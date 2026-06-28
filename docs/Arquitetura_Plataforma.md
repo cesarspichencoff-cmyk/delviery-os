@@ -1,5 +1,9 @@
 # DeliveryOS — Arquitetura da Plataforma (sistema operacional completo para delivery)
 
+> ⚠️ **Revisado pelo Red Team** ([RedTeam_Arquitetura.md](RedTeam_Arquitetura.md)): o núcleo encolheu
+> (Consumo e Maestro são projeções, não núcleo), o Cadastro passou a ser event-sourced (parte da História),
+> e o vocabulário do delivery virou um *Perfil* (dado, não código). Leia este doc com aquelas 5 correções aplicadas.
+
 > **Régua única:** isso respeita ou contradiz a tese?
 > **Tese:** em operação de alta rotatividade e tempo real, memória que depende de **ato separado** morre.
 > Só sobrevive a memória que nasce como **subproduto do trabalho**.
