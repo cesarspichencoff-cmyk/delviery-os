@@ -7,10 +7,12 @@
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "demo": "tsc && node dist/demo/camada0_demo.js"
+    "demo": "tsc && node dist/demo/camada0_demo.js",
+    "ingest": "tsc && node dist/demo/ingest_real.js"
   },
   "devDependencies": {
     "@types/node": "20.14.10",
-    "typescript": "5.5.3"
+    "typescript": "5.5.3",
+    "xlsx": "^0.18.5"
   }
 }
