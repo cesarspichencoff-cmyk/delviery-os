@@ -68,12 +68,15 @@
   /* FOCO — único gesto forte */
   .foco{position:static;transform:none}
   .screen.dir-top .foco{transform:translateY(-6px)} .screen.dir-bottom .foco{transform:translateY(6px)}
-  .foco .zone{font-size:54px;line-height:1;font-weight:600;letter-spacing:-.04em;color:var(--ink)}
-  .foco .tline{margin-top:18px;font-size:18px;font-weight:500;color:var(--soft)}
-  .foco .tline b{font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
-  .foco .cmd{margin-top:22px;display:inline-flex;align-items:center;gap:10px;color:rgba(var(--amber),1);font-size:17px;font-weight:600}
-  .foco .cmd .arrow{font-size:18px}
-  .foco .pid{margin-top:12px;font-size:11.5px;font-weight:500;letter-spacing:.16em;color:var(--faint)}
+  .foco .zone{font-size:50px;line-height:1;font-weight:600;letter-spacing:-.04em;color:var(--ink)}
+  .foco .pedido{margin-top:10px;font-size:15px;font-weight:600;letter-spacing:.02em;color:var(--soft);font-variant-numeric:tabular-nums}
+  .foco .tline{margin-top:14px;font-size:20px;font-weight:500;color:var(--ink)}
+  .foco .tline b{font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
+  .foco .cause{margin-top:6px;font-size:15px;font-weight:500;color:var(--soft)}
+  .foco .cmd{margin-top:20px;display:inline-flex;align-items:center;gap:10px;color:rgba(var(--amber),1);font-size:18px;font-weight:700}
+  .foco .cmd .arrow{font-size:19px}
+  .foco .impact{margin-top:16px;font-size:13.5px;font-weight:600;color:rgba(var(--amber),1);opacity:.92}
+  .foco .impact:empty{display:none}
 
   .screen[data-mode="calmo"] .calm{opacity:1}
   .screen[data-mode="ambiente"] .amb{opacity:1}
@@ -104,9 +107,11 @@
       <div class="reg amb"><div class="lines" id="ambLines"></div></div>
       <div class="reg foco">
         <div class="zone" id="fzone">Expedição</div>
-        <div class="tline" id="ftime">pronto há <b>53 min</b>, sem sair</div>
-        <div class="cmd"><span class="arrow">→</span><span id="fcmd">conferir a saída</span></div>
-        <div class="pid" id="fpid">PEDIDO 1622</div>
+        <div class="pedido" id="fped">Pedido #8606</div>
+        <div class="tline" id="ftime">pronto há <b>53 min</b></div>
+        <div class="cause" id="fcause">aguardando motoboy</div>
+        <div class="cmd"><span class="arrow">→</span><span id="fcmd">conferir saída</span></div>
+        <div class="impact" id="fimp"></div>
       </div>
     </div>
 
@@ -163,12 +168,15 @@ function step(t){
   const ambList=Object.entries(amb).map(([z,i])=>({label:lbl(z),inten:i}));
   const inten=Math.max(0,...ambList.map(a=>a.inten));
   let emand=0,cheg=0; for(const o of NIGHT){ if(o.r<=t&&!(o.e!=null&&o.e<=t)&&!(o.c!=null&&o.c<=t))emand++; if(o.r>t-20&&o.r<=t)cheg++; }
-  return {mode,active,ambList,inten,emand,intenso:cheg>=12};
+  let causa=null,impacto=0;
+  if(active){ if(active.zona==="Expedição"){ causa="aguardando motoboy"; impacto=wE.filter(x=>x.id!==active.id&&x.min>15).length; }
+              else { causa="ainda em preparo"; impacto=wP.filter(x=>x.id!==active.id&&x.min>30).length; } }
+  return {mode,active,causa,impacto,ambList,inten,emand,intenso:cheg>=12};
 }
 
 // ---- render: luz/ritmo/direção primeiro, texto depois ----
 const S=document.getElementById("screen"), clk=document.getElementById("clock");
-const fz=document.getElementById("fzone"),ft=document.getElementById("ftime"),fc=document.getElementById("fcmd"),fp=document.getElementById("fpid");
+const fz=document.getElementById("fzone"),fped=document.getElementById("fped"),ft=document.getElementById("ftime"),fcause=document.getElementById("fcause"),fc=document.getElementById("fcmd"),fimp=document.getElementById("fimp");
 const ambLines=document.getElementById("ambLines"), vital=document.getElementById("vital");
 const hhmm=t=>String(Math.floor(t/60)%24).padStart(2,"0")+":"+String(t%60).padStart(2,"0");
 
@@ -186,9 +194,11 @@ function render(t,m){
   if(m.mode==="foco"){
     const a=m.active;
     fz.textContent=a.zona;
-    if(a.zona==="Expedição"){ ft.innerHTML="pronto há <b>"+a.peak+" min</b>, sem sair"; fc.textContent="conferir a saída"; }
-    else { ft.innerHTML="<b>"+a.peak+" min</b> sem ficar pronto"; fc.textContent="ver a produção"; }
-    fp.textContent="PEDIDO "+a.id;
+    fped.textContent="Pedido #"+a.id;
+    if(a.zona==="Expedição"){ ft.innerHTML="pronto há <b>"+a.peak+" min</b>"; fc.textContent="conferir saída"; }
+    else { ft.innerHTML="<b>"+a.peak+" min</b> sem ficar pronto"; fc.textContent="olhar produção"; }
+    fcause.textContent=m.causa||"";
+    fimp.textContent = m.impacto>0 ? (a.zona==="Expedição" ? ("+"+m.impacto+" pedidos podem atrasar se não sair agora") : ("+"+m.impacto+" pedidos esperando produção")) : "";
   } else if(m.mode==="ambiente"){
     ambLines.innerHTML=m.ambList.map(c=>'<div class="wl">'+c.label+'</div>').join("");
   } else {
@@ -199,7 +209,15 @@ function render(t,m){
 // ---- replay da noite real: calmo → ambiente → foco → recua ----
 const START=18*60, END=24*60-1, TICK=360;
 let t=START;
-function loop(){ render(t,step(t)); t++; if(t>END){t=START;active=null;pending=null;chronic={};firedAt={};} setTimeout(loop,TICK); }
+// DEMO invisível (só revisão): toque na tela cicla  live → calmo → ambiente → foco → live
+const DEMO={
+  calmo:{mode:"calmo",ambList:[],inten:0,emand:16,intenso:false},
+  ambiente:{mode:"ambiente",ambList:[{label:"produção carregada",inten:3},{label:"saída lenta",inten:2}],inten:3,emand:34,intenso:true},
+  foco:{mode:"foco",active:{zona:"Expedição",id:"8606",peak:53},causa:"aguardando motoboy",impacto:3,ambList:[],inten:0,emand:31,intenso:true}
+};
+const CICLO=[null,"calmo","ambiente","foco"]; let demoIx=0, forced=null;
+document.getElementById("screen").addEventListener("click",()=>{ demoIx=(demoIx+1)%CICLO.length; forced=CICLO[demoIx]; if(forced) render(t,DEMO[forced]); });
+function loop(){ if(!forced){ render(t,step(t)); t++; if(t>END){t=START;active=null;pending=null;chronic={};firedAt={};} } setTimeout(loop,TICK); }
 (async()=>{try{if('wakeLock'in navigator)await navigator.wakeLock.request('screen');}catch(e){}})();
 loop();
 </script>
