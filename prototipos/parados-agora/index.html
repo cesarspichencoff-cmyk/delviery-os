@@ -10,7 +10,7 @@
 <style>
   :root{
     --paper:#F4F6F0; --ink:#1A211C; --soft:#6A736C; --faint:#AAB2AA;
-    --green:18,134,90; --amber:178,96,40; --warm:0; --bd:6s;
+    --green:18,134,90; --amber:178,96,40; --sevc:178,96,40; --warm:0; --bd:6s;
     --font:'Satoshi',-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,system-ui,sans-serif;
   }
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -23,7 +23,6 @@
     box-shadow:0 18px 50px -26px rgba(20,45,30,.30);display:flex;flex-direction:column;padding:30px 28px 22px;
     transition:background 1.1s ease}
 
-  /* campo: respiro / aquecimento / inclinação */
   .field{position:absolute;inset:0;z-index:0;pointer-events:none}
   .breathwrap{position:absolute;inset:0;opacity:1;transition:opacity 1s ease}
   .breath{position:absolute;left:50%;top:54%;width:560px;height:560px;border-radius:50%;transform:translate(-50%,-54%);
@@ -31,13 +30,13 @@
     animation:breathe var(--bd) ease-in-out infinite}
   @keyframes breathe{0%,100%{transform:translate(-50%,-54%) scale(1);opacity:.65}50%{transform:translate(-50%,-54%) scale(1.05);opacity:1}}
   .warm{position:absolute;inset:0;opacity:var(--warm);transition:opacity 1.2s ease;
-    background:radial-gradient(125% 95% at 50% 62%, rgba(var(--amber),.22) 0%, rgba(var(--amber),.08) 52%, transparent 82%)}
+    background:radial-gradient(125% 95% at 50% 62%, rgba(var(--sevc),.18) 0%, rgba(var(--sevc),.06) 52%, transparent 82%)}
   .lean{position:absolute;left:0;right:0;height:62%;opacity:0;transition:opacity .55s ease}
   .screen[data-mode="foco"] .lean{opacity:1}
-  .screen.dir-top .lean{top:0;background:linear-gradient(to bottom, rgba(var(--amber),.26) 0%, rgba(var(--amber),.05) 55%, transparent 100%)}
-  .screen.dir-bottom .lean{bottom:0;top:auto;background:linear-gradient(to top, rgba(var(--amber),.26) 0%, rgba(var(--amber),.05) 55%, transparent 100%)}
+  .screen.dir-top .lean{top:0;background:linear-gradient(to bottom, rgba(var(--sevc),.26) 0%, rgba(var(--sevc),.05) 55%, transparent 100%)}
+  .screen.dir-bottom .lean{bottom:0;top:auto;background:linear-gradient(to top, rgba(var(--sevc),.26) 0%, rgba(var(--sevc),.05) 55%, transparent 100%)}
   .screen[data-mode="ambiente"] .breathwrap{opacity:.45}
-  .screen[data-mode="foco"] .breathwrap{opacity:.20}
+  .screen[data-mode="foco"] .breathwrap{opacity:.18}
 
   .top{position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between}
   .mark{display:flex;align-items:center;gap:9px;font-size:10.5px;font-weight:700;letter-spacing:.22em;color:var(--soft)}
@@ -46,25 +45,27 @@
   .clock{font-size:11.5px;font-weight:500;letter-spacing:.14em;color:var(--faint);font-variant-numeric:tabular-nums}
 
   .stage{position:relative;z-index:2;flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center}
-  .screen.dir-top .stage{justify-content:flex-start;padding-top:9%}
-  .screen.dir-bottom .stage{justify-content:flex-end;padding-bottom:10%}
-  .reg{position:absolute;width:100%;opacity:0;transition:opacity .55s ease;pointer-events:none}
+  .screen.dir-top .stage{justify-content:flex-start;padding-top:8%}
+  .screen.dir-bottom .stage{justify-content:flex-end;padding-bottom:9%}
+  .reg{position:absolute;width:100%;opacity:0;transition:opacity .5s ease;pointer-events:none}
 
   .calm .word{font-size:24px;font-weight:300;letter-spacing:.01em;color:var(--soft)}
 
-  .amb .lines{display:flex;flex-direction:column;gap:9px;align-items:center}
-  .amb .wl{font-size:17px;font-weight:500;color:#9A8A66;letter-spacing:.01em}
+  .amb .lines{display:flex;flex-direction:column;gap:10px;align-items:center}
+  .amb .wl{display:flex;align-items:center;gap:9px;font-size:17px;font-weight:500;color:#8A8270;letter-spacing:.01em}
+  .amb .wd{width:7px;height:7px;border-radius:50%;background:#B59A2A}
 
-  /* FOCO genérico e rico */
-  .foco .fhead{font-size:37px;line-height:1.02;font-weight:600;letter-spacing:-.035em;color:var(--ink)}
-  .foco .fsub{margin-top:9px;font-size:19px;font-weight:600;letter-spacing:-.01em;color:var(--ink);font-variant-numeric:tabular-nums}
-  .foco .flines{margin-top:12px;display:flex;flex-direction:column;gap:5px}
-  .foco .flines div{font-size:15.5px;font-weight:500;color:var(--soft)}
-  .foco .flines b{font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
+  /* FOCO — voz de veterano: STATUS → CAUSA → AÇÃO */
+  .foco .sevrow{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:11px}
+  .foco .sevdot{width:9px;height:9px;border-radius:50%;background:rgba(var(--sevc),1)}
+  .foco .sevlbl{font-size:11px;font-weight:700;letter-spacing:.2em;color:rgba(var(--sevc),1)}
+  .foco .fhead{font-size:32px;line-height:1.05;font-weight:700;letter-spacing:-.03em;color:var(--ink);padding:0 6px}
+  .foco .fimpacts{margin-top:15px;list-style:none;display:flex;flex-direction:column;gap:5px;align-items:center}
+  .foco .fimpacts li{font-size:15.5px;font-weight:500;color:var(--soft);font-variant-numeric:tabular-nums}
+  .foco .fimpacts li b{font-weight:700;color:var(--ink)}
+  .foco .fconseq{margin-top:13px;font-size:14px;font-weight:600;color:var(--ink);opacity:.8}
   .foco .cmd{margin-top:20px;display:inline-flex;align-items:center;gap:10px;color:rgba(var(--amber),1);font-size:18px;font-weight:700}
   .foco .cmd .arrow{font-size:19px}
-  .foco .impact{margin-top:14px;font-size:13.5px;font-weight:600;color:rgba(var(--amber),1);opacity:.92}
-  .foco .impact:empty{display:none}
 
   .screen[data-mode="calmo"] .calm{opacity:1}
   .screen[data-mode="ambiente"] .amb{opacity:1}
@@ -73,7 +74,7 @@
   .vital{position:relative;z-index:2;align-self:center;font-size:12px;font-weight:500;letter-spacing:.05em;
     color:var(--faint);font-variant-numeric:tabular-nums;transition:opacity .5s ease}
   .screen[data-mode="foco"] .vital{opacity:0}
-  .foot{position:absolute;bottom:9px;left:0;width:100%;text-align:center;font-size:9px;letter-spacing:.13em;color:#CAD0C8;z-index:2}
+  .foot{position:absolute;bottom:9px;left:0;width:100%;text-align:center;font-size:9px;letter-spacing:.12em;color:#CAD0C8;z-index:2}
 </style>
 </head>
 <body>
@@ -91,11 +92,11 @@
       <div class="reg calm"><div class="word">em fluxo</div></div>
       <div class="reg amb"><div class="lines" id="ambLines"></div></div>
       <div class="reg foco">
-        <div class="fhead" id="fhead">Expedição</div>
-        <div class="fsub" id="fsub">Pedido #8606</div>
-        <div class="flines" id="flines"></div>
-        <div class="cmd"><span class="arrow">→</span><span id="fcmd">conferir saída</span></div>
-        <div class="impact" id="fimp"></div>
+        <div class="sevrow"><span class="sevdot"></span><span class="sevlbl" id="sevlbl">ATENÇÃO</span></div>
+        <div class="fhead" id="fhead">QUENTES EM RISCO</div>
+        <ul class="fimpacts" id="fimpacts"></ul>
+        <div class="fconseq" id="fconseq"></div>
+        <div class="cmd"><span class="arrow">→</span><span id="fcmd">liberar prontos pra bancada</span></div>
       </div>
     </div>
     <div class="vital" id="vital">18 em andamento</div>
@@ -110,167 +111,165 @@ const NIGHT=(window.NIGHT||[]);
 
 /* ===== CONHECIMENTO DO CARDÁPIO (seed inline — referência set-once) ===== */
 const BASE={quentes:4,sushi:4,enrolados:5,combinados:3};
+const TEMPO_PRACA={quentes:12,sushi:8,enrolados:8,combinados:22};
+const COOK=["quentes","sushi","enrolados","combinados"];
 const CARDAPIO=[
- {id:"hot",nome:"Hot Roll",cat:"quente",pr:["quentes"],temp:"quente",sac:1,kit:null,sozinho:true,trava:false,pausavel:true,peso:12},
- {id:"hotfila",nome:"Hot Filadélfia",cat:"quente",pr:["quentes"],temp:"quente",sac:1,kit:null,sozinho:true,trava:false,pausavel:true,peso:9},
- {id:"guioza",nome:"Guioza",cat:"quente",pr:["quentes"],temp:"quente",sac:1,kit:null,sozinho:true,trava:false,pausavel:true,peso:6},
- {id:"tempura",nome:"Tempurá",cat:"quente",pr:["quentes"],temp:"quente",sac:1,kit:null,sozinho:true,trava:true,pausavel:true,peso:4},
- {id:"yakisoba",nome:"Yakisoba",cat:"quente",pr:["quentes"],temp:"quente",sac:1,kit:null,sozinho:true,trava:true,pausavel:true,peso:5},
- {id:"temaki",nome:"Temaki Salmão",cat:"enrolado",pr:["enrolados"],temp:"frio",sac:1,kit:null,sozinho:true,trava:false,pausavel:true,peso:9},
- {id:"uramaki",nome:"Uramaki Filadélfia",cat:"enrolado",pr:["enrolados"],temp:"frio",sac:1,kit:null,sozinho:true,trava:false,pausavel:true,peso:8},
- {id:"hossomaki",nome:"Hossomaki",cat:"enrolado",pr:["enrolados"],temp:"frio",sac:1,kit:null,sozinho:true,trava:false,pausavel:true,peso:5},
- {id:"niguiri",nome:"Niguiri Salmão",cat:"sushi",pr:["sushi"],temp:"frio",sac:1,kit:null,sozinho:true,trava:false,pausavel:true,peso:6},
- {id:"sashimi",nome:"Sashimi Salmão",cat:"sushi",pr:["sushi"],temp:"frio",sac:1,kit:null,sozinho:true,trava:false,pausavel:true,peso:6},
- {id:"ceviche",nome:"Ceviche",cat:"frio",pr:["sushi"],temp:"frio",sac:1,kit:null,sozinho:true,trava:false,pausavel:true,peso:3},
- {id:"poke",nome:"Poke Salmão",cat:"frio",pr:["montagem"],temp:"frio",sac:1,kit:null,sozinho:true,trava:false,pausavel:true,peso:5},
- {id:"comb20",nome:"Combinado 20 peças",cat:"combinado",pr:["enrolados","sushi","quentes"],temp:"misto",sac:1,kit:null,sozinho:false,trava:true,pausavel:false,peso:10},
- {id:"comb30",nome:"Combinado 30 peças",cat:"combinado",pr:["enrolados","sushi","quentes"],temp:"misto",sac:1,kit:null,sozinho:false,trava:true,pausavel:false,peso:7},
- {id:"combfam",nome:"Combinado Família",cat:"combinado",pr:["enrolados","sushi","quentes"],temp:"misto",sac:2,kit:null,sozinho:false,trava:true,pausavel:false,peso:4},
- {id:"kit1",nome:"Kit p/1",cat:"kit",pr:["montagem"],temp:"ambiente",sac:0,kit:"p1",sozinho:true,trava:false,pausavel:false,peso:12},
- {id:"kit2",nome:"Kit p/2",cat:"kit",pr:["montagem"],temp:"ambiente",sac:0,kit:"p2",sozinho:true,trava:false,pausavel:false,peso:8},
- {id:"kitkids",nome:"Kit Kids",cat:"kit",pr:["montagem"],temp:"ambiente",sac:0,kit:"kids",sozinho:true,trava:false,pausavel:false,peso:3},
- {id:"coca",nome:"Coca-Cola",cat:"bebida",pr:["bar"],temp:"ambiente",sac:0,kit:null,sozinho:true,trava:false,pausavel:true,peso:9},
- {id:"mochi",nome:"Mochi",cat:"sobremesa",pr:["sobremesa"],temp:"frio",sac:0,kit:null,sozinho:true,trava:false,pausavel:true,peso:4}
+ {id:"hot",nome:"Hot Roll",cat:"quente",pr:["quentes"],temp:"quente",sac:1,kit:null,trava:false,pausavel:true,peso:12},
+ {id:"hotfila",nome:"Hot Filadélfia",cat:"quente",pr:["quentes"],temp:"quente",sac:1,kit:null,trava:false,pausavel:true,peso:9},
+ {id:"guioza",nome:"Guioza",cat:"quente",pr:["quentes"],temp:"quente",sac:1,kit:null,trava:false,pausavel:true,peso:6},
+ {id:"tempura",nome:"Tempurá",cat:"quente",pr:["quentes"],temp:"quente",sac:1,kit:null,trava:true,pausavel:true,peso:4},
+ {id:"yakisoba",nome:"Yakisoba",cat:"quente",pr:["quentes"],temp:"quente",sac:1,kit:null,trava:true,pausavel:true,peso:5},
+ {id:"temaki",nome:"Temaki Salmão",cat:"enrolado",pr:["enrolados"],temp:"frio",sac:1,kit:null,trava:false,pausavel:true,peso:9},
+ {id:"uramaki",nome:"Uramaki Filadélfia",cat:"enrolado",pr:["enrolados"],temp:"frio",sac:1,kit:null,trava:false,pausavel:true,peso:8},
+ {id:"hossomaki",nome:"Hossomaki",cat:"enrolado",pr:["enrolados"],temp:"frio",sac:1,kit:null,trava:false,pausavel:true,peso:5},
+ {id:"niguiri",nome:"Niguiri Salmão",cat:"sushi",pr:["sushi"],temp:"frio",sac:1,kit:null,trava:false,pausavel:true,peso:6},
+ {id:"sashimi",nome:"Sashimi Salmão",cat:"sushi",pr:["sushi"],temp:"frio",sac:1,kit:null,trava:false,pausavel:true,peso:6},
+ {id:"ceviche",nome:"Ceviche",cat:"frio",pr:["sushi"],temp:"frio",sac:1,kit:null,trava:false,pausavel:true,peso:3},
+ {id:"poke",nome:"Poke Salmão",cat:"frio",pr:["montagem"],temp:"frio",sac:1,kit:null,trava:false,pausavel:true,peso:5},
+ {id:"comb20",nome:"Combinado 20",cat:"combinado",pr:["enrolados","sushi","quentes"],temp:"misto",sac:1,kit:null,trava:true,pausavel:false,peso:10},
+ {id:"comb30",nome:"Combinado 30",cat:"combinado",pr:["enrolados","sushi","quentes"],temp:"misto",sac:1,kit:null,trava:true,pausavel:false,peso:7},
+ {id:"combfam",nome:"Combinado Família",cat:"combinado",pr:["enrolados","sushi","quentes"],temp:"misto",sac:2,kit:null,trava:true,pausavel:false,peso:4},
+ {id:"kit1",nome:"Kit p/1",cat:"kit",pr:["montagem"],temp:"ambiente",sac:0,kit:"p1",trava:false,pausavel:false,peso:12},
+ {id:"kit2",nome:"Kit p/2",cat:"kit",pr:["montagem"],temp:"ambiente",sac:0,kit:"p2",trava:false,pausavel:false,peso:8},
+ {id:"kitkids",nome:"Kit Kids",cat:"kit",pr:["montagem"],temp:"ambiente",sac:0,kit:"kids",trava:false,pausavel:false,peso:3},
+ {id:"coca",nome:"Coca-Cola",cat:"bebida",pr:["bar"],temp:"ambiente",sac:0,kit:null,trava:false,pausavel:true,peso:9},
+ {id:"mochi",nome:"Mochi",cat:"sobremesa",pr:["sobremesa"],temp:"frio",sac:0,kit:null,trava:false,pausavel:true,peso:4}
 ];
-const COOK=["quentes","sushi","enrolados","combinados"]; // praças de produção (sobrecarga)
 
-/* síntese de cesta: o relatório não traz itens → cesta plausível, determinística por id.
-   Tempo é REAL; composição é sintética (trocar pela comanda/impressora quando existir). */
+/* ===== SEAM: fonte dos itens (DESACOPLADA do resolver) =====
+   Hoje: síntese (o relatório não traz itens). Amanhã: KDS / impressora / API iFood.
+   Trocar SÓ esta função NÃO muda nenhuma regra de decisão abaixo. */
 function rng(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return()=>{h=Math.imul(h^(h>>>15),2246822519);return(h>>>0)/4294967296;};}
-function pick(arr,r){const t=arr.reduce((a,b)=>a+b.peso,0);let x=r()*t;for(const it of arr){x-=it.peso;if(x<=0)return it;}return arr[arr.length-1];}
-const MAINS=CARDAPIO.filter(i=>!["kit","bebida","sobremesa"].includes(i.cat));
-const KITS=CARDAPIO.filter(i=>i.cat==="kit"), BEB=CARDAPIO.filter(i=>i.cat==="bebida"), SOB=CARDAPIO.filter(i=>i.cat==="sobremesa");
-function comporPedido(id){
-  const r=rng("p"+id), itens=[m0=pick(MAINS,r)];
-  if(m0.cat!=="combinado"&&r()<0.4) itens.push(pick(MAINS,r));
-  if(r()<0.85) itens.push(pick(KITS,r));
-  if(r()<0.5) itens.push(pick(BEB,r));
-  if(r()<0.18) itens.push(pick(SOB,r));
-  return itens;
-}
-const INFO={};
-for(const o of NIGHT){
-  const it=comporPedido(o.id);
-  const pr=new Set(); it.forEach(x=>x.pr.forEach(p=>pr.add(p)));
-  const prodPr=[...pr].filter(p=>COOK.includes(p));
-  const temps=new Set(it.map(x=>x.temp));
-  const foodFrio=it.some(x=>x.temp==="frio");
-  INFO[o.id]={
-    nItens:it.length,
-    pracas:[...pr], prodPr,
-    sacolas:Math.max(1,it.reduce((a,x)=>a+x.sac,0)),
-    extras:it.filter(x=>["kit","bebida","sobremesa"].includes(x.cat)).map(x=>x.nome),
-    facilEsquecer:it.some(x=>["kit","bebida","sobremesa"].includes(x.cat)),
-    dependeMultiplas:prodPr.length>1,
-    trava:it.some(x=>x.trava),
-    soQuentes:it.some(x=>x.temp==="quente")&&!foodFrio
-  };
-}
+function pick(a,r){const t=a.reduce((x,b)=>x+b.peso,0);let v=r()*t;for(const it of a){v-=it.peso;if(v<=0)return it;}return a[a.length-1];}
+const MAINS=CARDAPIO.filter(i=>!["kit","bebida","sobremesa"].includes(i.cat)),KITS=CARDAPIO.filter(i=>i.cat==="kit"),BEB=CARDAPIO.filter(i=>i.cat==="bebida"),SOB=CARDAPIO.filter(i=>i.cat==="sobremesa");
+function FONTE_ITENS_sintetica(id){ const r=rng("p"+id),it=[pick(MAINS,r)]; if(it[0].cat!=="combinado"&&r()<0.4)it.push(pick(MAINS,r)); if(r()<0.85)it.push(pick(KITS,r)); if(r()<0.5)it.push(pick(BEB,r)); if(r()<0.18)it.push(pick(SOB,r)); return it; }
+const FONTE_ITENS = FONTE_ITENS_sintetica;   // ← único ponto a trocar quando houver itens reais
 
-/* ===== contrato de comportamento (aprovado) ===== */
-const PROD_FLOOR=45, EXPED_FLOOR=30, SURGE_N=3, COOLDOWN=45, MAXFOCUS=8, DEBOUNCE=3;
-let active=null, pending=null, chronic={}, firedAt={};
-const zoneHasChronic=z=>Object.values(chronic).some(c=>c.zona===z);
+/* RESOLVER (estável, agnóstico de fonte): itens → conhecimento operacional do pedido */
+function resolver(itens){
+  const pr=new Set(); itens.forEach(x=>x.pr.forEach(p=>pr.add(p)));
+  const prodPr=[...pr].filter(p=>COOK.includes(p));
+  const foodFrio=itens.some(x=>x.temp==="frio");
+  return { nItens:itens.length, pracas:[...pr], prodPr,
+    sacolas:Math.max(1,itens.reduce((a,x)=>a+x.sac,0)),
+    extras:itens.filter(x=>["kit","bebida","sobremesa"].includes(x.cat)).map(x=>x.nome),
+    facilEsquecer:itens.some(x=>["kit","bebida","sobremesa"].includes(x.cat)),
+    dependeMultiplas:prodPr.length>1, trava:itens.some(x=>x.trava),
+    soQuentes:itens.some(x=>x.temp==="quente")&&!foodFrio };
+}
+const INFO={}; for(const o of NIGHT) INFO[o.id]=resolver(FONTE_ITENS(o.id));
+
+/* ===== contrato de comportamento ===== */
+const EXPED_FLOOR=30, PROD_FLOOR=45, SURGE_N=3, COOLDOWN=45, MAXFOCUS=8, DEBOUNCE=3;
 const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
+const SEV={3:{c:"192,57,43",r:"CRÍTICO"},2:{c:"204,122,31",r:"ATENÇÃO"},1:{c:"181,154,42",r:"MONITORAR"}};
+let active=null, pending=null, firedAt={};
+
+function buildFoco(s,ctx){
+  if(s.kind==="praca"){
+    const P=cap(s.praca), quente=s.praca==="quentes";
+    const acima=Math.max(0,(s.maxmin||0)-(TEMPO_PRACA[s.praca]||12));
+    return {sev:s.sev,dir:"top",head: s.sev>=3?(P+" EM RISCO"):(P+" CARREGANDO"),
+      impactos:["<b>"+s.n+"</b> pedidos na praça", acima>0?("<b>+"+acima+" min</b> acima do normal"):"tempo acima do normal"],
+      conseq: quente?"se continuar, a expedição seca":"trava o fechamento de pedidos",
+      cmd: quente?"liberar prontos pra bancada":("priorizar bancada do "+s.praca)};
+  }
+  if(s.kind==="saida"){
+    return {sev:s.sev,dir:"bottom",head:s.sev>=3?"SAÍDA TRAVADA":"SAÍDA LENTA",
+      impactos:["<b>"+s.n+"</b> prontos sem sair","motoboy é o gargalo"],
+      conseq:"pedidos vão atrasar na entrega",cmd:"chamar motoboy / conferir saída"};
+  }
+  if(s.zona==="Expedição"){
+    const mais=ctx.wE.filter(x=>x.id!==s.id&&x.min>15).length;
+    return {sev:s.sev,dir:"bottom",head:"#"+s.id+" SEM SAIR",
+      impactos:["pronto há <b>"+s.peak+" min</b>", mais>0?("<b>+"+mais+"</b> podem atrasar"):"aguardando motoboy"],
+      conseq:"atraso na entrega · cliente pode reclamar",cmd:"conferir saída"};
+  }
+  const I=INFO[s.id]||{}, pr=I.prodPr&&I.prodPr[0]?I.prodPr[0]:null;
+  return {sev:s.sev,dir:"top",head:"#"+s.id+(pr?(" PRESO NO "+pr.toUpperCase()):" TRAVADO"),
+    impactos:["<b>"+s.peak+" min</b> sem ficar pronto", I.dependeMultiplas?("depende de <b>"+I.prodPr.length+"</b> praças"):("praça: "+(pr?cap(pr):"—"))],
+    conseq:I.trava?"segura o pedido inteiro":((ctx.load[pr]||0)>1?("+"+((ctx.load[pr]||1)-1)+" esperando "+pr):"fila crescendo"),
+    cmd:pr?("olhar "+pr):"olhar produção"};
+}
 
 function step(t){
-  const wE=[], wP=[]; const load={};
+  const wE=[],wP=[],load={},maxmin={};
   for(const o of NIGHT){
     if(o.c!=null&&o.c<=t)continue; if(o.r>t)continue;
     if(o.p!=null&&o.p<=t){ const up=o.s!=null?o.s:o.e; if(up==null||up<=t)continue; wE.push({id:o.id,min:t-o.p}); }
     else { const up=o.p!=null?o.p:o.c; if(up==null)continue; wP.push({id:o.id,min:t-o.r});
-           (INFO[o.id]?.prodPr||[]).forEach(p=>load[p]=(load[p]||0)+1); } // carga por praça (produção)
-  }
-  // foco: outlier solitário em zona não-surto (mesma lógica validada)
-  const byZone={Expedição:wE,Produção:wP}; let cand=null;
+           (INFO[o.id]?.prodPr||[]).forEach(p=>{load[p]=(load[p]||0)+1; maxmin[p]=Math.max(maxmin[p]||0,t-o.r);}); } }
+
+  // SITUAÇÕES com severidade (nascem classificadas)
+  const sits=[];
+  for(const p of COOK){ const n=load[p]||0; if(n>BASE[p]){ const ratio=n/BASE[p]; sits.push({key:"pr:"+p,kind:"praca",praca:p,n,maxmin:Math.round(maxmin[p]||0),sev:ratio>=2?3:(ratio>=1.4?2:1)}); } }
+  const ew=wE.filter(x=>x.min>EXPED_FLOOR); if(ew.length>=SURGE_N) sits.push({key:"saida",kind:"saida",n:ew.length,sev:ew.length>=6?3:2});
   for(const [zona,floor] of [["Expedição",EXPED_FLOOR],["Produção",PROD_FLOOR]]){
-    const over=byZone[zona].filter(x=>x.min>floor);
-    if(over.length>=SURGE_N) continue;
-    if(over.length===2) continue;
-    if(over.length===1&&!zoneHasChronic(zona)){ const mx=over[0]; if(!cand||mx.min>cand.min) cand={zona,id:mx.id,min:Math.round(mx.min)}; }
+    const over=(zona==="Expedição"?wE:wP).filter(x=>x.min>floor);
+    if(over.length===1){ const mx=over[0],peak=Math.round(mx.min); sits.push({key:"od:"+mx.id,kind:"order",zona,id:mx.id,peak,sev:peak>=(zona==="Expedição"?55:85)?3:2}); }
   }
-  if(cand){ if(!pending||pending.id!==cand.id) pending={id:cand.id,since:t}; } else pending=null;
-  const sustained=(pending&&(t-pending.since)>=DEBOUNCE)?cand:null;
-  const presentes=new Set([...wE,...wP].map(x=>x.id));
-  for(const id of Object.keys(chronic)) if(!presentes.has(id)) delete chronic[id];
-  if(active){
-    const cur=[...wE,...wP].find(x=>x.id===active.id); if(cur) active.peak=Math.max(active.peak,Math.round(cur.min));
-    if(!presentes.has(active.id)) active=null;
-    else if(t>=active.until){ chronic[active.id]={zona:active.zona,peak:active.peak}; active=null; }
-  }
-  if(!active&&sustained){ const elig=firedAt[sustained.id]==null||(t-firedAt[sustained.id])>COOLDOWN;
-    if(elig&&!chronic[sustained.id]){ active={id:sustained.id,zona:sustained.zona,until:t+MAXFOCUS,peak:sustained.min}; firedAt[sustained.id]=t; } }
+  sits.sort((a,b)=> b.sev-a.sev || ((b.n||b.peak||0)-(a.n||a.peak||0)));
+  const top=sits[0]||null;
 
-  // ambiente RICO: sobrecarga por praça (do cardápio) + saída lenta
-  const amb=[];
-  for(const p of COOK){ if((load[p]||0)>BASE[p]) amb.push({label:cap(p)+" sobrecarregada",inten:Math.min(3,Math.round((load[p]/BASE[p]))) }); }
-  if(wE.filter(x=>x.min>EXPED_FLOOR).length>=SURGE_N) amb.push({label:"saída lenta",inten:2});
-  for(const c of Object.values(chronic)) if(!amb.length) amb.push({label:(c.zona==="Expedição"?"saída lenta":"produção carregada"),inten:2});
+  // gerente de atenção: debounce + janela + refratário (raro, sem nag)
+  if(top&&top.sev>=2){ if(!pending||pending.key!==top.key) pending={key:top.key,since:t}; } else pending=null;
+  const sustained=(pending&&(t-pending.since)>=DEBOUNCE)?top:null;
+  if(active){ const cur=sits.find(s=>s.key===active.key);
+    if(!cur) active=null; else { active.sit=cur; if(t>=active.until){ firedAt[active.key]=t; active=null; } } }
+  if(!active&&sustained){ const elig=firedAt[sustained.key]==null||(t-firedAt[sustained.key])>COOLDOWN;
+    if(elig){ active={key:sustained.key,sit:sustained,until:t+MAXFOCUS}; firedAt[sustained.key]=t; } }
 
-  const inFoco=!!active, inAmb=!inFoco&&amb.length>0;
-  const mode=inFoco?"foco":(inAmb?"ambiente":"calmo");
-  const inten=Math.max(0,...amb.map(a=>a.inten));
-
-  // foco rico (vivo): monta a investigação a partir do cardápio
-  let foco=null;
-  if(active){
-    const I=INFO[active.id]||{}; const ex= I.facilEsquecer&&I.extras&&I.extras.length;
-    if(active.zona==="Expedição"){
-      foco={head:"Expedição", sub:"Pedido #"+active.id, dir:"bottom",
-        lines:["pronto há <b>"+active.peak+" min</b>","aguardando motoboy"].concat(I.sacolas>1?["<b>"+I.sacolas+" sacolas</b> · "+I.nItens+" itens"]:[]),
-        cmd:"conferir saída",
-        impact: wE.filter(x=>x.id!==active.id&&x.min>15).length>0 ? ("+"+wE.filter(x=>x.id!==active.id&&x.min>15).length+" pedidos podem atrasar") : ""};
-    } else {
-      const pl = I.dependeMultiplas ? ("depende de "+I.prodPr.length+" praças") : ("praça: "+(I.prodPr[0]?cap(I.prodPr[0]):"—"));
-      foco={head:"Produção", sub:"Pedido #"+active.id, dir:"top",
-        lines:["<b>"+active.peak+" min</b> sem ficar pronto", pl].concat(I.trava?["um item trava o fechamento"]:[]),
-        cmd: I.prodPr[0]?("olhar "+I.prodPr[0]):"olhar produção",
-        impact: (load[I.prodPr[0]]||0)>1 ? ("+"+((load[I.prodPr[0]]||1)-1)+" esperando "+I.prodPr[0]) : ""};
-    }
-  }
+  const inFoco=!!active, inAmb=!inFoco&&sits.length>0, mode=inFoco?"foco":(inAmb?"ambiente":"calmo");
+  const foco=active?buildFoco(active.sit,{wE,load}):null;
+  const ambList=sits.filter(s=>!active||s.key!==active.key).slice(0,2).map(s=>({
+    label: s.kind==="praca"?(cap(s.praca)+(s.sev>=2?" carregando":" acima do normal")) : (s.kind==="saida"?"saída lenta":(s.zona==="Expedição"?"saída lenta":"produção lenta")),
+    sev:s.sev }));
   let emand=0,cheg=0; for(const o of NIGHT){ if(o.r<=t&&!(o.e!=null&&o.e<=t)&&!(o.c!=null&&o.c<=t))emand++; if(o.r>t-20&&o.r<=t)cheg++; }
-  return {mode,foco,ambList:amb,inten,emand,intenso:cheg>=12};
+  return {mode,foco,ambList,emand,intenso:cheg>=12,sev:foco?foco.sev:0};
 }
 
 /* ===== render ===== */
 const S=document.getElementById("screen"),clk=document.getElementById("clock");
-const fhead=document.getElementById("fhead"),fsub=document.getElementById("fsub"),flines=document.getElementById("flines"),fcmd=document.getElementById("fcmd"),fimp=document.getElementById("fimp");
+const sevlbl=document.getElementById("sevlbl"),fhead=document.getElementById("fhead"),fimpacts=document.getElementById("fimpacts"),fconseq=document.getElementById("fconseq"),fcmd=document.getElementById("fcmd");
 const ambLines=document.getElementById("ambLines"),vital=document.getElementById("vital");
 const hhmm=t=>String(Math.floor(t/60)%24).padStart(2,"0")+":"+String(t%60).padStart(2,"0");
 function render(t,m){
   clk.textContent=hhmm(t);
-  S.dataset.mode=m.mode;
-  S.style.setProperty("--bd",m.intenso?"4.4s":"6s");
-  S.style.setProperty("--warm", m.mode==="ambiente"?(0.30+0.70*Math.min(1,((m.inten||1)-1)/2)).toFixed(2):0);
+  S.dataset.mode=m.mode; S.style.setProperty("--bd",m.intenso?"4.4s":"6s");
   const dir=m.foco?m.foco.dir:null;
   S.classList.toggle("dir-top",dir==="top"); S.classList.toggle("dir-bottom",dir==="bottom");
   if(m.mode==="foco"&&m.foco){
-    const f=m.foco;
-    fhead.textContent=f.head; fsub.textContent=f.sub;
-    flines.innerHTML=(f.lines||[]).map(l=>"<div>"+l+"</div>").join("");
-    fcmd.textContent=f.cmd; fimp.textContent=f.impact||"";
+    const f=m.foco, meta=SEV[f.sev]||SEV[2];
+    S.style.setProperty("--sevc",meta.c); S.style.setProperty("--warm","0");
+    sevlbl.textContent=meta.r; fhead.textContent=f.head;
+    fimpacts.innerHTML=(f.impactos||[]).filter(Boolean).map(x=>"<li>"+x+"</li>").join("");
+    fconseq.textContent=f.conseq?("↳ "+f.conseq):"";
+    fcmd.textContent=f.cmd;
   } else if(m.mode==="ambiente"){
-    ambLines.innerHTML=(m.ambList||[]).map(c=>'<div class="wl">'+c.label+'</div>').join("");
-  } else { vital.textContent=(m.emand||0)+" em andamento"; }
+    const topSev=Math.max(1,...(m.ambList||[]).map(a=>a.sev||1));
+    S.style.setProperty("--sevc",(SEV[topSev]||SEV[1]).c);
+    S.style.setProperty("--warm",(0.28+0.22*(topSev-1)).toFixed(2));
+    ambLines.innerHTML=(m.ambList||[]).map(a=>'<div class="wl"><span class="wd" style="background:rgba('+(SEV[a.sev]||SEV[1]).c+',.9)"></span>'+a.label+'</div>').join("");
+  } else { S.style.setProperty("--warm","0"); vital.textContent=(m.emand||0)+" em andamento"; }
 }
 
 /* ===== replay da noite real ===== */
 const START=18*60, END=24*60-1, TICK=360; let t=START;
 
 /* DEMO invisível (revisão): toque cicla os estados ricos. Não é produto. */
-const DEMO=[
- null,
+const DEMO=[ null,
  {mode:"calmo",emand:16,intenso:false},
- {mode:"ambiente",inten:3,intenso:true,ambList:[{label:"Quentes sobrecarregada",inten:3},{label:"saída lenta",inten:2}]},
- {mode:"foco",intenso:true,foco:{head:"Produção",sub:"Quentes sobrecarregada",dir:"top",lines:["8 pedidos de quente em aberto","tempo acima do normal"],cmd:"enviar prontos pra bancada do caixa",impact:"+8 podem atrasar"}},
- {mode:"foco",foco:{head:"Expedição",sub:"Pedido #8606",dir:"bottom",lines:["pronto há <b>53 min</b>","aguardando motoboy"],cmd:"conferir saída",impact:"+3 pedidos podem atrasar"}},
- {mode:"foco",foco:{head:"Fechamento",sub:"Pedido #4421",dir:"bottom",lines:["só pratos quentes","sem itens frios pendentes"],cmd:"verificar se já dá pra fechar",impact:""}},
- {mode:"foco",foco:{head:"Conferência",sub:"Pedido #5012",dir:"bottom",lines:["<b>2 sacolas</b> · 11 itens","bebida + kit obrigatório"],cmd:"separar 2ª sacola e conferir item a item",impact:"risco de esquecer item"}},
- {mode:"foco",foco:{head:"Cardápio / Pausa",sub:"Salmão",dir:"top",lines:["deveria estar pausado","entrou em <b>4 pedidos</b> nos últimos 15 min"],cmd:"pausar item ou confirmar substituição",impact:"+4 com risco de erro"}}
+ {mode:"ambiente",intenso:true,ambList:[{label:"Quentes carregando",sev:2},{label:"saída lenta",sev:1}]},
+ {mode:"foco",intenso:true,foco:{sev:3,dir:"top",head:"QUENTES EM RISCO",impactos:["<b>8</b> pedidos na praça","<b>+18 min</b> acima do normal"],conseq:"se continuar, a expedição seca",cmd:"liberar prontos pra bancada"}},
+ {mode:"foco",foco:{sev:2,dir:"top",head:"SUSHI ATRASANDO A SAÍDA",impactos:["<b>5</b> pedidos dependem do sushi","<b>2</b> já poderiam sair"],conseq:"trava o fechamento de 5 pedidos",cmd:"priorizar bancada do sushi"}},
+ {mode:"foco",foco:{sev:2,dir:"bottom",head:"#8606 SEM SAIR",impactos:["pronto há <b>53 min</b>","<b>+3</b> podem atrasar"],conseq:"atraso na entrega · cliente pode reclamar",cmd:"conferir saída"}},
+ {mode:"foco",foco:{sev:1,dir:"bottom",head:"#4421 PODE FECHAR",impactos:["só pratos quentes","sem frios pendentes"],conseq:"sai mais cedo",cmd:"verificar fechamento"}},
+ {mode:"foco",foco:{sev:2,dir:"bottom",head:"#5012 · 2 SACOLAS",impactos:["<b>11</b> itens","bebida + kit obrigatório"],conseq:"risco de esquecer item",cmd:"separar 2ª sacola e conferir"}},
+ {mode:"foco",foco:{sev:3,dir:"top",head:"SALMÃO SAINDO PAUSADO",impactos:["deveria estar pausado","entrou em <b>4 pedidos</b> / 15 min"],conseq:"4 pedidos com risco de erro",cmd:"pausar ou confirmar substituição"}}
 ];
 let di=0, forced=null;
 S.addEventListener("click",()=>{ di=(di+1)%DEMO.length; forced=DEMO[di]; if(forced) render(t,forced); });
-function loop(){ if(!forced){ render(t,step(t)); t++; if(t>END){t=START;active=null;pending=null;chronic={};firedAt={};} } setTimeout(loop,TICK); }
+function loop(){ if(!forced){ render(t,step(t)); t++; if(t>END){t=START;active=null;pending=null;firedAt={};} } setTimeout(loop,TICK); }
 (async()=>{try{if('wakeLock'in navigator)await navigator.wakeLock.request('screen');}catch(e){}})();
 loop();
 </script>
