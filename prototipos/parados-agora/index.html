@@ -3,174 +3,214 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-<meta name="theme-color" content="#F6F7F3"/>
+<meta name="theme-color" content="#F7F8F4"/>
 <title>Parados Agora</title>
 <link rel="preconnect" href="https://api.fontshare.com" crossorigin>
-<link href="https://api.fontshare.com/v2/css?f[]=satoshi@900,700,500,400,300&display=swap" rel="stylesheet">
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@700,500,400,300&display=swap" rel="stylesheet">
 <style>
   :root{
-    --paper1:#FBFCFA; --paper2:#F1F4EE; --ink:#19211C; --soft:#566059; --faint:#949D95;
-    --hair:rgba(25,33,28,.06);
-    --green:14,122,79; --amber:181,86,40;
+    --paper:#F7F8F4; --ink:#1A211C; --soft:#6A736C; --faint:#A6AEA6; --line:#E7EAE3;
+    --green:#12865A; --amber:#B0612A; --weather:#8A8270;
     --font:'Satoshi',-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,system-ui,sans-serif;
   }
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
   html,body{height:100%}
-  body{background:#DFE3DC;min-height:100%;display:grid;place-items:center;padding:22px;
-    font-family:var(--font);color:var(--ink);
-    -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;
-    user-select:none;cursor:default}
+  body{background:#E5E8E0;min-height:100%;display:grid;place-items:center;padding:20px;
+    font-family:var(--font);color:var(--ink);user-select:none;cursor:default;
+    -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility}
 
-  .stage{width:384px;max-width:94vw;height:min(824px,90vh);border-radius:38px;overflow:hidden;position:relative;
-    background:radial-gradient(130% 92% at 50% 26%, var(--paper1) 0%, var(--paper2) 72%);
-    box-shadow:0 22px 60px -28px rgba(20,50,34,.34), inset 0 0 0 1px var(--hair);
-    display:flex;flex-direction:column;padding:32px 30px 26px}
+  .screen{width:390px;max-width:94vw;height:min(840px,92vh);background:var(--paper);
+    border-radius:30px;border:1px solid var(--line);box-shadow:0 18px 50px -26px rgba(20,45,30,.30);
+    overflow:hidden;display:flex;flex-direction:column;padding:30px 28px 22px;position:relative}
 
-  /* topo: só identidade + relógio (sem controles) */
-  .top{display:flex;align-items:center;justify-content:space-between;z-index:4}
-  .brand{display:flex;align-items:center;gap:9px;font-size:11px;font-weight:700;letter-spacing:.22em;color:var(--soft)}
-  .glyph{width:10px;height:10px;border-radius:50%;background:rgba(var(--green),1);animation:beat 4.5s ease-in-out infinite}
-  .clock{font-size:11.5px;font-weight:500;letter-spacing:.16em;color:var(--faint);font-variant-numeric:tabular-nums}
+  /* topo: sinal vital + relógio da noite */
+  .top{display:flex;align-items:center;justify-content:space-between;z-index:3}
+  .mark{display:flex;align-items:center;gap:9px;font-size:10.5px;font-weight:700;letter-spacing:.22em;color:var(--soft)}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:vital 3.2s ease-in-out infinite}
+  @keyframes vital{0%,100%{opacity:1}50%{opacity:.45}}
+  .clock{font-size:11.5px;font-weight:500;letter-spacing:.14em;color:var(--faint);font-variant-numeric:tabular-nums}
 
-  /* o campo vivo */
-  .field{flex:1;position:relative}
-  .aura{position:absolute;left:50%;top:50%;width:330px;height:330px;border-radius:50%;
-    transform:translate(-50%,-50%);pointer-events:none;
-    background:radial-gradient(circle, rgba(var(--green),.13) 0%, rgba(var(--green),.045) 38%, transparent 66%);
-    animation:beat 6s ease-in-out infinite;transition:opacity .9s ease}
-  .bloom{position:absolute;left:50%;top:46%;width:344px;height:344px;border-radius:50%;
-    transform:translate(-50%,-50%);pointer-events:none;opacity:0;
-    background:radial-gradient(circle, rgba(var(--amber),.16) 0%, rgba(var(--amber),.05) 42%, transparent 68%);
-    animation:beat 4.6s ease-in-out infinite;transition:opacity .9s ease}
-  @keyframes beat{0%,100%{transform:translate(-50%,-50%) scale(1);opacity:1}50%{transform:translate(-50%,-50%) scale(1.05)}}
-  .flow{position:absolute;inset:0;overflow:hidden;pointer-events:none}
-  .flow i{position:absolute;width:3px;height:3px;border-radius:50%;background:rgba(var(--green),.5);bottom:20%;opacity:0;
-    animation:rise 8.5s linear infinite}
-  @keyframes rise{0%{opacity:0;transform:translateY(0)}16%{opacity:.55}100%{opacity:0;transform:translateY(-200px) scale(.4)}}
+  /* palco central — os três registros cruzam aqui */
+  .stage{flex:1;position:relative;display:grid;place-items:center;text-align:center}
+  .reg{position:absolute;width:100%;opacity:0;transform:translateY(8px);
+    transition:opacity .5s ease, transform .5s ease;pointer-events:none}
 
-  /* camadas calmo / atenção — cruzam sem toggle */
-  .layer{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
-    text-align:center;padding:0 10px;z-index:2}
+  /* CALMO */
+  .calm .calm-word{font-size:30px;font-weight:400;letter-spacing:-.01em;color:var(--ink)}
+  .calm .calm-sub{margin-top:10px;font-size:12.5px;font-weight:600;letter-spacing:.1em;color:var(--faint)}
 
-  .calm{transition:opacity .9s ease, transform .9s ease}
-  .ring{width:152px;height:152px;position:relative;margin-bottom:30px}
-  .ring svg{transform:rotate(-90deg)}
-  .ring .tk{stroke:rgba(var(--green),.16)} .ring .ar{stroke:rgba(var(--green),1);stroke-linecap:round}
-  .ring .pip{position:absolute;left:50%;top:50%;width:8px;height:8px;margin:-4px;border-radius:50%;
-    background:rgba(var(--green),1);animation:beat 4s ease-in-out infinite}
-  .calm-word{font-size:33px;font-weight:300;letter-spacing:-.02em;color:var(--ink)}
-  .calm-sub{margin-top:11px;font-size:13px;font-weight:600;letter-spacing:.09em;color:var(--faint)}
+  /* AMBIENTE (clima, baixo e sereno) */
+  .amb .amb-head{font-size:12px;font-weight:600;letter-spacing:.14em;color:var(--weather)}
+  .amb .amb-lines{margin-top:18px;display:flex;flex-direction:column;gap:10px;align-items:center}
+  .amb .wline{display:flex;align-items:center;gap:10px;font-size:16px;font-weight:500;color:var(--soft)}
+  .amb .wbar{display:inline-flex;gap:3px}
+  .amb .wbar i{width:4px;height:11px;border-radius:2px;background:var(--weather);opacity:.28}
+  .amb .wbar i.on{opacity:.85}
 
-  .alert{opacity:0;transform:translateY(18px);transition:opacity .9s ease, transform .9s ease}
-  .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:700;letter-spacing:.18em;color:rgba(var(--amber),1)}
-  .eyebrow .d{width:7px;height:7px;border-radius:50%;background:rgba(var(--amber),1);animation:beat 2.8s ease-in-out infinite}
-  .zone{font-size:54px;line-height:1;font-weight:700;letter-spacing:-.04em;margin-top:16px;color:var(--ink)}
-  .dur{margin-top:24px;display:flex;align-items:baseline;gap:9px;font-variant-numeric:tabular-nums}
-  .dur .n{font-size:60px;line-height:.85;font-weight:300;letter-spacing:-.04em;color:var(--ink)}
-  .dur .u{font-size:18px;font-weight:500;color:var(--soft)}
-  .why{margin-top:16px;font-size:15px;font-weight:500;color:var(--soft);max-width:26ch;line-height:1.45}
-  .why b{color:var(--ink);font-weight:600}
-  .cue{margin-top:28px;display:inline-flex;align-items:center;gap:11px;color:rgba(var(--amber),1);
-    font-size:17px;font-weight:600;letter-spacing:-.005em}
-  .cue .arrow{font-size:18px;animation:nudge 2.2s ease-in-out infinite}
+  /* FOCO (raro, claro, acionável) */
+  .foco .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:11.5px;font-weight:700;letter-spacing:.18em;color:var(--amber)}
+  .foco .eyebrow i{width:7px;height:7px;border-radius:50%;background:var(--amber)}
+  .foco .zone{font-size:50px;line-height:1;font-weight:600;letter-spacing:-.035em;margin-top:14px;color:var(--ink)}
+  .foco .tline{margin-top:22px;font-size:18px;font-weight:500;color:var(--soft)}
+  .foco .tline b{font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
+  .foco .cmd{margin-top:26px;display:inline-flex;align-items:center;gap:11px;color:var(--amber);font-size:17px;font-weight:600}
+  .foco .cmd .arrow{font-size:18px;animation:nudge 2.2s ease-in-out infinite}
   @keyframes nudge{0%,100%{transform:translateX(0);opacity:.7}50%{transform:translateX(5px);opacity:1}}
+  .foco .pid{margin-top:14px;font-size:12px;font-weight:500;letter-spacing:.16em;color:var(--faint)}
 
-  /* eco da 2ª zona — secundário legível, só na atenção */
-  .echo{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);z-index:2;opacity:0;
-    display:flex;align-items:center;gap:9px;font-size:13.5px;font-weight:500;color:var(--soft);
-    font-variant-numeric:tabular-nums;transition:opacity .9s ease}
-  .echo .d{width:6px;height:6px;border-radius:50%;background:rgba(var(--amber),.7)}
-  .echo b{color:var(--ink);font-weight:600}
+  /* base */
+  .vital{z-index:3;align-self:center;display:flex;align-items:center;gap:8px;font-size:12px;font-weight:500;
+    letter-spacing:.05em;color:var(--faint);font-variant-numeric:tabular-nums;transition:opacity .4s ease}
+  .foot{position:absolute;bottom:9px;left:0;width:100%;text-align:center;font-size:9px;letter-spacing:.14em;color:#C4CBC3}
 
-  /* sinal vital constante (a operação viva, calma ou não) */
-  .vital{z-index:4;align-self:center;display:flex;align-items:center;gap:9px;font-size:12px;font-weight:600;
-    letter-spacing:.08em;color:var(--faint);font-variant-numeric:tabular-nums}
-  .vital .v{width:6px;height:6px;border-radius:50%;background:rgba(var(--green),1);animation:beat 4s ease-in-out infinite}
-
-  /* estado de atenção: calmo recua, foco emerge */
-  .stage.alert .aura{opacity:.45}
-  .stage.alert .bloom{opacity:1}
-  .stage.alert .calm{opacity:0;transform:scale(.96) translateY(-10px)}
-  .stage.alert .alert{opacity:1;transform:none}
-  .stage.alert .echo{opacity:1}
+  /* registro ativo */
+  .screen[data-mode="calmo"]    .calm{opacity:1;transform:none}
+  .screen[data-mode="ambiente"] .amb {opacity:1;transform:none}
+  .screen[data-mode="foco"]     .foco{opacity:1;transform:none}
+  .screen[data-mode="foco"] .vital{opacity:0}    /* foco fica limpo */
 </style>
 </head>
 <body>
-  <div class="stage" id="stage">
+  <div class="screen" id="screen" data-mode="calmo">
     <div class="top">
-      <div class="brand"><span class="glyph"></span>DELIVERYOS</div>
-      <div class="clock" id="clock">21:34</div>
+      <div class="mark"><span class="dot"></span>DELIVERYOS</div>
+      <div class="clock" id="clock">18:00</div>
     </div>
 
-    <div class="field">
-      <div class="aura"></div>
-      <div class="bloom"></div>
-      <div class="flow">
-        <i style="left:44%;animation-delay:0s"></i><i style="left:56%;animation-delay:2.4s"></i>
-        <i style="left:49%;animation-delay:4.8s"></i><i style="left:59%;animation-delay:6.6s"></i>
-      </div>
-
+    <div class="stage">
       <!-- CALMO -->
-      <div class="layer calm">
-        <div class="ring">
-          <svg width="152" height="152" viewBox="0 0 152 152">
-            <circle class="tk" cx="76" cy="76" r="66" fill="none" stroke-width="7"/>
-            <circle class="ar" cx="76" cy="76" r="66" fill="none" stroke-width="7" stroke-dasharray="415" stroke-dashoffset="46"/>
-          </svg>
-          <span class="pip"></span>
-        </div>
-        <div class="calm-word">em fluxo</div>
+      <div class="reg calm">
+        <div class="calm-word">Em fluxo</div>
         <div class="calm-sub">NADA PARADO AGORA</div>
       </div>
 
-      <!-- ATENÇÃO (emerge da calma) -->
-      <div class="layer alert">
-        <span class="eyebrow"><span class="d"></span>PRECISA DE ATENÇÃO</span>
-        <div class="zone">Expedição</div>
-        <div class="dur"><span class="n" id="dmin">53</span><span class="u">min parado</span></div>
-        <div class="why"><b>Pronto</b>, aguardando motoboy · pedido 8606</div>
-        <div class="cue"><span class="arrow">→</span>conferir a saída</div>
+      <!-- AMBIENTE -->
+      <div class="reg amb">
+        <div class="amb-head">SOB PRESSÃO</div>
+        <div class="amb-lines" id="ambLines"></div>
       </div>
 
-      <div class="echo"><span class="d"></span>produção · mais <b>1</b> · 24 min</div>
+      <!-- FOCO -->
+      <div class="reg foco">
+        <span class="eyebrow"><i></i>PRECISA DE ATENÇÃO</span>
+        <div class="zone" id="fzone">Expedição</div>
+        <div class="tline" id="ftime">pronto há <b>53 min</b>, sem sair</div>
+        <div class="cmd"><span class="arrow">→</span><span id="fcmd">conferir a saída</span></div>
+        <div class="pid" id="fpid">PEDIDO 1622</div>
+      </div>
     </div>
 
-    <div class="vital"><span class="v"></span>18 EM FLUXO · RITMO NORMAL</div>
+    <div class="vital" id="vital">18 em andamento · ritmo normal</div>
+    <div class="foot">REPLAY · NOITE REAL 12/06</div>
   </div>
 
+<script src="night_data.js"></script>
 <script>
-  const stage=document.getElementById('stage');
-  const ck=document.getElementById('clock');
-  const dmin=document.getElementById('dmin');
+const NIGHT = (window.NIGHT||[]);   // [{id, r, p, s, e, c}] em minutos-do-dia; carregado de night_data.js
 
-  // relógio vivo
-  (function t(){const d=new Date();ck.textContent=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');setTimeout(t,15000);})();
+// ---- contrato de comportamento (aprovado) ----
+const PROD_FLOOR=45, EXPED_FLOOR=30, SURGE_N=3, COOLDOWN=45, MAXFOCUS=8, DEBOUNCE=3;
+const ZONES=[["Expedição","s","p",EXPED_FLOOR],["Produção","p","r",PROD_FLOOR]];
 
-  // sempre ligada: evita a tela dormir (best-effort, sem UI)
-  let wl=null;
-  async function lock(){try{if('wakeLock' in navigator){wl=await navigator.wakeLock.request('screen');}}catch(e){}}
-  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')lock();});
-  lock();
+let active=null, pending=null, chronic={}, firedAt={};
+function zoneHasChronic(z){ return Object.values(chronic).some(c=>c.zona===z); }
 
-  // a tela vive na calma e o foco emerge sozinho (sem controle visível).
-  // tempos longos para dar tempo de ler com calma cada estado.
-  let auto=true, alerted=false, timer=null, m=53;
-  function show(on){
-    alerted=on;
-    if(on){ m=53; dmin.textContent=m; }
-    stage.classList.toggle('alert', on);
+function step(t){
+  const wE=[], wP=[];
+  for(const o of NIGHT){
+    if(o.c!=null && o.c<=t) continue;
+    if(o.r>t) continue;
+    if(o.p!=null && o.p<=t){            // já ficou pronto → pode estar na expedição
+      const up = o.s!=null?o.s:o.e; if(up==null||up<=t) continue;
+      wE.push({id:o.id,min:t-o.p});
+    } else {                            // ainda sem pronto → produção (só se há desfecho conhecido)
+      const up = o.p!=null?o.p:o.c; if(up==null) continue;
+      wP.push({id:o.id,min:t-o.r});
+    }
   }
-  function loop(){
-    if(!auto) return;
-    show(!alerted);
-    timer=setTimeout(loop, alerted ? 18000 : 12000);
+  const byZone={Expedição:wE,Produção:wP};
+  let surges=[], light=[], cand=null;
+  for(const [zona,,,floor] of ZONES){
+    const list=byZone[zona], over=list.filter(x=>x.min>floor);
+    if(over.length>=SURGE_N) surges.push({zona,n:over.length,peak:Math.round(Math.max(...over.map(x=>x.min)))});
+    else if(over.length===2) light.push({zona});
+    else if(over.length===1 && !zoneHasChronic(zona)){ const mx=over[0]; if(!cand||mx.min>cand.min) cand={zona,id:mx.id,min:Math.round(mx.min)}; }
   }
-  setInterval(()=>{ if(alerted){ m++; dmin.textContent=m; } }, 5000); // o tempo parado corre
-  setTimeout(loop, 6000); // começa serena; o foco emerge depois
+  // debounce: candidato precisa sustentar
+  if(cand){ if(!pending||pending.id!==cand.id) pending={id:cand.id,since:t}; } else pending=null;
+  const sustained = (pending && (t-pending.since)>=DEBOUNCE) ? cand : null;
 
-  // REVISÃO (invisível, não é botão): toque em qualquer lugar para segurar e alternar os
-  // estados o tempo que quiser. O produto real se conduzirá por eventos, não por toque.
-  stage.addEventListener('click', ()=>{ auto=false; clearTimeout(timer); show(!alerted); });
+  const presentes=new Set([...wE,...wP].map(x=>x.id));
+  for(const id of Object.keys(chronic)) if(!presentes.has(id)) delete chronic[id];
+
+  if(active){
+    const cur=[...wE,...wP].find(x=>x.id===active.id);
+    if(cur) active.peak=Math.max(active.peak,Math.round(cur.min));
+    if(!presentes.has(active.id)) active=null;                 // resolveu
+    else if(t>=active.until){ chronic[active.id]={zona:active.zona,peak:active.peak}; active=null; } // crônico → ambiente
+  }
+  if(!active && sustained){
+    const elig = firedAt[sustained.id]==null || (t-firedAt[sustained.id])>COOLDOWN;
+    if(elig && !chronic[sustained.id]){ active={id:sustained.id,zona:sustained.zona,until:t+MAXFOCUS,min:sustained.min,peak:sustained.min}; firedAt[sustained.id]=t; }
+  }
+
+  const inFoco=!!active;
+  const chronicAlive=Object.keys(chronic).length>0;
+  const inAmb=!inFoco && (surges.length>0||light.length>0||chronicAlive);
+  const mode = inFoco?"foco":(inAmb?"ambiente":"calmo");
+
+  // ambiente: condições por zona (label sereno)
+  const amb={}; const lbl=z=> z==="Expedição"?"Saída lenta":"Produção carregada";
+  for(const s of surges) amb[s.zona]=Math.max(amb[s.zona]||0, s.n>=8?3:2);
+  for(const l of light) amb[l.zona]=Math.max(amb[l.zona]||0,1);
+  for(const c of Object.values(chronic)) amb[c.zona]=Math.max(amb[c.zona]||0,2);
+  const ambList=Object.entries(amb).map(([z,inten])=>({label:lbl(z),inten}));
+
+  // vital
+  let emand=0, cheg=0;
+  for(const o of NIGHT){ if(o.r<=t && !(o.e!=null&&o.e<=t) && !(o.c!=null&&o.c<=t)) emand++; if(o.r>t-20&&o.r<=t) cheg++; }
+  const ritmo = cheg>=12?"ritmo intenso":"ritmo normal";
+
+  return {mode, active, ambList, emand, ritmo};
+}
+
+// ---- render ----
+const S=document.getElementById("screen"), clk=document.getElementById("clock");
+const fz=document.getElementById("fzone"), ft=document.getElementById("ftime"), fc=document.getElementById("fcmd"), fp=document.getElementById("fpid");
+const ambLines=document.getElementById("ambLines"), vital=document.getElementById("vital");
+const hhmm=t=>String(Math.floor(t/60)%24).padStart(2,"0")+":"+String(t%60).padStart(2,"0");
+
+function render(t,m){
+  clk.textContent=hhmm(t);
+  S.dataset.mode=m.mode;
+  vital.textContent=m.emand+" em andamento · "+m.ritmo;
+  if(m.mode==="foco"){
+    const a=m.active;
+    fz.textContent=a.zona;
+    if(a.zona==="Expedição"){ ft.innerHTML="pronto há <b>"+a.peak+" min</b>, sem sair"; fc.textContent="conferir a saída"; }
+    else { ft.innerHTML="<b>"+a.peak+" min</b> sem ficar pronto"; fc.textContent="ver a produção"; }
+    fp.textContent="PEDIDO "+a.id;
+  }
+  if(m.mode==="ambiente"){
+    ambLines.innerHTML=m.ambList.map(c=>{
+      let bars=""; for(let i=0;i<3;i++) bars+='<i class="'+(i<c.inten?"on":"")+'"></i>';
+      return '<div class="wline">'+c.label+' <span class="wbar">'+bars+'</span></div>';
+    }).join("");
+  }
+}
+
+// ---- replay da noite real ----
+const START=18*60, END=24*60-1, TICK=360;   // ms por minuto-da-noite
+let t=START;
+function loop(){
+  render(t, step(t));
+  t++;
+  if(t>END){ t=START; active=null; pending=null; chronic={}; firedAt={}; }
+  setTimeout(loop, TICK);
+}
+// evita a tela dormir (sempre ligada), sem UI
+(async()=>{try{if('wakeLock'in navigator)await navigator.wakeLock.request('screen');}catch(e){}})();
+loop();
 </script>
 </body>
 </html>
