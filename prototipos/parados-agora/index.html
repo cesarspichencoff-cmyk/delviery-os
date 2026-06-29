@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-<meta name="theme-color" content="#F7F8F4"/>
+<meta name="theme-color" content="#F4F6F0"/>
 <title>Parados Agora</title>
 <link rel="preconnect" href="https://api.fontshare.com" crossorigin>
 <link href="https://api.fontshare.com/v2/css?f[]=satoshi@700,500,400,300&display=swap" rel="stylesheet">
 <style>
   :root{
-    --paper:#F7F8F4; --ink:#1A211C; --soft:#6A736C; --faint:#A6AEA6; --line:#E7EAE3;
-    --green:#12865A; --amber:#B0612A; --weather:#8A8270;
+    --paper:#F4F6F0; --ink:#1A211C; --soft:#6A736C; --faint:#AAB2AA;
+    --green:18,134,90; --amber:178,96,40; --warm:0; --bd:6s;
     --font:'Satoshi',-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,system-ui,sans-serif;
   }
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -19,80 +19,90 @@
     font-family:var(--font);color:var(--ink);user-select:none;cursor:default;
     -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility}
 
-  .screen{width:390px;max-width:94vw;height:min(840px,92vh);background:var(--paper);
-    border-radius:30px;border:1px solid var(--line);box-shadow:0 18px 50px -26px rgba(20,45,30,.30);
-    overflow:hidden;display:flex;flex-direction:column;padding:30px 28px 22px;position:relative}
+  .screen{position:relative;overflow:hidden;width:390px;max-width:94vw;height:min(840px,92vh);
+    background:var(--paper);border-radius:30px;border:1px solid #E7EAE3;
+    box-shadow:0 18px 50px -26px rgba(20,45,30,.30);display:flex;flex-direction:column;padding:30px 28px 22px;
+    transition:background 1.1s ease}
 
-  /* topo: sinal vital + relógio da noite */
-  .top{display:flex;align-items:center;justify-content:space-between;z-index:3}
+  /* ---------- O CAMPO (percebido antes de lido) ---------- */
+  .field{position:absolute;inset:0;z-index:0;pointer-events:none}
+  /* respiro: vida calma (verde), lento */
+  .breathwrap{position:absolute;inset:0;opacity:1;transition:opacity 1s ease}
+  .breath{position:absolute;left:50%;top:54%;width:560px;height:560px;border-radius:50%;transform:translate(-50%,-50%);
+    background:radial-gradient(circle, rgba(var(--green),.11) 0%, rgba(var(--green),.035) 40%, transparent 68%);
+    animation:breathe var(--bd) ease-in-out infinite}
+  @keyframes breathe{0%,100%{transform:translate(-50%,-54%) scale(1);opacity:.65}50%{transform:translate(-50%,-54%) scale(1.05);opacity:1}}
+  /* aquece: a noite pesa (âmbar), escala com --warm */
+  .warm{position:absolute;inset:0;opacity:var(--warm);transition:opacity 1.2s ease;
+    background:radial-gradient(125% 95% at 50% 62%, rgba(var(--amber),.22) 0%, rgba(var(--amber),.08) 52%, transparent 82%)}
+  /* inclina: o foco orienta o corpo para a zona */
+  .lean{position:absolute;left:0;right:0;height:62%;opacity:0;transition:opacity .55s ease}
+  .screen[data-mode="foco"] .lean{opacity:1}
+  .screen.dir-top .lean{top:0;background:linear-gradient(to bottom, rgba(var(--amber),.26) 0%, rgba(var(--amber),.05) 55%, transparent 100%)}
+  .screen.dir-bottom .lean{bottom:0;top:auto;background:linear-gradient(to top, rgba(var(--amber),.26) 0%, rgba(var(--amber),.05) 55%, transparent 100%)}
+  .screen[data-mode="ambiente"] .breathwrap{opacity:.45}
+  .screen[data-mode="foco"] .breathwrap{opacity:.20}
+
+  /* ---------- topo: vital + relógio da noite ---------- */
+  .top{position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between}
   .mark{display:flex;align-items:center;gap:9px;font-size:10.5px;font-weight:700;letter-spacing:.22em;color:var(--soft)}
-  .dot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:vital 3.2s ease-in-out infinite}
-  @keyframes vital{0%,100%{opacity:1}50%{opacity:.45}}
+  .vdot{width:8px;height:8px;border-radius:50%;background:rgba(var(--green),1);animation:vital var(--bd) ease-in-out infinite}
+  @keyframes vital{0%,100%{opacity:1}50%{opacity:.4}}
   .clock{font-size:11.5px;font-weight:500;letter-spacing:.14em;color:var(--faint);font-variant-numeric:tabular-nums}
 
-  /* palco central — os três registros cruzam aqui */
-  .stage{flex:1;position:relative;display:grid;place-items:center;text-align:center}
-  .reg{position:absolute;width:100%;opacity:0;transform:translateY(8px);
-    transition:opacity .5s ease, transform .5s ease;pointer-events:none}
+  /* ---------- palco ---------- */
+  .stage{position:relative;z-index:2;flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center}
+  .screen.dir-top .stage{justify-content:flex-start;padding-top:10%}
+  .screen.dir-bottom .stage{justify-content:flex-end;padding-bottom:11%}
+  .reg{position:absolute;width:100%;opacity:0;transition:opacity .55s ease, transform .55s ease;pointer-events:none}
 
-  /* CALMO */
-  .calm .calm-word{font-size:30px;font-weight:400;letter-spacing:-.01em;color:var(--ink)}
-  .calm .calm-sub{margin-top:10px;font-size:12.5px;font-weight:600;letter-spacing:.1em;color:var(--faint)}
+  /* CALMO — quase sem texto */
+  .calm{transform:translateY(0)}
+  .calm .word{font-size:24px;font-weight:300;letter-spacing:.01em;color:var(--soft)}
 
-  /* AMBIENTE (clima, baixo e sereno) */
-  .amb .amb-head{font-size:12px;font-weight:600;letter-spacing:.14em;color:var(--weather)}
-  .amb .amb-lines{margin-top:18px;display:flex;flex-direction:column;gap:10px;align-items:center}
-  .amb .wline{display:flex;align-items:center;gap:10px;font-size:16px;font-weight:500;color:var(--soft)}
-  .amb .wbar{display:inline-flex;gap:3px}
-  .amb .wbar i{width:4px;height:11px;border-radius:2px;background:var(--weather);opacity:.28}
-  .amb .wbar i.on{opacity:.85}
+  /* AMBIENTE — clima, baixo */
+  .amb{transform:translateY(0)}
+  .amb .lines{display:flex;flex-direction:column;gap:9px;align-items:center}
+  .amb .wl{font-size:17px;font-weight:500;color:#9A8A66;letter-spacing:.01em}
 
-  /* FOCO (raro, claro, acionável) */
-  .foco .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:11.5px;font-weight:700;letter-spacing:.18em;color:var(--amber)}
-  .foco .eyebrow i{width:7px;height:7px;border-radius:50%;background:var(--amber)}
-  .foco .zone{font-size:50px;line-height:1;font-weight:600;letter-spacing:-.035em;margin-top:14px;color:var(--ink)}
-  .foco .tline{margin-top:22px;font-size:18px;font-weight:500;color:var(--soft)}
+  /* FOCO — único gesto forte */
+  .foco{position:static;transform:none}
+  .screen.dir-top .foco{transform:translateY(-6px)} .screen.dir-bottom .foco{transform:translateY(6px)}
+  .foco .zone{font-size:54px;line-height:1;font-weight:600;letter-spacing:-.04em;color:var(--ink)}
+  .foco .tline{margin-top:18px;font-size:18px;font-weight:500;color:var(--soft)}
   .foco .tline b{font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
-  .foco .cmd{margin-top:26px;display:inline-flex;align-items:center;gap:11px;color:var(--amber);font-size:17px;font-weight:600}
-  .foco .cmd .arrow{font-size:18px;animation:nudge 2.2s ease-in-out infinite}
-  @keyframes nudge{0%,100%{transform:translateX(0);opacity:.7}50%{transform:translateX(5px);opacity:1}}
-  .foco .pid{margin-top:14px;font-size:12px;font-weight:500;letter-spacing:.16em;color:var(--faint)}
+  .foco .cmd{margin-top:22px;display:inline-flex;align-items:center;gap:10px;color:rgba(var(--amber),1);font-size:17px;font-weight:600}
+  .foco .cmd .arrow{font-size:18px}
+  .foco .pid{margin-top:12px;font-size:11.5px;font-weight:500;letter-spacing:.16em;color:var(--faint)}
+
+  .screen[data-mode="calmo"] .calm{opacity:1}
+  .screen[data-mode="ambiente"] .amb{opacity:1}
+  .screen[data-mode="foco"] .foco{opacity:1}
 
   /* base */
-  .vital{z-index:3;align-self:center;display:flex;align-items:center;gap:8px;font-size:12px;font-weight:500;
-    letter-spacing:.05em;color:var(--faint);font-variant-numeric:tabular-nums;transition:opacity .4s ease}
-  .foot{position:absolute;bottom:9px;left:0;width:100%;text-align:center;font-size:9px;letter-spacing:.14em;color:#C4CBC3}
-
-  /* registro ativo */
-  .screen[data-mode="calmo"]    .calm{opacity:1;transform:none}
-  .screen[data-mode="ambiente"] .amb {opacity:1;transform:none}
-  .screen[data-mode="foco"]     .foco{opacity:1;transform:none}
-  .screen[data-mode="foco"] .vital{opacity:0}    /* foco fica limpo */
+  .vital{position:relative;z-index:2;align-self:center;font-size:12px;font-weight:500;letter-spacing:.05em;
+    color:var(--faint);font-variant-numeric:tabular-nums;transition:opacity .5s ease}
+  .screen[data-mode="foco"] .vital{opacity:0}
+  .foot{position:absolute;bottom:9px;left:0;width:100%;text-align:center;font-size:9px;letter-spacing:.14em;color:#CAD0C8;z-index:2}
 </style>
 </head>
 <body>
   <div class="screen" id="screen" data-mode="calmo">
+    <div class="field">
+      <div class="breathwrap"><div class="breath"></div></div>
+      <div class="warm"></div>
+      <div class="lean"></div>
+    </div>
+
     <div class="top">
-      <div class="mark"><span class="dot"></span>DELIVERYOS</div>
+      <div class="mark"><span class="vdot"></span>DELIVERYOS</div>
       <div class="clock" id="clock">18:00</div>
     </div>
 
     <div class="stage">
-      <!-- CALMO -->
-      <div class="reg calm">
-        <div class="calm-word">Em fluxo</div>
-        <div class="calm-sub">NADA PARADO AGORA</div>
-      </div>
-
-      <!-- AMBIENTE -->
-      <div class="reg amb">
-        <div class="amb-head">SOB PRESSÃO</div>
-        <div class="amb-lines" id="ambLines"></div>
-      </div>
-
-      <!-- FOCO -->
+      <div class="reg calm"><div class="word">em fluxo</div></div>
+      <div class="reg amb"><div class="lines" id="ambLines"></div></div>
       <div class="reg foco">
-        <span class="eyebrow"><i></i>PRECISA DE ATENÇÃO</span>
         <div class="zone" id="fzone">Expedição</div>
         <div class="tline" id="ftime">pronto há <b>53 min</b>, sem sair</div>
         <div class="cmd"><span class="arrow">→</span><span id="fcmd">conferir a saída</span></div>
@@ -100,115 +110,94 @@
       </div>
     </div>
 
-    <div class="vital" id="vital">18 em andamento · ritmo normal</div>
+    <div class="vital" id="vital">18 em andamento</div>
     <div class="foot">REPLAY · NOITE REAL 12/06</div>
   </div>
 
 <script src="night_data.js"></script>
 <script>
-const NIGHT = (window.NIGHT||[]);   // [{id, r, p, s, e, c}] em minutos-do-dia; carregado de night_data.js
+const NIGHT = (window.NIGHT||[]);
 
 // ---- contrato de comportamento (aprovado) ----
 const PROD_FLOOR=45, EXPED_FLOOR=30, SURGE_N=3, COOLDOWN=45, MAXFOCUS=8, DEBOUNCE=3;
-const ZONES=[["Expedição","s","p",EXPED_FLOOR],["Produção","p","r",PROD_FLOOR]];
-
+const ZONES=[["Expedição",EXPED_FLOOR],["Produção",PROD_FLOOR]];
 let active=null, pending=null, chronic={}, firedAt={};
-function zoneHasChronic(z){ return Object.values(chronic).some(c=>c.zona===z); }
+const zoneHasChronic=z=>Object.values(chronic).some(c=>c.zona===z);
 
 function step(t){
   const wE=[], wP=[];
   for(const o of NIGHT){
-    if(o.c!=null && o.c<=t) continue;
-    if(o.r>t) continue;
-    if(o.p!=null && o.p<=t){            // já ficou pronto → pode estar na expedição
-      const up = o.s!=null?o.s:o.e; if(up==null||up<=t) continue;
-      wE.push({id:o.id,min:t-o.p});
-    } else {                            // ainda sem pronto → produção (só se há desfecho conhecido)
-      const up = o.p!=null?o.p:o.c; if(up==null) continue;
-      wP.push({id:o.id,min:t-o.r});
-    }
+    if(o.c!=null&&o.c<=t)continue; if(o.r>t)continue;
+    if(o.p!=null&&o.p<=t){ const up=o.s!=null?o.s:o.e; if(up==null||up<=t)continue; wE.push({id:o.id,min:t-o.p}); }
+    else { const up=o.p!=null?o.p:o.c; if(up==null)continue; wP.push({id:o.id,min:t-o.r}); }
   }
   const byZone={Expedição:wE,Produção:wP};
-  let surges=[], light=[], cand=null;
-  for(const [zona,,,floor] of ZONES){
+  let surges=[],light=[],cand=null;
+  for(const [zona,floor] of ZONES){
     const list=byZone[zona], over=list.filter(x=>x.min>floor);
-    if(over.length>=SURGE_N) surges.push({zona,n:over.length,peak:Math.round(Math.max(...over.map(x=>x.min)))});
+    if(over.length>=SURGE_N) surges.push({zona,n:over.length});
     else if(over.length===2) light.push({zona});
-    else if(over.length===1 && !zoneHasChronic(zona)){ const mx=over[0]; if(!cand||mx.min>cand.min) cand={zona,id:mx.id,min:Math.round(mx.min)}; }
+    else if(over.length===1&&!zoneHasChronic(zona)){ const mx=over[0]; if(!cand||mx.min>cand.min) cand={zona,id:mx.id,min:Math.round(mx.min)}; }
   }
-  // debounce: candidato precisa sustentar
   if(cand){ if(!pending||pending.id!==cand.id) pending={id:cand.id,since:t}; } else pending=null;
-  const sustained = (pending && (t-pending.since)>=DEBOUNCE) ? cand : null;
-
+  const sustained=(pending&&(t-pending.since)>=DEBOUNCE)?cand:null;
   const presentes=new Set([...wE,...wP].map(x=>x.id));
   for(const id of Object.keys(chronic)) if(!presentes.has(id)) delete chronic[id];
-
   if(active){
-    const cur=[...wE,...wP].find(x=>x.id===active.id);
-    if(cur) active.peak=Math.max(active.peak,Math.round(cur.min));
-    if(!presentes.has(active.id)) active=null;                 // resolveu
-    else if(t>=active.until){ chronic[active.id]={zona:active.zona,peak:active.peak}; active=null; } // crônico → ambiente
+    const cur=[...wE,...wP].find(x=>x.id===active.id); if(cur) active.peak=Math.max(active.peak,Math.round(cur.min));
+    if(!presentes.has(active.id)) active=null;
+    else if(t>=active.until){ chronic[active.id]={zona:active.zona,peak:active.peak}; active=null; }
   }
-  if(!active && sustained){
-    const elig = firedAt[sustained.id]==null || (t-firedAt[sustained.id])>COOLDOWN;
-    if(elig && !chronic[sustained.id]){ active={id:sustained.id,zona:sustained.zona,until:t+MAXFOCUS,min:sustained.min,peak:sustained.min}; firedAt[sustained.id]=t; }
-  }
-
-  const inFoco=!!active;
-  const chronicAlive=Object.keys(chronic).length>0;
-  const inAmb=!inFoco && (surges.length>0||light.length>0||chronicAlive);
-  const mode = inFoco?"foco":(inAmb?"ambiente":"calmo");
-
-  // ambiente: condições por zona (label sereno)
-  const amb={}; const lbl=z=> z==="Expedição"?"Saída lenta":"Produção carregada";
+  if(!active&&sustained){ const elig=firedAt[sustained.id]==null||(t-firedAt[sustained.id])>COOLDOWN;
+    if(elig&&!chronic[sustained.id]){ active={id:sustained.id,zona:sustained.zona,until:t+MAXFOCUS,peak:sustained.min}; firedAt[sustained.id]=t; } }
+  const inFoco=!!active, chronicAlive=Object.keys(chronic).length>0;
+  const inAmb=!inFoco&&(surges.length>0||light.length>0||chronicAlive);
+  const mode=inFoco?"foco":(inAmb?"ambiente":"calmo");
+  // intensidade do ambiente (1..3) por zona
+  const amb={}; const lbl=z=>z==="Expedição"?"saída lenta":"produção carregada";
   for(const s of surges) amb[s.zona]=Math.max(amb[s.zona]||0, s.n>=8?3:2);
   for(const l of light) amb[l.zona]=Math.max(amb[l.zona]||0,1);
   for(const c of Object.values(chronic)) amb[c.zona]=Math.max(amb[c.zona]||0,2);
-  const ambList=Object.entries(amb).map(([z,inten])=>({label:lbl(z),inten}));
-
-  // vital
-  let emand=0, cheg=0;
-  for(const o of NIGHT){ if(o.r<=t && !(o.e!=null&&o.e<=t) && !(o.c!=null&&o.c<=t)) emand++; if(o.r>t-20&&o.r<=t) cheg++; }
-  const ritmo = cheg>=12?"ritmo intenso":"ritmo normal";
-
-  return {mode, active, ambList, emand, ritmo};
+  const ambList=Object.entries(amb).map(([z,i])=>({label:lbl(z),inten:i}));
+  const inten=Math.max(0,...ambList.map(a=>a.inten));
+  let emand=0,cheg=0; for(const o of NIGHT){ if(o.r<=t&&!(o.e!=null&&o.e<=t)&&!(o.c!=null&&o.c<=t))emand++; if(o.r>t-20&&o.r<=t)cheg++; }
+  return {mode,active,ambList,inten,emand,intenso:cheg>=12};
 }
 
-// ---- render ----
+// ---- render: luz/ritmo/direção primeiro, texto depois ----
 const S=document.getElementById("screen"), clk=document.getElementById("clock");
-const fz=document.getElementById("fzone"), ft=document.getElementById("ftime"), fc=document.getElementById("fcmd"), fp=document.getElementById("fpid");
+const fz=document.getElementById("fzone"),ft=document.getElementById("ftime"),fc=document.getElementById("fcmd"),fp=document.getElementById("fpid");
 const ambLines=document.getElementById("ambLines"), vital=document.getElementById("vital");
 const hhmm=t=>String(Math.floor(t/60)%24).padStart(2,"0")+":"+String(t%60).padStart(2,"0");
 
 function render(t,m){
   clk.textContent=hhmm(t);
   S.dataset.mode=m.mode;
-  vital.textContent=m.emand+" em andamento · "+m.ritmo;
+  S.style.setProperty("--bd", m.intenso?"4.4s":"6s");           // respira mais cheio no volume alto
+  // aquecimento do campo (ambiente)
+  const warm = m.mode==="ambiente" ? (0.30+0.70*Math.min(1,(m.inten-1)/2)) : 0;
+  S.style.setProperty("--warm", warm.toFixed(2));
+  // direção (foco): produção em cima, expedição/saída embaixo
+  S.classList.toggle("dir-top",  m.mode==="foco"&&m.active.zona==="Produção");
+  S.classList.toggle("dir-bottom", m.mode==="foco"&&m.active.zona==="Expedição");
+
   if(m.mode==="foco"){
     const a=m.active;
     fz.textContent=a.zona;
     if(a.zona==="Expedição"){ ft.innerHTML="pronto há <b>"+a.peak+" min</b>, sem sair"; fc.textContent="conferir a saída"; }
     else { ft.innerHTML="<b>"+a.peak+" min</b> sem ficar pronto"; fc.textContent="ver a produção"; }
     fp.textContent="PEDIDO "+a.id;
-  }
-  if(m.mode==="ambiente"){
-    ambLines.innerHTML=m.ambList.map(c=>{
-      let bars=""; for(let i=0;i<3;i++) bars+='<i class="'+(i<c.inten?"on":"")+'"></i>';
-      return '<div class="wline">'+c.label+' <span class="wbar">'+bars+'</span></div>';
-    }).join("");
+  } else if(m.mode==="ambiente"){
+    ambLines.innerHTML=m.ambList.map(c=>'<div class="wl">'+c.label+'</div>').join("");
+  } else {
+    vital.textContent=m.emand+" em andamento";
   }
 }
 
-// ---- replay da noite real ----
-const START=18*60, END=24*60-1, TICK=360;   // ms por minuto-da-noite
+// ---- replay da noite real: calmo → ambiente → foco → recua ----
+const START=18*60, END=24*60-1, TICK=360;
 let t=START;
-function loop(){
-  render(t, step(t));
-  t++;
-  if(t>END){ t=START; active=null; pending=null; chronic={}; firedAt={}; }
-  setTimeout(loop, TICK);
-}
-// evita a tela dormir (sempre ligada), sem UI
+function loop(){ render(t,step(t)); t++; if(t>END){t=START;active=null;pending=null;chronic={};firedAt={};} setTimeout(loop,TICK); }
 (async()=>{try{if('wakeLock'in navigator)await navigator.wakeLock.request('screen');}catch(e){}})();
 loop();
 </script>
