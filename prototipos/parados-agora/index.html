@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<meta name="theme-color" content="#F6F7F4"/>
+<title>Parados Agora — DeliveryOS</title>
+<!-- @dsCard group="Telas" name="Parados Agora" subtitle="Estado de atenção / estado calmo" -->
+<style>
+  :root{
+    --paper:#F6F7F4; --surface:#FFFFFF; --ink:#16201A; --soft:#646E68; --faint:#9AA39D;
+    --line:#EBEFEA;
+    --green:#0E7A4F; --green-ink:#0A5638; --green-wash:#E7F2EC;
+    --amber:#B0710A; --amber-ink:#8A5905; --amber-wash:#FBF0DA;
+    --red:#CC3A3A;
+    --shadow:0 18px 50px -18px rgba(18,40,28,.28), 0 6px 16px -8px rgba(18,40,28,.12);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:radial-gradient(120% 80% at 50% 0%, #eef1ec 0%, #e7ebe5 100%);
+    min-height:100%;display:grid;place-items:center;padding:24px;
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Inter,system-ui,sans-serif;
+    color:var(--ink);
+  }
+
+  /* ---------- aparelho ---------- */
+  .phone{
+    width:390px;max-width:94vw;height:min(844px,92vh);
+    background:var(--paper);border-radius:46px;position:relative;overflow:hidden;
+    box-shadow:var(--shadow);
+  }
+  .screen{position:absolute;inset:0;display:flex;flex-direction:column;padding:64px 26px 24px}
+  .notch{position:absolute;top:14px;left:50%;transform:translateX(-50%);width:118px;height:30px;background:rgba(20,30,24,.9);border-radius:18px}
+
+  /* ---------- topo ---------- */
+  .hdr{display:flex;align-items:center;justify-content:space-between}
+  .brand{font-size:11.5px;font-weight:700;letter-spacing:.16em;color:var(--ink)}
+  .brand i{color:var(--faint);font-style:normal;margin:0 5px}
+  .live{display:flex;align-items:center;gap:7px;font-size:11.5px;font-weight:600;letter-spacing:.04em;color:var(--soft);font-variant-numeric:tabular-nums}
+  .livedot{width:7px;height:7px;border-radius:50%;background:var(--green);position:relative}
+  .livedot::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:1.5px solid var(--green);opacity:.5;animation:ping 2.6s ease-out infinite}
+  @keyframes ping{0%{transform:scale(.6);opacity:.6}100%{transform:scale(1.8);opacity:0}}
+
+  /* ---------- estado: ATENÇÃO ---------- */
+  .att{display:flex;flex-direction:column;flex:1;animation:rise .5s cubic-bezier(.2,.7,.2,1) both}
+  @keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+
+  .eyebrow{margin-top:46px;font-size:12px;font-weight:800;letter-spacing:.14em;color:var(--amber)}
+  .zone{font-size:52px;line-height:1;font-weight:800;letter-spacing:-.035em;margin-top:12px}
+  .accentbar{width:46px;height:5px;border-radius:99px;background:var(--amber);margin-top:18px;opacity:.9}
+
+  .situation{margin-top:22px;font-size:18px;color:var(--soft);font-weight:500}
+  .bigtime{margin-top:2px;display:flex;align-items:baseline;gap:8px}
+  .bigtime .n{font-size:46px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+  .bigtime .u{font-size:19px;font-weight:600;color:var(--soft)}
+  .ref{margin-top:14px;font-size:13.5px;color:var(--faint);font-weight:500}
+  .ref b{color:var(--soft);font-weight:600}
+
+  .action{margin-top:24px;width:100%;border:none;cursor:pointer;
+    background:var(--green-wash);color:var(--green-ink);
+    padding:19px 22px;border-radius:20px;font-size:17px;font-weight:700;letter-spacing:-.01em;
+    display:flex;align-items:center;justify-content:space-between;
+    transition:transform .12s ease, background .2s ease}
+  .action:active{transform:scale(.985);background:#dcebe1}
+  .action .arr{font-size:20px;opacity:.85}
+
+  /* secundário, rebaixado */
+  .also-label{margin-top:34px;font-size:11.5px;font-weight:700;letter-spacing:.12em;color:var(--faint)}
+  .row{display:flex;align-items:center;gap:13px;padding:15px 2px;border-bottom:1px solid var(--line)}
+  .row:first-of-type{border-top:1px solid var(--line)}
+  .dot{width:9px;height:9px;border-radius:50%;flex:0 0 auto}
+  .dot.amber{background:var(--amber)} .dot.green{background:var(--green)} .dot.red{background:var(--red)}
+  .row .rz{font-size:16.5px;font-weight:600}
+  .row .rd{margin-left:auto;font-size:14.5px;color:var(--soft);font-variant-numeric:tabular-nums}
+  .row .arr{color:var(--faint);font-size:17px;margin-left:4px}
+
+  .spacer{flex:1;min-height:18px}
+
+  /* rodapé organismo vivo */
+  .summary{display:flex;align-items:center;gap:14px;padding:16px 18px;background:var(--surface);border-radius:20px;border:1px solid var(--line)}
+  .miniring{width:42px;height:42px;flex:0 0 auto;position:relative}
+  .miniring svg{display:block;transform:rotate(-90deg)}
+  .miniring .track{stroke:var(--green-wash)} .miniring .arc{stroke:var(--green);stroke-linecap:round}
+  .breathe{transform-box:fill-box;transform-origin:center;animation:breathe 4.5s ease-in-out infinite}
+  @keyframes breathe{0%,100%{opacity:.85}50%{opacity:1}}
+  .ps-main{font-size:16px;font-weight:700;letter-spacing:-.01em}
+  .ps-sub{font-size:13.5px;color:var(--soft);margin-top:2px}
+
+  /* ---------- estado: CALMO ---------- */
+  .calm{flex:1;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;animation:rise .5s cubic-bezier(.2,.7,.2,1) both}
+  .rings{width:188px;height:188px;position:relative;display:grid;place-items:center;margin-bottom:30px}
+  .rings span{position:absolute;border-radius:50%;border:2px solid var(--green);inset:0}
+  .rings .r1{opacity:.16;animation:halo 5s ease-in-out infinite}
+  .rings .r2{inset:30px;opacity:.28;animation:halo 5s ease-in-out infinite .3s}
+  .rings .r3{inset:60px;opacity:.5;animation:halo 5s ease-in-out infinite .6s}
+  .rings .core{inset:78px;border:none;background:var(--green-wash);display:grid;place-items:center}
+  .rings .core svg{stroke:var(--green);fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+  @keyframes halo{0%,100%{transform:scale(1);opacity:var(--o,.3)}50%{transform:scale(1.05)}}
+  .calm .r1{--o:.16}.calm .r2{--o:.28}.calm .r3{--o:.5}
+  .calm-title{font-family:ui-serif,Georgia,"Times New Roman",serif;font-style:italic;font-weight:500;font-size:42px;letter-spacing:-.01em;color:var(--green-ink)}
+  .calm-sub{margin-top:10px;font-size:17px;color:var(--soft)}
+  .calm-summary{margin-top:30px;font-size:13.5px;color:var(--faint);letter-spacing:.02em;font-variant-numeric:tabular-nums}
+
+  /* ---------- alternador (pré-visualização) ---------- */
+  .preview{margin-top:18px;display:flex;flex-direction:column;align-items:center;gap:8px}
+  .preview .cap{font-size:10.5px;letter-spacing:.1em;color:var(--faint);text-transform:uppercase}
+  .seg{display:inline-flex;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:4px}
+  .seg button{border:none;background:none;cursor:pointer;padding:9px 20px;border-radius:999px;font-size:13px;font-weight:600;color:var(--soft);transition:.2s}
+  .seg button.on{background:var(--ink);color:#fff}
+
+  .state-calm .att{display:none}
+  .state-calm .calm{display:flex}
+</style>
+</head>
+<body>
+  <div class="phone" id="phone">
+    <div class="notch"></div>
+    <div class="screen">
+      <div class="hdr">
+        <div class="brand">TATÁ<i>·</i>DELIVERYOS</div>
+        <div class="live"><span class="livedot"></span>ao vivo · <span id="clock">21:34</span></div>
+      </div>
+
+      <!-- ATENÇÃO -->
+      <div class="att">
+        <div class="eyebrow">PRECISA DE VOCÊ</div>
+        <div class="zone">Expedição</div>
+        <div class="accentbar"></div>
+
+        <div class="situation">1 pedido pronto, parado há</div>
+        <div class="bigtime"><span class="n">53</span><span class="u">min</span></div>
+        <div class="ref"><b>#8606</b> · saiu da produção, aguardando motoboy</div>
+
+        <button class="action">Verificar saída <span class="arr">→</span></button>
+
+        <div class="also-label">TAMBÉM DE OLHO</div>
+        <div class="row"><span class="dot amber"></span><span class="rz">Produção</span><span class="rd">1 pedido · 24 min</span><span class="arr">→</span></div>
+
+        <div class="spacer"></div>
+
+        <div class="summary">
+          <div class="miniring">
+            <svg width="42" height="42" viewBox="0 0 42 42">
+              <circle class="track" cx="21" cy="21" r="17" fill="none" stroke-width="4"/>
+              <circle class="arc breathe" cx="21" cy="21" r="17" fill="none" stroke-width="4" stroke-dasharray="107" stroke-dashoffset="14"/>
+            </svg>
+          </div>
+          <div>
+            <div class="ps-main">18 pedidos em fluxo</div>
+            <div class="ps-sub">ritmo normal · 1 em atenção</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CALMO -->
+      <div class="calm">
+        <div class="rings">
+          <span class="r1"></span><span class="r2"></span><span class="r3"></span>
+          <span class="core"><svg width="34" height="34" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></span>
+        </div>
+        <div class="calm-title">Tudo em fluxo</div>
+        <div class="calm-sub">Nada parado agora.</div>
+        <div class="calm-summary">18 PEDIDOS · RITMO NORMAL · 0 EM ATENÇÃO</div>
+      </div>
+
+      <div class="preview">
+        <div class="cap">pré-visualização de estados</div>
+        <div class="seg">
+          <button class="on" data-s="att">Atenção</button>
+          <button data-s="calm">Calmo</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const phone=document.getElementById('phone');
+  document.querySelectorAll('.seg button').forEach(b=>b.addEventListener('click',()=>{
+    document.querySelectorAll('.seg button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    phone.parentElement && phone.classList.toggle('state-calm', b.dataset.s==='calm');
+  }));
+  // relógio vivo
+  const ck=document.getElementById('clock');
+  function tick(){const d=new Date();ck.textContent=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
+  tick();setInterval(tick,15000);
+</script>
+</body>
+</html>
