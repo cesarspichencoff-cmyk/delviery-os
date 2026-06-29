@@ -152,19 +152,25 @@
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')lock();});
   lock();
 
-  // a tela vive na calma e faz o foco emergir sozinha (sem toggle).
-  // no Dia 1 isto é conduzido por tempo; nos próximos dias, por eventos reais.
-  let tick=null, m=53;
-  function enterAlert(){
-    m=53; dmin.textContent=m; stage.classList.add('alert');
-    tick=setInterval(()=>{m++;dmin.textContent=m;},5000); // o tempo parado segue correndo
-    setTimeout(leaveAlert, 15000);
+  // a tela vive na calma e o foco emerge sozinho (sem controle visível).
+  // tempos longos para dar tempo de ler com calma cada estado.
+  let auto=true, alerted=false, timer=null, m=53;
+  function show(on){
+    alerted=on;
+    if(on){ m=53; dmin.textContent=m; }
+    stage.classList.toggle('alert', on);
   }
-  function leaveAlert(){
-    clearInterval(tick); stage.classList.remove('alert');
-    setTimeout(enterAlert, 9000);
+  function loop(){
+    if(!auto) return;
+    show(!alerted);
+    timer=setTimeout(loop, alerted ? 18000 : 12000);
   }
-  setTimeout(enterAlert, 8000); // começa serena; o foco emerge depois
+  setInterval(()=>{ if(alerted){ m++; dmin.textContent=m; } }, 5000); // o tempo parado corre
+  setTimeout(loop, 6000); // começa serena; o foco emerge depois
+
+  // REVISÃO (invisível, não é botão): toque em qualquer lugar para segurar e alternar os
+  // estados o tempo que quiser. O produto real se conduzirá por eventos, não por toque.
+  stage.addEventListener('click', ()=>{ auto=false; clearTimeout(timer); show(!alerted); });
 </script>
 </body>
 </html>
