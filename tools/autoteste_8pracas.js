@@ -40,7 +40,7 @@ for(const r of rows){ const rec=pdh(r[C.dh]); if(!rec)continue;
   peds.push(o);
 }
 /* INFO global: id → conhecimento do pedido (composição sintética, timing real) */
-const INFO={}; for(const o of peds) INFO[o.id]=MOTOR.resolver(fonte(o.id).map(MOTOR.adaptarItem));
+const INFO={}; for(const o of peds) INFO[o.id]=MOTOR.resolver(fonte(o.id));   // fonte já devolve itens adaptados
 const dias=[...new Set(peds.map(p=>p.dia))].sort((a,b)=>{const A=a.split("/"),B=b.split("/");return (A[2]+A[1]+A[0]).localeCompare(B[2]+B[1]+B[0]);});
 
 /* ===== roda o motor por dia (via MOTOR.step) ===== */

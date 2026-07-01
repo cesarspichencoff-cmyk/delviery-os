@@ -10455,26 +10455,30 @@ window.NIGHT=[{"id":"8359","r":667,"p":681,"s":679,"e":686,"c":null},{"id":"2860
     const confPr = uniq(it.filter(x => CONFERENCIA.includes(x.praca)).map(x => x.praca));
     const temQuente = it.some(x => x.temp === "quente");
     const temFrio   = it.some(x => x.temp === "frio");
-    const nItens = it.length;
-    const sacolas = Math.max(1, it.reduce((a,x)=>a+(x.sac||0),0));
+    const nItens = it.reduce((a,x)=>a+(x.qtd||1),0);   // peças totais (respeita quantidade real)
     const ancora = it.some(x => x.cat === "combinado" || x.cat === "menu_composto");
-    const segundaSacola = sacolas >= 2 || ancora || nItens >= 8;
+    const grande = nItens >= 8;
+    // sacola NÃO é soma de itens (5 sushi = 1 sacola). Regra: 1 base; 2 se combo/menu ou pedido grande.
+    const segundaSacola = ancora || grande;
+    const sacolas = segundaSacola ? 2 : 1;
     const contemBebida = it.some(x => x.praca === "bar_bebidas" || x.contemBebida);
     const contemSobremesa = it.some(x => x.praca === "sobremesa" || x.contemSobremesa);
-    // kit não é SKU de cardápio → proxy sintético/regra-de-negócio (talher/hashi obrigatório em combo/2 sacolas)
-    const contemKit = it.some(x => x.contemKit) || ancora || sacolas >= 2;
-    const riscoConfAlto = it.some(x => x.risco === "alto") || segundaSacola || (contemBebida && contemKit);
+    // kit não é SKU de cardápio → proxy/regra-de-negócio (talher/hashi obrigatório em combo/pedido grande)
+    const contemKit = it.some(x => x.contemKit) || ancora || grande;
+    const temObservacao = it.some(x => x.obs && String(x.obs).trim().length > 0);   // só existe com item REAL
+    const observacoes = it.filter(x => x.obs && String(x.obs).trim()).map(x => String(x.obs).trim());
+    const riscoConfAlto = it.some(x => x.risco === "alto") || segundaSacola || temObservacao || (contemBebida && contemKit);
     const facilEsquecer = confPr.length > 0 || contemBebida || contemSobremesa;
     const itemPorPraca = {};
-    it.forEach(x => { if (PRODUCAO.includes(x.praca)) { (itemPorPraca[x.praca] = itemPorPraca[x.praca] || []).push(x.id); } });
+    it.forEach(x => { if (PRODUCAO.includes(x.praca)) { for (let k=0;k<(x.qtd||1);k++) (itemPorPraca[x.praca] = itemPorPraca[x.praca] || []).push(x.id); } });
     return {
       nItens, benches, prodPr, depPr, confPr, nBenches: benches.length,
       pracaUnica: benches.length === 1 ? benches[0] : null,
       temQuente, temFrio, soQuentes: temQuente && !temFrio,
       sacolas, segundaSacola, trava: it.some(x => x.trava),
-      contemBebida, contemSobremesa, contemKit, riscoConfAlto, facilEsquecer, ancora,
+      contemBebida, contemSobremesa, contemKit, temObservacao, observacoes, riscoConfAlto, facilEsquecer, ancora,
       itemPorPraca,
-      itens: it.map(x => ({ id:x.id, nome:x.nome, praca:x.praca }))
+      itens: it.map(x => ({ id:x.id, nome:x.nome, praca:x.praca, qtd:x.qtd||1, obs:x.obs||null }))
     };
   }
 
@@ -10499,16 +10503,69 @@ window.NIGHT=[{"id":"8359","r":667,"p":681,"s":679,"e":686,"c":null},{"id":"2860
       if (c0 !== "combinado" && c0 !== "menu_composto" && r() < 0.40) out.push(pick(mains,r));
       if (beb.length && r() < 0.35) out.push(pick(beb,r));
       if (sob.length && r() < 0.15) out.push(pick(sob,r));
-      return out;
+      return out.map(s => adaptarItem(s));
     };
   }
+
+  /* ---------- FONTE REAL (motor B → REAL): mesmo contrato de makeFonteSintetica ----------
+     Entrada: linhas {pedido_id,item_nome,quantidade,observacao,horario}. Casa item_nome
+     contra o cardápio real (seed) e devolve id → [itens adaptados]. NENHUMA regra muda:
+     basta  const FONTE_ITENS = makeFonteItensFromCsv(txt, SEED)  no lugar da sintética. */
+  function _norm(s){ return (s||"").toString().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/\s+/g," ").trim(); }
+  function matchSeed(nome, seedItens){
+    const n=_norm(nome); if(!n) return null;
+    let hit=seedItens.find(i=>i.nome_normalizado===n); if(hit) return hit;
+    hit=seedItens.filter(i=> i.nome_normalizado && (n.indexOf(i.nome_normalizado)>=0 || i.nome_normalizado.indexOf(n)>=0))
+         .sort((a,b)=>b.nome_normalizado.length-a.nome_normalizado.length)[0]; if(hit) return hit;
+    const toks=n.split(" ").filter(Boolean); let best=null,bs=0;
+    for(const i of seedItens){ const it=(i.nome_normalizado||"").split(" ").filter(Boolean);
+      const ov=toks.filter(t=>it.indexOf(t)>=0).length; const sc=ov/Math.max(1,Math.max(toks.length,it.length));
+      if(sc>bs){bs=sc;best=i;} }
+    return bs>=0.5?best:null;
+  }
+  function itemDesconhecido(nome){ return { id:"?desconhecido", nome:nome, praca:"montagem_outros", dep:[], temp:"desconhecido",
+    sac:1, cat:"desconhecido", trava:false, produzSozinho:null, pausavel:false, risco:"baixo",
+    contemBebida:false, contemSobremesa:false, contemKit:false, sinais:[], _unmatched:true }; }
+  function makeFonteItensFromRows(rows, seedItens){
+    const byId={}, unmatched={}; let nLin=0, nMatch=0;
+    for(const r of rows){
+      const pid=String((r.pedido_id!=null?r.pedido_id:r.id)||"").trim();
+      const nome=(r.item_nome!=null?r.item_nome:r.nome); if(!pid||!nome) continue;
+      nLin++; const seed=matchSeed(nome, seedItens);
+      const base=seed?adaptarItem(seed):itemDesconhecido(nome);
+      if(seed) nMatch++; else unmatched[nome]=(unmatched[nome]||0)+1;
+      base.qtd=Math.max(1, parseInt((r.quantidade!=null?r.quantidade:(r.qtd!=null?r.qtd:1)),10)||1);
+      base.obs=(r.observacao!=null?r.observacao:r.obs)||null;
+      base.horario=(r.horario!=null?r.horario:r.hora)||null;
+      (byId[pid]=byId[pid]||[]).push(base);
+    }
+    const fonte=id=>byId[id]||[];
+    fonte.ids=Object.keys(byId); fonte.unmatched=unmatched;
+    fonte.stats={linhas:nLin, casados:nMatch, naoCasados:nLin-nMatch, pedidos:fonte.ids.length};
+    return fonte;
+  }
+  function makeFonteItensFromJson(data, seedItens){
+    let rows=[];
+    if(Array.isArray(data)) rows=data;
+    else if(data&&typeof data==="object"){ for(const pid in data){ const arr=data[pid]; if(Array.isArray(arr)) arr.forEach(x=>rows.push(Object.assign({pedido_id:pid},x))); } }
+    return makeFonteItensFromRows(rows, seedItens);
+  }
+  function parseCsv(text){
+    const lines=text.replace(/^﻿/,"").split(/\r?\n/).filter(l=>l.trim().length); if(!lines.length) return [];
+    const split=line=>{ const out=[]; let cur="",q=false; for(let i=0;i<line.length;i++){ const c=line[i];
+      if(q){ if(c==='"'){ if(line[i+1]==='"'){cur+='"';i++;} else q=false; } else cur+=c; }
+      else { if(c==='"')q=true; else if(c===","){out.push(cur);cur="";} else cur+=c; } } out.push(cur); return out.map(s=>s.trim()); };
+    const head=split(lines[0]).map(h=>_norm(h).replace(/ /g,"_"));
+    return lines.slice(1).map(l=>{ const c=split(l); const o={}; head.forEach((h,i)=>o[h]=c[i]!==undefined?c[i]:""); return o; });
+  }
+  function makeFonteItensFromCsv(text, seedItens){ return makeFonteItensFromRows(parseCsv(text), seedItens); }
 
   /* ---------- índice de pedidos: id → conhecimento (via fonte + adapter + resolver) ---------- */
   function indexar(NIGHT, seedItens, fonte) {
     const byId = {}; seedItens.forEach(i => byId[i.id] = i);
     const F = fonte || makeFonteSintetica(seedItens);
     const INFO = {};
-    for (const o of NIGHT) INFO[o.id] = resolver(F(o.id).map(adaptarItem));
+    for (const o of NIGHT) INFO[o.id] = resolver(F(o.id));   // fonte já devolve itens ADAPTADOS
     return INFO;
   }
 
@@ -10634,9 +10691,11 @@ window.NIGHT=[{"id":"8359","r":667,"p":681,"s":679,"e":686,"c":null},{"id":"2860
     if (s.kind === "conferencia") {
       const I = s.I, extras = [];
       if (I.contemBebida) extras.push("bebida"); if (I.contemKit) extras.push("kit"); if (I.contemSobremesa) extras.push("sobremesa");
-      return { sev:s.sev, dir:"top", head:"CONFERÊNCIA · #"+s.id,
-        impactos: [ "<b>"+I.sacolas+"</b> sacolas · <b>"+I.nItens+"</b> itens", extras.length?("obrigatório: "+extras.join(" + ")):"conferir item a item" ],
-        conseq: "risco de faltar item / 2ª sacola esquecida", cmd: "separar 2ª sacola e conferir item a item" };
+      const imp = [ "<b>"+I.sacolas+"</b> sacolas · <b>"+I.nItens+"</b> itens", extras.length?("obrigatório: "+extras.join(" + ")):"conferir item a item" ];
+      if (I.temObservacao) imp.push("⚠ observação: “"+String(I.observacoes[0]).slice(0,48)+"”");
+      return { sev:s.sev, dir:"top", head:"CONFERÊNCIA · #"+s.id, impactos: imp,
+        conseq: I.temObservacao ? "observação especial pode passar batido" : "risco de faltar item / 2ª sacola esquecida",
+        cmd: "separar 2ª sacola e conferir item a item" };
     }
     if (s.kind === "saida") {
       return { sev:s.sev, dir:"bottom", head: s.sev>=3?"SAÍDA TRAVADA":"SAÍDA LENTA",
@@ -10662,7 +10721,8 @@ window.NIGHT=[{"id":"8359","r":667,"p":681,"s":679,"e":686,"c":null},{"id":"2860
   function nomeDoItem(id){ return NOMES[id] || id; }
 
   const API = { PRACAS, PRODUCAO, CONFERENCIA, DISPLAY, BASELINE, TEMPO_PRACA, FLOORS,
-    adaptarItem, resolver, makeFonteSintetica, indexar, novaSessao, step, buildFoco, setNomes };
+    adaptarItem, resolver, makeFonteSintetica, indexar, novaSessao, step, buildFoco, setNomes,
+    matchSeed, makeFonteItensFromRows, makeFonteItensFromJson, makeFonteItensFromCsv, parseCsv };
   if (typeof module !== "undefined" && module.exports) module.exports = API;
   if (root) root.MOTOR = API;
 })(typeof window !== "undefined" ? window : null);
@@ -10685,8 +10745,8 @@ window.NIGHT=[{"id":"8359","r":667,"p":681,"s":679,"e":686,"c":null},{"id":"2860
 
   // (C) conhecimento real → nomes; (B) fonte sintética (SEAM único p/ trocar por itens reais)
   M.setNomes(Object.fromEntries(SEED.map(i => [i.id, i.nome])));
-  const FONTE_ITENS = M.makeFonteSintetica(SEED);   // ← trocar por KDS / impressora / API iFood
-  const INFO = {}; for (const o of NIGHT) INFO[o.id] = M.resolver(FONTE_ITENS(o.id).map(M.adaptarItem));
+  const FONTE_ITENS = M.makeFonteSintetica(SEED);   // ← trocar por makeFonteItensFromCsv/Json (KDS/impressora/API iFood)
+  const INFO = {}; for (const o of NIGHT) INFO[o.id] = M.resolver(FONTE_ITENS(o.id));   // fonte já devolve itens adaptados
   let SESS = M.novaSessao();
   function step(t) { return M.step(t, NIGHT, INFO, SESS); }
 

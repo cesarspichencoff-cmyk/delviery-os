@@ -14,8 +14,8 @@
 
   // (C) conhecimento real → nomes; (B) fonte sintética (SEAM único p/ trocar por itens reais)
   M.setNomes(Object.fromEntries(SEED.map(i => [i.id, i.nome])));
-  const FONTE_ITENS = M.makeFonteSintetica(SEED);   // ← trocar por KDS / impressora / API iFood
-  const INFO = {}; for (const o of NIGHT) INFO[o.id] = M.resolver(FONTE_ITENS(o.id).map(M.adaptarItem));
+  const FONTE_ITENS = M.makeFonteSintetica(SEED);   // ← trocar por makeFonteItensFromCsv/Json (KDS/impressora/API iFood)
+  const INFO = {}; for (const o of NIGHT) INFO[o.id] = M.resolver(FONTE_ITENS(o.id));   // fonte já devolve itens adaptados
   let SESS = M.novaSessao();
   function step(t) { return M.step(t, NIGHT, INFO, SESS); }
 

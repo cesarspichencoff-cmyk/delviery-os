@@ -11,7 +11,7 @@
 | (C) conhecimento do cardápio | **REAL** | `cardapio_knowledge_seed.json` (199 itens, 8 praças) |
 
 ## Nota do motor (desfecho real): **7.1 / 10**
-*(0,40×precisão 42% + 0,40×cobertura 100% + 0,20×calma 0.7) — precisão/cobertura usam só desfecho REAL; números de praça são ilustrativos.*
+*(0,40×precisão 43% + 0,40×cobertura 100% + 0,20×calma 0.7) — precisão/cobertura usam só desfecho REAL; números de praça são ilustrativos.*
 
 ---
 
@@ -52,13 +52,13 @@ _(30/05/2026 12:21)_
 
 **Conferência (pedido grande / 2 sacolas / bebida+kit):**
 ```
-CONFERÊNCIA · #5037
-• 3 sacolas · 3 itens
+CONFERÊNCIA · #6885
+• 2 sacolas · 2 itens
 • obrigatório: bebida + kit
 risco de faltar item / 2ª sacola esquecida
 → separar 2ª sacola e conferir item a item
 ```  
-_(28/05/2026 11:27)_
+_(28/05/2026 11:38)_
 
 **Saída travada (motoboy é o gargalo):**
 ```
@@ -71,15 +71,15 @@ pedidos vão atrasar na entrega
 _(27/05/2026 12:38)_
 
 ## 3. Volume de focos por tipo (mês)
-- praça: **15** · pedido preso: **13** · saída: **405** · fechamento: **15** · conferência: **44**
-- total **492** (~16.4/dia) · tempo: 🟢 4% calmo · 🌫️ 80% ambiente · 🔶 16% foco
+- praça: **15** · pedido preso: **15** · saída: **405** · fechamento: **16** · conferência: **9**
+- total **460** (~15.3/dia) · tempo: 🟢 4% calmo · 🌫️ 81% ambiente · 🔶 15% foco
 
 ## 4. Precisão dos focos (desfecho real)
-- **208/492 (42%)** dos focos aconteceram com um pedido **ruim de fato vivo** naquele minuto (cancelado/atraso>15/problema). Fora de janela ruim: 284.
-- Focos de pedido preso especificamente: 13. *(fechamento/conferência são ações úteis, não previsões de risco.)*
+- **200/460 (43%)** dos focos aconteceram com um pedido **ruim de fato vivo** naquele minuto (cancelado/atraso>15/problema). Fora de janela ruim: 260.
+- Focos de pedido preso especificamente: 15. *(fechamento/conferência são ações úteis, não previsões de risco.)*
 
 ## 5. Cobertura dos pedidos ruins
-- **1013** pedidos ruins no mês; **4** passaram 100% em calmo (ponto cego). Cobertura **100%**.
+- **1013** pedidos ruins no mês; **5** passaram 100% em calmo (ponto cego). Cobertura **100%**.
 - Pedidos que cruzaram risco: **1960** (24%).
 
 ## 6. Praças que mais travaram *(SINTÉTICO — ilustrativo, baseline provisório não calibrado)*
@@ -90,15 +90,15 @@ _(27/05/2026 12:38)_
 - Enrolados Quentes (`enrolados_quentes`): **1363** min de sobrecarga
 
 ## 7. Dias com mais gargalo
-- 10/06/2026: gargalo **98%** · 17 focos · 244 pedidos · 44 ruins
-- 08/06/2026: gargalo **97%** · 16 focos · 248 pedidos · 16 ruins
+- 10/06/2026: gargalo **98%** · 15 focos · 244 pedidos · 44 ruins
+- 08/06/2026: gargalo **97%** · 15 focos · 248 pedidos · 16 ruins
 - 24/06/2026: gargalo **97%** · 17 focos · 189 pedidos · 24 ruins
-- 02/06/2026: gargalo **97%** · 17 focos · 256 pedidos · 22 ruins
-- 28/05/2026: gargalo **97%** · 17 focos · 263 pedidos · 27 ruins
+- 02/06/2026: gargalo **97%** · 16 focos · 256 pedidos · 22 ruins
+- 31/05/2026: gargalo **97%** · 18 focos · 336 pedidos · 39 ruins
 
 ## 8. Horários mais críticos
-- **11h** — 71 focos
-- **12h** — 54 focos
+- **12h** — 52 focos
+- **11h** — 41 focos
 - **15h** — 36 focos
 - **21h** — 35 focos
 - **14h** — 34 focos
@@ -115,7 +115,7 @@ _(27/05/2026 12:38)_
 - Rever baseline de **Enrolados** (satura tempo demais — provável baseline subestimado, sobretudo Duplas por concentrar sushi/sashimi/dyo).
 - Rever baseline de **Enrolados Quentes** (satura tempo demais — provável baseline subestimado, sobretudo Duplas por concentrar sushi/sashimi/dyo).
 - Rever baseline de **Quentes** (satura tempo demais — provável baseline subestimado, sobretudo Duplas por concentrar sushi/sashimi/dyo).
-- Subir piso de expedição/produção (exagero 2185%).
+- Subir piso de expedição/produção (exagero 1733%).
 - Reforçar demote→ambiente (sequência de foco chegou a 16 min).
 - Só calibrar baseline DEPOIS de ligar a composição real — antes disso é calibrar no escuro.
 
