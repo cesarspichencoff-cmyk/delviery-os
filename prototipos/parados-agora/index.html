@@ -126,9 +126,9 @@ const CARDAPIO=[
  {id:"sashimi",nome:"Sashimi Salmão",cat:"sushi",pr:["sushi"],temp:"frio",sac:1,kit:null,trava:false,pausavel:true,peso:6},
  {id:"ceviche",nome:"Ceviche",cat:"frio",pr:["sushi"],temp:"frio",sac:1,kit:null,trava:false,pausavel:true,peso:3},
  {id:"poke",nome:"Poke Salmão",cat:"frio",pr:["montagem"],temp:"frio",sac:1,kit:null,trava:false,pausavel:true,peso:5},
- {id:"comb20",nome:"Combinado 20",cat:"combinado",pr:["enrolados","sushi","quentes"],temp:"misto",sac:1,kit:null,trava:true,pausavel:false,peso:10},
- {id:"comb30",nome:"Combinado 30",cat:"combinado",pr:["enrolados","sushi","quentes"],temp:"misto",sac:1,kit:null,trava:true,pausavel:false,peso:7},
- {id:"combfam",nome:"Combinado Família",cat:"combinado",pr:["enrolados","sushi","quentes"],temp:"misto",sac:2,kit:null,trava:true,pausavel:false,peso:4},
+ {id:"comb20",nome:"Combinado 20",cat:"combinado",pr:["combinados"],dep:["sushi","enrolados","quentes"],temp:"misto",sac:1,kit:null,trava:true,pausavel:false,peso:10},
+ {id:"comb30",nome:"Combinado 30",cat:"combinado",pr:["combinados"],dep:["sushi","enrolados","quentes"],temp:"misto",sac:1,kit:null,trava:true,pausavel:false,peso:7},
+ {id:"combfam",nome:"Combinado Família",cat:"combinado",pr:["combinados"],dep:["sushi","enrolados","quentes"],temp:"misto",sac:2,kit:null,trava:true,pausavel:false,peso:4},
  {id:"kit1",nome:"Kit p/1",cat:"kit",pr:["montagem"],temp:"ambiente",sac:0,kit:"p1",trava:false,pausavel:false,peso:12},
  {id:"kit2",nome:"Kit p/2",cat:"kit",pr:["montagem"],temp:"ambiente",sac:0,kit:"p2",trava:false,pausavel:false,peso:8},
  {id:"kitkids",nome:"Kit Kids",cat:"kit",pr:["montagem"],temp:"ambiente",sac:0,kit:"kids",trava:false,pausavel:false,peso:3},
@@ -148,13 +148,15 @@ const FONTE_ITENS = FONTE_ITENS_sintetica;   // ← único ponto a trocar quando
 /* RESOLVER (estável, agnóstico de fonte): itens → conhecimento operacional do pedido */
 function resolver(itens){
   const pr=new Set(); itens.forEach(x=>x.pr.forEach(p=>pr.add(p)));
-  const prodPr=[...pr].filter(p=>COOK.includes(p));
+  const dep=new Set(); itens.forEach(x=>(x.dep||[]).forEach(p=>dep.add(p)));
+  const prodPr=[...pr].filter(p=>COOK.includes(p));       // praças que PRODUZEM (carga)
+  const depPr=[...dep].filter(p=>COOK.includes(p));       // praças de que DEPENDE (fechamento/trava)
   const foodFrio=itens.some(x=>x.temp==="frio");
-  return { nItens:itens.length, pracas:[...pr], prodPr,
+  return { nItens:itens.length, pracas:[...pr], prodPr, depPr, depN:Math.max(prodPr.length,depPr.length),
     sacolas:Math.max(1,itens.reduce((a,x)=>a+x.sac,0)),
     extras:itens.filter(x=>["kit","bebida","sobremesa"].includes(x.cat)).map(x=>x.nome),
     facilEsquecer:itens.some(x=>["kit","bebida","sobremesa"].includes(x.cat)),
-    dependeMultiplas:prodPr.length>1, trava:itens.some(x=>x.trava),
+    dependeMultiplas:(prodPr.length>1)||(depPr.length>0), trava:itens.some(x=>x.trava),
     soQuentes:itens.some(x=>x.temp==="quente")&&!foodFrio };
 }
 const INFO={}; for(const o of NIGHT) INFO[o.id]=resolver(FONTE_ITENS(o.id));
@@ -187,7 +189,7 @@ function buildFoco(s,ctx){
   }
   const I=INFO[s.id]||{}, pr=I.prodPr&&I.prodPr[0]?I.prodPr[0]:null;
   return {sev:s.sev,dir:"top",head:"#"+s.id+(pr?(" PRESO NO "+pr.toUpperCase()):" TRAVADO"),
-    impactos:["<b>"+s.peak+" min</b> sem ficar pronto", I.dependeMultiplas?("depende de <b>"+I.prodPr.length+"</b> praças"):("praça: "+(pr?cap(pr):"—"))],
+    impactos:["<b>"+s.peak+" min</b> sem ficar pronto", I.dependeMultiplas?("depende de <b>"+I.depN+"</b> praças"):("praça: "+(pr?cap(pr):"—"))],
     conseq:I.trava?"segura o pedido inteiro":((ctx.load[pr]||0)>1?("+"+((ctx.load[pr]||1)-1)+" esperando "+pr):"fila crescendo"),
     cmd:pr?("olhar "+pr):"olhar produção"};
 }
