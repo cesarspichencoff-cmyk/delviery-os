@@ -8,13 +8,13 @@
     "total_itens_canonicos": 199,
     "pracas": [
       "(sem praça / não-produção)",
-      "bar",
+      "bar_bebidas",
       "combinados",
-      "cozinha",
+      "cozinha_quentes",
       "duplas",
       "enrolados",
       "enrolados_quentes",
-      "montagem",
+      "montagem_outros",
       "sobremesa"
     ],
     "aviso_honesto": "Ingredientes/molhos são extraídos da descrição por dicionário; onde a descrição falta ou é ambígua, os campos ficam vazios/null/baixa confiança. Popularidade (peso de venda) NÃO está aqui — deve vir de dados reais de venda, não de chute.",
@@ -44,7 +44,7 @@
       ],
       "categoria_operacional": "bebida",
       "subcategoria_operacional": "vinho",
-      "praca_principal": "bar",
+      "praca_principal": "bar_bebidas",
       "pracas_dependentes": [],
       "temperatura": "ambiente",
       "ingredientes_extraidos": [],
@@ -65,7 +65,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "bar sobrecarregada",
+        "bar_bebidas sobrecarregada",
         "pedido com bebida",
         "item pausado"
       ],
@@ -248,7 +248,7 @@
       ],
       "categoria_operacional": "prato_quente",
       "subcategoria_operacional": "prato_quente",
-      "praca_principal": "cozinha",
+      "praca_principal": "cozinha_quentes",
       "pracas_dependentes": [],
       "temperatura": "quente",
       "ingredientes_extraidos": [
@@ -284,7 +284,7 @@
       "substituivel": true,
       "risco_de_erro": "medio",
       "sinais_que_pode_gerar": [
-        "cozinha sobrecarregada",
+        "cozinha_quentes sobrecarregada",
         "trava fechamento",
         "pedido só de quente",
         "alto tempo de produção",
@@ -565,7 +565,7 @@
       ],
       "categoria_operacional": "bebida",
       "subcategoria_operacional": "cerveja",
-      "praca_principal": "bar",
+      "praca_principal": "bar_bebidas",
       "pracas_dependentes": [],
       "temperatura": "frio",
       "ingredientes_extraidos": [],
@@ -586,7 +586,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "bar sobrecarregada",
+        "bar_bebidas sobrecarregada",
         "pedido só de frio",
         "pedido com bebida",
         "pode ser adiantado",
@@ -651,10 +651,10 @@
         "alto tempo de produção",
         "item pausado"
       ],
-      "confianca_classificacao": "alta",
-      "revisao_manual": false,
+      "confianca_classificacao": "media",
+      "revisao_manual": true,
       "observacoes": [
-        "Entrada classificada como enrolados_quentes por regra explícita de termo (ceviche).",
+        "Item frio (marinado/cru) enviado para enrolados_quentes pela REGRA OPERACIONAL atual do César. A regra vence — NÃO cai em duplas/sushi. Revalidar com a equipe de qual bancada realmente sai; corrigível no cadastro sem quebrar a arquitetura.",
         "Termo quente: ceviche."
       ],
       "descricoes_alternativas": []
@@ -672,7 +672,7 @@
       ],
       "categoria_operacional": "prato_quente",
       "subcategoria_operacional": "katsu",
-      "praca_principal": "cozinha",
+      "praca_principal": "cozinha_quentes",
       "pracas_dependentes": [],
       "temperatura": "quente",
       "ingredientes_extraidos": [
@@ -700,7 +700,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "cozinha sobrecarregada",
+        "cozinha_quentes sobrecarregada",
         "trava fechamento",
         "pedido só de quente",
         "alto tempo de produção",
@@ -770,7 +770,7 @@
       ],
       "categoria_operacional": "bebida",
       "subcategoria_operacional": "refrigerante",
-      "praca_principal": "bar",
+      "praca_principal": "bar_bebidas",
       "pracas_dependentes": [],
       "temperatura": "frio",
       "ingredientes_extraidos": [],
@@ -791,7 +791,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "bar sobrecarregada",
+        "bar_bebidas sobrecarregada",
         "pedido só de frio",
         "pedido com bebida",
         "pode ser adiantado",
@@ -815,7 +815,7 @@
       ],
       "categoria_operacional": "bebida",
       "subcategoria_operacional": "refrigerante",
-      "praca_principal": "bar",
+      "praca_principal": "bar_bebidas",
       "pracas_dependentes": [],
       "temperatura": "frio",
       "ingredientes_extraidos": [],
@@ -836,7 +836,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "bar sobrecarregada",
+        "bar_bebidas sobrecarregada",
         "pedido só de frio",
         "pedido com bebida",
         "pode ser adiantado",
@@ -2675,7 +2675,7 @@
       ],
       "categoria_operacional": "prato_quente",
       "subcategoria_operacional": "tempura",
-      "praca_principal": "cozinha",
+      "praca_principal": "cozinha_quentes",
       "pracas_dependentes": [],
       "temperatura": "quente",
       "ingredientes_extraidos": [
@@ -2700,7 +2700,7 @@
       "substituivel": true,
       "risco_de_erro": "medio",
       "sinais_que_pode_gerar": [
-        "cozinha sobrecarregada",
+        "cozinha_quentes sobrecarregada",
         "trava fechamento",
         "pedido só de quente",
         "alto tempo de produção",
@@ -2724,7 +2724,7 @@
       ],
       "categoria_operacional": "entrada",
       "subcategoria_operacional": "entrada_quente",
-      "praca_principal": "cozinha",
+      "praca_principal": "cozinha_quentes",
       "pracas_dependentes": [],
       "temperatura": "quente",
       "ingredientes_extraidos": [
@@ -2749,7 +2749,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "cozinha sobrecarregada",
+        "cozinha_quentes sobrecarregada",
         "trava fechamento",
         "pedido só de quente",
         "alto tempo de produção",
@@ -2775,7 +2775,7 @@
       ],
       "categoria_operacional": "bebida",
       "subcategoria_operacional": "vinho",
-      "praca_principal": "bar",
+      "praca_principal": "bar_bebidas",
       "pracas_dependentes": [],
       "temperatura": "ambiente",
       "ingredientes_extraidos": [],
@@ -2796,7 +2796,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "bar sobrecarregada",
+        "bar_bebidas sobrecarregada",
         "pedido com bebida",
         "item pausado"
       ],
@@ -2818,7 +2818,7 @@
       ],
       "categoria_operacional": "bebida",
       "subcategoria_operacional": "refrigerante",
-      "praca_principal": "bar",
+      "praca_principal": "bar_bebidas",
       "pracas_dependentes": [],
       "temperatura": "frio",
       "ingredientes_extraidos": [],
@@ -2839,7 +2839,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "bar sobrecarregada",
+        "bar_bebidas sobrecarregada",
         "pedido só de frio",
         "pedido com bebida",
         "pode ser adiantado",
@@ -2863,7 +2863,7 @@
       ],
       "categoria_operacional": "bebida",
       "subcategoria_operacional": "refrigerante",
-      "praca_principal": "bar",
+      "praca_principal": "bar_bebidas",
       "pracas_dependentes": [],
       "temperatura": "frio",
       "ingredientes_extraidos": [],
@@ -2884,7 +2884,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "bar sobrecarregada",
+        "bar_bebidas sobrecarregada",
         "pedido só de frio",
         "pedido com bebida",
         "pode ser adiantado",
@@ -2908,7 +2908,7 @@
       ],
       "categoria_operacional": "prato_quente",
       "subcategoria_operacional": "katsu",
-      "praca_principal": "cozinha",
+      "praca_principal": "cozinha_quentes",
       "pracas_dependentes": [],
       "temperatura": "quente",
       "ingredientes_extraidos": [
@@ -2938,7 +2938,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "cozinha sobrecarregada",
+        "cozinha_quentes sobrecarregada",
         "trava fechamento",
         "pedido só de quente",
         "alto tempo de produção",
@@ -2962,7 +2962,7 @@
       ],
       "categoria_operacional": "prato_quente",
       "subcategoria_operacional": "grelhado",
-      "praca_principal": "cozinha",
+      "praca_principal": "cozinha_quentes",
       "pracas_dependentes": [],
       "temperatura": "quente",
       "ingredientes_extraidos": [
@@ -2997,7 +2997,7 @@
       "substituivel": true,
       "risco_de_erro": "medio",
       "sinais_que_pode_gerar": [
-        "cozinha sobrecarregada",
+        "cozinha_quentes sobrecarregada",
         "trava fechamento",
         "pedido só de quente",
         "alto tempo de produção",
@@ -3021,7 +3021,7 @@
       ],
       "categoria_operacional": "acompanhamento",
       "subcategoria_operacional": "guarnicao",
-      "praca_principal": "montagem",
+      "praca_principal": "montagem_outros",
       "pracas_dependentes": [],
       "temperatura": "frio",
       "ingredientes_extraidos": [
@@ -3046,7 +3046,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "montagem sobrecarregada",
+        "montagem_outros sobrecarregada",
         "pedido só de frio",
         "pode ser adiantado",
         "item pausado",
@@ -3072,7 +3072,7 @@
       ],
       "categoria_operacional": "acompanhamento",
       "subcategoria_operacional": "guarnicao",
-      "praca_principal": "montagem",
+      "praca_principal": "montagem_outros",
       "pracas_dependentes": [],
       "temperatura": "quente",
       "ingredientes_extraidos": [],
@@ -3093,7 +3093,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "montagem sobrecarregada",
+        "montagem_outros sobrecarregada",
         "trava fechamento",
         "pedido só de quente",
         "alto tempo de produção",
@@ -3120,7 +3120,7 @@
       ],
       "categoria_operacional": "prato_quente",
       "subcategoria_operacional": "grelhado",
-      "praca_principal": "cozinha",
+      "praca_principal": "cozinha_quentes",
       "pracas_dependentes": [],
       "temperatura": "quente",
       "ingredientes_extraidos": [
@@ -3158,7 +3158,7 @@
       "substituivel": true,
       "risco_de_erro": "alto",
       "sinais_que_pode_gerar": [
-        "cozinha sobrecarregada",
+        "cozinha_quentes sobrecarregada",
         "trava fechamento",
         "pedido só de quente",
         "risco de conferência",
@@ -3185,7 +3185,7 @@
       ],
       "categoria_operacional": "prato_quente",
       "subcategoria_operacional": "guioza",
-      "praca_principal": "cozinha",
+      "praca_principal": "cozinha_quentes",
       "pracas_dependentes": [],
       "temperatura": "quente",
       "ingredientes_extraidos": [
@@ -3210,7 +3210,7 @@
       "substituivel": true,
       "risco_de_erro": "alto",
       "sinais_que_pode_gerar": [
-        "cozinha sobrecarregada",
+        "cozinha_quentes sobrecarregada",
         "trava fechamento",
         "pedido só de quente",
         "risco de conferência",
@@ -3236,7 +3236,7 @@
       ],
       "categoria_operacional": "prato_quente",
       "subcategoria_operacional": "katsu",
-      "praca_principal": "cozinha",
+      "praca_principal": "cozinha_quentes",
       "pracas_dependentes": [],
       "temperatura": "quente",
       "ingredientes_extraidos": [
@@ -3264,7 +3264,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "cozinha sobrecarregada",
+        "cozinha_quentes sobrecarregada",
         "trava fechamento",
         "pedido só de quente",
         "alto tempo de produção",
@@ -3288,7 +3288,7 @@
       ],
       "categoria_operacional": "bebida",
       "subcategoria_operacional": "sake",
-      "praca_principal": "bar",
+      "praca_principal": "bar_bebidas",
       "pracas_dependentes": [],
       "temperatura": "ambiente",
       "ingredientes_extraidos": [],
@@ -3309,7 +3309,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "bar sobrecarregada",
+        "bar_bebidas sobrecarregada",
         "pedido com bebida",
         "item pausado"
       ],
@@ -3331,7 +3331,7 @@
       ],
       "categoria_operacional": "bebida",
       "subcategoria_operacional": "sake",
-      "praca_principal": "bar",
+      "praca_principal": "bar_bebidas",
       "pracas_dependentes": [],
       "temperatura": "ambiente",
       "ingredientes_extraidos": [],
@@ -3352,7 +3352,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "bar sobrecarregada",
+        "bar_bebidas sobrecarregada",
         "pedido com bebida",
         "item pausado"
       ],
@@ -3374,7 +3374,7 @@
       ],
       "categoria_operacional": "bebida",
       "subcategoria_operacional": "sake",
-      "praca_principal": "bar",
+      "praca_principal": "bar_bebidas",
       "pracas_dependentes": [],
       "temperatura": "ambiente",
       "ingredientes_extraidos": [],
@@ -3395,7 +3395,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "bar sobrecarregada",
+        "bar_bebidas sobrecarregada",
         "pedido com bebida",
         "item pausado"
       ],
@@ -3417,7 +3417,7 @@
       ],
       "categoria_operacional": "bebida",
       "subcategoria_operacional": "sake",
-      "praca_principal": "bar",
+      "praca_principal": "bar_bebidas",
       "pracas_dependentes": [],
       "temperatura": "ambiente",
       "ingredientes_extraidos": [],
@@ -3438,7 +3438,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "bar sobrecarregada",
+        "bar_bebidas sobrecarregada",
         "pedido com bebida",
         "item pausado"
       ],
@@ -3460,7 +3460,7 @@
       ],
       "categoria_operacional": "bebida",
       "subcategoria_operacional": "sake",
-      "praca_principal": "bar",
+      "praca_principal": "bar_bebidas",
       "pracas_dependentes": [],
       "temperatura": "ambiente",
       "ingredientes_extraidos": [],
@@ -3481,7 +3481,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "bar sobrecarregada",
+        "bar_bebidas sobrecarregada",
         "pedido com bebida",
         "item pausado"
       ],
@@ -3503,7 +3503,7 @@
       ],
       "categoria_operacional": "bebida",
       "subcategoria_operacional": "sake",
-      "praca_principal": "bar",
+      "praca_principal": "bar_bebidas",
       "pracas_dependentes": [],
       "temperatura": "ambiente",
       "ingredientes_extraidos": [],
@@ -3524,7 +3524,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "bar sobrecarregada",
+        "bar_bebidas sobrecarregada",
         "pedido com bebida",
         "item pausado"
       ],
@@ -3546,7 +3546,7 @@
       ],
       "categoria_operacional": "bebida",
       "subcategoria_operacional": "cerveja",
-      "praca_principal": "bar",
+      "praca_principal": "bar_bebidas",
       "pracas_dependentes": [],
       "temperatura": "frio",
       "ingredientes_extraidos": [],
@@ -3567,7 +3567,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "bar sobrecarregada",
+        "bar_bebidas sobrecarregada",
         "pedido só de frio",
         "pedido com bebida",
         "pode ser adiantado",
@@ -3591,7 +3591,7 @@
       ],
       "categoria_operacional": "bebida",
       "subcategoria_operacional": "cerveja",
-      "praca_principal": "bar",
+      "praca_principal": "bar_bebidas",
       "pracas_dependentes": [],
       "temperatura": "frio",
       "ingredientes_extraidos": [],
@@ -3612,7 +3612,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "bar sobrecarregada",
+        "bar_bebidas sobrecarregada",
         "pedido só de frio",
         "pedido com bebida",
         "pode ser adiantado",
@@ -3956,7 +3956,7 @@
       ],
       "categoria_operacional": "bebida",
       "subcategoria_operacional": "cha",
-      "praca_principal": "bar",
+      "praca_principal": "bar_bebidas",
       "pracas_dependentes": [],
       "temperatura": "frio",
       "ingredientes_extraidos": [],
@@ -3977,7 +3977,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "bar sobrecarregada",
+        "bar_bebidas sobrecarregada",
         "pedido só de frio",
         "pedido com bebida",
         "pode ser adiantado",
@@ -4001,7 +4001,7 @@
       ],
       "categoria_operacional": "prato_quente",
       "subcategoria_operacional": "katsu",
-      "praca_principal": "cozinha",
+      "praca_principal": "cozinha_quentes",
       "pracas_dependentes": [],
       "temperatura": "quente",
       "ingredientes_extraidos": [
@@ -4038,7 +4038,7 @@
       "substituivel": true,
       "risco_de_erro": "medio",
       "sinais_que_pode_gerar": [
-        "cozinha sobrecarregada",
+        "cozinha_quentes sobrecarregada",
         "trava fechamento",
         "pedido só de quente",
         "alto tempo de produção",
@@ -4062,7 +4062,7 @@
       ],
       "categoria_operacional": "bebida",
       "subcategoria_operacional": "sake",
-      "praca_principal": "bar",
+      "praca_principal": "bar_bebidas",
       "pracas_dependentes": [],
       "temperatura": "ambiente",
       "ingredientes_extraidos": [],
@@ -4083,7 +4083,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "bar sobrecarregada",
+        "bar_bebidas sobrecarregada",
         "pedido com bebida",
         "item pausado"
       ],
@@ -4105,7 +4105,7 @@
       ],
       "categoria_operacional": "bebida",
       "subcategoria_operacional": "vinho",
-      "praca_principal": "bar",
+      "praca_principal": "bar_bebidas",
       "pracas_dependentes": [],
       "temperatura": "ambiente",
       "ingredientes_extraidos": [],
@@ -4126,7 +4126,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "bar sobrecarregada",
+        "bar_bebidas sobrecarregada",
         "pedido com bebida",
         "item pausado"
       ],
@@ -4148,7 +4148,7 @@
       ],
       "categoria_operacional": "bebida",
       "subcategoria_operacional": "vinho",
-      "praca_principal": "bar",
+      "praca_principal": "bar_bebidas",
       "pracas_dependentes": [],
       "temperatura": "ambiente",
       "ingredientes_extraidos": [],
@@ -4169,7 +4169,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "bar sobrecarregada",
+        "bar_bebidas sobrecarregada",
         "pedido com bebida",
         "item pausado"
       ],
@@ -4236,9 +4236,9 @@
       "pracas_dependentes": [
         "enrolados",
         "enrolados_quentes",
-        "montagem",
+        "montagem_outros",
         "sobremesa",
-        "bar",
+        "bar_bebidas",
         "combinados"
       ],
       "temperatura": "misto",
@@ -4314,9 +4314,9 @@
       "pracas_dependentes": [
         "enrolados",
         "enrolados_quentes",
-        "montagem",
+        "montagem_outros",
         "sobremesa",
-        "bar",
+        "bar_bebidas",
         "combinados"
       ],
       "temperatura": "misto",
@@ -4389,7 +4389,7 @@
       ],
       "categoria_operacional": "acompanhamento",
       "subcategoria_operacional": "sopa",
-      "praca_principal": "cozinha",
+      "praca_principal": "cozinha_quentes",
       "pracas_dependentes": [],
       "temperatura": "quente",
       "ingredientes_extraidos": [],
@@ -4410,7 +4410,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "cozinha sobrecarregada",
+        "cozinha_quentes sobrecarregada",
         "trava fechamento",
         "pedido só de quente",
         "alto tempo de produção",
@@ -4488,7 +4488,7 @@
       ],
       "categoria_operacional": "entrada",
       "subcategoria_operacional": "entrada_quente",
-      "praca_principal": "cozinha",
+      "praca_principal": "cozinha_quentes",
       "pracas_dependentes": [],
       "temperatura": "quente",
       "ingredientes_extraidos": [
@@ -4516,7 +4516,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "cozinha sobrecarregada",
+        "cozinha_quentes sobrecarregada",
         "trava fechamento",
         "pedido só de quente",
         "alto tempo de produção",
@@ -4540,7 +4540,7 @@
       ],
       "categoria_operacional": "bebida",
       "subcategoria_operacional": "vinho",
-      "praca_principal": "bar",
+      "praca_principal": "bar_bebidas",
       "pracas_dependentes": [],
       "temperatura": "ambiente",
       "ingredientes_extraidos": [],
@@ -4561,7 +4561,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "bar sobrecarregada",
+        "bar_bebidas sobrecarregada",
         "pedido com bebida",
         "item pausado"
       ],
@@ -4665,7 +4665,7 @@
       ],
       "categoria_operacional": "bebida",
       "subcategoria_operacional": "sake",
-      "praca_principal": "bar",
+      "praca_principal": "bar_bebidas",
       "pracas_dependentes": [],
       "temperatura": "ambiente",
       "ingredientes_extraidos": [],
@@ -4686,7 +4686,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "bar sobrecarregada",
+        "bar_bebidas sobrecarregada",
         "pedido com bebida",
         "item pausado"
       ],
@@ -4708,7 +4708,7 @@
       ],
       "categoria_operacional": "bebida",
       "subcategoria_operacional": "sake",
-      "praca_principal": "bar",
+      "praca_principal": "bar_bebidas",
       "pracas_dependentes": [],
       "temperatura": "ambiente",
       "ingredientes_extraidos": [],
@@ -4729,7 +4729,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "bar sobrecarregada",
+        "bar_bebidas sobrecarregada",
         "pedido com bebida",
         "item pausado"
       ],
@@ -4751,7 +4751,7 @@
       ],
       "categoria_operacional": "bebida",
       "subcategoria_operacional": "sake",
-      "praca_principal": "bar",
+      "praca_principal": "bar_bebidas",
       "pracas_dependentes": [],
       "temperatura": "ambiente",
       "ingredientes_extraidos": [],
@@ -4772,7 +4772,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "bar sobrecarregada",
+        "bar_bebidas sobrecarregada",
         "pedido com bebida",
         "item pausado"
       ],
@@ -4794,7 +4794,7 @@
       ],
       "categoria_operacional": "bebida",
       "subcategoria_operacional": "sake",
-      "praca_principal": "bar",
+      "praca_principal": "bar_bebidas",
       "pracas_dependentes": [],
       "temperatura": "ambiente",
       "ingredientes_extraidos": [],
@@ -4815,7 +4815,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "bar sobrecarregada",
+        "bar_bebidas sobrecarregada",
         "pedido com bebida",
         "item pausado"
       ],
@@ -4838,7 +4838,7 @@
       ],
       "categoria_operacional": "prato_quente",
       "subcategoria_operacional": "grelhado",
-      "praca_principal": "cozinha",
+      "praca_principal": "cozinha_quentes",
       "pracas_dependentes": [],
       "temperatura": "quente",
       "ingredientes_extraidos": [
@@ -4868,7 +4868,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "cozinha sobrecarregada",
+        "cozinha_quentes sobrecarregada",
         "trava fechamento",
         "pedido só de quente",
         "alto tempo de produção",
@@ -4892,7 +4892,7 @@
       ],
       "categoria_operacional": "bebida",
       "subcategoria_operacional": "cerveja",
-      "praca_principal": "bar",
+      "praca_principal": "bar_bebidas",
       "pracas_dependentes": [],
       "temperatura": "frio",
       "ingredientes_extraidos": [],
@@ -4913,7 +4913,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "bar sobrecarregada",
+        "bar_bebidas sobrecarregada",
         "pedido só de frio",
         "pedido com bebida",
         "pode ser adiantado",
@@ -4937,7 +4937,7 @@
       ],
       "categoria_operacional": "bebida",
       "subcategoria_operacional": "sake",
-      "praca_principal": "bar",
+      "praca_principal": "bar_bebidas",
       "pracas_dependentes": [],
       "temperatura": "ambiente",
       "ingredientes_extraidos": [],
@@ -4958,7 +4958,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "bar sobrecarregada",
+        "bar_bebidas sobrecarregada",
         "pedido com bebida",
         "item pausado"
       ],
@@ -5933,7 +5933,7 @@
       ],
       "categoria_operacional": "entrada",
       "subcategoria_operacional": "entrada_quente",
-      "praca_principal": "cozinha",
+      "praca_principal": "cozinha_quentes",
       "pracas_dependentes": [],
       "temperatura": "quente",
       "ingredientes_extraidos": [
@@ -5961,7 +5961,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "cozinha sobrecarregada",
+        "cozinha_quentes sobrecarregada",
         "trava fechamento",
         "pedido só de quente",
         "alto tempo de produção",
@@ -5985,7 +5985,7 @@
       ],
       "categoria_operacional": "entrada",
       "subcategoria_operacional": "entrada_quente",
-      "praca_principal": "cozinha",
+      "praca_principal": "cozinha_quentes",
       "pracas_dependentes": [],
       "temperatura": "quente",
       "ingredientes_extraidos": [
@@ -6013,7 +6013,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "cozinha sobrecarregada",
+        "cozinha_quentes sobrecarregada",
         "trava fechamento",
         "pedido só de quente",
         "alto tempo de produção",
@@ -6037,7 +6037,7 @@
       ],
       "categoria_operacional": "entrada",
       "subcategoria_operacional": "entrada_quente",
-      "praca_principal": "cozinha",
+      "praca_principal": "cozinha_quentes",
       "pracas_dependentes": [],
       "temperatura": "quente",
       "ingredientes_extraidos": [
@@ -6067,7 +6067,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "cozinha sobrecarregada",
+        "cozinha_quentes sobrecarregada",
         "trava fechamento",
         "pedido só de quente",
         "alto tempo de produção",
@@ -6184,7 +6184,7 @@
       ],
       "categoria_operacional": "bebida",
       "subcategoria_operacional": "refrigerante",
-      "praca_principal": "bar",
+      "praca_principal": "bar_bebidas",
       "pracas_dependentes": [],
       "temperatura": "frio",
       "ingredientes_extraidos": [],
@@ -6205,7 +6205,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "bar sobrecarregada",
+        "bar_bebidas sobrecarregada",
         "pedido só de frio",
         "pedido com bebida",
         "pode ser adiantado",
@@ -6229,7 +6229,7 @@
       ],
       "categoria_operacional": "bebida",
       "subcategoria_operacional": "refrigerante",
-      "praca_principal": "bar",
+      "praca_principal": "bar_bebidas",
       "pracas_dependentes": [],
       "temperatura": "frio",
       "ingredientes_extraidos": [],
@@ -6250,7 +6250,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "bar sobrecarregada",
+        "bar_bebidas sobrecarregada",
         "pedido só de frio",
         "pedido com bebida",
         "pode ser adiantado",
@@ -6274,7 +6274,7 @@
       ],
       "categoria_operacional": "acompanhamento",
       "subcategoria_operacional": "guarnicao",
-      "praca_principal": "montagem",
+      "praca_principal": "montagem_outros",
       "pracas_dependentes": [],
       "temperatura": "frio",
       "ingredientes_extraidos": [
@@ -6302,7 +6302,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "montagem sobrecarregada",
+        "montagem_outros sobrecarregada",
         "pedido só de frio",
         "pode ser adiantado",
         "item pausado",
@@ -7999,10 +7999,10 @@
         "alto tempo de produção",
         "item pausado"
       ],
-      "confianca_classificacao": "alta",
-      "revisao_manual": false,
+      "confianca_classificacao": "media",
+      "revisao_manual": true,
       "observacoes": [
-        "Entrada classificada como enrolados_quentes por regra explícita de termo (tartar de salmao).",
+        "Item frio (marinado/cru) enviado para enrolados_quentes pela REGRA OPERACIONAL atual do César. A regra vence — NÃO cai em duplas/sushi. Revalidar com a equipe de qual bancada realmente sai; corrigível no cadastro sem quebrar a arquitetura.",
         "Termo quente: tartar de salmao."
       ],
       "descricoes_alternativas": []
@@ -8020,7 +8020,7 @@
       ],
       "categoria_operacional": "acompanhamento",
       "subcategoria_operacional": "guarnicao",
-      "praca_principal": "montagem",
+      "praca_principal": "montagem_outros",
       "pracas_dependentes": [],
       "temperatura": "frio",
       "ingredientes_extraidos": [
@@ -8045,7 +8045,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "montagem sobrecarregada",
+        "montagem_outros sobrecarregada",
         "pedido só de frio",
         "pode ser adiantado",
         "item pausado",
@@ -8530,7 +8530,7 @@
       ],
       "categoria_operacional": "prato_quente",
       "subcategoria_operacional": "tempura",
-      "praca_principal": "cozinha",
+      "praca_principal": "cozinha_quentes",
       "pracas_dependentes": [],
       "temperatura": "quente",
       "ingredientes_extraidos": [
@@ -8558,7 +8558,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "cozinha sobrecarregada",
+        "cozinha_quentes sobrecarregada",
         "trava fechamento",
         "pedido só de quente",
         "alto tempo de produção",
@@ -8582,7 +8582,7 @@
       ],
       "categoria_operacional": "prato_quente",
       "subcategoria_operacional": "tempura",
-      "praca_principal": "cozinha",
+      "praca_principal": "cozinha_quentes",
       "pracas_dependentes": [],
       "temperatura": "quente",
       "ingredientes_extraidos": [
@@ -8607,7 +8607,7 @@
       "substituivel": true,
       "risco_de_erro": "alto",
       "sinais_que_pode_gerar": [
-        "cozinha sobrecarregada",
+        "cozinha_quentes sobrecarregada",
         "trava fechamento",
         "pedido só de quente",
         "risco de conferência",
@@ -8633,7 +8633,7 @@
       ],
       "categoria_operacional": "prato_quente",
       "subcategoria_operacional": "tempura",
-      "praca_principal": "cozinha",
+      "praca_principal": "cozinha_quentes",
       "pracas_dependentes": [],
       "temperatura": "quente",
       "ingredientes_extraidos": [],
@@ -8654,7 +8654,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "cozinha sobrecarregada",
+        "cozinha_quentes sobrecarregada",
         "trava fechamento",
         "pedido só de quente",
         "alto tempo de produção",
@@ -8678,7 +8678,7 @@
       ],
       "categoria_operacional": "prato_quente",
       "subcategoria_operacional": "tempura",
-      "praca_principal": "cozinha",
+      "praca_principal": "cozinha_quentes",
       "pracas_dependentes": [],
       "temperatura": "quente",
       "ingredientes_extraidos": [
@@ -8703,7 +8703,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "cozinha sobrecarregada",
+        "cozinha_quentes sobrecarregada",
         "trava fechamento",
         "pedido só de quente",
         "alto tempo de produção",
@@ -8727,7 +8727,7 @@
       ],
       "categoria_operacional": "prato_quente",
       "subcategoria_operacional": "teppanyaki",
-      "praca_principal": "cozinha",
+      "praca_principal": "cozinha_quentes",
       "pracas_dependentes": [],
       "temperatura": "quente",
       "ingredientes_extraidos": [
@@ -8755,7 +8755,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "cozinha sobrecarregada",
+        "cozinha_quentes sobrecarregada",
         "trava fechamento",
         "pedido só de quente",
         "alto tempo de produção",
@@ -8779,7 +8779,7 @@
       ],
       "categoria_operacional": "prato_quente",
       "subcategoria_operacional": "teppanyaki",
-      "praca_principal": "cozinha",
+      "praca_principal": "cozinha_quentes",
       "pracas_dependentes": [],
       "temperatura": "quente",
       "ingredientes_extraidos": [
@@ -8807,7 +8807,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "cozinha sobrecarregada",
+        "cozinha_quentes sobrecarregada",
         "trava fechamento",
         "pedido só de quente",
         "alto tempo de produção",
@@ -8831,7 +8831,7 @@
       ],
       "categoria_operacional": "prato_quente",
       "subcategoria_operacional": "teppanyaki",
-      "praca_principal": "cozinha",
+      "praca_principal": "cozinha_quentes",
       "pracas_dependentes": [],
       "temperatura": "quente",
       "ingredientes_extraidos": [
@@ -8859,7 +8859,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "cozinha sobrecarregada",
+        "cozinha_quentes sobrecarregada",
         "trava fechamento",
         "pedido só de quente",
         "alto tempo de produção",
@@ -8883,7 +8883,7 @@
       ],
       "categoria_operacional": "prato_quente",
       "subcategoria_operacional": "teppanyaki",
-      "praca_principal": "cozinha",
+      "praca_principal": "cozinha_quentes",
       "pracas_dependentes": [],
       "temperatura": "quente",
       "ingredientes_extraidos": [
@@ -8911,7 +8911,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "cozinha sobrecarregada",
+        "cozinha_quentes sobrecarregada",
         "trava fechamento",
         "pedido só de quente",
         "alto tempo de produção",
@@ -8935,7 +8935,7 @@
       ],
       "categoria_operacional": "prato_quente",
       "subcategoria_operacional": "teppanyaki",
-      "praca_principal": "cozinha",
+      "praca_principal": "cozinha_quentes",
       "pracas_dependentes": [],
       "temperatura": "quente",
       "ingredientes_extraidos": [
@@ -8963,7 +8963,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "cozinha sobrecarregada",
+        "cozinha_quentes sobrecarregada",
         "trava fechamento",
         "pedido só de quente",
         "alto tempo de produção",
@@ -9051,7 +9051,7 @@
       ],
       "categoria_operacional": "prato_quente",
       "subcategoria_operacional": "katsu",
-      "praca_principal": "cozinha",
+      "praca_principal": "cozinha_quentes",
       "pracas_dependentes": [],
       "temperatura": "quente",
       "ingredientes_extraidos": [
@@ -9081,7 +9081,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "cozinha sobrecarregada",
+        "cozinha_quentes sobrecarregada",
         "trava fechamento",
         "pedido só de quente",
         "alto tempo de produção",
@@ -9138,10 +9138,10 @@
         "alto tempo de produção",
         "item pausado"
       ],
-      "confianca_classificacao": "alta",
-      "revisao_manual": false,
+      "confianca_classificacao": "media",
+      "revisao_manual": true,
       "observacoes": [
-        "Entrada classificada como enrolados_quentes por regra explícita de termo (tuna shiso).",
+        "Item frio (marinado/cru) enviado para enrolados_quentes pela REGRA OPERACIONAL atual do César. A regra vence — NÃO cai em duplas/sushi. Revalidar com a equipe de qual bancada realmente sai; corrigível no cadastro sem quebrar a arquitetura.",
         "Termo quente: tuna shiso."
       ],
       "descricoes_alternativas": []
@@ -9643,7 +9643,7 @@
       ],
       "categoria_operacional": "bebida",
       "subcategoria_operacional": "vinho",
-      "praca_principal": "bar",
+      "praca_principal": "bar_bebidas",
       "pracas_dependentes": [],
       "temperatura": "ambiente",
       "ingredientes_extraidos": [],
@@ -9664,7 +9664,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "bar sobrecarregada",
+        "bar_bebidas sobrecarregada",
         "pedido com bebida",
         "item pausado"
       ],
@@ -9686,7 +9686,7 @@
       ],
       "categoria_operacional": "bebida",
       "subcategoria_operacional": "vinho",
-      "praca_principal": "bar",
+      "praca_principal": "bar_bebidas",
       "pracas_dependentes": [],
       "temperatura": "ambiente",
       "ingredientes_extraidos": [],
@@ -9707,7 +9707,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "bar sobrecarregada",
+        "bar_bebidas sobrecarregada",
         "pedido com bebida",
         "item pausado"
       ],
@@ -9729,7 +9729,7 @@
       ],
       "categoria_operacional": "bebida",
       "subcategoria_operacional": "vinho",
-      "praca_principal": "bar",
+      "praca_principal": "bar_bebidas",
       "pracas_dependentes": [],
       "temperatura": "ambiente",
       "ingredientes_extraidos": [],
@@ -9750,7 +9750,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "bar sobrecarregada",
+        "bar_bebidas sobrecarregada",
         "pedido com bebida",
         "item pausado"
       ],
@@ -9772,7 +9772,7 @@
       ],
       "categoria_operacional": "bebida",
       "subcategoria_operacional": "vinho",
-      "praca_principal": "bar",
+      "praca_principal": "bar_bebidas",
       "pracas_dependentes": [],
       "temperatura": "ambiente",
       "ingredientes_extraidos": [],
@@ -9793,7 +9793,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "bar sobrecarregada",
+        "bar_bebidas sobrecarregada",
         "pedido com bebida",
         "item pausado"
       ],
@@ -9815,7 +9815,7 @@
       ],
       "categoria_operacional": "acompanhamento",
       "subcategoria_operacional": "guarnicao",
-      "praca_principal": "montagem",
+      "praca_principal": "montagem_outros",
       "pracas_dependentes": [],
       "temperatura": "frio",
       "ingredientes_extraidos": [],
@@ -9836,7 +9836,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "montagem sobrecarregada",
+        "montagem_outros sobrecarregada",
         "pedido só de frio",
         "pode ser adiantado",
         "item pausado",
@@ -9863,7 +9863,7 @@
       ],
       "categoria_operacional": "prato_quente",
       "subcategoria_operacional": "yakissoba",
-      "praca_principal": "cozinha",
+      "praca_principal": "cozinha_quentes",
       "pracas_dependentes": [],
       "temperatura": "quente",
       "ingredientes_extraidos": [],
@@ -9884,7 +9884,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "cozinha sobrecarregada",
+        "cozinha_quentes sobrecarregada",
         "trava fechamento",
         "pedido só de quente",
         "alto tempo de produção",
@@ -9908,7 +9908,7 @@
       ],
       "categoria_operacional": "prato_quente",
       "subcategoria_operacional": "yakissoba",
-      "praca_principal": "cozinha",
+      "praca_principal": "cozinha_quentes",
       "pracas_dependentes": [],
       "temperatura": "quente",
       "ingredientes_extraidos": [
@@ -9933,7 +9933,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "cozinha sobrecarregada",
+        "cozinha_quentes sobrecarregada",
         "trava fechamento",
         "pedido só de quente",
         "alto tempo de produção",
@@ -9957,7 +9957,7 @@
       ],
       "categoria_operacional": "prato_quente",
       "subcategoria_operacional": "yakissoba",
-      "praca_principal": "cozinha",
+      "praca_principal": "cozinha_quentes",
       "pracas_dependentes": [],
       "temperatura": "quente",
       "ingredientes_extraidos": [
@@ -9982,7 +9982,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "cozinha sobrecarregada",
+        "cozinha_quentes sobrecarregada",
         "trava fechamento",
         "pedido só de quente",
         "alto tempo de produção",
@@ -10006,7 +10006,7 @@
       ],
       "categoria_operacional": "prato_quente",
       "subcategoria_operacional": "yakissoba",
-      "praca_principal": "cozinha",
+      "praca_principal": "cozinha_quentes",
       "pracas_dependentes": [],
       "temperatura": "quente",
       "ingredientes_extraidos": [
@@ -10041,7 +10041,7 @@
       "substituivel": true,
       "risco_de_erro": "medio",
       "sinais_que_pode_gerar": [
-        "cozinha sobrecarregada",
+        "cozinha_quentes sobrecarregada",
         "trava fechamento",
         "pedido só de quente",
         "alto tempo de produção",
@@ -10065,7 +10065,7 @@
       ],
       "categoria_operacional": "prato_quente",
       "subcategoria_operacional": "yakissoba",
-      "praca_principal": "cozinha",
+      "praca_principal": "cozinha_quentes",
       "pracas_dependentes": [],
       "temperatura": "quente",
       "ingredientes_extraidos": [],
@@ -10086,7 +10086,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "cozinha sobrecarregada",
+        "cozinha_quentes sobrecarregada",
         "trava fechamento",
         "pedido só de quente",
         "alto tempo de produção",
@@ -10110,7 +10110,7 @@
       ],
       "categoria_operacional": "bebida",
       "subcategoria_operacional": "sake",
-      "praca_principal": "bar",
+      "praca_principal": "bar_bebidas",
       "pracas_dependentes": [],
       "temperatura": "ambiente",
       "ingredientes_extraidos": [],
@@ -10131,7 +10131,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "bar sobrecarregada",
+        "bar_bebidas sobrecarregada",
         "pedido com bebida",
         "item pausado"
       ],
@@ -10153,7 +10153,7 @@
       ],
       "categoria_operacional": "bebida",
       "subcategoria_operacional": "sake",
-      "praca_principal": "bar",
+      "praca_principal": "bar_bebidas",
       "pracas_dependentes": [],
       "temperatura": "ambiente",
       "ingredientes_extraidos": [],
@@ -10174,7 +10174,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "bar sobrecarregada",
+        "bar_bebidas sobrecarregada",
         "pedido com bebida",
         "item pausado"
       ],
@@ -10196,7 +10196,7 @@
       ],
       "categoria_operacional": "bebida",
       "subcategoria_operacional": "agua",
-      "praca_principal": "bar",
+      "praca_principal": "bar_bebidas",
       "pracas_dependentes": [],
       "temperatura": "frio",
       "ingredientes_extraidos": [],
@@ -10217,7 +10217,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "bar sobrecarregada",
+        "bar_bebidas sobrecarregada",
         "pedido só de frio",
         "pedido com bebida",
         "pode ser adiantado",
@@ -10241,7 +10241,7 @@
       ],
       "categoria_operacional": "bebida",
       "subcategoria_operacional": "agua",
-      "praca_principal": "bar",
+      "praca_principal": "bar_bebidas",
       "pracas_dependentes": [],
       "temperatura": "frio",
       "ingredientes_extraidos": [],
@@ -10262,7 +10262,7 @@
       "substituivel": true,
       "risco_de_erro": "baixo",
       "sinais_que_pode_gerar": [
-        "bar sobrecarregada",
+        "bar_bebidas sobrecarregada",
         "pedido só de frio",
         "pedido com bebida",
         "pode ser adiantado",

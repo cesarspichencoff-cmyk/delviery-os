@@ -1,0 +1,123 @@
+# Auto Teste Operacional v2 — motor de 8 praças
+
+> Backtest sobre **30 dias reais** (27/05/2026→25/06/2026), 8305 pedidos.
+> **Mesmo cérebro do protótipo** (`src/perfil-delivery/motor.js`) — nenhuma regra duplicada.
+
+### Três motores, separados de propósito
+| Motor | Estado | Fonte |
+|---|---|---|
+| (A) tempo / estado do pedido | **REAL** | relatório iFood (recebido/pronto/saiu/cancelado) |
+| (B) praça (qual bancada / carga) | **SINTÉTICO** | composição pedido→itens fabricada (`makeFonteSintetica`) |
+| (C) conhecimento do cardápio | **REAL** | `cardapio_knowledge_seed.json` (199 itens, 8 praças) |
+
+## Nota do motor (desfecho real): **7.1 / 10**
+*(0,40×precisão 42% + 0,40×cobertura 100% + 0,20×calma 0.7) — precisão/cobertura usam só desfecho REAL; números de praça são ilustrativos.*
+
+---
+
+## 1. As 8 praças no motor (quantos itens entraram)
+| Praça | Classe | Itens no cardápio |
+|---|---|---|
+| Combinados (`combinados`) | produção | 20 |
+| Duplas (`duplas`) | produção | 64 |
+| Enrolados (`enrolados`) | produção | 16 |
+| Enrolados Quentes (`enrolados_quentes`) | produção | 11 |
+| Quentes (`cozinha_quentes`) | produção | 31 |
+| Sobremesa (`sobremesa`) | conferência/montagem | 9 |
+| Bar (`bar_bebidas`) | conferência/montagem | 36 |
+| Montagem (`montagem_outros`) | conferência/montagem | 5 |
+
+## 2. Diagnósticos que o motor agora emite (não só alerta)
+O motor deixou de dizer só "tem atraso". Exemplos REAIS gerados no backtest:
+
+**Praça de produção sobrecarregada (com causa + quanto libera):**
+```
+Duplas CARREGANDO
+• 10 pedidos na praça
+• 6 sairiam se Duplas liberar
+trava o fechamento de pedidos
+→ priorizar duplas · olhar Sushi de Polvo
+```  
+_(27/05/2026 11:56)_
+
+**Fechamento (pedido que depende de uma só praça):**
+```
+FECHAMENTO · #1219
+• só depende de Duplas
+• ainda tem item frio
+pronto pra fechar assim que Duplas sair
+→ verificar se já dá pra fechar #1219
+```  
+_(30/05/2026 12:21)_
+
+**Conferência (pedido grande / 2 sacolas / bebida+kit):**
+```
+CONFERÊNCIA · #5037
+• 3 sacolas · 3 itens
+• obrigatório: bebida + kit
+risco de faltar item / 2ª sacola esquecida
+→ separar 2ª sacola e conferir item a item
+```  
+_(28/05/2026 11:27)_
+
+**Saída travada (motoboy é o gargalo):**
+```
+SAÍDA TRAVADA
+• 14 prontos sem sair
+• motoboy é o gargalo
+pedidos vão atrasar na entrega
+→ chamar motoboy / conferir saída
+```  
+_(27/05/2026 12:38)_
+
+## 3. Volume de focos por tipo (mês)
+- praça: **15** · pedido preso: **13** · saída: **405** · fechamento: **15** · conferência: **44**
+- total **492** (~16.4/dia) · tempo: 🟢 4% calmo · 🌫️ 80% ambiente · 🔶 16% foco
+
+## 4. Precisão dos focos (desfecho real)
+- **208/492 (42%)** dos focos aconteceram com um pedido **ruim de fato vivo** naquele minuto (cancelado/atraso>15/problema). Fora de janela ruim: 284.
+- Focos de pedido preso especificamente: 13. *(fechamento/conferência são ações úteis, não previsões de risco.)*
+
+## 5. Cobertura dos pedidos ruins
+- **1013** pedidos ruins no mês; **4** passaram 100% em calmo (ponto cego). Cobertura **100%**.
+- Pedidos que cruzaram risco: **1960** (24%).
+
+## 6. Praças que mais travaram *(SINTÉTICO — ilustrativo, baseline provisório não calibrado)*
+- Duplas (`duplas`): **8475** min de sobrecarga
+- Combinados (`combinados`): **4548** min de sobrecarga
+- Enrolados (`enrolados`): **4246** min de sobrecarga
+- Quentes (`cozinha_quentes`): **3088** min de sobrecarga
+- Enrolados Quentes (`enrolados_quentes`): **1363** min de sobrecarga
+
+## 7. Dias com mais gargalo
+- 10/06/2026: gargalo **98%** · 17 focos · 244 pedidos · 44 ruins
+- 08/06/2026: gargalo **97%** · 16 focos · 248 pedidos · 16 ruins
+- 24/06/2026: gargalo **97%** · 17 focos · 189 pedidos · 24 ruins
+- 02/06/2026: gargalo **97%** · 17 focos · 256 pedidos · 22 ruins
+- 28/05/2026: gargalo **97%** · 17 focos · 263 pedidos · 27 ruins
+
+## 8. Horários mais críticos
+- **11h** — 71 focos
+- **12h** — 54 focos
+- **15h** — 36 focos
+- **21h** — 35 focos
+- **14h** — 34 focos
+- **17h** — 34 focos
+
+## 9. O que é REAL vs SINTÉTICO neste resultado
+- **REAL e confiável:** todo o eixo de tempo/estado — atraso, pronto sem sair, cancelamento, problema; precisão e cobertura acima.
+- **SINTÉTICO (ilustrativo):** quais itens cada pedido teve → logo, qual praça carregou, item dominante, 2ª sacola, bebida/kit. Vira REAL quando ligar KDS/impressora/API iFood (trocar só `makeFonteSintetica`).
+- **REAL mas não calibrado:** o cardápio (199 itens/8 praças) é real; os BASELINE por praça são PROVISÓRIOS (tuning é passo futuro).
+
+## 10. Próximos ajustes (quando liberar tuning)
+- Rever baseline de **Combinados** (satura tempo demais — provável baseline subestimado, sobretudo Duplas por concentrar sushi/sashimi/dyo).
+- Rever baseline de **Duplas** (satura tempo demais — provável baseline subestimado, sobretudo Duplas por concentrar sushi/sashimi/dyo).
+- Rever baseline de **Enrolados** (satura tempo demais — provável baseline subestimado, sobretudo Duplas por concentrar sushi/sashimi/dyo).
+- Rever baseline de **Enrolados Quentes** (satura tempo demais — provável baseline subestimado, sobretudo Duplas por concentrar sushi/sashimi/dyo).
+- Rever baseline de **Quentes** (satura tempo demais — provável baseline subestimado, sobretudo Duplas por concentrar sushi/sashimi/dyo).
+- Subir piso de expedição/produção (exagero 2185%).
+- Reforçar demote→ambiente (sequência de foco chegou a 16 min).
+- Só calibrar baseline DEPOIS de ligar a composição real — antes disso é calibrar no escuro.
+
+---
+*Determinístico. Trocar a fonte de itens (sintética→real) NÃO muda nenhuma regra — basta re-rodar.*
