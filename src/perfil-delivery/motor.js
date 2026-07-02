@@ -31,7 +31,11 @@
   // ---- PROVISÓRIO · NÃO CALIBRADO (tuning é passo futuro; só existe p/ o motor rodar) ----
   const BASELINE   = { combinados:3, duplas:6, enrolados:5, enrolados_quentes:3, cozinha_quentes:4 }; // nº de pedidos "normal" na praça
   const TEMPO_PRACA= { combinados:22, duplas:9, enrolados:8, enrolados_quentes:12, cozinha_quentes:12 }; // min "normal" na praça
-  const FLOORS = { EXPED:30, PROD:45, SURGE:3, COOLDOWN:45, MAXFOCUS:8, DEBOUNCE:3 };
+  const FLOORS = { EXPED:30, PROD:45, SURGE:3, COOLDOWN:45, MAXFOCUS:8, DEBOUNCE:3,
+    // Teto de plausibilidade (anti-zumbi): no dado real, NENHUMA espera legítima passou de 104 min
+    // (expedição p99=57 máx=104 · produção p99=71 máx=103). Acima de STALE o dado é suspeito:
+    // não entra em contagem, não vira foco, não é nomeado. Se o sistema não tem certeza, não fala.
+    STALE:120 };
 
   const cap = s => s ? s.charAt(0).toUpperCase()+s.slice(1) : s;
   const uniq = a => Array.from(new Set(a));
@@ -188,16 +192,22 @@
   /* ---------- STEP: fotografa o minuto t e produz situações classificadas + diagnósticos ---------- */
   function step(t, NIGHT, INFO, sess) {
     const wE=[], wP=[], load={}, maxmin={}, domCount={};
+    let suspeitos=0;   // dados inválidos/implausíveis silenciados (debug/backtest — nunca na tela)
     for (const o of NIGHT) {
       if (o.c != null && o.c <= t) continue;      // cancelado
       if (o.r > t) continue;                       // ainda não chegou
       if (o.p != null && o.p <= t) {               // já ficou pronto → expedição
         const up = o.s != null ? o.s : o.e;
-        if (up == null || up <= t) { wE.push({ id:o.id, min: t-o.p }); }
+        if (up == null) { suspeitos++; continue; }   // sem NENHUM dado de saída → inválido p/ foco (silêncio)
+        if (up <= t) continue;                        // JÁ SAIU — não está esperando (guarda que matou o zumbi #8359)
+        const wmin = t - o.p;
+        if (wmin > FLOORS.STALE) { suspeitos++; continue; }  // espera implausível → dado suspeito, nunca foco
+        wE.push({ id:o.id, min: wmin });
       } else {                                      // em produção
         const up = o.p != null ? o.p : o.c;
         if (up == null) continue;
         const wait = t - o.r;
+        if (wait > FLOORS.STALE) { suspeitos++; continue; }  // mesmo teto na produção
         wP.push({ id:o.id, min: wait });
         const I = INFO[o.id];
         if (I) I.benches.forEach(p => {
@@ -265,7 +275,7 @@
     let emand=0, cheg=0;
     for (const o of NIGHT) { if (o.r<=t && !(o.e!=null&&o.e<=t) && !(o.c!=null&&o.c<=t)) emand++; if (o.r>t-20 && o.r<=t) cheg++; }
     return { mode, foco, ambList, emand, intenso: cheg>=12, sev: foco?foco.sev:0, sits,
-             t, ctx: { wE, wP, load } };   // contexto vivo p/ a Camada de Decisão (decisao.js)
+             t, suspeitos, ctx: { wE, wP, load } };   // contexto vivo p/ a Camada de Decisão (decisao.js)
   }
 
   function rotuloAmb(s) {

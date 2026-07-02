@@ -58,13 +58,14 @@
       cands.push({
         tipo: "priorizar_praca", dependeComposicao: true, sev: s.sev,
         score: unblock * 2 + s.n * 0.5 + s.sev,
+        head: "PRIORIZE " + D[s.praca].toUpperCase(),
         acao: "Priorizar " + D[s.praca],
         porque: unblock > 0
-          ? unblock + " pedido" + (unblock > 1 ? "s" : "") + " sae" + (unblock > 1 ? "m" : "") + " se " + D[s.praca] + " liberar agora"
-          : s.n + " pedidos na praça, tempo acima do normal",
-        primeiro: anc ? ("Pedido #" + anc.id + (anc.I.ancora ? " (combinado — segura o pedido inteiro)" : "")) : ("bancada de " + D[s.praca]),
-        impacto: unblock > 0 ? ("libera " + unblock + " saída" + (unblock > 1 ? "s" : "") + " · reduz risco de atraso")
-                             : ("desafoga " + s.n + " pedidos na bancada"),
+          ? unblock + " pedido" + (unblock > 1 ? "s" : "") + " sae" + (unblock > 1 ? "m" : "") + " se " + D[s.praca] + " liberar"
+          : s.n + " pedidos na praça, acima do normal",
+        primeiro: anc ? ("#" + anc.id + (anc.I.ancora ? " (combinado)" : "")) : ("bancada de " + D[s.praca]),
+        impacto: unblock > 0 ? ("libera " + unblock + " saída" + (unblock > 1 ? "s" : "") + " · reduz atraso")
+                             : ("desafoga a bancada"),
         confianca: confComp(s.sev <= 1 && unblock === 0)
       });
     }
@@ -79,10 +80,11 @@
         cands.push({
           tipo: "fechar_simples", dependeComposicao: true, sev: 2,
           score: simples.length * 1.5 + 1,
+          head: "FECHE PEDIDOS SIMPLES",
           acao: "Fechar pedidos simples agora",
-          porque: simples.length + " pedidos dependem de uma única praça (ex.: " + D[pr] + ") e já esperam",
+          porque: simples.length + " pedidos dependem só de " + D[pr] + ", sem mais pendências",
           primeiro: ids,
-          impacto: "desafoga a bancada · " + simples.length + " pedidos saem da fila",
+          impacto: simples.length + " pedidos saem da fila",
           confianca: confComp(false)
         });
       }
@@ -95,10 +97,11 @@
         cands.push({
           tipo: "chamar_motoboy", dependeComposicao: false, sev: ew.length >= 6 ? 3 : 2,
           score: ew.length * 1.8 + 2,
+          head: "CHAME MOTOBOY",
           acao: "Chamar motoboy agora",
-          porque: ew.length + " pedidos prontos há mais de " + F.EXPED + " min",
-          primeiro: "Pedido #" + ew[0].id + " (pronto há " + Math.round(ew[0].min) + " min)",
-          impacto: ew.length + " prontos virando atraso na entrega",
+          porque: ew.length + " prontos há mais de " + F.EXPED + " min",
+          primeiro: "#" + ew[0].id + " · pronto há " + Math.round(ew[0].min) + " min",
+          impacto: "todos viram atraso de entrega",
           confianca: "alta"
         });
       }
@@ -115,10 +118,11 @@
       cands.push({
         tipo: "conferencia", dependeComposicao: true, sev: s.sev,
         score: (I.temObservacao ? 3 : 2) + (I.segundaSacola ? 2 : 0),
+        head: "CONFIRA O #" + s.id,
         acao: "Conferência reforçada",
-        porque: "Pedido #" + s.id + " tem " + extras.join(", "),
-        primeiro: "Pedido #" + s.id + (I.temObservacao ? (" — obs: “" + String(I.observacoes[0]).slice(0, 40) + "”") : ""),
-        impacto: "alto risco de esquecimento (item / 2ª sacola" + (I.temObservacao ? " / observação" : "") + ")",
+        porque: extras.join(" · "),
+        primeiro: I.temObservacao ? ("obs: “" + String(I.observacoes[0]).slice(0, 40) + "”") : ("#" + s.id + " na montagem"),
+        impacto: "evita item esquecido" + (I.segundaSacola ? " e 2ª sacola perdida" : ""),
         confianca: confComp(!I.segundaSacola && !I.temObservacao)
       });
     }
@@ -130,10 +134,11 @@
       cands.push({
         tipo: exped ? "conferir_saida" : "olhar_pedido", dependeComposicao: !exped, sev: s.sev,
         score: s.peak / 25 + s.sev,
+        head: exped ? ("CONFIRA A SAÍDA DO #" + s.id) : ("OLHE O #" + s.id),
         acao: exped ? "Conferir saída do #" + s.id : "Olhar pedido #" + s.id,
-        porque: exped ? ("pronto há " + s.peak + " min sem sair") : (s.peak + " min sem ficar pronto — fora do padrão da noite"),
-        primeiro: "Pedido #" + s.id,
-        impacto: exped ? "evita atraso de entrega · cliente pode reclamar" : "destrava o pedido mais atrasado da produção",
+        porque: exped ? ("pronto há " + s.peak + " min sem sair") : (s.peak + " min sem ficar pronto — fora do padrão"),
+        primeiro: "#" + s.id,
+        impacto: exped ? "evita atraso e reclamação" : "destrava o mais atrasado da produção",
         confianca: exped ? "alta" : confComp(false)
       });
     }

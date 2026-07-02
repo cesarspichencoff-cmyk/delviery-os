@@ -29,19 +29,12 @@
   const ambLines=document.getElementById("ambLines"), vital=document.getElementById("vital");
   const hhmm=t=>String(Math.floor(t/60)%24).padStart(2,"0")+":"+String(t%60).padStart(2,"0");
 
-  // bloco da AÇÃO RECOMENDADA (criado dinamicamente — nenhum redesenho da tela)
+  // sussurro de honestidade: uma linha minúscula, só quando o sistema NÃO está 100% seguro.
+  // (dados usados, scores e ranking ficam no objeto rec / backtest — NUNCA na tela)
   const fdec=document.createElement("div");
   fdec.id="fdecide";
-  fdec.style.cssText="margin-top:10px;padding-top:8px;border-top:1px solid rgba(0,0,0,.08);font-size:.82em;line-height:1.45;opacity:.92";
+  fdec.style.cssText="margin-top:12px;font-size:.6em;letter-spacing:.08em;text-transform:uppercase;opacity:.42";
   if (fcmd && fcmd.parentNode) fcmd.parentNode.insertBefore(fdec, fcmd.nextSibling);
-  function renderDecisao(rec){
-    if(!rec){ fdec.innerHTML=""; return; }
-    fdec.innerHTML =
-      '<div style="font-weight:700;letter-spacing:.04em">AÇÃO RECOMENDADA — '+rec.acao+'</div>'+
-      '<div>porquê: '+rec.porque+'</div>'+
-      '<div>primeiro olhar: '+rec.primeiro+' · impacto: '+rec.impacto+'</div>'+
-      '<div style="opacity:.7">confiança: '+rec.confianca+' · '+rec.dados+'</div>';
-  }
 
   function render(t,m){
     clk.textContent=hhmm(t);
@@ -51,38 +44,55 @@
     if(m.mode==="foco"&&m.foco){
       const f=m.foco, meta=SEV[f.sev]||SEV[2];
       S.style.setProperty("--sevc",meta.c); S.style.setProperty("--warm","0");
-      sevlbl.textContent=meta.r; fhead.textContent=f.head;
-      fimpacts.innerHTML=(f.impactos||[]).filter(Boolean).map(x=>"<li>"+x+"</li>").join("");
-      fconseq.textContent=f.conseq?("↳ "+f.conseq):"";
-      fcmd.textContent=f.cmd;
-      // foco = situação + recomendação: a Camada de Decisão ranqueia a melhor próxima ação
-      renderDecisao(m.sits ? DEC.decidir(m, INFO, {fonteReal:FONTE_REAL}) : (m.decisao||null));
+      sevlbl.textContent=meta.r;
+      const real=(m.fonteReal!==undefined)?m.fonteReal:FONTE_REAL;
+      const rec=m.rec || (m.sits ? DEC.decidir(m, INFO, {fonteReal:real}) : null);
+      if(rec){
+        // HIERARQUIA DO FOCO: 1 ação · 2 onde olhar · 3 porquê · 4 impacto · 5 confiança (sussurro)
+        fhead.textContent=rec.head||rec.acao.toUpperCase();
+        fimpacts.innerHTML="<li>"+rec.porque+"</li><li>Primeiro olhar: <b>"+rec.primeiro+"</b></li>";
+        fconseq.textContent="↳ "+rec.impacto;
+        fcmd.textContent="";   // a ação JÁ É o título — nada duplica
+        const incerto=rec.confianca!=="alta"||(rec.dependeComposicao&&!real);
+        fdec.textContent=incerto?("confiança "+rec.confianca+(rec.dependeComposicao&&!real?" · composição sintética":"")):"";
+      } else {
+        fhead.textContent=f.head;
+        fimpacts.innerHTML=(f.impactos||[]).filter(Boolean).map(x=>"<li>"+x+"</li>").join("");
+        fconseq.textContent=f.conseq?("↳ "+f.conseq):"";
+        fcmd.textContent=f.cmd; fdec.textContent="";
+      }
     } else if(m.mode==="ambiente"){
-      renderDecisao(null);
+      fdec.textContent="";
       const topSev=Math.max(1,...(m.ambList||[]).map(a=>a.sev||1));
       S.style.setProperty("--sevc",(SEV[topSev]||SEV[1]).c);
       S.style.setProperty("--warm",(0.28+0.22*(topSev-1)).toFixed(2));
       ambLines.innerHTML=(m.ambList||[]).map(a=>'<div class="wl"><span class="wd" style="background:rgba('+(SEV[a.sev]||SEV[1]).c+',.9)"></span>'+a.label+'</div>').join("");
-    } else { S.style.setProperty("--warm","0"); vital.textContent=(m.emand||0)+" em andamento"; renderDecisao(null); }
+    } else { S.style.setProperty("--warm","0"); vital.textContent=(m.emand||0)+" em andamento"; fdec.textContent=""; }
   }
 
   /* ===== replay da noite real ===== */
   const START=18*60, END=24*60-1, TICK=360; let t=START;
 
-  /* DEMO invisível (revisão): toque cicla os diagnósticos ricos. Não é produto. */
+  /* DEMO invisível (revisão): toque cicla os 10 estados principais. Não é produto.
+     Ordem: vivo → calmo → ambiente → exped → praça(sintético) → fechamento → conferência
+            → item pausado(futuro) → confiança média → dado real (footer some) */
   const DEMO=[ null,
    {mode:"calmo",emand:16,intenso:false},
    {mode:"ambiente",intenso:true,ambList:[{label:"Quentes carregando",sev:2},{label:"saída lenta",sev:1}]},
-   {mode:"foco",intenso:true,foco:{sev:3,dir:"top",head:"QUENTES EM RISCO",impactos:["<b>8</b> pedidos na praça","<b>3</b> sairiam se Quentes liberar"],conseq:"se continuar, a expedição seca",cmd:"liberar prontos pra bancada"},
-    decisao:{acao:"Priorizar Quentes",porque:"3 pedidos saem se Quentes liberar agora",primeiro:"Pedido #1234 (combinado — segura o pedido inteiro)",impacto:"libera 3 saídas · reduz risco de atraso",confianca:"média",dados:"tempos reais (iFood) · cardápio real (199 itens) · composição sintética"}},
-   {mode:"foco",foco:{sev:2,dir:"top",head:"COMBINADOS SEGURANDO FLUXO",impactos:["<b>6</b> pedidos dependem de combinados","<b>2</b> já completos nas outras praças"],conseq:"combinado trava o pedido inteiro",cmd:"priorizar combinados que liberam saída"},
-    decisao:{acao:"Fechar pedidos simples agora",porque:"3 pedidos dependem de uma única praça (ex.: Quentes) e já esperam",primeiro:"#4421, #4480, #4512",impacto:"desafoga a bancada · 3 pedidos saem da fila",confianca:"média",dados:"tempos reais (iFood) · cardápio real (199 itens) · composição sintética"}},
-   {mode:"foco",foco:{sev:2,dir:"top",head:"ENROLADOS QUENTES EM RISCO",impactos:["Hot Roll / Ebiten concentrando a fila","praça acima do ritmo"],conseq:"trava o fechamento de pedidos",cmd:"priorizar bancada dos enrolados quentes"}},
-   {mode:"foco",foco:{sev:1,dir:"top",head:"FECHAMENTO · #4421",impactos:["só depende de Quentes","sem frios pendentes"],conseq:"pronto pra fechar quando Quentes sair",cmd:"verificar se já dá pra fechar #4421"}},
-   {mode:"foco",foco:{sev:2,dir:"top",head:"CONFERÊNCIA · #5012",impactos:["<b>2</b> sacolas · <b>11</b> itens","obrigatório: bebida + kit"],conseq:"risco de faltar item / 2ª sacola esquecida",cmd:"separar 2ª sacola e conferir item a item"},
-    decisao:{acao:"Conferência reforçada",porque:"Pedido #5012 tem 2 sacolas, bebida, kit e observação",primeiro:"Pedido #5012 — obs: “sem cebolinha”",impacto:"alto risco de esquecimento (item / 2ª sacola / observação)",confianca:"média",dados:"tempos reais (iFood) · cardápio real (199 itens) · composição sintética"}},
-   {mode:"foco",foco:{sev:2,dir:"bottom",head:"SAÍDA TRAVADA",impactos:["<b>14</b> prontos sem sair","motoboy é o gargalo"],conseq:"pedidos vão atrasar na entrega",cmd:"chamar motoboy / conferir saída"},
-    decisao:{acao:"Chamar motoboy agora",porque:"14 pedidos prontos há mais de 30 min",primeiro:"Pedido #8606 (pronto há 53 min)",impacto:"14 prontos virando atraso na entrega",confianca:"alta",dados:"tempos reais (iFood) · cardápio real (199 itens) · composição sintética"}}
+   {mode:"foco",intenso:true,foco:{sev:3,dir:"bottom"},
+    rec:{head:"CHAME MOTOBOY",porque:"7 prontos há mais de 30 min",primeiro:"#7006 · pronto há 55 min",impacto:"todos viram atraso de entrega",confianca:"alta",dependeComposicao:false}},
+   {mode:"foco",foco:{sev:2,dir:"top"},
+    rec:{head:"PRIORIZE DUPLAS",porque:"6 pedidos saem se Duplas liberar",primeiro:"#8565 (combinado)",impacto:"libera 6 saídas · reduz atraso",confianca:"média",dependeComposicao:true}},
+   {mode:"foco",foco:{sev:2,dir:"top"},
+    rec:{head:"FECHE PEDIDOS SIMPLES",porque:"3 pedidos dependem só de Quentes, sem mais pendências",primeiro:"#4421, #4480, #4512",impacto:"3 pedidos saem da fila",confianca:"média",dependeComposicao:true}},
+   {mode:"foco",foco:{sev:2,dir:"top"},
+    rec:{head:"CONFIRA O #5012",porque:"2 sacolas · bebida · kit · observação",primeiro:"obs: “sem cebolinha”",impacto:"evita item esquecido e 2ª sacola perdida",confianca:"média",dependeComposicao:true}},
+   {mode:"foco",foco:{sev:2,dir:"top"},
+    rec:{head:"PAUSE O SALMÃO SKIN",porque:"saiu em 4 pedidos em 15 min — deveria estar pausado",primeiro:"#8123",impacto:"evita 4 erros de conferência",confianca:"baixa",dependeComposicao:true}},
+   {mode:"foco",foco:{sev:2,dir:"top"},
+    rec:{head:"OLHE O #7223",porque:"78 min sem ficar pronto — fora do padrão",primeiro:"#7223",impacto:"destrava o mais atrasado da produção",confianca:"média",dependeComposicao:true}},
+   {mode:"foco",foco:{sev:2,dir:"top"},fonteReal:true,
+    rec:{head:"PRIORIZE DUPLAS",porque:"6 pedidos saem se Duplas liberar",primeiro:"#8565 (combinado)",impacto:"libera 6 saídas · reduz atraso",confianca:"alta",dependeComposicao:true}}
   ];
   let di=0, forced=null;
   S.addEventListener("click",()=>{ di=(di+1)%DEMO.length; forced=DEMO[di]; if(forced) render(t,forced); });

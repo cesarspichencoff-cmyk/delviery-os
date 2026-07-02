@@ -75,6 +75,37 @@ Números do backtest (30 dias): **460 recomendações**, das quais **56 (12%) de
 - **Protótipo**: só quando há foco — o foco vira *situação + recomendação + porquê + impacto + confiança* (bloco `AÇÃO RECOMENDADA` abaixo do comando; nenhum redesenho);
 - **Auto Teste**: seção "Camada de Decisão" com volume por tipo, distribuição de confiança e exemplos reais gerados do mês.
 
+## Apresentação no foco — hierarquia oficial (régua de produto)
+
+> **"O DeliveryOS pode ficar mais inteligente. Mas não pode parecer mais complexo."**
+> A tela mostra **a conclusão da investigação**, nunca a investigação.
+
+1. **AÇÃO** — título, imperativo, ≤ 4 palavras (`PRIORIZE DUPLAS`, `CHAME MOTOBOY`, `CONFIRA O #5012`);
+2. **Por quê** — uma linha (`6 pedidos saem se Duplas liberar`);
+3. **Primeiro olhar** — uma linha (`#8565 (combinado)`);
+4. **Impacto** — uma linha com ↳ (`libera 6 saídas · reduz atraso`);
+5. **Confiança** — sussurro (10.8px, 42% de opacidade), e **só quando o sistema NÃO está 100% seguro**. Com confiança alta + dado real, a linha some — a certeza é silenciosa.
+
+Máximo: **4 linhas + sussurro**. A situação ("Duplas carregando, 10 pedidos…") não aparece — está implícita no porquê. O chip de severidade (CRÍTICO/ATENÇÃO/MONITORAR) e a cor do campo carregam a emoção; o texto resolve.
+
+### Na tela × oculto (debug/backtest)
+
+| Aparece na tela | Fica oculto (rec/backtest) |
+|---|---|
+| ação, por quê, primeiro olhar, impacto | `dados` usados (fontes) |
+| confiança — só quando ≠ alta ou sintético | `score` e ranking completo (`todas`) |
+| chip de severidade + cor do campo | `tipo`, `dependeComposicao` |
+| — | contagem de `suspeitos` (dados silenciados) |
+
+## Confiabilidade — regras anti-zumbi (caso "402 min")
+
+O caso real: bug de guarda invertida no replay ressuscitava pedidos de almoço já entregues (às 18:03 de 12/06 mostrava 70 "prontos sem sair"; o real era 1). Corrigido, e blindado com regras permanentes:
+
+- **Já saiu → não existe** para a expedição (guarda correta);
+- **Sem nenhum dado de saída → dado inválido**, silenciado (nunca vira foco);
+- **Teto de plausibilidade `STALE = 120 min`** (medido no dado real: espera máxima legítima observada = 104 min; p99 = 57 exped / 71 prod). Acima disso: não conta, não vira foco, não é nomeado — vira contador `suspeitos` (debug);
+- **Regra-mãe: nenhum foco pode parecer bug.** Se o sistema não tem certeza, ele não fala forte — baixa confiança nunca aparece como CRÍTICO.
+
 ## Guarda-corpos
 
 Sem tuning · sem baseline · sem módulo novo · sem IA solta · sem previsão inventada · **não aumenta a quantidade de alertas** (a recomendação nasce dentro do foco que já existia; calmo continua mudo).
