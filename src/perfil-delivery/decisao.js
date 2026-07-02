@@ -78,7 +78,7 @@
         const ids = simples.slice(0, 3).map(w => "#" + w.id).join(", ");
         const pr = INFO[simples[0].id].pracaUnica;
         cands.push({
-          tipo: "fechar_simples", dependeComposicao: true, sev: 2,
+          tipo: "fechar_simples", dependeComposicao: true, sev: 2, natureza: "oportunidade",
           score: simples.length * 1.5 + 1,
           head: "FECHE PEDIDOS SIMPLES",
           acao: "Fechar pedidos simples agora",
@@ -100,7 +100,7 @@
           head: "CHAME MOTOBOY",
           acao: "Chamar motoboy agora",
           porque: ew.length + " prontos há mais de " + F.EXPED + " min",
-          primeiro: "#" + ew[0].id + " · pronto há " + Math.round(ew[0].min) + " min",
+          primeiro: "#" + ew[0].id + " · " + Math.round(ew[0].min) + " min",
           impacto: "todos viram atraso de entrega",
           confianca: "alta"
         });

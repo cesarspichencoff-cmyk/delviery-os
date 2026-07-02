@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Revisão Visual — Parados Agora</title>
+<style>
+  body{font-family:'Satoshi',-apple-system,system-ui,sans-serif;background:#E5E8E0;color:#1A211C;
+    max-width:420px;margin:0 auto;padding:28px 20px 60px}
+  h1{font-size:18px;letter-spacing:-.01em} p{color:#6A736C;font-size:13px;line-height:1.5;margin:10px 0 22px}
+  a.state{display:flex;justify-content:space-between;align-items:center;text-decoration:none;color:#1A211C;
+    background:#F4F6F0;border:1px solid #E7EAE3;border-radius:14px;padding:13px 16px;margin-bottom:8px;
+    font-size:14px;font-weight:500}
+  a.state small{color:#AAB2AA;font-size:11px;letter-spacing:.06em}
+  .risco{border-left:3px solid rgba(204,122,31,.8)} .oport{border-left:3px solid rgba(18,134,90,.8)}
+  .neutro{border-left:3px solid #CAD0C8}
+  .nota{font-size:11px;color:#AAB2AA;margin-top:24px;line-height:1.6}
+</style>
+</head>
+<body>
+  <h1>Modo Revisão Visual</h1>
+  <p>Homologação dos 10 estados — <b>não é produto</b> (o app final ignora estes parâmetros).
+     Todos os links abrem congelados (<code>freeze=1</code>); toque na tela cicla os estados.</p>
+
+  <a class="state neutro" href="index.html?review=1&state=vivo">1 · Replay vivo (noite 12/06)<small>motor real</small></a>
+  <a class="state neutro" href="index.html?review=1&freeze=1&state=calmo">2 · Calmo<small>a tela desaparece</small></a>
+  <a class="state neutro" href="index.html?review=1&freeze=1&state=ambiente">3 · Ambiente<small>clima, não alerta</small></a>
+  <a class="state risco"  href="index.html?review=1&freeze=1&state=expedicao">4 · Foco expedição<small>CHAME MOTOBOY · crítico · dado real</small></a>
+  <a class="state risco"  href="index.html?review=1&freeze=1&state=praca">5 · Foco praça<small>PRIORIZE DUPLAS · sintético</small></a>
+  <a class="state oport"  href="index.html?review=1&freeze=1&state=fechamento">6 · Foco fechamento<small>FECHE PEDIDOS SIMPLES · oportunidade</small></a>
+  <a class="state risco"  href="index.html?review=1&freeze=1&state=conferencia">7 · Foco conferência<small>CONFIRA O #5012 · observação</small></a>
+  <a class="state risco"  href="index.html?review=1&freeze=1&state=pausado">8 · Foco item pausado<small>sinal futuro · confiança baixa</small></a>
+  <a class="state risco"  href="index.html?review=1&freeze=1&state=media">9 · Foco confiança média<small>OLHE O #7223</small></a>
+  <a class="state risco"  href="index.html?review=1&freeze=1&state=real">10 · Foco dado real<small>o sussurro desaparece</small></a>
+
+  <p class="nota">Régua de avaliação: entendo em 1 segundo? a 3 metros? a ação domina? texto pesa?
+  o rodapé está discreto? parece instrumento premium — ou dashboard/app corporativo?<br><br>
+  Tons: <b style="color:rgba(204,122,31,1)">âmbar/vermelho = risco</b> (algo dá errado se ninguém agir) ·
+  <b style="color:rgba(18,134,90,1)">verde = oportunidade</b> (o fluxo melhora se alguém agir).</p>
+</body>
+</html>
