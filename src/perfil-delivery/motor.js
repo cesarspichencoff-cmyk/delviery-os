@@ -264,7 +264,8 @@
     const ambList = sits.filter(s=> !sess.active || s.key!==sess.active.key).slice(0,2).map(s=>({ label: rotuloAmb(s), sev:s.sev }));
     let emand=0, cheg=0;
     for (const o of NIGHT) { if (o.r<=t && !(o.e!=null&&o.e<=t) && !(o.c!=null&&o.c<=t)) emand++; if (o.r>t-20 && o.r<=t) cheg++; }
-    return { mode, foco, ambList, emand, intenso: cheg>=12, sev: foco?foco.sev:0, sits };
+    return { mode, foco, ambList, emand, intenso: cheg>=12, sev: foco?foco.sev:0, sits,
+             t, ctx: { wE, wP, load } };   // contexto vivo p/ a Camada de Decisão (decisao.js)
   }
 
   function rotuloAmb(s) {

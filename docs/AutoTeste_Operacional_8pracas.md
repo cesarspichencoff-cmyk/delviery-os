@@ -74,6 +74,61 @@ _(27/05/2026 12:38)_
 - praça: **15** · pedido preso: **15** · saída: **405** · fechamento: **16** · conferência: **9**
 - total **460** (~15.3/dia) · tempo: 🟢 4% calmo · 🌫️ 81% ambiente · 🔶 15% foco
 
+## 3b. CAMADA DE DECISÃO — recomendações geradas (novo)
+A cada foco, a camada de decisão ranqueia a **melhor próxima ação** ("se você olhar uma coisa agora, olhe isso"):
+
+- Recomendações geradas no mês: **460** (uma por onset de foco)
+- Por tipo: chamar_motoboy **397** · priorizar_praca **43** · conferencia **11** · conferir_saida **7** · fechar_simples **2**
+- Confiança: alta **404** · média **56** · baixa **0**
+- Dependem de composição (sintética hoje → confiança limitada a média): **56** (12%)
+- Só de tempo/estado real (confiança alta já hoje): **404** (88%)
+
+Exemplos REAIS gerados no backtest:
+
+**Priorizar praça (release impact):**
+```
+AÇÃO RECOMENDADA — Priorizar Duplas
+por quê: 6 pedidos saem se Duplas liberar agora
+primeiro olhar: Pedido #8565 (combinado — segura o pedido inteiro)
+impacto: libera 6 saídas · reduz risco de atraso
+confiança: média
+dados: tempos reais (iFood) · cardápio real (199 itens) · composição sintética
+```  
+_(27/05/2026 11:56)_
+
+**Chamar motoboy (timing 100% real):**
+```
+AÇÃO RECOMENDADA — Chamar motoboy agora
+por quê: 14 pedidos prontos há mais de 30 min
+primeiro olhar: Pedido #7006 (pronto há 55 min)
+impacto: 14 prontos virando atraso na entrega
+confiança: alta
+dados: tempos reais (iFood) · cardápio real (199 itens) · composição sintética
+```  
+_(27/05/2026 12:38)_
+
+**Fechar pedidos simples:**
+```
+AÇÃO RECOMENDADA — Fechar pedidos simples agora
+por quê: 3 pedidos dependem de uma única praça (ex.: Duplas) e já esperam
+primeiro olhar: #7223, #9403, #9381
+impacto: desafoga a bancada · 3 pedidos saem da fila
+confiança: média
+dados: tempos reais (iFood) · cardápio real (199 itens) · composição sintética
+```  
+_(02/06/2026 11:49)_
+
+**Conferência reforçada:**
+```
+AÇÃO RECOMENDADA — Conferência reforçada
+por quê: Pedido #6885 tem 2 sacolas, bebida, kit
+primeiro olhar: Pedido #6885
+impacto: alto risco de esquecimento (item / 2ª sacola)
+confiança: média
+dados: tempos reais (iFood) · cardápio real (199 itens) · composição sintética
+```  
+_(28/05/2026 11:38)_
+
 ## 4. Precisão dos focos (desfecho real)
 - **200/460 (43%)** dos focos aconteceram com um pedido **ruim de fato vivo** naquele minuto (cancelado/atraso>15/problema). Fora de janela ruim: 260.
 - Focos de pedido preso especificamente: 15. *(fechamento/conferência são ações úteis, não previsões de risco.)*

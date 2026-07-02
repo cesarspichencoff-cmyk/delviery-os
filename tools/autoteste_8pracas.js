@@ -3,7 +3,9 @@
    Usa o MESMO cérebro do protótipo: src/perfil-delivery/motor.js (nenhuma regra duplicada). */
 const XLSX=require("xlsx"), fs=require("fs");
 const MOTOR=require("C:/Users/italo/Desktop/Claude/delviery-os/src/perfil-delivery/motor.js");
+const DECISAO=require("C:/Users/italo/Desktop/Claude/delviery-os/src/perfil-delivery/decisao.js");
 const SEED=require("C:/Users/italo/Desktop/Claude/delviery-os/data/cardapio_knowledge_seed.json").itens;
+const FONTE_REAL=false;   // composição sintética → confiança das decisões de composição fica média/baixa
 const ARQ="C:/Users/italo/Downloads/relatorio-pedidos_38100c39ad1cfa7a9446d4bb2dfaeb0b4821ee0f6e47c46f24290e6bf16c35ac_2026-05-27-2026-06-25.xlsx.zip";
 const OUT="C:/Users/italo/Desktop/Claude/delviery-os/docs/AutoTeste_Operacional_8pracas.md";
 
@@ -46,24 +48,28 @@ const dias=[...new Set(peds.map(p=>p.dia))].sort((a,b)=>{const A=a.split("/"),B=
 /* ===== roda o motor por dia (via MOTOR.step) ===== */
 function runDay(O){
   const sess=MOTOR.novaSessao();
-  const mode=new Array(24*60).fill("calmo"); const focos=[]; const surge={}; let fMin=0,aMin=0,cMin=0,run=0,maxRun=0;
+  const mode=new Array(24*60).fill("calmo"); const focos=[]; const recs=[]; const surge={}; let fMin=0,aMin=0,cMin=0,run=0,maxRun=0;
   let prevKey=null;
   for(let t=11*60;t<=24*60-1;t++){
     const R=MOTOR.step(t,O,INFO,sess);
     mode[t]=R.mode;
     for(const s of R.sits){ if(s.kind==="praca") surge[s.praca]=(surge[s.praca]||0)+1; }
     const curKey=sess.active?sess.active.key:null;
-    if(curKey&&curKey!==prevKey){ const st=sess.active.sit; focos.push({t,kind:st.kind,key:curKey,sev:st.sev,id:st.id,praca:st.praca}); }
+    if(curKey&&curKey!==prevKey){ const st=sess.active.sit; focos.push({t,kind:st.kind,key:curKey,sev:st.sev,id:st.id,praca:st.praca});
+      // CAMADA DE DECISÃO: no onset de cada foco (quando a tela mostraria), qual a ação recomendada?
+      const rec=DECISAO.decidir(R,INFO,{fonteReal:FONTE_REAL});
+      if(rec) recs.push({t,tipo:rec.tipo,acao:rec.acao,confianca:rec.confianca,dependeComposicao:rec.dependeComposicao}); }
     prevKey=curKey;
     if(R.mode==="foco"){fMin++;run++;maxRun=Math.max(maxRun,run);}else{run=0;R.mode==="ambiente"?aMin++:cMin++;}
   }
-  return {mode,focos,surge,fMin,aMin,cMin,maxRun};
+  return {mode,focos,recs,surge,fMin,aMin,cMin,maxRun};
 }
 
 /* ===== agrega 30 dias ===== */
 let totFoco=0,ordFoco=0,useful=0,exager=0;
 const byKind={praca:0,order:0,saida:0,fechamento:0,conferencia:0};
 let badTot=0,silentMiss=0,riscoTot=0;
+const recTipo={}, recConf={alta:0,media:0,baixa:0}; let recTot=0, recComp=0;
 const surgeAll={}, byDay=[], horaFoco=new Array(24).fill(0); let fAll=0,aAll=0,cAll=0,maxRunAll=0;
 for(const dia of dias){
   const O=peds.filter(p=>p.dia===dia); const R=runDay(O);
@@ -74,6 +80,9 @@ for(const dia of dias){
     if(f.kind==="order") ordFoco++;
     const live=O.some(o=>o.bad&&o.r<=f.t&&upOf(o)>=f.t);   // havia pedido ruim de fato vivo neste minuto?
     live?useful++:exager++; }
+  for(const r of R.recs){ recTot++; recTipo[r.tipo]=(recTipo[r.tipo]||0)+1;
+    recConf[r.confianca==="média"?"media":r.confianca]=(recConf[r.confianca==="média"?"media":r.confianca]||0)+1;
+    if(r.dependeComposicao) recComp++; }
   const dayBad=O.filter(o=>o.bad); badTot+=dayBad.length; riscoTot+=O.filter(o=>o.risco).length;
   for(const o of dayBad){ const up=o.s!=null?o.s:(o.e!=null?o.e:(o.c!=null?o.c:o.r+30)); let cov=false;
     for(let t=Math.max(11*60,o.r);t<=Math.min(24*60-1,up);t++){ if(R.mode[t]!=="calmo"){cov=true;break;} } if(!cov)silentMiss++; }
@@ -96,6 +105,19 @@ function exemploDe(kind){
 const hhmm=t=>String(Math.floor(t/60)).padStart(2,"0")+":"+String(t%60).padStart(2,"0");
 function fmtFoco(e){ if(!e)return "_(não ocorreu no mês)_"; const f=e.foco;
   return `\`\`\`\n${f.head}\n${f.impactos.map(x=>"• "+x.replace(/<\/?b>/g,"")).join("\n")}\n${f.conseq}\n→ ${f.cmd}\n\`\`\`  \n_(${e.dia} ${hhmm(e.t)})_`; }
+
+/* exemplo REAL de recomendação da Camada de Decisão (1º de cada tipo no mês) */
+function exemploRecDe(tipo){
+  for(const dia of dias){ const O=peds.filter(p=>p.dia===dia); const sess=MOTOR.novaSessao(); let prevKey=null;
+    for(let t=11*60;t<=24*60-1;t++){ const R=MOTOR.step(t,O,INFO,sess);
+      const curKey=sess.active?sess.active.key:null;
+      if(curKey&&curKey!==prevKey){ const rec=DECISAO.decidir(R,INFO,{fonteReal:FONTE_REAL});
+        if(rec&&rec.tipo===tipo) return {dia,t,rec}; }
+      prevKey=curKey; } }
+  return null;
+}
+function fmtRec(e){ if(!e)return "_(não ocorreu no mês)_"; const r=e.rec;
+  return `\`\`\`\nAÇÃO RECOMENDADA — ${r.acao}\npor quê: ${r.porque}\nprimeiro olhar: ${r.primeiro}\nimpacto: ${r.impacto}\nconfiança: ${r.confianca}\ndados: ${r.dados}\n\`\`\`  \n_(${e.dia} ${hhmm(e.t)})_`; }
 
 /* ===== relatório ===== */
 const L=[];
@@ -127,6 +149,19 @@ L.push("");
 L.push("## 3. Volume de focos por tipo (mês)");
 L.push(`- praça: **${byKind.praca}** · pedido preso: **${byKind.order}** · saída: **${byKind.saida}** · fechamento: **${byKind.fechamento}** · conferência: **${byKind.conferencia}**`);
 L.push(`- total **${totFoco}** (~${(totFoco/dias.length).toFixed(1)}/dia) · tempo: 🟢 ${pct(cAll/totMin)} calmo · 🌫️ ${pct(aAll/totMin)} ambiente · 🔶 ${pct(focoShare)} foco\n`);
+L.push("## 3b. CAMADA DE DECISÃO — recomendações geradas (novo)");
+L.push("A cada foco, a camada de decisão ranqueia a **melhor próxima ação** (\"se você olhar uma coisa agora, olhe isso\"):\n");
+L.push(`- Recomendações geradas no mês: **${recTot}** (uma por onset de foco)`);
+L.push(`- Por tipo: ${Object.entries(recTipo).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${k} **${v}**`).join(" · ")}`);
+L.push(`- Confiança: alta **${recConf.alta}** · média **${recConf.media}** · baixa **${recConf.baixa}**`);
+L.push(`- Dependem de composição (sintética hoje → confiança limitada a média): **${recComp}** (${pct(recTot?recComp/recTot:0)})`);
+L.push(`- Só de tempo/estado real (confiança alta já hoje): **${recTot-recComp}** (${pct(recTot?(recTot-recComp)/recTot:0)})\n`);
+L.push("Exemplos REAIS gerados no backtest:\n");
+L.push("**Priorizar praça (release impact):**"); L.push(fmtRec(exemploRecDe("priorizar_praca")));
+L.push("\n**Chamar motoboy (timing 100% real):**"); L.push(fmtRec(exemploRecDe("chamar_motoboy")));
+L.push("\n**Fechar pedidos simples:**"); L.push(fmtRec(exemploRecDe("fechar_simples")));
+L.push("\n**Conferência reforçada:**"); L.push(fmtRec(exemploRecDe("conferencia")));
+L.push("");
 L.push("## 4. Precisão dos focos (desfecho real)");
 L.push(`- **${useful}/${totFoco} (${pct(precisao)})** dos focos aconteceram com um pedido **ruim de fato vivo** naquele minuto (cancelado/atraso>15/problema). Fora de janela ruim: ${exager}.`);
 L.push(`- Focos de pedido preso especificamente: ${ordFoco}. *(fechamento/conferência são ações úteis, não previsões de risco.)*\n`);
@@ -158,5 +193,7 @@ fs.writeFileSync(OUT,L.join("\n"),"utf8");
 console.log(`AUTO TESTE v2: ${dias.length} dias, ${totalPed} pedidos`);
 console.log(`Nota ${nota.toFixed(1)}/10 · precisão ${pct(precisao)} · cobertura ${pct(coberturaBad)} · foco ${pct(focoShare)}`);
 console.log(`focos ${totFoco} → praça ${byKind.praca} / preso ${byKind.order} / saída ${byKind.saida} / fechamento ${byKind.fechamento} / conferência ${byKind.conferencia}`);
+console.log(`DECISÕES ${recTot} → ${Object.entries(recTipo).sort((a,b)=>b[1]-a[1]).map(([k,v])=>k+" "+v).join(" / ")}`);
+console.log(`confiança: alta ${recConf.alta} · média ${recConf.media} · baixa ${recConf.baixa} · dependem de composição ${recComp}/${recTot}`);
 console.log(`ruins ${badTot} · silenciosos ${silentMiss} · maxRun ${maxRunAll}min`);
 console.log("relatório: "+OUT);

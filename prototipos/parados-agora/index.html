@@ -10651,7 +10651,8 @@ window.NIGHT=[{"id":"8359","r":667,"p":681,"s":679,"e":686,"c":null},{"id":"2860
     const ambList = sits.filter(s=> !sess.active || s.key!==sess.active.key).slice(0,2).map(s=>({ label: rotuloAmb(s), sev:s.sev }));
     let emand=0, cheg=0;
     for (const o of NIGHT) { if (o.r<=t && !(o.e!=null&&o.e<=t) && !(o.c!=null&&o.c<=t)) emand++; if (o.r>t-20 && o.r<=t) cheg++; }
-    return { mode, foco, ambList, emand, intenso: cheg>=12, sev: foco?foco.sev:0, sits };
+    return { mode, foco, ambList, emand, intenso: cheg>=12, sev: foco?foco.sev:0, sits,
+             t, ctx: { wE, wP, load } };   // contexto vivo p/ a Camada de Decisão (decisao.js)
   }
 
   function rotuloAmb(s) {
@@ -10728,6 +10729,159 @@ window.NIGHT=[{"id":"8359","r":667,"p":681,"s":679,"e":686,"c":null},{"id":"2860
 })(typeof window !== "undefined" ? window : null);
 
 </script>
+<script>/* camada de decisão: src/perfil-delivery/decisao.js */
+/* ============================================================================
+ * DeliveryOS · Perfil Delivery · CAMADA DE DECISÃO
+ * ----------------------------------------------------------------------------
+ * "O DeliveryOS não mostra mais problemas. Ele reduz decisões."
+ *
+ * Camada pequena ACIMA dos sinais: recebe a fotografia do minuto (MOTOR.step)
+ * e devolve UMA ação recomendada, ranqueada por impacto físico:
+ *   "se você olhar uma coisa agora, olhe isso."
+ *
+ * Não decide pela equipe. Não prevê. Não inventa. Só ranqueia o que os sinais
+ * já provaram, e explica: por quê · primeiro olhar · impacto · confiança · dados.
+ *
+ * Confiança é proporcional à fonte do dado:
+ *   - ações de TEMPO/ESTADO (motor A, real)            → alta
+ *   - ações de COMPOSIÇÃO (motor B, sintético hoje)    → média (sobe p/ alta com item real)
+ *   - evidência fraca (sev 1 / nada a destravar)       → baixa
+ * ==========================================================================*/
+(function (root, factory) {
+  if (typeof module !== "undefined" && module.exports) module.exports = factory(require("./motor.js"));
+  else root.DECISAO = factory(root.MOTOR);
+})(typeof window !== "undefined" ? window : globalThis, function (M) {
+  "use strict";
+  const D = M.DISPLAY, F = M.FLOORS;
+
+  /* pedido âncora de uma praça: o que mais segura fluxo (espera × nº de bancadas que ocupa).
+     Combinado/menu ganha desempate — é o que trava o pedido inteiro. */
+  function ancoraDaPraca(p, wP, INFO) {
+    let best = null, bs = -1;
+    for (const w of wP) {
+      const I = INFO[w.id]; if (!I || I.benches.indexOf(p) < 0) continue;
+      const sc = w.min * Math.max(1, I.nBenches) + (I.ancora ? 60 : 0);
+      if (sc > bs) { bs = sc; best = { id: w.id, min: w.min, I }; }
+    }
+    return best;
+  }
+
+  function dadosUsados(fonteReal) {
+    return "tempos reais (iFood) · cardápio real (199 itens) · " +
+           (fonteReal ? "itens reais por pedido" : "composição sintética");
+  }
+
+  /* decidir(snap, INFO, opts) → melhor próxima ação ou null (calmo = silêncio).
+     snap = retorno de MOTOR.step (t, sits, ctx{wE,wP,load}).
+     opts = { fonteReal: boolean } — sobe a confiança quando itens reais entram. */
+  function decidir(snap, INFO, opts) {
+    opts = opts || {};
+    const fonteReal = !!opts.fonteReal;
+    const sits = snap.sits || [], ctx = snap.ctx || { wE: [], wP: [], load: {} };
+    if (!sits.length) return null;
+    const cands = [];
+    const confComp = (fraca) => fraca ? "baixa" : (fonteReal ? "alta" : "média");
+
+    // 1) PRIORIZAR PRAÇA — release impact: quantos pedidos saem se a praça liberar
+    for (const s of sits) {
+      if (s.kind !== "praca") continue;
+      const anc = ancoraDaPraca(s.praca, ctx.wP, INFO);
+      const unblock = s.unblock || 0;
+      cands.push({
+        tipo: "priorizar_praca", dependeComposicao: true, sev: s.sev,
+        score: unblock * 2 + s.n * 0.5 + s.sev,
+        acao: "Priorizar " + D[s.praca],
+        porque: unblock > 0
+          ? unblock + " pedido" + (unblock > 1 ? "s" : "") + " sae" + (unblock > 1 ? "m" : "") + " se " + D[s.praca] + " liberar agora"
+          : s.n + " pedidos na praça, tempo acima do normal",
+        primeiro: anc ? ("Pedido #" + anc.id + (anc.I.ancora ? " (combinado — segura o pedido inteiro)" : "")) : ("bancada de " + D[s.praca]),
+        impacto: unblock > 0 ? ("libera " + unblock + " saída" + (unblock > 1 ? "s" : "") + " · reduz risco de atraso")
+                             : ("desafoga " + s.n + " pedidos na bancada"),
+        confianca: confComp(s.sev <= 1 && unblock === 0)
+      });
+    }
+
+    // 2) FECHAR PEDIDOS SIMPLES — dependem de UMA praça só e já esperam
+    {
+      const simples = ctx.wP.filter(w => { const I = INFO[w.id]; return I && I.pracaUnica && w.min > F.PROD * 0.5; })
+                            .sort((a, b) => b.min - a.min);
+      if (simples.length >= 2) {
+        const ids = simples.slice(0, 3).map(w => "#" + w.id).join(", ");
+        const pr = INFO[simples[0].id].pracaUnica;
+        cands.push({
+          tipo: "fechar_simples", dependeComposicao: true, sev: 2,
+          score: simples.length * 1.5 + 1,
+          acao: "Fechar pedidos simples agora",
+          porque: simples.length + " pedidos dependem de uma única praça (ex.: " + D[pr] + ") e já esperam",
+          primeiro: ids,
+          impacto: "desafoga a bancada · " + simples.length + " pedidos saem da fila",
+          confianca: confComp(false)
+        });
+      }
+    }
+
+    // 3) CHAMAR MOTOBOY — prontos parados virando atraso (dado 100% real)
+    {
+      const ew = ctx.wE.filter(x => x.min > F.EXPED).sort((a, b) => b.min - a.min);
+      if (ew.length >= F.SURGE) {
+        cands.push({
+          tipo: "chamar_motoboy", dependeComposicao: false, sev: ew.length >= 6 ? 3 : 2,
+          score: ew.length * 1.8 + 2,
+          acao: "Chamar motoboy agora",
+          porque: ew.length + " pedidos prontos há mais de " + F.EXPED + " min",
+          primeiro: "Pedido #" + ew[0].id + " (pronto há " + Math.round(ew[0].min) + " min)",
+          impacto: ew.length + " prontos virando atraso na entrega",
+          confianca: "alta"
+        });
+      }
+    }
+
+    // 4) CONFERÊNCIA REFORÇADA — 2 sacolas / bebida / kit / observação
+    for (const s of sits) {
+      if (s.kind !== "conferencia") continue;
+      const I = s.I, extras = [];
+      if (I.sacolas >= 2) extras.push(I.sacolas + " sacolas");
+      if (I.contemBebida) extras.push("bebida");
+      if (I.contemKit) extras.push("kit");
+      if (I.temObservacao) extras.push("observação");
+      cands.push({
+        tipo: "conferencia", dependeComposicao: true, sev: s.sev,
+        score: (I.temObservacao ? 3 : 2) + (I.segundaSacola ? 2 : 0),
+        acao: "Conferência reforçada",
+        porque: "Pedido #" + s.id + " tem " + extras.join(", "),
+        primeiro: "Pedido #" + s.id + (I.temObservacao ? (" — obs: “" + String(I.observacoes[0]).slice(0, 40) + "”") : ""),
+        impacto: "alto risco de esquecimento (item / 2ª sacola" + (I.temObservacao ? " / observação" : "") + ")",
+        confianca: confComp(!I.segundaSacola && !I.temObservacao)
+      });
+    }
+
+    // 5) PEDIDO PRESO / SEM SAIR — outlier individual (timing real)
+    for (const s of sits) {
+      if (s.kind !== "order") continue;
+      const exped = s.zona === "Expedição";
+      cands.push({
+        tipo: exped ? "conferir_saida" : "olhar_pedido", dependeComposicao: !exped, sev: s.sev,
+        score: s.peak / 25 + s.sev,
+        acao: exped ? "Conferir saída do #" + s.id : "Olhar pedido #" + s.id,
+        porque: exped ? ("pronto há " + s.peak + " min sem sair") : (s.peak + " min sem ficar pronto — fora do padrão da noite"),
+        primeiro: "Pedido #" + s.id,
+        impacto: exped ? "evita atraso de entrega · cliente pode reclamar" : "destrava o pedido mais atrasado da produção",
+        confianca: exped ? "alta" : confComp(false)
+      });
+    }
+
+    if (!cands.length) return null;
+    cands.sort((a, b) => b.score - a.score || b.sev - a.sev);
+    const top = cands[0];
+    top.dados = dadosUsados(fonteReal);
+    top.todas = cands.map(c => ({ tipo: c.tipo, acao: c.acao, score: Math.round(c.score * 10) / 10, confianca: c.confianca, dependeComposicao: c.dependeComposicao }));
+    return top;
+  }
+
+  return { decidir, ancoraDaPraca };
+});
+
+</script>
 <script>/* casca: prototipos/parados-agora/app.js */
 /* ============================================================================
  * DeliveryOS · protótipo "Parados Agora" — SHELL DE RENDER (não é o cérebro)
@@ -10746,9 +10900,11 @@ window.NIGHT=[{"id":"8359","r":667,"p":681,"s":679,"e":686,"c":null},{"id":"2860
   // (C) conhecimento real → nomes; (B) fonte sintética (SEAM único p/ trocar por itens reais)
   M.setNomes(Object.fromEntries(SEED.map(i => [i.id, i.nome])));
   const FONTE_ITENS = M.makeFonteSintetica(SEED);   // ← trocar por makeFonteItensFromCsv/Json (KDS/impressora/API iFood)
+  const FONTE_REAL = !!FONTE_ITENS.stats;           // fontes reais expõem .stats; a sintética não
   const INFO = {}; for (const o of NIGHT) INFO[o.id] = M.resolver(FONTE_ITENS(o.id));   // fonte já devolve itens adaptados
   let SESS = M.novaSessao();
   function step(t) { return M.step(t, NIGHT, INFO, SESS); }
+  const DEC = window.DECISAO;                       // camada de decisão (decisao.js)
 
   // mapa severidade → cor/rótulo (só interface)
   const SEV = { 3:{c:"192,57,43",r:"CRÍTICO"}, 2:{c:"204,122,31",r:"ATENÇÃO"}, 1:{c:"181,154,42",r:"MONITORAR"} };
@@ -10757,6 +10913,20 @@ window.NIGHT=[{"id":"8359","r":667,"p":681,"s":679,"e":686,"c":null},{"id":"2860
         fimpacts=document.getElementById("fimpacts"), fconseq=document.getElementById("fconseq"), fcmd=document.getElementById("fcmd");
   const ambLines=document.getElementById("ambLines"), vital=document.getElementById("vital");
   const hhmm=t=>String(Math.floor(t/60)%24).padStart(2,"0")+":"+String(t%60).padStart(2,"0");
+
+  // bloco da AÇÃO RECOMENDADA (criado dinamicamente — nenhum redesenho da tela)
+  const fdec=document.createElement("div");
+  fdec.id="fdecide";
+  fdec.style.cssText="margin-top:10px;padding-top:8px;border-top:1px solid rgba(0,0,0,.08);font-size:.82em;line-height:1.45;opacity:.92";
+  if (fcmd && fcmd.parentNode) fcmd.parentNode.insertBefore(fdec, fcmd.nextSibling);
+  function renderDecisao(rec){
+    if(!rec){ fdec.innerHTML=""; return; }
+    fdec.innerHTML =
+      '<div style="font-weight:700;letter-spacing:.04em">AÇÃO RECOMENDADA — '+rec.acao+'</div>'+
+      '<div>porquê: '+rec.porque+'</div>'+
+      '<div>primeiro olhar: '+rec.primeiro+' · impacto: '+rec.impacto+'</div>'+
+      '<div style="opacity:.7">confiança: '+rec.confianca+' · '+rec.dados+'</div>';
+  }
 
   function render(t,m){
     clk.textContent=hhmm(t);
@@ -10770,12 +10940,15 @@ window.NIGHT=[{"id":"8359","r":667,"p":681,"s":679,"e":686,"c":null},{"id":"2860
       fimpacts.innerHTML=(f.impactos||[]).filter(Boolean).map(x=>"<li>"+x+"</li>").join("");
       fconseq.textContent=f.conseq?("↳ "+f.conseq):"";
       fcmd.textContent=f.cmd;
+      // foco = situação + recomendação: a Camada de Decisão ranqueia a melhor próxima ação
+      renderDecisao(m.sits ? DEC.decidir(m, INFO, {fonteReal:FONTE_REAL}) : (m.decisao||null));
     } else if(m.mode==="ambiente"){
+      renderDecisao(null);
       const topSev=Math.max(1,...(m.ambList||[]).map(a=>a.sev||1));
       S.style.setProperty("--sevc",(SEV[topSev]||SEV[1]).c);
       S.style.setProperty("--warm",(0.28+0.22*(topSev-1)).toFixed(2));
       ambLines.innerHTML=(m.ambList||[]).map(a=>'<div class="wl"><span class="wd" style="background:rgba('+(SEV[a.sev]||SEV[1]).c+',.9)"></span>'+a.label+'</div>').join("");
-    } else { S.style.setProperty("--warm","0"); vital.textContent=(m.emand||0)+" em andamento"; }
+    } else { S.style.setProperty("--warm","0"); vital.textContent=(m.emand||0)+" em andamento"; renderDecisao(null); }
   }
 
   /* ===== replay da noite real ===== */
@@ -10785,12 +10958,16 @@ window.NIGHT=[{"id":"8359","r":667,"p":681,"s":679,"e":686,"c":null},{"id":"2860
   const DEMO=[ null,
    {mode:"calmo",emand:16,intenso:false},
    {mode:"ambiente",intenso:true,ambList:[{label:"Quentes carregando",sev:2},{label:"saída lenta",sev:1}]},
-   {mode:"foco",intenso:true,foco:{sev:3,dir:"top",head:"QUENTES EM RISCO",impactos:["<b>8</b> pedidos na praça","<b>3</b> sairiam se Quentes liberar"],conseq:"se continuar, a expedição seca",cmd:"liberar prontos pra bancada"}},
-   {mode:"foco",foco:{sev:2,dir:"top",head:"COMBINADOS SEGURANDO FLUXO",impactos:["<b>6</b> pedidos dependem de combinados","<b>2</b> já completos nas outras praças"],conseq:"combinado trava o pedido inteiro",cmd:"priorizar combinados que liberam saída"}},
+   {mode:"foco",intenso:true,foco:{sev:3,dir:"top",head:"QUENTES EM RISCO",impactos:["<b>8</b> pedidos na praça","<b>3</b> sairiam se Quentes liberar"],conseq:"se continuar, a expedição seca",cmd:"liberar prontos pra bancada"},
+    decisao:{acao:"Priorizar Quentes",porque:"3 pedidos saem se Quentes liberar agora",primeiro:"Pedido #1234 (combinado — segura o pedido inteiro)",impacto:"libera 3 saídas · reduz risco de atraso",confianca:"média",dados:"tempos reais (iFood) · cardápio real (199 itens) · composição sintética"}},
+   {mode:"foco",foco:{sev:2,dir:"top",head:"COMBINADOS SEGURANDO FLUXO",impactos:["<b>6</b> pedidos dependem de combinados","<b>2</b> já completos nas outras praças"],conseq:"combinado trava o pedido inteiro",cmd:"priorizar combinados que liberam saída"},
+    decisao:{acao:"Fechar pedidos simples agora",porque:"3 pedidos dependem de uma única praça (ex.: Quentes) e já esperam",primeiro:"#4421, #4480, #4512",impacto:"desafoga a bancada · 3 pedidos saem da fila",confianca:"média",dados:"tempos reais (iFood) · cardápio real (199 itens) · composição sintética"}},
    {mode:"foco",foco:{sev:2,dir:"top",head:"ENROLADOS QUENTES EM RISCO",impactos:["Hot Roll / Ebiten concentrando a fila","praça acima do ritmo"],conseq:"trava o fechamento de pedidos",cmd:"priorizar bancada dos enrolados quentes"}},
    {mode:"foco",foco:{sev:1,dir:"top",head:"FECHAMENTO · #4421",impactos:["só depende de Quentes","sem frios pendentes"],conseq:"pronto pra fechar quando Quentes sair",cmd:"verificar se já dá pra fechar #4421"}},
-   {mode:"foco",foco:{sev:2,dir:"top",head:"CONFERÊNCIA · #5012",impactos:["<b>2</b> sacolas · <b>11</b> itens","obrigatório: bebida + kit"],conseq:"risco de faltar item / 2ª sacola esquecida",cmd:"separar 2ª sacola e conferir item a item"}},
-   {mode:"foco",foco:{sev:2,dir:"bottom",head:"SAÍDA TRAVADA",impactos:["<b>14</b> prontos sem sair","motoboy é o gargalo"],conseq:"pedidos vão atrasar na entrega",cmd:"chamar motoboy / conferir saída"}}
+   {mode:"foco",foco:{sev:2,dir:"top",head:"CONFERÊNCIA · #5012",impactos:["<b>2</b> sacolas · <b>11</b> itens","obrigatório: bebida + kit"],conseq:"risco de faltar item / 2ª sacola esquecida",cmd:"separar 2ª sacola e conferir item a item"},
+    decisao:{acao:"Conferência reforçada",porque:"Pedido #5012 tem 2 sacolas, bebida, kit e observação",primeiro:"Pedido #5012 — obs: “sem cebolinha”",impacto:"alto risco de esquecimento (item / 2ª sacola / observação)",confianca:"média",dados:"tempos reais (iFood) · cardápio real (199 itens) · composição sintética"}},
+   {mode:"foco",foco:{sev:2,dir:"bottom",head:"SAÍDA TRAVADA",impactos:["<b>14</b> prontos sem sair","motoboy é o gargalo"],conseq:"pedidos vão atrasar na entrega",cmd:"chamar motoboy / conferir saída"},
+    decisao:{acao:"Chamar motoboy agora",porque:"14 pedidos prontos há mais de 30 min",primeiro:"Pedido #8606 (pronto há 53 min)",impacto:"14 prontos virando atraso na entrega",confianca:"alta",dados:"tempos reais (iFood) · cardápio real (199 itens) · composição sintética"}}
   ];
   let di=0, forced=null;
   S.addEventListener("click",()=>{ di=(di+1)%DEMO.length; forced=DEMO[di]; if(forced) render(t,forced); });

@@ -7,13 +7,15 @@ const REPO = "C:/Users/italo/Desktop/Claude/delviery-os";
 const IDX  = REPO + "/prototipos/parados-agora/index.html";
 const seed  = fs.readFileSync(REPO + "/data/cardapio_knowledge_seed.json", "utf8");
 const motor = fs.readFileSync(REPO + "/src/perfil-delivery/motor.js", "utf8");
+const dec   = fs.readFileSync(REPO + "/src/perfil-delivery/decisao.js", "utf8");
 const app   = fs.readFileSync(REPO + "/prototipos/parados-agora/app.js", "utf8");
-for (const [n,s] of [["motor",motor],["app",app]]) if (s.indexOf("</script>")>=0) throw new Error(n+" contém </script> — abortando injeção");
+for (const [n,s] of [["motor",motor],["decisao",dec],["app",app]]) if (s.indexOf("</script>")>=0) throw new Error(n+" contém </script> — abortando injeção");
 
 const block =
   "<!--APP:START (gerado por tools/build_prototipo.js — NÃO editar aqui; editar as fontes)-->\n" +
   "<script>window.CARDAPIO_SEED=" + seed + ";</script>\n" +
   "<script>/* cérebro: src/perfil-delivery/motor.js */\n" + motor + "\n</script>\n" +
+  "<script>/* camada de decisão: src/perfil-delivery/decisao.js */\n" + dec + "\n</script>\n" +
   "<script>/* casca: prototipos/parados-agora/app.js */\n" + app + "\n</script>\n" +
   "<!--APP:END-->";
 
