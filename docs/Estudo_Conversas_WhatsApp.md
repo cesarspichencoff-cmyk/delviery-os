@@ -8,8 +8,22 @@
 
 - **13 conversas** exportadas (formato iOS `[data, hora] Nome: msg`), extraídas dos zips em `Projeto tata/Bloco 2`.
 - **171.448 mensagens**, 26/04/2020 → 25/06/2026 (volume real concentrado 2022→2026).
+  > **PENDENTE — reconciliar contagem de mensagens WhatsApp.** A Auditoria Nível 2
+  > (`docs/Auditoria_Nivel2_Validacao_Base.md` §3.2) recontou as 13 conversas por regex sobre
+  > `_chat.txt` e encontrou **155.333 mensagens** — uma diferença de **~16.100 (9,4%)** frente aos
+  > 171.448 aqui citados. Os **períodos** por conversa batem exatos (conferido em Cinthia Tata:
+  > 23/07/2022→24/06/2026, idêntico). A causa da diferença de contagem **não foi identificada** — não
+  > presuma metodologia nem corrija este número sem reabrir a contagem original. Registrado como
+  > divergência aberta, não como erro confirmado.
 - Passe **quantitativo** (volume, período, remetentes, temas por regex) + passe **qualitativo** (leitura integral dos extratos temáticos: custódia do estado, ideias/decisões, maestro/pausa, erros/kit).
-- **Ressalva de canal (honesta):** o WhatsApp super-representa staffing/gestão (texto) e sub-representa a operação do chão (voz/rádio). E **os erros eram postados como IMAGENS** ("imagem ocultada") — o detalhe item-a-item está nos PDFs/imagens do `Bloco 3`, que precisam de **OCR** (ainda não feito).
+- **Ressalva de canal (honesta):** o WhatsApp super-representa staffing/gestão (texto) e sub-representa a operação do chão (voz/rádio). E **os erros eram postados como IMAGENS** ("imagem ocultada") — essas imagens específicas do chat **não foram recuperadas** (o export do WhatsApp as substitui por um placeholder e elas não estão em `Bloco 3`).
+  > **Correção (Auditoria Nível 2, §3.1):** o `Bloco 3` **não é** o detalhe item-a-item desses erros de
+  > chat, e **não precisa de OCR** — são 8 PDFs mensais (jan/2023 e fev/mai/jun/ago/"set"(=out)/nov/dez
+  > de 2024) com **camada de texto nativa extraível** (`pdftotext` já funciona), contendo **agregados
+  > mensais** (total de pedidos, cancelamentos por motivo, pedidos por dia-da-semana×turno, avaliações
+  > por estrela, moderações) — parecido com `Qualidade Operacao *.xlsx`, mas para 2023-2024. As 4
+  > imagens do Bloco 3 são fotos de referência do **kit físico** (shoyu/wasabi/hashi/sacola), não
+  > relatórios de erro. Ver `docs/Auditoria_Nivel2_Validacao_Base.md` §3.1 para o detalhe completo.
 
 ## 2. Mapa quantitativo
 
@@ -88,14 +102,18 @@ César é uma máquina de ideias ("tô louco das ideias", "minhas ideias doidas"
 
 ## 5. O que ainda está cego (precisa de trabalho)
 
-- **OCR dos relatórios de erro** (`Bloco 3`, PDFs/imagens mensais) → estende o "fechamento ressuscitado" para 2022–2024 com detalhe item-a-item.
+- **Extrair os agregados mensais do `Bloco 3`** (8 PDFs, jan/2023 e 7 meses de 2024 — texto nativo,
+  não precisa de OCR, ver correção no §1) → estende a série de qualidade/cancelamento para trás no
+  tempo. Não é detalhe item-a-item (isso não existe em nenhum arquivo do Bloco 3, corrigido no §1).
 - A **cognição do chão em tempo real** (voz/rádio) não está em nenhum texto — só observação de campo a captura.
+- As imagens de erro citadas em chat ("imagem ocultada") continuam irrecuperáveis — não estão no Bloco 3.
 
 ## 6. Próximos passos sugeridos
 
 1. **Mineração estendida** dos chats num timeline estruturado de erro + custódia por mês (alimenta o Mapa da Inteligência).
-2. **OCR** dos relatórios mensais do Bloco 3 (a base histórica de erro real).
+2. **Extrair com `pdftotext`** os 8 relatórios mensais do Bloco 3 (texto nativo — sem OCR; ver §1) e estruturar os agregados de cancelamento/avaliação de 2023-2024.
 3. No motor: a projeção `disponibilidade` + painel de parados já cobrem F3/F4 — conectar com dado real é o caminho de maior valor.
+4. **Reconciliar a contagem de mensagens** (§1) — refazer a contagem original com o mesmo método usado para chegar a 171.448 e comparar com a recontagem de 155.333 da Auditoria Nível 2.
 
 ---
 *Procedência: tudo marcado [G] foi lido diretamente nas conversas; volumes e datas conferidos por script. Citações abreviadas para legibilidade, sem alterar sentido.*
