@@ -29,7 +29,7 @@ ou histórico de edição — a origem é inferida do conteúdo, com confiança 
 
 | | `relatorio_pedidos_01-07.html` | `dashboard.html` | `dashboard_itens_detalhado.html` | `avaliacoes_tata_sushi_53069.xlsx` |
 |---|---|---|---|---|
-| **Período** | 01/07/2026 (1 dia) | 03/04/2026 – 30/06/2026 (Abr-Jun, 91 dias) | 03/04/2026 – 02/07/2026 (90 dias) | 03/04/2026 – 02/07/2026 (90 dias) |
+| **Período** | ⚠️ CORRIGIDO (2ª remessa): janela de ~24h **30/06 ~21:00 → 01/07 ~20:59**, não o dia-calendário 01/07 — ver correção na seção 1 | 03/04/2026 – 30/06/2026 (Abr-Jun, 91 dias) | 03/04/2026 – 02/07/2026 (90 dias) | 03/04/2026 – 02/07/2026 (90 dias) |
 | **Primário ou agregado?** | **Primário** — item por pedido | Agregado (item×mês/turno/dia-semana) | Agregado (item, Curva ABC) | Misto — `Diário`/`Resumo`/`Distância` agregados; `Comentários` semi-primário (ver abaixo) |
 | **Dado sensível?** | Não (ID interno iFood, sem nome/telefone/endereço de cliente) | Não | Não | Não (sem nome/telefone/endereço; `Comentários` tem texto livre do cliente, mas sem identificação) |
 | **Entra no Git?** | **Não** — bruto, `data/raw/incoming/` | **Não** — bruto | **Não** — bruto | **Não** — bruto |
@@ -69,6 +69,15 @@ de forma permanente**: é só 1 dia (250 pedidos), não uma integração contín
 há carimbo de "pronto"/"saiu"/"entregue" neste arquivo — logo ele **não substitui** o relatório
 tradicional para o eixo de tempo/estado (Motor A continua vindo de lá). Ele só resolve o eixo de
 composição (Motor B).
+
+**⚠️ CORREÇÃO (descoberta na 2ª remessa, 03/07):** o arquivo **não cobre o dia-calendário 01/07** — é
+uma **janela de ~24h: 30/06 ~21:00 → 01/07 ~20:59** (provavelmente "últimas 24h" no momento da
+geração). Prova, medida por join com o relatório de logística da mesma semana (ID completo, minuto a
+minuto): os 34 pedidos de 21h+ do HTML aparecem na logística com data **30/06** e horário idêntico; os
+42 pedidos de 21h+ do dia real 01/07 **não estão** no HTML. Dos 46 pedidos do HTML sem par na
+logística de 01/07: 34 são de 30/06 21h+ (têm timing, datado 30/06), 11 são `DECLINED` (recusados não
+entram no relatório logístico — natural) e 1 `CONCLUDED` 11:45 sem registro logístico (possível
+retirada). Qualquer uso deste arquivo deve tratar a data por linha como **janela**, não como "01/07".
 
 ### 2. `dashboard.html` — agregado, não confundir com o anterior
 
@@ -145,12 +154,42 @@ NPS e comentário de qualidade com granularidade diária que o projeto recebe. O
 é um sinal de produto relevante que nenhum documento anterior tinha capturado (os relatórios de
 cancelamento/erro mostravam sintoma; este mostra a métrica-resumo que a própria plataforma usa).
 
+## 2ª remessa do lote (recebida 03/07/2026) — mais 6 arquivos
+
+Mesmo local (`data/raw/incoming/ifood_2026-07-01/`), renomeados para nomes limpos (hash original do
+iFood removido do nome; conteúdo intocado). Todos confirmados fora do Git via `git check-ignore`.
+
+| Arquivo | Tipo | Período (medido) | Linhas de dado | Hash MD5 |
+|---|---|---|---:|---|
+| `relatorio_logistica_2026-06-26_2026-07-02.xlsx` | **primário, pedido-a-pedido** (29 col, mesmo formato da `Logistica.xlsx` histórica) | 26/06 → 01/07 (nome diz até 02/07, mas não há linhas de 02/07) | 1.763 | `4ad23169235488b43f8abdab8c00a534` |
+| `relatorio_cancelamento.xlsx` | primário (cancelamento-a-cancelamento, **itens nomeados**, só ID curto) | 26/06 → 01/07 | 61 | `a6bec1842df53ca0e5780305e7b9cf63` |
+| `relatorio_negociacoes.xlsx` | primário (negociação-a-negociação, só ID curto; **2 colunas novas**: `Houve arbitragem`, `Resultado da arbitragem`) | 26/06 → 01/07 | 59 | `33ce4d32673f07f02c50f48d6845f3ac` |
+| `relatorio_cardapio.xlsx` | agregado (Funil/Itens/Complementos — mesmo formato do `Cardapio.xlsx` histórico) | 26/06 → 02/07 | 1+148+19 | `e496c474c81caee7474c5a6716654632` |
+| `relatorio_vendas.xlsx` | agregado (4 abas — mesmo formato do `Relatorio Vendas.xlsx` histórico) | 26/06 → 02/07 | pequenas | `363516653948a36b1916c72625c4287e` |
+| `relatorio_qualidade_operacao.zip` | agregado pivotado (1 xlsx interno, série diária Dia vs Dia) | 26/06 → 02/07 (01/07 presente: 247 pedidos) | ~89 | `cd9455d791e9c8b56c8765e836676023` |
+
+- **PII:** nenhum dos 6 tem nome/telefone/endereço/CPF de cliente (mesmas famílias de export já
+  auditadas em `docs/Auditoria_Dados_Estruturados.md`).
+- **Entra no Git:** nenhum — todos brutos, `data/raw/incoming/` (gitignorado).
+- **Camadas servidas:** logística → **Motor A/timing por pedido** (a peça que faltava para 01/07);
+  cancelamento+negociações → camada de desfecho; cardápio+vendas+qualidade → contexto/validação
+  cruzada e popularidade (agregados — nunca composição por pedido).
+- **Achado-chave (join, medido):** logística tem **246 pedidos no dia 01/07, todos com timing completo**
+  (botão-pronto, entrega realizada, espera na loja, alocação — 246/246 em cada campo). Join por
+  **ID completo** com o HTML: 204/250. Join dos cancelamentos de 01/07 por ID curto→logística: **7/7**;
+  negociações: **9/9**. Parser exploratório: `tools/parse_lote_ifood_2026-07-01.js` → 4 `.jsonl` em
+  `data/generated/` (gitignorados), com hash de origem e proveniência por linha.
+- **Análise de completude e resposta à pergunta da fase:** ver
+  `docs/Relatorio_Completude_Simulacao_2026-07-01.md`.
+
 ## O que este lote NÃO resolve (honestidade)
 
-- **Não é uma integração contínua** — é uma amostra de 1 dia (`relatorio_pedidos_01-07.html`) mais três
-  agregados de período maior. Não dá para rodar o Auto Teste de 30 dias com item real a partir disto.
-- **Não traz carimbos de ciclo de vida** (pronto/saiu/entregue) — o eixo de tempo/estado continua
-  vindo só do relatório tradicional de pedidos (Motor A intocado).
+- **Não é uma integração contínua** — é uma janela de ~24h com composição (`relatorio_pedidos_01-07.html`)
+  + uma semana de timing logístico. Não dá para rodar o Auto Teste de 30 dias com item real a partir disto.
+- ~~Não traz carimbos de ciclo de vida~~ **CORRIGIDO pela 2ª remessa:** o relatório de logística traz as
+  durações oficiais por pedido (mesmo formato que o Motor A já consome) para 26/06→01/07 — o eixo de
+  tempo/estado desta janela está coberto. O que continua sem existir em nenhum arquivo: observação do
+  cliente, pronto-por-praça (só KDS dará) e horário de aceite próprio (aproximado ao recebido, como sempre).
 - **Não resolve a integração definitiva** (`docs/Fonte_Real_Itens_Plano.md` continua de pé — API iFood
   como próximo passo recomendado; este lote é mais um "modo ponte", não a integração).
 
