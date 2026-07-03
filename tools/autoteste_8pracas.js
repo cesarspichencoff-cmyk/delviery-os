@@ -1,23 +1,30 @@
 /* AUTO TESTE v2 — motor de 8 praças rodando sobre o cardápio REAL (seed) e timing REAL.
    3 motores separados: (A) tempo/estado REAL · (B) praça SINTÉTICA · (C) conhecimento REAL.
-   Usa o MESMO cérebro do protótipo: src/perfil-delivery/motor.js (nenhuma regra duplicada). */
-const XLSX=require("xlsx"), fs=require("fs");
-const MOTOR=require("C:/Users/italo/Desktop/Claude/delviery-os/src/perfil-delivery/motor.js");
-const DECISAO=require("C:/Users/italo/Desktop/Claude/delviery-os/src/perfil-delivery/decisao.js");
-const SEED=require("C:/Users/italo/Desktop/Claude/delviery-os/data/cardapio_knowledge_seed.json").itens;
-const FONTE_REAL=false;   // composição sintética → confiança das decisões de composição fica média/baixa
-const ARQ="C:/Users/italo/Downloads/relatorio-pedidos_38100c39ad1cfa7a9446d4bb2dfaeb0b4821ee0f6e47c46f24290e6bf16c35ac_2026-05-27-2026-06-25.xlsx.zip";
-const OUT="C:/Users/italo/Desktop/Claude/delviery-os/docs/AutoTeste_Operacional_8pracas.md";
+   Usa o MESMO cérebro do protótipo: src/perfil-delivery/motor.js (nenhuma regra duplicada).
 
+   Fonte do relatório iFood (nenhuma depende de máquina específica), em ordem de prioridade:
+     1) variável de ambiente DELIVERYOS_RELATORIO_IFOOD (ver .env.example)
+     2) padrão do projeto: data/raw/relatorio_pedidos_ifood.xlsx
+   Ver docs/Politica_Dados.md. */
+const XLSX=require("xlsx"), fs=require("fs"), path=require("path");
+const REPO=path.join(__dirname,"..");
+const MOTOR=require(path.join(REPO,"src/perfil-delivery/motor.js"));
+const DECISAO=require(path.join(REPO,"src/perfil-delivery/decisao.js"));
+const SEED=require(path.join(REPO,"data/cardapio_knowledge_seed.json")).itens;
+const FONTE_REAL=false;   // composição sintética → confiança das decisões de composição fica média/baixa
+const ARQ=process.env.DELIVERYOS_RELATORIO_IFOOD || path.join(REPO,"data/raw/relatorio_pedidos_ifood.xlsx");
+const OUT=path.join(REPO,"docs/AutoTeste_Operacional_8pracas.md");
+
+if(!fs.existsSync(ARQ)){
+  console.log(`\nERRO: relatório não encontrado em "${ARQ}".`);
+  console.log("Coloque o export do iFood em data/raw/relatorio_pedidos_ifood.xlsx, ou defina DELIVERYOS_RELATORIO_IFOOD no seu .env (veja .env.example / docs/Politica_Dados.md).");
+  process.exit(1);
+}
 const wb=XLSX.readFile(ARQ,{cellDates:false}); const ws=wb.Sheets["Página 1"]||wb.Sheets[wb.SheetNames[0]];
 const rows=XLSX.utils.sheet_to_json(ws,{defval:null});
-const C={idc:"ID CURTO DO PEDIDO",dh:"DATA E HORA DO PEDIDO",st:"STATUS FINAL DO PEDIDO",
- tpr:"TEMPO DE ACIONAMENTO DO BOTÃO PRONTO (MIN)",tent:"TEMPO DA ENTREGA REALIZADA (MIN)",
- tcam:"TEMPO DO ENTREGADOR À CAMINHO DO CLIENTE (MIN)",tesp:"TEMPO DO ENTREGADOR ESPERANDO NO CLIENTE (MIN)",
- dcanc:"DATA DO CANCELAMENTO",atr:"TEMPO DE ATRASO EM RELAÇÃO AO TEMPO PROMETIDO DE ENTREGA (MIN)",
- prob:"CLIENTE INFORMOU PROBLEMA EM PEDIDO APÓS A ENTREGA"};
-const num=v=>{if(v==null||v==="")return null;const n=typeof v==="number"?v:Number(String(v).replace(",","."));return isFinite(n)?n:null;};
-const pdh=v=>{if(v==null)return null;const m=String(v).trim().match(/^(\d{2})\/(\d{2})\/(\d{4})[ T](\d{2}):(\d{2})/);return m?{dia:`${m[1]}/${m[2]}/${m[3]}`,mod:(+m[4])*60+(+m[5])}:null;};
+// parser da linha (nomes de coluna, data/hora, reconstrução de "saiu") vive em um só lugar —
+// ver src/ingest/parserRelatorioIfood.js (antes duplicado aqui; ver Auditoria_Nivel2 §3.3).
+const PARSER=require(path.join(REPO,"src/ingest/parserRelatorioIfood.js"));
 
 /* ===== (C) conhecimento real + (B) fonte sintética + adapter + resolver — tudo via MOTOR ===== */
 MOTOR.setNomes(Object.fromEntries(SEED.map(i=>[i.id,i.nome])));
@@ -26,15 +33,9 @@ const F=MOTOR.FLOORS;
 
 /* ===== (A) parse pedidos — timing REAL ===== */
 const peds=[];
-for(const r of rows){ const rec=pdh(r[C.dh]); if(!rec)continue;
-  const id=String(r[C.idc]||"").trim(); if(!id)continue;
-  const canc=/cancel/i.test(String(r[C.st]||"")); const tpr=num(r[C.tpr]),tent=num(r[C.tent]),tcam=num(r[C.tcam]),tesp=num(r[C.tesp])||0;
-  const o={id,dia:rec.dia,r:rec.mod,
-    p:!canc&&tpr!=null?Math.round(rec.mod+tpr):null,
-    s:!canc&&tent!=null&&tcam!=null?Math.round(rec.mod+(tent-tcam-tesp)):null,
-    e:!canc&&tent!=null?Math.round(rec.mod+tent):null,
-    c:canc?((pdh(r[C.dcanc])||{}).mod??rec.mod):null,
-    atraso:num(r[C.atr])||0, problema:/sim/i.test(String(r[C.prob]||"")), cancel:canc};
+for(const r of rows){
+  const o=PARSER.linhaParaRegistro(r);
+  if(!o)continue;
   o.prodWait=o.p!=null?o.p-o.r:(o.c!=null?o.c-o.r:0);
   const up=o.s!=null?o.s:o.e; o.expedWait=(o.p!=null&&up!=null)?up-o.p:0;
   o.bad=o.cancel||o.atraso>15||o.problema;

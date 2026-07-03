@@ -1,5 +1,15 @@
 /node_modules
 /dist
 /data/*.jsonl
+/data/raw/*
+!/data/raw/.gitkeep
+!/data/raw/incoming/
+/data/raw/incoming/*
+!/data/raw/incoming/.gitkeep
+/data/canonico/*
+!/data/canonico/.gitkeep
+/data/generated/*
+!/data/generated/.gitkeep
 *.tsbuildinfo
 .DS_Store
+.env

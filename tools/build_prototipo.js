@@ -3,7 +3,8 @@
  * O index.html vira uma casca: <head/style/body> + night-data + [SEED + MOTOR + APP] injetados.
  * Idempotente (marcadores APP:START/END). Rode sempre que motor.js/app.js/seed mudarem. */
 const fs = require("fs");
-const REPO = "C:/Users/italo/Desktop/Claude/delviery-os";
+const path = require("path");
+const REPO = path.join(__dirname, "..");
 const IDX  = REPO + "/prototipos/parados-agora/index.html";
 const seed  = fs.readFileSync(REPO + "/data/cardapio_knowledge_seed.json", "utf8");
 const motor = fs.readFileSync(REPO + "/src/perfil-delivery/motor.js", "utf8");

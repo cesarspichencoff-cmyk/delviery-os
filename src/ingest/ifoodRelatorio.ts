@@ -5,6 +5,12 @@
  * O relatório NÃO traz carimbos absolutos por etapa — traz DURAÇÕES (min) a partir
  * de "DATA E HORA DO PEDIDO". Reconstruímos os instantes a partir dela.
  * Regra (fiel à tese): nunca falsear etapa sem dado — duração ausente => sem carimbo.
+ *
+ * Nota de arquitetura: existe uma segunda implementação, em JS puro, com propósito
+ * diferente — `src/ingest/parserRelatorioIfood.js` converte a mesma linha em
+ * minuto-do-dia para o backtest do motor de 8 praças (`tools/autoteste_8pracas.js`),
+ * em vez de Transições ISO/replay-safe como aqui. Ver `docs/Auditoria_Nivel2_Validacao_Base.md`
+ * §3.3 para o raciocínio completo e por que a unificação foi adiada de propósito.
  */
 import type { PedidoIfoodCru } from "../core/adaptadores";
 import { eventId, type Transicao } from "../core/dominio";

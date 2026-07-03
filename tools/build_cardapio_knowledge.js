@@ -4,7 +4,8 @@
    NÃO faz tuning, NÃO ajusta baseline, NÃO mexe no motor. Só organiza o cardápio.
    Saídas: data/cardapio_knowledge_seed.json  +  docs/Auditoria_Cardapio_Conhecimento.md */
 const fs = require("fs");
-const REPO = "C:/Users/italo/Desktop/Claude/delviery-os";
+const path = require("path");
+const REPO = path.join(__dirname, "..");
 const SRC  = REPO + "/data/cardapio_fonte.txt";
 
 // ---------- util ----------

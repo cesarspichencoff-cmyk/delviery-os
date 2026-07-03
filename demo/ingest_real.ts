@@ -4,10 +4,14 @@
  * Lê o export real, reconstrói a HISTÓRIA (transições append-only) e roda as
  * projeções sobre dados verdadeiros da TATÁ. Zero entrada manual.
  *
- * Uso: npm run ingest -- "<caminho do .xlsx>"   (sem arg: usa o do Downloads)
+ * Fonte do relatório (nenhuma depende de máquina específica), em ordem de prioridade:
+ *   1) argumento de linha de comando:  npm run ingest -- "<caminho do .xlsx>"
+ *   2) variável de ambiente DELIVERYOS_RELATORIO_IFOOD (ver .env.example)
+ *   3) padrão do projeto: data/raw/relatorio_pedidos_ifood.xlsx
+ * Ver docs/Politica_Dados.md — data/raw/ é local e gitignorado; ninguém versiona dado bruto sem decisão.
  */
 import * as XLSX from "xlsx";
-import { writeFileSync, mkdirSync } from "node:fs";
+import { writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { LogMemoria } from "../src/core/logTransicoes";
 import { ifoodParaTransicoes } from "../src/core/adaptadores";
@@ -18,10 +22,18 @@ import {
   type ErroReal, type Linha,
 } from "../src/ingest/ifoodRelatorio";
 
-const ARQ = process.argv[2] ??
-  "C:/Users/italo/Downloads/relatorio-pedidos_38100c39ad1cfa7a9446d4bb2dfaeb0b4821ee0f6e47c46f24290e6bf16c35ac_2026-05-27-2026-06-25.xlsx.zip";
+const PADRAO = join(process.cwd(), "data", "raw", "relatorio_pedidos_ifood.xlsx");
+const ARQ = process.argv[2] ?? process.env.DELIVERYOS_RELATORIO_IFOOD ?? PADRAO;
 
 const p = (s: string) => console.log(s);
+
+if (!existsSync(ARQ)) {
+  p(`\nERRO: relatório não encontrado em "${ARQ}".`);
+  p("Coloque o export do iFood em data/raw/relatorio_pedidos_ifood.xlsx, ou aponte para ele com:");
+  p('  npm run ingest -- "<caminho do .xlsx>"');
+  p("  ou defina DELIVERYOS_RELATORIO_IFOOD no seu .env (veja .env.example / docs/Politica_Dados.md).");
+  process.exit(1);
+}
 
 p(`\n=== INGESTÃO REAL — ${ARQ.split(/[\\/]/).pop()} ===`);
 const wb = XLSX.readFile(ARQ, { cellDates: true });
