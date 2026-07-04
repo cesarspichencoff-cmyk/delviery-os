@@ -16,6 +16,21 @@ const slug = s => norm(s).replace(/[^a-z0-9]+/g,"_").replace(/^_+|_+$/g,"").slic
 const uniq = a => [...new Set(a)];
 const splitList = s => (s||"").split(",").map(x=>x.trim()).filter(Boolean);
 
+// ---------- vocabulário oficial de praças (motor.js linha 19 — fonte da verdade) ----------
+// Bug corrigido (ver docs/Auditoria_Builder_Cardapio_PreCorrecao.md): este gerador produzia
+// "bar"/"cozinha"/"montagem" (o seed commitado foi corrigido À MÃO no commit aa1df5d; este
+// gerador nunca foi atualizado). Normalização agora CENTRALIZADA num único ponto de entrada
+// (ver uso logo após `classify()`), nunca espalhada pelas regras de classificação.
+const PRACAS_OFICIAIS = ["combinados","duplas","enrolados","enrolados_quentes","cozinha_quentes","sobremesa","bar_bebidas","montagem_outros"];
+const ALIASES_PRACA = { bar: "bar_bebidas", cozinha: "cozinha_quentes", montagem: "montagem_outros" };
+function normalizarPracaOficial(p) {
+  if (p == null) return null; // itens não-produtivos legitimamente não têm praça
+  if (PRACAS_OFICIAIS.includes(p)) return p;
+  if (ALIASES_PRACA[p]) return ALIASES_PRACA[p];
+  // trava anti-regressão (Etapa 3): nenhuma praça fora do vocabulário oficial pode chegar ao seed.
+  throw new Error(`Praça desconhecida "${p}" — fora do vocabulário oficial (${PRACAS_OFICIAIS.join(", ")}) e sem alias mapeado. Corrija ALIASES_PRACA ou a regra que a gerou.`);
+}
+
 // ---------- leitura ----------
 const raw = fs.readFileSync(SRC,"utf8").split(/\r?\n/).filter(l=>l.trim().length);
 const recs = raw.map((line,i)=>{
@@ -150,8 +165,18 @@ function classify(r){
   // 4) ENROLADOS QUENTES (vence enrolados)
   if(hot){
     let motivo = HOT_TERMS.filter(t=>H.includes(t));
-    // ceviche/tartar de salmão/tuna shisô entram por regra explícita mesmo sendo entradas
-    if(motivo.some(m=>["ceviche","tartar de salmao","tuna shiso"].includes(m))) {
+    // EXCEÇÃO NOMEADA (histórica, ver docs/Auditoria_Builder_Cardapio_PreCorrecao.md): Ceviche,
+    // Tartar de Salmão e Tuna Shisô Tartar foram revisados manualmente no seed (media/revisão
+    // manual=true, com nota sobre a regra operacional do César) — o gerador nunca refletia isso.
+    // Restrita aos 3 nomes exatos; NÃO se aplica a nenhum outro item que contenha os mesmos termos.
+    const EXCECAO_REVISAO_MANUAL = {
+      "ceviche": "Item frio (marinado/cru) enviado para enrolados_quentes pela REGRA OPERACIONAL atual do César. A regra vence — NÃO cai em duplas/sushi. Revalidar com a equipe de qual bancada realmente sai; corrigível no cadastro sem quebrar a arquitetura.",
+      "tartar de salmao": "Item frio (marinado/cru) enviado para enrolados_quentes pela REGRA OPERACIONAL atual do César. A regra vence — NÃO cai em duplas/sushi. Revalidar com a equipe de qual bancada realmente sai; corrigível no cadastro sem quebrar a arquitetura.",
+      "tuna shiso tartar": "Item frio (marinado/cru) enviado para enrolados_quentes pela REGRA OPERACIONAL atual do César. A regra vence — NÃO cai em duplas/sushi. Revalidar com a equipe de qual bancada realmente sai; corrigível no cadastro sem quebrar a arquitetura.",
+    };
+    if (EXCECAO_REVISAO_MANUAL[nomeN]) {
+      conf = "media"; revisao = true; obs.push(EXCECAO_REVISAO_MANUAL[nomeN]);
+    } else if(motivo.some(m=>["ceviche","tartar de salmao","tuna shiso"].includes(m))) {
       conf="alta"; obs.push("Entrada classificada como enrolados_quentes por regra explícita de termo ("+motivo.join(", ")+").");
     }
     return { praca_principal:"enrolados_quentes", categoria_operacional:"enrolado_quente",
@@ -327,6 +352,9 @@ function derive(rec, cls){
 // ---------- montar registros ----------
 let itens = recs.map(r=>{
   const cls = classify(r);
+  // único ponto de entrada da normalização — nada de praça entra no seed sem passar aqui
+  cls.praca_principal = normalizarPracaOficial(cls.praca_principal);
+  cls.pracas_dependentes = (cls.pracas_dependentes||[]).map(normalizarPracaOficial);
   const der = derive(r, cls);
   return {
     id: slug(r.nome),
@@ -426,7 +454,7 @@ fs.writeFileSync(REPO+"/data/cardapio_knowledge_seed.json", JSON.stringify(seed,
 const nz = o => Object.entries(o).sort((a,b)=>(b[1].length||b[1])-(a[1].length||a[1]));
 function exemplos(list,n=10){ return list.slice(0,n).map(it=>`  - **${it.nome}** — _${it.subcategoria_operacional}_, ${it.temperatura}${it.proteinas.length?` · proteínas: ${it.proteinas.join(", ")}`:""}${it.confianca_classificacao!=="alta"?` · ⚠️ ${it.confianca_classificacao}`:""}`).join("\n"); }
 
-const ORDEM_PRACA = ["combinados","duplas","enrolados","enrolados_quentes","cozinha","sobremesa","bar","montagem","(sem praça / não-produção)"];
+const ORDEM_PRACA = ["combinados","duplas","enrolados","enrolados_quentes","cozinha_quentes","sobremesa","bar_bebidas","montagem_outros","(sem praça / não-produção)"];
 let md = `# Auditoria — Camada de Conhecimento do Cardápio (TATÁ)
 
 > Base estrutural **set-once** do DeliveryOS. Não é preenchimento por pedido.
@@ -446,7 +474,7 @@ let md = `# Auditoria — Camada de Conhecimento do Cardápio (TATÁ)
 ${ORDEM_PRACA.filter(p=>porPraca[p]).map(p=>`| ${p} | ${porPraca[p].length} |`).join("\n")}
 
 ### Critério de sucesso (praças obrigatórias separadas e não-zeradas)
-${["combinados","duplas","enrolados","enrolados_quentes","cozinha","sobremesa","bar","montagem"].map(p=>{const n=(porPraca[p]||[]).length; return `- ${n>0?"✅":"❌"} **${p}**: ${n}`;}).join("\n")}
+${["combinados","duplas","enrolados","enrolados_quentes","cozinha_quentes","sobremesa","bar_bebidas","montagem_outros"].map(p=>{const n=(porPraca[p]||[]).length; return `- ${n>0?"✅":"❌"} **${p}**: ${n}`;}).join("\n")}
 
 ## 3. Quantidade por categoria operacional
 | Categoria | Itens |
@@ -483,7 +511,7 @@ ${dupInfo.length?dupInfo.map(d=>`- **${d.nome}** — ${d.fontes}× · disponíve
 - **Ingredientes** vêm da descrição por dicionário — itens sem descrição ficam com listas vazias (não inventei).
 - **Popularidade / peso de venda NÃO existe aqui** — deve vir de dados reais de venda (relatório iFood/PDV), não de chute. Sem isso, "quantos pedidos tocam cada praça" continua dependendo da fonte real de itens por pedido.
 - **quantidade_pecas** dos combinados fica \`null\` (são compostos); a contagem detalhada está na descrição.
-- **cozinha** aqui = a bancada de quentes (equivalente ao "quentes" do motor atual). A unificação de vocabulário acontece só quando conectarmos ao motor.
+- **cozinha_quentes** aqui = a bancada de quentes (rótulo de interface "Quentes" no motor). Vocabulário já unificado com \`motor.js\` (ver \`normalizarPracaOficial\` — corrigido em jul/2026, ver \`docs/Auditoria_Builder_Cardapio_PreCorrecao.md\`).
 - Peixe cru em Entradas (carpaccio/tartar de atum) e Missoshiro estão marcados para **revisão manual** — não force antes de confirmar o fluxo real.
 `;
 // ---------- Seção 11: sinais destravados pelo cardápio (entregável #3) ----------
@@ -514,9 +542,9 @@ ${check("ok",`**praça dos combinados sobrecarregada** — ${(porPraca["combinad
 ${check("ok",`**praça das duplas sobrecarregada** — ${(porPraca["duplas"]||[]).length} itens em \`duplas\``)}
 ${check("ok",`**enrolados sobrecarregados** — ${(porPraca["enrolados"]||[]).length} itens em \`enrolados\``)}
 ${check("ok",`**enrolados quentes sobrecarregados** — ${(porPraca["enrolados_quentes"]||[]).length} itens em \`enrolados_quentes\``)}
-${check("ok",`**cozinha/quentes sobrecarregada** — ${(porPraca["cozinha"]||[]).length} itens em \`cozinha\``)}
+${check("ok",`**cozinha/quentes sobrecarregada** — ${(porPraca["cozinha_quentes"]||[]).length} itens em \`cozinha_quentes\``)}
 ${check("ok",`**sobremesa pendente** — ${(porPraca["sobremesa"]||[]).length} itens em \`sobremesa\` (praça separada)`)}
-${check("ok",`**bebida pendente** — ${(porPraca["bar"]||[]).length} itens em \`bar\``)}
+${check("ok",`**bebida pendente** — ${(porPraca["bar_bebidas"]||[]).length} itens em \`bar_bebidas\``)}
 ${check("ok",`**pedido só de quente / só de frio** — ${totQuente} itens quentes, ${totFrio} frios marcados por temperatura`)}
 ${check("ordem",`**pedido fechável** — ${canon.length-totTrava} itens NÃO travam fechamento; o resolver marca o pedido fechável quando nenhum item pendente trava`)}
 ${check("ordem",`**pedido com mais de uma sacola** — sacolas_esperadas por item + soma no pedido (combos/menus já marcam risco de 2ª sacola)`)}
@@ -540,7 +568,7 @@ ORDEM_PRACA.filter(p=>porPraca[p]).forEach(p=>console.log("  "+p.padEnd(28)+porP
 console.log("\npor categoria:");
 Object.entries(porCat).sort((a,b)=>b[1]-a[1]).forEach(([c,n])=>console.log("  "+c.padEnd(20)+n));
 console.log("\nCRITÉRIO DE SUCESSO:");
-["combinados","duplas","enrolados","enrolados_quentes","cozinha","sobremesa","bar","montagem"].forEach(p=>{
+["combinados","duplas","enrolados","enrolados_quentes","cozinha_quentes","sobremesa","bar_bebidas","montagem_outros"].forEach(p=>{
   const n=(porPraca[p]||[]).length; console.log("  "+(n>0?"OK ":"FALHA ")+p+": "+n);
 });
 console.log("\nrevisão manual:",revisar.length," | sem descrição:",semDescricao.length," | baixa confiança:",baixaConf.length);

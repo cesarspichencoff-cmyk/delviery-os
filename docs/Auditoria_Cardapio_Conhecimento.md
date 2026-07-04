@@ -232,7 +232,7 @@
 - **Ingredientes** vêm da descrição por dicionário — itens sem descrição ficam com listas vazias (não inventei).
 - **Popularidade / peso de venda NÃO existe aqui** — deve vir de dados reais de venda (relatório iFood/PDV), não de chute. Sem isso, "quantos pedidos tocam cada praça" continua dependendo da fonte real de itens por pedido.
 - **quantidade_pecas** dos combinados fica `null` (são compostos); a contagem detalhada está na descrição.
-- **cozinha** aqui = a bancada de quentes (equivalente ao "quentes" do motor atual). A unificação de vocabulário acontece só quando conectarmos ao motor.
+- **cozinha_quentes** aqui = a bancada de quentes (rótulo de interface "Quentes" no motor). Vocabulário já unificado com `motor.js` (ver `normalizarPracaOficial` — corrigido em jul/2026, ver `docs/Auditoria_Builder_Cardapio_PreCorrecao.md`).
 - Peixe cru em Entradas (carpaccio/tartar de atum) e Missoshiro estão marcados para **revisão manual** — não force antes de confirmar o fluxo real.
 
 
@@ -268,9 +268,9 @@
 - ✅ **destravado** — **praça das duplas sobrecarregada** — 64 itens em `duplas`
 - ✅ **destravado** — **enrolados sobrecarregados** — 16 itens em `enrolados`
 - ✅ **destravado** — **enrolados quentes sobrecarregados** — 11 itens em `enrolados_quentes`
-- ✅ **destravado** — **cozinha/quentes sobrecarregada** — 0 itens em `cozinha`
+- ✅ **destravado** — **cozinha/quentes sobrecarregada** — 31 itens em `cozinha_quentes`
 - ✅ **destravado** — **sobremesa pendente** — 9 itens em `sobremesa` (praça separada)
-- ✅ **destravado** — **bebida pendente** — 0 itens em `bar`
+- ✅ **destravado** — **bebida pendente** — 36 itens em `bar_bebidas`
 - ✅ **destravado** — **pedido só de quente / só de frio** — 43 itens quentes, 101 frios marcados por temperatura
 - 🟡 **destravável no pedido** (o cardápio dá os ingredientes; o resolver combina no pedido) — **pedido fechável** — 136 itens NÃO travam fechamento; o resolver marca o pedido fechável quando nenhum item pendente trava
 - 🟡 **destravável no pedido** (o cardápio dá os ingredientes; o resolver combina no pedido) — **pedido com mais de uma sacola** — sacolas_esperadas por item + soma no pedido (combos/menus já marcam risco de 2ª sacola)
