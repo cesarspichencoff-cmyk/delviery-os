@@ -1,6 +1,10 @@
-# Pedido ao iFood — Fonte Contínua de Composição + Logística
+# Pedido ao iFood — Fonte Contínua de Composição + Logística (versão longa/técnica)
 
-> Mensagem pronta para copiar e enviar ao suporte/parceria do iFood (loja TATA SUSHI, FRN_ID 53069).
+> Versão detalhada, completa, em formato de e-mail formal — útil se o contato no iFood pedir
+> especificação item por item, ou para arquivo interno do que foi solicitado.
+> **Para copiar e enviar diretamente, prefira `docs/Mensagem_iFood_Pedido_Fonte_Continua.md`** — tem
+> duas versões mais curtas e naturais (direta e estratégica), pensadas para serem coladas numa
+> conversa real, não lidas como um e-mail corporativo.
 > Baseada em evidência interna de 12 janelas reais analisadas — não exige nada que o iFood já não
 > tenha gerado ao menos uma vez em algum dos exports recebidos até hoje.
 
