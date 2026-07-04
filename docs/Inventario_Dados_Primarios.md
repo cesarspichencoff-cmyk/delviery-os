@@ -182,6 +182,27 @@ iFood removido do nome; conteúdo intocado). Todos confirmados fora do Git via `
 - **Análise de completude e resposta à pergunta da fase:** ver
   `docs/Relatorio_Completude_Simulacao_2026-07-01.md`.
 
+## Lote `ifood_2026-06-20_a_2026-06-30` (recebido 03/07/2026)
+
+Local: `data/raw/incoming/ifood_2026-06-20_a_2026-06-30/` (gitignorado, confirmado por `git check-ignore`).
+
+| Arquivo | `relatorio_pedidos_com_itens_jun20-30.html` |
+|---|---|
+| Tipo | HTML com dados embutidos em array JS `const ALL_ROWS` (formato **diferente** do HTML de 01/07 — tabela paginada, 1 objeto por pedido) |
+| Período | 20/06/2026 → 30/06/2026 (11 dias-calendário completos, medido: 0 datas fora do período) |
+| Tamanho / Hash MD5 | 1.196.540 bytes / `0fbf1cd5067b3dad62bc791cbc66199a` |
+| Origem provável | export/relatório do painel iFood, FRN 53069 (título interno confirma loja e período) |
+| Primário ou agregado | **Primário** — pedido a pedido, com itens |
+| Item por pedido | ✅ 10.565 itens / 12.118 unidades em 3.215 pedidos (`itens_html`, "Nx Nome") |
+| **Observação do cliente** | ✅ **PRIMEIRA fonte com observações**: 758 observações em 543 pedidos (16,9%) — em `<em>(...)</em>`; inclui alergias explícitas |
+| Status | ✅ CONCLUDED 2.996 · CANCELLED 71 · DECLINED 148 (KPIs do próprio arquivo batem 100% com a extração) |
+| Preço por item | ❌ não existe (só valor total do pedido) — `preco_unitario: null`, nunca inventado |
+| ID | ✅ uuid completo (`oid`); atenção: `oid_short` do arquivo é PREFIXO do uuid, **não** o ID curto do iFood |
+| PII | Nenhum campo estruturado de cliente; observações são texto livre do cliente (sem identificação) |
+| Entra no Git? | **Não** — bruto |
+| Camada servida | **Motor B (composição real)** em escala: 11 dias · casamento com seed **154/154 itens únicos = 100% exato** · viabilizou replays reais (ver `docs/Relatorio_Replays_Reais_Jun20-30.md`) |
+| Parser | `tools/parse_relatorio_pedidos_com_itens_html.js` → `data/generated/itens_pedido_reais_2026-06-20_a_2026-06-30.jsonl` (fora do Git) |
+
 ## O que este lote NÃO resolve (honestidade)
 
 - **Não é uma integração contínua** — é uma janela de ~24h com composição (`relatorio_pedidos_01-07.html`)
