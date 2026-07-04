@@ -84,3 +84,50 @@ sessões anteriores) sempre citou como correto.
 mudou é que agora **é possível regenerá-lo com segurança** — antes, rodar o builder era uma bomba
 silenciosa (36% do cardápio perderia afiliação de praça); agora, rodar reproduz exatamente o estado
 protegido, e qualquer desvio futuro do vocabulário oficial faz o script **falhar alto**, não silenciar.
+
+## Trava permanente de integridade
+
+A correção acima prova que o builder está certo **hoje**. Sem uma verificação permanente, nada impede
+uma futura edição de `classify()` (nova regra de item, novo termo, refatoração) de reintroduzir drift
+silencioso — exatamente como aconteceu da primeira vez, sem nenhum erro visível por meses. Por isso,
+`tools/verificar_integridade_cardapio.js` (`npm run verificar:cardapio`) existe como cadeado permanente,
+não como script de uma vez só.
+
+**Por que existe:** o bug original só foi descoberto por acidente, testando portabilidade de caminho —
+não havia nada no projeto que checasse "o builder ainda reproduz o seed?". Esta trava fecha essa lacuna
+de forma permanente, antes de qualquer calibração ou tuning futuro se apoiar num cardápio que pode ter
+silenciosamente se corrompido.
+
+**O que ele protege — quatro checagens independentes, cada uma com falha isolada e nomeada:**
+
+1. **Diff byte a byte** entre o seed regenerado (em diretório temporário, nunca no repo) e o commitado,
+   ignorando só `_meta.gerado_em`. Qualquer divergência real do conteúdo do cardápio falha aqui primeiro.
+2. **Vocabulário oficial** — todo `praca_principal` gerado precisa estar nas 8 praças de `motor.js` (ou
+   ser `null`, para itens legitimamente não-produtivos). Herda a mesma trava de `normalizarPracaOficial()`.
+3. **Nenhum item perde praça** — cada um dos 199 itens do seed commitado que tem praça é comparado
+   individualmente (por `id`) contra a versão regenerada; identifica o item exato, não só "algo mudou".
+4. **As 3 exceções históricas** (Ceviche, Tartar de Salmão, Tuna Shisô Tartar) continuam com
+   `confianca_classificacao:"media"` e `revisao_manual:true` — a segunda divergência que este mesmo
+   processo corrigiu não pode voltar a se perder silenciosamente também.
+
+**Como rodar:** `npm run verificar:cardapio` (ou `node tools/verificar_integridade_cardapio.js`).
+Saída: `OK: seed reproduzível sem drift` (exit 0) ou uma lista numerada e objetiva de cada problema
+encontrado (exit 1) — nunca "parece que está tudo bem".
+
+**Validado nos dois sentidos, com testes negativos isolados (fora do repo, sem tocar em nenhum arquivo
+real):**
+- Reintroduzir `"bar"`/`"cozinha"`/`"montagem"` (os aliases já conhecidos) é absorvido silenciosamente
+  pela normalização — comportamento correto, não é falha do verificador.
+- Introduzir uma praça **desconhecida** (não mapeada, ex. `"bebidas_e_afins"`) faz o builder falhar com
+  `throw`, e o verificador reporta "builder falhou ao rodar" — a trava de `normalizarPracaOficial()`
+  funciona.
+- Simular uma **reclassificação silenciosa** (um item migrado para outra praça oficial, mas errada)
+  não gera nenhum erro no builder — e o verificador pega exatamente isso, nomeando cada um dos itens
+  afetados individualmente. É o cenário mais perigoso (sem exceção lançada) e o que mais importa provar.
+
+**Por que isso é importante antes de calibração futura:** qualquer calibração de baseline ou tuning
+que venha depois vai se apoiar na composição por praça do cardápio. Calibrar sobre um cardápio que
+silenciosamente perdeu 36% de sua afiliação de praça — como quase aconteceu aqui — produziria uma
+calibração inteira construída sobre dado errado, sem nenhum sinal de alerta. Esta trava garante que,
+antes de qualquer novo trabalho de calibração começar, o cardápio que o sustenta continua exatamente o
+que deveria ser.

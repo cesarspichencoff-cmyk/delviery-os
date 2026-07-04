@@ -8,7 +8,8 @@
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "demo": "tsc && node dist/demo/camada0_demo.js",
-    "ingest": "tsc && node dist/demo/ingest_real.js"
+    "ingest": "tsc && node dist/demo/ingest_real.js",
+    "verificar:cardapio": "node tools/verificar_integridade_cardapio.js"
   },
   "devDependencies": {
     "@types/node": "20.14.10",
