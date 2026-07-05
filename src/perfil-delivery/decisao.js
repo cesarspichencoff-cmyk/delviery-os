@@ -39,12 +39,39 @@
            (fonteReal ? "itens reais por pedido" : "composição sintética");
   }
 
-  /* decidir(snap, INFO, opts) → melhor próxima ação ou null (calmo = silêncio).
+  /* RESTRIÇÃO DE ESCOPO (docs/Contrato_Motor_Decisao.md §10, docs/Decisao_Correcao_Motor_Decisao.md):
+     sess.active.sit é a fonte da verdade da atenção. Quando existe foco ativo (opts.active),
+     um candidato só pode vencer se for causalmente ligado à MESMA causa raiz do foco — nunca
+     inteligência nova, só restrição de quem pode competir. Sem opts.active, nada muda (compat). */
+  function dentroDoEscopo(c, ativo) {
+    const sit = ativo.sit;
+    switch (sit.kind) {
+      case "praca":
+        return (c.tipo === "priorizar_praca" || c.tipo === "fechar_simples") && c.praca === sit.praca;
+      case "saida":
+        return c.tipo === "chamar_motoboy" || c.tipo === "conferir_saida";
+      case "fechamento":
+        if (c.tipo === "fechar_simples") return (c.ids || []).indexOf(sit.id) >= 0;
+        if (c.tipo === "olhar_pedido" || c.tipo === "conferir_saida") return c.id === sit.id;
+        return false;
+      case "conferencia":
+        return c.tipo === "conferencia" && c.id === sit.id;
+      case "order":
+        return (c.tipo === "olhar_pedido" || c.tipo === "conferir_saida") && c.id === sit.id;
+      default:
+        return false;
+    }
+  }
+
+  /* decidir(snap, INFO, opts) → melhor próxima ação ou null (calmo = silêncio, ou nenhum
+     candidato sobrevive ao escopo do foco ativo — cai para buildFoco() puro no chamador).
      snap = retorno de MOTOR.step (t, sits, ctx{wE,wP,load}).
-     opts = { fonteReal: boolean } — sobe a confiança quando itens reais entram. */
+     opts = { fonteReal: boolean, active: sess.active } — active restringe candidatos à
+     mesma causa raiz do foco ativo; fonteReal sobe a confiança quando itens reais entram. */
   function decidir(snap, INFO, opts) {
     opts = opts || {};
     const fonteReal = !!opts.fonteReal;
+    const ativo = (opts.active && opts.active.sit) ? opts.active : null;
     const sits = snap.sits || [], ctx = snap.ctx || { wE: [], wP: [], load: {} };
     if (!sits.length) return null;
     const cands = [];
@@ -56,7 +83,7 @@
       const anc = ancoraDaPraca(s.praca, ctx.wP, INFO);
       const unblock = s.unblock || 0;
       cands.push({
-        tipo: "priorizar_praca", dependeComposicao: true, sev: s.sev,
+        tipo: "priorizar_praca", dependeComposicao: true, sev: s.sev, praca: s.praca,
         score: unblock * 2 + s.n * 0.5 + s.sev,
         head: "PRIORIZE " + D[s.praca].toUpperCase(),
         acao: "Priorizar " + D[s.praca],
@@ -79,6 +106,7 @@
         const pr = INFO[simples[0].id].pracaUnica;
         cands.push({
           tipo: "fechar_simples", dependeComposicao: true, sev: 2, natureza: "oportunidade",
+          praca: pr, ids: simples.map(w => w.id),
           score: simples.length * 1.5 + 1,
           head: "FECHE PEDIDOS SIMPLES",
           acao: "Fechar pedidos simples agora",
@@ -116,7 +144,7 @@
       if (I.contemKit) extras.push("kit");
       if (I.temObservacao) extras.push("observação");
       cands.push({
-        tipo: "conferencia", dependeComposicao: true, sev: s.sev,
+        tipo: "conferencia", dependeComposicao: true, sev: s.sev, id: s.id,
         score: (I.temObservacao ? 3 : 2) + (I.segundaSacola ? 2 : 0),
         head: "CONFIRA O #" + s.id,
         acao: "Conferência reforçada",
@@ -132,7 +160,7 @@
       if (s.kind !== "order") continue;
       const exped = s.zona === "Expedição";
       cands.push({
-        tipo: exped ? "conferir_saida" : "olhar_pedido", dependeComposicao: !exped, sev: s.sev,
+        tipo: exped ? "conferir_saida" : "olhar_pedido", dependeComposicao: !exped, sev: s.sev, id: s.id,
         score: s.peak / 25 + s.sev,
         head: exped ? ("CONFIRA A SAÍDA DO #" + s.id) : ("OLHE O #" + s.id),
         acao: exped ? "Conferir saída do #" + s.id : "Olhar pedido #" + s.id,
@@ -144,10 +172,12 @@
     }
 
     if (!cands.length) return null;
-    cands.sort((a, b) => b.score - a.score || b.sev - a.sev);
-    const top = cands[0];
+    const elegiveis = ativo ? cands.filter(c => dentroDoEscopo(c, ativo)) : cands;
+    if (!elegiveis.length) return null;   // nenhum candidato na causa raiz do foco ativo → buildFoco() puro
+    elegiveis.sort((a, b) => b.score - a.score || b.sev - a.sev);
+    const top = elegiveis[0];
     top.dados = dadosUsados(fonteReal);
-    top.todas = cands.map(c => ({ tipo: c.tipo, acao: c.acao, score: Math.round(c.score * 10) / 10, confianca: c.confianca, dependeComposicao: c.dependeComposicao }));
+    top.todas = elegiveis.map(c => ({ tipo: c.tipo, acao: c.acao, score: Math.round(c.score * 10) / 10, confianca: c.confianca, dependeComposicao: c.dependeComposicao }));
     return top;
   }
 

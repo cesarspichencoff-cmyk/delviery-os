@@ -77,11 +77,11 @@ _(02/06/2026 12:12)_
 ## 3b. CAMADA DE DECISÃO — recomendações geradas (novo)
 A cada foco, a camada de decisão ranqueia a **melhor próxima ação** ("se você olhar uma coisa agora, olhe isso"):
 
-- Recomendações geradas no mês: **532** (uma por onset de foco)
-- Por tipo: priorizar_praca **332** · conferencia **96** · conferir_saida **52** · fechar_simples **37** · chamar_motoboy **11** · olhar_pedido **4**
-- Confiança: alta **63** · média **447** · baixa **22**
-- Dependem de composição (sintética hoje → confiança limitada a média): **469** (88%)
-- Só de tempo/estado real (confiança alta já hoje): **63** (12%)
+- Recomendações geradas no mês: **470** (uma por onset de foco)
+- Por tipo: priorizar_praca **159** · conferir_saida **114** · fechar_simples **95** · conferencia **69** · olhar_pedido **22** · chamar_motoboy **11**
+- Confiança: alta **125** · média **345** · baixa **0**
+- Dependem de composição (sintética hoje → confiança limitada a média): **345** (73%)
+- Só de tempo/estado real (confiança alta já hoje): **125** (27%)
 
 Exemplos REAIS gerados no backtest:
 
@@ -99,24 +99,24 @@ _(27/05/2026 11:56)_
 **Chamar motoboy (timing 100% real):**
 ```
 AÇÃO RECOMENDADA — Chamar motoboy agora
-por quê: 4 prontos há mais de 30 min
-primeiro olhar: #5607 · pronto há 79 min
+por quê: 3 prontos há mais de 30 min
+primeiro olhar: #4489 · 40 min
 impacto: todos viram atraso de entrega
 confiança: alta
 dados: tempos reais (iFood) · cardápio real (199 itens) · composição sintética
 ```  
-_(29/05/2026 20:56)_
+_(02/06/2026 12:12)_
 
 **Fechar pedidos simples:**
 ```
 AÇÃO RECOMENDADA — Fechar pedidos simples agora
-por quê: 2 pedidos dependem só de Duplas, sem mais pendências
-primeiro olhar: #9956, #3525
-impacto: 2 pedidos saem da fila
+por quê: 3 pedidos dependem só de Duplas, sem mais pendências
+primeiro olhar: #0039, #0753, #3522
+impacto: 3 pedidos saem da fila
 confiança: média
 dados: tempos reais (iFood) · cardápio real (199 itens) · composição sintética
 ```  
-_(29/05/2026 13:30)_
+_(27/05/2026 21:24)_
 
 **Conferência reforçada:**
 ```

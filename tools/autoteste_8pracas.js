@@ -58,7 +58,7 @@ function runDay(O){
     const curKey=sess.active?sess.active.key:null;
     if(curKey&&curKey!==prevKey){ const st=sess.active.sit; focos.push({t,kind:st.kind,key:curKey,sev:st.sev,id:st.id,praca:st.praca});
       // CAMADA DE DECISÃO: no onset de cada foco (quando a tela mostraria), qual a ação recomendada?
-      const rec=DECISAO.decidir(R,INFO,{fonteReal:FONTE_REAL});
+      const rec=DECISAO.decidir(R,INFO,{fonteReal:FONTE_REAL,active:sess.active});
       if(rec) recs.push({t,tipo:rec.tipo,acao:rec.acao,confianca:rec.confianca,dependeComposicao:rec.dependeComposicao}); }
     prevKey=curKey;
     if(R.mode==="foco"){fMin++;run++;maxRun=Math.max(maxRun,run);}else{run=0;R.mode==="ambiente"?aMin++:cMin++;}
@@ -112,7 +112,7 @@ function exemploRecDe(tipo){
   for(const dia of dias){ const O=peds.filter(p=>p.dia===dia); const sess=MOTOR.novaSessao(); let prevKey=null;
     for(let t=11*60;t<=24*60-1;t++){ const R=MOTOR.step(t,O,INFO,sess);
       const curKey=sess.active?sess.active.key:null;
-      if(curKey&&curKey!==prevKey){ const rec=DECISAO.decidir(R,INFO,{fonteReal:FONTE_REAL});
+      if(curKey&&curKey!==prevKey){ const rec=DECISAO.decidir(R,INFO,{fonteReal:FONTE_REAL,active:sess.active});
         if(rec&&rec.tipo===tipo) return {dia,t,rec}; }
       prevKey=curKey; } }
   return null;

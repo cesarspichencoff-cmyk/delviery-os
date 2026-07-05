@@ -204,8 +204,19 @@ function auditarJanela(tag, { NIGHT, FONTE, T0, T1 }) {
     const curKey = sess.active ? sess.active.key : null;
     if (curKey && curKey !== prevKey) {
       const sit = sess.active.sit;
-      const rec = DECISAO.decidir(R, INFO, { fonteReal: true });
-      if (!rec) { casos.push({ janela: tag, t, sitKey: sit.key, sitKind: sit.kind, categoria: "INDETERMINADO", motivo: "sess.active existe mas decidir() retornou null (sits vazio no instante da chamada — inconsistência momentânea)" }); prevKey = curKey; continue; }
+      // decidir() com escopo (comportamento real pós-correção) — active restringe candidatos à
+      // mesma causa raiz do foco. Se vier null, chamamos sem 'active' só para DIAGNOSTICAR por
+      // que (sits vazio de fato vs. filtrado corretamente pelo escopo) — não decide nada, só audita.
+      const rec = DECISAO.decidir(R, INFO, { fonteReal: true, active: sess.active });
+      if (!rec) {
+        const recSemEscopo = DECISAO.decidir(R, INFO, { fonteReal: true });
+        if (!recSemEscopo) {
+          casos.push({ janela: tag, t, sitKey: sit.key, sitKind: sit.kind, categoria: "INDETERMINADO", motivo: "sess.active existe mas decidir() retornou null mesmo sem restrição de escopo (sits vazio no instante da chamada — inconsistência momentânea)" });
+        } else {
+          casos.push({ janela: tag, t, sitKey: sit.key, sitKind: sit.kind, categoria: "ALINHADO", motivo: `nenhum candidato dentro do escopo do foco ativo (${sit.kind}) — caiu corretamente para buildFoco() puro em vez do candidato "${recSemEscopo.tipo}" de outra causa raiz` });
+        }
+        prevKey = curKey; continue;
+      }
       const espelho = mirrorCandidatos(R, INFO, true);
       const scoreRec = Math.round((rec.todas.find(c => c.acao === rec.acao) || {}).score * 10) / 10;
       const candidatosEspelho = espelho.filter(c => c.tipo === rec.tipo);
