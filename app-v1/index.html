@@ -24,17 +24,18 @@
   <main id="palco" class="palco" aria-live="polite">
     <!-- preenchido por app.js: um estado por vez (calmo | ambiente | foco) -->
     <section class="estado carregando" id="telaCarregando">
-      <p class="sussurro">preparando a janela real de 01/07…</p>
+      <p class="sussurro">Preparando a janela real…</p>
     </section>
   </main>
 
   <footer class="replay" id="replay" hidden>
-    <div class="replay-rotulo">Replay de janela real · demonstração (não é operação ao vivo)</div>
+    <div class="replay-rotulo">Replay de janela real para demonstração. Não é operação ao vivo.</div>
     <div class="replay-controles">
       <button id="btPlay" class="bt" aria-label="tocar ou pausar">▶</button>
       <input id="linha" class="linha" type="range" min="0" max="0" value="0" step="1" aria-label="posição no tempo">
-      <span id="relogio" class="relogio">—</span>
+      <span id="relogio" class="relogio"></span>
       <button id="btVel" class="bt bt-vel" aria-label="velocidade do replay">10×</button>
+      <button id="btSom" class="bt bt-som" aria-label="ativar ou desativar som do foco">Som desligado</button>
     </div>
   </footer>
 

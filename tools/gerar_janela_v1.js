@@ -53,7 +53,8 @@ function gerarDiaJunho(dia) {
     const cancelado = /cancel/i.test(String(r["STATUS FINAL DO PEDIDO"] || "")) || info.status === "CANCELLED";
     const tpr = num(r["TEMPO DE ACIONAMENTO DO BOTÃO PRONTO (MIN)"]), tent = num(r["TEMPO DA ENTREGA REALIZADA (MIN)"]), tcam = num(r["TEMPO DO ENTREGADOR À CAMINHO DO CLIENTE (MIN)"]), tesp = num(r["TEMPO DO ENTREGADOR ESPERANDO NO CLIENTE (MIN)"]) || 0;
     const id = uuid.slice(0, 8);
-    NIGHT.push({ id, r: t, p: !cancelado && tpr != null ? Math.round(t + tpr) : null, s: !cancelado && tent != null && tcam != null ? Math.round(t + (tent - tcam - tesp)) : null, e: !cancelado && tent != null ? Math.round(t + tent) : null, c: cancelado ? t : null });
+    const curto = String(r["ID CURTO DO PEDIDO"] || "").trim() || null;   // nº que a equipe conhece (real, da origem)
+    NIGHT.push({ id, curto, r: t, p: !cancelado && tpr != null ? Math.round(t + tpr) : null, s: !cancelado && tent != null && tcam != null ? Math.round(t + (tent - tcam - tesp)) : null, e: !cancelado && tent != null ? Math.round(t + tent) : null, c: cancelado ? t : null });
     for (const it of info.itens) rows.push({ pedido_id: id, item_nome: it.item_nome, quantidade: it.quantidade || 1, observacao: it.observacao || null });
   }
   if (!NIGHT.length) { console.log("sem janela para " + dia + "/06"); process.exit(1); }
@@ -90,9 +91,10 @@ const NIGHT = []; const uuid2id = new Map(); const rows = [];
 for (const x of casados) {
   const r = x.r; const cancelado = /cancel/i.test(String(r["STATUS FINAL DO PEDIDO"] || ""));
   const tpr = num(r["TEMPO DE ACIONAMENTO DO BOTÃO PRONTO (MIN)"]), tent = num(r["TEMPO DA ENTREGA REALIZADA (MIN)"]), tcam = num(r["TEMPO DO ENTREGADOR À CAMINHO DO CLIENTE (MIN)"]), tesp = num(r["TEMPO DO ENTREGADOR ESPERANDO NO CLIENTE (MIN)"]) || 0;
-  const id = idCurtoUnico ? String(r["ID CURTO DO PEDIDO"]).trim() : x.uuid.slice(0, 8);
+  const curto = String(r["ID CURTO DO PEDIDO"] || "").trim() || null;
+  const id = idCurtoUnico && curto ? curto : x.uuid.slice(0, 8);
   uuid2id.set(x.uuid, id);
-  NIGHT.push({ id, r: x.t, p: !cancelado && tpr != null ? Math.round(x.t + tpr) : null, s: !cancelado && tent != null && tcam != null ? Math.round(x.t + (tent - tcam - tesp)) : null, e: !cancelado && tent != null ? Math.round(x.t + tent) : null, c: cancelado ? x.t : null });
+  NIGHT.push({ id, curto, r: x.t, p: !cancelado && tpr != null ? Math.round(x.t + tpr) : null, s: !cancelado && tent != null && tcam != null ? Math.round(x.t + (tent - tcam - tesp)) : null, e: !cancelado && tent != null ? Math.round(x.t + tent) : null, c: cancelado ? x.t : null });
 }
 for (const x of casados) for (const it of x.info.itens) rows.push({ pedido_id: uuid2id.get(x.uuid), item_nome: it.item_nome, quantidade: it.quantidade || 1, observacao: it.observacao || null });
 

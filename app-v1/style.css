@@ -3,22 +3,23 @@
    tipografia forte, muito respiro, UMA coisa por vez. Nunca dashboard.
    Luz é informação; vazio é saúde (Manifesto §10).
 
-   Responsividade: uma única superfície.
-   - Mobile (padrão): uma coluna; estado como cabeçalho; cartão soberano.
-   - Desktop (≥1080px): SÓ no Foco, três colunas — eco tipográfico | cartão
-     SOBERANO | "Por que agora". Laterais = contexto, nunca dado novo.
-     Calmo/Ambiente continuam em coluna única, em escala maior: o vazio é
-     intencional (saúde), não tela quebrada.
+   Estética (pacote de correções V1, aproximação das referências aprovadas):
+   - Calmo: "Em fluxo" em display + anel verde luminoso com o nº dentro.
+   - Foco: cartão branco à esquerda com a SITUAÇÃO; a AÇÃO é a pílula verde
+     dominante ("Uma ação agora") — comando VISUAL, nunca botão de controle.
+   - Desktop: eco tipográfico | cartão soberano | "Por que agora" + evidências.
 ============================================================================ */
 :root {
-  --papel: #F4F2EC;        /* fundo claro, quente, sereno */
-  --tinta: #1A1914;        /* texto principal */
-  --tinta-2: #6E6A5E;      /* apoio */
-  --tinta-3: #9B968A;      /* sussurro */
-  --calmo: #3E7C4F;        /* saúde */
-  --atencao: #A2571F;      /* gravidade sem drama (nunca vermelho piscando) */
+  --papel: #F5F3ED;        /* fundo claro, quente, sereno (Calmo) */
+  --papel-amb: #F1EDE2;    /* Ambiente: um tom mais consciente */
+  --papel-foco: #ECE6D8;   /* Foco: aprofunda sem escurecer */
+  --tinta: #191813;        /* texto principal */
+  --tinta-2: #6C6759;      /* apoio */
+  --tinta-3: #9C968A;      /* sussurro */
+  --verde: #2E9E4F;        /* ação e saúde (cor operacional, nunca decorativa) */
+  --verde-brilho: rgba(70, 190, 110, .55);
+  --atencao: #9E5220;      /* gravidade sem drama (nunca vermelho piscando) */
   --cartao: #FFFFFF;
-  --sombra: 0 12px 34px rgba(26, 25, 20, .08);
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; }
@@ -26,81 +27,141 @@ body {
   background: var(--papel); color: var(--tinta);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   -webkit-font-smoothing: antialiased; display: flex; flex-direction: column; min-height: 100dvh;
+  transition: background .45s ease;
 }
+body[data-mode="ambiente"] { background: var(--papel-amb); }
+body[data-mode="foco"] { background: var(--papel-foco); }
 
 /* ---------- topo: identifica a versão e declara a fonte do dado ---------- */
-.topo { display: flex; justify-content: space-between; align-items: baseline; padding: 14px 20px 0; }
+.topo { display: flex; justify-content: space-between; align-items: baseline; padding: 16px 22px 0; }
 .marca { font-weight: 700; letter-spacing: -.02em; font-size: 15px; }
 .tag { font-weight: 500; font-size: 11px; color: var(--tinta-3); margin-left: 4px; }
 .fonte-dado { font-size: 11px; color: var(--tinta-3); text-align: right; max-width: 55%; }
 
 /* ---------- palco: um estado por vez, com surgimento discreto ---------- */
-.palco { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px 22px; }
-.estado, .foco-comp { animation: surge .28s ease-out; }
+.palco { flex: 1; display: flex; align-items: center; justify-content: center; padding: 22px; }
+.palco[data-mode="foco"] { align-items: stretch; }
+.estado { animation: surge .3s ease-out; width: 100%; max-width: 460px; text-align: center; margin: auto; }
+.foco-comp {
+  animation: surgeFoco .38s cubic-bezier(.2, .7, .3, 1);
+  width: 100%; max-width: 430px; margin: 0 auto;
+  display: flex; flex-direction: column;
+}
 @keyframes surge { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes surgeFoco { from { opacity: 0; transform: translateY(10px) scale(.985); } to { opacity: 1; transform: none; } }
 
-.estado { width: 100%; max-width: 430px; text-align: center; }
-.olho { font-size: 12px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; color: var(--tinta-3); margin-bottom: 18px; }
-.titulo { font-size: 34px; line-height: 1.12; letter-spacing: -.025em; font-weight: 800; }
-.apoio { margin-top: 14px; font-size: 15px; color: var(--tinta-2); }
+.titulo { font-size: 32px; line-height: 1.14; letter-spacing: -.025em; font-weight: 800; }
+.titulo.display { font-size: 46px; letter-spacing: -.03em; }
+.apoio { margin-top: 20px; font-size: 15px; color: var(--tinta-2); }
 .sussurro { margin-top: 18px; font-size: 12.5px; color: var(--tinta-3); }
+.olho { font-size: 12px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; color: var(--tinta-3); margin-bottom: 18px; }
 
-/* ---------- CALMO: o pulso é a prova de vida; quase nada mais ---------- */
-.pulso { display: flex; justify-content: center; margin: 6px 0 26px; }
+/* ---------- CALMO: "Em fluxo" + anel vivo com o número dentro ---------- */
+.pulso { display: flex; justify-content: center; margin: 30px 0 4px; }
 .pulso-anel {
-  width: 86px; height: 86px; border-radius: 50%;
-  border: 2px solid rgba(62, 124, 79, .55);
-  box-shadow: 0 0 24px rgba(62, 124, 79, .25) inset, 0 0 18px rgba(62, 124, 79, .18);
+  width: 190px; height: 190px; border-radius: 50%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  border: 3px solid var(--verde-brilho);
+  box-shadow:
+    0 0 34px rgba(70, 190, 110, .28),
+    0 0 60px rgba(70, 190, 110, .12),
+    inset 0 0 30px rgba(70, 190, 110, .14);
   animation: respira 6s ease-in-out infinite;
+  background: radial-gradient(circle at 50% 42%, rgba(255, 255, 255, .55), rgba(255, 255, 255, 0) 68%);
 }
 .pulso-intenso .pulso-anel { animation-duration: 3.6s; }
+.pulso-num { font-size: 52px; font-weight: 800; letter-spacing: -.03em; line-height: 1; }
+.pulso-cap { font-size: 12.5px; color: var(--tinta-2); max-width: 130px; }
 @keyframes respira {
-  0%, 100% { transform: scale(1); opacity: .75; }
-  50% { transform: scale(1.06); opacity: 1; }
+  0%, 100% { transform: scale(1); opacity: .82; }
+  50% { transform: scale(1.045); opacity: 1; }
 }
 
 /* ---------- AMBIENTE: clima, nunca alerta; máx. 2 rótulos; sem ação ---------- */
 .clima { display: flex; flex-direction: column; gap: 10px; align-items: center; margin-bottom: 8px; }
 .clima-rotulo {
-  font-size: 21px; font-weight: 700; letter-spacing: -.015em; padding: 10px 18px;
-  border-radius: 999px; background: rgba(162, 87, 31, .08); color: var(--tinta);
+  font-size: 20px; font-weight: 700; letter-spacing: -.015em; padding: 12px 22px;
+  border-radius: 999px; background: rgba(158, 82, 32, .09); color: var(--tinta);
 }
-.clima-rotulo.sev1 { background: rgba(26, 25, 20, .05); }
-.clima-rotulo.sev3 { background: rgba(162, 87, 31, .16); }
+.clima-rotulo.sev1 { background: rgba(25, 24, 19, .05); }
+.clima-rotulo.sev3 { background: rgba(158, 82, 32, .17); }
 
-/* ---------- FOCO: composição responsiva ----------
-   Mobile: eco = cabeçalho compacto ("Foco" + janela); cartão abaixo; contexto oculto. */
-.foco-comp { width: 100%; max-width: 430px; }
+/* ---------- FOCO: cartão de situação + pílula de ação dominante ---------- */
 .eco { text-align: left; margin-bottom: 14px; }
-.eco-estado { font-size: 30px; font-weight: 800; letter-spacing: -.03em; }
-.eco-sub { font-size: 13px; color: var(--tinta-2); margin-top: 2px; }
+.eco-estado {
+  display: inline-flex; align-items: center; gap: 9px;
+  font-size: 30px; font-weight: 800; letter-spacing: -.03em; color: var(--tinta);
+}
+.eco-estado::before {
+  content: ""; width: 10px; height: 10px; border-radius: 50%;
+  background: var(--atencao); box-shadow: 0 0 0 5px rgba(158, 82, 32, .15);
+}
+.eco-sub { font-size: 13px; color: var(--tinta-2); margin-top: 3px; }
 .eco-titulo { display: none; }
 .contexto { display: none; }
 
-.cartao { background: var(--cartao); border-radius: 22px; box-shadow: var(--sombra); padding: 28px 24px 26px; text-align: center; }
-.cartao .titulo { font-size: 29px; }
-.sev3 .eco-estado { color: #8A3E0F; }
-.linhas { margin-top: 18px; display: flex; flex-direction: column; gap: 8px; }
-.linha-info { font-size: 15.5px; color: var(--tinta-2); }
+.cartao {
+  background: var(--cartao); border-radius: 22px; text-align: left;
+  box-shadow: 0 22px 60px rgba(26, 25, 20, .13), 0 3px 10px rgba(26, 25, 20, .05);
+  padding: 20px 24px 24px;
+}
+.cartao-cab {
+  display: none;   /* mobile: o estado já é o cabeçalho da página (referência 1061) */
+  justify-content: space-between; align-items: baseline;
+  padding-bottom: 14px; margin-bottom: 18px;
+  border-bottom: 1px solid rgba(25, 24, 19, .08);
+}
+.cab-estado { font-size: 15px; font-weight: 700; letter-spacing: -.01em; }
+.cab-janela { font-size: 12px; color: var(--tinta-3); }
+.cartao .titulo { font-size: 25px; }
+.sev3 .eco-estado::before { background: #8A3E0F; box-shadow: 0 0 0 5px rgba(138, 62, 15, .2); }
+
+.linhas { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+.linha-info { font-size: 15px; color: var(--tinta-2); line-height: 1.4; }
 .linha-info.porque { color: var(--tinta); font-weight: 600; }
-.linha-info.conseq { color: var(--tinta); font-weight: 600; }
-.comando { margin-top: 20px; font-size: 16.5px; font-weight: 700; color: var(--tinta); }
+
+.pedido {
+  margin-top: 18px; padding: 12px 16px;
+  border: 1px solid rgba(25, 24, 19, .12); border-radius: 12px;
+  display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+}
+.pedido-num { font-size: 16px; font-weight: 800; letter-spacing: -.01em; }
+.pedido-comanda { font-size: 12px; color: var(--tinta-3); text-align: right; }
+
+/* ação dominante: pílula de comando VISUAL (sem clique, sem cursor, sem hover) */
+.acao-area { margin-top: auto; padding-top: 26px; text-align: center; }
+.acao-hint { font-size: 13.5px; color: var(--tinta-2); margin-bottom: 12px; }
+.acao-pill {
+  background: var(--verde); color: #fff;
+  border: 2px solid rgba(255, 255, 255, .55);
+  outline: 2px solid rgba(46, 158, 79, .55);
+  font-size: 17.5px; font-weight: 700; letter-spacing: -.01em;
+  padding: 15px 22px; border-radius: 16px;
+  box-shadow: 0 10px 26px rgba(46, 158, 79, .28);
+  user-select: none; cursor: default;
+}
+.acao-pill.pill-pura {
+  background: var(--tinta); outline-color: rgba(25, 24, 19, .35);
+  box-shadow: 0 10px 26px rgba(26, 25, 20, .22);
+}
 
 /* observação do cliente: texto COMPLETO, nunca truncado em silêncio */
-.obs { margin-top: 20px; text-align: left; background: rgba(162, 87, 31, .07); border-radius: 14px; padding: 14px 16px; }
+.obs { margin-top: 16px; text-align: left; background: rgba(158, 82, 32, .07); border-radius: 14px; padding: 14px 16px; }
 .obs-rotulo { font-size: 11.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--atencao); margin-bottom: 6px; }
 .obs-texto { font-size: 15px; color: var(--tinta); overflow-wrap: break-word; }
 .obs-texto + .obs-texto { margin-top: 6px; }
+.obs-aviso { margin-top: 8px; font-size: 12px; color: var(--tinta-2); }
 
 /* ---------- replay (demo sobre janela histórica — separado do "produto") ---------- */
 .replay { padding: 10px 18px calc(14px + env(safe-area-inset-bottom)); border-top: 1px solid rgba(26, 25, 20, .08); }
 .replay-rotulo { font-size: 10.5px; color: var(--tinta-3); text-align: center; margin-bottom: 8px; letter-spacing: .02em; }
-.replay-controles { display: flex; align-items: center; gap: 10px; max-width: 430px; margin: 0 auto; }
+.replay-controles { display: flex; align-items: center; gap: 10px; max-width: 560px; margin: 0 auto; }
 .bt {
   border: 1px solid rgba(26, 25, 20, .18); background: transparent; color: var(--tinta);
   border-radius: 999px; width: 40px; height: 32px; font-size: 13px; cursor: pointer;
 }
 .bt-vel { width: 52px; font-weight: 600; }
+.bt-som { width: auto; padding: 0 12px; font-size: 11.5px; color: var(--tinta-2); }
 .relogio { font-size: 12px; color: var(--tinta-2); font-variant-numeric: tabular-nums; min-width: 84px; text-align: center; }
 .linha { flex: 1; accent-color: var(--tinta); height: 24px; }
 
@@ -110,43 +171,56 @@ body {
    DESKTOP (≥1080px) — a largura vira CONTEXTO, nunca mais informação.
 ============================================================================ */
 @media (min-width: 1080px) {
-  .topo { padding: 20px 36px 0; }
+  .topo { padding: 22px 40px 0; }
 
   /* Calmo/Ambiente: coluna única em escala maior — o vazio é o luxo da paz */
-  .estado { max-width: 560px; }
-  .titulo { font-size: 56px; }
-  .apoio { font-size: 17px; margin-top: 18px; }
+  .estado { max-width: 620px; }
+  .titulo.display { font-size: 72px; }
+  .apoio { font-size: 17px; margin-top: 26px; }
   .olho { font-size: 13px; margin-bottom: 24px; }
-  .pulso-anel { width: 128px; height: 128px; }
-  .pulso { margin: 10px 0 34px; }
-  .clima-rotulo { font-size: 28px; padding: 14px 26px; }
+  .pulso { margin: 38px 0 6px; }
+  .pulso-anel { width: 230px; height: 230px; }
+  .pulso-num { font-size: 64px; }
+  .pulso-cap { font-size: 13.5px; max-width: 150px; }
+  .clima-rotulo { font-size: 27px; padding: 14px 28px; }
 
-  /* Foco: eco tipográfico | cartão soberano | por que agora */
+  /* Foco: eco tipográfico | cartão soberano | por que agora + evidências,
+     com a pílula de ação sob a coluna central (soberana) */
   .foco-comp {
-    max-width: 1280px;
+    max-width: 1320px;
     display: grid;
-    grid-template-columns: minmax(220px, 1fr) minmax(400px, 480px) minmax(220px, 1fr);
-    gap: 56px; align-items: center; padding: 0 20px;
+    grid-template-columns: minmax(230px, 1fr) minmax(410px, 490px) minmax(250px, 1fr);
+    grid-template-areas:
+      "eco cartao ctx"
+      ".   acao   .";
+    gap: 20px 60px; align-items: center; align-content: center; padding: 0 24px;
   }
-  .eco { margin-bottom: 0; }
-  .eco-estado { font-size: 15px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; color: var(--tinta-3); }
-  .sev3 .eco-estado { color: #8A3E0F; }
+  .eco { grid-area: eco; display: flex; flex-direction: column; margin-bottom: 0; }
+  .cartao { grid-area: cartao; }
+  .contexto { grid-area: ctx; }
+  .acao-area { grid-area: acao; margin-top: 0; padding-top: 6px; }
+
+  .eco-estado { font-size: 14px; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; color: var(--atencao); }
+  .eco-estado::before { width: 8px; height: 8px; box-shadow: 0 0 0 4px rgba(158, 82, 32, .15); }
   .eco-titulo {
-    display: block; font-size: clamp(24px, 2.6vw, 40px); line-height: 1.1; letter-spacing: -.03em;
-    font-weight: 800; margin-top: 12px; color: var(--tinta); overflow-wrap: break-word;
+    display: block; font-size: clamp(24px, 2.4vw, 38px); line-height: 1.12; letter-spacing: -.025em;
+    font-weight: 800; margin-top: 14px; color: var(--tinta); overflow-wrap: break-word;
   }
-  .eco-sub { margin-top: 14px; order: 3; }
-  .eco { display: flex; flex-direction: column; }
-  .eco .eco-sub { margin-top: 14px; }
+  .eco-sub { margin-top: 16px; order: 3; font-size: 12.5px; color: var(--tinta-3); }
 
-  .cartao { padding: 36px 32px 32px; border-radius: 24px; }
-  .cartao .titulo { font-size: 31px; }
+  .cartao { padding: 24px 30px 28px; border-radius: 24px; }
+  .cartao-cab { display: flex; }   /* desktop: cabeçalho interno do cartão (referência 1062) */
+  .cartao .titulo { font-size: 28px; }
 
-  .contexto { display: block; text-align: left; max-width: 300px; }
-  .ctx-rotulo { font-size: 13px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 14px; }
-  .ctx-linha { font-size: 16px; color: var(--tinta-2); line-height: 1.45; }
-  .ctx-linha + .ctx-linha { margin-top: 10px; }
-  .ctx-fonte { margin-top: 16px; font-size: 12px; color: var(--tinta-3); }
+  .contexto { display: block; text-align: left; max-width: 320px; }
+  .ctx-rotulo { font-size: 12.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 12px; }
+  .ctx-linha { font-size: 15.5px; color: var(--tinta-2); line-height: 1.45; }
+  .ctx-linha + .ctx-linha { margin-top: 8px; }
+  .ctx-fonte { margin-top: 18px; font-size: 11.5px; color: var(--tinta-3); }
 
-  .replay-controles { max-width: 560px; }
+  .evid { margin-top: 26px; }
+  .evid-item + .evid-item { margin-top: 12px; }
+  .evid-ped { font-size: 14.5px; font-weight: 700; }
+  .evid-det { font-size: 13px; color: var(--tinta-2); margin-top: 2px; }
+  .evid-resto { margin-top: 12px; font-size: 12.5px; color: var(--tinta-3); }
 }

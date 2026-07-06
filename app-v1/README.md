@@ -27,10 +27,23 @@ Abrir no navegador do celular ou desktop. Os controles no rodapé são do **repl
 - Markup `<b>` dos textos do motor é removido (E4) — tudo renderiza como texto puro.
 - Sem dashboard, sem lista, sem KPI, sem segundo foco, sem ação em Ambiente.
 
+## Camada de apresentação (pacote de correções V1)
+
+- Copy sem travessão, meia-risca, seta ou ponto médio; frases com maiúscula inicial; linguagem de
+  bancada ("Duplas precisam de atenção", "Tem mais pedidos que o normal"). A tradução é só
+  apresentação — nunca muda causa raiz, nunca inventa dado, nunca altera a decisão.
+- Todo foco com pedido-alvo mostra "Pedido #curto" (ID curto real do iFood, exposto pelo gerador).
+- Desktop: "Por que agora" concreto + no máximo 3 evidências (pedidos/itens que puxam a atenção,
+  com item real e tempo de espera) + resumo em 1 frase. Mobile não mostra evidências.
+- Som opcional ao ENTRAR em foco (WebAudio, 2 notas curtas, padrão desligado, botão no rodapé).
+  Só toca durante o replay tocando; nunca repete dentro do mesmo foco.
+
 ## Limitações declaradas
 
 - Replay de janela histórica — não é operação ao vivo (não existe fonte contínua do iFood ainda).
-- IDs exibidos são fatias de UUID (E5): o ID curto se repete nesta janela de 24h+, então o motor usa
-  o identificador não-ambíguo. Exibição amigável de ID é decisão futura de superfície.
+- **Comanda não existe na origem:** nenhum export do iFood (pedidos ou logística) traz o número da
+  comanda; a coluna `ID DO PEDIDO NA INTEGRADORA` vem vazia. A interface mostra "Comanda não
+  informada" — nunca inventa. Quando houver fonte com comanda (impressora/integradora), o gerador
+  ganha o campo e a interface passa a exibir os 3 finais.
 - O protótipo antigo (`prototipos/parados-agora/`) contém lógica anterior à correção Motor × Decisão
   e **não** deve ser usado como demo da V1.
