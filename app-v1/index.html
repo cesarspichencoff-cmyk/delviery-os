@@ -1,0 +1,46 @@
+<!doctype html>
+<!-- ============================================================================
+  DeliveryOS · Interface V1 (interna, descartável) — Missão 4 do Plano V1.
+  Uma tela. Nenhuma lógica de decisão aqui: o cérebro é o real
+  (src/perfil-delivery/motor.js + decisao.js), carregado sem cópia.
+  Regras: docs/Contrato_Estado_Cognitivo_V1.md (decidir() SEMPRE com active;
+  foco puro com dignidade; sem dashboard; composição real obrigatória).
+============================================================================ -->
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#F4F2EC">
+  <title>DeliveryOS · V1</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topo">
+    <div class="marca">DeliveryOS <span class="tag">V1 interna</span></div>
+    <div class="fonte-dado" id="fonteDado">carregando janela real…</div>
+  </header>
+
+  <main id="palco" class="palco" aria-live="polite">
+    <!-- preenchido por app.js: um estado por vez (calmo | ambiente | foco) -->
+    <section class="estado carregando" id="telaCarregando">
+      <p class="sussurro">preparando a janela real de 01/07…</p>
+    </section>
+  </main>
+
+  <footer class="replay" id="replay" hidden>
+    <div class="replay-rotulo">Replay de janela real · demonstração (não é operação ao vivo)</div>
+    <div class="replay-controles">
+      <button id="btPlay" class="bt" aria-label="tocar ou pausar">▶</button>
+      <input id="linha" class="linha" type="range" min="0" max="0" value="0" step="1" aria-label="posição no tempo">
+      <span id="relogio" class="relogio">—</span>
+      <button id="btVel" class="bt bt-vel" aria-label="velocidade do replay">10×</button>
+    </div>
+  </footer>
+
+  <!-- cérebro REAL, sem duplicação (mesma origem do backtest e da auditoria) -->
+  <script src="../src/perfil-delivery/motor.js"></script>
+  <script src="../src/perfil-delivery/decisao.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

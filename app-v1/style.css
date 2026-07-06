@@ -1,0 +1,152 @@
+/* ============================================================================
+   DeliveryOS · Interface V1 — direção: clara, premium, calma, mobile-first,
+   tipografia forte, muito respiro, UMA coisa por vez. Nunca dashboard.
+   Luz é informação; vazio é saúde (Manifesto §10).
+
+   Responsividade: uma única superfície.
+   - Mobile (padrão): uma coluna; estado como cabeçalho; cartão soberano.
+   - Desktop (≥1080px): SÓ no Foco, três colunas — eco tipográfico | cartão
+     SOBERANO | "Por que agora". Laterais = contexto, nunca dado novo.
+     Calmo/Ambiente continuam em coluna única, em escala maior: o vazio é
+     intencional (saúde), não tela quebrada.
+============================================================================ */
+:root {
+  --papel: #F4F2EC;        /* fundo claro, quente, sereno */
+  --tinta: #1A1914;        /* texto principal */
+  --tinta-2: #6E6A5E;      /* apoio */
+  --tinta-3: #9B968A;      /* sussurro */
+  --calmo: #3E7C4F;        /* saúde */
+  --atencao: #A2571F;      /* gravidade sem drama (nunca vermelho piscando) */
+  --cartao: #FFFFFF;
+  --sombra: 0 12px 34px rgba(26, 25, 20, .08);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  background: var(--papel); color: var(--tinta);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased; display: flex; flex-direction: column; min-height: 100dvh;
+}
+
+/* ---------- topo: identifica a versão e declara a fonte do dado ---------- */
+.topo { display: flex; justify-content: space-between; align-items: baseline; padding: 14px 20px 0; }
+.marca { font-weight: 700; letter-spacing: -.02em; font-size: 15px; }
+.tag { font-weight: 500; font-size: 11px; color: var(--tinta-3); margin-left: 4px; }
+.fonte-dado { font-size: 11px; color: var(--tinta-3); text-align: right; max-width: 55%; }
+
+/* ---------- palco: um estado por vez, com surgimento discreto ---------- */
+.palco { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px 22px; }
+.estado, .foco-comp { animation: surge .28s ease-out; }
+@keyframes surge { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+.estado { width: 100%; max-width: 430px; text-align: center; }
+.olho { font-size: 12px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; color: var(--tinta-3); margin-bottom: 18px; }
+.titulo { font-size: 34px; line-height: 1.12; letter-spacing: -.025em; font-weight: 800; }
+.apoio { margin-top: 14px; font-size: 15px; color: var(--tinta-2); }
+.sussurro { margin-top: 18px; font-size: 12.5px; color: var(--tinta-3); }
+
+/* ---------- CALMO: o pulso é a prova de vida; quase nada mais ---------- */
+.pulso { display: flex; justify-content: center; margin: 6px 0 26px; }
+.pulso-anel {
+  width: 86px; height: 86px; border-radius: 50%;
+  border: 2px solid rgba(62, 124, 79, .55);
+  box-shadow: 0 0 24px rgba(62, 124, 79, .25) inset, 0 0 18px rgba(62, 124, 79, .18);
+  animation: respira 6s ease-in-out infinite;
+}
+.pulso-intenso .pulso-anel { animation-duration: 3.6s; }
+@keyframes respira {
+  0%, 100% { transform: scale(1); opacity: .75; }
+  50% { transform: scale(1.06); opacity: 1; }
+}
+
+/* ---------- AMBIENTE: clima, nunca alerta; máx. 2 rótulos; sem ação ---------- */
+.clima { display: flex; flex-direction: column; gap: 10px; align-items: center; margin-bottom: 8px; }
+.clima-rotulo {
+  font-size: 21px; font-weight: 700; letter-spacing: -.015em; padding: 10px 18px;
+  border-radius: 999px; background: rgba(162, 87, 31, .08); color: var(--tinta);
+}
+.clima-rotulo.sev1 { background: rgba(26, 25, 20, .05); }
+.clima-rotulo.sev3 { background: rgba(162, 87, 31, .16); }
+
+/* ---------- FOCO: composição responsiva ----------
+   Mobile: eco = cabeçalho compacto ("Foco" + janela); cartão abaixo; contexto oculto. */
+.foco-comp { width: 100%; max-width: 430px; }
+.eco { text-align: left; margin-bottom: 14px; }
+.eco-estado { font-size: 30px; font-weight: 800; letter-spacing: -.03em; }
+.eco-sub { font-size: 13px; color: var(--tinta-2); margin-top: 2px; }
+.eco-titulo { display: none; }
+.contexto { display: none; }
+
+.cartao { background: var(--cartao); border-radius: 22px; box-shadow: var(--sombra); padding: 28px 24px 26px; text-align: center; }
+.cartao .titulo { font-size: 29px; }
+.sev3 .eco-estado { color: #8A3E0F; }
+.linhas { margin-top: 18px; display: flex; flex-direction: column; gap: 8px; }
+.linha-info { font-size: 15.5px; color: var(--tinta-2); }
+.linha-info.porque { color: var(--tinta); font-weight: 600; }
+.linha-info.conseq { color: var(--tinta); font-weight: 600; }
+.comando { margin-top: 20px; font-size: 16.5px; font-weight: 700; color: var(--tinta); }
+
+/* observação do cliente: texto COMPLETO, nunca truncado em silêncio */
+.obs { margin-top: 20px; text-align: left; background: rgba(162, 87, 31, .07); border-radius: 14px; padding: 14px 16px; }
+.obs-rotulo { font-size: 11.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--atencao); margin-bottom: 6px; }
+.obs-texto { font-size: 15px; color: var(--tinta); overflow-wrap: break-word; }
+.obs-texto + .obs-texto { margin-top: 6px; }
+
+/* ---------- replay (demo sobre janela histórica — separado do "produto") ---------- */
+.replay { padding: 10px 18px calc(14px + env(safe-area-inset-bottom)); border-top: 1px solid rgba(26, 25, 20, .08); }
+.replay-rotulo { font-size: 10.5px; color: var(--tinta-3); text-align: center; margin-bottom: 8px; letter-spacing: .02em; }
+.replay-controles { display: flex; align-items: center; gap: 10px; max-width: 430px; margin: 0 auto; }
+.bt {
+  border: 1px solid rgba(26, 25, 20, .18); background: transparent; color: var(--tinta);
+  border-radius: 999px; width: 40px; height: 32px; font-size: 13px; cursor: pointer;
+}
+.bt-vel { width: 52px; font-weight: 600; }
+.relogio { font-size: 12px; color: var(--tinta-2); font-variant-numeric: tabular-nums; min-width: 84px; text-align: center; }
+.linha { flex: 1; accent-color: var(--tinta); height: 24px; }
+
+.carregando { color: var(--tinta-3); }
+
+/* ============================================================================
+   DESKTOP (≥1080px) — a largura vira CONTEXTO, nunca mais informação.
+============================================================================ */
+@media (min-width: 1080px) {
+  .topo { padding: 20px 36px 0; }
+
+  /* Calmo/Ambiente: coluna única em escala maior — o vazio é o luxo da paz */
+  .estado { max-width: 560px; }
+  .titulo { font-size: 56px; }
+  .apoio { font-size: 17px; margin-top: 18px; }
+  .olho { font-size: 13px; margin-bottom: 24px; }
+  .pulso-anel { width: 128px; height: 128px; }
+  .pulso { margin: 10px 0 34px; }
+  .clima-rotulo { font-size: 28px; padding: 14px 26px; }
+
+  /* Foco: eco tipográfico | cartão soberano | por que agora */
+  .foco-comp {
+    max-width: 1280px;
+    display: grid;
+    grid-template-columns: minmax(220px, 1fr) minmax(400px, 480px) minmax(220px, 1fr);
+    gap: 56px; align-items: center; padding: 0 20px;
+  }
+  .eco { margin-bottom: 0; }
+  .eco-estado { font-size: 15px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; color: var(--tinta-3); }
+  .sev3 .eco-estado { color: #8A3E0F; }
+  .eco-titulo {
+    display: block; font-size: clamp(24px, 2.6vw, 40px); line-height: 1.1; letter-spacing: -.03em;
+    font-weight: 800; margin-top: 12px; color: var(--tinta); overflow-wrap: break-word;
+  }
+  .eco-sub { margin-top: 14px; order: 3; }
+  .eco { display: flex; flex-direction: column; }
+  .eco .eco-sub { margin-top: 14px; }
+
+  .cartao { padding: 36px 32px 32px; border-radius: 24px; }
+  .cartao .titulo { font-size: 31px; }
+
+  .contexto { display: block; text-align: left; max-width: 300px; }
+  .ctx-rotulo { font-size: 13px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 14px; }
+  .ctx-linha { font-size: 16px; color: var(--tinta-2); line-height: 1.45; }
+  .ctx-linha + .ctx-linha { margin-top: 10px; }
+  .ctx-fonte { margin-top: 16px; font-size: 12px; color: var(--tinta-3); }
+
+  .replay-controles { max-width: 560px; }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "DeliveryOS V1 (interna)",
+  "short_name": "DeliveryOS",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#F4F2EC",
+  "theme_color": "#F4F2EC",
+  "description": "Camada de atenção operacional — versão interna V1, replay sobre janela real."
+}

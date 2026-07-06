@@ -1,6 +1,7 @@
 {
   "version": "0.0.1",
   "configurations": [
-    { "name": "prototipo", "runtimeExecutable": "node", "runtimeArgs": ["tools/serve_prototipo.js"], "port": 5178 }
+    { "name": "prototipo", "runtimeExecutable": "node", "runtimeArgs": ["tools/serve_prototipo.js"], "port": 5178 },
+    { "name": "v1", "runtimeExecutable": "node", "runtimeArgs": ["tools/servir_v1.js"], "port": 5179 }
   ]
 }
