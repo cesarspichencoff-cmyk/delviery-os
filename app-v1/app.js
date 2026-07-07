@@ -212,33 +212,125 @@
     return { sev, pr };
   }
   function corPorSev(sev) { return sev >= 3 ? "vermelho" : (sev >= 1 ? "amarelo" : "verde"); }
+  // Pressão visual (0-100): leitura de carga, NUNCA um novo motor de decisão.
+  // Com load/baseline reais (praças de produção): ratio = load/baseline; ratio 1 (baseline) = 50%,
+  // ratio 2 (limiar de sev 3, "virando foco") = 100%. Sem baseline (conferência/motoboy): escala
+  // conservadora por severidade já calculada pelo motor (sem situação=15%, sev1=35%, sev2=60%, sev3=90%).
+  function pressaoPorRatio(R, pracas) {
+    let maxRatio = 0;
+    for (const p of pracas) {
+      const load = (R.ctx.load && R.ctx.load[p]) || 0;
+      const base = MOTOR.BASELINE[p];
+      if (!base) continue;
+      const ratio = load / base;
+      if (ratio > maxRatio) maxRatio = ratio;
+    }
+    return Math.max(0, Math.min(100, Math.round(maxRatio * 50)));
+  }
+  function pressaoPorSeveridade(sev) {
+    if (!sev) return 15;
+    if (sev === 1) return 35;
+    if (sev === 2) return 60;
+    return 90;
+  }
   function mapaAmbientes(R) {
     // Sushi = combinados + duplas + enrolados (frios principais)
     const su = piorPraca(R, ["combinados", "duplas", "enrolados"]);
     const suCor = corPorSev(su.sev);
-    const sushi = { nome: "Sushi", cor: suCor, motivo: su.pr
-      ? (MOTOR.DISPLAY[su.pr] + (suCor === "vermelho" ? " segurando o fluxo" : " com pedidos acumulando"))
-      : "Sushi em ritmo normal" };
+    const sushi = { nome: "Sushi", cor: suCor, pressao: pressaoPorRatio(R, ["combinados", "duplas", "enrolados"]),
+      motivo: su.pr
+        ? (MOTOR.DISPLAY[su.pr] + (suCor === "vermelho" ? " segurando o fluxo" : " com pedidos acumulando"))
+        : "Sushi em ritmo normal" };
     // Quentes = enrolados quentes (Hot Roll e afins) — mapeamento com as próprias palavras do César
     const qu = piorPraca(R, ["enrolados_quentes"]);
     const quCor = corPorSev(qu.sev);
-    const quentes = { nome: "Quentes", cor: quCor, motivo: qu.sev
-      ? ("Enrolados quentes " + (quCor === "vermelho" ? "segurando o fluxo" : "puxando espera"))
-      : "Quentes em ritmo normal" };
+    const quentes = { nome: "Quentes", cor: quCor, pressao: pressaoPorRatio(R, ["enrolados_quentes"]),
+      motivo: qu.sev
+        ? ("Enrolados quentes " + (quCor === "vermelho" ? "segurando o fluxo" : "puxando espera"))
+        : "Quentes em ritmo normal" };
     // Conferência = sinal por pedido (não fila); honesto sobre isso
-    const temConf = R.sits.some(s => s.kind === "conferencia");
-    const conf = { nome: "Conferência", cor: temConf ? "amarelo" : "verde",
-      motivo: temConf ? "Pedido pedindo conferência reforçada" : "Nada pendente para conferir" };
+    const confSit = R.sits.find(s => s.kind === "conferencia");
+    const conf = { nome: "Conferência", cor: confSit ? "amarelo" : "verde", pressao: pressaoPorSeveridade(confSit ? confSit.sev : 0),
+      motivo: confSit ? "Pedido pedindo conferência reforçada" : "Nada pendente para conferir" };
     // Motoboy = saída travada (prontos parados na expedição)
     const saida = R.sits.find(s => s.kind === "saida");
     const moCor = saida ? corPorSev(saida.sev) : "verde";
-    const motoboy = { nome: "Motoboy", cor: moCor,
+    const motoboy = { nome: "Motoboy", cor: moCor, pressao: pressaoPorSeveridade(saida ? saida.sev : 0),
       motivo: saida ? (moCor === "vermelho" ? "Saída travando, prontos parados" : "Prontos esperando saída") : "Despacho sem acúmulo" };
-    // Caixa e Cozinha: honestamente em validação (ver cabeçalho)
-    const caixa = { nome: "Caixa", cor: "validacao", motivo: "Fonte atual ainda não mede esta fila" };
-    const cozinha = { nome: "Cozinha", cor: "validacao", motivo: "Separação fina ainda depende do mapa operacional" };
+    // Caixa e Cozinha: honestamente em validação (ver cabeçalho) — barra sem percentual
+    const caixa = { nome: "Caixa", cor: "validacao", pressao: null, motivo: "Fonte atual ainda não mede esta fila" };
+    const cozinha = { nome: "Cozinha", cor: "validacao", pressao: null, motivo: "Separação fina ainda depende do mapa operacional" };
     // ordem de leitura: entrada → produção fria → produção quente → cozinha → conferência → saída
-    return [caixa, sushi, quentes, cozinha, conf, motoboy].map(a => ({ nome: a.nome, cor: a.cor, estadoTxt: AMB_ESTADO[a.cor], motivo: a.motivo }));
+    return [caixa, sushi, quentes, cozinha, conf, motoboy].map(a => ({ nome: a.nome, cor: a.cor, pressao: a.pressao, estadoTxt: AMB_ESTADO[a.cor], motivo: a.motivo }));
+  }
+
+  /* ====================== CLASSIFICAÇÃO V0 DE EMBALAGENS (visual, não motor) ======================
+     Base: docs/Logica_Embalagens_DeliveryOS_V0.md. Usada SÓ para os Sinais de Fluxo do Calmo — não
+     altera pedido, decisão, seed ou cardápio; não persiste nada. Regra por categoria, não por sabor.
+     Onde o nome não bate com nenhuma categoria conhecida, retorna null (nunca inventa categoria). */
+  function classificarCategoriaOperacionalV0(nome, praca) {
+    const n = String(nome || "").toLowerCase();
+    if (praca === "combinados") return nome;         // produto fechado — cada combinado é a própria categoria
+    if (/temaki/.test(n)) return "Temaki";
+    if (/uramaki/.test(n)) return "Uramaki";
+    if (/hoss?omaki/.test(n)) return "Hosomaki";
+    if (/hot ?roll/.test(n)) return "Hot Roll";
+    if (/\bdyo\b/.test(n)) return "Dyo";
+    if (/sashimi/.test(n)) return "Sashimi";
+    if (/batt?er[aá]/.test(n)) return "Battera";
+    if (/carpaccio/.test(n)) return "Carpaccio";
+    if (/tirashi/.test(n)) return "Tirashi";
+    if (/guioza/.test(n)) return "Guioza";
+    if (/edamame/.test(n)) return "Edamame";
+    if (/misso/.test(n)) return "Missoshiru";
+    if (/tempur[aá]/.test(n)) return "Tempurá";
+    if (/tartar/.test(n)) return "Tartar";
+    if (/tuna shis[oô]/.test(n)) return "Tuna Shiso";
+    if (/ceviche/.test(n)) return "Ceviche";
+    if (/sunomono/.test(n)) return "Sunomono";
+    if (/mochi/.test(n)) return "Mochi";
+    if (praca === "sobremesa") return "Sobremesa";
+    if (praca === "bar_bebidas") return "Bebida";
+    if (praca === "cozinha_quentes") return "Prato quente";
+    return null;
+  }
+  // "Duas sacolas" V0: só critérios fortes e inequívocos da lógica de embalagens (§11 do documento).
+  // Quente+frio usa I.temQuente/I.temFrio — dado REAL já computado pelo motor, não invenção.
+  // Bebida grande / muitas latas usam correspondência de nome forte; incerto = não classifica.
+  function detectarDuasSacolasV0(I) {
+    if (!I || !I.itens.length) return false;
+    if (I.temQuente && I.temFrio) return true;
+    const bebidaGrande = I.itens.some(x => x.praca === "bar_bebidas" && /720\s*ml|vinho|saqu[eê]/i.test(x.nome));
+    if (bebidaGrande) return true;
+    const latas = I.itens.filter(x => x.praca === "bar_bebidas" && /lata/i.test(x.nome)).reduce((a, x) => a + (x.qtd || 1), 0);
+    return latas >= 6;
+  }
+  // "Só quente" V0: I.soQuentes é dado REAL do motor (temQuente && !temFrio) — só leitura, sem inferência nova.
+  function detectarSoQuenteV0(I) { return !!(I && I.itens.length && I.soQuentes); }
+  // "Só sobremesa" V0: todos os itens do pedido são da praça sobremesa (inclui mochi).
+  function detectarSoSobremesaV0(I) { return !!(I && I.itens.length && I.itens.every(x => x.praca === "sobremesa")); }
+
+  function sinaisDeFluxo(R, INFO) {
+    const ids = Array.from(new Set(R.ctx.wP.map(x => x.id).concat(R.ctx.wE.map(x => x.id))));
+    const duasSacolas = [], soQuente = [], soSobremesa = [];
+    for (const id of ids) {
+      const I = INFO[id]; if (!I) continue;
+      if (detectarDuasSacolasV0(I)) duasSacolas.push(id);
+      if (detectarSoQuenteV0(I)) soQuente.push(id);
+      if (detectarSoSobremesaV0(I)) soSobremesa.push(id);
+    }
+    // itens puxando o fluxo: só pedidos EM PRODUÇÃO agora (os que estão "entrando"), agrupados por categoria
+    const contagem = {};
+    for (const w of R.ctx.wP) {
+      const I = INFO[w.id]; if (!I) continue;
+      for (const it of I.itens) {
+        const cat = classificarCategoriaOperacionalV0(it.nome, it.praca);
+        if (!cat) continue;
+        contagem[cat] = (contagem[cat] || 0) + (it.qtd || 1);
+      }
+    }
+    const itensPuxando = Object.entries(contagem).sort((a, b) => b[1] - a[1]).map(([nome, qtd]) => ({ nome, qtd }));
+    return { duasSacolas, soQuente, soSobremesa, itensPuxando };
   }
 
   function precomputar(J, INFO) {
@@ -258,6 +350,7 @@
         t, mode: R.mode, emand: R.emand, intenso: R.intenso,
         amb: (R.ambList || []).map(a => ({ label: semTags(a.label), sev: a.sev })),
         ambientes: R.mode === "ambiente" ? mapaAmbientes(R) : null,
+        sinais: R.mode === "calmo" ? sinaisDeFluxo(R, INFO) : null,
         foco: R.foco ? { sev: R.foco.sev, head: semTags(R.foco.head), impactos: (R.foco.impactos || []).map(semTags), conseq: semTags(R.foco.conseq), cmd: semTags(R.foco.cmd) } : null,
         sitKind: sit ? sit.kind : null, sitId: sit ? (sit.id || null) : null, sitPraca: sit ? (sit.praca || null) : null, alvoId, evid,
         rec: rec ? { tipo: rec.tipo, acao: semTags(rec.acao), head: semTags(rec.head), porque: semTags(rec.porque), primeiro: semTags(rec.primeiro), impacto: semTags(rec.impacto), confianca: rec.confianca, dados: rec.dados } : null
@@ -318,6 +411,54 @@
     return b;
   }
 
+  /* ---------- Sinais de Fluxo (só Calmo): "está tudo sob controle, mas dá pra adiantar isso" ----------
+     Discreto, nunca compete com o Calmo. Se não houver nada acionável, o bloco inteiro não aparece. */
+  function blocoSinalGrupoConteudo(titulo, ids, restoTexto, limite) {
+    limite = limite || 5;
+    const wrap = el("div", "sinal-grupo");
+    wrap.appendChild(el("div", "sinal-nome", titulo));
+    for (const id of ids.slice(0, limite)) wrap.appendChild(el("div", "sinal-pedido", "Pedido " + rotuloPedido(id)));
+    if (ids.length > limite) wrap.appendChild(el("div", "sinal-resto", "Mais " + (ids.length - limite) + " " + restoTexto + "."));
+    return wrap;
+  }
+  function blocoItensPuxando(itens) {
+    const b = el("div", "sinal-bloco sinal-bloco-itens");
+    b.appendChild(el("div", "sinal-nome", "Itens puxando o fluxo"));
+    // mobile: resumo de 1 linha (compacto); desktop: grade de até 6 (CSS troca qual aparece)
+    b.appendChild(el("p", "sinal-resumo-mobile", listaHumana(itens.slice(0, 3).map(x => x.nome)) + " puxando o fluxo agora."));
+    const grade = el("div", "sinal-itens-grade");
+    for (const it of itens.slice(0, 6)) {
+      const card = el("div", "sinal-item");
+      card.appendChild(el("div", "sinal-item-nome", it.nome));
+      card.appendChild(el("div", "sinal-item-qtd", it.qtd + (it.qtd === 1 ? " ativo" : " ativos")));
+      grade.appendChild(card);
+    }
+    b.appendChild(grade);
+    if (itens.length > 6) b.appendChild(el("p", "sinal-resto sinal-resto-desktop", "Mais " + (itens.length - 6) + " itens ativos."));
+    return b;
+  }
+  function blocoSinaisDeFluxo(sinais) {
+    if (!sinais) return null;
+    if (!sinais.duasSacolas.length && !sinais.soQuente.length && !sinais.soSobremesa.length && !sinais.itensPuxando.length) return null;
+    const sf = el("div", "sinais-fluxo");
+    sf.appendChild(el("div", "sinais-titulo", "Sinais de fluxo"));
+    const linha = el("div", "sinais-linha");
+    if (sinais.duasSacolas.length) {
+      const b = el("div", "sinal-bloco");
+      b.appendChild(blocoSinalGrupoConteudo("Duas sacolas", sinais.duasSacolas, "pedidos com duas sacolas"));
+      linha.appendChild(b);
+    }
+    if (sinais.soQuente.length || sinais.soSobremesa.length) {
+      const b = el("div", "sinal-bloco");
+      if (sinais.soQuente.length) b.appendChild(blocoSinalGrupoConteudo("Só quente", sinais.soQuente, "pedidos só quente"));
+      if (sinais.soSobremesa.length) b.appendChild(blocoSinalGrupoConteudo("Só sobremesa", sinais.soSobremesa, "pedidos só sobremesa"));
+      linha.appendChild(b);
+    }
+    if (sinais.itensPuxando.length) linha.appendChild(blocoItensPuxando(sinais.itensPuxando));
+    sf.appendChild(linha);
+    return sf;
+  }
+
   /* ---------- render de cada estado (um por vez, nunca lista) ---------- */
   function render(INFO, ponto) {
     const palco = $("palco");
@@ -335,6 +476,7 @@
       pulso.appendChild(anel);
       s.appendChild(pulso);
       s.appendChild(el("p", "apoio", "Operação fluindo. Nada precisa de você agora."));
+      const sf = blocoSinaisDeFluxo(ponto.sinais); if (sf) s.appendChild(sf);
       palco.appendChild(s);
       return;
     }
@@ -354,6 +496,12 @@
         card.appendChild(cab);
         card.appendChild(el("div", "amb-estado", a.estadoTxt));
         card.appendChild(el("div", "amb-motivo", a.motivo));
+        const barraWrap = el("div", "amb-barra-wrap" + (a.pressao == null ? " amb-barra-vazia" : ""));
+        const barra = el("div", "amb-barra");
+        if (a.pressao != null) barra.style.width = a.pressao + "%";
+        barraWrap.appendChild(barra);
+        card.appendChild(barraWrap);
+        if (a.pressao != null) card.appendChild(el("div", "amb-pressao-txt", "Pressão " + a.pressao + "%"));
         grade.appendChild(card);
       }
       s.appendChild(grade);

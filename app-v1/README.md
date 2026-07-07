@@ -79,6 +79,49 @@ Cada cor vem **só de dado que o motor já produz** (nada inventado):
 - **Calmo continua simples** (só o pulso "Em fluxo"); **Foco continua soberano** (cartão + pílula).
   O mapa pertence só ao Ambiente. Motor, seed e decisão intocados.
 
+## Barra de pressão por ambiente
+
+Cada cartão do Mapa de Ambientes ganhou uma barra fina. **É leitura visual de carga operacional, não
+uma nova decisão** — nunca recalcula o Foco, nunca substitui `sess.active.sit`.
+
+- **Sushi e Quentes** (têm baseline real no motor): pressão = `load/baseline` mapeado linearmente
+  (baseline = 50%, limiar de severidade 3 "virando foco" = 100%). Cresce de forma contínua antes
+  mesmo da cor mudar — mostra "quão perto" de virar Foco, não só o estado discreto atual.
+- **Conferência e Motoboy** (só severidade, sem baseline próprio): escala conservadora por
+  severidade (sem situação 15%, severidade 1 → 35%, severidade 2 → 60%, severidade 3 → 90%).
+- **Caixa e Cozinha** (em validação): barra sem preenchimento e sem número, com textura neutra —
+  nunca finge uma medida que não existe.
+- A cor da barra é sempre a mesma cor do cartão (verde/amarelo/vermelho) — nunca uma cor própria que
+  possa contradizer o texto do cartão.
+
+## Sinais de Fluxo no Calmo (docs/Logica_Embalagens_DeliveryOS_V0.md)
+
+O Calmo ganhou uma área discreta abaixo do pulso, **só quando há algo acionável** (se não houver
+nenhum sinal, o bloco inteiro não aparece — nunca mostra área vazia). Objetivo: "está tudo sob
+controle, mas você já pode adiantar isso." Nunca compete com o "Em fluxo"; nunca aparece no Ambiente
+ou no Foco.
+
+- **Duas sacolas**: critérios fortes da lógica de embalagens — quente de cozinha + frio no mesmo
+  pedido (usa `I.temQuente`/`I.temFrio`, dado real do motor), bebida grande (720 ml/vinho/saquê por
+  nome) ou 6+ latas. Critérios de volume/estabilidade da caixa **não foram automatizados** (exigiriam
+  simular a matriz de caixas inteira — fora do escopo desta V0; ver Pendências).
+- **Só quente**: leitura direta de `I.soQuentes` (`temQuente && !temFrio`), já calculado pelo motor —
+  nenhuma classificação nova, só apresentação.
+- **Só sobremesa**: todos os itens do pedido são da praça sobremesa (inclui mochi).
+- **Itens puxando o fluxo**: itens dos pedidos em produção agora, agrupados por categoria (Dyo,
+  Temaki, Uramaki, Hosomaki, Hot Roll, Sashimi, Battera etc. — nomes padronizados do documento de
+  embalagens), contados por quantidade. Combinados contam pelo próprio nome (produto fechado, não
+  decomposto em categoria genérica).
+- **Classificação V0 é só visual** (`classificarCategoriaOperacionalV0` e as funções `detectarXV0`
+  em `app-v1/app.js`) — não é motor definitivo de embalagem, não altera pedido, não persiste nada.
+  Onde o nome não bate com nenhuma categoria conhecida, o item simplesmente não entra na contagem
+  (nunca inventa categoria).
+- **Comanda ainda não é fonte digital** (ver Auditoria de Praça/Comanda) — todo sinal usa o **ID
+  curto real do iFood** como identificador ("Pedido #1234"), nunca comanda inferida.
+- Limite rígido: no máximo 5 pedidos por sinal (resto vira frase resumida), no máximo 6 categorias em
+  "itens puxando o fluxo" no desktop (3 num resumo compacto no mobile). Qualquer incerteza na
+  classificação faz o item **não aparecer** no sinal, nunca aparecer como se fosse certeza.
+
 ## Limitações declaradas
 
 - Replay de janela histórica — não é operação ao vivo (não existe fonte contínua do iFood ainda).
