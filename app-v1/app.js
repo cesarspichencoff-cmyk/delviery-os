@@ -170,7 +170,13 @@
         .sort((a, b) => b.min - a.min);
       return {
         titulo: "Pedidos que puxam esta atenção", tipo: "pedidos",
-        linhas: rel.slice(0, 3).map(w => { const I = INFO[w.id]; const it = I ? (I.itens.find(x => x.praca === sit.praca) || I.itens[0]) : null; return { id: w.id, min: Math.round(w.min), item: it ? it.nome : null }; }),
+        linhas: rel.slice(0, 3).map(w => {
+          const I = INFO[w.id];
+          const it = I ? (I.itens.find(x => x.praca === sit.praca) || I.itens[0]) : null;
+          // praças além da que abriu o foco (deixa claro que o pedido é multi-praça, não erro de praça)
+          const outras = (I && I.benches && I.benches.length > 1) ? I.benches.filter(p => p !== sit.praca).map(p => MOTOR.DISPLAY[p] || p) : [];
+          return { id: w.id, min: Math.round(w.min), item: it ? it.nome : null, deps: outras };
+        }),
         resto: Math.max(0, rel.length - 3), restoTexto: "pedidos também dependem desta praça"
       };
     }
@@ -207,7 +213,7 @@
         t, mode: R.mode, emand: R.emand, intenso: R.intenso,
         amb: (R.ambList || []).map(a => ({ label: semTags(a.label), sev: a.sev })),
         foco: R.foco ? { sev: R.foco.sev, head: semTags(R.foco.head), impactos: (R.foco.impactos || []).map(semTags), conseq: semTags(R.foco.conseq), cmd: semTags(R.foco.cmd) } : null,
-        sitKind: sit ? sit.kind : null, sitId: sit ? (sit.id || null) : null, alvoId, evid,
+        sitKind: sit ? sit.kind : null, sitId: sit ? (sit.id || null) : null, sitPraca: sit ? (sit.praca || null) : null, alvoId, evid,
         rec: rec ? { tipo: rec.tipo, acao: semTags(rec.acao), head: semTags(rec.head), porque: semTags(rec.porque), primeiro: semTags(rec.primeiro), impacto: semTags(rec.impacto), confianca: rec.confianca, dados: rec.dados } : null
       });
     }
@@ -223,11 +229,28 @@
     b.appendChild(el("p", "obs-aviso", "Conferir o texto completo na comanda."));
     return b;
   }
-  function blocoPedido(alvoId) {
+  const pracasDisplay = benches => (benches || []).map(p => MOTOR.DISPLAY[p] || p);
+  // linha de dependência: quando o pedido depende de VÁRIAS bancadas, explicar isso —
+  // usando só I.benches (dado real do motor). Nunca atribui item a praça errada.
+  function blocoDependencia(INFO, alvoId, sitKind, sitPraca) {
+    const I = INFO[alvoId];
+    if (!I || !I.benches || I.benches.length <= 1) return null;   // 1 bancada só: nada a explicar
+    if (sitKind === "praca" && sitPraca && I.benches.indexOf(sitPraca) >= 0) {
+      const foco = MOTOR.DISPLAY[sitPraca] || sitPraca;
+      const outras = pracasDisplay(I.benches.filter(p => p !== sitPraca));
+      return el("p", "pedido-dep", "Atenção agora em " + foco + ". Pedido também depende de " + listaHumana(outras) + ".");
+    }
+    return el("p", "pedido-dep", "Pedido depende de " + listaHumana(pracasDisplay(I.benches)) + ".");
+  }
+  function blocoPedido(INFO, alvoId, sitKind, sitPraca) {
     if (!alvoId) return null;
     const b = el("div", "pedido");
-    b.appendChild(el("div", "pedido-num", "Pedido " + rotuloPedido(alvoId)));
-    b.appendChild(el("div", "pedido-comanda", "Comanda não informada"));
+    const topo = el("div", "pedido-topo");
+    topo.appendChild(el("div", "pedido-num", "Pedido " + rotuloPedido(alvoId)));
+    topo.appendChild(el("div", "pedido-comanda", "Comanda não informada"));
+    b.appendChild(topo);
+    const dep = blocoDependencia(INFO, alvoId, sitKind, sitPraca);
+    if (dep) b.appendChild(dep);
     return b;
   }
   function blocoEvidencias(evid) {
@@ -239,6 +262,7 @@
       if (evid.tipo === "pedidos") {
         e.appendChild(el("div", "evid-ped", "Pedido " + rotuloPedido(l.id)));
         e.appendChild(el("div", "evid-det", (l.item ? l.item + " " : "") + "esperando há " + l.min + " minutos"));
+        if (l.deps && l.deps.length) e.appendChild(el("div", "evid-dep", "Também passa por " + listaHumana(l.deps) + "."));
       } else {
         e.appendChild(el("div", "evid-ped", l.item + (l.qtd > 1 ? " (" + l.qtd + ")" : "")));
       }
@@ -308,7 +332,7 @@
       li.appendChild(el("p", "linha-info porque", linhaPuro(ponto.foco.conseq)));
     }
     c.appendChild(li);
-    const ped = blocoPedido(ponto.alvoId); if (ped) c.appendChild(ped);
+    const ped = blocoPedido(INFO, ponto.alvoId, ponto.sitKind, ponto.sitPraca); if (ped) c.appendChild(ped);
     const obs = blocoObservacao(INFO, ponto.sitId); if (obs) c.appendChild(obs);
     if (ponto.rec && ponto.rec.confianca !== "alta") c.appendChild(el("p", "sussurro", "Confiança " + ponto.rec.confianca + ". Baseado em " + ponto.rec.dados.replace(/·/g, "e") + "."));
     s.appendChild(c);
