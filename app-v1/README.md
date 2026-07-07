@@ -54,6 +54,31 @@ em praça errada. Correção, **só apresentação, usando `I.benches` que o mot
 - Nenhum item é rotulado com praça errada; a praça real do item nunca muda; motor/seed/decisão
   intocados.
 
+## Mapa de Ambientes no estado Ambiente (docs/Mapa_Ambientes_V1.md)
+
+O estado **Ambiente** mostra os 6 ambientes reais da operação (Caixa, Sushi, Quentes, Cozinha,
+Conferência, Motoboy) — só quando `mode === "ambiente"`. Cada cartão tem nome, estado e motivo
+curto; a **cor é o significado** (verde = tudo fluindo, amarelo = atenção, vermelho = virando foco,
+neutro = em validação). Mobile: uma coluna. Desktop: grade 3×2. Não é dashboard: 6 cartões, pouco
+texto, sem número, sem gráfico, sem tabela.
+
+Cada cor vem **só de dado que o motor já produz** (nada inventado):
+- **Sushi** = severidade das praças combinados + duplas + enrolados.
+- **Quentes** = severidade da praça enrolados quentes (Hot Roll etc.), ancorada nas próprias
+  palavras do César ("Hot Roll, enrolados quentes").
+- **Conferência** = há pedido pedindo conferência reforçada (sinal por pedido, não fila de estação).
+- **Motoboy** = saída travada (prontos parados na expedição, sinal `saida`).
+- **Vermelho** só aparece em severidade 3 (praça a 2× do baseline) — nunca decorativo.
+
+**Honestidade obrigatória — Caixa e Cozinha ficam "Em validação":**
+- **Caixa** não é modelada pelo motor (não há dado de fila de comanda) → "Fonte atual ainda não mede
+  esta fila".
+- **Cozinha** carrega a colisão de nome documentada no Mapa de Ambientes: o motor rotula a praça
+  `cozinha_quentes` como "Quentes", e a separação fina Quentes × Cozinha não foi validada pelo
+  César → "Separação fina ainda depende do mapa operacional". Não inventamos essa separação.
+- **Calmo continua simples** (só o pulso "Em fluxo"); **Foco continua soberano** (cartão + pílula).
+  O mapa pertence só ao Ambiente. Motor, seed e decisão intocados.
+
 ## Limitações declaradas
 
 - Replay de janela histórica — não é operação ao vivo (não existe fonte contínua do iFood ainda).

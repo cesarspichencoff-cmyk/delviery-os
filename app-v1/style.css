@@ -19,6 +19,8 @@
   --verde: #2E9E4F;        /* ação e saúde (cor operacional, nunca decorativa) */
   --verde-brilho: rgba(70, 190, 110, .55);
   --atencao: #9E5220;      /* gravidade sem drama (nunca vermelho piscando) */
+  --vermelho: #B23A2A;     /* virando foco — controlado, nunca alarme piscando */
+  --neutro: #A8A296;       /* em validação — dado ainda não confiável */
   --cartao: #FFFFFF;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -85,6 +87,35 @@ body[data-mode="foco"] { background: var(--papel-foco); }
 }
 .clima-rotulo.sev1 { background: rgba(25, 24, 19, .05); }
 .clima-rotulo.sev3 { background: rgba(158, 82, 32, .17); }
+
+/* ---------- AMBIENTE: Mapa de Ambientes (6 áreas, consciência não ação) ----------
+   Visão viva da operação, nunca dashboard: 6 cartões, cor com significado, pouco texto. */
+.ambiente-mapa { width: 100%; max-width: 460px; margin: auto; animation: surge .3s ease-out; }
+.amb-topo { text-align: center; margin-bottom: 20px; }
+.amb-topo .olho { margin-bottom: 8px; }
+.amb-pergunta { font-size: 20px; font-weight: 800; letter-spacing: -.02em; color: var(--tinta); }
+.amb-grade { display: flex; flex-direction: column; gap: 10px; }
+.amb-card {
+  background: var(--cartao); border-radius: 16px; padding: 15px 17px;
+  box-shadow: 0 8px 22px rgba(26, 25, 20, .06);
+  border-left: 3px solid var(--neutro);
+}
+.amb-card-cab { display: flex; align-items: center; justify-content: space-between; }
+.amb-nome { font-size: 16px; font-weight: 800; letter-spacing: -.01em; }
+.amb-ponto { width: 9px; height: 9px; border-radius: 50%; background: var(--neutro); }
+.amb-estado { margin-top: 3px; font-size: 13px; font-weight: 700; color: var(--neutro); }
+.amb-motivo { margin-top: 2px; font-size: 13.5px; color: var(--tinta-2); line-height: 1.35; }
+/* cores por estado — o significado é a cor, o texto é humano */
+.amb-verde { border-left-color: var(--verde); }
+.amb-verde .amb-ponto { background: var(--verde); }
+.amb-verde .amb-estado { color: var(--verde); }
+.amb-amarelo { border-left-color: var(--atencao); }
+.amb-amarelo .amb-ponto { background: var(--atencao); }
+.amb-amarelo .amb-estado { color: var(--atencao); }
+.amb-vermelho { border-left-color: var(--vermelho); background: #FDF6F3; }
+.amb-vermelho .amb-ponto { background: var(--vermelho); box-shadow: 0 0 0 4px rgba(178, 58, 42, .14); }
+.amb-vermelho .amb-estado { color: var(--vermelho); }
+.amb-validacao { border-left-color: var(--neutro); }
 
 /* ---------- FOCO: cartão de situação + pílula de ação dominante ---------- */
 .eco { text-align: left; margin-bottom: 14px; }
@@ -185,6 +216,16 @@ body[data-mode="foco"] { background: var(--papel-foco); }
   .pulso-num { font-size: 64px; }
   .pulso-cap { font-size: 13.5px; max-width: 150px; }
   .clima-rotulo { font-size: 27px; padding: 14px 28px; }
+
+  /* Ambiente: mapa 3x2 — a largura vira composição, não mais informação */
+  .ambiente-mapa { max-width: 1040px; }
+  .amb-pergunta { font-size: 30px; }
+  .amb-topo { margin-bottom: 30px; }
+  .amb-grade { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  .amb-card { padding: 20px 22px; border-radius: 18px; }
+  .amb-nome { font-size: 18px; }
+  .amb-estado { font-size: 13.5px; margin-top: 6px; }
+  .amb-motivo { font-size: 14.5px; margin-top: 4px; }
 
   /* Foco: eco tipográfico | cartão soberano | por que agora + evidências,
      com a pílula de ação sob a coluna central (soberana) */

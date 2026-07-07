@@ -196,6 +196,51 @@
     };
   }
 
+  /* ---------- MAPA DE AMBIENTES (só estado Ambiente) ----------
+     Os 6 ambientes reais do César, coloridos SÓ com dado que o motor já produz.
+     Honestidade obrigatória (docs/Mapa_Ambientes_V1.md):
+       - Caixa: o motor não modela a fila da caixa → sempre "Em validação".
+       - Cozinha: colisão de nome (o motor rotula cozinha_quentes como "Quentes") e a
+         separação fina não foi validada pelo César → "Em validação".
+       - Sushi / Quentes / Conferência / Motoboy: mensuráveis por load/severidade/sinais reais.
+     Cor: verde (tudo fluindo) · amarelo (atenção) · vermelho (virando foco, só sev 3) ·
+     neutro (em validação). Vermelho nunca decorativo — sev 3 é praça a 2x do baseline. */
+  const AMB_ESTADO = { verde: "Tudo fluindo", amarelo: "Atenção", vermelho: "Virando foco", validacao: "Em validação" };
+  function piorPraca(R, pracas) {
+    let sev = 0, pr = null;
+    for (const s of R.sits) if (s.kind === "praca" && pracas.indexOf(s.praca) >= 0 && s.sev > sev) { sev = s.sev; pr = s.praca; }
+    return { sev, pr };
+  }
+  function corPorSev(sev) { return sev >= 3 ? "vermelho" : (sev >= 1 ? "amarelo" : "verde"); }
+  function mapaAmbientes(R) {
+    // Sushi = combinados + duplas + enrolados (frios principais)
+    const su = piorPraca(R, ["combinados", "duplas", "enrolados"]);
+    const suCor = corPorSev(su.sev);
+    const sushi = { nome: "Sushi", cor: suCor, motivo: su.pr
+      ? (MOTOR.DISPLAY[su.pr] + (suCor === "vermelho" ? " segurando o fluxo" : " com pedidos acumulando"))
+      : "Sushi em ritmo normal" };
+    // Quentes = enrolados quentes (Hot Roll e afins) — mapeamento com as próprias palavras do César
+    const qu = piorPraca(R, ["enrolados_quentes"]);
+    const quCor = corPorSev(qu.sev);
+    const quentes = { nome: "Quentes", cor: quCor, motivo: qu.sev
+      ? ("Enrolados quentes " + (quCor === "vermelho" ? "segurando o fluxo" : "puxando espera"))
+      : "Quentes em ritmo normal" };
+    // Conferência = sinal por pedido (não fila); honesto sobre isso
+    const temConf = R.sits.some(s => s.kind === "conferencia");
+    const conf = { nome: "Conferência", cor: temConf ? "amarelo" : "verde",
+      motivo: temConf ? "Pedido pedindo conferência reforçada" : "Nada pendente para conferir" };
+    // Motoboy = saída travada (prontos parados na expedição)
+    const saida = R.sits.find(s => s.kind === "saida");
+    const moCor = saida ? corPorSev(saida.sev) : "verde";
+    const motoboy = { nome: "Motoboy", cor: moCor,
+      motivo: saida ? (moCor === "vermelho" ? "Saída travando, prontos parados" : "Prontos esperando saída") : "Despacho sem acúmulo" };
+    // Caixa e Cozinha: honestamente em validação (ver cabeçalho)
+    const caixa = { nome: "Caixa", cor: "validacao", motivo: "Fonte atual ainda não mede esta fila" };
+    const cozinha = { nome: "Cozinha", cor: "validacao", motivo: "Separação fina ainda depende do mapa operacional" };
+    // ordem de leitura: entrada → produção fria → produção quente → cozinha → conferência → saída
+    return [caixa, sushi, quentes, cozinha, conf, motoboy].map(a => ({ nome: a.nome, cor: a.cor, estadoTxt: AMB_ESTADO[a.cor], motivo: a.motivo }));
+  }
+
   function precomputar(J, INFO) {
     const sess = MOTOR.novaSessao();
     const linha = [];
@@ -212,6 +257,7 @@
       linha.push({
         t, mode: R.mode, emand: R.emand, intenso: R.intenso,
         amb: (R.ambList || []).map(a => ({ label: semTags(a.label), sev: a.sev })),
+        ambientes: R.mode === "ambiente" ? mapaAmbientes(R) : null,
         foco: R.foco ? { sev: R.foco.sev, head: semTags(R.foco.head), impactos: (R.foco.impactos || []).map(semTags), conseq: semTags(R.foco.conseq), cmd: semTags(R.foco.cmd) } : null,
         sitKind: sit ? sit.kind : null, sitId: sit ? (sit.id || null) : null, sitPraca: sit ? (sit.praca || null) : null, alvoId, evid,
         rec: rec ? { tipo: rec.tipo, acao: semTags(rec.acao), head: semTags(rec.head), porque: semTags(rec.porque), primeiro: semTags(rec.primeiro), impacto: semTags(rec.impacto), confianca: rec.confianca, dados: rec.dados } : null
@@ -294,12 +340,23 @@
     }
 
     if (ponto.mode === "ambiente") {
-      const s = el("section", "estado ambiente");
-      s.appendChild(el("div", "olho", "Ambiente"));
-      const lista = el("div", "clima");
-      for (const a of ponto.amb.slice(0, 2)) lista.appendChild(el("div", "clima-rotulo sev" + a.sev, traduzAmb(a.label)));
-      s.appendChild(lista);
-      s.appendChild(el("p", "apoio", "Acompanhando. Nada precisa de você agora."));
+      const s = el("section", "estado ambiente-mapa");
+      const topo = el("header", "amb-topo");
+      topo.appendChild(el("div", "olho", "Ambiente"));
+      topo.appendChild(el("p", "amb-pergunta", "Onde a operação está pressionando agora"));
+      s.appendChild(topo);
+      const grade = el("div", "amb-grade");
+      for (const a of (ponto.ambientes || [])) {
+        const card = el("div", "amb-card amb-" + a.cor);
+        const cab = el("div", "amb-card-cab");
+        cab.appendChild(el("span", "amb-nome", a.nome));
+        cab.appendChild(el("span", "amb-ponto"));
+        card.appendChild(cab);
+        card.appendChild(el("div", "amb-estado", a.estadoTxt));
+        card.appendChild(el("div", "amb-motivo", a.motivo));
+        grade.appendChild(card);
+      }
+      s.appendChild(grade);
       palco.appendChild(s);
       return;
     }
