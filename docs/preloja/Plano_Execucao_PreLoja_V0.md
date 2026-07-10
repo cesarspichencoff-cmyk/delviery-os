@@ -5,6 +5,12 @@
 > Regra de checkpoint (do programa, repetida aqui para não se perder): **uma fase por vez → testes →
 > commit exclusivo → push só em `feature/preloja-fable` → pacote de revisão fora do Git → relatório
 > → PARAR → aguardar "AUTORIZO FASE N"**. `main` nunca é tocada; merge não existe neste programa.
+>
+> **CORRIGIDO PÓS-REVISÃO DO GROK:** revisado pela auditoria adversarial (F1-01 a F1-12) e
+> corrigido pelo `docs/preloja/Addendum_PreRequisitos_Fase2_V0.md` — em conflito, **o Addendum
+> vence**. Mudanças estruturais: Fase 6 SUSPENSA fora do caminho crítico (§ correspondente);
+> gates separados em G1/G2 com política de evidência (Addendum §12); contrato de eventos da Fase 2
+> é o do Addendum §5; conflitos de casamento seguem o Addendum §7.
 
 ---
 
@@ -21,16 +27,25 @@ Testes unitários novos: **`node:test` nativo do Node v24** (`node --test`) — 
 ## Fase 2 — Núcleo de fonte viva (`src/live/`)
 
 **Entregáveis:** módulos `contrato/normalizar/dedup/consolidar/persistir/snapshot/qualidade` +
-testes unitários (`src/live/__tests__/`) + linha `data/live/*` no `.gitignore` + contrato de
-eventos documentado (dentro de `docs/preloja/` ou docstring do `contrato.js`).
+**gate de staleness** (Addendum §4 — peça própria, anterior a qualquer recomendação) + testes
+unitários (`src/live/__tests__/`, via `node:test`). O contrato de eventos implementado é o
+**envelope completo do Addendum §5** (schema_version, event_id, idempotency_key, correlation,
+quality) — o envelope simples da Arquitetura §3 original está revogado. A linha do `.gitignore`
+**já foi feita e provada nesta missão corretiva** (Addendum §6) — a Fase 2 só re-verifica.
 **Eventos:** os 8 mínimos do programa (`comanda_impressa`, `status_ifood`, `pedido_cancelado`,
-`pedido_reimpresso`, `pedido_alterado`, `fonte_conectada`, `fonte_desconectada`, `pedido_vivo`).
-**Casos obrigatórios com teste:** status sem comanda · comanda sem status · reimpressão ·
-duplicidade · cancelamento · fora de ordem · atrasado · parcial · item desconhecido · linha JSONL
-inválida · arquivo truncado · reinício/replay idempotente.
-**Gate de saída:** `node --test src/live/` verde; bateria de regressão histórica verde (build,
-typecheck, demo, cardápio, autoteste 8,1, auditoria troca proibida 0); motor/decisão intocados;
-nenhum dado vivo no Git.
+`pedido_reimpresso`, `pedido_alterado`, `fonte_conectada`, `fonte_desconectada`, `pedido_vivo` —
+semânticas no Addendum §5/§13).
+**Casos obrigatórios com teste:** status sem comanda · comanda sem status · reimpressão (hash
+idêntico e **divergente**) · duplicidade · cancelamento · fora de ordem · atrasado · parcial ·
+**colisão de curto ⇒ `conflict` (não consolida, não vai ao motor)** · **staleness ⇒ sem ação
+dominante nova** · item desconhecido · linha JSONL inválida · arquivo truncado · reinício/replay
+idempotente · evento sem `schema_version` ⇒ quarentena.
+**Gates de saída (política de evidência do Addendum §12):**
+- **G1 (sempre):** `node --test src/live/` verde — obrigatório, sem exceção.
+- **G2 (se ambiente permitir):** bateria histórica (build, typecheck, demo, cardápio, autoteste,
+  auditoria) — executada e registrada **se** `node_modules` + `data/raw` presentes; senão
+  **`SKIP com motivo` explícito** no relatório. Nunca declarar nota 8,1/troca 0 por herança.
+- Motor/decisão intocados; nenhum dado vivo no Git (`git status` limpo de live).
 **Critério de parada:** se o núcleo precisar mudar `motor.js`/`decisao.js` ou o shape
 `NIGHT`/`rows` → parar e reportar (é sinal de erro de projeto, não de implementação).
 **Commit:** `Cria nucleo modular de fonte viva local`.
@@ -58,40 +73,52 @@ prova qualidade operacional do motor** — frase repetida no relatório do runne
 estendido (ou script irmão) expondo o snapshot vivo; `app-v1` com caminho de poll quando a flag
 liga; estados técnicos discretos no rodapé (simulação / fonte parcial / fonte desconectada / último
 dado confiável).
-**Gate de saída:** flag OFF ⇒ zero regressão (comparação com comportamento atual, mesmos JSONs
-históricos, mesma tela); flag ON ⇒ Calmo/Ambiente/Foco/Mapa/Pressão/Sinais idênticos em forma,
-alimentados pelo snapshot simulado; `decidir()` continua com `active`; nenhum estado cognitivo
-novo; nenhum log técnico na tela.
+**Gate de saída (corrigido pelo achado F1-07):** flag OFF ⇒ zero regressão (comparação com
+comportamento atual, mesmos JSONs históricos, mesma tela); flag ON ⇒ o caminho vivo **pode e deve
+restringir a superfície** — Calmo + Ambiente + Foco + estado de saúde das fontes primeiro;
+Mapa/Pressão/Sinais só entram quando as regras de fonte parcial (Addendum §10) estiverem
+implementadas (fonte parcial/vencida não sustenta percentual com aparência precisa; ambiente sem
+composição atual fica neutro/parcial; barra não usa dado velho como atual; Foco não nasce de fonte
+vencida). Paridade pixel-a-pixel com todas as camadas experimentais **não é** critério de aceite —
+honestidade sob parcialidade é. `decidir()` continua com `active`; nenhum estado cognitivo novo;
+nenhum log técnico na tela.
 **Critério de parada:** qualquer necessidade de tocar motor/decisão ou de criar estado cognitivo
 novo → parar e reportar.
 **Commit:** `Conecta fonte viva simulada a interface por feature flag`.
 
 ## Fase 5 — Offline e recuperação
 
-**Entregáveis:** último snapshot confiável + idade do dado na tela; reconexão automática dos
-adaptadores simulados; reconstrução pós-reinício (replay do log); proteção contra arquivo
-incompleto; identificação de dado vencido; confiança parcial por fonte caída; parada segura de
-recomendações sob confiança insuficiente. Documento das dependências (o que funciona sem internet /
-com rede local / depende da comanda / depende do iFood; quando continua, quando só observa, quando
-para de recomendar).
+**Entregáveis (corrigidos pelo achado F1-01):** o centro da fase é o **gate de staleness do
+Addendum §4** — mecanismo próprio, anterior à recomendação, com a matriz de comportamento
+status×composição e os campos `freshness_state`/`freshness_age_ms`/`last_trusted_at` (a premissa
+antiga de que `confComp` cobriria isso está revogada). Mais: último snapshot confiável + idade do
+dado na tela; reconexão automática dos adaptadores simulados; reconstrução pós-reinício (replay do
+log); proteção contra arquivo incompleto; identificação de dado vencido; confiança parcial por
+fonte caída. Limiares **configuráveis**, valores definitivos só com evidência da Fase Sombra.
+Documento das dependências (o que funciona sem internet / com rede local / depende da comanda /
+depende do iFood; quando continua, quando só observa, quando para de recomendar).
 **Gate de saída:** cenários de queda/reconexão/reinício da Fase 3 re-rodados com os novos
 mecanismos, todos recuperando; regressão histórica verde.
 **Commit:** `Adiciona resiliencia offline e recuperacao local`.
 
-## Fase 6 — Motor de embalagens por flag (`src/embalagens/`)
+## Fase 6 — Motor de embalagens (SUSPENSA — fora do caminho crítico; achado F1-05)
 
-**Entregáveis:** módulo isolado transcrevendo `docs/Logica_Embalagens_DeliveryOS_V0.md` (tabelas de
-categoria→caixa e regras de sacola como dados); flag `DELIVERYOS_EMBALAGENS_V1` (padrão `false`);
-saída sempre `{resultado, regra, motivo, confianca, pendencia}`; testes por regra (a tabela do
-documento é a tabela de casos).
-**Regras duras:** categoria, não sabor · combinado fechado, extras separados · nome desconhecido ⇒
-`incerto` + pendência (nunca regex ampla, nunca alias adivinhado) · flag OFF ⇒ classificação visual
-V0 atual intocada.
-**Pendências herdadas:** as 8 perguntas abertas do César (Embalagens §15) entram como `pendencia`
-nas saídas afetadas (ex.: Fish Katsu × Chickenkatsu).
-**Gate de saída:** todos os casos da tabela do documento passando; casos incertos retornando
-incerto; regressão histórica verde com flag OFF.
-**Commit:** `Implementa motor de embalagens V1 protegido por flag`.
+**ESTADO: SUSPENSA atrás do GATE EMBALAGENS VALIDADO PELO CÉSAR (Addendum §8).** A Fase 6 **não é
+pré-requisito da fonte viva, não bloqueia o modo sombra e não entra no caminho crítico da Release
+Candidate**. Ela só pode começar quando: (a) as 8 respostas do César (Embalagens §15) existirem;
+(b) a matriz técnica reconciliada com o seed existir; (c) houver **autorização explícita separada**
+— o "AUTORIZO FASE 6" genérico do checkpoint não basta sem o gate cumprido. Isso corrige o conflito
+apontado pelo Grok com a §16 do documento oficial de embalagens ("só depois transformar a lógica em
+função... nunca antes da validação").
+
+Quando (e se) autorizada, o desenho permanece o já descrito: módulo isolado em `src/embalagens/`
+(tabelas de categoria→caixa e sacola como dados); flag `DELIVERYOS_EMBALAGENS_V1` (padrão `false`);
+saída sempre `{resultado, regra, motivo, confianca, pendencia}`; categoria não sabor; combinado
+fechado; nome desconhecido ⇒ `incerto` + pendência (nunca regex ampla, nunca alias adivinhado);
+testes por regra. **Mesmo se implementada cedo por decisão do César: somente módulo + testes, flag
+OFF, ZERO fiação em Sinais de Fluxo/interface** — a flag desligada não pode alterar nada do
+comportamento atual.
+**Commit (quando autorizada):** `Implementa motor de embalagens V1 protegido por flag`.
 
 ## Fase 7 — Preparação para Windows (`tools/windows/`)
 
@@ -108,10 +135,13 @@ justificado (firewall), nunca silencioso.
 
 ## Fase 8 — Release candidate pré-loja
 
-**Entregáveis:** bateria total (histórica + viva + flags ON/OFF + 30 dias + embalagens + scripts
-Windows + interface nos dois modos); `Relatorio_Final_PreLoja_Fable_V0.md`,
-`Checklist_Release_Candidate_V0.md`, `Pendencias_Inspecao_Real_V0.md` (em `docs/preloja/`).
-**Confirmações obrigatórias:** troca proibida 0 · nota 8,1 não piorou · motor/decisão intocados ·
+**Entregáveis:** bateria total (histórica + viva + flags ON/OFF + 30 dias + scripts Windows +
+interface nos dois modos; **embalagens só se a Fase 6 tiver sido autorizada e executada — senão
+`N/A` declarado**); `Relatorio_Final_PreLoja_Fable_V0.md`, `Checklist_Release_Candidate_V0.md`,
+`Pendencias_Inspecao_Real_V0.md` (em `docs/preloja/`).
+**Confirmações obrigatórias (política de evidência do Addendum §12 — cada uma só é "aprovada" com
+comando executado, ambiente disponível, saída registrada e hash correspondente; senão `N/A — não
+executado (motivo)`):** troca proibida 0 · nota 8,1 não piorou · motor/decisão intocados ·
 fonte histórica intacta · nenhum dado real commitado · nenhum PDF/imagem rastreado.
 **Não criar** `release/preloja-rc1` — só recomendar se está pronto.
 **Commit:** `Consolida release candidate pre-loja do DeliveryOS`.
@@ -122,13 +152,12 @@ Pasta `../deliveryos-review-packets/faseN-<slug>/` (fora de qualquer repositóri
 `fase.patch` (diff completo da fase), `arquivos.txt`, `testes.txt` (saída dos testes),
 `hashes.txt` (hash base + hash final), `riscos.txt`. Nunca commitado.
 
-## Mapa de dependências entre fases
+## Mapa de dependências entre fases (corrigido pelo achado F1-05)
 
 ```
-F1 (docs) → F2 (núcleo) → F3 (simulador) → F4 (interface+flag) → F5 (offline)
-                                        ↘  F6 (embalagens, independente de F4/F5, depende de F2 só p/ integração de sinais)
-F7 (windows) depende de F2-F5 · F8 depende de todas
-```
+CAMINHO CRÍTICO:  F1 (docs) → F2 (núcleo) → F3 (simulador) → F4 (interface+flag) → F5 (offline)
+                                                                → F7 (windows) → F8 (RC)
 
-F6 pode ser reordenada antes de F4/F5 se o César preferir — registrado como flexibilidade, decisão
-dele a cada "AUTORIZO FASE N".
+ESTACIONADA:      F6 (embalagens) — SUSPENSA atrás do GATE EMBALAGENS VALIDADO PELO CÉSAR
+                  (Addendum §8); não bloqueia nada do caminho crítico; F8 não depende dela.
+```

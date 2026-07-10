@@ -6,6 +6,10 @@
 > pronto; a inspeção real serve só para escolher/validar os dois adaptadores (fila de impressão da
 > Epson TM-T20X e status do Gestor iFood).
 >
+> **CORRIGIDO PÓS-REVISÃO DO GROK:** este documento foi revisado pela auditoria adversarial
+> (achados F1-01 a F1-12) e corrigido pelo
+> `docs/preloja/Addendum_PreRequisitos_Fase2_V0.md` — em conflito, **o Addendum vence**.
+>
 > Cada ponto separa: **Fato** (verificado no código/documento, com referência) · **Hipótese** (a
 > confirmar) · **Decisão** (tomada aqui, para as próximas fases) · **Pendência da loja** (só a
 > inspeção real responde).
@@ -99,11 +103,14 @@ atômica por linha; leitura tolerante a última linha truncada (ver §10).
 na rede local; nenhuma chamada externa. A única dependência de internet do fluxo vivo futuro é o
 **Gestor iFood** (status) — a comanda impressa é local.
 
-**Decisão (regra para a Fase 5).** Sem internet: comanda continua chegando (fila de impressão é
-local) → composição/praça continuam confiáveis; status congela no último valor com carimbo de
-idade. O sistema **continua observando e mostrando com incerteza declarada**, e **para de
-recomendar ação** quando a confiança cair abaixo do necessário (o mecanismo de confiança por fonte
-já existe no cérebro — `confComp`, alta/média/baixa — não se inventa um novo).
+**Decisão (regra para a Fase 5) — CORRIGIDA pelo achado F1-01 do Grok.** Sem internet: comanda
+continua chegando (fila de impressão é local) → composição/praça continuam confiáveis; status
+congela no último valor com carimbo de idade. O sistema **continua observando e mostrando com
+incerteza declarada**, e **para de recomendar ação** via **gate de staleness independente**
+(Addendum §4) — um mecanismo NOVO do caminho vivo, aplicado ANTES do cálculo de recomendações.
+**A versão anterior deste parágrafo atribuía essa responsabilidade ao `confComp` do cérebro — isso
+estava errado**: `confComp` só lê `fonteReal` e fraqueza de severidade; não conhece idade de dado
+nem desconexão, e produziria confiança "alta" com status congelado há 40 minutos.
 
 ## 7. Reinício
 
@@ -132,14 +139,20 @@ exige declarar o que sabe/suspeita/não sabe.
 **Fato.** O histórico não precisou de dedup (cada linha de relatório = um pedido). O vivo precisa:
 o mesmo pedido chega por duas fontes, e cada fonte pode reemitir.
 
-**Decisão.** Chaves de dedup por fonte, nunca nome de cliente:
+**Decisão — CORRIGIDA pelo achado F1-04 do Grok.** Chaves de dedup por fonte, nunca nome de
+cliente:
 - Comanda: `pedido_interno` (sequencial Odhen de 10 dígitos) — único por pedido; reimpressão repete
   esse número (ver §11).
 - Status: código curto do iFood + janela do dia (colisão de curto dentro do dia é rara — 1 em 238
-  na janela 01/07, medido — mas existe; empate resolve por proximidade temporal e fica marcado
-  `incerto.colisao_curto` se ambíguo).
+  na janela 01/07, medido — mas existe).
 - Casamento entre fontes: código do iFood (único campo presente nas duas — fato, confirmado nas
   fotos da comanda e do Gestor).
+- **Colisão/ambiguidade vira estado `conflict`** (Addendum §7): **proibido** resolver por
+  proximidade temporal — proximidade é só indício de diagnóstico, nunca chave de casamento. Em
+  `conflict`, o pedido **não** vai ao motor, os candidatos e o motivo ficam registrados, e nenhum
+  evento original é apagado. **A versão anterior deste parágrafo dizia "empate resolve por
+  proximidade temporal" — isso estava errado** (casar por tempo é inventar vínculo; em pico denso
+  pode unir itens de um pedido com o tempo de outro).
 
 ## 10. Linha inválida / arquivo parcialmente corrompido
 
@@ -155,11 +168,15 @@ cancelamento aparece **no Gestor iFood**, nunca deve ser inferido da comanda; re
 mas é rara; correção manual à caneta ("não foi") **não é detectável** — limitação permanente
 declarada.
 
-**Decisão.** Evento `pedido_cancelado` só nasce da fonte de status. Evento `pedido_reimpresso`
-nasce quando a fonte de comanda vê `pedido_interno` já conhecido — atualiza carimbo, **não** cria
-segundo pedido, e fica registrado (reimpressões são sinal operacional, não lixo). `pedido_alterado`
-nasce quando a mesma chave chega com conteúdo diferente — o consolidado guarda a versão mais nova e
-o fato de ter mudado.
+**Decisão (refinada pelo Addendum §13, achado F1-11).** Evento `pedido_cancelado` só nasce da
+fonte de status. Evento `pedido_reimpresso` nasce quando a fonte de comanda vê `pedido_interno` já
+conhecido — atualiza carimbo, **não** cria segundo pedido, e fica registrado. Igualdade de conteúdo
+é definida por **hash canônico de itens ordenados** (nome normalizado + quantidade + observação):
+hash idêntico ⇒ reimpressão simples (só carimbo); hash divergente ⇒ **reimpressão divergente**
+(`conteudo_identico: false`), nunca silenciosa. `pedido_alterado` tem semântica completa no
+Addendum §13 (`change_mode`, `revision`, `supersedes_event_id`, `changed_fields`) — nunca aplicar
+delta sem base confiável, nunca remover item por ausência num delta, nunca presumir "última chegada
+= mais nova" sem `revision`/`occurred_at` confiável.
 
 ## 12. Segurança
 
@@ -179,9 +196,11 @@ nenhum dos três). A comanda real contém os três.
 **Decisão.** O contrato de eventos da Fase 2 **não tem campo** para telefone/endereço (o que não
 existe no schema não vaza). Nome do cliente: não entra no evento consolidado; se algum adaptador
 real futuro precisar dele para conferência visual, será decisão separada com autorização própria.
-Chave de pedido nunca é nome (§9). Dados vivos ficam em `data/live/` (fora do Git — verificar
-cobertura do `.gitignore` na Fase 2; hoje `data/*.jsonl` cobre a raiz, `data/live/*` precisará de
-linha própria: **decisão — adicionar ao `.gitignore` na Fase 2**).
+Chave de pedido nunca é nome (§9). **FEITO (não mais adiado para a Fase 2 — achado F1-03 do
+Grok):** o `.gitignore` já cobre `/data/live/`, `/runtime/`, `*.live.jsonl` e `*.runtime.jsonl`,
+com prova executada por `git check-ignore` (Addendum §6). Runtime de produção real fica **fora do
+repositório** (`%LOCALAPPDATA%\DeliveryOS\runtime`, configurável); `data/live/` é só fallback de
+desenvolvimento.
 
 ## 14. Interface
 
