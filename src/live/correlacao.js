@@ -32,8 +32,14 @@ function correlacionarStatusComComandas(statusRec, comandas) {
   if (!statusRec.ifood_short) {
     return { estado: "partial", candidatos: [], motivo: "sem_identificador_para_casar" };
   }
+  // F2-02: sem dia operacional confiável (storeTimeZone ausente/inválido),
+  // NENHUM casamento automático dependente de dia — UTC nunca é assumido.
+  if (!statusRec.dia) {
+    return { estado: "unmatched", candidatos: [], motivo: "sem_dia_operacional_confiavel" };
+  }
   const candidatos = (comandas || []).filter(
-    (c) => c.ifood_short && c.ifood_short === statusRec.ifood_short && c.dia === statusRec.dia
+    (c) => c.ifood_short && c.ifood_short === statusRec.ifood_short &&
+      c.dia && c.dia === statusRec.dia
   );
   if (candidatos.length === 0) {
     return { estado: "unmatched", candidatos: [], motivo: "nenhum_candidato_do_outro_lado" };

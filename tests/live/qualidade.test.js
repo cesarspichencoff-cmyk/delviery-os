@@ -7,12 +7,12 @@ const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const { criarNucleo } = require("../../src/live/nucleo");
 const { normalizarQualityDeEvento, calcularQualidadeConsolidado } = require("../../src/live/qualidade");
-const { relogioFixo, eventoComanda, eventoStatus } = require("./helpers");
+const { relogioFixo, eventoComanda, eventoStatus, CONFIG_TESTE } = require("./helpers");
 
 const agora = relogioFixo("2026-07-11T19:10:00.000Z");
 
 test("24. parsing_warnings no evento de comanda tornam o consolidado 'suspect'", () => {
-  const nucleo = criarNucleo({ agora });
+  const nucleo = criarNucleo({ agora, config: CONFIG_TESTE });
   const ev = eventoComanda();
   ev.quality.parsing_warnings = ["linha_de_item_ilegivel"];
   nucleo.receber(ev);
@@ -41,7 +41,7 @@ test("F3-07: matched não implica complete (status sem itens não completa nada)
 });
 
 test("F3-07: complete não implica atualizada — freshness mora nas fontes, não na completude", () => {
-  const nucleo = criarNucleo({ agora: relogioFixo("2026-07-11T20:00:00.000Z") });
+  const nucleo = criarNucleo({ agora: relogioFixo("2026-07-11T20:00:00.000Z"), config: CONFIG_TESTE });
   nucleo.receber(eventoComanda({ captured_at: "2026-07-11T19:00:05.000Z" }));
   nucleo.receber(eventoStatus({ captured_at: "2026-07-11T19:01:00.000Z" }));
   const snap = nucleo.snapshot();

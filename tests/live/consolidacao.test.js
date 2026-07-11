@@ -6,12 +6,12 @@
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const { criarNucleo } = require("../../src/live/nucleo");
-const { relogioFixo, eventoComanda, eventoStatus } = require("./helpers");
+const { relogioFixo, eventoComanda, eventoStatus, CONFIG_TESTE } = require("./helpers");
 
 const agora = relogioFixo("2026-07-11T19:10:00.000Z");
 
 test("7. comanda antes do status: parcial primeiro, matched depois", () => {
-  const nucleo = criarNucleo({ agora });
+  const nucleo = criarNucleo({ agora, config: CONFIG_TESTE });
   nucleo.receber(eventoComanda());
   let snap = nucleo.snapshot();
   assert.equal(snap.pedidos.parciais.length, 1);
@@ -24,7 +24,7 @@ test("7. comanda antes do status: parcial primeiro, matched depois", () => {
 });
 
 test("8. status antes da comanda: preserva status/tempo sem inventar itens", () => {
-  const nucleo = criarNucleo({ agora });
+  const nucleo = criarNucleo({ agora, config: CONFIG_TESTE });
   nucleo.receber(eventoStatus());
   let snap = nucleo.snapshot();
   const p = snap.pedidos.parciais[0];
@@ -38,7 +38,7 @@ test("8. status antes da comanda: preserva status/tempo sem inventar itens", () 
 });
 
 test("9. pedido parcial: status sem comanda fica partial com fields_missing explícito", () => {
-  const nucleo = criarNucleo({ agora });
+  const nucleo = criarNucleo({ agora, config: CONFIG_TESTE });
   nucleo.receber(eventoStatus({ ifood_short: "0901" }));
   const snap = nucleo.snapshot();
   const p = snap.pedidos.parciais[0];
@@ -49,7 +49,7 @@ test("9. pedido parcial: status sem comanda fica partial com fields_missing expl
 });
 
 test("10. casamento matched por identificador forte (ifood_short único no dia)", () => {
-  const nucleo = criarNucleo({ agora });
+  const nucleo = criarNucleo({ agora, config: CONFIG_TESTE });
   nucleo.receber(eventoComanda({ pedido_interno: "0000170001", ifood_short: "0777" }));
   nucleo.receber(eventoStatus({ ifood_short: "0777" }));
   const snap = nucleo.snapshot();
@@ -61,7 +61,7 @@ test("10. casamento matched por identificador forte (ifood_short único no dia)"
 });
 
 test("11. colisão de curto no dia vira conflict: nada apto, eventos preservados", () => {
-  const nucleo = criarNucleo({ agora });
+  const nucleo = criarNucleo({ agora, config: CONFIG_TESTE });
   nucleo.receber(eventoComanda({ pedido_interno: "0000170001", ifood_short: "0724", hash: "h1" }));
   nucleo.receber(eventoComanda({ pedido_interno: "0000170002", ifood_short: "0724", hash: "h2" }));
   nucleo.receber(eventoStatus({ ifood_short: "0724" }));
@@ -78,7 +78,7 @@ test("11. colisão de curto no dia vira conflict: nada apto, eventos preservados
 });
 
 test("12. proibido merge por proximidade temporal: o candidato 'mais próximo' NÃO é escolhido", () => {
-  const nucleo = criarNucleo({ agora });
+  const nucleo = criarNucleo({ agora, config: CONFIG_TESTE });
   // comanda A emitida no MESMO minuto do status; comanda B três horas antes.
   // Se alguém casasse por proximidade, escolheria A — o contrato exige conflict.
   nucleo.receber(eventoComanda({
@@ -98,7 +98,7 @@ test("12. proibido merge por proximidade temporal: o candidato 'mais próximo' N
 });
 
 test("29. pedido parcial nunca é exposto como completo no snapshot", () => {
-  const nucleo = criarNucleo({ agora });
+  const nucleo = criarNucleo({ agora, config: CONFIG_TESTE });
   nucleo.receber(eventoStatus({ ifood_short: "0888" }));
   nucleo.receber(eventoComanda({ pedido_interno: "0000170020", ifood_short: null }));
   const snap = nucleo.snapshot();

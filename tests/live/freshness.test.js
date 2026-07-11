@@ -9,7 +9,7 @@ const assert = require("node:assert/strict");
 const { classificarFonte, avaliarGateStaleness } = require("../../src/live/freshness");
 const { criarConfig } = require("../../src/live/config");
 const { criarNucleo } = require("../../src/live/nucleo");
-const { relogioFixo, eventoComanda, eventoStatus, eventoFonte } = require("./helpers");
+const { relogioFixo, eventoComanda, eventoStatus, eventoFonte, CONFIG_TESTE } = require("./helpers");
 
 const cfg = criarConfig(); // atrasada >= 90s · vencida >= 5min (chutes de dev declarados)
 const AGORA = Date.parse("2026-07-11T19:10:00.000Z");
@@ -65,7 +65,7 @@ test("23. sem evidência suficiente: 'desconhecida' (ex.: boot)", () => {
 
 test("critério de aceite Addendum §4: status vencida ⇒ nenhuma ação dominante nova (fim a fim)", () => {
   // eventos antigos; relógio avança além do vencimento — caminho completo via núcleo
-  const nucleo = criarNucleo({ agora: relogioFixo("2026-07-11T19:30:00.000Z") });
+  const nucleo = criarNucleo({ agora: relogioFixo("2026-07-11T19:30:00.000Z"), config: CONFIG_TESTE });
   nucleo.receber(eventoComanda({ captured_at: "2026-07-11T19:29:30.000Z" })); // composição atualizada
   nucleo.receber(eventoStatus({ captured_at: "2026-07-11T19:00:00.000Z" }));  // status: 30 min atrás
   const snap = nucleo.snapshot();
@@ -78,7 +78,7 @@ test("critério de aceite Addendum §4: status vencida ⇒ nenhuma ação domina
 });
 
 test("fonte_desconectada via evento: snapshot expõe desconexão; evento novo reconecta por evidência", () => {
-  const nucleo = criarNucleo({ agora: relogioFixo("2026-07-11T19:10:00.000Z") });
+  const nucleo = criarNucleo({ agora: relogioFixo("2026-07-11T19:10:00.000Z"), config: CONFIG_TESTE });
   nucleo.receber(eventoStatus({ captured_at: "2026-07-11T19:08:00.000Z" }));
   nucleo.receber(eventoFonte("fonte_desconectada", {
     source: "sim_status", captured_at: "2026-07-11T19:09:00.000Z"
@@ -96,7 +96,7 @@ test("fonte_desconectada via evento: snapshot expõe desconexão; evento novo re
 });
 
 test("ambas vencidas ⇒ nenhuma recomendação nova; último snapshot confiável preservado", () => {
-  const nucleo = criarNucleo({ agora: relogioFixo("2026-07-11T20:00:00.000Z") });
+  const nucleo = criarNucleo({ agora: relogioFixo("2026-07-11T20:00:00.000Z"), config: CONFIG_TESTE });
   nucleo.receber(eventoComanda({ captured_at: "2026-07-11T19:00:05.000Z" }));
   nucleo.receber(eventoStatus({ captured_at: "2026-07-11T19:01:00.000Z" }));
   const snap = nucleo.snapshot();

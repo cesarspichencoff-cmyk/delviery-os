@@ -23,11 +23,50 @@ function normalizarTexto(s) {
     .trim();
 }
 
-/** "2026-07-11T19:05:00-03:00" -> "2026-07-11" (dia da chave). null se inválido. */
+/** "2026-07-11T19:05:00-03:00" -> "2026-07-11" (prefixo da string ISO).
+ * ATENÇÃO (F2-02): NÃO é dia operacional — é só o prefixo textual, cego a
+ * fuso. Para correlação multi-fonte use SEMPRE localDayKey (abaixo).
+ * Mantida apenas para chaves onde o chamador já garante o fuso. */
 function diaDe(iso) {
   if (typeof iso !== "string") return null;
   const m = iso.match(/^(\d{4}-\d{2}-\d{2})T/);
   return m ? m[1] : null;
+}
+
+/* ---------- dia operacional da loja (fecha F2-02) ----------
+ * Um mesmo instante físico pertence a dias diferentes conforme o fuso; o dia
+ * que importa é o da LOJA. storeTimeZone é um identificador IANA explícito
+ * (ex. de teste: America/Sao_Paulo) — nunca uma constante escondida do núcleo
+ * e nunca UTC assumido em silêncio. */
+const formatadoresPorFuso = new Map();
+
+/**
+ * Chave local do dia: converte o instante para o fuso da loja e extrai
+ * YYYY-MM-DD LOCAIS. A virada do dia respeita a meia-noite local.
+ * @param {string} iso            occurred_at (preferido) ou captured_at
+ * @param {string} storeTimeZone  IANA; ausente/inválido => null (sem chute)
+ * @returns {string|null} null = "não sei o dia da loja" — nunca UTC silencioso
+ */
+function localDayKey(iso, storeTimeZone) {
+  if (typeof iso !== "string" || typeof storeTimeZone !== "string" || storeTimeZone.length === 0) {
+    return null;
+  }
+  const t = Date.parse(iso);
+  if (Number.isNaN(t)) return null;
+  let fmt = formatadoresPorFuso.get(storeTimeZone);
+  if (fmt === undefined) {
+    try {
+      // en-CA formata como YYYY-MM-DD
+      fmt = new Intl.DateTimeFormat("en-CA", {
+        timeZone: storeTimeZone, year: "numeric", month: "2-digit", day: "2-digit"
+      });
+    } catch {
+      fmt = null; // IANA inválido: registrado como incapaz, sem fallback p/ UTC
+    }
+    formatadoresPorFuso.set(storeTimeZone, fmt);
+  }
+  if (fmt === null) return null;
+  return fmt.format(new Date(t));
 }
 
 /**
@@ -75,6 +114,7 @@ function normalizarChangeMode(m) {
 module.exports = {
   normalizarTexto,
   diaDe,
+  localDayKey,
   hashCanonicoItens,
   CHANGE_MODES,
   normalizarChangeMode

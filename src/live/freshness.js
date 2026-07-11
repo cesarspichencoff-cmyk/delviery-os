@@ -47,6 +47,12 @@ function classificarFonte(fonte, agoraMs, config) {
   if (Number.isNaN(ultimoMs)) {
     return montar("desconhecida", f, agoraMs, "carimbo_ilegivel");
   }
+  // F2-03: carimbo no FUTURO além da tolerância de relógio não pode manter a
+  // fonte artificialmente fresca — vira "desconhecida" com motivo explícito.
+  const tolerancia = Number.isFinite(config.clockSkewToleranceMs) ? config.clockSkewToleranceMs : 0;
+  if (ultimoMs - agoraMs > tolerancia) {
+    return montar("desconhecida", f, agoraMs, "relogio_inconsistente_carimbo_no_futuro");
+  }
   const idade = Math.max(0, agoraMs - ultimoMs);
   if (idade >= config.vencidaAposMs) return montar("vencida", f, agoraMs, "idade_acima_do_limite_de_vencimento");
   if (idade >= config.atrasadaAposMs) return montar("atrasada", f, agoraMs, "idade_acima_do_intervalo_esperado");
@@ -57,6 +63,7 @@ function montar(estado, f, agoraMs, motivo) {
   const ultimoMs = f.ultimo_evento_em ? Date.parse(f.ultimo_evento_em) : NaN;
   return {
     freshness_state: estado,
+    // Math.max garante: freshness_age_ms NUNCA é negativo (F2-03)
     freshness_age_ms: Number.isNaN(ultimoMs) ? null : Math.max(0, agoraMs - ultimoMs),
     last_trusted_at: f.last_trusted_at || null,
     freshness_reason: motivo,

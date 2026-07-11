@@ -7,11 +7,17 @@
  * ==========================================================================*/
 "use strict";
 
+const { criarConfig } = require("../../src/live/config");
+
 let seq = 0;
 const proximoEventId = (prefixo) => `${prefixo || "evt"}-${String(++seq).padStart(4, "0")}`;
 
 /** relógio fixo em ms a partir de um ISO */
 const relogioFixo = (iso) => () => Date.parse(iso);
+
+/** config padrão dos testes — o fuso é exemplo de TESTE (F2-02), nunca uma
+ * constante permanente do núcleo. */
+const CONFIG_TESTE = criarConfig({ storeTimeZone: "America/Sao_Paulo" });
 
 const QUALITY_OK = () => ({
   completeness: "complete",
@@ -184,6 +190,7 @@ function eventoFonte(tipo, o) {
 module.exports = {
   relogioFixo,
   proximoEventId,
+  CONFIG_TESTE,
   eventoComanda,
   eventoStatus,
   eventoCancelamento,

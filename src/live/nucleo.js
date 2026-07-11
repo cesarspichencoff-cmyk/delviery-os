@@ -1,16 +1,19 @@
 /* ============================================================================
  * DeliveryOS · src/live · NÚCLEO (orquestração)
  * ----------------------------------------------------------------------------
- * Liga as peças: contrato → normalização → idempotência → persistência →
- * deduplicação → consolidação → snapshot. Não contém regra própria — cada
- * regra mora no seu módulo.
+ * Liga as peças na ORDEM endurecida da Fase 2.1 (F2-01/02/03/04):
+ *   1. validar envelope (inclui PII recursiva)
+ *   2. normalizar por allowlist (só campos operacionais persistem)
+ *   3. detectar clock skew (captured_at × received_at — determinístico)
+ *   4. calcular identidade de conteúdo
+ *   5. consultar deduplicação  ← ANTES de qualquer append
+ *   6. persistir somente quando apropriado
+ *   7. aplicar ao estado
+ *   8. atualizar índices
  *
- * O núcleo NUNCA sabe qual adaptador o alimenta (só recebe eventos no
- * contrato) e NUNCA escreve em fonte alguma (somente leitura, Addendum §11).
- * Nenhum adaptador real (Epson/Gestor iFood) existe nesta fase.
- *
- * Relógio injetável (agora() em ms): nenhum Date.now() escondido — replay e
- * testes precisam de tempo determinístico.
+ * O núcleo NUNCA sabe qual adaptador o alimenta e NUNCA escreve em fonte
+ * alguma (somente leitura, Addendum §11). Relógio injetável (agora() em ms):
+ * nenhum Date.now() escondido — replay e testes exigem tempo determinístico.
  * ==========================================================================*/
 "use strict";
 
@@ -21,6 +24,7 @@ const { criarRegistroDedup } = require("./dedup");
 const { normalizarQualityDeEvento } = require("./qualidade");
 const { criarQuarentena } = require("./quarentena");
 const { criarConfig } = require("./config");
+const { normalizarPorAllowlist, hashConteudoEvento } = require("./sanitizar");
 const consolidar = require("./consolidar");
 const { montarSnapshot } = require("./snapshot");
 
@@ -34,14 +38,22 @@ const PAPEL_POR_EVENTO = {
   pedido_cancelado: "status"
 };
 
+/** push idempotente: replay re-detecta as mesmas condições sobre a quality já
+ * persistida — o aviso não pode duplicar a cada reconstrução. */
+function avisar(ev, aviso) {
+  if (!ev.quality.parsing_warnings.includes(aviso)) ev.quality.parsing_warnings.push(aviso);
+}
+
 function criarNucleo({ armazenamento, config, agora } = {}) {
   const cfg = config || criarConfig();
   const relogio = typeof agora === "function" ? agora : () => Date.now();
   const dedup = criarRegistroDedup();
-  const estado = consolidar.criarEstadoConsolidacao();
+  const estado = consolidar.criarEstadoConsolidacao(cfg);
   const quarentena = criarQuarentena(armazenamento);
   const fontes = new Map(); // source -> { ultimo_evento_em, last_trusted_at, desconectada_em, reconectada_em, papeis:Set }
-  const contadores = {
+  // contadores de RECEPÇÃO — escopo de sessão (não sobrevivem ao reinício por
+  // desenho: duplicatas e quarentenas não são re-anexadas ao log — F2-04)
+  const recepcao = {
     recebidos: 0,
     aceitos: 0,
     em_quarentena: 0,
@@ -69,12 +81,16 @@ function criarNucleo({ armazenamento, config, agora } = {}) {
 
   function atualizarFonte(ev) {
     const f = fonteDe(ev.source);
-    if (!f.ultimo_evento_em || ev.captured_at > f.ultimo_evento_em) {
-      f.ultimo_evento_em = ev.captured_at;
-    }
     const papel = PAPEL_POR_EVENTO[ev.event_type];
     if (papel) f.papeis.add(papel);
 
+    // F2-03: carimbo com relógio inconsistente NÃO avança nada temporal —
+    // nem ultimo_evento_em, nem last_trusted_at, nem reconexão.
+    if (ev.quality && ev.quality.clock_skew_detected) return;
+
+    if (!f.ultimo_evento_em || ev.captured_at > f.ultimo_evento_em) {
+      f.ultimo_evento_em = ev.captured_at;
+    }
     // evidência de vida apaga desconexão anterior a este evento
     if (f.desconectada_em && !f.reconectada_em && ev.captured_at > f.desconectada_em) {
       f.reconectada_em = ev.captured_at;
@@ -82,16 +98,16 @@ function criarNucleo({ armazenamento, config, agora } = {}) {
     // last_trusted_at: último instante em que a fonte era "atualizada" —
     // registrado quando o evento chega dentro do intervalo esperado.
     const idadeNaChegada = relogio() - Date.parse(ev.captured_at);
-    if (idadeNaChegada <= cfg.freshness.atrasadaAposMs) {
+    if (idadeNaChegada >= 0 && idadeNaChegada <= cfg.freshness.atrasadaAposMs) {
       if (!f.last_trusted_at || ev.captured_at > f.last_trusted_at) {
         f.last_trusted_at = ev.captured_at;
       }
     }
   }
 
-  function paraQuarentena(bruto, motivo, campo, persistir) {
-    contadores.em_quarentena += 1;
-    quarentena.registrar(bruto, motivo, { campo: campo || null },
+  function paraQuarentena(evento, motivo, campo, persistir) {
+    recepcao.em_quarentena += 1;
+    quarentena.registrar(evento, motivo, { campo: campo || null },
       new Date(relogio()).toISOString(), persistir);
     return { aceito: false, destino: "quarentena", motivo, campo: campo || null };
   }
@@ -103,49 +119,83 @@ function criarNucleo({ armazenamento, config, agora } = {}) {
    */
   function receber(bruto, opts) {
     const persistir = !opts || opts.persistir !== false;
-    contadores.recebidos += 1;
+    recepcao.recebidos += 1;
 
+    // 1. validar (inclui varredura recursiva de PII — F2-01)
     const validacao = validarEnvelope(bruto);
     if (!validacao.ok) return paraQuarentena(bruto, validacao.motivo, validacao.campo, persistir);
 
     const chaveStatus = verificarChaveDeStatus(bruto);
     if (!chaveStatus.ok) return paraQuarentena(bruto, chaveStatus.motivo, null, persistir);
 
-    // normalização: carimbo de recepção + quality honesta + change_mode canônico
-    const ev = {
-      ...bruto,
-      received_at: bruto.received_at || new Date(relogio()).toISOString(),
-      correlation: bruto.correlation || {},
-      quality: normalizarQualityDeEvento(bruto.quality)
-    };
+    // 2. normalizar por allowlist: nada além do contrato chega ao disco (F2-01)
+    const { evento: ev, descartados } = normalizarPorAllowlist(bruto);
+    ev.received_at = bruto.received_at || new Date(relogio()).toISOString();
+    ev.correlation = ev.correlation || {};
+    ev.quality = normalizarQualityDeEvento(bruto.quality);
+    if (descartados.length > 0) {
+      // só NOMES de campos descartados — valores nunca são registrados
+      avisar(ev, `campos_descartados:${descartados.join(",")}`);
+    }
 
     let changeMode = null;
     if (ev.event_type === "pedido_alterado") {
       const norm = normalizarChangeMode(ev.payload.change_mode);
       if (!norm.modo) {
-        return paraQuarentena(bruto, "change_mode_desconhecido", "payload.change_mode", persistir);
+        return paraQuarentena(ev, "change_mode_desconhecido", "payload.change_mode", persistir);
       }
       changeMode = norm.modo;
-      if (norm.alias) ev.quality.parsing_warnings.push("change_mode_normalizado_de_alias");
+      if (norm.alias) avisar(ev, "change_mode_normalizado_de_alias");
     }
 
-    // log append-only ANTES de processar: o fato observado é patrimônio.
-    if (persistir && armazenamento) armazenamento.anexarEvento(ev);
+    // 3. clock skew (F2-03): determinístico — captured_at × received_at;
+    // no replay o received_at persistido preserva a decisão original.
+    const skewMs = Date.parse(ev.captured_at) - Date.parse(ev.received_at);
+    if (Number.isFinite(skewMs) && skewMs > cfg.freshness.clockSkewToleranceMs) {
+      ev.quality.clock_skew_detected = true;
+      ev.quality.clock_skew_ms = skewMs;
+      ev.quality.completeness = "suspect";
+      avisar(ev, "relogio_inconsistente_captured_at_futuro");
+    }
 
-    const resultadoDedup = dedup.registrar(ev);
-    if (resultadoDedup.tipo === "evento_duplicado") {
-      contadores.duplicados_event_id += 1;
+    // 4-5. identidade + dedup ANTES do append (F2-04)
+    const hashConteudo = hashConteudoEvento(ev);
+    const d = dedup.consultar(ev, hashConteudo);
+
+    if (d.tipo === "evento_duplicado") {
+      // mesma observação, mesmo conteúdo: sem append, sem estado, sem snapshot
+      recepcao.duplicados_event_id += 1;
       return { aceito: false, destino: "duplicado_ignorado", motivo: "event_id_ja_visto" };
     }
+    if (d.tipo === "evento_divergente") {
+      // mesmo event_id com conteúdo DIVERGENTE: anomalia — nunca substitui o
+      // evento aceito; registro sanitizado em quarentena.
+      return paraQuarentena(ev, "event_id_reutilizado_com_conteudo_divergente", null, persistir);
+    }
+    if (d.tipo === "fato_divergente") {
+      // mesma idempotency_key com conteúdo incompatível: conflito registrado;
+      // o fato original aceito é preservado.
+      return paraQuarentena(ev, "idempotency_key_reutilizada_com_conteudo_divergente", null, persistir);
+    }
 
-    atualizarFonte(ev);
-    contadores.aceitos += 1;
-
-    if (resultadoDedup.tipo === "observacao_repetida") {
-      contadores.observacoes_repetidas += 1;
+    if (d.tipo === "observacao_repetida") {
+      // mesmo fato reobservado: SEM segundo append (F2-04); carimbos em
+      // memória avançam (limitação de replay declarada no Contrato §17).
+      dedup.registrar(ev, hashConteudo);
+      atualizarFonte(ev);
+      recepcao.aceitos += 1;
+      recepcao.observacoes_repetidas += 1;
       const r = consolidar.aplicarObservacaoRepetida(estado, ev);
       return { aceito: true, destino: "observacao_repetida", resultado: r.tipo };
     }
+
+    // 6. novo fato: persistir ANTES de aplicar (o fato observado é patrimônio)
+    if (persistir && armazenamento) armazenamento.anexarEvento(ev);
+
+    // 7-8. aplicar ao estado e atualizar índices
+    dedup.registrar(ev, hashConteudo);
+    atualizarFonte(ev);
+    recepcao.aceitos += 1;
 
     let r;
     switch (ev.event_type) {
@@ -188,7 +238,8 @@ function criarNucleo({ armazenamento, config, agora } = {}) {
         pedidos: consolidar.consolidarVisao(estado),
         fontes,
         quarentena,
-        contadores: { ...contadores, ...estado.contadores },
+        contadoresEstado: estado.contadores,
+        recepcao,
         config: cfg,
         agoraMs: relogio(),
         reconstruidoEm
@@ -197,14 +248,14 @@ function criarNucleo({ armazenamento, config, agora } = {}) {
     // primitivas usadas pela reconstrução (reconstruir.js) — nunca re-persistem
     _marcarReconstruido(iso) { reconstruidoEm = iso; },
     _registrarLinhaInvalida(info) {
-      contadores.linhas_invalidas += 1;
-      contadores.em_quarentena += 1;
+      recepcao.linhas_invalidas += 1;
+      recepcao.em_quarentena += 1;
       quarentena.registrar(null, info.motivo, { origem: "reconstrucao" }, null, false);
     },
     _semearQuarentena(registros) {
       for (const reg of registros) {
-        contadores.recebidos += 1;
-        contadores.em_quarentena += 1;
+        recepcao.recebidos += 1;
+        recepcao.em_quarentena += 1;
         quarentena.registrar(reg.evento_bruto, reg.motivo,
           { campo: reg.campo, origem: reg.origem }, reg.recebido_em, false);
       }

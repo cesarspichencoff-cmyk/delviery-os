@@ -5,12 +5,12 @@
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const { criarNucleo } = require("../../src/live/nucleo");
-const { relogioFixo, eventoComanda, eventoStatus, eventoCancelamento } = require("./helpers");
+const { relogioFixo, eventoComanda, eventoStatus, eventoCancelamento, CONFIG_TESTE } = require("./helpers");
 
 const agora = relogioFixo("2026-07-11T19:10:00.000Z");
 
 test("13a. cancelamento depois do status: marca cancelado e preserva histórico", () => {
-  const nucleo = criarNucleo({ agora });
+  const nucleo = criarNucleo({ agora, config: CONFIG_TESTE });
   nucleo.receber(eventoComanda());
   nucleo.receber(eventoStatus({ captured_at: "2026-07-11T19:01:00.000Z" }));
   nucleo.receber(eventoCancelamento({ captured_at: "2026-07-11T19:02:00.000Z" }));
@@ -28,7 +28,7 @@ test("13a. cancelamento depois do status: marca cancelado e preserva histórico"
 });
 
 test("13b. cancelamento pode chegar ANTES da composição (status-first)", () => {
-  const nucleo = criarNucleo({ agora });
+  const nucleo = criarNucleo({ agora, config: CONFIG_TESTE });
   nucleo.receber(eventoCancelamento({ ifood_short: "0640" }));
   let snap = nucleo.snapshot();
   assert.equal(snap.pedidos.cancelados.length, 1);
@@ -42,7 +42,7 @@ test("13b. cancelamento pode chegar ANTES da composição (status-first)", () =>
 });
 
 test("13c. cancelamento nunca é inferido: sem evento, nada é cancelado", () => {
-  const nucleo = criarNucleo({ agora });
+  const nucleo = criarNucleo({ agora, config: CONFIG_TESTE });
   nucleo.receber(eventoComanda());
   // pedido some da fonte de status? silêncio NÃO cancela.
   const snap = nucleo.snapshot();

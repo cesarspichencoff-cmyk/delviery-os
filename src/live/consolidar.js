@@ -24,12 +24,15 @@
  * ==========================================================================*/
 "use strict";
 
-const { hashCanonicoItens, normalizarTexto, diaDe } = require("./normalizar");
+const { hashCanonicoItens, normalizarTexto, localDayKey } = require("./normalizar");
 const { correlacionarStatusComComandas } = require("./correlacao");
 const { calcularQualidadeConsolidado } = require("./qualidade");
 
-function criarEstadoConsolidacao() {
+function criarEstadoConsolidacao(config) {
   return {
+    // F2-02: fuso IANA da loja, explícito — dia operacional NUNCA é o prefixo
+    // UTC da string. null => sem casamento automático dependente de dia.
+    storeTimeZone: (config && config.storeTimeZone) || null,
     comandas: new Map(), // `pi:{pedido_interno}` -> registro lado comanda
     statuses: new Map(), // `if:{ifood_short}:{dia}` -> registro lado status
     contadores: {
@@ -43,6 +46,11 @@ function criarEstadoConsolidacao() {
   };
 }
 
+/** dia operacional da loja para este evento (occurred_at preferido) */
+function diaOperacional(estado, ev) {
+  return localDayKey(ev.occurred_at || ev.captured_at, estado.storeTimeZone);
+}
+
 const chaveComanda = (pedidoInterno) => `pi:${pedidoInterno}`;
 const chaveStatus = (short, dia) => `if:${short}:${dia}`;
 
@@ -51,9 +59,13 @@ function idDoEvento(ev, campo) {
   return corr[campo] || ev.payload[campo] || null;
 }
 
-/** melhor carimbo confiável para ordenação: occurred_at se houver, senão captured_at */
+/** melhor carimbo confiável para ordenação: occurred_at se houver, senão
+ * captured_at — MAS captured_at com relógio inconsistente detectado (F2-03)
+ * não é verdade de ordenação: sem occurred_at, não há carimbo confiável. */
 function carimboConfiavel(ev) {
-  return ev.occurred_at || ev.captured_at;
+  if (ev.occurred_at) return ev.occurred_at;
+  if (ev.quality && ev.quality.clock_skew_detected) return null;
+  return ev.captured_at;
 }
 
 /* ---------------- comanda_impressa ---------------- */
@@ -70,7 +82,7 @@ function aplicarComandaImpressa(estado, ev) {
       lado: "comanda",
       pedido_interno: pedidoInterno,
       ifood_short: short,
-      dia: diaDe(ev.captured_at),
+      dia: diaOperacional(estado, ev),
       emissao: ev.payload.emissao || null,
       itens_impressos: itens,
       itens_atuais: itens,
@@ -126,7 +138,7 @@ function aplicarPedidoReimpresso(estado, ev) {
       lado: "comanda",
       pedido_interno: pedidoInterno,
       ifood_short: idDoEvento(ev, "ifood_short"),
-      dia: diaDe(ev.captured_at),
+      dia: diaOperacional(estado, ev),
       emissao: ev.payload.emissao_nova || null,
       itens_impressos: Array.isArray(ev.payload.itens) ? ev.payload.itens : null,
       itens_atuais: Array.isArray(ev.payload.itens) ? ev.payload.itens : null,
@@ -180,7 +192,7 @@ function aplicarPedidoReimpresso(estado, ev) {
 /* ---------------- status_ifood / pedido_vivo ---------------- */
 function aplicarStatus(estado, ev) {
   const short = idDoEvento(ev, "ifood_short");
-  const dia = diaDe(ev.captured_at);
+  const dia = diaOperacional(estado, ev);
   const chave = chaveStatus(short, dia);
   let rec = estado.statuses.get(chave);
   if (!rec) {
@@ -205,6 +217,23 @@ function aplicarStatus(estado, ev) {
   rec.visto_por_ultimo_em = ev.captured_at;
 
   const carimbo = carimboConfiavel(ev);
+
+  // F2-03: relógio inconsistente sem occurred_at => sem carimbo confiável.
+  // A observação fica registrada, mas NÃO ordena nem avança a coluna vigente.
+  if (carimbo === null) {
+    rec.historico.push({
+      coluna: ev.payload.coluna,
+      occurred_at: null,
+      captured_at: ev.captured_at,
+      event_id: ev.event_id,
+      fora_de_ordem: false,
+      carimbo_suspeito: true,
+      heartbeat: ev.event_type === "pedido_vivo"
+    });
+    if (rec.coluna === null) rec.coluna = ev.payload.coluna; // única evidência; ordem desconhecida
+    return { tipo: "status_com_relogio_suspeito" };
+  }
+
   const foraDeOrdem = rec.coluna_em !== null && carimbo < rec.coluna_em;
   rec.historico.push({
     coluna: ev.payload.coluna,
@@ -228,7 +257,7 @@ function aplicarStatus(estado, ev) {
 /* ---------------- pedido_cancelado ---------------- */
 function aplicarCancelamento(estado, ev) {
   const short = idDoEvento(ev, "ifood_short");
-  const dia = diaDe(ev.captured_at);
+  const dia = diaOperacional(estado, ev);
   const chave = chaveStatus(short, dia);
   let rec = estado.statuses.get(chave);
   if (!rec) {
@@ -287,7 +316,7 @@ function aplicarAlteracao(estado, ev, changeModeCanonico) {
 
   let base = pedidoInterno ? estado.comandas.get(chaveComanda(pedidoInterno)) : null;
   if (!base && short) {
-    const dia = diaDe(ev.captured_at);
+    const dia = diaOperacional(estado, ev);
     const candidatas = [...estado.comandas.values()]
       .filter((c) => c.ifood_short === short && c.dia === dia);
     if (candidatas.length === 1) base = candidatas[0];
@@ -296,14 +325,14 @@ function aplicarAlteracao(estado, ev, changeModeCanonico) {
 
   // full_snapshot é a própria base: pode criar a composição se ela não existe.
   if (!base && changeModeCanonico === "full_snapshot" && Array.isArray(ev.payload.itens)) {
-    const chave = chaveComanda(pedidoInterno || `alterado:${short}:${diaDe(ev.captured_at)}`);
+    const chave = chaveComanda(pedidoInterno || `alterado:${short}:${diaOperacional(estado, ev)}`);
     registroAlteracao.aplicada = true;
     registroAlteracao.motivo = "snapshot_completo_criou_composicao";
     estado.comandas.set(chave, {
       lado: "comanda",
       pedido_interno: pedidoInterno,
       ifood_short: short,
-      dia: diaDe(ev.captured_at),
+      dia: diaOperacional(estado, ev),
       emissao: null,
       itens_impressos: null, // nunca observamos a via impressa
       itens_atuais: ev.payload.itens,
@@ -330,14 +359,14 @@ function aplicarAlteracao(estado, ev, changeModeCanonico) {
     // delta/correção/troca de itens sem base confiável: NUNCA reconstruir por
     // adivinhação — fica pendente, explícito e suspeito.
     registroAlteracao.motivo = "sem_base_confiavel";
-    const chave = chaveComanda(pedidoInterno || `alterado:${short}:${diaDe(ev.captured_at)}`);
+    const chave = chaveComanda(pedidoInterno || `alterado:${short}:${diaOperacional(estado, ev)}`);
     let pendente = estado.comandas.get(chave);
     if (!pendente) {
       pendente = {
         lado: "comanda",
         pedido_interno: pedidoInterno,
         ifood_short: short,
-        dia: diaDe(ev.captured_at),
+        dia: diaOperacional(estado, ev),
         emissao: null,
         itens_impressos: null,
         itens_atuais: null, // sem base, sem itens: nada é inventado
@@ -465,7 +494,7 @@ function aplicarObservacaoRepetida(estado, ev) {
     }
   }
   if (ev.event_type === "status_ifood" || ev.event_type === "pedido_vivo") {
-    const rec = estado.statuses.get(chaveStatus(idDoEvento(ev, "ifood_short"), diaDe(ev.captured_at)));
+    const rec = estado.statuses.get(chaveStatus(idDoEvento(ev, "ifood_short"), diaOperacional(estado, ev)));
     if (rec) {
       rec.eventos.push(ev.event_id);
       rec.visto_por_ultimo_em = ev.captured_at;
@@ -481,7 +510,7 @@ function consolidarVisao(estado) {
   const pedidos = [];
   const comandasPorShortDia = new Map();
   for (const c of estado.comandas.values()) {
-    if (!c.ifood_short) continue;
+    if (!c.ifood_short || !c.dia) continue; // sem dia local confiável não indexa (F2-02)
     const k = `${c.ifood_short}:${c.dia}`;
     if (!comandasPorShortDia.has(k)) comandasPorShortDia.set(k, []);
     comandasPorShortDia.get(k).push(c);
@@ -514,6 +543,10 @@ function consolidarVisao(estado) {
     if (!c.ifood_short) {
       pedidos.push(montarPedido(c, null, "partial",
         { motivo: "sem_identificador_para_casar", candidatos: [] }));
+    } else if (!c.dia) {
+      // F2-02: sem dia operacional confiável => sem casamento automático
+      pedidos.push(montarPedido(c, null, "unmatched",
+        { motivo: "sem_dia_operacional_confiavel", candidatos: [] }));
     } else if (!estado.statuses.has(chaveStatus(c.ifood_short, c.dia))) {
       pedidos.push(montarPedido(c, null, "unmatched",
         { motivo: "nenhum_candidato_do_outro_lado", candidatos: [] }));

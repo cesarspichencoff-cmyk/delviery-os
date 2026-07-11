@@ -12,7 +12,8 @@ const { criarNucleo } = require("../../src/live/nucleo");
 const { criarArmazenamento } = require("../../src/live/persistir");
 const { reconstruirDoLog } = require("../../src/live/reconstruir");
 const {
-  relogioFixo, eventoComanda, eventoStatus, eventoCancelamento, eventoReimpresso
+  relogioFixo, eventoComanda, eventoStatus, eventoCancelamento, eventoReimpresso,
+  CONFIG_TESTE
 } = require("./helpers");
 
 const tempDir = () => fs.mkdtempSync(path.join(os.tmpdir(), "deliveryos-live-replay-"));
@@ -36,21 +37,22 @@ test("27. reconstrução após reinício: mesmo estado, nenhum pedido duplicado"
   const dir = tempDir();
   try {
     const arm = criarArmazenamento({ runtimeRoot: dir });
-    const nucleo = criarNucleo({ armazenamento: arm, agora: relogioFixo(AGORA) });
+    const nucleo = criarNucleo({ armazenamento: arm, agora: relogioFixo(AGORA), config: CONFIG_TESTE });
     popularNucleo(nucleo);
     const antes = nucleo.snapshot();
 
     // "reinício": novo processo, novo núcleo, mesmo disco
     const { nucleo: renascido, relatorio } = reconstruirDoLog({
-      runtimeRoot: dir, agora: relogioFixo(AGORA)
+      runtimeRoot: dir, agora: relogioFixo(AGORA), config: CONFIG_TESTE
     });
     const depois = renascido.snapshot();
 
-    assert.ok(relatorio.eventos_relidos >= 5);
+    // F2-04: o log contém SÓ fatos únicos aceitos — a duplicata de event_id e
+    // o evento de quarentena nunca foram anexados (5 linhas, não 7)
+    assert.equal(relatorio.eventos_relidos, 5);
     assert.equal(depois.pedidos.completos.length, antes.pedidos.completos.length);
     assert.equal(depois.pedidos.parciais.length, antes.pedidos.parciais.length);
     assert.equal(depois.pedidos.cancelados.length, antes.pedidos.cancelados.length);
-    assert.equal(depois.qualidade.duplicados_event_id, antes.qualidade.duplicados_event_id);
     // vias de reimpressão não dobram no replay
     const pedido = depois.pedidos.completos.concat(depois.pedidos.parciais)
       .find((p) => p.comanda && p.comanda.pedido_interno === "0000170512");
@@ -63,16 +65,20 @@ test("28. snapshot reconstruído é IGUAL ao anterior (relógio fixo, campo de r
   const dir = tempDir();
   try {
     const arm = criarArmazenamento({ runtimeRoot: dir });
-    const nucleo = criarNucleo({ armazenamento: arm, agora: relogioFixo(AGORA) });
+    const nucleo = criarNucleo({ armazenamento: arm, agora: relogioFixo(AGORA), config: CONFIG_TESTE });
     popularNucleo(nucleo);
     const antes = nucleo.snapshot();
 
-    const { nucleo: renascido } = reconstruirDoLog({ runtimeRoot: dir, agora: relogioFixo(AGORA) });
+    const { nucleo: renascido } = reconstruirDoLog({ runtimeRoot: dir, agora: relogioFixo(AGORA), config: CONFIG_TESTE });
     const depois = renascido.snapshot();
 
-    // única diferença legítima: o carimbo de reconstrução
-    const normalizar = (s) => ({ ...s, reconstruido_em: null });
+    // diferenças legítimas: o carimbo de reconstrução e os contadores de
+    // RECEPÇÃO (escopo de sessão — duplicatas/quarentenas não são re-anexadas
+    // por desenho, F2-04). Todo o resto é idêntico byte a byte.
+    const normalizar = (s) => ({ ...s, reconstruido_em: null, recepcao: null });
     assert.deepEqual(normalizar(depois), normalizar(antes));
+    // o que é derivado do log continua idêntico mesmo nos contadores
+    assert.deepEqual(depois.qualidade, antes.qualidade);
   } finally { limpar(dir); }
 });
 
@@ -80,13 +86,13 @@ test("27b. replay não re-persiste: o log não cresce ao reconstruir duas vezes"
   const dir = tempDir();
   try {
     const arm = criarArmazenamento({ runtimeRoot: dir });
-    const nucleo = criarNucleo({ armazenamento: arm, agora: relogioFixo(AGORA) });
+    const nucleo = criarNucleo({ armazenamento: arm, agora: relogioFixo(AGORA), config: CONFIG_TESTE });
     popularNucleo(nucleo);
     const tamanho1 = fs.statSync(arm.caminhoEventos).size;
     const tamanhoQ1 = fs.statSync(arm.caminhoQuarentena).size;
 
-    reconstruirDoLog({ runtimeRoot: dir, agora: relogioFixo(AGORA) });
-    reconstruirDoLog({ runtimeRoot: dir, agora: relogioFixo(AGORA) });
+    reconstruirDoLog({ runtimeRoot: dir, agora: relogioFixo(AGORA), config: CONFIG_TESTE });
+    reconstruirDoLog({ runtimeRoot: dir, agora: relogioFixo(AGORA), config: CONFIG_TESTE });
 
     assert.equal(fs.statSync(arm.caminhoEventos).size, tamanho1);
     assert.equal(fs.statSync(arm.caminhoQuarentena).size, tamanhoQ1);
@@ -97,17 +103,17 @@ test("27c. reconstrução com linha corrompida no log: tolera, conta e segue", (
   const dir = tempDir();
   try {
     const arm = criarArmazenamento({ runtimeRoot: dir });
-    const nucleo = criarNucleo({ armazenamento: arm, agora: relogioFixo(AGORA) });
+    const nucleo = criarNucleo({ armazenamento: arm, agora: relogioFixo(AGORA), config: CONFIG_TESTE });
     nucleo.receber(eventoComanda({ event_id: "com-1" }));
     fs.appendFileSync(arm.caminhoEventos, "linha quebrada sem json\n", "utf8");
     nucleo.receber(eventoStatus({ event_id: "sta-1" }));
 
     const { nucleo: renascido, relatorio } = reconstruirDoLog({
-      runtimeRoot: dir, agora: relogioFixo(AGORA)
+      runtimeRoot: dir, agora: relogioFixo(AGORA), config: CONFIG_TESTE
     });
     assert.equal(relatorio.linhas_invalidas, 1);
     const snap = renascido.snapshot();
-    assert.equal(snap.qualidade.linhas_invalidas, 1);
+    assert.equal(snap.recepcao.linhas_invalidas, 1);
     assert.equal(snap.quarentena.por_motivo.linha_invalida, 1);
     assert.equal(snap.pedidos.completos.length, 1); // os dois válidos casaram
   } finally { limpar(dir); }

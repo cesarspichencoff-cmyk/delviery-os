@@ -7,23 +7,23 @@ const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const { criarNucleo } = require("../../src/live/nucleo");
 const { validarEnvelope } = require("../../src/live/contrato");
-const { relogioFixo, eventoComanda } = require("./helpers");
+const { relogioFixo, eventoComanda, CONFIG_TESTE } = require("./helpers");
 
 const agora = relogioFixo("2026-07-11T19:10:00.000Z");
 
 test("1. evento válido é aceito e processado", () => {
-  const nucleo = criarNucleo({ agora });
+  const nucleo = criarNucleo({ agora, config: CONFIG_TESTE });
   const r = nucleo.receber(eventoComanda());
   assert.equal(r.aceito, true);
   assert.equal(r.destino, "processado");
   assert.equal(r.resultado, "comanda_nova");
   const snap = nucleo.snapshot();
-  assert.equal(snap.qualidade.aceitos, 1);
+  assert.equal(snap.recepcao.aceitos, 1);
   assert.equal(snap.quarentena.total, 0);
 });
 
 test("2. evento sem schema_version vai para quarentena (nunca aceito em silêncio)", () => {
-  const nucleo = criarNucleo({ agora });
+  const nucleo = criarNucleo({ agora, config: CONFIG_TESTE });
   const ev = eventoComanda();
   delete ev.schema_version;
   const r = nucleo.receber(ev);
@@ -38,7 +38,7 @@ test("2. evento sem schema_version vai para quarentena (nunca aceito em silênci
 });
 
 test("3. schema_version desconhecida vai para quarentena", () => {
-  const nucleo = criarNucleo({ agora });
+  const nucleo = criarNucleo({ agora, config: CONFIG_TESTE });
   const r = nucleo.receber(eventoComanda({ schema_version: "9.9" }));
   assert.equal(r.destino, "quarentena");
   assert.equal(r.motivo, "schema_version_desconhecida");
@@ -53,13 +53,13 @@ test("privacidade: campo proibido rejeita o evento e o motivo não ecoa o valor"
   assert.equal(res.campo, "payload.telefone"); // nome do campo, nunca o valor
   assert.ok(!JSON.stringify(res).includes("valor-que-nao-pode-vazar"));
 
-  const nucleo = criarNucleo({ agora });
+  const nucleo = criarNucleo({ agora, config: CONFIG_TESTE });
   const r = nucleo.receber(ev);
   assert.equal(r.destino, "quarentena");
 });
 
 test("identificador essencial ausente vai para quarentena", () => {
-  const nucleo = criarNucleo({ agora });
+  const nucleo = criarNucleo({ agora, config: CONFIG_TESTE });
   const ev = eventoComanda();
   ev.correlation.pedido_interno = null;
   delete ev.payload.pedido_interno;

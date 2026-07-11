@@ -1,6 +1,11 @@
 # Contrato do Núcleo de Fonte Viva — V0
 
 > Fase 2 do programa Plataforma Pré-Loja. Branch `feature/preloja-fable`, base `73272bc`.
+> **Endurecido pela Fase 2.1** (base `4a74077`, revisão do Grok `04c58e2`): fecha
+> F2-01 (PII recursiva), F2-02 (dia operacional com fuso da loja), F2-03 (clock skew)
+> e F2-04 (dedup antes do append). F2-05 (`NIGHT`/`rows`) está **adiado por decisão**
+> para o adaptador da Fase 4; F2-06 (script `test:live`) **não exige mudança agora** —
+> o comando canônico segue `node --test tests/live/*.test.js`.
 > Este documento é o contrato do que `src/live/` implementa. Obedece ao
 > `Addendum_PreRequisitos_Fase2_V0.md` (que vence os docs da Fase 1) e à autorização da
 > Fase 2 do César (que decide vocabulário quando há divergência — registradas na §12).
@@ -44,15 +49,27 @@ da Fase 1 citavam `src/live/__tests__/`; a autorização vence (divergência reg
 `idempotency_key` · `occurred_at` · `captured_at` · `received_at` · `correlation`
 (`ifood_short`, `pedido_interno`, `print_job_id`) · `payload` · `quality`.
 
-Regras de validação (`contrato.js`):
+Regras de validação (`contrato.js` + `sanitizar.js`):
 - Sem `schema_version` ⇒ quarentena (`schema_version_ausente`). Versão fora de
   `["1.0"]` ⇒ quarentena (`schema_version_desconhecida`). **Nunca aceito em silêncio.**
 - `captured_at` obrigatório e legível; `occurred_at`/`received_at` podem ser `null`
   (não observado ≠ inventado). `received_at` é carimbado pelo núcleo na recepção.
-- **Privacidade:** telefone/endereço/nome de cliente **não têm campo**. A presença de
-  campo proibido (`telefone`, `endereco`, `cliente`, `cpf`, `senha`, `cookie`, `token`…)
-  em envelope/correlation/payload rejeita o evento; o registro de quarentena guarda só o
-  **nome** do campo, nunca o valor, e nesse caso o bruto **não** é preservado.
+- **Privacidade RECURSIVA (F2-01):** telefone/endereço/e-mail/CPF/documento/nome de
+  cliente/senha/cookie/token **não têm campo**. A varredura desce em objetos, arrays e
+  objetos dentro de arrays (profundidade limitada; estrutura funda demais ⇒ quarentena
+  `estrutura_profunda_demais`, nunca aceita cega) e é **case-insensitive**. Presença de
+  campo proibido em QUALQUER profundidade rejeita o evento; o registro de quarentena
+  guarda só o **caminho** do campo (ex.: `payload.itens[0].meta.telefone`), nunca o
+  valor, e nesse caso o bruto **não** é preservado. Identificadores operacionais
+  (`ifood_short`, `pedido_interno`, `sequencia`, `print_job_id`) **não** são PII.
+- **Normalização por allowlist (F2-01):** evento aceito nunca persiste o payload cego
+  da fonte — só os campos operacionais do contrato sobrevivem, por tipo de evento;
+  itens são reduzidos ao shape estrito `{nome, quantidade, observacao}`. Campos
+  descartados são registrados **por nome** em `parsing_warnings`
+  (`campos_descartados:…`). Evento malformado que vai à quarentena por outros motivos
+  tem o bruto **redigido** recursivamente antes do disco (`campos_redigidos`).
+  *Limitação declarada:* a detecção é por NOME de campo — valor livre dentro de campo
+  legítimo (ex.: observação do prato) não é vasculhado.
 - Identificador essencial ausente (ex.: comanda sem `pedido_interno`, status sem
   `ifood_short`) ⇒ quarentena (`identificador_essencial_ausente`).
 - `quality` ausente ⇒ preenchida com `completeness: "unknown"` + aviso — o default é
@@ -89,18 +106,46 @@ ou relógio `hh:mm` isolado) vai para quarentena (`idempotency_key_de_status_com
 *Limite declarado da heurística:* não detecta epoch arredondado — a proibição vale por
 contrato mesmo onde o padrão não alcança.
 
-## 5. Deduplicação
+## 5. Deduplicação (endurecida — F2-04)
 
-- `event_id` repetido ⇒ observação relida (replay) ⇒ ignorada e contada.
-- `idempotency_key` vista com `event_id` novo ⇒ mesmo fato reobservado ⇒ **não cria fato
-  novo**; carimbo avança; reimpressão idêntica de comanda conta uma via nova.
-- Idempotente por construção: mesmas linhas de log ⇒ mesmo estado (provado no teste 28).
+**A deduplicação acontece ANTES da persistência.** Ordem do pipeline:
+validar → sanitizar/allowlist → clock skew → **identidade de conteúdo → consulta ao
+índice → persistir somente quando apropriado** → aplicar ao estado → atualizar índices.
+
+Identidade de conteúdo: hash canônico (chaves ordenadas) do conteúdo OPERACIONAL do
+evento — exclui `captured_at`/`received_at`/`quality` e os campos de MEDIÇÃO do tipo
+(`tempo_decorrido_min`, `atraso_min`, `visto_em`, `emissao` da via, `occurred_at` nas
+famílias de status), que variam a cada releitura legítima do mesmo fato.
+
+| Caso | Comportamento |
+|---|---|
+| mesmo `event_id` + mesmo conteúdo | duplicata: **sem append**, sem estado, sem snapshot |
+| mesmo `event_id` + conteúdo divergente | anomalia: **sem append**; quarentena sanitizada (`event_id_reutilizado_com_conteudo_divergente`); o aceito anterior **nunca** é substituído |
+| mesma `idempotency_key` + mesmo fato | observação repetida: **sem append**; carimbos/vias avançam em memória |
+| mesma `idempotency_key` + conteúdo incompatível | conflito: **sem append**; quarentena sanitizada (`idempotency_key_reutilizada_com_conteudo_divergente`); o fato original aceito é preservado |
+
+Após reinício, os índices de `event_id` e `idempotency_key` são **reconstruídos pelo
+replay do log** — duplicata recebida depois do reinício também não é re-anexada
+(testado por contagem real de linhas no JSONL, não só pelo snapshot).
+
+*Consequência declarada:* o log contém **só fatos únicos aceitos**; contadores de
+recepção (duplicatas, quarentenas) têm **escopo de sessão** e vivem em seção própria
+do snapshot (`recepcao`), separados do que é derivado do log (§17).
 
 ## 6. Correlação (Addendum §7)
 
 Estados por pedido: `matched` (identificador forte único no dia) · `partial` (uma fonte,
 sem identificador para casar) · `unmatched` (uma fonte, identificador presente, nenhum
 candidato — comporta-se como partial) · `conflict` (2+ candidatos plausíveis).
+
+**Dia operacional da loja (F2-02):** o "dia" do casamento NUNCA é o prefixo UTC da
+string ISO. `localDayKey(occurred_at || captured_at, storeTimeZone)` converte o
+instante para o fuso IANA **explícito** da loja (`config.storeTimeZone` — sem padrão
+embutido; `America/Sao_Paulo` é exemplo de teste, não constante do núcleo) e extrai o
+dia LOCAL: a virada respeita a meia-noite da loja, e eventos perto da meia-noite UTC
+não caem no dia errado. **Sem timezone configurado ou com IANA inválido: nenhum
+casamento automático dependente de dia** — os lados ficam `partial`/`unmatched` com
+motivo `sem_dia_operacional_confiavel`; UTC nunca é assumido em silêncio.
 
 **Proibido e testado:** consolidar por proximidade temporal; escolher o candidato "mais
 próximo"; nome de cliente como chave. Em `conflict`: candidatos + motivo registrados,
@@ -174,6 +219,19 @@ desenvolvimento** — os valores definitivos dependem da Fase Sombra e nunca sã
 operacional. Papel de cada fonte (status/composição) é deduzido por **evidência** (do que
 ela emite), nunca por suposição; desconexão é apagada por evidência de vida posterior.
 
+**Clock skew (F2-03):** `captured_at` no futuro não mantém a fonte artificialmente
+fresca. Comparação **determinística** `captured_at × received_at` (o `received_at`
+persistido preserva o veredito no replay, independente do relógio real da máquina);
+tolerância `config.freshness.clockSkewToleranceMs` (chute de dev — o limite real da
+loja não é decidido nesta fase). Acima da tolerância: `quality.clock_skew_detected`,
+`quality.clock_skew_ms`, `completeness: suspect`, warning
+`relogio_inconsistente_captured_at_futuro`; a fonte **não** avança `ultimo_evento_em`
+nem `last_trusted_at` (freshness segue o restante da evidência — sem outra, fica
+`desconhecida`); o carimbo futuro **não ordena** coluna/revisão (sem `occurred_at`,
+a observação fica no histórico com `carimbo_suspeito`, sem avançar a coluna vigente);
+`freshness_age_ms` **nunca** é negativo; carimbo futuro direto no estado da fonte ⇒
+`desconhecida` com motivo `relogio_inconsistente_carimbo_no_futuro`.
+
 ## 12. Divergências e decisões registradas
 
 | Tema | Addendum/Fase 1 | Implementado | Por quê |
@@ -242,7 +300,16 @@ Dois eixos independentes de aptidão, nunca misturados: `apto_para_decisao` por 
 replay do log de eventos **sem re-persistir nada** (provado: o arquivo não cresce em
 reconstruções repetidas). Linha corrompida vira quarentena e contagem, nunca aborta.
 Com relógio fixo, o snapshot reconstruído é **igual** ao anterior exceto
-`reconstruido_em` (teste 28, `deepEqual`).
+`reconstruido_em` e a seção `recepcao` (teste 28, `deepEqual`).
+
+**Escopos declarados pós-F2-04:** `snapshot.qualidade` é 100% derivado do log e
+sobrevive ao reinício; `snapshot.recepcao` (recebidos/aceitos/duplicatas/quarentenas/
+linhas inválidas) é **contagem da sessão** — duplicatas e quarentenas não são
+re-anexadas ao log por desenho, então esses números não são reconstruíveis.
+*Limitação declarada:* carimbos de observação repetida (última vista, contagem de
+vias por reobservação idêntica) avançam só em memória e regridem no replay — o FATO e
+o conteúdo sobrevivem; via que precise sobreviver a reinício deve chegar como evento
+próprio `pedido_reimpresso` (fato distinto, persistido).
 
 ## 18. Matriz de aceite F3-01 a F3-07
 
@@ -255,6 +322,17 @@ Com relógio fixo, o snapshot reconstruído é **igual** ao anterior exceto
 | F3-05 diagrama da arquitetura | legenda corrigida: superfície mínima sob Addendum §10 | diff da arquitetura |
 | F3-06 consolidar sem conflict | layout corrigido: estados §7 explícitos | diff da arquitetura |
 | F3-07 suspect/match_state | §13: suspect implementado; match_state separado | testes 24 + F3-07 (2) |
+
+Achados da revisão do Grok sobre a Fase 2 (`04c58e2`), fechados na Fase 2.1:
+
+| Achado | Como foi fechado | Evidência |
+|---|---|---|
+| F2-01 PII aninhada | varredura recursiva + allowlist por tipo + redação na quarentena (§2) | tests/live/pii.test.js (marcadores ausentes do disco) |
+| F2-02 dia/fuso | `localDayKey` + `storeTimeZone` IANA explícito; sem fuso ⇒ sem casamento (§6) | tests/live/dia-local.test.js |
+| F2-03 captured_at futuro | skew determinístico captured×received; fonte nunca fresca à força (§11) | tests/live/clock-skew.test.js |
+| F2-04 dup antes do append | pipeline dedup-before-append; divergências em quarentena (§5) | tests/live/dedup-log.test.js (contagem de linhas) |
+| F2-05 NIGHT/rows | **ADIADO por decisão** — pertence ao adaptador da Fase 4 (`paraMotor`), fora deste núcleo | registro nesta tabela |
+| F2-06 script test:live | **SEM mudança agora** — `package.json` intocável nesta missão; comando canônico: `node --test tests/live/*.test.js` | registro nesta tabela |
 
 ## 19. Riscos e limitações conhecidas desta fase
 

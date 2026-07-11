@@ -33,12 +33,16 @@ function piorFreshness(classificacoes) {
  *  pedidos           saída de consolidarVisao()
  *  fontes            Map source -> registro de fonte (ver nucleo.js)
  *  quarentena        instância de criarQuarentena()
- *  contadores        contadores do núcleo
+ *  contadoresEstado  contadores da consolidação (100% reconstruíveis do log)
+ *  recepcao          contadores de recepção — ESCOPO DE SESSÃO: duplicatas e
+ *                    quarentenas não são re-anexadas (F2-04), logo estes
+ *                    números não sobrevivem ao reinício e são expostos em
+ *                    seção própria para nunca passarem por dado reconstruível
  *  config            criarConfig()
  *  agoraMs           relógio injetado
  *  reconstruidoEm    ISO da última reconstrução (null se sessão contínua)
  */
-function montarSnapshot({ pedidos, fontes, quarentena, contadores, config, agoraMs, reconstruidoEm }) {
+function montarSnapshot({ pedidos, fontes, quarentena, contadoresEstado, recepcao, config, agoraMs, reconstruidoEm }) {
   const fontesSaida = {};
   const porPapel = { status: [], composicao: [] };
   let ultimaConfiavel = null;
@@ -85,13 +89,16 @@ function montarSnapshot({ pedidos, fontes, quarentena, contadores, config, agora
       total: quarentena.total(),
       por_motivo: quarentena.porMotivo()
     },
+    // derivado do log — sobrevive ao reinício
     qualidade: {
-      ...contadores,
+      ...contadoresEstado,
       pedidos_completos: completos.length,
       pedidos_parciais: parciais.length,
       pedidos_em_conflito: conflitos.length,
       pedidos_cancelados: cancelados.length
-    }
+    },
+    // escopo de SESSÃO (F2-04): não sobrevive ao reinício por desenho
+    recepcao: { ...recepcao }
   };
 }
 

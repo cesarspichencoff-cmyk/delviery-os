@@ -8,7 +8,7 @@ const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const { criarNucleo } = require("../../src/live/nucleo");
 const { hashCanonicoItens } = require("../../src/live/normalizar");
-const { relogioFixo, eventoComanda, eventoAlterado } = require("./helpers");
+const { relogioFixo, eventoComanda, eventoAlterado, CONFIG_TESTE } = require("./helpers");
 
 const agora = relogioFixo("2026-07-11T19:10:00.000Z");
 const ITENS = [
@@ -17,7 +17,7 @@ const ITENS = [
 ];
 
 function nucleoComComanda() {
-  const nucleo = criarNucleo({ agora });
+  const nucleo = criarNucleo({ agora, config: CONFIG_TESTE });
   nucleo.receber(eventoComanda({ itens: ITENS, hash: hashCanonicoItens(ITENS) }));
   return nucleo;
 }
@@ -61,7 +61,7 @@ test("17b. remoção só quando explícita (itens_removidos)", () => {
 });
 
 test("17c. delta sem base confiável NÃO é aplicado: pendente e suspeito", () => {
-  const nucleo = criarNucleo({ agora }); // nenhuma comanda antes
+  const nucleo = criarNucleo({ agora, config: CONFIG_TESTE }); // nenhuma comanda antes
   const r = nucleo.receber(eventoAlterado({
     pedido_interno: "0000179999", ifood_short: "0999",
     change_mode: "partial_delta", revision: 2,

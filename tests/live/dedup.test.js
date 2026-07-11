@@ -7,19 +7,19 @@ const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const { criarNucleo } = require("../../src/live/nucleo");
 const { chaveStatus, verificarChaveDeStatus } = require("../../src/live/idempotencia");
-const { relogioFixo, eventoComanda, eventoStatus } = require("./helpers");
+const { relogioFixo, eventoComanda, eventoStatus, CONFIG_TESTE } = require("./helpers");
 
 const agora = relogioFixo("2026-07-11T19:10:00.000Z");
 
 test("4. event_id duplicado é ignorado (mesma observação relida)", () => {
-  const nucleo = criarNucleo({ agora });
+  const nucleo = criarNucleo({ agora, config: CONFIG_TESTE });
   const ev = eventoComanda({ event_id: "com-fixo-1" });
   assert.equal(nucleo.receber(ev).destino, "processado");
   const r2 = nucleo.receber(ev);
   assert.equal(r2.aceito, false);
   assert.equal(r2.destino, "duplicado_ignorado");
   const snap = nucleo.snapshot();
-  assert.equal(snap.qualidade.duplicados_event_id, 1);
+  assert.equal(snap.recepcao.duplicados_event_id, 1);
   // não virou segundo pedido nem segunda via
   const todos = [...snap.pedidos.completos, ...snap.pedidos.parciais];
   assert.equal(todos.length, 1);
@@ -27,19 +27,19 @@ test("4. event_id duplicado é ignorado (mesma observação relida)", () => {
 });
 
 test("5. idempotency_key duplicada (novo event_id) não cria fato novo", () => {
-  const nucleo = criarNucleo({ agora });
+  const nucleo = criarNucleo({ agora, config: CONFIG_TESTE });
   nucleo.receber(eventoComanda({ event_id: "com-a" }));
   const r = nucleo.receber(eventoComanda({ event_id: "com-b" })); // mesma chave de fato
   assert.equal(r.aceito, true);
   assert.equal(r.destino, "observacao_repetida");
   const snap = nucleo.snapshot();
-  assert.equal(snap.qualidade.observacoes_repetidas, 1);
+  assert.equal(snap.recepcao.observacoes_repetidas, 1);
   const todos = [...snap.pedidos.completos, ...snap.pedidos.parciais];
   assert.equal(todos.length, 1); // um fato, um pedido
 });
 
 test("6. status duplicado com captured_at diferente: mesmo fato, carimbo avança, nada duplica", () => {
-  const nucleo = criarNucleo({ agora });
+  const nucleo = criarNucleo({ agora, config: CONFIG_TESTE });
   nucleo.receber(eventoStatus({ event_id: "sta-a", captured_at: "2026-07-11T19:01:00.000Z" }));
   const r = nucleo.receber(eventoStatus({ event_id: "sta-b", captured_at: "2026-07-11T19:03:00.000Z" }));
   assert.equal(r.destino, "observacao_repetida"); // mesma chave: sem tempo na identidade
@@ -58,7 +58,7 @@ test("F3-04: chave de status construída pelo módulo não carrega horário", ()
 });
 
 test("F3-04: status com idempotency_key embutindo captured_at vai para quarentena", () => {
-  const nucleo = criarNucleo({ agora });
+  const nucleo = criarNucleo({ agora, config: CONFIG_TESTE });
   const r = nucleo.receber(eventoStatus({
     idempotency_key: "status:0724:2026-07-11:pronto:2026-07-11T19:01" // horário embutido: proibido
   }));

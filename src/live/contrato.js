@@ -28,25 +28,15 @@ const EVENT_TYPES = Object.freeze([
 
 const COMPLETENESS = Object.freeze(["complete", "partial", "suspect", "unknown"]);
 
-// Campos proibidos por privacidade (Auditoria Mestra §13): o que não existe no
-// schema não vaza. Verificados no topo do envelope, em correlation e em payload.
-const CAMPOS_PROIBIDOS = Object.freeze([
-  "telefone", "tel", "tel_consumidor", "endereco", "cep", "cpf", "cliente",
-  "consumidor", "nome_cliente", "senha", "cookie", "token"
-]);
+// Privacidade (F2-01): a lista proibida e a varredura RECURSIVA moram em
+// sanitizar.js — objetos, arrays e objetos dentro de arrays, em qualquer
+// profundidade (limitada), case-insensitive. O que não existe no schema não vaza.
+const { CAMPOS_PROIBIDOS, acharCampoProibido } = require("./sanitizar");
 
 const ehString = (v) => typeof v === "string" && v.length > 0;
 const ehObjeto = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
 const ehIsoOuNull = (v) => v === null || v === undefined ||
   (typeof v === "string" && !Number.isNaN(Date.parse(v)));
-
-function acharCampoProibido(obj) {
-  if (!ehObjeto(obj)) return null;
-  for (const k of Object.keys(obj)) {
-    if (CAMPOS_PROIBIDOS.includes(k.toLowerCase())) return k;
-  }
-  return null;
-}
 
 /**
  * Valida o envelope de um evento bruto.
@@ -84,10 +74,14 @@ function validarEnvelope(ev) {
     return { ok: false, motivo: "quality_invalida" };
   }
 
-  // privacidade: nenhum campo proibido em lugar nenhum do evento.
-  for (const [nome, obj] of [["envelope", ev], ["correlation", ev.correlation], ["payload", ev.payload]]) {
-    const campo = acharCampoProibido(obj);
-    if (campo) return { ok: false, motivo: "dado_pessoal_nao_permitido", campo: `${nome}.${campo}` };
+  // privacidade (F2-01): varredura RECURSIVA — nenhum campo proibido em
+  // NENHUMA profundidade do evento (objetos, arrays, objetos em arrays).
+  const pii = acharCampoProibido(ev, "", 0);
+  if (pii) {
+    if (pii.profundidade_excedida) {
+      return { ok: false, motivo: "estrutura_profunda_demais" };
+    }
+    return { ok: false, motivo: "dado_pessoal_nao_permitido", campo: pii.campo };
   }
 
   // identificadores essenciais por tipo (incompatíveis => quarentena)

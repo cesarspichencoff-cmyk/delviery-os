@@ -6,14 +6,14 @@ const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const { criarNucleo } = require("../../src/live/nucleo");
 const { hashCanonicoItens } = require("../../src/live/normalizar");
-const { relogioFixo, eventoComanda, eventoReimpresso } = require("./helpers");
+const { relogioFixo, eventoComanda, eventoReimpresso, CONFIG_TESTE } = require("./helpers");
 
 const agora = relogioFixo("2026-07-11T19:10:00.000Z");
 const ITENS = [{ nome: "Uramaki Ficticio Especial", quantidade: 1, observacao: null }];
 const ITENS_OUTROS = [{ nome: "Temaki Exemplo", quantidade: 2, observacao: null }];
 
 test("14. reimpressão idêntica: uma via a mais, nunca segundo pedido, idempotente", () => {
-  const nucleo = criarNucleo({ agora });
+  const nucleo = criarNucleo({ agora, config: CONFIG_TESTE });
   nucleo.receber(eventoComanda({ itens: ITENS, hash: hashCanonicoItens(ITENS) }));
   // mesma comanda impressa de novo => mesma idempotency_key, novo event_id
   const r = nucleo.receber(eventoComanda({
@@ -29,7 +29,7 @@ test("14. reimpressão idêntica: uma via a mais, nunca segundo pedido, idempote
 });
 
 test("14b. evento explícito pedido_reimpresso idêntico é idempotente", () => {
-  const nucleo = criarNucleo({ agora });
+  const nucleo = criarNucleo({ agora, config: CONFIG_TESTE });
   nucleo.receber(eventoComanda({ itens: ITENS, hash: hashCanonicoItens(ITENS) }));
   const r = nucleo.receber(eventoReimpresso({ itens: ITENS }));
   assert.equal(r.resultado, "reimpressao_identica");
@@ -40,7 +40,7 @@ test("14b. evento explícito pedido_reimpresso idêntico é idempotente", () => 
 });
 
 test("15. reimpressão divergente: registrada como possível alteração, itens NÃO substituídos", () => {
-  const nucleo = criarNucleo({ agora });
+  const nucleo = criarNucleo({ agora, config: CONFIG_TESTE });
   nucleo.receber(eventoComanda({ itens: ITENS, hash: hashCanonicoItens(ITENS) }));
   const r = nucleo.receber(eventoComanda({
     itens: ITENS_OUTROS, hash: hashCanonicoItens(ITENS_OUTROS),

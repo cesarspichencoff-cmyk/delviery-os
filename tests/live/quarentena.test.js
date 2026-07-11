@@ -7,12 +7,12 @@ const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const { criarNucleo } = require("../../src/live/nucleo");
 const { criarQuarentena } = require("../../src/live/quarentena");
-const { relogioFixo, eventoComanda, eventoStatus } = require("./helpers");
+const { relogioFixo, eventoComanda, eventoStatus, CONFIG_TESTE } = require("./helpers");
 
 const agora = relogioFixo("2026-07-11T19:10:00.000Z");
 
 test("26. evento inválido vai para quarentena e o fluxo segue processando", () => {
-  const nucleo = criarNucleo({ agora });
+  const nucleo = criarNucleo({ agora, config: CONFIG_TESTE });
   const invalido = eventoComanda({ schema_version: "9.9" });
   const valido = eventoStatus();
 
@@ -29,12 +29,24 @@ test("26. evento inválido vai para quarentena e o fluxo segue processando", () 
   assert.equal(todos.length, 1); // só o evento válido
 });
 
-test("26b. o evento bruto é preservado quando seguro", () => {
+test("26b. o evento bruto é preservado quando seguro (redigido por nome de campo)", () => {
   const q = criarQuarentena(null);
   const bruto = eventoComanda({ schema_version: "9.9" });
   const reg = q.registrar(bruto, "schema_version_desconhecida", {}, "2026-07-11T19:10:00.000Z");
-  assert.equal(reg.evento_bruto, bruto); // preservado para diagnóstico
+  // clone redigido: sem campos proibidos, conteúdo operacional preservado
+  assert.deepEqual(reg.evento_bruto, bruto); // nada proibido aqui => cópia fiel
+  assert.deepEqual(reg.campos_redigidos, []);
   assert.equal(reg.motivo, "schema_version_desconhecida");
+});
+
+test("26d. evento malformado COM PII aninhada vai à quarentena redigido (F2-01)", () => {
+  const q = criarQuarentena(null);
+  const bruto = eventoComanda({ schema_version: "9.9" });
+  bruto.payload.entrega = { endereco: "marcador-endereco-9871", bairro_zona: "ok" };
+  const reg = q.registrar(bruto, "schema_version_desconhecida", {}, "2026-07-11T19:10:00.000Z");
+  assert.ok(reg.campos_redigidos.includes("payload.entrega.endereco"));
+  assert.ok(!JSON.stringify(reg).includes("marcador-endereco-9871")); // valor morto
+  assert.equal(reg.evento_bruto.payload.entrega.bairro_zona, "ok"); // resto preservado
 });
 
 test("26c. rejeição por dado pessoal NÃO preserva o bruto nem ecoa o valor", () => {

@@ -16,6 +16,8 @@
  * ==========================================================================*/
 "use strict";
 
+const { redigirCamposProibidos } = require("./sanitizar");
+
 function criarQuarentena(armazenamento) {
   const registros = [];
 
@@ -28,15 +30,26 @@ function criarQuarentena(armazenamento) {
      * @param {boolean} [persistir=true] false só no replay (o arquivo já tem o registro)
      */
     registrar(eventoBruto, motivo, contexto, recebidoEm, persistir) {
+      // Rejeição por dado pessoal: o bruto NÃO é preservado (só o nome do campo).
+      // Qualquer outro motivo: o bruto é REDIGIDO recursivamente antes de ir ao
+      // disco (F2-01) — evento malformado também não pode carregar PII por nome.
       const seguroGuardarBruto = motivo !== "dado_pessoal_nao_permitido";
+      let brutoRedigido = null;
+      let camposRedigidos = [];
+      if (seguroGuardarBruto && eventoBruto !== null && eventoBruto !== undefined) {
+        const r = redigirCamposProibidos(eventoBruto, "", 0, []);
+        brutoRedigido = r.objeto;
+        camposRedigidos = r.removidos;
+      }
       const registro = {
         motivo,
         campo: (contexto && contexto.campo) || null,
+        campos_redigidos: camposRedigidos, // só nomes/caminhos, nunca valores
         origem: (contexto && contexto.origem) || "recepcao",
         recebido_em: recebidoEm || null,
         event_id: (eventoBruto && eventoBruto.event_id) || null,
         event_type: (eventoBruto && eventoBruto.event_type) || null,
-        evento_bruto: seguroGuardarBruto ? eventoBruto : null
+        evento_bruto: brutoRedigido
       };
       registros.push(registro);
       if (armazenamento && persistir !== false) armazenamento.anexarQuarentena(registro);
