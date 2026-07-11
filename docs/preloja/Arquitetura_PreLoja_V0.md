@@ -39,8 +39,10 @@
                        └───────────────────┬───────────────────────────┘
                                            ▼
                        ┌───────────────────────────────────────────────┐
-                       │  app-v1 (Fase 4, por flag) — Calmo/Ambiente/  │
-                       │  Foco/Mapa/Pressão/Sinais, mesmos de hoje     │
+                       │  app-v1 (Fase 4, por flag) — superfície       │
+                       │  MÍNIMA no vivo: Calmo/Ambiente/Foco + saúde  │
+                       │  das fontes; Mapa/Pressão/Sinais só sob as    │
+                       │  regras de fonte parcial do Addendum §10      │
                        └───────────────────────────────────────────────┘
 
   Transversais: gate de staleness (Addendum §4, ANTES de decidir) · flags (Fase 4) ·
@@ -58,7 +60,7 @@ src/live/                      Fase 2 — núcleo (CommonJS, mesmo padrão do re
   contrato.js                  tipos/validador dos eventos (schema por código, sem lib)
   normalizar.js                texto/idempotência de campos (reusa espírito de _norm do motor)
   dedup.js                     chaves por fonte + idempotência de replay
-  consolidar.js                casamento comanda×status pelo código iFood; parciais explícitos
+  consolidar.js                casamento comanda×status com estados matched|partial|unmatched|conflict (Addendum §7) — o curto sozinho é insuficiente sob ambiguidade; parciais explícitos
   persistir.js                 JSONL append-only + leitura tolerante a linha truncada
   snapshot.js                  estado atual {NIGHT, rows, qualidade} reconstruível do log
   qualidade.js                 saúde das fontes, idade do dado, contadores de incerteza
