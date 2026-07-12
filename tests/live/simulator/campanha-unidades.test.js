@@ -138,38 +138,42 @@ test("15. falha inesperada torna o gate G5 vermelho — nunca silenciosa", () =>
   assert.equal(r.gates.G5_volume, "vermelho");
 });
 
-test("10. F2-08 — as sete variações de comanda vazia, comportamento documentado", () => {
+test("10. F2-08 CORRIGIDO — as sete variações de comanda vazia", () => {
   const casos = executarCasosF208({ seed: "seed-f208-teste", storeTimeZone: TZ });
   assert.equal(casos.length, 7);
   const por = Object.fromEntries(casos.map((c) => [c.caso, c]));
 
-  // vazia que depois recebe composição via pedido_alterado
+  // vazia que depois recebe composição via pedido_alterado: recupera
   assert.equal(por.f208_vazia_depois_recebe_composicao.itens_atuais, 1);
+  assert.notEqual(por.f208_vazia_depois_recebe_composicao.completeness, "suspect");
 
-  // vazia que permanece vazia: aceita, parcial/unmatched, nunca apta
+  // vazia que permanece vazia: aceita, suspeita, nunca apta
   assert.equal(por.f208_vazia_permanece_vazia.aceito, true);
+  assert.equal(por.f208_vazia_permanece_vazia.completeness, "suspect");
   assert.equal(por.f208_vazia_permanece_vazia.apto_para_decisao, false);
   assert.equal(por.f208_vazia_permanece_vazia.itens_atuais, 0);
 
   // vazia duplicada: dedup segura o segundo envio
   assert.equal(por.f208_vazia_duplicada.duplicados, 1);
 
-  // ACHADO F2-08 (registrado, não corrigido): vazia casada com status vira
-  // matched/complete e APTA para decisão com 0 itens — risco operacional real.
+  // F2-08 CORRIGIDO: vazia casada com status segue matched (eixo de casamento),
+  // mas NUNCA complete e NUNCA apta com 0 itens.
   for (const caso of ["f208_vazia_apos_status", "f208_vazia_antes_de_status"]) {
     assert.equal(por[caso].match_state, "matched");
-    assert.equal(por[caso].completeness, "complete");
-    assert.equal(por[caso].apto_para_decisao, true); // <- o achado
+    assert.equal(por[caso].completeness, "suspect");   // antes: "complete"
+    assert.equal(por[caso].apto_para_decisao, false);  // antes: true (o achado)
     assert.equal(por[caso].itens_atuais, 0);
   }
 
-  // vazia cancelada: histórico preservado, cancelado true
+  // vazia cancelada: histórico preservado, cancelado true, nunca apta
   assert.equal(por.f208_vazia_seguida_de_cancelamento.cancelado, true);
+  assert.equal(por.f208_vazia_seguida_de_cancelamento.apto_para_decisao, false);
 
-  // vazia atravessa reinício: replay equivalente e casamento pós-reinício
+  // vazia atravessa reinício: replay equivalente; regra sobrevive ao replay
   assert.equal(por.f208_vazia_atravessando_reinicio.replay.executado, true);
   assert.equal(por.f208_vazia_atravessando_reinicio.replay.snapshot_igual, true);
   assert.equal(por.f208_vazia_atravessando_reinicio.match_state, "matched");
+  assert.equal(por.f208_vazia_atravessando_reinicio.apto_para_decisao, false);
 
   // determinismo dos casos
   const casos2 = executarCasosF208({ seed: "seed-f208-teste", storeTimeZone: TZ });

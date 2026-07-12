@@ -56,7 +56,18 @@ function calcularQualidadeConsolidado(pedido) {
   const warnings = [];
   const faltando = [];
 
-  const temComanda = !!(pedido.comanda && Array.isArray(pedido.comanda.itens));
+  // F2-08 (corrigido): composição presente exige pelo menos UM item válido
+  // (objeto com nome de texto não vazio — shape do contrato §2). Distinções:
+  //   comanda null            => composição desconhecida (partial)
+  //   itens não-array/null    => composição desconhecida/ inválida (partial)
+  //   itens: [] ou só lixo    => composição VAZIA observada (suspect, §abaixo)
+  //   >=1 item válido         => segue a lógica normal de completude
+  const itens = pedido.comanda ? pedido.comanda.itens : null;
+  const composicaoObservada = Array.isArray(itens);
+  const itensValidos = composicaoObservada
+    ? itens.filter((it) => it && typeof it.nome === "string" && it.nome.trim().length > 0).length
+    : 0;
+  const temComanda = composicaoObservada && itensValidos > 0;
   const temStatus = !!(pedido.status && pedido.status.coluna);
   if (!temComanda) faltando.push("itens");
   if (!temStatus) faltando.push("status");
@@ -71,6 +82,13 @@ function calcularQualidadeConsolidado(pedido) {
   }
   if (pedido.conflito_revisao) { suspeito = true; motivosSuspeita.push("conflito_revisao"); }
   if (pedido.alteracao_pendente_sem_base) { suspeito = true; motivosSuspeita.push("alteracao_sem_base_confiavel"); }
+  // F2-08: comanda impressa com composição VAZIA é anômala por natureza — a
+  // operação não vende pedido sem item. Nunca complete, nunca apta; se uma
+  // alteração posterior trouxer item válido, a suspeita cai e o pedido pode
+  // recuperar completude normalmente.
+  if (composicaoObservada && itensValidos === 0) {
+    suspeito = true; motivosSuspeita.push("comanda_sem_itens");
+  }
 
   let completeness;
   if (suspeito) completeness = "suspect";

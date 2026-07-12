@@ -68,7 +68,7 @@ artificialmente problemático por inteiro.
 | Reinícios / replays equivalentes | **6 / 6** |
 | Amostras freshness (atualizada/atrasada/vencida/desc./desconh.) | 356 / 279 / 113 / 1 / 1 |
 | Estados finais (matched/unmatched/conflict/cancelados) | 8.602 / 81 / 408 / 343 |
-| Aptos para decisão | 8.602 |
+| Aptos para decisão | **8.567** (pós-correção F2-08: −35 vazias casadas que antes ficavam aptas) |
 | Divergências / falhas inesperadas | **0 / 0** |
 
 Separação de leitura: duplicados, quarentena, conflitos, parciais e supressões são
@@ -93,30 +93,34 @@ decisão indevidamente, impediu recuperação ou gerou divergência não explica
 - Eventos processados: 24.595 · chaves de fato: **24.093** (1 por fato aceito; razão 1,0)
 - Série diária registrada (30 pontos, crescimento monotônico ∝ volume aceito).
 - Duplicidades reconhecidas: 448 · não reconhecidas: **0**.
-- Após replay: índice de event_ids renasce do log (só fatos únicos); chaves de fato preservadas.
 - **Não existe limpeza/expiração** no núcleo atual (fato registrado; nada implementado).
-- **Classificação: `crescimento_linear_esperado`** — sem componente superlinear; ~24k
-  chaves/30 dias na escala testada é estável para o processo; sessão contínua multi-dia
-  sem reinício cresce sem teto — mitigação operacional (reinício diário) pertence à F7.
+- **Classificação: `crescimento_linear_esperado`** — o índice cresce linearmente com os
+  fatos aceitos, sem componente superlinear (~24k chaves/30 dias na escala testada).
+- **Correção documental (auditoria 3B):** reinício com replay COMPLETO **reconstrói**
+  as chaves a partir do log inteiro — o log nunca é rotacionado, então **reiniciar
+  sozinho NÃO limita o crescimento** (a afirmação anterior de que "reinício diário
+  mitiga" estava tecnicamente errada e foi retratada). **Retenção, rotação, compactação
+  ou janela de histórico serão necessárias antes de operação contínua multiperíodo.**
+  O achado não bloqueia D4A; nenhuma política nova foi implementada nesta missão.
 
-## 7. F2-08 — comanda com itens vazios (documentado, não corrigido)
+## 7. F2-08 — comanda com itens vazios (CORRIGIDO — missão pós-auditoria 3B)
 
-7 casos executados (`tools/live/simulator/campanha/f208.js`) + 93 vazias no volume:
+Correção mínima centralizada em `src/live/qualidade.js` (contrato no
+`Contrato_Nucleo_Fonte_Viva_V0.md` §13): composição presente exige ≥1 item válido;
+`itens: []` (ou só itens sem nome) ⇒ `suspect` com motivo `comanda_sem_itens` — nunca
+`complete`, nunca apta. Casos recertificados (7 de f208.js + 93 vazias no volume + 15
+testes dedicados em `tests/live/comanda-vazia.test.js`):
 
-| Caso | Resultado |
+| Caso | Resultado pós-correção |
 |---|---|
-| vazia → `pedido_alterado` traz composição | composição aplicada (1 item) |
-| vazia permanece vazia | aceita; parcial/unmatched; **nunca apta** |
-| vazia duplicada | dedup segura (1 fato) |
-| **vazia + status (antes ou depois)** | **matched + complete + `apto_para_decisao: true` com 0 itens — ACHADO** |
-| vazia + cancelamento | cancelada, histórico íntegro |
-| vazia atravessando reinício | replay equivalente; casa depois |
-
-**Classificação de risco: limitação conhecida AGRAVADA** — sem status a vazia é
-inofensiva (nunca apta), mas casada com status ela parece completa e apta com zero
-itens. Correção mínima futura sugerida (exige autorização, `src/live`):
-`itens.length === 0` ⇒ `completeness: partial|suspect` + warning `comanda_sem_itens`.
-Nenhuma mudança foi feita nesta missão.
+| vazia → `pedido_alterado` traz composição | **recupera**: 1 item, sai de suspect |
+| vazia permanece vazia | suspect; nunca apta |
+| vazia duplicada | dedup segura (1 fato); suspect |
+| **vazia + status (antes ou depois)** | **matched + `suspect` + `apto_para_decisao: false`** (antes: complete/apto — corrigido) |
+| itens válidos → alteração para vazio | **revoga** completude e aptidão |
+| vazia + cancelamento | cancelada; aptidão nunca reaberta |
+| vazia atravessando reinício | replay equivalente; regra sobrevive |
+| sem campo `itens` / formato inválido | quarentena (`payload_incompativel`) |
 
 ## 8. Limitações desta campanha
 
@@ -134,10 +138,13 @@ varredura do runtime persistido; zero PII) ✓ · G5 volume (9.298 no alvo; zero
 inesperada; zero divergência) ✓ · G6 F2-07 medido e classificado ✓ · G7 F2-08
 documentado ✓ · G8 isolamento (diff vazio em `src/live` e áreas protegidas) ✓.
 
-## 10. Conclusão
+## 10. Conclusão (atualizada pós-correção F2-08)
 
 O núcleo de fonte viva sustentou 30 dias sintéticos determinísticos na escala da
 operação real (9,3k pedidos, 24,6k eventos) com dedup-antes-do-append íntegro sob
 volume, 6 reinícios com replay equivalente, quarentena e conflitos honestos e zero
-falha inesperada. Ficam registrados, sem correção nesta missão: o achado F2-08
-(vazia+status apta) e a ausência de expiração no índice de dedup (F2-07, linear).
+falha inesperada. **F2-08 foi corrigido e recertificado** (hash da campanha mudou de
+forma explicada e determinística: só os estados de comanda vazia e os textos F2-07 do
+relatório; matched inalterado em 8.602; aptos 8.602→8.567). **F2-07 permanece
+registrado**: crescimento linear; reinício não limita (replay reconstrói do log
+inteiro); retenção/rotação necessárias antes de operação contínua multiperíodo.

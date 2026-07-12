@@ -307,11 +307,13 @@ function executarCampanha({ config, manterRuntime, hooks } = {}) {
       duplicidades_reconhecidas: totais.duplicados + totais.observacoes_repetidas,
       duplicidades_nao_reconhecidas: divergencias.filter((x) => x.categoria === "duplicado_reenvio").length,
       existe_limpeza_ou_expiracao: false, // fato do núcleo atual — nada foi implementado
-      comportamento_apos_replay: "indice de event_ids renasce do log (so fatos unicos); chaves de fato preservadas",
+      comportamento_apos_replay: "reinicio com replay COMPLETO reconstroi as chaves a partir do log " +
+        "inteiro (so fatos unicos); o log nunca e rotacionado, entao reiniciar NAO limita o crescimento",
       classificacao: "crescimento_linear_esperado",
-      justificativa: "chaves crescem proporcionalmente aos fatos aceitos, sem componente superlinear; " +
-        "reinicio reduz o indice de event_ids ao numero de fatos persistidos; sem expiracao, " +
-        "sessao continua multi-dia cresce sem teto — mitigavel por reinicio diario (F7)."
+      justificativa: "o indice cresce linearmente com os fatos aceitos, sem componente superlinear; " +
+        "reinicio sozinho nao limita o crescimento (o replay reconstroi todas as chaves do log); " +
+        "retencao, rotacao, compactacao ou janela de historico serao necessarias antes de operacao " +
+        "continua multiperiodo — nenhuma politica nova foi implementada nesta missao; nao bloqueia D4A."
     };
 
     // F2-08: casos de estudo determinísticos (seed derivada da campanha)
@@ -344,8 +346,8 @@ function executarCampanha({ config, manterRuntime, hooks } = {}) {
         comportamento_esperado: ["duplicados ignorados", "invalidos em quarentena",
           "conflitos sem merge", "parciais honestos", "replay equivalente"],
         limitacoes_conhecidas: [
-          "F2-08: comanda vazia casada com status vira complete/apto (achado registrado, nao corrigido)",
-          "F2-07: sem expiracao de indice em sessao continua (mitigacao operacional futura)",
+          "F2-08 CORRIGIDO: comanda com itens vazios nunca e complete nem apta (suspect, comanda_sem_itens); composicao valida posterior recupera",
+          "F2-07: indice cresce linearmente e replay completo reconstroi as chaves — reinicio nao limita; retencao/rotacao necessarias antes de operacao continua multiperiodo",
           "last_trusted_at conservador pos-reinicio (contrato §17)"
         ],
         falhas_inesperadas: falhasInesperadas.length,

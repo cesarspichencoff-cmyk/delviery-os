@@ -248,7 +248,19 @@ a observação fica no histórico com `carimbo_suspeito`, sem avançar a coluna 
 separado de `completeness`** em todo pedido do snapshot. `matched` não implica
 `complete` (matched sem itens = partial; matched com aviso = suspect). `complete` não
 implica `atualizada` (freshness mora nas fontes). `suspect` nasce de:
-`parsing_warnings`, reimpressão divergente, conflito de revisão, alteração sem base.
+`parsing_warnings`, reimpressão divergente, conflito de revisão, alteração sem base,
+**composição vazia**.
+
+**Composição presente exige pelo menos UM item válido (correção F2-08):** item válido =
+objeto com `nome` de texto não vazio (shape do §2). Distinções obrigatórias:
+comanda não recebida ⇒ composição desconhecida (`partial`); `itens` não-array/`null` ⇒
+desconhecida/ inválida (`partial`); **`itens: []` ou só itens sem nome ⇒ composição
+VAZIA observada ⇒ `suspect` com motivo `comanda_sem_itens` — nunca `complete`, nunca
+`apto_para_decisao`**, com ou sem status, sob duplicidade, reimpressão, reinício e
+replay. Composição válida posterior (ex.: `pedido_alterado`) recupera a completude
+normalmente; alteração de composição válida para vazia **revoga** completude e aptidão
+(nada é preservado por estado anterior). Cancelamento continua soberano: cancelado
+nunca volta a apto.
 
 Rasura (Addendum §14): `manual_correction_possible: true`;
 `manual_correction_detected: null` = "não sabemos", **nunca** "não houve";
