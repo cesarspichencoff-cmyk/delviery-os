@@ -1,126 +1,107 @@
-# Passaporte de Evolução e Dossiê Privado — L8
+# Passaporte e Dossiê — L8 V0 (pós-correção)
 
-> Duas camadas **separadas**. O funcionário vê o Passaporte. O dossiê é **inicialmente só do César**.  
-> IA organiza e sugere; **IA não decide** promoção, rebaixamento, advertência, desligamento, intenção, personalidade, potencial definitivo nem alinhamento cultural definitivo.
-
----
-
-## 1. Passaporte de Evolução (visível ao funcionário)
-
-### 1.1 Finalidade
-Responder: **“Qual é o meu próximo passo para evoluir?”**  
-Motivar com clareza e respeito — sem competição pública.
-
-### 1.2 Campos permitidos
-
-| Campo | Descrição | Origem |
-|---|---|---|
-| trilha_atual | Função + formação em curso | Atribuição LE/César |
-| conteudos_concluidos | Microlições / módulos | Sistema de formação (futuro) |
-| competencias_demonstradas | IDs com provas aprovadas (K/S/B/C) | Validação humana |
-| pontos_fortes_reconhecidos | Só o que LE/César **reconheceu** | Humano |
-| foco_desenvolvimento | Um foco principal | Humano |
-| proximos_passos | 1–3 ações concretas | Humano + regra de trilha |
-| requisitos_para_avancar | Marcos de autonomia / provas faltantes | Matriz + trilha |
-| ideias_reconhecidas | Ideias aprovadas no fluxo de casos | Governança |
-| conquistas | Marcos não competitivos (ex.: F1 completa) | Sistema + humano |
-| evolucao_recente | Mudança desde última validação | Resumo |
-| evidencias_praticas_aprovadas | Lista curta de evidências **já validadas** | Humano |
-
-### 1.3 Proibido no Passaporte
-
-- Ranking · comparação com colegas · hipóteses internas · suspeitas  
-- Avaliações não validadas · julgamentos de personalidade · informações disciplinares  
-- “Score” público · placar de erros · 45/55/65 · valores de compensação de terceiros  
-
-### 1.4 Regras de escrita
-
-- Fatos e comportamentos observáveis.  
-- Tom de respeito (valor TATÁ).  
-- Conteúdo concluído **≠** competência (mostrar provas separadas).
+> Simplificado para **&lt;10 segundos** de leitura do próximo passo.  
+> Anti-punição · sem ranking · contrato INT como limite · **não** sistema disciplinar.
 
 ---
 
-## 2. Dossiê privado de desenvolvimento (César)
+## 0. Anti-punição
+
+O TATÁ Evolução forma e desenvolve. **Não** disciplina.  
+Falha isolada ≠ diagnóstico de pessoa. Competência não cai por um único caso. Contestação permitida.
+
+---
+
+## 1. Passaporte V0 (visível ao funcionário)
+
+### 1.1 Campos **mantidos** (somente estes)
+
+| Campo | Finalidade | Origem | Quem edita/aprova |
+|---|---|---|---|
+| **trilha_atual** | Onde estou | Atribuição LE/César | LE/César |
+| **proximo_passo** | Uma ação dominante | Humano + trilha | LE (ou DS no escopo) |
+| **competencias_demonstradas** | O que já demonstrei (IDs + prova) | Validação humana | Validador autorizado |
+| **evidencia_necessaria** | O que preciso demonstrar agora | Trilha / foco | LE/DS |
+| **validador_possivel** | Quem pode validar | Matriz validadores | Sistema/LE |
+| **foco_desenvolvimento** | Foco aprovado (1) | LE/César | LE/César |
+| **status_contestacao** | aberta / resolvida / nenhuma | Contestation | Funcionário abre; César/LE resolve no escopo |
+
+### 1.2 Removidos ou adiados do V0
+
+| Campo antigo | Ação |
+|---|---|
+| conteudos_concluidos | Secundário — fora da face V0 (pode existir em Formação) |
+| proximos_passos (lista) | **Fundido** em `proximo_passo` |
+| evolucao_recente | **Fundido** em `proximo_passo` / competências |
+| ideias_reconhecidas | **Adiado** |
+| conquistas extensas | **Adiado** (no máx. 1 marco não competitivo futuro) |
+| requisitos_para_avancar longos | Embutido em `evidencia_necessaria` |
+| evidencias_praticas lista longa | Só o necessário em `evidencia_necessaria` + última B |
+| prontidão promoção | **Proibido** no Passaporte |
+
+### 1.3 Perguntas respondidas em &lt;10 s
+
+| Pergunta | Campo |
+|---|---|
+| Onde estou? | trilha_atual |
+| Qual meu próximo passo? | proximo_passo |
+| O que preciso demonstrar? | evidencia_necessaria |
+| Quem valida? | validador_possivel |
+| Como contestar? | status_contestacao + caminho: avisar LE/César e registrar motivo em 1 linha |
+
+### 1.4 Proibido no Passaporte
+
+Ranking · comparação · hipótese · acusação · evidência não revisada · disciplina · personalidade · suspeita · comentário privado · 45/55/65 · valores $ de terceiros.
+
+---
+
+## 2. Dossiê privado V0
 
 ### 2.1 Finalidade
-Apoiar decisão humana de desenvolvimento com memória estruturada — **não** RH punitivo automatizado.
+Apoiar desenvolvimento legítimo do César — **não** RH punitivo.
 
-### 2.2 Campos permitidos
+### 2.2 Campos **mantidos**
 
-| Campo | Uso |
+| Campo | Nota |
 |---|---|
-| evidencias | Notas B/C, casos, observações |
-| recorrencias | Temas (omissão, comunicação…), não “ficha criminal” |
-| autonomia_demonstrada | O que já executa na matriz |
-| necessidades_treinamento | Lacunas F1–F4 / função |
-| situacoes_criticas | Eventos graves com fato (segurança, etc.) |
-| prontidao_promocao | **Hipótese de trabalho humana**, nunca automática |
-| intervencoes_recomendadas | Treino, sombra, conversa — sugestão |
-| status_desenvolvimento | Ver §2.3 |
+| evidencias_aprovadas | Fatos validados |
+| recorrencias_validadas_por_tema | Tema, não ficha criminal |
+| autonomia_demonstrada | Marcos matriz |
+| foco_desenvolvimento | Alinhado Passaporte |
+| intervencoes_realizadas | Só o que **foi feito** (treino, conversa) — não “potencial” |
+| status | aberto / em desenvolvimento / corrigido / consolidado / evidencia_insuficiente / arquivado |
 
-### 2.3 Status do dossiê / item
+**Hipótese vs evidência:** labels obrigatórios; hipótese **não** vai ao Passaporte.
 
-| Status | Significado |
-|---|---|
-| aberto | Em observação |
-| em desenvolvimento | Plano ativo |
-| corrigido | Comportamento/recorrência endereçada |
-| consolidado | Consistência demonstrada |
-| evidencia_insuficiente | Não concluir nada |
-| arquivado | Encerrado com motivo |
+### 2.3 Retirados / adiados
 
-### 2.4 O que a IA pode / não pode
+prontidão promoção estruturada · potencial · perfil · personalidade · comentários sem finalidade · disciplina · observações não revisadas · intervenções “recomendadas” especulativas (só realizadas)
 
-| Pode | Não pode |
-|---|---|
-| Organizar evidências | Decidir promoção |
-| Sugerir foco de treino | Rebaixar, advertir, desligar |
-| Agrupar recorrências por **tema** | Inferir intenção ou personalidade |
-| Lembrar provas pendentes | Declarar potencial ou alinhamento cultural **definitivos** |
-| Rascunhar texto de Passaporte para LE editar | Publicar no Passaporte sem humano |
-
-### 2.5 Acesso (Fase 1)
+### 2.4 ACL (decisão César — aplicada)
 
 | Papel | Acesso |
 |---|---|
-| César | Total |
-| LE | **Pendente decisão César** (mínimo: só o necessário para validar provas da equipe) |
-| Funcionário | **Não** vê dossiê; vê Passaporte |
-| IA | Processa sob política de privacidade; sem export público |
+| **César** | Integral |
+| **LE** | **Somente:** evidências a validar · competências sob responsabilidade · foco aprovado · próximo passo necessário. **Não:** hipóteses privadas, histórico completo, prontidão, intervenções confidenciais, disciplina, anotações César |
+| **Funcionário** | Não vê dossiê; vê Passaporte |
+| **IA** | Organiza; **não** decide |
+| **DS/AO** | Não acessam dossiê; validam provas no escopo via fila de validação |
+
+**Registrar:** quem acessou · quando · finalidade (audit conceitual; papel no piloto).
+
+### 2.5 Contestação e correção
+Conforme contrato INT: contestada ≠ consolidada. Correção versionada. César resolve conflitos sensíveis.
 
 ---
 
-## 3. Fluxo entre as duas camadas
+## 3. Fluxo mínimo
 
 ```text
-Observação / simulação / ciclo real
-  → evidência candidata
-  → validação humana (LE/César)
-  → se aprovada: espelha no Passaporte (campos permitidos)
-  → detalhe sensível / recorrência: só dossiê
-  → avanço de autonomia: humano
-  → promoção de cargo: só César (fora do produto automático)
+Prova K/S/B → validador autorizado → se aprovada: Passaporte
+Detalhe sensível / recorrência tema → dossiê (César; fatia LE se validação)
+Contestação → status no Passaporte → resolução humana
 ```
 
 ---
 
-## 4. Privacidade e Git
-
-- Nenhum dossiê real de pessoa no repositório.  
-- Este documento é **arquitetura**.  
-- Política: `Politica_Privacidade_Evidencia_V1.md`.
-
----
-
-## 5. Critérios de pronto da arquitetura
-
-- [x] Passaporte e dossiê separados.  
-- [x] Campos permitidos/proibidos explícitos.  
-- [x] Limites da IA explícitos.  
-- [ ] Acesso LE ao dossiê: decisão César.  
-- [ ] Prazos de consistência por competência: decisão César.
-
----
-
-*Passaporte + Dossiê L8 · sem ranking · sem implementação.*
+*Passaporte/Dossiê V0 pós-correção · 7 campos · ACL LE fatia.*

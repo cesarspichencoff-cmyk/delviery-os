@@ -1,92 +1,42 @@
-# Blueprint 4 — Preparação para Liderança (F4)
+# Blueprint 4 — Preparação para Liderança (F4) — pós-correção
 
-> Para pessoas em **desenvolvimento**, antes de assumir o cargo.  
-> Não é promoção automática. Não define prazo de promoção.
-
----
-
-## 1. Objetivo
-
-Desenvolver maturidade, visão de fluxo, comunicação, antecipação, apoio, decisão dentro do limite, escalonamento de qualidade e feedback — distinguindo **executar bem** de **liderar bem**.
+> **Onda 2 — CONGELADO.** Seletiva. **Não** é promoção automática.  
+> Linguagem de “maturidade” **substituída** por comportamentos C-PL01.
 
 ---
 
-## 2. Público e entrada
+## 1. Status
 
-| Campo | Conteúdo |
+| Campo | Valor |
 |---|---|
-| Público | Indicação de LE/César; tipicamente DS ou AO com consistência |
-| Pré-requisito | F1 (K+S+B) · trilha da função atual com consistência mínima |
-| Não é | Atalho de cargo · ranking de “potencial” público |
+| Onda | **2** |
+| Entrada | Indicação LE + César |
+| Pré-requisito | F1 com B âncora; consistência na função |
+| Piloto base | **Fora** |
 
 ---
 
-## 3. Resultados de aprendizagem
+## 2. Objetivo (quando liberado)
 
-1. Reconhece o próprio limite e escala cedo o suficiente.  
-2. Antecipa gargalo e comunica com contexto.  
-3. Apoia pares sem usurpar o LE nem abandonar a própria sacola.  
-4. Dá e recebe feedback factual.  
-5. Observa LE (sombra) e registra aprendizado privado.  
-6. Entende que liderar ≠ fazer o trabalho de todos.
+Apoiar sem usurpar; antecipar; feedback factual; reconhecer limite; escalar bem — **C-PL01 reescrito**.
 
 ---
 
-## 4. Módulos (títulos)
+## 3. Módulos candidatos (não produzir na Onda 1)
 
-| # | Microlição | Temas | Competências | Casos | Protocolos |
-|---|---|---|---|---|---|
-| F4-M01 | Maturidade sob pressão | Responsabilidade | C-PL01, C-T* | CASE-L8-L02 | — |
-| F4-M02 | Executar bem ≠ liderar bem | Papéis | C-PL01 | CASE-L8-S03 | P5 |
-| F4-M03 | Visão de fluxo | Ler o todo (nível PL) | C-DS01 | CASE-L8-A01 | P8 |
-| F4-M04 | Comunicação de apoio | ESTADO+IMPACTO+AÇÃO | C-T03 | CASE-L8-E01 | P10 |
-| F4-M05 | Antecipação | Pedido parado / gargalo | C-DP02 | CASE-L8-S01 | P8 |
-| F4-M06 | Apoio sem usurpar | Ajuda + dono | C-T02 | CASE-L8-S02 | P5 |
-| F4-M07 | Tomada de decisão no limite | Quando parar e escalar | C-T03 | CASE-L8-E02 | P10 |
-| F4-M08 | Escalonamento de qualidade | Contexto completo | C-DS04 | CASE-L8-E03 | P10 |
-| F4-M09 | Reconhecer limite | Segurança e ética | IE | CASE-L8-Q01 | — |
-| F4-M10 | Feedback factual | Sem personalidade | C-T01 | CASE-L8-L01 | P12 |
-| F4-M11 | Correção de processo | P12 | C-T04 | CASE-L8-L01 | P12 |
-| F4-M12 | Consistência e sombra LE | Observar 2 turnos | C-PL01 | — | — |
-| F4-M13 | Pós-pico com LE | Fechamento 21–22h | — | CASE-L8-PP01 | P11 |
+| # | Tema | Nota |
+|---|---|---|
+| F4-M01 | Executar bem ≠ liderar bem | Papéis |
+| F4-M02 | C-PL01 na prática | 4 comportamentos |
+| F4-M03 | Visão de fluxo (nível PL) | Checklist C-DS01 adaptado |
+| F4-M04 | Escala e limite | C-T03; não $ sozinho |
+| F4-M05 | Feedback factual | Sem personalidade |
+| F4-M06 | Sombra LE | 2 turnos; validador LE; avanço César |
+
+**Proibido ensinar como competência:** maturidade · perfil de liderança · potencial · atitude.
+
+Validador final de avanço: **César**.
 
 ---
 
-## 5. Quatro provas (F4)
-
-| Prova | Demonstrar | Observar | Validador | Evidência | Aprovação | Reavaliar | Risco crítico | Autonomia |
-|---|---|---|---|---|---|---|---|---|
-| K | Diferença executar/liderar; 5 critérios; limites | Oral | LE | K | Itens críticos | — | “Já sou líder” sem prova | — |
-| S | Apoia gargalo sem abandonar dono; escala com contexto | Role-play | LE | S | Sem usurpar LE | 6 meses | Heroísmo isolado | Sombra LE |
-| B | 2 turnos de sombra: 1 antecipação + 1 feedback factual | LE observa | LE | Nota B | Sem erro crítico | — | Avaliar personalidade | Indicação formal só por César |
-| C | Janela acordada com César | Amostra | César/LE | Janela | Critério humano | — | Usar F4 como ranking de promoção | Pré-requisito **candidato** a LE — não promoção |
-
----
-
-## 6. Simulações candidatas
-
-1. Colega pede “me ajuda?” sem contexto — treinar reformulação.  
-2. LE ausente 10 min; decidir o mais seguro e comunicar.  
-3. Dar feedback pós-omissão sem humilhar.  
-4. Recusar “atalho” de pausa só por pressão.
-
----
-
-## 7. Próximos passos possíveis (não automáticos)
-
-- Permanecer na função com maior autonomia na matriz.  
-- Especialização (SAC, boqueta, AO).  
-- Indicação a LE **somente** por decisão humana (César/LE), com dossiê privado.
-
----
-
-## 8. Critérios de pronto
-
-- [x] Separado de F3.  
-- [x] Sem promoção/prazo automáticos.  
-- [x] Sem ranking de potencial.  
-- [ ] Critérios de indicação: César no piloto.
-
----
-
-*Blueprint F4 L8 · produção T2 · desenvolvimento, não cargo.*
+*F4 pós-correção · congelado Onda 2 · sem personalidade.*

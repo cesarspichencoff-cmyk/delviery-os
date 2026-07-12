@@ -1,84 +1,64 @@
-# Registro de Decisões Pendentes — Pós-L8
+# Registro de Decisões Pendentes — Pós-L8 (atualizado pós-correção)
 
-> Itens **não bloqueiam** a L8 nem o início da Sprint Visual.  
-> **Não inventar respostas.** Atualizar quando César decidir.
+> O que **ainda** falta do César. O que **já** foi decidido na correção.  
+> Contrato INT V0.9 não promovido a V1.
 
 ---
 
-## 1. Decisões do César aplicadas nesta L8
+## 1. Decisões já aplicadas (correção)
 
 | # | Decisão | Efeito |
 |---|---|---|
-| 1 | SAC formal no turno | Trilha TR-SAC; F2; R-L6B-01 reforçada |
-| 2 | Não abrir L7 mídias | Gate mídia mantido |
-| 3 | Janela operacional &lt;23h / ≥23h | F1-M14; templates 22–00 desatualizados |
-| 4 | 19h vs 21–22h como dois momentos | F1/F3; P8/P11 |
-| 5 | Comunicação ESTADO+IMPACTO+AÇÃO | F1/P10; proibido “cadê?” institucional |
-| 6 | 45/55/65 não oficiais | Fora de curso, avaliação, alerta, automação, baseline, simulação |
-| 7 | Revisão de pausa 15 min se sem previsão | P1 atualizado na formação |
-| 8 | Compensação parametrizável sem inventar R$ | F2 matriz tipos |
-| 9 | R-L6B-05…11 provisórias oficiais de piloto | Status `em_piloto` até T4 |
+| 1 | Onda 1 = F1+F2+10 casos+protocolos+Passaporte V0+papel | Arq · blueprints · piloto |
+| 2 | F3/F4 congeladas Onda 2 | BP F3 F4 |
+| 3 | 10 casos (6+4) e fusões | Biblioteca |
+| 4 | Caps 40/75/2 micro/1 caso/1 val | Piloto |
+| 5 | Validadores DS/AO + LE + César | Arq · jornadas |
+| 6 | Passaporte 7 campos + contestação | Passaporte |
+| 7 | Dossiê mínimo; LE fatia; César full | Passaporte |
+| 8 | Regra $ provisória (sempre A liderança) | F2 · Arq |
+| 9 | P1/P6 não plenos no Canal B | Arq · métricas |
+| 10 | M3 M4 M10 (+M1 cuidado) | Métricas |
+| 11 | Anti-punição visível | Vários |
+| 12 | C-DS01 C-PL01 reescritos | Arq |
+| 13 | Brief Visual inativo | Academia / backlog |
 
 ---
 
-## 2. Pendências abertas
+## 2. Ainda pendentes do César
 
-| ID | Tema | Por que importa | Bloqueia Sprint Visual? | Bloqueia piloto? | Notas |
-|---|---|---|---|---|---|
-| PEND-01 | **Limites financeiros por função** | Autonomia real de P6/F2 | Não | Parcial (usa tipos + escala) | LIMITES FINANCEIROS PENDENTES DO CÉSAR |
-| PEND-02 | **Aprovação final R-L6B-05…11** após piloto | Vigente vs revisar | Não | Não (entram como provisórias) | Reavaliar T3–T4 |
-| PEND-03 | **Calibração futura de saturação** | Substituir 45/55/65 com volume, capacidade, praça, idade, impacto, baseline | Não | Não | Fora de Fase 1 conteúdo |
-| PEND-04 | **Prazo de consistência por competência** | Prova C | Não | Usa candidatos L6B | César calibra pós-piloto |
-| PEND-05 | **Funções que validam cada evidência prática** | LE vs César vs formador | Não | LE padrão; César em $ e loja | Documentar ACL no piloto |
-| PEND-06 | **Acesso do LE ao dossiê** | Privacidade vs utilidade | Não | Não | Default L8: dossiê só César |
-| PEND-07 | **Ampliação para outras áreas** (salão, multi-loja) | Escopo | Não | Não | Fora Fase 1 |
-| PEND-08 | **N mínimo de casos no piloto** | Critério de encerramento | Não | Definir no D0 | Sugestão 8–15 |
-| PEND-09 | **Tom de voz scripts de canal** | F2 produção | Não | Pode piloto com rascunho | Validar com César |
-| PEND-10 | **Conteúdo atualizado de kits** | Se cardápio mudou vs OP-04 | Não | Usar OP-04 + validar | Se divergir, atualizar P4 |
-| PEND-11 | **Ferramenta do piloto** (app vs papel) | Passaporte V0 | Não (visual primeiro) | Papel aceitável | Pós-Sprint Visual |
-| PEND-12 | **Integração futura DeliveryOS** | Estado do pedido na formação | Não | Não | Só conceito |
+| ID | Tema | Bloqueia protótipo conteúdo? | Bloqueia piloto papel? |
+|---|---|---|---|
+| PEND-01 | **Limites financeiros** definitivos (valores) | Não (usa provisória) | Parcial |
+| PEND-02 | Vigência final R-L6B-05…11 pós-piloto | Não | Não |
+| PEND-03 | Calibração saturação (substitui 45/55/65) | Não | Não |
+| PEND-04 | Janelas de consistência oficiais | Não (candidato-only) | Não |
+| PEND-05 | Lista fina validador × cada competência residual | Não (modelo candidato) | Não |
+| PEND-08 | N casos capturados P12 no D0 | Não | Definir D0 |
+| PEND-09 | Tom de scripts de canal | Produção F2 | Não |
+| PEND-10 | Kit atual vs OP-04 | P4 Canal B | Validar antes B |
+| PEND-11 | App vs permanecer papel após piloto | Não | Não |
+| PEND-12 | Integração DOS / Canal B no piloto | Não | Opcional |
+| PEND-13 | Quais P exatamente no Canal B + datas valid | Se publicar B | Não |
+| PEND-14 | Contrato INT → V1 | Não | Não |
+| PEND-15 | Sprint Visual autorização | Visual | Não (papel) |
 
----
-
-## 3. O que **não** deve ser decidido por IA
-
-- Promoção, rebaixamento, advertência, desligamento.  
-- Intenção, personalidade, potencial definitivo, alinhamento cultural definitivo.  
-- Valores de compensação.  
-- Oficialização de limiares de saturação sem calibração.
+*PEND-06 acesso LE dossiê: **resolvido** (fatia only).*
 
 ---
 
-## 4. Ordem sugerida de decisão (não executada aqui)
+## 3. IA não decide
 
-1. PEND-01 limites $ (ou política “sempre autorizar”).  
-2. Escolha da direção visual (pós-Sprint).  
-3. PEND-05/06 validadores e acesso dossiê antes do piloto.  
-4. PEND-02 após T3.  
-5. PEND-03 quando houver baseline de capacidade (pós-Fase 1 ou paralelo DeliveryOS).
+Promoção · rebaixamento · advertência · desligamento · intenção · personalidade · potencial definitivo · alinhamento cultural definitivo · limite $ · regra oficial · protocolo vigente sem humano.
 
 ---
 
-## 5. Riscos se pendências demorarem
+## 4. Próximo passo de produto (outra missão)
 
-| Pendência | Risco |
-|---|---|
-| $ | Recuperação inconsistente; LE vira gargalo eterno |
-| Validadores | Evidências sem dono ou validação de favor |
-| Kits desatualizados | Treinar o errado |
-| Saturação antiga vazando no treino | Reintroduzir 45/55/65 por hábito |
+1. Protótipo de conteúdo Onda 1 (microtextos + 10 casos com escolhas).  
+2. Simulação de mesa do piloto (não execução com equipe).  
+3. Só depois: piloto real / visual se autorizado.
 
 ---
 
-## 6. Veredito de avanço (L8)
-
-Com as decisões César desta missão e o pacote de blueprints:
-
-- **Sprint Visual:** pode ser autorizada em missão seguinte.  
-- **Implementação / Fable / L7:** não iniciadas e não autorizadas aqui.
-
-Ver relatório compacto da L8 para veredito formal.
-
----
-
-*Pendências pós-L8 · registro vivo · sem inventar política.*
+*Pendências pós-correção L8 · histórico de decisões congelado acima.*

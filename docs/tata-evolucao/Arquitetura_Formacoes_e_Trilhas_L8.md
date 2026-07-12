@@ -1,8 +1,22 @@
-# Arquitetura de Formações e Trilhas — L8
+# Arquitetura de Formações e Trilhas — L8 (pós-correção)
 
-> Consolidação final da pesquisa T0B-A → L6B em arquitetura executável da **Fase 1** (24 semanas).  
+> Versão **corrigida e simplificada** após auditoria adversarial.  
+> Changelog: `Changelog_Correcoes_Pos_Auditoria_L8.md`.  
 > **Não** é curso completo, app, interface nem alteração do DeliveryOS.  
-> Base: Visão Mestra V1 · Modelo L6B · Matriz Autonomia V0.9 · Competências L6B · Protocolos P1–P12 · decisões César L8.
+> Contrato INT V0.9 = limite de governança (não alterado).
+
+---
+
+## 0. Anti-punição (visível)
+
+**O TATÁ Evolução existe para formação, autonomia e melhoria. Não é sistema disciplinar.**
+
+- Evidência positiva também se registra.  
+- Piloto inclui casos positivos.  
+- Treinamento após erro **não** é punição.  
+- Contestação é possível.  
+- Falha isolada **≠** diagnóstico de pessoa.  
+- Competência **não** se invalida por um único caso.
 
 ---
 
@@ -13,123 +27,193 @@
 | DeliveryOS | O que precisa da sua atenção **agora**? |
 | TATÁ Evolução | Qual é o seu **próximo passo** para evoluir? |
 
-Aprendizagem: microlições 5–8 min · casos anonimizados · escolhas · simulações · aplicação · reflexão curta · evidência · consistência.  
-**Proibido:** formato escolar tradicional · prova só de memorização · gamificação infantil · placar público · conclusão de conteúdo = competência · ranking.
+Aprendizagem: microlições 5–8 min · casos anonimizados · escolhas · simulações · aplicação · evidência · consistência.  
+**Proibido:** escola tradicional · prova só memorização · gamificação infantil · placar · conclusão = competência · ranking · 45/55/65.
 
 ---
 
-## 2. Fase 1 — 24 semanas (plano executável)
+## 2. Fase 1 — 24 semanas (com ondas)
 
-| Etapa | Semanas | Nome | Entregas-chave |
-|---|---|---|---|
-| **T0** | 1–4 | Extração e Fundação | Pesquisa já feita (T0A–L6B); fechar blueprints L8; Sprint Visual (pós-L8); governança; backlog ativo |
-| **T1** | 5–10 | Alpha Cultura + Atendimento | Microlições Cultura; Excelência Atendimento; casos kit/omissão/sacola; Passaporte V0 mínimo; validação prática piloto parcial |
-| **T2** | 11–16 | Liderança + Preparação | LE e PL; pico/pós-pico; pausa; escalonamento; dossiê privado (só César); trilhas DJ–DS reforçadas |
-| **T3** | 17–22 | Piloto 30 dias (toda equipe Delivery) | Cronograma único; observação de comportamento; feedback semanal; métricas de autonomia |
-| **T4** | 23–24 | Consolidação e lançamento Fase 1 | Correções; reavaliação R-L6B-05…11; versão “vigente” dos protocolos; roadmap Fase 2 |
+| Etapa | Semanas | Foco |
+|---|---|---|
+| T0 | 1–4 | Fundação + **correção L8** (esta) |
+| T1 | 5–10 | **Onda 1:** F1+F2 núcleo, 10 casos, protocolos, Passaporte V0, papel |
+| T2 | 11–16 | **Onda 2:** F3+F4, casos liderança, autonomia ampliada |
+| T3 | 17–22 | Piloto 30 dias (conteúdo Onda 1; Onda 2 se coorte LE) |
+| T4 | 23–24 | Consolidação |
 
----
+### Onda 1 (primeira entrega / piloto base)
 
-## 3. Quatro formações obrigatórias
-
-| ID | Formação | Público | Obrigatoriedade |
-|---|---|---|---|
-| **F1** | Cultura e Inteligência TATÁ | Todos | Obrigatória |
-| **F2** | Excelência em Atendimento | Quem afeta cliente (direto/indireto) | Obrigatória no escopo |
-| **F3** | Liderança em exercício | Quem já lidera (formal ou operacional) | Obrigatória se exerce |
-| **F4** | Preparação para liderança | Pessoas em desenvolvimento | Seletiva (indicação LE/César) |
-
-Blueprints detalhados: `Blueprint_*_L8.md`.
-
----
-
-## 4. Trilhas por função
-
-| Função | Código | Formações | Módulos específicos âncora | Competências âncora | Marcos de autonomia (não promoção) |
-|---|---|---|---|---|---|
-| Delivery Júnior | TR-DJ | F1 + F2 leve | Montagem, kit, sacola, lacre, expedição | C-DJ01–04, C-T02 | Fecha sacola com dono; não entrega sem baixa |
-| Delivery Pleno | TR-DP | F1 + F2 leve | Multi-sacola, pedido parado, omissão/troca na loja | C-DP01–03 | Comunica estado; corrige na loja |
-| Delivery Sênior | TR-DS | F1 + F2 + trechos F3 | Boqueta, pausa item, gargalo, P10 | C-DS01–04 | Pausa item com registro; prioriza pelos 5 critérios |
-| Caixa | TR-CX | F1 + F2 | Canal, comanda, multi-sacola chat, $ autorizado | C-CX01–05 | Executa $ autorizado; não fecha ciclo cliente sozinho |
-| SAC e Atendimento | TR-SAC | F1 + F2 | Ciclo completo, recuperação, percepção vs fato | C-SAC01–05 | Fecha ciclo; propõe recuperação (sem inventar $) |
-| Assistência Operacional | TR-AO | F1 + trechos F2/F3 | Pausa item, padrão, apoio LE | C-AO01–03 | Apoia sem usurpar LE |
-| Liderança em exercício | TR-LE | F1 + F2 + F3 | Pico, loja, exceção, debrief | C-LE01–04 | Contém pico; autoriza no limite documentado |
-| Preparação para liderança | TR-PL | F1 + F4 + sombra LE | Limite, feedback, visão de fluxo | C-PL01 + C-T* | Escala bem; não decide além da autoridade |
-
-**Não** há promoção automática nem prazo automático de cargo.
-
----
-
-## 5. Quatro provas (modelo único)
-
-| Prova | O que demonstra | Como observar | Quem valida | Evidência | Aprovação | Reavaliar | Risco crítico | Autonomia |
-|---|---|---|---|---|---|---|---|---|
-| **Conhecimento** | Explica princípio/regra/protocolo | Microquiz / oral 2 min | LE ou formador | Resposta correta com contexto | Critério do módulo | Se regra mudar | Memorizar sem aplicar | Base para simulação |
-| **Simulação** | Escolhe e age em cenário | Caso interativo / role-play | LE | Escolha + justificativa | Sem erro crítico | Semestral ou pós-incidente | “Gabarito” sem raciocínio | Libera aplicação acompanhada |
-| **Comportamento** | Faz no turno real | Observação / registro curto | LE (César em temas $ e loja) | Nota prática validada | 1 turno ok com supervisão | Por competência | Observação tendenciosa | Libera consistência |
-| **Consistência** | Mantém ao longo do tempo | Amostra de turnos / Passaporte | LE + César (promoção/avanços) | Janela sem erro crítico | Janela candidata (L6B) | Após mudança de função | Usar como ranking | Amplia autonomia na matriz |
-
-Janelas candidatas (pendente calibração César): pontual 1 turno · júnior 4 turnos · pleno/sênior 8 turnos ou 2 semanas · LE definido por César.
-
----
-
-## 6. Mapa protocolo → formação
-
-| Protocolo | Formação principal | Funções | Competências | Casos (IDs L8) | Simulação | Evidência prática |
-|---|---|---|---|---|---|---|
-| P1 Pausa/86 | F3 + F1 | DS, AO, LE, L | C-DS02, C-AO01, C-LE03 | CASE-L8-P01 | Decidir item vs loja + 5 campos | Registro de pausa |
-| P2 Faltante | F2 + F1 | DJ–DS, SAC | C-DP03, C-SAC* | CASE-L8-O01–O03 | Omissão na loja vs cliente | Correção ou ciclo SAC |
-| P3 Trocado | F2 | Montagem, SAC | C-DP03, C-SAC* | CASE-L8-T01 | Esperado vs enviado | Registro sem culpar em público |
-| P4 Kit | F1 + trilha DJ/DP | DJ, DP, DS | C-DJ01–02 | CASE-L8-K01–K03 | Checklist de kit | Conferência antes de grampear |
-| P5 Sacola | F1 | DJ–DS | C-DJ03, C-T02 | CASE-L8-S01–S03 | Transferência explícita | Pré-turno + passagem |
-| P6 Compensação | F2 | SAC, CX, LE | C-SAC03, C-CX04, C-LE02 | CASE-L8-C01–C03 | Tipo de recuperação | Tipo + autorização + fechamento (**$ pendente**) |
-| P7 Cancelamento | F2 | SAC, CX | C-SAC*, C-CX | CASE-L8-X01 | Motivo e dono | Motivo registrado |
-| P8 Atraso | F1 + F3 | DS, CX, LE, SAC | C-DS03, C-LE01, C-CX03 | CASE-L8-A01–A03 | 5 critérios de prioridade | Sinal com contexto |
-| P9 Sistema/impressão | F2 + F3 | CX, DS, LE | C-CX01, IE | CASE-L8-F01 | Contenção | Escala imediata |
-| P10 Escalonamento | F1 + F3 | Todos | C-T03, C-DS04 | CASE-L8-E01–E03 | ESTADO+IMPACTO+AÇÃO | Mensagem com contexto |
-| P11 Pós-pico | F2 + F3 | SAC, CX, LE | C-SAC04, C-LE04 | CASE-L8-PP01–02 | Fechar fila de casos | Ciclos fechados 21–22h |
-| P12 Aprendizado | F1 + F3 | LE, todos | C-T04, C-LE04 | CASE-L8-L01–L02 | Debrief 5 min | Caso → proposta (sem ranking) |
-
-Curso **não** é leitura de procedimento: protocolo entra como **prática** embutida em caso + simulação + turno.
-
----
-
-## 7. Regras provisórias oficiais para piloto controlado
-
-| Regras | Status L8 |
+| Inclui | Não inclui |
 |---|---|
-| R-L6B-01…04 | **Oficiais consolidadas** (César L6B) |
-| R-L6B-05…11 | **Provisórias oficiais para piloto controlado** — reavaliar após aplicação, observação, feedback, evidência e piloto 30 dias |
-| R-L6B-12 (45/55/65) | **Não oficial** · não usar em curso, avaliação, alerta, automação, baseline, simulação |
+| F1 Cultura (núcleo ≤8 micro) | F3 completa |
+| F2 Atendimento (núcleo ≤8 micro) | F4 completa |
+| 10 casos selecionados | Biblioteca 36 ativa |
+| P2 P3 P4 P5 P8 P10 P12 | P7 P9 plenos; P11 full |
+| P1 como **conteúdo provisório** | P1 “fechado” |
+| P6 **tipos** + regra $ provisória | Autonomia financeira / valores |
+| Passaporte V0 · piloto papel | App obrigatório · INT profunda |
 
-SAC formal no turno (decisão César L8). Janela operacional: local &lt; 23:00 fluxo normal; ≥ 23:00 fora; `operational_day_key = local_date`; America/Sao_Paulo.  
-19h = proteção do pico · 21–22h = fechamento responsável do pós-pico (dois momentos formativos, não contradição).  
-Comunicação institucional: **ESTADO + IMPACTO + AÇÃO NECESSÁRIA** (não “cadê?”).  
-Pausa: 5 campos; com previsão → revisar no horário; sem previsão → **revisão a cada 15 min**; retirada com confirmação da área.
+### Onda 2 (congelada até liberação)
+
+F3 · F4 · casos L* / P01 / A01 full · competências LE/PL · dossiê além do mínimo · B-15/16.
 
 ---
 
-## 8. Compensação parametrizável (sem inventar R$)
+## 3. Formações
 
-| Campo | Uso |
+| ID | Nome | Onda | Público |
+|---|---|---|---|
+| F1 | Cultura e Inteligência TATÁ | **1** | Todos |
+| F2 | Excelência em Atendimento | **1** | Quem afeta cliente (+ leve DJ/DP) |
+| F3 | Liderança em exercício | **2** | Quem lidera |
+| F4 | Preparação para liderança | **2** | Seletiva |
+
+---
+
+## 4. Trilhas por função (pós-correção)
+
+| Função | Onda 1 | Específico | Erro crítico | Marcos autonomia (não promoção) |
+|---|---|---|---|---|
+| **TR-DJ** | F1+F2 leve | kit, sacola, lacre, expedição | quente/frio; sem dono; sem baixa | Fecha sacola com dono |
+| **TR-DP** | F1+F2 leve | multi-sacola, parado, omissão/troca loja | abandona dono | Comunica estado; corrige na loja |
+| **TR-DS** | F1+F2; **sem** F3 full | escala P10, gargalo **no escopo DS**, pausa item **provisória** | escala vazia; pausa sem rastro | Prioriza 5 critérios; registra pausa se autorizada |
+| **TR-CX** | F1+F2 | canal, multi-sacola, executa $ **autorizado** | decide $ sozinho | Executa só com A |
+| **TR-SAC** | F1+F2 | ciclo, tipos recuperação, fecha | abandona ciclo; inventa $ | Propõe; não autoriza $ sozinho |
+| **TR-AO** | F1 + trechos F2 | **Apoio a padrão e pausa item com LE/DS** — **não** redistribui praças como LE | usurpar LE; “fiscalizar” pares | Reforça checklist; escala com contexto |
+| **TR-LE** | F1+F2; **F3 na Onda 2** | — | — | Onda 2 |
+| **TR-PL** | F1; **F4 na Onda 2** | — | promoção implícita | Onda 2 seletiva |
+
+**TR-AO ≠ LE reduzida:** AO apoia capacidade e padrão; LE decide redistribuição estrutural e exceções.
+
+---
+
+## 5. Quatro provas + validadores (distribuídos)
+
+| Prova | Quem valida (candidato) |
 |---|---|
-| tipo_recuperacao | correção · reenvio · cortesia · desconto · voucher · estorno · crédito · exceção comercial |
-| funcao | SAC / CX / LE / L / produção |
-| pode_executar | E |
-| precisa_comunicar | EC |
-| exige_autorizacao | A |
-| valor_maximo | **LIMITES FINANCEIROS PENDENTES DO CÉSAR** |
-| evidencia | fato + tipo + autorização |
-| registro | obrigatório no ciclo |
-| encerramento | cliente ok ou próximo passo datado |
+| **K** | DS, AO ou formador no escopo; LE se ambíguo |
+| **S** | **DS ou AO** no escopo da função; LE se autonomia ampliada |
+| **B** | DS/AO no escopo rotineiro; **LE** se autonomia ampliada / exceção; **César** se $ sensível, LE/PL, pausa loja |
+| **C** | LE (amostra); César audita amostra e valida LE/PL |
+
+**Regra:** evidência sensível **não** pode ser criada, validada e aprovada pela **mesma** pessoa.
+
+| Competência | Validador preferencial | Ainda precisa de definição fina? |
+|---|---|---|
+| C-DJ* C-DP* | DS ou AO | Não |
+| C-CX* rotina | DS/AO/LE turno | $ = LE/César |
+| C-SAC* ciclo | LE; $ = LE/César | Limites $ pendentes |
+| C-DS02 pausa item | LE | Sim — aderência P1 provisório |
+| C-DS01 visão de fluxo | LE | Rubrica reescrita §7 |
+| C-AO* | LE | Limites AO reescritos |
+| C-LE* C-PL* | César | Onda 2 |
+| C-T* | DS/AO/LE conforme ato | C-T01 amostra César |
 
 ---
 
-## 9. O que a L8 **não** entrega
+## 6. Competências reescritas (observáveis)
 
-- Aulas completas, vídeos, stack, código, Fable, Sprint Visual iniciada.  
-- Limites $ inventados · 45/55/65 oficiais · ranking · mídia L7 · promoção automática.
+### C-DS01 — Visão de fluxo no pico (reescreve “ler o todo”)
+| Campo | Conteúdo |
+|---|---|
+| Situação | Pico com risco de gargalo |
+| Comportamento | Em ≤2 min nomeia: (1) praça mais atrasada, (2) pedidos bloqueados, (3) se há sacola sem dono |
+| Decisão | Aplica 1 dos 5 critérios de prioridade ou escala com ESTADO+IMPACTO+AÇÃO |
+| Evidência | Observação LE ou nota de 1 linha no turno |
+| Risco crítico | “Me ajuda?” sem contexto; ignorar sacola sem dono |
+| Validador | LE |
+| Contestação | Sim |
+| Autonomia | Libera apoio a redistribuição sob LE |
+
+### C-PL01 — Apoio sem usurpar (reescreve “observar e ensinar” / maturidade)
+| Campo | Conteúdo |
+|---|---|
+| Situação | Sombra de LE ou apoio a par |
+| Comportamento | (1) 1 antecipação factual; (2) 1 feedback só com fato+impacto; (3) não ranqueia pares; (4) não decide além da autoridade |
+| Evidência | LE observa 1 turno sombra |
+| Risco crítico | Autodeclarar-se líder; decidir $ ou pausa loja |
+| Validador | LE; avanço formal = César |
+| Contestação | Sim |
+| Autonomia | Não implica promoção |
+
+### C-T03 vs C-DS04
+| ID | Escopo |
+|---|---|
+| C-T03 | Qualquer função: mensagem com estado+impacto+ação |
+| C-DS04 | DS: mesma qualidade **no gargalo multi-praça** + impacto em múltiplos pedidos |
+
+**Proibido como competência sem ato:** atitude · maturidade · proatividade · comprometimento · perfil de liderança.
+
+Modelo de prova (inalterado em espírito): K/S/B/C — conteúdo ≠ competência.
 
 ---
 
-*Arquitetura L8 · base para blueprints, piloto e brief visual · sem implementação.*
+## 7. Protocolos Onda 1 e Canal B
+
+| P | Onda 1 | Canal B | Nota |
+|---|---|---|---|
+| P2 faltante | Sim | Candidato | |
+| P3 trocado | Sim | Candidato | |
+| P4 kit | Sim | Candidato **após** validar kit atual | |
+| P5 sacola | Sim | Candidato (oficial R-L6B-02) | |
+| P8 atraso essencial | Sim | Candidato essencial (5 critérios; **sem** 45/55/65) | |
+| P10 escala | Sim | Candidato | |
+| P12 aprendizado leve | Sim | Candidato leve | |
+| P1 pausa | Conteúdo/caso **provisório** | **Não** pleno | |
+| P6 compensação | Tipos + regra $ provisória | **Não** pleno | |
+| P7 P9 P11 | Fora ou leve Onda 2 | Não | |
+
+### Metadados obrigatórios Canal B (provisório)
+
+`protocol_id` · `version_id` · `owner` · `status=provisorio_de_piloto` · `scope` · `valid_from` · `valid_until` · condição de suspensão · feedback · rollback · **aprovação explícita do César**.  
+Publicação **≠** alterar motor (contrato INT).
+
+### Regra financeira provisória
+
+Até limites do César:
+
+> Toda compensação monetária, voucher, desconto, crédito ou estorno **comercial** exige **autorização da liderança**.  
+> SAC investiga, comunica, propõe, acompanha, fecha ciclo.  
+> Caixa executa $ autorizado.  
+> Correção operacional **sem** concessão financeira segue autonomia da função.  
+> **LIMITES FINANCEIROS PENDENTES DO CÉSAR.**
+
+---
+
+## 8. Mapa protocolo → formação (Onda 1)
+
+| P | Formação | Casos piloto |
+|---|---|---|
+| P2 | F2 | CASE-L8-O01 |
+| P3 | F2 | CASE-L8-T01 |
+| P4 | F1/F2 leve | CASE-L8-K01 |
+| P5 | F1 | CASE-L8-S01 |
+| P8 | F1 leve | CASE-L8-A01 |
+| P10 | F1 | CASE-L8-E01 |
+| P12 | F1 LE leve | (captura no piloto) |
+| P1 provisório | F1/F2 ref | (Onda 2 caso P01) |
+| P6 tipos | F2 | CASE-L8-R01 (positivo recuperação) |
+
+---
+
+## 9. Regras
+
+| ID | Status |
+|---|---|
+| R-L6B-01…04 | Oficiais |
+| R-L6B-05…11 | Provisórias de piloto controlado |
+| R-L6B-12 45/55/65 | **Não oficial** — banido em curso/alerta/simulação/KPI |
+
+---
+
+## 10. Integração (limite)
+
+Onda 1 **independente** do DeliveryOS.  
+Canal B opcional com metadados.  
+TE **não** escreve Calmo/Ambiente/Foco.  
+Protocolo **não** vira regra executável sem missão técnica + César.
+
+---
+
+*Arquitetura L8 pós-correção · Onda 1 enxuta · Onda 2 congelada.*
