@@ -127,6 +127,27 @@ function eventoFonteDesconectada(ctx, ts, source) {
   };
 }
 
+function eventoAlteracao(ctx, ts, pedido, opts) {
+  const o = opts || {};
+  const revision = o.revision !== undefined ? o.revision : 1;
+  return {
+    ...base(ctx, ts),
+    event_type: "pedido_alterado",
+    source: "sim_comanda",
+    idempotency_key: `alter:${pedido.interno}:rev=${revision}`,
+    correlation: { ifood_short: pedido.ifood, pedido_interno: pedido.interno, print_job_id: null },
+    payload: {
+      pedido_interno: pedido.interno,
+      change_mode: o.change_mode || "full_snapshot",
+      revision,
+      previous_revision: o.previous_revision !== undefined ? o.previous_revision : null,
+      supersedes_event_id: null,
+      changed_fields: ["itens"],
+      itens: o.itens || pedido.itens
+    }
+  };
+}
+
 /** evento propositalmente INVÁLIDO (sem schema_version) — só ids sintéticos */
 function eventoInvalido(ctx, ts, pedido) {
   const ev = eventoComanda(ctx, ts, pedido);
@@ -141,5 +162,6 @@ module.exports = {
   eventoCancelamento,
   eventoReimpressao,
   eventoFonteDesconectada,
+  eventoAlteracao,
   eventoInvalido
 };

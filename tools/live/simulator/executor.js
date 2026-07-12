@@ -152,4 +152,4 @@ function executarCenario({ cenario, seed, storeTimeZone, freshness, manterRuntim
   }
 }
 
-module.exports = { executarCenario, validarStoreTimeZone };
+module.exports = { executarCenario, validarStoreTimeZone, projecaoReconstruivel };
