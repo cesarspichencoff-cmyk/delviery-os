@@ -1,7 +1,8 @@
 # Modelo de Análise Temporal e Alertas — T0B-A
 
 > **Camada documental apenas.** Não implementa alertas. Não afirma padrões temporais reais.  
-> Branch `research/tata-evolucao-grok` · sobre `df1d9d8` (T0B-A cultural) · fuso de referência: **America/Sao_Paulo**.  
+> Branch `research/tata-evolucao-grok` · fuso oficial: **America/Sao_Paulo**.  
+> **Dia operacional (oficial):** encerra **23:00** · sem operação na madrugada · `operational_day_key = local_date` (§5).  
 > Regra de ouro: **nunca** classificar dia/hora como “pior” só por contagem absoluta. Sem exposição → análise **inconclusiva**.
 
 ---
@@ -71,28 +72,58 @@
 
 | Regra | Valor |
 |---|---|
-| Fuso padrão de análise | **America/Sao_Paulo** (IANA explícito) |
+| Fuso **oficial** de análise | **America/Sao_Paulo** (IANA explícito) |
 | UTC silencioso | **Proibido** |
-| Derivação de `local_date` / `weekday` / `local_hour` | Sempre a partir de instante + IANA |
-| Fonte sem offset | Tratar como **ambíguo** até política de ingestão (HIP: assumir America/Sao_Paulo **só** se export da loja for local e documentado) |
-| Alinhamento com DeliveryOS live | `storeTimeZone` / `localDayKey` (núcleo live F2) — **HIP** reutilizar a mesma IANA |
+| Derivação de `local_date` / `weekday` / `local_hour` | Sempre a partir de instante + America/Sao_Paulo |
+| Fonte sem offset | Tratar como **ambíguo** até política de ingestão; se o export for da loja e documentado como horário local, aplicar America/Sao_Paulo **com flag** `timezone_assumed_local` — nunca UTC escondido |
+| Alinhamento com DeliveryOS live | Preferir a mesma IANA (`storeTimeZone` / `localDayKey` no núcleo live) |
 
 ---
 
-## 5. Proposta de dia operacional
+## 5. Dia operacional — **regra oficial (César, fechamento T0B-A)**
 
-| Conceito | Definição preliminar (HIP) | Validação |
-|---|---|---|
-| **data civil** | Calendário em America/Sao_Paulo | Automática |
-| **dia da semana** | Derivado da data civil local | Automática |
-| **hora local** | 0–23 local | Automática |
-| **turno** | HIP inicial: almoço / tarde / jantar / ceia (como dashboards iFood) — cortes de hora **a validar** | César + operação |
-| **dia operacional** | HIP: janela que começa no horário de abertura efetiva do delivery e pode **atravessar meia-noite civil** (ex.: pedidos 00:30 ainda do “sábado operacional”) | **César decide** política definitiva |
-| **operational_day_key** | Chave estável do dia operacional (não necessariamente = data civil) | Depende da política acima |
+> **Decisão registrada e congelada para análise temporal e futuros alertas.**  
+> Substitui qualquer hipótese anterior de “turno que atravessa a madrugada”.
 
-**Eventos após meia-noite:** se `operational_day_key` ≠ `local_date`, ambos os campos ficam preenchidos; comparações de “sábado” usam a chave operacional quando a política estiver aprovada.
+| Conceito | Regra oficial |
+|---|---|
+| **Fuso** | **America/Sao_Paulo** |
+| **Encerramento da operação Delivery** | **23:00** (hora local) |
+| **Operação na madrugada** | **Não existe** — o Delivery **não** opera atravessando a madrugada |
+| **`local_date`** | Data civil no fuso America/Sao_Paulo |
+| **`operational_day_key`** | **Sempre igual a `local_date`** |
+| **Carregar evento pós-meia-noite no dia anterior** | **Proibido** |
+| **Turno (faixas internas)** | Ainda podem usar rótulos almoço/tarde/jantar/ceia **dentro** do dia civil, com cortes de hora a detalhar na T0B-B; nenhum turno cruza 00:00 para “salvar” no dia anterior |
 
-**Até validação do César:** análises publicáveis usam **data civil America/Sao_Paulo** e marcam virada noturna como **limitação**.
+### 5.1 Eventos com `local_hour` ≥ 23:00 (e qualquer evento após o encerramento)
+
+Não entram **automaticamente** no movimento normal do dia operacional.  
+Classificar de forma **separada e explícita** em um (ou mais) de:
+
+| Classe | Significado |
+|---|---|
+| `registro_tardio` | Fato do dia, registrado depois do fechamento |
+| `atraso_sincronizacao` | Timestamp de sistema/fonte atrasado em relação ao ato |
+| `evento_tecnico` | Heartbeat, log, reprocessamento, artefato de export |
+| `fora_janela_operacional` | Ocorrência fora do horário de operação declarado |
+| `dado_a_validar` | Não classificado com segurança; exige revisão humana |
+
+**Regras de uso:**
+
+1. Esses eventos **não** alimentam contagens de volume/erro do “movimento normal” do dia sem revisão.  
+2. Podem constar em relatórios e trilhas de qualidade de dado, com a classe acima.  
+3. **Não** realocar para `local_date - 1` nem para outro `operational_day_key`.  
+4. Se `occurred_at` cair **após 00:00** civil, permanece no `local_date` daquele instante (o novo dia civil) e, se for ruído de fonte, marca-se `evento_tecnico` / `dado_a_validar` — **nunca** “ainda é o dia de ontem”.
+
+### 5.2 Campo sugerido no evento analítico
+
+```text
+after_hours_class   # null | registro_tardio | atraso_sincronizacao |
+                    # evento_tecnico | fora_janela_operacional | dado_a_validar
+in_normal_day_flow  # true só se dentro da janela operacional e sem after_hours_class bloqueante
+```
+
+Default conservador: se `local_hour >= 23` ou fora da janela aberta→23:00 → `in_normal_day_flow = false` até classificação humana ou regra de ingestão explícita.
 
 ---
 
@@ -108,8 +139,11 @@ local_date             # YYYY-MM-DD America/Sao_Paulo ou null
 weekday                # 0-6 ou nome local; null se sem data
 local_hour             # 0-23 local; null se sem hora
 time_window            # ex. 30m/60m/120m bucket; null se sem hora
-operational_shift      # turno; null se não classificado
-operational_day_key    # chave do dia operacional; null se política não aplicada
+operational_shift      # turno interno do dia; null se não classificado
+operational_day_key    # SEMPRE = local_date (regra oficial §5)
+after_hours_class      # null | registro_tardio | atraso_sincronizacao |
+                       # evento_tecnico | fora_janela_operacional | dado_a_validar
+in_normal_day_flow     # true só no movimento normal do dia (ver §5)
 event_category         # taxonomia primária
 event_subcategory      # taxonomia secundária
 operational_area       # praça / caixa / conferência / saída / ...
@@ -132,6 +166,8 @@ context_missing        # lista do que falta (exposição, praça, pessoa-papel, 
 - Não inferir `local_hour` de “jantar” agregado sem distribuição.  
 - Não preencher `affected_orders` com 1 por padrão.  
 - Não usar nome de pessoa como dimensão.  
+- Não definir `operational_day_key` ≠ `local_date`.  
+- Não “puxar” evento de madrugada para o dia civil anterior.  
 
 ---
 
@@ -364,7 +400,8 @@ Evidência individual → **revisão humana**; não no alerta coletivo do turno.
 | Atraso produção/expedição | Carimbos pronto/saiu |
 | Proxy fraco de “erro” via chat | WhatsApp + taxonomia manual |
 | Turno oficial da loja | César + eventualmente escala |
-| `operational_day_key` definitivo | César |
+| `operational_day_key` | **Fechado:** = `local_date` (America/Sao_Paulo); cortes de turno internos e horário de **abertura** ainda a detalhar |
+| Classificação `after_hours_class` em escala | Regras de ingestão por fonte (iFood vs WhatsApp) na T0B-B |
 | Feriados/promoções | Calendário auxiliar a criar |
 | Baseline comparável estável | ≥ N semanas de série (a definir) |
 | Validar ALC-001…004 | Tudo acima + revisão humana |
@@ -410,7 +447,7 @@ Uso: curso de kit “antes/depois” qualitativo; não alerta de pico.
 | Fadiga de alertas | Contrato §12–13; preferir silêncio |
 | Vigilância de pessoa | Proibição §14 |
 | Baselines do motor provisórios | Não usar como verdade de loja sem calibração |
-| Janela HTML 24h cruzando meia-noite | `operational_day_key` + join logística |
+| Janela HTML “últimas 24h” misturando dois `local_date` | Partir por `local_date`; nunca fundir no dia anterior; join logística |
 | Contagem WhatsApp 155k vs 171k | Recontar antes de qualquer % |
 | Implementar alerta cedo demais | Status só avança com aprovador humano |
 
@@ -424,6 +461,7 @@ Uso: curso de kit “antes/depois” qualitativo; não alerta de pico.
 - [x] Nenhum padrão temporal afirmado sem exposição  
 - [x] Candidatos a alerta ≠ alertas aprovados (§11–12)  
 - [x] Dependências T0B-B registradas (§15)  
+- [x] **Dia operacional oficial:** encerra 23:00 · sem madrugada · `operational_day_key = local_date` · pós-23:00 classificado à parte (§5)  
 
 ---
 
