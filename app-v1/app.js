@@ -594,30 +594,96 @@
     $("replay").hidden = false;
   }
 
-  /* ---------- boot: dados reais + cérebro real, nada mais ----------
-     ?j=2026-06-23 carrega outra janela real já gerada (ex.: a que tem foco puro). */
-  const qj = new URLSearchParams(location.search).get("j");
-  const arqJanela = qj ? "../data/generated/v1_janela_real_" + qj + ".json" : "../data/generated/v1_janela_real.json";
-  Promise.all([
-    fetch("../data/cardapio_knowledge_seed.json").then(r => r.json()),
-    fetch(arqJanela).then(r => { if (!r.ok) throw new Error("Janela real não encontrada. Rode: node tools/gerar_janela_v1.js" + (qj ? " " + (+qj.slice(-2)) : "")); return r.json(); })
-  ]).then(([seed, J]) => {
+  /* ---------- pipeline único (motor decide; a interface só apresenta) ---------- */
+  function rodarJanela(seed, J, rotuloFonte) {
     const SEED = seed.itens;
     MOTOR.setNomes(Object.fromEntries(SEED.map(x => [x.id, x.nome])));
     const FONTE = MOTOR.makeFonteItensFromRows(J.rows, SEED);
     const INFO = {}; for (const o of J.NIGHT) INFO[o.id] = MOTOR.resolver(FONTE(o.id));
     for (const o of J.NIGHT) if (o.curto) CURTO[o.id] = o.curto;
     if (J.meta.diaBase) { const d = +J.meta.diaBase.slice(-2); diasRotulo = [d + "/06", (d + 1) + "/06"]; }
-    rotuloJanela = "Janela real " + (J.meta.diaBase ? diasRotulo[0] : "01/07");
-    $("fonteDado").textContent = rotuloJanela + ", " + J.meta.pedidos + " pedidos, itens reais por pedido";
+    else if (J.meta.dia_local) { const dl = J.meta.dia_local.slice(8, 10) + "/" + J.meta.dia_local.slice(5, 7); diasRotulo = [dl, dl]; }
+    rotuloJanela = rotuloFonte || ("Janela real " + (J.meta.diaBase ? diasRotulo[0] : "01/07"));
+    $("fonteDado").textContent = rotuloJanela + ", " + J.meta.pedidos + " pedidos" +
+      (J.meta.fonte === "simulada" ? ", dados sintéticos (não é operação real)" : ", itens reais por pedido");
     timeline = precomputar(J, INFO);
     window.__V1 = { timeline, INFO, meta: J.meta };   // alça de leitura p/ validação — não é UI
     ligarControles(INFO);
-  }).catch(e => {
+  }
+
+  /* ---------- estado técnico da FONTE (D4A) — nunca é Calmo ----------
+     Ausência de informação não é calmo: sem janela pronta, a tela diz o estado
+     da fonte, com desconhecidos declarados e último confiável DATADO. */
+  function renderEstadoFonte(pl) {
+    const TEXTO = {
+      initializing: "Fonte simulada iniciando…",
+      replaying: "Reprocessando o histórico (replay). O que aparece agora não é o estado final.",
+      stale: "Fonte simulada com dado envelhecido. Sem estado atual confiável.",
+      disconnected: "Fonte simulada desconectada.",
+      degraded: "Fonte em modo degradado" + (pl.source_motivo ? ": " + pl.source_motivo : "") + ".",
+      failed: "Erro na fonte simulada" + (pl.source_motivo ? ": " + pl.source_motivo : "") + ".",
+      stopped: "Fonte simulada parada.",
+      ready: "Fonte pronta, ainda sem pedidos aptos para apresentar."
+    };
     const palco = $("palco"); palco.innerHTML = "";
     const s = el("section", "estado carregando");
-    s.appendChild(el("p", "sussurro", "Não consegui carregar a janela real. " + e.message));
+    s.appendChild(el("p", "sussurro", TEXTO[pl.source_status] || ("Estado da fonte: " + pl.source_status + ".")));
+    if (pl.unknowns) {
+      s.appendChild(el("p", "sussurro", "Desconhecidos declarados: " + pl.unknowns.conflitos +
+        " em conflito, " + pl.unknowns.parciais + " parciais, " + pl.unknowns.suspeitos +
+        " suspeitos, " + pl.unknowns.quarentena.total + " em quarentena."));
+    }
+    if (pl.ultimo_confiavel) {
+      s.appendChild(el("p", "sussurro", "Último estado confiável: " + pl.ultimo_confiavel.dia_local +
+        " (" + pl.ultimo_confiavel.pedidos + " pedidos). " + pl.ultimo_confiavel.aviso + "."));
+    }
     palco.appendChild(s);
-    $("fonteDado").textContent = "Sem dado";
-  });
+    $("fonteDado").textContent = "Fonte simulada: " + pl.source_status;
+  }
+
+  /* ---------- boot: dados reais + cérebro real, nada mais ----------
+     ?j=2026-06-23 carrega outra janela real já gerada (ex.: a que tem foco puro). */
+  function bootAtual(avisoFlag) {
+    const qj = new URLSearchParams(location.search).get("j");
+    const arqJanela = qj ? "../data/generated/v1_janela_real_" + qj + ".json" : "../data/generated/v1_janela_real.json";
+    Promise.all([
+      fetch("../data/cardapio_knowledge_seed.json").then(r => r.json()),
+      fetch(arqJanela).then(r => { if (!r.ok) throw new Error("Janela real não encontrada. Rode: node tools/gerar_janela_v1.js" + (qj ? " " + (+qj.slice(-2)) : "")); return r.json(); })
+    ]).then(([seed, J]) => {
+      rodarJanela(seed, J, null);
+      if (avisoFlag) $("fonteDado").textContent += " · " + avisoFlag;
+    }).catch(e => {
+      const palco = $("palco"); palco.innerHTML = "";
+      const s = el("section", "estado carregando");
+      s.appendChild(el("p", "sussurro", "Não consegui carregar a janela real. " + e.message));
+      palco.appendChild(s);
+      $("fonteDado").textContent = "Sem dado";
+    });
+  }
+
+  function bootSimulador() {
+    const q = new URLSearchParams(location.search);
+    const url = "/api/fonte" + (q.get("cenario") ? "?cenario=" + q.get("cenario") : "") +
+      (q.get("estado") ? (q.get("cenario") ? "&" : "?") + "estado=" + q.get("estado") : "");
+    Promise.all([
+      fetch("../data/cardapio_knowledge_seed.json").then(r => r.json()),
+      fetch(url).then(r => r.json())
+    ]).then(([seed, pl]) => {
+      if (pl.source_status === "ready" && pl.janela && pl.janela.NIGHT.length > 0) {
+        rodarJanela(seed, pl.janela, "Fonte simulada (D4A), dia " + (pl.operational_day_key || "?"));
+      } else {
+        renderEstadoFonte(pl); // dado antigo/parcial nunca aparece como atual
+      }
+    }).catch(e => renderEstadoFonte({ source_status: "failed", source_motivo: e.message }));
+  }
+
+  // Feature flag D4A (DELIVERYOS_LIVE_SOURCE, lida pelo servidor): a sonda de
+  // config falhando (ex.: servir_v1 antigo, sem /api) => caminho atual,
+  // comportamento seguro por padrão. Flag inválida => fonte atual + aviso.
+  fetch("/api/config").then(r => { if (!r.ok) throw new Error("sem config"); return r.json(); })
+    .then(cfg => {
+      if (cfg && cfg.fonte === "simulator") bootSimulador();
+      else bootAtual(cfg && cfg.degraded_state === "flag_invalida" ? "flag inválida, usando fonte padrão" : null);
+    })
+    .catch(() => bootAtual(null));
 })();
