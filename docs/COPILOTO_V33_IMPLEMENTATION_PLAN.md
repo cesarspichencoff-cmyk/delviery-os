@@ -307,7 +307,70 @@ Nesta fase: **nenhum teste novo executado além da verificação de hashes**.
 | Campo | Valor |
 |---|---|
 | Fase 1 | Congelamento + plano |
-| Implementação UI | **NÃO iniciada** |
+| Fase 2A | Superfície V3.3 na app real (adapters + mocks) |
 | Push / deploy | **NÃO** |
 | ZIP / HTML originais | **intocados** |
+| Pack inteligência | **não incorporado** |
 | Outros worktrees | **intocados** |
+
+---
+
+## Fase 2A executada
+
+### Arquivos implementados
+
+| Arquivo | Papel |
+|---|---|
+| `app-v1/index.html` | Shell V3.3 (topo, palco, voz, fechamento, QA) |
+| `app-v1/style.css` | Tokens e gramática visual do organismo canônico |
+| `app-v1/app.js` | Render organismo; motor/D4A preservados; default Calmo |
+| `app-v1/v33-mocks.js` | Previsão, ação acompanhada, voz, fechamento, QA catalog |
+| `src/live/interface/adaptador-v33.js` | View-model V3.3 (Node + browser) |
+| `tests/live/interface-adaptador-v33.test.js` | Contrato do adaptador V3.3 |
+
+### Adapters
+
+- `montarViewModelV33` — mode + áreas + atenção + mocks → shape UI  
+- `mapearEstadoFonteV33` — status D4A → texto + forma (dashed/pulse/solid)  
+- `areaHintFromSit` — sitKind/sitPraca → área dominante (apresentação)  
+- Motor / `adaptador.js` D4A / `fonte.js` **intocados na semântica**
+
+### Mocks (explícitos, `simulated: true` + label demo)
+
+- Previsão 10–15 min, “se nada mudar”, confiança ●●○, “estimativa, não certeza”  
+- Ação acompanhada: 8 estados sequenciais (um de cada vez)  
+- Responsável funcional (sem ranking)  
+- Voz: escuta → transcrição → conclusão → confirmação / ambiguidade / falha  
+- Fechamento: resumo, 1 de 2, Não sei / Pular, áudio simulado  
+- QA Catalog (~16 itens) só com `?qa=1` ou `?dev=1`
+
+### Testes
+
+- `node --test tests/live/**/*.js tests/live/*.js` → **179 pass / 0 fail**  
+- Inclui novos testes do adaptador V3.3 + suite live/D4A/simulador intacta  
+
+### Comando para executar
+
+```bash
+node tools/servir_v1.js
+# → http://localhost:5179/
+# QA catalog: http://localhost:5179/app-v1/index.html?qa=1
+# D4A: DELIVERYOS_LIVE_SOURCE=simulator node tools/live/interface/servir_d4a.js
+```
+
+### Limitações (Fase 2A)
+
+- Previsão / ação / voz / fechamento **não** ligados a engines do pack  
+- ASR/TTS ausente (só demo)  
+- Janela real ainda depende de `data/generated` (gerar se faltar)  
+- Replay permanece no rodapé (demonstração de janela histórica)  
+- Pixel-perfect vs HTML Claude Design: gramática e tokens portados; validação visual humana pendente  
+
+### Itens reservados para Fase 2B
+
+- Merge/port controlado de `grok/copiloto-intelligence-pack`  
+- Forecast engine, voice-intents, shift-closing, schemas, OpenAPI  
+- Wiring live de previsão e ação acompanhada  
+- Memória operacional / backtests  
+- Remoção progressiva de mocks onde o motor cobrir  
+- Gate visual formal vs HTML congelado
