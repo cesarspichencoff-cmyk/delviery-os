@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Entregas · Direção B — Expedição editorial</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body data-moment="ambiente">
+  <div class="lab-chrome">
+    <a class="lab-back" href="../index.html">← Laboratório</a>
+    <strong>Opção B</strong>
+    <span>Expedição editorial</span>
+    <select id="moment-select" aria-label="Momento"></select>
+  </div>
+  <div class="shell">
+    <main class="palco">
+      <div class="panel" data-panel="ambiente">
+        <div class="hero-line">
+          <div>
+            <div class="olho">Expedição</div>
+            <div class="titulo">Viagens agora</div>
+          </div>
+          <p class="apoio">Leitura rápida do campo — sem colunas de status.</p>
+        </div>
+        <div class="lista-editorial">
+          <div class="linha-viagem pronta">
+            <span class="id">V-1045</span>
+            <div class="corpo">
+              <div class="st">Pronta para sair</div>
+              <div class="meta">Ana · 2 paradas · 3 volumes</div>
+            </div>
+            <span class="marca-estado">Loja → Saída</span>
+          </div>
+          <div class="linha-viagem bloqueada">
+            <span class="id">V-1043</span>
+            <div class="corpo">
+              <div class="st">Saída bloqueada</div>
+              <div class="meta">Marcos · Esperados 3 · Conferidos 2</div>
+            </div>
+            <span class="marca-estado">Bloqueio</span>
+          </div>
+          <div class="linha-viagem rota">
+            <span class="id">V-1046</span>
+            <div class="corpo">
+              <div class="st">Em rota</div>
+              <div class="meta">Ana · 1 de 2 paradas</div>
+            </div>
+            <span class="marca-estado">Rua</span>
+          </div>
+          <div class="linha-viagem pendente">
+            <span class="id">V-1053</span>
+            <div class="corpo">
+              <div class="st">Fechamento pendente</div>
+              <div class="meta">Bruno · 1 volume a receber</div>
+            </div>
+            <span class="marca-estado">Retorno</span>
+          </div>
+          <div class="linha-viagem encerrada">
+            <span class="id">V-1039</span>
+            <div class="corpo">
+              <div class="st">Viagem encerrada</div>
+              <div class="meta">Carla · conferida</div>
+            </div>
+            <span class="marca-estado">Fechamento</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" data-panel="foco" hidden>
+        <div class="foco-edit surge">
+          <div>
+            <div class="olho">V-1046 · Em rota</div>
+            <div class="mega">Próxima parada</div>
+            <div class="fase">
+              <span>Loja</span><span class="sep">·</span>
+              <span>Saída</span><span class="sep">·</span>
+              <b>Rua</b><span class="sep">·</span>
+              <span>Retorno</span><span class="sep">·</span>
+              <span>Fechamento</span>
+            </div>
+            <div class="evid">
+              <div class="strong">R. dos Pinheiros, 800 — ap 12</div>
+              <div>2 volumes nesta parada</div>
+              <div class="dash">Sessão de localização ativa</div>
+            </div>
+            <div style="margin-top:28px">
+              <div class="acao-pill">Confirmar chegada</div>
+            </div>
+          </div>
+          <div class="lado">
+            <div class="olho">Outras viagens</div>
+            <div class="lista-mini">
+              <span><strong>V-1045</strong> · Pronta para sair</span>
+              <span><strong>V-1043</strong> · Saída bloqueada</span>
+              <span><strong>V-1053</strong> · Fechamento pendente</span>
+            </div>
+            <p class="sussurro">O contexto permanece. Só a atenção muda.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" data-panel="bloqueio" hidden>
+        <div class="foco-edit surge">
+          <div>
+            <div class="olho">V-1043 · Marcos</div>
+            <div class="mega">Saída bloqueada</div>
+            <div class="fase">
+              <span>Loja</span><span class="sep">·</span>
+              <b>Saída</b><span class="sep">·</span>
+              <span>Rua</span><span class="sep">·</span>
+              <span>Retorno</span><span class="sep">·</span>
+              <span>Fechamento</span>
+            </div>
+            <div class="evid">
+              <div class="tensao">São esperados 3 volumes, mas apenas 2 foram conferidos.</div>
+              <div class="strong">Esperados 3 · Conferidos 2</div>
+            </div>
+            <div style="margin-top:28px">
+              <div class="acao-pill atencao">Revisar volumes</div>
+            </div>
+          </div>
+          <div class="lado">
+            <div class="olho">Outras viagens</div>
+            <div class="lista-mini">
+              <span><strong>V-1045</strong> · Pronta para sair</span>
+              <span><strong>V-1046</strong> · Em rota</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" data-panel="fechamento" hidden>
+        <div class="foco-edit surge">
+          <div>
+            <div class="olho">V-1053 · Bruno</div>
+            <div class="mega">Fechamento pendente</div>
+            <div class="fase">
+              <span>Loja</span><span class="sep">·</span>
+              <span>Saída</span><span class="sep">·</span>
+              <span>Rua</span><span class="sep">·</span>
+              <span>Retorno</span><span class="sep">·</span>
+              <b>Fechamento</b>
+            </div>
+            <div class="evid">
+              <div class="strong">Ainda falta reconciliação</div>
+              <div>1 volume a receber na loja</div>
+              <div class="dash">Handoff de volta não confirmado</div>
+            </div>
+            <div style="margin-top:28px">
+              <div class="acao-pill">Receber handoff de volta</div>
+            </div>
+          </div>
+          <div class="lado">
+            <div class="olho">Por que não fecha</div>
+            <div class="lista-mini">
+              <span>Resultados das entregas · ok</span>
+              <span>Volumes reconciliados · não</span>
+              <span>Retorno recebido · não</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" data-panel="mobile" hidden>
+        <div class="mobile-shell centered surge">
+          <div class="topo-m">
+            <span style="font-weight:700;font-size:14px">Entregas</span>
+            <span class="conn"><span class="pip"></span>Conectado</span>
+          </div>
+          <div class="olho">Parada 1 de 2</div>
+          <div class="mega-m">Entregar</div>
+          <p class="apoio" style="margin:0 auto 12px;max-width:300px">R. dos Pinheiros, 800 — ap 12</p>
+          <div style="font-weight:700;margin-bottom:8px">2 volumes nesta parada</div>
+          <div class="fase" style="justify-content:center">
+            <span>Loja</span><span class="sep">·</span>
+            <span>Saída</span><span class="sep">·</span>
+            <b>Rua</b>
+          </div>
+          <div class="acoes">
+            <div class="acao-pill">Confirmar chegada</div>
+            <button type="button" class="acao-sec">Registrar exceção</button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script src="../shared/lab.js"></script>
+</body>
+</html>

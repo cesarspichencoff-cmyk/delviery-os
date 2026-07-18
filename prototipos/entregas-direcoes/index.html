@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#F5F3ED" />
+  <title>Entregas · Laboratório de direções visuais</title>
+  <link rel="stylesheet" href="shared/tokens.css" />
+  <style>
+    .lab-home { max-width: 720px; margin: 0 auto; padding: 36px 22px 64px; }
+    .lab-home h1 {
+      font-size: clamp(28px, 4vw, 40px);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      margin: 12px 0 10px;
+    }
+    .lab-home .lead {
+      font-size: 16px;
+      color: var(--tinta-2);
+      line-height: 1.45;
+      margin-bottom: 32px;
+      max-width: 34em;
+    }
+    .opts { display: flex; flex-direction: column; gap: 14px; }
+    .opt {
+      display: block;
+      text-decoration: none;
+      color: inherit;
+      padding: 20px 18px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.55);
+      border-left: 3px solid var(--verde);
+      box-shadow: 0 10px 28px rgba(26, 25, 20, 0.06);
+      transition: transform 0.15s ease;
+    }
+    .opt:hover { transform: translateY(-2px); }
+    .opt.b { border-left-color: var(--tinta); }
+    .opt.c { border-left-color: var(--atencao); }
+    .opt .k {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--tinta-3);
+      margin-bottom: 6px;
+    }
+    .opt h2 {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 6px;
+    }
+    .opt p { font-size: 14px; color: var(--tinta-2); line-height: 1.4; }
+    .note {
+      margin-top: 36px;
+      font-size: 12.5px;
+      color: var(--tinta-3);
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+  <div class="lab-home">
+    <div class="olho">Laboratório · Entregas</div>
+    <h1>Três direções na família DeliveryOS</h1>
+    <p class="lead">
+      Comparar propostas sem mexer no protótipo oficial.
+      Tokens e gramática de <strong>deliveryos-fable/app-v1</strong>.
+      Cada opção: Ambiente, Foco, Bloqueio, Fechamento e Mobile.
+    </p>
+    <div class="opts">
+      <a class="opt" href="opcao-a/index.html">
+        <div class="k">Opção A</div>
+        <h2>Transplante direto DeliveryOS</h2>
+        <p>Presenças no campo + composição Foco (eco · cartão · contexto · pílula), como o V1 aprovado.</p>
+      </a>
+      <a class="opt b" href="opcao-b/index.html">
+        <div class="k">Opção B</div>
+        <h2>Expedição editorial</h2>
+        <p>Títulos grandes, lista tipográfica, assimetria — premium e operacional, sem revista.</p>
+      </a>
+      <a class="opt c" href="opcao-c/index.html">
+        <div class="k">Opção C</div>
+        <h2>Campo topográfico</h2>
+        <p>Loja âncora, viagens por posição e escala — espacial, sem linhas onduladas nem mapa hero.</p>
+      </a>
+    </div>
+    <p class="note">
+      Protótipo oficial <code>prototipos/entregas-v01/</code> não foi alterado.
+      Documentação: <code>docs/entregas-design/VISUAL_OPTIONS.md</code>.
+    </p>
+  </div>
+</body>
+</html>

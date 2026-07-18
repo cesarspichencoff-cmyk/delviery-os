@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Entregas · Direção C — Campo topográfico</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body data-moment="ambiente">
+  <div class="lab-chrome">
+    <a class="lab-back" href="../index.html">← Laboratório</a>
+    <strong>Opção C</strong>
+    <span>Campo topográfico</span>
+    <select id="moment-select" aria-label="Momento"></select>
+  </div>
+  <div class="shell">
+    <main class="palco">
+      <div class="panel" data-panel="ambiente">
+        <div class="campo-topo">
+          <div class="marca">Entregas</div>
+          <div class="sussurro">Loja no centro · viagens no campo</div>
+        </div>
+        <div class="topo-campo" aria-label="Campo operacional">
+          <div class="ancora-loja">
+            <div class="nucleo" aria-hidden="true"></div>
+            <div class="lbl">Loja</div>
+          </div>
+          <div class="v-node p1 pronta">
+            <div class="orb"></div>
+            <div class="vid">V-1045</div>
+            <div class="vst">Pronta para sair</div>
+          </div>
+          <div class="v-node p2 bloqueada">
+            <div class="orb"></div>
+            <div class="vid">V-1043</div>
+            <div class="vst">Saída bloqueada</div>
+          </div>
+          <div class="v-node p3 rota">
+            <div class="orb"></div>
+            <div class="vid">V-1046</div>
+            <div class="vst">Em rota · 1/2</div>
+          </div>
+          <div class="v-node p4 pendente">
+            <div class="orb"></div>
+            <div class="vid">V-1053</div>
+            <div class="vst">Fechamento pendente</div>
+          </div>
+          <div class="v-node p5 encerrada">
+            <div class="orb"></div>
+            <div class="vid">V-1039</div>
+            <div class="vst">Encerrada</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" data-panel="foco" hidden>
+        <div class="foco-topo surge">
+          <div class="halo">
+            <div class="satelites" aria-hidden="true">
+              <div class="sat s1 ok">V-1045</div>
+              <div class="sat s2 warn">V-1043</div>
+              <div class="sat s3 warn">V-1053</div>
+            </div>
+            <div class="halo-core">
+              <div class="olho">V-1046</div>
+              <div class="titulo">Em rota</div>
+              <p class="apoio">Parada 1 de 2</p>
+            </div>
+          </div>
+          <div class="foco-copy">
+            <div class="olho">Próxima ação</div>
+            <div class="titulo">Entregar</div>
+            <div class="fases-min">Loja · Saída · <b>Rua</b> · Retorno · Fechamento</div>
+            <div class="linhas">
+              <div class="strong">R. dos Pinheiros, 800 — ap 12</div>
+              <div>2 volumes nesta parada</div>
+              <div><span class="dash">Localização da viagem ativa</span></div>
+            </div>
+            <div class="acao-pill">Confirmar chegada</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" data-panel="bloqueio" hidden>
+        <div class="foco-topo surge">
+          <div class="halo">
+            <div class="satelites">
+              <div class="sat s1 ok">V-1045</div>
+              <div class="sat s2 ok">V-1046</div>
+            </div>
+            <div class="halo-core tensao">
+              <div class="olho">V-1043</div>
+              <div class="titulo">Saída bloqueada</div>
+              <p class="apoio">Esperados 3 · Conferidos 2</p>
+            </div>
+          </div>
+          <div class="foco-copy">
+            <div class="olho">Marcos</div>
+            <div class="titulo">Volumes</div>
+            <div class="fases-min">Loja · <b>Saída</b> · Rua · Retorno · Fechamento</div>
+            <div class="linhas">
+              <div class="tensao">São esperados 3 volumes, mas apenas 2 foram conferidos.</div>
+              <div class="strong">Esperados 3 · Conferidos 2</div>
+            </div>
+            <div class="acao-pill atencao">Revisar volumes</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" data-panel="fechamento" hidden>
+        <div class="foco-topo surge">
+          <div class="halo">
+            <div class="satelites">
+              <div class="sat s1 ok">V-1046</div>
+              <div class="sat s3 ok">V-1039</div>
+            </div>
+            <div class="halo-core tensao">
+              <div class="olho">V-1053</div>
+              <div class="titulo">Fechamento pendente</div>
+              <p class="apoio">Ainda aberta</p>
+            </div>
+          </div>
+          <div class="foco-copy">
+            <div class="olho">Bruno · retorno</div>
+            <div class="titulo">Não fecha ainda</div>
+            <div class="fases-min">Loja · Saída · Rua · Retorno · <b>Fechamento</b></div>
+            <div class="linhas">
+              <div class="strong">1 volume a receber na loja</div>
+              <div><span class="dash">Handoff de volta não confirmado</span></div>
+              <div>Resultados das entregas · ok</div>
+            </div>
+            <div class="acao-pill">Receber handoff de volta</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" data-panel="mobile" hidden>
+        <div class="mobile-shell surge">
+          <div class="topo-m">
+            <span style="font-weight:700;font-size:14px">Entregas</span>
+            <span class="conn"><span class="pip"></span>Conectado</span>
+          </div>
+          <div class="orb-m" aria-hidden="true"></div>
+          <div class="olho">Parada 1 de 2 · Rua</div>
+          <div class="titulo">Entregar</div>
+          <p class="apoio" style="max-width:300px;margin:0 auto 10px">R. dos Pinheiros, 800 — ap 12</p>
+          <div style="font-weight:700;margin-bottom:8px">2 volumes nesta parada</div>
+          <div class="acoes">
+            <div class="acao-pill">Confirmar chegada</div>
+            <button type="button" class="acao-sec">Registrar exceção</button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script src="../shared/lab.js"></script>
+</body>
+</html>
