@@ -1,0 +1,182 @@
+{
+  "source": "synthetic_calibrated_from_documented_patterns",
+  "note": "Raw multi-month iFood files are NOT in this worktree (gitignored). Backtest uses synthetic series calibrated to documented dinner-dominant patterns.",
+  "n_samples_series": 112,
+  "backtest": {
+    "b10": {
+      "horizon_min": 10,
+      "model": "ensemble",
+      "n": 90,
+      "mae": 1.2,
+      "p90_abs_error": 2.4,
+      "coverage": 1,
+      "samples": [
+        {
+          "t": 12,
+          "predicted": 4.1,
+          "actual": 2,
+          "abs_error": 2.0999999999999996
+        },
+        {
+          "t": 13,
+          "predicted": 3,
+          "actual": 3,
+          "abs_error": 0
+        },
+        {
+          "t": 14,
+          "predicted": 4.6,
+          "actual": 5,
+          "abs_error": 0.40000000000000036
+        },
+        {
+          "t": 15,
+          "predicted": 3.7,
+          "actual": 3,
+          "abs_error": 0.7000000000000002
+        },
+        {
+          "t": 16,
+          "predicted": 3.7,
+          "actual": 5,
+          "abs_error": 1.2999999999999998
+        }
+      ]
+    },
+    "b15": {
+      "horizon_min": 15,
+      "model": "ensemble",
+      "n": 85,
+      "mae": 1.3,
+      "p90_abs_error": 2.6,
+      "coverage": 1,
+      "samples": [
+        {
+          "t": 12,
+          "predicted": 4.2,
+          "actual": 4,
+          "abs_error": 0.20000000000000018
+        },
+        {
+          "t": 13,
+          "predicted": 3,
+          "actual": 4,
+          "abs_error": 1
+        },
+        {
+          "t": 14,
+          "predicted": 4.6,
+          "actual": 3,
+          "abs_error": 1.5999999999999996
+        },
+        {
+          "t": 15,
+          "predicted": 3.6,
+          "actual": 5,
+          "abs_error": 1.4
+        },
+        {
+          "t": 16,
+          "predicted": 3.6,
+          "actual": 3,
+          "abs_error": 0.6000000000000001
+        }
+      ]
+    },
+    "b30": {
+      "horizon_min": 30,
+      "model": "ensemble",
+      "n": 70,
+      "mae": 1.8,
+      "p90_abs_error": 3.8,
+      "coverage": 1,
+      "samples": [
+        {
+          "t": 12,
+          "predicted": 4.6,
+          "actual": 3,
+          "abs_error": 1.5999999999999996
+        },
+        {
+          "t": 13,
+          "predicted": 2.8,
+          "actual": 5,
+          "abs_error": 2.2
+        },
+        {
+          "t": 14,
+          "predicted": 4.6,
+          "actual": 2,
+          "abs_error": 2.5999999999999996
+        },
+        {
+          "t": 15,
+          "predicted": 3.2,
+          "actual": 2,
+          "abs_error": 1.2000000000000002
+        },
+        {
+          "t": 16,
+          "predicted": 3.2,
+          "actual": 5,
+          "abs_error": 1.7999999999999998
+        }
+      ]
+    }
+  },
+  "baseline_example": {
+    "area": "conferencia",
+    "dow": 0,
+    "hour_band": "11-13",
+    "queue": {
+      "n": 12,
+      "median": 2.5,
+      "p25": 1,
+      "p75": 3,
+      "p90": 3,
+      "p95": 3.4,
+      "min": 1,
+      "max": 4,
+      "iqr": 2,
+      "normal_low": 1,
+      "normal_high": 3,
+      "mean": 2.3,
+      "stdev": 1,
+      "dispersion": 0.4
+    },
+    "dwell_min": {
+      "n": 12,
+      "median": 11.1,
+      "p25": 9,
+      "p75": 14.3,
+      "p90": 15.4,
+      "p95": 15.7,
+      "min": 7.036445698700845,
+      "max": 15.936467660591006,
+      "iqr": 5.2,
+      "normal_low": 9,
+      "normal_high": 14.3,
+      "mean": 11.5,
+      "stdev": 3,
+      "dispersion": 0.3
+    },
+    "volume": {
+      "n": 12,
+      "median": 8,
+      "p25": 5,
+      "p75": 10.5,
+      "p90": 12,
+      "p95": 12,
+      "min": 4,
+      "max": 12,
+      "iqr": 5.5,
+      "normal_low": 5,
+      "normal_high": 10.5,
+      "mean": 8.1,
+      "stdev": 2.9,
+      "dispersion": 0.4
+    },
+    "source": "synthetic_calibrated",
+    "confidence": "media"
+  }
+}

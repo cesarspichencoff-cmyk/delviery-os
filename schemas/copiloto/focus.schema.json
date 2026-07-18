@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tata.local/schemas/copiloto/focus.schema.json",
+  "title": "CopilotoFocus",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["focus_id", "status", "title", "confidence", "technical_state"],
+  "properties": {
+    "focus_id": { "type": "string" },
+    "status": { "type": "string", "enum": ["active", "none", "resolved", "invalid"] },
+    "area": { "type": ["string", "null"] },
+    "title": { "type": "string" },
+    "summary": { "type": "string" },
+    "why_it_matters": { "type": "string" },
+    "evidence": { "type": "array", "items": { "type": "object" } },
+    "affected_orders": { "type": "array", "items": { "type": ["string", "object"] } },
+    "severity": { "type": "number", "minimum": 0, "maximum": 3 },
+    "urgency": { "type": "number", "minimum": 0, "maximum": 3 },
+    "reach": { "type": "number", "minimum": 0 },
+    "confidence": { "type": "string", "enum": ["baixa", "media", "alta"] },
+    "dimensions": {
+      "type": "object",
+      "properties": {
+        "severity": { "type": "number" },
+        "urgency": { "type": "number" },
+        "reach": { "type": "number" },
+        "confidence": { "type": "string" },
+        "intervenable": { "type": "boolean" },
+        "confidence_sufficient": { "type": "boolean" }
+      }
+    },
+    "priority_score": { "type": "number" },
+    "assertion_strength": { "type": "number" },
+    "forecast": { "type": ["object", "null"] },
+    "recommended_action": { "type": ["object", "null"] },
+    "alternatives": { "type": "array" },
+    "responsible_role": { "type": "string" },
+    "follow_up": { "type": "object" },
+    "technical_state": {
+      "type": "string",
+      "enum": ["healthy", "degraded", "failed"]
+    },
+    "needs_verification": { "type": "boolean" },
+    "epistemic": { "type": "string" },
+    "selected_at": { "type": "string" }
+  }
+}

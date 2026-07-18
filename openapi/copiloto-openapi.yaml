@@ -1,0 +1,194 @@
+openapi: 3.0.3
+info:
+  title: Copiloto Delivery Intelligence API (Reference)
+  version: 1.0.0
+  description: |
+    API de referência do pacote de inteligência do Copiloto Delivery.
+    Não é produção. Mock em `node mocks/copiloto/server.js`.
+    Nome de produto atual: DeliveryOS. Módulo futuro: Copiloto Delivery (TATÁ OS).
+servers:
+  - url: http://localhost:5188
+    description: Mock local
+tags:
+  - name: state
+  - name: focus
+  - name: forecast
+  - name: anomalies
+  - name: voice
+  - name: shift
+  - name: scenarios
+paths:
+  /health:
+    get:
+      summary: Healthcheck
+      responses:
+        "200":
+          description: OK
+  /v1/state:
+    get:
+      tags: [state]
+      summary: Estado geral da operação
+      parameters:
+        - in: query
+          name: scenario
+          schema: { type: string }
+      responses:
+        "200":
+          description: Snapshot de áreas e estado técnico
+  /v1/areas:
+    get:
+      tags: [state]
+      summary: Estados por área
+      parameters:
+        - in: query
+          name: scenario
+          schema: { type: string }
+      responses:
+        "200":
+          description: Mapa de áreas
+  /v1/focus:
+    get:
+      tags: [focus]
+      summary: Foco vivo atual
+      parameters:
+        - in: query
+          name: scenario
+          schema: { type: string }
+      responses:
+        "200":
+          description: Contrato do Foco
+          content:
+            application/json:
+              schema:
+                $ref: "../schemas/copiloto/focus.schema.json"
+  /v1/forecast:
+    get:
+      tags: [forecast]
+      summary: Previsão 10/15/30
+      parameters:
+        - in: query
+          name: horizon
+          schema: { type: integer, enum: [10, 15, 30] }
+        - in: query
+          name: area
+          schema: { type: string }
+      responses:
+        "200":
+          description: Previsão
+  /v1/anomalies:
+    get:
+      tags: [anomalies]
+      summary: Anomalias detectadas
+      parameters:
+        - in: query
+          name: scenario
+          schema: { type: string }
+      responses:
+        "200":
+          description: Lista de anomalias
+  /v1/briefing:
+    get:
+      tags: [shift]
+      summary: Briefing pré-turno
+      responses:
+        "200":
+          description: Briefing + áudio
+  /v1/closing:
+    get:
+      tags: [shift]
+      summary: Fechamento de turno
+      parameters:
+        - in: query
+          name: questions
+          schema: { type: integer, enum: [0, 1, 3] }
+      responses:
+        "200":
+          description: Fechamento
+  /v1/voice/intents:
+    get:
+      tags: [voice]
+      summary: Catálogo de intenções
+      responses:
+        "200":
+          description: Intents
+  /v1/voice/match:
+    get:
+      tags: [voice]
+      summary: Match heurístico de intent
+      parameters:
+        - in: query
+          name: q
+          schema: { type: string }
+      responses:
+        "200":
+          description: Intent match
+  /v1/playbooks:
+    get:
+      summary: Playbooks seed
+      responses:
+        "200":
+          description: Playbooks
+  /v1/scenarios:
+    get:
+      tags: [scenarios]
+      summary: Índice dos 30 cenários
+      responses:
+        "200":
+          description: Index
+  /v1/scenarios/{id}:
+    get:
+      tags: [scenarios]
+      summary: Payload de um cenário
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Scenario payload
+        "404":
+          description: Not found
+  /v1/response/example:
+    get:
+      summary: Exemplo de resposta do Copiloto
+      responses:
+        "200":
+          description: Response contract
+  /v1/shadow/gates:
+    get:
+      summary: Níveis e gates do modo sombra
+      responses:
+        "200":
+          description: Gates
+  /v1/metrics:
+    get:
+      summary: Métricas de produto
+      responses:
+        "200":
+          description: Metric names
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  responses:
+    Unauthorized:
+      description: Sem permissão
+    Conflict:
+      description: Conflito de idempotência
+x-copiloto:
+  versioning: "v1 no path; schema_version nos payloads"
+  idempotency: "escritas futuras exigem Idempotency-Key"
+  expected_latency_ms:
+    state: 100
+    focus: 100
+    forecast: 150
+    closing: 200
+  fallback:
+    on_degraded: "retornar technical_state=degraded e reduzir interrupções"
+    on_failed: "sem Foco operacional; só diagnóstico técnico"
+  permissions:
+    operator_read: "leitura de estado/foco/previsão"
+    operator_write_memory: "registros de apoio e equipamentos"
+    leader_close_shift: "fechamento de turno"

@@ -9,7 +9,10 @@
     "typecheck": "tsc --noEmit",
     "demo": "tsc && node dist/demo/camada0_demo.js",
     "ingest": "tsc && node dist/demo/ingest_real.js",
-    "verificar:cardapio": "node tools/verificar_integridade_cardapio.js"
+    "verificar:cardapio": "node tools/verificar_integridade_cardapio.js",
+    "copiloto:fixtures": "node mocks/copiloto/generate-fixtures.js",
+    "copiloto:test": "node tests/copiloto/run.js",
+    "copiloto:mock": "node mocks/copiloto/server.js"
   },
   "devDependencies": {
     "@types/node": "20.14.10",

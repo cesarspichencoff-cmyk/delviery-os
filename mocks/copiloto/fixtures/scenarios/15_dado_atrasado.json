@@ -1,0 +1,25 @@
+{
+  "scenario": "dado_atrasado",
+  "pressure": {
+    "level": "unknown",
+    "severity": 0,
+    "confidence": "baixa",
+    "kind": "technical_failure",
+    "reason": "dado_atrasado",
+    "required_data": {
+      "normal_queue": 8,
+      "attention_queue": 12,
+      "pressure_queue": 16,
+      "critical_queue": 22,
+      "normal_min": 12,
+      "attention_min": 18,
+      "pressure_min": 25,
+      "critical_min": 35,
+      "min_persistence_min": 3,
+      "recovery_below_queue": 10,
+      "recovery_below_min": 15,
+      "min_confidence": "media"
+    }
+  },
+  "technical_state": "degraded"
+}

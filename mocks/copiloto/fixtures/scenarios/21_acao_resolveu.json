@@ -1,0 +1,14 @@
+{
+  "scenario": "acao_resolveu",
+  "action": {
+    "type": "priorizar_praca",
+    "area": "quentes"
+  },
+  "before": {
+    "pressure_level": "pressure"
+  },
+  "after": {
+    "pressure_level": "normal"
+  },
+  "side_effects": []
+}

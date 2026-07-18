@@ -1,0 +1,43 @@
+{
+  "scenario": "previsao_10min",
+  "forecast": {
+    "conclusion": "Conferência deve se manter estável nos próximos 10 min (fila ~10.3). Cerca de 2 pedido(s) com risco de prazo.",
+    "horizon_min": 10,
+    "area": "conferencia",
+    "metric": "queue_depth",
+    "value": 10.3,
+    "range": {
+      "low": 9.3,
+      "high": 11.3
+    },
+    "unit": "pedidos",
+    "confidence": "media",
+    "model": "ensemble_baseline_ema_linear",
+    "factors": [
+      {
+        "factor": "current_queue",
+        "value": 11,
+        "weight": "high"
+      },
+      {
+        "factor": "historical_median",
+        "value": 3,
+        "weight": "medium"
+      },
+      {
+        "factor": "local_trend_per_min",
+        "value": 0.7,
+        "weight": "medium"
+      }
+    ],
+    "missing_data": [],
+    "risk_orders_count": 2,
+    "dwell_expected_min": 20.5,
+    "change_conditions": [
+      "chegada acima do ritmo histórico",
+      "liberação rápida de área a montante",
+      "falha de dado / desconexão de fonte"
+    ],
+    "epistemic": "inference"
+  }
+}

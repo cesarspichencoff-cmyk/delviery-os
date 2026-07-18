@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tata.local/schemas/copiloto/forecast.schema.json",
+  "title": "CopilotForecast",
+  "type": "object",
+  "required": ["conclusion", "horizon_min", "value", "confidence", "epistemic"],
+  "properties": {
+    "conclusion": { "type": "string" },
+    "horizon_min": { "type": "number", "enum": [10, 15, 30] },
+    "area": { "type": "string" },
+    "metric": { "type": "string" },
+    "value": { "type": "number" },
+    "range": {
+      "type": "object",
+      "properties": {
+        "low": { "type": "number" },
+        "high": { "type": "number" }
+      }
+    },
+    "unit": { "type": "string" },
+    "confidence": { "type": "string", "enum": ["baixa", "media", "alta"] },
+    "model": { "type": "string" },
+    "factors": { "type": "array" },
+    "missing_data": { "type": "array", "items": { "type": "string" } },
+    "risk_orders_count": { "type": "number" },
+    "dwell_expected_min": { "type": ["number", "null"] },
+    "change_conditions": { "type": "array", "items": { "type": "string" } },
+    "epistemic": { "type": "string", "const": "inference" }
+  }
+}

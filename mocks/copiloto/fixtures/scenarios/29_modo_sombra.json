@@ -1,0 +1,36 @@
+{
+  "scenario": "modo_sombra",
+  "log": {
+    "shadow_id": "sh_1784365438748",
+    "at": "2026-07-18T09:03:58.748Z",
+    "level": 1,
+    "situation": "conferencia_pressure",
+    "reading": "pressure",
+    "forecast": null,
+    "would_choose_focus": {
+      "area": "conferencia"
+    },
+    "recommendation": {
+      "label": "Conferir 184 e 191"
+    },
+    "real_decision": {
+      "label": "Conferiu 184"
+    },
+    "outcome": {
+      "recovered": true
+    },
+    "correct": true,
+    "error_type": null,
+    "missing_data": [],
+    "notes": null
+  },
+  "promotion_gate": {
+    "ok": false,
+    "reason": "horas_insuficientes",
+    "gate": {
+      "min_shadow_hours": 20,
+      "max_false_alert_rate": 0.35,
+      "human_review": true
+    }
+  }
+}

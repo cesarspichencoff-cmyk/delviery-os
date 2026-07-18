@@ -1,0 +1,58 @@
+{
+  "scenario": "foco_mudanca_legitima",
+  "steps": [
+    "activate_sushi",
+    "critical_switch_motoboy"
+  ],
+  "result": {
+    "action": "switch",
+    "focus": {
+      "focus_id": "f_moto",
+      "area": "motoboy",
+      "title": "Saída crítica",
+      "severity": 3,
+      "urgency": 3,
+      "reach": 8,
+      "confidence": "alta",
+      "priority_score": 40
+    },
+    "reason": "risco_critico",
+    "technical_rule": "critical_switch",
+    "product": {
+      "action": "Trocar o Foco",
+      "explanation": "Surgiu um risco maior. O Foco mudou por isso."
+    }
+  },
+  "session": {
+    "active": {
+      "focus_id": "f_moto",
+      "area": "motoboy",
+      "title": "Saída crítica",
+      "severity": 3,
+      "urgency": 3,
+      "reach": 8,
+      "confidence": "alta",
+      "priority_score": 40
+    },
+    "since": 5,
+    "updates_held": 0,
+    "last_switch_at": 5,
+    "last_key": "f_sushi",
+    "cooldown_until": {
+      "f_sushi": 13
+    },
+    "history": [
+      {
+        "at": 1,
+        "event": "activate",
+        "key": "f_sushi"
+      },
+      {
+        "at": 5,
+        "event": "critical_switch",
+        "from": "f_sushi",
+        "to": "f_moto"
+      }
+    ]
+  }
+}

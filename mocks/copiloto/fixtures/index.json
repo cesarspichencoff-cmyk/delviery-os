@@ -1,0 +1,155 @@
+{
+  "count": 30,
+  "scenarios": [
+    {
+      "id": 1,
+      "name": "operacao_calma",
+      "file": "01_operacao_calma.json"
+    },
+    {
+      "id": 2,
+      "name": "sushi_atencao",
+      "file": "02_sushi_atencao.json"
+    },
+    {
+      "id": 3,
+      "name": "quentes_pressao",
+      "file": "03_quentes_pressao.json"
+    },
+    {
+      "id": 4,
+      "name": "conferencia_acumulando",
+      "file": "04_conferencia_acumulando.json"
+    },
+    {
+      "id": 5,
+      "name": "motoboy_acumulando",
+      "file": "05_motoboy_acumulando.json"
+    },
+    {
+      "id": 6,
+      "name": "pedido_risco_erro",
+      "file": "06_pedido_risco_erro.json"
+    },
+    {
+      "id": 7,
+      "name": "duas_pressoes",
+      "file": "07_duas_pressoes.json"
+    },
+    {
+      "id": 8,
+      "name": "tres_pressoes",
+      "file": "08_tres_pressoes.json"
+    },
+    {
+      "id": 9,
+      "name": "foco_mudanca_legitima",
+      "file": "09_foco_mudanca_legitima.json"
+    },
+    {
+      "id": 10,
+      "name": "foco_protegido_oscilacao",
+      "file": "10_foco_protegido_oscilacao.json"
+    },
+    {
+      "id": 11,
+      "name": "previsao_10min",
+      "file": "11_previsao_10min.json"
+    },
+    {
+      "id": 12,
+      "name": "previsao_30min",
+      "file": "12_previsao_30min.json"
+    },
+    {
+      "id": 13,
+      "name": "anomalia",
+      "file": "13_anomalia.json"
+    },
+    {
+      "id": 14,
+      "name": "dado_incompleto",
+      "file": "14_dado_incompleto.json"
+    },
+    {
+      "id": 15,
+      "name": "dado_atrasado",
+      "file": "15_dado_atrasado.json"
+    },
+    {
+      "id": 16,
+      "name": "conexao_perdida",
+      "file": "16_conexao_perdida.json"
+    },
+    {
+      "id": 17,
+      "name": "falha_tecnica",
+      "file": "17_falha_tecnica.json"
+    },
+    {
+      "id": 18,
+      "name": "recomendacao_aceita",
+      "file": "18_recomendacao_aceita.json"
+    },
+    {
+      "id": 19,
+      "name": "recomendacao_adaptada",
+      "file": "19_recomendacao_adaptada.json"
+    },
+    {
+      "id": 20,
+      "name": "recomendacao_ignorada",
+      "file": "20_recomendacao_ignorada.json"
+    },
+    {
+      "id": 21,
+      "name": "acao_resolveu",
+      "file": "21_acao_resolveu.json"
+    },
+    {
+      "id": 22,
+      "name": "acao_nao_resolveu",
+      "file": "22_acao_nao_resolveu.json"
+    },
+    {
+      "id": 23,
+      "name": "efeito_colateral",
+      "file": "23_efeito_colateral.json"
+    },
+    {
+      "id": 24,
+      "name": "briefing",
+      "file": "24_briefing.json"
+    },
+    {
+      "id": 25,
+      "name": "fechamento_sem_perguntas",
+      "file": "25_fechamento_sem_perguntas.json"
+    },
+    {
+      "id": 26,
+      "name": "fechamento_uma_pergunta",
+      "file": "26_fechamento_uma_pergunta.json"
+    },
+    {
+      "id": 27,
+      "name": "fechamento_tres_perguntas",
+      "file": "27_fechamento_tres_perguntas.json"
+    },
+    {
+      "id": 28,
+      "name": "voz",
+      "file": "28_voz.json"
+    },
+    {
+      "id": 29,
+      "name": "modo_sombra",
+      "file": "29_modo_sombra.json"
+    },
+    {
+      "id": 30,
+      "name": "aprendizado",
+      "file": "30_aprendizado.json"
+    }
+  ]
+}

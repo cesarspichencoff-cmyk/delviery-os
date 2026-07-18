@@ -1,0 +1,65 @@
+{
+  "source": "synthetic_calibrated",
+  "areas": [
+    "sushi",
+    "quentes",
+    "cozinha",
+    "conferencia",
+    "motoboy"
+  ],
+  "sample": {
+    "area": "sushi",
+    "dow": 0,
+    "hour_band": "11-13",
+    "queue": {
+      "n": 12,
+      "median": 3,
+      "p25": 2.8,
+      "p75": 4,
+      "p90": 4,
+      "p95": 4,
+      "min": 1,
+      "max": 4,
+      "iqr": 1.3,
+      "normal_low": 2.8,
+      "normal_high": 4,
+      "mean": 3,
+      "stdev": 0.9,
+      "dispersion": 0.3
+    },
+    "dwell_min": {
+      "n": 12,
+      "median": 16,
+      "p25": 13.6,
+      "p75": 18.5,
+      "p90": 19.9,
+      "p95": 20.4,
+      "min": 11.526838244404644,
+      "max": 20.96724475407973,
+      "iqr": 5,
+      "normal_low": 13.6,
+      "normal_high": 18.5,
+      "mean": 16.2,
+      "stdev": 2.9,
+      "dispersion": 0.2
+    },
+    "volume": {
+      "n": 12,
+      "median": 7.5,
+      "p25": 6,
+      "p75": 10,
+      "p90": 10,
+      "p95": 10,
+      "min": 4,
+      "max": 10,
+      "iqr": 4,
+      "normal_low": 6,
+      "normal_high": 10,
+      "mean": 7.6,
+      "stdev": 2.2,
+      "dispersion": 0.3
+    },
+    "source": "synthetic_calibrated",
+    "confidence": "media"
+  }
+}

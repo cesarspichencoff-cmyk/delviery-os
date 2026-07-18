@@ -1,0 +1,63 @@
+{
+  "scenario": "falha_tecnica",
+  "anomalies": [
+    {
+      "anomaly_id": "source_mismatch",
+      "kind": "technical",
+      "area": null,
+      "title": "Fontes de dados incompatíveis",
+      "what_changed": "Duas fontes descrevem estados diferentes para o mesmo recorte",
+      "comparison": "live vs export",
+      "evidence": [
+        {
+          "k": "delta_orders",
+          "v": 12
+        }
+      ],
+      "hypothesis": "Atraso de sincronização ou ID curto ambíguo",
+      "alternative_explanation": "Relógio dessincronizado entre fontes",
+      "confidence": "alta",
+      "verify_action": "Não agir na operação; validar freshness e IDs antes de qualquer Foco",
+      "not_a_person_judgment": true,
+      "epistemic": "hypothesis"
+    },
+    {
+      "anomaly_id": "technical_degraded",
+      "kind": "technical",
+      "area": null,
+      "title": "Qualidade técnica da leitura comprometida",
+      "what_changed": "Estado técnico: failed",
+      "comparison": "freshness ou completude abaixo do aceitável",
+      "evidence": [
+        {
+          "k": "technical_state",
+          "v": "failed"
+        }
+      ],
+      "hypothesis": "Desconexão, atraso de evento ou parse incompleto",
+      "alternative_explanation": "Janela de silêncio real da operação (improvável se volume > 0)",
+      "confidence": "alta",
+      "verify_action": "Checar conexão das fontes e último evento recebido",
+      "not_a_person_judgment": true,
+      "epistemic": "hypothesis"
+    }
+  ],
+  "silence": {
+    "level": "silent",
+    "notify": false,
+    "reason": "falha_tecnica_registrada_sem_alarme_operacional",
+    "product": "Registra sem interromper.",
+    "state": {
+      "history": [
+        {
+          "at": 0,
+          "level": "silent",
+          "key": null,
+          "reason": "falha_tecnica_registrada_sem_alarme_operacional"
+        }
+      ],
+      "last_intervention_at": null,
+      "last_discreet_at": null
+    }
+  }
+}

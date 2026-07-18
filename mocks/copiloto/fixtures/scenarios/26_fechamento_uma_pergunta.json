@@ -1,0 +1,74 @@
+{
+  "scenario": "fechamento_uma_pergunta",
+  "closing": {
+    "schema_version": "1.0",
+    "summary": {
+      "shift_id": "s1",
+      "volume": {
+        "orders": 0,
+        "items": 0
+      },
+      "main_pressures": [
+        {
+          "area": "conferencia",
+          "level": "pressure"
+        }
+      ],
+      "affected_orders_count": 0,
+      "forecasts": [],
+      "actions_detected": [],
+      "outcomes": [],
+      "unexplained": [
+        {
+          "id": "u1",
+          "observation": "Pressão em Conferência caiu em 6 min sem evento automático",
+          "unknown": "Ação manual de apoio",
+          "question": "Houve apoio extra na Conferência?",
+          "why_it_helps": "Liga resultado a playbook",
+          "info_gain": 0.8,
+          "importance": 0.9
+        }
+      ]
+    },
+    "questions": [
+      {
+        "question_id": "u1",
+        "text": "Houve apoio extra na Conferência?",
+        "observed": "Pressão em Conferência caiu em 6 min sem evento automático",
+        "unknown": "Ação manual de apoio",
+        "why_it_helps": "Liga resultado a playbook",
+        "info_gain": 0.8,
+        "options_hint": [
+          "não sei",
+          "pular"
+        ],
+        "type": "unobservable_cause"
+      }
+    ],
+    "audio_script": {
+      "opening": "Resumo do turno: principais pressões em conferencia. Tenho uma pergunta rápida.",
+      "questions": [
+        "Houve apoio extra na Conferência?"
+      ],
+      "closing": "Obrigado. Salvando o fechamento."
+    },
+    "constraints": {
+      "ideal_seconds": 60,
+      "max_seconds": 120,
+      "max_questions": 3,
+      "allow_skip": true,
+      "allow_dont_know": true,
+      "no_emotion_analysis": true,
+      "no_long_form": true
+    },
+    "flow": [
+      "apresentar_resumo",
+      "perguntar_se_houver",
+      "transcrever_resposta",
+      "confirmar_ou_corrigir",
+      "proxima_pergunta",
+      "resumo_final",
+      "salvar"
+    ]
+  }
+}

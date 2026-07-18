@@ -1,0 +1,18 @@
+{
+  "scenario": "efeito_colateral",
+  "action": {
+    "type": "priorizar_praca",
+    "area": "sushi"
+  },
+  "before": {
+    "sushi": "pressure",
+    "quentes": "normal"
+  },
+  "after": {
+    "sushi": "attention",
+    "quentes": "pressure"
+  },
+  "side_effects": [
+    "Quentes subiu de pressão após priorizar só Sushi"
+  ]
+}

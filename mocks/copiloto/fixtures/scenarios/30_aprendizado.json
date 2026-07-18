@@ -1,0 +1,111 @@
+{
+  "scenario": "aprendizado",
+  "memory": {
+    "schema_version": "1.0",
+    "shift_id": "learn1",
+    "store_id": null,
+    "opened_at": "2026-07-18T09:03:58.748Z",
+    "closed_at": null,
+    "context": {
+      "dow": null,
+      "planned_peak": null,
+      "team_notes": [],
+      "external_signals": []
+    },
+    "volume": {
+      "orders": 0,
+      "items": 0
+    },
+    "events": [],
+    "pressures": [],
+    "forecasts": [],
+    "anomalies": [],
+    "focus_timeline": [],
+    "recommendations": [],
+    "human_decisions": [],
+    "actions": [],
+    "outcomes": [
+      {
+        "area": "quentes",
+        "recovery_min": 15
+      }
+    ],
+    "recovery_times_min": [],
+    "side_effects": [],
+    "closing_report": {
+      "text": "Fritadeira parou 12 min",
+      "equipment": "fritadeira"
+    },
+    "unexplained": [],
+    "learnings": [],
+    "confidence_overall": "media",
+    "entries": [
+      {
+        "entry_id": "e_1",
+        "at": "2026-07-18T09:03:58.748Z",
+        "kind": "report",
+        "epistemic": "human_report",
+        "payload": {
+          "text": "Fritadeira parou 12 min",
+          "equipment": "fritadeira"
+        },
+        "confidence": "alta",
+        "source": null
+      },
+      {
+        "entry_id": "e_2",
+        "at": "2026-07-18T09:03:58.748Z",
+        "kind": "outcome",
+        "epistemic": "fact",
+        "payload": {
+          "area": "quentes",
+          "recovery_min": 15
+        },
+        "confidence": "alta",
+        "source": null
+      }
+    ]
+  },
+  "separated": {
+    "fact": [
+      {
+        "entry_id": "e_2",
+        "at": "2026-07-18T09:03:58.748Z",
+        "kind": "outcome",
+        "epistemic": "fact",
+        "payload": {
+          "area": "quentes",
+          "recovery_min": 15
+        },
+        "confidence": "alta",
+        "source": null
+      }
+    ],
+    "inference": [],
+    "human_report": [
+      {
+        "entry_id": "e_1",
+        "at": "2026-07-18T09:03:58.748Z",
+        "kind": "report",
+        "epistemic": "human_report",
+        "payload": {
+          "text": "Fritadeira parou 12 min",
+          "equipment": "fritadeira"
+        },
+        "confidence": "alta",
+        "source": null
+      }
+    ],
+    "hypothesis": [],
+    "pattern": [],
+    "validated_rule": [],
+    "absent": [],
+    "unknown": []
+  },
+  "playbooks": [
+    "pb_conference_buildup",
+    "pb_motoboy_surge",
+    "pb_quentes_pressure",
+    "pb_sushi_attention"
+  ]
+}

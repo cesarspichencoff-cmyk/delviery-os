@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tata.local/schemas/copiloto/anomaly.schema.json",
+  "title": "CopilotAnomaly",
+  "type": "object",
+  "required": ["anomaly_id", "title", "what_changed", "hypothesis", "alternative_explanation", "confidence", "verify_action", "not_a_person_judgment"],
+  "properties": {
+    "anomaly_id": { "type": "string" },
+    "kind": { "type": "string" },
+    "area": { "type": ["string", "null"] },
+    "title": { "type": "string" },
+    "what_changed": { "type": "string" },
+    "comparison": { "type": "string" },
+    "evidence": { "type": "array" },
+    "hypothesis": { "type": "string" },
+    "alternative_explanation": { "type": "string" },
+    "confidence": { "type": "string" },
+    "verify_action": { "type": "string" },
+    "not_a_person_judgment": { "type": "boolean", "const": true },
+    "epistemic": { "type": "string" }
+  }
+}
