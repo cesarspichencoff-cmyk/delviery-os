@@ -63,6 +63,13 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+  /* Nunca deixar surge preso em opacity:0 (bug comum com duração ~0) */
+  .area,
+  .area-foco,
+  .foco-body {
+    animation: none !important;
+    transform: none !important;
+  }
   .area-pulse::after,
   .stage-now .stage-dot::after {
     animation: none !important;
@@ -204,6 +211,11 @@ button { cursor: pointer; border: none; background: none; color: inherit; }
   gap: 14px 16px;
   align-content: start;
   flex: 1;
+  min-height: 240px;
+  width: 100%;
+  /* nunca colapsar o palco das viagens */
+  visibility: visible;
+  opacity: 1;
 }
 
 /* Área de viagem = zona do organismo */
@@ -218,7 +230,9 @@ button { cursor: pointer; border: none; background: none; color: inherit; }
   background: transparent;
   box-shadow: none;
   cursor: default;
-  color: inherit;
+  color: var(--ink);
+  /* Nunca animar opacity de 0→1 (trava invisível se a animação falhar) */
+  opacity: 1;
   animation: surge 0.34s ease-out;
   /* presença por densidade, não borda completa */
   border-left: 2px solid transparent;
@@ -230,29 +244,30 @@ button { cursor: pointer; border: none; background: none; color: inherit; }
 }
 
 .area-periferica {
-  opacity: 0.72;
-  border-left-color: rgba(94, 122, 98, 0.35);
-  background: linear-gradient(90deg, rgba(27, 53, 39, 0.28), transparent 88%);
+  opacity: 0.92;
+  border-left-color: rgba(94, 122, 98, 0.55);
+  background: linear-gradient(90deg, rgba(27, 53, 39, 0.45), transparent 88%);
 }
 .area-periferica.is-tense {
-  opacity: 0.88;
+  opacity: 1;
   border-left-color: var(--ambar);
-  background: linear-gradient(90deg, rgba(224, 162, 90, 0.1), transparent 90%);
+  background: linear-gradient(90deg, rgba(224, 162, 90, 0.14), transparent 90%);
 }
 .area-periferica.is-live {
-  opacity: 0.85;
+  opacity: 0.96;
   border-left-color: var(--verde-deep);
-  background: linear-gradient(90deg, rgba(62, 107, 79, 0.35), transparent 90%);
+  background: linear-gradient(90deg, rgba(62, 107, 79, 0.45), transparent 90%);
 }
 .area-periferica.is-tech {
-  opacity: 0.78;
+  opacity: 0.94;
   border-left-color: var(--tech);
   border-left-style: dashed;
-  background: linear-gradient(90deg, rgba(154, 167, 176, 0.08), transparent 90%);
+  background: linear-gradient(90deg, rgba(154, 167, 176, 0.12), transparent 90%);
 }
 
+/* Calmo: ainda discreto, mas SEMPRE legível — nunca tela vazia */
 body[data-mode="calmo"] .area-periferica {
-  opacity: 0.62;
+  opacity: 0.88;
 }
 body[data-mode="ambiente"] .area-periferica.is-tense,
 body[data-mode="ambiente"] .area-periferica.is-live {
@@ -290,13 +305,14 @@ body[data-mode="calmo"] .area-foco {
   padding: 18px 20px;
 }
 
+/* Só movimento — visibilidade NÃO depende de keyframes de opacity */
 @keyframes surge {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: none; }
+  from { transform: translateY(6px); }
+  to { transform: none; }
 }
 @keyframes surgeFoco {
-  from { opacity: 0; transform: translateY(8px) scale(0.992); }
-  to { opacity: 1; transform: none; }
+  from { transform: translateY(8px) scale(0.992); }
+  to { transform: none; }
 }
 @keyframes dosPulse {
   0% { opacity: 0.45; transform: scale(1); }
@@ -330,7 +346,7 @@ body[data-mode="calmo"] .area-foco {
   font-size: 0.78rem;
   font-weight: 500;
   letter-spacing: 0.04em;
-  color: var(--ink-2);
+  color: var(--ink);
 }
 .area-foco .area-id {
   font-size: 0.85rem;
@@ -339,7 +355,7 @@ body[data-mode="calmo"] .area-foco {
 .area-sit {
   font-size: 0.76rem;
   font-weight: 600;
-  color: var(--ink-3);
+  color: var(--ink-2);
 }
 .area-sit.tensao { color: var(--ambar); }
 .area-sit.vivo { color: var(--verde-soft); }
@@ -464,6 +480,7 @@ body[data-mode="calmo"] .area-foco {
 .foco-body {
   margin-top: 20px;
   max-width: 520px;
+  opacity: 1;
   animation: surge 0.3s ease-out;
 }
 .foco-situation {

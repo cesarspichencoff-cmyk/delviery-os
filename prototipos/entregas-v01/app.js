@@ -980,16 +980,23 @@
   }
 
   function renderDesktop(sc) {
+    if (!sc || !sc.trip) {
+      const host = el("organismo");
+      if (host) host.innerHTML = '<div class="area area-foco">Cenário sem viagem.</div>';
+      return;
+    }
     const mode = sc.mode || "ambiente";
     document.body.dataset.mode = mode;
-    el("campo-sussurro").textContent = sc.sussurro || "";
+    document.body.setAttribute("data-mode", mode);
+    const suss = el("campo-sussurro");
+    if (suss) suss.textContent = sc.sussurro || "";
 
     const trip = sc.trip;
     const peri = (sc.peripheral || []).map(renderPeripheral).join("");
     const tone = sitTone(trip.sitClass);
     const closedCls = trip.closed && !trip.openIncident ? "is-closed" : "";
 
-    const focusHtml = `<div class="area area-foco ${tone} ${closedCls}" role="listitem" aria-current="${mode === "foco" ? "true" : "false"}">
+    const focusHtml = `<div class="area area-foco ${tone} ${closedCls}" role="listitem" data-trip="${trip.id}" aria-current="${mode === "foco" ? "true" : "false"}">
       <div class="area-eye">Viagem ${trip.id}</div>
       <div class="area-head">
         <span class="area-id">${trip.id}</span>
@@ -1001,8 +1008,14 @@
       ${renderFocus(trip, mode)}
     </div>`;
 
-    // Calmo: periféricas + viagem sem expansão dramática; Ambiente/Foco: foco no fim (protagonismo)
-    el("organismo").innerHTML = mode === "calmo" ? peri + focusHtml : peri + focusHtml;
+    // Sempre periféricas + viagem principal na mesma superfície (Calmo inclusive).
+    const host = el("organismo");
+    if (!host) return;
+    host.innerHTML = peri + focusHtml;
+    // Garante presença no DOM: se vazio, falha explícita (nunca "fundo vazio" silencioso)
+    if (!host.querySelector || !host.innerHTML || host.innerHTML.indexOf("area") === -1) {
+      host.innerHTML = focusHtml || '<div class="area area-foco">Falha ao montar viagens.</div>';
+    }
   }
 
   function renderMobile(sc) {
@@ -1046,13 +1059,33 @@
 
   function render() {
     const sc = SCENARIOS[state.scenarioId];
+    if (!sc) {
+      console.error("[entregas] cenário desconhecido:", state.scenarioId);
+      return;
+    }
     document.body.dataset.surface = state.view;
-    el("campo").classList.toggle("is-active", state.view === "desktop");
-    el("mobile-wrap").classList.toggle("is-active", state.view === "mobile");
-    el("btn-desktop").setAttribute("aria-pressed", state.view === "desktop" ? "true" : "false");
-    el("btn-mobile").setAttribute("aria-pressed", state.view === "mobile" ? "true" : "false");
-    renderDesktop(sc);
-    renderMobile(sc);
+    document.body.setAttribute("data-surface", state.view);
+    const campo = el("campo");
+    const mobile = el("mobile-wrap");
+    if (campo) campo.classList.toggle("is-active", state.view === "desktop");
+    if (mobile) mobile.classList.toggle("is-active", state.view === "mobile");
+    const bd = el("btn-desktop");
+    const bm = el("btn-mobile");
+    if (bd) bd.setAttribute("aria-pressed", state.view === "desktop" ? "true" : "false");
+    if (bm) bm.setAttribute("aria-pressed", state.view === "mobile" ? "true" : "false");
+    try {
+      renderDesktop(sc);
+      renderMobile(sc);
+    } catch (err) {
+      console.error("[entregas] render falhou:", err);
+      const host = el("organismo");
+      if (host) {
+        host.innerHTML =
+          '<div class="area area-foco"><div class="area-eye">Erro</div><div class="foco-situation">Falha ao renderizar</div><div class="foco-consequence">' +
+          String(err && err.message ? err.message : err) +
+          "</div></div>";
+      }
+    }
   }
 
   function openModal(title, body, primary, onPrimary) {
