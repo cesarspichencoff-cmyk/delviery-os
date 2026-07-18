@@ -1,6 +1,7 @@
 /**
- * Entregas V0.2 — superfície topológica (família DeliveryOS)
- * Contratos e 20 cenários preservados; pele reconstruída.
+ * Entregas V0.3 — identidade canônica DeliveryOS V3.3
+ * Domínio Trip/Delivery/Handoff + 20 cenários preservados.
+ * Visual: organismo (não fios ondulados, não cards SaaS, não dashboard).
  */
 (function () {
   "use strict";
@@ -18,13 +19,68 @@
     { code: "E10", label: "Outro" }
   ];
 
-  /** progress 0–1 along path; blockAt optional 0–1 */
-  function pathD(w, h, variant) {
-    const y = h * 0.55;
-    if (variant === "return") {
-      return `M 8 ${y} C ${w * 0.25} ${y - 18}, ${w * 0.45} ${y + 22}, ${w * 0.62} ${y} S ${w * 0.85} ${y - 10}, ${w - 12} ${y + 4}`;
-    }
-    return `M 8 ${y} C ${w * 0.22} ${y}, ${w * 0.38} ${y - 8}, ${w * 0.5} ${y} S ${w * 0.78} ${y + 6}, ${w - 12} ${y}`;
+  const STAGE_KEYS = ["LOJA", "SAÍDA", "RUA", "RETORNO", "FECHAMENTO"];
+
+  /**
+   * Progressive disclosure: só momento anterior confirmado, atual e próximo.
+   * Mapeia variante/progresso do domínio Entregas — não timeline corporativa.
+   */
+  function deriveStages(trip) {
+    const v = trip.variant || "prep";
+    let idx = 0;
+    if (v === "prep") idx = 0;
+    else if (v === "ready" || v === "block") idx = 1;
+    else if (v === "route" || v === "exception" || v === "offline" || v === "conflict") idx = 2;
+    else if (v === "return") idx = 3;
+    else if (v === "open" || v === "closed") idx = 4;
+    else idx = Math.min(4, Math.floor((trip.progress || 0) * 4));
+
+    if (trip.closed && !trip.openEnd) idx = 4;
+
+    const tense = trip.sitClass === "tensao" || trip.blocked || trip.divergence;
+    const tech = trip.sitClass === "tech" || trip.variant === "offline" || trip.variant === "conflict";
+
+    return STAGE_KEYS.map((label, i) => {
+      let role = "hidden";
+      if (i < idx) role = i === idx - 1 ? "done" : "hidden";
+      if (i === idx) role = trip.closed && !trip.openEnd && !trip.openIncident ? "done" : "now";
+      if (i === idx + 1 && !(trip.closed && !trip.openEnd)) role = "next";
+      // sempre revelar anterior imediato + atual + próximo
+      if (i === idx - 1) role = "done";
+      if (trip.closed && !trip.openEnd && !trip.openIncident) {
+        if (i === 3) role = "done";
+        if (i === 4) role = "done";
+        if (i < 3) role = "hidden";
+      }
+      if (trip.openEnd && i === 4) role = "now";
+      if (trip.openEnd && i === 3) role = "done";
+      if (trip.openEnd && i < 3) role = "hidden";
+      return {
+        label,
+        role,
+        tense: role === "now" && tense,
+        tech: role === "now" && tech
+      };
+    }).filter((s) => s.role !== "hidden");
+  }
+
+  function stagesHtml(trip, compact) {
+    const stages = deriveStages(trip);
+    const cls = compact ? "stages phone-stages" : "stages";
+    return `<div class="${cls}" aria-label="Momentos essenciais da viagem">${stages
+      .map((s) => {
+        const extra = [
+          s.role === "done" ? "is-done" : "",
+          s.role === "now" ? "is-now stage-now" : "",
+          s.role === "next" ? "is-next" : "",
+          s.tense ? "is-tense" : "",
+          s.tech ? "is-tech" : ""
+        ]
+          .filter(Boolean)
+          .join(" ");
+        return `<span class="stage ${extra}"><span class="stage-dot" aria-hidden="true"></span>${s.label}</span>`;
+      })
+      .join("")}</div>`;
   }
 
   const SCENARIOS = {
@@ -33,10 +89,10 @@
       name: "1 · Preparação com três entregas",
       conn: "online",
       mode: "ambiente",
-      sussurro: "Campo em fluxo",
+      sussurro: "Movimento discreto no organismo",
       peripheral: [
         { id: "V-1038", sit: "Em rota", sitClass: "vivo", rider: "Ana", progress: 0.55, stops: 2, done: 1, variant: "route", label: "1 de 2" },
-        { id: "V-1040", sit: "Saída bloqueada", sitClass: "tensao", rider: "Marcos", progress: 0.28, blockAt: 0.32, stops: 2, done: 0, variant: "block", label: "Volumes" },
+        { id: "V-1040", sit: "Saída bloqueada", sitClass: "tensao", rider: "Marcos", progress: 0.28, stops: 2, done: 0, variant: "block", label: "Volumes" },
         { id: "V-1035", sit: "Fechamento pendente", sitClass: "tensao", rider: "Bruno", progress: 0.92, openEnd: true, stops: 3, done: 3, variant: "open", label: "Retorno" }
       ],
       trip: {
@@ -79,7 +135,7 @@
       name: "2 · Divergência de volume",
       conn: "online",
       mode: "foco",
-      sussurro: "Uma trajetória precisa de atenção",
+      sussurro: "Uma viagem pede atenção",
       peripheral: [
         { id: "V-1038", sit: "Em rota", sitClass: "vivo", rider: "Ana", progress: 0.6, stops: 2, done: 1, variant: "route", label: "1 de 2" }
       ],
@@ -89,7 +145,6 @@
         sit: "Saída bloqueada",
         sitClass: "tensao",
         progress: 0.3,
-        blockAt: 0.34,
         variant: "block",
         volumes: { expected: 3, checked: 2, handed: 2, received: 2, delivered: 0, returned: 0 },
         divergence: true,
@@ -99,12 +154,12 @@
           { id: "D-91", state: "pending", label: "Mooca", ref: "R. Borges, 88", vol: 1 }
         ],
         facts: [
-          { k: "tensao", t: "São esperados 3 volumes, mas apenas 2 foram conferidos." },
+          { k: "tensao", t: "Esperados 3 · Conferidos 2" },
           { k: "fact", t: "Entregador atribuído" }
         ],
         foco: {
           titulo: "Saída bloqueada",
-          apoio: "São esperados 3 volumes, mas apenas 2 foram conferidos.",
+          apoio: "A viagem não pode ser liberada até a nova conferência.",
           acao: { id: "volumes", label: "Revisar volumes", atencao: true },
           secs: []
         },
@@ -123,7 +178,7 @@
       name: "3 · Aguardando entregador",
       conn: "online",
       mode: "ambiente",
-      sussurro: "Campo em fluxo",
+      sussurro: "Pendência leve na loja",
       peripheral: [],
       trip: {
         id: "V-1044",
@@ -179,7 +234,7 @@
         ],
         foco: {
           titulo: "Pronta para sair",
-          apoio: "Handoff completo. A trajetória pode continuar.",
+          apoio: "Handoff completo. A viagem pode continuar.",
           acao: { id: "depart", label: "Registrar saída" },
           secs: [{ id: "map", label: "Mapa de apoio" }]
         },
@@ -209,7 +264,6 @@
         sitClass: "vivo",
         progress: 0.48,
         variant: "route",
-        pulse: true,
         volumes: { expected: 3, checked: 3, handed: 3, received: 3, delivered: 0, returned: 0 },
         stops: [
           { id: "D-94", state: "pending", label: "1", ref: "R. dos Pinheiros, 800 — ap 12", vol: 2 },
@@ -291,7 +345,6 @@
         sit: "Precisa de atenção",
         sitClass: "tensao",
         progress: 0.5,
-        blockAt: 0.52,
         variant: "exception",
         volumes: { expected: 2, checked: 2, handed: 2, received: 2, delivered: 0, returned: 0 },
         stops: [{ id: "D-100", state: "exception", label: "1", ref: "R. Harmonia, 55", vol: 2 }],
@@ -334,7 +387,6 @@
         sit: "Precisa de atenção",
         sitClass: "tensao",
         progress: 0.45,
-        blockAt: 0.48,
         variant: "exception",
         volumes: { expected: 1, checked: 1, handed: 1, received: 1, delivered: 0, returned: 0 },
         stops: [{ id: "D-101", state: "exception", label: "1", ref: "Referência incompleta", vol: 1 }],
@@ -371,7 +423,6 @@
         sit: "Precisa de atenção",
         sitClass: "tensao",
         progress: 0.5,
-        blockAt: 0.5,
         variant: "exception",
         volumes: { expected: 2, checked: 2, handed: 2, received: 2, delivered: 0, returned: 0 },
         stops: [{ id: "D-102", state: "exception", label: "1", ref: "Al. Lorena, 200", vol: 2 }],
@@ -405,7 +456,6 @@
         sit: "Retorno necessário",
         sitClass: "tensao",
         progress: 0.55,
-        blockAt: 0.55,
         variant: "exception",
         volumes: { expected: 2, checked: 2, handed: 2, received: 2, delivered: 0, returned: 0 },
         stops: [{ id: "D-150", state: "exception", label: "1", ref: "Recusada", vol: 2 }],
@@ -471,7 +521,7 @@
       name: "12 · Offline",
       conn: "offline",
       mode: "ambiente",
-      sussurro: "Dados pendentes no campo",
+      sussurro: "Estado técnico · sem culpa",
       peripheral: [],
       trip: {
         id: "V-1051",
@@ -596,7 +646,6 @@
         sit: "Dados pendentes",
         sitClass: "tech",
         progress: 0.9,
-        blockAt: 0.9,
         variant: "conflict",
         conflict: true,
         openEnd: true,
@@ -711,9 +760,11 @@
       name: "18 · Viagem encerrada",
       conn: "online",
       mode: "calmo",
-      sussurro: "Campo em fluxo",
+      sussurro: "Operação sob controle",
       peripheral: [
-        { id: "V-1046", sit: "Em rota", sitClass: "vivo", rider: "Ana", progress: 0.4, stops: 2, done: 0, variant: "route", label: "Em rota" }
+        { id: "V-1046", sit: "Em rota", sitClass: "vivo", rider: "Ana", progress: 0.4, stops: 2, done: 0, variant: "route", label: "Em rota" },
+        { id: "V-1042", sit: "Em preparação", sitClass: "", rider: "—", progress: 0.12, stops: 3, done: 0, variant: "prep", label: "Montagem" },
+        { id: "V-1045", sit: "Pronta para sair", sitClass: "vivo", rider: "Bruno", progress: 0.35, stops: 2, done: 0, variant: "ready", label: "Handoff ok" }
       ],
       trip: {
         id: "V-1053",
@@ -793,7 +844,7 @@
       name: "20 · Reenvio vinculado",
       conn: "online",
       mode: "ambiente",
-      sussurro: "Campo em fluxo",
+      sussurro: "Nova viagem no organismo",
       peripheral: [
         { id: "V-1053", sit: "Encerrada e conferida", sitClass: "", rider: "Ana", progress: 1, stops: 3, done: 3, variant: "closed", label: "Origem" }
       ],
@@ -831,7 +882,7 @@
 
   const state = {
     view: "desktop",
-    scenarioId: "prep3",
+    scenarioId: "closed", // default Calmo
     mapOpen: false,
     volumeStep: 0
   };
@@ -853,65 +904,6 @@
     return { text: "Conectado", cls: "" };
   }
 
-  function nodePoints(n, w, h) {
-    const y = h * 0.55;
-    const pts = [];
-    for (let i = 0; i < n; i++) {
-      const x = 16 + ((w - 32) * i) / Math.max(1, n - 1);
-      pts.push({ x, y });
-    }
-    return pts;
-  }
-
-  function buildFioSVG(trip, compact) {
-    const w = compact ? 320 : 640;
-    const h = compact ? 36 : 64;
-    const d = pathD(w, h, trip.variant === "return" ? "return" : "fwd");
-    const prog = Math.max(0.04, Math.min(1, trip.progress || 0.1));
-    // approximate path length for dash
-    const len = w * 1.05;
-    const drawn = len * prog;
-    const cls =
-      trip.variant === "offline" || trip.variant === "conflict"
-        ? "tech"
-        : trip.variant === "block" || trip.variant === "exception"
-          ? "tensao"
-          : trip.variant === "closed"
-            ? ""
-            : trip.pendingSync
-              ? "provisional"
-              : "";
-
-    const stops = trip.stops || [];
-    const pts = nodePoints(Math.max(stops.length, 2), w, h);
-    let nodes = "";
-    stops.forEach((s, i) => {
-      const p = pts[i] || pts[pts.length - 1];
-      let nc = "pending";
-      if (s.state === "done") nc = "done";
-      else if (s.state === "exception") nc = "exception";
-      else if (i === stops.findIndex((x) => x.state === "pending" || x.state === "exception")) nc = trip.blocked ? "block" : "now";
-      nodes += `<circle class="fio-node ${nc}" cx="${p.x}" cy="${p.y}" r="${compact ? 4 : 6}" />`;
-    });
-
-    let gap = "";
-    if (trip.blockAt != null) {
-      const gx = 16 + (w - 32) * trip.blockAt;
-      gap = `<path class="fio-gap" d="M ${gx - 10} ${h * 0.55} L ${gx + 10} ${h * 0.55}" />`;
-    }
-
-    let openEnd = "";
-    if (trip.openEnd) {
-      openEnd = `<circle class="fio-end" cx="${w - 14}" cy="${h * 0.55}" r="7" />`;
-    }
-
-    return `<svg class="fio-svg" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true">
-      <path class="fio-base" d="${d}" />
-      <path class="fio-prog ${cls}" d="${d}" stroke-dasharray="${drawn} ${len}" />
-      ${gap}${nodes}${openEnd}
-    </svg>`;
-  }
-
   function metaLine(trip) {
     const v = trip.volumes || {};
     const parts = [];
@@ -928,38 +920,44 @@
     return parts.join("");
   }
 
+  function sitTone(sitClass) {
+    if (sitClass === "tensao") return "is-tense";
+    if (sitClass === "vivo") return "is-live";
+    if (sitClass === "tech") return "is-tech";
+    return "";
+  }
+
   function renderPeripheral(p) {
-    const fakeStops = [];
-    for (let i = 0; i < p.stops; i++) {
-      fakeStops.push({
-        state: i < (p.done || 0) ? "done" : "pending",
-        label: String(i + 1)
-      });
-    }
     const fakeTrip = {
       progress: p.progress,
       variant: p.variant,
-      blockAt: p.blockAt,
       openEnd: p.openEnd,
-      stops: fakeStops,
-      pendingSync: p.pendingSync
+      stops: [],
+      pendingSync: p.pendingSync,
+      sitClass: p.sitClass,
+      blocked: p.variant === "block",
+      closed: p.variant === "closed"
     };
-    return `<button type="button" class="trajeto trajeto-periferico" role="listitem" data-peripheral="${p.id}" aria-label="Viagem ${p.id}">
-      <div class="trajeto-cab">
-        <span class="trajeto-id">${p.id}</span>
-        <span class="trajeto-sit ${p.sitClass || ""}">${p.sit}</span>
-        <span class="trajeto-rider">${p.rider}</span>
+    for (let i = 0; i < (p.stops || 0); i++) {
+      fakeTrip.stops.push({ state: i < (p.done || 0) ? "done" : "pending" });
+    }
+    return `<div class="area area-periferica ${sitTone(p.sitClass)}" role="listitem" data-peripheral="${p.id}" aria-label="Viagem ${p.id}">
+      <div class="area-eye">Viagem</div>
+      <div class="area-head">
+        <span class="area-id">${p.id}</span>
+        <span class="area-sit ${p.sitClass || ""}">${p.sit}</span>
+        <span class="area-rider">${p.rider}</span>
       </div>
-      <div class="fio-wrap">${buildFioSVG(fakeTrip, true)}</div>
-      <div class="trajeto-meta"><span>${p.label}</span></div>
-    </button>`;
+      ${stagesHtml(fakeTrip, false)}
+      <div class="area-meta"><span>${p.label || ""}</span></div>
+    </div>`;
   }
 
-  function renderFocus(trip) {
-    if (!trip.foco) return "";
+  function renderFocus(trip, mode) {
+    if (!trip.foco || mode === "calmo") return "";
     const f = trip.foco;
     const lines = (trip.facts || [])
-      .map((x) => `<div class="foco-linha ${x.k === "fact" ? "fact" : x.k === "tensao" ? "tensao" : "prov"}">${x.t}</div>`)
+      .map((x) => `<div class="foco-ev ${x.k === "fact" ? "fact" : x.k === "tensao" ? "tensao" : "prov"}">${x.t}</div>`)
       .join("");
     let acoes = "";
     if (f.acao) {
@@ -968,13 +966,13 @@
     (f.secs || []).forEach((s) => {
       acoes += `<button type="button" class="acao-sec" data-act="${s.id}">${s.label}</button>`;
     });
-    return `<div class="foco-corpo">
-      <div class="foco-titulo">${f.titulo}</div>
-      <div class="foco-apoio">${f.apoio}</div>
-      <div class="foco-linhas">${lines}</div>
+    return `<div class="foco-body">
+      <div class="foco-situation">${f.titulo}</div>
+      <div class="foco-consequence">${f.apoio}</div>
+      <div class="foco-evidence">${lines}</div>
       <div class="acao-area">${acoes}
         <div class="map-mini ${state.mapOpen ? "is-open" : ""}" id="map-mini">
-          Localização indisponível ou opcional. A viagem pode continuar pela ordem das paradas.
+          Localização opcional. A viagem pode continuar pela ordem das paradas.
           <div class="map-mini-field" role="img" aria-label="Apoio de mapa"></div>
         </div>
       </div>
@@ -982,35 +980,38 @@
   }
 
   function renderDesktop(sc) {
-    document.body.dataset.mode = sc.mode || "ambiente";
+    const mode = sc.mode || "ambiente";
+    document.body.dataset.mode = mode;
     el("campo-sussurro").textContent = sc.sussurro || "";
 
     const trip = sc.trip;
     const peri = (sc.peripheral || []).map(renderPeripheral).join("");
+    const tone = sitTone(trip.sitClass);
+    const closedCls = trip.closed && !trip.openIncident ? "is-closed" : "";
 
-    const focusHtml = `<div class="trajeto trajeto-foco ${trip.variant === "return" ? "retorno" : ""} ${trip.closed ? "fechada" : ""} ${trip.openEnd ? "aberta-fim" : ""}" role="listitem" aria-current="true">
-      <div class="trajeto-cab">
-        <span class="trajeto-id">${trip.id}</span>
-        <span class="trajeto-sit ${trip.sitClass || ""}">${trip.sit}</span>
-        <span class="trajeto-rider">${trip.rider}</span>
+    const focusHtml = `<div class="area area-foco ${tone} ${closedCls}" role="listitem" aria-current="${mode === "foco" ? "true" : "false"}">
+      <div class="area-eye">Viagem ${trip.id}</div>
+      <div class="area-head">
+        <span class="area-id">${trip.id}</span>
+        <span class="area-sit ${trip.sitClass || ""}">${trip.sit}</span>
+        <span class="area-rider">${trip.rider}</span>
       </div>
-      <div class="fio-wrap">${buildFioSVG(trip, false)}</div>
-      <div class="trajeto-meta">${metaLine(trip)}</div>
-      ${renderFocus(trip)}
+      ${stagesHtml(trip, false)}
+      <div class="area-meta">${metaLine(trip)}</div>
+      ${renderFocus(trip, mode)}
     </div>`;
 
-    // order: some peri before, focus, some after — put all peri then focus for clarity, or interleave
-    el("trajetorias").innerHTML = peri + focusHtml;
+    // Calmo: periféricas + viagem sem expansão dramática; Ambiente/Foco: foco no fim (protagonismo)
+    el("organismo").innerHTML = mode === "calmo" ? peri + focusHtml : peri + focusHtml;
   }
 
   function renderMobile(sc) {
     const trip = sc.trip;
     const m = trip.mobile;
     const c = connLabel(sc.conn);
-    el("phone-conn").className = "conn " + c.cls;
-    el("phone-conn").innerHTML = `<span class="pip"></span>${c.text}`;
+    el("phone-conn").className = "conn tech-state " + c.cls;
+    el("phone-conn").innerHTML = `<span class="pip" aria-hidden="true"></span><span class="conn-text">${c.text}</span>`;
 
-    const mini = `<div class="minifio">${buildFioSVG(trip, true)}</div>`;
     let cta = "";
     if (m.cta) {
       cta = `<button type="button" class="acao-pill" data-act="${m.cta.id}">${m.cta.label}</button>`;
@@ -1022,14 +1023,21 @@
       ? `<div class="sync-line ${m.syncTensao ? "tensao" : ""}">${m.sync}</div>`
       : "";
 
+    const nextStop = (trip.stops || []).find((s) => s.state === "pending" || s.state === "exception");
+    const stopLine = nextStop ? nextStop.ref : (m.apoio || "");
+
     el("phone-body").innerHTML = `
       <div>
-        <div class="phone-trip-id">${trip.id}</div>
-        ${mini}
-        <div class="olho">${m.olho}</div>
-        <h2 class="titulo">${m.titulo}</h2>
-        <p class="apoio">${m.apoio}</p>
-        <div class="dados">${m.dados}</div>
+        <div class="phone-eye">${m.olho}</div>
+        <div class="phone-trip">${trip.id}</div>
+        <h2 class="phone-title">${m.titulo}</h2>
+        <p class="phone-support">${m.apoio}</p>
+        ${stagesHtml(trip, true)}
+        <div class="phone-facts">
+          <div class="phone-fact">${m.dados || "—"}</div>
+          ${nextStop && stopLine !== m.apoio ? `<div class="phone-fact">${stopLine}</div>` : ""}
+          ${trip.rider && trip.rider !== "—" ? `<div class="phone-fact">${trip.rider}</div>` : ""}
+        </div>
         ${sync}
       </div>
       <div class="phone-acoes">${cta}${secs}</div>
@@ -1093,7 +1101,8 @@
     const steps = [
       {
         title: "Saída bloqueada",
-        body: `<p>São esperados <strong>${v.expected}</strong> volumes, mas apenas <strong>${v.checked}</strong> foram conferidos.</p>`
+        body: `<p>São esperados <strong>${v.expected}</strong> volumes, mas apenas <strong>${v.checked}</strong> foram conferidos.</p>
+               <p>A viagem não pode ser liberada até a nova conferência.</p>`
       },
       {
         title: "Revisar volumes",
@@ -1124,7 +1133,7 @@
           return;
         }
         closeModal();
-        toast("Volumes conferidos. Trajetória liberada.");
+        toast("Volumes conferidos. Viagem liberada.");
         setScenario("handoff");
       });
     }
@@ -1218,18 +1227,17 @@
       state.view = "mobile";
       render();
     };
-    sel.onchange = (e) => setScenario(e.target.value);
-    document.body.addEventListener("click", (e) => {
-      const act = e.target.closest("[data-act]");
-      if (act) handleAction(act.getAttribute("data-act"));
-    });
+    sel.onchange = () => setScenario(sel.value);
     el("modal-cancel").onclick = closeModal;
-    el("modal-backdrop").addEventListener("click", (e) => {
-      if (e.target === el("modal-backdrop")) closeModal();
+    el("modal-backdrop").addEventListener("click", (ev) => {
+      if (ev.target === el("modal-backdrop")) closeModal();
+    });
+    document.addEventListener("click", (ev) => {
+      const btn = ev.target.closest("[data-act]");
+      if (btn) handleAction(btn.getAttribute("data-act"));
     });
     render();
   }
 
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
-  else init();
+  init();
 })();
