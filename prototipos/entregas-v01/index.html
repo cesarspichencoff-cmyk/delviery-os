@@ -3,69 +3,53 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="color-scheme" content="light" />
-  <title>Entregas V0.1 — Mesa de Expedição · Próximo Passo</title>
+  <meta name="theme-color" content="#F5F3ED" />
+  <title>Entregas · V0.2</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
-<body>
-  <div class="app-shell">
-    <header class="topbar">
-      <div>
-        <h1>Entregas</h1>
-        <div class="tag">Linha de confiança da viagem · protótipo V0.1</div>
-      </div>
-      <div class="view-toggle" role="group" aria-label="Superfície">
-        <button type="button" id="btn-desktop" aria-pressed="true">Mesa de Expedição</button>
-        <button type="button" id="btn-mobile" aria-pressed="false">Próximo Passo</button>
-      </div>
-    </header>
-
-    <div class="demo-rail" aria-label="Demonstração">
-      <label for="scenario-select">Demo (não é produto)</label>
-      <select id="scenario-select"></select>
-      <span class="demo-note" id="demo-count">20 cenários · dados fictícios · sem GPS real</span>
+<body data-surface="desktop">
+  <!-- Demo fora do produto (como replay do DeliveryOS V1) -->
+  <div class="demo-bar" aria-label="Demonstração">
+    <label for="scenario-select">Demo</label>
+    <select id="scenario-select"></select>
+    <span class="demo-sep" aria-hidden="true">·</span>
+    <div class="view-seg" role="group" aria-label="Superfície">
+      <button type="button" id="btn-desktop" aria-pressed="true">Campo</button>
+      <button type="button" id="btn-mobile" aria-pressed="false">Próximo passo</button>
     </div>
-
-    <main class="workspace">
-      <!-- Desktop -->
-      <section id="mesa" class="mesa is-active" aria-label="Mesa de Expedição">
-        <aside id="queues" class="queues" aria-label="Filas"></aside>
-        <div class="mesa-main">
-          <div id="desktop-insight" class="insight"></div>
-          <div class="panel">
-            <h2>Viagens</h2>
-            <p class="lede">
-              Cada viagem é uma trajetória contínua — da preparação ao fechamento confirmado.
-              Não é grade de cards nem painel de produtividade.
-            </p>
-            <div id="trip-list"></div>
-          </div>
-          <div id="trip-detail" class="panel detail"></div>
-        </div>
-      </section>
-
-      <!-- Mobile -->
-      <section id="mobile-wrap" class="mobile-wrap" aria-label="Mobile do entregador">
-        <div class="phone">
-          <div class="phone-screen">
-            <div class="phone-status">
-              <span>Entregas</span>
-              <span id="phone-conn" class="conn"><span class="pip"></span>Conectado</span>
-            </div>
-            <div class="phone-body" id="phone-body"></div>
-          </div>
-        </div>
-      </section>
-    </main>
   </div>
+
+  <main id="palco" class="palco">
+    <!-- Desktop: campo de trajetórias -->
+    <section id="campo" class="campo is-active" aria-label="Campo de viagens">
+      <header class="campo-topo">
+        <div class="marca">Entregas</div>
+        <div id="campo-sussurro" class="sussurro"></div>
+      </header>
+      <div id="trajetorias" class="trajetorias" role="list"></div>
+    </section>
+
+    <!-- Mobile: próximo passo -->
+    <section id="mobile-wrap" class="mobile-wrap" aria-label="Próximo passo">
+      <div class="phone">
+        <div class="phone-inner">
+          <div class="phone-meta">
+            <span class="phone-marca">Entregas</span>
+            <span id="phone-conn" class="conn"><span class="pip" aria-hidden="true"></span>Conectado</span>
+          </div>
+          <div id="phone-body" class="phone-body"></div>
+        </div>
+      </div>
+    </section>
+  </main>
 
   <div id="modal-backdrop" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-title">
     <div class="modal">
       <h3 id="modal-title">—</h3>
       <div id="modal-body"></div>
-      <div class="actions-row">
-        <button type="button" class="btn btn-secondary" id="modal-cancel">Cancelar</button>
-        <button type="button" class="btn btn-primary" id="modal-primary">Confirmar</button>
+      <div class="modal-actions">
+        <button type="button" class="btn-ghost" id="modal-cancel">Cancelar</button>
+        <button type="button" class="btn-pill" id="modal-primary">Confirmar</button>
       </div>
     </div>
   </div>

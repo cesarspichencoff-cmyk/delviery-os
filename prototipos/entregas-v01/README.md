@@ -1,36 +1,29 @@
-# Entregas V0.1 — Protótipo visual interativo
+# Entregas · protótipo visual V0.2
 
-Protótipo **estático** (HTML/CSS/JS). Sem build, sem dependências, sem dados reais.
+Campo de **trajetórias** (família DeliveryOS). Não é dashboard nem grade de cards.
 
 ## Executar
 
 ```bash
-# a partir desta pasta, ou abra index.html no navegador
 cd prototipos/entregas-v01
-# opcional: servidor estático simples
-npx --yes serve -p 5190 .
-# ou
-python -m http.server 5190
+# abrir index.html no navegador
+# ou: python -m http.server 5190
 ```
-
-Abra `http://localhost:5190` (ou o arquivo `index.html` direto).
 
 ## Superfícies
 
-| Toggle | Conteúdo |
+| Demo toggle | Conteúdo |
 |---|---|
-| **Mesa de Expedição** | Desktop — filas + trajetória da viagem + detalhe |
-| **Próximo Passo** | Mobile — ação dominante do entregador |
+| **Campo** | Desktop — fios de viagem no palco |
+| **Próximo passo** | Mobile — ação dominante |
 
-Seletor **Demo (não é produto)** no topo: 17 cenários.
+Seletor **Demo** no topo: 20 cenários (fora do produto).
 
 ## Arquivos
 
-- `index.html` — shell
-- `styles.css` — família visual (verde profundo, creme, verde vivo, âmbar, técnico)
-- `app.js` — cenários e interações simuladas
-- `README.md` — este arquivo
+- `index.html` · `styles.css` · `app.js`
 
-## Não faz
+## Contratos
 
-- Ranking, fleet map hero, GPS real, iFood live, alteração de `app-v1`
+Preservados em `docs/entregas-design/` e `docs/deliveryos/`.  
+Direção visual: `docs/entregas-design/VISUAL_IDENTITY_RESET.md` · handoff `DESIGN_HANDOFF_V02.md`.

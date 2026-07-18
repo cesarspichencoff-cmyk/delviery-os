@@ -1,22 +1,9 @@
 /**
- * Entregas V0.1 — protótipo visual interativo
- * Missão 2B · contratos 2A preservados · sem dados reais
+ * Entregas V0.2 — superfície topológica (família DeliveryOS)
+ * Contratos e 20 cenários preservados; pele reconstruída.
  */
 (function () {
   "use strict";
-
-  const STAGES = [
-    "PREPARAÇÃO",
-    "CONFERÊNCIA",
-    "HANDOFF",
-    "SAÍDA",
-    "PARADAS",
-    "TENTATIVAS",
-    "EXCEÇÕES",
-    "RETORNO",
-    "RECONCILIAÇÃO",
-    "FECHAMENTO"
-  ];
 
   const EXCEPTIONS = [
     { code: "E01", label: "Cliente não atendeu" },
@@ -31,14 +18,13 @@
     { code: "E10", label: "Outro" }
   ];
 
-  /** stageIndex 0–9; stageState: done | now | pending | blocked | provisional */
-  function stagesFrom(idx, special) {
-    return STAGES.map((name, i) => {
-      let st = "pending";
-      if (i < idx) st = "done";
-      else if (i === idx) st = special || "now";
-      return { name, st };
-    });
+  /** progress 0–1 along path; blockAt optional 0–1 */
+  function pathD(w, h, variant) {
+    const y = h * 0.55;
+    if (variant === "return") {
+      return `M 8 ${y} C ${w * 0.25} ${y - 18}, ${w * 0.45} ${y + 22}, ${w * 0.62} ${y} S ${w * 0.85} ${y - 10}, ${w - 12} ${y + 4}`;
+    }
+    return `M 8 ${y} C ${w * 0.22} ${y}, ${w * 0.38} ${y - 8}, ${w * 0.5} ${y} S ${w * 0.78} ${y + 6}, ${w - 12} ${y}`;
   }
 
   const SCENARIOS = {
@@ -46,42 +32,45 @@
       id: "prep3",
       name: "1 · Preparação com três entregas",
       conn: "online",
-      queues: { block: 1, ready: 2, route: 1, action: 1, return: 0, close: 1, sync: 0 },
-      insight: "Em poucos segundos: o que está bloqueado, o que está pronto, o que está em rota e o que ainda não fechou.",
-      boardExtra: [
-        { id: "V-1038", statusLabel: "Em rota", badge: "badge-live", lineClass: "", rider: "Ana", n: 2, note: "1 de 2 paradas" },
-        { id: "V-1040", statusLabel: "Bloqueada · volumes", badge: "badge-amber", lineClass: "blocked", rider: "Marcos", n: 2, note: "não pode sair" },
-        { id: "V-1035", statusLabel: "Fechamento pendente", badge: "badge-amber", lineClass: "pending-close", rider: "Bruno", n: 3, note: "retorno provisório" }
+      mode: "ambiente",
+      sussurro: "Campo em fluxo",
+      peripheral: [
+        { id: "V-1038", sit: "Em rota", sitClass: "vivo", rider: "Ana", progress: 0.55, stops: 2, done: 1, variant: "route", label: "1 de 2" },
+        { id: "V-1040", sit: "Saída bloqueada", sitClass: "tensao", rider: "Marcos", progress: 0.28, blockAt: 0.32, stops: 2, done: 0, variant: "block", label: "Volumes" },
+        { id: "V-1035", sit: "Fechamento pendente", sitClass: "tensao", rider: "Bruno", progress: 0.92, openEnd: true, stops: 3, done: 3, variant: "open", label: "Retorno" }
       ],
       trip: {
         id: "V-1042",
         rider: "Aguardando entregador disponível",
-        status: "preparing",
-        statusLabel: "Em preparação",
-        lineClass: "",
-        badge: "badge-muted",
-        stages: stagesFrom(0),
+        sit: "Em preparação",
+        sitClass: "",
+        progress: 0.12,
+        variant: "prep",
         volumes: { expected: 5, checked: 5, handed: 0, received: 0, delivered: 0, returned: 0 },
         divergence: false,
         blocked: false,
         stops: [
-          { id: "D-81", label: "Itaim · 2 vol", state: "pending", ref: "R. Joaquim Floriano, 100 — ap 42" },
-          { id: "D-82", label: "Itaim · 1 vol", state: "pending", ref: "Al. Santos, 2200 — portaria" },
-          { id: "D-83", label: "Jardins · 2 vol", state: "pending", ref: "R. Augusta, 1500 — loja" }
+          { id: "D-81", state: "pending", label: "Itaim", ref: "R. Joaquim Floriano, 100 — ap 42", vol: 2 },
+          { id: "D-82", state: "pending", label: "Itaim", ref: "Al. Santos, 2200 — portaria", vol: 1 },
+          { id: "D-83", state: "pending", label: "Jardins", ref: "R. Augusta, 1500", vol: 2 }
         ],
-        timeline: [
-          { t: "19:02", text: "Viagem criada", kind: "fact" },
-          { t: "19:03", text: "Três entregas adicionadas · ordem definida", kind: "fact" },
-          { t: "19:04", text: "Volumes esperados: 5 · conferência em andamento", kind: "provisional" }
+        facts: [
+          { k: "fact", t: "Três entregas · ordem definida" },
+          { k: "prov", t: "Volumes esperados: 5" }
         ],
-        desktopActions: ["atribuir", "volumes", "ordenar"],
+        foco: {
+          titulo: "Preparar saída",
+          apoio: "Três paradas. Falta um entregador disponível.",
+          acao: { id: "atribuir", label: "Atribuir entregador" },
+          secs: [{ id: "volumes", label: "Ver volumes" }]
+        },
         mobile: {
-          kicker: "Preparação na loja",
-          title: "Aguardando liberação",
-          ref: "Expedição monta a viagem V-1042.",
-          vol: "Esperados: 5 volumes · 3 paradas",
+          olho: "Preparação",
+          titulo: "Aguardando liberação",
+          apoio: "A expedição ainda monta a viagem.",
+          dados: "Esperados 5 · 3 paradas",
           cta: null,
-          secondary: []
+          secs: []
         }
       }
     },
@@ -89,36 +78,43 @@
       id: "volDiv",
       name: "2 · Divergência de volume",
       conn: "online",
-      queues: { block: 1, ready: 0, route: 0, action: 1, return: 0, close: 0, sync: 0 },
-      insight: "São esperados 3 volumes, mas apenas 2 foram conferidos. A viagem não pode sair até corrigir.",
-      insightClass: "warn",
+      mode: "foco",
+      sussurro: "Uma trajetória precisa de atenção",
+      peripheral: [
+        { id: "V-1038", sit: "Em rota", sitClass: "vivo", rider: "Ana", progress: 0.6, stops: 2, done: 1, variant: "route", label: "1 de 2" }
+      ],
       trip: {
         id: "V-1043",
-        rider: "Marcos (disponível)",
-        status: "assigned",
-        statusLabel: "Bloqueada · volumes",
-        lineClass: "blocked",
-        badge: "badge-amber",
-        stages: stagesFrom(1, "blocked"),
+        rider: "Marcos",
+        sit: "Saída bloqueada",
+        sitClass: "tensao",
+        progress: 0.3,
+        blockAt: 0.34,
+        variant: "block",
         volumes: { expected: 3, checked: 2, handed: 2, received: 2, delivered: 0, returned: 0 },
         divergence: true,
         blocked: true,
         stops: [
-          { id: "D-90", label: "Mooca · 2 vol", state: "pending", ref: "R. da Mooca, 400" },
-          { id: "D-91", label: "Mooca · 1 vol", state: "pending", ref: "R. Borges, 88" }
+          { id: "D-90", state: "pending", label: "Mooca", ref: "R. da Mooca, 400", vol: 2 },
+          { id: "D-91", state: "pending", label: "Mooca", ref: "R. Borges, 88", vol: 1 }
         ],
-        timeline: [
-          { t: "19:10", text: "Entregador atribuído (disponível, não só na loja)", kind: "fact" },
-          { t: "19:12", text: "Divergência de volumes · saída bloqueada", kind: "amber" }
+        facts: [
+          { k: "tensao", t: "São esperados 3 volumes, mas apenas 2 foram conferidos." },
+          { k: "fact", t: "Entregador atribuído" }
         ],
-        desktopActions: ["volumes", "override"],
+        foco: {
+          titulo: "Saída bloqueada",
+          apoio: "São esperados 3 volumes, mas apenas 2 foram conferidos.",
+          acao: { id: "volumes", label: "Revisar volumes", atencao: true },
+          secs: []
+        },
         mobile: {
-          kicker: "Antes de sair",
-          title: "Volumes não batem",
-          ref: "A loja precisa conferir de novo antes de liberar a saída.",
-          vol: "Esperados: 3 · Conferidos: 2",
+          olho: "Antes de sair",
+          titulo: "Volumes não batem",
+          apoio: "A loja precisa conferir novamente antes de liberar a saída.",
+          dados: "Esperados 3 · Conferidos 2",
           cta: { id: "wait", label: "Aguardar liberação" },
-          secondary: [{ id: "exception", label: "Registrar observação" }]
+          secs: [{ id: "exception", label: "Informar um problema" }]
         }
       }
     },
@@ -126,35 +122,35 @@
       id: "awaitRider",
       name: "3 · Aguardando entregador",
       conn: "online",
-      queues: { block: 0, ready: 1, route: 0, action: 0, return: 0, close: 0, sync: 0 },
-      insight: "Viagem montada e conferida. Só quem está disponível — não apenas na loja — pode sair.",
+      mode: "ambiente",
+      sussurro: "Campo em fluxo",
+      peripheral: [],
       trip: {
         id: "V-1044",
         rider: "—",
-        status: "preparing",
-        statusLabel: "Aguardando entregador",
-        lineClass: "",
-        badge: "badge-muted",
-        stages: stagesFrom(0),
+        sit: "Pronta para sair",
+        sitClass: "",
+        progress: 0.22,
+        variant: "prep",
         volumes: { expected: 4, checked: 4, handed: 0, received: 0, delivered: 0, returned: 0 },
-        divergence: false,
-        blocked: false,
         stops: [
-          { id: "D-92", label: "Lapa · 2 vol", state: "pending", ref: "R. Clélia, 1200" },
-          { id: "D-93", label: "Lapa · 2 vol", state: "pending", ref: "R. Titia, 50" }
+          { id: "D-92", state: "pending", label: "Lapa", ref: "R. Clélia, 1200", vol: 2 },
+          { id: "D-93", state: "pending", label: "Lapa", ref: "R. Titia, 50", vol: 2 }
         ],
-        timeline: [
-          { t: "19:15", text: "Ordem definida · volumes conferidos", kind: "fact" },
-          { t: "19:16", text: "Aguardando entregador disponível", kind: "provisional" }
-        ],
-        desktopActions: ["atribuir"],
+        facts: [{ k: "fact", t: "Volumes conferidos · falta quem está disponível" }],
+        foco: {
+          titulo: "Aguardando entregador",
+          apoio: "Só quem está disponível — não apenas na loja.",
+          acao: { id: "atribuir", label: "Atribuir entregador" },
+          secs: []
+        },
         mobile: {
-          kicker: "Fila da loja",
-          title: "Sem viagem atribuída",
-          ref: "Quando houver viagem, a próxima ação aparece aqui.",
-          vol: "—",
+          olho: "Na loja",
+          titulo: "Sem viagem atribuída",
+          apoio: "Quando houver viagem, a próxima ação aparece aqui.",
+          dados: "—",
           cta: null,
-          secondary: []
+          secs: []
         }
       }
     },
@@ -162,35 +158,38 @@
       id: "handoff",
       name: "4 · Handoff confirmado",
       conn: "online",
-      queues: { block: 0, ready: 1, route: 0, action: 0, return: 0, close: 0, sync: 0 },
-      insight: "Handoff loja → entregador confirmado dos dois lados. Saída liberada.",
+      mode: "foco",
+      sussurro: "",
+      peripheral: [{ id: "V-1038", sit: "Em rota", sitClass: "vivo", rider: "Bruno", progress: 0.4, stops: 2, done: 0, variant: "route", label: "0 de 2" }],
       trip: {
         id: "V-1045",
         rider: "Ana",
-        status: "ready_to_depart",
-        statusLabel: "Pronta para sair",
-        lineClass: "",
-        badge: "badge-live",
-        stages: stagesFrom(3),
+        sit: "Pronta para sair",
+        sitClass: "vivo",
+        progress: 0.38,
+        variant: "ready",
         volumes: { expected: 3, checked: 3, handed: 3, received: 3, delivered: 0, returned: 0 },
-        divergence: false,
-        blocked: false,
         stops: [
-          { id: "D-94", label: "Pinheiros · 2 vol", state: "pending", ref: "R. dos Pinheiros, 800" },
-          { id: "D-95", label: "Pinheiros · 1 vol", state: "pending", ref: "R. Teodoro, 300" }
+          { id: "D-94", state: "pending", label: "Pinheiros", ref: "R. dos Pinheiros, 800", vol: 2 },
+          { id: "D-95", state: "pending", label: "Pinheiros", ref: "R. Teodoro, 300", vol: 1 }
         ],
-        timeline: [
-          { t: "19:18", text: "Volumes entregues no handoff: 3", kind: "fact" },
-          { t: "19:18", text: "Recebidos pelo entregador: 3 · aceite confirmado", kind: "fact" }
+        facts: [
+          { k: "fact", t: "Handoff confirmado · 3 volumes com Ana" },
+          { k: "fact", t: "Ordem: 2 paradas" }
         ],
-        desktopActions: ["saida", "mapa"],
+        foco: {
+          titulo: "Pronta para sair",
+          apoio: "Handoff completo. A trajetória pode continuar.",
+          acao: { id: "depart", label: "Registrar saída" },
+          secs: [{ id: "map", label: "Mapa de apoio" }]
+        },
         mobile: {
-          kicker: "Handoff ok",
-          title: "Pode sair",
-          ref: "2 paradas · ordem definida",
-          vol: "Esperados: 3 · Com você: 3",
-          cta: { id: "depart", label: "Iniciar viagem · registrar saída" },
-          secondary: [{ id: "map", label: "Mapa de apoio (opcional)" }]
+          olho: "Handoff ok",
+          titulo: "Pode sair",
+          apoio: "2 paradas · ordem definida",
+          dados: "Esperados 3 · Com você 3",
+          cta: { id: "depart", label: "Iniciar viagem" },
+          secs: [{ id: "map", label: "Mapa de apoio" }]
         }
       }
     },
@@ -198,35 +197,45 @@
       id: "inRoute",
       name: "5 · Viagem em rota",
       conn: "online",
-      queues: { block: 0, ready: 0, route: 1, action: 0, return: 0, close: 0, sync: 0 },
-      insight: "Em rota. Saída não é entrega — cada parada pede confirmação.",
+      mode: "foco",
+      sussurro: "",
+      peripheral: [
+        { id: "V-1042", sit: "Em preparação", sitClass: "", rider: "—", progress: 0.1, stops: 3, done: 0, variant: "prep", label: "Montagem" }
+      ],
       trip: {
         id: "V-1046",
         rider: "Ana",
-        status: "in_route",
-        statusLabel: "Em rota",
-        lineClass: "",
-        badge: "badge-live",
-        stages: stagesFrom(4),
+        sit: "Em rota",
+        sitClass: "vivo",
+        progress: 0.48,
+        variant: "route",
+        pulse: true,
         volumes: { expected: 3, checked: 3, handed: 3, received: 3, delivered: 0, returned: 0 },
-        divergence: false,
-        blocked: false,
         stops: [
-          { id: "D-94", label: "Parada 1", state: "pending", ref: "R. dos Pinheiros, 800 — ap 12" },
-          { id: "D-95", label: "Parada 2", state: "pending", ref: "R. Teodoro, 300" }
+          { id: "D-94", state: "pending", label: "1", ref: "R. dos Pinheiros, 800 — ap 12", vol: 2 },
+          { id: "D-95", state: "pending", label: "2", ref: "R. Teodoro, 300", vol: 1 }
         ],
-        timeline: [
-          { t: "19:20", text: "Saída registrada", kind: "fact" },
-          { t: "19:20", text: "Localização da viagem: sessão ativa (não vigilância permanente)", kind: "provisional" }
+        facts: [
+          { k: "fact", t: "Saída registrada" },
+          { k: "prov", t: "Sessão de localização da viagem ativa" }
         ],
-        desktopActions: ["mapa"],
+        foco: {
+          titulo: "Próxima parada",
+          apoio: "R. dos Pinheiros, 800 — ap 12",
+          acao: { id: "arrive", label: "Confirmar chegada" },
+          secs: [
+            { id: "deliver", label: "Confirmar entrega" },
+            { id: "exception", label: "Registrar exceção" },
+            { id: "map", label: "Mapa de apoio" }
+          ]
+        },
         mobile: {
-          kicker: "Próxima parada · 1 de 2",
-          title: "Entregar",
-          ref: "R. dos Pinheiros, 800 — ap 12",
-          vol: "2 volumes nesta parada",
+          olho: "Parada 1 de 2",
+          titulo: "Entregar",
+          apoio: "R. dos Pinheiros, 800 — ap 12",
+          dados: "2 volumes nesta parada",
           cta: { id: "arrive", label: "Confirmar chegada" },
-          secondary: [
+          secs: [
             { id: "deliver", label: "Confirmar entrega" },
             { id: "exception", label: "Registrar exceção" }
           ]
@@ -237,38 +246,35 @@
       id: "delivered",
       name: "6 · Entrega confirmada",
       conn: "online",
-      queues: { block: 0, ready: 0, route: 1, action: 0, return: 0, close: 0, sync: 0 },
-      insight: "Primeira parada confirmada de fato — não por silêncio do cliente.",
+      mode: "foco",
+      sussurro: "",
+      peripheral: [],
       trip: {
         id: "V-1046",
         rider: "Ana",
-        status: "partially_completed",
-        statusLabel: "Parcialmente concluída",
-        lineClass: "",
-        badge: "badge-live",
-        stages: stagesFrom(4),
+        sit: "Em rota",
+        sitClass: "vivo",
+        progress: 0.72,
+        variant: "route",
         volumes: { expected: 3, checked: 3, handed: 3, received: 3, delivered: 2, returned: 0 },
-        divergence: false,
-        blocked: false,
         stops: [
-          { id: "D-94", label: "Parada 1", state: "done", ref: "Confirmada · 2 volumes" },
-          { id: "D-95", label: "Parada 2", state: "pending", ref: "R. Teodoro, 300" }
+          { id: "D-94", state: "done", label: "1", ref: "Confirmada", vol: 2 },
+          { id: "D-95", state: "pending", label: "2", ref: "R. Teodoro, 300", vol: 1 }
         ],
-        timeline: [
-          { t: "19:28", text: "Chegada na parada 1", kind: "fact" },
-          { t: "19:29", text: "Entrega confirmada · 2 volumes ao cliente", kind: "fact" }
-        ],
-        desktopActions: [],
+        facts: [{ k: "fact", t: "Parada 1 confirmada · 2 volumes" }],
+        foco: {
+          titulo: "Próxima parada",
+          apoio: "R. Teodoro, 300 — portaria",
+          acao: { id: "deliver", label: "Confirmar entrega" },
+          secs: [{ id: "exception", label: "Registrar exceção" }]
+        },
         mobile: {
-          kicker: "Próxima parada · 2 de 2",
-          title: "Entregar",
-          ref: "R. Teodoro, 300 — portaria",
-          vol: "1 volume nesta parada",
+          olho: "Parada 2 de 2",
+          titulo: "Entregar",
+          apoio: "R. Teodoro, 300 — portaria",
+          dados: "1 volume nesta parada",
           cta: { id: "deliver", label: "Confirmar entrega" },
-          secondary: [
-            { id: "arrive", label: "Confirmar chegada" },
-            { id: "exception", label: "Registrar exceção" }
-          ]
+          secs: [{ id: "exception", label: "Registrar exceção" }]
         }
       }
     },
@@ -276,36 +282,39 @@
       id: "noAnswer",
       name: "7 · Cliente não atende",
       conn: "online",
-      queues: { block: 0, ready: 0, route: 1, action: 1, return: 0, close: 0, sync: 0 },
-      insight: "O cliente não respondeu. A entrega continua aberta — tentativa não encerra.",
-      insightClass: "warn",
+      mode: "foco",
+      sussurro: "",
+      peripheral: [],
       trip: {
         id: "V-1047",
         rider: "Bruno",
-        status: "in_route",
-        statusLabel: "Em rota · tentativa",
-        lineClass: "blocked",
-        badge: "badge-amber",
-        stages: stagesFrom(5, "blocked"),
+        sit: "Precisa de atenção",
+        sitClass: "tensao",
+        progress: 0.5,
+        blockAt: 0.52,
+        variant: "exception",
         volumes: { expected: 2, checked: 2, handed: 2, received: 2, delivered: 0, returned: 0 },
-        divergence: false,
-        blocked: false,
-        attempts: [{ at: "19:35", result: "failed", code: "E01", next: "retry ou seguir rota" }],
-        stops: [
-          { id: "D-100", label: "Parada 1", state: "exception", ref: "R. Harmonia, 55 — tentativa 1" }
+        stops: [{ id: "D-100", state: "exception", label: "1", ref: "R. Harmonia, 55", vol: 2 }],
+        facts: [
+          { k: "tensao", t: "Tentativa 19:35 · cliente não atendeu" },
+          { k: "prov", t: "A entrega continua aberta" }
         ],
-        timeline: [
-          { t: "19:35", text: "Tentativa 1 · E01 Cliente não atendeu", kind: "amber" },
-          { t: "19:35", text: "Entrega permanece aberta", kind: "provisional" }
-        ],
-        desktopActions: [],
+        foco: {
+          titulo: "Cliente não respondeu",
+          apoio: "A entrega continua aberta.",
+          acao: { id: "retry", label: "Nova tentativa depois" },
+          secs: [
+            { id: "continue", label: "Seguir a rota" },
+            { id: "return", label: "Retornar à loja" }
+          ]
+        },
         mobile: {
-          kicker: "Tentativa registrada",
-          title: "Cliente não respondeu",
-          ref: "A entrega continua aberta. O que fazer agora?",
-          vol: "2 volumes ainda com você",
+          olho: "Tentativa",
+          titulo: "Cliente não respondeu",
+          apoio: "A entrega continua aberta.",
+          dados: "2 volumes ainda com você",
           cta: { id: "retry", label: "Nova tentativa depois" },
-          secondary: [
+          secs: [
             { id: "continue", label: "Seguir a rota" },
             { id: "return", label: "Retornar à loja" }
           ]
@@ -316,37 +325,36 @@
       id: "badAddr",
       name: "8 · Endereço incorreto",
       conn: "online",
-      queues: { block: 0, ready: 0, route: 1, action: 1, return: 0, close: 0, sync: 0 },
-      insight: "Endereço não confere. Localização indisponível ou errada não inventa destino.",
-      insightClass: "warn",
+      mode: "foco",
+      sussurro: "",
+      peripheral: [],
       trip: {
         id: "V-1048",
         rider: "Bruno",
-        status: "in_route",
-        statusLabel: "Em rota · exceção",
-        lineClass: "blocked",
-        badge: "badge-amber",
-        stages: stagesFrom(6, "blocked"),
+        sit: "Precisa de atenção",
+        sitClass: "tensao",
+        progress: 0.45,
+        blockAt: 0.48,
+        variant: "exception",
         volumes: { expected: 1, checked: 1, handed: 1, received: 1, delivered: 0, returned: 0 },
-        divergence: false,
-        blocked: false,
-        attempts: [{ at: "19:40", result: "failed", code: "E02", next: "aguardar loja" }],
-        stops: [{ id: "D-101", label: "Parada 1", state: "exception", ref: "Ref. incompleta · E02" }],
-        timeline: [
-          { t: "19:40", text: "Tentativa · E02 Endereço incorreto ou incompleto", kind: "amber" },
-          { t: "19:40", text: "Localização indisponível. A viagem pode continuar sob orientação.", kind: "provisional" }
+        stops: [{ id: "D-101", state: "exception", label: "1", ref: "Referência incompleta", vol: 1 }],
+        facts: [
+          { k: "tensao", t: "Endereço não confere" },
+          { k: "prov", t: "Localização indisponível. A viagem pode continuar." }
         ],
-        desktopActions: ["orientar"],
+        foco: {
+          titulo: "Endereço não confere",
+          apoio: "Aguarde orientação da loja ou retorne com o volume.",
+          acao: { id: "wait_le", label: "Solicitar orientação" },
+          secs: [{ id: "return", label: "Retornar à loja" }]
+        },
         mobile: {
-          kicker: "Precisa de orientação",
-          title: "Endereço não confere",
-          ref: "Aguarde a loja ou retorne com o volume.",
-          vol: "1 volume",
+          olho: "Orientação",
+          titulo: "Endereço não confere",
+          apoio: "Localização indisponível. A viagem pode continuar sob orientação.",
+          dados: "1 volume",
           cta: { id: "wait_le", label: "Solicitar orientação" },
-          secondary: [
-            { id: "return", label: "Retornar à loja" },
-            { id: "exception", label: "Outra exceção" }
-          ]
+          secs: [{ id: "return", label: "Retornar à loja" }]
         }
       }
     },
@@ -354,34 +362,33 @@
       id: "damage",
       name: "9 · Avaria",
       conn: "online",
-      queues: { block: 0, ready: 0, route: 1, action: 1, return: 0, close: 0, sync: 0 },
-      insight: "Embalagem danificada. Aceite com ressalva ou retorno — sem relatório longo na rua.",
-      insightClass: "warn",
+      mode: "foco",
+      sussurro: "",
+      peripheral: [],
       trip: {
         id: "V-1049",
         rider: "Carla",
-        status: "in_route",
-        statusLabel: "Em rota · avaria",
-        lineClass: "blocked",
-        badge: "badge-amber",
-        stages: stagesFrom(6, "blocked"),
+        sit: "Precisa de atenção",
+        sitClass: "tensao",
+        progress: 0.5,
+        blockAt: 0.5,
+        variant: "exception",
         volumes: { expected: 2, checked: 2, handed: 2, received: 2, delivered: 0, returned: 0 },
-        divergence: false,
-        blocked: false,
-        attempts: [{ at: "19:44", result: "deferred", code: "E06", next: "aceite ou retorno" }],
-        stops: [{ id: "D-102", label: "Parada 1", state: "exception", ref: "Al. Lorena, 200 · E06" }],
-        timeline: [{ t: "19:44", text: "Exceção E06 · avaria registrada", kind: "amber" }],
-        desktopActions: [],
+        stops: [{ id: "D-102", state: "exception", label: "1", ref: "Al. Lorena, 200", vol: 2 }],
+        facts: [{ k: "tensao", t: "Embalagem danificada" }],
+        foco: {
+          titulo: "Embalagem danificada",
+          apoio: "Cliente aceitou com ressalva ou recusou?",
+          acao: { id: "deliver", label: "Cliente aceitou · confirmar" },
+          secs: [{ id: "return", label: "Cliente recusou · retornar" }]
+        },
         mobile: {
-          kicker: "Avaria",
-          title: "Embalagem danificada",
-          ref: "Cliente aceitou com ressalva ou recusou?",
-          vol: "2 volumes",
+          olho: "Avaria",
+          titulo: "Embalagem danificada",
+          apoio: "Cliente aceitou com ressalva ou recusou?",
+          dados: "2 volumes",
           cta: { id: "deliver", label: "Cliente aceitou · confirmar" },
-          secondary: [
-            { id: "return", label: "Cliente recusou · retornar" },
-            { id: "exception", label: "Outra exceção" }
-          ]
+          secs: [{ id: "return", label: "Cliente recusou · retornar" }]
         }
       }
     },
@@ -389,34 +396,36 @@
       id: "refused",
       name: "10 · Entrega recusada",
       conn: "online",
-      queues: { block: 0, ready: 0, route: 1, action: 1, return: 1, close: 0, sync: 0 },
-      insight: "Cliente recusou. O pedido não fica no local — volumes voltam com retorno à loja.",
-      insightClass: "warn",
+      mode: "foco",
+      sussurro: "",
+      peripheral: [],
       trip: {
         id: "V-1054",
         rider: "Bruno",
-        status: "in_route",
-        statusLabel: "Recusa · retorno necessário",
-        lineClass: "blocked",
-        badge: "badge-amber",
-        stages: stagesFrom(6, "blocked"),
+        sit: "Retorno necessário",
+        sitClass: "tensao",
+        progress: 0.55,
+        blockAt: 0.55,
+        variant: "exception",
         volumes: { expected: 2, checked: 2, handed: 2, received: 2, delivered: 0, returned: 0 },
-        divergence: false,
-        blocked: false,
-        attempts: [{ at: "19:48", result: "failed", code: "E05", next: "retorno" }],
-        stops: [{ id: "D-150", label: "Parada 1", state: "exception", ref: "Recusada · E05" }],
-        timeline: [
-          { t: "19:48", text: "Tentativa · E05 Entrega recusada", kind: "amber" },
-          { t: "19:48", text: "Volumes devem retornar à loja", kind: "amber" }
+        stops: [{ id: "D-150", state: "exception", label: "1", ref: "Recusada", vol: 2 }],
+        facts: [
+          { k: "tensao", t: "Cliente recusou receber" },
+          { k: "fact", t: "Volumes voltam à loja" }
         ],
-        desktopActions: [],
+        foco: {
+          titulo: "Cliente recusou receber",
+          apoio: "Não deixe o pedido. Inicie o retorno.",
+          acao: { id: "return", label: "Registrar retorno" },
+          secs: []
+        },
         mobile: {
-          kicker: "Recusa",
-          title: "Cliente recusou receber",
-          ref: "Não deixe o pedido. Inicie o retorno com os volumes.",
-          vol: "2 volumes a devolver",
-          cta: { id: "return", label: "Registrar retorno à loja" },
-          secondary: [{ id: "exception", label: "Ajustar motivo" }]
+          olho: "Recusa",
+          titulo: "Cliente recusou receber",
+          apoio: "Não deixe o pedido. Retorne com os volumes.",
+          dados: "2 volumes a devolver",
+          cta: { id: "return", label: "Registrar retorno" },
+          secs: []
         }
       }
     },
@@ -424,33 +433,36 @@
       id: "partial",
       name: "11 · Viagem parcialmente concluída",
       conn: "online",
-      queues: { block: 0, ready: 0, route: 1, action: 0, return: 0, close: 0, sync: 0 },
-      insight: "Duas paradas confirmadas, uma ainda aberta. Progresso real na linha da viagem.",
+      mode: "foco",
+      sussurro: "",
+      peripheral: [],
       trip: {
         id: "V-1050",
         rider: "Ana",
-        status: "partially_completed",
-        statusLabel: "Parcialmente concluída",
-        lineClass: "",
-        badge: "badge-live",
-        stages: stagesFrom(4),
+        sit: "Em rota",
+        sitClass: "vivo",
+        progress: 0.78,
+        variant: "route",
         volumes: { expected: 5, checked: 5, handed: 5, received: 5, delivered: 4, returned: 0 },
-        divergence: false,
-        blocked: false,
         stops: [
-          { id: "D-110", label: "1", state: "done", ref: "Entregue" },
-          { id: "D-111", label: "2", state: "done", ref: "Entregue" },
-          { id: "D-112", label: "3", state: "pending", ref: "R. Haddock, 500" }
+          { id: "D-110", state: "done", label: "1", ref: "Ok", vol: 2 },
+          { id: "D-111", state: "done", label: "2", ref: "Ok", vol: 2 },
+          { id: "D-112", state: "pending", label: "3", ref: "R. Haddock, 500", vol: 1 }
         ],
-        timeline: [{ t: "19:50", text: "2 de 3 paradas com entrega confirmada", kind: "fact" }],
-        desktopActions: [],
+        facts: [{ k: "fact", t: "2 de 3 paradas confirmadas" }],
+        foco: {
+          titulo: "Última parada",
+          apoio: "R. Haddock, 500 — sala 3",
+          acao: { id: "deliver", label: "Confirmar entrega" },
+          secs: [{ id: "exception", label: "Registrar exceção" }]
+        },
         mobile: {
-          kicker: "Parada 3 de 3",
-          title: "Entregar",
-          ref: "R. Haddock, 500 — sala 3",
-          vol: "1 volume",
+          olho: "Parada 3 de 3",
+          titulo: "Entregar",
+          apoio: "R. Haddock, 500 — sala 3",
+          dados: "1 volume",
           cta: { id: "deliver", label: "Confirmar entrega" },
-          secondary: [{ id: "exception", label: "Registrar exceção" }]
+          secs: [{ id: "exception", label: "Registrar exceção" }]
         }
       }
     },
@@ -458,38 +470,39 @@
       id: "offline",
       name: "12 · Offline",
       conn: "offline",
-      queues: { block: 0, ready: 0, route: 1, action: 0, return: 0, close: 0, sync: 1 },
-      insight: "Salvo no aparelho. Será enviado quando a conexão voltar. Isso não é falha do entregador.",
-      insightClass: "tech",
+      mode: "ambiente",
+      sussurro: "Dados pendentes no campo",
+      peripheral: [],
       trip: {
         id: "V-1051",
         rider: "Diego",
-        status: "in_route",
-        statusLabel: "Em rota · offline",
-        lineClass: "tech-state",
-        badge: "badge-tech",
-        stages: stagesFrom(4, "provisional"),
-        volumes: { expected: 2, checked: 2, handed: 2, received: 2, delivered: 1, returned: 0 },
-        divergence: false,
-        blocked: false,
+        sit: "Dados pendentes",
+        sitClass: "tech",
+        progress: 0.65,
+        variant: "offline",
         pendingSync: 2,
+        volumes: { expected: 2, checked: 2, handed: 2, received: 2, delivered: 1, returned: 0 },
         stops: [
-          { id: "D-120", label: "1", state: "done", ref: "Confirmada no aparelho" },
-          { id: "D-121", label: "2", state: "pending", ref: "R. Cardeal, 90" }
+          { id: "D-120", state: "done", label: "1", ref: "No aparelho", vol: 1 },
+          { id: "D-121", state: "pending", label: "2", ref: "R. Cardeal, 90", vol: 1 }
         ],
-        timeline: [
-          { t: "19:55", text: "Entrega D-120 · evento salvo no aparelho", kind: "provisional" },
-          { t: "19:55", text: "2 eventos aguardando sincronização", kind: "provisional" }
+        facts: [
+          { k: "prov", t: "Salvo no aparelho. Será enviado quando a conexão voltar." }
         ],
-        desktopActions: [],
+        foco: {
+          titulo: "Continuar a rota",
+          apoio: "Sem conexão. As ações ficam no aparelho.",
+          acao: { id: "deliver", label: "Confirmar entrega" },
+          secs: [{ id: "exception", label: "Registrar exceção" }]
+        },
         mobile: {
-          kicker: "Sem conexão",
-          title: "Continuar a rota",
-          ref: "R. Cardeal, 90",
-          vol: "1 volume restante",
-          syncMsg: "Salvo no aparelho. Será enviado quando a conexão voltar.",
+          olho: "Sem conexão",
+          titulo: "Continuar a rota",
+          apoio: "R. Cardeal, 90",
+          dados: "1 volume restante",
+          sync: "Salvo no aparelho. Será enviado quando a conexão voltar.",
           cta: { id: "deliver", label: "Confirmar entrega" },
-          secondary: [{ id: "exception", label: "Registrar exceção" }]
+          secs: [{ id: "exception", label: "Registrar exceção" }]
         }
       }
     },
@@ -497,37 +510,38 @@
       id: "pendingSync",
       name: "13 · Evento aguardando sincronização",
       conn: "unstable",
-      queues: { block: 0, ready: 0, route: 1, action: 0, return: 0, close: 0, sync: 1 },
-      insight: "Conexão instável. Há eventos no aparelho ainda não confirmados no sistema da loja.",
-      insightClass: "tech",
+      mode: "ambiente",
+      sussurro: "Dados pendentes",
+      peripheral: [],
       trip: {
         id: "V-1051b",
         rider: "Diego",
-        status: "in_route",
-        statusLabel: "Aguardando sync",
-        lineClass: "tech-state",
-        badge: "badge-tech",
-        stages: stagesFrom(4, "provisional"),
-        volumes: { expected: 2, checked: 2, handed: 2, received: 2, delivered: 2, returned: 0 },
-        divergence: false,
-        blocked: false,
+        sit: "Dados pendentes",
+        sitClass: "tech",
+        progress: 0.85,
+        variant: "offline",
         pendingSync: 3,
+        openEnd: true,
+        volumes: { expected: 2, checked: 2, handed: 2, received: 2, delivered: 2, returned: 0 },
         stops: [
-          { id: "D-120", label: "1", state: "done", ref: "Ok no aparelho" },
-          { id: "D-121", label: "2", state: "done", ref: "Ok no aparelho" }
+          { id: "D-120", state: "done", label: "1", ref: "Ok no aparelho", vol: 1 },
+          { id: "D-121", state: "done", label: "2", ref: "Ok no aparelho", vol: 1 }
         ],
-        timeline: [
-          { t: "20:00", text: "3 eventos aguardando sincronização", kind: "provisional" }
-        ],
-        desktopActions: [],
+        facts: [{ k: "prov", t: "3 eventos aguardando sincronização" }],
+        foco: {
+          titulo: "Paradas no aparelho",
+          apoio: "A loja ainda não recebeu tudo.",
+          acao: { id: "return", label: "Registrar retorno" },
+          secs: []
+        },
         mobile: {
-          kicker: "Conexão instável",
-          title: "Paradas feitas no aparelho",
-          ref: "A loja ainda não recebeu tudo.",
-          vol: "—",
-          syncMsg: "3 eventos aguardando sincronização",
+          olho: "Conexão instável",
+          titulo: "Paradas no aparelho",
+          apoio: "A loja ainda não recebeu tudo.",
+          dados: "—",
+          sync: "3 eventos aguardando sincronização",
           cta: { id: "return", label: "Registrar retorno" },
-          secondary: []
+          secs: []
         }
       }
     },
@@ -535,35 +549,37 @@
       id: "syncing",
       name: "14 · Sincronizando",
       conn: "syncing",
-      queues: { block: 0, ready: 0, route: 1, action: 0, return: 0, close: 0, sync: 1 },
-      insight: "Enviando o que estava no aparelho — sem perda silenciosa.",
-      insightClass: "tech",
+      mode: "ambiente",
+      sussurro: "Dados pendentes",
+      peripheral: [],
       trip: {
         id: "V-1051",
         rider: "Diego",
-        status: "in_route",
-        statusLabel: "Sincronizando",
-        lineClass: "tech-state",
-        badge: "badge-tech",
-        stages: stagesFrom(4, "provisional"),
-        volumes: { expected: 2, checked: 2, handed: 2, received: 2, delivered: 2, returned: 0 },
-        divergence: false,
-        blocked: false,
+        sit: "Dados pendentes",
+        sitClass: "tech",
+        progress: 0.88,
+        variant: "offline",
         pendingSync: 1,
+        volumes: { expected: 2, checked: 2, handed: 2, received: 2, delivered: 2, returned: 0 },
         stops: [
-          { id: "D-120", label: "1", state: "done", ref: "Ok" },
-          { id: "D-121", label: "2", state: "done", ref: "Ok · enviando" }
+          { id: "D-120", state: "done", label: "1", ref: "Ok", vol: 1 },
+          { id: "D-121", state: "done", label: "2", ref: "Enviando", vol: 1 }
         ],
-        timeline: [{ t: "20:01", text: "Sincronização em andamento", kind: "provisional" }],
-        desktopActions: [],
+        facts: [{ k: "prov", t: "Sincronizando…" }],
+        foco: {
+          titulo: "Sincronizando",
+          apoio: "Enviando o que estava no aparelho.",
+          acao: { id: "return", label: "Registrar retorno" },
+          secs: []
+        },
         mobile: {
-          kicker: "Enviando",
-          title: "Sincronizando",
-          ref: "Paradas concluídas no aparelho.",
-          vol: "—",
-          syncMsg: "Sincronizando 1 evento…",
+          olho: "Enviando",
+          titulo: "Sincronizando",
+          apoio: "Paradas concluídas no aparelho.",
+          dados: "—",
+          sync: "Sincronizando 1 evento…",
           cta: { id: "return", label: "Registrar retorno" },
-          secondary: []
+          secs: []
         }
       }
     },
@@ -571,36 +587,40 @@
       id: "conflict",
       name: "15 · Conflito de sincronização",
       conn: "online",
-      queues: { block: 0, ready: 0, route: 0, action: 1, return: 0, close: 1, sync: 1 },
-      insight: "Duas versões do mesmo evento. Resolução humana na mesa — sem auto-merge sensível.",
-      insightClass: "tech",
+      mode: "foco",
+      sussurro: "Dados pendentes",
+      peripheral: [],
       trip: {
         id: "V-1052",
         rider: "Elena",
-        status: "under_review",
-        statusLabel: "Conflito · revisão",
-        lineClass: "tech-state",
-        badge: "badge-tech",
-        stages: stagesFrom(9, "blocked"),
-        volumes: { expected: 2, checked: 2, handed: 2, received: 2, delivered: 2, returned: 0 },
-        divergence: false,
-        blocked: true,
+        sit: "Dados pendentes",
+        sitClass: "tech",
+        progress: 0.9,
+        blockAt: 0.9,
+        variant: "conflict",
         conflict: true,
-        stops: [{ id: "D-130", label: "1", state: "done", ref: "Conflito no horário de confirmação" }],
-        timeline: [
-          { t: "20:05", text: "Conflito de sincronização em D-130", kind: "provisional" },
-          { t: "—", text: "Hipótese: relógio do aparelho dessincronizado", kind: "provisional" }
+        openEnd: true,
+        volumes: { expected: 2, checked: 2, handed: 2, received: 2, delivered: 2, returned: 0 },
+        stops: [{ id: "D-130", state: "done", label: "1", ref: "Conflito de horário", vol: 2 }],
+        facts: [
+          { k: "prov", t: "Conflito de sincronização" },
+          { k: "prov", t: "Resolução na expedição — sem auto-merge" }
         ],
-        desktopActions: ["resolver"],
+        foco: {
+          titulo: "Há um conflito",
+          apoio: "Duas versões do mesmo evento. A mesa resolve.",
+          acao: { id: "resolver", label: "Resolver na mesa" },
+          secs: []
+        },
         mobile: {
-          kicker: "Aguarde a loja",
-          title: "Há um conflito",
-          ref: "Sua ação foi salva. A expedição vai conferir.",
-          vol: "—",
-          syncMsg: "Conflito · resolução na mesa de expedição",
-          syncClass: "amber",
+          olho: "Aguarde",
+          titulo: "Há um conflito",
+          apoio: "Sua ação foi salva. A expedição vai conferir.",
+          dados: "—",
+          sync: "Conflito · resolução na mesa",
+          syncTensao: true,
           cta: { id: "wait_le", label: "Entendi" },
-          secondary: []
+          secs: []
         }
       }
     },
@@ -608,36 +628,39 @@
       id: "returning",
       name: "16 · Retorno à loja",
       conn: "online",
-      queues: { block: 0, ready: 0, route: 0, action: 0, return: 1, close: 0, sync: 0 },
-      insight: "Retorno com volumes. Ainda não está disponível para nova viagem até o handoff de volta.",
+      mode: "foco",
+      sussurro: "",
+      peripheral: [],
       trip: {
         id: "V-1053",
         rider: "Ana",
-        status: "returning",
-        statusLabel: "Retornando",
-        lineClass: "",
-        badge: "badge-live",
-        stages: stagesFrom(7),
+        sit: "Em retorno",
+        sitClass: "vivo",
+        progress: 0.7,
+        variant: "return",
         volumes: { expected: 4, checked: 4, handed: 4, received: 4, delivered: 3, returned: 1 },
-        divergence: false,
-        blocked: false,
         stops: [
-          { id: "D-140", label: "1", state: "done", ref: "Ok" },
-          { id: "D-141", label: "2", state: "done", ref: "Ok" },
-          { id: "D-142", label: "3", state: "exception", ref: "Recusada · volume volta" }
+          { id: "D-140", state: "done", label: "1", ref: "Ok", vol: 1 },
+          { id: "D-141", state: "done", label: "2", ref: "Ok", vol: 1 },
+          { id: "D-142", state: "exception", label: "3", ref: "Volta", vol: 1 }
         ],
-        timeline: [
-          { t: "20:10", text: "Retorno solicitado · motivo E05", kind: "fact" },
-          { t: "20:10", text: "1 volume a devolver no handoff da loja", kind: "provisional" }
+        facts: [
+          { k: "fact", t: "1 volume a devolver" },
+          { k: "prov", t: "Handoff de volta na loja ainda pendente" }
         ],
-        desktopActions: ["receber"],
+        foco: {
+          titulo: "Voltar à loja",
+          apoio: "Entregar 1 volume na expedição.",
+          acao: { id: "arrive_store", label: "Cheguei na loja" },
+          secs: []
+        },
         mobile: {
-          kicker: "Retorno",
-          title: "Voltar à loja",
-          ref: "Entregar 1 volume na expedição (handoff de volta).",
-          vol: "Entregues 3 · retorno 1",
+          olho: "Retorno",
+          titulo: "Voltar à loja",
+          apoio: "1 volume para devolver na expedição.",
+          dados: "Entregues 3 · Retorno 1",
           cta: { id: "arrive_store", label: "Cheguei na loja" },
-          secondary: []
+          secs: []
         }
       }
     },
@@ -645,39 +668,41 @@
       id: "closePending",
       name: "17 · Fechamento pendente",
       conn: "online",
-      queues: { block: 0, ready: 0, route: 0, action: 1, return: 0, close: 1, sync: 0 },
-      insight: "Retorno informado, mas falta confirmar na loja e reconciliar volumes. Não está encerrada.",
-      insightClass: "warn",
+      mode: "foco",
+      sussurro: "",
+      peripheral: [],
       trip: {
         id: "V-1053",
         rider: "Ana",
-        status: "returning",
-        statusLabel: "Fechamento pendente",
-        lineClass: "pending-close",
-        badge: "badge-amber",
-        stages: stagesFrom(8, "blocked"),
-        volumes: { expected: 4, checked: 4, handed: 4, received: 4, delivered: 3, returned: 1 },
-        divergence: false,
-        blocked: false,
+        sit: "Fechamento pendente",
+        sitClass: "tensao",
+        progress: 0.94,
+        openEnd: true,
+        variant: "open",
         returnProvisional: true,
-        closeState: "pending",
+        volumes: { expected: 4, checked: 4, handed: 4, received: 4, delivered: 3, returned: 1 },
         stops: [
-          { id: "D-140", label: "1", state: "done", ref: "Ok" },
-          { id: "D-141", label: "2", state: "done", ref: "Ok" },
-          { id: "D-142", label: "3", state: "exception", ref: "Retorno" }
+          { id: "D-140", state: "done", label: "1", ref: "Ok", vol: 1 },
+          { id: "D-141", state: "done", label: "2", ref: "Ok", vol: 1 },
+          { id: "D-142", state: "exception", label: "3", ref: "Retorno", vol: 1 }
         ],
-        timeline: [
-          { t: "20:18", text: "Chegada na loja informada", kind: "provisional" },
-          { t: "—", text: "Pendente: handoff de volta + reconciliação de volumes", kind: "amber" }
+        facts: [
+          { k: "prov", t: "Retorno informado" },
+          { k: "tensao", t: "Falta handoff de volta e reconciliação" }
         ],
-        desktopActions: ["fechar", "receber"],
+        foco: {
+          titulo: "Fechamento pendente",
+          apoio: "A viagem permanece aberta até conferir volumes e retorno.",
+          acao: { id: "fechar", label: "Confirmar fechamento" },
+          secs: [{ id: "receber", label: "Receber handoff de volta" }]
+        },
         mobile: {
-          kicker: "Na loja",
-          title: "Aguardando conferência",
-          ref: "Retorno ainda não confirmado. Viagem não está fechada.",
-          vol: "Devolver 1 volume na mesa",
+          olho: "Na loja",
+          titulo: "Aguardando conferência",
+          apoio: "Retorno ainda não confirmado. Viagem não está fechada.",
+          dados: "Devolver 1 volume",
           cta: { id: "wait_le", label: "Aguardar conferência" },
-          secondary: []
+          secs: []
         }
       }
     },
@@ -685,39 +710,43 @@
       id: "closed",
       name: "18 · Viagem encerrada",
       conn: "online",
-      queues: { block: 0, ready: 0, route: 0, action: 0, return: 0, close: 0, sync: 0 },
-      insight: "Viagem encerrada e conferida. Só agora o entregador pode ficar disponível de novo.",
+      mode: "calmo",
+      sussurro: "Campo em fluxo",
+      peripheral: [
+        { id: "V-1046", sit: "Em rota", sitClass: "vivo", rider: "Ana", progress: 0.4, stops: 2, done: 0, variant: "route", label: "Em rota" }
+      ],
       trip: {
         id: "V-1053",
         rider: "Ana · disponível",
-        status: "completed",
-        statusLabel: "Encerrada e conferida",
-        lineClass: "closed",
-        badge: "badge-solid",
-        stages: stagesFrom(10).map((s, i) => ({ ...s, st: i < 10 ? "done" : "done" })),
+        sit: "Encerrada e conferida",
+        sitClass: "",
+        progress: 1,
+        variant: "closed",
+        closed: true,
         volumes: { expected: 4, checked: 4, handed: 4, received: 4, delivered: 3, returned: 1 },
-        divergence: false,
-        blocked: false,
-        closeState: "closed",
         stops: [
-          { id: "D-140", label: "1", state: "done", ref: "Confirmada" },
-          { id: "D-141", label: "2", state: "done", ref: "Confirmada" },
-          { id: "D-142", label: "3", state: "done", ref: "Retornada · reconciliada" }
+          { id: "D-140", state: "done", label: "1", ref: "Ok", vol: 1 },
+          { id: "D-141", state: "done", label: "2", ref: "Ok", vol: 1 },
+          { id: "D-142", state: "done", label: "3", ref: "Devolvido", vol: 1 }
         ],
-        timeline: [
-          { t: "20:22", text: "Handoff de volta · volume recebido na loja", kind: "fact" },
-          { t: "20:22", text: "Volumes reconciliados · viagem encerrada e conferida", kind: "fact" }
+        facts: [
+          { k: "fact", t: "Handoff de volta confirmado" },
+          { k: "fact", t: "Volumes reconciliados" }
         ],
-        desktopActions: [],
+        foco: {
+          titulo: "Viagem encerrada e conferida",
+          apoio: "Entregador disponível para nova atribuição.",
+          acao: null,
+          secs: []
+        },
         mobile: {
-          kicker: "Concluído",
-          title: "Viagem encerrada e conferida",
-          ref: "Você está disponível para nova viagem quando a loja atribuir.",
-          vol: "3 entregues · 1 devolvido",
-          syncMsg: "Tudo sincronizado",
-          syncClass: "ok",
+          olho: "Concluído",
+          titulo: "Viagem encerrada e conferida",
+          apoio: "Você está disponível para nova viagem quando a loja atribuir.",
+          dados: "3 entregues · 1 devolvido",
+          sync: "Tudo sincronizado",
           cta: null,
-          secondary: []
+          secs: []
         }
       }
     },
@@ -725,37 +754,37 @@
       id: "openIncident",
       name: "19 · Ocorrência ainda aberta",
       conn: "online",
-      queues: { block: 0, ready: 0, route: 0, action: 1, return: 0, close: 0, sync: 0 },
-      insight: "Viagem pode estar encerrada no transporte, mas a ocorrência segue em tratamento na loja.",
-      insightClass: "warn",
+      mode: "ambiente",
+      sussurro: "",
+      peripheral: [],
       trip: {
         id: "V-1055",
         rider: "Carla · disponível",
-        status: "completed",
-        statusLabel: "Encerrada · ocorrência aberta",
-        lineClass: "closed",
-        badge: "badge-amber",
-        stages: stagesFrom(9, "blocked"),
+        sit: "Ocorrência aberta",
+        sitClass: "tensao",
+        progress: 1,
+        variant: "closed",
+        closed: true,
+        openIncident: true,
         volumes: { expected: 2, checked: 2, handed: 2, received: 2, delivered: 2, returned: 0 },
-        divergence: false,
-        blocked: false,
-        closeState: "closed_open_incident",
-        openIncident: "E06 · cliente aceitou com ressalva · LE em análise",
-        stops: [
-          { id: "D-160", label: "1", state: "done", ref: "Entregue com ressalva" }
+        stops: [{ id: "D-160", state: "done", label: "1", ref: "Com ressalva", vol: 2 }],
+        facts: [
+          { k: "fact", t: "Viagem encerrada no transporte" },
+          { k: "tensao", t: "Ocorrência de avaria ainda em tratamento" }
         ],
-        timeline: [
-          { t: "20:25", text: "Viagem encerrada e volumes ok", kind: "fact" },
-          { t: "20:25", text: "Ocorrência E06 ainda aberta · não esconder", kind: "amber" }
-        ],
-        desktopActions: ["ocorrencia"],
+        foco: {
+          titulo: "Ocorrência ainda aberta",
+          apoio: "A rota terminou. A loja segue com o tratamento.",
+          acao: { id: "ocorrencia", label: "Ver ocorrência" },
+          secs: []
+        },
         mobile: {
-          kicker: "Viagem ok",
-          title: "Ocorrência com a loja",
-          ref: "Sua parte na rota terminou. A loja segue com a ocorrência.",
-          vol: "2 entregues",
+          olho: "Viagem ok",
+          titulo: "Ocorrência com a loja",
+          apoio: "Sua parte na rota terminou.",
+          dados: "2 entregues",
           cta: null,
-          secondary: []
+          secs: []
         }
       }
     },
@@ -763,47 +792,42 @@
       id: "reissue",
       name: "20 · Reenvio vinculado",
       conn: "online",
-      queues: { block: 0, ready: 1, route: 0, action: 0, return: 0, close: 0, sync: 0 },
-      insight: "Nova entrega com novo ID, ligada à original. Financeiro não passa por Entregas.",
+      mode: "ambiente",
+      sussurro: "Campo em fluxo",
+      peripheral: [
+        { id: "V-1053", sit: "Encerrada e conferida", sitClass: "", rider: "Ana", progress: 1, stops: 3, done: 3, variant: "closed", label: "Origem" }
+      ],
       trip: {
         id: "V-1060",
         rider: "—",
-        status: "preparing",
-        statusLabel: "Reenvio · montagem",
-        lineClass: "",
-        badge: "badge-muted",
-        stages: stagesFrom(0),
-        volumes: { expected: 1, checked: 1, handed: 0, received: 0, delivered: 0, returned: 0 },
-        divergence: false,
-        blocked: false,
+        sit: "Em preparação",
+        sitClass: "",
+        progress: 0.1,
+        variant: "prep",
         reissueOf: "D-142",
-        stops: [
-          {
-            id: "D-142b",
-            label: "Reenvio",
-            state: "pending",
-            ref: "Novo delivery_id D-142b · origem D-142 · mesma ref operacional"
-          }
+        volumes: { expected: 1, checked: 1, handed: 0, received: 0, delivered: 0, returned: 0 },
+        stops: [{ id: "D-142b", state: "pending", label: "Reenvio", ref: "Novo D-142b · origem D-142", vol: 1 }],
+        facts: [
+          { k: "fact", t: "Novo delivery · vínculo com D-142" },
+          { k: "prov", t: "Decisão de reenvio fora do financeiro de Entregas" }
         ],
-        timeline: [
-          { t: "20:30", text: "Decisão de reenvio registrada (fora do Caixa)", kind: "fact" },
-          { t: "20:30", text: "D-142b vinculada a D-142", kind: "fact" }
-        ],
-        desktopActions: ["atribuir"],
+        foco: {
+          titulo: "Reenvio",
+          apoio: "Mesma referência operacional. Novo identificador.",
+          acao: { id: "atribuir", label: "Atribuir entregador" },
+          secs: []
+        },
         mobile: {
-          kicker: "Reenvio",
-          title: "Aguardando atribuição",
-          ref: "Quando atribuída, a próxima ação aparece aqui.",
-          vol: "1 volume",
+          olho: "Reenvio",
+          titulo: "Aguardando atribuição",
+          apoio: "Quando atribuída, a próxima ação aparece aqui.",
+          dados: "1 volume",
           cta: null,
-          secondary: []
+          secs: []
         }
       }
     }
   };
-
-  // fix closed stages - all done
-  SCENARIOS.closed.trip.stages = STAGES.map((name) => ({ name, st: "done" }));
 
   const state = {
     view: "desktop",
@@ -819,7 +843,7 @@
     t.textContent = msg;
     t.classList.add("is-show");
     clearTimeout(toast._timer);
-    toast._timer = setTimeout(() => t.classList.remove("is-show"), 3000);
+    toast._timer = setTimeout(() => t.classList.remove("is-show"), 2800);
   }
 
   function connLabel(c) {
@@ -829,191 +853,154 @@
     return { text: "Conectado", cls: "" };
   }
 
-  function stopClass(s) {
-    if (s.state === "done") return "done confirmed";
-    if (s.state === "exception") return "exception";
-    return "pending";
+  function nodePoints(n, w, h) {
+    const y = h * 0.55;
+    const pts = [];
+    for (let i = 0; i < n; i++) {
+      const x = 16 + ((w - 32) * i) / Math.max(1, n - 1);
+      pts.push({ x, y });
+    }
+    return pts;
   }
 
-  function renderQueues(q) {
-    const items = [
-      { label: "Não pode sair", n: q.block, cls: q.block ? "needs-action" : "" },
-      { label: "Pronta / fila loja", n: q.ready, cls: "" },
-      { label: "Em rota", n: q.route, cls: "" },
-      { label: "Exige ação", n: q.action, cls: q.action ? "needs-action" : "" },
-      { label: "Em retorno", n: q.return, cls: "" },
-      { label: "Fechamento pendente", n: q.close, cls: q.close ? "needs-action" : "" },
-      { label: "Sync / técnico", n: q.sync, cls: q.sync ? "tech" : "" }
-    ];
-    el("queues").innerHTML =
-      "<h2>Filas da mesa</h2>" +
-      items
-        .map(
-          (i) =>
-            `<div class="queue-chip ${i.cls}" role="status">
-              <strong>${i.label}</strong><span>${i.n}</span>
-            </div>`
-        )
-        .join("");
+  function buildFioSVG(trip, compact) {
+    const w = compact ? 320 : 640;
+    const h = compact ? 36 : 64;
+    const d = pathD(w, h, trip.variant === "return" ? "return" : "fwd");
+    const prog = Math.max(0.04, Math.min(1, trip.progress || 0.1));
+    // approximate path length for dash
+    const len = w * 1.05;
+    const drawn = len * prog;
+    const cls =
+      trip.variant === "offline" || trip.variant === "conflict"
+        ? "tech"
+        : trip.variant === "block" || trip.variant === "exception"
+          ? "tensao"
+          : trip.variant === "closed"
+            ? ""
+            : trip.pendingSync
+              ? "provisional"
+              : "";
+
+    const stops = trip.stops || [];
+    const pts = nodePoints(Math.max(stops.length, 2), w, h);
+    let nodes = "";
+    stops.forEach((s, i) => {
+      const p = pts[i] || pts[pts.length - 1];
+      let nc = "pending";
+      if (s.state === "done") nc = "done";
+      else if (s.state === "exception") nc = "exception";
+      else if (i === stops.findIndex((x) => x.state === "pending" || x.state === "exception")) nc = trip.blocked ? "block" : "now";
+      nodes += `<circle class="fio-node ${nc}" cx="${p.x}" cy="${p.y}" r="${compact ? 4 : 6}" />`;
+    });
+
+    let gap = "";
+    if (trip.blockAt != null) {
+      const gx = 16 + (w - 32) * trip.blockAt;
+      gap = `<path class="fio-gap" d="M ${gx - 10} ${h * 0.55} L ${gx + 10} ${h * 0.55}" />`;
+    }
+
+    let openEnd = "";
+    if (trip.openEnd) {
+      openEnd = `<circle class="fio-end" cx="${w - 14}" cy="${h * 0.55}" r="7" />`;
+    }
+
+    return `<svg class="fio-svg" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true">
+      <path class="fio-base" d="${d}" />
+      <path class="fio-prog ${cls}" d="${d}" stroke-dasharray="${drawn} ${len}" />
+      ${gap}${nodes}${openEnd}
+    </svg>`;
   }
 
-  function renderStageRail(stages) {
-    if (!stages) return "";
-    return (
-      `<div class="stage-rail" aria-label="Linha da viagem">` +
-      stages
-        .map((s) => {
-          const cls =
-            s.st === "done"
-              ? "done"
-              : s.st === "now"
-                ? "now"
-                : s.st === "blocked"
-                  ? "blocked"
-                  : s.st === "provisional"
-                    ? "provisional"
-                    : "pending";
-          return `<span class="stage-pill ${cls}">${s.name}</span>`;
-        })
-        .join(`<span class="stage-arrow" aria-hidden="true">→</span>`) +
-      `</div>`
-    );
+  function metaLine(trip) {
+    const v = trip.volumes || {};
+    const parts = [];
+    if (trip.stops) parts.push(`<span><strong>${trip.stops.length}</strong> paradas</span>`);
+    if (v.expected != null) {
+      let vol = `Esperados ${v.expected}`;
+      if (v.checked != null) vol += ` · Conferidos ${v.checked}`;
+      if (v.delivered) vol += ` · Cliente ${v.delivered}`;
+      if (v.returned) vol += ` · Retorno ${v.returned}`;
+      parts.push(`<span>${vol}</span>`);
+    }
+    if (trip.pendingSync) parts.push(`<span><strong>${trip.pendingSync}</strong> no aparelho</span>`);
+    if (trip.reissueOf) parts.push(`<span>Origem ${trip.reissueOf}</span>`);
+    return parts.join("");
   }
 
-  function renderStops(stops) {
-    return stops
-      .map((s, i) => {
-        const node = `<span class="stop-node ${stopClass(s)}"><span class="dot" aria-hidden="true"></span>${s.label}</span>`;
-        const conn = i < stops.length - 1 ? `<span class="stop-connector" aria-hidden="true"></span>` : "";
-        return node + conn;
-      })
+  function renderPeripheral(p) {
+    const fakeStops = [];
+    for (let i = 0; i < p.stops; i++) {
+      fakeStops.push({
+        state: i < (p.done || 0) ? "done" : "pending",
+        label: String(i + 1)
+      });
+    }
+    const fakeTrip = {
+      progress: p.progress,
+      variant: p.variant,
+      blockAt: p.blockAt,
+      openEnd: p.openEnd,
+      stops: fakeStops,
+      pendingSync: p.pendingSync
+    };
+    return `<button type="button" class="trajeto trajeto-periferico" role="listitem" data-peripheral="${p.id}" aria-label="Viagem ${p.id}">
+      <div class="trajeto-cab">
+        <span class="trajeto-id">${p.id}</span>
+        <span class="trajeto-sit ${p.sitClass || ""}">${p.sit}</span>
+        <span class="trajeto-rider">${p.rider}</span>
+      </div>
+      <div class="fio-wrap">${buildFioSVG(fakeTrip, true)}</div>
+      <div class="trajeto-meta"><span>${p.label}</span></div>
+    </button>`;
+  }
+
+  function renderFocus(trip) {
+    if (!trip.foco) return "";
+    const f = trip.foco;
+    const lines = (trip.facts || [])
+      .map((x) => `<div class="foco-linha ${x.k === "fact" ? "fact" : x.k === "tensao" ? "tensao" : "prov"}">${x.t}</div>`)
       .join("");
-  }
-
-  function volSummary(v, divergence) {
-    let t = `Esperados: ${v.expected}`;
-    t += ` · Conferidos: ${v.checked}`;
-    if (v.handed) t += ` · Handoff: ${v.handed}`;
-    if (v.received) t += ` · Rider: ${v.received}`;
-    if (v.delivered) t += ` · Cliente: ${v.delivered}`;
-    if (v.returned) t += ` · Retorno: ${v.returned}`;
-    if (divergence) t += " · divergência";
-    return t;
-  }
-
-  function kindClass(k) {
-    if (k === "amber") return "amber";
-    if (k === "provisional") return "provisional";
-    if (k === "fact") return "fact";
-    return k || "";
-  }
-
-  function renderTripCard(trip, selected) {
-    return `
-      <article class="trip-line ${trip.lineClass || ""} ${selected ? "is-selected" : ""}" tabindex="0" data-focus-trip="1">
-        <div class="trip-head">
-          <span class="id">${trip.id}</span>
-          <span class="badge ${trip.badge}">${trip.statusLabel}</span>
-          <span class="rider">${trip.rider}</span>
-          ${trip.reissueOf ? `<span class="badge badge-muted">reenvio de ${trip.reissueOf}</span>` : ""}
-          ${trip.conflict ? `<span class="badge badge-tech">conflito</span>` : ""}
-          ${trip.returnProvisional ? `<span class="badge badge-amber">retorno provisório</span>` : ""}
-          ${trip.closeState === "closed_open_incident" ? `<span class="badge badge-amber">ocorrência aberta</span>` : ""}
-          ${trip.blocked && trip.divergence ? `<span class="badge badge-amber">saída bloqueada</span>` : ""}
+    let acoes = "";
+    if (f.acao) {
+      acoes += `<button type="button" class="acao-pill ${f.acao.atencao ? "atencao" : ""}" data-act="${f.acao.id}">${f.acao.label}</button>`;
+    }
+    (f.secs || []).forEach((s) => {
+      acoes += `<button type="button" class="acao-sec" data-act="${s.id}">${s.label}</button>`;
+    });
+    return `<div class="foco-corpo">
+      <div class="foco-titulo">${f.titulo}</div>
+      <div class="foco-apoio">${f.apoio}</div>
+      <div class="foco-linhas">${lines}</div>
+      <div class="acao-area">${acoes}
+        <div class="map-mini ${state.mapOpen ? "is-open" : ""}" id="map-mini">
+          Localização indisponível ou opcional. A viagem pode continuar pela ordem das paradas.
+          <div class="map-mini-field" role="img" aria-label="Apoio de mapa"></div>
         </div>
-        ${selected ? renderStageRail(trip.stages) : ""}
-        <div class="stops-rail" aria-label="Paradas">${renderStops(trip.stops)}</div>
-        <div class="trip-meta">
-          <span><strong>${trip.stops.length}</strong> entregas</span>
-          <span>${volSummary(trip.volumes, trip.divergence)}</span>
-          ${trip.pendingSync ? `<span><strong>${trip.pendingSync}</strong> aguardando envio</span>` : ""}
-          ${trip.openIncident ? `<span>${trip.openIncident}</span>` : ""}
-        </div>
-      </article>`;
-  }
-
-  function renderBoardExtra(list) {
-    if (!list || !list.length) return "";
-    return list
-      .map(
-        (t) => `
-      <article class="trip-line ${t.lineClass} trip-line-secondary" aria-label="Outra viagem">
-        <div class="trip-head">
-          <span class="id">${t.id}</span>
-          <span class="badge ${t.badge}">${t.statusLabel}</span>
-          <span class="rider">${t.rider}</span>
-        </div>
-        <div class="trip-meta"><span>${t.n} entregas</span><span>${t.note}</span></div>
-      </article>`
-      )
-      .join("");
+      </div>
+    </div>`;
   }
 
   function renderDesktop(sc) {
+    document.body.dataset.mode = sc.mode || "ambiente";
+    el("campo-sussurro").textContent = sc.sussurro || "";
+
     const trip = sc.trip;
-    renderQueues(sc.queues);
-    el("desktop-insight").className = "insight " + (sc.insightClass || "");
-    el("desktop-insight").textContent = sc.insight;
+    const peri = (sc.peripheral || []).map(renderPeripheral).join("");
 
-    el("trip-list").innerHTML =
-      renderBoardExtra(sc.boardExtra) + renderTripCard(trip, true);
-
-    const tl = trip.timeline
-      .map((x) => `<li class="${kindClass(x.kind)}"><strong>${x.t}</strong> — ${x.text}</li>`)
-      .join("");
-
-    const attempts = (trip.attempts || [])
-      .map(
-        (a) =>
-          `<li class="amber"><strong>${a.at}</strong> — Tentativa · ${a.code} · ${a.result} · próxima: ${a.next}</li>`
-      )
-      .join("");
-
-    const mapActs = {
-      atribuir: ["atribuir", "Atribuir entregador disponível", "btn-primary"],
-      volumes: ["volumes", "Conferir / corrigir volumes", trip.divergence ? "btn-amber" : "btn-secondary"],
-      ordenar: ["ordenar", "Ordenar paradas", "btn-secondary"],
-      saida: ["depart", "Registrar saída", "btn-primary"],
-      mapa: ["map", "Mapa de apoio", "btn-ghost"],
-      override: ["override", "Override LE (audit)", "btn-amber"],
-      orientar: ["orientar", "Enviar orientação", "btn-primary"],
-      resolver: ["resolver", "Resolver conflito", "btn-primary"],
-      fechar: ["fechar", "Confirmar fechamento real", "btn-primary"],
-      receber: ["receber", "Receber handoff de volta", "btn-primary"],
-      ocorrencia: ["ocorrencia", "Tratar ocorrência aberta", "btn-amber"]
-    };
-    const actions = (trip.desktopActions || [])
-      .map((a) => {
-        const m = mapActs[a];
-        return m ? `<button type="button" class="btn ${m[2]}" data-act="${m[0]}">${m[1]}</button>` : "";
-      })
-      .join("");
-
-    let closeHint = "";
-    if (trip.closeState === "pending" || trip.returnProvisional) {
-      closeHint =
-        `<div class="insight warn">Fechamento pendente — há pendência operacional visível. Não usar “concluir” escondendo gaps.</div>`;
-    } else if (trip.closeState === "closed_open_incident") {
-      closeHint = `<div class="insight warn">Encerrada no transporte · ocorrência ainda aberta.</div>`;
-    } else if (trip.status === "completed" && !trip.openIncident) {
-      closeHint = `<div class="insight">Fechada — tudo confirmado e reconciliado.</div>`;
-    }
-
-    el("trip-detail").className = "panel detail is-open";
-    el("trip-detail").innerHTML = `
-      <h3>Detalhe · ${trip.id}</h3>
-      <p class="lede">Linha de confiança: fato confirmado, provisório, offline e conflito não se misturam.</p>
-      ${closeHint}
-      ${renderStageRail(trip.stages)}
-      <h4 class="subh">Linha temporal</h4>
-      <ul class="timeline">${tl}${attempts}</ul>
-      <div class="actions-row">${actions || "<span class='trip-meta'>Sem ação de mesa neste momento.</span>"}</div>
-      <div class="map-drawer ${state.mapOpen ? "is-open" : ""}" id="map-drawer">
-        Mapa é apoio contextual — não vigilância. Alternativa textual: ordem das paradas acima.
-        <div class="map-fake" role="img" aria-label="Mapa esquemático de apoio, parada atual"></div>
-        <p class="map-note">Localização desatualizada? A viagem continua pela lista.</p>
+    const focusHtml = `<div class="trajeto trajeto-foco ${trip.variant === "return" ? "retorno" : ""} ${trip.closed ? "fechada" : ""} ${trip.openEnd ? "aberta-fim" : ""}" role="listitem" aria-current="true">
+      <div class="trajeto-cab">
+        <span class="trajeto-id">${trip.id}</span>
+        <span class="trajeto-sit ${trip.sitClass || ""}">${trip.sit}</span>
+        <span class="trajeto-rider">${trip.rider}</span>
       </div>
-    `;
+      <div class="fio-wrap">${buildFioSVG(trip, false)}</div>
+      <div class="trajeto-meta">${metaLine(trip)}</div>
+      ${renderFocus(trip)}
+    </div>`;
+
+    // order: some peri before, focus, some after — put all peri then focus for clarity, or interleave
+    el("trajetorias").innerHTML = peri + focusHtml;
   }
 
   function renderMobile(sc) {
@@ -1021,85 +1008,64 @@
     const m = trip.mobile;
     const c = connLabel(sc.conn);
     el("phone-conn").className = "conn " + c.cls;
-    el("phone-conn").innerHTML = `<span class="pip" aria-hidden="true"></span>${c.text}`;
+    el("phone-conn").innerHTML = `<span class="pip"></span>${c.text}`;
 
-    let foundNow = false;
-    const pips = trip.stops
-      .map((s) => {
-        if (s.state === "done") return '<i class="done"></i>';
-        if (s.state === "exception") return '<i class="ex"></i>';
-        if (!foundNow) {
-          foundNow = true;
-          return '<i class="now"></i>';
-        }
-        return "<i></i>";
-      })
-      .join("");
-
-    let sync = "";
-    if (m.syncMsg) {
-      sync = `<div class="sync-banner ${m.syncClass || ""}">${m.syncMsg}</div>`;
-    } else if (sc.conn === "offline") {
-      sync = `<div class="sync-banner">Sem conexão. As ações ficam no aparelho.</div>`;
+    const mini = `<div class="minifio">${buildFioSVG(trip, true)}</div>`;
+    let cta = "";
+    if (m.cta) {
+      cta = `<button type="button" class="acao-pill" data-act="${m.cta.id}">${m.cta.label}</button>`;
     }
-
-    const cta = m.cta
-      ? `<button type="button" class="cta-main" data-act="${m.cta.id}">${m.cta.label}</button>`
-      : "";
-    const secs = (m.secondary || [])
-      .map((s) => {
-        const danger = s.id === "exception" || s.id === "return" ? " danger-soft" : "";
-        return `<button type="button" class="cta-sec${danger}" data-act="${s.id}">${s.label}</button>`;
-      })
+    const secs = (m.secs || [])
+      .map((s) => `<button type="button" class="acao-sec" data-act="${s.id}">${s.label}</button>`)
       .join("");
+    const sync = m.sync
+      ? `<div class="sync-line ${m.syncTensao ? "tensao" : ""}">${m.sync}</div>`
+      : "";
 
     el("phone-body").innerHTML = `
-      <div class="phone-trip">Viagem <strong>${trip.id}</strong> · ${trip.statusLabel}</div>
-      ${sync}
-      <div class="next-card">
-        <div class="kicker">${m.kicker}</div>
-        <div class="progress-mini" aria-hidden="true">${pips}</div>
-        <h2>${m.title}</h2>
-        <div class="ref">${m.ref}</div>
-        <div class="vol"><strong>Volumes.</strong> ${m.vol}</div>
-        <div class="cta-stack">${cta}${secs}</div>
+      <div>
+        <div class="phone-trip-id">${trip.id}</div>
+        ${mini}
+        <div class="olho">${m.olho}</div>
+        <h2 class="titulo">${m.titulo}</h2>
+        <p class="apoio">${m.apoio}</p>
+        <div class="dados">${m.dados}</div>
+        ${sync}
       </div>
+      <div class="phone-acoes">${cta}${secs}</div>
     `;
   }
 
   function render() {
     const sc = SCENARIOS[state.scenarioId];
-    el("mesa").classList.toggle("is-active", state.view === "desktop");
+    document.body.dataset.surface = state.view;
+    el("campo").classList.toggle("is-active", state.view === "desktop");
     el("mobile-wrap").classList.toggle("is-active", state.view === "mobile");
     el("btn-desktop").setAttribute("aria-pressed", state.view === "desktop" ? "true" : "false");
     el("btn-mobile").setAttribute("aria-pressed", state.view === "mobile" ? "true" : "false");
-    el("demo-count").textContent = "20 cenários · dados fictícios · sem GPS real";
     renderDesktop(sc);
     renderMobile(sc);
   }
 
-  function openModal(title, bodyHtml, primaryLabel, onPrimary) {
+  function openModal(title, body, primary, onPrimary) {
     el("modal-title").textContent = title;
-    el("modal-body").innerHTML = bodyHtml;
-    el("modal-primary").textContent = primaryLabel || "Confirmar";
+    el("modal-body").innerHTML = body;
+    el("modal-primary").textContent = primary;
     el("modal-backdrop").classList.add("is-open");
     el("modal-primary").onclick = onPrimary;
   }
-
   function closeModal() {
     el("modal-backdrop").classList.remove("is-open");
   }
 
   function openExceptions() {
-    const grid = EXCEPTIONS.map(
-      (e) => `<button type="button" data-ex="${e.code}">${e.label}</button>`
-    ).join("");
     let selected = null;
+    const grid = EXCEPTIONS.map((e) => `<button type="button" data-ex="${e.code}">${e.label}</button>`).join("");
     openModal(
-      "Registrar tentativa / exceção",
-      `<p>Motivo rápido. A entrega continua aberta até confirmação ou retorno.</p>
+      "Registrar exceção",
+      `<p>Escolha o motivo. A entrega continua aberta.</p>
        <div class="exception-grid" id="ex-grid">${grid}</div>
-       <textarea id="ex-note" placeholder="Nota opcional (curta)" aria-label="Nota opcional"></textarea>`,
+       <textarea id="ex-note" placeholder="Nota opcional" aria-label="Nota opcional"></textarea>`,
       "Registrar",
       () => {
         if (!selected) {
@@ -1108,19 +1074,12 @@
         }
         closeModal();
         const map = { E01: "noAnswer", E02: "badAddr", E05: "refused", E06: "damage" };
-        if (map[selected]) {
-          state.scenarioId = map[selected];
-          el("scenario-select").value = map[selected];
-          render();
-        }
-        toast("O cliente não respondeu. A entrega continua aberta.".replace(
-          "não respondeu",
-          selected === "E05" ? "recusou" : selected === "E06" ? "recebeu com avaria" : "não respondeu"
-        ));
+        if (map[selected]) setScenario(map[selected]);
+        toast("O cliente não respondeu. A entrega continua aberta.");
       }
     );
     el("ex-grid").onclick = (ev) => {
-      const b = ev.target.closest("button[data-ex]");
+      const b = ev.target.closest("[data-ex]");
       if (!b) return;
       selected = b.getAttribute("data-ex");
       el("ex-grid").querySelectorAll("button").forEach((x) => x.classList.remove("is-on"));
@@ -1129,56 +1088,47 @@
   }
 
   function openVolumes() {
-    const sc = SCENARIOS[state.scenarioId];
-    const v = sc.trip.volumes;
+    const v = SCENARIOS[state.scenarioId].trip.volumes;
     state.volumeStep = 0;
     const steps = [
       {
-        title: "1 · Identificar divergência",
-        body: `<p>Esperados: <strong>${v.expected}</strong> · Conferidos: <strong>${v.checked}</strong></p>
-               <p class="insight warn">A saída permanece bloqueada enquanto os números não baterem.</p>`
+        title: "Saída bloqueada",
+        body: `<p>São esperados <strong>${v.expected}</strong> volumes, mas apenas <strong>${v.checked}</strong> foram conferidos.</p>`
       },
       {
-        title: "2 · Revisar e corrigir",
-        body: `<div class="volume-row"><span>Conferidos na loja</span>
-                 <input type="number" id="vol-checked" min="0" max="20" value="${v.checked}" /></div>
-               <div class="volume-row"><span>Recebidos pelo entregador</span>
-                 <input type="number" id="vol-received" min="0" max="20" value="${v.received || 0}" /></div>`
+        title: "Revisar volumes",
+        body: `<div class="volume-row"><span>Conferidos</span><input type="number" id="vol-checked" min="0" max="20" value="${v.checked}" /></div>
+               <div class="volume-row"><span>Recebidos pelo entregador</span><input type="number" id="vol-received" min="0" max="20" value="${v.received || 0}" /></div>`
       },
       {
-        title: "3 · Reconfirmar e liberar",
-        body: `<p>Confirme que handoff e aceite batem com o esperado (${v.expected}).</p>`
+        title: "Reconfirmar",
+        body: `<p>Confirme que os números batem com o esperado (${v.expected}) para liberar a saída.</p>`
       }
     ];
-
-    function showStep() {
+    function show() {
       const s = steps[state.volumeStep];
-      openModal(s.title, s.body, state.volumeStep < 2 ? "Continuar" : "Salvar e liberar se ok", () => {
+      openModal(s.title, s.body, state.volumeStep < 2 ? "Continuar" : "Salvar", () => {
         if (state.volumeStep === 1) {
           const c = Number(el("vol-checked").value);
           const r = Number(el("vol-received").value);
           if (c !== v.expected || r !== v.expected) {
-            toast("Ainda há divergência. Corrija antes de liberar a saída.");
-            state.scenarioId = "volDiv";
-            el("scenario-select").value = "volDiv";
+            toast("Ainda há divergência. Saída bloqueada.");
             closeModal();
-            render();
+            setScenario("volDiv");
             return;
           }
         }
         if (state.volumeStep < 2) {
           state.volumeStep++;
-          showStep();
+          show();
           return;
         }
         closeModal();
-        toast("Volumes reconfirmados. Saída liberada.");
-        state.scenarioId = "handoff";
-        el("scenario-select").value = "handoff";
-        render();
+        toast("Volumes conferidos. Trajetória liberada.");
+        setScenario("handoff");
       });
     }
-    showStep();
+    show();
   }
 
   function setScenario(id) {
@@ -1194,44 +1144,43 @@
     if (act === "map") {
       state.mapOpen = !state.mapOpen;
       if (state.view === "desktop") render();
-      else toast("Localização indisponível ou opcional. Use a ordem das paradas e a referência.");
+      else toast("Localização indisponível. A viagem pode continuar.");
       return;
     }
     if (act === "depart") {
       const t = SCENARIOS[state.scenarioId].trip;
       if (t.blocked || t.divergence) {
-        toast("Saída bloqueada: volumes não conferem.");
+        toast("Saída bloqueada.");
         return;
       }
-      toast("Saída registrada. Sessão de localização da viagem ativa — não é vigilância permanente.");
+      toast("Saída registrada.");
       setScenario("inRoute");
       return;
     }
     if (act === "arrive") {
-      toast("Chegada registrada nesta parada.");
+      toast("Chegada registrada.");
       return;
     }
     if (act === "deliver") {
       toast("Entrega confirmada.");
       if (state.scenarioId === "inRoute") setScenario("delivered");
       else if (state.scenarioId === "delivered" || state.scenarioId === "partial") setScenario("returning");
-      else if (state.scenarioId === "offline") toast("Confirmada no aparelho. Será enviada quando a conexão voltar.");
-      else if (state.scenarioId === "damage") toast("Entrega com ressalva de avaria.");
+      else if (state.scenarioId === "offline") toast("Salvo no aparelho. Será enviado quando a conexão voltar.");
       else render();
       return;
     }
     if (act === "return") {
-      toast("Retorno à loja com volumes — handoff de volta na chegada.");
-      setScenario(state.scenarioId === "refused" ? "returning" : "returning");
+      toast("Retorno à loja.");
+      setScenario("returning");
       return;
     }
     if (act === "arrive_store") {
-      toast("Chegada na loja. Falta handoff de volta e reconciliação.");
+      toast("Na loja. Falta handoff de volta.");
       setScenario("closePending");
       return;
     }
     if (act === "receber") {
-      toast("Handoff de volta: volumes recebidos pela operação.");
+      toast("Handoff de volta recebido.");
       return;
     }
     if (act === "fechar") {
@@ -1240,42 +1189,19 @@
       return;
     }
     if (act === "atribuir") {
-      toast("Atribuído a quem está disponível — não apenas na loja.");
+      toast("Entregador disponível atribuído.");
       setScenario("volDiv");
       return;
     }
-    if (act === "override") {
-      toast("Override LE com auditoria. Prefira corrigir volumes.");
-      return;
-    }
     if (act === "resolver") {
-      toast("Conflito resolvido na mesa.");
+      toast("Conflito resolvido.");
       setScenario("closed");
       return;
     }
-    if (act === "orientar") {
-      toast("Orientação enviada ao entregador.");
-      return;
-    }
-    if (act === "ocorrencia") {
-      toast("Ocorrência permanece aberta no tratamento da loja.");
-      return;
-    }
-    if (act === "retry") {
-      toast("Nova tentativa fica na rota. A entrega continua aberta.");
-      return;
-    }
-    if (act === "continue") {
-      toast("Seguindo a rota. Entrega permanece aberta.");
-      return;
-    }
-    if (act === "wait" || act === "wait_le") {
-      toast("Aguardando a loja.");
-      return;
-    }
-    if (act === "ordenar") {
-      toast("Ordem das paradas atualizada.");
-    }
+    if (act === "retry") toast("Nova tentativa. A entrega continua aberta.");
+    if (act === "continue") toast("Seguindo a rota. A entrega continua aberta.");
+    if (act === "wait" || act === "wait_le") toast("Aguardando a loja.");
+    if (act === "ocorrencia") toast("Ocorrência permanece aberta.");
   }
 
   function init() {
