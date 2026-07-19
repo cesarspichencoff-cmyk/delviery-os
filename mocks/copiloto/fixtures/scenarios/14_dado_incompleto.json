@@ -1,0 +1,24 @@
+{
+  "scenario": "dado_incompleto",
+  "pressure": {
+    "level": "attention",
+    "severity": 1,
+    "confidence": "baixa",
+    "confidence_sufficient": true,
+    "kind": "pressure",
+    "reason": "fila 3 >= atencao 2",
+    "recovery": {
+      "queue_below": 1,
+      "dwell_below_min": 8,
+      "sustained_min": 5
+    },
+    "thresholds_used": {
+      "normal_queue": 0,
+      "attention_queue": 2,
+      "pressure_queue": 4,
+      "critical_queue": 6
+    },
+    "note": null
+  },
+  "technical_state": "degraded"
+}

@@ -1,0 +1,73 @@
+{
+  "scenario": "briefing",
+  "briefing": {
+    "schema_version": "1.0",
+    "scenario": {
+      "expected": "jantar com volume moderado a alto",
+      "peak_window": "19:00–21:00",
+      "primary_risk": {
+        "area": "conferencia",
+        "text": "Maior atenção por volta de 19h",
+        "confidence": "media"
+      },
+      "preparation": [
+        "Preparar Conferência e saída antes do acúmulo"
+      ],
+      "recent_learning": [
+        {
+          "text": "Na sexta passada, Conferência acumulou antes do jantar."
+        }
+      ],
+      "forecast_limit": "Previsão baseada em padrão histórico e sinais parciais — não é certeza."
+    },
+    "forecast_30m": {
+      "conclusion": "Conferência tende a acumular nos próximos 30 min (fila ~14.4). Cerca de 4 pedido(s) com risco de prazo.",
+      "horizon_min": 30,
+      "area": "conferencia",
+      "metric": "queue_depth",
+      "value": 14.4,
+      "range": {
+        "low": 13.4,
+        "high": 15.4
+      },
+      "unit": "pedidos",
+      "confidence": "media",
+      "model": "ensemble_baseline_ema_linear",
+      "factors": [
+        {
+          "factor": "current_queue",
+          "value": 7,
+          "weight": "high"
+        },
+        {
+          "factor": "historical_median",
+          "value": 3,
+          "weight": "medium"
+        },
+        {
+          "factor": "local_trend_per_min",
+          "value": 0.7,
+          "weight": "medium"
+        }
+      ],
+      "missing_data": [
+        "dwell_history"
+      ],
+      "risk_orders_count": 4,
+      "dwell_expected_min": null,
+      "change_conditions": [
+        "chegada acima do ritmo histórico",
+        "liberação rápida de área a montante",
+        "falha de dado / desconexão de fonte"
+      ],
+      "epistemic": "inference"
+    },
+    "data_quality": "partial",
+    "audio": {
+      "spoken_text": "Cenário esperado: jantar com volume moderado a alto. Janela de maior atenção: 19:00–21:00. Risco principal: Maior atenção por volta de 19h. Preparação: Preparar Conferência e saída antes do acúmulo. Aprendizado recente: Na sexta passada, Conferência acumulou antes do jantar.. Previsão baseada em padrão histórico e sinais parciais — não é certeza.",
+      "max_seconds": 45,
+      "screen_full_text": "Cenário esperado: jantar com volume moderado a alto. Janela de maior atenção: 19:00–21:00. Risco principal: Maior atenção por volta de 19h. Preparação: Preparar Conferência e saída antes do acúmulo. Aprendizado recente: Na sexta passada, Conferência acumulou antes do jantar.. Previsão baseada em padrão histórico e sinais parciais — não é certeza."
+    },
+    "max_audio_seconds": 45
+  }
+}

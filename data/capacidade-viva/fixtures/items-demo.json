@@ -1,0 +1,13 @@
+{
+  "schema_version": "0.1",
+  "simulated": true,
+  "note": "Fixtures demonstrativas — NÃO classificação definitiva do cardápio TATÁ",
+  "items": [
+    { "id": "demo_simples_1", "nome": "Item simples demo", "praca": "sushi", "complexidade": "simples", "tempo_tipico_min": 4, "paralelizavel": true, "dependencias": [] },
+    { "id": "demo_mod_1", "nome": "Item moderado demo", "praca": "sushi", "complexidade": "moderado", "tempo_tipico_min": 8, "paralelizavel": true, "dependencias": [] },
+    { "id": "demo_cx_1", "nome": "Item complexo demo", "praca": "quentes", "complexidade": "complexo", "tempo_tipico_min": 14, "paralelizavel": false, "dependencias": ["sushi"] },
+    { "id": "demo_mc_1", "nome": "Muito complexo demo", "praca": "quentes", "complexidade": "muito_complexo", "tempo_tipico_min": 20, "paralelizavel": false, "dependencias": ["sushi", "conferencia"] },
+    { "id": "demo_cong_1", "nome": "Congestionante demo", "praca": "conferencia", "complexidade": "congestionante", "tempo_tipico_min": 6, "paralelizavel": true, "dependencias": [] },
+    { "id": "demo_beb_1", "nome": "Bebida demo", "praca": "conferencia", "complexidade": "simples", "tempo_tipico_min": 2, "paralelizavel": true, "dependencias": [] }
+  ]
+}

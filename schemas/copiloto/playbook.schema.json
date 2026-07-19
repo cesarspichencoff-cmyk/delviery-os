@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tata.local/schemas/copiloto/playbook.schema.json",
+  "title": "Playbook",
+  "type": "object",
+  "required": ["playbook_id", "situation", "action", "responsible_role", "human_approval", "auto_mutate"],
+  "properties": {
+    "playbook_id": { "type": "string" },
+    "situation": { "type": "string" },
+    "conditions": { "type": "array" },
+    "action": { "type": "string" },
+    "responsible_role": { "type": "string" },
+    "limits": { "type": "array" },
+    "exceptions": { "type": "array" },
+    "risks": { "type": "array" },
+    "expected_result": { "type": "string" },
+    "usage_history": { "type": "array" },
+    "success_rate": { "type": ["number", "null"] },
+    "side_effects": { "type": "array" },
+    "last_reviewed_at": { "type": ["string", "null"] },
+    "human_approval": { "type": "object" },
+    "critical": { "type": "boolean" },
+    "auto_mutate": { "type": "boolean", "const": false },
+    "suggest_revision_only": { "type": "boolean" }
+  }
+}

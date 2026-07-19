@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tata.local/schemas/copiloto/copilot-response.schema.json",
+  "title": "CopilotResponse",
+  "type": "object",
+  "required": ["schema_version", "conclusion", "confidence", "text_full", "audio"],
+  "properties": {
+    "schema_version": { "type": "string" },
+    "conclusion": { "type": "string" },
+    "evidence": { "type": "array" },
+    "impact": {},
+    "confidence": { "type": "string", "enum": ["baixa", "media", "alta"] },
+    "recommendation": {},
+    "limit_or_doubt": { "type": ["string", "null"] },
+    "text_full": { "type": "string" },
+    "audio": {
+      "type": "object",
+      "required": ["spoken_text", "max_seconds", "screen_full_text"],
+      "properties": {
+        "mode": { "type": "string", "enum": ["short", "normal", "detailed"] },
+        "spoken_text": { "type": "string" },
+        "max_seconds": { "type": "number" },
+        "screen_full_text": { "type": "string" },
+        "rules": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "style_rules": { "type": "object" },
+    "epistemic": { "type": "string" }
+  }
+}

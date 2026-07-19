@@ -1,0 +1,127 @@
+{
+  "scenario": "fechamento_tres_perguntas",
+  "closing": {
+    "schema_version": "1.0",
+    "summary": {
+      "shift_id": "s3",
+      "volume": {
+        "orders": 0,
+        "items": 0
+      },
+      "main_pressures": [
+        {
+          "area": "quentes"
+        },
+        {
+          "area": "motoboy"
+        }
+      ],
+      "affected_orders_count": 0,
+      "forecasts": [],
+      "actions_detected": [],
+      "outcomes": [],
+      "unexplained": [
+        {
+          "id": "u1",
+          "observation": "Quentes piorou sem volume",
+          "unknown": "causa",
+          "question": "O que travou Quentes?",
+          "info_gain": 0.9,
+          "importance": 0.9
+        },
+        {
+          "id": "u2",
+          "observation": "Saída lenta",
+          "unknown": "motoboy",
+          "question": "Faltou motoboy ou houve atraso de atribuição?",
+          "info_gain": 0.85,
+          "importance": 0.85
+        },
+        {
+          "id": "u3",
+          "observation": "Pico 20h",
+          "unknown": "promo",
+          "question": "Havia promoção não registrada?",
+          "info_gain": 0.7,
+          "importance": 0.7
+        },
+        {
+          "id": "u4",
+          "observation": "menor",
+          "unknown": "x",
+          "question": "Ignorar?",
+          "info_gain": 0.2,
+          "importance": 0.2
+        }
+      ]
+    },
+    "questions": [
+      {
+        "question_id": "u1",
+        "text": "O que travou Quentes?",
+        "observed": "Quentes piorou sem volume",
+        "unknown": "causa",
+        "why_it_helps": "Fecha a lacuna entre o que medimos e a causa real para o próximo turno.",
+        "info_gain": 0.9,
+        "options_hint": [
+          "não sei",
+          "pular"
+        ],
+        "type": "unobservable_cause"
+      },
+      {
+        "question_id": "u2",
+        "text": "Faltou motoboy ou houve atraso de atribuição?",
+        "observed": "Saída lenta",
+        "unknown": "motoboy",
+        "why_it_helps": "Fecha a lacuna entre o que medimos e a causa real para o próximo turno.",
+        "info_gain": 0.85,
+        "options_hint": [
+          "não sei",
+          "pular"
+        ],
+        "type": "unobservable_cause"
+      },
+      {
+        "question_id": "u3",
+        "text": "Havia promoção não registrada?",
+        "observed": "Pico 20h",
+        "unknown": "promo",
+        "why_it_helps": "Fecha a lacuna entre o que medimos e a causa real para o próximo turno.",
+        "info_gain": 0.7,
+        "options_hint": [
+          "não sei",
+          "pular"
+        ],
+        "type": "unobservable_cause"
+      }
+    ],
+    "audio_script": {
+      "opening": "Resumo do turno: principais pressões em quentes, motoboy. Tenho 3 perguntas rápidas.",
+      "questions": [
+        "O que travou Quentes?",
+        "Faltou motoboy ou houve atraso de atribuição?",
+        "Havia promoção não registrada?"
+      ],
+      "closing": "Obrigado. Salvando o fechamento."
+    },
+    "constraints": {
+      "ideal_seconds": 60,
+      "max_seconds": 120,
+      "max_questions": 3,
+      "allow_skip": true,
+      "allow_dont_know": true,
+      "no_emotion_analysis": true,
+      "no_long_form": true
+    },
+    "flow": [
+      "apresentar_resumo",
+      "perguntar_se_houver",
+      "transcrever_resposta",
+      "confirmar_ou_corrigir",
+      "proxima_pergunta",
+      "resumo_final",
+      "salvar"
+    ]
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "scenario": "previsao_30min",
+  "forecast": {
+    "conclusion": "Sushi tende a acumular nos próximos 30 min (fila ~22.3). Cerca de 6 pedido(s) com risco de prazo.",
+    "horizon_min": 30,
+    "area": "sushi",
+    "metric": "queue_depth",
+    "value": 22.3,
+    "range": {
+      "low": 21.6,
+      "high": 23.1
+    },
+    "unit": "pedidos",
+    "confidence": "media",
+    "model": "ensemble_baseline_ema_linear",
+    "factors": [
+      {
+        "factor": "current_queue",
+        "value": 14,
+        "weight": "high"
+      },
+      {
+        "factor": "historical_median",
+        "value": 4.5,
+        "weight": "medium"
+      },
+      {
+        "factor": "local_trend_per_min",
+        "value": 1,
+        "weight": "medium"
+      }
+    ],
+    "missing_data": [
+      "dwell_history"
+    ],
+    "risk_orders_count": 6,
+    "dwell_expected_min": null,
+    "change_conditions": [
+      "chegada acima do ritmo histórico",
+      "liberação rápida de área a montante",
+      "falha de dado / desconexão de fonte"
+    ],
+    "epistemic": "inference"
+  }
+}

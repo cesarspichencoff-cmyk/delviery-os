@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tata.local/schemas/copiloto/shift-memory.schema.json",
+  "title": "ShiftMemory",
+  "type": "object",
+  "required": ["schema_version", "shift_id", "entries"],
+  "properties": {
+    "schema_version": { "type": "string" },
+    "shift_id": { "type": "string" },
+    "store_id": { "type": ["string", "null"] },
+    "opened_at": { "type": "string" },
+    "closed_at": { "type": ["string", "null"] },
+    "context": { "type": "object" },
+    "volume": { "type": "object" },
+    "events": { "type": "array" },
+    "pressures": { "type": "array" },
+    "forecasts": { "type": "array" },
+    "anomalies": { "type": "array" },
+    "focus_timeline": { "type": "array" },
+    "recommendations": { "type": "array" },
+    "human_decisions": { "type": "array" },
+    "actions": { "type": "array" },
+    "outcomes": { "type": "array" },
+    "recovery_times_min": { "type": "array" },
+    "side_effects": { "type": "array" },
+    "closing_report": {},
+    "unexplained": { "type": "array" },
+    "learnings": { "type": "array" },
+    "confidence_overall": { "type": "string" },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["entry_id", "kind", "epistemic", "payload"],
+        "properties": {
+          "entry_id": { "type": "string" },
+          "at": { "type": "string" },
+          "kind": { "type": "string" },
+          "epistemic": {
+            "type": "string",
+            "enum": ["fact", "inference", "human_report", "hypothesis", "pattern", "validated_rule", "absent", "unknown"]
+          },
+          "payload": {},
+          "confidence": { "type": "string" },
+          "source": { "type": ["string", "null"] }
+        }
+      }
+    }
+  }
+}

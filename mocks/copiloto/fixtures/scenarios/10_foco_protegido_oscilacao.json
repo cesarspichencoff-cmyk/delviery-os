@@ -1,0 +1,47 @@
+{
+  "scenario": "foco_protegido_oscilacao",
+  "result": {
+    "action": "keep",
+    "focus": {
+      "focus_id": "f_conf",
+      "area": "conferencia",
+      "title": "Conferência",
+      "severity": 2,
+      "urgency": 2,
+      "reach": 6,
+      "confidence": "media",
+      "priority_score": 22
+    },
+    "reason": "margem_insuficiente",
+    "technical_rule": "keep",
+    "product": {
+      "action": "Manter o Foco atual",
+      "explanation": "Mantemos o Foco. A alternativa ainda não é claramente maior."
+    }
+  },
+  "expect_action": "keep",
+  "session": {
+    "active": {
+      "focus_id": "f_conf",
+      "area": "conferencia",
+      "title": "Conferência",
+      "severity": 2,
+      "urgency": 2,
+      "reach": 6,
+      "confidence": "media",
+      "priority_score": 22
+    },
+    "since": 1,
+    "updates_held": 0,
+    "last_switch_at": null,
+    "last_key": "f_conf",
+    "cooldown_until": {},
+    "history": [
+      {
+        "at": 1,
+        "event": "activate",
+        "key": "f_conf"
+      }
+    ]
+  }
+}

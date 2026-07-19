@@ -1,0 +1,16 @@
+{
+  "scenario": "recomendacao_adaptada",
+  "recommendation": {
+    "id": "r2",
+    "label": "Chamar motoboy"
+  },
+  "human_decision": {
+    "status": "adapted",
+    "note": "Chamou e agrupou rotas",
+    "at": "2026-07-01T20:12:00Z"
+  },
+  "outcome": {
+    "recovered": true,
+    "recovery_min": 12
+  }
+}

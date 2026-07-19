@@ -1,0 +1,13 @@
+{
+  "scenario": "acao_nao_resolveu",
+  "action": {
+    "type": "chamar_motoboy"
+  },
+  "before": {
+    "pressure_level": "pressure"
+  },
+  "after": {
+    "pressure_level": "pressure"
+  },
+  "side_effects": []
+}

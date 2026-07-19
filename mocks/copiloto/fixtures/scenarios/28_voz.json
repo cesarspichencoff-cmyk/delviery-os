@@ -1,0 +1,51 @@
+{
+  "scenario": "voz",
+  "intent": "state.biggest_problem",
+  "response": {
+    "schema_version": "1.0",
+    "conclusion": "A Conferência merece atenção",
+    "evidence": [
+      "Cinco pedidos estão aguardando",
+      "dois estão próximos do prazo"
+    ],
+    "impact": "Mantido o ritmo atual, outros três podem acumular nos próximos quinze minutos.",
+    "confidence": "media",
+    "recommendation": "verificar primeiro os pedidos 184 e 191.",
+    "limit_or_doubt": "Não há dado de quem está na bancada de conferência.",
+    "text_full": "A Conferência merece atenção. Cinco pedidos estão aguardando; dois estão próximos do prazo. Mantido o ritmo atual, outros três podem acumular nos próximos quinze minutos. Recomendo verificar primeiro os pedidos 184 e 191. Leitura com confiança moderada. Não há dado de quem está na bancada de conferência.",
+    "audio": {
+      "mode": "normal",
+      "spoken_text": "A Conferência merece atenção. Cinco pedidos estão aguardando; dois estão próximos do prazo. Mantido o ritmo atual, outros três podem acumular nos próximos quinze minutos.",
+      "max_seconds": 20,
+      "screen_full_text": "A Conferência merece atenção. Cinco pedidos estão aguardando; dois estão próximos do prazo. Mantido o ritmo atual, outros três podem acumular nos próximos quinze minutos. Recomendo verificar primeiro os pedidos 184 e 191. Leitura com confiança moderada. Não há dado de quem está na bancada de conferência.",
+      "rules": [
+        "conclusao_nos_primeiros_segundos",
+        "uma_ideia_principal",
+        "numeros_essenciais",
+        "acao_final",
+        "nao_ler_tabelas"
+      ]
+    },
+    "style_rules": {
+      "no_abstract_jargon": true,
+      "no_false_precision": true,
+      "no_alarmism": true,
+      "no_invented_certainty": true,
+      "max_lists": 3
+    },
+    "epistemic": "inference"
+  },
+  "audio_short": {
+    "mode": "normal",
+    "spoken_text": "A Conferência merece atenção. Cinco pedidos estão aguardando; dois estão próximos do prazo. Recomendo verificar primeiro os pedidos 184 e 191.",
+    "max_seconds": 20,
+    "screen_full_text": "A Conferência merece atenção. Cinco pedidos estão aguardando; dois estão próximos do prazo. Recomendo verificar primeiro os pedidos 184 e 191. Leitura com confiança moderada.",
+    "rules": [
+      "conclusao_nos_primeiros_segundos",
+      "uma_ideia_principal",
+      "numeros_essenciais",
+      "acao_final",
+      "nao_ler_tabelas"
+    ]
+  }
+}

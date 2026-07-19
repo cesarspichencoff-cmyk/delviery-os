@@ -76,6 +76,79 @@ http.createServer((req, res) => {
       if (sel.fonte !== "simulator") { json({ erro: "fonte_simulada_desligada", selecao: sel }, 409); return; }
       json(payloadDaFonte(query)); return;
     }
+    /* Fase 2B — inteligência e Capacidade Viva (sem redesenhar UI) */
+    if (rota === "/api/inteligencia/forecast") {
+      const intel = require(path.join(DIR, "src", "live", "interface", "adaptador-inteligencia.js"));
+      const hist = String(query.get("hist") || "2,3,4,5,6,7,8,9,10,11,12")
+        .split(",").map(Number).filter((n) => !Number.isNaN(n));
+      json(intel.buildForecastForArea({
+        area: query.get("area") || "conferencia",
+        queue_history: hist,
+        horizon_min: Number(query.get("horizon") || 15),
+        demo: query.get("demo") === "1"
+      }));
+      return;
+    }
+    if (rota === "/api/inteligencia/action") {
+      const intel = require(path.join(DIR, "src", "live", "interface", "adaptador-inteligencia.js"));
+      const pb = intel.suggestPlaybookForArea(query.get("area") || "conferencia");
+      json(intel.adaptActionTrack({
+        stateId: query.get("state") || "recomendacao",
+        playbook: pb,
+        from_engine: true
+      }));
+      return;
+    }
+    if (rota === "/api/inteligencia/closing") {
+      const intel = require(path.join(DIR, "src", "live", "interface", "adaptador-inteligencia.js"));
+      const mem = intel.newShiftMemory({
+        pressures: query.get("calm") === "1" ? [] : [{ area: "conferencia" }],
+        unexplained: query.get("q") === "1"
+          ? [{ id: "u1", observation: "queda sem causa", unknown: "ação manual?", question: "Houve apoio não registrado?", importance: 0.8, info_gain: 0.8 }]
+          : []
+      });
+      json(intel.adaptClosing(mem, Number(query.get("step") || 0)));
+      return;
+    }
+    if (rota === "/api/inteligencia/voice") {
+      const intel = require(path.join(DIR, "src", "live", "interface", "adaptador-inteligencia.js"));
+      json(intel.adaptVoiceIntent(query.get("q") || "Como está a Conferência?", {
+        focus_conclusion: "Conferência sob leitura atual.",
+        focus_detail: "Sinais no organismo.",
+        focus_area: "Conferência"
+      }));
+      return;
+    }
+    if (rota === "/api/capacidade-viva/avaliar") {
+      const CV = require(path.join(DIR, "src", "capacidade-viva"));
+      const demo = require(path.join(DIR, "data", "capacidade-viva", "fixtures", "items-demo.json"));
+      const items = (demo.items || []).filter((it) => it.praca === (query.get("praca") || "sushi"));
+      const av = CV.avaliar({
+        turno: {
+          equipe: {
+            sushi: Number(query.get("sushi") || 8),
+            quentes: Number(query.get("quentes") || 3),
+            conferencia: Number(query.get("conferencia") || 5),
+            caixa: 3,
+            cozinha: 2,
+            motoboy: 4,
+            flutuantes: 1
+          }
+        },
+        por_praca: {
+          sushi: { items: items.length ? items : demo.items.filter((i) => i.praca === "sushi") },
+          quentes: { items: demo.items.filter((i) => i.praca === "quentes"), envelhecimento: Number(query.get("env") || 0) },
+          conferencia: { items: demo.items.filter((i) => i.praca === "conferencia") }
+        },
+        n_pedidos: Number(query.get("pedidos") || 45),
+        orders: query.get("ex") === "motoboy"
+          ? [{ id: "D-1", motoboy_esperando: true, age_min: 12, pronto: true }]
+          : [],
+        confianca: query.get("conf") || "media"
+      });
+      json({ avaliacao: av, v33: CV.toV33ViewHints(av), simulated_fixtures: true });
+      return;
+    }
     const p = decodeURIComponent(rota);
     const f = path.join(DIR, p);
     if (!f.startsWith(DIR)) { res.writeHead(403); res.end("403"); return; }

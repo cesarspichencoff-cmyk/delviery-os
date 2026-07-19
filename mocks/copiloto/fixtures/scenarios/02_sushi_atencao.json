@@ -1,0 +1,397 @@
+{
+  "scenario": "sushi_atencao",
+  "state": {
+    "technical_state": "healthy",
+    "areas": {
+      "sushi": {
+        "label": "Sushi",
+        "queue_depth": 13,
+        "median_dwell_min": 19,
+        "baseline_dwell": 12,
+        "pressure_level": "attention",
+        "trend": "worsening",
+        "volume_trend": "stable",
+        "dwell_trend": "stable",
+        "confidence": "media",
+        "open_orders": [],
+        "pressure_level_forced": "attention",
+        "severity": 1,
+        "pressure_meta": {
+          "level": "attention",
+          "severity": 1,
+          "confidence": "media",
+          "confidence_sufficient": true,
+          "kind": "pressure",
+          "reason": "fila 13 >= atencao 12",
+          "recovery": {
+            "queue_below": 10,
+            "dwell_below_min": 15,
+            "sustained_min": 3
+          },
+          "thresholds_used": {
+            "normal_queue": 8,
+            "attention_queue": 12,
+            "pressure_queue": 16,
+            "critical_queue": 22
+          },
+          "note": null
+        }
+      },
+      "quentes": {
+        "label": "Quentes",
+        "queue_depth": 2,
+        "median_dwell_min": 12,
+        "baseline_dwell": 12,
+        "pressure_level": "normal",
+        "trend": "stable",
+        "volume_trend": "stable",
+        "dwell_trend": "stable",
+        "confidence": "media",
+        "open_orders": [],
+        "severity": 0,
+        "pressure_meta": {
+          "level": "normal",
+          "severity": 0,
+          "confidence": "media",
+          "confidence_sufficient": true,
+          "kind": "normal",
+          "reason": "dentro_do_intervalo_esperado",
+          "recovery": {
+            "queue_below": 5,
+            "dwell_below_min": 14,
+            "sustained_min": 3
+          },
+          "thresholds_used": {
+            "normal_queue": 4,
+            "attention_queue": 7,
+            "pressure_queue": 10,
+            "critical_queue": 14
+          },
+          "note": null
+        }
+      },
+      "cozinha": {
+        "label": "Cozinha",
+        "queue_depth": 2,
+        "median_dwell_min": 12,
+        "baseline_dwell": 12,
+        "pressure_level": "critical",
+        "trend": "stable",
+        "volume_trend": "stable",
+        "dwell_trend": "stable",
+        "confidence": "media",
+        "open_orders": [],
+        "severity": 3,
+        "pressure_meta": {
+          "level": "critical",
+          "severity": 3,
+          "confidence": "media",
+          "confidence_sufficient": true,
+          "kind": "pressure",
+          "reason": "tempo 12min >= critico 12",
+          "recovery": {
+            "queue_below": 4,
+            "dwell_below_min": 14,
+            "sustained_min": 3
+          },
+          "thresholds_used": {
+            "normal_queue": 3,
+            "attention_queue": 5,
+            "pressure_queue": 8,
+            "critical_queue": 12
+          },
+          "note": null
+        }
+      },
+      "conferencia": {
+        "label": "Conferência",
+        "queue_depth": 2,
+        "median_dwell_min": 12,
+        "baseline_dwell": 12,
+        "pressure_level": "normal",
+        "trend": "stable",
+        "volume_trend": "stable",
+        "dwell_trend": "stable",
+        "confidence": "media",
+        "open_orders": [],
+        "severity": 0,
+        "pressure_meta": {
+          "level": "normal",
+          "severity": 0,
+          "confidence": "media",
+          "confidence_sufficient": true,
+          "kind": "normal",
+          "reason": "dentro_do_intervalo_esperado",
+          "recovery": {
+            "queue_below": 3,
+            "dwell_below_min": 10,
+            "sustained_min": 2
+          },
+          "thresholds_used": {
+            "normal_queue": 3,
+            "attention_queue": 5,
+            "pressure_queue": 8,
+            "critical_queue": 12
+          },
+          "note": null
+        }
+      },
+      "motoboy": {
+        "label": "Motoboy",
+        "queue_depth": 2,
+        "median_dwell_min": 12,
+        "baseline_dwell": 12,
+        "pressure_level": "normal",
+        "trend": "stable",
+        "volume_trend": "stable",
+        "dwell_trend": "stable",
+        "confidence": "media",
+        "open_orders": [],
+        "severity": 0,
+        "pressure_meta": {
+          "level": "normal",
+          "severity": 0,
+          "confidence": "media",
+          "confidence_sufficient": false,
+          "kind": "normal",
+          "reason": "dentro_do_intervalo_esperado",
+          "recovery": {
+            "queue_below": 2,
+            "dwell_below_min": 18,
+            "sustained_min": 2
+          },
+          "thresholds_used": {
+            "normal_queue": 2,
+            "attention_queue": 4,
+            "pressure_queue": 6,
+            "critical_queue": 9
+          },
+          "note": "confianca_abaixo_do_minimo_nao_reduz_gravidade"
+        }
+      },
+      "caixa": {
+        "label": "Caixa",
+        "queue_depth": 2,
+        "median_dwell_min": 12,
+        "baseline_dwell": 12,
+        "pressure_level": "attention",
+        "trend": "stable",
+        "volume_trend": "stable",
+        "dwell_trend": "stable",
+        "confidence": "baixa",
+        "open_orders": [],
+        "severity": 1,
+        "pressure_meta": {
+          "level": "attention",
+          "severity": 1,
+          "confidence": "baixa",
+          "confidence_sufficient": true,
+          "kind": "pressure",
+          "reason": "fila 2 >= atencao 2",
+          "recovery": {
+            "queue_below": 1,
+            "dwell_below_min": 8,
+            "sustained_min": 5
+          },
+          "thresholds_used": {
+            "normal_queue": 0,
+            "attention_queue": 2,
+            "pressure_queue": 4,
+            "critical_queue": 6
+          },
+          "note": null
+        }
+      }
+    },
+    "orders": [],
+    "anomalies": [],
+    "focus_selection": {
+      "status": "active",
+      "focus": {
+        "focus_id": "area:cozinha:critical",
+        "status": "active",
+        "area": "cozinha",
+        "title": "Cozinha em crítico",
+        "summary": "2 pedidos · tempo ~12 min",
+        "why_it_matters": "Gravidade 3, urgência 3, alcance 2. Custo de não agir sobe se a tendência for de piora.",
+        "evidence": [
+          {
+            "type": "queue_depth",
+            "value": 2
+          },
+          {
+            "type": "median_dwell_min",
+            "value": 12
+          }
+        ],
+        "affected_orders": [],
+        "severity": 3,
+        "urgency": 3,
+        "reach": 2,
+        "confidence": "media",
+        "dimensions": {
+          "severity": 3,
+          "urgency": 3,
+          "reach": 2,
+          "confidence": "media",
+          "intervenable": true,
+          "confidence_sufficient": true
+        },
+        "priority_score": 25.71,
+        "assertion_strength": 0.85,
+        "forecast": null,
+        "recommended_action": {
+          "type": "recommend",
+          "label": "Olhar Cozinha e liberar pedidos dependentes",
+          "confidence": "media"
+        },
+        "alternatives": [
+          {
+            "key": "area:sushi:attention",
+            "area": "sushi",
+            "title": "Sushi em atenção",
+            "priority_score": 24.49,
+            "severity": 1,
+            "confidence": "media"
+          },
+          {
+            "key": "area:caixa:attention",
+            "area": "caixa",
+            "title": "Caixa em atenção",
+            "priority_score": 4.57,
+            "severity": 1,
+            "confidence": "baixa"
+          }
+        ],
+        "responsible_role": "lider_producao",
+        "follow_up": {
+          "check_after_min": 5,
+          "success_if": "pressao_da_area_cai_um_nivel",
+          "fail_if": "pressao_sobe_ou_pedidos_atrasam"
+        },
+        "technical_state": "healthy",
+        "needs_verification": false,
+        "epistemic": "inference",
+        "selected_at": "2026-07-19T05:51:03.516Z"
+      },
+      "ranking": [
+        {
+          "key": "area:cozinha:critical",
+          "area": "cozinha",
+          "priority_score": 25.71,
+          "severity": 3,
+          "confidence": "media"
+        },
+        {
+          "key": "area:sushi:attention",
+          "area": "sushi",
+          "priority_score": 24.49,
+          "severity": 1,
+          "confidence": "media"
+        },
+        {
+          "key": "area:caixa:attention",
+          "area": "caixa",
+          "priority_score": 4.57,
+          "severity": 1,
+          "confidence": "baixa"
+        }
+      ],
+      "reason": "maior_prioridade_auditavel"
+    }
+  },
+  "focus": {
+    "status": "active",
+    "focus": {
+      "focus_id": "area:cozinha:critical",
+      "status": "active",
+      "area": "cozinha",
+      "title": "Cozinha em crítico",
+      "summary": "2 pedidos · tempo ~12 min",
+      "why_it_matters": "Gravidade 3, urgência 3, alcance 2. Custo de não agir sobe se a tendência for de piora.",
+      "evidence": [
+        {
+          "type": "queue_depth",
+          "value": 2
+        },
+        {
+          "type": "median_dwell_min",
+          "value": 12
+        }
+      ],
+      "affected_orders": [],
+      "severity": 3,
+      "urgency": 3,
+      "reach": 2,
+      "confidence": "media",
+      "dimensions": {
+        "severity": 3,
+        "urgency": 3,
+        "reach": 2,
+        "confidence": "media",
+        "intervenable": true,
+        "confidence_sufficient": true
+      },
+      "priority_score": 25.71,
+      "assertion_strength": 0.85,
+      "forecast": null,
+      "recommended_action": {
+        "type": "recommend",
+        "label": "Olhar Cozinha e liberar pedidos dependentes",
+        "confidence": "media"
+      },
+      "alternatives": [
+        {
+          "key": "area:sushi:attention",
+          "area": "sushi",
+          "title": "Sushi em atenção",
+          "priority_score": 24.49,
+          "severity": 1,
+          "confidence": "media"
+        },
+        {
+          "key": "area:caixa:attention",
+          "area": "caixa",
+          "title": "Caixa em atenção",
+          "priority_score": 4.57,
+          "severity": 1,
+          "confidence": "baixa"
+        }
+      ],
+      "responsible_role": "lider_producao",
+      "follow_up": {
+        "check_after_min": 5,
+        "success_if": "pressao_da_area_cai_um_nivel",
+        "fail_if": "pressao_sobe_ou_pedidos_atrasam"
+      },
+      "technical_state": "healthy",
+      "needs_verification": false,
+      "epistemic": "inference",
+      "selected_at": "2026-07-19T05:51:03.516Z"
+    },
+    "ranking": [
+      {
+        "key": "area:cozinha:critical",
+        "area": "cozinha",
+        "priority_score": 25.71,
+        "severity": 3,
+        "confidence": "media"
+      },
+      {
+        "key": "area:sushi:attention",
+        "area": "sushi",
+        "priority_score": 24.49,
+        "severity": 1,
+        "confidence": "media"
+      },
+      {
+        "key": "area:caixa:attention",
+        "area": "caixa",
+        "priority_score": 4.57,
+        "severity": 1,
+        "confidence": "baixa"
+      }
+    ],
+    "reason": "maior_prioridade_auditavel"
+  }
+}

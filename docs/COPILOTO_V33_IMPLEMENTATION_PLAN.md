@@ -377,6 +377,57 @@ node tools/servir_v1.js
 
 ---
 
+## Fase 2B — Inteligência e Capacidade Viva V0.1
+
+**Checkpoint visual:** `dccc71e` preservado (sem redesign).  
+**Referência congelada:** hash inalterado.  
+**Fonte de inteligência (somente leitura):** `deliveryos-grok-copiloto-intelligence` @ `a8ea130` / `321f67a`.
+
+### A — Integração seletiva
+
+| Incorporado | Caminho |
+|---|---|
+| Engines copiloto | `src/copiloto/*` (20 módulos) |
+| Schemas | `schemas/copiloto/*` |
+| OpenAPI | `openapi/copiloto-openapi.yaml` |
+| Fixtures 30 cenários | `mocks/copiloto/fixtures/` |
+| Testes pack | `tests/copiloto/run.js` |
+| Adapter → V3.3 | `src/live/interface/adaptador-inteligencia.js` |
+| APIs | `/api/inteligencia/forecast\|action\|closing\|voice` |
+
+**Não incorporado / ainda simulado:** ASR/TTS, microfone real, iFood contínuo, memória persistente de produção, financeiro, visão, UI do pack, merge total da branch.
+
+Mocks de UI permanecem como **fallback** e marcados `simulated` / `demonstração` quando o motor não tem dado.
+
+### B — Capacidade Viva V0.1
+
+| Peça | Caminho |
+|---|---|
+| Motor | `src/capacidade-viva/*` |
+| Config | `data/capacidade-viva/config.default.json` |
+| Fixtures itens | `data/capacidade-viva/fixtures/items-demo.json` |
+| Doc | `docs/CAPACIDADE_VIVA_V01.md` |
+| Testes | `tests/capacidade-viva/run.js` |
+| API | `/api/capacidade-viva/avaliar` |
+| QA catalog | +20 entradas CV em `app-v1/v33-mocks.js` |
+
+### Comandos
+
+```bash
+node tools/servir_v1.js
+node tests/copiloto/run.js
+node tests/capacidade-viva/run.js
+node --test tests/live/**/*.js tests/live/*.js
+```
+
+### Limitações 2B
+
+- Superfície Claude Code intocada em composição; APIs prontas para conexão fina.
+- Capacidade Viva usa fixtures de complexidade — calibração real pendente.
+- Pausa nunca auto-aplicada.
+
+---
+
 ## Fase 2A — correção final (fix(copiloto): finaliza implementação fiel ao V3.3)
 
 A entrega 2A original **não abria** num worktree limpo e **não era** a composição congelada.

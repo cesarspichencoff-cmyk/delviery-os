@@ -1,0 +1,43 @@
+{
+  "scenario": "fechamento_sem_perguntas",
+  "closing": {
+    "schema_version": "1.0",
+    "summary": {
+      "shift_id": "s_calm",
+      "volume": {
+        "orders": 40,
+        "items": 120
+      },
+      "main_pressures": [],
+      "affected_orders_count": 0,
+      "forecasts": [],
+      "actions_detected": [],
+      "outcomes": [],
+      "unexplained": []
+    },
+    "questions": [],
+    "audio_script": {
+      "opening": "Resumo do turno: operação sem pressão principal registrada. Sem perguntas. Podemos salvar.",
+      "questions": [],
+      "closing": "Obrigado. Salvando o fechamento."
+    },
+    "constraints": {
+      "ideal_seconds": 60,
+      "max_seconds": 120,
+      "max_questions": 3,
+      "allow_skip": true,
+      "allow_dont_know": true,
+      "no_emotion_analysis": true,
+      "no_long_form": true
+    },
+    "flow": [
+      "apresentar_resumo",
+      "perguntar_se_houver",
+      "transcrever_resposta",
+      "confirmar_ou_corrigir",
+      "proxima_pergunta",
+      "resumo_final",
+      "salvar"
+    ]
+  }
+}

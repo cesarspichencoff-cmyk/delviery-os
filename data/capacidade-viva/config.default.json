@@ -1,0 +1,130 @@
+{
+  "schema_version": "0.1",
+  "config_version": "cv-0.1.0",
+  "provisional": true,
+  "note": "Valores provisórios — não universais. Calibrar com operação real.",
+  "pracas": {
+    "sushi": {
+      "id": "sushi",
+      "label": "Sushi",
+      "aliases": ["sushi", "frios", "combinados"],
+      "role": "producao",
+      "capacidade_base_pessoas_ref": 8,
+      "capacidade_base_note": "8 pessoas = estrutura forte (provisório)"
+    },
+    "quentes": {
+      "id": "quentes",
+      "label": "Quentes",
+      "aliases": ["quentes", "hot", "enrolados_quentes"],
+      "role": "producao",
+      "capacidade_base_pessoas_ref": 3,
+      "capacidade_base_note": "Separação Quentes×Cozinha ainda configurável"
+    },
+    "cozinha": {
+      "id": "cozinha",
+      "label": "Cozinha",
+      "aliases": ["cozinha", "cozinha_quentes"],
+      "role": "producao",
+      "capacidade_base_pessoas_ref": 2,
+      "capacidade_base_note": "Vocabulário não consolidado — alias configurável"
+    },
+    "conferencia": {
+      "id": "conferencia",
+      "label": "Conferência / Delivery",
+      "aliases": ["conferencia", "delivery", "montagem"],
+      "role": "conferencia",
+      "capacidade_base_pessoas_ref": 5,
+      "capacidade_base_note": "5–6 = estrutura forte (provisório)"
+    },
+    "caixa": {
+      "id": "caixa",
+      "label": "Caixa / Atendimento",
+      "aliases": ["caixa", "atendimento"],
+      "role": "caixa",
+      "capacidade_base_pessoas_ref": 3,
+      "capacidade_base_note": "3 = estrutura adequada (provisório)"
+    },
+    "motoboy": {
+      "id": "motoboy",
+      "label": "Motoboy / Expedição",
+      "aliases": ["motoboy", "expedicao", "saida"],
+      "role": "saida",
+      "capacidade_base_pessoas_ref": 4,
+      "capacidade_base_note": "Provisório — capacidade de despacho"
+    }
+  },
+  "complexidade": {
+    "simples": { "peso": 1.0, "label": "simples" },
+    "moderado": { "peso": 1.5, "label": "moderado" },
+    "complexo": { "peso": 2.2, "label": "complexo" },
+    "muito_complexo": { "peso": 3.0, "label": "muito complexo" },
+    "congestionante": { "peso": 3.5, "label": "congestionante em volume" }
+  },
+  "pesos_carga": {
+    "quantidade": 1.0,
+    "complexidade": 1.0,
+    "urgencia": 1.0,
+    "concentracao": 1.0,
+    "dependencias": 1.0
+  },
+  "previsao": {
+    "horizonte_min": 15,
+    "janela_alternativa_min": [10, 15, 30]
+  },
+  "volume_global_provisorio": {
+    "note": "Não é verdade absoluta — complexidade e equipe alteram o limite",
+    "controlavel_max": 50,
+    "atencao_max": 60,
+    "dificuldade_min": 70
+  },
+  "contexto_temporal": {
+    "dia": {
+      "0": { "fator": 1.15, "label": "domingo" },
+      "1": { "fator": 0.85, "label": "segunda" },
+      "2": { "fator": 0.85, "label": "terça" },
+      "3": { "fator": 0.95, "label": "quarta" },
+      "4": { "fator": 0.95, "label": "quinta" },
+      "5": { "fator": 1.2, "label": "sexta" },
+      "6": { "fator": 1.1, "label": "sábado", "incerteza": "alta" }
+    },
+    "hora_sensivel": { "inicio": 19, "fim": 21, "fator": 1.15 },
+    "preparacao_pico": { "inicio": 17, "fim": 19, "fator": 1.05 }
+  },
+  "isf_estados": {
+    "controlavel": { "max": 0.65 },
+    "atencao": { "max": 0.85 },
+    "proximo_limite": { "max": 1.05 },
+    "acima_capacidade": { "max": 999 }
+  },
+  "recuperacao": {
+    "resultado_inicial_min": 5,
+    "recuperacao_principal_min": 15,
+    "efeito_colateral_min": 20
+  },
+  "intervencoes": [
+    "observar",
+    "preparar_equipe_antes_pico",
+    "priorizar_pedidos_especificos",
+    "finalizar_pedidos_motoboy_esperando",
+    "verificar_comanda_ausente",
+    "verificar_pedido_ja_saiu",
+    "chamar_ou_cobrar_motoboy",
+    "reorganizar_prioridade_praca",
+    "apoio_local",
+    "pausa_seletiva",
+    "pausa_geral"
+  ],
+  "pausa": {
+    "seletiva_antes_geral": true,
+    "geral_ultima_alternativa": true,
+    "requer_confirmacao_humana": true,
+    "auto_aplicar": false
+  },
+  "atraso": {
+    "proximo_atrasar_min": 35,
+    "atrasado_min": 50,
+    "pronto_parado_min": 8,
+    "motoboy_esperando_min": 5,
+    "entregador_alocado_sem_retirada_min": 10
+  }
+}

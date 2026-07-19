@@ -1,0 +1,15 @@
+{
+  "scenario": "recomendacao_aceita",
+  "recommendation": {
+    "id": "r1",
+    "label": "Priorizar Conferência"
+  },
+  "human_decision": {
+    "status": "accepted",
+    "at": "2026-07-01T20:10:00Z"
+  },
+  "outcome": {
+    "recovered": true,
+    "recovery_min": 8
+  }
+}

@@ -1,0 +1,81 @@
+{
+  "scenario": "anomalia",
+  "anomalies": [
+    {
+      "anomaly_id": "dwell_up_volume_flat_sushi",
+      "kind": "operational",
+      "area": "sushi",
+      "title": "Tempo piorando sem mais volume",
+      "what_changed": "Tempo mediano em Sushi subiu com volume estável/baixo",
+      "comparison": "dwell 22 vs baseline 14; volume stable",
+      "evidence": [
+        {
+          "k": "median_dwell_min",
+          "v": 22
+        },
+        {
+          "k": "baseline_dwell",
+          "v": 14
+        },
+        {
+          "k": "volume_trend",
+          "v": "stable"
+        }
+      ],
+      "hypothesis": "Gargalo de processo, item complexo ou capacidade reduzida (não atribuído a pessoa)",
+      "alternative_explanation": "Dado de tempo com atraso de fonte ou composição atípica",
+      "confidence": "media",
+      "verify_action": "Checar 2-3 pedidos abertos em Sushi e se a fonte de tempo está fresca",
+      "not_a_person_judgment": true,
+      "epistemic": "hypothesis"
+    },
+    {
+      "anomaly_id": "quentes_desync_sushi",
+      "kind": "operational",
+      "area": "quentes",
+      "title": "Quentes descolado do ritmo do Sushi",
+      "what_changed": "Fila de Quentes bem acima do Sushi no mesmo momento",
+      "comparison": "Quentes 12 vs Sushi 5",
+      "evidence": [
+        {
+          "k": "quentes_queue",
+          "v": 12
+        },
+        {
+          "k": "sushi_queue",
+          "v": 5
+        }
+      ],
+      "hypothesis": "Pedidos com mais itens quentes ou bancada de quentes mais lenta que o usual",
+      "alternative_explanation": "Subcontagem de Sushi por classificação de praça",
+      "confidence": "media",
+      "verify_action": "Comparar composição dos últimos 5 pedidos e carga da bancada de quentes",
+      "not_a_person_judgment": true,
+      "epistemic": "hypothesis"
+    },
+    {
+      "anomaly_id": "conference_buildup_stable_prod",
+      "kind": "operational",
+      "area": "conferencia",
+      "title": "Conferência acumulando com produção estável",
+      "what_changed": "Pedidos prontos/em conferência sobem sem pressão de produção",
+      "comparison": "Conferência 6; produção estável",
+      "evidence": [
+        {
+          "k": "conference_queue",
+          "v": 6
+        },
+        {
+          "k": "sushi_level",
+          "v": "attention"
+        }
+      ],
+      "hypothesis": "Gargalo de montagem/conferência ou espera de motoboy refletida como fila de conferência",
+      "alternative_explanation": "Marca de 'pronto' atrasada ou pedidos grandes concentrados",
+      "confidence": "media",
+      "verify_action": "Ver se os pedidos em conferência já têm motoboy e se há 2ª sacola/obs",
+      "not_a_person_judgment": true,
+      "epistemic": "hypothesis"
+    }
+  ]
+}

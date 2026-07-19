@@ -1,0 +1,15 @@
+{
+  "scenario": "recomendacao_ignorada",
+  "recommendation": {
+    "id": "r3",
+    "label": "Priorizar Quentes"
+  },
+  "human_decision": {
+    "status": "ignored",
+    "at": "2026-07-01T20:15:00Z"
+  },
+  "outcome": {
+    "recovered": false,
+    "pressure_increased": true
+  }
+}

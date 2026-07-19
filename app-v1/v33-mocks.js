@@ -111,7 +111,7 @@
     };
   }
 
-  /** Catálogo QA interno (~15 momentos) — NÃO é home do produto */
+  /** Catálogo QA interno — NÃO é home do produto (inclui Capacidade Viva) */
   const QA_CATALOG = [
     { id: "calmo", name: "Calmo · nada exige você", mode: "force-calmo" },
     { id: "ambiente", name: "Ambiente · pressão surgindo", mode: "force-ambiente" },
@@ -128,7 +128,28 @@
     { id: "fechamento", name: "Fechamento de turno (demo)", mode: "closing" },
     { id: "tech_stale", name: "Técnico · dado atrasado", mode: "tech", status: "stale" },
     { id: "tech_fail", name: "Técnico · falha", mode: "tech", status: "failed" },
-    { id: "tech_disc", name: "Técnico · conexão perdida", mode: "tech", status: "disconnected" }
+    { id: "tech_disc", name: "Técnico · conexão perdida", mode: "tech", status: "disconnected" },
+    /* Capacidade Viva V0.1 — cenários dev */
+    { id: "cv_controlavel", name: "CV · operação controlável", mode: "force-calmo", cv: "controlavel" },
+    { id: "cv_prep_pico", name: "CV · preparação antes do pico", mode: "force-ambiente", cv: "prep" },
+    { id: "cv_sushi", name: "CV · Sushi em atenção", mode: "force-ambiente", cv: "sushi" },
+    { id: "cv_quentes", name: "CV · Quentes próximo do limite", mode: "force-foco", cv: "quentes" },
+    { id: "cv_conf", name: "CV · Conferência congestionada", mode: "force-foco", cv: "conferencia" },
+    { id: "cv_simples", name: "CV · muitos pedidos simples", mode: "force-ambiente", cv: "simples" },
+    { id: "cv_complexos", name: "CV · poucos grandes complexos", mode: "force-foco", cv: "complexos" },
+    { id: "cv_antigo", name: "CV · pedido antigo", mode: "force-foco", cv: "antigo" },
+    { id: "cv_moto_esp", name: "CV · motoboy esperando", mode: "force-foco", cv: "motoboy" },
+    { id: "cv_alocado", name: "CV · entregador alocado sem buscar", mode: "force-foco", cv: "alocado" },
+    { id: "cv_comanda", name: "CV · possível comanda ausente", mode: "force-foco", cv: "comanda" },
+    { id: "cv_pausa_nao", name: "CV · pausa ainda desnecessária", mode: "force-ambiente", cv: "pausa_nao" },
+    { id: "cv_pausa_sel", name: "CV · pausa seletiva recomendada", mode: "force-foco", cv: "pausa_sel" },
+    { id: "cv_pausa_geral", name: "CV · pausa geral recomendada", mode: "force-foco", cv: "pausa_geral" },
+    { id: "cv_rec_liq", name: "CV · recuperação líquida", mode: "force-foco", mock: "action", state: "melhora" },
+    { id: "cv_parcial", name: "CV · melhora parcial", mode: "force-foco", mock: "action", state: "parcial" },
+    { id: "cv_sem", name: "CV · ação sem resultado", mode: "force-foco", mock: "action", state: "sem_resultado" },
+    { id: "cv_colat", name: "CV · efeito colateral", mode: "force-foco", mock: "action", state: "colateral" },
+    { id: "cv_parcial_dado", name: "CV · dado parcial", mode: "tech", status: "degraded" },
+    { id: "cv_conf_baixa", name: "CV · confiança insuficiente", mode: "force-calmo", cv: "conf_baixa" }
   ];
 
   root.V33_MOCKS = {
