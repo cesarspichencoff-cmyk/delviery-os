@@ -1,0 +1,219 @@
+{
+  "labels": ["CALIBRAÇÃO", "MODO SOMBRA", "NÃO OPERACIONAL"],
+  "version": "2D.6",
+  "source": "César / operação TATÁ",
+  "date": "2026-07-19",
+  "pack": "review-v3",
+  "representativos": {
+    "CV-R-001": {
+      "rotulo": "observacao_normal_proximo_limite",
+      "gravidade_humana": "observacao",
+      "critico": false,
+      "valido_calibracao": true,
+      "nota": "Não crítico. Motoboy ~5.5 min — normal próximo do limite."
+    },
+    "CV-R-002": {
+      "rotulo": "invalido_calibracao",
+      "gravidade_humana": null,
+      "critico": false,
+      "valido_calibracao": false,
+      "nota": "Inválido: uma leitura e espera zero contradizem razão de ≥15 min."
+    },
+    "CV-R-003": {
+      "rotulo": "atencao_forte_quase_critico",
+      "gravidade_humana": "quase_critico",
+      "critico": false,
+      "valido_calibracao": true,
+      "nota": "Atenção forte / quase crítico (~14.5 min motoboy)."
+    },
+    "CV-R-004": {
+      "rotulo": "normal_ou_observacao",
+      "gravidade_humana": "observacao",
+      "critico": false,
+      "valido_calibracao": true,
+      "nota": "Não crítico (~5 min motoboy)."
+    },
+    "CV-R-005": {
+      "rotulo": "critico",
+      "gravidade_humana": "critico",
+      "critico": true,
+      "valido_calibracao": true,
+      "nota": "Crítico (~24.9 min motoboy)."
+    },
+    "CV-R-006": {
+      "rotulo": "qualidade_fonte",
+      "gravidade_humana": "qualidade_fonte",
+      "critico": false,
+      "valido_calibracao": false,
+      "excluir_capacidade": true,
+      "nota": "Qualidade da fonte; idade incompatível (zumbi)."
+    },
+    "CV-R-007": {
+      "rotulo": "critico",
+      "gravidade_humana": "critico",
+      "critico": true,
+      "valido_calibracao": true,
+      "nota": "Crítico (~31 min motoboy)."
+    },
+    "CV-R-008": {
+      "rotulo": "critico",
+      "gravidade_humana": "critico",
+      "critico": true,
+      "valido_calibracao": true,
+      "nota": "Crítico — pedido acima de 40 min (idade 58)."
+    },
+    "CV-R-009": {
+      "rotulo": "observacao",
+      "gravidade_humana": "observacao",
+      "critico": false,
+      "valido_calibracao": true,
+      "nota": "Não crítico apenas por 6,9 min."
+    },
+    "CV-R-010": {
+      "rotulo": "observacao",
+      "gravidade_humana": "observacao",
+      "critico": false,
+      "valido_calibracao": true,
+      "nota": "Não crítico apenas por 7,87 min."
+    },
+    "CV-R-011": {
+      "rotulo": "qualidade_fonte",
+      "gravidade_humana": "qualidade_fonte",
+      "critico": false,
+      "valido_calibracao": false,
+      "excluir_capacidade": true,
+      "nota": "Qualidade da fonte; idade incompatível."
+    },
+    "CV-R-012": {
+      "rotulo": "invalido_calibracao",
+      "gravidade_humana": null,
+      "critico": false,
+      "valido_calibracao": false,
+      "nota": "Inválido: razão diz vários prontos, caso mostra apenas um."
+    },
+    "CV-R-013": {
+      "rotulo": "qualidade_fonte",
+      "gravidade_humana": "qualidade_fonte",
+      "critico": false,
+      "valido_calibracao": false,
+      "excluir_capacidade": true,
+      "nota": "Qualidade da fonte."
+    },
+    "CV-R-014": {
+      "rotulo": "qualidade_fonte",
+      "gravidade_humana": "qualidade_fonte",
+      "critico": false,
+      "valido_calibracao": false,
+      "excluir_capacidade": true,
+      "nota": "Qualidade da fonte."
+    },
+    "CV-R-015": {
+      "rotulo": "qualidade_fonte",
+      "gravidade_humana": "qualidade_fonte",
+      "critico": false,
+      "valido_calibracao": false,
+      "excluir_capacidade": true,
+      "nota": "Qualidade da fonte."
+    },
+    "CV-R-016": {
+      "rotulo": "qualidade_fonte",
+      "gravidade_humana": "qualidade_fonte",
+      "critico": false,
+      "valido_calibracao": false,
+      "excluir_capacidade": true,
+      "nota": "Qualidade da fonte."
+    }
+  },
+  "limitrofes": {
+    "CV-L-001": {
+      "rotulo": "atencao_forte_confianca_baixa",
+      "gravidade_humana": "atencao_forte",
+      "confianca": "baixa",
+      "acao": "verificar_imediatamente",
+      "valido_calibracao": true,
+      "nota": "Atenção forte, confiança baixa; verificar imediatamente."
+    },
+    "CV-L-002": {
+      "rotulo": "atencao_confianca_baixa",
+      "gravidade_humana": "atencao",
+      "confianca": "baixa",
+      "acao": "verificar",
+      "valido_calibracao": true,
+      "nota": "Atenção, confiança baixa; verificar."
+    },
+    "CV-L-003": {
+      "rotulo": "qualidade_fonte",
+      "excluir_capacidade": true,
+      "valido_calibracao": false,
+      "nota": "Qualidade da fonte; excluir da capacidade."
+    },
+    "CV-L-004": {
+      "rotulo": "qualidade_fonte",
+      "excluir_capacidade": true,
+      "valido_calibracao": false,
+      "nota": "Qualidade da fonte; excluir da capacidade."
+    },
+    "CV-L-005": {
+      "rotulo": "qualidade_fonte",
+      "excluir_capacidade": true,
+      "valido_calibracao": false,
+      "nota": "Qualidade da fonte; excluir da capacidade."
+    },
+    "CV-L-006": {
+      "rotulo": "critico_confirmado",
+      "gravidade_humana": "critico",
+      "critico": true,
+      "valido_calibracao": true,
+      "nota": "Crítico confirmado."
+    },
+    "CV-L-007": {
+      "rotulo": "critico_confirmado",
+      "gravidade_humana": "critico",
+      "critico": true,
+      "valido_calibracao": true,
+      "nota": "Crítico confirmado."
+    },
+    "CV-L-008": {
+      "rotulo": "critico_confirmado",
+      "gravidade_humana": "critico",
+      "critico": true,
+      "valido_calibracao": true,
+      "nota": "Crítico confirmado."
+    },
+    "CV-L-009": {
+      "rotulo": "critico_confirmado",
+      "gravidade_humana": "critico",
+      "critico": true,
+      "valido_calibracao": true,
+      "nota": "Crítico confirmado."
+    },
+    "CV-L-010": {
+      "rotulo": "critico_confirmado",
+      "gravidade_humana": "critico",
+      "critico": true,
+      "valido_calibracao": true,
+      "nota": "Crítico confirmado."
+    },
+    "CV-L-011": {
+      "rotulo": "critico_confirmado",
+      "gravidade_humana": "critico",
+      "critico": true,
+      "valido_calibracao": true,
+      "nota": "Crítico confirmado."
+    },
+    "CV-L-012": {
+      "rotulo": "critico_confirmado",
+      "gravidade_humana": "critico",
+      "critico": true,
+      "valido_calibracao": true,
+      "nota": "Crítico confirmado."
+    }
+  },
+  "summary": {
+    "n_representativos": 16,
+    "n_limitrofes": 12,
+    "validos_calibracao": 17,
+    "excluidos": 11,
+    "zumbis_qualidade_fonte": 9
+  }
+}

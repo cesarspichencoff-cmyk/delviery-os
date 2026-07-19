@@ -105,11 +105,57 @@ function replayOrders(byOrder, opts) {
     const itemsByPraca = {};
     let nReady = 0;
     let nComplex = 0;
+    let nZombies = 0;
 
+    // Passo 1: separar zumbis (fora da capacidade/ISF) de pedidos operacionais
+    const operational = [];
     for (const meta of orderMeta.values()) {
       const state = orderStateAt(meta, t);
       if (!state.active) continue;
-      active.push(state);
+      const baseState = {
+        id: meta.id,
+        age_min: state.age_min,
+        ready_wait_min: state.ready_wait_min,
+        pronto: state.pronto,
+        saiu: state.saiu,
+        cancelado: state.cancelado,
+        alocado: state.alocado,
+        alocado_epistemic: meta.alocado_epistemic,
+        courier_wait_store_min: meta.courier_wait_store_min,
+        courier_wait_epistemic: meta.courier_wait_epistemic,
+        queue_growing: false,
+        carga_alta: false,
+        item_complexo: meta.items.some(
+          (i) => i.complexidade === "complexo" || i.complexidade === "muito_complexo"
+        ),
+        capacidade_baixa: teamProfileId === "estrutura_fraca",
+        prontos_acumulando: false
+      };
+      const pre = classifyOrderSignals(baseState, config, {});
+      if (pre.zombie || pre.level === "qualidade_fonte" || pre.exclude_from_capacity) {
+        nZombies++;
+        orderClassifications.push(pre);
+        continue;
+      }
+      operational.push({ meta, state, baseState });
+    }
+
+    const nReadyAll = operational.filter((x) => x.state.pronto && !x.state.saiu).length;
+    const nDelayedAll = operational.filter((x) => x.state.age_min >= 40).length;
+    const nCourier = operational.filter(
+      (x) => x.meta.courier_wait_store_min != null && x.meta.courier_wait_store_min >= 5
+    ).length;
+    const ampCtx = {
+      n_ready: nReadyAll,
+      n_delayed: nDelayedAll,
+      queue_growing: false,
+      praca_pressionada: false,
+      n_motoboys_waiting: nCourier
+    };
+
+    // Passo 2: classificar operacionais com amplificadores
+    for (const { meta, state, baseState } of operational) {
+      active.push(Object.assign({}, state, { id: meta.id }));
       if (state.pronto && !state.saiu) nReady++;
       for (const it of meta.items) {
         if (it.complexidade && it.complexidade !== "simples") nComplex++;
@@ -121,25 +167,13 @@ function replayOrders(byOrder, opts) {
           })
         );
       }
-
       const cls = classifyOrderSignals(
-        {
-          id: meta.id,
-          age_min: state.age_min,
-          ready_wait_min: state.ready_wait_min,
-          pronto: state.pronto,
-          saiu: state.saiu,
-          alocado: state.alocado,
-          alocado_epistemic: meta.alocado_epistemic,
-          courier_wait_store_min: state.motoboy_na_loja ? meta.courier_wait_store_min : null,
-          courier_wait_epistemic: meta.courier_wait_epistemic,
-          queue_growing: false,
-          carga_alta: active.length > 40,
-          item_complexo: meta.items.some((i) => i.complexidade === "complexo" || i.complexidade === "muito_complexo"),
-          capacidade_baixa: teamProfileId === "estrutura_fraca",
-          prontos_acumulando: nReady >= 4
-        },
-        config
+        Object.assign({}, baseState, {
+          carga_alta: operational.length > 40,
+          prontos_acumulando: nReadyAll >= 4
+        }),
+        config,
+        ampCtx
       );
       orderClassifications.push(cls);
     }
@@ -155,7 +189,7 @@ function replayOrders(byOrder, opts) {
     if (!Object.keys(por_praca).length && active.length) {
       por_praca.conferencia = {
         items: active.slice(0, 15).map((a) => ({
-          id: "unknown",
+          id: a.id || "unknown",
           nome: "item_desconhecido",
           quantidade: 1,
           praca: "conferencia",
@@ -174,7 +208,7 @@ function replayOrders(byOrder, opts) {
       por_praca,
       n_pedidos: active.length,
       when: new Date(t),
-      orders: [], // exceções vêm da taxonomia saneada, não do detector legado
+      orders: [],
       confianca: Object.keys(itemsByPraca).length ? "media" : "baixa",
       source: { status: "ready" }
     });
@@ -211,12 +245,14 @@ function replayOrders(byOrder, opts) {
         n_signal: tick_class.n_signal_orders,
         n_attention: tick_class.n_attention_orders,
         n_critical: tick_class.n_critical_orders,
+        n_zombie: tick_class.n_zombie_orders || nZombies || 0,
         ready: nReady,
         complex_items: nComplex,
         isf_critica: isfCrit ? isfCrit.isf : null
       },
       confianca: av.isf.confidence,
       menor_intervencao: iv.action,
+      intervencao_mensagem: iv.message || iv.reason || null,
       intervencao_detail: iv,
       pausa_seletiva_sugerida: iv.action === "pausa_seletiva",
       pausa_geral_sugerida: iv.action === "pausa_geral",

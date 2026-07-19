@@ -1,0 +1,165 @@
+{
+  "schema_version": "0.1",
+  "config_version": "cv-cal-tata-human-v1",
+  "provisional": true,
+  "rules_engine": "tata_human_v1",
+  "note": "Primeira calibração com verdade operacional do César (TATÁ). Não sobrescreve cv-cal-sane-v2.",
+  "parent_config": "cv-cal-sane-v2",
+  "human_calibration": {
+    "enabled": true,
+    "source": "César / operação TATÁ",
+    "date": "2026-07-19",
+    "pack_reference": "review-v3 (2D.5)",
+    "description": "Âncoras de motoboy e pedido sem saída; pedidos zumbis fora da capacidade; gravidade ≠ confiança"
+  },
+  "pracas": {
+    "sushi": {
+      "id": "sushi",
+      "label": "Sushi",
+      "aliases": ["sushi", "frios", "combinados"],
+      "role": "producao",
+      "capacidade_base_pessoas_ref": 8,
+      "capacidade_base_note": "CAPACIDADE HIPOTÉTICA — provisório"
+    },
+    "quentes": {
+      "id": "quentes",
+      "label": "Quentes",
+      "aliases": ["quentes", "hot", "enrolados_quentes"],
+      "role": "producao",
+      "capacidade_base_pessoas_ref": 3
+    },
+    "cozinha": {
+      "id": "cozinha",
+      "label": "Cozinha",
+      "aliases": ["cozinha", "cozinha_quentes"],
+      "role": "producao",
+      "capacidade_base_pessoas_ref": 2
+    },
+    "conferencia": {
+      "id": "conferencia",
+      "label": "Conferência / Delivery",
+      "aliases": ["conferencia", "delivery", "montagem"],
+      "role": "conferencia",
+      "capacidade_base_pessoas_ref": 5
+    },
+    "caixa": {
+      "id": "caixa",
+      "label": "Caixa / Atendimento",
+      "aliases": ["caixa", "atendimento"],
+      "role": "caixa",
+      "capacidade_base_pessoas_ref": 3
+    },
+    "motoboy": {
+      "id": "motoboy",
+      "label": "Motoboy / Expedição",
+      "aliases": ["motoboy", "expedicao", "saida"],
+      "role": "saida",
+      "capacidade_base_pessoas_ref": 4
+    }
+  },
+  "complexidade": {
+    "simples": { "peso": 1 },
+    "moderado": { "peso": 1.4 },
+    "complexo": { "peso": 2.0 },
+    "muito_complexo": { "peso": 2.8 }
+  },
+  "pesos_carga": {
+    "quantidade": 0.85,
+    "complexidade": 1.25,
+    "urgencia": 1.05,
+    "concentracao": 1.0,
+    "dependencias": 1.05
+  },
+  "previsao": { "horizonte_min": 15 },
+  "volume_global_provisorio": { "enabled": true },
+  "contexto_temporal": { "timezone": "America/Sao_Paulo" },
+  "isf_estados": {
+    "controlavel": { "max": 0.7 },
+    "atencao": { "max": 0.9 },
+    "proximo_limite": { "max": 1.05 },
+    "acima_capacidade": { "min": 1.05 }
+  },
+  "recuperacao": { "enabled": false },
+  "intervencoes": {
+    "auto_aplicar": false,
+    "mensagens_concretas": true,
+    "substituir_observar_quando_concreto": true
+  },
+  "pausa": {
+    "auto_aplicar": false,
+    "seletiva_requer_tendencia": true,
+    "seletiva_requer_confianca": true,
+    "geral_requer_multiplas_pracas": true,
+    "ignorar_pedidos_zumbi": true
+  },
+  "atraso": {
+    "proximo_atrasar_min": 30,
+    "atrasado_min": 40,
+    "pronto_parado_min": 25,
+    "motoboy_esperando_min": 10,
+    "entregador_alocado_sem_retirada_min": 15,
+    "pronto_sem_saida_min": 25,
+    "pronto_sem_saida_critico_min": 40,
+    "motoboy_na_loja_min": 10,
+    "motoboy_quase_critico_min": 15,
+    "motoboy_critico_min": 20,
+    "motoboy_normal_max_min": 5,
+    "expedicao_normal_max_min": 8
+  },
+  "human_anchors": {
+    "motoboy_na_loja": [
+      { "min": 0, "severity": 0, "label": "normal" },
+      { "min": 5, "severity": 0.25, "label": "normal_proximo_limite" },
+      { "min": 10, "severity": 1, "label": "atencao" },
+      { "min": 15, "severity": 2, "label": "quase_critico" },
+      { "min": 20, "severity": 3, "label": "critico" }
+    ],
+    "pronto_sem_saida": [
+      { "min": 0, "severity": 0, "label": "normal" },
+      { "min": 25, "severity": 1.5, "label": "atencao_forte" },
+      { "min": 30, "severity": 1.75, "label": "atencao_forte_investigacao" },
+      { "min": 40, "severity": 3, "label": "critico" }
+    ]
+  },
+  "zombie": {
+    "max_age_min": 180,
+    "multi_day_without_terminal": true,
+    "exclude_from_isf": true,
+    "exclude_from_pause": true,
+    "exclude_from_capacity": true,
+    "label": "qualidade_da_fonte / pedido_sem_encerramento",
+    "recommendation": "Verifique e corrija o status deste pedido antigo."
+  },
+  "episode": {
+    "gap_min": 10
+  },
+  "calibration": {
+    "labels": ["CALIBRAÇÃO", "MODO SOMBRA", "NÃO OPERACIONAL"],
+    "parent": "cv-cal-sane-v2",
+    "human_source": "César",
+    "date": "2026-07-19",
+    "rules": [
+      "motoboy: 5 normal, 10 atenção, 15 quase crítico, 20 crítico (contínuo)",
+      "pronto sem saída: 25–30 atenção forte, ≥40 crítico",
+      "5–7 min motoboy nunca exceção crítica",
+      "gravidade separada da confiança",
+      "zumbis fora de ISF/capacidade/pausa",
+      "intervenções concretas no lugar de observar"
+    ],
+    "cases_used": [
+      "CV-R-001", "CV-R-003", "CV-R-004", "CV-R-005", "CV-R-007", "CV-R-008", "CV-R-009", "CV-R-010",
+      "CV-L-001", "CV-L-002", "CV-L-006", "CV-L-007", "CV-L-008", "CV-L-009", "CV-L-010", "CV-L-011", "CV-L-012"
+    ],
+    "cases_excluded": [
+      "CV-R-002", "CV-R-006", "CV-R-011", "CV-R-012", "CV-R-013", "CV-R-014", "CV-R-015", "CV-R-016",
+      "CV-L-003", "CV-L-004", "CV-L-005"
+    ],
+    "limitations": [
+      "Amostra pequena (review-v3) — não afirmar precisão geral",
+      "Equipe continua CAPACIDADE HIPOTÉTICA",
+      "Sem 6 meses de histórico",
+      "Itens/complexidade ainda parciais na fonte"
+    ],
+    "at": "2026-07-19T12:00:00.000Z"
+  }
+}

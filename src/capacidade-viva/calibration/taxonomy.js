@@ -5,14 +5,20 @@
 "use strict";
 
 const { EPISTEMIC, stamp } = require("./labels");
+const { usesHumanRules, classifyOrderHuman } = require("./human-rules");
 
 /**
  * Classifica um pedido no instante t.
  * @param {object} state - orderStateAt + extras
  * @param {object} config
+ * @param {object} [ctx] - contexto de amplificadores (só regras humanas)
  */
-function classifyOrderSignals(state, config) {
+function classifyOrderSignals(state, config, ctx) {
   const cfg = config || {};
+  // Calibração humana TATÁ v1 — não altera comportamento de cv-cal-sane-v2
+  if (usesHumanRules(cfg)) {
+    return classifyOrderHuman(state, cfg, ctx || {});
+  }
   const atras = cfg.atraso || {};
   const limReady = atras.pronto_sem_saida_min != null ? atras.pronto_sem_saida_min : 12;
   const limCourierStore = atras.motoboy_na_loja_min != null ? atras.motoboy_na_loja_min : 5;
@@ -177,14 +183,22 @@ function classifyTick(orderClassifications, isfSnapshot, opts) {
   const critical_items = [];
   const attention_items = [];
 
+  let n_zombie = 0;
   for (const c of list) {
+    if (c.level === "qualidade_fonte" || c.zombie) {
+      n_zombie++;
+      continue; // não entra em pressão operacional / ISF
+    }
     if (c.level === "excecao_critica") {
       n_critical++;
       // propaga order_id do pedido para cada exceção (não altera classificação)
       for (const ex of c.exceptions || []) {
         critical_items.push(
           Object.assign({}, ex, {
-            order_id: ex.order_id || c.order_id || null
+            order_id: ex.order_id || c.order_id || null,
+            severity: ex.severity != null ? ex.severity : c.severity,
+            action: c.action || ex.action,
+            action_code: c.action_code || ex.action_code
           })
         );
       }
@@ -193,7 +207,10 @@ function classifyTick(orderClassifications, isfSnapshot, opts) {
       for (const at of c.attentions || []) {
         attention_items.push(
           Object.assign({}, at, {
-            order_id: at.order_id || c.order_id || null
+            order_id: at.order_id || c.order_id || null,
+            severity: at.severity != null ? at.severity : c.severity,
+            action: c.action || at.action,
+            action_code: c.action_code || at.action_code
           })
         );
       }
@@ -217,6 +234,7 @@ function classifyTick(orderClassifications, isfSnapshot, opts) {
     n_signal_orders: n_signal,
     n_attention_orders: n_attention,
     n_critical_orders: n_critical,
+    n_zombie_orders: n_zombie,
     has_signal: n_signal + n_attention + n_critical > 0,
     has_attention: n_attention > 0 || tick_level === "atencao",
     has_critical: n_critical > 0,

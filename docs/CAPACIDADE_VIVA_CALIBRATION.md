@@ -225,3 +225,28 @@ Concentração em **Conferência** e **Sushi** reflete `praca_critica` do ISF no
 node tools/regenerar_episodios_2d3.js
 node tests/capacidade-viva/calibration/run-sane.js
 ```
+
+---
+
+## Fase 2D.6 — Primeira calibração humana (César / TATÁ)
+
+Config nova (não sobrescreve anteriores):
+
+`data/capacidade-viva/calibration/configs/cv-cal-tata-human-v1.json`
+
+| Âncora | Regra |
+|---|---|
+| Motoboy na loja | 5 normal · 10 atenção · 15 quase crítico · 20 crítico (contínuo) |
+| Pronto sem saída | 25–30 atenção forte · ≥40 crítico |
+| Zumbis | idade ≥180 min sem terminal → qualidade da fonte; fora de ISF/capacidade/pausa |
+| Gravidade × confiança | separadas; baixa confiança muda ação, não apaga severidade |
+
+Rótulos: `review-v3/rotulos-humanos-cesar.json`  
+Avaliação: `review-v3/avaliacao-calibracao-humana-2d6.json`
+
+```bash
+node tests/capacidade-viva/calibration/run-human-v1.js
+node tools/avaliar_calibracao_humana.js
+```
+
+**Limitação:** amostra pequena (review-v3). Não afirmar precisão geral.

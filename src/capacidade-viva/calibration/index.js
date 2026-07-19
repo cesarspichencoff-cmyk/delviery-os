@@ -24,5 +24,6 @@ module.exports = {
   intervencaoSane: require("./intervencao-sane"),
   reviewSet: require("./review-set"),
   reviewV2: require("./review-v2"),
-  reviewV3: require("./review-v3")
+  reviewV3: require("./review-v3"),
+  humanRules: require("./human-rules")
 };
