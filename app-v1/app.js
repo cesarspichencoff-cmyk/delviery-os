@@ -3,7 +3,10 @@
  * ----------------------------------------------------------------------------
  * Contrato: motor decide → projeção expõe → adaptador transporta → UI apresenta.
  * A interface NUNCA recalcula Calmo/Ambiente/Foco.
- * Design canônico: design-reference/copiloto-v33/ (imutável).
+ * Design canônico: design-reference/copiloto-v33/ (imutável). A composição
+ * daqui é o PORT fiel do HTML congelado: topologia circular do organismo
+ * (células por área + ligações SVG), caption editorial, painel de atenção
+ * sobreposto, banner técnico, mobile vertical. Nada de grade de cards.
  * Mocks (previsão, ação, voz, fechamento) são DEMONSTRAÇÃO explícita.
  * ==========================================================================*/
 (function () {
@@ -16,11 +19,17 @@
     if (txt != null) e.textContent = txt;
     return e;
   };
+  const svgEl = (tag, attrs) => {
+    const e = document.createElementNS("http://www.w3.org/2000/svg", tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  };
 
   const VELOCIDADES = [1, 10, 30];
   let timeline = [], i0 = 0, tocando = false, vel = 1, timer = null;
   let diasRotulo = ["30/06", "01/07"];
   let rotuloJanela = "";
+  let fonteSimulada = false;
   let CURTO = {};
   let ultimoModo = null;
   let lastINFO = null;
@@ -43,6 +52,7 @@
 
   const params = new URLSearchParams(location.search);
   const QA_MODE = params.get("qa") === "1" || params.get("dev") === "1";
+  const mqMobile = window.matchMedia("(max-width: 720px)");
 
   function hhmm(t) {
     const d = Math.floor(t / 1440), m = t % 1440;
@@ -69,22 +79,6 @@
     if (!p.length) return "";
     if (p.length === 1) return p[0];
     return p.slice(0, -1).join(", ") + " e " + p[p.length - 1];
-  }
-  function traduzAmb(label) {
-    label = semTags(label).trim();
-    let m;
-    if ((m = label.match(/^(.+) carregando$/i))) {
-      const p = m[1];
-      if (/combinados/i.test(p)) return "Combinados com pedidos acumulando";
-      if (/duplas/i.test(p)) return "Duplas precisam de atenção";
-      return p + " com pedidos esperando";
-    }
-    if ((m = label.match(/^(.+) acima do normal$/i))) return m[1] + " com mais pedidos que o normal";
-    if (/^saída lenta$/i.test(label)) return "Saída está demorando";
-    if (/^produção lenta$/i.test(label)) return "Produção está demorando";
-    if (/^pedido quase fechável$/i.test(label)) return "Pedido quase pronto para fechar";
-    if (/^conferência reforçada$/i.test(label)) return "Pedido pedindo conferência";
-    return frase(label).replace(/\.$/, "");
   }
   function tituloAcao(rec) {
     switch (rec.tipo) {
@@ -233,6 +227,7 @@
     };
   }
 
+  /* —— Leitura por área (dados reais do motor; nunca decide, só apresenta) —— */
   const AMB_ESTADO = { verde: "Tudo fluindo", amarelo: "Atenção", vermelho: "Virando foco", validacao: "Em validação" };
   function piorPraca(R, pracas) {
     let sev = 0, pr = null;
@@ -246,70 +241,58 @@
   function corPorSev(sev) {
     return sev >= 3 ? "vermelho" : sev >= 1 ? "amarelo" : "verde";
   }
-  function pressaoPorRatio(R, pracas) {
-    let maxRatio = 0;
-    for (const p of pracas) {
-      const load = (R.ctx.load && R.ctx.load[p]) || 0;
-      const base = MOTOR.BASELINE[p];
-      if (!base) continue;
-      const ratio = load / base;
-      if (ratio > maxRatio) maxRatio = ratio;
+  function pedidosDependendo(R, INFO, pracas) {
+    let n = 0;
+    for (const w of R.ctx.wP) {
+      const I = INFO[w.id];
+      if (I && I.benches && I.benches.some((p) => pracas.indexOf(p) >= 0)) n++;
     }
-    return Math.max(0, Math.min(100, Math.round(maxRatio * 50)));
+    return n;
   }
-  function pressaoPorSeveridade(sev) {
-    if (!sev) return 15;
-    if (sev === 1) return 35;
-    if (sev === 2) return 60;
-    return 90;
-  }
-  function mapaAmbientes(R) {
+  function mapaAmbientes(R, INFO) {
     const su = piorPraca(R, ["combinados", "duplas", "enrolados"]);
     const suCor = corPorSev(su.sev);
     const sushi = {
-      nome: "Sushi",
-      cor: suCor,
-      pressao: pressaoPorRatio(R, ["combinados", "duplas", "enrolados"]),
+      nome: "Sushi", cor: suCor, sev: su.sev,
+      n: pedidosDependendo(R, INFO, ["combinados", "duplas", "enrolados"]),
       motivo: su.pr
         ? MOTOR.DISPLAY[su.pr] + (suCor === "vermelho" ? " segurando o fluxo" : " com pedidos acumulando")
         : "Sushi em ritmo normal"
     };
-    const qu = piorPraca(R, ["enrolados_quentes"]);
+    /* Área Quentes agrega as DUAS praças quentes (enrolados_quentes +
+     * cozinha_quentes) — mesmo padrão da área Sushi (3 praças frias) e mesmo
+     * mapeamento do adaptador-v33 (DISPLAY do motor rotula cozinha_quentes
+     * como "Quentes"; a área nunca contradiz a frase do motor na tela). */
+    const qu = piorPraca(R, ["enrolados_quentes", "cozinha_quentes"]);
     const quCor = corPorSev(qu.sev);
     const quentes = {
-      nome: "Quentes",
-      cor: quCor,
-      pressao: pressaoPorRatio(R, ["enrolados_quentes"]),
-      motivo: qu.sev
-        ? "Enrolados quentes " + (quCor === "vermelho" ? "segurando o fluxo" : "puxando espera")
+      nome: "Quentes", cor: quCor, sev: qu.sev,
+      n: pedidosDependendo(R, INFO, ["enrolados_quentes", "cozinha_quentes"]),
+      motivo: qu.pr
+        ? MOTOR.DISPLAY[qu.pr] + (quCor === "vermelho" ? " segurando o fluxo" : " puxando espera")
         : "Quentes em ritmo normal"
     };
+    /* Cozinha: sem praça própria validada no motor (a separação fina
+     * Quentes × Cozinha depende do mapa operacional do César) — a célula
+     * segue "em validação", tracejado honesto, nunca uma medida inventada. */
+    const cozinha = { nome: "Cozinha", cor: "validacao", sev: 0, n: 0, motivo: "Separação fina ainda depende do mapa operacional" };
     const confSit = R.sits.find((s) => s.kind === "conferencia");
     const conf = {
-      nome: "Conferência",
-      cor: confSit ? "amarelo" : "verde",
-      pressao: pressaoPorSeveridade(confSit ? confSit.sev : 0),
+      nome: "Conferência", cor: confSit ? "amarelo" : "verde", sev: confSit ? confSit.sev : 0,
+      n: confSit ? 1 : 0,
       motivo: confSit ? "Pedido pedindo conferência reforçada" : "Nada pendente para conferir"
     };
     const saida = R.sits.find((s) => s.kind === "saida");
     const moCor = saida ? corPorSev(saida.sev) : "verde";
     const motoboy = {
-      nome: "Motoboy",
-      cor: moCor,
-      pressao: pressaoPorSeveridade(saida ? saida.sev : 0),
+      nome: "Motoboy", cor: moCor, sev: saida ? saida.sev : 0,
+      n: R.ctx.wE.filter((x) => x.min > MOTOR.FLOORS.EXPED).length,
       motivo: saida ? (moCor === "vermelho" ? "Saída travando, prontos parados" : "Prontos esperando saída") : "Despacho sem acúmulo"
     };
-    const caixa = { nome: "Caixa", cor: "validacao", pressao: null, motivo: "Fonte atual ainda não mede esta fila" };
-    const cozinha = {
-      nome: "Cozinha",
-      cor: "validacao",
-      pressao: null,
-      motivo: "Separação fina ainda depende do mapa operacional"
-    };
+    const caixa = { nome: "Caixa", cor: "validacao", sev: 0, n: 0, motivo: "Fonte atual ainda não mede esta fila" };
     return [caixa, sushi, quentes, cozinha, conf, motoboy].map((a) => ({
-      nome: a.nome,
-      cor: a.cor,
-      pressao: a.pressao,
+      nome: a.nome, cor: a.cor, sev: a.sev, n: a.n,
+      pressao: null,
       estadoTxt: AMB_ESTADO[a.cor],
       motivo: a.motivo
     }));
@@ -355,6 +338,9 @@
   function detectarSoSobremesaV0(I) {
     return !!(I && I.itens.length && I.itens.every((x) => x.praca === "sobremesa"));
   }
+  /* Sinais de Fluxo (V1): seguem computados e expostos em window.__V1 para
+   * inspeção/QA, mas a superfície V3.3 congelada não tem esse bloco —
+   * renderizá-lo seria desvio da referência. Pendência de design registrada. */
   function sinaisDeFluxo(R, INFO) {
     const ids = Array.from(new Set(R.ctx.wP.map((x) => x.id).concat(R.ctx.wE.map((x) => x.id))));
     const duasSacolas = [], soQuente = [], soSobremesa = [];
@@ -393,7 +379,7 @@
         evid = evidenciasDe(R, sit, INFO);
         alvoId = sit.id || null;
         if (!alvoId && rec && rec.primeiro) {
-          const m = semTags(rec.primeiro).match(/#([A-Za-z0-9]+)/);
+          const m = semTags(rec.primeiro).match(/#([A-Za-z0-9-]+)/);
           if (m) alvoId = m[1];
         }
       }
@@ -403,7 +389,7 @@
         emand: R.emand,
         intenso: R.intenso,
         amb: (R.ambList || []).map((a) => ({ label: semTags(a.label), sev: a.sev })),
-        ambientes: mapaAmbientes(R),
+        ambientes: mapaAmbientes(R, INFO),
         sinais: R.mode === "calmo" ? sinaisDeFluxo(R, INFO) : null,
         foco: R.foco
           ? {
@@ -474,10 +460,6 @@
     }
 
     const mocks = { demo: true };
-    if (ui.showForecast || (mode === "foco" && ui.forecastOpen !== false && params.get("forecast") === "1")) {
-      mocks.forecast = M.forecastMock(areaHint || "Conferência");
-      mocks.forecast.expanded = ui.forecastOpen;
-    }
     if (ui.showForecast) {
       mocks.forecast = M.forecastMock(areaHint || "Conferência");
       mocks.forecast.expanded = ui.forecastOpen;
@@ -495,13 +477,13 @@
       rec: ponto.rec,
       situation,
       consequence,
-      evidences: evidences.slice(0, 5),
+      evidences: evidences.slice(0, 3),
       actionLabel,
       secondaryAction,
       focoAreaHint: areaHint,
       mocks,
       calmCopy: "Nada exige você agora.",
-      climateNote: mode === "ambiente" ? climateFromAmb(ponto) : null,
+      climateNote: null,
       meta: { janela: rotuloJanela }
     });
 
@@ -511,23 +493,411 @@
         if (a.nome === ui.areaCite) a.cite = true;
       });
     }
+    vm.areaHint = areaHint;
+    vm.alvoId = ponto.alvoId;
     return vm;
   }
 
-  function climateFromAmb(ponto) {
-    const tensas = (ponto.ambientes || []).filter((a) => a.cor === "amarelo" || a.cor === "vermelho");
-    if (!tensas.length) return "Movimento discreto no organismo.";
-    return tensas[0].nome + " começa a pressionar. Contexto preservado.";
+  /* ================= ORGANISMO V3.3 — topologia canônica ================= */
+  /* Posições e tamanhos-base do HTML congelado (defs + baseCells). */
+  const CEL_DEF = [
+    { id: "caixa", nome: "Caixa", x: 10, y: 52, base: 112 },
+    { id: "sushi", nome: "Sushi", x: 38, y: 21, base: 126 },
+    { id: "quentes", nome: "Quentes", x: 40, y: 53, base: 128 },
+    { id: "cozinha", nome: "Cozinha", x: 38, y: 84, base: 112 },
+    { id: "conferencia", nome: "Conferência", x: 67, y: 52, base: 128 },
+    { id: "motoboy", nome: "Motoboy", x: 90, y: 52, base: 122 }
+  ];
+  const LIGACOES = [
+    ["caixa", "sushi"], ["caixa", "quentes"], ["caixa", "cozinha"],
+    ["sushi", "conferencia"], ["quentes", "conferencia"], ["cozinha", "conferencia"],
+    ["conferencia", "motoboy"]
+  ];
+
+  /* Frases de estado por degrau (linguagem do HTML congelado; degrau = cor
+   * que o motor já produziu — a UI só traduz degrau → frase aprovada). */
+  function fraseEstado(nome, cor, dominante) {
+    if (dominante) return "precisa de atenção";
+    if (cor === "validacao") return nome === "Cozinha" ? "sem dados" : "ainda sem dados";
+    if (cor === "vermelho") {
+      if (nome === "Motoboy") return "acúmulo na saída";
+      if (nome === "Conferência") return "atrasando a saída";
+      return "pressão subindo";
+    }
+    if (cor === "amarelo") {
+      if (nome === "Conferência") return "começando a atrasar";
+      if (nome === "Motoboy") return "prontos esperando";
+      return "fila crescendo";
+    }
+    if (nome === "Conferência") return "sem pendências";
+    if (nome === "Motoboy") return "sem acúmulo";
+    return "no ritmo";
+  }
+  function infoDe(nome, cor, n) {
+    if (!n) return "";
+    if (nome === "Conferência") return "pedido para conferir";
+    if (nome === "Motoboy") return n === 1 ? "1 pronto esperando" : n + " prontos esperando";
+    return cor === "verde" ? n + " em produção" : n + " esperando";
+  }
+  function toneCelula(cor, dominante) {
+    if (dominante) return "cream";
+    if (cor === "validacao") return "faint";
+    if (cor === "vermelho") return "ember";
+    if (cor === "amarelo") return "warm";
+    return "ivory";
+  }
+  function tamanhoCelula(base, tone) {
+    if (tone === "ember") return base + 34;
+    if (tone === "cream") return base + 22;
+    if (tone === "warm") return base + 12;
+    return base;
+  }
+
+  function montarCelulas(vm, ponto) {
+    const porNome = {};
+    (ponto.ambientes || []).forEach((a) => { porNome[a.nome] = a; });
+    const domNome = vm.mode === "foco" && vm.areaHint ? vm.areaHint : null;
+    return CEL_DEF.map((d) => {
+      const a = porNome[d.nome] || { cor: "validacao", n: 0, motivo: "" };
+      const dominante = domNome === d.nome;
+      const tone = toneCelula(a.cor, dominante);
+      const marcas = tone === "faint"
+        ? { solid: 0, open: 2 }
+        : { solid: Math.min(6, a.n || 0), open: 0 };
+      const dim = vm.mode === "foco" && !dominante && (tone === "ivory" || tone === "faint");
+      return {
+        id: d.id, nome: d.nome, x: d.x, y: d.y,
+        size: tamanhoCelula(d.base, tone),
+        tone,
+        estado: fraseEstado(d.nome, a.cor, dominante),
+        info: dominante ? infoDe(d.nome, "vermelho", a.n) : infoDe(d.nome, a.cor, a.n),
+        motivo: a.motivo || "",
+        marcas,
+        pulse: tone === "ember",
+        halo: dominante,
+        dim,
+        cite: !!(porNome[d.nome] && vm.areas.find((v) => v.nome === d.nome && v.cite)),
+        cor: a.cor
+      };
+    });
+  }
+
+  /* Ligações ativas: pressão real (degrau da área, informado pelo motor)
+   * atravessando o caminho do pedido — sem relação ativa, linha base fina. */
+  function montarLigacoes(celulas) {
+    const por = {};
+    celulas.forEach((c) => { por[c.id] = c; });
+    const ativa = {};
+    ["sushi", "quentes", "cozinha"].forEach((id) => {
+      const c = por[id];
+      if (!c) return;
+      if (c.cor === "vermelho") ativa[id + "-conferencia"] = { w: 2.6, c: "#C98A46", flow: true };
+      else if (c.cor === "amarelo") ativa[id + "-conferencia"] = { w: 1.8, c: "#8A6E4A" };
+    });
+    const saidaTensa = por.motoboy && (por.motoboy.cor === "amarelo" || por.motoboy.cor === "vermelho");
+    const confTensa = por.conferencia && por.conferencia.cor !== "verde" && por.conferencia.cor !== "validacao";
+    if (saidaTensa || confTensa) {
+      ativa["conferencia-motoboy"] = { w: saidaTensa && por.motoboy.cor === "vermelho" ? 2.8 : 2, c: "#C98A46", flow: true };
+    }
+    return ativa;
+  }
+
+  function svgLigacoes(celulas, opts) {
+    const ativas = montarLigacoes(celulas);
+    const svg = svgEl("svg", { class: "constel-links", viewBox: "0 0 100 100", preserveAspectRatio: "none" });
+    const por = {};
+    celulas.forEach((c) => { por[c.id] = c; });
+    const base = opts && opts.frozen ? { w: 0.8, c: "#1A2A22" } : { w: 0.9, c: "#22402F" };
+    for (const [a, b] of LIGACOES) {
+      const ov = (opts && opts.frozen) ? null : ativas[a + "-" + b];
+      const w = ov || base;
+      const linha = svgEl("line", {
+        x1: por[a].x, y1: por[a].y, x2: por[b].x, y2: por[b].y,
+        stroke: w.c, "stroke-width": w.w, "stroke-linecap": "round",
+        "vector-effect": "non-scaling-stroke"
+      });
+      if (w.flow) {
+        linha.setAttribute("stroke-dasharray", "5 8");
+        linha.setAttribute("class", "dosflow");
+      }
+      svg.appendChild(linha);
+    }
+    /* Âncora ao painel de atenção: só quando a célula dominante está acima
+     * da região do painel (coluna direita) — como no congelado; para células
+     * à esquerda, a própria ligação ativa em âmbar faz a ponte visual. */
+    const dom = celulas.find((c) => c.halo);
+    if (dom && dom.x >= 60 && opts && opts.anchor) {
+      svg.appendChild(svgEl("line", {
+        x1: dom.x, y1: dom.y + 11, x2: dom.x, y2: Math.min(96, dom.y + 36),
+        stroke: "#E0A25A", "stroke-width": 1.4, "stroke-dasharray": "1.5 3.5",
+        "vector-effect": "non-scaling-stroke"
+      }));
+    }
+    return svg;
+  }
+
+  function nodeCelula(c, circular) {
+    const node = el("div", "cell tone-" + c.tone +
+      (c.dim ? " is-dim" : "") + (c.halo ? " is-halo" : "") + (c.cite ? " is-cite" : ""));
+    if (circular) {
+      node.style.width = c.size + "px";
+      node.style.height = c.size + "px";
+    }
+    if (c.pulse) node.appendChild(el("span", "cell-pulse dospulse"));
+    const marcas = el("div", "cell-marks");
+    for (let i = 0; i < c.marcas.solid; i++) marcas.appendChild(el("span", "mark-solid"));
+    for (let i = 0; i < c.marcas.open; i++) marcas.appendChild(el("span", "mark-open"));
+    if (c.marcas.solid + c.marcas.open > 0) node.appendChild(marcas);
+    node.appendChild(el("div", "cell-nome" + (c.size >= 150 ? " nome-xl" : c.size >= 126 ? " nome-lg" : ""), c.nome));
+    node.appendChild(el("div", "cell-estado", c.estado));
+    if (c.info) node.appendChild(el("div", "cell-info", c.info));
+    if (c.motivo) node.title = c.motivo;
+    return node;
+  }
+
+  /* —— Cabeçalho editorial do palco (kicker + caption + subnota) —— */
+  function cabecalhoDe(vm) {
+    const rotuloFonte = fonteSimulada ? "demonstração" : "replay";
+    const medidas = (lastPonto && lastPonto.ambientes ? lastPonto.ambientes : [])
+      .filter((a) => a.cor === "amarelo" || a.cor === "vermelho");
+    if (vm.mode === "foco") {
+      return { kicker: "PRECISA DE ATENÇÃO", accent: "cream", caption: "", rotuloFonte };
+    }
+    if (vm.mode === "ambiente") {
+      let caption;
+      if (medidas.length >= 3) caption = "Pressão em várias áreas ao mesmo tempo.";
+      else if (medidas.length === 2) caption = "Duas pressões ao mesmo tempo.";
+      else if (medidas.length === 1) {
+        const CAPTION_AREA = {
+          "Sushi": "A fila do Sushi está crescendo.",
+          "Quentes": "A fila dos Quentes está crescendo.",
+          "Cozinha": "A fila da Cozinha está crescendo.",
+          "Conferência": "Pedido pedindo conferência antes de sair.",
+          "Motoboy": "Prontos esperando a saída."
+        };
+        caption = CAPTION_AREA[medidas[0].nome] || "Pressão surgindo no organismo.";
+      } else caption = "Movimento discreto no organismo.";
+      return { kicker: "O CLIMA MUDA", accent: "ambar", caption, rotuloFonte };
+    }
+    return {
+      kicker: "AGORA · " + rotuloFonte.toUpperCase(),
+      accent: "verde",
+      caption: "A operação está fluindo. Nada exige você agora.",
+      rotuloFonte
+    };
+  }
+
+  function nodeCaption(vm, cab) {
+    const box = el("div", "stage-caption");
+    box.appendChild(el("span", "stage-kicker accent-" + cab.accent, cab.kicker));
+    if (cab.caption) box.appendChild(el("p", "stage-caption-text", cab.caption));
+    box.appendChild(el("p", "stage-subnote",
+      vm.emand + (vm.emand === 1 ? " pedido em andamento · " : " pedidos em andamento · ") + cab.rotuloFonte));
+    return box;
+  }
+
+  /* —— Painel de atenção (Foco) — composição do HTML congelado —— */
+  function nodeFocoPanel(vm, INFO, ponto) {
+    const at = vm.attention;
+    if (!at) return null;
+    const panel = el("section", "foco-panel is-gravity-" + (at.gravity || "none"));
+    panel.appendChild(el("div", "foco-notch"));
+    panel.appendChild(el("span", "foco-eye",
+      "PRECISA DE ATENÇÃO" + (vm.areaHint ? " · " + vm.areaHint.toUpperCase() : "")));
+    panel.appendChild(el("h2", "foco-situacao", at.situation || ""));
+    if (at.consequence) panel.appendChild(el("p", "foco-conseq", at.consequence));
+    if (at.evidences && at.evidences.length) {
+      const evs = el("div", "foco-evs");
+      at.evidences.slice(0, 3).forEach((t) => {
+        const linha = el("div", "foco-ev");
+        linha.appendChild(el("span", "foco-tick"));
+        linha.appendChild(el("span", "foco-ev-txt", t));
+        evs.appendChild(linha);
+      });
+      panel.appendChild(evs);
+    }
+
+    /* Previsão — progressive disclosure, confiança separada da gravidade */
+    if (vm.forecast) {
+      const f = vm.forecast;
+      const box = el("div", "forecast" + (f.expanded ? "" : " is-collapsed"));
+      const fh = el("div", "forecast-head");
+      fh.appendChild(el("span", "forecast-horizon", f.horizon || "próximos 10 a 15 min"));
+      fh.appendChild(el("span", "forecast-conf",
+        (f.confidence && f.confidence.level ? "confiança " + f.confidence.level + " " : "") +
+        ((f.confidence && f.confidence.dots) || "●●○")));
+      box.appendChild(fh);
+      box.appendChild(el("p", "forecast-text", f.text));
+      const detail = el("div", "forecast-detail");
+      detail.appendChild(el("p", "forecast-note", f.note || "estimativa, não certeza · demonstração"));
+      if (f.conditional) detail.appendChild(el("p", "forecast-note", "condição: " + f.conditional));
+      box.appendChild(detail);
+      const tog = el("button", "forecast-toggle", f.expanded ? "Recolher estimativa" : "Ver estimativa (10–15 min)");
+      tog.onclick = () => {
+        ui.forecastOpen = !ui.forecastOpen;
+        ui.showForecast = true;
+        render(INFO, ponto);
+      };
+      box.appendChild(tog);
+      panel.appendChild(box);
+    }
+
+    /* Ação acompanhada — fases + estado atual (demonstração explícita) */
+    if (vm.actionTrack) {
+      const atk = vm.actionTrack;
+      const FASES = ["Recomendada", "Aceita", "Em andamento", "Encerrada"];
+      const IDX = {
+        recomendacao: 0, aceita: 1, assumiu: 1, andamento: 2, melhora: 2,
+        parcial: 2, sem_resultado: 2, colateral: 2, encerramento: 3
+      };
+      const fi = IDX[atk.stateId] != null ? IDX[atk.stateId] : 0;
+      const fases = el("div", "foco-fases");
+      FASES.forEach((n, i) => {
+        fases.appendChild(el("span",
+          "fase-pill" + (i === fi ? " is-atual" : i < fi ? " is-feita" : ""), n));
+        if (i < FASES.length - 1) fases.appendChild(el("span", "fase-seta", "→"));
+      });
+      panel.appendChild(fases);
+      const st = el("p", "foco-status status-" + atk.stateId, atk.copy);
+      panel.appendChild(st);
+      if (atk.responsible) {
+        panel.appendChild(el("div", "foco-who",
+          (atk.responsible.role || "") +
+          (atk.responsible.name ? " · " + atk.responsible.name : "") +
+          " · " + (atk.responsible.note || "função, não ranking")));
+      }
+      panel.appendChild(el("span", "demo-tag", atk.demoLabel || "demonstração"));
+    }
+
+    const acoes = el("div", "foco-acoes");
+    if (at.actionLabel) {
+      acoes.appendChild(el("div", "acao-pill" + (at.pure ? " pure" : ""), at.actionLabel));
+    }
+    if (at.secondaryAction) acoes.appendChild(el("span", "acao-sec", at.secondaryAction));
+    panel.appendChild(acoes);
+    return panel;
+  }
+
+  function nodePill(vm) {
+    if (vm.mode !== "foco") return null;
+    const pill = el("div", "stage-pill");
+    pill.appendChild(el("span", "pill-dot"));
+    pill.appendChild(el("span", "pill-txt",
+      "Atenção" + (vm.areaHint ? " · " + vm.areaHint : "") +
+      (vm.alvoId ? " · " + rotuloPedido(vm.alvoId) : "")));
+    return pill;
+  }
+
+  function nodeBanner(kind, texto) {
+    const b = el("div", "stage-banner banner-" + kind);
+    b.appendChild(el("span", "banner-dot"));
+    b.appendChild(el("span", "banner-txt", texto));
+    return b;
+  }
+
+  /* —— Palco desktop: constelação —— */
+  function stageDesktop(vm, celulas, opts) {
+    const constel = el("div", "constel");
+    constel.appendChild(svgLigacoes(celulas, { frozen: opts.frozen, anchor: vm.mode === "foco" && !opts.frozen }));
+    celulas.forEach((c) => {
+      const wrap = el("div", "cell-wrap");
+      wrap.style.left = c.x + "%";
+      wrap.style.top = c.y + "%";
+      wrap.appendChild(nodeCelula(c, true));
+      constel.appendChild(wrap);
+    });
+    return constel;
+  }
+
+  /* —— Palco mobile: topologia vertical do HTML congelado —— */
+  function svgFan(pontos, cls) {
+    const svg = svgEl("svg", { class: "mfan" + (cls ? " " + cls : ""), viewBox: "0 0 100 20", preserveAspectRatio: "none" });
+    pontos.forEach((p) => {
+      const linha = svgEl("line", {
+        x1: p[0], y1: p[1], x2: p[2], y2: p[3],
+        stroke: p[4] || "#22402F", "stroke-width": p[5] || 1
+      });
+      if (p[6]) { linha.setAttribute("stroke-dasharray", "4 6"); linha.setAttribute("class", "dosflow"); }
+      svg.appendChild(linha);
+    });
+    return svg;
+  }
+  function stageMobile(vm, celulas, opts) {
+    const por = {};
+    celulas.forEach((c) => { por[c.id] = c; });
+    const box = el("div", "mconstel");
+    const pill = (c) => {
+      const n = nodeCelula(c, false);
+      n.classList.add("mcell-pill");
+      return n;
+    };
+    const circ = (c) => {
+      const n = nodeCelula(c, false);
+      n.classList.add("mcell-circ", "msize-" + c.tone);
+      return n;
+    };
+    if (vm.mode === "foco" && !opts.frozen && por[idDoNome(vm.areaHint)]) {
+      /* Foco mobile: atenção dominante primeiro (composição mFoco do
+       * congelado), periferia preservada no minimapa abaixo do cartão. */
+      const dom = por[idDoNome(vm.areaHint)];
+      const topo = el("div", "mfoco-area");
+      topo.appendChild(pill(dom));
+      box.appendChild(topo);
+      box.appendChild(svgFan([[50, 0, 50, 18, "#E0A25A", 1.6, false]], "mfan-anchor"));
+      return box;
+    }
+    box.appendChild(el("div", "mrow mrow-center")).appendChild(pill(por.caixa));
+    box.appendChild(svgFan([
+      [50, 0, 50, 6], [50, 6, 17, 20], [50, 6, 50, 20], [50, 6, 83, 20]
+    ]));
+    const meio = el("div", "mrow mrow-three");
+    ["sushi", "quentes", "cozinha"].forEach((id) => {
+      const slot = el("div", "mslot");
+      slot.appendChild(circ(por[id]));
+      meio.appendChild(slot);
+    });
+    box.appendChild(meio);
+    const corDe = (id) => {
+      const lig = montarLigacoes(celulas)[id + "-conferencia"];
+      return lig ? [lig.c, lig.flow ? 2.4 : 1.6, !!lig.flow] : ["#22402F", 1, false];
+    };
+    const [cS, wS, fS] = corDe("sushi");
+    const [cQ, wQ, fQ] = corDe("quentes");
+    const [cC, wC, fC] = corDe("cozinha");
+    box.appendChild(svgFan([
+      [17, 0, 50, 13, cS, wS, fS],
+      [50, 0, 50, 13, cQ, wQ, fQ],
+      [83, 0, 50, 13, cC, wC, fC],
+      [50, 13, 50, 20, (fS || fQ || fC) ? "#C98A46" : "#22402F", (fS || fQ || fC) ? 2 : 1, false]
+    ]));
+    box.appendChild(el("div", "mrow mrow-center")).appendChild(pill(por.conferencia));
+    const ligCM = montarLigacoes(celulas)["conferencia-motoboy"];
+    box.appendChild(svgFan([
+      [50, 0, 50, 14, ligCM ? ligCM.c : "#22402F", ligCM ? 1.6 : 1, !!(ligCM && ligCM.flow)]
+    ], "mfan-short"));
+    box.appendChild(el("div", "mrow mrow-center")).appendChild(pill(por.motoboy));
+    return box;
+  }
+  function idDoNome(nome) {
+    const d = CEL_DEF.find((x) => x.nome === nome);
+    return d ? d.id : null;
+  }
+  function nodeMinimapa(celulas, domNome) {
+    const box = el("div", "minimapa");
+    box.appendChild(el("span", "minimapa-rotulo", "resto da operação"));
+    celulas.forEach((c) => {
+      const item = el("span", "minimapa-item" + (c.nome === domNome ? " is-atual" : ""));
+      item.appendChild(el("span", "minimapa-dot"));
+      item.appendChild(el("span", null, c.nome));
+      box.appendChild(item);
+    });
+    return box;
   }
 
   /* ---------- RENDER ORGANISMO V3.3 ---------- */
   function render(INFO, ponto) {
     lastINFO = INFO;
     lastPonto = ponto;
-    if (ui.techOverride) {
-      renderTechOnly(ui.techOverride);
-      return;
-    }
 
     const vm = buildPresentation(INFO, ponto);
     const palco = $("palco");
@@ -535,209 +905,89 @@
     palco.dataset.mode = vm.mode;
     document.body.dataset.mode = vm.mode;
 
-    const root = el("div", "organismo");
+    const tech = ui.techOverride ? window.V33_ADAPTER.mapearEstadoFonteV33(ui.techOverride) : null;
+    const frozen = !!tech;
 
-    const head = el("div", "organismo-head");
-    const left = el("div", "");
-    if (vm.mode === "calmo") {
-      left.appendChild(el("h1", "calm-title", "Em fluxo"));
-      left.appendChild(el("p", "calm-copy", vm.calmCopy || "Nada exige você agora."));
-    } else if (vm.mode === "ambiente") {
-      left.appendChild(el("h1", "calm-title", "Operação em movimento"));
-      if (vm.climateNote) left.appendChild(el("p", "climate-note", vm.climateNote));
+    const stage = el("section", "stage" + (frozen ? " is-frozen" : ""));
+    const celulas = montarCelulas(vm, ponto);
+    const cab = frozen
+      ? { kicker: tech.label.toUpperCase(), accent: "tech", caption: tech.text, rotuloFonte: "última leitura visível como memória" }
+      : cabecalhoDe(vm);
+    stage.appendChild(nodeCaption(vm, cab));
+    if (frozen) stage.appendChild(nodeBanner("tech", tech.text + " Última leitura permanece visível — nunca como estado atual."));
+
+    const mobile = mqMobile.matches;
+    stage.appendChild(mobile ? stageMobile(vm, celulas, { frozen }) : stageDesktop(vm, celulas, { frozen }));
+
+    if (!frozen) {
+      const pill = nodePill(vm);
+      if (pill) stage.appendChild(pill);
+      const focoPanel = nodeFocoPanel(vm, INFO, ponto);
+      if (focoPanel) {
+        if (mobile) focoPanel.classList.add("is-mobile");
+        stage.appendChild(focoPanel);
+        if (mobile) stage.appendChild(nodeMinimapa(celulas, vm.areaHint));
+      }
+    }
+    palco.appendChild(stage);
+    atualizarVivo(frozen ? tech : null);
+  }
+
+  function atualizarVivo(tech) {
+    const nota = $("liveNote");
+    if (!nota) return;
+    if (tech) {
+      nota.dataset.estado = "tech";
+      nota.textContent = tech.label;
     } else {
-      left.appendChild(el("h1", "calm-title", "Atenção no organismo"));
+      nota.dataset.estado = "demo";
+      nota.textContent = fonteSimulada ? "demonstração" : "replay";
     }
-    head.appendChild(left);
-    head.appendChild(
-      el(
-        "div",
-        "emand-chip",
-        vm.emand + (vm.emand === 1 ? " pedido em andamento" : " pedidos em andamento")
-      )
-    );
-    root.appendChild(head);
-
-    const areas = el("div", "areas");
-    vm.areas.forEach((a) => {
-      const node = el(
-        "div",
-        "area tone-" +
-          a.tone +
-          (a.dominant && vm.mode === "foco" ? " area-dominant" : "") +
-          (a.cite ? " area-cite" : "")
-      );
-      node.appendChild(el("div", "area-name", a.nome));
-      node.appendChild(el("div", "area-state", a.estadoTxt));
-      node.appendChild(el("div", "area-motivo", a.motivo));
-      if (a.pressao != null && !a.tech) {
-        const bar = el("div", "area-press");
-        const i = document.createElement("i");
-        i.style.width = a.pressao + "%";
-        bar.appendChild(i);
-        node.appendChild(bar);
-      }
-      areas.appendChild(node);
-    });
-    root.appendChild(areas);
-
-    if (vm.attention) {
-      const att = el(
-        "section",
-        "attention is-gravity-" + (vm.attention.gravity || "none")
-      );
-      att.appendChild(el("div", "att-eye", vm.attention.eyebrow));
-      att.appendChild(el("h2", "att-situation", vm.attention.situation));
-      if (vm.attention.consequence) att.appendChild(el("p", "att-consequence", vm.attention.consequence));
-      if (vm.attention.evidences && vm.attention.evidences.length) {
-        const ev = el("div", "att-evidences");
-        vm.attention.evidences.forEach((t) => ev.appendChild(el("div", "att-ev fact", t)));
-        att.appendChild(ev);
-      }
-      const acoes = el("div", "acao-area");
-      if (vm.attention.actionLabel) {
-        const pill = el("div", "acao-pill" + (vm.attention.pure ? " pure" : ""));
-        pill.textContent = vm.attention.actionLabel;
-        acoes.appendChild(pill);
-      }
-      if (vm.attention.secondaryAction) {
-        acoes.appendChild(el("button", "acao-sec", vm.attention.secondaryAction));
-      }
-      att.appendChild(acoes);
-
-      /* Previsão — progressive disclosure, secondary */
-      if (vm.forecast) {
-        const f = vm.forecast;
-        const box = el("div", "forecast" + (f.expanded ? "" : " is-collapsed"));
-        const fh = el("div", "forecast-head");
-        fh.appendChild(el("span", "forecast-horizon", f.horizon || "próximos 10 a 15 min"));
-        fh.appendChild(
-          el("span", "forecast-conf", (f.confidence && f.confidence.level ? "confiança " + f.confidence.level + " " : "") + ((f.confidence && f.confidence.dots) || "●●○"))
-        );
-        fh.appendChild(el("span", "forecast-demo", f.demoLabel || "demonstração"));
-        box.appendChild(fh);
-        box.appendChild(el("p", "forecast-text", f.text));
-        const detail = el("div", "forecast-detail");
-        detail.appendChild(el("p", "forecast-note", f.note || "estimativa, não certeza · demonstração"));
-        if (f.conditional) detail.appendChild(el("p", "forecast-note", f.conditional));
-        box.appendChild(detail);
-        const tog = el("button", "forecast-toggle", f.expanded ? "Recolher estimativa" : "Ver estimativa (10–15 min)");
-        tog.onclick = () => {
-          ui.forecastOpen = !ui.forecastOpen;
-          ui.showForecast = true;
-          render(INFO, ponto);
-        };
-        box.appendChild(tog);
-        att.appendChild(box);
-      }
-
-      /* Ação acompanhada — estado atual */
-      if (vm.actionTrack) {
-        const at = vm.actionTrack;
-        const box = el("div", "action-track" + (at.tense || at.stateId === "colateral" || at.stateId === "sem_resultado" ? " is-tense" : ""));
-        const lab = el("div", "action-track-label", "Ação acompanhada");
-        lab.appendChild(el("span", "demo-tag", at.demoLabel || "demonstração"));
-        box.appendChild(lab);
-        box.appendChild(el("div", "action-track-state", at.stateLabel));
-        box.appendChild(el("p", "action-track-copy", at.copy));
-        if (at.responsible) {
-          box.appendChild(
-            el(
-              "div",
-              "action-track-who",
-              (at.responsible.role || "") +
-                (at.responsible.name ? " · " + at.responsible.name : "") +
-                " · " +
-                (at.responsible.note || "função, não ranking")
-            )
-          );
-        }
-        att.appendChild(box);
-      }
-
-      root.appendChild(att);
-    }
-
-    palco.appendChild(root);
-    updateTechBadge(null);
   }
 
-  function updateTechBadge(tech) {
-    const badge = $("techBadge");
-    if (!tech || tech.status === "ready") {
-      badge.hidden = true;
-      return;
-    }
-    badge.hidden = false;
-    badge.dataset.form = tech.form || "dashed";
-    $("techLabel").textContent = tech.label || tech.status;
-  }
-
-  function renderTechOnly(status) {
-    const AD = window.V33_ADAPTER;
-    const tech = AD.mapearEstadoFonteV33(status);
-    const palco = $("palco");
-    palco.innerHTML = "";
-    document.body.dataset.mode = "calmo";
-    const s = el("section", "tech-screen");
-    s.appendChild(el("div", "tech-screen-label", tech.label));
-    s.appendChild(el("h1", "tech-screen-text", tech.text));
-    s.appendChild(
-      el(
-        "p",
-        "tech-screen-detail",
-        "Estado técnico da fonte — não é tensão operacional nem culpa da equipe. Texto + forma (tracejado), cor só como apoio."
-      )
-    );
-    palco.appendChild(s);
-    updateTechBadge(tech);
-  }
-
+  /* Estado técnico sem janela nenhuma (boot/fonte não-ready): a topologia
+   * continua presente — todas as células em leitura indisponível (tracejado),
+   * banner técnico com o motivo. Nunca tela vazia, nunca erro cru no centro. */
   function renderEstadoFonte(pl) {
     const AD = window.V33_ADAPTER;
     const tech = AD.mapearEstadoFonteV33(pl.source_status, pl.source_motivo);
     const palco = $("palco");
     palco.innerHTML = "";
     document.body.dataset.mode = "calmo";
-    const s = el("section", "tech-screen");
-    s.appendChild(el("div", "tech-screen-label", tech.label));
-    s.appendChild(el("h1", "tech-screen-text", tech.text));
+
+    const stage = el("section", "stage is-frozen");
+    const box = el("div", "stage-caption");
+    box.appendChild(el("span", "stage-kicker accent-tech", tech.label.toUpperCase()));
+    box.appendChild(el("p", "stage-caption-text", tech.text));
+    const detalhes = [];
     if (pl.unknowns) {
-      s.appendChild(
-        el(
-          "p",
-          "tech-screen-detail",
-          "Desconhecidos declarados: " +
-            pl.unknowns.conflitos +
-            " em conflito, " +
-            pl.unknowns.parciais +
-            " parciais, " +
-            pl.unknowns.suspeitos +
-            " suspeitos."
-        )
-      );
+      detalhes.push("desconhecidos declarados: " + pl.unknowns.conflitos + " em conflito, " +
+        pl.unknowns.parciais + " parciais, " + pl.unknowns.suspeitos + " suspeitos");
     }
     if (pl.ultimo_confiavel) {
-      s.appendChild(
-        el(
-          "p",
-          "tech-screen-detail",
-          "Último estado confiável: " +
-            pl.ultimo_confiavel.dia_local +
-            " (" +
-            pl.ultimo_confiavel.pedidos +
-            " pedidos). " +
-            pl.ultimo_confiavel.aviso +
-            "."
-        )
-      );
+      detalhes.push("último estado confiável: " + pl.ultimo_confiavel.dia_local +
+        " (" + pl.ultimo_confiavel.pedidos + " pedidos) · " + pl.ultimo_confiavel.aviso);
     }
-    palco.appendChild(s);
+    if (pl.dica) detalhes.push(pl.dica);
+    box.appendChild(el("p", "stage-subnote", detalhes.length ? detalhes.join(" · ") : "estado técnico da fonte · não é tensão operacional"));
+    stage.appendChild(box);
+    stage.appendChild(nodeBanner("tech", tech.text));
+
+    const celulas = CEL_DEF.map((d) => ({
+      id: d.id, nome: d.nome, x: d.x, y: d.y, size: d.base,
+      tone: "tech", estado: "sem leitura", info: "", motivo: "",
+      marcas: { solid: 0, open: 2 }, pulse: false, halo: false, dim: false, cite: false,
+      cor: "validacao"
+    }));
+    stage.appendChild(mqMobile.matches
+      ? stageMobile({ mode: "calmo" }, celulas, { frozen: true })
+      : stageDesktop({ mode: "calmo" }, celulas, { frozen: true }));
+    palco.appendChild(stage);
     $("fonteDado").textContent = "Fonte: " + pl.source_status + " · técnico";
-    updateTechBadge(tech);
+    atualizarVivo(tech);
   }
 
-  /* ---------- Voz (demo) ---------- */
+  /* ---------- Voz (demo) — composição do painel do congelado ---------- */
   function renderVoice() {
     const panel = $("voicePanel");
     if (!ui.voiceOpen) {
@@ -751,25 +1001,48 @@
     const v = M.voiceMock(ui.voicePhase);
     panel.hidden = false;
     panel.innerHTML = "";
-    panel.appendChild(el("div", "panel-demo", "voz · demonstração"));
+
+    const mic = el("div", "voice-mic" + (v.phase === "fail" ? " is-off" : ""));
+    mic.appendChild(el("span", "voice-mic-body"));
+    mic.appendChild(el("span", "voice-mic-base"));
+    if (v.phase === "listening") mic.appendChild(el("span", "voice-mic-pulse dospulse"));
+    panel.appendChild(mic);
+
+    const corpo = el("div", "voice-corpo");
+    const faseTxt = {
+      idle: "fale sobre a operação · demonstração",
+      listening: "ouvindo você",
+      transcript: "entendi assim",
+      answer: "conclusão primeiro",
+      ambiguity: "preciso de um detalhe",
+      fail: "não consegui entender",
+      done: "registrado"
+    }[v.phase] || "voz · demonstração";
+    corpo.appendChild(el("span", "voice-fase", faseTxt));
+    if (v.phase === "transcript" || v.phase === "answer") {
+      const perguntaMock = M.voiceMock("transcript").transcript;
+      corpo.appendChild(el("p", "voice-pergunta", "“" + perguntaMock + "”"));
+    }
     if (v.phase === "idle" || v.phase === "listening") {
-      panel.appendChild(el("div", "panel-title", v.hint || "Ouvindo…"));
-      panel.appendChild(el("p", "panel-body", "Não é gravação contínua. Toque encerra a escuta."));
-    } else if (v.phase === "transcript") {
-      panel.appendChild(el("div", "panel-title", "Você disse"));
-      panel.appendChild(el("p", "panel-body", "“" + v.transcript + "”"));
-    } else if (v.phase === "answer") {
-      panel.appendChild(el("div", "panel-title", v.conclusion));
-      panel.appendChild(el("p", "panel-body", v.detail));
+      corpo.appendChild(el("p", "voice-resposta", "Não é gravação contínua. Toque encerra a escuta."));
+    }
+    if (v.phase === "answer") {
+      corpo.appendChild(el("p", "voice-resposta", v.conclusion + " " + v.detail));
       ui.areaCite = v.areaCite || null;
       if (lastPonto) render(lastINFO, lastPonto);
-    } else if (v.phase === "ambiguity" || v.phase === "fail" || v.phase === "done") {
-      panel.appendChild(el("div", "panel-title", v.message));
     }
-    const acts = el("div", "panel-actions");
+    if (v.phase === "ambiguity" || v.phase === "fail" || v.phase === "done") {
+      corpo.appendChild(el("p", "voice-resposta", v.message));
+    }
+
+    const acts = el("div", "voice-acoes");
+    const botao = (rotulo, cls, fn) => {
+      const b = el("button", cls, rotulo);
+      b.onclick = fn;
+      acts.appendChild(b);
+    };
     if (v.phase === "idle") {
-      const b = el("button", "acao-pill", "Simular escuta");
-      b.onclick = () => {
+      botao("Simular escuta", "voice-bt-main", () => {
         ui.voicePhase = "listening";
         renderVoice();
         setTimeout(() => {
@@ -780,12 +1053,10 @@
             renderVoice();
           }, 700);
         }, 700);
-      };
-      acts.appendChild(b);
+      });
     }
     if (v.phase === "answer" && v.needsConfirm) {
-      const ok = el("button", "acao-pill", "Confirmar registro");
-      ok.onclick = () => {
+      botao("Confirmar registro", "voice-bt-main", () => {
         ui.voicePhase = "done";
         renderVoice();
         setTimeout(() => {
@@ -795,45 +1066,31 @@
           renderVoice();
           if (lastPonto) render(lastINFO, lastPonto);
         }, 900);
-      };
-      acts.appendChild(ok);
-      const amb = el("button", "acao-sec", "Ambíguo");
-      amb.onclick = () => {
-        ui.voicePhase = "ambiguity";
-        renderVoice();
-      };
-      acts.appendChild(amb);
-      const fail = el("button", "acao-sec", "Falha de reconhecimento");
-      fail.onclick = () => {
-        ui.voicePhase = "fail";
-        renderVoice();
-      };
-      acts.appendChild(fail);
+      });
+      botao("Ambíguo", "voice-bt-ghost", () => { ui.voicePhase = "ambiguity"; renderVoice(); });
+      botao("Falha de reconhecimento", "voice-bt-ghost", () => { ui.voicePhase = "fail"; renderVoice(); });
     }
     if (v.phase === "ambiguity" || v.phase === "fail" || v.phase === "done") {
-      const back = el("button", "acao-pill", "Voltar à operação");
-      back.onclick = () => {
+      botao("Voltar à operação", "voice-bt-main", () => {
         ui.voiceOpen = false;
         ui.voicePhase = "idle";
         ui.areaCite = null;
         renderVoice();
         if (lastPonto) render(lastINFO, lastPonto);
-      };
-      acts.appendChild(back);
+      });
     }
-    const close = el("button", "acao-sec", "Fechar");
-    close.onclick = () => {
+    botao("Fechar", "voice-bt-ghost", () => {
       ui.voiceOpen = false;
       ui.voicePhase = "idle";
       ui.areaCite = null;
       renderVoice();
       if (lastPonto) render(lastINFO, lastPonto);
-    };
-    acts.appendChild(close);
-    panel.appendChild(acts);
+    });
+    corpo.appendChild(acts);
+    panel.appendChild(corpo);
   }
 
-  /* ---------- Fechamento de turno (demo) ---------- */
+  /* ---------- Fechamento de turno (demo) — cartão central do congelado ---------- */
   function renderClosing() {
     const panel = $("closingPanel");
     if (!ui.closingOpen) {
@@ -846,64 +1103,42 @@
     const c = M.closingMock(step);
     panel.hidden = false;
     panel.innerHTML = "";
-    panel.appendChild(el("div", "panel-demo", "fechamento · demonstração · " + c.timeHint));
+
+    const head = el("div", "closing-head");
+    head.appendChild(el("span", "closing-eye", "Fechamento do turno"));
+    head.appendChild(el("span", "closing-tempo", (c.demoLabel || "demonstração") + " · " + c.timeHint));
+    panel.appendChild(head);
+
+    const acts = el("div", "closing-acoes");
+    const botao = (rotulo, cls, fn) => {
+      const b = el("button", cls, rotulo);
+      b.onclick = fn;
+      acts.appendChild(b);
+    };
     if (step === 0) {
-      panel.appendChild(el("div", "panel-title", "Resumo do turno pronto"));
-      panel.appendChild(
-        el("p", "panel-body", "Operação estável na maior parte do tempo. Picos pontuais de saída. Até dois minutos.")
-      );
-      const acts = el("div", "panel-actions");
-      const go = el("button", "acao-pill", "Começar (1 de 2)");
-      go.onclick = () => {
-        ui.closingStep = 1;
-        renderClosing();
-      };
-      acts.appendChild(go);
-      const skip = el("button", "acao-sec", "Pular");
-      skip.onclick = () => {
-        ui.closingOpen = false;
-        ui.closingStep = null;
-        renderClosing();
-      };
-      acts.appendChild(skip);
-      panel.appendChild(acts);
+      panel.appendChild(el("h3", "closing-titulo", "O turno de hoje, em meia página."));
+      panel.appendChild(el("p", "closing-body",
+        "Operação estável na maior parte do tempo. Picos pontuais de saída. Até dois minutos."));
+      botao("Começar (1 de 2)", "closing-bt-main", () => { ui.closingStep = 1; renderClosing(); });
+      botao("Pular", "closing-bt-text", () => { ui.closingOpen = false; ui.closingStep = null; renderClosing(); });
     } else if (step === 1 || step === 2) {
-      panel.appendChild(el("div", "panel-title", "Pergunta " + c.question.n));
-      panel.appendChild(el("p", "panel-body", c.question.text));
-      if (c.transcript) panel.appendChild(el("p", "panel-body", "Áudio simulado: “" + c.transcript + "”"));
-      const acts = el("div", "panel-actions");
-      const audio = el("button", "acao-pill", "Responder por áudio (demo)");
-      audio.onclick = () => {
-        ui.closingStep = step === 1 ? 2 : 3;
-        renderClosing();
-      };
-      acts.appendChild(audio);
-      const ns = el("button", "acao-sec", "Não sei");
-      ns.onclick = () => {
-        ui.closingStep = step === 1 ? 2 : 3;
-        renderClosing();
-      };
-      acts.appendChild(ns);
-      const pl = el("button", "acao-sec", "Pular");
-      pl.onclick = () => {
-        ui.closingStep = step === 1 ? 2 : 3;
-        renderClosing();
-      };
-      acts.appendChild(pl);
-      panel.appendChild(acts);
+      panel.appendChild(el("span", "closing-num", "pergunta " + c.question.n));
+      panel.appendChild(el("h3", "closing-titulo", c.question.text));
+      if (c.transcript) {
+        const tr = el("div", "closing-transcricao");
+        tr.appendChild(el("span", "closing-tr-rotulo", "sua resposta · por áudio (demonstração)"));
+        tr.appendChild(el("p", "closing-tr-txt", "“" + c.transcript + "”"));
+        panel.appendChild(tr);
+      }
+      botao("Responder por áudio (demo)", "closing-bt-main", () => { ui.closingStep = step === 1 ? 2 : 3; renderClosing(); });
+      botao("Não sei", "closing-bt-ghost", () => { ui.closingStep = step === 1 ? 2 : 3; renderClosing(); });
+      botao("Pular", "closing-bt-text", () => { ui.closingStep = step === 1 ? 2 : 3; renderClosing(); });
     } else {
-      panel.appendChild(el("div", "panel-title", "Registrado no resumo"));
-      panel.appendChild(el("p", "panel-body", "Transcrição de demonstração incluída. O turno pode se encerrar com calma."));
-      const acts = el("div", "panel-actions");
-      const done = el("button", "acao-pill", "Concluir");
-      done.onclick = () => {
-        ui.closingOpen = false;
-        ui.closingStep = null;
-        renderClosing();
-      };
-      acts.appendChild(done);
-      panel.appendChild(acts);
+      panel.appendChild(el("h3", "closing-titulo", "Registrado. O turno pode se encerrar com calma."));
+      panel.appendChild(el("p", "closing-body", "Transcrição de demonstração incluída no resumo."));
+      botao("Concluir", "closing-bt-main", () => { ui.closingOpen = false; ui.closingStep = null; renderClosing(); });
     }
+    panel.appendChild(acts);
   }
 
   /* ---------- QA Catalog ---------- */
@@ -944,7 +1179,7 @@
     if (item.mode === "tech") {
       ui.techOverride = item.status;
       if (lastPonto) render(lastINFO, lastPonto);
-      else renderTechOnly(item.status);
+      else renderEstadoFonte({ source_status: item.status, source_motivo: "demonstração de estado técnico (QA)" });
       return;
     }
     if (item.mode === "voice") {
@@ -995,7 +1230,6 @@
       const p = timeline[i0];
       if (tocando && p.mode === "foco" && ultimoModo !== "foco") chime();
       ultimoModo = p.mode;
-      // ao avançar no replay natural, limpa forceMode de QA se não estiver no catálogo aberto de propósito
       render(INFO, p);
       rel.textContent = hhmm(p.t);
       linha.value = String(i0);
@@ -1033,14 +1267,20 @@
       ultimoModo = null;
       mostrar();
     };
-    // DEFAULT: primeiro minuto CALMO
-    i0 = Math.max(0, timeline.findIndex((p) => p.mode === "calmo"));
+    // DEFAULT: o produto abre em Calmo — de preferência um Calmo VIVO
+    // (pedidos em andamento), nunca tela morta; senão o primeiro Calmo.
+    i0 = timeline.findIndex((p) => p.mode === "calmo" && p.emand > 0);
+    if (i0 < 0) i0 = timeline.findIndex((p) => p.mode === "calmo");
     if (i0 < 0) i0 = 0;
     vel = 10;
     btVel.textContent = "10×";
     mostrar();
     $("replay").hidden = false;
   }
+
+  mqMobile.addEventListener("change", () => {
+    if (lastPonto) render(lastINFO, lastPonto);
+  });
 
   function rodarJanela(seed, J, rotuloFonte) {
     const SEED = seed.itens;
@@ -1056,13 +1296,14 @@
       const dl = J.meta.dia_local.slice(8, 10) + "/" + J.meta.dia_local.slice(5, 7);
       diasRotulo = [dl, dl];
     }
+    fonteSimulada = J.meta.fonte === "simulada";
     rotuloJanela = rotuloFonte || "Janela real " + (J.meta.diaBase ? diasRotulo[0] : "01/07");
     $("fonteDado").textContent =
       rotuloJanela +
       ", " +
       J.meta.pedidos +
       " pedidos" +
-      (J.meta.fonte === "simulada" ? ", dados sintéticos (não é operação real)" : ", itens reais por pedido");
+      (fonteSimulada ? ", dados sintéticos (não é operação real)" : ", itens reais por pedido");
     timeline = precomputar(J, INFO);
     window.__V1 = { timeline, INFO, meta: J.meta };
     window.__V33 = { ui, version: "v3.3" };
@@ -1077,10 +1318,7 @@
     Promise.all([
       fetch("../data/cardapio_knowledge_seed.json").then((r) => r.json()),
       fetch(arqJanela).then((r) => {
-        if (!r.ok)
-          throw new Error(
-            "Janela real não encontrada. Rode: node tools/gerar_janela_v1.js" + (qj ? " " + +qj.slice(-2) : "")
-          );
+        if (!r.ok) throw new Error("janela_real_ausente");
         return r.json();
       })
     ])
@@ -1089,12 +1327,11 @@
         if (avisoFlag) $("fonteDado").textContent += " · " + avisoFlag;
       })
       .catch((e) => {
-        const palco = $("palco");
-        palco.innerHTML = "";
-        const s = el("section", "estado carregando");
-        s.appendChild(el("p", "sussurro", "Não consegui carregar a janela real. " + e.message));
-        palco.appendChild(s);
-        $("fonteDado").textContent = "Sem dado";
+        renderEstadoFonte({
+          source_status: "stopped",
+          source_motivo: e.message,
+          dica: "janela real fora do Git — gere com node tools/gerar_janela_v1.js (exige data/raw) ou use a fonte simulada (padrão do worktree limpo)"
+        });
       });
   }
 

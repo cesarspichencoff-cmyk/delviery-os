@@ -1,19 +1,32 @@
-# Interface V1 (interna, descartável)
+# Copiloto Delivery V3.3 — superfície do organismo (app-v1)
 
-Primeira superfície mobile da V1 — prova a tese visual mínima do
-`docs/Contrato_Estado_Cognitivo_V1.md`: Calmo existe, Ambiente existe, Foco aparece quando vale
-gastar atenção, com ação dominante segura ou **foco puro com dignidade**. Se precisar ser
-reconstruída depois da validação, isso é sucesso, não fracasso.
+Superfície do **Organismo Operacional V3.3**, port fiel do design congelado em
+`design-reference/copiloto-v33/DeliveryOS Organismo Operacional.dc.html` (imutável): topologia
+circular das seis áreas com ligações, caption editorial, painel de atenção soberano, banner
+técnico, voz e fechamento demonstrativos. O cérebro continua o mesmo: motor real + decisão real +
+adaptadores D4A/V3.3 — a interface nunca decide Calmo/Ambiente/Foco.
 
 ## Como rodar
 
 ```bash
-node tools/gerar_janela_v1.js   # 1) prepara a janela real 01/07 (uma vez; sai em data/generated/, fora do Git)
-node tools/servir_v1.js        # 2) serve em http://localhost:5179/  (no celular: IP da máquina na mesma rede)
+node tools/servir_v1.js        # http://localhost:5179/  (no celular: IP da máquina na mesma rede)
 ```
 
-Abrir no navegador do celular ou desktop. Os controles no rodapé são do **replay de demonstração**
-(janela histórica real) — não fazem parte do produto operacional.
+**Funciona em worktree limpo, sem passo prévio.** A janela real (`data/generated/v1_janela_real.json`)
+é dado real e fica fora do Git; quando ela não existe, o servidor cai para o **simulador
+certificado** (cenários de volume, motor real, dados 100% sintéticos e rotulados como
+demonstração) com fallback registrado no `/api/config`. Quem tiver os dados reais na máquina pode
+gerá-la com `node tools/gerar_janela_v1.js` (exige `data/raw/**` + `node_modules/xlsx`) — aí a
+fonte volta a ser a janela real, sem flag. A flag `DELIVERYOS_LIVE_SOURCE=current|simulator`
+continua soberana quando explícita. Catálogo de QA (dev): `?qa=1`. Cenário alternativo:
+`?cenario=ambiente`.
+
+Os controles no rodapé são do **replay de demonstração** — não fazem parte do produto operacional.
+
+> As seções abaixo documentam a camada de apresentação herdada da V1 (tradução de copy, regras de
+> honestidade, limitações de fonte). O **desenho** da superfície (mapa de 6 cards, barras de
+> pressão) descrito em algumas delas foi substituído pela composição V3.3 congelada; a lógica de
+> honestidade e tradução permanece válida e em uso.
 
 ## Regras que esta superfície obedece (e que qualquer sucessora deve obedecer)
 

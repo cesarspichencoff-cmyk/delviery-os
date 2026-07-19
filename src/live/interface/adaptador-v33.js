@@ -202,8 +202,12 @@ function areaHintFromSit(sitKind, sitPraca, displayMap) {
   if (sitKind === "conferencia") return "Conferência";
   if (sitKind === "praca" && sitPraca) {
     if (["combinados", "duplas", "enrolados"].indexOf(sitPraca) >= 0) return "Sushi";
-    if (sitPraca === "enrolados_quentes") return "Quentes";
-    if (sitPraca === "cozinha_quentes") return "Cozinha";
+    /* O vocabulário do motor é soberano: DISPLAY rotula cozinha_quentes como
+     * "Quentes". A área Quentes do organismo agrega as duas praças quentes
+     * (enrolados_quentes + cozinha_quentes) — mesma lógica da área Sushi, que
+     * agrega três praças frias. Nunca apontar uma área cujo nome contradiga a
+     * frase que o motor/decisão mostra na mesma tela. */
+    if (sitPraca === "enrolados_quentes" || sitPraca === "cozinha_quentes") return "Quentes";
     if (displayMap && displayMap[sitPraca]) {
       const d = displayMap[sitPraca];
       if (/quentes/i.test(d)) return "Quentes";

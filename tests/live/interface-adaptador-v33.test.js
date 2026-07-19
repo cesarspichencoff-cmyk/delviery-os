@@ -86,6 +86,9 @@ test("areaHintFromSit e toneFromCor são determinísticos", () => {
   assert.equal(areaHintFromSit("saida"), "Motoboy");
   assert.equal(areaHintFromSit("conferencia"), "Conferência");
   assert.equal(areaHintFromSit("praca", "enrolados_quentes"), "Quentes");
+  // cozinha_quentes: DISPLAY do motor rotula "Quentes" — a área apontada
+  // nunca pode contradizer o vocabulário que o motor mostra na mesma tela
+  assert.equal(areaHintFromSit("praca", "cozinha_quentes"), "Quentes");
   assert.equal(toneFromCor("vermelho"), "tense");
   assert.equal(toneFromCor("validacao"), "tech");
 });

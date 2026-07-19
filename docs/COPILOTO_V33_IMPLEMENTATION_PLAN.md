@@ -374,3 +374,59 @@ node tools/servir_v1.js
 - Memória operacional / backtests  
 - Remoção progressiva de mocks onde o motor cobrir  
 - Gate visual formal vs HTML congelado
+
+---
+
+## Fase 2A — correção final (fix(copiloto): finaliza implementação fiel ao V3.3)
+
+A entrega 2A original **não abria** num worktree limpo e **não era** a composição congelada.
+Correções aplicadas:
+
+### Execução reproduzível (causa da "janela real não encontrada")
+
+- O comando documentado (`node tools/servir_v1.js`) era um servidor **só estático**: sem
+  `/api/config`, o app caía em `bootAtual`, que exige `data/generated/v1_janela_real.json` —
+  dado REAL, **fora do Git** e impossível de gerar em worktree limpo (`gerar_janela_v1.js`
+  depende de `data/raw/**` e `node_modules/xlsx`, ambos ausentes). Resultado: tela escura.
+- `tools/servir_v1.js` agora expõe `/api/config` + `/api/fonte` (adaptador D4A intocado sobre os
+  cenários de volume certificados; motor real, dado sintético rotulado). Flag ausente + janela
+  real presente → fonte atual (comportamento histórico); flag ausente + janela ausente →
+  simulador com **fallback registrado**; flag explícita continua soberana. Porta: `PORT=`.
+- Falha de fonte nunca mais vira erro cru no centro: a topologia permanece (células "sem
+  leitura", tracejadas) + banner técnico com o motivo.
+
+### Fidelidade ao congelado (a adaptação do Grok não foi aceita)
+
+- A 2A original renderizava **grade de cards retangulares com barras de pressão** — risco
+  proibido §13.1 ("Áreas → cards ERP"). Substituída pelo port fiel: **topologia circular**
+  (posições/tamanhos/tons do congelado), ligações SVG com fluxo, degraus por severidade do
+  motor, marcas por contagem real, caption editorial (kicker + Spectral), painel de atenção
+  soberano ancorado, pill de atenção, banner técnico, congelamento dessaturado em estado
+  técnico, mobile vertical (pranchas mobile), minimapa de periferia no Foco mobile,
+  `prefers-reduced-motion` respeitado.
+- Correção de transporte: `areaHintFromSit` apontava `cozinha_quentes` → "Cozinha",
+  contradizendo o vocabulário soberano do motor (`DISPLAY` rotula "Quentes") na mesma tela.
+  A área **Quentes agrega as duas praças quentes** (como Sushi agrega as três frias);
+  **Cozinha segue "em validação"** (separação fina pertence ao César). Teste do adaptador
+  fortalecido com a asserção.
+- Mocks de previsão / ação acompanhada / voz / fechamento **preservados** (conteúdo) e
+  recompostos na forma do congelado (previsão colapsável com confiança separada da gravidade;
+  fases Recomendada→Aceita→Em andamento→Encerrada; voz em cartão inferior; fechamento em
+  cartão central com "Não sei"/"Pular"). Dado simulado sempre rotulado; kicker do Calmo diz
+  "AGORA · DEMONSTRAÇÃO" (nunca "ao vivo" sem fonte real).
+
+### Testes
+
+- Suíte completa: `node --test tests/live/*.test.js tests/live/simulator/*.test.js` →
+  **183 pass / 0 fail**.
+- Novo `tests/live/interface-v33-smoke.test.js`: sobe o servidor real, prova recursos de boot
+  sem 404, QA oculto por padrão (`?qa=1` só em dev), Calmo vivo (emand>0) antes do Foco e Foco
+  produzido pelo **motor real** (nunca forçado) no cenário padrão.
+
+### Pendências visuais registradas (não corrigidas aqui)
+
+- "Aproximação de área" (área ampliada com causa-e-efeito) do congelado **não portada**: exigiria
+  leitura por área que o motor ainda não expõe; célula não é clicável nesta fase.
+- Sinais de Fluxo (V1) seguem computados (`window.__V1`) mas fora da superfície V3.3 (o
+  congelado não tem esse bloco).
+- Vocabulário Quentes × Cozinha continua reservado ao César (condição 2 do próprio congelado).
