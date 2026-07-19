@@ -255,7 +255,9 @@ function replayOrders(byOrder, opts) {
         : 10) || 10;
   const episodes = buildEpisodes(ticks, {
     gap_min: gapMin,
-    interval_min: intervalMin
+    interval_min: intervalMin,
+    // fronteiras de dia/turno — defaults em operational-window (não altera cv-cal-sane-v2)
+    operational: (o.operational || (config.episode && config.episode.operational) || undefined)
   });
   const elapsed_ms = Date.now() - t0run;
 
@@ -303,16 +305,27 @@ function replayOrders(byOrder, opts) {
       n_episodios: episodes.n_episodes,
       n_episodios_criticos: episodes.n_critical_episodes,
       n_episodios_atencao: episodes.n_attention_episodes,
+      // durações humanas = só episódios mensuráveis (≥2 ticks); null se nenhum
       duracao_media_min: episodes.duration_avg_min,
       duracao_mediana_min: episodes.duration_median_min,
       duracao_p90_min: episodes.duration_p90_min,
       duracao_max_min: episodes.duration_max_min,
+      episodios_uma_leitura: episodes.single_tick && episodes.single_tick.n,
+      episodios_duracao_mensuravel: episodes.measurable && episodes.measurable.n,
+      duracao_media_mensuravel: episodes.measurable && episodes.measurable.duration_avg_min,
+      duracao_mediana_mensuravel: episodes.measurable && episodes.measurable.duration_median_min,
+      duracao_p90_mensuravel: episodes.measurable && episodes.measurable.duration_p90_min,
+      duracao_max_mensuravel: episodes.measurable && episodes.measurable.duration_max_min,
+      episodios_atravessando_turno_ou_dia: episodes.episodes_crossing_day,
       pedidos_unicos_afetados: episodes.unique_orders_affected,
       episodios_sem_pedido: episodes.episodes_without_order_id,
       episodios_resolvidos: episodes.episodes_resolved,
       episodios_abertos_fim_janela: episodes.episodes_open_at_end,
       episodios_por_praca: episodes.by_praca,
       episodios_por_tipo: episodes.by_type,
+      episodios_por_confianca: episodes.by_confidence,
+      episodios_por_epistemic: episodes.by_epistemic,
+      n_partidos_por_fronteira: episodes.n_split_by_boundary,
       pausas_seletivas_ticks: pauseSel,
       pausas_gerais_ticks: pauseGen,
       confianca_media_proxy: confN ? round3(confSum / confN) : null,

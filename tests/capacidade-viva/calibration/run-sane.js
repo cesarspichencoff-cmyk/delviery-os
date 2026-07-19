@@ -136,7 +136,7 @@ test("dedup e resolução", () => {
   assert.ok(ep.episodes[0].resolved_at);
 });
 
-test("duração média/mediana/p90/máximo", () => {
+test("duração média/mediana/p90/máximo (só mensuráveis)", () => {
   const base = Date.parse("2026-06-20T20:00:00.000Z");
   // 3 ticks contínuos (0,5,10 min) → 1 episódio duração 10
   const ticks = [0, 5, 10].map((m) => ({
@@ -148,7 +148,7 @@ test("duração média/mediana/p90/máximo", () => {
       critical_items: [{ type: "motoboy_na_loja", order_id: "A", explanation: "e" }]
     }
   }));
-  // segundo episódio isolado duração 0
+  // segundo episódio isolado — uma leitura (não entra na média mensurável)
   ticks.push({
     t_ms: base + 40 * 60000,
     local_iso: new Date(base + 40 * 60000).toISOString(),
@@ -159,10 +159,9 @@ test("duração média/mediana/p90/máximo", () => {
     }
   });
   const ep = Cal.episodes.buildEpisodes(ticks, { gap_min: 10, interval_min: 5 });
-  assert.ok(ep.duration_avg_min != null);
-  assert.ok(ep.duration_median_min != null);
-  assert.ok(ep.duration_p90_min != null);
-  assert.ok(ep.duration_max_min != null);
+  assert.ok(ep.measurable.n >= 1);
+  assert.strictEqual(ep.measurable.duration_max_min, 10);
+  assert.ok(ep.single_tick.n >= 1);
   assert.strictEqual(ep.duration_max_min, 10);
   assert.ok(ep.duration_avg_min > 0);
 });
@@ -259,6 +258,231 @@ test("order_id propagado pela taxonomia no classifyTick", () => {
   );
   assert.ok(tick.critical_items.length);
   assert.strictEqual(tick.critical_items[0].order_id, "PED-9");
+});
+
+console.log("=== fronteiras 2D.3 ===");
+test("quebra por dia operacional", () => {
+  // 03:00 e 08:00 SP no mesmo dia civil com cutover 5 → dias operacionais diferentes
+  // 2026-06-21T06:00:00Z = 03:00 SP; 2026-06-21T11:00:00Z = 08:00 SP
+  const t1 = Date.parse("2026-06-21T06:00:00.000Z");
+  const t2 = Date.parse("2026-06-21T11:00:00.000Z");
+  const d1 = Cal.operationalWindow.operationalDayKey(t1);
+  const d2 = Cal.operationalWindow.operationalDayKey(t2);
+  assert.notStrictEqual(d1.operational_day, d2.operational_day);
+  const cont = Cal.operationalWindow.continuityBetween(t1, t2);
+  assert.strictEqual(cont.continuous, false);
+  assert.strictEqual(cont.reason, "quebra_dia_operacional");
+});
+
+test("quebra por turno configurado", () => {
+  const t1 = Date.parse("2026-06-21T15:00:00.000Z"); // 12:00 SP
+  const t2 = Date.parse("2026-06-21T22:00:00.000Z"); // 19:00 SP
+  const cont = Cal.operationalWindow.continuityBetween(t1, t2, {
+    shifts: [
+      { id: "almoco", start_hour: 11, end_hour: 16 },
+      { id: "jantar", start_hour: 16, end_hour: 23 }
+    ],
+    break_on_operational_day: false
+  });
+  assert.strictEqual(cont.continuous, false);
+  assert.strictEqual(cont.reason, "quebra_turno");
+});
+
+test("grande gap sem dados", () => {
+  const t1 = Date.parse("2026-06-21T15:00:00.000Z");
+  const t2 = t1 + 200 * 60000;
+  const cont = Cal.operationalWindow.continuityBetween(t1, t2, {
+    break_on_operational_day: false,
+    max_data_gap_min: 180
+  });
+  assert.strictEqual(cont.continuous, false);
+  assert.strictEqual(cont.reason, "grande_gap_sem_dados");
+});
+
+test("episódio não atravessa dias (máximo)", () => {
+  const base = Date.parse("2026-06-25T23:45:00.000Z"); // 20:45 SP 25/jun
+  const ticks = [];
+  // 5 dias de ticks a cada 15 min — deve partir por dia operacional
+  for (let i = 0; i < 100; i++) {
+    const t = base + i * 15 * 60000;
+    ticks.push({
+      t_ms: t,
+      local_iso: Cal.timezone.toSaoPaulo(t).local_iso,
+      active_orders: 1,
+      tick_class: {
+        has_critical: true,
+        critical_items: [
+          {
+            type: "pedido_atrasado_vs_prometido_operacional",
+            order_id: "STUCK",
+            explanation: "atrasado",
+            epistemic: "confirmado"
+          }
+        ]
+      }
+    });
+  }
+  const ep = Cal.episodes.buildEpisodes(ticks, { gap_min: 10, interval_min: 15 });
+  assert.strictEqual(ep.episodes_crossing_day, 0);
+  for (const e of ep.episodes) {
+    assert.ok(!e.crosses_operational_day, e.episode_id + " crosses day");
+    if (e.observed_span_min != null) assert.ok(e.observed_span_min < 24 * 60, "span " + e.observed_span_min);
+  }
+  assert.ok(ep.n_split_by_boundary >= 1);
+});
+
+test("reabertura após gap", () => {
+  const base = Date.parse("2026-06-20T20:00:00.000Z");
+  const ticks = [
+    {
+      t_ms: base,
+      local_iso: "a",
+      tick_class: {
+        has_critical: true,
+        critical_items: [{ type: "motoboy_na_loja", order_id: "R1", explanation: "e" }]
+      }
+    },
+    {
+      t_ms: base + 5 * 60000,
+      local_iso: "b",
+      tick_class: {
+        has_critical: true,
+        critical_items: [{ type: "motoboy_na_loja", order_id: "R1", explanation: "e" }]
+      }
+    },
+    {
+      t_ms: base + 40 * 60000,
+      local_iso: "c",
+      tick_class: {
+        has_critical: true,
+        critical_items: [{ type: "motoboy_na_loja", order_id: "R1", explanation: "e" }]
+      }
+    }
+  ];
+  const ep = Cal.episodes.buildEpisodes(ticks, { gap_min: 10, interval_min: 5 });
+  assert.ok(ep.n_episodes >= 2);
+  assert.ok(ep.episodes.some((e) => e.reopened));
+});
+
+test("episódio genérico por praça", () => {
+  const base = Date.parse("2026-06-20T20:00:00.000Z");
+  const ticks = [0, 5].map((m) => ({
+    t_ms: base + m * 60000,
+    local_iso: "t" + m,
+    praca_critica: "conferencia",
+    tick_class: {
+      has_critical: false,
+      has_attention: true,
+      attention_items: [{ type: "prontos_acumulando", explanation: "fila", epistemic: "inferido_alta_confianca" }]
+    }
+  }));
+  const ep = Cal.episodes.buildEpisodes(ticks, { gap_min: 10, interval_min: 5 });
+  assert.ok(ep.n_episodes >= 1);
+  assert.ok(ep.episodes.some((e) => e.praca === "conferencia"));
+});
+
+test("um tick: duration_label e não 0 min humano", () => {
+  const base = Date.parse("2026-06-20T20:00:00.000Z");
+  const ticks = [
+    {
+      t_ms: base,
+      local_iso: "x",
+      tick_class: {
+        has_critical: true,
+        critical_items: [{ type: "motoboy_na_loja", order_id: "T1", explanation: "e", epistemic: "confirmado" }]
+      }
+    }
+  ];
+  const ep = Cal.episodes.buildEpisodes(ticks, { gap_min: 10, interval_min: 15 });
+  assert.strictEqual(ep.episodes[0].duration_label, "observado em uma leitura");
+  assert.strictEqual(ep.episodes[0].minimum_observed_duration_min, null);
+  assert.strictEqual(ep.episodes[0].observed_span_min, 0);
+  assert.strictEqual(ep.single_tick.n, 1);
+  assert.strictEqual(ep.measurable.n, 0);
+  assert.strictEqual(ep.duration_avg_min, null);
+});
+
+test("motoboy confirmado vs inferido / causa desconhecida", () => {
+  const conf = Cal.taxonomy.classifyOrderSignals(
+    {
+      id: "o1",
+      age_min: 30,
+      pronto: true,
+      saiu: false,
+      ready_wait_min: 10,
+      courier_wait_store_min: 8,
+      courier_wait_epistemic: "inferido_alta_confianca"
+    },
+    {}
+  );
+  assert.ok(conf.exceptions.some((e) => e.type === "motoboy_na_loja" && e.confirmed));
+
+  const unknown = Cal.taxonomy.classifyOrderSignals(
+    { id: "o2", age_min: 40, pronto: true, saiu: false, ready_wait_min: 15 },
+    { atraso: { pronto_sem_saida_min: 12 } }
+  );
+  assert.ok(unknown.attentions.some((a) => a.type === "aguardando_saida_causa_nao_confirmada"));
+  assert.ok(!unknown.exceptions.some((e) => e.type === "motoboy_na_loja"));
+
+  const audit = Cal.reviewSet.logisticConfidenceAudit();
+  assert.ok(audit.types.motoboy_na_loja);
+  assert.ok(audit.types.aguardando_saida_causa_nao_confirmada.opens_critical === false);
+});
+
+test("review pack explicita confiança", () => {
+  const rep = {
+    ticks: [
+      {
+        t_ms: Date.parse("2026-06-20T21:00:00.000Z"),
+        local_date: "2026-06-20",
+        local_iso: "2026-06-20T18:00:00-03:00",
+        active_orders: 12,
+        shadow: { estado: "excecao_critica", confianca: "media", menor_intervencao: "observar", sinais: { ready: 2 } },
+        tick_class: {
+          tick_level: "excecao_critica",
+          has_critical: true,
+          has_attention: false,
+          critical_items: [
+            {
+              type: "motoboy_na_loja",
+              order_id: "X",
+              explanation: "espera",
+              epistemic: "confirmado",
+              confirmed: true
+            }
+          ]
+        }
+      }
+    ],
+    episodes: {
+      episodes: [
+        {
+          episode_id: "ep_1",
+          type: "motoboy_na_loja",
+          level: "excecao_critica",
+          started_ms: Date.parse("2026-06-20T21:00:00.000Z"),
+          started_at: "2026-06-20T18:00:00-03:00",
+          last_seen_at: "2026-06-20T18:00:00-03:00",
+          last_seen_ms: Date.parse("2026-06-20T21:00:00.000Z"),
+          observed_span_min: 0,
+          observed_ticks: 1,
+          tick_count: 1,
+          single_tick: true,
+          duration_label: "observado em uma leitura",
+          confidence: "alta",
+          epistemic: "confirmado",
+          evidence_kind: "confirmado",
+          praca: "conferencia"
+        }
+      ]
+    }
+  };
+  const r = Cal.reviewSet.buildReviewCases(rep, { items: [] }, { freeze_version: "2D.3" });
+  assert.ok(r.cases.length);
+  assert.ok(r.cases.some((c) => c.evidencia_explicita_ou_inferida || c.duration_label));
+  const md = Cal.reviewSet.toMarkdown(r);
+  assert.ok(md.includes("Evidência"));
+  assert.ok(md.includes("observado em uma leitura") || md.includes("Uma leitura"));
 });
 
 console.log("=== pausa gates ===");

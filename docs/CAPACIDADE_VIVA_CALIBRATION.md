@@ -142,3 +142,86 @@ node tools/calibrar_capacidade_viva.js          # FULL
 node tools/calibrar_capacidade_viva.js --fast   # dev
 node tests/capacidade-viva/calibration/run-sane.js
 ```
+
+---
+
+## Fase 2D.2 — Métricas de episódios
+
+Correção de agregação: `order_id` propagado nas exceções; duração média/mediana/p90/max; null honesto; episódios serializados em `04b_episodes_full.json`.
+
+---
+
+## Fase 2D.3 — Limite de turno, duração honesta e freeze do pack humano
+
+### Causa do episódio de 7.335 min
+
+- **episode_id (2D.2):** `ep_1855`
+- **tipo:** `pedido_atrasado_vs_prometido_operacional`
+- **order_id:** `778a2735-97af-4f4f-8d5b-189b2c7c49db`
+- **janela:** 2026-06-25T20:45 → 2026-06-30T23:00 (America/Sao_Paulo)
+- **ticks:** 490 · **open** no fim da janela
+- **Causa raiz:** o pedido permaneceu `active` no replay (sem evento terminal saiu/entregue/cancelado na fonte). O sinal de atraso renovava a cada tick de 15 min. **Não havia quebra por dia/turno operacional**, então a continuidade uniu madrugadas e dias distintos num único episódio.
+- **Não** foi chave genérica sem order_id; **não** se “corrigiu” com teto arbitrário de minutos.
+
+### Fronteiras operacionais
+
+Módulo `operational-window.js` (defaults, **sem** alterar `cv-cal-sane-v2`):
+
+| Regra | Valor inicial |
+|---|---|
+| Timezone | America/Sao_Paulo |
+| Quebra por dia operacional | obrigatória (cutover **05:00** local) |
+| Multi-day continuity | **proibida** |
+| Turnos nomeados | opcionais (lista vazia por default; podem cruzar meia-noite) |
+| Gap máximo sem dados | 180 min (além do gap de episódio) |
+| Pedido | episódio por `type|order|id`; encerra por gap, fronteira, ou ausência do sinal |
+| Praça | não une pressão de um dia operacional ao seguinte |
+
+### Semântica de duração
+
+| Campo | Significado |
+|---|---|
+| `observed_span_min` | last_seen − started (técnico; pode ser 0) |
+| `observed_ticks` | contagem de leituras |
+| `sampling_interval_min` | intervalo do replay |
+| `duration_label` | humano: “observado em uma leitura” ou “duração mensurável · N min” |
+| `minimum_observed_duration_min` | null em 1 tick (não afirmar 15 min) |
+
+Estatísticas humanas (média/mediana/p90/máx) usam **somente** episódios com ≥2 ticks. Contagem de “uma leitura” é reportada à parte. **Não** apresentar mediana 0 ao César como “durou zero minutos”.
+
+### Confiança logística (auditoria; taxonomia inalterada)
+
+| Tipo | Exceção? | Evidência |
+|---|---|---|
+| `motoboy_na_loja` | sim | campo de espera na loja; não abrir só por ausência de saída |
+| `entregador_alocado_sem_retirada` | sim se não fraco | inferência baixa → só atenção |
+| `pronto_sem_saida_excessivo` | sim (investigar) | inferido baixa; motivo desconhecido |
+| `aguardando_saida_causa_nao_confirmada` | não (atenção) | permanece causa não confirmada |
+
+Pack humano exibe **confirmado / inferido alta / inferido baixa**.
+
+### Cobertura por praça
+
+Concentração em **Conferência** e **Sushi** reflete `praca_critica` do ISF no tick e sinais logísticos/atraso — **não** prova de calma em Quentes/Cozinha/Caixa/Motoboy. Distinguir **ausência de episódio** vs **ausência de leitura**. Não fabricar distribuição.
+
+### Pack humano congelado (2D.3)
+
+- `data/capacidade-viva/calibration/review/casos-validacao.json`
+- `data/capacidade-viva/calibration/review/CASOS_VALIDACAO.md`
+- 40 casos (10/10/10/10) + 14 itens pendentes
+- Formulário César; flag quando dados não permitem confirmação segura
+
+### O que ainda depende do César
+
+- Rótulos reais nos 40 casos
+- Confirmação dos 14 itens do cardápio
+- Escala real de equipe por turno (não inventada)
+- Se o cutover 05:00 e turnos nomeados batem com a operação
+- Eventos terminais faltantes em pedidos “zumbis” na fonte
+
+### Comando 2D.3
+
+```bash
+node tools/regenerar_episodios_2d3.js
+node tests/capacidade-viva/calibration/run-sane.js
+```

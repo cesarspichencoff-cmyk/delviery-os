@@ -2,13 +2,16 @@
 
 **CALIBRAÇÃO · MODO SOMBRA · NÃO OPERACIONAL**
 
+Freeze: **2D.3** · 2026-07-19T07:46:51.343Z
+
 Timezone de referência: **America/Sao_Paulo**.
 
 Instruções para César / equipe:
 1. Leia o caso (campos do motor) sem inventar dados ausentes.
-2. Preencha os campos **Sua avaliação** em cada caso.
-3. Não há resposta automática “certa” — sua leitura calibra o motor.
-4. Nenhum dado pessoal de cliente/entregador deve aparecer; se vir, marque e ignore.
+2. Se o motor classificou mas os dados não permitem confirmação segura, marque **impossível avaliar**.
+3. Duração: **uma leitura** ≠ **0 min**. Só use minutos quando houver duração mensurável (≥2 ticks).
+4. Confiança: confirme se a evidência é **confirmada**, **inferida alta** ou **inferida baixa**.
+5. Nenhum dado pessoal de cliente/entregador deve aparecer.
 
 ---
 
@@ -18,24 +21,30 @@ Instruções para César / equipe:
 - Número do caso: CV-H-001
 - Data: 2026-05-26
 - Horário local (America/Sao_Paulo): 2026-05-26T21:00:00-03:00
-- Duração do episódio (min): —
-- Praça provável: —
-- Volume de pedidos (ativos no tick): 0
-- Quantidade de itens (proxy complexidade > simples): 0
-- Complexidade (proxy): 0
+- Episódio: — (tick)
+- Uma leitura ou duração mensurável: tick
+- Duração (label): tick isolado (não episódio)
+- Span observado (min, técnico): —
+- Ticks observados: 1
+- Praça: —
+- Volume de pedidos: 0
+- Itens (proxy complexidade > simples): 0
 - Pedido mais antigo: anonimizado
 - Pedidos prontos aguardando: 0
-- Sinal logístico: —
+- Sinais logísticos: —
+- Evidência: ausente (ausente)
 - Confiança do motor: baixa
 - Classificação do motor: quieto
-- Ação sugerida (sombra): observar
+- Intervenção sugerida (sombra): observar
 - Dados ausentes: equipe_real_por_turno, componentes_isf_detalhados, nenhuma_excecao_critica_neste_tick
 - Bucket de amostragem: controlavel
+- ⚠ Motor classificou, mas os dados não permitem confirmação humana segura.
 
 ### Sua avaliação (preencher)
 - Estado real: [ ] controlável  [ ] atenção  [ ] crítico  [ ] impossível avaliar
 - Praça correta: [ ] sim  [ ] não  [ ] outra: _______________
 - Recomendação adequada: [ ] sim  [ ] parcialmente  [ ] não
+- Evidência (na sua visão): [ ] confirmada  [ ] inferida  [ ] insuficiente
 - O que você faria: _______________________________________________
 - Observação: ___________________________________________________
 
@@ -45,24 +54,30 @@ Instruções para César / equipe:
 - Número do caso: CV-H-002
 - Data: 2026-05-26
 - Horário local (America/Sao_Paulo): 2026-05-26T22:15:00-03:00
-- Duração do episódio (min): —
-- Praça provável: —
-- Volume de pedidos (ativos no tick): 0
-- Quantidade de itens (proxy complexidade > simples): 0
-- Complexidade (proxy): 0
+- Episódio: — (tick)
+- Uma leitura ou duração mensurável: tick
+- Duração (label): tick isolado (não episódio)
+- Span observado (min, técnico): —
+- Ticks observados: 1
+- Praça: —
+- Volume de pedidos: 0
+- Itens (proxy complexidade > simples): 0
 - Pedido mais antigo: anonimizado
 - Pedidos prontos aguardando: 0
-- Sinal logístico: —
+- Sinais logísticos: —
+- Evidência: ausente (ausente)
 - Confiança do motor: baixa
 - Classificação do motor: quieto
-- Ação sugerida (sombra): observar
+- Intervenção sugerida (sombra): observar
 - Dados ausentes: equipe_real_por_turno, componentes_isf_detalhados, nenhuma_excecao_critica_neste_tick
 - Bucket de amostragem: controlavel
+- ⚠ Motor classificou, mas os dados não permitem confirmação humana segura.
 
 ### Sua avaliação (preencher)
 - Estado real: [ ] controlável  [ ] atenção  [ ] crítico  [ ] impossível avaliar
 - Praça correta: [ ] sim  [ ] não  [ ] outra: _______________
 - Recomendação adequada: [ ] sim  [ ] parcialmente  [ ] não
+- Evidência (na sua visão): [ ] confirmada  [ ] inferida  [ ] insuficiente
 - O que você faria: _______________________________________________
 - Observação: ___________________________________________________
 
@@ -72,24 +87,30 @@ Instruções para César / equipe:
 - Número do caso: CV-H-003
 - Data: 2026-05-26
 - Horário local (America/Sao_Paulo): 2026-05-26T23:30:00-03:00
-- Duração do episódio (min): —
-- Praça provável: —
-- Volume de pedidos (ativos no tick): 0
-- Quantidade de itens (proxy complexidade > simples): 0
-- Complexidade (proxy): 0
+- Episódio: — (tick)
+- Uma leitura ou duração mensurável: tick
+- Duração (label): tick isolado (não episódio)
+- Span observado (min, técnico): —
+- Ticks observados: 1
+- Praça: —
+- Volume de pedidos: 0
+- Itens (proxy complexidade > simples): 0
 - Pedido mais antigo: anonimizado
 - Pedidos prontos aguardando: 0
-- Sinal logístico: —
+- Sinais logísticos: —
+- Evidência: ausente (ausente)
 - Confiança do motor: baixa
 - Classificação do motor: quieto
-- Ação sugerida (sombra): observar
+- Intervenção sugerida (sombra): observar
 - Dados ausentes: equipe_real_por_turno, componentes_isf_detalhados, nenhuma_excecao_critica_neste_tick
 - Bucket de amostragem: controlavel
+- ⚠ Motor classificou, mas os dados não permitem confirmação humana segura.
 
 ### Sua avaliação (preencher)
 - Estado real: [ ] controlável  [ ] atenção  [ ] crítico  [ ] impossível avaliar
 - Praça correta: [ ] sim  [ ] não  [ ] outra: _______________
 - Recomendação adequada: [ ] sim  [ ] parcialmente  [ ] não
+- Evidência (na sua visão): [ ] confirmada  [ ] inferida  [ ] insuficiente
 - O que você faria: _______________________________________________
 - Observação: ___________________________________________________
 
@@ -99,24 +120,30 @@ Instruções para César / equipe:
 - Número do caso: CV-H-004
 - Data: 2026-05-27
 - Horário local (America/Sao_Paulo): 2026-05-27T00:45:00-03:00
-- Duração do episódio (min): —
-- Praça provável: —
-- Volume de pedidos (ativos no tick): 0
-- Quantidade de itens (proxy complexidade > simples): 0
-- Complexidade (proxy): 0
+- Episódio: — (tick)
+- Uma leitura ou duração mensurável: tick
+- Duração (label): tick isolado (não episódio)
+- Span observado (min, técnico): —
+- Ticks observados: 1
+- Praça: —
+- Volume de pedidos: 0
+- Itens (proxy complexidade > simples): 0
 - Pedido mais antigo: anonimizado
 - Pedidos prontos aguardando: 0
-- Sinal logístico: —
+- Sinais logísticos: —
+- Evidência: ausente (ausente)
 - Confiança do motor: baixa
 - Classificação do motor: quieto
-- Ação sugerida (sombra): observar
+- Intervenção sugerida (sombra): observar
 - Dados ausentes: equipe_real_por_turno, componentes_isf_detalhados, nenhuma_excecao_critica_neste_tick
 - Bucket de amostragem: controlavel
+- ⚠ Motor classificou, mas os dados não permitem confirmação humana segura.
 
 ### Sua avaliação (preencher)
 - Estado real: [ ] controlável  [ ] atenção  [ ] crítico  [ ] impossível avaliar
 - Praça correta: [ ] sim  [ ] não  [ ] outra: _______________
 - Recomendação adequada: [ ] sim  [ ] parcialmente  [ ] não
+- Evidência (na sua visão): [ ] confirmada  [ ] inferida  [ ] insuficiente
 - O que você faria: _______________________________________________
 - Observação: ___________________________________________________
 
@@ -126,24 +153,30 @@ Instruções para César / equipe:
 - Número do caso: CV-H-005
 - Data: 2026-05-27
 - Horário local (America/Sao_Paulo): 2026-05-27T02:00:00-03:00
-- Duração do episódio (min): —
-- Praça provável: —
-- Volume de pedidos (ativos no tick): 0
-- Quantidade de itens (proxy complexidade > simples): 0
-- Complexidade (proxy): 0
+- Episódio: — (tick)
+- Uma leitura ou duração mensurável: tick
+- Duração (label): tick isolado (não episódio)
+- Span observado (min, técnico): —
+- Ticks observados: 1
+- Praça: —
+- Volume de pedidos: 0
+- Itens (proxy complexidade > simples): 0
 - Pedido mais antigo: anonimizado
 - Pedidos prontos aguardando: 0
-- Sinal logístico: —
+- Sinais logísticos: —
+- Evidência: ausente (ausente)
 - Confiança do motor: baixa
 - Classificação do motor: quieto
-- Ação sugerida (sombra): observar
+- Intervenção sugerida (sombra): observar
 - Dados ausentes: equipe_real_por_turno, componentes_isf_detalhados, nenhuma_excecao_critica_neste_tick
 - Bucket de amostragem: controlavel
+- ⚠ Motor classificou, mas os dados não permitem confirmação humana segura.
 
 ### Sua avaliação (preencher)
 - Estado real: [ ] controlável  [ ] atenção  [ ] crítico  [ ] impossível avaliar
 - Praça correta: [ ] sim  [ ] não  [ ] outra: _______________
 - Recomendação adequada: [ ] sim  [ ] parcialmente  [ ] não
+- Evidência (na sua visão): [ ] confirmada  [ ] inferida  [ ] insuficiente
 - O que você faria: _______________________________________________
 - Observação: ___________________________________________________
 
@@ -153,24 +186,30 @@ Instruções para César / equipe:
 - Número do caso: CV-H-006
 - Data: 2026-05-27
 - Horário local (America/Sao_Paulo): 2026-05-27T03:15:00-03:00
-- Duração do episódio (min): —
-- Praça provável: —
-- Volume de pedidos (ativos no tick): 0
-- Quantidade de itens (proxy complexidade > simples): 0
-- Complexidade (proxy): 0
+- Episódio: — (tick)
+- Uma leitura ou duração mensurável: tick
+- Duração (label): tick isolado (não episódio)
+- Span observado (min, técnico): —
+- Ticks observados: 1
+- Praça: —
+- Volume de pedidos: 0
+- Itens (proxy complexidade > simples): 0
 - Pedido mais antigo: anonimizado
 - Pedidos prontos aguardando: 0
-- Sinal logístico: —
+- Sinais logísticos: —
+- Evidência: ausente (ausente)
 - Confiança do motor: baixa
 - Classificação do motor: quieto
-- Ação sugerida (sombra): observar
+- Intervenção sugerida (sombra): observar
 - Dados ausentes: equipe_real_por_turno, componentes_isf_detalhados, nenhuma_excecao_critica_neste_tick
 - Bucket de amostragem: controlavel
+- ⚠ Motor classificou, mas os dados não permitem confirmação humana segura.
 
 ### Sua avaliação (preencher)
 - Estado real: [ ] controlável  [ ] atenção  [ ] crítico  [ ] impossível avaliar
 - Praça correta: [ ] sim  [ ] não  [ ] outra: _______________
 - Recomendação adequada: [ ] sim  [ ] parcialmente  [ ] não
+- Evidência (na sua visão): [ ] confirmada  [ ] inferida  [ ] insuficiente
 - O que você faria: _______________________________________________
 - Observação: ___________________________________________________
 
@@ -180,24 +219,30 @@ Instruções para César / equipe:
 - Número do caso: CV-H-007
 - Data: 2026-05-27
 - Horário local (America/Sao_Paulo): 2026-05-27T04:30:00-03:00
-- Duração do episódio (min): —
-- Praça provável: —
-- Volume de pedidos (ativos no tick): 0
-- Quantidade de itens (proxy complexidade > simples): 0
-- Complexidade (proxy): 0
+- Episódio: — (tick)
+- Uma leitura ou duração mensurável: tick
+- Duração (label): tick isolado (não episódio)
+- Span observado (min, técnico): —
+- Ticks observados: 1
+- Praça: —
+- Volume de pedidos: 0
+- Itens (proxy complexidade > simples): 0
 - Pedido mais antigo: anonimizado
 - Pedidos prontos aguardando: 0
-- Sinal logístico: —
+- Sinais logísticos: —
+- Evidência: ausente (ausente)
 - Confiança do motor: baixa
 - Classificação do motor: quieto
-- Ação sugerida (sombra): observar
+- Intervenção sugerida (sombra): observar
 - Dados ausentes: equipe_real_por_turno, componentes_isf_detalhados, nenhuma_excecao_critica_neste_tick
 - Bucket de amostragem: controlavel
+- ⚠ Motor classificou, mas os dados não permitem confirmação humana segura.
 
 ### Sua avaliação (preencher)
 - Estado real: [ ] controlável  [ ] atenção  [ ] crítico  [ ] impossível avaliar
 - Praça correta: [ ] sim  [ ] não  [ ] outra: _______________
 - Recomendação adequada: [ ] sim  [ ] parcialmente  [ ] não
+- Evidência (na sua visão): [ ] confirmada  [ ] inferida  [ ] insuficiente
 - O que você faria: _______________________________________________
 - Observação: ___________________________________________________
 
@@ -207,24 +252,30 @@ Instruções para César / equipe:
 - Número do caso: CV-H-008
 - Data: 2026-05-27
 - Horário local (America/Sao_Paulo): 2026-05-27T05:45:00-03:00
-- Duração do episódio (min): —
-- Praça provável: —
-- Volume de pedidos (ativos no tick): 0
-- Quantidade de itens (proxy complexidade > simples): 0
-- Complexidade (proxy): 0
+- Episódio: — (tick)
+- Uma leitura ou duração mensurável: tick
+- Duração (label): tick isolado (não episódio)
+- Span observado (min, técnico): —
+- Ticks observados: 1
+- Praça: —
+- Volume de pedidos: 0
+- Itens (proxy complexidade > simples): 0
 - Pedido mais antigo: anonimizado
 - Pedidos prontos aguardando: 0
-- Sinal logístico: —
+- Sinais logísticos: —
+- Evidência: ausente (ausente)
 - Confiança do motor: baixa
 - Classificação do motor: quieto
-- Ação sugerida (sombra): observar
+- Intervenção sugerida (sombra): observar
 - Dados ausentes: equipe_real_por_turno, componentes_isf_detalhados, nenhuma_excecao_critica_neste_tick
 - Bucket de amostragem: controlavel
+- ⚠ Motor classificou, mas os dados não permitem confirmação humana segura.
 
 ### Sua avaliação (preencher)
 - Estado real: [ ] controlável  [ ] atenção  [ ] crítico  [ ] impossível avaliar
 - Praça correta: [ ] sim  [ ] não  [ ] outra: _______________
 - Recomendação adequada: [ ] sim  [ ] parcialmente  [ ] não
+- Evidência (na sua visão): [ ] confirmada  [ ] inferida  [ ] insuficiente
 - O que você faria: _______________________________________________
 - Observação: ___________________________________________________
 
@@ -234,24 +285,30 @@ Instruções para César / equipe:
 - Número do caso: CV-H-009
 - Data: 2026-05-27
 - Horário local (America/Sao_Paulo): 2026-05-27T07:00:00-03:00
-- Duração do episódio (min): —
-- Praça provável: —
-- Volume de pedidos (ativos no tick): 0
-- Quantidade de itens (proxy complexidade > simples): 0
-- Complexidade (proxy): 0
+- Episódio: — (tick)
+- Uma leitura ou duração mensurável: tick
+- Duração (label): tick isolado (não episódio)
+- Span observado (min, técnico): —
+- Ticks observados: 1
+- Praça: —
+- Volume de pedidos: 0
+- Itens (proxy complexidade > simples): 0
 - Pedido mais antigo: anonimizado
 - Pedidos prontos aguardando: 0
-- Sinal logístico: —
+- Sinais logísticos: —
+- Evidência: ausente (ausente)
 - Confiança do motor: baixa
 - Classificação do motor: quieto
-- Ação sugerida (sombra): observar
+- Intervenção sugerida (sombra): observar
 - Dados ausentes: equipe_real_por_turno, componentes_isf_detalhados, nenhuma_excecao_critica_neste_tick
 - Bucket de amostragem: controlavel
+- ⚠ Motor classificou, mas os dados não permitem confirmação humana segura.
 
 ### Sua avaliação (preencher)
 - Estado real: [ ] controlável  [ ] atenção  [ ] crítico  [ ] impossível avaliar
 - Praça correta: [ ] sim  [ ] não  [ ] outra: _______________
 - Recomendação adequada: [ ] sim  [ ] parcialmente  [ ] não
+- Evidência (na sua visão): [ ] confirmada  [ ] inferida  [ ] insuficiente
 - O que você faria: _______________________________________________
 - Observação: ___________________________________________________
 
@@ -261,24 +318,30 @@ Instruções para César / equipe:
 - Número do caso: CV-H-010
 - Data: 2026-05-27
 - Horário local (America/Sao_Paulo): 2026-05-27T08:15:00-03:00
-- Duração do episódio (min): —
-- Praça provável: —
-- Volume de pedidos (ativos no tick): 0
-- Quantidade de itens (proxy complexidade > simples): 0
-- Complexidade (proxy): 0
+- Episódio: — (tick)
+- Uma leitura ou duração mensurável: tick
+- Duração (label): tick isolado (não episódio)
+- Span observado (min, técnico): —
+- Ticks observados: 1
+- Praça: —
+- Volume de pedidos: 0
+- Itens (proxy complexidade > simples): 0
 - Pedido mais antigo: anonimizado
 - Pedidos prontos aguardando: 0
-- Sinal logístico: —
+- Sinais logísticos: —
+- Evidência: ausente (ausente)
 - Confiança do motor: baixa
 - Classificação do motor: quieto
-- Ação sugerida (sombra): observar
+- Intervenção sugerida (sombra): observar
 - Dados ausentes: equipe_real_por_turno, componentes_isf_detalhados, nenhuma_excecao_critica_neste_tick
 - Bucket de amostragem: controlavel
+- ⚠ Motor classificou, mas os dados não permitem confirmação humana segura.
 
 ### Sua avaliação (preencher)
 - Estado real: [ ] controlável  [ ] atenção  [ ] crítico  [ ] impossível avaliar
 - Praça correta: [ ] sim  [ ] não  [ ] outra: _______________
 - Recomendação adequada: [ ] sim  [ ] parcialmente  [ ] não
+- Evidência (na sua visão): [ ] confirmada  [ ] inferida  [ ] insuficiente
 - O que você faria: _______________________________________________
 - Observação: ___________________________________________________
 
@@ -288,24 +351,30 @@ Instruções para César / equipe:
 - Número do caso: CV-H-011
 - Data: 2026-05-27
 - Horário local (America/Sao_Paulo): 2026-05-27T08:45:00-03:00
-- Duração do episódio (min): —
-- Praça provável: conferencia
-- Volume de pedidos (ativos no tick): 8
-- Quantidade de itens (proxy complexidade > simples): 0
-- Complexidade (proxy): 0
+- Episódio: — (tick)
+- Uma leitura ou duração mensurável: tick
+- Duração (label): tick isolado (não episódio)
+- Span observado (min, técnico): —
+- Ticks observados: 1
+- Praça: conferencia
+- Volume de pedidos: 8
+- Itens (proxy complexidade > simples): 0
 - Pedido mais antigo: anonimizado
 - Pedidos prontos aguardando: 2
-- Sinal logístico: —
+- Sinais logísticos: —
+- Evidência: ausente (ausente)
 - Confiança do motor: baixa
 - Classificação do motor: atencao
-- Ação sugerida (sombra): observar
+- Intervenção sugerida (sombra): observar
 - Dados ausentes: equipe_real_por_turno, nenhuma_excecao_critica_neste_tick
 - Bucket de amostragem: atencao
+- ⚠ Motor classificou, mas os dados não permitem confirmação humana segura.
 
 ### Sua avaliação (preencher)
 - Estado real: [ ] controlável  [ ] atenção  [ ] crítico  [ ] impossível avaliar
 - Praça correta: [ ] sim  [ ] não  [ ] outra: _______________
 - Recomendação adequada: [ ] sim  [ ] parcialmente  [ ] não
+- Evidência (na sua visão): [ ] confirmada  [ ] inferida  [ ] insuficiente
 - O que você faria: _______________________________________________
 - Observação: ___________________________________________________
 
@@ -314,25 +383,31 @@ Instruções para César / equipe:
 ### Contexto (motor — somente leitura)
 - Número do caso: CV-H-012
 - Data: 2026-06-03
-- Horário local (America/Sao_Paulo): 2026-06-03T19:15:00-03:00
-- Duração do episódio (min): —
-- Praça provável: conferencia
-- Volume de pedidos (ativos no tick): 25
-- Quantidade de itens (proxy complexidade > simples): 0
-- Complexidade (proxy): 0
+- Horário local (America/Sao_Paulo): 2026-06-03T12:45:00-03:00
+- Episódio: — (tick)
+- Uma leitura ou duração mensurável: tick
+- Duração (label): tick isolado (não episódio)
+- Span observado (min, técnico): —
+- Ticks observados: 1
+- Praça: conferencia
+- Volume de pedidos: 4
+- Itens (proxy complexidade > simples): 0
 - Pedido mais antigo: anonimizado
-- Pedidos prontos aguardando: 3
-- Sinal logístico: pedido_atrasado_vs_prometido_operacional, aguardando_saida_causa_nao_confirmada
+- Pedidos prontos aguardando: 0
+- Sinais logísticos: pedido_atrasado_vs_prometido_operacional
+- Evidência: confirmado (confirmado)
 - Confiança do motor: baixa
 - Classificação do motor: atencao
-- Ação sugerida (sombra): observar
+- Intervenção sugerida (sombra): observar
 - Dados ausentes: equipe_real_por_turno, nenhuma_excecao_critica_neste_tick
 - Bucket de amostragem: atencao
+- ⚠ Motor classificou, mas os dados não permitem confirmação humana segura.
 
 ### Sua avaliação (preencher)
 - Estado real: [ ] controlável  [ ] atenção  [ ] crítico  [ ] impossível avaliar
 - Praça correta: [ ] sim  [ ] não  [ ] outra: _______________
 - Recomendação adequada: [ ] sim  [ ] parcialmente  [ ] não
+- Evidência (na sua visão): [ ] confirmada  [ ] inferida  [ ] insuficiente
 - O que você faria: _______________________________________________
 - Observação: ___________________________________________________
 
@@ -341,25 +416,31 @@ Instruções para César / equipe:
 ### Contexto (motor — somente leitura)
 - Número do caso: CV-H-013
 - Data: 2026-06-10
-- Horário local (America/Sao_Paulo): 2026-06-10T23:15:00-03:00
-- Duração do episódio (min): —
-- Praça provável: conferencia
-- Volume de pedidos (ativos no tick): 7
-- Quantidade de itens (proxy complexidade > simples): 0
-- Complexidade (proxy): 0
+- Horário local (America/Sao_Paulo): 2026-06-10T12:30:00-03:00
+- Episódio: — (tick)
+- Uma leitura ou duração mensurável: tick
+- Duração (label): tick isolado (não episódio)
+- Span observado (min, técnico): —
+- Ticks observados: 1
+- Praça: conferencia
+- Volume de pedidos: 6
+- Itens (proxy complexidade > simples): 0
 - Pedido mais antigo: anonimizado
 - Pedidos prontos aguardando: 0
-- Sinal logístico: pedido_atrasado_vs_prometido_operacional
+- Sinais logísticos: pedido_atrasado_vs_prometido_operacional
+- Evidência: confirmado (confirmado)
 - Confiança do motor: baixa
 - Classificação do motor: atencao
-- Ação sugerida (sombra): observar
+- Intervenção sugerida (sombra): observar
 - Dados ausentes: equipe_real_por_turno, nenhuma_excecao_critica_neste_tick
 - Bucket de amostragem: atencao
+- ⚠ Motor classificou, mas os dados não permitem confirmação humana segura.
 
 ### Sua avaliação (preencher)
 - Estado real: [ ] controlável  [ ] atenção  [ ] crítico  [ ] impossível avaliar
 - Praça correta: [ ] sim  [ ] não  [ ] outra: _______________
 - Recomendação adequada: [ ] sim  [ ] parcialmente  [ ] não
+- Evidência (na sua visão): [ ] confirmada  [ ] inferida  [ ] insuficiente
 - O que você faria: _______________________________________________
 - Observação: ___________________________________________________
 
@@ -367,26 +448,32 @@ Instruções para César / equipe:
 
 ### Contexto (motor — somente leitura)
 - Número do caso: CV-H-014
-- Data: 2026-06-18
-- Horário local (America/Sao_Paulo): 2026-06-18T00:00:00-03:00
-- Duração do episódio (min): —
-- Praça provável: conferencia
-- Volume de pedidos (ativos no tick): 13
-- Quantidade de itens (proxy complexidade > simples): 0
-- Complexidade (proxy): 0
+- Data: 2026-06-17
+- Horário local (America/Sao_Paulo): 2026-06-17T11:45:00-03:00
+- Episódio: — (tick)
+- Uma leitura ou duração mensurável: tick
+- Duração (label): tick isolado (não episódio)
+- Span observado (min, técnico): —
+- Ticks observados: 1
+- Praça: conferencia
+- Volume de pedidos: 16
+- Itens (proxy complexidade > simples): 0
 - Pedido mais antigo: anonimizado
-- Pedidos prontos aguardando: 0
-- Sinal logístico: pedido_atrasado_vs_prometido_operacional
+- Pedidos prontos aguardando: 1
+- Sinais logísticos: pedido_atrasado_vs_prometido_operacional
+- Evidência: confirmado (confirmado)
 - Confiança do motor: baixa
 - Classificação do motor: atencao
-- Ação sugerida (sombra): observar
+- Intervenção sugerida (sombra): observar
 - Dados ausentes: equipe_real_por_turno, nenhuma_excecao_critica_neste_tick
 - Bucket de amostragem: atencao
+- ⚠ Motor classificou, mas os dados não permitem confirmação humana segura.
 
 ### Sua avaliação (preencher)
 - Estado real: [ ] controlável  [ ] atenção  [ ] crítico  [ ] impossível avaliar
 - Praça correta: [ ] sim  [ ] não  [ ] outra: _______________
 - Recomendação adequada: [ ] sim  [ ] parcialmente  [ ] não
+- Evidência (na sua visão): [ ] confirmada  [ ] inferida  [ ] insuficiente
 - O que você faria: _______________________________________________
 - Observação: ___________________________________________________
 
@@ -394,19 +481,23 @@ Instruções para César / equipe:
 
 ### Contexto (motor — somente leitura)
 - Número do caso: CV-H-015
-- Data: 2026-06-25
-- Horário local (America/Sao_Paulo): 2026-06-25T06:00:00-03:00
-- Duração do episódio (min): —
-- Praça provável: sushi
-- Volume de pedidos (ativos no tick): 22
-- Quantidade de itens (proxy complexidade > simples): 29
-- Complexidade (proxy): 29
+- Data: 2026-06-24
+- Horário local (America/Sao_Paulo): 2026-06-24T14:30:00-03:00
+- Episódio: — (tick)
+- Uma leitura ou duração mensurável: tick
+- Duração (label): tick isolado (não episódio)
+- Span observado (min, técnico): —
+- Ticks observados: 1
+- Praça: sushi
+- Volume de pedidos: 19
+- Itens (proxy complexidade > simples): 16
 - Pedido mais antigo: anonimizado
 - Pedidos prontos aguardando: 0
-- Sinal logístico: pedido_atrasado_vs_prometido_operacional
+- Sinais logísticos: pedido_atrasado_vs_prometido_operacional
+- Evidência: confirmado (confirmado)
 - Confiança do motor: media
 - Classificação do motor: atencao
-- Ação sugerida (sombra): apoio_local
+- Intervenção sugerida (sombra): apoio_local
 - Dados ausentes: equipe_real_por_turno, nenhuma_excecao_critica_neste_tick
 - Bucket de amostragem: atencao
 
@@ -414,6 +505,7 @@ Instruções para César / equipe:
 - Estado real: [ ] controlável  [ ] atenção  [ ] crítico  [ ] impossível avaliar
 - Praça correta: [ ] sim  [ ] não  [ ] outra: _______________
 - Recomendação adequada: [ ] sim  [ ] parcialmente  [ ] não
+- Evidência (na sua visão): [ ] confirmada  [ ] inferida  [ ] insuficiente
 - O que você faria: _______________________________________________
 - Observação: ___________________________________________________
 
@@ -422,18 +514,22 @@ Instruções para César / equipe:
 ### Contexto (motor — somente leitura)
 - Número do caso: CV-H-016
 - Data: 2026-06-30
-- Horário local (America/Sao_Paulo): 2026-06-30T22:15:00-03:00
-- Duração do episódio (min): —
-- Praça provável: sushi
-- Volume de pedidos (ativos no tick): 23
-- Quantidade de itens (proxy complexidade > simples): 31
-- Complexidade (proxy): 31
+- Horário local (America/Sao_Paulo): 2026-06-30T07:15:00-03:00
+- Episódio: — (tick)
+- Uma leitura ou duração mensurável: tick
+- Duração (label): tick isolado (não episódio)
+- Span observado (min, técnico): —
+- Ticks observados: 1
+- Praça: sushi
+- Volume de pedidos: 23
+- Itens (proxy complexidade > simples): 31
 - Pedido mais antigo: anonimizado
 - Pedidos prontos aguardando: 0
-- Sinal logístico: pedido_atrasado_vs_prometido_operacional
+- Sinais logísticos: pedido_atrasado_vs_prometido_operacional
+- Evidência: confirmado (confirmado)
 - Confiança do motor: media
 - Classificação do motor: atencao
-- Ação sugerida (sombra): apoio_local
+- Intervenção sugerida (sombra): apoio_local
 - Dados ausentes: equipe_real_por_turno, nenhuma_excecao_critica_neste_tick
 - Bucket de amostragem: atencao
 
@@ -441,6 +537,7 @@ Instruções para César / equipe:
 - Estado real: [ ] controlável  [ ] atenção  [ ] crítico  [ ] impossível avaliar
 - Praça correta: [ ] sim  [ ] não  [ ] outra: _______________
 - Recomendação adequada: [ ] sim  [ ] parcialmente  [ ] não
+- Evidência (na sua visão): [ ] confirmada  [ ] inferida  [ ] insuficiente
 - O que você faria: _______________________________________________
 - Observação: ___________________________________________________
 
@@ -448,26 +545,32 @@ Instruções para César / equipe:
 
 ### Contexto (motor — somente leitura)
 - Número do caso: CV-H-017
-- Data: 2026-06-03
-- Horário local (America/Sao_Paulo): 2026-06-03T14:45:00-03:00
-- Duração do episódio (min): 0
-- Praça provável: conferencia
-- Volume de pedidos (ativos no tick): 4
-- Quantidade de itens (proxy complexidade > simples): 0
-- Complexidade (proxy): 0
+- Data: 2026-06-09
+- Horário local (America/Sao_Paulo): 2026-06-09T09:30:00-03:00
+- Episódio: ep_1144 · pedido_atrasado_vs_prometido_operacional · atencao
+- Uma leitura ou duração mensurável: uma_leitura
+- Duração (label): observado em uma leitura
+- Span observado (min, técnico): 0
+- Ticks observados: 1
+- Praça: conferencia
+- Volume de pedidos: 21
+- Itens (proxy complexidade > simples): 0
 - Pedido mais antigo: anonimizado
-- Pedidos prontos aguardando: 0
-- Sinal logístico: pedido_atrasado_vs_prometido_operacional
+- Pedidos prontos aguardando: 7
+- Sinais logísticos: pedido_atrasado_vs_prometido_operacional, prontos_acumulando
+- Evidência: confirmado (confirmado)
 - Confiança do motor: baixa
 - Classificação do motor: atencao
-- Ação sugerida (sombra): observar
+- Intervenção sugerida (sombra): observar
 - Dados ausentes: equipe_real_por_turno, nenhuma_excecao_critica_neste_tick
 - Bucket de amostragem: atencao
+- ⚠ Motor classificou, mas os dados não permitem confirmação humana segura.
 
 ### Sua avaliação (preencher)
 - Estado real: [ ] controlável  [ ] atenção  [ ] crítico  [ ] impossível avaliar
 - Praça correta: [ ] sim  [ ] não  [ ] outra: _______________
 - Recomendação adequada: [ ] sim  [ ] parcialmente  [ ] não
+- Evidência (na sua visão): [ ] confirmada  [ ] inferida  [ ] insuficiente
 - O que você faria: _______________________________________________
 - Observação: ___________________________________________________
 
@@ -475,26 +578,32 @@ Instruções para César / equipe:
 
 ### Contexto (motor — somente leitura)
 - Número do caso: CV-H-018
-- Data: 2026-06-10
-- Horário local (America/Sao_Paulo): 2026-06-10T22:15:00-03:00
-- Duração do episódio (min): 0
-- Praça provável: conferencia
-- Volume de pedidos (ativos no tick): 7
-- Quantidade de itens (proxy complexidade > simples): 0
-- Complexidade (proxy): 0
+- Data: 2026-06-15
+- Horário local (America/Sao_Paulo): 2026-06-15T09:30:00-03:00
+- Episódio: ep_1950 · prontos_acumulando · atencao
+- Uma leitura ou duração mensurável: uma_leitura
+- Duração (label): observado em uma leitura
+- Span observado (min, técnico): 0
+- Ticks observados: 1
+- Praça: conferencia
+- Volume de pedidos: 24
+- Itens (proxy complexidade > simples): 0
 - Pedido mais antigo: anonimizado
-- Pedidos prontos aguardando: 0
-- Sinal logístico: pedido_atrasado_vs_prometido_operacional
+- Pedidos prontos aguardando: 10
+- Sinais logísticos: pedido_atrasado_vs_prometido_operacional, aguardando_saida_causa_nao_confirmada, prontos_acumulando
+- Evidência: inferido_alta (inferido_alta_confianca)
 - Confiança do motor: baixa
 - Classificação do motor: atencao
-- Ação sugerida (sombra): observar
+- Intervenção sugerida (sombra): observar
 - Dados ausentes: equipe_real_por_turno, nenhuma_excecao_critica_neste_tick
 - Bucket de amostragem: atencao
+- ⚠ Motor classificou, mas os dados não permitem confirmação humana segura.
 
 ### Sua avaliação (preencher)
 - Estado real: [ ] controlável  [ ] atenção  [ ] crítico  [ ] impossível avaliar
 - Praça correta: [ ] sim  [ ] não  [ ] outra: _______________
 - Recomendação adequada: [ ] sim  [ ] parcialmente  [ ] não
+- Evidência (na sua visão): [ ] confirmada  [ ] inferida  [ ] insuficiente
 - O que você faria: _______________________________________________
 - Observação: ___________________________________________________
 
@@ -502,26 +611,32 @@ Instruções para César / equipe:
 
 ### Contexto (motor — somente leitura)
 - Número do caso: CV-H-019
-- Data: 2026-06-17
-- Horário local (America/Sao_Paulo): 2026-06-17T23:00:00-03:00
-- Duração do episódio (min): 0
-- Praça provável: conferencia
-- Volume de pedidos (ativos no tick): 13
-- Quantidade de itens (proxy complexidade > simples): 0
-- Complexidade (proxy): 0
+- Data: 2026-06-19
+- Horário local (America/Sao_Paulo): 2026-06-19T20:15:00-03:00
+- Episódio: ep_2735 · pedido_atrasado_vs_prometido_operacional · atencao
+- Uma leitura ou duração mensurável: duracao_mensuravel
+- Duração (label): duração mensurável · 510 min
+- Span observado (min, técnico): 510
+- Ticks observados: 35
+- Praça: conferencia
+- Volume de pedidos: 14
+- Itens (proxy complexidade > simples): 0
 - Pedido mais antigo: anonimizado
 - Pedidos prontos aguardando: 0
-- Sinal logístico: pedido_atrasado_vs_prometido_operacional
+- Sinais logísticos: pedido_atrasado_vs_prometido_operacional
+- Evidência: confirmado (confirmado)
 - Confiança do motor: baixa
 - Classificação do motor: atencao
-- Ação sugerida (sombra): observar
+- Intervenção sugerida (sombra): observar
 - Dados ausentes: equipe_real_por_turno, nenhuma_excecao_critica_neste_tick
 - Bucket de amostragem: atencao
+- ⚠ Motor classificou, mas os dados não permitem confirmação humana segura.
 
 ### Sua avaliação (preencher)
 - Estado real: [ ] controlável  [ ] atenção  [ ] crítico  [ ] impossível avaliar
 - Praça correta: [ ] sim  [ ] não  [ ] outra: _______________
 - Recomendação adequada: [ ] sim  [ ] parcialmente  [ ] não
+- Evidência (na sua visão): [ ] confirmada  [ ] inferida  [ ] insuficiente
 - O que você faria: _______________________________________________
 - Observação: ___________________________________________________
 
@@ -529,19 +644,23 @@ Instruções para César / equipe:
 
 ### Contexto (motor — somente leitura)
 - Número do caso: CV-H-020
-- Data: 2026-06-25
-- Horário local (America/Sao_Paulo): 2026-06-25T05:00:00-03:00
-- Duração do episódio (min): 0
-- Praça provável: sushi
-- Volume de pedidos (ativos no tick): 22
-- Quantidade de itens (proxy complexidade > simples): 29
-- Complexidade (proxy): 29
+- Data: 2026-06-23
+- Horário local (America/Sao_Paulo): 2026-06-23T05:00:00-03:00
+- Episódio: ep_3430 · pedido_atrasado_vs_prometido_operacional · atencao
+- Uma leitura ou duração mensurável: duracao_mensuravel
+- Duração (label): duração mensurável · 195 min
+- Span observado (min, técnico): 195
+- Ticks observados: 14
+- Praça: sushi
+- Volume de pedidos: 18
+- Itens (proxy complexidade > simples): 14
 - Pedido mais antigo: anonimizado
 - Pedidos prontos aguardando: 0
-- Sinal logístico: pedido_atrasado_vs_prometido_operacional
+- Sinais logísticos: pedido_atrasado_vs_prometido_operacional
+- Evidência: confirmado (confirmado)
 - Confiança do motor: media
 - Classificação do motor: atencao
-- Ação sugerida (sombra): apoio_local
+- Intervenção sugerida (sombra): apoio_local
 - Dados ausentes: equipe_real_por_turno, nenhuma_excecao_critica_neste_tick
 - Bucket de amostragem: atencao
 
@@ -549,6 +668,7 @@ Instruções para César / equipe:
 - Estado real: [ ] controlável  [ ] atenção  [ ] crítico  [ ] impossível avaliar
 - Praça correta: [ ] sim  [ ] não  [ ] outra: _______________
 - Recomendação adequada: [ ] sim  [ ] parcialmente  [ ] não
+- Evidência (na sua visão): [ ] confirmada  [ ] inferida  [ ] insuficiente
 - O que você faria: _______________________________________________
 - Observação: ___________________________________________________
 
@@ -558,24 +678,30 @@ Instruções para César / equipe:
 - Número do caso: CV-H-021
 - Data: 2026-05-27
 - Horário local (America/Sao_Paulo): 2026-05-27T08:45:00-03:00
-- Duração do episódio (min): —
-- Praça provável: conferencia
-- Volume de pedidos (ativos no tick): 8
-- Quantidade de itens (proxy complexidade > simples): 0
-- Complexidade (proxy): 0
+- Episódio: — (tick)
+- Uma leitura ou duração mensurável: tick
+- Duração (label): tick isolado (não episódio)
+- Span observado (min, técnico): —
+- Ticks observados: 1
+- Praça: conferencia
+- Volume de pedidos: 8
+- Itens (proxy complexidade > simples): 0
 - Pedido mais antigo: anonimizado
 - Pedidos prontos aguardando: 2
-- Sinal logístico: —
+- Sinais logísticos: —
+- Evidência: ausente (ausente)
 - Confiança do motor: baixa
 - Classificação do motor: atencao
-- Ação sugerida (sombra): observar
+- Intervenção sugerida (sombra): observar
 - Dados ausentes: equipe_real_por_turno, nenhuma_excecao_critica_neste_tick
 - Bucket de amostragem: critico
+- ⚠ Motor classificou, mas os dados não permitem confirmação humana segura.
 
 ### Sua avaliação (preencher)
 - Estado real: [ ] controlável  [ ] atenção  [ ] crítico  [ ] impossível avaliar
 - Praça correta: [ ] sim  [ ] não  [ ] outra: _______________
 - Recomendação adequada: [ ] sim  [ ] parcialmente  [ ] não
+- Evidência (na sua visão): [ ] confirmada  [ ] inferida  [ ] insuficiente
 - O que você faria: _______________________________________________
 - Observação: ___________________________________________________
 
@@ -584,25 +710,31 @@ Instruções para César / equipe:
 ### Contexto (motor — somente leitura)
 - Número do caso: CV-H-022
 - Data: 2026-06-03
-- Horário local (America/Sao_Paulo): 2026-06-03T19:15:00-03:00
-- Duração do episódio (min): —
-- Praça provável: conferencia
-- Volume de pedidos (ativos no tick): 25
-- Quantidade de itens (proxy complexidade > simples): 0
-- Complexidade (proxy): 0
+- Horário local (America/Sao_Paulo): 2026-06-03T12:45:00-03:00
+- Episódio: — (tick)
+- Uma leitura ou duração mensurável: tick
+- Duração (label): tick isolado (não episódio)
+- Span observado (min, técnico): —
+- Ticks observados: 1
+- Praça: conferencia
+- Volume de pedidos: 4
+- Itens (proxy complexidade > simples): 0
 - Pedido mais antigo: anonimizado
-- Pedidos prontos aguardando: 3
-- Sinal logístico: pedido_atrasado_vs_prometido_operacional, aguardando_saida_causa_nao_confirmada
+- Pedidos prontos aguardando: 0
+- Sinais logísticos: pedido_atrasado_vs_prometido_operacional
+- Evidência: confirmado (confirmado)
 - Confiança do motor: baixa
 - Classificação do motor: atencao
-- Ação sugerida (sombra): observar
+- Intervenção sugerida (sombra): observar
 - Dados ausentes: equipe_real_por_turno, nenhuma_excecao_critica_neste_tick
 - Bucket de amostragem: critico
+- ⚠ Motor classificou, mas os dados não permitem confirmação humana segura.
 
 ### Sua avaliação (preencher)
 - Estado real: [ ] controlável  [ ] atenção  [ ] crítico  [ ] impossível avaliar
 - Praça correta: [ ] sim  [ ] não  [ ] outra: _______________
 - Recomendação adequada: [ ] sim  [ ] parcialmente  [ ] não
+- Evidência (na sua visão): [ ] confirmada  [ ] inferida  [ ] insuficiente
 - O que você faria: _______________________________________________
 - Observação: ___________________________________________________
 
@@ -611,25 +743,31 @@ Instruções para César / equipe:
 ### Contexto (motor — somente leitura)
 - Número do caso: CV-H-023
 - Data: 2026-06-10
-- Horário local (America/Sao_Paulo): 2026-06-10T23:15:00-03:00
-- Duração do episódio (min): —
-- Praça provável: conferencia
-- Volume de pedidos (ativos no tick): 7
-- Quantidade de itens (proxy complexidade > simples): 0
-- Complexidade (proxy): 0
+- Horário local (America/Sao_Paulo): 2026-06-10T12:30:00-03:00
+- Episódio: — (tick)
+- Uma leitura ou duração mensurável: tick
+- Duração (label): tick isolado (não episódio)
+- Span observado (min, técnico): —
+- Ticks observados: 1
+- Praça: conferencia
+- Volume de pedidos: 6
+- Itens (proxy complexidade > simples): 0
 - Pedido mais antigo: anonimizado
 - Pedidos prontos aguardando: 0
-- Sinal logístico: pedido_atrasado_vs_prometido_operacional
+- Sinais logísticos: pedido_atrasado_vs_prometido_operacional
+- Evidência: confirmado (confirmado)
 - Confiança do motor: baixa
 - Classificação do motor: atencao
-- Ação sugerida (sombra): observar
+- Intervenção sugerida (sombra): observar
 - Dados ausentes: equipe_real_por_turno, nenhuma_excecao_critica_neste_tick
 - Bucket de amostragem: critico
+- ⚠ Motor classificou, mas os dados não permitem confirmação humana segura.
 
 ### Sua avaliação (preencher)
 - Estado real: [ ] controlável  [ ] atenção  [ ] crítico  [ ] impossível avaliar
 - Praça correta: [ ] sim  [ ] não  [ ] outra: _______________
 - Recomendação adequada: [ ] sim  [ ] parcialmente  [ ] não
+- Evidência (na sua visão): [ ] confirmada  [ ] inferida  [ ] insuficiente
 - O que você faria: _______________________________________________
 - Observação: ___________________________________________________
 
@@ -637,26 +775,32 @@ Instruções para César / equipe:
 
 ### Contexto (motor — somente leitura)
 - Número do caso: CV-H-024
-- Data: 2026-06-18
-- Horário local (America/Sao_Paulo): 2026-06-18T00:00:00-03:00
-- Duração do episódio (min): —
-- Praça provável: conferencia
-- Volume de pedidos (ativos no tick): 13
-- Quantidade de itens (proxy complexidade > simples): 0
-- Complexidade (proxy): 0
+- Data: 2026-06-17
+- Horário local (America/Sao_Paulo): 2026-06-17T11:45:00-03:00
+- Episódio: — (tick)
+- Uma leitura ou duração mensurável: tick
+- Duração (label): tick isolado (não episódio)
+- Span observado (min, técnico): —
+- Ticks observados: 1
+- Praça: conferencia
+- Volume de pedidos: 16
+- Itens (proxy complexidade > simples): 0
 - Pedido mais antigo: anonimizado
-- Pedidos prontos aguardando: 0
-- Sinal logístico: pedido_atrasado_vs_prometido_operacional
+- Pedidos prontos aguardando: 1
+- Sinais logísticos: pedido_atrasado_vs_prometido_operacional
+- Evidência: confirmado (confirmado)
 - Confiança do motor: baixa
 - Classificação do motor: atencao
-- Ação sugerida (sombra): observar
+- Intervenção sugerida (sombra): observar
 - Dados ausentes: equipe_real_por_turno, nenhuma_excecao_critica_neste_tick
 - Bucket de amostragem: critico
+- ⚠ Motor classificou, mas os dados não permitem confirmação humana segura.
 
 ### Sua avaliação (preencher)
 - Estado real: [ ] controlável  [ ] atenção  [ ] crítico  [ ] impossível avaliar
 - Praça correta: [ ] sim  [ ] não  [ ] outra: _______________
 - Recomendação adequada: [ ] sim  [ ] parcialmente  [ ] não
+- Evidência (na sua visão): [ ] confirmada  [ ] inferida  [ ] insuficiente
 - O que você faria: _______________________________________________
 - Observação: ___________________________________________________
 
@@ -664,19 +808,23 @@ Instruções para César / equipe:
 
 ### Contexto (motor — somente leitura)
 - Número do caso: CV-H-025
-- Data: 2026-06-25
-- Horário local (America/Sao_Paulo): 2026-06-25T06:00:00-03:00
-- Duração do episódio (min): —
-- Praça provável: sushi
-- Volume de pedidos (ativos no tick): 22
-- Quantidade de itens (proxy complexidade > simples): 29
-- Complexidade (proxy): 29
+- Data: 2026-06-24
+- Horário local (America/Sao_Paulo): 2026-06-24T14:30:00-03:00
+- Episódio: — (tick)
+- Uma leitura ou duração mensurável: tick
+- Duração (label): tick isolado (não episódio)
+- Span observado (min, técnico): —
+- Ticks observados: 1
+- Praça: sushi
+- Volume de pedidos: 19
+- Itens (proxy complexidade > simples): 16
 - Pedido mais antigo: anonimizado
 - Pedidos prontos aguardando: 0
-- Sinal logístico: pedido_atrasado_vs_prometido_operacional
+- Sinais logísticos: pedido_atrasado_vs_prometido_operacional
+- Evidência: confirmado (confirmado)
 - Confiança do motor: media
 - Classificação do motor: atencao
-- Ação sugerida (sombra): apoio_local
+- Intervenção sugerida (sombra): apoio_local
 - Dados ausentes: equipe_real_por_turno, nenhuma_excecao_critica_neste_tick
 - Bucket de amostragem: critico
 
@@ -684,6 +832,7 @@ Instruções para César / equipe:
 - Estado real: [ ] controlável  [ ] atenção  [ ] crítico  [ ] impossível avaliar
 - Praça correta: [ ] sim  [ ] não  [ ] outra: _______________
 - Recomendação adequada: [ ] sim  [ ] parcialmente  [ ] não
+- Evidência (na sua visão): [ ] confirmada  [ ] inferida  [ ] insuficiente
 - O que você faria: _______________________________________________
 - Observação: ___________________________________________________
 
@@ -692,18 +841,22 @@ Instruções para César / equipe:
 ### Contexto (motor — somente leitura)
 - Número do caso: CV-H-026
 - Data: 2026-06-30
-- Horário local (America/Sao_Paulo): 2026-06-30T22:15:00-03:00
-- Duração do episódio (min): —
-- Praça provável: sushi
-- Volume de pedidos (ativos no tick): 23
-- Quantidade de itens (proxy complexidade > simples): 31
-- Complexidade (proxy): 31
+- Horário local (America/Sao_Paulo): 2026-06-30T07:15:00-03:00
+- Episódio: — (tick)
+- Uma leitura ou duração mensurável: tick
+- Duração (label): tick isolado (não episódio)
+- Span observado (min, técnico): —
+- Ticks observados: 1
+- Praça: sushi
+- Volume de pedidos: 23
+- Itens (proxy complexidade > simples): 31
 - Pedido mais antigo: anonimizado
 - Pedidos prontos aguardando: 0
-- Sinal logístico: pedido_atrasado_vs_prometido_operacional
+- Sinais logísticos: pedido_atrasado_vs_prometido_operacional
+- Evidência: confirmado (confirmado)
 - Confiança do motor: media
 - Classificação do motor: atencao
-- Ação sugerida (sombra): apoio_local
+- Intervenção sugerida (sombra): apoio_local
 - Dados ausentes: equipe_real_por_turno, nenhuma_excecao_critica_neste_tick
 - Bucket de amostragem: critico
 
@@ -711,6 +864,7 @@ Instruções para César / equipe:
 - Estado real: [ ] controlável  [ ] atenção  [ ] crítico  [ ] impossível avaliar
 - Praça correta: [ ] sim  [ ] não  [ ] outra: _______________
 - Recomendação adequada: [ ] sim  [ ] parcialmente  [ ] não
+- Evidência (na sua visão): [ ] confirmada  [ ] inferida  [ ] insuficiente
 - O que você faria: _______________________________________________
 - Observação: ___________________________________________________
 
@@ -718,26 +872,32 @@ Instruções para César / equipe:
 
 ### Contexto (motor — somente leitura)
 - Número do caso: CV-H-027
-- Data: 2026-06-03
-- Horário local (America/Sao_Paulo): 2026-06-03T14:45:00-03:00
-- Duração do episódio (min): 0
-- Praça provável: conferencia
-- Volume de pedidos (ativos no tick): 4
-- Quantidade de itens (proxy complexidade > simples): 0
-- Complexidade (proxy): 0
+- Data: 2026-06-09
+- Horário local (America/Sao_Paulo): 2026-06-09T09:30:00-03:00
+- Episódio: ep_1144 · pedido_atrasado_vs_prometido_operacional · atencao
+- Uma leitura ou duração mensurável: uma_leitura
+- Duração (label): observado em uma leitura
+- Span observado (min, técnico): 0
+- Ticks observados: 1
+- Praça: conferencia
+- Volume de pedidos: 21
+- Itens (proxy complexidade > simples): 0
 - Pedido mais antigo: anonimizado
-- Pedidos prontos aguardando: 0
-- Sinal logístico: pedido_atrasado_vs_prometido_operacional
+- Pedidos prontos aguardando: 7
+- Sinais logísticos: pedido_atrasado_vs_prometido_operacional, prontos_acumulando
+- Evidência: confirmado (confirmado)
 - Confiança do motor: baixa
 - Classificação do motor: atencao
-- Ação sugerida (sombra): observar
+- Intervenção sugerida (sombra): observar
 - Dados ausentes: equipe_real_por_turno, nenhuma_excecao_critica_neste_tick
 - Bucket de amostragem: critico
+- ⚠ Motor classificou, mas os dados não permitem confirmação humana segura.
 
 ### Sua avaliação (preencher)
 - Estado real: [ ] controlável  [ ] atenção  [ ] crítico  [ ] impossível avaliar
 - Praça correta: [ ] sim  [ ] não  [ ] outra: _______________
 - Recomendação adequada: [ ] sim  [ ] parcialmente  [ ] não
+- Evidência (na sua visão): [ ] confirmada  [ ] inferida  [ ] insuficiente
 - O que você faria: _______________________________________________
 - Observação: ___________________________________________________
 
@@ -745,26 +905,32 @@ Instruções para César / equipe:
 
 ### Contexto (motor — somente leitura)
 - Número do caso: CV-H-028
-- Data: 2026-06-10
-- Horário local (America/Sao_Paulo): 2026-06-10T22:15:00-03:00
-- Duração do episódio (min): 0
-- Praça provável: conferencia
-- Volume de pedidos (ativos no tick): 7
-- Quantidade de itens (proxy complexidade > simples): 0
-- Complexidade (proxy): 0
+- Data: 2026-06-15
+- Horário local (America/Sao_Paulo): 2026-06-15T09:30:00-03:00
+- Episódio: ep_1950 · prontos_acumulando · atencao
+- Uma leitura ou duração mensurável: uma_leitura
+- Duração (label): observado em uma leitura
+- Span observado (min, técnico): 0
+- Ticks observados: 1
+- Praça: conferencia
+- Volume de pedidos: 24
+- Itens (proxy complexidade > simples): 0
 - Pedido mais antigo: anonimizado
-- Pedidos prontos aguardando: 0
-- Sinal logístico: pedido_atrasado_vs_prometido_operacional
+- Pedidos prontos aguardando: 10
+- Sinais logísticos: pedido_atrasado_vs_prometido_operacional, aguardando_saida_causa_nao_confirmada, prontos_acumulando
+- Evidência: inferido_alta (inferido_alta_confianca)
 - Confiança do motor: baixa
 - Classificação do motor: atencao
-- Ação sugerida (sombra): observar
+- Intervenção sugerida (sombra): observar
 - Dados ausentes: equipe_real_por_turno, nenhuma_excecao_critica_neste_tick
 - Bucket de amostragem: critico
+- ⚠ Motor classificou, mas os dados não permitem confirmação humana segura.
 
 ### Sua avaliação (preencher)
 - Estado real: [ ] controlável  [ ] atenção  [ ] crítico  [ ] impossível avaliar
 - Praça correta: [ ] sim  [ ] não  [ ] outra: _______________
 - Recomendação adequada: [ ] sim  [ ] parcialmente  [ ] não
+- Evidência (na sua visão): [ ] confirmada  [ ] inferida  [ ] insuficiente
 - O que você faria: _______________________________________________
 - Observação: ___________________________________________________
 
@@ -772,26 +938,32 @@ Instruções para César / equipe:
 
 ### Contexto (motor — somente leitura)
 - Número do caso: CV-H-029
-- Data: 2026-06-17
-- Horário local (America/Sao_Paulo): 2026-06-17T23:00:00-03:00
-- Duração do episódio (min): 0
-- Praça provável: conferencia
-- Volume de pedidos (ativos no tick): 13
-- Quantidade de itens (proxy complexidade > simples): 0
-- Complexidade (proxy): 0
+- Data: 2026-06-19
+- Horário local (America/Sao_Paulo): 2026-06-19T20:15:00-03:00
+- Episódio: ep_2735 · pedido_atrasado_vs_prometido_operacional · atencao
+- Uma leitura ou duração mensurável: duracao_mensuravel
+- Duração (label): duração mensurável · 510 min
+- Span observado (min, técnico): 510
+- Ticks observados: 35
+- Praça: conferencia
+- Volume de pedidos: 14
+- Itens (proxy complexidade > simples): 0
 - Pedido mais antigo: anonimizado
 - Pedidos prontos aguardando: 0
-- Sinal logístico: pedido_atrasado_vs_prometido_operacional
+- Sinais logísticos: pedido_atrasado_vs_prometido_operacional
+- Evidência: confirmado (confirmado)
 - Confiança do motor: baixa
 - Classificação do motor: atencao
-- Ação sugerida (sombra): observar
+- Intervenção sugerida (sombra): observar
 - Dados ausentes: equipe_real_por_turno, nenhuma_excecao_critica_neste_tick
 - Bucket de amostragem: critico
+- ⚠ Motor classificou, mas os dados não permitem confirmação humana segura.
 
 ### Sua avaliação (preencher)
 - Estado real: [ ] controlável  [ ] atenção  [ ] crítico  [ ] impossível avaliar
 - Praça correta: [ ] sim  [ ] não  [ ] outra: _______________
 - Recomendação adequada: [ ] sim  [ ] parcialmente  [ ] não
+- Evidência (na sua visão): [ ] confirmada  [ ] inferida  [ ] insuficiente
 - O que você faria: _______________________________________________
 - Observação: ___________________________________________________
 
@@ -799,19 +971,23 @@ Instruções para César / equipe:
 
 ### Contexto (motor — somente leitura)
 - Número do caso: CV-H-030
-- Data: 2026-06-25
-- Horário local (America/Sao_Paulo): 2026-06-25T05:00:00-03:00
-- Duração do episódio (min): 0
-- Praça provável: sushi
-- Volume de pedidos (ativos no tick): 22
-- Quantidade de itens (proxy complexidade > simples): 29
-- Complexidade (proxy): 29
+- Data: 2026-06-23
+- Horário local (America/Sao_Paulo): 2026-06-23T05:00:00-03:00
+- Episódio: ep_3430 · pedido_atrasado_vs_prometido_operacional · atencao
+- Uma leitura ou duração mensurável: duracao_mensuravel
+- Duração (label): duração mensurável · 195 min
+- Span observado (min, técnico): 195
+- Ticks observados: 14
+- Praça: sushi
+- Volume de pedidos: 18
+- Itens (proxy complexidade > simples): 14
 - Pedido mais antigo: anonimizado
 - Pedidos prontos aguardando: 0
-- Sinal logístico: pedido_atrasado_vs_prometido_operacional
+- Sinais logísticos: pedido_atrasado_vs_prometido_operacional
+- Evidência: confirmado (confirmado)
 - Confiança do motor: media
 - Classificação do motor: atencao
-- Ação sugerida (sombra): apoio_local
+- Intervenção sugerida (sombra): apoio_local
 - Dados ausentes: equipe_real_por_turno, nenhuma_excecao_critica_neste_tick
 - Bucket de amostragem: critico
 
@@ -819,6 +995,7 @@ Instruções para César / equipe:
 - Estado real: [ ] controlável  [ ] atenção  [ ] crítico  [ ] impossível avaliar
 - Praça correta: [ ] sim  [ ] não  [ ] outra: _______________
 - Recomendação adequada: [ ] sim  [ ] parcialmente  [ ] não
+- Evidência (na sua visão): [ ] confirmada  [ ] inferida  [ ] insuficiente
 - O que você faria: _______________________________________________
 - Observação: ___________________________________________________
 
@@ -828,24 +1005,30 @@ Instruções para César / equipe:
 - Número do caso: CV-H-031
 - Data: 2026-05-27
 - Horário local (America/Sao_Paulo): 2026-05-27T09:15:00-03:00
-- Duração do episódio (min): —
-- Praça provável: conferencia
-- Volume de pedidos (ativos no tick): 23
-- Quantidade de itens (proxy complexidade > simples): 0
-- Complexidade (proxy): 0
+- Episódio: — (tick)
+- Uma leitura ou duração mensurável: tick
+- Duração (label): tick isolado (não episódio)
+- Span observado (min, técnico): —
+- Ticks observados: 1
+- Praça: conferencia
+- Volume de pedidos: 23
+- Itens (proxy complexidade > simples): 0
 - Pedido mais antigo: anonimizado
 - Pedidos prontos aguardando: 3
-- Sinal logístico: entregador_alocado_sem_retirada, aguardando_saida_causa_nao_confirmada
+- Sinais logísticos: entregador_alocado_sem_retirada, aguardando_saida_causa_nao_confirmada
+- Evidência: inferido_alta (inferido_alta_confianca)
 - Confiança do motor: baixa
 - Classificação do motor: excecao_critica
-- Ação sugerida (sombra): observar
+- Intervenção sugerida (sombra): observar
 - Dados ausentes: equipe_real_por_turno
 - Bucket de amostragem: excecao
+- ⚠ Motor classificou, mas os dados não permitem confirmação humana segura.
 
 ### Sua avaliação (preencher)
 - Estado real: [ ] controlável  [ ] atenção  [ ] crítico  [ ] impossível avaliar
 - Praça correta: [ ] sim  [ ] não  [ ] outra: _______________
 - Recomendação adequada: [ ] sim  [ ] parcialmente  [ ] não
+- Evidência (na sua visão): [ ] confirmada  [ ] inferida  [ ] insuficiente
 - O que você faria: _______________________________________________
 - Observação: ___________________________________________________
 
@@ -853,26 +1036,32 @@ Instruções para César / equipe:
 
 ### Contexto (motor — somente leitura)
 - Número do caso: CV-H-032
-- Data: 2026-06-04
-- Horário local (America/Sao_Paulo): 2026-06-04T12:30:00-03:00
-- Duração do episódio (min): —
-- Praça provável: conferencia
-- Volume de pedidos (ativos no tick): 6
-- Quantidade de itens (proxy complexidade > simples): 0
-- Complexidade (proxy): 0
+- Data: 2026-06-07
+- Horário local (America/Sao_Paulo): 2026-06-07T11:00:00-03:00
+- Episódio: — (tick)
+- Uma leitura ou duração mensurável: tick
+- Duração (label): tick isolado (não episódio)
+- Span observado (min, técnico): —
+- Ticks observados: 1
+- Praça: conferencia
+- Volume de pedidos: 21
+- Itens (proxy complexidade > simples): 0
 - Pedido mais antigo: anonimizado
-- Pedidos prontos aguardando: 1
-- Sinal logístico: motoboy_na_loja, pedido_atrasado_vs_prometido_operacional
+- Pedidos prontos aguardando: 4
+- Sinais logísticos: motoboy_na_loja, entregador_alocado_sem_retirada, pedido_atrasado_vs_prometido_operacional, prontos_acumulando
+- Evidência: confirmado (confirmado)
 - Confiança do motor: baixa
 - Classificação do motor: excecao_critica
-- Ação sugerida (sombra): observar
+- Intervenção sugerida (sombra): observar
 - Dados ausentes: equipe_real_por_turno
 - Bucket de amostragem: excecao
+- ⚠ Motor classificou, mas os dados não permitem confirmação humana segura.
 
 ### Sua avaliação (preencher)
 - Estado real: [ ] controlável  [ ] atenção  [ ] crítico  [ ] impossível avaliar
 - Praça correta: [ ] sim  [ ] não  [ ] outra: _______________
 - Recomendação adequada: [ ] sim  [ ] parcialmente  [ ] não
+- Evidência (na sua visão): [ ] confirmada  [ ] inferida  [ ] insuficiente
 - O que você faria: _______________________________________________
 - Observação: ___________________________________________________
 
@@ -880,26 +1069,32 @@ Instruções para César / equipe:
 
 ### Contexto (motor — somente leitura)
 - Número do caso: CV-H-033
-- Data: 2026-06-12
-- Horário local (America/Sao_Paulo): 2026-06-12T16:15:00-03:00
-- Duração do episódio (min): —
-- Praça provável: conferencia
-- Volume de pedidos (ativos no tick): 80
-- Quantidade de itens (proxy complexidade > simples): 0
-- Complexidade (proxy): 0
+- Data: 2026-06-16
+- Horário local (America/Sao_Paulo): 2026-06-16T17:15:00-03:00
+- Episódio: — (tick)
+- Uma leitura ou duração mensurável: tick
+- Duração (label): tick isolado (não episódio)
+- Span observado (min, técnico): —
+- Ticks observados: 1
+- Praça: conferencia
+- Volume de pedidos: 41
+- Itens (proxy complexidade > simples): 0
 - Pedido mais antigo: anonimizado
-- Pedidos prontos aguardando: 9
-- Sinal logístico: motoboy_na_loja, pedido_atrasado_vs_prometido_operacional, aguardando_saida_causa_nao_confirmada, prontos_acumulando
+- Pedidos prontos aguardando: 16
+- Sinais logísticos: pronto_sem_saida_excessivo, entregador_alocado_sem_retirada, pedido_atrasado_vs_prometido_operacional, aguardando_saida_causa_nao_confirmada, prontos_acumulando
+- Evidência: inferido_baixa (inferido_baixa_confianca)
 - Confiança do motor: baixa
 - Classificação do motor: excecao_critica
-- Ação sugerida (sombra): observar
+- Intervenção sugerida (sombra): observar
 - Dados ausentes: equipe_real_por_turno
 - Bucket de amostragem: excecao
+- ⚠ Motor classificou, mas os dados não permitem confirmação humana segura.
 
 ### Sua avaliação (preencher)
 - Estado real: [ ] controlável  [ ] atenção  [ ] crítico  [ ] impossível avaliar
 - Praça correta: [ ] sim  [ ] não  [ ] outra: _______________
 - Recomendação adequada: [ ] sim  [ ] parcialmente  [ ] não
+- Evidência (na sua visão): [ ] confirmada  [ ] inferida  [ ] insuficiente
 - O que você faria: _______________________________________________
 - Observação: ___________________________________________________
 
@@ -907,26 +1102,32 @@ Instruções para César / equipe:
 
 ### Contexto (motor — somente leitura)
 - Número do caso: CV-H-034
-- Data: 2026-06-20
-- Horário local (America/Sao_Paulo): 2026-06-20T16:15:00-03:00
-- Duração do episódio (min): —
-- Praça provável: sushi
-- Volume de pedidos (ativos no tick): 61
-- Quantidade de itens (proxy complexidade > simples): 156
-- Complexidade (proxy): 156
+- Data: 2026-05-27
+- Horário local (America/Sao_Paulo): 2026-05-27T17:45:00-03:00
+- Episódio: ep_24 · pronto_sem_saida_excessivo · excecao_critica
+- Uma leitura ou duração mensurável: uma_leitura
+- Duração (label): observado em uma leitura
+- Span observado (min, técnico): 0
+- Ticks observados: 1
+- Praça: conferencia
+- Volume de pedidos: 35
+- Itens (proxy complexidade > simples): 0
 - Pedido mais antigo: anonimizado
-- Pedidos prontos aguardando: 5
-- Sinal logístico: motoboy_na_loja, entregador_alocado_sem_retirada, pedido_atrasado_vs_prometido_operacional, aguardando_saida_causa_nao_confirmada, prontos_acumulando
-- Confiança do motor: media
+- Pedidos prontos aguardando: 8
+- Sinais logísticos: pronto_sem_saida_excessivo, entregador_alocado_sem_retirada, prontos_acumulando, aguardando_saida_causa_nao_confirmada, pedido_atrasado_vs_prometido_operacional
+- Evidência: inferido_baixa (inferido_baixa_confianca)
+- Confiança do motor: baixa
 - Classificação do motor: excecao_critica
-- Ação sugerida (sombra): finalizar_pedidos_motoboy_esperando
+- Intervenção sugerida (sombra): observar
 - Dados ausentes: equipe_real_por_turno
 - Bucket de amostragem: excecao
+- ⚠ Motor classificou, mas os dados não permitem confirmação humana segura.
 
 ### Sua avaliação (preencher)
 - Estado real: [ ] controlável  [ ] atenção  [ ] crítico  [ ] impossível avaliar
 - Praça correta: [ ] sim  [ ] não  [ ] outra: _______________
 - Recomendação adequada: [ ] sim  [ ] parcialmente  [ ] não
+- Evidência (na sua visão): [ ] confirmada  [ ] inferida  [ ] insuficiente
 - O que você faria: _______________________________________________
 - Observação: ___________________________________________________
 
@@ -934,26 +1135,32 @@ Instruções para César / equipe:
 
 ### Contexto (motor — somente leitura)
 - Número do caso: CV-H-035
-- Data: 2026-05-29
-- Horário local (America/Sao_Paulo): 2026-05-29T08:15:00-03:00
-- Duração do episódio (min): 0
-- Praça provável: conferencia
-- Volume de pedidos (ativos no tick): 7
-- Quantidade de itens (proxy complexidade > simples): 0
-- Complexidade (proxy): 0
+- Data: 2026-06-01
+- Horário local (America/Sao_Paulo): 2026-06-01T10:15:00-03:00
+- Episódio: ep_364 · entregador_alocado_sem_retirada · excecao_critica
+- Uma leitura ou duração mensurável: uma_leitura
+- Duração (label): observado em uma leitura
+- Span observado (min, técnico): 0
+- Ticks observados: 1
+- Praça: conferencia
+- Volume de pedidos: 15
+- Itens (proxy complexidade > simples): 0
 - Pedido mais antigo: anonimizado
-- Pedidos prontos aguardando: 2
-- Sinal logístico: motoboy_na_loja, pedido_atrasado_vs_prometido_operacional
+- Pedidos prontos aguardando: 5
+- Sinais logísticos: motoboy_na_loja, entregador_alocado_sem_retirada, pedido_atrasado_vs_prometido_operacional, prontos_acumulando
+- Evidência: inferido_alta (inferido_alta_confianca)
 - Confiança do motor: baixa
 - Classificação do motor: excecao_critica
-- Ação sugerida (sombra): observar
+- Intervenção sugerida (sombra): observar
 - Dados ausentes: equipe_real_por_turno
 - Bucket de amostragem: excecao
+- ⚠ Motor classificou, mas os dados não permitem confirmação humana segura.
 
 ### Sua avaliação (preencher)
 - Estado real: [ ] controlável  [ ] atenção  [ ] crítico  [ ] impossível avaliar
 - Praça correta: [ ] sim  [ ] não  [ ] outra: _______________
 - Recomendação adequada: [ ] sim  [ ] parcialmente  [ ] não
+- Evidência (na sua visão): [ ] confirmada  [ ] inferida  [ ] insuficiente
 - O que você faria: _______________________________________________
 - Observação: ___________________________________________________
 
@@ -961,26 +1168,32 @@ Instruções para César / equipe:
 
 ### Contexto (motor — somente leitura)
 - Número do caso: CV-H-036
-- Data: 2026-06-02
-- Horário local (America/Sao_Paulo): 2026-06-02T18:15:00-03:00
-- Duração do episódio (min): 0
-- Praça provável: conferencia
-- Volume de pedidos (ativos no tick): 19
-- Quantidade de itens (proxy complexidade > simples): 0
-- Complexidade (proxy): 0
+- Data: 2026-06-06
+- Horário local (America/Sao_Paulo): 2026-06-06T16:15:00-03:00
+- Episódio: ep_781 · entregador_alocado_sem_retirada · excecao_critica
+- Uma leitura ou duração mensurável: uma_leitura
+- Duração (label): observado em uma leitura
+- Span observado (min, técnico): 0
+- Ticks observados: 1
+- Praça: conferencia
+- Volume de pedidos: 29
+- Itens (proxy complexidade > simples): 0
 - Pedido mais antigo: anonimizado
-- Pedidos prontos aguardando: 11
-- Sinal logístico: pronto_sem_saida_excessivo, entregador_alocado_sem_retirada, pedido_atrasado_vs_prometido_operacional, aguardando_saida_causa_nao_confirmada, prontos_acumulando
+- Pedidos prontos aguardando: 2
+- Sinais logísticos: motoboy_na_loja, entregador_alocado_sem_retirada, pedido_atrasado_vs_prometido_operacional
+- Evidência: inferido_alta (inferido_alta_confianca)
 - Confiança do motor: baixa
 - Classificação do motor: excecao_critica
-- Ação sugerida (sombra): observar
+- Intervenção sugerida (sombra): observar
 - Dados ausentes: equipe_real_por_turno
 - Bucket de amostragem: excecao
+- ⚠ Motor classificou, mas os dados não permitem confirmação humana segura.
 
 ### Sua avaliação (preencher)
 - Estado real: [ ] controlável  [ ] atenção  [ ] crítico  [ ] impossível avaliar
 - Praça correta: [ ] sim  [ ] não  [ ] outra: _______________
 - Recomendação adequada: [ ] sim  [ ] parcialmente  [ ] não
+- Evidência (na sua visão): [ ] confirmada  [ ] inferida  [ ] insuficiente
 - O que você faria: _______________________________________________
 - Observação: ___________________________________________________
 
@@ -988,26 +1201,32 @@ Instruções para César / equipe:
 
 ### Contexto (motor — somente leitura)
 - Número do caso: CV-H-037
-- Data: 2026-06-08
-- Horário local (America/Sao_Paulo): 2026-06-08T15:15:00-03:00
-- Duração do episódio (min): 0
-- Praça provável: conferencia
-- Volume de pedidos (ativos no tick): 22
-- Quantidade de itens (proxy complexidade > simples): 0
-- Complexidade (proxy): 0
+- Data: 2026-06-09
+- Horário local (America/Sao_Paulo): 2026-06-09T15:30:00-03:00
+- Episódio: ep_1184 · entregador_alocado_sem_retirada · excecao_critica
+- Uma leitura ou duração mensurável: uma_leitura
+- Duração (label): observado em uma leitura
+- Span observado (min, técnico): 0
+- Ticks observados: 1
+- Praça: conferencia
+- Volume de pedidos: 14
+- Itens (proxy complexidade > simples): 0
 - Pedido mais antigo: anonimizado
 - Pedidos prontos aguardando: 5
-- Sinal logístico: motoboy_na_loja, pedido_atrasado_vs_prometido_operacional, prontos_acumulando
+- Sinais logísticos: motoboy_na_loja, entregador_alocado_sem_retirada, pedido_atrasado_vs_prometido_operacional, prontos_acumulando
+- Evidência: inferido_alta (inferido_alta_confianca)
 - Confiança do motor: baixa
 - Classificação do motor: excecao_critica
-- Ação sugerida (sombra): observar
+- Intervenção sugerida (sombra): observar
 - Dados ausentes: equipe_real_por_turno
 - Bucket de amostragem: excecao
+- ⚠ Motor classificou, mas os dados não permitem confirmação humana segura.
 
 ### Sua avaliação (preencher)
 - Estado real: [ ] controlável  [ ] atenção  [ ] crítico  [ ] impossível avaliar
 - Praça correta: [ ] sim  [ ] não  [ ] outra: _______________
 - Recomendação adequada: [ ] sim  [ ] parcialmente  [ ] não
+- Evidência (na sua visão): [ ] confirmada  [ ] inferida  [ ] insuficiente
 - O que você faria: _______________________________________________
 - Observação: ___________________________________________________
 
@@ -1015,26 +1234,32 @@ Instruções para César / equipe:
 
 ### Contexto (motor — somente leitura)
 - Número do caso: CV-H-038
-- Data: 2026-06-12
-- Horário local (America/Sao_Paulo): 2026-06-12T15:30:00-03:00
-- Duração do episódio (min): 0
-- Praça provável: conferencia
-- Volume de pedidos (ativos no tick): 52
-- Quantidade de itens (proxy complexidade > simples): 0
-- Complexidade (proxy): 0
+- Data: 2026-06-13
+- Horário local (America/Sao_Paulo): 2026-06-13T16:30:00-03:00
+- Episódio: ep_1709 · entregador_alocado_sem_retirada · excecao_critica
+- Uma leitura ou duração mensurável: uma_leitura
+- Duração (label): observado em uma leitura
+- Span observado (min, técnico): 0
+- Ticks observados: 1
+- Praça: conferencia
+- Volume de pedidos: 20
+- Itens (proxy complexidade > simples): 0
 - Pedido mais antigo: anonimizado
-- Pedidos prontos aguardando: 7
-- Sinal logístico: motoboy_na_loja, pronto_sem_saida_excessivo, entregador_alocado_sem_retirada, pedido_atrasado_vs_prometido_operacional, prontos_acumulando
+- Pedidos prontos aguardando: 3
+- Sinais logísticos: motoboy_na_loja, entregador_alocado_sem_retirada, pedido_atrasado_vs_prometido_operacional
+- Evidência: inferido_alta (inferido_alta_confianca)
 - Confiança do motor: baixa
 - Classificação do motor: excecao_critica
-- Ação sugerida (sombra): observar
+- Intervenção sugerida (sombra): observar
 - Dados ausentes: equipe_real_por_turno
 - Bucket de amostragem: excecao
+- ⚠ Motor classificou, mas os dados não permitem confirmação humana segura.
 
 ### Sua avaliação (preencher)
 - Estado real: [ ] controlável  [ ] atenção  [ ] crítico  [ ] impossível avaliar
 - Praça correta: [ ] sim  [ ] não  [ ] outra: _______________
 - Recomendação adequada: [ ] sim  [ ] parcialmente  [ ] não
+- Evidência (na sua visão): [ ] confirmada  [ ] inferida  [ ] insuficiente
 - O que você faria: _______________________________________________
 - Observação: ___________________________________________________
 
@@ -1042,26 +1267,32 @@ Instruções para César / equipe:
 
 ### Contexto (motor — somente leitura)
 - Número do caso: CV-H-039
-- Data: 2026-06-17
-- Horário local (America/Sao_Paulo): 2026-06-17T09:30:00-03:00
-- Duração do episódio (min): 0
-- Praça provável: conferencia
-- Volume de pedidos (ativos no tick): 36
-- Quantidade de itens (proxy complexidade > simples): 0
-- Complexidade (proxy): 0
+- Data: 2026-06-18
+- Horário local (America/Sao_Paulo): 2026-06-18T16:30:00-03:00
+- Episódio: ep_2498 · motoboy_na_loja · excecao_critica
+- Uma leitura ou duração mensurável: uma_leitura
+- Duração (label): observado em uma leitura
+- Span observado (min, técnico): 0
+- Ticks observados: 1
+- Praça: conferencia
+- Volume de pedidos: 46
+- Itens (proxy complexidade > simples): 0
 - Pedido mais antigo: anonimizado
-- Pedidos prontos aguardando: 10
-- Sinal logístico: motoboy_na_loja, pronto_sem_saida_excessivo, entregador_alocado_sem_retirada, pedido_atrasado_vs_prometido_operacional, aguardando_saida_causa_nao_confirmada, prontos_acumulando
+- Pedidos prontos aguardando: 2
+- Sinais logísticos: motoboy_na_loja, entregador_alocado_sem_retirada, pedido_atrasado_vs_prometido_operacional
+- Evidência: confirmado (confirmado)
 - Confiança do motor: baixa
 - Classificação do motor: excecao_critica
-- Ação sugerida (sombra): observar
+- Intervenção sugerida (sombra): observar
 - Dados ausentes: equipe_real_por_turno
 - Bucket de amostragem: excecao
+- ⚠ Motor classificou, mas os dados não permitem confirmação humana segura.
 
 ### Sua avaliação (preencher)
 - Estado real: [ ] controlável  [ ] atenção  [ ] crítico  [ ] impossível avaliar
 - Praça correta: [ ] sim  [ ] não  [ ] outra: _______________
 - Recomendação adequada: [ ] sim  [ ] parcialmente  [ ] não
+- Evidência (na sua visão): [ ] confirmada  [ ] inferida  [ ] insuficiente
 - O que você faria: _______________________________________________
 - Observação: ___________________________________________________
 
@@ -1070,25 +1301,31 @@ Instruções para César / equipe:
 ### Contexto (motor — somente leitura)
 - Número do caso: CV-H-040
 - Data: 2026-06-21
-- Horário local (America/Sao_Paulo): 2026-06-21T09:15:00-03:00
-- Duração do episódio (min): 0
-- Praça provável: sushi
-- Volume de pedidos (ativos no tick): 29
-- Quantidade de itens (proxy complexidade > simples): 50
-- Complexidade (proxy): 50
+- Horário local (America/Sao_Paulo): 2026-06-21T20:30:00-03:00
+- Episódio: ep_3191 · pronto_sem_saida_excessivo · excecao_critica
+- Uma leitura ou duração mensurável: uma_leitura
+- Duração (label): observado em uma leitura
+- Span observado (min, técnico): 0
+- Ticks observados: 1
+- Praça: sushi
+- Volume de pedidos: 19
+- Itens (proxy complexidade > simples): 16
 - Pedido mais antigo: anonimizado
 - Pedidos prontos aguardando: 1
-- Sinal logístico: motoboy_na_loja, pedido_atrasado_vs_prometido_operacional
+- Sinais logísticos: pronto_sem_saida_excessivo, entregador_alocado_sem_retirada, pedido_atrasado_vs_prometido_operacional
+- Evidência: inferido_baixa (inferido_baixa_confianca)
 - Confiança do motor: media
 - Classificação do motor: excecao_critica
-- Ação sugerida (sombra): finalizar_pedidos_motoboy_esperando
+- Intervenção sugerida (sombra): finalizar_pedidos_motoboy_esperando
 - Dados ausentes: equipe_real_por_turno
 - Bucket de amostragem: excecao
+- ⚠ Motor classificou, mas os dados não permitem confirmação humana segura.
 
 ### Sua avaliação (preencher)
 - Estado real: [ ] controlável  [ ] atenção  [ ] crítico  [ ] impossível avaliar
 - Praça correta: [ ] sim  [ ] não  [ ] outra: _______________
 - Recomendação adequada: [ ] sim  [ ] parcialmente  [ ] não
+- Evidência (na sua visão): [ ] confirmada  [ ] inferida  [ ] insuficiente
 - O que você faria: _______________________________________________
 - Observação: ___________________________________________________
 
