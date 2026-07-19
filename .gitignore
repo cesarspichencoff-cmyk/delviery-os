@@ -19,3 +19,8 @@ docs/*.pdf
 /runtime/
 *.live.jsonl
 *.runtime.jsonl
+
+# Capacidade Viva calibration outputs (local, non-operational)
+results/capacidade-viva/
+data/capacidade-viva/calibration/imports/
+

@@ -86,3 +86,14 @@ Sem dados suficientes: *“Não tenho leitura suficiente para recomendar.”*
 ## O que ainda é simulado
 
 ASR/TTS, microfone, iFood contínuo, memória persistente de produção, financeiro, visão, Caixa/Estoque/Entregas como produtos, deploy.
+
+## Calibração e modo sombra (Fase 2D)
+
+Ver **`docs/CAPACIDADE_VIVA_CALIBRATION.md`**.
+
+Worktree isolado: `deliveryos-capacidade-viva-calibration` · branch `research/capacidade-viva-calibration`.
+
+- Replay histórico + calibração de pesos com split temporal  
+- Modo sombra (o que o sistema teria dito — sem contrafactual como prova)  
+- Comando: `node tools/calibrar_capacidade_viva.js`  
+- Resultados locais em `results/capacidade-viva/` (não operacionais)
