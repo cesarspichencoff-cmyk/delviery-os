@@ -47,12 +47,49 @@
     forceMode: null, // QA only
     techOverride: null,
     qaOpen: false,
-    areaCite: null
+    areaCite: null,
+    actionSince: null,
+    voiceAnswer: null,
+    feedbackState: null,
+    cvOverlay: null
   };
 
   const params = new URLSearchParams(location.search);
   const QA_MODE = params.get("qa") === "1" || params.get("dev") === "1";
   const mqMobile = window.matchMedia("(max-width: 720px)");
+
+  /* —— Fase 2C: chamadas vivas aos motores (cache por chave; re-render ao
+   * chegar). A UI nunca decide — só apresenta o que os motores devolvem. —— */
+  const cvCache = new Map();
+  function buscarVivo(chave, url, opts, aoChegar) {
+    if (cvCache.has(chave)) return cvCache.get(chave);
+    cvCache.set(chave, null); // em voo
+    fetch(url, opts)
+      .then((r) => r.json())
+      .then((d) => {
+        cvCache.set(chave, d);
+        if (aoChegar) aoChegar(d);
+        else if (lastPonto) render(lastINFO, lastPonto);
+      })
+      .catch(() => { cvCache.set(chave, { indisponivel: true }); });
+    return null;
+  }
+  const AREA_SLUG = {
+    "Sushi": "sushi", "Quentes": "quentes", "Cozinha": "cozinha",
+    "Conferência": "conferencia", "Motoboy": "motoboy", "Caixa": "caixa"
+  };
+  const ROTULO_PRACA_CV = {
+    sushi: "Sushi", quentes: "Quentes", cozinha: "Cozinha",
+    conferencia: "Conferência", caixa: "Caixa", motoboy: "Motoboy"
+  };
+  /* Tradução humana do estado interno (o ISF nunca vira número no produto) */
+  function humanoDoEstado(estado, pracaSlug) {
+    const p = ROTULO_PRACA_CV[pracaSlug] || pracaSlug || "A operação";
+    if (estado === "atencao") return p + " está absorvendo o ritmo, mas perdeu margem de segurança.";
+    if (estado === "proximo_limite") return p + " está perto do limite do que consegue absorver.";
+    if (estado === "acima_capacidade") return p + " passou do que consegue absorver agora.";
+    return "A operação está absorvendo o que entra.";
+  }
 
   function hhmm(t) {
     const d = Math.floor(t / 1440), m = t % 1440;
@@ -367,6 +404,21 @@
     return { duasSacolas, soQuente, soSobremesa, itensPuxando };
   }
 
+  /* Sinais por pedido a partir dos carimbos REAIS da janela. Idade = tempo na
+   * etapa observável (desde o pronto quando pronto; desde a chegada antes).
+   * s/e não são observados por esta fonte — "parado" significa sempre "sem
+   * saída OBSERVADA", nunca um evento inventado. */
+  function ordersSinaisDe(t, NIGHT) {
+    const out = [];
+    for (const o of NIGHT) {
+      if (o.r == null || o.r > t) continue;
+      if (o.c != null && o.c <= t) continue;
+      const pronto = o.p != null && t >= o.p;
+      out.push({ id: o.curto || o.id, pronto, age_min: pronto ? t - o.p : t - o.r });
+    }
+    return out;
+  }
+
   function precomputar(J, INFO) {
     const sess = MOTOR.novaSessao();
     const linha = [];
@@ -383,13 +435,23 @@
           if (m) alvoId = m[1];
         }
       }
+      const ambientes = mapaAmbientes(R, INFO);
+      const cvPracas = {}; const filas = {};
+      for (const a of ambientes) {
+        const slug = AREA_SLUG[a.nome];
+        if (!slug) continue;
+        filas[slug] = a.n || 0;
+        if (a.cor !== "validacao") cvPracas[slug] = { sev: a.sev || 0, n: a.n || 0 };
+      }
       linha.push({
         t,
         mode: R.mode,
         emand: R.emand,
         intenso: R.intenso,
         amb: (R.ambList || []).map((a) => ({ label: semTags(a.label), sev: a.sev })),
-        ambientes: mapaAmbientes(R, INFO),
+        ambientes,
+        filas,
+        cv: { pracas: cvPracas, orders: ordersSinaisDe(t, J.NIGHT) },
         sinais: R.mode === "calmo" ? sinaisDeFluxo(R, INFO) : null,
         foco: R.foco
           ? {
@@ -460,12 +522,45 @@
     }
 
     const mocks = { demo: true };
-    if (ui.showForecast) {
-      mocks.forecast = M.forecastMock(areaHint || "Conferência");
-      mocks.forecast.expanded = ui.forecastOpen;
+    /* Previsão: motor real (copiloto.forecast) sobre o histórico REAL de fila
+     * da área — progressive disclosure (nasce recolhida, nunca domina). */
+    if (mode === "foco" || ui.showForecast) {
+      const areaSlug = AREA_SLUG[areaHint] || "conferencia";
+      const hist = historicoFila(areaSlug, ponto);
+      let vivo = null;
+      if (hist.length >= 2) {
+        vivo = buscarVivo(
+          "fc:" + ponto.t + ":" + areaSlug,
+          "/api/inteligencia/forecast?area=" + areaSlug + "&hist=" + hist.join(",") +
+            (fonteSimulada ? "&demo=1" : "")
+        );
+      }
+      if (vivo && !vivo.indisponivel) {
+        mocks.forecast = Object.assign({}, vivo, { expanded: ui.forecastOpen });
+      } else if (hist.length >= 2) {
+        mocks.forecast = {
+          simulated: false,
+          demoLabel: fonteSimulada ? "demonstração" : null,
+          horizon: "próximos 10 a 15 min",
+          conditional: "se nada mudar",
+          confidence: { level: "baixa", dots: "○○○", visual: "confidence" },
+          text: "Calculando estimativa do motor…",
+          note: "motor de previsão · aguardando cálculo",
+          expanded: ui.forecastOpen
+        };
+      } else if (ui.showForecast) {
+        mocks.forecast = M.forecastMock(areaHint || "Conferência");
+        mocks.forecast.expanded = ui.forecastOpen;
+      }
     }
+    /* Ação acompanhada: estado real do engine (playbooks) quando disponível */
     if (ui.actionState) {
-      mocks.actionTrack = M.actionTrackMock(ui.actionState);
+      const areaSlug = AREA_SLUG[areaHint] || "conferencia";
+      const vivo = buscarVivo(
+        "at:" + ui.actionState + ":" + areaSlug,
+        "/api/inteligencia/action?area=" + areaSlug + "&state=" + encodeURIComponent(ui.actionState)
+      );
+      mocks.actionTrack = vivo && !vivo.indisponivel ? Object.assign({}, vivo) : M.actionTrackMock(ui.actionState);
       if (ui.actionState === "colateral") mocks.actionTrack.tense = true;
     }
 
@@ -495,7 +590,31 @@
     }
     vm.areaHint = areaHint;
     vm.alvoId = ponto.alvoId;
+
+    /* Leitura viva da Capacidade Viva no Foco: exceções + menor intervenção
+     * dos motores reais sobre degraus do motor + carimbos reais (V0.1). */
+    if (mode === "foco" && ponto.cv) {
+      const leitura = buscarVivo("cv:" + ponto.t, "/api/capacidade-viva/leitura", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          pracas: ponto.cv.pracas || {},
+          orders: ponto.cv.orders || [],
+          confianca: "media"
+        })
+      });
+      vm.cvLeitura = leitura && !leitura.indisponivel ? leitura : null;
+    }
     return vm;
+  }
+
+  /* Histórico REAL de fila da área (pedidos em produção dependendo dela),
+   * minuto a minuto até o ponto atual — entrada do motor de previsão. */
+  function historicoFila(slug, ponto) {
+    const i = timeline.indexOf(ponto);
+    if (i < 0) return [];
+    const ini = Math.max(0, i - 30);
+    return timeline.slice(ini, i + 1).map((p) => (p.filas && p.filas[slug]) || 0);
   }
 
   /* ================= ORGANISMO V3.3 — topologia canônica ================= */
@@ -717,6 +836,22 @@
       panel.appendChild(evs);
     }
 
+    /* Menor intervenção (Capacidade Viva, motores reais) — subordinada à ação
+     * do motor de decisão; pausa NUNCA é automática, sempre decisão humana. */
+    if (vm.cvLeitura && vm.cvLeitura.intervencao) {
+      const iv = vm.cvLeitura.intervencao;
+      const ehPausa = iv.action === "pausa_seletiva" || iv.action === "pausa_geral";
+      const linha = el("div", "foco-intervencao" + (ehPausa ? " is-pausa" : ""));
+      linha.appendChild(el("span", "foco-intervencao-rotulo", "menor intervenção"));
+      let txt;
+      if (iv.bloqueio_confianca) txt = iv.reason;
+      else if (iv.action === "pausa_geral") txt = "Pausa geral é a última alternativa — decisão humana, nada é aplicado automaticamente.";
+      else if (iv.action === "pausa_seletiva") txt = "Pause temporariamente apenas os itens desta praça — decisão humana, nada é aplicado automaticamente.";
+      else txt = "Ainda não é necessário pausar — " + (iv.label || "observar").toLowerCase() + ".";
+      linha.appendChild(el("span", "foco-intervencao-txt", txt));
+      panel.appendChild(linha);
+    }
+
     /* Previsão — progressive disclosure, confiança separada da gravidade */
     if (vm.forecast) {
       const f = vm.forecast;
@@ -758,7 +893,9 @@
         if (i < FASES.length - 1) fases.appendChild(el("span", "fase-seta", "→"));
       });
       panel.appendChild(fases);
-      const st = el("p", "foco-status status-" + atk.stateId, atk.copy);
+      const min = ui.actionSince ? Math.max(0, Math.round((Date.now() - ui.actionSince) / 60000)) : null;
+      const tempo = min == null ? "" : min === 0 ? " · agora" : " · há " + min + " min";
+      const st = el("p", "foco-status status-" + atk.stateId, atk.copy + tempo);
       panel.appendChild(st);
       if (atk.responsible) {
         panel.appendChild(el("div", "foco-who",
@@ -766,7 +903,19 @@
           (atk.responsible.name ? " · " + atk.responsible.name : "") +
           " · " + (atk.responsible.note || "função, não ranking")));
       }
-      panel.appendChild(el("span", "demo-tag", atk.demoLabel || "demonstração"));
+      /* Recuperação Líquida: classificador real traduzido humanamente */
+      const CASO_POR_STATE = { melhora: "liquida", parcial: "parcial", sem_resultado: "sem", colateral: "deslocou" };
+      const caso = CASO_POR_STATE[atk.stateId];
+      if (caso) {
+        const rec = buscarVivo("rec:" + caso, "/api/capacidade-viva/recuperacao?caso=" + caso);
+        if (rec && rec.copy) {
+          panel.appendChild(el("p", "foco-recuperacao",
+            rec.copy + (QA_MODE ? " · " + rec.outcome + " (detalhe dev)" : "")));
+        }
+      }
+      if (atk.demoLabel) panel.appendChild(el("span", "demo-tag", atk.demoLabel));
+      /* Feedback humano no encerramento — rápido, opcional, nunca no pico */
+      if (atk.stateId === "encerramento") panel.appendChild(nodeFeedback());
     }
 
     const acoes = el("div", "foco-acoes");
@@ -776,6 +925,66 @@
     if (at.secondaryAction) acoes.appendChild(el("span", "acao-sec", at.secondaryAction));
     panel.appendChild(acoes);
     return panel;
+  }
+
+  /* Feedback humano — pills rápidas + observação opcional. Registrado na
+   * memória da sessão do servidor (não é persistência de produção). */
+  function nodeFeedback() {
+    const box = el("div", "feedback-box");
+    if (ui.feedbackState === "ok") {
+      box.appendChild(el("span", "feedback-obrigado",
+        "Registrado — ajuda o sistema a aprender. Memória da sessão, não avaliação de pessoas."));
+      return box;
+    }
+    box.appendChild(el("span", "feedback-rotulo", "Isso ajudou? (opcional)"));
+    const obs = document.createElement("input");
+    obs.type = "text";
+    obs.className = "feedback-obs";
+    obs.placeholder = "observação (opcional)";
+    const row = el("div", "feedback-row");
+    [["ajudou", "Ajudou"], ["ajudou_parcialmente", "Em parte"], ["nao_ajudou", "Não ajudou"],
+     ["criou_outro_problema", "Criou outro problema"], ["nao_sei", "Não sei"]].forEach(([id, rotulo]) => {
+      const b = el("button", "feedback-pill", rotulo);
+      b.onclick = () => {
+        const fim = () => { ui.feedbackState = "ok"; if (lastPonto) render(lastINFO, lastPonto); };
+        fetch("/api/capacidade-viva/feedback", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ choice: id, observation: obs.value || null, action_id: ui.actionState })
+        }).then(fim).catch(fim);
+      };
+      row.appendChild(b);
+    });
+    box.appendChild(row);
+    box.appendChild(obs);
+    return box;
+  }
+
+  /* Nota de cenário Capacidade Viva (QA/dev): tradução humana + menor
+   * intervenção do motor real; detalhe técnico (ISF) só em modo dev. */
+  function nodeCvNota(dados) {
+    const av = dados.avaliacao || {};
+    const isf = av.isf || {};
+    const iv = av.intervencao || {};
+    const box = el("div", "cv-nota");
+    box.appendChild(el("span", "cv-nota-tag", "capacidade viva · demonstração"));
+    box.appendChild(el("p", "cv-nota-humano", humanoDoEstado(isf.estado_geral, isf.praca_critica)));
+    if (iv.label) {
+      box.appendChild(el("p", "cv-nota-intervencao",
+        "Menor intervenção: " + iv.label + (iv.reason ? " — " + iv.reason : "") +
+        (iv.action && iv.action.indexOf("pausa") === 0 ? " · decisão humana, nunca automática" : "")));
+    }
+    if ((av.excecoes || {}).count > 0) {
+      const e0 = av.excecoes.items[0];
+      box.appendChild(el("p", "cv-nota-excecao",
+        e0.title + (e0.order_id ? " · pedido " + e0.order_id : "") + " — verificar."));
+    }
+    if (QA_MODE && isf.por_praca) {
+      box.appendChild(el("p", "cv-nota-dev",
+        "ISF interno (dev): " + Object.values(isf.por_praca)
+          .map((p) => p.praca + " " + (p.isf != null ? p.isf : "—") + " (" + p.estado + ")").join(" · ")));
+    }
+    return box;
   }
 
   function nodePill(vm) {
@@ -916,6 +1125,12 @@
     stage.appendChild(nodeCaption(vm, cab));
     if (frozen) stage.appendChild(nodeBanner("tech", tech.text + " Última leitura permanece visível — nunca como estado atual."));
 
+    /* Cenário Capacidade Viva ativo (QA/dev) — nota sob a legenda */
+    if (ui.cvOverlay) {
+      const dadosCv = cvCache.get("cvq:" + ui.cvOverlay);
+      if (dadosCv && dadosCv.avaliacao) stage.appendChild(nodeCvNota(dadosCv));
+    }
+
     const mobile = mqMobile.matches;
     stage.appendChild(mobile ? stageMobile(vm, celulas, { frozen }) : stageDesktop(vm, celulas, { frozen }));
 
@@ -955,23 +1170,42 @@
     palco.innerHTML = "";
     document.body.dataset.mode = "calmo";
 
+    /* Microcopy de PRODUÇÃO: sem jargão, sem comando de terminal. O detalhe
+     * técnico completo (motivo, dica, desconhecidos) aparece só em modo dev. */
+    const dois = (n) => String(n).padStart(2, "0");
+    let horaUltima = null;
+    if (pl.ultimo_confiavel && pl.ultimo_confiavel.gerado_em) {
+      const d = new Date(pl.ultimo_confiavel.gerado_em);
+      if (!isNaN(d)) horaUltima = dois(d.getHours()) + ":" + dois(d.getMinutes());
+    }
     const stage = el("section", "stage is-frozen");
     const box = el("div", "stage-caption");
     box.appendChild(el("span", "stage-kicker accent-tech", tech.label.toUpperCase()));
-    box.appendChild(el("p", "stage-caption-text", tech.text));
-    const detalhes = [];
-    if (pl.unknowns) {
-      detalhes.push("desconhecidos declarados: " + pl.unknowns.conflitos + " em conflito, " +
-        pl.unknowns.parciais + " parciais, " + pl.unknowns.suspeitos + " suspeitos");
+    box.appendChild(el("p", "stage-caption-text",
+      QA_MODE ? tech.text : "Ainda não estou recebendo dados da operação."));
+    if (QA_MODE) {
+      const detalhes = [];
+      if (pl.source_motivo) detalhes.push("motivo: " + pl.source_motivo);
+      if (pl.unknowns) {
+        detalhes.push("desconhecidos declarados: " + pl.unknowns.conflitos + " em conflito, " +
+          pl.unknowns.parciais + " parciais, " + pl.unknowns.suspeitos + " suspeitos");
+      }
+      if (pl.ultimo_confiavel) {
+        detalhes.push("último estado confiável: " + pl.ultimo_confiavel.dia_local +
+          " (" + pl.ultimo_confiavel.pedidos + " pedidos) · " + pl.ultimo_confiavel.aviso);
+      }
+      if (pl.dica) detalhes.push(pl.dica);
+      box.appendChild(el("p", "stage-subnote",
+        detalhes.length ? detalhes.join(" · ") : "estado técnico da fonte · não é tensão operacional"));
+    } else {
+      box.appendChild(el("p", "stage-subnote",
+        "Acompanhe o fluxo diretamente enquanto a leitura é restabelecida." +
+        (horaUltima ? " Última leitura às " + horaUltima + "." : "")));
     }
-    if (pl.ultimo_confiavel) {
-      detalhes.push("último estado confiável: " + pl.ultimo_confiavel.dia_local +
-        " (" + pl.ultimo_confiavel.pedidos + " pedidos) · " + pl.ultimo_confiavel.aviso);
-    }
-    if (pl.dica) detalhes.push(pl.dica);
-    box.appendChild(el("p", "stage-subnote", detalhes.length ? detalhes.join(" · ") : "estado técnico da fonte · não é tensão operacional"));
     stage.appendChild(box);
-    stage.appendChild(nodeBanner("tech", tech.text));
+    stage.appendChild(nodeBanner("tech",
+      QA_MODE ? tech.text
+        : "Ainda não estou recebendo dados da operação." + (horaUltima ? " Última leitura às " + horaUltima + "." : "")));
 
     const celulas = CEL_DEF.map((d) => ({
       id: d.id, nome: d.nome, x: d.x, y: d.y, size: d.base,
@@ -998,7 +1232,11 @@
     }
     $("btMic").classList.add("is-on");
     const M = window.V33_MOCKS;
-    const v = M.voiceMock(ui.voicePhase);
+    /* Resposta: intents REAIS (copiloto.voice-intents) quando disponíveis;
+     * ASR continua simulado e rotulado como demonstração. */
+    const v = ui.voicePhase === "answer" && ui.voiceAnswer && ui.voiceAnswer.phase === "answer"
+      ? Object.assign({}, M.voiceMock("answer"), ui.voiceAnswer)
+      : M.voiceMock(ui.voicePhase);
     panel.hidden = false;
     panel.innerHTML = "";
 
@@ -1048,10 +1286,17 @@
         setTimeout(() => {
           ui.voicePhase = "transcript";
           renderVoice();
-          setTimeout(() => {
-            ui.voicePhase = "answer";
-            renderVoice();
-          }, 700);
+          const pergunta = M.voiceMock("transcript").transcript;
+          fetch("/api/inteligencia/voice?q=" + encodeURIComponent(pergunta))
+            .then((r) => r.json())
+            .then((d) => { ui.voiceAnswer = d; })
+            .catch(() => { ui.voiceAnswer = null; })
+            .finally(() => {
+              setTimeout(() => {
+                ui.voicePhase = "answer";
+                renderVoice();
+              }, 500);
+            });
         }, 700);
       });
     }
@@ -1062,6 +1307,7 @@
         setTimeout(() => {
           ui.voiceOpen = false;
           ui.voicePhase = "idle";
+          ui.voiceAnswer = null;
           ui.areaCite = null;
           renderVoice();
           if (lastPonto) render(lastINFO, lastPonto);
@@ -1082,6 +1328,7 @@
     botao("Fechar", "voice-bt-ghost", () => {
       ui.voiceOpen = false;
       ui.voicePhase = "idle";
+      ui.voiceAnswer = null;
       ui.areaCite = null;
       renderVoice();
       if (lastPonto) render(lastINFO, lastPonto);
@@ -1100,7 +1347,18 @@
     }
     const M = window.V33_MOCKS;
     const step = ui.closingStep == null ? 0 : ui.closingStep;
-    const c = M.closingMock(step);
+    /* Fechamento REAL (copiloto.shift-closing sobre memória de turno da
+     * sessão); mock só como fallback enquanto o motor responde. */
+    const calmo = lastPonto && lastPonto.mode === "calmo" ? "1" : "0";
+    const vivo = buscarVivo(
+      "cl:" + step + ":" + calmo,
+      "/api/inteligencia/closing?step=" + step + "&calm=" + calmo + "&q=1",
+      null,
+      () => renderClosing()
+    );
+    const c = vivo && !vivo.indisponivel
+      ? Object.assign({}, M.closingMock(step), vivo)
+      : M.closingMock(step);
     panel.hidden = false;
     panel.innerHTML = "";
 
@@ -1118,10 +1376,17 @@
     if (step === 0) {
       panel.appendChild(el("h3", "closing-titulo", "O turno de hoje, em meia página."));
       panel.appendChild(el("p", "closing-body",
-        "Operação estável na maior parte do tempo. Picos pontuais de saída. Até dois minutos."));
+        c.summaryText || "Operação estável na maior parte do tempo. Picos pontuais de saída. Até dois minutos."));
       botao("Começar (1 de 2)", "closing-bt-main", () => { ui.closingStep = 1; renderClosing(); });
       botao("Pular", "closing-bt-text", () => { ui.closingOpen = false; ui.closingStep = null; renderClosing(); });
     } else if (step === 1 || step === 2) {
+      if (!c.question) {
+        panel.appendChild(el("h3", "closing-titulo", "Nenhuma pergunta necessária hoje."));
+        panel.appendChild(el("p", "closing-body", "O resumo já cobre o turno. Bom descanso."));
+        botao("Concluir", "closing-bt-main", () => { ui.closingOpen = false; ui.closingStep = null; renderClosing(); });
+        panel.appendChild(acts);
+        return;
+      }
       panel.appendChild(el("span", "closing-num", "pergunta " + c.question.n));
       panel.appendChild(el("h3", "closing-titulo", c.question.text));
       if (c.transcript) {
@@ -1167,14 +1432,91 @@
       ui.qaOpen = false;
       $("qaCatalog").hidden = true;
     };
+
+    /* Configuração do turno — entrada mínima de DESENVOLVIMENTO (fora da
+     * operação normal). Contagens por praça + flutuantes; NUNCA rastreia
+     * pessoas individualmente. Alimenta os cenários de Capacidade Viva. */
+    const catalogo = $("qaCatalog");
+    const turnoBox = el("div", "qa-turno");
+    turnoBox.appendChild(el("div", "qa-turno-titulo", "Turno (dev) · pessoas por praça · não rastreia indivíduos"));
+    const grade = el("div", "qa-turno-grade");
+    const salvo = turnoAtual();
+    [["sushi", "Sushi"], ["quentes", "Quentes"], ["cozinha", "Cozinha"],
+     ["conferencia", "Conf./Delivery"], ["caixa", "Caixa"], ["motoboy", "Motoboy"],
+     ["flutuantes", "Flutuantes"]].forEach(([k, rotulo]) => {
+      const campo = el("label", "qa-turno-campo");
+      campo.appendChild(el("span", "qa-turno-rotulo", rotulo));
+      const inp = document.createElement("input");
+      inp.type = "number";
+      inp.min = "0";
+      inp.placeholder = "—";
+      if (salvo[k] != null) inp.value = salvo[k];
+      inp.oninput = () => {
+        const t = turnoAtual();
+        if (inp.value === "") delete t[k]; else t[k] = Number(inp.value);
+        try { localStorage.setItem("dosTurno01", JSON.stringify(t)); } catch (e) { /* sem storage */ }
+        if (ui.cvOverlay) {
+          cvCache.delete("cvq:" + ui.cvOverlay);
+          buscarVivo("cvq:" + ui.cvOverlay, "/api/capacidade-viva/avaliar?" + paramsComTurno(CV_PARAMS[ui.cvOverlay] || ""));
+        }
+      };
+      campo.appendChild(inp);
+      grade.appendChild(campo);
+    });
+    turnoBox.appendChild(grade);
+    catalogo.appendChild(turnoBox);
+  }
+
+  /* Parâmetros calibrados dos 20 cenários de Capacidade Viva (motor real
+   * sobre fixtures demonstrativas; ver docs/CAPACIDADE_VIVA_V01.md). A base
+   * "quentes=12&sushi=10&conferencia=8" deixa o fundo controlável para que o
+   * elemento do cenário seja o protagonista. */
+  const CTRL_CV = "quentes=12&sushi=10&conferencia=8";
+  const CV_PARAMS = {
+    controlavel: CTRL_CV,
+    prep: CTRL_CV + "&when=prep",
+    sushi: "sushi=5&quentes=12&conferencia=8",
+    quentes: "quentes=4&env=2&sushi=10&conferencia=8",
+    conferencia: "conferencia=2&env_conf=8&quentes=12&sushi=10",
+    simples: CTRL_CV + "&pedidos=85",
+    complexos: CTRL_CV + "&ex=complexos",
+    antigo: CTRL_CV + "&ex=antigo",
+    motoboy: CTRL_CV + "&ex=motoboy",
+    alocado: CTRL_CV + "&ex=alocado",
+    comanda: CTRL_CV + "&ex=comanda",
+    pausa_nao: "quentes=4&sushi=10&conferencia=8",
+    pausa_sel: "quentes=1&env=40&sushi=10&conferencia=8",
+    pausa_geral: "quentes=1&env=40&sushi=10&conferencia=8&seletiva=0",
+    conf_baixa: CTRL_CV + "&conf=baixa"
+  };
+  function turnoAtual() {
+    try { return JSON.parse(localStorage.getItem("dosTurno01")) || {}; } catch (e) { return {}; }
+  }
+  function paramsComTurno(base) {
+    const t = turnoAtual();
+    const extras = ["sushi", "quentes", "cozinha", "conferencia", "caixa", "motoboy", "flutuantes"]
+      .filter((k) => t[k] != null && t[k] !== "")
+      .map((k) => k + "=" + encodeURIComponent(t[k]));
+    if (!extras.length) return base;
+    // turno do drawer dev sobrepõe os defaults do cenário (mesma chave vence a última)
+    const q = new URLSearchParams(base);
+    for (const kv of extras) { const [k, v] = kv.split("="); q.set(k, v); }
+    return q.toString();
   }
 
   function applyQa(item) {
     ui.techOverride = null;
     ui.voiceOpen = false;
     ui.closingOpen = false;
+    ui.cvOverlay = null;
     renderVoice();
     renderClosing();
+
+    if (item.cv) {
+      ui.cvOverlay = item.cv;
+      const q = paramsComTurno(CV_PARAMS[item.cv] || "");
+      buscarVivo("cvq:" + item.cv, "/api/capacidade-viva/avaliar?" + q);
+    }
 
     if (item.mode === "tech") {
       ui.techOverride = item.status;
@@ -1198,7 +1540,13 @@
     ui.forceMode = item.mode.indexOf("force-") === 0 ? item.mode : null;
     ui.showForecast = item.mock === "forecast";
     ui.forecastOpen = item.mock === "forecast";
-    ui.actionState = item.mock === "action" ? item.state : null;
+    const novoEstadoAcao = item.mock === "action" ? item.state : null;
+    if (novoEstadoAcao && novoEstadoAcao !== ui.actionState) {
+      ui.actionSince = Date.now();
+      ui.feedbackState = null;
+    }
+    ui.actionState = novoEstadoAcao;
+    if (!novoEstadoAcao) ui.actionSince = null;
 
     // pular timeline para minuto compatível quando possível
     if (timeline.length) {

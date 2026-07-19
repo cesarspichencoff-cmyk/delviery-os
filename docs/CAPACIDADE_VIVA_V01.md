@@ -63,9 +63,30 @@ Classes: recuperação líquida, melhora parcial, sem resultado, deslocou proble
 ajudou · ajudou parcialmente · não ajudou · criou outro problema · não sei (+ observação).  
 Não obrigatório no pico.
 
-## Interface
+## Interface (conectada na Fase 2C)
 
-Sem redesign. Adapters em `toV33ViewHints` e `/api/capacidade-viva/avaliar`.  
+Sem redesign — a superfície V3.3 consome os motores por adapters/endpoints:
+
+- **Leitura viva** (`POST /api/capacidade-viva/leitura`): exceções + menor intervenção dos
+  motores REAIS sobre degraus do motor (sev 0..3 → estados) e sinais por pedido derivados dos
+  carimbos reais da janela. O ISF numérico com complexidade **não** entra na leitura viva
+  (cardápio real não classificado — ver Limitações); permanece demonstrativo em
+  `/api/capacidade-viva/avaliar` (fixtures rotuladas, cenários QA/dev).
+- **Foco**: linha "menor intervenção" subordinada à ação do motor de decisão; pausa seletiva
+  antes da geral, nunca automática, sempre decisão humana; "Ainda não é necessário pausar."
+  quando cabe. Previsão (`copiloto.forecast`) sobre histórico real de fila, recolhida por
+  padrão, confiança separada da gravidade.
+- **Recuperação** (`GET /api/capacidade-viva/recuperacao?caso=`): classificador real traduzido
+  humanamente nos estados terminais da ação; detalhe técnico só em `?qa=1`.
+- **Feedback** (`POST /api/capacidade-viva/feedback`): pills no encerramento + observação
+  opcional; memória da sessão do servidor (não é persistência de produção).
+- **Ordem de verdade**: fonte fora de ready ≠ Calmo (topologia tracejada + banner técnico +
+  "Última leitura às HH:MM"); `confianca=baixa` bloqueia recomendação.
+- **Turno**: drawer dev no catálogo QA (contagens por praça + flutuantes, localStorage,
+  sem rastrear pessoas).
+- **Cenários**: 20 cenários `cv_*` no catálogo QA (`?qa=1`/`?dev=1` apenas), com parâmetros
+  calibrados sobre as fixtures.
+
 Sem dados suficientes: *“Não tenho leitura suficiente para recomendar.”*
 
 ## Limitações V0.1

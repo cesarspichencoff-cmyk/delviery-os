@@ -481,3 +481,79 @@ Correções aplicadas:
 - Sinais de Fluxo (V1) seguem computados (`window.__V1`) mas fora da superfície V3.3 (o
   congelado não tem esse bloco).
 - Vocabulário Quentes × Cozinha continua reservado ao César (condição 2 do próprio congelado).
+
+---
+
+## Fase 2C — Capacidade Viva conectada à superfície V3.3
+
+> Commit: `feat(copiloto): conecta Capacidade Viva à superfície V3.3` · base `54b5c59`.
+> A superfície passa a usar os resultados REAIS dos motores incorporados na 2B —
+> sem redesenhar, sem trocar topologia, sem score visível.
+
+### Ordem de verdade implementada
+
+1. **Fonte** → fora de `ready` a janela NUNCA aparece como atual (`/api/fonte?estado=`
+   demonstra: degraded/stale/disconnected/failed/stopped/initializing); a topologia permanece
+   tracejada ("sem leitura") + banner técnico. Fonte ausente ≠ Calmo.
+2. **Confiança** → `confianca=baixa` bloqueia recomendação nos endpoints
+   (`bloqueio_confianca: true`, copy "Não tenho leitura suficiente para recomendar.").
+3. **Exceção crítica** → `detectarExcecoes` real sobre sinais por pedido derivados dos
+   carimbos REAIS da janela (idade na etapa observável; "parado" = sem saída OBSERVADA).
+4. **Pressão por praça** → degraus reais do motor (sev 0..3 → estados CV).
+5. **Tendência** → `copiloto.forecast` real sobre o histórico REAL de fila da área.
+6. **Menor intervenção** → `sugerirMenorIntervencao` real; pausa seletiva antes da geral;
+   `auto_apply` sempre false; decisão humana obrigatória.
+7-9. **Ação acompanhada / recuperação / aprendizado** → engines reais (abaixo).
+
+### Decisão de honestidade central (registrada)
+
+O ISF numérico completo exige complexidade por item e a classificação do cardápio real TATÁ
+**não está fechada** (limitação V0.1). A leitura VIVA usa degraus do motor + carimbos reais —
+nunca carga ponderada inventada. O ISF com complexidade permanece demonstrativo
+(`/api/capacidade-viva/avaliar`, fixtures rotuladas), visível só nos cenários QA/dev.
+
+### Endpoints usados pelo wiring
+
+| Endpoint | Motor real | Uso na superfície |
+|---|---|---|
+| `POST /api/capacidade-viva/leitura` | `detectarExcecoes` + `sugerirMenorIntervencao` sobre degraus do motor | Linha "menor intervenção" no Foco (pausa nunca automática; "Ainda não é necessário pausar." quando cabe) |
+| `GET /api/capacidade-viva/avaliar` (+`ex=`, `when=prep`, `seletiva=0`, `conf=baixa`, equipe) | `CV.avaliar` completo (fixtures) | 20 cenários QA `cv_*` (nota "capacidade viva · demonstração"; ISF só em dev) |
+| `GET /api/capacidade-viva/recuperacao?caso=` | `classificarRecuperacao` real (antes/depois demonstrativos) | Tradução humana nos estados terminais da ação (líquida/parcial/sem/deslocou/insuficiente/não executada) |
+| `POST /api/capacidade-viva/feedback` | `registrarFeedback` | Pills no encerramento da ação (+observação opcional); memória da sessão do servidor |
+| `GET /api/inteligencia/forecast?area&hist` | `copiloto.forecast` | Bloco de previsão no Foco (colapsado por padrão; hist real da fila; confiança separada da gravidade) |
+| `GET /api/inteligencia/action?area&state` | `copiloto.playbooks` + adapter | Ação acompanhada (estado atual + responsável funcional + "há N min") |
+| `GET /api/inteligencia/closing?step&calm` | `shift-closing` + `shift-memory` | Painel de fechamento (resumo/perguntas reais; "Não sei"/"Pular") |
+| `GET /api/inteligencia/voice?q` | `voice-intents` | Resposta da voz (intents reais; ASR segue demo rotulada) |
+| `GET /api/fonte?estado=` | adaptador D4A | Demonstração honesta de degradação (último confiável DATADO) |
+
+### Estados visuais e fallbacks
+
+- **Calmo**: default quando fonte ready + nenhum degrau + nenhuma exceção; organismo completo,
+  sem score, sem lista. CV calcula sem poluir.
+- **Foco**: painel soberano + linha "menor intervenção" (verde; âmbar quando pausa) + previsão
+  recolhida + ação acompanhada com fases e tempo. Painel com `max-height` (rolagem interna).
+- **Técnico (produção)**: "Ainda não estou recebendo dados da operação." + "Acompanhe o fluxo
+  diretamente enquanto a leitura é restabelecida." + "Última leitura às HH:MM." Comando de
+  terminal e motivo técnico só em `?qa=1`/`?dev=1`.
+- **Fallbacks**: toda chamada viva tem cache por chave + fallback (mock rotulado ou
+  "Calculando estimativa do motor…"); indisponibilidade nunca quebra o render.
+- **Configuração do turno**: drawer dev no catálogo QA (contagens por praça + flutuantes,
+  localStorage, sem rastrear pessoas) — alimenta os cenários CV; fora da operação normal.
+
+### Testes
+
+- `tests/live/interface-capacidade-viva.test.js` (novo, 15 testes): ordem de verdade completa
+  (fonte fora de ready sem janela; confiança bloqueia; exceção→intervenção específica; pausa
+  seletiva antes da geral; pausa nunca automática; 6 classes de recuperação com copy; feedback
+  válido/inválido; previsão honesta; 20 cenários QA; microcopy produção×dev).
+- Totais: live **198/198** · copiloto **53/53** · capacidade-viva **17/17** = **268 pass / 0 fail**
+  (antes da 2C: 253).
+
+### Pontos que exigem calibração real (não resolvíveis em código)
+
+1. Classificação de complexidade do cardápio real TATÁ (destrava ISF vivo).
+2. Referências de equipe por praça (8/5–6/3 são provisórias).
+3. Limiar dos estados ISF e janelas de recuperação (5/10–15/20 min).
+4. Aliases Quentes × Cozinha com a operação.
+5. Outcomes reais de intervenções + feedback humano acumulado (hoje: memória da sessão).
+6. Fonte iFood contínua (hoje: janela simulada rotulada / real via `gerar_janela_v1`).

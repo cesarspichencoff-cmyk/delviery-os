@@ -58,13 +58,94 @@ function payloadDaFonte(query) {
   const nome = query.get("cenario") || "foco";
   const cenario = CENARIOS_VOLUME[nome] || nome; // objeto (volume) ou id do catálogo 3A
   const r = executarCenario({ cenario, seed: query.get("seed") || "copiloto-v33", storeTimeZone: TZ });
+  /* ?estado= demonstra degradação HONESTA (mesma semântica do servir_d4a):
+   * o snapshot real do cenário vira "último confiável" datado — nunca janela
+   * atual. Fora de ready a interface mostra o estado técnico, nunca Calmo. */
+  const estadoForcado = query.get("estado");
+  if (estadoForcado && estadoForcado !== "ready") {
+    const forca = {
+      initializing: { inicializando: true, snapshot: null },
+      replaying: { replayStatus: { em_andamento: true, eventos_relidos: 0 } },
+      failed: { erro: new Error("falha_demonstracao"), snapshot: null },
+      stopped: { parada: true, snapshot: null },
+      degraded: { degradedState: "degradacao_demonstracao" },
+      stale: { degradedState: "fonte_atrasada_demonstracao" },
+      disconnected: { degradedState: "conexao_perdida_demonstracao" }
+    }[estadoForcado] || {};
+    return montarPayloadInterface(Object.assign({
+      snapshot: r.snapshot, storeTimeZone: TZ, origem: "simulator",
+      agoraIso: r.snapshot.gerado_em
+    }, forca));
+  }
   return montarPayloadInterface({
     snapshot: r.snapshot, storeTimeZone: TZ, origem: "simulator",
     replayStatus: { em_andamento: false, ultimo: r.replay }, agoraIso: r.snapshot.gerado_em
   });
 }
 
-http.createServer((req, res) => {
+function lerBody(req) {
+  return new Promise((resolve, reject) => {
+    let dados = "";
+    req.on("data", (c) => { dados += c; if (dados.length > 1e6) req.destroy(); });
+    req.on("end", () => resolve(dados));
+    req.on("error", reject);
+  });
+}
+
+/* ---------------------------------------------------------------------------
+ * Fase 2C — Capacidade Viva conectada aos SINAIS REAIS do motor/fonte.
+ * Decisão de honestidade documentada: o ISF completo exige complexidade por
+ * item, e a classificação do cardápio real TATÁ não está fechada (limitação
+ * V0.1). Por isso a leitura VIVA usa os DEGRAUS que o motor já produziu
+ * (sev 0..3 → controlavel/atencao/proximo_limite/acima_capacidade) + exceções
+ * derivadas de carimbos reais — nunca uma carga ponderada inventada. O ISF
+ * numérico com complexidade permanece demonstrativo (/avaliar, fixtures).
+ * ------------------------------------------------------------------------- */
+const ORDEM_ESTADOS_CV = ["controlavel", "atencao", "proximo_limite", "acima_capacidade"];
+const ESTADO_POR_SEV = { 0: "controlavel", 1: "atencao", 2: "proximo_limite", 3: "acima_capacidade" };
+
+const COPY_RECUPERACAO = {
+  recuperacao_liquida: "A praça voltou ao ritmo sem criar nova pressão.",
+  melhora_parcial: "A fila diminuiu, mas ainda exige atenção.",
+  sem_resultado: "A ação não produziu o efeito esperado.",
+  deslocou_problema: "Uma praça melhorou, mas outra começou a pressionar.",
+  dados_insuficientes: "Ainda não há leitura suficiente para avaliar o resultado.",
+  acao_nao_executada: "A ação não chegou a ser executada."
+};
+
+function isfDeDegraus(pracas, confianca) {
+  const por = {};
+  for (const [praca, info] of Object.entries(pracas || {})) {
+    const estado = info.estado || ESTADO_POR_SEV[info.sev] || "controlavel";
+    por[praca] = {
+      praca, estado,
+      isf: null, // sem complexidade de item não existe ISF numérico honesto
+      origem: "degrau_do_motor",
+      n: info.n != null ? info.n : null,
+      not_ranking: true,
+      explanation: praca + ": " + estado.replace(/_/g, " ") + " (degrau do motor)"
+    };
+  }
+  let critica = null;
+  for (const row of Object.values(por)) {
+    if (!critica || ORDEM_ESTADOS_CV.indexOf(row.estado) > ORDEM_ESTADOS_CV.indexOf(critica.estado)) critica = row;
+  }
+  return {
+    schema_version: "0.1-degrau",
+    por_praca: por,
+    praca_critica: critica ? critica.praca : null,
+    estado_geral: critica ? critica.estado : "insufficient",
+    confidence: confianca || "media",
+    insufficient_data: Object.keys(por).length === 0,
+    fonte_isf: "degraus_do_motor_sem_complexidade_de_item",
+    temporal: { tags: [] },
+    not_employee_score: true
+  };
+}
+
+const FEEDBACKS_SESSAO = []; // memória da sessão do servidor — NÃO é persistência de produção
+
+http.createServer(async (req, res) => {
   const [rota, qs] = req.url.split("?");
   const query = new URLSearchParams(qs || "");
   const json = (obj, code) => { res.writeHead(code || 200, { "Content-Type": "application/json" }); res.end(JSON.stringify(obj)); };
@@ -123,30 +204,136 @@ http.createServer((req, res) => {
       const CV = require(path.join(DIR, "src", "capacidade-viva"));
       const demo = require(path.join(DIR, "data", "capacidade-viva", "fixtures", "items-demo.json"));
       const items = (demo.items || []).filter((it) => it.praca === (query.get("praca") || "sushi"));
+      const EX_DEMO = {
+        motoboy: [{ id: "D-1", motoboy_esperando: true, age_min: 12, pronto: true }],
+        comanda: [{ id: "D-4", comanda_ausente: true, age_min: 6 }],
+        alocado: [{ id: "D-3", entregador_alocado_sem_retirada: true, age_min: 9 }],
+        antigo: [{ id: "D-2", age_min: 55 }]
+      };
+      const config = CV.loadDefaultConfig();
+      if (query.get("seletiva") === "0") {
+        config.pausa = Object.assign({}, config.pausa, { seletiva_antes_geral: false });
+      }
       const av = CV.avaliar({
+        config,
         turno: {
           equipe: {
             sushi: Number(query.get("sushi") || 8),
             quentes: Number(query.get("quentes") || 3),
             conferencia: Number(query.get("conferencia") || 5),
-            caixa: 3,
-            cozinha: 2,
-            motoboy: 4,
-            flutuantes: 1
+            caixa: Number(query.get("caixa") || 3),
+            cozinha: Number(query.get("cozinha") || 2),
+            motoboy: Number(query.get("motoboy") || 4),
+            flutuantes: Number(query.get("flutuantes") || 1)
           }
         },
         por_praca: {
-          sushi: { items: items.length ? items : demo.items.filter((i) => i.praca === "sushi") },
+          sushi: { items: items.length ? items : demo.items.filter((i) => i.praca === "sushi"), envelhecimento: Number(query.get("env_sushi") || 0) },
           quentes: { items: demo.items.filter((i) => i.praca === "quentes"), envelhecimento: Number(query.get("env") || 0) },
-          conferencia: { items: demo.items.filter((i) => i.praca === "conferencia") }
+          conferencia: { items: demo.items.filter((i) => i.praca === "conferencia"), envelhecimento: Number(query.get("env_conf") || 0) }
         },
         n_pedidos: Number(query.get("pedidos") || 45),
-        orders: query.get("ex") === "motoboy"
-          ? [{ id: "D-1", motoboy_esperando: true, age_min: 12, pronto: true }]
-          : [],
+        when: query.get("when") === "prep" ? "2026-07-17T18:10:00" : undefined,
+        orders: EX_DEMO[query.get("ex")] || [],
+        praca_congestionada_complexa: query.get("ex") === "complexos" ? "quentes" : undefined,
         confianca: query.get("conf") || "media"
       });
+      // ORDEM DE VERDADE: confiança insuficiente bloqueia recomendação
+      if ((query.get("conf") || "media") === "baixa") {
+        av.intervencao = {
+          action: "observar", label: "Observar",
+          reason: "Não tenho leitura suficiente para recomendar.",
+          bloqueio_confianca: true, confidence: "baixa",
+          auto_apply: false, requires_human_confirmation: true
+        };
+        av.mode_hint = "technical_or_unknown";
+      }
       json({ avaliacao: av, v33: CV.toV33ViewHints(av), simulated_fixtures: true });
+      return;
+    }
+    /* Fase 2C — leitura VIVA: exceções + menor intervenção dos motores REAIS
+     * da Capacidade Viva sobre degraus reais do motor e carimbos reais dos
+     * pedidos (nunca complexidade inventada; ver bloco de honestidade acima). */
+    if (rota === "/api/capacidade-viva/leitura" && req.method === "POST") {
+      const CV = require(path.join(DIR, "src", "capacidade-viva"));
+      const body = JSON.parse((await lerBody(req)) || "{}");
+      const config = CV.loadDefaultConfig();
+      const confianca = body.confianca || "media";
+      const isf = isfDeDegraus(body.pracas, confianca);
+      const excecoes = CV.detectarExcecoes({
+        orders: body.orders || [], config, source: body.source || {}
+      });
+      let intervencao;
+      if (confianca === "baixa") {
+        intervencao = {
+          action: "observar", label: "Observar",
+          reason: "Não tenho leitura suficiente para recomendar.",
+          bloqueio_confianca: true, confidence: "baixa",
+          auto_apply: false, requires_human_confirmation: true
+        };
+      } else {
+        intervencao = CV.sugerirMenorIntervencao({ isf, excecoes, config });
+      }
+      json({
+        isf, excecoes, intervencao,
+        base: "degraus_do_motor + carimbos_reais_dos_pedidos",
+        complexidade_itens: "nao_avaliada_v01"
+      });
+      return;
+    }
+    /* Recuperação Líquida: classificador REAL sobre antes/depois DEMONSTRATIVOS
+     * (não há ISF vivo antes/depois até a calibração do cardápio). */
+    if (rota === "/api/capacidade-viva/recuperacao") {
+      const CV = require(path.join(DIR, "src", "capacidade-viva"));
+      const antes = {
+        praca_critica: "quentes",
+        por_praca: { quentes: { praca: "quentes", estado: "acima_capacidade", isf: 1.4 } },
+        confidence: "media"
+      };
+      const CASOS = {
+        liquida: {
+          after: { praca_critica: "quentes", por_praca: { quentes: { praca: "quentes", estado: "controlavel", isf: 0.5 } }, signals: { fila_parou_crescer: true, erros_nao_aumentaram: true }, confidence: "media" },
+          elapsed: 12
+        },
+        parcial: {
+          after: { praca_critica: "quentes", por_praca: { quentes: { praca: "quentes", estado: "atencao", isf: 0.9 } }, signals: { fila_parou_crescer: true, erros_nao_aumentaram: true }, confidence: "media" },
+          elapsed: 12
+        },
+        sem: {
+          after: { praca_critica: "quentes", por_praca: { quentes: { praca: "quentes", estado: "acima_capacidade", isf: 1.45 } }, signals: {}, confidence: "media" },
+          elapsed: 14
+        },
+        deslocou: {
+          after: { praca_critica: "sushi", por_praca: { quentes: { praca: "quentes", estado: "atencao", isf: 0.8 }, sushi: { praca: "sushi", estado: "acima_capacidade", isf: 1.5 } }, signals: { erros_nao_aumentaram: true }, confidence: "media" },
+          elapsed: 12
+        },
+        insuficiente: { after: { insufficient_data: true, confidence: "baixa" }, elapsed: 8 },
+        nao_executada: { executed: false, after: null, elapsed: 0 }
+      };
+      const c = CASOS[query.get("caso") || "liquida"] || CASOS.liquida;
+      const r = CV.classificarRecuperacao({
+        before: antes, after: c.after,
+        executed: c.executed !== false,
+        elapsed_min: c.elapsed,
+        config: CV.loadDefaultConfig()
+      });
+      json(Object.assign({}, r, {
+        copy: COPY_RECUPERACAO[r.outcome] || r.explanation,
+        simulated_scenario: true,
+        engine: "capacidade-viva.recuperacao"
+      }));
+      return;
+    }
+    /* Feedback humano — memória da sessão, nunca persistência de produção */
+    if (rota === "/api/capacidade-viva/feedback" && req.method === "POST") {
+      const CV = require(path.join(DIR, "src", "capacidade-viva"));
+      const body = JSON.parse((await lerBody(req)) || "{}");
+      const r = CV.registrarFeedback(body);
+      if (r.ok) FEEDBACKS_SESSAO.push(r.feedback);
+      json(Object.assign({}, r, {
+        total_sessao: FEEDBACKS_SESSAO.length,
+        persistence: "memoria_da_sessao_do_servidor"
+      }), r.ok ? 200 : 400);
       return;
     }
     const p = decodeURIComponent(rota);

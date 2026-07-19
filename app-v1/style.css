@@ -454,6 +454,8 @@ body[data-mode="foco"] .stage { background: linear-gradient(180deg, #0D1B13, var
   bottom: clamp(1rem, 3vw, 1.8rem);
   z-index: 7;
   width: min(440px, 88%);
+  max-height: calc(100% - 5.2rem);
+  overflow-y: auto;
   background: linear-gradient(180deg, #13291D, #0E2016);
   border: 1px solid #2C5940;
   border-radius: 16px;
@@ -901,6 +903,138 @@ body[data-mode="foco"] .stage { background: linear-gradient(180deg, #0D1B13, var
   min-height: var(--touch);
 }
 
+/* —— Capacidade Viva conectada (Fase 2C) —— */
+.foco-intervencao {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin: -0.4rem 0 1rem;
+  padding: 0.6rem 0.85rem;
+  border-left: 2px solid var(--verde-deep);
+  background: rgba(140, 198, 63, 0.04);
+  border-radius: 0 8px 8px 0;
+}
+.foco-intervencao.is-pausa { border-left-color: var(--ambar); background: rgba(224, 162, 90, 0.05); }
+.foco-intervencao-rotulo {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.foco-intervencao-txt { font-size: 0.95rem; line-height: 1.4; color: var(--ink-2); }
+.foco-intervencao.is-pausa .foco-intervencao-txt { color: var(--ambar-soft); }
+.foco-recuperacao {
+  margin: 0 0 0.6rem;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 0.98rem;
+  line-height: 1.4;
+  color: #D9E2CE;
+}
+.feedback-box {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0.4rem 0 0.8rem;
+  padding-top: 0.7rem;
+  border-top: 1px dashed var(--line);
+}
+.feedback-rotulo {
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.feedback-row { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.feedback-pill {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--ink-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  padding: 0.5rem 0.8rem;
+  min-height: 38px;
+}
+.feedback-pill:hover { border-color: var(--verde-deep); color: var(--ink); }
+.feedback-obs {
+  font-size: 0.82rem;
+  color: var(--ink-2);
+  background: rgba(12, 24, 17, 0.6);
+  border: 1px dashed var(--line);
+  border-radius: var(--r-sm);
+  padding: 0.5rem 0.7rem;
+}
+.feedback-obrigado { font-size: 0.88rem; color: var(--verde-soft); line-height: 1.4; }
+.cv-nota {
+  position: absolute;
+  left: clamp(1rem, 3vw, 1.6rem);
+  bottom: clamp(1rem, 3vw, 1.8rem);
+  z-index: 6;
+  max-width: min(430px, 60%);
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.85rem 1rem;
+  background: rgba(12, 24, 17, 0.92);
+  border: 1px dashed rgba(126, 148, 120, 0.5);
+  border-radius: var(--r-md);
+}
+.cv-nota-tag {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+}
+.cv-nota-humano {
+  font-family: var(--font-display);
+  font-size: 1.02rem;
+  line-height: 1.35;
+  color: var(--ink);
+}
+.cv-nota-intervencao { font-size: 0.85rem; line-height: 1.4; color: var(--ink-2); }
+.cv-nota-excecao { font-size: 0.85rem; line-height: 1.4; color: var(--ambar-soft); }
+.cv-nota-dev {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: var(--tech);
+  line-height: 1.4;
+}
+.qa-turno {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.qa-turno-titulo {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+  line-height: 1.4;
+}
+.qa-turno-grade {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px 10px;
+}
+.qa-turno-campo { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.qa-turno-rotulo { font-size: 0.72rem; color: var(--ink-3); }
+.qa-turno-campo input {
+  width: 64px;
+  font-size: 0.8rem;
+  color: var(--ink);
+  background: rgba(12, 24, 17, 0.7);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  padding: 6px 8px;
+}
+
 /* —— QA Catalog (dev-only, nunca navegação do produto) —— */
 .qa-catalog {
   position: fixed;
@@ -1012,6 +1146,11 @@ body[data-mode="foco"] .stage { background: linear-gradient(180deg, #0D1B13, var
     width: auto;
     margin: 0.4rem 1rem 0.8rem;
     padding: 1.25rem;
+  }
+  .cv-nota {
+    position: static;
+    max-width: none;
+    margin: 0.6rem 1rem 0;
   }
   .foco-situacao { font-size: 1.4rem; }
   .acao-pill { width: 100%; }
