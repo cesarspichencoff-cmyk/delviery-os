@@ -145,7 +145,7 @@ function isfDeDegraus(pracas, confianca) {
 
 const FEEDBACKS_SESSAO = []; // memória da sessão do servidor — NÃO é persistência de produção
 
-http.createServer(async (req, res) => {
+const servidor = http.createServer(async (req, res) => {
   const [rota, qs] = req.url.split("?");
   const query = new URLSearchParams(qs || "");
   const json = (obj, code) => { res.writeHead(code || 200, { "Content-Type": "application/json" }); res.end(JSON.stringify(obj)); };
@@ -341,7 +341,14 @@ http.createServer(async (req, res) => {
     if (!f.startsWith(DIR)) { res.writeHead(403); res.end("403"); return; }
     fs.readFile(f, (e, d) => {
       if (e) { res.writeHead(404); res.end("404"); return; }
-      res.writeHead(200, { "Content-Type": types[path.extname(f)] || "application/octet-stream" }); res.end(d);
+      // Cache-Control: no-store — arquivo servido em dev muda a cada iteração;
+      // sem isso o navegador pode reter uma versão antiga (app.js/style.css)
+      // e a UI parece "não atualizar" mesmo com o servidor correto no ar.
+      res.writeHead(200, {
+        "Content-Type": types[path.extname(f)] || "application/octet-stream",
+        "Cache-Control": "no-store"
+      });
+      res.end(d);
     });
   } catch (erro) {
     json(montarPayloadInterface({
@@ -349,10 +356,32 @@ http.createServer(async (req, res) => {
       agoraIso: new Date().toISOString()
     }), 500);
   }
-}).listen(PORT, "0.0.0.0", () => {
+});
+
+/* Nunca falhar em silêncio: se a porta já estiver ocupada (ex.: um servidor
+ * órfão de OUTRO worktree/repo ainda rodando), o processo padrão do Node
+ * simplesmente morre sem explicação — e quem abre o navegador continua
+ * vendo o conteúdo antigo do processo antigo, sem nenhum sinal de erro.
+ * Isso já causou confusão real: um `servir_v1.js` de outro checkout ficou
+ * preso na porta 5179 e o app.js atual nunca chegou a ser servido. */
+servidor.on("error", (erro) => {
+  if (erro.code === "EADDRINUSE") {
+    console.error(
+      "\nERRO: porta " + PORT + " já está em uso por outro processo.\n" +
+      "Isso costuma ser um servidor antigo (talvez de outro worktree/repo) ainda rodando.\n" +
+      "Windows:  netstat -ano | findstr :" + PORT + "   (pega o PID)  →  taskkill /PID <pid> /F\n" +
+      "Ou rode noutra porta:  PORT=5199 node tools/servir_v1.js\n"
+    );
+    process.exit(1);
+  }
+  throw erro;
+});
+
+servidor.listen(PORT, "0.0.0.0", () => {
   const sel = selecaoEfetiva();
   const ips = [].concat(...Object.values(os.networkInterfaces())).filter(i => i && i.family === "IPv4" && !i.internal).map(i => i.address);
   console.log("Copiloto V3.3: http://localhost:" + PORT + "/  fonte=" + sel.fonte +
     (sel.fallback ? " (" + sel.fallback + ")" : "") +
     (ips.length ? "  ·  no celular: http://" + ips[0] + ":" + PORT + "/" : ""));
 });
+
