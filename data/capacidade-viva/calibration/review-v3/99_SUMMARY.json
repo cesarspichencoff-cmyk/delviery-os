@@ -1,0 +1,61 @@
+{
+  "version": "2D.5",
+  "n_representativos": 16,
+  "n_limitrofes": 12,
+  "buckets": {
+    "controlavel": 0,
+    "atencao": 8,
+    "critico": 0,
+    "excecao": 8
+  },
+  "dates": [
+    "2026-05-27",
+    "2026-05-28",
+    "2026-05-29",
+    "2026-06-01",
+    "2026-06-02",
+    "2026-06-08",
+    "2026-06-09",
+    "2026-06-15",
+    "2026-06-16",
+    "2026-06-19",
+    "2026-06-20",
+    "2026-06-21",
+    "2026-06-22",
+    "2026-06-23",
+    "2026-06-29",
+    "2026-06-30"
+  ],
+  "dias_semana": [
+    "quarta",
+    "quinta",
+    "sexta",
+    "segunda",
+    "terça",
+    "sábado",
+    "domingo"
+  ],
+  "pracas": [
+    "conferencia",
+    "sushi"
+  ],
+  "types": [
+    "motoboy_na_loja",
+    "entregador_alocado_sem_retirada",
+    "pedido_atrasado_vs_prometido_operacional",
+    "prontos_acumulando"
+  ],
+  "validation": {
+    "ok": true,
+    "errors": [],
+    "n": 16,
+    "dates": 16,
+    "buckets": {
+      "controlavel": 0,
+      "atencao": 8,
+      "critico": 0,
+      "excecao": 8
+    }
+  },
+  "source_episodes": "C:\\Users\\italo\\Desktop\\Claude\\deliveryos-capacidade-viva-calibration\\results\\capacidade-viva\\sane-episodes-2d3-1784446646346\\04b_episodes_full.json"
+}

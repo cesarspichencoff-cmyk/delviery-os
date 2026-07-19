@@ -23,5 +23,6 @@ module.exports = {
   baselines: require("./baselines"),
   intervencaoSane: require("./intervencao-sane"),
   reviewSet: require("./review-set"),
-  reviewV2: require("./review-v2")
+  reviewV2: require("./review-v2"),
+  reviewV3: require("./review-v3")
 };
