@@ -173,40 +173,89 @@ function toMarkdown(review) {
   lines.push("");
   lines.push("**CALIBRAÇÃO · MODO SOMBRA · NÃO OPERACIONAL**");
   lines.push("");
-  lines.push("Instruções: para cada caso, marque a opção que melhor descreve a situação real da operação.");
-  lines.push("Não há resposta “certa” automática — sua leitura calibra o motor.");
+  lines.push("Timezone de referência: **America/Sao_Paulo**.");
   lines.push("");
-  lines.push("Opções: controlável · atenção · crítico · não é possível avaliar · praça correta/incorreta · recomendação adequada/inadequada · observação.");
+  lines.push("Instruções para César / equipe:");
+  lines.push("1. Leia o caso (campos do motor) sem inventar dados ausentes.");
+  lines.push("2. Preencha os campos **Sua avaliação** em cada caso.");
+  lines.push("3. Não há resposta automática “certa” — sua leitura calibra o motor.");
+  lines.push("4. Nenhum dado pessoal de cliente/entregador deve aparecer; se vir, marque e ignore.");
+  lines.push("");
+  lines.push("---");
   lines.push("");
   for (const c of review.cases || []) {
     lines.push(`## ${c.case_id}`);
-    lines.push(`- Data: ${c.data || "—"}`);
-    lines.push(`- Horário local: ${c.horario_local || "—"}`);
-    lines.push(`- Duração (se episódio): ${c.duracao_min != null ? c.duracao_min + " min" : "—"}`);
-    lines.push(`- Pedidos ativos: ${c.pedidos_ativos != null ? c.pedidos_ativos : "—"}`);
-    lines.push(`- Itens com complexidade > simples (proxy): ${c.itens_complexidade != null ? c.itens_complexidade : "—"}`);
-    lines.push(`- Praça provável: ${c.praca_provavel || "—"}`);
-    lines.push(`- Pedidos prontos aguardando (proxy): ${c.pedidos_prontos_aguardando != null ? c.pedidos_prontos_aguardando : "—"}`);
-    lines.push(`- Sinais logísticos: ${(c.sinais_logisticos || []).join(", ") || "—"}`);
-    lines.push(`- Confiança do motor: ${c.confianca || "—"}`);
-    lines.push(`- Classificação do motor: ${c.classificacao_motor || "—"}`);
-    lines.push(`- Intervenção sugerida: ${c.intervencao_sugerida || "—"}`);
-    lines.push(`- Dados ausentes: ${(c.dados_ausentes || []).join(", ") || "—"}`);
-    lines.push(`- Sua avaliação: _______________`);
+    lines.push("");
+    lines.push("### Contexto (motor — somente leitura)");
+    lines.push(`- Número do caso: ${c.case_id}`);
+    lines.push(`- Data: ${fmt(c.data)}`);
+    lines.push(`- Horário local (America/Sao_Paulo): ${fmt(c.horario_local)}`);
+    lines.push(`- Duração do episódio (min): ${fmtNum(c.duracao_min)}`);
+    lines.push(`- Praça provável: ${fmt(c.praca_provavel)}`);
+    lines.push(`- Volume de pedidos (ativos no tick): ${fmtNum(c.pedidos_ativos)}`);
+    lines.push(`- Quantidade de itens (proxy complexidade > simples): ${fmtNum(c.itens_complexidade)}`);
+    lines.push(`- Complexidade (proxy): ${fmt(c.complexidade || c.itens_complexidade)}`);
+    lines.push(`- Pedido mais antigo: ${fmt(c.pedido_mais_antigo)}`);
+    lines.push(`- Pedidos prontos aguardando: ${fmtNum(c.pedidos_prontos_aguardando)}`);
+    lines.push(`- Sinal logístico: ${fmtList(c.sinais_logisticos)}`);
+    lines.push(`- Confiança do motor: ${fmt(c.confianca)}`);
+    lines.push(`- Classificação do motor: ${fmt(c.classificacao_motor)}`);
+    lines.push(`- Ação sugerida (sombra): ${fmt(c.intervencao_sugerida)}`);
+    lines.push(`- Dados ausentes: ${fmtList(c.dados_ausentes)}`);
+    lines.push(`- Bucket de amostragem: ${fmt(c.bucket_esperado_motor)}`);
+    lines.push("");
+    lines.push("### Sua avaliação (preencher)");
+    lines.push("- Estado real: [ ] controlável  [ ] atenção  [ ] crítico  [ ] impossível avaliar");
+    lines.push("- Praça correta: [ ] sim  [ ] não  [ ] outra: _______________");
+    lines.push("- Recomendação adequada: [ ] sim  [ ] parcialmente  [ ] não");
+    lines.push("- O que você faria: _______________________________________________");
+    lines.push("- Observação: ___________________________________________________");
     lines.push("");
   }
+
+  lines.push("---");
+  lines.push("");
   lines.push("# Itens pendentes de validação (cardápio)");
   lines.push("");
-  for (const it of review.itens_pendentes || []) {
-    lines.push(`## ${it.nome}`);
-    lines.push(`- Praça sugerida: ${it.praca_sugerida || "—"}`);
-    lines.push(`- Complexidade sugerida: ${it.complexidade_sugerida || "—"}`);
-    lines.push(`- Evidência: ${it.evidencia || "—"}`);
-    lines.push(`- Confiança: ${it.confianca || "—"}`);
-    lines.push(`- Correção: confirmar / corrigir praça / corrigir complexidade / indefinido`);
+  lines.push("Classificação automática com confiança baixa — confirmar ou corrigir.");
+  lines.push("");
+  const pending = review.itens_pendentes || [];
+  lines.push(`Total: **${pending.length}** itens.`);
+  lines.push("");
+  pending.forEach((it, i) => {
+    lines.push(`## Item ${i + 1}: ${it.nome}`);
+    lines.push(`- Nome: ${fmt(it.nome)}`);
+    lines.push(`- Praça sugerida: ${fmt(it.praca_sugerida)}`);
+    lines.push(`- Complexidade sugerida: ${fmt(it.complexidade_sugerida)}`);
+    lines.push(`- Evidências: ${fmt(it.evidencia)}`);
+    lines.push(`- Confiança: ${fmt(it.confianca)}`);
     lines.push("");
-  }
+    lines.push("### Correção (preencher)");
+    lines.push("- [ ] confirmar");
+    lines.push("- [ ] corrigir praça → _______________");
+    lines.push("- [ ] corrigir complexidade → _______________");
+    lines.push("- [ ] marcar indefinido");
+    lines.push("- Observação: ___________________________________________________");
+    lines.push("");
+  });
   return lines.join("\n");
+}
+
+function fmt(v) {
+  if (v == null || v === "") return "—";
+  return String(v);
+}
+
+function fmtNum(v) {
+  if (v == null || v === "") return "—";
+  if (typeof v === "number" && !Number.isFinite(v)) return "—";
+  return String(v);
+}
+
+function fmtList(v) {
+  if (v == null) return "—";
+  if (Array.isArray(v)) return v.length ? v.join(", ") : "—";
+  return String(v);
 }
 
 module.exports = { buildReviewCases, toMarkdown };

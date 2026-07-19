@@ -247,7 +247,16 @@ function replayOrders(byOrder, opts) {
     }
   }
 
-  const episodes = buildEpisodes(ticks, { gap_min: o.episode_gap_min || 10 });
+  const gapMin =
+    (o.episode_gap_min != null
+      ? o.episode_gap_min
+      : config.episode && config.episode.gap_min != null
+        ? config.episode.gap_min
+        : 10) || 10;
+  const episodes = buildEpisodes(ticks, {
+    gap_min: gapMin,
+    interval_min: intervalMin
+  });
   const elapsed_ms = Date.now() - t0run;
 
   // métricas corrigidas
@@ -295,8 +304,15 @@ function replayOrders(byOrder, opts) {
       n_episodios_criticos: episodes.n_critical_episodes,
       n_episodios_atencao: episodes.n_attention_episodes,
       duracao_media_min: episodes.duration_avg_min,
+      duracao_mediana_min: episodes.duration_median_min,
+      duracao_p90_min: episodes.duration_p90_min,
       duracao_max_min: episodes.duration_max_min,
       pedidos_unicos_afetados: episodes.unique_orders_affected,
+      episodios_sem_pedido: episodes.episodes_without_order_id,
+      episodios_resolvidos: episodes.episodes_resolved,
+      episodios_abertos_fim_janela: episodes.episodes_open_at_end,
+      episodios_por_praca: episodes.by_praca,
+      episodios_por_tipo: episodes.by_type,
       pausas_seletivas_ticks: pauseSel,
       pausas_gerais_ticks: pauseGen,
       confianca_media_proxy: confN ? round3(confSum / confN) : null,

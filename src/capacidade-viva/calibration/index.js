@@ -15,6 +15,9 @@ module.exports = {
   timezone: require("./timezone"),
   taxonomy: require("./taxonomy"),
   episodes: require("./episodes"),
+  // re-exports for tooling
+  aggregateEpisodeMetrics: require("./episodes").aggregateEpisodeMetrics,
+  reaggregateFromSerialized: require("./episodes").reaggregateFromSerialized,
   sensitivity: require("./sensitivity"),
   baselines: require("./baselines"),
   intervencaoSane: require("./intervencao-sane"),

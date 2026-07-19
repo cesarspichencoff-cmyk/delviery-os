@@ -136,6 +136,131 @@ test("dedup e resolução", () => {
   assert.ok(ep.episodes[0].resolved_at);
 });
 
+test("duração média/mediana/p90/máximo", () => {
+  const base = Date.parse("2026-06-20T20:00:00.000Z");
+  // 3 ticks contínuos (0,5,10 min) → 1 episódio duração 10
+  const ticks = [0, 5, 10].map((m) => ({
+    t_ms: base + m * 60000,
+    local_iso: new Date(base + m * 60000).toISOString(),
+    active_orders: 4,
+    tick_class: {
+      has_critical: true,
+      critical_items: [{ type: "motoboy_na_loja", order_id: "A", explanation: "e" }]
+    }
+  }));
+  // segundo episódio isolado duração 0
+  ticks.push({
+    t_ms: base + 40 * 60000,
+    local_iso: new Date(base + 40 * 60000).toISOString(),
+    active_orders: 2,
+    tick_class: {
+      has_critical: true,
+      critical_items: [{ type: "motoboy_na_loja", order_id: "B", explanation: "e" }]
+    }
+  });
+  const ep = Cal.episodes.buildEpisodes(ticks, { gap_min: 10, interval_min: 5 });
+  assert.ok(ep.duration_avg_min != null);
+  assert.ok(ep.duration_median_min != null);
+  assert.ok(ep.duration_p90_min != null);
+  assert.ok(ep.duration_max_min != null);
+  assert.strictEqual(ep.duration_max_min, 10);
+  assert.ok(ep.duration_avg_min > 0);
+});
+
+test("pedido único e episódio sem order_id", () => {
+  const base = Date.parse("2026-06-20T20:00:00.000Z");
+  const ticks = [
+    {
+      t_ms: base,
+      local_iso: "t0",
+      active_orders: 1,
+      tick_class: {
+        has_critical: true,
+        critical_items: [{ type: "motoboy_na_loja", order_id: "O1", explanation: "e" }]
+      }
+    },
+    {
+      t_ms: base + 5 * 60000,
+      local_iso: "t1",
+      active_orders: 3,
+      praca_critica: "sushi",
+      tick_class: {
+        has_critical: false,
+        has_attention: true,
+        attention_items: [{ type: "prontos_acumulando", explanation: "e" }]
+      }
+    }
+  ];
+  const ep = Cal.episodes.buildEpisodes(ticks, { gap_min: 10, interval_min: 5 });
+  assert.ok(ep.unique_orders_affected >= 1);
+  assert.ok(ep.episodes_without_order_id >= 1);
+  assert.ok(Array.isArray(ep.episodes[0].order_ids));
+});
+
+test("episódio aberto no fim da janela", () => {
+  const base = Date.parse("2026-06-20T20:00:00.000Z");
+  const ticks = [
+    {
+      t_ms: base,
+      local_iso: "t0",
+      tick_class: {
+        has_critical: true,
+        critical_items: [{ type: "motoboy_na_loja", order_id: "Z", explanation: "e" }]
+      }
+    }
+  ];
+  const ep = Cal.episodes.buildEpisodes(ticks, { gap_min: 10 });
+  assert.strictEqual(ep.episodes_open_at_end, 1);
+  assert.strictEqual(ep.episodes_resolved, 0);
+  assert.strictEqual(ep.episodes[0].resolved_at, null);
+  assert.strictEqual(ep.episodes[0].open_at_window_end, true);
+});
+
+test("serialização Set/order_ids e reaggregate", () => {
+  const base = Date.parse("2026-06-20T20:00:00.000Z");
+  const ticks = [0, 5, 10].map((m) => ({
+    t_ms: base + m * 60000,
+    local_iso: new Date(base + m * 60000).toISOString(),
+    tick_class: {
+      has_critical: true,
+      critical_items: [{ type: "motoboy_na_loja", order_id: "S1", explanation: "e" }]
+    }
+  }));
+  const ep = Cal.episodes.buildEpisodes(ticks, { gap_min: 10, interval_min: 5 });
+  const json = JSON.parse(JSON.stringify(ep));
+  assert.ok(Array.isArray(json.episodes[0].order_ids));
+  assert.ok(!json.episodes[0].order_ids || typeof json.episodes[0].order_ids.length === "number");
+  const again = Cal.episodes.reaggregateFromSerialized(json.episodes);
+  assert.strictEqual(again.unique_orders_affected, 1);
+  assert.ok(again.duration_max_min === 10 || again.duration_max_min === 10.0);
+});
+
+test("ausência de duração é null, nunca zero enganoso", () => {
+  const metrics = Cal.episodes.aggregateEpisodeMetrics([
+    { level: "atencao", type: "x", order_ids: [], duration_min: null, open_at_window_end: true }
+  ]);
+  assert.strictEqual(metrics.duration_avg_min, null);
+  assert.strictEqual(metrics.duration_median_min, null);
+  assert.strictEqual(metrics.duration_p90_min, null);
+  assert.strictEqual(metrics.duration_max_min, null);
+  assert.strictEqual(metrics.unique_orders_affected, 0); // zero aqui é contagem real
+});
+
+test("order_id propagado pela taxonomia no classifyTick", () => {
+  const tick = Cal.taxonomy.classifyTick(
+    [
+      {
+        order_id: "PED-9",
+        level: "excecao_critica",
+        exceptions: [{ type: "motoboy_na_loja", explanation: "e", confidence: "alta" }]
+      }
+    ],
+    {}
+  );
+  assert.ok(tick.critical_items.length);
+  assert.strictEqual(tick.critical_items[0].order_id, "PED-9");
+});
+
 console.log("=== pausa gates ===");
 test("pausa seletiva requer tendência", () => {
   const iv = Cal.intervencaoSane.sugerirMenorIntervencaoSane({

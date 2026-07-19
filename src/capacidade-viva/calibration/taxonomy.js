@@ -180,10 +180,23 @@ function classifyTick(orderClassifications, isfSnapshot, opts) {
   for (const c of list) {
     if (c.level === "excecao_critica") {
       n_critical++;
-      critical_items.push(...(c.exceptions || []));
+      // propaga order_id do pedido para cada exceção (não altera classificação)
+      for (const ex of c.exceptions || []) {
+        critical_items.push(
+          Object.assign({}, ex, {
+            order_id: ex.order_id || c.order_id || null
+          })
+        );
+      }
     } else if (c.level === "atencao") {
       n_attention++;
-      attention_items.push(...(c.attentions || []));
+      for (const at of c.attentions || []) {
+        attention_items.push(
+          Object.assign({}, at, {
+            order_id: at.order_id || c.order_id || null
+          })
+        );
+      }
     } else if (c.level === "sinal") n_signal++;
   }
 
