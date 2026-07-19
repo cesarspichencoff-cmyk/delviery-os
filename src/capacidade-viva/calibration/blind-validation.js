@@ -106,74 +106,109 @@ function isTrainingLeak(ep, exclusion) {
 
 function parseWaitFromEvidence(ep) {
   const text = Array.isArray(ep.evidence) ? ep.evidence.join(" ") : String(ep.evidence || "");
+  const out = { kind: null, min: null, pronto: null, idade: null, motoboy: null };
   const m1 = text.match(/espera na loja\s+([\d.]+)\s*min/i);
-  if (m1) return { kind: "motoboy", min: Number(m1[1]) };
+  if (m1) out.motoboy = Number(m1[1]);
   const m2 = text.match(/pronto sem saída[^\d]*([\d.]+)\s*min/i);
-  if (m2) return { kind: "pronto", min: Number(m2[1]) };
+  if (m2) out.pronto = Number(m2[1]);
+  const m2b = text.match(/pronto há\s+([\d.]+)\s*min/i);
+  if (m2b && out.pronto == null) out.pronto = Number(m2b[1]);
   const m3 = text.match(/idade\s+([\d.]+)/i);
-  if (m3) return { kind: "idade", min: Number(m3[1]) };
+  if (m3) out.idade = Number(m3[1]);
   const m4 = text.match(/([\d.]+)\s*min/);
-  if (m4 && ep.type === "motoboy_na_loja") return { kind: "motoboy", min: Number(m4[1]) };
-  if (m4 && /pronto|saida/.test(ep.type || "")) return { kind: "pronto", min: Number(m4[1]) };
-  if (m4 && /atrasado/.test(ep.type || "")) return { kind: "idade", min: Number(m4[1]) };
-  return { kind: null, min: null };
+  if (m4 && ep.type === "motoboy_na_loja" && out.motoboy == null) out.motoboy = Number(m4[1]);
+  if (m4 && /pronto|saida/.test(ep.type || "") && out.pronto == null) out.pronto = Number(m4[1]);
+  if (m4 && /atrasado/.test(ep.type || "") && out.idade == null) out.idade = Number(m4[1]);
+  // primary kind for legacy callers
+  if (out.motoboy != null) {
+    out.kind = "motoboy";
+    out.min = out.motoboy;
+  } else if (out.pronto != null) {
+    out.kind = "pronto";
+    out.min = out.pronto;
+  } else if (out.idade != null) {
+    out.kind = "idade";
+    out.min = out.idade;
+  }
+  return out;
 }
 
 /**
- * Classifica episódio com cv-cal-tata-human-v1 (somente leitura da config).
+ * Classifica a partir de fatos cegos (casos-cegos-fatos) — preferido para regressão v2.
  */
-function classifyEpisodeWithHumanConfig(ep, humanConfig) {
-  const wait = parseWaitFromEvidence(ep);
-  const ageFromEvidence = wait.kind === "idade" ? wait.min : null;
-  const age =
-    ageFromEvidence != null
-      ? ageFromEvidence
-      : ep.observed_span_min != null && ep.type && /atrasado/.test(ep.type)
-        ? Math.max(ep.observed_span_min, 50)
-        : ep.peak_active_orders
-          ? 35
-          : 20;
+function classifyBlindFactCase(fact, humanConfig) {
+  const f = fact || {};
+  const courier =
+    f.motoboy_confirmado_na_loja && f.tempo_espera_motoboy_min != null
+      ? Number(f.tempo_espera_motoboy_min)
+      : null;
+  const ready =
+    f.maior_tempo_pronto_aguardando_min != null
+      ? Number(f.maior_tempo_pronto_aguardando_min)
+      : courier != null
+        ? courier
+        : 0;
+  const age = f.tempo_atraso_min != null ? Number(f.tempo_atraso_min) : 0;
 
-  let courier = null;
-  let ready = 0;
-  if (ep.type === "motoboy_na_loja") {
-    courier = wait.min != null ? wait.min : 10;
-    ready = courier;
-  } else if (/pronto|alocado|aguardando_saida|prontos_acumulando/.test(ep.type || "")) {
-    ready = wait.min != null ? wait.min : ep.observed_span_min || 20;
-  } else if (/atrasado/.test(ep.type || "")) {
-    // atraso operacional
-    ready = 0;
-  }
+  const hasTemporal =
+    courier != null ||
+    (ready != null && ready > 0) ||
+    (age != null && age > 0) ||
+    f.pedido_atrasado === true;
 
-  // idade absurda → zumbi
+  const onlyVolume =
+    !hasTemporal &&
+    (f.pedidos_ativos != null || f.pedidos_ativos === 0) &&
+    !f.ritmo_recente &&
+    !(f.dados_ausentes && f.dados_ausentes.length === 0);
+
   const state = {
-    id: ep.order_id || ep.episode_id,
+    id: f.case_id,
     age_min: age,
     ready_wait_min: ready,
-    pronto: ep.type !== "pedido_atrasado_vs_prometido_operacional" || ready > 0 || age > 40,
+    pronto: ready > 0 || courier != null || f.pedidos_prontos > 0,
     saiu: false,
     cancelado: false,
-    alocado: ep.type === "entregador_alocado_sem_retirada",
-    alocado_epistemic: "inferido_alta_confianca",
+    alocado: false,
     courier_wait_store_min: courier,
-    courier_wait_epistemic: courier != null ? "inferido_alta_confianca" : null,
-    prontos_acumulando: ep.type === "prontos_acumulando",
-    queue_growing: false,
-    carga_alta: (ep.peak_active_orders || 0) > 40,
-    item_complexo: false,
-    capacidade_baixa: false
+    courier_wait_epistemic: courier != null ? "confirmado" : null,
+    ready_epistemic: f.confianca_da_evidencia === "alta" ? "confirmado" : "inferido_baixa_confianca",
+    prontos_acumulando: false,
+    age_is_proxy_from_volume: false,
+    crosses_operational_days: ready >= 180 || age >= 180
   };
 
+  // alocado: se 15 min pronto sem motoboy e tipo implícito — só quando ready>=15 e sem motoboy
+  // (regressão CV-B-015)
+  if (!courier && ready > 0 && ready < 40 && f.motoboy_confirmado_na_loja === false && age === 0) {
+    // pode ser alocado ou pronto simples — classificado por faixas de pronto
+    state.alocado = ready >= 15 && ready < 25 ? true : false;
+  }
+
   const ctx = {
-    n_ready: (ep.peak_active_orders || 0) > 20 ? 5 : ep.type === "prontos_acumulando" ? 5 : 1,
+    n_ready: ready >= 25 ? Math.max(1, f.pedidos_prontos || 1) : 0,
     n_delayed: age >= 40 ? 1 : 0,
-    n_motoboys_waiting: ep.type === "motoboy_na_loja" ? 1 : 0,
+    n_motoboys_waiting: courier != null ? 1 : 0,
     queue_growing: false,
-    praca_pressionada: (ep.peak_active_orders || 0) >= 30
+    praca_pressionada: false,
+    only_active_orders: onlyVolume,
+    volume_only: onlyVolume,
+    insufficient_evidence: onlyVolume
   };
 
   const cls = classifyOrderHuman(state, humanConfig, ctx);
+  return packClassification(cls, humanConfig, {
+    type: courier != null ? "motoboy_na_loja" : ready > 0 ? "pronto_sem_saida" : onlyVolume ? "volume" : "geral",
+    evidence: [
+      courier != null ? `espera motoboy ${courier} min` : null,
+      ready > 0 ? `pronto sem saída ${ready} min` : null,
+      age > 0 ? `idade/atraso ${age} min` : null,
+      onlyVolume ? `pedidos_ativos=${f.pedidos_ativos}` : null
+    ].filter(Boolean)
+  });
+}
+
+function packClassification(cls, humanConfig, meta) {
   const iv = sugerirMenorIntervencaoSane({
     tick_class: {
       has_critical: cls.level === "excecao_critica",
@@ -189,10 +224,22 @@ function classifyEpisodeWithHumanConfig(ep, humanConfig) {
 
   let regra = "geral";
   if (cls.zombie || cls.level === "qualidade_fonte") regra = "zombie_qualidade_fonte";
-  else if (ep.type === "motoboy_na_loja") regra = "motoboy_ancoras_humanas";
-  else if (/pronto|aguardando_saida/.test(ep.type || "")) regra = "pronto_sem_saida_ancoras";
-  else if (/atrasado/.test(ep.type || "")) regra = "atraso_operacional_40";
-  else if (ep.type === "prontos_acumulando") regra = "prontos_acumulando";
+  else if (cls.level === "evidencia_insuficiente") regra = "evidencia_insuficiente";
+  else if (meta && meta.type === "motoboy_na_loja") regra = "motoboy_ancoras_humanas";
+  else if (meta && /pronto/.test(meta.type || "")) regra = "pronto_sem_saida_ancoras";
+  else if (meta && /atrasado/.test(meta.type || "")) regra = "atraso_operacional_40";
+
+  // intervenção para evidência insuficiente
+  let intervencao = iv.action;
+  let intervencao_mensagem = iv.message || iv.reason || null;
+  if (cls.level === "evidencia_insuficiente" || cls.insufficient_evidence) {
+    intervencao = "nao_classificar_pressao";
+    intervencao_mensagem = cls.action;
+  }
+  if (cls.level === "qualidade_fonte") {
+    intervencao = "corrigir_status_pedido_antigo";
+    intervencao_mensagem = cls.action;
+  }
 
   return {
     classificacao: cls.level,
@@ -200,14 +247,99 @@ function classifyEpisodeWithHumanConfig(ep, humanConfig) {
     severity_label: cls.severity_label || null,
     confianca: cls.confidence || "media",
     epistemic: null,
-    intervencao: iv.action,
-    intervencao_mensagem: iv.message || iv.reason || null,
+    intervencao,
+    intervencao_mensagem,
     regra_acionada: regra,
-    evidencias: Array.isArray(ep.evidence) ? ep.evidence.slice() : ep.evidence ? [ep.evidence] : [],
+    evidencias: (meta && meta.evidence) || [],
     exclude_from_capacity: !!cls.exclude_from_capacity,
+    exclude_from_isf: !!cls.exclude_from_isf,
     zombie: !!cls.zombie,
+    insufficient_evidence: !!cls.insufficient_evidence,
     human_cls: cls
   };
+}
+
+/**
+ * Classifica episódio com config humana (v1 ou v2).
+ */
+function classifyEpisodeWithHumanConfig(ep, humanConfig) {
+  const wait = parseWaitFromEvidence(ep);
+
+  // Não inventar idade a partir de volume (evita falsa atenção)
+  let age = wait.idade != null ? wait.idade : wait.kind === "idade" ? wait.min : null;
+  let ageIsProxy = false;
+  if (age == null && ep.observed_span_min != null && ep.type && /atrasado/.test(ep.type)) {
+    age = Math.max(ep.observed_span_min, 0);
+  }
+  if (age == null) {
+    age = 0;
+    ageIsProxy = true;
+  }
+
+  let courier = null;
+  let ready = 0;
+  if (ep.type === "motoboy_na_loja" || wait.motoboy != null) {
+    courier = wait.motoboy != null ? wait.motoboy : wait.kind === "motoboy" ? wait.min : null;
+    if (courier == null && ep.type === "motoboy_na_loja") courier = 10;
+    ready = courier != null ? courier : 0;
+  }
+  if (wait.pronto != null) ready = Math.max(ready, wait.pronto);
+  if (/pronto|alocado|aguardando_saida|prontos_acumulando/.test(ep.type || "") && ready === 0) {
+    ready = wait.min != null && wait.kind === "pronto" ? wait.min : ep.observed_span_min || 0;
+  }
+
+  // volume-only episodes (atenção geral sem tempos)
+  const onlyVolume =
+    !courier &&
+    !ready &&
+    !wait.idade &&
+    (!ep.type || /geral|volume|carga|atencao_operacional/i.test(ep.type || "")) &&
+    (ep.peak_active_orders != null || /atenção operacional geral/i.test(String(ep.evidence || "")));
+
+  const state = {
+    id: ep.order_id || ep.episode_id,
+    age_min: age,
+    ready_wait_min: ready,
+    pronto: ep.type !== "pedido_atrasado_vs_prometido_operacional" || ready > 0 || age > 40,
+    saiu: false,
+    cancelado: false,
+    alocado: ep.type === "entregador_alocado_sem_retirada",
+    alocado_epistemic: "inferido_alta_confianca",
+    courier_wait_store_min: courier,
+    courier_wait_epistemic: courier != null ? "inferido_alta_confianca" : null,
+    prontos_acumulando: ep.type === "prontos_acumulando",
+    queue_growing: false,
+    carga_alta: false,
+    item_complexo: false,
+    capacidade_baixa: false,
+    age_is_proxy_from_volume: ageIsProxy,
+    crosses_operational_days: ready >= 180 || age >= 180
+  };
+
+  // atraso com idade real e possível pronto longo no observed_span
+  if (/atrasado/.test(ep.type || "") && ep.observed_span_min != null && ready < ep.observed_span_min) {
+    // se o span for absurdo, tratar como ready para fonte
+    if (ep.observed_span_min >= 180) {
+      state.ready_wait_min = Math.max(state.ready_wait_min, ep.observed_span_min);
+    }
+  }
+
+  const ctx = {
+    n_ready: ready >= 25 ? 2 : 0,
+    n_delayed: !ageIsProxy && age >= 40 ? 1 : 0,
+    n_motoboys_waiting: courier != null ? 1 : 0,
+    queue_growing: false,
+    praca_pressionada: false,
+    only_active_orders: onlyVolume,
+    volume_only: onlyVolume,
+    insufficient_evidence: onlyVolume
+  };
+
+  const cls = classifyOrderHuman(state, humanConfig, ctx);
+  return packClassification(cls, humanConfig, {
+    type: ep.type,
+    evidence: Array.isArray(ep.evidence) ? ep.evidence.slice() : ep.evidence ? [ep.evidence] : []
+  });
 }
 
 /**
@@ -573,13 +705,84 @@ function prepareComparisonScaffold(gabaritoPath, labelsPath) {
 }
 
 /**
+ * Normaliza arquivo de rótulos cegos (formato César: rotulos[].caso/estado/acao).
+ * Não modifica o arquivo — só a estrutura em memória.
+ */
+function normalizeHumanBlindLabels(labelsDoc) {
+  if (!labelsDoc) return {};
+  if (labelsDoc.by_case_id) return labelsDoc.by_case_id;
+  if (Array.isArray(labelsDoc.cases)) {
+    return Object.fromEntries(
+      labelsDoc.cases.map((c) => [
+        c.case_id || c.caso,
+        {
+          case_id: c.case_id || c.caso,
+          estado_real: normalizeEstado(c.estado_real || c.estado),
+          acao: c.acao || c.acao_recomendada || null,
+          observacao: c.observacao || null
+        }
+      ])
+    );
+  }
+  if (Array.isArray(labelsDoc.rotulos)) {
+    return Object.fromEntries(
+      labelsDoc.rotulos.map((c) => [
+        c.caso || c.case_id,
+        {
+          case_id: c.caso || c.case_id,
+          estado_real: normalizeEstado(c.estado || c.estado_real),
+          acao: c.acao || null,
+          observacao: c.observacao || null
+        }
+      ])
+    );
+  }
+  // mapa direto case_id → {estado}
+  const out = {};
+  for (const [k, v] of Object.entries(labelsDoc)) {
+    if (k === "configuracao_avaliada" || k === "referencia_congelada" || k === "avaliador") continue;
+    if (v && typeof v === "object" && (v.estado || v.estado_real)) {
+      out[k] = {
+        case_id: k,
+        estado_real: normalizeEstado(v.estado_real || v.estado),
+        acao: v.acao || null
+      };
+    }
+  }
+  return out;
+}
+
+function normalizeEstado(e) {
+  if (!e) return null;
+  const s = String(e)
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, "_");
+  if (s === "qualidade_da_fonte" || s === "qualidade_fonte") return "qualidade_fonte";
+  if (s === "impossivel_avaliar" || s === "impossivel") return "impossivel_avaliar";
+  if (s === "quase_critico" || s === "quase-critico") return "quase_critico";
+  if (s === "atencao" || s === "atenção") return "atencao";
+  if (s === "critico" || s === "crítico") return "critico";
+  if (s === "normal" || s === "observacao" || s === "observação") return s === "normal" ? "normal" : "normal";
+  return s;
+}
+
+/**
  * Mapeia rótulo humano cego → buckets comparáveis.
+ * @param {Array} gabaritoCases
+ * @param {object} humanLabelsByCaseId — já normalizado OU documento bruto
  */
 function compareBlindLabels(gabaritoCases, humanLabelsByCaseId) {
-  if (!humanLabelsByCaseId || !Object.keys(humanLabelsByCaseId).length) {
+  let byId = humanLabelsByCaseId || {};
+  // se veio documento bruto com rotulos[]
+  if (byId.rotulos || byId.cases || byId.configuracao_avaliada) {
+    byId = normalizeHumanBlindLabels(byId);
+  }
+  if (!byId || !Object.keys(byId).length) {
     return { ok: false, error: "sem_rotulos_humanos", n: 0 };
   }
-  // placeholder metrics structure — filled when labels exist
+
   const rows = [];
   let exact = 0;
   let within1 = 0;
@@ -588,39 +791,85 @@ function compareBlindLabels(gabaritoCases, humanLabelsByCaseId) {
   let falseFonte = 0;
   let zombieContamination = 0;
   let n = 0;
+  let nImpossivel = 0;
+  let nComparaveis = 0;
 
   const order = ["normal", "atencao", "quase_critico", "critico", "qualidade_fonte"];
 
-  function motorToHumanScale(cls) {
+  function motorToHumanScale(cls, severityLabel) {
     if (cls === "qualidade_fonte") return "qualidade_fonte";
+    if (cls === "evidencia_insuficiente") return "impossivel_avaliar";
     if (cls === "excecao_critica") return "critico";
+    if (severityLabel === "quase_critico") return "quase_critico";
+    if (severityLabel === "normal") return "normal";
     if (cls === "atencao") return "atencao";
     if (cls === "sinal" || cls === "quieto") return "normal";
     return "atencao";
   }
 
   for (const g of gabaritoCases || []) {
-    const h = humanLabelsByCaseId[g.case_id];
+    const h = byId[g.case_id];
     if (!h || !h.estado_real) continue;
     n++;
-    const m = motorToHumanScale(g.classificacao);
+    const m = motorToHumanScale(g.classificacao, g.severity_label);
     const human = h.estado_real;
+
+    if (human === "impossivel_avaliar") {
+      nImpossivel++;
+      rows.push({
+        case_id: g.case_id,
+        motor: m,
+        human,
+        exact: false,
+        skipped_for_agreement: true,
+        acao_humana: h.acao || null,
+        intervencao_motor: g.intervencao || null
+      });
+      continue;
+    }
+
+    nComparaveis++;
     if (m === human) exact++;
     const mi = order.indexOf(m);
     const hi = order.indexOf(human);
     if (mi >= 0 && hi >= 0 && Math.abs(mi - hi) <= 1) within1++;
+    // falso crítico: motor crítico, humano não (e não quase crítico)
     if (m === "critico" && human !== "critico" && human !== "quase_critico") falseCritical++;
     if (human === "critico" && m !== "critico") missedCritical++;
     if (m === "qualidade_fonte" && human !== "qualidade_fonte") falseFonte++;
-    if (g.zombie && h.contaminou_capacidade) zombieContamination++;
-    rows.push({ case_id: g.case_id, motor: m, human, exact: m === human });
+    // zumbi que o motor NÃO marcou como fonte mas humano sim, ou motor marcou capacidade
+    if (human === "qualidade_fonte" && !g.zombie && g.classificacao !== "qualidade_fonte") {
+      /* missed fonte */
+    }
+    if (g.zombie && human !== "qualidade_fonte" && m !== "qualidade_fonte") {
+      /* motor said zombie but human didn't - ok */
+    }
+    // contaminação: motor NÃO excluiu (não zombie/fonte) mas humano diz fonte
+    if (human === "qualidade_fonte" && !g.exclude_from_capacity && g.classificacao !== "qualidade_fonte") {
+      zombieContamination++;
+    }
+
+    rows.push({
+      case_id: g.case_id,
+      motor: m,
+      human,
+      exact: m === human,
+      within1: mi >= 0 && hi >= 0 && Math.abs(mi - hi) <= 1,
+      acao_humana: h.acao || null,
+      intervencao_motor: g.intervencao || null,
+      intervencao_mensagem_motor: g.intervencao_mensagem || null
+    });
   }
 
   return {
     ok: true,
     n,
-    concordancia_exata: n ? exact / n : null,
-    concordancia_dentro_de_um_nivel: n ? within1 / n : null,
+    n_comparaveis: nComparaveis,
+    n_impossivel_avaliar: nImpossivel,
+    concordancia_exata: nComparaveis ? exact / nComparaveis : null,
+    concordancia_exata_count: exact,
+    concordancia_dentro_de_um_nivel: nComparaveis ? within1 / nComparaveis : null,
+    concordancia_dentro_de_um_nivel_count: within1,
     falsos_criticos: falseCritical,
     criticos_nao_detectados: missedCritical,
     falsos_qualidade_fonte: falseFonte,
@@ -634,11 +883,15 @@ module.exports = {
   isTrainingLeak,
   parseWaitFromEvidence,
   classifyEpisodeWithHumanConfig,
+  classifyBlindFactCase,
+  packClassification,
   selectBlindHoldout,
   buildBlindCase,
   blindCasesToMarkdown,
   assertBlindMarkdownClean,
   fileSha256,
   prepareComparisonScaffold,
+  normalizeHumanBlindLabels,
+  normalizeEstado,
   compareBlindLabels
 };

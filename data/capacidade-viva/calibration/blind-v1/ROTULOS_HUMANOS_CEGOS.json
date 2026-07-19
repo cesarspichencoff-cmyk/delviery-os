@@ -1,0 +1,31 @@
+{
+  "configuracao_avaliada": "cv-cal-tata-human-v1",
+  "referencia_congelada": "d21d8e7f5944f5049d2c08cea194d3a295e235663c29b2f5b44c6cf319d95103",
+  "avaliador": "Cesar",
+  "rotulos": [
+    {"caso":"CV-B-001","estado":"impossivel_avaliar","acao":"Não classificar apenas pela quantidade de pedidos; faltam equipe, ritmo, complexidade e distribuição dos itens."},
+    {"caso":"CV-B-002","estado":"impossivel_avaliar","acao":"Dados insuficientes para determinar o estado operacional."},
+    {"caso":"CV-B-003","estado":"impossivel_avaliar","acao":"Dados insuficientes para determinar o estado operacional."},
+    {"caso":"CV-B-004","estado":"impossivel_avaliar","acao":"Não classificar pressão apenas pelos pedidos ativos."},
+    {"caso":"CV-B-005","estado":"impossivel_avaliar","acao":"Faltam composição da carga, ritmo e equipe real."},
+    {"caso":"CV-B-006","estado":"normal","acao":"Acompanhar; motoboy ainda abaixo de 10 minutos."},
+    {"caso":"CV-B-007","estado":"critico","acao":"Confirmar situação, localização e saída do pedido imediatamente."},
+    {"caso":"CV-B-008","estado":"normal","acao":"Continuar acompanhando; ainda abaixo do limite de atenção para pronto sem saída."},
+    {"caso":"CV-B-009","estado":"atencao","acao":"Verificar o pedido que segura a saída e informar previsão ao motoboy."},
+    {"caso":"CV-B-010","estado":"atencao","acao":"Verificar o bloqueio e acompanhar até a retirada."},
+    {"caso":"CV-B-011","estado":"qualidade_da_fonte","acao":"Investigar contradição entre tempo pronto e idade do pedido; corrigir status."},
+    {"caso":"CV-B-012","estado":"critico","acao":"Confirmar se o pedido continua na loja e intervir imediatamente."},
+    {"caso":"CV-B-013","estado":"critico","acao":"Priorizar a liberação; motoboy em espera crítica."},
+    {"caso":"CV-B-014","estado":"qualidade_da_fonte","acao":"Tratar como pedido antigo ou sem encerramento; não pressionar a capacidade."},
+    {"caso":"CV-B-015","estado":"normal","acao":"Acompanhar; sem evidência de atraso ou motoboy esperando."},
+    {"caso":"CV-B-016","estado":"qualidade_da_fonte","acao":"Corrigir pedido antigo ou status terminal ausente."},
+    {"caso":"CV-B-017","estado":"normal","acao":"Acompanhar; aproxima-se dos 10 minutos, mas ainda não chegou à atenção."},
+    {"caso":"CV-B-018","estado":"qualidade_da_fonte","acao":"Tratar como pedido zumbi; excluir da pressão operacional."},
+    {"caso":"CV-B-019","estado":"atencao","acao":"Verificar imediatamente se o pedido continua pronto na loja; evidência de baixa confiança."},
+    {"caso":"CV-B-020","estado":"critico","acao":"Confirmar localização, saída e atualização de status imediatamente."},
+    {"caso":"CV-B-021","estado":"atencao","acao":"Confirmar status e identificar o motivo da saída não registrada."},
+    {"caso":"CV-B-022","estado":"normal","acao":"Acompanhar; tempo abaixo da faixa de atenção e evidência de baixa confiança."},
+    {"caso":"CV-B-023","estado":"qualidade_da_fonte","acao":"Investigar dados contraditórios; tempo pronto maior que a idade registrada."},
+    {"caso":"CV-B-024","estado":"qualidade_da_fonte","acao":"Tratar como pedido antigo sem encerramento; excluir da capacidade atual."}
+  ]
+}

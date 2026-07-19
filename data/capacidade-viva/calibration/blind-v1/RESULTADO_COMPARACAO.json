@@ -1,0 +1,271 @@
+{
+  "labels": [
+    "CALIBRAÇÃO",
+    "MODO SOMBRA",
+    "NÃO OPERACIONAL"
+  ],
+  "generated_at": "2026-07-19T09:17:25.717Z",
+  "config_sha256": "d21d8e7f5944f5049d2c08cea194d3a295e235663c29b2f5b44c6cf319d95103",
+  "rotulos_path": "data/capacidade-viva/calibration/blind-v1/ROTULOS_HUMANOS_CEGOS.json",
+  "rotulos_meta": {
+    "configuracao_avaliada": "cv-cal-tata-human-v1",
+    "referencia_congelada": "d21d8e7f5944f5049d2c08cea194d3a295e235663c29b2f5b44c6cf319d95103",
+    "avaliador": "Cesar",
+    "n_rotulos": 24
+  },
+  "validation": {
+    "file_exists": true,
+    "json_valid": true
+  },
+  "report": {
+    "ok": true,
+    "n": 24,
+    "n_comparaveis": 19,
+    "n_impossivel_avaliar": 5,
+    "concordancia_exata": 0.5789473684210527,
+    "concordancia_exata_count": 11,
+    "concordancia_dentro_de_um_nivel": 1,
+    "concordancia_dentro_de_um_nivel_count": 19,
+    "falsos_criticos": 2,
+    "criticos_nao_detectados": 0,
+    "falsos_qualidade_fonte": 0,
+    "zumbis_contaminaram_capacidade": 2,
+    "rows": [
+      {
+        "case_id": "CV-B-001",
+        "motor": "atencao",
+        "human": "impossivel_avaliar",
+        "exact": false,
+        "skipped_for_agreement": true,
+        "acao_humana": "Não classificar apenas pela quantidade de pedidos; faltam equipe, ritmo, complexidade e distribuição dos itens.",
+        "intervencao_motor": "verificar_agora"
+      },
+      {
+        "case_id": "CV-B-002",
+        "motor": "atencao",
+        "human": "impossivel_avaliar",
+        "exact": false,
+        "skipped_for_agreement": true,
+        "acao_humana": "Dados insuficientes para determinar o estado operacional.",
+        "intervencao_motor": "verificar_agora"
+      },
+      {
+        "case_id": "CV-B-003",
+        "motor": "atencao",
+        "human": "impossivel_avaliar",
+        "exact": false,
+        "skipped_for_agreement": true,
+        "acao_humana": "Dados insuficientes para determinar o estado operacional.",
+        "intervencao_motor": "verificar_agora"
+      },
+      {
+        "case_id": "CV-B-004",
+        "motor": "atencao",
+        "human": "impossivel_avaliar",
+        "exact": false,
+        "skipped_for_agreement": true,
+        "acao_humana": "Não classificar pressão apenas pelos pedidos ativos.",
+        "intervencao_motor": "verificar_agora"
+      },
+      {
+        "case_id": "CV-B-005",
+        "motor": "atencao",
+        "human": "impossivel_avaliar",
+        "exact": false,
+        "skipped_for_agreement": true,
+        "acao_humana": "Faltam composição da carga, ritmo e equipe real.",
+        "intervencao_motor": "verificar_agora"
+      },
+      {
+        "case_id": "CV-B-006",
+        "motor": "atencao",
+        "human": "normal",
+        "exact": false,
+        "within1": true,
+        "acao_humana": "Acompanhar; motoboy ainda abaixo de 10 minutos.",
+        "intervencao_motor": "verificar_agora",
+        "intervencao_mensagem_motor": "Confirme se o pedido continua na loja e identifique o motivo da saída não registrada."
+      },
+      {
+        "case_id": "CV-B-007",
+        "motor": "critico",
+        "human": "critico",
+        "exact": true,
+        "within1": true,
+        "acao_humana": "Confirmar situação, localização e saída do pedido imediatamente.",
+        "intervencao_motor": "intervir_pedido_critico",
+        "intervencao_mensagem_motor": "Pedido em estado crítico: confirmar localização, saída e atualização de status imediatamente."
+      },
+      {
+        "case_id": "CV-B-008",
+        "motor": "atencao",
+        "human": "normal",
+        "exact": false,
+        "within1": true,
+        "acao_humana": "Continuar acompanhando; ainda abaixo do limite de atenção para pronto sem saída.",
+        "intervencao_motor": "verificar_status",
+        "intervencao_mensagem_motor": "Confirme se o pedido continua na loja."
+      },
+      {
+        "case_id": "CV-B-009",
+        "motor": "atencao",
+        "human": "atencao",
+        "exact": true,
+        "within1": true,
+        "acao_humana": "Verificar o pedido que segura a saída e informar previsão ao motoboy.",
+        "intervencao_motor": "verificar_pedido_segurando_saida",
+        "intervencao_mensagem_motor": "Verifique o pedido que está segurando a saída e informe uma previsão ao motoboy."
+      },
+      {
+        "case_id": "CV-B-010",
+        "motor": "atencao",
+        "human": "atencao",
+        "exact": true,
+        "within1": true,
+        "acao_humana": "Verificar o bloqueio e acompanhar até a retirada.",
+        "intervencao_motor": "verificar_pedido_segurando_saida",
+        "intervencao_mensagem_motor": "Verifique o pedido que está segurando a saída e informe uma previsão ao motoboy."
+      },
+      {
+        "case_id": "CV-B-011",
+        "motor": "critico",
+        "human": "qualidade_fonte",
+        "exact": false,
+        "within1": true,
+        "acao_humana": "Investigar contradição entre tempo pronto e idade do pedido; corrigir status.",
+        "intervencao_motor": "intervir_pedido_critico",
+        "intervencao_mensagem_motor": "Pedido em estado crítico: confirmar localização, saída e atualização de status imediatamente."
+      },
+      {
+        "case_id": "CV-B-012",
+        "motor": "critico",
+        "human": "critico",
+        "exact": true,
+        "within1": true,
+        "acao_humana": "Confirmar se o pedido continua na loja e intervir imediatamente.",
+        "intervencao_motor": "intervir_pedido_critico",
+        "intervencao_mensagem_motor": "Pedido em estado crítico: confirmar localização, saída e atualização de status imediatamente."
+      },
+      {
+        "case_id": "CV-B-013",
+        "motor": "critico",
+        "human": "critico",
+        "exact": true,
+        "within1": true,
+        "acao_humana": "Priorizar a liberação; motoboy em espera crítica.",
+        "intervencao_motor": "intervir_agora_motoboy",
+        "intervencao_mensagem_motor": "Intervenha agora: identifique o bloqueio, priorize a saída e corrija o status caso o pedido já tenha saído."
+      },
+      {
+        "case_id": "CV-B-014",
+        "motor": "qualidade_fonte",
+        "human": "qualidade_fonte",
+        "exact": true,
+        "within1": true,
+        "acao_humana": "Tratar como pedido antigo ou sem encerramento; não pressionar a capacidade.",
+        "intervencao_motor": "corrigir_status_pedido_antigo",
+        "intervencao_mensagem_motor": "Verifique e corrija o status deste pedido antigo."
+      },
+      {
+        "case_id": "CV-B-015",
+        "motor": "atencao",
+        "human": "normal",
+        "exact": false,
+        "within1": true,
+        "acao_humana": "Acompanhar; sem evidência de atraso ou motoboy esperando.",
+        "intervencao_motor": "verificar_status",
+        "intervencao_mensagem_motor": "Confirme se o pedido continua na loja."
+      },
+      {
+        "case_id": "CV-B-016",
+        "motor": "qualidade_fonte",
+        "human": "qualidade_fonte",
+        "exact": true,
+        "within1": true,
+        "acao_humana": "Corrigir pedido antigo ou status terminal ausente.",
+        "intervencao_motor": "corrigir_status_pedido_antigo",
+        "intervencao_mensagem_motor": "Verifique e corrija o status deste pedido antigo."
+      },
+      {
+        "case_id": "CV-B-017",
+        "motor": "atencao",
+        "human": "normal",
+        "exact": false,
+        "within1": true,
+        "acao_humana": "Acompanhar; aproxima-se dos 10 minutos, mas ainda não chegou à atenção.",
+        "intervencao_motor": "verificar_agora",
+        "intervencao_mensagem_motor": "Confirme se o pedido continua na loja e identifique o motivo da saída não registrada."
+      },
+      {
+        "case_id": "CV-B-018",
+        "motor": "qualidade_fonte",
+        "human": "qualidade_fonte",
+        "exact": true,
+        "within1": true,
+        "acao_humana": "Tratar como pedido zumbi; excluir da pressão operacional.",
+        "intervencao_motor": "corrigir_status_pedido_antigo",
+        "intervencao_mensagem_motor": "Verifique e corrija o status deste pedido antigo."
+      },
+      {
+        "case_id": "CV-B-019",
+        "motor": "atencao",
+        "human": "atencao",
+        "exact": true,
+        "within1": true,
+        "acao_humana": "Verificar imediatamente se o pedido continua pronto na loja; evidência de baixa confiança.",
+        "intervencao_motor": "verificar_agora",
+        "intervencao_mensagem_motor": "Confirme se o pedido continua na loja e identifique o motivo da saída não registrada."
+      },
+      {
+        "case_id": "CV-B-020",
+        "motor": "critico",
+        "human": "critico",
+        "exact": true,
+        "within1": true,
+        "acao_humana": "Confirmar localização, saída e atualização de status imediatamente.",
+        "intervencao_motor": "intervir_pedido_critico",
+        "intervencao_mensagem_motor": "Pedido em estado crítico: confirmar localização, saída e atualização de status imediatamente."
+      },
+      {
+        "case_id": "CV-B-021",
+        "motor": "quase_critico",
+        "human": "atencao",
+        "exact": false,
+        "within1": true,
+        "acao_humana": "Confirmar status e identificar o motivo da saída não registrada.",
+        "intervencao_motor": "verificar_agora",
+        "intervencao_mensagem_motor": "Confirme se o pedido continua na loja e identifique o motivo da saída não registrada."
+      },
+      {
+        "case_id": "CV-B-022",
+        "motor": "atencao",
+        "human": "normal",
+        "exact": false,
+        "within1": true,
+        "acao_humana": "Acompanhar; tempo abaixo da faixa de atenção e evidência de baixa confiança.",
+        "intervencao_motor": "verificar_status",
+        "intervencao_mensagem_motor": "Confirme se o pedido continua na loja."
+      },
+      {
+        "case_id": "CV-B-023",
+        "motor": "critico",
+        "human": "qualidade_fonte",
+        "exact": false,
+        "within1": true,
+        "acao_humana": "Investigar dados contraditórios; tempo pronto maior que a idade registrada.",
+        "intervencao_motor": "intervir_pedido_critico",
+        "intervencao_mensagem_motor": "Pedido em estado crítico: confirmar localização, saída e atualização de status imediatamente."
+      },
+      {
+        "case_id": "CV-B-024",
+        "motor": "qualidade_fonte",
+        "human": "qualidade_fonte",
+        "exact": true,
+        "within1": true,
+        "acao_humana": "Tratar como pedido antigo sem encerramento; excluir da capacidade atual.",
+        "intervencao_motor": "corrigir_status_pedido_antigo",
+        "intervencao_mensagem_motor": "Verifique e corrija o status deste pedido antigo."
+      }
+    ]
+  }
+}

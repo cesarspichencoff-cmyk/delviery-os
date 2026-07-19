@@ -1,0 +1,438 @@
+{
+  "ALERTA_VALIDADE": "NÃO É NOVA VALIDAÇÃO CEGA. É REAVALIAÇÃO SOBRE CONJUNTO JÁ REVELADO (blind-v1).",
+  "labels": [
+    "CALIBRAÇÃO",
+    "MODO SOMBRA",
+    "NÃO OPERACIONAL",
+    "REGRESSÃO_NÃO_CEGA"
+  ],
+  "generated_at": "2026-07-19T19:04:49.881Z",
+  "config_version": "cv-cal-tata-human-v2",
+  "note": "Reavaliação do conjunto blind-v1 já revelado. Não usar como precisão independente da v2.",
+  "n": 24,
+  "n_comparaveis": 24,
+  "n_impossivel_avaliar_humano": 5,
+  "concordancia_exata_count": 24,
+  "concordancia_exata": 1,
+  "concordancia_dentro_de_um_nivel_count": 24,
+  "concordancia_dentro_de_um_nivel": 1,
+  "falsos_criticos": 0,
+  "criticos_nao_detectados": 0,
+  "falsos_qualidade_fonte": 0,
+  "zumbis_contaminaram_capacidade": 0,
+  "checks_obrigatorios": {
+    "CV-B-006": true,
+    "CV-B-007": true,
+    "CV-B-008": true,
+    "CV-B-011": true,
+    "CV-B-012": true,
+    "CV-B-013": true,
+    "CV-B-015": true,
+    "CV-B-017": true,
+    "CV-B-020": true,
+    "CV-B-021": true,
+    "CV-B-022": true,
+    "CV-B-023": true
+  },
+  "checks_obrigatorios_ok": true,
+  "rows": [
+    {
+      "case_id": "CV-B-001",
+      "motor": "impossivel_avaliar",
+      "human": "impossivel_avaliar",
+      "classificacao": "evidencia_insuficiente",
+      "severity_label": "evidencia_insuficiente",
+      "intervencao": "nao_classificar_pressao",
+      "exclude_from_capacity": false,
+      "zombie": false,
+      "regra": "evidencia_insuficiente",
+      "evidencias": [
+        "pedidos_ativos=14"
+      ],
+      "exact": true,
+      "within1": true
+    },
+    {
+      "case_id": "CV-B-002",
+      "motor": "impossivel_avaliar",
+      "human": "impossivel_avaliar",
+      "classificacao": "evidencia_insuficiente",
+      "severity_label": "evidencia_insuficiente",
+      "intervencao": "nao_classificar_pressao",
+      "exclude_from_capacity": false,
+      "zombie": false,
+      "regra": "evidencia_insuficiente",
+      "evidencias": [
+        "pedidos_ativos=5"
+      ],
+      "exact": true,
+      "within1": true
+    },
+    {
+      "case_id": "CV-B-003",
+      "motor": "impossivel_avaliar",
+      "human": "impossivel_avaliar",
+      "classificacao": "evidencia_insuficiente",
+      "severity_label": "evidencia_insuficiente",
+      "intervencao": "nao_classificar_pressao",
+      "exclude_from_capacity": false,
+      "zombie": false,
+      "regra": "evidencia_insuficiente",
+      "evidencias": [
+        "pedidos_ativos=8"
+      ],
+      "exact": true,
+      "within1": true
+    },
+    {
+      "case_id": "CV-B-004",
+      "motor": "impossivel_avaliar",
+      "human": "impossivel_avaliar",
+      "classificacao": "evidencia_insuficiente",
+      "severity_label": "evidencia_insuficiente",
+      "intervencao": "nao_classificar_pressao",
+      "exclude_from_capacity": false,
+      "zombie": false,
+      "regra": "evidencia_insuficiente",
+      "evidencias": [
+        "pedidos_ativos=25"
+      ],
+      "exact": true,
+      "within1": true
+    },
+    {
+      "case_id": "CV-B-005",
+      "motor": "impossivel_avaliar",
+      "human": "impossivel_avaliar",
+      "classificacao": "evidencia_insuficiente",
+      "severity_label": "evidencia_insuficiente",
+      "intervencao": "nao_classificar_pressao",
+      "exclude_from_capacity": false,
+      "zombie": false,
+      "regra": "evidencia_insuficiente",
+      "evidencias": [
+        "pedidos_ativos=35"
+      ],
+      "exact": true,
+      "within1": true
+    },
+    {
+      "case_id": "CV-B-006",
+      "motor": "normal",
+      "human": "normal",
+      "classificacao": "quieto",
+      "severity_label": "normal",
+      "intervencao": "observar",
+      "exclude_from_capacity": false,
+      "zombie": false,
+      "regra": "motoboy_ancoras_humanas",
+      "evidencias": [
+        "espera motoboy 6.17 min",
+        "pronto sem saída 6.17 min"
+      ],
+      "exact": true,
+      "within1": true
+    },
+    {
+      "case_id": "CV-B-007",
+      "motor": "critico",
+      "human": "critico",
+      "classificacao": "excecao_critica",
+      "severity_label": "critico",
+      "intervencao": "intervir_pedido_critico",
+      "exclude_from_capacity": false,
+      "zombie": false,
+      "regra": "pronto_sem_saida_ancoras",
+      "evidencias": [
+        "pronto sem saída 15 min",
+        "idade/atraso 52.5 min"
+      ],
+      "exact": true,
+      "within1": true
+    },
+    {
+      "case_id": "CV-B-008",
+      "motor": "normal",
+      "human": "normal",
+      "classificacao": "quieto",
+      "severity_label": "normal",
+      "intervencao": "observar",
+      "exclude_from_capacity": false,
+      "zombie": false,
+      "regra": "pronto_sem_saida_ancoras",
+      "evidencias": [
+        "pronto sem saída 15 min"
+      ],
+      "exact": true,
+      "within1": true
+    },
+    {
+      "case_id": "CV-B-009",
+      "motor": "atencao",
+      "human": "atencao",
+      "classificacao": "atencao",
+      "severity_label": "atencao",
+      "intervencao": "verificar_pedido_segurando_saida",
+      "exclude_from_capacity": false,
+      "zombie": false,
+      "regra": "motoboy_ancoras_humanas",
+      "evidencias": [
+        "espera motoboy 12.47 min",
+        "pronto sem saída 12.47 min"
+      ],
+      "exact": true,
+      "within1": true
+    },
+    {
+      "case_id": "CV-B-010",
+      "motor": "atencao",
+      "human": "atencao",
+      "classificacao": "atencao",
+      "severity_label": "atencao",
+      "intervencao": "verificar_pedido_segurando_saida",
+      "exclude_from_capacity": false,
+      "zombie": false,
+      "regra": "motoboy_ancoras_humanas",
+      "evidencias": [
+        "espera motoboy 11.62 min",
+        "pronto sem saída 11.62 min"
+      ],
+      "exact": true,
+      "within1": true
+    },
+    {
+      "case_id": "CV-B-011",
+      "motor": "qualidade_fonte",
+      "human": "qualidade_fonte",
+      "classificacao": "qualidade_fonte",
+      "severity_label": "qualidade_fonte",
+      "intervencao": "corrigir_status_pedido_antigo",
+      "exclude_from_capacity": true,
+      "zombie": true,
+      "regra": "zombie_qualidade_fonte",
+      "evidencias": [
+        "pronto sem saída 525 min",
+        "idade/atraso 68.8 min"
+      ],
+      "exact": true,
+      "within1": true
+    },
+    {
+      "case_id": "CV-B-012",
+      "motor": "critico",
+      "human": "critico",
+      "classificacao": "excecao_critica",
+      "severity_label": "critico",
+      "intervencao": "intervir_pedido_critico",
+      "exclude_from_capacity": false,
+      "zombie": false,
+      "regra": "pronto_sem_saida_ancoras",
+      "evidencias": [
+        "pronto sem saída 15 min",
+        "idade/atraso 56 min"
+      ],
+      "exact": true,
+      "within1": true
+    },
+    {
+      "case_id": "CV-B-013",
+      "motor": "critico",
+      "human": "critico",
+      "classificacao": "excecao_critica",
+      "severity_label": "critico",
+      "intervencao": "intervir_agora_motoboy",
+      "exclude_from_capacity": false,
+      "zombie": false,
+      "regra": "motoboy_ancoras_humanas",
+      "evidencias": [
+        "espera motoboy 43.45 min",
+        "pronto sem saída 43.45 min"
+      ],
+      "exact": true,
+      "within1": true
+    },
+    {
+      "case_id": "CV-B-014",
+      "motor": "qualidade_fonte",
+      "human": "qualidade_fonte",
+      "classificacao": "qualidade_fonte",
+      "severity_label": "qualidade_fonte",
+      "intervencao": "corrigir_status_pedido_antigo",
+      "exclude_from_capacity": true,
+      "zombie": true,
+      "regra": "zombie_qualidade_fonte",
+      "evidencias": [
+        "pronto sem saída 480 min",
+        "idade/atraso 1618.5 min"
+      ],
+      "exact": true,
+      "within1": true
+    },
+    {
+      "case_id": "CV-B-015",
+      "motor": "normal",
+      "human": "normal",
+      "classificacao": "quieto",
+      "severity_label": "normal",
+      "intervencao": "observar",
+      "exclude_from_capacity": false,
+      "zombie": false,
+      "regra": "pronto_sem_saida_ancoras",
+      "evidencias": [
+        "pronto sem saída 15 min"
+      ],
+      "exact": true,
+      "within1": true
+    },
+    {
+      "case_id": "CV-B-016",
+      "motor": "qualidade_fonte",
+      "human": "qualidade_fonte",
+      "classificacao": "qualidade_fonte",
+      "severity_label": "qualidade_fonte",
+      "intervencao": "corrigir_status_pedido_antigo",
+      "exclude_from_capacity": true,
+      "zombie": true,
+      "regra": "zombie_qualidade_fonte",
+      "evidencias": [
+        "pronto sem saída 480 min",
+        "idade/atraso 8881.4 min"
+      ],
+      "exact": true,
+      "within1": true
+    },
+    {
+      "case_id": "CV-B-017",
+      "motor": "normal",
+      "human": "normal",
+      "classificacao": "quieto",
+      "severity_label": "normal",
+      "intervencao": "observar",
+      "exclude_from_capacity": false,
+      "zombie": false,
+      "regra": "motoboy_ancoras_humanas",
+      "evidencias": [
+        "espera motoboy 8.13 min",
+        "pronto sem saída 8.13 min"
+      ],
+      "exact": true,
+      "within1": true
+    },
+    {
+      "case_id": "CV-B-018",
+      "motor": "qualidade_fonte",
+      "human": "qualidade_fonte",
+      "classificacao": "qualidade_fonte",
+      "severity_label": "qualidade_fonte",
+      "intervencao": "corrigir_status_pedido_antigo",
+      "exclude_from_capacity": true,
+      "zombie": true,
+      "regra": "zombie_qualidade_fonte",
+      "evidencias": [
+        "pronto sem saída 480 min",
+        "idade/atraso 3326.9 min"
+      ],
+      "exact": true,
+      "within1": true
+    },
+    {
+      "case_id": "CV-B-019",
+      "motor": "atencao",
+      "human": "atencao",
+      "classificacao": "atencao",
+      "severity_label": "atencao",
+      "intervencao": "verificar_agora",
+      "exclude_from_capacity": false,
+      "zombie": false,
+      "regra": "pronto_sem_saida_ancoras",
+      "evidencias": [
+        "pronto sem saída 25.7 min"
+      ],
+      "exact": true,
+      "within1": true
+    },
+    {
+      "case_id": "CV-B-020",
+      "motor": "critico",
+      "human": "critico",
+      "classificacao": "excecao_critica",
+      "severity_label": "critico",
+      "intervencao": "intervir_pedido_critico",
+      "exclude_from_capacity": false,
+      "zombie": false,
+      "regra": "pronto_sem_saida_ancoras",
+      "evidencias": [
+        "pronto sem saída 90 min",
+        "idade/atraso 53.3 min"
+      ],
+      "exact": true,
+      "within1": true
+    },
+    {
+      "case_id": "CV-B-021",
+      "motor": "atencao",
+      "human": "atencao",
+      "classificacao": "atencao",
+      "severity_label": "atencao",
+      "intervencao": "verificar_agora",
+      "exclude_from_capacity": false,
+      "zombie": false,
+      "regra": "pronto_sem_saida_ancoras",
+      "evidencias": [
+        "pronto sem saída 28.9 min"
+      ],
+      "exact": true,
+      "within1": true
+    },
+    {
+      "case_id": "CV-B-022",
+      "motor": "normal",
+      "human": "normal",
+      "classificacao": "quieto",
+      "severity_label": "normal",
+      "intervencao": "observar",
+      "exclude_from_capacity": false,
+      "zombie": false,
+      "regra": "pronto_sem_saida_ancoras",
+      "evidencias": [
+        "pronto sem saída 14.7 min"
+      ],
+      "exact": true,
+      "within1": true
+    },
+    {
+      "case_id": "CV-B-023",
+      "motor": "qualidade_fonte",
+      "human": "qualidade_fonte",
+      "classificacao": "qualidade_fonte",
+      "severity_label": "qualidade_fonte",
+      "intervencao": "corrigir_status_pedido_antigo",
+      "exclude_from_capacity": true,
+      "zombie": true,
+      "regra": "zombie_qualidade_fonte",
+      "evidencias": [
+        "pronto sem saída 495 min",
+        "idade/atraso 143.7 min"
+      ],
+      "exact": true,
+      "within1": true
+    },
+    {
+      "case_id": "CV-B-024",
+      "motor": "qualidade_fonte",
+      "human": "qualidade_fonte",
+      "classificacao": "qualidade_fonte",
+      "severity_label": "qualidade_fonte",
+      "intervencao": "corrigir_status_pedido_antigo",
+      "exclude_from_capacity": true,
+      "zombie": true,
+      "regra": "zombie_qualidade_fonte",
+      "evidencias": [
+        "pronto sem saída 240 min",
+        "idade/atraso 21204.7 min"
+      ],
+      "exact": true,
+      "within1": true
+    }
+  ]
+}

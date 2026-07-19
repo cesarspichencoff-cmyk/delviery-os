@@ -37,13 +37,19 @@ function main() {
     console.error("gabarito missing");
     process.exit(1);
   }
-  const gab = JSON.parse(fs.readFileSync(gabaritoPath, "utf8"));
-  const labels = JSON.parse(fs.readFileSync(labelsPath, "utf8"));
-  const byId = labels.cases
-    ? Object.fromEntries(labels.cases.map((c) => [c.case_id, c]))
-    : labels.by_case_id || labels;
+  // Validação prévia: arquivo existe (já checado) + JSON válido
+  let labels;
+  try {
+    labels = JSON.parse(fs.readFileSync(labelsPath, "utf8"));
+  } catch (e) {
+    console.error("JSON inválido em ROTULOS_HUMANOS_CEGOS.json:", e.message);
+    process.exit(1);
+  }
 
-  const report = Blind.compareBlindLabels(gab.cases || [], byId);
+  const gab = JSON.parse(fs.readFileSync(gabaritoPath, "utf8"));
+
+  // Usa exatamente o arquivo salvo (formato rotulos[].caso/estado/acao)
+  const report = Blind.compareBlindLabels(gab.cases || [], labels);
   const out = path.join(blindDir, "RESULTADO_COMPARACAO.json");
   fs.writeFileSync(
     out,
@@ -52,13 +58,24 @@ function main() {
         labels: ["CALIBRAÇÃO", "MODO SOMBRA", "NÃO OPERACIONAL"],
         generated_at: new Date().toISOString(),
         config_sha256: gab.config_sha256,
+        rotulos_path: "data/capacidade-viva/calibration/blind-v1/ROTULOS_HUMANOS_CEGOS.json",
+        rotulos_meta: {
+          configuracao_avaliada: labels.configuracao_avaliada || null,
+          referencia_congelada: labels.referencia_congelada || null,
+          avaliador: labels.avaliador || null,
+          n_rotulos: Array.isArray(labels.rotulos) ? labels.rotulos.length : null
+        },
+        validation: {
+          file_exists: true,
+          json_valid: true
+        },
         report
       },
       null,
       2
     )
   );
-  console.log(JSON.stringify(report, null, 2));
+  console.log(JSON.stringify({ validation: { file_exists: true, json_valid: true }, report }, null, 2));
   console.log("wrote", out);
 }
 
