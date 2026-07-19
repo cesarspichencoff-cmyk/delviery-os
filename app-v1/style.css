@@ -1,6 +1,25 @@
 /* DeliveryOS Copiloto V3.3 — gramática visual do Organismo Operacional
  * canônico (port fiel de design-reference/copiloto-v33/*.dc.html).
  * Topologia circular + ligações; nunca grade de cards, nunca dashboard. */
+
+/* Progressão cromática por modo (verde do TATÁ; âmbar só no crítico).
+ * @property é necessário porque app.js reconstrói .stage/.cell via
+ * innerHTML="" a cada render — sem tipar a cor, a custom property não é
+ * interpolável e "transition" nela não faz nada. Registrada aqui, o
+ * <body> (nunca recriado, só muda data-mode) anima o valor; qualquer
+ * elemento novo herda o valor JÁ EM TRANSIÇÃO a cada repaint, mesmo
+ * tendo acabado de nascer — por isso a suavidade funciona mesmo com
+ * DOM sendo reconstruído. Praças sem leitura (tone-faint/tone-tech) e
+ * estados de pressão (tone-warm/tone-ember/tone-cream) NUNCA referenciam
+ * --mode-* — não herdam o verde do Calmo, nem mudam com o clima. */
+@property --mode-bg { syntax: '<color>'; inherits: true; initial-value: #08130D; }
+@property --mode-glow { syntax: '<color>'; inherits: true; initial-value: rgba(140, 198, 63, 0.22); }
+@property --mode-surface { syntax: '<color>'; inherits: true; initial-value: #0C1811; }
+@property --mode-line { syntax: '<color>'; inherits: true; initial-value: #22402F; }
+@property --mode-node { syntax: '<color>'; inherits: true; initial-value: #8CC63F; }
+@property --mode-text-muted { syntax: '<color>'; inherits: true; initial-value: #7E9478; }
+@property --mode-accent { syntax: '<color>'; inherits: true; initial-value: #8CC63F; }
+
 :root {
   --void: #08130D;
   --field: #0C1811;
@@ -41,12 +60,62 @@
   --r-lg: 16px;
   --r-pill: 999px;
   --touch: 44px;
+
+  /* Fallback antes de body[data-mode] resolver (= valores de Ambiente,
+   * o clima intermediário — visual idêntico ao pré-progressão cromática). */
+  --mode-bg: #08130D;
+  --mode-glow: rgba(140, 198, 63, 0.22);
+  --mode-surface: #0C1811;
+  --mode-line: #22402F;
+  --mode-node: #8CC63F;
+  --mode-text-muted: #7E9478;
+  --mode-accent: #8CC63F;
+}
+
+/* CALMO — verde claro, vivo, acolhedor. Fundo levemente mais luminoso;
+ * círculos e ligações visíveis, mas suaves. Contraste texto auxiliar vs
+ * --mode-surface: 6.64:1 (AA). */
+body[data-mode="calmo"] {
+  --mode-bg: #0A180F;
+  --mode-glow: rgba(140, 198, 63, 0.30);
+  --mode-surface: #102319;
+  --mode-line: #2E5A40;
+  --mode-node: #A0D65C;
+  --mode-text-muted: #93AC87;
+  --mode-accent: #8CC63F;
+}
+
+/* AMBIENTE — verde intermediário, mais fechado; contraste e densidade um
+ * pouco maiores; transição natural a partir do Calmo. Mesmos valores que
+ * a superfície já usava antes da progressão (baseline). Contraste: 5.54:1. */
+body[data-mode="ambiente"] {
+  --mode-bg: #08130D;
+  --mode-glow: rgba(140, 198, 63, 0.22);
+  --mode-surface: #0C1811;
+  --mode-line: #22402F;
+  --mode-node: #8CC63F;
+  --mode-text-muted: #7E9478;
+  --mode-accent: #8CC63F;
+}
+
+/* FOCO — verde profundo, escuro, concentrado; organismo e conexões mais
+ * contidos. Âmbar segue reservado à praça/ligação/evidência/ação crítica
+ * (tone-warm/tone-ember/tone-cream, foco-eye, foco-tick — nenhum usa
+ * --mode-*). Contraste texto auxiliar: 4.96:1 (AA, com margem). */
+body[data-mode="foco"] {
+  --mode-bg: #050B07;
+  --mode-glow: rgba(140, 198, 63, 0.13);
+  --mode-surface: #081410;
+  --mode-line: #1A3325;
+  --mode-node: #6FA636;
+  --mode-text-muted: #6C8A76;
+  --mode-accent: #79B23A;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { min-height: 100%; }
 body {
-  background: radial-gradient(1300px 680px at 50% -8%, #0F241A, var(--void) 68%);
+  background: radial-gradient(1300px 680px at 50% -8%, var(--mode-glow), var(--mode-bg) 68%);
   color: var(--ink);
   font-family: var(--font-ui);
   -webkit-font-smoothing: antialiased;
@@ -54,7 +123,11 @@ body {
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  transition: background 0.45s ease;
+  /* transição cromática do clima — curta, elegante; prefers-reduced-motion
+   * já zera transition-duration globalmente (regra abaixo). */
+  transition: --mode-bg 0.5s ease, --mode-glow 0.5s ease, --mode-surface 0.5s ease,
+    --mode-line 0.5s ease, --mode-node 0.5s ease, --mode-text-muted 0.5s ease,
+    --mode-accent 0.5s ease;
 }
 button, input { font: inherit; }
 button { cursor: pointer; border: none; background: none; color: inherit; }
@@ -229,14 +302,13 @@ button { cursor: pointer; border: none; background: none; color: inherit; }
 .stage {
   position: relative;
   flex: 1;
-  background: var(--field);
-  border: 1px solid #1B3527;
+  background: var(--mode-surface);
+  border: 1px solid var(--mode-line);
   border-radius: 14px;
   overflow: hidden;
   min-height: clamp(560px, 68vh, 700px);
   animation: surge 0.34s ease-out;
 }
-body[data-mode="foco"] .stage { background: linear-gradient(180deg, #0D1B13, var(--field)); }
 
 .stage-caption {
   position: absolute;
@@ -255,7 +327,7 @@ body[data-mode="foco"] .stage { background: linear-gradient(180deg, #0D1B13, var
   letter-spacing: 0.18em;
   text-transform: uppercase;
 }
-.accent-verde { color: var(--verde); }
+.accent-verde { color: var(--mode-accent); }
 .accent-ambar { color: var(--ambar); }
 .accent-cream { color: var(--ambar-soft); }
 .accent-tech { color: var(--tech); }
@@ -271,7 +343,7 @@ body[data-mode="foco"] .stage { background: linear-gradient(180deg, #0D1B13, var
   margin: 0.5rem 0 0;
   font-family: var(--font-mono);
   font-size: 0.7rem;
-  color: #8FA588;
+  color: var(--mode-text-muted);
 }
 
 /* Banner técnico — texto + forma, nunca só cor; nunca parece pressão */
@@ -357,9 +429,19 @@ body[data-mode="foco"] .stage { background: linear-gradient(180deg, #0D1B13, var
   border: 1px solid transparent;
   transition: all 0.5s cubic-bezier(0.22, 0.61, 0.36, 1);
 }
+/* Única praça cuja aparência responde ao clima: --mode-node é uma cor
+ * SÓLIDA por modo (verde claro→intermediário→profundo); color-mix()
+ * deriva as translucências do preenchimento/borda a partir dela — em
+ * Ambiente reproduz os valores originais quase exatamente (18%≈0.16,
+ * 5%≈0.05, 42%≈0.4), então a progressão é sempre proporcional/coordenada,
+ * nunca uma variável isolada. */
 .cell.tone-ivory {
-  background: radial-gradient(circle at 50% 38%, rgba(140, 198, 63, 0.16), rgba(140, 198, 63, 0.05) 58%, rgba(140, 198, 63, 0.02) 100%), var(--field);
-  border-color: rgba(140, 198, 63, 0.4);
+  background: radial-gradient(circle at 50% 38%,
+      color-mix(in srgb, var(--mode-node) 18%, transparent),
+      color-mix(in srgb, var(--mode-node) 5%, transparent) 58%,
+      color-mix(in srgb, var(--mode-node) 2%, transparent) 100%),
+    var(--mode-surface);
+  border-color: color-mix(in srgb, var(--mode-node) 42%, transparent);
 }
 .cell.tone-warm {
   background: radial-gradient(circle at 50% 38%, rgba(224, 162, 90, 0.2), rgba(224, 162, 90, 0.06) 58%, transparent 100%), var(--field);
@@ -425,7 +507,7 @@ body[data-mode="foco"] .stage { background: linear-gradient(180deg, #0D1B13, var
   font-size: 0.72rem;
   letter-spacing: 0.01em;
   line-height: 1.3;
-  color: var(--mute);
+  color: var(--mode-text-muted);
   max-width: 14ch;
 }
 .cell.tone-warm .cell-estado { color: var(--ambar); }
@@ -630,6 +712,9 @@ body[data-mode="foco"] .stage { background: linear-gradient(180deg, #0D1B13, var
   padding: 0.9rem 1.5rem;
   min-height: var(--touch);
   letter-spacing: -0.01em;
+  /* glow acompanha o clima (mais vivo no Calmo, mais contido no Foco);
+   * a cor da ação em si permanece verde — é sempre a ação positiva. */
+  box-shadow: 0 8px 28px var(--mode-glow);
 }
 .acao-pill.pure {
   background: transparent;

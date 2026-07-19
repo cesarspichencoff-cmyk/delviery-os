@@ -701,6 +701,15 @@
     });
   }
 
+  /* Cor-base das ligações sem pressão: segue --mode-line (progressão
+   * cromática do clima). Ligações com pressão real (âmbar, acima) nunca
+   * usam isto — permanecem fixas independente do modo. Congelado/frozen
+   * também não usa isto — estado técnico fica neutro, fora do clima. */
+  function corLinhaBase() {
+    const v = getComputedStyle(document.body).getPropertyValue("--mode-line").trim();
+    return v || "#22402F";
+  }
+
   /* Ligações ativas: pressão real (degrau da área, informado pelo motor)
    * atravessando o caminho do pedido — sem relação ativa, linha base fina. */
   function montarLigacoes(celulas) {
@@ -726,7 +735,7 @@
     const svg = svgEl("svg", { class: "constel-links", viewBox: "0 0 100 100", preserveAspectRatio: "none" });
     const por = {};
     celulas.forEach((c) => { por[c.id] = c; });
-    const base = opts && opts.frozen ? { w: 0.8, c: "#1A2A22" } : { w: 0.9, c: "#22402F" };
+    const base = opts && opts.frozen ? { w: 0.8, c: "#1A2A22" } : { w: 0.9, c: corLinhaBase() };
     for (const [a, b] of LIGACOES) {
       const ov = (opts && opts.frozen) ? null : ativas[a + "-" + b];
       const w = ov || base;
@@ -1024,7 +1033,7 @@
     pontos.forEach((p) => {
       const linha = svgEl("line", {
         x1: p[0], y1: p[1], x2: p[2], y2: p[3],
-        stroke: p[4] || "#22402F", "stroke-width": p[5] || 1
+        stroke: p[4] || corLinhaBase(), "stroke-width": p[5] || 1
       });
       if (p[6]) { linha.setAttribute("stroke-dasharray", "4 6"); linha.setAttribute("class", "dosflow"); }
       svg.appendChild(linha);
@@ -1068,7 +1077,7 @@
     box.appendChild(meio);
     const corDe = (id) => {
       const lig = montarLigacoes(celulas)[id + "-conferencia"];
-      return lig ? [lig.c, lig.flow ? 2.4 : 1.6, !!lig.flow] : ["#22402F", 1, false];
+      return lig ? [lig.c, lig.flow ? 2.4 : 1.6, !!lig.flow] : [corLinhaBase(), 1, false];
     };
     const [cS, wS, fS] = corDe("sushi");
     const [cQ, wQ, fQ] = corDe("quentes");
@@ -1077,12 +1086,12 @@
       [17, 0, 50, 13, cS, wS, fS],
       [50, 0, 50, 13, cQ, wQ, fQ],
       [83, 0, 50, 13, cC, wC, fC],
-      [50, 13, 50, 20, (fS || fQ || fC) ? "#C98A46" : "#22402F", (fS || fQ || fC) ? 2 : 1, false]
+      [50, 13, 50, 20, (fS || fQ || fC) ? "#C98A46" : corLinhaBase(), (fS || fQ || fC) ? 2 : 1, false]
     ]));
     box.appendChild(el("div", "mrow mrow-center")).appendChild(pill(por.conferencia));
     const ligCM = montarLigacoes(celulas)["conferencia-motoboy"];
     box.appendChild(svgFan([
-      [50, 0, 50, 14, ligCM ? ligCM.c : "#22402F", ligCM ? 1.6 : 1, !!(ligCM && ligCM.flow)]
+      [50, 0, 50, 14, ligCM ? ligCM.c : corLinhaBase(), ligCM ? 1.6 : 1, !!(ligCM && ligCM.flow)]
     ], "mfan-short"));
     box.appendChild(el("div", "mrow mrow-center")).appendChild(pill(por.motoboy));
     return box;
