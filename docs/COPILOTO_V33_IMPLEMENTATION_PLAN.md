@@ -557,3 +557,38 @@ nunca carga ponderada inventada. O ISF com complexidade permanece demonstrativo
 4. Aliases Quentes × Cozinha com a operação.
 5. Outcomes reais de intervenções + feedback humano acumulado (hoje: memória da sessão).
 6. Fonte iFood contínua (hoje: janela simulada rotulada / real via `gerar_janela_v1`).
+
+---
+
+## Fase 2D — baseline visual congelado (progressão cromática)
+
+> Commit: `6f04177` — `style(copiloto): cria progressao cromatica entre os modos` · base `e803367`.
+> Aprovado pelo César como **novo baseline visual canônico** do Copiloto V3.3.
+
+### Registro
+
+- **Calmo** usa verde mais claro e aberto (`--mode-bg`/`--mode-surface`/`--mode-line`/
+  `--mode-node`/`--mode-glow`/`--mode-text-muted` no extremo mais luminoso da escala).
+- **Ambiente** preserva o baseline visual anterior à progressão — os 7 tokens em Ambiente
+  reproduzem os valores que a superfície já usava antes desta fase; zero regressão nesse modo.
+- **Foco** usa verde profundo e concentrado — mesmos 7 tokens no extremo mais escuro/contido.
+- **Crítico permanece Foco**: não existe um quarto modo para situação crítica. O âmbar fica
+  localizado (praça/ligação/evidência/ação em `tone-warm`/`tone-ember`/`tone-cream` e no painel
+  de menor intervenção) — nunca vira tela âmbar, nunca introduz vermelho.
+- **Estados sem dados continuam neutros**: `tone-faint`/`tone-tech` e o congelado (`is-frozen`)
+  não referenciam nenhum `--mode-*` — não herdam o verde do Calmo em nenhuma circunstância
+  (garantido por teste automatizado, `tests/live/interface-progressao-cromatica.test.js`).
+- **A progressão cromática é o comportamento visual canônico** da superfície V3.3 a partir
+  deste commit.
+
+### Congelado — não alterar sem nova autorização explícita
+
+Progressão cromática · tokens `--mode-*` · intensidade dos três modos · uso localizado do âmbar ·
+comportamento de fonte parcial/sem dados · duração da transição (`0.5s`, uniforme nos 7 tokens) ·
+layout V3.3 · referência visual congelada (`design-reference/copiloto-v33/*.dc.html`,
+SHA-256 `434294036F86FF6976B48FB3EC4B58D5C4CECEFE272FEEA181E9A167E7B19FBC`, inalterado).
+
+### Testes
+
+Sem alteração de código nesta entrada — apenas registro. Suítes seguem em
+**278/278** (208 live + 53 copiloto + 17 capacidade-viva), confirmadas na Fase 2D.
