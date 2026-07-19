@@ -98,3 +98,47 @@ Saídas em `results/capacidade-viva/run-<ts>/` (gitignored).
 ## Limitações
 
 Não operacional; não alerta equipe; não aplica pausa; não ranqueia pessoas; não estima dinheiro.
+
+---
+
+## Fase 2D.1 — Saneamento e validação humana
+
+### Problemas da V1 (corrida inicial)
+
+- ~98% ticks com “exceção” (envelhecimento e pronto tratados como críticos).
+- ~48% ticks “críticos” sem ground truth (não é taxa de detecção).
+- Risco UTC vs horário BR na análise temporal.
+- Subsample de pedidos.
+- Equipe simulada tratável como se fosse real.
+- Pausa seletiva acoplada demais ao ISF isolado.
+
+### Correções
+
+| Tema | Correção |
+|---|---|
+| Timezone | `America/Sao_Paulo` explícito; preserva `timestamp_original` / UTC |
+| Taxonomia | sinal contínuo · atenção · exceção crítica |
+| Envelhecimento | sinal/atenção, **não** exceção isolada |
+| Pronto→saída | “aguardando saída — causa não confirmada” sem campo de espera na loja |
+| Motoboy | só com evidência de espera na loja (alta confiança) |
+| Episódios | gap 10 min; métricas por episódio + tick |
+| Pausa | gates (tendência, confiança, localização) |
+| Full replay | default `--full` (use `--fast` só em dev) |
+| Config | `cv-cal-sane-v2` (não sobrescreve v1) |
+| Humanos | 40 casos + 14 itens em `data/capacidade-viva/calibration/review/` |
+
+### O que ainda não se conclui
+
+- Falso positivo real (precisa rótulo do César).
+- Capacidade real de equipe (só perfis hipotéticos).
+- Recuperação Líquida histórica.
+- Superioridade vs baselines sem validação humana.
+- Seis meses de histórico.
+
+### Comando
+
+```bash
+node tools/calibrar_capacidade_viva.js          # FULL
+node tools/calibrar_capacidade_viva.js --fast   # dev
+node tests/capacidade-viva/calibration/run-sane.js
+```

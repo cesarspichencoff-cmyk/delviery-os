@@ -4,6 +4,7 @@
 "use strict";
 
 const { EPISTEMIC, stamp } = require("./labels");
+const { enrichEventTimezone, parseBrWallClockToUtcIso } = require("./timezone");
 
 const EVENT_MAP = {
   "ifood.recebido": "pedido_recebido",
@@ -25,10 +26,11 @@ function normalizeTransition(row) {
     return null;
   }
   const payload = row.payload_original || {};
-  return stamp({
+  const base = stamp({
     order_id: row.pedido_id,
     source: row.fonte || "ifood",
     timestamp: row.timestamp,
+    timestamp_original: row.timestamp,
     event_type: eventType,
     order_status: row.estado_novo || payload["STATUS FINAL DO PEDIDO"] || null,
     item_id: null,
@@ -43,6 +45,7 @@ function normalizeTransition(row) {
     // timing fields when present on payload (confirmados se numéricos)
     timing: extractTiming(payload)
   });
+  return enrichEventTimezone(base, "ifood_real_jsonl");
 }
 
 function extractTiming(payload) {
@@ -88,43 +91,76 @@ function deriveTimingInferences(orderTimeline) {
   if (!Number.isFinite(t0)) return events;
   const timing = base.timing || (byType.pedido_pronto && byType.pedido_pronto.timing) || {};
 
-  // motoboy aguardando: se espera na loja > 5 min — INFERIDO alta se campo existe
+  // motoboy NA LOJA: só com campo explícito de espera — limiar configurável (default 5, provisório)
+  const limLoja = 5;
   const espera = timing.entregador_espera_loja_min;
-  if (espera && espera.epistemic === EPISTEMIC.CONFIRMADO && espera.value != null && espera.value >= 5) {
+  if (espera && espera.epistemic === EPISTEMIC.CONFIRMADO && espera.value != null && espera.value >= limLoja) {
     const pronto = byType.pedido_pronto;
     if (pronto) {
       events.push(
-        stamp({
-          order_id: base.order_id,
-          source: "calibration.inference",
-          timestamp: pronto.timestamp,
-          event_type: "motoboy_aguardando",
-          order_status: null,
-          confidence: "media",
-          confirmed: false,
-          epistemic: EPISTEMIC.INFERIDO_ALTA,
-          explanation: `Campo TEMPO DO ENTREGADOR ESPERANDO NA LOJA=${espera.value} min ≥ 5`
-        })
+        enrichEventTimezone(
+          stamp({
+            order_id: base.order_id,
+            source: "calibration.inference",
+            timestamp: pronto.timestamp,
+            timestamp_original: pronto.timestamp,
+            event_type: "motoboy_na_loja",
+            order_status: null,
+            confidence: "alta",
+            confirmed: false,
+            epistemic: EPISTEMIC.INFERIDO_ALTA,
+            courier_wait_store_min: espera.value,
+            explanation: `Campo TEMPO DO ENTREGADOR ESPERANDO NA LOJA=${espera.value} min ≥ ${limLoja} (provisório)`
+          }),
+          "ifood_real_jsonl"
+        )
       );
     }
   }
 
-  // alocado: se alocação_entregador presente
+  // alocado: se alocação_entregador presente — NÃO implica "esperando na loja"
   const aloc = timing.alocacao_entregador_min;
   if (aloc && aloc.epistemic === EPISTEMIC.CONFIRMADO && aloc.value != null) {
     const ts = new Date(t0 + aloc.value * 60000).toISOString();
     events.push(
-      stamp({
-        order_id: base.order_id,
-        source: "calibration.inference",
-        timestamp: ts,
-        event_type: "motoboy_alocado",
-        confidence: "media",
-        confirmed: false,
-        epistemic: EPISTEMIC.INFERIDO_ALTA,
-        explanation: `Tempo de alocação do entregador=${aloc.value} min desde o pedido`
-      })
+      enrichEventTimezone(
+        stamp({
+          order_id: base.order_id,
+          source: "calibration.inference",
+          timestamp: ts,
+          timestamp_original: ts,
+          event_type: "motoboy_alocado",
+          confidence: "media",
+          confirmed: false,
+          epistemic: EPISTEMIC.INFERIDO_ALTA,
+          explanation: `Tempo de alocação do entregador=${aloc.value} min desde o pedido (não prova presença na loja)`
+        }),
+        "ifood_real_jsonl"
+      )
     );
+  }
+
+  // caminho da loja — alocado ainda distante (sinal, não exceção crítica)
+  const cam = timing.entregador_caminho_loja_min;
+  if (cam && cam.epistemic === EPISTEMIC.CONFIRMADO && cam.value != null && cam.value >= 8) {
+    const pronto = byType.pedido_pronto;
+    if (pronto) {
+      events.push(
+        enrichEventTimezone(
+          stamp({
+            order_id: base.order_id,
+            source: "calibration.inference",
+            timestamp: pronto.timestamp,
+            event_type: "entregador_caminho_loja",
+            confidence: "media",
+            confirmed: false,
+            epistemic: EPISTEMIC.INFERIDO_ALTA,
+            explanation: `Entregador à caminho da loja ${cam.value} min — distante, não "esperando"`
+          }),
+          "ifood_real_jsonl"
+        )
+      );
+    }
   }
 
   return events;
@@ -147,12 +183,14 @@ function normalizeItemLine(row, catalogByName) {
     epistemic = EPISTEMIC.AUSENTE;
     conf = "baixa";
   }
-  // parse BR datetime
-  const ts = parseBrDateTime(row.data_hora);
-  return stamp({
+  // parse BR datetime as America/Sao_Paulo wall clock (não silencioso)
+  const parsed = parseBrWallClockToUtcIso(row.data_hora);
+  const ts = parsed.ok ? parsed.timestamp_utc : null;
+  const base = stamp({
     order_id: row.pedido_id,
     source: row.origem || "itens_jsonl",
     timestamp: ts,
+    timestamp_original: row.data_hora,
     event_type: "item_atribuido_praca",
     order_status: row.status || null,
     item_id: cat && cat.id ? cat.id : null,
@@ -166,19 +204,17 @@ function normalizeItemLine(row, catalogByName) {
       ? `Item casado com cardápio seed → praça ${praca}`
       : "Item sem casamento no cardápio — praça ausente",
     complexity: cat && cat.complexidade ? cat.complexidade : null,
-    complexity_epistemic: cat && cat.complexidade_epistemic
+    complexity_epistemic: cat && cat.complexidade_epistemic,
+    timezone_parse: parsed.ok
+      ? { timezone: "America/Sao_Paulo", conversion: "BR wall → UTC", silent: false }
+      : { error: parsed.error }
   });
+  return ts ? enrichEventTimezone(base, "itens_jsonl") : base;
 }
 
 function parseBrDateTime(s) {
-  if (!s) return null;
-  // 20/06/2026 11:05
-  const m = String(s).match(/(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})/);
-  if (!m) return null;
-  const iso = `${m[3]}-${m[2]}-${m[1]}T${m[4]}:${m[5]}:00`;
-  // treat as America/Sao_Paulo approx as local wall — mark epistemic
-  const d = Date.parse(iso + "-03:00");
-  return Number.isFinite(d) ? new Date(d).toISOString() : null;
+  const p = parseBrWallClockToUtcIso(s);
+  return p.ok ? p.timestamp_utc : null;
 }
 
 function normalizeName(s) {

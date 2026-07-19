@@ -1,14 +1,11 @@
 #!/usr/bin/env node
 /* ============================================================================
- * Calibração Capacidade Viva — MODO SOMBRA · NÃO OPERACIONAL
+ * Calibração Capacidade Viva 2D.1 — saneada · FULL por padrão
+ * CALIBRAÇÃO · MODO SOMBRA · NÃO OPERACIONAL
  *
- * Uso:
  *   node tools/calibrar_capacidade_viva.js
- *   node tools/calibrar_capacidade_viva.js --ifood path/to/ifood_real.jsonl
- *   node tools/calibrar_capacidade_viva.js --interval 5 --team estrutura_media
- *   node tools/calibrar_capacidade_viva.js --demo   # só fixtures sintéticas rotuladas
- *
- * Não modifica dados de origem. Saída em results/capacidade-viva/ (gitignored).
+ *   node tools/calibrar_capacidade_viva.js --fast   # subsample dev
+ *   node tools/calibrar_capacidade_viva.js --demo
  * ==========================================================================*/
 "use strict";
 
@@ -19,27 +16,46 @@ const Cal = require("../src/capacidade-viva/calibration");
 function arg(name, def) {
   const i = process.argv.indexOf(name);
   if (i < 0) return def;
-  return process.argv[i + 1] != null ? process.argv[i + 1] : true;
+  return process.argv[i + 1] != null && !String(process.argv[i + 1]).startsWith("--")
+    ? process.argv[i + 1]
+    : true;
 }
 
 async function main() {
   const demoOnly = process.argv.includes("--demo");
-  const interval = Number(arg("--interval", "5")) || 5;
-  const team = arg("--team", "estrutura_media");
-  const outDir = path.resolve(arg("--out", path.join(__dirname, "..", "results", "capacidade-viva", `run-${Date.now()}`)));
+  const fast = process.argv.includes("--fast");
+  const full = !fast; // full is default
+  const interval = Number(arg("--interval", "15")) || 15;
+  const outDir = path.resolve(
+    arg("--out", path.join(__dirname, "..", "results", "capacidade-viva", `sane-${Date.now()}`))
+  );
   fs.mkdirSync(outDir, { recursive: true });
 
-  console.log("=== CAPACIDADE VIVA · CALIBRAÇÃO · MODO SOMBRA · NÃO OPERACIONAL ===");
+  console.log("=== CALIBRAÇÃO · MODO SOMBRA · NÃO OPERACIONAL · 2D.1 ===");
+  console.log("mode:", full ? "FULL" : "FAST subsample", "interval", interval);
   console.log("out:", outDir);
 
   const inv = Cal.loader.inventoryKnownSources({
     ifood_real: arg("--ifood", undefined),
-    itens: arg("--itens", undefined),
-    cardapio: arg("--cardapio", undefined)
+    itens: arg("--itens", undefined)
   });
   fs.writeFileSync(path.join(outDir, "00_inventory.json"), JSON.stringify(inv, null, 2));
+  fs.writeFileSync(
+    path.join(outDir, "00_timezone.json"),
+    JSON.stringify(
+      {
+        target: Cal.timezone.TARGET_TZ,
+        sources: {
+          ifood_real_jsonl: Cal.timezone.sourceTimezoneEvidence("ifood_real_jsonl"),
+          itens_jsonl: Cal.timezone.sourceTimezoneEvidence("itens_jsonl")
+        },
+        silent_conversion: false
+      },
+      null,
+      2
+    )
+  );
 
-  // Cardápio
   const cardPath =
     (inv.sources.find((s) => s.id === "cardapio_seed" && s.exists) || {}).path ||
     path.join(__dirname, "..", "data", "cardapio_knowledge_seed.json");
@@ -49,33 +65,28 @@ async function main() {
 
   let transitions = [];
   let items = [];
-  let quality = { transitions: null, items: null };
+  let quality = {};
 
   if (!demoOnly) {
     const ifoodSrc = inv.sources.find((s) => s.id === "ifood_real_jsonl" && s.exists);
     if (ifoodSrc) {
-      console.log("loading ifood_real (read-only)...");
+      console.log("loading ifood_real FULL (read-only)...");
       const loaded = await Cal.loader.loadJsonl(ifoodSrc.path);
       transitions = loaded.rows || [];
       quality.transitions = Cal.quality.analyzeTransitions(transitions);
       console.log("  events:", transitions.length);
-    } else {
-      console.log("AVISO: ifood_real.jsonl não encontrado — sem fabricação de 6 meses.");
     }
-
     const itensSrc = inv.sources.find((s) => s.id === "itens_jun20_30" && s.exists);
     if (itensSrc) {
-      console.log("loading itens jun20-30 (read-only)...");
+      console.log("loading itens (read-only)...");
       const loaded = await Cal.loader.loadJsonl(itensSrc.path);
       items = loaded.rows || [];
       quality.items = Cal.quality.analyzeItems(items);
       console.log("  item lines:", items.length);
     }
   }
-
-  // Demo fallback sintético rotulado
   if (demoOnly || (!transitions.length && !items.length)) {
-    console.log("modo demo/sintético rotulado");
+    console.log("demo synthetic");
     const demo = buildSyntheticBundle();
     transitions = demo.transitions;
     items = demo.items;
@@ -83,11 +94,9 @@ async function main() {
     quality.transitions = Cal.quality.analyzeTransitions(transitions);
     quality.items = Cal.quality.analyzeItems(items);
   }
-
   fs.writeFileSync(path.join(outDir, "02_quality.json"), JSON.stringify(quality, null, 2));
 
-  // Normalize events
-  console.log("normalizing events...");
+  console.log("normalizing + timezone SP...");
   const events = [];
   for (const row of transitions) {
     const e = Cal.normalizer.normalizeTransition(row);
@@ -97,106 +106,154 @@ async function main() {
     const e = Cal.normalizer.normalizeItemLine(row, catalog.byName);
     if (e) events.push(e);
   }
-
   const timelines = Cal.normalizer.buildOrderTimelines(events);
-  // derive inferences per order
-  for (const [oid, list] of timelines.byOrder) {
+  for (const [, list] of timelines.byOrder) {
     const derived = Cal.normalizer.deriveTimingInferences(list);
     if (derived.length) {
       list.push(...derived);
       list.sort((a, b) => String(a.timestamp).localeCompare(String(b.timestamp)));
     }
   }
-  fs.writeFileSync(
-    path.join(outDir, "03_timelines_meta.json"),
-    JSON.stringify(
-      {
-        labels: ["CALIBRAÇÃO", "MODO SOMBRA", "NÃO OPERACIONAL"],
-        orders: timelines.byOrder.size,
-        quality: timelines.quality,
-        events_normalized: events.length
-      },
-      null,
-      2
-    )
-  );
 
-  // Replay (may subsample for speed if huge)
   let byOrder = timelines.byOrder;
-  if (byOrder.size > 2500 && !process.argv.includes("--full")) {
-    console.log("subsample 2000 pedidos para calibração prática (--full para todos)");
-    const entries = [...byOrder.entries()].slice(0, 2000);
-    byOrder = new Map(entries);
+  const ordersTotal = byOrder.size;
+  if (!full && byOrder.size > 1500) {
+    console.log("FAST: subsample 1500 pedidos");
+    byOrder = new Map([...byOrder.entries()].slice(0, 1500));
+  } else {
+    console.log("FULL: pedidos", byOrder.size);
   }
 
-  console.log("replay interval=", interval, "team=", team);
-  const replay = Cal.replay.replayOrders(byOrder, {
-    interval_min: interval,
-    team_profile: team
-  });
-  fs.writeFileSync(
-    path.join(outDir, "04_replay_summary.json"),
-    JSON.stringify(
-      {
-        ok: replay.ok,
-        from: replay.from,
-        to: replay.to,
-        n_ticks: replay.n_ticks,
-        interval_min: replay.interval_min,
-        team_profile: replay.team_profile,
-        alerts_summary: replay.alerts_summary
+  // Load sane config v2 if exists, else default + patches
+  const sanePath = path.join(
+    __dirname,
+    "..",
+    "data",
+    "capacidade-viva",
+    "calibration",
+    "configs",
+    "cv-cal-sane-v2.json"
+  );
+  let config = Cal.loader.loadJson(
+    path.join(__dirname, "..", "data", "capacidade-viva", "config.default.json")
+  ).data;
+  if (fs.existsSync(sanePath)) {
+    config = JSON.parse(fs.readFileSync(sanePath, "utf8"));
+    console.log("using", sanePath);
+  } else {
+    config = patchSaneV2(config);
+  }
+
+  const profiles = ["estrutura_forte", "estrutura_media", "estrutura_fraca"];
+  const profileResults = {};
+
+  for (const team of profiles) {
+    console.log("replay team=", team);
+    const rep = Cal.replay.replayOrders(byOrder, {
+      interval_min: interval,
+      team_profile: team,
+      config
+    });
+    profileResults[team] = {
+      metrics: rep.metrics_corrected,
+      runtime: rep.runtime,
+      n_ticks: rep.n_ticks,
+      episodes: {
+        n: rep.episodes.n_episodes,
+        critical: rep.episodes.n_critical_episodes,
+        attention: rep.episodes.n_attention_episodes,
+        duration_avg: rep.episodes.duration_avg_min,
+        duration_max: rep.episodes.duration_max_min,
+        unique_orders: rep.episodes.unique_orders_affected
       },
-      null,
-      2
-    )
-  );
-  // sample ticks only (full can be large)
-  fs.writeFileSync(
-    path.join(outDir, "04_replay_ticks_sample.json"),
-    JSON.stringify((replay.ticks || []).filter((_, i) => i % 10 === 0).slice(0, 500), null, 2)
-  );
+      capacidade_hipotetica: true
+    };
+    if (team === "estrutura_media") {
+      // primary report artifacts
+      fs.writeFileSync(
+        path.join(outDir, "04_replay_summary.json"),
+        JSON.stringify(
+          {
+            ok: rep.ok,
+            full: full,
+            from: rep.from,
+            to: rep.to,
+            n_ticks: rep.n_ticks,
+            interval_min: rep.interval_min,
+            timezone: rep.timezone,
+            metrics_corrected: rep.metrics_corrected,
+            runtime: rep.runtime,
+            orders_in_replay: byOrder.size,
+            orders_available: ordersTotal
+          },
+          null,
+          2
+        )
+      );
+      fs.writeFileSync(
+        path.join(outDir, "04b_episodes_summary.json"),
+        JSON.stringify(
+          {
+            n_episodes: rep.episodes.n_episodes,
+            n_critical: rep.episodes.n_critical_episodes,
+            n_attention: rep.episodes.n_attention_episodes,
+            duration_avg_min: rep.episodes.duration_avg_min,
+            duration_max_min: rep.episodes.duration_max_min,
+            unique_orders_affected: rep.episodes.unique_orders_affected,
+            sample: (rep.episodes.episodes || []).slice(0, 30)
+          },
+          null,
+          2
+        )
+      );
+      const sens = Cal.sensitivity.analyzeSensitivity(rep.ticks);
+      fs.writeFileSync(path.join(outDir, "05_sensitivity.json"), JSON.stringify(sens, null, 2));
+      const base = Cal.baselines.compareBaselines(rep.ticks);
+      fs.writeFileSync(path.join(outDir, "05b_baselines.json"), JSON.stringify(base, null, 2));
+      const temporal = Cal.calibrator.evaluateTemporalHypotheses(rep.ticks);
+      fs.writeFileSync(path.join(outDir, "06_temporal_hypotheses.json"), JSON.stringify(temporal, null, 2));
+      const shadow = Cal.shadow.buildShadowReport(rep);
+      fs.writeFileSync(path.join(outDir, "07_shadow_report.json"), JSON.stringify(shadow, null, 2));
 
-  console.log("calibrating weights...");
-  const cal = Cal.calibrator.calibrateWeights(byOrder, {
-    interval_min: Math.max(interval, 10),
-    team_profile: team
-  });
-  fs.writeFileSync(path.join(outDir, "05_calibration.json"), JSON.stringify(cal, null, 2));
-  if (cal.recommended_config) {
-    const cfgPath = path.join(outDir, "05_config_recommended.json");
-    fs.writeFileSync(cfgPath, JSON.stringify(cal.recommended_config, null, 2));
-    // also versioned copy in data configs (not silent overwrite of default)
-    const cfgDir = path.join(__dirname, "..", "data", "capacidade-viva", "calibration", "configs");
-    fs.mkdirSync(cfgDir, { recursive: true });
-    const versioned = path.join(cfgDir, `${cal.recommended_config.config_version || "cal"}.json`);
-    fs.writeFileSync(versioned, JSON.stringify(cal.recommended_config, null, 2));
-    console.log("config versionada:", versioned);
+      const review = Cal.reviewSet
+        ? Cal.reviewSet.buildReviewCases(rep, catalog)
+        : require("../src/capacidade-viva/calibration/review-set").buildReviewCases(rep, catalog);
+      const reviewDir = path.join(__dirname, "..", "data", "capacidade-viva", "calibration", "review");
+      fs.mkdirSync(reviewDir, { recursive: true });
+      fs.writeFileSync(path.join(reviewDir, "casos-validacao.json"), JSON.stringify(review, null, 2));
+      const md = require("../src/capacidade-viva/calibration/review-set").toMarkdown(review);
+      fs.writeFileSync(path.join(reviewDir, "CASOS_VALIDACAO.md"), md, "utf8");
+      fs.writeFileSync(path.join(outDir, "09_review_cases.json"), JSON.stringify(review, null, 2));
+      console.log("review cases:", review.n_cases, "pending items", (review.itens_pendentes || []).length);
+
+      // keep sample ticks
+      fs.writeFileSync(
+        path.join(outDir, "04_replay_ticks_sample.json"),
+        JSON.stringify(rep.ticks.filter((_, i) => i % 20 === 0).slice(0, 400), null, 2)
+      );
+
+      global.__PRIMARY_REP__ = rep;
+      global.__REVIEW__ = review;
+    }
   }
 
-  const temporal = Cal.calibrator.evaluateTemporalHypotheses(replay.ticks || []);
-  fs.writeFileSync(path.join(outDir, "06_temporal_hypotheses.json"), JSON.stringify(temporal, null, 2));
+  fs.writeFileSync(path.join(outDir, "08_team_profiles.json"), JSON.stringify(profileResults, null, 2));
 
-  const shadow = Cal.shadow.buildShadowReport(replay);
-  fs.writeFileSync(path.join(outDir, "07_shadow_report.json"), JSON.stringify(shadow, null, 2));
-
-  // Import contract for missing 6 months
-  const importContract = {
-    labels: ["CALIBRAÇÃO", "MODO SOMBRA", "NÃO OPERACIONAL"],
-    missing_for_six_months: [
-      "relatorios_pedidos_ifood_mes_a_mes (jan–maio ou período pedido)",
-      "exports HTML itens multi-mês se desejado",
-      "escala de equipe por turno (se existir)"
-    ],
-    expected_formats: ["xlsx iFood pedidos", "jsonl Transicao", "jsonl itens"],
-    drop_path_suggestion: "data/raw/incoming/ifood_YYYY-MM/",
-    do_not_invent: true
-  };
-  fs.writeFileSync(path.join(outDir, "08_import_contract.json"), JSON.stringify(importContract, null, 2));
+  // persist config v2 if not already
+  const cfgDir = path.join(__dirname, "..", "data", "capacidade-viva", "calibration", "configs");
+  fs.mkdirSync(cfgDir, { recursive: true });
+  const v2path = path.join(cfgDir, "cv-cal-sane-v2.json");
+  if (!fs.existsSync(v2path)) {
+    fs.writeFileSync(v2path, JSON.stringify(patchSaneV2(Cal.loader.loadJson(path.join(__dirname, "..", "data", "capacidade-viva", "config.default.json")).data), null, 2));
+  }
+  fs.writeFileSync(path.join(outDir, "05_config_sane_v2.json"), fs.readFileSync(v2path, "utf8"));
 
   const master = {
     labels: ["CALIBRAÇÃO", "MODO SOMBRA", "NÃO OPERACIONAL"],
-    operational: false,
+    version: "2D.1-sane",
+    full_replay: full,
     generated_at: new Date().toISOString(),
+    timezone: "America/Sao_Paulo",
     inventory: inv,
     quality,
     catalog_summary: {
@@ -204,34 +261,70 @@ async function main() {
       classified: catalog.classified,
       pending: catalog.pending_validation
     },
-    replay: {
-      from: replay.from,
-      to: replay.to,
-      n_ticks: replay.n_ticks,
-      interval_min: replay.interval_min
-    },
-    calibration: {
-      recommended: cal.recommended && cal.recommended.id,
-      stability_gap: cal.recommended && cal.recommended.stability_gap
-    },
-    shadow_metrics: shadow.metrics,
-    temporal: temporal.hypotheses,
-    recovery_liquida: shadow.recovery_liquida_historica,
+    metrics: profileResults.estrutura_media && profileResults.estrutura_media.metrics,
+    episodes: profileResults.estrutura_media && profileResults.estrutura_media.episodes,
+    profiles: profileResults,
+    config_previous: "cv-cal-complexity_heavy-v1",
+    config_new: "cv-cal-sane-v2",
+    recovery_liquida_historica: "nao_calculavel_sem_acoes_humanas",
     out_dir: outDir
   };
   fs.writeFileSync(path.join(outDir, "99_MASTER_REPORT.json"), JSON.stringify(master, null, 2));
   console.log("DONE", path.join(outDir, "99_MASTER_REPORT.json"));
 }
 
+function patchSaneV2(base) {
+  const c = JSON.parse(JSON.stringify(base));
+  c.config_version = "cv-cal-sane-v2";
+  c.provisional = true;
+  c.calibration = {
+    labels: ["CALIBRAÇÃO", "MODO SOMBRA", "NÃO OPERACIONAL"],
+    parent: "cv-cal-complexity-heavy-v1",
+    changes: [
+      "taxonomia sinal/atenção/exceção",
+      "envelhecimento isolado não é exceção crítica",
+      "pronto sem saída com causa não confirmada",
+      "motoboy só com espera na loja evidenciada",
+      "gates de pausa seletiva/geral",
+      "timezone America/Sao_Paulo explícito",
+      "episódios com gap 10 min"
+    ],
+    at: new Date().toISOString()
+  };
+  c.atraso = Object.assign({}, c.atraso || {}, {
+    pronto_sem_saida_min: 12,
+    motoboy_na_loja_min: 5,
+    entregador_alocado_sem_retirada_min: 15,
+    expedicao_normal_max_min: 8,
+    atraso_min: 50,
+    proximo_atrasar_min: 35
+  });
+  c.pesos_carga = {
+    quantidade: 0.85,
+    complexidade: 1.25,
+    urgencia: 1.05,
+    concentracao: 1.0,
+    dependencias: 1.05
+  };
+  c.episode = { gap_min: 10 };
+  c.pausa = Object.assign({}, c.pausa || {}, {
+    seletiva_requer_tendencia: true,
+    seletiva_requer_confianca: true,
+    geral_requer_multiplas_pracas: true,
+    auto_aplicar: false
+  });
+  return c;
+}
+
 function buildSyntheticBundle() {
-  const base = Date.parse("2026-06-20T18:00:00.000Z");
+  const base = Date.parse("2026-06-20T21:00:00.000Z");
   const transitions = [];
   const items = [];
-  for (let i = 0; i < 40; i++) {
-    const id = "sim-order-" + i;
-    const t0 = new Date(base + i * 120000).toISOString();
-    const t1 = new Date(base + i * 120000 + 600000).toISOString();
-    const t2 = new Date(base + i * 120000 + 900000).toISOString();
+  for (let i = 0; i < 30; i++) {
+    const id = "sim-" + i;
+    const t0 = new Date(base + i * 180000).toISOString();
+    const t1 = new Date(base + i * 180000 + 800000).toISOString();
+    const t2 = new Date(base + i * 180000 + 1500000).toISOString();
     transitions.push(
       { pedido_id: id, tipo_evento: "ifood.recebido", timestamp: t0, fonte: "synthetic", confianca: "alta", payload_original: {} },
       { pedido_id: id, tipo_evento: "ifood.aceito", timestamp: t0, fonte: "synthetic", confianca: "alta", payload_original: {} },
@@ -241,20 +334,23 @@ function buildSyntheticBundle() {
         timestamp: t1,
         fonte: "synthetic",
         confianca: "alta",
-        payload_original: { "TEMPO DO ENTREGADOR ESPERANDO NA LOJA (MIN)": i % 5 === 0 ? 8 : 1 }
+        payload_original: {
+          "TEMPO DO ENTREGADOR ESPERANDO NA LOJA (MIN)": i % 7 === 0 ? 9 : 1,
+          "TEMPO DE ALOCAÇÃO DO ENTREGADOR (MIN)": 10
+        }
       },
       { pedido_id: id, tipo_evento: "ifood.saiu", timestamp: t2, fonte: "synthetic", confianca: "alta", payload_original: {} }
     );
     items.push({
       pedido_id: id,
-      item_nome: i % 2 ? "Hot Roll" : "Uramaki",
+      item_nome: "Hot Roll",
       quantidade: 1,
-      data_hora: "20/06/2026 15:00",
+      data_hora: "20/06/2026 18:00",
       status: "CONCLUDED",
-      origem: "synthetic_fixture"
+      origem: "synthetic"
     });
   }
-  return { transitions, items, simulated: true };
+  return { transitions, items };
 }
 
 main().catch((e) => {

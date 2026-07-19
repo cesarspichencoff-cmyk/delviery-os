@@ -1,0 +1,1968 @@
+{
+  "labels": [
+    "CALIBRAÇÃO",
+    "MODO SOMBRA",
+    "NÃO OPERACIONAL"
+  ],
+  "operational": false,
+  "emits_real_alerts": false,
+  "applies_pause": false,
+  "ranks_employees": false,
+  "n_cases": 40,
+  "counts": {
+    "controlavel": 10,
+    "atencao": 10,
+    "critico": 10,
+    "excecao": 10
+  },
+  "cases": [
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "case_id": "CV-H-001",
+      "bucket_esperado_motor": "controlavel",
+      "data": "2026-05-26",
+      "horario_local": "2026-05-26T21:00:00-03:00",
+      "duracao_min": null,
+      "pedidos_ativos": 0,
+      "itens_complexidade": 0,
+      "praca_provavel": null,
+      "pedido_mais_antigo": "anonimizado",
+      "pedidos_prontos_aguardando": 0,
+      "sinais_logisticos": [],
+      "confianca": "baixa",
+      "classificacao_motor": "quieto",
+      "intervencao_sugerida": "observar",
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "componentes_isf_detalhados",
+        "nenhuma_excecao_critica_neste_tick"
+      ],
+      "pii": false,
+      "order_ids": "redacted",
+      "opcoes_validador": [
+        "controlavel",
+        "atencao",
+        "critico",
+        "nao_e_possivel_avaliar",
+        "praca_correta",
+        "praca_incorreta",
+        "recomendacao_adequada",
+        "recomendacao_inadequada",
+        "observacao"
+      ]
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "case_id": "CV-H-002",
+      "bucket_esperado_motor": "controlavel",
+      "data": "2026-05-26",
+      "horario_local": "2026-05-26T22:15:00-03:00",
+      "duracao_min": null,
+      "pedidos_ativos": 0,
+      "itens_complexidade": 0,
+      "praca_provavel": null,
+      "pedido_mais_antigo": "anonimizado",
+      "pedidos_prontos_aguardando": 0,
+      "sinais_logisticos": [],
+      "confianca": "baixa",
+      "classificacao_motor": "quieto",
+      "intervencao_sugerida": "observar",
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "componentes_isf_detalhados",
+        "nenhuma_excecao_critica_neste_tick"
+      ],
+      "pii": false,
+      "order_ids": "redacted",
+      "opcoes_validador": [
+        "controlavel",
+        "atencao",
+        "critico",
+        "nao_e_possivel_avaliar",
+        "praca_correta",
+        "praca_incorreta",
+        "recomendacao_adequada",
+        "recomendacao_inadequada",
+        "observacao"
+      ]
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "case_id": "CV-H-003",
+      "bucket_esperado_motor": "controlavel",
+      "data": "2026-05-26",
+      "horario_local": "2026-05-26T23:30:00-03:00",
+      "duracao_min": null,
+      "pedidos_ativos": 0,
+      "itens_complexidade": 0,
+      "praca_provavel": null,
+      "pedido_mais_antigo": "anonimizado",
+      "pedidos_prontos_aguardando": 0,
+      "sinais_logisticos": [],
+      "confianca": "baixa",
+      "classificacao_motor": "quieto",
+      "intervencao_sugerida": "observar",
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "componentes_isf_detalhados",
+        "nenhuma_excecao_critica_neste_tick"
+      ],
+      "pii": false,
+      "order_ids": "redacted",
+      "opcoes_validador": [
+        "controlavel",
+        "atencao",
+        "critico",
+        "nao_e_possivel_avaliar",
+        "praca_correta",
+        "praca_incorreta",
+        "recomendacao_adequada",
+        "recomendacao_inadequada",
+        "observacao"
+      ]
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "case_id": "CV-H-004",
+      "bucket_esperado_motor": "controlavel",
+      "data": "2026-05-27",
+      "horario_local": "2026-05-27T00:45:00-03:00",
+      "duracao_min": null,
+      "pedidos_ativos": 0,
+      "itens_complexidade": 0,
+      "praca_provavel": null,
+      "pedido_mais_antigo": "anonimizado",
+      "pedidos_prontos_aguardando": 0,
+      "sinais_logisticos": [],
+      "confianca": "baixa",
+      "classificacao_motor": "quieto",
+      "intervencao_sugerida": "observar",
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "componentes_isf_detalhados",
+        "nenhuma_excecao_critica_neste_tick"
+      ],
+      "pii": false,
+      "order_ids": "redacted",
+      "opcoes_validador": [
+        "controlavel",
+        "atencao",
+        "critico",
+        "nao_e_possivel_avaliar",
+        "praca_correta",
+        "praca_incorreta",
+        "recomendacao_adequada",
+        "recomendacao_inadequada",
+        "observacao"
+      ]
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "case_id": "CV-H-005",
+      "bucket_esperado_motor": "controlavel",
+      "data": "2026-05-27",
+      "horario_local": "2026-05-27T02:00:00-03:00",
+      "duracao_min": null,
+      "pedidos_ativos": 0,
+      "itens_complexidade": 0,
+      "praca_provavel": null,
+      "pedido_mais_antigo": "anonimizado",
+      "pedidos_prontos_aguardando": 0,
+      "sinais_logisticos": [],
+      "confianca": "baixa",
+      "classificacao_motor": "quieto",
+      "intervencao_sugerida": "observar",
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "componentes_isf_detalhados",
+        "nenhuma_excecao_critica_neste_tick"
+      ],
+      "pii": false,
+      "order_ids": "redacted",
+      "opcoes_validador": [
+        "controlavel",
+        "atencao",
+        "critico",
+        "nao_e_possivel_avaliar",
+        "praca_correta",
+        "praca_incorreta",
+        "recomendacao_adequada",
+        "recomendacao_inadequada",
+        "observacao"
+      ]
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "case_id": "CV-H-006",
+      "bucket_esperado_motor": "controlavel",
+      "data": "2026-05-27",
+      "horario_local": "2026-05-27T03:15:00-03:00",
+      "duracao_min": null,
+      "pedidos_ativos": 0,
+      "itens_complexidade": 0,
+      "praca_provavel": null,
+      "pedido_mais_antigo": "anonimizado",
+      "pedidos_prontos_aguardando": 0,
+      "sinais_logisticos": [],
+      "confianca": "baixa",
+      "classificacao_motor": "quieto",
+      "intervencao_sugerida": "observar",
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "componentes_isf_detalhados",
+        "nenhuma_excecao_critica_neste_tick"
+      ],
+      "pii": false,
+      "order_ids": "redacted",
+      "opcoes_validador": [
+        "controlavel",
+        "atencao",
+        "critico",
+        "nao_e_possivel_avaliar",
+        "praca_correta",
+        "praca_incorreta",
+        "recomendacao_adequada",
+        "recomendacao_inadequada",
+        "observacao"
+      ]
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "case_id": "CV-H-007",
+      "bucket_esperado_motor": "controlavel",
+      "data": "2026-05-27",
+      "horario_local": "2026-05-27T04:30:00-03:00",
+      "duracao_min": null,
+      "pedidos_ativos": 0,
+      "itens_complexidade": 0,
+      "praca_provavel": null,
+      "pedido_mais_antigo": "anonimizado",
+      "pedidos_prontos_aguardando": 0,
+      "sinais_logisticos": [],
+      "confianca": "baixa",
+      "classificacao_motor": "quieto",
+      "intervencao_sugerida": "observar",
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "componentes_isf_detalhados",
+        "nenhuma_excecao_critica_neste_tick"
+      ],
+      "pii": false,
+      "order_ids": "redacted",
+      "opcoes_validador": [
+        "controlavel",
+        "atencao",
+        "critico",
+        "nao_e_possivel_avaliar",
+        "praca_correta",
+        "praca_incorreta",
+        "recomendacao_adequada",
+        "recomendacao_inadequada",
+        "observacao"
+      ]
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "case_id": "CV-H-008",
+      "bucket_esperado_motor": "controlavel",
+      "data": "2026-05-27",
+      "horario_local": "2026-05-27T05:45:00-03:00",
+      "duracao_min": null,
+      "pedidos_ativos": 0,
+      "itens_complexidade": 0,
+      "praca_provavel": null,
+      "pedido_mais_antigo": "anonimizado",
+      "pedidos_prontos_aguardando": 0,
+      "sinais_logisticos": [],
+      "confianca": "baixa",
+      "classificacao_motor": "quieto",
+      "intervencao_sugerida": "observar",
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "componentes_isf_detalhados",
+        "nenhuma_excecao_critica_neste_tick"
+      ],
+      "pii": false,
+      "order_ids": "redacted",
+      "opcoes_validador": [
+        "controlavel",
+        "atencao",
+        "critico",
+        "nao_e_possivel_avaliar",
+        "praca_correta",
+        "praca_incorreta",
+        "recomendacao_adequada",
+        "recomendacao_inadequada",
+        "observacao"
+      ]
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "case_id": "CV-H-009",
+      "bucket_esperado_motor": "controlavel",
+      "data": "2026-05-27",
+      "horario_local": "2026-05-27T07:00:00-03:00",
+      "duracao_min": null,
+      "pedidos_ativos": 0,
+      "itens_complexidade": 0,
+      "praca_provavel": null,
+      "pedido_mais_antigo": "anonimizado",
+      "pedidos_prontos_aguardando": 0,
+      "sinais_logisticos": [],
+      "confianca": "baixa",
+      "classificacao_motor": "quieto",
+      "intervencao_sugerida": "observar",
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "componentes_isf_detalhados",
+        "nenhuma_excecao_critica_neste_tick"
+      ],
+      "pii": false,
+      "order_ids": "redacted",
+      "opcoes_validador": [
+        "controlavel",
+        "atencao",
+        "critico",
+        "nao_e_possivel_avaliar",
+        "praca_correta",
+        "praca_incorreta",
+        "recomendacao_adequada",
+        "recomendacao_inadequada",
+        "observacao"
+      ]
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "case_id": "CV-H-010",
+      "bucket_esperado_motor": "controlavel",
+      "data": "2026-05-27",
+      "horario_local": "2026-05-27T08:15:00-03:00",
+      "duracao_min": null,
+      "pedidos_ativos": 0,
+      "itens_complexidade": 0,
+      "praca_provavel": null,
+      "pedido_mais_antigo": "anonimizado",
+      "pedidos_prontos_aguardando": 0,
+      "sinais_logisticos": [],
+      "confianca": "baixa",
+      "classificacao_motor": "quieto",
+      "intervencao_sugerida": "observar",
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "componentes_isf_detalhados",
+        "nenhuma_excecao_critica_neste_tick"
+      ],
+      "pii": false,
+      "order_ids": "redacted",
+      "opcoes_validador": [
+        "controlavel",
+        "atencao",
+        "critico",
+        "nao_e_possivel_avaliar",
+        "praca_correta",
+        "praca_incorreta",
+        "recomendacao_adequada",
+        "recomendacao_inadequada",
+        "observacao"
+      ]
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "case_id": "CV-H-011",
+      "bucket_esperado_motor": "atencao",
+      "data": "2026-05-27",
+      "horario_local": "2026-05-27T08:45:00-03:00",
+      "duracao_min": null,
+      "pedidos_ativos": 8,
+      "itens_complexidade": 0,
+      "praca_provavel": "conferencia",
+      "pedido_mais_antigo": "anonimizado",
+      "pedidos_prontos_aguardando": 2,
+      "sinais_logisticos": [],
+      "confianca": "baixa",
+      "classificacao_motor": "atencao",
+      "intervencao_sugerida": "observar",
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "nenhuma_excecao_critica_neste_tick"
+      ],
+      "pii": false,
+      "order_ids": "redacted",
+      "opcoes_validador": [
+        "controlavel",
+        "atencao",
+        "critico",
+        "nao_e_possivel_avaliar",
+        "praca_correta",
+        "praca_incorreta",
+        "recomendacao_adequada",
+        "recomendacao_inadequada",
+        "observacao"
+      ]
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "case_id": "CV-H-012",
+      "bucket_esperado_motor": "atencao",
+      "data": "2026-06-03",
+      "horario_local": "2026-06-03T19:15:00-03:00",
+      "duracao_min": null,
+      "pedidos_ativos": 25,
+      "itens_complexidade": 0,
+      "praca_provavel": "conferencia",
+      "pedido_mais_antigo": "anonimizado",
+      "pedidos_prontos_aguardando": 3,
+      "sinais_logisticos": [
+        "pedido_atrasado_vs_prometido_operacional",
+        "aguardando_saida_causa_nao_confirmada"
+      ],
+      "confianca": "baixa",
+      "classificacao_motor": "atencao",
+      "intervencao_sugerida": "observar",
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "nenhuma_excecao_critica_neste_tick"
+      ],
+      "pii": false,
+      "order_ids": "redacted",
+      "opcoes_validador": [
+        "controlavel",
+        "atencao",
+        "critico",
+        "nao_e_possivel_avaliar",
+        "praca_correta",
+        "praca_incorreta",
+        "recomendacao_adequada",
+        "recomendacao_inadequada",
+        "observacao"
+      ]
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "case_id": "CV-H-013",
+      "bucket_esperado_motor": "atencao",
+      "data": "2026-06-10",
+      "horario_local": "2026-06-10T23:15:00-03:00",
+      "duracao_min": null,
+      "pedidos_ativos": 7,
+      "itens_complexidade": 0,
+      "praca_provavel": "conferencia",
+      "pedido_mais_antigo": "anonimizado",
+      "pedidos_prontos_aguardando": 0,
+      "sinais_logisticos": [
+        "pedido_atrasado_vs_prometido_operacional"
+      ],
+      "confianca": "baixa",
+      "classificacao_motor": "atencao",
+      "intervencao_sugerida": "observar",
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "nenhuma_excecao_critica_neste_tick"
+      ],
+      "pii": false,
+      "order_ids": "redacted",
+      "opcoes_validador": [
+        "controlavel",
+        "atencao",
+        "critico",
+        "nao_e_possivel_avaliar",
+        "praca_correta",
+        "praca_incorreta",
+        "recomendacao_adequada",
+        "recomendacao_inadequada",
+        "observacao"
+      ]
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "case_id": "CV-H-014",
+      "bucket_esperado_motor": "atencao",
+      "data": "2026-06-18",
+      "horario_local": "2026-06-18T00:00:00-03:00",
+      "duracao_min": null,
+      "pedidos_ativos": 13,
+      "itens_complexidade": 0,
+      "praca_provavel": "conferencia",
+      "pedido_mais_antigo": "anonimizado",
+      "pedidos_prontos_aguardando": 0,
+      "sinais_logisticos": [
+        "pedido_atrasado_vs_prometido_operacional"
+      ],
+      "confianca": "baixa",
+      "classificacao_motor": "atencao",
+      "intervencao_sugerida": "observar",
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "nenhuma_excecao_critica_neste_tick"
+      ],
+      "pii": false,
+      "order_ids": "redacted",
+      "opcoes_validador": [
+        "controlavel",
+        "atencao",
+        "critico",
+        "nao_e_possivel_avaliar",
+        "praca_correta",
+        "praca_incorreta",
+        "recomendacao_adequada",
+        "recomendacao_inadequada",
+        "observacao"
+      ]
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "case_id": "CV-H-015",
+      "bucket_esperado_motor": "atencao",
+      "data": "2026-06-25",
+      "horario_local": "2026-06-25T06:00:00-03:00",
+      "duracao_min": null,
+      "pedidos_ativos": 22,
+      "itens_complexidade": 29,
+      "praca_provavel": "sushi",
+      "pedido_mais_antigo": "anonimizado",
+      "pedidos_prontos_aguardando": 0,
+      "sinais_logisticos": [
+        "pedido_atrasado_vs_prometido_operacional"
+      ],
+      "confianca": "media",
+      "classificacao_motor": "atencao",
+      "intervencao_sugerida": "apoio_local",
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "nenhuma_excecao_critica_neste_tick"
+      ],
+      "pii": false,
+      "order_ids": "redacted",
+      "opcoes_validador": [
+        "controlavel",
+        "atencao",
+        "critico",
+        "nao_e_possivel_avaliar",
+        "praca_correta",
+        "praca_incorreta",
+        "recomendacao_adequada",
+        "recomendacao_inadequada",
+        "observacao"
+      ]
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "case_id": "CV-H-016",
+      "bucket_esperado_motor": "atencao",
+      "data": "2026-06-30",
+      "horario_local": "2026-06-30T22:15:00-03:00",
+      "duracao_min": null,
+      "pedidos_ativos": 23,
+      "itens_complexidade": 31,
+      "praca_provavel": "sushi",
+      "pedido_mais_antigo": "anonimizado",
+      "pedidos_prontos_aguardando": 0,
+      "sinais_logisticos": [
+        "pedido_atrasado_vs_prometido_operacional"
+      ],
+      "confianca": "media",
+      "classificacao_motor": "atencao",
+      "intervencao_sugerida": "apoio_local",
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "nenhuma_excecao_critica_neste_tick"
+      ],
+      "pii": false,
+      "order_ids": "redacted",
+      "opcoes_validador": [
+        "controlavel",
+        "atencao",
+        "critico",
+        "nao_e_possivel_avaliar",
+        "praca_correta",
+        "praca_incorreta",
+        "recomendacao_adequada",
+        "recomendacao_inadequada",
+        "observacao"
+      ]
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "case_id": "CV-H-017",
+      "bucket_esperado_motor": "atencao",
+      "data": "2026-06-03",
+      "horario_local": "2026-06-03T14:45:00-03:00",
+      "duracao_min": 0,
+      "pedidos_ativos": 4,
+      "itens_complexidade": 0,
+      "praca_provavel": "conferencia",
+      "pedido_mais_antigo": "anonimizado",
+      "pedidos_prontos_aguardando": 0,
+      "sinais_logisticos": [
+        "pedido_atrasado_vs_prometido_operacional"
+      ],
+      "confianca": "baixa",
+      "classificacao_motor": "atencao",
+      "intervencao_sugerida": "observar",
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "nenhuma_excecao_critica_neste_tick"
+      ],
+      "pii": false,
+      "order_ids": "redacted",
+      "opcoes_validador": [
+        "controlavel",
+        "atencao",
+        "critico",
+        "nao_e_possivel_avaliar",
+        "praca_correta",
+        "praca_incorreta",
+        "recomendacao_adequada",
+        "recomendacao_inadequada",
+        "observacao"
+      ]
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "case_id": "CV-H-018",
+      "bucket_esperado_motor": "atencao",
+      "data": "2026-06-10",
+      "horario_local": "2026-06-10T22:15:00-03:00",
+      "duracao_min": 0,
+      "pedidos_ativos": 7,
+      "itens_complexidade": 0,
+      "praca_provavel": "conferencia",
+      "pedido_mais_antigo": "anonimizado",
+      "pedidos_prontos_aguardando": 0,
+      "sinais_logisticos": [
+        "pedido_atrasado_vs_prometido_operacional"
+      ],
+      "confianca": "baixa",
+      "classificacao_motor": "atencao",
+      "intervencao_sugerida": "observar",
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "nenhuma_excecao_critica_neste_tick"
+      ],
+      "pii": false,
+      "order_ids": "redacted",
+      "opcoes_validador": [
+        "controlavel",
+        "atencao",
+        "critico",
+        "nao_e_possivel_avaliar",
+        "praca_correta",
+        "praca_incorreta",
+        "recomendacao_adequada",
+        "recomendacao_inadequada",
+        "observacao"
+      ]
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "case_id": "CV-H-019",
+      "bucket_esperado_motor": "atencao",
+      "data": "2026-06-17",
+      "horario_local": "2026-06-17T23:00:00-03:00",
+      "duracao_min": 0,
+      "pedidos_ativos": 13,
+      "itens_complexidade": 0,
+      "praca_provavel": "conferencia",
+      "pedido_mais_antigo": "anonimizado",
+      "pedidos_prontos_aguardando": 0,
+      "sinais_logisticos": [
+        "pedido_atrasado_vs_prometido_operacional"
+      ],
+      "confianca": "baixa",
+      "classificacao_motor": "atencao",
+      "intervencao_sugerida": "observar",
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "nenhuma_excecao_critica_neste_tick"
+      ],
+      "pii": false,
+      "order_ids": "redacted",
+      "opcoes_validador": [
+        "controlavel",
+        "atencao",
+        "critico",
+        "nao_e_possivel_avaliar",
+        "praca_correta",
+        "praca_incorreta",
+        "recomendacao_adequada",
+        "recomendacao_inadequada",
+        "observacao"
+      ]
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "case_id": "CV-H-020",
+      "bucket_esperado_motor": "atencao",
+      "data": "2026-06-25",
+      "horario_local": "2026-06-25T05:00:00-03:00",
+      "duracao_min": 0,
+      "pedidos_ativos": 22,
+      "itens_complexidade": 29,
+      "praca_provavel": "sushi",
+      "pedido_mais_antigo": "anonimizado",
+      "pedidos_prontos_aguardando": 0,
+      "sinais_logisticos": [
+        "pedido_atrasado_vs_prometido_operacional"
+      ],
+      "confianca": "media",
+      "classificacao_motor": "atencao",
+      "intervencao_sugerida": "apoio_local",
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "nenhuma_excecao_critica_neste_tick"
+      ],
+      "pii": false,
+      "order_ids": "redacted",
+      "opcoes_validador": [
+        "controlavel",
+        "atencao",
+        "critico",
+        "nao_e_possivel_avaliar",
+        "praca_correta",
+        "praca_incorreta",
+        "recomendacao_adequada",
+        "recomendacao_inadequada",
+        "observacao"
+      ]
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "case_id": "CV-H-021",
+      "bucket_esperado_motor": "critico",
+      "data": "2026-05-27",
+      "horario_local": "2026-05-27T08:45:00-03:00",
+      "duracao_min": null,
+      "pedidos_ativos": 8,
+      "itens_complexidade": 0,
+      "praca_provavel": "conferencia",
+      "pedido_mais_antigo": "anonimizado",
+      "pedidos_prontos_aguardando": 2,
+      "sinais_logisticos": [],
+      "confianca": "baixa",
+      "classificacao_motor": "atencao",
+      "intervencao_sugerida": "observar",
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "nenhuma_excecao_critica_neste_tick"
+      ],
+      "pii": false,
+      "order_ids": "redacted",
+      "opcoes_validador": [
+        "controlavel",
+        "atencao",
+        "critico",
+        "nao_e_possivel_avaliar",
+        "praca_correta",
+        "praca_incorreta",
+        "recomendacao_adequada",
+        "recomendacao_inadequada",
+        "observacao"
+      ]
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "case_id": "CV-H-022",
+      "bucket_esperado_motor": "critico",
+      "data": "2026-06-03",
+      "horario_local": "2026-06-03T19:15:00-03:00",
+      "duracao_min": null,
+      "pedidos_ativos": 25,
+      "itens_complexidade": 0,
+      "praca_provavel": "conferencia",
+      "pedido_mais_antigo": "anonimizado",
+      "pedidos_prontos_aguardando": 3,
+      "sinais_logisticos": [
+        "pedido_atrasado_vs_prometido_operacional",
+        "aguardando_saida_causa_nao_confirmada"
+      ],
+      "confianca": "baixa",
+      "classificacao_motor": "atencao",
+      "intervencao_sugerida": "observar",
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "nenhuma_excecao_critica_neste_tick"
+      ],
+      "pii": false,
+      "order_ids": "redacted",
+      "opcoes_validador": [
+        "controlavel",
+        "atencao",
+        "critico",
+        "nao_e_possivel_avaliar",
+        "praca_correta",
+        "praca_incorreta",
+        "recomendacao_adequada",
+        "recomendacao_inadequada",
+        "observacao"
+      ]
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "case_id": "CV-H-023",
+      "bucket_esperado_motor": "critico",
+      "data": "2026-06-10",
+      "horario_local": "2026-06-10T23:15:00-03:00",
+      "duracao_min": null,
+      "pedidos_ativos": 7,
+      "itens_complexidade": 0,
+      "praca_provavel": "conferencia",
+      "pedido_mais_antigo": "anonimizado",
+      "pedidos_prontos_aguardando": 0,
+      "sinais_logisticos": [
+        "pedido_atrasado_vs_prometido_operacional"
+      ],
+      "confianca": "baixa",
+      "classificacao_motor": "atencao",
+      "intervencao_sugerida": "observar",
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "nenhuma_excecao_critica_neste_tick"
+      ],
+      "pii": false,
+      "order_ids": "redacted",
+      "opcoes_validador": [
+        "controlavel",
+        "atencao",
+        "critico",
+        "nao_e_possivel_avaliar",
+        "praca_correta",
+        "praca_incorreta",
+        "recomendacao_adequada",
+        "recomendacao_inadequada",
+        "observacao"
+      ]
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "case_id": "CV-H-024",
+      "bucket_esperado_motor": "critico",
+      "data": "2026-06-18",
+      "horario_local": "2026-06-18T00:00:00-03:00",
+      "duracao_min": null,
+      "pedidos_ativos": 13,
+      "itens_complexidade": 0,
+      "praca_provavel": "conferencia",
+      "pedido_mais_antigo": "anonimizado",
+      "pedidos_prontos_aguardando": 0,
+      "sinais_logisticos": [
+        "pedido_atrasado_vs_prometido_operacional"
+      ],
+      "confianca": "baixa",
+      "classificacao_motor": "atencao",
+      "intervencao_sugerida": "observar",
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "nenhuma_excecao_critica_neste_tick"
+      ],
+      "pii": false,
+      "order_ids": "redacted",
+      "opcoes_validador": [
+        "controlavel",
+        "atencao",
+        "critico",
+        "nao_e_possivel_avaliar",
+        "praca_correta",
+        "praca_incorreta",
+        "recomendacao_adequada",
+        "recomendacao_inadequada",
+        "observacao"
+      ]
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "case_id": "CV-H-025",
+      "bucket_esperado_motor": "critico",
+      "data": "2026-06-25",
+      "horario_local": "2026-06-25T06:00:00-03:00",
+      "duracao_min": null,
+      "pedidos_ativos": 22,
+      "itens_complexidade": 29,
+      "praca_provavel": "sushi",
+      "pedido_mais_antigo": "anonimizado",
+      "pedidos_prontos_aguardando": 0,
+      "sinais_logisticos": [
+        "pedido_atrasado_vs_prometido_operacional"
+      ],
+      "confianca": "media",
+      "classificacao_motor": "atencao",
+      "intervencao_sugerida": "apoio_local",
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "nenhuma_excecao_critica_neste_tick"
+      ],
+      "pii": false,
+      "order_ids": "redacted",
+      "opcoes_validador": [
+        "controlavel",
+        "atencao",
+        "critico",
+        "nao_e_possivel_avaliar",
+        "praca_correta",
+        "praca_incorreta",
+        "recomendacao_adequada",
+        "recomendacao_inadequada",
+        "observacao"
+      ]
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "case_id": "CV-H-026",
+      "bucket_esperado_motor": "critico",
+      "data": "2026-06-30",
+      "horario_local": "2026-06-30T22:15:00-03:00",
+      "duracao_min": null,
+      "pedidos_ativos": 23,
+      "itens_complexidade": 31,
+      "praca_provavel": "sushi",
+      "pedido_mais_antigo": "anonimizado",
+      "pedidos_prontos_aguardando": 0,
+      "sinais_logisticos": [
+        "pedido_atrasado_vs_prometido_operacional"
+      ],
+      "confianca": "media",
+      "classificacao_motor": "atencao",
+      "intervencao_sugerida": "apoio_local",
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "nenhuma_excecao_critica_neste_tick"
+      ],
+      "pii": false,
+      "order_ids": "redacted",
+      "opcoes_validador": [
+        "controlavel",
+        "atencao",
+        "critico",
+        "nao_e_possivel_avaliar",
+        "praca_correta",
+        "praca_incorreta",
+        "recomendacao_adequada",
+        "recomendacao_inadequada",
+        "observacao"
+      ]
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "case_id": "CV-H-027",
+      "bucket_esperado_motor": "critico",
+      "data": "2026-06-03",
+      "horario_local": "2026-06-03T14:45:00-03:00",
+      "duracao_min": 0,
+      "pedidos_ativos": 4,
+      "itens_complexidade": 0,
+      "praca_provavel": "conferencia",
+      "pedido_mais_antigo": "anonimizado",
+      "pedidos_prontos_aguardando": 0,
+      "sinais_logisticos": [
+        "pedido_atrasado_vs_prometido_operacional"
+      ],
+      "confianca": "baixa",
+      "classificacao_motor": "atencao",
+      "intervencao_sugerida": "observar",
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "nenhuma_excecao_critica_neste_tick"
+      ],
+      "pii": false,
+      "order_ids": "redacted",
+      "opcoes_validador": [
+        "controlavel",
+        "atencao",
+        "critico",
+        "nao_e_possivel_avaliar",
+        "praca_correta",
+        "praca_incorreta",
+        "recomendacao_adequada",
+        "recomendacao_inadequada",
+        "observacao"
+      ]
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "case_id": "CV-H-028",
+      "bucket_esperado_motor": "critico",
+      "data": "2026-06-10",
+      "horario_local": "2026-06-10T22:15:00-03:00",
+      "duracao_min": 0,
+      "pedidos_ativos": 7,
+      "itens_complexidade": 0,
+      "praca_provavel": "conferencia",
+      "pedido_mais_antigo": "anonimizado",
+      "pedidos_prontos_aguardando": 0,
+      "sinais_logisticos": [
+        "pedido_atrasado_vs_prometido_operacional"
+      ],
+      "confianca": "baixa",
+      "classificacao_motor": "atencao",
+      "intervencao_sugerida": "observar",
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "nenhuma_excecao_critica_neste_tick"
+      ],
+      "pii": false,
+      "order_ids": "redacted",
+      "opcoes_validador": [
+        "controlavel",
+        "atencao",
+        "critico",
+        "nao_e_possivel_avaliar",
+        "praca_correta",
+        "praca_incorreta",
+        "recomendacao_adequada",
+        "recomendacao_inadequada",
+        "observacao"
+      ]
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "case_id": "CV-H-029",
+      "bucket_esperado_motor": "critico",
+      "data": "2026-06-17",
+      "horario_local": "2026-06-17T23:00:00-03:00",
+      "duracao_min": 0,
+      "pedidos_ativos": 13,
+      "itens_complexidade": 0,
+      "praca_provavel": "conferencia",
+      "pedido_mais_antigo": "anonimizado",
+      "pedidos_prontos_aguardando": 0,
+      "sinais_logisticos": [
+        "pedido_atrasado_vs_prometido_operacional"
+      ],
+      "confianca": "baixa",
+      "classificacao_motor": "atencao",
+      "intervencao_sugerida": "observar",
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "nenhuma_excecao_critica_neste_tick"
+      ],
+      "pii": false,
+      "order_ids": "redacted",
+      "opcoes_validador": [
+        "controlavel",
+        "atencao",
+        "critico",
+        "nao_e_possivel_avaliar",
+        "praca_correta",
+        "praca_incorreta",
+        "recomendacao_adequada",
+        "recomendacao_inadequada",
+        "observacao"
+      ]
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "case_id": "CV-H-030",
+      "bucket_esperado_motor": "critico",
+      "data": "2026-06-25",
+      "horario_local": "2026-06-25T05:00:00-03:00",
+      "duracao_min": 0,
+      "pedidos_ativos": 22,
+      "itens_complexidade": 29,
+      "praca_provavel": "sushi",
+      "pedido_mais_antigo": "anonimizado",
+      "pedidos_prontos_aguardando": 0,
+      "sinais_logisticos": [
+        "pedido_atrasado_vs_prometido_operacional"
+      ],
+      "confianca": "media",
+      "classificacao_motor": "atencao",
+      "intervencao_sugerida": "apoio_local",
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "nenhuma_excecao_critica_neste_tick"
+      ],
+      "pii": false,
+      "order_ids": "redacted",
+      "opcoes_validador": [
+        "controlavel",
+        "atencao",
+        "critico",
+        "nao_e_possivel_avaliar",
+        "praca_correta",
+        "praca_incorreta",
+        "recomendacao_adequada",
+        "recomendacao_inadequada",
+        "observacao"
+      ]
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "case_id": "CV-H-031",
+      "bucket_esperado_motor": "excecao",
+      "data": "2026-05-27",
+      "horario_local": "2026-05-27T09:15:00-03:00",
+      "duracao_min": null,
+      "pedidos_ativos": 23,
+      "itens_complexidade": 0,
+      "praca_provavel": "conferencia",
+      "pedido_mais_antigo": "anonimizado",
+      "pedidos_prontos_aguardando": 3,
+      "sinais_logisticos": [
+        "entregador_alocado_sem_retirada",
+        "aguardando_saida_causa_nao_confirmada"
+      ],
+      "confianca": "baixa",
+      "classificacao_motor": "excecao_critica",
+      "intervencao_sugerida": "observar",
+      "dados_ausentes": [
+        "equipe_real_por_turno"
+      ],
+      "pii": false,
+      "order_ids": "redacted",
+      "opcoes_validador": [
+        "controlavel",
+        "atencao",
+        "critico",
+        "nao_e_possivel_avaliar",
+        "praca_correta",
+        "praca_incorreta",
+        "recomendacao_adequada",
+        "recomendacao_inadequada",
+        "observacao"
+      ]
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "case_id": "CV-H-032",
+      "bucket_esperado_motor": "excecao",
+      "data": "2026-06-04",
+      "horario_local": "2026-06-04T12:30:00-03:00",
+      "duracao_min": null,
+      "pedidos_ativos": 6,
+      "itens_complexidade": 0,
+      "praca_provavel": "conferencia",
+      "pedido_mais_antigo": "anonimizado",
+      "pedidos_prontos_aguardando": 1,
+      "sinais_logisticos": [
+        "motoboy_na_loja",
+        "pedido_atrasado_vs_prometido_operacional"
+      ],
+      "confianca": "baixa",
+      "classificacao_motor": "excecao_critica",
+      "intervencao_sugerida": "observar",
+      "dados_ausentes": [
+        "equipe_real_por_turno"
+      ],
+      "pii": false,
+      "order_ids": "redacted",
+      "opcoes_validador": [
+        "controlavel",
+        "atencao",
+        "critico",
+        "nao_e_possivel_avaliar",
+        "praca_correta",
+        "praca_incorreta",
+        "recomendacao_adequada",
+        "recomendacao_inadequada",
+        "observacao"
+      ]
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "case_id": "CV-H-033",
+      "bucket_esperado_motor": "excecao",
+      "data": "2026-06-12",
+      "horario_local": "2026-06-12T16:15:00-03:00",
+      "duracao_min": null,
+      "pedidos_ativos": 80,
+      "itens_complexidade": 0,
+      "praca_provavel": "conferencia",
+      "pedido_mais_antigo": "anonimizado",
+      "pedidos_prontos_aguardando": 9,
+      "sinais_logisticos": [
+        "motoboy_na_loja",
+        "pedido_atrasado_vs_prometido_operacional",
+        "aguardando_saida_causa_nao_confirmada",
+        "prontos_acumulando"
+      ],
+      "confianca": "baixa",
+      "classificacao_motor": "excecao_critica",
+      "intervencao_sugerida": "observar",
+      "dados_ausentes": [
+        "equipe_real_por_turno"
+      ],
+      "pii": false,
+      "order_ids": "redacted",
+      "opcoes_validador": [
+        "controlavel",
+        "atencao",
+        "critico",
+        "nao_e_possivel_avaliar",
+        "praca_correta",
+        "praca_incorreta",
+        "recomendacao_adequada",
+        "recomendacao_inadequada",
+        "observacao"
+      ]
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "case_id": "CV-H-034",
+      "bucket_esperado_motor": "excecao",
+      "data": "2026-06-20",
+      "horario_local": "2026-06-20T16:15:00-03:00",
+      "duracao_min": null,
+      "pedidos_ativos": 61,
+      "itens_complexidade": 156,
+      "praca_provavel": "sushi",
+      "pedido_mais_antigo": "anonimizado",
+      "pedidos_prontos_aguardando": 5,
+      "sinais_logisticos": [
+        "motoboy_na_loja",
+        "entregador_alocado_sem_retirada",
+        "pedido_atrasado_vs_prometido_operacional",
+        "aguardando_saida_causa_nao_confirmada",
+        "prontos_acumulando"
+      ],
+      "confianca": "media",
+      "classificacao_motor": "excecao_critica",
+      "intervencao_sugerida": "finalizar_pedidos_motoboy_esperando",
+      "dados_ausentes": [
+        "equipe_real_por_turno"
+      ],
+      "pii": false,
+      "order_ids": "redacted",
+      "opcoes_validador": [
+        "controlavel",
+        "atencao",
+        "critico",
+        "nao_e_possivel_avaliar",
+        "praca_correta",
+        "praca_incorreta",
+        "recomendacao_adequada",
+        "recomendacao_inadequada",
+        "observacao"
+      ]
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "case_id": "CV-H-035",
+      "bucket_esperado_motor": "excecao",
+      "data": "2026-05-29",
+      "horario_local": "2026-05-29T08:15:00-03:00",
+      "duracao_min": 0,
+      "pedidos_ativos": 7,
+      "itens_complexidade": 0,
+      "praca_provavel": "conferencia",
+      "pedido_mais_antigo": "anonimizado",
+      "pedidos_prontos_aguardando": 2,
+      "sinais_logisticos": [
+        "motoboy_na_loja",
+        "pedido_atrasado_vs_prometido_operacional"
+      ],
+      "confianca": "baixa",
+      "classificacao_motor": "excecao_critica",
+      "intervencao_sugerida": "observar",
+      "dados_ausentes": [
+        "equipe_real_por_turno"
+      ],
+      "pii": false,
+      "order_ids": "redacted",
+      "opcoes_validador": [
+        "controlavel",
+        "atencao",
+        "critico",
+        "nao_e_possivel_avaliar",
+        "praca_correta",
+        "praca_incorreta",
+        "recomendacao_adequada",
+        "recomendacao_inadequada",
+        "observacao"
+      ]
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "case_id": "CV-H-036",
+      "bucket_esperado_motor": "excecao",
+      "data": "2026-06-02",
+      "horario_local": "2026-06-02T18:15:00-03:00",
+      "duracao_min": 0,
+      "pedidos_ativos": 19,
+      "itens_complexidade": 0,
+      "praca_provavel": "conferencia",
+      "pedido_mais_antigo": "anonimizado",
+      "pedidos_prontos_aguardando": 11,
+      "sinais_logisticos": [
+        "pronto_sem_saida_excessivo",
+        "entregador_alocado_sem_retirada",
+        "pedido_atrasado_vs_prometido_operacional",
+        "aguardando_saida_causa_nao_confirmada",
+        "prontos_acumulando"
+      ],
+      "confianca": "baixa",
+      "classificacao_motor": "excecao_critica",
+      "intervencao_sugerida": "observar",
+      "dados_ausentes": [
+        "equipe_real_por_turno"
+      ],
+      "pii": false,
+      "order_ids": "redacted",
+      "opcoes_validador": [
+        "controlavel",
+        "atencao",
+        "critico",
+        "nao_e_possivel_avaliar",
+        "praca_correta",
+        "praca_incorreta",
+        "recomendacao_adequada",
+        "recomendacao_inadequada",
+        "observacao"
+      ]
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "case_id": "CV-H-037",
+      "bucket_esperado_motor": "excecao",
+      "data": "2026-06-08",
+      "horario_local": "2026-06-08T15:15:00-03:00",
+      "duracao_min": 0,
+      "pedidos_ativos": 22,
+      "itens_complexidade": 0,
+      "praca_provavel": "conferencia",
+      "pedido_mais_antigo": "anonimizado",
+      "pedidos_prontos_aguardando": 5,
+      "sinais_logisticos": [
+        "motoboy_na_loja",
+        "pedido_atrasado_vs_prometido_operacional",
+        "prontos_acumulando"
+      ],
+      "confianca": "baixa",
+      "classificacao_motor": "excecao_critica",
+      "intervencao_sugerida": "observar",
+      "dados_ausentes": [
+        "equipe_real_por_turno"
+      ],
+      "pii": false,
+      "order_ids": "redacted",
+      "opcoes_validador": [
+        "controlavel",
+        "atencao",
+        "critico",
+        "nao_e_possivel_avaliar",
+        "praca_correta",
+        "praca_incorreta",
+        "recomendacao_adequada",
+        "recomendacao_inadequada",
+        "observacao"
+      ]
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "case_id": "CV-H-038",
+      "bucket_esperado_motor": "excecao",
+      "data": "2026-06-12",
+      "horario_local": "2026-06-12T15:30:00-03:00",
+      "duracao_min": 0,
+      "pedidos_ativos": 52,
+      "itens_complexidade": 0,
+      "praca_provavel": "conferencia",
+      "pedido_mais_antigo": "anonimizado",
+      "pedidos_prontos_aguardando": 7,
+      "sinais_logisticos": [
+        "motoboy_na_loja",
+        "pronto_sem_saida_excessivo",
+        "entregador_alocado_sem_retirada",
+        "pedido_atrasado_vs_prometido_operacional",
+        "prontos_acumulando"
+      ],
+      "confianca": "baixa",
+      "classificacao_motor": "excecao_critica",
+      "intervencao_sugerida": "observar",
+      "dados_ausentes": [
+        "equipe_real_por_turno"
+      ],
+      "pii": false,
+      "order_ids": "redacted",
+      "opcoes_validador": [
+        "controlavel",
+        "atencao",
+        "critico",
+        "nao_e_possivel_avaliar",
+        "praca_correta",
+        "praca_incorreta",
+        "recomendacao_adequada",
+        "recomendacao_inadequada",
+        "observacao"
+      ]
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "case_id": "CV-H-039",
+      "bucket_esperado_motor": "excecao",
+      "data": "2026-06-17",
+      "horario_local": "2026-06-17T09:30:00-03:00",
+      "duracao_min": 0,
+      "pedidos_ativos": 36,
+      "itens_complexidade": 0,
+      "praca_provavel": "conferencia",
+      "pedido_mais_antigo": "anonimizado",
+      "pedidos_prontos_aguardando": 10,
+      "sinais_logisticos": [
+        "motoboy_na_loja",
+        "pronto_sem_saida_excessivo",
+        "entregador_alocado_sem_retirada",
+        "pedido_atrasado_vs_prometido_operacional",
+        "aguardando_saida_causa_nao_confirmada",
+        "prontos_acumulando"
+      ],
+      "confianca": "baixa",
+      "classificacao_motor": "excecao_critica",
+      "intervencao_sugerida": "observar",
+      "dados_ausentes": [
+        "equipe_real_por_turno"
+      ],
+      "pii": false,
+      "order_ids": "redacted",
+      "opcoes_validador": [
+        "controlavel",
+        "atencao",
+        "critico",
+        "nao_e_possivel_avaliar",
+        "praca_correta",
+        "praca_incorreta",
+        "recomendacao_adequada",
+        "recomendacao_inadequada",
+        "observacao"
+      ]
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "case_id": "CV-H-040",
+      "bucket_esperado_motor": "excecao",
+      "data": "2026-06-21",
+      "horario_local": "2026-06-21T09:15:00-03:00",
+      "duracao_min": 0,
+      "pedidos_ativos": 29,
+      "itens_complexidade": 50,
+      "praca_provavel": "sushi",
+      "pedido_mais_antigo": "anonimizado",
+      "pedidos_prontos_aguardando": 1,
+      "sinais_logisticos": [
+        "motoboy_na_loja",
+        "pedido_atrasado_vs_prometido_operacional"
+      ],
+      "confianca": "media",
+      "classificacao_motor": "excecao_critica",
+      "intervencao_sugerida": "finalizar_pedidos_motoboy_esperando",
+      "dados_ausentes": [
+        "equipe_real_por_turno"
+      ],
+      "pii": false,
+      "order_ids": "redacted",
+      "opcoes_validador": [
+        "controlavel",
+        "atencao",
+        "critico",
+        "nao_e_possivel_avaliar",
+        "praca_correta",
+        "praca_incorreta",
+        "recomendacao_adequada",
+        "recomendacao_inadequada",
+        "observacao"
+      ]
+    }
+  ],
+  "itens_pendentes": [
+    {
+      "nome": "Baunilha",
+      "praca_sugerida": "conferencia",
+      "complexidade_sugerida": "moderado",
+      "evidencia": "pendente validação operacional; sem tempo típico observado por item — não inventado",
+      "confianca": "baixa",
+      "opcoes_correcao": [
+        "confirmar",
+        "corrigir_praca",
+        "corrigir_complexidade",
+        "marcar_indefinido"
+      ]
+    },
+    {
+      "nome": "Boné Tatá Preto Estonado",
+      "praca_sugerida": "caixa",
+      "complexidade_sugerida": "moderado",
+      "evidencia": "pendente validação operacional; sem tempo típico observado por item — não inventado",
+      "confianca": "baixa",
+      "opcoes_correcao": [
+        "confirmar",
+        "corrigir_praca",
+        "corrigir_complexidade",
+        "marcar_indefinido"
+      ]
+    },
+    {
+      "nome": "Boné Tatá chumbo",
+      "praca_sugerida": "caixa",
+      "complexidade_sugerida": "moderado",
+      "evidencia": "pendente validação operacional; sem tempo típico observado por item — não inventado",
+      "confianca": "baixa",
+      "opcoes_correcao": [
+        "confirmar",
+        "corrigir_praca",
+        "corrigir_complexidade",
+        "marcar_indefinido"
+      ]
+    },
+    {
+      "nome": "Carpaccio de Polvo Espanhol",
+      "praca_sugerida": "sushi",
+      "complexidade_sugerida": "moderado",
+      "evidencia": "pendente validação operacional; sem tempo típico observado por item — não inventado",
+      "confianca": "baixa",
+      "opcoes_correcao": [
+        "confirmar",
+        "corrigir_praca",
+        "corrigir_complexidade",
+        "marcar_indefinido"
+      ]
+    },
+    {
+      "nome": "Carpaccio de Salmão Trufado",
+      "praca_sugerida": "sushi",
+      "complexidade_sugerida": "moderado",
+      "evidencia": "pendente validação operacional; sem tempo típico observado por item — não inventado",
+      "confianca": "baixa",
+      "opcoes_correcao": [
+        "confirmar",
+        "corrigir_praca",
+        "corrigir_complexidade",
+        "marcar_indefinido"
+      ]
+    },
+    {
+      "nome": "Ceviche",
+      "praca_sugerida": "quentes",
+      "complexidade_sugerida": "moderado",
+      "evidencia": "enrolado quente; pendente validação operacional; sem tempo típico observado por item — não inventado",
+      "confianca": "baixa",
+      "opcoes_correcao": [
+        "confirmar",
+        "corrigir_praca",
+        "corrigir_complexidade",
+        "marcar_indefinido"
+      ]
+    },
+    {
+      "nome": "Melão",
+      "praca_sugerida": "conferencia",
+      "complexidade_sugerida": "moderado",
+      "evidencia": "pendente validação operacional; sem tempo típico observado por item — não inventado",
+      "confianca": "baixa",
+      "opcoes_correcao": [
+        "confirmar",
+        "corrigir_praca",
+        "corrigir_complexidade",
+        "marcar_indefinido"
+      ]
+    },
+    {
+      "nome": "Missoshiro",
+      "praca_sugerida": "quentes",
+      "complexidade_sugerida": "moderado",
+      "evidencia": "pendente validação operacional; sem tempo típico observado por item — não inventado",
+      "confianca": "baixa",
+      "opcoes_correcao": [
+        "confirmar",
+        "corrigir_praca",
+        "corrigir_complexidade",
+        "marcar_indefinido"
+      ]
+    },
+    {
+      "nome": "Número de pessoas",
+      "praca_sugerida": "caixa",
+      "complexidade_sugerida": "moderado",
+      "evidencia": "pendente validação operacional; sem tempo típico observado por item — não inventado",
+      "confianca": "baixa",
+      "opcoes_correcao": [
+        "confirmar",
+        "corrigir_praca",
+        "corrigir_complexidade",
+        "marcar_indefinido"
+      ]
+    },
+    {
+      "nome": "Pistache",
+      "praca_sugerida": "conferencia",
+      "complexidade_sugerida": "moderado",
+      "evidencia": "pendente validação operacional; sem tempo típico observado por item — não inventado",
+      "confianca": "baixa",
+      "opcoes_correcao": [
+        "confirmar",
+        "corrigir_praca",
+        "corrigir_complexidade",
+        "marcar_indefinido"
+      ]
+    },
+    {
+      "nome": "Tartar de Atum Spicy",
+      "praca_sugerida": "sushi",
+      "complexidade_sugerida": "moderado",
+      "evidencia": "pendente validação operacional; sem tempo típico observado por item — não inventado",
+      "confianca": "baixa",
+      "opcoes_correcao": [
+        "confirmar",
+        "corrigir_praca",
+        "corrigir_complexidade",
+        "marcar_indefinido"
+      ]
+    },
+    {
+      "nome": "Tartar de Salmão",
+      "praca_sugerida": "quentes",
+      "complexidade_sugerida": "moderado",
+      "evidencia": "enrolado quente; pendente validação operacional; sem tempo típico observado por item — não inventado",
+      "confianca": "baixa",
+      "opcoes_correcao": [
+        "confirmar",
+        "corrigir_praca",
+        "corrigir_complexidade",
+        "marcar_indefinido"
+      ]
+    },
+    {
+      "nome": "Tatá Especial - Club Vip Gourmet",
+      "praca_sugerida": "conferencia",
+      "complexidade_sugerida": "moderado",
+      "evidencia": "pendente validação operacional; sem tempo típico observado por item — não inventado",
+      "confianca": "baixa",
+      "opcoes_correcao": [
+        "confirmar",
+        "corrigir_praca",
+        "corrigir_complexidade",
+        "marcar_indefinido"
+      ]
+    },
+    {
+      "nome": "Tuna Shisô Tartar",
+      "praca_sugerida": "quentes",
+      "complexidade_sugerida": "moderado",
+      "evidencia": "enrolado quente; pendente validação operacional; sem tempo típico observado por item — não inventado",
+      "confianca": "baixa",
+      "opcoes_correcao": [
+        "confirmar",
+        "corrigir_praca",
+        "corrigir_complexidade",
+        "marcar_indefinido"
+      ]
+    }
+  ]
+}

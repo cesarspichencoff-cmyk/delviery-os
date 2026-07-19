@@ -167,16 +167,20 @@ function evaluateTemporalHypotheses(ticks) {
   const byDow = {};
   const byHour = {};
   for (const t of ticks) {
-    const d = new Date(t.t_ms || t.t);
-    const dow = d.getUTCDay();
-    const hour = d.getUTCHours();
+    // Prefer America/Sao_Paulo fields from replay; fallback UTC with caveat
+    const dow = t.local_dow != null ? t.local_dow : new Date(t.t_ms || t.t).getUTCDay();
+    const hour = t.local_hour != null ? t.local_hour : new Date(t.t_ms || t.t).getUTCHours();
     byDow[dow] = byDow[dow] || { n: 0, critical: 0, active_sum: 0 };
     byHour[hour] = byHour[hour] || { n: 0, critical: 0, active_sum: 0 };
     byDow[dow].n++;
     byHour[hour].n++;
     byDow[dow].active_sum += t.active_orders || 0;
     byHour[hour].active_sum += t.active_orders || 0;
-    if (t.shadow && (t.shadow.estado === "acima_capacidade" || t.shadow.estado === "proximo_limite")) {
+    const crit =
+      t.tick_class && t.tick_class.has_critical
+        ? true
+        : t.shadow && (t.shadow.estado === "excecao_critica" || t.shadow.estado === "atencao" && t.shadow.excecao_critica);
+    if (crit) {
       byDow[dow].critical++;
       byHour[hour].critical++;
     }
@@ -211,7 +215,8 @@ function evaluateTemporalHypotheses(ticks) {
     by_dow: byDow,
     by_hour: byHour,
     hypotheses: hyp,
-    caveat: "Horários em UTC do timestamp — converter mentalmente para BR (-3) ao interpretar picos"
+    timezone: "America/Sao_Paulo",
+    caveat: "Buckets usam local_hour/local_dow quando presentes no replay"
   });
 }
 
