@@ -1,0 +1,15 @@
+{
+  "ready": false,
+  "gabarito_path": "data/capacidade-viva/calibration/blind-v1/GABARITO_MOTOR_CONGELADO.json",
+  "labels_path": "data/capacidade-viva/calibration/blind-v1/ROTULOS_HUMANOS_CEGOS.json",
+  "metrics": [
+    "concordancia_exata",
+    "concordancia_dentro_de_um_nivel",
+    "falsos_criticos",
+    "criticos_nao_detectados",
+    "falsos_qualidade_fonte",
+    "zumbis_contaminaram_capacidade",
+    "qualidade_intervencoes"
+  ],
+  "note": "Executar somente após preencher rótulos humanos cegos. Não recalibrar antes."
+}

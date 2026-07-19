@@ -652,6 +652,7 @@ module.exports = {
   anonEpisodeId,
   anonOrderToken,
   episodeTurnKey,
+  hourBand,
   normalizeConfidence,
   motorClassFromEpisode,
   bucketFromMotor,

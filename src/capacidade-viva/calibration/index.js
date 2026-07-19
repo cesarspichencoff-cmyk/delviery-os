@@ -25,5 +25,6 @@ module.exports = {
   reviewSet: require("./review-set"),
   reviewV2: require("./review-v2"),
   reviewV3: require("./review-v3"),
-  humanRules: require("./human-rules")
+  humanRules: require("./human-rules"),
+  blindValidation: require("./blind-validation")
 };

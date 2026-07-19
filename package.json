@@ -19,6 +19,9 @@
     "capacidade:calibration:review-v3:test": "node tests/capacidade-viva/calibration/run-review-v3.js",
     "capacidade:calibration:human:test": "node tests/capacidade-viva/calibration/run-human-v1.js",
     "capacidade:calibration:human:eval": "node tools/avaliar_calibracao_humana.js",
+    "capacidade:calibration:blind:test": "node tests/capacidade-viva/calibration/run-blind-v1.js",
+    "capacidade:calibration:blind:gerar": "node tools/gerar_blind_v1.js",
+    "capacidade:calibration:blind:comparar": "node tools/comparar_blind_v1.js",
     "capacidade:calibrar": "node tools/calibrar_capacidade_viva.js",
     "serve": "node tools/servir_v1.js"
   },
