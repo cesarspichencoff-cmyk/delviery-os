@@ -1,0 +1,914 @@
+{
+  "labels": [
+    "CALIBRAÇÃO",
+    "MODO SOMBRA",
+    "NÃO OPERACIONAL"
+  ],
+  "version": "2D.4",
+  "pack": "qualidade_fonte",
+  "note": "Não entra no cálculo de concordância operacional",
+  "n_cases": 30,
+  "cases": [
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "fingerprint": "53b95d4d584de0a0",
+      "reason": "contexto_insuficiente_ou_fonte",
+      "data": "2026-05-26",
+      "horario_local": "2026-05-26T21:00:00-03:00",
+      "pedidos_ativos": 0,
+      "praca": null,
+      "classificacao_motor": "quieto",
+      "confianca": "baixa",
+      "fonte_saude": "sem_cobertura",
+      "sinais_logisticos": [],
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "componentes_isf_detalhados",
+        "idade_pedido_mais_antigo",
+        "ritmo_15min"
+      ],
+      "note": "Ausência de leitura não é operação calma. Caso de qualidade da fonte — fora do ground truth operacional.",
+      "pii": false,
+      "case_id": "CV-Q-001",
+      "pack": "qualidade_fonte"
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "fingerprint": "846780f9176c76e7",
+      "reason": "contexto_insuficiente_ou_fonte",
+      "data": "2026-05-26",
+      "horario_local": "2026-05-26T21:15:00-03:00",
+      "pedidos_ativos": 0,
+      "praca": null,
+      "classificacao_motor": "quieto",
+      "confianca": "baixa",
+      "fonte_saude": "sem_cobertura",
+      "sinais_logisticos": [],
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "componentes_isf_detalhados",
+        "idade_pedido_mais_antigo"
+      ],
+      "note": "Ausência de leitura não é operação calma. Caso de qualidade da fonte — fora do ground truth operacional.",
+      "pii": false,
+      "case_id": "CV-Q-002",
+      "pack": "qualidade_fonte"
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "fingerprint": "72ebbb7a5b07671c",
+      "reason": "contexto_insuficiente_ou_fonte",
+      "data": "2026-05-26",
+      "horario_local": "2026-05-26T21:30:00-03:00",
+      "pedidos_ativos": 0,
+      "praca": null,
+      "classificacao_motor": "quieto",
+      "confianca": "baixa",
+      "fonte_saude": "sem_cobertura",
+      "sinais_logisticos": [],
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "componentes_isf_detalhados",
+        "idade_pedido_mais_antigo"
+      ],
+      "note": "Ausência de leitura não é operação calma. Caso de qualidade da fonte — fora do ground truth operacional.",
+      "pii": false,
+      "case_id": "CV-Q-003",
+      "pack": "qualidade_fonte"
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "fingerprint": "3ab36f29ba75b825",
+      "reason": "contexto_insuficiente_ou_fonte",
+      "data": "2026-05-26",
+      "horario_local": "2026-05-26T21:45:00-03:00",
+      "pedidos_ativos": 0,
+      "praca": null,
+      "classificacao_motor": "quieto",
+      "confianca": "baixa",
+      "fonte_saude": "sem_cobertura",
+      "sinais_logisticos": [],
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "componentes_isf_detalhados",
+        "idade_pedido_mais_antigo"
+      ],
+      "note": "Ausência de leitura não é operação calma. Caso de qualidade da fonte — fora do ground truth operacional.",
+      "pii": false,
+      "case_id": "CV-Q-004",
+      "pack": "qualidade_fonte"
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "fingerprint": "5af0b767fdf65fed",
+      "reason": "contexto_insuficiente_ou_fonte",
+      "data": "2026-05-26",
+      "horario_local": "2026-05-26T22:00:00-03:00",
+      "pedidos_ativos": 0,
+      "praca": null,
+      "classificacao_motor": "quieto",
+      "confianca": "baixa",
+      "fonte_saude": "sem_cobertura",
+      "sinais_logisticos": [],
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "componentes_isf_detalhados",
+        "idade_pedido_mais_antigo"
+      ],
+      "note": "Ausência de leitura não é operação calma. Caso de qualidade da fonte — fora do ground truth operacional.",
+      "pii": false,
+      "case_id": "CV-Q-005",
+      "pack": "qualidade_fonte"
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "fingerprint": "f87a8b4ce5733f56",
+      "reason": "contexto_insuficiente_ou_fonte",
+      "data": "2026-05-26",
+      "horario_local": "2026-05-26T22:15:00-03:00",
+      "pedidos_ativos": 0,
+      "praca": null,
+      "classificacao_motor": "quieto",
+      "confianca": "baixa",
+      "fonte_saude": "sem_cobertura",
+      "sinais_logisticos": [],
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "componentes_isf_detalhados",
+        "idade_pedido_mais_antigo"
+      ],
+      "note": "Ausência de leitura não é operação calma. Caso de qualidade da fonte — fora do ground truth operacional.",
+      "pii": false,
+      "case_id": "CV-Q-006",
+      "pack": "qualidade_fonte"
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "fingerprint": "ab04a2fd34eff57c",
+      "reason": "contexto_insuficiente_ou_fonte",
+      "data": "2026-05-26",
+      "horario_local": "2026-05-26T22:30:00-03:00",
+      "pedidos_ativos": 0,
+      "praca": null,
+      "classificacao_motor": "quieto",
+      "confianca": "baixa",
+      "fonte_saude": "sem_cobertura",
+      "sinais_logisticos": [],
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "componentes_isf_detalhados",
+        "idade_pedido_mais_antigo"
+      ],
+      "note": "Ausência de leitura não é operação calma. Caso de qualidade da fonte — fora do ground truth operacional.",
+      "pii": false,
+      "case_id": "CV-Q-007",
+      "pack": "qualidade_fonte"
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "fingerprint": "712b088d224b7b2a",
+      "reason": "contexto_insuficiente_ou_fonte",
+      "data": "2026-05-26",
+      "horario_local": "2026-05-26T22:45:00-03:00",
+      "pedidos_ativos": 0,
+      "praca": null,
+      "classificacao_motor": "quieto",
+      "confianca": "baixa",
+      "fonte_saude": "sem_cobertura",
+      "sinais_logisticos": [],
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "componentes_isf_detalhados",
+        "idade_pedido_mais_antigo"
+      ],
+      "note": "Ausência de leitura não é operação calma. Caso de qualidade da fonte — fora do ground truth operacional.",
+      "pii": false,
+      "case_id": "CV-Q-008",
+      "pack": "qualidade_fonte"
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "fingerprint": "16f7aae6d6b57f0b",
+      "reason": "contexto_insuficiente_ou_fonte",
+      "data": "2026-05-26",
+      "horario_local": "2026-05-26T23:00:00-03:00",
+      "pedidos_ativos": 0,
+      "praca": null,
+      "classificacao_motor": "quieto",
+      "confianca": "baixa",
+      "fonte_saude": "sem_cobertura",
+      "sinais_logisticos": [],
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "componentes_isf_detalhados",
+        "idade_pedido_mais_antigo"
+      ],
+      "note": "Ausência de leitura não é operação calma. Caso de qualidade da fonte — fora do ground truth operacional.",
+      "pii": false,
+      "case_id": "CV-Q-009",
+      "pack": "qualidade_fonte"
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "fingerprint": "8cb28a269a021033",
+      "reason": "contexto_insuficiente_ou_fonte",
+      "data": "2026-05-26",
+      "horario_local": "2026-05-26T23:15:00-03:00",
+      "pedidos_ativos": 0,
+      "praca": null,
+      "classificacao_motor": "quieto",
+      "confianca": "baixa",
+      "fonte_saude": "sem_cobertura",
+      "sinais_logisticos": [],
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "componentes_isf_detalhados",
+        "idade_pedido_mais_antigo"
+      ],
+      "note": "Ausência de leitura não é operação calma. Caso de qualidade da fonte — fora do ground truth operacional.",
+      "pii": false,
+      "case_id": "CV-Q-010",
+      "pack": "qualidade_fonte"
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "fingerprint": "6ee10cf8f21c96b0",
+      "reason": "contexto_insuficiente_ou_fonte",
+      "data": "2026-05-26",
+      "horario_local": "2026-05-26T23:30:00-03:00",
+      "pedidos_ativos": 0,
+      "praca": null,
+      "classificacao_motor": "quieto",
+      "confianca": "baixa",
+      "fonte_saude": "sem_cobertura",
+      "sinais_logisticos": [],
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "componentes_isf_detalhados",
+        "idade_pedido_mais_antigo"
+      ],
+      "note": "Ausência de leitura não é operação calma. Caso de qualidade da fonte — fora do ground truth operacional.",
+      "pii": false,
+      "case_id": "CV-Q-011",
+      "pack": "qualidade_fonte"
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "fingerprint": "fcb189d275723cf7",
+      "reason": "contexto_insuficiente_ou_fonte",
+      "data": "2026-05-26",
+      "horario_local": "2026-05-26T23:45:00-03:00",
+      "pedidos_ativos": 0,
+      "praca": null,
+      "classificacao_motor": "quieto",
+      "confianca": "baixa",
+      "fonte_saude": "sem_cobertura",
+      "sinais_logisticos": [],
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "componentes_isf_detalhados",
+        "idade_pedido_mais_antigo"
+      ],
+      "note": "Ausência de leitura não é operação calma. Caso de qualidade da fonte — fora do ground truth operacional.",
+      "pii": false,
+      "case_id": "CV-Q-012",
+      "pack": "qualidade_fonte"
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "fingerprint": "aca012d20f285fdb",
+      "reason": "contexto_insuficiente_ou_fonte",
+      "data": "2026-05-27",
+      "horario_local": "2026-05-27T00:00:00-03:00",
+      "pedidos_ativos": 0,
+      "praca": null,
+      "classificacao_motor": "quieto",
+      "confianca": "baixa",
+      "fonte_saude": "sem_cobertura",
+      "sinais_logisticos": [],
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "componentes_isf_detalhados",
+        "idade_pedido_mais_antigo"
+      ],
+      "note": "Ausência de leitura não é operação calma. Caso de qualidade da fonte — fora do ground truth operacional.",
+      "pii": false,
+      "case_id": "CV-Q-013",
+      "pack": "qualidade_fonte"
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "fingerprint": "35a238ece10dc2cb",
+      "reason": "contexto_insuficiente_ou_fonte",
+      "data": "2026-05-27",
+      "horario_local": "2026-05-27T00:15:00-03:00",
+      "pedidos_ativos": 0,
+      "praca": null,
+      "classificacao_motor": "quieto",
+      "confianca": "baixa",
+      "fonte_saude": "sem_cobertura",
+      "sinais_logisticos": [],
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "componentes_isf_detalhados",
+        "idade_pedido_mais_antigo"
+      ],
+      "note": "Ausência de leitura não é operação calma. Caso de qualidade da fonte — fora do ground truth operacional.",
+      "pii": false,
+      "case_id": "CV-Q-014",
+      "pack": "qualidade_fonte"
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "fingerprint": "2171026829aa35b0",
+      "reason": "contexto_insuficiente_ou_fonte",
+      "data": "2026-05-27",
+      "horario_local": "2026-05-27T00:30:00-03:00",
+      "pedidos_ativos": 0,
+      "praca": null,
+      "classificacao_motor": "quieto",
+      "confianca": "baixa",
+      "fonte_saude": "sem_cobertura",
+      "sinais_logisticos": [],
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "componentes_isf_detalhados",
+        "idade_pedido_mais_antigo"
+      ],
+      "note": "Ausência de leitura não é operação calma. Caso de qualidade da fonte — fora do ground truth operacional.",
+      "pii": false,
+      "case_id": "CV-Q-015",
+      "pack": "qualidade_fonte"
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "fingerprint": "52728dc141604054",
+      "reason": "contexto_insuficiente_ou_fonte",
+      "data": "2026-05-27",
+      "horario_local": "2026-05-27T00:45:00-03:00",
+      "pedidos_ativos": 0,
+      "praca": null,
+      "classificacao_motor": "quieto",
+      "confianca": "baixa",
+      "fonte_saude": "sem_cobertura",
+      "sinais_logisticos": [],
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "componentes_isf_detalhados",
+        "idade_pedido_mais_antigo"
+      ],
+      "note": "Ausência de leitura não é operação calma. Caso de qualidade da fonte — fora do ground truth operacional.",
+      "pii": false,
+      "case_id": "CV-Q-016",
+      "pack": "qualidade_fonte"
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "fingerprint": "cc8ec6d7871e9b35",
+      "reason": "contexto_insuficiente_ou_fonte",
+      "data": "2026-05-27",
+      "horario_local": "2026-05-27T01:00:00-03:00",
+      "pedidos_ativos": 0,
+      "praca": null,
+      "classificacao_motor": "quieto",
+      "confianca": "baixa",
+      "fonte_saude": "sem_cobertura",
+      "sinais_logisticos": [],
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "componentes_isf_detalhados",
+        "idade_pedido_mais_antigo"
+      ],
+      "note": "Ausência de leitura não é operação calma. Caso de qualidade da fonte — fora do ground truth operacional.",
+      "pii": false,
+      "case_id": "CV-Q-017",
+      "pack": "qualidade_fonte"
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "fingerprint": "a75e948edf8cde82",
+      "reason": "contexto_insuficiente_ou_fonte",
+      "data": "2026-05-27",
+      "horario_local": "2026-05-27T01:15:00-03:00",
+      "pedidos_ativos": 0,
+      "praca": null,
+      "classificacao_motor": "quieto",
+      "confianca": "baixa",
+      "fonte_saude": "sem_cobertura",
+      "sinais_logisticos": [],
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "componentes_isf_detalhados",
+        "idade_pedido_mais_antigo"
+      ],
+      "note": "Ausência de leitura não é operação calma. Caso de qualidade da fonte — fora do ground truth operacional.",
+      "pii": false,
+      "case_id": "CV-Q-018",
+      "pack": "qualidade_fonte"
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "fingerprint": "0b4757cbba4ea2d4",
+      "reason": "contexto_insuficiente_ou_fonte",
+      "data": "2026-05-27",
+      "horario_local": "2026-05-27T01:30:00-03:00",
+      "pedidos_ativos": 0,
+      "praca": null,
+      "classificacao_motor": "quieto",
+      "confianca": "baixa",
+      "fonte_saude": "sem_cobertura",
+      "sinais_logisticos": [],
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "componentes_isf_detalhados",
+        "idade_pedido_mais_antigo"
+      ],
+      "note": "Ausência de leitura não é operação calma. Caso de qualidade da fonte — fora do ground truth operacional.",
+      "pii": false,
+      "case_id": "CV-Q-019",
+      "pack": "qualidade_fonte"
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "fingerprint": "99c12ca6c38b61d7",
+      "reason": "contexto_insuficiente_ou_fonte",
+      "data": "2026-05-27",
+      "horario_local": "2026-05-27T01:45:00-03:00",
+      "pedidos_ativos": 0,
+      "praca": null,
+      "classificacao_motor": "quieto",
+      "confianca": "baixa",
+      "fonte_saude": "sem_cobertura",
+      "sinais_logisticos": [],
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "componentes_isf_detalhados",
+        "idade_pedido_mais_antigo"
+      ],
+      "note": "Ausência de leitura não é operação calma. Caso de qualidade da fonte — fora do ground truth operacional.",
+      "pii": false,
+      "case_id": "CV-Q-020",
+      "pack": "qualidade_fonte"
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "fingerprint": "50a98d82a65ff8fe",
+      "reason": "contexto_insuficiente_ou_fonte",
+      "data": "2026-05-27",
+      "horario_local": "2026-05-27T02:00:00-03:00",
+      "pedidos_ativos": 0,
+      "praca": null,
+      "classificacao_motor": "quieto",
+      "confianca": "baixa",
+      "fonte_saude": "sem_cobertura",
+      "sinais_logisticos": [],
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "componentes_isf_detalhados",
+        "idade_pedido_mais_antigo"
+      ],
+      "note": "Ausência de leitura não é operação calma. Caso de qualidade da fonte — fora do ground truth operacional.",
+      "pii": false,
+      "case_id": "CV-Q-021",
+      "pack": "qualidade_fonte"
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "fingerprint": "09c26a5ab6426380",
+      "reason": "contexto_insuficiente_ou_fonte",
+      "data": "2026-05-27",
+      "horario_local": "2026-05-27T02:15:00-03:00",
+      "pedidos_ativos": 0,
+      "praca": null,
+      "classificacao_motor": "quieto",
+      "confianca": "baixa",
+      "fonte_saude": "sem_cobertura",
+      "sinais_logisticos": [],
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "componentes_isf_detalhados",
+        "idade_pedido_mais_antigo"
+      ],
+      "note": "Ausência de leitura não é operação calma. Caso de qualidade da fonte — fora do ground truth operacional.",
+      "pii": false,
+      "case_id": "CV-Q-022",
+      "pack": "qualidade_fonte"
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "fingerprint": "bf1e8f2f0d62ca92",
+      "reason": "contexto_insuficiente_ou_fonte",
+      "data": "2026-05-27",
+      "horario_local": "2026-05-27T02:30:00-03:00",
+      "pedidos_ativos": 0,
+      "praca": null,
+      "classificacao_motor": "quieto",
+      "confianca": "baixa",
+      "fonte_saude": "sem_cobertura",
+      "sinais_logisticos": [],
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "componentes_isf_detalhados",
+        "idade_pedido_mais_antigo"
+      ],
+      "note": "Ausência de leitura não é operação calma. Caso de qualidade da fonte — fora do ground truth operacional.",
+      "pii": false,
+      "case_id": "CV-Q-023",
+      "pack": "qualidade_fonte"
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "fingerprint": "7a2a696a1c85c47b",
+      "reason": "contexto_insuficiente_ou_fonte",
+      "data": "2026-05-27",
+      "horario_local": "2026-05-27T02:45:00-03:00",
+      "pedidos_ativos": 0,
+      "praca": null,
+      "classificacao_motor": "quieto",
+      "confianca": "baixa",
+      "fonte_saude": "sem_cobertura",
+      "sinais_logisticos": [],
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "componentes_isf_detalhados",
+        "idade_pedido_mais_antigo"
+      ],
+      "note": "Ausência de leitura não é operação calma. Caso de qualidade da fonte — fora do ground truth operacional.",
+      "pii": false,
+      "case_id": "CV-Q-024",
+      "pack": "qualidade_fonte"
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "fingerprint": "7a36602231246cba",
+      "reason": "contexto_insuficiente_ou_fonte",
+      "data": "2026-05-27",
+      "horario_local": "2026-05-27T03:00:00-03:00",
+      "pedidos_ativos": 0,
+      "praca": null,
+      "classificacao_motor": "quieto",
+      "confianca": "baixa",
+      "fonte_saude": "sem_cobertura",
+      "sinais_logisticos": [],
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "componentes_isf_detalhados",
+        "idade_pedido_mais_antigo"
+      ],
+      "note": "Ausência de leitura não é operação calma. Caso de qualidade da fonte — fora do ground truth operacional.",
+      "pii": false,
+      "case_id": "CV-Q-025",
+      "pack": "qualidade_fonte"
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "fingerprint": "e618322b03f16785",
+      "reason": "contexto_insuficiente_ou_fonte",
+      "data": "2026-05-27",
+      "horario_local": "2026-05-27T03:15:00-03:00",
+      "pedidos_ativos": 0,
+      "praca": null,
+      "classificacao_motor": "quieto",
+      "confianca": "baixa",
+      "fonte_saude": "sem_cobertura",
+      "sinais_logisticos": [],
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "componentes_isf_detalhados",
+        "idade_pedido_mais_antigo"
+      ],
+      "note": "Ausência de leitura não é operação calma. Caso de qualidade da fonte — fora do ground truth operacional.",
+      "pii": false,
+      "case_id": "CV-Q-026",
+      "pack": "qualidade_fonte"
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "fingerprint": "c647e5976989800b",
+      "reason": "contexto_insuficiente_ou_fonte",
+      "data": "2026-05-27",
+      "horario_local": "2026-05-27T03:30:00-03:00",
+      "pedidos_ativos": 0,
+      "praca": null,
+      "classificacao_motor": "quieto",
+      "confianca": "baixa",
+      "fonte_saude": "sem_cobertura",
+      "sinais_logisticos": [],
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "componentes_isf_detalhados",
+        "idade_pedido_mais_antigo"
+      ],
+      "note": "Ausência de leitura não é operação calma. Caso de qualidade da fonte — fora do ground truth operacional.",
+      "pii": false,
+      "case_id": "CV-Q-027",
+      "pack": "qualidade_fonte"
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "fingerprint": "662a2127951af57b",
+      "reason": "contexto_insuficiente_ou_fonte",
+      "data": "2026-05-27",
+      "horario_local": "2026-05-27T03:45:00-03:00",
+      "pedidos_ativos": 0,
+      "praca": null,
+      "classificacao_motor": "quieto",
+      "confianca": "baixa",
+      "fonte_saude": "sem_cobertura",
+      "sinais_logisticos": [],
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "componentes_isf_detalhados",
+        "idade_pedido_mais_antigo"
+      ],
+      "note": "Ausência de leitura não é operação calma. Caso de qualidade da fonte — fora do ground truth operacional.",
+      "pii": false,
+      "case_id": "CV-Q-028",
+      "pack": "qualidade_fonte"
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "fingerprint": "0cdcd838116f7772",
+      "reason": "contexto_insuficiente_ou_fonte",
+      "data": "2026-05-27",
+      "horario_local": "2026-05-27T04:00:00-03:00",
+      "pedidos_ativos": 0,
+      "praca": null,
+      "classificacao_motor": "quieto",
+      "confianca": "baixa",
+      "fonte_saude": "sem_cobertura",
+      "sinais_logisticos": [],
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "componentes_isf_detalhados",
+        "idade_pedido_mais_antigo"
+      ],
+      "note": "Ausência de leitura não é operação calma. Caso de qualidade da fonte — fora do ground truth operacional.",
+      "pii": false,
+      "case_id": "CV-Q-029",
+      "pack": "qualidade_fonte"
+    },
+    {
+      "labels": [
+        "CALIBRAÇÃO",
+        "MODO SOMBRA",
+        "NÃO OPERACIONAL"
+      ],
+      "operational": false,
+      "emits_real_alerts": false,
+      "applies_pause": false,
+      "ranks_employees": false,
+      "fingerprint": "c068e80102736232",
+      "reason": "contexto_insuficiente_ou_fonte",
+      "data": "2026-05-27",
+      "horario_local": "2026-05-27T04:15:00-03:00",
+      "pedidos_ativos": 0,
+      "praca": null,
+      "classificacao_motor": "quieto",
+      "confianca": "baixa",
+      "fonte_saude": "sem_cobertura",
+      "sinais_logisticos": [],
+      "dados_ausentes": [
+        "equipe_real_por_turno",
+        "componentes_isf_detalhados",
+        "idade_pedido_mais_antigo"
+      ],
+      "note": "Ausência de leitura não é operação calma. Caso de qualidade da fonte — fora do ground truth operacional.",
+      "pii": false,
+      "case_id": "CV-Q-030",
+      "pack": "qualidade_fonte"
+    }
+  ]
+}

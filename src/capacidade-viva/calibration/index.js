@@ -22,5 +22,6 @@ module.exports = {
   sensitivity: require("./sensitivity"),
   baselines: require("./baselines"),
   intervencaoSane: require("./intervencao-sane"),
-  reviewSet: require("./review-set")
+  reviewSet: require("./review-set"),
+  reviewV2: require("./review-v2")
 };

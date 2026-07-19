@@ -15,6 +15,7 @@
     "capacidade:test": "node tests/capacidade-viva/run.js",
     "capacidade:calibration:test": "node tests/capacidade-viva/calibration/run.js",
     "capacidade:calibration:sane:test": "node tests/capacidade-viva/calibration/run-sane.js",
+    "capacidade:calibration:review-v2:test": "node tests/capacidade-viva/calibration/run-review-v2.js",
     "capacidade:calibrar": "node tools/calibrar_capacidade_viva.js",
     "serve": "node tools/servir_v1.js"
   },

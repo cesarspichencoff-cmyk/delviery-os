@@ -1,0 +1,274 @@
+{
+  "labels": [
+    "CALIBRAÇÃO",
+    "MODO SOMBRA",
+    "NÃO OPERACIONAL"
+  ],
+  "operational": false,
+  "emits_real_alerts": false,
+  "applies_pause": false,
+  "ranks_employees": false,
+  "n": 14,
+  "counts": {
+    "production_item": 7,
+    "modifier": 3,
+    "merchandise": 2,
+    "metadata": 1,
+    "promotion": 1,
+    "unknown": 0
+  },
+  "items": [
+    {
+      "nome": "Baunilha",
+      "tipo_sugerido": "modifier",
+      "entra_carga_produtiva": false,
+      "praca_sugerida": null,
+      "complexidade_sugerida": null,
+      "motivo": "modificador/sabor — só entra na carga se alterar trabalho real",
+      "confianca": "alta",
+      "evidencia": "pendente validação operacional; sem tempo típico observado por item — não inventado",
+      "opcoes_correcao": [
+        "confirmar_tipo",
+        "corrigir_tipo",
+        "corrigir_praca",
+        "corrigir_complexidade",
+        "marcar_unknown"
+      ],
+      "note": "Não atribuir praça/complexidade produtiva até César confirmar o tipo"
+    },
+    {
+      "nome": "Boné Tatá Preto Estonado",
+      "tipo_sugerido": "merchandise",
+      "entra_carga_produtiva": false,
+      "praca_sugerida": null,
+      "complexidade_sugerida": null,
+      "motivo": "mercadoria / retail — fora da carga produtiva de cozinha",
+      "confianca": "alta",
+      "evidencia": "pendente validação operacional; sem tempo típico observado por item — não inventado",
+      "opcoes_correcao": [
+        "confirmar_tipo",
+        "corrigir_tipo",
+        "corrigir_praca",
+        "corrigir_complexidade",
+        "marcar_unknown"
+      ],
+      "note": "Não atribuir praça/complexidade produtiva até César confirmar o tipo"
+    },
+    {
+      "nome": "Boné Tatá chumbo",
+      "tipo_sugerido": "merchandise",
+      "entra_carga_produtiva": false,
+      "praca_sugerida": null,
+      "complexidade_sugerida": null,
+      "motivo": "mercadoria / retail — fora da carga produtiva de cozinha",
+      "confianca": "alta",
+      "evidencia": "pendente validação operacional; sem tempo típico observado por item — não inventado",
+      "opcoes_correcao": [
+        "confirmar_tipo",
+        "corrigir_tipo",
+        "corrigir_praca",
+        "corrigir_complexidade",
+        "marcar_unknown"
+      ],
+      "note": "Não atribuir praça/complexidade produtiva até César confirmar o tipo"
+    },
+    {
+      "nome": "Carpaccio de Polvo Espanhol",
+      "tipo_sugerido": "production_item",
+      "entra_carga_produtiva": true,
+      "praca_sugerida": "sushi",
+      "complexidade_sugerida": "moderado",
+      "motivo": "parece item de produção culinária; validar praça/complexidade",
+      "confianca": "media",
+      "evidencia": "pendente validação operacional; sem tempo típico observado por item — não inventado",
+      "opcoes_correcao": [
+        "confirmar_tipo",
+        "corrigir_tipo",
+        "corrigir_praca",
+        "corrigir_complexidade",
+        "marcar_unknown"
+      ],
+      "note": "Somente production_item recebe praça e complexidade diretamente"
+    },
+    {
+      "nome": "Carpaccio de Salmão Trufado",
+      "tipo_sugerido": "production_item",
+      "entra_carga_produtiva": true,
+      "praca_sugerida": "sushi",
+      "complexidade_sugerida": "moderado",
+      "motivo": "parece item de produção culinária; validar praça/complexidade",
+      "confianca": "media",
+      "evidencia": "pendente validação operacional; sem tempo típico observado por item — não inventado",
+      "opcoes_correcao": [
+        "confirmar_tipo",
+        "corrigir_tipo",
+        "corrigir_praca",
+        "corrigir_complexidade",
+        "marcar_unknown"
+      ],
+      "note": "Somente production_item recebe praça e complexidade diretamente"
+    },
+    {
+      "nome": "Ceviche",
+      "tipo_sugerido": "production_item",
+      "entra_carga_produtiva": true,
+      "praca_sugerida": "quentes",
+      "complexidade_sugerida": "moderado",
+      "motivo": "parece item de produção culinária; validar praça/complexidade",
+      "confianca": "media",
+      "evidencia": "enrolado quente; pendente validação operacional; sem tempo típico observado por item — não inventado",
+      "opcoes_correcao": [
+        "confirmar_tipo",
+        "corrigir_tipo",
+        "corrigir_praca",
+        "corrigir_complexidade",
+        "marcar_unknown"
+      ],
+      "note": "Somente production_item recebe praça e complexidade diretamente"
+    },
+    {
+      "nome": "Melão",
+      "tipo_sugerido": "modifier",
+      "entra_carga_produtiva": false,
+      "praca_sugerida": null,
+      "complexidade_sugerida": null,
+      "motivo": "modificador/sabor — só entra na carga se alterar trabalho real",
+      "confianca": "alta",
+      "evidencia": "pendente validação operacional; sem tempo típico observado por item — não inventado",
+      "opcoes_correcao": [
+        "confirmar_tipo",
+        "corrigir_tipo",
+        "corrigir_praca",
+        "corrigir_complexidade",
+        "marcar_unknown"
+      ],
+      "note": "Não atribuir praça/complexidade produtiva até César confirmar o tipo"
+    },
+    {
+      "nome": "Missoshiro",
+      "tipo_sugerido": "production_item",
+      "entra_carga_produtiva": true,
+      "praca_sugerida": "quentes",
+      "complexidade_sugerida": "moderado",
+      "motivo": "parece item de produção culinária; validar praça/complexidade",
+      "confianca": "media",
+      "evidencia": "pendente validação operacional; sem tempo típico observado por item — não inventado",
+      "opcoes_correcao": [
+        "confirmar_tipo",
+        "corrigir_tipo",
+        "corrigir_praca",
+        "corrigir_complexidade",
+        "marcar_unknown"
+      ],
+      "note": "Somente production_item recebe praça e complexidade diretamente"
+    },
+    {
+      "nome": "Número de pessoas",
+      "tipo_sugerido": "metadata",
+      "entra_carga_produtiva": false,
+      "praca_sugerida": null,
+      "complexidade_sugerida": null,
+      "motivo": "metadado operacional / não é item de produção",
+      "confianca": "alta",
+      "evidencia": "pendente validação operacional; sem tempo típico observado por item — não inventado",
+      "opcoes_correcao": [
+        "confirmar_tipo",
+        "corrigir_tipo",
+        "corrigir_praca",
+        "corrigir_complexidade",
+        "marcar_unknown"
+      ],
+      "note": "Não atribuir praça/complexidade produtiva até César confirmar o tipo"
+    },
+    {
+      "nome": "Pistache",
+      "tipo_sugerido": "modifier",
+      "entra_carga_produtiva": false,
+      "praca_sugerida": null,
+      "complexidade_sugerida": null,
+      "motivo": "modificador/sabor — só entra na carga se alterar trabalho real",
+      "confianca": "alta",
+      "evidencia": "pendente validação operacional; sem tempo típico observado por item — não inventado",
+      "opcoes_correcao": [
+        "confirmar_tipo",
+        "corrigir_tipo",
+        "corrigir_praca",
+        "corrigir_complexidade",
+        "marcar_unknown"
+      ],
+      "note": "Não atribuir praça/complexidade produtiva até César confirmar o tipo"
+    },
+    {
+      "nome": "Tartar de Atum Spicy",
+      "tipo_sugerido": "production_item",
+      "entra_carga_produtiva": true,
+      "praca_sugerida": "sushi",
+      "complexidade_sugerida": "moderado",
+      "motivo": "parece item de produção culinária; validar praça/complexidade",
+      "confianca": "media",
+      "evidencia": "pendente validação operacional; sem tempo típico observado por item — não inventado",
+      "opcoes_correcao": [
+        "confirmar_tipo",
+        "corrigir_tipo",
+        "corrigir_praca",
+        "corrigir_complexidade",
+        "marcar_unknown"
+      ],
+      "note": "Somente production_item recebe praça e complexidade diretamente"
+    },
+    {
+      "nome": "Tartar de Salmão",
+      "tipo_sugerido": "production_item",
+      "entra_carga_produtiva": true,
+      "praca_sugerida": "quentes",
+      "complexidade_sugerida": "moderado",
+      "motivo": "parece item de produção culinária; validar praça/complexidade",
+      "confianca": "media",
+      "evidencia": "enrolado quente; pendente validação operacional; sem tempo típico observado por item — não inventado",
+      "opcoes_correcao": [
+        "confirmar_tipo",
+        "corrigir_tipo",
+        "corrigir_praca",
+        "corrigir_complexidade",
+        "marcar_unknown"
+      ],
+      "note": "Somente production_item recebe praça e complexidade diretamente"
+    },
+    {
+      "nome": "Tatá Especial - Club Vip Gourmet",
+      "tipo_sugerido": "promotion",
+      "entra_carga_produtiva": false,
+      "praca_sugerida": null,
+      "complexidade_sugerida": null,
+      "motivo": "promoção / benefício — não é produção",
+      "confianca": "alta",
+      "evidencia": "pendente validação operacional; sem tempo típico observado por item — não inventado",
+      "opcoes_correcao": [
+        "confirmar_tipo",
+        "corrigir_tipo",
+        "corrigir_praca",
+        "corrigir_complexidade",
+        "marcar_unknown"
+      ],
+      "note": "Não atribuir praça/complexidade produtiva até César confirmar o tipo"
+    },
+    {
+      "nome": "Tuna Shisô Tartar",
+      "tipo_sugerido": "production_item",
+      "entra_carga_produtiva": true,
+      "praca_sugerida": "quentes",
+      "complexidade_sugerida": "moderado",
+      "motivo": "parece item de produção culinária; validar praça/complexidade",
+      "confianca": "media",
+      "evidencia": "enrolado quente; pendente validação operacional; sem tempo típico observado por item — não inventado",
+      "opcoes_correcao": [
+        "confirmar_tipo",
+        "corrigir_tipo",
+        "corrigir_praca",
+        "corrigir_complexidade",
+        "marcar_unknown"
+      ],
+      "note": "Somente production_item recebe praça e complexidade diretamente"
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "version": "2D.4",
+  "operational_n": 40,
+  "unique": true,
+  "duplicates": 0,
+  "counts": {
+    "controlavel": 10,
+    "atencao": 10,
+    "critico": 10,
+    "excecao": 10
+  },
+  "quality_n": 30,
+  "empty_removed": 57,
+  "validation": {
+    "ok": true,
+    "errors": [],
+    "counts": {
+      "controlavel": 10,
+      "atencao": 10,
+      "critico": 10,
+      "excecao": 10
+    },
+    "unique": 40,
+    "n": 40
+  },
+  "items_counts": {
+    "production_item": 7,
+    "modifier": 3,
+    "merchandise": 2,
+    "metadata": 1,
+    "promotion": 1,
+    "unknown": 0
+  },
+  "full_replay_3_profiles": false,
+  "candidate_extraction_pass": true,
+  "config_changed": false,
+  "motor_changed": false
+}
