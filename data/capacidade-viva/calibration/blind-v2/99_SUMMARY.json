@@ -1,0 +1,67 @@
+{
+  "version": "2D.9",
+  "n_cegos": 30,
+  "independentes": true,
+  "vazamento_treino": 0,
+  "datas": [
+    "2026-05-27",
+    "2026-05-28",
+    "2026-05-29",
+    "2026-05-30",
+    "2026-05-31",
+    "2026-06-01",
+    "2026-06-02",
+    "2026-06-03",
+    "2026-06-04",
+    "2026-06-05",
+    "2026-06-06",
+    "2026-06-07",
+    "2026-06-08",
+    "2026-06-09",
+    "2026-06-10",
+    "2026-06-11",
+    "2026-06-12",
+    "2026-06-13",
+    "2026-06-14",
+    "2026-06-15",
+    "2026-06-16",
+    "2026-06-20",
+    "2026-06-22"
+  ],
+  "dias": [
+    "quarta",
+    "quinta",
+    "sexta",
+    "sábado",
+    "domingo",
+    "segunda",
+    "terça"
+  ],
+  "faixas": [
+    "jantar",
+    "manha",
+    "tarde",
+    "almoco"
+  ],
+  "pracas": [
+    "conferencia",
+    "sushi"
+  ],
+  "motoboy_bandas_cobertas": [
+    "lt10",
+    "10-15",
+    "15-20",
+    "gte20"
+  ],
+  "pronto_bandas_cobertas": [
+    "lt25",
+    "25-35",
+    "35-40"
+  ],
+  "avaliaveis": 23,
+  "qualidade_fonte": 3,
+  "evidencia_insuficiente": 4,
+  "config_sha256": "f248a17328ca71fc8608e0897d24ee3966bf0b7bcd55afbebb6feaa4cc7534dc",
+  "markdown_clean": true,
+  "frozen": true
+}

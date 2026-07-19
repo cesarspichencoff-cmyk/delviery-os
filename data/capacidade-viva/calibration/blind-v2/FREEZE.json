@@ -1,0 +1,78 @@
+{
+  "frozen": true,
+  "generated_at": "2026-07-19T19:44:11.069Z",
+  "generator": "tools/gerar_blind_v2.js",
+  "generator_version": "2D.9",
+  "motor_commit": "b620aef",
+  "config_version": "cv-cal-tata-human-v2",
+  "config_path": "data/capacidade-viva/calibration/configs/cv-cal-tata-human-v2.json",
+  "config_sha256": "f248a17328ca71fc8608e0897d24ee3966bf0b7bcd55afbebb6feaa4cc7534dc",
+  "config_bytes": 7030,
+  "n_cases": 30,
+  "case_ids": [
+    "CV-B2-001",
+    "CV-B2-002",
+    "CV-B2-003",
+    "CV-B2-004",
+    "CV-B2-005",
+    "CV-B2-006",
+    "CV-B2-007",
+    "CV-B2-008",
+    "CV-B2-009",
+    "CV-B2-010",
+    "CV-B2-011",
+    "CV-B2-012",
+    "CV-B2-013",
+    "CV-B2-014",
+    "CV-B2-015",
+    "CV-B2-016",
+    "CV-B2-017",
+    "CV-B2-018",
+    "CV-B2-019",
+    "CV-B2-020",
+    "CV-B2-021",
+    "CV-B2-022",
+    "CV-B2-023",
+    "CV-B2-024",
+    "CV-B2-025",
+    "CV-B2-026",
+    "CV-B2-027",
+    "CV-B2-028",
+    "CV-B2-029",
+    "CV-B2-030"
+  ],
+  "selection_criteria": {
+    "pool_source": "results/capacidade-viva/sane-episodes-2d3-1784446646346/04b_episodes_full.json",
+    "selection_by": "evidencias_observaveis_nao_classificacao_do_motor",
+    "min_n": 24,
+    "max_n": 32,
+    "target_n": 28,
+    "max_evidencia_insuficiente": 4,
+    "min_avaliaveis": 20,
+    "diversidade": [
+      "data",
+      "dia_da_semana",
+      "faixa_do_dia",
+      "praca",
+      "confianca",
+      "faixas_de_espera_motoboy_e_pronto"
+    ]
+  },
+  "exclusions": {
+    "n_case_ids": 162,
+    "n_order_tokens": 52,
+    "n_turn_keys": 52,
+    "n_episode_id_anons": 62,
+    "sources": {
+      "review_v3_base": 28,
+      "review_v1": 40,
+      "review_v2": 70,
+      "blind_v1": 24
+    },
+    "limitations": [
+      "review/ (v1) e review-v2/casos-qualidade-fonte.json não carregam order_token/episode_id real no dado de origem (campo 'order_ids' vem como a string literal 'redacted'); exclusão desses dois conjuntos é garantida por case_id (não pode colidir com o pool de episódios, que usa order_id/episode_id, nunca case_id) — não por token cruzável. Os demais conjuntos (review-v2/operacionais parcialmente, review-v3 e blind-v1) fornecem token real."
+    ]
+  },
+  "no_silent_regeneration": true,
+  "note": "Não substituir casos após o César responder. Não comparar nesta fase."
+}
