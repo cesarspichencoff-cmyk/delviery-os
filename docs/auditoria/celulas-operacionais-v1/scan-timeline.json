@@ -1,0 +1,926 @@
+[
+  {
+    "f": 0,
+    "replay": {
+      "value": "3",
+      "max": "80",
+      "min": "0"
+    },
+    "relogio": "15/09 18:58",
+    "caixa": {
+      "estado": "leitura parcial",
+      "info": "",
+      "title": "Ainda não há pedidos observados nesta janela. Leitura parcial: sacolas, comandas, expedição e mensagens ainda não estão conectadas."
+    },
+    "sushi": {
+      "estado": "no ritmo",
+      "info": "",
+      "title": "Combinados, Duplas e Enrolados seguem estáveis.",
+      "classes": "cell tone-ivory"
+    },
+    "quentes": {
+      "estado": "no ritmo",
+      "info": "",
+      "title": "Enrolados Quentes segue estável."
+    },
+    "cozinha": {
+      "estado": "no ritmo",
+      "info": "",
+      "title": "Quentes segue estável."
+    },
+    "conf": {
+      "nome": "Conferência",
+      "estado": "leitura ainda não conectada",
+      "info": "",
+      "title": "A conferência final ainda não tem fonte conectada (entrada em conferência, checklist, itens pendentes, pedido conferido).",
+      "classes": "cell tone-faint"
+    },
+    "entregas": {
+      "nome": "Entregas",
+      "estado": "aguardando integração",
+      "info": "",
+      "title": "O domínio Entregas ainda não está integrado ao Copiloto.",
+      "classes": "cell tone-faint"
+    }
+  },
+  {
+    "f": 0.05,
+    "replay": {
+      "value": "8",
+      "max": "80",
+      "min": "0"
+    },
+    "relogio": "15/09 19:03",
+    "caixa": {
+      "estado": "calmo",
+      "info": "",
+      "title": "Nenhuma concentração relevante de pedidos prontos nos últimos 10 min. Leitura parcial: sacolas, comandas, expedição e mensagens ainda não estão conectadas."
+    },
+    "sushi": {
+      "estado": "no ritmo",
+      "info": "",
+      "title": "Combinados, Duplas e Enrolados seguem estáveis.",
+      "classes": "cell tone-ivory"
+    },
+    "quentes": {
+      "estado": "no ritmo",
+      "info": "",
+      "title": "Enrolados Quentes segue estável."
+    },
+    "cozinha": {
+      "estado": "no ritmo",
+      "info": "4 em produção",
+      "title": "Quentes segue estável."
+    },
+    "conf": {
+      "nome": "Conferência",
+      "estado": "leitura ainda não conectada",
+      "info": "",
+      "title": "A conferência final ainda não tem fonte conectada (entrada em conferência, checklist, itens pendentes, pedido conferido).",
+      "classes": "cell tone-faint"
+    },
+    "entregas": {
+      "nome": "Entregas",
+      "estado": "aguardando integração",
+      "info": "",
+      "title": "O domínio Entregas ainda não está integrado ao Copiloto.",
+      "classes": "cell tone-faint"
+    }
+  },
+  {
+    "f": 0.1,
+    "replay": {
+      "value": "12",
+      "max": "80",
+      "min": "0"
+    },
+    "relogio": "15/09 19:07",
+    "caixa": {
+      "estado": "calmo",
+      "info": "",
+      "title": "Nenhuma concentração relevante de pedidos prontos nos últimos 10 min. Leitura parcial: sacolas, comandas, expedição e mensagens ainda não estão conectadas."
+    },
+    "sushi": {
+      "estado": "no ritmo",
+      "info": "",
+      "title": "Combinados, Duplas e Enrolados seguem estáveis.",
+      "classes": "cell tone-ivory"
+    },
+    "quentes": {
+      "estado": "no ritmo",
+      "info": "",
+      "title": "Enrolados Quentes segue estável."
+    },
+    "cozinha": {
+      "estado": "pressão subindo",
+      "info": "8 esperando",
+      "title": "Quentes concentra a maior espera."
+    },
+    "conf": {
+      "nome": "Conferência",
+      "estado": "leitura ainda não conectada",
+      "info": "",
+      "title": "A conferência final ainda não tem fonte conectada (entrada em conferência, checklist, itens pendentes, pedido conferido).",
+      "classes": "cell tone-faint"
+    },
+    "entregas": {
+      "nome": "Entregas",
+      "estado": "aguardando integração",
+      "info": "",
+      "title": "O domínio Entregas ainda não está integrado ao Copiloto.",
+      "classes": "cell tone-faint"
+    }
+  },
+  {
+    "f": 0.15000000000000002,
+    "replay": {
+      "value": "15",
+      "max": "80",
+      "min": "0"
+    },
+    "relogio": "15/09 19:10",
+    "caixa": {
+      "estado": "calmo",
+      "info": "",
+      "title": "Nenhuma concentração relevante de pedidos prontos nos últimos 10 min. Leitura parcial: sacolas, comandas, expedição e mensagens ainda não estão conectadas."
+    },
+    "sushi": {
+      "estado": "no ritmo",
+      "info": "",
+      "title": "Combinados, Duplas e Enrolados seguem estáveis.",
+      "classes": "cell tone-ivory is-dim"
+    },
+    "quentes": {
+      "estado": "no ritmo",
+      "info": "",
+      "title": "Enrolados Quentes segue estável."
+    },
+    "cozinha": {
+      "estado": "precisa de atenção",
+      "info": "8 esperando",
+      "title": "Quentes concentra a maior espera."
+    },
+    "conf": {
+      "nome": "Conferência",
+      "estado": "leitura ainda não conectada",
+      "info": "",
+      "title": "A conferência final ainda não tem fonte conectada (entrada em conferência, checklist, itens pendentes, pedido conferido).",
+      "classes": "cell tone-faint is-dim"
+    },
+    "entregas": {
+      "nome": "Entregas",
+      "estado": "aguardando integração",
+      "info": "",
+      "title": "O domínio Entregas ainda não está integrado ao Copiloto.",
+      "classes": "cell tone-faint is-dim"
+    }
+  },
+  {
+    "f": 0.2,
+    "replay": {
+      "value": "20",
+      "max": "80",
+      "min": "0"
+    },
+    "relogio": "15/09 19:15",
+    "caixa": {
+      "estado": "calmo",
+      "info": "",
+      "title": "Nenhuma concentração relevante de pedidos prontos nos últimos 10 min. Leitura parcial: sacolas, comandas, expedição e mensagens ainda não estão conectadas."
+    },
+    "sushi": {
+      "estado": "no ritmo",
+      "info": "",
+      "title": "Combinados, Duplas e Enrolados seguem estáveis.",
+      "classes": "cell tone-ivory is-dim"
+    },
+    "quentes": {
+      "estado": "no ritmo",
+      "info": "",
+      "title": "Enrolados Quentes segue estável."
+    },
+    "cozinha": {
+      "estado": "precisa de atenção",
+      "info": "8 esperando",
+      "title": "Quentes concentra a maior espera."
+    },
+    "conf": {
+      "nome": "Conferência",
+      "estado": "leitura ainda não conectada",
+      "info": "",
+      "title": "A conferência final ainda não tem fonte conectada (entrada em conferência, checklist, itens pendentes, pedido conferido).",
+      "classes": "cell tone-faint is-dim"
+    },
+    "entregas": {
+      "nome": "Entregas",
+      "estado": "aguardando integração",
+      "info": "",
+      "title": "O domínio Entregas ainda não está integrado ao Copiloto.",
+      "classes": "cell tone-faint is-dim"
+    }
+  },
+  {
+    "f": 0.25,
+    "replay": {
+      "value": "23",
+      "max": "80",
+      "min": "0"
+    },
+    "relogio": "15/09 19:18",
+    "caixa": {
+      "estado": "calmo",
+      "info": "",
+      "title": "Nenhuma concentração relevante de pedidos prontos nos últimos 10 min. Leitura parcial: sacolas, comandas, expedição e mensagens ainda não estão conectadas."
+    },
+    "sushi": {
+      "estado": "no ritmo",
+      "info": "",
+      "title": "Combinados, Duplas e Enrolados seguem estáveis.",
+      "classes": "cell tone-ivory"
+    },
+    "quentes": {
+      "estado": "no ritmo",
+      "info": "",
+      "title": "Enrolados Quentes segue estável."
+    },
+    "cozinha": {
+      "estado": "pressão subindo",
+      "info": "8 esperando",
+      "title": "Quentes concentra a maior espera."
+    },
+    "conf": {
+      "nome": "Conferência",
+      "estado": "leitura ainda não conectada",
+      "info": "",
+      "title": "A conferência final ainda não tem fonte conectada (entrada em conferência, checklist, itens pendentes, pedido conferido).",
+      "classes": "cell tone-faint"
+    },
+    "entregas": {
+      "nome": "Entregas",
+      "estado": "aguardando integração",
+      "info": "",
+      "title": "O domínio Entregas ainda não está integrado ao Copiloto.",
+      "classes": "cell tone-faint"
+    }
+  },
+  {
+    "f": 0.3,
+    "replay": {
+      "value": "28",
+      "max": "80",
+      "min": "0"
+    },
+    "relogio": "15/09 19:23",
+    "caixa": {
+      "estado": "calmo",
+      "info": "",
+      "title": "Nenhuma concentração relevante de pedidos prontos nos últimos 10 min. Leitura parcial: sacolas, comandas, expedição e mensagens ainda não estão conectadas."
+    },
+    "sushi": {
+      "estado": "no ritmo",
+      "info": "",
+      "title": "Combinados, Duplas e Enrolados seguem estáveis.",
+      "classes": "cell tone-ivory"
+    },
+    "quentes": {
+      "estado": "no ritmo",
+      "info": "",
+      "title": "Enrolados Quentes segue estável."
+    },
+    "cozinha": {
+      "estado": "pressão subindo",
+      "info": "8 esperando",
+      "title": "Quentes concentra a maior espera."
+    },
+    "conf": {
+      "nome": "Conferência",
+      "estado": "leitura ainda não conectada",
+      "info": "",
+      "title": "A conferência final ainda não tem fonte conectada (entrada em conferência, checklist, itens pendentes, pedido conferido).",
+      "classes": "cell tone-faint"
+    },
+    "entregas": {
+      "nome": "Entregas",
+      "estado": "aguardando integração",
+      "info": "",
+      "title": "O domínio Entregas ainda não está integrado ao Copiloto.",
+      "classes": "cell tone-faint"
+    }
+  },
+  {
+    "f": 0.35,
+    "replay": {
+      "value": "32",
+      "max": "80",
+      "min": "0"
+    },
+    "relogio": "15/09 19:27",
+    "caixa": {
+      "estado": "calmo",
+      "info": "",
+      "title": "Nenhuma concentração relevante de pedidos prontos nos últimos 10 min. Leitura parcial: sacolas, comandas, expedição e mensagens ainda não estão conectadas."
+    },
+    "sushi": {
+      "estado": "no ritmo",
+      "info": "",
+      "title": "Combinados, Duplas e Enrolados seguem estáveis.",
+      "classes": "cell tone-ivory"
+    },
+    "quentes": {
+      "estado": "no ritmo",
+      "info": "",
+      "title": "Enrolados Quentes segue estável."
+    },
+    "cozinha": {
+      "estado": "pressão subindo",
+      "info": "8 esperando",
+      "title": "Quentes concentra a maior espera."
+    },
+    "conf": {
+      "nome": "Conferência",
+      "estado": "leitura ainda não conectada",
+      "info": "",
+      "title": "A conferência final ainda não tem fonte conectada (entrada em conferência, checklist, itens pendentes, pedido conferido).",
+      "classes": "cell tone-faint"
+    },
+    "entregas": {
+      "nome": "Entregas",
+      "estado": "aguardando integração",
+      "info": "",
+      "title": "O domínio Entregas ainda não está integrado ao Copiloto.",
+      "classes": "cell tone-faint"
+    }
+  },
+  {
+    "f": 0.39999999999999997,
+    "replay": {
+      "value": "35",
+      "max": "80",
+      "min": "0"
+    },
+    "relogio": "15/09 19:30",
+    "caixa": {
+      "estado": "calmo",
+      "info": "",
+      "title": "Nenhuma concentração relevante de pedidos prontos nos últimos 10 min. Leitura parcial: sacolas, comandas, expedição e mensagens ainda não estão conectadas."
+    },
+    "sushi": {
+      "estado": "no ritmo",
+      "info": "",
+      "title": "Combinados, Duplas e Enrolados seguem estáveis.",
+      "classes": "cell tone-ivory"
+    },
+    "quentes": {
+      "estado": "no ritmo",
+      "info": "",
+      "title": "Enrolados Quentes segue estável."
+    },
+    "cozinha": {
+      "estado": "pressão subindo",
+      "info": "8 esperando",
+      "title": "Quentes concentra a maior espera."
+    },
+    "conf": {
+      "nome": "Conferência",
+      "estado": "leitura ainda não conectada",
+      "info": "",
+      "title": "A conferência final ainda não tem fonte conectada (entrada em conferência, checklist, itens pendentes, pedido conferido).",
+      "classes": "cell tone-faint"
+    },
+    "entregas": {
+      "nome": "Entregas",
+      "estado": "aguardando integração",
+      "info": "",
+      "title": "O domínio Entregas ainda não está integrado ao Copiloto.",
+      "classes": "cell tone-faint"
+    }
+  },
+  {
+    "f": 0.44999999999999996,
+    "replay": {
+      "value": "40",
+      "max": "80",
+      "min": "0"
+    },
+    "relogio": "15/09 19:35",
+    "caixa": {
+      "estado": "calmo",
+      "info": "",
+      "title": "Nenhuma concentração relevante de pedidos prontos nos últimos 10 min. Leitura parcial: sacolas, comandas, expedição e mensagens ainda não estão conectadas."
+    },
+    "sushi": {
+      "estado": "no ritmo",
+      "info": "",
+      "title": "Combinados, Duplas e Enrolados seguem estáveis.",
+      "classes": "cell tone-ivory"
+    },
+    "quentes": {
+      "estado": "no ritmo",
+      "info": "",
+      "title": "Enrolados Quentes segue estável."
+    },
+    "cozinha": {
+      "estado": "pressão subindo",
+      "info": "8 esperando",
+      "title": "Quentes concentra a maior espera."
+    },
+    "conf": {
+      "nome": "Conferência",
+      "estado": "leitura ainda não conectada",
+      "info": "",
+      "title": "A conferência final ainda não tem fonte conectada (entrada em conferência, checklist, itens pendentes, pedido conferido).",
+      "classes": "cell tone-faint"
+    },
+    "entregas": {
+      "nome": "Entregas",
+      "estado": "aguardando integração",
+      "info": "",
+      "title": "O domínio Entregas ainda não está integrado ao Copiloto.",
+      "classes": "cell tone-faint"
+    }
+  },
+  {
+    "f": 0.49999999999999994,
+    "replay": {
+      "value": "44",
+      "max": "80",
+      "min": "0"
+    },
+    "relogio": "15/09 19:39",
+    "caixa": {
+      "estado": "calmo",
+      "info": "",
+      "title": "Nenhuma concentração relevante de pedidos prontos nos últimos 10 min. Leitura parcial: sacolas, comandas, expedição e mensagens ainda não estão conectadas."
+    },
+    "sushi": {
+      "estado": "no ritmo",
+      "info": "",
+      "title": "Combinados, Duplas e Enrolados seguem estáveis.",
+      "classes": "cell tone-ivory"
+    },
+    "quentes": {
+      "estado": "no ritmo",
+      "info": "",
+      "title": "Enrolados Quentes segue estável."
+    },
+    "cozinha": {
+      "estado": "pressão subindo",
+      "info": "8 esperando",
+      "title": "Quentes concentra a maior espera."
+    },
+    "conf": {
+      "nome": "Conferência",
+      "estado": "leitura ainda não conectada",
+      "info": "",
+      "title": "A conferência final ainda não tem fonte conectada (entrada em conferência, checklist, itens pendentes, pedido conferido).",
+      "classes": "cell tone-faint"
+    },
+    "entregas": {
+      "nome": "Entregas",
+      "estado": "aguardando integração",
+      "info": "",
+      "title": "O domínio Entregas ainda não está integrado ao Copiloto.",
+      "classes": "cell tone-faint"
+    }
+  },
+  {
+    "f": 0.5499999999999999,
+    "replay": {
+      "value": "47",
+      "max": "80",
+      "min": "0"
+    },
+    "relogio": "15/09 19:42",
+    "caixa": {
+      "estado": "calmo",
+      "info": "",
+      "title": "Nenhuma concentração relevante de pedidos prontos nos últimos 10 min. Leitura parcial: sacolas, comandas, expedição e mensagens ainda não estão conectadas."
+    },
+    "sushi": {
+      "estado": "no ritmo",
+      "info": "",
+      "title": "Combinados, Duplas e Enrolados seguem estáveis.",
+      "classes": "cell tone-ivory"
+    },
+    "quentes": {
+      "estado": "no ritmo",
+      "info": "",
+      "title": "Enrolados Quentes segue estável."
+    },
+    "cozinha": {
+      "estado": "pressão subindo",
+      "info": "8 esperando",
+      "title": "Quentes concentra a maior espera."
+    },
+    "conf": {
+      "nome": "Conferência",
+      "estado": "leitura ainda não conectada",
+      "info": "",
+      "title": "A conferência final ainda não tem fonte conectada (entrada em conferência, checklist, itens pendentes, pedido conferido).",
+      "classes": "cell tone-faint"
+    },
+    "entregas": {
+      "nome": "Entregas",
+      "estado": "aguardando integração",
+      "info": "",
+      "title": "O domínio Entregas ainda não está integrado ao Copiloto.",
+      "classes": "cell tone-faint"
+    }
+  },
+  {
+    "f": 0.6,
+    "replay": {
+      "value": "52",
+      "max": "80",
+      "min": "0"
+    },
+    "relogio": "15/09 19:47",
+    "caixa": {
+      "estado": "calmo",
+      "info": "",
+      "title": "Nenhuma concentração relevante de pedidos prontos nos últimos 10 min. Leitura parcial: sacolas, comandas, expedição e mensagens ainda não estão conectadas."
+    },
+    "sushi": {
+      "estado": "no ritmo",
+      "info": "",
+      "title": "Combinados, Duplas e Enrolados seguem estáveis.",
+      "classes": "cell tone-ivory"
+    },
+    "quentes": {
+      "estado": "no ritmo",
+      "info": "",
+      "title": "Enrolados Quentes segue estável."
+    },
+    "cozinha": {
+      "estado": "pressão subindo",
+      "info": "8 esperando",
+      "title": "Quentes concentra a maior espera."
+    },
+    "conf": {
+      "nome": "Conferência",
+      "estado": "leitura ainda não conectada",
+      "info": "",
+      "title": "A conferência final ainda não tem fonte conectada (entrada em conferência, checklist, itens pendentes, pedido conferido).",
+      "classes": "cell tone-faint"
+    },
+    "entregas": {
+      "nome": "Entregas",
+      "estado": "aguardando integração",
+      "info": "",
+      "title": "O domínio Entregas ainda não está integrado ao Copiloto.",
+      "classes": "cell tone-faint"
+    }
+  },
+  {
+    "f": 0.65,
+    "replay": {
+      "value": "56",
+      "max": "80",
+      "min": "0"
+    },
+    "relogio": "15/09 19:51",
+    "caixa": {
+      "estado": "calmo",
+      "info": "",
+      "title": "Nenhuma concentração relevante de pedidos prontos nos últimos 10 min. Leitura parcial: sacolas, comandas, expedição e mensagens ainda não estão conectadas."
+    },
+    "sushi": {
+      "estado": "no ritmo",
+      "info": "",
+      "title": "Combinados, Duplas e Enrolados seguem estáveis.",
+      "classes": "cell tone-ivory"
+    },
+    "quentes": {
+      "estado": "no ritmo",
+      "info": "",
+      "title": "Enrolados Quentes segue estável."
+    },
+    "cozinha": {
+      "estado": "pressão subindo",
+      "info": "8 esperando",
+      "title": "Quentes concentra a maior espera."
+    },
+    "conf": {
+      "nome": "Conferência",
+      "estado": "leitura ainda não conectada",
+      "info": "",
+      "title": "A conferência final ainda não tem fonte conectada (entrada em conferência, checklist, itens pendentes, pedido conferido).",
+      "classes": "cell tone-faint"
+    },
+    "entregas": {
+      "nome": "Entregas",
+      "estado": "aguardando integração",
+      "info": "",
+      "title": "O domínio Entregas ainda não está integrado ao Copiloto.",
+      "classes": "cell tone-faint"
+    }
+  },
+  {
+    "f": 0.7000000000000001,
+    "replay": {
+      "value": "59",
+      "max": "80",
+      "min": "0"
+    },
+    "relogio": "15/09 19:54",
+    "caixa": {
+      "estado": "calmo",
+      "info": "",
+      "title": "Nenhuma concentração relevante de pedidos prontos nos últimos 10 min. Leitura parcial: sacolas, comandas, expedição e mensagens ainda não estão conectadas."
+    },
+    "sushi": {
+      "estado": "no ritmo",
+      "info": "",
+      "title": "Combinados, Duplas e Enrolados seguem estáveis.",
+      "classes": "cell tone-ivory"
+    },
+    "quentes": {
+      "estado": "no ritmo",
+      "info": "",
+      "title": "Enrolados Quentes segue estável."
+    },
+    "cozinha": {
+      "estado": "pressão subindo",
+      "info": "8 esperando",
+      "title": "Quentes concentra a maior espera."
+    },
+    "conf": {
+      "nome": "Conferência",
+      "estado": "leitura ainda não conectada",
+      "info": "",
+      "title": "A conferência final ainda não tem fonte conectada (entrada em conferência, checklist, itens pendentes, pedido conferido).",
+      "classes": "cell tone-faint"
+    },
+    "entregas": {
+      "nome": "Entregas",
+      "estado": "aguardando integração",
+      "info": "",
+      "title": "O domínio Entregas ainda não está integrado ao Copiloto.",
+      "classes": "cell tone-faint"
+    }
+  },
+  {
+    "f": 0.7500000000000001,
+    "replay": {
+      "value": "64",
+      "max": "80",
+      "min": "0"
+    },
+    "relogio": "15/09 19:59",
+    "caixa": {
+      "estado": "calmo",
+      "info": "",
+      "title": "Nenhuma concentração relevante de pedidos prontos nos últimos 10 min. Leitura parcial: sacolas, comandas, expedição e mensagens ainda não estão conectadas."
+    },
+    "sushi": {
+      "estado": "no ritmo",
+      "info": "",
+      "title": "Combinados, Duplas e Enrolados seguem estáveis.",
+      "classes": "cell tone-ivory"
+    },
+    "quentes": {
+      "estado": "no ritmo",
+      "info": "",
+      "title": "Enrolados Quentes segue estável."
+    },
+    "cozinha": {
+      "estado": "pressão subindo",
+      "info": "8 esperando",
+      "title": "Quentes concentra a maior espera."
+    },
+    "conf": {
+      "nome": "Conferência",
+      "estado": "leitura ainda não conectada",
+      "info": "",
+      "title": "A conferência final ainda não tem fonte conectada (entrada em conferência, checklist, itens pendentes, pedido conferido).",
+      "classes": "cell tone-faint"
+    },
+    "entregas": {
+      "nome": "Entregas",
+      "estado": "aguardando integração",
+      "info": "",
+      "title": "O domínio Entregas ainda não está integrado ao Copiloto.",
+      "classes": "cell tone-faint"
+    }
+  },
+  {
+    "f": 0.8000000000000002,
+    "replay": {
+      "value": "68",
+      "max": "80",
+      "min": "0"
+    },
+    "relogio": "15/09 20:03",
+    "caixa": {
+      "estado": "atenção",
+      "info": "8 prontos na janela",
+      "title": "8 pedidos ficaram prontos nos últimos 10 min — concentração acima do normal. Leitura parcial: sacolas, comandas, expedição e mensagens ainda não estão conectadas."
+    },
+    "sushi": {
+      "estado": "no ritmo",
+      "info": "",
+      "title": "Combinados, Duplas e Enrolados seguem estáveis.",
+      "classes": "cell tone-ivory"
+    },
+    "quentes": {
+      "estado": "no ritmo",
+      "info": "",
+      "title": "Enrolados Quentes segue estável."
+    },
+    "cozinha": {
+      "estado": "no ritmo",
+      "info": "",
+      "title": "Quentes segue estável."
+    },
+    "conf": {
+      "nome": "Conferência",
+      "estado": "leitura ainda não conectada",
+      "info": "",
+      "title": "A conferência final ainda não tem fonte conectada (entrada em conferência, checklist, itens pendentes, pedido conferido).",
+      "classes": "cell tone-faint"
+    },
+    "entregas": {
+      "nome": "Entregas",
+      "estado": "aguardando integração",
+      "info": "",
+      "title": "O domínio Entregas ainda não está integrado ao Copiloto.",
+      "classes": "cell tone-faint"
+    }
+  },
+  {
+    "f": 0.8500000000000002,
+    "replay": {
+      "value": "71",
+      "max": "80",
+      "min": "0"
+    },
+    "relogio": "15/09 20:06",
+    "caixa": {
+      "estado": "atenção",
+      "info": "8 prontos na janela",
+      "title": "8 pedidos ficaram prontos nos últimos 10 min — concentração acima do normal. Leitura parcial: sacolas, comandas, expedição e mensagens ainda não estão conectadas."
+    },
+    "sushi": {
+      "estado": "no ritmo",
+      "info": "",
+      "title": "Combinados, Duplas e Enrolados seguem estáveis.",
+      "classes": "cell tone-ivory"
+    },
+    "quentes": {
+      "estado": "no ritmo",
+      "info": "",
+      "title": "Enrolados Quentes segue estável."
+    },
+    "cozinha": {
+      "estado": "no ritmo",
+      "info": "",
+      "title": "Quentes segue estável."
+    },
+    "conf": {
+      "nome": "Conferência",
+      "estado": "leitura ainda não conectada",
+      "info": "",
+      "title": "A conferência final ainda não tem fonte conectada (entrada em conferência, checklist, itens pendentes, pedido conferido).",
+      "classes": "cell tone-faint"
+    },
+    "entregas": {
+      "nome": "Entregas",
+      "estado": "aguardando integração",
+      "info": "",
+      "title": "O domínio Entregas ainda não está integrado ao Copiloto.",
+      "classes": "cell tone-faint"
+    }
+  },
+  {
+    "f": 0.9000000000000002,
+    "replay": {
+      "value": "76",
+      "max": "80",
+      "min": "0"
+    },
+    "relogio": "15/09 20:11",
+    "caixa": {
+      "estado": "calmo",
+      "info": "",
+      "title": "Nenhuma concentração relevante de pedidos prontos nos últimos 10 min. Leitura parcial: sacolas, comandas, expedição e mensagens ainda não estão conectadas."
+    },
+    "sushi": {
+      "estado": "no ritmo",
+      "info": "",
+      "title": "Combinados, Duplas e Enrolados seguem estáveis.",
+      "classes": "cell tone-ivory"
+    },
+    "quentes": {
+      "estado": "no ritmo",
+      "info": "",
+      "title": "Enrolados Quentes segue estável."
+    },
+    "cozinha": {
+      "estado": "no ritmo",
+      "info": "",
+      "title": "Quentes segue estável."
+    },
+    "conf": {
+      "nome": "Conferência",
+      "estado": "leitura ainda não conectada",
+      "info": "",
+      "title": "A conferência final ainda não tem fonte conectada (entrada em conferência, checklist, itens pendentes, pedido conferido).",
+      "classes": "cell tone-faint"
+    },
+    "entregas": {
+      "nome": "Entregas",
+      "estado": "aguardando integração",
+      "info": "",
+      "title": "O domínio Entregas ainda não está integrado ao Copiloto.",
+      "classes": "cell tone-faint"
+    }
+  },
+  {
+    "f": 0.9500000000000003,
+    "replay": {
+      "value": "80",
+      "max": "80",
+      "min": "0"
+    },
+    "relogio": "15/09 20:15",
+    "caixa": {
+      "estado": "calmo",
+      "info": "",
+      "title": "Nenhuma concentração relevante de pedidos prontos nos últimos 10 min. Leitura parcial: sacolas, comandas, expedição e mensagens ainda não estão conectadas."
+    },
+    "sushi": {
+      "estado": "no ritmo",
+      "info": "",
+      "title": "Combinados, Duplas e Enrolados seguem estáveis.",
+      "classes": "cell tone-ivory"
+    },
+    "quentes": {
+      "estado": "no ritmo",
+      "info": "",
+      "title": "Enrolados Quentes segue estável."
+    },
+    "cozinha": {
+      "estado": "no ritmo",
+      "info": "",
+      "title": "Quentes segue estável."
+    },
+    "conf": {
+      "nome": "Conferência",
+      "estado": "leitura ainda não conectada",
+      "info": "",
+      "title": "A conferência final ainda não tem fonte conectada (entrada em conferência, checklist, itens pendentes, pedido conferido).",
+      "classes": "cell tone-faint"
+    },
+    "entregas": {
+      "nome": "Entregas",
+      "estado": "aguardando integração",
+      "info": "",
+      "title": "O domínio Entregas ainda não está integrado ao Copiloto.",
+      "classes": "cell tone-faint"
+    }
+  },
+  {
+    "f": 1,
+    "replay": {
+      "value": "80",
+      "max": "80",
+      "min": "0"
+    },
+    "relogio": "15/09 20:15",
+    "caixa": {
+      "estado": "calmo",
+      "info": "",
+      "title": "Nenhuma concentração relevante de pedidos prontos nos últimos 10 min. Leitura parcial: sacolas, comandas, expedição e mensagens ainda não estão conectadas."
+    },
+    "sushi": {
+      "estado": "no ritmo",
+      "info": "",
+      "title": "Combinados, Duplas e Enrolados seguem estáveis.",
+      "classes": "cell tone-ivory"
+    },
+    "quentes": {
+      "estado": "no ritmo",
+      "info": "",
+      "title": "Enrolados Quentes segue estável."
+    },
+    "cozinha": {
+      "estado": "no ritmo",
+      "info": "",
+      "title": "Quentes segue estável."
+    },
+    "conf": {
+      "nome": "Conferência",
+      "estado": "leitura ainda não conectada",
+      "info": "",
+      "title": "A conferência final ainda não tem fonte conectada (entrada em conferência, checklist, itens pendentes, pedido conferido).",
+      "classes": "cell tone-faint"
+    },
+    "entregas": {
+      "nome": "Entregas",
+      "estado": "aguardando integração",
+      "info": "",
+      "title": "O domínio Entregas ainda não está integrado ao Copiloto.",
+      "classes": "cell tone-faint"
+    }
+  }
+]

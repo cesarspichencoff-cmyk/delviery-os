@@ -1,0 +1,25 @@
+{
+  "caixa_em_movimento_unit": {
+    "cor": "verde",
+    "sev": 0,
+    "n": 4,
+    "frase": "em movimento",
+    "info": "4 prontos na janela",
+    "motivo": "4 pedidos ficaram prontos nos últimos 10 min. Fluxo dentro do esperado. Leitura parcial: sacolas, comandas, expedição e mensagens ainda não estão conectadas."
+  },
+  "caixa_atencao_unit": {
+    "cor": "amarelo",
+    "sev": 1,
+    "n": 8,
+    "frase": "atenção",
+    "info": "8 prontos na janela",
+    "motivo": "8 pedidos ficaram prontos nos últimos 10 min — concentração acima do normal. Leitura parcial: sacolas, comandas, expedição e mensagens ainda não estão conectadas."
+  },
+  "sushi_atencao_unit": {
+    "cor": "amarelo",
+    "sev": 1,
+    "pr": "enrolados",
+    "motivo": "Enrolados concentra a maior espera. Combinados e Duplas seguem estáveis."
+  },
+  "note_ui": "Se a UI do cenário sintético pular bandas, a prova unitária confirma a lógica do módulo puro."
+}

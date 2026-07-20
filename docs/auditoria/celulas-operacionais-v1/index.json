@@ -1,0 +1,120 @@
+{
+  "audit": "copiloto-celulas-operacionais-v1",
+  "commit": "82d300c",
+  "commit_full": "82d300cc9d2ed49fcd83ba0e2fe7cf773ae5594c",
+  "branch": "audit/copiloto-celulas-operacionais-v1",
+  "base_url": "http://127.0.0.1:5186",
+  "stamp_policy": "faixa técnica anexada após screenshot — não DOM da app",
+  "captures": [
+    {
+      "file": "01_sushi_estavel.png",
+      "commit": "82d300c",
+      "commit_full": "82d300cc9d2ed49fcd83ba0e2fe7cf773ae5594c",
+      "branch": "audit/copiloto-celulas-operacionais-v1",
+      "scenario": "sushi_estavel",
+      "viewport": "1280x800",
+      "replay": "3",
+      "stamp": "commit 82d300c · branch audit/copiloto-celulas-operacionais-v1 · sushi_estavel · 1280x800 · replay≈3"
+    },
+    {
+      "file": "02_sushi_atencao.png",
+      "commit": "82d300c",
+      "commit_full": "82d300cc9d2ed49fcd83ba0e2fe7cf773ae5594c",
+      "branch": "audit/copiloto-celulas-operacionais-v1",
+      "scenario": "sushi_atencao_praca",
+      "viewport": "1280x800",
+      "replay": "35",
+      "stamp": "commit 82d300c · branch audit/copiloto-celulas-operacionais-v1 · sushi_atencao_praca · 1280x800 · replay≈35"
+    },
+    {
+      "file": "03_quentes_cozinha_diferentes.png",
+      "commit": "82d300c",
+      "commit_full": "82d300cc9d2ed49fcd83ba0e2fe7cf773ae5594c",
+      "branch": "audit/copiloto-celulas-operacionais-v1",
+      "scenario": "quentes_cozinha_estados_diferentes",
+      "viewport": "1280x800",
+      "replay": "12",
+      "stamp": "commit 82d300c · branch audit/copiloto-celulas-operacionais-v1 · quentes_cozinha_estados_diferentes · 1280x800 · replay≈12"
+    },
+    {
+      "file": "04_caixa_calmo.png",
+      "commit": "82d300c",
+      "commit_full": "82d300cc9d2ed49fcd83ba0e2fe7cf773ae5594c",
+      "branch": "audit/copiloto-celulas-operacionais-v1",
+      "scenario": "caixa_calmo",
+      "viewport": "1280x800",
+      "replay": "8",
+      "stamp": "commit 82d300c · branch audit/copiloto-celulas-operacionais-v1 · caixa_calmo · 1280x800 · replay≈8"
+    },
+    {
+      "file": "05_caixa_movimento.png",
+      "commit": "82d300c",
+      "commit_full": "82d300cc9d2ed49fcd83ba0e2fe7cf773ae5594c",
+      "branch": "audit/copiloto-celulas-operacionais-v1",
+      "scenario": "caixa_em_movimento",
+      "viewport": "1280x800",
+      "replay": "32",
+      "stamp": "commit 82d300c · branch audit/copiloto-celulas-operacionais-v1 · caixa_em_movimento · 1280x800 · replay≈32"
+    },
+    {
+      "file": "06_caixa_atencao.png",
+      "commit": "82d300c",
+      "commit_full": "82d300cc9d2ed49fcd83ba0e2fe7cf773ae5594c",
+      "branch": "audit/copiloto-celulas-operacionais-v1",
+      "scenario": "caixa_atencao",
+      "viewport": "1280x800",
+      "replay": "56",
+      "stamp": "commit 82d300c · branch audit/copiloto-celulas-operacionais-v1 · caixa_atencao · 1280x800 · replay≈56"
+    },
+    {
+      "file": "07_caixa_leitura_parcial.png",
+      "commit": "82d300c",
+      "commit_full": "82d300cc9d2ed49fcd83ba0e2fe7cf773ae5594c",
+      "branch": "audit/copiloto-celulas-operacionais-v1",
+      "scenario": "caixa_leitura_parcial",
+      "viewport": "1280x800",
+      "replay": "40",
+      "stamp": "commit 82d300c · branch audit/copiloto-celulas-operacionais-v1 · caixa_leitura_parcial · 1280x800 · replay≈40"
+    },
+    {
+      "file": "08_conferencia.png",
+      "commit": "82d300c",
+      "commit_full": "82d300cc9d2ed49fcd83ba0e2fe7cf773ae5594c",
+      "branch": "audit/copiloto-celulas-operacionais-v1",
+      "scenario": "conferencia_sem_leitura",
+      "viewport": "1280x800",
+      "replay": "24",
+      "stamp": "commit 82d300c · branch audit/copiloto-celulas-operacionais-v1 · conferencia_sem_leitura · 1280x800 · replay≈24"
+    },
+    {
+      "file": "09_entregas.png",
+      "commit": "82d300c",
+      "commit_full": "82d300cc9d2ed49fcd83ba0e2fe7cf773ae5594c",
+      "branch": "audit/copiloto-celulas-operacionais-v1",
+      "scenario": "entregas_aguardando_integracao",
+      "viewport": "1280x800",
+      "replay": "24",
+      "stamp": "commit 82d300c · branch audit/copiloto-celulas-operacionais-v1 · entregas_aguardando_integracao · 1280x800 · replay≈24"
+    },
+    {
+      "file": "11_desktop_completa.png",
+      "commit": "82d300c",
+      "commit_full": "82d300cc9d2ed49fcd83ba0e2fe7cf773ae5594c",
+      "branch": "audit/copiloto-celulas-operacionais-v1",
+      "scenario": "desktop_completa",
+      "viewport": "1280x800",
+      "replay": "36",
+      "stamp": "commit 82d300c · branch audit/copiloto-celulas-operacionais-v1 · desktop_completa · 1280x800 · replay≈36"
+    },
+    {
+      "file": "10_viewport_360.png",
+      "commit": "82d300c",
+      "commit_full": "82d300cc9d2ed49fcd83ba0e2fe7cf773ae5594c",
+      "branch": "audit/copiloto-celulas-operacionais-v1",
+      "scenario": "viewport_360",
+      "viewport": "360x740",
+      "replay": "47",
+      "stamp": "commit 82d300c · branch audit/copiloto-celulas-operacionais-v1 · viewport_360 · 360x740 · replay≈47"
+    }
+  ]
+}
