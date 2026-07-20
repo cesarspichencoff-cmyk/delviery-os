@@ -1,4 +1,9 @@
 /* Mobile ENTREGAS — topo institucional · corpo de trabalho claro */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
 body.mobile {
   max-width: 480px;
   margin: 0 auto;
@@ -6,36 +11,70 @@ body.mobile {
   display: flex;
   flex-direction: column;
   background: var(--surface-work);
+  overflow-x: hidden;
+  width: 100%;
 }
 
 .m-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding: 0.9rem 1.1rem;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.75rem;
+  padding: 0.85rem 1rem;
   background: var(--brand-deep);
   color: var(--text-on-dark);
   border-bottom: 1px solid var(--line-on-dark);
+  min-width: 0;
+  max-width: 100%;
 }
 .shell-brand {
   font-weight: 600;
   font-size: 0.95rem;
   color: var(--text-on-dark);
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow-wrap: anywhere;
 }
 .conn {
   font-family: var(--font-mono);
   font-size: 0.68rem;
   margin: 0;
   color: var(--text-on-dark-muted);
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  text-align: right;
+  overflow-wrap: anywhere;
 }
 
 .m-main {
   flex: 1;
-  padding: 1rem 1.15rem 1.5rem;
+  padding: 1rem 1rem 1.5rem;
   display: flex;
   flex-direction: column;
   gap: 0.9rem;
   background: var(--surface-work);
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* 360px: aviso e títulos não estouram */
+.sync-bar {
+  max-width: 100%;
+  min-width: 0;
+  width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.sync-bar > div {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.m-focus .title-sov {
+  overflow-wrap: anywhere;
+  max-width: 100%;
 }
 
 .m-focus .title-sov {

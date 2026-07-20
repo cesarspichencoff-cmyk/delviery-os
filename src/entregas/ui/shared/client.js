@@ -93,13 +93,53 @@ export function chip(state) {
   return `<span class="chip ${cls}" role="status">${label}</span>`;
 }
 
-export function connectionLabel(conn, pending) {
-  if (conn === "offline") {
-    return pending > 0
-      ? "Sem rede — confirmações guardadas neste aparelho"
-      : "Sem rede no momento";
+/**
+ * Fonte única de conectividade para cabeçalho + banner.
+ * conn: "online" | "offline" | "syncing" (snapshot da facade)
+ * pending: contagem de confirmações ainda não enviadas
+ *
+ * Distingue:
+ * - aparelho offline
+ * - aparelho online com sincronização pendente
+ * - nunca usa "Sem rede" quando online
+ */
+export function connectionState(conn, pending = 0) {
+  const offline = conn === "offline";
+  const syncing = conn === "syncing";
+  const hasPending = Number(pending) > 0;
+
+  if (offline) {
+    return {
+      mode: "offline",
+      header: "Offline",
+      showBanner: true,
+      bannerTitle: "Sem rede",
+      bannerDetail: hasPending
+        ? "Confirmações ficam neste aparelho e sobem sozinhas quando a rede voltar."
+        : "Sem rede no momento. Confirmações ficam neste aparelho até a rede voltar.",
+    };
   }
-  if (conn === "syncing") return "Enviando atualizações…";
-  if (pending > 0) return `Enviando ${pending} atualização(ões)…`;
-  return "Online";
+  if (syncing || hasPending) {
+    return {
+      mode: "pending_sync",
+      header: "Online",
+      showBanner: true,
+      bannerTitle: "Sincronização pendente",
+      bannerDetail: hasPending
+        ? `${pending} atualização(ões) aguardando envio — aparelho com rede.`
+        : "Enviando atualizações… aparelho com rede.",
+    };
+  }
+  return {
+    mode: "online",
+    header: "Online",
+    showBanner: false,
+    bannerTitle: "",
+    bannerDetail: "",
+  };
+}
+
+/** Rótulo curto do cabeçalho — mesma fonte que o banner */
+export function connectionLabel(conn, pending) {
+  return connectionState(conn, pending).header;
 }

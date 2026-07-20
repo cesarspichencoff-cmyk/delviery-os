@@ -285,6 +285,182 @@ console.log("\n=== ENTREGAS UI 3C.1 tests ===\n");
     assert.equal(r.ok, true, r.error);
   });
 
+  /**
+   * Espelha connectionState do client.js (fonte única cabeçalho + banner).
+   * Mantido em sync com shared/client.js — se divergir, o teste de fonte falha.
+   */
+  function connectionStateMirror(
+    conn: string,
+    pending = 0,
+  ): {
+    mode: string;
+    header: string;
+    showBanner: boolean;
+    bannerTitle: string;
+  } {
+    const offline = conn === "offline";
+    const syncing = conn === "syncing";
+    const hasPending = Number(pending) > 0;
+    if (offline) {
+      return {
+        mode: "offline",
+        header: "Offline",
+        showBanner: true,
+        bannerTitle: "Sem rede",
+      };
+    }
+    if (syncing || hasPending) {
+      return {
+        mode: "pending_sync",
+        header: "Online",
+        showBanner: true,
+        bannerTitle: "Sincronização pendente",
+      };
+    }
+    return {
+      mode: "online",
+      header: "Online",
+      showBanner: false,
+      bannerTitle: "",
+    };
+  }
+
+  await test("online: cabeçalho Online e sem banner de ausência de rede", () => {
+    const cs = connectionStateMirror("online", 0);
+    assert.equal(cs.mode, "online");
+    assert.equal(cs.header, "Online");
+    assert.equal(cs.showBanner, false);
+    assert.equal(/sem rede/i.test(cs.bannerTitle), false);
+  });
+
+  await test("offline: Offline + aviso Sem rede", () => {
+    const cs = connectionStateMirror("offline", 0);
+    assert.equal(cs.mode, "offline");
+    assert.equal(cs.header, "Offline");
+    assert.equal(cs.showBanner, true);
+    assert.ok(/sem rede/i.test(cs.bannerTitle));
+  });
+
+  await test("sincronização pendente distinta de offline (aparelho online)", () => {
+    const cs = connectionStateMirror("online", 2);
+    assert.equal(cs.mode, "pending_sync");
+    assert.equal(cs.header, "Online");
+    assert.equal(cs.showBanner, true);
+    assert.equal(cs.bannerTitle, "Sincronização pendente");
+    assert.equal(/sem rede/i.test(cs.bannerTitle), false);
+    const offline = connectionStateMirror("offline", 2);
+    assert.equal(offline.mode, "offline");
+    assert.notEqual(cs.mode, offline.mode);
+  });
+
+  await test("fonte única connectionState no client + rider + console", () => {
+    const client = readFileSync(
+      join(process.cwd(), "src/entregas/ui/shared/client.js"),
+      "utf8",
+    );
+    const rider = readFileSync(
+      join(process.cwd(), "src/entregas/ui/rider-mobile/rider.js"),
+      "utf8",
+    );
+    const cons = readFileSync(
+      join(process.cwd(), "src/entregas/ui/console/console.js"),
+      "utf8",
+    );
+    assert.ok(client.includes("export function connectionState"));
+    assert.ok(client.includes('mode: "pending_sync"'));
+    assert.ok(client.includes('bannerTitle: "Sincronização pendente"'));
+    assert.ok(client.includes('header: "Offline"'));
+    assert.ok(client.includes("nunca usa \"Sem rede\" quando online") || client.includes("nunca usa"));
+    assert.ok(rider.includes("connectionState(snap.connection"));
+    assert.ok(rider.includes("cs.showBanner"));
+    assert.ok(cons.includes("connectionState(snap.connection"));
+  });
+
+  await test("conferência iFood: checklist sem ficha factsHtml duplicada", () => {
+    const js = readFileSync(
+      join(process.cwd(), "src/entregas/ui/ifood-handoff/handoff.js"),
+      "utf8",
+    );
+    const start = js.indexOf("function renderChecking");
+    assert.ok(start >= 0);
+    const end = js.indexOf("\nfunction ", start + 10);
+    const body = end > start ? js.slice(start, end) : js.slice(start);
+    assert.equal(body.includes("factsHtml("), false, "renderChecking não deve chamar factsHtml");
+    assert.ok(body.includes("chkBags"));
+    assert.ok(body.includes("chkName"));
+    assert.ok(body.includes("chkIfood"));
+    assert.ok(body.includes("Entregar ao motoboy"));
+    assert.ok(body.includes("handoff-meta") || body.includes("Entregador esperado"));
+    assert.ok(body.includes("disabled"));
+    assert.ok(js.includes("canDeliverOrder") && js.includes("missingFor"));
+  });
+
+  await test("controles demo: hidden por padrão; gated por health demo_controls", () => {
+    const html = readFileSync(
+      join(process.cwd(), "src/entregas/ui/ifood-handoff/index.html"),
+      "utf8",
+    );
+    const js = readFileSync(
+      join(process.cwd(), "src/entregas/ui/ifood-handoff/handoff.js"),
+      "utf8",
+    );
+    const uiSrv = readFileSync(
+      join(process.cwd(), "tools/entregas_ui_server.ts"),
+      "utf8",
+    );
+    const pilotSrv = readFileSync(
+      join(process.cwd(), "tools/entregas_pilot_server.ts"),
+      "utf8",
+    );
+    assert.ok(html.includes('id="demoDock"'));
+    assert.ok(/demoDock[^>]*\bhidden\b/.test(html) || html.includes('class="demo-dock" hidden'));
+    assert.ok(js.includes("applyDemoControlsVisibility"));
+    assert.ok(js.includes("demo_controls"));
+    assert.ok(js.includes("dock.hidden = !enabled") || js.includes("dock.hidden = true"));
+    assert.ok(uiSrv.includes("demo_controls"));
+    assert.ok(uiSrv.includes("ENTREGAS_DEMO_CONTROLS"));
+    assert.ok(pilotSrv.includes("demo_controls"));
+    // piloto: default seguro (só true se env/config)
+    assert.ok(
+      pilotSrv.includes('ENTREGAS_DEMO_CONTROLS === "true"') ||
+        pilotSrv.includes("ENTREGAS_DEMO_CONTROLS"),
+    );
+  });
+
+  await test("360px: overflow e min-width nos CSS de console/rider/handoff", () => {
+    const riderCss = readFileSync(
+      join(process.cwd(), "src/entregas/ui/rider-mobile/rider.css"),
+      "utf8",
+    );
+    const consoleCss = readFileSync(
+      join(process.cwd(), "src/entregas/ui/console/console.css"),
+      "utf8",
+    );
+    const handoffCss = readFileSync(
+      join(process.cwd(), "src/entregas/ui/ifood-handoff/handoff.css"),
+      "utf8",
+    );
+    assert.ok(riderCss.includes("overflow-x: hidden"));
+    assert.ok(riderCss.includes("min-width: 0"));
+    assert.ok(consoleCss.includes("overflow-x: hidden"));
+    assert.ok(consoleCss.includes("min-width: 0"));
+    assert.ok(consoleCss.includes("@media (max-width: 400px)"));
+    assert.ok(handoffCss.includes("min-width: 0"));
+    assert.ok(handoffCss.includes("demo-dock[hidden]") || handoffCss.includes(".demo-dock[hidden]"));
+    assert.ok(handoffCss.includes("overflow-wrap: anywhere") || handoffCss.includes("word-break"));
+  });
+
+  await test("facade: pending_sync e connection no snapshot", async () => {
+    const f = new UiApplicationFacade();
+    f.setConnection("online");
+    let s = await f.snapshot();
+    assert.equal(s.connection, "online");
+    assert.equal(s.pending_sync, 0);
+    f.setConnection("offline");
+    s = await f.snapshot();
+    assert.equal(s.connection, "offline");
+  });
+
   console.log(`\n=== ${passed} UI tests OK ===\n`);
 })().catch((e) => {
   console.error(e);

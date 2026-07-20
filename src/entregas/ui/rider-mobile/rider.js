@@ -3,7 +3,7 @@ import {
   command,
   chip,
   renderError,
-  connectionLabel,
+  connectionState,
   api,
 } from "../shared/client.js";
 
@@ -61,27 +61,26 @@ function addressHint(orderRef) {
 
 async function refresh() {
   snap = await snapshot();
-  const offline = snap.connection === "offline";
-  const syncing = snap.connection === "syncing";
-  const pending = snap.pending_sync > 0;
+  // Uma única fonte: snap.connection + pending_sync (nunca misturar com outro canal)
+  const cs = connectionState(snap.connection, snap.pending_sync || 0);
+  const offline = cs.mode === "offline";
 
-  $("connLine").textContent = connectionLabel(snap.connection, snap.pending_sync);
+  $("connLine").textContent = cs.header;
+  $("connLine").dataset.mode = cs.mode;
 
-  // Sync automática: banner só em offline real ou envio em curso — nunca “sem rede” se online
   const syncBar = $("syncBar");
-  if (offline) {
+  if (cs.showBanner) {
     syncBar.hidden = false;
-    $("syncTitle").textContent = "Sem rede no momento";
-    $("syncDetail").textContent =
-      "Suas confirmações ficam guardadas neste aparelho e sobem sozinhas quando a rede voltar.";
-  } else if (syncing || pending) {
-    syncBar.hidden = false;
-    $("syncTitle").textContent = "Enviando atualizações…";
-    $("syncDetail").textContent = "Sincronização automática em andamento.";
+    $("syncTitle").textContent = cs.bannerTitle;
+    $("syncDetail").textContent = cs.bannerDetail;
+    // Guardrail: se cabeçalho é Online, título do banner não pode ser "Sem rede"
+    if (cs.header === "Online" && /sem rede/i.test(cs.bannerTitle)) {
+      $("syncTitle").textContent = "Sincronização pendente";
+    }
   } else {
     syncBar.hidden = true;
   }
-  // Link secundário opcional — motoboy não administra a fila
+  // Link secundário só em offline real — não em sync pendente online
   $("btnSyncNow").hidden = !offline;
 
   const t = activeTrip();

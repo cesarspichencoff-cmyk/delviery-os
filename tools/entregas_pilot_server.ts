@@ -71,10 +71,10 @@ function transformHtml(html: string, pathname: string): string {
     /AMBIENTE DE DEMONSTRAÇÃO[^<]*/g,
     banner,
   );
-  // esconder dock de demo na expedição iFood
-  if (pathname.includes("ifood-handoff") && !cfg.features.demo_controls) {
+  // esconder dock de demo na expedição iFood (id ou class; operação: ausente no HTML)
+  if (pathname.includes("ifood-handoff") && !cfg.features?.demo_controls) {
     out = out.replace(
-      /<aside class="demo-dock"[\s\S]*?<\/aside>/,
+      /<aside\b[^>]*(?:id=["']demoDock["']|class=["'][^"']*demo-dock[^"']*["'])[^>]*>[\s\S]*?<\/aside>/i,
       "<!-- demo dock desabilitado no piloto -->",
     );
   }
@@ -127,6 +127,11 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url || "/", `http://127.0.0.1:${PORT}`);
   try {
     if (url.pathname === "/api/health") {
+      // Operação/piloto: controles de simulação ausentes (default seguro)
+      const demoControls =
+        process.env.ENTREGAS_DEMO_CONTROLS === "true" ||
+        process.env.ENTREGAS_DEMO_CONTROLS === "1" ||
+        !!cfg.features?.demo_controls;
       return json(res, 200, {
         ok: true,
         module: "ENTREGAS",
@@ -134,6 +139,8 @@ const server = http.createServer(async (req, res) => {
         unit: cfg.unit_name,
         banner,
         demo: false,
+        demo_controls: demoControls,
+        features: { ...(cfg.features || {}), demo_controls: demoControls },
         shell: false,
         copiloto: false,
         gps_production: false,

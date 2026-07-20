@@ -42,10 +42,19 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url || "/", `http://127.0.0.1:${PORT}`);
   try {
     if (url.pathname === "/api/health") {
+      // Demo server: controles de simulação ligados por padrão.
+      // Override: ENTREGAS_DEMO_CONTROLS=false desliga mesmo no ui:entregas.
+      const demoControls =
+        process.env.ENTREGAS_DEMO_CONTROLS === undefined
+          ? true
+          : process.env.ENTREGAS_DEMO_CONTROLS === "true" ||
+            process.env.ENTREGAS_DEMO_CONTROLS === "1";
       return json(res, 200, {
         ok: true,
         module: "ENTREGAS",
         demo: true,
+        demo_controls: demoControls,
+        features: { demo_controls: demoControls },
         shell: false,
         copiloto: false,
       });

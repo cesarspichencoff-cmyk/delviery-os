@@ -409,6 +409,7 @@ function renderChecking(o) {
   const missing = missingFor(o);
   const canDeliver = missing.length === 0;
 
+  // Conferência enxuta: checklist com dados reais; sem ficha factsHtml duplicada
   app().innerHTML = `
     <div class="detail">
       <button type="button" class="detail-back" data-act="home">← Voltar</button>
@@ -433,7 +434,7 @@ function renderChecking(o) {
               <input type="checkbox" id="chkName" name="chkName"
                 ${o._chkName ? "checked" : ""}
                 aria-describedby="hintName" />
-              <label for="chkName">Nome do pedido correto</label>
+              <label for="chkName">Nome: ${escapeHtml(o.customer_name)}</label>
             </div>
             <p class="check-hint" id="hintName">Confirme o nome identificado no pedido.</p>
           </li>
@@ -442,14 +443,14 @@ function renderChecking(o) {
               <input type="checkbox" id="chkIfood" name="chkIfood"
                 ${o._chkIfood ? "checked" : ""}
                 aria-describedby="hintIfood" />
-              <label for="chkIfood">Número do iFood correto</label>
+              <label for="chkIfood">Número iFood: ${escapeHtml(o.ifood_code)}</label>
             </div>
             <p class="check-hint" id="hintIfood">Confirme o número ou código do iFood.</p>
           </li>
         </ul>
       </fieldset>
 
-      <div class="rider-soft" role="group" aria-label="Entregador esperado">
+      <div class="handoff-meta" role="group" aria-label="Entrega">
         <p class="label-meta">Entregador esperado</p>
         ${
           o.rider_name
@@ -457,9 +458,11 @@ function renderChecking(o) {
             : `<p class="name">Nome do motoboy não informado pelo iFood</p>
                <p class="hint">Confirme pelo número do pedido e pelo código apresentado.</p>`
         }
+        <p class="label-meta" style="margin-top:0.85rem">Responsável</p>
+        <label class="sr-only" for="fldResponsible">Responsável interno</label>
+        <input id="fldResponsible" class="resp-input" value="${escapeAttr(o.responsible)}"
+          autocomplete="name" aria-label="Responsável pela entrega" />
       </div>
-
-      ${factsHtml(o, { editableResponsible: true })}
 
       <div class="pending-box ${canDeliver ? "ready" : ""}" id="pendingBox" role="status" aria-live="polite">
         ${
@@ -784,17 +787,47 @@ if (newestReady && !newestReady.alerted) {
 }
 
 initSoundToggle();
-$("btnDemoReady")?.addEventListener("click", demoNewReady);
-$("btnDemoEmpty")?.addEventListener("click", demoEmpty);
-$("btnDemoReset")?.addEventListener("click", () => {
-  seedOrders();
-  const f = find("o-8640");
-  if (f) {
-    f.alerted = false;
-    f.just_ready = true;
-    maybeAlertReady(f);
+
+/**
+ * Controles de demo: só aparecem se o servidor declarar demo_controls.
+ * Operação/piloto: ausentes (não apenas desabilitados).
+ * Default seguro: ocultos se health falhar ou flag ausente.
+ */
+async function applyDemoControlsVisibility() {
+  const dock = $("demoDock");
+  if (!dock) return false;
+  let enabled = false;
+  try {
+    const res = await fetch("/api/health");
+    const h = await res.json();
+    enabled = h.demo_controls === true || h.features?.demo_controls === true;
+  } catch {
+    enabled = false;
   }
-  render();
-});
+  dock.hidden = !enabled;
+  if (!enabled) {
+    dock.setAttribute("aria-hidden", "true");
+    return false;
+  }
+  dock.removeAttribute("aria-hidden");
+  $("btnDemoReady")?.addEventListener("click", demoNewReady);
+  $("btnDemoEmpty")?.addEventListener("click", demoEmpty);
+  $("btnDemoReset")?.addEventListener("click", () => {
+    seedOrders();
+    const f = find("o-8640");
+    if (f) {
+      f.alerted = false;
+      f.just_ready = true;
+      maybeAlertReady(f);
+    }
+    render();
+  });
+  return true;
+}
+
 render();
+applyDemoControlsVisibility().catch(() => {
+  const dock = $("demoDock");
+  if (dock) dock.hidden = true;
+});
 snapshot().catch(() => {});

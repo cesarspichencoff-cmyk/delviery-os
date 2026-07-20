@@ -26,8 +26,8 @@
 
   <div id="errorBox" class="error-box" hidden role="alert"></div>
 
-  <!-- Controles de demo (recuados) — não fazem parte da operação real -->
-  <aside class="demo-dock" aria-label="Controles de demonstração">
+  <!-- Controles de demo: só montados se /api/health.demo_controls === true -->
+  <aside id="demoDock" class="demo-dock" hidden aria-label="Controles de demonstração">
     <p class="label-meta">Demo</p>
     <button type="button" id="btnDemoReady">Simular novo pedido pronto</button>
     <button type="button" id="btnDemoEmpty">Estado sem prontos</button>

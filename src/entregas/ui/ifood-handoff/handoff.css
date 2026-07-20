@@ -1,22 +1,36 @@
 /* Expedição iFood — identidade profunda + trabalho em branco quente */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
 
 body {
   background: var(--surface-work);
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100%;
 }
 
 .shell-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
   padding: 0.95rem 1.25rem;
   background: var(--brand-deep);
   color: var(--text-on-dark);
   border-bottom: 1px solid var(--line-on-dark);
+  min-width: 0;
+  max-width: 100%;
 }
 .shell-brand {
   font-weight: 600;
   color: var(--text-on-dark);
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow-wrap: anywhere;
 }
 .shell-brand span {
   font-weight: 400;
@@ -26,8 +40,11 @@ body {
 .shell-tools {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  flex-wrap: wrap;
+  gap: 0.65rem 1rem;
   font-size: 0.88rem;
+  min-width: 0;
+  max-width: 100%;
 }
 .shell-tools a {
   color: var(--text-on-dark);
@@ -48,10 +65,12 @@ body {
 }
 
 .exp-wrap {
-  max-width: 480px;
+  max-width: min(480px, 100%);
   margin: 0 auto;
   padding: 0 0 5rem;
   min-height: calc(100vh - 8rem);
+  min-width: 0;
+  width: 100%;
 }
 
 /* —— Home: faixa institucional + trabalho claro —— */
@@ -341,12 +360,16 @@ body {
   font-size: 0.98rem;
   cursor: pointer;
   flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .check-hint {
   margin: 0.35rem 0 0 1.95rem;
   font-size: 0.78rem;
   color: var(--ink-muted);
   line-height: 1.35;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 .inline-hint {
   font-weight: 400;
@@ -395,6 +418,10 @@ body {
   color: var(--ink-2);
   margin-bottom: 0.65rem;
   line-height: 1.4;
+  max-width: 100%;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 .pending-box.ready {
   background: var(--accent-soft);
@@ -436,7 +463,45 @@ body {
   max-width: 38ch;
 }
 
-/* Demo dock — contexto recuado */
+/* Meta da conferência (entregador + responsável) — sem ficha facts duplicada */
+.handoff-meta {
+  margin: 0 0 1rem;
+  padding: 0.95rem 1rem;
+  border-radius: var(--radius);
+  background: var(--surface-elevated);
+  border: 1px solid var(--line-work);
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.handoff-meta .label-meta {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--tinta-3);
+  margin: 0 0 0.2rem;
+}
+.handoff-meta .name {
+  margin: 0;
+  font-size: 1.02rem;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.handoff-meta .hint {
+  margin: 0.25rem 0 0;
+  font-size: 0.8rem;
+  color: var(--ink-muted);
+  line-height: 1.35;
+}
+.handoff-meta .resp-input {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin-top: 0.25rem;
+}
+
+/* Demo dock — só visível quando JS remove [hidden] (demo_controls) */
 .demo-dock {
   position: fixed;
   right: 0.75rem;
@@ -449,6 +514,10 @@ body {
   font-size: 0.75rem;
   z-index: 20;
   box-shadow: var(--shadow);
+  box-sizing: border-box;
+}
+.demo-dock[hidden] {
+  display: none !important;
 }
 .demo-dock .label-meta { margin-bottom: 0.4rem; }
 .demo-dock button {
@@ -465,6 +534,26 @@ body {
     position: static;
     max-width: none;
     margin: 0 1rem 1.5rem;
+  }
+}
+@media (max-width: 400px) {
+  .shell-header {
+    padding: 0.75rem 0.85rem;
+  }
+  .shell-brand {
+    flex-basis: 100%;
+  }
+  .detail {
+    padding-left: 0.85rem;
+    padding-right: 0.85rem;
+  }
+  .check-row label {
+    font-size: 0.92rem;
+  }
+  .primary.wide,
+  .btn-sovereign.wide {
+    max-width: 100%;
+    width: 100%;
   }
 }
 

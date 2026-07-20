@@ -4,7 +4,7 @@ import {
   api,
   chip,
   renderError,
-  connectionLabel,
+  connectionState,
 } from "../shared/client.js";
 
 const $ = (id) => document.getElementById(id);
@@ -36,24 +36,25 @@ async function refresh() {
   try {
     snap = await snapshot();
     $("maxStops").textContent = String(snap.policy.max_stops);
-    $("conn").textContent = connectionLabel(snap.connection, snap.pending_sync);
+    const cs = connectionState(snap.connection, snap.pending_sync || 0);
+    $("conn").textContent = cs.header;
+    $("conn").dataset.mode = cs.mode;
     $("conn").className =
       "chip " +
-      (snap.connection === "offline"
-        ? "warn"
-        : snap.pending_sync > 0
-          ? "warn"
-          : "neutral");
+      (cs.mode === "offline" ? "warn" : cs.mode === "pending_sync" ? "warn" : "neutral");
     const roleLabel = {
       operador_expedicao: "Operador",
       lider_delivery: "Líder",
       gerente: "Gerente",
       motoboy_interno: "Motoboy",
     }[snap.actor.role] || snap.actor.role;
+    // Status de linha: nunca "sem rede" se online
     $("statusLine").textContent =
-      snap.pending_sync > 0
-        ? `${roleLabel} · envio automático pendente (${snap.pending_sync})`
-        : `${roleLabel} · sincronizado`;
+      cs.mode === "offline"
+        ? `${roleLabel} · offline`
+        : cs.mode === "pending_sync"
+          ? `${roleLabel} · sincronização pendente (${snap.pending_sync || 0})`
+          : `${roleLabel} · online`;
     renderError($("errorBox"), snap.last_error);
     renderReady();
     renderTrips();
