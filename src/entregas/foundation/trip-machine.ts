@@ -361,7 +361,8 @@ export function closeTripManual(
   authorizedRoles: string[],
   actorRole: string,
 ): ApplyResult<TripAggregate> {
-  if (!authorizedRoles.includes(actorRole)) {
+  // authorizedRoles: papéis COR piloto (lider_delivery | gerente)
+  if (!authorizedRoles.includes(actorRole as never) && !authorizedRoles.includes(actorRole)) {
     return {
       ok: false,
       error: new DomainError(
