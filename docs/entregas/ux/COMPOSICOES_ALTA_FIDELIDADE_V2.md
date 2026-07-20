@@ -2,13 +2,15 @@
 
 | Campo | Valor |
 |---|---|
-| Status | **AGUARDA APROVAÇÃO DO CÉSAR** |
+| Status | **Direção aprovada · ver correções obrigatórias** |
 | Data | 2026-07-20 |
-| Artefato interativo | [`composicoes-v2/INDEX.html`](composicoes-v2/INDEX.html) |
+| Artefato 1ª rodada (histórico) | [`composicoes-v2/INDEX.html`](composicoes-v2/INDEX.html) |
+| **Artefato de revisão final** | [`composicoes-v2/CORRECOES_OBRIGATORIAS.html`](composicoes-v2/CORRECOES_OBRIGATORIAS.html) |
+| Spec das correções | [`COMPOSICOES_CORRECOES_OBRIGATORIAS.md`](COMPOSICOES_CORRECOES_OBRIGATORIAS.md) |
 | Linhagem | [`LINHAGEM_VISUAL_CANONICA.md`](LINHAGEM_VISUAL_CANONICA.md) |
 | Implementação | **NÃO iniciada** |
 
-Abrir o `INDEX.html` no navegador (com rede para Google Fonts) para revisar as sete composições com tipografia canônica e side-by-side da referência Sprint.
+**Para o César:** abrir `CORRECOES_OBRIGATORIAS.html` (somente as composições alteradas). O `INDEX.html` da 1ª rodada fica como histórico.
 
 ---
 

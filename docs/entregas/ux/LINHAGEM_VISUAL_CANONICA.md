@@ -2,8 +2,9 @@
 
 | Campo | Valor |
 |---|---|
-| Status | **PROPOSTA — aguarda aprovação do César** |
+| Status | **Direção aprovada · composições em correção obrigatória · redesign NÃO autorizado** |
 | Data | 2026-07-20 |
+| Composições corrigidas | `docs/entregas/ux/composicoes-v2/CORRECOES_OBRIGATORIAS.html` |
 | Nível 1 | Sprint Visual DeliveryOS V2 (ZIP canônico) |
 | Nível 2 | DeliveryOS Organismo Operacional V3.3 (referência validada; **não alterado**) |
 | Módulo | ENTREGAS — “Os pedidos ganham movimento.” |
@@ -37,7 +38,7 @@
 | Offline / sync | Contrato de estados técnicos | Solidez vs interrompido | Banner de solidez; fila de sync; sem drama | Inteligência perceptível no comportamento |
 | Mobile | Mobile-first no Sprint | — | Parada atual como única atenção | Dedo e rua |
 | Desktop | Leitura ampla | Console de consciência | Console de movimento (mapa + montagem) | Mesma linhagem, função distinta |
-| Inteligência | Pelo comportamento, não selo “IA” | Recomenda e recua | Sugere ordem de parada / alerta de pendência sem chat | Silenciosa |
+| Inteligência | Pelo comportamento, não selo “IA” | Recomenda e recua | Só o que o domínio prova; **sem** ordem “pelo bairro”, tempo no local ou GPS simulado como fato | Silenciosa; visão futura marcada |
 | Anti-SaaS | Remover cards Ambiente com % e anéis | Foco único | Proibido ranking, 3 colunas iguais, KPI wall | Critério global §8 |
 
 ## Princípios detalhados (Sprint → Copiloto → ENTREGAS)
@@ -135,11 +136,11 @@
 | Campo | Conteúdo |
 |---|---|
 | Referência mapa | Não copiar Google Maps stock; identidade TATA |
-| ENTREGAS mapa | Tiles desaturados quentes; rota verde; pins editoriais; legenda mínima |
-| Offline | Solidez interrompida; fila local; CTA “Sincronizar quando houver rede” |
-| Mobile | Uma parada = uma tela mental |
-| Desktop | Console de montagem e supervisão |
-| Risco | Widget de mapa default sem skin; full-screen spinner de sync |
+| ENTREGAS mapa | Tiles quentes; rota com solidez; pins de estado — **proposta**; exige prova MapLibre real antes da aprovação final da cartografia |
+| Offline | Sync **automática**; motoboy não administra fila; “Enviar agora” só secundário |
+| Mobile | Por estado: Abrir rota → Cheguei → Confirmar entrega; problema secundário |
+| Desktop | Console com verdade sem GPS; GPS só como visão futura marcada |
+| Risco | Mapa stock; GPS fictício; jargão técnico na UI; ação inválida no estado |
 
 ## Problemas da referência histórica (app-v1) que **não** serão repetidos
 
