@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Hanken+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0;background:#EDE4D3;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+    ::selection{background:#322E27;color:#F6F1E7}
+    a{color:#8E3B2E;text-decoration:none;border-bottom:1px solid rgba(142,59,46,0.3)}
+    a:hover{border-bottom-color:#8E3B2E}
+    @keyframes dosShimmer{0%{transform:translateX(-60%)}100%{transform:translateX(300%)}}
+    @keyframes dosPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.35;transform:scale(0.82)}}
+    @keyframes dosRing{0%{opacity:0.5;transform:scale(1)}100%{opacity:0;transform:scale(2.4)}}
+  </style>
+</helmet>
+<div style="background:#EDE4D3;color:#322E27;font-family:'Hanken Grotesk',system-ui,sans-serif;padding:clamp(1.1rem,4vw,3rem) clamp(1rem,4vw,2rem);min-height:100vh;">
+<div style="max-width:1180px;margin:0 auto;">
+
+  <header style="display:flex;flex-direction:column;gap:1.4rem;padding-bottom:2rem;border-bottom:1px solid #DccFbb;">
+    <div style="display:flex;flex-wrap:wrap;gap:0.5rem 1.1rem;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:0.72rem;letter-spacing:0.14em;text-transform:uppercase;color:#7C7565;">
+      <span>DeliveryOS · Operação Viva</span>
+      <span style="color:#C3B7A2;">/</span>
+      <span>Sprint Visual V2A</span>
+      <span style="color:#C3B7A2;">/</span>
+      <span style="color:#8E3B2E;">Contrato dos estados técnicos</span>
+    </div>
+    <h1 style="margin:0;font-family:'Spectral',serif;font-weight:300;font-size:clamp(2.1rem,6vw,3.8rem);line-height:1.05;letter-spacing:-0.02em;max-width:20ch;">Quando o sistema não pode mostrar consciência, ele precisa dizer isso com calma.</h1>
+    <p style="margin:0;font-size:clamp(1.02rem,2.6vw,1.22rem);line-height:1.55;color:#5C554A;max-width:62ch;">Este documento define a família visual dos estados técnicos e das condições de informação incompleta. Não redesenha Calmo, Ambiente ou Foco. Não altera o motor, a decisão ou o payload. Só dá forma ao que a V1 hoje resolve com um texto genérico único.</p>
+    <nav style="display:flex;flex-wrap:wrap;gap:0.5rem 0.75rem;font-family:'IBM Plex Mono',monospace;font-size:0.73rem;letter-spacing:0.04em;">
+      <a href="#diagnostico">01 Diagnóstico</a><a href="#principios">02 Princípios</a><a href="#arquitetura">03 Arquitetura</a><a href="#demonstrador">04 Superfície viva</a><a href="#familia">05 Os 8 estados</a><a href="#unknowns">06 Informação incompleta</a><a href="#comparacao">07 Distinções</a><a href="#textos">08 Textos</a><a href="#responsivo">09 Mobile e desktop</a><a href="#preservar">10 Preservar</a><a href="#simulador">11 Simulador</a><a href="#validacao">12 Validação</a>
+    </nav>
+  </header>
+
+  <div style="margin:1.6rem 0 0;padding:1.1rem 1.3rem;background:#F6F1E7;border:1px solid #E0D5c1;border-radius:12px;display:flex;gap:0.85rem;align-items:flex-start;">
+    <span style="flex:none;width:8px;height:8px;border-radius:50%;background:#B0812F;margin-top:0.42rem;"></span>
+    <p style="margin:0;font-size:0.95rem;line-height:1.5;color:#5C554A;"><strong style="color:#322E27;font-weight:600;">Base desta auditoria.</strong> O diagnóstico abaixo parte do laudo técnico já registrado (todos estes estados usam hoje o mesmo texto genérico) e do payload documentado. Não reflete inspeção visual das capturas, que não chegaram a este ambiente. Ambiente e Foco não foram observados e não são tratados aqui.</p>
+  </div>
+
+  <!-- 01 DIAGNÓSTICO -->
+  <section id="diagnostico" style="padding:3.4rem 0 0;">
+    <div style="display:flex;align-items:baseline;gap:0.8rem;margin-bottom:1.4rem;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:0.8rem;color:#B0812F;">01</span>
+      <h2 style="margin:0;font-family:'Spectral',serif;font-weight:400;font-size:clamp(1.6rem,3.6vw,2.4rem);letter-spacing:-0.015em;">Diagnóstico do que existe hoje</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1.5rem 2.5rem;">
+      <div>
+        <p style="margin:0 0 0.9rem;font-size:1.05rem;line-height:1.6;color:#4A453D;">Calmo, Ambiente e Foco têm composição própria. O restante da operação, tudo que não é uma consciência pronta, cai no mesmo lugar: uma frase curta sobre fundo vazio.</p>
+        <p style="margin:0;font-size:1.05rem;line-height:1.6;color:#4A453D;">Isso cria três problemas de confiança que este contrato resolve.</p>
+      </div>
+      <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:0.9rem;">
+        <li style="display:flex;gap:0.7rem;font-size:1rem;line-height:1.5;color:#4A453D;"><span style="flex:none;font-family:'IBM Plex Mono',monospace;color:#8E3B2E;">a.</span><span><strong style="font-weight:600;color:#322E27;">Vazio parece calma.</strong> Uma fonte desconectada e uma operação tranquila podem terminar visualmente parecidas. Ausência de dado não pode ter a mesma aparência de operação saudável.</span></li>
+        <li style="display:flex;gap:0.7rem;font-size:1rem;line-height:1.5;color:#4A453D;"><span style="flex:none;font-family:'IBM Plex Mono',monospace;color:#8E3B2E;">b.</span><span><strong style="font-weight:600;color:#322E27;">Gravidade sem proporção.</strong> Reconstruir o turno, envelhecer o dado e não conseguir ler a operação são coisas diferentes e hoje pesam igual.</span></li>
+        <li style="display:flex;gap:0.7rem;font-size:1rem;line-height:1.5;color:#4A453D;"><span style="flex:none;font-family:'IBM Plex Mono',monospace;color:#8E3B2E;">c.</span><span><strong style="font-weight:600;color:#322E27;">Desconhecidos invisíveis.</strong> Pedidos sem informação suficiente existem no payload, mas não aparecem. Some deles, ou viram alarme. Faltava o meio termo honesto.</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 02 PRINCÍPIOS -->
+  <section id="principios" style="padding:3.4rem 0 0;">
+    <div style="display:flex;align-items:baseline;gap:0.8rem;margin-bottom:1.4rem;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:0.8rem;color:#B0812F;">02</span>
+      <h2 style="margin:0;font-family:'Spectral',serif;font-weight:400;font-size:clamp(1.6rem,3.6vw,2.4rem);letter-spacing:-0.015em;">Princípios do contrato</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1.2rem;">
+      <div style="padding:1.4rem;background:#F6F1E7;border-radius:14px;"><h3 style="margin:0 0 0.5rem;font-family:'Spectral',serif;font-weight:500;font-size:1.18rem;">Nunca imita Calmo</h3><p style="margin:0;font-size:0.98rem;line-height:1.5;color:#5C554A;">Calmo só existe com informação confiável e atual. Qualquer estado técnico deve ser distinguível de Calmo à primeira olhada.</p></div>
+      <div style="padding:1.4rem;background:#F6F1E7;border-radius:14px;"><h3 style="margin:0 0 0.5rem;font-family:'Spectral',serif;font-weight:500;font-size:1.18rem;">Não compete com o Foco</h3><p style="margin:0;font-size:0.98rem;line-height:1.5;color:#5C554A;">O estado técnico explica se há condição de mostrar consciência. Ele não vira uma segunda prioridade nem uma central de alertas.</p></div>
+      <div style="padding:1.4rem;background:#F6F1E7;border-radius:14px;"><h3 style="margin:0 0 0.5rem;font-family:'Spectral',serif;font-weight:500;font-size:1.18rem;">Três camadas separadas</h3><p style="margin:0;font-size:0.98rem;line-height:1.5;color:#5C554A;">Estado cognitivo, estado da fonte e qualidade da informação são coisas distintas. Nunca em uma lista única.</p></div>
+      <div style="padding:1.4rem;background:#F6F1E7;border-radius:14px;"><h3 style="margin:0 0 0.5rem;font-family:'Spectral',serif;font-weight:500;font-size:1.18rem;">Só o que o payload informa</h3><p style="margin:0;font-size:0.98rem;line-height:1.5;color:#5C554A;">Nenhum dado, previsão ou ação inventada. A UI mostra o que o núcleo e a fonte já dizem.</p></div>
+    </div>
+    <div style="margin-top:1.6rem;padding:1.6rem 1.8rem;background:#322E27;border-radius:14px;color:#EDE4D3;">
+      <p style="margin:0;font-family:'Spectral',serif;font-style:italic;font-size:clamp(1.2rem,3vw,1.55rem);line-height:1.4;">A ideia central: confiança é solidez. Quanto menos confiável a informação, menos sólida fica a superfície. O que é certo aparece cheio. O que envelheceu, desconectou ou falhou aparece desbotado, tracejado ou interrompido.</p>
+    </div>
+  </section>
+
+  <!-- 03 ARQUITETURA -->
+  <section id="arquitetura" style="padding:3.4rem 0 0;">
+    <div style="display:flex;align-items:baseline;gap:0.8rem;margin-bottom:0.7rem;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:0.8rem;color:#B0812F;">03</span>
+      <h2 style="margin:0;font-family:'Spectral',serif;font-weight:400;font-size:clamp(1.6rem,3.6vw,2.4rem);letter-spacing:-0.015em;">A anatomia compartilhada</h2>
+    </div>
+    <p style="margin:0 0 2rem;font-size:1.05rem;line-height:1.6;color:#5C554A;max-width:64ch;">Todos os estados usam a mesma estrutura vertical. Cada um mostra só o que precisa. Um deles nunca terá cards, tabelas ou ícones de erro. A linha de sinal no topo carrega o significado.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:2rem;align-items:start;">
+      <div style="background:#F6F1E7;border-radius:22px;padding:1.8rem;box-shadow:0 1px 2px rgba(50,46,39,0.05),0 18px 40px -28px rgba(50,46,39,0.35);">
+        <dc-import name="EstadoTecnico" eyebrow="{{ sample.eyebrow }}" accent="{{ sample.accent }}" signal="{{ sample.signal }}" title="{{ sample.title }}" explanation="{{ sample.explanation }}" evidence="{{ sample.evidence }}" has-evidence="{{ sample.hasEvidence }}" last-reliable="{{ sample.lastReliable }}" last-reliable-state="{{ sample.lastReliableState }}" has-memory="{{ sample.hasMemory }}" restriction="{{ sample.restriction }}" has-restriction="{{ sample.hasRestriction }}" restriction-color="{{ sample.restrictionColor }}" hint-size="100%,420px"></dc-import>
+      </div>
+      <ol style="list-style:none;margin:0;padding:0;counter-reset:an;display:flex;flex-direction:column;gap:0.85rem;">
+        <li style="display:flex;gap:0.8rem;font-size:0.98rem;line-height:1.45;color:#4A453D;"><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:0.8rem;color:#B0812F;width:1.4rem;">1</span><span><strong style="color:#322E27;">Camada técnica.</strong> Marca discreta em maiúsculas. Nomeia a condição sem alardear.</span></li>
+        <li style="display:flex;gap:0.8rem;font-size:0.98rem;line-height:1.45;color:#4A453D;"><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:0.8rem;color:#B0812F;width:1.4rem;">2</span><span><strong style="color:#322E27;">Linha de sinal.</strong> Mostra a saúde da verdade operacional. Muda de forma por estado.</span></li>
+        <li style="display:flex;gap:0.8rem;font-size:0.98rem;line-height:1.45;color:#4A453D;"><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:0.8rem;color:#B0812F;width:1.4rem;">3</span><span><strong style="color:#322E27;">Título humano.</strong> Uma frase editorial. O operador entende em uma leitura.</span></li>
+        <li style="display:flex;gap:0.8rem;font-size:0.98rem;line-height:1.45;color:#4A453D;"><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:0.8rem;color:#B0812F;width:1.4rem;">4</span><span><strong style="color:#322E27;">Explicação curta.</strong> Uma linha de contexto, sem termos técnicos.</span></li>
+        <li style="display:flex;gap:0.8rem;font-size:0.98rem;line-height:1.45;color:#4A453D;"><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:0.8rem;color:#B0812F;width:1.4rem;">5</span><span><strong style="color:#322E27;">Evidência.</strong> Só quando o payload dá. Marca cheia para o confiável, vazada para o incompleto.</span></li>
+        <li style="display:flex;gap:0.8rem;font-size:0.98rem;line-height:1.45;color:#4A453D;"><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:0.8rem;color:#B0812F;width:1.4rem;">6</span><span><strong style="color:#322E27;">Último estado confiável.</strong> A memória. Recuada, com hora exata em fonte mono.</span></li>
+        <li style="display:flex;gap:0.8rem;font-size:0.98rem;line-height:1.45;color:#4A453D;"><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:0.8rem;color:#B0812F;width:1.4rem;">7</span><span><strong style="color:#322E27;">Restrição explícita.</strong> O que não se pode concluir agora. Ganha peso no estado mais grave.</span></li>
+        <li style="display:flex;gap:0.8rem;font-size:0.98rem;line-height:1.45;color:#4A453D;"><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:0.8rem;color:#B0812F;width:1.4rem;">8</span><span><strong style="color:#322E27;">Cabeçalho operacional.</strong> Fora da superfície, no topo do aparelho. Nome da casa, relógio e estado da fonte.</span></li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- 04 DEMONSTRADOR -->
+  <section id="demonstrador" style="padding:3.4rem 0 0;">
+    <div style="display:flex;align-items:baseline;gap:0.8rem;margin-bottom:0.7rem;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:0.8rem;color:#B0812F;">04</span>
+      <h2 style="margin:0;font-family:'Spectral',serif;font-weight:400;font-size:clamp(1.6rem,3.6vw,2.4rem);letter-spacing:-0.015em;">A mesma superfície, mudando de estado</h2>
+    </div>
+    <p style="margin:0 0 1.6rem;font-size:1.05rem;line-height:1.6;color:#5C554A;max-width:64ch;">Não são telas diferentes. É um só espaço que muda de forma conforme a confiança na informação. Troque o estado abaixo e observe a linha de sinal, o cabeçalho e a densidade mudarem juntos.</p>
+
+    <!-- Barra do simulador, claramente separada do produto -->
+    <div style="background:#2A2620;border-radius:14px 14px 0 0;padding:0.9rem 1.1rem;display:flex;flex-direction:column;gap:0.75rem;border:1px solid #2A2620;">
+      <div style="display:flex;align-items:center;gap:0.5rem;">
+        <span style="width:6px;height:6px;border-radius:50%;background:#8E7B52;"></span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:0.66rem;letter-spacing:0.14em;text-transform:uppercase;color:#9A9182;">Controle do protótipo · não faz parte do produto</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:0.4rem;">
+        <sc-for list="{{ states }}" as="s" hint-placeholder-count="8">
+          <button onClick="{{ s.select }}" style="cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-size:0.82rem;font-weight:500;padding:0.42rem 0.8rem;border-radius:8px;border:1px solid {{ s.btnBorder }};background:{{ s.btnBg }};color:{{ s.btnColor }};transition:all .18s ease;" style-hover="border-color:#6E6552;color:#F6F1E7;">{{ s.short }}</button>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="background:#F1E9DA;border:1px solid #2A2620;border-top:none;border-radius:0 0 14px 14px;padding:clamp(1.2rem,3vw,2.4rem);display:flex;flex-wrap:wrap;gap:2rem;justify-content:center;align-items:flex-start;">
+      <!-- MOBILE -->
+      <div style="flex:none;display:flex;flex-direction:column;gap:0.7rem;align-items:center;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:0.64rem;letter-spacing:0.16em;text-transform:uppercase;color:#9A8F7B;">Mobile · consulta rápida</span>
+        <div style="width:min(340px,86vw);border:1px solid #D9CFBC;border-radius:36px;padding:12px;background:#E7DDCB;box-shadow:0 30px 60px -34px rgba(50,46,39,0.5);">
+          <div style="background:#F6F1E7;border-radius:26px;overflow:hidden;min-height:600px;display:flex;flex-direction:column;">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:1.1rem 1.3rem 0.9rem;">
+              <span style="font-family:'Spectral',serif;font-size:1.05rem;letter-spacing:0.01em;">Tatá</span>
+              <div style="display:flex;align-items:center;gap:0.5rem;">
+                <span style="position:relative;display:inline-flex;width:8px;height:8px;">
+                  <span style="position:absolute;inset:0;border-radius:50%;background:{{ current.sourceColor }};"></span>
+                  <sc-if value="{{ current.pulsing }}" hint-placeholder-val="{{ true }}"><span style="position:absolute;inset:0;border-radius:50%;background:{{ current.sourceColor }};animation:dosRing 1.8s ease-out infinite;"></span></sc-if>
+                </span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:0.7rem;color:#6B6459;">{{ current.sourceLabel }}</span>
+              </div>
+            </div>
+            <div style="height:1px;background:#EBE1D0;margin:0 1.3rem;"></div>
+            <div style="padding:1.6rem 1.3rem 2rem;flex:1;">
+              <dc-import name="EstadoTecnico" eyebrow="{{ current.eyebrow }}" accent="{{ current.accent }}" signal="{{ current.signal }}" title="{{ current.title }}" explanation="{{ current.explanation }}" evidence="{{ current.evidence }}" has-evidence="{{ current.hasEvidence }}" last-reliable="{{ current.lastReliable }}" last-reliable-state="{{ current.lastReliableState }}" has-memory="{{ current.hasMemory }}" restriction="{{ current.restriction }}" has-restriction="{{ current.hasRestriction }}" restriction-color="{{ current.restrictionColor }}" hint-size="100%,420px"></dc-import>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- DESKTOP -->
+      <div style="flex:1;min-width:300px;display:flex;flex-direction:column;gap:0.7rem;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:0.64rem;letter-spacing:0.16em;text-transform:uppercase;color:#9A8F7B;">Desktop · observação contínua do turno</span>
+        <div style="border:1px solid #D9CFBC;border-radius:16px;overflow:hidden;background:#F6F1E7;box-shadow:0 30px 60px -38px rgba(50,46,39,0.5);min-height:600px;display:flex;flex-direction:column;">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.5rem;background:#F1E9DA;border-bottom:1px solid #E6DBC9;">
+            <div style="display:flex;align-items:baseline;gap:0.9rem;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;letter-spacing:0.12em;text-transform:uppercase;color:#8E836F;">DeliveryOS</span>
+              <span style="font-family:'Spectral',serif;font-size:1.1rem;">Tatá</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:1.4rem;">
+              <div style="display:flex;align-items:center;gap:0.5rem;">
+                <span style="position:relative;display:inline-flex;width:8px;height:8px;">
+                  <span style="position:absolute;inset:0;border-radius:50%;background:{{ current.sourceColor }};"></span>
+                  <sc-if value="{{ current.pulsing }}" hint-placeholder-val="{{ true }}"><span style="position:absolute;inset:0;border-radius:50%;background:{{ current.sourceColor }};animation:dosRing 1.8s ease-out infinite;"></span></sc-if>
+                </span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:#6B6459;">{{ current.sourceLabel }}</span>
+              </div>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:#9A8F7B;">agora {{ clock }}</span>
+            </div>
+          </div>
+          <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:clamp(1.5rem,4vw,3.5rem);">
+            <div style="width:100%;max-width:460px;">
+              <dc-import name="EstadoTecnico" eyebrow="{{ current.eyebrow }}" accent="{{ current.accent }}" signal="{{ current.signal }}" title="{{ current.title }}" explanation="{{ current.explanation }}" evidence="{{ current.evidence }}" has-evidence="{{ current.hasEvidence }}" last-reliable="{{ current.lastReliable }}" last-reliable-state="{{ current.lastReliableState }}" has-memory="{{ current.hasMemory }}" restriction="{{ current.restriction }}" has-restriction="{{ current.hasRestriction }}" restriction-color="{{ current.restrictionColor }}" hint-size="100%,420px"></dc-import>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 05 FAMÍLIA / GALERIA -->
+  <section id="familia" style="padding:3.4rem 0 0;">
+    <div style="display:flex;align-items:baseline;gap:0.8rem;margin-bottom:0.7rem;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:0.8rem;color:#B0812F;">05</span>
+      <h2 style="margin:0;font-family:'Spectral',serif;font-weight:400;font-size:clamp(1.6rem,3.6vw,2.4rem);letter-spacing:-0.015em;">Os oito estados, lado a lado</h2>
+    </div>
+    <p style="margin:0 0 1.8rem;font-size:1.05rem;line-height:1.6;color:#5C554A;max-width:64ch;">A família inteira em uma olhada. Repare como nenhum deles parece Calmo, e como a linha de sinal conta a história antes mesmo da leitura do título.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(288px,1fr));gap:1.5rem;">
+      <sc-for list="{{ states }}" as="s" hint-placeholder-count="8">
+        <div style="display:flex;flex-direction:column;gap:0.7rem;">
+          <div style="border:1px solid #DFD4c1;border-radius:26px;padding:9px;background:#EDE3D1;">
+            <div style="background:#F6F1E7;border-radius:19px;overflow:hidden;min-height:430px;display:flex;flex-direction:column;">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:0.85rem 1rem 0.7rem;">
+                <span style="font-family:'Spectral',serif;font-size:0.92rem;">Tatá</span>
+                <div style="display:flex;align-items:center;gap:0.4rem;">
+                  <span style="width:7px;height:7px;border-radius:50%;background:{{ s.sourceColor }};"></span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:0.63rem;color:#6B6459;">{{ s.sourceLabel }}</span>
+                </div>
+              </div>
+              <div style="height:1px;background:#EBE1D0;margin:0 1rem;"></div>
+              <div style="padding:1.2rem 1rem 1.4rem;flex:1;">
+                <dc-import name="EstadoTecnico" eyebrow="{{ s.eyebrow }}" accent="{{ s.accent }}" signal="{{ s.gallerySignal }}" title="{{ s.title }}" explanation="{{ s.explanation }}" evidence="{{ s.evidence }}" has-evidence="{{ s.hasEvidence }}" last-reliable="{{ s.lastReliable }}" last-reliable-state="{{ s.lastReliableState }}" has-memory="{{ s.hasMemory }}" restriction="{{ s.restriction }}" has-restriction="{{ s.hasRestriction }}" restriction-color="{{ s.restrictionColor }}" hint-size="100%,360px"></dc-import>
+              </div>
+            </div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <!-- 06 UNKNOWNS -->
+  <section id="unknowns" style="padding:3.4rem 0 0;">
+    <div style="display:flex;align-items:baseline;gap:0.8rem;margin-bottom:1.2rem;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:0.8rem;color:#B0812F;">06</span>
+      <h2 style="margin:0;font-family:'Spectral',serif;font-weight:400;font-size:clamp(1.6rem,3.6vw,2.4rem);letter-spacing:-0.015em;">Informação incompleta, tratada com honestidade</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1.4rem 2.5rem;">
+      <div>
+        <p style="margin:0 0 0.9rem;font-size:1.05rem;line-height:1.6;color:#4A453D;">Pedidos com conflito, informação parcial, suspeita ou em quarentena não são falha da fonte. São qualidade da informação. Eles não entram na decisão, mas também não desaparecem.</p>
+        <p style="margin:0;font-size:1.05rem;line-height:1.6;color:#4A453D;">Regra visual: marca vazada, nunca cheia. O vazado comunica que ali falta algo. Nunca inventamos quantidade. Se o payload não confirma a quantidade de um item, ela é omitida, não vira 1.</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:1rem;">
+        <div style="padding:1rem 1.2rem;background:#F6F1E7;border-radius:12px;"><p style="margin:0;font-size:0.96rem;line-height:1.5;color:#4A453D;"><strong style="color:#322E27;">Quando domina a tela</strong> (nada confiável para decidir): vira a superfície, como no estado ao lado. Diz quantos, por quê, e que estão fora da decisão.</p></div>
+        <div style="padding:1rem 1.2rem;background:#F6F1E7;border-radius:12px;"><p style="margin:0;font-size:0.96rem;line-height:1.5;color:#4A453D;"><strong style="color:#322E27;">Quando convive com Calmo, Ambiente ou Foco:</strong> vira uma linha discreta ao pé da superfície, do tipo <em style="font-family:'Spectral',serif;">3 pedidos ainda sem confirmação</em>, tocável para inspeção. Nunca compete com o Foco.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 07 COMPARAÇÃO -->
+  <section id="comparacao" style="padding:3.4rem 0 0;">
+    <div style="display:flex;align-items:baseline;gap:0.8rem;margin-bottom:1.2rem;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:0.8rem;color:#B0812F;">07</span>
+      <h2 style="margin:0;font-family:'Spectral',serif;font-weight:400;font-size:clamp(1.6rem,3.6vw,2.4rem);letter-spacing:-0.015em;">Como a linha distingue os quatro difíceis</h2>
+    </div>
+    <p style="margin:0 0 1.8rem;font-size:1.05rem;line-height:1.6;color:#5C554A;max-width:64ch;">Desatualizado, sem conexão, confiança reduzida e sem leitura confiável são fáceis de confundir em palavras. A forma da linha resolve isso sem semáforo nem vermelho espalhado.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1.2rem;">
+      <sc-for list="{{ legend }}" as="l" hint-placeholder-count="8">
+        <div style="padding:1.3rem;background:#F6F1E7;border-radius:14px;display:flex;flex-direction:column;gap:0.9rem;min-height:150px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:0.66rem;letter-spacing:0.13em;text-transform:uppercase;color:#8E836F;">{{ l.label }}</span>
+          <div style="padding:0.3rem 0;">{{ l.signal }}</div>
+          <p style="margin:0;font-size:0.94rem;line-height:1.45;color:#5C554A;">{{ l.meaning }}</p>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <!-- 08 TEXTOS -->
+  <section id="textos" style="padding:3.4rem 0 0;">
+    <div style="display:flex;align-items:baseline;gap:0.8rem;margin-bottom:1.2rem;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:0.8rem;color:#B0812F;">08</span>
+      <h2 style="margin:0;font-family:'Spectral',serif;font-weight:400;font-size:clamp(1.6rem,3.6vw,2.4rem);letter-spacing:-0.015em;">Textos de interface recomendados</h2>
+    </div>
+    <p style="margin:0 0 1.6rem;font-size:1.05rem;line-height:1.6;color:#5C554A;max-width:64ch;">Português simples, sem travessão longo, sem termo de engenharia. São o ponto de partida, não regra fixa.</p>
+    <div style="display:flex;flex-direction:column;gap:0.9rem;">
+      <sc-for list="{{ states }}" as="s" hint-placeholder-count="8">
+        <div style="display:grid;grid-template-columns:minmax(120px,180px) 1fr;gap:1rem 1.8rem;padding:1.2rem 0;border-top:1px solid #DED3c0;align-items:start;">
+          <div style="display:flex;flex-direction:column;gap:0.35rem;"><span style="font-family:'IBM Plex Mono',monospace;font-size:0.66rem;letter-spacing:0.12em;text-transform:uppercase;color:#8E836F;">{{ s.eyebrow }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:0.68rem;color:#B0a993;">{{ s.techName }}</span></div>
+          <div style="display:flex;flex-direction:column;gap:0.35rem;">
+            <span style="font-family:'Spectral',serif;font-size:1.15rem;color:#322E27;">{{ s.title }}</span>
+            <span style="font-size:0.98rem;line-height:1.45;color:#5C554A;">{{ s.explanation }}</span>
+            <sc-if value="{{ s.hasRestriction }}" hint-placeholder-val="{{ true }}"><span style="font-size:0.92rem;line-height:1.4;color:#8E7B52;font-style:italic;font-family:'Spectral',serif;">{{ s.restriction }}</span></sc-if>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <!-- 09 RESPONSIVO -->
+  <section id="responsivo" style="padding:3.4rem 0 0;">
+    <div style="display:flex;align-items:baseline;gap:0.8rem;margin-bottom:1.2rem;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:0.8rem;color:#B0812F;">09</span>
+      <h2 style="margin:0;font-family:'Spectral',serif;font-weight:400;font-size:clamp(1.6rem,3.6vw,2.4rem);letter-spacing:-0.015em;">Mobile e desktop, a mesma consciência</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1.4rem;">
+      <div style="padding:1.5rem;background:#F6F1E7;border-radius:14px;">
+        <h3 style="margin:0 0 0.7rem;font-family:'Spectral',serif;font-weight:500;font-size:1.25rem;">Mobile primeiro</h3>
+        <p style="margin:0;font-size:1rem;line-height:1.55;color:#5C554A;">Feito para consulta rápida e leitura em movimento. Nada essencial é escondido para caber: o título, a linha de sinal e a restrição sempre aparecem. O cabeçalho encolhe para nome da casa e estado da fonte.</p>
+      </div>
+      <div style="padding:1.5rem;background:#F6F1E7;border-radius:14px;">
+        <h3 style="margin:0 0 0.7rem;font-family:'Spectral',serif;font-weight:500;font-size:1.25rem;">Desktop operacional</h3>
+        <p style="margin:0;font-size:1rem;line-height:1.55;color:#5C554A;">Feito para observação contínua durante o turno. A superfície se centraliza com mais respiro, o cabeçalho ganha relógio e estado da fonte permanentes. Não é o card do mobile esticado: a composição respira mais, a informação é a mesma.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10 PRESERVAR -->
+  <section id="preservar" style="padding:3.4rem 0 0;">
+    <div style="display:flex;align-items:baseline;gap:0.8rem;margin-bottom:1.2rem;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:0.8rem;color:#B0812F;">10</span>
+      <h2 style="margin:0;font-family:'Spectral',serif;font-weight:400;font-size:clamp(1.6rem,3.6vw,2.4rem);letter-spacing:-0.015em;">Preservar e reconsiderar</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1.4rem;">
+      <div>
+        <h3 style="margin:0 0 0.9rem;font-family:'IBM Plex Mono',monospace;font-size:0.72rem;letter-spacing:0.13em;text-transform:uppercase;color:#5E8F70;">Preservar</h3>
+        <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:0.7rem;">
+          <li style="display:flex;gap:0.6rem;font-size:0.98rem;line-height:1.45;color:#4A453D;"><span style="color:#5E8F70;">✓</span> O silêncio visual e o fundo quente do DeliveryOS.</li>
+          <li style="display:flex;gap:0.6rem;font-size:0.98rem;line-height:1.45;color:#4A453D;"><span style="color:#5E8F70;">✓</span> Um único Foco soberano e a ausência de central de alertas.</li>
+          <li style="display:flex;gap:0.6rem;font-size:0.98rem;line-height:1.45;color:#4A453D;"><span style="color:#5E8F70;">✓</span> Linguagem humana e hora exata do último dado confiável.</li>
+          <li style="display:flex;gap:0.6rem;font-size:0.98rem;line-height:1.45;color:#4A453D;"><span style="color:#5E8F70;">✓</span> A soberania do motor. A UI nunca cria prioridade paralela.</li>
+        </ul>
+      </div>
+      <div>
+        <h3 style="margin:0 0 0.9rem;font-family:'IBM Plex Mono',monospace;font-size:0.72rem;letter-spacing:0.13em;text-transform:uppercase;color:#A65E3C;">Reconsiderar</h3>
+        <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:0.7rem;">
+          <li style="display:flex;gap:0.6rem;font-size:0.98rem;line-height:1.45;color:#4A453D;"><span style="color:#A65E3C;">→</span> O texto genérico único para todos os estados técnicos.</li>
+          <li style="display:flex;gap:0.6rem;font-size:0.98rem;line-height:1.45;color:#4A453D;"><span style="color:#A65E3C;">→</span> Vazio e desconexão com a mesma aparência.</li>
+          <li style="display:flex;gap:0.6rem;font-size:0.98rem;line-height:1.45;color:#4A453D;"><span style="color:#A65E3C;">→</span> Desconhecidos sem representação perceptível.</li>
+          <li style="display:flex;gap:0.6rem;font-size:0.98rem;line-height:1.45;color:#4A453D;"><span style="color:#A65E3C;">→</span> Quantidade inferida apresentada como certeza.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11 SIMULADOR -->
+  <section id="simulador" style="padding:3.4rem 0 0;">
+    <div style="display:flex;align-items:baseline;gap:0.8rem;margin-bottom:1.2rem;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:0.8rem;color:#B0812F;">11</span>
+      <h2 style="margin:0;font-family:'Spectral',serif;font-weight:400;font-size:clamp(1.6rem,3.6vw,2.4rem);letter-spacing:-0.015em;">O simulador fica de fora do produto</h2>
+    </div>
+    <p style="margin:0 0 1.2rem;font-size:1.05rem;line-height:1.6;color:#5C554A;max-width:64ch;">Fonte simulada, dados sintéticos, controles de replay, play, pausa, slider, velocidade, som, data fictícia e window.__V1 são ferramenta de demonstração. Ficam em uma faixa escura, separada, rotulada como controle do protótipo (como a barra do item 04). Nunca dentro da superfície de consciência.</p>
+  </section>
+
+  <!-- 12 VALIDAÇÃO -->
+  <section id="validacao" style="padding:3.4rem 0 3rem;">
+    <div style="background:#322E27;border-radius:20px;padding:clamp(1.6rem,4vw,2.8rem);color:#EDE4D3;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;letter-spacing:0.14em;text-transform:uppercase;color:#A69A80;">12 · Fecho do V2A</span>
+      <h2 style="margin:0.8rem 0 1.4rem;font-family:'Spectral',serif;font-weight:300;font-size:clamp(1.7rem,4vw,2.6rem);line-height:1.15;">Pronto para validação do César.</h2>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1.6rem;">
+        <div>
+          <h3 style="margin:0 0 0.7rem;font-size:0.95rem;font-weight:600;color:#EFE7D6;">Decisões que dependem do César</h3>
+          <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:0.6rem;font-size:0.95rem;line-height:1.45;color:#C9BFA9;">
+            <li>Aprovar o motivo visual: confiança como solidez da linha de sinal.</li>
+            <li>Confirmar as palavras de cada estado (item 08) com o vocabulário da casa.</li>
+            <li>Definir a partir de quantos minutos a informação vira desatualizada, se ainda não fixado no núcleo.</li>
+            <li>Validar a forma discreta dos desconhecidos convivendo com Calmo, Ambiente e Foco.</li>
+          </ul>
+        </div>
+        <div>
+          <h3 style="margin:0 0 0.7rem;font-size:0.95rem;font-weight:600;color:#EFE7D6;">O que este sprint não fez, de propósito</h3>
+          <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:0.6rem;font-size:0.95rem;line-height:1.45;color:#C9BFA9;">
+            <li>Não redesenhou Calmo, Ambiente ou Foco.</li>
+            <li>Não tocou motor, decisão, projeção ou payload.</li>
+            <li>Não escreveu código de produção nem iniciou D4B.</li>
+            <li>Não inventou dados, ações ou diagnósticos fora do payload.</li>
+          </ul>
+        </div>
+      </div>
+      <div style="margin-top:1.8rem;padding-top:1.6rem;border-top:1px solid #4A443A;">
+        <h3 style="margin:0 0 0.7rem;font-size:0.95rem;font-weight:600;color:#EFE7D6;">Handoff para o Fable</h3>
+        <p style="margin:0;font-size:0.98rem;line-height:1.55;color:#C9BFA9;max-width:70ch;">O componente reutilizável da superfície técnica já existe neste protótipo (EstadoTecnico), com props que mapeiam direto para source_status, freshness, último estado confiável, unknowns e a restrição. A implementação futura consome esses campos do payload e escolhe a variante da linha de sinal. Nenhuma lógica cognitiva muda.</p>
+      </div>
+    </div>
+    <p style="margin:1.6rem 0 0;font-size:0.9rem;line-height:1.5;color:#8E836F;text-align:center;">Aguardando evidências de Ambiente e Foco (cenários com volume) para a auditoria completa e as Fases 2 a 5 do Sprint Visual V2.</p>
+  </section>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1180,&quot;height&quot;:900}}">
+class Component extends DCLogic {
+  state = { i: 3 };
+
+  sig(v, key) {
+    const h = React.createElement;
+    const PREP='#5E6B86', CALM='#5E8F70', AGE='#B0812F', REDUCE='#A65E3C', LOST='#8C8677', FAIL='#8E3B2E', LINE='#E4DBCB';
+    const wrap = (kids) => h('div', { key, style:{ position:'relative', width:'100%', height:'12px', display:'flex', alignItems:'center' } }, kids);
+    const base = (c) => h('div', { key:'base', style:{ width:'100%', height:'3px', borderRadius:'2px', background:c } });
+    if (v === 'initializing') return wrap([ base(LINE),
+      h('div',{key:'sh',style:{position:'absolute',left:0,top:'4.5px',height:'3px',width:'34%',borderRadius:'2px',background:'linear-gradient(90deg,transparent,'+PREP+',transparent)',animation:'dosShimmer 1.9s linear infinite'}}) ]);
+    if (v === 'replaying') return wrap([ base(LINE),
+      h('div',{key:'fl',style:{position:'absolute',left:0,top:'4.5px',height:'3px',width:'72%',borderRadius:'2px',background:PREP}}),
+      h('div',{key:'hd',style:{position:'absolute',left:'calc(72% - 4px)',top:'1.5px',width:'9px',height:'9px',borderRadius:'50%',background:PREP,boxShadow:'0 0 0 3px rgba(94,107,134,0.18)'}}) ]);
+    if (v === 'unknowns') {
+      const ticks=[];
+      for (let i=0;i<5;i++) ticks.push(h('div',{key:'s'+i,style:{flex:1,height:'6px',borderRadius:'2px',background:CALM,opacity:0.8}}));
+      for (let i=0;i<3;i++) ticks.push(h('div',{key:'o'+i,style:{flex:1,height:'6px',borderRadius:'2px',background:'transparent',border:'1px dashed #B7AE9D'}}));
+      return h('div',{key,style:{display:'flex',gap:'6px',width:'100%',height:'12px',alignItems:'center'}},ticks);
+    }
+    if (v === 'stale') return wrap([ base(LINE),
+      h('div',{key:'ag',style:{position:'absolute',left:0,top:'4.5px',height:'3px',width:'100%',borderRadius:'2px',background:'linear-gradient(90deg,'+AGE+' 0%,'+AGE+' 66%,rgba(176,129,47,0) 100%)',opacity:0.6}}) ]);
+    if (v === 'disconnected') return h('div',{key,style:{display:'flex',alignItems:'center',width:'100%',height:'12px'}},[
+      h('div',{key:'l',style:{width:'40%',height:'3px',borderRadius:'2px',background:LOST}}),
+      h('div',{key:'d',style:{width:'9px',height:'9px',borderRadius:'50%',border:'1.5px solid '+LOST,margin:'0 7px',flex:'none'}}),
+      h('div',{key:'r',style:{flex:1,height:'3px',borderRadius:'2px',background:'repeating-linear-gradient(90deg,'+LOST+' 0 5px,transparent 5px 11px)',opacity:0.4}}) ]);
+    if (v === 'degraded') return h('div',{key,style:{display:'flex',alignItems:'center',gap:'7px',width:'100%',height:'12px'}},[
+      h('div',{key:'s',style:{width:'32%',height:'3px',borderRadius:'2px',background:REDUCE}}),
+      h('div',{key:'hz',style:{flex:1,height:'7px',borderRadius:'1px',background:'repeating-linear-gradient(45deg,'+REDUCE+' 0 2px,transparent 2px 6px)',opacity:0.55}}) ]);
+    if (v === 'failed') return h('div',{key,style:{display:'flex',alignItems:'center',width:'100%',height:'12px'}},[
+      h('div',{key:'a',style:{width:'34%',height:'3px',borderRadius:'2px',background:FAIL}}),
+      h('div',{key:'g',style:{flex:1,height:0,margin:'0 5px',borderTop:'2px dotted '+FAIL,opacity:0.35}}),
+      h('div',{key:'b',style:{width:'16%',height:'3px',borderRadius:'2px',background:FAIL}}) ]);
+    if (v === 'stopped') return wrap([ base('#EDE4D3'),
+      h('div',{key:'s',style:{position:'absolute',left:0,top:'4.5px',height:'3px',width:'64%',borderRadius:'2px',background:LOST}}),
+      h('div',{key:'c',style:{position:'absolute',left:'64%',top:0,width:'3px',height:'12px',borderRadius:'1px',background:LOST}}) ]);
+    return wrap([ base(LINE) ]);
+  }
+
+  raw() {
+    const PREP='#5E6B86', CALM='#5E8F70', AGE='#B0812F', REDUCE='#A65E3C', LOST='#8C8677', FAIL='#8E3B2E', INK='#322E27', INK2='#6B6459';
+    return [
+      { id:'initializing', variant:'initializing', short:'Preparando', techName:'initializing', accent:PREP, sourceColor:PREP, sourceLabel:'Preparando', pulsing:true,
+        eyebrow:'PREPARANDO', title:'Preparando a leitura da operação', explanation:'Ainda estamos montando uma visão confiável do turno.',
+        restriction:'Nada para concluir ainda.', restrictionColor:INK2 },
+      { id:'replaying', variant:'replaying', short:'Reconstruindo', techName:'replaying', accent:PREP, sourceColor:PREP, sourceLabel:'Reconstruindo', pulsing:true,
+        eyebrow:'RECONSTRUINDO', title:'Reconstruindo o turno', explanation:'Estamos relendo o que já aconteceu para chegar ao estado atual.',
+        evidence:[{text:'1.240 de 1.500 momentos relidos', solid:true}],
+        restriction:'O que aparece aqui ainda não é o estado final.', restrictionColor:INK2 },
+      { id:'unknowns', variant:'unknowns', short:'Incompletos', techName:'ready · unknowns', accent:LOST, sourceColor:CALM, sourceLabel:'Pronto',
+        eyebrow:'INFORMAÇÃO INCOMPLETA', title:'3 pedidos ainda sem confirmação', explanation:'Eles não entram na leitura da operação enquanto a informação não se completa.',
+        evidence:[{text:'Pedido #2041, itens não batem com a comanda', open:true},{text:'Pedido #2044, sem confirmação de pagamento', open:true},{text:'Pedido #2047, em verificação', open:true}],
+        restriction:'Estes pedidos não fazem parte da decisão atual.', restrictionColor:INK2 },
+      { id:'stale', variant:'stale', short:'Desatualizada', techName:'stale', accent:AGE, sourceColor:AGE, sourceLabel:'Desatualizada',
+        eyebrow:'INFORMAÇÃO DESATUALIZADA', title:'Esta leitura não é a mais recente', explanation:'A informação passou do tempo em que ainda é confiável.',
+        lastReliable:'Última leitura confiável às 21h42', lastReliableState:'Naquele momento, operação calma.',
+        restriction:'Pode não representar o estado atual da operação.', restrictionColor:INK },
+      { id:'disconnected', variant:'disconnected', short:'Sem conexão', techName:'disconnected', accent:LOST, sourceColor:LOST, sourceLabel:'Sem conexão',
+        eyebrow:'SEM CONEXÃO COM A FONTE', title:'Paramos de receber atualizações', explanation:'A conexão com a operação foi interrompida.',
+        lastReliable:'Última informação recebida às 21h42', lastReliableState:'Último estado confiável, operação calma.',
+        restriction:'Nada novo chegou desde então.', restrictionColor:INK },
+      { id:'degraded', variant:'degraded', short:'Confiança reduzida', techName:'degraded', accent:REDUCE, sourceColor:REDUCE, sourceLabel:'Confiança reduzida',
+        eyebrow:'CONFIANÇA REDUZIDA', title:'Parte da operação está incerta', explanation:'Uma parte das informações continua chegando. Outra parte não pode ser confirmada agora.',
+        evidence:[{text:'Tempos e pagamentos seguem confiáveis', solid:true},{text:'Status de preparo não confirmado', open:true}],
+        restriction:'Evite conclusões sobre o que não pode ser confirmado.', restrictionColor:INK },
+      { id:'failed', variant:'failed', short:'Sem leitura', techName:'failed', accent:FAIL, sourceColor:FAIL, sourceLabel:'Sem leitura',
+        eyebrow:'SEM LEITURA CONFIÁVEL', title:'Não é possível formar uma leitura confiável agora', explanation:'O sistema não conseguiu montar o estado atual da operação.',
+        lastReliable:'Última leitura confiável às 21h42', lastReliableState:'Naquele momento, operação calma.',
+        restriction:'Não use esta tela como o estado atual da operação.', restrictionColor:FAIL },
+      { id:'stopped', variant:'stopped', short:'Pausada', techName:'stopped', accent:LOST, sourceColor:LOST, sourceLabel:'Pausada',
+        eyebrow:'ATUALIZAÇÃO PAUSADA', title:'As atualizações estão pausadas', explanation:'A leitura da operação foi interrompida de propósito.',
+        lastReliable:'Última leitura às 21h42', lastReliableState:'Naquele momento, operação calma.',
+        restriction:'As atualizações voltam quando a fonte for retomada.', restrictionColor:INK2 },
+    ];
+  }
+
+  build() {
+    return this.raw().map((o) => ({
+      ...o,
+      evidence: o.evidence || [],
+      hasEvidence: !!(o.evidence && o.evidence.length),
+      hasMemory: !!o.lastReliable,
+      hasRestriction: !!o.restriction,
+      lastReliable: o.lastReliable || '',
+      lastReliableState: o.lastReliableState || '',
+      restriction: o.restriction || '',
+      signal: this.sig(o.variant, 'sig-'+o.id),
+      gallerySignal: this.sig(o.variant, 'gal-'+o.id),
+    }));
+  }
+
+  legendData() {
+    const meanings = {
+      initializing:'Montando a visão. Ainda não há o que concluir.',
+      replaying:'Reconstruindo o turno. O estado ainda não é o final.',
+      unknowns:'Pedidos sem informação suficiente, fora da decisão.',
+      stale:'A informação existe, mas passou do tempo confiável.',
+      disconnected:'A fonte parou de enviar. Nada novo chegou.',
+      degraded:'Parte confiável, parte não confirmada.',
+      failed:'Não é possível formar uma leitura confiável.',
+      stopped:'Atualização pausada de propósito.',
+    };
+    return this.raw().map((o) => ({ label:o.eyebrow, meaning:meanings[o.id], signal:this.sig(o.variant, 'leg-'+o.id) }));
+  }
+
+  renderVals() {
+    if (!this._states) this._states = this.build();
+    if (!this._legend) this._legend = this.legendData();
+    const i = this.state.i;
+    const INK='#322E27';
+    const states = this._states.map((s, idx) => ({
+      ...s,
+      select: () => this.setState({ i: idx }),
+      btnBg: idx === i ? '#EDE4D3' : 'transparent',
+      btnColor: idx === i ? '#2A2620' : '#B3A992',
+      btnBorder: idx === i ? '#EDE4D3' : '#4A443A',
+    }));
+    return {
+      states,
+      current: states[i],
+      sample: this._states[3],
+      legend: this._legend,
+      clock: '21h48',
+    };
+  }
+}
+</script>
+</body>
+</html>

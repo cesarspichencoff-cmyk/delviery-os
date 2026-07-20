@@ -1,0 +1,54 @@
+{
+  "canonical_visual_name": "Sprint Visual DeliveryOS V2",
+  "original_filename": "Sprint Visual DeliveryOS V2 (1).zip",
+  "status": "canonical",
+  "scope": "ecosystem_global",
+  "version": "2.0.0",
+  "source_commit": "PENDING_REGISTER_COMMIT",
+  "registered_at": "2026-07-20T12:00:00.000Z",
+  "registered_by": "gate_visual_canon_registration",
+  "archive_path": "docs/design/canonical/deliveryos-visual-v2/Sprint Visual DeliveryOS V2 (1).zip",
+  "archive_sha256": "2755573BBE624F4CE0DBA992D006E6E5B8E2B6DEA87B7D6A2050E55FD9834101",
+  "pdf_sha256": "9E3B431AC3C36E968B96180D7FA05286C0EF9CD30146B49094F5242C7DFCB1F5",
+  "extracted_path": "docs/design/canonical/deliveryos-visual-v2/extracted/",
+  "extracted_content_hash": "7619A9A97AF73F4B069B30673CFAAE0662CE33596A4BF9443FCFEDB779716F09",
+  "primary_visual_source": true,
+  "app_v1_status": "historical_reference_only",
+  "copiloto_v33_status": "validated_implementation_reference",
+  "modules_covered": [
+    "deliveryos_copiloto",
+    "entregas",
+    "selecao",
+    "shell",
+    "future_modules"
+  ],
+  "key_documents_inside_archive": [
+    "Pacote Visual DeliveryOS V2.dc.html",
+    "DeliveryOS Organismo Operacional.dc.html",
+    "Contrato Visual Estados Tecnicos.dc.html",
+    "TATA OS.dc.html",
+    "EstadoTecnico.dc.html"
+  ],
+  "typography_canonical": {
+    "editorial": "Spectral",
+    "interface": "Hanken Grotesk",
+    "technical": "IBM Plex Mono"
+  },
+  "semantic_color_principles": [
+    "fundo_quente_creme",
+    "verde_tata_acao_e_vivo",
+    "ambar_tensao_operacional",
+    "neutro_tracejado_incompleto",
+    "cinza_ardosia_falha_tecnica",
+    "confianca_como_solidez"
+  ],
+  "prohibited_overrides": [
+    "use_app_v1_as_visual_baseline",
+    "palette_only_extraction",
+    "generic_saas_cards_as_identity",
+    "silent_rewrite_of_canonical_zip",
+    "declare_kinship_by_hex_only"
+  ],
+  "review_policy": "Qualquer divergência do Sprint V2 exige justificativa escrita e aprovação do César. Evolução do cânone cria nova versão; o ZIP atual permanece imutável.",
+  "immutable_original": true
+}

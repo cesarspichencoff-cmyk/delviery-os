@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Hanken+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0;background:#E7DECD;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+    ::selection{background:#22563C;color:#F4EFE4}
+    a{color:#22563C;text-decoration:none;border-bottom:1px solid rgba(34,86,60,0.28)}
+    a:hover{border-bottom-color:#22563C}
+    @keyframes dosShimmer{0%{transform:translateX(-140%)}100%{transform:translateX(340%)}}
+    @keyframes dosActivity{0%{left:-32%}100%{left:100%}}
+    @keyframes dosBreathe{0%,100%{opacity:0.55;transform:scale(1)}50%{opacity:1;transform:scale(1.12)}}
+    @keyframes dosRing{0%{opacity:0.45;transform:scale(1)}100%{opacity:0;transform:scale(2.6)}}
+    .dos-shimmer{animation:dosShimmer 2.1s linear infinite}
+    .dos-activity{animation:dosActivity 1.7s ease-in-out infinite}
+    .dos-breathe{animation:dosBreathe 3.4s ease-in-out infinite}
+    .dos-ring{animation:dosRing 2.2s ease-out infinite}
+    @media (prefers-reduced-motion: reduce){
+      .dos-shimmer,.dos-activity,.dos-breathe,.dos-ring{animation:none}
+      .dos-ring{display:none}
+    }
+  </style>
+</helmet>
+<div style="background:#E7DECD;color:#2A2620;font-family:'Hanken Grotesk',system-ui,sans-serif;padding:clamp(1.1rem,4vw,3.2rem) clamp(1rem,4vw,2rem);min-height:100vh;">
+<div style="max-width:1200px;margin:0 auto;">
+
+  <!-- MASTHEAD -->
+  <header style="display:flex;flex-direction:column;gap:1.3rem;padding-bottom:2.2rem;border-bottom:1px solid #D3C6B0;">
+    <div style="display:flex;flex-wrap:wrap;gap:0.4rem 1.1rem;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:0.72rem;letter-spacing:0.14em;text-transform:uppercase;color:#7C7565;">
+      <span style="color:#22563C;font-weight:500;">DeliveryOS · Operação Viva</span>
+      <span style="color:#C3B7A2;">/</span>
+      <span>Pacote Visual V2</span>
+      <span style="color:#C3B7A2;">/</span>
+      <span>Tatá</span>
+    </div>
+    <h1 style="margin:0;font-family:'Spectral',serif;font-weight:300;font-size:clamp(2.1rem,6vw,3.9rem);line-height:1.04;letter-spacing:-0.02em;max-width:19ch;">DeliveryOS não muda de tela. Ele muda de consciência.</h1>
+    <p style="margin:0;font-size:clamp(1.02rem,2.6vw,1.2rem);line-height:1.55;color:#5C554A;max-width:64ch;">Uma direção visual única para a operação do Tatá: fundo claro, verde escuro, tipografia editorial e muito respiro. Calma sem vazio, urgência sem espetáculo, leitura em poucos segundos. Abaixo, as dezesseis pranchas, o sistema visual e a recomendação final.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:0.5rem 1.6rem;font-family:'IBM Plex Mono',monospace;font-size:0.73rem;letter-spacing:0.03em;padding-top:0.3rem;">
+      <a href="#recomendacao">Recomendação</a><a href="#cognitivos">Calmo · Ambiente · Foco</a><a href="#tecnicos">Estados técnicos</a><a href="#qualidade">Desconhecidos</a><a href="#sistema">Sistema visual</a><a href="#preservar">Preservar / Remover</a>
+    </div>
+  </header>
+
+  <div style="margin:1.5rem 0 0;padding:0.95rem 1.25rem;background:#F4EFE4;border-radius:12px;display:flex;gap:0.8rem;align-items:flex-start;">
+    <span style="flex:none;width:7px;height:7px;border-radius:50%;background:#B0812F;margin-top:0.45rem;"></span>
+    <p style="margin:0;font-size:0.92rem;line-height:1.5;color:#5C554A;">Base histórica: três capturas da V1. O repositório não está acessível nesta sessão, então nada aqui declara implementação concluída. É direção visual para validação e futura implementação.</p>
+  </div>
+
+  <!-- RECOMENDAÇÃO -->
+  <section id="recomendacao" style="padding:3.2rem 0 0;">
+    <div style="display:flex;align-items:baseline;gap:0.8rem;margin-bottom:1.3rem;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:0.8rem;color:#22563C;">→</span>
+      <h2 style="margin:0;font-family:'Spectral',serif;font-weight:400;font-size:clamp(1.6rem,3.6vw,2.4rem);letter-spacing:-0.015em;">Recomendação final, uma direção só</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:2.4rem;align-items:start;">
+      <p style="margin:0;font-family:'Spectral',serif;font-weight:300;font-size:clamp(1.3rem,3vw,1.75rem);line-height:1.4;color:#2A2620;">Consciência editorial. A tela é uma superfície de leitura, não um painel. A pressão aparece por <em style="font-style:italic;">hierarquia, ritmo e linguagem</em>, nunca por medidores. Uma única atenção soberana, uma única ação. O que é confiável aparece cheio; o que envelheceu, desconectou ou falhou aparece desbotado, tracejado ou interrompido.</p>
+      <div style="display:flex;flex-direction:column;gap:0.75rem;padding:1.3rem 1.4rem;background:#22563C;border-radius:14px;color:#EFE7D6;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:0.66rem;letter-spacing:0.14em;text-transform:uppercase;color:#9DBBA6;">Por que esta e não outra</span>
+        <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:0.55rem;font-size:0.94rem;line-height:1.45;color:#DCD2BF;">
+          <li>Confiança: distingue na hora dado confiável de dado velho.</li>
+          <li>Adoção: sem jargão, sem treino, leitura imediata sob pressão.</li>
+          <li>Identidade: parece feita para o Tatá, não um SaaS genérico.</li>
+          <li>Manutenção: uma superfície e poucos componentes.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ COGNITIVOS ============ -->
+  <section id="cognitivos" style="padding:3.4rem 0 0;">
+    <div style="display:flex;align-items:baseline;gap:0.8rem;margin-bottom:0.4rem;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:0.8rem;color:#22563C;">01</span>
+      <h2 style="margin:0;font-family:'Spectral',serif;font-weight:400;font-size:clamp(1.6rem,3.6vw,2.4rem);letter-spacing:-0.015em;">Estados cognitivos</h2>
+    </div>
+    <p style="margin:0 0 2rem;font-size:1.02rem;line-height:1.55;color:#5C554A;max-width:60ch;">Calmo, Ambiente e Foco. A mesma superfície mudando de consciência conforme a operação pede mais ou menos atenção.</p>
+
+    <!-- PRANCHA 1 + 2 : CALMO -->
+    <div data-screen-label="Prancha 01-02 Calmo" style="margin-bottom:2.6rem;">
+      <div style="display:flex;align-items:baseline;gap:0.7rem;margin-bottom:1rem;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:0.7rem;letter-spacing:0.12em;color:#A8977A;">PRANCHA 01 · 02</span>
+        <h3 style="margin:0;font-family:'Spectral',serif;font-weight:500;font-size:1.4rem;">Calmo</h3>
+        <span style="font-size:0.9rem;color:#8E836F;">operação saudável, com presença e sem gauge</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:1.6rem;align-items:flex-start;">
+        <!-- desktop -->
+        <div style="flex:1;min-width:320px;display:flex;flex-direction:column;gap:0.6rem;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:0.62rem;letter-spacing:0.16em;text-transform:uppercase;color:#A8977A;">01 · Desktop</span>
+          <div style="border:1px solid #D8CDB8;border-radius:16px;overflow:hidden;background:#F6F1E7;box-shadow:0 30px 60px -42px rgba(42,38,32,0.5);">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:0.95rem 1.5rem;background:#F1E9DA;border-bottom:1px solid #E6DBC9;">
+              <div style="display:flex;align-items:baseline;gap:0.9rem;"><span style="font-family:'IBM Plex Mono',monospace;font-size:0.7rem;letter-spacing:0.12em;text-transform:uppercase;color:#8E836F;">DeliveryOS</span><span style="font-family:'Spectral',serif;font-size:1.05rem;">Tatá</span></div>
+              <div style="display:flex;align-items:center;gap:1.2rem;">
+                <div style="display:flex;align-items:center;gap:0.5rem;"><span style="position:relative;display:inline-flex;width:8px;height:8px;"><span style="position:absolute;inset:0;border-radius:50%;background:#3F7B54;"></span><span class="dos-ring" style="position:absolute;inset:0;border-radius:50%;background:#3F7B54;"></span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:0.7rem;color:#6B6459;">ao vivo</span></div>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:0.7rem;color:#9A8F7B;">atualizado agora</span>
+              </div>
+            </div>
+            <div style="padding:clamp(2.4rem,5vw,4rem) clamp(1.5rem,4vw,3.5rem);min-height:340px;display:flex;flex-direction:column;justify-content:center;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:0.68rem;letter-spacing:0.18em;text-transform:uppercase;color:#3F7B54;margin-bottom:1.1rem;">Agora</span>
+              <h2 style="margin:0 0 1rem;font-family:'Spectral',serif;font-weight:300;font-size:clamp(2.2rem,4.5vw,3.2rem);line-height:1.05;letter-spacing:-0.02em;color:#2A2620;">A operação está fluindo.</h2>
+              <p style="margin:0 0 0.5rem;font-size:1.12rem;line-height:1.5;color:#5C554A;max-width:44ch;">Vinte e dois pedidos em andamento, todos dentro do ritmo. Nada exige você agora.</p>
+              <p style="margin:0;font-family:'Spectral',serif;font-style:italic;font-size:1.05rem;line-height:1.45;color:#8E836F;max-width:44ch;">Movimento leve começando em Sushi e Quentes, ainda tranquilo.</p>
+              <div style="margin-top:2.4rem;display:flex;align-items:center;gap:0.6rem;padding-top:1.2rem;border-top:1px solid #EBE1D0;">
+                <span style="flex:none;width:3px;height:13px;border:1px dashed #C6BDA9;border-radius:2px;"></span>
+                <span style="font-size:0.92rem;color:#8E836F;">3 pedidos ainda sem confirmação, fora da leitura por enquanto.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- mobile -->
+        <div style="flex:none;display:flex;flex-direction:column;gap:0.6rem;align-items:center;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:0.62rem;letter-spacing:0.16em;text-transform:uppercase;color:#A8977A;">02 · Mobile</span>
+          <div style="width:300px;border:1px solid #D5CAB5;border-radius:34px;padding:10px;background:#E4DAC7;box-shadow:0 30px 60px -40px rgba(42,38,32,0.55);">
+            <div style="background:#F6F1E7;border-radius:25px;overflow:hidden;min-height:560px;display:flex;flex-direction:column;">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.2rem 0.85rem;"><span style="font-family:'Spectral',serif;font-size:1.02rem;">Tatá</span><div style="display:flex;align-items:center;gap:0.45rem;"><span style="position:relative;display:inline-flex;width:8px;height:8px;"><span style="position:absolute;inset:0;border-radius:50%;background:#3F7B54;"></span><span class="dos-ring" style="position:absolute;inset:0;border-radius:50%;background:#3F7B54;"></span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:0.68rem;color:#6B6459;">ao vivo</span></div></div>
+              <div style="height:1px;background:#EBE1D0;margin:0 1.2rem;"></div>
+              <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:1.6rem 1.3rem 2rem;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:0.64rem;letter-spacing:0.18em;text-transform:uppercase;color:#3F7B54;margin-bottom:0.9rem;">Agora</span>
+                <h2 style="margin:0 0 0.9rem;font-family:'Spectral',serif;font-weight:300;font-size:2.1rem;line-height:1.08;letter-spacing:-0.015em;">A operação está fluindo.</h2>
+                <p style="margin:0 0 0.5rem;font-size:1.02rem;line-height:1.45;color:#5C554A;">22 pedidos em andamento, todos no ritmo. Nada exige você agora.</p>
+                <p style="margin:0;font-family:'Spectral',serif;font-style:italic;font-size:0.98rem;line-height:1.4;color:#8E836F;">Movimento leve em Sushi e Quentes.</p>
+                <div style="margin-top:auto;padding-top:1.4rem;display:flex;align-items:center;gap:0.55rem;"><span style="flex:none;width:3px;height:12px;border:1px dashed #C6BDA9;border-radius:2px;"></span><span style="font-size:0.86rem;color:#8E836F;">3 pedidos sem confirmação</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRANCHA 3 + 4 : AMBIENTE -->
+    <div data-screen-label="Prancha 03-04 Ambiente" style="margin-bottom:2.6rem;">
+      <div style="display:flex;align-items:baseline;gap:0.7rem;margin-bottom:1rem;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:0.7rem;letter-spacing:0.12em;color:#A8977A;">PRANCHA 03 · 04</span>
+        <h3 style="margin:0;font-family:'Spectral',serif;font-weight:500;font-size:1.4rem;">Ambiente</h3>
+        <span style="font-size:0.9rem;color:#8E836F;">o clima por hierarquia e ritmo, sem cards nem barras</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:1.6rem;align-items:flex-start;">
+        <!-- desktop -->
+        <div style="flex:1;min-width:340px;display:flex;flex-direction:column;gap:0.6rem;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:0.62rem;letter-spacing:0.16em;text-transform:uppercase;color:#A8977A;">03 · Desktop</span>
+          <div style="border:1px solid #D8CDB8;border-radius:16px;overflow:hidden;background:#F6F1E7;box-shadow:0 30px 60px -42px rgba(42,38,32,0.5);">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:0.95rem 1.5rem;background:#F1E9DA;border-bottom:1px solid #E6DBC9;">
+              <div style="display:flex;align-items:baseline;gap:0.9rem;"><span style="font-family:'IBM Plex Mono',monospace;font-size:0.7rem;letter-spacing:0.12em;text-transform:uppercase;color:#8E836F;">DeliveryOS</span><span style="font-family:'Spectral',serif;font-size:1.05rem;">Tatá</span></div>
+              <div style="display:flex;align-items:center;gap:0.5rem;"><span style="width:8px;height:8px;border-radius:50%;background:#3F7B54;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:0.7rem;color:#6B6459;">ao vivo</span></div>
+            </div>
+            <div style="padding:clamp(2rem,4vw,3rem) clamp(1.5rem,4vw,3.4rem);min-height:340px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:0.68rem;letter-spacing:0.18em;text-transform:uppercase;color:#8E836F;">Ambiente · o clima agora</span>
+              <h2 style="margin:0.9rem 0 1.8rem;font-family:'Spectral',serif;font-weight:300;font-size:clamp(1.9rem,3.6vw,2.5rem);line-height:1.1;letter-spacing:-0.015em;">Onde a operação pede atenção.</h2>
+              <div style="display:flex;flex-direction:column;gap:1.15rem;">
+                <div style="display:flex;align-items:baseline;gap:1rem;"><span style="font-family:'Spectral',serif;font-weight:500;font-size:1.85rem;color:#2A2620;min-width:8.5rem;">Quentes</span><span style="font-size:1.12rem;color:#4A453D;">enrolados puxando a espera</span></div>
+                <div style="display:flex;align-items:baseline;gap:1rem;"><span style="font-family:'Spectral',serif;font-weight:500;font-size:1.5rem;color:#3A352E;min-width:8.5rem;">Sushi</span><span style="font-size:1.05rem;color:#5C554A;">duplas começando a acumular</span></div>
+                <div style="height:1px;background:#EBE1D0;margin:0.35rem 0;"></div>
+                <div style="display:flex;align-items:baseline;gap:1rem;"><span style="font-family:'Spectral',serif;font-size:1.15rem;color:#6B6459;min-width:8.5rem;">Conferência</span><span style="font-size:0.98rem;color:#8E836F;">no ritmo, nada pendente</span></div>
+                <div style="display:flex;align-items:baseline;gap:1rem;"><span style="font-family:'Spectral',serif;font-size:1.15rem;color:#6B6459;min-width:8.5rem;">Motoboy</span><span style="font-size:0.98rem;color:#8E836F;">despacho sem acúmulo</span></div>
+                <div style="display:flex;align-items:baseline;gap:1rem;"><span style="font-family:'Spectral',serif;font-style:italic;font-size:1.05rem;color:#A29684;min-width:8.5rem;">Caixa</span><span style="font-family:'Spectral',serif;font-style:italic;font-size:0.95rem;color:#A29684;">ainda sem leitura própria</span></div>
+                <div style="display:flex;align-items:baseline;gap:1rem;"><span style="font-family:'Spectral',serif;font-style:italic;font-size:1.05rem;color:#A29684;min-width:8.5rem;">Cozinha</span><span style="font-family:'Spectral',serif;font-style:italic;font-size:0.95rem;color:#A29684;">depende do mapa operacional</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- mobile -->
+        <div style="flex:none;display:flex;flex-direction:column;gap:0.6rem;align-items:center;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:0.62rem;letter-spacing:0.16em;text-transform:uppercase;color:#A8977A;">04 · Mobile</span>
+          <div style="width:300px;border:1px solid #D5CAB5;border-radius:34px;padding:10px;background:#E4DAC7;box-shadow:0 30px 60px -40px rgba(42,38,32,0.55);">
+            <div style="background:#F6F1E7;border-radius:25px;overflow:hidden;min-height:560px;display:flex;flex-direction:column;">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.2rem 0.85rem;"><span style="font-family:'Spectral',serif;font-size:1.02rem;">Tatá</span><div style="display:flex;align-items:center;gap:0.45rem;"><span style="width:8px;height:8px;border-radius:50%;background:#3F7B54;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:0.68rem;color:#6B6459;">ao vivo</span></div></div>
+              <div style="height:1px;background:#EBE1D0;margin:0 1.2rem;"></div>
+              <div style="flex:1;padding:1.5rem 1.3rem 1.8rem;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:0.62rem;letter-spacing:0.16em;text-transform:uppercase;color:#8E836F;">Ambiente · o clima agora</span>
+                <h2 style="margin:0.7rem 0 1.4rem;font-family:'Spectral',serif;font-weight:300;font-size:1.65rem;line-height:1.12;">Onde pede atenção.</h2>
+                <div style="display:flex;flex-direction:column;gap:0.85rem;">
+                  <div><div style="font-family:'Spectral',serif;font-weight:500;font-size:1.45rem;color:#2A2620;">Quentes</div><div style="font-size:0.98rem;color:#4A453D;">enrolados puxando a espera</div></div>
+                  <div><div style="font-family:'Spectral',serif;font-weight:500;font-size:1.2rem;color:#3A352E;">Sushi</div><div style="font-size:0.94rem;color:#5C554A;">duplas acumulando</div></div>
+                  <div style="height:1px;background:#EBE1D0;margin:0.2rem 0;"></div>
+                  <div style="display:flex;justify-content:space-between;align-items:baseline;"><span style="font-family:'Spectral',serif;font-size:1.02rem;color:#6B6459;">Conferência</span><span style="font-size:0.86rem;color:#8E836F;">no ritmo</span></div>
+                  <div style="display:flex;justify-content:space-between;align-items:baseline;"><span style="font-family:'Spectral',serif;font-size:1.02rem;color:#6B6459;">Motoboy</span><span style="font-size:0.86rem;color:#8E836F;">sem acúmulo</span></div>
+                  <div style="display:flex;justify-content:space-between;align-items:baseline;"><span style="font-family:'Spectral',serif;font-style:italic;font-size:0.98rem;color:#A29684;">Caixa</span><span style="font-family:'Spectral',serif;font-style:italic;font-size:0.84rem;color:#A29684;">sem leitura</span></div>
+                  <div style="display:flex;justify-content:space-between;align-items:baseline;"><span style="font-family:'Spectral',serif;font-style:italic;font-size:0.98rem;color:#A29684;">Cozinha</span><span style="font-family:'Spectral',serif;font-style:italic;font-size:0.84rem;color:#A29684;">sem leitura</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRANCHA 5 + 6 : FOCO -->
+    <div data-screen-label="Prancha 05-06 Foco" style="margin-bottom:1rem;">
+      <div style="display:flex;align-items:baseline;gap:0.7rem;margin-bottom:1rem;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:0.7rem;letter-spacing:0.12em;color:#A8977A;">PRANCHA 05 · 06</span>
+        <h3 style="margin:0;font-family:'Spectral',serif;font-weight:500;font-size:1.4rem;">Foco</h3>
+        <span style="font-size:0.9rem;color:#8E836F;">uma superfície soberana, uma ação, sem repetição</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:1.6rem;align-items:flex-start;">
+        <!-- desktop -->
+        <div style="flex:1;min-width:340px;display:flex;flex-direction:column;gap:0.6rem;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:0.62rem;letter-spacing:0.16em;text-transform:uppercase;color:#A8977A;">05 · Desktop</span>
+          <div style="border:1px solid #D8CDB8;border-radius:16px;overflow:hidden;background:#F6F1E7;box-shadow:0 30px 60px -42px rgba(42,38,32,0.5);">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:0.95rem 1.5rem;background:#F1E9DA;border-bottom:1px solid #E6DBC9;">
+              <div style="display:flex;align-items:baseline;gap:0.9rem;"><span style="font-family:'IBM Plex Mono',monospace;font-size:0.7rem;letter-spacing:0.12em;text-transform:uppercase;color:#8E836F;">DeliveryOS</span><span style="font-family:'Spectral',serif;font-size:1.05rem;">Tatá</span></div>
+              <div style="display:flex;align-items:center;gap:0.5rem;"><span style="width:8px;height:8px;border-radius:50%;background:#3F7B54;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:0.7rem;color:#6B6459;">ao vivo · alta confiança</span></div>
+            </div>
+            <div style="padding:clamp(2rem,4vw,3rem) clamp(1.5rem,4vw,3.4rem);min-height:340px;display:flex;flex-direction:column;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:0.68rem;letter-spacing:0.18em;text-transform:uppercase;color:#8E3B2E;">Foco · Conferência</span>
+              <h2 style="margin:0.9rem 0 0.9rem;font-family:'Spectral',serif;font-weight:400;font-size:clamp(1.9rem,3.8vw,2.6rem);line-height:1.1;letter-spacing:-0.015em;max-width:20ch;">Pedido #8622 pedindo conferência antes de sair.</h2>
+              <p style="margin:0 0 1.6rem;font-size:1.1rem;line-height:1.5;color:#5C554A;max-width:48ch;">Tem duas sacolas e um kit. Conferir agora evita item esquecido e segunda sacola perdida.</p>
+              <div style="display:flex;flex-direction:column;gap:0.6rem;margin-bottom:2rem;">
+                <div style="display:flex;align-items:baseline;gap:0.65rem;"><span style="flex:none;width:3px;height:14px;background:#8E3B2E;border-radius:2px;transform:translateY(2px);"></span><span style="font-size:1.02rem;color:#4A453D;">Comanda não informada</span></div>
+                <div style="display:flex;align-items:baseline;gap:0.65rem;"><span style="flex:none;width:3px;height:14px;background:#8E3B2E;border-radius:2px;transform:translateY(2px);"></span><span style="font-size:1.02rem;color:#4A453D;">Depende de Sushi, Quentes e Enrolados</span></div>
+                <div style="display:flex;align-items:baseline;gap:0.65rem;"><span style="flex:none;width:3px;height:14px;background:#8E3B2E;border-radius:2px;transform:translateY(2px);"></span><span style="font-size:1.02rem;color:#4A453D;">Combinados para 2 pessoas, volume alto</span></div>
+              </div>
+              <button style="align-self:flex-start;margin-top:auto;cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-weight:600;font-size:1.05rem;color:#F4EFE4;background:#24603F;border:none;border-radius:12px;padding:1rem 1.9rem;box-shadow:0 12px 24px -14px rgba(36,96,63,0.9);" style-hover="background:#1B4430;">Conferir este pedido antes de sair</button>
+            </div>
+          </div>
+        </div>
+        <!-- mobile -->
+        <div style="flex:none;display:flex;flex-direction:column;gap:0.6rem;align-items:center;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:0.62rem;letter-spacing:0.16em;text-transform:uppercase;color:#A8977A;">06 · Mobile</span>
+          <div style="width:300px;border:1px solid #D5CAB5;border-radius:34px;padding:10px;background:#E4DAC7;box-shadow:0 30px 60px -40px rgba(42,38,32,0.55);">
+            <div style="background:#F6F1E7;border-radius:25px;overflow:hidden;min-height:560px;display:flex;flex-direction:column;">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.2rem 0.85rem;"><span style="font-family:'Spectral',serif;font-size:1.02rem;">Tatá</span><div style="display:flex;align-items:center;gap:0.45rem;"><span style="width:8px;height:8px;border-radius:50%;background:#3F7B54;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:0.66rem;color:#6B6459;">alta confiança</span></div></div>
+              <div style="height:1px;background:#EBE1D0;margin:0 1.2rem;"></div>
+              <div style="flex:1;display:flex;flex-direction:column;padding:1.5rem 1.3rem 1.5rem;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:0.62rem;letter-spacing:0.16em;text-transform:uppercase;color:#8E3B2E;">Foco · Conferência</span>
+                <h2 style="margin:0.7rem 0 0.8rem;font-family:'Spectral',serif;font-weight:400;font-size:1.7rem;line-height:1.12;letter-spacing:-0.01em;">Pedido #8622 pedindo conferência antes de sair.</h2>
+                <p style="margin:0 0 1.2rem;font-size:1rem;line-height:1.45;color:#5C554A;">Tem duas sacolas e um kit. Conferir evita item esquecido e 2ª sacola perdida.</p>
+                <div style="display:flex;flex-direction:column;gap:0.5rem;margin-bottom:1.4rem;">
+                  <div style="display:flex;align-items:baseline;gap:0.6rem;"><span style="flex:none;width:3px;height:13px;background:#8E3B2E;border-radius:2px;transform:translateY(2px);"></span><span style="font-size:0.96rem;color:#4A453D;">Comanda não informada</span></div>
+                  <div style="display:flex;align-items:baseline;gap:0.6rem;"><span style="flex:none;width:3px;height:13px;background:#8E3B2E;border-radius:2px;transform:translateY(2px);"></span><span style="font-size:0.96rem;color:#4A453D;">Depende de Sushi, Quentes e Enrolados</span></div>
+                  <div style="display:flex;align-items:baseline;gap:0.6rem;"><span style="flex:none;width:3px;height:13px;background:#8E3B2E;border-radius:2px;transform:translateY(2px);"></span><span style="font-size:0.96rem;color:#4A453D;">Combinados para 2 pessoas, volume alto</span></div>
+                </div>
+                <button style="margin-top:auto;cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-weight:600;font-size:1rem;color:#F4EFE4;background:#24603F;border:none;border-radius:12px;padding:0.95rem 1.2rem;width:100%;" style-hover="background:#1B4430;">Conferir antes de sair</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ TÉCNICOS ============ -->
+  <section id="tecnicos" style="padding:3.4rem 0 0;">
+    <div style="display:flex;align-items:baseline;gap:0.8rem;margin-bottom:0.4rem;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:0.8rem;color:#22563C;">02</span>
+      <h2 style="margin:0;font-family:'Spectral',serif;font-weight:400;font-size:clamp(1.6rem,3.6vw,2.4rem);letter-spacing:-0.015em;">Estados técnicos</h2>
+    </div>
+    <p style="margin:0 0 2rem;font-size:1.02rem;line-height:1.55;color:#5C554A;max-width:62ch;">Pranchas 07 a 14. A mesma superfície reutilizável (componente Estado Técnico), com a linha de sinal contando a confiança pela forma. Nenhum deles parece Calmo.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(272px,1fr));gap:1.5rem;">
+      <sc-for list="{{ tech }}" as="t" hint-placeholder-count="8">
+        <div style="display:flex;flex-direction:column;gap:0.6rem;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:0.62rem;letter-spacing:0.14em;text-transform:uppercase;color:#A8977A;">{{ t.prancha }} · {{ t.techName }}</span>
+          <div style="border:1px solid #D8CDB8;border-radius:26px;padding:9px;background:#E4DAC7;box-shadow:0 22px 44px -34px rgba(42,38,32,0.5);">
+            <div style="background:#F6F1E7;border-radius:19px;overflow:hidden;min-height:432px;display:flex;flex-direction:column;">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:0.85rem 1rem 0.7rem;">
+                <span style="font-family:'Spectral',serif;font-size:0.92rem;">Tatá</span>
+                <div style="display:flex;align-items:center;gap:0.4rem;"><span style="width:7px;height:7px;border-radius:50%;background:{{ t.sourceColor }};"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:0.62rem;color:#6B6459;">{{ t.sourceLabel }}</span></div>
+              </div>
+              <div style="height:1px;background:#EBE1D0;margin:0 1rem;"></div>
+              <div style="padding:1.2rem 1rem 1.4rem;flex:1;">
+                <dc-import name="EstadoTecnico" eyebrow="{{ t.eyebrow }}" accent="{{ t.accent }}" signal="{{ t.signal }}" title="{{ t.title }}" explanation="{{ t.explanation }}" evidence="{{ t.evidence }}" has-evidence="{{ t.hasEvidence }}" evidence-more="{{ t.evidenceMore }}" has-more="{{ t.hasMore }}" last-reliable-time="{{ t.lastReliableTime }}" last-reliable-detail="{{ t.lastReliableDetail }}" has-detail="{{ t.hasDetail }}" has-memory="{{ t.hasMemory }}" restriction="{{ t.restriction }}" has-restriction="{{ t.hasRestriction }}" restriction-color="{{ t.restrictionColor }}" hint-size="100%,360px"></dc-import>
+              </div>
+            </div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <!-- ============ QUALIDADE ============ -->
+  <section id="qualidade" style="padding:3.4rem 0 0;">
+    <div style="display:flex;align-items:baseline;gap:0.8rem;margin-bottom:0.4rem;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:0.8rem;color:#22563C;">03</span>
+      <h2 style="margin:0;font-family:'Spectral',serif;font-weight:400;font-size:clamp(1.6rem,3.6vw,2.4rem);letter-spacing:-0.015em;">Qualidade e desconhecidos</h2>
+    </div>
+    <p style="margin:0 0 2rem;font-size:1.02rem;line-height:1.55;color:#5C554A;max-width:62ch;">Pranchas 15 e 16. Pedidos com conflito, informação parcial, suspeita, quarentena, sem match ou comanda sem itens. Visíveis, secundários, nunca apresentados como fato confirmado e nunca alarmistas.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:1.6rem;align-items:flex-start;">
+      <!-- desktop -->
+      <div style="flex:1;min-width:340px;display:flex;flex-direction:column;gap:0.6rem;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:0.62rem;letter-spacing:0.16em;text-transform:uppercase;color:#A8977A;">15 · Desktop</span>
+        <div style="border:1px solid #D8CDB8;border-radius:16px;overflow:hidden;background:#F6F1E7;box-shadow:0 30px 60px -42px rgba(42,38,32,0.5);">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:0.95rem 1.5rem;background:#F1E9DA;border-bottom:1px solid #E6DBC9;">
+            <div style="display:flex;align-items:baseline;gap:0.9rem;"><span style="font-family:'IBM Plex Mono',monospace;font-size:0.7rem;letter-spacing:0.12em;text-transform:uppercase;color:#8E836F;">DeliveryOS</span><span style="font-family:'Spectral',serif;font-size:1.05rem;">Tatá</span></div>
+            <div style="display:flex;align-items:center;gap:0.5rem;"><span style="width:8px;height:8px;border-radius:50%;background:#3F7B54;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:0.7rem;color:#6B6459;">ao vivo</span></div>
+          </div>
+          <div style="padding:clamp(2rem,4vw,3rem) clamp(1.5rem,4vw,3.4rem);min-height:340px;display:flex;align-items:center;">
+            <div style="width:100%;max-width:460px;">
+              <dc-import name="EstadoTecnico" eyebrow="{{ quality.eyebrow }}" accent="{{ quality.accent }}" signal="{{ quality.signal }}" title="{{ quality.title }}" explanation="{{ quality.explanation }}" evidence="{{ quality.evidence }}" has-evidence="{{ quality.hasEvidence }}" evidence-more="{{ quality.evidenceMore }}" has-more="{{ quality.hasMore }}" has-memory="{{ quality.hasMemory }}" restriction="{{ quality.restriction }}" has-restriction="{{ quality.hasRestriction }}" restriction-color="{{ quality.restrictionColor }}" hint-size="100%,360px"></dc-import>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- mobile -->
+      <div style="flex:none;display:flex;flex-direction:column;gap:0.6rem;align-items:center;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:0.62rem;letter-spacing:0.16em;text-transform:uppercase;color:#A8977A;">16 · Mobile</span>
+        <div style="width:300px;border:1px solid #D5CAB5;border-radius:34px;padding:10px;background:#E4DAC7;box-shadow:0 30px 60px -40px rgba(42,38,32,0.55);">
+          <div style="background:#F6F1E7;border-radius:25px;overflow:hidden;min-height:560px;display:flex;flex-direction:column;">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.2rem 0.85rem;"><span style="font-family:'Spectral',serif;font-size:1.02rem;">Tatá</span><div style="display:flex;align-items:center;gap:0.45rem;"><span style="width:8px;height:8px;border-radius:50%;background:#3F7B54;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:0.68rem;color:#6B6459;">ao vivo</span></div></div>
+            <div style="height:1px;background:#EBE1D0;margin:0 1.2rem;"></div>
+            <div style="flex:1;padding:1.6rem 1.3rem 2rem;">
+              <dc-import name="EstadoTecnico" eyebrow="{{ quality.eyebrow }}" accent="{{ quality.accent }}" signal="{{ quality.signalMobile }}" title="{{ quality.title }}" explanation="{{ quality.explanation }}" evidence="{{ quality.evidence }}" has-evidence="{{ quality.hasEvidence }}" evidence-more="{{ quality.evidenceMore }}" has-more="{{ quality.hasMore }}" has-memory="{{ quality.hasMemory }}" restriction="{{ quality.restriction }}" has-restriction="{{ quality.hasRestriction }}" restriction-color="{{ quality.restrictionColor }}" hint-size="100%,360px"></dc-import>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SISTEMA VISUAL ============ -->
+  <section id="sistema" style="padding:3.4rem 0 0;">
+    <div style="display:flex;align-items:baseline;gap:0.8rem;margin-bottom:0.4rem;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:0.8rem;color:#22563C;">04</span>
+      <h2 style="margin:0;font-family:'Spectral',serif;font-weight:400;font-size:clamp(1.6rem,3.6vw,2.4rem);letter-spacing:-0.015em;">Sistema visual mínimo</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1.2rem;margin-top:1.4rem;">
+      <div style="padding:1.4rem;background:#F4EFE4;border-radius:14px;">
+        <h3 style="margin:0 0 0.9rem;font-family:'IBM Plex Mono',monospace;font-size:0.68rem;letter-spacing:0.13em;text-transform:uppercase;color:#8E836F;">Tipografia</h3>
+        <p style="margin:0 0 0.6rem;font-family:'Spectral',serif;font-weight:300;font-size:1.7rem;line-height:1;">Spectral</p>
+        <p style="margin:0 0 1rem;font-size:0.88rem;color:#6B6459;">Serifada editorial. Títulos e a voz do produto.</p>
+        <p style="margin:0 0 0.4rem;font-family:'Hanken Grotesk',sans-serif;font-weight:600;font-size:1.2rem;">Hanken Grotesk</p>
+        <p style="margin:0 0 1rem;font-size:0.88rem;color:#6B6459;">Interface, apoio, ação.</p>
+        <p style="margin:0 0 0.4rem;font-family:'IBM Plex Mono',monospace;font-size:1rem;">IBM Plex Mono</p>
+        <p style="margin:0;font-size:0.88rem;color:#6B6459;">Rótulos, horários, camada técnica.</p>
+      </div>
+      <div style="padding:1.4rem;background:#F4EFE4;border-radius:14px;">
+        <h3 style="margin:0 0 0.9rem;font-family:'IBM Plex Mono',monospace;font-size:0.68rem;letter-spacing:0.13em;text-transform:uppercase;color:#8E836F;">Cor semântica</h3>
+        <div style="display:flex;flex-direction:column;gap:0.55rem;font-size:0.86rem;color:#4A453D;">
+          <div style="display:flex;align-items:center;gap:0.6rem;"><span style="width:20px;height:20px;border-radius:5px;background:#E7DECD;border:1px solid #D3C6B0;"></span>Fundo quente</div>
+          <div style="display:flex;align-items:center;gap:0.6rem;"><span style="width:20px;height:20px;border-radius:5px;background:#22563C;"></span>Verde Tatá · ação</div>
+          <div style="display:flex;align-items:center;gap:0.6rem;"><span style="width:20px;height:20px;border-radius:5px;background:#3F7B54;"></span>Saudável · ao vivo</div>
+          <div style="display:flex;align-items:center;gap:0.6rem;"><span style="width:20px;height:20px;border-radius:5px;background:#B0812F;"></span>Envelhecido</div>
+          <div style="display:flex;align-items:center;gap:0.6rem;"><span style="width:20px;height:20px;border-radius:5px;background:#5E6B86;"></span>Preparando</div>
+          <div style="display:flex;align-items:center;gap:0.6rem;"><span style="width:20px;height:20px;border-radius:5px;background:#8C8677;"></span>Sem conexão · pausa</div>
+          <div style="display:flex;align-items:center;gap:0.6rem;"><span style="width:20px;height:20px;border-radius:5px;background:#8E3B2E;"></span>Sem leitura confiável</div>
+        </div>
+      </div>
+      <div style="padding:1.4rem;background:#F4EFE4;border-radius:14px;">
+        <h3 style="margin:0 0 0.9rem;font-family:'IBM Plex Mono',monospace;font-size:0.68rem;letter-spacing:0.13em;text-transform:uppercase;color:#8E836F;">Espaço e hierarquia</h3>
+        <p style="margin:0;font-size:0.92rem;line-height:1.55;color:#4A453D;">Escala 4px. Respiro generoso é regra, não sobra. Uma superfície central, uma voz dominante, uma ação. O silêncio é conteúdo: não se preenche a tela para evitar vazio.</p>
+      </div>
+      <div style="padding:1.4rem;background:#F4EFE4;border-radius:14px;">
+        <h3 style="margin:0 0 0.9rem;font-family:'IBM Plex Mono',monospace;font-size:0.68rem;letter-spacing:0.13em;text-transform:uppercase;color:#8E836F;">Mobile-first</h3>
+        <p style="margin:0;font-size:0.92rem;line-height:1.55;color:#4A453D;">A lógica nasce no mobile, para consulta rápida em movimento. Nada essencial some para caber: título, sinal, ação e restrição sempre presentes. O desktop dá mais respiro para observação contínua, não estica o card.</p>
+      </div>
+    </div>
+
+    <!-- Linha de sinal -->
+    <h3 style="margin:2.4rem 0 1.1rem;font-family:'Spectral',serif;font-weight:500;font-size:1.35rem;">A linha de sinal, por variante</h3>
+    <p style="margin:0 0 1.4rem;font-size:0.98rem;line-height:1.55;color:#5C554A;max-width:64ch;">A linha comunica a saúde da verdade operacional pela forma, nunca só pela cor. Ela apoia o texto, nunca fala sozinha, e nunca vira medidor, gráfico ou barra de desempenho.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:1rem;">
+      <sc-for list="{{ legend }}" as="l" hint-placeholder-count="8">
+        <div style="padding:1.2rem;background:#F4EFE4;border-radius:12px;display:flex;flex-direction:column;gap:0.75rem;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:0.62rem;letter-spacing:0.12em;text-transform:uppercase;color:#8E836F;">{{ l.name }}</span>
+          <div style="padding:0.2rem 0;">{{ l.signal }}</div>
+          <p style="margin:0;font-size:0.87rem;line-height:1.45;color:#5C554A;">{{ l.shape }}</p>
+          <p style="margin:0;font-size:0.82rem;line-height:1.4;color:#8E836F;">{{ l.motion }}</p>
+        </div>
+      </sc-for>
+    </div>
+    <p style="margin:1rem 0 0;font-size:0.86rem;line-height:1.5;color:#8E836F;">Movimento respeita a preferência de menos animação do sistema: com ela ligada, tudo fica estático e a forma continua legível. Acessibilidade: contraste mínimo AA no texto, alvos de toque a partir de 44px, estado nunca dependente de cor isolada.</p>
+  </section>
+
+  <!-- ============ PRESERVAR / REMOVER ============ -->
+  <section id="preservar" style="padding:3.4rem 0 0;">
+    <div style="display:flex;align-items:baseline;gap:0.8rem;margin-bottom:1.4rem;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:0.8rem;color:#22563C;">05</span>
+      <h2 style="margin:0;font-family:'Spectral',serif;font-weight:400;font-size:clamp(1.6rem,3.6vw,2.4rem);letter-spacing:-0.015em;">Preservar e remover na implementação</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1.4rem;">
+      <div>
+        <h3 style="margin:0 0 0.9rem;font-family:'IBM Plex Mono',monospace;font-size:0.72rem;letter-spacing:0.13em;text-transform:uppercase;color:#3F7B54;">Preservar</h3>
+        <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:0.65rem;">
+          <li style="display:flex;gap:0.6rem;font-size:0.98rem;line-height:1.45;color:#4A453D;"><span style="color:#3F7B54;">✓</span> Fundo claro, verde escuro Tatá e tipografia editorial.</li>
+          <li style="display:flex;gap:0.6rem;font-size:0.98rem;line-height:1.45;color:#4A453D;"><span style="color:#3F7B54;">✓</span> Foco único soberano, com uma só ação.</li>
+          <li style="display:flex;gap:0.6rem;font-size:0.98rem;line-height:1.45;color:#4A453D;"><span style="color:#3F7B54;">✓</span> Linguagem humana e hora do último dado confiável.</li>
+          <li style="display:flex;gap:0.6rem;font-size:0.98rem;line-height:1.45;color:#4A453D;"><span style="color:#3F7B54;">✓</span> Soberania do motor: a UI não escolhe nem recalcula o foco.</li>
+          <li style="display:flex;gap:0.6rem;font-size:0.98rem;line-height:1.45;color:#4A453D;"><span style="color:#3F7B54;">✓</span> Silêncio visual quando nada exige atenção.</li>
+        </ul>
+      </div>
+      <div>
+        <h3 style="margin:0 0 0.9rem;font-family:'IBM Plex Mono',monospace;font-size:0.72rem;letter-spacing:0.13em;text-transform:uppercase;color:#A65E3C;">Remover</h3>
+        <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:0.65rem;">
+          <li style="display:flex;gap:0.6rem;font-size:0.98rem;line-height:1.45;color:#4A453D;"><span style="color:#A65E3C;">✕</span> O anel-medidor e o grande "0" do Calmo.</li>
+          <li style="display:flex;gap:0.6rem;font-size:0.98rem;line-height:1.45;color:#4A453D;"><span style="color:#A65E3C;">✕</span> Os seis cards de Ambiente, com borda, barra e porcentagem.</li>
+          <li style="display:flex;gap:0.6rem;font-size:0.98rem;line-height:1.45;color:#4A453D;"><span style="color:#A65E3C;">✕</span> As três colunas do Foco e o conteúdo repetido.</li>
+          <li style="display:flex;gap:0.6rem;font-size:0.98rem;line-height:1.45;color:#4A453D;"><span style="color:#A65E3C;">✕</span> O texto técnico genérico único para todos os estados.</li>
+          <li style="display:flex;gap:0.6rem;font-size:0.98rem;line-height:1.45;color:#4A453D;"><span style="color:#A65E3C;">✕</span> Rótulos de simulador dentro da superfície do produto.</li>
+        </ul>
+      </div>
+    </div>
+    <div style="margin-top:2.4rem;padding:1.6rem 1.8rem;background:#2A2620;border-radius:16px;color:#EFE7D6;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:0.68rem;letter-spacing:0.14em;text-transform:uppercase;color:#A69A80;">Fecho</span>
+      <p style="margin:0.7rem 0 0;font-family:'Spectral',serif;font-weight:300;font-size:clamp(1.3rem,3vw,1.7rem);line-height:1.3;">Direção recomendada definida, dezesseis pranchas cobertas, sistema mínimo documentado. Nenhum código alterado, nenhuma implementação declarada. Pronto para validação do César.</p>
+    </div>
+  </section>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1200,&quot;height&quot;:900}}">
+class Component extends DCLogic {
+  sig(v, key, mobile) {
+    const h = React.createElement;
+    const PREP='#5E6B86', AGE='#B0812F', REDUCE='#A65E3C', LOST='#8C8677', FAIL='#8E3B2E', LINE='#E4DBCB', READY='#3F7B54';
+    const wrap = (kids) => h('div', { key, style:{ position:'relative', width:'100%', height:'12px', display:'flex', alignItems:'center', overflow:'hidden' } }, kids);
+    const base = (c) => h('div', { key:'base', style:{ width:'100%', height:'3px', borderRadius:'2px', background:c } });
+    if (v === 'initializing') return wrap([ base(LINE),
+      h('div',{key:'sh',className:'dos-shimmer',style:{position:'absolute',left:0,top:'4.5px',height:'3px',width:'32%',borderRadius:'2px',background:'linear-gradient(90deg,transparent,'+PREP+',transparent)'}}) ]);
+    if (v === 'ready') return wrap([ base(READY),
+      h('div',{key:'end',style:{position:'absolute',right:0,top:'1.5px',width:'9px',height:'9px',borderRadius:'50%',background:'#F6F1E7',border:'1.5px solid '+READY}}) ]);
+    if (v === 'replaying') return wrap([ base(LINE),
+      h('div',{key:'seg',className:'dos-activity',style:{position:'absolute',top:'4.5px',height:'3px',width:'30%',borderRadius:'2px',background:PREP}}) ]);
+    if (v === 'stale') return wrap([ base(LINE),
+      h('div',{key:'ag',style:{position:'absolute',left:0,top:'4.5px',height:'3px',width:'100%',borderRadius:'2px',background:'linear-gradient(90deg,'+AGE+' 0%,'+AGE+' 62%,rgba(176,129,47,0) 100%)',opacity:0.7}}) ]);
+    if (v === 'disconnected') return h('div',{key,style:{display:'flex',alignItems:'center',width:'100%',height:'12px'}},[
+      h('div',{key:'l',style:{width:'40%',height:'3px',borderRadius:'2px',background:LOST}}),
+      h('div',{key:'d',style:{width:'9px',height:'9px',borderRadius:'50%',border:'1.5px solid '+LOST,margin:'0 7px',flex:'none'}}),
+      h('div',{key:'r',style:{flex:1,height:'3px',borderRadius:'2px',background:'repeating-linear-gradient(90deg,'+LOST+' 0 5px,transparent 5px 11px)',opacity:0.42}}) ]);
+    if (v === 'degraded') return h('div',{key,style:{display:'flex',alignItems:'center',gap:'7px',width:'100%',height:'12px'}},[
+      h('div',{key:'s',style:{width:'32%',height:'3px',borderRadius:'2px',background:REDUCE}}),
+      h('div',{key:'hz',style:{flex:1,height:'8px',borderRadius:'1px',background:'repeating-linear-gradient(45deg,'+REDUCE+' 0 2px,transparent 2px 6px)',opacity:0.55}}) ]);
+    if (v === 'failed') return h('div',{key,style:{display:'flex',alignItems:'center',width:'100%',height:'12px'}},[
+      h('div',{key:'a',style:{width:'32%',height:'3px',borderRadius:'2px',background:FAIL}}),
+      h('div',{key:'g',style:{flex:1,height:0,margin:'0 5px',borderTop:'2px dotted '+FAIL,opacity:0.4}}),
+      h('div',{key:'b',style:{width:'15%',height:'3px',borderRadius:'2px',background:FAIL}}) ]);
+    if (v === 'stopped') return wrap([
+      h('div',{key:'s',style:{position:'absolute',left:0,top:'4.5px',height:'3px',width:'62%',borderRadius:'2px',background:LOST}}),
+      h('div',{key:'c',style:{position:'absolute',left:'64%',top:0,width:'3px',height:'12px',borderRadius:'1px',background:LOST}}),
+      h('div',{key:'c2',style:{position:'absolute',left:'calc(64% + 6px)',top:0,width:'3px',height:'12px',borderRadius:'1px',background:LOST}}) ]);
+    if (v === 'unknowns') {
+      const ticks=[]; const n = mobile ? 6 : 8;
+      for (let i=0;i<n;i++){
+        const open = i >= (mobile?3:5);
+        ticks.push(h('div',{key:'t'+i,style:{flex:1,height:'6px',borderRadius:'2px',background:open?'transparent':READY,border:open?'1px dashed #B7AE9D':'none',opacity:open?1:0.8}}));
+      }
+      return h('div',{key,style:{display:'flex',gap:'6px',width:'100%',height:'12px',alignItems:'center'}},ticks);
+    }
+    return wrap([ base(LINE) ]);
+  }
+
+  techRaw() {
+    const PREP='#5E6B86', AGE='#B0812F', REDUCE='#A65E3C', LOST='#8C8677', FAIL='#8E3B2E', READY='#3F7B54', INK='#2A2620', INK2='#6B6459';
+    return [
+      { id:'initializing', prancha:'07', techName:'initializing', accent:PREP, sourceColor:PREP, sourceLabel:'Preparando',
+        eyebrow:'PREPARANDO', title:'Preparando a leitura da operação', explanation:'Ainda estamos montando uma visão confiável do turno.',
+        restriction:'Nada para concluir ainda.', restrictionColor:INK2, hasMemory:false,
+        shape:'Trilho claro com um brilho curto passando.', motion:'Brilho indeterminado, sem medir progresso.' },
+      { id:'ready', prancha:'08', techName:'ready', accent:READY, sourceColor:READY, sourceLabel:'Pronto',
+        eyebrow:'PRONTO PARA LEITURA', title:'Fonte conectada, sem pedidos ativos', explanation:'A operação está pronta para ser lida. No momento não há pedidos em andamento.',
+        restriction:'Operação vazia agora. Diferente de dado ausente.', restrictionColor:INK2, hasMemory:false,
+        shape:'Linha inteira e firme, com um ponto vazado no fim.', motion:'Sem movimento. Fonte estável.' },
+      { id:'replaying', prancha:'09', techName:'replaying', accent:PREP, sourceColor:PREP, sourceLabel:'Reconstruindo',
+        eyebrow:'RECONSTRUINDO', title:'Reconstruindo o turno', explanation:'Estamos relendo o que já aconteceu para chegar ao estado atual.',
+        evidence:[{text:'Eventos relidos até agora: 1.240', solid:true}], restriction:'O que aparece aqui ainda não é o estado final.', restrictionColor:INK2, hasMemory:false,
+        shape:'Um segmento deslizando de um lado ao outro.', motion:'Atividade indeterminada, sem porcentagem nem total.' },
+      { id:'stale', prancha:'10', techName:'stale', accent:AGE, sourceColor:AGE, sourceLabel:'Desatualizada',
+        eyebrow:'INFORMAÇÃO DESATUALIZADA', title:'Esta leitura não é a mais recente', explanation:'A informação passou do tempo em que ainda é confiável.',
+        lastReliableTime:'Última leitura confiável às 21h42', lastReliableDetail:'Naquele momento, 3 pedidos em conferência.', hasDetail:true, hasMemory:true,
+        restriction:'Pode não representar o estado atual da operação.', restrictionColor:INK,
+        shape:'Linha inteira que desbota até sumir à direita.', motion:'Estática. A cor esmaece com a idade.' },
+      { id:'disconnected', prancha:'11', techName:'disconnected', accent:LOST, sourceColor:LOST, sourceLabel:'Sem conexão',
+        eyebrow:'SEM CONEXÃO COM A FONTE', title:'Paramos de receber atualizações', explanation:'A conexão com a operação foi interrompida.',
+        lastReliableTime:'Última informação recebida às 21h42', hasDetail:false, hasMemory:true,
+        restriction:'Nada novo chegou desde então.', restrictionColor:INK,
+        shape:'Trecho firme, uma quebra, depois pontilhado apagado.', motion:'Estática. A quebra marca o corte.' },
+      { id:'degraded', prancha:'12', techName:'degraded', accent:REDUCE, sourceColor:REDUCE, sourceLabel:'Confiança reduzida',
+        eyebrow:'CONFIANÇA REDUZIDA', title:'Parte da operação está incerta', explanation:'Uma parte das informações continua chegando. Outra parte não pode ser confirmada agora.',
+        restriction:'Evite conclusões sobre o que não pode ser confirmado.', restrictionColor:INK, hasMemory:false,
+        shape:'Trecho firme que vira uma trama diagonal.', motion:'Estática. A trama sinaliza incerteza.' },
+      { id:'failed', prancha:'13', techName:'failed', accent:FAIL, sourceColor:FAIL, sourceLabel:'Sem leitura',
+        eyebrow:'SEM LEITURA CONFIÁVEL', title:'Não é possível formar uma leitura confiável agora', explanation:'O sistema não conseguiu montar o estado atual da operação.',
+        lastReliableTime:'Última leitura confiável às 21h42', hasDetail:false, hasMemory:true,
+        restriction:'Não use esta tela como o estado atual da operação.', restrictionColor:FAIL,
+        shape:'A linha não se forma: fragmentos com falha no meio.', motion:'Estática. A ruptura é o sinal.' },
+      { id:'stopped', prancha:'14', techName:'stopped', accent:LOST, sourceColor:LOST, sourceLabel:'Pausada',
+        eyebrow:'ATUALIZAÇÃO PAUSADA', title:'As atualizações estão pausadas', explanation:'A leitura da operação não está sendo atualizada.',
+        lastReliableTime:'Última leitura às 21h42', hasDetail:false, hasMemory:true,
+        restriction:'As atualizações voltam quando a fonte for retomada.', restrictionColor:INK2,
+        shape:'Trecho firme que termina em um símbolo de pausa.', motion:'Estática. Marca interrupção, não falha.' },
+    ];
+  }
+
+  build() {
+    return this.techRaw().map((o) => ({
+      ...o,
+      evidence: o.evidence || [],
+      hasEvidence: !!(o.evidence && o.evidence.length),
+      evidenceMore: o.evidenceMore || '',
+      hasMore: !!o.evidenceMore,
+      hasRestriction: !!o.restriction,
+      lastReliableTime: o.lastReliableTime || '',
+      lastReliableDetail: o.lastReliableDetail || '',
+      hasDetail: !!o.hasDetail,
+      restriction: o.restriction || '',
+      signal: this.sig(o.id, 'sig-'+o.id, false),
+    }));
+  }
+
+  buildQuality() {
+    const INK2='#6B6459', LOST='#8C8677';
+    return {
+      eyebrow:'INFORMAÇÃO INCOMPLETA', accent:LOST, title:'3 pedidos ainda sem confirmação',
+      explanation:'Eles não entram na leitura da operação enquanto a informação não se completa.',
+      evidence:[
+        {text:'Pedido #2041, itens não batem com a comanda', open:true},
+        {text:'Pedido #2044, sem confirmação de pagamento', open:true},
+        {text:'Pedido #2047, comanda sem itens', open:true},
+      ],
+      hasEvidence:true, evidenceMore:'mais 2 pedidos aguardando verificação', hasMore:true,
+      hasMemory:false, restriction:'Estes pedidos não fazem parte da decisão atual.', restrictionColor:INK2,
+      signal:this.sig('unknowns','q-d',false), signalMobile:this.sig('unknowns','q-m',true),
+    };
+  }
+
+  legendData() {
+    return this.techRaw().map((o) => ({ name:o.eyebrow, shape:o.shape, motion:o.motion, signal:this.sig(o.id, 'leg-'+o.id, false) }));
+  }
+
+  renderVals() {
+    if (!this._tech) this._tech = this.build();
+    if (!this._quality) this._quality = this.buildQuality();
+    if (!this._legend) this._legend = this.legendData();
+    return { tech:this._tech, quality:this._quality, legend:this._legend };
+  }
+}
+</script>
+</body>
+</html>

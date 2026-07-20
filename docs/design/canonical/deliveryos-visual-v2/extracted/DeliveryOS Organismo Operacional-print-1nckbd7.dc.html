@@ -1,0 +1,1133 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style data-omelette-print-defaults>
+@media print {
+  @page { margin: 0.5in; }
+  h1, h2, h3, h4, h5, h6 { break-after: avoid; }
+  figure, table, pre, blockquote, img, svg, tr, [class~="card" i] { break-inside: avoid; }
+  img, svg { max-width: 100%; }
+  p { orphans: 3; widows: 3; }
+}
+</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Hanken+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0;background:#08130D;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+    ::selection{background:#8CC63F;color:#08130D}
+    a{color:#8CC63F;text-decoration:none;border-bottom:1px solid rgba(140,198,63,0.3)}
+    a:hover{border-bottom-color:#8CC63F}
+    @keyframes dosFlow{to{stroke-dashoffset:-28}}
+    @keyframes dosPulse{0%{opacity:0.4;transform:scale(1)}100%{opacity:0;transform:scale(1.5)}}
+    .dosflow{animation:dosFlow 1.6s linear infinite}
+    .dospulse{animation:dosPulse 2.8s ease-out infinite}
+    @media (prefers-reduced-motion: reduce){.dosflow,.dospulse{animation:none}.dospulse{display:none}}
+  </style>
+</helmet>
+<div style="background:radial-gradient(1300px 680px at 50% -8%, #0F241A, #08130D 68%);color:#EFE6D3;font-family:'Hanken Grotesk',system-ui,sans-serif;padding:clamp(1.1rem,4vw,3.2rem) clamp(1rem,4vw,2rem);min-height:100vh;">
+<div style="max-width:1220px;margin:0 auto;">
+
+  <header style="display:flex;flex-direction:column;gap:1.25rem;padding-bottom:2rem;border-bottom:1px solid #1F3E2E;">
+    <div style="display:flex;flex-wrap:wrap;gap:0.4rem 1.1rem;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:0.76rem;letter-spacing:0.14em;text-transform:uppercase;color:#7E9478;">
+      <span style="color:#8CC63F;">DeliveryOS · Operação Viva</span><span style="color:#2C4A36;">/</span><span>V3.3 · Pronto para validação final</span><span style="color:#2C4A36;">/</span><span>Tatá</span>
+    </div>
+    <h1 style="margin:0;font-family:'Spectral',serif;font-weight:300;font-size:clamp(2.1rem,6vw,4rem);line-height:1.03;letter-spacing:-0.02em;max-width:18ch;">A operação inteira, viva, em uma só superfície.</h1>
+    <p style="margin:0;font-size:clamp(1.05rem,2.6vw,1.22rem);line-height:1.55;color:#BFCBB2;max-width:62ch;">Onze cenários reais, dez estados técnicos, linguagem humana e leitura em dois segundos. Todos os números exibidos são valores de demonstração; os limiares reais pertencem ao motor.</p>
+  </header>
+
+  <!-- SUPERFÍCIE (cenários 01-11) -->
+  <section style="padding:2.4rem 0 0;">
+    <div style="display:flex;align-items:baseline;gap:0.7rem;margin-bottom:1rem;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:0.76rem;letter-spacing:0.12em;color:#7E9478;">PRANCHAS 01–11 · DESKTOP</span>
+      <h2 style="margin:0;font-family:'Spectral',serif;font-weight:400;font-size:clamp(1.3rem,3vw,1.8rem);">A mesma superfície em onze cenários</h2>
+    </div>
+
+    <div style="background:#06120D;border:1px solid #1B3527;border-radius:14px 14px 0 0;padding:0.85rem 1.1rem;display:flex;flex-direction:column;gap:0.55rem;">
+      <div style="display:flex;flex-wrap:wrap;gap:0.6rem 1.4rem;align-items:center;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:0.68rem;letter-spacing:0.13em;text-transform:uppercase;color:#7E9478;display:flex;align-items:center;gap:0.45rem;"><span style="width:6px;height:6px;border-radius:50%;background:#3E6B4F;"></span>Apresentação · o gestor não escolhe o estado · valores de demonstração</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:0.4rem;align-items:center;">
+        <sc-for list="{{ scenBtns }}" as="st" hint-placeholder-count="11">
+          <sc-if value="{{ st.divider }}" hint-placeholder-val="{{ false }}"><span style="width:1px;height:18px;background:#1F3E2E;margin:0 0.35rem;"></span></sc-if>
+          <button onClick="{{ st.onClick }}" style="cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-size:0.85rem;font-weight:500;padding:0.45rem 0.85rem;border-radius:8px;border:1px solid {{ st.border }};background:{{ st.bg }};color:{{ st.color }};transition:all .18s ease;">{{ st.label }}</button>
+        </sc-for>
+      </div>
+    </div>
+
+    <!-- STAGE -->
+    <div style="position:relative;background:#0C1811;border:1px solid #1B3527;border-top:none;border-radius:0 0 14px 14px;overflow:hidden;min-height:clamp(580px,60vw,680px);height:clamp(580px,60vw,680px);">
+      <div style="position:absolute;top:0;left:0;right:0;z-index:6;display:flex;align-items:center;justify-content:space-between;padding:1rem 1.4rem;">
+        <div style="display:flex;align-items:baseline;gap:0.85rem;"><span style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;letter-spacing:0.12em;text-transform:uppercase;color:#7E9478;">DeliveryOS</span><span style="font-family:'Spectral',serif;font-size:1.1rem;color:#EFE6D3;">Tatá</span></div>
+        <div style="display:flex;align-items:center;gap:0.5rem;"><span style="position:relative;display:inline-flex;width:9px;height:9px;"><span style="position:absolute;inset:0;border-radius:50%;background:{{ liveDot }};"></span><sc-if value="{{ livePulse }}" hint-placeholder-val="{{ true }}"><span class="dospulse" style="position:absolute;inset:0;border-radius:50%;background:{{ liveDot }};"></span></sc-if></span><span style="font-family:'IBM Plex Mono',monospace;font-size:0.76rem;color:#A8BCA0;">{{ headerNote }}</span></div>
+      </div>
+
+      <sc-if value="{{ hasBanner }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;top:3.1rem;left:50%;transform:translateX(-50%);z-index:6;max-width:92%;display:inline-flex;align-items:center;gap:0.55rem;padding:0.5rem 1rem;border-radius:999px;background:{{ bannerBg }};border:1px {{ bannerStroke }};">
+          <span style="flex:none;width:7px;height:7px;border-radius:50%;background:{{ bannerDot }};"></span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:0.76rem;color:{{ bannerColor }};white-space:normal;line-height:1.35;">{{ bannerText }}</span>
+        </div>
+      </sc-if>
+
+      <div style="position:absolute;top:{{ captionTop }};left:clamp(1rem,3vw,1.6rem);z-index:5;display:flex;flex-direction:column;align-items:flex-start;max-width:19ch;pointer-events:none;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;letter-spacing:0.18em;text-transform:uppercase;color:{{ captionAccent }};">{{ captionKicker }}</span>
+        <p style="margin:0.5rem 0 0;font-family:'Spectral',serif;font-weight:300;font-size:clamp(1.2rem,2.6vw,1.7rem);line-height:1.22;color:#F2EBD9;">{{ captionText }}</p>
+      </div>
+
+      <sc-if value="{{ modeConstellation }}" hint-placeholder-val="{{ true }}">
+        <div style="position:absolute;inset:0;">
+          {{ connections }}
+          <sc-for list="{{ stageAreas }}" as="a" hint-placeholder-count="6">
+            <div style="{{ a.wrapStyle }}">
+              <div onClick="{{ a.onClick }}" role="button" tabindex="0" style="{{ a.cellStyle }}" style-hover="transform:scale(1.05);border-color:rgba(190,229,146,0.75)" style-focus="outline:2px solid rgba(190,229,146,0.7);outline-offset:3px">
+                <sc-if value="{{ a.pulse }}" hint-placeholder-val="{{ true }}"><span class="dospulse" style="position:absolute;inset:-1px;border-radius:50%;border:1px solid rgba(240,179,106,0.5);"></span></sc-if>
+                <div style="display:flex;gap:4px;align-items:center;justify-content:center;flex-wrap:wrap;max-width:72%;">
+                  <sc-for list="{{ a.markList }}" as="m" hint-placeholder-count="3">
+                    <sc-if value="{{ m.solid }}" hint-placeholder-val="{{ true }}"><span style="width:6px;height:6px;border-radius:50%;background:{{ a.markColor }};"></span></sc-if>
+                    <sc-if value="{{ m.open }}" hint-placeholder-val="{{ true }}"><span style="width:6px;height:6px;border-radius:50%;border:1px solid #7E9478;"></span></sc-if>
+                  </sc-for>
+                </div>
+                <div style="font-family:'Spectral',serif;font-size:{{ a.nameSize }};color:{{ a.nameColor }};line-height:1.08;">{{ a.name }}</div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;letter-spacing:0.01em;line-height:1.3;color:{{ a.stateColor }};max-width:14ch;">{{ a.state }}</div>
+                <sc-if value="{{ a.hasInfo }}" hint-placeholder-val="{{ true }}"><div style="font-size:0.82rem;font-weight:600;line-height:1.25;color:{{ a.infoColor }};max-width:13ch;">{{ a.info }}</div></sc-if>
+              </div>
+            </div>
+          </sc-for>
+
+          <sc-if value="{{ showFocoPanel }}" hint-placeholder-val="{{ true }}">
+            <div style="position:absolute;right:clamp(1rem,4vw,3rem);bottom:clamp(1rem,3vw,1.8rem);z-index:7;width:min(440px,88%);background:linear-gradient(180deg,#13291D,#0E2016);border:1px solid #2C5940;border-radius:16px;padding:1.4rem 1.5rem;box-shadow:0 30px 70px -32px rgba(0,0,0,0.8);">
+              <div style="position:absolute;top:-1px;left:50%;transform:translateX(-50%);width:52px;height:3px;border-radius:0 0 3px 3px;background:#E0A25A;"></div>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:0.7rem;letter-spacing:0.14em;text-transform:uppercase;color:#E0A25A;">{{ foco.eyebrow }}</span>
+              <h3 style="margin:0.6rem 0 0.45rem;font-family:'Spectral',serif;font-weight:400;font-size:1.6rem;line-height:1.15;color:#F2EBD9;">{{ foco.situacao }}</h3>
+              <p style="margin:0 0 1rem;font-family:'Spectral',serif;font-style:italic;font-size:1.02rem;line-height:1.45;color:#D9C9A8;">{{ foco.consequencia }}</p>
+              <div style="display:flex;flex-direction:column;gap:0.45rem;margin-bottom:1.15rem;">
+                <sc-for list="{{ foco.evidencias }}" as="e" hint-placeholder-count="3">
+                  <div style="display:flex;align-items:baseline;gap:0.55rem;"><span style="flex:none;width:3px;height:14px;border-radius:2px;background:#E0A25A;transform:translateY(2px);"></span><span style="font-size:1rem;line-height:1.35;color:#E3DAC2;">{{ e }}</span></div>
+                </sc-for>
+              </div>
+              <div style="display:flex;align-items:center;gap:0.8rem;flex-wrap:wrap;">
+                <button style="cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-weight:600;font-size:1.02rem;color:#0B1A11;background:#8CC63F;border:none;border-radius:11px;padding:0.9rem 1.5rem;min-height:44px;" style-hover="background:#9ED64F">{{ foco.acao }}</button>
+                <button style="cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-weight:500;font-size:0.95rem;color:#BFCBB2;background:transparent;border:1px solid #2C5940;border-radius:11px;padding:0.85rem 1.1rem;min-height:44px;" style-hover="border-color:#3E6B4F;color:#EFE6D3">{{ foco.acaoSec }}</button>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ modeApproach }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;padding:4.2rem clamp(1.4rem,4vw,3rem) clamp(1.2rem,2.5vw,1.8rem);">
+          <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:1rem;">
+            <button onClick="{{ back }}" style="cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:0.8rem;letter-spacing:0.06em;color:#BFCBB2;background:transparent;border:1px solid #274B39;border-radius:8px;padding:0.5rem 1rem;min-height:44px;" style-hover="border-color:#3E6B4F;color:#EFE6D3">← Visão geral</button>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:0.74rem;color:#7E9478;">{{ approach.path }}</span>
+          </div>
+          <div style="flex:1;display:flex;flex-wrap:wrap;gap:clamp(1.4rem,3.5vw,2.6rem);align-items:center;">
+            <div style="flex:none;display:flex;flex-direction:column;align-items:center;gap:0.4rem;">
+              <div style="position:relative;width:clamp(175px,17vw,215px);height:clamp(175px,17vw,215px);border-radius:50%;background:{{ approach.glow }};border:1px solid {{ approach.ring }};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0.45rem;">
+                <div style="display:flex;gap:6px;">
+                  <sc-for list="{{ approach.markList }}" as="m" hint-placeholder-count="4">
+                    <sc-if value="{{ m.solid }}" hint-placeholder-val="{{ true }}"><span style="width:8px;height:8px;border-radius:50%;background:{{ approach.markColor }};"></span></sc-if>
+                    <sc-if value="{{ m.open }}" hint-placeholder-val="{{ true }}"><span style="width:8px;height:8px;border-radius:50%;border:1px solid #7E9478;"></span></sc-if>
+                  </sc-for>
+                </div>
+                <div style="font-family:'Spectral',serif;font-size:1.7rem;color:#F2EBD9;">{{ approach.name }}</div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:0.74rem;letter-spacing:0.03em;color:{{ approach.stateColor }};">{{ approach.state }}</div>
+              </div>
+            </div>
+            <div style="flex:1.4;min-width:min(320px,100%);">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;letter-spacing:0.14em;text-transform:uppercase;color:#7E9478;margin-bottom:0.6rem;">O que está acontecendo</div>
+              <div style="display:flex;flex-direction:column;gap:0.55rem;margin-bottom:1.1rem;">
+                <sc-for list="{{ approach.solidLines }}" as="l" hint-placeholder-count="3">
+                  <div style="display:flex;align-items:baseline;gap:0.6rem;"><span style="flex:none;width:3px;height:15px;border-radius:2px;background:{{ approach.markColor }};transform:translateY(2px);"></span><span style="font-size:1.1rem;line-height:1.4;color:#E9E2CE;">{{ l }}</span></div>
+                </sc-for>
+              </div>
+              <sc-if value="{{ approach.hasOpen }}" hint-placeholder-val="{{ true }}">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;letter-spacing:0.14em;text-transform:uppercase;color:#7E9478;margin-bottom:0.6rem;">Sem confirmação</div>
+                <div style="display:flex;flex-direction:column;gap:0.55rem;margin-bottom:1.1rem;">
+                  <sc-for list="{{ approach.openLines }}" as="l" hint-placeholder-count="1">
+                    <div style="display:flex;align-items:baseline;gap:0.6rem;"><span style="flex:none;width:3px;height:15px;border-radius:2px;border:1px dashed #7E9478;transform:translateY(2px);"></span><span style="font-size:1.04rem;line-height:1.4;color:#A8BCA0;">{{ l }}</span></div>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{ approach.hasNote }}" hint-placeholder-val="{{ false }}"><p style="margin:0 0 1.1rem;font-family:'Spectral',serif;font-style:italic;font-size:1rem;line-height:1.45;color:#A8BCA0;max-width:48ch;">{{ approach.note }}</p></sc-if>
+              <div style="display:flex;align-items:center;gap:1.1rem;flex-wrap:wrap;">
+                <button style="cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-weight:600;font-size:1.04rem;color:#0B1A11;background:#8CC63F;border:none;border-radius:11px;padding:0.9rem 1.5rem;min-height:44px;" style-hover="background:#9ED64F">{{ approach.action }}</button>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:0.78rem;color:#7E9478;cursor:pointer;border-bottom:1px solid #2C4A36;" style-hover="color:#BFCBB2">todos os itens ›</span>
+              </div>
+            </div>
+            <div style="flex:none;width:220px;display:flex;flex-direction:column;gap:0.7rem;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;letter-spacing:0.14em;text-transform:uppercase;color:#7E9478;">Causa e efeito</div>
+              <sc-for list="{{ approach.relations }}" as="r" hint-placeholder-count="2">
+                <div style="display:flex;flex-direction:column;gap:0.15rem;padding:0.65rem 0.85rem;border-left:2px solid {{ r.edge }};background:rgba(140,198,63,0.03);border-radius:0 8px 8px 0;">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:0.68rem;letter-spacing:0.08em;text-transform:uppercase;color:#7E9478;">{{ r.dir }}</span>
+                  <span style="font-size:0.98rem;color:{{ r.color }};line-height:1.35;">{{ r.text }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:0.8rem;flex-wrap:wrap;padding-top:1rem;border-top:1px solid #1B3527;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:0.7rem;letter-spacing:0.1em;text-transform:uppercase;color:#5F7A62;">resto da operação</span>
+            <sc-for list="{{ minimap }}" as="mm" hint-placeholder-count="6">
+              <span style="display:inline-flex;align-items:center;gap:0.35rem;font-family:'IBM Plex Mono',monospace;font-size:0.76rem;color:{{ mm.color }};"><span style="width:7px;height:7px;border-radius:50%;background:{{ mm.dot }};"></span>{{ mm.name }}</span>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ showPill }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;top:3.1rem;right:clamp(1rem,3vw,1.8rem);z-index:8;display:inline-flex;align-items:center;gap:0.5rem;padding:0.5rem 0.95rem;border-radius:999px;background:rgba(19,41,29,0.94);border:1px solid #3A5A42;box-shadow:0 12px 30px -14px rgba(0,0,0,0.7);">
+          <span style="width:7px;height:7px;border-radius:50%;background:#E0A25A;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;letter-spacing:0.03em;color:#E9DFC8;">{{ pillText }}</span>
+        </div>
+      </sc-if>
+    </div>
+    <p style="margin:0.9rem 0 0;font-size:1rem;line-height:1.5;color:#8FA588;max-width:74ch;">{{ stepHint }}</p>
+  </section>
+
+  <!-- MOBILE -->
+  <section style="padding:3rem 0 0;">
+    <div style="display:flex;align-items:baseline;gap:0.7rem;margin-bottom:1.2rem;flex-wrap:wrap;"><span style="font-family:'IBM Plex Mono',monospace;font-size:0.76rem;letter-spacing:0.12em;color:#7E9478;">PRANCHA 12 · MOBILE</span><h2 style="margin:0;font-family:'Spectral',serif;font-weight:400;font-size:clamp(1.3rem,3vw,1.8rem);">Fluxo clicável: geral, área, atenção e retorno</h2></div>
+    <div style="display:flex;flex-wrap:wrap;gap:1.6rem;justify-content:center;">
+
+      <!-- interactive phone -->
+      <div style="flex:none;display:flex;flex-direction:column;gap:0.6rem;align-items:center;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:0.7rem;letter-spacing:0.14em;text-transform:uppercase;color:#8CC63F;">Clicável · toque nas áreas</span>
+        <div style="width:300px;border:1px solid #1F3E2E;border-radius:34px;padding:9px;background:#06120D;box-shadow:0 30px 60px -34px rgba(0,0,0,0.8);">
+          <div style="background:#0C1811;border-radius:26px;overflow:hidden;min-height:620px;display:flex;flex-direction:column;">
+
+            <sc-if value="{{ mGeral }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.2rem 0.5rem;"><span style="font-family:'Spectral',serif;font-size:1.08rem;color:#EFE6D3;">Tatá</span><div style="display:flex;align-items:center;gap:0.45rem;"><span style="width:8px;height:8px;border-radius:50%;background:#8CC63F;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:#A8BCA0;">ao vivo</span></div></div>
+              <div style="padding:0.3rem 1.2rem 1.1rem;flex:1;display:flex;flex-direction:column;">
+                <p style="margin:0 0 0.9rem;font-family:'Spectral',serif;font-weight:300;font-size:1.38rem;line-height:1.2;color:#F2EBD9;">Quentes está atrasando a Conferência.</p>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;">
+                  <div style="width:158px;min-height:48px;padding:0.5rem 0.9rem;border-radius:999px;border:1px dashed rgba(126,148,120,0.5);display:flex;flex-direction:column;align-items:center;justify-content:center;"><span style="font-family:'Spectral',serif;font-size:1rem;color:#B9C4AC;">Caixa</span><span style="font-family:'IBM Plex Mono',monospace;font-size:0.62rem;color:#8FA588;">ainda sem dados</span></div>
+                  <svg viewBox="0 0 100 20" preserveAspectRatio="none" style="width:100%;height:20px;display:block;"><line x1="50" y1="0" x2="50" y2="6" stroke="#22402F" stroke-width="1"></line><line x1="50" y1="6" x2="17" y2="20" stroke="#22402F" stroke-width="1"></line><line x1="50" y1="6" x2="50" y2="20" stroke="#22402F" stroke-width="1"></line><line x1="50" y1="6" x2="83" y2="20" stroke="#22402F" stroke-width="1"></line></svg>
+                  <div style="display:flex;width:100%;align-items:center;">
+                    <div style="flex:1;display:flex;justify-content:center;"><div style="width:78px;height:78px;border-radius:50%;border:1px solid rgba(140,198,63,0.4);background:radial-gradient(circle at 50% 40%, rgba(140,198,63,0.15), transparent 72%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;"><span style="font-family:'Spectral',serif;font-size:0.92rem;color:#F2EBD9;">Sushi</span><span style="font-family:'IBM Plex Mono',monospace;font-size:0.58rem;color:#A8BCA0;">no ritmo</span></div></div>
+                    <div style="flex:1;display:flex;justify-content:center;"><div onClick="{{ mGoArea }}" role="button" style="position:relative;width:104px;height:104px;border-radius:50%;border:1px solid rgba(240,179,106,0.62);background:radial-gradient(circle at 50% 40%, rgba(224,142,58,0.32), rgba(224,142,58,0.08) 60%, transparent 78%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;box-shadow:0 14px 34px -16px rgba(224,142,58,0.5);"><span class="dospulse" style="position:absolute;inset:-1px;border-radius:50%;border:1px solid rgba(240,179,106,0.5);"></span><span style="font-family:'Spectral',serif;font-size:1.05rem;color:#F2EBD9;">Quentes</span><span style="font-family:'IBM Plex Mono',monospace;font-size:0.6rem;color:#F0B36A;">pressão subindo</span><span style="font-size:0.72rem;font-weight:600;color:#F2EBD9;">9 esperando</span></div></div>
+                    <div style="flex:1;display:flex;justify-content:center;"><div style="width:72px;height:72px;border-radius:50%;border:1px dashed rgba(126,148,120,0.5);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;"><span style="font-family:'Spectral',serif;font-size:0.82rem;color:#B9C4AC;">Cozinha</span><span style="font-family:'IBM Plex Mono',monospace;font-size:0.54rem;color:#8FA588;">sem dados</span></div></div>
+                  </div>
+                  <svg viewBox="0 0 100 20" preserveAspectRatio="none" style="width:100%;height:20px;display:block;"><line x1="17" y1="0" x2="50" y2="13" stroke="#22402F" stroke-width="1"></line><line x1="50" y1="0" x2="50" y2="13" stroke="#C98A46" stroke-width="2.4" stroke-dasharray="4 6" class="dosflow"></line><line x1="83" y1="0" x2="50" y2="13" stroke="#22402F" stroke-width="1"></line><line x1="50" y1="13" x2="50" y2="20" stroke="#C98A46" stroke-width="2"></line></svg>
+                  <div style="width:196px;min-height:52px;padding:0.55rem 0.9rem;border-radius:999px;border:1px solid rgba(224,162,90,0.55);background:radial-gradient(circle at 50% 40%, rgba(224,162,90,0.2), transparent 78%);display:flex;flex-direction:column;align-items:center;justify-content:center;"><span style="font-family:'Spectral',serif;font-size:1.05rem;color:#F2EBD9;">Conferência</span><span style="font-family:'IBM Plex Mono',monospace;font-size:0.62rem;color:#E0A25A;">começando a atrasar</span></div>
+                  <svg viewBox="0 0 100 14" preserveAspectRatio="none" style="width:100%;height:14px;display:block;"><line x1="50" y1="0" x2="50" y2="14" stroke="#C98A46" stroke-width="1.6" stroke-dasharray="3 5" class="dosflow"></line></svg>
+                  <div style="width:170px;min-height:48px;padding:0.5rem 0.9rem;border-radius:999px;border:1px solid rgba(140,198,63,0.4);background:radial-gradient(circle at 50% 40%, rgba(140,198,63,0.12), transparent 75%);display:flex;flex-direction:column;align-items:center;justify-content:center;"><span style="font-family:'Spectral',serif;font-size:1rem;color:#F2EBD9;">Motoboy</span><span style="font-family:'IBM Plex Mono',monospace;font-size:0.62rem;color:#E0A25A;">pode ser afetado</span></div>
+                </div>
+                <div onClick="{{ mGoFoco }}" role="button" style="margin-top:0.9rem;display:flex;align-items:center;gap:0.6rem;padding:0.7rem 0.9rem;border-radius:12px;background:linear-gradient(180deg,#13291D,#0E2016);border:1px solid #2C5940;cursor:pointer;min-height:48px;">
+                  <span style="flex:none;width:7px;height:7px;border-radius:50%;background:#E0A25A;"></span>
+                  <span style="flex:1;font-size:0.92rem;color:#E9E2CE;line-height:1.3;">Pedido #8622 precisa de atenção</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:0.78rem;color:#8CC63F;">ver ›</span>
+                </div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ mArea }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;align-items:center;gap:0.7rem;padding:1rem 1.2rem 0.6rem;"><button onClick="{{ mGoGeral }}" style="font-family:'IBM Plex Mono',monospace;font-size:0.76rem;color:#BFCBB2;background:transparent;border:1px solid #274B39;border-radius:8px;padding:0.5rem 0.85rem;min-height:44px;cursor:pointer;">← Voltar</button><span style="font-family:'IBM Plex Mono',monospace;font-size:0.66rem;color:#7E9478;">Caixa → Quentes → Conferência</span></div>
+              <div style="flex:1;display:flex;flex-direction:column;padding:0.5rem 1.2rem 1.2rem;">
+                <div style="align-self:center;width:148px;height:148px;border-radius:50%;border:1px solid rgba(240,179,106,0.55);background:radial-gradient(circle at 50% 42%, rgba(224,142,58,0.26), transparent 74%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;margin-bottom:1rem;">
+                  <span style="font-family:'Spectral',serif;font-size:1.4rem;color:#F2EBD9;">Quentes</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:0.66rem;color:#F0B36A;">pressão subindo</span>
+                  <span style="font-size:0.82rem;font-weight:600;color:#F2EBD9;">9 esperando esta praça</span>
+                </div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:0.68rem;letter-spacing:0.14em;text-transform:uppercase;color:#7E9478;margin-bottom:0.5rem;">O que está acontecendo</div>
+                <div style="display:flex;flex-direction:column;gap:0.5rem;margin-bottom:0.9rem;">
+                  <div style="display:flex;gap:0.55rem;align-items:baseline;"><span style="flex:none;width:3px;height:14px;background:#F0B36A;border-radius:2px;transform:translateY(2px);"></span><span style="font-size:1rem;color:#E9E2CE;">6 enrolados em produção</span></div>
+                  <div style="display:flex;gap:0.55rem;align-items:baseline;"><span style="flex:none;width:3px;height:14px;background:#F0B36A;border-radius:2px;transform:translateY(2px);"></span><span style="font-size:1rem;color:#E9E2CE;">9 pedidos esperando esta praça</span></div>
+                  <div style="display:flex;gap:0.55rem;align-items:baseline;"><span style="flex:none;width:3px;height:14px;background:#F0B36A;border-radius:2px;transform:translateY(2px);"></span><span style="font-size:1rem;color:#E9E2CE;">A Conferência começou a atrasar</span></div>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:0.15rem;padding:0.6rem 0.85rem;border-left:2px solid #E0A25A;background:rgba(140,198,63,0.03);border-radius:0 8px 8px 0;margin-bottom:1rem;">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:0.64rem;letter-spacing:0.08em;text-transform:uppercase;color:#7E9478;">efeito</span>
+                  <span style="font-size:0.95rem;color:#E7C089;line-height:1.35;">Atrasa a Conferência e, na sequência, o Motoboy</span>
+                </div>
+                <button style="margin-top:auto;width:100%;font-family:'Hanken Grotesk',sans-serif;font-weight:600;font-size:1.02rem;color:#0B1A11;background:#8CC63F;border:none;border-radius:11px;padding:0.95rem;min-height:48px;cursor:pointer;">Ver fila dos Quentes</button>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ mFoco }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.2rem 0.5rem;"><button onClick="{{ mGoGeral }}" style="font-family:'IBM Plex Mono',monospace;font-size:0.76rem;color:#BFCBB2;background:transparent;border:1px solid #274B39;border-radius:8px;padding:0.5rem 0.85rem;min-height:44px;cursor:pointer;">← Voltar</button><div style="display:inline-flex;align-items:center;gap:0.4rem;padding:0.35rem 0.7rem;border-radius:999px;background:rgba(19,41,29,0.94);border:1px solid #3A5A42;"><span style="width:6px;height:6px;border-radius:50%;background:#E0A25A;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:0.64rem;color:#E9DFC8;">atenção agora</span></div></div>
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;padding:0.7rem 1.2rem 1.2rem;">
+                <div style="width:176px;min-height:52px;padding:0.6rem 0.9rem;border-radius:999px;border:1px solid rgba(242,235,217,0.55);background:radial-gradient(circle at 50% 40%, rgba(242,235,217,0.14), transparent 78%);display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 0 34px rgba(242,235,217,0.12);"><span style="font-family:'Spectral',serif;font-size:1.08rem;color:#F2EBD9;">Conferência</span><span style="font-family:'IBM Plex Mono',monospace;font-size:0.62rem;color:#E0A25A;">precisa de atenção</span></div>
+                <svg viewBox="0 0 100 18" preserveAspectRatio="none" style="width:100%;height:18px;display:block;"><line x1="50" y1="0" x2="50" y2="18" stroke="#E0A25A" stroke-width="1.6" stroke-dasharray="2 4"></line></svg>
+                <div style="align-self:stretch;background:linear-gradient(180deg,#13291D,#0E2016);border:1px solid #2C5940;border-radius:16px;padding:1.25rem;position:relative;">
+                  <div style="position:absolute;top:-1px;left:50%;transform:translateX(-50%);width:44px;height:3px;border-radius:0 0 3px 3px;background:#E0A25A;"></div>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:0.66rem;letter-spacing:0.12em;text-transform:uppercase;color:#E0A25A;">Precisa de atenção · Conferência</span>
+                  <h3 style="margin:0.5rem 0 0.4rem;font-family:'Spectral',serif;font-weight:400;font-size:1.4rem;line-height:1.18;color:#F2EBD9;">Pedido #8622 está parado há 14 minutos.</h3>
+                  <p style="margin:0 0 0.8rem;font-family:'Spectral',serif;font-style:italic;font-size:0.98rem;line-height:1.4;color:#D9C9A8;">Se nada for feito, o entregador sai sem a segunda sacola.</p>
+                  <div style="display:flex;flex-direction:column;gap:0.4rem;margin-bottom:1rem;">
+                    <div style="display:flex;gap:0.5rem;align-items:baseline;"><span style="flex:none;width:3px;height:13px;background:#E0A25A;border-radius:2px;transform:translateY(2px);"></span><span style="font-size:0.95rem;color:#E3DAC2;">2 sacolas e um kit no mesmo pedido</span></div>
+                    <div style="display:flex;gap:0.5rem;align-items:baseline;"><span style="flex:none;width:3px;height:13px;background:#E0A25A;border-radius:2px;transform:translateY(2px);"></span><span style="font-size:0.95rem;color:#E3DAC2;">Entregador do iFood chega em ~4 min</span></div>
+                  </div>
+                  <button style="width:100%;font-family:'Hanken Grotesk',sans-serif;font-weight:600;font-size:1.02rem;color:#0B1A11;background:#8CC63F;border:none;border-radius:10px;padding:0.95rem;min-height:48px;cursor:pointer;">Ver pedido parado</button>
+                  <button onClick="{{ mGoGeral }}" style="width:100%;margin-top:0.55rem;font-family:'Hanken Grotesk',sans-serif;font-weight:500;font-size:0.92rem;color:#BFCBB2;background:transparent;border:1px solid #2C5940;border-radius:10px;padding:0.8rem;min-height:44px;cursor:pointer;">Ver conferência</button>
+                </div>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:0.7rem;color:#8FA588;margin-top:0.7rem;">ao vivo · alta confiança · demonstração</span>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+      </div>
+
+      <!-- static calm phone -->
+      <div style="flex:none;display:flex;flex-direction:column;gap:0.6rem;align-items:center;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:0.7rem;letter-spacing:0.14em;text-transform:uppercase;color:#7E9478;">Prancha · Calmo</span>
+        <div style="width:300px;border:1px solid #1F3E2E;border-radius:34px;padding:9px;background:#06120D;box-shadow:0 30px 60px -34px rgba(0,0,0,0.8);">
+          <div style="background:#0C1811;border-radius:26px;overflow:hidden;min-height:620px;display:flex;flex-direction:column;">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.2rem 0.5rem;"><span style="font-family:'Spectral',serif;font-size:1.08rem;color:#EFE6D3;">Tatá</span><div style="display:flex;align-items:center;gap:0.45rem;"><span style="width:8px;height:8px;border-radius:50%;background:#8CC63F;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:#A8BCA0;">ao vivo</span></div></div>
+            <div style="padding:0.3rem 1.2rem 1.2rem;flex:1;display:flex;flex-direction:column;">
+              <p style="margin:0 0 0.2rem;font-family:'Spectral',serif;font-weight:300;font-size:1.38rem;line-height:1.2;color:#F2EBD9;">A operação está fluindo.</p>
+              <p style="margin:0 0 0.9rem;font-family:'IBM Plex Mono',monospace;font-size:0.7rem;color:#8FA588;">22 pedidos no ritmo · demonstração</p>
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;">
+                <div style="width:158px;min-height:48px;padding:0.5rem 0.9rem;border-radius:999px;border:1px dashed rgba(126,148,120,0.5);display:flex;flex-direction:column;align-items:center;justify-content:center;"><span style="font-family:'Spectral',serif;font-size:1rem;color:#B9C4AC;">Caixa</span><span style="font-family:'IBM Plex Mono',monospace;font-size:0.62rem;color:#8FA588;">ainda sem dados</span></div>
+                <svg viewBox="0 0 100 20" preserveAspectRatio="none" style="width:100%;height:20px;display:block;"><line x1="50" y1="0" x2="50" y2="6" stroke="#22402F" stroke-width="1"></line><line x1="50" y1="6" x2="17" y2="20" stroke="#22402F" stroke-width="1"></line><line x1="50" y1="6" x2="50" y2="20" stroke="#22402F" stroke-width="1"></line><line x1="50" y1="6" x2="83" y2="20" stroke="#22402F" stroke-width="1"></line></svg>
+                <div style="display:flex;width:100%;align-items:center;">
+                  <div style="flex:1;display:flex;justify-content:center;"><div style="width:80px;height:80px;border-radius:50%;border:1px solid rgba(140,198,63,0.4);background:radial-gradient(circle at 50% 40%, rgba(140,198,63,0.15), transparent 72%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;"><span style="font-family:'Spectral',serif;font-size:0.92rem;color:#F2EBD9;">Sushi</span><span style="font-family:'IBM Plex Mono',monospace;font-size:0.58rem;color:#A8BCA0;">no ritmo</span><span style="font-size:0.7rem;font-weight:600;color:#E9E2CE;">8 em produção</span></div></div>
+                  <div style="flex:1;display:flex;justify-content:center;"><div style="width:84px;height:84px;border-radius:50%;border:1px solid rgba(140,198,63,0.4);background:radial-gradient(circle at 50% 40%, rgba(140,198,63,0.15), transparent 72%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;"><span style="font-family:'Spectral',serif;font-size:0.95rem;color:#F2EBD9;">Quentes</span><span style="font-family:'IBM Plex Mono',monospace;font-size:0.58rem;color:#A8BCA0;">no ritmo</span><span style="font-size:0.7rem;font-weight:600;color:#E9E2CE;">6 em produção</span></div></div>
+                  <div style="flex:1;display:flex;justify-content:center;"><div style="width:74px;height:74px;border-radius:50%;border:1px dashed rgba(126,148,120,0.5);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;"><span style="font-family:'Spectral',serif;font-size:0.84rem;color:#B9C4AC;">Cozinha</span><span style="font-family:'IBM Plex Mono',monospace;font-size:0.54rem;color:#8FA588;">sem dados</span></div></div>
+                </div>
+                <svg viewBox="0 0 100 20" preserveAspectRatio="none" style="width:100%;height:20px;display:block;"><line x1="17" y1="0" x2="50" y2="13" stroke="#22402F" stroke-width="1"></line><line x1="50" y1="0" x2="50" y2="13" stroke="#22402F" stroke-width="1"></line><line x1="83" y1="0" x2="50" y2="13" stroke="#22402F" stroke-width="1"></line><line x1="50" y1="13" x2="50" y2="20" stroke="#22402F" stroke-width="1"></line></svg>
+                <div style="width:196px;min-height:52px;padding:0.55rem 0.9rem;border-radius:999px;border:1px solid rgba(140,198,63,0.4);background:radial-gradient(circle at 50% 40%, rgba(140,198,63,0.12), transparent 78%);display:flex;flex-direction:column;align-items:center;justify-content:center;"><span style="font-family:'Spectral',serif;font-size:1.05rem;color:#F2EBD9;">Conferência</span><span style="font-family:'IBM Plex Mono',monospace;font-size:0.62rem;color:#A8BCA0;">sem pendências</span></div>
+                <svg viewBox="0 0 100 14" preserveAspectRatio="none" style="width:100%;height:14px;display:block;"><line x1="50" y1="0" x2="50" y2="14" stroke="#22402F" stroke-width="1"></line></svg>
+                <div style="width:170px;min-height:48px;padding:0.5rem 0.9rem;border-radius:999px;border:1px solid rgba(140,198,63,0.4);background:radial-gradient(circle at 50% 40%, rgba(140,198,63,0.12), transparent 75%);display:flex;flex-direction:column;align-items:center;justify-content:center;"><span style="font-family:'Spectral',serif;font-size:1rem;color:#F2EBD9;">Motoboy</span><span style="font-family:'IBM Plex Mono',monospace;font-size:0.62rem;color:#A8BCA0;">1 viagem na rua</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- REGRAS DE PRESSÃO -->
+  <section style="padding:3rem 0 0;">
+    <div style="display:flex;align-items:baseline;gap:0.7rem;margin-bottom:1.2rem;"><span style="font-family:'IBM Plex Mono',monospace;font-size:0.76rem;letter-spacing:0.12em;color:#7E9478;">PRANCHA 13 · REGRAS</span><h2 style="margin:0;font-family:'Spectral',serif;font-weight:400;font-size:clamp(1.3rem,3vw,1.8rem);">Quando a superfície reage</h2></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1rem;">
+      <div style="padding:1.2rem;background:#0C1811;border:1px solid #1B3527;border-radius:12px;"><div style="font-weight:600;font-size:1rem;color:#EDE3CF;margin-bottom:0.35rem;">A área cresce</div><p style="margin:0;font-size:0.95rem;line-height:1.5;color:#A8BCA0;">Quando o motor indica fila acima do ritmo normal daquela praça. O crescimento é em degraus (normal, atenção, pressão), nunca contínuo.</p></div>
+      <div style="padding:1.2rem;background:#0C1811;border:1px solid #1B3527;border-radius:12px;"><div style="font-weight:600;font-size:1rem;color:#EDE3CF;margin-bottom:0.35rem;">A área recebe âmbar</div><p style="margin:0;font-size:0.95rem;line-height:1.5;color:#A8BCA0;">Junto com o segundo degrau. Cor nunca é o único sinal: escala, texto e informação principal mudam juntos.</p></div>
+      <div style="padding:1.2rem;background:#0C1811;border:1px solid #1B3527;border-radius:12px;"><div style="font-weight:600;font-size:1rem;color:#EDE3CF;margin-bottom:0.35rem;">Uma ligação aparece</div><p style="margin:0;font-size:0.95rem;line-height:1.5;color:#A8BCA0;">Só quando a dependência está ativa agora: uma área esperando outra, ou pressão passando adiante. Sem relação ativa, a linha fica quase invisível.</p></div>
+      <div style="padding:1.2rem;background:#0C1811;border:1px solid #1B3527;border-radius:12px;"><div style="font-weight:600;font-size:1rem;color:#EDE3CF;margin-bottom:0.35rem;">A ligação engrossa</div><p style="margin:0;font-size:0.95rem;line-height:1.5;color:#A8BCA0;">Quando a pressão começa a atravessá-la. O tracejado em movimento indica fluxo; parado, indica espera. Com animação desligada, a espessura e a cor bastam.</p></div>
+      <div style="padding:1.2rem;background:#0C1811;border:1px solid #1B3527;border-radius:12px;"><div style="font-weight:600;font-size:1rem;color:#EDE3CF;margin-bottom:0.35rem;">A pressão se espalha</div><p style="margin:0;font-size:0.95rem;line-height:1.5;color:#A8BCA0;">A área seguinte no caminho do pedido ganha o primeiro degrau e o texto diz de onde vem: "começando a atrasar", "pode ser afetado".</p></div>
+      <div style="padding:1.2rem;background:#0C1811;border:1px solid #1B3527;border-radius:12px;"><div style="font-weight:600;font-size:1rem;color:#EDE3CF;margin-bottom:0.35rem;">O resto recua</div><p style="margin:0;font-size:0.95rem;line-height:1.5;color:#A8BCA0;">Só em dois momentos: quando você amplia uma área e quando algo precisa de atenção agora. Recuar nunca é sumir: tudo continua visível e tocável.</p></div>
+    </div>
+  </section>
+
+  <!-- ESTADOS TÉCNICOS -->
+  <section style="padding:3rem 0 0;">
+    <div style="display:flex;align-items:baseline;gap:0.7rem;margin-bottom:1.2rem;"><span style="font-family:'IBM Plex Mono',monospace;font-size:0.76rem;letter-spacing:0.12em;color:#7E9478;">PRANCHA 14 · ESTADOS TÉCNICOS</span><h2 style="margin:0;font-family:'Spectral',serif;font-weight:400;font-size:clamp(1.3rem,3vw,1.8rem);">Dez estados, nenhum parece pressão</h2></div>
+    <p style="margin:0 0 1.2rem;font-size:1rem;line-height:1.5;color:#8FA588;max-width:74ch;">Falha técnica fala em cinza-ardósia e frases próprias; pressão fala em âmbar. As duas linguagens nunca se cruzam. Estados marcados com ● estão demonstrados nos cenários acima.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:0.8rem;">
+      <sc-for list="{{ techStates }}" as="t" hint-placeholder-count="10">
+        <div style="display:flex;gap:0.8rem;align-items:flex-start;padding:0.95rem 1.1rem;background:#0C1811;border:1px solid #1B3527;border-radius:11px;">
+          <span style="flex:none;margin-top:0.35rem;width:9px;height:9px;border-radius:50%;background:{{ t.dot }};border:1px {{ t.stroke }};"></span>
+          <div><div style="font-weight:600;font-size:0.98rem;color:#EDE3CF;">{{ t.name }} <span style="font-weight:400;color:#5F7A62;font-family:'IBM Plex Mono',monospace;font-size:0.7rem;">{{ t.demo }}</span></div><p style="margin:0.15rem 0 0;font-size:0.92rem;line-height:1.45;color:#A8BCA0;">{{ t.copy }}</p></div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <!-- COR -->
+  <section style="padding:3rem 0 0;">
+    <div style="display:flex;align-items:baseline;gap:0.7rem;margin-bottom:1.2rem;"><span style="font-family:'IBM Plex Mono',monospace;font-size:0.76rem;letter-spacing:0.12em;color:#7E9478;">PRANCHA 15 · SISTEMA</span><h2 style="margin:0;font-family:'Spectral',serif;font-weight:400;font-size:clamp(1.3rem,3vw,1.8rem);">Contrato semântico de cor</h2></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1rem;">
+      <div style="display:flex;gap:0.85rem;align-items:flex-start;padding:1.1rem;background:#0C1811;border:1px solid #1B3527;border-radius:12px;"><span style="flex:none;width:34px;height:34px;border-radius:9px;background:#0F241A;border:1px solid #274B39;"></span><div><div style="font-weight:600;font-size:0.98rem;color:#EDE3CF;">Verde profundo</div><p style="margin:0.2rem 0 0;font-size:0.92rem;line-height:1.45;color:#A8BCA0;">A superfície Tatá. Onde a operação vive.</p></div></div>
+      <div style="display:flex;gap:0.85rem;align-items:flex-start;padding:1.1rem;background:#0C1811;border:1px solid #1B3527;border-radius:12px;"><span style="flex:none;width:34px;height:34px;border-radius:9px;background:#8CC63F;"></span><div><div style="font-weight:600;font-size:0.98rem;color:#EDE3CF;">Verde vivo</div><p style="margin:0.2rem 0 0;font-size:0.92rem;line-height:1.45;color:#A8BCA0;">Confiança, presença ativa e a ação principal. Nunca em tudo.</p></div></div>
+      <div style="display:flex;gap:0.85rem;align-items:flex-start;padding:1.1rem;background:#0C1811;border:1px solid #1B3527;border-radius:12px;"><span style="flex:none;width:34px;height:34px;border-radius:9px;background:#F2EBD9;"></span><div><div style="font-weight:600;font-size:0.98rem;color:#EDE3CF;">Creme</div><p style="margin:0.2rem 0 0;font-size:0.92rem;line-height:1.45;color:#A8BCA0;">Alta legibilidade e conteúdo principal: nomes, títulos, atenção.</p></div></div>
+      <div style="display:flex;gap:0.85rem;align-items:flex-start;padding:1.1rem;background:#0C1811;border:1px solid #1B3527;border-radius:12px;"><span style="flex:none;width:34px;height:34px;border-radius:9px;background:#E0A25A;"></span><div><div style="font-weight:600;font-size:0.98rem;color:#EDE3CF;">Âmbar</div><p style="margin:0.2rem 0 0;font-size:0.92rem;line-height:1.45;color:#A8BCA0;">Tensão operacional em formação. Não significa "ruim".</p></div></div>
+      <div style="display:flex;gap:0.85rem;align-items:flex-start;padding:1.1rem;background:#0C1811;border:1px solid #1B3527;border-radius:12px;"><span style="flex:none;width:34px;height:34px;border-radius:9px;border:1px dashed #7E9478;background:transparent;"></span><div><div style="font-weight:600;font-size:0.98rem;color:#EDE3CF;">Neutro tracejado</div><p style="margin:0.2rem 0 0;font-size:0.92rem;line-height:1.45;color:#A8BCA0;">Informação incompleta ou área ainda sem dados. Forma, não só cor.</p></div></div>
+      <div style="display:flex;gap:0.85rem;align-items:flex-start;padding:1.1rem;background:#0C1811;border:1px solid #1B3527;border-radius:12px;"><span style="flex:none;width:34px;height:34px;border-radius:9px;background:#6E7B84;"></span><div><div style="font-weight:600;font-size:0.98rem;color:#EDE3CF;">Cinza-ardósia</div><p style="margin:0.2rem 0 0;font-size:0.92rem;line-height:1.45;color:#A8BCA0;">Falha e atraso técnico. Nunca se confunde com pressão âmbar.</p></div></div>
+    </div>
+    <p style="margin:1rem 0 0;font-size:0.95rem;line-height:1.5;color:#8FA588;max-width:76ch;">Nunca só cor: confirmado usa marca cheia, incompleto usa tracejado, pressão usa escala e relação, falha usa faixa cinza com hora. Movimento só comunica mudança e respeita a preferência de menos animação.</p>
+  </section>
+
+  <!-- HANDOFF -->
+  <section style="padding:3rem 0 0;">
+    <div style="display:flex;align-items:baseline;gap:0.7rem;margin-bottom:1.2rem;"><span style="font-family:'IBM Plex Mono',monospace;font-size:0.76rem;letter-spacing:0.12em;color:#7E9478;">PRANCHA 16 · HANDOFF</span><h2 style="margin:0;font-family:'Spectral',serif;font-weight:400;font-size:clamp(1.3rem,3vw,1.8rem);">O que alimenta cada elemento</h2></div>
+    <div style="display:flex;flex-direction:column;gap:0.55rem;">
+      <sc-for list="{{ handoff }}" as="hf" hint-placeholder-count="8">
+        <div style="display:grid;grid-template-columns:minmax(150px,220px) 1fr;gap:0.6rem 1.4rem;padding:0.85rem 0;border-top:1px solid #1B3527;align-items:baseline;">
+          <span style="font-weight:600;font-size:0.96rem;color:#EDE3CF;">{{ hf.el }}</span>
+          <span style="font-size:0.94rem;line-height:1.5;color:#A8BCA0;">{{ hf.src }}</span>
+        </div>
+      </sc-for>
+    </div>
+    <p style="margin:1rem 0 0;font-size:0.95rem;line-height:1.5;color:#8FA588;max-width:76ch;">A interface nunca calcula nem escolhe: exibe o que o motor e a fonte informam. Limiares de fila, atraso e pressão são decisão do núcleo, validada pelo César.</p>
+  </section>
+
+  <!-- CHECKLIST FINAL -->
+  <section style="padding:3rem 0 3rem;">
+    <div style="background:linear-gradient(180deg,#13291D,#0E2016);border:1px solid #2C5940;border-radius:18px;padding:clamp(1.5rem,4vw,2.4rem);">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;letter-spacing:0.14em;text-transform:uppercase;color:#8CC63F;">V3.3 · Resposta ao gate</span>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:0.4rem 2.4rem;margin-top:1.1rem;">
+        <sc-for list="{{ checklist }}" as="c" hint-placeholder-count="15">
+          <div style="display:flex;justify-content:space-between;gap:1rem;align-items:baseline;padding:0.5rem 0;border-bottom:1px solid rgba(44,89,64,0.4);">
+            <span style="font-size:0.96rem;color:#DDD4BC;">{{ c.item }}</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:0.8rem;font-weight:500;color:{{ c.color }};white-space:nowrap;">{{ c.status }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="margin-top:1.4rem;padding-top:1.2rem;border-top:1px solid #2C5940;">
+        <p style="margin:0 0 0.5rem;font-family:'Spectral',serif;font-weight:300;font-size:clamp(1.25rem,2.8vw,1.6rem);line-height:1.3;color:#F2EBD9;">Pronto para implementação: <strong style="font-weight:600;color:#8CC63F;">SIM</strong>, com três condições.</p>
+        <p style="margin:0;font-size:0.98rem;line-height:1.55;color:#BFCBB2;max-width:80ch;">1. Os limiares (a partir de quantos pedidos ou minutos cada degrau acende) são do motor e precisam ser fixados pelo César. 2. O vocabulário de cada frase deve ser validado com a equipe do Tatá. 3. O teste de dois segundos foi desenhado, mas só se comprova com gente real na operação. Nenhum código de produção foi escrito; nada no repositório foi alterado.</p>
+      </div>
+    </div>
+  </section>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1220,&quot;height&quot;:1050}}">
+class Component extends DCLogic {
+  state = { scen: 'quentes', expanded: null, mScreen: 'geral' };
+
+  defs() {
+    return [
+      { id:'caixa', name:'Caixa', x:10, y:52 },
+      { id:'sushi', name:'Sushi', x:38, y:21 },
+      { id:'quentes', name:'Quentes', x:40, y:53 },
+      { id:'cozinha', name:'Cozinha', x:38, y:84 },
+      { id:'conferencia', name:'Conferência', x:67, y:52 },
+      { id:'motoboy', name:'Motoboy', x:90, y:52 },
+    ];
+  }
+
+  tone(t) {
+    const M = {
+      ivory:{ bg:'radial-gradient(circle at 50% 38%, rgba(140,198,63,0.16), rgba(140,198,63,0.05) 58%, rgba(140,198,63,0.02) 100%),#0C1811', ring:'rgba(140,198,63,0.4)', mark:'#BEE592' },
+      warm:{ bg:'radial-gradient(circle at 50% 38%, rgba(224,162,90,0.2), rgba(224,162,90,0.06) 58%, transparent 100%),#0C1811', ring:'rgba(224,162,90,0.48)', mark:'#E7C089' },
+      ember:{ bg:'radial-gradient(circle at 50% 38%, rgba(224,142,58,0.34), rgba(224,142,58,0.09) 58%, transparent 100%),#0C1811', ring:'rgba(240,179,106,0.62)', mark:'#F0B36A' },
+      faint:{ bg:'linear-gradient(rgba(140,198,63,0.03),rgba(140,198,63,0.03)),#0C1811', ring:'rgba(126,148,120,0.34)', mark:'#7E9478' },
+      cream:{ bg:'radial-gradient(circle at 50% 38%, rgba(242,235,217,0.16), rgba(242,235,217,0.04) 58%, transparent 100%),#0C1811', ring:'rgba(242,235,217,0.6)', mark:'#F2EBD9' },
+      tech:{ bg:'linear-gradient(rgba(110,123,132,0.07),rgba(110,123,132,0.07)),#0C1811', ring:'rgba(154,167,176,0.5)', mark:'#9AA7B0' },
+      live:{ bg:'radial-gradient(circle at 50% 38%, rgba(140,198,63,0.28), rgba(140,198,63,0.08) 58%, transparent 100%),#0C1811', ring:'rgba(140,198,63,0.75)', mark:'#BEE592' },
+    };
+    return M[t] || M.ivory;
+  }
+
+  baseCells() {
+    return {
+      caixa:{ size:112, tone:'faint', state:'ainda sem dados', info:'', s:0, o:2, dashed:true },
+      sushi:{ size:126, tone:'ivory', state:'no ritmo', info:'8 em produção', s:3, o:0 },
+      quentes:{ size:128, tone:'ivory', state:'no ritmo', info:'6 em produção', s:3, o:0 },
+      cozinha:{ size:112, tone:'faint', state:'ainda sem dados', info:'', s:0, o:2, dashed:true },
+      conferencia:{ size:128, tone:'ivory', state:'sem pendências', info:'2 em conferência', s:2, o:0 },
+      motoboy:{ size:122, tone:'ivory', state:'sem acúmulo', info:'1 viagem na rua', s:2, o:0 },
+    };
+  }
+
+  scenarios() {
+    if (this._S) return this._S;
+    const b = () => JSON.parse(JSON.stringify(this.baseCells()));
+    const S = {};
+    S.calma = { label:'Calma', kicker:'AGORA · AO VIVO', accent:'#8CC63F', caption:'A operação está fluindo. Nada exige você agora.', cells:b(), links:{},
+      hint:'Prancha 01 · Calmo vivo: quatro áreas confiáveis, Caixa e Cozinha honestas em tracejado ("ainda sem dados"). Tudo explorável, nada gritando.' };
+    let c = b();
+    c.sushi = { size:150, tone:'ember', state:'fila aumentando', info:'12 em produção', s:5, o:0, pulse:true };
+    c.conferencia.state = 'no ritmo';
+    S.sushi = { label:'Pressão no Sushi', kicker:'O CLIMA MUDA', accent:'#E0A25A', caption:'A fila do Sushi está crescendo.', cells:c,
+      links:{ 'sushi-conferencia':{w:1.8,c:'#8A6E4A'} },
+      hint:'Prancha 02 · Pressão começando: o Sushi cresce um degrau e ganha âmbar; a ligação com a Conferência aparece fina, ainda sem fluxo de atraso.' };
+    c = b();
+    c.quentes = { size:166, tone:'ember', state:'pressão subindo', info:'9 esperando', s:6, o:0, pulse:true };
+    c.conferencia = { size:140, tone:'warm', state:'começando a atrasar', info:'3 aguardando', s:3, o:0 };
+    c.motoboy = { size:124, tone:'ivory', state:'pode ser afetado', info:'2 sacolas prontas', s:2, o:0 };
+    S.quentes = { label:'Quentes → Conferência', kicker:'O CLIMA MUDA', accent:'#E0A25A', caption:'Quentes está atrasando a Conferência.', cells:c,
+      links:{ 'quentes-conferencia':{w:2.8,c:'#C98A46',flow:true}, 'conferencia-motoboy':{w:2,c:'#C98A46',flow:true} },
+      hint:'Prancha 03 · Pressão em cadeia: Quentes empurra a Conferência, que já toca o Motoboy. A relação se lê pela escala, pelo texto e pelas duas linhas âmbar.' };
+    c = b();
+    c.motoboy = { size:160, tone:'ember', state:'acúmulo na saída', info:'4 sacolas esperando', s:5, o:0, pulse:true };
+    c.conferencia = { size:134, tone:'warm', state:'entregando para a saída', info:'2 em conferência', s:2, o:0 };
+    S.motoboys = { label:'Acúmulo na saída', kicker:'O CLIMA MUDA', accent:'#E0A25A', caption:'Sacolas prontas estão esperando entregador.', cells:c,
+      links:{ 'conferencia-motoboy':{w:2.8,c:'#C98A46',flow:true} },
+      hint:'Prancha 04 · Acúmulo de motoboys: sacolas prontas sem entregador do iFood. O motoboy da casa confere e entrega a sacola; nunca leva o pedido do iFood ao cliente.' };
+    c = b();
+    c.quentes = { size:120, tone:'warm', state:'no limite', info:'7 esperando', s:4, o:0 };
+    c.conferencia = { size:150, tone:'cream', state:'precisa de atenção', info:'#8622 parado', s:3, o:0, halo:true };
+    c.sushi.dim = true; c.caixa.dim = true; c.cozinha.dim = true; c.motoboy.dim = true;
+    S.travado = { label:'Pedido travado', kicker:'PRECISA DE ATENÇÃO', accent:'#E7C089', caption:'', cells:c,
+      links:{ 'quentes-conferencia':{w:1.4,c:'#6E6A52'}, 'conferencia-motoboy':{w:2,c:'#D9C9A8',flow:true} }, anchor:true,
+      foco:{ eyebrow:'PRECISA DE ATENÇÃO · CONFERÊNCIA', situacao:'Pedido #8622 está parado há 14 minutos.', consequencia:'Se nada for feito, o entregador sai sem a segunda sacola.', evidencias:['2 sacolas e um kit no mesmo pedido','Entregador do iFood chega em ~4 minutos','Depende de um item dos Quentes'], acao:'Ver pedido parado', acaoSec:'Ver conferência' },
+      pill:'Atenção · Conferência · #8622',
+      hint:'Prancha 05 · Pedido travado: o motor aponta a atenção; a Conferência acende em creme, a linha âmbar ancora o painel à área. Situação, consequência, evidências, uma ação principal e uma secundária de navegação.' };
+    c = b();
+    c.sushi = { size:148, tone:'ember', state:'fila aumentando', info:'12 em produção', s:5, o:0, pulse:true };
+    c.quentes = { size:152, tone:'ember', state:'pressão subindo', info:'9 esperando', s:5, o:0, pulse:true };
+    c.conferencia = { size:140, tone:'warm', state:'recebendo das duas', info:'5 aguardando', s:3, o:0 };
+    S.duplo = { label:'Duas pressões', kicker:'O CLIMA MUDA', accent:'#E0A25A', caption:'Duas pressões ao mesmo tempo.', cells:c,
+      links:{ 'sushi-conferencia':{w:2.2,c:'#C98A46',flow:true}, 'quentes-conferencia':{w:2.4,c:'#C98A46',flow:true} },
+      hint:'Prancha 06 · Duas pressões simultâneas convergindo na Conferência. A tela não escolhe prioridade: quando o motor apontar uma atenção, ela vira o cenário 05.' };
+    c = b();
+    c.sushi.o = 1; c.sushi.info = '1 sem confirmação';
+    c.conferencia.o = 1;
+    S.parcial = { label:'Parcial', kicker:'INFORMAÇÃO INCOMPLETA', accent:'#A8BCA0', caption:'A operação segue, com 3 pedidos ainda sem confirmação.', cells:c, links:{},
+      banner:{ kind:'neutral', text:'3 pedidos ainda sem confirmação · fora da leitura até completar' },
+      hint:'Prancha 07 · Informação parcial: marcas vazadas nas áreas afetadas e uma faixa neutra. Os pedidos incompletos não entram na decisão e não somem.' };
+    c = b();
+    Object.keys(c).forEach(k => { c[k].dim = false; });
+    S.atrasados = { label:'Atrasados', kicker:'LEITURA DE 21h42', accent:'#9AA7B0', caption:'Esta leitura pode não ser a atual.', cells:c, links:{}, live:'#9AA7B0', frozen:true,
+      banner:{ kind:'tech', text:'Dados atrasados 4 minutos · mostrando a última leitura confiável, das 21h42' },
+      hint:'Prancha 08 · Dados atrasados: a superfície congela na última leitura confiável, o ponto "ao vivo" vira cinza-ardósia e a faixa diz a hora. Nada aqui parece pressão.' };
+    c = b();
+    S.conexao = { label:'Sem conexão', kicker:'SEM ATUALIZAÇÃO', accent:'#9AA7B0', caption:'Paramos de receber atualizações.', cells:c, links:{}, live:'#9AA7B0', frozen:true,
+      banner:{ kind:'tech', text:'Sem conexão desde 21h42 · nada novo chegou desde então' },
+      hint:'Prancha 09 · Conexão perdida: mesma linguagem cinza, com o momento exato do corte. A última leitura permanece visível como memória, nunca como estado atual.' };
+    c = b();
+    c.quentes = { size:128, tone:'tech', state:'leitura indisponível', info:'falha técnica', s:0, o:0 };
+    S.falha = { label:'Falha em área', kicker:'FALHA TÉCNICA', accent:'#9AA7B0', caption:'Os Quentes estão sem leitura técnica.', cells:c, links:{ 'quentes-conferencia':{w:1.2,c:'#5E6A72'} },
+      banner:{ kind:'tech', text:'A leitura dos Quentes falhou às 21h47 · o resto da operação segue normal' },
+      hint:'Prancha 10 · Falha persistente em uma área: cinza-ardósia, sem âmbar, sem crescer. Falha técnica nunca imita pressão operacional.' };
+    c = b();
+    c.conferencia = { size:140, tone:'live', state:'resolvido agora', info:'#8622 saiu com o entregador', s:3, o:0 };
+    S.recuperacao = { label:'Recuperação', kicker:'DE VOLTA AO RITMO', accent:'#8CC63F', caption:'Conferido. A operação volta ao ritmo.', cells:c, links:{},
+      hint:'Prancha 11 · Depois da ação: a atenção se desfaz, a área confirma em verde vivo por alguns segundos e o todo volta ao Calmo. Sem fanfarra.' };
+    this._S = S;
+    return S;
+  }
+
+  detail(id) {
+    const D = {
+      caixa:{ path:'início do fluxo → estações', solid:['Pedidos entrando no ritmo normal','2 comandas aguardando abertura'], open:['Ainda não recebemos dados da fila do Caixa'], relations:[{dir:'envia para',text:'Sushi, Quentes e Cozinha',active:false}], note:'', action:'Ver entradas' },
+      sushi:{ path:'Caixa → Sushi → Conferência', solid:['4 combinados na bancada','2 duplas acumulando','1 pedido acima de 20 minutos'], open:['1 item ainda sem confirmação'], relations:[{dir:'recebe de',text:'Caixa',active:false},{dir:'envia para',text:'Conferência, começando a acumular',active:true}], note:'', action:'Ver fila do Sushi' },
+      quentes:{ path:'Caixa → Quentes → Conferência', solid:['6 enrolados em produção','9 pedidos esperando esta praça','A Conferência começou a atrasar'], open:[], relations:[{dir:'recebe de',text:'Caixa',active:false},{dir:'atrasa',text:'Conferência e, na sequência, Motoboy',active:true}], note:'', action:'Ver fila dos Quentes' },
+      cozinha:{ path:'Caixa → Cozinha → Conferência', solid:['Preparo em fluxo normal'], open:['A Cozinha ainda não está conectada a esta leitura'], relations:[{dir:'envia para',text:'Conferência',active:false}], note:'', action:'Ver Cozinha' },
+      conferencia:{ path:'estações → Conferência → Motoboy', solid:['3 pedidos aguardando conferência','1 com 2 sacolas e um kit'], open:['1 sem comanda informada'], relations:[{dir:'recebe de',text:'Sushi, Quentes e Cozinha',active:true},{dir:'entrega para',text:'Motoboy',active:true}], note:'', action:'Ver conferência' },
+      motoboy:{ path:'Conferência → Motoboy → rua', solid:['2 sacolas aguardando o entregador do iFood','1 viagem própria com 2 paradas','1 pedido em conferência antes de sair'], open:['1 sacola ainda sem confirmação'], relations:[{dir:'depende de',text:'Conferência',active:true}], note:'O motoboy da casa confere e entrega a sacola ao entregador do iFood. Não leva o pedido do iFood ao cliente.', action:'Ver sacolas aguardando' },
+    };
+    return D[id];
+  }
+
+  connections(scen) {
+    const h = React.createElement;
+    const P = {}; this.defs().forEach(d => P[d.id] = d);
+    const links = [['caixa','sushi'],['caixa','quentes'],['caixa','cozinha'],['sushi','conferencia'],['quentes','conferencia'],['cozinha','conferencia'],['conferencia','motoboy']];
+    const base = scen.frozen ? { w:0.8, c:'#1A2A22' } : { w:0.9, c:'#22402F' };
+    const kids = links.map(([a,b],i) => {
+      const ov = (scen.links||{})[a+'-'+b];
+      const w = ov || base;
+      return h('line', { key:i, x1:P[a].x, y1:P[a].y, x2:P[b].x, y2:P[b].y, stroke:w.c, strokeWidth:w.w, strokeLinecap:'round', vectorEffect:'non-scaling-stroke', className: w.flow?'dosflow':undefined, strokeDasharray: w.flow?'5 8':undefined });
+    });
+    if (scen.anchor) kids.push(h('line', { key:'anchor', x1:67, y1:63, x2:67, y2:88, stroke:'#E0A25A', strokeWidth:1.4, strokeDasharray:'1.5 3.5', vectorEffect:'non-scaling-stroke' }));
+    return h('svg', { key:'conn', viewBox:'0 0 100 100', preserveAspectRatio:'none', style:{ position:'absolute', inset:0, width:'100%', height:'100%', pointerEvents:'none' } }, kids);
+  }
+
+  markList(s, o) {
+    const a = [];
+    for (let i=0;i<(s||0);i++) a.push({ solid:true, open:false });
+    for (let i=0;i<(o||0);i++) a.push({ solid:false, open:true });
+    return a;
+  }
+
+  stageAreas(scen) {
+    return this.defs().map(d => {
+      const v = scen.cells[d.id];
+      const t = this.tone(v.tone);
+      const dim = !!v.dim;
+      const frozenOp = scen.frozen ? 0.72 : 1;
+      return {
+        id:d.id, name:d.name, state:v.state, info:v.info||'', hasInfo: !!v.info,
+        onClick: () => this.setState({ expanded: d.id }),
+        wrapStyle: `position:absolute;left:${d.x}%;top:${d.y}%;transform:translate(-50%,-50%);transition:all .55s cubic-bezier(.22,.61,.36,1);z-index:${v.halo?4:2};`,
+        cellStyle: `position:relative;width:${v.size}px;height:${v.size}px;border-radius:50%;background:${t.bg};border:1px ${v.dashed?'dashed':'solid'} ${t.ring};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0.22rem;padding:0.5rem;text-align:center;cursor:pointer;transition:all .5s cubic-bezier(.22,.61,.36,1);opacity:${dim?0.38:frozenOp};filter:${scen.frozen?'saturate(0.55)':'none'};box-shadow:${v.halo?'0 0 0 1.5px rgba(242,235,217,0.5), 0 0 42px rgba(242,235,217,0.12)': v.tone==='ember' ? '0 18px 44px -18px rgba(224,142,58,0.45)' : 'none'};`,
+        markList: this.markList(v.s, v.o),
+        markColor: t.mark,
+        pulse: !!v.pulse,
+        nameSize: v.size>=150 ? '1.35rem' : (v.size>=126 ? '1.16rem' : '1.02rem'),
+        nameColor: dim ? '#5F7A62' : '#F2EBD9',
+        stateColor: dim ? '#4E6552' : (v.tone==='ember' ? '#F0B36A' : (v.tone==='warm' ? '#E0A25A' : (v.tone==='faint' ? '#8FA588' : (v.tone==='tech' ? '#9AA7B0' : '#A8BCA0')))),
+        infoColor: dim ? '#5F7A62' : '#E9E2CE',
+      };
+    });
+  }
+
+  approach() {
+    const id = this.state.expanded;
+    if (!id) return null;
+    const d = this.detail(id);
+    const warmSet = { quentes:true, sushi:true, conferencia:true };
+    const t = this.tone(warmSet[id] ? 'warm' : 'ivory');
+    const scen = this.scenarios()[this.state.scen];
+    const v = scen.cells[id];
+    return {
+      name: this.defs().find(x=>x.id===id).name,
+      state: v ? v.state : '',
+      stateColor: warmSet[id] ? '#E0A25A' : '#A8BCA0',
+      glow: t.bg, ring: t.ring, markColor: t.mark,
+      markList: this.markList(3, d.open.length ? 1 : 0),
+      path: d.path, solidLines: d.solid, openLines: d.open, hasOpen: d.open.length>0,
+      relations: d.relations.map(r => ({ dir:r.dir, text:r.text, edge: r.active ? '#E0A25A' : '#2C4A36', color: r.active ? '#E7C089' : '#A8BCA0' })),
+      note: d.note, hasNote: !!d.note, action: d.action,
+    };
+  }
+
+  minimap() {
+    const id = this.state.expanded;
+    return this.defs().map(d => ({ name:d.name, color: d.id===id ? '#BEE592' : '#5F7A62', dot: d.id===id ? '#8CC63F' : '#2C4A36' }));
+  }
+
+  techStatesList() {
+    return [
+      { name:'Carregando', demo:'', copy:'Primeira montagem do turno: "Preparando a leitura da operação." Sem esqueleto de dashboard, só a frase e a topologia surgindo.', dot:'#5E6B86', stroke:'solid transparent' },
+      { name:'Atualização normal', demo:'● todos os cenários', copy:'Ponto verde vivo "ao vivo" no cabeçalho. É a ausência de faixa, não um selo.', dot:'#8CC63F', stroke:'solid transparent' },
+      { name:'Dados atrasados', demo:'● cenário 08', copy:'Faixa cinza com a idade do dado e a hora da última leitura confiável. Superfície congelada e dessaturada.', dot:'#9AA7B0', stroke:'solid transparent' },
+      { name:'Informação parcial', demo:'● cenário 07', copy:'Faixa neutra com o total sem confirmação; marcas vazadas nas áreas afetadas. Não entra na decisão, não some.', dot:'transparent', stroke:'dashed #7E9478' },
+      { name:'Área sem integração', demo:'● Caixa e Cozinha', copy:'"Ainda sem dados", contorno tracejado permanente. Honestidade estrutural, não erro.', dot:'transparent', stroke:'dashed #7E9478' },
+      { name:'Conexão perdida', demo:'● cenário 09', copy:'"Paramos de receber atualizações" com o momento do corte. A memória fica visível, o presente não é inventado.', dot:'#9AA7B0', stroke:'solid transparent' },
+      { name:'Erro temporário', demo:'', copy:'Tentando de novo em silêncio: faixa cinza curta "Reconectando…". Vira conexão perdida se persistir.', dot:'#9AA7B0', stroke:'solid transparent' },
+      { name:'Falha persistente', demo:'● cenário 10', copy:'Área em cinza-ardósia, "leitura indisponível". Nunca cresce, nunca fica âmbar, nunca vira pressão.', dot:'#6E7B84', stroke:'solid transparent' },
+      { name:'Recuperação', demo:'● cenário 11', copy:'Verde vivo confirma por alguns segundos ("resolvido agora") e a superfície volta ao Calmo.', dot:'#8CC63F', stroke:'solid transparent' },
+      { name:'Sem ocorrências', demo:'● cenário 01', copy:'Calmo não é vazio: áreas presentes, números reais, "nada exige você agora".', dot:'#BEE592', stroke:'solid transparent' },
+    ];
+  }
+
+  handoffList() {
+    return [
+      { el:'Nome da área', src:'Identidade fixa do mapa operacional (as seis áreas confirmadas).' },
+      { el:'Estado em uma frase', src:'Derivado do degrau de pressão informado pelo motor por área. A UI só traduz degrau → frase aprovada.' },
+      { el:'Informação principal', src:'Métrica principal da área vinda do payload (fila, sacolas, viagens). Uma por célula.' },
+      { el:'Marcas cheias e vazadas', src:'Contagem de pedidos confirmados vs. sem confirmação (suspeitos, parciais, conflito, quarentena).' },
+      { el:'Ligações e espessura', src:'Dependências ativas e pressão em trânsito, informadas pelo motor. Sem relação ativa, sem linha.' },
+      { el:'Faixa técnica', src:'Estado da fonte e frescor (atraso, conexão, falha) com horário da última leitura confiável.' },
+      { el:'Painel de atenção', src:'A situação ativa apontada pelo motor (sess.active.sit): situação, consequência, evidências e ação. A UI nunca escolhe.' },
+      { el:'Ações', src:'Principal e secundária são navegação/inspeção. Nenhum comando operacional novo é criado pela interface.' },
+    ];
+  }
+
+  checklistList() {
+    const SIM = '#8CC63F', COND = '#E0A25A';
+    return [
+      { item:'Direção preservada', status:'SIM', color:SIM },
+      { item:'Legibilidade corrigida', status:'SIM', color:SIM },
+      { item:'Contraste corrigido', status:'SIM', color:SIM },
+      { item:'Leitura em dois segundos', status:'SIM · testar com a equipe', color:COND },
+      { item:'Linguagem técnica removida da interface', status:'SIM', color:SIM },
+      { item:'Contrato das células', status:'SIM', color:SIM },
+      { item:'Regras de pressão', status:'SIM', color:SIM },
+      { item:'Área ampliada', status:'SIM', color:SIM },
+      { item:'Foco', status:'SIM', color:SIM },
+      { item:'Ação principal', status:'SIM', color:SIM },
+      { item:'Estados técnicos', status:'SIM · 10 definidos', color:SIM },
+      { item:'Cenários desenhados', status:'SIM · 11', color:SIM },
+      { item:'Mobile', status:'SIM · fluxo clicável', color:SIM },
+      { item:'Movimento reduzido', status:'SIM', color:SIM },
+      { item:'Protótipo clicável', status:'SIM', color:SIM },
+    ];
+  }
+
+  renderVals() {
+    const S = this.scenarios();
+    const scen = S[this.state.scen];
+    const expanded = this.state.expanded;
+    const order = ['calma','sushi','quentes','motoboys','travado','duplo','parcial','atrasados','conexao','falha','recuperacao'];
+    const dividers = { parcial:true, conexao:true };
+    const scenBtns = order.map(k => ({
+      label:S[k].label, divider: !!dividers[k],
+      onClick: () => this.setState({ scen:k, expanded:null }),
+      bg: this.state.scen===k ? '#8CC63F' : 'transparent',
+      color: this.state.scen===k ? '#0B1A11' : '#A8BCA0',
+      border: this.state.scen===k ? '#8CC63F' : '#274B39',
+    }));
+    const appr = this.approach();
+    const banner = scen.banner;
+    return {
+      scenBtns,
+      liveDot: scen.live || '#8CC63F',
+      livePulse: !scen.frozen,
+      headerNote: scen.frozen ? 'última leitura · 21h42' : (expanded ? ('aproximando · ' + (appr?appr.name:'')) : 'ao vivo'),
+      hasBanner: !!banner && !expanded,
+      bannerBg: banner && banner.kind==='tech' ? 'rgba(110,123,132,0.14)' : 'rgba(126,148,120,0.1)',
+      bannerStroke: banner && banner.kind==='tech' ? 'solid rgba(154,167,176,0.45)' : 'dashed rgba(126,148,120,0.5)',
+      bannerDot: banner && banner.kind==='tech' ? '#9AA7B0' : '#7E9478',
+      bannerColor: banner && banner.kind==='tech' ? '#C3CDD4' : '#B9C4AC',
+      bannerText: banner ? banner.text : '',
+      captionTop: banner ? '5.4rem' : '3.4rem',
+      captionKicker: scen.kicker, captionAccent: scen.accent,
+      captionText: expanded ? '' : scen.caption,
+      modeConstellation: !expanded,
+      modeApproach: !!expanded,
+      connections: this.connections(scen),
+      stageAreas: this.stageAreas(scen),
+      approach: appr || { name:'', state:'', stateColor:'#A8BCA0', glow:'', ring:'transparent', markColor:'#BEE592', markList:[], path:'', solidLines:[], openLines:[], hasOpen:false, relations:[], note:'', hasNote:false, action:'' },
+      back: () => this.setState({ expanded:null }),
+      minimap: this.minimap(),
+      showFocoPanel: !!scen.foco && !expanded,
+      foco: scen.foco || { eyebrow:'', situacao:'', consequencia:'', evidencias:[], acao:'', acaoSec:'' },
+      showPill: !!scen.pill,
+      pillText: scen.pill || '',
+      stepHint: scen.hint,
+      mGeral: this.state.mScreen==='geral',
+      mArea: this.state.mScreen==='area',
+      mFoco: this.state.mScreen==='foco',
+      mGoArea: () => this.setState({ mScreen:'area' }),
+      mGoFoco: () => this.setState({ mScreen:'foco' }),
+      mGoGeral: () => this.setState({ mScreen:'geral' }),
+      techStates: this.techStatesList(),
+      handoff: this.handoffList(),
+      checklist: this.checklistList(),
+    };
+  }
+}
+</script>
+<script>
+(async () => {
+  if (!document.title || !document.title.trim()) document.title = "DeliveryOS Organismo Operacional";
+  // rAF raced with a short timeout: inside a cross-origin iframe (PrintMode),
+  // rAF can be throttled or paused even while the tab is focused, which would
+  // hang the scroll loop and never reach print(). Same pattern as
+  // buildExportSettleScript (export/shared.ts).
+  var raf = function () {
+    return Promise.race([
+      new Promise(function (r) { requestAnimationFrame(r); }),
+      new Promise(function (r) { setTimeout(r, 50); }),
+    ]);
+  };
+  var t0 = performance.now();
+  var mark = function (phase) {
+    var ms = Math.round(performance.now() - t0);
+    console.info('[autoprint]', phase, ms + 'ms');
+    try { parent.postMessage({ __omelette_autoprint: { phase: phase, ms: ms } }, '*'); } catch (e) {}
+  };
+  mark('start');
+  // Prepend so page-supplied @page / break rules (deck-stage's margin:0,
+  // author CSS) keep source-order precedence over the baseline.
+  const baseCss = document.createElement('style');
+  baseCss.textContent = "@media print {\n  figure, table { break-inside: avoid; }\n  *, *::before, *::after {\n    print-color-adjust: exact; -webkit-print-color-adjust: exact;\n    backdrop-filter: none !important; -webkit-backdrop-filter: none !important;\n    animation-delay: -99s !important; animation-duration: .001s !important;\n    animation-iteration-count: 1 !important; animation-fill-mode: both !important;\n    animation-play-state: running !important; transition-duration: 0s !important;\n  }\n}";
+  document.head.prepend(baseCss);
+  if (document.readyState === 'loading') {
+    await new Promise((r) => document.addEventListener('DOMContentLoaded', r, { once: true }));
+  }
+  let ds = document.querySelector('deck-stage');
+  // whenDefined never resolves when nothing registers the element, so only
+  // await it when a <deck-stage> tag exists (and race a timeout regardless).
+  if (ds && !customElements.get('deck-stage')) {
+    try {
+      await Promise.race([
+        customElements.whenDefined('deck-stage'),
+        new Promise((r) => setTimeout(r, 3000)),
+      ]);
+    } catch (e) {}
+    ds = document.querySelector('deck-stage');
+  }
+  // dc-runtime assigns window.DCLogic at init and mounts into #dc-root on
+  // DOMContentLoaded; settle on that subtree so React has rendered before
+  // print(). Non-DC pages fall through to weighing body.
+  const isDc = !ds && 'DCLogic' in window;
+  const settleRoot = ds || (isDc ? document.getElementById('dc-root') : null) || document.body;
+  if (settleRoot) {
+    // Weigh only content children — skip script/style/template so inline
+    // Babel/CSS doesn't register as stable "content" before the framework
+    // has mounted anything.
+    const MEDIA = 'img,svg,canvas,video,picture,iframe,embed,object';
+    const weigh = () => {
+      let text = 0, media = 0;
+      for (const c of settleRoot.children) {
+        const t = c.tagName;
+        if (t === 'SCRIPT' || t === 'STYLE' || t === 'TEMPLATE') continue;
+        text += (c.textContent || '').trim().length;
+        media += c.querySelectorAll(MEDIA).length + (c.matches(MEDIA) ? 1 : 0);
+      }
+      return text + media * 100;
+    };
+    // "Non-zero and stable" alone is not sufficient to mean rendered: generic
+    // body can carry a static shell while async main content is pending, and
+    // #dc-root can carry the root DC's static text while child refs are still
+    // .sc-placeholder boxes. Gate generic on readyState 'complete', and never
+    // accept stability while a dc-runtime placeholder is present.
+    const isGeneric = settleRoot === document.body;
+    // A placeholder whose fetch failed (.sc-placeholder-error inside) keeps
+    // .sc-placeholder forever — don't wait on it. JS loop, not :has(), so an
+    // engine without :has() support can't throw out of the while and skip
+    // print() entirely.
+    var pendingPlaceholders = function () {
+      var all = settleRoot.querySelectorAll('.sc-placeholder'), n = 0;
+      for (var i = 0; i < all.length; i++)
+        if (!all[i].querySelector('.sc-placeholder-error')) n++;
+      return n;
+    };
+    const deadline = Date.now() + 15000;
+    let last = -1, stable = 0;
+    while (Date.now() < deadline) {
+      const n = weigh();
+      const ready =
+        (!isGeneric || document.readyState === 'complete') &&
+        pendingPlaceholders() === 0;
+      if (n > 0 && n === last && ready) { if (++stable >= 2) break; } else { stable = 0; }
+      last = n;
+      await new Promise((r) => setTimeout(r, 250));
+    }
+  }
+  mark('settle-done' + (settleRoot ? ' (errs=' + settleRoot.querySelectorAll('.sc-placeholder-error').length + ' pending=' + pendingPlaceholders() + ')' : ''));
+  // Project support.js may predate runtime default-seeding; push via bridge.
+  if (isDc && window.__dcSetProps && window.__dcRootName) {
+    try {
+      const dpEl = document.querySelector('script[data-dc-script]');
+      const meta = JSON.parse((dpEl && dpEl.getAttribute('data-props')) || '{}');
+      const bag = {};
+      for (const k in meta)
+        if (k[0] !== '$' && meta[k] && meta[k].default !== undefined)
+          bag[k] = meta[k].default;
+      if (Object.keys(bag).length) {
+        window.__dcSetProps(window.__dcRootName(), bag);
+        await new Promise((r) => setTimeout(r, 50));
+      }
+    } catch (e) {}
+  }
+  // Reveal content gated on scroll or visibility before printing. Lazy <img>,
+  // IntersectionObserver fade-ins, and collapsed <details> don't render while
+  // off-screen, so a long page would print with them blank or closed. Open
+  // every <details>, force native-lazy images eager, and scroll the document
+  // through its full height to trip lazy-load + IO; then wait (bounded) for the
+  // newly-triggered images. Inert for deck-stage (slides aren't scroll-gated).
+  try {
+    for (const d of document.querySelectorAll('details')) d.open = true;
+    for (const img of document.querySelectorAll('img[loading="lazy"]'))
+      img.loading = 'eager';
+    const scroller = document.scrollingElement || document.documentElement;
+    const full = Math.max(scroller.scrollHeight, document.body.scrollHeight);
+    const step = window.innerHeight || 800;
+    var scrollDeadline = Date.now() + 4000;
+    for (let y = 0; y <= full && Date.now() < scrollDeadline; y += step) {
+      window.scrollTo(0, y);
+      await raf();
+    }
+    window.scrollTo(0, 0);
+    await Promise.race([
+      Promise.all(
+        [...document.images].map((img) =>
+          img.complete
+            ? null
+            : new Promise((res) => {
+                img.addEventListener('load', res, { once: true });
+                img.addEventListener('error', res, { once: true });
+              })
+        )
+      ),
+      new Promise((r) => setTimeout(r, 4000)),
+    ]);
+  } catch (e) {}
+  mark('scroll-done');
+  try { await Promise.race([document.fonts.ready, new Promise((r) => setTimeout(r, 3000))]); } catch (e) {}
+  mark('fonts-done');
+  // Jump every animation to its end state so print() never captures a slide
+  // mid-entrance. Ordering matters: the 0s-transition style must be live
+  // BEFORE data-deck-active is set so attribute-keyed transitions don't
+  // start a (now-0s) run from the pre-active base.
+  const st = document.createElement('style');
+  st.textContent = '*,*::before,*::after{animation-delay:-99s !important;animation-duration:.001s !important;animation-iteration-count:1 !important;animation-fill-mode:both !important;animation-play-state:running !important;transition-duration:0s !important}';
+  document.head.appendChild(st);
+  for (const d of document.querySelectorAll('deck-stage')) {
+    for (const c of d.children) {
+      const t = c.tagName;
+      if (t === 'SCRIPT' || t === 'STYLE' || t === 'TEMPLATE') continue;
+      c.setAttribute('data-deck-active', '');
+    }
+  }
+  // Re-append deck-stage's @page last so no author @page can add a margin and
+  // spill each full-bleed slide onto two sheets. Backstop for old copies.
+  if (ds) {
+    let pg = document.getElementById('deck-stage-print-page');
+    if (!pg) {
+      pg = document.createElement('style');
+      pg.textContent = '@page{size:' + (+ds.getAttribute('width') || 1920) +
+        'px ' + (+ds.getAttribute('height') || 1080) + 'px;margin:0}';
+    }
+    document.body.appendChild(pg);
+  }
+  try {
+    const sweep = () => {
+      for (const a of document.getAnimations()) {
+        try { a.finish(); } catch (e) {
+          try { a.currentTime = (a.effect && a.effect.getComputedTiming().duration) || 0; a.pause(); } catch (e2) {}
+        }
+      }
+    };
+    sweep();
+    await raf();
+    sweep();
+    await raf();
+  } catch (e) {}
+  // A document that owns its print CSS (the doc-page starter injects the
+  // meta at runtime; hand-rolled print designs author it) gets no automatic
+  // page geometry and keeps its forced breaks: strip the injected default
+  // @page — write time cannot see a runtime-injected meta — skip the frame
+  // override below, and skip the fakepage-flattening further down. What
+  // still applies: the print baseline and break-hygiene defaults (no @page
+  // in either; low specificity, so the document's own print CSS wins) and
+  // the break-inside relaxation on >page elements (avoid on those cannot
+  // be honored whoever authored it).
+  var ownsPrint = !!document.querySelector('meta[name="omelette-owns-print" i]');
+  if (ownsPrint) {
+    var dst = document.querySelector('style[data-omelette-print-defaults]');
+    if (dst && dst.textContent) {
+      dst.textContent = dst.textContent.replace(/@page\b[^{}]*\{[^}]*\}/, '');
+    }
+  }
+  // Size the PDF page to the rendered design unless the file opted into
+  // standard paper via @page{size:letter|A4|…} or declared print ownership
+  // via the meta above. Decks own their own @page.
+  // Wrappers (body, …) lose padding+margin so the frame sits at (0,0); the
+  // frame itself loses only margin — its padding is INSIDE the measured
+  // rect and must stay, or content shifts and leaves a gap at bottom/right.
+  var __m = null;
+  try { __m = (() => {
+  var STAMP = true;
+  var docEl = document.documentElement;
+  var doc = { width: docEl.scrollWidth, height: docEl.scrollHeight };
+  // Name-presence check, case-insensitive — the same contract as the
+  // instant-PDF path's runtime check in deck-stage-export.ts. The name is
+  // a string literal here because that file interpolates this script into
+  // its print script, so importing a shared constant from it would be a
+  // cycle; measure.test.ts pins the literal so the two cannot drift apart
+  // silently.
+  var ownsPrint = !!document.querySelector('meta[name="omelette-owns-print" i]');
+
+  var ds = document.querySelector('deck-stage');
+  if (ds) {
+    var dw = Number(ds.getAttribute('width')) || 1920;
+    var dh = Number(ds.getAttribute('height')) || 1080;
+    var n = typeof ds.length === 'number' ? ds.length : ds.children.length;
+    var idx = typeof ds.index === 'number' ? ds.index : 0;
+    var frames = [];
+    for (var i = 0; i < n; i++) frames.push({ left: 0, top: 0, width: dw, height: dh });
+    return { kind: 'deck', source: 'declared', doc: doc, frames: frames,
+      authored: frames.map(function(){return{width:true,height:true}}),
+      deck: { width: dw, height: dh, slideCount: n, index: idx },
+      signals: { paperPage: false, pxPage: false, ownsPrint: ownsPrint } };
+  }
+
+  // Declared kind: a doc-page tag names the kind outright, so no signal
+  // heuristics run (like the deck branch above, signals report false —
+  // they describe inferred classifications only). The tag alone is not
+  // trusted: the element must have upgraded (shadowRoot present), so a
+  // leftover tag whose script was deleted falls through to the heuristics
+  // that handle plain markup.
+  var stageSx = window.scrollX || 0, stageSy = window.scrollY || 0;
+  var dp = document.querySelector('doc-page');
+  if (dp && dp.shadowRoot) {
+    // Crop to the sheet, not the host — the desk around it is screen-only
+    // chrome that must not land in PNG exports.
+    var sheet = dp.shadowRoot.querySelector('.sheet');
+    var sr = (sheet || dp).getBoundingClientRect();
+    return { kind: 'paper-doc', source: 'declared', doc: doc,
+      frames: [{ left: sr.left + stageSx, top: sr.top + stageSy,
+        width: sr.width, height: sr.height }],
+      authored: [{ width: false, height: false }],
+      signals: { paperPage: false, pxPage: false, ownsPrint: ownsPrint } };
+  }
+  var paperPage = false, pxPage = false;
+  var eachRule = function (fn) {
+    for (var s = 0; s < document.styleSheets.length; s++) {
+      var rs; try { rs = document.styleSheets[s].cssRules; } catch (e) { continue; }
+      for (var r = 0; r < rs.length; r++) {
+        fn(rs[r]);
+        if (rs[r].cssRules) for (var n = 0; n < rs[r].cssRules.length; n++) fn(rs[r].cssRules[n]);
+      }
+    }
+  };
+  eachRule(function (r) {
+    if (r.type !== 6) return;
+    var m = /\bsize\s*:\s*([^;}]+)/i.exec(r.cssText || '');
+    if (!m) return;
+    if (/\b(letter|a[3-5]|legal|ledger)\b/i.test(m[1])) paperPage = true;
+    if (/\d+(?:\.\d+)?px\b/i.test(m[1])) pxPage = true;
+  });
+  var signals = { paperPage: paperPage, pxPage: pxPage, ownsPrint: ownsPrint };
+
+  var pxVal = function (v) {
+    var m = /^(\d+(?:\.\d+)?)px$/.exec(v || ''); return m ? +m[1] : 0;
+  };
+  var authoredPx = function (el, prop) {
+    if (pxVal(el.style[prop])) return true;
+    var attr = el.getAttribute(prop);
+    if (attr && /^\d+$/.test(attr)) return true;
+    var hit = false;
+    eachRule(function (r) {
+      if (hit || r.type !== 1 || !r.style) return;
+      try { if (el.matches(r.selectorText) && pxVal(r.style[prop])) hit = true; } catch (e) {}
+    });
+    return hit;
+  };
+
+  var el = document.body, rootPxW = false;
+  for (;;) {
+    var kids = [];
+    for (var c = 0; c < el.children.length; c++) {
+      var t = el.children[c].tagName;
+      if (t !== 'SCRIPT' && t !== 'STYLE' && t !== 'TEMPLATE') kids.push(el.children[c]);
+    }
+    if (kids.length !== 1 || !(kids[0] instanceof HTMLElement)) break;
+    if (STAMP) el.setAttribute('data-om-frame-wrap', '');
+    el = kids[0];
+    rootPxW = authoredPx(el, 'width');
+    if (rootPxW) break;
+  }
+  if (!rootPxW) rootPxW = authoredPx(el, 'width');
+
+  // @page{size:letter} alone is a flowing doc; with a px-width root it's a
+  // fixed sheet pretending to be paper — fall through and size to render.
+  if (paperPage && !rootPxW) {
+    return { kind: 'paper-doc', source: 'inferred', doc: doc, signals: signals,
+      frames: [{ left: 0, top: 0, width: doc.width, height: doc.height }],
+      authored: [{ width: false, height: false }] };
+  }
+
+  var sx = window.scrollX || 0, sy = window.scrollY || 0;
+  var rectOf = function (e) {
+    var r = e.getBoundingClientRect();
+    var oy; try { oy = getComputedStyle(e).overflowY; } catch (err) {}
+    var h = oy === 'visible' ? Math.max(r.height, e.scrollHeight || 0) : r.height;
+    return { left: r.left + sx, top: r.top + sy, width: r.width, height: h };
+  };
+
+  // Multi-frame: off unless the page opts in via data-om-multi-frame on the
+  // stop element — the explicit opt-in is what guards against card grids
+  // and pricing tables that match the geometry but aren't separate
+  // canvases. Two ways to name the frames, explicit first:
+  // 1. Descendants marked data-om-frame-export (the social-frames starter
+  //    marks each asset frame; shells/panels around them are presentation,
+  //    so nesting is expected). Document order.
+  // 2. Fallback, no marked descendants: direct children with an authored px
+  //    width AND height (the original geometry heuristic).
+  // Frames may be different sizes (a gallery mixes 1080×1920 stories with
+  // 728×90 banners); data-om-frame-label rides along for export filenames.
+  if (el.hasAttribute('data-om-multi-frame')) {
+    var visOk = function (e) {
+      var cs; try { cs = getComputedStyle(e); } catch (err) { return false; }
+      return cs.display !== 'none' && cs.visibility !== 'hidden' && cs.position !== 'fixed';
+    };
+    // A frame's crop is its VISUAL box — never the scrollHeight-inflated
+    // rect that rectOf computes for page roots. Shadow-DOM hover controls
+    // (image-slot's Replace bar parks 29px below its host) and similar
+    // escaping UI contribute scrollable overflow to the frame, and the
+    // inflated height both squashes the nominal-size resize and drags
+    // content below the frame into the crop. Zoom-independent; bit every
+    // slot-bearing frame.
+    var frameRectOf = function (e) {
+      var r = e.getBoundingClientRect();
+      return { left: r.left + sx, top: r.top + sy, width: r.width, height: r.height };
+    };
+    var pushCand = function (list, e) {
+      if (!visOk(e)) return;
+      var rc = frameRectOf(e);
+      if (rc.width < 2 || rc.height < 2) return;
+      var lbl = e.getAttribute('data-om-frame-label');
+      if (lbl) rc.label = lbl;
+      list.push(rc);
+    };
+    var cands = [];
+    var marked = el.querySelectorAll('[data-om-frame-export]');
+    if (marked.length) {
+      for (var mk = 0; mk < marked.length; mk++) pushCand(cands, marked[mk]);
+    } else {
+      for (var k = 0; k < el.children.length; k++) {
+        var ch = el.children[k];
+        if (!authoredPx(ch, 'width') || !authoredPx(ch, 'height')) continue;
+        pushCand(cands, ch);
+      }
+    }
+    if (cands.length >= 2) {
+      return { kind: 'multi-frame', source: 'inferred', doc: doc, signals: signals,
+        frames: cands, authored: cands.map(function(){return{width:true,height:true}}) };
+    }
+  }
+
+  if (STAMP) el.setAttribute('data-om-frame', '');
+  return { kind: 'single-canvas', source: 'inferred', doc: doc, signals: signals,
+    frames: [rectOf(el)],
+    authored: [{ width: rootPxW, height: authoredPx(el, 'height') }] };
+})(); } catch (e) {}
+  var frame = null;
+  if (!ownsPrint && __m && __m.kind === 'single-canvas') {
+    var f = __m.frames && __m.frames[0];
+    if (f && f.width >= 200 && f.height >= 200) {
+      frame = f;
+      var fst = document.createElement('style');
+      fst.textContent = '@media print{@page{size:' + Math.ceil(f.width) + 'px ' +
+        Math.ceil(f.height) + 'px;margin:0}' +
+        'html,body,[data-om-frame-wrap]{padding:0!important;margin:0!important;background:none!important}' +
+        '[data-om-frame]{margin:0!important}}';
+      document.body.appendChild(fst);
+    }
+  }
+  // Relax break-inside on oversized elements. An element taller than a
+  // printable page can't honor break-inside: avoid — browsers either overflow
+  // it or push it whole to the next page, leaving a blank gap, then break it
+  // anyway at an arbitrary point. After the final layout (content revealed,
+  // animations jumped), find elements taller than a page that still compute
+  // break-inside: avoid and reset them to auto, so the browser breaks them at
+  // their children's boundaries instead (children keep their own avoid). PAGE_PX
+  // is a conservative portrait estimate at 96 CSS px/in — Letter/A4 usable
+  // height minus our 0.5in margins — so only clearly-oversized elements are
+  // touched and under-page elements still stay whole. Skipped for decks (slides
+  // are sized to the page) and for fixed-size canvases (frame set, or an author
+  // px-based @page) — runs as before for flowing docs on letter/A4.
+  try {
+    if (!ds && !frame && !(__m && __m.signals && __m.signals.pxPage)) {
+      const PAGE_PX = 1024;
+      // Our print defaults add a real @page margin only when the source has
+      // no @page of its own; computed style can't tell us (it reports screen
+      // media), so read the injected rule directly.
+      const defaults = document.querySelector('style[data-omelette-print-defaults]');
+      const pageInset = /@page\s*\{[^}]*margin/.test(defaults ? defaults.textContent || '' : '');
+      const SEL = 'section,article,figure,table,pre,blockquote,[class~="card" i],[class~="page" i],[class~="sheet" i]';
+      for (const el of document.body.querySelectorAll(SEL)) {
+        if (el instanceof HTMLElement && el.offsetHeight > PAGE_PX) {
+          el.setAttribute('data-om-oversized', '');
+          // Fake-paged docs simulate sheets with over-tall break-after:page
+          // boxes; honoring the break spills half-blank pages and ends a
+          // colored box mid-sheet. Flow them, and (only when we own the page
+          // inset) drop the redundant padding/background via the rule below.
+          const cs = getComputedStyle(el);
+          // An owns-print doc's forced breaks are intentional sheet
+          // boundaries, never fake-paged simulation — don't strip them.
+          // The break-inside relaxation above still applies: avoid on a
+          // >page element is impossible to honor whoever authored it.
+          if (
+            !ownsPrint &&
+            (cs.breakAfter === 'page' || cs.pageBreakAfter === 'always')
+          ) {
+            el.setAttribute('data-om-fakepage', '');
+          }
+        }
+      }
+      const ost = document.createElement('style');
+      ost.textContent = '@media print{' +
+        '[data-om-oversized]{break-inside:auto !important;page-break-inside:auto !important}' +
+        '[data-om-fakepage]{break-after:auto !important;page-break-after:auto !important}' +
+        (pageInset ? '[data-om-fakepage]{padding:0 !important;background:none !important}' : '') +
+        '}';
+      document.head.appendChild(ost);
+    }
+  } catch (e) {}
+  // macOS Preview renders Skia-PDF Luminosity soft-masks as opaque grey boxes;
+  // swap the CSS that triggers them for Preview-safe forms.
+  try {
+    for (const el of document.body.querySelectorAll('*')) {
+      const cs = getComputedStyle(el);
+
+      if (cs.boxShadow !== 'none' && cs.filter === 'none') {
+        const outs = [], kept = [];
+        for (const s of cs.boxShadow.split(/,(?![^(]*[)])/)) {
+          const t = s.trim();
+          const m = t.match(/^(rgba?[(][^)]+[)]) (-?[0-9.]+px) (-?[0-9.]+px) ([0-9.]+px) -?[0-9.]+px$/);
+          if (m && parseFloat(m[4]) > 0) outs.push('drop-shadow(' + m[2] + ' ' + m[3] + ' ' + m[4] + ' ' + m[1] + ')');
+          else kept.push(t);
+        }
+        if (outs.length) {
+          el.style.setProperty('filter', outs.join(' '), 'important');
+          el.style.setProperty('box-shadow', kept.join(', ') || 'none', 'important');
+        }
+      }
+
+      const mask = cs.maskImage && cs.maskImage !== 'none' ? cs.maskImage : cs.webkitMaskImage;
+      if (mask && mask !== 'none' && cs.filter === 'none') el.style.setProperty('filter', 'opacity(1)', 'important');
+    }
+  } catch (e) {}
+  mark('print-calling');
+  setTimeout(() => { try { window.print(); } catch (e) {} }, 200);
+})();
+</script>
+</body>
+</html>

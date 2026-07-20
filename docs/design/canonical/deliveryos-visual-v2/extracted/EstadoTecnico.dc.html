@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;1,400&family=Hanken+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+</helmet>
+<div style="display:flex;flex-direction:column;gap:1.15rem;width:100%;font-family:'Hanken Grotesk',system-ui,sans-serif;color:#322E27;">
+  <div style="display:flex;align-items:center;gap:0.55rem;">
+    <span style="flex:none;width:7px;height:7px;border-radius:50%;background:{{ accent }};"></span>
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:0.68rem;letter-spacing:0.17em;color:#6B6459;text-transform:uppercase;">{{ eyebrow }}</span>
+  </div>
+  {{ signal }}
+  <div style="display:flex;flex-direction:column;gap:0.55rem;">
+    <h2 style="margin:0;font-family:'Spectral',serif;font-weight:400;font-size:clamp(1.5rem,4.4vw,2.1rem);line-height:1.12;letter-spacing:-0.012em;color:#322E27;text-wrap:balance;">{{ title }}</h2>
+    <p style="margin:0;font-size:clamp(0.98rem,2.5vw,1.06rem);line-height:1.5;color:#6B6459;max-width:36ch;">{{ explanation }}</p>
+  </div>
+  <sc-if value="{{ hasEvidence }}" hint-placeholder-val="{{ true }}">
+    <div style="display:flex;flex-direction:column;gap:0.5rem;">
+      <sc-for list="{{ evidence }}" as="ev" hint-placeholder-count="2">
+        <div style="display:flex;align-items:baseline;gap:0.6rem;">
+          <sc-if value="{{ ev.solid }}" hint-placeholder-val="{{ true }}">
+            <span style="flex:none;width:3px;height:13px;border-radius:2px;background:{{ accent }};transform:translateY(2px);"></span>
+          </sc-if>
+          <sc-if value="{{ ev.open }}" hint-placeholder-val="{{ true }}">
+            <span style="flex:none;width:3px;height:13px;border-radius:2px;border:1px dashed #B7AE9D;transform:translateY(2px);"></span>
+          </sc-if>
+          <span style="font-size:1rem;line-height:1.42;color:#4A453D;">{{ ev.text }}</span>
+        </div>
+      </sc-for>
+      <sc-if value="{{ hasMore }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;align-items:baseline;gap:0.6rem;">
+          <span style="flex:none;width:3px;height:13px;border:1px dashed #C6BDA9;border-radius:2px;transform:translateY(2px);"></span>
+          <span style="font-size:0.94rem;line-height:1.4;color:#8E836F;">{{ evidenceMore }}</span>
+        </div>
+      </sc-if>
+    </div>
+  </sc-if>
+  <sc-if value="{{ hasMemory }}" hint-placeholder-val="{{ true }}">
+    <div style="display:flex;flex-direction:column;gap:0.32rem;padding-left:0.9rem;border-left:2px solid #E4DBCB;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:0.62rem;letter-spacing:0.14em;text-transform:uppercase;color:#9A8F7B;">Último estado confiável</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:0.8rem;letter-spacing:0.01em;color:#6B6459;">{{ lastReliableTime }}</span>
+      <sc-if value="{{ hasDetail }}" hint-placeholder-val="{{ true }}">
+        <span style="font-family:'Spectral',serif;font-style:italic;font-size:1rem;line-height:1.35;color:#4A453D;">{{ lastReliableDetail }}</span>
+      </sc-if>
+    </div>
+  </sc-if>
+  <sc-if value="{{ hasRestriction }}" hint-placeholder-val="{{ true }}">
+    <p style="margin:0.1rem 0 0;font-size:0.96rem;line-height:1.45;font-weight:500;color:{{ restrictionColor }};max-width:38ch;">{{ restriction }}</p>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:360,&quot;height&quot;:480},&quot;eyebrow&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;INFORMAÇÃO DESATUALIZADA&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#B0812F&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;signal&quot;:{&quot;editor&quot;:null,&quot;default&quot;:null,&quot;tsType&quot;:&quot;React.ReactNode&quot;},&quot;title&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Esta leitura não é a mais recente&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;explanation&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;A informação passou do tempo em que ainda é confiável.&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;evidence&quot;:{&quot;editor&quot;:null,&quot;default&quot;:[],&quot;tsType&quot;:&quot;Array&lt;{text:string,solid?:boolean,open?:boolean}&gt;&quot;},&quot;hasEvidence&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;evidenceMore&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;hasMore&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;lastReliableTime&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Última leitura confiável às 21h42&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;lastReliableDetail&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;hasDetail&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;hasMemory&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;restriction&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Pode não representar o estado atual da operação.&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;hasRestriction&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;restrictionColor&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#322E27&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const p = this.props;
+    return {
+      eyebrow: p.eyebrow ?? 'INFORMAÇÃO DESATUALIZADA',
+      accent: p.accent ?? '#B0812F',
+      signal: p.signal ?? null,
+      title: p.title ?? 'Esta leitura não é a mais recente',
+      explanation: p.explanation ?? 'A informação passou do tempo em que ainda é confiável.',
+      evidence: p.evidence ?? [],
+      hasEvidence: p.hasEvidence ?? false,
+      evidenceMore: p.evidenceMore ?? '',
+      hasMore: p.hasMore ?? false,
+      lastReliableTime: p.lastReliableTime ?? 'Última leitura confiável às 21h42',
+      lastReliableDetail: p.lastReliableDetail ?? '',
+      hasDetail: p.hasDetail ?? false,
+      hasMemory: p.hasMemory ?? true,
+      restriction: p.restriction ?? 'Pode não representar o estado atual da operação.',
+      hasRestriction: p.hasRestriction ?? true,
+      restrictionColor: p.restrictionColor ?? '#322E27',
+    };
+  }
+}
+</script>
+</body>
+</html>

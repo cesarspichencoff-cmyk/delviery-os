@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Hanken+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0;background:#08130D;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+    ::selection{background:#8CC63F;color:#08130D}
+    a{color:#8CC63F;text-decoration:none;border-bottom:1px solid rgba(140,198,63,0.3)}
+    a:hover{border-bottom-color:#8CC63F}
+    @keyframes dosPulse{0%{opacity:0.4;transform:scale(1)}100%{opacity:0;transform:scale(1.5)}}
+    .dospulse{animation:dosPulse 2.8s ease-out infinite}
+    @media (prefers-reduced-motion: reduce){.dospulse{animation:none;display:none}}
+  </style>
+</helmet>
+<div style="background:radial-gradient(1300px 680px at 50% -8%, #0F241A, #08130D 68%);color:#EFE6D3;font-family:'Hanken Grotesk',system-ui,sans-serif;padding:clamp(1.1rem,4vw,3.2rem) clamp(1rem,4vw,2rem);min-height:100vh;">
+<div style="max-width:1220px;margin:0 auto;">
+
+  <header style="display:flex;flex-direction:column;gap:1.25rem;padding-bottom:2rem;border-bottom:1px solid #1F3E2E;">
+    <div style="display:flex;flex-wrap:wrap;gap:0.4rem 1.1rem;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:0.76rem;letter-spacing:0.14em;text-transform:uppercase;color:#7E9478;">
+      <span style="color:#8CC63F;">TATÁ OS</span><span style="color:#2C4A36;">/</span><span>Porta de entrada do ecossistema</span><span style="color:#2C4A36;">/</span><span>Gate 10/10</span>
+    </div>
+    <h1 style="margin:0;font-family:'Spectral',serif;font-weight:300;font-size:clamp(2.1rem,6vw,4rem);line-height:1.03;letter-spacing:-0.02em;max-width:16ch;">Tudo o que move o TATÁ.</h1>
+    <p style="margin:0;font-size:clamp(1.05rem,2.6vw,1.22rem);line-height:1.55;color:#BFCBB2;max-width:64ch;">A Home é um launcher inteligente, não um dashboard. Ela diz onde você está, o que existe, o que merece atenção agora e por onde entrar. Cada módulo continua soberano sobre a própria operação. Todos os estados abaixo são demonstração.</p>
+  </header>
+
+  <!-- SUPERFÍCIE -->
+  <section style="padding:2.4rem 0 0;">
+    <div style="display:flex;align-items:baseline;gap:0.7rem;margin-bottom:1rem;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:0.76rem;letter-spacing:0.12em;color:#7E9478;">DESKTOP</span>
+      <h2 style="margin:0;font-family:'Spectral',serif;font-weight:400;font-size:clamp(1.3rem,3vw,1.8rem);">Home, módulos e retorno, no mesmo lugar</h2>
+    </div>
+
+    <div style="background:#06120D;border:1px solid #1B3527;border-radius:14px 14px 0 0;padding:0.85rem 1.1rem;display:flex;flex-direction:column;gap:0.55rem;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:0.68rem;letter-spacing:0.13em;text-transform:uppercase;color:#7E9478;display:flex;align-items:center;gap:0.45rem;"><span style="width:6px;height:6px;border-radius:50%;background:#3E6B4F;"></span>Apresentação · cenários de demonstração · a Home é renderizada do registro de módulos</span>
+      <div style="display:flex;flex-wrap:wrap;gap:0.4rem;">
+        <sc-for list="{{ scenBtns }}" as="st" hint-placeholder-count="4">
+          <button onClick="{{ st.onClick }}" style="cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-size:0.85rem;font-weight:500;padding:0.45rem 0.85rem;border-radius:8px;border:1px solid {{ st.border }};background:{{ st.bg }};color:{{ st.color }};transition:all .18s ease;">{{ st.label }}</button>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="position:relative;background:#0C1811;border:1px solid #1B3527;border-top:none;border-radius:0 0 14px 14px;overflow:hidden;min-height:640px;display:flex;flex-direction:column;">
+
+      <!-- barra compartilhada -->
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0.95rem 1.5rem;border-bottom:1px solid #163026;">
+        <div style="display:flex;align-items:center;gap:1rem;">
+          <span onClick="{{ goHome }}" role="button" style="cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:0.78rem;letter-spacing:0.14em;text-transform:uppercase;color:#8CC63F;">TATÁ OS</span>
+          <sc-if value="{{ inModule }}" hint-placeholder-val="{{ false }}">
+            <span style="color:#2C4A36;">/</span>
+            <span style="font-family:'Spectral',serif;font-size:1.05rem;color:#F2EBD9;">{{ moduleName }}</span>
+            <button onClick="{{ goHome }}" style="cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:0.74rem;color:#BFCBB2;background:transparent;border:1px solid #274B39;border-radius:8px;padding:0.4rem 0.8rem;min-height:38px;" style-hover="border-color:#3E6B4F;color:#EFE6D3">← Voltar ao TATÁ OS</button>
+          </sc-if>
+        </div>
+        <div style="display:flex;align-items:center;gap:0.9rem;">
+          <span style="display:inline-flex;align-items:center;gap:0.5rem;font-family:'IBM Plex Mono',monospace;font-size:0.74rem;color:#A8BCA0;"><span style="width:26px;height:26px;border-radius:50%;background:#1B3527;border:1px solid #2C4A36;display:inline-flex;align-items:center;justify-content:center;color:#BEE592;font-size:0.7rem;">{{ userInitial }}</span>{{ userName }}</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:#7E9478;cursor:pointer;border-bottom:1px solid #2C4A36;" style-hover="color:#BFCBB2">sair</span>
+        </div>
+      </div>
+
+      <!-- HOME -->
+      <sc-if value="{{ vHome }}" hint-placeholder-val="{{ true }}">
+        <div style="flex:1;display:flex;flex-direction:column;padding:clamp(1.6rem,4vw,3rem) clamp(1.5rem,5vw,4rem);">
+          <p style="margin:0 0 0.4rem;font-family:'IBM Plex Mono',monospace;font-size:0.72rem;letter-spacing:0.18em;text-transform:uppercase;color:#7E9478;">{{ saudacao }}</p>
+          <p style="margin:0 0 2rem;font-family:'Spectral',serif;font-weight:300;font-size:clamp(1.5rem,3.4vw,2.1rem);line-height:1.15;color:#F2EBD9;max-width:26ch;">Tudo o que move o TATÁ, em um só lugar.</p>
+
+          <!-- módulo principal (definido pelo registro, não hardcode) -->
+          <div style="display:flex;flex-wrap:wrap;align-items:center;gap:1.6rem;padding:1.6rem 1.8rem;background:linear-gradient(180deg,#13291D,#0E2016);border:1px solid #2C5940;border-radius:16px;margin-bottom:1.8rem;">
+            <div style="flex:none;">{{ principalGlyph }}</div>
+            <div style="flex:1;min-width:min(300px,100%);">
+              <div style="display:flex;align-items:baseline;gap:0.7rem;flex-wrap:wrap;">
+                <h3 style="margin:0;font-family:'Spectral',serif;font-weight:400;font-size:1.6rem;color:#F2EBD9;">{{ principal.nome }}</h3>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:0.68rem;letter-spacing:0.1em;text-transform:uppercase;color:#8CC63F;">{{ principal.statusLabel }}</span>
+              </div>
+              <p style="margin:0.35rem 0 0.5rem;font-size:1rem;line-height:1.5;color:#BFCBB2;max-width:52ch;">{{ principal.descricao }}</p>
+              <p style="margin:0;font-size:0.98rem;line-height:1.4;color:{{ principal.estadoCor }};display:flex;align-items:center;gap:0.5rem;"><span style="position:relative;display:inline-flex;width:8px;height:8px;"><span style="position:absolute;inset:0;border-radius:50%;background:{{ principal.dotCor }};"></span><sc-if value="{{ principal.pulse }}" hint-placeholder-val="{{ true }}"><span class="dospulse" style="position:absolute;inset:0;border-radius:50%;background:{{ principal.dotCor }};"></span></sc-if></span>{{ principal.estadoLinha }}</p>
+            </div>
+            <button onClick="{{ principal.abrir }}" style="cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-weight:600;font-size:1.02rem;color:#0B1A11;background:#8CC63F;border:none;border-radius:11px;padding:0.9rem 1.5rem;min-height:48px;" style-hover="background:#9ED64F">{{ principal.acao }}</button>
+          </div>
+
+          <!-- demais módulos, do registro -->
+          <div style="display:flex;flex-direction:column;">
+            <sc-for list="{{ others }}" as="m" hint-placeholder-count="4">
+              <div style="display:flex;flex-wrap:wrap;align-items:center;gap:0.9rem 1.4rem;padding:1.05rem 0.4rem;border-top:1px solid #163026;">
+                <div style="flex:none;">{{ m.glyph }}</div>
+                <div style="flex:1;min-width:min(260px,100%);">
+                  <div style="display:flex;align-items:baseline;gap:0.7rem;flex-wrap:wrap;">
+                    <span style="font-family:'Spectral',serif;font-size:1.18rem;color:{{ m.nomeCor }};">{{ m.nome }}</span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:0.66rem;letter-spacing:0.1em;text-transform:uppercase;color:{{ m.statusCor }};">{{ m.statusLabel }}</span>
+                  </div>
+                  <p style="margin:0.2rem 0 0;font-size:0.94rem;line-height:1.45;color:#8FA588;max-width:60ch;">{{ m.descricao }}</p>
+                </div>
+                <sc-if value="{{ m.podeAbrir }}" hint-placeholder-val="{{ true }}">
+                  <button onClick="{{ m.abrir }}" style="cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-weight:500;font-size:0.92rem;color:#BFCBB2;background:transparent;border:1px solid #274B39;border-radius:10px;padding:0.65rem 1.1rem;min-height:44px;" style-hover="border-color:#3E6B4F;color:#EFE6D3">{{ m.acao }}</button>
+                </sc-if>
+                <sc-if value="{{ m.indisponivel }}" hint-placeholder-val="{{ false }}">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:#7E9478;">{{ m.acao }}</span>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+          <p style="margin:auto 0 0;padding-top:1.4rem;font-family:'IBM Plex Mono',monospace;font-size:0.7rem;color:#5F7A62;">{{ homeNota }}</p>
+        </div>
+      </sc-if>
+
+      <!-- COPILOTO DELIVERY ABERTO -->
+      <sc-if value="{{ vDelivery }}" hint-placeholder-val="{{ false }}">
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.1rem;padding:2rem;text-align:center;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;letter-spacing:0.16em;text-transform:uppercase;color:#8CC63F;">Módulo ativo · sessão própria</span>
+          <p style="margin:0;font-family:'Spectral',serif;font-weight:300;font-size:1.9rem;line-height:1.2;color:#F2EBD9;max-width:24ch;">A operação de delivery, viva, em uma só superfície.</p>
+          <p style="margin:0;font-size:1rem;color:#8FA588;max-width:52ch;">Aqui entra a superfície completa do Copiloto Delivery, exatamente como aprovada na V3.3. O TATÁ OS só empresta a barra de cima: identidade, retorno e perfil.</p>
+          <a href="DeliveryOS Organismo Operacional.dc.html" style="font-family:'Hanken Grotesk',sans-serif;font-weight:600;font-size:1rem;color:#0B1A11;background:#8CC63F;border:none;border-radius:11px;padding:0.9rem 1.5rem;display:inline-block;">Abrir a superfície completa</a>
+        </div>
+      </sc-if>
+
+      <!-- SELEÇÃO ABERTO (EXTERNO) -->
+      <sc-if value="{{ vSelecao }}" hint-placeholder-val="{{ false }}">
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.1rem;padding:2rem;text-align:center;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;letter-spacing:0.16em;text-transform:uppercase;color:#E0A25A;">Aplicação existente · abrindo nesta aba</span>
+          <p style="margin:0;font-family:'Spectral',serif;font-weight:300;font-size:1.9rem;line-height:1.2;color:#F2EBD9;max-width:22ch;">Indo para o TATÁ Seleção.</p>
+          <div style="display:flex;flex-direction:column;gap:0.5rem;font-size:0.98rem;color:#A8BCA0;max-width:52ch;text-align:left;">
+            <span style="display:flex;gap:0.6rem;"><span style="color:#8CC63F;">✓</span>A sessão do Seleção é própria e fica preservada.</span>
+            <span style="display:flex;gap:0.6rem;"><span style="color:#8CC63F;">✓</span>Para voltar, use "TATÁ OS" no topo do Seleção.</span>
+            <span style="display:flex;gap:0.6rem;"><span style="color:#8CC63F;">✓</span>Sem iframe, sem token compartilhado, sem novo login automático.</span>
+          </div>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:#5F7A62;">login unificado entra depois, com arquitetura aprovada</span>
+        </div>
+      </sc-if>
+
+      <!-- MÓDULO EM PREPARAÇÃO -->
+      <sc-if value="{{ vPrep }}" hint-placeholder-val="{{ false }}">
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;padding:2rem;text-align:center;">
+          <div style="width:64px;height:64px;border-radius:50%;border:1px dashed rgba(126,148,120,0.5);display:flex;align-items:center;justify-content:center;"><span style="font-family:'Spectral',serif;font-size:1.4rem;color:#B9C4AC;">{{ prepInicial }}</span></div>
+          <p style="margin:0;font-family:'Spectral',serif;font-weight:300;font-size:1.9rem;line-height:1.2;color:#F2EBD9;">{{ prepNome }}</p>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:0.7rem;letter-spacing:0.14em;text-transform:uppercase;color:#7E9478;">em preparação</span>
+          <p style="margin:0;font-size:1rem;line-height:1.55;color:#8FA588;max-width:52ch;">{{ prepDesc }} O que você lê é direção inicial, não escopo congelado: este módulo ainda será investigado com a operação antes de ganhar recursos.</p>
+          <button onClick="{{ goHome }}" style="cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-weight:500;font-size:0.95rem;color:#BFCBB2;background:transparent;border:1px solid #274B39;border-radius:10px;padding:0.75rem 1.3rem;min-height:44px;" style-hover="border-color:#3E6B4F;color:#EFE6D3">← Voltar ao TATÁ OS</button>
+        </div>
+      </sc-if>
+    </div>
+    <p style="margin:0.9rem 0 0;font-size:1rem;line-height:1.5;color:#8FA588;max-width:76ch;">{{ scenHint }}</p>
+  </section>
+
+  <!-- MOBILE -->
+  <section style="padding:3rem 0 0;">
+    <div style="display:flex;align-items:baseline;gap:0.7rem;margin-bottom:1.2rem;flex-wrap:wrap;"><span style="font-family:'IBM Plex Mono',monospace;font-size:0.76rem;letter-spacing:0.12em;color:#7E9478;">MOBILE · CLICÁVEL</span><h2 style="margin:0;font-family:'Spectral',serif;font-weight:400;font-size:clamp(1.3rem,3vw,1.8rem);">Trocar de módulo em dois toques</h2></div>
+    <div style="display:flex;flex-wrap:wrap;gap:1.6rem;justify-content:center;">
+      <div style="flex:none;display:flex;flex-direction:column;gap:0.6rem;align-items:center;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:0.7rem;letter-spacing:0.14em;text-transform:uppercase;color:#8CC63F;">toque em "módulos" e escolha</span>
+        <div style="width:300px;border:1px solid #1F3E2E;border-radius:34px;padding:9px;background:#06120D;box-shadow:0 30px 60px -34px rgba(0,0,0,0.8);">
+          <div style="position:relative;background:#0C1811;border-radius:26px;overflow:hidden;min-height:620px;display:flex;flex-direction:column;">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.2rem 0.6rem;">
+              <span onClick="{{ mGoHome }}" role="button" style="cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:0.72rem;letter-spacing:0.12em;text-transform:uppercase;color:#8CC63F;">TATÁ OS</span>
+              <button onClick="{{ mToggleSheet }}" style="cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:#BFCBB2;background:transparent;border:1px solid #274B39;border-radius:8px;padding:0.45rem 0.8rem;min-height:44px;">módulos ▾</button>
+            </div>
+
+            <sc-if value="{{ mHome }}" hint-placeholder-val="{{ true }}">
+              <div style="flex:1;display:flex;flex-direction:column;padding:0.6rem 1.2rem 1.2rem;">
+                <p style="margin:0 0 1.1rem;font-family:'Spectral',serif;font-weight:300;font-size:1.34rem;line-height:1.2;color:#F2EBD9;">Tudo o que move o TATÁ.</p>
+                <div onClick="{{ mAbrirDelivery }}" role="button" style="cursor:pointer;padding:1.1rem;background:linear-gradient(180deg,#13291D,#0E2016);border:1px solid #2C5940;border-radius:14px;margin-bottom:1rem;">
+                  <div style="display:flex;align-items:baseline;gap:0.5rem;flex-wrap:wrap;"><span style="font-family:'Spectral',serif;font-size:1.2rem;color:#F2EBD9;">Copiloto Delivery</span><span style="font-family:'IBM Plex Mono',monospace;font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase;color:#8CC63F;">ativo</span></div>
+                  <p style="margin:0.3rem 0 0.55rem;font-size:0.88rem;line-height:1.4;color:#A8BCA0;">A operação de delivery em uma só superfície.</p>
+                  <p style="margin:0 0 0.8rem;font-size:0.9rem;color:{{ mDeliveryCor }};display:flex;align-items:center;gap:0.45rem;"><span style="width:7px;height:7px;border-radius:50%;background:{{ mDeliveryDot }};"></span>{{ mDeliveryLinha }}</p>
+                  <span style="display:inline-block;font-family:'Hanken Grotesk',sans-serif;font-weight:600;font-size:0.94rem;color:#0B1A11;background:#8CC63F;border-radius:10px;padding:0.7rem 1.1rem;min-height:44px;line-height:1.6;">Abrir a operação</span>
+                </div>
+                <div style="display:flex;flex-direction:column;">
+                  <sc-for list="{{ mOthers }}" as="m" hint-placeholder-count="4">
+                    <div style="display:flex;align-items:center;gap:0.7rem;padding:0.8rem 0.2rem;border-top:1px solid #163026;min-height:52px;">
+                      <div style="flex:1;"><span style="font-family:'Spectral',serif;font-size:1.02rem;color:{{ m.nomeCor }};">{{ m.nome }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:0.58rem;letter-spacing:0.08em;text-transform:uppercase;color:{{ m.statusCor }};margin-left:0.5rem;">{{ m.statusLabel }}</span></div>
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:0.78rem;color:#7E9478;">›</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ mDelivery }}" hint-placeholder-val="{{ false }}">
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0.9rem;padding:1.4rem;text-align:center;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:0.64rem;letter-spacing:0.14em;text-transform:uppercase;color:#8CC63F;">Copiloto Delivery · ativo</span>
+                <p style="margin:0;font-family:'Spectral',serif;font-weight:300;font-size:1.4rem;line-height:1.22;color:#F2EBD9;max-width:20ch;">A operação viva entra aqui, como na V3.3.</p>
+                <p style="margin:0;font-size:0.9rem;color:#8FA588;max-width:30ch;">Barra do TATÁ OS no topo; o módulo é dono do resto.</p>
+                <button onClick="{{ mGoHome }}" style="cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-weight:500;font-size:0.92rem;color:#BFCBB2;background:transparent;border:1px solid #274B39;border-radius:10px;padding:0.75rem 1.2rem;min-height:44px;">← TATÁ OS</button>
+              </div>
+            </sc-if>
+
+            <!-- sheet de módulos: 2 toques -->
+            <sc-if value="{{ mSheet }}" hint-placeholder-val="{{ false }}">
+              <div onClick="{{ mToggleSheet }}" style="position:absolute;inset:0;background:rgba(4,10,7,0.6);z-index:4;"></div>
+              <div style="position:absolute;left:0;right:0;bottom:0;z-index:5;background:#0E2016;border-top:1px solid #2C5940;border-radius:18px 18px 26px 26px;padding:1rem 1.1rem 1.3rem;display:flex;flex-direction:column;gap:0.2rem;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:0.64rem;letter-spacing:0.14em;text-transform:uppercase;color:#7E9478;margin-bottom:0.4rem;">Trocar de módulo</span>
+                <sc-for list="{{ mSheetItems }}" as="m" hint-placeholder-count="5">
+                  <button onClick="{{ m.abrir }}" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:0.7rem;padding:0.75rem 0.6rem;background:transparent;border:none;border-top:1px solid #163026;min-height:48px;text-align:left;width:100%;">
+                    <span style="font-family:'Spectral',serif;font-size:1.02rem;color:{{ m.nomeCor }};">{{ m.nome }}</span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:0.58rem;letter-spacing:0.08em;text-transform:uppercase;color:{{ m.statusCor }};">{{ m.statusLabel }}</span>
+                  </button>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- REGISTRO CENTRAL -->
+  <section style="padding:3rem 0 0;">
+    <div style="display:flex;align-items:baseline;gap:0.7rem;margin-bottom:1.2rem;"><span style="font-family:'IBM Plex Mono',monospace;font-size:0.76rem;letter-spacing:0.12em;color:#7E9478;">CONTRATO</span><h2 style="margin:0;font-family:'Spectral',serif;font-weight:400;font-size:clamp(1.3rem,3vw,1.8rem);">Registro central de módulos</h2></div>
+    <p style="margin:0 0 1.2rem;font-size:1rem;line-height:1.5;color:#8FA588;max-width:76ch;">A Home inteira, desktop e mobile, é renderizada deste registro. Nenhum card é manual. Exemplo real do protótipo, o Copiloto Delivery:</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:0.55rem 2.4rem;">
+      <sc-for list="{{ contrato }}" as="c" hint-placeholder-count="19">
+        <div style="display:flex;justify-content:space-between;gap:1rem;align-items:baseline;padding:0.5rem 0;border-bottom:1px solid #163026;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:0.76rem;color:#7E9478;">{{ c.campo }}</span>
+          <span style="font-size:0.92rem;color:#DDD4BC;text-align:right;">{{ c.valor }}</span>
+        </div>
+      </sc-for>
+    </div>
+    <p style="margin:1.1rem 0 0;font-size:0.95rem;line-height:1.55;color:#8FA588;max-width:78ch;">Flags (ativo, piloto, em preparação, manutenção, desativado) e permissões (visualizar, operar, administrar módulo, administrar TATÁ OS) são aplicadas no backend na implementação; o frontend apenas reflete. Módulo desativado não aparece, não tem rota pública e não gera erro.</p>
+  </section>
+
+  <!-- CONTRATO VISUAL + NOME -->
+  <section style="padding:3rem 0 0;">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1.6rem;">
+      <div>
+        <h3 style="margin:0 0 0.85rem;font-family:'IBM Plex Mono',monospace;font-size:0.72rem;letter-spacing:0.13em;text-transform:uppercase;color:#8CC63F;">Compartilhado por todos os módulos</h3>
+        <p style="margin:0;font-size:0.98rem;line-height:1.6;color:#BFCBB2;">Logotipo e barra do TATÁ OS, tipografia (Spectral + Hanken Grotesk + Plex Mono), verde profundo e verde vivo estruturais, escala de espaçamento, retorno, estados técnicos em cinza-ardósia, movimento contido com redução respeitada, acessibilidade.</p>
+      </div>
+      <div>
+        <h3 style="margin:0 0 0.85rem;font-family:'IBM Plex Mono',monospace;font-size:0.72rem;letter-spacing:0.13em;text-transform:uppercase;color:#E0A25A;">Soberano de cada módulo</h3>
+        <p style="margin:0;font-size:0.98rem;line-height:1.6;color:#BFCBB2;">Composição e topologia (a superfície viva é do Delivery, não vira molde), conteúdo, interação central e uma cor secundária controlada. Os módulos não são cópias do Copiloto Delivery.</p>
+      </div>
+      <div>
+        <h3 style="margin:0 0 0.85rem;font-family:'IBM Plex Mono',monospace;font-size:0.72rem;letter-spacing:0.13em;text-transform:uppercase;color:#E9DFC8;">Nome e assinatura</h3>
+        <p style="margin:0;font-size:0.98rem;line-height:1.6;color:#BFCBB2;"><strong style="color:#F2EBD9;">TATÁ OS</strong> vence: mais claro que One (vago) e Core (técnico), mais expansível que Central (soa a atendimento), fácil de falar, coerente com módulos. Assinatura: <em style="font-family:'Spectral',serif;">"Tudo o que move o TATÁ."</em> É própria, curta, e não colide com a voz do Copiloto ("a operação inteira em uma só superfície").</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- RESPOSTA FINAL -->
+  <section style="padding:3rem 0 3rem;">
+    <div style="background:linear-gradient(180deg,#13291D,#0E2016);border:1px solid #2C5940;border-radius:18px;padding:clamp(1.5rem,4vw,2.4rem);">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;letter-spacing:0.14em;text-transform:uppercase;color:#8CC63F;">Resposta final ao gate</span>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:0.35rem 2.4rem;margin-top:1.1rem;">
+        <sc-for list="{{ resposta }}" as="r" hint-placeholder-count="15">
+          <div style="display:flex;justify-content:space-between;gap:1rem;align-items:baseline;padding:0.5rem 0;border-bottom:1px solid rgba(44,89,64,0.4);">
+            <span style="font-size:0.95rem;color:#DDD4BC;">{{ r.item }}</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:0.78rem;font-weight:500;color:{{ r.cor }};text-align:right;">{{ r.valor }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <p style="margin:1.3rem 0 0;font-size:0.98rem;line-height:1.55;color:#BFCBB2;max-width:80ch;">Condições de implementação: flags e permissões aplicadas no backend, abertura do Seleção validada com a arquitetura atual dele, e o registro de módulos como fonte única da Home. Nenhum código de produção foi escrito.</p>
+    </div>
+  </section>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1220,&quot;height&quot;:1050}}">
+class Component extends DCLogic {
+  state = { scen:'gestor', view:'home', mView:'home', mSheet:false };
+
+  registry() {
+    return [
+      { id:'mod-copiloto-delivery', slug:'delivery', nome:'Copiloto Delivery', descricao:'A operação de delivery do Tatá, viva, em uma só superfície: pressão, atenção e ação.', rota:'/os/delivery', flag:'ativo', permissao:'operar', prioridade:100, ultimaUtilizacao:'agora há pouco', fonte:'motor do Copiloto (sess.active.sit)', versao:'v3.3', acao:'Abrir a operação', abertura:'interna', url:'/os/delivery', retorno:'sim, barra do TATÁ OS', glyphKind:'topologia', ordem:1 },
+      { id:'mod-selecao', slug:'selecao', nome:'TATÁ Seleção', descricao:'Recrutamento e seleção do TATÁ. Aplicação existente, aberta com sessão própria.', rota:'/os/selecao', flag:'ativo', permissao:'visualizar', prioridade:60, ultimaUtilizacao:'ontem', fonte:'aplicação Seleção', versao:'atual', acao:'Abrir o Seleção', abertura:'externa, mesma aba', url:'https://selecao.tata', retorno:'link TATÁ OS no topo', glyphKind:'pessoas', ordem:2 },
+      { id:'mod-entregas', slug:'entregas', nome:'Entregas', descricao:'Direção inicial: viagens próprias e entrega de sacolas aos entregadores do iFood.', rota:'/os/entregas', flag:'preparacao', permissao:'visualizar', prioridade:30, ultimaUtilizacao:'—', fonte:'—', versao:'—', acao:'Ver preparação', abertura:'interna', url:'/os/entregas', retorno:'sim', glyphKind:'rota', ordem:3 },
+      { id:'mod-estoque', slug:'estoque', nome:'Estoque', descricao:'Direção inicial: insumos e faltas vistos a partir da operação, não de planilhas.', rota:'/os/estoque', flag:'preparacao', permissao:'administrar', prioridade:20, ultimaUtilizacao:'—', fonte:'—', versao:'—', acao:'Ver preparação', abertura:'interna', url:'/os/estoque', retorno:'sim', glyphKind:'caixa', ordem:4 },
+      { id:'mod-caixa', slug:'caixa', nome:'Caixa', descricao:'Direção inicial: entradas e fechamento do turno com a mesma linguagem do ecossistema.', rota:'/os/caixa', flag:'preparacao', permissao:'administrar', prioridade:10, ultimaUtilizacao:'—', fonte:'—', versao:'—', acao:'Ver preparação', abertura:'interna', url:'/os/caixa', retorno:'sim', glyphKind:'moeda', ordem:5 },
+    ];
+  }
+
+  scenarios() {
+    return {
+      gestor:{ label:'Gestor · tudo ativo', user:'César', perms:{ visualizar:true, operar:true, administrar:true },
+        overrides:{}, delivery:{ linha:'Operação fluindo · 22 pedidos no ritmo', cor:'#A8BCA0', dot:'#8CC63F', pulse:true },
+        hint:'Home padrão: identidade, uma frase, o módulo principal definido pelo registro (hoje o Copiloto Delivery, por prioridade, não por hardcode) e os demais módulos. Sem feed, sem métrica, sem alerta.' },
+      atencao:{ label:'Atenção no Delivery', user:'César', perms:{ visualizar:true, operar:true, administrar:true },
+        overrides:{}, delivery:{ linha:'Pedido #8622 precisa de atenção na Conferência', cor:'#E7C089', dot:'#E0A25A', pulse:true },
+        hint:'O módulo principal empresta uma linha de estado vinda da fonte do próprio módulo. A Home aponta, não explica: compreender e agir acontece dentro do Copiloto.' },
+      operador:{ label:'Sem permissão', user:'Kenji', perms:{ visualizar:true, operar:true, administrar:false },
+        overrides:{}, delivery:{ linha:'Operação fluindo · 22 pedidos no ritmo', cor:'#A8BCA0', dot:'#8CC63F', pulse:true },
+        hint:'Kenji não administra Estoque nem Caixa: os dois nem aparecem (permissão aplicada no backend; a Home só mostra o que o usuário pode conhecer). Nada de botão quebrado.' },
+      manutencao:{ label:'Seleção em manutenção', user:'César', perms:{ visualizar:true, operar:true, administrar:true },
+        overrides:{ 'mod-selecao':{ flag:'manutencao' } }, delivery:{ linha:'Operação fluindo · 22 pedidos no ritmo', cor:'#A8BCA0', dot:'#8CC63F', pulse:true },
+        hint:'Manutenção é honesta: o módulo continua visível, diz "em manutenção" e não oferece abertura. Sem rota aberta, sem erro, sem promessa de horário.' },
+    };
+  }
+
+  glyph(kind, big) {
+    const h = React.createElement;
+    const s = big ? 56 : 40;
+    const wrap = (kids, ring) => h('div',{style:{width:s+'px',height:s+'px',borderRadius:'50%',border:'1px '+(ring||'solid rgba(140,198,63,0.4)'),display:'flex',alignItems:'center',justifyContent:'center',background:'rgba(140,198,63,0.06)'}},kids);
+    const dot = (c,sz) => h('span',{style:{width:sz+'px',height:sz+'px',borderRadius:'50%',background:c,display:'inline-block'}});
+    if (kind==='topologia') return wrap(h('div',{style:{display:'flex',gap:'4px',alignItems:'center'}},[dot('#BEE592',6),h('span',{key:'l',style:{width:'8px',height:'1px',background:'#3E6B4F'}}),dot('#8CC63F',8),h('span',{key:'l2',style:{width:'8px',height:'1px',background:'#3E6B4F'}}),dot('#BEE592',6)]));
+    if (kind==='pessoas') return wrap(h('div',{style:{display:'flex',gap:'3px',alignItems:'flex-end'}},[dot('#BEE592',7),dot('#8CC63F',9),dot('#BEE592',7)]));
+    return wrap(h('span',{style:{fontFamily:"'Spectral',serif",fontSize:big?'1.3rem':'1rem',color:'#B9C4AC'}}, kind==='rota'?'E':(kind==='caixa'?'S':'C')), 'dashed rgba(126,148,120,0.5)');
+  }
+
+  visible(scen) {
+    const S = this.scenarios()[scen];
+    return this.registry()
+      .map(m => Object.assign({}, m, (S.overrides[m.id]||{})))
+      .filter(m => m.flag !== 'desativado')
+      .filter(m => m.permissao !== 'administrar' || S.perms.administrar)
+      .sort((a,b) => a.ordem - b.ordem);
+  }
+
+  statusMeta(flag) {
+    if (flag==='ativo') return { label:'ativo', cor:'#8CC63F' };
+    if (flag==='piloto') return { label:'piloto', cor:'#BEE592' };
+    if (flag==='preparacao') return { label:'em preparação', cor:'#7E9478' };
+    if (flag==='manutencao') return { label:'em manutenção', cor:'#9AA7B0' };
+    return { label:'desativado', cor:'#5F7A62' };
+  }
+
+  openModule(m) {
+    if (m.flag==='manutencao') return;
+    if (m.slug==='delivery') this.setState({ view:'delivery' });
+    else if (m.slug==='selecao') this.setState({ view:'selecao' });
+    else this.setState({ view:'prep-'+m.slug });
+  }
+
+  renderVals() {
+    const scen = this.state.scen;
+    const S = this.scenarios()[scen];
+    const mods = this.visible(scen);
+    const principal = mods.filter(m => m.flag==='ativo').sort((a,b)=>b.prioridade-a.prioridade)[0];
+    const others = mods.filter(m => m !== principal);
+    const view = this.state.view;
+    const prepSlug = view.startsWith('prep-') ? view.slice(5) : null;
+    const prepMod = prepSlug ? mods.find(m=>m.slug===prepSlug) : null;
+    const scenBtns = Object.keys(this.scenarios()).map(k => ({
+      label:this.scenarios()[k].label,
+      onClick:() => this.setState({ scen:k, view:'home' }),
+      bg: scen===k ? '#8CC63F' : 'transparent', color: scen===k ? '#0B1A11' : '#A8BCA0', border: scen===k ? '#8CC63F' : '#274B39',
+    }));
+    const moduleName = view==='delivery' ? 'Copiloto Delivery' : (view==='selecao' ? 'TATÁ Seleção' : (prepMod ? prepMod.nome : ''));
+    const othersV = others.map(m => {
+      const st = this.statusMeta(m.flag);
+      const manut = m.flag==='manutencao';
+      return {
+        nome:m.nome, descricao:m.descricao, statusLabel:st.label, statusCor:st.cor,
+        nomeCor: m.flag==='preparacao' || manut ? '#B9C4AC' : '#F2EBD9',
+        glyph:this.glyph(m.glyphKind,false),
+        podeAbrir: !manut, indisponivel: manut,
+        acao: manut ? 'indisponível agora' : m.acao,
+        abrir: () => this.openModule(m),
+      };
+    });
+    const pSt = principal ? this.statusMeta(principal.flag) : { label:'', cor:'#8CC63F' };
+    const sheetSource = mods.map(m => {
+      const st = this.statusMeta(m.flag);
+      return { nome:m.nome, statusLabel:st.label, statusCor:st.cor, nomeCor: m.flag==='ativo' ? '#F2EBD9' : '#B9C4AC',
+        abrir: () => this.setState({ mSheet:false, mView: m.slug==='delivery' ? 'delivery' : 'home' }) };
+    });
+    const c = principal || {};
+    return {
+      scenBtns, scenHint:S.hint,
+      userName:S.user, userInitial:S.user.slice(0,1),
+      saudacao:'Boa noite, '+S.user,
+      vHome: view==='home', vDelivery: view==='delivery', vSelecao: view==='selecao', vPrep: !!prepMod,
+      inModule: view!=='home', moduleName,
+      goHome: () => this.setState({ view:'home' }),
+      principal:{
+        nome: principal ? principal.nome : '', descricao: principal ? principal.descricao : '',
+        statusLabel:pSt.label, estadoLinha:S.delivery.linha, estadoCor:S.delivery.cor, dotCor:S.delivery.dot, pulse:S.delivery.pulse,
+        acao: principal ? principal.acao : '', abrir: () => principal && this.openModule(principal),
+      },
+      principalGlyph: principal ? this.glyph(principal.glyphKind,true) : null,
+      others: othersV,
+      homeNota:'renderizado do registro central · módulos ocultos por permissão não aparecem · demonstração',
+      prepNome: prepMod ? prepMod.nome : '', prepDesc: prepMod ? prepMod.descricao : '', prepInicial: prepMod ? prepMod.nome.slice(0,1) : '',
+      contrato: principal ? [
+        { campo:'id', valor:c.id },{ campo:'slug', valor:c.slug },{ campo:'nome', valor:c.nome },
+        { campo:'descrição curta', valor:'A operação de delivery, viva…' },{ campo:'rota', valor:c.rota },
+        { campo:'status', valor:'saudável (da fonte do módulo)' },{ campo:'feature flag', valor:c.flag },
+        { campo:'disponibilidade', valor:'disponível' },{ campo:'permissão necessária', valor:c.permissao },
+        { campo:'prioridade visual', valor:String(c.prioridade)+' (maior = principal)' },{ campo:'última utilização', valor:c.ultimaUtilizacao },
+        { campo:'fonte do estado', valor:c.fonte },{ campo:'versão', valor:c.versao },
+        { campo:'ação principal', valor:c.acao },{ campo:'tipo de abertura', valor:c.abertura },
+        { campo:'URL', valor:c.url },{ campo:'suporte a retorno', valor:c.retorno },
+        { campo:'assinatura visual', valor:'glifo de topologia' },{ campo:'ordem', valor:String(c.ordem) },
+      ] : [],
+      resposta: [
+        { item:'Papel da Home', valor:'porta de entrada', cor:'#8CC63F' },
+        { item:'Home funciona como launcher', valor:'SIM', cor:'#8CC63F' },
+        { item:'Home parece dashboard', valor:'NÃO', cor:'#8CC63F' },
+        { item:'Módulo principal configurável', valor:'SIM · prioridade no registro', cor:'#8CC63F' },
+        { item:'Cards gerados por registro', valor:'SIM', cor:'#8CC63F' },
+        { item:'Feature flags', valor:'SIM · 5 estados', cor:'#8CC63F' },
+        { item:'Integração inicial do Seleção', valor:'card ativo + abertura segura', cor:'#8CC63F' },
+        { item:'Tipo de abertura', valor:'externa, mesma aba', cor:'#8CC63F' },
+        { item:'Retorno ao TATÁ OS', valor:'SIM · visível no topo', cor:'#8CC63F' },
+        { item:'SSO improvisado', valor:'NÃO', cor:'#8CC63F' },
+        { item:'Módulos futuros sem escopo inventado', valor:'SIM · direção inicial', cor:'#8CC63F' },
+        { item:'Permissão no backend', valor:'SIM · condição de implementação', cor:'#E0A25A' },
+        { item:'Nome validado', valor:'TATÁ OS', cor:'#8CC63F' },
+        { item:'Assinatura escolhida', valor:'"Tudo o que move o TATÁ."', cor:'#8CC63F' },
+        { item:'Arquitetura expansível', valor:'SIM · novo módulo = nova entrada', cor:'#8CC63F' },
+      ],
+      mHome: this.state.mView==='home', mDelivery: this.state.mView==='delivery', mSheet: this.state.mSheet,
+      mGoHome: () => this.setState({ mView:'home', mSheet:false }),
+      mToggleSheet: () => this.setState({ mSheet: !this.state.mSheet }),
+      mAbrirDelivery: () => this.setState({ mView:'delivery' }),
+      mDeliveryLinha:S.delivery.linha, mDeliveryCor:S.delivery.cor, mDeliveryDot:S.delivery.dot,
+      mOthers: othersV.map(o => ({ nome:o.nome, statusLabel:o.statusLabel, statusCor:o.statusCor, nomeCor:o.nomeCor })),
+      mSheetItems: sheetSource,
+    };
+  }
+}
+</script>
+</body>
+</html>
