@@ -182,7 +182,7 @@ console.log("\n=== ENTREGAS UI 3C.1 tests ===\n");
     assert.equal(t.includes("app-v1/style.css"), false);
   });
 
-  await test("UI expedição: retirada iFood operacional e sem jargão", () => {
+  await test("UI expedição reconstruída: home simples e sem jargão", () => {
     const html = readFileSync(
       join(process.cwd(), "src/entregas/ui/ifood-handoff/index.html"),
       "utf8",
@@ -191,23 +191,31 @@ console.log("\n=== ENTREGAS UI 3C.1 tests ===\n");
       join(process.cwd(), "src/entregas/ui/ifood-handoff/handoff.js"),
       "utf8",
     );
-    assert.ok(html.includes("Buscar pedido"));
-    assert.ok(html.includes("Entregar ao motoboy"));
-    assert.ok(html.includes("Confira antes de entregar"));
-    assert.ok(html.includes("Nome no pedido"));
-    assert.ok(html.includes("Número iFood") || html.includes("Número do iFood") || html.includes("número do iFood") || html.includes("chkIfood"));
-    assert.equal(html.includes("Iniciar handoff"), false);
-    assert.equal(html.includes("Liberar pedido"), false);
-    assert.equal(html.toLowerCase().includes("external_courier_ref"), false);
-    assert.equal(html.toLowerCase().includes("verificação de identidade"), false);
+    const css = readFileSync(
+      join(process.cwd(), "src/entregas/ui/ifood-handoff/handoff.css"),
+      "utf8",
+    );
+    // Home não embute formulário permanente
+    assert.equal(html.includes("chkBags"), false);
+    assert.equal(html.includes("Entregar ao motoboy"), false);
+    assert.ok(html.includes("id=\"app\"") || html.includes("id='app'"));
+    assert.ok(js.includes("Buscar pedido"));
+    assert.ok(js.includes("Entregar ao motoboy"));
+    assert.ok(js.includes("Nenhum pedido pronto agora"));
+    assert.ok(js.includes("Vá buscar na conferência"));
+    assert.ok(js.includes("Pedido em mãos"));
+    assert.ok(js.includes("Confira antes de entregar"));
     assert.ok(js.includes("Pedido entregue ao motoboy do iFood"));
     assert.ok(js.includes("canal do iFood"));
+    assert.ok(js.includes("playReadyChime") || js.includes("soundEnabled"));
+    assert.ok(js.includes("alerted")); // aviso uma vez por pedido
+    assert.equal(html.toLowerCase().includes("external_courier_ref"), false);
     assert.equal(js.includes("sai do cuidado da casa"), false);
-    // Conferência de conteúdo não é do entregador externo
+    assert.ok(css.includes("pulse-in") || css.includes("readyPulse"));
     assert.ok(
-      html.includes("não confere itens") ||
-        html.includes("Não abra a embalagem") ||
-        js.includes("Não abra a embalagem"),
+      js.includes("não confere itens") ||
+        js.includes("Não peça ao motoboy") ||
+        js.includes("Sem abrir a embalagem"),
     );
   });
 

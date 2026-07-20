@@ -11,134 +11,29 @@
   <div class="demo-banner" role="status">AMBIENTE DE DEMONSTRAÇÃO · EXPEDIÇÃO IFOOD</div>
   <header class="shell-header">
     <div class="shell-brand">ENTREGAS <span>expedição iFood</span></div>
-    <a class="muted" href="/console/">← Console</a>
+    <div class="shell-tools">
+      <label class="sound-toggle" title="Som discreto ao ficar pronto">
+        <input type="checkbox" id="soundEnabled" checked />
+        <span>Som</span>
+      </label>
+      <a class="muted" href="/console/">← Console</a>
+    </div>
   </header>
 
-  <main class="exp-wrap">
-    <!-- ===== Foco soberano por etapa ===== -->
-    <section class="focus card edge-green" id="focusPanel" aria-live="polite">
-      <p class="label-meta" id="focusStage">Pedido pronto</p>
-      <h1 class="title-sov" id="focusTitle">Pedido #8640 ficou pronto.</h1>
-      <p class="sub-human" id="focusSub">Vá buscar na conferência.</p>
-      <p class="note-ops muted" id="focusNote">
-        O entregador do iFood não confere itens nem abre a embalagem.
-        A conferência do conteúdo é da casa, antes do repasse.
-      </p>
-      <div class="focus-actions">
-        <button type="button" class="primary big btn-sovereign" id="btnPrimary">Buscar pedido</button>
-      </div>
-    </section>
-
-    <!-- ===== Dados do pedido (sempre visíveis após pronto) ===== -->
-    <section class="card order-sheet" aria-labelledby="sheet-title">
-      <h2 class="step-label" id="sheet-title">Pedido</h2>
-      <div class="order-head">
-        <div class="order-num" id="dispOrderNum">Pedido #8640</div>
-        <span class="chip" id="dispStatus">Pedido pronto</span>
-      </div>
-      <dl class="facts">
-        <div>
-          <dt>Nome no pedido</dt>
-          <dd id="dispCustomerName">Marina Alves</dd>
-        </div>
-        <div>
-          <dt>Número iFood</dt>
-          <dd id="dispIfoodCode" class="mono">4821</dd>
-        </div>
-        <div>
-          <dt>Quantidade de sacolas</dt>
-          <dd id="dispBags">2 sacolas</dd>
-        </div>
-        <div>
-          <dt>Ficou pronto</dt>
-          <dd id="dispReadyAt">19:42</dd>
-        </div>
-        <div class="span-2">
-          <dt>Entregador esperado</dt>
-          <dd id="dispRiderBlock">
-            <span id="dispRiderName">Lucas</span>
-            <span class="meta" id="dispRiderHint">Nome exibido pelo iFood</span>
-          </dd>
-        </div>
-        <div class="span-2">
-          <dt>Responsável interno pela liberação</dt>
-          <dd>
-            <input id="handActor" value="Juliana" autocomplete="name" aria-label="Responsável interno pela liberação" />
-          </dd>
-        </div>
-      </dl>
-      <!-- Demo: simular nome ausente do iFood -->
-      <label class="check demo-toggle">
-        <input type="checkbox" id="toggleNoRiderName" />
-        Demo: nome do entregador não informado pelo iFood
-      </label>
-    </section>
-
-    <!-- ===== Confira antes de entregar (só com entregador) ===== -->
-    <section class="card check-sheet" id="checkSheet" hidden aria-labelledby="check-title">
-      <h2 class="title-sov check-heading" id="check-title">Confira antes de entregar</h2>
-      <p class="sub-human">Só o que importa na retirada — sacolas, nome e número. Sem abrir a embalagem.</p>
-
-      <ul class="check-list" role="list">
-        <li>
-          <label class="check">
-            <input type="checkbox" id="chkBags" />
-            <span id="lblBags">2 sacolas</span>
-          </label>
-        </li>
-        <li>
-          <label class="check">
-            <input type="checkbox" id="chkName" />
-            <span>Nome do pedido correto</span>
-          </label>
-        </li>
-        <li>
-          <label class="check">
-            <input type="checkbox" id="chkIfood" />
-            <span>Número do iFood correto</span>
-          </label>
-        </li>
-      </ul>
-
-      <div class="rider-box" id="riderBox">
-        <p class="label-meta">Entregador</p>
-        <p class="rider-name" id="checkRiderName">Lucas</p>
-        <p class="meta" id="checkRiderHint">Informação exibida pelo iFood</p>
-      </div>
-
-      <div id="pendingBox" class="pending-box" role="status">Complete as conferências para entregar.</div>
-      <button type="button" class="primary big btn-sovereign" id="btnDeliver" disabled>
-        Entregar ao motoboy
-      </button>
-    </section>
-
-    <div id="errorBox" class="error-box" hidden role="alert"></div>
-    <div id="result" class="result" hidden></div>
-
-    <!-- Demo controls: pedido pronto simulado -->
-    <section class="card list-panel" aria-labelledby="demo-title">
-      <h2 class="step-label" id="demo-title">Demonstração</h2>
-      <p class="muted small">Simula o aviso de pedido pronto e a fila da sessão (sem alterar o domínio).</p>
-      <div class="demo-row">
-        <button type="button" id="btnResetDemo">Novo pedido pronto</button>
-        <button type="button" class="ghost" id="btnRiderArrived" hidden>Entregador chegou (demo)</button>
-      </div>
-      <div id="list" class="list" style="margin-top:0.75rem"></div>
-    </section>
+  <main class="exp-wrap" id="app">
+    <!-- Preenchido por handoff.js: home | detail stages -->
   </main>
 
-  <!-- Dados de demo embutidos (UI only) -->
-  <script type="application/json" id="demoOrder">
-  {
-    "local_number": "8640",
-    "customer_name": "Marina Alves",
-    "ifood_code": "4821",
-    "bags": 2,
-    "ready_at": "19:42",
-    "platform_order_ref": "IF-9001",
-    "rider_display_name": "Lucas"
-  }
-  </script>
+  <div id="errorBox" class="error-box" hidden role="alert"></div>
+
+  <!-- Controles de demo (recuados) — não fazem parte da operação real -->
+  <aside class="demo-dock" aria-label="Controles de demonstração">
+    <p class="label-meta">Demo</p>
+    <button type="button" id="btnDemoReady">Simular novo pedido pronto</button>
+    <button type="button" id="btnDemoEmpty">Estado sem prontos</button>
+    <button type="button" id="btnDemoReset">Reiniciar fila</button>
+  </aside>
+
   <script type="module" src="/ifood-handoff/handoff.js"></script>
 </body>
 </html>

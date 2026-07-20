@@ -1,0 +1,56 @@
+[
+  {
+    "file": "01_home_varios_prontos.png",
+    "scenario": "home_varios_prontos",
+    "commit": "26e3dd61480b00e9ad4302ecd6eac8034fcdc4b1",
+    "route": "/ifood-handoff/"
+  },
+  {
+    "file": "02_home_sem_prontos.png",
+    "scenario": "home_vazio",
+    "commit": "26e3dd61480b00e9ad4302ecd6eac8034fcdc4b1",
+    "route": "/ifood-handoff/"
+  },
+  {
+    "file": "03_home_novo_pronto.png",
+    "scenario": "home_novo_pedido_pronto",
+    "commit": "26e3dd61480b00e9ad4302ecd6eac8034fcdc4b1",
+    "route": "/ifood-handoff/"
+  },
+  {
+    "file": "04_em_maos_aguardando.png",
+    "scenario": "pedido_em_maos",
+    "commit": "26e3dd61480b00e9ad4302ecd6eac8034fcdc4b1",
+    "route": "/ifood-handoff/"
+  },
+  {
+    "file": "05_conferencia_bloqueada.png",
+    "scenario": "conferencia_antes",
+    "commit": "26e3dd61480b00e9ad4302ecd6eac8034fcdc4b1",
+    "route": "/ifood-handoff/"
+  },
+  {
+    "file": "06_conferencia_pronta.png",
+    "scenario": "pronto_para_entregar",
+    "commit": "26e3dd61480b00e9ad4302ecd6eac8034fcdc4b1",
+    "route": "/ifood-handoff/"
+  },
+  {
+    "file": "07_conclusao.png",
+    "scenario": "expedicao_concluida",
+    "commit": "26e3dd61480b00e9ad4302ecd6eac8034fcdc4b1",
+    "route": "/ifood-handoff/"
+  },
+  {
+    "file": "08_nome_indisponivel.png",
+    "scenario": "motoboy_sem_nome",
+    "commit": "26e3dd61480b00e9ad4302ecd6eac8034fcdc4b1",
+    "route": "/ifood-handoff/"
+  },
+  {
+    "file": "09_home_desktop.png",
+    "scenario": "home_desktop",
+    "commit": "26e3dd61480b00e9ad4302ecd6eac8034fcdc4b1",
+    "route": "/ifood-handoff/"
+  }
+]

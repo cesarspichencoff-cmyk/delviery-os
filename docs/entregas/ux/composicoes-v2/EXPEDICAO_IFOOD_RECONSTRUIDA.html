@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ENTREGAS · Composições Expedição iFood reconstruída</title>
+  <link rel="stylesheet" href="tokens.css" />
+  <style>
+    .deck { max-width: 520px; margin: 0 auto; padding: 1.5rem 1.1rem 3rem; }
+    .deck h1 {
+      font-family: var(--font-editorial);
+      font-weight: 300;
+      font-size: 1.9rem;
+      margin: 0.4rem 0 0.6rem;
+    }
+    .frame {
+      margin: 1.4rem 0;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      overflow: hidden;
+      background: var(--cream-1);
+      box-shadow: var(--shadow-soft);
+    }
+    .frame header {
+      padding: 0.85rem 1rem;
+      background: var(--cream-3);
+      border-bottom: 1px solid var(--line);
+    }
+    .frame header h2 {
+      font-family: var(--font-editorial);
+      font-weight: 400;
+      font-size: 1.15rem;
+      margin: 0.2rem 0 0;
+    }
+    .phone {
+      padding: 1.25rem 1.1rem 1.5rem;
+      min-height: 420px;
+    }
+    .count {
+      font-family: var(--font-editorial);
+      font-weight: 300;
+      font-size: 2.6rem;
+      margin: 0.2rem 0;
+    }
+    .focus {
+      margin-top: 1.2rem;
+      padding: 1.2rem;
+      border-radius: 18px;
+      background: var(--card);
+      border: 1.5px solid rgba(34,86,60,.28);
+      box-shadow: var(--shadow-soft);
+    }
+    .focus h3 {
+      font-family: var(--font-editorial);
+      font-weight: 300;
+      font-size: 1.45rem;
+      margin: 0.3rem 0 0.4rem;
+    }
+    .btn {
+      display: block;
+      width: 100%;
+      margin-top: 1rem;
+      min-height: 50px;
+      border: none;
+      border-radius: 14px;
+      background: var(--green);
+      color: #F6F1E7;
+      font-weight: 600;
+      font-size: 1rem;
+      box-shadow: var(--glow-green);
+    }
+    .q { margin-top: 1.4rem; padding-top: 1rem; border-top: 1px dashed var(--line); }
+    .q button {
+      width: 100%;
+      text-align: left;
+      margin: 0.35rem 0;
+      padding: 0.65rem 0.8rem;
+      border-radius: 12px;
+      border: 1px solid transparent;
+      background: rgba(255,254,251,.8);
+      font: inherit;
+    }
+    .chk { margin: 0.45rem 0; padding: 0.7rem 0.85rem; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
+    .stop {
+      margin: 1.5rem 0;
+      padding: 1rem;
+      background: #2A2620;
+      color: #F4EFE4;
+      border-radius: 14px;
+      font-size: 0.9rem;
+    }
+    .stop strong { color: #9DBBA6; }
+  </style>
+</head>
+<body>
+  <div class="deck">
+    <div class="badge-comp">COMPOSIÇÕES · EXPEDIÇÃO IFOOD RECONSTRUÍDA</div>
+    <h1>Direção final da superfície</h1>
+    <p class="sub-human">Sprint V2 · uma atenção · uma ação · sem formulário na home.</p>
+
+    <section class="frame">
+      <header><div class="badge-comp">01</div><h2>Tela inicial · vários prontos</h2></header>
+      <div class="phone">
+        <div class="label-meta">Prontos para buscar</div>
+        <div class="count">3 pedidos prontos</div>
+        <p class="muted" style="font-size:0.88rem;margin:0">2 em preparo</p>
+        <div class="focus">
+          <div class="label-meta" style="color:var(--green)">Acabou de ficar pronto</div>
+          <h3>Pedido #8640 ficou pronto.</h3>
+          <p class="sub-human">Vá buscar na conferência.</p>
+          <button class="btn" type="button">Buscar pedido</button>
+        </div>
+        <div class="q">
+          <div class="label-meta">Ainda aguardam retirada</div>
+          <button type="button">#8638 · Pedro Lima</button>
+          <button type="button">#8635 · Ana Costa</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="frame">
+      <header><div class="badge-comp">02</div><h2>Sem pedidos prontos</h2></header>
+      <div class="phone">
+        <div class="label-meta">Expedição iFood</div>
+        <h3 class="title-sov" style="font-size:1.7rem;margin:0.5rem 0">Nenhum pedido pronto agora.</h3>
+        <p class="sub-human">Os novos pedidos aparecerão aqui assim que forem finalizados.</p>
+        <p class="muted" style="margin-top:1rem;font-size:0.9rem">2 pedidos em preparo</p>
+      </div>
+    </section>
+
+    <section class="frame">
+      <header><div class="badge-comp">03</div><h2>Novo pedido pronto (destaque + pulso)</h2></header>
+      <div class="phone">
+        <div class="count">1 pedido pronto</div>
+        <div class="focus" style="box-shadow:0 0 0 8px rgba(34,86,60,.12)">
+          <div class="label-meta" style="color:var(--green)">Acabou de ficar pronto</div>
+          <h3>Pedido #8640 ficou pronto.</h3>
+          <p class="sub-human">Vá buscar na conferência.</p>
+          <button class="btn" type="button">Buscar pedido</button>
+        </div>
+        <p class="muted" style="font-size:0.8rem;margin-top:1rem">Animação curta · som discreto opcional · uma vez por pedido</p>
+      </div>
+    </section>
+
+    <section class="frame">
+      <header><div class="badge-comp">04</div><h2>Pedido em mãos · aguardando motoboy</h2></header>
+      <div class="phone">
+        <div class="label-meta" style="color:var(--green)">Aguardando motoboy</div>
+        <h3 class="title-sov" style="font-size:1.7rem;margin:0.35rem 0">Pedido em mãos.</h3>
+        <p class="sub-human">Aguardando entregador do iFood.</p>
+        <div class="card" style="padding:1rem;margin-top:1rem">
+          <div><strong>#8640</strong> · Marina Alves</div>
+          <div class="muted" style="font-size:0.88rem;margin-top:0.35rem">iFood 4821 · 2 sacolas · 19:42</div>
+          <div class="muted" style="font-size:0.88rem;margin-top:0.35rem">Motoboy: Lucas · Resp.: Juliana</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="frame">
+      <header><div class="badge-comp">05</div><h2>Conferência da retirada · nome disponível</h2></header>
+      <div class="phone">
+        <h3 class="title-sov" style="font-size:1.55rem">Confira antes de entregar</h3>
+        <div class="chk">☐ 2 sacolas</div>
+        <div class="chk">☐ Nome do pedido correto</div>
+        <div class="chk">☐ Número do iFood correto</div>
+        <p style="margin:1rem 0 0.25rem;font-family:var(--font-editorial);font-size:1.15rem">Lucas</p>
+        <p class="muted" style="font-size:0.82rem;margin:0">Nome informado pelo iFood</p>
+        <button class="btn" type="button" style="opacity:.45">Entregar ao motoboy</button>
+      </div>
+    </section>
+
+    <section class="frame">
+      <header><div class="badge-comp">06</div><h2>Nome indisponível</h2></header>
+      <div class="phone">
+        <p style="font-family:var(--font-editorial);font-size:1.15rem;margin:0">Nome do motoboy não informado pelo iFood</p>
+        <p class="sub-human" style="margin-top:0.4rem">Confirme pelo número do pedido e pelo código apresentado.</p>
+        <p class="muted" style="font-size:0.82rem">Não bloqueia a entrega se sacolas, nome e número conferirem.</p>
+      </div>
+    </section>
+
+    <section class="frame">
+      <header><div class="badge-comp">07</div><h2>Conclusão</h2></header>
+      <div class="phone">
+        <div class="card edge-green" style="padding:1.2rem">
+          <h3 class="title-sov" style="font-size:1.45rem;margin:0 0 0.45rem">Pedido entregue ao motoboy do iFood.</h3>
+          <p class="muted" style="margin:0;line-height:1.5">Expedição concluída.<br />O andamento posterior é acompanhado pelo canal do iFood.</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="stop">
+      <strong>Implementação:</strong> <code>src/entregas/ui/ifood-handoff/</code><br />
+      Aguardar aprovação do César. Sem push · sem deploy.
+    </div>
+  </div>
+</body>
+</html>
