@@ -42,17 +42,31 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url || "/", `http://127.0.0.1:${PORT}`);
   try {
     if (url.pathname === "/api/health") {
-      // Demo server: controles de simulação ligados por padrão.
-      // Override: ENTREGAS_DEMO_CONTROLS=false desliga mesmo no ui:entregas.
-      const demoControls =
+      // Ambiente real: ENTREGAS_ENV=demo|operational (default demo neste servidor).
+      // Controles de simulação só no modo demo e com ENTREGAS_DEMO_CONTROLS.
+      const envRaw = (process.env.ENTREGAS_ENV || "demo").toLowerCase();
+      const isDemo =
+        process.env.ENTREGAS_OPERATIONAL !== "true" &&
+        process.env.ENTREGAS_OPERATIONAL !== "1" &&
+        envRaw !== "operational" &&
+        envRaw !== "ops" &&
+        envRaw !== "operacional";
+      const controlsRequested =
         process.env.ENTREGAS_DEMO_CONTROLS === undefined
           ? true
           : process.env.ENTREGAS_DEMO_CONTROLS === "true" ||
             process.env.ENTREGAS_DEMO_CONTROLS === "1";
+      // Controles ausentes fora do demo (não apenas desabilitados)
+      const demoControls = isDemo && controlsRequested;
+      const banner = isDemo
+        ? "AMBIENTE DE DEMONSTRAÇÃO · EXPEDIÇÃO IFOOD"
+        : "AMBIENTE OPERACIONAL · EXPEDIÇÃO IFOOD";
       return json(res, 200, {
         ok: true,
         module: "ENTREGAS",
-        demo: true,
+        demo: isDemo,
+        mode: isDemo ? "demo" : "operational",
+        banner,
         demo_controls: demoControls,
         features: { demo_controls: demoControls },
         shell: false,

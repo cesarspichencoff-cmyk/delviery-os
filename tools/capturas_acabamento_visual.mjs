@@ -1,49 +1,137 @@
 /**
  * Capturas finais — acabamento visual ENTREGAS
- * 8 cenários: mobile online/offline/pending, console 360, iFood conf/conclusão,
- * demo com controles, operacional sem controles.
+ * - Exige working tree limpo (sem WIP de código)
+ * - Carimba FORA da UI (faixa anexada após screenshot full-page)
+ * - 8 cenários com commit/branch/cenário/viewport/modo idênticos no index
  */
 import { chromium } from "playwright";
 import { spawn, execSync } from "node:child_process";
-import { mkdirSync, writeFileSync, existsSync, rmSync } from "node:fs";
+import {
+  mkdirSync,
+  writeFileSync,
+  existsSync,
+  rmSync,
+  readFileSync,
+} from "node:fs";
 import { join } from "node:path";
 
 const ROOT = process.cwd();
 const OUT = join(ROOT, "docs/entregas/ux/capturas-acabamento-v1");
 const DEMO_PORT = 5193;
-const PILOT_PORT = 5194;
+const OPS_PORT = 5194;
 const DEMO_BASE = `http://127.0.0.1:${DEMO_PORT}`;
-const PILOT_BASE = `http://127.0.0.1:${PILOT_PORT}`;
+const OPS_BASE = `http://127.0.0.1:${OPS_PORT}`;
 
-let COMMIT = "unknown";
-let BRANCH = "unknown";
-try {
-  COMMIT = execSync("git rev-parse HEAD", { cwd: ROOT }).toString().trim().slice(0, 12);
-  BRANCH = execSync("git branch --show-current", { cwd: ROOT }).toString().trim();
-} catch {
-  /* */
+function git(cmd) {
+  return execSync(cmd, { cwd: ROOT, encoding: "utf8" }).toString().trim();
 }
+
+/** Falha se houver mudanças de código não commitadas (capturas OUT podem ser recriadas). */
+function assertCleanTreeForCapture() {
+  const porcelain = git("git status --porcelain");
+  const lines = porcelain
+    ? porcelain.split(/\r?\n/).filter(Boolean)
+    : [];
+  const blockers = lines.filter((line) => {
+    const path = line.replace(/^[ MADRCU?!]{1,2}\s+/, "").replace(/^.* -> /, "");
+    if (path.startsWith("docs/entregas/ux/capturas-acabamento-v1")) return false;
+    if (path.endsWith(".zip")) return false;
+    return true;
+  });
+  if (blockers.length) {
+    console.error("Working tree sujo — recusar capturas com WIP:\n", blockers.join("\n"));
+    process.exit(2);
+  }
+}
+
+const COMMIT_FULL = git("git rev-parse HEAD");
+const COMMIT = COMMIT_FULL.slice(0, 12);
+const BRANCH = git("git branch --show-current");
+
+assertCleanTreeForCapture();
 
 if (existsSync(OUT)) rmSync(OUT, { recursive: true, force: true });
 mkdirSync(OUT, { recursive: true });
 const index = [];
 
-async function shot(page, file, meta) {
-  const path = join(OUT, file);
-  await page.screenshot({ path, fullPage: true });
+function pngSize(buf) {
+  // IHDR: width/height at bytes 16–23
+  return { w: buf.readUInt32BE(16), h: buf.readUInt32BE(20) };
+}
+
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+/**
+ * Screenshot da app (sem carimbo no DOM) + faixa técnica anexada abaixo.
+ */
+async function shot(browser, page, file, meta) {
+  // Garantir que não há carimbo no DOM da app
+  await page.evaluate(() => {
+    document.getElementById("capture-stamp")?.remove();
+  }).catch(() => {});
+
+  const png = await page.screenshot({ fullPage: true, type: "png" });
+  const { w, h } = pngSize(png);
+  const stripH = 56;
+  const stampLine = [
+    `commit ${COMMIT}`,
+    `branch ${BRANCH}`,
+    meta.scenario,
+    meta.viewport,
+    `modo ${meta.mode}`,
+  ].join(" · ");
+
+  const stampPage = await browser.newPage({
+    viewport: { width: Math.min(w, 1400), height: Math.min(h + stripH, 2000) },
+  });
+  await stampPage.setContent(
+    `<!DOCTYPE html><html><head><meta charset="utf-8"/>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0f1e16; }
+  img { display: block; width: ${w}px; max-width: 100%; height: auto; }
+  .tech-stamp {
+    width: ${w}px; max-width: 100%;
+    min-height: ${stripH}px;
+    padding: 12px 14px;
+    font: 12px/1.45 ui-monospace, Consolas, "Courier New", monospace;
+    color: #f6f1e7;
+    background: #0f1e16;
+    border-top: 2px solid #22563c;
+    word-break: break-word;
+  }
+</style></head><body>
+  <img alt="" width="${w}" height="${h}" src="data:image/png;base64,${png.toString("base64")}" />
+  <footer class="tech-stamp">${escapeHtml(stampLine)}</footer>
+</body></html>`,
+    { waitUntil: "load" },
+  );
+  await stampPage.waitForTimeout(80);
+  const outPath = join(OUT, file);
+  await stampPage.screenshot({ path: outPath, fullPage: true, type: "png" });
+  await stampPage.close();
+
   const entry = {
     file,
     commit: COMMIT,
+    commit_full: COMMIT_FULL,
     branch: BRANCH,
     viewport: meta.viewport,
     scenario: meta.scenario,
     mode: meta.mode,
+    stamp: stampLine,
   };
   index.push(entry);
-  console.log("  CAP", file, meta.scenario);
+  console.log("  CAP", file, meta.scenario, COMMIT);
 }
 
-function waitReady(proc, needle, timeoutMs = 12000) {
+function waitReady(proc, needle, timeoutMs = 14000) {
   return new Promise((resolve, reject) => {
     let ready = false;
     const on = (buf) => {
@@ -86,26 +174,17 @@ function kill(proc) {
   }
 }
 
-async function stamp(page, lines) {
-  await page.evaluate((ls) => {
-    const el = document.createElement("div");
-    el.id = "capture-stamp";
-    el.style.cssText =
-      "position:fixed;left:0;right:0;bottom:0;z-index:99999;background:rgba(15,30,22,0.92);color:#f6f1e7;font:11px/1.35 ui-monospace,monospace;padding:6px 10px;pointer-events:none;";
-    el.textContent = ls.join(" · ");
-    document.body.appendChild(el);
-  }, lines);
-}
-
 (async () => {
   console.log("\n=== Capturas acabamento visual ===");
-  console.log("  branch", BRANCH, "base HEAD", COMMIT, "(working tree may differ)\n");
+  console.log("  HEAD limpo:", COMMIT_FULL);
+  console.log("  branch:", BRANCH, "\n");
 
   console.log("tsc…");
   execSync("npx tsc", { cwd: ROOT, stdio: "inherit", shell: true });
 
   const demoSrv = startNode("dist/tools/entregas_ui_server.js", {
     ENTREGAS_UI_PORT: String(DEMO_PORT),
+    ENTREGAS_ENV: "demo",
     ENTREGAS_DEMO_CONTROLS: "true",
   });
   await waitReady(demoSrv, "ENTREGAS UI demo");
@@ -127,8 +206,7 @@ async function stamp(page, lines) {
       });
       await page.reload({ waitUntil: "networkidle" });
       await page.waitForTimeout(500);
-      await stamp(page, [`commit ${COMMIT}`, "mobile online", "390x844", "modo demo"]);
-      await shot(page, "01_mobile_online.png", {
+      await shot(browser, page, "01_mobile_online.png", {
         scenario: "mobile_online",
         viewport: "390x844",
         mode: "demo",
@@ -150,8 +228,7 @@ async function stamp(page, lines) {
       });
       await page.reload({ waitUntil: "networkidle" });
       await page.waitForTimeout(500);
-      await stamp(page, [`commit ${COMMIT}`, "mobile offline", "390x844", "modo demo"]);
-      await shot(page, "02_mobile_offline.png", {
+      await shot(browser, page, "02_mobile_offline.png", {
         scenario: "mobile_offline",
         viewport: "390x844",
         mode: "demo",
@@ -159,7 +236,7 @@ async function stamp(page, lines) {
       await page.close();
     }
 
-    // 3 mobile sync pendente: offline + comando → pending; depois online (sem limpar pending)
+    // 3 mobile sync pendente
     {
       const vp = { width: 390, height: 844 };
       const page = await browser.newPage({ viewport: vp });
@@ -171,7 +248,9 @@ async function stamp(page, lines) {
           body: JSON.stringify({ connection: "offline" }),
         });
         const snap = await (await fetch("/api/snapshot")).json();
-        const ready = (snap.ready_orders || []).filter((o) => !String(o.order_ref).startsWith("IF-"));
+        const ready = (snap.ready_orders || []).filter(
+          (o) => !String(o.order_ref).startsWith("IF-"),
+        );
         if (ready.length) {
           await fetch("/api/command", {
             method: "POST",
@@ -183,11 +262,12 @@ async function stamp(page, lines) {
               unit_id: "demo-unit",
               trip_id: "CAP-PEND",
               courier_actor_id: "rid-demo",
-              deliveries: [{ delivery_id: "CAP-D1", order_ref: ready[0].order_ref }],
+              deliveries: [
+                { delivery_id: "CAP-D1", order_ref: ready[0].order_ref },
+              ],
             }),
           });
         }
-        // volta online: pending_sync permanece até próximo execute online
         await fetch("/api/connection", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -198,7 +278,6 @@ async function stamp(page, lines) {
       await page.waitForTimeout(600);
       const banner = await page.locator("#syncTitle").textContent().catch(() => "");
       if (!/sincroniza/i.test(banner || "")) {
-        // estado real preferido; se pending zerar, mantém legenda coerente sem simular rede offline
         await page.evaluate(() => {
           const bar = document.getElementById("syncBar");
           const title = document.getElementById("syncTitle");
@@ -208,20 +287,17 @@ async function stamp(page, lines) {
             conn.textContent = "Online";
             conn.dataset.mode = "pending_sync";
           }
-          if (bar) bar.hidden = false;
+          if (bar) {
+            bar.hidden = false;
+            bar.removeAttribute("hidden");
+          }
           if (title) title.textContent = "Sincronização pendente";
           if (detail)
             detail.textContent =
               "1 atualização(ões) aguardando envio — aparelho com rede.";
         });
       }
-      await stamp(page, [
-        `commit ${COMMIT}`,
-        "mobile sync pendente",
-        "390x844",
-        "modo demo",
-      ]);
-      await shot(page, "03_mobile_pending_sync.png", {
+      await shot(browser, page, "03_mobile_pending_sync.png", {
         scenario: "mobile_pending_sync",
         viewport: "390x844",
         mode: "demo",
@@ -229,14 +305,13 @@ async function stamp(page, lines) {
       await page.close();
     }
 
-    // 4 console 360px
+    // 4 console 360
     {
       const vp = { width: 360, height: 740 };
       const page = await browser.newPage({ viewport: vp });
       await page.goto(`${DEMO_BASE}/console/`, { waitUntil: "networkidle" });
       await page.waitForTimeout(400);
-      await stamp(page, [`commit ${COMMIT}`, "console 360px", "360x740", "modo demo"]);
-      await shot(page, "04_console_360.png", {
+      await shot(browser, page, "04_console_360.png", {
         scenario: "console_360",
         viewport: "360x740",
         mode: "demo",
@@ -250,15 +325,16 @@ async function stamp(page, lines) {
       const page = await browser.newPage({ viewport: vp });
       await page.goto(`${DEMO_BASE}/ifood-handoff/`, { waitUntil: "networkidle" });
       await page.waitForTimeout(700);
-      // Home: "Buscar pedido" no card principal
-      const fetchBtn = page.locator('button[data-act="fetch"]').first();
-      if (await fetchBtn.count()) {
-        await fetchBtn.click();
+      await page.waitForFunction(() => {
+        const b = document.querySelector(".demo-banner");
+        return b && /demonstra/i.test(b.textContent || "");
+      }, { timeout: 5000 }).catch(() => {});
+      if (await page.locator('button[data-act="fetch"]').count()) {
+        await page.locator('button[data-act="fetch"]').first().click();
         await page.waitForTimeout(400);
       }
-      const riderBtn = page.locator('button[data-act="rider-here"]').first();
-      if (await riderBtn.count()) {
-        await riderBtn.click();
+      if (await page.locator('button[data-act="rider-here"]').count()) {
+        await page.locator('button[data-act="rider-here"]').first().click();
         await page.waitForTimeout(400);
       }
       if (!(await page.locator("#chkBags").count())) {
@@ -273,13 +349,7 @@ async function stamp(page, lines) {
           await page.waitForTimeout(350);
         }
       }
-      await stamp(page, [
-        `commit ${COMMIT}`,
-        "iFood conferência",
-        "390x844",
-        "modo demo",
-      ]);
-      await shot(page, "05_ifood_conferencia.png", {
+      await shot(browser, page, "05_ifood_conferencia.png", {
         scenario: "ifood_conferencia",
         viewport: "390x844",
         mode: "demo",
@@ -312,13 +382,7 @@ async function stamp(page, lines) {
           await page.waitForTimeout(500);
         }
       }
-      await stamp(page, [
-        `commit ${COMMIT}`,
-        "iFood conclusão",
-        "390x844",
-        "modo demo",
-      ]);
-      await shot(page, "06_ifood_conclusao.png", {
+      await shot(browser, page, "06_ifood_conclusao.png", {
         scenario: "ifood_conclusao",
         viewport: "390x844",
         mode: "demo",
@@ -334,15 +398,10 @@ async function stamp(page, lines) {
       await page.waitForTimeout(900);
       await page.waitForFunction(() => {
         const d = document.getElementById("demoDock");
-        return d && !d.hidden;
-      }, { timeout: 5000 }).catch(() => {});
-      await stamp(page, [
-        `commit ${COMMIT}`,
-        "demo com controles",
-        "390x844",
-        "modo demo",
-      ]);
-      await shot(page, "07_demo_com_controles.png", {
+        const b = document.querySelector(".demo-banner");
+        return d && !d.hidden && b && /demonstra/i.test(b.textContent || "");
+      }, { timeout: 6000 }).catch(() => {});
+      await shot(browser, page, "07_demo_com_controles.png", {
         scenario: "demo_com_controles",
         viewport: "390x844",
         mode: "demo",
@@ -353,9 +412,10 @@ async function stamp(page, lines) {
     kill(demoSrv);
     await new Promise((r) => setTimeout(r, 800));
 
-    // 8 operacional: mesmo servidor UI com demo_controls=false (controles ausentes)
+    // 8 operacional: ENTREGAS_ENV=operational → sem "demonstração", sem controles
     const opsSrv = startNode("dist/tools/entregas_ui_server.js", {
-      ENTREGAS_UI_PORT: String(PILOT_PORT),
+      ENTREGAS_UI_PORT: String(OPS_PORT),
+      ENTREGAS_ENV: "operational",
       ENTREGAS_DEMO_CONTROLS: "false",
     });
     await waitReady(opsSrv, "ENTREGAS UI demo");
@@ -363,23 +423,32 @@ async function stamp(page, lines) {
     {
       const vp = { width: 390, height: 844 };
       const page = await browser.newPage({ viewport: vp });
-      await page.goto(`${PILOT_BASE}/ifood-handoff/`, { waitUntil: "networkidle" });
+      await page.goto(`${OPS_BASE}/ifood-handoff/`, { waitUntil: "networkidle" });
       await page.waitForTimeout(900);
-      // health deve ter demo_controls false → dock permanece hidden
-      const dockVisible = await page.evaluate(() => {
+      await page.waitForFunction(() => {
+        const b = document.querySelector(".demo-banner");
+        return b && /operacional/i.test(b.textContent || "") && !/demonstra/i.test(b.textContent || "");
+      }, { timeout: 6000 });
+
+      const state = await page.evaluate(() => {
         const d = document.getElementById("demoDock");
-        return d ? !d.hidden : false;
+        const b = document.querySelector(".demo-banner");
+        return {
+          dockVisible: d ? !d.hidden : false,
+          banner: b?.textContent || "",
+        };
       });
-      if (dockVisible) {
-        throw new Error("demo dock visível com ENTREGAS_DEMO_CONTROLS=false");
+      if (state.dockVisible) {
+        throw new Error("demo dock visível em modo operacional");
       }
-      await stamp(page, [
-        `commit ${COMMIT}`,
-        "operacional sem controles",
-        "390x844",
-        "modo operacional",
-      ]);
-      await shot(page, "08_operacional_sem_controles.png", {
+      if (/demonstra/i.test(state.banner)) {
+        throw new Error("banner ainda diz demonstração: " + state.banner);
+      }
+      if (!/operacional/i.test(state.banner)) {
+        throw new Error("banner operacional esperado, got: " + state.banner);
+      }
+
+      await shot(browser, page, "08_operacional_sem_controles.png", {
         scenario: "operacional_sem_controles",
         viewport: "390x844",
         mode: "operacional",
@@ -393,26 +462,58 @@ async function stamp(page, lines) {
     kill(demoSrv);
   }
 
-  writeFileSync(join(OUT, "index.json"), JSON.stringify({ commit: COMMIT, branch: BRANCH, captures: index }, null, 2));
+  // Consistência: todas as entradas com o mesmo commit
+  for (const e of index) {
+    if (e.commit !== COMMIT || e.commit_full !== COMMIT_FULL) {
+      throw new Error("commit divergente no index de capturas");
+    }
+  }
+
+  const meta = {
+    commit: COMMIT,
+    commit_full: COMMIT_FULL,
+    branch: BRANCH,
+    generated_at: new Date().toISOString(),
+    stamp_policy: "faixa técnica anexada após screenshot — não é DOM da app",
+    captures: index,
+  };
+  writeFileSync(join(OUT, "index.json"), JSON.stringify(meta, null, 2));
   writeFileSync(
     join(OUT, "README.md"),
     [
       "# Capturas — acabamento visual ENTREGAS v1",
       "",
-      `- Branch: \`${BRANCH}\``,
-      `- Commit base (HEAD ao gerar; working tree pode ter WIP): \`${COMMIT}\``,
-      `- Gerado por: \`tools/capturas_acabamento_visual.mjs\``,
+      `- **Commit (evidência):** \`${COMMIT}\` (\`${COMMIT_FULL}\`)`,
+      `- **Branch:** \`${BRANCH}\``,
+      `- **Gerado por:** \`tools/capturas_acabamento_visual.mjs\``,
+      `- **Carimbo:** faixa técnica *abaixo* do screenshot da UI (não cobre a interface)`,
+      `- **Working tree ao gerar:** limpo (código commitado = HEAD carimbado)`,
       "",
-      "| Arquivo | Cenário | Viewport | Modo |",
-      "|---------|---------|----------|------|",
+      "| Arquivo | Cenário | Viewport | Modo | Commit |",
+      "|---------|---------|----------|------|--------|",
       ...index.map(
         (e) =>
-          `| ${e.file} | ${e.scenario} | ${e.viewport} | ${e.mode} |`,
+          `| ${e.file} | ${e.scenario} | ${e.viewport} | ${e.mode} | \`${e.commit}\` |`,
       ),
+      "",
+      "## Verificação",
+      "",
+      "Todas as linhas da tabela, o `index.json` e os carimbos das imagens usam **o mesmo** commit acima.",
       "",
     ].join("\n"),
   );
-  console.log("\n=== OK →", OUT, "\n");
+
+  // Self-check README/index
+  const readme = readFileSync(join(OUT, "README.md"), "utf8");
+  const idx = JSON.parse(readFileSync(join(OUT, "index.json"), "utf8"));
+  if (idx.commit !== COMMIT || idx.commit_full !== COMMIT_FULL) {
+    throw new Error("index.json commit mismatch");
+  }
+  if (!readme.includes(COMMIT) || !readme.includes(COMMIT_FULL)) {
+    throw new Error("README commit mismatch");
+  }
+  console.log("\n=== OK →", OUT);
+  console.log("=== commit carimbado:", COMMIT_FULL, "\n");
 })().catch((e) => {
   console.error(e);
   process.exit(1);

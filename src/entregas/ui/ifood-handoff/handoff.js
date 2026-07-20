@@ -789,25 +789,54 @@ if (newestReady && !newestReady.alerted) {
 initSoundToggle();
 
 /**
- * Controles de demo: só aparecem se o servidor declarar demo_controls.
- * Operação/piloto: ausentes (não apenas desabilitados).
- * Default seguro: ocultos se health falhar ou flag ausente.
+ * Identidade de ambiente + controles de demo — ambos a partir de /api/health.
+ * - demo === true  → faixa "AMBIENTE DE DEMONSTRAÇÃO · …"
+ * - demo === false → faixa "AMBIENTE OPERACIONAL · …" (nunca "demonstração")
+ * Controles: só se demo_controls === true (e tipicamente demo); ausentes, não só desabilitados.
+ * Default seguro se health falhar: operacional na linguagem; controles ocultos.
  */
-async function applyDemoControlsVisibility() {
-  const dock = $("demoDock");
-  if (!dock) return false;
-  let enabled = false;
+async function applyEnvironmentFromHealth() {
+  let h = null;
   try {
     const res = await fetch("/api/health");
-    const h = await res.json();
-    enabled = h.demo_controls === true || h.features?.demo_controls === true;
+    h = await res.json();
   } catch {
-    enabled = false;
+    h = null;
   }
+
+  const isDemo = h?.demo === true;
+  const bannerEl = document.querySelector(".demo-banner");
+  if (bannerEl) {
+    if (isDemo) {
+      bannerEl.textContent =
+        (typeof h.banner === "string" && h.banner.trim()) ||
+        "AMBIENTE DE DEMONSTRAÇÃO · EXPEDIÇÃO IFOOD";
+    } else {
+      // Operacional: nunca manter texto de demonstração
+      const fromHealth =
+        typeof h?.banner === "string" &&
+        h.banner.trim() &&
+        !/demonstra/i.test(h.banner)
+          ? h.banner.trim()
+          : "AMBIENTE OPERACIONAL · EXPEDIÇÃO IFOOD";
+      bannerEl.textContent = fromHealth;
+    }
+    bannerEl.hidden = false;
+    bannerEl.dataset.mode = isDemo ? "demo" : "operational";
+    bannerEl.setAttribute(
+      "aria-label",
+      isDemo ? "Ambiente de demonstração" : "Ambiente operacional",
+    );
+  }
+
+  const dock = $("demoDock");
+  if (!dock) return { isDemo, controls: false };
+  const enabled =
+    h?.demo_controls === true || h?.features?.demo_controls === true;
   dock.hidden = !enabled;
   if (!enabled) {
     dock.setAttribute("aria-hidden", "true");
-    return false;
+    return { isDemo, controls: false };
   }
   dock.removeAttribute("aria-hidden");
   $("btnDemoReady")?.addEventListener("click", demoNewReady);
@@ -822,12 +851,16 @@ async function applyDemoControlsVisibility() {
     }
     render();
   });
-  return true;
+  return { isDemo, controls: true };
 }
 
 render();
-applyDemoControlsVisibility().catch(() => {
+applyEnvironmentFromHealth().catch(() => {
+  // Sem health: controles ausentes (seguro). Faixa permanece no markup estático até haver resposta.
   const dock = $("demoDock");
-  if (dock) dock.hidden = true;
+  if (dock) {
+    dock.hidden = true;
+    dock.setAttribute("aria-hidden", "true");
+  }
 });
 snapshot().catch(() => {});

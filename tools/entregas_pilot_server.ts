@@ -127,17 +127,21 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url || "/", `http://127.0.0.1:${PORT}`);
   try {
     if (url.pathname === "/api/health") {
-      // Operação/piloto: controles de simulação ausentes (default seguro)
+      // Operação/piloto: nunca é "ambiente de demonstração"; controles default ausentes
       const demoControls =
         process.env.ENTREGAS_DEMO_CONTROLS === "true" ||
         process.env.ENTREGAS_DEMO_CONTROLS === "1" ||
         !!cfg.features?.demo_controls;
+      const envBanner =
+        banner && !/demonstra/i.test(banner)
+          ? banner
+          : "AMBIENTE OPERACIONAL · EXPEDIÇÃO IFOOD";
       return json(res, 200, {
         ok: true,
         module: "ENTREGAS",
-        mode: "pilot",
+        mode: "operational",
         unit: cfg.unit_name,
-        banner,
+        banner: envBanner,
         demo: false,
         demo_controls: demoControls,
         features: { ...(cfg.features || {}), demo_controls: demoControls },

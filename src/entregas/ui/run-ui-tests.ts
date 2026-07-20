@@ -414,17 +414,74 @@ console.log("\n=== ENTREGAS UI 3C.1 tests ===\n");
     );
     assert.ok(html.includes('id="demoDock"'));
     assert.ok(/demoDock[^>]*\bhidden\b/.test(html) || html.includes('class="demo-dock" hidden'));
-    assert.ok(js.includes("applyDemoControlsVisibility"));
+    assert.ok(js.includes("applyEnvironmentFromHealth"));
     assert.ok(js.includes("demo_controls"));
     assert.ok(js.includes("dock.hidden = !enabled") || js.includes("dock.hidden = true"));
     assert.ok(uiSrv.includes("demo_controls"));
     assert.ok(uiSrv.includes("ENTREGAS_DEMO_CONTROLS"));
+    assert.ok(uiSrv.includes("ENTREGAS_ENV"));
     assert.ok(pilotSrv.includes("demo_controls"));
-    // piloto: default seguro (só true se env/config)
     assert.ok(
       pilotSrv.includes('ENTREGAS_DEMO_CONTROLS === "true"') ||
         pilotSrv.includes("ENTREGAS_DEMO_CONTROLS"),
     );
+  });
+
+  await test("identificação demo: health demo true e faixa de demonstração", () => {
+    const uiSrv = readFileSync(
+      join(process.cwd(), "tools/entregas_ui_server.ts"),
+      "utf8",
+    );
+    const js = readFileSync(
+      join(process.cwd(), "src/entregas/ui/ifood-handoff/handoff.js"),
+      "utf8",
+    );
+    const html = readFileSync(
+      join(process.cwd(), "src/entregas/ui/ifood-handoff/index.html"),
+      "utf8",
+    );
+    assert.ok(uiSrv.includes('mode: isDemo ? "demo" : "operational"') || uiSrv.includes('"demo"'));
+    assert.ok(uiSrv.includes("AMBIENTE DE DEMONSTRAÇÃO · EXPEDIÇÃO IFOOD"));
+    assert.ok(html.includes("AMBIENTE DE DEMONSTRAÇÃO · EXPEDIÇÃO IFOOD"));
+    assert.ok(js.includes("AMBIENTE DE DEMONSTRAÇÃO · EXPEDIÇÃO IFOOD"));
+    assert.ok(js.includes("isDemo") || js.includes("h?.demo === true") || js.includes("h.demo === true") || js.includes("demo === true"));
+  });
+
+  await test("identificação operacional: sem palavra demonstração; faixa operacional", () => {
+    const uiSrv = readFileSync(
+      join(process.cwd(), "tools/entregas_ui_server.ts"),
+      "utf8",
+    );
+    const pilotSrv = readFileSync(
+      join(process.cwd(), "tools/entregas_pilot_server.ts"),
+      "utf8",
+    );
+    const js = readFileSync(
+      join(process.cwd(), "src/entregas/ui/ifood-handoff/handoff.js"),
+      "utf8",
+    );
+    assert.ok(uiSrv.includes("AMBIENTE OPERACIONAL · EXPEDIÇÃO IFOOD"));
+    assert.ok(uiSrv.includes("operational") || uiSrv.includes("operacional"));
+    assert.ok(js.includes("AMBIENTE OPERACIONAL · EXPEDIÇÃO IFOOD"));
+    assert.ok(js.includes("/demonstra/i") || js.includes("demonstra"));
+    // piloto: demo false e mode operational
+    assert.ok(pilotSrv.includes("demo: false"));
+    assert.ok(pilotSrv.includes('mode: "operational"') || pilotSrv.includes("operational"));
+    assert.ok(pilotSrv.includes("AMBIENTE OPERACIONAL · EXPEDIÇÃO IFOOD"));
+  });
+
+  await test("operacional: controles demo só com flag e demo; default ausentes", () => {
+    const uiSrv = readFileSync(
+      join(process.cwd(), "tools/entregas_ui_server.ts"),
+      "utf8",
+    );
+    const js = readFileSync(
+      join(process.cwd(), "src/entregas/ui/ifood-handoff/handoff.js"),
+      "utf8",
+    );
+    // demo_controls = isDemo && controlsRequested
+    assert.ok(uiSrv.includes("isDemo && controlsRequested") || uiSrv.includes("demoControls = isDemo"));
+    assert.ok(js.includes("applyEnvironmentFromHealth"));
   });
 
   await test("360px: overflow e min-width nos CSS de console/rider/handoff", () => {
