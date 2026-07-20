@@ -250,3 +250,102 @@ node tools/avaliar_calibracao_humana.js
 ```
 
 **Limitação:** amostra pequena (review-v3). Não afirmar precisão geral.
+
+---
+
+## Fase 2D.7 — Primeiro holdout cego (blind-v1)
+
+24 episódios independentes de `cv-cal-tata-human-v1`, excluídos dos conjuntos de treino (review/review-v2/review-v3). Resultado inicial (config v1): concordância exata 57,9% (11/19 comparáveis) — 5 falsos "atenção" em casos que o César marcou `normal`/`impossível avaliar`, 2 falsos críticos onde a fonte estava incoerente, 2 zumbis não detectados.
+
+```bash
+node tools/gerar_blind_v1.js
+node tools/comparar_blind_v1.js
+node tests/capacidade-viva/calibration/run-blind-v1.js
+```
+
+## Fase 2D.8 — Correção de faixas baixas e precedência da fonte (`cv-cal-tata-human-v2`)
+
+Config nova (**preserva** `cv-cal-tata-human-v1` sem alteração):
+
+`data/capacidade-viva/calibration/configs/cv-cal-tata-human-v2.json`
+
+| Âncora | v1 (contínua) | v2 (discreta) |
+|---|---|---|
+| Motoboy na loja | 5/10/15/20 | **<10 normal · 10–15 atenção · 15–20 quase crítico · ≥20 crítico** |
+| Pronto sem saída | 25–30 atenção forte · ≥40 crítico | **<25 normal · 25–35 atenção · 35–40 quase crítico · ≥40 crítico** |
+| Precedência | severidade antes da fonte | **fonte (zumbi/incoerência) avaliada ANTES da severidade operacional** |
+| Volume sozinho | podia virar "atenção" | **evidência insuficiente — nunca pressão sem sinal temporal** |
+
+Regressão sobre o **mesmo** blind-v1 (não é validação nova — o conjunto já tinha sido revelado): **24/24 concordância exata**, incluindo os 12 casos antes errados. Motor commit `b620aef`.
+
+```bash
+node tools/regressao_blind_v1_v2.js
+node tests/capacidade-viva/calibration/run-human-v2.js
+```
+
+## Fase 2D.9 — Segundo holdout cego independente (blind-v2)
+
+30 episódios, exclusão combinada de review/ + review-v2/ + review-v3/ + blind-v1 (162 case_ids, 52 order_tokens). Seleção por evidência observável, nunca por classificação do motor. Achados empíricos do pool documentados em `blind-v2/MANIFESTO_CONGELAMENTO.json`: nenhum episódio de "pronto sem saída" ultrapassa ~40 min neste dataset sintético; os 5 únicos episódios "evidência insuficiente pura" já tinham sido consumidos pelo blind-v1.
+
+```bash
+node tools/gerar_blind_v2.js
+```
+
+---
+
+## Fase 2D.10 — Fechamento formal do blind-v2
+
+**Configuração avaliada:** `cv-cal-tata-human-v2`
+**Hash congelado:** `f248a17328ca71fc8608e0897d24ee3966bf0b7bcd55afbebb6feaa4cc7534dc`
+**Commit do motor:** `b620aef`
+**Casos:** 30 (26 comparáveis + 4 impossível avaliar)
+
+### Resultado da validação cega independente
+
+| Métrica | Resultado |
+|---|---|
+| Concordância exata | **26/26** (100% dos comparáveis) |
+| Concordância dentro de um nível | 26/26 |
+| Falsos críticos | 0 |
+| Críticos não detectados | 0 |
+| Qualidade da fonte | 3/3 detectados, 0 falsos, 0 não detectados |
+| Zumbis contaminando capacidade | 0 |
+| Intervenções adequadas | 26/26 |
+| Impossível avaliar | 4/4 — motor e César concordam nos 4 (fora do denominador de "comparáveis" por metodologia herdada do blind-v1, mas batem também) |
+
+Artefatos: `blind-v2/ROTULOS_HUMANOS_CEGOS.json` (avaliação do César) + `blind-v2/RESULTADO_COMPARACAO.json` (comparação).
+
+### Natureza da avaliação (registrado explicitamente)
+
+Os 30 rótulos são **avaliação baseada nas regras operacionais fornecidas pelo César, aplicada aos casos cegos antes da abertura do gabarito** — um julgamento retrospectivo sobre fatos operacionais de episódios sintéticos já registrados. **Não** representam 30 observações presenciais na loja, nem decisões tomadas durante operação ao vivo.
+
+### Decisão de produto
+
+> **`cv-cal-tata-human-v2` aprovada para integração ao Copiloto exclusivamente em modo sombra.**
+
+Modo sombra: a calibração pode rodar em paralelo à operação real, produzindo classificação/severidade/intervenção sugerida para leitura humana — **sem** disparar alerta, sem aplicar pausa, sem decisão automática. `auto_aplicar: false` continua vigente em toda a config (verificado por teste).
+
+### Limitações obrigatórias
+
+1. **Casos vindos do mesmo ecossistema histórico de dados** — blind-v1 e blind-v2 compartilham o mesmo pool sintético (`sane-episodes-2d3-1784446646346`); 100% de concordância aqui prova aderência às regras do César sobre ESTE gerador de episódios, não generalização a dados de fonte diferente.
+2. **Apenas Conferência e Sushi com evidência real** neste holdout — Quentes/Cozinha/Caixa/Motoboy não têm representação própria nos 30 casos (ausência de leitura, não prova de calma).
+3. **Ausência de caso legítimo "pronto sem saída ≥40 min"** — achado estrutural do dataset (documentado no manifesto do blind-v2): nenhum dos 4146 episódios brutos do pool atinge esse patamar por esse caminho específico; a faixa crítica equivalente só é alcançada via idade/atraso operacional real.
+4. **Ausência de equipe real, complexidade detalhada e ritmo** em parte dos episódios — `capacidade_hipotetica`, não capacidade real medida.
+5. **A avaliação confirma aderência às regras do César, não precisão universal** — 60 casos cegos (blind-v1 + blind-v2) é amostra pequena frente a uma operação real de meses.
+6. **Nenhuma decisão automática autorizada** — toda saída da calibração é sugestão para leitura humana; pausa nunca é aplicada sem confirmação humana (`auto_aplicar: false`, testado).
+
+### Não criar blind-v3 agora
+
+Não se cria um terceiro holdout sobre o mesmo pool histórico — o ganho marginal seria baixo (mesmo gerador sintético, mesmas regras) e o risco de sobreajuste às particularidades do dataset é real. **A próxima validação** (blind-v3, quando houver) deve usar:
+
+- episódios **novos**, coletados **depois** da integração em modo sombra;
+- preferencialmente **dados de operação real** (não mais o pool sintético `sane-episodes-2d3`);
+- **novas praças** quando houver leitura confiável (Quentes, Cozinha, Caixa, Motoboy);
+- **equipe real, ritmo e composição da carga** quando disponíveis (destrava o ISF numérico completo, hoje só demonstrativo).
+
+### Comando 2D.10
+
+```bash
+node tools/comparar_blind_v2.js
+node tests/capacidade-viva/calibration/run-blind-v2.js
+```

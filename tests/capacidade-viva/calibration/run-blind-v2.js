@@ -1,5 +1,6 @@
 /**
- * Testes 2D.9 — segundo holdout cego independente (blind-v2)
+ * Testes 2D.9/2D.10 — segundo holdout cego independente (blind-v2):
+ * congelamento (2D.9) + fechamento formal pós-avaliação do César (2D.10).
  * node tests/capacidade-viva/calibration/run-blind-v2.js
  */
 "use strict";
@@ -191,21 +192,97 @@ test("diversidade mínima de datas, dias e faixas do dia", () => {
   assert.ok(manifest.diversidade.faixas.length >= 3);
 });
 
-test("nenhuma comparação foi executada nesta fase (sem RESULTADO_COMPARACAO.json)", () => {
-  assert.strictEqual(fs.existsSync(path.join(blindDir, "RESULTADO_COMPARACAO.json")), false);
-});
+/* ----------------------------------------------------------------------------
+ * Fase 2D.10 — fechamento formal. A avaliação do César já aconteceu: o pack
+ * real tem ROTULOS_HUMANOS_CEGOS.json e RESULTADO_COMPARACAO.json de verdade.
+ * Os três testes abaixo substituem os que assumiam "ainda não avaliado" —
+ * comportamento do comparador sem rótulos agora é testado numa fixture
+ * ISOLADA (nunca mais contra o pack real, que legitimamente já avançou).
+ * -------------------------------------------------------------------------- */
 
-test("nenhum arquivo de rótulos humanos criado antecipadamente (sem ROTULOS_HUMANOS_CEGOS.json)", () => {
-  assert.strictEqual(fs.existsSync(path.join(blindDir, "ROTULOS_HUMANOS_CEGOS.json")), false);
-});
-
-test("comparador blind-v2 existe e recusa comparar sem rótulos (não executa nesta fase)", () => {
+test("comparador recusa comparar sem rótulos, numa fixture isolada (sem tocar o pack real)", () => {
   const toolPath = path.join(root, "tools/comparar_blind_v2.js");
   assert.ok(fs.existsSync(toolPath));
-  const out = execFileSync(process.execPath, [toolPath], { cwd: root, encoding: "utf8" });
-  const parsed = JSON.parse(out);
-  assert.strictEqual(parsed.ready, false);
-  assert.strictEqual(fs.existsSync(path.join(blindDir, "RESULTADO_COMPARACAO.json")), false);
+  const tmpDir = fs.mkdtempSync(path.join(require("os").tmpdir(), "blind-v2-fixture-"));
+  try {
+    // fixture vazia: sem ROTULOS_HUMANOS_CEGOS.json — o comparador deve
+    // recusar antes mesmo de olhar para qualquer gabarito.
+    const out = execFileSync(process.execPath, [toolPath, tmpDir], { cwd: root, encoding: "utf8" });
+    const parsed = JSON.parse(out);
+    assert.strictEqual(parsed.ready, false);
+    assert.strictEqual(fs.existsSync(path.join(tmpDir, "RESULTADO_COMPARACAO.json")), false);
+    // e o pack real não foi tocado por essa chamada isolada
+    assert.ok(fs.existsSync(path.join(blindDir, "ROTULOS_HUMANOS_CEGOS.json")), "fixture isolada não deveria afetar o pack real");
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
+
+test("estado concluído: rótulos humanos presentes, exatamente 30, resultado presente, hashes preservados", () => {
+  const labelsPath = path.join(blindDir, "ROTULOS_HUMANOS_CEGOS.json");
+  const resultPath = path.join(blindDir, "RESULTADO_COMPARACAO.json");
+  assert.ok(fs.existsSync(labelsPath), "ROTULOS_HUMANOS_CEGOS.json deveria existir — avaliação já concluída");
+  assert.ok(fs.existsSync(resultPath), "RESULTADO_COMPARACAO.json deveria existir — comparação já executada");
+
+  const labels = JSON.parse(fs.readFileSync(labelsPath, "utf8"));
+  assert.strictEqual(labels.rotulos.length, 30, "esperava exatamente 30 rótulos");
+  assert.strictEqual(labels.configuracao_avaliada, "cv-cal-tata-human-v2");
+  assert.match(
+    labels.metodologia || "",
+    /regras operacionais fornecidas pelo César.*antes da abertura do gabarito/i,
+    "nota de proveniência da metodologia ausente ou incompleta"
+  );
+  const casos = labels.rotulos.map((r) => r.caso);
+  assert.deepStrictEqual(
+    casos,
+    Array.from({ length: 30 }, (_, i) => "CV-B2-" + String(i + 1).padStart(3, "0")),
+    "sequência de casos deveria ser CV-B2-001..030 sem lacunas"
+  );
+
+  // hashes do gabarito/manifesto/config permanecem os do congelamento — a
+  // avaliação humana NUNCA deveria ter alterado o que foi congelado.
+  const liveGabSha = Blind.fileSha256(path.join(blindDir, "GABARITO_MOTOR_CONGELADO.json"));
+  const liveCfgSha = Blind.fileSha256(configPath);
+  assert.strictEqual(manifest.gabarito_sha256, liveGabSha);
+  assert.strictEqual(manifest.config_sha256, liveCfgSha);
+
+  const result = JSON.parse(fs.readFileSync(resultPath, "utf8"));
+  assert.strictEqual(
+    result.config_sha256,
+    "f248a17328ca71fc8608e0897d24ee3966bf0b7bcd55afbebb6feaa4cc7534dc",
+    "comparação precisa estar vinculada ao hash congelado correto"
+  );
+  assert.strictEqual(result.config_sha256, manifest.config_sha256, "hash da comparação diverge do hash congelado no manifesto");
+  assert.strictEqual(result.validation.gabarito_integrity_ok, true);
+  assert.strictEqual(result.report.n, 30);
+  assert.strictEqual(result.report.n_comparaveis, 26);
+  assert.strictEqual(result.report.n_impossivel_avaliar, 4);
+  assert.strictEqual(result.report.concordancia_exata_count, 26);
+  assert.strictEqual(result.report.concordancia_dentro_de_um_nivel_count, 26);
+  assert.strictEqual(result.report.falsos_criticos, 0);
+  assert.strictEqual(result.report.criticos_nao_detectados, 0);
+  assert.strictEqual(result.report.zumbis_contaminaram_capacidade, 0);
+  assert.strictEqual(result.report.intervencoes_adequadas, 26);
+});
+
+test("imutabilidade: rodar o comparador de novo produz o mesmo conteúdo semântico (só o timestamp muda)", () => {
+  const resultPath = path.join(blindDir, "RESULTADO_COMPARACAO.json");
+  const before = JSON.parse(fs.readFileSync(resultPath, "utf8"));
+  const toolPath = path.join(root, "tools/comparar_blind_v2.js");
+  execFileSync(process.execPath, [toolPath], { cwd: root, encoding: "utf8" });
+  const after = JSON.parse(fs.readFileSync(resultPath, "utf8"));
+
+  assert.notStrictEqual(before.generated_at, after.generated_at, "timestamp deveria avançar a cada execução (não é o que fica congelado)");
+  const stripTimestamp = (doc) => {
+    const copy = JSON.parse(JSON.stringify(doc));
+    delete copy.generated_at;
+    return copy;
+  };
+  assert.deepStrictEqual(
+    stripTimestamp(before),
+    stripTimestamp(after),
+    "o conteúdo semântico da comparação deveria ser idêntico entre execuções — mesmos rótulos, mesmo gabarito, mesmo resultado"
+  );
 });
 
 test("gerador recusa regeneração silenciosa (já congelado)", () => {

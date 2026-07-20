@@ -1,11 +1,13 @@
 #!/usr/bin/env node
 /* ============================================================================
  * Compara gabarito congelado do blind-v2 com rótulos humanos cegos.
- * NÃO executa se ROTULOS_HUMANOS_CEGOS.json não existir — a Fase 2D.9 só
- * congela o holdout; esta ferramenta fica pronta para DEPOIS que o César
- * responder. NÃO recalibra. NÃO altera a configuração nem o motor.
+ * NÃO executa se ROTULOS_HUMANOS_CEGOS.json não existir. NÃO recalibra.
+ * NÃO altera a configuração nem o motor.
  *
- *   node tools/comparar_blind_v2.js
+ *   node tools/comparar_blind_v2.js [diretorio_blind_v2]
+ * Sem argumento, usa data/capacidade-viva/calibration/blind-v2 (o pack real).
+ * O argumento existe para permitir testar o comparador contra uma fixture
+ * isolada (ex.: diretório temporário sem rótulos) sem tocar no pack real.
  * ==========================================================================*/
 "use strict";
 
@@ -14,7 +16,9 @@ const path = require("path");
 const Blind = require("../src/capacidade-viva/calibration/blind-validation");
 
 const root = path.join(__dirname, "..");
-const blindDir = path.join(root, "data/capacidade-viva/calibration/blind-v2");
+const blindDir = process.argv[2]
+  ? path.resolve(process.argv[2])
+  : path.join(root, "data/capacidade-viva/calibration/blind-v2");
 const gabaritoPath = path.join(blindDir, "GABARITO_MOTOR_CONGELADO.json");
 const labelsPath = path.join(blindDir, "ROTULOS_HUMANOS_CEGOS.json");
 const manifestPath = path.join(blindDir, "MANIFESTO_CONGELAMENTO.json");
@@ -117,10 +121,17 @@ function main() {
     rotulos_path: "data/capacidade-viva/calibration/blind-v2/ROTULOS_HUMANOS_CEGOS.json",
     rotulos_meta: {
       configuracao_avaliada: labels.configuracao_avaliada || null,
+      config_sha256_declarado: labels.config_sha256 || null,
       referencia_congelada: labels.referencia_congelada || null,
       avaliador: labels.avaliador || null,
+      metodologia: labels.metodologia || null,
       n_rotulos: Array.isArray(labels.rotulos) ? labels.rotulos.length : null
     },
+    natureza_da_avaliacao:
+      "Os rótulos comparados aqui são um julgamento retrospectivo do avaliador sobre fatos " +
+      "operacionais de episódios já registrados (CASOS_CEGOS_CESAR.md), feito antes da abertura " +
+      "do gabarito — não são observações presenciais em loja nem decisões tomadas durante " +
+      "operação ao vivo. Ver ROTULOS_HUMANOS_CEGOS.json.metodologia para o texto completo.",
     validation: {
       file_exists: true,
       json_valid: true,
