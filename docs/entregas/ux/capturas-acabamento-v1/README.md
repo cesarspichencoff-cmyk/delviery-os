@@ -1,7 +1,7 @@
 # Capturas — acabamento visual ENTREGAS v1
 
 - Branch: `feature/entregas-acabamento-visual-v1`
-- Commit base (HEAD ao gerar; working tree pode ter WIP): `79241b2eb580`
+- Commit base (HEAD ao gerar; working tree pode ter WIP): `a75b8fd15b91`
 - Gerado por: `tools/capturas_acabamento_visual.mjs`
 
 | Arquivo | Cenário | Viewport | Modo |

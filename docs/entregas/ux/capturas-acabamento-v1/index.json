@@ -1,10 +1,10 @@
 {
-  "commit": "79241b2eb580",
+  "commit": "a75b8fd15b91",
   "branch": "feature/entregas-acabamento-visual-v1",
   "captures": [
     {
       "file": "01_mobile_online.png",
-      "commit": "79241b2eb580",
+      "commit": "a75b8fd15b91",
       "branch": "feature/entregas-acabamento-visual-v1",
       "viewport": "390x844",
       "scenario": "mobile_online",
@@ -12,7 +12,7 @@
     },
     {
       "file": "02_mobile_offline.png",
-      "commit": "79241b2eb580",
+      "commit": "a75b8fd15b91",
       "branch": "feature/entregas-acabamento-visual-v1",
       "viewport": "390x844",
       "scenario": "mobile_offline",
@@ -20,7 +20,7 @@
     },
     {
       "file": "03_mobile_pending_sync.png",
-      "commit": "79241b2eb580",
+      "commit": "a75b8fd15b91",
       "branch": "feature/entregas-acabamento-visual-v1",
       "viewport": "390x844",
       "scenario": "mobile_pending_sync",
@@ -28,7 +28,7 @@
     },
     {
       "file": "04_console_360.png",
-      "commit": "79241b2eb580",
+      "commit": "a75b8fd15b91",
       "branch": "feature/entregas-acabamento-visual-v1",
       "viewport": "360x740",
       "scenario": "console_360",
@@ -36,7 +36,7 @@
     },
     {
       "file": "05_ifood_conferencia.png",
-      "commit": "79241b2eb580",
+      "commit": "a75b8fd15b91",
       "branch": "feature/entregas-acabamento-visual-v1",
       "viewport": "390x844",
       "scenario": "ifood_conferencia",
@@ -44,7 +44,7 @@
     },
     {
       "file": "06_ifood_conclusao.png",
-      "commit": "79241b2eb580",
+      "commit": "a75b8fd15b91",
       "branch": "feature/entregas-acabamento-visual-v1",
       "viewport": "390x844",
       "scenario": "ifood_conclusao",
@@ -52,7 +52,7 @@
     },
     {
       "file": "07_demo_com_controles.png",
-      "commit": "79241b2eb580",
+      "commit": "a75b8fd15b91",
       "branch": "feature/entregas-acabamento-visual-v1",
       "viewport": "390x844",
       "scenario": "demo_com_controles",
@@ -60,7 +60,7 @@
     },
     {
       "file": "08_operacional_sem_controles.png",
-      "commit": "79241b2eb580",
+      "commit": "a75b8fd15b91",
       "branch": "feature/entregas-acabamento-visual-v1",
       "viewport": "390x844",
       "scenario": "operacional_sem_controles",

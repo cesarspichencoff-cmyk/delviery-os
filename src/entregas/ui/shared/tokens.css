@@ -371,6 +371,10 @@ label > textarea {
   color: var(--ink-2);
   line-height: 1.4;
 }
+/* display:flex acima vence o UA [hidden] — forçar ausência real do aviso */
+.sync-bar[hidden] {
+  display: none !important;
+}
 .stage-rail {
   display: flex;
   flex-wrap: wrap;

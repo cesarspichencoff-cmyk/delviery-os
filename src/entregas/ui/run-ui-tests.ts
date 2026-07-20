@@ -450,6 +450,21 @@ console.log("\n=== ENTREGAS UI 3C.1 tests ===\n");
     assert.ok(handoffCss.includes("overflow-wrap: anywhere") || handoffCss.includes("word-break"));
   });
 
+  await test("sync-bar[hidden] força display:none (não vaza Sem rede quando online)", () => {
+    const tokens = readFileSync(
+      join(process.cwd(), "src/entregas/ui/shared/tokens.css"),
+      "utf8",
+    );
+    const rider = readFileSync(
+      join(process.cwd(), "src/entregas/ui/rider-mobile/rider.js"),
+      "utf8",
+    );
+    assert.ok(tokens.includes(".sync-bar[hidden]"));
+    assert.ok(/display:\s*none\s*!important/.test(tokens));
+    assert.ok(rider.includes("setAttribute(\"hidden\"") || rider.includes("syncBar.hidden = true"));
+    assert.ok(rider.includes("showBanner") && /syncTitle[\s\S]{0,80}textContent\s*=\s*""/.test(rider));
+  });
+
   await test("facade: pending_sync e connection no snapshot", async () => {
     const f = new UiApplicationFacade();
     f.setConnection("online");

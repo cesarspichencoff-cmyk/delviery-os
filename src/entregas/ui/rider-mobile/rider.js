@@ -71,6 +71,7 @@ async function refresh() {
   const syncBar = $("syncBar");
   if (cs.showBanner) {
     syncBar.hidden = false;
+    syncBar.removeAttribute("hidden");
     $("syncTitle").textContent = cs.bannerTitle;
     $("syncDetail").textContent = cs.bannerDetail;
     // Guardrail: se cabeçalho é Online, título do banner não pode ser "Sem rede"
@@ -78,7 +79,11 @@ async function refresh() {
       $("syncTitle").textContent = "Sincronização pendente";
     }
   } else {
+    // Ausência real: hidden + limpar texto residual (CSS display:flex não pode vazar o aviso)
     syncBar.hidden = true;
+    syncBar.setAttribute("hidden", "");
+    $("syncTitle").textContent = "";
+    $("syncDetail").textContent = "";
   }
   // Link secundário só em offline real — não em sync pendente online
   $("btnSyncNow").hidden = !offline;
