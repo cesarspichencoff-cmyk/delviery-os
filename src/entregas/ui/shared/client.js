@@ -29,13 +29,13 @@ export function humanizeDomainError(msg) {
   if (/MAX_STOPS|Máximo de paradas/i.test(m))
     return "Essa viagem já tem o máximo de paradas permitido no piloto.";
   if (/HANDOFF_NOT_VERIFIED|verificado/i.test(m))
-    return "Confirme a verificação do entregador do iFood antes de liberar.";
+    return "Confira sacolas, nome do pedido e número do iFood antes de entregar ao motoboy.";
   if (/HANDOFF_VOLUMES|Volumes/i.test(m))
-    return "Confira os volumes: o que saiu precisa bater com o esperado.";
+    return "A quantidade de sacolas precisa bater com o definido pela casa.";
   if (/Pedido deve estar identificado/i.test(m))
-    return "Identifique o pedido correto antes de liberar.";
+    return "Confira se o nome e o número do pedido estão corretos.";
   if (/conference_actor|handoff_actor|internos/i.test(m))
-    return "Informe quem conferiu e quem libera o pedido na casa.";
+    return "Informe o responsável interno pela liberação.";
   if (/não autoriz/i.test(m)) return "Seu perfil não pode fazer esta ação.";
   if (/Trip não encontrada/i.test(m)) return "Viagem não encontrada.";
   return m;

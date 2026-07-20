@@ -222,37 +222,48 @@ async function api(page, path, opts = {}) {
       await page.close();
     }
 
-    // —— Expedição iFood ——
+    // —— Expedição iFood (pronto → buscar → conferir → entregar) ——
     {
       const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
       await page.goto(`${BASE}/ifood-handoff/`, { waitUntil: "networkidle" });
-      await page.waitForSelector("#btnConfirm");
-      await shot(page, "07_expedicao_bloqueada_1280.png", {
+      await page.waitForSelector("#btnPrimary");
+      await shot(page, "07_expedicao_pedido_pronto_1280.png", {
         route: "/ifood-handoff/",
         viewport: "1280x900",
-        scenario: "expedicao_liberar_desabilitado",
+        scenario: "expedicao_pedido_pronto_buscar",
       });
-      const disabled = await page.locator("#btnConfirm").isDisabled();
-      if (!disabled) consoleErrors.push("FAIL: Liberar pedido deveria estar desabilitado");
-      await page.click("#btnStart");
-      await page.waitForTimeout(300);
-      await page.check("#orderOk");
-      await page.check("#verified");
-      await page.selectOption("#method", "codigo_app_plataforma");
-      await page.fill("#volDel", "2");
-      await page.check("#physicalOk");
-      await page.waitForTimeout(200);
-      await shot(page, "08_expedicao_pronta_1280.png", {
-        route: "/ifood-handoff/",
-        viewport: "1280x900",
-        scenario: "expedicao_pronta_para_liberar",
-      });
-      await page.click("#btnConfirm");
+      await page.click("#btnPrimary");
       await page.waitForTimeout(400);
-      await shot(page, "09_expedicao_concluida_1280.png", {
+      await shot(page, "08_expedicao_aguardando_entregador_1280.png", {
         route: "/ifood-handoff/",
         viewport: "1280x900",
-        scenario: "expedicao_copy_concluida",
+        scenario: "expedicao_pedido_em_maos",
+      });
+      await page.click("#btnRiderArrived");
+      await page.waitForTimeout(200);
+      const deliverDisabled = await page.locator("#btnDeliver").isDisabled();
+      if (!deliverDisabled)
+        consoleErrors.push("FAIL: Entregar ao motoboy deveria estar desabilitado");
+      await shot(page, "09_expedicao_conferir_bloqueada_1280.png", {
+        route: "/ifood-handoff/",
+        viewport: "1280x900",
+        scenario: "expedicao_conferir_antes",
+      });
+      await page.check("#chkBags");
+      await page.check("#chkName");
+      await page.check("#chkIfood");
+      await page.waitForTimeout(150);
+      await shot(page, "10_expedicao_pronta_entregar_1280.png", {
+        route: "/ifood-handoff/",
+        viewport: "1280x900",
+        scenario: "expedicao_entregar_habilitado",
+      });
+      await page.click("#btnDeliver");
+      await page.waitForTimeout(400);
+      await shot(page, "11_expedicao_concluida_1280.png", {
+        route: "/ifood-handoff/",
+        viewport: "1280x900",
+        scenario: "expedicao_entregue_ao_motoboy",
       });
       await page.close();
     }
@@ -262,7 +273,7 @@ async function api(page, path, opts = {}) {
       const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
       await page.goto(`${BASE}/map-poc/`, { waitUntil: "domcontentloaded", timeout: 60000 });
       await page.waitForTimeout(1500);
-      await shot(page, "10_maplibre_experimental_1280.png", {
+      await shot(page, "12_maplibre_experimental_1280.png", {
         route: "/map-poc/",
         viewport: "1280x800",
         scenario: "maplibre_experimental",
@@ -277,7 +288,7 @@ async function api(page, path, opts = {}) {
     ]) {
       const page = await browser.newPage({ viewport: { width: vp.w, height: vp.h } });
       await page.goto(`${BASE}/console/`, { waitUntil: "networkidle" });
-      await shot(page, `11_console_resp_${vp.name}.png`, {
+      await shot(page, `13_console_resp_${vp.name}.png`, {
         route: "/console/",
         viewport: `${vp.w}x${vp.h}`,
         scenario: "console_responsivo",

@@ -370,8 +370,7 @@ function renderExpeditions() {
         .map(
           (h) => `<div class="item"><div>
       <strong>${h.external_order_ref}</strong> ${chip(h.state)}
-      <div class="meta">${h.courier_verified ? "Entregador verificado" : "Aguardando verificação"}
-        ${h.confirmed ? " · liberado" : ""}</div>
+      <div class="meta">${h.confirmed ? "Entregue ao motoboy do iFood" : "Aguardando entregador / conferência"}</div>
     </div></div>`,
         )
         .join("")

@@ -182,7 +182,7 @@ console.log("\n=== ENTREGAS UI 3C.1 tests ===\n");
     assert.equal(t.includes("app-v1/style.css"), false);
   });
 
-  await test("UI expedição: copy de conclusão e sem jargão Handoff no HTML", () => {
+  await test("UI expedição: retirada iFood operacional e sem jargão", () => {
     const html = readFileSync(
       join(process.cwd(), "src/entregas/ui/ifood-handoff/index.html"),
       "utf8",
@@ -191,15 +191,24 @@ console.log("\n=== ENTREGAS UI 3C.1 tests ===\n");
       join(process.cwd(), "src/entregas/ui/ifood-handoff/handoff.js"),
       "utf8",
     );
-    assert.ok(html.includes("Liberar pedido"));
+    assert.ok(html.includes("Buscar pedido"));
+    assert.ok(html.includes("Entregar ao motoboy"));
+    assert.ok(html.includes("Confira antes de entregar"));
+    assert.ok(html.includes("Nome no pedido"));
+    assert.ok(html.includes("Número iFood") || html.includes("Número do iFood") || html.includes("número do iFood") || html.includes("chkIfood"));
     assert.equal(html.includes("Iniciar handoff"), false);
+    assert.equal(html.includes("Liberar pedido"), false);
     assert.equal(html.toLowerCase().includes("external_courier_ref"), false);
-    assert.ok(
-      js.includes(
-        "Expedição concluída. O andamento posterior é acompanhado pelo canal do iFood.",
-      ),
-    );
+    assert.equal(html.toLowerCase().includes("verificação de identidade"), false);
+    assert.ok(js.includes("Pedido entregue ao motoboy do iFood"));
+    assert.ok(js.includes("canal do iFood"));
     assert.equal(js.includes("sai do cuidado da casa"), false);
+    // Conferência de conteúdo não é do entregador externo
+    assert.ok(
+      html.includes("não confere itens") ||
+        html.includes("Não abra a embalagem") ||
+        js.includes("Não abra a embalagem"),
+    );
   });
 
   await test("mobile: Cliente não encontrado não no markup estático de a caminho", () => {
