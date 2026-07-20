@@ -83,12 +83,16 @@ test("mapearEstadoFonteV33: texto + forma, nunca só cor", () => {
 });
 
 test("areaHintFromSit e toneFromCor são determinísticos", () => {
-  assert.equal(areaHintFromSit("saida"), "Motoboy");
+  /* Células operacionais V1: a saída (prontos concentrando na etapa final) é
+   * lida pelo CAIXA; a célula Entregas fica "aguardando integração" enquanto o
+   * domínio ENTREGAS não estiver integrado — destacar uma célula sem leitura
+   * seria contraditório. */
+  assert.equal(areaHintFromSit("saida"), "Caixa");
   assert.equal(areaHintFromSit("conferencia"), "Conferência");
+  /* Quentes e Cozinha são células distintas — a praça sob pressão nunca pode
+   * apontar para a célula errada (sem duplicar cozinha_quentes). */
   assert.equal(areaHintFromSit("praca", "enrolados_quentes"), "Quentes");
-  // cozinha_quentes: DISPLAY do motor rotula "Quentes" — a área apontada
-  // nunca pode contradizer o vocabulário que o motor mostra na mesma tela
-  assert.equal(areaHintFromSit("praca", "cozinha_quentes"), "Quentes");
+  assert.equal(areaHintFromSit("praca", "cozinha_quentes"), "Cozinha");
   assert.equal(toneFromCor("vermelho"), "tense");
   assert.equal(toneFromCor("validacao"), "tech");
 });

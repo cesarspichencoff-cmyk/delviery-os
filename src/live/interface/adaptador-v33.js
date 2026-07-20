@@ -9,7 +9,7 @@
  * ==========================================================================*/
 "use strict";
 
-const AREA_ORDER = ["Caixa", "Sushi", "Quentes", "Cozinha", "Conferência", "Motoboy"];
+const AREA_ORDER = ["Caixa", "Sushi", "Quentes", "Cozinha", "Conferência", "Entregas"];
 
 /**
  * Mapeia cor V1 (mapaAmbientes) → tom visual V3.3 (não decide; só apresenta).
@@ -198,20 +198,20 @@ function mapearEstadoFonteV33(sourceStatus, motivo) {
  * a partir do sitKind/sitPraca já decididos pelo motor.
  */
 function areaHintFromSit(sitKind, sitPraca, displayMap) {
-  if (sitKind === "saida") return "Motoboy";
+  /* Saída = pedidos prontos concentrando-se na etapa final. Quem lê isso hoje
+   * é o CAIXA (organiza os prontos e coordena a saída); a célula Entregas
+   * permanece "aguardando integração" enquanto o domínio ENTREGAS não estiver
+   * integrado — apontar para ela seria destacar uma célula sem leitura. */
+  if (sitKind === "saida") return "Caixa";
   if (sitKind === "conferencia") return "Conferência";
   if (sitKind === "praca" && sitPraca) {
     if (["combinados", "duplas", "enrolados"].indexOf(sitPraca) >= 0) return "Sushi";
-    /* O vocabulário do motor é soberano: DISPLAY rotula cozinha_quentes como
-     * "Quentes". A área Quentes do organismo agrega as duas praças quentes
-     * (enrolados_quentes + cozinha_quentes) — mesma lógica da área Sushi, que
-     * agrega três praças frias. Nunca apontar uma área cujo nome contradiga a
-     * frase que o motor/decisão mostra na mesma tela. */
-    if (sitPraca === "enrolados_quentes" || sitPraca === "cozinha_quentes") return "Quentes";
-    if (displayMap && displayMap[sitPraca]) {
-      const d = displayMap[sitPraca];
-      if (/quentes/i.test(d)) return "Quentes";
-    }
+    /* Quentes e Cozinha são células distintas: enrolados_quentes → Quentes,
+     * cozinha_quentes → Cozinha (sem duplicar a praça em duas células).
+     * Nunca apontar uma área cujo nome contradiga a praça que está sob
+     * pressão na mesma tela. */
+    if (sitPraca === "enrolados_quentes") return "Quentes";
+    if (sitPraca === "cozinha_quentes") return "Cozinha";
   }
   if (sitKind === "fechamento" || sitKind === "order") return "Conferência";
   return null;

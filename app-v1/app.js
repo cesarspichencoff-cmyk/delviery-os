@@ -76,11 +76,11 @@
   }
   const AREA_SLUG = {
     "Sushi": "sushi", "Quentes": "quentes", "Cozinha": "cozinha",
-    "Conferência": "conferencia", "Motoboy": "motoboy", "Caixa": "caixa"
+    "Conferência": "conferencia", "Entregas": "motoboy", "Caixa": "caixa"
   };
   const ROTULO_PRACA_CV = {
     sushi: "Sushi", quentes: "Quentes", cozinha: "Cozinha",
-    conferencia: "Conferência", caixa: "Caixa", motoboy: "Motoboy"
+    conferencia: "Conferência", caixa: "Caixa", motoboy: "Entregas"
   };
   /* Tradução humana do estado interno (o ISF nunca vira número no produto) */
   function humanoDoEstado(estado, pracaSlug) {
@@ -266,15 +266,6 @@
 
   /* —— Leitura por área (dados reais do motor; nunca decide, só apresenta) —— */
   const AMB_ESTADO = { verde: "Tudo fluindo", amarelo: "Atenção", vermelho: "Virando foco", validacao: "Em validação" };
-  function piorPraca(R, pracas) {
-    let sev = 0, pr = null;
-    for (const s of R.sits)
-      if (s.kind === "praca" && pracas.indexOf(s.praca) >= 0 && s.sev > sev) {
-        sev = s.sev;
-        pr = s.praca;
-      }
-    return { sev, pr };
-  }
   function corPorSev(sev) {
     return sev >= 3 ? "vermelho" : sev >= 1 ? "amarelo" : "verde";
   }
@@ -286,52 +277,69 @@
     }
     return n;
   }
-  function mapaAmbientes(R, INFO) {
-    const su = piorPraca(R, ["combinados", "duplas", "enrolados"]);
-    const suCor = corPorSev(su.sev);
-    const sushi = {
-      nome: "Sushi", cor: suCor, sev: su.sev,
-      n: pedidosDependendo(R, INFO, ["combinados", "duplas", "enrolados"]),
-      motivo: su.pr
-        ? MOTOR.DISPLAY[su.pr] + (suCor === "vermelho" ? " segurando o fluxo" : " com pedidos acumulando")
-        : "Sushi em ritmo normal"
+  /* Lógica pura das células (agregação de praças + Caixa) vive em
+   * src/live/interface/celulas-operacionais.js (window.CELULAS_OP) — módulo
+   * testável server-side, mesmo padrão de MOTOR / V33_ADAPTER. */
+  const CEL = window.CELULAS_OP;
+
+  /* Severidade por praça, a partir dos degraus que o motor já produziu. */
+  function sevPorPracaDe(R, pracas) {
+    const sp = {};
+    for (const s of R.sits) {
+      if (s.kind === "praca" && pracas.indexOf(s.praca) >= 0) {
+        sp[s.praca] = Math.max(sp[s.praca] || 0, s.sev || 0);
+      }
+    }
+    return sp;
+  }
+  /* Célula de produção (agregada ou praça única) usando a lógica pura. */
+  function celulaProducao(R, INFO, pracas, nomeCelula) {
+    const est = CEL.estadoAgregado(sevPorPracaDe(R, pracas), pracas, MOTOR.DISPLAY);
+    return {
+      nome: nomeCelula, cor: est.cor, sev: est.sev,
+      n: pedidosDependendo(R, INFO, pracas),
+      motivo: est.motivo
     };
-    /* Área Quentes agrega as DUAS praças quentes (enrolados_quentes +
-     * cozinha_quentes) — mesmo padrão da área Sushi (3 praças frias) e mesmo
-     * mapeamento do adaptador-v33 (DISPLAY do motor rotula cozinha_quentes
-     * como "Quentes"; a área nunca contradiz a frase do motor na tela). */
-    const qu = piorPraca(R, ["enrolados_quentes", "cozinha_quentes"]);
-    const quCor = corPorSev(qu.sev);
-    const quentes = {
-      nome: "Quentes", cor: quCor, sev: qu.sev,
-      n: pedidosDependendo(R, INFO, ["enrolados_quentes", "cozinha_quentes"]),
-      motivo: qu.pr
-        ? MOTOR.DISPLAY[qu.pr] + (quCor === "vermelho" ? " segurando o fluxo" : " puxando espera")
-        : "Quentes em ritmo normal"
-    };
-    /* Cozinha: sem praça própria validada no motor (a separação fina
-     * Quentes × Cozinha depende do mapa operacional do César) — a célula
-     * segue "em validação", tracejado honesto, nunca uma medida inventada. */
-    const cozinha = { nome: "Cozinha", cor: "validacao", sev: 0, n: 0, motivo: "Separação fina ainda depende do mapa operacional" };
-    const confSit = R.sits.find((s) => s.kind === "conferencia");
+  }
+
+  function mapaAmbientes(R, INFO, NIGHT, t) {
+    /* Sushi: agregação visual das três praças frias. */
+    const sushi = celulaProducao(R, INFO, ["combinados", "duplas", "enrolados"], "Sushi");
+    /* Quentes: praça visual ligada SOMENTE a enrolados_quentes.
+     * cozinha_quentes NÃO entra aqui — pertence à célula Cozinha (sem duplicar). */
+    const quentes = celulaProducao(R, INFO, ["enrolados_quentes"], "Quentes");
+    /* Cozinha: praça visual ligada SOMENTE a cozinha_quentes (dado real do
+     * motor; deixou de ser estado fixo de validação). */
+    const cozinha = celulaProducao(R, INFO, ["cozinha_quentes"], "Cozinha");
+    /* Caixa: célula derivada, leitura parcial e explicável. */
+    const caixa = Object.assign({ nome: "Caixa" }, CEL.leituraCaixa(NIGHT, t));
+    /* Conferência: função distinta do Caixa (verificação final, integridade,
+     * itens pendentes, liberação). NÃO é alimentada por montagem_outros —
+     * cuja hipótese operacional é montagem/sacolas/embalagem, não checklist.
+     * Sem fonte comprovada de entrada em conferência, checklist, itens
+     * pendentes, pedido conferido ou tempo aguardando, a célula declara que a
+     * leitura não está conectada — nunca inventa estado, pressão ou quantidade. */
     const conf = {
-      nome: "Conferência", cor: confSit ? "amarelo" : "verde", sev: confSit ? confSit.sev : 0,
-      n: confSit ? 1 : 0,
-      motivo: confSit ? "Pedido pedindo conferência reforçada" : "Nada pendente para conferir"
+      nome: "Conferência", cor: "validacao", sev: 0, n: 0,
+      frase: "leitura ainda não conectada", info: "",
+      motivo: "A conferência final ainda não tem fonte conectada (entrada em conferência, checklist, itens pendentes, pedido conferido)."
     };
-    const saida = R.sits.find((s) => s.kind === "saida");
-    const moCor = saida ? corPorSev(saida.sev) : "verde";
-    const motoboy = {
-      nome: "Motoboy", cor: moCor, sev: saida ? saida.sev : 0,
-      n: R.ctx.wE.filter((x) => x.min > MOTOR.FLOORS.EXPED).length,
-      motivo: saida ? (moCor === "vermelho" ? "Saída travando, prontos parados" : "Prontos esperando saída") : "Despacho sem acúmulo"
+    /* Entregas: o domínio ENTREGAS ainda não está integrado ao Copiloto.
+     * Nada de motoboys, viagens, atrasos, ocorrências, retornos, handoffs,
+     * carga de expedição ou fila de retirada — nenhum desses sinais existe
+     * aqui, e estimativa não é dado. */
+    const entregas = {
+      nome: "Entregas", cor: "validacao", sev: 0, n: 0,
+      frase: "aguardando integração", info: "",
+      motivo: "O domínio Entregas ainda não está integrado ao Copiloto."
     };
-    const caixa = { nome: "Caixa", cor: "validacao", sev: 0, n: 0, motivo: "Fonte atual ainda não mede esta fila" };
-    return [caixa, sushi, quentes, cozinha, conf, motoboy].map((a) => ({
+    return [caixa, sushi, quentes, cozinha, conf, entregas].map((a) => ({
       nome: a.nome, cor: a.cor, sev: a.sev, n: a.n,
       pressao: null,
       estadoTxt: AMB_ESTADO[a.cor],
-      motivo: a.motivo
+      motivo: a.motivo,
+      frase: a.frase || null,
+      info: a.info != null ? a.info : null
     }));
   }
 
@@ -435,7 +443,7 @@
           if (m) alvoId = m[1];
         }
       }
-      const ambientes = mapaAmbientes(R, INFO);
+      const ambientes = mapaAmbientes(R, INFO, J.NIGHT, t);
       const cvPracas = {}; const filas = {};
       for (const a of ambientes) {
         const slug = AREA_SLUG[a.nome];
@@ -625,7 +633,7 @@
     { id: "quentes", nome: "Quentes", x: 40, y: 53, base: 128 },
     { id: "cozinha", nome: "Cozinha", x: 38, y: 84, base: 112 },
     { id: "conferencia", nome: "Conferência", x: 67, y: 52, base: 128 },
-    { id: "motoboy", nome: "Motoboy", x: 90, y: 52, base: 122 }
+    { id: "motoboy", nome: "Entregas", x: 90, y: 52, base: 122 }
   ];
   const LIGACOES = [
     ["caixa", "sushi"], ["caixa", "quentes"], ["caixa", "cozinha"],
@@ -637,25 +645,25 @@
    * que o motor já produziu — a UI só traduz degrau → frase aprovada). */
   function fraseEstado(nome, cor, dominante) {
     if (dominante) return "precisa de atenção";
-    if (cor === "validacao") return nome === "Cozinha" ? "sem dados" : "ainda sem dados";
+    if (cor === "validacao") return "ainda sem dados";
     if (cor === "vermelho") {
-      if (nome === "Motoboy") return "acúmulo na saída";
+      if (nome === "Entregas") return "acúmulo na saída";
       if (nome === "Conferência") return "atrasando a saída";
       return "pressão subindo";
     }
     if (cor === "amarelo") {
       if (nome === "Conferência") return "começando a atrasar";
-      if (nome === "Motoboy") return "prontos esperando";
+      if (nome === "Entregas") return "prontos esperando";
       return "fila crescendo";
     }
     if (nome === "Conferência") return "sem pendências";
-    if (nome === "Motoboy") return "sem acúmulo";
+    if (nome === "Entregas") return "sem acúmulo";
     return "no ritmo";
   }
   function infoDe(nome, cor, n) {
     if (!n) return "";
     if (nome === "Conferência") return "pedido para conferir";
-    if (nome === "Motoboy") return n === 1 ? "1 pronto esperando" : n + " prontos esperando";
+    if (nome === "Entregas") return n === 1 ? "1 pronto esperando" : n + " prontos esperando";
     return cor === "verde" ? n + " em produção" : n + " esperando";
   }
   function toneCelula(cor, dominante) {
@@ -688,8 +696,14 @@
         id: d.id, nome: d.nome, x: d.x, y: d.y,
         size: tamanhoCelula(d.base, tone),
         tone,
-        estado: fraseEstado(d.nome, a.cor, dominante),
-        info: dominante ? infoDe(d.nome, "vermelho", a.n) : infoDe(d.nome, a.cor, a.n),
+        /* Células derivadas (Caixa, Conferência, Entregas) trazem a própria
+         * frase/info honesta; as praças seguem o vocabulário congelado. */
+        estado: dominante
+          ? fraseEstado(d.nome, a.cor, true)
+          : (a.frase || fraseEstado(d.nome, a.cor, false)),
+        info: a.info != null && a.info !== null
+          ? a.info
+          : (dominante ? infoDe(d.nome, "vermelho", a.n) : infoDe(d.nome, a.cor, a.n)),
         motivo: a.motivo || "",
         marcas,
         pulse: tone === "ember",
@@ -801,7 +815,7 @@
           "Quentes": "A fila dos Quentes está crescendo.",
           "Cozinha": "A fila da Cozinha está crescendo.",
           "Conferência": "Pedido pedindo conferência antes de sair.",
-          "Motoboy": "Prontos esperando a saída."
+          "Caixa": "Vários pedidos ficaram prontos quase juntos."
         };
         caption = CAPTION_AREA[medidas[0].nome] || "Pressão surgindo no organismo.";
       } else caption = "Movimento discreto no organismo.";
@@ -1451,7 +1465,7 @@
     const grade = el("div", "qa-turno-grade");
     const salvo = turnoAtual();
     [["sushi", "Sushi"], ["quentes", "Quentes"], ["cozinha", "Cozinha"],
-     ["conferencia", "Conf./Delivery"], ["caixa", "Caixa"], ["motoboy", "Motoboy"],
+     ["conferencia", "Conf./Delivery"], ["caixa", "Caixa"], ["motoboy", "Entregas"],
      ["flutuantes", "Flutuantes"]].forEach(([k, rotulo]) => {
       const campo = el("label", "qa-turno-campo");
       campo.appendChild(el("span", "qa-turno-rotulo", rotulo));
