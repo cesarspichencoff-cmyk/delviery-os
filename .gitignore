@@ -14,3 +14,7 @@
 .DS_Store
 .env
 docs/*.pdf
+
+var/
+_tmp_*
+

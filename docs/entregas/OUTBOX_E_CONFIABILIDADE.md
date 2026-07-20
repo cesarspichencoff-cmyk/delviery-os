@@ -8,28 +8,28 @@
 
 ---
 
-## 1. Nível atual da outbox (explícito)
+## 1. Nível atual da outbox (explícito) — atualizado 3B.1
 
 | Pergunta | Resposta |
 |---|---|
-| Em memória? | **SIM** |
-| Arquivo local? | **NÃO** |
-| Banco persistente? | **NÃO** |
-| Transacional com o domínio (DB ACID)? | **NÃO** (sem adapter persistente) |
-| Apenas contrato futuro? | **NÃO** — implementação **simulada/local** funcional |
+| Em memória? | **SIM** (`MemoryUnitOfWork`) |
+| Arquivo local? | **SIM** (`FileUnitOfWork` — JSON atômico) |
+| Banco SQL? | **NÃO** ainda |
+| Transacional com o domínio? | **SIM no nível UnitOfWork** (staging + commit único) |
+| DB ACID multi-instância? | **NÃO** |
 
 ### Atomicidade
 
-> **Contrato de atomicidade definido e testado no nível de sessão; garantia transacional definitiva depende do adapter persistente da fase de infraestrutura.**
+> **Contrato de atomicidade definido e testado no UnitOfWork (memória e arquivo local). Garantia transacional de produção (SQL multi-instância) depende do adapter da fase de infraestrutura.**
 
-Na F0, `EntregasSession`:
+`EntregasApplicationService` + `UnitOfWork`:
 
-1. aplica mudança no domínio (`InMemoryEventLog`);
-2. enfileira eventos públicos validados na outbox em memória;
-3. na **mesma operação síncrona de processo** (mesmo call stack da API de sessão).
+1. muta agregados no staging;
+2. append eventos operacionais;
+3. enqueue outbox pública;
+4. `commit()` persiste tudo ou `rollback()` descarta.
 
-Isso **não** é atomicidade de produção com banco (não há `BEGIN/COMMIT` compartilhado).  
-Crash de processo pode perder memória; reprocessamento e idempotência protegem o **consumidor**, não a durabilidade do produtor.
+Arquivo: write temp + rename. **Não** é cluster-safe.
 
 ---
 
