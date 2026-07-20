@@ -17,7 +17,9 @@
     "test:entregas:gate-close": "npx tsc && node dist/src/entregas/integration/run-gate-close-tests.js",
     "test:entregas:acceptance": "npx tsc && node dist/src/entregas/acceptance/run-acceptance-a01-a39.js",
     "test:entregas:ui": "npx tsc && node dist/src/entregas/ui/run-ui-tests.js",
-    "ui:entregas": "npx tsc && node dist/tools/entregas_ui_server.js"
+    "ui:entregas": "npx tsc && node dist/tools/entregas_ui_server.js",
+    "ui:entregas:pilot": "npx tsc && node dist/tools/entregas_pilot_server.js",
+    "test:entregas:pilot-gate": "npx tsc && node dist/src/entregas/pilot/run-pilot-gate-tests.js"
   },
   "devDependencies": {
     "@types/node": "20.14.10",

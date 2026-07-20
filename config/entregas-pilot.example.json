@@ -1,0 +1,51 @@
+{
+  "mode": "pilot",
+  "unit_id": "unit-piloto-1",
+  "unit_name": "UNIDADE PILOTO",
+  "timezone": "America/Sao_Paulo",
+  "port": 5193,
+  "bind": "0.0.0.0",
+  "data_dir": "data/entregas-pilot",
+  "max_stops": 5,
+  "banner": "PILOTO CONTROLADO · UNIDADE {unit_name}",
+  "users": [
+    {
+      "actor_id": "ops-console-1",
+      "role": "operador_expedicao",
+      "label": "Operador do console",
+      "token": "CHANGE_ME_OPS_TOKEN"
+    },
+    {
+      "actor_id": "ops-ifood-1",
+      "role": "operador_expedicao",
+      "label": "Operador Expedição iFood",
+      "token": "CHANGE_ME_IFOOD_TOKEN"
+    },
+    {
+      "actor_id": "rid-1",
+      "role": "motoboy_interno",
+      "label": "Motoboy interno 1",
+      "token": "CHANGE_ME_RIDER_TOKEN"
+    },
+    {
+      "actor_id": "admin-1",
+      "role": "gerente",
+      "label": "Administrador do piloto",
+      "token": "CHANGE_ME_ADMIN_TOKEN"
+    }
+  ],
+  "features": {
+    "demo_seed": false,
+    "demo_controls": false,
+    "map_poc": false,
+    "gps_production": false,
+    "auto_assignment": false,
+    "copiloto": false,
+    "shell": false
+  },
+  "backup": {
+    "auto_interval_minutes": 30,
+    "retain_count": 48,
+    "dir": "backups"
+  }
+}

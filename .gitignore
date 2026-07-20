@@ -18,3 +18,8 @@ docs/*.pdf
 var/
 _tmp_*
 
+
+# Piloto ENTREGAS
+config/entregas-pilot.json
+data/entregas-pilot/
+
