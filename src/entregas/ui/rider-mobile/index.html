@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>ENTREGAS · Motoboy</title>
+  <link rel="stylesheet" href="/shared/tokens.css" />
+  <link rel="stylesheet" href="/rider-mobile/rider.css" />
+</head>
+<body class="mobile">
+  <div class="demo-banner" role="status">AMBIENTE DE DEMONSTRAÇÃO · app motoboy interno</div>
+  <header class="m-header">
+    <p class="eyebrow">ENTREGAS</p>
+    <h1>Minha viagem</h1>
+    <p id="connLine" class="muted" role="status">Conexão…</p>
+  </header>
+  <main id="main" class="m-main">
+    <section class="panel" id="tripPanel">
+      <h2 class="sr-only">Viagem atual</h2>
+      <div id="tripBody" class="empty">Carregando…</div>
+    </section>
+    <section class="panel" aria-labelledby="stopTitle">
+      <h2 id="stopTitle">Parada atual</h2>
+      <div id="stopBody" class="empty">Sem parada ativa</div>
+      <p class="muted loc" id="locLine">Localização indisponível — GPS de produção não está ativo neste protótipo.</p>
+    </section>
+    <section class="actions-stack" aria-label="Ações principais">
+      <button type="button" class="primary big" id="btnDepart">Confirmar saída</button>
+      <button type="button" class="big" id="btnNav">Abrir rota (externa)</button>
+      <button type="button" class="big" id="btnArrive">Cheguei</button>
+      <button type="button" class="primary big" id="btnConfirm">Entrega confirmada</button>
+      <button type="button" class="big" id="btnNotFound">Cliente não encontrado</button>
+      <button type="button" class="big" id="btnProblem">Registrar problema</button>
+      <button type="button" class="big" id="btnReturn">Iniciar retorno</button>
+    </section>
+    <div id="errorBox" class="error-box" hidden role="alert"></div>
+    <p class="sync muted" id="syncLine"></p>
+  </main>
+  <nav class="m-nav" aria-label="Navegação demo">
+    <a href="/console/">Console</a>
+    <a href="/ifood-handoff/">Expedição iFood</a>
+  </nav>
+  <script type="module" src="/rider-mobile/rider.js"></script>
+</body>
+</html>

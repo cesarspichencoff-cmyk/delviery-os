@@ -1,0 +1,43 @@
+body.mobile {
+  max-width: 430px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background: #ebe7df;
+}
+.m-header { padding: 1rem 1rem 0.25rem; }
+.m-header h1 { margin: 0; font-size: 1.45rem; }
+.eyebrow {
+  margin: 0;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+.m-main { padding: 0.75rem 1rem 5rem; display: flex; flex-direction: column; gap: 0.75rem; }
+.actions-stack { display: flex; flex-direction: column; gap: 0.55rem; }
+button.big {
+  min-height: 52px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  width: 100%;
+}
+.loc {
+  margin: 0.75rem 0 0;
+  font-size: 0.85rem;
+  padding: 0.5rem;
+  background: var(--warn-soft);
+  border-radius: 8px;
+}
+.m-nav {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  padding: 0.75rem;
+  background: rgba(235,231,223,0.95);
+  border-top: 1px solid var(--line);
+  font-size: 0.85rem;
+}
+.m-nav a { color: var(--accent); }
+.sync { font-size: 0.8rem; text-align: center; }
