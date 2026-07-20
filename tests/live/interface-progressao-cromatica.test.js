@@ -104,7 +104,10 @@ test("ausência de mudança estrutural: nenhuma classe/elemento novo — só tok
   // topologia/estrutura continuam intocadas: mesmas 6 áreas, mesma função de render
   assert.match(APP_JS, /const CEL_DEF = \[/);
   assert.match(APP_JS, /\{ id: "caixa", nome: "Caixa"/);
-  assert.match(APP_JS, /\{ id: "motoboy", nome: "Motoboy"/);
+  /* Células operacionais V1: o id topológico "motoboy" é preservado (posição,
+   * ligações e QA intactos); só o rótulo passou a "Entregas", que é o domínio
+   * real dessa célula enquanto aguarda integração. */
+  assert.match(APP_JS, /\{ id: "motoboy", nome: "Entregas"/);
   const celDef = APP_JS.match(/const CEL_DEF = \[[\s\S]*?\];/)[0];
   assert.equal((celDef.match(/\{ id:/g) || []).length, 6, "topologia deve continuar com 6 áreas");
 });
