@@ -169,6 +169,64 @@ console.log("\n=== ENTREGAS UI 3C.1 tests ===\n");
     }
   });
 
+  await test("tokens canônicos Sprint (não baseline app-v1)", () => {
+    const t = readFileSync(
+      join(process.cwd(), "src/entregas/ui/shared/tokens.css"),
+      "utf8",
+    );
+    assert.ok(t.includes("Spectral"));
+    assert.ok(t.includes("Hanken Grotesk"));
+    assert.ok(t.includes("IBM Plex Mono"));
+    assert.ok(t.includes("#22563c") || t.includes("#22563C"));
+    assert.ok(t.includes("Sprint Visual") || t.includes("canônico"));
+    assert.equal(t.includes("app-v1/style.css"), false);
+  });
+
+  await test("UI expedição: copy de conclusão e sem jargão Handoff no HTML", () => {
+    const html = readFileSync(
+      join(process.cwd(), "src/entregas/ui/ifood-handoff/index.html"),
+      "utf8",
+    );
+    const js = readFileSync(
+      join(process.cwd(), "src/entregas/ui/ifood-handoff/handoff.js"),
+      "utf8",
+    );
+    assert.ok(html.includes("Liberar pedido"));
+    assert.equal(html.includes("Iniciar handoff"), false);
+    assert.equal(html.toLowerCase().includes("external_courier_ref"), false);
+    assert.ok(
+      js.includes(
+        "Expedição concluída. O andamento posterior é acompanhado pelo canal do iFood.",
+      ),
+    );
+    assert.equal(js.includes("sai do cuidado da casa"), false);
+  });
+
+  await test("mobile: Cliente não encontrado não no markup estático de a caminho", () => {
+    const js = readFileSync(
+      join(process.cwd(), "src/entregas/ui/rider-mobile/rider.js"),
+      "utf8",
+    );
+    assert.ok(js.includes('notFound.hidden = true'));
+    assert.ok(js.includes("Abrir rota"));
+    assert.ok(js.includes("Cheguei"));
+    assert.ok(js.includes("Confirmar entrega"));
+  });
+
+  await test("console: sem mapa pseudogeográfico — sequência de endereços", () => {
+    const html = readFileSync(
+      join(process.cwd(), "src/entregas/ui/console/index.html"),
+      "utf8",
+    );
+    const js = readFileSync(
+      join(process.cwd(), "src/entregas/ui/console/console.js"),
+      "utf8",
+    );
+    assert.ok(html.includes("addressSeq"));
+    assert.ok(js.includes("address-seq") || js.includes("addr-chip"));
+    assert.ok(js.includes("Sem coordenadas") || html.includes("Sem coordenadas"));
+  });
+
   await test("saída e confirmação via facade", async () => {
     const f = new UiApplicationFacade();
     await f.execute({

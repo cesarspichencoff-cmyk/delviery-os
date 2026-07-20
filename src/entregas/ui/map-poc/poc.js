@@ -83,14 +83,19 @@ function initMapLibre() {
   map.on("load", () => {
     setState("ready");
     // store marker
-    new maplibregl.Marker({ color: "#2E9E4F" })
+    // Cores da linguagem cartográfica TATA (experimental)
+    new maplibregl.Marker({ color: "#22563C" })
       .setLngLat([STORE.lon, STORE.lat])
-      .setPopup(new maplibregl.Popup().setText("Loja (demo anonimizada)"))
+      .setPopup(new maplibregl.Popup().setText("Casa (demo anonimizada)"))
       .addTo(map);
     DELIVERIES.forEach((d, i) => {
-      new maplibregl.Marker({ color: "#6C6759" })
+      new maplibregl.Marker({ color: i === 0 ? "#24603F" : "#B0812F" })
         .setLngLat([d.lon, d.lat])
-        .setPopup(new maplibregl.Popup().setText(`Parada ${i + 1} (anon.)`))
+        .setPopup(
+          new maplibregl.Popup().setText(
+            `Parada ${i + 1} (demo geo — não é tracking de produção)`,
+          ),
+        )
         .addTo(map);
     });
     // NÃO desenhar motoboy fictício como dado real
@@ -128,9 +133,9 @@ function addSimulatedRoute() {
       type: "line",
       source: id,
       paint: {
-        "line-color": "#2E9E4F",
+        "line-color": "#22563C",
         "line-width": 4,
-        "line-opacity": 0.75,
+        "line-opacity": 0.8,
       },
     });
     setState("ready + rota simulada (não é routing engine)");

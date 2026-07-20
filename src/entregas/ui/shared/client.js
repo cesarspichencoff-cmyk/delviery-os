@@ -10,7 +10,6 @@ export async function api(path, opts = {}) {
     err.payload = data;
     throw err;
   }
-  // Domain rejection comes as HTTP 200 + result.ok=false
   if (data.result && data.result.ok === false) {
     const raw = data.result.error || "Ação não concluída";
     const err = new Error(humanizeDomainError(raw));
@@ -30,11 +29,14 @@ export function humanizeDomainError(msg) {
   if (/MAX_STOPS|Máximo de paradas/i.test(m))
     return "Essa viagem já tem o máximo de paradas permitido no piloto.";
   if (/HANDOFF_NOT_VERIFIED|verificado/i.test(m))
-    return "Confirme a verificação do entregador do iFood antes de repassar.";
+    return "Confirme a verificação do entregador do iFood antes de liberar.";
   if (/HANDOFF_VOLUMES|Volumes/i.test(m))
     return "Confira os volumes: o que saiu precisa bater com o esperado.";
-  if (/não autoriz/i.test(m))
-    return "Seu perfil não pode fazer esta ação.";
+  if (/Pedido deve estar identificado/i.test(m))
+    return "Identifique o pedido correto antes de liberar.";
+  if (/conference_actor|handoff_actor|internos/i.test(m))
+    return "Informe quem conferiu e quem libera o pedido na casa.";
+  if (/não autoriz/i.test(m)) return "Seu perfil não pode fazer esta ação.";
   if (/Trip não encontrada/i.test(m)) return "Viagem não encontrada.";
   return m;
 }
@@ -64,6 +66,7 @@ export function renderError(box, msg) {
   box.textContent = msg;
 }
 
+/** Rótulos humanos — sem jargão de domínio na UI */
 export function chip(state) {
   const map = {
     preparando_saida: ["Preparando saída", "neutral"],
@@ -74,15 +77,29 @@ export function chip(state) {
     entrega_sem_confirmacao: ["Aguardando confirmação", "warn"],
     entregue_confirmado: ["Entrega confirmada", ""],
     cliente_nao_encontrado: ["Cliente não encontrado", "danger"],
+    chegada_detectada: ["Chegada registrada", ""],
+    aguardando_saida: ["Aguardando saída", "neutral"],
     disponivel: ["Disponível", ""],
     pausa: ["Em pausa", "warn"],
     apoio_expedicao: ["Apoio à expedição", "warn"],
     indisponivel: ["Indisponível", "danger"],
-    repassado: ["Entrega ao iFood concluída", ""],
-    aguardando_courier: ["Aguardando entregador do iFood", "warn"],
-    em_conferencia: ["Conferindo pedido", "warn"],
+    repassado: ["Expedição concluída", ""],
+    aguardando_courier: ["Aguardando entregador", "warn"],
+    em_conferencia: ["Em conferência", "warn"],
     excecao: ["Problema na expedição", "danger"],
+    cancelado: ["Cancelada", "neutral"],
   };
   const [label, cls] = map[state] || [state, "neutral"];
   return `<span class="chip ${cls}" role="status">${label}</span>`;
+}
+
+export function connectionLabel(conn, pending) {
+  if (conn === "offline") {
+    return pending > 0
+      ? "Sem rede — confirmações guardadas neste aparelho"
+      : "Sem rede no momento";
+  }
+  if (conn === "syncing") return "Enviando atualizações…";
+  if (pending > 0) return `Enviando ${pending} atualização(ões)…`;
+  return "Online";
 }

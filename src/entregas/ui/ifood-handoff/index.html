@@ -8,55 +8,97 @@
   <link rel="stylesheet" href="/ifood-handoff/handoff.css" />
 </head>
 <body>
-  <div class="demo-banner" role="status">AMBIENTE DE DEMONSTRAÇÃO · EXPEDIÇÃO IFOOD / HANDOFF IFOOD</div>
-  <header class="top">
-    <div>
-      <p class="eyebrow">ENTREGAS · não é “Entregadores iFood”</p>
-      <h1>Expedição iFood</h1>
-      <p class="muted">Foco no <strong>pedido e conferência</strong>. Courier externo não tem conta, app, Trip nem GPS.</p>
-    </div>
+  <div class="demo-banner" role="status">AMBIENTE DE DEMONSTRAÇÃO · EXPEDIÇÃO IFOOD</div>
+  <header class="shell-header">
+    <div class="shell-brand">ENTREGAS <span>expedição iFood</span></div>
     <a class="muted" href="/console/">← Console</a>
   </header>
-  <main class="wrap">
-    <section class="panel">
-      <h2>1. Pedido</h2>
-      <label>Referência do pedido iFood
-        <input id="orderRef" value="IF-9001" autocomplete="off" />
-      </label>
-      <button type="button" class="primary" id="btnStart">Iniciar handoff</button>
-    </section>
-    <section class="panel">
-      <h2>2. Verificação do courier</h2>
-      <p class="muted">Sem nome completo ou documento. Método operacional + verificação.</p>
-      <label class="check"><input type="checkbox" id="verified" /> Courier verificado</label>
-      <label>Método
-        <select id="method">
-          <option value="codigo_app_plataforma">Código no app da plataforma</option>
-          <option value="visual_cracha">Visual de identificação da plataforma</option>
-        </select>
-      </label>
-      <label>Ref. mascarada (opcional)
-        <input id="courierRef" value="plt-***42" autocomplete="off" />
-      </label>
-    </section>
-    <section class="panel">
-      <h2>3. Volumes e responsáveis</h2>
-      <div class="grid2">
-        <label>Volumes esperados <input type="number" id="volExp" value="2" min="1" /></label>
-        <label>Volumes conferidos <input type="number" id="volDel" value="2" min="0" /></label>
+
+  <main class="exp-wrap">
+    <header class="exp-intro">
+      <p class="label-meta">Liberação na casa</p>
+      <h1 class="title-sov">Expedição iFood</h1>
+      <p class="sub-human">
+        Identifique o pedido, confira o entregador e os volumes, registre quem libera.
+        O entregador do iFood não é usuário deste módulo.
+      </p>
+    </header>
+
+    <div class="exp-grid">
+      <section class="card edge-green step" aria-labelledby="pedido-title">
+        <h2 class="step-label" id="pedido-title">Pedido</h2>
+        <label>Referência do pedido iFood
+          <input id="orderRef" value="IF-9001" autocomplete="off" />
+        </label>
+        <label class="check">
+          <input type="checkbox" id="orderOk" />
+          Pedido identificado e correto
+        </label>
+        <button type="button" class="ghost" id="btnStart">Iniciar expedição deste pedido</button>
+        <p class="muted small" id="sessionLine">Nenhuma expedição iniciada nesta tela.</p>
+      </section>
+
+      <section class="card step" aria-labelledby="courier-title">
+        <h2 class="step-label" id="courier-title">Entregador na porta</h2>
+        <p class="muted small">Confira o código ou identificação com quem chegou. Sem cadastro de perfil.</p>
+        <label class="check">
+          <input type="checkbox" id="verified" />
+          Entregador verificado
+        </label>
+        <label>Método de verificação
+          <select id="method">
+            <option value="">Selecione…</option>
+            <option value="codigo_app_plataforma">Código no app da plataforma</option>
+            <option value="visual_cracha">Identificação visual da plataforma</option>
+          </select>
+        </label>
+        <label>Código / ref. mascarada (opcional, só desta liberação)
+          <input id="courierRef" value="" placeholder="ex.: ****42" autocomplete="off" />
+        </label>
+        <p class="muted small">Não criamos histórico pessoal, GPS nem conta do entregador externo.</p>
+      </section>
+
+      <section class="card step" aria-labelledby="vol-title">
+        <h2 class="step-label" id="vol-title">Volumes</h2>
+        <div class="grid2">
+          <label>Esperados
+            <input type="number" id="volExp" value="2" min="1" />
+          </label>
+          <label>Conferidos na mão
+            <input type="number" id="volDel" value="0" min="0" />
+          </label>
+        </div>
+        <label class="check">
+          <input type="checkbox" id="physicalOk" />
+          Conferência física concluída
+        </label>
+      </section>
+
+      <section class="card step" aria-labelledby="people-title">
+        <h2 class="step-label" id="people-title">Quem libera na casa</h2>
+        <label>Responsável pela conferência
+          <input id="confActor" value="Juliana" autocomplete="name" />
+        </label>
+        <label>Quem faz a liberação física
+          <input id="handActor" value="Juliana" autocomplete="name" />
+        </label>
+      </section>
+    </div>
+
+    <section class="release-bar" aria-labelledby="release-title">
+      <h2 class="sr-only" id="release-title">Liberar pedido</h2>
+      <div id="pendingBox" class="pending-box" role="status">
+        Para liberar, complete: —
       </div>
-      <label>Responsável conferência <input id="confActor" value="ops-demo" /></label>
-      <label>Ator do repasse físico <input id="handActor" value="ops-demo" /></label>
-      <label class="check"><input type="checkbox" id="orderOk" checked /> Pedido identificado e correto</label>
-      <p class="muted">Campo impresso “Entregador” da comanda <strong>não</strong> atribui motoboy interno.</p>
-    </section>
-    <section class="panel">
-      <button type="button" class="primary big" id="btnConfirm">Confirmar repasse (handoff)</button>
+      <button type="button" class="primary big btn-sovereign" id="btnConfirm" disabled>
+        Liberar pedido
+      </button>
       <div id="errorBox" class="error-box" hidden role="alert"></div>
-      <div id="result" class="muted" style="margin-top:0.75rem"></div>
+      <div id="result" class="result muted" hidden></div>
     </section>
-    <section class="panel">
-      <h2>Handoffs nesta sessão</h2>
+
+    <section class="card list-panel" aria-labelledby="list-title">
+      <h2 class="step-label" id="list-title">Expedições nesta sessão</h2>
       <div id="list" class="list"></div>
     </section>
   </main>

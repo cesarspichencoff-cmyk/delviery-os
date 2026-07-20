@@ -1,47 +1,130 @@
-.top {
-  padding: 1.25rem 1.5rem 0.5rem;
+/* Expedição iFood — liberação na casa, sem mapa decorativo */
+.shell-header {
   display: flex;
   justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
+  align-items: center;
+  padding: 1rem 1.4rem;
+  border-bottom: 1px solid var(--line);
+  background: var(--cream-2);
 }
-.eyebrow {
-  margin: 0;
-  font-size: 0.75rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--ink-muted);
+.shell-brand {
+  font-weight: 600;
 }
-h1 { margin: 0.2rem 0; font-size: 1.5rem; }
-.wrap {
-  max-width: 640px;
+.shell-brand span {
+  font-weight: 400;
+  color: var(--tinta-3);
+  margin-left: 0.35rem;
+}
+
+.exp-wrap {
+  max-width: 920px;
   margin: 0 auto;
-  padding: 1rem 1.5rem 3rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
+  padding: 1.4rem 1.25rem 2.5rem;
 }
-label {
+.exp-intro .title-sov {
+  font-size: clamp(1.7rem, 3vw, 2.2rem);
+  margin: 0.35rem 0 0.5rem;
+}
+.exp-intro {
+  margin-bottom: 1.25rem;
+}
+
+.exp-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.9rem;
+}
+@media (max-width: 720px) {
+  .exp-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.step-label {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--tinta-3);
+  font-weight: 500;
+  margin: 0 0 0.75rem;
+}
+.step .title-sov {
+  font-size: 1.4rem;
+}
+.check {
+  display: flex !important;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 0.75rem;
+  cursor: pointer;
+}
+.check input {
+  width: auto;
+  min-height: 0;
+  margin: 0;
+}
+.grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
+}
+.small {
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.release-bar {
+  margin: 1.25rem 0;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
-  margin: 0.5rem 0;
+  gap: 0.65rem;
+}
+.release-bar .big {
+  width: 100%;
+  min-height: 52px;
+  font-size: 1.05rem;
+}
+.pending-box {
+  padding: 0.75rem 0.95rem;
+  border-radius: 12px;
+  background: var(--warn-soft);
+  border: 1px solid rgba(176, 129, 47, 0.3);
+  color: var(--ink-2);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+.pending-box.ready {
+  background: var(--accent-soft);
+  border-color: rgba(34, 86, 60, 0.3);
+  color: var(--verde);
+}
+.result {
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  background: var(--accent-soft);
+  border: 1px solid rgba(34, 86, 60, 0.25);
+  color: var(--ink-2);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+.list-panel {
+  margin-top: 0.5rem;
+}
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.item {
+  padding: 0.65rem 0.75rem;
+  border-radius: 12px;
+  background: rgba(255, 254, 251, 0.8);
+  border: 1px solid var(--line);
   font-size: 0.9rem;
 }
-label.check { flex-direction: row; align-items: center; gap: 0.5rem; }
-input, select {
-  padding: 0.55rem 0.65rem;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #fff;
-  min-height: 44px;
-}
-.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
-button.big { width: 100%; min-height: 52px; font-weight: 600; margin-top: 0.5rem; }
-.list { display: flex; flex-direction: column; gap: 0.45rem; }
-.item {
-  padding: 0.6rem 0.75rem;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: #fff;
+.meta {
+  font-size: 0.78rem;
+  color: var(--ink-muted);
+  margin-top: 0.2rem;
 }

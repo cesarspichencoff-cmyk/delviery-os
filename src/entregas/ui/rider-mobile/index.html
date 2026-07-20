@@ -10,31 +10,42 @@
 <body class="mobile">
   <div class="demo-banner" role="status">AMBIENTE DE DEMONSTRAÇÃO · app motoboy interno</div>
   <header class="m-header">
-    <p class="eyebrow">ENTREGAS</p>
-    <h1>Minha viagem</h1>
-    <p id="connLine" class="muted" role="status">Conexão…</p>
+    <div class="shell-brand">ENTREGAS</div>
+    <p id="connLine" class="muted conn" role="status">Conexão…</p>
   </header>
   <main id="main" class="m-main">
-    <section class="panel" id="tripPanel">
-      <h2 class="sr-only">Viagem atual</h2>
-      <div id="tripBody" class="empty">Carregando…</div>
+    <div id="syncBar" class="sync-bar" hidden>
+      <span class="dot dashed" aria-hidden="true"></span>
+      <div>
+        <div class="sync-title" id="syncTitle">Sem rede no momento</div>
+        <div class="muted small" id="syncDetail">Suas confirmações ficam guardadas e sobem sozinhas quando a rede voltar.</div>
+      </div>
+    </div>
+
+    <div id="stageRail" class="stage-rail" aria-label="Etapa da parada"></div>
+
+    <section class="m-focus" aria-labelledby="stopTitle">
+      <p class="label-meta" id="stopMeta">Parada</p>
+      <h1 class="title-sov" id="stopTitle">Carregando…</h1>
+      <p class="sub-human" id="stopSub"></p>
+      <div id="stopCard" class="card stop-card" hidden></div>
+      <p class="muted small" id="nextLine"></p>
+      <p class="muted small loc" id="locLine">Localização ao vivo indisponível — GPS de produção não está ativo.</p>
     </section>
-    <section class="panel" aria-labelledby="stopTitle">
-      <h2 id="stopTitle">Parada atual</h2>
-      <div id="stopBody" class="empty">Sem parada ativa</div>
-      <p class="muted loc" id="locLine">Localização indisponível — GPS de produção não está ativo neste protótipo.</p>
+
+    <section class="actions-stack" aria-label="Ação principal">
+      <!-- Um botão soberano por estado; outros só quando válidos -->
+      <button type="button" class="primary big btn-sovereign" id="btnPrimary" hidden>Ação</button>
+      <button type="button" class="big" id="btnSecondary" hidden>Secundária</button>
+      <div id="problemRow" class="problem-row" hidden>
+        <button type="button" class="ghost" id="btnNotFound" hidden>Cliente não encontrado</button>
+        <button type="button" class="ghost" id="btnProblem">Registrar problema</button>
+      </div>
+      <button type="button" class="secondary-link" id="btnSyncNow" hidden>Enviar agora (se a rede voltou)</button>
     </section>
-    <section class="actions-stack" aria-label="Ações principais">
-      <button type="button" class="primary big" id="btnDepart">Confirmar saída</button>
-      <button type="button" class="big" id="btnNav">Abrir rota (externa)</button>
-      <button type="button" class="big" id="btnArrive">Cheguei</button>
-      <button type="button" class="primary big" id="btnConfirm">Entrega confirmada</button>
-      <button type="button" class="big" id="btnNotFound">Cliente não encontrado</button>
-      <button type="button" class="big" id="btnProblem">Registrar problema</button>
-      <button type="button" class="big" id="btnReturn">Iniciar retorno</button>
-    </section>
+
     <div id="errorBox" class="error-box" hidden role="alert"></div>
-    <p class="sync muted" id="syncLine"></p>
+    <p class="trip-foot muted" id="tripFoot"></p>
   </main>
   <nav class="m-nav" aria-label="Navegação demo">
     <a href="/console/">Console</a>

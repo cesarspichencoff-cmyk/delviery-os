@@ -122,7 +122,14 @@ export class UiApplicationFacade {
       return result;
     }
     this.last_error = null;
-    if (result.trip) this.tripCache.set(result.trip.trip.trip_id, result.trip);
+    if (result.trip) {
+      this.tripCache.set(result.trip.trip.trip_id, result.trip);
+      // Demo: remove da lista de prontos os pedidos já na viagem (sem alterar domínio)
+      const used = new Set(
+        [...result.trip.deliveries.values()].map((d) => d.order_ref),
+      );
+      this.ready_orders = this.ready_orders.filter((o) => !used.has(o.order_ref));
+    }
     if (result.handoff) this.handoffCache.set(result.handoff.handoff_id, result.handoff);
     if (result.occurrence)
       this.occCache.set(result.occurrence.occurrence_id, result.occurrence);

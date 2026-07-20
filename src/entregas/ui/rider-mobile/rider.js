@@ -1,4 +1,11 @@
-import { snapshot, command, chip, renderError } from "../shared/client.js";
+import {
+  snapshot,
+  command,
+  chip,
+  renderError,
+  connectionLabel,
+  api,
+} from "../shared/client.js";
 
 const $ = (id) => document.getElementById(id);
 let snap = null;
@@ -12,68 +19,193 @@ function activeTrip() {
   );
 }
 
+/**
+ * Parada atual na sequência:
+ * - primeira ativa não confirmada / não removida
+ */
 function currentStop(t) {
   if (!t) return null;
   return t.deliveries.find(
     (d) =>
       d.active &&
-      ["em_rota", "chegada_detectada", "aguardando_saida"].includes(d.state),
+      !["entregue_confirmado", "cliente_nao_encontrado"].includes(d.state),
   );
+}
+
+/**
+ * Fase visual da parada (sem inventar GPS):
+ * - depart: viagem preparando saída
+ * - en_route: delivery em_rota → ação Abrir rota (+ Cheguei)
+ * - arrived: chegada_detectada | entrega_sem_confirmacao → Confirmar entrega
+ * - returning: viagem retornando
+ */
+function stopPhase(t, s) {
+  if (!t) return "idle";
+  if (t.state === "preparando_saida") return "depart";
+  if (t.state === "retornando") return "returning";
+  if (!s) return "idle";
+  if (s.state === "chegada_detectada" || s.state === "entrega_sem_confirmacao")
+    return "arrived";
+  if (s.state === "em_rota" || s.state === "aguardando_saida") return "en_route";
+  return "idle";
+}
+
+function addressHint(orderRef) {
+  const o = (snap?.ready_orders || []).find((x) => x.order_ref === orderRef);
+  if (o?.label) {
+    const parts = o.label.split("·").map((x) => x.trim());
+    return parts[parts.length - 1] || orderRef;
+  }
+  return orderRef;
 }
 
 async function refresh() {
   snap = await snapshot();
-  $("connLine").textContent =
-    snap.connection === "offline"
-      ? "Offline — eventos ficam pendentes"
-      : snap.connection === "syncing"
-        ? "Sincronizando…"
-        : "Online";
-  $("syncLine").textContent =
-    snap.pending_sync > 0
-      ? `${snap.pending_sync} evento(s) aguardando sincronização (occurred_at preservado no domínio)`
-      : "Sem fila de sincronização";
+  const offline = snap.connection === "offline";
+  const syncing = snap.connection === "syncing";
+  const pending = snap.pending_sync > 0;
+
+  $("connLine").textContent = connectionLabel(snap.connection, snap.pending_sync);
+
+  // Sync automática: banner só em offline real ou envio em curso — nunca “sem rede” se online
+  const syncBar = $("syncBar");
+  if (offline) {
+    syncBar.hidden = false;
+    $("syncTitle").textContent = "Sem rede no momento";
+    $("syncDetail").textContent =
+      "Suas confirmações ficam guardadas neste aparelho e sobem sozinhas quando a rede voltar.";
+  } else if (syncing || pending) {
+    syncBar.hidden = false;
+    $("syncTitle").textContent = "Enviando atualizações…";
+    $("syncDetail").textContent = "Sincronização automática em andamento.";
+  } else {
+    syncBar.hidden = true;
+  }
+  // Link secundário opcional — motoboy não administra a fila
+  $("btnSyncNow").hidden = !offline;
+
   const t = activeTrip();
-  // Ações por estado — evita botão morto / erro técnico
-  const canDepart = t && t.state === "preparando_saida";
-  const canArrive = t && t.state === "em_rota";
-  const canConfirm =
-    t &&
-    t.deliveries.some(
-      (d) =>
-        d.active &&
-        ["em_rota", "chegada_detectada", "entrega_sem_confirmacao"].includes(
-          d.state,
-        ),
-    );
-  const canReturn = t && t.state === "em_rota";
-  $("btnDepart").disabled = !canDepart;
-  $("btnArrive").disabled = !canArrive;
-  $("btnConfirm").disabled = !canConfirm;
-  $("btnNotFound").disabled = !canArrive;
-  $("btnReturn").disabled = !canReturn;
-  $("btnNav").disabled = !t;
-  $("btnProblem").disabled = !t;
+  const s = currentStop(t);
+  const phase = stopPhase(t, s);
+
+  // Reset actions
+  const primary = $("btnPrimary");
+  const secondary = $("btnSecondary");
+  const notFound = $("btnNotFound");
+  const problemRow = $("problemRow");
+  const btnProblem = $("btnProblem");
+
+  primary.hidden = true;
+  secondary.hidden = true;
+  notFound.hidden = true;
+  problemRow.hidden = true;
+  primary.onclick = null;
+  secondary.onclick = null;
 
   if (!t) {
-    $("tripBody").innerHTML = `<div class="empty">Nenhuma viagem ativa. Peça ao console para criar e atribuir.</div>`;
-    $("stopBody").innerHTML = `<div class="empty">Sem parada</div>`;
+    $("stageRail").innerHTML = "";
+    $("stopMeta").textContent = "Viagem";
+    $("stopTitle").textContent = "Nenhuma viagem ativa";
+    $("stopSub").textContent = "Peça ao console para montar e atribuir uma viagem.";
+    $("stopCard").hidden = true;
+    $("nextLine").textContent = "";
+    $("tripFoot").textContent = "";
     return;
   }
-  $("tripBody").innerHTML = `
-    <div><strong>${chip(t.state)}</strong></div>
-    <div class="muted" style="margin-top:0.35rem">Você: ${t.courier_actor_id}</div>
-    <div class="muted trip-id" style="font-size:0.75rem;margin-top:0.25rem">Cód. viagem ${t.trip_id}</div>
-    <div style="margin-top:0.5rem">${t.deliveries
+
+  const total = t.deliveries.filter((d) => d.active).length;
+  const order = s?.planned_stop_order;
+
+  if (phase === "depart") {
+    $("stageRail").innerHTML = `<span class="stage on">Saída</span><span class="stage">A caminho</span><span class="stage">Entregar</span>`;
+    $("stopMeta").textContent = "Preparando saída";
+    $("stopTitle").textContent = "Confirme a saída da casa";
+    $("stopSub").textContent = `${total} parada(s) nesta viagem.`;
+    $("stopCard").hidden = false;
+    $("stopCard").innerHTML = t.deliveries
       .map(
         (d) =>
-          `<div class="muted">${d.planned_stop_order}. ${d.order_ref} ${chip(d.state)} ${d.active ? "" : "· removida"}</div>`,
+          `<div class="meta">${d.planned_stop_order}. ${d.order_ref} ${chip(d.state)}</div>`,
       )
-      .join("")}</div>`;
-  const s = currentStop(t);
-  $("stopBody").innerHTML = s
-    ? `<strong>${s.order_ref}</strong> ${chip(s.state)}<div class="muted">Parada ${s.planned_stop_order}</div>`
-    : `<div class="empty">Nenhuma parada em andamento agora</div>`;
+      .join("");
+    $("nextLine").textContent = "";
+    primary.hidden = false;
+    primary.textContent = "Confirmar saída";
+    primary.onclick = () => actDepart(t);
+    problemRow.hidden = false;
+    btnProblem.hidden = false;
+  } else if (phase === "en_route") {
+    // A caminho → Abrir rota (soberana). Cheguei disponível para registrar chegada.
+    // NÃO mostrar Cliente não encontrado.
+    $("stageRail").innerHTML = `<span class="stage on">A caminho</span><span class="stage">No local</span><span class="stage">Entregar</span>`;
+    $("stopMeta").textContent = `Parada ${order} de ${total}`;
+    $("stopTitle").textContent = addressHint(s.order_ref);
+    $("stopSub").textContent = `Pedido ${s.order_ref}`;
+    $("stopCard").hidden = false;
+    $("stopCard").className = "card stop-card";
+    $("stopCard").innerHTML = `<div style="font-weight:600">Pedido ${s.order_ref}</div>
+      <div class="meta">${chip(s.state)}</div>`;
+    const next = t.deliveries.find(
+      (d) => d.active && d.planned_stop_order === order + 1,
+    );
+    $("nextLine").textContent = next
+      ? `Próxima: ${addressHint(next.order_ref)} · ${next.order_ref}`
+      : "Última parada desta viagem";
+
+    primary.hidden = false;
+    primary.textContent = "Abrir rota";
+    primary.onclick = () => openRoute(s);
+
+    secondary.hidden = false;
+    secondary.textContent = "Cheguei";
+    secondary.onclick = () => actArrive(t, s);
+
+    problemRow.hidden = false;
+    notFound.hidden = true; // obrigatório: não no estado a caminho
+    btnProblem.hidden = false;
+  } else if (phase === "arrived") {
+    // Chegada registrada → Confirmar entrega; Cliente não encontrado aplicável
+    $("stageRail").innerHTML = `<span class="stage done">A caminho</span><span class="stage done">Cheguei</span><span class="stage on">Entregar</span>`;
+    $("stopMeta").textContent = `Parada ${order} de ${total} · chegada registrada`;
+    $("stopTitle").textContent = addressHint(s.order_ref);
+    $("stopSub").textContent = "Entregue o pedido e confirme quando o cliente receber.";
+    $("stopCard").hidden = false;
+    $("stopCard").className = "card stop-card edge-green";
+    $("stopCard").innerHTML = `<div style="font-weight:600">Pedido ${s.order_ref}</div>
+      <div class="meta">${chip(s.state)}</div>
+      <div class="mark">CHEGADA REGISTRADA</div>`;
+    $("nextLine").textContent = "";
+
+    primary.hidden = false;
+    primary.textContent = "Confirmar entrega";
+    primary.onclick = () => actConfirm(t, s);
+
+    problemRow.hidden = false;
+    notFound.hidden = false;
+    btnProblem.hidden = false;
+  } else if (phase === "returning") {
+    $("stageRail").innerHTML = `<span class="stage done">Rota</span><span class="stage on">Retorno</span>`;
+    $("stopMeta").textContent = "Retorno";
+    $("stopTitle").textContent = "Voltando para a casa";
+    $("stopSub").textContent = "Quando chegar, o console pode encerrar a viagem.";
+    $("stopCard").hidden = true;
+    $("nextLine").textContent = "";
+    problemRow.hidden = false;
+    btnProblem.hidden = false;
+  } else {
+    $("stageRail").innerHTML = "";
+    $("stopMeta").textContent = "Viagem";
+    $("stopTitle").textContent = chip(t.state).replace(/<[^>]+>/g, t.state);
+    $("stopSub").textContent = "";
+    $("stopCard").hidden = true;
+  }
+
+  $("tripFoot").textContent = `Viagem · ${t.deliveries.filter((d) => d.active).length} parada(s)`;
+}
+
+function openRoute(s) {
+  const q = encodeURIComponent(addressHint(s.order_ref) + " São Paulo");
+  window.open(`https://www.openstreetmap.org/search?query=${q}`, "_blank", "noopener");
 }
 
 async function act(fn) {
@@ -86,10 +218,8 @@ async function act(fn) {
   }
 }
 
-$("btnDepart").addEventListener("click", () =>
-  act(async () => {
-    const t = activeTrip();
-    if (!t) throw new Error("Sem viagem");
+function actDepart(t) {
+  return act(async () => {
     if (!confirm("Confirmar saída da loja?")) return;
     await command({
       type: "ConfirmTripDeparture",
@@ -99,19 +229,11 @@ $("btnDepart").addEventListener("click", () =>
       trip_id: t.trip_id,
       actor: { actor_id: "rid-demo", role: "motoboy_interno" },
     });
-  }),
-);
+  });
+}
 
-$("btnNav").addEventListener("click", () => {
-  // Navegação externa — não inventa mapa interno
-  window.open("https://www.openstreetmap.org/search?query=São%20Paulo", "_blank", "noopener");
-});
-
-$("btnArrive").addEventListener("click", () =>
-  act(async () => {
-    const t = activeTrip();
-    const s = currentStop(t);
-    if (!t || !s) throw new Error("Sem parada");
+function actArrive(t, s) {
+  return act(async () => {
     await command({
       type: "RecordArrivalDetected",
       command_id: cid("arr"),
@@ -122,17 +244,11 @@ $("btnArrive").addEventListener("click", () =>
       source: "manual",
       actor: { actor_id: "rid-demo", role: "motoboy_interno" },
     });
-  }),
-);
+  });
+}
 
-$("btnConfirm").addEventListener("click", () =>
-  act(async () => {
-    const t = activeTrip();
-    const s =
-      t?.deliveries.find((d) => d.active && d.state === "chegada_detectada") ||
-      t?.deliveries.find((d) => d.active && d.state === "em_rota") ||
-      t?.deliveries.find((d) => d.active && d.state === "entrega_sem_confirmacao");
-    if (!t || !s) throw new Error("Sem entrega para confirmar");
+function actConfirm(t, s) {
+  return act(async () => {
     if (!confirm("Confirmar entrega ao cliente?")) return;
     await command({
       type: "ConfirmDelivery",
@@ -143,14 +259,21 @@ $("btnConfirm").addEventListener("click", () =>
       delivery_id: s.delivery_id,
       actor: { actor_id: "rid-demo", role: "motoboy_interno" },
     });
-  }),
-);
+  });
+}
 
 $("btnNotFound").addEventListener("click", () =>
   act(async () => {
     const t = activeTrip();
     const s = currentStop(t);
     if (!t || !s) throw new Error("Sem parada");
+    // Só permitido após chegada (UI); domínio valida o restante
+    if (!["chegada_detectada", "entrega_sem_confirmacao", "em_rota"].includes(s.state)) {
+      throw new Error("Só após registrar a chegada.");
+    }
+    if (s.state === "em_rota") {
+      throw new Error("Registre a chegada (Cheguei) antes de informar cliente não encontrado.");
+    }
     await command({
       type: "RecordCustomerNotFound",
       command_id: cid("nf"),
@@ -181,20 +304,27 @@ $("btnProblem").addEventListener("click", () =>
   }),
 );
 
-$("btnReturn").addEventListener("click", () =>
-  act(async () => {
-    const t = activeTrip();
-    if (!t) throw new Error("Sem viagem");
-    if (!confirm("Iniciar retorno à loja?")) return;
-    await command({
-      type: "StartTripReturn",
-      command_id: cid("rt"),
-      occurred_at: now(),
-      unit_id: "demo-unit",
-      trip_id: t.trip_id,
-      actor: { actor_id: "rid-demo", role: "motoboy_interno" },
+$("btnSyncNow").addEventListener("click", async () => {
+  // Apenas tenta marcar online — sync é automática no facade
+  try {
+    await api("/api/connection", {
+      method: "POST",
+      body: JSON.stringify({ connection: "online" }),
     });
-  }),
-);
+    await refresh();
+  } catch (e) {
+    renderError($("errorBox"), e.message);
+  }
+});
+
+// Demo: long-press status to toggle offline (não exposto como “admin de sync”)
+$("connLine").addEventListener("dblclick", async () => {
+  const next = snap?.connection === "offline" ? "online" : "offline";
+  await api("/api/connection", {
+    method: "POST",
+    body: JSON.stringify({ connection: next }),
+  });
+  await refresh();
+});
 
 refresh().catch((e) => renderError($("errorBox"), e.message));
