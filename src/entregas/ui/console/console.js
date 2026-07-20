@@ -90,8 +90,8 @@ function renderTrips() {
           <div class="actions" style="margin-top:0.5rem">
             <button type="button" data-act="depart" data-trip="${t.trip_id}">Confirmar saída</button>
             <button type="button" data-act="return" data-trip="${t.trip_id}">Iniciar retorno</button>
-            <button type="button" data-act="close" data-trip="${t.trip_id}">Fechar manual</button>
-            <button type="button" data-act="remove" data-trip="${t.trip_id}">Remover 1ª ativa</button>
+            <button type="button" data-act="close" data-trip="${t.trip_id}">Encerrar viagem</button>
+            <button type="button" data-act="remove" data-trip="${t.trip_id}">Tirar um pedido</button>
           </div>
         </div>
       </div>`;

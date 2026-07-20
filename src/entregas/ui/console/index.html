@@ -29,17 +29,17 @@
 
   <main class="layout" id="main">
     <section class="panel" aria-labelledby="ready-title">
-      <h2 id="ready-title">Pedidos próprios prontos</h2>
-      <p class="muted">Selecione para formar viagem. Limite do piloto: <strong id="maxStops">—</strong> (política, não fixo na UI).</p>
+      <h2 id="ready-title">Prontos para sair</h2>
+      <p class="muted">Marque os pedidos e monte a viagem. No máximo <strong id="maxStops">—</strong> por vez (regra do piloto).</p>
       <div id="readyList" class="list" role="list"></div>
       <div class="row">
-        <button type="button" class="primary" id="btnCreateTrip">Criar viagem com selecionados</button>
+        <button type="button" class="primary" id="btnCreateTrip">Montar viagem</button>
       </div>
       <p class="status-line" id="tripHint"></p>
     </section>
 
-    <section class="panel" aria-labelledby="trips-title">
-      <h2 id="trips-title">Viagens</h2>
+    <section class="panel span-2" aria-labelledby="trips-title">
+      <h2 id="trips-title">Viagens de agora</h2>
       <div class="tabs" role="tablist">
         <button type="button" role="tab" data-filter="all" aria-selected="true">Todas</button>
         <button type="button" role="tab" data-filter="preparando_saida">Preparação</button>

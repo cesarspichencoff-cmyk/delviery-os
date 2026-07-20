@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ENTREGAS · POC mapa (isolada)</title>
+  <link rel="stylesheet" href="/shared/tokens.css" />
+  <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
+  <style>
+    body { margin: 0; font-family: var(--font, system-ui, sans-serif); background: #F5F3ED; color: #191813; }
+    .demo-banner {
+      background: #f5efdf; color: #9E5220; text-align: center;
+      font-size: 0.8rem; font-weight: 600; padding: 0.45rem;
+      border-bottom: 1px solid #e8dcb8;
+    }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 1rem; }
+    h1 { font-size: 1.4rem; letter-spacing: -0.02em; margin: 0.5rem 0; }
+    .layout { display: grid; grid-template-columns: 280px 1fr; gap: 1rem; min-height: 420px; }
+    @media (max-width: 800px) { .layout { grid-template-columns: 1fr; } }
+    .panel {
+      background: #fff; border: 1px solid #e4dfd4; border-radius: 12px; padding: 0.85rem;
+    }
+    #map {
+      height: 420px; border-radius: 12px; border: 1px solid #e4dfd4;
+      background: #e8e4db; position: relative;
+    }
+    #map.unavailable {
+      display: flex; align-items: center; justify-content: center;
+      color: #6C6759; text-align: center; padding: 1rem;
+    }
+    button {
+      display: block; width: 100%; margin: 0.35rem 0; min-height: 44px;
+      border-radius: 10px; border: 1px solid #e4dfd4; background: #fff;
+      font: inherit; cursor: pointer;
+    }
+    button.primary { background: #2E9E4F; color: #fff; border-color: #2E9E4F; }
+    .attr { font-size: 0.7rem; color: #9C968A; margin-top: 0.5rem; }
+    .state { font-size: 0.85rem; color: #6C6759; margin: 0.5rem 0; }
+    .warn { background: #f5efdf; color: #9E5220; padding: 0.5rem; border-radius: 8px; font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+  <div class="demo-banner">AMBIENTE DE DEMONSTRAÇÃO · POC cartográfica isolada · zero licença paga · não é produção</div>
+  <div class="wrap">
+    <h1>Mapa operacional (prova técnica)</h1>
+    <p class="state">MapLibre GL JS + dados OpenStreetMap. Tiles de demonstração pública — <strong>não</strong> usar como infra de produção.</p>
+    <div class="layout">
+      <aside class="panel">
+        <p class="warn">Inteligência = utilidade. Mapa só quando ajuda. Sem motoboy fictício como dado real.</p>
+        <button type="button" class="primary" id="btnReady">Mapa pronto (demo tiles)</button>
+        <button type="button" id="btnNoLoc">Sem localização</button>
+        <button type="button" id="btnDenied">Permissão negada</button>
+        <button type="button" id="btnImprecise">Localização imprecisa</button>
+        <button type="button" id="btnOffline">Tiles indisponíveis / offline</button>
+        <button type="button" id="btnRoute">Rota simulada (não é motor real)</button>
+        <button type="button" id="btnNav">Abrir navegação externa</button>
+        <p class="state" id="viewState">Estado: —</p>
+        <p class="attr" id="attr">© OpenStreetMap contributors</p>
+      </aside>
+      <div id="map" role="img" aria-label="Mapa de demonstração"></div>
+    </div>
+    <p class="attr">Licenças: MapLibre BSD · dados © OpenStreetMap ODbL. Self-host de tiles é obrigatório antes de produção.</p>
+  </div>
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+  <script type="module" src="/map-poc/poc.js"></script>
+</body>
+</html>

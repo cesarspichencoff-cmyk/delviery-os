@@ -107,5 +107,6 @@ server.listen(PORT, "127.0.0.1", () => {
   console.log(`ENTREGAS UI demo http://127.0.0.1:${PORT}/console/`);
   console.log(`  mobile:  http://127.0.0.1:${PORT}/rider-mobile/`);
   console.log(`  ifood:   http://127.0.0.1:${PORT}/ifood-handoff/`);
-  console.log("AMBIENTE DE DEMONSTRAÇÃO — ApplicationService only");
+  console.log(`  mapa:    http://127.0.0.1:${PORT}/map-poc/`);
+  console.log("AMBIENTE DE DEMONSTRAÇÃO — ApplicationService only · zero licença paga de mapa");
 });

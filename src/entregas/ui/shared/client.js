@@ -52,10 +52,10 @@ export function chip(state) {
     pausa: ["Em pausa", "warn"],
     apoio_expedicao: ["Apoio à expedição", "warn"],
     indisponivel: ["Indisponível", "danger"],
-    repassado: ["Handoff concluído", ""],
-    aguardando_courier: ["Aguardando courier", "warn"],
-    em_conferencia: ["Em conferência", "warn"],
-    excecao: ["Exceção", "danger"],
+    repassado: ["Entrega ao iFood concluída", ""],
+    aguardando_courier: ["Aguardando entregador do iFood", "warn"],
+    em_conferencia: ["Conferindo pedido", "warn"],
+    excecao: ["Problema na expedição", "danger"],
   };
   const [label, cls] = map[state] || [state, "neutral"];
   return `<span class="chip ${cls}" role="status">${label}</span>`;
