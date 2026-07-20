@@ -67,6 +67,36 @@ test("Cozinha usa SOMENTE cozinha_quentes", () => {
   assert.equal(est.cor, "vermelho");
 });
 
+/* Regressão do rótulo contextual (auditoria D2): o DISPLAY do motor rotula
+ * `cozinha_quentes` como "Quentes" — na célula Cozinha isso produzia o texto
+ * errado "Quentes concentra a maior espera". O rótulo contextual corrige a
+ * apresentação sem tocar no vínculo praça→célula nem no DISPLAY do motor. */
+const DISPLAY_MOTOR = { cozinha_quentes: "Quentes", enrolados_quentes: "Enrolados Quentes" };
+
+test("regressão: Cozinha explica com 'Cozinha', nunca 'Quentes concentra'", () => {
+  const c = CEL.estadoAgregado({ cozinha_quentes: 2 }, ["cozinha_quentes"], DISPLAY_MOTOR, { cozinha_quentes: "Cozinha" });
+  assert.match(c.motivo, /Cozinha concentra a maior espera/);
+  assert.doesNotMatch(c.motivo, /Quentes concentra/);
+  assert.doesNotMatch(c.motivo, /\bQuentes\b/);
+});
+
+test("regressão: cozinha_quentes continua alimentando a Cozinha (vínculo intacto)", () => {
+  const c = CEL.estadoAgregado({ cozinha_quentes: 3 }, ["cozinha_quentes"], DISPLAY_MOTOR, { cozinha_quentes: "Cozinha" });
+  assert.equal(c.sev, 3, "a severidade da Cozinha vem de cozinha_quentes");
+  assert.equal(c.pr, "cozinha_quentes");
+  assert.equal(c.cor, "vermelho");
+});
+
+test("regressão: Quentes continua usando enrolados_quentes e independente da Cozinha", () => {
+  const sev = { enrolados_quentes: 1, cozinha_quentes: 3 };
+  const q = CEL.estadoAgregado(sev, ["enrolados_quentes"], DISPLAY_MOTOR);
+  const c = CEL.estadoAgregado(sev, ["cozinha_quentes"], DISPLAY_MOTOR, { cozinha_quentes: "Cozinha" });
+  assert.equal(q.pr, "enrolados_quentes", "Quentes não pode ser dominado por cozinha_quentes");
+  assert.notEqual(q.cor, c.cor, "as duas células continuam independentes");
+  // o rótulo contextual da Cozinha não afeta o texto de Quentes
+  assert.doesNotMatch(q.motivo, /Cozinha/);
+});
+
 test("Quentes e Cozinha podem apresentar estados diferentes ao mesmo tempo", () => {
   const sev = { enrolados_quentes: 1, cozinha_quentes: 3 };
   const q = CEL.estadoAgregado(sev, ["enrolados_quentes"], DISPLAY);
