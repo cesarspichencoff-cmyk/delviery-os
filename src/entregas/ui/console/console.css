@@ -1,8 +1,9 @@
-/* Console ENTREGAS — composição editorial (Sprint V2 → movimento) */
+/* Console ENTREGAS — identidade profunda + trabalho em branco quente */
 body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  background: var(--surface-work);
 }
 
 .shell-header {
@@ -10,18 +11,19 @@ body {
   justify-content: space-between;
   align-items: center;
   gap: 1rem;
-  padding: 1rem 1.4rem;
-  border-bottom: 1px solid var(--line);
-  background: var(--cream-2);
+  padding: 0.95rem 1.4rem;
+  background: var(--brand-deep);
+  color: var(--text-on-dark);
+  border-bottom: 1px solid var(--line-on-dark);
 }
 .shell-brand {
   font-weight: 600;
   font-size: 1rem;
-  color: var(--ink);
+  color: var(--text-on-dark);
 }
 .shell-brand span {
   font-weight: 400;
-  color: var(--tinta-3);
+  color: var(--text-on-dark-muted);
   margin-left: 0.35rem;
 }
 .shell-meta {
@@ -34,6 +36,13 @@ body {
   min-width: 12rem;
   min-height: 40px;
   font-size: 0.88rem;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--line-on-dark);
+  color: var(--text-on-dark);
+}
+.shell-meta .chip.neutral {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text-on-dark);
 }
 
 .console-layout {
@@ -51,8 +60,8 @@ body {
 
 .focus-surface {
   padding: 1.5rem 1.6rem 2rem;
-  background: linear-gradient(165deg, var(--cream-1) 0%, var(--cream-2) 100%);
-  border-right: 1px solid rgba(213, 202, 181, 0.7);
+  background: var(--surface-work);
+  border-right: 1px solid var(--line-work);
   min-height: 520px;
 }
 .focus-panel {
@@ -61,12 +70,43 @@ body {
 .focus-panel .title-sov {
   font-size: clamp(1.75rem, 3.2vw, 2.35rem);
   margin: 0.45rem 0 0.55rem;
+  font-weight: 400;
 }
 .focus-panel .status-line {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   margin-bottom: 0.25rem;
+}
+/* Foco operacional — identidade sem cobrir a tela toda */
+.focus-panel.is-attention .title-sov {
+  color: var(--text-primary);
+}
+.focus-panel.is-deep {
+  background: var(--brand-deep);
+  color: var(--text-on-dark);
+  padding: 1.35rem 1.4rem;
+  border-radius: var(--radius);
+}
+.focus-panel.is-deep .title-sov,
+.focus-panel.is-deep .status-line {
+  color: var(--text-on-dark);
+}
+.focus-panel.is-deep .sub-human,
+.focus-panel.is-deep .map-note,
+.focus-panel.is-deep .muted {
+  color: var(--text-on-dark-muted);
+}
+.focus-panel.is-deep .addr-chip {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--line-on-dark);
+  color: var(--text-on-dark);
+}
+.focus-panel.is-deep .addr-chip .n {
+  color: var(--text-on-dark-muted);
+}
+.focus-panel.is-deep .addr-chip.pend {
+  border-color: rgba(176, 129, 47, 0.55);
 }
 .focus-detail {
   margin: 1rem 0;
@@ -82,9 +122,9 @@ body {
   max-width: 42ch;
   line-height: 1.45;
   margin-top: 1.25rem;
+  color: var(--text-muted);
 }
 
-/* Sequência de endereços — sem pseudogeografia */
 .address-seq {
   display: flex;
   flex-direction: column;
@@ -92,14 +132,15 @@ body {
   margin: 1rem 0;
 }
 .addr-chip {
-  background: var(--cartao);
-  border: 1px solid var(--line);
+  background: var(--surface-elevated);
+  border: 1px solid var(--line-work);
   border-radius: 12px;
   padding: 0.7rem 0.9rem;
   box-shadow: var(--shadow);
 }
 .addr-chip.pend {
-  border-color: rgba(176, 129, 47, 0.45);
+  border-color: rgba(176, 129, 47, 0.5);
+  border-left: 3px solid var(--attention);
 }
 .addr-chip .n {
   font-family: var(--font-mono);
@@ -110,7 +151,7 @@ body {
   margin-bottom: 0.2rem;
 }
 .addr-chip.pend .n {
-  color: var(--amber);
+  color: var(--attention);
 }
 .addr-chip .addr {
   font-weight: 500;
@@ -122,12 +163,14 @@ body {
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
-  background: var(--cream-1);
+  background: var(--surface-secondary);
   overflow: auto;
   max-height: calc(100vh - 3.5rem);
 }
 .side-rail .panel {
   padding: 0.95rem 1rem;
+  background: var(--surface-elevated);
+  border-color: var(--line-work);
 }
 .rail-title {
   font-family: var(--font-editorial);
@@ -153,17 +196,17 @@ body {
   gap: 0.5rem;
   padding: 0.65rem 0.75rem;
   border-radius: 12px;
-  background: rgba(255, 254, 251, 0.75);
-  border: 1px solid transparent;
+  background: var(--surface-elevated);
+  border: 1px solid var(--line-work);
   font-size: 0.9rem;
 }
 .item.active {
-  border-color: rgba(34, 86, 60, 0.3);
-  background: var(--cartao);
+  border-color: rgba(34, 86, 60, 0.4);
   box-shadow: var(--shadow);
 }
 .item.pend {
-  border-color: rgba(176, 129, 47, 0.35);
+  border-color: rgba(176, 129, 47, 0.4);
+  border-left: 3px solid var(--attention);
 }
 .item label {
   display: flex;
@@ -180,7 +223,7 @@ body {
 }
 .meta {
   font-size: 0.78rem;
-  color: var(--ink-muted);
+  color: var(--text-muted);
   margin-top: 0.15rem;
 }
 .actions {
@@ -209,12 +252,12 @@ body {
   font-size: 0.75rem;
   font-weight: 500;
   border-radius: 999px;
-  background: transparent;
+  background: var(--surface-elevated);
 }
 .tabs button[aria-selected="true"] {
-  background: var(--accent-soft);
-  border-color: rgba(34, 86, 60, 0.3);
-  color: var(--verde);
+  background: var(--brand-deep);
+  border-color: var(--brand-deep);
+  color: var(--text-on-dark);
 }
 .text-link {
   font-size: 0.85rem;
@@ -229,8 +272,9 @@ body {
 .foot {
   padding: 0.75rem 1.25rem 1.1rem;
   font-size: 0.8rem;
-  border-top: 1px solid var(--line);
-  background: var(--cream-2);
+  border-top: 1px solid var(--line-work);
+  background: var(--surface-elevated);
+  color: var(--text-muted);
 }
 .foot-error {
   margin: 0 1.25rem;
@@ -245,12 +289,12 @@ body {
   font-size: 0.78rem;
   padding: 0.3rem 0.6rem;
   border-radius: 999px;
-  border: 1px solid var(--line);
-  background: var(--cartao);
+  border: 1px solid var(--line-work);
+  background: var(--surface-elevated);
 }
 .chip-order.on {
   border-color: rgba(34, 86, 60, 0.4);
   background: var(--accent-soft);
-  color: var(--verde);
+  color: var(--brand-action);
   font-weight: 500;
 }

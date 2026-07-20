@@ -1,48 +1,65 @@
-/* ENTREGAS — Design system canônico
-   Fonte: Sprint Visual DeliveryOS V2 (Nível 1)
-   Referência validada: Organismo V3.3 (Nível 2) — não copiar layout do Copiloto
-   app-v1 = historical_reference_only (não baseline) */
+/* ENTREGAS — tokens canônicos (Sprint Visual DeliveryOS V2)
+   Ajuste cromático: verde profundo estrutura · branco quente trabalha · creme apoia
+   app-v1 = historical_reference_only */
 @import url("https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&display=swap");
 
 :root {
+  /* —— Semânticos (preferir) —— */
+  --brand-deep: #143528;      /* estrutura / shell / identidade */
+  --brand-deep-2: #1b4430;    /* bloco de estado / hover institucional */
+  --brand-action: #22563c;    /* CTA soberano · confirmação · movimento */
+  --brand-action-hover: #24603f;
+  --surface-work: #faf8f4;    /* fundo global de trabalho (branco quente) */
+  --surface-secondary: #efe7d6; /* creme — só contexto */
+  --surface-elevated: #ffffff;  /* cartões / painéis de trabalho */
+  --surface-muted: #f3f0ea;     /* áreas discretas */
+  --text-primary: #1c1915;
+  --text-muted: #5a544a;
+  --text-on-dark: #f4efe6;
+  --text-on-dark-muted: rgba(244, 239, 230, 0.72);
+  --attention: #b0812f;
+  --line-work: #e4e0d8;
+  --line-on-dark: rgba(244, 239, 230, 0.14);
+
+  /* —— Compatibilidade legada (aliases) —— */
   --cream-0: #f6f1e7;
-  --cream-1: #f4efe4;
-  --cream-2: #efe7d6;
-  --cream-3: #e7decd;
-  --cream-4: #e4dac7;
-  --papel: var(--cream-1);
-  --bg: var(--cream-1);
-  --bg-elev: #fffefb;
-  --cartao: #fffefb;
-  --ink: #2a2620;
-  --tinta: #2a2620;
-  --ink-2: #3a352e;
-  --ink-muted: #5c554a;
-  --tinta-2: #5c554a;
-  --tinta-3: #8c8677;
-  --line: #d5cab5;
-  --verde: #22563c;
-  --green: #22563c;
-  --green-2: #24603f;
+  --cream-1: var(--surface-secondary);
+  --cream-2: #e8e0d2;
+  --cream-3: #e0d6c6;
+  --cream-4: #d8cdb8;
+  --papel: var(--surface-work);
+  --bg: var(--surface-work);
+  --bg-elev: var(--surface-elevated);
+  --cartao: var(--surface-elevated);
+  --ink: var(--text-primary);
+  --tinta: var(--text-primary);
+  --ink-2: #2f2a24;
+  --ink-muted: var(--text-muted);
+  --tinta-2: var(--text-muted);
+  --tinta-3: #7a7468;
+  --line: var(--line-work);
+  --verde: var(--brand-action);
+  --green: var(--brand-action);
+  --green-2: var(--brand-action-hover);
   --green-soft: #3f7b54;
   --green-mist: #9dbba6;
-  --accent: var(--verde);
-  --accent-soft: rgba(157, 187, 166, 0.22);
-  --verde-brilho: rgba(34, 86, 60, 0.28);
-  --warn: #b0812f;
-  --atencao: #b0812f;
-  --amber: #b0812f;
+  --accent: var(--brand-action);
+  --accent-soft: rgba(34, 86, 60, 0.1);
+  --verde-brilho: rgba(34, 86, 60, 0.22);
+  --warn: var(--attention);
+  --atencao: var(--attention);
+  --amber: var(--attention);
   --warn-soft: rgba(176, 129, 47, 0.12);
   --slate: #5e6b86;
   --danger: #8e3b2e;
   --danger-soft: rgba(142, 59, 46, 0.1);
-  --ok: var(--verde);
-  --neutro: #a29684;
-  --radius: 20px;
-  --radius-sm: 14px;
+  --ok: var(--brand-action);
+  --neutro: #9a9488;
+  --radius: 18px;
+  --radius-sm: 12px;
   --radius-pill: 999px;
-  --shadow: 0 12px 40px rgba(42, 38, 32, 0.06);
-  --glow-green: 0 10px 28px rgba(34, 86, 60, 0.28);
+  --shadow: 0 1px 0 rgba(28, 25, 21, 0.04), 0 8px 24px rgba(28, 25, 21, 0.05);
+  --glow-green: 0 8px 22px rgba(34, 86, 60, 0.22);
   --font-editorial: "Spectral", Georgia, serif;
   --font-ui: "Hanken Grotesk", system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
@@ -64,8 +81,8 @@ body {
   margin: 0;
   padding: 0;
   font-family: var(--font-ui);
-  background: var(--bg);
-  color: var(--ink);
+  background: var(--surface-work);
+  color: var(--text-primary);
   line-height: 1.45;
   -webkit-font-smoothing: antialiased;
 }
@@ -74,9 +91,9 @@ h2,
 h3,
 .title-sov {
   font-family: var(--font-editorial);
-  font-weight: 300;
+  font-weight: 400;
   letter-spacing: -0.01em;
-  color: var(--ink);
+  color: var(--text-primary);
   line-height: 1.2;
 }
 .mono {
@@ -95,7 +112,7 @@ h3,
   font-family: var(--font-editorial);
   font-style: italic;
   font-size: 1rem;
-  color: var(--ink-muted);
+  color: var(--text-muted);
   line-height: 1.45;
   margin: 0;
 }
@@ -107,31 +124,31 @@ textarea {
 }
 button {
   cursor: pointer;
-  border: 1px solid var(--line);
-  background: var(--bg-elev);
-  color: var(--ink);
+  border: 1px solid var(--line-work);
+  background: var(--surface-elevated);
+  color: var(--text-primary);
   border-radius: var(--radius-sm);
   padding: 0.65rem 1.15rem;
   min-height: 48px;
   font-weight: 600;
-  transition: opacity 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+  transition: opacity 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
 }
 button.primary,
 button.btn-sovereign {
-  background: var(--verde);
-  color: var(--cream-0);
-  border-color: var(--verde);
+  background: var(--brand-action);
+  color: var(--text-on-dark);
+  border-color: var(--brand-action);
   box-shadow: var(--glow-green);
 }
 button.primary:hover:not(:disabled),
 button.btn-sovereign:hover:not(:disabled) {
-  background: var(--green-2);
+  background: var(--brand-action-hover);
 }
 button.ghost,
 button.btn-ghost {
   background: transparent;
   border: none;
-  color: var(--ink-muted);
+  color: var(--text-muted);
   text-decoration: underline;
   text-underline-offset: 3px;
   min-height: 40px;
@@ -150,7 +167,7 @@ button.secondary-link {
   box-shadow: none;
 }
 button:disabled {
-  opacity: 0.42;
+  opacity: 0.45;
   cursor: not-allowed;
   box-shadow: none;
 }
@@ -159,18 +176,18 @@ a:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  outline: 3px solid rgba(34, 86, 60, 0.4);
+  outline: 3px solid rgba(34, 86, 60, 0.45);
   outline-offset: 2px;
 }
 input,
 select,
 textarea {
   width: 100%;
-  border: 1px solid var(--line);
+  border: 1px solid var(--line-work);
   border-radius: 12px;
   padding: 0.65rem 0.85rem;
-  background: var(--bg-elev);
-  color: var(--ink);
+  background: var(--surface-elevated);
+  color: var(--text-primary);
   min-height: 44px;
 }
 label {
@@ -184,16 +201,63 @@ label > select,
 label > textarea {
   margin-top: 0.35rem;
 }
+
+/* Shell institucional */
+.shell-deep {
+  background: var(--brand-deep);
+  color: var(--text-on-dark);
+  border-bottom: 1px solid var(--line-on-dark);
+}
+.shell-deep .shell-brand {
+  color: var(--text-on-dark);
+  font-weight: 600;
+}
+.shell-deep .shell-brand span {
+  color: var(--text-on-dark-muted);
+  font-weight: 400;
+}
+.shell-deep a {
+  color: var(--text-on-dark);
+}
+.shell-deep .muted,
+.shell-deep .conn {
+  color: var(--text-on-dark-muted);
+}
+.shell-deep select {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--line-on-dark);
+  color: var(--text-on-dark);
+}
+.shell-deep .chip.neutral {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text-on-dark);
+}
+
+.surface-deep {
+  background: var(--brand-deep);
+  color: var(--text-on-dark);
+}
+.surface-deep .title-sov,
+.surface-deep h1,
+.surface-deep h2 {
+  color: var(--text-on-dark);
+}
+.surface-deep .sub-human,
+.surface-deep .muted,
+.surface-deep .label-meta {
+  color: var(--text-on-dark-muted);
+}
+
 .demo-banner {
-  background: var(--warn-soft);
-  color: var(--atencao);
+  background: var(--brand-deep-2);
+  color: var(--text-on-dark-muted);
   text-align: center;
   font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-size: 0.65rem;
   font-weight: 500;
   letter-spacing: 0.06em;
-  padding: 0.55rem 0.85rem;
-  border-bottom: 1px solid rgba(176, 129, 47, 0.25);
+  padding: 0.45rem 0.85rem;
+  border-bottom: 1px solid var(--line-on-dark);
 }
 .sr-only {
   position: absolute;
@@ -206,18 +270,18 @@ label > textarea {
   border: 0;
 }
 .muted {
-  color: var(--ink-muted);
+  color: var(--text-muted);
 }
 .panel,
 .card {
-  background: var(--cartao);
-  border: 1px solid rgba(213, 202, 181, 0.7);
+  background: var(--surface-elevated);
+  border: 1px solid var(--line-work);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   padding: 1.1rem 1.2rem;
 }
 .card.edge-green {
-  border-color: rgba(34, 86, 60, 0.35);
+  border-color: rgba(34, 86, 60, 0.32);
   border-width: 1.5px;
 }
 .card.edge-amber {
@@ -236,23 +300,23 @@ label > textarea {
   padding: 0.28rem 0.55rem;
   border-radius: var(--radius-pill);
   background: var(--accent-soft);
-  color: var(--verde);
+  color: var(--brand-action);
 }
 .chip.warn {
   background: var(--warn-soft);
-  color: var(--atencao);
+  color: var(--attention);
 }
 .chip.danger {
   background: var(--danger-soft);
   color: var(--danger);
 }
 .chip.neutral {
-  background: rgba(213, 202, 181, 0.45);
-  color: var(--tinta-2);
+  background: var(--surface-muted);
+  color: var(--text-muted);
 }
 .status-line {
   font-size: 0.85rem;
-  color: var(--ink-muted);
+  color: var(--text-muted);
 }
 .error-box {
   background: var(--danger-soft);
@@ -263,13 +327,14 @@ label > textarea {
   font-size: 0.92rem;
 }
 .empty {
-  color: var(--ink-muted);
+  color: var(--text-muted);
   padding: 1.35rem;
   text-align: center;
-  border: 1.5px dashed var(--line);
+  border: 1.5px dashed var(--line-work);
   border-radius: var(--radius);
   font-family: var(--font-editorial);
   font-style: italic;
+  background: var(--surface-elevated);
 }
 .dot {
   width: 8px;
@@ -300,8 +365,8 @@ label > textarea {
   gap: 0.55rem;
   padding: 0.75rem 0.9rem;
   border-radius: 12px;
-  background: rgba(94, 107, 134, 0.07);
-  border: 1.5px dashed rgba(94, 107, 134, 0.3);
+  background: rgba(94, 107, 134, 0.08);
+  border: 1.5px dashed rgba(94, 107, 134, 0.32);
   font-size: 0.84rem;
   color: var(--ink-2);
   line-height: 1.4;
@@ -318,20 +383,21 @@ label > textarea {
   text-transform: uppercase;
   padding: 0.3rem 0.5rem;
   border-radius: 999px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--line-work);
   color: var(--tinta-3);
+  background: var(--surface-elevated);
 }
 .stage.on {
-  border-color: rgba(34, 86, 60, 0.35);
+  border-color: rgba(34, 86, 60, 0.4);
   background: var(--accent-soft);
-  color: var(--verde);
-  font-weight: 500;
+  color: var(--brand-action);
+  font-weight: 600;
 }
 .stage.done {
   opacity: 0.65;
 }
 a {
-  color: var(--verde);
+  color: var(--brand-action);
 }
 @media (prefers-reduced-motion: reduce) {
   *,

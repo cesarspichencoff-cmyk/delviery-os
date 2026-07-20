@@ -258,9 +258,12 @@ function renderHome() {
 
     const focusOrder = actionTarget;
     focusHtml = `
-      <p class="home-count-label">Prontos para buscar</p>
-      <p class="home-count" id="readyCount">${count} pedido${count === 1 ? "" : "s"} pronto${count === 1 ? "" : "s"}</p>
-      ${prepCount > 0 ? `<p class="prep-line">${prepCount} em preparo</p>` : ""}
+      <div class="home-hero">
+        <p class="home-count-label">Expedição iFood</p>
+        <p class="home-count" id="readyCount">${count} pedido${count === 1 ? "" : "s"} pronto${count === 1 ? "" : "s"}</p>
+        ${prepCount > 0 ? `<p class="prep-line">${prepCount} em preparo</p>` : ""}
+      </div>
+      <div class="home-body">
       ${banner}
       <div class="focus-card" data-order="${focusOrder.id}">
         <p class="label-meta">Próximo da fila</p>
@@ -320,11 +323,12 @@ function renderHome() {
       </div>`);
   }
 
+  const bodyClose = count > 0 ? `${queueBlocks.join("")}</div>` : queueBlocks.join("");
   app().innerHTML = `
     <div class="home" id="homeView">
       <span class="sr-live" id="srLive" aria-live="polite"></span>
       ${focusHtml}
-      ${queueBlocks.join("")}
+      ${bodyClose}
     </div>`;
 
   if (pulse) lastPulseId = null;

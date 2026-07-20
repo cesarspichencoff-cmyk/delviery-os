@@ -1,29 +1,32 @@
-/* Mobile ENTREGAS — uma parada, uma ação soberana */
+/* Mobile ENTREGAS — topo institucional · corpo de trabalho claro */
 body.mobile {
   max-width: 480px;
   margin: 0 auto;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: var(--cream-1);
+  background: var(--surface-work);
 }
 
 .m-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.85rem 1.1rem;
-  border-bottom: 1px solid var(--line);
-  background: var(--cream-2);
+  padding: 0.9rem 1.1rem;
+  background: var(--brand-deep);
+  color: var(--text-on-dark);
+  border-bottom: 1px solid var(--line-on-dark);
 }
 .shell-brand {
   font-weight: 600;
   font-size: 0.95rem;
+  color: var(--text-on-dark);
 }
 .conn {
   font-family: var(--font-mono);
   font-size: 0.68rem;
   margin: 0;
+  color: var(--text-on-dark-muted);
 }
 
 .m-main {
@@ -32,21 +35,26 @@ body.mobile {
   display: flex;
   flex-direction: column;
   gap: 0.9rem;
+  background: var(--surface-work);
 }
 
 .m-focus .title-sov {
   font-size: 1.7rem;
   margin: 0.25rem 0 0.4rem;
+  font-weight: 400;
+  color: var(--text-primary);
 }
 .stop-card {
   margin-top: 0.75rem;
+  background: var(--surface-elevated);
 }
 .stop-card .mark {
   font-family: var(--font-mono);
   font-size: 0.62rem;
   letter-spacing: 0.08em;
-  color: var(--verde);
+  color: var(--brand-action);
   margin-top: 0.45rem;
+  font-weight: 600;
 }
 .small {
   font-size: 0.84rem;
@@ -86,6 +94,7 @@ body.mobile {
 .trip-foot {
   font-size: 0.78rem;
   margin: 0.25rem 0 0;
+  color: var(--text-muted);
 }
 
 .m-nav {
@@ -93,20 +102,20 @@ body.mobile {
   justify-content: space-around;
   gap: 1rem;
   padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom));
-  border-top: 1px solid var(--line);
-  background: var(--cream-2);
+  border-top: 1px solid var(--line-work);
+  background: var(--surface-elevated);
   font-size: 0.85rem;
 }
 .m-nav a {
   text-decoration: none;
-  color: var(--ink-muted);
-  font-weight: 500;
+  color: var(--brand-deep);
+  font-weight: 600;
 }
 
 @media (min-width: 600px) {
   body.mobile {
-    border-left: 1px solid var(--line);
-    border-right: 1px solid var(--line);
+    border-left: 1px solid var(--line-work);
+    border-right: 1px solid var(--line-work);
     box-shadow: var(--shadow);
   }
 }

@@ -1,0 +1,52 @@
+[
+  {
+    "file": "01_console_normal.png",
+    "scenario": "console_normal",
+    "commit": "9479a7ead0de7596494e4f77eac290fd91b10945"
+  },
+  {
+    "file": "02_console_atencao_ou_rota.png",
+    "scenario": "console_atencao",
+    "commit": "9479a7ead0de7596494e4f77eac290fd91b10945"
+  },
+  {
+    "file": "03_mobile_a_caminho.png",
+    "scenario": "mobile_a_caminho",
+    "commit": "9479a7ead0de7596494e4f77eac290fd91b10945"
+  },
+  {
+    "file": "04_mobile_chegada.png",
+    "scenario": "mobile_chegada",
+    "commit": "9479a7ead0de7596494e4f77eac290fd91b10945"
+  },
+  {
+    "file": "05_mobile_offline.png",
+    "scenario": "mobile_offline",
+    "commit": "9479a7ead0de7596494e4f77eac290fd91b10945"
+  },
+  {
+    "file": "06_ifood_varios.png",
+    "scenario": "ifood_home",
+    "commit": "9479a7ead0de7596494e4f77eac290fd91b10945"
+  },
+  {
+    "file": "07_ifood_em_maos.png",
+    "scenario": "ifood_em_maos",
+    "commit": "9479a7ead0de7596494e4f77eac290fd91b10945"
+  },
+  {
+    "file": "08_ifood_conferencia.png",
+    "scenario": "ifood_conferencia",
+    "commit": "9479a7ead0de7596494e4f77eac290fd91b10945"
+  },
+  {
+    "file": "09_ifood_conclusao.png",
+    "scenario": "ifood_conclusao",
+    "commit": "9479a7ead0de7596494e4f77eac290fd91b10945"
+  },
+  {
+    "file": "10_console_360.png",
+    "scenario": "console_360",
+    "commit": "9479a7ead0de7596494e4f77eac290fd91b10945"
+  }
+]

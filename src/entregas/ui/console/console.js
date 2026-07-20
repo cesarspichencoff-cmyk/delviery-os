@@ -154,6 +154,7 @@ function renderFocus() {
 
   if (active) focusTripId = active.trip_id;
 
+  const panel = $("focusPanel");
   const status = $("focusStatus");
   const title = $("focus-title");
   const sub = $("focusSub");
@@ -161,6 +162,7 @@ function renderFocus() {
   const actions = $("focusActions");
   const seqBox = $("addressSeq");
   const mapNote = $("mapNote");
+  if (panel) panel.classList.remove("is-attention", "is-deep");
 
   if (!active) {
     status.innerHTML = `<span class="dot green"></span> Em fluxo`;
@@ -181,6 +183,7 @@ function renderFocus() {
   const openDels = active.deliveries.filter((d) => d.active);
 
   if (pendDel) {
+    if (panel) panel.classList.add("is-attention");
     status.innerHTML = `<span class="dot amber"></span> Atenção`;
     title.textContent = `Parada ${pendDel.planned_stop_order} ainda não foi confirmada.`;
     sub.textContent = `${riderName(active.courier_actor_id)} está com a viagem. Sabemos o endereço e o estado — não a posição agora.`;
