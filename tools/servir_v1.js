@@ -27,6 +27,13 @@
 const http = require("http"), fs = require("fs"), path = require("path"), os = require("os");
 const DIR = path.join(__dirname, "..");
 const PORT = parseInt(process.env.PORT || "5179", 10);
+/* Bind seguro por padrão: localhost apenas. Este servidor serve a RAIZ do repo
+ * (src/, docs/, data/) por design — expô-lo em todas as interfaces de rede
+ * (0.0.0.0) deixa o repositório inteiro legível por qualquer um na mesma LAN.
+ * Para testar no celular na rede local, ligue explicitamente: HOST=0.0.0.0.
+ * (Auditoria 2026-07-20 — endurecimento P2, capacidade de celular preservada
+ * via opt-in.) */
+const HOST = process.env.HOST || "127.0.0.1";
 const TZ = "America/Sao_Paulo";
 const types = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".json": "application/json", ".jsonl": "application/json", ".css": "text/css", ".webmanifest": "application/manifest+json", ".svg": "image/svg+xml" };
 
@@ -442,11 +449,15 @@ servidor.on("error", (erro) => {
   throw erro;
 });
 
-servidor.listen(PORT, "0.0.0.0", () => {
+servidor.listen(PORT, HOST, () => {
   const sel = selecaoEfetiva();
-  const ips = [].concat(...Object.values(os.networkInterfaces())).filter(i => i && i.family === "IPv4" && !i.internal).map(i => i.address);
+  const naLan = HOST === "0.0.0.0";
+  const ips = naLan
+    ? [].concat(...Object.values(os.networkInterfaces())).filter(i => i && i.family === "IPv4" && !i.internal).map(i => i.address)
+    : [];
   console.log("Copiloto V3.3: http://localhost:" + PORT + "/  fonte=" + sel.fonte +
     (sel.fallback ? " (" + sel.fallback + ")" : "") +
-    (ips.length ? "  ·  no celular: http://" + ips[0] + ":" + PORT + "/" : ""));
+    (naLan && ips.length ? "  ·  no celular: http://" + ips[0] + ":" + PORT + "/" : "") +
+    (!naLan ? "  ·  (só localhost — para celular: HOST=0.0.0.0 node tools/servir_v1.js)" : ""));
 });
 
