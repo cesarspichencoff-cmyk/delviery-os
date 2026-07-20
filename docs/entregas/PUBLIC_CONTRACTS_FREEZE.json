@@ -50,11 +50,11 @@
     "breaking_change_requires": "nova schema_version (e preferencialmente catalog_version)",
     "additive_optional_fields": "permitido sem rehash de significado de campos existentes"
   },
-  "origin_commit": "99f6be00bbd41278af7a93c115a3d2767af3f133",
+  "origin_commit": "de1d7eb49f17f0614ff25dea5093e5c38c8c9274",
   "status": "pre_integration",
   "consumer_live": "disabled",
   "producer": "entregas",
   "domain_contract": "COR-ENTREGAS-V1@1.0.3",
   "frozen_at": "2026-07-20T07:38:50.295Z",
-  "note": "origin_commit aponta para este commit de release da fundação+contratos; re-hash de conteúdo do freeze não invalida schemas_hash"
+  "release_commit": "de1d7eb49f17f0614ff25dea5093e5c38c8c9274"
 }
