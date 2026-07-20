@@ -1,70 +1,89 @@
 {
-  "commit": "a75b8fd15b91",
+  "commit": "05b6efaf1842",
+  "commit_full": "05b6efaf1842180cf7d220eb6e57c72f9366cccf",
   "branch": "feature/entregas-acabamento-visual-v1",
+  "generated_at": "2026-07-20T20:43:54.406Z",
+  "stamp_policy": "faixa técnica anexada após screenshot — não é DOM da app",
   "captures": [
     {
       "file": "01_mobile_online.png",
-      "commit": "a75b8fd15b91",
+      "commit": "05b6efaf1842",
+      "commit_full": "05b6efaf1842180cf7d220eb6e57c72f9366cccf",
       "branch": "feature/entregas-acabamento-visual-v1",
       "viewport": "390x844",
       "scenario": "mobile_online",
-      "mode": "demo"
+      "mode": "demo",
+      "stamp": "commit 05b6efaf1842 · branch feature/entregas-acabamento-visual-v1 · mobile_online · 390x844 · modo demo"
     },
     {
       "file": "02_mobile_offline.png",
-      "commit": "a75b8fd15b91",
+      "commit": "05b6efaf1842",
+      "commit_full": "05b6efaf1842180cf7d220eb6e57c72f9366cccf",
       "branch": "feature/entregas-acabamento-visual-v1",
       "viewport": "390x844",
       "scenario": "mobile_offline",
-      "mode": "demo"
+      "mode": "demo",
+      "stamp": "commit 05b6efaf1842 · branch feature/entregas-acabamento-visual-v1 · mobile_offline · 390x844 · modo demo"
     },
     {
       "file": "03_mobile_pending_sync.png",
-      "commit": "a75b8fd15b91",
+      "commit": "05b6efaf1842",
+      "commit_full": "05b6efaf1842180cf7d220eb6e57c72f9366cccf",
       "branch": "feature/entregas-acabamento-visual-v1",
       "viewport": "390x844",
       "scenario": "mobile_pending_sync",
-      "mode": "demo"
+      "mode": "demo",
+      "stamp": "commit 05b6efaf1842 · branch feature/entregas-acabamento-visual-v1 · mobile_pending_sync · 390x844 · modo demo"
     },
     {
       "file": "04_console_360.png",
-      "commit": "a75b8fd15b91",
+      "commit": "05b6efaf1842",
+      "commit_full": "05b6efaf1842180cf7d220eb6e57c72f9366cccf",
       "branch": "feature/entregas-acabamento-visual-v1",
       "viewport": "360x740",
       "scenario": "console_360",
-      "mode": "demo"
+      "mode": "demo",
+      "stamp": "commit 05b6efaf1842 · branch feature/entregas-acabamento-visual-v1 · console_360 · 360x740 · modo demo"
     },
     {
       "file": "05_ifood_conferencia.png",
-      "commit": "a75b8fd15b91",
+      "commit": "05b6efaf1842",
+      "commit_full": "05b6efaf1842180cf7d220eb6e57c72f9366cccf",
       "branch": "feature/entregas-acabamento-visual-v1",
       "viewport": "390x844",
       "scenario": "ifood_conferencia",
-      "mode": "demo"
+      "mode": "demo",
+      "stamp": "commit 05b6efaf1842 · branch feature/entregas-acabamento-visual-v1 · ifood_conferencia · 390x844 · modo demo"
     },
     {
       "file": "06_ifood_conclusao.png",
-      "commit": "a75b8fd15b91",
+      "commit": "05b6efaf1842",
+      "commit_full": "05b6efaf1842180cf7d220eb6e57c72f9366cccf",
       "branch": "feature/entregas-acabamento-visual-v1",
       "viewport": "390x844",
       "scenario": "ifood_conclusao",
-      "mode": "demo"
+      "mode": "demo",
+      "stamp": "commit 05b6efaf1842 · branch feature/entregas-acabamento-visual-v1 · ifood_conclusao · 390x844 · modo demo"
     },
     {
       "file": "07_demo_com_controles.png",
-      "commit": "a75b8fd15b91",
+      "commit": "05b6efaf1842",
+      "commit_full": "05b6efaf1842180cf7d220eb6e57c72f9366cccf",
       "branch": "feature/entregas-acabamento-visual-v1",
       "viewport": "390x844",
       "scenario": "demo_com_controles",
-      "mode": "demo"
+      "mode": "demo",
+      "stamp": "commit 05b6efaf1842 · branch feature/entregas-acabamento-visual-v1 · demo_com_controles · 390x844 · modo demo"
     },
     {
       "file": "08_operacional_sem_controles.png",
-      "commit": "a75b8fd15b91",
+      "commit": "05b6efaf1842",
+      "commit_full": "05b6efaf1842180cf7d220eb6e57c72f9366cccf",
       "branch": "feature/entregas-acabamento-visual-v1",
       "viewport": "390x844",
       "scenario": "operacional_sem_controles",
-      "mode": "operacional"
+      "mode": "operacional",
+      "stamp": "commit 05b6efaf1842 · branch feature/entregas-acabamento-visual-v1 · operacional_sem_controles · 390x844 · modo operacional"
     }
   ]
 }
