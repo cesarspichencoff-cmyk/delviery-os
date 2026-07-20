@@ -1,0 +1,27 @@
+[
+  {
+    "url": "http://127.0.0.1:5193/api/command",
+    "status": 400,
+    "route": "http://127.0.0.1:5193/console/"
+  },
+  {
+    "url": "http://127.0.0.1:5193/api/command",
+    "status": 400,
+    "route": "http://127.0.0.1:5193/rider-mobile/"
+  },
+  {
+    "url": "http://127.0.0.1:5193/api/command",
+    "status": 400,
+    "route": "http://127.0.0.1:5193/rider-mobile/"
+  },
+  {
+    "url": "http://127.0.0.1:5193/api/command",
+    "status": 400,
+    "route": "http://127.0.0.1:5193/ifood-handoff/"
+  },
+  {
+    "url": "http://127.0.0.1:5193/api/command",
+    "status": 400,
+    "route": "http://127.0.0.1:5193/ifood-handoff/"
+  }
+]

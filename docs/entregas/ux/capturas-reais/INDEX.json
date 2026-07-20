@@ -1,0 +1,393 @@
+{
+  "commit": "cb74303932a8dd2dfdd5fd0c110639d16e654d3e",
+  "date": "2026-07-20T08:19:21.017Z",
+  "captures": [
+    {
+      "file": "console_01_operacao_normal_1440.png",
+      "route": "/console/",
+      "viewport": "1440x900",
+      "scenario": "operacao_normal_inicial",
+      "fonte": "AMBIENTE DE DEMONSTRAÇÃO",
+      "commit": "cb74303932a8dd2dfdd5fd0c110639d16e654d3e",
+      "data": "2026-07-20T08:19:21.017Z"
+    },
+    {
+      "file": "console_02_pedidos_prontos_1440.png",
+      "route": "/console/",
+      "viewport": "1440x900",
+      "scenario": "pedidos_prontos",
+      "fonte": "AMBIENTE DE DEMONSTRAÇÃO",
+      "commit": "cb74303932a8dd2dfdd5fd0c110639d16e654d3e",
+      "data": "2026-07-20T08:19:21.017Z"
+    },
+    {
+      "file": "console_03_montagem_viagem_1440.png",
+      "route": "/console/",
+      "viewport": "1440x900",
+      "scenario": "montagem_viagem",
+      "fonte": "AMBIENTE DE DEMONSTRAÇÃO",
+      "commit": "cb74303932a8dd2dfdd5fd0c110639d16e654d3e",
+      "data": "2026-07-20T08:19:21.017Z"
+    },
+    {
+      "file": "console_04_multiplas_paradas_1440.png",
+      "route": "/console/",
+      "viewport": "1440x900",
+      "scenario": "viagem_multiplas_paradas",
+      "fonte": "AMBIENTE DE DEMONSTRAÇÃO",
+      "commit": "cb74303932a8dd2dfdd5fd0c110639d16e654d3e",
+      "data": "2026-07-20T08:19:21.017Z"
+    },
+    {
+      "file": "console_05_limite_politica_1440.png",
+      "route": "/console/",
+      "viewport": "1440x900",
+      "scenario": "limite_configuravel_6_paradas_api",
+      "fonte": "AMBIENTE DE DEMONSTRAÇÃO",
+      "commit": "cb74303932a8dd2dfdd5fd0c110639d16e654d3e",
+      "data": "2026-07-20T08:19:21.017Z"
+    },
+    {
+      "file": "console_11_em_rota_1440.png",
+      "route": "/console/",
+      "viewport": "1440x900",
+      "scenario": "viagem_em_rota",
+      "fonte": "AMBIENTE DE DEMONSTRAÇÃO",
+      "commit": "cb74303932a8dd2dfdd5fd0c110639d16e654d3e",
+      "data": "2026-07-20T08:19:21.017Z"
+    },
+    {
+      "file": "console_06_pedido_removido_1440.png",
+      "route": "/console/",
+      "viewport": "1440x900",
+      "scenario": "pedido_removido_preservado",
+      "fonte": "AMBIENTE DE DEMONSTRAÇÃO",
+      "commit": "cb74303932a8dd2dfdd5fd0c110639d16e654d3e",
+      "data": "2026-07-20T08:19:21.017Z"
+    },
+    {
+      "file": "console_08_motoboy_pausa_1440.png",
+      "route": "/console/",
+      "viewport": "1440x900",
+      "scenario": "motoboy_pausa",
+      "fonte": "AMBIENTE DE DEMONSTRAÇÃO",
+      "commit": "cb74303932a8dd2dfdd5fd0c110639d16e654d3e",
+      "data": "2026-07-20T08:19:21.017Z"
+    },
+    {
+      "file": "console_09_motoboy_apoio_1440.png",
+      "route": "/console/",
+      "viewport": "1440x900",
+      "scenario": "motoboy_apoio_expedicao",
+      "fonte": "AMBIENTE DE DEMONSTRAÇÃO",
+      "commit": "cb74303932a8dd2dfdd5fd0c110639d16e654d3e",
+      "data": "2026-07-20T08:19:21.017Z"
+    },
+    {
+      "file": "console_12_retornando_1440.png",
+      "route": "/console/",
+      "viewport": "1440x900",
+      "scenario": "viagem_retornando",
+      "fonte": "AMBIENTE DE DEMONSTRAÇÃO",
+      "commit": "cb74303932a8dd2dfdd5fd0c110639d16e654d3e",
+      "data": "2026-07-20T08:19:21.017Z"
+    },
+    {
+      "file": "console_16_ocorrencia_1440.png",
+      "route": "/console/",
+      "viewport": "1440x900",
+      "scenario": "ocorrencia_aberta",
+      "fonte": "AMBIENTE DE DEMONSTRAÇÃO",
+      "commit": "cb74303932a8dd2dfdd5fd0c110639d16e654d3e",
+      "data": "2026-07-20T08:19:21.017Z"
+    },
+    {
+      "file": "console_19_vazio_filtro_1440.png",
+      "route": "/console/",
+      "viewport": "1440x900",
+      "scenario": "estado_vazio_ou_sem_pendencias",
+      "fonte": "AMBIENTE DE DEMONSTRAÇÃO",
+      "commit": "cb74303932a8dd2dfdd5fd0c110639d16e654d3e",
+      "data": "2026-07-20T08:19:21.017Z"
+    },
+    {
+      "file": "console_23_papel_motoboy_1440.png",
+      "route": "/console/",
+      "viewport": "1440x900",
+      "scenario": "papel_motoboy_selecionado",
+      "fonte": "AMBIENTE DE DEMONSTRAÇÃO",
+      "commit": "cb74303932a8dd2dfdd5fd0c110639d16e654d3e",
+      "data": "2026-07-20T08:19:21.017Z"
+    },
+    {
+      "file": "console_resp_1366x768.png",
+      "route": "/console/",
+      "viewport": "1366x768",
+      "scenario": "responsivo_console",
+      "fonte": "AMBIENTE DE DEMONSTRAÇÃO",
+      "commit": "cb74303932a8dd2dfdd5fd0c110639d16e654d3e",
+      "data": "2026-07-20T08:19:21.017Z"
+    },
+    {
+      "file": "console_resp_1440x900.png",
+      "route": "/console/",
+      "viewport": "1440x900",
+      "scenario": "responsivo_console",
+      "fonte": "AMBIENTE DE DEMONSTRAÇÃO",
+      "commit": "cb74303932a8dd2dfdd5fd0c110639d16e654d3e",
+      "data": "2026-07-20T08:19:21.017Z"
+    },
+    {
+      "file": "console_resp_768x1024.png",
+      "route": "/console/",
+      "viewport": "768x1024",
+      "scenario": "responsivo_console",
+      "fonte": "AMBIENTE DE DEMONSTRAÇÃO",
+      "commit": "cb74303932a8dd2dfdd5fd0c110639d16e654d3e",
+      "data": "2026-07-20T08:19:21.017Z"
+    },
+    {
+      "file": "console_resp_390x844.png",
+      "route": "/console/",
+      "viewport": "390x844",
+      "scenario": "responsivo_console",
+      "fonte": "AMBIENTE DE DEMONSTRAÇÃO",
+      "commit": "cb74303932a8dd2dfdd5fd0c110639d16e654d3e",
+      "data": "2026-07-20T08:19:21.017Z"
+    },
+    {
+      "file": "console_resp_360x800.png",
+      "route": "/console/",
+      "viewport": "360x800",
+      "scenario": "responsivo_console",
+      "fonte": "AMBIENTE DE DEMONSTRAÇÃO",
+      "commit": "cb74303932a8dd2dfdd5fd0c110639d16e654d3e",
+      "data": "2026-07-20T08:19:21.017Z"
+    },
+    {
+      "file": "mobile_01_viagem_390.png",
+      "route": "/rider-mobile/",
+      "viewport": "390x844",
+      "scenario": "viagem_atribuida_ou_vazia",
+      "fonte": "AMBIENTE DE DEMONSTRAÇÃO",
+      "commit": "cb74303932a8dd2dfdd5fd0c110639d16e654d3e",
+      "data": "2026-07-20T08:19:21.017Z"
+    },
+    {
+      "file": "mobile_02_preparacao_390.png",
+      "route": "/rider-mobile/",
+      "viewport": "390x844",
+      "scenario": "preparando_saida",
+      "fonte": "AMBIENTE DE DEMONSTRAÇÃO",
+      "commit": "cb74303932a8dd2dfdd5fd0c110639d16e654d3e",
+      "data": "2026-07-20T08:19:21.017Z"
+    },
+    {
+      "file": "mobile_03_saida_390.png",
+      "route": "/rider-mobile/",
+      "viewport": "390x844",
+      "scenario": "apos_confirmar_saida",
+      "fonte": "AMBIENTE DE DEMONSTRAÇÃO",
+      "commit": "cb74303932a8dd2dfdd5fd0c110639d16e654d3e",
+      "data": "2026-07-20T08:19:21.017Z"
+    },
+    {
+      "file": "mobile_04_parada_atual_390.png",
+      "route": "/rider-mobile/",
+      "viewport": "390x844",
+      "scenario": "parada_atual",
+      "fonte": "AMBIENTE DE DEMONSTRAÇÃO",
+      "commit": "cb74303932a8dd2dfdd5fd0c110639d16e654d3e",
+      "data": "2026-07-20T08:19:21.017Z"
+    },
+    {
+      "file": "mobile_05_nav_externa_contexto_390.png",
+      "route": "/rider-mobile/",
+      "viewport": "390x844",
+      "scenario": "apos_abrir_rota_externa",
+      "fonte": "AMBIENTE DE DEMONSTRAÇÃO",
+      "commit": "cb74303932a8dd2dfdd5fd0c110639d16e654d3e",
+      "data": "2026-07-20T08:19:21.017Z"
+    },
+    {
+      "file": "mobile_08_chegada_390.png",
+      "route": "/rider-mobile/",
+      "viewport": "390x844",
+      "scenario": "cheguei",
+      "fonte": "AMBIENTE DE DEMONSTRAÇÃO",
+      "commit": "cb74303932a8dd2dfdd5fd0c110639d16e654d3e",
+      "data": "2026-07-20T08:19:21.017Z"
+    },
+    {
+      "file": "mobile_09_entrega_confirmada_390.png",
+      "route": "/rider-mobile/",
+      "viewport": "390x844",
+      "scenario": "entrega_confirmada",
+      "fonte": "AMBIENTE DE DEMONSTRAÇÃO",
+      "commit": "cb74303932a8dd2dfdd5fd0c110639d16e654d3e",
+      "data": "2026-07-20T08:19:21.017Z"
+    },
+    {
+      "file": "mobile_11_problema_390.png",
+      "route": "/rider-mobile/",
+      "viewport": "390x844",
+      "scenario": "registrar_problema",
+      "fonte": "AMBIENTE DE DEMONSTRAÇÃO",
+      "commit": "cb74303932a8dd2dfdd5fd0c110639d16e654d3e",
+      "data": "2026-07-20T08:19:21.017Z"
+    },
+    {
+      "file": "mobile_13_retorno_390.png",
+      "route": "/rider-mobile/",
+      "viewport": "390x844",
+      "scenario": "iniciar_retorno",
+      "fonte": "AMBIENTE DE DEMONSTRAÇÃO",
+      "commit": "cb74303932a8dd2dfdd5fd0c110639d16e654d3e",
+      "data": "2026-07-20T08:19:21.017Z"
+    },
+    {
+      "file": "mobile_14_offline_390.png",
+      "route": "/rider-mobile/",
+      "viewport": "390x844",
+      "scenario": "offline",
+      "fonte": "AMBIENTE DE DEMONSTRAÇÃO",
+      "commit": "cb74303932a8dd2dfdd5fd0c110639d16e654d3e",
+      "data": "2026-07-20T08:19:21.017Z"
+    },
+    {
+      "file": "mobile_20_360x800.png",
+      "route": "/rider-mobile/",
+      "viewport": "360x800",
+      "scenario": "tela_pequena",
+      "fonte": "AMBIENTE DE DEMONSTRAÇÃO",
+      "commit": "cb74303932a8dd2dfdd5fd0c110639d16e654d3e",
+      "data": "2026-07-20T08:19:21.017Z"
+    },
+    {
+      "file": "console_a11y_teclado_foco_1440.png",
+      "route": "/console/",
+      "viewport": "1440x900",
+      "scenario": "teclado_foco",
+      "fonte": "AMBIENTE DE DEMONSTRAÇÃO",
+      "commit": "cb74303932a8dd2dfdd5fd0c110639d16e654d3e",
+      "data": "2026-07-20T08:19:21.017Z"
+    },
+    {
+      "file": "console_a11y_zoom200_1440.png",
+      "route": "/console/",
+      "viewport": "1440x900",
+      "scenario": "zoom_200",
+      "fonte": "AMBIENTE DE DEMONSTRAÇÃO",
+      "commit": "cb74303932a8dd2dfdd5fd0c110639d16e654d3e",
+      "data": "2026-07-20T08:19:21.017Z"
+    },
+    {
+      "file": "ifood_01_inicial_1440.png",
+      "route": "/ifood-handoff/",
+      "viewport": "1440x900",
+      "scenario": "expedicao_inicial",
+      "fonte": "AMBIENTE DE DEMONSTRAÇÃO",
+      "commit": "cb74303932a8dd2dfdd5fd0c110639d16e654d3e",
+      "data": "2026-07-20T08:19:21.017Z"
+    },
+    {
+      "file": "ifood_02_iniciado_1440.png",
+      "route": "/ifood-handoff/",
+      "viewport": "1440x900",
+      "scenario": "handoff_iniciado_aguardando_verify",
+      "fonte": "AMBIENTE DE DEMONSTRAÇÃO",
+      "commit": "cb74303932a8dd2dfdd5fd0c110639d16e654d3e",
+      "data": "2026-07-20T08:19:21.017Z"
+    },
+    {
+      "file": "ifood_09_sem_verificacao_1440.png",
+      "route": "/ifood-handoff/",
+      "viewport": "1440x900",
+      "scenario": "recusa_sem_courier_verified",
+      "fonte": "AMBIENTE DE DEMONSTRAÇÃO",
+      "commit": "cb74303932a8dd2dfdd5fd0c110639d16e654d3e",
+      "data": "2026-07-20T08:19:21.017Z"
+    },
+    {
+      "file": "ifood_04_volumes_incompletos_1440.png",
+      "route": "/ifood-handoff/",
+      "viewport": "1440x900",
+      "scenario": "recusa_volumes_incompletos",
+      "fonte": "AMBIENTE DE DEMONSTRAÇÃO",
+      "commit": "cb74303932a8dd2dfdd5fd0c110639d16e654d3e",
+      "data": "2026-07-20T08:19:21.017Z"
+    },
+    {
+      "file": "ifood_07_confirmado_1440.png",
+      "route": "/ifood-handoff/",
+      "viewport": "1440x900",
+      "scenario": "handoff_confirmado",
+      "fonte": "AMBIENTE DE DEMONSTRAÇÃO",
+      "commit": "cb74303932a8dd2dfdd5fd0c110639d16e654d3e",
+      "data": "2026-07-20T08:19:21.017Z"
+    },
+    {
+      "file": "mapa_01_inicial_1440.png",
+      "route": "/map-poc/",
+      "viewport": "1440x900",
+      "scenario": "mapa_inicial",
+      "fonte": "AMBIENTE DE DEMONSTRAÇÃO",
+      "commit": "cb74303932a8dd2dfdd5fd0c110639d16e654d3e",
+      "data": "2026-07-20T08:19:21.017Z"
+    },
+    {
+      "file": "mapa_02_disponivel_1440.png",
+      "route": "/map-poc/",
+      "viewport": "1440x900",
+      "scenario": "mapa_tiles_demo",
+      "fonte": "AMBIENTE DE DEMONSTRAÇÃO",
+      "commit": "cb74303932a8dd2dfdd5fd0c110639d16e654d3e",
+      "data": "2026-07-20T08:19:21.017Z"
+    },
+    {
+      "file": "mapa_03_rota_simulada_1440.png",
+      "route": "/map-poc/",
+      "viewport": "1440x900",
+      "scenario": "rota_simulada_identificada",
+      "fonte": "AMBIENTE DE DEMONSTRAÇÃO",
+      "commit": "cb74303932a8dd2dfdd5fd0c110639d16e654d3e",
+      "data": "2026-07-20T08:19:21.017Z"
+    },
+    {
+      "file": "mapa_04_sem_localizacao_1440.png",
+      "route": "/map-poc/",
+      "viewport": "1440x900",
+      "scenario": "localizacao_indisponivel",
+      "fonte": "AMBIENTE DE DEMONSTRAÇÃO",
+      "commit": "cb74303932a8dd2dfdd5fd0c110639d16e654d3e",
+      "data": "2026-07-20T08:19:21.017Z"
+    },
+    {
+      "file": "mapa_05_permissao_negada_1440.png",
+      "route": "/map-poc/",
+      "viewport": "1440x900",
+      "scenario": "permissao_negada",
+      "fonte": "AMBIENTE DE DEMONSTRAÇÃO",
+      "commit": "cb74303932a8dd2dfdd5fd0c110639d16e654d3e",
+      "data": "2026-07-20T08:19:21.017Z"
+    },
+    {
+      "file": "mapa_06_offline_1440.png",
+      "route": "/map-poc/",
+      "viewport": "1440x900",
+      "scenario": "tiles_offline",
+      "fonte": "AMBIENTE DE DEMONSTRAÇÃO",
+      "commit": "cb74303932a8dd2dfdd5fd0c110639d16e654d3e",
+      "data": "2026-07-20T08:19:21.017Z"
+    },
+    {
+      "file": "mapa_mobile_390.png",
+      "route": "/map-poc/",
+      "viewport": "390x844",
+      "scenario": "mapa_mobile",
+      "fonte": "AMBIENTE DE DEMONSTRAÇÃO",
+      "commit": "cb74303932a8dd2dfdd5fd0c110639d16e654d3e",
+      "data": "2026-07-20T08:19:21.017Z"
+    }
+  ]
+}

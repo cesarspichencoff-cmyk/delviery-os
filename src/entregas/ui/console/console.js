@@ -23,7 +23,16 @@ async function refresh() {
         : snap.connection === "offline"
           ? "Offline"
           : "Sincronizando";
-    $("statusLine").textContent = `Ator ${snap.actor.role} · sync pendente ${snap.pending_sync}`;
+    const roleLabel = {
+      operador_expedicao: "Operador",
+      lider_delivery: "Líder",
+      gerente: "Gerente",
+      motoboy_interno: "Motoboy",
+    }[snap.actor.role] || snap.actor.role;
+    $("statusLine").textContent =
+      snap.pending_sync > 0
+        ? `${roleLabel} · aguardando sincronização (${snap.pending_sync})`
+        : `${roleLabel} · tudo sincronizado`;
     renderError($("errorBox"), snap.last_error);
     renderReady();
     renderTrips();

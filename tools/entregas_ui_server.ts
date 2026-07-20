@@ -11,7 +11,8 @@ import { asInternalRiderActorId, asExternalCourierRef } from "../src/entregas/fo
 import type { OperationalRole } from "../src/entregas/operational/auth";
 
 const PORT = Number(process.env.ENTREGAS_UI_PORT || 5193);
-const ROOT = join(__dirname, "..", "src", "entregas", "ui");
+// Fonte HTML/CSS/JS permanece em src/ (não em dist/)
+const ROOT = join(process.cwd(), "src", "entregas", "ui");
 const facade = new UiApplicationFacade();
 facade.seedDemo();
 
@@ -83,15 +84,27 @@ const server = http.createServer(async (req, res) => {
       }
       const result = await facade.execute(body as never);
       const snap = await facade.snapshot();
-      return json(res, result.ok ? 200 : 400, { result, snapshot: snap });
+      // 200 sempre: rejeição de domínio é negócio, não falha de rede/UI
+      return json(res, 200, { result, snapshot: snap });
     }
 
-    // static
+    // static (directories → index.html)
     let path = url.pathname === "/" ? "/console/index.html" : url.pathname;
-    const file = join(ROOT, path.replace(/^\//, ""));
-    if (!file.startsWith(ROOT) || !existsSync(file)) {
-      res.writeHead(404);
-      return res.end("Not found");
+    let rel = path.replace(/^\//, "").replace(/\//g, "\\");
+    // normalize for join
+    rel = path.replace(/^\//, "");
+    let file = join(ROOT, rel);
+    if (existsSync(file) && !extname(file)) {
+      // directory
+      file = join(file, "index.html");
+    } else if (path.endsWith("/")) {
+      file = join(ROOT, rel, "index.html");
+    }
+    const rootNorm = ROOT.replace(/\\/g, "/").toLowerCase();
+    const fileNorm = file.replace(/\\/g, "/").toLowerCase();
+    if (!fileNorm.startsWith(rootNorm) || !existsSync(file)) {
+      res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
+      return res.end(`Not found: ${path}`);
     }
     const ext = extname(file);
     res.writeHead(200, { "Content-Type": mime[ext] || "text/plain" });

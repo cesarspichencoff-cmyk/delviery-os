@@ -10,7 +10,33 @@ export async function api(path, opts = {}) {
     err.payload = data;
     throw err;
   }
+  // Domain rejection comes as HTTP 200 + result.ok=false
+  if (data.result && data.result.ok === false) {
+    const raw = data.result.error || "Ação não concluída";
+    const err = new Error(humanizeDomainError(raw));
+    err.payload = data;
+    throw err;
+  }
   return data;
+}
+
+/** Traduz rejeições técnicas do domínio para português operacional */
+export function humanizeDomainError(msg) {
+  const m = String(msg || "");
+  if (/trip_started de retornando/i.test(m))
+    return "Esta viagem já saiu. Não dá para confirmar saída de novo.";
+  if (/trip_started de/i.test(m))
+    return "Não é possível confirmar a saída neste momento.";
+  if (/MAX_STOPS|Máximo de paradas/i.test(m))
+    return "Essa viagem já tem o máximo de paradas permitido no piloto.";
+  if (/HANDOFF_NOT_VERIFIED|verificado/i.test(m))
+    return "Confirme a verificação do entregador do iFood antes de repassar.";
+  if (/HANDOFF_VOLUMES|Volumes/i.test(m))
+    return "Confira os volumes: o que saiu precisa bater com o esperado.";
+  if (/não autoriz/i.test(m))
+    return "Seu perfil não pode fazer esta ação.";
+  if (/Trip não encontrada/i.test(m)) return "Viagem não encontrada.";
+  return m;
 }
 
 export async function snapshot() {

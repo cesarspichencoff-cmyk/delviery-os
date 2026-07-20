@@ -34,6 +34,27 @@ async function refresh() {
       ? `${snap.pending_sync} evento(s) aguardando sincronização (occurred_at preservado no domínio)`
       : "Sem fila de sincronização";
   const t = activeTrip();
+  // Ações por estado — evita botão morto / erro técnico
+  const canDepart = t && t.state === "preparando_saida";
+  const canArrive = t && t.state === "em_rota";
+  const canConfirm =
+    t &&
+    t.deliveries.some(
+      (d) =>
+        d.active &&
+        ["em_rota", "chegada_detectada", "entrega_sem_confirmacao"].includes(
+          d.state,
+        ),
+    );
+  const canReturn = t && t.state === "em_rota";
+  $("btnDepart").disabled = !canDepart;
+  $("btnArrive").disabled = !canArrive;
+  $("btnConfirm").disabled = !canConfirm;
+  $("btnNotFound").disabled = !canArrive;
+  $("btnReturn").disabled = !canReturn;
+  $("btnNav").disabled = !t;
+  $("btnProblem").disabled = !t;
+
   if (!t) {
     $("tripBody").innerHTML = `<div class="empty">Nenhuma viagem ativa. Peça ao console para criar e atribuir.</div>`;
     $("stopBody").innerHTML = `<div class="empty">Sem parada</div>`;
@@ -41,8 +62,8 @@ async function refresh() {
   }
   $("tripBody").innerHTML = `
     <div><strong>${chip(t.state)}</strong></div>
-    <div class="muted" style="margin-top:0.35rem">Motoboy ${t.courier_actor_id}</div>
-    <div class="muted trip-id" style="font-size:0.75rem;margin-top:0.25rem">${t.trip_id}</div>
+    <div class="muted" style="margin-top:0.35rem">Você: ${t.courier_actor_id}</div>
+    <div class="muted trip-id" style="font-size:0.75rem;margin-top:0.25rem">Cód. viagem ${t.trip_id}</div>
     <div style="margin-top:0.5rem">${t.deliveries
       .map(
         (d) =>
@@ -52,7 +73,7 @@ async function refresh() {
   const s = currentStop(t);
   $("stopBody").innerHTML = s
     ? `<strong>${s.order_ref}</strong> ${chip(s.state)}<div class="muted">Parada ${s.planned_stop_order}</div>`
-    : `<div class="empty">Todas as paradas ativas resolvidas ou viagem em retorno</div>`;
+    : `<div class="empty">Nenhuma parada em andamento agora</div>`;
 }
 
 async function act(fn) {
