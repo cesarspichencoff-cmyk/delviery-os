@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ENTREGAS · Console operacional</title>
+  <link rel="stylesheet" href="/shared/tokens.css" />
+  <link rel="stylesheet" href="/console/console.css" />
+</head>
+<body>
+  <div class="demo-banner" role="status">AMBIENTE DE DEMONSTRAÇÃO — dados simulados · módulo ENTREGAS · TATA (provisório)</div>
+  <header class="top">
+    <div>
+      <p class="eyebrow">TATA · ENTREGAS</p>
+      <h1>Console operacional</h1>
+      <p class="muted">Operação própria · expedição iFood · sem classificação individual</p>
+    </div>
+    <div class="top-actions">
+      <label class="sr-only" for="role">Papel</label>
+      <select id="role" aria-label="Papel operacional">
+        <option value="operador_expedicao">Operador de expedição</option>
+        <option value="lider_delivery">Líder de Delivery</option>
+        <option value="gerente">Gerente</option>
+        <option value="motoboy_interno">Motoboy (somente leitura sensível)</option>
+      </select>
+      <span id="conn" class="chip neutral" role="status">Online</span>
+    </div>
+  </header>
+
+  <main class="layout" id="main">
+    <section class="panel" aria-labelledby="ready-title">
+      <h2 id="ready-title">Pedidos próprios prontos</h2>
+      <p class="muted">Selecione para formar viagem. Limite do piloto: <strong id="maxStops">—</strong> (política, não fixo na UI).</p>
+      <div id="readyList" class="list" role="list"></div>
+      <div class="row">
+        <button type="button" class="primary" id="btnCreateTrip">Criar viagem com selecionados</button>
+      </div>
+      <p class="status-line" id="tripHint"></p>
+    </section>
+
+    <section class="panel" aria-labelledby="trips-title">
+      <h2 id="trips-title">Viagens</h2>
+      <div class="tabs" role="tablist">
+        <button type="button" role="tab" data-filter="all" aria-selected="true">Todas</button>
+        <button type="button" role="tab" data-filter="preparando_saida">Preparação</button>
+        <button type="button" role="tab" data-filter="em_rota">Em rota</button>
+        <button type="button" role="tab" data-filter="retornando">Retornando</button>
+        <button type="button" role="tab" data-filter="pendencias">Pendências</button>
+      </div>
+      <div id="tripsList" class="list" role="list"></div>
+      <div id="emptyTrips" class="empty" hidden>Nenhuma viagem neste filtro.</div>
+    </section>
+
+    <section class="panel" aria-labelledby="people-title">
+      <h2 id="people-title">Motoboys da casa</h2>
+      <p class="muted">Estados funcionais do COR — sem classificação individual e sem avaliação.</p>
+      <div id="ridersList" class="list" role="list"></div>
+      <div id="emptyRiders" class="empty">Nenhum motoboy em estado conhecido ainda. Atribua uma viagem.</div>
+    </section>
+
+    <section class="panel" aria-labelledby="ifood-title">
+      <h2 id="ifood-title">Expedição iFood</h2>
+      <p class="muted">Courier externo não é usuário do módulo. <a href="/ifood-handoff/">Abrir superfície de handoff</a>.</p>
+      <div id="handoffList" class="list" role="list"></div>
+    </section>
+
+    <section class="panel" aria-labelledby="occ-title">
+      <h2 id="occ-title">Ocorrências</h2>
+      <div id="occList" class="list" role="list"></div>
+      <div class="row">
+        <button type="button" id="btnOcc">Abrir ocorrência de demonstração</button>
+      </div>
+    </section>
+  </main>
+
+  <div id="errorBox" class="error-box" hidden role="alert"></div>
+  <footer class="foot muted">
+    <span id="statusLine">Carregando…</span>
+    · ApplicationService · sem shell · sem Copiloto
+    · <a href="/rider-mobile/">App motoboy</a>
+  </footer>
+  <script type="module" src="/console/console.js"></script>
+</body>
+</html>

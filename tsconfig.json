@@ -11,6 +11,6 @@
     "resolveJsonModule": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["src/**/*.ts", "demo/**/*.ts"],
+  "include": ["src/**/*.ts", "demo/**/*.ts", "tools/entregas_ui_server.ts"],
   "exclude": ["node_modules", "dist"]
 }
