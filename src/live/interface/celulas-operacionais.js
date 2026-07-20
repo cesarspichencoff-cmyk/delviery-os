@@ -48,11 +48,17 @@
    * @param {Object} sevPorPraca  { praca: severidade } já extraído do motor
    * @param {string[]} pracas     praças canônicas desta célula
    * @param {Object} displayMap   MOTOR.DISPLAY (rótulos humanos das praças)
+   * @param {Object} [labelOverride] rótulo CONTEXTUAL por praça, para quando o
+   *   DISPLAY do motor colide com o nome de OUTRA célula. Ex.: a praça
+   *   `cozinha_quentes` tem DISPLAY "Quentes" (nome de outra célula); na célula
+   *   Cozinha ela precisa aparecer como "Cozinha", não "Quentes". Só afeta o
+   *   texto desta célula — o vínculo praça→célula e o DISPLAY do motor não mudam.
    * @returns {{cor,sev,pr,motivo}}
    */
-  function estadoAgregado(sevPorPraca, pracas, displayMap) {
+  function estadoAgregado(sevPorPraca, pracas, displayMap, labelOverride) {
     const sp = sevPorPraca || {};
-    const nome = (p) => (displayMap && displayMap[p]) || p;
+    const ovr = labelOverride || {};
+    const nome = (p) => ovr[p] || (displayMap && displayMap[p]) || p;
     let sev = 0, pr = null;
     for (const p of pracas) {
       if ((sp[p] || 0) > sev) { sev = sp[p]; pr = p; }

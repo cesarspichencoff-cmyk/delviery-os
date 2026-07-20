@@ -292,9 +292,11 @@
     }
     return sp;
   }
-  /* Célula de produção (agregada ou praça única) usando a lógica pura. */
-  function celulaProducao(R, INFO, pracas, nomeCelula) {
-    const est = CEL.estadoAgregado(sevPorPracaDe(R, pracas), pracas, MOTOR.DISPLAY);
+  /* Célula de produção (agregada ou praça única) usando a lógica pura.
+   * labelOverride (opcional): rótulo contextual por praça, quando o DISPLAY do
+   * motor colide com o nome de outra célula (ver célula Cozinha). */
+  function celulaProducao(R, INFO, pracas, nomeCelula, labelOverride) {
+    const est = CEL.estadoAgregado(sevPorPracaDe(R, pracas), pracas, MOTOR.DISPLAY, labelOverride);
     return {
       nome: nomeCelula, cor: est.cor, sev: est.sev,
       n: pedidosDependendo(R, INFO, pracas),
@@ -309,8 +311,10 @@
      * cozinha_quentes NÃO entra aqui — pertence à célula Cozinha (sem duplicar). */
     const quentes = celulaProducao(R, INFO, ["enrolados_quentes"], "Quentes");
     /* Cozinha: praça visual ligada SOMENTE a cozinha_quentes (dado real do
-     * motor; deixou de ser estado fixo de validação). */
-    const cozinha = celulaProducao(R, INFO, ["cozinha_quentes"], "Cozinha");
+     * motor; deixou de ser estado fixo de validação). O DISPLAY do motor rotula
+     * `cozinha_quentes` como "Quentes" (nome de OUTRA célula); na explicação da
+     * Cozinha ela precisa aparecer como "Cozinha" — daí o rótulo contextual. */
+    const cozinha = celulaProducao(R, INFO, ["cozinha_quentes"], "Cozinha", { cozinha_quentes: "Cozinha" });
     /* Caixa: célula derivada, leitura parcial e explicável. */
     const caixa = Object.assign({ nome: "Caixa" }, CEL.leituraCaixa(NIGHT, t));
     /* Conferência: função distinta do Caixa (verificação final, integridade,
