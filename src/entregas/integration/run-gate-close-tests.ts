@@ -4,6 +4,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { execSync } from "node:child_process";
 import { asInternalRiderActorId } from "../foundation/brands";
 import { createPilotPolicy } from "../foundation/policy";
 import {
@@ -24,6 +25,10 @@ import { createMockCopilotoConsumer } from "../contracts/EntregasEventFeed";
 import { healthFromOutbox } from "./health-from-outbox";
 import { EXAMPLE_TRIP_CREATED } from "../contracts/events/examples";
 import type { TripAggregate } from "../foundation/trip-machine";
+
+/** Commit de origem dos contratos públicos (não o commit do manifesto de freeze) */
+const CONTRACTS_ORIGIN_COMMIT =
+  "de1d7eb49f17f0614ff25dea5093e5c38c8c9274";
 
 let passed = 0;
 const queue: Array<() => Promise<void>> = [];
@@ -79,6 +84,64 @@ test("manifesto de contrato público congelado + hash estável", () => {
   assert.equal(m.consumer_live, "disabled");
   assert.ok(m.event_count >= 20);
   assert.equal(m.schemas_hash, h1);
+});
+
+test("integridade do PUBLIC_CONTRACTS_FREEZE.json (origin sem autorreferência)", () => {
+  const freezePath = join(
+    process.cwd(),
+    "docs/entregas/PUBLIC_CONTRACTS_FREEZE.json",
+  );
+  const freeze = JSON.parse(readFileSync(freezePath, "utf8")) as {
+    origin_commit: string;
+    schemas_hash: string;
+    status: string;
+    consumer_live: string;
+    catalog_version: string;
+    schema_version: string;
+  };
+
+  assert.ok(freeze.origin_commit, "origin_commit deve existir");
+  assert.equal(
+    freeze.origin_commit,
+    CONTRACTS_ORIGIN_COMMIT,
+    "origin_commit deve ser o commit de origem dos contratos (de1d7eb…)",
+  );
+  assert.equal(freeze.status, "pre_integration");
+  assert.equal(freeze.consumer_live, "disabled");
+  assert.equal(freeze.catalog_version, PUBLIC_CATALOG_VERSION);
+  assert.equal(freeze.schema_version, PUBLIC_EVENTS_SCHEMA_VERSION);
+
+  const liveHash = computePublicSchemasHash();
+  assert.equal(
+    freeze.schemas_hash,
+    liveHash,
+    "schemas_hash deve corresponder aos arquivos atuais do catálogo/schema",
+  );
+
+  // origin_commit é ancestral válido de HEAD; não autorreferencia o tip
+  const head = execSync("git rev-parse HEAD", {
+    encoding: "utf8",
+  }).trim();
+  assert.notEqual(
+    freeze.origin_commit,
+    head,
+    "origin_commit não deve ser o HEAD (evita referência circular com o commit de freeze)",
+  );
+  let ancestorOk = false;
+  try {
+    execSync(
+      `git merge-base --is-ancestor ${freeze.origin_commit} ${head}`,
+      { stdio: "pipe" },
+    );
+    ancestorOk = true;
+  } catch {
+    ancestorOk = false;
+  }
+  assert.equal(
+    ancestorOk,
+    true,
+    "origin_commit deve ser ancestral válido de HEAD",
+  );
 });
 
 test("consumer simulado: fonte não importa domínio interno/outbox/CV", () => {
