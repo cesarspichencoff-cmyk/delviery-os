@@ -83,16 +83,20 @@ Matriz objetiva completa e mapeamento proposto: [PRACAS_MAPPING_PROPOSAL.md](cop
 |---|---|---|---|---|
 | **Sushi** | agregação visual de produção | `combinados + duplas + enrolados` | Sim (composição sintética rotulada) | Ativa |
 | **Quentes** | praça visual de produção | `enrolados_quentes` (**proposto: sem** `cozinha_quentes`) | Sim | Ativa, mapeamento a corrigir |
-| **Cozinha** | praça visual de produção | `cozinha_quentes` | **Não — hardcoded, desligada da praça** | Inerte (a corrigir: ligar à praça) |
-| **Conferência/Montagem** | derivada / praça? | `montagem_outros` (a confirmar) | parcial (via `sits`) | Nome/fonte a confirmar |
-| **Caixa** | **célula operacional derivada** | não é praça (deriva de prontos/expedição) | **parcial** (só prontos hoje) | **Viva, leitura parcial** |
-| **Motoboy** | célula operacional derivada (futura) | eventos do ENTREGAS | **não integrada** | Aguardando integração |
+| **Cozinha** | praça visual de produção | `cozinha_quentes` | **Não — hardcoded, desligada da praça** | Inerte (a corrigir) |
+| **Caixa** | **célula operacional derivada** | prontos + concentração (`p`); `r`/`c` só quando relevantes | **parcial** | **Viva, leitura parcial** |
+| **Conferência** | **célula derivada DISTINTA** | **não comprovada** — precisa fonte própria | **não** | Precisa fonte própria |
+| **Motoboy / Entregas** | célula derivada futura | eventos do ENTREGAS | **não integrada** | "Aguardando integração" |
+| `montagem_outros` | praça canônica | — | hipótese **Montagem/Sacolas** | possível pressão do Caixa |
 | `bar_bebidas` / `sobremesa` | praças canônicas | — | — | Sem círculo próprio (opções ao César) |
 
-**Correções em relação à V2 (instrução do César):**
-- **Cozinha** não é "sem fonte" — é uma praça visual **desligada** de `cozinha_quentes` (hoje contada em Quentes). Proposta: ligar Cozinha a `cozinha_quentes`, remover de Quentes (sem duplicar).
-- **Caixa** **não** "poderia desaparecer" (conclusão anterior errada). É **célula operacional derivada** com responsabilidades reais (sacolas, comandas, saída, comunicação). Deve permanecer viva, com **leitura parcial explicável** — nunca hardcoded, nunca "zero" como ausência real. Especificação: [CAIXA_OPERATIONAL_MODEL.md](copiloto/CAIXA_OPERATIONAL_MODEL.md).
-- **Motoboy** também é célula derivada (futura), alimentada pelo ENTREGAS — enquanto não integrado, não exibir números simulados ("Entregas — aguardando integração").
+**Correções finais (instrução do César):**
+- **Caixa e Conferência são funções distintas na operação do TATÁ — não unificar.** Caixa: sacolas, comandas, fechamento, organização da saída, atrasos, mensagens, coordenação, motoboys. Conferência: confere o pedido final, verifica itens/integridade, identifica o que falta, **comunica ao Caixa**, sinaliza que pode seguir.
+- **`montagem_outros` tende a representar Montagem/Sacolas, não Conferência.** Só servirá à Conferência com evidência de checklist/validação item a item.
+- **Caixa tem leitura parcial hoje** (só prontos/concentração). **Conferência ainda precisa de fonte própria.**
+- **ENTREGAS não está integrado ao Copiloto** — expedição, saída, retirada, handoffs, viagens, ocorrências e motoboys **não estão conectados**. Não afirmar o contrário.
+- **"Sobrecarregado" não é permitido** para o Caixa com base apenas em `p` — ver [CAIXA_OPERATIONAL_MODEL.md §6](copiloto/CAIXA_OPERATIONAL_MODEL.md).
+- **Nenhuma carga operacional pode ser inventada.**
 
 ---
 

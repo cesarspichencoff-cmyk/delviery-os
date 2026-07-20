@@ -83,9 +83,12 @@ O código distingue visual e tecnicamente (`app-v1/app.js:638` `fraseEstado` + c
 
 **Porém — risco de demonstração (não de verdade):** para uma direção/investidor, duas células permanentemente escuras podem *parecer* produto quebrado. O ajuste é de **produto/UX** e **exige decisão do César** — não deve ser implementado silenciosamente.
 
-### Correção (instrução do César): Cozinha e Caixa são coisas diferentes
+### Correção final (instrução do César)
 
-- **Cozinha** = **praça visual de produção** cuja fonte é `cozinha_quentes`. A conclusão certa **não** é "sem fonte" — é que a célula está **hardcoded** e **desligada** de `cozinha_quentes` (hoje essa praça é contada dentro de "Quentes"). Proposta: ligar Cozinha a `cozinha_quentes` e tirar `cozinha_quentes` de Quentes (sem duplicar). Ver [PRACAS_MAPPING_PROPOSAL](copiloto/PRACAS_MAPPING_PROPOSAL.md).
-- **Caixa** = **célula operacional derivada** (não praça). A conclusão anterior ("sem função / poderia desaparecer") estava **errada**. O Caixa concentra a etapa final (sacolas, comandas, organização da saída, comunicação, liberação). **Não deve ser removido nem permanecer hardcoded** — precisa de **leitura parcial derivada e explicável**. Especificação completa: [CAIXA_OPERATIONAL_MODEL](copiloto/CAIXA_OPERATIONAL_MODEL.md).
+- **Cozinha** = **praça visual de produção** cuja fonte é `cozinha_quentes`. Não é "sem fonte" — a célula está **hardcoded** e **desligada** da praça (hoje `cozinha_quentes` é contada dentro de "Quentes"). Proposta: ligar Cozinha a `cozinha_quentes` e removê-lo de Quentes (**sem duplicar**).
+- **Caixa** = **célula operacional derivada** (não praça). Concentra a etapa final: sacolas, comandas, fechamento para saída, organização de prontos, atrasos, mensagens/alterações de clientes, coordenação da saída, motoboys próprios e iFood. **Não remover, não hardcodar.** Cobertura hoje: **parcial** (só prontos/concentração).
+- **Conferência** = **célula derivada DISTINTA** do Caixa: confere o pedido final, verifica itens/integridade antes da saída, identifica o que falta, **comunica ao Caixa** o que precisa de ação, sinaliza quando o pedido pode seguir. **Não unificar com o Caixa.** Precisa de **fonte própria** (ainda não comprovada).
+- **`montagem_outros`** → hipótese principal **Montagem/Sacolas** (possível sinal de pressão para o Caixa), **não** fonte da Conferência sem evidência de checklist/validação item a item.
+- **ENTREGAS não está integrado ao Copiloto** — viagens, retiradas, handoffs, ocorrências, saída e motoboys **não estão conectados**. Não afirmar que estão.
 
-Opções que continuam sendo do César (nenhuma aplicada): para **Cozinha**, ligar a `cozinha_quentes` (proposto) ou aguardar mapa fino; para **Bar/Sobremesa**, incorporar / manter fora da 1ª camada / contexto secundário / célula futura; para **Caixa × Conferência**, unificar / principal+detalhe / separar / aguardar. Detalhes em [PROJECT_WIDE_READINESS_AUDIT.md](PROJECT_WIDE_READINESS_AUDIT.md).
+Especificações: [CAIXA_OPERATIONAL_MODEL](copiloto/CAIXA_OPERATIONAL_MODEL.md) · [PRACAS_MAPPING_PROPOSAL](copiloto/PRACAS_MAPPING_PROPOSAL.md).

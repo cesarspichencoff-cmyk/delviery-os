@@ -1,8 +1,7 @@
 # Proposta de Mapeamento das Praças — Copiloto (especificação, sem código)
 
-> **Proposta operacional inicial. Nenhum código foi alterado.** O mapeamento atual do
-> `app.js` (baseline `101680a`) permanece como está até decisão do César. Este documento
-> registra a divergência entre os dois vocabulários e propõe a ligação explícita.
+> **Proposta operacional. Nenhum código foi alterado.** O mapeamento atual do `app.js`
+> (baseline `101680a`) permanece como está até decisão do César.
 
 ## 1. Os dois vocabulários (não equivalentes automaticamente)
 
@@ -11,57 +10,69 @@
 
 A interface criou conceitos visuais **sem ligação explícita** com as fontes do motor. Cozinha e Caixa estavam **hardcoded em estado de validação** (`app.js:315`, `app.js:329`) — por isso não reagiam aos dados.
 
-## 2. Matriz objetiva corrigida
+## 2. Matriz final das células
 
 | Conceito visual | Tipo | Fonte canônica | Regra de agregação | Cobertura atual | Fontes ausentes | Estado |
 |---|---|---|---|---|---|---|
-| **Sushi** | agregação visual de produção | `combinados` + `duplas` + `enrolados` | pressão combinada das 3 (pior estado + explicar qual praça contribuiu) | sim (composição sintética rotulada) | composição real (motor B) | ativa |
-| **Quentes** | praça visual de produção | `enrolados_quentes` **(só)** | direta | **hoje inclui também `cozinha_quentes`** (a corrigir) | — | ativa, mapeamento a corrigir |
-| **Cozinha** | praça visual de produção | `cozinha_quentes` | direta | **nenhuma — hardcoded `validacao`** | ligação com `cozinha_quentes` | **inerte (a corrigir)** |
-| **Conferência/Montagem** | célula derivada / praça? | `montagem_outros` (a confirmar) | a definir | deriva de `sits`, não da praça | confirmação do significado | ambígua |
-| **Caixa** | **célula operacional derivada** | não é praça — deriva de prontos/saída/expedição | leitura derivada explicável | **parcial** (só prontos hoje) | sacola, comanda, retirada, mensagens | viva, leitura parcial — ver [CAIXA_OPERATIONAL_MODEL](CAIXA_OPERATIONAL_MODEL.md) |
-| **Motoboy** | célula operacional derivada (futura) | eventos do ENTREGAS | leitura derivada | **não integrada** | integração Copiloto×ENTREGAS | aguardando integração |
-| — `sobremesa` | praça canônica | `sobremesa` | — | **sem círculo próprio** | representação visual | fora da 1ª camada |
-| — `bar_bebidas` | praça canônica | `bar_bebidas` | — | **sem círculo próprio** | representação visual | fora da 1ª camada |
+| **Sushi** | agregação visual de produção | `combinados` + `duplas` + `enrolados` | pressão combinada das 3; explicar qual praça contribuiu | sim (composição sintética rotulada) | composição real | ativa |
+| **Quentes** | praça visual de produção | `enrolados_quentes` **(só)** | direta | hoje inclui também `cozinha_quentes` (a corrigir) | — | ativa, mapeamento a corrigir |
+| **Cozinha** | praça visual de produção | `cozinha_quentes` | direta | **nenhuma — hardcoded** | ligação com a praça | inerte (a corrigir) |
+| **Caixa** | **célula operacional derivada** | não é praça — prontos/concentração (`p`); `r`/`c` só quando relevantes | leitura derivada explicável | **parcial** | sacola, comanda, saída, retirada, handoffs, viagens, ocorrências, mensagens | **viva, leitura parcial** |
+| **Conferência** | **célula operacional derivada distinta** | **não comprovada / parcial** | — | **não comprovada** | início/fim de conferência, itens pendentes, checklist, tempo em conferência | precisa **fonte própria** |
+| **Motoboy / Entregas** | célula derivada futura | eventos reais do ENTREGAS | — | **não integrada** | integração Copiloto×ENTREGAS | "Aguardando integração" |
+| `sobremesa` | praça canônica | `sobremesa` | — | sem círculo próprio | representação visual | fora da 1ª camada |
+| `bar_bebidas` | praça canônica | `bar_bebidas` | — | sem círculo próprio | representação visual | fora da 1ª camada |
+| `montagem_outros` | praça canônica | — | — | **hipótese: Montagem/Sacolas** | comprovação | ver §4 |
 
-## 3. Mapeamento proposto (para decisão do César)
+## 3. Mapeamento proposto
 
 ### Sushi — agregação visual
-`combinados + duplas + enrolados`. Representa a pressão **combinada** das três. Regra deve **respeitar o significado dos indicadores do motor** e **explicar qual praça contribuiu** para o estado — não somar valores de formas incompatíveis. (Coincide com o comportamento atual.)
+`combinados + duplas + enrolados`. Pressão **combinada** das três; deve **respeitar o significado dos indicadores do motor** e **explicar qual praça contribuiu**. (Coincide com o comportamento atual.)
 
 ### Quentes — praça visual
-Fonte: **`enrolados_quentes` apenas**. **Não incluir `cozinha_quentes`.** (Muda o comportamento atual, que agrega as duas.)
+Fonte: **`enrolados_quentes` apenas**. **Não incluir `cozinha_quentes`.**
 
 ### Cozinha — praça visual
-Fonte: **`cozinha_quentes`**. Deve **receber dados reais** dessa praça; **não deixar hardcoded em validação**. **Não duplicar `cozinha_quentes` em Quentes e Cozinha ao mesmo tempo** (por isso Quentes perde `cozinha_quentes`).
+Fonte: **`cozinha_quentes`**. Deve receber dados reais; **não deixar hardcoded**. **Não duplicar `cozinha_quentes` em Quentes e Cozinha.**
 
-### Conferência ou Montagem
-Fonte possível: **`montagem_outros`**. **Antes de chamar de "Conferência", comprovar** se `montagem_outros` é a conferência final. Se representar preparação/embalagem/montagem ampla, usar **"Montagem"**. Não escolher "Conferência" só por soar melhor.
+### Caixa — célula derivada
+Fontes atuais: pedidos prontos; concentração temporal de prontos; `r`/`c` só quando realmente relevantes. Cobertura **parcial**. Ver [CAIXA_OPERATIONAL_MODEL.md](CAIXA_OPERATIONAL_MODEL.md).
+
+### Conferência — célula derivada distinta
+**Não é sinônimo de Caixa** e **não deve ser unificada** com ele. Fonte atual não comprovada; precisa de **fonte própria** (início da conferência, pedido em conferência, itens pendentes, checklist final, pedido conferido, tempo aguardando conferência). **Não alimentar com `montagem_outros` só para preencher a célula.**
+
+### Motoboy / Entregas
+Célula derivada **futura**, alimentada por eventos reais do ENTREGAS **após integração**. Enquanto não integrada: **"Aguardando integração"** — sem números simulados.
 
 ### Bar e Sobremesa
-`bar_bebidas` e `sobremesa` são praças canônicas **sem representação própria** entre os 6 círculos. **Não inventar círculos automaticamente.** Opções para o César:
-1. incorporar em outra leitura;
-2. manter fora da primeira camada;
-3. apresentar em contexto secundário;
-4. criar células futuras.
+Praças canônicas **sem representação própria** entre os 6 círculos. **Não inventar círculos.** Opções ao César: incorporar em outra leitura · manter fora da 1ª camada · contexto secundário · células futuras.
 
-## 4. Impacto do mapeamento proposto vs. código atual (`101680a`)
+## 4. `montagem_outros` — hipótese principal registrada
 
-| Célula | Hoje (código) | Proposto | É mudança? |
+**Não mapear para "Conferência" sem comprovação.** Pela operação descrita, aproxima-se de preparação de sacola, comanda, montagem final, embalagem, itens externos e organização física da saída.
+
+> `montagem_outros` → **Montagem / Sacolas** → **possível sinal de pressão para o Caixa**
+
+Só servirá à **Conferência final** se houver evidência de **eventos de checklist ou validação item a item**.
+
+## 5. Impacto do mapeamento proposto vs. código atual (`101680a`)
+
+| Célula | Hoje (código) | Proposto | Mudança? |
 |---|---|---|---|
 | Sushi | combinados+duplas+enrolados | igual | não |
 | Quentes | enrolados_quentes **+ cozinha_quentes** | enrolados_quentes só | **sim** |
-| Cozinha | hardcoded `validacao` | cozinha_quentes real | **sim** |
-| Conferência | deriva de `sits` | confirmar montagem_outros → Conferência/Montagem | **talvez (nome/fonte)** |
+| Cozinha | hardcoded `validacao` | `cozinha_quentes` real | **sim** |
 | Caixa | hardcoded `validacao` | célula derivada, leitura parcial | **sim** |
-| Motoboy | deriva de `sits` saída | célula derivada futura (ENTREGAS) | futuro |
+| Conferência | deriva de `sits` | célula distinta com fonte própria (a definir) | **sim** |
+| Motoboy | deriva de `sits` saída | "Aguardando integração" até ENTREGAS integrar | **sim** |
 
-**Nenhuma dessas mudanças foi implementada.** Todas dependem de decisão do César e de uma fase de implementação própria (que tocaria `app.js` — proibido nesta etapa).
+**Nenhuma dessas mudanças foi implementada.** Todas dependem de decisão do César e de uma fase própria de implementação.
 
-## 5. Decisões pendentes do César
+## 6. Decisões pendentes do César
 
-1. Aprovar separar `cozinha_quentes` de Quentes e ligá-lo à célula Cozinha.
-2. Confirmar o significado de `montagem_outros` → nome "Conferência" ou "Montagem".
-3. Destino de `bar_bebidas` e `sobremesa` (4 opções, §3).
-4. Caixa e Motoboy como células derivadas — ver [CAIXA_OPERATIONAL_MODEL](CAIXA_OPERATIONAL_MODEL.md).
-5. Momento da implementação (nenhuma feita agora).
+1. Separar `cozinha_quentes` de Quentes e ligá-lo à Cozinha.
+2. Confirmar `montagem_outros` como Montagem/Sacolas e se serve de sinal de pressão do Caixa.
+3. Definir a fonte própria da Conferência.
+4. Destino de `bar_bebidas` e `sobremesa`.
+5. Momento da integração ENTREGAS→Copiloto (célula Motoboy/Entregas).
+6. Autorizar a leitura do Caixa em modo sombra.
