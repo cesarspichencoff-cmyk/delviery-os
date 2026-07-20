@@ -509,6 +509,78 @@ test("flag de modo sombra nunca habilita decisão operacional automática", () =
   );
 });
 
+console.log("=== Fase 2E.2 — Auditoria local do modo sombra ===");
+
+test("multiplicidade: zumbi + normal + crítico na mesma janela — crítico dominante, ISF só com dado válido", () => {
+  const shadowConfig = SHW_Config.loadShadowConfig();
+  const t = 1000;
+  const NIGHT = [
+    { id: "Z1", curto: "Z1", r: t - 500, p: null, s: null, e: null, c: null }, // zumbi por idade
+    { id: "N1", curto: "N1", r: t - 15, p: t - 5, s: null, e: null, c: null }, // pronto 5min — normal
+    { id: "C1", curto: "C1", r: t - 55, p: t - 45, s: null, e: null, c: null } // pronto 45min — crítico
+  ];
+  const res = SHW_Adapter.observeSnapshot({ NIGHT, rows: [], seedItens: [], t, sourceStatus: "ready", shadowConfig });
+  assert.strictEqual(res.observation.estado, "critico", "crítico precisa continuar dominante com zumbi e normal presentes");
+  assert.strictEqual(res.observation.pedidos_avaliados, 3);
+  assert.strictEqual(res.observation.pedidos_excluidos_por_fonte, 1, "só o zumbi conta como excluído por fonte");
+  assert.strictEqual(res.observation.participa_do_isf, true, "o pedido crítico reportado precisa participar do ISF");
+  // a mesma observação carrega exclusão do zumbi E a criticidade restante — não precisa de dois registros
+  assert.ok(res.observation.estado === "critico" && res.observation.pedidos_excluidos_por_fonte === 1);
+});
+
+test("normalizeNightOrder nunca produz courier_wait_store_min a partir de dado da janela D4A (campo sempre ausente na fonte)", () => {
+  // Propriedade estrutural: não importa a forma do pedido NIGHT (pronto, não
+  // pronto, com/sem cancelamento) — a fonte D4A nunca observa `s`/`e`
+  // (ver src/live/interface/adaptador.js), então o adapter nunca pode
+  // fabricar um courier_wait_store_min a partir dela. Documentado, não
+  // contornado (§8 do relatório de auditoria).
+  const t = 1000;
+  const amostras = [
+    { id: "a", curto: "A", r: t - 5, p: null, s: null, e: null, c: null },
+    { id: "b", curto: "B", r: t - 50, p: t - 20, s: null, e: null, c: null },
+    { id: "c", curto: "C", r: t - 200, p: t - 190, s: null, e: null, c: null }
+  ];
+  for (const o of amostras) {
+    const fact = SHW_Adapter.normalizeNightOrder(o, t);
+    if (fact) assert.strictEqual(fact.courier_wait_store_min, null, "pedido " + o.id + " não deveria ter courier_wait_store_min");
+  }
+});
+
+test("deduplicação: sequência real de 8 ticks produz exatamente 4 registros (50% de redução)", () => {
+  const shadowConfig = SHW_Config.loadShadowConfig();
+  const log = createObservationLog({ persist: false, heartbeatMinutes: 15 });
+  const baseIso = Date.parse("2026-01-01T00:00:00.000Z");
+  function tick(tOffsetMin, prontoMin, saude) {
+    const res = SHW_Adapter.observeSnapshot({
+      NIGHT: nightProntoSemSaida(prontoMin, 1000), rows: [], seedItens: [], t: 1000,
+      sourceStatus: "ready", shadowConfig
+    });
+    const obs = Object.assign({}, res.observation, {
+      timestamp: new Date(baseIso + tOffsetMin * 60000).toISOString(),
+      saude_da_fonte: saude
+    });
+    return log.register(obs);
+  }
+  const decisoes = [
+    tick(0, 30, "ready"), tick(1, 30, "ready"), tick(2, 30, "ready"),
+    tick(3, 45, "ready"), tick(4, 45, "ready"),
+    tick(5, 45, "degraded"), tick(6, 45, "degraded"),
+    tick(21, 45, "degraded")
+  ];
+  const persistidos = decisoes.filter((d) => d.register).length;
+  assert.strictEqual(persistidos, 4);
+  assert.strictEqual(log.getEntries().length, 4);
+  assert.deepStrictEqual(
+    decisoes.map((d) => d.reason),
+    [
+      "primeira_observacao", "tick_equivalente_deduplicado", "tick_equivalente_deduplicado",
+      "mudanca_de_estado", "tick_equivalente_deduplicado",
+      "mudanca_saude_da_fonte", "tick_equivalente_deduplicado",
+      "heartbeat_tecnico"
+    ]
+  );
+});
+
 console.log("\n=== RESULT ===");
 console.log(`passed=${passed} failed=${failed}`);
 if (failed) {

@@ -11,6 +11,11 @@
  *      desligado — nenhum campo novo vaza para a interface (§8).
  *   3) Com a feature flag desligada (produção sem configuração), o motor
  *      sombra nem executa — nenhuma observação é registrada (§7/§10).
+ *
+ * Cada describe usa seu próprio diretório de log (via
+ * CAPACIDADE_VIVA_HUMAN_V2_SHADOW_LOG_PATH/_FAILURE_LOG_PATH) para não
+ * disputar o arquivo real com outros arquivos de teste rodando em paralelo
+ * (ver tests/live/interface-capacidade-viva-shadow-audit.test.js).
  * ==========================================================================*/
 "use strict";
 
@@ -19,14 +24,26 @@ const assert = require("node:assert/strict");
 const { spawn } = require("node:child_process");
 const path = require("node:path");
 const fs = require("node:fs");
+const os = require("node:os");
 
 const RAIZ = path.join(__dirname, "..", "..");
-const OBS_LOG = path.join(RAIZ, "data", "capacidade-viva", "shadow", "observacoes.runtime.jsonl");
-const FAIL_LOG = path.join(RAIZ, "data", "capacidade-viva", "shadow", "falhas.runtime.jsonl");
 
 function contarLinhas(filePath) {
   if (!fs.existsSync(filePath)) return 0;
   return fs.readFileSync(filePath, "utf8").split("\n").filter((l) => l.trim()).length;
+}
+
+function scratchLogPaths(tag) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cv-shadow-smoke-" + tag + "-"));
+  const logPath = path.join(dir, "observacoes.runtime.jsonl");
+  const failurePath = path.join(dir, "falhas.runtime.jsonl");
+  return {
+    logPath, failurePath,
+    env: {
+      CAPACIDADE_VIVA_HUMAN_V2_SHADOW_LOG_PATH: logPath,
+      CAPACIDADE_VIVA_HUMAN_V2_SHADOW_FAILURE_LOG_PATH: failurePath
+    }
+  };
 }
 
 async function esperarServidor(base, tentativas) {
@@ -51,15 +68,14 @@ function subirServidor(port, envExtra) {
 describe("modo sombra ligado com configuração QUEBRADA — Copiloto precisa continuar funcionando", () => {
   const PORT = 5450 + (process.pid % 100);
   const BASE = `http://127.0.0.1:${PORT}`;
+  const scratch = scratchLogPaths("quebrada");
   let servidor = null;
-  let falhasAntes = 0;
 
   before(async () => {
-    falhasAntes = contarLinhas(FAIL_LOG);
-    servidor = subirServidor(PORT, {
+    servidor = subirServidor(PORT, Object.assign({
       CAPACIDADE_VIVA_HUMAN_V2_SHADOW: "1",
       CAPACIDADE_VIVA_HUMAN_V2_SHADOW_CONFIG_PATH: path.join(RAIZ, "nao_existe_de_verdade.json")
-    });
+    }, scratch.env));
     await esperarServidor(BASE, 40);
   });
   after(() => { if (servidor) servidor.kill(); });
@@ -71,9 +87,10 @@ describe("modo sombra ligado com configuração QUEBRADA — Copiloto precisa co
   });
 
   test("a falha do motor sombra é registrada só no canal técnico, nunca como pressão operacional", async () => {
+    const falhasAntes = contarLinhas(scratch.failurePath);
     await fetch(BASE + "/api/fonte?cenario=foco");
     await new Promise((res) => setTimeout(res, 200));
-    const falhasDepois = contarLinhas(FAIL_LOG);
+    const falhasDepois = contarLinhas(scratch.failurePath);
     assert.ok(falhasDepois > falhasAntes, "nenhuma falha técnica foi registrada — canal de falha (§9) não disparou");
   });
 });
@@ -83,12 +100,13 @@ describe("modo sombra ligado com configuração válida — payload de /api/font
   const PORT_ON = 5650 + (process.pid % 100);
   const BASE_OFF = `http://127.0.0.1:${PORT_OFF}`;
   const BASE_ON = `http://127.0.0.1:${PORT_ON}`;
+  const scratch = scratchLogPaths("payload");
   let servidorOff = null;
   let servidorOn = null;
 
   before(async () => {
     servidorOff = subirServidor(PORT_OFF, { NODE_ENV: "production" }); // sem flag → sombra desligada
-    servidorOn = subirServidor(PORT_ON, { CAPACIDADE_VIVA_HUMAN_V2_SHADOW: "1" }); // sombra ligada, config real
+    servidorOn = subirServidor(PORT_ON, Object.assign({ CAPACIDADE_VIVA_HUMAN_V2_SHADOW: "1" }, scratch.env)); // sombra ligada, config real
     await Promise.all([esperarServidor(BASE_OFF, 40), esperarServidor(BASE_ON, 40)]);
   });
   after(() => { if (servidorOff) servidorOff.kill(); if (servidorOn) servidorOn.kill(); });
@@ -109,20 +127,20 @@ describe("modo sombra ligado com configuração válida — payload de /api/font
 describe("feature flag desligada — motor sombra nem executa", () => {
   const PORT = 5750 + (process.pid % 100);
   const BASE = `http://127.0.0.1:${PORT}`;
+  const scratch = scratchLogPaths("flagoff");
   let servidor = null;
-  let linhasAntes = 0;
 
   before(async () => {
-    linhasAntes = contarLinhas(OBS_LOG);
-    servidor = subirServidor(PORT, { NODE_ENV: "production" }); // sem CAPACIDADE_VIVA_HUMAN_V2_SHADOW, produção → desligado
+    servidor = subirServidor(PORT, Object.assign({ NODE_ENV: "production" }, scratch.env)); // sem CAPACIDADE_VIVA_HUMAN_V2_SHADOW, produção → desligado
     await esperarServidor(BASE, 40);
   });
   after(() => { if (servidor) servidor.kill(); });
 
   test("nenhuma observação sombra é registrada com a flag desligada", async () => {
+    const linhasAntes = contarLinhas(scratch.logPath);
     const pl = await (await fetch(BASE + "/api/fonte?cenario=foco")).json();
     assert.equal(pl.source_status, "ready"); // Copiloto funciona normalmente
     await new Promise((res) => setTimeout(res, 200));
-    assert.equal(contarLinhas(OBS_LOG), linhasAntes, "uma observação foi registrada mesmo com a feature flag desligada");
+    assert.equal(contarLinhas(scratch.logPath), linhasAntes, "uma observação foi registrada mesmo com a feature flag desligada");
   });
 });

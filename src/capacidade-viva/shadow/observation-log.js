@@ -77,8 +77,12 @@ function appendJsonlSafe(filePath, record) {
  */
 function createObservationLog(opts) {
   const options = opts || {};
-  const logPath = options.logPath || LOG_PATH;
-  const failurePath = options.failurePath || FAILURE_LOG_PATH;
+  // Override por env só existe para permitir que testes de auditoria rodem
+  // servidores reais concorrentes sem disputar o mesmo arquivo em disco —
+  // em uso normal, sem as env vars definidas, o caminho é sempre o real
+  // (mesmo padrão de CAPACIDADE_VIVA_HUMAN_V2_SHADOW_CONFIG_PATH em config.js).
+  const logPath = options.logPath || process.env.CAPACIDADE_VIVA_HUMAN_V2_SHADOW_LOG_PATH || LOG_PATH;
+  const failurePath = options.failurePath || process.env.CAPACIDADE_VIVA_HUMAN_V2_SHADOW_FAILURE_LOG_PATH || FAILURE_LOG_PATH;
   const heartbeatMinutes =
     options.heartbeatMinutes != null ? options.heartbeatMinutes : DEFAULT_HEARTBEAT_MINUTES;
   const persist = options.persist !== false;
