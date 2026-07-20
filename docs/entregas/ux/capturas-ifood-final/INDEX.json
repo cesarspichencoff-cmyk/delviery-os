@@ -1,0 +1,56 @@
+[
+  {
+    "file": "01_home_fifo_e_aviso.png",
+    "scenario": "home_fifo_aviso_temporario",
+    "commit": "1c84b0b77a45eff518cbbe43fb19dc0e7765317b",
+    "route": "/ifood-handoff/"
+  },
+  {
+    "file": "02_home_sem_prontos.png",
+    "scenario": "home_vazio",
+    "commit": "1c84b0b77a45eff518cbbe43fb19dc0e7765317b",
+    "route": "/ifood-handoff/"
+  },
+  {
+    "file": "03_home_novo_pronto_temporario.png",
+    "scenario": "aviso_novo_pedido",
+    "commit": "1c84b0b77a45eff518cbbe43fb19dc0e7765317b",
+    "route": "/ifood-handoff/"
+  },
+  {
+    "file": "04_em_maos_aguardando.png",
+    "scenario": "pedido_em_maos",
+    "commit": "1c84b0b77a45eff518cbbe43fb19dc0e7765317b",
+    "route": "/ifood-handoff/"
+  },
+  {
+    "file": "05_conferencia_bloqueada.png",
+    "scenario": "conferencia_acessivel_bloqueada",
+    "commit": "1c84b0b77a45eff518cbbe43fb19dc0e7765317b",
+    "route": "/ifood-handoff/"
+  },
+  {
+    "file": "06_conferencia_pronta.png",
+    "scenario": "conferencia_habilitada",
+    "commit": "1c84b0b77a45eff518cbbe43fb19dc0e7765317b",
+    "route": "/ifood-handoff/"
+  },
+  {
+    "file": "07_conclusao.png",
+    "scenario": "expedicao_concluida",
+    "commit": "1c84b0b77a45eff518cbbe43fb19dc0e7765317b",
+    "route": "/ifood-handoff/"
+  },
+  {
+    "file": "08_nome_indisponivel.png",
+    "scenario": "entregador_sem_nome",
+    "commit": "1c84b0b77a45eff518cbbe43fb19dc0e7765317b",
+    "route": "/ifood-handoff/"
+  },
+  {
+    "file": "09_home_desktop.png",
+    "scenario": "home_desktop",
+    "commit": "1c84b0b77a45eff518cbbe43fb19dc0e7765317b",
+    "route": "/ifood-handoff/"
+  }
+]

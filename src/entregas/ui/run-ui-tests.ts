@@ -209,9 +209,16 @@ console.log("\n=== ENTREGAS UI 3C.1 tests ===\n");
     assert.ok(js.includes("canal do iFood"));
     assert.ok(js.includes("playReadyChime") || js.includes("soundEnabled"));
     assert.ok(js.includes("alerted")); // aviso uma vez por pedido
+    assert.ok(js.includes("ready_at_ts") || js.includes("readyOrdersFifo"));
+    assert.ok(js.includes("ALERT_MS") || js.includes("tempor"));
+    assert.ok(js.includes('for="chkBags"') || js.includes('for=\\"chkBags\\"') || js.includes("for=\"chkBags\""));
+    assert.ok(js.includes("canDeliverOrder") || js.includes("missingFor"));
+    assert.ok(js.includes("Entregador esperado"));
+    assert.ok(js.includes("Responsável pela entrega"));
     assert.equal(html.toLowerCase().includes("external_courier_ref"), false);
     assert.equal(js.includes("sai do cuidado da casa"), false);
     assert.ok(css.includes("pulse-in") || css.includes("readyPulse"));
+    assert.ok(css.includes("#btnDeliver:disabled") || css.includes("pointer-events: none"));
     assert.ok(
       js.includes("não confere itens") ||
         js.includes("Não peça ao motoboy") ||

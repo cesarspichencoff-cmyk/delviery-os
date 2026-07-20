@@ -8,7 +8,7 @@ import { join } from "node:path";
 import { execSync } from "node:child_process";
 
 const ROOT = process.cwd();
-const OUT = join(ROOT, "docs/entregas/ux/capturas-ifood-reconstrucao");
+const OUT = join(ROOT, "docs/entregas/ux/capturas-ifood-final");
 const BASE = "http://127.0.0.1:5193";
 let COMMIT = "unknown";
 try {
@@ -66,51 +66,47 @@ function startServer() {
     const page = await browser.newPage({ viewport: { width: 420, height: 900 } });
     await page.goto(`${BASE}/ifood-handoff/`, { waitUntil: "networkidle" });
     await page.waitForSelector(".home-count, .empty-focus, .title-sov");
-    await shot(page, "01_home_varios_prontos.png", "home_varios_prontos");
+    // Home: aviso temporário (novo) + ação no mais antigo (FIFO)
+    await shot(page, "01_home_fifo_e_aviso.png", "home_fifo_aviso_temporario");
 
     await page.click("#btnDemoEmpty");
     await page.waitForTimeout(250);
     await shot(page, "02_home_sem_prontos.png", "home_vazio");
 
+    await page.click("#btnDemoReset");
+    await page.waitForTimeout(200);
     await page.click("#btnDemoReady");
-    await page.waitForTimeout(400);
-    await shot(page, "03_home_novo_pronto.png", "home_novo_pedido_pronto");
+    await page.waitForTimeout(350);
+    await shot(page, "03_home_novo_pronto_temporario.png", "aviso_novo_pedido");
 
     await page.click("#btnDemoReset");
-    await page.waitForTimeout(300);
-    // abrir destaque
-    await page.click('button[data-act=open]').catch(() => {});
-    await page.waitForTimeout(200);
-    // se ainda na home, clicar Buscar no focus
-    const fetchBtn = page.locator('button[data-act=fetch], button[data-act=open]').first();
-    if (await page.locator('button[data-act=fetch]').count()) {
-      await page.click('button[data-act=fetch]');
-    } else {
-      await page.click('button.btn-sovereign, button[data-act=open]');
-      await page.waitForTimeout(200);
-      if (await page.locator('button[data-act=fetch]').count()) {
-        await page.click('button[data-act=fetch]');
-      }
-    }
+    await page.waitForTimeout(250);
+    // Buscar = pedido mais antigo da fila (8635)
+    await page.click('button[data-act=fetch]');
     await page.waitForTimeout(400);
     await shot(page, "04_em_maos_aguardando.png", "pedido_em_maos");
 
     if (await page.locator('button[data-act="rider-here"]').count()) {
       await page.click('button[data-act="rider-here"]');
       await page.waitForTimeout(250);
-      await shot(page, "05_conferencia_bloqueada.png", "conferencia_antes");
-      // nome disponível (seed Lucas no 8640)
+      // botão deve estar disabled de verdade
+      const disabled = await page.locator("#btnDeliver").isDisabled();
+      if (!disabled) console.error("FAIL: btnDeliver deveria estar disabled");
+      await shot(page, "05_conferencia_bloqueada.png", "conferencia_acessivel_bloqueada");
+      // checkboxes reais for=
       await page.check("#chkBags");
       await page.check("#chkName");
       await page.check("#chkIfood");
       await page.waitForTimeout(150);
-      await shot(page, "06_conferencia_pronta.png", "pronto_para_entregar");
+      const enabled = !(await page.locator("#btnDeliver").isDisabled());
+      if (!enabled) console.error("FAIL: btnDeliver deveria habilitar");
+      await shot(page, "06_conferencia_pronta.png", "conferencia_habilitada");
       await page.click("#btnDeliver");
       await page.waitForTimeout(400);
       await shot(page, "07_conclusao.png", "expedicao_concluida");
     }
 
-    // nome indisponível: reset + open 8638
+    // nome indisponível: 8638
     await page.click("#btnDemoReset");
     await page.waitForTimeout(200);
     await page.click('button[data-id="o-8638"]').catch(async () => {
@@ -122,10 +118,9 @@ function startServer() {
       await page.waitForTimeout(300);
       await page.click('button[data-act="rider-here"]');
       await page.waitForTimeout(200);
-      await shot(page, "08_nome_indisponivel.png", "motoboy_sem_nome");
+      await shot(page, "08_nome_indisponivel.png", "entregador_sem_nome");
     }
 
-    // desktop width
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.click("#btnDemoReset");
     await page.waitForTimeout(250);
