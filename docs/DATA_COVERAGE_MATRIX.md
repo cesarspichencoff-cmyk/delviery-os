@@ -81,4 +81,15 @@ O código distingue visual e tecnicamente (`app-v1/app.js:638` `fraseEstado` + c
 
 "Sem dados" em Cozinha e Caixa está **tecnicamente correto e honesto** — não é bug escondendo dado real. É a **ausência de fonte** (Caixa) e a **ausência de praça própria no motor** (Cozinha, cuja produção já é contada dentro de Quentes). **Não corrigir com mock.**
 
-**Porém — risco de demonstração (não de verdade):** para uma direção/investidor, duas células permanentemente escuras podem *parecer* produto quebrado. O ajuste correto é de **produto/UX** (deixar mais claro "módulo em desenvolvimento" vs. "sem dado agora", ou não exibir Caixa/Cozinha até terem fonte) e **exige decisão do César** — não deve ser implementado silenciosamente. Registrado em [IMPROVEMENT_RECOMMENDATIONS.md](IMPROVEMENT_RECOMMENDATIONS.md) e [DEMO_READINESS.md](DEMO_READINESS.md).
+**Porém — risco de demonstração (não de verdade):** para uma direção/investidor, duas células permanentemente escuras podem *parecer* produto quebrado. O ajuste é de **produto/UX** e **exige decisão do César** — não deve ser implementado silenciosamente.
+
+### Opções para César (nenhuma aplicada — decisão soberana)
+
+| Opção | Cozinha | Caixa |
+|---|---|---|
+| **1. Desaparecer** | remover a célula da interface | remover a célula da interface |
+| **2. Permanecer "sem fonte"** (estado atual) | manter tracejado honesto | manter tracejado honesto |
+| **3. Agregar a praça existente** | fundir visualmente em "Quentes" (onde o dado já está) | — (não há fonte para agregar) |
+| **4. Aguardar nova fonte** | mapa operacional fino do César separa Cozinha × Quentes | instrumentar a fila do caixa (nova fonte de dado) |
+
+Cada opção tem consequência distinta (ver tabela de consequências em [PROJECT_WIDE_READINESS_AUDIT.md](PROJECT_WIDE_READINESS_AUDIT.md#cozinha--caixa--matriz-objetiva-aprofundada)). Registrado também em [IMPROVEMENT_RECOMMENDATIONS.md](IMPROVEMENT_RECOMMENDATIONS.md) e [DEMO_READINESS.md](DEMO_READINESS.md).

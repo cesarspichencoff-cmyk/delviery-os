@@ -9,14 +9,16 @@ Permite dados simulados **claramente rotulados** e ambiente local.
 
 | Critério | Copiloto | Entregas | Seleção |
 |---|---|---|---|
-| Abre limpo pela entrada canônica | ✅ | ❌ (sem código) | ❌ (não existe) |
+| Abre limpo pela entrada canônica | ✅ | ✅ (4 superfícies @`bb567a6`) | ❌ (não localizado) |
 | Sem erro de console/rede | ✅ | — | — |
 | Dado simulado rotulado | ✅ | — | — |
 | Suítes verdes | ✅ 317/317 | — | — |
 | Baseline visual congelado | ✅ (`6f04177`) | protótipo estático | — |
 | Sem afirmação além da evidência | ✅ | ✅ (Gate Zero honesto) | — |
 
-**Status:** Copiloto **PASSA**. Entregas **não aplicável** (é fundação). Seleção **inexistente**.
+**Status:** Copiloto **PASSA** (`101680a`). Entregas-demo **PASSA** para Gate 1 (`bb567a6`: 99 testes, 4 superfícies, rotulado como demonstração). SELECAO **não localizado**.
+
+> Nota: os critérios abaixo (dados reais, auth, DB, etc.) valem tanto para Copiloto quanto para o Entregas — nenhum dos dois passa do Gate 1 hoje.
 
 ## Gate 2 — Pronto para Piloto (operação real assistida)
 

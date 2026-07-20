@@ -8,7 +8,7 @@
 | # | Problema | Proposta | Benefício | Custo | Risco | Agora? |
 |---|---|---|---|---|---|---|
 | U1 | Cozinha e Caixa permanentemente "sem dados" parecem produto quebrado numa demo | Tratamento visual explícito "estação em desenvolvimento / sem fonte" distinto de "sem pressão agora"; OU ocultar até haver fonte | Elimina leitura de "quebrado"; mantém honestidade | Baixo | Decisão de produto | **Decisão César** |
-| U2 | "Seleção" citado como módulo, mas inexistente | Definir o que é Seleção, onde nasce, se `tata-house` faz parte do DeliveryOS | Alinha narrativa com realidade | — | Estratégico | **Decisão César** |
+| U2 | SELECAO citado como módulo, mas nenhuma implementação localizada | Definir o que é Seleção, onde nasce, se `tata-house` faz parte do DeliveryOS | Alinha narrativa com realidade | — | Estratégico | **Decisão César** |
 | U3 | Não há shell/tela inicial dos módulos | Shell mínimo com registro de módulos + estado honesto por módulo ("pronto" / "em validação" / "em desenvolvimento") | Entrada única, escalável para módulos futuros | Médio | Baixo | Quando ≥2 módulos executáveis |
 
 ### Proposta técnica mínima de shell (U3 — para decisão, não implementação)

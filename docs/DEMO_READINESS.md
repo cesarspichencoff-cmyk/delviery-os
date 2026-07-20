@@ -4,8 +4,8 @@
 
 ## 1. Veredito
 
-**Pronto para demonstração local controlada: SIM — apenas o Copiloto.**
-Seleção não existe. Entregas não tem produto executável (só Gate Zero). Mostrar os "três módulos" como prontos seria afirmação falsa.
+**Pronto para demonstração local controlada: SIM — Copiloto (`101680a`) e Entregas-demo (`bb567a6`).**
+**SELECAO não foi localizado** como implementação; não há shell. Entregas é **demo executável** (99 testes, 4 superfícies — ver [ENTREGAS_AUDIT_FROZEN](ENTREGAS_AUDIT_FROZEN.md)), não piloto. Apresentar Entregas como pronto para operação real, ou citar Seleção como pronto, seria afirmação falsa.
 
 ## 2. O que abre limpo (Copiloto)
 
