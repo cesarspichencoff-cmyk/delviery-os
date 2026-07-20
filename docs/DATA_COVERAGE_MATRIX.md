@@ -83,13 +83,9 @@ O código distingue visual e tecnicamente (`app-v1/app.js:638` `fraseEstado` + c
 
 **Porém — risco de demonstração (não de verdade):** para uma direção/investidor, duas células permanentemente escuras podem *parecer* produto quebrado. O ajuste é de **produto/UX** e **exige decisão do César** — não deve ser implementado silenciosamente.
 
-### Opções para César (nenhuma aplicada — decisão soberana)
+### Correção (instrução do César): Cozinha e Caixa são coisas diferentes
 
-| Opção | Cozinha | Caixa |
-|---|---|---|
-| **1. Desaparecer** | remover a célula da interface | remover a célula da interface |
-| **2. Permanecer "sem fonte"** (estado atual) | manter tracejado honesto | manter tracejado honesto |
-| **3. Agregar a praça existente** | fundir visualmente em "Quentes" (onde o dado já está) | — (não há fonte para agregar) |
-| **4. Aguardar nova fonte** | mapa operacional fino do César separa Cozinha × Quentes | instrumentar a fila do caixa (nova fonte de dado) |
+- **Cozinha** = **praça visual de produção** cuja fonte é `cozinha_quentes`. A conclusão certa **não** é "sem fonte" — é que a célula está **hardcoded** e **desligada** de `cozinha_quentes` (hoje essa praça é contada dentro de "Quentes"). Proposta: ligar Cozinha a `cozinha_quentes` e tirar `cozinha_quentes` de Quentes (sem duplicar). Ver [PRACAS_MAPPING_PROPOSAL](copiloto/PRACAS_MAPPING_PROPOSAL.md).
+- **Caixa** = **célula operacional derivada** (não praça). A conclusão anterior ("sem função / poderia desaparecer") estava **errada**. O Caixa concentra a etapa final (sacolas, comandas, organização da saída, comunicação, liberação). **Não deve ser removido nem permanecer hardcoded** — precisa de **leitura parcial derivada e explicável**. Especificação completa: [CAIXA_OPERATIONAL_MODEL](copiloto/CAIXA_OPERATIONAL_MODEL.md).
 
-Cada opção tem consequência distinta (ver tabela de consequências em [PROJECT_WIDE_READINESS_AUDIT.md](PROJECT_WIDE_READINESS_AUDIT.md#cozinha--caixa--matriz-objetiva-aprofundada)). Registrado também em [IMPROVEMENT_RECOMMENDATIONS.md](IMPROVEMENT_RECOMMENDATIONS.md) e [DEMO_READINESS.md](DEMO_READINESS.md).
+Opções que continuam sendo do César (nenhuma aplicada): para **Cozinha**, ligar a `cozinha_quentes` (proposto) ou aguardar mapa fino; para **Bar/Sobremesa**, incorporar / manter fora da 1ª camada / contexto secundário / célula futura; para **Caixa × Conferência**, unificar / principal+detalhe / separar / aguardar. Detalhes em [PROJECT_WIDE_READINESS_AUDIT.md](PROJECT_WIDE_READINESS_AUDIT.md).

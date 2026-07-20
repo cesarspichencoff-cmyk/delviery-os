@@ -7,6 +7,12 @@
 >
 > Data: 2026-07-20 · Substitui a V1 (que continha uma conclusão desatualizada sobre o Entregas).
 
+## Estado oficial dos worktrees (registro)
+
+- **Copiloto:** baseline oficial V3.3 **congelado em `101680a`**. A branch `audit/copiloto-hardening` permanece **isolada** (correção de bind + docs de auditoria + esta correção). **Não fazer merge; não alterar o baseline congelado.**
+- **ENTREGAS:** fotografia técnica auditada no commit **`bb567a6`** — comprovou TypeScript compilando, 99 testes verdes, console/rider-mobile/Expedição-iFood/MapLibre-experimental executáveis, ApplicationService, outbox, FileUnitOfWork, domínio sob COR-ENTREGAS-V1 1.0.3. **O estado mais recente do ENTREGAS avançou depois para `9479a7e`.** Registrar com precisão: *"ENTREGAS @`bb567a6` foi auditado em fotografia fixa. Mudanças posteriores, incluindo o Gate de Prontidão, não fizeram parte integral dessa fotografia."* Não repetir que o ENTREGAS é "só Gate Zero" ou "sem código".
+- **SELECAO:** *"Nenhum domínio, interface ou módulo executável SELECAO foi localizado nos repositórios auditados."* (Não afirmar que o conceito não existe no planejamento do ecossistema.)
+
 ## Separação obrigatória (A / B / C / D)
 
 - **A. Achados observados ANTES de qualquer alteração** — Níveis 1/2/3 e a seção Cozinha/Caixa. Read-only.
@@ -71,27 +77,22 @@ Os **317** são a suíte **Copiloto/Capacidade Viva** (incluindo os testes de bi
 Motor canônico (8 praças): `combinados · duplas · enrolados · enrolados_quentes · cozinha_quentes · sobremesa · bar_bebidas · montagem_outros`.
 Interface atual (6 conceitos): `Sushi · Quentes · Cozinha · Caixa · Conferência · Motoboy`.
 
-| Conceito da interface | Fonte canônica | Regra de agregação | Tem dado real? | Situação |
+Matriz objetiva completa e mapeamento proposto: [PRACAS_MAPPING_PROPOSAL.md](copiloto/PRACAS_MAPPING_PROPOSAL.md). Resumo com os **tipos corrigidos**:
+
+| Conceito visual | Tipo | Fonte canônica | Tem dado real? | Situação |
 |---|---|---|---|---|
-| **Sushi** | `combinados + duplas + enrolados` | `piorPraca` das 3 praças frias | Sim (composição sintética rotulada) | Ativa |
-| **Quentes** | `enrolados_quentes + cozinha_quentes` | `piorPraca` das 2 quentes | Sim (idem) | Ativa |
-| **Conferência** | sinais `sits` tipo `conferencia` | derivada de sinais, não de praça | Sim (quando há sinal) | Ativa |
-| **Motoboy** | `sits` tipo `saida` + `ctx.wE` | espera de expedição/saída | Sim | Ativa |
-| **Cozinha** | **nenhuma praça própria** | nenhuma (hardcoded `validacao`) | **Não** | Sem lastro no motor |
-| **Caixa** | **nenhuma fonte** | nenhuma (hardcoded `validacao`) | **Não** | Domínio futuro |
+| **Sushi** | agregação visual de produção | `combinados + duplas + enrolados` | Sim (composição sintética rotulada) | Ativa |
+| **Quentes** | praça visual de produção | `enrolados_quentes` (**proposto: sem** `cozinha_quentes`) | Sim | Ativa, mapeamento a corrigir |
+| **Cozinha** | praça visual de produção | `cozinha_quentes` | **Não — hardcoded, desligada da praça** | Inerte (a corrigir: ligar à praça) |
+| **Conferência/Montagem** | derivada / praça? | `montagem_outros` (a confirmar) | parcial (via `sits`) | Nome/fonte a confirmar |
+| **Caixa** | **célula operacional derivada** | não é praça (deriva de prontos/expedição) | **parcial** (só prontos hoje) | **Viva, leitura parcial** |
+| **Motoboy** | célula operacional derivada (futura) | eventos do ENTREGAS | **não integrada** | Aguardando integração |
+| `bar_bebidas` / `sobremesa` | praças canônicas | — | — | Sem círculo próprio (opções ao César) |
 
-**Cozinha:** o motor não tem praça "Cozinha"; `cozinha_quentes` já é rotulada e contada como **"Quentes"**. A produção da cozinha **não some** — aparece dentro de Quentes. "Cozinha" separada é conceito operacional sem praça correspondente.
-
-**Caixa:** nenhuma fonte de dado mede a fila do caixa (domínio futuro na arquitetura). Qualquer número seria inventado.
-
-### Opções para César (não decidir automaticamente — nenhuma foi aplicada)
-
-| Opção | Cozinha | Caixa | Consequência |
-|---|---|---|---|
-| **1. Desaparecer** | remover a célula | remover a célula | UI mais limpa; perde-se o "mapa mental" das estações |
-| **2. Permanecer "sem fonte"** (atual) | manter tracejado honesto | manter tracejado honesto | Honesto, mas 2 células escuras podem ler como "quebrado" numa demo |
-| **3. Agregar a praças existentes** | fundir em "Quentes" (onde o dado já está) | não aplicável (sem fonte) | Elimina a ambiguidade da Cozinha; Caixa continua sem solução |
-| **4. Aguardar nova fonte** | mapa operacional fino do César separa Cozinha×Quentes | instrumentar a fila do caixa | Solução real, mas depende de dado/instrumentação inexistente hoje |
+**Correções em relação à V2 (instrução do César):**
+- **Cozinha** não é "sem fonte" — é uma praça visual **desligada** de `cozinha_quentes` (hoje contada em Quentes). Proposta: ligar Cozinha a `cozinha_quentes`, remover de Quentes (sem duplicar).
+- **Caixa** **não** "poderia desaparecer" (conclusão anterior errada). É **célula operacional derivada** com responsabilidades reais (sacolas, comandas, saída, comunicação). Deve permanecer viva, com **leitura parcial explicável** — nunca hardcoded, nunca "zero" como ausência real. Especificação: [CAIXA_OPERATIONAL_MODEL.md](copiloto/CAIXA_OPERATIONAL_MODEL.md).
+- **Motoboy** também é célula derivada (futura), alimentada pelo ENTREGAS — enquanto não integrado, não exibir números simulados ("Entregas — aguardando integração").
 
 ---
 

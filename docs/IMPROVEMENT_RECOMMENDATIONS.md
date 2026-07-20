@@ -7,7 +7,9 @@
 
 | # | Problema | Proposta | Benefício | Custo | Risco | Agora? |
 |---|---|---|---|---|---|---|
-| U1 | Cozinha e Caixa permanentemente "sem dados" parecem produto quebrado numa demo | Tratamento visual explícito "estação em desenvolvimento / sem fonte" distinto de "sem pressão agora"; OU ocultar até haver fonte | Elimina leitura de "quebrado"; mantém honestidade | Baixo | Decisão de produto | **Decisão César** |
+| U1a | **Cozinha** hardcoded, desligada de `cozinha_quentes` (hoje contada em Quentes) | Ligar Cozinha a `cozinha_quentes`; remover `cozinha_quentes` de Quentes (sem duplicar) — ver [PRACAS_MAPPING_PROPOSAL](copiloto/PRACAS_MAPPING_PROPOSAL.md) | Cozinha passa a reagir a dado real; elimina ambiguidade | Baixo (toca `app.js`) | Decisão de produto | **Decisão César** |
+| U1b | **Caixa** é célula operacional derivada, não praça — conclusão anterior ("sem função") corrigida | Leitura parcial explicável em modo sombra — ver [CAIXA_OPERATIONAL_MODEL](copiloto/CAIXA_OPERATIONAL_MODEL.md); **não** remover, **não** hardcodar | Célula viva e honesta; capta pressão da etapa final | Médio (nova leitura) | Decisão de produto | **Decisão César** |
+| U1c | **Motoboy** é célula derivada futura (ENTREGAS), não deve mostrar número simulado | Enquanto não integrado: "Entregas — aguardando integração" | Honestidade; sem dado falso | Baixo | Decisão de produto | **Decisão César** |
 | U2 | SELECAO citado como módulo, mas nenhuma implementação localizada | Definir o que é Seleção, onde nasce, se `tata-house` faz parte do DeliveryOS | Alinha narrativa com realidade | — | Estratégico | **Decisão César** |
 | U3 | Não há shell/tela inicial dos módulos | Shell mínimo com registro de módulos + estado honesto por módulo ("pronto" / "em validação" / "em desenvolvimento") | Entrada única, escalável para módulos futuros | Médio | Baixo | Quando ≥2 módulos executáveis |
 
