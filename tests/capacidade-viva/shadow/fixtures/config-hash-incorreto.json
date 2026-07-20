@@ -1,0 +1,4 @@
+{
+  "config_version": "cv-cal-tata-human-v2",
+  "nota": "Fixture deliberadamente alterada — SHA-256 nunca deve bater com o hash validado (f248a173...). Usada só por tests/capacidade-viva/run.js para exercitar o caminho de falha do hash (§9/§10). Nunca usar em runtime real."
+}

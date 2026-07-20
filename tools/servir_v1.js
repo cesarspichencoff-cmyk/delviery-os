@@ -37,6 +37,66 @@ const { selecionarFonteDoAmbiente } = require(path.join(DIR, "src", "live", "int
 
 const JANELA_REAL = path.join(DIR, "data", "generated", "v1_janela_real.json");
 
+/* ---------------------------------------------------------------------------
+ * Fase 2E.1 — Capacidade Viva human-v2 em MODO SOMBRA (ver docs/CAPACIDADE_VIVA_SHADOW.md).
+ * Roda em paralelo ao Copiloto, só para leitura/registro técnico. NUNCA
+ * altera o payload de /api/fonte nem qualquer outra resposta HTTP — é
+ * sempre um efeito colateral disparado DEPOIS de `json(...)` já ter
+ * respondido ao navegador, e sempre dentro de try/catch que nunca propaga.
+ * ------------------------------------------------------------------------- */
+const ShadowFlags = require(path.join(DIR, "src", "capacidade-viva", "shadow", "flags.js"));
+const ShadowConfig = require(path.join(DIR, "src", "capacidade-viva", "shadow", "config.js"));
+const ShadowAdapter = require(path.join(DIR, "src", "capacidade-viva", "shadow", "adapter.js"));
+const { createObservationLog } = require(path.join(DIR, "src", "capacidade-viva", "shadow", "observation-log.js"));
+
+const shadowLog = createObservationLog();
+let SEED_ITENS_CACHE = null;
+function seedItensCarregado() {
+  if (SEED_ITENS_CACHE) return SEED_ITENS_CACHE;
+  try {
+    const seed = require(path.join(DIR, "data", "cardapio_knowledge_seed.json"));
+    SEED_ITENS_CACHE = Array.isArray(seed.itens) ? seed.itens : [];
+  } catch (e) {
+    SEED_ITENS_CACHE = [];
+  }
+  return SEED_ITENS_CACHE;
+}
+
+/**
+ * Roda a leitura sombra sobre o MESMO payload já enviado ao operador — nunca
+ * o altera, nunca é aguardada pela resposta HTTP (chamar sempre depois de
+ * `json(payload)`). Fail-safe por construção (§9): qualquer problema vira
+ * registro no canal técnico, nunca uma exceção, nunca pressão operacional.
+ */
+function rodarLeituraSombra(payload) {
+  if (!ShadowFlags.isShadowEnabled()) return;
+  try {
+    if (!payload || !payload.janela) return; // sem janela pronta, nada a observar ainda
+    const shadowConfig = ShadowConfig.loadShadowConfig();
+    if (!shadowConfig.ready) {
+      shadowLog.registerFailure(shadowConfig.error || "config_nao_pronta", shadowConfig.error_detail);
+      return;
+    }
+    const janela = payload.janela;
+    const resultado = ShadowAdapter.observeSnapshot({
+      NIGHT: janela.NIGHT,
+      rows: janela.rows,
+      seedItens: seedItensCarregado(),
+      t: janela.T1,
+      sourceStatus: payload.source_status,
+      contextoOperacional: janela.meta ? janela.meta.dia_local : null,
+      shadowConfig
+    });
+    if (resultado.ok) {
+      shadowLog.register(resultado.observation);
+    } else {
+      shadowLog.registerFailure(resultado.error, resultado.detail);
+    }
+  } catch (e) {
+    try { shadowLog.registerFailure("excecao_nao_tratada", String((e && e.message) || e)); } catch (_) { /* nunca propagar */ }
+  }
+}
+
 /* Cenários de volume (motor real produz Calmo→Ambiente→Foco legitimamente —
  * ver docs/preloja/Investigacao_Cenarios_Volume_Ambiente_Foco_V0.md). */
 const CENARIOS_VOLUME = { ambiente: CENARIO_AMBIENTE, foco: CENARIO_FOCO };
@@ -155,7 +215,12 @@ const servidor = http.createServer(async (req, res) => {
     if (rota === "/api/fonte") {
       const sel = selecaoEfetiva();
       if (sel.fonte !== "simulator") { json({ erro: "fonte_simulada_desligada", selecao: sel }, 409); return; }
-      json(payloadDaFonte(query)); return;
+      const payload = payloadDaFonte(query);
+      json(payload);
+      // Efeito colateral, sempre DEPOIS da resposta já enviada — modo sombra
+      // nunca atrasa nem altera o que o navegador recebe (§3/§8).
+      rodarLeituraSombra(payload);
+      return;
     }
     /* Fase 2B — inteligência e Capacidade Viva (sem redesenhar UI) */
     if (rota === "/api/inteligencia/forecast") {

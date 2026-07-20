@@ -5,8 +5,16 @@
 "use strict";
 
 const assert = require("assert");
+const fs = require("fs");
+const path = require("path");
 const CV = require("../../src/capacidade-viva");
 const intel = require("../../src/live/interface/adaptador-inteligencia");
+
+const SHW_HR = require("../../src/capacidade-viva/shadow/human-rules.js");
+const SHW_Config = require("../../src/capacidade-viva/shadow/config.js");
+const SHW_Adapter = require("../../src/capacidade-viva/shadow/adapter.js");
+const SHW_Flags = require("../../src/capacidade-viva/shadow/flags.js");
+const { createObservationLog } = require("../../src/capacidade-viva/shadow/observation-log.js");
 
 let passed = 0;
 let failed = 0;
@@ -239,6 +247,266 @@ test("confiança insuficiente → observar", () => {
     config
   });
   assert.strictEqual(iv.action, "observar");
+});
+
+console.log("=== Fase 2E.1 — Capacidade Viva human-v2 em modo sombra (§10) ===");
+
+const HASH_INCORRETO_FIXTURE = path.join(__dirname, "shadow", "fixtures", "config-hash-incorreto.json");
+
+function motoboyFact(courierWaitMin) {
+  return {
+    id: "m1", age_min: 20, ready_wait_min: courierWaitMin, pronto: true, saiu: false, cancelado: false,
+    courier_wait_store_min: courierWaitMin, courier_wait_epistemic: "confirmado",
+    alocado: false, alocado_epistemic: null, age_is_proxy_from_volume: false,
+    crosses_operational_days: false
+  };
+}
+
+function nightProntoSemSaida(readyWaitMin, t) {
+  return [{ id: "PED-X", curto: "X1", r: t - readyWaitMin - 10, p: t - readyWaitMin, s: null, e: null, c: null }];
+}
+
+test("hash correto habilita o motor sombra", () => {
+  const cfg = SHW_Config.loadShadowConfig();
+  assert.strictEqual(cfg.ready, true);
+  assert.strictEqual(cfg.status, "shadow_only");
+  assert.strictEqual(cfg.automatic_decisions_allowed, false);
+  assert.strictEqual(cfg.actual_sha256, SHW_Config.METADATA.expected_sha256);
+});
+
+test("hash incorreto bloqueia somente o motor sombra", () => {
+  process.env.CAPACIDADE_VIVA_HUMAN_V2_SHADOW_CONFIG_PATH = HASH_INCORRETO_FIXTURE;
+  try {
+    const cfg = SHW_Config.loadShadowConfig();
+    assert.strictEqual(cfg.ready, false);
+    assert.strictEqual(cfg.error, "hash_incompatível");
+    assert.strictEqual(cfg.config, null);
+  } finally {
+    delete process.env.CAPACIDADE_VIVA_HUMAN_V2_SHADOW_CONFIG_PATH;
+  }
+  // o arquivo real, validado, continua carregando normalmente depois
+  assert.strictEqual(SHW_Config.loadShadowConfig().ready, true);
+});
+
+test("adapter falha em modo seguro quando a config não está pronta (pré-condição de 'Copiloto continua funcionando')", () => {
+  const r1 = SHW_Adapter.observeSnapshot({ NIGHT: [], rows: [], t: 100, shadowConfig: { ready: false, config: null } });
+  assert.strictEqual(r1.ok, false);
+  assert.strictEqual(r1.kind, "shadow_failure");
+  const r2 = SHW_Adapter.observeSnapshot(null);
+  assert.strictEqual(r2.ok, false);
+  const r3 = SHW_Adapter.observeSnapshot({ NIGHT: "não é array", t: "não é número", shadowConfig: null });
+  assert.strictEqual(r3.ok, false);
+  // nenhuma dessas chamadas lançou — é exatamente essa garantia que permite ao
+  // Copiloto continuar respondendo mesmo com o motor sombra quebrado (ver
+  // tools/servir_v1.js:rodarLeituraSombra e o teste de fumaça em
+  // tests/live/interface-capacidade-viva-shadow-smoke.test.js).
+});
+
+test("saída do human-v2 não altera estado oficial (snapshot de entrada nunca é mutado)", () => {
+  const shadowConfig = SHW_Config.loadShadowConfig();
+  const t = 500;
+  const NIGHT = nightProntoSemSaida(45, t);
+  const antes = JSON.stringify(NIGHT);
+  const res = SHW_Adapter.observeSnapshot({ NIGHT, rows: [], seedItens: [], t, sourceStatus: "ready", shadowConfig });
+  assert.strictEqual(JSON.stringify(NIGHT), antes, "o adapter mutou a janela recebida");
+  assert.strictEqual(res.kind, "shadow_observation");
+  assert.notStrictEqual(res.kind, "operational_decision");
+});
+
+test("módulos do modo sombra nunca referenciam DOM/UI (garantia estática de 'não altera body[data-mode]')", () => {
+  const arquivos = ["adapter.js", "config.js", "flags.js", "human-rules.js", "labels.js", "observation-log.js"]
+    .map((f) => path.join(__dirname, "..", "..", "src", "capacidade-viva", "shadow", f));
+  const proibidos = /\bdocument\b|data-mode|innerHTML|querySelector|body\[/;
+  for (const f of arquivos) {
+    const src = fs.readFileSync(f, "utf8");
+    assert.ok(!proibidos.test(src), "arquivo sombra referencia DOM/UI: " + f);
+  }
+  const appJs = fs.readFileSync(path.join(__dirname, "..", "..", "app-v1", "app.js"), "utf8");
+  assert.ok(appJs.indexOf("capacidade-viva/shadow") === -1, "app.js não deve conhecer o motor sombra nesta fase");
+});
+
+test("wiring do servidor não altera o payload de /api/fonte (garantia de 'não altera painel ou prioridade')", () => {
+  const shadowConfig = SHW_Config.loadShadowConfig();
+  const payload = {
+    source_status: "ready",
+    janela: { meta: { dia_local: "2026-07-19" }, T1: 500, NIGHT: nightProntoSemSaida(10, 500), rows: [] }
+  };
+  const antes = JSON.stringify(payload);
+  SHW_Adapter.observeSnapshot({
+    NIGHT: payload.janela.NIGHT, rows: payload.janela.rows, seedItens: [],
+    t: payload.janela.T1, sourceStatus: payload.source_status, shadowConfig
+  });
+  assert.strictEqual(JSON.stringify(payload), antes, "o payload que o navegador recebe não pode mudar");
+});
+
+test("nenhuma decisão automática é emitida", () => {
+  assert.strictEqual(SHW_Flags.automaticDecisionsEnabled(), false);
+  const shadowConfig = SHW_Config.loadShadowConfig();
+  const t = 500;
+  const res = SHW_Adapter.observeSnapshot({
+    NIGHT: nightProntoSemSaida(45, t), rows: [], seedItens: [], t, sourceStatus: "ready", shadowConfig
+  });
+  assert.strictEqual(res.observation.automatic_decisions_allowed, false);
+  assert.strictEqual(res.observation.intervencao_executavel, false);
+  assert.strictEqual(typeof res.observation.intervencao_sugerida_texto, "string");
+});
+
+test("pedido zumbi não contamina o ISF", () => {
+  const shadowConfig = SHW_Config.loadShadowConfig();
+  const zfact = {
+    id: "z1", age_min: 500, ready_wait_min: 0, pronto: false, saiu: false, cancelado: false,
+    courier_wait_store_min: null, courier_wait_epistemic: null, alocado: false, alocado_epistemic: null,
+    age_is_proxy_from_volume: false, crosses_operational_days: false
+  };
+  const cls = SHW_HR.classifyOrderHuman(zfact, shadowConfig.config, {});
+  assert.strictEqual(cls.zombie, true);
+  assert.strictEqual(cls.exclude_from_isf, true);
+  assert.strictEqual(cls.exclude_from_capacity, true);
+  assert.strictEqual(cls.exclude_from_pause, true);
+});
+
+test("qualidade da fonte tem precedência (zumbi nunca esconde um crítico real na mesma janela)", () => {
+  const shadowConfig = SHW_Config.loadShadowConfig();
+  const t = 1000;
+  const NIGHT = [
+    { id: "z1", curto: "Z1", r: t - 500, p: null, s: null, e: null, c: null }, // zumbi por idade
+    { id: "c1", curto: "C1", r: t - 55, p: t - 45, s: null, e: null, c: null } // pronto 45min → crítico
+  ];
+  const res = SHW_Adapter.observeSnapshot({ NIGHT, rows: [], seedItens: [], t, sourceStatus: "ready", shadowConfig });
+  assert.strictEqual(res.observation.estado, "critico");
+  assert.strictEqual(res.observation.pedidos_excluidos_por_fonte, 1);
+});
+
+test("motoboy 5–9.99 min permanece normal", () => {
+  const shadowConfig = SHW_Config.loadShadowConfig();
+  const cls = SHW_HR.classifyOrderHuman(motoboyFact(7), shadowConfig.config, {});
+  assert.strictEqual(cls.severity_label, "normal");
+});
+test("motoboy 10–14.99 min permanece atenção", () => {
+  const shadowConfig = SHW_Config.loadShadowConfig();
+  const cls = SHW_HR.classifyOrderHuman(motoboyFact(12), shadowConfig.config, {});
+  assert.strictEqual(cls.severity_label, "atencao");
+});
+test("motoboy 15–19.99 min permanece quase crítico", () => {
+  const shadowConfig = SHW_Config.loadShadowConfig();
+  const cls = SHW_HR.classifyOrderHuman(motoboyFact(17), shadowConfig.config, {});
+  assert.strictEqual(cls.severity_label, "quase_critico");
+});
+test("motoboy 20+ min permanece crítico", () => {
+  const shadowConfig = SHW_Config.loadShadowConfig();
+  const cls = SHW_HR.classifyOrderHuman(motoboyFact(25), shadowConfig.config, {});
+  assert.strictEqual(cls.severity_label, "critico");
+});
+
+test("pronto sem saída abaixo de 25 min permanece normal", () => {
+  const shadowConfig = SHW_Config.loadShadowConfig();
+  const t = 500;
+  const res = SHW_Adapter.observeSnapshot({ NIGHT: nightProntoSemSaida(15, t), rows: [], seedItens: [], t, sourceStatus: "ready", shadowConfig });
+  assert.strictEqual(res.observation.estado, "normal");
+});
+test("pronto sem saída 25–35 min permanece atenção", () => {
+  const shadowConfig = SHW_Config.loadShadowConfig();
+  const t = 500;
+  const res = SHW_Adapter.observeSnapshot({ NIGHT: nightProntoSemSaida(30, t), rows: [], seedItens: [], t, sourceStatus: "ready", shadowConfig });
+  assert.strictEqual(res.observation.estado, "atencao");
+});
+test("pronto sem saída 35–40 min permanece quase crítico", () => {
+  const shadowConfig = SHW_Config.loadShadowConfig();
+  const t = 500;
+  const res = SHW_Adapter.observeSnapshot({ NIGHT: nightProntoSemSaida(37, t), rows: [], seedItens: [], t, sourceStatus: "ready", shadowConfig });
+  assert.strictEqual(res.observation.estado, "quase_critico");
+});
+test("pronto sem saída 40+ min permanece crítico", () => {
+  const shadowConfig = SHW_Config.loadShadowConfig();
+  const t = 500;
+  const res = SHW_Adapter.observeSnapshot({ NIGHT: nightProntoSemSaida(45, t), rows: [], seedItens: [], t, sourceStatus: "ready", shadowConfig });
+  assert.strictEqual(res.observation.estado, "critico");
+});
+
+test("volume bruto isolado gera evidência insuficiente", () => {
+  // Este gate (context.only_active_orders / volume_only) existe para quando a
+  // ÚNICA informação disponível é uma CONTAGEM de pedidos ativos, sem timing
+  // por pedido nenhum — nunca acontece via o adapter (a janela NIGHT sempre
+  // traz carimbo real por pedido), então é exercitado direto na regra humana,
+  // exatamente como o motor a define. Mesma limitação honesta documentada
+  // para courier_wait_store_min em adapter.js — não contornar com dado
+  // fabricado no adapter só para "passar" este teste.
+  const shadowConfig = SHW_Config.loadShadowConfig();
+  const fact = {
+    id: "v1", age_min: 5, ready_wait_min: 0, pronto: false, saiu: false, cancelado: false,
+    courier_wait_store_min: null, courier_wait_epistemic: null, alocado: false, alocado_epistemic: null,
+    age_is_proxy_from_volume: false, crosses_operational_days: false
+  };
+  const cls = SHW_HR.classifyOrderHuman(fact, shadowConfig.config, { only_active_orders: true });
+  assert.strictEqual(cls.level, "evidencia_insuficiente");
+  assert.strictEqual(cls.exclude_from_isf, true);
+});
+
+test("logs consecutivos idênticos são deduplicados", () => {
+  const log = createObservationLog({ persist: false });
+  const base = Date.parse("2026-01-01T00:00:00.000Z");
+  const obs = (tOffsetMin, estado) => ({
+    timestamp: new Date(base + tOffsetMin * 60000).toISOString(), estado,
+    regra_acionada: "tata_v2", saude_da_fonte: "ready",
+    excluido_por_qualidade_da_fonte: false, pedidos_excluidos_por_fonte: 0, confianca: "media"
+  });
+  assert.strictEqual(log.register(obs(0, "normal")).register, true);
+  assert.strictEqual(log.register(obs(1, "normal")).register, false);
+  assert.strictEqual(log.register(obs(2, "normal")).register, false);
+  assert.strictEqual(log.getEntries().length, 1);
+});
+
+test("mudança de estado gera novo registro", () => {
+  const log = createObservationLog({ persist: false });
+  const base = Date.parse("2026-01-01T00:00:00.000Z");
+  const obs = (tOffsetMin, estado) => ({
+    timestamp: new Date(base + tOffsetMin * 60000).toISOString(), estado,
+    regra_acionada: "tata_v2", saude_da_fonte: "ready",
+    excluido_por_qualidade_da_fonte: false, pedidos_excluidos_por_fonte: 0, confianca: "media"
+  });
+  log.register(obs(0, "normal"));
+  const r = log.register(obs(1, "atencao"));
+  assert.strictEqual(r.register, true);
+  assert.strictEqual(r.reason, "mudanca_de_estado");
+  assert.strictEqual(log.getEntries().length, 2);
+});
+
+test("nenhum nome de funcionário ou ranking é produzido", () => {
+  const shadowConfig = SHW_Config.loadShadowConfig();
+  const t = 1000;
+  const NIGHT = [
+    { id: "PED-A", curto: "A1", r: t - 55, p: t - 45, s: null, e: null, c: null },
+    { id: "PED-B", curto: "B1", r: t - 500, p: null, s: null, e: null, c: null }
+  ];
+  const res = SHW_Adapter.observeSnapshot({ NIGHT, rows: [], seedItens: [], t, sourceStatus: "ready", shadowConfig });
+  const serializado = JSON.stringify(res.observation);
+  assert.ok(!/nome_funcionario|colaborador|employee|ranking|funcionario/i.test(serializado));
+  // "config_nome" é campo exigido pelo §4 ("nome da configuração") — não é
+  // nome de pessoa. Só reprova chave que sinalize identidade de funcionário.
+  const chaves = Object.keys(res.observation);
+  assert.ok(!chaves.some((k) => /funcionario|colaborador|ranking|employee/i.test(k)));
+});
+
+test("feature flag off (produção sem configuração) impede habilitação do modo sombra", () => {
+  assert.strictEqual(SHW_Flags.isShadowEnabled({ NODE_ENV: "production" }), false);
+  assert.strictEqual(SHW_Flags.isShadowEnabled({}), true); // sem NODE_ENV definido, default é development
+  assert.strictEqual(SHW_Flags.isShadowEnabled({ NODE_ENV: "development" }), true);
+  assert.strictEqual(SHW_Flags.isShadowEnabled({ NODE_ENV: "test" }), true);
+  assert.strictEqual(SHW_Flags.isShadowEnabled({ NODE_ENV: "production", CAPACIDADE_VIVA_HUMAN_V2_SHADOW: "1" }), true);
+});
+
+test("flag de modo sombra nunca habilita decisão operacional automática", () => {
+  assert.strictEqual(SHW_Flags.automaticDecisionsEnabled(), false);
+  // nem mesmo tentando "convencer" via variáveis de ambiente forjadas —
+  // a função não lê env nenhuma, então nada pode ligá-la.
+  assert.strictEqual(
+    SHW_Flags.automaticDecisionsEnabled({
+      CAPACIDADE_VIVA_HUMAN_V2_SHADOW: "1",
+      CAPACIDADE_VIVA_HUMAN_V2_OPERATIONAL: "1",
+      NODE_ENV: "production"
+    }),
+    false
+  );
 });
 
 console.log("\n=== RESULT ===");
