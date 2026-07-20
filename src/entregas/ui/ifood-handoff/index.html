@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ENTREGAS · Expedição iFood</title>
+  <link rel="stylesheet" href="/shared/tokens.css" />
+  <link rel="stylesheet" href="/ifood-handoff/handoff.css" />
+</head>
+<body>
+  <div class="demo-banner" role="status">AMBIENTE DE DEMONSTRAÇÃO · EXPEDIÇÃO IFOOD / HANDOFF IFOOD</div>
+  <header class="top">
+    <div>
+      <p class="eyebrow">ENTREGAS · não é “Entregadores iFood”</p>
+      <h1>Expedição iFood</h1>
+      <p class="muted">Foco no <strong>pedido e conferência</strong>. Courier externo não tem conta, app, Trip nem GPS.</p>
+    </div>
+    <a class="muted" href="/console/">← Console</a>
+  </header>
+  <main class="wrap">
+    <section class="panel">
+      <h2>1. Pedido</h2>
+      <label>Referência do pedido iFood
+        <input id="orderRef" value="IF-9001" autocomplete="off" />
+      </label>
+      <button type="button" class="primary" id="btnStart">Iniciar handoff</button>
+    </section>
+    <section class="panel">
+      <h2>2. Verificação do courier</h2>
+      <p class="muted">Sem nome completo ou documento. Método operacional + verificação.</p>
+      <label class="check"><input type="checkbox" id="verified" /> Courier verificado</label>
+      <label>Método
+        <select id="method">
+          <option value="codigo_app_plataforma">Código no app da plataforma</option>
+          <option value="visual_cracha">Visual de identificação da plataforma</option>
+        </select>
+      </label>
+      <label>Ref. mascarada (opcional)
+        <input id="courierRef" value="plt-***42" autocomplete="off" />
+      </label>
+    </section>
+    <section class="panel">
+      <h2>3. Volumes e responsáveis</h2>
+      <div class="grid2">
+        <label>Volumes esperados <input type="number" id="volExp" value="2" min="1" /></label>
+        <label>Volumes conferidos <input type="number" id="volDel" value="2" min="0" /></label>
+      </div>
+      <label>Responsável conferência <input id="confActor" value="ops-demo" /></label>
+      <label>Ator do repasse físico <input id="handActor" value="ops-demo" /></label>
+      <label class="check"><input type="checkbox" id="orderOk" checked /> Pedido identificado e correto</label>
+      <p class="muted">Campo impresso “Entregador” da comanda <strong>não</strong> atribui motoboy interno.</p>
+    </section>
+    <section class="panel">
+      <button type="button" class="primary big" id="btnConfirm">Confirmar repasse (handoff)</button>
+      <div id="errorBox" class="error-box" hidden role="alert"></div>
+      <div id="result" class="muted" style="margin-top:0.75rem"></div>
+    </section>
+    <section class="panel">
+      <h2>Handoffs nesta sessão</h2>
+      <div id="list" class="list"></div>
+    </section>
+  </main>
+  <script type="module" src="/ifood-handoff/handoff.js"></script>
+</body>
+</html>
