@@ -32,7 +32,21 @@ const LIVE_HEALTH_REQUIRES_HUMAN = Object.freeze([
   LIVE_SOURCE_HEALTH.CAPTCHA_PRESENT
 ]);
 
-/** Estados canônicos do pedido observados na TELA ao vivo (vocabulário da missão). */
+/**
+ * @deprecated (Sprint 2.1) Vocabulário UNIDIMENSIONAL original do Sprint 2 —
+ * mantido só por compatibilidade (consumidores e testes existentes). A
+ * auditoria independente (`docs/auditoria/CONFERENCE_BRAIN_SPRINT2_AUDIT.md`)
+ * apontou que ele mistura produção, prontidão informada e logística num
+ * único eixo — risco material de colar coluna visual, botão "Avisar Pedido
+ * Pronto" e evento de entregador no mesmo campo. A partir do Sprint 2.1, a
+ * fonte de verdade é a observação MULTIDIMENSIONAL (`live/multidimensional-observation.js`):
+ * `order_state` (produção) + `readiness_state`/`available_actions` (prontidão
+ * informada) + `courier_state` (logística iFood) + `dispatch_state`
+ * (logística própria) + `completion_state`, cada um com seu próprio histórico
+ * e confiança. Este enum não é removido — `live/legacy-compat.js#deriveLegacyLiveStatus`
+ * projeta a observação nova de volta neste vocabulário para quem ainda
+ * consome só um status.
+ */
 const LIVE_ORDER_STATUS = Object.freeze({
   RECEIVED: "received",
   ACCEPTED: "accepted",
@@ -117,10 +131,159 @@ const CLOCK_VALID_NEXT = Object.freeze({
   [CLOCK_EVENT_TYPES.CANCELLED]: []
 });
 
+/* ============================================================================
+ * Sprint 2.1 — modelo MULTIDIMENSIONAL. Cada dimensão abaixo descreve um
+ * FATO INDEPENDENTE do pedido; nenhuma "vence" as outras, nenhuma é derivada
+ * da outra por suposição. Fundamentado em funcionalidade OFICIAL do Gestor de
+ * Pedidos iFood documentada publicamente (blog-parceiros.ifood.com.br,
+ * consultado em 2026-07-21 — ver docs/conference-brain/IFOOD_FUNCTIONAL_MODEL_V1.md)
+ * — NUNCA em DOM real, que continua não observado nesta missão.
+ * ==========================================================================*/
+
+/** Em qual MODO da interface o cartão foi observado. Nunca representa o pedido. */
+const LAYOUT_MODE = Object.freeze({
+  EXPEDITION: "expedition",
+  BOARDS: "boards",
+  ORDER_DETAILS: "order_details",
+  UNKNOWN: "unknown"
+});
+const LAYOUT_MODE_LIST = Object.freeze(Object.values(LAYOUT_MODE));
+
+/** ONDE o cartão apareceu (coluna/seção) — evidência, nunca prova de evento. */
+const VISUAL_LOCATION = Object.freeze({
+  ACCEPT: "accept",
+  PREPARING: "preparing",
+  READY: "ready",
+  IN_ROUTE: "in_route",
+  FINALIZED: "finalized",
+  SCHEDULED: "scheduled",
+  CANCELLED: "cancelled",
+  SEARCH_RESULTS: "search_results",
+  ORDER_DETAILS: "order_details",
+  UNKNOWN: "unknown"
+});
+const VISUAL_LOCATION_LIST = Object.freeze(Object.values(VISUAL_LOCATION));
+
+/** Situação de PRODUÇÃO do pedido — sem logística embutida. */
+const ORDER_STATE = Object.freeze({
+  RECEIVED: "received",
+  ACCEPTED: "accepted",
+  PREPARING: "preparing",
+  READY: "ready",
+  FINALIZED: "finalized",
+  CANCELLED: "cancelled",
+  UNKNOWN: "unknown"
+});
+const ORDER_STATE_LIST = Object.freeze(Object.values(ORDER_STATE));
+/** Ordem de progressão natural — só para detectar regressão, nunca peso/score. */
+const ORDER_STATE_RANK = Object.freeze(
+  [ORDER_STATE.RECEIVED, ORDER_STATE.ACCEPTED, ORDER_STATE.PREPARING, ORDER_STATE.READY, ORDER_STATE.FINALIZED]
+);
+
+/** PRONTIDÃO informada — distinta de "estar na coluna Pronto". */
+const READINESS_STATE = Object.freeze({
+  NOT_READY: "not_ready",
+  READY_OBSERVED: "ready_observed",
+  READY_NOTIFIED: "ready_notified",
+  READY_NOTIFICATION_AVAILABLE: "ready_notification_available",
+  UNKNOWN: "unknown"
+});
+const READINESS_STATE_LIST = Object.freeze(Object.values(READINESS_STATE));
+
+/** Código de ação observável no cartão/detalhe. O observador NUNCA clica nelas. */
+const ACTION_CODES = Object.freeze({
+  NOTIFY_READY: "notify_ready"
+});
+
+/** Situação do ENTREGADOR — logística iFood, paralela à produção. */
+const COURIER_STATE = Object.freeze({
+  NOT_APPLICABLE: "not_applicable",
+  SEARCHING: "searching",
+  ASSIGNED: "assigned",
+  HEADING_TO_STORE: "heading_to_store",
+  ARRIVING: "arriving",
+  AT_STORE: "at_store",
+  COLLECTED: "collected",
+  IN_ROUTE: "in_route",
+  DELIVERED: "delivered",
+  UNKNOWN: "unknown"
+});
+const COURIER_STATE_LIST = Object.freeze(Object.values(COURIER_STATE));
+
+/** DESPACHO — distingue logística própria, do iFood e retirada. */
+const DISPATCH_STATE = Object.freeze({
+  NOT_APPLICABLE: "not_applicable",
+  AWAITING_DISPATCH: "awaiting_dispatch",
+  DISPATCHED_BY_STORE: "dispatched_by_store",
+  COLLECTED_BY_IFOOD: "collected_by_ifood",
+  UNKNOWN: "unknown"
+});
+const DISPATCH_STATE_LIST = Object.freeze(Object.values(DISPATCH_STATE));
+
+/** CONCLUSÃO — nunca apaga histórico de preparo/prontidão/logística. */
+const COMPLETION_STATE = Object.freeze({
+  ACTIVE: "active",
+  COMPLETED: "completed",
+  CANCELLED: "cancelled",
+  UNKNOWN: "unknown"
+});
+const COMPLETION_STATE_LIST = Object.freeze(Object.values(COMPLETION_STATE));
+
+/** MODALIDADE — só a partir de evidência observada, nunca inferida da coluna. */
+const FULFILLMENT_MODE = Object.freeze({
+  IFOOD_DELIVERY: "ifood_delivery",
+  STORE_DELIVERY: "store_delivery",
+  CUSTOMER_PICKUP: "customer_pickup",
+  TABLE_OR_LOCAL: "table_or_local",
+  SCHEDULED: "scheduled",
+  UNKNOWN: "unknown"
+});
+const FULFILLMENT_MODE_LIST = Object.freeze(Object.values(FULFILLMENT_MODE));
+
+/** Estado da LOJA — separado da saúde técnica da fonte (ver live/store-state.js). */
+const STORE_STATE = Object.freeze({
+  OPEN: "open",
+  CLOSED_BY_SCHEDULE: "closed_by_schedule",
+  CLOSED_MANUALLY: "closed_manually",
+  CLOSED_BY_CONNECTIVITY: "closed_by_connectivity",
+  TEMPORARILY_UNAVAILABLE: "temporarily_unavailable",
+  UNKNOWN: "unknown"
+});
+const STORE_STATE_LIST = Object.freeze(Object.values(STORE_STATE));
+
+/**
+ * Códigos de indicador/alerta do cartão (Fase 12). Cada um é classificado
+ * (indicador/alerta/atributo) em live/indicators.js — aqui só o vocabulário.
+ */
+const INDICATOR_CODES = Object.freeze({
+  PREPARATION_TIME_REMAINING: "PREPARATION_TIME_REMAINING",
+  HALF_PREPARATION_TIME_REACHED: "HALF_PREPARATION_TIME_REACHED",
+  PREPARATION_DELAYED: "PREPARATION_DELAYED",
+  COURIER_SEARCHING: "COURIER_SEARCHING",
+  COURIER_ETA: "COURIER_ETA",
+  COURIER_AT_STORE: "COURIER_AT_STORE",
+  CHAT_PENDING: "CHAT_PENDING",
+  NEGOTIATION_PENDING: "NEGOTIATION_PENDING",
+  GROUPED_DELIVERY: "GROUPED_DELIVERY",
+  SCHEDULED_ORDER: "SCHEDULED_ORDER"
+});
+const INDICATOR_CODE_LIST = Object.freeze(Object.values(INDICATOR_CODES));
+
 module.exports = {
   LIVE_SOURCE_HEALTH, LIVE_SOURCE_HEALTH_LIST, LIVE_HEALTH_REQUIRES_HUMAN,
   LIVE_ORDER_STATUS, LIVE_ORDER_STATUS_LIST, LIVE_TO_SPRINT1_STATUS,
   CLOCK_EVENT_TYPES, CLOCK_EVENT_TYPE_LIST,
   CLOCK_EVENT_ORIGIN, CLOCK_EVENT_ORIGIN_LIST,
-  CLOCK_VALID_NEXT
+  CLOCK_VALID_NEXT,
+  // Sprint 2.1 — multidimensional
+  LAYOUT_MODE, LAYOUT_MODE_LIST,
+  VISUAL_LOCATION, VISUAL_LOCATION_LIST,
+  ORDER_STATE, ORDER_STATE_LIST, ORDER_STATE_RANK,
+  READINESS_STATE, READINESS_STATE_LIST, ACTION_CODES,
+  COURIER_STATE, COURIER_STATE_LIST,
+  DISPATCH_STATE, DISPATCH_STATE_LIST,
+  COMPLETION_STATE, COMPLETION_STATE_LIST,
+  FULFILLMENT_MODE, FULFILLMENT_MODE_LIST,
+  STORE_STATE, STORE_STATE_LIST,
+  INDICATOR_CODES, INDICATOR_CODE_LIST
 };
