@@ -1,7 +1,10 @@
 # Especificação técnica executável — Cérebro Operacional da Conferência V1
 
 > Estado: **Sprint 1 implementado, em modo sombra, atrás de flag desligada em produção.**
-> Branch: `feature/conference-brain-foundation-v1` · base `52611dd`.
+> Branch: `feature/conference-brain-foundation-v1` · base `52611dd` · **7 commits**
+> (`00b5728` contratos/modelo/flags · `e701041` ingestão/normalização/dedup ·
+> `9c836a1` snapshots/estado sombra · `db86879` composição · `ebe781c` testes ·
+> `6015ff4` correção do parser + validação · `32ca889` documentação).
 > Este documento descreve o que **existe e roda**, não o que se pretende construir.
 > Cada afirmação aqui pode ser conferida por arquivo, teste ou comando.
 
@@ -144,9 +147,14 @@ npm run copiloto:test
 npm run capacidade:test
 ```
 
-Flags (desligadas fora de desenvolvimento/teste):
-`CONFERENCE_BRAIN_FOUNDATION_V1` · `CONFERENCE_SHADOW_STATE_V1` ·
-`CONFERENCE_COMPOSITION_HINTS_V1`.
+**Flags:** `CONFERENCE_BRAIN_FOUNDATION_V1` · `CONFERENCE_SHADOW_STATE_V1` ·
+`CONFERENCE_COMPOSITION_HINTS_V1`. O comportamento correto (`flags.js`,
+`readFlag`) é: se a variável de ambiente está **presente**, ela manda
+(`"1"`/`"true"` liga, qualquer outro valor desliga); se está **ausente**, o
+padrão depende de `NODE_ENV` — **ligada** em `development`/`test`, **desligada**
+em qualquer outro ambiente (produção inclusive). Não é "desligada fora de
+desenvolvimento/teste" de forma incondicional — é desligada por *padrão* fora
+desses ambientes, e sempre pode ser forçada explicitamente por variável.
 
 ## 8. Estado de prontidão
 
@@ -154,7 +162,7 @@ Flags (desligadas fora de desenvolvimento/teste):
 |---|---|
 | Roda sobre dados reais? | Sim — 3.429 pedidos, 11.230 itens, 12 dias |
 | Afirma estado operacional hoje? | **Não** — a fonte histórica não carimba PRONTO |
-| Muda algo no Copiloto atual? | Não — flags desligadas, nenhum arquivo existente alterado |
+| Muda algo no Copiloto atual? | Não — nenhum arquivo existente alterado. Em produção as flags ficam desligadas por padrão; em desenvolvimento e teste ficam ligadas por padrão quando a variável de ambiente está ausente (ver §7 e `flags.js`) |
 | Está pronto para produção? | Não, e não deve estar. É fundação em sombra |
 | O que falta para afirmar carga? | Uma fonte que observe **pronto** e **saída** (Sprint 2) |
 

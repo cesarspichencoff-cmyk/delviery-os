@@ -82,8 +82,10 @@ parse, e o nome do item passa a sair da linha **sem** o bloco `<em>`. O texto do
 cliente é preservado inteiro, com a quebra original.
 
 Impacto: 3 pedidos, 3 itens fantasma. Eram exatamente os 6 itens que não casavam
-no catálogo — depois da correção, **100% de correspondência**. Travado por dois
-testes (`observacao com quebra de linha nao cria item fantasma` e
+no catálogo — depois da correção, **100% das linhas de item casam** com um dos
+154 nomes distintos observados no período (não com os 199 itens do seed; os
+outros 45 não apareceram nestes 12 dias). Travado por dois testes
+(`observacao com quebra de linha nao cria item fantasma` e
 `a quebra escrita pelo cliente e' preservada na observacao`).
 
 ## 4. Deduplicação

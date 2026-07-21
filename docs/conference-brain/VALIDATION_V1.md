@@ -76,7 +76,11 @@ registrado em anomalia. Nada descartado em silêncio.
 ## 5. Normalização de itens
 
 - 11.230 linhas de item sobre 3.429 pedidos;
-- **11.230 casadas no catálogo de 199 itens · 0 sem correspondência**;
+- **11.230 linhas casadas · 0 sem correspondência** contra o catálogo de 199
+  itens — o que casou foram **154 nomes distintos observados** nos dados, não
+  os 199 itens do seed. Os outros 45 itens do cardápio simplesmente não
+  apareceram nestes 12 dias; isso não é um problema do parser, é o que a
+  operação real vendeu no período;
 - 3.698 eventos de status (recebimento + cancelamentos);
 - valores monetários conferidos por amostra: `R$ 90,99` → `90.99`;
 - horários com offset `-03:00`: `"20/06/2026 11:05"` → `2026-06-20T11:05:00-03:00`.
