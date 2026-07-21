@@ -11,7 +11,8 @@
 
 const crypto = require("crypto");
 const {
-  CLOCK_EVENT_TYPES, CLOCK_EVENT_TYPE_LIST, CLOCK_EVENT_ORIGIN, CLOCK_VALID_NEXT
+  CLOCK_EVENT_TYPES, CLOCK_EVENT_TYPE_LIST, CLOCK_EVENT_ORIGIN, CLOCK_VALID_NEXT,
+  ORDER_STATE, READINESS_STATE
 } = require("../contracts/live-states");
 const { CONFIDENCE } = require("../contracts/states");
 
@@ -104,7 +105,46 @@ function recordEvent(opts) {
  */
 function readyDoesNotImplyStarted() { return true; }
 
+/**
+ * Sprint 2.1 (Fase 18) — o relógio NUNCA lê logística de entregador. Isto não
+ * é uma regra de política sozinha: nenhuma função deste arquivo aceita
+ * `courier_state`/`dispatch_state` como entrada, então "entregador na loja"
+ * é estruturalmente incapaz de iniciar/pausar/retomar a Conferência. Fica
+ * travado por teste para que uma mudança futura não introduza esse
+ * acoplamento por acidente.
+ */
+function courierLogisticsNeverDrivesConferenceFlow() { return true; }
+
+/**
+ * `ready_observed` pode nascer da dimensão `order_state` (o Sprint 2 já faz
+ * isso) OU da dimensão `readiness` (Sprint 2.1) — a tela pode mostrar
+ * "pronto" antes de o texto de status mudar, através do botão "Avisar Pedido
+ * Pronto" ficando disponível. As duas fontes convergem para o MESMO evento;
+ * nenhuma delas infere `conference_started` sozinha (ver `readyDoesNotImplyStarted`).
+ * Não decide nada sobre courier/dispatch — só sobre se PRONTO já é afirmável.
+ */
+function isReadyFromMultidimensional(dim) {
+  if (!dim) return false;
+  const orderReady = dim.order_state === ORDER_STATE.READY;
+  const readinessReady = [
+    READINESS_STATE.READY_OBSERVED,
+    READINESS_STATE.READY_NOTIFICATION_AVAILABLE,
+    READINESS_STATE.READY_NOTIFIED
+  ].includes(dim.readiness_state);
+  return orderReady || readinessReady;
+}
+
+/**
+ * `collected` (entregador retirou) NUNCA substitui `released` (liberação
+ * interna da Conferência) — são fatos de fontes diferentes. Esta função
+ * documenta e trava a distinção: `collected_by_ifood`/`dispatched_by_store`
+ * não aparecem em `CLOCK_VALID_NEXT` nem em `FREE_TRANSITION_EVENTS`, então
+ * não existe caminho por onde um sinal de despacho vire `released` sozinho.
+ */
+function dispatchNeverReplacesRelease() { return true; }
+
 module.exports = {
   CLOCK_VERSION, CLOCK_EVENT_TYPES, CLOCK_EVENT_ORIGIN,
-  eventId, currentClockState, isValidTransition, recordEvent, readyDoesNotImplyStarted
+  eventId, currentClockState, isValidTransition, recordEvent, readyDoesNotImplyStarted,
+  courierLogisticsNeverDrivesConferenceFlow, isReadyFromMultidimensional, dispatchNeverReplacesRelease
 };
