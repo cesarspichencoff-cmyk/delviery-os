@@ -1,0 +1,20 @@
+# ============================================================================
+# Reprodutibilidade de arquivos validados por hash.
+# ----------------------------------------------------------------------------
+# A configuração da Capacidade Viva em modo sombra é validada por SHA-256 na
+# inicialização (src/capacidade-viva/shadow/config.js). Em checkout novo no
+# Windows com core.autocrlf=true e sem regra explícita, o Git materializa o
+# arquivo com CRLF (7030 → 7233 bytes), o hash deixa de bater com o valor
+# canônico e o motor sombra corretamente se recusa a iniciar — derrubando em
+# cascata os testes que dependem da configuração.
+#
+# `text eol=lf` mantém o arquivo normalizado em LF no índice (onde já está) e
+# força LF também no checkout, independentemente de core.autocrlf. O conteúdo
+# semântico não muda: só se garante que os bytes materializados sejam os mesmos
+# bytes canônicos cujo hash o carregador espera.
+#
+# Regra deliberadamente específica ao caminho: não normalizar todos os .json do
+# repositório, e não marcar o arquivo como binário (-text) — ele É texto, e
+# `text eol=lf` resolve o problema sem perder diff legível.
+# ============================================================================
+data/capacidade-viva/calibration/configs/cv-cal-tata-human-v2.json text eol=lf
