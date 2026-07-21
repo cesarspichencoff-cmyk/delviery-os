@@ -1,0 +1,93 @@
+{
+ "proposta": "Proposta B — Cérebro Operacional do DeliveryOS (Claude)",
+ "congelado_em": "2026-07-21T11:05:56.428Z",
+ "base": {
+  "worktree": "deliveryos-proposta-b-claude",
+  "branch": "research/proposta-b-claude",
+  "commit_base": "101680a",
+  "descricao": "baseline oficial congelado do Copiloto"
+ },
+ "declaracao_de_independencia": {
+  "proposta_a_lida": false,
+  "texto": "Esta proposta foi produzida SEM qualquer leitura da Proposta A do Grok. Nenhum arquivo PROPOSTA_A_*, docs/descoberta-conferencia/ ou data/descoberta-conferencia/ foi aberto, lido ou referenciado. O worktree foi criado limpo a partir de 101680a e nao contem esses arquivos (sao untracked em outro worktree).",
+  "verificado_em": "2026-07-21T11:05:56.429Z"
+ },
+ "completude": {
+  "executados": [
+   "1 inventario",
+   "4 linha do tempo",
+   "5 conferencia",
+   "6 prontidao",
+   "9 arquitetura+dados",
+   "10 inovacoes"
+  ],
+  "nao_executados": [
+   "2 preparo dos itens",
+   "3 memoria humana WhatsApp",
+   "7 catalogo visual",
+   "8 coletor iFood"
+  ],
+  "motivo_nao_execucao": "Limite de sessao da API interrompeu as cinco frentes delegadas antes de qualquer entrega; nenhum arquivo foi escrito por elas. Nada foi fabricado para preencher as lacunas."
+ },
+ "evidencia_principal": {
+  "pedidos_analisados": 70071,
+  "dias_analisados": 267,
+  "periodo": "2025-10 a 2026-06",
+  "correlacao_pico_x_tempo_interno": 0.842,
+  "tempo_abaixo_de_30_ativos_pct": 91.2,
+  "minutos_em_70_mais": 207
+ },
+ "artefatos": [
+  {
+   "arquivo": "data/proposta-b-claude/operational-time-windows.json",
+   "bytes": 73602,
+   "sha256": "1caf55841a5d2e512cf3ed6267e31c22158312bae0092c519adec59d9520a72c"
+  },
+  {
+   "arquivo": "docs/proposta-b-claude/DIA_A_DIA_E_GARGALOS.md",
+   "bytes": 6053,
+   "sha256": "0776ba7992da4898272f3274049f02098d1ca7a092875ad70aa60fa922016e3a"
+  },
+  {
+   "arquivo": "docs/proposta-b-claude/INVENTARIO_FONTES_PRIMARIAS.md",
+   "bytes": 8707,
+   "sha256": "fbc4f30745e6845dc0dca7c2488dbe67c7b43aab7d30404f2206753b365010e4"
+  },
+  {
+   "arquivo": "docs/proposta-b-claude/PADROES_DE_SUCESSO_E_FALHA.md",
+   "bytes": 5672,
+   "sha256": "d89e35060e455899414ec0c27f6d623d438a689146544a2e8578795d842979b1"
+  },
+  {
+   "arquivo": "docs/proposta-b-claude/PROPOSTA_B_ARQUITETURA_DO_CEREBRO.md",
+   "bytes": 8037,
+   "sha256": "8c41012d62550341aea08901189a0a43d89f1e2c070b7b43d1784494889df4cf"
+  },
+  {
+   "arquivo": "docs/proposta-b-claude/PROPOSTA_B_CLAUDE_CEREBRO_OPERACIONAL.md",
+   "bytes": 7813,
+   "sha256": "60440b077b18b7b5943ebbb447b859008892f51b21543b7e13099faee44b5ab9"
+  },
+  {
+   "arquivo": "docs/proposta-b-claude/PROPOSTA_B_DATA_MODEL.md",
+   "bytes": 7801,
+   "sha256": "9b0462c8de63a7194f5bcc905c47222052daf5ab1813fd93c50756a212904f60"
+  },
+  {
+   "arquivo": "docs/proposta-b-claude/PROPOSTA_B_INOVACOES.md",
+   "bytes": 7928,
+   "sha256": "fd0680c3d3bf02409e6bdca320cc3c1ddc2ff7ad9a8c8e9bec174a353b1fd736"
+  },
+  {
+   "arquivo": "docs/proposta-b-claude/PROPOSTA_B_MODELO_CONFERENCIA.md",
+   "bytes": 9008,
+   "sha256": "ce61c9f71d94258edafc9ea73bf71743eac273df9226ca78b4899e667271da24"
+  },
+  {
+   "arquivo": "docs/proposta-b-claude/PROPOSTA_B_PRONTIDAO_ABERTURA.md",
+   "bytes": 6615,
+   "sha256": "bb213df70c2d82b3c0f885c0c441c3143e87d61efbd0e5e56c51dc7c52f68aa6"
+  }
+ ],
+ "total_artefatos": 10
+}

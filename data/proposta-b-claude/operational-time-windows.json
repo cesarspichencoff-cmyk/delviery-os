@@ -1,0 +1,3798 @@
+{
+ "gerado_em": "2026-07-21T11:00:45.036Z",
+ "fonte": "MULTIPERIOD_L2C/agg/orders_union_sanitized.json (70.071 pedidos, 2025-10 a 2026-06)",
+ "metodo": {
+  "simultaneidade": "pedido ocupa a operação de received_at ate received_at+ready_wait_duration (teto 180min); varredura minuto a minuto por dia",
+  "sofrimento": "medido por ready_wait_duration medio do dia (sinal interno). % de atraso NAO usado como verdade — contaminado por tempo prometido da plataforma (ver PADROES_DE_SUCESSO_E_FALHA.md)",
+  "limiar_sofrimento": "ready_medio > mediana*1.15"
+ },
+ "variaveis_ausentes": [
+  "itens",
+  "unidades",
+  "variedade",
+  "praca",
+  "equipe",
+  "volumes",
+  "materiais",
+  "prontidao",
+  "observacoes",
+  "complementos",
+  "valor_do_pedido(descartado na sanitizacao)"
+ ],
+ "resumo": {
+  "dias": 267,
+  "mediana_ready_min": 26,
+  "corte_volume": {
+   "baixo_ate": 228,
+   "alto_a_partir": 284
+  },
+  "picos": {
+   "p25": 28,
+   "p50": 38,
+   "p75": 52,
+   "p90": 64,
+   "p99": 77,
+   "max": 94
+  },
+  "tempo_por_faixa_min": {
+   "<30": 175977,
+   "30-49": 13685,
+   "50-69": 3148,
+   "70+": 207
+  },
+  "classes": {
+   "alto_volume_problematico": 51,
+   "alto_volume_fluido": 40,
+   "moderado_fluido": 72,
+   "baixo_volume": 86,
+   "moderado_problematico": 18
+  }
+ },
+ "dias": [
+  {
+   "data": "2026-05-31",
+   "pedidos": 336,
+   "pico_ativos": 62,
+   "ready_medio_min": 33,
+   "pct_atraso": 58.9,
+   "pct_cancelado": 1.49,
+   "volume": "alto",
+   "classe": "alto_volume_problematico",
+   "minutos_por_faixa": {
+    "<30": 602,
+    "30-49": 64,
+    "50-69": 67
+   }
+  },
+  {
+   "data": "2026-05-30",
+   "pedidos": 331,
+   "pico_ativos": 48,
+   "ready_medio_min": 28.8,
+   "pct_atraso": 45.3,
+   "pct_cancelado": 2.72,
+   "volume": "alto",
+   "classe": "alto_volume_fluido",
+   "minutos_por_faixa": {
+    "<30": 614,
+    "30-49": 121
+   }
+  },
+  {
+   "data": "2026-05-29",
+   "pedidos": 340,
+   "pico_ativos": 76,
+   "ready_medio_min": 31.7,
+   "pct_atraso": 50.9,
+   "pct_cancelado": 3.24,
+   "volume": "alto",
+   "classe": "alto_volume_problematico",
+   "minutos_por_faixa": {
+    "<30": 616,
+    "30-49": 75,
+    "50-69": 35,
+    "70+": 14
+   }
+  },
+  {
+   "data": "2026-05-28",
+   "pedidos": 263,
+   "pico_ativos": 39,
+   "ready_medio_min": 24.6,
+   "pct_atraso": 47.9,
+   "pct_cancelado": 1.9,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 656,
+    "30-49": 74
+   }
+  },
+  {
+   "data": "2026-05-27",
+   "pedidos": 262,
+   "pico_ativos": 37,
+   "ready_medio_min": 28.1,
+   "pct_atraso": 45.8,
+   "pct_cancelado": 1.15,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 640,
+    "30-49": 67
+   }
+  },
+  {
+   "data": "2026-06-25",
+   "pedidos": 239,
+   "pico_ativos": 29,
+   "ready_medio_min": 24.6,
+   "pct_atraso": 41.4,
+   "pct_cancelado": 2.51,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 737
+   }
+  },
+  {
+   "data": "2026-06-24",
+   "pedidos": 189,
+   "pico_ativos": 20,
+   "ready_medio_min": 22.4,
+   "pct_atraso": 29.1,
+   "pct_cancelado": 3.17,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 726
+   }
+  },
+  {
+   "data": "2026-06-23",
+   "pedidos": 116,
+   "pico_ativos": 12,
+   "ready_medio_min": 15.2,
+   "pct_atraso": 38.8,
+   "pct_cancelado": 4.31,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 705
+   }
+  },
+  {
+   "data": "2026-06-22",
+   "pedidos": 268,
+   "pico_ativos": 42,
+   "ready_medio_min": 25.4,
+   "pct_atraso": 8.2,
+   "pct_cancelado": 1.12,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 657,
+    "30-49": 61
+   }
+  },
+  {
+   "data": "2026-06-21",
+   "pedidos": 387,
+   "pico_ativos": 55,
+   "ready_medio_min": 27,
+   "pct_atraso": 9.6,
+   "pct_cancelado": 2.07,
+   "volume": "alto",
+   "classe": "alto_volume_fluido",
+   "minutos_por_faixa": {
+    "<30": 599,
+    "30-49": 121,
+    "50-69": 12
+   }
+  },
+  {
+   "data": "2026-06-20",
+   "pedidos": 347,
+   "pico_ativos": 50,
+   "ready_medio_min": 30.4,
+   "pct_atraso": 77.5,
+   "pct_cancelado": 4.61,
+   "volume": "alto",
+   "classe": "alto_volume_problematico",
+   "minutos_por_faixa": {
+    "<30": 595,
+    "30-49": 128,
+    "50-69": 2
+   }
+  },
+  {
+   "data": "2026-06-19",
+   "pedidos": 264,
+   "pico_ativos": 57,
+   "ready_medio_min": 28.5,
+   "pct_atraso": 64,
+   "pct_cancelado": 3.03,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 628,
+    "30-49": 32,
+    "50-69": 52
+   }
+  },
+  {
+   "data": "2026-06-18",
+   "pedidos": 276,
+   "pico_ativos": 35,
+   "ready_medio_min": 25.6,
+   "pct_atraso": 58,
+   "pct_cancelado": 2.9,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 680,
+    "30-49": 54
+   }
+  },
+  {
+   "data": "2026-06-17",
+   "pedidos": 246,
+   "pico_ativos": 29,
+   "ready_medio_min": 23.8,
+   "pct_atraso": 18.7,
+   "pct_cancelado": 0.41,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 734
+   }
+  },
+  {
+   "data": "2026-06-16",
+   "pedidos": 193,
+   "pico_ativos": 18,
+   "ready_medio_min": 16.3,
+   "pct_atraso": 22.8,
+   "pct_cancelado": 1.04,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 711
+   }
+  },
+  {
+   "data": "2026-06-15",
+   "pedidos": 248,
+   "pico_ativos": 27,
+   "ready_medio_min": 19.3,
+   "pct_atraso": 8.9,
+   "pct_cancelado": 2.42,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 732
+   }
+  },
+  {
+   "data": "2026-06-14",
+   "pedidos": 379,
+   "pico_ativos": 77,
+   "ready_medio_min": 34.9,
+   "pct_atraso": 23,
+   "pct_cancelado": 2.11,
+   "volume": "alto",
+   "classe": "alto_volume_problematico",
+   "minutos_por_faixa": {
+    "<30": 570,
+    "30-49": 47,
+    "50-69": 75,
+    "70+": 33
+   }
+  },
+  {
+   "data": "2026-06-13",
+   "pedidos": 215,
+   "pico_ativos": 20,
+   "ready_medio_min": 18.7,
+   "pct_atraso": 14.9,
+   "pct_cancelado": 0.47,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 724
+   }
+  },
+  {
+   "data": "2026-06-12",
+   "pedidos": 388,
+   "pico_ativos": 94,
+   "ready_medio_min": 45.3,
+   "pct_atraso": 45.4,
+   "pct_cancelado": 3.09,
+   "volume": "alto",
+   "classe": "alto_volume_problematico",
+   "minutos_por_faixa": {
+    "<30": 517,
+    "30-49": 101,
+    "50-69": 47,
+    "70+": 92
+   }
+  },
+  {
+   "data": "2026-06-11",
+   "pedidos": 244,
+   "pico_ativos": 29,
+   "ready_medio_min": 24.5,
+   "pct_atraso": 15.2,
+   "pct_cancelado": 4.92,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 731
+   }
+  },
+  {
+   "data": "2026-06-10",
+   "pedidos": 244,
+   "pico_ativos": 31,
+   "ready_medio_min": 24,
+   "pct_atraso": 48,
+   "pct_cancelado": 3.69,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 714,
+    "30-49": 15
+   }
+  },
+  {
+   "data": "2026-06-09",
+   "pedidos": 239,
+   "pico_ativos": 29,
+   "ready_medio_min": 18.3,
+   "pct_atraso": 37.7,
+   "pct_cancelado": 0.42,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 723
+   }
+  },
+  {
+   "data": "2026-06-08",
+   "pedidos": 248,
+   "pico_ativos": 26,
+   "ready_medio_min": 20.3,
+   "pct_atraso": 32.7,
+   "pct_cancelado": 0.4,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 730
+   }
+  },
+  {
+   "data": "2026-06-07",
+   "pedidos": 431,
+   "pico_ativos": 68,
+   "ready_medio_min": 35.6,
+   "pct_atraso": 40.4,
+   "pct_cancelado": 1.16,
+   "volume": "alto",
+   "classe": "alto_volume_problematico",
+   "minutos_por_faixa": {
+    "<30": 504,
+    "30-49": 106,
+    "50-69": 124
+   }
+  },
+  {
+   "data": "2026-06-06",
+   "pedidos": 247,
+   "pico_ativos": 44,
+   "ready_medio_min": 30.8,
+   "pct_atraso": 38.1,
+   "pct_cancelado": 2.02,
+   "volume": "moderado",
+   "classe": "moderado_problematico",
+   "minutos_por_faixa": {
+    "<30": 599,
+    "30-49": 99
+   }
+  },
+  {
+   "data": "2026-06-05",
+   "pedidos": 258,
+   "pico_ativos": 49,
+   "ready_medio_min": 26.5,
+   "pct_atraso": 39.9,
+   "pct_cancelado": 2.71,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 644,
+    "30-49": 70
+   }
+  },
+  {
+   "data": "2026-06-04",
+   "pedidos": 267,
+   "pico_ativos": 34,
+   "ready_medio_min": 23.7,
+   "pct_atraso": 32.6,
+   "pct_cancelado": 0.75,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 707,
+    "30-49": 12
+   }
+  },
+  {
+   "data": "2026-06-03",
+   "pedidos": 338,
+   "pico_ativos": 46,
+   "ready_medio_min": 28.5,
+   "pct_atraso": 51.8,
+   "pct_cancelado": 2.37,
+   "volume": "alto",
+   "classe": "alto_volume_fluido",
+   "minutos_por_faixa": {
+    "<30": 586,
+    "30-49": 142
+   }
+  },
+  {
+   "data": "2026-06-02",
+   "pedidos": 256,
+   "pico_ativos": 31,
+   "ready_medio_min": 20.7,
+   "pct_atraso": 35.5,
+   "pct_cancelado": 0.78,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 726,
+    "30-49": 16
+   }
+  },
+  {
+   "data": "2026-06-01",
+   "pedidos": 246,
+   "pico_ativos": 22,
+   "ready_medio_min": 17.5,
+   "pct_atraso": 27.6,
+   "pct_cancelado": 0.81,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 727
+   }
+  },
+  {
+   "data": "2025-10-31",
+   "pedidos": 300,
+   "pico_ativos": 53,
+   "ready_medio_min": 29.2,
+   "pct_atraso": 16,
+   "pct_cancelado": 2.67,
+   "volume": "alto",
+   "classe": "alto_volume_fluido",
+   "minutos_por_faixa": {
+    "<30": 615,
+    "30-49": 114,
+    "50-69": 7
+   }
+  },
+  {
+   "data": "2025-10-30",
+   "pedidos": 223,
+   "pico_ativos": 25,
+   "ready_medio_min": 23.3,
+   "pct_atraso": 17,
+   "pct_cancelado": 2.69,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 733
+   }
+  },
+  {
+   "data": "2025-10-29",
+   "pedidos": 213,
+   "pico_ativos": 31,
+   "ready_medio_min": 25.9,
+   "pct_atraso": 29.6,
+   "pct_cancelado": 5.63,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 721,
+    "30-49": 5
+   }
+  },
+  {
+   "data": "2025-10-28",
+   "pedidos": 172,
+   "pico_ativos": 24,
+   "ready_medio_min": 15.8,
+   "pct_atraso": 18,
+   "pct_cancelado": 0,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 733
+   }
+  },
+  {
+   "data": "2025-10-27",
+   "pedidos": 176,
+   "pico_ativos": 26,
+   "ready_medio_min": 21.7,
+   "pct_atraso": 31.8,
+   "pct_cancelado": 2.84,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 708
+   }
+  },
+  {
+   "data": "2025-10-26",
+   "pedidos": 361,
+   "pico_ativos": 57,
+   "ready_medio_min": 27.7,
+   "pct_atraso": 16.9,
+   "pct_cancelado": 0.28,
+   "volume": "alto",
+   "classe": "alto_volume_fluido",
+   "minutos_por_faixa": {
+    "<30": 596,
+    "30-49": 80,
+    "50-69": 47
+   }
+  },
+  {
+   "data": "2025-10-25",
+   "pedidos": 310,
+   "pico_ativos": 48,
+   "ready_medio_min": 28.2,
+   "pct_atraso": 17.4,
+   "pct_cancelado": 1.94,
+   "volume": "alto",
+   "classe": "alto_volume_fluido",
+   "minutos_por_faixa": {
+    "<30": 606,
+    "30-49": 124
+   }
+  },
+  {
+   "data": "2025-10-24",
+   "pedidos": 321,
+   "pico_ativos": 65,
+   "ready_medio_min": 33.8,
+   "pct_atraso": 27.7,
+   "pct_cancelado": 1.25,
+   "volume": "alto",
+   "classe": "alto_volume_problematico",
+   "minutos_por_faixa": {
+    "<30": 571,
+    "30-49": 69,
+    "50-69": 80
+   }
+  },
+  {
+   "data": "2025-10-23",
+   "pedidos": 223,
+   "pico_ativos": 36,
+   "ready_medio_min": 25.9,
+   "pct_atraso": 23.3,
+   "pct_cancelado": 3.14,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 684,
+    "30-49": 42
+   }
+  },
+  {
+   "data": "2025-10-22",
+   "pedidos": 216,
+   "pico_ativos": 27,
+   "ready_medio_min": 23.7,
+   "pct_atraso": 26.4,
+   "pct_cancelado": 1.39,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 728
+   }
+  },
+  {
+   "data": "2025-10-21",
+   "pedidos": 162,
+   "pico_ativos": 21,
+   "ready_medio_min": 14.4,
+   "pct_atraso": 21,
+   "pct_cancelado": 0,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 717
+   }
+  },
+  {
+   "data": "2025-10-20",
+   "pedidos": 111,
+   "pico_ativos": 19,
+   "ready_medio_min": 22.3,
+   "pct_atraso": 34.2,
+   "pct_cancelado": 19.82,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 587
+   }
+  },
+  {
+   "data": "2025-10-19",
+   "pedidos": 251,
+   "pico_ativos": 58,
+   "ready_medio_min": 34.7,
+   "pct_atraso": 32.3,
+   "pct_cancelado": 0.8,
+   "volume": "moderado",
+   "classe": "moderado_problematico",
+   "minutos_por_faixa": {
+    "<30": 599,
+    "30-49": 109,
+    "50-69": 21
+   }
+  },
+  {
+   "data": "2025-10-18",
+   "pedidos": 278,
+   "pico_ativos": 43,
+   "ready_medio_min": 30.6,
+   "pct_atraso": 38.1,
+   "pct_cancelado": 2.16,
+   "volume": "moderado",
+   "classe": "moderado_problematico",
+   "minutos_por_faixa": {
+    "<30": 648,
+    "30-49": 77
+   }
+  },
+  {
+   "data": "2025-10-17",
+   "pedidos": 271,
+   "pico_ativos": 51,
+   "ready_medio_min": 29.4,
+   "pct_atraso": 36.9,
+   "pct_cancelado": 2.95,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 618,
+    "30-49": 94,
+    "50-69": 12
+   }
+  },
+  {
+   "data": "2025-10-16",
+   "pedidos": 203,
+   "pico_ativos": 29,
+   "ready_medio_min": 21.5,
+   "pct_atraso": 14.8,
+   "pct_cancelado": 0.99,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 732
+   }
+  },
+  {
+   "data": "2025-10-15",
+   "pedidos": 200,
+   "pico_ativos": 32,
+   "ready_medio_min": 25.8,
+   "pct_atraso": 27,
+   "pct_cancelado": 0,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 711,
+    "30-49": 17
+   }
+  },
+  {
+   "data": "2025-10-14",
+   "pedidos": 178,
+   "pico_ativos": 22,
+   "ready_medio_min": 19.6,
+   "pct_atraso": 18,
+   "pct_cancelado": 1.12,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 700
+   }
+  },
+  {
+   "data": "2025-10-13",
+   "pedidos": 182,
+   "pico_ativos": 28,
+   "ready_medio_min": 27.4,
+   "pct_atraso": 34.6,
+   "pct_cancelado": 4.95,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 732
+   }
+  },
+  {
+   "data": "2025-10-12",
+   "pedidos": 281,
+   "pico_ativos": 54,
+   "ready_medio_min": 33.5,
+   "pct_atraso": 31.7,
+   "pct_cancelado": 1.42,
+   "volume": "moderado",
+   "classe": "moderado_problematico",
+   "minutos_por_faixa": {
+    "<30": 603,
+    "30-49": 101,
+    "50-69": 23
+   }
+  },
+  {
+   "data": "2025-10-11",
+   "pedidos": 226,
+   "pico_ativos": 40,
+   "ready_medio_min": 33.2,
+   "pct_atraso": 44.2,
+   "pct_cancelado": 1.33,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 616,
+    "30-49": 110
+   }
+  },
+  {
+   "data": "2025-10-10",
+   "pedidos": 272,
+   "pico_ativos": 38,
+   "ready_medio_min": 28.8,
+   "pct_atraso": 31.3,
+   "pct_cancelado": 1.84,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 655,
+    "30-49": 76
+   }
+  },
+  {
+   "data": "2025-10-09",
+   "pedidos": 186,
+   "pico_ativos": 23,
+   "ready_medio_min": 23.5,
+   "pct_atraso": 24.2,
+   "pct_cancelado": 0,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 736
+   }
+  },
+  {
+   "data": "2025-10-08",
+   "pedidos": 170,
+   "pico_ativos": 20,
+   "ready_medio_min": 21.9,
+   "pct_atraso": 27.1,
+   "pct_cancelado": 0.59,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 725
+   }
+  },
+  {
+   "data": "2025-10-07",
+   "pedidos": 160,
+   "pico_ativos": 24,
+   "ready_medio_min": 17.9,
+   "pct_atraso": 26.3,
+   "pct_cancelado": 1.88,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 733
+   }
+  },
+  {
+   "data": "2025-10-06",
+   "pedidos": 180,
+   "pico_ativos": 26,
+   "ready_medio_min": 23.7,
+   "pct_atraso": 26.7,
+   "pct_cancelado": 1.67,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 735
+   }
+  },
+  {
+   "data": "2025-10-05",
+   "pedidos": 345,
+   "pico_ativos": 57,
+   "ready_medio_min": 34.4,
+   "pct_atraso": 36.2,
+   "pct_cancelado": 1.16,
+   "volume": "alto",
+   "classe": "alto_volume_problematico",
+   "minutos_por_faixa": {
+    "<30": 583,
+    "30-49": 101,
+    "50-69": 53
+   }
+  },
+  {
+   "data": "2025-10-04",
+   "pedidos": 273,
+   "pico_ativos": 48,
+   "ready_medio_min": 31.5,
+   "pct_atraso": 32.2,
+   "pct_cancelado": 2.2,
+   "volume": "moderado",
+   "classe": "moderado_problematico",
+   "minutos_por_faixa": {
+    "<30": 630,
+    "30-49": 89
+   }
+  },
+  {
+   "data": "2025-10-03",
+   "pedidos": 311,
+   "pico_ativos": 50,
+   "ready_medio_min": 34.9,
+   "pct_atraso": 45.7,
+   "pct_cancelado": 1.61,
+   "volume": "alto",
+   "classe": "alto_volume_problematico",
+   "minutos_por_faixa": {
+    "<30": 556,
+    "30-49": 176,
+    "50-69": 1
+   }
+  },
+  {
+   "data": "2025-10-02",
+   "pedidos": 214,
+   "pico_ativos": 33,
+   "ready_medio_min": 26,
+   "pct_atraso": 16.8,
+   "pct_cancelado": 2.8,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 716,
+    "30-49": 11
+   }
+  },
+  {
+   "data": "2025-10-01",
+   "pedidos": 219,
+   "pico_ativos": 25,
+   "ready_medio_min": 22.8,
+   "pct_atraso": 13.7,
+   "pct_cancelado": 1.37,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 725
+   }
+  },
+  {
+   "data": "2025-11-30",
+   "pedidos": 317,
+   "pico_ativos": 65,
+   "ready_medio_min": 38.8,
+   "pct_atraso": 35.6,
+   "pct_cancelado": 3.47,
+   "volume": "alto",
+   "classe": "alto_volume_problematico",
+   "minutos_por_faixa": {
+    "<30": 590,
+    "30-49": 74,
+    "50-69": 57
+   }
+  },
+  {
+   "data": "2025-11-29",
+   "pedidos": 328,
+   "pico_ativos": 44,
+   "ready_medio_min": 32.3,
+   "pct_atraso": 32.3,
+   "pct_cancelado": 4.57,
+   "volume": "alto",
+   "classe": "alto_volume_problematico",
+   "minutos_por_faixa": {
+    "<30": 566,
+    "30-49": 166
+   }
+  },
+  {
+   "data": "2025-11-28",
+   "pedidos": 329,
+   "pico_ativos": 66,
+   "ready_medio_min": 34.4,
+   "pct_atraso": 33.4,
+   "pct_cancelado": 3.65,
+   "volume": "alto",
+   "classe": "alto_volume_problematico",
+   "minutos_por_faixa": {
+    "<30": 548,
+    "30-49": 119,
+    "50-69": 39
+   }
+  },
+  {
+   "data": "2025-11-27",
+   "pedidos": 228,
+   "pico_ativos": 37,
+   "ready_medio_min": 27.8,
+   "pct_atraso": 23.7,
+   "pct_cancelado": 2.63,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 664,
+    "30-49": 64
+   }
+  },
+  {
+   "data": "2025-11-26",
+   "pedidos": 201,
+   "pico_ativos": 28,
+   "ready_medio_min": 24.8,
+   "pct_atraso": 31.8,
+   "pct_cancelado": 1,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 727
+   }
+  },
+  {
+   "data": "2025-11-25",
+   "pedidos": 208,
+   "pico_ativos": 37,
+   "ready_medio_min": 24,
+   "pct_atraso": 19.2,
+   "pct_cancelado": 2.88,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 673,
+    "30-49": 51
+   }
+  },
+  {
+   "data": "2025-11-24",
+   "pedidos": 216,
+   "pico_ativos": 36,
+   "ready_medio_min": 27.9,
+   "pct_atraso": 18.1,
+   "pct_cancelado": 3.7,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 620,
+    "30-49": 62
+   }
+  },
+  {
+   "data": "2025-11-23",
+   "pedidos": 374,
+   "pico_ativos": 63,
+   "ready_medio_min": 36,
+   "pct_atraso": 14.4,
+   "pct_cancelado": 1.07,
+   "volume": "alto",
+   "classe": "alto_volume_problematico",
+   "minutos_por_faixa": {
+    "<30": 588,
+    "30-49": 62,
+    "50-69": 84
+   }
+  },
+  {
+   "data": "2025-11-22",
+   "pedidos": 261,
+   "pico_ativos": 44,
+   "ready_medio_min": 28.5,
+   "pct_atraso": 16.5,
+   "pct_cancelado": 0.38,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 629,
+    "30-49": 97
+   }
+  },
+  {
+   "data": "2025-11-21",
+   "pedidos": 234,
+   "pico_ativos": 40,
+   "ready_medio_min": 28.4,
+   "pct_atraso": 9.4,
+   "pct_cancelado": 0.43,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 655,
+    "30-49": 61
+   }
+  },
+  {
+   "data": "2025-11-20",
+   "pedidos": 246,
+   "pico_ativos": 30,
+   "ready_medio_min": 28.3,
+   "pct_atraso": 24.8,
+   "pct_cancelado": 2.85,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 688,
+    "30-49": 2
+   }
+  },
+  {
+   "data": "2025-11-19",
+   "pedidos": 276,
+   "pico_ativos": 58,
+   "ready_medio_min": 35.4,
+   "pct_atraso": 29.3,
+   "pct_cancelado": 3.26,
+   "volume": "moderado",
+   "classe": "moderado_problematico",
+   "minutos_por_faixa": {
+    "<30": 549,
+    "30-49": 116,
+    "50-69": 40
+   }
+  },
+  {
+   "data": "2025-11-18",
+   "pedidos": 225,
+   "pico_ativos": 31,
+   "ready_medio_min": 28.1,
+   "pct_atraso": 28,
+   "pct_cancelado": 4,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 725,
+    "30-49": 6
+   }
+  },
+  {
+   "data": "2025-11-17",
+   "pedidos": 208,
+   "pico_ativos": 30,
+   "ready_medio_min": 25.4,
+   "pct_atraso": 14.9,
+   "pct_cancelado": 1.92,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 726,
+    "30-49": 1
+   }
+  },
+  {
+   "data": "2025-11-16",
+   "pedidos": 364,
+   "pico_ativos": 60,
+   "ready_medio_min": 28,
+   "pct_atraso": 5.5,
+   "pct_cancelado": 0.55,
+   "volume": "alto",
+   "classe": "alto_volume_fluido",
+   "minutos_por_faixa": {
+    "<30": 603,
+    "30-49": 92,
+    "50-69": 38
+   }
+  },
+  {
+   "data": "2025-11-15",
+   "pedidos": 291,
+   "pico_ativos": 49,
+   "ready_medio_min": 28.3,
+   "pct_atraso": 17.5,
+   "pct_cancelado": 1.03,
+   "volume": "alto",
+   "classe": "alto_volume_fluido",
+   "minutos_por_faixa": {
+    "<30": 656,
+    "30-49": 58
+   }
+  },
+  {
+   "data": "2025-11-14",
+   "pedidos": 318,
+   "pico_ativos": 63,
+   "ready_medio_min": 31,
+   "pct_atraso": 23.6,
+   "pct_cancelado": 1.89,
+   "volume": "alto",
+   "classe": "alto_volume_problematico",
+   "minutos_por_faixa": {
+    "<30": 594,
+    "30-49": 125,
+    "50-69": 21
+   }
+  },
+  {
+   "data": "2025-11-13",
+   "pedidos": 251,
+   "pico_ativos": 30,
+   "ready_medio_min": 21.7,
+   "pct_atraso": 13.5,
+   "pct_cancelado": 1.99,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 726,
+    "30-49": 1
+   }
+  },
+  {
+   "data": "2025-11-12",
+   "pedidos": 256,
+   "pico_ativos": 54,
+   "ready_medio_min": 35.7,
+   "pct_atraso": 32.8,
+   "pct_cancelado": 1.17,
+   "volume": "moderado",
+   "classe": "moderado_problematico",
+   "minutos_por_faixa": {
+    "<30": 553,
+    "30-49": 133,
+    "50-69": 21
+   }
+  },
+  {
+   "data": "2025-11-11",
+   "pedidos": 204,
+   "pico_ativos": 28,
+   "ready_medio_min": 22.2,
+   "pct_atraso": 11.3,
+   "pct_cancelado": 1.47,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 709
+   }
+  },
+  {
+   "data": "2025-11-10",
+   "pedidos": 173,
+   "pico_ativos": 28,
+   "ready_medio_min": 22.7,
+   "pct_atraso": 16.8,
+   "pct_cancelado": 1.73,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 724
+   }
+  },
+  {
+   "data": "2025-11-09",
+   "pedidos": 287,
+   "pico_ativos": 47,
+   "ready_medio_min": 32.9,
+   "pct_atraso": 46.7,
+   "pct_cancelado": 1.74,
+   "volume": "alto",
+   "classe": "alto_volume_problematico",
+   "minutos_por_faixa": {
+    "<30": 632,
+    "30-49": 98
+   }
+  },
+  {
+   "data": "2025-11-08",
+   "pedidos": 316,
+   "pico_ativos": 47,
+   "ready_medio_min": 36.4,
+   "pct_atraso": 46.2,
+   "pct_cancelado": 3.8,
+   "volume": "alto",
+   "classe": "alto_volume_problematico",
+   "minutos_por_faixa": {
+    "<30": 591,
+    "30-49": 145
+   }
+  },
+  {
+   "data": "2025-11-07",
+   "pedidos": 295,
+   "pico_ativos": 76,
+   "ready_medio_min": 33.8,
+   "pct_atraso": 34.9,
+   "pct_cancelado": 2.71,
+   "volume": "alto",
+   "classe": "alto_volume_problematico",
+   "minutos_por_faixa": {
+    "<30": 632,
+    "30-49": 56,
+    "50-69": 50,
+    "70+": 4
+   }
+  },
+  {
+   "data": "2025-11-06",
+   "pedidos": 232,
+   "pico_ativos": 44,
+   "ready_medio_min": 27.4,
+   "pct_atraso": 34.5,
+   "pct_cancelado": 1.72,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 670,
+    "30-49": 75
+   }
+  },
+  {
+   "data": "2025-11-05",
+   "pedidos": 249,
+   "pico_ativos": 35,
+   "ready_medio_min": 26.1,
+   "pct_atraso": 20.9,
+   "pct_cancelado": 1.61,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 681,
+    "30-49": 43
+   }
+  },
+  {
+   "data": "2025-11-04",
+   "pedidos": 211,
+   "pico_ativos": 20,
+   "ready_medio_min": 18,
+   "pct_atraso": 18.5,
+   "pct_cancelado": 0,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 727
+   }
+  },
+  {
+   "data": "2025-11-03",
+   "pedidos": 213,
+   "pico_ativos": 31,
+   "ready_medio_min": 27,
+   "pct_atraso": 18.8,
+   "pct_cancelado": 2.35,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 728,
+    "30-49": 9
+   }
+  },
+  {
+   "data": "2025-11-02",
+   "pedidos": 347,
+   "pico_ativos": 52,
+   "ready_medio_min": 27.3,
+   "pct_atraso": 11.8,
+   "pct_cancelado": 0.29,
+   "volume": "alto",
+   "classe": "alto_volume_fluido",
+   "minutos_por_faixa": {
+    "<30": 590,
+    "30-49": 118,
+    "50-69": 11
+   }
+  },
+  {
+   "data": "2025-11-01",
+   "pedidos": 316,
+   "pico_ativos": 50,
+   "ready_medio_min": 27,
+   "pct_atraso": 17.7,
+   "pct_cancelado": 0.63,
+   "volume": "alto",
+   "classe": "alto_volume_fluido",
+   "minutos_por_faixa": {
+    "<30": 602,
+    "30-49": 119,
+    "50-69": 3
+   }
+  },
+  {
+   "data": "2025-12-30",
+   "pedidos": 145,
+   "pico_ativos": 22,
+   "ready_medio_min": 22.5,
+   "pct_atraso": 17.9,
+   "pct_cancelado": 4.14,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 706
+   }
+  },
+  {
+   "data": "2025-12-29",
+   "pedidos": 168,
+   "pico_ativos": 18,
+   "ready_medio_min": 19.4,
+   "pct_atraso": 13.1,
+   "pct_cancelado": 1.19,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 720
+   }
+  },
+  {
+   "data": "2025-12-28",
+   "pedidos": 180,
+   "pico_ativos": 25,
+   "ready_medio_min": 18.2,
+   "pct_atraso": 21.7,
+   "pct_cancelado": 0.56,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 687
+   }
+  },
+  {
+   "data": "2025-12-27",
+   "pedidos": 194,
+   "pico_ativos": 23,
+   "ready_medio_min": 19.7,
+   "pct_atraso": 28.4,
+   "pct_cancelado": 0.52,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 702
+   }
+  },
+  {
+   "data": "2025-12-26",
+   "pedidos": 159,
+   "pico_ativos": 58,
+   "ready_medio_min": 39.1,
+   "pct_atraso": 58.5,
+   "pct_cancelado": 2.52,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 199,
+    "30-49": 88,
+    "50-69": 25
+   }
+  },
+  {
+   "data": "2025-12-23",
+   "pedidos": 248,
+   "pico_ativos": 62,
+   "ready_medio_min": 35.1,
+   "pct_atraso": 50,
+   "pct_cancelado": 11.29,
+   "volume": "moderado",
+   "classe": "moderado_problematico",
+   "minutos_por_faixa": {
+    "<30": 618,
+    "30-49": 59,
+    "50-69": 48
+   }
+  },
+  {
+   "data": "2025-12-22",
+   "pedidos": 223,
+   "pico_ativos": 48,
+   "ready_medio_min": 28,
+   "pct_atraso": 41.3,
+   "pct_cancelado": 2.69,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 700,
+    "30-49": 51
+   }
+  },
+  {
+   "data": "2025-12-21",
+   "pedidos": 270,
+   "pico_ativos": 38,
+   "ready_medio_min": 29.7,
+   "pct_atraso": 32.6,
+   "pct_cancelado": 3.7,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 618,
+    "30-49": 115
+   }
+  },
+  {
+   "data": "2025-12-20",
+   "pedidos": 220,
+   "pico_ativos": 26,
+   "ready_medio_min": 23.4,
+   "pct_atraso": 20.5,
+   "pct_cancelado": 0.91,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 714
+   }
+  },
+  {
+   "data": "2025-12-19",
+   "pedidos": 327,
+   "pico_ativos": 56,
+   "ready_medio_min": 27.9,
+   "pct_atraso": 43.7,
+   "pct_cancelado": 3.67,
+   "volume": "alto",
+   "classe": "alto_volume_fluido",
+   "minutos_por_faixa": {
+    "<30": 585,
+    "30-49": 125,
+    "50-69": 17
+   }
+  },
+  {
+   "data": "2025-12-18",
+   "pedidos": 313,
+   "pico_ativos": 57,
+   "ready_medio_min": 30.5,
+   "pct_atraso": 59.1,
+   "pct_cancelado": 1.92,
+   "volume": "alto",
+   "classe": "alto_volume_problematico",
+   "minutos_por_faixa": {
+    "<30": 604,
+    "30-49": 115,
+    "50-69": 20
+   }
+  },
+  {
+   "data": "2025-12-17",
+   "pedidos": 281,
+   "pico_ativos": 57,
+   "ready_medio_min": 32.6,
+   "pct_atraso": 59.1,
+   "pct_cancelado": 4.63,
+   "volume": "moderado",
+   "classe": "moderado_problematico",
+   "minutos_por_faixa": {
+    "<30": 637,
+    "30-49": 60,
+    "50-69": 35
+   }
+  },
+  {
+   "data": "2025-12-16",
+   "pedidos": 279,
+   "pico_ativos": 46,
+   "ready_medio_min": 28.3,
+   "pct_atraso": 48.7,
+   "pct_cancelado": 1.08,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 647,
+    "30-49": 89
+   }
+  },
+  {
+   "data": "2025-12-15",
+   "pedidos": 277,
+   "pico_ativos": 49,
+   "ready_medio_min": 29.3,
+   "pct_atraso": 40.1,
+   "pct_cancelado": 1.08,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 615,
+    "30-49": 97
+   }
+  },
+  {
+   "data": "2025-12-14",
+   "pedidos": 350,
+   "pico_ativos": 46,
+   "ready_medio_min": 25.5,
+   "pct_atraso": 37.4,
+   "pct_cancelado": 1.71,
+   "volume": "alto",
+   "classe": "alto_volume_fluido",
+   "minutos_por_faixa": {
+    "<30": 594,
+    "30-49": 134
+   }
+  },
+  {
+   "data": "2025-12-13",
+   "pedidos": 308,
+   "pico_ativos": 36,
+   "ready_medio_min": 23.1,
+   "pct_atraso": 14.3,
+   "pct_cancelado": 2.27,
+   "volume": "alto",
+   "classe": "alto_volume_fluido",
+   "minutos_por_faixa": {
+    "<30": 690,
+    "30-49": 37
+   }
+  },
+  {
+   "data": "2025-12-12",
+   "pedidos": 328,
+   "pico_ativos": 67,
+   "ready_medio_min": 25.2,
+   "pct_atraso": 39.3,
+   "pct_cancelado": 2.13,
+   "volume": "alto",
+   "classe": "alto_volume_fluido",
+   "minutos_por_faixa": {
+    "<30": 639,
+    "30-49": 55,
+    "50-69": 44
+   }
+  },
+  {
+   "data": "2025-12-11",
+   "pedidos": 284,
+   "pico_ativos": 36,
+   "ready_medio_min": 25.3,
+   "pct_atraso": 39.1,
+   "pct_cancelado": 1.06,
+   "volume": "alto",
+   "classe": "alto_volume_fluido",
+   "minutos_por_faixa": {
+    "<30": 678,
+    "30-49": 45
+   }
+  },
+  {
+   "data": "2025-12-10",
+   "pedidos": 295,
+   "pico_ativos": 48,
+   "ready_medio_min": 29.4,
+   "pct_atraso": 45.1,
+   "pct_cancelado": 0.68,
+   "volume": "alto",
+   "classe": "alto_volume_fluido",
+   "minutos_por_faixa": {
+    "<30": 661,
+    "30-49": 75
+   }
+  },
+  {
+   "data": "2025-12-09",
+   "pedidos": 221,
+   "pico_ativos": 28,
+   "ready_medio_min": 27.7,
+   "pct_atraso": 60.2,
+   "pct_cancelado": 2.71,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 701
+   }
+  },
+  {
+   "data": "2025-12-08",
+   "pedidos": 265,
+   "pico_ativos": 37,
+   "ready_medio_min": 26.1,
+   "pct_atraso": 44.9,
+   "pct_cancelado": 2.26,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 664,
+    "30-49": 66
+   }
+  },
+  {
+   "data": "2025-12-07",
+   "pedidos": 315,
+   "pico_ativos": 49,
+   "ready_medio_min": 27.7,
+   "pct_atraso": 49.2,
+   "pct_cancelado": 2.54,
+   "volume": "alto",
+   "classe": "alto_volume_fluido",
+   "minutos_por_faixa": {
+    "<30": 662,
+    "30-49": 68
+   }
+  },
+  {
+   "data": "2025-12-06",
+   "pedidos": 364,
+   "pico_ativos": 44,
+   "ready_medio_min": 26.5,
+   "pct_atraso": 60.4,
+   "pct_cancelado": 2.75,
+   "volume": "alto",
+   "classe": "alto_volume_fluido",
+   "minutos_por_faixa": {
+    "<30": 592,
+    "30-49": 129
+   }
+  },
+  {
+   "data": "2025-12-05",
+   "pedidos": 326,
+   "pico_ativos": 69,
+   "ready_medio_min": 32.7,
+   "pct_atraso": 56.4,
+   "pct_cancelado": 0.92,
+   "volume": "alto",
+   "classe": "alto_volume_problematico",
+   "minutos_por_faixa": {
+    "<30": 624,
+    "30-49": 66,
+    "50-69": 44
+   }
+  },
+  {
+   "data": "2025-12-04",
+   "pedidos": 236,
+   "pico_ativos": 23,
+   "ready_medio_min": 20.6,
+   "pct_atraso": 25.4,
+   "pct_cancelado": 1.27,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 722
+   }
+  },
+  {
+   "data": "2025-12-03",
+   "pedidos": 253,
+   "pico_ativos": 38,
+   "ready_medio_min": 25.9,
+   "pct_atraso": 22.1,
+   "pct_cancelado": 1.58,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 665,
+    "30-49": 56
+   }
+  },
+  {
+   "data": "2025-12-02",
+   "pedidos": 214,
+   "pico_ativos": 29,
+   "ready_medio_min": 23.9,
+   "pct_atraso": 18.2,
+   "pct_cancelado": 2.34,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 710
+   }
+  },
+  {
+   "data": "2025-12-01",
+   "pedidos": 230,
+   "pico_ativos": 40,
+   "ready_medio_min": 30.3,
+   "pct_atraso": 10.9,
+   "pct_cancelado": 2.17,
+   "volume": "moderado",
+   "classe": "moderado_problematico",
+   "minutos_por_faixa": {
+    "<30": 652,
+    "30-49": 68
+   }
+  },
+  {
+   "data": "2026-01-31",
+   "pedidos": 315,
+   "pico_ativos": 51,
+   "ready_medio_min": 27,
+   "pct_atraso": 56.8,
+   "pct_cancelado": 1.27,
+   "volume": "alto",
+   "classe": "alto_volume_fluido",
+   "minutos_por_faixa": {
+    "<30": 628,
+    "30-49": 103,
+    "50-69": 3
+   }
+  },
+  {
+   "data": "2026-01-30",
+   "pedidos": 323,
+   "pico_ativos": 57,
+   "ready_medio_min": 26.2,
+   "pct_atraso": 40.6,
+   "pct_cancelado": 0.93,
+   "volume": "alto",
+   "classe": "alto_volume_fluido",
+   "minutos_por_faixa": {
+    "<30": 618,
+    "30-49": 86,
+    "50-69": 25
+   }
+  },
+  {
+   "data": "2026-01-29",
+   "pedidos": 236,
+   "pico_ativos": 48,
+   "ready_medio_min": 28,
+   "pct_atraso": 44.1,
+   "pct_cancelado": 1.69,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 632,
+    "30-49": 79
+   }
+  },
+  {
+   "data": "2026-01-28",
+   "pedidos": 227,
+   "pico_ativos": 40,
+   "ready_medio_min": 22.2,
+   "pct_atraso": 32.2,
+   "pct_cancelado": 1.76,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 665,
+    "30-49": 47
+   }
+  },
+  {
+   "data": "2026-01-27",
+   "pedidos": 203,
+   "pico_ativos": 25,
+   "ready_medio_min": 20,
+   "pct_atraso": 23.6,
+   "pct_cancelado": 0.99,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 744
+   }
+  },
+  {
+   "data": "2026-01-26",
+   "pedidos": 236,
+   "pico_ativos": 22,
+   "ready_medio_min": 18.9,
+   "pct_atraso": 19.1,
+   "pct_cancelado": 0.42,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 723
+   }
+  },
+  {
+   "data": "2026-01-25",
+   "pedidos": 302,
+   "pico_ativos": 58,
+   "ready_medio_min": 26,
+   "pct_atraso": 28.5,
+   "pct_cancelado": 1.99,
+   "volume": "alto",
+   "classe": "alto_volume_fluido",
+   "minutos_por_faixa": {
+    "<30": 638,
+    "30-49": 58,
+    "50-69": 17
+   }
+  },
+  {
+   "data": "2026-01-24",
+   "pedidos": 299,
+   "pico_ativos": 45,
+   "ready_medio_min": 24.5,
+   "pct_atraso": 27.8,
+   "pct_cancelado": 2.34,
+   "volume": "alto",
+   "classe": "alto_volume_fluido",
+   "minutos_por_faixa": {
+    "<30": 612,
+    "30-49": 95
+   }
+  },
+  {
+   "data": "2026-01-23",
+   "pedidos": 297,
+   "pico_ativos": 62,
+   "ready_medio_min": 28.7,
+   "pct_atraso": 47.8,
+   "pct_cancelado": 0.67,
+   "volume": "alto",
+   "classe": "alto_volume_fluido",
+   "minutos_por_faixa": {
+    "<30": 637,
+    "30-49": 64,
+    "50-69": 26
+   }
+  },
+  {
+   "data": "2026-01-22",
+   "pedidos": 216,
+   "pico_ativos": 23,
+   "ready_medio_min": 20.3,
+   "pct_atraso": 17.1,
+   "pct_cancelado": 0.46,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 720
+   }
+  },
+  {
+   "data": "2026-01-21",
+   "pedidos": 213,
+   "pico_ativos": 27,
+   "ready_medio_min": 20.5,
+   "pct_atraso": 18.8,
+   "pct_cancelado": 1.41,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 723
+   }
+  },
+  {
+   "data": "2026-01-20",
+   "pedidos": 203,
+   "pico_ativos": 36,
+   "ready_medio_min": 22.8,
+   "pct_atraso": 33,
+   "pct_cancelado": 0.99,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 702,
+    "30-49": 22
+   }
+  },
+  {
+   "data": "2026-01-19",
+   "pedidos": 218,
+   "pico_ativos": 29,
+   "ready_medio_min": 20.5,
+   "pct_atraso": 22.9,
+   "pct_cancelado": 0.92,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 720
+   }
+  },
+  {
+   "data": "2026-01-18",
+   "pedidos": 345,
+   "pico_ativos": 40,
+   "ready_medio_min": 24.5,
+   "pct_atraso": 16.2,
+   "pct_cancelado": 0.87,
+   "volume": "alto",
+   "classe": "alto_volume_fluido",
+   "minutos_por_faixa": {
+    "<30": 645,
+    "30-49": 79
+   }
+  },
+  {
+   "data": "2026-01-17",
+   "pedidos": 244,
+   "pico_ativos": 40,
+   "ready_medio_min": 24,
+   "pct_atraso": 17.6,
+   "pct_cancelado": 2.05,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 689,
+    "30-49": 43
+   }
+  },
+  {
+   "data": "2026-01-16",
+   "pedidos": 322,
+   "pico_ativos": 56,
+   "ready_medio_min": 27.4,
+   "pct_atraso": 50.6,
+   "pct_cancelado": 0.62,
+   "volume": "alto",
+   "classe": "alto_volume_fluido",
+   "minutos_por_faixa": {
+    "<30": 620,
+    "30-49": 87,
+    "50-69": 29
+   }
+  },
+  {
+   "data": "2026-01-15",
+   "pedidos": 186,
+   "pico_ativos": 19,
+   "ready_medio_min": 17.6,
+   "pct_atraso": 21.5,
+   "pct_cancelado": 2.69,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 726
+   }
+  },
+  {
+   "data": "2026-01-14",
+   "pedidos": 226,
+   "pico_ativos": 37,
+   "ready_medio_min": 23.8,
+   "pct_atraso": 29.6,
+   "pct_cancelado": 0.44,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 695,
+    "30-49": 21
+   }
+  },
+  {
+   "data": "2026-01-13",
+   "pedidos": 193,
+   "pico_ativos": 27,
+   "ready_medio_min": 21.8,
+   "pct_atraso": 38.3,
+   "pct_cancelado": 2.59,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 712
+   }
+  },
+  {
+   "data": "2026-01-12",
+   "pedidos": 241,
+   "pico_ativos": 41,
+   "ready_medio_min": 29.2,
+   "pct_atraso": 37.3,
+   "pct_cancelado": 1.66,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 663,
+    "30-49": 67
+   }
+  },
+  {
+   "data": "2026-01-11",
+   "pedidos": 272,
+   "pico_ativos": 42,
+   "ready_medio_min": 20.8,
+   "pct_atraso": 21,
+   "pct_cancelado": 0.74,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 663,
+    "30-49": 53
+   }
+  },
+  {
+   "data": "2026-01-10",
+   "pedidos": 240,
+   "pico_ativos": 26,
+   "ready_medio_min": 20.4,
+   "pct_atraso": 14.6,
+   "pct_cancelado": 0,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 729
+   }
+  },
+  {
+   "data": "2026-01-09",
+   "pedidos": 260,
+   "pico_ativos": 28,
+   "ready_medio_min": 21.1,
+   "pct_atraso": 14.6,
+   "pct_cancelado": 0.77,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 734
+   }
+  },
+  {
+   "data": "2026-01-08",
+   "pedidos": 222,
+   "pico_ativos": 23,
+   "ready_medio_min": 18.1,
+   "pct_atraso": 13.5,
+   "pct_cancelado": 0.9,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 727
+   }
+  },
+  {
+   "data": "2026-01-07",
+   "pedidos": 224,
+   "pico_ativos": 30,
+   "ready_medio_min": 22.7,
+   "pct_atraso": 16.1,
+   "pct_cancelado": 0.89,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 733,
+    "30-49": 1
+   }
+  },
+  {
+   "data": "2026-01-06",
+   "pedidos": 227,
+   "pico_ativos": 37,
+   "ready_medio_min": 26.4,
+   "pct_atraso": 42.7,
+   "pct_cancelado": 0,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 648,
+    "30-49": 68
+   }
+  },
+  {
+   "data": "2026-01-05",
+   "pedidos": 229,
+   "pico_ativos": 36,
+   "ready_medio_min": 25.9,
+   "pct_atraso": 40.2,
+   "pct_cancelado": 1.75,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 678,
+    "30-49": 27
+   }
+  },
+  {
+   "data": "2026-01-04",
+   "pedidos": 253,
+   "pico_ativos": 40,
+   "ready_medio_min": 26,
+   "pct_atraso": 32.8,
+   "pct_cancelado": 1.19,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 665,
+    "30-49": 54
+   }
+  },
+  {
+   "data": "2026-01-03",
+   "pedidos": 284,
+   "pico_ativos": 52,
+   "ready_medio_min": 25.7,
+   "pct_atraso": 35.6,
+   "pct_cancelado": 0.7,
+   "volume": "alto",
+   "classe": "alto_volume_fluido",
+   "minutos_por_faixa": {
+    "<30": 664,
+    "30-49": 66,
+    "50-69": 4
+   }
+  },
+  {
+   "data": "2026-01-02",
+   "pedidos": 176,
+   "pico_ativos": 29,
+   "ready_medio_min": 20.8,
+   "pct_atraso": 25,
+   "pct_cancelado": 0.57,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 736
+   }
+  },
+  {
+   "data": "2026-02-28",
+   "pedidos": 306,
+   "pico_ativos": 49,
+   "ready_medio_min": 33,
+   "pct_atraso": 57.8,
+   "pct_cancelado": 2.94,
+   "volume": "alto",
+   "classe": "alto_volume_problematico",
+   "minutos_por_faixa": {
+    "<30": 600,
+    "30-49": 115
+   }
+  },
+  {
+   "data": "2026-02-27",
+   "pedidos": 316,
+   "pico_ativos": 71,
+   "ready_medio_min": 33.1,
+   "pct_atraso": 53.2,
+   "pct_cancelado": 2.53,
+   "volume": "alto",
+   "classe": "alto_volume_problematico",
+   "minutos_por_faixa": {
+    "<30": 641,
+    "30-49": 53,
+    "50-69": 46,
+    "70+": 6
+   }
+  },
+  {
+   "data": "2026-02-26",
+   "pedidos": 264,
+   "pico_ativos": 36,
+   "ready_medio_min": 27.1,
+   "pct_atraso": 62.9,
+   "pct_cancelado": 3.79,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 691,
+    "30-49": 37
+   }
+  },
+  {
+   "data": "2026-02-25",
+   "pedidos": 250,
+   "pico_ativos": 41,
+   "ready_medio_min": 28.6,
+   "pct_atraso": 48.8,
+   "pct_cancelado": 2.4,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 645,
+    "30-49": 85
+   }
+  },
+  {
+   "data": "2026-02-24",
+   "pedidos": 200,
+   "pico_ativos": 21,
+   "ready_medio_min": 22.4,
+   "pct_atraso": 33.5,
+   "pct_cancelado": 2.5,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 725
+   }
+  },
+  {
+   "data": "2026-02-23",
+   "pedidos": 204,
+   "pico_ativos": 27,
+   "ready_medio_min": 24.4,
+   "pct_atraso": 27.5,
+   "pct_cancelado": 1.96,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 727
+   }
+  },
+  {
+   "data": "2026-02-22",
+   "pedidos": 311,
+   "pico_ativos": 47,
+   "ready_medio_min": 35.8,
+   "pct_atraso": 65.6,
+   "pct_cancelado": 0.96,
+   "volume": "alto",
+   "classe": "alto_volume_problematico",
+   "minutos_por_faixa": {
+    "<30": 496,
+    "30-49": 177
+   }
+  },
+  {
+   "data": "2026-02-21",
+   "pedidos": 294,
+   "pico_ativos": 44,
+   "ready_medio_min": 30.7,
+   "pct_atraso": 56.1,
+   "pct_cancelado": 1.7,
+   "volume": "alto",
+   "classe": "alto_volume_problematico",
+   "minutos_por_faixa": {
+    "<30": 629,
+    "30-49": 107
+   }
+  },
+  {
+   "data": "2026-02-20",
+   "pedidos": 277,
+   "pico_ativos": 58,
+   "ready_medio_min": 31.2,
+   "pct_atraso": 57.4,
+   "pct_cancelado": 0.72,
+   "volume": "moderado",
+   "classe": "moderado_problematico",
+   "minutos_por_faixa": {
+    "<30": 628,
+    "30-49": 95,
+    "50-69": 16
+   }
+  },
+  {
+   "data": "2026-02-19",
+   "pedidos": 231,
+   "pico_ativos": 36,
+   "ready_medio_min": 25.3,
+   "pct_atraso": 39,
+   "pct_cancelado": 3.46,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 696,
+    "30-49": 28
+   }
+  },
+  {
+   "data": "2026-02-18",
+   "pedidos": 269,
+   "pico_ativos": 55,
+   "ready_medio_min": 36.6,
+   "pct_atraso": 59.9,
+   "pct_cancelado": 3.72,
+   "volume": "moderado",
+   "classe": "moderado_problematico",
+   "minutos_por_faixa": {
+    "<30": 649,
+    "30-49": 53,
+    "50-69": 32
+   }
+  },
+  {
+   "data": "2026-02-17",
+   "pedidos": 278,
+   "pico_ativos": 31,
+   "ready_medio_min": 21.2,
+   "pct_atraso": 53.2,
+   "pct_cancelado": 3.24,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 734,
+    "30-49": 7
+   }
+  },
+  {
+   "data": "2026-02-16",
+   "pedidos": 241,
+   "pico_ativos": 41,
+   "ready_medio_min": 28.5,
+   "pct_atraso": 49.4,
+   "pct_cancelado": 2.9,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 670,
+    "30-49": 56
+   }
+  },
+  {
+   "data": "2026-02-15",
+   "pedidos": 191,
+   "pico_ativos": 19,
+   "ready_medio_min": 22.1,
+   "pct_atraso": 28.8,
+   "pct_cancelado": 1.57,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 717
+   }
+  },
+  {
+   "data": "2026-02-14",
+   "pedidos": 206,
+   "pico_ativos": 27,
+   "ready_medio_min": 23.6,
+   "pct_atraso": 35,
+   "pct_cancelado": 0.97,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 702
+   }
+  },
+  {
+   "data": "2026-02-13",
+   "pedidos": 290,
+   "pico_ativos": 42,
+   "ready_medio_min": 30.7,
+   "pct_atraso": 69,
+   "pct_cancelado": 1.72,
+   "volume": "alto",
+   "classe": "alto_volume_problematico",
+   "minutos_por_faixa": {
+    "<30": 639,
+    "30-49": 94
+   }
+  },
+  {
+   "data": "2026-02-12",
+   "pedidos": 274,
+   "pico_ativos": 42,
+   "ready_medio_min": 30.1,
+   "pct_atraso": 63.9,
+   "pct_cancelado": 2.19,
+   "volume": "moderado",
+   "classe": "moderado_problematico",
+   "minutos_por_faixa": {
+    "<30": 653,
+    "30-49": 84
+   }
+  },
+  {
+   "data": "2026-02-11",
+   "pedidos": 279,
+   "pico_ativos": 43,
+   "ready_medio_min": 28.8,
+   "pct_atraso": 71.7,
+   "pct_cancelado": 3.23,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 656,
+    "30-49": 69
+   }
+  },
+  {
+   "data": "2026-02-10",
+   "pedidos": 206,
+   "pico_ativos": 22,
+   "ready_medio_min": 24.5,
+   "pct_atraso": 48.5,
+   "pct_cancelado": 0.97,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 725
+   }
+  },
+  {
+   "data": "2026-02-09",
+   "pedidos": 228,
+   "pico_ativos": 30,
+   "ready_medio_min": 24.2,
+   "pct_atraso": 43.4,
+   "pct_cancelado": 3.51,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 696,
+    "30-49": 2
+   }
+  },
+  {
+   "data": "2026-02-08",
+   "pedidos": 323,
+   "pico_ativos": 41,
+   "ready_medio_min": 33.8,
+   "pct_atraso": 74.3,
+   "pct_cancelado": 3.72,
+   "volume": "alto",
+   "classe": "alto_volume_problematico",
+   "minutos_por_faixa": {
+    "<30": 625,
+    "30-49": 105
+   }
+  },
+  {
+   "data": "2026-02-07",
+   "pedidos": 323,
+   "pico_ativos": 58,
+   "ready_medio_min": 38.2,
+   "pct_atraso": 85.1,
+   "pct_cancelado": 3.72,
+   "volume": "alto",
+   "classe": "alto_volume_problematico",
+   "minutos_por_faixa": {
+    "<30": 587,
+    "30-49": 116,
+    "50-69": 27
+   }
+  },
+  {
+   "data": "2026-02-06",
+   "pedidos": 322,
+   "pico_ativos": 45,
+   "ready_medio_min": 28.2,
+   "pct_atraso": 77,
+   "pct_cancelado": 3.42,
+   "volume": "alto",
+   "classe": "alto_volume_fluido",
+   "minutos_por_faixa": {
+    "<30": 638,
+    "30-49": 105
+   }
+  },
+  {
+   "data": "2026-02-05",
+   "pedidos": 250,
+   "pico_ativos": 56,
+   "ready_medio_min": 32.7,
+   "pct_atraso": 74,
+   "pct_cancelado": 2.4,
+   "volume": "moderado",
+   "classe": "moderado_problematico",
+   "minutos_por_faixa": {
+    "<30": 624,
+    "30-49": 74,
+    "50-69": 24
+   }
+  },
+  {
+   "data": "2026-02-04",
+   "pedidos": 264,
+   "pico_ativos": 37,
+   "ready_medio_min": 31,
+   "pct_atraso": 70.8,
+   "pct_cancelado": 1.89,
+   "volume": "moderado",
+   "classe": "moderado_problematico",
+   "minutos_por_faixa": {
+    "<30": 647,
+    "30-49": 96
+   }
+  },
+  {
+   "data": "2026-02-03",
+   "pedidos": 236,
+   "pico_ativos": 33,
+   "ready_medio_min": 25.4,
+   "pct_atraso": 75.4,
+   "pct_cancelado": 1.69,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 714,
+    "30-49": 23
+   }
+  },
+  {
+   "data": "2026-02-02",
+   "pedidos": 247,
+   "pico_ativos": 30,
+   "ready_medio_min": 21.2,
+   "pct_atraso": 40.9,
+   "pct_cancelado": 2.02,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 726,
+    "30-49": 1
+   }
+  },
+  {
+   "data": "2026-02-01",
+   "pedidos": 332,
+   "pico_ativos": 60,
+   "ready_medio_min": 31.5,
+   "pct_atraso": 63.6,
+   "pct_cancelado": 3.92,
+   "volume": "alto",
+   "classe": "alto_volume_problematico",
+   "minutos_por_faixa": {
+    "<30": 607,
+    "30-49": 97,
+    "50-69": 21
+   }
+  },
+  {
+   "data": "2026-03-31",
+   "pedidos": 210,
+   "pico_ativos": 28,
+   "ready_medio_min": 17.7,
+   "pct_atraso": 2.9,
+   "pct_cancelado": 1.9,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 720
+   }
+  },
+  {
+   "data": "2026-03-30",
+   "pedidos": 200,
+   "pico_ativos": 19,
+   "ready_medio_min": 16.3,
+   "pct_atraso": 6.5,
+   "pct_cancelado": 1,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 734
+   }
+  },
+  {
+   "data": "2026-03-29",
+   "pedidos": 355,
+   "pico_ativos": 57,
+   "ready_medio_min": 26.6,
+   "pct_atraso": 13.5,
+   "pct_cancelado": 0.28,
+   "volume": "alto",
+   "classe": "alto_volume_fluido",
+   "minutos_por_faixa": {
+    "<30": 608,
+    "30-49": 75,
+    "50-69": 35
+   }
+  },
+  {
+   "data": "2026-03-28",
+   "pedidos": 287,
+   "pico_ativos": 44,
+   "ready_medio_min": 25.2,
+   "pct_atraso": 10.5,
+   "pct_cancelado": 1.05,
+   "volume": "alto",
+   "classe": "alto_volume_fluido",
+   "minutos_por_faixa": {
+    "<30": 674,
+    "30-49": 49
+   }
+  },
+  {
+   "data": "2026-03-27",
+   "pedidos": 322,
+   "pico_ativos": 68,
+   "ready_medio_min": 32.8,
+   "pct_atraso": 23.6,
+   "pct_cancelado": 0.93,
+   "volume": "alto",
+   "classe": "alto_volume_problematico",
+   "minutos_por_faixa": {
+    "<30": 593,
+    "30-49": 59,
+    "50-69": 76
+   }
+  },
+  {
+   "data": "2026-03-26",
+   "pedidos": 228,
+   "pico_ativos": 22,
+   "ready_medio_min": 18.1,
+   "pct_atraso": 7.5,
+   "pct_cancelado": 1.75,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 725
+   }
+  },
+  {
+   "data": "2026-03-25",
+   "pedidos": 228,
+   "pico_ativos": 41,
+   "ready_medio_min": 25.7,
+   "pct_atraso": 13.6,
+   "pct_cancelado": 2.19,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 661,
+    "30-49": 63
+   }
+  },
+  {
+   "data": "2026-03-24",
+   "pedidos": 197,
+   "pico_ativos": 22,
+   "ready_medio_min": 18,
+   "pct_atraso": 3.6,
+   "pct_cancelado": 0.51,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 723
+   }
+  },
+  {
+   "data": "2026-03-23",
+   "pedidos": 193,
+   "pico_ativos": 22,
+   "ready_medio_min": 20.3,
+   "pct_atraso": 2.6,
+   "pct_cancelado": 2.07,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 727
+   }
+  },
+  {
+   "data": "2026-03-22",
+   "pedidos": 320,
+   "pico_ativos": 65,
+   "ready_medio_min": 33.5,
+   "pct_atraso": 19.4,
+   "pct_cancelado": 1.88,
+   "volume": "alto",
+   "classe": "alto_volume_problematico",
+   "minutos_por_faixa": {
+    "<30": 546,
+    "30-49": 70,
+    "50-69": 73
+   }
+  },
+  {
+   "data": "2026-03-21",
+   "pedidos": 304,
+   "pico_ativos": 28,
+   "ready_medio_min": 22,
+   "pct_atraso": 3.6,
+   "pct_cancelado": 2.3,
+   "volume": "alto",
+   "classe": "alto_volume_fluido",
+   "minutos_por_faixa": {
+    "<30": 735
+   }
+  },
+  {
+   "data": "2026-03-20",
+   "pedidos": 310,
+   "pico_ativos": 58,
+   "ready_medio_min": 33.5,
+   "pct_atraso": 37.4,
+   "pct_cancelado": 4.84,
+   "volume": "alto",
+   "classe": "alto_volume_problematico",
+   "minutos_por_faixa": {
+    "<30": 575,
+    "30-49": 107,
+    "50-69": 45
+   }
+  },
+  {
+   "data": "2026-03-19",
+   "pedidos": 244,
+   "pico_ativos": 24,
+   "ready_medio_min": 18,
+   "pct_atraso": 7,
+   "pct_cancelado": 1.64,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 722
+   }
+  },
+  {
+   "data": "2026-03-18",
+   "pedidos": 205,
+   "pico_ativos": 27,
+   "ready_medio_min": 20.7,
+   "pct_atraso": 8.3,
+   "pct_cancelado": 1.46,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 728
+   }
+  },
+  {
+   "data": "2026-03-17",
+   "pedidos": 186,
+   "pico_ativos": 17,
+   "ready_medio_min": 14.6,
+   "pct_atraso": 2.7,
+   "pct_cancelado": 1.61,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 721
+   }
+  },
+  {
+   "data": "2026-03-16",
+   "pedidos": 223,
+   "pico_ativos": 23,
+   "ready_medio_min": 18.2,
+   "pct_atraso": 5.4,
+   "pct_cancelado": 1.35,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 713
+   }
+  },
+  {
+   "data": "2026-03-15",
+   "pedidos": 375,
+   "pico_ativos": 57,
+   "ready_medio_min": 26.5,
+   "pct_atraso": 6.9,
+   "pct_cancelado": 1.33,
+   "volume": "alto",
+   "classe": "alto_volume_fluido",
+   "minutos_por_faixa": {
+    "<30": 625,
+    "30-49": 64,
+    "50-69": 18
+   }
+  },
+  {
+   "data": "2026-03-14",
+   "pedidos": 231,
+   "pico_ativos": 29,
+   "ready_medio_min": 19.6,
+   "pct_atraso": 8.2,
+   "pct_cancelado": 0,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 721
+   }
+  },
+  {
+   "data": "2026-03-13",
+   "pedidos": 358,
+   "pico_ativos": 68,
+   "ready_medio_min": 27.9,
+   "pct_atraso": 15.4,
+   "pct_cancelado": 1.96,
+   "volume": "alto",
+   "classe": "alto_volume_fluido",
+   "minutos_por_faixa": {
+    "<30": 626,
+    "30-49": 77,
+    "50-69": 38
+   }
+  },
+  {
+   "data": "2026-03-12",
+   "pedidos": 217,
+   "pico_ativos": 28,
+   "ready_medio_min": 23.6,
+   "pct_atraso": 27.6,
+   "pct_cancelado": 3.69,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 704
+   }
+  },
+  {
+   "data": "2026-03-11",
+   "pedidos": 226,
+   "pico_ativos": 27,
+   "ready_medio_min": 21.7,
+   "pct_atraso": 11.9,
+   "pct_cancelado": 1.33,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 732
+   }
+  },
+  {
+   "data": "2026-03-10",
+   "pedidos": 216,
+   "pico_ativos": 27,
+   "ready_medio_min": 22.3,
+   "pct_atraso": 24.5,
+   "pct_cancelado": 2.31,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 724
+   }
+  },
+  {
+   "data": "2026-03-09",
+   "pedidos": 220,
+   "pico_ativos": 22,
+   "ready_medio_min": 20.6,
+   "pct_atraso": 23.6,
+   "pct_cancelado": 1.82,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 755
+   }
+  },
+  {
+   "data": "2026-03-08",
+   "pedidos": 319,
+   "pico_ativos": 56,
+   "ready_medio_min": 34.1,
+   "pct_atraso": 59.2,
+   "pct_cancelado": 1.88,
+   "volume": "alto",
+   "classe": "alto_volume_problematico",
+   "minutos_por_faixa": {
+    "<30": 567,
+    "30-49": 149,
+    "50-69": 11
+   }
+  },
+  {
+   "data": "2026-03-07",
+   "pedidos": 319,
+   "pico_ativos": 46,
+   "ready_medio_min": 32.5,
+   "pct_atraso": 60.2,
+   "pct_cancelado": 0.63,
+   "volume": "alto",
+   "classe": "alto_volume_problematico",
+   "minutos_por_faixa": {
+    "<30": 597,
+    "30-49": 131
+   }
+  },
+  {
+   "data": "2026-03-06",
+   "pedidos": 321,
+   "pico_ativos": 64,
+   "ready_medio_min": 32.1,
+   "pct_atraso": 63.6,
+   "pct_cancelado": 3.43,
+   "volume": "alto",
+   "classe": "alto_volume_problematico",
+   "minutos_por_faixa": {
+    "<30": 597,
+    "30-49": 122,
+    "50-69": 28
+   }
+  },
+  {
+   "data": "2026-03-05",
+   "pedidos": 218,
+   "pico_ativos": 34,
+   "ready_medio_min": 30.8,
+   "pct_atraso": 26.6,
+   "pct_cancelado": 2.75,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 698,
+    "30-49": 22
+   }
+  },
+  {
+   "data": "2026-03-04",
+   "pedidos": 118,
+   "pico_ativos": 16,
+   "ready_medio_min": 24.9,
+   "pct_atraso": 33.1,
+   "pct_cancelado": 12.71,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 712
+   }
+  },
+  {
+   "data": "2026-03-03",
+   "pedidos": 212,
+   "pico_ativos": 24,
+   "ready_medio_min": 25.8,
+   "pct_atraso": 27.8,
+   "pct_cancelado": 0,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 732
+   }
+  },
+  {
+   "data": "2026-03-02",
+   "pedidos": 194,
+   "pico_ativos": 30,
+   "ready_medio_min": 24.5,
+   "pct_atraso": 23.2,
+   "pct_cancelado": 1.55,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 718,
+    "30-49": 2
+   }
+  },
+  {
+   "data": "2026-03-01",
+   "pedidos": 305,
+   "pico_ativos": 65,
+   "ready_medio_min": 34.5,
+   "pct_atraso": 50.8,
+   "pct_cancelado": 0.98,
+   "volume": "alto",
+   "classe": "alto_volume_problematico",
+   "minutos_por_faixa": {
+    "<30": 597,
+    "30-49": 80,
+    "50-69": 42
+   }
+  },
+  {
+   "data": "2026-04-03",
+   "pedidos": 338,
+   "pico_ativos": 43,
+   "ready_medio_min": 25,
+   "pct_atraso": 6.8,
+   "pct_cancelado": 1.18,
+   "volume": "alto",
+   "classe": "alto_volume_fluido",
+   "minutos_por_faixa": {
+    "<30": 649,
+    "30-49": 73
+   }
+  },
+  {
+   "data": "2026-04-04",
+   "pedidos": 207,
+   "pico_ativos": 25,
+   "ready_medio_min": 20.4,
+   "pct_atraso": 0,
+   "pct_cancelado": 0.48,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 710
+   }
+  },
+  {
+   "data": "2026-04-05",
+   "pedidos": 330,
+   "pico_ativos": 46,
+   "ready_medio_min": 28.6,
+   "pct_atraso": 5.8,
+   "pct_cancelado": 0.91,
+   "volume": "alto",
+   "classe": "alto_volume_fluido",
+   "minutos_por_faixa": {
+    "<30": 613,
+    "30-49": 101
+   }
+  },
+  {
+   "data": "2026-04-06",
+   "pedidos": 222,
+   "pico_ativos": 26,
+   "ready_medio_min": 19.1,
+   "pct_atraso": 5,
+   "pct_cancelado": 0.9,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 725
+   }
+  },
+  {
+   "data": "2026-04-07",
+   "pedidos": 218,
+   "pico_ativos": 30,
+   "ready_medio_min": 20.3,
+   "pct_atraso": 9.6,
+   "pct_cancelado": 1.38,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 721,
+    "30-49": 2
+   }
+  },
+  {
+   "data": "2026-04-08",
+   "pedidos": 252,
+   "pico_ativos": 32,
+   "ready_medio_min": 24,
+   "pct_atraso": 15.1,
+   "pct_cancelado": 0.4,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 712,
+    "30-49": 15
+   }
+  },
+  {
+   "data": "2026-04-09",
+   "pedidos": 249,
+   "pico_ativos": 35,
+   "ready_medio_min": 22.8,
+   "pct_atraso": 19.7,
+   "pct_cancelado": 0.8,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 706,
+    "30-49": 18
+   }
+  },
+  {
+   "data": "2026-04-10",
+   "pedidos": 339,
+   "pico_ativos": 70,
+   "ready_medio_min": 36.2,
+   "pct_atraso": 44.5,
+   "pct_cancelado": 0.88,
+   "volume": "alto",
+   "classe": "alto_volume_problematico",
+   "minutos_por_faixa": {
+    "<30": 521,
+    "30-49": 150,
+    "50-69": 67,
+    "70+": 1
+   }
+  },
+  {
+   "data": "2026-04-11",
+   "pedidos": 338,
+   "pico_ativos": 60,
+   "ready_medio_min": 37.6,
+   "pct_atraso": 46.4,
+   "pct_cancelado": 0.59,
+   "volume": "alto",
+   "classe": "alto_volume_problematico",
+   "minutos_por_faixa": {
+    "<30": 546,
+    "30-49": 101,
+    "50-69": 83
+   }
+  },
+  {
+   "data": "2026-04-12",
+   "pedidos": 362,
+   "pico_ativos": 70,
+   "ready_medio_min": 35.5,
+   "pct_atraso": 38.4,
+   "pct_cancelado": 0.28,
+   "volume": "alto",
+   "classe": "alto_volume_problematico",
+   "minutos_por_faixa": {
+    "<30": 575,
+    "30-49": 53,
+    "50-69": 108,
+    "70+": 1
+   }
+  },
+  {
+   "data": "2026-04-13",
+   "pedidos": 222,
+   "pico_ativos": 28,
+   "ready_medio_min": 20,
+   "pct_atraso": 7.7,
+   "pct_cancelado": 0.45,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 718
+   }
+  },
+  {
+   "data": "2026-04-14",
+   "pedidos": 204,
+   "pico_ativos": 33,
+   "ready_medio_min": 24.8,
+   "pct_atraso": 20.1,
+   "pct_cancelado": 1.47,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 716,
+    "30-49": 8
+   }
+  },
+  {
+   "data": "2026-04-15",
+   "pedidos": 240,
+   "pico_ativos": 30,
+   "ready_medio_min": 26.8,
+   "pct_atraso": 17.5,
+   "pct_cancelado": 1.67,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 715,
+    "30-49": 8
+   }
+  },
+  {
+   "data": "2026-04-16",
+   "pedidos": 248,
+   "pico_ativos": 44,
+   "ready_medio_min": 26.3,
+   "pct_atraso": 21,
+   "pct_cancelado": 0.4,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 681,
+    "30-49": 61
+   }
+  },
+  {
+   "data": "2026-04-17",
+   "pedidos": 325,
+   "pico_ativos": 72,
+   "ready_medio_min": 35.6,
+   "pct_atraso": 40,
+   "pct_cancelado": 0.92,
+   "volume": "alto",
+   "classe": "alto_volume_problematico",
+   "minutos_por_faixa": {
+    "<30": 520,
+    "30-49": 99,
+    "50-69": 80,
+    "70+": 12
+   }
+  },
+  {
+   "data": "2026-04-18",
+   "pedidos": 203,
+   "pico_ativos": 35,
+   "ready_medio_min": 25.9,
+   "pct_atraso": 18.7,
+   "pct_cancelado": 0,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 685,
+    "30-49": 36
+   }
+  },
+  {
+   "data": "2026-04-19",
+   "pedidos": 248,
+   "pico_ativos": 30,
+   "ready_medio_min": 18,
+   "pct_atraso": 12.5,
+   "pct_cancelado": 0.4,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 732,
+    "30-49": 1
+   }
+  },
+  {
+   "data": "2026-04-20",
+   "pedidos": 264,
+   "pico_ativos": 40,
+   "ready_medio_min": 30.6,
+   "pct_atraso": 29.2,
+   "pct_cancelado": 3.03,
+   "volume": "moderado",
+   "classe": "moderado_problematico",
+   "minutos_por_faixa": {
+    "<30": 636,
+    "30-49": 92
+   }
+  },
+  {
+   "data": "2026-04-21",
+   "pedidos": 344,
+   "pico_ativos": 57,
+   "ready_medio_min": 33.6,
+   "pct_atraso": 38.7,
+   "pct_cancelado": 1.16,
+   "volume": "alto",
+   "classe": "alto_volume_problematico",
+   "minutos_por_faixa": {
+    "<30": 554,
+    "30-49": 150,
+    "50-69": 25
+   }
+  },
+  {
+   "data": "2026-04-22",
+   "pedidos": 203,
+   "pico_ativos": 16,
+   "ready_medio_min": 15.9,
+   "pct_atraso": 12.3,
+   "pct_cancelado": 0.49,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 722
+   }
+  },
+  {
+   "data": "2026-04-23",
+   "pedidos": 221,
+   "pico_ativos": 30,
+   "ready_medio_min": 22,
+   "pct_atraso": 19,
+   "pct_cancelado": 0.9,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 724,
+    "30-49": 4
+   }
+  },
+  {
+   "data": "2026-04-24",
+   "pedidos": 347,
+   "pico_ativos": 66,
+   "ready_medio_min": 32.1,
+   "pct_atraso": 22.8,
+   "pct_cancelado": 0.86,
+   "volume": "alto",
+   "classe": "alto_volume_problematico",
+   "minutos_por_faixa": {
+    "<30": 540,
+    "30-49": 151,
+    "50-69": 46
+   }
+  },
+  {
+   "data": "2026-04-25",
+   "pedidos": 312,
+   "pico_ativos": 55,
+   "ready_medio_min": 30.3,
+   "pct_atraso": 16,
+   "pct_cancelado": 0,
+   "volume": "alto",
+   "classe": "alto_volume_problematico",
+   "minutos_por_faixa": {
+    "<30": 587,
+    "30-49": 110,
+    "50-69": 34
+   }
+  },
+  {
+   "data": "2026-04-26",
+   "pedidos": 375,
+   "pico_ativos": 75,
+   "ready_medio_min": 32.1,
+   "pct_atraso": 26.1,
+   "pct_cancelado": 1.07,
+   "volume": "alto",
+   "classe": "alto_volume_problematico",
+   "minutos_por_faixa": {
+    "<30": 565,
+    "30-49": 78,
+    "50-69": 76,
+    "70+": 9
+   }
+  },
+  {
+   "data": "2026-04-27",
+   "pedidos": 246,
+   "pico_ativos": 39,
+   "ready_medio_min": 22.9,
+   "pct_atraso": 23.6,
+   "pct_cancelado": 0.41,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 687,
+    "30-49": 42
+   }
+  },
+  {
+   "data": "2026-04-28",
+   "pedidos": 246,
+   "pico_ativos": 32,
+   "ready_medio_min": 22.1,
+   "pct_atraso": 23.6,
+   "pct_cancelado": 1.22,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 726,
+    "30-49": 10
+   }
+  },
+  {
+   "data": "2026-04-29",
+   "pedidos": 278,
+   "pico_ativos": 41,
+   "ready_medio_min": 25.4,
+   "pct_atraso": 16.2,
+   "pct_cancelado": 0,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 641,
+    "30-49": 72
+   }
+  },
+  {
+   "data": "2026-04-30",
+   "pedidos": 303,
+   "pico_ativos": 67,
+   "ready_medio_min": 32.6,
+   "pct_atraso": 36,
+   "pct_cancelado": 1.32,
+   "volume": "alto",
+   "classe": "alto_volume_problematico",
+   "minutos_por_faixa": {
+    "<30": 596,
+    "30-49": 66,
+    "50-69": 75
+   }
+  },
+  {
+   "data": "2026-05-01",
+   "pedidos": 307,
+   "pico_ativos": 43,
+   "ready_medio_min": 28.3,
+   "pct_atraso": 17.6,
+   "pct_cancelado": 0.33,
+   "volume": "alto",
+   "classe": "alto_volume_fluido",
+   "minutos_por_faixa": {
+    "<30": 644,
+    "30-49": 96
+   }
+  },
+  {
+   "data": "2026-05-02",
+   "pedidos": 262,
+   "pico_ativos": 37,
+   "ready_medio_min": 22.7,
+   "pct_atraso": 18.7,
+   "pct_cancelado": 0.38,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 683,
+    "30-49": 31
+   }
+  },
+  {
+   "data": "2026-05-03",
+   "pedidos": 391,
+   "pico_ativos": 80,
+   "ready_medio_min": 34.2,
+   "pct_atraso": 28.9,
+   "pct_cancelado": 0.77,
+   "volume": "alto",
+   "classe": "alto_volume_problematico",
+   "minutos_por_faixa": {
+    "<30": 564,
+    "30-49": 68,
+    "50-69": 74,
+    "70+": 20
+   }
+  },
+  {
+   "data": "2026-05-04",
+   "pedidos": 264,
+   "pico_ativos": 32,
+   "ready_medio_min": 22.9,
+   "pct_atraso": 10.6,
+   "pct_cancelado": 0.38,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 732,
+    "30-49": 1
+   }
+  },
+  {
+   "data": "2026-05-05",
+   "pedidos": 232,
+   "pico_ativos": 28,
+   "ready_medio_min": 21.2,
+   "pct_atraso": 9.9,
+   "pct_cancelado": 1.29,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 729
+   }
+  },
+  {
+   "data": "2026-05-06",
+   "pedidos": 240,
+   "pico_ativos": 31,
+   "ready_medio_min": 25.4,
+   "pct_atraso": 21.7,
+   "pct_cancelado": 0.42,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 712,
+    "30-49": 13
+   }
+  },
+  {
+   "data": "2026-05-07",
+   "pedidos": 233,
+   "pico_ativos": 30,
+   "ready_medio_min": 23.8,
+   "pct_atraso": 22.7,
+   "pct_cancelado": 2.58,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 737,
+    "30-49": 3
+   }
+  },
+  {
+   "data": "2026-05-08",
+   "pedidos": 356,
+   "pico_ativos": 74,
+   "ready_medio_min": 44.6,
+   "pct_atraso": 59.3,
+   "pct_cancelado": 0.84,
+   "volume": "alto",
+   "classe": "alto_volume_problematico",
+   "minutos_por_faixa": {
+    "<30": 498,
+    "30-49": 65,
+    "50-69": 167,
+    "70+": 9
+   }
+  },
+  {
+   "data": "2026-05-09",
+   "pedidos": 307,
+   "pico_ativos": 47,
+   "ready_medio_min": 31.6,
+   "pct_atraso": 20.8,
+   "pct_cancelado": 1.3,
+   "volume": "alto",
+   "classe": "alto_volume_problematico",
+   "minutos_por_faixa": {
+    "<30": 512,
+    "30-49": 165
+   }
+  },
+  {
+   "data": "2026-05-10",
+   "pedidos": 323,
+   "pico_ativos": 50,
+   "ready_medio_min": 28.7,
+   "pct_atraso": 27.2,
+   "pct_cancelado": 1.24,
+   "volume": "alto",
+   "classe": "alto_volume_fluido",
+   "minutos_por_faixa": {
+    "<30": 600,
+    "30-49": 126,
+    "50-69": 3
+   }
+  },
+  {
+   "data": "2026-05-11",
+   "pedidos": 214,
+   "pico_ativos": 28,
+   "ready_medio_min": 20.3,
+   "pct_atraso": 10.7,
+   "pct_cancelado": 0.47,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 721
+   }
+  },
+  {
+   "data": "2026-05-12",
+   "pedidos": 216,
+   "pico_ativos": 25,
+   "ready_medio_min": 22.3,
+   "pct_atraso": 15.3,
+   "pct_cancelado": 0.46,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 724
+   }
+  },
+  {
+   "data": "2026-05-13",
+   "pedidos": 233,
+   "pico_ativos": 26,
+   "ready_medio_min": 21.9,
+   "pct_atraso": 15.5,
+   "pct_cancelado": 0.86,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 735
+   }
+  },
+  {
+   "data": "2026-05-14",
+   "pedidos": 250,
+   "pico_ativos": 34,
+   "ready_medio_min": 23,
+   "pct_atraso": 26,
+   "pct_cancelado": 1.2,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 715,
+    "30-49": 15
+   }
+  },
+  {
+   "data": "2026-05-15",
+   "pedidos": 364,
+   "pico_ativos": 47,
+   "ready_medio_min": 29.8,
+   "pct_atraso": 35.7,
+   "pct_cancelado": 2.2,
+   "volume": "alto",
+   "classe": "alto_volume_fluido",
+   "minutos_por_faixa": {
+    "<30": 547,
+    "30-49": 190
+   }
+  },
+  {
+   "data": "2026-05-16",
+   "pedidos": 327,
+   "pico_ativos": 54,
+   "ready_medio_min": 31.9,
+   "pct_atraso": 33.6,
+   "pct_cancelado": 0.31,
+   "volume": "alto",
+   "classe": "alto_volume_problematico",
+   "minutos_por_faixa": {
+    "<30": 593,
+    "30-49": 102,
+    "50-69": 27
+   }
+  },
+  {
+   "data": "2026-05-17",
+   "pedidos": 358,
+   "pico_ativos": 56,
+   "ready_medio_min": 29,
+   "pct_atraso": 18.4,
+   "pct_cancelado": 0.56,
+   "volume": "alto",
+   "classe": "alto_volume_fluido",
+   "minutos_por_faixa": {
+    "<30": 575,
+    "30-49": 114,
+    "50-69": 31
+   }
+  },
+  {
+   "data": "2026-05-18",
+   "pedidos": 258,
+   "pico_ativos": 34,
+   "ready_medio_min": 21.9,
+   "pct_atraso": 11.6,
+   "pct_cancelado": 1.55,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 689,
+    "30-49": 36
+   }
+  },
+  {
+   "data": "2026-05-19",
+   "pedidos": 223,
+   "pico_ativos": 29,
+   "ready_medio_min": 19.6,
+   "pct_atraso": 14.8,
+   "pct_cancelado": 0.9,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 722
+   }
+  },
+  {
+   "data": "2026-05-20",
+   "pedidos": 254,
+   "pico_ativos": 39,
+   "ready_medio_min": 31.5,
+   "pct_atraso": 33.5,
+   "pct_cancelado": 1.57,
+   "volume": "moderado",
+   "classe": "moderado_problematico",
+   "minutos_por_faixa": {
+    "<30": 630,
+    "30-49": 95
+   }
+  },
+  {
+   "data": "2026-05-21",
+   "pedidos": 227,
+   "pico_ativos": 50,
+   "ready_medio_min": 29,
+   "pct_atraso": 28.6,
+   "pct_cancelado": 0.88,
+   "volume": "baixo",
+   "classe": "baixo_volume",
+   "minutos_por_faixa": {
+    "<30": 666,
+    "30-49": 74,
+    "50-69": 1
+   }
+  },
+  {
+   "data": "2026-05-22",
+   "pedidos": 347,
+   "pico_ativos": 74,
+   "ready_medio_min": 37.9,
+   "pct_atraso": 35.2,
+   "pct_cancelado": 0.58,
+   "volume": "alto",
+   "classe": "alto_volume_problematico",
+   "minutos_por_faixa": {
+    "<30": 536,
+    "30-49": 63,
+    "50-69": 133,
+    "70+": 5
+   }
+  },
+  {
+   "data": "2026-05-23",
+   "pedidos": 302,
+   "pico_ativos": 59,
+   "ready_medio_min": 31.3,
+   "pct_atraso": 34.1,
+   "pct_cancelado": 0,
+   "volume": "alto",
+   "classe": "alto_volume_problematico",
+   "minutos_por_faixa": {
+    "<30": 633,
+    "30-49": 67,
+    "50-69": 43
+   }
+  },
+  {
+   "data": "2026-05-24",
+   "pedidos": 436,
+   "pico_ativos": 47,
+   "ready_medio_min": 27.7,
+   "pct_atraso": 11.2,
+   "pct_cancelado": 0,
+   "volume": "alto",
+   "classe": "alto_volume_fluido",
+   "minutos_por_faixa": {
+    "<30": 532,
+    "30-49": 187
+   }
+  },
+  {
+   "data": "2026-05-25",
+   "pedidos": 253,
+   "pico_ativos": 28,
+   "ready_medio_min": 23.7,
+   "pct_atraso": 14.2,
+   "pct_cancelado": 1.19,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 726
+   }
+  },
+  {
+   "data": "2026-05-26",
+   "pedidos": 248,
+   "pico_ativos": 28,
+   "ready_medio_min": 21.5,
+   "pct_atraso": 28.6,
+   "pct_cancelado": 0.4,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 731
+   }
+  },
+  {
+   "data": "2026-06-26",
+   "pedidos": 357,
+   "pico_ativos": 70,
+   "ready_medio_min": 36.8,
+   "pct_atraso": 32.5,
+   "pct_cancelado": 1.68,
+   "volume": "alto",
+   "classe": "alto_volume_problematico",
+   "minutos_por_faixa": {
+    "<30": 514,
+    "30-49": 129,
+    "50-69": 89,
+    "70+": 1
+   }
+  },
+  {
+   "data": "2026-06-27",
+   "pedidos": 314,
+   "pico_ativos": 53,
+   "ready_medio_min": 32,
+   "pct_atraso": 35,
+   "pct_cancelado": 1.91,
+   "volume": "alto",
+   "classe": "alto_volume_problematico",
+   "minutos_por_faixa": {
+    "<30": 569,
+    "30-49": 138,
+    "50-69": 16
+   }
+  },
+  {
+   "data": "2026-06-28",
+   "pedidos": 356,
+   "pico_ativos": 64,
+   "ready_medio_min": 27.2,
+   "pct_atraso": 15.7,
+   "pct_cancelado": 0.84,
+   "volume": "alto",
+   "classe": "alto_volume_fluido",
+   "minutos_por_faixa": {
+    "<30": 602,
+    "30-49": 66,
+    "50-69": 55
+   }
+  },
+  {
+   "data": "2026-06-29",
+   "pedidos": 247,
+   "pico_ativos": 59,
+   "ready_medio_min": 41.3,
+   "pct_atraso": 47,
+   "pct_cancelado": 8.1,
+   "volume": "moderado",
+   "classe": "moderado_problematico",
+   "minutos_por_faixa": {
+    "<30": 514,
+    "30-49": 115,
+    "50-69": 24
+   }
+  },
+  {
+   "data": "2026-06-30",
+   "pedidos": 243,
+   "pico_ativos": 31,
+   "ready_medio_min": 23.1,
+   "pct_atraso": 21.8,
+   "pct_cancelado": 1.23,
+   "volume": "moderado",
+   "classe": "moderado_fluido",
+   "minutos_por_faixa": {
+    "<30": 725,
+    "30-49": 5
+   }
+  }
+ ]
+}
