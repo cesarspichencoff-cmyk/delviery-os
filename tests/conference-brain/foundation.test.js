@@ -142,6 +142,25 @@ describe("pedidos e normalizacao", () => {
     assert.ok(r.warnings.some((w) => w.startsWith("unidades_divergentes")));
   });
 
+  // Defeito real encontrado nos dados historicos: 3 pedidos tinham observacao
+  // com quebra de linha, e o resto da frase virava um item fantasma
+  // ("pode colocar salmao"). A quebra e' do TEXTO, nao separa itens.
+  test("observacao com quebra de linha nao cria item fantasma", () => {
+    const it = N.parseItemsHtml(
+      "1x Combinado Kids\n1x Ceviche <em>(nao gosto de tilapia ao inves\npode colocar salmao)</em>");
+    assert.equal(it.length, 2, "duas linhas de item, nao tres");
+    assert.equal(it[1].raw_name, "Ceviche");
+    assert.ok(!it.some((x) => /pode colocar salmao/i.test(x.raw_name)), "nome nao pode conter a observacao");
+  });
+
+  test("a quebra escrita pelo cliente e' preservada na observacao", () => {
+    const it = N.parseItemsHtml("2x Temaki de Salmao <em>(1 - sem cream cheese\n1 - normal)</em>");
+    assert.equal(it.length, 1);
+    assert.equal(it[0].quantity, 2);
+    // texto do cliente inteiro, com a quebra original — nada inventado, nada perdido
+    assert.equal(it[0].observation, "1 - sem cream cheese\n1 - normal");
+  });
+
   test("dedup preserva o mais completo e registra o que divergiu", () => {
     const a = { order_id: "z", status: "concluido", received_at: at(0), total_value: null, first_observed_at: at(0) };
     const b = { order_id: "z", status: "concluido", received_at: at(0), total_value: 50, first_observed_at: at(1) };

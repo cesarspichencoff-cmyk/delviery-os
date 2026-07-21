@@ -64,22 +64,44 @@ function statusNote(raw) {
  * "1x Uramaki Ebiten\n1x Yakissoba <em>(sem cebola)</em>" -> linhas de item.
  * A observação vem no <em>(...)</em> e pertence ao pedido/linha, nunca é inventada.
  */
+/**
+ * Reúne linhas partidas no meio de um <em>. A observação do cliente pode conter
+ * quebra de linha ("1 - sem cream cheese" / "1 - normal"): essa quebra é do TEXTO
+ * e não separa itens. Sem isto, o resto da frase vira um item fantasma — defeito
+ * real observado em 3 pedidos do histórico.
+ */
+function juntarLinhasDeObservacao(lines) {
+  const out = [];
+  let aberta = null;
+  for (const line of lines) {
+    if (aberta !== null) {
+      aberta += "\n" + line;
+      if (/<\/em>/i.test(line)) { out.push(aberta); aberta = null; }
+      continue;
+    }
+    const abre = (line.match(/<em>/gi) || []).length;
+    const fecha = (line.match(/<\/em>/gi) || []).length;
+    if (abre > fecha) aberta = line; else out.push(line);
+  }
+  if (aberta !== null) out.push(aberta);   // <em> sem fechamento: preserva o texto
+  return out;
+}
+
 function parseItemsHtml(html) {
   const items = [];
   if (!html) return items;
   const text = String(html).replace(/<br\s*\/?>/gi, "\n");
-  const lines = text.split(/\n+/).map((l) => l.trim()).filter(Boolean);
-  lines.forEach((line, idx) => {
-    let observation = null;
-    const em = line.match(/<em>\s*\(?([^<]*?)\)?\s*<\/em>/i);
-    if (em) observation = em[1].trim() || null;
-    const clean = line.replace(/<[^>]+>/g, "").trim();
+  const brutas = text.split(/\n+/).map((l) => l.trim()).filter(Boolean);
+  juntarLinhasDeObservacao(brutas).forEach((line, idx) => {
+    // [\s\S] em vez de [^<]: a observação pode atravessar a quebra do cliente.
+    const em = line.match(/<em>\s*\(?([\s\S]*?)\)?\s*<\/em>/i);
+    const observation = em ? (em[1].trim() || null) : null;
+    // O nome sai da linha SEM o bloco <em>: subtrair o texto depois falha quando
+    // a observação tem quebra de linha.
+    const clean = line.replace(/<em>[\s\S]*?<\/em>/gi, " ").replace(/<[^>]+>/g, "").trim();
     const qm = clean.match(/^(\d+)\s*x\s*(.+)$/i);
     const quantity = qm ? Number(qm[1]) : 1;
-    let raw_name = (qm ? qm[2] : clean).trim();
-    // a observação, já capturada, não deve poluir o nome
-    if (observation) raw_name = raw_name.replace(/\(?\s*$/, "").replace(observation, "").replace(/\(\s*\)?$/, "").trim();
-    raw_name = raw_name.replace(/[\s(]+$/, "").trim();
+    const raw_name = (qm ? qm[2] : clean).replace(/[\s(]+$/, "").trim();
     if (!raw_name) return;
     items.push({ line_index: idx, raw_name, normalized_name: normalizeName(raw_name), quantity, observation });
   });
