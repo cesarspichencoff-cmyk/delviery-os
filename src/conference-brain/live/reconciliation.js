@@ -257,8 +257,190 @@ function reconcileOrder(externalId, observations) {
   };
 }
 
+/* ============================================================================
+ * Sprint 2.1 — reconciliação MULTIDIMENSIONAL (Fase 16).
+ * ----------------------------------------------------------------------------
+ * `reconcileOrder` acima resolve o modelo unidimensional do Sprint 2 (mantido
+ * por compatibilidade). A partir daqui, cada dimensão de
+ * `live/multidimensional-observation.js` é reconciliada de forma
+ * INDEPENDENTE — nenhuma "vence" as outras, e nenhuma observação mais
+ * compacta (ex.: cartão do modo Expedição) apaga um dado mais detalhado que
+ * já foi visto (ex.: courier_state visto nos detalhes do pedido).
+ *
+ * Regra operacional: um valor "vazio" de uma dimensão (unknown/not_applicable)
+ * significa "esta leitura não mostrou essa informação", não "essa informação
+ * deixou de existir" — por isso ele NUNCA entra como candidato a "atual".
+ * ==========================================================================*/
+const M = require("./multidimensional-observation");
+const { ORDER_STATE, ORDER_STATE_RANK } = require("../contracts/live-states");
+const Grouping = require("./grouping");
+
+const EMPTY_DIMENSION_VALUES = Object.freeze({
+  order_state: ["unknown"],
+  visual: ["unknown"],
+  layout: ["unknown"],
+  readiness: ["unknown"],
+  courier: ["not_applicable", "unknown"],
+  dispatch: ["not_applicable", "unknown"],
+  completion: ["unknown"],
+  fulfillment: ["unknown"]
+});
+
+/**
+ * Reconcilia uma dimensão ESCALAR (um valor canônico por leitura) preservando
+ * todo o histórico e escolhendo como "atual" a leitura REAL mais recente —
+ * leituras vazias (a dimensão não apareceu naquele modo/tela) são ignoradas
+ * como candidatas, mas continuam no histórico bruto se presentes.
+ */
+function reconcileScalarDimension(observations, dimKey, valueField) {
+  valueField = valueField || "value";
+  const empties = EMPTY_DIMENSION_VALUES[dimKey] || [];
+  const raw = [];
+  const candidates = [];
+  for (const o of observations) {
+    const dim = o && o[dimKey];
+    if (!dim) continue;
+    const value = dim[valueField];
+    if (value == null) continue;
+    const entry = {
+      value, observed_at: dim.observed_at || o.observed_at || null,
+      confidence: dim.confidence || "media",
+      raw_text: dim.raw_text || dim.raw_mode_name || dim.raw_section || null
+    };
+    raw.push(entry);
+    if (!empties.includes(value)) candidates.push(entry);
+  }
+  if (!candidates.length) {
+    return { value: empties[0] || "unknown", changed_at: null, history: raw, regressions: [] };
+  }
+  candidates.sort((a, b) => String(a.observed_at || "").localeCompare(String(b.observed_at || "")));
+
+  // regressão só é avaliada para dimensões com progressão natural conhecida
+  // (order_state) — as demais (courier/dispatch/...) não têm ordem estrita
+  // o bastante para acusar regressão sem risco de falso positivo.
+  const regressions = [];
+  if (dimKey === "order_state") {
+    let lastRank = -1;
+    for (const c of candidates) {
+      const r = ORDER_STATE_RANK.indexOf(c.value);
+      if (r === -1) continue;
+      if (lastRank !== -1 && r < lastRank) {
+        regressions.push({
+          type: "regressao_de_order_state_inesperada",
+          from: ORDER_STATE_RANK[lastRank], to: c.value, observed_at: c.observed_at
+        });
+      }
+      lastRank = Math.max(lastRank, r);
+    }
+  }
+
+  const current = candidates[candidates.length - 1];
+  return { value: current.value, changed_at: current.observed_at, history: raw, regressions };
+}
+
+/**
+ * Reconcilia `readiness.available_actions[]` — versionado como os itens:
+ * dedup de leituras idênticas consecutivas, nunca converte ação disponível em
+ * evento (isso é papel do relógio, nunca desta reconciliação).
+ */
+function reconcileAvailableActions(observations) {
+  const withActions = observations
+    .filter((o) => o.readiness && Array.isArray(o.readiness.available_actions) && o.readiness.available_actions.length)
+    .slice()
+    .sort((a, b) => String(a.observed_at || "").localeCompare(String(b.observed_at || "")));
+  if (!withActions.length) return { current: [], versions: [] };
+
+  const fp = (actions) => actions.map((a) => `${a.code}|${a.available}|${a.disabled}`).sort().join("\n");
+  const versions = [];
+  for (const o of withActions) {
+    const actions = o.readiness.available_actions;
+    const f = fp(actions);
+    const last = versions[versions.length - 1];
+    if (last && last.fingerprint === f) { last.observed_at_last = o.observed_at; continue; }
+    versions.push({ fingerprint: f, actions, observed_at_first: o.observed_at, observed_at_last: o.observed_at });
+  }
+  return { current: versions[versions.length - 1].actions, versions };
+}
+
+/** Indicadores mudam a cada ciclo por natureza — histórico bruto + snapshot mais recente. */
+function reconcileIndicators(observationsWithIndicators) {
+  const withInd = (observationsWithIndicators || []).filter((o) => Array.isArray(o.indicators) && o.indicators.length);
+  if (!withInd.length) return { current: [], history: [] };
+  const sorted = withInd.slice().sort((a, b) => String(a.observed_at || "").localeCompare(String(b.observed_at || "")));
+  return { current: sorted[sorted.length - 1].indicators, history: sorted.map((o) => ({ observed_at: o.observed_at, indicators: o.indicators })) };
+}
+
+/** Agendamento: prefere a leitura mais completa (com `scheduled_for`), preserva a primeira ativação observada. */
+function reconcileSchedule(observationsWithSchedule) {
+  const withSched = (observationsWithSchedule || []).filter((o) => o.schedule).map((o) => o.schedule);
+  if (!withSched.length) return null;
+  const withTime = withSched.find((s) => s.scheduled_for) || withSched[withSched.length - 1];
+  const firstActivation = withSched.find((s) => s.activation_observed_at);
+  return Object.assign({}, withTime, {
+    activation_observed_at: (firstActivation && firstActivation.activation_observed_at) || withTime.activation_observed_at || null
+  });
+}
+
+/**
+ * Reconcilia TODAS as dimensões de um pedido a partir de uma lista de
+ * observações multidimensionais (`buildOrderObservation()`), em qualquer
+ * modo/ciclo. Alternar Expedição <-> Quadros nunca cria um pedido novo — é
+ * responsabilidade de quem chama agrupar por `external_id`, exatamente como
+ * `reconcileOrder` já faz para o modelo antigo.
+ */
+function reconcileMultidimensional(externalId, observations) {
+  const list = Array.isArray(observations) ? observations.filter(Boolean) : [];
+  if (!list.length) return null;
+
+  const layout = reconcileScalarDimension(list, "layout", "mode");
+  const visual = reconcileScalarDimension(list, "visual", "location");
+  const orderState = reconcileScalarDimension(list, "order_state", "value");
+  const readinessState = reconcileScalarDimension(list, "readiness", "state");
+  const actions = reconcileAvailableActions(list);
+  const courier = reconcileScalarDimension(list, "courier", "state");
+  const dispatch = reconcileScalarDimension(list, "dispatch", "value");
+  const completion = reconcileScalarDimension(list, "completion", "value");
+  const fulfillment = reconcileScalarDimension(list, "fulfillment", "value");
+  const grouping = Grouping.reconcileGrouping(list.map((o) => o.grouping).filter(Boolean));
+  const schedule = reconcileSchedule(list);
+  const indicators = reconcileIndicators(list);
+
+  // layout/visual "unknown" nunca vira anomalia aqui: é falta de evidência,
+  // não conflito — só regressão de order_state (progressão real conhecida)
+  // é anomalia neste nível multidimensional.
+  const anomalies = orderState.regressions.slice();
+
+  return {
+    external_id: externalId,
+    observation_count: list.length,
+
+    layout_mode: layout.value,
+    visual_location: visual.value,
+    order_state: orderState.value,
+    readiness_state: readinessState.value,
+    available_actions: actions.current,
+    courier_state: courier.value,
+    dispatch_state: dispatch.value,
+    completion_state: completion.value,
+    fulfillment_mode: fulfillment.value,
+    grouping: grouping.current,
+    schedule,
+    indicators: indicators.current,
+
+    dimension_provenance: {
+      layout, visual, order_state: orderState, readiness: readinessState,
+      available_actions: actions, courier, dispatch, completion, fulfillment,
+      grouping, indicators
+    },
+    anomalies
+  };
+}
+
 module.exports = {
   STATUS_RANK, rankOf,
   detectIdentityConflicts, reconcileField, reconcileStatus, reconcileItems,
-  reconcileObservationText, reconcileValue, reconcileOrder, itemsFingerprint
+  reconcileObservationText, reconcileValue, reconcileOrder, itemsFingerprint,
+  // Sprint 2.1
+  EMPTY_DIMENSION_VALUES, reconcileScalarDimension, reconcileAvailableActions,
+  reconcileIndicators, reconcileSchedule, reconcileMultidimensional
 };
