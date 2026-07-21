@@ -50,3 +50,27 @@ Sprint 1 (`telefone`, `endereco`, `cpf`, `email`, `cliente_nome`).
 ID curto do pedido, minutos desde o pronto, estado atual, volumes (quando
 informado), avisos pontuais, saúde da fonte. Nada de dado de cliente, nada de
 composição do pedido além do necessário para conferir.
+
+## 6. Sprint 2.1 — sinais multidimensionais, com prioridade fixa
+
+`panelRow(order)` aceita opcionalmente `order.dimension` — a saída de
+`reconciliation.js#reconcileMultidimensional`. Sem ela, o painel funciona
+**exatamente** como no Sprint 2 (testado: `"painel sem dimensao
+multidimensional funciona exatamente como no Sprint 2"`). Com ela,
+`buildPanelSignals()` adiciona no máximo estes campos à linha — nunca todas
+as 9 dimensões de uma vez:
+
+| Prioridade | Campo | Quando aparece |
+|---|---|---|
+| 1 | `actions` (já existia) | sempre — ação interna válida para o estado atual |
+| 2 | `minutes_since_ready` (já existia) | sempre |
+| 3 | `blocked` | `true` quando o relógio está em `waiting_for_item` |
+| 4 | `courier_at_store` | `true` quando `courier_state === "at_store"` |
+| 5 | `logistics_alert` | primeiro indicador com `category === "alerta"`, ou `null` |
+| 6 | `details.*` | tudo mais (dispatch, modalidade, grupo, agendamento, indicadores) — só sob expansão, nunca na linha principal |
+
+`grouped`/`scheduled` são booleanos de sinalização; o conteúdo completo
+(`group_id`, `scheduled_for`) fica em `details`, coerente com a regra
+"mostrar apenas sinais relevantes, detalhes sob expansão".
+
+Nenhuma ação nova foi adicionada ao portal — os sinais são só leitura.

@@ -55,3 +55,25 @@ histórico só tem `completed`, a resposta é `{observed:false, reason:
 Isso é a regra mais estritamente testada de todo o Sprint 2 (3 testes
 dedicados) — é exatamente o tipo de suposição confortável que a missão proíbe
 explicitamente.
+
+## 5. Sprint 2.1 — este mapeamento agora é UM entre nove
+
+A auditoria do Sprint 2 apontou que `normalizeLiveStatus`/`buildStatusEvent`
+sozinhos, sem mais contexto, arriscam colar "coluna visual", "botão
+disponível" e "evento de entregador" no mesmo campo. Este arquivo **não foi
+reescrito** — continua a fonte de verdade de `LIVE_ORDER_STATUS` — mas deixou
+de ser a ÚNICA leitura possível do pedido.
+
+`src/conference-brain/live/multidimensional-observation.js` traz mapeadores
+irmãos, no mesmo estilo (regex ancorada, `unknown` sem correspondência):
+`mapOrderState` (produção, sem logística), `mapCourierState` (entregador),
+`mapDispatchState` (despacho), `mapCompletionState`, `mapFulfillmentMode`,
+`mapLayoutMode`, `mapVisualLocation`. Cada um resolve UMA dimensão, nunca o
+pedido inteiro.
+
+Quem só precisa do status antigo continua usando este arquivo (ou
+`live/legacy-compat.js#deriveLegacyLiveStatus`, que projeta as 9 dimensões de
+volta para `LIVE_ORDER_STATUS` — ver `MULTIDIMENSIONAL_ORDER_STATE_V1.md` §5).
+Regra preservada e reforçada: nem lá nem aqui um botão "Avisar Pedido Pronto"
+disponível vira "notificado" sozinho — só a confirmação observada faz isso
+avançar (`buildReadinessDimension`).

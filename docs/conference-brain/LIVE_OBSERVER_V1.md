@@ -79,3 +79,26 @@ Herdado diretamente das restrições da missão e verificado por teste
 não faz login sozinho, não digita senha, não contorna 2FA nem CAPTCHA, não
 clica em ações que mudam estado no portal, não reexecuta endpoint privado fora
 do navegador, não continua coletando quando pede intervenção humana.
+
+## 7. Sprint 2.1 — modelo multidimensional (correção da auditoria)
+
+A auditoria independente do Sprint 2 (`docs/auditoria/CONFERENCE_BRAIN_SPRINT2_AUDIT.md`)
+classificou o coletor como **Categoria B** e apontou que `status-map.js`
+sozinho não basta para o Gestor real: ele mistura produção, prontidão
+informada e logística num único eixo. O ciclo (§3 acima) **continua o
+mesmo** — nada nesta seção muda `observer.js`. O que muda é uma camada NOVA,
+paralela, disponível para quem quiser usá-la:
+
+```
+multidimensional-observation.js   (buildOrderObservation) — 9 dimensões independentes
+        │
+reconciliation.js#reconcileMultidimensional  — cada dimensão reconciliada à parte
+        │
+legacy-compat.js#deriveLegacyLiveStatus      — projeção de volta ao LIVE_ORDER_STATUS, se precisar
+```
+
+Ver `MULTIDIMENSIONAL_ORDER_STATE_V1.md` para as 9 dimensões e
+`IFOOD_FUNCTIONAL_MODEL_V1.md` para a funcionalidade oficial que fundamenta
+cada uma. `playwright-preflight.js` (Fase 21) verifica pré-condições de uma
+futura sessão (dependência instalada, executável, perfil) — sem nunca
+instalar, baixar ou abrir sessão nesta missão.

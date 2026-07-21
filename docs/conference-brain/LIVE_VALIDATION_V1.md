@@ -123,7 +123,7 @@ Provado com o driver falso e com o observador completo:
 4. Só então ligar `CONFERENCE_LIVE_OBSERVER_V1=1` para um ciclo supervisionado,
    curto, com um humano acompanhando — nunca em produção sem essa etapa.
 
-## 5. Veredito
+## 5. Veredito (Sprint 2)
 
 ```
 COLETOR IMPLEMENTADO — VALIDAÇÃO AO VIVO PENDENTE
@@ -133,3 +133,32 @@ A lógica está construída e testada com o rigor possível sem uma sessão real
 A validação ao vivo não é uma formalidade pendente — é uma dependência real,
 de responsabilidade humana (autorização de sessão), que este projeto está
 certo em não contornar.
+
+## 6. Sprint 2.1 — o que mudou e o que continua igual
+
+Esta missão **não iniciou** o mapeamento ao vivo (proibido explicitamente) e
+**não instalou** Playwright nem baixou navegador. A verificação de ambiente
+de `LIVE_VALIDATION_V1` §1 continua válida — nada mudou na disponibilidade de
+sessão. `playwright-preflight.js` formaliza essa verificação em código
+(`verifyMappingPreconditions`), mas o resultado é o mesmo: sem dependência
+instalada, sem perfil configurado, `session_validated` sempre `false`.
+
+O que mudou é a PROFUNDIDADE do que é validável sem sessão: o modelo
+multidimensional (`MULTIDIMENSIONAL_ORDER_STATE_V1.md`) foi testado contra
+11 cenários combinados (pronto+procurando, pronto+na loja, coluna+botão
+disponível, concluído sem saída, despacho próprio, coletado pelo iFood,
+agrupado, agendado→produção, operação vazia com loja aberta, loja fechada,
+layout alterado) e 8 cenários de reconciliação (alternância de modo, cartão↔
+detalhe, logística alterada, agrupamento alterado, ação removida, e os
+mesmos 36 IDs duplicados reais do Sprint 1) — todos com fixtures sintéticas
+fundamentadas em `IFOOD_FUNCTIONAL_MODEL_V1.md`, nunca em DOM observado.
+
+**Continua não confirmado nesta missão:** se a conta TATÁ usa Expedição,
+Quadros, ou os dois; se QR Code de chegada está habilitado; qualquer seletor
+real; os textos exatos da tela.
+
+## 7. Veredito (Sprint 2.1)
+
+```
+CORREÇÕES DO SPRINT 2 IMPLEMENTADAS — PRONTO PARA RECHECAGEM
+```

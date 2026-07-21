@@ -86,3 +86,37 @@ usam confiança declarada, não votação), sem inferir dado ausente, sem
 descartar uma observação em silêncio. Toda decisão de qual valor prevalece é
 rastreável em `field_provenance` — auditável campo a campo, exatamente como o
 Sprint 1 exige para qualquer regra deste projeto.
+
+## 5. Sprint 2.1 — reconciliação MULTIDIMENSIONAL
+
+`reconcileMultidimensional(externalId, observations)` reconcilia as 9
+dimensões de `MULTIDIMENSIONAL_ORDER_STATE_V1.md` de forma **independente** —
+nenhuma vence as outras. `reconcileOrder` (§1-4 acima) continua existindo,
+intocado, para quem consome o modelo antigo.
+
+**Regra central — valor vazio nunca apaga valor real:**
+`EMPTY_DIMENSION_VALUES` define, por dimensão, o que conta como "esta leitura
+não mostrou essa informação" (`unknown`, `not_applicable`). Uma leitura vazia
+entra no histórico bruto (auditável), mas NUNCA concorre como candidata a
+"valor atual" — por isso um cartão compacto (Expedição) lido depois de um
+detalhe completo não apaga o `courier_state` que o detalhe mostrou. Provado
+em teste: `"detalhes -> cartao compacto: informacao antiga mais completa nao
+e apagada"`.
+
+**Regressão só é avaliada para `order_state`** (progressão de produção
+conhecida) — as demais dimensões (courier, dispatch, completion, fulfillment)
+não têm ordem estrita o bastante para acusar regressão sem risco de falso
+positivo; mudam de valor livremente, todas registradas no histórico.
+
+**Ações disponíveis (`available_actions[]`) são versionadas como itens** —
+nunca convertidas em evento do relógio por esta reconciliação; isso continua
+sendo papel exclusivo de `clock.js`/`observer.js`.
+
+**Agrupamento e agendamento** delegam para `live/grouping.js` e
+`live/schedule.js` respectivamente — alteração de membros do grupo gera nova
+versão, nunca sobrescreve a anterior.
+
+Prova com dado real, de novo: os mesmos 36 IDs duplicados do Sprint 1,
+envolvidos agora em observações multidimensionais sintéticas (o relatório
+histórico não carrega sinal multidimensional real), passam por
+`reconcileMultidimensional` sem exceção nenhuma.
