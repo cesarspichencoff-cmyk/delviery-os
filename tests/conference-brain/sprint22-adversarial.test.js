@@ -286,3 +286,90 @@ describe("bloqueadores 3/4 — modelo multidimensional integrado de ponta a pont
     assert.ok(!html.includes("undefined"));
   });
 });
+
+/* ---------------------------------------------------------------------------
+ * Bloqueadores 5-8 — semântica de ausência (remoção nunca mantém valor antigo)
+ * ------------------------------------------------------------------------- */
+describe("bloqueadores 5-8 — remocao, ativacao e fonte parcial", () => {
+  const Grouping = require("../../src/conference-brain/live/grouping");
+  const Reconciliation = require("../../src/conference-brain/live/reconciliation");
+  const DimensionEvents = require("../../src/conference-brain/live/dimension-events");
+
+  test("bloqueador 5: saida de agrupamento observada explicitamente esvazia o grupo atual", () => {
+    const rec = Grouping.reconcileGrouping([
+      { groupId: "g1", memberOrderIds: ["A", "B"], observedAt: "t1" },
+      { memberOrderIds: [], observed: true, observedAt: "t2" }
+    ]);
+    assert.deepEqual(rec.current.member_order_ids, []);
+    assert.equal(rec.current.presence, "removed");
+    assert.equal(rec.versions.length, 2);
+  });
+
+  test("bloqueador 5 (controle): leitura vazia SEM observed:true nao apaga o grupo (cartao compacto)", () => {
+    const rec = Grouping.reconcileGrouping([
+      { groupId: "g1", memberOrderIds: ["A", "B"], observedAt: "t1" },
+      { memberOrderIds: [], observedAt: "t2" } // sem `observed` — fonte parcial/compacta
+    ]);
+    assert.deepEqual(rec.current.member_order_ids, ["A", "B"]);
+  });
+
+  test("bloqueador 6: ativacao de agendamento substitui is_scheduled corretamente e versiona", () => {
+    const rec = Reconciliation.reconcileSchedule([
+      { schedule: { is_scheduled: true, scheduled_for: "20:00" }, observed_at: "t1" },
+      { schedule: { is_scheduled: false, activation_observed_at: "t2" }, observed_at: "t2" }
+    ]);
+    assert.equal(rec.is_scheduled, false);
+    assert.equal(rec.scheduled_for, "20:00", "horario original preservado como contexto");
+    assert.equal(rec.activation_observed_at, "t2");
+    assert.equal(rec.versions.length, 2);
+  });
+
+  test("bloqueador 7: acao removida numa leitura completa nao fica ativa indefinidamente", () => {
+    const rec = Reconciliation.reconcileAvailableActions([
+      { readiness: { available_actions: [{ code: "notify_ready", available: true, disabled: false }], actions_observed: true }, observed_at: "t1" },
+      { readiness: { available_actions: [], actions_observed: true }, observed_at: "t2" }
+    ]);
+    assert.deepEqual(rec.current, []);
+    assert.equal(rec.versions[1].removed_at, "t2");
+  });
+
+  test("bloqueador 7 (fonte parcial): leitura sem actions_observed nao remove a acao", () => {
+    const rec = Reconciliation.reconcileAvailableActions([
+      { readiness: { available_actions: [{ code: "notify_ready", available: true, disabled: false }], actions_observed: true }, observed_at: "t1" },
+      { readiness: { available_actions: [] }, observed_at: "t2" } // fonte parcial, nao checou
+    ]);
+    assert.equal(rec.current.length, 1, "fonte parcial nunca remove por omissao");
+  });
+
+  test("bloqueador 8: indicador some numa leitura completa e' encerrado, nao mantido", () => {
+    const rec = Reconciliation.reconcileIndicators([
+      { indicatorsObserved: true, indicators: [{ code: "COURIER_SEARCHING" }], observed_at: "t1" },
+      { indicatorsObserved: true, indicators: [], observed_at: "t2" }
+    ]);
+    assert.deepEqual(rec.current, []);
+    assert.equal(rec.ended[0].code, "COURIER_SEARCHING");
+  });
+
+  test("bloqueador 8 (fonte parcial): leitura sem indicatorsObserved nao encerra o indicador", () => {
+    const rec = Reconciliation.reconcileIndicators([
+      { indicatorsObserved: true, indicators: [{ code: "COURIER_SEARCHING" }], observed_at: "t1" },
+      { indicators: [], observed_at: "t2" } // fonte parcial
+    ]);
+    assert.equal(rec.current.length, 1);
+  });
+
+  test("eventos derivados sao idempotentes (mesmo par prev/curr produz os mesmos event_id)", () => {
+    const prev = { available_actions: [{ code: "notify_ready" }], indicators: [], grouping: null, schedule: null, dimension_provenance: {} };
+    const curr = { available_actions: [], indicators: [{ code: "COURIER_ETA" }], grouping: null, schedule: null, dimension_provenance: {} };
+    const e1 = DimensionEvents.deriveDimensionEvents("O1", prev, curr, "t2");
+    const e2 = DimensionEvents.deriveDimensionEvents("O1", prev, curr, "t2");
+    assert.deepEqual(e1.map((e) => e.event_id), e2.map((e) => e.event_id));
+  });
+
+  test("eventos derivados nunca sao emitidos como eventos do relogio (clock.js intocado)", () => {
+    const { CLOCK_EVENT_TYPES } = require("../../src/conference-brain/contracts/live-states");
+    for (const t of Object.values(DimensionEvents.DIMENSION_EVENT_TYPES)) {
+      assert.ok(!Object.values(CLOCK_EVENT_TYPES).includes(t), `"${t}" nao pode colidir com o vocabulario do relogio`);
+    }
+  });
+});

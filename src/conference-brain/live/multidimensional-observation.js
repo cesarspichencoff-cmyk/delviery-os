@@ -155,6 +155,11 @@ function buildReadinessDimension(signal) {
   return {
     state: readiness,
     available_actions: actions,
+    // Sprint 2.2 (Fase 4, bloqueador 7): distingue "esta leitura CHECOU a
+    // área de ações e não achou nenhuma" de "esta leitura não olhou essa
+    // área" (cartão compacto, por exemplo). Sem isso, a reconciliação não
+    // consegue saber se uma lista vazia significa remoção ou ausência de dado.
+    actions_observed: s.actionsObserved === true || s.actionPresent !== undefined || Boolean(s.actionDisabled),
     confirmation_text: s.confirmationText || null,
     observed_at: s.observedAt || null
   };

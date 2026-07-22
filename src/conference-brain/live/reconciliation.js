@@ -344,42 +344,114 @@ function reconcileScalarDimension(observations, dimKey, valueField) {
  * dedup de leituras idênticas consecutivas, nunca converte ação disponível em
  * evento (isso é papel do relógio, nunca desta reconciliação).
  */
+/**
+ * Bloqueador 7 da rechecagem: a versão anterior só considerava leituras com
+ * `available_actions.length > 0` — uma leitura completa mostrando "a ação
+ * sumiu" (`actions_observed:true`, lista vazia) era invisível, e a ação
+ * antiga continuava "atual" para sempre. Agora TODA leitura que checou a
+ * área de ações entra na versão (mesmo vazia); só leituras que NUNCA
+ * checaram essa área (`actions_observed` ausente/false — cartão compacto)
+ * são ignoradas, sem apagar o que já se sabia.
+ */
 function reconcileAvailableActions(observations) {
-  const withActions = observations
-    .filter((o) => o.readiness && Array.isArray(o.readiness.available_actions) && o.readiness.available_actions.length)
+  const checked = observations
+    .filter((o) => o.readiness && o.readiness.actions_observed === true)
     .slice()
     .sort((a, b) => String(a.observed_at || "").localeCompare(String(b.observed_at || "")));
-  if (!withActions.length) return { current: [], versions: [] };
+  if (!checked.length) return { current: [], versions: [] };
 
   const fp = (actions) => actions.map((a) => `${a.code}|${a.available}|${a.disabled}`).sort().join("\n");
   const versions = [];
-  for (const o of withActions) {
-    const actions = o.readiness.available_actions;
+  for (const o of checked) {
+    const actions = o.readiness.available_actions || [];
     const f = fp(actions);
     const last = versions[versions.length - 1];
     if (last && last.fingerprint === f) { last.observed_at_last = o.observed_at; continue; }
-    versions.push({ fingerprint: f, actions, observed_at_first: o.observed_at, observed_at_last: o.observed_at });
+    const removed = last && last.actions.length && !actions.length;
+    versions.push({
+      fingerprint: f, actions, observed_at_first: o.observed_at, observed_at_last: o.observed_at,
+      removed_at: removed ? o.observed_at : null
+    });
   }
   return { current: versions[versions.length - 1].actions, versions };
 }
 
 /** Indicadores mudam a cada ciclo por natureza — histórico bruto + snapshot mais recente. */
+/**
+ * Bloqueador 8 da rechecagem: só entravam leituras com indicadores não
+ * vazios — um ciclo posterior com `indicators:[]` (mas que checou de
+ * verdade) era ignorado, mantendo um alerta velho como "atual" para sempre.
+ * Igual à correção de ações (bloqueador 7): distingue "checou e não achou
+ * nada" (`indicatorsObserved:true`, entra e pode ENCERRAR indicadores
+ * antigos) de "não checou essa área nesta leitura" (ignorado, nunca apaga).
+ */
 function reconcileIndicators(observationsWithIndicators) {
-  const withInd = (observationsWithIndicators || []).filter((o) => Array.isArray(o.indicators) && o.indicators.length);
-  if (!withInd.length) return { current: [], history: [] };
-  const sorted = withInd.slice().sort((a, b) => String(a.observed_at || "").localeCompare(String(b.observed_at || "")));
-  return { current: sorted[sorted.length - 1].indicators, history: sorted.map((o) => ({ observed_at: o.observed_at, indicators: o.indicators })) };
+  const checked = (observationsWithIndicators || []).filter((o) => o.indicatorsObserved === true);
+  if (!checked.length) return { current: [], history: [] };
+  const sorted = checked.slice().sort((a, b) => String(a.observed_at || "").localeCompare(String(b.observed_at || "")));
+
+  // marca quando cada indicador do ciclo anterior deixou de aparecer — "encerrado", nunca só sumido.
+  const ended = [];
+  for (let i = 1; i < sorted.length; i++) {
+    const prevCodes = new Set((sorted[i - 1].indicators || []).map((x) => x.code));
+    const currCodes = new Set((sorted[i].indicators || []).map((x) => x.code));
+    for (const code of prevCodes) {
+      if (!currCodes.has(code)) ended.push({ code, ended_at: sorted[i].observed_at });
+    }
+  }
+
+  return {
+    current: sorted[sorted.length - 1].indicators || [],
+    history: sorted.map((o) => ({ observed_at: o.observed_at, indicators: o.indicators || [] })),
+    ended
+  };
 }
 
 /** Agendamento: prefere a leitura mais completa (com `scheduled_for`), preserva a primeira ativação observada. */
+/**
+ * Bloqueador 6 da rechecagem: a versão anterior escolhia "a primeira leitura
+ * com `scheduled_for`" como se fosse o estado atual — depois de
+ * `is_scheduled:true -> false` (ativação em produção), a saída continuava
+ * `is_scheduled:true`. Agora `is_scheduled` segue SEMPRE a leitura mais
+ * recente (é um fato que muda no tempo, não uma característica fixa do
+ * pedido); `scheduled_for` é preservado como contexto mesmo depois da
+ * ativação (só porque o pedido já não está mais agendado não significa que
+ * o horário original deixou de ser um fato relevante para auditoria).
+ * `versions[]` agora existe de verdade — RECONCILIATION_V1.md já afirmava
+ * isso, o código não entregava.
+ */
 function reconcileSchedule(observationsWithSchedule) {
-  const withSched = (observationsWithSchedule || []).filter((o) => o.schedule).map((o) => o.schedule);
+  const withSched = (observationsWithSchedule || [])
+    .filter((o) => o.schedule)
+    .map((o) => Object.assign({}, o.schedule, { _observed_at: o.observed_at || o.schedule.activation_observed_at || null }))
+    .sort((a, b) => String(a._observed_at || "").localeCompare(String(b._observed_at || "")));
   if (!withSched.length) return null;
-  const withTime = withSched.find((s) => s.scheduled_for) || withSched[withSched.length - 1];
-  const firstActivation = withSched.find((s) => s.activation_observed_at);
-  return Object.assign({}, withTime, {
-    activation_observed_at: (firstActivation && firstActivation.activation_observed_at) || withTime.activation_observed_at || null
-  });
+
+  const versions = [];
+  for (const s of withSched) {
+    const last = versions[versions.length - 1];
+    if (last && last.is_scheduled === s.is_scheduled && last.scheduled_for === s.scheduled_for) {
+      if (s.activation_observed_at && !last.activation_observed_at) last.activation_observed_at = s.activation_observed_at;
+      continue;
+    }
+    versions.push(Object.assign({}, s));
+  }
+
+  const latest = versions[versions.length - 1];
+  const priorWithTime = versions.slice().reverse().find((v) => v.scheduled_for);
+  const firstActivation = versions.find((v) => v.activation_observed_at);
+
+  return {
+    is_scheduled: latest.is_scheduled,
+    scheduled_for: latest.scheduled_for || (priorWithTime && priorWithTime.scheduled_for) || null,
+    activation_observed_at: latest.activation_observed_at || (firstActivation && firstActivation.activation_observed_at) || null,
+    confidence: latest.confidence,
+    source: latest.source,
+    versions: versions.map((v) => ({
+      is_scheduled: v.is_scheduled, scheduled_for: v.scheduled_for,
+      activation_observed_at: v.activation_observed_at, observed_at: v._observed_at
+    }))
+  };
 }
 
 /**
