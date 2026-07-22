@@ -17,6 +17,8 @@
 
 const S = require("../contracts/live-states");
 const { CONFIDENCE } = require("../contracts/states");
+const { normalizeLiveStatus } = require("./status-map");
+const { buildStoreStateDimension } = require("./store-state");
 
 /* ---------------------------------------------------------------------------
  * 2. Modo de visualização — nunca representa o estado do pedido.
@@ -258,9 +260,29 @@ function mapFulfillmentMode(rawText) {
  * exigem contexto de mais de um pedido ou de mais de um ciclo.
  * ------------------------------------------------------------------------- */
 
+/**
+ * Ponte com o vocabulário COMPLETO do Sprint 2 (`normalizeLiveStatus`, 10
+ * estados) para fontes que ainda só fornecem UM texto de status — sem
+ * seletor separado de logística (a situação real deste ambiente: nenhum
+ * seletor real do Gestor foi mapeado). `departed`/`picked_up` não existem no
+ * vocabulário de `order_state` (produção) nem de `completion` — são fatos de
+ * `courier_state`. Sem esta ponte, uma fonte unidimensional perderia esse
+ * sinal ao passar pelo modelo novo. NUNCA sobrescreve um sinal explícito
+ * (`r.courier`/`r.dispatch`) — só preenche quando a fonte não trouxe nada.
+ */
+function legacyLogisticsHint(orderStateText) {
+  if (!orderStateText) return null;
+  return normalizeLiveStatus(orderStateText);
+}
+
 function buildOrderObservation(raw) {
   const r = raw || {};
   const observedAt = r.observedAt || new Date().toISOString();
+  const hint = legacyLogisticsHint(r.orderStateText);
+
+  const courierSignal = Object.assign({}, r.courier);
+  if (!courierSignal.rawText && hint === "departed") courierSignal.rawText = "Em rota";
+  if (!courierSignal.rawText && hint === "picked_up") courierSignal.rawText = "Coletado";
 
   return {
     external_id: r.externalId || null,
@@ -281,7 +303,7 @@ function buildOrderObservation(raw) {
 
     readiness: buildReadinessDimension(Object.assign({ observedAt, rawOrderStateText: r.orderStateText }, r.readiness)),
 
-    courier: buildCourierDimension(Object.assign({ observedAt }, r.courier)),
+    courier: buildCourierDimension(Object.assign({ observedAt }, courierSignal)),
 
     dispatch: {
       value: mapDispatchState(r.dispatch && r.dispatch.rawText),
@@ -301,7 +323,15 @@ function buildOrderObservation(raw) {
       raw_text: r.fulfillmentText || null,
       confidence: r.fulfillmentText ? CONFIDENCE.HIGH : CONFIDENCE.LOW,
       observed_at: observedAt
-    }
+    },
+
+    // Sprint 2.2 — a rechecagem provou que store_state, itens, observação e
+    // valor ficavam de fora da observação multidimensional, apesar da
+    // documentação falar em "nove dimensões". Agora entram de verdade.
+    store: buildStoreStateDimension(Object.assign({ observedAt }, r.store)),
+    items: Array.isArray(r.items) ? r.items : [],
+    customer_note: r.customerNote || null,
+    total_value: r.totalValue != null ? r.totalValue : null
   };
 }
 
@@ -314,7 +344,7 @@ module.exports = {
   mapDispatchState,
   mapCompletionState,
   mapFulfillmentMode,
-  buildOrderObservation,
+  buildOrderObservation, legacyLogisticsHint,
   // vocabulário conhecido, reexportado para o guard de PII (allowlist —
   // ver live/pii-guard.js) reconhecer texto funcional sem duplicar padrões
   LAYOUT_MODE_TEXT_MAP, VISUAL_LOCATION_TEXT_MAP, ORDER_STATE_TEXT_MAP,

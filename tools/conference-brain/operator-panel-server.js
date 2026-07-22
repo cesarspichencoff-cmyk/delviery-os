@@ -22,6 +22,7 @@ const flags = require(path.join(DIR, "src", "conference-brain", "flags.js"));
 const { createStore } = require(path.join(DIR, "src", "conference-brain", "storage", "store.js"));
 const { panelRow, applyAction } = require(path.join(DIR, "src", "conference-brain", "live", "operator-panel.js"));
 const { CLOCK_EVENT_TYPES } = require(path.join(DIR, "src", "conference-brain", "contracts", "live-states.js"));
+const { reconcileMultidimensional } = require(path.join(DIR, "src", "conference-brain", "live", "reconciliation.js"));
 
 const PORT = parseInt(process.env.PANEL_PORT || "5183", 10);
 
@@ -67,6 +68,23 @@ function esc(s) {
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 
+/**
+ * Sprint 2.2 (Fase 3/9 — bloqueador 3): antes, so lia eventos do relogio e
+ * NUNCA injetava `order.dimension` — o HTML renderizado nunca continha
+ * courier/bloqueio/alerta, mesmo quando esses sinais existiam no store.
+ * Agora reconcilia a observacao multidimensional persistida pelo observador
+ * (`live_observations[].dimensions`) da MESMA forma que `observer.js#getReconciledDimension`
+ * faz — a fonte de verdade e' uma so.
+ */
+function reconciledDimensionFor(store, orderId) {
+  const dims = store.all("live_observations")
+    .filter((o) => o.external_id === orderId && o.dimensions)
+    .sort((a, b) => String(a.observed_at || "").localeCompare(String(b.observed_at || "")))
+    .map((o) => o.dimensions);
+  if (!dims.length) return null;
+  return reconcileMultidimensional(orderId, dims);
+}
+
 function ordersInPlay(store) {
   const byOrder = new Map();
   for (const ev of store.all("conference_clock_events")) {
@@ -79,9 +97,44 @@ function ordersInPlay(store) {
     const last = events[events.length - 1];
     if (last.event_type === CLOCK_EVENT_TYPES.DEPARTED_OBSERVED ||
         last.event_type === CLOCK_EVENT_TYPES.CANCELLED) continue; // ciclo encerrado, some do painel
-    rows.push(Object.assign(panelRow({ external_id: orderId, clock_events: events }), { order_id: orderId }));
+    const dimension = reconciledDimensionFor(store, orderId);
+    rows.push(Object.assign(
+      panelRow({ external_id: orderId, clock_events: events, dimension }),
+      { order_id: orderId }
+    ));
   }
   return rows.sort((a, b) => (b.minutes_since_ready || 0) - (a.minutes_since_ready || 0));
+}
+
+/**
+ * Sinais multidimensionais em ordem de prioridade fixa (Fase 9): bloqueio >
+ * entregador na loja > alerta logístico > agrupado > agendado. Nunca todas
+ * as dimensões juntas — o resto vira `<details>` (expansão sob demanda).
+ */
+function renderSignals(r) {
+  if (!r.details) return ""; // sem dimensao multidimensional — nada a mostrar (compat Sprint 2)
+  const chips = [];
+  if (r.blocked) chips.push('<span class="chip chip-block">bloqueado</span>');
+  if (r.courier_at_store) chips.push('<span class="chip chip-courier">entregador na loja</span>');
+  if (r.logistics_alert) chips.push(`<span class="chip chip-alert">${esc(r.logistics_alert.code)}</span>`);
+  if (r.grouped) chips.push('<span class="chip">agrupado</span>');
+  if (r.scheduled) chips.push('<span class="chip">agendado</span>');
+
+  const d = r.details;
+  const detailLines = [
+    d.courier_state && d.courier_state !== "not_applicable" ? `entregador: ${esc(d.courier_state)}` : null,
+    d.dispatch_state && d.dispatch_state !== "not_applicable" ? `despacho: ${esc(d.dispatch_state)}` : null,
+    d.fulfillment_mode && d.fulfillment_mode !== "unknown" ? `modalidade: ${esc(d.fulfillment_mode)}` : null,
+    d.group_id ? `grupo: ${esc(d.group_id)}` : null,
+    d.scheduled_for ? `agendado para: ${esc(d.scheduled_for)}` : null,
+    d.indicators && d.indicators.length ? `indicadores: ${d.indicators.map((i) => esc(i.code)).join(", ")}` : null
+  ].filter(Boolean);
+
+  const details = detailLines.length
+    ? `<details><summary>detalhes</summary><ul>${detailLines.map((l) => `<li>${l}</li>`).join("")}</ul></details>`
+    : "";
+
+  return chips.join(" ") + (chips.length && details ? " " : "") + details;
 }
 
 function renderPage(rows) {
@@ -91,6 +144,7 @@ function renderPage(rows) {
       <td>${r.minutes_since_ready == null ? "—" : r.minutes_since_ready + " min"}</td>
       <td>${esc(r.state)}</td>
       <td>${esc(r.source_health)}</td>
+      <td>${renderSignals(r)}</td>
       <td>
         ${r.actions.map((a) => `
           <form method="post" action="/action" style="display:inline">
@@ -110,12 +164,18 @@ function renderPage(rows) {
   button{background:#222;color:#eee;border:1px solid #444;border-radius:4px;padding:4px 10px;cursor:pointer}
   button:hover{background:#333}
   .aviso{color:#f5a623;margin-bottom:16px}
+  .chip{display:inline-block;background:#2a2a2a;border:1px solid #444;border-radius:12px;padding:2px 8px;margin:0 4px 2px 0;font-size:12px}
+  .chip-block{border-color:#f5a623;color:#f5a623}
+  .chip-courier{border-color:#4ade80;color:#4ade80}
+  .chip-alert{border-color:#f87171;color:#f87171}
+  details{display:inline-block;font-size:12px;color:#aaa}
+  details ul{margin:4px 0 0 16px;padding:0}
 </style></head><body>
 <h1>Painel interno da Conferência</h1>
 <p class="aviso">Ferramenta interna, atrás de feature flag. Não é a interface do Copiloto. Sem identificação de funcionário, sem ranking.</p>
 <table>
-<tr><th>Pedido</th><th>Desde o pronto</th><th>Estado</th><th>Saúde da fonte</th><th>Ações</th></tr>
-${items || '<tr><td colspan="5">Nenhum pedido em Conferência agora.</td></tr>'}
+<tr><th>Pedido</th><th>Desde o pronto</th><th>Estado</th><th>Saúde da fonte</th><th>Sinais</th><th>Ações</th></tr>
+${items || '<tr><td colspan="6">Nenhum pedido em Conferência agora.</td></tr>'}
 </table>
 </body></html>`;
 }
@@ -180,4 +240,7 @@ function main() {
 
 if (require.main === module) main();
 
-module.exports = { createServer, ordersInPlay, renderPage, resolvePanelHost, LOOPBACK_ALLOWLIST, REJECTED_HOSTS };
+module.exports = {
+  createServer, ordersInPlay, renderPage, resolvePanelHost, LOOPBACK_ALLOWLIST, REJECTED_HOSTS,
+  reconciledDimensionFor, renderSignals
+};

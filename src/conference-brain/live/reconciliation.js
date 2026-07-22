@@ -283,7 +283,8 @@ const EMPTY_DIMENSION_VALUES = Object.freeze({
   courier: ["not_applicable", "unknown"],
   dispatch: ["not_applicable", "unknown"],
   completion: ["unknown"],
-  fulfillment: ["unknown"]
+  fulfillment: ["unknown"],
+  store: ["unknown"]
 });
 
 /**
@@ -404,6 +405,16 @@ function reconcileMultidimensional(externalId, observations) {
   const grouping = Grouping.reconcileGrouping(list.map((o) => o.grouping).filter(Boolean));
   const schedule = reconcileSchedule(list);
   const indicators = reconcileIndicators(list);
+  const store = reconcileScalarDimension(list, "store", "value");
+
+  // Sprint 2.2 — a rechecagem provou que itens, observação e valor ficavam
+  // fora da observação multidimensional. Reaproveita as MESMAS funções do
+  // reconciliador legado (reconcileItems/reconcileObservationText/reconcileField)
+  // — `buildOrderObservation` já expõe `items`/`customer_note`/`total_value`
+  // no nível raiz de cada observação, no mesmo formato que essas funções esperam.
+  const items = reconcileItems(list);
+  const customerNote = reconcileObservationText(list, "customer_note");
+  const totalValue = reconcileField("total_value", list);
 
   // layout/visual "unknown" nunca vira anomalia aqui: é falta de evidência,
   // não conflito — só regressão de order_state (progressão real conhecida)
@@ -423,14 +434,19 @@ function reconcileMultidimensional(externalId, observations) {
     dispatch_state: dispatch.value,
     completion_state: completion.value,
     fulfillment_mode: fulfillment.value,
+    store_state: store.value,
     grouping: grouping.current,
     schedule,
     indicators: indicators.current,
+    items_current: items.current,
+    items_versions: items.versions,
+    customer_note: customerNote.current,
+    total_value: totalValue.value,
 
     dimension_provenance: {
       layout, visual, order_state: orderState, readiness: readinessState,
-      available_actions: actions, courier, dispatch, completion, fulfillment,
-      grouping, indicators
+      available_actions: actions, courier, dispatch, completion, fulfillment, store,
+      grouping, indicators, items, customer_note: customerNote, total_value: totalValue
     },
     anomalies
   };

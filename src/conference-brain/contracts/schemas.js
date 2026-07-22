@@ -83,7 +83,8 @@ const SCHEMAS = Object.freeze({
     required: ["run_id", "cycle_id", "external_id", "observed_at", "raw_status",
                "source_health", "confidence"],
     optional: ["status", "received_at", "promised_at", "ready_at", "departed_at", "items",
-               "modality", "last_change_detected_at", "observation_hash", "missing_from_view"]
+               "modality", "last_change_detected_at", "observation_hash", "missing_from_view",
+               "dimensions"]
   },
   conference_clock_events: {
     key: ["event_id"],
