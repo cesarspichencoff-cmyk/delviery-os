@@ -73,6 +73,16 @@ function recordEvent(opts) {
 
   const existing = o.existing_events || [];
   const fromType = currentClockState(existing);
+
+  // Sprint 2.2 (Fase 7, bloqueador 11): retry idempotente — repetir a MESMA
+  // intenção (o tipo de evento que já É o estado atual) nunca é tratada como
+  // transição inválida nem gera duplicata. Antes, um retry depois de
+  // `ready_observed` já persistido devolvia `transicao_invalida:ready_observed->ready_observed`
+  // — um erro para uma operação que deveria ser um no-op reconhecido.
+  if (fromType === o.event_type) {
+    return { ok: true, event: existing[existing.length - 1], idempotent: true };
+  }
+
   if (!isValidTransition(fromType, o.event_type)) {
     return {
       ok: false,

@@ -30,6 +30,7 @@ function createStore(opts) {
   const memoryOnly = options.memoryOnly === true;
   const mem = new Map();          // entidade -> Map(chave -> registro)
   const failures = [];
+  const corrupted = [];           // Sprint 2.2 (Fase 7/12, bloqueador 12): linhas JSONL ilegíveis, NUNCA descartadas em silêncio
 
   function fileFor(entity) { return path.join(dir, entity + ".runtime.jsonl"); }
 
@@ -44,17 +45,33 @@ function createStore(opts) {
     return mem.get(entity);
   }
 
-  /** Carrega do disco para memória (idempotente; última linha por chave vence). */
+  /**
+   * Carrega do disco para memória (idempotente; última linha por chave vence).
+   *
+   * Bloqueador 12 da rechecagem: uma linha JSONL corrompida (truncada por
+   * queda no meio da escrita, disco cheio, etc.) era silenciosamente
+   * ignorada — o evento correspondente sumia sem deixar rastro nenhum. Agora
+   * toda linha corrompida vira uma entrada em `corrupted` (linha, entidade,
+   * trecho sanitizado, erro) — visível em `health()`, nunca escondida.
+   */
   function load(entity) {
     if (memoryOnly) return table(entity).size;
     const f = fileFor(entity);
     if (!fs.existsSync(f)) return 0;
     try {
       const t = table(entity);
-      for (const line of fs.readFileSync(f, "utf8").split("\n")) {
-        const s = line.trim();
+      const lines = fs.readFileSync(f, "utf8").split("\n");
+      for (let i = 0; i < lines.length; i++) {
+        const s = lines[i].trim();
         if (!s) continue;
-        try { const r = JSON.parse(s); t.set(naturalKey(entity, r), r); } catch (_) { /* linha corrompida ignorada */ }
+        try { const r = JSON.parse(s); t.set(naturalKey(entity, r), r); }
+        catch (e) {
+          corrupted.push({
+            entity, line_number: i + 1, file: f,
+            error: String((e && e.message) || e),
+            excerpt_length: s.length, excerpt_hash: sha256(s)
+          });
+        }
       }
       return t.size;
     } catch (e) {
@@ -88,13 +105,14 @@ function createStore(opts) {
   function count(entity) { return table(entity).size; }
   function clear(entity) { table(entity).clear(); }
 
-  /** Saúde do armazenamento — sem esconder falha de I/O. */
+  /** Saúde do armazenamento — sem esconder falha de I/O nem linha corrompida. */
   function health() {
     return {
       dir: memoryOnly ? "(memoria)" : dir,
       memory_only: memoryOnly,
       entities: Array.from(mem.keys()).map((e) => ({ entity: e, records: mem.get(e).size })),
-      io_failures: failures.slice()
+      io_failures: failures.slice(),
+      corrupted_lines: corrupted.slice()
     };
   }
 
