@@ -37,12 +37,20 @@ function buildEvidenceRecord(opts) {
   };
 }
 
-/** Remove trechos que pareçam telefone, e-mail, CPF ou nome vinculado a "cliente"/"nome". */
+/**
+ * Camada 4 de defesa em profundidade (Fase 1, Sprint 2.2) — "antes de
+ * evidências de erro". Suprime padrões de número (telefone/CPF/documento),
+ * e-mail, E nomes prováveis (duas+ palavras capitalizadas seguidas — "Joao
+ * Silva", "Ana Cristóvão"), que é exatamente o vazamento que a rechecagem do
+ * Sprint 2.1 encontrou no mapping mode. Um trecho técnico legítimo (classes
+ * CSS, contagens, códigos de erro) não usa esse padrão e não é afetado.
+ */
 function sanitizeExcerpt(text) {
   return String(text)
     .replace(/\b\d{2,3}[.\s]?\d{3}[.\s]?\d{3}[-.\s]?\d{0,2}\b/g, "[numero-suprimido]")
     .replace(/\b[\w.+-]+@[\w-]+\.[\w.-]+\b/g, "[email-suprimido]")
     .replace(/\(?\d{2}\)?\s?\d{4,5}-?\d{4}/g, "[telefone-suprimido]")
+    .replace(/\b[A-ZÀ-Ý][a-zà-ÿ]+(?:\s+[A-ZÀ-Ý][a-zà-ÿ]+)+\b/g, "[nome-suprimido]")
     .slice(0, 500); // trecho mínimo — nunca o documento inteiro
 }
 

@@ -314,5 +314,10 @@ module.exports = {
   mapDispatchState,
   mapCompletionState,
   mapFulfillmentMode,
-  buildOrderObservation
+  buildOrderObservation,
+  // vocabulário conhecido, reexportado para o guard de PII (allowlist —
+  // ver live/pii-guard.js) reconhecer texto funcional sem duplicar padrões
+  LAYOUT_MODE_TEXT_MAP, VISUAL_LOCATION_TEXT_MAP, ORDER_STATE_TEXT_MAP,
+  COURIER_STATE_TEXT_MAP, DISPATCH_STATE_TEXT_MAP, COMPLETION_TEXT_MAP,
+  FULFILLMENT_TEXT_MAP, NOTIFY_LABEL_RE, CONFIRMED_NOTIFICATION_RE
 };

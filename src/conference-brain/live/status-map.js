@@ -107,5 +107,6 @@ function buildStatusEvent(prev, curr) {
 
 module.exports = {
   LIVE_ORDER_STATUS, LIVE_ORDER_STATUS_LIST,
-  normalizeLiveStatus, toSprint1Status, buildStatusEvent
+  normalizeLiveStatus, toSprint1Status, buildStatusEvent,
+  RAW_TEXT_MAP
 };

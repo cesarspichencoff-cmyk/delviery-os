@@ -459,10 +459,17 @@ describe("modo de mapeamento — candidatos funcionais", () => {
     assert.ok(!JSON.stringify(sig).includes("<div"));
   });
 
-  test("candidatos de acao nunca incluem rotulo que pareça PII", () => {
+  test("candidatos de acao que nao batem com vocabulario conhecido nunca aparecem em texto bruto (Sprint 2.2)", () => {
+    // Sprint 2.1 usava blocklist (so rejeitava se contivesse "telefone"/"nome")
+    // — a rechecagem provou que um nome de pessoa real passava direto por nao
+    // conter nenhuma palavra proibida. Sprint 2.2: allowlist. O texto nao
+    // desaparece (perderia sinal estrutural) — vira marcador sanitizado.
     const html = '<button>telefone contato</button>';
     const labels = MappingMode.candidateActionLabels(html);
-    assert.equal(labels.length, 0);
+    assert.equal(labels.length, 1);
+    assert.equal(labels[0].redacted, true);
+    assert.equal(typeof labels[0].text_hash, "string");
+    assert.ok(!JSON.stringify(labels).includes("telefone"));
   });
 
   test("assinatura reage a mudanca de modo/coluna/acao (nao so card/badge genericos)", () => {

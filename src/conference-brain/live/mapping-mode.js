@@ -14,6 +14,7 @@
 "use strict";
 
 const crypto = require("crypto");
+const PiiGuard = require("./pii-guard");
 
 const PII_LIKE_ATTRS = /(nome|name|telefone|phone|endereco|address|cpf|email)/i;
 
@@ -44,19 +45,30 @@ function candidateCounts(html) {
 }
 
 /**
- * Textos curtos que parecem rótulo de status (letras/espaços, poucas
- * palavras, sem dígitos longos) — heurística deliberadamente conservadora:
- * melhor perder um rótulo real do que capturar um trecho de PII por engano.
+ * Textos curtos que parecem rótulo de status. A extração em si continua
+ * ampla (letras/espaços) — a garantia de privacidade não vem mais de excluir
+ * PALAVRAS proibidas (blocklist, o que a rechecagem do Sprint 2.1 provou
+ * furável com um nome de pessoa qualquer), vem de só deixar passar
+ * literalmente o que BATE com vocabulário funcional conhecido (allowlist,
+ * `pii-guard.js`). Qualquer outra coisa vira marcador sanitizado — nunca o
+ * texto original.
  */
 function candidateStatusTexts(html) {
-  const found = new Set();
+  const found = new Map(); // chave = texto original (dedup), valor = sanitizado
   const re = /class=["'][^"']*(?:badge|status)[^"']*["'][^>]*>\s*([A-Za-zÀ-ÿ ]{2,24})\s*</gi;
   let m;
   while ((m = re.exec(html)) !== null) {
     const t = m[1].trim();
-    if (t && !PII_LIKE_ATTRS.test(t)) found.add(t);
+    if (t && !found.has(t)) found.set(t, PiiGuard.sanitizeText(t, "status_label"));
   }
-  return Array.from(found).sort();
+  return Array.from(found.values()).sort(sortSanitized);
+}
+
+/** Ordena marcadores sanitizados e strings juntos, de forma estável (por chave textual). */
+function sortSanitized(a, b) {
+  const ka = typeof a === "string" ? a : "￿" + a.text_hash;
+  const kb = typeof b === "string" ? b : "￿" + b.text_hash;
+  return ka.localeCompare(kb);
 }
 
 /** Sinaliza atributos com nome que parece PII — não extrai o valor, só avisa. */
@@ -81,7 +93,9 @@ function flagsPiiLikeAttributes(html) {
 /** Presença de tokens conhecidos (case-insensitive) em nomes de classe OU texto curto de badge/label. */
 function tokenHints(html, tokenPatterns) {
   const classNames = extractClassNames(html).join(" ");
-  const shortTexts = candidateStatusTexts(html).join(" ");
+  // só os textos que passaram pelo allowlist entram no haystack — um marcador
+  // sanitizado (objeto) não é texto e não deve virar "[object Object]" aqui.
+  const shortTexts = candidateStatusTexts(html).filter((t) => typeof t === "string").join(" ");
   const haystack = classNames + " " + shortTexts;
   const found = {};
   for (const [label, re] of Object.entries(tokenPatterns)) {
@@ -111,14 +125,14 @@ function candidateColumnHints(html) {
 
 /** Rótulos de ação candidatos (ex.: "Avisar Pedido Pronto") — nunca clicados, só contados. */
 function candidateActionLabels(html) {
-  const found = new Set();
+  const found = new Map();
   const re = /<button[^>]*>\s*([A-Za-zÀ-ÿ ]{2,40})\s*<\/button>/gi;
   let m;
   while ((m = re.exec(html)) !== null) {
     const t = m[1].trim();
-    if (t && !PII_LIKE_ATTRS.test(t)) found.add(t);
+    if (t && !found.has(t)) found.set(t, PiiGuard.sanitizeText(t, "action_label"));
   }
-  return Array.from(found).sort();
+  return Array.from(found.values()).sort(sortSanitized);
 }
 
 /** Tags de tempo candidatas (ex.: "12 min") perto de badge/tag — nunca o texto livre inteiro. */
