@@ -373,3 +373,73 @@ describe("bloqueadores 5-8 — remocao, ativacao e fonte parcial", () => {
     }
   });
 });
+
+/* ---------------------------------------------------------------------------
+ * Bloqueadores 9 e 10 — preflight composto com o driver real
+ * ------------------------------------------------------------------------- */
+describe("bloqueadores 9/10 — preflight valida tudo e protege o driver", () => {
+  const Preflight = require("../../src/conference-brain/live/playwright-preflight");
+  const BrowserAdapter = require("../../src/conference-brain/live/browser-adapter");
+
+  test("bloqueador 9: preflight sem config nenhuma acusa flag, URL e unidade ausentes (nao so executavel/perfil)", () => {
+    const check = Preflight.verifyMappingPreconditions({});
+    assert.ok(check.blockers.includes("flag_nao_informada_ao_preflight"));
+    assert.ok(check.blockers.includes("url_nao_configurada"));
+    assert.ok(check.blockers.includes("unidade_esperada_nao_configurada"));
+  });
+
+  test("bloqueador 9: flag desligada e' recusada explicitamente pelo preflight", () => {
+    const check = Preflight.verifyMappingPreconditions({ flagEnabled: false, flagName: "CONFERENCE_LIVE_OBSERVER_V1" });
+    assert.ok(check.blockers.includes("flag_desligada:CONFERENCE_LIVE_OBSERVER_V1"));
+  });
+
+  test("bloqueador 9: URL sem allowlist e' recusada por padrao (nunca aceita so por ser HTTPS)", () => {
+    const r = Preflight.checkAllowedUrl("https://parceiro.ifood.com.br/gestor", null);
+    assert.equal(r.allowed, false);
+    assert.equal(r.reason, "allowlist_nao_configurada");
+  });
+
+  test("bloqueador 9: URL fora da allowlist e' recusada", () => {
+    const r = Preflight.checkAllowedUrl("https://dominio-malicioso.com/gestor", ["parceiro.ifood.com.br"]);
+    assert.equal(r.allowed, false);
+    assert.equal(r.reason, "host_fora_da_allowlist");
+  });
+
+  test("bloqueador 9: URL na allowlist e' aceita", () => {
+    const r = Preflight.checkAllowedUrl("https://parceiro.ifood.com.br/gestor", ["parceiro.ifood.com.br"]);
+    assert.equal(r.allowed, true);
+  });
+
+  test("bloqueador 9: protocolo nao-HTTPS e' recusado mesmo na allowlist", () => {
+    const r = Preflight.checkAllowedUrl("http://parceiro.ifood.com.br/gestor", ["parceiro.ifood.com.br"]);
+    assert.equal(r.allowed, false);
+    assert.equal(r.reason, "protocolo_nao_https");
+  });
+
+  test("bloqueador 10: preflight e driver resolvem a MESMA dependencia (nunca divergem)", () => {
+    const fromPreflight = Preflight.detectDependency();
+    const fromDriver = BrowserAdapter.tryLoadPlaywright();
+    // sem playwright instalado neste ambiente, os dois concordam que esta ausente
+    assert.equal(fromPreflight.present, fromDriver.ok);
+  });
+
+  test("bloqueador 10: driver NUNCA abre sessao sem passar pelo preflight (caminho unico)", async () => {
+    const r = await BrowserAdapter.createPlaywrightDriver({
+      profileDir: "/tmp/perfil-teste", allowedUrl: "https://parceiro.ifood.com.br"
+      // sem flagEnabled, urlAllowlist, expectedUnitId — preflight recusa
+    });
+    assert.equal(r.ok, false);
+    assert.match(r.reason, /precondicoes_ausentes/);
+    assert.ok(r.check.blockers.length > 0);
+  });
+
+  test("bloqueador 10: driver falho nunca lanca excecao, mesmo com config vazia", async () => {
+    await assert.doesNotReject(BrowserAdapter.createPlaywrightDriver({}));
+  });
+
+  test("unidade esperada configurada satisfaz o preflight nesse quesito", () => {
+    const check = Preflight.checkUnit("unidade-tata-53069");
+    assert.equal(check.configured, true);
+    assert.equal(check.unit_id, "unidade-tata-53069");
+  });
+});

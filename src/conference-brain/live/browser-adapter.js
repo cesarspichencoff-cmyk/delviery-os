@@ -24,6 +24,7 @@
 
 const { LIVE_SOURCE_HEALTH } = require("../contracts/live-states");
 const { classifyCycleHealth } = require("./health");
+const Preflight = require("./playwright-preflight");
 
 const COLLECTOR_VERSION = "ifood-live-browser-v1";
 
@@ -41,31 +42,52 @@ const DEFAULTS = Object.freeze({
  * Tenta carregar o Playwright em runtime (devDependency opcional — ver
  * package.json). Nunca lança: se ausente, o adaptador continua existindo e
  * reporta saúde `unavailable` com o motivo, em vez de derrubar o processo.
+ *
+ * Bloqueador 10 da rechecagem: esta função só tentava `require("playwright")`,
+ * enquanto `playwright-preflight.js#detectDependency()` aceitava
+ * `playwright-core` OU `playwright` — se só `playwright-core` estivesse
+ * instalado, o preflight diria "pronto" e o driver falharia mesmo assim.
+ * Agora delega para `playwright-preflight.js` — FONTE ÚNICA de resolução da
+ * dependência, nunca duas implementações que podem divergir.
  */
 function tryLoadPlaywright() {
-  try { return { ok: true, playwright: require("playwright") }; }
-  catch (e) { return { ok: false, error: "playwright_nao_instalado:" + String((e && e.message) || e) }; }
+  const dep = Preflight.detectDependency();
+  if (!dep.present) return { ok: false, error: "playwright_nao_instalado:playwright-core_ou_playwright_nao_encontrado" };
+  return { ok: true, playwright: dep.module, package: dep.package };
 }
 
 /**
  * Cria um driver real sobre uma sessão persistente do Chromium. `profileDir`
  * fica FORA do repositório (config, nunca hardcoded) — é a sessão autorizada
  * do lojista, não deve ir para o Git em hipótese alguma.
+ *
+ * Bloqueador 9/10 da rechecagem: antes, este driver não passava por
+ * `refuseIfNotReady()` (não existia caminho ÚNICO de entrada — um script
+ * poderia chamar `createPlaywrightDriver` direto, ignorando o preflight);
+ * ignorava `config.executablePath` mesmo quando validado pelo preflight; e
+ * aceitava `allowedUrl` sem checar contra nenhuma allowlist. Agora:
+ *   1. `refuseIfNotReady(config)` é a ÚNICA porta — sem isso, não há
+ *      `chromium.launchPersistentContext` nenhum;
+ *   2. `executablePath` validado é o MESMO passado ao Chromium;
+ *   3. `gotoAllowedUrl()` nunca navega para nada fora da allowlist checada
+ *      no preflight — a checagem já aconteceu em `refuseIfNotReady`, aqui só
+ *      se usa o resultado.
  */
 async function createPlaywrightDriver(config) {
-  const loaded = tryLoadPlaywright();
-  if (!loaded.ok) return { ok: false, reason: loaded.error };
-  if (!config || !config.profileDir || !config.allowedUrl) {
-    return { ok: false, reason: "config_incompleta:profileDir_e_allowedUrl_obrigatorios" };
-  }
-  const { chromium } = loaded.playwright;
-  const context = await chromium.launchPersistentContext(config.profileDir, {
-    headless: config.headless !== false
-  });
+  const c = config || {};
+  const gate = Preflight.refuseIfNotReady(c);
+  if (!gate.allowed) return { ok: false, reason: gate.reason, check: gate.check };
+
+  const { module: playwright } = Preflight.detectDependency();
+  const { chromium } = playwright;
+  const launchOptions = { headless: c.headless !== false };
+  if (c.executablePath) launchOptions.executablePath = c.executablePath;
+
+  const context = await chromium.launchPersistentContext(c.profileDir, launchOptions);
   const page = context.pages()[0] || await context.newPage();
   return {
     ok: true,
-    async gotoAllowedUrl() { await page.goto(config.allowedUrl, { waitUntil: "domcontentloaded" }); },
+    async gotoAllowedUrl() { await page.goto(c.allowedUrl, { waitUntil: "domcontentloaded" }); },
     async textContent(selector) {
       const el = await page.$(selector);
       return el ? (await el.textContent()) : null;
