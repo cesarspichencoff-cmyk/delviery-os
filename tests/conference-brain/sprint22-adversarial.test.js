@@ -16,6 +16,8 @@ const assert = require("node:assert/strict");
 const PiiGuard = require("../../src/conference-brain/live/pii-guard");
 const MappingMode = require("../../src/conference-brain/live/mapping-mode");
 const { sanitizeExcerpt } = require("../../src/conference-brain/live/evidence");
+const PanelServer = require("../../tools/conference-brain/operator-panel-server");
+const { createStore } = require("../../src/conference-brain/storage/store");
 
 /* ---------------------------------------------------------------------------
  * Bloqueador 1 — privacidade do Modo de Mapeamento
@@ -105,5 +107,81 @@ describe("bloqueador 1 — privacidade (allowlist, nao blocklist)", () => {
     assert.equal(sig.pii_like_attributes_flagged.length, 0);
     // os 3 status conhecidos do relatorio real continuam literais (vocabulario seguro)
     assert.ok(sig.candidate_status_texts.includes("CONCLUDED"));
+  });
+});
+
+/* ---------------------------------------------------------------------------
+ * Bloqueador 2 — bind local do painel
+ * ------------------------------------------------------------------------- */
+describe("bloqueador 2 — painel escuta so em loopback", () => {
+  test("padrao (sem PANEL_HOST) resolve para 127.0.0.1", () => {
+    const r = PanelServer.resolvePanelHost({});
+    assert.equal(r.ok, true);
+    assert.equal(r.host, "127.0.0.1");
+  });
+
+  test("localhost e' aceito quando configurado", () => {
+    assert.equal(PanelServer.resolvePanelHost({ PANEL_HOST: "localhost" }).ok, true);
+  });
+
+  test("::1 e' aceito SO quando configurado explicitamente", () => {
+    assert.equal(PanelServer.resolvePanelHost({ PANEL_HOST: "::1" }).ok, true);
+  });
+
+  test("0.0.0.0 e' recusado", () => {
+    const r = PanelServer.resolvePanelHost({ PANEL_HOST: "0.0.0.0" });
+    assert.equal(r.ok, false);
+    assert.match(r.reason, /curinga/);
+  });
+
+  test(":: e' recusado", () => {
+    const r = PanelServer.resolvePanelHost({ PANEL_HOST: "::" });
+    assert.equal(r.ok, false);
+  });
+
+  test("IP de LAN e' recusado", () => {
+    const r = PanelServer.resolvePanelHost({ PANEL_HOST: "192.168.1.50" });
+    assert.equal(r.ok, false);
+    assert.match(r.reason, /nao_loopback/);
+  });
+
+  test("hostname externo arbitrario e' recusado", () => {
+    const r = PanelServer.resolvePanelHost({ PANEL_HOST: "meudominio.com" });
+    assert.equal(r.ok, false);
+  });
+
+  test("bind real do servidor e' 127.0.0.1, nunca :: (reproduz e prova a correcao do bloqueador 2)", async () => {
+    const server = PanelServer.createServer(createStore({ memoryOnly: true }));
+    await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const addr = server.address();
+    assert.equal(addr.address, "127.0.0.1");
+    assert.notEqual(addr.address, "::");
+    await new Promise((resolve) => server.close(resolve));
+  });
+
+  test("encerramento limpo: porta liberada apos close()", async () => {
+    const server = PanelServer.createServer(createStore({ memoryOnly: true }));
+    await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const port = server.address().port;
+    await new Promise((resolve) => server.close(resolve));
+    const server2 = PanelServer.createServer(createStore({ memoryOnly: true }));
+    await new Promise((resolve, reject) => {
+      server2.once("error", reject);
+      server2.listen(port, "127.0.0.1", resolve);
+    });
+    await new Promise((resolve) => server2.close(resolve));
+  });
+
+  test("porta ocupada gera erro EADDRINUSE, nunca sobe silenciosamente em outra interface", async () => {
+    const s1 = PanelServer.createServer(createStore({ memoryOnly: true }));
+    await new Promise((resolve) => s1.listen(0, "127.0.0.1", resolve));
+    const port = s1.address().port;
+    const s2 = PanelServer.createServer(createStore({ memoryOnly: true }));
+    const err = await new Promise((resolve) => {
+      s2.once("error", resolve);
+      s2.listen(port, "127.0.0.1");
+    });
+    assert.equal(err.code, "EADDRINUSE");
+    await new Promise((resolve) => s1.close(resolve));
   });
 });

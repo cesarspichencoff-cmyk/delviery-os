@@ -25,6 +25,34 @@ const { CLOCK_EVENT_TYPES } = require(path.join(DIR, "src", "conference-brain", 
 
 const PORT = parseInt(process.env.PANEL_PORT || "5183", 10);
 
+/**
+ * Bind local por padrao (Sprint 2.2, Fase 2 — bloqueador 2 da rechecagem).
+ * `server.listen(PORT)` sem host explicito abre em `::` (curinga IPv6,
+ * aceita conexao de qualquer interface) — reproduzido antes desta correcao:
+ * `server.address()` devolvia `{address:"::", family:"IPv6"}`.
+ *
+ * So loopback e permitido. `::1` so quando configurado explicitamente
+ * (PANEL_HOST=::1) — nunca por padrao, porque nem todo ambiente tem IPv6
+ * funcional e o padrao precisa ser o que sempre funciona. Qualquer outro
+ * host (0.0.0.0, ::, IP de LAN, hostname nao-loopback) e RECUSADO — falha
+ * fechada, o processo nao sobe.
+ */
+const LOOPBACK_ALLOWLIST = Object.freeze(["127.0.0.1", "localhost", "::1"]);
+const REJECTED_HOSTS = Object.freeze(["0.0.0.0", "::", "0000:0000:0000:0000:0000:0000:0000:0000"]);
+
+function resolvePanelHost(env) {
+  const raw = (env || process.env).PANEL_HOST;
+  if (!raw) return { ok: true, host: "127.0.0.1", source: "padrao" };
+  const host = raw.trim();
+  if (REJECTED_HOSTS.includes(host)) {
+    return { ok: false, host, reason: `host_curinga_recusado:${host}` };
+  }
+  if (!LOOPBACK_ALLOWLIST.includes(host)) {
+    return { ok: false, host, reason: `host_nao_loopback_recusado:${host}` };
+  }
+  return { ok: true, host, source: "configurado" };
+}
+
 function readBody(req) {
   return new Promise((resolve, reject) => {
     let data = "";
@@ -134,13 +162,22 @@ function main() {
     process.exitCode = 1;
     return;
   }
+  const hostCheck = resolvePanelHost();
+  if (!hostCheck.ok) {
+    console.error(`PANEL_HOST recusado: ${hostCheck.reason}. So loopback e permitido ` +
+      `(127.0.0.1, localhost, ::1 quando explicito). Painel nao sobe.`);
+    process.exitCode = 1;
+    return;
+  }
   const store = createStore();
   const server = createServer(store);
-  server.listen(PORT, () => {
-    console.log(`Painel interno da Conferencia em http://localhost:${PORT}/ (Sprint 2, sombra, uso interno)`);
+  server.listen(PORT, hostCheck.host, () => {
+    const { address, port } = server.address();
+    console.log(`Painel interno da Conferencia em http://${hostCheck.host}:${port}/ ` +
+      `(bind real: ${address}) (Sprint 2, sombra, uso interno)`);
   });
 }
 
 if (require.main === module) main();
 
-module.exports = { createServer, ordersInPlay, renderPage };
+module.exports = { createServer, ordersInPlay, renderPage, resolvePanelHost, LOOPBACK_ALLOWLIST, REJECTED_HOSTS };
