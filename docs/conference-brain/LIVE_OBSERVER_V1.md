@@ -80,21 +80,36 @@ não faz login sozinho, não digita senha, não contorna 2FA nem CAPTCHA, não
 clica em ações que mudam estado no portal, não reexecuta endpoint privado fora
 do navegador, não continua coletando quando pede intervenção humana.
 
-## 7. Sprint 2.1 — modelo multidimensional (correção da auditoria)
+## 7. Sprint 2.1/2.2 — modelo multidimensional (correção da auditoria)
 
-A auditoria independente do Sprint 2 (`docs/auditoria/CONFERENCE_BRAIN_SPRINT2_AUDIT.md`)
-classificou o coletor como **Categoria B** e apontou que `status-map.js`
-sozinho não basta para o Gestor real: ele mistura produção, prontidão
-informada e logística num único eixo. O ciclo (§3 acima) **continua o
-mesmo** — nada nesta seção muda `observer.js`. O que muda é uma camada NOVA,
-paralela, disponível para quem quiser usá-la:
+A auditoria independente do Sprint 2 (rechecagem em
+`docs/conference-brain/LIVE_VALIDATION_V1.md` §6-7; o relatório de auditoria
+em si vive numa branch de auditoria separada, não neste histórico) apontou
+que `status-map.js` sozinho não basta para o Gestor real: ele mistura
+produção, prontidão informada e logística num único eixo.
+
+**Estado no Sprint 2.1:** a camada multidimensional existia como biblioteca
+pura, paralela — `observer.js` continuava chamando só `normalizeLiveStatus`.
+A rechecagem independente marcou isso como bloqueador: bibliotecas puras não
+integradas não corrigem o observador real.
+
+**Estado no Sprint 2.2 (atual):** `observer.js#runCycle()` **integra** a
+camada — cada ciclo constrói a observação multidimensional, reconcilia
+contra o histórico persistido, e SÓ DEPOIS deriva o status antigo:
 
 ```
-multidimensional-observation.js   (buildOrderObservation) — 9 dimensões independentes
+observer.js#runCycle()
+        │  a cada pedido observado:
+        ▼
+multidimensional-observation.js#buildOrderObservation()  — 9 dimensões, a partir do sinal bruto
         │
-reconciliation.js#reconcileMultidimensional  — cada dimensão reconciliada à parte
+reconciliation.js#reconcileMultidimensional()  — reconcilia contra TODO o histórico já persistido
+        │  persistido em live_observations[].dimensions
+        ▼
+legacy-compat.js#deriveLegacyLiveStatus()      — DERIVA o LIVE_ORDER_STATUS antigo (nunca o contrário)
         │
-legacy-compat.js#deriveLegacyLiveStatus      — projeção de volta ao LIVE_ORDER_STATUS, se precisar
+        ├─► clock.js (relógio, ready/departure) — consome o status derivado
+        └─► painel (via observer.js#getReconciledDimension / operator-panel-server.js#reconciledDimensionFor)
 ```
 
 Ver `MULTIDIMENSIONAL_ORDER_STATE_V1.md` para as 9 dimensões e

@@ -120,3 +120,19 @@ Prova com dado real, de novo: os mesmos 36 IDs duplicados do Sprint 1,
 envolvidos agora em observações multidimensionais sintéticas (o relatório
 histórico não carrega sinal multidimensional real), passam por
 `reconcileMultidimensional` sem exceção nenhuma.
+
+## 6. Correção (Sprint 2.2) — remoção era invisível quando a leitura vinha vazia
+
+A rechecagem independente do Sprint 2.1 provou que a afirmação da §5 acima
+("gera nova versão, nunca sobrescreve") era **verdadeira só para leituras não
+vazias**. Uma saída de agrupamento, uma ação que sumiu ou um indicador que
+terminou — todos representados por uma leitura com lista **vazia** — eram
+descartados pelos mesmos filtros que ignoram "leitura que não checou essa
+dimensão". O valor antigo ficava "atual" para sempre.
+
+Corrigido: `grouping.js`/`reconciliation.js` agora distinguem
+`unobserved` (não afeta nada) de `present`/`removed` (leitura EXPLÍCITA,
+sinalizada por `observed:true`/`actions_observed:true`/`indicatorsObserved:true`)
+— só a segunda pode encerrar um valor anterior. Ver
+`LIVE_VALIDATION_V1.md` §8 (bloqueadores 5, 6, 7, 8) para a reprodução e a
+correção completas.

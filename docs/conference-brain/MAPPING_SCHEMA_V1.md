@@ -1,8 +1,20 @@
-# Esquema do Modo de Mapeamento — Sprint 2.1
+# Esquema do Modo de Mapeamento — Sprint 2.1 (privacidade corrigida no Sprint 2.2)
 
 `src/conference-brain/live/mapping-mode.js` — evolução da Fase 14 do Sprint 2.
 Continua **somente leitura**: nunca executa ação no portal, nunca clica, nunca
 muta, nunca persiste HTML bruto, nunca extrai valor de atributo que pareça PII.
+
+> **Correção de privacidade (Sprint 2.2, bloqueador 1):** até o Sprint 2.1, a
+> sanitização de texto curto (`candidateStatusTexts`/`candidateActionLabels`)
+> era por BLOCKLIST — só rejeitava texto contendo palavras como
+> "telefone"/"nome". A rechecagem independente provou que um nome de pessoa
+> real ("Joao Silva") passava direto, por não conter nenhuma palavra
+> proibida. Corrigido para ALLOWLIST em `live/pii-guard.js`: só passa
+> literalmente o que bate com vocabulário funcional conhecido (os mesmos
+> padrões usados para mapear as dimensões); qualquer outro texto vira
+> `{redacted:true, text_category, text_length, text_hash}` — nunca some
+> (perderia sinal estrutural), nunca aparece bruto. Ver
+> `docs/conference-brain/LIVE_VALIDATION_V1.md` §8.
 
 ## 1. O que a assinatura estrutural captura agora
 
@@ -14,7 +26,7 @@ adiciona `functional_candidates`:
 |---|---|---|
 | Modo de layout | `candidateLayoutModeHints` | tokens "expedição"/"quadros"/"kanban" em classe ou rota sanitizada |
 | Colunas | `candidateColumnHints` | nomes de classe com `column`/`coluna`/`lane`/`board-` |
-| Ações | `candidateActionLabels` | texto de `<button>`, filtrado contra padrão de PII |
+| Ações | `candidateActionLabels` | texto de `<button>`, sanitizado por allowlist (`pii-guard.js`) — nunca texto bruto que não bata com vocabulário conhecido |
 | Tags de tempo | `candidateTimeTags` | `"N min"` perto de classe `tag`/`time`/`tempo` |
 | Sinais logísticos/agrupamento/agendado/loja/QR | `candidateSemanticHints` | vocabulário conhecido (entregador, agrupado, agendado, loja aberta/fechada, QR code) |
 | Seletor de unidade | `candidateUnitSelectorHints` | vocabulário de troca de loja/unidade |

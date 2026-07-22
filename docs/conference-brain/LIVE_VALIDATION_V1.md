@@ -162,3 +162,45 @@ real; os textos exatos da tela.
 ```
 CORREÇÕES DO SPRINT 2 IMPLEMENTADAS — PRONTO PARA RECHECAGEM
 ```
+
+## 8. Sprint 2.2 — rechecagem bloqueada, 12 bloqueadores corrigidos
+
+A rechecagem independente do Sprint 2.1 (branch de auditoria separada,
+commit `f7529fa`, não incorporado a este histórico) reproduziu falhas
+materiais e devolveu **RECHECAGEM BLOQUEADA**, progresso mantido em 63%.
+Todos os 15 bloqueadores foram reproduzidos antes de qualquer correção
+(Fase 0 desta missão) e corrigidos nesta branch (`fix/conference-live-multidimensional-model-v2`):
+
+| # | Bloqueador | Corrigido em |
+|---|---|---|
+| 1 | Mapping mode podia persistir PII (nome real passava por blocklist) | `live/pii-guard.js` (allowlist) |
+| 2 | Painel escutava em `::` (curinga), não só local | `operator-panel-server.js#resolvePanelHost` |
+| 3 | Painel não renderizava sinais multidimensionais | `operator-panel-server.js#reconciledDimensionFor`/`renderSignals` |
+| 4 | Modelo multidimensional não integrado ao observador real | `observer.js` (fonte de verdade agora) |
+| 5 | Saída de agrupamento mantinha estado antigo | `grouping.js` (`PRESENCE`) |
+| 6 | Ativação de agendamento mantinha `is_scheduled` antigo | `reconciliation.js#reconcileSchedule` |
+| 7 | Desaparecimento de ação mantinha ação antiga | `reconciliation.js#reconcileAvailableActions` |
+| 8 | Desaparecimento de indicador mantinha indicador antigo | `reconciliation.js#reconcileIndicators` |
+| 9 | Preflight não validava flag nem URL | `playwright-preflight.js` |
+| 10 | Preflight incompatível com o driver real | `browser-adapter.js` (fonte única com o preflight) |
+| 11 | Idempotência do relógio não reconhecia retry | `clock.js#recordEvent` |
+| 12 | Store descartava linha corrompida em silêncio | `storage/store.js#load` |
+| 13-14 | Documentação divergia do código/diff | este arquivo + `LIVE_OBSERVER_V1.md` |
+| 15 | Datas de fontes oficiais inconsistentes | `IFOOD_FUNCTIONAL_MODEL_V1.md` §1 (reverificado 2026-07-22) |
+
+Cada bloqueador tem reprodução ANTES da correção e teste adversarial
+verificando a correção em `tests/conference-brain/sprint22-adversarial.test.js`
+(66 testes). Nenhuma sessão real foi aberta, nenhum Gestor acessado, nenhum
+seletor real mapeado — as restrições desta missão continuam integralmente
+respeitadas.
+
+**Limitação honesta registrada nesta correção:** a segurança contra
+concorrência real (dois processos, ou I/O com latência genuína) não foi
+implementada nem testada — só a ausência de duplicação dentro do mesmo
+processo Node.js com store em memória foi provada.
+
+## 9. Veredito (Sprint 2.2)
+
+```
+SPRINT 2.2 CORRIGIDO — PRONTO PARA RECHECAGEM INDEPENDENTE
+```

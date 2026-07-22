@@ -10,18 +10,37 @@
 
 ## 1. Fontes consultadas
 
-Domínio oficial `blog-parceiros.ifood.com.br`, consultado em **2026-07-21**.
-Materiais públicos de marketing/suporte — **não são documentação de DOM**.
+Domínio oficial `blog-parceiros.ifood.com.br`. Materiais públicos de
+marketing/suporte — **não são documentação de DOM**.
 
-| Título | URL | Atualização | Categoria |
-|---|---|---|---|
-| Conheça a Nova jornada de Pedidos no Gestor | blog-parceiros.ifood.com.br/painel-de-expedicao-gestor-de-pedidos/ | 16/07/2026 | funcionalidade oficial |
-| Gestor de Pedidos iFood: saiba como funciona | blog-parceiros.ifood.com.br/gestor-de-pedidos-ifood/ | 17/07/2026 | funcionalidade oficial |
-| Botão Pronto: como otimizar a chegada do entregador | blog-parceiros.ifood.com.br/botao-pronto/ | 07/07/2025 | funcionalidade oficial |
-| Confirmação de chegada QR Code | blog-parceiros.ifood.com.br/confirmacao-de-chegada-qr-code/ | 20/07/2026 | funcionalidade oficial (recurso **opcional**) |
+> **Correção (Sprint 2.2, bloqueador 15):** a versão anterior tinha uma única
+> coluna "Atualização", sem dizer se era a data de PUBLICAÇÃO ou de
+> ATUALIZAÇÃO do artigo — uma ambiguidade real, apontada pela rechecagem
+> independente. A tabela abaixo separa as três datas que a missão pede:
+> publicação, atualização e ACESSO (quando esta verificação foi feita),
+> todas obtidas por leitura direta de cada página em **2026-07-22**.
+>
+> Nota de honestidade: a rechecagem independente (executada em 2026-07-22,
+> com outro modelo) registrou datas de "atualização" diferentes das
+> encontradas aqui para 3 das 4 páginas. Esta verificação é uma leitura
+> direta e independente, feita nesta sessão — não consegue confirmar qual
+> leitura está certa sem acesso à outra sessão que gerou o número
+> divergente. Páginas de blog frequentemente têm campo de "atualizado em"
+> gerenciado por CMS, que pode mudar entre visitas por motivos alheios ao
+> conteúdo (recirculação editorial, cache, etc.) — por isso a data de
+> ACESSO desta verificação é o dado com garantia mais forte aqui.
+
+| Título | URL | Publicado | Atualizado | Acesso desta verificação | Categoria |
+|---|---|---|---|---|---|
+| Conheça a Nova jornada de Pedidos no Gestor | blog-parceiros.ifood.com.br/painel-de-expedicao-gestor-de-pedidos/ | 22/05/2025 | 16/07/2026 | 2026-07-22 | funcionalidade oficial |
+| Gestor de Pedidos iFood: saiba como funciona | blog-parceiros.ifood.com.br/gestor-de-pedidos-ifood/ | 30/06/2026 | 17/07/2026 | 2026-07-22 | funcionalidade oficial |
+| Botão Pronto: como otimizar a chegada do entregador | blog-parceiros.ifood.com.br/botao-pronto/ | 19/12/2022 | 07/07/2025 | 2026-07-22 | funcionalidade oficial |
+| Confirmação de chegada QR Code | blog-parceiros.ifood.com.br/confirmacao-de-chegada-qr-code/ | 04/07/2025 | 20/07/2026 | 2026-07-22 | funcionalidade oficial (recurso **opcional**) |
 
 Nenhuma dessas páginas expõe seletor, classe CSS ou estrutura de DOM da conta
-TATÁ — isso só a sessão supervisionada (não realizada) pode confirmar.
+TATÁ — isso só a sessão supervisionada (não realizada) pode confirmar. Data
+de implementação do modelo baseado nestas fontes: Sprint 2.1, 2026-07-22
+(commits `4e29b25`..`0d2960f`).
 
 ## 2. Dois modos de visualização (funcionalidade oficial)
 

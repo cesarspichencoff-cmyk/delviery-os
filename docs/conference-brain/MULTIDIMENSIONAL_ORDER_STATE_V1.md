@@ -71,7 +71,9 @@ entregador na loja + pedido ainda em preparo
 
 `LIVE_ORDER_STATUS` (Sprint 2) não foi removido — está marcado `@deprecated`
 em `contracts/live-states.js` e projetado a partir do modelo novo por
-`live/legacy-compat.js#deriveLegacyLiveStatus`. Ver `RECONCILIATION_V1.md` §6.
+`live/legacy-compat.js#deriveLegacyLiveStatus`. Ver `RECONCILIATION_V1.md`
+§5 (reconciliação multidimensional) e §6 (correção da semântica de ausência,
+Sprint 2.2).
 
 ## 6. Documentos relacionados
 

@@ -74,3 +74,20 @@ as 9 dimensões de uma vez:
 "mostrar apenas sinais relevantes, detalhes sob expansão".
 
 Nenhuma ação nova foi adicionada ao portal — os sinais são só leitura.
+
+## 7. Correção (Sprint 2.2) — o servidor real nunca usava isto
+
+A rechecagem independente encontrou a lacuna exata: `panelRow()`/
+`buildPanelSignals()` (§6 acima) sempre estiveram corretos — o problema era
+que `tools/conference-brain/operator-panel-server.js#ordersInPlay()` **nunca
+passava `order.dimension`**, e `renderPage()` não tinha coluna nenhuma para
+os sinais. O HTML executável nunca mostrava bloqueio, entregador na loja,
+alerta ou detalhes, mesmo quando esses dados existiam no store.
+
+Corrigido: `ordersInPlay()` agora reconcilia a observação persistida
+(`reconciledDimensionFor`) e injeta `dimension`; `renderPage()` ganhou a
+coluna "Sinais" com os chips priorizados (§6) e `<details>` para o resto.
+Testado contra o servidor real (`createServer`+`ordersInPlay`+`renderPage`),
+não só contra `panelRow()` isolado — ver
+`tests/conference-brain/sprint22-adversarial.test.js`, describe
+"bloqueadores 3/4".
