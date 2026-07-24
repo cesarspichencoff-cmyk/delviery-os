@@ -204,3 +204,44 @@ processo Node.js com store em memória foi provada.
 ```
 SPRINT 2.2 CORRIGIDO — PRONTO PARA RECHECAGEM INDEPENDENTE
 ```
+
+> **Correção (Sprint 2.3):** a rechecagem independente focada do Sprint 2.2
+> (worktree `audit/recheck-conference-live-multidimensional-v2`, commit
+> `1d6bc44`) provou que este veredito era prematuro em 6 dos 12 pontos
+> acima: a suíte oficial (66 testes) passava, mas tinha lacunas de
+> asserção — o veredito real era `RECHECAGEM BLOQUEADA`, com 10 de 25
+> testes independentes falhando. Ver §10 para a correção cirúrgica desses
+> 10 casos e o novo veredito.
+
+## 10. Sprint 2.3 — correção cirúrgica dos bloqueadores da rechecagem do 2.2
+
+A rechecagem independente focada do Sprint 2.2 rodou 25 testes adversariais
+próprios (`tests/auditoria/conference-sprint22-recheck.test.js`, cópia
+somente-leitura do commit `1d6bc44`) e encontrou 10 falhas materiais,
+apesar de todas as suítes oficiais (263 testes) passarem. A causa comum:
+os testes oficiais do Sprint 2.2 provavam que CADA MÓDULO ISOLADO se
+comportava corretamente, mas não cobriam o caminho de PONTA A PONTA (ex.:
+`reconcileMultidimensional` já sabia reconciliar agrupamento, mas
+`observer.js` nunca alimentava esse campo) nem alguns vetores de ataque
+específicos (subdomínio-prefixo na allowlist de URL, forma de nome como
+único critério de PII, ordem de chegada assumida como ordem temporal).
+
+| Bloqueador | Sintoma provado pela rechecagem | Correção | Commit |
+|---|---|---|---|
+| 1 — PII | `pii-guard.js` liberava frase inteira por conter fragmento de vocabulário (substring, não igualdade); `evidence.js` era blocklist (não cobria nome minúsculo/CJK); `observer.js` persistia texto bruto em `live_observations`/`live_cycle_runs` | allowlist por correspondência de STRING COMPLETA (`pii-guard.js#fullMatch`); excerto por allowlist de TOKEN (`sanitizeFreeText`); sanitização cirúrgica do caminho de persistência (`sanitizeOrderObservation`) | `1d430d9` |
+| 2 — integração | `buildOrderObservation()` nunca aceitava/repassava `grouping`/`schedule`/`indicators` — a reconciliação já sabia consumi-los, mas nunca era alimentada | `multidimensional-observation.js`/`observer.js` encaminham os três sinais de ponta a ponta | `02c5d9b` |
+| 3 — agrupamento | `reconcileGrouping` dobrava por ORDEM DE CHEGADA do array, não por tempo — leitura antiga entregue por último "ressuscitava" grupo encerrado | ordena por `observed_at` antes de dobrar em versões | `7df6df9` |
+| 4 — preflight | `checkAllowedUrl` comparava `href.startsWith(entry)` — subdomínio-prefixo malicioso passava | comparação por hostname canônico (mesmo parser `URL` nos dois lados), igualdade exata | `546016c` |
+| 5 — idempotência | `recordEvent` tratava "mesmo tipo que o estado atual" como retry, mesmo com origem/motivo/horário diferentes | identidade do fato (`isSameFact`): origem/motivo/raw_status sempre comparados; `event_time` explícito desempata; `observed_at` sozinho nunca torna dois retries fatos distintos | `3050913` |
+| 6 — recuperação | `store.js` vazava conteúdo corrompido via `e.message` (V8 embute trecho da entrada no erro); `observer.js` só emitia evento do relógio quando o texto "mudava" no ciclo — uma queda entre persistir observação e evento deixava o fato sem `ready_observed` para sempre | `e.name` (literal fixo) em vez de `e.message`; emissão de evento reavaliada TODO ciclo contra o histórico persistido, não só quando algo mudou | `573810c` |
+| 7 — documentação | Datas de "Atualizado" de 2 das 4 fontes oficiais divergiam entre a rechecagem e o documento | reverificação independente em 2026-07-24 (3ª consulta): reproduziu os números do documento original nas 4 fontes; divergência da rechecagem não reproduzida, registrada com honestidade | este commit |
+
+Todos os 25 testes da suíte de auditoria passam agora (verificado duas
+vezes, sem alterar o arquivo — ver relatório final da missão). Testes
+oficiais equivalentes em `tests/conference-brain/sprint23-adversarial.test.js`.
+
+## 11. Veredito (Sprint 2.3)
+
+```
+SPRINT 2.3 CORRIGIDO — PRONTO PARA RECHECAGEM FOCADA
+```

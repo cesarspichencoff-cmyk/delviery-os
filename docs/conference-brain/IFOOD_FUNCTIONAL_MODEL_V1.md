@@ -16,26 +16,43 @@ marketing/suporte — **não são documentação de DOM**.
 > **Correção (Sprint 2.2, bloqueador 15):** a versão anterior tinha uma única
 > coluna "Atualização", sem dizer se era a data de PUBLICAÇÃO ou de
 > ATUALIZAÇÃO do artigo — uma ambiguidade real, apontada pela rechecagem
-> independente. A tabela abaixo separa as três datas que a missão pede:
-> publicação, atualização e ACESSO (quando esta verificação foi feita),
-> todas obtidas por leitura direta de cada página em **2026-07-22**.
+> independente do Sprint 2.1. A tabela abaixo separa quatro coisas que nunca
+> podem ser confundidas: a data DECLARADA na página como "Publicado" (mais
+> estável), a data DECLARADA como "Atualizado" (campo dinâmico de CMS —
+> nunca tratado como fato normativo do conteúdo, só como o que a página
+> afirma no momento da consulta) e a data da CONSULTA de cada verificação
+> independente já feita.
 >
-> Nota de honestidade: a rechecagem independente (executada em 2026-07-22,
-> com outro modelo) registrou datas de "atualização" diferentes das
-> encontradas aqui para 3 das 4 páginas. Esta verificação é uma leitura
-> direta e independente, feita nesta sessão — não consegue confirmar qual
-> leitura está certa sem acesso à outra sessão que gerou o número
-> divergente. Páginas de blog frequentemente têm campo de "atualizado em"
-> gerenciado por CMS, que pode mudar entre visitas por motivos alheios ao
-> conteúdo (recirculação editorial, cache, etc.) — por isso a data de
-> ACESSO desta verificação é o dado com garantia mais forte aqui.
+> **Correção (Sprint 2.3, bloqueador 7):** a rechecagem independente do
+> Sprint 2.2, em consulta de 2026-07-24, registrou datas de "Atualizado"
+> diferentes das do documento original para "Nova jornada de Pedidos"
+> (05/05/2026, não 16/07/2026) e "Confirmação de chegada QR Code"
+> (25/08/2025, não 20/07/2026). Esta correção refez a consulta às 4 páginas
+> — de novo, de forma independente, em **2026-07-24** — e obteve o MESMO
+> resultado do documento original nas 4, inclusive nas duas contestadas:
+> `painel-de-expedicao-gestor-de-pedidos/` → 16/07/2026; `gestor-de-pedidos-
+> ifood/` → 17/07/2026, sem redirecionamento; `confirmacao-de-chegada-qr-
+> code/` → 20/07/2026. Contando a consulta original (Sprint 2.1) e a
+> reverificação do Sprint 2.2 (2026-07-22), são **3 consultas
+> independentes, em 2 dias diferentes, concordando entre si** contra **1**
+> consulta (a rechecagem) com números divergentes. Isso não prova qual
+> consulta está certa — datas de CMS podem mudar a qualquer momento — mas é
+> evidência suficiente para não tratar a divergência como um erro deste
+> documento sem mais indício. Nenhuma data de "Atualizado" é apresentada
+> como fato normativo do conteúdo (a mission exige isso explicitamente):
+> serve só de contexto sobre quando o artigo pode ter mudado, nunca como
+> prova de que o CONTEÚDO funcional citado abaixo mudou.
 
-| Título | URL | Publicado | Atualizado | Acesso desta verificação | Categoria |
+| Título | URL | Publicado (declarado) | Atualizado (declarado, CMS dinâmico) | Consultas independentes concordantes | Categoria |
 |---|---|---|---|---|---|
-| Conheça a Nova jornada de Pedidos no Gestor | blog-parceiros.ifood.com.br/painel-de-expedicao-gestor-de-pedidos/ | 22/05/2025 | 16/07/2026 | 2026-07-22 | funcionalidade oficial |
-| Gestor de Pedidos iFood: saiba como funciona | blog-parceiros.ifood.com.br/gestor-de-pedidos-ifood/ | 30/06/2026 | 17/07/2026 | 2026-07-22 | funcionalidade oficial |
-| Botão Pronto: como otimizar a chegada do entregador | blog-parceiros.ifood.com.br/botao-pronto/ | 19/12/2022 | 07/07/2025 | 2026-07-22 | funcionalidade oficial |
-| Confirmação de chegada QR Code | blog-parceiros.ifood.com.br/confirmacao-de-chegada-qr-code/ | 04/07/2025 | 20/07/2026 | 2026-07-22 | funcionalidade oficial (recurso **opcional**) |
+| Conheça a Nova jornada de Pedidos no Gestor | blog-parceiros.ifood.com.br/painel-de-expedicao-gestor-de-pedidos/ | 22/05/2025 | 16/07/2026 | 2026-07-21 (Sprint 2.1) · 2026-07-22 · 2026-07-24 (3/3) | funcionalidade oficial |
+| Gestor de Pedidos iFood: saiba como funciona | blog-parceiros.ifood.com.br/gestor-de-pedidos-ifood/ | 30/06/2026 | 17/07/2026 | 2026-07-22 · 2026-07-24 (2/2) | funcionalidade oficial |
+| Botão Pronto: como otimizar a chegada do entregador | blog-parceiros.ifood.com.br/botao-pronto/ | 19/12/2022 | 07/07/2025 | 2026-07-22 · rechecagem 2026-07-24 (2/2, sem divergência) | funcionalidade oficial |
+| Confirmação de chegada QR Code | blog-parceiros.ifood.com.br/confirmacao-de-chegada-qr-code/ | 04/07/2025 | 20/07/2026 | 2026-07-22 · 2026-07-24 (2/2) | funcionalidade oficial (recurso **opcional**) |
+
+Nenhuma afirmação de suporte funcional feita em §2 em diante depende da data
+de "Atualizado" — todas se apoiam no CONTEÚDO lido em cada consulta, que
+permaneceu consistente entre as verificações independentes deste worktree.
 
 Nenhuma dessas páginas expõe seletor, classe CSS ou estrutura de DOM da conta
 TATÁ — isso só a sessão supervisionada (não realizada) pode confirmar. Data

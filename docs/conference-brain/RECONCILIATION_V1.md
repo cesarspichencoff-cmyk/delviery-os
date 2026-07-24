@@ -136,3 +136,20 @@ sinalizada por `observed:true`/`actions_observed:true`/`indicatorsObserved:true`
 — só a segunda pode encerrar um valor anterior. Ver
 `LIVE_VALIDATION_V1.md` §8 (bloqueadores 5, 6, 7, 8) para a reprodução e a
 correção completas.
+
+## 7. Correção (Sprint 2.3) — agrupamento por ordem de CHEGADA, não por ordem TEMPORAL
+
+A rechecagem independente do Sprint 2.2 provou que a distinção `unobserved`/
+`present`/`removed` da §6 acima, sozinha, não bastava: `grouping.js#reconcileGrouping`
+dobrava as leituras na ordem em que apareciam no ARRAY de entrada — "a versão
+atual" era "a última do array", não "a última no tempo". Uma leitura antiga
+entregue por último (rede fora de ordem, retry, replay) ressuscitava um grupo
+já encerrado por uma leitura mais nova.
+
+Corrigido: `reconcileGrouping()` ordena por `observed_at` **antes** de dobrar
+em versões. Isso também garante, sem código adicional, a exigência de replay
+determinístico — qualquer ordem de chegada da MESMA sequência de leituras
+converge para o mesmo resultado final. Ver `LIVE_VALIDATION_V1.md` §10
+(bloqueador 3) para a reprodução e a correção completas. `reconcileSchedule`
+e `reconcileIndicators` já ordenavam por `observed_at`/`indicatorsObserved`
+desde o Sprint 2.2 — só `reconcileGrouping` tinha a lacuna.
