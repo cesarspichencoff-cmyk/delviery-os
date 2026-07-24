@@ -255,3 +255,51 @@ describe("bloqueador 3 — agrupamento fora de ordem e' resolvido por observed_a
     assert.deepEqual(forward.current, reversed.current);
   });
 });
+
+/* ---------------------------------------------------------------------------
+ * Bloqueador 4 — preflight: allowlist de URL por hostname canônico.
+ * ------------------------------------------------------------------------- */
+describe("bloqueador 4 — allowlist de URL nunca aceita por prefixo/substring", () => {
+  test("subdominio malicioso que comeca igual ao host legitimo e' recusado", () => {
+    const r = Preflight.checkAllowedUrl(
+      "https://parceiro.ifood.com.br.evil.example/gestor",
+      ["https://parceiro.ifood.com.br"]
+    );
+    assert.equal(r.allowed, false);
+    assert.equal(r.reason, "host_fora_da_allowlist");
+  });
+
+  test("host legitimo exato continua aceito", () => {
+    const r = Preflight.checkAllowedUrl("https://parceiro.ifood.com.br/gestor", ["parceiro.ifood.com.br"]);
+    assert.equal(r.allowed, true);
+  });
+
+  test("credenciais embutidas na URL sao recusadas", () => {
+    const r = Preflight.checkAllowedUrl("https://user:pass@parceiro.ifood.com.br/gestor", ["parceiro.ifood.com.br"]);
+    assert.equal(r.allowed, false);
+  });
+
+  test("porta diferente nao muda o host mas continua exigindo host valido", () => {
+    const r = Preflight.checkAllowedUrl("https://parceiro.ifood.com.br:8443/gestor", ["parceiro.ifood.com.br"]);
+    assert.equal(r.allowed, true);
+    assert.equal(r.host, "parceiro.ifood.com.br");
+  });
+
+  test("host vazio/URL invalida e' recusado", () => {
+    assert.equal(Preflight.checkAllowedUrl("https:///gestor", ["parceiro.ifood.com.br"]).allowed, false);
+    assert.equal(Preflight.checkAllowedUrl("nao-e-url", ["parceiro.ifood.com.br"]).allowed, false);
+  });
+
+  test("driver e preflight continuam usando exatamente a mesma validacao apos a correcao", async () => {
+    const config = {
+      flagEnabled: true, flagName: "CONFERENCE_LIVE_OBSERVER_V1",
+      allowedUrl: "https://parceiro.ifood.com.br.evil.example/gestor",
+      urlAllowlist: ["parceiro.ifood.com.br"], expectedUnitId: "SIM-UNIT"
+    };
+    const check = Preflight.verifyMappingPreconditions(config);
+    assert.equal(check.url.allowed, false);
+    const driver = await Browser.createPlaywrightDriver(config);
+    assert.equal(driver.ok, false);
+    assert.deepEqual(driver.check.blockers, check.blockers);
+  });
+});

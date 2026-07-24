@@ -55,10 +55,42 @@ function checkFlag(flagEnabled, flagName) {
   return { configured: flagEnabled !== undefined, enabled: flagEnabled === true, name: flagName || null };
 }
 
+/** Forma canônica de um hostname para comparação: minúsculo, sem ponto final. */
+function canonicalHost(hostname) {
+  return String(hostname || "").toLowerCase().replace(/\.$/, "");
+}
+
+/**
+ * Resolve uma entrada de allowlist (hostname puro ou URL completa) para o
+ * mesmo formato canônico que `new URL().hostname` produz — mesma
+ * implementação de parsing para os dois lados da comparação, nunca duas
+ * heurísticas diferentes que podem divergir.
+ */
+function canonicalAllowlistHost(entry) {
+  const s = String(entry || "");
+  try {
+    const u = new URL(/^https?:\/\//i.test(s) ? s : `https://${s}`);
+    return canonicalHost(u.hostname);
+  } catch (_) {
+    return canonicalHost(s);
+  }
+}
+
 /**
  * URL permitida — nunca aceita "qualquer HTTPS". Exige uma allowlist
  * explícita; sem ela, a URL é recusada por padrão (Fase 6: "sem uma URL
  * permitida explicitamente: recusar execução").
+ *
+ * Sprint 2.3 (bloqueador 4 da rechecagem do 2.2): a versão anterior
+ * comparava `parsed.href.startsWith(entry)` — comparação de PREFIXO de
+ * string sobre a URL inteira. `"https://parceiro.ifood.com.br.evil.example/gestor"`
+ * literalmente COMEÇA com `"https://parceiro.ifood.com.br"`, então um
+ * subdomínio malicioso que só precisa começar igual ao host legítimo
+ * passava. Corrigido: os dois lados (URL alvo e cada entrada da allowlist)
+ * são resolvidos pelo MESMO parser (`URL`) até o `hostname` canônico, e a
+ * decisão é igualdade EXATA de string — nunca prefixo, sufixo ou substring.
+ * Credenciais embutidas (`user:pass@host`) e host vazio são recusados antes
+ * mesmo de chegar à comparação de allowlist.
  */
 function checkAllowedUrl(rawUrl, allowlist) {
   if (!rawUrl) return { configured: false, allowed: false, reason: "url_nao_configurada" };
@@ -70,8 +102,14 @@ function checkAllowedUrl(rawUrl, allowlist) {
   if (parsed.protocol !== "https:") {
     return { configured: true, allowed: false, reason: "protocolo_nao_https", url: rawUrl };
   }
-  const allowed = allowlist.some((entry) => parsed.host === entry || parsed.href.startsWith(entry));
-  return { configured: true, allowed, reason: allowed ? null : "host_fora_da_allowlist", host: parsed.host, url: rawUrl };
+  if (parsed.username || parsed.password) {
+    return { configured: true, allowed: false, reason: "credenciais_embutidas_na_url", url: rawUrl };
+  }
+  const host = canonicalHost(parsed.hostname);
+  if (!host) return { configured: true, allowed: false, reason: "host_vazio", url: rawUrl };
+  const allowedHosts = allowlist.map(canonicalAllowlistHost).filter(Boolean);
+  const allowed = allowedHosts.includes(host);
+  return { configured: true, allowed, reason: allowed ? null : "host_fora_da_allowlist", host, url: rawUrl };
 }
 
 /** Unidade esperada configurada — o coletor nunca mistura pedidos de unidades diferentes. */
