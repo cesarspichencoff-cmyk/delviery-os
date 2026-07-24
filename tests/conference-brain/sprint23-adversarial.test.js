@@ -126,3 +126,54 @@ describe("bloqueador 1 — PII no caminho completo", () => {
     assert.match(serialized, /redacted|text_hash/);
   });
 });
+
+/* ---------------------------------------------------------------------------
+ * Bloqueador 2 — integração multidimensional: agrupamento, agenda e
+ * indicadores capturados de verdade chegam à reconciliação e ao painel.
+ * ------------------------------------------------------------------------- */
+describe("bloqueador 2 — captura real transporta todas as dimensões", () => {
+  test("grouping/schedule/indicators capturados chegam a reconciliacao a partir do observador real", async () => {
+    const store = createStore({ memoryOnly: true });
+    const raw = {
+      external_id: "S23-INT-1", raw_status: "Pronto", courier: { rawText: "Na loja" },
+      grouping: { observed: true, groupId: "G-S23", memberOrderIds: ["S23-INT-1", "S23-INT-9"] },
+      schedule: { is_scheduled: true, scheduled_for: "2026-07-25T20:00:00-03:00" },
+      indicatorsObserved: true,
+      indicators: [{ code: "PREPARATION_DELAYED", category: "alerta", severity: "high" }]
+    };
+    const obs = observerFor(store, [[raw]], "s23-int-1");
+    await obs.runCycle();
+    const dim = obs.getReconciledDimension("S23-INT-1");
+    assert.equal(dim.grouping.group_id, "G-S23");
+    assert.equal(dim.schedule.is_scheduled, true);
+    assert.equal(dim.indicators.length, 1);
+    assert.equal(dim.indicators[0].code, "PREPARATION_DELAYED");
+  });
+
+  test("sem grouping/schedule/indicators no raw, observacao continua compativel com Sprint 2.2 (sem quebrar)", async () => {
+    const store = createStore({ memoryOnly: true });
+    const obs = observerFor(store, [[{ external_id: "S23-INT-2", raw_status: "Pronto" }]], "s23-int-2");
+    const r = await obs.runCycle();
+    assert.equal(r.ok, true);
+    const dim = obs.getReconciledDimension("S23-INT-2");
+    assert.equal(dim.grouping, null);
+    assert.equal(dim.indicators.length, 0);
+  });
+
+  test("painel real (Panel.renderPage + ordersInPlay) mostra os tres sinais vindos do ciclo real", async () => {
+    const store = createStore({ memoryOnly: true });
+    const raw = {
+      external_id: "S23-INT-3", raw_status: "Pronto", courier: { rawText: "Na loja" },
+      grouping: { observed: true, groupId: "G-PAINEL", memberOrderIds: ["S23-INT-3", "S23-INT-4"] },
+      schedule: { is_scheduled: true, scheduled_for: "2026-07-25T21:00:00-03:00" },
+      indicatorsObserved: true,
+      indicators: [{ code: "PREPARATION_DELAYED", category: "alerta", severity: "high" }]
+    };
+    const obs = observerFor(store, [[raw]], "s23-int-3");
+    await obs.runCycle();
+    const html = Panel.renderPage(Panel.ordersInPlay(store));
+    for (const signal of ["entregador na loja", "PREPARATION_DELAYED", "agrupado", "agendado"]) {
+      assert.match(html, new RegExp(signal));
+    }
+  });
+});

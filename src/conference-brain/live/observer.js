@@ -139,7 +139,12 @@ function createLiveObserver(opts) {
         layout: raw.layout, visual: raw.visual, readiness: raw.readiness,
         courier: raw.courier, dispatch: raw.dispatch, completionText: raw.completionText,
         fulfillmentText: raw.fulfillmentText, store: raw.store, items: raw.items,
-        customerNote: raw.customerNote, totalValue: raw.totalValue
+        customerNote: raw.customerNote, totalValue: raw.totalValue,
+        // Sprint 2.3 (bloqueador 2): agrupamento/agenda/indicadores capturados
+        // pela fonte agora chegam ate a reconciliacao — antes paravam aqui,
+        // mesmo com reconciliation.js ja pronto para consumi-los.
+        grouping: raw.grouping, schedule: raw.schedule,
+        indicatorsObserved: raw.indicatorsObserved, indicators: raw.indicators
       });
       // Sprint 2.3 (bloqueador 1, PII-D): a sanitizacao por allowlist do
       // Sprint 2.2 cobria a CAPTURA (mapping-mode.js), nunca o caminho

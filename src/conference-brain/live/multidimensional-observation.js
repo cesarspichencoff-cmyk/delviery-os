@@ -336,7 +336,21 @@ function buildOrderObservation(raw) {
     store: buildStoreStateDimension(Object.assign({ observedAt }, r.store)),
     items: Array.isArray(r.items) ? r.items : [],
     customer_note: r.customerNote || null,
-    total_value: r.totalValue != null ? r.totalValue : null
+    total_value: r.totalValue != null ? r.totalValue : null,
+
+    // Sprint 2.3 (bloqueador 2 da rechecagem do 2.2): `reconcileMultidimensional`
+    // já sabia reconciliar agrupamento/agenda/indicadores (Grouping.reconcileGrouping,
+    // reconcileSchedule, reconcileIndicators) — mas esta função, a única porta
+    // de entrada real usada por `observer.js`, nunca aceitava nem repassava
+    // esses três sinais. A reconciliação estava pronta; a observação nunca a
+    // alimentava. `grouping` ganha `observedAt` por padrão (mesmo padrão das
+    // demais dimensões) porque `grouping.js#normalizeGrouping` precisa dele
+    // para ordenar temporalmente; `schedule`/`indicators` usam o `observed_at`
+    // do nível raiz da observação, já presente.
+    grouping: r.grouping ? Object.assign({ observedAt }, r.grouping) : null,
+    schedule: r.schedule || null,
+    indicatorsObserved: r.indicatorsObserved === true,
+    indicators: Array.isArray(r.indicators) ? r.indicators : []
   };
 }
 
