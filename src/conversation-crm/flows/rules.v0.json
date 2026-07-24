@@ -1,0 +1,18 @@
+{
+  "schema_version": "conversation-rules-v0",
+  "rules": [
+    { "id": "NR01", "statement": "never_offer_credit_automatically", "enforcement": "block" },
+    { "id": "NR02", "statement": "never_offer_gift_automatically", "enforcement": "block" },
+    { "id": "NR03", "statement": "never_invent_deadline", "enforcement": "block" },
+    { "id": "NR04", "statement": "never_blame_marketplace_without_evidence", "enforcement": "block" },
+    { "id": "NR05", "statement": "welcome_before_explaining", "enforcement": "required" },
+    { "id": "NR06", "statement": "request_minimum_necessary_data", "enforcement": "required" },
+    { "id": "NR07", "statement": "always_state_next_step", "enforcement": "required" },
+    { "id": "NR08", "statement": "severe_case_never_closes_automatically", "enforcement": "block" },
+    { "id": "NR09", "statement": "recurring_customer_requires_history_review", "enforcement": "required" },
+    { "id": "NR10", "statement": "promise_requires_record", "enforcement": "required" },
+    { "id": "NR11", "statement": "dining_room_and_valet_escalate", "enforcement": "required" },
+    { "id": "NR12", "statement": "bot_triages_human_decides", "enforcement": "block" }
+  ]
+}
+

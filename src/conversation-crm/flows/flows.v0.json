@@ -1,0 +1,264 @@
+{
+  "schema_version": "conversation-flows-v0",
+  "configuration_required": [
+    "menu_public_url",
+    "reservation_public_url",
+    "unit_information_reference",
+    "human_service_status"
+  ],
+  "blocks": [
+    {
+      "id": "B00", "intent": "opening", "origin": "unknown", "severity": "unknown",
+      "message": "Olá. Estou aqui para entender o que você precisa e encaminhar com clareza.",
+      "required_data": [], "tags": ["conversation_opened"], "next_block": "B01", "conditions": [],
+      "allowed_actions": ["welcome", "continue_triage"], "forbidden_actions": ["promise", "financial_decision"],
+      "escalation_level": "none", "internal_record_required": false
+    },
+    {
+      "id": "B01", "intent": "menu", "origin": "unknown", "severity": "unknown",
+      "message": "Você quer ajuda com reserva, informações, delivery ou uma ocorrência?",
+      "required_data": ["intent"], "tags": ["intent_requested"], "next_block": "B02", "conditions": [],
+      "allowed_actions": ["collect_intent"], "forbidden_actions": ["infer_missing_fact"],
+      "escalation_level": "none", "internal_record_required": false
+    },
+    {
+      "id": "B02", "intent": "intent_filter", "origin": "unknown", "severity": "unknown",
+      "message": "Entendi o assunto. Vou pedir somente as informações necessárias para o próximo passo.",
+      "required_data": ["intent"], "tags": ["intent_classified"], "next_block": "dynamic", "conditions": ["route_by_intent"],
+      "allowed_actions": ["route"], "forbidden_actions": ["financial_decision", "close_severe_case"],
+      "escalation_level": "none", "internal_record_required": false
+    },
+    {
+      "id": "B03", "intent": "origin_filter", "origin": "unknown", "severity": "unknown",
+      "message": "Para encaminhar corretamente, preciso saber em qual canal a situação aconteceu.",
+      "required_data": ["origin"], "tags": ["origin_requested"], "next_block": "B04", "conditions": ["occurrence_or_delivery"],
+      "allowed_actions": ["collect_origin"], "forbidden_actions": ["blame_source"],
+      "escalation_level": "none", "internal_record_required": false
+    },
+    {
+      "id": "B04", "intent": "severity_filter", "origin": "unknown", "severity": "unknown",
+      "message": "Vou avaliar a gravidade para proteger o atendimento e definir quem precisa acompanhar.",
+      "required_data": ["severity"], "tags": ["severity_classified"], "next_block": "dynamic", "conditions": ["route_by_severity"],
+      "allowed_actions": ["route", "escalate"], "forbidden_actions": ["close_severe_case"],
+      "escalation_level": "conditional", "internal_record_required": false
+    },
+
+    {
+      "id": "R01", "intent": "reservation", "origin": "dining_room", "severity": "low",
+      "message": "Posso orientar a reserva. Informe data, horário e quantidade de pessoas.",
+      "required_data": ["reservation_date", "reservation_time", "party_size"], "tags": ["reservation_standard"], "next_block": "F01", "conditions": ["party_size_within_standard"],
+      "allowed_actions": ["collect_reservation_data", "present_configured_reservation_reference"], "forbidden_actions": ["confirm_unobserved_availability"],
+      "escalation_level": "none", "internal_record_required": false
+    },
+    {
+      "id": "R02", "intent": "reservation_unavailable", "origin": "dining_room", "severity": "medium",
+      "message": "Não vou prometer disponibilidade. Uma pessoa precisa verificar as opções possíveis.",
+      "required_data": ["reservation_date", "reservation_time", "party_size"], "tags": ["reservation_unavailable"], "next_block": "H02", "conditions": ["availability_unconfirmed_or_unavailable"],
+      "allowed_actions": ["escalate"], "forbidden_actions": ["invent_availability", "offer_benefit"],
+      "escalation_level": "commercial_operational", "internal_record_required": true
+    },
+    {
+      "id": "R03", "intent": "waitlist", "origin": "dining_room", "severity": "low",
+      "message": "Posso preparar a triagem da fila. Preciso de data, horário e quantidade de pessoas.",
+      "required_data": ["reservation_date", "reservation_time", "party_size"], "tags": ["waitlist_triage"], "next_block": "R04", "conditions": [],
+      "allowed_actions": ["collect_reservation_data"], "forbidden_actions": ["confirm_waitlist_without_human"],
+      "escalation_level": "commercial_operational", "internal_record_required": true
+    },
+    {
+      "id": "R04", "intent": "waitlist_confirmation", "origin": "dining_room", "severity": "low",
+      "message": "A solicitação de fila foi registrada para conferência humana. Isso ainda não confirma disponibilidade.",
+      "required_data": ["reservation_date", "reservation_time", "party_size"], "tags": ["waitlist_pending_human"], "next_block": "F02", "conditions": ["waitlist_recorded"],
+      "allowed_actions": ["record_request", "escalate"], "forbidden_actions": ["confirm_unobserved_availability"],
+      "escalation_level": "commercial_operational", "internal_record_required": true
+    },
+    {
+      "id": "R05", "intent": "large_group_reservation", "origin": "dining_room", "severity": "medium",
+      "message": "Grupos maiores precisam de avaliação humana. Vou registrar os dados para continuidade.",
+      "required_data": ["reservation_date", "reservation_time", "party_size"], "tags": ["large_group"], "next_block": "H02", "conditions": ["party_size_above_standard"],
+      "allowed_actions": ["record_request", "escalate"], "forbidden_actions": ["confirm_reservation", "financial_decision"],
+      "escalation_level": "commercial_operational", "internal_record_required": true
+    },
+
+    {
+      "id": "I01", "intent": "menu_information", "origin": "informational", "severity": "low",
+      "message": "O cardápio deve ser consultado na referência pública configurada para esta unidade.",
+      "required_data": [], "tags": ["menu_information"], "next_block": "F01", "conditions": ["menu_reference_configured"],
+      "allowed_actions": ["present_configured_menu_reference"], "forbidden_actions": ["invent_item", "invent_price", "invent_availability"],
+      "escalation_level": "none", "internal_record_required": false
+    },
+    {
+      "id": "I02", "intent": "general_information", "origin": "informational", "severity": "low",
+      "message": "As informações da unidade devem vir da referência local configurada e validada.",
+      "required_data": ["information_topic"], "tags": ["general_information"], "next_block": "F01", "conditions": ["unit_information_configured"],
+      "allowed_actions": ["present_configured_unit_information"], "forbidden_actions": ["invent_address", "invent_hours", "invent_policy"],
+      "escalation_level": "none", "internal_record_required": false
+    },
+
+    {
+      "id": "D01", "intent": "delivery", "origin": "unknown", "severity": "unknown",
+      "message": "Vou identificar o canal e o tipo de ajuda necessária para o delivery.",
+      "required_data": ["origin", "delivery_topic"], "tags": ["delivery_entry"], "next_block": "D02", "conditions": [],
+      "allowed_actions": ["collect_origin", "collect_delivery_topic"], "forbidden_actions": ["access_external_order"],
+      "escalation_level": "none", "internal_record_required": false
+    },
+    {
+      "id": "D02", "intent": "delivery_triage", "origin": "unknown", "severity": "unknown",
+      "message": "Canal identificado. Agora vou encaminhar acompanhamento ou alteração sem modificar o pedido.",
+      "required_data": ["origin", "delivery_topic"], "tags": ["delivery_triaged"], "next_block": "dynamic", "conditions": ["route_delivery_topic"],
+      "allowed_actions": ["route"], "forbidden_actions": ["change_order", "cancel_order", "access_external_order"],
+      "escalation_level": "conditional", "internal_record_required": false
+    },
+    {
+      "id": "D03", "intent": "own_delivery_tracking", "origin": "own_delivery", "severity": "medium",
+      "message": "O acompanhamento precisa de conferência humana. Informe apenas a referência sintética ou token do pedido.",
+      "required_data": ["order_reference"], "tags": ["own_delivery_tracking"], "next_block": "H01", "conditions": [],
+      "allowed_actions": ["record_request", "escalate"], "forbidden_actions": ["invent_status", "promise_deadline"],
+      "escalation_level": "operational", "internal_record_required": true
+    },
+    {
+      "id": "D04", "intent": "marketplace_tracking", "origin": "marketplace", "severity": "medium",
+      "message": "Não acesso o marketplace neste piloto. Vou registrar o caso e indicar o próximo passo seguro.",
+      "required_data": ["order_reference"], "tags": ["marketplace_tracking"], "next_block": "F03", "conditions": [],
+      "allowed_actions": ["record_request", "present_configured_marketplace_guidance"], "forbidden_actions": ["access_external_order", "blame_source", "invent_status"],
+      "escalation_level": "conditional", "internal_record_required": true
+    },
+    {
+      "id": "D05", "intent": "order_change", "origin": "delivery", "severity": "medium",
+      "message": "Alterações dependem de uma pessoa e das condições do pedido. Vou registrar sem prometer a mudança.",
+      "required_data": ["order_reference", "requested_change"], "tags": ["order_change_requested"], "next_block": "H01", "conditions": [],
+      "allowed_actions": ["record_request", "escalate"], "forbidden_actions": ["change_order", "confirm_change", "financial_decision"],
+      "escalation_level": "operational", "internal_record_required": true
+    },
+
+    {
+      "id": "O00", "intent": "occurrence", "origin": "unknown", "severity": "unknown",
+      "message": "Sinto muito pela situação. Vou entender origem e gravidade antes de encaminhar.",
+      "required_data": ["origin", "occurrence_type", "severity"], "tags": ["occurrence_entry"], "next_block": "B03", "conditions": [],
+      "allowed_actions": ["welcome", "collect_minimum_occurrence_data"], "forbidden_actions": ["offer_credit", "offer_gift", "promise_deadline"],
+      "escalation_level": "conditional", "internal_record_required": true
+    },
+    {
+      "id": "O01", "intent": "marketplace_delivery_occurrence", "origin": "marketplace", "severity": "medium",
+      "message": "Vou registrar o ocorrido sem atribuir culpa e encaminhar a verificação adequada.",
+      "required_data": ["order_reference", "occurrence_type"], "tags": ["marketplace_occurrence"], "next_block": "H01", "conditions": [],
+      "allowed_actions": ["create_occurrence", "escalate"], "forbidden_actions": ["blame_source", "offer_refund", "access_external_order"],
+      "escalation_level": "operational", "internal_record_required": true
+    },
+    {
+      "id": "O02", "intent": "wrong_or_missing_item", "origin": "delivery", "severity": "medium",
+      "message": "Vou registrar o item errado ou ausente e encaminhar para uma pessoa avaliar a solução.",
+      "required_data": ["order_reference", "occurrence_detail_code"], "tags": ["item_issue"], "next_block": "H01", "conditions": [],
+      "allowed_actions": ["create_occurrence", "escalate"], "forbidden_actions": ["offer_credit", "offer_gift", "offer_refund"],
+      "escalation_level": "operational", "internal_record_required": true
+    },
+    {
+      "id": "O03", "intent": "serious_quality_occurrence", "origin": "unknown", "severity": "high",
+      "message": "Este caso precisa de acompanhamento humano prioritário. Vou preservar o registro e encaminhar agora.",
+      "required_data": ["occurrence_type", "occurrence_detail_code"], "tags": ["serious_quality", "human_required"], "next_block": "H03", "conditions": ["severe_signal_present"],
+      "allowed_actions": ["create_occurrence", "escalate_priority"], "forbidden_actions": ["close_automatically", "offer_financial_resolution"],
+      "escalation_level": "management", "internal_record_required": true
+    },
+    {
+      "id": "O04", "intent": "charge_or_dining_occurrence", "origin": "dining_room", "severity": "high",
+      "message": "Cobrança e situações do salão exigem decisão humana. Vou registrar e escalar sem definir compensação.",
+      "required_data": ["occurrence_type", "occurrence_detail_code"], "tags": ["charge_or_dining", "human_required"], "next_block": "H03", "conditions": [],
+      "allowed_actions": ["create_occurrence", "escalate_priority"], "forbidden_actions": ["financial_decision", "close_automatically"],
+      "escalation_level": "management", "internal_record_required": true
+    },
+    {
+      "id": "O05", "intent": "delay_occurrence", "origin": "delivery", "severity": "medium",
+      "message": "Vou registrar o atraso e encaminhar a conferência do estado. Não vou inventar prazo.",
+      "required_data": ["order_reference"], "tags": ["delay"], "next_block": "H01", "conditions": [],
+      "allowed_actions": ["create_occurrence", "escalate"], "forbidden_actions": ["promise_deadline", "invent_status"],
+      "escalation_level": "operational", "internal_record_required": true
+    },
+    {
+      "id": "O06", "intent": "valet_occurrence", "origin": "valet", "severity": "high",
+      "message": "Situações de manobrista precisam de gestão humana. Vou registrar e escalar imediatamente.",
+      "required_data": ["occurrence_detail_code"], "tags": ["valet", "human_required"], "next_block": "H03", "conditions": [],
+      "allowed_actions": ["create_occurrence", "escalate_priority"], "forbidden_actions": ["close_automatically", "financial_decision"],
+      "escalation_level": "management", "internal_record_required": true
+    },
+    {
+      "id": "O07", "intent": "alert_only", "origin": "unknown", "severity": "low",
+      "message": "Obrigado por avisar. Vou registrar o alerta para que ele não se perca.",
+      "required_data": ["occurrence_type"], "tags": ["alert_only"], "next_block": "C01", "conditions": ["no_resolution_requested"],
+      "allowed_actions": ["create_occurrence"], "forbidden_actions": ["offer_benefit", "promise_follow_up_without_record"],
+      "escalation_level": "none", "internal_record_required": true
+    },
+    {
+      "id": "O08", "intent": "prior_promise", "origin": "unknown", "severity": "high",
+      "message": "Uma promessa anterior precisa ser conferida no histórico por uma pessoa. Vou registrar a recorrência e escalar.",
+      "required_data": ["prior_promise_reference"], "tags": ["prior_promise", "history_required", "human_required"], "next_block": "H03", "conditions": [],
+      "allowed_actions": ["create_occurrence", "request_history_review", "escalate_priority"], "forbidden_actions": ["repeat_promise_automatically", "offer_financial_resolution"],
+      "escalation_level": "management", "internal_record_required": true
+    },
+
+    {
+      "id": "H01", "intent": "human_operational", "origin": "unknown", "severity": "medium",
+      "message": "O caso foi preparado para continuidade operacional humana, com o que está conhecido e o que ainda falta.",
+      "required_data": [], "tags": ["human_operational"], "next_block": "F02", "conditions": [],
+      "allowed_actions": ["handoff_with_context"], "forbidden_actions": ["decide_for_human"],
+      "escalation_level": "operational", "internal_record_required": true
+    },
+    {
+      "id": "H02", "intent": "human_commercial_operational", "origin": "unknown", "severity": "medium",
+      "message": "O caso foi preparado para avaliação comercial e operacional humana, sem promessa automática.",
+      "required_data": [], "tags": ["human_commercial_operational"], "next_block": "F02", "conditions": [],
+      "allowed_actions": ["handoff_with_context"], "forbidden_actions": ["financial_decision", "promise_deadline"],
+      "escalation_level": "commercial_operational", "internal_record_required": true
+    },
+    {
+      "id": "H03", "intent": "human_management", "origin": "unknown", "severity": "high",
+      "message": "O caso requer gestão humana e permanece aberto até uma decisão registrada.",
+      "required_data": [], "tags": ["human_management", "cannot_auto_close"], "next_block": "F02", "conditions": [],
+      "allowed_actions": ["handoff_with_context", "preserve_open_state"], "forbidden_actions": ["close_automatically", "financial_decision"],
+      "escalation_level": "management", "internal_record_required": true
+    },
+
+    {
+      "id": "F01", "intent": "standard_closure", "origin": "unknown", "severity": "low",
+      "message": "Essas são as informações disponíveis. Se precisar de outro assunto, uma nova triagem pode ser iniciada.",
+      "required_data": [], "tags": ["standard_closure"], "next_block": null, "conditions": ["no_open_occurrence"],
+      "allowed_actions": ["close_informational_flow"], "forbidden_actions": ["close_severe_case"],
+      "escalation_level": "none", "internal_record_required": false
+    },
+    {
+      "id": "F02", "intent": "follow_up_closure", "origin": "unknown", "severity": "medium",
+      "message": "O registro foi preparado para acompanhamento. O próximo passo depende da pessoa responsável indicada.",
+      "required_data": [], "tags": ["follow_up_pending"], "next_block": null, "conditions": ["internal_record_exists"],
+      "allowed_actions": ["state_next_step"], "forbidden_actions": ["promise_deadline", "close_severe_case"],
+      "escalation_level": "conditional", "internal_record_required": true
+    },
+    {
+      "id": "F03", "intent": "marketplace_guidance_closure", "origin": "marketplace", "severity": "medium",
+      "message": "O piloto não acessa o marketplace. O registro interno foi preservado e a orientação configurada pode ser consultada.",
+      "required_data": [], "tags": ["marketplace_guidance"], "next_block": null, "conditions": [],
+      "allowed_actions": ["state_next_step", "present_configured_marketplace_guidance"], "forbidden_actions": ["access_external_order", "blame_source"],
+      "escalation_level": "conditional", "internal_record_required": true
+    },
+
+    {
+      "id": "C01", "intent": "record_occurrence", "origin": "unknown", "severity": "unknown",
+      "message": "A ocorrência deve ser registrada com códigos, evidências e campos desconhecidos, sem copiar dados pessoais.",
+      "required_data": ["occurrence_type", "severity", "origin"], "tags": ["crm_occurrence_required"], "next_block": "F02", "conditions": [],
+      "allowed_actions": ["create_occurrence"], "forbidden_actions": ["store_free_text_pii"],
+      "escalation_level": "conditional", "internal_record_required": true
+    },
+    {
+      "id": "C02", "intent": "record_recurring_customer", "origin": "unknown", "severity": "unknown",
+      "message": "A recorrência deve ser registrada como hipótese e exigir revisão do histórico disponível.",
+      "required_data": ["history_reference"], "tags": ["history_required"], "next_block": "F02", "conditions": ["recurrence_signal_present"],
+      "allowed_actions": ["record_history_review_request"], "forbidden_actions": ["infer_identity_by_name", "rank_customer"],
+      "escalation_level": "conditional", "internal_record_required": true
+    },
+    {
+      "id": "C03", "intent": "record_promise", "origin": "unknown", "severity": "unknown",
+      "message": "Uma promessa só existe depois de autorização humana e registro vinculado à ocorrência.",
+      "required_data": ["occurrence_id", "promise_type", "human_authorization"], "tags": ["promise_requires_human"], "next_block": "F02", "conditions": ["human_authorization_present"],
+      "allowed_actions": ["record_authorized_promise"], "forbidden_actions": ["create_automatic_promise", "offer_financial_resolution"],
+      "escalation_level": "human_required", "internal_record_required": true
+    }
+  ]
+}
+
