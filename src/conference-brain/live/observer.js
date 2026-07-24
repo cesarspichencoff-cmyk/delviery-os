@@ -188,32 +188,46 @@ function createLiveObserver(opts) {
 
       if (statusEvent.changed) {
         changes.push({ external_id: raw.external_id, from: prevLast && prevLast.status, to: status });
+      }
 
-        // Único evento do relógio emitido automaticamente pela tela: PRONTO.
-        // Todo o resto do relógio é ação humana (ver clock.js/readyDoesNotImplyStarted).
-        if (isReadyMilestone(status) && clock.currentClockState(prevClock) == null) {
-          const r = clock.recordEvent({
-            order_id: raw.external_id, event_type: CLOCK_EVENT_TYPES.READY_OBSERVED,
-            event_time: statusEvent.event_time, observed_at: observedAt,
-            origin: CLOCK_EVENT_ORIGIN.IFOOD_SCREEN, confidence: statusEvent.confidence,
-            raw_status: sanitizedRawStatus, existing_events: prevClock
-          });
-          if (r.ok) { store.put("conference_clock_events", r.event); newClockEvents.push(r.event); }
-          else cycleErrors.push(`evento_ready_rejeitado:${raw.external_id}:${r.reason}`);
-        }
+      // Sprint 2.3 (bloqueador 6 da rechecagem do 2.2, REPLAY-B): a emissao
+      // do evento do relogio estava condicionada a "o texto mudou NESTE
+      // ciclo" (statusEvent.changed) — uma queda entre persistir a
+      // observacao e persistir o evento correspondente deixava o fato
+      // conhecido ("pronto") sem `ready_observed` PARA SEMPRE, porque nos
+      // ciclos seguintes o texto ja nao "mudava" mais (a observacao
+      // persistida antes da queda ja tinha o mesmo status). Corrigido
+      // estruturalmente: a necessidade do evento e' reavaliada TODO ciclo
+      // contra o que ja esta persistido (`clock.currentClockState(prevClock)`),
+      // nunca so quando algo mudou nesta leitura — recomputacao
+      // deterministica e idempotente a partir do `store` append-only
+      // (que ja e' o registro durável desta arquitetura; nao ha estado em
+      // memoria que sobreviva a um crash sem passar por ele primeiro).
 
-        // Saída real só é auto-emitida quando COMPROVADA (nunca a partir de "completed" sozinho).
-        const history = prevObs.map((x) => x.status || normalizeLiveStatus(x.raw_status)).concat([status]);
-        const dep = departureEvidence(history);
-        if (dep.observed && !prevClock.some((e) => e.event_type === CLOCK_EVENT_TYPES.DEPARTED_OBSERVED)) {
-          const r = clock.recordEvent({
-            order_id: raw.external_id, event_type: CLOCK_EVENT_TYPES.DEPARTED_OBSERVED,
-            observed_at: observedAt, origin: CLOCK_EVENT_ORIGIN.IFOOD_SCREEN,
-            confidence: statusEvent.confidence, raw_status: sanitizedRawStatus, existing_events: prevClock
-          });
-          if (r.ok) { store.put("conference_clock_events", r.event); newClockEvents.push(r.event); }
-          else cycleErrors.push(`evento_saida_rejeitado:${raw.external_id}:${r.reason}`);
-        }
+      // Único evento do relógio emitido automaticamente pela tela: PRONTO.
+      // Todo o resto do relógio é ação humana (ver clock.js/readyDoesNotImplyStarted).
+      if (isReadyMilestone(status) && clock.currentClockState(prevClock) == null) {
+        const r = clock.recordEvent({
+          order_id: raw.external_id, event_type: CLOCK_EVENT_TYPES.READY_OBSERVED,
+          event_time: statusEvent.event_time, observed_at: observedAt,
+          origin: CLOCK_EVENT_ORIGIN.IFOOD_SCREEN, confidence: statusEvent.confidence,
+          raw_status: sanitizedRawStatus, existing_events: prevClock
+        });
+        if (r.ok) { store.put("conference_clock_events", r.event); newClockEvents.push(r.event); }
+        else cycleErrors.push(`evento_ready_rejeitado:${raw.external_id}:${r.reason}`);
+      }
+
+      // Saída real só é auto-emitida quando COMPROVADA (nunca a partir de "completed" sozinho).
+      const history = prevObs.map((x) => x.status || normalizeLiveStatus(x.raw_status)).concat([status]);
+      const dep = departureEvidence(history);
+      if (dep.observed && !prevClock.some((e) => e.event_type === CLOCK_EVENT_TYPES.DEPARTED_OBSERVED)) {
+        const r = clock.recordEvent({
+          order_id: raw.external_id, event_type: CLOCK_EVENT_TYPES.DEPARTED_OBSERVED,
+          observed_at: observedAt, origin: CLOCK_EVENT_ORIGIN.IFOOD_SCREEN,
+          confidence: statusEvent.confidence, raw_status: sanitizedRawStatus, existing_events: prevClock
+        });
+        if (r.ok) { store.put("conference_clock_events", r.event); newClockEvents.push(r.event); }
+        else cycleErrors.push(`evento_saida_rejeitado:${raw.external_id}:${r.reason}`);
       }
     }
 

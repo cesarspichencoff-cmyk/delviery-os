@@ -68,7 +68,14 @@ function createStore(opts) {
         catch (e) {
           corrupted.push({
             entity, line_number: i + 1, file: f,
-            error: String((e && e.message) || e),
+            // Sprint 2.3 (bloqueador 6, REPLAY-A): `e.message` de um
+            // `SyntaxError` de JSON.parse embute um TRECHO da entrada
+            // invalida na propria mensagem (comportamento do V8 atual) —
+            // guardar isso bruto reabria exatamente o vazamento que esta
+            // estrutura foi desenhada para evitar. `e.name` e' sempre um
+            // literal fixo ("SyntaxError"), nunca influenciado pelo
+            // conteudo — o hash/tamanho ao lado ja bastam para auditoria.
+            error: (e && e.name) || "Error",
             excerpt_length: s.length, excerpt_hash: sha256(s)
           });
         }

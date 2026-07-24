@@ -350,3 +350,93 @@ describe("bloqueador 5 — idempotencia por identidade, nao so por tipo", () => 
     assert.equal(events.length, 1);
   });
 });
+
+/* ---------------------------------------------------------------------------
+ * Bloqueador 6 — recuperação sem perda de evento e sem vazamento no
+ * diagnóstico de corrupção.
+ * ------------------------------------------------------------------------- */
+describe("bloqueador 6 — recuperacao apos crash, sem perda e sem vazamento", () => {
+  test("erro de linha corrompida nunca inclui o conteudo original, mesmo com PII no meio", () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "s23-replay-"));
+    try {
+      const file = path.join(dir, "live_cycle_runs.runtime.jsonl");
+      fs.writeFileSync(file, `CORROMPIDO-MARIA-OLIVEIRA-11999999999\n{"truncado":`);
+      const store = createStore({ dir });
+      store.load("live_cycle_runs");
+      const health = store.health();
+      assert.equal(health.corrupted_lines.length, 2);
+      const serialized = JSON.stringify(health);
+      assert.equal(serialized.includes("MARIA-OLIVEIRA"), false);
+      assert.equal(serialized.includes("11999999999"), false);
+      for (const c of health.corrupted_lines) assert.ok(c.excerpt_hash && c.excerpt_length != null);
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test("crash entre persistir observacao e persistir o evento e' reparado no proximo ciclo", async () => {
+    const store = createStore({ memoryOnly: true });
+    store.put("live_observations", {
+      run_id: "crashed", cycle_id: "c1", external_id: "S23-REC-1",
+      observed_at: "2026-01-01T10:00:00Z", raw_status: "Pronto",
+      source_health: "available", confidence: "alta", status: "ready"
+    });
+    const obs = observerFor(store, [[{ external_id: "S23-REC-1", raw_status: "Pronto" }]], "s23-restart");
+    await obs.runCycle();
+    const events = store.all("conference_clock_events").filter((e) => e.order_id === "S23-REC-1");
+    assert.equal(events.length, 1);
+    assert.equal(events[0].event_type, "ready_observed");
+  });
+
+  test("mesma recuperacao repetida (2x) e' idempotente, nao duplica o evento", async () => {
+    const store = createStore({ memoryOnly: true });
+    store.put("live_observations", {
+      run_id: "crashed", cycle_id: "c1", external_id: "S23-REC-2",
+      observed_at: "2026-01-01T10:00:00Z", raw_status: "Pronto",
+      source_health: "available", confidence: "alta", status: "ready"
+    });
+    const obs1 = observerFor(store, [[{ external_id: "S23-REC-2", raw_status: "Pronto" }]], "s23-restart-a");
+    await obs1.runCycle();
+    const obs2 = observerFor(store, [[{ external_id: "S23-REC-2", raw_status: "Pronto" }]], "s23-restart-b");
+    await obs2.runCycle();
+    const events = store.all("conference_clock_events").filter((e) => e.order_id === "S23-REC-2");
+    assert.equal(events.length, 1, "recuperacao repetida nao pode criar um segundo ready_observed");
+  });
+
+  test("replay em disco (processo reiniciado de verdade) nao duplica evento ja persistido", async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "s23-restart-ok-"));
+    try {
+      const store1 = createStore({ dir });
+      const obs1 = observerFor(store1, [[{ external_id: "S23-REC-3", raw_status: "Pronto" }]], "s23-run-1");
+      await obs1.runCycle();
+      const before = fs.readFileSync(store1.fileFor("conference_clock_events"), "utf8").trim().split("\n").length;
+      const store2 = createStore({ dir });
+      store2.load("live_observations");
+      store2.load("conference_clock_events");
+      const obs2 = observerFor(store2, [[{ external_id: "S23-REC-3", raw_status: "Pronto" }]], "s23-run-2");
+      await obs2.runCycle();
+      const after = fs.readFileSync(store2.fileFor("conference_clock_events"), "utf8").trim().split("\n").length;
+      assert.equal(after, before);
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test("pedido diferente no mesmo store nao e' afetado pela recuperacao de outro pedido", async () => {
+    const store = createStore({ memoryOnly: true });
+    store.put("live_observations", {
+      run_id: "crashed", cycle_id: "c1", external_id: "S23-REC-4",
+      observed_at: "2026-01-01T10:00:00Z", raw_status: "Pronto",
+      source_health: "available", confidence: "alta", status: "ready"
+    });
+    const obs = observerFor(store, [[
+      { external_id: "S23-REC-4", raw_status: "Pronto" },
+      { external_id: "S23-REC-5", raw_status: "Em preparo" }
+    ]], "s23-restart-multi");
+    await obs.runCycle();
+    const events4 = store.all("conference_clock_events").filter((e) => e.order_id === "S23-REC-4");
+    const events5 = store.all("conference_clock_events").filter((e) => e.order_id === "S23-REC-5");
+    assert.equal(events4.length, 1);
+    assert.equal(events5.length, 0, "pedido ainda em preparo nao pode ganhar ready_observed");
+  });
+});
