@@ -18,7 +18,27 @@ function createWebhookReceiver(deps) {
     return inbox.receive(mapped);
   }
 
-  return { receive };
+  /**
+   * Recebe o corpo do webhook como STRING bruta (o formato real de um
+   * corpo HTTP antes de qualquer parse). JSON inválido nunca derruba o
+   * processo nem os demais eventos -- vira quarentena com motivo
+   * declarado, nunca um payload adivinhado.
+   */
+  function receiveRaw(rawBody) {
+    let parsed;
+    try { parsed = JSON.parse(rawBody); }
+    catch (e) {
+      return inbox.receive({
+        source: "webhook", receivedAt: new Date().toISOString(),
+        rawPayload: String(rawBody).slice(0, 500)
+        // eventType/schemaVersion ausentes de propósito -- buildEventEnvelope
+        // recusa por forma invalida, inbox.receive() manda para quarentena.
+      });
+    }
+    return receive(parsed);
+  }
+
+  return { receive, receiveRaw };
 }
 
 module.exports = { createWebhookReceiver };

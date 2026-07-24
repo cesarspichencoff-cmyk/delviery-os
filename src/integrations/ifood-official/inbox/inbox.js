@@ -12,6 +12,14 @@
 const crypto = require("crypto");
 const { buildEventEnvelope, sha256 } = require("../contracts/envelope");
 
+/**
+ * Versões de schema de payload que esta integração sabe interpretar.
+ * Uma versão fora daqui nunca é adivinhada/coagida — vai para quarentena
+ * (mesma disciplina de "desconhecido é declarado, nunca forçado" de
+ * `status-map.js` do conference-brain).
+ */
+const KNOWN_SCHEMA_VERSIONS = Object.freeze(["v0", "v1"]);
+
 const PROCESSING_STATUS = Object.freeze({
   RECEIVED: "received", VALIDATED: "validated", NORMALIZED: "normalized",
   PROCESSED: "processed", ACKNOWLEDGED: "acknowledged", DUPLICATED: "duplicated",
@@ -38,28 +46,36 @@ function createInbox(store) {
    * antes disso, na fronteira do receiver de polling/webhook). Nunca
    * lança; sempre devolve um status determinístico.
    */
+  function quarantine(r, reason) {
+    const record = {
+      internal_event_id: quarantineId(r),
+      external_event_id: r.externalEventId || null,
+      event_type: r.eventType || "unknown",
+      source: r.source || "unknown",
+      received_at: r.receivedAt || new Date().toISOString(),
+      payload_hash: r.rawPayload !== undefined ? sha256(r.rawPayload) : null,
+      schema_version: r.schemaVersion || "v0",
+      processing_status: PROCESSING_STATUS.QUARANTINED,
+      retry_count: 0,
+      quarantine_reason: reason,
+      merchant_id: r.merchantId || null,
+      order_id: r.orderId || null,
+      occurred_at: r.occurredAt || null
+    };
+    const putRes = store.put("ifood_events_inbox", record);
+    return { ok: putRes.ok, status: PROCESSING_STATUS.QUARANTINED, record, put: putRes };
+  }
+
   function receive(raw) {
     const r = raw || {};
     const built = buildEventEnvelope(r);
 
-    if (!built.ok) {
-      const record = {
-        internal_event_id: quarantineId(r),
-        external_event_id: r.externalEventId || null,
-        event_type: r.eventType || "unknown",
-        source: r.source || "unknown",
-        received_at: r.receivedAt || new Date().toISOString(),
-        payload_hash: r.rawPayload !== undefined ? sha256(r.rawPayload) : null,
-        schema_version: r.schemaVersion || "v0",
-        processing_status: PROCESSING_STATUS.QUARANTINED,
-        retry_count: 0,
-        quarantine_reason: built.errors.join(","),
-        merchant_id: r.merchantId || null,
-        order_id: r.orderId || null,
-        occurred_at: r.occurredAt || null
-      };
-      const putRes = store.put("ifood_events_inbox", record);
-      return { ok: putRes.ok, status: PROCESSING_STATUS.QUARANTINED, record, put: putRes };
+    if (!built.ok) return quarantine(r, built.errors.join(","));
+
+    // Versão de schema que esta integração não sabe interpretar -- nunca
+    // adivinha o formato, vai para quarentena declarada.
+    if (!KNOWN_SCHEMA_VERSIONS.includes(built.envelope.schema_version)) {
+      return quarantine(r, "schema_version_desconhecida:" + built.envelope.schema_version);
     }
 
     const existing = store.get("ifood_events_inbox", built.envelope.internal_event_id);
@@ -119,4 +135,4 @@ function createInbox(store) {
   return { receive, markStatus, markFailed, pending, all, get, PROCESSING_STATUS };
 }
 
-module.exports = { createInbox, PROCESSING_STATUS, TERMINAL_STATUS };
+module.exports = { createInbox, PROCESSING_STATUS, TERMINAL_STATUS, KNOWN_SCHEMA_VERSIONS };
