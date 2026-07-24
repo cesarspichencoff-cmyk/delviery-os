@@ -52,6 +52,34 @@ function isValidTransition(fromEventType, toEventType) {
 }
 
 /**
+ * Sprint 2.3 (bloqueador 5 da rechecagem do 2.2): identidade de um FATO do
+ * relógio para decidir retry (mesma operação repetida) vs. correção
+ * (evento novo, mesmo tipo, conteúdo diferente). A versão anterior tratava
+ * "mesmo tipo que o estado atual" como sinônimo de "mesma operação repetida"
+ * — um evento `ready_observed` com origem/motivo diferentes (uma correção
+ * de horário, por exemplo) era colapsado como se fosse o retry do primeiro.
+ * Idempotência é sobre a OPERAÇÃO ser a mesma, não sobre o TIPO ser o mesmo
+ * — "dois eventos distintos que mantêm o mesmo estado podem continuar
+ * sendo fatos diferentes" (missão).
+ *
+ * Compara origem, motivo e `raw_status` sempre — um retry genuíno nunca
+ * muda essas três coisas. `event_time` só desempata quando o CHAMADOR
+ * informa um explicitamente dos dois lados: `observed_at` sozinho variar
+ * entre duas tentativas (a segunda tentativa aconteceu num instante de
+ * parede diferente, mas é a MESMA intenção) nunca torna dois retries fatos
+ * distintos — só um `event_time` explícito e divergente prova correção.
+ */
+function isSameFact(lastEvent, o) {
+  if (!lastEvent) return false;
+  const a = lastEvent, b = o || {};
+  if ((a.origin || null) !== (b.origin || null)) return false;
+  if ((a.reason || null) !== (b.reason || null)) return false;
+  if ((a.raw_status || null) !== (b.raw_status || null)) return false;
+  if (b.event_time && a.event_time && b.event_time !== a.event_time) return false;
+  return true;
+}
+
+/**
  * Registra um evento no relógio de um pedido. Nunca lança: transição inválida
  * vira `{ok:false, reason}` para o chamador decidir (registrar como anomalia,
  * pedir confirmação no painel etc.) — o relógio em si não aborta o processo.
@@ -73,14 +101,21 @@ function recordEvent(opts) {
 
   const existing = o.existing_events || [];
   const fromType = currentClockState(existing);
+  const lastEvent = existing[existing.length - 1] || null;
 
-  // Sprint 2.2 (Fase 7, bloqueador 11): retry idempotente — repetir a MESMA
-  // intenção (o tipo de evento que já É o estado atual) nunca é tratada como
-  // transição inválida nem gera duplicata. Antes, um retry depois de
-  // `ready_observed` já persistido devolvia `transicao_invalida:ready_observed->ready_observed`
-  // — um erro para uma operação que deveria ser um no-op reconhecido.
+  // Sprint 2.2 (Fase 7, bloqueador 11) + Sprint 2.3 (bloqueador 5): o mesmo
+  // TIPO que o estado atual não é mais suficiente para presumir retry. Só é
+  // idempotente quando o FATO inteiro (fingerprint) é idêntico ao último
+  // evento — retry real, mesma chave, mesma carga. Quando o tipo repete mas
+  // o conteúdo difere (correção de horário, origem ou motivo diferentes), é
+  // um fato NOVO do mesmo tipo — nunca rejeitado como transição inválida
+  // (autotransição é estruturalmente permitida quando o conteúdo PROVA que
+  // é um evento distinto, não um retry) nem colapsado como duplicata.
   if (fromType === o.event_type) {
-    return { ok: true, event: existing[existing.length - 1], idempotent: true };
+    if (isSameFact(lastEvent, o)) {
+      return { ok: true, event: lastEvent, idempotent: true };
+    }
+    return { ok: true, event: buildEventRecord(o, existing.length), idempotent: false };
   }
 
   if (!isValidTransition(fromType, o.event_type)) {
@@ -90,8 +125,11 @@ function recordEvent(opts) {
     };
   }
 
-  const sequence = existing.length;
-  const event = {
+  return { ok: true, event: buildEventRecord(o, existing.length) };
+}
+
+function buildEventRecord(o, sequence) {
+  return {
     event_id: eventId(o.order_id, o.event_type, sequence),
     order_id: o.order_id,
     event_type: o.event_type,
@@ -104,7 +142,6 @@ function recordEvent(opts) {
     collector_version: CLOCK_VERSION,
     sequence
   };
-  return { ok: true, event };
 }
 
 /**

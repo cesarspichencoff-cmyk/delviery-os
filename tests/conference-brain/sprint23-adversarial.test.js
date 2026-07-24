@@ -303,3 +303,50 @@ describe("bloqueador 4 — allowlist de URL nunca aceita por prefixo/substring",
     assert.deepEqual(driver.check.blockers, check.blockers);
   });
 });
+
+/* ---------------------------------------------------------------------------
+ * Bloqueador 5 — identidade de evento além do tipo (idempotência real).
+ * ------------------------------------------------------------------------- */
+describe("bloqueador 5 — idempotencia por identidade, nao so por tipo", () => {
+  test("retry exato (mesma origem/motivo, so observed_at variou) e' reconhecido idempotente", () => {
+    const first = Clock.recordEvent({ order_id: "S23-IDEM-1", event_type: "ready_observed", observed_at: "t1", origin: "ifood_screen", existing_events: [] });
+    const retry = Clock.recordEvent({ order_id: "S23-IDEM-1", event_type: "ready_observed", observed_at: "t2", origin: "ifood_screen", existing_events: [first.event] });
+    assert.equal(retry.idempotent, true);
+    assert.equal(retry.event.event_id, first.event.event_id);
+  });
+
+  test("mesmo tipo com outra origem/motivo (correcao) e' fato novo, nao retry", () => {
+    const first = Clock.recordEvent({ order_id: "S23-IDEM-2", event_type: "ready_observed", event_time: "2026-01-01T10:00:00Z", observed_at: "t1", origin: "ifood_screen", existing_events: [] });
+    const correction = Clock.recordEvent({
+      order_id: "S23-IDEM-2", event_type: "ready_observed", event_time: "2026-01-01T10:05:00Z",
+      observed_at: "t2", origin: "operator_manual", reason: "correcao_de_horario", existing_events: [first.event]
+    });
+    assert.equal(correction.ok, true);
+    assert.equal(correction.idempotent, false);
+    assert.notEqual(correction.event.event_id, first.event.event_id);
+    assert.equal(correction.event.sequence, 1);
+  });
+
+  test("mesmo raw_status/origem, event_time explicito divergente tambem e' fato novo", () => {
+    const first = Clock.recordEvent({ order_id: "S23-IDEM-3", event_type: "ready_observed", event_time: "2026-01-01T10:00:00Z", observed_at: "t1", origin: "ifood_screen", raw_status: "Pronto", existing_events: [] });
+    const again = Clock.recordEvent({ order_id: "S23-IDEM-3", event_type: "ready_observed", event_time: "2026-01-01T10:09:00Z", observed_at: "t2", origin: "ifood_screen", raw_status: "Pronto", existing_events: [first.event] });
+    assert.equal(again.idempotent, false);
+  });
+
+  test("transicao estruturalmente invalida real continua rejeitada", () => {
+    const invalid = Clock.recordEvent({ order_id: "S23-IDEM-4", event_type: "released", observed_at: "t1", origin: "operator_manual", existing_events: [] });
+    assert.equal(invalid.ok, false);
+    assert.match(invalid.reason, /transicao_invalida/);
+  });
+
+  test("retries legitimos consecutivos continuam colapsando (a correcao nao reabre duplicidade)", () => {
+    const first = Clock.recordEvent({ order_id: "S23-IDEM-5", event_type: "ready_observed", observed_at: "t1", origin: "ifood_screen", existing_events: [] });
+    let events = [first.event];
+    for (let i = 0; i < 3; i++) {
+      const r = Clock.recordEvent({ order_id: "S23-IDEM-5", event_type: "ready_observed", observed_at: "t" + (i + 2), origin: "ifood_screen", existing_events: events });
+      assert.equal(r.idempotent, true);
+      events = [r.event];
+    }
+    assert.equal(events.length, 1);
+  });
+});
