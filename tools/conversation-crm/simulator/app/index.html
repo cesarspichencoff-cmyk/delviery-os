@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Conversation + CRM Pilot V0</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="masthead">
+      <div>
+        <p class="eyebrow">DELIVERYOS · PILOTO LOCAL</p>
+        <h1>Conversation + CRM</h1>
+        <p class="subtitle">Triagem previsível, memória codificada e decisão humana.</p>
+      </div>
+      <div class="mode"><span></span>Sintético · sem integrações</div>
+    </header>
+
+    <section class="workspace" aria-label="Simulador de conversa">
+      <form id="triage-form" class="composer">
+        <div class="field wide">
+          <label for="case-select">Cenário sintético</label>
+          <select id="case-select"><option value="manual">Entrada manual sintética</option></select>
+        </div>
+        <div class="field wide">
+          <label for="message">Mensagem para triagem</label>
+          <textarea id="message" maxlength="2000" rows="5" placeholder="Descreva uma situação sintética, sem dados pessoais." required></textarea>
+          <small>O texto é processado em memória e não entra no registro CRM.</small>
+        </div>
+        <div class="field">
+          <label for="origin">Origem conhecida</label>
+          <select id="origin">
+            <option value="">Desconhecida</option>
+            <option value="own_delivery">Delivery próprio</option>
+            <option value="marketplace">Marketplace</option>
+            <option value="dining_room">Salão</option>
+            <option value="valet">Manobrista</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="severity">Gravidade conhecida</label>
+          <select id="severity">
+            <option value="">Desconhecida</option>
+            <option value="low">Baixa</option>
+            <option value="medium">Média</option>
+            <option value="high">Alta</option>
+            <option value="critical">Crítica</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="order-reference">Referência sintética</label>
+          <input id="order-reference" value="SIM-ORDER-MANUAL" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="detail-code">Código de detalhe</label>
+          <input id="detail-code" value="synthetic_detail" autocomplete="off">
+        </div>
+        <button class="primary" type="submit">Executar triagem</button>
+        <p id="request-state" class="request-state" aria-live="polite"></p>
+      </form>
+
+      <section id="result" class="result empty" aria-live="polite">
+        <div class="empty-state">
+          <p class="eyebrow">AGUARDANDO CENÁRIO</p>
+          <h2>O motor ainda não foi acionado.</h2>
+          <p>Escolha um caso sintético ou escreva uma situação de teste.</p>
+        </div>
+      </section>
+    </section>
+
+    <section id="evaluation" class="evaluation hidden" aria-label="Avaliação do resultado">
+      <div>
+        <p class="eyebrow">AVALIAÇÃO HUMANA</p>
+        <h2>Como ficou a triagem?</h2>
+      </div>
+      <div class="evaluation-actions">
+        <button data-verdict="correct">Correto</button>
+        <button data-verdict="incorrect">Incorreto</button>
+        <button data-verdict="bad_response">Resposta ruim</button>
+        <button data-verdict="wrong_severity">Gravidade errada</button>
+        <button data-verdict="wrong_block">Bloco errado</button>
+        <button data-verdict="should_be_human">Deveria ir para humano</button>
+        <button data-verdict="should_not_be_human">Não deveria ir para humano</button>
+      </div>
+      <p id="evaluation-state" class="request-state" aria-live="polite"></p>
+    </section>
+  </main>
+  <script src="/app.js"></script>
+</body>
+</html>
+
