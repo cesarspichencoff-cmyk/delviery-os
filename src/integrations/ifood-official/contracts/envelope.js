@@ -22,13 +22,17 @@ function sha256(v) {
  * que o MESMO evento entregue duas vezes (retry de webhook, ou webhook +
  * polling do mesmo fato) produza a MESMA identidade — condição necessária
  * para idempotência real na inbox.
+ *
+ * Sem `external_event_id` (alguns eventos podem não ter um), a identidade
+ * cai para tipo+merchant+pedido+HASH DO PAYLOAD — nunca só tipo+merchant+
+ * pedido sozinho, porque isso colapsaria eventos genuinamente DISTINTOS
+ * (mesmo tipo, mesmo pedido, conteúdo diferente) na ausência de ID. Incluir
+ * o hash do payload no fallback reduz esse risco sem inventar uma
+ * causalidade que não existe.
  */
-function eventIdentityKey(externalEventId, eventType, merchantId, orderId) {
+function eventIdentityKey(externalEventId, eventType, merchantId, orderId, payloadHash) {
   if (externalEventId) return `id:${externalEventId}`;
-  // sem ID externo (alguns eventos síncronos podem não ter um) — a
-  // identidade cai para tipo+merchant+pedido+hash do payload, calculado por
-  // quem chama (nunca aqui, para não decidir por conteúdo desconhecido).
-  return `fallback:${eventType}:${merchantId || "-"}:${orderId || "-"}`;
+  return `fallback:${eventType}:${merchantId || "-"}:${orderId || "-"}:${payloadHash || "-"}`;
 }
 
 /**
@@ -52,8 +56,8 @@ function buildEventEnvelope(raw) {
   if (!r.receivedAt) errors.push("received_at_obrigatorio");
   if (errors.length) return { ok: false, errors };
 
-  const identityKey = eventIdentityKey(r.externalEventId, r.eventType || EVENT_TYPES.UNKNOWN, r.merchantId, r.orderId);
   const payloadHash = r.rawPayload !== undefined ? sha256(r.rawPayload) : null;
+  const identityKey = eventIdentityKey(r.externalEventId, r.eventType || EVENT_TYPES.UNKNOWN, r.merchantId, r.orderId, payloadHash);
 
   return {
     ok: true,

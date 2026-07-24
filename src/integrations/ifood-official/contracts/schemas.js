@@ -16,10 +16,14 @@ const FORBIDDEN_FIELDS = Object.freeze([
 const SCHEMAS = Object.freeze({
   ifood_events_inbox: {
     key: ["internal_event_id"],
-    required: ["internal_event_id", "external_event_id", "event_type", "source",
-               "received_at", "payload_hash", "schema_version", "processing_status"],
-    optional: ["merchant_id", "order_id", "occurred_at", "retry_count",
-               "last_error_category", "quarantine_reason", "identity_key"]
+    // external_event_id/payload_hash ficam OPCIONAIS de propósito: um
+    // payload desconhecido (quarentena) pode não ter nenhum dos dois, e a
+    // quarentena precisa persistir mesmo assim -- nunca falhar a escrita
+    // exatamente no caso que mais precisa ficar auditável.
+    required: ["internal_event_id", "event_type", "source",
+               "received_at", "schema_version", "processing_status"],
+    optional: ["external_event_id", "payload_hash", "merchant_id", "order_id", "occurred_at",
+               "retry_count", "last_error_category", "quarantine_reason", "identity_key"]
   },
   ifood_events_outbox: {
     key: ["idempotency_key"],
