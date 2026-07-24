@@ -30,6 +30,7 @@ const { normalizeLiveStatus, buildStatusEvent } = require("./status-map");
 const { reconcileOrder, reconcileMultidimensional } = require("./reconciliation");
 const { buildOrderObservation } = require("./multidimensional-observation");
 const { deriveLegacyLiveStatus } = require("./legacy-compat");
+const PiiGuard = require("./pii-guard");
 const { departureEvidence, isReadyMilestone } = require("./ready-departure");
 const clock = require("./clock");
 const { CLOCK_EVENT_TYPES, CLOCK_EVENT_ORIGIN } = require("../contracts/live-states");
@@ -90,7 +91,14 @@ function createLiveObserver(opts) {
         run_id: runId, cycle_id: cycleId, started_at: startedAt,
         collector_version: o.collectorVersion || OBSERVER_VERSION,
         source_health: "unavailable", finished_at: new Date().toISOString(),
-        errors: [String((e && e.message) || e)]
+        // Sprint 2.3 (bloqueador 1, PII-E): mensagem de excecao pode conter
+        // qualquer texto que a fonte tenha carregado ate o ponto da falha.
+        // `errors` nao e' schema-constrangido a string (ao contrario de
+        // `raw_status`), entao usa a classificacao de VALOR INTEIRO — se a
+        // mensagem inteira nao bate com vocabulario conhecido (quase sempre
+        // o caso para uma mensagem de excecao), vira marcador auditavel
+        // (redacted/text_hash/text_length), nunca texto bruto.
+        errors: [PiiGuard.sanitizeText(String((e && e.message) || e), "collector_error")]
       };
       store.put("live_cycle_runs", rec);
       return { ok: false, cycle: rec };
@@ -125,7 +133,7 @@ function createLiveObserver(opts) {
 
       // Fonte de verdade (Sprint 2.2): a observação multidimensional deste
       // ciclo, reconciliada contra TODO o histórico já persistido do pedido.
-      const dimensionObs = buildOrderObservation({
+      const rawDimensionObs = buildOrderObservation({
         externalId: raw.external_id, observedAt,
         orderStateText: raw.raw_status,
         layout: raw.layout, visual: raw.visual, readiness: raw.readiness,
@@ -133,6 +141,14 @@ function createLiveObserver(opts) {
         fulfillmentText: raw.fulfillmentText, store: raw.store, items: raw.items,
         customerNote: raw.customerNote, totalValue: raw.totalValue
       });
+      // Sprint 2.3 (bloqueador 1, PII-D): a sanitizacao por allowlist do
+      // Sprint 2.2 cobria a CAPTURA (mapping-mode.js), nunca o caminho
+      // observador -> persistencia. Todo texto bruto que a observacao
+      // multidimensional carrega (raw_text/confirmation_text/customer_note)
+      // passa por aqui ANTES de reconciliar e persistir — nunca depois. Só
+      // toca texto livre; enum/id/tempo (o que a reconciliacao decide por
+      // cima) continuam intocados.
+      const dimensionObs = PiiGuard.sanitizeOrderObservation(rawDimensionObs);
       const priorDimensions = prevObs.map((o) => o.dimensions).filter(Boolean);
       const reconciled = reconcileMultidimensional(raw.external_id, priorDimensions.concat([dimensionObs]));
 
@@ -146,9 +162,18 @@ function createLiveObserver(opts) {
         { raw_status: raw.raw_status, screen_event_time: raw.screen_event_time || null, observed_at: observedAt }
       );
 
+      // raw_status precisa continuar STRING em todo lugar onde e' persistido
+      // (contracts/schemas.js exige typeof "string" em live_observations) —
+      // sanitizacao por token preserva o formato sem devolver o
+      // marcador-objeto usado nos campos livres de dimensionObs. Calculado
+      // uma vez, reaproveitado tambem nos eventos do relogio abaixo (mesma
+      // rota de vazamento, mesmo guard).
+      const sanitizedRawStatus = PiiGuard.sanitizeFreeText(raw.raw_status || "");
+
       const liveObs = {
         run_id: runId, cycle_id: cycleId, external_id: raw.external_id,
-        observed_at: observedAt, raw_status: raw.raw_status || "",
+        observed_at: observedAt,
+        raw_status: sanitizedRawStatus,
         source_health: health.state, confidence: statusEvent.confidence,
         status, items: raw.items || undefined, last_change_detected_at: statusEvent.changed ? observedAt : undefined,
         dimensions: dimensionObs
@@ -166,7 +191,7 @@ function createLiveObserver(opts) {
             order_id: raw.external_id, event_type: CLOCK_EVENT_TYPES.READY_OBSERVED,
             event_time: statusEvent.event_time, observed_at: observedAt,
             origin: CLOCK_EVENT_ORIGIN.IFOOD_SCREEN, confidence: statusEvent.confidence,
-            raw_status: raw.raw_status, existing_events: prevClock
+            raw_status: sanitizedRawStatus, existing_events: prevClock
           });
           if (r.ok) { store.put("conference_clock_events", r.event); newClockEvents.push(r.event); }
           else cycleErrors.push(`evento_ready_rejeitado:${raw.external_id}:${r.reason}`);
@@ -179,7 +204,7 @@ function createLiveObserver(opts) {
           const r = clock.recordEvent({
             order_id: raw.external_id, event_type: CLOCK_EVENT_TYPES.DEPARTED_OBSERVED,
             observed_at: observedAt, origin: CLOCK_EVENT_ORIGIN.IFOOD_SCREEN,
-            confidence: statusEvent.confidence, raw_status: raw.raw_status, existing_events: prevClock
+            confidence: statusEvent.confidence, raw_status: sanitizedRawStatus, existing_events: prevClock
           });
           if (r.ok) { store.put("conference_clock_events", r.event); newClockEvents.push(r.event); }
           else cycleErrors.push(`evento_saida_rejeitado:${raw.external_id}:${r.reason}`);

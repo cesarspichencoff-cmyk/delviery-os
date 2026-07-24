@@ -10,6 +10,7 @@
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
+const PiiGuard = require("./pii-guard");
 
 const DEFAULT_DIR = path.join(__dirname, "..", "..", "..", "data", "conference-brain", "live-evidence");
 
@@ -21,15 +22,22 @@ function sha256(v) { return crypto.createHash("sha256").update(v).digest("hex");
  * `screenshotPath` é opcional e, quando presente, fica fora do Git por
  * construção (ver `ensureEvidenceDir`, que nunca escreve dentro do repositório
  * versionado quando chamado com o diretório padrão).
+ *
+ * Sprint 2.3 (bloqueador 1, item PII-C da rechecagem): além do excerto
+ * redigido por token, o registro carrega `diagnostic_excerpt_hash` — a
+ * rechecagem exigiu estrutura auditável (hash/tamanho/redigido) mesmo quando
+ * o excerto inteiro sobrevive redigido; nunca "some" em silêncio.
  */
 function buildEvidenceRecord(opts) {
   const o = opts || {};
+  const rawExcerpt = o.diagnosticExcerpt ? String(o.diagnosticExcerpt).slice(0, 500) : null;
   return {
     run_id: o.runId || null,
     cycle_id: o.cycleId || null,
     captured_at: o.capturedAt || new Date().toISOString(),
     layout_signature_hash: o.signatureHash || null,
-    diagnostic_excerpt: o.diagnosticExcerpt ? sanitizeExcerpt(o.diagnosticExcerpt) : null,
+    diagnostic_excerpt: rawExcerpt ? sanitizeExcerpt(rawExcerpt) : null,
+    diagnostic_excerpt_hash: rawExcerpt ? sha256(rawExcerpt) : null,
     screenshot_path: o.screenshotPath || null,
     screenshot_sanitized: o.screenshotPath ? Boolean(o.screenshotSanitized) : null,
     retention_days: o.retentionDays || 7,
@@ -38,20 +46,19 @@ function buildEvidenceRecord(opts) {
 }
 
 /**
- * Camada 4 de defesa em profundidade (Fase 1, Sprint 2.2) — "antes de
- * evidências de erro". Suprime padrões de número (telefone/CPF/documento),
- * e-mail, E nomes prováveis (duas+ palavras capitalizadas seguidas — "Joao
- * Silva", "Ana Cristóvão"), que é exatamente o vazamento que a rechecagem do
- * Sprint 2.1 encontrou no mapping mode. Um trecho técnico legítimo (classes
- * CSS, contagens, códigos de erro) não usa esse padrão e não é afetado.
+ * Camada 4 de defesa em profundidade (Fase 1, Sprint 2.2 · corrigida no
+ * Sprint 2.3, bloqueador 1/PII-C). A versão anterior era BLOCKLIST: suprimia
+ * só os formatos previstos (número, e-mail, telefone, "duas+ palavras
+ * capitalizadas"). A rechecagem provou o buraco clássico de blocklist: nome
+ * minúsculo ("joao silva") e nome em outro alfabeto ("李明") não batem com
+ * NENHUM desses formatos e passavam brutos. Corrigido para ALLOWLIST por
+ * TOKEN via `pii-guard.js#sanitizeFreeText` — a mesma disciplina já usada em
+ * `mapping-mode.js`, sem depender de forma de nome (maiúscula/latina) como
+ * critério: só sobrevive literal a palavra que bate INTEIRA com vocabulário
+ * funcional conhecido; qualquer outra, em qualquer script, vira marcador.
  */
 function sanitizeExcerpt(text) {
-  return String(text)
-    .replace(/\b\d{2,3}[.\s]?\d{3}[.\s]?\d{3}[-.\s]?\d{0,2}\b/g, "[numero-suprimido]")
-    .replace(/\b[\w.+-]+@[\w-]+\.[\w.-]+\b/g, "[email-suprimido]")
-    .replace(/\(?\d{2}\)?\s?\d{4,5}-?\d{4}/g, "[telefone-suprimido]")
-    .replace(/\b[A-ZÀ-Ý][a-zà-ÿ]+(?:\s+[A-ZÀ-Ý][a-zà-ÿ]+)+\b/g, "[nome-suprimido]")
-    .slice(0, 500); // trecho mínimo — nunca o documento inteiro
+  return PiiGuard.sanitizeFreeText(String(text).slice(0, 500));
 }
 
 function ensureEvidenceDir(dir) {

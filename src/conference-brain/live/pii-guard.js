@@ -46,12 +46,31 @@ const KNOWN_PATTERNS = [
   /^(concluded|cancelled|declined|concluido|cancelado|recusado)$/i
 ];
 
-/** Um texto curto bate com vocabulário funcional conhecido? Allowlist, nunca blocklist. */
+/**
+ * Sprint 2.3 (bloqueador 1 da rechecagem do 2.2): `KNOWN_PATTERNS` inclui
+ * regexes de DETECÇÃO (`NOTIFY_LABEL_RE`/`CONFIRMED_NOTIFICATION_RE`) feitas
+ * para achar uma frase DENTRO de um texto maior — não ancoradas de propósito,
+ * porque `buildReadinessDimension()` usa `.test()` para checar se uma
+ * confirmação aparece em qualquer lugar de `confirmationText`. Reaproveitar
+ * essas mesmas regexes com `.test()` para decidir se um valor INTEIRO é
+ * seguro é um uso incompatível: `"Avisar pedido pronto para Joao Silva"`
+ * "contém" o padrão, então era liberada por inteiro. Aqui a pergunta é
+ * diferente — "este valor INTEIRO é vocabulário conhecido?" — por isso toda
+ * checagem de allowlist força correspondência de STRING COMPLETA,
+ * independente de o padrão de origem já vir ancorado ou não. Não duplica
+ * regex nenhuma; só corrige a semântica da comparação neste ponto de uso.
+ */
+function fullMatch(re, s) {
+  const flags = re.flags.replace(/[gy]/g, "");
+  return new RegExp(`^(?:${re.source})$`, flags).test(s);
+}
+
+/** Um texto curto bate INTEIRO com vocabulário funcional conhecido? Allowlist, nunca blocklist. */
 function isKnownSafeText(text) {
   const s = String(text || "").trim();
   if (!s) return false;
   if (PANEL_ACTION_LABELS.has(s.toLowerCase())) return true;
-  return KNOWN_PATTERNS.some((re) => re.test(s));
+  return KNOWN_PATTERNS.some((re) => fullMatch(re, s));
 }
 
 function sha256(v) { return crypto.createHash("sha256").update(String(v)).digest("hex").slice(0, 16); }
@@ -107,4 +126,78 @@ function sanitizeDeep(value, opts) {
   return sanitizeText(String(value), category);
 }
 
-module.exports = { isKnownSafeText, sanitizeText, isRedactedMarker, sanitizeDeep, sha256, KNOWN_PATTERNS };
+/**
+ * Sanitização de texto LIVRE (frase, excerto de diagnóstico) que precisa
+ * continuar sendo uma STRING no esquema de saída (ex.: `raw_status` — ver
+ * `contracts/schemas.js`, que exige `typeof === "string"`). Diferente de
+ * `sanitizeText` (classifica o valor INTEIRO e devolve um marcador objeto
+ * quando desconhecido), aqui a unidade é o TOKEN: cada palavra é testada
+ * contra o mesmo vocabulário conhecido (`isKnownSafeText`) e só sobrevive
+ * literal se bater inteira; qualquer token desconhecido — minúsculo,
+ * maiúsculo, unicode, CJK, numérico (telefone/CPF são só dígitos) — vira um
+ * marcador de posição fixo. Pontuação pura (sem letra nem dígito) nunca é
+ * PII por si só e é preservada para não destruir a estrutura da frase.
+ * Nunca usa forma de nome (maiúscula) como critério — allowlist de
+ * vocabulário, nunca formato de nome, é a única defesa.
+ */
+function sanitizeFreeText(text) {
+  const s = String(text == null ? "" : text);
+  return s.replace(/\S+/g, (tok) => {
+    const bare = tok.replace(/^[^\p{L}\p{N}]+/u, "").replace(/[^\p{L}\p{N}]+$/u, "");
+    if (!bare) return tok; // pontuação/símbolo isolado — estruturalmente inerte
+    return isKnownSafeText(bare) ? tok : "[token-suprimido]";
+  });
+}
+
+/**
+ * Caminhos de texto bruto conhecidos dentro de uma observação multidimensional
+ * (`live/multidimensional-observation.js#buildOrderObservation`) que podem
+ * carregar o que a tela realmente mostrou — nunca os campos de enum/id/tempo,
+ * que são vocabulário canônico já validado, não texto livre do cliente.
+ */
+const ORDER_OBSERVATION_TEXT_PATHS = Object.freeze([
+  ["layout", "raw_mode_name"],
+  ["visual", "raw_section"],
+  ["order_state", "raw_text"],
+  ["readiness", "confirmation_text"],
+  ["courier", "raw_text"],
+  ["dispatch", "raw_text"],
+  ["completion", "raw_text"],
+  ["fulfillment", "raw_text"],
+  ["store", "raw_text"]
+]);
+
+/**
+ * Sanitiza em profundidade CIRÚRGICA os campos de texto bruto de uma
+ * observação multidimensional — nunca toca enum (`.value`/`.state`),
+ * id, timestamp ou confiança, que continuam sendo a fonte de verdade da
+ * reconciliação. Sprint 2.3 (bloqueador 1): a captura via allowlist
+ * (mapping-mode.js) nunca cobria o caminho observador -> persistência —
+ * `buildOrderObservation()` grava texto bruto direto nos campos `raw_text`/
+ * `confirmation_text`/`customer_note`, e `observer.js` persistia isso sem
+ * passar por este guard nenhuma vez.
+ */
+function sanitizeOrderObservation(dim) {
+  if (!dim || typeof dim !== "object") return dim;
+  const out = Object.assign({}, dim);
+  for (const [dimKey, field] of ORDER_OBSERVATION_TEXT_PATHS) {
+    const sub = out[dimKey];
+    if (sub && sub[field] != null) {
+      out[dimKey] = Object.assign({}, sub, { [field]: sanitizeText(sub[field], `${dimKey}.${field}`) });
+    }
+  }
+  if (out.readiness && Array.isArray(out.readiness.available_actions)) {
+    out.readiness = Object.assign({}, out.readiness, {
+      available_actions: out.readiness.available_actions.map((a) => (a && a.raw_label != null)
+        ? Object.assign({}, a, { raw_label: sanitizeText(a.raw_label, "readiness.action_label") })
+        : a)
+    });
+  }
+  if (out.customer_note != null) out.customer_note = sanitizeText(out.customer_note, "customer_note");
+  return out;
+}
+
+module.exports = {
+  isKnownSafeText, sanitizeText, isRedactedMarker, sanitizeDeep, sanitizeFreeText,
+  sanitizeOrderObservation, sha256, KNOWN_PATTERNS
+};
