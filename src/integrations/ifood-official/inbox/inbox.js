@@ -40,6 +40,8 @@ function quarantineId(raw) {
 }
 
 function createInbox(store) {
+  const stats = { duplicates_seen: 0, quarantined_seen: 0 };
+
   /**
    * Recebe UM evento bruto (já no formato de entrada de
    * `buildEventEnvelope` — a normalização do payload externo real acontece
@@ -63,6 +65,7 @@ function createInbox(store) {
       occurred_at: r.occurredAt || null
     };
     const putRes = store.put("ifood_events_inbox", record);
+    if (putRes.ok) stats.quarantined_seen += 1;
     return { ok: putRes.ok, status: PROCESSING_STATUS.QUARANTINED, record, put: putRes };
   }
 
@@ -83,6 +86,7 @@ function createInbox(store) {
       // Mesma identidade real -> retry de entrega (webhook repetido, ou
       // webhook+polling do mesmo fato). NUNCA regride o estado de
       // processamento já alcançado -- só relata que foi visto de novo.
+      stats.duplicates_seen += 1;
       return { ok: true, status: PROCESSING_STATUS.DUPLICATED, record: existing, duplicate_of: existing.internal_event_id };
     }
 
@@ -132,7 +136,15 @@ function createInbox(store) {
   function all() { return store.all("ifood_events_inbox"); }
   function get(internalEventId) { return store.get("ifood_events_inbox", internalEventId); }
 
-  return { receive, markStatus, markFailed, pending, all, get, PROCESSING_STATUS };
+  /**
+   * Contadores em memória DESTE processo -- nunca persistidos, nunca
+   * sobrevivem a reinício. Servem só para `health/health.js` construir um
+   * diagnóstico local; a fonte de verdade durável continua sendo os
+   * registros da inbox (`processing_status` de cada um).
+   */
+  function stats_() { return Object.assign({}, stats); }
+
+  return { receive, markStatus, markFailed, pending, all, get, stats: stats_, PROCESSING_STATUS };
 }
 
 module.exports = { createInbox, PROCESSING_STATUS, TERMINAL_STATUS, KNOWN_SCHEMA_VERSIONS };
