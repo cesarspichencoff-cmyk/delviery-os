@@ -29,7 +29,8 @@ const SCHEMAS = Object.freeze({
     key: ["idempotency_key"],
     required: ["action_id", "idempotency_key", "action_type", "created_at", "status"],
     optional: ["merchant_id", "order_id", "next_attempt_at", "attempt_count",
-               "dependency", "payload_hash", "response_reference", "failure_category"]
+               "dependency", "payload_hash", "response_reference", "failure_category",
+               "authorized_by", "authorized_at"]
   },
   ifood_order_snapshots: {
     key: ["order_id"],
