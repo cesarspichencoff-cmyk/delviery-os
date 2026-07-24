@@ -177,3 +177,81 @@ describe("bloqueador 2 — captura real transporta todas as dimensões", () => {
     }
   });
 });
+
+/* ---------------------------------------------------------------------------
+ * Bloqueador 3 — agrupamento com semântica TEMPORAL determinística.
+ * ------------------------------------------------------------------------- */
+describe("bloqueador 3 — agrupamento fora de ordem e' resolvido por observed_at", () => {
+  test("entrada", () => {
+    const r = Grouping.reconcileGrouping([
+      { observed: true, groupId: "GA", memberOrderIds: ["A", "B"], observedAt: "2026-01-01T10:00:00Z" }
+    ]);
+    assert.equal(r.current.group_id, "GA");
+    assert.equal(r.current.presence, "present");
+  });
+
+  test("saida", () => {
+    const r = Grouping.reconcileGrouping([
+      { observed: true, groupId: "GA", memberOrderIds: ["A", "B"], observedAt: "2026-01-01T10:00:00Z" },
+      { observed: true, memberOrderIds: [], observedAt: "2026-01-01T10:01:00Z" }
+    ]);
+    assert.equal(r.current.presence, "removed");
+  });
+
+  test("novo grupo apos saida", () => {
+    const r = Grouping.reconcileGrouping([
+      { observed: true, groupId: "GA", memberOrderIds: ["A", "B"], observedAt: "2026-01-01T10:00:00Z" },
+      { observed: true, memberOrderIds: [], observedAt: "2026-01-01T10:01:00Z" },
+      { observed: true, groupId: "GB", memberOrderIds: ["A", "C"], observedAt: "2026-01-01T10:02:00Z" }
+    ]);
+    assert.equal(r.current.group_id, "GB");
+  });
+
+  test("repeticao (leitura identica consecutiva) nao cria versao nova", () => {
+    const r = Grouping.reconcileGrouping([
+      { observed: true, groupId: "GA", memberOrderIds: ["A", "B"], observedAt: "2026-01-01T10:00:00Z" },
+      { observed: true, groupId: "GA", memberOrderIds: ["A", "B"], observedAt: "2026-01-01T10:00:30Z" }
+    ]);
+    assert.equal(r.versions.length, 1);
+  });
+
+  test("atraso: leitura antiga chega por ultimo no array mas nao vence a mais nova", () => {
+    const r = Grouping.reconcileGrouping([
+      { observed: true, groupId: "GB", memberOrderIds: ["A", "C"], observedAt: "2026-01-01T10:02:00Z" },
+      { observed: true, groupId: "GA", memberOrderIds: ["A", "B"], observedAt: "2026-01-01T10:00:00Z" }
+    ]);
+    assert.equal(r.current.group_id, "GB");
+  });
+
+  test("evento antigo apos evento novo (remocao) nao ressuscita grupo encerrado", () => {
+    const r = Grouping.reconcileGrouping([
+      { observed: true, groupId: "GB", memberOrderIds: ["A", "C"], observedAt: "2026-01-01T10:03:00Z" },
+      { observed: true, memberOrderIds: [], observedAt: "2026-01-01T10:04:00Z" },
+      { observed: true, groupId: "GA", memberOrderIds: ["A", "B"], observedAt: "2026-01-01T10:00:00Z" }
+    ]);
+    assert.equal(r.current.presence, "removed");
+    assert.equal(r.current.group_id, null);
+  });
+
+  test("leitura parcial (sem observed:true) nunca altera presenca", () => {
+    const r = Grouping.reconcileGrouping([
+      { observed: true, groupId: "GA", memberOrderIds: ["A", "B"], observedAt: "2026-01-01T10:00:00Z" },
+      { observed: false, memberOrderIds: [], observedAt: "2026-01-01T10:05:00Z" }
+    ]);
+    assert.equal(r.current.group_id, "GA");
+    assert.equal(r.versions.length, 1);
+  });
+
+  test("replay completo: qualquer ordem de chegada da mesma sequencia converge para o mesmo resultado final", () => {
+    const sequence = [
+      { observed: true, groupId: "GA", memberOrderIds: ["A", "B"], observedAt: "2026-01-01T10:00:00Z" },
+      { observed: true, memberOrderIds: [], observedAt: "2026-01-01T10:01:00Z" },
+      { observed: true, groupId: "GB", memberOrderIds: ["A", "C"], observedAt: "2026-01-01T10:02:00Z" }
+    ];
+    const forward = Grouping.reconcileGrouping(sequence);
+    const shuffled = Grouping.reconcileGrouping([sequence[2], sequence[0], sequence[1]]);
+    const reversed = Grouping.reconcileGrouping(sequence.slice().reverse());
+    assert.deepEqual(forward.current, shuffled.current);
+    assert.deepEqual(forward.current, reversed.current);
+  });
+});

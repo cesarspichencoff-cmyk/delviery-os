@@ -92,11 +92,23 @@ function groupingChanged(prev, curr) {
  * `reconciliation.js#reconcileItems`). Uma leitura `unobserved` (ver
  * `normalizeGrouping`) simplesmente não entra aqui — `current` continua a
  * última versão REAL (presente ou removida), nunca regride para "nada".
+ *
+ * Sprint 2.3 (bloqueador 3 da rechecagem do 2.2): a versão anterior dobrava
+ * as leituras na ORDEM DE CHEGADA do array — `current` era "a última do
+ * array", não "a última no TEMPO". Uma leitura antiga entregue por último
+ * (rede fora de ordem, retry, replay) "ressuscitava" um grupo já encerrado
+ * por uma leitura mais nova. Corrigido: ordena por `observed_at` ANTES de
+ * dobrar em versões — `current` passa a ser genuinamente a leitura mais
+ * recente no tempo, nunca a mais recente na chegada. Isso também garante,
+ * de graça, as duas outras exigências da missão: reprocessar a MESMA
+ * sequência (em qualquer ordem de chegada) converge sempre para o mesmo
+ * resultado, porque a ordenação elimina a dependência da ordem de entrada.
  */
 function reconcileGrouping(observations) {
   const withGroup = (observations || [])
     .map((o) => normalizeGrouping(o))
-    .filter(Boolean);
+    .filter(Boolean)
+    .sort((a, b) => String(a.observed_at || "").localeCompare(String(b.observed_at || "")));
   if (!withGroup.length) return { current: null, versions: [] };
   const versions = [];
   for (const g of withGroup) {
