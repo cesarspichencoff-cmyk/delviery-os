@@ -19,6 +19,14 @@ docs/*.pdf
 /runtime/
 *.live.jsonl
 *.runtime.jsonl
+# Conversation + CRM Pilot V0: conteúdo privado e estado local nunca entram no Git
+/imports/conversation-crm/
+/backups/conversation-crm/
+/uploads/conversation-crm/
+/.cache/conversation-crm/
+/config/conversation-crm/config.json
+*.crm.db
+*.crm.sqlite
 # evidencia do observador ao vivo (Sprint 2) — hashes/assinaturas ficam no
 # banco operacional; screenshots e trechos brutos nunca entram no Git
 /data/conference-brain/live-evidence/

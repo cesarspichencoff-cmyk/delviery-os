@@ -2,6 +2,7 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const { loadPortableConfig } = require('../config');
 
 const REQUIRED_BLOCK_FIELDS = Object.freeze([
   'id', 'intent', 'origin', 'severity', 'message', 'required_data', 'tags', 'next_block',
@@ -51,7 +52,7 @@ function readJson(filePath, invalidCode) {
 }
 
 function loadFlowBundle(options = {}) {
-  const root = options.root || __dirname;
+  const root = options.root || loadPortableConfig(options.configOptions).paths.flow_config_root.resolved;
   const flowsPath = options.flowsPath || path.join(root, 'flows.v0.json');
   const rulesPath = options.rulesPath || path.join(root, 'rules.v0.json');
   const policiesPath = options.policiesPath || path.join(root, 'policies.v0.json');

@@ -27,6 +27,7 @@ Não há IA generativa, WhatsApp real, marketplace, sistema de pedidos, campanha
 | Casos | `src/conversation-crm/simulator/cases.js` | 40 cenários exclusivamente sintéticos |
 | Simulador | `tools/conversation-crm/simulator/` | Interface e API locais para triagem e avaliação humana |
 | Testes | `tests/conversation-crm/` | Importação, privacidade, domínio, fluxos, motor e servidor |
+| Configuração | `config/conversation-crm/config.example.json` | Portas e diretórios relativos, sem segredo |
 
 ## Privacidade
 
@@ -36,29 +37,29 @@ Não há IA generativa, WhatsApp real, marketplace, sistema de pedidos, campanha
 - Logs do servidor não contêm corpo de requisição.
 - A interface não usa `localStorage`.
 - A avaliação registra somente `case_id` e veredito em memória.
-- O XLSX original e toda saída derivada permanecem fora do repositório.
+- O XLSX original e toda saída derivada permanecem fora da branch. Quando usados localmente, ficam apenas em diretórios privados ignorados pelo Git.
 
 O export usa HMAC com segredo local. Isso remove os valores pessoais do artefato de desenvolvimento, mas tecnicamente é pseudonimização determinística. Enquanto o segredo existir, a saída deve continuar sendo tratada como sensível e nunca versionada.
 
 ## Comandos do importador
 
-Os comandos pressupõem as dependências já declaradas no projeto. Não é necessário alterar `package.json`.
+Coloque uma cópia local do XLSX em `imports/conversation-crm/`. Essa pasta é ignorada pelo Git e não deve ser transferida junto com o código.
 
 ```powershell
-node tools/conversation-crm/crm-importer.js analyze --input <arquivo-xlsx-local>
-node tools/conversation-crm/crm-importer.js validate --input <arquivo-xlsx-local>
+node tools/conversation-crm/crm-importer.js analyze --input imports/conversation-crm/entrada-privada.xlsx
+node tools/conversation-crm/crm-importer.js validate --input imports/conversation-crm/entrada-privada.xlsx
 
-$env:DELIVERYOS_CRM_ANON_SECRET = <segredo-local-com-32-ou-mais-caracteres>
-node tools/conversation-crm/crm-importer.js anonymize --input <arquivo-xlsx-local> --output <arquivo-fora-do-repositorio>
-node tools/conversation-crm/crm-importer.js export --input <arquivo-xlsx-local> --output <diretorio-fora-do-repositorio>
+$env:DELIVERYOS_CRM_ANON_SECRET = 'defina-um-segredo-local-forte-com-32-caracteres'
+node tools/conversation-crm/crm-importer.js anonymize --input imports/conversation-crm/entrada-privada.xlsx --output runtime/conversation-crm/crm-anonimizado.json
+node tools/conversation-crm/crm-importer.js export --input imports/conversation-crm/entrada-privada.xlsx --output backups/conversation-crm/exportacao-anonimizada
 ```
 
-`anonymize` produz um JSON único. `export` produz registros, quarentena, grupos candidatos e estatísticas em arquivos separados. A saída dentro do repositório é bloqueada.
+`anonymize` produz um JSON único. `export` produz registros, quarentena, grupos candidatos e estatísticas em arquivos separados. Entradas e saídas fora das raízes privadas configuradas são bloqueadas. Todos os argumentos de caminho são relativos à raiz do projeto.
 
 ## Executar o simulador
 
 ```powershell
-node tools/conversation-crm/simulator/server.js
+npm run conversation-crm:start
 ```
 
 Abrir localmente:
@@ -72,7 +73,7 @@ O servidor escuta somente em `127.0.0.1`. A tela permite selecionar um dos 40 ce
 ## Executar os testes
 
 ```powershell
-node --test tests/conversation-crm/*.test.js
+npm run conversation-crm:test
 ```
 
 Cobertura principal:
@@ -112,4 +113,4 @@ Cobertura principal:
 - Não há consentimento presumido a partir da planilha CRM.
 - Frequência agregada não é histórico pedido a pedido.
 - Não existe identidade unificada automática entre canais.
-
+- O procedimento completo de instalação, transferência, configuração e restauração está em `docs/conversation-crm/PORTABILITY_V0.md`.

@@ -29,6 +29,14 @@ function assertOutputOutsideRepository(outputPath, repositoryRoot) {
   }
 }
 
+function assertPathInsideAllowedRoot(candidate, allowedRoot, errorCode = 'CAMINHO_PRIVADO_NAO_PERMITIDO') {
+  if (!pathInside(candidate, allowedRoot)) {
+    const error = new Error(errorCode.toLowerCase());
+    error.code = errorCode;
+    throw error;
+  }
+}
+
 function safeError(error) {
   const allowedCodes = new Set([
     'ANON_SECRET_INVALIDO',
@@ -37,7 +45,12 @@ function safeError(error) {
     'PLANILHA_INCOMPATIVEL',
     'COMANDO_INVALIDO',
     'ARGUMENTO_OBRIGATORIO_AUSENTE',
-    'DEPENDENCIA_XLSX_INDISPONIVEL'
+    'DEPENDENCIA_XLSX_INDISPONIVEL',
+    'CAMINHO_RELATIVO_INVALIDO',
+    'CAMINHO_FORA_DO_PROJETO',
+    'CAMINHO_IMPORTACAO_NAO_PERMITIDO',
+    'CAMINHO_PRIVADO_NAO_PERMITIDO',
+    'CONFIGURACAO_INVALIDA'
   ]);
   return {
     ok: false,
@@ -50,6 +63,6 @@ module.exports = {
   token,
   pathInside,
   assertOutputOutsideRepository,
+  assertPathInsideAllowedRoot,
   safeError
 };
-

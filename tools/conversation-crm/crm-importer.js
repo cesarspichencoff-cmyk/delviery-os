@@ -6,9 +6,10 @@ const path = require('node:path');
 const {
   analyzeWorkbook,
   anonymizeWorkbook,
-  assertOutputOutsideRepository,
+  assertPathInsideAllowedRoot,
   safeError
 } = require('../../src/conversation-crm/importer');
+const { loadPortableConfig, resolveProjectRelative } = require('../../src/conversation-crm/config');
 
 function parseArgs(argv) {
   const [command, ...rest] = argv;
@@ -42,10 +43,21 @@ function jsonLines(records) {
   return records.map((record) => JSON.stringify(record)).join('\n') + (records.length ? '\n' : '');
 }
 
-async function run(argv = process.argv.slice(2), env = process.env) {
+function resolveCliPath(value, config, allowedRoot, errorCode) {
+  const candidate = resolveProjectRelative(value, { projectRoot: config.project_root });
+  assertPathInsideAllowedRoot(candidate.resolved, allowedRoot.resolved, errorCode);
+  return candidate.resolved;
+}
+
+async function run(argv = process.argv.slice(2), env = process.env, options = {}) {
   const args = parseArgs(argv);
-  const input = required(args, 'input');
-  const repositoryRoot = path.resolve(__dirname, '..', '..');
+  const config = options.config || loadPortableConfig({ env, projectRoot: options.projectRoot });
+  const input = resolveCliPath(
+    required(args, 'input'),
+    config,
+    config.paths.import_dir,
+    'CAMINHO_IMPORTACAO_NAO_PERMITIDO'
+  );
 
   if (args.command === 'analyze') {
     const result = analyzeWorkbook(input);
@@ -65,8 +77,12 @@ async function run(argv = process.argv.slice(2), env = process.env) {
   }
 
   if (args.command === 'anonymize') {
-    const output = required(args, 'output');
-    assertOutputOutsideRepository(output, repositoryRoot);
+    const output = resolveCliPath(
+      required(args, 'output'),
+      config,
+      config.paths.runtime_dir,
+      'CAMINHO_PRIVADO_NAO_PERMITIDO'
+    );
     const result = anonymizeWorkbook(input, { secret: env.DELIVERYOS_CRM_ANON_SECRET });
     await atomicWrite(output, `${JSON.stringify(result, null, 2)}\n`);
     process.stdout.write(`${JSON.stringify({ ok: true, command: 'anonymize', stats: result.stats })}\n`);
@@ -74,8 +90,12 @@ async function run(argv = process.argv.slice(2), env = process.env) {
   }
 
   if (args.command === 'export') {
-    const output = required(args, 'output');
-    assertOutputOutsideRepository(output, repositoryRoot);
+    const output = resolveCliPath(
+      required(args, 'output'),
+      config,
+      config.paths.backup_dir,
+      'CAMINHO_PRIVADO_NAO_PERMITIDO'
+    );
     const result = anonymizeWorkbook(input, { secret: env.DELIVERYOS_CRM_ANON_SECRET });
     await fs.mkdir(output, { recursive: true });
     await Promise.all([
@@ -102,5 +122,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { parseArgs, atomicWrite, run };
-
+module.exports = { parseArgs, atomicWrite, resolveCliPath, run };

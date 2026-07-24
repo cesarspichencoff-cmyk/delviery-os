@@ -10,7 +10,8 @@ const {
   normalizeEmail,
   analyzeWorkbook,
   anonymizeWorkbook,
-  assertOutputOutsideRepository
+  assertOutputOutsideRepository,
+  assertPathInsideAllowedRoot
 } = require('../../src/conversation-crm/importer');
 const { tempDirectory, removeDirectory, syntheticPhone, syntheticEmail } = require('./helpers');
 
@@ -145,6 +146,16 @@ test('segredo curto é rejeitado', (t) => {
 test('saída dentro do repositório é bloqueada', () => {
   const root = path.resolve(__dirname, '..', '..');
   assert.throws(() => assertOutputOutsideRepository(path.join(root, 'data', 'unsafe.json'), root), { code: 'SAIDA_DENTRO_REPOSITORIO' });
+});
+
+test('saída privada só é aceita dentro da raiz configurada', () => {
+  const root = path.resolve(__dirname, '..', '..');
+  const allowed = path.join(root, 'runtime', 'conversation-crm');
+  assert.doesNotThrow(() => assertPathInsideAllowedRoot(path.join(allowed, 'safe.json'), allowed));
+  assert.throws(
+    () => assertPathInsideAllowedRoot(path.join(root, 'docs', 'unsafe.json'), allowed),
+    { code: 'CAMINHO_PRIVADO_NAO_PERMITIDO' }
+  );
 });
 
 test('nenhum arquivo temporário permanece após o teste', () => {

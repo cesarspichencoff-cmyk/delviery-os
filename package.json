@@ -13,6 +13,10 @@
     "copiloto:fixtures": "node mocks/copiloto/generate-fixtures.js",
     "copiloto:test": "node tests/copiloto/run.js",
     "capacidade:test": "node tests/capacidade-viva/run.js",
+    "conversation-crm:test": "node --test tests/conversation-crm/*.test.js",
+    "conversation-crm:start": "node tools/conversation-crm/simulator/server.js",
+    "conversation-crm:config:export": "node tools/conversation-crm/config-cli.js export",
+    "conversation-crm:config:import": "node tools/conversation-crm/config-cli.js import",
     "serve": "node tools/servir_v1.js"
   },
   "devDependencies": {

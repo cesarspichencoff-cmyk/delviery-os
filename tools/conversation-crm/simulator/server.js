@@ -5,6 +5,7 @@ const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
 const { ConversationEngine } = require('../../../src/conversation-crm/engine');
+const { loadPortableConfig } = require('../../../src/conversation-crm/config');
 const cases = require('../../../src/conversation-crm/simulator/cases');
 
 const APP_ROOT = path.join(__dirname, 'app');
@@ -93,11 +94,18 @@ function createServer(options = {}) {
 }
 
 function start(options = {}) {
-  const host = '127.0.0.1';
-  const port = Number(options.port || process.env.DELIVERYOS_CRM_SIMULATOR_PORT || 4179);
+  const config = options.config || loadPortableConfig({ env: options.env || process.env });
+  const host = config.server.host;
+  const port = options.port === undefined ? config.server.port : Number(options.port);
+  if (!Number.isInteger(port) || port < 0 || port > 65535) {
+    const error = new Error('porta_invalida');
+    error.code = 'PORTA_INVALIDA';
+    throw error;
+  }
   const server = createServer(options);
   server.listen(port, host, () => {
-    process.stdout.write(`Conversation CRM Pilot V0 disponível localmente em http://${host}:${port}\n`);
+    const actualPort = server.address().port;
+    process.stdout.write(`Conversation CRM Pilot V0 disponível localmente em http://${host}:${actualPort}\n`);
     process.stdout.write('Modo sintético; nenhuma integração externa está ativa.\n');
   });
   return server;
@@ -106,4 +114,3 @@ function start(options = {}) {
 if (require.main === module) start();
 
 module.exports = { MAX_BODY_BYTES, EVALUATION_OPTIONS, createServer, start };
-

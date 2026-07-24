@@ -7,7 +7,7 @@ Permitir teste funcional sem conectar mensageria, pedidos ou dados reais.
 ## Iniciar
 
 ```powershell
-node tools/conversation-crm/simulator/server.js
+npm run conversation-crm:start
 ```
 
 URL local: `http://127.0.0.1:4179/`.
@@ -62,4 +62,3 @@ Todos usam identificadores `SIM-*`, códigos operacionais e mensagens próprias.
 ## Verificação visual executada
 
 A tela foi aberta em navegador local, carregou 40 cenários, executou um caso grave, exibiu `O03`, `waiting_human`, ações proibidas e `CustomerOccurrence`. A avaliação “correto” foi registrada em memória. Não houve erro de console.
-
