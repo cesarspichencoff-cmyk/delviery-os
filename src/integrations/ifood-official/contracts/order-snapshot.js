@@ -8,7 +8,13 @@
 
 const { EVENT_TYPES } = require("./event-types");
 
-/** Estado de produção derivado do último evento de progressão conhecido. */
+/**
+ * Estado de produção derivado do último evento de progressão conhecido.
+ * `CONFLICT` (mesma disciplina do Sprint 2.4 do conference-brain,
+ * reimplementada aqui de forma independente): dois eventos de progressão
+ * contraditórios no MESMO instante, sem metadado causal para desempatar,
+ * nunca escolhem um lado arbitrariamente — viram conflito explícito.
+ */
 const ORDER_STATUS = Object.freeze({
   UNKNOWN: "unknown",
   PLACED: "placed",
@@ -17,7 +23,8 @@ const ORDER_STATUS = Object.freeze({
   READY_FOR_PICKUP: "ready_for_pickup",
   DISPATCHED: "dispatched",
   CONCLUDED: "concluded",
-  CANCELLED: "cancelled"
+  CANCELLED: "cancelled",
+  CONFLICT: "conflict"
 });
 
 const EVENT_TO_STATUS = Object.freeze({
@@ -33,11 +40,16 @@ const EVENT_TO_STATUS = Object.freeze({
 /**
  * Constrói o snapshot vazio inicial de um pedido — nunca "adivinha" um
  * status; um pedido sem nenhum evento de progressão reconciliado fica
- * `unknown`, ponto.
+ * `unknown`, ponto. Formato já compatível com `contracts/schemas.js#ifood_order_snapshots`
+ * (campos no nível raiz, não aninhados) — quem reconcilia pode persistir
+ * o resultado diretamente, sem etapa de tradução.
  */
-function emptyOrderSnapshot(orderReference) {
+function emptyOrderSnapshot(orderId, opts) {
+  const o = opts || {};
   return {
-    order_reference: orderReference,
+    order_id: orderId,
+    external_order_id: o.externalOrderId || null,
+    merchant_id: o.merchantId || null,
     order_status: ORDER_STATUS.UNKNOWN,
     order_status_history: [],
     last_event_id: null,
