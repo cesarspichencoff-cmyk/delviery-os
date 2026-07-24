@@ -151,3 +151,113 @@ describe("bloqueador 1 — agrupamento nao depende de ordem de chegada, nem em e
     assert.equal(actual.grouping.presence, "conflict");
   });
 });
+
+/* ---------------------------------------------------------------------------
+ * Bloqueador 2 — ready_observed reconstruído a partir do contrato
+ * multidimensional (fonte de verdade), nunca da projeção legada.
+ * ------------------------------------------------------------------------- */
+describe("bloqueador 2 — recuperacao de ready_observed usa o contrato multidimensional", () => {
+  test("cenario 1 — crash antes de persistir estado: primeiro ciclo funciona normalmente", async () => {
+    const store = createStore({ memoryOnly: true });
+    const obs = observerFor(store, [[{ external_id: "S24-C1", raw_status: "Pronto" }]], "s24-c1");
+    const r = await obs.runCycle();
+    assert.equal(r.ok, true);
+    const events = store.all("conference_clock_events").filter((e) => e.order_id === "S24-C1");
+    assert.equal(events.length, 1);
+    assert.equal(events[0].event_type, "ready_observed");
+  });
+
+  test("cenario 2 — crash depois de persistir estado, antes do evento, prontidao SO multidimensional (readiness, sem order_state)", async () => {
+    const store = createStore({ memoryOnly: true });
+    const dimension = PiiGuard.sanitizeOrderObservation(Multidimensional.buildOrderObservation({
+      externalId: "S24-C2", observedAt: "2026-01-01T10:00:00Z", orderStateText: "-",
+      readiness: { confirmationText: "Pedido pronto avisado" }
+    }));
+    const projected = Reconciliation.reconcileMultidimensional("S24-C2", [dimension]);
+    const status = Legacy.deriveLegacyLiveStatus(projected);
+    assert.equal(Clock.isReadyFromMultidimensional(projected), true);
+    store.put("live_observations", {
+      run_id: "crashed", cycle_id: "before-clock", external_id: "S24-C2",
+      observed_at: dimension.observed_at, raw_status: "-", source_health: "available",
+      confidence: "alta", status, dimensions: dimension
+    });
+    const obs = observerFor(store, [[{ external_id: "S24-C2", raw_status: "-", readiness: { confirmationText: "Pedido pronto avisado" } }]], "s24-c2-recover");
+    await obs.runCycle();
+    const events = store.all("conference_clock_events").filter((e) => e.order_id === "S24-C2");
+    assert.equal(events.length, 1);
+    assert.equal(events[0].event_type, "ready_observed");
+  });
+
+  test("cenario 3 — crash depois de emitir evento: recuperacao nao duplica", async () => {
+    const store = createStore({ memoryOnly: true });
+    const obs1 = observerFor(store, [[{ external_id: "S24-C3", raw_status: "Pronto" }]], "s24-c3-a");
+    await obs1.runCycle();
+    const obs2 = observerFor(store, [[{ external_id: "S24-C3", raw_status: "Pronto" }]], "s24-c3-b");
+    await obs2.runCycle();
+    const events = store.all("conference_clock_events").filter((e) => e.order_id === "S24-C3");
+    assert.equal(events.length, 1);
+  });
+
+  test("cenario 4 — dois reinicios consecutivos apos crash multidimensional nao duplicam", async () => {
+    const store = createStore({ memoryOnly: true });
+    const dimension = PiiGuard.sanitizeOrderObservation(Multidimensional.buildOrderObservation({
+      externalId: "S24-C4", observedAt: "2026-01-01T10:00:00Z", orderStateText: "-",
+      readiness: { confirmationText: "Pedido pronto avisado" }
+    }));
+    const projected = Reconciliation.reconcileMultidimensional("S24-C4", [dimension]);
+    const status = Legacy.deriveLegacyLiveStatus(projected);
+    store.put("live_observations", {
+      run_id: "crashed", cycle_id: "c1", external_id: "S24-C4",
+      observed_at: dimension.observed_at, raw_status: "-", source_health: "available",
+      confidence: "alta", status, dimensions: dimension
+    });
+    const raw = [[{ external_id: "S24-C4", raw_status: "-", readiness: { confirmationText: "Pedido pronto avisado" } }]];
+    await observerFor(store, raw, "s24-c4-restart-a").runCycle();
+    await observerFor(store, raw, "s24-c4-restart-b").runCycle();
+    const events = store.all("conference_clock_events").filter((e) => e.order_id === "S24-C4");
+    assert.equal(events.length, 1);
+  });
+
+  test("cenario 5 — prontidao apenas multidimensional (order_state nunca vira ready)", async () => {
+    const store = createStore({ memoryOnly: true });
+    const obs = observerFor(store, [[{
+      external_id: "S24-C5", raw_status: "-", readiness: { confirmationText: "Pedido pronto avisado" }
+    }]], "s24-c5");
+    await obs.runCycle();
+    const dim = obs.getReconciledDimension("S24-C5");
+    assert.equal(dim.order_state, "unknown", "order_state nunca deveria reconhecer texto vazio");
+    const events = store.all("conference_clock_events").filter((e) => e.order_id === "S24-C5");
+    assert.equal(events.length, 1, "mesmo com order_state unknown, readiness sozinha deve emitir ready_observed");
+  });
+
+  test("cenario 6 — projecao legada diverge (fica unknown) mas ready_observed e' emitido do mesmo jeito", async () => {
+    const store = createStore({ memoryOnly: true });
+    const obs = observerFor(store, [[{
+      external_id: "S24-C6", raw_status: "-", readiness: { confirmationText: "Pedido pronto avisado" }
+    }]], "s24-c6");
+    await obs.runCycle();
+    const persisted = store.all("live_observations")[0];
+    assert.equal(persisted.status, "unknown", "a projecao legada continua unknown -- nao e' isso que decide mais");
+    const events = store.all("conference_clock_events").filter((e) => e.order_id === "S24-C6");
+    assert.equal(events.length, 1);
+  });
+
+  test("cenario 7 — pedido nao pronto nunca ganha ready_observed", async () => {
+    const store = createStore({ memoryOnly: true });
+    const obs = observerFor(store, [[{ external_id: "S24-C7", raw_status: "Em preparo" }]], "s24-c7");
+    await obs.runCycle();
+    const events = store.all("conference_clock_events").filter((e) => e.order_id === "S24-C7");
+    assert.equal(events.length, 0);
+  });
+
+  test("cenario 8 — evento ready_observed ja existente: recuperacao nao recria, e departed_observed continua funcionando depois", async () => {
+    const store = createStore({ memoryOnly: true });
+    const obs1 = observerFor(store, [[{ external_id: "S24-C8", raw_status: "Pronto" }]], "s24-c8-ready");
+    await obs1.runCycle();
+    const obs2 = observerFor(store, [[{ external_id: "S24-C8", raw_status: "Saiu para entrega" }]], "s24-c8-departed");
+    await obs2.runCycle();
+    const events = store.all("conference_clock_events").filter((e) => e.order_id === "S24-C8");
+    assert.equal(events.filter((e) => e.event_type === "ready_observed").length, 1);
+    assert.equal(events.filter((e) => e.event_type === "departed_observed").length, 1);
+  });
+});

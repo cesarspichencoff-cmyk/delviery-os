@@ -31,7 +31,7 @@ const { reconcileOrder, reconcileMultidimensional } = require("./reconciliation"
 const { buildOrderObservation } = require("./multidimensional-observation");
 const { deriveLegacyLiveStatus } = require("./legacy-compat");
 const PiiGuard = require("./pii-guard");
-const { departureEvidence, isReadyMilestone } = require("./ready-departure");
+const { departureEvidence } = require("./ready-departure");
 const clock = require("./clock");
 const { CLOCK_EVENT_TYPES, CLOCK_EVENT_ORIGIN } = require("../contracts/live-states");
 
@@ -206,7 +206,22 @@ function createLiveObserver(opts) {
 
       // Único evento do relógio emitido automaticamente pela tela: PRONTO.
       // Todo o resto do relógio é ação humana (ver clock.js/readyDoesNotImplyStarted).
-      if (isReadyMilestone(status) && clock.currentClockState(prevClock) == null) {
+      //
+      // Sprint 2.4 (bloqueador 2 da rechecagem relâmpago do 2.3): a decisão
+      // usava `isReadyMilestone(status)` — `status` é a projeção LEGADA
+      // (`deriveLegacyLiveStatus`, só 9 valores), que só enxerga prontidão
+      // via `order_state`. Um pedido pronto SÓ pela dimensão `readiness`
+      // (ex.: texto de confirmação capturado sem `order_state` reconhecido)
+      // nunca fazia `status` virar `ready`/`awaiting_pickup` — a recuperação
+      // após crash nunca reconstruía o `ready_observed` correspondente,
+      // mesmo com `Clock.isReadyFromMultidimensional()` já sabendo que o
+      // CONTRATO multidimensional (fonte de verdade) afirma prontidão.
+      // Corrigido: usa o estado multidimensional reconciliado diretamente —
+      // `isReadyFromMultidimensional` é estritamente mais abrangente que
+      // `isReadyMilestone(status)` (todo caso que a projeção legada cobria
+      // continua coberto; a lacuna de readiness-só passa a ser coberta
+      // também), então não há caminho anterior perdido, só ganho.
+      if (clock.isReadyFromMultidimensional(reconciled) && clock.currentClockState(prevClock) == null) {
         const r = clock.recordEvent({
           order_id: raw.external_id, event_type: CLOCK_EVENT_TYPES.READY_OBSERVED,
           event_time: statusEvent.event_time, observed_at: observedAt,
