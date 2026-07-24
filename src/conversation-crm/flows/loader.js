@@ -54,14 +54,20 @@ function loadFlowBundle(options = {}) {
   const root = options.root || __dirname;
   const flowsPath = options.flowsPath || path.join(root, 'flows.v0.json');
   const rulesPath = options.rulesPath || path.join(root, 'rules.v0.json');
+  const policiesPath = options.policiesPath || path.join(root, 'policies.v0.json');
   const flows = readJson(flowsPath, 'FLOW_CONFIG_INVALIDA');
   const rules = readJson(rulesPath, 'RULE_CONFIG_INVALIDA');
+  const policies = readJson(policiesPath, 'POLICY_CONFIG_INVALIDA');
+  if (policies.schema_version !== 'conversation-policies-v0' || !policies.messages) {
+    throw flowError('POLICY_CONFIG_INVALIDA');
+  }
   const flowValidation = validateFlowConfig(flows);
   const ruleValidation = validateRulesConfig(rules);
   return Object.freeze({
     schema_version: 'conversation-bundle-v0',
     flows,
     rules,
+    policies,
     byId: new Map(flows.blocks.map((block) => [block.id, Object.freeze(block)])),
     validation: { ...flowValidation, ...ruleValidation }
   });
@@ -73,4 +79,3 @@ module.exports = {
   validateRulesConfig,
   loadFlowBundle
 };
-
