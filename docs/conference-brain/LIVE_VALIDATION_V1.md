@@ -245,3 +245,33 @@ oficiais equivalentes em `tests/conference-brain/sprint23-adversarial.test.js`.
 ```
 SPRINT 2.3 CORRIGIDO — PRONTO PARA RECHECAGEM FOCADA
 ```
+
+> **Correção (Sprint 2.4):** o gate independente relâmpago do Sprint 2.3
+> (worktree `audit/recheck-conference-live-multidimensional-v2`, commit
+> `c42fbda`) provou que 2 dos 11 casos de um teste MAIS AGRESSIVO ainda
+> falhavam — ambos sobreviventes disfarçados dos próprios bloqueadores 3 e
+> 6 do Sprint 2.3, expostos só sob condição de EMPATE exato de `observed_at`
+> e sob prontidão que só existe na dimensão `readiness` (nunca em
+> `order_state`). Ver §12.
+
+## 12. Sprint 2.4 — correção final dos dois bloqueadores do gate relâmpago
+
+O gate relâmpago rodou 11 testes adversariais próprios
+(`tests/auditoria/conference-sprint23-lightning.test.js`, cópia
+somente-leitura do commit `c42fbda`) e encontrou 2 falhas, apesar de todas
+as suítes oficiais (297 testes) passarem.
+
+| Bloqueador | Sintoma provado pelo gate relâmpago | Correção | Commit |
+|---|---|---|---|
+| 1 — empate temporal no agrupamento | `reconcileGrouping` ordenava por `observed_at`, mas duas leituras com o MESMO `observed_at` e fatos contraditórios (PRESENT vs. REMOVED) eram desempatadas pelo `sort` estável — que preserva a ordem de ENTRADA entre iguais. "Ordenar por tempo" degenerava em "ordenar por posição no array" exatamente no empate | candidatos agrupados por `observed_at` (`Map`, sem dependência de ordem de inserção) e resolvidos por `resolveTie()`: metadado causal (`sequence`/`version`, novo, opcional) desempata quando disponível; sem ele, resultado explícito `PRESENCE.CONFLICT` — nunca escolha arbitrária | `4d67006` |
+| 2 — `ready_observed` perdido quando a prontidão é só multidimensional | A recuperação decidia emitir o evento via `isReadyMilestone(status)` — `status` é a projeção LEGADA (`deriveLegacyLiveStatus`), que só reconhece prontidão através de `order_state`. Um pedido pronto só pela dimensão `readiness` (texto de confirmação, sem `order_state` reconhecido) nunca fazia a projeção legada virar `ready`, mesmo com `Clock.isReadyFromMultidimensional()` já confirmando prontidão no contrato multidimensional (fonte de verdade) | condição de emissão trocada para `clock.isReadyFromMultidimensional(reconciled)` — estritamente mais abrangente que a projeção legada (nenhum caso anterior perde cobertura) | `2abbbff` |
+
+Todos os 11 testes do gate relâmpago passam agora (verificado duas vezes,
+sem alterar o arquivo). Testes oficiais equivalentes em
+`tests/conference-brain/sprint24-adversarial.test.js`.
+
+## 13. Veredito (Sprint 2.4)
+
+```
+SPRINT 2.4 CORRIGIDO — PRONTO PARA GATE FINAL
+```
