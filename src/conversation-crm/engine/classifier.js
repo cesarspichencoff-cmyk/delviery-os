@@ -8,7 +8,7 @@ const INTENT_SIGNALS = Object.freeze([
   ['valet_occurrence', ['manobrista', 'valet', 'veiculo']],
   ['charge_occurrence', ['cobranca', 'cobrado', 'pagamento duplicado', 'valor incorreto']],
   ['serious_quality', ['risco de saude', 'alergia', 'contaminacao', 'mal estar', 'muito grave']],
-  ['wrong_or_missing_item', ['item faltando', 'item errado', 'faltou item', 'pedido incompleto']],
+  ['wrong_or_missing_item', ['item faltando', 'item errado', 'faltou item', 'faltou um item', 'veio um item errado', 'pedido incompleto']],
   ['delay', ['atraso', 'atrasado', 'demorando', 'nao chegou']],
   ['order_change', ['alterar pedido', 'mudar pedido', 'retirar item', 'acrescentar item']],
   ['tracking', ['acompanhar pedido', 'onde esta o pedido', 'status do pedido', 'rastrear']],
@@ -68,4 +68,3 @@ function classifySeverity(message, intent, context = {}) {
 }
 
 module.exports = { INTENT_SIGNALS, classifyIntent, classifyOrigin, classifySeverity };
-

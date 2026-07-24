@@ -190,7 +190,7 @@
       "id": "O08", "intent": "prior_promise", "origin": "unknown", "severity": "high",
       "message": "Uma promessa anterior precisa ser conferida no histórico por uma pessoa. Vou registrar a recorrência e escalar.",
       "required_data": ["prior_promise_reference"], "tags": ["prior_promise", "history_required", "human_required"], "next_block": "H03", "conditions": [],
-      "allowed_actions": ["create_occurrence", "request_history_review", "escalate_priority"], "forbidden_actions": ["repeat_promise_automatically", "offer_financial_resolution"],
+      "allowed_actions": ["create_occurrence", "request_history_review", "escalate_priority"], "forbidden_actions": ["repeat_promise_automatically", "offer_financial_resolution", "close_automatically"],
       "escalation_level": "management", "internal_record_required": true
     },
 
@@ -261,4 +261,3 @@
     }
   ]
 }
-
