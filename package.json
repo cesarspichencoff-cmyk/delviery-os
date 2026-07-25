@@ -10,7 +10,7 @@
     "demo": "npx tsc && node dist/demo/camada0_demo.js",
     "ingest": "npx tsc && node dist/demo/ingest_real.js",
     "verificar:cardapio": "node tools/verificar_integridade_cardapio.js",
-    "test:entregas": "npx tsc && node dist/src/entregas/foundation/run-tests.js && node dist/src/entregas/integration/run-integration-tests.js && node dist/src/entregas/integration/run-gate-close-tests.js && node dist/src/entregas/acceptance/run-acceptance-a01-a39.js && node dist/src/entregas/ui/run-ui-tests.js && node dist/src/entregas/ui/map/run-map-tests.js && node dist/src/entregas/offline/run-offline-tests.js && node dist/src/entregas/offline/run-outbox-persistence-tests.js && node dist/src/entregas/gps/run-gps-tests.js && node dist/src/entregas/gps/run-field-tests.js",
+    "test:entregas": "npx tsc && node dist/src/entregas/foundation/run-tests.js && node dist/src/entregas/integration/run-integration-tests.js && node dist/src/entregas/integration/run-gate-close-tests.js && node dist/src/entregas/acceptance/run-acceptance-a01-a39.js && node dist/src/entregas/ui/run-ui-tests.js && node dist/src/entregas/ui/map/run-map-tests.js && node dist/src/entregas/offline/run-offline-tests.js && node dist/src/entregas/offline/run-outbox-persistence-tests.js && node dist/src/entregas/gps/run-gps-tests.js && node dist/src/entregas/gps/run-field-tests.js && node dist/src/entregas/gps/run-native-consent-tests.js",
     "test:entregas:offline": "npx tsc && node dist/src/entregas/offline/run-offline-tests.js",
     "test:entregas:outbox": "npx tsc && node dist/src/entregas/offline/run-outbox-persistence-tests.js",
     "test:entregas:gps": "npx tsc && node dist/src/entregas/gps/run-gps-tests.js",
@@ -23,7 +23,8 @@
     "ui:entregas": "npx tsc && node dist/tools/entregas_ui_server.js",
     "ui:entregas:pilot": "npx tsc && node dist/tools/entregas_pilot_server.js",
     "test:entregas:pilot-gate": "npx tsc && node dist/src/entregas/pilot/run-pilot-gate-tests.js",
-    "test:entregas:field": "npx tsc && node dist/src/entregas/gps/run-field-tests.js"
+    "test:entregas:field": "npx tsc && node dist/src/entregas/gps/run-field-tests.js",
+    "test:entregas:native": "npx tsc && node dist/src/entregas/gps/run-native-consent-tests.js"
   },
   "devDependencies": {
     "@types/node": "20.14.10",
