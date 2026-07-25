@@ -38,7 +38,10 @@ export interface Delivery {
   planned_stop_order: number;
   actual_stop_order?: number;
   state: DeliveryState;
+  /** Chegada observada pelo SISTEMA (geofence/GPS). Nunca ato humano. */
   arrival_detected_at?: string;
+  /** Chegada RELATADA pelo motoboy ("Cheguei"). Nunca evidência de sensor. */
+  arrival_reported_at?: string;
   confirmed_at?: string;
   unconfirmed_at?: string;
   unconfirmed_trigger?: UnconfirmedTrigger;

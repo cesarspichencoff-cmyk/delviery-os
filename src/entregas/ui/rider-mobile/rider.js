@@ -239,13 +239,13 @@ function actDepart(t) {
 function actArrive(t, s) {
   return act(async () => {
     await command({
-      type: "RecordArrivalDetected",
+      // "Cheguei" e' ato humano: relato, nao deteccao de sensor.
+      type: "RecordArrivalReported",
       command_id: cid("arr"),
       occurred_at: now(),
       unit_id: "demo-unit",
       trip_id: t.trip_id,
       delivery_id: s.delivery_id,
-      source: "manual",
       actor: { actor_id: "rid-demo", role: "motoboy_interno" },
     });
   });

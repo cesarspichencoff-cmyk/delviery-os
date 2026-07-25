@@ -101,6 +101,16 @@ export function applyDeliveryConfirmed(
   };
 }
 
+/**
+ * Chegada observada pelo SISTEMA (geofence/GPS).
+ *
+ * Idempotente e comutativa em relação ao relato humano: se o motoboy já
+ * apertou "Cheguei", a parada já está em `chegada_detectada` e a detecção
+ * apenas acrescenta o carimbo do sistema — não é transição inválida, é a
+ * segunda evidência do mesmo fato. O primeiro carimbo nunca é sobrescrito.
+ *
+ * Não confirma entrega. Nunca.
+ */
 export function applyArrivalDetected(
   delivery: Delivery,
   at: string,
@@ -108,17 +118,65 @@ export function applyArrivalDetected(
   if (!delivery.active) {
     throw new DomainError("PRECONDITION_FAILED", "arrival em delivery inativa");
   }
-  if (delivery.state !== "em_rota") {
+  if (delivery.state !== "em_rota" && delivery.state !== "chegada_detectada") {
     throw new DomainError(
       "INVALID_TRANSITION",
       `arrival_detected de ${delivery.state}`,
     );
   }
+  if (delivery.arrival_detected_at) return delivery; // idempotente
   return {
     ...delivery,
     state: "chegada_detectada",
     arrival_detected_at: at,
   };
+}
+
+/**
+ * Chegada RELATADA pelo motoboy. Ato humano, não evidência de sensor —
+ * por isso carimbo próprio (COR modela `arrival_detected` com ator sistema).
+ *
+ * Também não confirma entrega: leva a parada para `chegada_detectada`, que é
+ * estado de desfecho PENDENTE. Quem entrega é `delivery_confirmed`.
+ */
+export function applyArrivalReported(
+  delivery: Delivery,
+  at: string,
+): Delivery {
+  if (!delivery.active) {
+    throw new DomainError("PRECONDITION_FAILED", "arrival em delivery inativa");
+  }
+  if (delivery.state !== "em_rota" && delivery.state !== "chegada_detectada") {
+    throw new DomainError(
+      "INVALID_TRANSITION",
+      `arrival_reported de ${delivery.state}`,
+    );
+  }
+  if (delivery.arrival_reported_at) return delivery; // idempotente
+  return {
+    ...delivery,
+    state: "chegada_detectada",
+    arrival_reported_at: at,
+  };
+}
+
+/**
+ * Como a chegada ficou conhecida. Serve à timeline e à auditoria: o operador
+ * precisa saber se foi o sistema, a pessoa, ou os dois.
+ */
+export type ArrivalProvenance =
+  | "nenhuma"
+  | "somente_sistema"
+  | "somente_relato"
+  | "sistema_e_relato";
+
+export function arrivalProvenance(delivery: Delivery): ArrivalProvenance {
+  const d = Boolean(delivery.arrival_detected_at);
+  const r = Boolean(delivery.arrival_reported_at);
+  if (d && r) return "sistema_e_relato";
+  if (d) return "somente_sistema";
+  if (r) return "somente_relato";
+  return "nenhuma";
 }
 
 /** G3: ao trip_return_started, marcar active sem desfecho */

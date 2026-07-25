@@ -113,6 +113,7 @@ export type TripEventType = (typeof TRIP_EVENT_TYPES)[number];
 export const DELIVERY_EVENT_TYPES = [
   "delivery_departed",
   "arrival_detected",
+  "arrival_reported",
   "delivery_confirmed",
   "delivery_unconfirmed",
   "customer_not_found",

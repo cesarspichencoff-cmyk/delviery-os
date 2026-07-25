@@ -46,10 +46,28 @@ export const SYNC_PUBLIC_EVENT_TYPES = [
   "event_sync_completed",
 ] as const;
 
+/**
+ * Extensões posteriores ao COR-ENTREGAS-V1@1.0.3 — mantidas em lista própria
+ * para que a lista canônica continue sendo espelho fiel do contrato.
+ *
+ * `arrival_reported` existe porque o COR (§ matriz de transições) modela
+ * `arrival_detected` com ator **sistema (GPS)**, enquanto a operação real tem
+ * o motoboy apertando "Cheguei". Fundir os dois faria um ato humano parecer
+ * evidência de sensor. Nenhum dos dois confirma entrega.
+ *
+ * `rider_location_notice_acknowledged` registra a ciência do termo de
+ * localização (Adendo §4.5).
+ */
+export const EXTENSION_PUBLIC_EVENT_TYPES = [
+  "arrival_reported",
+  "rider_location_notice_acknowledged",
+] as const;
+
 export const PUBLIC_EVENT_TYPES = [
   ...COR_PUBLIC_EVENT_TYPES,
   ...SIGNAL_PUBLIC_EVENT_TYPES,
   ...SYNC_PUBLIC_EVENT_TYPES,
+  ...EXTENSION_PUBLIC_EVENT_TYPES,
 ] as const;
 
 export type PublicEventType = (typeof PUBLIC_EVENT_TYPES)[number];

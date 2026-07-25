@@ -11,6 +11,7 @@ export type Command =
   | AssignInternalRiderCmd
   | ConfirmTripDepartureCmd
   | RecordArrivalDetectedCmd
+  | RecordArrivalReportedCmd
   | ConfirmDeliveryCmd
   | RecordCustomerNotFoundCmd
   | StartTripReturnCmd
@@ -68,12 +69,26 @@ export interface ConfirmTripDepartureCmd extends CmdBase {
   trip_id: string;
 }
 
+/**
+ * Chegada observada pelo SISTEMA. `source` existe por compatibilidade com o
+ * histórico; toque humano deve usar `RecordArrivalReported`.
+ */
 export interface RecordArrivalDetectedCmd extends CmdBase {
   type: "RecordArrivalDetected";
   trip_id: string;
   delivery_id: string;
   /** evidência de rota — NÃO confirma entrega */
   source?: "gps" | "manual";
+}
+
+/**
+ * Chegada RELATADA pelo motoboy (botão "Cheguei"). Ato humano.
+ * Também NÃO confirma entrega.
+ */
+export interface RecordArrivalReportedCmd extends CmdBase {
+  type: "RecordArrivalReported";
+  trip_id: string;
+  delivery_id: string;
 }
 
 export interface ConfirmDeliveryCmd extends CmdBase {

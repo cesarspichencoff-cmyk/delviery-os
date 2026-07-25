@@ -17,6 +17,8 @@ import {
 } from "../foundation/trip-machine";
 import {
   applyArrivalDetected,
+  applyArrivalReported,
+  arrivalProvenance,
   applyDeliveryConfirmed,
 } from "../foundation/delivery-rules";
 import {
@@ -27,7 +29,7 @@ import {
 import { DomainError, type Delivery, type Handoff } from "../foundation/types";
 import { domainEventToPublic } from "../integration/public-event-builder";
 import type { UnitOfWork } from "../persistence/ports";
-import { assertCan, requireActor, MANUAL_CLOSE_ROLES } from "./auth";
+import { assertCan, requireActor, MANUAL_CLOSE_ROLES, type ActorContext } from "./auth";
 import type { Command } from "./commands";
 import {
   openOccurrence,
@@ -73,6 +75,8 @@ export class EntregasApplicationService {
           return await this.depart(cmd);
         case "RecordArrivalDetected":
           return await this.arrival(cmd);
+        case "RecordArrivalReported":
+          return await this.arrivalReported(cmd);
         case "ConfirmDelivery":
           return await this.confirmDelivery(cmd);
         case "RecordCustomerNotFound":
@@ -268,24 +272,78 @@ export class EntregasApplicationService {
   private async arrival(
     cmd: Extract<Command, { type: "RecordArrivalDetected" }>,
   ): Promise<AppResult> {
-    assertCan(cmd.actor, "trip_start");
-    const rec = await this.uow.trips.get(cmd.trip_id);
+    return this.recordArrival({
+      trip_id: cmd.trip_id,
+      delivery_id: cmd.delivery_id,
+      occurred_at: cmd.occurred_at,
+      actor: cmd.actor,
+      kind: "detected",
+      source: cmd.source ?? "manual",
+    });
+  }
+
+  private async arrivalReported(
+    cmd: Extract<Command, { type: "RecordArrivalReported" }>,
+  ): Promise<AppResult> {
+    return this.recordArrival({
+      trip_id: cmd.trip_id,
+      delivery_id: cmd.delivery_id,
+      occurred_at: cmd.occurred_at,
+      actor: cmd.actor,
+      kind: "reported",
+      source: "rider",
+    });
+  }
+
+  /**
+   * Caminho único das duas chegadas. Elas compartilham o estado canônico
+   * (`chegada_detectada`, desfecho PENDENTE) e diferem em quem observou:
+   * sistema ou pessoa. Nenhuma das duas confirma entrega — `confirms_delivery`
+   * vai `false` no payload para que isso fique escrito no log, não só no
+   * comentário.
+   */
+  private async recordArrival(args: {
+    trip_id: string;
+    delivery_id: string;
+    occurred_at: string;
+    actor: ActorContext;
+    kind: "detected" | "reported";
+    source: string;
+  }): Promise<AppResult> {
+    assertCan(args.actor, "trip_start");
+    const rec = await this.uow.trips.get(args.trip_id);
     if (!rec) return { ok: false, error: "Trip não encontrada", code: "NOT_FOUND" };
     const log = new InMemoryEventLog();
     const map = new Map(rec.deliveries.map((d) => [d.delivery_id, d]));
-    const d = map.get(cmd.delivery_id);
+    const d = map.get(args.delivery_id);
     if (!d) return { ok: false, error: "Delivery não encontrada", code: "NOT_FOUND" };
-    const updated = applyArrivalDetected(d, cmd.occurred_at);
-    map.set(cmd.delivery_id, updated);
+
+    const detected = args.kind === "detected";
+    const updated = detected
+      ? applyArrivalDetected(d, args.occurred_at)
+      : applyArrivalReported(d, args.occurred_at);
+
+    // Repetição do mesmo fato não vira segundo evento no log.
+    if (updated === d) {
+      const same: TripAggregate = { trip: rec.trip, deliveries: map };
+      return { ok: true, trip: same };
+    }
+
+    map.set(args.delivery_id, updated);
+    const event_type = detected ? "arrival_detected" : "arrival_reported";
     log.append({
       object_type: "delivery",
-      object_id: cmd.delivery_id,
-      event_type: "arrival_detected",
-      occurred_at: cmd.occurred_at,
-      origin: cmd.source === "gps" ? "system" : "device",
-      actor_id: cmd.actor.actor_id,
-      idempotency_key: `arrival_detected:${cmd.delivery_id}:${cmd.occurred_at}`,
-      payload: { source: cmd.source ?? "manual", confirms_delivery: false },
+      object_id: args.delivery_id,
+      event_type,
+      occurred_at: args.occurred_at,
+      origin: detected ? "system" : "device",
+      actor_id: args.actor.actor_id,
+      idempotency_key: `${event_type}:${args.delivery_id}:${args.occurred_at}`,
+      payload: {
+        source: args.source,
+        confirms_delivery: false,
+        arrival_provenance: arrivalProvenance(updated),
+      },
     });
     const agg: TripAggregate = { trip: rec.trip, deliveries: map };
     await this.saveAgg(agg, rec.version, log);

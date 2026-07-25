@@ -22,6 +22,7 @@ const DOMAIN_TO_PUBLIC: Record<string, PublicEventType | null> = {
   delivery_removed: "delivery_removed",
   trip_started: "trip_started",
   arrival_detected: "arrival_detected",
+  arrival_reported: "arrival_reported",
   delivery_confirmed: "delivery_confirmed",
   delivery_unconfirmed: "delivery_unconfirmed",
   customer_not_found: "customer_not_found",

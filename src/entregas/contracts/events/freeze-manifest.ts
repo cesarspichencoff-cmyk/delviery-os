@@ -5,8 +5,14 @@ import { PUBLIC_EVENTS_SCHEMA_VERSION, FORBIDDEN_PAYLOAD_KEYS } from "./types";
 /**
  * Manifesto de congelamento do contrato público de eventos.
  * Mudança incompatível → nova schema_version / catalog_version.
+ *
+ * 1.1.0 — aditivo. Entraram `arrival_reported` e
+ * `rider_location_notice_acknowledged`. O envelope não mudou, logo
+ * `PUBLIC_EVENTS_SCHEMA_VERSION` continua 1.0.0: consumidor antigo ignora
+ * event_type que não conhece e segue funcionando. Acrescentar evento é minor;
+ * mudar significado de campo existente seria major.
  */
-export const PUBLIC_CATALOG_VERSION = "1.0.0" as const;
+export const PUBLIC_CATALOG_VERSION = "1.1.0" as const;
 
 /** Campos obrigatórios do envelope (v1.0.0) — base do hash de schema */
 export const ENVELOPE_REQUIRED_FIELDS = [

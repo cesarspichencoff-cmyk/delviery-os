@@ -1,5 +1,5 @@
 {
-  "catalog_version": "1.0.0",
+  "catalog_version": "1.1.0",
   "schema_version": "1.0.0",
   "event_types": [
     "trip_created",
@@ -32,9 +32,11 @@
     "rider_location_stale",
     "source_quality_issue",
     "event_sync_pending",
-    "event_sync_completed"
+    "event_sync_completed",
+    "arrival_reported",
+    "rider_location_notice_acknowledged"
   ],
-  "event_count": 31,
+  "event_count": 33,
   "aliases": {
     "delivery_added_to_trip": "delivery_added",
     "trip_departed": "trip_started",
@@ -44,7 +46,7 @@
     "occurrence_resolved": "occurrence_closed",
     "occurrence_updated": "occurrence_updated"
   },
-  "schemas_hash": "d0607bf1e6e79b566a38b95aa51cfa5ac5fc9e62e078b73b8639c1eed2572021",
+  "schemas_hash": "6cf720e9e6f9972d0796460819d202d82946f6094493788dff3e2eb9f90c710c",
   "compatibility": {
     "policy": "Campos opcionais novos permitidos na mesma major se ignoráveis por consumidores antigos",
     "breaking_change_requires": "nova schema_version (e preferencialmente catalog_version)",
@@ -55,6 +57,6 @@
   "consumer_live": "disabled",
   "producer": "entregas",
   "domain_contract": "COR-ENTREGAS-V1@1.0.3",
-  "frozen_at": "2026-07-20T07:38:50.295Z",
+  "frozen_at": "2026-07-25T23:42:56.625Z",
   "release_commit": "de1d7eb49f17f0614ff25dea5093e5c38c8c9274"
 }
