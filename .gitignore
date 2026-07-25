@@ -22,6 +22,7 @@ _tmp_*
 # Piloto ENTREGAS
 config/entregas-pilot.json
 config/entregas-geofence.json
+config/entregas-unit-*.json
 data/entregas-pilot/
 
 # TLS local do piloto — chave privada e certificado NUNCA entram no Git.
