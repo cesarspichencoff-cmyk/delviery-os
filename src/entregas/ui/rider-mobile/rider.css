@@ -158,3 +158,30 @@ body.mobile {
     box-shadow: var(--shadow);
   }
 }
+
+/* Indicador persistente de GPS — reflete o watcher real, não o botão.
+   Cor é significado: verde = atual, âmbar = degradado, cinza = desligado. */
+.gps-status {
+  margin: 8px 0 4px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+  border: 1px solid var(--line, #d8d8d8);
+  background: #f4f4f5;
+  color: #52525b;
+  overflow-wrap: anywhere;
+}
+.gps-status[data-running="true"][data-freshness="current"] {
+  background: #ecfdf3; border-color: #a6f4c5; color: #05603a;
+}
+.gps-status[data-running="true"][data-freshness="inaccurate"],
+.gps-status[data-running="true"][data-freshness="stale"],
+.gps-status[data-running="true"][data-freshness="offline"] {
+  background: #fffaeb; border-color: #fedf89; color: #b54708;
+}
+.gps-status[data-freshness="permission_denied"],
+.gps-status[data-freshness="unavailable"] {
+  background: #fef3f2; border-color: #fecdca; color: #b42318;
+}
