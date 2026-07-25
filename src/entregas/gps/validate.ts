@@ -21,6 +21,12 @@ export interface RawGpsSample {
   occurred_at: string;
   source: "device" | "simulator" | "offline_batch";
   captured_offline?: boolean;
+  /**
+   * Android informa quando a posição veio de provedor simulado
+   * (`Location.isFromMockProvider`). Ponto simulado é rejeitado: entra na
+   * contagem de rejeições, nunca no histórico da viagem.
+   */
+  is_mock?: boolean;
 }
 
 export interface ValidationContext {
@@ -90,6 +96,10 @@ export function validateSample(
   }
   if (raw.device_id !== ctx.session_device_id) {
     return { ok: false, rejection: "device_mismatch" };
+  }
+  // Localização simulada informada pelo próprio sistema: não é observação.
+  if (raw.is_mock === true) {
+    return { ok: false, rejection: "mock_location" };
   }
 
   // 2. Faixa geográfica.

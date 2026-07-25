@@ -109,6 +109,7 @@ export class GpsTracker {
     heading_deg?: number;
     altitude_m?: number;
     occurred_at: string;
+    is_mock?: boolean;
   }): void {
     // Trava dura: sem viagem ativa, o ponto não existe para o sistema.
     if (!this.activeTripId) {
@@ -127,6 +128,7 @@ export class GpsTracker {
       altitude_m: sample.altitude_m,
       occurred_at: sample.occurred_at,
       source: this.provider.kind === "simulator" ? "simulator" : "device",
+      is_mock: sample.is_mock,
     };
 
     const result = validateSample(raw, {

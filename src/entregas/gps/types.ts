@@ -157,5 +157,6 @@ export const GPS_REJECTIONS = [
   "trip_mismatch",
   "duplicate",
   "unusable_accuracy",
+  "mock_location",
 ] as const;
 export type GpsRejection = (typeof GPS_REJECTIONS)[number];

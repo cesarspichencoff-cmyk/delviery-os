@@ -17,6 +17,10 @@ export interface ProviderSample {
   altitude_m?: number;
   /** Horário do aparelho (ISO). */
   occurred_at: string;
+  /** Android informa quando a posição veio de provedor simulado. */
+  is_mock?: boolean;
+  /** Provedor que originou a posição (fused/gps/network), quando conhecido. */
+  provider_name?: string;
 }
 
 export type ProviderEvent =
