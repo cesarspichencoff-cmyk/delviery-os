@@ -12,6 +12,7 @@
 const { test, describe, before, after } = require("node:test");
 const assert = require("node:assert/strict");
 const { spawn } = require("node:child_process");
+const fs = require("node:fs");
 const path = require("node:path");
 const os = require("node:os");
 
@@ -93,5 +94,55 @@ describe("opt-in de LAN preservado (HOST=0.0.0.0)", () => {
     if (!lan) { t.skip("máquina sem IP de LAN para testar"); return; }
     const r = await fetch(`http://${lan}:${PORT}/api/config`);
     assert.equal(r.ok, true, "com opt-in explícito o acesso via LAN deve funcionar");
+  });
+});
+
+/* ============================================================================
+ * Extensão desta missão (gate de reconciliação do bind seguro) — adicionada
+ * além do que o commit 5e22553 trouxe. Duas provas que o cherry-pick sozinho
+ * não cobria: (1) asserção estrutural explícita contra o literal "0.0.0.0"
+ * hardcoded (nunca substitui a prova comportamental acima, só complementa);
+ * (2) falha de inicialização (porta ocupada) precisa encerrar o processo
+ * filho sozinha, sem travar o teste nem deixar processo pendurado.
+ * ==========================================================================*/
+
+describe("asserção estrutural — impede regressão direta do literal 0.0.0.0 como padrão", () => {
+  test("servir_v1.js nunca volta a chamar listen com \"0.0.0.0\" hardcoded, e o default continua 127.0.0.1", () => {
+    const codigo = fs.readFileSync(path.join(RAIZ, "tools", "servir_v1.js"), "utf8");
+    assert.doesNotMatch(
+      codigo, /servidor\.listen\(PORT,\s*"0\.0\.0\.0"/,
+      "regressão direta: bind hardcoded em 0.0.0.0, sem passar por HOST/opt-in"
+    );
+    assert.match(
+      codigo, /const HOST = process\.env\.HOST \|\| "127\.0\.0\.1"/,
+      "host padrão precisa continuar resolvendo para 127.0.0.1 quando HOST não é informado"
+    );
+  });
+});
+
+describe("falha de inicialização encerra corretamente (sem processo órfão)", () => {
+  test("segunda instância na mesma porta falha (EADDRINUSE) e o processo filho termina sozinho, sem travar o teste", async () => {
+    const PORT = 6550 + (process.pid % 100);
+    const primeiro = subir(PORT, {});
+    try {
+      await esperar(`http://127.0.0.1:${PORT}`, 40);
+
+      const segundo = subir(PORT, {});
+      const codigoSaida = await new Promise((resolve) => {
+        segundo.once("exit", (code) => resolve(code));
+        setTimeout(() => resolve(undefined), 5000); // nunca trava o teste indefinidamente
+      });
+
+      assert.notEqual(
+        codigoSaida, undefined,
+        "processo com porta ocupada precisa terminar sozinho (EADDRINUSE -> process.exit), nunca ficar pendurado"
+      );
+      assert.equal(
+        codigoSaida, 1,
+        "saída esperada é o código de erro que o próprio servir_v1.js já registra para EADDRINUSE"
+      );
+    } finally {
+      primeiro.kill();
+    }
   });
 });
