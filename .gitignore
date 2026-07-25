@@ -21,5 +21,15 @@ _tmp_*
 
 # Piloto ENTREGAS
 config/entregas-pilot.json
+config/entregas-geofence.json
 data/entregas-pilot/
+
+# TLS local do piloto — chave privada e certificado NUNCA entram no Git.
+# Os caminhos são configurados por ENTREGAS_TLS_CERT / ENTREGAS_TLS_KEY.
+certs/
+*.pem
+*.key
+*.crt
+*.pfx
+*.p12
 
