@@ -437,7 +437,7 @@ class NativeConversationRuntime {
         additional_handoffs: additionalHandoffs,
         response,
         closure: executionClosure(classification, result.status),
-        production_blocked: this.placeholders.production_blockers_open === 46,
+        production_blocked: this.placeholders.production_blockers_open > 0,
         external_system_accessed: false,
         real_driver_used: false,
         raw_message_persisted: false,

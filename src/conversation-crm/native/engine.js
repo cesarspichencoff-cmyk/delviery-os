@@ -5,6 +5,13 @@ const { NUMBER_WORDS, extractPartySize, detectMissingItem } = require('../engine
 const { assertFeature } = require('./feature-flags');
 const { legacyProjection } = require('./migration');
 const { foodSafetyPolicy, abuseReview } = require('./policies');
+const {
+  detectPublicTopic,
+  intentForPublicTopic,
+  normalizePublicText,
+  publicInformationResponse,
+  publicBehaviorOverride
+} = require('./public-information');
 
 function normalizeText(value) {
   return String(value || '')
@@ -41,7 +48,7 @@ const INTENT_RULES = Object.freeze([
   ['occurrence.address', /\b(corrigir o endereco do pedido|endereco ta errado|local errado.*mudar)\b/],
   ['order.modify', /\b(retirar um item|tirar um item|mudar um item|alterar pedido|acrescentar item)\b/],
   ['occurrence.refund_request', /\b(reembolso|dinheiro de volta)\b/],
-  ['occurrence.valet', /\b(valet|manobrista|carro foi danificado)\b/],
+  ['occurrence.valet', /\b(carro foi danificado|dano.*(?:valet|manobrista)|problema com (?:o )?(?:valet|manobrista)|aconteceu algo.*carro.*valet)\b/],
   ['occurrence.dining_room', /\b(problema no atendimento do salao|atendimento no salao|situacao durante a visita)\b/],
   ['occurrence.prior_promise', /\b(promessa de retorno|prazo informado passou|ja me prometeram|solucao que foi combinada)\b/],
   ['occurrence.alert_only', /\b(so quero avisar|so um toque|apenas avisar|nao quero solucao)\b/],
@@ -64,7 +71,7 @@ const INTENT_RULES = Object.freeze([
   ['information.hours', /\b(abrem?|aberto|horario|funcionamento|mais tarde)\b/],
   ['information.address', /\b(endereco|onde fica|onde e a unidade)\b/],
   ['order.status', /\b(onde esta meu pedido|cade meu pedido|pedido.*(?:ja saiu|esta pronto|sumiu|consulta|atualizacao|informacao antiga|entregador)|consultar meu pedido|ifood saiu|retirada.*pronta|ir buscar meu pedido|status|cada tela fala|observador mostra|ser avisado quando houver mudanca|consulta demorou|consulta falhou|ultima atualizacao|um sistema diz pronto)\b/],
-  ['occurrence.missing_item', /\b(i need help with a missing item|falto una bebida|outro idioma.*pedido|n veio)\b/]
+  ['occurrence.missing_item', /\b(i need help with a missing item|falto una bebida|outro idioma.*pedido|n veio|item faltando)\b/]
 ]);
 
 const ACTIONS = Object.freeze({
@@ -189,6 +196,18 @@ function extractEntities(content, context = {}) {
   return output;
 }
 
+function addOkeEntities(entities, content, party) {
+  const text = normalizePublicText(content);
+  if (party.value) entities.party_size = { value: party.value, state: 'provided', provenance: 'message', confidence: party.confidence };
+  if (/\b(?:retirada|retirar|buscar).{0,30}\b(?:as|a)\s+\d{1,2}(?:h|:\d{2})\b/u.test(text)) {
+    entities.pickup_time = { value: 'pickup_time_provided', state: 'provided', provenance: 'message', confidence: 0.9 };
+  }
+  if (/\b(?:quero|desejo|gostaria|vamos)\b.{0,80}\b(?:sushi|entrada|prato|sake|temaki|sashimi|nigiri|roll)\b/u.test(text)) {
+    entities.requested_items = { value: 'requested_items_provided', state: 'provided', provenance: 'message', confidence: 0.8, raw_value_discarded: true };
+  }
+  return entities;
+}
+
 function behaviorFor(intentId, content, intentDefinition) {
   const text = normalizeText(content);
   const capability = DEFAULT_CAPABILITY[intentId] || intentDefinition.capability_candidates[0];
@@ -259,8 +278,9 @@ class NativeConversationEngine {
     assertFeature(this.flags, 'conversationEngineV1');
     const content = String(input.content || '');
     const context = input.context || {};
+    const publicTopic = detectPublicTopic(content);
     const candidates = extractPartyCandidates(content);
-    if (candidates.length > 1 && candidates.some((value) => value > 8)) {
+    if (publicTopic !== 'oke_pickup' && candidates.length > 1 && candidates.some((value) => value > 8)) {
       const intent = this.intentById.get('reservation.large_group');
       return this.finish({
         intent: intent.id,
@@ -286,25 +306,34 @@ class NativeConversationEngine {
       }, content);
     }
     const party = extractPartySize(content);
-    if (party.value > 8) return this.largeGroup(content, context, party);
+    if (publicTopic !== 'oke_pickup' && party.value > 8) return this.largeGroup(content, context, party);
     const continuedIntent = context.short_reply_resolved === true && this.intentById.has(context.continuation_intent)
       ? context.continuation_intent
       : null;
-    const intentId = continuedIntent || this.classifyIntent(content);
+    const classifiedIntent = this.classifyIntent(content);
+    const publicIntent = intentForPublicTopic(publicTopic);
+    const intentId = continuedIntent || (publicTopic === 'oke_pickup' || classifiedIntent === 'conversation.ambiguous' ? publicIntent : classifiedIntent) || classifiedIntent;
+    const effectivePublicTopic = publicIntent === intentId ? publicTopic : null;
     const intent = this.intentById.get(intentId);
     const entities = extractEntities(content, context);
+    if (effectivePublicTopic) entities.unit = { value: this.catalogs.publicInfo.unit.unit_id, state: 'confirmed', provenance: 'confirmed_public_catalog', confidence: 1 };
+    if (effectivePublicTopic === 'oke_pickup') addOkeEntities(entities, content, party);
     const known = new Set([
       ...Object.entries(context).filter(([, value]) => value != null && value !== '').map(([key]) => key),
       ...Object.keys(entities)
     ]);
-    const fieldsMissing = (intent.minimum_entities || []).filter((field) => !known.has(field));
-    const behavior = behaviorFor(intentId, content, intent);
-    let idealResponse = null;
+    const staticInformation = ['address', 'opening_hours', 'holiday_hours', 'dining_room_menu', 'delivery_menu', 'institutional_menu', 'delivery_options', 'restaurant_model', 'executive_lunch', 'tata_suggestion', 'payment', 'corkage', 'valet_information'];
+    const fieldsMissing = staticInformation.includes(effectivePublicTopic)
+      ? []
+      : (intent.minimum_entities || []).filter((field) => field !== 'occurrence_reference' && !known.has(field));
+    const behavior = { ...behaviorFor(intentId, content, intent), ...(publicBehaviorOverride(effectivePublicTopic) || {}) };
+    const publicResponse = publicInformationResponse({ topic: effectivePublicTopic, content, publicInfo: this.catalogs.publicInfo, fieldsMissing, intentId });
+    let idealResponse = publicResponse;
     if (intentId === 'conversation.ambiguous') idealResponse = 'Quero entender bem antes de seguir. Qual é o assunto principal?';
-    if (intentId.startsWith('occurrence.')) idealResponse = 'Vou registrar somente o que está confirmado e manter o caso aberto para acompanhamento.';
+    if (intentId.startsWith('occurrence.') && !idealResponse) idealResponse = 'Vou registrar somente o que está confirmado e manter o caso aberto para acompanhamento.';
     return this.finish({
       intent: intentId,
-      subintent: intentId.split('.').slice(1).join('.'),
+      subintent: effectivePublicTopic === 'oke_pickup' ? 'evento_oke_retirada' : (effectivePublicTopic || intentId.split('.').slice(1).join('.')),
       entities: Object.keys(entities).length ? entities : { expected: intent.minimum_entities || [], values: 'synthetic_or_missing_only' },
       origin: entities.order_channel?.value || context.origin || (intentId.startsWith('reservation.') || intentId.startsWith('waitlist.') ? 'dining_room' : 'unknown'),
       severity: intent.default_severity,
@@ -316,6 +345,11 @@ class NativeConversationEngine {
       legacy_blocks: intent.legacy_blocks,
       scenario_id: null,
       basis_classifications: [intent.classification || 'INFERÊNCIA'],
+      information_source: publicResponse ? {
+        classification: this.catalogs.publicInfo.classification,
+        unit_id: this.catalogs.publicInfo.unit.unit_id,
+        catalog_version: this.catalogs.publicInfo.version
+      } : null,
       confidence: intentId === 'conversation.ambiguous' ? 0.2 : 0.86
     }, content);
   }
@@ -370,6 +404,7 @@ module.exports = {
   extractSafeItem,
   detectNativeMissingItem,
   extractEntities,
+  addOkeEntities,
   behaviorFor,
   NativeConversationEngine
 };
