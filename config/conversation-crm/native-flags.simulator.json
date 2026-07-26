@@ -1,0 +1,20 @@
+{
+  "schema_version": "conversation-native-feature-flags-v1",
+  "environment": "test",
+  "flags": {
+    "conversationNativeV1": true,
+    "conversationGatewayV1": true,
+    "conversationEngineV1": true,
+    "conversationCrmV1": true,
+    "deliveryosCapabilityRouterV1": true,
+    "deliveryosStateHubV1": true,
+    "deliveryosActionExecutorV1": true,
+    "deliveryosEvidenceStoreV1": true,
+    "deliveryosHumanQueueV1": true,
+    "deliveryosNotificationEngineV1": true,
+    "simulatedDriversV1": true,
+    "realDriversReadV1": false,
+    "realDriversWriteV1": false
+  }
+}
+
