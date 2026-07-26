@@ -184,6 +184,15 @@ function detectNativeMissingItem(content) {
 function extractEntities(content, context = {}) {
   const text = normalizeText(content);
   const output = {};
+  const partyCandidates = extractPartyCandidates(content);
+  if (partyCandidates.length === 1) {
+    output.party_size = { value: partyCandidates[0], state: 'provided', provenance: 'message', confidence: 0.95 };
+  }
+  if (/\bhoje\b/u.test(text)) output.date = { value: 'relative_today', state: 'provided', provenance: 'message', confidence: 0.9 };
+  if (/\bamanha\b/u.test(text)) output.date = { value: 'relative_tomorrow', state: 'provided', provenance: 'message', confidence: 0.9 };
+  if (/\b(?:as|a)\s+\d{1,2}(?:h|:\d{2})\b/u.test(text)) {
+    output.time = { value: 'time_provided', state: 'provided', provenance: 'message', confidence: 0.9 };
+  }
   const orderReference = extractOrderReference(content);
   const orderChannel = extractOrderChannel(text);
   if (orderReference) output.order_reference = { value: orderReference, state: 'provided', provenance: 'message', confidence: 0.98 };

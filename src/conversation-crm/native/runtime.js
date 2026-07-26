@@ -18,7 +18,7 @@ const { EvidenceStore } = require('./evidence-store');
 const { NotificationEngine } = require('./notification');
 const { NativeObservability } = require('./observability');
 const { DriverHealthMonitor } = require('./health');
-const { extractEntities, normalizeText } = require('./engine');
+const { extractEntities, extractPartyCandidates, normalizeText } = require('./engine');
 const { createRuntimeConversationEngine } = require('./engine-factory');
 const { composeConversationalResponse } = require('./conversational-composer');
 const { loadPlaceholderRegistry } = require('./placeholders');
@@ -66,6 +66,11 @@ function isComplement(content) {
 function resolveShortReply(content, pendingFields = []) {
   const text = normalizeText(content);
   const output = {};
+  const partyCandidates = extractPartyCandidates(content);
+  if (pendingFields.includes('party_size') && partyCandidates.length === 1) output.party_size = partyCandidates[0];
+  if (pendingFields.includes('date') && /\bhoje\b/u.test(text)) output.date = 'relative_today';
+  if (pendingFields.includes('date') && /\bamanha\b/u.test(text)) output.date = 'relative_tomorrow';
+  if (pendingFields.includes('time') && /\b(?:as|a)\s+\d{1,2}(?:h|:\d{2})\b/u.test(text)) output.time = 'time_provided';
   if (pendingFields.includes('order_channel')) {
     if (/\bifood\b/u.test(text)) output.order_channel = 'marketplace';
     else if (/\bdelivery\b/u.test(text)) output.order_channel = 'own_delivery';

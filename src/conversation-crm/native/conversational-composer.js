@@ -3,6 +3,7 @@
 const { deepFreeze } = require('./catalogs/operational');
 const { sha256 } = require('./deterministic');
 const { composeResponse } = require('./response-composer');
+const { chooseResponseStrategy } = require('./response-strategies');
 
 function conversationStage(input = {}) {
   if (Number(input.turn_order) > 1 || input.previous_responses?.length) return 'continuation';
@@ -80,10 +81,18 @@ function composeConversationalResponse(input) {
     input.classification.intent,
     plan.conversation_stage
   ].join('|')).slice(0, 16);
+  const text = chooseResponseStrategy({
+    classification: input.classification,
+    result: input.result,
+    handoff: input.handoff,
+    plan,
+    legacyText: legacy.text,
+    variationKey
+  });
   return deepFreeze({
     ...legacy,
     schema_version: 'conversation-response-v1.3',
-    text: legacy.text,
+    text,
     previous_text: legacy.text,
     plan,
     variation_key: variationKey,
