@@ -345,6 +345,64 @@ test("o WebView é trancado na origem do piloto e sem geolocalização própria"
   assert.match(a, /class OriginLockedClient/);
 });
 
+test("WebView: superfície reduzida — sem arquivo, janela, download ou form data", () => {
+  const a = stripComments(read("app/src/main/java/br/com/tata/entregas/ui/MainActivity.kt"));
+  for (const [regra, padrao] of [
+    ["acesso a arquivo por file://", /allowFileAccessFromFileURLs = false/],
+    ["acesso universal por file://", /allowUniversalAccessFromFileURLs = false/],
+    ["banco do WebView", /databaseEnabled = false/],
+    ["popup automático", /javaScriptCanOpenWindowsAutomatically = false/],
+    ["múltiplas janelas", /setSupportMultipleWindows\(false\)/],
+    ["autocompletar de formulário", /saveFormData = false/],
+    ["download", /setDownloadListener/],
+    ["cookie de terceiro", /setAcceptThirdPartyCookies\([^,]+, false\)/],
+  ] as Array<[string, RegExp]>) {
+    assert.match(a, padrao, `WebView sem trava de ${regra}`);
+  }
+});
+
+test("inspeção remota do WebView só existe em debug", () => {
+  const a = stripComments(read("app/src/main/java/br/com/tata/entregas/ui/MainActivity.kt"));
+  assert.match(
+    a,
+    /setWebContentsDebuggingEnabled\(BuildConfig\.DEBUG\)/,
+    "em release, USB conectado poderia ler a tela e chamar a ponte",
+  );
+  assert.equal(
+    /setWebContentsDebuggingEnabled\(true\)/.test(a),
+    false,
+    "debugging nunca pode ser ligado incondicionalmente",
+  );
+});
+
+test("certificado inválido é sempre recusado — nunca proceed()", () => {
+  const a = stripComments(read("app/src/main/java/br/com/tata/entregas/ui/MainActivity.kt"));
+  assert.match(a, /override fun onReceivedSslError/, "a decisão precisa ser explícita no código");
+  assert.match(a, /handler\?\.cancel\(\)/);
+  assert.equal(
+    /handler\??\.proceed\(\)/.test(a),
+    false,
+    "aceitar certificado inválido anula o HTTPS inteiro",
+  );
+});
+
+test("nenhuma credencial viaja em URL", () => {
+  // Token vai por header Authorization. Query string entra em histórico,
+  // em log de servidor e em Referer.
+  for (const f of kotlinFiles) {
+    const src = stripComments(readFileSync(f, "utf8"));
+    for (const padrao of [/\?token=/, /&token=/, /\?password=/, /\?senha=/]) {
+      assert.equal(
+        padrao.test(src),
+        false,
+        `credencial em URL em ${relative(ROOT, f)}`,
+      );
+    }
+  }
+  const api = stripComments(read("app/src/main/java/br/com/tata/entregas/sync/EntregasApi.kt"));
+  assert.match(api, /setRequestProperty\("Authorization", "Bearer \$it"\)/);
+});
+
 test("nenhum trust-all de TLS no cliente HTTP", () => {
   const api = read("app/src/main/java/br/com/tata/entregas/sync/EntregasApi.kt");
   for (const perigo of [

@@ -11,10 +11,21 @@ repositories {
  * mexer no portão lá, é aqui que quebra. Uma cópia daria a ilusão de
  * cobertura enquanto o código real seguia outro caminho.
  */
+/*
+ * Os dois arquivos do aplicativo que não dependem de Android:
+ *  - CaptureGate: o portão de privacidade;
+ *  - EntregasApi: o cliente HTTP, onde mora o tratamento de TLS e a
+ *    classificação de erro entre "tenta de novo" e "o servidor recusou".
+ *
+ * `BuildConfig` é gerado pelo build Android e não existe aqui, então
+ * EntregasApi entra só como compilação — o suficiente para pegar erro de
+ * tipo na camada de rede sem precisar do SDK.
+ */
 sourceSets {
     main {
         kotlin.setSrcDirs(listOf("../app/src/main/java"))
         kotlin.include("**/location/CaptureGate.kt")
+        kotlin.include("**/sync/EntregasApi.kt")
     }
     test {
         kotlin.setSrcDirs(listOf("../app/src/test/java"))
@@ -23,6 +34,9 @@ sourceSets {
 }
 
 dependencies {
+    // `org.json` vem do Android em produção; aqui usamos a implementação de
+    // referência, que é a mesma API.
+    implementation("org.json:json:20240303")
     testImplementation("junit:junit:4.13.2")
 }
 
@@ -37,6 +51,9 @@ val verificarFontes by tasks.registering {
         val test = sourceSets.test.get().kotlin.files
         require(main.any { it.name == "CaptureGate.kt" }) {
             "CaptureGate.kt não foi encontrado — a verificação passaria vazia"
+        }
+        require(main.any { it.name == "EntregasApi.kt" }) {
+            "EntregasApi.kt não foi encontrado — a verificação passaria vazia"
         }
         require(test.any { it.name == "CaptureGateTest.kt" }) {
             "CaptureGateTest.kt não foi encontrado — a verificação passaria vazia"

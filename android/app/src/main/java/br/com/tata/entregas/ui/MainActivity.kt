@@ -78,9 +78,24 @@ class MainActivity : AppCompatActivity(), EntregasJsBridge.NativeActions {
             settings.mediaPlaybackRequiresUserGesture = true
             settings.mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_NEVER_ALLOW
             settings.setGeolocationEnabled(false) // quem captura é o serviço nativo
+            settings.allowFileAccessFromFileURLs = false
+            settings.allowUniversalAccessFromFileURLs = false
+            settings.databaseEnabled = false
+            settings.javaScriptCanOpenWindowsAutomatically = false
+            settings.setSupportMultipleWindows(false)
+            settings.saveFormData = false
             webViewClient = OriginLockedClient(BuildConfig.ENTREGAS_BASE_URL)
+            // Sem downloads: nada que a página ofereça deve virar arquivo no
+            // aparelho do motoboy. Um PDF de pedido salvo na pasta pública
+            // sobreviveria ao encerramento da viagem.
+            setDownloadListener { _, _, _, _, _ -> }
             addJavascriptInterface(EntregasJsBridge(this@MainActivity), Bridge.JS_INTERFACE_NAME)
         }
+        // Cookies de terceiros não têm uso aqui — só falamos com o piloto.
+        android.webkit.CookieManager.getInstance().setAcceptThirdPartyCookies(webView, false)
+        // Inspeção remota SOMENTE no build de debug. Em release, um aparelho
+        // conectado por USB poderia ler a tela e chamar a ponte nativa.
+        WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG)
         setContentView(webView)
         Bridge.attach(webView)
 
@@ -245,5 +260,25 @@ class OriginLockedClient(baseUrl: String) : WebViewClient() {
     ): Boolean {
         val host = request?.url?.host ?: return true
         return host != allowedHost
+    }
+
+    /**
+     * Certificado inválido derruba o carregamento, sempre.
+     *
+     * O default do WebView já cancela, mas o método é sobrescrito aqui de
+     * propósito: é a linha que um desenvolvedor apressado troca por
+     * `handler.proceed()` quando o certificado local não está instalado no
+     * aparelho. Deixá-la explícita, com este comentário, torna a troca uma
+     * decisão visível no diff em vez de um detalhe esquecido.
+     *
+     * Se der erro de certificado, a saída é instalar a CA no aparelho — não
+     * aceitar qualquer certificado.
+     */
+    override fun onReceivedSslError(
+        view: WebView?,
+        handler: android.webkit.SslErrorHandler?,
+        error: android.net.http.SslError?,
+    ) {
+        handler?.cancel()
     }
 }
