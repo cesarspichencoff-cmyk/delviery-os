@@ -433,6 +433,22 @@ class NativeConversationRuntime {
           context: mergedContext
         }
       });
+      if (response.validation.fallback_used) {
+        this.store.append({
+          event_id: `response_validation_${gateway.input.message_id}`,
+          idempotency_key: `response-validation:${gateway.input.message_id}`,
+          type: 'runtime.response_validation_failed',
+          occurred_at: this.clock.iso(),
+          payload: {
+            message_id: gateway.input.message_id,
+            conversation_id: gateway.input.conversation_id,
+            case_id: caseId,
+            finding_codes: response.validation.rejected_findings,
+            fallback_used: true,
+            synthetic: true
+          }
+        });
+      }
       this.stage(raw.message_id, 'response_composed', { response_status: result.status }, options.crashAfter);
       const responseId = `response_${sha256(gateway.input.message_id).slice(0, 20)}`;
       this.crm.recordResponse({ response_id: responseId, case_id: caseId, conversation_id: gateway.input.conversation_id, status_reflected: result.status, text_hash: sha256(response.text), handoff_confirmed: handoff?.status === 'confirmed', synthetic: true });

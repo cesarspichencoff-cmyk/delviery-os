@@ -4,6 +4,12 @@ const { deepFreeze } = require('./catalogs/operational');
 const { sha256 } = require('./deterministic');
 const { composeResponse } = require('./response-composer');
 const { chooseResponseStrategy } = require('./response-strategies');
+const {
+  validateComposedResponse,
+  safeHumanizedFallback,
+  repetitionMetrics,
+  compareResponses
+} = require('./response-validator');
 
 function conversationStage(input = {}) {
   if (Number(input.turn_order) > 1 || input.previous_responses?.length) return 'continuation';
@@ -81,7 +87,7 @@ function composeConversationalResponse(input) {
     input.classification.intent,
     plan.conversation_stage
   ].join('|')).slice(0, 16);
-  const text = chooseResponseStrategy({
+  const proposedText = chooseResponseStrategy({
     classification: input.classification,
     result: input.result,
     handoff: input.handoff,
@@ -89,6 +95,35 @@ function composeConversationalResponse(input) {
     legacyText: legacy.text,
     variationKey
   });
+  const firstValidation = validateComposedResponse({
+    text: proposedText,
+    legacy_text: legacy.text,
+    classification: input.classification,
+    result: input.result,
+    plan
+  });
+  const fallbackText = firstValidation.passed ? null : safeHumanizedFallback({
+    legacy_text: legacy.text,
+    classification: input.classification,
+    result: input.result,
+    plan
+  });
+  const text = fallbackText || proposedText;
+  const validation = firstValidation.passed
+    ? firstValidation
+    : {
+        ...validateComposedResponse({
+          text,
+          legacy_text: legacy.text,
+          classification: input.classification,
+          result: input.result,
+          plan
+        }),
+        fallback_used: true,
+        rejected_findings: firstValidation.findings
+      };
+  const repetition = repetitionMetrics(text, conversation.previous_responses || []);
+  const comparison = compareResponses(legacy.text, text, validation, repetition);
   return deepFreeze({
     ...legacy,
     schema_version: 'conversation-response-v1.3',
@@ -97,8 +132,9 @@ function composeConversationalResponse(input) {
     plan,
     variation_key: variationKey,
     humanized: true,
-    validation: { passed: true, fallback_used: false, findings: [] },
-    repetition: { warnings: [], opening: null, closing: null }
+    validation,
+    repetition,
+    comparison
   });
 }
 
