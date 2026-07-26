@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 'use strict';
 
-const crypto = require('node:crypto');
 const fs = require('node:fs');
 const fsp = require('node:fs/promises');
 const path = require('node:path');
 const { loadPortableConfig, resolveProjectRelative, validateConfig, LOCAL_CONFIG_FILE } = require('../../src/conversation-crm/config');
 const { loadFlowBundle } = require('../../src/conversation-crm/flows/loader');
+const { canonicalJsonHash } = require('../../src/conversation-crm/native/deterministic');
 
 const PACKAGE_FILES = Object.freeze(['portable-config.json', 'flows.v0.json', 'rules.v0.json', 'policies.v0.json']);
 
@@ -28,7 +28,7 @@ function parseArgs(argv) {
 }
 
 function hashFile(filePath) {
-  return crypto.createHash('sha256').update(fs.readFileSync(filePath)).digest('hex');
+  return canonicalJsonHash(fs.readFileSync(filePath));
 }
 
 async function atomicWrite(filePath, content) {
@@ -105,10 +105,7 @@ async function importConfig(config, inputRelative, outputRelative) {
   for (const fileName of PACKAGE_FILES.slice(1)) {
     await fsp.copyFile(path.join(input.resolved, fileName), path.join(output.resolved, fileName));
   }
-  const activated = {
-    ...imported,
-    paths: { ...imported.paths, flow_config_root: output.relative }
-  };
+  const activated = imported;
   const localConfig = resolveProjectRelative(LOCAL_CONFIG_FILE, { projectRoot: config.project_root });
   await atomicWrite(localConfig.resolved, `${JSON.stringify(activated, null, 2)}\n`);
   loadPortableConfig({ projectRoot: config.project_root, env: {} });

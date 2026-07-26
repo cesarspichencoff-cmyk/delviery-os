@@ -75,6 +75,12 @@ function loadPortableConfig(options = {}) {
     key,
     resolveProjectRelative(value, { projectRoot, label: key })
   ]));
+  const flowFiles = ['flows.v0.json', 'rules.v0.json', 'policies.v0.json'];
+  const flowRootAvailable = flowFiles.every((fileName) => fs.existsSync(path.join(paths.flow_config_root.resolved, fileName)));
+  if (!flowRootAvailable && selectedFile === LOCAL_CONFIG_FILE && !requestedFile) {
+    return loadPortableConfig({ ...options, projectRoot, configFile: DEFAULT_CONFIG_FILE, env: { ...env, DELIVERYOS_CRM_CONFIG_FILE: undefined } });
+  }
+  if (!flowRootAvailable) throw portableError('CONFIGURACAO_INVALIDA');
   const envPort = env.DELIVERYOS_CRM_SIMULATOR_PORT;
   const port = envPort === undefined ? Number(raw.server.port) : Number(envPort);
   if (!Number.isInteger(port) || port < 1 || port > 65535) throw portableError('PORTA_INVALIDA');

@@ -13,6 +13,23 @@ function canonicalJson(value) {
   return JSON.stringify(canonicalize(value));
 }
 
+function canonicalText(value, options = {}) {
+  const source = Buffer.isBuffer(value) ? value.toString('utf8') : String(value ?? '');
+  const withoutBom = source.charCodeAt(0) === 0xFEFF ? source.slice(1) : source;
+  const normalized = withoutBom.replace(/\r\n?/g, '\n');
+  if (options.final_newline === 'required') return `${normalized.replace(/\n*$/, '')}\n`;
+  if (options.final_newline === 'forbidden') return normalized.replace(/\n*$/, '');
+  return normalized;
+}
+
+function canonicalJsonText(value) {
+  return canonicalJson(JSON.parse(canonicalText(value, { final_newline: 'forbidden' })));
+}
+
+function canonicalJsonHash(value) {
+  return sha256(canonicalJsonText(value));
+}
+
 function sha256(value) {
   const input = Buffer.isBuffer(value) ? value : Buffer.from(typeof value === 'string' ? value : canonicalJson(value));
   return crypto.createHash('sha256').update(input).digest('hex');
@@ -93,4 +110,4 @@ class DeterministicIds {
   snapshot() { return Object.fromEntries(this.counters); }
 }
 
-module.exports = { canonicalize, canonicalJson, sha256, SeededRandom, DeterministicClock, DeterministicIds };
+module.exports = { canonicalize, canonicalJson, canonicalText, canonicalJsonText, canonicalJsonHash, sha256, SeededRandom, DeterministicClock, DeterministicIds };

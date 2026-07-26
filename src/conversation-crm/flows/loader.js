@@ -45,7 +45,7 @@ function validateRulesConfig(config) {
 
 function readJson(filePath, invalidCode) {
   try {
-    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    return JSON.parse(fs.readFileSync(filePath, 'utf8').replace(/^\uFEFF/u, ''));
   } catch {
     throw flowError(invalidCode);
   }
