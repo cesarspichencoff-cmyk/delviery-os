@@ -38,6 +38,12 @@ import {
 } from "../src/entregas/consent/acknowledgement";
 import { loadUnitConfig, type UnitConfig } from "../src/entregas/gps/unit-config";
 import { buildOperationalTrack, buildRawTrack } from "../src/entregas/gps/track-projection";
+import {
+  buildTripTimeline,
+  summarizeArrival,
+  timelineIsClean,
+} from "../src/entregas/pilot/trip-timeline";
+import { freshnessOf } from "../src/entregas/pilot/dispatch-projection";
 import type { GPSPoint } from "../src/entregas/gps/types";
 
 const configPath = process.env.ENTREGAS_PILOT_CONFIG;
@@ -390,6 +396,50 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
         results.push({ event_id: ev.event_id, ok: r.ok, error: r.ok ? undefined : r.error });
       }
       return json(res, 200, { ok: true, results });
+    }
+
+    if (url.pathname === "/api/trip/timeline" && req.method === "GET") {
+      const actor = requestActor(token);
+      if (!actor) return json(res, 401, { ok: false, human: "Acesso nao autorizado." });
+      const tripId = (url.searchParams.get("trip_id") || "").trim();
+      const events = await facade.listTripEvents(tripId);
+      const timeline = buildTripTimeline(events);
+      // Trava de runtime, nao so' de teste: timeline suja nao vai para a tela.
+      if (!timelineIsClean(timeline)) {
+        log.warn("route_access", "Timeline bloqueada por conteudo inesperado.", tripId);
+        return json(res, 500, { ok: false, human: "Nao foi possivel montar a linha do tempo." });
+      }
+      const snap = (await facade.snapshot()) as {
+        trips?: Array<{ trip_id: string; deliveries: Array<{ delivery_id: string }> }>;
+      };
+      const trip = (snap.trips ?? []).find((t) => t.trip_id === tripId);
+      return json(res, 200, {
+        ok: true,
+        trip_id: tripId,
+        timeline,
+        arrivals: (trip?.deliveries ?? []).map((d) => summarizeArrival(d.delivery_id, timeline)),
+      });
+    }
+
+    if (url.pathname === "/api/trip/location" && req.method === "GET") {
+      const actor = requestActor(token);
+      if (!actor) return json(res, 401, { ok: false, human: "Acesso nao autorizado." });
+      const tripId = (url.searchParams.get("trip_id") || "").trim();
+      const points = pointsByTrip.get(tripId) ?? [];
+      const last = points[points.length - 1];
+      const auth = authorizeRouteAccess(actor.role);
+      // Freshness e' honesto para todo mundo; coordenada, so' para papel
+      // autorizado. Saber "esta' sem sinal ha' 10 minutos" nao expoe ninguem.
+      return json(res, 200, {
+        ok: true,
+        trip_id: tripId,
+        ...freshnessOf(last, points.length, new Date()),
+        coordinates_visible: auth.allowed,
+        last_point:
+          auth.allowed && last
+            ? { latitude: last.latitude, longitude: last.longitude, accuracy_m: last.accuracy_m }
+            : undefined,
+      });
     }
 
     if (url.pathname === "/api/trip/route" && req.method === "GET") {

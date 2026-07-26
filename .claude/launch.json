@@ -2,6 +2,12 @@
   "version": "0.0.1",
   "configurations": [
     { "name": "prototipo", "runtimeExecutable": "node", "runtimeArgs": ["tools/serve_prototipo.js"], "port": 5178 },
-    { "name": "v1", "runtimeExecutable": "node", "runtimeArgs": ["tools/servir_v1.js"], "port": 5179 }
+    { "name": "v1", "runtimeExecutable": "node", "runtimeArgs": ["tools/servir_v1.js"], "port": 5179 },
+    {
+      "name": "entregas-piloto",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["dist/tools/entregas_pilot_server.js"],
+      "port": 5193
+    }
   ]
 }

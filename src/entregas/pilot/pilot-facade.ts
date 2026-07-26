@@ -288,6 +288,22 @@ export class PilotApplicationFacade {
     }
   }
 
+  /**
+   * Eventos de uma viagem, para a timeline do console.
+   * Devolve o log cru; a traducao para linguagem de operacao e a limpeza de
+   * dado sensivel acontecem em trip-timeline.ts.
+   */
+  async listTripEvents(trip_id: string) {
+    const all = await this.uow.events.listAll();
+    const rec = await this.uow.trips.get(trip_id);
+    const deliveryIds = new Set((rec?.deliveries ?? []).map((d) => d.delivery_id));
+    return all.filter(
+      (e) =>
+        (e.object_type === "trip" && e.object_id === trip_id) ||
+        (e.object_type === "delivery" && deliveryIds.has(e.object_id)),
+    );
+  }
+
   async snapshot(): Promise<PilotSnapshot> {
     // reconstruir trips do cache + uow conhecidos
     const tripIds = new Set(this.tripCache.keys());

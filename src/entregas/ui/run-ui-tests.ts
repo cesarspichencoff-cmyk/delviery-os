@@ -250,7 +250,18 @@ console.log("\n=== ENTREGAS UI 3C.1 tests ===\n");
     );
     assert.ok(html.includes("addressSeq"));
     assert.ok(js.includes("address-seq") || js.includes("addr-chip"));
-    assert.ok(js.includes("Sem coordenadas") || html.includes("Sem coordenadas"));
+    // A invariante é "não existe mapa falso", e não uma frase específica: o
+    // console avisa que o mapa não está ligado e não desenha projeção
+    // pseudogeográfica a partir de dados que não são coordenada.
+    assert.ok(
+      js.includes("mapa da rota") || html.includes("mapa da rota"),
+      "console precisa dizer que o mapa não está ligado",
+    );
+    for (const proibido of ["projectLatLon", "fakeMap", "pseudoGeo", "maplibre"]) {
+      assert.equal(js.includes(proibido), false, `mapa pseudogeográfico: ${proibido}`);
+    }
+    // Coordenada nunca é escrita direto no markup do console.
+    assert.equal(/-?\d{1,3}\.\d{4,}/.test(html), false, "coordenada no HTML do console");
   });
 
   await test("saída e confirmação via facade", async () => {

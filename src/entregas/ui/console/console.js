@@ -6,6 +6,11 @@ import {
   renderError,
   connectionState,
 } from "../shared/client.js";
+import {
+  createDispatchLocation,
+  renderLocationLine,
+  renderTimeline,
+} from "./dispatch-location.js";
 
 const $ = (id) => document.getElementById(id);
 let snap = null;
@@ -135,8 +140,31 @@ function renderTrips() {
       focusTripId = el.getAttribute("data-focus");
       renderFocus();
       renderTrips();
+      refreshFocusLocation();
     });
   });
+}
+
+
+/* Localizacao e linha do tempo da viagem em foco.
+   Busca so' quando ha' viagem selecionada: sem foco, nada e' consultado. */
+const dispatchLocation = createDispatchLocation({
+  fetchJson: async (url) => {
+    const r = await fetch(url);
+    return r.ok ? r.json() : null;
+  },
+  onRender: (st) => {
+    renderLocationLine($("locLine"), st);
+    renderTimeline($("tripTimeline"), st);
+  },
+});
+
+function refreshFocusLocation() {
+  if (!focusTripId) {
+    dispatchLocation.refresh(null);
+    return;
+  }
+  void dispatchLocation.refresh(focusTripId);
 }
 
 function renderFocus() {
@@ -200,7 +228,8 @@ function renderFocus() {
   } else if (active.state === "em_rota") {
     status.innerHTML = `<span class="dot green"></span> Em rota`;
     title.textContent = `Viagem com ${riderName(active.courier_actor_id)}.`;
-    sub.textContent = "Acompanhamento por confirmações de parada — sem localização ao vivo.";
+    sub.textContent =
+      "Acompanhamento por confirmações de parada. A localização ao vivo aparece abaixo quando o motoboy está com o GPS ligado.";
     detail.innerHTML = "";
   } else if (active.state === "retornando") {
     status.innerHTML = `<span class="dot amber"></span> Retorno`;
@@ -239,7 +268,7 @@ function renderFocus() {
 
   mapNote.hidden = false;
   mapNote.textContent =
-    "Sem coordenadas confiáveis — destinos em sequência de endereços. Mapa só com geocodificação real (experimental em /map-poc/).";
+    "Destinos aparecem como sequência de endereços. O mapa da rota depende de geocodificação real e ainda não está ligado.";
 
   const btns = [];
   if (active.state === "preparando_saida") {

@@ -349,3 +349,47 @@ body {
   color: var(--brand-action);
   font-weight: 500;
 }
+
+/* ---- Localizacao e linha do tempo da viagem ----
+   A cor carrega significado: verde so' quando a posicao serve para decidir.
+   Amarelo e' "cuidado, isso e' antigo"; vermelho e' "voce esta' no escuro". */
+.loc-line {
+  margin: 10px 0 4px;
+  font-size: 13px;
+  letter-spacing: 0.01em;
+  color: var(--text-dim, #9aa4a8);
+}
+.loc-line[data-freshness="current"] { color: var(--ok, #6fd08c); }
+.loc-line[data-freshness="stale"],
+.loc-line[data-freshness="inaccurate"] { color: var(--warn, #e0b341); }
+.loc-line[data-freshness="offline"] { color: var(--warn, #e0b341); }
+.loc-line[data-freshness="unavailable"],
+.loc-line[data-freshness="permission_denied"] { color: var(--danger, #e06c6c); }
+.loc-line[data-freshness="unknown"] { color: var(--text-dim, #9aa4a8); }
+
+.timeline {
+  margin-top: 10px;
+  max-height: 220px;
+  overflow-y: auto;
+  font-size: 12.5px;
+}
+.timeline:empty { display: none; }
+.timeline .tl-row {
+  display: grid;
+  grid-template-columns: 44px 1fr auto;
+  gap: 8px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--line-soft, rgba(255, 255, 255, 0.06));
+  align-items: baseline;
+}
+.timeline .tl-time { color: var(--text-dim, #9aa4a8); font-variant-numeric: tabular-nums; }
+.timeline .tl-author {
+  color: var(--text-dim, #9aa4a8);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+/* So' a confirmacao de entrega ganha peso: e' o unico desfecho real. */
+.timeline .tl-row[data-confirms="true"] .tl-label { color: var(--ok, #6fd08c); font-weight: 600; }
+.timeline .tl-row[data-author="sistema"] .tl-label { color: var(--text-dim, #cfd6d8); }
+.timeline .shadow { color: var(--text-dim, #9aa4a8); font-style: italic; }
