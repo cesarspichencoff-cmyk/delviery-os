@@ -172,3 +172,28 @@ Para executar em outro computador, copie o repositório sem `node_modules`, runt
 - `xlsx@0.18.5` mantém vulnerabilidade alta preexistente. O importador deve permanecer local, privado e restrito a arquivo conhecido; não pode virar endpoint público.
 
 Roadmap condicionado a novas autorizações: contrato e homologação individual de cada driver real, gestão de segredos fora do Git, observabilidade de produção, retenção/rotação, testes de carga e concorrência multiprocesso, segurança independente e preenchimento aprovado dos dados reais.
+
+## Estado após o sprint corretivo V1.1
+
+A primeira implementação, no commit `d3c49fe57c575f08c64ccd4326166a379d613fb2`, foi bloqueada pela rechecagem independente. O sprint V1.1 corrigiu somente os bloqueadores reproduzidos, sem habilitar produção nem integração externa:
+
+- a mensagem bruta deixou de ser persistida; somente metadados sanitizados e hash operacional permanecem;
+- o scanner de privacidade passou a ser independente do sanitizador e falha com raiz ausente, zero arquivos, erro de leitura ou controle positivo não detectado;
+- hashes de catálogos e configurações passaram a ser semânticos e independentes de BOM, LF/CRLF e newline final;
+- `scenario_id` deixou de participar da classificação; o oráculo do catálogo ficou restrito ao executor de testes;
+- contexto multiturno passou a separar conversa, caso, pedido, turno, revisão, correção e fatos substituídos;
+- mensagens conversacionais válidas não são mais enviadas à quarentena por divergência de conteúdo;
+- a notificação sintética do cenário `TATA-SC-194` agora percorre o caminho real do runtime, com idempotência;
+- exportação e importação de configuração foram estabilizadas para dois ciclos consecutivos.
+
+O catálogo continua com 200 cenários, 51 intents, 39 capacidades e os 35 blocos legados. R05 e O02 permanecem cobertos. A suíte do módulo possui 210 testes após a adição das regressões corretivas.
+
+O hash canônico atual do catálogo é `865df8e2f247e1824eb01f9eeba4683219ff3cf4c8cbd9861508dfd108c93556`. Ele foi reproduzido em duas cópias limpas, com caminhos diferentes e políticas LF/CRLF distintas.
+
+### Limites mantidos
+
+- nenhum driver real, mensagem real, endpoint externo ou dado real foi ativado;
+- concorrência multiprocesso permanece não homologada;
+- a vulnerabilidade alta preexistente em `xlsx@0.18.5` permanece registrada e o importador continua restrito ao uso local;
+- dados institucionais ainda não aprovados continuam bloqueando produção;
+- esta correção não constitui autorização de produção.
