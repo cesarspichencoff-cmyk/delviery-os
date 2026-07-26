@@ -7,9 +7,10 @@
  * Não é produção multi-unidade.
  */
 import http from "node:http";
-import { readFileSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
+import https from "node:https";
+import { readFileSync, existsSync, mkdirSync, writeFileSync, appendFileSync } from "node:fs";
 import { join, extname } from "node:path";
-import { loadPilotConfig, resolveBanner } from "../src/entregas/pilot/pilot-config";
+import { loadPilotConfig, resolveBanner, findUserByToken } from "../src/entregas/pilot/pilot-config";
 import { createPilotLogger } from "../src/entregas/pilot/pilot-log";
 import { PilotApplicationFacade } from "../src/entregas/pilot/pilot-facade";
 import {
@@ -18,6 +19,26 @@ import {
   listBackups,
 } from "../src/entregas/pilot/pilot-backup";
 import { asInternalRiderActorId, asExternalCourierRef } from "../src/entregas/foundation/brands";
+import { resolveHttps, resolveBind, startupSummary } from "../src/entregas/pilot/https-config";
+import {
+  handleDeviceSession,
+  buildPolicies,
+  ingestGpsBatch,
+  handleTermAcknowledge,
+  authorizeRouteAccess,
+  buildRouteAudit,
+  DEVICE_API_VERSION,
+  type AuthorizedDevice,
+} from "../src/entregas/pilot/device-api";
+import { loadFlags } from "../src/entregas/gps/flags";
+import { TERM_ITAIM_V1, type LocationTerm } from "../src/entregas/consent/term";
+import {
+  AcknowledgementStore,
+  type AckStorage,
+} from "../src/entregas/consent/acknowledgement";
+import { loadUnitConfig, type UnitConfig } from "../src/entregas/gps/unit-config";
+import { buildOperationalTrack, buildRawTrack } from "../src/entregas/gps/track-projection";
+import type { GPSPoint } from "../src/entregas/gps/types";
 
 const configPath = process.env.ENTREGAS_PILOT_CONFIG;
 const cfg = loadPilotConfig(configPath);
@@ -27,7 +48,83 @@ const log = createPilotLogger(dataDir);
 const facade = new PilotApplicationFacade(cfg, log);
 const backupDir = join(dataDir, cfg.backup.dir || "backups");
 const PORT = Number(process.env.ENTREGAS_UI_PORT || cfg.port || 5193);
-const BIND = process.env.ENTREGAS_BIND || cfg.bind || "0.0.0.0";
+
+/*
+ * TLS e bind. Falha fechada: pedir HTTPS e não ter certificado derruba o
+ * boot em vez de cair para HTTP em silêncio — cair calado faria o GPS falhar
+ * no celular sem ninguém entender por quê.
+ */
+const httpsResolution = resolveHttps(process.env, { existsSync });
+if (httpsResolution.fatal) {
+  console.error(`[piloto] ${httpsResolution.reason}`);
+  process.exit(1);
+}
+const bindResolution = resolveBind(process.env, httpsResolution.enabled);
+if (bindResolution.fatal) {
+  console.error(`[piloto] ${bindResolution.reason}`);
+  process.exit(1);
+}
+const BIND = bindResolution.host;
+
+/* Configuração externa da unidade e do termo — ambas fora do Git. */
+function readJsonIfPresent<T>(file: string): T | null {
+  const p = join(process.cwd(), file);
+  if (!existsSync(p)) return null;
+  try {
+    return JSON.parse(readFileSync(p, "utf8")) as T;
+  } catch {
+    return null;
+  }
+}
+
+const unitRaw = readJsonIfPresent<Partial<UnitConfig>>(
+  process.env.ENTREGAS_UNIT_CONFIG || "config/entregas-unit-itaim.json",
+);
+const unitConfig = loadUnitConfig(unitRaw);
+
+const termOverride = readJsonIfPresent<Partial<LocationTerm>>(
+  process.env.ENTREGAS_TERM_CONFIG || "config/entregas-term.json",
+);
+/* Sem o arquivo do responsável, o termo continua o modelo — não publicável. */
+const activeTerm: LocationTerm = { ...TERM_ITAIM_V1, ...(termOverride ?? {}) };
+
+const gpsFlags = loadFlags(readJsonIfPresent("config/entregas-gps-flags.json") ?? undefined);
+
+const authorizedDevices: AuthorizedDevice[] =
+  readJsonIfPresent<AuthorizedDevice[]>("config/entregas-devices.json") ?? [];
+
+/* Aceites do termo: arquivo append-only, ao lado dos dados do piloto. */
+const ackFile = join(dataDir, "term-acks.jsonl");
+const ackStorage: AckStorage = {
+  appendLine: (line) => appendFileSync(ackFile, line + "\n", "utf8"),
+  readLines: () => (existsSync(ackFile) ? readFileSync(ackFile, "utf8").split("\n") : []),
+};
+const ackStore = new AcknowledgementStore(ackStorage);
+
+/**
+ * Autenticacao POR REQUISICAO para a API do aparelho.
+ *
+ * Nao usa `facade.getActor()`: a facade guarda o ultimo ator que fez login e
+ * responderia por uma requisicao sem token nenhum. Para o console isso e
+ * comportamento antigo; para um aparelho que fala pela rede, seria um furo.
+ * Aqui o token e resolvido a cada chamada, ou nao ha ator.
+ */
+function requestActor(tok: string): { actor_id: string; role: string } | null {
+  const user = findUserByToken(cfg, tok);
+  return user ? { actor_id: user.actor_id, role: user.role } : null;
+}
+
+/** O termo so e apresentavel depois que o responsavel preenche os campos. */
+function termPublishable(): boolean {
+  const body = buildPolicies({ flags: gpsFlags, term: activeTerm, unit: unitConfig }).body;
+  return (body.term as { publishable: boolean }).publishable;
+}
+
+/* Pontos aceitos, por viagem. Memória de sessão para a projeção do console;
+   a verdade durável do lote é a fila do aparelho + o outbox. */
+const pointsByTrip = new Map<string, GPSPoint[]>();
+const knownPointIds = new Set<string>();
+const routeAuditFile = join(dataDir, "route-access.jsonl");
 const ROOT = join(process.cwd(), "src", "entregas", "ui");
 const banner = resolveBanner(cfg);
 
@@ -114,7 +211,7 @@ window.entregasPilotLogin = async (token) => {
 
 let autoBackupTimer: ReturnType<typeof setInterval> | null = null;
 
-const server = http.createServer(async (req, res) => {
+const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
   if (req.method === "OPTIONS") {
     res.writeHead(204, {
       "Access-Control-Allow-Origin": "*",
@@ -147,8 +244,14 @@ const server = http.createServer(async (req, res) => {
         features: { ...(cfg.features || {}), demo_controls: demoControls },
         shell: false,
         copiloto: false,
-        gps_production: false,
+        gps_production: gpsFlags.gps_capture_enabled,
         multi_instance: false,
+        api_version: DEVICE_API_VERSION,
+        https: httpsResolution.enabled,
+        lan: bindResolution.exposedToLan,
+        term_publishable: termPublishable(),
+        unit_configured: unitConfig.ok,
+        devices_authorized: authorizedDevices.length,
       });
     }
 
@@ -175,6 +278,144 @@ const server = http.createServer(async (req, res) => {
       if (!u.ok && url.pathname.startsWith("/api/") && url.pathname !== "/api/health") {
         // allow health only
       }
+    }
+
+    /* ---------------- API do aparelho Android ---------------- */
+
+    if (url.pathname === "/api/device/session" && req.method === "POST") {
+      const actor = requestActor(token);
+      const body = JSON.parse(await readBody(req)) as Record<string, unknown>;
+      const r = handleDeviceSession({
+        input: body as never,
+        actorRole: actor?.role,
+        actorId: actor?.actor_id,
+        authorizedDevices,
+      });
+      log.info(
+        "device_session",
+        r.body.ok ? "Aparelho autenticado." : "Aparelho recusado.",
+        String(r.body.code ?? ""),
+      );
+      return json(res, r.status, { ...r.body, unit_id: cfg.unit_id });
+    }
+
+    if (url.pathname === "/api/policies" && req.method === "GET") {
+      if (!requestActor(token)) {
+        return json(res, 401, { ok: false, human: "Acesso nao autorizado." });
+      }
+      const r = buildPolicies({ flags: gpsFlags, term: activeTerm, unit: unitConfig });
+      return json(res, r.status, r.body);
+    }
+
+    if (url.pathname === "/api/term/acknowledge" && req.method === "POST") {
+      if (!requestActor(token)) {
+        return json(res, 401, { ok: false, human: "Acesso nao autorizado." });
+      }
+      const body = JSON.parse(await readBody(req)) as Record<string, unknown>;
+      const r = handleTermAcknowledge({
+        input: body,
+        term: activeTerm,
+        store: ackStore,
+        now: new Date(),
+      });
+      return json(res, r.status, r.body);
+    }
+
+    if (url.pathname === "/api/gps/batch" && req.method === "POST") {
+      const actor = requestActor(token);
+      if (!actor) return json(res, 401, { ok: false, human: "Acesso nao autorizado." });
+      if (!gpsFlags.gps_capture_enabled) {
+        return json(res, 409, {
+          ok: false,
+          code: "capture_disabled",
+          human: "A captura de localizacao esta desligada na configuracao.",
+        });
+      }
+      const body = JSON.parse(await readBody(req)) as {
+        points?: unknown[];
+        device_id?: string;
+      };
+      const snap = (await facade.snapshot()) as { trips?: Array<{ trip_id: string; state: string }> };
+      const activeTripIds = new Set<string>(
+        (snap.trips ?? [])
+          .filter((t) => t.state !== "encerrada" && t.state !== "cancelada")
+          .map((t) => t.trip_id),
+      );
+      const first = (body.points ?? [])[0] as Record<string, unknown> | undefined;
+      const deviceId = String(body.device_id ?? first?.device_id ?? "");
+      const r = ingestGpsBatch({
+        points: body.points ?? [],
+        activeTripIds,
+        knownPointIds,
+        sessionDeviceId: deviceId,
+        now: new Date(),
+      });
+      for (const pt of r.accepted_points) {
+        const list = pointsByTrip.get(pt.trip_id) ?? [];
+        list.push(pt);
+        pointsByTrip.set(pt.trip_id, list);
+      }
+      // Log sem coordenada: apenas contagens e motivos.
+      log.info(
+        "gps_batch",
+        "Lote de localizacao recebido.",
+        JSON.stringify({ aceitos: r.accepted, repetidos: r.duplicated, recusados: r.rejected, motivos: r.reasons }),
+      );
+      return json(res, 200, {
+        ok: true,
+        accepted: r.accepted,
+        duplicated: r.duplicated,
+        rejected: r.rejected,
+        reasons: r.reasons,
+      });
+    }
+
+    if (url.pathname === "/api/events/batch" && req.method === "POST") {
+      const actor = requestActor(token);
+      if (!actor) return json(res, 401, { ok: false, human: "Acesso nao autorizado." });
+      const body = JSON.parse(await readBody(req)) as {
+        events?: Array<{ event_id: string; command: Record<string, unknown> }>;
+      };
+      const results: Array<{ event_id: string; ok: boolean; error?: string }> = [];
+      for (const ev of body.events ?? []) {
+        // O aparelho propoe; o dominio dispoe. Nenhuma regra e reavaliada aqui.
+        const cmd = { ...ev.command } as Record<string, unknown>;
+        if (typeof cmd.courier_actor_id === "string") {
+          cmd.courier_actor_id = asInternalRiderActorId(cmd.courier_actor_id);
+        }
+        if (typeof cmd.rider_id === "string") {
+          cmd.rider_id = asInternalRiderActorId(cmd.rider_id);
+        }
+        const r = await facade.execute(cmd as never);
+        results.push({ event_id: ev.event_id, ok: r.ok, error: r.ok ? undefined : r.error });
+      }
+      return json(res, 200, { ok: true, results });
+    }
+
+    if (url.pathname === "/api/trip/route" && req.method === "GET") {
+      const actor = requestActor(token);
+      const tripId = (url.searchParams.get("trip_id") || "").trim();
+      const auth = authorizeRouteAccess(actor?.role);
+      const points = pointsByTrip.get(tripId) ?? [];
+      // Toda consulta de rota e auditavel, inclusive as negadas.
+      const audit = buildRouteAudit({
+        actor_id: actor?.actor_id ?? "anonimo",
+        role: actor?.role ?? "nenhum",
+        trip_id: tripId,
+        granted: auth.allowed,
+        point_count: points.length,
+        now: new Date(),
+      });
+      appendFileSync(routeAuditFile, JSON.stringify(audit) + "\n", "utf8");
+      if (!auth.allowed) {
+        return json(res, 403, { ok: false, human: auth.human });
+      }
+      return json(res, 200, {
+        ok: true,
+        trip_id: tripId,
+        bruto: buildRawTrack(tripId, points),
+        operacional: buildOperationalTrack(tripId, points),
+      });
     }
 
     if (url.pathname === "/api/snapshot" && req.method === "GET") {
@@ -278,7 +519,21 @@ const server = http.createServer(async (req, res) => {
       // technical only in logs
     });
   }
-});
+};
+
+/*
+ * HTTPS quando configurado. O certificado e a chave sao lidos de caminhos
+ * vindos do ambiente e nunca moram no repositorio.
+ */
+const server = httpsResolution.enabled
+  ? https.createServer(
+      {
+        cert: readFileSync(httpsResolution.cert_path as string),
+        key: readFileSync(httpsResolution.key_path as string),
+      },
+      handler,
+    )
+  : http.createServer(handler);
 
 server.listen(PORT, BIND, () => {
   log.info(
@@ -286,9 +541,16 @@ server.listen(PORT, BIND, () => {
     `Piloto iniciado na unidade ${cfg.unit_name}.`,
     `http://${BIND}:${PORT}/console/`,
   );
-  console.log(`ENTREGAS PILOTO http://127.0.0.1:${PORT}/console/`);
-  console.log(`  mobile: http://127.0.0.1:${PORT}/rider-mobile/`);
-  console.log(`  ifood:  http://127.0.0.1:${PORT}/ifood-handoff/`);
+  const scheme = httpsResolution.enabled ? "https" : "http";
+  console.log(startupSummary(httpsResolution, bindResolution, PORT));
+  console.log(`ENTREGAS PILOTO ${scheme}://127.0.0.1:${PORT}/console/`);
+  console.log(`  mobile: ${scheme}://127.0.0.1:${PORT}/rider-mobile/`);
+  console.log(`  ifood:  ${scheme}://127.0.0.1:${PORT}/ifood-handoff/`);
+  console.log(`  aparelhos autorizados: ${authorizedDevices.length}`);
+  console.log(
+    `  unidade configurada: ${unitConfig.ok ? "SIM" : "NAO (retorno automatico desligado)"}`,
+  );
+  console.log(`  termo publicavel: ${termPublishable() ? "SIM" : "NAO (GPS bloqueado)"}`);
   console.log(`  ${banner}`);
   console.log(`  dados:  ${dataDir}`);
   console.log("  multi-instância: NÃO · GPS prod: NÃO · Copiloto: NÃO");

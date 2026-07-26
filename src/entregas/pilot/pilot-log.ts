@@ -25,7 +25,12 @@ export type PilotLogEvent =
   | "restore_done"
   | "restore_failed"
   | "session_login"
-  | "session_rejected";
+  | "session_rejected"
+  /* Aparelho Android */
+  | "device_session"
+  | "device_rejected"
+  | "gps_batch"
+  | "route_access";
 
 export interface PilotLogEntry {
   at: string;
