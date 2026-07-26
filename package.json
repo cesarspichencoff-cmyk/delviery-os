@@ -42,7 +42,8 @@
     "test:platform:repos": "npx tsx src/platform/run-pg-repository-tests.ts",
     "test:platform:envelope": "npx tsx src/platform/run-envelope-tests.ts",
     "migrate": "npx tsx src/platform/bin/migrate.ts",
-    "test:platform:deploy": "npx tsx src/platform/run-platform-deploy-audit-tests.ts"
+    "test:platform:deploy": "npx tsx src/platform/run-platform-deploy-audit-tests.ts",
+    "test:platform:backup": "npx tsx src/platform/run-backup-restore-tests.ts"
   },
   "devDependencies": {
     "@types/node": "20.14.10",
