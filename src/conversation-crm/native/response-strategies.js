@@ -20,6 +20,12 @@ const QUESTION_LABELS = Object.freeze({
   people_affected: 'quantas pessoas foram afetadas'
 });
 
+const UNCERTAINTY_VARIANTS = Object.freeze([
+  'Vou preservar as informações já fornecidas e manter o caso aberto enquanto os pontos pendentes são verificados.',
+  'Ainda falta confirmação para concluir, então o contexto permanece preservado e o acompanhamento continua aberto.',
+  'O caso continua aberto com as informações disponíveis, sem antecipar uma conclusão.'
+]);
+
 function sentence(value) {
   const text = String(value || '').trim();
   if (!text) return '';
@@ -117,7 +123,10 @@ function occurrenceStrategy(input) {
     ? deterministicVariant(TATA_WARM_PROFILE.openings.frustrated, variationKey, 'occurrence-opening')
     : deterministicVariant(TATA_WARM_PROFILE.openings.concerned, variationKey, 'occurrence-opening');
   const question = minimalQuestion(classification.fields_missing, { limit: 2 });
-  return `${opening} ${sentence(legacyText)}${question ? ` ${question}` : ''}`;
+  const body = /Ainda não tenho confirmação suficiente|Vou preservar o contexto/iu.test(legacyText)
+    ? deterministicVariant(UNCERTAINTY_VARIANTS, variationKey, 'occurrence-uncertainty')
+    : legacyText;
+  return `${opening} ${sentence(body)}${question ? ` ${question}` : ''}`;
 }
 
 function chooseResponseStrategy(input) {
@@ -131,6 +140,9 @@ function chooseResponseStrategy(input) {
     return plan.conversation_stage === 'continuation'
       ? 'Quero acompanhar sem perder o contexto. Qual parte você quer esclarecer agora?'
       : 'Quero entender direitinho antes de seguir. Você pode me contar um pouco mais?';
+  }
+  if (/Ainda não tenho confirmação suficiente|Vou preservar o contexto/iu.test(legacyText)) {
+    return deterministicVariant(UNCERTAINTY_VARIANTS, input.variationKey, 'general-uncertainty');
   }
   return legacyText;
 }
@@ -146,5 +158,6 @@ module.exports = {
   largeGroupStrategy,
   reservationContinuationStrategy,
   occurrenceStrategy,
+  UNCERTAINTY_VARIANTS,
   chooseResponseStrategy
 };

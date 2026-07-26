@@ -41,7 +41,7 @@ function prohibitedClaimFindings(text, input) {
   }
   if (
     input.classification.policies?.food_safety
-    && /\b(?:diagn[oó]stico|foi causado por|com certeza foi|n[aã]o [eé] nada)\b/iu.test(text)
+    && /\b(?:o diagn[oó]stico [eé]|diagnosticamos|foi causado por|com certeza foi|n[aã]o [eé] nada)\b/iu.test(text)
   ) findings.push('FOOD_SAFETY_UNSUPPORTED_CLAIM');
   return findings;
 }
