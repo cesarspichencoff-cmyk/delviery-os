@@ -3,6 +3,7 @@
 const { validateCapabilityResult } = require('./contracts');
 const { assertFeature } = require('./feature-flags');
 const { nativeError } = require('./errors');
+const { sha256 } = require('./deterministic');
 
 class ActionExecutor {
   constructor(options = {}) { this.flags=options.flags;this.store=options.store;this.clock=options.clock;this.ids=options.ids; }
@@ -12,7 +13,7 @@ class ActionExecutor {
     const request=route.request;
     const prior=this.store.findByIdempotency(`action:complete:${request.idempotency_key}`);
     if(prior)return Object.freeze({status:'duplicate',action:prior.payload.action,result:prior.payload.result});
-    const action={action_id:this.ids.next('action'),request_id:request.request_id,capability_id:request.capability_id,driver_id:route.driver?.manifest.id||null,authority:request.authority,policy_id:request.policy_id,synthetic:true,started_at:this.clock.iso(),executed:false};
+    const action={action_id:`action_${sha256(request.idempotency_key).slice(0,20)}`,request_id:request.request_id,capability_id:request.capability_id,driver_id:route.driver?.manifest.id||null,authority:request.authority,policy_id:request.policy_id,synthetic:true,started_at:this.clock.iso(),executed:false};
     this.store.append({event_id:`action_start_${request.request_id}`,idempotency_key:`action:start:${request.idempotency_key}`,type:'action.started',occurred_at:this.clock.iso(),payload:action});
     let result;
     if(route.status==='prohibited'||request.authority==='A4'){
@@ -29,4 +30,3 @@ class ActionExecutor {
 }
 
 module.exports={ActionExecutor};
-

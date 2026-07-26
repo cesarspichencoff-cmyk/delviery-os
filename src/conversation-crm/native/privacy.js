@@ -3,10 +3,11 @@
 const { sha256 } = require('./deterministic');
 
 const FORBIDDEN_KEY = /(?:^|_)(?:name|nome|customer_name|phone|telefone|email|mail|cpf|document|documento|address|endereco|delivery_code|codigo_entrega|password|senha|token|cookie|credential|credencial|session|sessao|authorization|secret)(?:$|_)/i;
+const OPERATIONAL_ALLOWED_KEYS = new Set(['item_name','driver_name','capability_name','policy_name']);
 const PATTERNS = Object.freeze([
   ['email', /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi],
   ['cpf', /\b\d{3}[.\s]?\d{3}[.\s]?\d{3}[-\s]?\d{2}\b/g],
-  ['phone', /(?<!\d)(?:\+?55[\s.-]*)?(?:\(?\d{2}\)?[\s.-]*)?9?\d{4}[\s.-]?\d{4}(?!\d)/g],
+  ['phone', /(?<![A-Za-z0-9])(?:\+?55[\s.-]*)?(?:\(?\d{2}\)?[\s.-]*)?9?\d{4}[\s.-]?\d{4}(?![A-Za-z0-9])/g],
   ['url_credentials', /https?:\/\/[^\s/@:]+:[^\s/@]+@[^\s]+/gi],
   ['sensitive_query', /([?&](?:token|access_token|auth|authorization|cookie|session|password|senha|secret|key)=)[^&#\s]+/gi],
   ['private_path', /[A-Z]:\\Users\\[^\s"']+/gi],
@@ -47,7 +48,7 @@ function sanitize(value, options = {}) {
     const output = {};
     for (const [key, nested] of Object.entries(current)) {
       const childPath = `${path}.${key}`;
-      if (FORBIDDEN_KEY.test(key)) {
+      if (FORBIDDEN_KEY.test(key) && !OPERATIONAL_ALLOWED_KEYS.has(key.toLowerCase())) {
         findings.add('forbidden_field');
         removedFields.add(childPath);
         output[key] = '[REDACTED_FIELD]';
@@ -69,5 +70,4 @@ function sanitize(value, options = {}) {
 
 function containsSensitiveMarker(value) { return sanitize(value).detected; }
 
-module.exports = { FORBIDDEN_KEY, PATTERNS, sanitize, containsSensitiveMarker };
-
+module.exports = { FORBIDDEN_KEY, OPERATIONAL_ALLOWED_KEYS, PATTERNS, sanitize, containsSensitiveMarker };
