@@ -22,6 +22,7 @@
     "conversation-native:scenario": "node tools/conversation-crm/native-simulator.js scenario",
     "conversation-native:catalog": "node tools/conversation-crm/native-simulator.js all",
     "conversation-native:reproduce": "node tools/conversation-crm/native-simulator.js reproduce",
+    "conversation-native:privacy": "node tools/conversation-crm/native-privacy-scan.js",
     "serve": "node tools/servir_v1.js"
   },
   "devDependencies": {

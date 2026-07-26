@@ -17,6 +17,7 @@ const {DeliveryOsStateHub}=require('./state-hub');
 const {EvidenceStore}=require('./evidence-store');
 const {NotificationEngine}=require('./notification');
 const {NativeObservability}=require('./observability');
+const {DriverHealthMonitor}=require('./health');
 const {NativeConversationEngine}=require('./engine');
 const {composeResponse}=require('./response-composer');
 const {loadPlaceholderRegistry}=require('./placeholders');
@@ -43,7 +44,8 @@ class NativeConversationRuntime{
     this.context=new ConversationContextStore({store:this.store,clock:this.clock});
     this.queue=new HumanQueue({store:this.store,flags:this.flags,clock:this.clock,ids:this.ids});
     this.registry=createSimulatedDriverRegistry({clock:this.clock,catalogs:this.catalogs});
-    this.router=new CapabilityRouter({flags:this.flags,registry:this.registry,store:this.store,clock:this.clock,catalogs:this.catalogs});
+    this.health=new DriverHealthMonitor({flags:this.flags,store:this.store,clock:this.clock});
+    this.router=new CapabilityRouter({flags:this.flags,registry:this.registry,store:this.store,clock:this.clock,catalogs:this.catalogs,healthMonitor:this.health});
     this.executor=new ActionExecutor({flags:this.flags,store:this.store,clock:this.clock,ids:this.ids});
     this.stateHub=new DeliveryOsStateHub({store:this.store,flags:this.flags,clock:this.clock});
     this.evidence=new EvidenceStore({store:this.store,flags:this.flags,clock:this.clock,seed:this.seed});
@@ -72,6 +74,7 @@ class NativeConversationRuntime{
       const route=this.router.route(request);this.crm.recordCapability({request_id:request.request_id,case_id:caseId,conversation_id:gateway.input.conversation_id,capability_id:request.capability_id,driver_id:route.driver?.manifest.id||null,route_status:route.status,synthetic:true});this.stage(raw.message_id,'capability_requested',{request_id:request.request_id,driver_id:route.driver?.manifest.id||null},options.crashAfter);
       this.stage(raw.message_id,'action_started',{request_id:request.request_id},options.crashAfter);
       const action=this.executor.execute(route,{status:classification.expected_result?.status||'unknown',scenario_id:classification.scenario_id,outcome:gateway.input.context.simulation_outcome,retryable:classification.expected_result?.retryable===true});
+      if(route.driver)this.health.record(route.driver.manifest.id,action.result.status,request.request_id);
       const evidence=this.evidence.record({evidence_type:'capability_result',source:action.result.source,capability:classification.capability_id,driver:route.driver?.manifest.id||null,result:{status:action.result.status,confidence:action.result.confidence,freshness:action.result.freshness},correlation_id:gateway.input.correlation_id,scenario_id:classification.scenario_id});
       const result=deepFreeze({...action.result,evidence_id:evidence.evidence_id});
       this.stateHub.ingestFact({synthetic:true,entity_type:capabilityEntity(classification.capability_id),entity_id:gateway.input.context.order_id||caseId,field:classification.capability_id,value:{status:result.status},source:result.source,observed_at:this.clock.iso(),effective_at:this.clock.iso(),confidence:result.confidence,freshness:result.freshness,evidence_id:evidence.evidence_id,revision:1,conflict_state:result.status==='conflict'?'conflict':'none'});
@@ -91,7 +94,7 @@ class NativeConversationRuntime{
 
   scenarioInput(scenarioId){const scenario=this.catalogs.scenarios.scenarios.find((item)=>item.scenario_id===scenarioId);if(!scenario)throw nativeError('SCENARIO_NOT_FOUND');return{synthetic:true,message_type:'text',content:scenario.input,channel:'synthetic',subject_id:`SIM-SUBJECT-${scenarioId.slice(-3)}`,conversation_id:`SIM-CONV-${scenarioId}`,message_id:`SIM-MSG-${scenarioId}`,correlation_id:`SIM-CORR-${scenarioId}`,idempotency_key:`scenario:${scenarioId}`,occurred_at:this.clock.iso(),turn_order:1,unit_id:'SIM-UNIT-001',context:{scenario_id:scenarioId,synthetic:true}};}
   runScenario(scenarioId,options={}){return this.processMessage(this.scenarioInput(scenarioId),options);}
-  snapshot(){const value={schema_version:'conversation-native-snapshot-v1',synthetic:true,seed:this.seed,clock:this.clock.iso(),event_store:this.store.snapshot(),crm:this.crm.snapshot(),state_hub:this.stateHub.snapshot(),human_queue:this.queue.snapshot(),evidence:this.evidence.snapshot(),notifications:this.notifications.snapshot(),drivers:this.registry.manifests().map((item)=>({id:item.id,health:item.health,availability:item.availability,capabilities:item.capabilities.length})),production_blockers:this.placeholders.production_blockers_open};return deepFreeze({...value,snapshot_hash:sha256(canonicalJson(value))});}
+  snapshot(){const value={schema_version:'conversation-native-snapshot-v1',synthetic:true,seed:this.seed,clock:this.clock.iso(),event_store:this.store.snapshot(),crm:this.crm.snapshot(),state_hub:this.stateHub.snapshot(),human_queue:this.queue.snapshot(),evidence:this.evidence.snapshot(),notifications:this.notifications.snapshot(),drivers:this.registry.manifests().map((item)=>({id:item.id,health:item.health,availability:item.availability,capabilities:item.capabilities.length})),driver_health:this.health.snapshot(),production_blockers:this.placeholders.production_blockers_open};return deepFreeze({...value,snapshot_hash:sha256(canonicalJson(value))});}
 }
 
 module.exports={CHECKPOINTS,SimulatedCrashError,capabilityEntity,NativeConversationRuntime};
