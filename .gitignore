@@ -1,5 +1,6 @@
 /node_modules
 /dist
+android/*.log
 /data/*.jsonl
 /data/raw/*
 !/data/raw/.gitkeep

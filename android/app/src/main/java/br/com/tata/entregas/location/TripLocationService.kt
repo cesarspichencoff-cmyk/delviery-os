@@ -13,6 +13,7 @@ import android.os.IBinder
 import android.os.PowerManager
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
+import br.com.tata.entregas.bridge.Bridge
 import br.com.tata.entregas.data.EntregasDatabase
 import br.com.tata.entregas.data.GpsPointEntity
 import br.com.tata.entregas.notify.TripNotification
