@@ -164,6 +164,24 @@ export class PilotApplicationFacade {
     this.actor = null;
   }
 
+  /**
+   * Vincula o ator DESTA requisição — inclusive `null`.
+   *
+   * `login()` só sabe entrar; não sabe sair. Num servidor, isso significa que
+   * uma requisição sem token herdaria o ator da requisição anterior, porque
+   * `this.actor` continuava preenchido. Era o furo de sessão grudenta.
+   *
+   * `bindActor` é o oposto: ela é chamada em TODA requisição, e passar `null`
+   * é um caso de uso normal, não um erro. Sem ator vinculado, a facade não
+   * responde por ninguém.
+   *
+   * Não escreve log: acontece uma vez por requisição, e logar aqui encheria o
+   * arquivo do piloto de ruído sem informação.
+   */
+  bindActor(actor: ActorContext | null): void {
+    this.actor = actor;
+  }
+
   getActor(): ActorContext | null {
     return this.actor;
   }

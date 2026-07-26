@@ -13,6 +13,7 @@ import { join, extname } from "node:path";
 import { loadPilotConfig, resolveBanner, findUserByToken } from "../src/entregas/pilot/pilot-config";
 import { createPilotLogger } from "../src/entregas/pilot/pilot-log";
 import { PilotApplicationFacade } from "../src/entregas/pilot/pilot-facade";
+import type { ActorContext } from "../src/entregas/operational/auth";
 import {
   createBackup,
   restoreBackup,
@@ -115,7 +116,10 @@ const ackStore = new AcknowledgementStore(ackStorage);
  * comportamento antigo; para um aparelho que fala pela rede, seria um furo.
  * Aqui o token e resolvido a cada chamada, ou nao ha ator.
  */
-function requestActor(tok: string): { actor_id: string; role: string } | null {
+const NO_SESSION =
+  "Acesso nao autorizado. Use o token fornecido pelo responsavel pelo piloto.";
+
+function requestActor(tok: string): ActorContext | null {
   const user = findUserByToken(cfg, tok);
   return user ? { actor_id: user.actor_id, role: user.role } : null;
 }
@@ -228,6 +232,19 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
   }
 
   const url = new URL(req.url || "/", `http://127.0.0.1:${PORT}`);
+
+  /*
+   * Autenticacao POR REQUISICAO — a primeira coisa que acontece.
+   *
+   * O vinculo e' feito SEMPRE, inclusive com null. Antes, `facade.login()` so'
+   * era chamado quando havia token, e a facade guardava o ator anterior: uma
+   * requisicao sem token nenhum era respondida com o papel de quem tinha
+   * entrado antes. Aqui nao ha caminho que pule esta linha.
+   */
+  const token = extractToken(req, url);
+  const actor = requestActor(token);
+  facade.bindActor(actor);
+
   try {
     if (url.pathname === "/api/health") {
       // Operação/piloto: nunca é "ambiente de demonstração"; controles default ausentes
@@ -263,33 +280,25 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
 
     if (url.pathname === "/api/session" && req.method === "POST") {
       const body = JSON.parse(await readBody(req)) as { token?: string };
+      // login() valida e registra a entrada; o vinculo desta requisicao ja'
+      // foi feito no topo do handler e nao depende deste corpo.
       const result = facade.login(body.token || "");
+      facade.bindActor(actor);
       return json(res, result.ok ? 200 : 401, result);
     }
 
     if (url.pathname === "/api/session" && req.method === "GET") {
-      const token = extractToken(req, url);
-      if (token) facade.login(token);
       return json(res, 200, {
-        actor: facade.getActor(),
+        actor,
         banner,
         unit_name: cfg.unit_name,
       });
     }
 
-    // Autenticar se token presente
-    const token = extractToken(req, url);
-    if (token) {
-      const u = facade.login(token);
-      if (!u.ok && url.pathname.startsWith("/api/") && url.pathname !== "/api/health") {
-        // allow health only
-      }
-    }
 
     /* ---------------- API do aparelho Android ---------------- */
 
     if (url.pathname === "/api/device/session" && req.method === "POST") {
-      const actor = requestActor(token);
       const body = JSON.parse(await readBody(req)) as Record<string, unknown>;
       const r = handleDeviceSession({
         input: body as never,
@@ -306,17 +315,13 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
     }
 
     if (url.pathname === "/api/policies" && req.method === "GET") {
-      if (!requestActor(token)) {
-        return json(res, 401, { ok: false, human: "Acesso nao autorizado." });
-      }
+      if (!actor) return json(res, 401, { ok: false, human: NO_SESSION });
       const r = buildPolicies({ flags: gpsFlags, term: activeTerm, unit: unitConfig });
       return json(res, r.status, r.body);
     }
 
     if (url.pathname === "/api/term/acknowledge" && req.method === "POST") {
-      if (!requestActor(token)) {
-        return json(res, 401, { ok: false, human: "Acesso nao autorizado." });
-      }
+      if (!actor) return json(res, 401, { ok: false, human: NO_SESSION });
       const body = JSON.parse(await readBody(req)) as Record<string, unknown>;
       const r = handleTermAcknowledge({
         input: body,
@@ -328,8 +333,7 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
     }
 
     if (url.pathname === "/api/gps/batch" && req.method === "POST") {
-      const actor = requestActor(token);
-      if (!actor) return json(res, 401, { ok: false, human: "Acesso nao autorizado." });
+      if (!actor) return json(res, 401, { ok: false, human: NO_SESSION });
       if (!gpsFlags.gps_capture_enabled) {
         return json(res, 409, {
           ok: false,
@@ -377,8 +381,7 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
     }
 
     if (url.pathname === "/api/events/batch" && req.method === "POST") {
-      const actor = requestActor(token);
-      if (!actor) return json(res, 401, { ok: false, human: "Acesso nao autorizado." });
+      if (!actor) return json(res, 401, { ok: false, human: NO_SESSION });
       const body = JSON.parse(await readBody(req)) as {
         events?: Array<{ event_id: string; command: Record<string, unknown> }>;
       };
@@ -399,8 +402,7 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
     }
 
     if (url.pathname === "/api/trip/timeline" && req.method === "GET") {
-      const actor = requestActor(token);
-      if (!actor) return json(res, 401, { ok: false, human: "Acesso nao autorizado." });
+      if (!actor) return json(res, 401, { ok: false, human: NO_SESSION });
       const tripId = (url.searchParams.get("trip_id") || "").trim();
       const events = await facade.listTripEvents(tripId);
       const timeline = buildTripTimeline(events);
@@ -422,8 +424,7 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
     }
 
     if (url.pathname === "/api/trip/location" && req.method === "GET") {
-      const actor = requestActor(token);
-      if (!actor) return json(res, 401, { ok: false, human: "Acesso nao autorizado." });
+      if (!actor) return json(res, 401, { ok: false, human: NO_SESSION });
       const tripId = (url.searchParams.get("trip_id") || "").trim();
       const points = pointsByTrip.get(tripId) ?? [];
       const last = points[points.length - 1];
@@ -443,7 +444,6 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
     }
 
     if (url.pathname === "/api/trip/route" && req.method === "GET") {
-      const actor = requestActor(token);
       const tripId = (url.searchParams.get("trip_id") || "").trim();
       const auth = authorizeRouteAccess(actor?.role);
       const points = pointsByTrip.get(tripId) ?? [];
@@ -458,7 +458,12 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
       });
       appendFileSync(routeAuditFile, JSON.stringify(audit) + "\n", "utf8");
       if (!auth.allowed) {
-        return json(res, 403, { ok: false, human: auth.human });
+        // Sem sessao e' 401 (quem e' voce?); com sessao e papel insuficiente
+        // e' 403 (sei quem voce e', e nao pode). A tentativa sem sessao ja'
+        // foi auditada acima -- e' justamente a que mais interessa registrar.
+        return actor
+          ? json(res, 403, { ok: false, human: auth.human })
+          : json(res, 401, { ok: false, human: NO_SESSION });
       }
       return json(res, 200, {
         ok: true,
@@ -469,12 +474,12 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
     }
 
     if (url.pathname === "/api/snapshot" && req.method === "GET") {
-      if (token) facade.login(token);
+      if (!actor) return json(res, 401, { ok: false, human: NO_SESSION });
       return json(res, 200, await facade.snapshot());
     }
 
     if (url.pathname === "/api/ready-order" && req.method === "POST") {
-      if (token) facade.login(token);
+      if (!actor) return json(res, 401, { ok: false, human: NO_SESSION });
       const body = JSON.parse(await readBody(req)) as {
         order_ref: string;
         label: string;
@@ -484,7 +489,7 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
     }
 
     if (url.pathname === "/api/command" && req.method === "POST") {
-      if (token) facade.login(token);
+      if (!actor) return json(res, 401, { ok: false, human: NO_SESSION });
       const body = JSON.parse(await readBody(req)) as Record<string, unknown>;
       if (typeof body.courier_actor_id === "string") {
         body.courier_actor_id = asInternalRiderActorId(body.courier_actor_id);
@@ -501,8 +506,6 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
     }
 
     if (url.pathname === "/api/backup" && req.method === "POST") {
-      if (token) facade.login(token);
-      const actor = facade.getActor();
       if (!actor || !["gerente", "lider_delivery"].includes(actor.role)) {
         return json(res, 403, {
           ok: false,
@@ -514,12 +517,11 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
     }
 
     if (url.pathname === "/api/backups" && req.method === "GET") {
+      if (!actor) return json(res, 401, { ok: false, human: NO_SESSION });
       return json(res, 200, { backups: listBackups(backupDir) });
     }
 
     if (url.pathname === "/api/restore" && req.method === "POST") {
-      if (token) facade.login(token);
-      const actor = facade.getActor();
       if (!actor || actor.role !== "gerente") {
         return json(res, 403, {
           ok: false,
