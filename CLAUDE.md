@@ -97,7 +97,40 @@ estados. Nunca aceitar "parece igual" — sempre diff byte a byte ou contagem ex
   `node tools/autoteste_8pracas.js` · `node tools/teste_fonte_real.js` ·
   `node tools/verificar_dados_primarios.js`.
 
-## 11. Frases-guia
+## 11. Memória executável — ler ANTES de começar qualquer missão
+
+Quatro arquivos em `docs/execution/` carregam o estado real entre sessões. Quem começa uma missão lê
+os quatro; quem termina uma missão atualiza os quatro. Eles existem porque contexto de conversa se
+perde e repositório não conta o que foi *tentado e descartado*.
+
+- **`STATE.json`** — o que está verificado, com que evidência, e o que **não** está. O campo
+  `nao_comprovado` é o mais importante do arquivo: cada item diz o motivo, o substituto usado e o que
+  exatamente falta. Nunca escrever ali algo que não foi medido.
+- **`EVIDENCE.jsonl`** — uma linha por evidência: o que foi afirmado, como foi medido, o que a
+  medição devolveu. Sem medição, não entra.
+- **`DECISIONS.md`** — decisão, **a alternativa recusada**, o porquê e o custo. Decisão sem
+  alternativa registrada é decisão que ninguém consegue revisar depois.
+- **`PROMPT_LESSONS.md`** — o que quase passou e como foi pego. Quase tudo ali é da mesma família: o
+  teste que passa sem testar.
+
+### A plataforma (Macro-Prompt 1)
+
+Dois runtimes com o mesmo código e ciclos de vida diferentes: **o crítico grava, o assíncrono
+consome.** Se o assíncrono sumir, a rua continua e o backlog espera; o contrário não vale.
+PostgreSQL é a fonte de verdade online e o `FileUnitOfWork` **permanece** como caminho local e de
+recuperação.
+
+- `npm run migrate` · `npm run start:critical` · `npm run start:async`
+- `npm run test:platform` · `:envelope` · `:deploy` (rodam em qualquer máquina)
+- `npm run test:platform:pg` · `:repos` · `:backup` (exigem `DELIVERYOS_DATABASE_URL`; sem ela se
+  declaram **PULADOS em voz alta** — ausência de banco nunca vira verde silencioso)
+
+Três regras deste território que não se negociam sem discutir com o César: `/ready` só responde 200
+quando o processo **consegue persistir**; lease vencido **não** consome tentativa, porque o processo
+morreu e o trabalho nem chegou a falhar; e o event log é append-only por **trigger no banco**, não
+por disciplina de quem escreve o código.
+
+## 12. Frases-guia
 
 - Toda operação de delivery sob pressão para de produzir para se procurar. O DeliveryOS é o sentido que falta.
 - Mais cérebro por trás. Menos interface na frente.

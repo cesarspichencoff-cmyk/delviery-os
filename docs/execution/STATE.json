@@ -1,0 +1,129 @@
+{
+  "_leia_primeiro": "Estado executável do DeliveryOS. Escrito por quem termina uma missão, lido por quem começa a próxima. Só entra aqui o que foi VERIFICADO — o que é intenção vai para DECISIONS.md.",
+  "atualizado_em": "2026-07-26",
+  "missao": "MACRO-PROMPT 1/3 — Hybrid Platform + PostgreSQL + Cloud Foundation",
+  "veredito": "READY_FOR_MACRO_PROMPT_2_FIELD_AND_COPILOT_BRIDGE",
+
+  "repositorio": {
+    "remoto": "cesarspichencoff-cmyk/delviery-os",
+    "_nota_remoto": "O nome tem erro de grafia na origem e é preservado de propósito: renomear quebraria referências existentes.",
+    "worktree": "deliveryos-hybrid-platform-foundation-v1",
+    "branch": "feature/deliveryos-hybrid-platform-foundation-v1",
+    "base": "d67f041",
+    "publicado": false,
+    "_nota_publicacao": "Nenhum push, merge ou PR. Tudo local, conforme a missão."
+  },
+
+  "contratos": {
+    "operacional": "COR-ENTREGAS-V1@1.0.3",
+    "catalogo_publico_de_eventos": "1.1.0",
+    "plataforma": "platform@1.0.0",
+    "mensageria": "messaging@1.0.0",
+    "envelope_dispositivo": "device-envelope@1.0.0",
+    "envelope_fonte": "source-envelope@1.0.0"
+  },
+
+  "runtimes": {
+    "critico": {
+      "entrypoint": "src/platform/bin/critical.ts",
+      "start": "npm run start:critical",
+      "porta_padrao": 8080,
+      "rotas": ["/health", "/ready"],
+      "dependencia_essencial_unica": "armazenamento",
+      "verificado": "sobe, atende, reporta blocked sem banco e volta a healthy sem reiniciar"
+    },
+    "assincrono": {
+      "entrypoint": "src/platform/bin/async-runtime.ts",
+      "start": "npm run start:async",
+      "escuta_porta": false,
+      "handlers_registrados": 0,
+      "_nota_handlers": "Vazio de propósito. O lugar existe; os consumidores entram no Macro-Prompt 2.",
+      "verificado": "laço roda, falha com backoff e caminha para dead-letter"
+    }
+  },
+
+  "banco": {
+    "motor": "PostgreSQL 16.4",
+    "papel": "fonte de verdade online",
+    "fallback_local": "FileUnitOfWork — PRESERVADO e intocado",
+    "migrations": ["0001_platform_foundation", "0002_event_log_contexto_dispositivo"],
+    "executor": "src/platform/migrations/runner.ts",
+    "comando": "npm run migrate",
+    "aplica_no_boot": "somente em ambiente local",
+    "schemas": ["platform", "identity", "entregas", "sources", "orders", "crm", "copiloto"],
+    "verificado_contra_servidor_real": true,
+    "_como": "Cluster PostgreSQL 16.4 portátil e efêmero (binários EnterpriseDB, sem instalador e sem serviço do Windows), porta 55432."
+  },
+
+  "testes": {
+    "novos_da_plataforma": {
+      "run-platform-tests": 44,
+      "run-envelope-tests": 23,
+      "run-platform-deploy-audit-tests": 30,
+      "run-postgres-integration-tests": 17,
+      "run-pg-repository-tests": 19,
+      "run-backup-restore-tests": 15,
+      "total": 148
+    },
+    "herdados_verdes": 481,
+    "total": 629,
+    "_dependem_de_banco": [
+      "run-postgres-integration-tests",
+      "run-pg-repository-tests",
+      "run-backup-restore-tests"
+    ],
+    "_sem_banco": "Estes três se declaram PULADOS em voz alta e saem com sucesso. Ausência de banco nunca vira verde silencioso."
+  },
+
+  "android": {
+    "variantes": ["debug", "pilot", "release"],
+    "variante_de_campo": "pilot",
+    "application_id_pilot": "br.com.tata.entregas.pilot",
+    "gate_de_endereco": "assemblePilot e assembleRelease recusam endereço não-HTTPS ou local",
+    "apk_pilot_gerado": "app/build/outputs/apk/pilot/app-pilot-unsigned.apk",
+    "assinado": false,
+    "instalado_em_aparelho": false,
+    "sdk": "não vive neste worktree; exige ANDROID_HOME apontando para o SDK já instalado"
+  },
+
+  "nao_comprovado": [
+    {
+      "item": "docker build / docker compose up da plataforma",
+      "motivo": "Docker não existe nesta máquina e o Docker Desktop é licença comercial — não instalado sem decisão do César.",
+      "substituto": "30 testes leem os arquivos e afirmam os invariantes da composição; 4 defeitos injetados foram detectados.",
+      "o_que_falta": "que a imagem construa e os containers subam"
+    },
+    {
+      "item": "encerramento gracioso por SIGTERM",
+      "motivo": "No Windows, SIGTERM enviado de fora encerra o processo incondicionalmente; o handler não roda.",
+      "substituto": "o caminho de shutdown é exercitado em processo pelos 44 testes da plataforma",
+      "o_que_falta": "observar SIGTERM real, o que acontece naturalmente em container Linux"
+    },
+    {
+      "item": "PostgreSQL hospedado (Supabase ou equivalente)",
+      "motivo": "Criar conta ou instância é ato com potencial de cobrança — depende de autorização expressa do César.",
+      "substituto": "o código recusa conexão remota sem TLS, e isso é testado",
+      "o_que_falta": "apontar DELIVERYOS_DATABASE_URL para o banco real e rodar as três suítes de banco"
+    },
+    {
+      "item": "APK em aparelho real",
+      "motivo": "Fora do escopo desta missão e sem assinatura.",
+      "substituto": "o binário é gerado e inspecionado",
+      "o_que_falta": "chave de assinatura e instalação autorizada"
+    }
+  ],
+
+  "protegido_nao_tocar": {
+    "worktree": "deliveryos-conversation-crm-pilot-v0",
+    "motivo": "Outra sessão ativa. O branch mudou duas vezes durante esta engenharia."
+  },
+
+  "proxima_missao": {
+    "nome": "MACRO-PROMPT 2 — Field and Copilot Bridge",
+    "pontos_de_entrada_prontos": [
+      "src/platform/bin/critical.ts — falta a rota de ingestão do Android",
+      "src/platform/bin/async-runtime.ts — OUTBOX_HANDLERS e JOB_HANDLERS vazios, prontos para receber",
+      "src/platform/contracts/device-envelope.ts — checkEnvelope pronto para virar porta de entrada"
+    ]
+  }
+}
