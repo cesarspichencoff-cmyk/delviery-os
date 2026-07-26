@@ -10,10 +10,12 @@ const { FLAG_NAMES, loadFeatureFlags, validateFeatureFlags } = require('../../sr
 test('catálogos canônicos preservam hashes e contagens aprovadas', () => {
   const catalogs = loadCanonicalCatalogs();
   assert.equal(catalogs.capabilities.capabilities.length, 39);
-  assert.equal(catalogs.intents.intents.length, 51);
+  assert.equal(catalogs.intents.intents.length, 52);
   assert.equal(catalogs.scenarios.scenarios.length, 200);
   assert.equal(catalogs.placeholders.placeholders.length, 47);
-  assert.equal(Object.keys(HASHES).length, 6);
+  assert.equal(Object.keys(HASHES).length, 7);
+  assert.equal(catalogs.publicInfo.classification, 'CONFIRMADO_POR_CESAR');
+  assert.equal(catalogs.publicInfo.unit.unit_id, 'unidade-tata-53069');
   assert.equal(catalogs.scenarios.scenarios.every((scenario) => scenario.synthetic === true), true);
 });
 

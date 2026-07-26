@@ -71,9 +71,10 @@ test('fronteira estática do runtime não importa cenário, testes ou review pac
 test('factory de runtime carrega somente catálogo operacional aprovado', () => {
   const engine = createRuntimeConversationEngine({ flags });
   assert.equal(Object.hasOwn(engine.catalogs, 'scenarios'), false);
-  assert.deepEqual(Object.keys(engine.catalogs).sort(), ['capabilities', 'escalation', 'hashes', 'intents', 'placeholders', 'policy']);
-  assert.equal(engine.catalogs.intents.intents.length, 51);
+  assert.deepEqual(Object.keys(engine.catalogs).sort(), ['capabilities', 'escalation', 'hashes', 'intents', 'placeholders', 'policy', 'publicInfo']);
+  assert.equal(engine.catalogs.intents.intents.length, 52);
   assert.equal(engine.catalogs.capabilities.capabilities.length, 39);
+  assert.equal(engine.catalogs.publicInfo.real_drivers_enabled, false);
 });
 
 test('factory de testes recebe somente catálogo operacional e mantém o oráculo externo', () => {
