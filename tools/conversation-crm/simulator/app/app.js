@@ -11,12 +11,18 @@ const result = document.querySelector('#result');
 const requestState = document.querySelector('#request-state');
 const evaluation = document.querySelector('#evaluation');
 const evaluationState = document.querySelector('#evaluation-state');
+const experienceNote = document.querySelector('#experience-note');
+const saveExperienceNote = document.querySelector('#save-experience-note');
 const advanceClock = document.querySelector('#advance-clock');
 const replayState = document.querySelector('#replay-state');
 const resetState = document.querySelector('#reset-state');
 const clockState = document.querySelector('#clock-state');
 const humanTest = document.querySelector('#human-test');
+const humanGroupList = document.querySelector('#human-group-list');
+const humanGroupPrompts = document.querySelector('#human-group-prompts');
+const developmentMode = new URLSearchParams(window.location.search).get('dev') === '1';
 let cases = [];
+let humanGroups = [];
 let activeCase = 'manual';
 
 function escapeHtml(value) {
@@ -28,8 +34,10 @@ function tokenList(values, kind = '') {
   return values.map((value) => `<span class="token ${kind}">${escapeHtml(value)}</span>`).join('');
 }
 
-function render(output) {
-  const native = output.classification ? {
+function asPanelOutput(output) {
+  if (!output.classification) return output;
+  return {
+    raw: output,
     intent: output.classification.intent,
     origin: output.classification.origin,
     severity: output.classification.severity,
@@ -40,6 +48,11 @@ function render(output) {
     known_field_labels: Object.keys(output.classification.entities || {}),
     missing_field_labels: output.classification.fields_missing,
     suggested_response: output.response?.text,
+    previous_response: output.response?.previous_text,
+    response_plan: output.response?.plan,
+    response_validation: output.response?.validation,
+    response_repetition: output.response?.repetition,
+    response_comparison: output.response?.comparison,
     tags: output.classification.legacy_projection?.tags || [],
     allowed_actions: [output.classification.action],
     forbidden_actions: output.classification.prohibited_responses || [],
@@ -50,29 +63,70 @@ function render(output) {
     policy: output.classification.policy_id,
     result_status: output.result?.status,
     crm_record: output.case_id ? { entity_type: 'NativeCase', summary_code: output.case_id, status: output.closure?.expected_state } : null
-  } : output;
-  output = native;
-  result.classList.remove('empty');
-  result.innerHTML = `
-    <div class="result-grid">
+  };
+}
+
+function technicalDecision(output) {
+  return `
+    <div class="result-grid technical-grid">
       <div class="summary">
         <div class="metric"><span>Intenção</span><strong>${escapeHtml(output.intent_label || output.intent)}</strong></div>
         <div class="metric"><span>Origem</span><strong>${escapeHtml(output.origin_label || output.origin)}</strong></div>
         <div class="metric"><span>Gravidade</span><strong>${escapeHtml(output.severity_label || output.severity)}</strong></div>
       </div>
       <div class="card"><h3>Bloco e confiança</h3><p><strong>${escapeHtml(output.block_code || output.block_id)}</strong> · ${Math.round(output.confidence * 100)}% · humano: ${output.human_required ? 'sim' : 'não'}</p><p>Escalonamento: ${escapeHtml(output.escalation_code || output.escalation_level)}</p></div>
-      <div class="card"><h3>Dados conhecidos</h3><div class="tokens">${tokenList(output.known_field_labels || output.known_fields)}</div></div>
-      <div class="card"><h3>Dados faltantes</h3><div class="tokens">${tokenList(output.missing_field_labels || output.missing_fields, 'warn')}</div></div>
-      <div class="card"><h3>Resposta sugerida</h3><p>${escapeHtml(output.suggested_response)}</p></div>
+      <div class="card"><h3>Fatos conhecidos</h3><div class="tokens">${tokenList(output.known_field_labels || output.known_fields)}</div></div>
+      <div class="card"><h3>Fatos faltantes</h3><div class="tokens">${tokenList(output.missing_field_labels || output.missing_fields, 'warn')}</div></div>
       <div class="card"><h3>Capacidade e driver</h3><p>${escapeHtml(output.capability || 'legado')} · ${escapeHtml(output.driver || 'não selecionado')} · resultado: ${escapeHtml(output.result_status || 'n/a')}</p></div>
-      <div class="card"><h3>Evidência, autoridade e política</h3><p>${escapeHtml(output.evidence || 'sem evidência')} · ${escapeHtml(output.authority || 'n/a')} · ${escapeHtml(output.policy || 'n/a')}</p></div>
-      <div class="card"><h3>Tags</h3><div class="tokens">${tokenList(output.tags)}</div></div>
+      <div class="card"><h3>Evidência e autoridade</h3><p>${escapeHtml(output.evidence || 'sem evidência')} · ${escapeHtml(output.authority || 'n/a')} · ${escapeHtml(output.policy || 'n/a')}</p></div>
       <div class="card"><h3>Ações permitidas</h3><div class="tokens">${tokenList(output.allowed_actions)}</div></div>
       <div class="card"><h3>Ações proibidas</h3><div class="tokens">${tokenList(output.forbidden_actions, 'block')}</div></div>
-      <div class="card"><h3>Registro CRM</h3><p>${output.crm_record ? `${escapeHtml(output.crm_record.entity_type)} · ${escapeHtml(output.crm_record.summary_code)} · ${escapeHtml(output.crm_record.status)}` : output.consent_record ? `${escapeHtml(output.consent_record.entity_type)} · ${escapeHtml(output.consent_record.status)}` : 'nenhum registro obrigatório'}</p></div>
-      <div class="card"><h3>Privacidade e integração</h3><p>texto persistido: não · decisão financeira automática: não · sistema externo acessado: não</p></div>
+      <div class="card"><h3>Validação da linguagem</h3><p>${output.response_validation?.passed ? 'aprovada' : 'fallback seguro'} · achados: ${escapeHtml((output.response_validation?.findings || []).join(', ') || 'nenhum')}</p></div>
+      <div class="card"><h3>CRM</h3><p>${output.crm_record ? `${escapeHtml(output.crm_record.entity_type)} · ${escapeHtml(output.crm_record.summary_code)} · ${escapeHtml(output.crm_record.status)}` : 'nenhum registro obrigatório'}</p></div>
     </div>`;
+}
+
+function comparisonView(output) {
+  const comparison = output.response_comparison || {};
+  return `
+    <div class="comparison-grid">
+      <div class="card"><h3>Resposta anterior</h3><p>${escapeHtml(output.previous_response || 'indisponível')}</p></div>
+      <div class="card"><h3>Resposta humanizada</h3><p>${escapeHtml(output.suggested_response)}</p></div>
+      <div class="card"><h3>Diferenças técnicas</h3><p>tamanho: ${escapeHtml(comparison.previous_length)} → ${escapeHtml(comparison.humanized_length)} · alterada: ${comparison.changed ? 'sim' : 'não'} · risco de promessa: ${comparison.risk_of_promise ? 'sim' : 'não'}</p><p>alertas de repetição: ${escapeHtml((comparison.conversation_warnings || []).join(', ') || 'nenhum')}</p></div>
+    </div>`;
+}
+
+function render(rawOutput) {
+  const output = asPanelOutput(rawOutput);
+  result.classList.remove('empty');
+  result.innerHTML = `
+    <article class="customer-response">
+      <p class="eyebrow">RESPOSTA DO TATÁ</p>
+      <p class="response-copy">${escapeHtml(output.suggested_response)}</p>
+      <p class="response-meta">Simulação local · nenhuma mensagem enviada</p>
+    </article>
+    <details id="technical-decision" class="technical-decision">
+      <summary>Ver decisão do DeliveryOS</summary>
+      ${technicalDecision(output)}
+    </details>
+    <details id="response-comparison" class="developer-only hidden">
+      <summary>Comparar resposta anterior × resposta humanizada</summary>
+      ${comparisonView(output)}
+    </details>`;
+  if (developmentMode) result.querySelectorAll('.developer-only').forEach((element) => element.classList.remove('hidden'));
   evaluation.classList.remove('hidden');
+}
+
+function loadPrompt(prompt) {
+  activeCase = 'manual';
+  caseSelect.value = 'manual';
+  message.value = prompt;
+  origin.value = '';
+  severity.value = '';
+  orderReference.value = '';
+  detailCode.value = '';
+  requestState.textContent = 'Pergunta carregada para o atendimento livre.';
+  message.focus();
 }
 
 async function loadCases() {
@@ -87,22 +141,23 @@ async function loadCases() {
   }
 }
 
+async function loadHumanGroups() {
+  const response = await fetch('/api/human-test-groups');
+  const body = await response.json();
+  humanGroups = body.groups || [];
+  humanGroupList.innerHTML = humanGroups.map((group) => `<button type="button" data-human-group="${escapeHtml(group.id)}">${escapeHtml(group.label)}</button>`).join('');
+}
+
 async function refreshClock() {
   const response = await fetch('/api/health');
   const body = await response.json();
-  clockState.textContent = body.clock ? `Relógio: ${body.clock}` : 'Modo legado local';
+  clockState.textContent = body.clock ? `Relógio: ${body.clock}` : 'Modo local';
 }
 
 caseSelect.addEventListener('change', () => {
   activeCase = caseSelect.value;
   const selected = cases.find((item) => item.id === activeCase);
-  if (!selected) {
-    origin.value = '';
-    severity.value = '';
-    orderReference.value = '';
-    detailCode.value = '';
-    return;
-  }
+  if (!selected) return;
   message.value = selected.message;
   origin.value = selected.context.origin || '';
   severity.value = selected.context.severity || '';
@@ -111,22 +166,27 @@ caseSelect.addEventListener('change', () => {
 });
 
 humanTest?.addEventListener('click', (event) => {
-  const prompt = event.target.dataset.humanPrompt;
-  if (!prompt) return;
-  activeCase = 'manual';
-  caseSelect.value = 'manual';
-  message.value = prompt;
-  origin.value = '';
-  severity.value = '';
-  orderReference.value = '';
-  detailCode.value = '';
-  requestState.textContent = 'Pergunta carregada para teste humano local.';
-  message.focus();
+  const humanPrompt = event.target.dataset.humanPrompt;
+  if (humanPrompt) loadPrompt(humanPrompt);
+});
+
+humanGroupList?.addEventListener('click', (event) => {
+  const groupId = event.target.dataset.humanGroup;
+  if (!groupId) return;
+  const group = humanGroups.find((item) => item.id === groupId);
+  if (!group) return;
+  humanGroupList.querySelectorAll('button').forEach((button) => button.classList.toggle('active', button.dataset.humanGroup === groupId));
+  humanGroupPrompts.innerHTML = `<strong>${escapeHtml(group.label)}</strong>${group.prompts.map((prompt) => `<button type="button" data-human-prompt="${escapeHtml(prompt)}">${escapeHtml(prompt)}</button>`).join('')}`;
+});
+
+humanGroupPrompts?.addEventListener('click', (event) => {
+  const humanPrompt = event.target.dataset.humanPrompt;
+  if (humanPrompt) loadPrompt(humanPrompt);
 });
 
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
-  requestState.textContent = 'Processando localmente…';
+  requestState.textContent = 'O TATÁ está preparando a resposta…';
   const selected = cases.find((item) => item.id === activeCase);
   const context = selected ? { ...selected.context } : {};
   if (origin.value) context.origin = origin.value;
@@ -134,7 +194,7 @@ form.addEventListener('submit', async (event) => {
   if (orderReference.value) context.order_reference = orderReference.value;
   if (detailCode.value) context.occurrence_detail_code = detailCode.value;
   try {
-    const nativeScenario = activeCase.startsWith('TATA-SC-');
+    const nativeScenario = developmentMode && activeCase.startsWith('TATA-SC-');
     const response = await fetch(nativeScenario ? `/api/native/scenarios/${activeCase}` : '/api/triage', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -143,38 +203,56 @@ form.addEventListener('submit', async (event) => {
     const body = await response.json();
     if (!body.ok) throw new Error(body.error_code);
     render(body.result);
-    requestState.textContent = 'Triagem concluída sem acesso externo.';
+    requestState.textContent = 'Resposta criada localmente, sem acesso externo.';
+    message.value = '';
   } catch {
-    requestState.textContent = 'A triagem não pôde ser concluída. Nenhum conteúdo foi registrado.';
+    requestState.textContent = 'A resposta não pôde ser concluída. Nenhum conteúdo foi enviado.';
   }
 });
 
 advanceClock?.addEventListener('click', async () => {
   const response = await fetch('/api/native/clock', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ advance_ms: 60000 }) });
   const body = await response.json();
-  clockState.textContent = body.ok ? `Relógio: ${body.clock}` : 'Relógio indisponível no modo legado.';
+  clockState.textContent = body.ok ? `Relógio: ${body.clock}` : 'Relógio indisponível.';
 });
+
 replayState?.addEventListener('click', async () => {
   const response = await fetch('/api/native/replay', { method: 'POST' });
   const body = await response.json();
-  requestState.textContent = body.ok ? 'Replay concluído e projeção reconstruída.' : 'Replay indisponível no modo legado.';
+  requestState.textContent = body.ok ? 'Replay concluído e contexto reconstruído.' : 'Replay indisponível.';
 });
+
 resetState?.addEventListener('click', async () => {
   const response = await fetch('/api/native/reset', { method: 'POST' });
   const body = await response.json();
-  requestState.textContent = body.ok ? 'Estado sintético reiniciado.' : 'Reset indisponível no modo legado.';
+  requestState.textContent = body.ok ? 'Atendimento sintético reiniciado.' : 'Reset indisponível.';
   if (body.clock) clockState.textContent = `Relógio: ${body.clock}`;
 });
 
-evaluation.addEventListener('click', async (event) => {
-  const verdict = event.target.dataset.verdict;
-  if (!verdict) return;
+async function saveEvaluation(verdict, note = '') {
   const response = await fetch('/api/evaluations', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ case_id: activeCase, verdict })
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ case_id: activeCase, verdict, note })
   });
   const body = await response.json();
-  evaluationState.textContent = body.ok ? 'Avaliação registrada somente em memória nesta execução.' : 'Avaliação não registrada.';
+  evaluationState.textContent = body.ok ? 'Feedback sintético guardado somente nesta execução local.' : 'Feedback não registrado.';
+  if (body.ok && verdict === 'experience_note') experienceNote.value = '';
+}
+
+evaluation.addEventListener('click', (event) => {
+  const verdict = event.target.dataset.verdict;
+  if (verdict) saveEvaluation(verdict);
 });
 
-Promise.all([loadCases(), refreshClock()]).catch(() => { requestState.textContent = 'Casos sintéticos indisponíveis.'; });
+saveExperienceNote?.addEventListener('click', () => {
+  const note = experienceNote.value.trim();
+  if (!note) {
+    evaluationState.textContent = 'Escreva uma observação antes de salvar.';
+    return;
+  }
+  saveEvaluation('experience_note', note);
+});
+
+if (developmentMode) document.querySelectorAll('.developer-only').forEach((element) => element.classList.remove('hidden'));
+Promise.all([loadCases(), loadHumanGroups(), refreshClock()]).catch(() => { requestState.textContent = 'O banco sintético não pôde ser carregado.'; });

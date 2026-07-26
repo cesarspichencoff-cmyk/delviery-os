@@ -3,16 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Conversation + CRM Pilot V0</title>
+  <title>Chatbot TATÁ V1.3 · Atendimento humano simulado</title>
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
   <main class="shell">
     <header class="masthead">
       <div>
-        <p class="eyebrow">DELIVERYOS · PILOTO LOCAL</p>
-        <h1>Conversation + CRM</h1>
-        <p class="subtitle">Conversa sintética, decisão auditável e memória append-only.</p>
+        <p class="eyebrow">DELIVERYOS · CHATBOT TATÁ V1.3</p>
+        <h1>Atendimento livre</h1>
+        <p class="subtitle">Conversa natural com decisão auditável e somente fatos confirmados.</p>
       </div>
       <div class="mode"><span></span>Sintético · sem integrações</div>
     </header>
@@ -25,11 +25,11 @@
 
     <section id="human-test" class="human-test" aria-labelledby="human-test-title">
       <div>
-        <p class="eyebrow">CONTEÚDO OPERACIONAL V1.2</p>
-        <h2 id="human-test-title">Teste Humano — Informações Reais Confirmadas</h2>
-        <p>Os atalhos preenchem somente uma pergunta de teste. Nenhuma resposta esperada ou regra do oráculo é exibida.</p>
+        <p class="eyebrow">BANCO COMPLETO DE EXPERIÊNCIA</p>
+        <h2 id="human-test-title">Teste humano sem respostas sugeridas</h2>
+        <p>Escolha uma área para carregar exemplos ou escreva livremente. O oráculo e as decisões técnicas ficam ocultos por padrão.</p>
       </div>
-      <div class="human-prompts" aria-label="Atalhos de perguntas confirmadas">
+      <div class="human-prompts featured-prompts" aria-label="Atalhos de perguntas confirmadas">
         <button type="button" data-human-prompt="Quero fazer uma reserva.">Reserva</button>
         <button type="button" data-human-prompt="Como funciona a fila de espera?">Fila</button>
         <button type="button" data-human-prompt="Quais são os horários de funcionamento?">Horário</button>
@@ -45,60 +45,92 @@
       </div>
     </section>
 
-    <section class="workspace" aria-label="Simulador de conversa">
+    <section class="test-bank" aria-labelledby="test-bank-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">24 ÁREAS DE TESTE</p>
+          <h2 id="test-bank-title">Explore todo o banco</h2>
+        </div>
+        <p>Os grupos oferecem perguntas sintéticas, sem indicar intenção ou resultado esperado.</p>
+      </div>
+      <nav id="human-group-list" class="group-list" aria-label="Áreas do banco de teste"></nav>
+      <div id="human-group-prompts" class="group-prompts" aria-live="polite">
+        <p>Escolha uma área para ver perguntas de partida.</p>
+      </div>
+    </section>
+
+    <section class="workspace" aria-label="Atendimento livre">
       <form id="triage-form" class="composer">
-        <div class="native-toolbar wide" aria-label="Controles do simulador nativo">
-          <button id="advance-clock" type="button">Avançar 1 minuto</button>
-          <button id="replay-state" type="button">Reproduzir estado</button>
-          <button id="reset-state" type="button">Reiniciar cenário</button>
+        <div class="conversation-title wide">
+          <div>
+            <p class="eyebrow">ATENDIMENTO LIVRE</p>
+            <h2>Converse como um cliente</h2>
+          </div>
           <span id="clock-state">Relógio aguardando</span>
         </div>
+
         <div class="field wide">
-          <label for="case-select">Cenário sintético ou conversa manual</label>
-          <select id="case-select"><option value="manual">Entrada manual sintética</option></select>
+          <label for="message">Sua mensagem</label>
+          <textarea id="message" maxlength="2000" rows="5" placeholder="Escreva uma situação sintética, sem dados pessoais." required></textarea>
+          <small>Nenhuma mensagem sai deste computador. O texto bruto não entra no CRM.</small>
         </div>
-        <div class="field wide">
-          <label for="message">Conversa manual livre</label>
-          <textarea id="message" maxlength="2000" rows="5" placeholder="Descreva uma situação sintética, sem dados pessoais." required></textarea>
-          <small>O texto é processado em memória e não entra no registro CRM.</small>
-        </div>
-        <div class="field">
-          <label for="origin">Origem conhecida</label>
-          <select id="origin">
-            <option value="">Desconhecida</option>
-            <option value="own_delivery">Delivery próprio</option>
-            <option value="marketplace">Marketplace</option>
-            <option value="dining_room">Salão</option>
-            <option value="valet">Manobrista</option>
-          </select>
-        </div>
-        <div class="field">
-          <label for="severity">Gravidade conhecida</label>
-          <select id="severity">
-            <option value="">Desconhecida</option>
-            <option value="low">Baixa</option>
-            <option value="medium">Média</option>
-            <option value="high">Alta</option>
-            <option value="critical">Crítica</option>
-          </select>
-        </div>
-        <div class="field">
-          <label for="order-reference">Referência sintética</label>
-          <input id="order-reference" placeholder="Opcional para cenários de pedido" autocomplete="off">
-        </div>
-        <div class="field">
-          <label for="detail-code">Código de detalhe</label>
-          <input id="detail-code" placeholder="Opcional para ocorrências" autocomplete="off">
-        </div>
-        <button class="primary" type="submit">Executar triagem</button>
+
+        <details class="context-options wide">
+          <summary>Informações opcionais já conhecidas</summary>
+          <div class="context-grid">
+            <div class="field">
+              <label for="origin">Origem</label>
+              <select id="origin">
+                <option value="">Desconhecida</option>
+                <option value="own_delivery">Delivery próprio</option>
+                <option value="marketplace">iFood</option>
+                <option value="dining_room">Salão</option>
+                <option value="valet">Manobrista</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="severity">Gravidade</label>
+              <select id="severity">
+                <option value="">Desconhecida</option>
+                <option value="low">Baixa</option>
+                <option value="medium">Média</option>
+                <option value="high">Alta</option>
+                <option value="critical">Crítica</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="order-reference">Referência sintética</label>
+              <input id="order-reference" placeholder="Opcional" autocomplete="off">
+            </div>
+            <div class="field">
+              <label for="detail-code">Código de detalhe</label>
+              <input id="detail-code" placeholder="Opcional" autocomplete="off">
+            </div>
+          </div>
+        </details>
+
+        <details id="developer-tools" class="developer-only hidden wide">
+          <summary>Ferramentas de desenvolvimento · 200 casos sintéticos</summary>
+          <div class="native-toolbar">
+            <button id="advance-clock" type="button">Avançar 1 minuto</button>
+            <button id="replay-state" type="button">Reproduzir estado</button>
+            <button id="reset-state" type="button">Reiniciar cenário</button>
+          </div>
+          <div class="field">
+            <label for="case-select">Cenário técnico</label>
+            <select id="case-select"><option value="manual">Atendimento livre</option></select>
+          </div>
+        </details>
+
+        <button class="primary" type="submit">Enviar mensagem</button>
         <p id="request-state" class="request-state" aria-live="polite"></p>
       </form>
 
       <section id="result" class="result empty" aria-live="polite">
         <div class="empty-state">
-          <p class="eyebrow">AGUARDANDO CENÁRIO</p>
-          <h2>O motor ainda não foi acionado.</h2>
-          <p>Escolha um dos 200 casos sintéticos ou escreva uma situação de teste.</p>
+          <p class="eyebrow">CONVERSA PRONTA</p>
+          <h2>O TATÁ responde por aqui.</h2>
+          <p>Envie uma mensagem para iniciar o atendimento sintético.</p>
         </div>
       </section>
     </section>
@@ -106,7 +138,11 @@
     <section id="evaluation" class="evaluation hidden" aria-label="Avaliação do resultado">
       <div>
         <p class="eyebrow">AVALIAÇÃO HUMANA</p>
-        <h2>Como ficou a triagem?</h2>
+        <h2>Como ficou a experiência?</h2>
+        <label for="experience-note">O que ficou estranho nesta resposta?</label>
+        <textarea id="experience-note" maxlength="500" rows="3" placeholder="Comentário sintético opcional"></textarea>
+        <button id="save-experience-note" type="button">Salvar observação</button>
+        <p id="evaluation-state" class="request-state" aria-live="polite"></p>
       </div>
       <div class="evaluation-actions">
         <button data-verdict="correct">Correto</button>
@@ -117,7 +153,6 @@
         <button data-verdict="should_be_human">Deveria ir para humano</button>
         <button data-verdict="should_not_be_human">Não deveria ir para humano</button>
       </div>
-      <p id="evaluation-state" class="request-state" aria-live="polite"></p>
     </section>
   </main>
   <script src="/app.js"></script>
