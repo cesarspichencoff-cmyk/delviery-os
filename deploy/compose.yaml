@@ -1,0 +1,140 @@
+# DeliveryOS Cloud Pilot V1 — composição local
+#
+# NÃO EXECUTADO NESTA MÁQUINA: não há Docker aqui. Os arquivos estão completos,
+# mas `docker compose config/build/up` ainda não passou neles. Ver o relatório.
+#
+#   cd deploy && cp .env.pilot.example .env   # e preencha
+#   docker compose config
+#   docker compose build
+#   docker compose up -d
+#
+# Só o proxy publica porta. Todo o resto vive na rede privada.
+
+name: deliveryos-pilot
+
+services:
+  # --------------------------------------------------------------- proxy
+  # Único serviço com porta publicada. Termina TLS e fala HTTP com a API
+  # dentro da rede privada.
+  deliveryos-proxy:
+    image: caddy:2-alpine
+    container_name: deliveryos-proxy
+    restart: unless-stopped
+    depends_on:
+      deliveryos-api:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      # Domínio configurável. Enquanto não houver domínio real, o Caddyfile
+      # usa TLS interno e não pede certificado público.
+      ENTREGAS_DOMAIN: ${ENTREGAS_DOMAIN:-localhost}
+    networks: [interna]
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:2019/config/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    logging: &logs
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  # --------------------------------------------------------------- api
+  # O servidor do Entregas. NÃO publica porta: quem alcança é o proxy.
+  deliveryos-api:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    image: deliveryos-pilot:v1
+    container_name: deliveryos-api
+    restart: unless-stopped
+    env_file: [.env]
+    environment:
+      ENTREGAS_ENV: cloud
+      ENTREGAS_BIND: 0.0.0.0
+      ENTREGAS_UI_PORT: "5193"
+      ENTREGAS_DATA_DIR: /dados
+    volumes:
+      # O volume é a única coisa que sobrevive à recriação do container.
+      - entregas_dados:/dados
+      # Configurações da unidade e do termo: fora do Git, somente leitura.
+      - ./config:/config:ro
+    networks: [interna]
+    # `expose` documenta a porta interna sem publicá-la no host.
+    expose:
+      - "5193"
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:5193/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+    # Tempo para o desligamento gracioso fechar o backup antes do SIGKILL.
+    stop_grace_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+        reservations:
+          memory: 128M
+    security_opt:
+      - no-new-privileges:true
+    read_only: false # o processo grava no volume
+    tmpfs:
+      - /tmp:size=64m
+    logging: *logs
+
+  # --------------------------------------------------------------- backup
+  # Cópia periódica do volume para fora do container da API. Roda como
+  # serviço próprio para que uma falha aqui nunca derrube o Entregas.
+  deliveryos-backup:
+    image: alpine:3.20
+    container_name: deliveryos-backup
+    restart: unless-stopped
+    depends_on:
+      deliveryos-api:
+        condition: service_started
+    volumes:
+      - entregas_dados:/dados:ro
+      - entregas_backups:/backups
+    # Um tar por dia, retendo 14. Não substitui backup fora da máquina —
+    # ver o runbook.
+    command: >
+      sh -c "while true; do
+        ts=$$(date -u +%Y%m%dT%H%M%SZ);
+        tar -czf /backups/entregas-$$ts.tar.gz -C /dados . 2>/dev/null || true;
+        ls -1t /backups/entregas-*.tar.gz 2>/dev/null | tail -n +15 | xargs -r rm -f;
+        sleep 86400;
+      done"
+    networks: [interna]
+    logging: *logs
+
+# ---------------------------------------------------------------- rede
+networks:
+  interna:
+    driver: bridge
+    # `internal: false` porque a API precisa de saída para NTP/DNS; o que
+    # importa é que nada aqui está publicado, exceto o proxy.
+
+# ---------------------------------------------------------------- volumes
+volumes:
+  entregas_dados:
+    name: deliveryos-pilot-dados
+  entregas_backups:
+    name: deliveryos-pilot-backups
+  caddy_data:
+    name: deliveryos-pilot-caddy-data
+  caddy_config:
+    name: deliveryos-pilot-caddy-config

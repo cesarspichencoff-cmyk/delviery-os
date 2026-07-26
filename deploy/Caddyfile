@@ -1,0 +1,74 @@
+# DeliveryOS Cloud Pilot V1 — proxy reverso
+#
+# NESTA MISSÃO NÃO SE PEDE CERTIFICADO PÚBLICO. Com `ENTREGAS_DOMAIN` não
+# definido, o Caddy usa `localhost` e emite certificado interno próprio —
+# nada é solicitado a nenhuma autoridade, nenhum domínio é registrado.
+#
+# Quando houver domínio real, basta definir ENTREGAS_DOMAIN e o Caddy pede o
+# certificado sozinho. Não faça isso antes de o domínio existir e apontar.
+
+{
+	# Sem e-mail configurado, o Caddy não tenta ACME automático em produção.
+	admin 0.0.0.0:2019
+	# Logs em JSON: plataforma de nuvem indexa melhor, e evita linha solta.
+	log {
+		output stdout
+		format json
+		level INFO
+	}
+}
+
+{$ENTREGAS_DOMAIN:localhost} {
+	# TLS interno enquanto não houver domínio. Trocar por ACME é uma linha.
+	tls internal
+
+	encode gzip
+
+	header {
+		# O aplicativo é interno; nada disto precisa ser indexado ou embutido.
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "no-referrer"
+		# A interface não carrega nada de fora. CSP restritiva é possível
+		# justamente porque não há CDN nem fonte externa.
+		Content-Security-Policy "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+		-Server
+	}
+
+	# Lote de GPS pode chegar grande depois de um período offline, e a
+	# sincronização acontece com o motoboy em movimento: timeout curto aqui
+	# significaria ponto perdido justamente quando a rede está ruim.
+	@gps path /api/gps/batch /api/events/batch
+	handle @gps {
+		request_body {
+			max_size 10MB
+		}
+		reverse_proxy deliveryos-api:5193 {
+			transport http {
+				read_timeout 120s
+				write_timeout 120s
+			}
+		}
+	}
+
+	# Demais requisições: corpo pequeno, timeout normal.
+	handle {
+		request_body {
+			max_size 2MB
+		}
+		reverse_proxy deliveryos-api:5193 {
+			transport http {
+				read_timeout 30s
+				write_timeout 30s
+			}
+			header_up X-Real-IP {remote_host}
+		}
+	}
+}
+
+# HTTP existe só para mandar para HTTPS. O GPS não liga fora de contexto
+# seguro, então servir a interface em HTTP seria entregar um app quebrado.
+http://{$ENTREGAS_DOMAIN:localhost} {
+	redir https://{host}{uri} permanent
+}

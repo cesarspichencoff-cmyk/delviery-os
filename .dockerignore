@@ -1,0 +1,66 @@
+# O que NÃO entra na imagem.
+#
+# Regra: se não é necessário para o processo rodar, fica de fora. Imagem menor
+# é build mais rápido, superfície menor e menos chance de vazar arquivo local.
+
+# Histórico e worktrees — pesados e inúteis dentro do container.
+.git
+.git*
+!.gitignore
+
+# Dependências e artefatos: reconstruídos no estágio de build.
+node_modules
+dist
+
+# Android inteiro. O container é do servidor; o APK é construído fora.
+android
+
+# Segredos e certificados — nunca, em hipótese alguma.
+deploy/.env
+deploy/.env.*
+!deploy/.env.pilot.example
+deploy/certs
+deploy/config
+deploy/dados
+config/entregas-pilot.json
+config/entregas-devices.json
+config/entregas-term.json
+config/entregas-gps-flags.json
+config/entregas-unit-*.json
+*.pem
+*.key
+*.crt
+*.pfx
+*.p12
+*.keystore
+*.jks
+.env
+
+# Artefatos de build e binários.
+*.apk
+*.aab
+*.log
+
+# Dados reais e gerados. O volume é montado; nada disso vai assado na imagem.
+data
+prototipos
+app-v1
+
+# Documentação e material de auditoria: não muda o comportamento do serviço.
+docs
+*.md
+!package.json
+
+# Ferramentas de desenvolvimento e captura que não rodam no servidor.
+tools/audit_*
+tools/capturas_*
+tools/comparar_*
+tools/serve_prototipo.js
+tools/servir_v1.js
+
+# Ruído de editor e de sistema operacional.
+.vscode
+.idea
+.claude
+Thumbs.db
+.DS_Store
