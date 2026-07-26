@@ -1,21 +1,32 @@
 # Compilar e instalar o aplicativo Android
 
-> **O projeto ainda não foi compilado.** Este ambiente não tem JDK, Gradle nem
-> Android SDK. O que está abaixo é o caminho exato — não uma estimativa.
+> **O JDK e o Gradle wrapper já estão prontos.** Falta o Android SDK, que
+> exige um aceite de licença — decisão sua, não minha. Depois disso, um
+> comando gera o APK.
 
-## 1. O que falta na máquina
+## Caminho curto
 
-Verificado nesta máquina, componente por componente:
+```powershell
+.\android\setup-android-sdk.ps1
+```
+
+Ele prepara tudo, **para** no aceite da licença, mostra o comando, e continua
+quando você rodar de novo. As seções abaixo detalham cada passo, caso prefira
+fazer à mão.
+
+## 1. Estado desta máquina
 
 | Componente | Estado | Comando de verificação |
 |---|---|---|
-| JDK 17 | **ausente** | `java -version` |
-| Gradle | vem pelo wrapper | — |
-| Android SDK (platform 34, build-tools) | **ausente** | `sdkmanager --list` |
-| `adb` | **ausente** | `adb version` |
-| Emulador | **ausente** | `emulator -list-avds` |
+| JDK 17 (Temurin 17.0.19) | **instalado** | `java -version` |
+| Gradle 8.9 | **wrapper pronto e provado** | `.\gradlew.bat --version` |
+| Android SDK (platform 34, build-tools) | **ausente — falta aceitar a licença** | `sdkmanager --list` |
+| `adb` | ausente (vem com platform-tools) | `adb version` |
+| Emulador | ausente | `emulator -list-avds` |
+| Virtualização | **habilitada** | — |
 
-Nenhum deles é opcional para gerar APK.
+O wrapper valida a distribuição do Gradle pelo SHA-256 fixado em
+`gradle-wrapper.properties`, então qualquer máquina reproduz o mesmo build.
 
 ## 2. Instalar
 
@@ -46,17 +57,17 @@ Por fim, aponte o SDK para o projeto criando `android/local.properties`
 sdk.dir=C:\\Users\\<voce>\\AppData\\Local\\Android\\Sdk
 ```
 
-## 3. Gerar o wrapper do Gradle
+## 3. Gradle wrapper
 
-O repositório versiona `gradle-wrapper.properties`, mas **não** o `.jar` do
-wrapper — binário não entra no Git. Gere-o uma vez:
+Já está pronto e versionado (`gradlew`, `gradlew.bat`, `gradle-wrapper.jar`,
+`gradle-wrapper.properties`). Não precisa de Gradle instalado:
 
 ```bash
-cd android && gradle wrapper --gradle-version 8.9
+cd android && ./gradlew --version
 ```
 
-Se você não tem `gradle` no PATH, o Android Studio faz isso ao abrir a pasta
-`android/`.
+Provado nesta máquina: Gradle 8.9 sobre JVM 17.0.19, distribuição validada
+pelo SHA-256.
 
 ## 4. Compilar
 
@@ -77,6 +88,16 @@ O `.gitignore` já bloqueia `*.apk` — o artefato não entra no repositório.
 ```bash
 cd android && ./gradlew testDebugUnitTest
 ```
+
+**Sem Android SDK**, o portão de captura já pode ser verificado — ele é Kotlin
+puro:
+
+```bash
+cd android/gate-verification && gradle test
+```
+
+Compila e roda o MESMO `CaptureGate.kt` do aplicativo numa JVM comum. 12
+testes, todos passando nesta máquina.
 
 Testes instrumentados (precisam de aparelho ou emulador ligado):
 
