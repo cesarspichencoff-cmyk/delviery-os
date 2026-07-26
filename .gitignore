@@ -34,3 +34,15 @@ certs/
 *.pfx
 *.p12
 
+# Android — artefatos de build e chaves de assinatura
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/.idea/
+android/captures/
+*.apk
+*.aab
+*.keystore
+*.jks
+android/keystore.properties

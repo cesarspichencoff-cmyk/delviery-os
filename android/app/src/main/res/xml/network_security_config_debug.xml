@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Debug do piloto: alem das autoridades do sistema, confia tambem nas que o
+  usuario instalou no aparelho. E' assim que o certificado local (mkcert)
+  passa a valer SEM desativar a verificacao de TLS em codigo.
+
+  Cleartext continua proibido: HTTP puro nao e' aceito nem no debug.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>
