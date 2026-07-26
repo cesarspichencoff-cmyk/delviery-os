@@ -11,4 +11,3 @@ function scanTree(root){const resolved=path.resolve(root);if(!fs.existsSync(reso
 function assertTreeSafe(root){const result=scanTree(root);if(!result.passed)throw nativeError('PRIVACY_SCAN_FAILED',{files:result.files,findings:result.findings.length});return result;}
 
 module.exports={SECRET_FILE,scanText,scanTree,assertTreeSafe};
-

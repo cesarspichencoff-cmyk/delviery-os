@@ -9,4 +9,3 @@ function foodSafetyPolicy(classification,message){if(!FOOD_SAFETY_INTENTS.has(cl
 function abuseReview(signals={}){let score=0;for(const key of ['order_missing','chronology_conflict','duplicate_claim','prior_compensation','promise_fulfilled','evidence_conflict','unusual_recurrence'])if(signals[key]===true)score+=1;const state=score>=5?'high_risk_review':score>=3?'manual_review':score>=1?'needs_confirmation':'normal';return Object.freeze({state,internal_only:true,customer_visible:false,automatic_block:false,human_decision_required:state!=='normal',signals_count:score,synthetic:true});}
 
 module.exports={FOOD_SAFETY_INTENTS,ABUSE_STATES,foodSafetyPolicy,abuseReview};
-

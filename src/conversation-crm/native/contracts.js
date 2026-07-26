@@ -96,4 +96,3 @@ function validateDriverManifest(input) {
 function operationalIdentity(value) { return sha256(canonicalJson(value)); }
 
 module.exports = { RESULT_STATES, CAPABILITY_STATES, DRIVER_MODES, QUEUE_STATES, DATA_STATES, AUTHORITIES, requireObject, requireString, requireEnum, requireIso, validateGatewayInput, validateCapabilityRequest, validateCapabilityResult, validateDriverManifest, operationalIdentity };
-

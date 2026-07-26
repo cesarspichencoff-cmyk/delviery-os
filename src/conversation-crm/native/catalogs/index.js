@@ -46,4 +46,3 @@ function loadCanonicalCatalogs() {
 }
 
 module.exports = { HASHES, deepFreeze, readCatalog, loadCanonicalCatalogs };
-

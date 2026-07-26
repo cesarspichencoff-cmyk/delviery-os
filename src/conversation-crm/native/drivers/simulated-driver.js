@@ -41,4 +41,3 @@ class SimulatedDriver {
 }
 
 module.exports = { OUTCOME_MAP, SimulatedDriver };
-

@@ -15,4 +15,3 @@ function safeError(error) {
 }
 
 module.exports = { nativeError, safeError };
-

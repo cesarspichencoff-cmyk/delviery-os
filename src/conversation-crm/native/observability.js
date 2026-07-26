@@ -9,4 +9,3 @@ class NativeObservability{
 }
 
 module.exports={NativeObservability};
-

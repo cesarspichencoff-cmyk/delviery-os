@@ -38,4 +38,3 @@ function assertFeature(flags, name) {
 }
 
 module.exports = { FLAG_NAMES, DEFAULT_FLAGS, validateFeatureFlags, loadFeatureFlags, assertFeature };
-

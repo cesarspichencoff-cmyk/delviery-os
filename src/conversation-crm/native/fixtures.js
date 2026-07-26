@@ -13,4 +13,3 @@ const SYNTHETIC_FIXTURES = Object.freeze({
 });
 
 module.exports = { SYNTHETIC_FIXTURES };
-

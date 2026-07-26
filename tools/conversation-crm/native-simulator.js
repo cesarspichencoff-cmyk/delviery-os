@@ -15,4 +15,3 @@ function run(argv=process.argv.slice(2)){
 }
 if(require.main===module){try{process.exitCode=run();}catch(error){process.stderr.write(`${JSON.stringify({error_code:error.code||'NATIVE_SIMULATOR_FAILED'})}\n`);process.exitCode=1;}}
 module.exports={run};
-

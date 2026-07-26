@@ -123,4 +123,3 @@ class NativeEventStore {
 }
 
 module.exports = { ensureDirectory, durableAppend, NativeEventStore };
-

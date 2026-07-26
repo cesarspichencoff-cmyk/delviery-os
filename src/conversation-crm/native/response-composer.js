@@ -6,4 +6,3 @@ function composeResponse(input){const{classification,result,handoff}=input;let t
   return Object.freeze({schema_version:'conversation-response-v1',text,status_reflected:result.status,handoff_confirmed:handoff?.status==='confirmed',synthetic:true});}
 
 module.exports={CONCLUSIVE,composeResponse};
-

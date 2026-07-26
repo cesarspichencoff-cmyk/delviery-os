@@ -11,4 +11,3 @@ function validateSimulatorConfig(raw){if(!raw||raw.schema_version!=='conversatio
 function loadSimulatorConfig(options={}){const projectRoot=path.resolve(options.projectRoot||PROJECT_ROOT);const file=resolveProjectRelative(options.file||'config/conversation-crm/native-simulator.example.json',{projectRoot,label:'native_simulator_config'});let raw;try{raw=JSON.parse(fs.readFileSync(file.resolved,'utf8'));}catch{throw nativeError('SIMULATOR_CONFIG_INVALID');}const config=validateSimulatorConfig(raw);return deepFreeze({...config,config_file:file,scenario_catalog_path:resolveProjectRelative(config.scenario_catalog,{projectRoot,label:'scenario_catalog'}),runtime_path:resolveProjectRelative(config.runtime_dir,{projectRoot,label:'runtime_dir'})});}
 
 module.exports={validTimeZone,validateSimulatorConfig,loadSimulatorConfig};
-

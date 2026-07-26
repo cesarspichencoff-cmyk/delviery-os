@@ -42,4 +42,3 @@ class ConversationCrmV1 {
 }
 
 module.exports = { ConversationCrmV1 };
-

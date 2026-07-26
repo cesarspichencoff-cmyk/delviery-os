@@ -32,4 +32,3 @@ class DeliveryOsStateHub {
 }
 
 module.exports = { ENTITY_TYPES, DeliveryOsStateHub };
-

@@ -94,4 +94,3 @@ class DeterministicIds {
 }
 
 module.exports = { canonicalize, canonicalJson, sha256, SeededRandom, DeterministicClock, DeterministicIds };
-
