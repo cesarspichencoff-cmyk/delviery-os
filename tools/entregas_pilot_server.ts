@@ -60,7 +60,18 @@ const rawDataDir = process.env.ENTREGAS_DATA_DIR?.trim() || cfg.data_dir;
 const dataDir = isAbsolute(rawDataDir) ? rawDataDir : join(process.cwd(), rawDataDir);
 mkdirSync(dataDir, { recursive: true });
 const log = createPilotLogger(dataDir);
-const facade = new PilotApplicationFacade(cfg, log);
+/*
+ * A facade resolve o próprio caminho a partir de `cfg.data_dir`. Se ela
+ * receber a config crua enquanto o servidor usa `dataDir`, os dois gravam em
+ * lugares DIFERENTES: `store.json` (viagens, event log, outbox) vai para o
+ * diretório do arquivo de config, e backups/aceites/auditoria vão para o
+ * volume. Num container isso é perda total de dado de viagem no restart — o
+ * volume ficaria com os backups e sem a viagem.
+ *
+ * Por isso a config entregue à facade carrega o diretório JÁ RESOLVIDO.
+ */
+const cfgResolved = { ...cfg, data_dir: dataDir };
+const facade = new PilotApplicationFacade(cfgResolved, log);
 const backupDir = join(dataDir, cfg.backup.dir || "backups");
 /*
  * Contrato de ambiente. Em modo remoto ele EXIGE credencial por variável,
