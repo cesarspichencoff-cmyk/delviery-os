@@ -1,0 +1,224 @@
+# DeliveryOS — plataforma híbrida: crítico + assíncrono + PostgreSQL
+#
+# NÃO EXECUTADO NESTA MÁQUINA: não há Docker aqui. Os arquivos estão completos
+# e auditados por teste automatizado (`npm run test:entregas:deploy-audit`),
+# mas `docker compose config/build/up` ainda não passou neles.
+#
+#   cd deploy && cp .env.platform.example .env
+#   docker compose -f compose.platform.yaml config
+#   docker compose -f compose.platform.yaml up -d
+#
+# A forma da composição é a arquitetura: o crítico e o assíncrono são
+# processos SEPARADOS, com o mesmo código e ciclos de vida diferentes. Derrubar
+# o worker não pode tirar a rua do ar — e aqui isso é verificável, não
+# prometido.
+
+name: deliveryos-platform
+
+x-imagem: &imagem
+  build:
+    context: ..
+    dockerfile: deploy/Dockerfile.platform
+  image: deliveryos-platform:v1
+
+x-logs: &logs
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+x-ambiente: &ambiente
+  DELIVERYOS_ENV: ${DELIVERYOS_ENV:-pilot}
+  DELIVERYOS_DATABASE_URL: postgres://${POSTGRES_USER:-deliveryos}:${POSTGRES_PASSWORD:?senha do banco obrigatoria}@deliveryos-postgres:5432/${POSTGRES_DB:-deliveryos}
+  # TLS desligado APENAS aqui dentro: o tráfego não sai da rede privada do
+  # Docker e o banco não tem certificado. Para um PostgreSQL hospedado, a URL
+  # aponta para fora e este valor vira true — o código recusa remoto sem TLS.
+  DELIVERYOS_DATABASE_SSL: "false"
+  DELIVERYOS_COMMIT: ${DELIVERYOS_COMMIT:?commit da imagem obrigatorio}
+  DELIVERYOS_VERSION: ${DELIVERYOS_VERSION:-0.1.0}
+  # Nenhuma réplica aplica schema no boot: a migration é um passo explícito.
+  DELIVERYOS_MIGRATE_ON_BOOT: "false"
+
+services:
+  # ------------------------------------------------------------ postgres
+  # Fonte de verdade online. NÃO publica porta: só a rede interna alcança.
+  deliveryos-postgres:
+    image: postgres:16-bookworm
+    container_name: deliveryos-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-deliveryos}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?senha do banco obrigatoria}
+      POSTGRES_DB: ${POSTGRES_DB:-deliveryos}
+      # Fuso do container fixo em UTC. Todo carimbo do schema é TIMESTAMPTZ;
+      # deixar o fuso ao acaso do host é como um relatório muda de números
+      # quando alguém troca a máquina.
+      TZ: UTC
+      PGTZ: UTC
+    volumes:
+      - pgdados:/var/lib/postgresql/data
+    networks: [interna]
+    expose:
+      - "5432"
+    healthcheck:
+      # `pg_isready` com usuário e base explícitos: sem eles ele responde por
+      # um usuário que pode nem existir, e o "saudável" não significa nada.
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-deliveryos} -d ${POSTGRES_DB:-deliveryos}"]
+      interval: 10s
+      timeout: 5s
+      start_period: 30s
+      retries: 5
+    stop_grace_period: 60s
+    security_opt:
+      - no-new-privileges:true
+    logging: *logs
+
+  # ------------------------------------------------------------- migrate
+  # Passo explícito, roda uma vez e sai. Existe como serviço próprio para que
+  # NENHUMA réplica aplique schema no boot: N processos subindo juntos
+  # correriam a mesma migration ao mesmo tempo e um deploy viraria corrida.
+  deliveryos-migrate:
+    <<: *imagem
+    container_name: deliveryos-migrate
+    restart: "no"
+    depends_on:
+      deliveryos-postgres:
+        condition: service_healthy
+    environment:
+      <<: *ambiente
+      DELIVERYOS_MIGRATE_ON_BOOT: "true"
+    command: ["node", "dist/src/platform/bin/migrate.js"]
+    networks: [interna]
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m
+    logging: *logs
+
+  # ------------------------------------------------------------- crítico
+  # O que a operação não pode perder. Sobe com CRM, Copiloto e IA ausentes.
+  deliveryos-critical:
+    <<: *imagem
+    container_name: deliveryos-critical
+    restart: unless-stopped
+    depends_on:
+      deliveryos-postgres:
+        condition: service_healthy
+      deliveryos-migrate:
+        condition: service_completed_successfully
+    environment:
+      <<: *ambiente
+      DELIVERYOS_HOST: 0.0.0.0
+      DELIVERYOS_PORT: "8080"
+    command: ["node", "dist/src/platform/bin/critical.js"]
+    networks: [interna]
+    # `expose`, não `ports`: quem publica para fora é o proxy, e só ele.
+    expose:
+      - "8080"
+    healthcheck:
+      # `/ready`, não `/health`: a pergunta do orquestrador é "posso mandar
+      # tráfego", e ela só é sim quando o processo consegue PERSISTIR.
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:8080/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 15s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+    stop_grace_period: 30s
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+        reservations:
+          memory: 128M
+    logging: *logs
+
+  # ----------------------------------------------------------- assíncrono
+  # Consome a outbox e executa jobs. Pode cair e voltar sem afetar a rua.
+  deliveryos-async:
+    <<: *imagem
+    container_name: deliveryos-async
+    restart: unless-stopped
+    depends_on:
+      deliveryos-postgres:
+        condition: service_healthy
+      deliveryos-migrate:
+        condition: service_completed_successfully
+    environment:
+      <<: *ambiente
+      DELIVERYOS_TICK_MS: "1000"
+      DELIVERYOS_BATCH_SIZE: "25"
+    command: ["node", "dist/src/platform/bin/async-runtime.js"]
+    networks: [interna]
+    # Sem porta e sem healthcheck HTTP: ele não escuta nada. A saúde dele é
+    # visível pelo backlog, que o crítico reporta — inventar um endpoint aqui
+    # só criaria uma superfície a mais para proteger.
+    #
+    # `stop_grace_period` generoso: interromper um job no meio o devolve pela
+    # expiração do lease, mas retrabalho sobre efeito externo pode duplicar.
+    stop_grace_period: 45s
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+        reservations:
+          memory: 128M
+    logging: *logs
+
+  # -------------------------------------------------------------- backup
+  # `pg_dump` diário para um volume separado. Serviço próprio para que uma
+  # falha de backup nunca derrube o banco nem os runtimes.
+  #
+  # Isto é cópia LOCAL. Backup que mora na mesma máquina do banco não protege
+  # contra perda da máquina — a cópia externa está no runbook e depende de
+  # credencial que só o César pode criar.
+  deliveryos-backup:
+    image: postgres:16-bookworm
+    container_name: deliveryos-backup
+    restart: unless-stopped
+    depends_on:
+      deliveryos-postgres:
+        condition: service_healthy
+    environment:
+      PGUSER: ${POSTGRES_USER:-deliveryos}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?senha do banco obrigatoria}
+      PGHOST: deliveryos-postgres
+      PGDATABASE: ${POSTGRES_DB:-deliveryos}
+      TZ: UTC
+    volumes:
+      - pgbackups:/backups
+    command: >
+      sh -c "while true; do
+        ts=$$(date -u +%Y%m%dT%H%M%SZ);
+        pg_dump --format=custom --file=/backups/deliveryos-$$ts.dump || echo 'backup falhou em '$$ts;
+        ls -1t /backups/deliveryos-*.dump 2>/dev/null | tail -n +15 | xargs -r rm -f;
+        sleep 86400;
+      done"
+    networks: [interna]
+    logging: *logs
+
+networks:
+  interna:
+    driver: bridge
+
+volumes:
+  pgdados:
+    name: deliveryos-platform-pgdados
+  pgbackups:
+    name: deliveryos-platform-pgbackups

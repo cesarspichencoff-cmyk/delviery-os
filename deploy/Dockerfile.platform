@@ -1,0 +1,59 @@
+# DeliveryOS — imagem dos runtimes crítico e assíncrono
+#
+# NÃO CONSTRUÍDO NESTA MÁQUINA: não há Docker aqui. O arquivo está completo e
+# revisado, mas `docker build` ainda não passou nele. O relatório do Macro-
+# Prompt 1 diz exatamente o que isso deixa não comprovado.
+#
+# Uma imagem só para os dois runtimes, com comandos diferentes. Duas imagens
+# separadas garantiriam duas versões do mesmo código no ar ao mesmo tempo,
+# que é a origem de "funciona no crítico e falha no worker".
+#
+# Build a partir da RAIZ do repositório:
+#   docker build -f deploy/Dockerfile.platform -t deliveryos-platform:v1 .
+
+# ---------------------------------------------------------------- build
+FROM node:22-bookworm-slim AS build
+
+WORKDIR /build
+
+COPY package.json package-lock.json* ./
+RUN if [ -f package-lock.json ]; then npm ci; else npm install --no-audit --no-fund; fi
+
+COPY tsconfig.json ./
+COPY src ./src
+COPY tools ./tools
+COPY demo ./demo
+
+# Compila e copia as migrations para dist/. O `tsc` ignora .sql — sem este
+# passo a imagem sobe sem schema e, pior, acha que não há migration pendente.
+RUN npx tsc && node tools/copiar_migrations.js
+
+# `pg` é dependência de RUNTIME e precisa sobreviver ao prune.
+RUN npm prune --omit=dev
+
+# ---------------------------------------------------------------- runtime
+FROM node:22-bookworm-slim AS runtime
+
+# `dumb-init` no PID 1 encaminha sinais. Sem ele o SIGTERM do `docker stop`
+# não chega ao Node, o encerramento gracioso não roda, e um job em andamento
+# só volta quando o lease vencer.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends dumb-init \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV NODE_ENV=production
+WORKDIR /app
+
+# Usuário sem privilégio. O `node` já existe na imagem base.
+COPY --from=build --chown=node:node /build/node_modules ./node_modules
+COPY --from=build --chown=node:node /build/dist ./dist
+COPY --from=build --chown=node:node /build/package.json ./package.json
+
+USER node
+
+# Documenta a porta do crítico. O worker assíncrono não escuta nada.
+EXPOSE 8080
+
+# Sem CMD: cada serviço da composição declara o seu. Um CMD padrão aqui faria
+# um erro de configuração subir silenciosamente o processo errado.
+ENTRYPOINT ["dumb-init", "--"]
