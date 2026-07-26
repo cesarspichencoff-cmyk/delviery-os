@@ -1,0 +1,247 @@
+{
+  "schema_version": "tata-operational-public-info-v1",
+  "version": "1.0.0",
+  "classification": "CONFIRMADO_POR_CESAR",
+  "confirmed_on": "2026-07-26",
+  "source": "Mensagens oficiais TATÁ Sushi de 25/07/2026, confirmadas por César em 26/07/2026.",
+  "scope": "public_operational_information",
+  "unit": {
+    "unit_id": "unidade-tata-53069",
+    "label": "Itaim",
+    "address": "R. João Cachoeira, 278 - Itaim Bibi, São Paulo - SP, 04535-000, Brasil",
+    "time_zone": "America/Sao_Paulo"
+  },
+  "opening_hours": {
+    "regular": {
+      "monday": [
+        {
+          "opens": "12:00",
+          "closes": "15:00"
+        },
+        {
+          "opens": "19:00",
+          "closes": "23:00"
+        }
+      ],
+      "tuesday": [
+        {
+          "opens": "12:00",
+          "closes": "15:00"
+        },
+        {
+          "opens": "19:00",
+          "closes": "23:00"
+        }
+      ],
+      "wednesday": [
+        {
+          "opens": "12:00",
+          "closes": "15:00"
+        },
+        {
+          "opens": "19:00",
+          "closes": "23:00"
+        }
+      ],
+      "thursday": [
+        {
+          "opens": "12:00",
+          "closes": "15:00"
+        },
+        {
+          "opens": "19:00",
+          "closes": "23:00"
+        }
+      ],
+      "friday": [
+        {
+          "opens": "12:00",
+          "closes": "15:00"
+        },
+        {
+          "opens": "19:00",
+          "closes": "23:30"
+        }
+      ],
+      "saturday": [
+        {
+          "opens": "12:00",
+          "closes": "16:30"
+        },
+        {
+          "opens": "19:00",
+          "closes": "23:30"
+        }
+      ],
+      "sunday": [
+        {
+          "opens": "11:00",
+          "closes": "16:30"
+        },
+        {
+          "opens": "18:00",
+          "closes": "22:00"
+        }
+      ]
+    },
+    "holiday": {
+      "status": "not_configured",
+      "customer_guidance": "confirm_special_hours"
+    }
+  },
+  "reservation": {
+    "url": "https://reservation.getin.app/MP9xnVkL",
+    "tolerance_minutes": 15,
+    "same_day_confirmation_may_be_required": true,
+    "may_be_cancelled_without_requested_confirmation": true,
+    "confirmation_requires_observable_system_result": true
+  },
+  "waitlist": {
+    "url": "https://reservation.getin.app/MP9xnVkL",
+    "available_when_reservation_unavailable": true,
+    "position_can_be_followed": true,
+    "customer_notified_when_table_available": true,
+    "arrival_after_call_minutes": 5,
+    "position_or_wait_time_must_not_be_invented": true,
+    "entry_confirmation_requires_deliveryos_result": true
+  },
+  "menus": {
+    "institutional_with_prices": "https://abre.ai/ni3n",
+    "dining_room_complete": "https://livemenu.app/menu/6407492af6880700523699bf?cross_session=done",
+    "own_delivery": "https://deliveryapp.neemo.com.br/delivery/5936/menu"
+  },
+  "restaurant_model": {
+    "service": "a_la_carte",
+    "executive_lunch_is_all_you_can_eat": false,
+    "tata_suggestion_is_all_you_can_eat": false
+  },
+  "executive_lunch": {
+    "availability": "weekday_lunch",
+    "price_brl_per_person": 136,
+    "course_count": 7,
+    "one_repeat_included": true,
+    "repeat_details": "not_formalized",
+    "courses": [
+      "Entrada fria — carpaccio misto de salmão e peixe branco, seis fatias.",
+      "Temaki — salmão, atum e atum spicy.",
+      "Entrada quente — nasu no missô e shimeji batayaki.",
+      "Sashimi — atum e salmão, quatro fatias.",
+      "Nigiris — barriga de salmão trufado, atum e peixe branco.",
+      "Rolls — batera de salmão, uramaki atum spicy avocado e dyo de salmão com shimeji.",
+      "Sorvete artesanal."
+    ]
+  },
+  "tata_suggestion": {
+    "availability": [
+      "dinner",
+      "weekend",
+      "holiday"
+    ],
+    "price_brl_per_person": 180,
+    "course_count": 5,
+    "repeat_included": false,
+    "courses": [
+      "Entrada fria — carpaccio misto de salmão e peixe branco, seis fatias.",
+      "Entrada quente — nasu no missô e shimeji batayaki.",
+      "Nigiris — barriga de salmão trufado, atum, peixe branco com shisô e salmão selado trufado.",
+      "Rolls — Tatá Roll, Uramaki Tatá Avocado e Batera de Salmão.",
+      "Especiais — vieira trufada, Ebi Nikkei, dyo de codorna e tobiko e polvo teriyaki."
+    ]
+  },
+  "payments": {
+    "confirmed": [
+      "Visa débito",
+      "Visa crédito",
+      "Mastercard débito",
+      "Mastercard crédito",
+      "American Express",
+      "Ticket Restaurante",
+      "Alelo",
+      "Pluxee"
+    ],
+    "not_confirmed": [
+      "dinheiro",
+      "Pix",
+      "outras bandeiras",
+      "pagamento por aproximação",
+      "parcelamento"
+    ]
+  },
+  "corkage": {
+    "fee_brl": 70,
+    "billing_unit": "not_confirmed"
+  },
+  "valet": {
+    "fee_brl": 45,
+    "location": "em frente ao restaurante"
+  },
+  "delivery": {
+    "own_delivery_url": "https://deliveryapp.neemo.com.br/delivery/5936/menu",
+    "ifood_available": true,
+    "automatic_preference": false
+  },
+  "oke_pickup": {
+    "intent_alias": "evento_oke_retirada",
+    "customer_selects_from_quote_options": true,
+    "fish_variety_depends_on_oke": true,
+    "quantity_depends_on_party_size": true,
+    "complements_may_include": [
+      "pratos quentes",
+      "entradas",
+      "sakes"
+    ],
+    "fulfillment": "pickup_only",
+    "availability_requires_team_confirmation": true,
+    "response_target": "by_next_day",
+    "required_fields": [
+      "party_size",
+      "pickup_time",
+      "requested_items"
+    ],
+    "boards_return_days": 2,
+    "delivery_available": false,
+    "price": "not_confirmed",
+    "deposit": "not_confirmed",
+    "quantity_per_person": "not_confirmed"
+  },
+  "ifood_support": {
+    "official_request_channel": "ifood_app",
+    "steps": [
+      "Meus Pedidos",
+      "Selecionar o pedido",
+      "Ajuda ou Reportar problema",
+      "Selecionar o motivo",
+      "Anexar evidências, quando houver"
+    ],
+    "store_analysis_examples": [
+      "item fora do padrão",
+      "alimento impróprio",
+      "pedido errado",
+      "item faltando"
+    ],
+    "platform_or_delivery_examples": [
+      "transporte",
+      "pedido revirado durante a entrega",
+      "atraso logístico",
+      "cupom",
+      "cardápio do aplicativo",
+      "falha do aplicativo"
+    ],
+    "occurrence_must_be_recorded": true,
+    "refund_must_not_be_promised": true,
+    "case_must_not_auto_close": true
+  },
+  "known_gaps": [
+    "holiday_hours",
+    "executive_lunch_repeat_details",
+    "cash_payment",
+    "pix_payment",
+    "contactless_payment",
+    "installments",
+    "corkage_billing_unit",
+    "oke_price",
+    "oke_deposit",
+    "oke_quantity_per_person"
+  ],
+  "real_drivers_enabled": false
+}

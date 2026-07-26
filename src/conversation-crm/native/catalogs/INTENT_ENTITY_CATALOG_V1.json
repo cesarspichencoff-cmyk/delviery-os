@@ -5,6 +5,7 @@
     "information",
     "reservation",
     "waitlist",
+    "event",
     "order",
     "occurrence",
     "food_safety",
@@ -1249,6 +1250,30 @@
         "H03"
       ],
       "native_route": "conversation_engine_to_deliveryos_capability_router"
+    },
+    {
+      "id": "event.oke_pickup",
+      "aliases": [
+        "evento_oke_retirada"
+      ],
+      "family": "evento_retirada",
+      "default_severity": "operational",
+      "minimum_entities": [
+        "unit",
+        "party_size",
+        "pickup_time",
+        "requested_items"
+      ],
+      "record_required": true,
+      "classification": "CANÔNICO_INTERNO",
+      "capability_candidates": [
+        "human.queue.create"
+      ],
+      "legacy_blocks": [
+        "C01",
+        "H01"
+      ],
+      "native_route": "conversation_engine_to_deliveryos_capability_router"
     }
   ],
   "entities": [
@@ -1277,6 +1302,16 @@
     {
       "id": "arrival_estimate",
       "type": "time_window",
+      "privacy": "operational"
+    },
+    {
+      "id": "pickup_time",
+      "type": "time_window",
+      "privacy": "operational"
+    },
+    {
+      "id": "requested_items",
+      "type": "array",
       "privacy": "operational"
     },
     {
