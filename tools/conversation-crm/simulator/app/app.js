@@ -15,6 +15,7 @@ const advanceClock = document.querySelector('#advance-clock');
 const replayState = document.querySelector('#replay-state');
 const resetState = document.querySelector('#reset-state');
 const clockState = document.querySelector('#clock-state');
+const humanTest = document.querySelector('#human-test');
 let cases = [];
 let activeCase = 'manual';
 
@@ -107,6 +108,20 @@ caseSelect.addEventListener('change', () => {
   severity.value = selected.context.severity || '';
   orderReference.value = selected.context.order_reference || '';
   detailCode.value = selected.context.occurrence_detail_code || '';
+});
+
+humanTest?.addEventListener('click', (event) => {
+  const prompt = event.target.dataset.humanPrompt;
+  if (!prompt) return;
+  activeCase = 'manual';
+  caseSelect.value = 'manual';
+  message.value = prompt;
+  origin.value = '';
+  severity.value = '';
+  orderReference.value = '';
+  detailCode.value = '';
+  requestState.textContent = 'Pergunta carregada para teste humano local.';
+  message.focus();
 });
 
 form.addEventListener('submit', async (event) => {

@@ -17,6 +17,34 @@
       <div class="mode"><span></span>Sintético · sem integrações</div>
     </header>
 
+    <section class="safety-banner" aria-label="Garantias do ambiente">
+      <strong>AMBIENTE DE SIMULAÇÃO</strong>
+      <span>NENHUMA MENSAGEM SERÁ ENVIADA</span>
+      <span>DRIVERS REAIS DESATIVADOS</span>
+    </section>
+
+    <section id="human-test" class="human-test" aria-labelledby="human-test-title">
+      <div>
+        <p class="eyebrow">CONTEÚDO OPERACIONAL V1.2</p>
+        <h2 id="human-test-title">Teste Humano — Informações Reais Confirmadas</h2>
+        <p>Os atalhos preenchem somente uma pergunta de teste. Nenhuma resposta esperada ou regra do oráculo é exibida.</p>
+      </div>
+      <div class="human-prompts" aria-label="Atalhos de perguntas confirmadas">
+        <button type="button" data-human-prompt="Quero fazer uma reserva.">Reserva</button>
+        <button type="button" data-human-prompt="Como funciona a fila de espera?">Fila</button>
+        <button type="button" data-human-prompt="Quais são os horários de funcionamento?">Horário</button>
+        <button type="button" data-human-prompt="Pode mandar o cardápio presencial completo?">Cardápio</button>
+        <button type="button" data-human-prompt="Como funciona o Almoço Executivo?">Almoço Executivo</button>
+        <button type="button" data-human-prompt="Como funciona a Sugestão Tatá?">Sugestão Tatá</button>
+        <button type="button" data-human-prompt="Quais pagamentos vocês aceitam?">Pagamento</button>
+        <button type="button" data-human-prompt="Qual é a taxa de rolha?">Rolha</button>
+        <button type="button" data-human-prompt="Quanto custa o valet e onde fica?">Valet</button>
+        <button type="button" data-human-prompt="Onde posso pedir pelo delivery próprio ou pelo iFood?">Delivery</button>
+        <button type="button" data-human-prompt="Quero encomendar um oke para retirada.">Oke</button>
+        <button type="button" data-human-prompt="Quero solicitar uma análise de reembolso no iFood.">iFood</button>
+      </div>
+    </section>
+
     <section class="workspace" aria-label="Simulador de conversa">
       <form id="triage-form" class="composer">
         <div class="native-toolbar wide" aria-label="Controles do simulador nativo">
@@ -26,11 +54,11 @@
           <span id="clock-state">Relógio aguardando</span>
         </div>
         <div class="field wide">
-          <label for="case-select">Cenário sintético</label>
+          <label for="case-select">Cenário sintético ou conversa manual</label>
           <select id="case-select"><option value="manual">Entrada manual sintética</option></select>
         </div>
         <div class="field wide">
-          <label for="message">Mensagem para triagem</label>
+          <label for="message">Conversa manual livre</label>
           <textarea id="message" maxlength="2000" rows="5" placeholder="Descreva uma situação sintética, sem dados pessoais." required></textarea>
           <small>O texto é processado em memória e não entra no registro CRM.</small>
         </div>

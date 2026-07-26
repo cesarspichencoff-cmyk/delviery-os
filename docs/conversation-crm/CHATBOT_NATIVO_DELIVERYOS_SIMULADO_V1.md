@@ -224,3 +224,16 @@ Para adicionar um cenário:
 4. comparar externamente o resultado com a expectativa.
 
 É proibido importar o oráculo em Engine, runtime, router, registry, placeholders ou migração. O painel lista cenários exclusivamente pelo módulo de simulação explicitamente ativado.
+
+## Conteúdo público confirmado V1.2
+
+A branch `feature/conversation-native-deliveryos-real-content-v1` adiciona `TATA_OPERATIONAL_PUBLIC_INFO_V1` ao catálogo operacional, sem colocá-lo no oráculo dos 200 cenários.
+
+- unidade canônica: `unidade-tata-53069`;
+- fonte: `CONFIRMADO_POR_CESAR`;
+- 52 intenções operacionais, sendo 51 cobertas pelo oráculo sintético e `event.oke_pickup` coberta por testes próprios;
+- 47 placeholders preservados;
+- drivers reais continuam desativados;
+- produção continua bloqueada enquanto existirem pré-requisitos abertos.
+
+O painel local oferece uma seção separada para teste humano. Ela carrega perguntas, não expectativas, e mantém conversa manual livre. O contrato completo está em `docs/conversation-crm/CHATBOT_TATA_REAL_CONTENT_V1.md`.
