@@ -28,13 +28,13 @@ function render(output) {
   result.innerHTML = `
     <div class="result-grid">
       <div class="summary">
-        <div class="metric"><span>Intenção</span><strong>${escapeHtml(output.intent)}</strong></div>
-        <div class="metric"><span>Origem</span><strong>${escapeHtml(output.origin)}</strong></div>
-        <div class="metric"><span>Gravidade</span><strong>${escapeHtml(output.severity)}</strong></div>
+        <div class="metric"><span>Intenção</span><strong>${escapeHtml(output.intent_label || output.intent)}</strong></div>
+        <div class="metric"><span>Origem</span><strong>${escapeHtml(output.origin_label || output.origin)}</strong></div>
+        <div class="metric"><span>Gravidade</span><strong>${escapeHtml(output.severity_label || output.severity)}</strong></div>
       </div>
-      <div class="card"><h3>Bloco e confiança</h3><p><strong>${escapeHtml(output.block_id)}</strong> · ${Math.round(output.confidence * 100)}% · humano: ${output.human_required ? 'sim' : 'não'}</p></div>
-      <div class="card"><h3>Dados conhecidos</h3><div class="tokens">${tokenList(output.known_fields)}</div></div>
-      <div class="card"><h3>Dados faltantes</h3><div class="tokens">${tokenList(output.missing_fields, 'warn')}</div></div>
+      <div class="card"><h3>Bloco e confiança</h3><p><strong>${escapeHtml(output.block_code || output.block_id)}</strong> · ${Math.round(output.confidence * 100)}% · humano: ${output.human_required ? 'sim' : 'não'}</p><p>Escalonamento: ${escapeHtml(output.escalation_code || output.escalation_level)}</p></div>
+      <div class="card"><h3>Dados conhecidos</h3><div class="tokens">${tokenList(output.known_field_labels || output.known_fields)}</div></div>
+      <div class="card"><h3>Dados faltantes</h3><div class="tokens">${tokenList(output.missing_field_labels || output.missing_fields, 'warn')}</div></div>
       <div class="card"><h3>Resposta sugerida</h3><p>${escapeHtml(output.suggested_response)}</p></div>
       <div class="card"><h3>Tags</h3><div class="tokens">${tokenList(output.tags)}</div></div>
       <div class="card"><h3>Ações permitidas</h3><div class="tokens">${tokenList(output.allowed_actions)}</div></div>
@@ -60,12 +60,18 @@ async function loadCases() {
 caseSelect.addEventListener('change', () => {
   activeCase = caseSelect.value;
   const selected = cases.find((item) => item.id === activeCase);
-  if (!selected) return;
+  if (!selected) {
+    origin.value = '';
+    severity.value = '';
+    orderReference.value = '';
+    detailCode.value = '';
+    return;
+  }
   message.value = selected.message;
   origin.value = selected.context.origin || '';
   severity.value = selected.context.severity || '';
-  orderReference.value = selected.context.order_reference || 'SIM-ORDER-MANUAL';
-  detailCode.value = selected.context.occurrence_detail_code || 'synthetic_detail';
+  orderReference.value = selected.context.order_reference || '';
+  detailCode.value = selected.context.occurrence_detail_code || '';
 });
 
 form.addEventListener('submit', async (event) => {
@@ -104,4 +110,3 @@ evaluation.addEventListener('click', async (event) => {
 });
 
 loadCases().catch(() => { requestState.textContent = 'Casos sintéticos indisponíveis.'; });
-

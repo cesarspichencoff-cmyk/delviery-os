@@ -72,11 +72,11 @@
       "escalation_level": "commercial_operational", "internal_record_required": true
     },
     {
-      "id": "R05", "intent": "large_group_reservation", "origin": "dining_room", "severity": "medium",
-      "message": "Grupos maiores precisam de avaliação humana. Vou registrar os dados para continuidade.",
-      "required_data": ["reservation_date", "reservation_time", "party_size"], "tags": ["large_group"], "next_block": "H02", "conditions": ["party_size_above_standard"],
+      "id": "R05", "code": "R05_GRUPO_GRANDE", "intent": "large_group_reservation", "intent_label": "grupo_grande", "origin": "dining_room", "origin_label": "salão", "severity": "medium", "severity_label": "operacional",
+      "message": "Perfeito. Como são {{party_size}} pessoas, vou sinalizar sua chegada para o responsável.", "missing_data_prompt": "Pode me informar {{missing_fields}}?", "missing_data_labels": { "customer_name": "seu nome", "arrival_estimate": "a previsão aproximada de chegada" }, "append_policy_messages": false,
+      "required_data": ["customer_name", "arrival_estimate", "party_size"], "tags": ["TAG_FILA", "TAG_SALAO", "TAG_AGUARDANDO_HUMANO"], "canonical_tags_only": true, "next_block": "H01", "escalation_code": "H01_HUMANO_OPERACIONAL", "conditions": ["party_size_above_standard"],
       "allowed_actions": ["record_request", "escalate"], "forbidden_actions": ["confirm_reservation", "financial_decision"],
-      "escalation_level": "commercial_operational", "internal_record_required": true
+      "escalation_level": "operational", "internal_record_required": true
     },
 
     {
@@ -145,11 +145,20 @@
       "escalation_level": "operational", "internal_record_required": true
     },
     {
-      "id": "O02", "intent": "wrong_or_missing_item", "origin": "delivery", "severity": "medium",
+      "id": "O02", "code": "O02_ITEM_ERRADO_OU_FALTANDO", "intent": "wrong_or_missing_item", "origin": "delivery", "severity": "medium",
       "message": "Vou registrar o item errado ou ausente e encaminhar para uma pessoa avaliar a solução.",
       "required_data": ["order_reference", "occurrence_detail_code"], "tags": ["item_issue"], "next_block": "H01", "conditions": [],
       "allowed_actions": ["create_occurrence", "escalate"], "forbidden_actions": ["offer_credit", "offer_gift", "offer_refund"],
-      "escalation_level": "operational", "internal_record_required": true
+      "escalation_level": "operational", "internal_record_required": true,
+      "variants": {
+        "missing_item": {
+          "intent_label": "reclamação / item_faltando", "origin": "unknown", "severity_label": "sensível",
+          "message": "Peço desculpas pelo ocorrido.", "missing_data_prompt": "Pode me informar {{missing_fields}}?", "missing_data_labels": { "order_reference": "o número do pedido", "origin": "se ele foi feito pelo nosso delivery ou pelo iFood" }, "follow_up_message": "Vou registrar a falta {{missing_item_reference}} e direcionar a situação corretamente.", "append_policy_messages": false,
+          "required_data": ["order_reference", "origin"], "tags": ["TAG_ITEM_FALTANDO", "TAG_AGUARDANDO_HUMANO"], "canonical_tags_only": true,
+          "next_block": "H02", "escalation_code": "H02_HUMANO_COMERCIAL_OPERACIONAL", "escalation_level": "commercial_operational",
+          "allowed_actions": ["create_occurrence", "escalate"], "forbidden_actions": ["offer_credit", "promise_replacement", "offer_courtesy", "offer_refund", "financial_decision"]
+        }
+      }
     },
     {
       "id": "O03", "intent": "serious_quality_occurrence", "origin": "unknown", "severity": "high",

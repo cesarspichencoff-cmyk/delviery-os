@@ -79,3 +79,48 @@ test('interface usa somente recursos locais', async (t) => {
   assert.equal(html.includes('localStorage'), false);
 });
 
+test('entrada manual não injeta referência ou detalhe sintético interno', async (t) => {
+  const base = await withServer(t);
+  const html = await (await fetch(base)).text();
+  const script = await (await fetch(`${base}/app.js`)).text();
+  assert.equal(html.includes('value="SIM-ORDER-MANUAL"'), false);
+  assert.equal(html.includes('value="synthetic_detail"'), false);
+  assert.equal(script.includes("|| 'SIM-ORDER-MANUAL'"), false);
+  assert.equal(script.includes("|| 'synthetic_detail'"), false);
+});
+
+test('entrada manual de grupo grande atravessa API com contrato funcional corrigido', async (t) => {
+  const base = await withServer(t);
+  const response = await fetch(`${base}/api/triage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message: 'Estamos em dez pessoas e chegando', context: {} })
+  });
+  const body = await response.json();
+  assert.equal(body.ok, true);
+  assert.equal(body.result.block_code, 'R05_GRUPO_GRANDE');
+  assert.equal(body.result.escalation_code, 'H01_HUMANO_OPERACIONAL');
+  assert.equal(body.result.human_required, true);
+  assert.deepEqual(body.result.known_fields, ['party_size']);
+  assert.deepEqual(body.result.missing_field_labels, ['nome', 'previsão aproximada de chegada']);
+  assert.equal(
+    body.result.suggested_response,
+    'Perfeito. Como são 10 pessoas, vou sinalizar sua chegada para o responsável. Pode me informar seu nome e a previsão aproximada de chegada?'
+  );
+});
+
+test('item faltando atravessa API sem cair na entrada genérica de delivery', async (t) => {
+  const base = await withServer(t);
+  const response = await fetch(`${base}/api/triage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message: 'Faltou meu refrigerante no pedido', context: {} })
+  });
+  const body = await response.json();
+  assert.equal(body.ok, true);
+  assert.equal(body.result.block_code, 'O02_ITEM_ERRADO_OU_FALTANDO');
+  assert.equal(body.result.item_identified, 'refrigerante');
+  assert.equal(body.result.origin, 'unknown');
+  assert.equal(body.result.escalation_code, 'H02_HUMANO_COMERCIAL_OPERACIONAL');
+  assert.equal(body.result.crm_record.status, 'waiting_human');
+});
