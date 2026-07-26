@@ -57,7 +57,10 @@ android/keystore.properties
 # Deploy do piloto de nuvem — segredos e certificados nunca versionados
 deploy/.env
 deploy/.env.*
-!deploy/.env.pilot.example
+# Os arquivos `*.example` sao o contrato de configuracao: nomes de variaveis,
+# nunca valores. Precisam estar versionados — a auditoria de deploy os le, e
+# num clone limpo ela falharia sem eles.
+!deploy/.env.*.example
 deploy/certs/
 deploy/config/
 deploy/dados/
