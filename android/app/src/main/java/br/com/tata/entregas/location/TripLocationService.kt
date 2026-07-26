@@ -200,11 +200,23 @@ class TripLocationService : Service() {
         }
         currentDecision = decision
         fused.removeLocationUpdates(callback)
-        fused.requestLocationUpdates(
-            CapturePolicy.buildRequest(decision),
-            callback,
-            mainLooper,
-        )
+        try {
+            // hasLocationPermission() já confirmou a permissão acima, mas o
+            // Android pode revogá-la NA JANELA entre essa checagem e esta
+            // chamada — o usuário pode desligar nas configurações do sistema
+            // a qualquer momento, inclusive com o app em primeiro plano. O
+            // try/catch cobre esse caso real, e não só a análise estática do
+            // lint: se a permissão sumir aqui, o serviço para do mesmo jeito
+            // que pararia se hasLocationPermission() já tivesse detectado.
+            fused.requestLocationUpdates(
+                CapturePolicy.buildRequest(decision),
+                callback,
+                mainLooper,
+            )
+        } catch (e: SecurityException) {
+            stopBecause("permissao_revogada")
+            return
+        }
         updateNotification()
     }
 
