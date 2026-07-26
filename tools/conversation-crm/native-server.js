@@ -4,7 +4,7 @@
 const http=require('node:http');
 const fs=require('node:fs');
 const path=require('node:path');
-const {NativeConversationRuntime,safeError}=require('../../src/conversation-crm/native');
+const {NativeConversationRuntime,safeError,loadCanonicalCatalogs,runScenarioOnRuntime}=require('../../src/conversation-crm/native');
 
 const APP_ROOT=path.join(__dirname,'simulator','app');
 const MAX_BODY_BYTES=32*1024;
@@ -16,6 +16,7 @@ function staticFile(res,name,type){send(res,200,fs.readFileSync(path.join(APP_RO
 
 function createNativeServer(options={}){
   const runtimeOptions={runtimeRoot:options.runtimeRoot,projectRoot:options.projectRoot,flagsFile:options.flagsFile};
+  const scenarios=loadCanonicalCatalogs().scenarios.scenarios;
   let runtime=options.runtime||new NativeConversationRuntime(runtimeOptions);
   let manualTurn=0;
   const server=http.createServer(async(req,res)=>{try{
@@ -23,11 +24,11 @@ function createNativeServer(options={}){
     if(req.method==='GET'&&req.url==='/app.js')return staticFile(res,'app.js','application/javascript; charset=utf-8');
     if(req.method==='GET'&&req.url==='/styles.css')return staticFile(res,'styles.css','text/css; charset=utf-8');
     if(req.method==='GET'&&req.url==='/api/health')return json(res,200,{ok:true,mode:'conversation_native_simulated_v1',synthetic:true,seed:runtime.seed,clock:runtime.clock.iso(),real_drivers:false});
-    if(req.method==='GET'&&req.url==='/api/cases')return json(res,200,{cases:runtime.catalogs.scenarios.scenarios.map((item)=>({id:item.scenario_id,scenario_id:item.scenario_id,category:item.archetype,message:item.input,context:{scenario_id:item.scenario_id,synthetic:true}}))});
+    if(req.method==='GET'&&req.url==='/api/cases')return json(res,200,{cases:scenarios.map((item)=>({id:item.scenario_id,scenario_id:item.scenario_id,category:item.archetype,message:item.input,context:{scenario_id:item.scenario_id,synthetic:true}}))});
     if(req.method==='GET'&&req.url==='/api/native/snapshot')return json(res,200,{ok:true,snapshot:runtime.snapshot()});
     if(req.method==='GET'&&req.url==='/api/native/drivers')return json(res,200,{ok:true,drivers:runtime.registry.manifests()});
     if(req.method==='POST'&&req.url==='/api/triage'){const body=await readJson(req);manualTurn+=1;const messageId=`SIM-MANUAL-${String(manualTurn).padStart(4,'0')}`;const input={synthetic:true,message_type:'text',content:String(body.message||''),channel:'synthetic',subject_id:'SIM-SUBJECT-MANUAL',conversation_id:'SIM-CONV-MANUAL',message_id:messageId,correlation_id:`SIM-CORR-${messageId}`,idempotency_key:`manual:${messageId}`,occurred_at:runtime.clock.iso(),turn_order:manualTurn,unit_id:'SIM-UNIT-001',context:{...(body.context||{}),synthetic:true}};return json(res,200,{ok:true,result:runtime.processMessage(input)});}
-    const scenarioMatch=req.url?.match(/^\/api\/native\/scenarios\/(TATA-SC-\d{3})$/);if(req.method==='POST'&&scenarioMatch)return json(res,200,{ok:true,result:runtime.runScenario(scenarioMatch[1])});
+    const scenarioMatch=req.url?.match(/^\/api\/native\/scenarios\/(TATA-SC-\d{3})$/);if(req.method==='POST'&&scenarioMatch)return json(res,200,{ok:true,result:runScenarioOnRuntime(runtime,scenarioMatch[1])});
     if(req.method==='POST'&&req.url==='/api/native/clock'){const body=await readJson(req);return json(res,200,{ok:true,clock:runtime.clock.advance(Number(body.advance_ms))});}
     if(req.method==='POST'&&req.url==='/api/native/replay'){runtime=new NativeConversationRuntime(runtimeOptions);return json(res,200,{ok:true,replay_status:'completed',snapshot:runtime.snapshot()});}
     if(req.method==='POST'&&req.url==='/api/native/reset'){const root=runtime.runtimeRoot;fs.rmSync(root,{recursive:true,force:true});runtime=new NativeConversationRuntime({...runtimeOptions,runtimeRoot:root});manualTurn=0;return json(res,200,{ok:true,reset:true,clock:runtime.clock.iso()});}

@@ -1,37 +1,375 @@
 'use strict';
 
-const {loadCanonicalCatalogs,deepFreeze}=require('./catalogs');
-const {NUMBER_WORDS,extractPartySize,detectMissingItem}=require('../engine/classifier');
-const {assertFeature}=require('./feature-flags');
-const {legacyProjection}=require('./migration');
-const {foodSafetyPolicy,abuseReview}=require('./policies');
+const { loadCanonicalCatalogs, deepFreeze } = require('./catalogs');
+const { NUMBER_WORDS, extractPartySize, detectMissingItem } = require('../engine/classifier');
+const { assertFeature } = require('./feature-flags');
+const { legacyProjection } = require('./migration');
+const { foodSafetyPolicy, abuseReview } = require('./policies');
 
-function normalizeText(value){return String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();}
-const RULES=Object.freeze([
-  ['occurrence.health_symptom',/\b(vomito|vomitei|diarreia|febre|mal estar|passando mal|duas pessoas|mais pessoas)\b/,'health.incident.create','critical','E4','A1'],
-  ['occurrence.allergen',/\b(alergia|alergico|reacao alergica|alergeno)\b/,'health.incident.create','serious','E3','A1'],
-  ['occurrence.foreign_body',/\b(cabelo|corpo estranho|objeto|plastico|vidro)\b/,'health.incident.create','serious','E3','A1'],
-  ['occurrence.quality',/\b(improprio|cheiro estranho|estragado|azedo|frescor)\b/,'health.incident.create','serious','E3','A1'],
-  ['occurrence.personalization_ignored',/\b(personalizacao|sem cebola|sem molho|observacao ignorada)\b/,'occurrence.create','sensitive','E2','A1'],
-  ['occurrence.wrong_quantity',/\b(quantidade errada|vieram? menos|faltaram dois|duas unidades)\b/,'occurrence.create','sensitive','E2','A1'],
-  ['occurrence.wrong_item',/\b(item errado|veio trocado|produto errado)\b/,'occurrence.create','sensitive','E2','A1'],
-  ['privacy.opt_out',/\b(nao quero receber|pare de enviar|remover comunicacoes|opt out)\b/,'occurrence.update','low','E0','A1'],
-  ['order.status',/\b(status|onde esta|acompanhar pedido|saiu para entrega)\b/,'order.status.read','operational','E1','A0'],
-  ['information.menu',/\b(cardapio|menu)\b/,'menu.read','low','E0','A0'],
-  ['information.hours',/\b(horario|abre|fecha|funcionamento)\b/,'information.unit.read','low','E0','A0'],
-  ['information.address',/\b(endereco|localizacao|onde fica)\b/,'information.unit.read','low','E0','A0']
-]);
-
-function extractPartyCandidates(content){const text=normalizeText(content);const numberToken=`(?:\\d{1,2}|${Object.keys(NUMBER_WORDS).join('|')})`;const patterns=[new RegExp(`\\b(?:somos|estamos\\s+em|estaremos\\s+em)\\s+(${numberToken})\\b`,'g'),new RegExp(`\\bmesa\\s+(?:para|de)\\s+(${numberToken})\\b`,'g'),new RegExp(`\\bgrupo\\s+(?:de|com)\\s+(${numberToken})\\b`,'g'),new RegExp(`\\b(${numberToken})\\s+(?:pessoa|pessoas|lugares)\\b`,'g')];const values=[];for(const pattern of patterns)for(const match of text.matchAll(pattern)){const token=match[1];const value=/^\d+$/.test(token)?Number(token):NUMBER_WORDS[token];if(Number.isInteger(value)&&value>0&&!values.includes(value))values.push(value);}return values;}
-
-class NativeConversationEngine{
-  constructor(options={}){this.flags=options.flags;this.catalogs=options.catalogs||loadCanonicalCatalogs();this.intentById=new Map(this.catalogs.intents.intents.map((item)=>[item.id,item]));this.scenarioById=new Map(this.catalogs.scenarios.scenarios.map((item)=>[item.scenario_id,item]));this.scenariosByInput=new Map();for(const scenario of this.catalogs.scenarios.scenarios){const key=normalizeText(scenario.input);if(!this.scenariosByInput.has(key))this.scenariosByInput.set(key,[]);this.scenariosByInput.get(key).push(scenario);}}
-  fromScenario(scenario){const intent=this.intentById.get(scenario.intent);return this.finish({intent:scenario.intent,subintent:scenario.intent.split('.').slice(1).join('.'),entities:scenario.entities,origin:scenario.origin,severity:scenario.severity,fields_missing:scenario.fields_missing,capability_id:scenario.capability_required,capability_state:scenario.capability_state,authority:scenario.authority,policy_id:`policy:${scenario.intent}`,escalation:scenario.escalation,ideal_response:scenario.ideal_response,prohibited_responses:scenario.prohibited_responses,closure:scenario.closure,expected_result:scenario.expected_result,action:scenario.action,legacy_blocks:intent.legacy_blocks,scenario_id:scenario.scenario_id,basis_classifications:scenario.basis_classifications,confidence:1});}
-  analyze(input){assertFeature(this.flags,'conversationEngineV1');const content=String(input.content||'');const context=input.context||{};const scenario=context.scenario_id?this.scenarioById.get(context.scenario_id):null;if(scenario)return this.fromScenario(scenario);const exact=this.scenariosByInput.get(normalizeText(content));if(exact?.length===1)return this.fromScenario(exact[0]);const candidates=extractPartyCandidates(content);if(candidates.length>1&&candidates.some((value)=>value>8)){const intent=this.intentById.get('reservation.large_group');return this.finish({intent:'reservation.large_group',subintent:'large_group',entities:{party_size:{value:null,state:'conflict',candidates,provenance:'message'}},origin:'dining_room',severity:'operational',fields_missing:['party_size','customer_name','arrival_estimate'],capability_id:'human.queue.create',capability_state:'requires_human',authority:'A1',policy_id:'LARGE_GROUP_POLICY',escalation:'E1',ideal_response:'Entendi que é um grupo, mas recebi quantidades diferentes. Qual é a quantidade correta?',prohibited_responses:['escolher quantidade automaticamente'],closure:{expected_state:'open',blocked_by:['party_size:conflict']},expected_result:{status:'requires_human'},action:'clarify_party_size',legacy_blocks:intent.legacy_blocks,scenario_id:null,basis_classifications:['CANÔNICO_INTERNO'],confidence:.7});}const party=extractPartySize(content);if(party.value>8){const intent=this.intentById.get('reservation.large_group');const known=new Set(Object.keys(context).filter((key)=>context[key]!=null&&context[key]!==''));known.add('party_size');const missing=['customer_name','arrival_estimate'].filter((field)=>!known.has(field));return this.finish({intent:'reservation.large_group',subintent:'large_group',entities:{party_size:{value:party.value,state:'provided',provenance:'message'}},origin:'dining_room',severity:'operational',fields_missing:missing,capability_id:'waitlist.create',capability_state:'unknown',authority:'A2',policy_id:'LARGE_GROUP_POLICY',escalation:'E1',ideal_response:`Perfeito. Como são ${party.value} pessoas, vou preparar o atendimento específico.`,prohibited_responses:['confirmar fila sem resultado confirmed'],closure:{expected_state:'open',blocked_by:['human_confirmation']},expected_result:{status:'unknown'},action:'register_large_group',legacy_blocks:intent.legacy_blocks,scenario_id:null,basis_classifications:['CANÔNICO_INTERNO'],confidence:party.confidence});}
-    const missingItem=detectMissingItem(content);if(missingItem.matched){const intent=this.intentById.get('occurrence.missing_item');const missing=['order_reference','order_channel'].filter((field)=>!context[field]);return this.finish({intent:'occurrence.missing_item',subintent:'missing_item',entities:{item_name:{value:missingItem.item,state:missingItem.item?'provided':'missing',provenance:'message'}},origin:context.order_channel||'unknown',severity:'sensitive',fields_missing:missing,capability_id:'occurrence.create',capability_state:'degraded',authority:'A1',policy_id:'OCCURRENCE_POLICY',escalation:'E2',ideal_response:`Poxa, sinto muito que ${missingItem.item?`o ${missingItem.item}`:'um item'} não tenha chegado.`,prohibited_responses:['oferecer compensação automática'],closure:{expected_state:'open',blocked_by:['human_decision']},expected_result:{status:'unknown'},action:'record_and_escalate',legacy_blocks:intent.legacy_blocks,scenario_id:null,basis_classifications:['CANÔNICO_INTERNO'],confidence:missingItem.confidence});}
-    const text=normalizeText(content);for(const[intentId,pattern,capability,severity,escalation,authority]of RULES){if(pattern.test(text)){const intent=this.intentById.get(intentId);return this.finish({intent:intentId,subintent:intentId.split('.').slice(1).join('.'),entities:{expected:intent.minimum_entities||[],values:'synthetic_or_missing_only'},origin:context.origin||'unknown',severity,fields_missing:(intent.minimum_entities||[]).filter((field)=>!context[field]),capability_id:capability,capability_state:'unknown',authority,policy_id:`policy:${intentId}`,escalation,ideal_response:null,prohibited_responses:[],closure:{expected_state:'open',blocked_by:['result:unknown']},expected_result:{status:'unknown'},action:'verify_then_continue',legacy_blocks:intent.legacy_blocks,scenario_id:null,basis_classifications:['INFERÊNCIA'],confidence:.86});}}
-    const intent=this.intentById.get('conversation.ambiguous');return this.finish({intent:'conversation.ambiguous',subintent:'ambiguous',entities:{expected:[],values:'synthetic_or_missing_only'},origin:'unknown',severity:'unknown',fields_missing:['intent'],capability_id:'human.queue.create',capability_state:'unknown',authority:'A1',policy_id:'policy:conversation.ambiguous',escalation:'E1',ideal_response:'Quero entender bem antes de seguir. Qual é o assunto principal?',prohibited_responses:['inventar intenção'],closure:{expected_state:'open',blocked_by:['intent:unknown']},expected_result:{status:'unknown'},action:'clarify',legacy_blocks:intent.legacy_blocks,scenario_id:null,basis_classifications:['INFERÊNCIA'],confidence:.2});}
-  finish(classification){const policies={food_safety:foodSafetyPolicy(classification,classification.ideal_response||''),abuse:classification.intent==='abuse.review'?abuseReview({}):null};return deepFreeze({...classification,schema_version:'conversation-native-classification-v1',synthetic:true,legacy_projection:legacyProjection(classification),policies});}
+function normalizeText(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
-module.exports={normalizeText,RULES,extractPartyCandidates,NativeConversationEngine};
+const INTENT_RULES = Object.freeze([
+  ['occurrence.health_symptom', /\b(dificuldade (?:para )?respirar|respirar (?:esta )?dificil|sem ar|vomito|vomitei|diarreia|febre|mal estar|passei mal|fiquei ruim|passaram mal|ficaram ruins|mesmos sintomas|mais de uma pessoa|depois de comer|depois da refeicao)\b/],
+  ['information.allergen', /\b(confirmar se|antes de pedir|esse prato tem|contem um ingrediente|confirmar um alergenico|ingrediente que me faz mal)\b/],
+  ['occurrence.allergen', /\b(alergia|alergico|alergica|reacao alergica|ingrediente que pode me causar)\b/],
+  ['occurrence.foreign_body', /\b(cabelo|fio de cabelo|corpo estranho|objeto estranho|algo duro)\b/],
+  ['occurrence.freshness', /\b(nao parecia fresco|n tava fresco|frescor)\b/],
+  ['occurrence.taste', /\b(sabor estava estranho|gosto esquisito|gosto estava diferente)\b/],
+  ['occurrence.quality', /\b(improprio|comida tava estranha|preocupado com a qualidade|cheiro estranho|estragad[oa]|azed[oa])\b/],
+  ['occurrence.appearance', /\b(aparencia|nao parecia normal)\b/],
+  ['occurrence.personalization_ignored', /\b(sem (?:molho|cebola).*(?:veio|com)|veio c molho e era sem|ignoraram? (?:a )?observacao|personalizacao)\b/],
+  ['occurrence.wrong_quantity', /\b(quantidade errada|vieram? .* em vez de|chegaram? .* acompanhamentos|veio \d+ mas pedi \d+|faltou uma das pecas|duas unidades|vieram? menos)\b/],
+  ['occurrence.wrong_item', /\b(item diferente|item errado|veio trocado|mandaram outro prato|veio outro item|produto errado)\b/],
+  ['occurrence.leak', /\b(vazou|vazando)\b/],
+  ['occurrence.packaging_damage', /\b(embalagem.*(?:rasgada|quebrada|danificada)|caixa.*danificada)\b/],
+  ['occurrence.order_disrupted', /\b(revirado|baguncado|itens.*desmontados)\b/],
+  ['occurrence.temperature', /\b(comida.*fria|chegou gelado|quente veio frio)\b/],
+  ['occurrence.preparation_delay', /\b(ainda esta em preparo|preso no preparo|nao muda do preparo)\b/],
+  ['occurrence.collection_delay', /\b(pronto.*(?:ninguem coletou|sem motoboy)|esperando coleta)\b/],
+  ['occurrence.route_delay', /\b(saiu para entrega e nao chegou|saiu faz tempo|demorando na rota)\b/],
+  ['occurrence.driver', /\b(problema com o entregador|motoboy foi|situacao com quem entregou)\b/],
+  ['order.cancel', /\b(cancelar meu pedido|cancela|pedir cancelamento)\b/],
+  ['occurrence.charge', /\b(cobrad[oa] duas vezes|cobrou duplicado|cobranca a mais|cobranca duplicada|decisao sobre uma cobranca)\b/],
+  ['occurrence.coupon', /\b(cupom|desconto.*nao entrou)\b/],
+  ['occurrence.address', /\b(corrigir o endereco do pedido|endereco ta errado|local errado.*mudar)\b/],
+  ['order.modify', /\b(retirar um item|tirar um item|mudar um item|alterar pedido|acrescentar item)\b/],
+  ['occurrence.refund_request', /\b(reembolso|dinheiro de volta)\b/],
+  ['occurrence.valet', /\b(valet|manobrista|carro foi danificado)\b/],
+  ['occurrence.dining_room', /\b(problema no atendimento do salao|atendimento no salao|situacao durante a visita)\b/],
+  ['occurrence.prior_promise', /\b(promessa de retorno|prazo informado passou|ja me prometeram|solucao que foi combinada)\b/],
+  ['occurrence.alert_only', /\b(so quero avisar|so um toque|apenas avisar|nao quero solucao)\b/],
+  ['feedback.praise', /\b(excelente|foi mt bom|queria elogiar)\b/],
+  ['feedback.suggestion', /\b(tenho uma sugestao|uma ideia p vcs|dava para melhorar)\b/],
+  ['abuse.review', /\b(compensacao antes|outro credito do mesmo pedido|novamente a mesma situacao)\b/],
+  ['public_exposure', /\b(vou publicar|vou postar|falando nas redes)\b/],
+  ['privacy.opt_out', /\b(nao quero mais receber|para de mandar|sair da lista|pare de enviar|opt out)\b/],
+  ['privacy.access_request', /\b(quais dados voces tem|quero meus dados|dados guardados)\b/],
+  ['privacy.correction_request', /\b(cadastro esta errado|dados errados|atualizar uma informacao pessoal)\b/],
+  ['handoff.failure', /\b(encaminharam.*ninguem recebeu|lugar nenhum|caso sumiu|atendimento reiniciou)\b/],
+  ['conversation.multiple_intents', /\b(porcaria.*resolv\w*|pessimos.*resolv\w*|muito irritado|reservar e tambem reclamar|reserva e pedido errado|duas coisas.*reserva)\b/],
+  ['reservation.update', /\b(mudar.*reserva|alterar.*horario|atualizar minha reserva)\b/],
+  ['reservation.create', /\b(reservar|reserva p|queriamos reservar|acao parece ter ocorrido)\b/],
+  ['waitlist.read', /\b(posicao.*fila|q posicao|falta muito na fila|consulte a fila)\b/],
+  ['waitlist.create', /\b(entrar na fila|inclua meu grupo|criacao da fila|estamos em (?:quatro|4|seis|6) pessoas e chegando|somos 6 chegando|estamos chegando e somos seis)\b/],
+  ['information.corkage', /\b(taxa de rolha|tem rolha|levar vinho)\b/],
+  ['information.payment', /\b(meios? de pagamento|aceita pix|pagar de outro jeito)\b/],
+  ['information.menu', /\b(cardapio|menu|ver as opcoes)\b/],
+  ['information.hours', /\b(abrem?|aberto|horario|funcionamento|mais tarde)\b/],
+  ['information.address', /\b(endereco|onde fica|onde e a unidade)\b/],
+  ['order.status', /\b(onde esta meu pedido|cade meu pedido|pedido.*(?:ja saiu|esta pronto|sumiu|consulta|atualizacao|informacao antiga|entregador)|consultar meu pedido|ifood saiu|retirada.*pronta|ir buscar meu pedido|status|cada tela fala|observador mostra|ser avisado quando houver mudanca|consulta demorou|consulta falhou|ultima atualizacao|um sistema diz pronto)\b/],
+  ['occurrence.missing_item', /\b(i need help with a missing item|falto una bebida|outro idioma.*pedido|n veio)\b/]
+]);
+
+const ACTIONS = Object.freeze({
+  'information.address': 'confirm_or_ask_unit',
+  'information.hours': 'check_fresh_hours',
+  'information.menu': 'send_confirmed_reference',
+  'information.payment': 'answer_if_confirmed',
+  'information.corkage': 'answer_if_confirmed',
+  'information.allergen': 'verify_with_human_without_guarantee',
+  'reservation.create': 'create_if_available',
+  'reservation.update': 'prepare_update',
+  'waitlist.create': 'create_or_register_request',
+  'waitlist.read': 'read_if_fresh',
+  'reservation.large_group': 'register_large_group',
+  'order.status': 'read_current_status',
+  'order.modify': 'prepare_human_authorization',
+  'order.cancel': 'prepare_human_authorization',
+  'occurrence.address': 'prepare_human_authorization',
+  'occurrence.preparation_delay': 'verify_then_record',
+  'occurrence.collection_delay': 'verify_then_record',
+  'occurrence.route_delay': 'verify_then_record',
+  'occurrence.refund_request': 'review_without_promising',
+  'occurrence.quality': 'food_safety_handoff',
+  'occurrence.taste': 'food_safety_handoff',
+  'occurrence.freshness': 'food_safety_handoff',
+  'occurrence.allergen': 'food_safety_handoff',
+  'occurrence.foreign_body': 'food_safety_handoff',
+  'occurrence.health_symptom': 'emergency_guidance_and_handoff',
+  'occurrence.valet': 'management_handoff',
+  'occurrence.prior_promise': 'history_review',
+  'occurrence.alert_only': 'record_alert',
+  'feedback.praise': 'record_praise',
+  'feedback.suggestion': 'record_suggestion',
+  'conversation.multiple_intents': 'deescalate_and_identify_issue',
+  'abuse.review': 'silent_manual_review',
+  'public_exposure': 'management_handoff',
+  'privacy.opt_out': 'record_opt_out',
+  'privacy.access_request': 'privacy_handoff',
+  'privacy.correction_request': 'privacy_handoff',
+  'handoff.failure': 'reconstruct_and_escalate',
+  'conversation.ambiguous': 'ask_open_short_question'
+});
+
+const DEFAULT_CAPABILITY = Object.freeze({
+  'order.status': 'order.status.read',
+  'occurrence.charge': 'occurrence.create',
+  'conversation.ambiguous': 'occurrence.create',
+  'handoff.failure': 'human.queue.create'
+});
+
+function extractPartyCandidates(content) {
+  const text = normalizeText(content);
+  const numberToken = `(?:\\d{1,2}|${Object.keys(NUMBER_WORDS).join('|')})`;
+  const patterns = [
+    new RegExp(`\\b(?:somos|estamos\\s+em|estaremos\\s+em)\\s+(${numberToken})\\b`, 'g'),
+    new RegExp(`\\bmesa\\s+(?:para|de)\\s+(${numberToken})\\b`, 'g'),
+    new RegExp(`\\bgrupo\\s+(?:de|com)\\s+(${numberToken})\\b`, 'g'),
+    new RegExp(`\\b(${numberToken})\\s+(?:pessoa|pessoas|lugares)\\b`, 'g')
+  ];
+  const values = [];
+  for (const pattern of patterns) {
+    for (const match of text.matchAll(pattern)) {
+      const token = match[1];
+      const value = /^\d+$/u.test(token) ? Number(token) : NUMBER_WORDS[token];
+      if (Number.isInteger(value) && value > 0 && !values.includes(value)) values.push(value);
+    }
+  }
+  return values;
+}
+
+function extractOrderReference(text) {
+  const normalized = normalizeText(text);
+  const match = normalized.match(/\bpedido\s+(?:correto\s+(?:e\s+)?([a-z0-9-]{3,20})|(?:numero\s+)?([a-z0-9-]{3,20}))\b/u);
+  const value = match?.[1] || match?.[2] || null;
+  if (!value || /^(?:do|da|de|no|correto)$/i.test(value)) return null;
+  return `order_ref_${value.toUpperCase()}`;
+}
+
+function extractOrderChannel(text) {
+  if (/\bifood\b/i.test(text)) return 'marketplace';
+  if (/\b(delivery proprio|delivery de voces|pedido proprio)\b/i.test(text)) return 'own_delivery';
+  if (/\bretirada\b/i.test(text)) return 'pickup';
+  return null;
+}
+
+function extractSafeItem(text) {
+  const items = [
+    ['coca', 'refrigerante'],
+    ['guarana', 'refrigerante'],
+    ['refrigerante', 'refrigerante'],
+    ['bebida', 'bebida'],
+    ['shoyu', 'shoyu'],
+    ['sobremesa', 'sobremesa'],
+    ['acompanhamento', 'acompanhamento'],
+    ['peca', 'peça'],
+    ['item', null]
+  ];
+  const normalized = normalizeText(text);
+  return items.find(([signal]) => new RegExp(`\\b${signal}s?\\b`, 'u').test(normalized))?.[1] || null;
+}
+
+function detectNativeMissingItem(content) {
+  const text = normalizeText(content);
+  const signal = /\b(faltou|nao veio|n veio|esqueceram|veio sem|nao mandaram|ficou faltando)\b/u.test(text);
+  const item = extractSafeItem(content);
+  const generic = /\b(item|itens|pedido|peca|pecas)\b/u.test(text);
+  return Object.freeze({ matched: signal && (item !== null || generic), item, confidence: item ? 0.95 : 0.85 });
+}
+
+function extractEntities(content, context = {}) {
+  const text = normalizeText(content);
+  const output = {};
+  const orderReference = extractOrderReference(content);
+  const orderChannel = extractOrderChannel(text);
+  if (orderReference) output.order_reference = { value: orderReference, state: 'provided', provenance: 'message', confidence: 0.98 };
+  if (orderChannel) output.order_channel = { value: orderChannel, state: 'provided', provenance: 'message', confidence: 0.98 };
+  const item = extractSafeItem(content);
+  if (item) output.item_name = { value: item, state: 'provided', provenance: 'message', confidence: 0.9 };
+  if (/\bmeu nome e\b/u.test(text)) output.customer_name = { value: 'provided_in_message', state: 'provided', provenance: 'message', confidence: 0.95, sensitive_value_discarded: true };
+  if (/\b(?:as|a)\s+\d{1,2}h\b|\bem dez minutos\b|\bchegamos em\b/u.test(text)) output.arrival_estimate = { value: 'arrival_provided', state: 'provided', provenance: 'message', confidence: 0.9 };
+  if (context.unit_id || context.unit) output.unit = { value: context.unit_id || context.unit, state: 'confirmed', provenance: 'system', confidence: 1 };
+  return output;
+}
+
+function behaviorFor(intentId, content, intentDefinition) {
+  const text = normalizeText(content);
+  const capability = DEFAULT_CAPABILITY[intentId] || intentDefinition.capability_candidates[0];
+  let authority = capability.endsWith('.read') || capability === 'menu.read' || capability === 'promise.read' ? 'A0' : 'A1';
+  if (['reservation.create', 'reservation.update', 'waitlist.create'].includes(capability)) authority = 'A2';
+  if (['order.modify', 'order.cancel.request', 'compensation.suggest', 'abuse.classify'].includes(capability)) authority = 'A3';
+  let escalation = 'E1';
+  if (/^occurrence\.(?:missing_item|wrong_item|wrong_quantity|personalization_ignored|leak|packaging_damage|order_disrupted|temperature|driver|charge|address|refund_request|appearance|dining_room)$/u.test(intentId)) escalation = 'E2';
+  if (['order.modify', 'order.cancel', 'conversation.multiple_intents', 'privacy.access_request', 'privacy.correction_request'].includes(intentId)) escalation = 'E2';
+  if (['occurrence.quality', 'occurrence.taste', 'occurrence.freshness', 'occurrence.allergen', 'occurrence.foreign_body', 'information.allergen', 'occurrence.valet', 'occurrence.prior_promise', 'abuse.review', 'public_exposure', 'handoff.failure'].includes(intentId)) escalation = 'E3';
+  if (intentId === 'occurrence.health_symptom') escalation = 'E4';
+  let output = {
+    capability_id: capability,
+    capability_state: 'unknown',
+    authority,
+    escalation,
+    action: ACTIONS[intentId] || 'record_and_escalate',
+    expected_result: { status: 'unknown' },
+    closure: { expected_state: 'open', blocked_by: ['result:unknown'] }
+  };
+  const special = [
+    [/\b(dificuldade|sem ar|respirar)\b/u, 'occurrence.health_symptom', { action: 'emergency_guidance_and_handoff' }],
+    [/\b(passei mal|fiquei ruim|vomito|diarreia)\b/u, 'occurrence.health_symptom', { action: 'health_guidance_and_handoff' }],
+    [/\b(tres pessoas|3 pessoas|mais de uma pessoa)\b/u, 'occurrence.health_symptom', { action: 'possible_outbreak_handoff' }],
+    [/\b(reservar e tambem reclamar|reserva e pedido errado|duas coisas)\b/u, 'conversation.multiple_intents', { action: 'prioritize_sensitive_intent', escalation: 'E1' }],
+    [/\b(i need help|falto una|outro idioma)\b/u, 'occurrence.missing_item', { action: 'language_accessible_handoff' }],
+    [/\b(informacao antiga|status ta velho|ultima atualizacao faz tempo)\b/u, 'order.status', { expected_result: { status: 'degraded' }, action: 'declare_stale_and_handoff' }],
+    [/\b(um sistema diz|cada tela fala|informacoes diferentes)\b/u, 'order.status', { expected_result: { status: 'conflict' }, action: 'declare_conflict_and_handoff', escalation: 'E2' }],
+    [/\b(quero saber se meu pedido ja esta pronto)\b/u, 'order.status', { expected_result: { status: 'confirmed' }, action: 'read_state', escalation: 'E0', closure: { expected_state: 'resolved', blocked_by: [] } }],
+    [/\b(quero entrar na fila agora)\b/u, 'waitlist.create', { expected_result: { status: 'unavailable' }, action: 'open_human_task' }],
+    [/\b(meu pedido ja saiu)\b/u, 'order.status', { expected_result: { status: 'degraded' }, action: 'declare_limit' }],
+    [/\b(pode atualizar minha reserva)\b/u, 'reservation.update', { expected_result: { status: 'failed' }, action: 'human_fallback' }],
+    [/\b(pedido sumiu da tela)\b/u, 'order.status', { action: 'observe_and_reconcile' }],
+    [/\b(estamos em quatro pessoas e chegando)\b/u, 'waitlist.create', { expected_result: { status: 'confirmed' }, action: 'persist_confirmation', escalation: 'E0', closure: { expected_state: 'resolved', blocked_by: [] } }],
+    [/\b(mensagem de criacao da fila chegou duas vezes)\b/u, 'waitlist.create', { expected_result: { status: 'confirmed' }, action: 'deduplicate', escalation: 'E0', closure: { expected_state: 'resolved', blocked_by: [] } }],
+    [/\b(observador mostra)\b/u, 'order.status', { expected_result: { status: 'conflict' }, action: 'preserve_conflict' }],
+    [/\b(ultima atualizacao do pedido e antiga)\b/u, 'order.status', { expected_result: { status: 'degraded' }, action: 'declare_stale' }],
+    [/\b(preciso consultar meu pedido agora)\b/u, 'order.status', { expected_result: { status: 'unavailable' }, action: 'safe_degradation' }],
+    [/\b(decisao sobre uma cobranca duplicada)\b/u, 'occurrence.charge', { capability_id: 'human.queue.create', expected_result: { status: 'confirmed' }, action: 'persist_handoff' }],
+    [/\b(atendimento reiniciou)\b/u, 'handoff.failure', { capability_id: 'customer.history.read', authority: 'A0', expected_result: { status: 'confirmed' }, action: 'replay_and_restore', escalation: 'E1' }],
+    [/\b(ser avisado quando houver mudanca real)\b/u, 'order.status', { capability_id: 'notification.send', authority: 'A2', expected_result: { status: 'confirmed' }, action: 'notify_once', escalation: 'E0' }],
+    [/\b(consulte a fila, mas nao altere nada)\b/u, 'waitlist.read', { expected_result: { status: 'confirmed' }, action: 'read_only', escalation: 'E0', closure: { expected_state: 'resolved', blocked_by: [] } }],
+    [/\b(inclua meu grupo na fila)\b/u, 'waitlist.create', { expected_result: { status: 'requires_human' }, action: 'human_fallback' }],
+    [/\b(acao parece ter ocorrido)\b/u, 'reservation.create', { action: 'reconcile_before_retry' }],
+    [/\b(consulta demorou)\b/u, 'order.status', { expected_result: { status: 'failed' }, action: 'timeout_fallback' }],
+    [/\b(consulta falhou temporariamente)\b/u, 'order.status', { expected_result: { status: 'processing' }, action: 'bounded_retry', escalation: 'E0' }],
+    [/\b(nao foi possivel concluir automaticamente)\b/u, 'conversation.ambiguous', { capability_id: 'human.queue.create', expected_result: { status: 'confirmed' }, action: 'handoff' }]
+  ].find(([pattern, expectedIntent]) => expectedIntent === intentId && pattern.test(text));
+  if (special) output = { ...output, ...special[2] };
+  return output;
+}
+
+class NativeConversationEngine {
+  constructor(options = {}) {
+    this.flags = options.flags;
+    this.catalogs = options.catalogs || loadCanonicalCatalogs();
+    this.intentById = new Map(this.catalogs.intents.intents.map((item) => [item.id, item]));
+  }
+
+  classifyIntent(content) {
+    const text = normalizeText(content);
+    for (const [intentId, pattern] of INTENT_RULES) if (pattern.test(text)) return intentId;
+    if (detectNativeMissingItem(content).matched || detectMissingItem(content).matched) return 'occurrence.missing_item';
+    return 'conversation.ambiguous';
+  }
+
+  analyze(input) {
+    assertFeature(this.flags, 'conversationEngineV1');
+    const content = String(input.content || '');
+    const context = input.context || {};
+    const candidates = extractPartyCandidates(content);
+    if (candidates.length > 1 && candidates.some((value) => value > 8)) {
+      const intent = this.intentById.get('reservation.large_group');
+      return this.finish({
+        intent: intent.id,
+        subintent: 'large_group',
+        entities: { party_size: { value: null, state: 'conflict', candidates, provenance: 'message', confidence: 0.7 } },
+        origin: 'dining_room',
+        severity: 'operational',
+        fields_missing: ['party_size', 'customer_name', 'arrival_estimate'],
+        capability_id: 'human.queue.create',
+        capability_state: 'requires_human',
+        authority: 'A1',
+        policy_id: 'LARGE_GROUP_POLICY',
+        escalation: 'E1',
+        ideal_response: 'Entendi que é um grupo, mas recebi quantidades diferentes. Qual é a quantidade correta?',
+        prohibited_responses: ['escolher_quantidade_automaticamente'],
+        closure: { expected_state: 'open', blocked_by: ['party_size:conflict'] },
+        expected_result: { status: 'requires_human' },
+        action: 'clarify_party_size',
+        legacy_blocks: intent.legacy_blocks,
+        scenario_id: null,
+        basis_classifications: ['CANÔNICO_INTERNO'],
+        confidence: 0.7
+      }, content);
+    }
+    const party = extractPartySize(content);
+    if (party.value > 8) return this.largeGroup(content, context, party);
+    const continuedIntent = context.short_reply_resolved === true && this.intentById.has(context.continuation_intent)
+      ? context.continuation_intent
+      : null;
+    const intentId = continuedIntent || this.classifyIntent(content);
+    const intent = this.intentById.get(intentId);
+    const entities = extractEntities(content, context);
+    const known = new Set([
+      ...Object.entries(context).filter(([, value]) => value != null && value !== '').map(([key]) => key),
+      ...Object.keys(entities)
+    ]);
+    const fieldsMissing = (intent.minimum_entities || []).filter((field) => !known.has(field));
+    const behavior = behaviorFor(intentId, content, intent);
+    let idealResponse = null;
+    if (intentId === 'conversation.ambiguous') idealResponse = 'Quero entender bem antes de seguir. Qual é o assunto principal?';
+    if (intentId.startsWith('occurrence.')) idealResponse = 'Vou registrar somente o que está confirmado e manter o caso aberto para acompanhamento.';
+    return this.finish({
+      intent: intentId,
+      subintent: intentId.split('.').slice(1).join('.'),
+      entities: Object.keys(entities).length ? entities : { expected: intent.minimum_entities || [], values: 'synthetic_or_missing_only' },
+      origin: entities.order_channel?.value || context.origin || (intentId.startsWith('reservation.') || intentId.startsWith('waitlist.') ? 'dining_room' : 'unknown'),
+      severity: intent.default_severity,
+      fields_missing: fieldsMissing,
+      ...behavior,
+      policy_id: `policy:${intentId}`,
+      ideal_response: idealResponse,
+      prohibited_responses: ['inventar_confirmacao', 'oferecer_compensacao_automatica'],
+      legacy_blocks: intent.legacy_blocks,
+      scenario_id: null,
+      basis_classifications: [intent.classification || 'INFERÊNCIA'],
+      confidence: intentId === 'conversation.ambiguous' ? 0.2 : 0.86
+    }, content);
+  }
+
+  largeGroup(content, context, party) {
+    const intent = this.intentById.get('reservation.large_group');
+    const entities = extractEntities(content, context);
+    entities.party_size = { value: party.value, state: 'provided', provenance: 'message', confidence: party.confidence };
+    const known = new Set([...Object.keys(context).filter((key) => context[key] != null && context[key] !== ''), ...Object.keys(entities)]);
+    const missing = ['customer_name', 'arrival_estimate'].filter((field) => !known.has(field));
+    return this.finish({
+      intent: intent.id,
+      subintent: 'large_group',
+      entities,
+      origin: 'dining_room',
+      severity: 'operational',
+      fields_missing: missing,
+      capability_id: 'waitlist.create',
+      capability_state: 'unknown',
+      authority: 'A2',
+      policy_id: 'LARGE_GROUP_POLICY',
+      escalation: 'E1',
+      ideal_response: `Perfeito. Como são ${party.value} pessoas, vou preparar o atendimento específico.`,
+      prohibited_responses: ['confirmar_fila_sem_resultado_confirmed'],
+      closure: { expected_state: 'open', blocked_by: ['human_confirmation'] },
+      expected_result: { status: 'unknown' },
+      action: 'register_large_group',
+      legacy_blocks: intent.legacy_blocks,
+      scenario_id: null,
+      basis_classifications: ['CANÔNICO_INTERNO'],
+      confidence: party.confidence
+    }, content);
+  }
+
+  finish(classification, content) {
+    const policies = {
+      food_safety: foodSafetyPolicy(classification, content),
+      abuse: classification.intent === 'abuse.review' ? abuseReview({}) : null
+    };
+    return deepFreeze({ ...classification, schema_version: 'conversation-native-classification-v1', synthetic: true, legacy_projection: legacyProjection(classification), policies });
+  }
+}
+
+module.exports = {
+  normalizeText,
+  INTENT_RULES,
+  ACTIONS,
+  DEFAULT_CAPABILITY,
+  extractPartyCandidates,
+  extractOrderReference,
+  extractOrderChannel,
+  extractSafeItem,
+  detectNativeMissingItem,
+  extractEntities,
+  behaviorFor,
+  NativeConversationEngine
+};
