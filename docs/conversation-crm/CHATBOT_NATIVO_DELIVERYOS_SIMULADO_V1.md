@@ -197,3 +197,30 @@ O hash canônico atual do catálogo é `865df8e2f247e1824eb01f9eeba4683219ff3cf4
 - a vulnerabilidade alta preexistente em `xlsx@0.18.5` permanece registrada e o importador continua restrito ao uso local;
 - dados institucionais ainda não aprovados continuam bloqueando produção;
 - esta correção não constitui autorização de produção.
+
+## Isolamento definitivo do oráculo de cenários
+
+O catálogo operacional e o oráculo de testes possuem loaders fisicamente separados:
+
+- `catalogs/operational.js` carrega apenas capacidades, políticas, escalonamentos, intenções, entidades e placeholders;
+- `catalogs/oracle.js` carrega os 200 cenários e só pode ser usado pelo simulador ou por testes;
+- `createRuntimeConversationEngine()` é a factory operacional e injeta somente o catálogo operacional;
+- `createTestConversationEngine()` fica em `tests/conversation-crm/helpers` e também exige catálogo operacional explícito. A expectativa permanece fora do Engine.
+
+`NativeConversationEngine` não possui fallback. Ausência, estrutura incompleta, chave desconhecida ou propriedade `scenarios` causam falha fechada com código sanitizado. Registry, router, placeholders e migração aplicam a mesma validação.
+
+Para adicionar uma intenção:
+
+1. alterar o catálogo operacional de intenções e entidades;
+2. atualizar a regra conversacional correspondente;
+3. atualizar o hash e os testes operacionais;
+4. nunca copiar expectativa de cenário para o catálogo operacional.
+
+Para adicionar um cenário:
+
+1. alterar somente `SCENARIO_CATALOG_V1.json`;
+2. atualizar seu hash no módulo do oráculo;
+3. enviar a entrada ao runtime sem intenção, entidade ou capacidade esperada;
+4. comparar externamente o resultado com a expectativa.
+
+É proibido importar o oráculo em Engine, runtime, router, registry, placeholders ou migração. O painel lista cenários exclusivamente pelo módulo de simulação explicitamente ativado.

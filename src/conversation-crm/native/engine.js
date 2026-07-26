@@ -1,6 +1,6 @@
 'use strict';
 
-const { loadCanonicalCatalogs, deepFreeze } = require('./catalogs');
+const { deepFreeze, validateOperationalCatalogs } = require('./catalogs/operational');
 const { NUMBER_WORDS, extractPartySize, detectMissingItem } = require('../engine/classifier');
 const { assertFeature } = require('./feature-flags');
 const { legacyProjection } = require('./migration');
@@ -244,7 +244,7 @@ function behaviorFor(intentId, content, intentDefinition) {
 class NativeConversationEngine {
   constructor(options = {}) {
     this.flags = options.flags;
-    this.catalogs = options.catalogs || loadCanonicalCatalogs();
+    this.catalogs = validateOperationalCatalogs(options.catalogs);
     this.intentById = new Map(this.catalogs.intents.intents.map((item) => [item.id, item]));
   }
 

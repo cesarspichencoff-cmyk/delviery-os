@@ -1,13 +1,13 @@
 'use strict';
 
 const { validateCapabilityRequest } = require('./contracts');
-const { loadCanonicalCatalogs } = require('./catalogs');
+const { loadRuntimeCatalogs, validateOperationalCatalogs } = require('./catalogs/operational');
 const { assertFeature } = require('./feature-flags');
 
 class CapabilityRouter {
   constructor(options = {}) {
     this.flags = options.flags; this.registry = options.registry; this.store = options.store; this.clock = options.clock; this.healthMonitor=options.healthMonitor||null;
-    const catalogs = options.catalogs || loadCanonicalCatalogs();
+    const catalogs = validateOperationalCatalogs(options.catalogs || loadRuntimeCatalogs());
     this.capabilities = new Map(catalogs.capabilities.capabilities.map((item) => [item.id, item]));
   }
   route(rawRequest) {

@@ -1,6 +1,6 @@
 'use strict';
 
-const { loadCanonicalCatalogs, deepFreeze } = require('./catalogs');
+const { loadRuntimeCatalogs, validateOperationalCatalogs, deepFreeze } = require('./catalogs/operational');
 const { nativeError } = require('./errors');
 
 const QUESTIONNAIRE_ORDER = Object.freeze([
@@ -16,7 +16,8 @@ const CLASSIFICATIONS = deepFreeze({
   SENSIVEL_NAO_CONFIRMADO: ['{{DELIVERYOS_LOCAL_SERVICE_ENDPOINTS}}']
 });
 
-function loadPlaceholderRegistry(catalogs = loadCanonicalCatalogs()) {
+function loadPlaceholderRegistry(catalogs = loadRuntimeCatalogs()) {
+  validateOperationalCatalogs(catalogs);
   const sourceByKey = new Map(catalogs.placeholders.placeholders.map((item) => [item.key, item]));
   const classificationByKey = new Map();
   for (const [classification, keys] of Object.entries(CLASSIFICATIONS)) for (const key of keys) classificationByKey.set(key, classification);

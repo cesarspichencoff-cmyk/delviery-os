@@ -6,7 +6,7 @@ const fs=require('node:fs');
 const os=require('node:os');
 const path=require('node:path');
 const {DeterministicClock,DeterministicIds}=require('../../src/conversation-crm/native/deterministic');
-const {loadCanonicalCatalogs}=require('../../src/conversation-crm/native/catalogs');
+const {loadRuntimeCatalogs}=require('../../src/conversation-crm/native/catalogs/operational');
 const {loadFeatureFlags}=require('../../src/conversation-crm/native/feature-flags');
 const {NativeEventStore}=require('../../src/conversation-crm/native/event-store');
 const {createSimulatedDriverRegistry}=require('../../src/conversation-crm/native/drivers/registry');
@@ -16,7 +16,7 @@ const {DeliveryOsStateHub}=require('../../src/conversation-crm/native/state-hub'
 const {EvidenceStore}=require('../../src/conversation-crm/native/evidence-store');
 const {NotificationEngine}=require('../../src/conversation-crm/native/notification');
 
-function setup(t){const root=fs.mkdtempSync(path.join(os.tmpdir(),'deliveryos-native-cap-'));t.after(()=>fs.rmSync(root,{recursive:true,force:true}));const clock=new DeterministicClock('2026-07-01T12:00:00-03:00');const ids=new DeterministicIds('TATA-SIM-V1');const flags=loadFeatureFlags({file:'config/conversation-crm/native-flags.simulator.json'});const store=new NativeEventStore({runtimeRoot:root,clock});const catalogs=loadCanonicalCatalogs();const registry=createSimulatedDriverRegistry({clock,catalogs});const router=new CapabilityRouter({flags,registry,store,clock,catalogs});return{root,clock,ids,flags,store,catalogs,registry,router};}
+function setup(t){const root=fs.mkdtempSync(path.join(os.tmpdir(),'deliveryos-native-cap-'));t.after(()=>fs.rmSync(root,{recursive:true,force:true}));const clock=new DeterministicClock('2026-07-01T12:00:00-03:00');const ids=new DeterministicIds('TATA-SIM-V1');const flags=loadFeatureFlags({file:'config/conversation-crm/native-flags.simulator.json'});const store=new NativeEventStore({runtimeRoot:root,clock});const catalogs=loadRuntimeCatalogs();const registry=createSimulatedDriverRegistry({clock,catalogs});const router=new CapabilityRouter({flags,registry,store,clock,catalogs});return{root,clock,ids,flags,store,catalogs,registry,router};}
 function request(capability,authority='A0',suffix='1'){return{synthetic:true,request_id:`SIM-REQ-${suffix}`,capability_id:capability,conversation_id:'SIM-CONV-001',case_id:'SIM-CASE-001',unit_id:'SIM-UNIT-001',subject_id:'SIM-SUBJECT-001',payload:{synthetic:true},authority,policy_id:'POLICY-SIM-001',evidence_requirements:['source','freshness'],idempotency_key:`cap:${capability}:${suffix}`,correlation_id:'SIM-CORR-001',deadline:'2026-07-01T15:01:00.000Z'};}
 
 test('drivers simulados cobrem exatamente as 39 capacidades e nunca usam modo real',(t)=>{const{catalogs,registry}=setup(t);const expected=new Set(catalogs.capabilities.capabilities.map((item)=>item.id));assert.deepEqual(registry.coverage(),expected);assert.equal(registry.manifests().length>=9,true);assert.equal(registry.manifests().some((item)=>item.id==='simulated-production-driver'),true);for(const manifest of registry.manifests()){assert.equal(manifest.synthetic,true);assert.equal(manifest.read_mode,'simulated');assert.equal(manifest.write_mode,'simulated');}});

@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { NativeConversationRuntime } = require('./runtime');
-const { loadCanonicalCatalogs } = require('./catalogs');
+const { loadCanonicalCatalogs } = require('./catalogs/oracle');
 const { nativeError } = require('./errors');
 const { sha256, canonicalJson } = require('./deterministic');
 

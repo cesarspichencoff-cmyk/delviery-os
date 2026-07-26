@@ -1,6 +1,6 @@
 'use strict';
 
-const { loadCanonicalCatalogs } = require('../catalogs');
+const { loadRuntimeCatalogs, validateOperationalCatalogs } = require('../catalogs/operational');
 const { SimulatedDriver } = require('./simulated-driver');
 const { nativeError } = require('../errors');
 
@@ -35,7 +35,7 @@ class DriverRegistry {
 }
 
 function createSimulatedDriverRegistry(options = {}) {
-  const catalogs = options.catalogs || loadCanonicalCatalogs();
+  const catalogs = validateOperationalCatalogs(options.catalogs || loadRuntimeCatalogs());
   const capabilityIds = catalogs.capabilities.capabilities.map((item) => item.id);
   const assigned = new Set();
   const registry = new DriverRegistry({ clock: options.clock });

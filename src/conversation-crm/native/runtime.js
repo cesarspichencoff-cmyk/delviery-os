@@ -4,7 +4,7 @@ const path = require('node:path');
 const { DeterministicClock, DeterministicIds, sha256, canonicalJson } = require('./deterministic');
 const { loadFeatureFlags, assertFeature } = require('./feature-flags');
 const { loadSimulatorConfig } = require('./simulator-config');
-const { loadRuntimeCatalogs, deepFreeze } = require('./catalogs');
+const { loadRuntimeCatalogs, deepFreeze } = require('./catalogs/operational');
 const { NativeEventStore } = require('./event-store');
 const { ConversationGateway } = require('./gateway');
 const { ConversationCrmV1 } = require('./crm');
@@ -18,7 +18,8 @@ const { EvidenceStore } = require('./evidence-store');
 const { NotificationEngine } = require('./notification');
 const { NativeObservability } = require('./observability');
 const { DriverHealthMonitor } = require('./health');
-const { NativeConversationEngine, extractEntities, normalizeText } = require('./engine');
+const { extractEntities, normalizeText } = require('./engine');
+const { createRuntimeConversationEngine } = require('./engine-factory');
 const { composeResponse } = require('./response-composer');
 const { loadPlaceholderRegistry } = require('./placeholders');
 const { nativeError } = require('./errors');
@@ -120,7 +121,7 @@ class NativeConversationRuntime {
     this.evidence = new EvidenceStore({ store: this.store, flags: this.flags, clock: this.clock, seed: this.seed });
     this.notifications = new NotificationEngine({ store: this.store, flags: this.flags, clock: this.clock, ids: this.ids });
     this.observability = new NativeObservability({ store: this.store, clock: this.clock });
-    this.engine = new NativeConversationEngine({ flags: this.flags, catalogs: this.catalogs });
+    this.engine = createRuntimeConversationEngine({ flags: this.flags, operationalCatalog: this.catalogs });
     this.placeholders = loadPlaceholderRegistry(this.catalogs);
   }
 
