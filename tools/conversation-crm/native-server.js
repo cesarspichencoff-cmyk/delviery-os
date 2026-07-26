@@ -27,7 +27,7 @@ function createNativeServer(options={}){
     if(req.method==='GET'&&req.url==='/styles.css')return staticFile(res,'styles.css','text/css; charset=utf-8');
     if(req.method==='GET'&&req.url==='/api/health')return json(res,200,{ok:true,mode:'conversation_native_simulated_v1',synthetic:true,seed:runtime.seed,clock:runtime.clock.iso(),real_drivers:false});
     if(req.method==='GET'&&req.url==='/api/cases')return json(res,200,{cases:scenarios.map((item)=>({id:item.scenario_id,scenario_id:item.scenario_id,category:item.archetype,message:item.input,context:{scenario_id:item.scenario_id,synthetic:true}}))});
-    if(req.method==='GET'&&req.url==='/api/human-test-groups')return json(res,200,{groups:HUMAN_TEST_GROUPS,synthetic:true,oracle_exposed:false});
+    if(req.method==='GET'&&req.url==='/api/human-groups')return json(res,200,{groups:HUMAN_TEST_GROUPS,synthetic:true,oracle_exposed:false});
     if(req.method==='GET'&&req.url==='/api/native/snapshot')return json(res,200,{ok:true,snapshot:runtime.snapshot()});
     if(req.method==='GET'&&req.url==='/api/native/drivers')return json(res,200,{ok:true,drivers:runtime.registry.manifests()});
     if(req.method==='POST'&&req.url==='/api/triage'){const body=await readJson(req);manualTurn+=1;const messageId=`SIM-MANUAL-${String(manualTurn).padStart(4,'0')}`;const input={synthetic:true,message_type:'text',content:String(body.message||''),channel:'synthetic',subject_id:'SIM-SUBJECT-MANUAL',conversation_id:'SIM-CONV-MANUAL',message_id:messageId,correlation_id:`SIM-CORR-${messageId}`,idempotency_key:`manual:${messageId}`,occurred_at:runtime.clock.iso(),turn_order:manualTurn,unit_id:'SIM-UNIT-001',context:{...(body.context||{}),synthetic:true}};return json(res,200,{ok:true,result:runtime.processMessage(input)});}

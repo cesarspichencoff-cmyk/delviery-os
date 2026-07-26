@@ -142,7 +142,7 @@ async function loadCases() {
 }
 
 async function loadHumanGroups() {
-  const response = await fetch('/api/human-test-groups');
+  const response = await fetch('/api/human-groups');
   const body = await response.json();
   humanGroups = body.groups || [];
   humanGroupList.innerHTML = humanGroups.map((group) => `<button type="button" data-human-group="${escapeHtml(group.id)}">${escapeHtml(group.label)}</button>`).join('');

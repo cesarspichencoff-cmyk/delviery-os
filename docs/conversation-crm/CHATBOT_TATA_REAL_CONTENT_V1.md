@@ -76,6 +76,8 @@ A seção `Teste Humano — Informações Reais Confirmadas` oferece doze atalho
 
 Os atalhos preenchem perguntas; não exibem intenção esperada, resposta esperada ou conteúdo do oráculo.
 
+Na V1.3, os doze atalhos continuam disponíveis dentro de um banco ampliado de 24 áreas. O modo normal se chama `Atendimento livre`, mantém o oráculo oculto e apresenta apenas a resposta ao cliente; detalhes técnicos permanecem recolhidos e as ferramentas de desenvolvimento exigem `?dev=1`.
+
 ## Limitações
 
 - nenhum horário de feriado foi configurado;

@@ -237,3 +237,9 @@ A branch `feature/conversation-native-deliveryos-real-content-v1` adiciona `TATA
 - produção continua bloqueada enquanto existirem pré-requisitos abertos.
 
 O painel local oferece uma seção separada para teste humano. Ela carrega perguntas, não expectativas, e mantém conversa manual livre. O contrato completo está em `docs/conversation-crm/CHATBOT_TATA_REAL_CONTENT_V1.md`.
+
+## Humanização V1.3
+
+A camada V1.3 adiciona um compositor determinístico entre a decisão e a apresentação, sem alterar a soberania do DeliveryOS. Estratégias por intenção, perfil de voz, validação posterior, diagnóstico de repetição e painel com 24 áreas estão documentados em `docs/conversation-crm/CHATBOT_TATA_HUMANIZADO_V1.md`.
+
+O oráculo permanece fora do runtime. A decisão técnica continua recolhida por padrão, e o comparador anterior versus humanizado existe apenas em `?dev=1`.
