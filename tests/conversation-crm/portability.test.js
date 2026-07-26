@@ -80,19 +80,42 @@ test('exportação e importação restauram configuração validada sem segredo'
   assert.equal(exported.file_count, 5);
   const imported = await importConfig(config);
   const activated = JSON.parse(fs.readFileSync(path.join(root, imported.activated_config), 'utf8'));
-  assert.equal(activated.paths.flow_config_root, 'runtime/conversation-crm/restored-config-v0');
+  assert.equal(activated.paths.flow_config_root, 'src/conversation-crm/flows');
   assert.equal(JSON.stringify(activated).includes('synthetic-test-secret'), false);
   assert.equal(loadPortableConfig({ projectRoot: root, env: {} }).paths.flow_config_root.relative, activated.paths.flow_config_root);
 });
 
-test('manifesto adulterado impede restauração', async (t) => {
+test('manifesto aceita newline equivalente e bloqueia alteração semântica', async (t) => {
   const root = tempDirectory('deliveryos-portable-tamper-');
   t.after(() => removeDirectory(root));
   portableCopy(root);
   const config = loadPortableConfig({ projectRoot: root, env: {} });
   await exportConfig(config);
-  fs.appendFileSync(path.join(root, 'backups', 'conversation-crm', 'config-export-v0', 'rules.v0.json'), '\n');
+  const rulesFile = path.join(root, 'backups', 'conversation-crm', 'config-export-v0', 'rules.v0.json');
+  fs.writeFileSync(rulesFile, `\uFEFF${fs.readFileSync(rulesFile, 'utf8').replace(/\r?\n/g, '\r\n').trimEnd()}\r\n`, 'utf8');
+  await importConfig(config);
+  const rules = JSON.parse(fs.readFileSync(rulesFile, 'utf8').replace(/^\uFEFF/u, ''));
+  rules.schema_version = `${rules.schema_version}-tampered`;
+  fs.writeFileSync(rulesFile, JSON.stringify(rules), 'utf8');
   await assert.rejects(() => importConfig(config), { code: 'HASH_CONFIG_INVALIDO' });
+});
+
+test('dois round-trips preservam configuração semanticamente equivalente', async (t) => {
+  const root = tempDirectory('deliveryos-portable-double-roundtrip-');
+  t.after(() => removeDirectory(root));
+  portableCopy(root);
+  let config = loadPortableConfig({ projectRoot: root, env: {} });
+  await exportConfig(config, 'backups/conversation-crm/config-export-v0');
+  await importConfig(config, 'backups/conversation-crm/config-export-v0', 'runtime/conversation-crm/restored-config-v0');
+  const first = JSON.parse(fs.readFileSync(path.join(root, 'config', 'conversation-crm', 'config.json'), 'utf8'));
+  config = loadPortableConfig({ projectRoot: root, env: {} });
+  await exportConfig(config, 'backups/conversation-crm/config-export-v1');
+  await importConfig(config, 'backups/conversation-crm/config-export-v1', 'runtime/conversation-crm/restored-config-v1');
+  const second = JSON.parse(fs.readFileSync(path.join(root, 'config', 'conversation-crm', 'config.json'), 'utf8'));
+  assert.deepEqual(second, first);
+  const firstManifest = JSON.parse(fs.readFileSync(path.join(root, 'backups', 'conversation-crm', 'config-export-v0', 'manifest.json'), 'utf8'));
+  const secondManifest = JSON.parse(fs.readFileSync(path.join(root, 'backups', 'conversation-crm', 'config-export-v1', 'manifest.json'), 'utf8'));
+  assert.deepEqual(secondManifest.files, firstManifest.files);
 });
 
 test('exportação não pode apagar a raiz inteira de backups', async () => {

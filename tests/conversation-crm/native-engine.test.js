@@ -13,7 +13,7 @@ const {composeResponse}=require('../../src/conversation-crm/native/response-comp
 
 const flags=loadFeatureFlags({file:'config/conversation-crm/native-flags.simulator.json'});const catalogs=loadCanonicalCatalogs();const engine=new NativeConversationEngine({flags,catalogs});
 
-test('as 51 intenções têm cenário canônico e são resolvidas sem categoria reclamação',()=>{const covered=new Set();for(const scenario of catalogs.scenarios.scenarios){const result=engine.analyze({content:scenario.input,context:{scenario_id:scenario.scenario_id}});assert.equal(result.intent,scenario.intent);assert.notEqual(result.intent,'reclamação');covered.add(result.intent);}assert.equal(covered.size,51);assert.deepEqual(covered,new Set(catalogs.intents.intents.map((item)=>item.id)));});
+test('as 51 intenções têm cenário canônico e são resolvidas pelo texto sem scenario_id',()=>{const covered=new Set();for(const scenario of catalogs.scenarios.scenarios){const result=engine.analyze({content:scenario.input,context:{}});assert.equal(result.intent,scenario.intent);assert.equal(result.scenario_id,null);assert.notEqual(result.intent,'reclamação');covered.add(result.intent);}assert.equal(covered.size,51);assert.deepEqual(covered,new Set(catalogs.intents.intents.map((item)=>item.id)));});
 
 test('migração cobre 35 de 35 blocos e preserva R05 e O02',()=>{const migration=createMigrationMap(catalogs);assert.equal(BLOCK_IDS.length,35);assert.equal(migration.covered.length,35);assert.ok(migration.map.get('R05').includes('reservation.large_group'));assert.ok(migration.map.get('O02').includes('occurrence.missing_item'));});
 
