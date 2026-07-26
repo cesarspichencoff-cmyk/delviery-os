@@ -32,6 +32,8 @@ h2 { margin: 0; font-size: 21px; letter-spacing: -.02em; }
 .composer { padding: 28px; display: grid; grid-template-columns: 1fr 1fr; gap: 18px; border-right: 1px solid var(--line); }
 .field { display: flex; flex-direction: column; gap: 8px; }
 .field.wide, .primary, .request-state { grid-column: 1 / -1; }
+.native-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding-bottom: 4px; }
+.native-toolbar span { color: var(--muted); font-size: 12px; margin-left: auto; }
 label { color: #cbd8d1; font-size: 13px; font-weight: 650; }
 small { color: var(--muted); line-height: 1.45; }
 input, select, textarea { width: 100%; border: 1px solid var(--line); border-radius: 11px; background: #0d1210; color: var(--text); padding: 12px 13px; outline: none; }
@@ -72,4 +74,3 @@ button:hover { border-color: #466254; }
   .field, .field.wide, .primary, .request-state { grid-column: 1; }
   .summary { grid-template-columns: 1fr; }
 }
-

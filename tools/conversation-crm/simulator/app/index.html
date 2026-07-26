@@ -12,13 +12,19 @@
       <div>
         <p class="eyebrow">DELIVERYOS · PILOTO LOCAL</p>
         <h1>Conversation + CRM</h1>
-        <p class="subtitle">Triagem previsível, memória codificada e decisão humana.</p>
+        <p class="subtitle">Conversa sintética, decisão auditável e memória append-only.</p>
       </div>
       <div class="mode"><span></span>Sintético · sem integrações</div>
     </header>
 
     <section class="workspace" aria-label="Simulador de conversa">
       <form id="triage-form" class="composer">
+        <div class="native-toolbar wide" aria-label="Controles do simulador nativo">
+          <button id="advance-clock" type="button">Avançar 1 minuto</button>
+          <button id="replay-state" type="button">Reproduzir estado</button>
+          <button id="reset-state" type="button">Reiniciar cenário</button>
+          <span id="clock-state">Relógio aguardando</span>
+        </div>
         <div class="field wide">
           <label for="case-select">Cenário sintético</label>
           <select id="case-select"><option value="manual">Entrada manual sintética</option></select>
@@ -64,7 +70,7 @@
         <div class="empty-state">
           <p class="eyebrow">AGUARDANDO CENÁRIO</p>
           <h2>O motor ainda não foi acionado.</h2>
-          <p>Escolha um caso sintético ou escreva uma situação de teste.</p>
+          <p>Escolha um dos 200 casos sintéticos ou escreva uma situação de teste.</p>
         </div>
       </section>
     </section>

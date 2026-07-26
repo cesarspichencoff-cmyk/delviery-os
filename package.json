@@ -17,6 +17,11 @@
     "conversation-crm:start": "node tools/conversation-crm/simulator/server.js",
     "conversation-crm:config:export": "node tools/conversation-crm/config-cli.js export",
     "conversation-crm:config:import": "node tools/conversation-crm/config-cli.js import",
+    "conversation-native:test": "node --test tests/conversation-crm/*.test.js",
+    "conversation-native:start": "node tools/conversation-crm/native-server.js",
+    "conversation-native:scenario": "node tools/conversation-crm/native-simulator.js scenario",
+    "conversation-native:catalog": "node tools/conversation-crm/native-simulator.js all",
+    "conversation-native:reproduce": "node tools/conversation-crm/native-simulator.js reproduce",
     "serve": "node tools/servir_v1.js"
   },
   "devDependencies": {
