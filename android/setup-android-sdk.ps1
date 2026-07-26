@@ -1,4 +1,4 @@
-# Prepara o Android SDK para compilar o TATÁ Entregas.
+﻿# Prepara o Android SDK para compilar o TATÁ Entregas.
 #
 # O JDK e o Gradle wrapper já estão prontos no repositório. Falta só o SDK —
 # e ele exige que VOCÊ aceite a licença do Android SDK, que é um acordo entre
@@ -20,6 +20,37 @@ $CmdlineUrl = "https://dl.google.com/android/repository/commandlinetools-win-110
 
 function Passo($n, $texto) { Write-Host "`n[$n] $texto" -ForegroundColor Cyan }
 
+<#
+ Executa um processo externo e devolve a saída combinada (stdout+stderr).
+
+ Por que isto existe: java, sdkmanager e gradle escrevem linhas normais em
+ stderr por convenção (a versão do java, avisos de deprecação do Gradle) —
+ isso NÃO é falha. Mas com $ErrorActionPreference = "Stop", qualquer linha
+ que chegue pelo stream de erro vira exceção terminante assim que passa pelo
+ pipeline, mesmo que o processo termine com código 0. O critério real de
+ sucesso de um processo externo é o código de saída, não o stream em que ele
+ escreveu — então é isso que checamos aqui, e só aqui.
+#>
+function Invoke-External([string]$Exe, [string[]]$Arguments) {
+    # `$Arguments`, não `$Args`: `$args` é variável automática reservada do
+    # PowerShell (argumentos não vinculados), e como nomes de variável não
+    # diferenciam maiúsculas de minúsculas, um parâmetro chamado `$Args`
+    # colide com ela silenciosamente — o splatting `@Args` corrompeu a lista
+    # de argumentos passada ao processo externo (foi assim que "-version"
+    # deixou de chegar ao java como argumento de verdade).
+    $anterior = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        $saida = & $Exe @Arguments 2>&1 | ForEach-Object { "$_" }
+    } finally {
+        $ErrorActionPreference = $anterior
+    }
+    return [pscustomobject]@{
+        Output   = $saida
+        ExitCode = $LASTEXITCODE
+    }
+}
+
 # ---------------------------------------------------------------- JDK
 Passo 1 "Conferindo o JDK"
 
@@ -32,7 +63,13 @@ if (-not $jdk) {
 }
 $env:JAVA_HOME = $jdk.FullName
 Write-Host "  JAVA_HOME = $env:JAVA_HOME"
-& "$env:JAVA_HOME\bin\java" -version 2>&1 | Select-Object -First 1 | ForEach-Object { Write-Host "  $_" }
+$javaCheck = Invoke-External "$env:JAVA_HOME\bin\java.exe" @("-version")
+if ($javaCheck.ExitCode -ne 0) {
+    Write-Host "  java -version falhou (código $($javaCheck.ExitCode)):" -ForegroundColor Yellow
+    $javaCheck.Output | ForEach-Object { Write-Host "  $_" }
+    exit 1
+}
+Write-Host "  $($javaCheck.Output | Select-Object -First 1)"
 
 # ---------------------------------------------------------------- cmdline-tools
 Passo 2 "Baixando as ferramentas de linha de comando do Android"
@@ -84,7 +121,13 @@ Passo 4 "Instalando os pacotes que o projeto usa"
 
 $pacotes = @("platform-tools", "platforms;android-34", "build-tools;34.0.0")
 Write-Host "  $($pacotes -join ', ')"
-& "$cmdlineBin\sdkmanager.bat" --sdk_root="$SdkRoot" @pacotes
+$sdkArgs = @("--sdk_root=$SdkRoot") + $pacotes
+$instalacao = Invoke-External "$cmdlineBin\sdkmanager.bat" $sdkArgs
+$instalacao.Output | ForEach-Object { Write-Host "  $_" }
+if ($instalacao.ExitCode -ne 0) {
+    Write-Host "sdkmanager falhou (código $($instalacao.ExitCode))." -ForegroundColor Yellow
+    exit 1
+}
 
 # ---------------------------------------------------------------- local.properties
 Passo 5 "Apontando o SDK para o projeto"
@@ -98,7 +141,12 @@ Write-Host "  $localProps  (está no .gitignore)"
 Passo 6 "Compilando"
 
 Set-Location $AndroidDir
-.\gradlew.bat assembleDebug --console=plain
+$build = Invoke-External ".\gradlew.bat" @("assembleDebug", "--console=plain")
+$build.Output | ForEach-Object { Write-Host $_ }
+if ($build.ExitCode -ne 0) {
+    Write-Host "`ngradlew falhou (código $($build.ExitCode))." -ForegroundColor Yellow
+    exit 1
+}
 
 $apk = Join-Path $AndroidDir "app\build\outputs\apk\debug\app-debug.apk"
 if (Test-Path $apk) {
