@@ -53,3 +53,11 @@ android/captures/
 *.keystore
 *.jks
 android/keystore.properties
+
+# Deploy do piloto de nuvem — segredos e certificados nunca versionados
+deploy/.env
+deploy/.env.*
+!deploy/.env.pilot.example
+deploy/certs/
+deploy/config/
+deploy/dados/

@@ -9,7 +9,7 @@
 import http from "node:http";
 import https from "node:https";
 import { readFileSync, existsSync, mkdirSync, writeFileSync, appendFileSync } from "node:fs";
-import { join, extname } from "node:path";
+import { join, extname, isAbsolute } from "node:path";
 import { loadPilotConfig, resolveBanner, findUserByToken } from "../src/entregas/pilot/pilot-config";
 import { createPilotLogger } from "../src/entregas/pilot/pilot-log";
 import { PilotApplicationFacade } from "../src/entregas/pilot/pilot-facade";
@@ -21,6 +21,11 @@ import {
 } from "../src/entregas/pilot/pilot-backup";
 import { asInternalRiderActorId, asExternalCourierRef } from "../src/entregas/foundation/brands";
 import { resolveHttps, resolveBind, startupSummary } from "../src/entregas/pilot/https-config";
+import {
+  loadCloudConfig,
+  describe as describeCloudConfig,
+  resolveCorsOrigin,
+} from "../src/entregas/pilot/cloud-config";
 import {
   handleDeviceSession,
   buildPolicies,
@@ -49,11 +54,30 @@ import type { GPSPoint } from "../src/entregas/gps/types";
 
 const configPath = process.env.ENTREGAS_PILOT_CONFIG;
 const cfg = loadPilotConfig(configPath);
-const dataDir = join(process.cwd(), cfg.data_dir);
+/* Diretório de dados: o ambiente manda, e em modo remoto é obrigatório.
+   Caminho absoluto é usado como está — é assim que o volume é montado. */
+const rawDataDir = process.env.ENTREGAS_DATA_DIR?.trim() || cfg.data_dir;
+const dataDir = isAbsolute(rawDataDir) ? rawDataDir : join(process.cwd(), rawDataDir);
 mkdirSync(dataDir, { recursive: true });
 const log = createPilotLogger(dataDir);
 const facade = new PilotApplicationFacade(cfg, log);
 const backupDir = join(dataDir, cfg.backup.dir || "backups");
+/*
+ * Contrato de ambiente. Em modo remoto ele EXIGE credencial por variável,
+ * origem declarada e volume de dados; qualquer ausência derruba o boot aqui,
+ * antes de a porta abrir. Num servidor remoto ninguém está lendo o terminal
+ * para ver um aviso — ou o processo recusa subir, ou fica no ar errado.
+ */
+const cloudResult = loadCloudConfig(process.env);
+if (!cloudResult.ok) {
+  console.error("[piloto] configuração de ambiente inválida — servidor NÃO subiu:");
+  for (const issue of cloudResult.issues) {
+    console.error(`  - ${issue.variable}: ${issue.message}`);
+  }
+  process.exit(1);
+}
+const cloud = cloudResult.config;
+
 const PORT = Number(process.env.ENTREGAS_UI_PORT || cfg.port || 5193);
 
 /*
@@ -119,7 +143,19 @@ const ackStore = new AcknowledgementStore(ackStorage);
 const NO_SESSION =
   "Acesso nao autorizado. Use o token fornecido pelo responsavel pelo piloto.";
 
+/*
+ * Usuários do AMBIENTE têm precedência sobre o arquivo.
+ *
+ * O arquivo continua valendo para o uso local (nada regride). Em nuvem,
+ * `ENTREGAS_USERS` manda — assim o segredo não precisa ser assado na imagem
+ * nem montado como arquivo extra.
+ */
 function requestActor(tok: string): ActorContext | null {
+  if (!tok) return null;
+  if (cloud.users.length) {
+    const u = cloud.users.find((x) => x.token === tok);
+    return u ? { actor_id: u.actor_id, role: u.role as ActorContext["role"] } : null;
+  }
   const user = findUserByToken(cfg, tok);
   return user ? { actor_id: user.actor_id, role: user.role } : null;
 }
@@ -155,13 +191,33 @@ const mime: Record<string, string> = {
   ".json": "application/json",
 };
 
-function json(res: http.ServerResponse, code: number, body: unknown) {
+/*
+ * CORS por origem. `*` só em modo local; exposto, a origem precisa estar na
+ * lista, e quando não está o cabeçalho é OMITIDO — o navegador barra sozinho.
+ * Curinga com Authorization liberado deixaria qualquer página da internet
+ * conversar com a API a partir do navegador de quem estivesse logado.
+ */
+function corsHeaders(origin: string | undefined): Record<string, string> {
+  const allowed = resolveCorsOrigin(origin, cloud);
+  if (!allowed) return {};
+  return {
+    "Access-Control-Allow-Origin": allowed,
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    ...(allowed === "*" ? {} : { Vary: "Origin" }),
+  };
+}
+
+function json(
+  res: http.ServerResponse,
+  code: number,
+  body: unknown,
+  origin?: string,
+) {
   res.writeHead(code, {
     "Content-Type": "application/json; charset=utf-8",
     "Cache-Control": "no-store",
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    ...corsHeaders(origin),
   });
   res.end(JSON.stringify(body));
 }
@@ -223,11 +279,9 @@ let autoBackupTimer: ReturnType<typeof setInterval> | null = null;
 
 const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
   if (req.method === "OPTIONS") {
-    res.writeHead(204, {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Headers": "Content-Type, Authorization",
-      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    });
+    const preflight = corsHeaders(req.headers.origin);
+    // Sem origem permitida, o preflight não concede nada.
+    res.writeHead(Object.keys(preflight).length ? 204 : 403, preflight);
     return res.end();
   }
 
@@ -245,6 +299,16 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
   const actor = requestActor(token);
   facade.bindActor(actor);
 
+  /*
+   * Resposta desta requisição, já com a origem dela.
+   *
+   * Closure por requisição, de propósito: guardar a origem numa variável de
+   * módulo repetiria exatamente o defeito de sessão grudenta que já foi
+   * corrigido — duas requisições concorrentes se contaminariam.
+   */
+  const reply = (code: number, body: unknown) =>
+    json(res, code, body, req.headers.origin);
+
   try {
     if (url.pathname === "/api/health") {
       // Operação/piloto: nunca é "ambiente de demonstração"; controles default ausentes
@@ -256,7 +320,7 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
         banner && !/demonstra/i.test(banner)
           ? banner
           : "AMBIENTE OPERACIONAL · EXPEDIÇÃO IFOOD";
-      return json(res, 200, {
+      return reply(200, {
         ok: true,
         module: "ENTREGAS",
         mode: "operational",
@@ -284,11 +348,11 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
       // foi feito no topo do handler e nao depende deste corpo.
       const result = facade.login(body.token || "");
       facade.bindActor(actor);
-      return json(res, result.ok ? 200 : 401, result);
+      return reply(result.ok ? 200 : 401, result);
     }
 
     if (url.pathname === "/api/session" && req.method === "GET") {
-      return json(res, 200, {
+      return reply(200, {
         actor,
         banner,
         unit_name: cfg.unit_name,
@@ -311,17 +375,17 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
         r.body.ok ? "Aparelho autenticado." : "Aparelho recusado.",
         String(r.body.code ?? ""),
       );
-      return json(res, r.status, { ...r.body, unit_id: cfg.unit_id });
+      return reply(r.status, { ...r.body, unit_id: cfg.unit_id });
     }
 
     if (url.pathname === "/api/policies" && req.method === "GET") {
-      if (!actor) return json(res, 401, { ok: false, human: NO_SESSION });
+      if (!actor) return reply(401, { ok: false, human: NO_SESSION });
       const r = buildPolicies({ flags: gpsFlags, term: activeTerm, unit: unitConfig });
-      return json(res, r.status, r.body);
+      return reply(r.status, r.body);
     }
 
     if (url.pathname === "/api/term/acknowledge" && req.method === "POST") {
-      if (!actor) return json(res, 401, { ok: false, human: NO_SESSION });
+      if (!actor) return reply(401, { ok: false, human: NO_SESSION });
       const body = JSON.parse(await readBody(req)) as Record<string, unknown>;
       const r = handleTermAcknowledge({
         input: body,
@@ -329,13 +393,13 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
         store: ackStore,
         now: new Date(),
       });
-      return json(res, r.status, r.body);
+      return reply(r.status, r.body);
     }
 
     if (url.pathname === "/api/gps/batch" && req.method === "POST") {
-      if (!actor) return json(res, 401, { ok: false, human: NO_SESSION });
+      if (!actor) return reply(401, { ok: false, human: NO_SESSION });
       if (!gpsFlags.gps_capture_enabled) {
-        return json(res, 409, {
+        return reply(409, {
           ok: false,
           code: "capture_disabled",
           human: "A captura de localizacao esta desligada na configuracao.",
@@ -371,7 +435,7 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
         "Lote de localizacao recebido.",
         JSON.stringify({ aceitos: r.accepted, repetidos: r.duplicated, recusados: r.rejected, motivos: r.reasons }),
       );
-      return json(res, 200, {
+      return reply(200, {
         ok: true,
         accepted: r.accepted,
         duplicated: r.duplicated,
@@ -381,7 +445,7 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
     }
 
     if (url.pathname === "/api/events/batch" && req.method === "POST") {
-      if (!actor) return json(res, 401, { ok: false, human: NO_SESSION });
+      if (!actor) return reply(401, { ok: false, human: NO_SESSION });
       const body = JSON.parse(await readBody(req)) as {
         events?: Array<{ event_id: string; command: Record<string, unknown> }>;
       };
@@ -398,24 +462,24 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
         const r = await facade.execute(cmd as never);
         results.push({ event_id: ev.event_id, ok: r.ok, error: r.ok ? undefined : r.error });
       }
-      return json(res, 200, { ok: true, results });
+      return reply(200, { ok: true, results });
     }
 
     if (url.pathname === "/api/trip/timeline" && req.method === "GET") {
-      if (!actor) return json(res, 401, { ok: false, human: NO_SESSION });
+      if (!actor) return reply(401, { ok: false, human: NO_SESSION });
       const tripId = (url.searchParams.get("trip_id") || "").trim();
       const events = await facade.listTripEvents(tripId);
       const timeline = buildTripTimeline(events);
       // Trava de runtime, nao so' de teste: timeline suja nao vai para a tela.
       if (!timelineIsClean(timeline)) {
         log.warn("route_access", "Timeline bloqueada por conteudo inesperado.", tripId);
-        return json(res, 500, { ok: false, human: "Nao foi possivel montar a linha do tempo." });
+        return reply(500, { ok: false, human: "Nao foi possivel montar a linha do tempo." });
       }
       const snap = (await facade.snapshot()) as {
         trips?: Array<{ trip_id: string; deliveries: Array<{ delivery_id: string }> }>;
       };
       const trip = (snap.trips ?? []).find((t) => t.trip_id === tripId);
-      return json(res, 200, {
+      return reply(200, {
         ok: true,
         trip_id: tripId,
         timeline,
@@ -424,14 +488,14 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
     }
 
     if (url.pathname === "/api/trip/location" && req.method === "GET") {
-      if (!actor) return json(res, 401, { ok: false, human: NO_SESSION });
+      if (!actor) return reply(401, { ok: false, human: NO_SESSION });
       const tripId = (url.searchParams.get("trip_id") || "").trim();
       const points = pointsByTrip.get(tripId) ?? [];
       const last = points[points.length - 1];
       const auth = authorizeRouteAccess(actor.role);
       // Freshness e' honesto para todo mundo; coordenada, so' para papel
       // autorizado. Saber "esta' sem sinal ha' 10 minutos" nao expoe ninguem.
-      return json(res, 200, {
+      return reply(200, {
         ok: true,
         trip_id: tripId,
         ...freshnessOf(last, points.length, new Date()),
@@ -462,10 +526,10 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
         // e' 403 (sei quem voce e', e nao pode). A tentativa sem sessao ja'
         // foi auditada acima -- e' justamente a que mais interessa registrar.
         return actor
-          ? json(res, 403, { ok: false, human: auth.human })
-          : json(res, 401, { ok: false, human: NO_SESSION });
+          ? reply(403, { ok: false, human: auth.human })
+          : reply(401, { ok: false, human: NO_SESSION });
       }
-      return json(res, 200, {
+      return reply(200, {
         ok: true,
         trip_id: tripId,
         bruto: buildRawTrack(tripId, points),
@@ -474,22 +538,22 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
     }
 
     if (url.pathname === "/api/snapshot" && req.method === "GET") {
-      if (!actor) return json(res, 401, { ok: false, human: NO_SESSION });
-      return json(res, 200, await facade.snapshot());
+      if (!actor) return reply(401, { ok: false, human: NO_SESSION });
+      return reply(200, await facade.snapshot());
     }
 
     if (url.pathname === "/api/ready-order" && req.method === "POST") {
-      if (!actor) return json(res, 401, { ok: false, human: NO_SESSION });
+      if (!actor) return reply(401, { ok: false, human: NO_SESSION });
       const body = JSON.parse(await readBody(req)) as {
         order_ref: string;
         label: string;
         channel?: string;
       };
-      return json(res, 200, facade.registerReadyOrder(body.order_ref, body.label, body.channel));
+      return reply(200, facade.registerReadyOrder(body.order_ref, body.label, body.channel));
     }
 
     if (url.pathname === "/api/command" && req.method === "POST") {
-      if (!actor) return json(res, 401, { ok: false, human: NO_SESSION });
+      if (!actor) return reply(401, { ok: false, human: NO_SESSION });
       const body = JSON.parse(await readBody(req)) as Record<string, unknown>;
       if (typeof body.courier_actor_id === "string") {
         body.courier_actor_id = asInternalRiderActorId(body.courier_actor_id);
@@ -502,28 +566,28 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
       }
       const result = await facade.execute(body as never);
       const snap = await facade.snapshot();
-      return json(res, 200, { result, snapshot: snap });
+      return reply(200, { result, snapshot: snap });
     }
 
     if (url.pathname === "/api/backup" && req.method === "POST") {
       if (!actor || !["gerente", "lider_delivery"].includes(actor.role)) {
-        return json(res, 403, {
+        return reply(403, {
           ok: false,
           human: "Só o responsável pelo piloto pode gerar backup.",
         });
       }
       const r = createBackup(facade.dataPath, backupDir, cfg.backup.retain_count, log);
-      return json(res, r.ok ? 200 : 500, r);
+      return reply(r.ok ? 200 : 500, r);
     }
 
     if (url.pathname === "/api/backups" && req.method === "GET") {
-      if (!actor) return json(res, 401, { ok: false, human: NO_SESSION });
-      return json(res, 200, { backups: listBackups(backupDir) });
+      if (!actor) return reply(401, { ok: false, human: NO_SESSION });
+      return reply(200, { backups: listBackups(backupDir) });
     }
 
     if (url.pathname === "/api/restore" && req.method === "POST") {
       if (!actor || actor.role !== "gerente") {
-        return json(res, 403, {
+        return reply(403, {
           ok: false,
           human: "Só o administrador do piloto pode restaurar.",
         });
@@ -531,11 +595,11 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
       const body = JSON.parse(await readBody(req)) as { file: string };
       const full = join(backupDir, body.file);
       if (!full.startsWith(backupDir)) {
-        return json(res, 400, { ok: false, human: "Arquivo inválido." });
+        return reply(400, { ok: false, human: "Arquivo inválido." });
       }
       const r = restoreBackup(full, facade.dataPath, backupDir, log);
       if (r.ok) facade.reloadStore();
-      return json(res, r.ok ? 200 : 500, r);
+      return reply(r.ok ? 200 : 500, r);
     }
 
     // static UI
@@ -566,7 +630,7 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
   } catch (e) {
     const technical = e instanceof Error ? e.message : String(e);
     log.error("command_failed", "Erro interno do servidor.", technical);
-    json(res, 500, {
+    reply(500, {
       error: "Algo deu errado. Avise o responsável pelo piloto.",
       // technical only in logs
     });
@@ -595,9 +659,13 @@ server.listen(PORT, BIND, () => {
   );
   const scheme = httpsResolution.enabled ? "https" : "http";
   console.log(startupSummary(httpsResolution, bindResolution, PORT));
-  console.log(`ENTREGAS PILOTO ${scheme}://127.0.0.1:${PORT}/console/`);
-  console.log(`  mobile: ${scheme}://127.0.0.1:${PORT}/rider-mobile/`);
-  console.log(`  ifood:  ${scheme}://127.0.0.1:${PORT}/ifood-handoff/`);
+  // Em nuvem o banner não pode dizer 127.0.0.1: quem lê o log precisa saber
+  // o endereço real pelo qual o serviço responde.
+  const shown = cloud.publicUrl || `${scheme}://${cloud.remote ? BIND : "127.0.0.1"}:${PORT}`;
+  console.log(`ENTREGAS PILOTO ${shown}/console/`);
+  console.log(`  mobile: ${shown}/rider-mobile/`);
+  console.log(`  ifood:  ${shown}/ifood-handoff/`);
+  console.log(`  config: ${JSON.stringify(describeCloudConfig(cloud))}`);
   console.log(`  aparelhos autorizados: ${authorizedDevices.length}`);
   console.log(
     `  unidade configurada: ${unitConfig.ok ? "SIM" : "NAO (retorno automatico desligado)"}`,
