@@ -73,7 +73,17 @@ export class CriticalRuntime {
 
     // Backlog é sinal, não falha. Fila crescendo com consumidor fora do ar é
     // exatamente o comportamento projetado.
-    const pendentes = await this.deps.outbox.pendingCount();
+    //
+    // A contagem é informativa e por isso NÃO pode derrubar a apuração. Com o
+    // banco fora do ar ela falha junto com tudo — e deixá-la propagar trocava
+    // o diagnóstico exato ("não consigo persistir") por um genérico "falha ao
+    // apurar saúde", justamente na hora em que alguém precisa da informação.
+    let pendentes: number | "desconhecido" = "desconhecido";
+    try {
+      pendentes = await this.deps.outbox.pendingCount();
+    } catch {
+      /* mantém "desconhecido": o estado do armazenamento já foi apurado acima */
+    }
 
     if (this.deps.probeAsyncConsumer) {
       let asyncOk = false;

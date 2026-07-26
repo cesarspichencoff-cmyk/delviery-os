@@ -39,6 +39,7 @@ interface PoolLike {
   query(sql: string, params?: readonly unknown[]): Promise<{ rows: SqlRow[] }>;
   connect(): Promise<PoolClientLike>;
   end(): Promise<void>;
+  on(evento: "error", ouvinte: (erro: Error) => void): unknown;
 }
 interface PoolClientLike {
   query(sql: string, params?: readonly unknown[]): Promise<{ rows: SqlRow[] }>;
@@ -150,6 +151,25 @@ export async function createPgClient(opts: PgConnectionOptions): Promise<PgSqlCl
     statement_timeout: opts.statementTimeoutMs ?? 15_000,
     ssl: ssl ? { rejectUnauthorized: true } : undefined,
     application_name: "deliveryos",
+  });
+
+  /**
+   * Sem este ouvinte o processo MORRE quando o banco cai.
+   *
+   * O pool emite `error` nas conexões ociosas quando o servidor vai embora, e
+   * um evento `error` sem ouvinte derruba o Node inteiro. O efeito prático foi
+   * medido: com o PostgreSQL parado, o runtime crítico saía do ar em vez de
+   * responder `blocked` — trocando "não consigo gravar agora", que é
+   * recuperável e visível, por "sumi", que exige alguém reiniciar na mão.
+   *
+   * A queda de conexão ociosa não é erro de negócio nem exige ação: quem
+   * decide o que fazer é a sonda de saúde, que tenta escrever e reporta o
+   * estado real.
+   */
+  pool.on("error", (erro: Error) => {
+    console.error(
+      `[postgres] conexão ociosa caiu: ${erro.message} — o pool reconecta; a saúde reporta o estado.`,
+    );
   });
 
   return new PgSqlClient(pool);

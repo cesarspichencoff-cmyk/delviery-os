@@ -31,7 +31,17 @@
     "test:entregas:session": "npx tsc && node dist/src/entregas/pilot/run-session-isolation-tests.js",
     "test:entregas:cloud": "npx tsc && node dist/src/entregas/pilot/run-cloud-config-tests.js",
     "test:entregas:persistence-recreate": "npx tsc && node dist/src/entregas/pilot/run-persistence-recreate-tests.js",
-    "test:entregas:deploy-audit": "npx tsc && node dist/src/entregas/pilot/run-deploy-audit-tests.js"
+    "test:entregas:deploy-audit": "npx tsc && node dist/src/entregas/pilot/run-deploy-audit-tests.js",
+    "build:platform": "npx tsc && node tools/copiar_migrations.js",
+    "build:critical": "npm run build:platform",
+    "build:async": "npm run build:platform",
+    "start:critical": "node dist/src/platform/bin/critical.js",
+    "start:async": "node dist/src/platform/bin/async-runtime.js",
+    "test:platform": "npx tsx src/platform/run-platform-tests.ts",
+    "test:platform:pg": "npx tsx src/platform/run-postgres-integration-tests.ts",
+    "test:platform:repos": "npx tsx src/platform/run-pg-repository-tests.ts",
+    "test:platform:envelope": "npx tsx src/platform/run-envelope-tests.ts",
+    "migrate": "npx tsx src/platform/bin/migrate.ts"
   },
   "devDependencies": {
     "@types/node": "20.14.10",

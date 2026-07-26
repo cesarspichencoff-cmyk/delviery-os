@@ -548,3 +548,75 @@ export class PgTransactionalWriter {
     }
   }
 }
+
+/* ------------------------------------------------------------------ *
+ * Sink de fatos
+ * ------------------------------------------------------------------ */
+
+/**
+ * Grava fatos no event log.
+ *
+ * Recebe o cliente da transação em curso — nunca o pool — porque `append` é,
+ * por contrato, a metade que ainda NÃO confirmou. Confirmar é do Unit of Work.
+ */
+export class PgFactSink {
+  constructor(private readonly sql: SqlClient) {}
+
+  async append(facts: readonly PlatformFactLike[]): Promise<void> {
+    for (const f of facts) {
+      await this.sql.query(
+        `INSERT INTO platform.event_log
+           (event_id, unit_id, object_type, object_id, event_type, payload, occurred_at,
+            origin, actor_id, idempotency_key, correlation_id, contract_version)
+         VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9,$10,$11,$12)
+         ON CONFLICT (idempotency_key) DO NOTHING`,
+        [
+          f.event_id,
+          f.unit_id,
+          f.object_type,
+          f.object_id,
+          f.event_type,
+          JSON.stringify(f.payload ?? {}),
+          f.occurred_at,
+          f.origin,
+          f.actor_id ?? null,
+          f.idempotency_key,
+          f.correlation_id ?? null,
+          f.contract_version,
+        ],
+      );
+    }
+  }
+
+  /**
+   * Quais destas chaves já existem.
+   *
+   * Uma consulta só com `= ANY($1)`. Uma consulta por chave transformaria um
+   * lote de sincronização do celular — que chega com dezenas de eventos — em
+   * dezenas de idas ao banco.
+   */
+  async existingKeys(keys: readonly string[]): Promise<Set<string>> {
+    if (!keys.length) return new Set();
+    const r = await this.sql.query<SqlRow>(
+      `SELECT idempotency_key FROM platform.event_log WHERE idempotency_key = ANY($1)`,
+      [keys],
+    );
+    return new Set(r.map((l) => String(l.idempotency_key)));
+  }
+}
+
+/** Forma mínima de um fato — evita import circular com o Unit of Work. */
+export interface PlatformFactLike {
+  event_id: string;
+  unit_id: string;
+  object_type: string;
+  object_id: string;
+  event_type: string;
+  payload: Record<string, unknown>;
+  occurred_at: string;
+  idempotency_key: string;
+  actor_id?: string;
+  origin: string;
+  correlation_id?: string;
+  contract_version: string;
+}
