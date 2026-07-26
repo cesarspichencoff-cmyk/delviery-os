@@ -20,7 +20,7 @@ const { NativeObservability } = require('./observability');
 const { DriverHealthMonitor } = require('./health');
 const { extractEntities, normalizeText } = require('./engine');
 const { createRuntimeConversationEngine } = require('./engine-factory');
-const { composeResponse } = require('./response-composer');
+const { composeConversationalResponse } = require('./conversational-composer');
 const { loadPlaceholderRegistry } = require('./placeholders');
 const { nativeError } = require('./errors');
 
@@ -410,7 +410,24 @@ class NativeConversationRuntime {
           additionalHandoffs.push(this.queue.create({ case_id: caseId, conversation_id: gateway.input.conversation_id, escalation, reason: 'food_safety', idempotency_key: `${caseId}:${escalation}:food_safety` }));
         }
       }
-      const response = composeResponse({ classification, result, handoff });
+      const previousResponses = this.store.eventsOfType('runtime.response_registered')
+        .map((event) => event.payload?.result)
+        .filter((saved) => saved?.conversation_id === gateway.input.conversation_id)
+        .map((saved) => saved.response?.text)
+        .filter(Boolean);
+      const response = composeConversationalResponse({
+        classification,
+        result,
+        handoff,
+        seed: this.seed,
+        conversation: {
+          conversation_id: gateway.input.conversation_id,
+          turn_order: gateway.input.turn_order,
+          source_text: gateway.input.content,
+          previous_responses: previousResponses,
+          context: mergedContext
+        }
+      });
       this.stage(raw.message_id, 'response_composed', { response_status: result.status }, options.crashAfter);
       const responseId = `response_${sha256(gateway.input.message_id).slice(0, 20)}`;
       this.crm.recordResponse({ response_id: responseId, case_id: caseId, conversation_id: gateway.input.conversation_id, status_reflected: result.status, text_hash: sha256(response.text), handoff_confirmed: handoff?.status === 'confirmed', synthetic: true });
