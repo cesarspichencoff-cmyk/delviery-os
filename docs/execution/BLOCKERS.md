@@ -214,3 +214,14 @@ extração de backup nem contra aparelho comprometido.
 
 Reavaliação do portão durante a viagem · corrida na `sequenceLocal` · GPS do
 piloto em RAM · resíduos de bind `0.0.0.0` e extrator de dimensões.
+
+## Atualização — Unidade 2 (2026-07-27)
+
+**B4 — dois tipos de evento aceitos sem consumidor.** `source_event_received` e
+`order_state_changed` estão em `EVENT_TYPES`, então `checkEvent()` os aceita.
+Gravados hoje, iriam para a outbox, não encontrariam handler, e terminariam em
+dead-letter depois de gastar as tentativas.
+
+Não receberam schema de propósito: contrato para evento que ninguém produz nem
+consome é acordo entre partes que não existem. Formalizar quando o Store Agent
+ou a ponte de pedidos tiverem produtor real.

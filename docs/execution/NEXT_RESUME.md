@@ -1,5 +1,11 @@
 # Retomada — leia este arquivo primeiro
 
+> **ATUALIZADO 2026-07-27 — Unidades 1 e 2 CONCLUÍDAS.**
+> `EVENT_CONTRACTS_UNIT_COMPLETE` no commit `eba60ab`. Nove eventos
+> formalizados; dois recusados por não terem produtor nem consumidor. O
+> cruzamento schema×código achou e corrigiu duas divergências reais no runtime.
+> **Próxima unidade: 3 — ponte Entregas → Operação Viva.**
+>
 > **ATUALIZADO 2026-07-27 — Unidade 1 CONCLUÍDA.**
 > `ANDROID_DEVICE_AUTH_UNIT_COMPLETE`. HEAD `4456f2e`.
 > O P0 do Android está corrigido e provado: 24 testes no servidor, 34 Kotlin,

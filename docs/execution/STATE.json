@@ -270,6 +270,29 @@
         "SyncWorker autentica antes de enviar e retorna retry() em credencial recusada"
       ],
       "limitacao": "token em Room sem cifragem por Keystore; nenhum aparelho fisico usado"
+    },
+    "unidade_2_contratos_de_evento": {
+      "veredito": "EVENT_CONTRACTS_UNIT_COMPLETE",
+      "commit": "eba60ab",
+      "arquivos": [
+        "docs/contracts/eventos.schema.json",
+        "src/platform/contracts/event-schema.ts",
+        "src/platform/run-event-contract-tests.ts"
+      ],
+      "testes": {
+        "event-contract": 23
+      },
+      "eventos_com_contrato": 9,
+      "eventos_declarados_sem_contrato": [
+        "source_event_received",
+        "order_state_changed"
+      ],
+      "o_que_o_cruzamento_achou": [
+        "origin exigido pelo contrato e nao validado pelo runtime",
+        "payload ausente virando {} em silencio"
+      ],
+      "lacuna_fechada": "validacao de payload por tipo — antes so o envelope era verificado",
+      "limitacao": "validador cobre apenas o subconjunto de JSON Schema usado no arquivo; verificarCobertura() acusa palavra-chave nova"
     }
   }
 }
