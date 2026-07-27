@@ -49,7 +49,8 @@
     "test:platform:bridge": "npx tsx src/platform/run-bridge-tests.ts",
     "test:platform:auth": "npx tsx src/platform/run-device-auth-tests.ts",
     "test:platform:contracts": "npx tsx src/platform/run-event-contract-tests.ts",
-    "test:platform:ingest": "npx tsx src/platform/run-ingest-service-tests.ts"
+    "test:platform:ingest": "npx tsx src/platform/run-ingest-service-tests.ts",
+    "test:platform:consumer": "npx tsx src/platform/run-bridge-consumer-tests.ts"
   },
   "devDependencies": {
     "@types/node": "20.14.10",
