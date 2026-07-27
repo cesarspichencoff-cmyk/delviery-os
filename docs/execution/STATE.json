@@ -311,7 +311,24 @@
       ],
       "decisao_central": "o consumidor guarda o fato e recalcula; idempotencia, ordem e expiracao viram consequencia estrutural",
       "afirmacao_permitida": "ponte local comprovada em testes",
-      "NAO_integrada": "nenhuma rota HTTP chama ingerir; OUTBOX_HANDLERS continua vazio"
+      "_correcao_de_registro": "bd3bc24 comprovou o NUCLEO da ponte, e a afirmacao de entao — 'NAO integrada' — estava correta para aquele commit. A ligacao ao runtime foi comprovada em 2bc30fe."
+    },
+    "unidade_3D_ligacao_ao_runtime": {
+      "veredito": "OPERATION_LIVE_RUNTIME_WIRING_COMPLETE",
+      "commit": "2bc30fe",
+      "rota_conectada": "POST /api/gps/batch no critical.ts — a mesma que o Android ja fala",
+      "handler_registrado": "9 tipos da Operacao Viva em OUTBOX_HANDLERS do async-runtime.ts",
+      "arquivos_novos": [
+        "src/platform/runtime/rota-ingestao.ts",
+        "src/platform/runtime/handler-operacao-viva.ts",
+        "PgDeviceRegistry"
+      ],
+      "testes": {
+        "runtime-wiring": 20
+      },
+      "fluxo_real": "rota autenticada -> ingerir -> event log + outbox na mesma transacao -> worker real -> handler -> Operacao Viva -> replay",
+      "afirmacao_permitida": "cadeia local comprovada em testes, incluindo os pontos reais de composicao",
+      "nao_exercitado": "a rota nao foi chamada por HTTP real neste gate; nenhum aparelho fisico; nenhum GPS real"
     }
   }
 }

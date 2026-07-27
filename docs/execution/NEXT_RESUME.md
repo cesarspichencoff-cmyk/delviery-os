@@ -1,5 +1,12 @@
 # Retomada — leia este arquivo primeiro
 
+> **ATUALIZADO 2026-07-27 — Unidades 1, 2, 3 e 3D CONCLUIDAS.**
+> `OPERATION_LIVE_RUNTIME_WIRING_COMPLETE` em `2bc30fe`. A ponte deixou de ser
+> peca testada: `POST /api/gps/batch` existe no critico e os nove tipos da
+> Operacao Viva estao registrados em `OUTBOX_HANDLERS`. A ressalva anterior
+> ("nenhuma rota chama `ingerir`") esta SUPERADA — vale para `bd3bc24`, nao
+> para o HEAD atual. **Proxima unidade: 4 — Conference Brain.**
+>
 > **ATUALIZADO 2026-07-27 — Unidades 1, 2 e 3 CONCLUÍDAS.**
 > `OPERATION_LIVE_BRIDGE_UNIT_COMPLETE` em `01bc66d`. A cadeia
 > ingestão → event log → outbox → consumidor → projeção → replay é

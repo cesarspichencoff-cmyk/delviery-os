@@ -403,3 +403,46 @@ não acontece duas vezes.
 **Custo:** um efeito externo perdido por bug de consumidor não volta por
 replay. Correto — ele precisa de decisão humana, não de reprocessamento
 automático.
+
+---
+
+## D25 - A rota mora fora do servidor HTTP
+
+**Decidido:** `tratarLoteGps` recebe cabecalhos e corpo e devolve status e
+corpo. O `critical.ts` le o socket e escreve a resposta.
+
+**Contra:** tratar a requisicao dentro do `createServer`, como e o comum.
+
+**Por que:** testar a rota subindo servidor exige sincronizar processos por
+texto - e isso ja produziu falso verde nesta base (L3). Separada, a cadeia
+inteira (autenticacao, contrato, transacao, resposta) e testavel em processo,
+com relogio injetado e sem porta.
+
+**Custo:** o `critical.ts` tem um trecho de leitura de corpo que nao e coberto
+pelos testes de wiring. Registrado como nao exercitado.
+
+## D26 - A rota e `/api/gps/batch`, a que o Android ja fala
+
+**Decidido:** o servidor adota o caminho e o formato existentes do aparelho.
+
+**Contra:** desenhar um endpoint novo, mais limpo, e adaptar o Kotlin.
+
+**Por que:** mudar o Kotlin significa recompilar e reinstalar em cada aparelho
+em campo, e um aparelho com versao velha pararia de sincronizar no dia do
+deploy. O servidor e a peca barata de mudar; o parque de celulares e a cara.
+
+**Custo:** o adaptador de formato fica no servidor para sempre. Aceito - e onde
+ele custa menos.
+
+## D27 - O handler lanca em vez de engolir
+
+**Decidido:** mensagem nao aplicavel faz o handler lancar.
+
+**Contra:** registrar e devolver, tratando como processada.
+
+**Por que:** o `AsyncRuntime` traduz excecao em tentativa contada, backoff e
+dead-letter com motivo. Engolir devolveria "processado" para algo que ninguem
+processou, e o problema sumiria da fila sem nunca ter sido resolvido.
+
+**Custo:** uma mensagem estruturalmente incoerente consome tentativas antes de
+morrer. Correto: ela precisa aparecer, nao desaparecer.

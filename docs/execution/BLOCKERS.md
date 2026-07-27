@@ -225,3 +225,20 @@ dead-letter depois de gastar as tentativas.
 Não receberam schema de propósito: contrato para evento que ninguém produz nem
 consome é acordo entre partes que não existem. Formalizar quando o Store Agent
 ou a ponte de pedidos tiverem produtor real.
+
+## Atualizacao - Unidade 3D (2026-07-27)
+
+**B4 resolvido no caminho de ingestao.** Os dois tipos sem consumidor
+(`source_event_received`, `order_state_changed`) agora sao recusados ANTES de
+gravar, com a classe `nao_roteavel`. Eles nao entram mais na outbox e nao
+queimam tentativas ate dead-letter.
+
+Continuam aceitos por `checkEvent` de proposito: o catalogo registra que eles
+existem. A recusa e no roteamento, que e onde a decisao pertence.
+
+### Nao exercitado nesta unidade
+
+A rota nao foi chamada por HTTP real. A decisao mora em modulo separado e e
+testada em processo (D25); o servidor em si foi exercitado no Macro-Prompt 1,
+com `/health` e `/ready` contra PostgreSQL real. O trecho de leitura de corpo
+em `critical.ts` nao tem cobertura direta.

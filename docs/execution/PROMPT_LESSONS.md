@@ -280,3 +280,17 @@ apontou os três lugares que precisavam mudar.
 **Regra:** quando duas coisas de natureza diferente estão sendo tratadas como
 uma, dê a elas tipos diferentes. Um teste pega a regressão depois; o tipo a
 impede antes.
+
+## L20 - Ligar nao e reimplementar
+
+A Unidade 3D era conectar componentes ja comprovados. A tentacao, ao escrever a
+rota, e resolver ali mesmo o que ja estava resolvido - montar o INSERT, calcular
+a projecao - porque no momento parece mais direto do que importar.
+
+Tres testes estruturais existem so para impedir isso: nenhum `INSERT INTO` na
+rota ou no handler, nenhuma chamada a `projetar`, e uso obrigatorio de
+`ingerir` e `consumir`.
+
+**Regra:** quando a missao e integrar, escreva o teste que proibe a segunda
+implementacao ANTES de escrever a integracao. Duas pontes nao sao redundancia -
+sao duas verdades que divergem no primeiro defeito.
