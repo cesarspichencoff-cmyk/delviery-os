@@ -189,3 +189,28 @@ Se os três estiverem verdes, o checkpoint está íntegro e a próxima frente é
 ligar a rota de ingestão no `src/platform/bin/critical.ts` — o adapter, a
 validação e o recibo já existem e estão testados; falta o `PgDeviceRegistry`
 sobre `identity.device` e o wiring HTTP.
+
+---
+
+## Atualização — Unidade 1 concluída (2026-07-27)
+
+**C1 (P0 do Android) está CORRIGIDO.** Ver commits `a5fe45d` e `4456f2e`.
+A reprodução revelou que era pior do que o registrado: com 401, `doWork`
+retornava `Result.success()` — o WorkManager dava a sincronização por concluída.
+
+### Bloqueador novo, menor
+
+**B3 — token sem cifragem por Keystore.** O token fica em Room, no diretório
+privado do app. Isso protege contra outro aplicativo; **não** protege contra
+extração de backup nem contra aparelho comprometido.
+
+- **O que falta:** `androidx.security-crypto` com `EncryptedSharedPreferences`,
+  ou cifrar a coluna antes de gravar.
+- **Por que não foi feito agora:** é dependência nova e só é verificável em
+  aparelho — não cabia na Unidade 1 sem inflar o escopo.
+- **Mitigação atual:** confirmar `android:allowBackup="false"` no manifesto.
+
+### C2, C3, C4, C5 seguem abertos
+
+Reavaliação do portão durante a viagem · corrida na `sequenceLocal` · GPS do
+piloto em RAM · resíduos de bind `0.0.0.0` e extrator de dimensões.

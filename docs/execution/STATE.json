@@ -229,7 +229,8 @@
       "figma": "docs/figma/ nao existe; nada foi escrito no repositorio",
       "rota_de_ingestao": "critical.ts continua com /health e /ready apenas",
       "handlers_assincronos": "OUTBOX_HANDLERS e JOB_HANDLERS continuam vazios",
-      "PgDeviceRegistry": "interface existe em device-ingest.ts; implementacao PG nao"
+      "PgDeviceRegistry": "interface existe em device-ingest.ts; implementacao PG nao",
+      "unidades_2_a_7": "contratos de evento, ponte, Conference Brain, Copiloto shadow, Figma, gate tecnico"
     },
     "bloqueado": {
       "P0_android_autenticacao": {
@@ -250,6 +251,25 @@
       },
       "_armadilha": "get_metadata sem nodeId listou UMA pagina; a API do plugin e a autoridade",
       "variaveis_estilos": 0
+    },
+    "unidade_1_android_device_auth": {
+      "veredito": "ANDROID_DEVICE_AUTH_UNIT_COMPLETE",
+      "commits": [
+        "a5fe45d (servidor)",
+        "4456f2e (Android)"
+      ],
+      "testes": {
+        "device-auth (TS)": 24,
+        "Kotlin unitarios": 34,
+        "android estruturais": 35
+      },
+      "o_que_mudou": [
+        "credencial assinada e autocontida: o token prova QUEM, o registro decide se AINDA pode",
+        "taxonomia de recusa: renovavel vs terminal; toda recusa manda preservar dados locais",
+        "ApiResult.Unauthorized separada de Rejected — o compilador impede a confusao voltar",
+        "SyncWorker autentica antes de enviar e retorna retry() em credencial recusada"
+      ],
+      "limitacao": "token em Room sem cifragem por Keystore; nenhum aparelho fisico usado"
     }
   }
 }

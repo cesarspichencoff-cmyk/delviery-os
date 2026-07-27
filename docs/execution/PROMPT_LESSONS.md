@@ -248,3 +248,35 @@ verificado?" com um "sim" que ninguém checou.
 **Regra:** quando uma skill ou documento citar um comando, rode-o. Se ainda não
 existir, diga isso em voz alta no próprio texto e ofereça o substituto que
 funciona hoje.
+
+---
+
+## L18 — O ambiente de teste pode substituir a coisa por um boneco
+
+Um teste da credencial falhou por um motivo que não era o meu código: no
+ambiente de teste JVM do Android, `org.json.JSONObject` é um **stub** e, com
+`isReturnDefaultValues = true`, devolve vazio em vez de lançar.
+
+O teste não estava medindo minha lógica — estava medindo o boneco. E o
+caminho tentador era enfraquecer a asserção até passar, o que teria escondido
+que aquele caminho **nunca foi exercitado**.
+
+Corrigido com Robolectric, que já era dependência do projeto e fornece a
+implementação real.
+
+**Regra:** quando um teste falha por causa de um tipo da plataforma, pergunte
+primeiro se aquele tipo é real naquele ambiente. Enfraquecer a asserção troca
+um vermelho honesto por um verde que não significa nada.
+
+## L19 — Deixe o compilador ser o guarda
+
+A confusão que causou o P0 era semântica: 401 (credencial) e 400 (lote
+malformado) tratados pelo mesmo ramo. Comentário não impede isso voltar.
+
+Acrescentar `Unauthorized` como variante do `sealed class ApiResult` fez o
+compilador Kotlin **exigir** tratamento em todo `when` — e foi ele, não eu, que
+apontou os três lugares que precisavam mudar.
+
+**Regra:** quando duas coisas de natureza diferente estão sendo tratadas como
+uma, dê a elas tipos diferentes. Um teste pega a regressão depois; o tipo a
+impede antes.

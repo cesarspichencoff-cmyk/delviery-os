@@ -1,5 +1,12 @@
 # Retomada — leia este arquivo primeiro
 
+> **ATUALIZADO 2026-07-27 — Unidade 1 CONCLUÍDA.**
+> `ANDROID_DEVICE_AUTH_UNIT_COMPLETE`. HEAD `4456f2e`.
+> O P0 do Android está corrigido e provado: 24 testes no servidor, 34 Kotlin,
+> 35 estruturais. A **próxima unidade é a 2 — contratos dos eventos.**
+> O que está abaixo descreve o estado anterior e continua válido para tudo o
+> que a Unidade 1 não tocou.
+
 > Escrito em **2026-07-27**, depois de o Macro-Prompt 2 ser interrompido pelo
 > fim dos créditos. O Macro-Prompt 2 **NÃO está concluído**.
 >
