@@ -168,3 +168,83 @@ no próprio arquivo que Docker não rodou ali.
 **Regra:** quando algo não pôde ser verificado, o resultado precisa **dizer
 isso** — no console e no artefato. Um placar verde que não distingue "passou"
 de "não rodou" é pior que um vermelho.
+
+---
+
+# Lições da interrupção — 2026-07-27
+
+> As anteriores são todas sobre o teste que passa sem testar. Estas são de outra
+> família: **sobre gastar o recurso que permite verificar.**
+
+## L13 — Especificação ampla não autoriza frentes paralelas ilimitadas
+
+O Macro-Prompt 2 pedia doze resultados. A leitura natural foi abrir três frentes
+em paralelo — Copiloto, Android, Figma — mais a implementação principal. As três
+frentes de subagente **morreram no meio**, por limite de gasto, e nenhuma
+entregou resultado aceitável:
+
+- o port do Conference Brain parou em 309/314, sem o gate de auditoria;
+- o Figma não escreveu um arquivo sequer no repositório;
+- só a inspeção read-only — que era barata — chegou ao fim.
+
+O trabalho que sobreviveu foi o que **eu** fiz sequencialmente: as seis skills e
+os quatro módulos da ponte, cada um com teste verde antes do próximo começar.
+
+**Regra:** uma unidade ativa por vez. Um briefing com doze itens é uma fila,
+não uma autorização de paralelismo. Paralelizar é uma decisão de custo, e o
+custo aqui é o único recurso que não se recupera dentro da sessão.
+
+**O que fazer em vez disso:** ordenar por dependência, atacar a primeira, provar,
+registrar, seguir. Se sobrar recurso, paralelize o que for **independente e
+barato** — inspeção read-only, por exemplo, que foi a única que funcionou.
+
+## L14 — Checkpoint ANTES de esgotar, não quando o aviso chegar
+
+Quando o aviso de crédito chegou, havia 78 arquivos não rastreados e zero
+commits — cerca de 15 mil linhas de trabalho sustentadas apenas pelo disco.
+Não se perdeu nada, mas por sorte de ordem, não por desenho.
+
+**Regra:** commitar cada unidade assim que ela passa no teste. Um commit por
+unidade comprovada custa segundos; reconstruir do zero custa a sessão inteira.
+
+Sinal para parar e consolidar: mais de ~5 arquivos novos não rastreados, ou mais
+de uma unidade comprovada sem commit.
+
+## L15 — Trabalho de subagente não entra sem validação independente
+
+O port do Conference Brain **parecia** pronto: 34 arquivos no lugar certo,
+estrutura coerente, 309 de 314 testes verdes. E o subagente que o produziu
+**terminou em erro**, não por conclusão.
+
+A tentação de aceitar era grande e tinha até uma explicação plausível — "os 5
+que falham são guardas de compatibilidade a módulos que mandei não copiar". A
+explicação é coerente com as mensagens de erro. **Coerente não é provado.**
+
+**Regra:** resultado de subagente é hipótese até um verificador independente
+confirmar. E verifique como o agente **terminou**: um agente que morreu no meio
+produz artefato com cara de completo.
+
+## L16 — A ferramenta pode falhar por um motivo que não é o seu
+
+Durante o snapshot, `tar -czf "C:/..."` falhou com "Cannot connect to C: resolve
+failed" — o `tar` do Git Bash leu `C:` como nome de host remoto.
+
+Falhou ruidosamente, e mesmo assim o comando seguinte reportou "0 arquivos" num
+formato que passaria batido numa leitura rápida. O que pegou foi a **comparação
+de contagem** contra o esperado (78 = 78) depois de trocar por cópia manual.
+
+**Regra:** toda preservação termina com uma contagem comparada contra o
+esperado. "O comando rodou" não é evidência de que o arquivo existe.
+
+## L17 — Verificador citado precisa existir
+
+A skill do Figma citava `npm run test:platform:figma` como verificador. O script
+**não existe** — e o teste que valida as skills só exigia que a seção contivesse
+*algum* comando, não que o comando fosse real.
+
+Um verificador inexistente é pior que nenhum: ele encerra a pergunta "isto está
+verificado?" com um "sim" que ninguém checou.
+
+**Regra:** quando uma skill ou documento citar um comando, rode-o. Se ainda não
+existir, diga isso em voz alta no próprio texto e ofereça o substituto que
+funciona hoje.

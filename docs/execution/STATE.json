@@ -1,6 +1,6 @@
 {
-  "_leia_primeiro": "Estado executável do DeliveryOS. Escrito por quem termina uma missão, lido por quem começa a próxima. Só entra aqui o que foi VERIFICADO — o que é intenção vai para DECISIONS.md.",
-  "atualizado_em": "2026-07-26",
+  "_leia_primeiro": "Estado executavel do DeliveryOS. So entra aqui o que foi VERIFICADO. Escrito por quem termina uma missao, lido por quem comeca a proxima. Para retomar a execucao interrompida, leia docs/execution/NEXT_RESUME.md primeiro.",
+  "atualizado_em": "2026-07-27",
   "missao": "MACRO-PROMPT 1/3 — Hybrid Platform + PostgreSQL + Cloud Foundation",
   "veredito": "READY_FOR_MACRO_PROMPT_2_FIELD_AND_COPILOT_BRIDGE",
   "repositorio": {
@@ -93,7 +93,25 @@
       "run-backup-restore-tests"
     ],
     "_sem_banco": "As tres suites de banco se declaram PULADAS em voz alta e a corrida agregada segue verde com codigo 0. Ausencia de banco nunca vira verde silencioso.",
-    "comando_agregado": "npm run test:platform:all"
+    "comando_agregado": "npm run test:platform:all",
+    "macro_prompt_2_recuperacao": {
+      "verdes": {
+        "run-skills-tests": 12,
+        "run-bridge-tests": 45,
+        "tsc --noEmit": "exit 0"
+      },
+      "falhando": {
+        "conference-brain": "309/314, nao aceito"
+      },
+      "nao_executados_nesta_missao": [
+        "npm run test:entregas (481, suite global)",
+        "test:platform / :envelope / :deploy",
+        "test:platform:pg / :repos / :backup (exigem banco)",
+        "gate de auditoria conference-sprint23/24 (esperado 12/12)",
+        "qualquer Android instrumentado, emulador ou APK",
+        "Figma"
+      ]
+    }
   },
   "android": {
     "variantes": [
@@ -167,5 +185,71 @@
       "regiao distante custa latencia invisivel em teste e sensivel numa sexta"
     ],
     "executado_contra_provedor": false
+  },
+  "macro_prompt_2": {
+    "estado": "INTERROMPIDO por fim de creditos — NAO concluido",
+    "veredito": "RECOVERY_CHECKPOINT_COMPLETE (recuperacao), NAO e veredito do Macro-Prompt 2",
+    "leia_primeiro": "docs/execution/NEXT_RESUME.md",
+    "preservacao": {
+      "branch_wip": "wip/macro2-interrupted-recovery-20260727",
+      "commit_wip": "2d298cb",
+      "arquivos_preservados": 80,
+      "snapshot_externo": "scratchpad/recovery-20260727/ (78 nao rastreados copiados, patch reversivel verificado)",
+      "_nota": "O commit WIP NAO significa aprovacao, teste verde nem codigo completo."
+    },
+    "comprovado_como_unidade_mas_NAO_integrado": {
+      "arquivos": [
+        "src/platform/contracts/event-catalog.ts",
+        "src/platform/projections/operacao-viva.ts",
+        "src/platform/copiloto/shadow.ts",
+        "src/platform/ingest/device-ingest.ts"
+      ],
+      "prova": "45 testes verdes em run-bridge-tests.ts, tsc --noEmit exit 0",
+      "limitacao_explicita": "Nenhuma rota do critical.ts os chama e nenhum handler do async-runtime.ts os consome. A ponte existe em pecas testadas, nao em funcionamento ponta a ponta."
+    },
+    "concluido_e_comprovado": {
+      "skills": {
+        "quantidade": 6,
+        "diretorio": ".claude/skills/",
+        "prova": "12 testes verdes E as seis aparecem carregadas na sessao (prova viva, nao estrutural)",
+        "formato": ".claude/skills/<nome>/SKILL.md com frontmatter name+description",
+        "gabarito": "tata-product-system, que ja carregava antes"
+      }
+    },
+    "parcial_nao_aceito": {
+      "conference_brain": {
+        "origem": "deliveryos-copiloto-secure-bind-v1 @ aec9027",
+        "resultado": "314 testes, 309 pass, 5 fail",
+        "estado": "NAO APROVADO — preservado somente no WIP, fora do checkpoint",
+        "subagente": "terminou em ERRO por limite de gasto, nao por conclusao",
+        "hipotese_NAO_confirmada": "os 5 seriam guardas de compatibilidade alcancando modulos vizinhos nao copiados; coerente com as mensagens, mas nao provado"
+      }
+    },
+    "nao_iniciado": {
+      "figma": "docs/figma/ nao existe; nada foi escrito no repositorio",
+      "rota_de_ingestao": "critical.ts continua com /health e /ready apenas",
+      "handlers_assincronos": "OUTBOX_HANDLERS e JOB_HANDLERS continuam vazios",
+      "PgDeviceRegistry": "interface existe em device-ingest.ts; implementacao PG nao"
+    },
+    "bloqueado": {
+      "P0_android_autenticacao": {
+        "estado": "REPRODUZIDO, nao corrigido",
+        "evidencia": "KEY_SESSION_TOKEN declarada (EntregasDatabase.kt:207) e lida (SyncWorker.kt:47), nunca escrita; authenticateDevice (EntregasApi.kt:85) nunca chamada",
+        "impacto": "todo envio termina em 401; 401 vira Rejected que NAO retenta; o aparelho parece funcionar e nada chega",
+        "e_o_proximo_objetivo_unico": true
+      }
+    },
+    "figma_fatos_verificados_nao_reinvestigar": {
+      "fileKey": "IMWH8ZKMF5ra3QJYiR6vGa",
+      "escrita_permitida": true,
+      "_como_foi_provado": "criando e removendo um retangulo; o whoami reporta seat View e isso NAO impede escrever",
+      "paginas": {
+        "00 — Overview & Architecture": "0:1 (tem capa)",
+        "01 — Design System": "2:2 (vazia)",
+        "02 — Product Flows & Screens": "2:3 (vazia)"
+      },
+      "_armadilha": "get_metadata sem nodeId listou UMA pagina; a API do plugin e a autoridade",
+      "variaveis_estilos": 0
+    }
   }
 }

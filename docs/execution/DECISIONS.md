@@ -251,3 +251,106 @@ relatório que não distingue "verificado" de "escrito" não serve para decidir
 nada.
 
 **Custo:** o veredito carrega itens abertos, e alguém precisa fechá-los.
+
+---
+
+# Decisões da recuperação — 2026-07-27
+
+> O Macro-Prompt 2 foi interrompido pelo fim dos créditos antes de qualquer
+> checkpoint. Estas seis decisões são sobre **como preservar**, não sobre o que
+> construir.
+
+## D16 — Snapshot externo ANTES de qualquer operação Git
+
+**Decidido:** copiar os 78 arquivos não rastreados um a um para fora do
+repositório, e gerar o patch dos rastreados, antes de criar branch ou commitar.
+
+**Contra:** ir direto ao commit WIP, que já preserva tudo.
+
+**Por quê:** o commit WIP depende do Git funcionar como esperado. O snapshot
+não depende de nada — é cópia de arquivo. Se qualquer operação Git tivesse
+saído errado, o trabalho ainda existiria.
+
+**Custo:** duplicação temporária. Aceito: o custo de duplicar 78 arquivos é
+nulo perto do custo de perdê-los.
+
+**Detalhe que quase custou caro:** o `tar` do Git Bash interpretou `C:/...`
+como host remoto e falhou — mas falhou **ruidosamente**, e a verificação de
+contagem (78 = 78) foi o que confirmou a cópia manual. Um `tar` que falhasse em
+silêncio teria produzido um snapshot vazio com cara de completo.
+
+## D17 — WIP e checkpoint principal SEPARADOS
+
+**Decidido:** duas referências. `wip/macro2-interrupted-recovery-20260727`
+guarda tudo, sem juízo. A branch principal recebe só o comprovado.
+
+**Contra:** um commit só, marcado como "WIP", na branch principal.
+
+**Por quê:** misturar preservação com aprovação faz o histórico da branch
+principal deixar de significar "isto funciona". Quem olhar o log daqui a três
+meses precisa poder confiar que cada commit ali passou em teste.
+
+**Custo:** uma branch a mais para lembrar de limpar depois.
+
+## D18 — O port do Conference Brain NÃO foi aceito
+
+**Decidido:** 309/314 fica só no WIP.
+
+**Contra:** aceitar com os 5 documentados como inaplicáveis.
+
+**Por quê:** duas razões independentes, e cada uma bastaria. Primeira: o
+subagente **terminou em erro** por limite de gasto — o resultado é de um
+processo interrompido, não de um processo que concluiu. Segunda: a hipótese de
+que os 5 são guardas de compatibilidade a módulos vizinhos é **coerente com as
+mensagens de erro, e não foi provada**. Coerente não é provado.
+
+**Custo:** o trabalho fica um passo atrás. Recuperável a qualquer momento a
+partir do WIP.
+
+**O que NÃO fazer na retomada:** apagar os 5 testes para ficar verde. Eles
+existem para impedir que um sprint quebre o motor de 8 praças. Apagá-los remove
+a proteção, não o problema.
+
+## D19 — `shadow.ts` entrou no checkpoint
+
+**Decidido:** incluir, contrariando a suposição de que estaria incompleto.
+
+**Contra:** deixá-lo no WIP junto do resto, por precaução.
+
+**Por quê:** a suposição foi verificada e é falsa. O arquivo fecha com `}`, não
+tem marcador de interrupção, passa no `tsc`, e tem teste dedicado dentro dos 45
+verdes — inclusive o que afirma que o estado `executed` **não existe** no
+contrato. Excluir por precaução, com a evidência apontando o contrário, seria
+substituir medição por medo.
+
+**Custo:** nenhum identificado. A ressalva real — que ele não está **integrado**
+— está registrada em três lugares, e vale igualmente para os outros três
+módulos da ponte.
+
+## D20 — O P0 do Android não foi corrigido nesta missão
+
+**Decidido:** reproduzir e documentar, não corrigir.
+
+**Contra:** corrigir, já que a causa é conhecida e o JDK funciona nesta máquina.
+
+**Por quê:** a missão de recuperação proíbe implementação nova, e com razão. A
+correção não é de uma linha: exige decidir o modelo de autenticação de
+dispositivo, e essa decisão é a próxima frente inteira. Começá-la com crédito
+incerto produziria exatamente o estado que esta missão existe para desfazer.
+
+**Custo:** o P0 continua aberto. Está reproduzido com precisão de arquivo:linha,
+então a retomada começa da correção, não da investigação.
+
+## D21 — O Figma não foi consultado
+
+**Decidido:** nenhuma chamada ao MCP do Figma.
+
+**Contra:** ao menos registrar o que o agente interrompido chegou a criar lá.
+
+**Por quê:** a missão proíbe explicitamente. E o que importa saber já está
+registrado e verificado: o arquivo aceita escrita, as três páginas existem, e
+`docs/figma/` não existe no repositório.
+
+**Custo:** não se sabe se o agente interrompido chegou a criar variáveis no
+arquivo antes de morrer. A retomada precisa **verificar antes de criar**, senão
+duplica.
