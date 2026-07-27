@@ -52,6 +52,8 @@ export const EVENT_CATALOG_VERSION = "event-catalog@1.0.0";
  */
 export type EventOrigin = "device" | "source" | "operator" | "system";
 
+export const EVENT_ORIGINS: readonly EventOrigin[] = ["device", "source", "operator", "system"];
+
 /**
  * Se o fato é da operação real, de simulação, ou de braço de controle.
  *
@@ -223,6 +225,21 @@ export function checkEvent(bruto: unknown): EventCheck {
     return { ok: false, rejection: "invalid_timestamp", detail: "observed_at inválido" };
   }
 
+  // `origin` diz se o fato veio de um celular, de um observador, de gente ou
+  // de derivacao da propria plataforma. Sem ele, uma auditoria nao consegue
+  // distinguir o que foi OBSERVADO do que foi INFERIDO — e essa diferenca e a
+  // que decide se um numero pode ser usado para cobrar alguem.
+  //
+  // Esta checagem faltava: o contrato documentado exigia o campo e o portao do
+  // runtime nao. O teste que cruza os dois apontou a divergencia.
+  if (!EVENT_ORIGINS.includes(e.origin as EventOrigin)) {
+    return {
+      ok: false,
+      rejection: "missing_field",
+      detail: `origin precisa ser device, source, operator ou system (veio: ${String(e.origin)})`,
+    };
+  }
+
   if (!SOURCE_MODES.includes(e.source_mode as SourceMode)) {
     // Sem padrão: ver `SourceMode`.
     return {
@@ -238,7 +255,14 @@ export function checkEvent(bruto: unknown): EventCheck {
     }
   }
 
-  const payload = e.payload ?? {};
+  // Payload ausente virava `{}` em silencio, e com isso um produtor que
+  // esqueceu de serializar o conteudo passava como se tivesse mandado um fato
+  // legitimamente vazio. Ausente e vazio sao coisas diferentes: `{}` e uma
+  // afirmacao ("nao ha nada a dizer"), ausencia e um defeito.
+  if (e.payload === undefined || e.payload === null || typeof e.payload !== "object" || Array.isArray(e.payload)) {
+    return { ok: false, rejection: "missing_field", detail: "payload ausente ou nao e objeto" };
+  }
+  const payload = e.payload;
   const tamanho = Buffer.byteLength(JSON.stringify(payload), "utf8");
   if (tamanho > PAYLOAD_MAX_BYTES) {
     // Payload sem limite é como uma linha de log vira um incidente de disco.

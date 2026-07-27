@@ -1,0 +1,210 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://deliveryos.tata.local/contracts/eventos.schema.json",
+  "title": "Catálogo de eventos do DeliveryOS",
+  "version": "event-catalog@1.0.0",
+
+  "_leia_primeiro": [
+    "Este arquivo é o contrato DOCUMENTADO. O contrato APLICADO é checkEvent() em",
+    "src/platform/contracts/event-catalog.ts. Os dois são cruzados por teste — schema que",
+    "descreve algo diferente do que o código recusa é pior que schema nenhum, porque cria",
+    "confiança numa garantia que não existe.",
+    "",
+    "Só entram aqui eventos com PRODUTOR ou CONSUMIDOR comprovável no código de hoje.",
+    "Catálogo cheio de evento futuro vira lista que ninguém confia."
+  ],
+
+  "_carimbos": {
+    "occurred_at": "quando aconteceu no mundo. Vem do produtor.",
+    "observed_at": "quando o observador viu. Ausente quando ver e acontecer coincidem.",
+    "received_at": "quando o servidor recebeu. NÃO faz parte do envelope do produtor — é atribuído na ingestão e guardado em platform.inbox. Deixá-lo no envelope permitiria ao produtor mentir sobre quando o servidor recebeu.",
+    "_por_que_separados": "Fundir occurred_at com observed_at faz sincronização atrasada parecer operação atrasada — é assim que se acusa um motoboy de demorar quando ele estava sem sinal."
+  },
+
+  "_source_mode": {
+    "valores": ["real", "simulated", "control"],
+    "padrao": "NENHUM — a ausência é recusada",
+    "por_que": "Se `real` fosse o padrão, um simulador esquecido ligado viraria histórico real em silêncio, e ninguém descobriria até alguém decidir com base nele.",
+    "control": "braço de controle: permite comparar uma recomendação contra o que teria acontecido sem ela."
+  },
+
+  "_compatibilidade": {
+    "regra": "major igual basta",
+    "por_que": "Dentro do mesmo major a evolução é aditiva por contrato: campo novo só se acrescenta, nunca muda de sentido. Exigir `minor do evento <= minor do consumidor` pararia todo consumidor não atualizado no instante em que um produtor acrescentasse um campo opcional — que é exatamente a mudança que o versionamento aditivo existe para permitir.",
+    "major_diferente": "vai para dead-letter, nunca é interpretado como se fosse compatível"
+  },
+
+  "_replay": {
+    "garantia": "reprocessar o log inteiro reconstrói o mesmo estado lógico",
+    "como": "a projeção é função pura dos eventos; duplicata é descartada por idempotency_key; evento fora de ordem não retrocede o estado",
+    "efeito_externo": "NENHUM evento deste catálogo dispara efeito externo no replay — o Copiloto está em sombra e não executa ação"
+  },
+
+  "_classificacao_de_dados": {
+    "operacional": "posição, estado de viagem, ocorrência. Retenção 24 meses.",
+    "identificador_pseudonimo": "device_id, actor_id, trip_id. Não são nome nem documento. Retenção 24 meses.",
+    "proibido": "nome de cliente, telefone, endereço, documento, token, cookie. Recusado por NOME DE CHAVE em qualquer profundidade — procurar por regex dentro do valor é um jogo que se perde."
+  },
+
+  "type": "object",
+  "required": [
+    "event_id", "event_type", "event_version", "unit_id",
+    "occurred_at", "origin", "source_mode", "idempotency_key", "payload"
+  ],
+  "properties": {
+    "event_id":        { "type": "string", "minLength": 1 },
+    "event_type":      { "$ref": "#/$defs/tipos" },
+    "event_version":   { "type": "string", "pattern": "^[a-z_]+@[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "unit_id":         { "type": "string", "minLength": 1 },
+    "trip_id":         { "type": "string" },
+    "order_id":        { "type": "string" },
+    "device_id":       { "type": "string" },
+    "actor_id":        { "type": "string" },
+    "occurred_at":     { "type": "string", "format": "date-time" },
+    "observed_at":     { "type": "string", "format": "date-time" },
+    "origin":          { "enum": ["device", "source", "operator", "system"] },
+    "source_mode":     { "enum": ["real", "simulated", "control"] },
+    "sequence":        { "type": "integer", "minimum": 0 },
+    "idempotency_key": { "type": "string", "minLength": 1 },
+    "correlation_id":  { "type": "string" },
+    "causation_id":    { "type": "string" },
+    "payload":         { "type": "object" }
+  },
+
+  "$defs": {
+    "tipos": {
+      "enum": [
+        "trip_created", "trip_started", "gps_batch_received", "arrival_detected",
+        "delivery_confirmed", "occurrence_created", "trip_return_started",
+        "trip_returned", "trip_closed"
+      ]
+    },
+
+    "gps_batch_received": {
+      "_contrato": {
+        "nome": "gps_batch_received",
+        "versao": "gps_batch_received@1.0.0",
+        "produtor": "src/platform/ingest/device-ingest.ts (traduzirLoteGps)",
+        "consumidores": ["src/platform/projections/operacao-viva.ts — ultima_posicao_em e frescor"],
+        "idempotency_key": "gps:<device_id>:<trip_id>:<occurred_at> — gerada NO APARELHO, para o reenvio ser reconhecido",
+        "classificacao": "operacional + identificador pseudônimo",
+        "retencao_meses": 24,
+        "replay": "seguro; recalcula frescor sem efeito externo",
+        "obrigatorios_extra": ["trip_id", "device_id", "sequence"]
+      },
+      "type": "object",
+      "required": ["latitude", "longitude", "accuracy_m"],
+      "properties": {
+        "latitude":  { "type": "number", "minimum": -90,  "maximum": 90 },
+        "longitude": { "type": "number", "minimum": -180, "maximum": 180 },
+        "accuracy_m": { "type": "number", "minimum": 0 },
+        "speed_mps":  { "type": "number", "minimum": 0 },
+        "heading_deg": { "type": "number", "minimum": 0, "maximum": 360 },
+        "altitude_m":  { "type": "number" },
+        "provider":    { "type": "string" },
+        "captured_offline": { "type": "boolean" },
+        "elapsed_realtime_ns": { "type": "integer", "minimum": 0 }
+      }
+    },
+
+    "trip_created": {
+      "_contrato": {
+        "nome": "trip_created", "versao": "trip_created@1.0.0",
+        "produtor": "runtime crítico (rota de viagem — ainda não existe rota; consumidor já existe)",
+        "consumidores": ["operacao-viva.ts — estado `criada`"],
+        "classificacao": "operacional", "retencao_meses": 24,
+        "replay": "seguro", "obrigatorios_extra": ["trip_id"]
+      },
+      "type": "object", "properties": { "created_by": { "type": "string" } }
+    },
+
+    "trip_started": {
+      "_contrato": {
+        "nome": "trip_started", "versao": "trip_started@1.0.0",
+        "produtor": "runtime crítico", "consumidores": ["operacao-viva.ts — estado `em_rota`"],
+        "classificacao": "operacional", "retencao_meses": 24,
+        "replay": "seguro", "obrigatorios_extra": ["trip_id"]
+      },
+      "type": "object", "properties": {}
+    },
+
+    "arrival_detected": {
+      "_contrato": {
+        "nome": "arrival_detected", "versao": "arrival_detected@1.0.0",
+        "produtor": "runtime crítico (derivado de GPS)",
+        "consumidores": ["operacao-viva.ts — estado `chegou`"],
+        "_nota": "DETECÇÃO não é confirmação. A chegada detectada por geofence é uma inferência; a entrega confirmada é ato humano. Fundir as duas transformaria proximidade em prova de entrega.",
+        "classificacao": "operacional", "retencao_meses": 24,
+        "replay": "seguro", "obrigatorios_extra": ["trip_id"]
+      },
+      "type": "object",
+      "properties": { "distancia_m": { "type": "number", "minimum": 0 }, "metodo": { "type": "string" } }
+    },
+
+    "delivery_confirmed": {
+      "_contrato": {
+        "nome": "delivery_confirmed", "versao": "delivery_confirmed@1.0.0",
+        "produtor": "runtime crítico (ato humano)",
+        "consumidores": ["operacao-viva.ts — estado `entregue`"],
+        "classificacao": "operacional", "retencao_meses": 24,
+        "replay": "seguro", "obrigatorios_extra": ["trip_id"]
+      },
+      "type": "object", "properties": { "confirmado_por": { "type": "string" } }
+    },
+
+    "occurrence_created": {
+      "_contrato": {
+        "nome": "occurrence_created", "versao": "occurrence_created@1.0.0",
+        "produtor": "runtime crítico",
+        "consumidores": ["operacao-viva.ts — ocorrencias_abertas; shadow.ts via dimensões"],
+        "_nota": "O texto livre da ocorrência é o lugar mais provável de PII entrar sem querer. O campo `descricao` é limitado e passa pela mesma varredura de chave proibida.",
+        "classificacao": "operacional", "retencao_meses": 24,
+        "replay": "seguro; a contagem é derivada, não incrementada", "obrigatorios_extra": ["trip_id"]
+      },
+      "type": "object",
+      "required": ["tipo"],
+      "properties": {
+        "tipo": { "type": "string", "minLength": 1 },
+        "descricao": { "type": "string", "maxLength": 500 },
+        "gravidade": { "enum": ["baixa", "media", "alta"] }
+      }
+    },
+
+    "trip_return_started": {
+      "_contrato": {
+        "nome": "trip_return_started", "versao": "trip_return_started@1.0.0",
+        "produtor": "runtime crítico", "consumidores": ["operacao-viva.ts — estado `retornando`"],
+        "classificacao": "operacional", "retencao_meses": 24,
+        "replay": "seguro", "obrigatorios_extra": ["trip_id"]
+      },
+      "type": "object", "properties": {}
+    },
+
+    "trip_returned": {
+      "_contrato": {
+        "nome": "trip_returned", "versao": "trip_returned@1.0.0",
+        "produtor": "runtime crítico", "consumidores": ["operacao-viva.ts — estado `retornou`"],
+        "classificacao": "operacional", "retencao_meses": 24,
+        "replay": "seguro", "obrigatorios_extra": ["trip_id"]
+      },
+      "type": "object", "properties": {}
+    },
+
+    "trip_closed": {
+      "_contrato": {
+        "nome": "trip_closed", "versao": "trip_closed@1.0.0",
+        "produtor": "runtime crítico", "consumidores": ["operacao-viva.ts — estado `encerrada`; sai da carga"],
+        "classificacao": "operacional", "retencao_meses": 24,
+        "replay": "seguro", "obrigatorios_extra": ["trip_id"]
+      },
+      "type": "object", "properties": {}
+    }
+  },
+
+  "_declarados_sem_contrato": {
+    "_o_que_e": "Tipos que EVENT_TYPES aceita mas que não têm produtor nem consumidor no código de hoje. Não recebem schema: escrever contrato para evento que ninguém produz nem consome é inventar acordo entre partes que não existem.",
+    "tipos": ["source_event_received", "order_state_changed"],
+    "risco_real": "checkEvent() os ACEITA. Um deles gravado hoje iria para a outbox, não encontraria handler, e terminaria em dead-letter depois de gastar as tentativas. Está registrado em BLOCKERS.md.",
+    "quando_formalizar": "quando o Store Agent (source_event_received) ou a ponte de pedidos (order_state_changed) tiverem produtor real"
+  }
+}
