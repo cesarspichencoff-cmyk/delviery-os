@@ -354,3 +354,52 @@ registrado e verificado: o arquivo aceita escrita, as três páginas existem, e
 **Custo:** não se sabe se o agente interrompido chegou a criar variáveis no
 arquivo antes de morrer. A retomada precisa **verificar antes de criar**, senão
 duplica.
+
+---
+
+## D22 — O consumidor guarda o fato e recalcula
+
+**Decidido:** o consumidor da Operação Viva registra o fato e recomputa a
+projeção inteira a cada leitura.
+
+**Contra:** aplicar o efeito de cada mensagem sobre um estado mutável, que é o
+padrão e é mais rápido.
+
+**Por quê:** a alternativa mutável exige que cada aplicação seja idempotente
+**e** comutativa — duas propriedades que dependem de quem escreve cada handler
+lembrar delas. Guardando fato e recomputando, idempotência, ordem e expiração
+deixam de ser casos a tratar e viram consequência de `projetar` ser função
+pura. A evidência de que funciona: os 23 testes passaram de primeira.
+
+**Custo:** recomputar é O(n) por leitura. Aceitável enquanto n é o volume de um
+turno; quando não for, a saída é snapshot periódico + replay incremental, sem
+mudar a semântica.
+
+## D23 — Roteabilidade antes do payload
+
+**Decidido:** a ingestão verifica se o tipo tem consumidor antes de validar o
+conteúdo.
+
+**Contra:** validar o payload primeiro, que era a ordem original.
+
+**Por quê:** o teste mostrou o diagnóstico errado — um tipo sem consumidor era
+recusado como "payload inválido", o que mandaria o produtor consertar
+exatamente o que já está certo. Um erro que aponta o lugar errado custa mais
+que nenhum erro.
+
+**Custo:** nenhum identificado.
+
+## D24 — Replay não emite mensagem de outbox
+
+**Decidido:** `reconstruirPorReplay` recalcula estado derivado e não enfileira
+nada.
+
+**Contra:** reprocessar a outbox junto, o que reconstruiria "tudo".
+
+**Por quê:** emitir trabalho crítico de novo faria um fato de ontem disparar
+efeito hoje. Replay reconstrói o que é DERIVADO; o que já aconteceu no mundo
+não acontece duas vezes.
+
+**Custo:** um efeito externo perdido por bug de consumidor não volta por
+replay. Correto — ele precisa de decisão humana, não de reprocessamento
+automático.

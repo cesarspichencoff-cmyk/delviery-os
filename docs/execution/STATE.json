@@ -293,6 +293,25 @@
       ],
       "lacuna_fechada": "validacao de payload por tipo — antes so o envelope era verificado",
       "limitacao": "validador cobre apenas o subconjunto de JSON Schema usado no arquivo; verificarCobertura() acusa palavra-chave nova"
+    },
+    "unidade_3_ponte_operacao_viva": {
+      "veredito": "OPERATION_LIVE_BRIDGE_UNIT_COMPLETE",
+      "commits": [
+        "221d40a (3A)",
+        "01bc66d (3B+3C)"
+      ],
+      "blocos": {
+        "3A": "persistencia critica e outbox — 17 testes",
+        "3B+3C": "consumidor, projecao, replay, isolamento — 23 testes"
+      },
+      "fluxo_comprovado": "ingestao autenticada -> event log -> outbox -> consumidor -> projecao -> replay",
+      "descobertas": [
+        "PlatformUnitOfWork.commit() nao abre transacao — atomicidade dependia de quem o constroi",
+        "roteabilidade tinha que vir antes da validacao de payload"
+      ],
+      "decisao_central": "o consumidor guarda o fato e recalcula; idempotencia, ordem e expiracao viram consequencia estrutural",
+      "afirmacao_permitida": "ponte local comprovada em testes",
+      "NAO_integrada": "nenhuma rota HTTP chama ingerir; OUTBOX_HANDLERS continua vazio"
     }
   }
 }

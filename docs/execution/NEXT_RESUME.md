@@ -1,5 +1,12 @@
 # Retomada — leia este arquivo primeiro
 
+> **ATUALIZADO 2026-07-27 — Unidades 1, 2 e 3 CONCLUÍDAS.**
+> `OPERATION_LIVE_BRIDGE_UNIT_COMPLETE` em `01bc66d`. A cadeia
+> ingestão → event log → outbox → consumidor → projeção → replay é
+> **ponte local comprovada em testes** — e NÃO está integrada ao runtime:
+> nenhuma rota HTTP chama `ingerir`, e `OUTBOX_HANDLERS` continua vazio.
+> **Próxima unidade: 4 — Conference Brain** (port em 309/314, não aceito).
+>
 > **ATUALIZADO 2026-07-27 — Unidades 1 e 2 CONCLUÍDAS.**
 > `EVENT_CONTRACTS_UNIT_COMPLETE` no commit `eba60ab`. Nove eventos
 > formalizados; dois recusados por não terem produtor nem consumidor. O
