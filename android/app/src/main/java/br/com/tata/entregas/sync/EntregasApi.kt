@@ -22,6 +22,20 @@ sealed class ApiResult<out T> {
     data class Retryable(val reason: String, val status: Int? = null) : ApiResult<Nothing>()
     /** Recusa definitiva: 4xx. Retentar só repete o erro. */
     data class Rejected(val reason: String, val status: Int) : ApiResult<Nothing>()
+
+    /**
+     * Credencial ausente, invalida ou vencida.
+     *
+     * Separada de [Rejected] de proposito. Antes, 401 caia em `Rejected` e o
+     * lote era marcado `failed` para sempre — um ponto de GPS perdido porque
+     * um token venceu. Sao coisas de natureza diferente: um lote malformado
+     * nunca vai ser aceito; uma credencial vencida so precisa ser renovada.
+     *
+     * Como o `when` sobre um sealed class precisa ser exaustivo, acrescentar
+     * esta variante faz o compilador apontar todo lugar que ainda tratava os
+     * dois casos como um so.
+     */
+    data class Unauthorized(val reason: String, val status: Int) : ApiResult<Nothing>()
 }
 
 class EntregasApi(
@@ -67,8 +81,17 @@ class EntregasApi(
                 status in 200..299 -> ApiResult.Ok(
                     if (text.isBlank()) JSONObject() else JSONObject(text),
                 )
+                // 401 e sempre credencial. Nunca e o lote.
+                status == 401 -> ApiResult.Unauthorized(
+                    br.com.tata.entregas.sync.DeviceSession.semSegredo(
+                        runCatching { JSONObject(text).optString("human", text) }.getOrDefault(text),
+                    ),
+                    status,
+                )
                 status in 400..499 -> ApiResult.Rejected(
-                    runCatching { JSONObject(text).optString("human", text) }.getOrDefault(text),
+                    br.com.tata.entregas.sync.DeviceSession.semSegredo(
+                        runCatching { JSONObject(text).optString("human", text) }.getOrDefault(text),
+                    ),
                     status,
                 )
                 else -> ApiResult.Retryable("servidor respondeu $status", status)

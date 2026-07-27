@@ -44,11 +44,44 @@ class SyncWorker(
 
     override suspend fun doWork(): Result {
         val db = EntregasDatabase.get(applicationContext)
-        val token = db.deviceState().get(EntregasDatabase.KEY_SESSION_TOKEN)
-        val api = EntregasApi(BuildConfig.ENTREGAS_BASE_URL, { token })
-        val correlationId = "sync-${System.currentTimeMillis()}"
+        val agoraMs = System.currentTimeMillis()
+        val correlationId = "sync-$agoraMs"
+
+        // Aparelho revogado nao tenta. Os dados locais FICAM: se ele for
+        // reautorizado, a fila volta a sincronizar de onde parou.
+        if (DeviceSession.estaRevogado(db)) return Result.success()
+
+        // A credencial e obtida ANTES de qualquer envio, e renovada com folga.
+        // Antes disto, `KEY_SESSION_TOKEN` era lida e nunca escrita: o header
+        // nunca ia, tudo respondia 401, e o metodo ainda retornava sucesso.
+        var sessao = DeviceSession.sessaoAtual(db)
+        if (DeviceSession.precisaAutenticar(sessao, agoraMs)) {
+            val deviceId = br.com.tata.entregas.location.DeviceId.ensure(db)
+            val semCredencial = EntregasApi(BuildConfig.ENTREGAS_BASE_URL, { null })
+            when (val a = DeviceSession.autenticar(
+                db, semCredencial, deviceId, BuildConfig.VERSION_NAME, agoraMs,
+            )) {
+                is DeviceSession.ResultadoAutenticacao.Autenticado ->
+                    sessao = DeviceSession.sessaoAtual(db)
+                is DeviceSession.ResultadoAutenticacao.Revogado -> return Result.success()
+                is DeviceSession.ResultadoAutenticacao.FalhouTemporariamente -> {
+                    // Sem rede nao ha o que fazer agora, e nada se perde:
+                    // a fila local continua intacta esperando a proxima janela.
+                    if (sessao == null) return Result.retry()
+                }
+                is DeviceSession.ResultadoAutenticacao.PrecisaDeHumano -> {
+                    if (sessao == null) return Result.retry()
+                }
+            }
+        }
+
+        val tokenAtual = sessao?.token
+        val api = EntregasApi(BuildConfig.ENTREGAS_BASE_URL, { tokenAtual })
 
         var retryable = false
+        // Houve 401 depois de ja termos autenticado? Entao o token nao serve, e
+        // o lote precisa voltar para a fila — nunca ser descartado.
+        var credencialRecusada = false
 
         // 1. Aceites do termo primeiro: são a autorização de tudo o mais.
         val acks = db.termAcks().pending()
@@ -56,6 +89,7 @@ class SyncWorker(
             when (val r = api.sendTermAcknowledgement(ackJson(ack))) {
                 is ApiResult.Ok -> db.termAcks().markSent(listOf(ack.acknowledgementId))
                 is ApiResult.Retryable -> retryable = true
+                is ApiResult.Unauthorized -> credencialRecusada = true
                 is ApiResult.Rejected -> Unit // fica visível; não insiste
             }
         }
@@ -79,6 +113,13 @@ class SyncWorker(
                 is ApiResult.Retryable -> {
                     db.outbox().markFailed(ids, r.reason)
                     retryable = true
+                }
+                is ApiResult.Unauthorized -> {
+                    // `markFailed` registra o motivo e mantem o item na fila.
+                    // O que NAO se faz aqui e desistir: credencial recusada e
+                    // problema de credencial, nao do que foi coletado.
+                    db.outbox().markFailed(ids, r.reason)
+                    credencialRecusada = true
                 }
                 is ApiResult.Rejected -> db.outbox().markFailed(ids, r.reason)
             }
@@ -115,6 +156,10 @@ class SyncWorker(
                     db.gpsPoints().markFailed(ids, r.reason)
                     retryable = true
                 }
+                is ApiResult.Unauthorized -> {
+                    db.gpsPoints().markFailed(ids, r.reason)
+                    credencialRecusada = true
+                }
                 is ApiResult.Rejected -> db.gpsPoints().markFailed(ids, r.reason)
             }
         }
@@ -126,6 +171,13 @@ class SyncWorker(
             else -> Unit
         }
 
+        // Credencial recusada e RETENTAVEL. Retornar sucesso aqui foi o coracao
+        // do P0: o WorkManager dava a sincronizacao por concluida e os pontos
+        // ficavam `failed` para sempre, sem nada sinalizar.
+        if (credencialRecusada) {
+            DeviceSession.limparCredencial(db)
+            return Result.retry()
+        }
         return if (retryable) Result.retry() else Result.success()
     }
 
