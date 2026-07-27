@@ -1,5 +1,13 @@
 # Retomada — leia este arquivo primeiro
 
+> **ATUALIZADO 2026-07-27 — Unidade 4A (forense) CONCLUIDA.**
+> `CONFERENCE_BRAIN_FORENSIC_MAP_COMPLETE`. Leia
+> `docs/execution/CONFERENCE_BRAIN_FORENSE.md` antes de tocar no Conference
+> Brain. Os 5 testes falhos sao GUARDAS DE NAO-REGRESSAO sobre modulos
+> vizinhos — nao testam o Brain, e `314/314` nunca foi alcancavel. O numero
+> correto do nucleo e **309/309**, e o gate independente 2.3/2.4 deu **12/12**.
+> Estrategia: port seletivo de ~18 arquivos. **Proxima: 4B1.**
+>
 > **ATUALIZADO 2026-07-27 — Unidades 1, 2, 3 e 3D CONCLUIDAS.**
 > `OPERATION_LIVE_RUNTIME_WIRING_COMPLETE` em `2bc30fe`. A ponte deixou de ser
 > peca testada: `POST /api/gps/batch` existe no critico e os nove tipos da

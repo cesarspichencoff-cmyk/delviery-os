@@ -242,3 +242,25 @@ A rota nao foi chamada por HTTP real. A decisao mora em modulo separado e e
 testada em processo (D25); o servidor em si foi exercitado no Macro-Prompt 1,
 com `/health` e `/ready` contra PostgreSQL real. O trecho de leitura de corpo
 em `critical.ts` nao tem cobertura direta.
+
+## Atualizacao - Unidade 4A forense (2026-07-27)
+
+**B1 reclassificado.** O port do Conference Brain continua NAO ACEITO, mas a
+causa dos 5 testes falhos foi reproduzida e e outra: sao GUARDAS DE
+NAO-REGRESSAO sobre modulos vizinhos, e nao dependencia ausente do nucleo.
+
+O numero correto do nucleo e **309/309**. `314/314` nunca foi alcancavel
+portando so o Conference Brain, porque cinco daqueles testes so passam num
+repositorio que tambem tenha `src/live/interface/` e `src/capacidade-viva/`.
+
+Gate de auditoria independente executado: **12/12**.
+
+Ver `docs/execution/CONFERENCE_BRAIN_FORENSE.md`.
+
+### Nao provado nesta analise
+
+Tres itens aparecem corrigidos no codigo e **nao tem gate independente**:
+agendamento desativado, acoes/indicadores antigos, e recuperacao apos
+corrupcao. Classificados como PARECE CORRIGIDO, NAO PROVADO.
+
+Os 21 documentos de `docs/conference-brain/` nao foram auditados linha a linha.

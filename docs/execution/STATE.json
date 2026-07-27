@@ -222,7 +222,19 @@
         "resultado": "314 testes, 309 pass, 5 fail",
         "estado": "NAO APROVADO — preservado somente no WIP, fora do checkpoint",
         "subagente": "terminou em ERRO por limite de gasto, nao por conclusao",
-        "hipotese_NAO_confirmada": "os 5 seriam guardas de compatibilidade alcancando modulos vizinhos nao copiados; coerente com as mensagens, mas nao provado"
+        "hipotese_NAO_confirmada": "os 5 seriam guardas de compatibilidade alcancando modulos vizinhos nao copiados; coerente com as mensagens, mas nao provado",
+        "_forense_2026_07_27": {
+          "documento": "docs/execution/CONFERENCE_BRAIN_FORENSE.md",
+          "arquivos_reais": 65,
+          "causa_dos_5_falhos": "guardas de nao-regressao sobre modulos vizinhos — NAO testam o Conference Brain",
+          "hipotese_anterior": "CONFIRMADA na conclusao, CORRIGIDA no mecanismo: nao e dependencia ausente do nucleo",
+          "nucleo_autocontido": "require devolve so crypto, fs, path, playwright (opcional)",
+          "numero_correto": "309/309 — 314/314 nunca foi alcancavel portando so o Brain",
+          "gate_independente": "12/12 (sprint 2.3 e 2.4) — executado no extrato isolado",
+          "estrategia": "A — port seletivo do nucleo, ~18 arquivos, com adapter de entrada novo",
+          "plano": "4B1 contratos/store, 4B2 nucleo multidimensional, 4B3 observador/relogio, 4B4 adapter Operacao Viva, 4B5 gate adversarial",
+          "risco_principal": "4B4 — as duas listas de nove dimensoes descrevem coisas diferentes; forcar correspondencia campo a campo produziria mapeamento que parece certo e mente"
+        }
       }
     },
     "nao_iniciado": {

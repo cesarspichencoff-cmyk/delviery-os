@@ -446,3 +446,34 @@ processou, e o problema sumiria da fila sem nunca ter sido resolvido.
 
 **Custo:** uma mensagem estruturalmente incoerente consome tentativas antes de
 morrer. Correto: ela precisa aparecer, nao desaparecer.
+
+---
+
+## D28 - Port seletivo do nucleo do Conference Brain
+
+**Decidido:** portar ~18 arquivos do nucleo, com adapter de entrada novo.
+
+**Contra:** (B) reimplementar sobre os contratos atuais; (C) portar tambem os
+vizinhos para satisfazer os 5 guardas; (D) portar os 65.
+
+**Por que:** o nucleo e autocontido - a varredura de `require` devolve so
+`crypto`, `fs`, `path` e `playwright` opcional. Ele passa 309/309 no isolamento
+e o gate independente confirma 12/12 as correcoes dos Sprints 2.3 e 2.4.
+
+Reimplementar (B) descartaria doze correcoes de seguranca adversarial que
+existem **porque a versao obvia delas estava errada** - PII por allowlist com
+`fullMatch`, canonicalizacao de hostname, determinismo de empate, idempotencia
+por identidade de fato - e faria isso sem os 309 testes para acusar o erro.
+
+Portar os vizinhos (C) traria dois modulos que o DeliveryOS nao usa, so para
+satisfazer guardas que protegem um repositorio onde aqueles modulos existem.
+Aqui eles nao existem, e o guarda perde o objeto.
+
+**Custo:** os 5 guardas ficam inaplicaveis e precisam de marcacao explicita.
+**Nao devem ser apagados** - se um dia os modulos existirem, eles voltam a
+valer. Apagar remove a protecao, nao o problema.
+
+**Risco identificado:** o bloco 4B4. As duas listas de nove dimensoes descrevem
+coisas diferentes - as do Brain sao sobre PEDIDO observado em tela, as da
+Operacao Viva sao sobre CARGA da operacao. Forcar correspondencia campo a campo
+produziria um mapeamento que parece certo e mente.
