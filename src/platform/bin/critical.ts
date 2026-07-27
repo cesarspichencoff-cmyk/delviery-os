@@ -21,7 +21,16 @@ import { loadPlatformConfig, describe, ConfigError } from "../config/platform-co
 import { runMigrations } from "../migrations/runner";
 import { diretorioDeMigrations } from "../migrations/localizar";
 import { createPgClient } from "../persistence/sql-client";
-import { PgFactSink, PgInboxRepository, PgOutboxRepository } from "../persistence/pg-repositories";
+import {
+  PgDeviceRegistry,
+  PgFactSink,
+  PgInboxRepository,
+  PgOutboxRepository,
+  PgTransactionalWriter,
+} from "../persistence/pg-repositories";
+import { lerSegredo, SegredoAusente } from "../auth/device-token";
+import type { SourceMode } from "../contracts/event-catalog";
+import { tratarLoteGps, ROTA_INGESTAO } from "../runtime/rota-ingestao";
 import { CriticalRuntime } from "../runtime/critical";
 import type { FactSink } from "../persistence/platform-uow";
 
@@ -64,10 +73,38 @@ async function main(): Promise<void> {
   const outbox = new PgOutboxRepository(cliente);
   const inbox = new PgInboxRepository(cliente);
 
-  // O sink existe e grava de verdade. O que ainda não existe é a rota que o
-  // alimenta: a ingestão do Android entra no Macro-Prompt 2. Deixar um stub
-  // que lança faria a saúde mentir sobre a capacidade de persistir.
   const facts: FactSink = new PgFactSink(cliente);
+
+  // A ponte. `PgTransactionalWriter` grava fato e mensagem na MESMA transação;
+  // o registro decide revogação a cada requisição.
+  // O modo desta instância é EXPLÍCITO. Sem padrão silencioso: uma instância
+  // de simulação esquecida ligada gravaria histórico como se fosse a rua.
+  const modoBruto = (process.env.DELIVERYOS_SOURCE_MODE ?? "real").trim();
+  if (modoBruto !== "real" && modoBruto !== "simulated" && modoBruto !== "control") {
+    console.error(
+      `[critico] DELIVERYOS_SOURCE_MODE inválido: "${modoBruto}" (real, simulated ou control)`,
+    );
+    await cliente.close();
+    process.exit(78);
+  }
+  const modoDaInstancia = modoBruto as SourceMode;
+
+  const escritor = new PgTransactionalWriter(cliente);
+  const registro = new PgDeviceRegistry(cliente);
+
+  // Falha fechada: sem segredo, nenhum aparelho consegue autenticar, e subir
+  // assim daria a impressão de um servidor pronto que recusa tudo em campo.
+  let segredoDeDispositivo: string;
+  try {
+    segredoDeDispositivo = lerSegredo();
+  } catch (e) {
+    if (e instanceof SegredoAusente) {
+      console.error(`[critico] ${e.message}`);
+      await cliente.close();
+      process.exit(78);
+    }
+    throw e;
+  }
 
   const runtime = new CriticalRuntime({
     identity: { version: cfg.version, commit: cfg.commit, instance_id: cfg.instance_id },
@@ -122,6 +159,41 @@ async function main(): Promise<void> {
           responder(res, pronto ? 200 : 503, { ready: pronto, state: h.state, summary: h.summary });
         })
         .catch(() => responder(res, 503, { ready: false, state: "unavailable" }));
+      return;
+    }
+
+    if (rota === ROTA_INGESTAO && req.method === "POST") {
+      // O corpo é lido aqui e a decisão mora em `rota-ingestao.ts`. O servidor
+      // fica com socket e resposta; a cadeia inteira é testável sem HTTP.
+      let bruto = "";
+      req.on("data", (c: Buffer) => {
+        bruto += c.toString("utf8");
+        // Corpo sem limite é como uma requisição vira incidente de memória.
+        if (bruto.length > 2_000_000) req.destroy();
+      });
+      req.on("end", () => {
+        let corpo: unknown;
+        try {
+          corpo = JSON.parse(bruto || "{}");
+        } catch {
+          responder(res, 400, { classe: "contrato_invalido", detalhe: "corpo não é JSON" });
+          return;
+        }
+        void tratarLoteGps(
+          req.headers as Record<string, string | undefined>,
+          corpo,
+          {
+            segredo: segredoDeDispositivo,
+            registro,
+            escritor,
+            agora: () => new Date(),
+            source_mode: modoDaInstancia,
+          },
+        )
+          .then((r) => responder(res, r.status, r.corpo))
+          // Erro inesperado NUNCA vira 200. O aparelho precisa poder reenviar.
+          .catch(() => responder(res, 503, { classe: "falha_de_persistencia", retentavel: true }));
+      });
       return;
     }
 

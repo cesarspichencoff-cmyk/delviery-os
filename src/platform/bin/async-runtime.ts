@@ -20,15 +20,20 @@ import { diretorioDeMigrations } from "../migrations/localizar";
 import { createPgClient } from "../persistence/sql-client";
 import { PgJobRepository, PgOutboxRepository } from "../persistence/pg-repositories";
 import { AsyncRuntime, type JobHandler, type OutboxHandler } from "../runtime/async-worker";
+import { montarPonteDaOperacaoViva } from "../runtime/handler-operacao-viva";
 
 /**
  * Handlers registrados.
  *
- * Vazio de propósito no Macro-Prompt 1: os consumidores reais (CRM, Copiloto,
- * projeções, notificações) entram depois. O que precisa existir agora é o
- * lugar onde eles entram, e a prova de que a fila anda sem eles.
+ * A Operação Viva é o primeiro consumidor real. Os demais (Conference Brain,
+ * Copiloto, notificações) entram do mesmo jeito: uma linha aqui.
+ *
+ * A memória da projeção vive no processo e é DESCARTÁVEL — o event log é a
+ * verdade, e `reconstruirPorReplay` a recompõe. Um reinício do worker não
+ * perde nada que não possa ser recalculado.
  */
-const OUTBOX_HANDLERS: Record<string, OutboxHandler> = {};
+const ponteOperacaoViva = montarPonteDaOperacaoViva();
+const OUTBOX_HANDLERS: Record<string, OutboxHandler> = { ...ponteOperacaoViva.handlers };
 const JOB_HANDLERS: Record<string, JobHandler> = {};
 
 function dormir(ms: number): Promise<void> {

@@ -620,3 +620,40 @@ export interface PlatformFactLike {
   correlation_id?: string;
   contract_version: string;
 }
+
+/* ------------------------------------------------------------------ *
+ * Registro de dispositivos
+ * ------------------------------------------------------------------ */
+
+/**
+ * Quem é o aparelho, e se ele ainda pode falar.
+ *
+ * A revogação é decidida AQUI, a cada requisição, e não numa lista de tokens
+ * revogados. Um token assinado e dentro da validade continua sendo recusado
+ * assim que `revoked_at` é preenchido — sem propagação, sem cache para
+ * invalidar, sem janela em que o aparelho perdido ainda escreve.
+ */
+export class PgDeviceRegistry {
+  constructor(private readonly sql: SqlClient) {}
+
+  async buscar(device_id: string): Promise<{
+    device_id: string;
+    unit_id: string;
+    actor_id?: string;
+    revoked_at?: string | null;
+  } | null> {
+    const r = await this.sql.query<SqlRow>(
+      `SELECT device_id, unit_id, actor_id, revoked_at
+         FROM identity.device WHERE device_id = $1`,
+      [device_id],
+    );
+    if (!r.length) return null;
+    const l = r[0];
+    return {
+      device_id: String(l.device_id),
+      unit_id: String(l.unit_id),
+      actor_id: l.actor_id === null ? undefined : String(l.actor_id),
+      revoked_at: l.revoked_at === null ? null : isoObrigatorio(l.revoked_at),
+    };
+  }
+}
