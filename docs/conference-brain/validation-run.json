@@ -1,0 +1,55 @@
+{
+  "observados": 3465,
+  "normalizados": 3465,
+  "duplicados": 36,
+  "rejeitados": 0,
+  "unicos": 3429,
+  "linhas_de_item": 11230,
+  "eventos": 3698,
+  "status": "concluido",
+  "erro": null,
+  "saude": {
+    "run_id": "historico_html:1784635047172",
+    "source": "historico_html",
+    "source_state": "parcial",
+    "missing_fields": [
+      "ready_at",
+      "dispatched_at",
+      "confirmed_at"
+    ],
+    "warnings": 0,
+    "anomalies": 36,
+    "divergent_duplicates": 36,
+    "confidence": "media",
+    "counts": {
+      "observed": 3465,
+      "normalized": 3465,
+      "duplicates": 36,
+      "rejected": 0
+    }
+  },
+  "declarado_distinto_bruto": 11355,
+  "declarado_unidades_bruto": 13009,
+  "linhas_html_bruto": 11358,
+  "linhas_sem_nitens": 0,
+  "janelas": 3287,
+  "janelas_com_chegada": 1047,
+  "janelas_com_ativos": 0,
+  "distribuicao_fonte_real": {
+    "leitura_parcial": 3287
+  },
+  "modo_nao_sombra": 0,
+  "atencao_abaixo_de_50": true,
+  "composicao_altera_global": 0,
+  "sinais": {
+    "HAS_OBSERVATION": 576,
+    "HOT_AND_COLD": 1462,
+    "MULTI_PRACA": 1339,
+    "HAS_ASSEMBLY_ITEM": 272,
+    "HAS_DRINK": 275,
+    "MANY_UNITS": 66,
+    "POSSIBLE_MULTI_VOLUME": 15,
+    "DECLARED_RESTRICTION": 24,
+    "HAS_DESSERT": 187
+  }
+}

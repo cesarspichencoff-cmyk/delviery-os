@@ -44,7 +44,9 @@
     "migrate": "npx tsx src/platform/bin/migrate.ts",
     "test:platform:deploy": "npx tsx src/platform/run-platform-deploy-audit-tests.ts",
     "test:platform:backup": "npx tsx src/platform/run-backup-restore-tests.ts",
-    "test:platform:all": "npm run test:platform && npm run test:platform:envelope && npm run test:platform:deploy && npm run test:platform:pg && npm run test:platform:repos && npm run test:platform:backup"
+    "test:platform:all": "npm run test:platform && npm run test:platform:envelope && npm run test:platform:deploy && npm run test:platform:pg && npm run test:platform:repos && npm run test:platform:backup",
+    "test:platform:skills": "npx tsx src/platform/run-skills-tests.ts",
+    "test:platform:bridge": "npx tsx src/platform/run-bridge-tests.ts"
   },
   "devDependencies": {
     "@types/node": "20.14.10",

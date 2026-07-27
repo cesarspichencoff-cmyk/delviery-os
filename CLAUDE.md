@@ -130,7 +130,23 @@ quando o processo **consegue persistir**; lease vencido **não** consome tentati
 morreu e o trabalho nem chegou a falhar; e o event log é append-only por **trigger no banco**, não
 por disciplina de quem escreve o código.
 
-## 12. Frases-guia
+## 12. Skills de projeto — a disciplina, executável
+
+Seis skills em `.claude/skills/` carregam automaticamente quando a situação aparece. Elas existem
+porque contrato que mora só em prosa não é aplicado no momento em que importa.
+
+| Skill | Carrega quando |
+|---|---|
+| `deliveryos-architecture-guardrails` | tocar runtime, persistência, event log, outbox, Copiloto ou Android |
+| `deliveryos-execution-loop` | atacar bloqueador ou corrigir defeito — reproduzir **antes** de corrigir |
+| `deliveryos-evidence-gate` | declarar qualquer coisa verificada ou pronta |
+| `deliveryos-figma-code-sync` | desenhar, mapear componente ou registrar divergência design↔código |
+| `deliveryos-release-readiness` | avaliar prontidão de campo ou gate externo com risco de cobrança |
+| `deliveryos-adversarial-review` | fechar gate de alto risco — tentar invalidar a própria prova |
+
+Verificador: `npm run test:platform:skills`.
+
+## 13. Frases-guia
 
 - Toda operação de delivery sob pressão para de produzir para se procurar. O DeliveryOS é o sentido que falta.
 - Mais cérebro por trás. Menos interface na frente.
