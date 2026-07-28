@@ -41,3 +41,20 @@ superfície: estado lembrado pelo CRM pode continuar invisível na frase.
   fatos e decisões permanecem equivalentes;
 - uma frase operacional canônica deve ser transportada sem alteração semântica
   quando já contém a orientação autorizada.
+
+## Mudança 003
+
+- cegamento confiável deve acontecer no payload do servidor, não apenas por
+  CSS;
+- detalhe técnico pós-voto exige autorização por caso, não uma flag global da
+  página;
+- revisão append-only precisa de uma projeção `latest` para o dashboard não
+  contar o mesmo caso duas vezes;
+- mensagem livre não deve entrar no registro de feedback; apenas hash da
+  resposta, tags e comentário sanitizado são necessários;
+- identificadores sintéticos precisam de allowlist no scanner para não serem
+  confundidos com telefone, sem relaxar a inspeção de comentários;
+- teste de navegador deve observar a experiência visível e testar reload,
+  mobile, teclado e falha segura;
+- defeito encontrado durante homologação é evidência para a mudança seguinte,
+  não autorização para corrigir respostas no mesmo sprint.

@@ -2,11 +2,11 @@
 
 ## Bloqueadores locais
 
-Nenhum ao término técnico da Mudança 002.
+Nenhum ao término técnico da Mudança 003.
 
 ## Bloqueadores externos
 
-- avaliação humana da experiência pertence a César;
+- avaliação humana da experiência ainda pertence a César;
 - produção permanece fora de escopo.
 
 ## Limitações conhecidas
@@ -17,6 +17,9 @@ Nenhum ao término técnico da Mudança 002.
 - o validador oficial dos skills em Python ficou `N/A` porque `PyYAML` não está
   instalado e esta mudança proíbe adicionar dependências; a estrutura foi
   validada por Node nativo e por testes prospectivos independentes.
+- o Playwright de navegador é uma ferramenta de desenvolvimento instalada sem
+  alterar manifesto ou lockfile; o caminho do Chrome deve ser informado no
+  ambiente de teste.
 
 ## Trabalho preservado
 
@@ -31,3 +34,9 @@ Nenhum dado real é necessário para o corpus sintético. Políticas ou fatos in
 Os cinco gaps do baseline foram corrigidos ou classificados com fallback
 explícito. Não há falha silenciosa restante no corpus, mas a aprovação humana da
 voz continua pendente e não bloqueia a homologação técnica.
+
+## Mudança 003
+
+O painel está pronto, mas contém zero voto real de César. Qualidade subjetiva,
+preferência A/B e aprovação final continuam desconhecidas. A Mudança 004 está
+somente especificada e bloqueada por esse gate.

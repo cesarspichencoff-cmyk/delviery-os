@@ -103,3 +103,37 @@ TATÁ para César na Mudança 003.
 
 **Impacto:** a Mudança 002 pode ser homologada tecnicamente sem afirmar
 aprovação de experiência ou prontidão para produção.
+
+## D-008 — Cegamento por contrato de transporte
+
+**Contexto:** o artefato aprovado contém nomes de versões e dados técnicos.
+
+**Decisão:** o bootstrap público recebe somente mensagens, respostas A/B,
+categoria e identificador opaco. A ordem real e o detalhe técnico permanecem no
+servidor e exigem voto persistido do caso correto.
+
+**Impacto:** reload não altera a posição e inspeção visual pré-voto não revela
+baseline, humanizada, intenção, estratégia ou oráculo.
+
+## D-009 — Feedback privado fora do Git
+
+**Decisão:** usar `%LOCALAPPDATA%\DeliveryOS\human-homologation` por padrão,
+com raiz substituível por variável de ambiente e JSONL append-only.
+
+**Motivo:** preservar progresso sem colocar votos, mensagens ou bancos locais
+no repositório.
+
+## D-010 — Comentário sensível falha antes do append
+
+**Decisão:** recusar comentários com sinais de telefone, e-mail, CPF,
+credencial, cookie, token, endereço pessoal ou referência de pedido.
+
+**Motivo:** redigir depois da gravação ainda criaria uma janela de vazamento.
+
+## D-011 — Playwright somente de desenvolvimento
+
+**Decisão:** usar `@playwright/test@1.55.0` sem salvar dependência ou lockfile e
+apontar explicitamente para um Chrome local no comando de teste.
+
+**Impacto:** nenhuma dependência de produção foi alterada; o teste de navegador
+continua reproduzível e falha fechado sem o caminho explícito.
