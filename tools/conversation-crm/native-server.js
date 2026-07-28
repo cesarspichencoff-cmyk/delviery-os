@@ -5,6 +5,7 @@ const http=require('node:http');
 const fs=require('node:fs');
 const path=require('node:path');
 const {NativeConversationRuntime,safeError,loadCanonicalCatalogs,runScenarioOnRuntime}=require('../../src/conversation-crm/native');
+const {HomologationService}=require('./homologation/service');
 
 const APP_ROOT=path.join(__dirname,'simulator','app');
 const MAX_BODY_BYTES=32*1024;
@@ -18,6 +19,12 @@ function createNativeServer(options={}){
   const runtimeOptions={runtimeRoot:options.runtimeRoot,projectRoot:options.projectRoot,flagsFile:options.flagsFile};
   const scenarios=loadCanonicalCatalogs().scenarios.scenarios;
   let runtime=options.runtime||new NativeConversationRuntime(runtimeOptions);
+  const homologation=options.homologation||new HomologationService({
+    projectRoot:options.projectRoot,
+    feedbackRoot:options.feedbackRoot||options.runtimeRoot,
+    chatRuntimeRoot:options.chatRuntimeRoot,
+    now:options.now
+  });
   let manualTurn=0;
   const server=http.createServer(async(req,res)=>{try{
     if(req.method==='GET'&&req.url==='/')return staticFile(res,'index.html','text/html; charset=utf-8');
@@ -27,6 +34,17 @@ function createNativeServer(options={}){
     if(req.method==='GET'&&req.url==='/api/cases')return json(res,200,{cases:scenarios.map((item)=>({id:item.scenario_id,scenario_id:item.scenario_id,category:item.archetype,message:item.input,context:{scenario_id:item.scenario_id,synthetic:true}}))});
     if(req.method==='GET'&&req.url==='/api/native/snapshot')return json(res,200,{ok:true,snapshot:runtime.snapshot()});
     if(req.method==='GET'&&req.url==='/api/native/drivers')return json(res,200,{ok:true,drivers:runtime.registry.manifests()});
+    if(req.method==='GET'&&req.url==='/api/homologation/bootstrap')return json(res,200,homologation.bootstrap());
+    if(req.method==='GET'&&req.url?.startsWith('/api/homologation/technical')){
+      const parsed=new URL(req.url,'http://127.0.0.1');
+      return json(res,200,homologation.technical(parsed.searchParams.get('mode'),parsed.searchParams.get('review_id')));
+    }
+    if(req.method==='GET'&&req.url==='/api/homologation/summary')return json(res,200,homologation.summary());
+    if(req.method==='POST'&&req.url==='/api/homologation/chat'){const body=await readJson(req);return json(res,200,homologation.chat(body.message));}
+    if(req.method==='POST'&&req.url==='/api/homologation/chat/reset')return json(res,200,homologation.resetChat());
+    if(req.method==='POST'&&req.url==='/api/homologation/feedback'){const body=await readJson(req);return json(res,200,homologation.feedback(body));}
+    if(req.method==='POST'&&req.url==='/api/homologation/session/reset'){const body=await readJson(req);return json(res,200,{ok:true,...homologation.store.resetReviewSession(body.confirmation)});}
+    if(req.method==='POST'&&req.url==='/api/homologation/test-data/delete'){const body=await readJson(req);return json(res,200,{ok:true,...homologation.store.deleteSyntheticFeedback(body.confirmation)});}
     if(req.method==='POST'&&req.url==='/api/triage'){const body=await readJson(req);manualTurn+=1;const messageId=`SIM-MANUAL-${String(manualTurn).padStart(4,'0')}`;const input={synthetic:true,message_type:'text',content:String(body.message||''),channel:'synthetic',subject_id:'SIM-SUBJECT-MANUAL',conversation_id:'SIM-CONV-MANUAL',message_id:messageId,correlation_id:`SIM-CORR-${messageId}`,idempotency_key:`manual:${messageId}`,occurred_at:runtime.clock.iso(),turn_order:manualTurn,unit_id:'SIM-UNIT-001',context:{...(body.context||{}),synthetic:true}};return json(res,200,{ok:true,result:runtime.processMessage(input)});}
     const scenarioMatch=req.url?.match(/^\/api\/native\/scenarios\/(TATA-SC-\d{3})$/);if(req.method==='POST'&&scenarioMatch)return json(res,200,{ok:true,result:runScenarioOnRuntime(runtime,scenarioMatch[1])});
     if(req.method==='POST'&&req.url==='/api/native/clock'){const body=await readJson(req);return json(res,200,{ok:true,clock:runtime.clock.advance(Number(body.advance_ms))});}
@@ -34,7 +52,7 @@ function createNativeServer(options={}){
     if(req.method==='POST'&&req.url==='/api/native/reset'){const root=runtime.runtimeRoot;fs.rmSync(root,{recursive:true,force:true});runtime=new NativeConversationRuntime({...runtimeOptions,runtimeRoot:root});manualTurn=0;return json(res,200,{ok:true,reset:true,clock:runtime.clock.iso()});}
     return json(res,404,{ok:false,error_code:'NOT_FOUND'});
   }catch(error){const safe=safeError(error);return json(res,error?.code==='PAYLOAD_TOO_LARGE'?413:400,{ok:false,...safe});}});
-  server.nativeRuntime=()=>runtime;return server;
+  server.nativeRuntime=()=>runtime;server.homologation=homologation;return server;
 }
 
 function start(options={}){const host=validateHost(options.host||'127.0.0.1',options.allowIpv6Loopback===true);const port=options.port===undefined?4179:Number(options.port);if(!Number.isInteger(port)||port<0||port>65535){const error=new Error('port_invalid');error.code='PORTA_INVALIDA';throw error;}const server=createNativeServer(options);server.listen(port,host,()=>{const actual=server.address().port;process.stdout.write(`Chatbot Nativo DeliveryOS V1 em http://${host}:${actual}\n`);process.stdout.write('Somente simulação local; drivers reais desativados.\n');});return server;}

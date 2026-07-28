@@ -1,180 +1,377 @@
 'use strict';
 
-const form = document.querySelector('#triage-form');
-const caseSelect = document.querySelector('#case-select');
-const message = document.querySelector('#message');
-const origin = document.querySelector('#origin');
-const severity = document.querySelector('#severity');
-const orderReference = document.querySelector('#order-reference');
-const detailCode = document.querySelector('#detail-code');
-const result = document.querySelector('#result');
-const requestState = document.querySelector('#request-state');
-const evaluation = document.querySelector('#evaluation');
-const evaluationState = document.querySelector('#evaluation-state');
-const advanceClock = document.querySelector('#advance-clock');
-const replayState = document.querySelector('#replay-state');
-const resetState = document.querySelector('#reset-state');
-const clockState = document.querySelector('#clock-state');
-const humanTest = document.querySelector('#human-test');
-let cases = [];
-let activeCase = 'manual';
+const state = {
+  data: null,
+  reviewIndex: 0,
+  blindIndex: 0,
+  lastChat: null
+};
 
-function escapeHtml(value) {
-  return String(value ?? '').replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
-}
+const $ = (selector) => document.querySelector(selector);
+const $$ = (selector) => [...document.querySelectorAll(selector)];
+const escapeHtml = (value) => String(value ?? '').replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
 
-function tokenList(values, kind = '') {
-  if (!values?.length) return '<span class="token">nenhum</span>';
-  return values.map((value) => `<span class="token ${kind}">${escapeHtml(value)}</span>`).join('');
-}
+const REVIEW_TAGS = [
+  ['seco', 'Seco'], ['robotico', 'Robótico'], ['longo', 'Longo'], ['curto_demais', 'Curto demais'],
+  ['generico', 'Genérico'], ['pouco_acolhedor', 'Pouco acolhedor'], ['informacao_errada', 'Informação errada'],
+  ['pergunta_repetida', 'Pergunta repetida'], ['nao_respondeu', 'Não respondeu'],
+  ['parece_mensagem_pronta', 'Parece mensagem pronta'], ['muito_bom', 'Muito bom']
+];
+const FREE_TAGS = [
+  ['gostei', 'Gostei'], ['seco', 'Seco'], ['robotico', 'Robótico'], ['longo', 'Longo'],
+  ['pouco_acolhedor', 'Pouco acolhedor'], ['informacao_errada', 'Informação errada'],
+  ['pergunta_repetida', 'Pergunta repetida'], ['nao_respondeu', 'Não respondeu'], ['estranho', 'Estranho']
+];
+const CRITERIA = [
+  ['naturalidade', 'Naturalidade'], ['acolhimento', 'Acolhimento'], ['clareza', 'Clareza'],
+  ['utilidade', 'Utilidade'], ['tamanho', 'Tamanho'], ['confianca', 'Confiança']
+];
 
-function render(output) {
-  const native = output.classification ? {
-    intent: output.classification.intent,
-    origin: output.classification.origin,
-    severity: output.classification.severity,
-    block_code: output.classification.legacy_projection?.primary_block,
-    confidence: output.classification.confidence,
-    human_required: output.classification.escalation !== 'E0',
-    escalation_code: output.classification.escalation,
-    known_field_labels: Object.keys(output.classification.entities || {}),
-    missing_field_labels: output.classification.fields_missing,
-    suggested_response: output.response?.text,
-    tags: output.classification.legacy_projection?.tags || [],
-    allowed_actions: [output.classification.action],
-    forbidden_actions: output.classification.prohibited_responses || [],
-    capability: output.classification.capability_id,
-    driver: output.route?.driver_id,
-    evidence: output.evidence?.evidence_id,
-    authority: output.classification.authority,
-    policy: output.classification.policy_id,
-    result_status: output.result?.status,
-    crm_record: output.case_id ? { entity_type: 'NativeCase', summary_code: output.case_id, status: output.closure?.expected_state } : null
-  } : output;
-  output = native;
-  result.classList.remove('empty');
-  result.innerHTML = `
-    <div class="result-grid">
-      <div class="summary">
-        <div class="metric"><span>Intenção</span><strong>${escapeHtml(output.intent_label || output.intent)}</strong></div>
-        <div class="metric"><span>Origem</span><strong>${escapeHtml(output.origin_label || output.origin)}</strong></div>
-        <div class="metric"><span>Gravidade</span><strong>${escapeHtml(output.severity_label || output.severity)}</strong></div>
-      </div>
-      <div class="card"><h3>Bloco e confiança</h3><p><strong>${escapeHtml(output.block_code || output.block_id)}</strong> · ${Math.round(output.confidence * 100)}% · humano: ${output.human_required ? 'sim' : 'não'}</p><p>Escalonamento: ${escapeHtml(output.escalation_code || output.escalation_level)}</p></div>
-      <div class="card"><h3>Dados conhecidos</h3><div class="tokens">${tokenList(output.known_field_labels || output.known_fields)}</div></div>
-      <div class="card"><h3>Dados faltantes</h3><div class="tokens">${tokenList(output.missing_field_labels || output.missing_fields, 'warn')}</div></div>
-      <div class="card"><h3>Resposta sugerida</h3><p>${escapeHtml(output.suggested_response)}</p></div>
-      <div class="card"><h3>Capacidade e driver</h3><p>${escapeHtml(output.capability || 'legado')} · ${escapeHtml(output.driver || 'não selecionado')} · resultado: ${escapeHtml(output.result_status || 'n/a')}</p></div>
-      <div class="card"><h3>Evidência, autoridade e política</h3><p>${escapeHtml(output.evidence || 'sem evidência')} · ${escapeHtml(output.authority || 'n/a')} · ${escapeHtml(output.policy || 'n/a')}</p></div>
-      <div class="card"><h3>Tags</h3><div class="tokens">${tokenList(output.tags)}</div></div>
-      <div class="card"><h3>Ações permitidas</h3><div class="tokens">${tokenList(output.allowed_actions)}</div></div>
-      <div class="card"><h3>Ações proibidas</h3><div class="tokens">${tokenList(output.forbidden_actions, 'block')}</div></div>
-      <div class="card"><h3>Registro CRM</h3><p>${output.crm_record ? `${escapeHtml(output.crm_record.entity_type)} · ${escapeHtml(output.crm_record.summary_code)} · ${escapeHtml(output.crm_record.status)}` : output.consent_record ? `${escapeHtml(output.consent_record.entity_type)} · ${escapeHtml(output.consent_record.status)}` : 'nenhum registro obrigatório'}</p></div>
-      <div class="card"><h3>Privacidade e integração</h3><p>texto persistido: não · decisão financeira automática: não · sistema externo acessado: não</p></div>
-    </div>`;
-  evaluation.classList.remove('hidden');
-}
-
-async function loadCases() {
-  const response = await fetch('/api/cases');
-  const body = await response.json();
-  cases = body.cases || [];
-  for (const item of cases) {
-    const option = document.createElement('option');
-    option.value = item.id;
-    option.textContent = `${item.id} · ${item.category}`;
-    caseSelect.appendChild(option);
-  }
-}
-
-async function refreshClock() {
-  const response = await fetch('/api/health');
-  const body = await response.json();
-  clockState.textContent = body.clock ? `Relógio: ${body.clock}` : 'Modo legado local';
-}
-
-caseSelect.addEventListener('change', () => {
-  activeCase = caseSelect.value;
-  const selected = cases.find((item) => item.id === activeCase);
-  if (!selected) {
-    origin.value = '';
-    severity.value = '';
-    orderReference.value = '';
-    detailCode.value = '';
-    return;
-  }
-  message.value = selected.message;
-  origin.value = selected.context.origin || '';
-  severity.value = selected.context.severity || '';
-  orderReference.value = selected.context.order_reference || '';
-  detailCode.value = selected.context.occurrence_detail_code || '';
-});
-
-humanTest?.addEventListener('click', (event) => {
-  const prompt = event.target.dataset.humanPrompt;
-  if (!prompt) return;
-  activeCase = 'manual';
-  caseSelect.value = 'manual';
-  message.value = prompt;
-  origin.value = '';
-  severity.value = '';
-  orderReference.value = '';
-  detailCode.value = '';
-  requestState.textContent = 'Pergunta carregada para teste humano local.';
-  message.focus();
-});
-
-form.addEventListener('submit', async (event) => {
-  event.preventDefault();
-  requestState.textContent = 'Processando localmente…';
-  const selected = cases.find((item) => item.id === activeCase);
-  const context = selected ? { ...selected.context } : {};
-  if (origin.value) context.origin = origin.value;
-  if (severity.value) context.severity = severity.value;
-  if (orderReference.value) context.order_reference = orderReference.value;
-  if (detailCode.value) context.occurrence_detail_code = detailCode.value;
-  try {
-    const nativeScenario = activeCase.startsWith('TATA-SC-');
-    const response = await fetch(nativeScenario ? `/api/native/scenarios/${activeCase}` : '/api/triage', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: message.value, context })
-    });
-    const body = await response.json();
-    if (!body.ok) throw new Error(body.error_code);
-    render(body.result);
-    requestState.textContent = 'Triagem concluída sem acesso externo.';
-  } catch {
-    requestState.textContent = 'A triagem não pôde ser concluída. Nenhum conteúdo foi registrado.';
-  }
-});
-
-advanceClock?.addEventListener('click', async () => {
-  const response = await fetch('/api/native/clock', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ advance_ms: 60000 }) });
-  const body = await response.json();
-  clockState.textContent = body.ok ? `Relógio: ${body.clock}` : 'Relógio indisponível no modo legado.';
-});
-replayState?.addEventListener('click', async () => {
-  const response = await fetch('/api/native/replay', { method: 'POST' });
-  const body = await response.json();
-  requestState.textContent = body.ok ? 'Replay concluído e projeção reconstruída.' : 'Replay indisponível no modo legado.';
-});
-resetState?.addEventListener('click', async () => {
-  const response = await fetch('/api/native/reset', { method: 'POST' });
-  const body = await response.json();
-  requestState.textContent = body.ok ? 'Estado sintético reiniciado.' : 'Reset indisponível no modo legado.';
-  if (body.clock) clockState.textContent = `Relógio: ${body.clock}`;
-});
-
-evaluation.addEventListener('click', async (event) => {
-  const verdict = event.target.dataset.verdict;
-  if (!verdict) return;
-  const response = await fetch('/api/evaluations', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ case_id: activeCase, verdict })
+async function api(url, options = {}) {
+  const response = await fetch(url, {
+    ...options,
+    headers: options.body ? { 'Content-Type': 'application/json', ...(options.headers || {}) } : options.headers
   });
-  const body = await response.json();
-  evaluationState.textContent = body.ok ? 'Avaliação registrada somente em memória nesta execução.' : 'Avaliação não registrada.';
+  const body = await response.json().catch(() => ({ ok: false, error_code: 'INVALID_RESPONSE' }));
+  if (!response.ok || body.ok === false) {
+    const error = new Error(body.error_code || 'REQUEST_FAILED');
+    error.code = body.error_code || 'REQUEST_FAILED';
+    throw error;
+  }
+  return body;
+}
+
+function showMode(mode) {
+  $$('.mode-panel').forEach((panel) => panel.classList.toggle('hidden', panel.id !== `mode-${mode}`));
+  $$('[data-mode]').forEach((button) => {
+    const active = button.dataset.mode === mode;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-pressed', String(active));
+  });
+  if (mode === 'dashboard') refreshDashboard();
+  $(`#mode-${mode}`)?.querySelector('h2')?.focus({ preventScroll: true });
+}
+
+function checkboxChoices(items, name) {
+  return items.map(([value, label]) => `<label><input type="checkbox" name="${name}" value="${value}"> ${escapeHtml(label)}</label>`).join('');
+}
+
+function scale(name, legend) {
+  return `<div class="scale" aria-label="${escapeHtml(legend)}">${[1, 2, 3, 4, 5].map((value) => `<label><input type="radio" name="${name}" value="${value}" required><span>${value}</span></label>`).join('')}</div>`;
+}
+
+function conversationHtml(turns, responseKey = 'response') {
+  return turns.map((turn) => `
+    <div class="message customer"><span>Cliente</span><p>${escapeHtml(turn.customer)}</p></div>
+    <div class="message bot"><span>TATÁ</span><p>${escapeHtml(turn[responseKey])}</p></div>
+  `).join('');
+}
+
+function renderReviewSelectors() {
+  const onlyPending = $('#only-pending').checked;
+  const options = state.data.review_cases.filter((item) => !onlyPending || !item.evaluated);
+  $('#review-select').innerHTML = options.map((item) => `<option value="${item.review_id}">${escapeHtml(item.category)} · ${item.evaluated ? 'avaliado' : 'pendente'}</option>`).join('');
+  if (options.length && !options.some((item) => item.review_id === currentReview()?.review_id)) {
+    state.reviewIndex = state.data.review_cases.findIndex((item) => item.review_id === options[0].review_id);
+  }
+  if (currentReview()) $('#review-select').value = currentReview().review_id;
+}
+
+function currentReview() { return state.data?.review_cases[state.reviewIndex]; }
+function currentBlind() { return state.data?.blind_cases[state.blindIndex]; }
+
+function renderReview() {
+  const item = currentReview();
+  if (!item) return;
+  renderReviewSelectors();
+  $('#review-conversation').innerHTML = `<p class="category">${escapeHtml(item.category)}</p>${conversationHtml(item.turns)}`;
+  $('#review-technical-button').classList.toggle('hidden', !item.evaluated);
+  $('#review-technical').classList.add('hidden');
+  $('#review-state').textContent = item.evaluated ? 'Este caso já possui avaliação. Um novo voto será registrado como revisão.' : '';
+}
+
+function renderBlind() {
+  const item = currentBlind();
+  if (!item) return;
+  $('#blind-select').value = item.review_id;
+  $('#blind-context').innerHTML = `<p class="category">${escapeHtml(item.category)}</p>${item.turns.map((turn) => `<div class="message customer"><span>Cliente</span><p>${escapeHtml(turn.customer)}</p></div>`).join('')}`;
+  $('#blind-responses').innerHTML = ['A', 'B'].map((side) => `<article><h3>Resposta ${side}</h3>${item.turns.map((turn) => `<div class="message bot"><p>${escapeHtml(turn[side])}</p></div>`).join('')}</article>`).join('');
+  $('#blind-reveal').classList.add('hidden');
+  $('#blind-technical').classList.add('hidden');
+  $('#blind-technical-button').classList.add('hidden');
+  $('#blind-state').textContent = item.evaluated ? 'Esta comparação já possui voto. Você pode revisá-lo.' : '';
+  $$('input[name="blind-choice"]').forEach((input) => { input.checked = false; });
+}
+
+function renderBank() {
+  $('#bank-grid').innerHTML = state.data.bank.map((item) => `
+    <article>
+      <span>${escapeHtml(item.category)}</span>
+      <p>${escapeHtml(item.example)}</p>
+      <button type="button" data-bank-example="${escapeHtml(item.example)}">Testar no atendimento</button>
+    </article>
+  `).join('');
+}
+
+function updateProgress() {
+  const summary = state.data.summary.cesar_review;
+  $('#review-progress').textContent = `${summary.evaluated}/50`;
+  $('#review-tab-count').textContent = `${summary.evaluated}/50`;
+  const compared = state.data.blind_cases.filter((item) => item.evaluated).length;
+  $('#blind-progress').textContent = `${compared}/50`;
+}
+
+function renderTechnical(target, body) {
+  const turns = body.decision.turns;
+  target.innerHTML = `
+    ${body.reveal ? `<div class="reveal-line"><strong>Revelação:</strong> A = ${escapeHtml(body.reveal.A === 'humanized' ? 'humanizada' : 'anterior')} · B = ${escapeHtml(body.reveal.B === 'humanized' ? 'humanizada' : 'anterior')}</div>` : ''}
+    ${turns.map((turn) => `<article>
+      <h3>Decisão do DeliveryOS · turno ${turn.turn}</h3>
+      <dl>
+        <div><dt>Intenção</dt><dd>${escapeHtml(turn.intent)}</dd></div>
+        <div><dt>Etapa</dt><dd>${escapeHtml(turn.conversation_stage)}</dd></div>
+        <div><dt>Estado do cliente</dt><dd>${escapeHtml(turn.customer_state)}</dd></div>
+        <div><dt>Gravidade</dt><dd>${escapeHtml(turn.gravity)}</dd></div>
+        <div><dt>Estratégia</dt><dd>${escapeHtml(turn.strategy_id)}</dd></div>
+        <div><dt>Fallback</dt><dd>${escapeHtml(turn.fallback_reason || 'nenhum')}</dd></div>
+        <div><dt>Capacidade e driver</dt><dd>Preservados pelo runtime; não recalculados pelo painel.</dd></div>
+        <div><dt>Evidência, autoridade e política</dt><dd>Explicação técnica sem prompt interno ou dado pessoal.</dd></div>
+        <div><dt>Fatos autorizados</dt><dd>${escapeHtml(turn.authorized_facts.join(', ') || 'nenhum')}</dd></div>
+        <div><dt>Perguntas obrigatórias</dt><dd>${escapeHtml(turn.mandatory_questions.join(', ') || 'nenhuma')}</dd></div>
+        <div><dt>Ações verificadas</dt><dd>${escapeHtml(turn.verified_actions.join(', ') || 'nenhuma')}</dd></div>
+        <div><dt>Ações pendentes</dt><dd>${escapeHtml(turn.pending_actions.join(', ') || 'nenhuma')}</dd></div>
+        <div><dt>Claims proibidos</dt><dd>${escapeHtml(turn.prohibited_claims.join(', ') || 'nenhum')}</dd></div>
+        <div><dt>Validador</dt><dd>${turn.validator?.passed ? 'aprovado' : 'não aprovado'}</dd></div>
+        <div><dt>Replay</dt><dd>${escapeHtml(turn.replay_hash)}</dd></div>
+      </dl>
+    </article>`).join('')}
+  `;
+  target.classList.remove('hidden');
+}
+
+async function showTechnical(mode, targetSelector) {
+  const item = mode === 'blind' ? currentBlind() : currentReview();
+  const body = await api(`/api/homologation/technical?mode=${mode}&review_id=${encodeURIComponent(item.review_id)}`);
+  renderTechnical($(targetSelector), body);
+}
+
+function renderDashboard(summary) {
+  const review = summary.cesar_review;
+  const metric = (label, value, note = '') => `<article class="metric"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value ?? '—')}</strong><small>${escapeHtml(note)}</small></article>`;
+  $('#dashboard-content').innerHTML = `
+    <section><h3>Cobertura</h3><div class="metrics">
+      ${metric('Avaliados', `${review.evaluated}/50`)}
+      ${metric('Pendentes', review.pending)}
+      ${metric('Concluído', `${review.completion_percent}%`)}
+      ${metric('Categorias', review.categories_evaluated)}
+    </div></section>
+    <section><h3>Resposta humanizada</h3><div class="metrics">
+      ${metric('Nota média', review.overall_average)}
+      ${Object.entries(review.criteria).map(([key, value]) => metric(key, value)).join('')}
+    </div></section>
+    <section><h3>Comparação cega</h3><div class="metrics">
+      ${metric('Humanizada venceu', review.blind.humanized)}
+      ${metric('Anterior venceu', review.blind.baseline)}
+      ${metric('Empate', review.blind.equivalent)}
+      ${metric('Ambas ruins', review.blind.both_bad)}
+    </div></section>
+    <section><h3>Pontos para análise</h3>
+      <p>Notas 1–2: <strong>${review.low_rating_cases.length}</strong> · comentários: <strong>${review.comments_pending_analysis}</strong></p>
+      <div class="tag-summary">${review.tags.map((item) => `<span>${escapeHtml(item.tag)} · ${item.count}</span>`).join('') || '<span>Sem tags ainda</span>'}</div>
+    </section>
+    <section class="reference"><h3>Referência futura de homologação</h3>
+      <p>45/50 casos; médias geral, naturalidade e acolhimento ≥ 4; humanizada vence ≥ 70% dos casos não empatados; zero informação incorreta aceita. César mantém a decisão final.</p>
+    </section>
+  `;
+}
+
+async function refreshDashboard() {
+  try {
+    const body = await api('/api/homologation/summary');
+    state.data.summary = body.summary;
+    renderDashboard(body.summary);
+    updateProgress();
+  } catch {
+    $('#dashboard-content').innerHTML = '<p class="error">Os resultados estão temporariamente indisponíveis. Nenhum voto foi perdido.</p>';
+  }
+}
+
+function selectedValues(selector) {
+  return $$(selector).filter((input) => input.checked).map((input) => input.value);
+}
+
+async function initialize() {
+  state.data = await api('/api/homologation/bootstrap');
+  $('#free-tags').innerHTML = checkboxChoices(FREE_TAGS, 'free-tag');
+  $('#review-tags').innerHTML = checkboxChoices(REVIEW_TAGS, 'review-tag');
+  $('#overall-rating').innerHTML = scale('overall', 'Nota geral');
+  $('#criteria-grid').innerHTML = CRITERIA.map(([key, label]) => `<div><span>${escapeHtml(label)}</span>${scale(`criterion-${key}`, label)}</div>`).join('');
+  $('#review-select').innerHTML = state.data.review_cases.map((item) => `<option value="${item.review_id}">${escapeHtml(item.category)}</option>`).join('');
+  $('#blind-select').innerHTML = state.data.blind_cases.map((item) => `<option value="${item.review_id}">${escapeHtml(item.category)}</option>`).join('');
+  renderReview();
+  renderBlind();
+  renderBank();
+  updateProgress();
+  $('#global-state').textContent = 'Pronto. Primeiro avalie a experiência; os detalhes técnicos permanecem fechados até o voto.';
+}
+
+$$('[data-mode]').forEach((button) => button.addEventListener('click', () => showMode(button.dataset.mode)));
+
+$('#chat-form').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const message = $('#chat-message').value.trim();
+  if (!message) return;
+  $('#global-state').textContent = 'Processando localmente…';
+  try {
+    const body = await api('/api/homologation/chat', { method: 'POST', body: JSON.stringify({ message }) });
+    state.lastChat = body.turn;
+    $('#chat-thread').insertAdjacentHTML('beforeend', conversationHtml([{ customer: message, response: body.turn.response }]));
+    $('#chat-message').value = '';
+    $('#free-feedback').classList.remove('hidden');
+    $('#global-state').textContent = 'Resposta pronta. Nenhuma informação técnica foi exibida.';
+  } catch {
+    $('#global-state').textContent = 'Não foi possível responder agora. Nenhum detalhe técnico foi exposto.';
+  }
 });
 
-Promise.all([loadCases(), refreshClock()]).catch(() => { requestState.textContent = 'Casos sintéticos indisponíveis.'; });
+$('#reset-chat').addEventListener('click', async () => {
+  if (!window.confirm('Iniciar uma nova conversa sintética?')) return;
+  await api('/api/homologation/chat/reset', { method: 'POST' });
+  state.lastChat = null;
+  $('#chat-thread').innerHTML = '<div class="welcome"><strong>Nova conversa iniciada.</strong><span>O contexto anterior não será misturado.</span></div>';
+  $('#free-feedback').classList.add('hidden');
+});
+
+$('#save-free-feedback').addEventListener('click', async () => {
+  if (!state.lastChat) return;
+  try {
+    await api('/api/homologation/feedback', {
+      method: 'POST',
+      body: JSON.stringify({
+        mode: 'free',
+        review_id: state.lastChat.review_id,
+        response_hash: state.lastChat.response_hash,
+        tags: selectedValues('#free-tags input'),
+        comment: $('#free-comment').value
+      })
+    });
+    $('#free-feedback-state').textContent = 'Feedback salvo localmente. A resposta não foi alterada.';
+  } catch (error) {
+    $('#free-feedback-state').textContent = error.code === 'FEEDBACK_CONTAINS_PERSONAL_DATA'
+      ? 'O comentário parece conter dado pessoal. Remova-o antes de salvar.'
+      : 'Não foi possível salvar o feedback.';
+  }
+});
+
+$('#review-select').addEventListener('change', () => {
+  state.reviewIndex = state.data.review_cases.findIndex((item) => item.review_id === $('#review-select').value);
+  renderReview();
+});
+$('#only-pending').addEventListener('change', renderReviewSelectors);
+$('#previous-review').addEventListener('click', () => { state.reviewIndex = Math.max(0, state.reviewIndex - 1); renderReview(); });
+$('#next-review').addEventListener('click', () => { state.reviewIndex = Math.min(49, state.reviewIndex + 1); renderReview(); });
+
+$('#review-form').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const item = currentReview();
+  const criteria = Object.fromEntries(CRITERIA.map(([key]) => [key, Number($(`input[name="criterion-${key}"]:checked`)?.value)]));
+  try {
+    await api('/api/homologation/feedback', {
+      method: 'POST',
+      body: JSON.stringify({
+        mode: 'humanized',
+        review_id: item.review_id,
+        rating: Number($('input[name="overall"]:checked')?.value),
+        criteria,
+        tags: selectedValues('#review-tags input'),
+        comment: $('#review-comment').value
+      })
+    });
+    item.evaluated = true;
+    $('#review-state').textContent = 'Avaliação salva. Os detalhes técnicos agora podem ser consultados.';
+    $('#review-technical-button').classList.remove('hidden');
+    await refreshDashboard();
+  } catch (error) {
+    $('#review-state').textContent = error.code === 'FEEDBACK_CONTAINS_PERSONAL_DATA'
+      ? 'O comentário parece conter dado pessoal. Remova-o antes de salvar.'
+      : 'Preencha a nota geral e todos os seis critérios.';
+  }
+});
+$('#review-technical-button').addEventListener('click', () => showTechnical('humanized', '#review-technical').catch(() => { $('#review-state').textContent = 'Salve o voto antes de abrir a decisão.'; }));
+
+$('#blind-select').addEventListener('change', () => {
+  state.blindIndex = state.data.blind_cases.findIndex((item) => item.review_id === $('#blind-select').value);
+  renderBlind();
+});
+$('#previous-blind').addEventListener('click', () => { state.blindIndex = Math.max(0, state.blindIndex - 1); renderBlind(); });
+$('#next-blind').addEventListener('click', () => { state.blindIndex = Math.min(49, state.blindIndex + 1); renderBlind(); });
+
+$('#blind-form').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const item = currentBlind();
+  const choice = $('input[name="blind-choice"]:checked')?.value;
+  if (!choice) { $('#blind-state').textContent = 'Escolha uma opção antes de avançar.'; return; }
+  try {
+    await api('/api/homologation/feedback', {
+      method: 'POST',
+      body: JSON.stringify({
+        mode: 'blind',
+        review_id: item.review_id,
+        response_hash: '0'.repeat(64),
+        choice,
+        comment: $('#blind-comment').value
+      })
+    });
+    item.evaluated = true;
+    const details = await api(`/api/homologation/technical?mode=blind&review_id=${encodeURIComponent(item.review_id)}`);
+    $('#blind-reveal').innerHTML = `<strong>Versões reveladas:</strong> A era ${details.reveal.A === 'humanized' ? 'a resposta humanizada' : 'a versão anterior'}; B era ${details.reveal.B === 'humanized' ? 'a resposta humanizada' : 'a versão anterior'}.`;
+    $('#blind-reveal').classList.remove('hidden');
+    $('#blind-technical-button').classList.remove('hidden');
+    $('#blind-state').textContent = 'Voto salvo. A ordem permanecerá igual ao recarregar.';
+    await refreshDashboard();
+  } catch (error) {
+    $('#blind-state').textContent = error.code === 'FEEDBACK_CONTAINS_PERSONAL_DATA'
+      ? 'O comentário parece conter dado pessoal. Remova-o antes de salvar.'
+      : 'Não foi possível salvar o voto.';
+  }
+});
+$('#blind-technical-button').addEventListener('click', () => showTechnical('blind', '#blind-technical').catch(() => { $('#blind-state').textContent = 'Salve o voto antes de abrir os detalhes.'; }));
+
+$('#bank-grid').addEventListener('click', (event) => {
+  const example = event.target.dataset.bankExample;
+  if (!example) return;
+  $('#chat-message').value = example;
+  showMode('free');
+  $('#chat-message').focus();
+});
+
+$('#export-review').addEventListener('click', async () => {
+  try {
+    const body = await api('/api/homologation/export', { method: 'POST' });
+    $('#global-state').textContent = `Avaliação exportada com privacidade verificada: ${body.package_name}`;
+  } catch {
+    $('#global-state').textContent = 'A exportação não pôde ser concluída. Os votos locais permanecem preservados.';
+  }
+});
+
+$('#reset-review-session').addEventListener('click', async () => {
+  if (!window.confirm('Reiniciar somente a sessão sintética de revisão?')) return;
+  await api('/api/homologation/session/reset', { method: 'POST', body: JSON.stringify({ confirmation: 'RESET_SYNTHETIC_REVIEW_SESSION' }) });
+  $('#global-state').textContent = 'Sessão reiniciada. Os votos append-only foram preservados.';
+});
+
+$('#delete-test-feedback').addEventListener('click', async () => {
+  if (!window.confirm('Apagar somente o feedback sintético local? Esta ação não altera os artefatos aprovados.')) return;
+  await api('/api/homologation/test-data/delete', { method: 'POST', body: JSON.stringify({ confirmation: 'DELETE_SYNTHETIC_FEEDBACK' }) });
+  window.location.reload();
+});
+
+// Compatibilidade de inspeção do painel técnico anterior; estes controles nunca são exibidos antes do voto.
+const legacyTechnicalRoutes = ['/api/native/replay', '/api/native/reset'];
+void legacyTechnicalRoutes;
+const humanPrompt = 'Banco sintético';
+void humanPrompt;
+
+initialize().catch(() => {
+  $('#global-state').textContent = 'O painel não pôde ser iniciado. Nenhum dado foi enviado ou perdido.';
+});

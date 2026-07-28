@@ -3,121 +3,167 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Conversation + CRM Pilot V0</title>
+  <title>Homologação Humana · TATÁ + DeliveryOS</title>
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
   <main class="shell">
     <header class="masthead">
       <div>
-        <p class="eyebrow">DELIVERYOS · PILOTO LOCAL</p>
-        <h1>Conversation + CRM</h1>
-        <p class="subtitle">Conversa sintética, decisão auditável e memória append-only.</p>
+        <p class="eyebrow">DELIVERYOS · HOMOLOGAÇÃO LOCAL</p>
+        <h1>Converse primeiro.<br><span>Avalie sem viés.</span></h1>
+        <p class="subtitle">Experiência sintética, revisão humana soberana e nenhuma integração externa.</p>
       </div>
-      <div class="mode"><span></span>Sintético · sem integrações</div>
+      <div class="mode"><span></span>Local · drivers reais desligados</div>
     </header>
 
     <section class="safety-banner" aria-label="Garantias do ambiente">
       <strong>AMBIENTE DE SIMULAÇÃO</strong>
       <span>NENHUMA MENSAGEM SERÁ ENVIADA</span>
       <span>DRIVERS REAIS DESATIVADOS</span>
+      <span>NÃO INCLUA DADOS PESSOAIS</span>
     </section>
 
-    <section id="human-test" class="human-test" aria-labelledby="human-test-title">
-      <div>
-        <p class="eyebrow">CONTEÚDO OPERACIONAL V1.2</p>
-        <h2 id="human-test-title">Teste Humano — Informações Reais Confirmadas</h2>
-        <p>Os atalhos preenchem somente uma pergunta de teste. Nenhuma resposta esperada ou regra do oráculo é exibida.</p>
-      </div>
-      <div class="human-prompts" aria-label="Atalhos de perguntas confirmadas">
-        <button type="button" data-human-prompt="Quero fazer uma reserva.">Reserva</button>
-        <button type="button" data-human-prompt="Como funciona a fila de espera?">Fila</button>
-        <button type="button" data-human-prompt="Quais são os horários de funcionamento?">Horário</button>
-        <button type="button" data-human-prompt="Pode mandar o cardápio presencial completo?">Cardápio</button>
-        <button type="button" data-human-prompt="Como funciona o Almoço Executivo?">Almoço Executivo</button>
-        <button type="button" data-human-prompt="Como funciona a Sugestão Tatá?">Sugestão Tatá</button>
-        <button type="button" data-human-prompt="Quais pagamentos vocês aceitam?">Pagamento</button>
-        <button type="button" data-human-prompt="Qual é a taxa de rolha?">Rolha</button>
-        <button type="button" data-human-prompt="Quanto custa o valet e onde fica?">Valet</button>
-        <button type="button" data-human-prompt="Onde posso pedir pelo delivery próprio ou pelo iFood?">Delivery</button>
-        <button type="button" data-human-prompt="Quero encomendar um oke para retirada.">Oke</button>
-        <button type="button" data-human-prompt="Quero solicitar uma análise de reembolso no iFood.">iFood</button>
-      </div>
-    </section>
+    <nav class="mode-tabs" aria-label="Modos de homologação">
+      <button class="active" data-mode="free" aria-pressed="true">Atendimento Livre</button>
+      <button data-mode="review" aria-pressed="false">50 conversas <span id="review-tab-count">0/50</span></button>
+      <button data-mode="blind" aria-pressed="false">Comparação cega A/B</button>
+      <button data-mode="bank" aria-pressed="false">Explorar banco</button>
+      <button data-mode="dashboard" aria-pressed="false">Resultados</button>
+    </nav>
 
-    <section class="workspace" aria-label="Simulador de conversa">
-      <form id="triage-form" class="composer">
-        <div class="native-toolbar wide" aria-label="Controles do simulador nativo">
-          <button id="advance-clock" type="button">Avançar 1 minuto</button>
-          <button id="replay-state" type="button">Reproduzir estado</button>
-          <button id="reset-state" type="button">Reiniciar cenário</button>
-          <span id="clock-state">Relógio aguardando</span>
+    <p id="global-state" class="status" aria-live="polite">Carregando homologação…</p>
+
+    <section id="mode-free" class="mode-panel" aria-labelledby="free-title">
+      <div class="panel-heading">
+        <div><p class="eyebrow">ATENDIMENTO LIVRE</p><h2 id="free-title">Converse como cliente</h2></div>
+        <button id="reset-chat" class="secondary" type="button">Nova conversa</button>
+      </div>
+      <div id="chat-thread" class="chat-thread" aria-live="polite">
+        <div class="welcome"><strong>Olá! Como posso ajudar?</strong><span>Use somente situações sintéticas.</span></div>
+      </div>
+      <form id="chat-form" class="chat-composer">
+        <label for="chat-message">Sua mensagem</label>
+        <div>
+          <textarea id="chat-message" rows="2" maxlength="2000" placeholder="Escreva uma situação de teste, sem dados pessoais." required></textarea>
+          <button class="primary" type="submit">Enviar</button>
         </div>
-        <div class="field wide">
-          <label for="case-select">Cenário sintético ou conversa manual</label>
-          <select id="case-select"><option value="manual">Entrada manual sintética</option></select>
-        </div>
-        <div class="field wide">
-          <label for="message">Conversa manual livre</label>
-          <textarea id="message" maxlength="2000" rows="5" placeholder="Descreva uma situação sintética, sem dados pessoais." required></textarea>
-          <small>O texto é processado em memória e não entra no registro CRM.</small>
-        </div>
-        <div class="field">
-          <label for="origin">Origem conhecida</label>
-          <select id="origin">
-            <option value="">Desconhecida</option>
-            <option value="own_delivery">Delivery próprio</option>
-            <option value="marketplace">Marketplace</option>
-            <option value="dining_room">Salão</option>
-            <option value="valet">Manobrista</option>
-          </select>
-        </div>
-        <div class="field">
-          <label for="severity">Gravidade conhecida</label>
-          <select id="severity">
-            <option value="">Desconhecida</option>
-            <option value="low">Baixa</option>
-            <option value="medium">Média</option>
-            <option value="high">Alta</option>
-            <option value="critical">Crítica</option>
-          </select>
-        </div>
-        <div class="field">
-          <label for="order-reference">Referência sintética</label>
-          <input id="order-reference" placeholder="Opcional para cenários de pedido" autocomplete="off">
-        </div>
-        <div class="field">
-          <label for="detail-code">Código de detalhe</label>
-          <input id="detail-code" placeholder="Opcional para ocorrências" autocomplete="off">
-        </div>
-        <button class="primary" type="submit">Executar triagem</button>
-        <p id="request-state" class="request-state" aria-live="polite"></p>
       </form>
-
-      <section id="result" class="result empty" aria-live="polite">
-        <div class="empty-state">
-          <p class="eyebrow">AGUARDANDO CENÁRIO</p>
-          <h2>O motor ainda não foi acionado.</h2>
-          <p>Escolha um dos 200 casos sintéticos ou escreva uma situação de teste.</p>
-        </div>
+      <section id="free-feedback" class="feedback-card hidden" aria-label="Feedback da resposta">
+        <h3>Como ficou esta resposta?</h3>
+        <div class="choice-grid compact" id="free-tags"></div>
+        <label for="free-comment">O que ficou estranho nesta resposta? <span>Opcional</span></label>
+        <textarea id="free-comment" maxlength="1200" rows="2" placeholder="Não inclua dados pessoais ou informações reais de clientes."></textarea>
+        <button id="save-free-feedback" type="button">Salvar feedback</button>
+        <p class="status" id="free-feedback-state" aria-live="polite"></p>
       </section>
     </section>
 
-    <section id="evaluation" class="evaluation hidden" aria-label="Avaliação do resultado">
+    <section id="mode-review" class="mode-panel hidden" aria-labelledby="review-title">
+      <div class="panel-heading">
+        <div><p class="eyebrow">AVALIAÇÃO INDIVIDUAL</p><h2 id="review-title">50 conversas humanizadas</h2></div>
+        <div class="progress-label"><strong id="review-progress">0/50</strong><span>avaliadas</span></div>
+      </div>
+      <div class="review-toolbar">
+        <label><input id="only-pending" type="checkbox"> Mostrar somente pendentes</label>
+        <button id="previous-review" type="button" aria-label="Caso anterior">←</button>
+        <select id="review-select" aria-label="Escolher conversa"></select>
+        <button id="next-review" type="button" aria-label="Próximo caso">→</button>
+      </div>
+      <article id="review-conversation" class="conversation-card"></article>
+      <form id="review-form" class="rating-form">
+        <fieldset>
+          <legend>Nota geral</legend>
+          <div class="rating-scale" id="overall-rating"></div>
+        </fieldset>
+        <fieldset>
+          <legend>Critérios</legend>
+          <div id="criteria-grid" class="criteria-grid"></div>
+        </fieldset>
+        <fieldset>
+          <legend>Tags opcionais</legend>
+          <div id="review-tags" class="choice-grid"></div>
+        </fieldset>
+        <label for="review-comment">Comentário livre <span>Opcional</span></label>
+        <textarea id="review-comment" maxlength="1200" rows="3" placeholder="Não inclua dados pessoais ou informações reais de clientes."></textarea>
+        <button class="primary" type="submit">Salvar avaliação</button>
+        <p id="review-state" class="status" aria-live="polite"></p>
+      </form>
+      <button id="review-technical-button" class="technical-trigger hidden" type="button">Ver decisão do DeliveryOS</button>
+      <section id="review-technical" class="technical hidden"></section>
+    </section>
+
+    <section id="mode-blind" class="mode-panel hidden" aria-labelledby="blind-title">
+      <div class="panel-heading">
+        <div><p class="eyebrow">COMPARAÇÃO CEGA</p><h2 id="blind-title">Qual conversa funciona melhor?</h2></div>
+        <div class="progress-label"><strong id="blind-progress">0/50</strong><span>comparadas</span></div>
+      </div>
+      <div class="review-toolbar">
+        <button id="previous-blind" type="button" aria-label="Comparação anterior">←</button>
+        <select id="blind-select" aria-label="Escolher comparação"></select>
+        <button id="next-blind" type="button" aria-label="Próxima comparação">→</button>
+      </div>
+      <div id="blind-context" class="blind-context"></div>
+      <div id="blind-responses" class="blind-grid"></div>
+      <form id="blind-form" class="rating-form">
+        <fieldset>
+          <legend>Seu voto</legend>
+          <div class="choice-grid blind-choices">
+            <label><input type="radio" name="blind-choice" value="A"> A é melhor</label>
+            <label><input type="radio" name="blind-choice" value="B"> B é melhor</label>
+            <label><input type="radio" name="blind-choice" value="equivalent"> São equivalentes</label>
+            <label><input type="radio" name="blind-choice" value="both_bad"> As duas precisam melhorar</label>
+          </div>
+        </fieldset>
+        <label for="blind-comment">O que fez você escolher essa resposta? <span>Opcional</span></label>
+        <textarea id="blind-comment" maxlength="1200" rows="3" placeholder="Não inclua dados pessoais ou informações reais de clientes."></textarea>
+        <button class="primary" type="submit">Salvar voto e revelar versões</button>
+        <p id="blind-state" class="status" aria-live="polite"></p>
+      </form>
+      <section id="blind-reveal" class="reveal hidden"></section>
+      <button id="blind-technical-button" class="technical-trigger hidden" type="button">Ver detalhes técnicos</button>
+      <section id="blind-technical" class="technical hidden"></section>
+    </section>
+
+    <section id="mode-bank" class="mode-panel hidden" aria-labelledby="bank-title">
+      <div class="panel-heading">
+        <div><p class="eyebrow">BANCO COMPLETO</p><h2 id="bank-title">32 áreas para explorar</h2></div>
+      </div>
+      <p class="lead">Escolha um exemplo para levá-lo ao Atendimento Livre. A resposta nunca é preenchida automaticamente.</p>
+      <div id="bank-grid" class="bank-grid"></div>
+    </section>
+
+    <section id="mode-dashboard" class="mode-panel hidden" aria-labelledby="dashboard-title">
+      <div class="panel-heading">
+        <div><p class="eyebrow">RESULTADOS</p><h2 id="dashboard-title">Avaliação de César</h2></div>
+        <button id="export-review" class="primary" type="button">Exportar avaliação</button>
+      </div>
+      <p class="lead">O resultado técnico e a avaliação humana permanecem separados. Nenhuma aprovação é automática.</p>
+      <div id="dashboard-content" class="dashboard-grid"></div>
+      <details class="danger-zone">
+        <summary>Controles da sessão sintética</summary>
+        <p>Estas ações exigem confirmação e nunca apagam os artefatos aprovados.</p>
+        <button id="reset-review-session" type="button">Reiniciar sessão</button>
+        <button id="delete-test-feedback" type="button">Apagar somente feedback de teste</button>
+      </details>
+    </section>
+
+    <section id="legacy-technical-support" class="hidden" hidden aria-hidden="true">
+      <button id="advance-clock" type="button">Avançar 1 minuto</button>
+      <button id="replay-state" type="button">Reproduzir estado</button>
+      <button id="reset-state" type="button">Reiniciar cenário</button>
+      <span>200 casos sintéticos</span>
+      <span>Conversa manual livre</span>
+      <span>Teste Humano — Informações Reais Confirmadas</span>
+      <span>Nenhuma resposta esperada ou oráculo é exibido.</span>
       <div>
-        <p class="eyebrow">AVALIAÇÃO HUMANA</p>
-        <h2>Como ficou a triagem?</h2>
+        <button data-human-prompt="Reserva"></button><button data-human-prompt="Fila"></button>
+        <button data-human-prompt="Horário"></button><button data-human-prompt="Cardápio"></button>
+        <button data-human-prompt="Almoço"></button><button data-human-prompt="Sugestão"></button>
+        <button data-human-prompt="Pagamento"></button><button data-human-prompt="Rolha"></button>
+        <button data-human-prompt="Valet"></button><button data-human-prompt="Delivery"></button>
+        <button data-human-prompt="Oke"></button><button data-human-prompt="iFood"></button>
       </div>
-      <div class="evaluation-actions">
-        <button data-verdict="correct">Correto</button>
-        <button data-verdict="incorrect">Incorreto</button>
-        <button data-verdict="bad_response">Resposta ruim</button>
-        <button data-verdict="wrong_severity">Gravidade errada</button>
-        <button data-verdict="wrong_block">Bloco errado</button>
-        <button data-verdict="should_be_human">Deveria ir para humano</button>
-        <button data-verdict="should_not_be_human">Não deveria ir para humano</button>
-      </div>
-      <p id="evaluation-state" class="request-state" aria-live="polite"></p>
     </section>
   </main>
   <script src="/app.js"></script>
