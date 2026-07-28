@@ -2,6 +2,7 @@
 
 const { deepFreeze } = require('./catalogs/operational');
 const { selectStrategyId, strategyFor } = require('./response-strategy-catalog');
+const { searchServiceKnowledge } = require('./service-knowledge-bank');
 
 const RESPONSE_GOALS = Object.freeze(['inform', 'clarify', 'acknowledge', 'guide', 'handoff', 'protect', 'close']);
 const CONVERSATION_STAGES = Object.freeze(['opening', 'continuation', 'clarification', 'resolution', 'reopening']);
@@ -162,11 +163,55 @@ function buildResponsePlan(input = {}) {
     values.findIndex((candidate) => candidate.field === fact.field && candidate.value === fact.value) === index
   ));
   const authorizedSurface = extractSurfaceFacts(input.authorized_text);
+  const knowledge = searchServiceKnowledge({
+    classification,
+    conversation,
+    authorized_text: input.authorized_text
+  });
+  const knowledgeSurface = extractSurfaceFacts(
+    knowledge.selected.map((item) => item.customer_message).filter(Boolean).join(' ')
+  );
+  authorizedSurface.text = [authorizedSurface.text, knowledgeSurface.text].filter(Boolean).join(' ');
+  authorizedSurface.links = [...new Set([...authorizedSurface.links, ...knowledgeSurface.links])];
+  authorizedSurface.numbers = [...new Set([...authorizedSurface.numbers, ...knowledgeSurface.numbers])];
   const verifiedActions = result.status === 'confirmed' && classification.action ? [classification.action] : [];
   const pendingActions = result.status === 'confirmed' || !classification.action ? [] : [classification.action];
+  const handoffConfirmed = input.handoff?.status === 'confirmed';
+  const actionSelected = verifiedActions[0] || (handoffConfirmed ? 'human.queue.create' : null);
+  const actionMode = actionSelected
+    ? 'executed'
+    : (knowledge.directions.length ? 'orientation' : (pendingActions.length ? 'handoff_required' : 'unavailable'));
   const gravity = gravityFor(classification);
   const plan = {
-    version: '1.0.0',
+    version: '2.0.0',
+    customer_need: knowledge.customer_need,
+    direct_answer: [...knowledge.direct_answer],
+    knowledge_candidates: knowledge.candidates.map((item) => ({
+      knowledge_id: item.knowledge_id,
+      playbook: item.playbook,
+      purpose: item.purpose,
+      priority: item.priority,
+      sources: [...item.sources]
+    })),
+    knowledge_selected: knowledge.selected.map((item) => item.knowledge_id),
+    knowledge_sources_used: [...knowledge.knowledge_sources_used],
+    knowledge_rejected: knowledge.rejected.map((item) => item.knowledge_id),
+    rejection_reason: Object.fromEntries(knowledge.rejected.map((item) => [item.knowledge_id, item.rejection_reason])),
+    action_playbook: knowledge.playbook.id,
+    action_available: Boolean(actionSelected),
+    action_selected: actionSelected,
+    action_mode: actionMode,
+    channel_guidance: [...knowledge.playbook.channel_guidance],
+    explanation_needed: [...knowledge.explanations],
+    optional_enrichment: knowledge.selected
+      .filter((item) => item.purpose !== 'direct_answer')
+      .map((item) => item.knowledge_id),
+    humanity_requirements: [
+      'specific_understanding',
+      'direct_answer_before_question',
+      'proportional_tone',
+      ...(gravityFor(classification) === 'critical' ? ['serious_without_emoji'] : [])
+    ],
     response_goal: strategy.response_goal,
     conversation_stage: stage,
     customer_state: customerState(classification, conversation.source_text),
@@ -200,7 +245,12 @@ function validateResponsePlan(plan) {
     'version', 'response_goal', 'conversation_stage', 'customer_state', 'gravity',
     'known_facts', 'new_facts', 'verified_actions', 'pending_actions',
     'mandatory_questions', 'optional_information', 'prohibited_claims', 'length',
-    'emoji_policy', 'tone_profile', 'strategy_id'
+    'emoji_policy', 'tone_profile', 'strategy_id', 'customer_need',
+    'direct_answer', 'knowledge_candidates', 'knowledge_selected',
+    'knowledge_sources_used', 'knowledge_rejected', 'rejection_reason',
+    'action_playbook', 'action_available', 'action_mode',
+    'channel_guidance', 'explanation_needed', 'optional_enrichment',
+    'humanity_requirements'
   ];
   const missing = required.filter((field) => plan?.[field] == null);
   const invalid = [
@@ -210,7 +260,15 @@ function validateResponsePlan(plan) {
     !GRAVITIES.includes(plan?.gravity),
     !LENGTHS.includes(plan?.length),
     !EMOJI_POLICIES.includes(plan?.emoji_policy),
+    plan?.version !== '2.0.0',
+    !Object.hasOwn(plan || {}, 'action_selected'),
     plan?.tone_profile !== 'tata_warm',
+    !['executed', 'prepared', 'orientation', 'handoff_required', 'unavailable'].includes(plan?.action_mode),
+    !Array.isArray(plan?.direct_answer),
+    !Array.isArray(plan?.knowledge_candidates),
+    !Array.isArray(plan?.knowledge_selected),
+    !Array.isArray(plan?.knowledge_sources_used),
+    !Array.isArray(plan?.humanity_requirements),
     new Set(plan?.mandatory_questions || []).size !== (plan?.mandatory_questions || []).length,
     (plan?.verified_actions || []).some((action) => (plan?.pending_actions || []).includes(action))
   ].some(Boolean);

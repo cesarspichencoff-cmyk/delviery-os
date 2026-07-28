@@ -20,18 +20,23 @@ function classification(overrides = {}) {
   };
 }
 
-test('Response Plan v1 contém o contrato mínimo versionado', () => {
+test('Response Plan v2 contém o contrato mínimo versionado', () => {
   const plan = buildResponsePlan({
     classification: classification(),
     result: { status: 'unknown' },
     authorized_text: 'O endereço confirmado é sintético.',
     conversation: { conversation_id: 'SIM-CONV-PLAN-001', turn_order: 1, source_text: 'Qual é o endereço?' }
   });
-  assert.equal(plan.version, '1.0.0');
+  assert.equal(plan.version, '2.0.0');
   assert.equal(plan.response_goal, 'inform');
   assert.equal(plan.conversation_stage, 'opening');
   assert.equal(plan.tone_profile, 'tata_warm');
   assert.equal(plan.strategy_id, 'information_direct');
+  assert.equal(plan.customer_need, 'localizar o restaurante');
+  assert.equal(plan.action_playbook, 'restaurant_information');
+  assert.equal(Array.isArray(plan.knowledge_candidates), true);
+  assert.equal(Array.isArray(plan.knowledge_selected), true);
+  assert.equal(Array.isArray(plan.knowledge_sources_used), true);
   assert.deepEqual(plan.verified_actions, []);
   assert.deepEqual(plan.pending_actions, ['read_information']);
   assert.equal(validateResponsePlan(plan), plan);
@@ -107,7 +112,7 @@ test('catálogo contém estratégias estruturais e perfil tata_warm válido', ()
 
 test('schema inválido falha fechado', () => {
   assert.throws(() => validateResponsePlan({
-    version: '1.0.0',
+    version: '2.0.0',
     response_goal: 'invent',
     conversation_stage: 'opening'
   }), { code: 'RESPONSE_PLAN_INVALID' });
