@@ -2,7 +2,7 @@
 
 ## Bloqueadores locais
 
-Nenhum no início da Mudança 001.
+Nenhum ao término técnico da Mudança 002.
 
 ## Bloqueadores externos
 
@@ -25,3 +25,9 @@ A branch local `feature/conversation-native-deliveryos-humanized-v1` foi conclu�
 ## Dados pendentes e dívidas aceitas
 
 Nenhum dado real é necessário para o corpus sintético. Políticas ou fatos institucionais não confirmados continuam desconhecidos.
+
+## Mudança 002
+
+Os cinco gaps do baseline foram corrigidos ou classificados com fallback
+explícito. Não há falha silenciosa restante no corpus, mas a aprovação humana da
+voz continua pendente e não bloqueia a homologação técnica.

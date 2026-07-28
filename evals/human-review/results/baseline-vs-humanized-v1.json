@@ -2,7 +2,7 @@
   "schema_version": "deliveryos-conversation-baseline-vs-humanized-v1",
   "synthetic": true,
   "baseline_hash": "894e8246aea72267cba4eb111d936421e76ff23859b191917a9b093b2a10fca9",
-  "humanized_hash": "d7c879de2f30258534e143d542278b37d1429572f1cfbcfd0728827efb990a6e",
+  "humanized_hash": "cfe462fe00147c6b0642fbd9e9fe15f19c8120781d5829d62f3dda663814dc04",
   "rows": [
     {
       "case_id": "HREV-001",
@@ -925,7 +925,7 @@
         {
           "turn": 1,
           "before": "Sinto muito pelo ocorrido. Registre a solicitação pelo pedido no iFood, em Ajuda ou Reportar problema, e envie as evidências disponíveis. O relato também permanece no atendimento para preservar o contexto.",
-          "after": "Sinto muito pelo ocorrido. Sobre a falta de bebida, registre a solicitação pelo pedido no iFood, em Ajuda ou Reportar problema, e envie as evidências disponíveis. O relato também permanece no atendimento para preservar o contexto.",
+          "after": "Sinto muito pelo ocorrido. Sobre a falta de bebida. Registre a solicitação pelo pedido no iFood, em Ajuda ou Reportar problema, e envie as evidências disponíveis. O relato também permanece no atendimento para preservar o contexto.",
           "changed": true,
           "facts": [
             "pedido e canal já informados"
@@ -1497,7 +1497,7 @@
         {
           "turn": 1,
           "before": "Sinto muito pelo ocorrido. Registre a solicitação pelo pedido no iFood, em Ajuda ou Reportar problema, e envie as evidências disponíveis. O relato também permanece no atendimento para preservar o contexto.",
-          "after": "Poxa, sinto muito por isso. Sobre a falta de shoyu, registre a solicitação pelo pedido no iFood, em Ajuda ou Reportar problema, e envie as evidências disponíveis. O relato também permanece no atendimento para preservar o contexto.",
+          "after": "Poxa, sinto muito por isso. Sobre a falta de shoyu. Registre a solicitação pelo pedido no iFood, em Ajuda ou Reportar problema, e envie as evidências disponíveis. O relato também permanece no atendimento para preservar o contexto.",
           "changed": true,
           "facts": [
             "correção append-only"
@@ -1591,7 +1591,7 @@
         {
           "turn": 2,
           "before": "Sinto muito pelo ocorrido. Registre a solicitação pelo pedido no iFood, em Ajuda ou Reportar problema, e envie as evidências disponíveis. O relato também permanece no atendimento para preservar o contexto. Pode me informar o número do pedido?",
-          "after": "Certo. Sobre a falta de refrigerante, registre a solicitação pelo pedido no iFood, em Ajuda ou Reportar problema, e envie as evidências disponíveis. O relato também permanece no atendimento para preservar o contexto. Pode me informar o número do pedido?",
+          "after": "Certo. Sobre a falta de refrigerante. Registre a solicitação pelo pedido no iFood, em Ajuda ou Reportar problema, e envie as evidências disponíveis. O relato também permanece no atendimento para preservar o contexto. Pode me informar o número do pedido?",
           "changed": true,
           "facts": [
             "respostas curtas resolvidas"
@@ -1655,7 +1655,7 @@
         {
           "turn": 1,
           "before": "Sinto muito pelo ocorrido. Registre a solicitação pelo pedido no iFood, em Ajuda ou Reportar problema, e envie as evidências disponíveis. O relato também permanece no atendimento para preservar o contexto.",
-          "after": "Entendi o que aconteceu. Sobre a falta de bebida, registre a solicitação pelo pedido no iFood, em Ajuda ou Reportar problema, e envie as evidências disponíveis. O relato também permanece no atendimento para preservar o contexto.",
+          "after": "Entendi o que aconteceu. Sobre a falta de bebida. Registre a solicitação pelo pedido no iFood, em Ajuda ou Reportar problema, e envie as evidências disponíveis. O relato também permanece no atendimento para preservar o contexto.",
           "changed": true,
           "facts": [
             "complemento no mesmo caso"
@@ -1717,7 +1717,7 @@
         {
           "turn": 1,
           "before": "Sinto muito pelo ocorrido. Registre a solicitação pelo pedido no iFood, em Ajuda ou Reportar problema, e envie as evidências disponíveis. O relato também permanece no atendimento para preservar o contexto.",
-          "after": "Sinto muito pelo ocorrido. Sobre a falta de bebida, registre a solicitação pelo pedido no iFood, em Ajuda ou Reportar problema, e envie as evidências disponíveis. O relato também permanece no atendimento para preservar o contexto.",
+          "after": "Sinto muito pelo ocorrido. Sobre a falta de bebida. Registre a solicitação pelo pedido no iFood, em Ajuda ou Reportar problema, e envie as evidências disponíveis. O relato também permanece no atendimento para preservar o contexto.",
           "changed": true,
           "facts": [
             "novo assunto não misturado"
@@ -1949,5 +1949,5 @@
       ]
     }
   ],
-  "canonical_hash": "8e7b923b4c6fbc6ec558c8491fdd270fc1ac3bfdc50719c711dc968076d046dc"
+  "canonical_hash": "c275942e98a63228d18af5a3dc3cada204ace4840f16ce62ce69ff6021f5c6c2"
 }

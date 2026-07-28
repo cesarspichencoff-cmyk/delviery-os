@@ -2,8 +2,8 @@
   "project": "DeliveryOS Chatbot TATÁ",
   "active_change": "002-humanized-response-strategy",
   "branch": "feature/conversation-humanized-response-strategy-v1",
-  "head": "135d1c0a8853e626126777d10043106a2ce17cfb",
-  "working_tree": "humanized_corpus_and_mutations_ready_for_commit",
+  "head": "dc2718d915f8dc9f381dcf62a75699cfb2f95355",
+  "working_tree": "final_documentation_ready_for_commit",
   "completed_units": [
     "git_lineage_validation",
     "historical_baseline",
@@ -31,13 +31,12 @@
     "five_contract_gaps",
     "humanized_corpus",
     "humanized_metrics",
-    "mutation_controls"
-  ],
-  "active_unit": "final_regression_and_documentation",
-  "pending_units": [
+    "mutation_controls",
     "final_regression",
     "external_review_packet"
   ],
+  "active_unit": "final_documentation_commit",
+  "pending_units": [],
   "test_status": {
     "conversation_native": "260/260 passed; 255 historical plus 5 verifier tests",
     "scenario_catalog": "200/200 passed; hash 258fece5f484f00e5a59ad2b45d2144af494da540941daccd53cf92c2e80a8e8",
@@ -53,13 +52,14 @@
     "baseline_verifiers": "595/600 passed; 5 measured surface gaps",
     "negative_controls": "7/7 rejected with exit code 1",
     "humanized_validation": "72/72 focused integration and recovery tests passed",
-    "humanized_corpus": "50 conversations, 56 turns, 616/616 checks; hash d7c879de2f30258534e143d542278b37d1429572f1cfbcfd0728827efb990a6e",
-    "humanized_mutations": "12/12 rejected with exit code 1"
+    "humanized_corpus": "50 conversations, 56 turns, 616/616 checks; hash cfe462fe00147c6b0642fbd9e9fe15f19c8120781d5829d62f3dda663814dc04",
+    "humanized_mutations": "12/12 rejected with exit code 1",
+    "final_regression": "Conversation 284/284; catalog 200/200; privacy passed; Conference 350/350; PRESENCE.CONFLICT 1/1; Live 243/243; Capacity 43/43; Copilot 53/53; menu 199; historical source 16/16"
   },
   "blockers": [],
   "external_gates": [
     "César reviews human experience in Change 002"
   ],
-  "next_step": "commit corpus and mutation evidence, then run inherited regressions and build the external review packet",
-  "updated_at": "2026-07-28T03:31:59-03:00"
+  "next_step": "create the fifth documentation commit and stop for technical homologation",
+  "updated_at": "2026-07-28T03:35:10-03:00"
 }

@@ -218,7 +218,7 @@ function occurrenceText(input) {
     const concrete = item ? `a falta de ${item}` : 'o item faltante';
     if (classification.information_source && authorizedText) {
       const operationalText = sentence(authorizedText).replace(/^Sinto muito pelo ocorrido\.\s*/iu, '');
-      return `${intro} Sobre ${concrete}, ${operationalText.charAt(0).toLowerCase()}${operationalText.slice(1)}`;
+      return `${intro} Sobre ${concrete}. ${operationalText}`;
     }
     const next = question || 'O caso permanece aberto com as informações já fornecidas.';
     return `${intro} Sobre ${concrete}, não vou presumir reposição, crédito ou reembolso. ${next}`;

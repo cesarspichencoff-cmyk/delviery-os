@@ -11,7 +11,7 @@
 - `completed` — executar controles negativos e mutações;
 - `completed` — comparar métricas com o baseline;
 - `pending` — realizar gate humano com César;
-- `active` — executar regressões históricas;
-- `pending` — documentar evidência e rollback.
+- `completed` — executar regressões históricas;
+- `completed` — documentar evidência e rollback.
 
 O gate humano permanece deliberadamente para a Mudança 003; não é preenchido por avaliação automática.

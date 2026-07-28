@@ -2323,7 +2323,7 @@
       "results": [
         {
           "input_fingerprint": "b565656a1368703590f78dc4025a0c63fe47601e459b94f6d0c2f60650404f74",
-          "response_text": "Sinto muito pelo ocorrido. Sobre a falta de bebida, registre a solicitação pelo pedido no iFood, em Ajuda ou Reportar problema, e envie as evidências disponíveis. O relato também permanece no atendimento para preservar o contexto.",
+          "response_text": "Sinto muito pelo ocorrido. Sobre a falta de bebida. Registre a solicitação pelo pedido no iFood, em Ajuda ou Reportar problema, e envie as evidências disponíveis. O relato também permanece no atendimento para preservar o contexto.",
           "response_status": "unknown",
           "result_status": "unknown",
           "intent": "occurrence.missing_item",
@@ -3840,7 +3840,7 @@
       "results": [
         {
           "input_fingerprint": "e0941413304f509ba261e7ea14428819bf61ef7569d0b423cfc07c5d39cad878",
-          "response_text": "Poxa, sinto muito por isso. Sobre a falta de shoyu, registre a solicitação pelo pedido no iFood, em Ajuda ou Reportar problema, e envie as evidências disponíveis. O relato também permanece no atendimento para preservar o contexto.",
+          "response_text": "Poxa, sinto muito por isso. Sobre a falta de shoyu. Registre a solicitação pelo pedido no iFood, em Ajuda ou Reportar problema, e envie as evidências disponíveis. O relato também permanece no atendimento para preservar o contexto.",
           "response_status": "unknown",
           "result_status": "unknown",
           "intent": "occurrence.missing_item",
@@ -4103,7 +4103,7 @@
         },
         {
           "input_fingerprint": "f654541fc3f5d261bfb251c6d2a1104b344b3461403b6fec48073c52b2885d80",
-          "response_text": "Certo. Sobre a falta de refrigerante, registre a solicitação pelo pedido no iFood, em Ajuda ou Reportar problema, e envie as evidências disponíveis. O relato também permanece no atendimento para preservar o contexto. Pode me informar o número do pedido?",
+          "response_text": "Certo. Sobre a falta de refrigerante. Registre a solicitação pelo pedido no iFood, em Ajuda ou Reportar problema, e envie as evidências disponíveis. O relato também permanece no atendimento para preservar o contexto. Pode me informar o número do pedido?",
           "response_status": "unknown",
           "result_status": "unknown",
           "intent": "occurrence.missing_item",
@@ -4294,7 +4294,7 @@
       "results": [
         {
           "input_fingerprint": "897fd8dd0280886d2df57d8e1917b9af76666b2681a7fb4ce5ba1ac8ab62a9f7",
-          "response_text": "Entendi o que aconteceu. Sobre a falta de bebida, registre a solicitação pelo pedido no iFood, em Ajuda ou Reportar problema, e envie as evidências disponíveis. O relato também permanece no atendimento para preservar o contexto.",
+          "response_text": "Entendi o que aconteceu. Sobre a falta de bebida. Registre a solicitação pelo pedido no iFood, em Ajuda ou Reportar problema, e envie as evidências disponíveis. O relato também permanece no atendimento para preservar o contexto.",
           "response_status": "unknown",
           "result_status": "unknown",
           "intent": "occurrence.missing_item",
@@ -4482,7 +4482,7 @@
       "results": [
         {
           "input_fingerprint": "842718e704e5639642a92994cbca5527e5026a2989ef1491fcbc0eb5d28975e2",
-          "response_text": "Sinto muito pelo ocorrido. Sobre a falta de bebida, registre a solicitação pelo pedido no iFood, em Ajuda ou Reportar problema, e envie as evidências disponíveis. O relato também permanece no atendimento para preservar o contexto.",
+          "response_text": "Sinto muito pelo ocorrido. Sobre a falta de bebida. Registre a solicitação pelo pedido no iFood, em Ajuda ou Reportar problema, e envie as evidências disponíveis. O relato também permanece no atendimento para preservar o contexto.",
           "response_status": "unknown",
           "result_status": "unknown",
           "intent": "occurrence.missing_item",
@@ -5075,5 +5075,5 @@
       ]
     }
   ],
-  "canonical_hash": "d7c879de2f30258534e143d542278b37d1429572f1cfbcfd0728827efb990a6e"
+  "canonical_hash": "cfe462fe00147c6b0642fbd9e9fe15f19c8120781d5829d62f3dda663814dc04"
 }

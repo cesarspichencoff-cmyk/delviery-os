@@ -12,5 +12,5 @@
 - [x] oráculo ausente do runtime e do compositor;
 - [x] corpus reproduzível e comparação antes/depois publicada;
 - [ ] César aprova naturalidade, acolhimento e voz TATÁ;
-- [ ] suítes históricas verdes;
+- [x] suítes históricas verdes;
 - [x] nenhuma integração externa, push, merge ou deploy sem autorização.

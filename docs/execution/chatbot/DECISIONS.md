@@ -77,3 +77,29 @@ consulta append-only para continuidade e evento sanitizado de rejeição.
 **Impacto:** a fundação da Mudança 001 permanece soberana.
 
 **Reversibilidade:** alta; os novos módulos são isolados e testáveis.
+
+## D-006 — Validação independente e recomposição sem texto bruto
+
+**Contexto:** o store redige campos de texto por privacidade, mas o replay deve
+devolver a mesma resposta.
+
+**Decisão:** persistir somente o hash da entrada e recompor deterministicamente
+a resposta quando o hash recebido coincide, sem reexecutar efeitos.
+
+**Motivo:** concilia idempotência, privacidade e reprodutibilidade.
+
+**Impacto:** resposta idêntica após reinício, um único efeito lógico e nenhum
+conteúdo bruto novo no JSONL.
+
+## D-007 — Métrica não substitui o gate humano
+
+**Contexto:** o corpus comprova diversidade estrutural e segurança, mas não
+prova preferência estética.
+
+**Decisão:** publicar campos de avaliação vazios e reservar a aprovação da voz
+TATÁ para César na Mudança 003.
+
+**Motivo:** separar fato automatizado de julgamento humano.
+
+**Impacto:** a Mudança 002 pode ser homologada tecnicamente sem afirmar
+aprovação de experiência ou prontidão para produção.

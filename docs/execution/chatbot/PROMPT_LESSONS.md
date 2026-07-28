@@ -28,3 +28,16 @@ regra foi promovida para a decisão D-003.
 
 O baseline também mostrou que cobertura de intenção não equivale a riqueza de
 superfície: estado lembrado pelo CRM pode continuar invisível na frase.
+
+## Mudança 002
+
+- validar o texto final com regras independentes do compositor detecta omissão
+  de pergunta, fato e limite que testes do compositor isolado não veem;
+- recuperação deve reconstruir a visão anterior ao turno corrente para não
+  transformar retry em divergência;
+- reduzir fallback genérico exige estratégias concretas e taxonomia, não
+  sinônimos;
+- hashes de artefato que incluem texto podem mudar legitimamente mesmo quando
+  fatos e decisões permanecem equivalentes;
+- uma frase operacional canônica deve ser transportada sem alteração semântica
+  quando já contém a orientação autorizada.
