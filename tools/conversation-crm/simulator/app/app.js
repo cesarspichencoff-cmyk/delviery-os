@@ -115,8 +115,8 @@ function renderBank() {
 
 function updateProgress() {
   const summary = state.data.summary.cesar_review;
-  $('#review-progress').textContent = `${summary.evaluated}/50`;
-  $('#review-tab-count').textContent = `${summary.evaluated}/50`;
+  $('#review-progress').textContent = `${summary.evaluated}/${summary.total}`;
+  $('#review-tab-count').textContent = `${summary.evaluated}/${summary.total}`;
   const compared = state.data.blind_cases.filter((item) => item.evaluated).length;
   $('#blind-progress').textContent = `${compared}/50`;
 }
@@ -125,6 +125,11 @@ function renderTechnical(target, body) {
   const turns = body.decision.turns;
   target.innerHTML = `
     ${body.reveal ? `<div class="reveal-line"><strong>Revelação:</strong> A = ${escapeHtml(body.reveal.A === 'humanized' ? 'humanizada' : 'anterior')} · B = ${escapeHtml(body.reveal.B === 'humanized' ? 'humanizada' : 'anterior')}</div>` : ''}
+    ${body.comparison ? `<section class="comparison-after-vote"><h3>${escapeHtml(body.comparison.label)}</h3>${body.comparison.turns.map((turn) => `
+      <article><strong>Turno ${turn.turn}</strong>
+        <div class="message bot"><span>Anterior</span><p>${escapeHtml(turn.previous)}</p></div>
+        <div class="message bot"><span>Refinada</span><p>${escapeHtml(turn.refined)}</p></div>
+      </article>`).join('')}</section>` : ''}
     ${turns.map((turn) => `<article>
       <h3>Decisão do DeliveryOS · turno ${turn.turn}</h3>
       <dl>
@@ -160,12 +165,12 @@ function renderDashboard(summary) {
   const metric = (label, value, note = '') => `<article class="metric"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value ?? '—')}</strong><small>${escapeHtml(note)}</small></article>`;
   $('#dashboard-content').innerHTML = `
     <section><h3>Cobertura</h3><div class="metrics">
-      ${metric('Avaliados', `${review.evaluated}/50`)}
+      ${metric('Avaliados', `${review.evaluated}/${review.total}`)}
       ${metric('Pendentes', review.pending)}
       ${metric('Concluído', `${review.completion_percent}%`)}
       ${metric('Categorias', review.categories_evaluated)}
     </div></section>
-    <section><h3>Resposta humanizada</h3><div class="metrics">
+    <section><h3>Nova resposta refinada</h3><div class="metrics">
       ${metric('Nota média', review.overall_average)}
       ${Object.entries(review.criteria).map(([key, value]) => metric(key, value)).join('')}
     </div></section>
@@ -269,7 +274,7 @@ $('#review-select').addEventListener('change', () => {
 });
 $('#only-pending').addEventListener('change', renderReviewSelectors);
 $('#previous-review').addEventListener('click', () => { state.reviewIndex = Math.max(0, state.reviewIndex - 1); renderReview(); });
-$('#next-review').addEventListener('click', () => { state.reviewIndex = Math.min(49, state.reviewIndex + 1); renderReview(); });
+$('#next-review').addEventListener('click', () => { state.reviewIndex = Math.min(state.data.review_cases.length - 1, state.reviewIndex + 1); renderReview(); });
 
 $('#review-form').addEventListener('submit', async (event) => {
   event.preventDefault();
@@ -279,7 +284,7 @@ $('#review-form').addEventListener('submit', async (event) => {
     await api('/api/homologation/feedback', {
       method: 'POST',
       body: JSON.stringify({
-        mode: 'humanized',
+        mode: 'refined',
         review_id: item.review_id,
         rating: Number($('input[name="overall"]:checked')?.value),
         criteria,
@@ -297,7 +302,7 @@ $('#review-form').addEventListener('submit', async (event) => {
       : 'Preencha a nota geral e todos os seis critérios.';
   }
 });
-$('#review-technical-button').addEventListener('click', () => showTechnical('humanized', '#review-technical').catch(() => { $('#review-state').textContent = 'Salve o voto antes de abrir a decisão.'; }));
+$('#review-technical-button').addEventListener('click', () => showTechnical('refined', '#review-technical').catch(() => { $('#review-state').textContent = 'Salve o voto antes de abrir a decisão.'; }));
 
 $('#blind-select').addEventListener('change', () => {
   state.blindIndex = state.data.blind_cases.findIndex((item) => item.review_id === $('#blind-select').value);

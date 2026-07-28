@@ -27,15 +27,12 @@ function renderSummary(summary) {
   return [
     '# Resumo da homologação humana',
     '',
-    `- Casos avaliados: ${review.evaluated}/50`,
+    `- Casos avaliados: ${review.evaluated}/${review.total}`,
     `- Casos pendentes: ${review.pending}`,
     `- Nota média: ${review.overall_average ?? 'não disponível'}`,
     `- Naturalidade: ${review.criteria.naturalidade ?? 'não disponível'}`,
     `- Acolhimento: ${review.criteria.acolhimento ?? 'não disponível'}`,
-    `- Humanizada venceu: ${review.blind.humanized}`,
-    `- Versão anterior venceu: ${review.blind.baseline}`,
-    `- Empates: ${review.blind.equivalent}`,
-    `- Ambas precisam melhorar: ${review.blind.both_bad}`,
+    `- Avaliações anteriores preservadas: ${summary.previous_review.evaluated}`,
     '',
     'Este resumo não aprova automaticamente o chatbot. A decisão final pertence a César.',
     ''
@@ -65,17 +62,18 @@ function ensurePrivateFeedback(rows) {
 function exportReview(options) {
   const { projectRoot, outputRoot, data, store, summary, now = () => new Date().toISOString() } = options;
   const timestamp = now();
-  const packageName = `chatbot-human-homologation-${timestampSlug(timestamp)}`;
+  const packageName = `chatbot-refined-rehomologation-${timestampSlug(timestamp)}`;
   const packageRoot = path.join(outputRoot, packageName);
   if (fs.existsSync(packageRoot)) {
     const error = new Error('export_package_already_exists');
     error.code = 'EXPORT_PACKAGE_ALREADY_EXISTS';
     throw error;
   }
-  const ratings = [...store.latest('humanized').values()];
+  const previousRatings = [...store.latest('humanized').values()];
+  const ratings = [...store.latest('refined').values()];
   const comparisons = [...store.latest('blind').values()];
   const free = [...store.latest('free').values()];
-  ensurePrivateFeedback({ ratings, comparisons, free });
+  ensurePrivateFeedback({ previousRatings, ratings, comparisons, free });
 
   const git = {
     branch: gitValue(projectRoot, ['branch', '--show-current']),
@@ -85,7 +83,7 @@ function exportReview(options) {
     'README.md': [
       '# Pacote de avaliação humana',
       '',
-      'Pacote sintético exportado pelo painel local da Mudança 003.',
+      'Pacote sintético exportado pelo painel local da Mudança 004.',
       `Branch: ${git.branch}`,
       `HEAD: ${git.head}`,
       `Data: ${timestamp}`,
@@ -94,7 +92,8 @@ function exportReview(options) {
       ''
     ].join('\n'),
     'HUMAN_REVIEW_SUMMARY.md': renderSummary(summary),
-    'HUMANIZED_RATINGS.json': `${JSON.stringify(ratings, null, 2)}\n`,
+    'PREVIOUS_HUMANIZED_RATINGS.json': `${JSON.stringify(previousRatings, null, 2)}\n`,
+    'REFINED_RATINGS_V2.json': `${JSON.stringify(ratings, null, 2)}\n`,
     'BLIND_COMPARISONS.json': `${JSON.stringify(comparisons, null, 2)}\n`,
     'FREE_CHAT_FEEDBACK.json': `${JSON.stringify(free, null, 2)}\n`,
     'FAILED_CASES.md': renderCases('Casos com nota 1 ou 2', ratings, (row) => row.rating <= 2),
@@ -111,7 +110,7 @@ function exportReview(options) {
   fs.mkdirSync(packageRoot, { recursive: true });
   for (const [name, content] of Object.entries(files)) fs.writeFileSync(path.join(packageRoot, name), content, 'utf8');
   const manifest = {
-    schema_version: '1.0.0',
+    schema_version: '2.0.0',
     synthetic: true,
     exported_at: timestamp,
     branch: git.branch,
@@ -120,7 +119,8 @@ function exportReview(options) {
     composer_version: data.composer_version,
     hashes: data.hashes,
     counts: {
-      ratings: ratings.length,
+      previous_ratings: previousRatings.length,
+      refined_ratings: ratings.length,
       comparisons: comparisons.length,
       free_chat_feedback: free.length
     },

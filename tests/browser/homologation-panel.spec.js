@@ -66,7 +66,7 @@ test('abre somente a experiência e mantém detalhes técnicos fechados', async 
   await expect(page.locator('#legacy-technical-support')).toBeHidden();
   await expect(page.getByText(/TATA-SC-/)).toHaveCount(0);
   await expect(page.getByText(/resposta esperada/i)).toBeHidden();
-  await openMode(page, /50 conversas/);
+  await openMode(page, /Nova homologação/);
   await expect(page.locator('#review-technical-button')).toBeHidden();
 });
 
@@ -86,13 +86,14 @@ test('Atendimento Livre mantém multiturno e reset separa a conversa', async ({ 
 
 test('avaliação exige voto e só então revela decisão técnica', async ({ page }) => {
   await open(page);
-  await openMode(page, /50 conversas/);
+  await openMode(page, /Nova homologação/);
   await completeRating(page, 'REV-001', 'Resposta muito clara.');
   await expect(page.locator('#review-state')).toContainText('Avaliação salva');
   await expect(page.locator('#review-technical-button')).toBeVisible();
   await page.locator('#review-technical-button').click();
   await expect(page.locator('#review-technical')).toContainText('Decisão do DeliveryOS');
   await expect(page.locator('#review-technical')).toContainText('Intenção');
+  await expect(page.locator('#review-technical')).toContainText('Resposta anterior × resposta refinada');
 });
 
 test('A/B permanece cego, determinístico após reload e revela somente após voto', async ({ page }) => {
@@ -122,7 +123,7 @@ test('não permite avançar na comparação sem voto', async ({ page }) => {
 
 test('voto persiste após reload e filtro remove caso já avaliado', async ({ page }) => {
   await open(page);
-  await openMode(page, /50 conversas/);
+  await openMode(page, /Nova homologação/);
   await page.locator('#review-select').selectOption('REV-001');
   await expect(page.locator('#review-technical-button')).toBeVisible();
   await page.locator('#only-pending').check();
@@ -132,7 +133,7 @@ test('voto persiste após reload e filtro remove caso já avaliado', async ({ pa
 test('comentário com PII é bloqueado e marcador não alcança arquivos', async ({ page }) => {
   const marker = 'controle-negativo-unico@example.test';
   await open(page);
-  await openMode(page, /50 conversas/);
+  await openMode(page, /Nova homologação/);
   await completeRating(page, 'REV-004', `Contato ${marker}`);
   await expect(page.locator('#review-state')).toContainText('dado pessoal');
   const disk = filesBelow(root).map((file) => fs.readFileSync(file, 'utf8')).join('\n');

@@ -1,0 +1,36 @@
+{
+  "schema_version": "deliveryos-conversation-refined-metrics-v2",
+  "synthetic": true,
+  "seed": "TATA-SERVICE-REFINEMENT-V2",
+  "cases": 58,
+  "turns": 64,
+  "validation": {
+    "passed": 64,
+    "failed": 0
+  },
+  "gates": {
+    "available_knowledge_unused": {
+      "passed": 64,
+      "failed": 0
+    },
+    "humanized_but_unhelpful": {
+      "passed": 64,
+      "failed": 0
+    }
+  },
+  "knowledge": {
+    "selected_turns": 50,
+    "source_traceable_turns": 50,
+    "legitimate_fallback_turns": 52,
+    "suspect_fallback_turns": 0
+  },
+  "actionability": {
+    "turns_with_direction": 11
+  },
+  "safety": {
+    "external_system_accessed": false,
+    "real_driver_used": false,
+    "raw_message_persisted": false
+  },
+  "canonical_hash": "5fb8089e3d28986463f3ef779021fb92d4f7789a0fb3b18bc7507cd71e8fe783"
+}

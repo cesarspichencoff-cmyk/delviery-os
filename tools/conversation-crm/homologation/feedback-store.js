@@ -8,6 +8,7 @@ const { requireSafeComment } = require('./privacy');
 
 const FILES = Object.freeze({
   humanized: 'humanized-ratings.jsonl',
+  refined: 'refined-ratings-v2.jsonl',
   blind: 'blind-comparisons.jsonl',
   free: 'free-chat-feedback.jsonl'
 });
@@ -86,7 +87,7 @@ class FeedbackStore {
     const mode = body.mode;
     if (!FILES[mode]) throw Object.assign(new Error('feedback_mode_invalid'), { code: 'FEEDBACK_MODE_INVALID' });
     const reviewId = String(body.review_id || '');
-    if (!/^(?:REV-\d{3}|CHAT-\d{4}-\d{4})$/.test(reviewId)) throw Object.assign(new Error('review_id_invalid'), { code: 'REVIEW_ID_INVALID' });
+    if (!/^(?:REV-\d{3}|NEW-\d{3}|CHAT-\d{4}-\d{4})$/.test(reviewId)) throw Object.assign(new Error('review_id_invalid'), { code: 'REVIEW_ID_INVALID' });
     const recordKey = `${mode}:${reviewId}`;
     const previous = this.latest(mode).get(recordKey);
     const tags = [...new Set((Array.isArray(body.tags) ? body.tags : []).map(String))];
@@ -111,7 +112,7 @@ class FeedbackStore {
       revision_reason: previous ? requireSafeComment(body.revision_reason || 'Revisão do voto') : null
     };
     if (!/^[a-f0-9]{64}$/.test(base.response_hash)) throw Object.assign(new Error('response_hash_invalid'), { code: 'RESPONSE_HASH_INVALID' });
-    if (mode === 'humanized') {
+    if (mode === 'humanized' || mode === 'refined') {
       const rating = Number(body.rating);
       if (!Number.isInteger(rating) || rating < 1 || rating > 5) throw Object.assign(new Error('rating_invalid'), { code: 'RATING_INVALID' });
       const criteria = {};
@@ -120,7 +121,7 @@ class FeedbackStore {
         if (!Number.isInteger(value) || value < 1 || value > 5) throw Object.assign(new Error('criteria_invalid'), { code: 'CRITERIA_INVALID' });
         criteria[key] = value;
       }
-      Object.assign(base, { rating, criteria, evaluated_version: 'humanized' });
+      Object.assign(base, { rating, criteria, evaluated_version: mode });
     } else if (mode === 'blind') {
       const choice = String(body.choice || '');
       if (!['A', 'B', 'equivalent', 'both_bad'].includes(choice)) throw Object.assign(new Error('blind_choice_invalid'), { code: 'BLIND_CHOICE_INVALID' });
@@ -158,7 +159,7 @@ class FeedbackStore {
 
   deleteSyntheticFeedback(confirmation) {
     if (confirmation !== 'DELETE_SYNTHETIC_FEEDBACK') throw Object.assign(new Error('confirmation_required'), { code: 'CONFIRMATION_REQUIRED' });
-    for (const name of Object.values(FILES)) fs.rmSync(path.join(this.root, name), { force: true });
+    for (const mode of ['refined', 'free']) fs.rmSync(path.join(this.root, FILES[mode]), { force: true });
     this.state = { schema_version: '1.0.0', chat_session: 1, chat_turn: 0, updated_at: this.now(), synthetic: true };
     this.persistState();
     return { deleted: true };

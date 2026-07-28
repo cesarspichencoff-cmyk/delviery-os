@@ -7,13 +7,13 @@ const { loadHomologationData, publicBlindCase, publicReviewCase, sha256 } = requ
 const { FeedbackStore } = require('./feedback-store');
 const { exportReview } = require('./exporter');
 
-function asPublicTechnical(item) {
+function asPublicTechnical(item, field = 'technical_refined') {
   return {
     review_id: item.review_id,
     category: item.category,
     turns: item.turns.map((turn) => ({
       turn: turn.turn,
-      ...turn.technical
+      ...(turn[field] || {})
     }))
   };
 }
@@ -23,7 +23,8 @@ function average(values) {
 }
 
 function summarize(data, store) {
-  const ratings = [...store.latest('humanized').values()];
+  const previousRatings = [...store.latest('humanized').values()];
+  const ratings = [...store.latest('refined').values()];
   const comparisons = [...store.latest('blind').values()];
   const free = [...store.latest('free').values()];
   const criteria = {};
@@ -32,7 +33,7 @@ function summarize(data, store) {
   }
   const tags = {};
   [...ratings, ...free].flatMap((row) => row.tags).forEach((tag) => { tags[tag] = (tags[tag] || 0) + 1; });
-  const categories = new Set(ratings.map((row) => data.cases.find((item) => item.review_id === row.review_id)?.category).filter(Boolean));
+  const categories = new Set(ratings.map((row) => data.rehomologation_cases.find((item) => item.review_id === row.review_id)?.category).filter(Boolean));
   const lowCases = ratings.filter((row) => row.rating <= 2).map((row) => row.review_id);
   const ab = { humanized: 0, baseline: 0, equivalent: 0, both_bad: 0 };
   comparisons.forEach((row) => { ab[row.winner] = (ab[row.winner] || 0) + 1; });
@@ -40,19 +41,26 @@ function summarize(data, store) {
     technical_result: {
       corpus_cases: data.cases.length,
       corpus_turns: data.cases.reduce((sum, item) => sum + item.turns.length, 0),
-      approved_artifact_hash: data.hashes.humanized
+      approved_artifact_hash: data.hashes.refined
+    },
+    previous_review: {
+      preserved: true,
+      evaluated: previousRatings.length,
+      overall_average: average(previousRatings.map((row) => row.rating)),
+      low_rating_cases: previousRatings.filter((row) => row.rating <= 2).map((row) => row.review_id)
     },
     cesar_review: {
       evaluated: ratings.length,
-      pending: data.cases.length - ratings.length,
-      completion_percent: Math.round((ratings.length / data.cases.length) * 100),
+      total: data.rehomologation_cases.length,
+      pending: data.rehomologation_cases.length - ratings.length,
+      completion_percent: Math.round((ratings.length / data.rehomologation_cases.length) * 100),
       categories_evaluated: categories.size,
       overall_average: average(ratings.map((row) => row.rating)),
       criteria,
       blind: ab,
       tags: Object.entries(tags).sort((a, b) => b[1] - a[1]).map(([tag, count]) => ({ tag, count })),
       low_rating_cases: lowCases,
-      comments_pending_analysis: ratings.filter((row) => row.comment).length + comparisons.filter((row) => row.comment).length + free.filter((row) => row.comment).length,
+      comments_pending_analysis: ratings.filter((row) => row.comment).length + free.filter((row) => row.comment).length,
       incorrect_information_cases: ratings.filter((row) => row.tags.includes('informacao_errada')).map((row) => row.review_id),
       repeated_question_cases: ratings.filter((row) => row.tags.includes('pergunta_repetida')).map((row) => row.review_id)
     },
@@ -91,14 +99,14 @@ class HomologationService {
 
   bootstrap() {
     const summary = summarize(this.data, this.store);
-    const rated = new Set([...this.store.latest('humanized').keys()].map((key) => key.split(':')[1]));
+    const rated = new Set([...this.store.latest('refined').keys()].map((key) => key.split(':')[1]));
     const compared = new Set([...this.store.latest('blind').keys()].map((key) => key.split(':')[1]));
     return {
       ok: true,
       synthetic: true,
-      panel_version: 'change-003-v1',
+      panel_version: 'change-004-v2',
       warning: 'Não inclua dados pessoais ou informações reais de clientes.',
-      review_cases: this.data.cases.map((item) => ({ ...publicReviewCase(item), evaluated: rated.has(item.review_id) })),
+      review_cases: this.data.rehomologation_cases.map((item) => ({ ...publicReviewCase(item), evaluated: rated.has(item.review_id) })),
       blind_cases: this.data.cases.map((item) => ({ ...publicBlindCase(item), evaluated: compared.has(item.review_id) })),
       bank: this.data.bank,
       summary
@@ -106,14 +114,15 @@ class HomologationService {
   }
 
   findCase(reviewId) {
-    const item = this.data.cases.find((candidate) => candidate.review_id === reviewId);
+    const item = [...this.data.cases, ...this.data.rehomologation_cases].find((candidate) => candidate.review_id === reviewId);
     if (!item) throw Object.assign(new Error('review_case_not_found'), { code: 'REVIEW_CASE_NOT_FOUND' });
     return item;
   }
 
   feedback(body) {
     const item = body.mode === 'free' ? null : this.findCase(String(body.review_id || ''));
-    const responseHash = item ? sha256(item.turns.map((turn) => turn.humanized).join('\n')) : String(body.response_hash || '');
+    const responseKey = body.mode === 'refined' ? 'refined' : 'humanized';
+    const responseHash = item ? sha256(item.turns.map((turn) => turn[responseKey] || '').join('\n')) : String(body.response_hash || '');
     const saved = this.store.record(body, {
       corpusVersion: this.data.corpus_version,
       composerVersion: this.data.composer_version,
@@ -124,13 +133,23 @@ class HomologationService {
   }
 
   technical(mode, reviewId) {
-    if (!['humanized', 'blind'].includes(mode)) throw Object.assign(new Error('technical_mode_invalid'), { code: 'TECHNICAL_MODE_INVALID' });
+    if (!['humanized', 'refined', 'blind'].includes(mode)) throw Object.assign(new Error('technical_mode_invalid'), { code: 'TECHNICAL_MODE_INVALID' });
     if (!this.store.hasVote(mode, reviewId)) throw Object.assign(new Error('vote_required'), { code: 'VOTE_REQUIRED' });
     const item = this.findCase(reviewId);
     return {
       ok: true,
-      decision: asPublicTechnical(item),
-      reveal: mode === 'blind' ? { A: item.order.A, B: item.order.B } : undefined
+      decision: asPublicTechnical(item, mode === 'humanized' || mode === 'blind' ? 'technical' : 'technical_refined'),
+      reveal: mode === 'blind' ? { A: item.order.A, B: item.order.B } : undefined,
+      comparison: mode === 'refined' && item.turns.every((turn) => typeof turn.humanized === 'string')
+        ? {
+            label: 'Resposta anterior × resposta refinada',
+            turns: item.turns.map((turn) => ({
+              turn: turn.turn,
+              previous: turn.humanized,
+              refined: turn.refined
+            }))
+          }
+        : undefined
     };
   }
 

@@ -58,7 +58,10 @@ function allowedNumbers(plan) {
 }
 
 function questionSentences(text) {
-  return String(text || '').split(/(?<=[.!?])\s+/u).filter((part) => part.includes('?'));
+  return String(text || '')
+    .replace(URL_PATTERN, ' ')
+    .split(/(?<=[.!?])\s+/u)
+    .filter((part) => part.includes('?'));
 }
 
 function validatePostComposition(input = {}) {

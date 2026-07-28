@@ -35,7 +35,7 @@ function setupService(t, options = {}) {
 
 function validRating(reviewId = 'REV-001') {
   return {
-    mode: 'humanized',
+    mode: 'refined',
     review_id: reviewId,
     rating: 4,
     criteria: {
@@ -59,12 +59,15 @@ function allFiles(root) {
   });
 }
 
-test('fontes aprovadas alimentam 50 conversas, 56 turnos e 32 áreas sem regeneração', () => {
+test('fontes aprovadas alimentam a re-homologação refinada e preservam o banco anterior', () => {
   const data = loadHomologationData(projectRoot);
   assert.equal(data.cases.length, 50);
   assert.equal(data.cases.reduce((sum, item) => sum + item.turns.length, 0), 56);
+  assert.equal(data.rehomologation_cases.length, 51);
+  assert.equal(data.rehomologation_cases.filter((item) => item.review_id.startsWith('NEW-')).length, 8);
   assert.equal(data.bank.length, 32);
   assert.equal(data.hashes.humanized, 'cfe462fe00147c6b0642fbd9e9fe15f19c8120781d5829d62f3dda663814dc04');
+  assert.match(data.hashes.refined, /^[a-f0-9]{64}$/);
 });
 
 test('ordem A/B é determinística e não revela versão no payload público', (t) => {
@@ -80,13 +83,13 @@ test('ordem A/B é determinística e não revela versão no payload público', (
 
 test('detalhes técnicos ficam bloqueados até existir voto do caso correto', (t) => {
   const { service } = setupService(t);
-  assert.throws(() => service.technical('humanized', 'REV-001'), { code: 'VOTE_REQUIRED' });
+  assert.throws(() => service.technical('refined', 'REV-001'), { code: 'VOTE_REQUIRED' });
   service.feedback(validRating());
-  const result = service.technical('humanized', 'REV-001');
+  const result = service.technical('refined', 'REV-001');
   assert.equal(result.ok, true);
   assert.equal(result.decision.review_id, 'REV-001');
   assert.equal(result.decision.turns.length, 1);
-  assert.throws(() => service.technical('humanized', 'REV-002'), { code: 'VOTE_REQUIRED' });
+  assert.throws(() => service.technical('refined', 'REV-004'), { code: 'VOTE_REQUIRED' });
 });
 
 test('feedback humano persiste em JSONL e reaparece após reinício do store', (t) => {
@@ -99,16 +102,16 @@ test('feedback humano persiste em JSONL e reaparece após reinício do store', (
     responseHash: 'a'.repeat(64)
   });
   const second = new FeedbackStore(options);
-  assert.equal(second.latest('humanized').size, 1);
-  assert.equal(second.hasVote('humanized', 'REV-001'), true);
-  assert.equal(fs.readFileSync(path.join(root, 'humanized-ratings.jsonl'), 'utf8').trim().split(/\r?\n/).length, 1);
+  assert.equal(second.latest('refined').size, 1);
+  assert.equal(second.hasVote('refined', 'REV-001'), true);
+  assert.equal(fs.readFileSync(path.join(root, 'refined-ratings-v2.jsonl'), 'utf8').trim().split(/\r?\n/).length, 1);
 });
 
 test('revisão é append-only e o dashboard conta somente o voto mais recente', (t) => {
   const { service, root } = setupService(t);
   service.feedback(validRating());
   service.feedback({ ...validRating(), rating: 2, tags: ['seco'], revision_reason: 'Reavaliação após leitura completa.' });
-  const rows = service.store.rows('humanized');
+  const rows = service.store.rows('refined');
   const summary = service.summary().summary.cesar_review;
   assert.equal(rows.length, 2);
   assert.equal(rows[1].supersedes_review_event_id, rows[0].review_event_id);
@@ -132,7 +135,7 @@ test('telefone, e-mail, token, pedido, endereço e cookie são recusados antes d
   });
   const disk = allFiles(root).map((file) => fs.readFileSync(file, 'utf8')).join('\n');
   markers.forEach((marker) => assert.equal(disk.includes(marker), false));
-  assert.equal(service.store.rows('humanized').length, 0);
+  assert.equal(service.store.rows('refined').length, 0);
 });
 
 test('Atendimento Livre retorna somente experiência pública e reset separa contextos', (t) => {
@@ -180,10 +183,26 @@ test('exportação contém manifesto, HEAD, hashes e zero mensagem bruta de chat
   const manifest = JSON.parse(fs.readFileSync(path.join(packageRoot, 'MANIFEST.json'), 'utf8'));
   assert.equal(manifest.privacy_scan.passed, true);
   assert.match(manifest.head, /^[a-f0-9]{40}$/);
-  assert.equal(manifest.hashes.humanized, service.data.hashes.humanized);
+  assert.equal(manifest.hashes.refined, service.data.hashes.refined);
   const disk = allFiles(packageRoot).map((file) => fs.readFileSync(file, 'utf8')).join('\n');
   assert.equal(disk.includes('Quero entender o horário de funcionamento.'), false);
   assert.equal(fs.existsSync(path.join(packageRoot, 'APPROVED_CASES.md')), true);
+  assert.equal(fs.existsSync(path.join(packageRoot, 'PREVIOUS_HUMANIZED_RATINGS.json')), true);
+  assert.equal(fs.existsSync(path.join(packageRoot, 'REFINED_RATINGS_V2.json')), true);
+});
+
+test('votos anteriores permanecem separados da nova rodada e comparação só abre após novo voto', (t) => {
+  const { service } = setupService(t);
+  service.feedback({ ...validRating(), mode: 'humanized' });
+  assert.equal(service.store.latest('humanized').size, 1);
+  assert.equal(service.store.latest('refined').size, 0);
+  assert.equal(service.bootstrap().summary.previous_review.evaluated, 1);
+  assert.throws(() => service.technical('refined', 'REV-001'), { code: 'VOTE_REQUIRED' });
+  service.feedback(validRating());
+  const details = service.technical('refined', 'REV-001');
+  assert.equal(details.comparison.turns.length, 1);
+  assert.equal(typeof details.comparison.turns[0].previous, 'string');
+  assert.equal(typeof details.comparison.turns[0].refined, 'string');
 });
 
 test('servidor expõe fluxo de homologação sem remover as rotas históricas', async (t) => {
@@ -200,11 +219,11 @@ test('servidor expõe fluxo de homologação sem remover as rotas históricas', 
   t.after(async () => { server.close(); await once(server, 'close'); });
   const base = `http://127.0.0.1:${server.address().port}`;
   const bootstrap = await (await fetch(`${base}/api/homologation/bootstrap`)).json();
-  assert.equal(bootstrap.review_cases.length, 50);
+  assert.equal(bootstrap.review_cases.length, 51);
   assert.equal(bootstrap.bank.length, 32);
   const historical = await (await fetch(`${base}/api/cases`)).json();
   assert.equal(historical.cases.length, 200);
-  const technical = await fetch(`${base}/api/homologation/technical?mode=humanized&review_id=REV-001`);
+  const technical = await fetch(`${base}/api/homologation/technical?mode=refined&review_id=REV-001`);
   assert.equal(technical.status, 400);
   assert.equal((await technical.json()).error_code, 'VOTE_REQUIRED');
 });

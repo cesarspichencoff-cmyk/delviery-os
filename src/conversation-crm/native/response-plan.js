@@ -168,6 +168,11 @@ function buildResponsePlan(input = {}) {
     conversation,
     authorized_text: input.authorized_text
   });
+  const hasReservationSelfService = ['reservation', 'waitlist'].includes(strategyId)
+    && knowledge.direct_answer.some((message) => /https:\/\/reservation\.getin\.app\//iu.test(message));
+  if (hasReservationSelfService) {
+    mandatoryQuestions = [];
+  }
   if (classification.intent === 'conversation.ambiguous' && knowledge.direct_answer.length) {
     mandatoryQuestions = [];
   }
