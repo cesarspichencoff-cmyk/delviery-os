@@ -153,7 +153,7 @@ function buildResponsePlan(input = {}) {
     ambiguity: 1,
     continuation: 1
   }[strategyId] || 2;
-  const mandatoryQuestions = pendingQuestions.slice(0, questionLimit);
+  let mandatoryQuestions = pendingQuestions.slice(0, questionLimit);
   const newFacts = safeEntityFacts(classification);
   const suppliedKnownFacts = Array.isArray(conversation.known_facts) ? conversation.known_facts.filter((fact) => fact && typeof fact === 'object') : [];
   const contextualFacts = Object.entries(conversation.context || {})
@@ -168,6 +168,9 @@ function buildResponsePlan(input = {}) {
     conversation,
     authorized_text: input.authorized_text
   });
+  if (classification.intent === 'conversation.ambiguous' && knowledge.direct_answer.length) {
+    mandatoryQuestions = [];
+  }
   const knowledgeSurface = extractSurfaceFacts(
     knowledge.selected.map((item) => item.customer_message).filter(Boolean).join(' ')
   );
@@ -203,6 +206,7 @@ function buildResponsePlan(input = {}) {
     action_mode: actionMode,
     channel_guidance: [...knowledge.playbook.channel_guidance],
     explanation_needed: [...knowledge.explanations],
+    direction: [...knowledge.directions],
     optional_enrichment: knowledge.selected
       .filter((item) => item.purpose !== 'direct_answer')
       .map((item) => item.knowledge_id),
@@ -249,7 +253,7 @@ function validateResponsePlan(plan) {
     'direct_answer', 'knowledge_candidates', 'knowledge_selected',
     'knowledge_sources_used', 'knowledge_rejected', 'rejection_reason',
     'action_playbook', 'action_available', 'action_mode',
-    'channel_guidance', 'explanation_needed', 'optional_enrichment',
+    'channel_guidance', 'explanation_needed', 'direction', 'optional_enrichment',
     'humanity_requirements'
   ];
   const missing = required.filter((field) => plan?.[field] == null);
@@ -269,6 +273,7 @@ function validateResponsePlan(plan) {
     !Array.isArray(plan?.knowledge_selected),
     !Array.isArray(plan?.knowledge_sources_used),
     !Array.isArray(plan?.humanity_requirements),
+    !Array.isArray(plan?.direction),
     new Set(plan?.mandatory_questions || []).size !== (plan?.mandatory_questions || []).length,
     (plan?.verified_actions || []).some((action) => (plan?.pending_actions || []).includes(action))
   ].some(Boolean);

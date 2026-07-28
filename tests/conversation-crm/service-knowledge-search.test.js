@@ -49,7 +49,8 @@ test('busca não para no primeiro fato e combina experiência e cardápio', () =
   });
   assert.equal(result.selected.some((item) => item.knowledge_id === 'engine.authorized_surface'), true);
   assert.equal(result.selected.some((item) => item.knowledge_id === 'restaurant.experiences'), true);
-  assert.equal(result.direct_answer.length >= 2, true);
+  assert.equal(result.selected.length >= 2, true);
+  assert.match(result.direct_answer.join(' '), /Almoço Executivo.*Sugestão Tatá/u);
 });
 
 test('procedimento iFood só é selecionado quando o canal é iFood', () => {

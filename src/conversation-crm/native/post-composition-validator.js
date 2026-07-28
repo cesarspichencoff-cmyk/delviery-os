@@ -155,9 +155,10 @@ function safeResponseAfterRejection(input = {}) {
   let text;
 
   if (plan.gravity === 'critical') {
-    text = `Sinto muito pelo que aconteceu. O caso permanece aberto para acompanhamento da equipe de qualidade e da gestão, sem tirar conclusão médica nem apontar causa.${questions ? ` ${questions}` : ''}`;
+    const guidance = [...(plan.direct_answer || []), ...(plan.explanation_needed || [])].slice(0, 2).join(' ');
+    text = `Sinto muito pelo que aconteceu. ${guidance || 'Esse relato precisa de acompanhamento da equipe de qualidade e da gestão.'}${questions ? ` ${questions}` : ''}`;
   } else if (plan.strategy_id === 'missing_item') {
-    text = `Entendi${item ? ` a falta de ${item}` : ' o item faltante'}. Não vou presumir reposição, crédito ou reembolso.${questions ? ` ${questions}` : ''}`;
+    text = `Entendi${item ? ` a falta de ${item}` : ' o item faltante'}. Vou orientar o próximo passo pelo canal do pedido.${questions ? ` ${questions}` : ''}`;
   } else if (plan.strategy_id === 'large_group') {
     text = `${party ? `Como são ${party} pessoas, e` : 'E'}sse atendimento precisa de acompanhamento operacional antes de confirmar fila ou reserva.${questions ? ` ${questions}` : ''}`;
   } else if (plan.authorized_surface?.text && plan.response_goal === 'inform') {

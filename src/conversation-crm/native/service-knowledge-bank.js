@@ -57,7 +57,6 @@ const SERVICE_KNOWLEDGE = deepFreeze([
   entry('restaurant.experiences', 'experiences',
     `O TATÁ trabalha à la carte. Também há o Almoço Executivo nos almoços de dias úteis e a Sugestão Tatá no jantar, fins de semana e feriados. Você pode ver os pratos e preços em ${publicInfo.menus.institutional_with_prices}`,
     {
-      intents: ['information.menu'],
       triggers: [/\brod[ií]zio|experi[eê]ncia do chef|menu degusta|almoco executivo|sugest[aã]o tat[aá]/iu],
       sources: ['TATA_OPERATIONAL_PUBLIC_INFO_V1'],
       priority: 90
@@ -81,7 +80,6 @@ const SERVICE_KNOWLEDGE = deepFreeze([
   entry('delivery.options', 'own_delivery',
     `Você pode pedir pelo delivery próprio em ${publicInfo.delivery.own_delivery_url} ou procurar por TATÁ Sushi no aplicativo do iFood.`,
     {
-      intents: ['information.menu'],
       triggers: [/\bdelivery pr[oó]prio|onde.*ifood|encontro.*ifood|pedir.*ifood/iu],
       sources: ['TATA_OPERATIONAL_PUBLIC_INFO_V1', 'CESAR_HUMAN_FEEDBACK_2026-07-28'],
       priority: 95
@@ -103,7 +101,7 @@ const SERVICE_KNOWLEDGE = deepFreeze([
       prohibited: ['confirmar_pedido_sem_resultado', 'inventar_previsao']
     }),
   entry('ifood.problem_path', 'ifood',
-    'No iFood, abra o pedido em Pedidos, toque em Ajuda e escolha “Tenho um problema com meu pedido”. Selecione o item afetado, descreva o que aconteceu e envie as evidências solicitadas no aplicativo.',
+    'Registre a solicitação pelo pedido no iFood: abra Pedidos, toque em Ajuda e escolha “Tenho um problema com meu pedido”. Selecione o item afetado, descreva o que aconteceu e envie as evidências solicitadas no aplicativo.',
     {
       intents: ALL_ORDER_PROBLEMS,
       sources: ['ifood:problemas-com-o-pedido:2026-04-06', 'ifood:suporte:2026-04-01'],
@@ -165,7 +163,7 @@ const SERVICE_KNOWLEDGE = deepFreeze([
       priority: 70
     }),
   entry('food_safety.health_service', 'food_safety',
-    'Por segurança, procure um serviço de saúde o mais rápido possível. A equipe também precisa acompanhar o relato, sem afirmar diagnóstico ou causa.',
+    'Por segurança, procure um serviço de saúde o mais rápido possível. A equipe de qualidade e da gestão também precisa acompanhar o relato, sem concluir clinicamente nem apontar causa.',
     {
       intents: ['occurrence.freshness', 'occurrence.allergen', 'occurrence.health_symptom'],
       sources: ['anvisa:nutrivigilancia:consultado-2026-07-28', 'ministerio-saude:dtha:consultado-2026-07-28'],
@@ -185,7 +183,6 @@ const SERVICE_KNOWLEDGE = deepFreeze([
   entry('food_safety.multiple_people', 'food_safety',
     'Como mais de uma pessoa foi afetada, o relato exige acompanhamento imediato e deve preservar sintomas, momento de início, item e referência do pedido.',
     {
-      intents: ['occurrence.health_symptom'],
       triggers: [/\bduas pessoas|dois afetad|mais de uma pessoa|v[aá]rias pessoas/iu],
       sources: ['ministerio-saude:dtha:consultado-2026-07-28'],
       priority: 100,
@@ -270,7 +267,8 @@ function searchServiceKnowledge(input = {}) {
     .sort((left, right) => right.priority - left.priority || left.id.localeCompare(right.id));
   const authorized = String(input.authorized_text || '').trim();
   const authorizedUseful = Boolean(authorized)
-    && (classification.information_source || !/^(?:Vou registrar somente|Quero entender bem|Ainda não tenho)/u.test(authorized));
+    && !classification.intent?.startsWith('occurrence.')
+    && (classification.information_source || !/^(?:\[REDACTED_|Vou registrar somente|Quero entender bem|Ainda não tenho)/u.test(authorized));
   const candidates = [];
   if (authorized) {
     candidates.push({
@@ -300,6 +298,7 @@ function searchServiceKnowledge(input = {}) {
     });
   }
   const selected = candidates.filter((item) => item.selected);
+  const specializedDirect = selected.filter((item) => item.knowledge_id !== 'engine.authorized_surface' && item.purpose === 'direct_answer');
   const selectedPlaybook = selected.find((item) => item.playbook)?.playbook || coverage.action_playbook;
   const playbook = actionPlaybookFor(selectedPlaybook) || basePlaybook;
   return deepFreeze({
@@ -311,7 +310,10 @@ function searchServiceKnowledge(input = {}) {
     selected,
     rejected: candidates.filter((item) => !item.selected),
     knowledge_sources_used: [...new Set(selected.flatMap((item) => item.sources))],
-    direct_answer: selected.filter((item) => item.purpose === 'direct_answer').map((item) => item.customer_message),
+    direct_answer: (specializedDirect.length
+      ? specializedDirect
+      : selected.filter((item) => item.purpose === 'direct_answer'))
+      .map((item) => item.customer_message),
     explanations: selected.filter((item) => item.purpose === 'explanation').map((item) => item.customer_message),
     directions: selected.filter((item) => item.purpose === 'direction').map((item) => item.customer_message)
   });

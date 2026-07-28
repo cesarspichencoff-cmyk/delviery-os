@@ -110,6 +110,39 @@ function minimalQuestions(fields = [], options = {}) {
   return selected.map((field) => QUESTION_LABELS[field]).join(' ');
 }
 
+function uniqueMessages(values = []) {
+  const seen = new Set();
+  return values.filter((value) => {
+    const key = normalize(value);
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function knowledgeMessages(plan, options = {}) {
+  const messages = uniqueMessages([
+    ...(plan.direct_answer || []),
+    ...(options.includeExplanations === false ? [] : (plan.explanation_needed || [])),
+    ...(options.includeDirections === false ? [] : (plan.direction || []))
+  ]);
+  return messages.slice(0, options.limit || messages.length).map(sentence).join(' ');
+}
+
+function warmClosing(plan, conversation, variationContext) {
+  if (['sensitive', 'critical'].includes(plan.gravity)) return '';
+  const text = normalize(conversation.source_text);
+  if (/\b(?:endereco|horario|abre|funcionamento)\b/u.test(text)) {
+    return deterministicVariant([
+      'Vai ser um prazer receber você.',
+      'Esperamos ver você por aqui.'
+    ], variationContext, 'visit_closing');
+  }
+  if (plan.action_playbook === 'experiences') return 'Se quiser, também posso te ajudar a escolher a experiência que combina melhor com o momento.';
+  if (plan.action_playbook === 'own_delivery') return 'Se quiser, me diga qual opção você prefere e eu te oriento pelo caminho certo.';
+  return '';
+}
+
 function acknowledgement(plan, variationContext, kind = 'neutral') {
   const components = TATA_WARM_PROFILE.components;
   if (plan.conversation_stage === 'continuation') return deterministicVariant(components.continuation, variationContext, 'continuation');
@@ -169,24 +202,33 @@ function fallbackText(input) {
 }
 
 function informationText(input) {
-  const { plan, authorizedText, variationContext } = input;
-  if (!authorizedText) return fallbackText(input);
-  if (plan.strategy_id === 'information_direct' || plan.length === 'short') return sentence(authorizedText);
-  return `${acknowledgement(plan, variationContext)} ${sentence(authorizedText)}`;
+  const { plan, authorizedText, variationContext, conversation } = input;
+  const informed = knowledgeMessages(plan, { limit: 2 });
+  const base = informed || (authorizedText ? sentence(authorizedText) : '');
+  if (!base) return fallbackText(input);
+  const closing = warmClosing(plan, conversation, variationContext);
+  if (plan.customer_state === 'interested' && plan.conversation_stage === 'opening') {
+    return `${acknowledgement(plan, variationContext)} ${base}${closing ? ` ${closing}` : ''}`;
+  }
+  return `${base}${closing ? ` ${closing}` : ''}`;
 }
 
 function reservationText(input) {
   const { classification, plan, authorizedText, conversation, variationContext } = input;
   const source = String(conversation.source_text || '');
   const asksToAct = /\b(?:quero fazer|quero reservar|reservar para|confirmar minha|entrar na fila)\b/iu.test(source);
-  const question = asksToAct || plan.conversation_stage === 'continuation' ? minimalQuestions(plan.mandatory_questions, { limit: 1 }) : '';
+  const hasSelfServiceLink = (plan.authorized_surface?.links || []).some((link) => /reservation\.getin\.app/iu.test(link));
+  const question = (asksToAct || plan.conversation_stage === 'continuation') && !hasSelfServiceLink
+    ? minimalQuestions(plan.mandatory_questions, { limit: 1 })
+    : '';
   const intro = plan.conversation_stage === 'continuation' ? acknowledgement(plan, variationContext) : 'Claro.';
   const partySize = entityValue(classification, plan, 'party_size');
   if (plan.conversation_stage === 'continuation') {
     const continuity = partySize ? `${intro.replace(/[.]$/u, '')}, para ${partySize} pessoas.` : intro;
     return `${continuity}${question ? ` ${question}` : ''}`;
   }
-  return `${intro} ${sentence(authorizedText)}${question ? ` ${question}` : ''}`;
+  const answer = knowledgeMessages(plan, { limit: 2 }) || sentence(authorizedText);
+  return `${intro} ${answer}${question ? ` ${question}` : ''} Se precisar, eu sigo com você por aqui.`;
 }
 
 function largeGroupText(input) {
@@ -194,7 +236,7 @@ function largeGroupText(input) {
   const size = entityValue(classification, plan, 'party_size');
   const intro = plan.conversation_stage === 'continuation' ? acknowledgement(plan, variationContext) : 'Perfeito.';
   const question = minimalQuestions(plan.mandatory_questions, { limit: 2 });
-  return `${intro}${size ? ` Como são ${size} pessoas,` : ''} esse atendimento precisa de acompanhamento operacional antes de confirmar fila ou reserva.${question ? ` ${question}` : ''}`;
+  return `${intro}${size ? ` Como são ${size} pessoas,` : ''} a disponibilidade precisa ser verificada antes de confirmar mesa, fila ou reserva.${question ? ` ${question}` : ''}`;
 }
 
 function occurrenceText(input) {
@@ -205,10 +247,12 @@ function occurrenceText(input) {
   const question = minimalQuestions(plan.mandatory_questions, { limit: sensitive ? 2 : 2 });
 
   if (plan.strategy_id === 'food_safety') {
-    return `${intro} Vou preservar ${issue} para acompanhamento da equipe de qualidade e da gestão, sem tirar conclusão médica nem apontar causa.${question ? ` ${question}` : ''}`;
+    const guidance = knowledgeMessages(plan, { limit: 3 });
+    return `${intro} Entendi ${issue}. ${guidance || 'Esse relato é sério e precisa de acompanhamento da equipe de qualidade e da gestão.'}${question ? ` ${question}` : ''}`;
   }
   if (plan.strategy_id === 'quality') {
-    return `${intro} Vou preservar ${issue} para análise da equipe de qualidade e da gestão, sem antecipar causa ou compensação.${question ? ` ${question}` : ''}`;
+    const guidance = knowledgeMessages(plan, { limit: 2 });
+    return `${intro} Entendi ${issue}. ${guidance || 'Vou preservar o relato para análise da equipe de qualidade e da gestão, sem antecipar a causa.'}${question ? ` ${question}` : ''}`;
   }
   if (classification.intent === 'occurrence.refund_request' && authorizedText) {
     return sentence(authorizedText);
@@ -216,14 +260,27 @@ function occurrenceText(input) {
   if (classification.intent === 'occurrence.missing_item') {
     const item = entityValue(classification, plan, 'item_name');
     const concrete = item ? `a falta de ${item}` : 'o item faltante';
-    if (classification.information_source && authorizedText) {
-      const operationalText = sentence(authorizedText).replace(/^Sinto muito pelo ocorrido\.\s*/iu, '');
-      return `${intro} Sobre ${concrete}. ${operationalText}`;
-    }
-    const next = question || 'O caso permanece aberto com as informações já fornecidas.';
-    return `${intro} Sobre ${concrete}, não vou presumir reposição, crédito ou reembolso. ${next}`;
+    const guidance = knowledgeMessages(plan, { limit: 2 });
+    const next = [guidance, question].filter(Boolean).join(' ')
+      || 'Vou preservar as informações já fornecidas para o próximo passo correto.';
+    return `${intro} Entendi ${concrete}. ${next}`;
   }
-  return `${intro} Sobre ${issue}, não vou antecipar uma conclusão ou compensação.${question ? ` ${question}` : ''}`;
+  const guidance = knowledgeMessages(plan, { limit: 2 });
+  return `${intro} Entendi ${issue}. ${guidance || 'Vou preservar o relato para a análise correta.'}${question ? ` ${question}` : ''}`;
+}
+
+function eventText(input) {
+  const { plan, conversation, variationContext } = input;
+  const answer = knowledgeMessages(plan, { limit: 2 }) || fallbackText(input);
+  const question = minimalQuestions(plan.mandatory_questions, { limit: 3 });
+  const intro = plan.conversation_stage === 'continuation' ? acknowledgement(plan, variationContext) : 'Claro.';
+  return `${intro} ${answer}${question ? ` ${question}` : ''}`;
+}
+
+function praiseText(input) {
+  const answer = knowledgeMessages(input.plan, { limit: 1 });
+  if (answer) return answer;
+  return `${acknowledgement(input.plan, input.variationContext)} Obrigado por compartilhar isso com a gente.`;
 }
 
 function capabilityLimitText(input) {
@@ -246,7 +303,10 @@ function composeControlledText(input = {}) {
   };
   const shared = { ...input, plan, classification, conversation, authorizedText, variationContext };
   let text;
-  if (plan.strategy_id === 'large_group') text = largeGroupText(shared);
+  if (plan.action_playbook === 'praise_and_suggestion') text = praiseText(shared);
+  else if (plan.action_playbook === 'events_oke') text = eventText(shared);
+  else if (plan.direct_answer?.length && ['ambiguity', 'continuation', 'capability_limit'].includes(plan.strategy_id)) text = informationText(shared);
+  else if (plan.strategy_id === 'large_group') text = largeGroupText(shared);
   else if (['missing_item', 'wrong_item', 'wrong_quantity', 'personalization_ignored', 'complaint', 'quality', 'food_safety', 'delay'].includes(plan.strategy_id)) text = occurrenceText(shared);
   else if (['reservation', 'waitlist'].includes(plan.strategy_id)) text = reservationText(shared);
   else if (plan.strategy_id === 'capability_limit' || plan.fallback_reason) text = capabilityLimitText(shared);
@@ -282,5 +342,9 @@ module.exports = {
   reservationText,
   largeGroupText,
   occurrenceText,
+  eventText,
+  praiseText,
+  knowledgeMessages,
+  warmClosing,
   composeControlledText
 };
