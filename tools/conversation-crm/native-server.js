@@ -23,6 +23,7 @@ function createNativeServer(options={}){
     projectRoot:options.projectRoot,
     feedbackRoot:options.feedbackRoot||options.runtimeRoot,
     chatRuntimeRoot:options.chatRuntimeRoot,
+    exportRoot:options.exportRoot,
     now:options.now
   });
   let manualTurn=0;
@@ -43,6 +44,7 @@ function createNativeServer(options={}){
     if(req.method==='POST'&&req.url==='/api/homologation/chat'){const body=await readJson(req);return json(res,200,homologation.chat(body.message));}
     if(req.method==='POST'&&req.url==='/api/homologation/chat/reset')return json(res,200,homologation.resetChat());
     if(req.method==='POST'&&req.url==='/api/homologation/feedback'){const body=await readJson(req);return json(res,200,homologation.feedback(body));}
+    if(req.method==='POST'&&req.url==='/api/homologation/export')return json(res,200,homologation.export());
     if(req.method==='POST'&&req.url==='/api/homologation/session/reset'){const body=await readJson(req);return json(res,200,{ok:true,...homologation.store.resetReviewSession(body.confirmation)});}
     if(req.method==='POST'&&req.url==='/api/homologation/test-data/delete'){const body=await readJson(req);return json(res,200,{ok:true,...homologation.store.deleteSyntheticFeedback(body.confirmation)});}
     if(req.method==='POST'&&req.url==='/api/triage'){const body=await readJson(req);manualTurn+=1;const messageId=`SIM-MANUAL-${String(manualTurn).padStart(4,'0')}`;const input={synthetic:true,message_type:'text',content:String(body.message||''),channel:'synthetic',subject_id:'SIM-SUBJECT-MANUAL',conversation_id:'SIM-CONV-MANUAL',message_id:messageId,correlation_id:`SIM-CORR-${messageId}`,idempotency_key:`manual:${messageId}`,occurred_at:runtime.clock.iso(),turn_order:manualTurn,unit_id:'SIM-UNIT-001',context:{...(body.context||{}),synthetic:true}};return json(res,200,{ok:true,result:runtime.processMessage(input)});}

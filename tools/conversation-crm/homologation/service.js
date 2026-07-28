@@ -5,6 +5,7 @@ const path = require('node:path');
 const { NativeConversationRuntime } = require('../../../src/conversation-crm/native');
 const { loadHomologationData, publicBlindCase, publicReviewCase, sha256 } = require('./data');
 const { FeedbackStore } = require('./feedback-store');
+const { exportReview } = require('./exporter');
 
 function asPublicTechnical(item) {
   return {
@@ -79,6 +80,8 @@ class HomologationService {
         composer_version: this.data.composer_version
       }
     });
+    this.now = options.now || (() => new Date().toISOString());
+    this.exportRoot = path.resolve(options.exportRoot || process.env.DELIVERYOS_HOMOLOGATION_EXPORT_ROOT || path.join(this.projectRoot, '..', 'deliveryos-review-packets'));
     this.runtimeOptions = {
       projectRoot: this.projectRoot,
       runtimeRoot: path.resolve(options.chatRuntimeRoot || path.join(this.store.root, 'chat-runtime'))
@@ -176,6 +179,24 @@ class HomologationService {
 
   summary() {
     return { ok: true, summary: summarize(this.data, this.store) };
+  }
+
+  export() {
+    fs.mkdirSync(this.exportRoot, { recursive: true });
+    const result = exportReview({
+      projectRoot: this.projectRoot,
+      outputRoot: this.exportRoot,
+      data: this.data,
+      store: this.store,
+      summary: summarize(this.data, this.store),
+      now: this.now
+    });
+    return {
+      ok: true,
+      package_name: result.packageName,
+      privacy_scan: result.manifest.privacy_scan,
+      counts: result.manifest.counts
+    };
   }
 }
 

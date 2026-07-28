@@ -13,7 +13,8 @@ const SENSITIVE_PATTERNS = Object.freeze([
 
 function inspectText(value) {
   const text = String(value ?? '').normalize('NFKC').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '').trim();
-  const findings = SENSITIVE_PATTERNS.filter(([, pattern]) => pattern.test(text)).map(([name]) => name);
+  const detectionText = text.replace(/\b(?:CHAT|REV|HFB|TATA-SC|SIM)-[A-Z0-9-]+\b/gi, '[SYNTHETIC_ID]');
+  const findings = SENSITIVE_PATTERNS.filter(([, pattern]) => pattern.test(detectionText)).map(([name]) => name);
   return Object.freeze({
     safe: findings.length === 0,
     findings: Object.freeze(findings),
@@ -33,14 +34,15 @@ function requireSafeComment(value) {
   return inspected.text;
 }
 
-function scanValue(value, path = '$', findings = []) {
+function scanValue(value, path = '$', findings = [], key = '') {
   if (typeof value === 'string') {
+    if (/(?:^|_)(?:id|hash|key|version|timestamp|mode|winner|choice|branch|head)$/.test(key)) return findings;
     const inspected = inspectText(value);
     if (!inspected.safe) findings.push({ path, finding_types: inspected.findings });
   } else if (Array.isArray(value)) {
-    value.forEach((item, index) => scanValue(item, `${path}[${index}]`, findings));
+    value.forEach((item, index) => scanValue(item, `${path}[${index}]`, findings, key));
   } else if (value && typeof value === 'object') {
-    Object.entries(value).forEach(([key, item]) => scanValue(item, `${path}.${key}`, findings));
+    Object.entries(value).forEach(([childKey, item]) => scanValue(item, `${path}.${childKey}`, findings, childKey));
   }
   return findings;
 }

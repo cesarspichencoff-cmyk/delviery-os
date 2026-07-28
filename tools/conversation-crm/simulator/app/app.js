@@ -98,7 +98,7 @@ function renderBlind() {
   $('#blind-responses').innerHTML = ['A', 'B'].map((side) => `<article><h3>Resposta ${side}</h3>${item.turns.map((turn) => `<div class="message bot"><p>${escapeHtml(turn[side])}</p></div>`).join('')}</article>`).join('');
   $('#blind-reveal').classList.add('hidden');
   $('#blind-technical').classList.add('hidden');
-  $('#blind-technical-button').classList.add('hidden');
+  $('#blind-technical-button').classList.toggle('hidden', !item.evaluated);
   $('#blind-state').textContent = item.evaluated ? 'Esta comparação já possui voto. Você pode revisá-lo.' : '';
   $$('input[name="blind-choice"]').forEach((input) => { input.checked = false; });
 }

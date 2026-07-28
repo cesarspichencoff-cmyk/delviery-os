@@ -16,7 +16,7 @@ const FREE_TAGS = new Set(['gostei', 'seco', 'robotico', 'longo', 'pouco_acolhed
 const CRITERIA = Object.freeze(['naturalidade', 'acolhimento', 'clareza', 'utilidade', 'tamanho', 'confianca']);
 
 function defaultFeedbackRoot() {
-  return path.join(process.env.LOCALAPPDATA || os.tmpdir(), 'DeliveryOS', 'human-homologation');
+  return path.resolve(process.env.DELIVERYOS_HOMOLOGATION_ROOT || path.join(process.env.LOCALAPPDATA || os.tmpdir(), 'DeliveryOS', 'human-homologation'));
 }
 
 function safeJsonLines(file) {
