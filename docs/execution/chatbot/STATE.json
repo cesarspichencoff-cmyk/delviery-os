@@ -1,0 +1,41 @@
+{
+  "project": "DeliveryOS Chatbot TATÁ",
+  "active_change": "001-conversation-baseline-foundation",
+  "branch": "feature/conversation-baseline-foundation-v1",
+  "head": "26922b9fe584917d12394ef63e3987173ae72ade",
+  "working_tree": "foundation_in_progress",
+  "completed_units": [
+    "git_lineage_validation",
+    "historical_baseline"
+  ],
+  "active_unit": "execution_foundation",
+  "pending_units": [
+    "local_skills",
+    "conversation_inventory",
+    "baseline_corpus",
+    "baseline_verifiers",
+    "baseline_report",
+    "change_002_skeleton",
+    "final_regression",
+    "external_review_packet"
+  ],
+  "test_status": {
+    "conversation_native": "255/255 passed",
+    "scenario_catalog": "200/200 passed",
+    "privacy": "passed",
+    "conference_brain": "350/350 passed",
+    "presence_conflict_smoke": "1/1 passed",
+    "live": "243/243 passed",
+    "capacidade_viva": "43/43 passed",
+    "copiloto": "53/53 passed",
+    "cardapio": "199 items verified",
+    "historical_source": "16/16 matched"
+  },
+  "blockers": [],
+  "external_gates": [
+    "César reviews human experience in Change 002"
+  ],
+  "next_step": "complete execution foundation and create the first atomic commit",
+  "updated_at": "2026-07-28T01:06:05-03:00"
+}
+
