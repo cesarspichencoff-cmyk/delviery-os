@@ -2,12 +2,12 @@
 
 - Diretório: raiz atual do projeto
 - Branch: `feature/conversation-baseline-foundation-v1`
-- HEAD de entrada: `72fd9bc1a3bf13751c8a29d17396d28371bfb01e`
-- Working tree: skills validadas, aguardando segundo commit
-- Commits da mudança: `72fd9bc`
-- Unidade comprovada: linhagem, baseline histórico, fundação e três skills
-- Unidade ativa: inventário e corpus conversacional
-- Artefatos parciais: três skills locais e relatório de validação
+- HEAD de entrada: `374442070ce20e4c71b020075ed231ad02adbc6a`
+- Working tree: corpus e verificadores aguardando terceiro commit
+- Commits da mudança: `72fd9bc`, `3744420`
+- Unidade comprovada: fundação, skills, corpus de 50 casos e verificadores
+- Unidade ativa: documentação do baseline
+- Artefatos parciais: respostas e métricas reproduzíveis do baseline
 - Testes executados: Conversation 255, catálogo 200, privacidade, Conference 350, smoke 1, Live 243, Capacidade 43, Copiloto 53, cardápio 199 e fonte 16
-- Testes não executados: corpus, verificadores e regressão final
-- Próximo comando técnico único: `git add .agents/skills docs/execution/chatbot`
+- Testes não executados: regressão final
+- Próximo comando técnico único: `git add evals scripts/verifiers/chatbot tests/conversation-crm/baseline-verifiers.test.js`

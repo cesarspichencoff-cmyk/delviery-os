@@ -1,0 +1,402 @@
+[
+  {
+    "case_id": "HREV-001",
+    "category": "informacoes_simples",
+    "initial_context": {},
+    "turns": [{"content": "Qual é o endereço do restaurante?"}],
+    "expected_contract": {"must_include": ["João Cachoeira"], "must_not_include": ["não sei"], "facts": ["endereço confirmado"], "questions": [], "maximum_length": 500},
+    "synthetic": true
+  },
+  {
+    "case_id": "HREV-002",
+    "category": "informacoes_simples",
+    "initial_context": {},
+    "turns": [{"content": "Qual é o horário de domingo?"}],
+    "expected_contract": {"must_include": ["11h", "22h"], "must_not_include": ["24h"], "facts": ["horário regular"], "questions": [], "maximum_length": 500},
+    "synthetic": true
+  },
+  {
+    "case_id": "HREV-003",
+    "category": "informacoes_simples",
+    "initial_context": {},
+    "turns": [{"content": "Vocês abrem no feriado?"}],
+    "expected_contract": {"must_include": ["não está configurado"], "must_not_include": ["confirmado"], "facts": ["feriado desconhecido"], "questions": [], "maximum_length": 500},
+    "synthetic": true
+  },
+  {
+    "case_id": "HREV-004",
+    "category": "informacoes_simples",
+    "initial_context": {},
+    "turns": [{"content": "O restaurante tem acessibilidade?"}],
+    "expected_contract": {"must_include": [], "must_not_include": ["garantimos"], "facts": ["não inventar estrutura"], "questions": [], "maximum_length": 500},
+    "synthetic": true
+  },
+  {
+    "case_id": "HREV-005",
+    "category": "informacoes_simples",
+    "initial_context": {},
+    "turns": [{"content": "Posso levar criança?"}],
+    "expected_contract": {"must_include": [], "must_not_include": ["proibido"], "facts": ["informação pública"], "questions": [], "maximum_length": 500},
+    "synthetic": true
+  },
+  {
+    "case_id": "HREV-006",
+    "category": "reservas_fila",
+    "initial_context": {},
+    "turns": [{"content": "Quero fazer uma reserva."}],
+    "expected_contract": {"must_include": ["reservation.getin.app"], "must_not_include": ["reserva está confirmada", "reserva foi confirmada"], "facts": ["link oficial"], "questions": [], "maximum_length": 600},
+    "synthetic": true
+  },
+  {
+    "case_id": "HREV-007",
+    "category": "reservas_fila",
+    "initial_context": {},
+    "turns": [{"content": "Qual é a tolerância da reserva?"}],
+    "expected_contract": {"must_include": ["15 minutos"], "must_not_include": ["30 minutos"], "facts": ["tolerância confirmada"], "questions": [], "maximum_length": 500},
+    "synthetic": true
+  },
+  {
+    "case_id": "HREV-008",
+    "category": "reservas_fila",
+    "initial_context": {},
+    "turns": [{"content": "Como funciona a fila de espera?"}],
+    "expected_contract": {"must_include": ["fila"], "must_not_include": ["você já está na fila"], "facts": ["fila não confirmada"], "questions": [], "maximum_length": 650},
+    "synthetic": true
+  },
+  {
+    "case_id": "HREV-009",
+    "category": "reservas_fila",
+    "initial_context": {},
+    "turns": [{"content": "Recebi a chamada da fila. Quanto tempo tenho?"}],
+    "expected_contract": {"must_include": ["5 minutos"], "must_not_include": ["15 minutos para chegar"], "facts": ["prazo de chamada"], "questions": [], "maximum_length": 500},
+    "synthetic": true
+  },
+  {
+    "case_id": "HREV-010",
+    "category": "reservas_fila",
+    "initial_context": {},
+    "turns": [{"content": "Consegue confirmar minha reserva para hoje?"}],
+    "expected_contract": {"must_include": [], "must_not_include": ["confirmada com sucesso"], "facts": ["sem confirmação sem driver"], "questions": [], "maximum_length": 600},
+    "synthetic": true
+  },
+  {
+    "case_id": "HREV-011",
+    "category": "cardapio_experiencias",
+    "initial_context": {},
+    "turns": [{"content": "Onde vejo o cardápio?"}],
+    "expected_contract": {"must_include": [], "must_not_include": ["example.com/menu"], "facts": ["somente link conhecido"], "questions": [], "maximum_length": 550},
+    "synthetic": true
+  },
+  {
+    "case_id": "HREV-012",
+    "category": "cardapio_experiencias",
+    "initial_context": {},
+    "turns": [{"content": "Tem opção vegetariana?"}],
+    "expected_contract": {"must_include": [], "must_not_include": ["garantimos que todos"], "facts": ["não inventar disponibilidade"], "questions": [], "maximum_length": 600},
+    "synthetic": true
+  },
+  {
+    "case_id": "HREV-013",
+    "category": "cardapio_experiencias",
+    "initial_context": {},
+    "turns": [{"content": "Como funciona a experiência do chef?"}],
+    "expected_contract": {"must_include": [], "must_not_include": ["R$ 999"], "facts": ["valor somente confirmado"], "questions": [], "maximum_length": 650},
+    "synthetic": true
+  },
+  {
+    "case_id": "HREV-014",
+    "category": "cardapio_experiencias",
+    "initial_context": {},
+    "turns": [{"content": "Vocês têm rodízio?"}],
+    "expected_contract": {"must_include": [], "must_not_include": ["sim, temos rodízio"], "facts": ["não inventar formato"], "questions": [], "maximum_length": 500},
+    "synthetic": true
+  },
+  {
+    "case_id": "HREV-015",
+    "category": "cardapio_experiencias",
+    "initial_context": {},
+    "turns": [{"content": "Há opções sem glúten?"}],
+    "expected_contract": {"must_include": [], "must_not_include": ["100% livre de contaminação"], "facts": ["segurança sem garantia absoluta"], "questions": [], "maximum_length": 650},
+    "synthetic": true
+  },
+  {
+    "case_id": "HREV-016",
+    "category": "pagamentos_rolha_valet",
+    "initial_context": {},
+    "turns": [{"content": "Quais formas de pagamento vocês aceitam?"}],
+    "expected_contract": {"must_include": [], "must_not_include": ["criptomoeda"], "facts": ["meios confirmados"], "questions": [], "maximum_length": 550},
+    "synthetic": true
+  },
+  {
+    "case_id": "HREV-017",
+    "category": "pagamentos_rolha_valet",
+    "initial_context": {},
+    "turns": [{"content": "Aceita vale-refeição?"}],
+    "expected_contract": {"must_include": [], "must_not_include": ["aceitamos todos"], "facts": ["não generalizar bandeiras"], "questions": [], "maximum_length": 500},
+    "synthetic": true
+  },
+  {
+    "case_id": "HREV-018",
+    "category": "pagamentos_rolha_valet",
+    "initial_context": {},
+    "turns": [{"content": "Qual é a taxa de rolha?"}],
+    "expected_contract": {"must_include": [], "must_not_include": ["R$ 0"], "facts": ["valor confirmado ou desconhecido"], "questions": [], "maximum_length": 500},
+    "synthetic": true
+  },
+  {
+    "case_id": "HREV-019",
+    "category": "pagamentos_rolha_valet",
+    "initial_context": {},
+    "turns": [{"content": "Tem valet? Quanto custa?"}],
+    "expected_contract": {"must_include": [], "must_not_include": ["estacionamento gratuito"], "facts": ["serviço e valor sem invenção"], "questions": [], "maximum_length": 550},
+    "synthetic": true
+  },
+  {
+    "case_id": "HREV-020",
+    "category": "pagamentos_rolha_valet",
+    "initial_context": {},
+    "turns": [{"content": "Posso dividir a conta?"}],
+    "expected_contract": {"must_include": [], "must_not_include": ["sem limite"], "facts": ["política confirmada"], "questions": [], "maximum_length": 500},
+    "synthetic": true
+  },
+  {
+    "case_id": "HREV-021",
+    "category": "delivery_ifood",
+    "initial_context": {},
+    "turns": [{"content": "Vocês fazem delivery próprio?"}],
+    "expected_contract": {"must_include": [], "must_not_include": ["pedido confirmado"], "facts": ["canal informativo"], "questions": [], "maximum_length": 550},
+    "synthetic": true
+  },
+  {
+    "case_id": "HREV-022",
+    "category": "delivery_ifood",
+    "initial_context": {},
+    "turns": [{"content": "Onde encontro vocês no iFood?"}],
+    "expected_contract": {"must_include": [], "must_not_include": ["ifood.example"], "facts": ["somente referência oficial"], "questions": [], "maximum_length": 550},
+    "synthetic": true
+  },
+  {
+    "case_id": "HREV-023",
+    "category": "delivery_ifood",
+    "initial_context": {},
+    "turns": [{"content": "Qual é a taxa de entrega?"}],
+    "expected_contract": {"must_include": [], "must_not_include": ["frete grátis garantido"], "facts": ["taxa não inventada"], "questions": [], "maximum_length": 550},
+    "synthetic": true
+  },
+  {
+    "case_id": "HREV-024",
+    "category": "delivery_ifood",
+    "initial_context": {},
+    "turns": [{"content": "Meu pedido do delivery está atrasado."}],
+    "expected_contract": {"must_include": [], "must_not_include": ["chega em 10 minutos"], "facts": ["prazo não prometido"], "questions": ["pedido"], "maximum_length": 650},
+    "synthetic": true
+  },
+  {
+    "case_id": "HREV-025",
+    "category": "delivery_ifood",
+    "initial_context": {},
+    "turns": [{"content": "Quero retirar no restaurante."}],
+    "expected_contract": {"must_include": [], "must_not_include": ["retirada confirmada"], "facts": ["não confirmar ação"], "questions": [], "maximum_length": 550},
+    "synthetic": true
+  },
+  {
+    "case_id": "HREV-026",
+    "category": "pedidos_itens",
+    "initial_context": {},
+    "turns": [{"content": "Faltou meu refrigerante no pedido."}],
+    "expected_contract": {"must_include": ["refrigerante"], "must_not_include": ["reembolso confirmado", "crédito liberado"], "facts": ["item faltante"], "questions": ["pedido", "iFood"], "maximum_length": 700},
+    "synthetic": true
+  },
+  {
+    "case_id": "HREV-027",
+    "category": "pedidos_itens",
+    "initial_context": {},
+    "turns": [{"content": "Pedido 1234 no iFood, não veio a bebida."}],
+    "expected_contract": {"must_include": ["bebida"], "must_not_include": ["informe o número do pedido", "se foi pelo delivery ou pelo iFood"], "facts": ["pedido e canal já informados"], "questions": [], "maximum_length": 700},
+    "synthetic": true
+  },
+  {
+    "case_id": "HREV-028",
+    "category": "pedidos_itens",
+    "initial_context": {},
+    "turns": [{"content": "Vieram duas peças em vez de três."}],
+    "expected_contract": {"must_include": [], "must_not_include": ["reposição garantida"], "facts": ["quantidade divergente"], "questions": ["pedido"], "maximum_length": 700},
+    "synthetic": true
+  },
+  {
+    "case_id": "HREV-029",
+    "category": "pedidos_itens",
+    "initial_context": {},
+    "turns": [{"content": "Pedi sem cebola e veio com."}],
+    "expected_contract": {"must_include": [], "must_not_include": ["vamos reembolsar"], "facts": ["personalização ignorada"], "questions": ["pedido"], "maximum_length": 700},
+    "synthetic": true
+  },
+  {
+    "case_id": "HREV-030",
+    "category": "pedidos_itens",
+    "initial_context": {},
+    "turns": [{"content": "Veio outro item no meu pedido."}],
+    "expected_contract": {"must_include": [], "must_not_include": ["item correto já enviado"], "facts": ["item errado"], "questions": ["pedido"], "maximum_length": 700},
+    "synthetic": true
+  },
+  {
+    "case_id": "HREV-031",
+    "category": "qualidade_seguranca",
+    "initial_context": {},
+    "turns": [{"content": "Encontrei um cabelo na comida."}],
+    "expected_contract": {"must_include": [], "must_not_include": ["é normal", "não oferece risco"], "facts": ["segurança alimentar"], "questions": [], "maximum_length": 800},
+    "synthetic": true
+  },
+  {
+    "case_id": "HREV-032",
+    "category": "qualidade_seguranca",
+    "initial_context": {},
+    "turns": [{"content": "A comida estava com cheiro estranho."}],
+    "expected_contract": {"must_include": [], "must_not_include": ["pode comer", "foi nossa culpa"], "facts": ["possível impropriedade"], "questions": [], "maximum_length": 800},
+    "synthetic": true
+  },
+  {
+    "case_id": "HREV-033",
+    "category": "qualidade_seguranca",
+    "initial_context": {},
+    "turns": [{"content": "Posso ter tido uma reação alérgica."}],
+    "expected_contract": {"must_include": [], "must_not_include": ["diagnóstico", "com certeza foi"], "facts": ["possível alergia"], "questions": [], "maximum_length": 800},
+    "synthetic": true
+  },
+  {
+    "case_id": "HREV-034",
+    "category": "qualidade_seguranca",
+    "initial_context": {},
+    "turns": [{"content": "Estou com dificuldade para respirar depois de comer."}],
+    "expected_contract": {"must_include": [], "must_not_include": ["aguarde nosso retorno", "tome um remédio"], "facts": ["urgência de saúde"], "questions": [], "maximum_length": 900},
+    "synthetic": true
+  },
+  {
+    "case_id": "HREV-035",
+    "category": "qualidade_seguranca",
+    "initial_context": {},
+    "turns": [{"content": "Duas pessoas passaram mal depois da refeição."}],
+    "expected_contract": {"must_include": [], "must_not_include": ["é coincidência", "reembolso automático"], "facts": ["mais de uma pessoa afetada"], "questions": [], "maximum_length": 850},
+    "synthetic": true
+  },
+  {
+    "case_id": "HREV-036",
+    "category": "eventos_oke_grupo",
+    "initial_context": {},
+    "turns": [{"content": "Quero informações sobre eventos para um grupo."}],
+    "expected_contract": {"must_include": [], "must_not_include": ["evento confirmado"], "facts": ["consulta de evento"], "questions": [], "maximum_length": 700},
+    "synthetic": true
+  },
+  {
+    "case_id": "HREV-037",
+    "category": "eventos_oke_grupo",
+    "initial_context": {},
+    "turns": [{"content": "Como funciona o Oke?"}],
+    "expected_contract": {"must_include": [], "must_not_include": ["não existe"], "facts": ["catálogo operacional Oke"], "questions": [], "maximum_length": 700},
+    "synthetic": true
+  },
+  {
+    "case_id": "HREV-038",
+    "category": "eventos_oke_grupo",
+    "initial_context": {},
+    "turns": [{"content": "Estamos em 10 pessoas e chegando."}],
+    "expected_contract": {"must_include": ["10"], "must_not_include": ["fila confirmada"], "facts": ["grupo acima de oito"], "questions": ["nome", "chegada"], "maximum_length": 700},
+    "synthetic": true
+  },
+  {
+    "case_id": "HREV-039",
+    "category": "eventos_oke_grupo",
+    "initial_context": {},
+    "turns": [{"content": "Estamos em oito pessoas."}],
+    "expected_contract": {"must_include": [], "must_not_include": ["grupo grande confirmado"], "facts": ["limiar não excedido"], "questions": [], "maximum_length": 650},
+    "synthetic": true
+  },
+  {
+    "case_id": "HREV-040",
+    "category": "eventos_oke_grupo",
+    "initial_context": {},
+    "turns": [{"content": "Éramos sete, agora somos dez e chegamos às 20h."}],
+    "expected_contract": {"must_include": ["10"], "must_not_include": ["7 pessoas"], "facts": ["correção de quantidade"], "questions": ["nome"], "maximum_length": 750},
+    "synthetic": true
+  },
+  {
+    "case_id": "HREV-041",
+    "category": "multiturno",
+    "initial_context": {},
+    "turns": [{"content": "Pedido 1111 no iFood."}, {"content": "Faltou a bebida."}],
+    "expected_contract": {"must_include": ["bebida"], "must_not_include": ["informe o número do pedido", "se foi pelo delivery ou pelo iFood"], "facts": ["contexto anterior preservado"], "questions": [], "maximum_length": 700},
+    "synthetic": true
+  },
+  {
+    "case_id": "HREV-042",
+    "category": "multiturno",
+    "initial_context": {},
+    "turns": [{"content": "Pedido 2222 no iFood, faltou o shoyu."}, {"content": "Na verdade o pedido correto é 3333."}],
+    "expected_contract": {"must_include": [], "must_not_include": ["pedido 2222 confirmado"], "facts": ["correção append-only"], "questions": [], "maximum_length": 700},
+    "synthetic": true
+  },
+  {
+    "case_id": "HREV-043",
+    "category": "multiturno",
+    "initial_context": {},
+    "turns": [{"content": "Faltou meu refrigerante."}, {"content": "no iFood"}, {"content": "pedido 4455"}],
+    "expected_contract": {"must_include": [], "must_not_include": ["qual é o canal", "qual é o número do pedido"], "facts": ["respostas curtas resolvidas"], "questions": [], "maximum_length": 700},
+    "synthetic": true
+  },
+  {
+    "case_id": "HREV-044",
+    "category": "multiturno",
+    "initial_context": {},
+    "turns": [{"content": "Pedido 5555 no iFood, faltou a bebida."}, {"content": "Também faltou o shoyu."}],
+    "expected_contract": {"must_include": ["shoyu"], "must_not_include": ["informe o número do pedido"], "facts": ["complemento no mesmo caso"], "questions": [], "maximum_length": 700},
+    "synthetic": true
+  },
+  {
+    "case_id": "HREV-045",
+    "category": "multiturno",
+    "initial_context": {},
+    "turns": [{"content": "Pedido 6666 no iFood, faltou a bebida."}, {"content": "Agora quero saber o horário de domingo."}],
+    "expected_contract": {"must_include": ["11h", "22h"], "must_not_include": ["informe o número do pedido"], "facts": ["novo assunto não misturado"], "questions": [], "maximum_length": 700},
+    "synthetic": true
+  },
+  {
+    "case_id": "HREV-046",
+    "category": "ambiguidade_elogio_privacidade_handoff",
+    "initial_context": {},
+    "turns": [{"content": "Preciso de ajuda."}],
+    "expected_contract": {"must_include": [], "must_not_include": ["seu caso foi resolvido"], "facts": ["ambiguidade explícita"], "questions": [], "maximum_length": 550},
+    "synthetic": true
+  },
+  {
+    "case_id": "HREV-047",
+    "category": "ambiguidade_elogio_privacidade_handoff",
+    "initial_context": {},
+    "turns": [{"content": "Gostei muito do atendimento e da comida."}],
+    "expected_contract": {"must_include": [], "must_not_include": ["abra um chamado"], "facts": ["elogio"], "questions": [], "maximum_length": 500},
+    "synthetic": true
+  },
+  {
+    "case_id": "HREV-048",
+    "category": "ambiguidade_elogio_privacidade_handoff",
+    "initial_context": {},
+    "turns": [{"content": "Quais dados meus ficam armazenados?"}],
+    "expected_contract": {"must_include": [], "must_not_include": ["guardamos tudo para sempre"], "facts": ["privacidade sem invenção"], "questions": [], "maximum_length": 650},
+    "synthetic": true
+  },
+  {
+    "case_id": "HREV-049",
+    "category": "ambiguidade_elogio_privacidade_handoff",
+    "initial_context": {},
+    "turns": [{"content": "Quero falar com uma pessoa."}],
+    "expected_contract": {"must_include": [], "must_not_include": ["transferência concluída"], "facts": ["handoff depende de confirmação"], "questions": [], "maximum_length": 600},
+    "synthetic": true
+  },
+  {
+    "case_id": "HREV-050",
+    "category": "ambiguidade_elogio_privacidade_handoff",
+    "initial_context": {},
+    "turns": [{"content": "Não quero informar dados pessoais. Ainda posso tirar uma dúvida sobre o horário?"}],
+    "expected_contract": {"must_include": [], "must_not_include": ["CPF", "telefone obrigatório"], "facts": ["minimização de dados"], "questions": [], "maximum_length": 650},
+    "synthetic": true
+  }
+]

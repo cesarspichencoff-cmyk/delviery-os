@@ -1,0 +1,973 @@
+{
+  "schema_version": "deliveryos-conversation-baseline-metrics-v1",
+  "synthetic": true,
+  "source_hash": "894e8246aea72267cba4eb111d936421e76ff23859b191917a9b093b2a10fca9",
+  "objective": {
+    "conversations": 50,
+    "turns": 56,
+    "lengths": [
+      {
+        "case_id": "HREV-001",
+        "turn": 1,
+        "category": "informacoes_simples",
+        "characters": 94,
+        "words": 19,
+        "sentences": 2,
+        "questions": 0
+      },
+      {
+        "case_id": "HREV-002",
+        "turn": 1,
+        "category": "informacoes_simples",
+        "characters": 58,
+        "words": 13,
+        "sentences": 1,
+        "questions": 0
+      },
+      {
+        "case_id": "HREV-003",
+        "turn": 1,
+        "category": "informacoes_simples",
+        "characters": 98,
+        "words": 14,
+        "sentences": 2,
+        "questions": 0
+      },
+      {
+        "case_id": "HREV-004",
+        "turn": 1,
+        "category": "informacoes_simples",
+        "characters": 63,
+        "words": 11,
+        "sentences": 2,
+        "questions": 1
+      },
+      {
+        "case_id": "HREV-005",
+        "turn": 1,
+        "category": "informacoes_simples",
+        "characters": 63,
+        "words": 11,
+        "sentences": 2,
+        "questions": 1
+      },
+      {
+        "case_id": "HREV-006",
+        "turn": 1,
+        "category": "reservas_fila",
+        "characters": 158,
+        "words": 22,
+        "sentences": 2,
+        "questions": 0
+      },
+      {
+        "case_id": "HREV-007",
+        "turn": 1,
+        "category": "reservas_fila",
+        "characters": 158,
+        "words": 22,
+        "sentences": 2,
+        "questions": 0
+      },
+      {
+        "case_id": "HREV-008",
+        "turn": 1,
+        "category": "reservas_fila",
+        "characters": 258,
+        "words": 39,
+        "sentences": 2,
+        "questions": 0
+      },
+      {
+        "case_id": "HREV-009",
+        "turn": 1,
+        "category": "reservas_fila",
+        "characters": 258,
+        "words": 39,
+        "sentences": 2,
+        "questions": 0
+      },
+      {
+        "case_id": "HREV-010",
+        "turn": 1,
+        "category": "reservas_fila",
+        "characters": 158,
+        "words": 22,
+        "sentences": 2,
+        "questions": 0
+      },
+      {
+        "case_id": "HREV-011",
+        "turn": 1,
+        "category": "cardapio_experiencias",
+        "characters": 63,
+        "words": 10,
+        "sentences": 1,
+        "questions": 0
+      },
+      {
+        "case_id": "HREV-012",
+        "turn": 1,
+        "category": "cardapio_experiencias",
+        "characters": 63,
+        "words": 11,
+        "sentences": 2,
+        "questions": 1
+      },
+      {
+        "case_id": "HREV-013",
+        "turn": 1,
+        "category": "cardapio_experiencias",
+        "characters": 63,
+        "words": 11,
+        "sentences": 2,
+        "questions": 1
+      },
+      {
+        "case_id": "HREV-014",
+        "turn": 1,
+        "category": "cardapio_experiencias",
+        "characters": 98,
+        "words": 19,
+        "sentences": 2,
+        "questions": 0
+      },
+      {
+        "case_id": "HREV-015",
+        "turn": 1,
+        "category": "cardapio_experiencias",
+        "characters": 63,
+        "words": 11,
+        "sentences": 2,
+        "questions": 1
+      },
+      {
+        "case_id": "HREV-016",
+        "turn": 1,
+        "category": "pagamentos_rolha_valet",
+        "characters": 145,
+        "words": 18,
+        "sentences": 1,
+        "questions": 0
+      },
+      {
+        "case_id": "HREV-017",
+        "turn": 1,
+        "category": "pagamentos_rolha_valet",
+        "characters": 63,
+        "words": 11,
+        "sentences": 2,
+        "questions": 1
+      },
+      {
+        "case_id": "HREV-018",
+        "turn": 1,
+        "category": "pagamentos_rolha_valet",
+        "characters": 27,
+        "words": 8,
+        "sentences": 1,
+        "questions": 0
+      },
+      {
+        "case_id": "HREV-019",
+        "turn": 1,
+        "category": "pagamentos_rolha_valet",
+        "characters": 52,
+        "words": 11,
+        "sentences": 1,
+        "questions": 0
+      },
+      {
+        "case_id": "HREV-020",
+        "turn": 1,
+        "category": "pagamentos_rolha_valet",
+        "characters": 63,
+        "words": 11,
+        "sentences": 2,
+        "questions": 1
+      },
+      {
+        "case_id": "HREV-021",
+        "turn": 1,
+        "category": "delivery_ifood",
+        "characters": 154,
+        "words": 18,
+        "sentences": 2,
+        "questions": 0
+      },
+      {
+        "case_id": "HREV-022",
+        "turn": 1,
+        "category": "delivery_ifood",
+        "characters": 63,
+        "words": 11,
+        "sentences": 2,
+        "questions": 1
+      },
+      {
+        "case_id": "HREV-023",
+        "turn": 1,
+        "category": "delivery_ifood",
+        "characters": 63,
+        "words": 11,
+        "sentences": 2,
+        "questions": 1
+      },
+      {
+        "case_id": "HREV-024",
+        "turn": 1,
+        "category": "delivery_ifood",
+        "characters": 63,
+        "words": 11,
+        "sentences": 2,
+        "questions": 1
+      },
+      {
+        "case_id": "HREV-025",
+        "turn": 1,
+        "category": "delivery_ifood",
+        "characters": 63,
+        "words": 11,
+        "sentences": 2,
+        "questions": 1
+      },
+      {
+        "case_id": "HREV-026",
+        "turn": 1,
+        "category": "pedidos_itens",
+        "characters": 285,
+        "words": 43,
+        "sentences": 4,
+        "questions": 1
+      },
+      {
+        "case_id": "HREV-027",
+        "turn": 1,
+        "category": "pedidos_itens",
+        "characters": 205,
+        "words": 31,
+        "sentences": 3,
+        "questions": 0
+      },
+      {
+        "case_id": "HREV-028",
+        "turn": 1,
+        "category": "pedidos_itens",
+        "characters": 98,
+        "words": 14,
+        "sentences": 2,
+        "questions": 0
+      },
+      {
+        "case_id": "HREV-029",
+        "turn": 1,
+        "category": "pedidos_itens",
+        "characters": 98,
+        "words": 14,
+        "sentences": 2,
+        "questions": 0
+      },
+      {
+        "case_id": "HREV-030",
+        "turn": 1,
+        "category": "pedidos_itens",
+        "characters": 98,
+        "words": 14,
+        "sentences": 2,
+        "questions": 0
+      },
+      {
+        "case_id": "HREV-031",
+        "turn": 1,
+        "category": "qualidade_seguranca",
+        "characters": 98,
+        "words": 14,
+        "sentences": 2,
+        "questions": 0
+      },
+      {
+        "case_id": "HREV-032",
+        "turn": 1,
+        "category": "qualidade_seguranca",
+        "characters": 98,
+        "words": 14,
+        "sentences": 2,
+        "questions": 0
+      },
+      {
+        "case_id": "HREV-033",
+        "turn": 1,
+        "category": "qualidade_seguranca",
+        "characters": 98,
+        "words": 14,
+        "sentences": 2,
+        "questions": 0
+      },
+      {
+        "case_id": "HREV-034",
+        "turn": 1,
+        "category": "qualidade_seguranca",
+        "characters": 98,
+        "words": 14,
+        "sentences": 2,
+        "questions": 0
+      },
+      {
+        "case_id": "HREV-035",
+        "turn": 1,
+        "category": "qualidade_seguranca",
+        "characters": 98,
+        "words": 14,
+        "sentences": 2,
+        "questions": 0
+      },
+      {
+        "case_id": "HREV-036",
+        "turn": 1,
+        "category": "eventos_oke_grupo",
+        "characters": 63,
+        "words": 11,
+        "sentences": 2,
+        "questions": 1
+      },
+      {
+        "case_id": "HREV-037",
+        "turn": 1,
+        "category": "eventos_oke_grupo",
+        "characters": 283,
+        "words": 51,
+        "sentences": 3,
+        "questions": 1
+      },
+      {
+        "case_id": "HREV-038",
+        "turn": 1,
+        "category": "eventos_oke_grupo",
+        "characters": 131,
+        "words": 21,
+        "sentences": 3,
+        "questions": 1
+      },
+      {
+        "case_id": "HREV-039",
+        "turn": 1,
+        "category": "eventos_oke_grupo",
+        "characters": 63,
+        "words": 11,
+        "sentences": 2,
+        "questions": 1
+      },
+      {
+        "case_id": "HREV-040",
+        "turn": 1,
+        "category": "eventos_oke_grupo",
+        "characters": 96,
+        "words": 15,
+        "sentences": 3,
+        "questions": 1
+      },
+      {
+        "case_id": "HREV-041",
+        "turn": 1,
+        "category": "multiturno",
+        "characters": 63,
+        "words": 11,
+        "sentences": 2,
+        "questions": 1
+      },
+      {
+        "case_id": "HREV-041",
+        "turn": 2,
+        "category": "multiturno",
+        "characters": 202,
+        "words": 27,
+        "sentences": 3,
+        "questions": 0
+      },
+      {
+        "case_id": "HREV-042",
+        "turn": 1,
+        "category": "multiturno",
+        "characters": 205,
+        "words": 31,
+        "sentences": 3,
+        "questions": 0
+      },
+      {
+        "case_id": "HREV-042",
+        "turn": 2,
+        "category": "multiturno",
+        "characters": 63,
+        "words": 11,
+        "sentences": 2,
+        "questions": 1
+      },
+      {
+        "case_id": "HREV-043",
+        "turn": 1,
+        "category": "multiturno",
+        "characters": 285,
+        "words": 43,
+        "sentences": 4,
+        "questions": 1
+      },
+      {
+        "case_id": "HREV-043",
+        "turn": 2,
+        "category": "multiturno",
+        "characters": 242,
+        "words": 38,
+        "sentences": 4,
+        "questions": 1
+      },
+      {
+        "case_id": "HREV-043",
+        "turn": 3,
+        "category": "multiturno",
+        "characters": 202,
+        "words": 27,
+        "sentences": 3,
+        "questions": 0
+      },
+      {
+        "case_id": "HREV-044",
+        "turn": 1,
+        "category": "multiturno",
+        "characters": 205,
+        "words": 31,
+        "sentences": 3,
+        "questions": 0
+      },
+      {
+        "case_id": "HREV-044",
+        "turn": 2,
+        "category": "multiturno",
+        "characters": 202,
+        "words": 27,
+        "sentences": 3,
+        "questions": 0
+      },
+      {
+        "case_id": "HREV-045",
+        "turn": 1,
+        "category": "multiturno",
+        "characters": 205,
+        "words": 31,
+        "sentences": 3,
+        "questions": 0
+      },
+      {
+        "case_id": "HREV-045",
+        "turn": 2,
+        "category": "multiturno",
+        "characters": 58,
+        "words": 13,
+        "sentences": 1,
+        "questions": 0
+      },
+      {
+        "case_id": "HREV-046",
+        "turn": 1,
+        "category": "ambiguidade_elogio_privacidade_handoff",
+        "characters": 63,
+        "words": 11,
+        "sentences": 2,
+        "questions": 1
+      },
+      {
+        "case_id": "HREV-047",
+        "turn": 1,
+        "category": "ambiguidade_elogio_privacidade_handoff",
+        "characters": 63,
+        "words": 11,
+        "sentences": 2,
+        "questions": 1
+      },
+      {
+        "case_id": "HREV-048",
+        "turn": 1,
+        "category": "ambiguidade_elogio_privacidade_handoff",
+        "characters": 63,
+        "words": 11,
+        "sentences": 2,
+        "questions": 1
+      },
+      {
+        "case_id": "HREV-049",
+        "turn": 1,
+        "category": "ambiguidade_elogio_privacidade_handoff",
+        "characters": 63,
+        "words": 11,
+        "sentences": 2,
+        "questions": 1
+      },
+      {
+        "case_id": "HREV-050",
+        "turn": 1,
+        "category": "ambiguidade_elogio_privacidade_handoff",
+        "characters": 176,
+        "words": 38,
+        "sentences": 1,
+        "questions": 0
+      }
+    ],
+    "by_category": {
+      "informacoes_simples": {
+        "turns": 5,
+        "characters": 376,
+        "words": 68,
+        "sentences": 9,
+        "average_characters": 75.2,
+        "average_words": 13.6
+      },
+      "reservas_fila": {
+        "turns": 5,
+        "characters": 990,
+        "words": 144,
+        "sentences": 10,
+        "average_characters": 198,
+        "average_words": 28.8
+      },
+      "cardapio_experiencias": {
+        "turns": 5,
+        "characters": 350,
+        "words": 62,
+        "sentences": 9,
+        "average_characters": 70,
+        "average_words": 12.4
+      },
+      "pagamentos_rolha_valet": {
+        "turns": 5,
+        "characters": 350,
+        "words": 59,
+        "sentences": 7,
+        "average_characters": 70,
+        "average_words": 11.8
+      },
+      "delivery_ifood": {
+        "turns": 5,
+        "characters": 406,
+        "words": 62,
+        "sentences": 10,
+        "average_characters": 81.2,
+        "average_words": 12.4
+      },
+      "pedidos_itens": {
+        "turns": 5,
+        "characters": 784,
+        "words": 116,
+        "sentences": 13,
+        "average_characters": 156.8,
+        "average_words": 23.2
+      },
+      "qualidade_seguranca": {
+        "turns": 5,
+        "characters": 490,
+        "words": 70,
+        "sentences": 10,
+        "average_characters": 98,
+        "average_words": 14
+      },
+      "eventos_oke_grupo": {
+        "turns": 5,
+        "characters": 636,
+        "words": 109,
+        "sentences": 13,
+        "average_characters": 127.2,
+        "average_words": 21.8
+      },
+      "multiturno": {
+        "turns": 11,
+        "characters": 1932,
+        "words": 290,
+        "sentences": 31,
+        "average_characters": 175.6,
+        "average_words": 26.4
+      },
+      "ambiguidade_elogio_privacidade_handoff": {
+        "turns": 5,
+        "characters": 428,
+        "words": 82,
+        "sentences": 9,
+        "average_characters": 85.6,
+        "average_words": 16.4
+      }
+    },
+    "repeated_openings": [
+      {
+        "value": "quero entender bem antes",
+        "count": 19
+      },
+      {
+        "value": "ainda nao tenho confirmacao",
+        "count": 14
+      },
+      {
+        "value": "sinto muito pelo ocorrido.",
+        "count": 5
+      },
+      {
+        "value": "voce pode consultar a",
+        "count": 3
+      },
+      {
+        "value": "no domingo, o horario",
+        "count": 2
+      },
+      {
+        "value": "perfeito. como sao 10",
+        "count": 2
+      },
+      {
+        "value": "quando nao houver reserva",
+        "count": 2
+      }
+    ],
+    "repeated_closings": [
+      {
+        "value": "e o assunto principal?",
+        "count": 19
+      },
+      {
+        "value": "manter o contexto preservado.",
+        "count": 9
+      },
+      {
+        "value": "sem oferecer compensacao automatica.",
+        "count": 5
+      },
+      {
+        "value": "para preservar o contexto.",
+        "count": 4
+      },
+      {
+        "value": "do retorno do sistema.",
+        "count": 3
+      },
+      {
+        "value": "e 18h as 22h.",
+        "count": 3
+      },
+      {
+        "value": "espera sem resultado observavel.",
+        "count": 2
+      }
+    ],
+    "frequent_trigrams": [
+      {
+        "value": "antes de seguir.",
+        "count": 19
+      },
+      {
+        "value": "bem antes de",
+        "count": 19
+      },
+      {
+        "value": "de seguir. qual",
+        "count": 19
+      },
+      {
+        "value": "e o assunto",
+        "count": 19
+      },
+      {
+        "value": "entender bem antes",
+        "count": 19
+      },
+      {
+        "value": "o assunto principal?",
+        "count": 19
+      },
+      {
+        "value": "qual e o",
+        "count": 19
+      },
+      {
+        "value": "quero entender bem",
+        "count": 19
+      },
+      {
+        "value": "seguir. qual e",
+        "count": 19
+      },
+      {
+        "value": "a conclusao. vou",
+        "count": 14
+      },
+      {
+        "value": "afirmar a conclusao.",
+        "count": 14
+      },
+      {
+        "value": "ainda nao tenho",
+        "count": 14
+      },
+      {
+        "value": "conclusao. vou manter",
+        "count": 14
+      },
+      {
+        "value": "confirmacao suficiente para",
+        "count": 14
+      },
+      {
+        "value": "manter o contexto",
+        "count": 14
+      },
+      {
+        "value": "nao tenho confirmacao",
+        "count": 14
+      },
+      {
+        "value": "o contexto preservado.",
+        "count": 14
+      },
+      {
+        "value": "para afirmar a",
+        "count": 14
+      },
+      {
+        "value": "suficiente para afirmar",
+        "count": 14
+      },
+      {
+        "value": "tenho confirmacao suficiente",
+        "count": 14
+      }
+    ],
+    "high_similarity_pairs": [
+      {
+        "left": "HREV-002",
+        "right": "HREV-045",
+        "score": 1
+      },
+      {
+        "left": "HREV-003",
+        "right": "HREV-028",
+        "score": 1
+      },
+      {
+        "left": "HREV-003",
+        "right": "HREV-029",
+        "score": 1
+      },
+      {
+        "left": "HREV-003",
+        "right": "HREV-030",
+        "score": 1
+      },
+      {
+        "left": "HREV-003",
+        "right": "HREV-031",
+        "score": 1
+      },
+      {
+        "left": "HREV-003",
+        "right": "HREV-032",
+        "score": 1
+      },
+      {
+        "left": "HREV-003",
+        "right": "HREV-033",
+        "score": 1
+      },
+      {
+        "left": "HREV-003",
+        "right": "HREV-034",
+        "score": 1
+      },
+      {
+        "left": "HREV-003",
+        "right": "HREV-035",
+        "score": 1
+      },
+      {
+        "left": "HREV-004",
+        "right": "HREV-005",
+        "score": 1
+      },
+      {
+        "left": "HREV-004",
+        "right": "HREV-012",
+        "score": 1
+      },
+      {
+        "left": "HREV-004",
+        "right": "HREV-013",
+        "score": 1
+      },
+      {
+        "left": "HREV-004",
+        "right": "HREV-015",
+        "score": 1
+      },
+      {
+        "left": "HREV-004",
+        "right": "HREV-017",
+        "score": 1
+      },
+      {
+        "left": "HREV-004",
+        "right": "HREV-020",
+        "score": 1
+      },
+      {
+        "left": "HREV-004",
+        "right": "HREV-022",
+        "score": 1
+      },
+      {
+        "left": "HREV-004",
+        "right": "HREV-023",
+        "score": 1
+      },
+      {
+        "left": "HREV-004",
+        "right": "HREV-024",
+        "score": 1
+      },
+      {
+        "left": "HREV-004",
+        "right": "HREV-025",
+        "score": 1
+      },
+      {
+        "left": "HREV-004",
+        "right": "HREV-036",
+        "score": 1
+      },
+      {
+        "left": "HREV-004",
+        "right": "HREV-039",
+        "score": 1
+      },
+      {
+        "left": "HREV-004",
+        "right": "HREV-041",
+        "score": 1
+      },
+      {
+        "left": "HREV-004",
+        "right": "HREV-042",
+        "score": 1
+      },
+      {
+        "left": "HREV-004",
+        "right": "HREV-046",
+        "score": 1
+      },
+      {
+        "left": "HREV-004",
+        "right": "HREV-047",
+        "score": 1
+      },
+      {
+        "left": "HREV-004",
+        "right": "HREV-048",
+        "score": 1
+      },
+      {
+        "left": "HREV-004",
+        "right": "HREV-049",
+        "score": 1
+      },
+      {
+        "left": "HREV-005",
+        "right": "HREV-012",
+        "score": 1
+      },
+      {
+        "left": "HREV-005",
+        "right": "HREV-013",
+        "score": 1
+      },
+      {
+        "left": "HREV-005",
+        "right": "HREV-015",
+        "score": 1
+      }
+    ],
+    "verifier": {
+      "total": 600,
+      "passed": 595,
+      "failed": 5
+    },
+    "verifier_failures": [
+      {
+        "status": "failed",
+        "check": "must_include",
+        "case_id": "HREV-003",
+        "expected": "não está configurado",
+        "actual": "Ainda não tenho confirmação suficiente para afirmar a conclusão. Vou manter o contexto preservado.",
+        "evidence": "final response"
+      },
+      {
+        "status": "failed",
+        "check": "must_include",
+        "case_id": "HREV-026",
+        "expected": "refrigerante",
+        "actual": "Ainda não tenho confirmação suficiente para afirmar a conclusão. Vou manter o contexto preservado. Pode me informar o número do pedido e se foi feito pelo delivery próprio ou iFood? Vou registrar a ocorrência somente após a persistência confirmada, sem oferecer compensação automática.",
+        "evidence": "final response"
+      },
+      {
+        "status": "failed",
+        "check": "must_include",
+        "case_id": "HREV-027",
+        "expected": "bebida",
+        "actual": "Sinto muito pelo ocorrido. Registre a solicitação pelo pedido no iFood, em Ajuda ou Reportar problema, e envie as evidências disponíveis. O relato também permanece no atendimento para preservar o contexto.",
+        "evidence": "final response"
+      },
+      {
+        "status": "failed",
+        "check": "must_include",
+        "case_id": "HREV-041",
+        "expected": "bebida",
+        "actual": "Ainda não tenho confirmação suficiente para afirmar a conclusão. Vou manter o contexto preservado. Vou registrar a ocorrência somente após a persistência confirmada, sem oferecer compensação automática.",
+        "evidence": "final response"
+      },
+      {
+        "status": "failed",
+        "check": "must_include",
+        "case_id": "HREV-044",
+        "expected": "shoyu",
+        "actual": "Ainda não tenho confirmação suficiente para afirmar a conclusão. Vou manter o contexto preservado. Vou registrar a ocorrência somente após a persistência confirmada, sem oferecer compensação automática.",
+        "evidence": "final response"
+      }
+    ]
+  },
+  "heuristic": {
+    "bureaucratic_patterns": [
+      {
+        "phrase": "setor responsável",
+        "count": 0
+      },
+      {
+        "phrase": "da forma correta",
+        "count": 0
+      },
+      {
+        "phrase": "com a devida atenção",
+        "count": 0
+      },
+      {
+        "phrase": "para que possamos",
+        "count": 0
+      },
+      {
+        "phrase": "seguimos à disposição",
+        "count": 0
+      }
+    ],
+    "responses_with_structural_usefulness_signal": 30,
+    "short_abrupt_candidates": 5,
+    "note": "Heurísticas indicam candidatos à revisão; não provam qualidade humana."
+  },
+  "human_required": [
+    "naturalidade da voz TATÁ",
+    "acolhimento proporcional ao caso",
+    "sensação de interesse genuíno",
+    "adequação do ritmo e da continuidade",
+    "preferência de César entre versões factual e igualmente seguras"
+  ],
+  "canonical_hash": "7b2d6c9457ba26e94b6aa0befd948918e10306eecc69357572d7456d63a5fbe2"
+}

@@ -2,19 +2,19 @@
   "project": "DeliveryOS Chatbot TATÁ",
   "active_change": "001-conversation-baseline-foundation",
   "branch": "feature/conversation-baseline-foundation-v1",
-  "head": "72fd9bc1a3bf13751c8a29d17396d28371bfb01e",
-  "working_tree": "skills_ready_for_commit",
+  "head": "374442070ce20e4c71b020075ed231ad02adbc6a",
+  "working_tree": "baseline_ready_for_commit",
   "completed_units": [
     "git_lineage_validation",
     "historical_baseline",
     "execution_foundation",
-    "local_skills"
+    "local_skills",
+    "baseline_corpus",
+    "baseline_verifiers"
   ],
-  "active_unit": "conversation_inventory_and_baseline",
+  "active_unit": "inventory_and_baseline_documentation",
   "pending_units": [
     "conversation_inventory",
-    "baseline_corpus",
-    "baseline_verifiers",
     "baseline_report",
     "change_002_skeleton",
     "final_regression",
@@ -36,6 +36,6 @@
   "external_gates": [
     "César reviews human experience in Change 002"
   ],
-  "next_step": "commit validated local skills, then build the independent baseline corpus",
-  "updated_at": "2026-07-28T02:10:00-03:00"
+  "next_step": "commit corpus and verifiers, then document the measured baseline",
+  "updated_at": "2026-07-28T02:45:00-03:00"
 }

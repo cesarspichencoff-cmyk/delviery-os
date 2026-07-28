@@ -5,10 +5,10 @@
 - `completed` — criar fundação e regras de agentes;
 - `completed` — criar e validar três skills;
 - `active` — inventariar banco conversacional;
-- `pending` — criar corpus de 50 conversas;
-- `pending` — capturar respostas atuais;
-- `pending` — implementar métricas e verificadores;
-- `pending` — provar controles negativos;
+- `completed` — criar corpus de 50 conversas;
+- `completed` — capturar respostas atuais;
+- `completed` — implementar métricas e verificadores;
+- `completed` — provar controles negativos;
 - `pending` — documentar baseline;
 - `pending` — especificar Mudança 002;
 - `pending` — executar regressão final;
