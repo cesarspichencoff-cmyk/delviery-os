@@ -1,10 +1,10 @@
 {
   "project": "DeliveryOS Chatbot TATÁ",
-  "active_change": "003-human-homologation-panel",
-  "branch": "feature/conversation-human-homologation-panel-v1",
-  "base": "5df60b80371a5df8d6846b5c8dcc917e9f5bf63d",
-  "code_and_test_checkpoint": "a3ff803",
-  "working_tree": "expected_clean_after_final_documentation_commit",
+  "active_change": "004-service-intelligence-refinement",
+  "branch": "feature/conversation-service-intelligence-refinement-v1",
+  "base": "4030d4558673c98528357a9bb87903a993496bf7",
+  "code_and_test_checkpoint": "4030d4558673c98528357a9bb87903a993496bf7",
+  "working_tree": "active_change_004",
   "completed_units": [
     "git_lineage_validation",
     "targeted_prechange_regression",
@@ -21,12 +21,26 @@
     "privacy_negative_controls",
     "playwright_browser_flows",
     "historical_regression",
-    "external_review_packet"
+    "external_review_packet",
+    "cesar_human_review_complete",
+    "change_004_authorized",
+    "change_004_git_validation",
+    "change_004_baseline",
+    "human_feedback_diagnosis",
+    "external_service_research"
   ],
-  "active_unit": null,
+  "active_unit": "knowledge_coverage_and_action_playbooks",
   "pending_units": [
-    "cesar_human_review",
-    "cesar_gate_decision"
+    "knowledge_coverage_matrix",
+    "action_playbooks",
+    "response_plan_v2",
+    "broad_knowledge_search",
+    "actionable_composition",
+    "independent_gates_and_mutations",
+    "refined_corpus",
+    "re_homologation_panel",
+    "full_regression",
+    "final_documentation"
   ],
   "test_status": {
     "conversation_native": "295/295 passed",
@@ -44,11 +58,23 @@
     "historical_source": "16/16 matched",
     "humanized_artifact": "50 conversations; 56 turns; hash cfe462fe00147c6b0642fbd9e9fe15f19c8120781d5829d62f3dda663814dc04"
   },
+  "human_feedback": {
+    "evaluated": "50/50",
+    "turns": 56,
+    "overall_average": 2.86,
+    "blind": "18 humanized; 2 baseline; 8 equivalent; 18 both_bad",
+    "free_chat_feedback": 3,
+    "decision": "reproved_by_Cesar"
+  },
+  "change_004_baseline": {
+    "conversation_native": "295/295 passed",
+    "scenario_catalog": "200/200 passed; hash d68e17ce7c4b17f33a9f4577c1e57039d588cb3bffedd8709e0044ecbb9b6c43",
+    "privacy": "passed; zero findings; positive control detected"
+  },
   "blockers": [],
   "external_gates": [
-    "César evaluates the human experience",
-    "César authorizes or rejects Change 004"
+    "César performs the new human re-homologation after implementation"
   ],
-  "next_step": "run the local panel, collect human feedback, export it, and stop before Change 004",
-  "updated_at": "2026-07-28T15:30:00-03:00"
+  "next_step": "implement the 52-intent knowledge coverage matrix and versioned action playbooks",
+  "updated_at": "2026-07-28T18:00:00-03:00"
 }
