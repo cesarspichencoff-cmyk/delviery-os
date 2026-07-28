@@ -1,0 +1,4 @@
+interface:
+  display_name: "Chatbot Checkpoint Resume"
+  short_description: "Checkpoint and resume chatbot work safely"
+  default_prompt: "Create or resume a safe atomic checkpoint for this chatbot change without losing partial work."

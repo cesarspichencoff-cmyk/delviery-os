@@ -1,0 +1,4 @@
+interface:
+  display_name: "TATA Conversation Quality"
+  short_description: "Evaluate TATA voice without changing facts"
+  default_prompt: "Evaluate this synthetic chatbot response for TATA conversational quality while preserving facts and authority."

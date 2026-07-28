@@ -1,0 +1,4 @@
+interface:
+  display_name: "Chatbot Adversarial Evidence"
+  short_description: "Challenge chatbot claims with independent evidence"
+  default_prompt: "Audit this chatbot result adversarially using independent evidence and negative controls."
