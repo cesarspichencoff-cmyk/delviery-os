@@ -65,6 +65,7 @@ function fallbackReason(classification = {}, result = {}, strategyId) {
   if (result.status === 'unavailable') return 'action_unavailable';
   if (result.status === 'failed') return 'safe_internal_error';
   if (result.status === 'processing') return 'integration_not_observable';
+  if (classification.intent?.startsWith('information.') && !classification.information_source) return 'public_fact_unconfirmed';
   if (strategyId === 'capability_limit' && classification.intent?.startsWith('information.')) return 'public_fact_unconfirmed';
   if (strategyId === 'handoff' || (classification.escalation !== 'E0' && result.status !== 'confirmed')) return 'human_assistance_needed';
   return null;
