@@ -88,6 +88,32 @@ function extractSurfaceFacts(authorizedText = '') {
   return { text, links: [...new Set(links)], numbers: [...new Set(numbers)] };
 }
 
+function answeredFieldsFromSource(sourceText = '') {
+  const text = normalizeText(sourceText);
+  const fields = new Set();
+  if (/\b(?:hoje|amanha|segunda|terca|quarta|quinta|sexta|sabado|domingo|\d{1,2}\/\d{1,2})\b/u.test(text)) fields.add('date');
+  if (/\b(?:as|a)\s+\d{1,2}(?:h|:\d{2})\b/u.test(text)) fields.add('time');
+  if (/\b(?:somos|estamos em|mesa para|grupo de)\s+(?:\d{1,2}|um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove|dez|onze|doze)\b/u.test(text)) fields.add('party_size');
+  if (/^(?:\d{1,2}|um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove|dez|onze|doze)[.!]?$/u.test(text)) fields.add('party_size');
+  return fields;
+}
+
+function questionPriority(strategyId, fields) {
+  const priorities = {
+    reservation: ['party_size', 'date', 'time', 'customer_name'],
+    waitlist: ['party_size', 'customer_name', 'arrival_estimate'],
+    large_group: ['customer_name', 'arrival_estimate'],
+    missing_item: ['order_reference', 'order_channel', 'item_name'],
+    food_safety: ['symptoms', 'onset', 'people_affected', 'order_reference', 'item_name'],
+    quality: ['order_reference', 'item_name', 'evidence_available', 'quality_signal']
+  }[strategyId] || [];
+  return [...fields].sort((left, right) => {
+    const a = priorities.includes(left) ? priorities.indexOf(left) : priorities.length;
+    const b = priorities.includes(right) ? priorities.indexOf(right) : priorities.length;
+    return a - b;
+  });
+}
+
 function buildResponsePlan(input = {}) {
   const classification = input.classification || {};
   const result = input.result || { status: 'unknown' };
@@ -96,9 +122,33 @@ function buildResponsePlan(input = {}) {
   const strategyId = selectStrategyId({ classification, conversation_stage: stage, result_status: result.status });
   const strategy = strategyFor(strategyId);
   const asked = new Set(conversation.asked_fields || []);
-  const mandatoryQuestions = [...new Set(classification.fields_missing || [])].filter((field) => !asked.has(field));
+  const answeredNow = answeredFieldsFromSource(conversation.source_text);
+  const pendingQuestions = questionPriority(
+    strategyId,
+    [...new Set(classification.fields_missing || [])].filter((field) => !asked.has(field) && !answeredNow.has(field))
+  );
+  const questionLimit = {
+    reservation: 1,
+    waitlist: 1,
+    large_group: 2,
+    missing_item: 2,
+    wrong_item: 2,
+    wrong_quantity: 2,
+    personalization_ignored: 2,
+    quality: 2,
+    food_safety: 2,
+    ambiguity: 1,
+    continuation: 1
+  }[strategyId] || 2;
+  const mandatoryQuestions = pendingQuestions.slice(0, questionLimit);
   const newFacts = safeEntityFacts(classification);
-  const knownFacts = Array.isArray(conversation.known_facts) ? conversation.known_facts.filter((fact) => fact && typeof fact === 'object') : [];
+  const suppliedKnownFacts = Array.isArray(conversation.known_facts) ? conversation.known_facts.filter((fact) => fact && typeof fact === 'object') : [];
+  const contextualFacts = Object.entries(conversation.context || {})
+    .filter(([field, value]) => SAFE_ENTITY_FIELDS.has(field) && value != null && ['string', 'number', 'boolean'].includes(typeof value))
+    .map(([field, value]) => ({ field, value, source: 'conversation_context', certainty: 'provided' }));
+  const knownFacts = [...suppliedKnownFacts, ...contextualFacts].filter((fact, index, values) => (
+    values.findIndex((candidate) => candidate.field === fact.field && candidate.value === fact.value) === index
+  ));
   const authorizedSurface = extractSurfaceFacts(input.authorized_text);
   const verifiedActions = result.status === 'confirmed' && classification.action ? [classification.action] : [];
   const pendingActions = result.status === 'confirmed' || !classification.action ? [] : [classification.action];
@@ -114,6 +164,7 @@ function buildResponsePlan(input = {}) {
     verified_actions: verifiedActions,
     pending_actions: pendingActions,
     mandatory_questions: mandatoryQuestions,
+    deferred_questions: pendingQuestions.slice(questionLimit),
     optional_information: [],
     prohibited_claims: [...new Set([...STANDARD_PROHIBITED, ...(classification.prohibited_responses || []), ...strategy.prohibited_claims])],
     length: strategy.length,
@@ -175,6 +226,8 @@ module.exports = {
   fallbackReason,
   safeEntityFacts,
   extractSurfaceFacts,
+  answeredFieldsFromSource,
+  questionPriority,
   buildResponsePlan,
   validateResponsePlan
 };

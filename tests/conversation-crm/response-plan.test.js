@@ -56,7 +56,8 @@ test('perguntas já feitas não reaparecem no plano', () => {
     authorized_text: 'A confirmação depende do retorno do sistema.',
     conversation: { turn_order: 2, source_text: 'Quatro.', asked_fields: ['party_size'] }
   });
-  assert.deepEqual(plan.mandatory_questions, ['date', 'time']);
+  assert.deepEqual(plan.mandatory_questions, ['date']);
+  assert.deepEqual(plan.deferred_questions, ['time']);
   assert.equal(plan.conversation_stage, 'continuation');
 });
 

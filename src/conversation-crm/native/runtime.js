@@ -18,9 +18,10 @@ const { EvidenceStore } = require('./evidence-store');
 const { NotificationEngine } = require('./notification');
 const { NativeObservability } = require('./observability');
 const { DriverHealthMonitor } = require('./health');
-const { extractEntities, normalizeText } = require('./engine');
+const { extractEntities, extractPartyCandidates, normalizeText } = require('./engine');
+const { NUMBER_WORDS } = require('../engine/classifier');
 const { createRuntimeConversationEngine } = require('./engine-factory');
-const { composeResponse } = require('./response-composer');
+const { composeHumanizedResponse } = require('./humanized-response');
 const { loadPlaceholderRegistry } = require('./placeholders');
 const { nativeError } = require('./errors');
 
@@ -66,6 +67,16 @@ function isComplement(content) {
 function resolveShortReply(content, pendingFields = []) {
   const text = normalizeText(content);
   const output = {};
+  const partyCandidates = extractPartyCandidates(content);
+  if (pendingFields.includes('party_size') && partyCandidates.length === 1) output.party_size = partyCandidates[0];
+  if (pendingFields.includes('party_size') && partyCandidates.length === 0) {
+    const bare = text.match(/^(\d{1,2}|[a-z]+)[.!?]?$/u)?.[1];
+    const value = bare && (/^\d+$/u.test(bare) ? Number(bare) : NUMBER_WORDS[bare]);
+    if (Number.isInteger(value) && value > 0) output.party_size = value;
+  }
+  if (pendingFields.includes('date') && /\bhoje\b/u.test(text)) output.date = 'relative_today';
+  if (pendingFields.includes('date') && /\bamanha\b/u.test(text)) output.date = 'relative_tomorrow';
+  if (pendingFields.includes('time') && /\b(?:as|a)\s+\d{1,2}(?:h|:\d{2})\b/u.test(text)) output.time = 'time_provided';
   if (pendingFields.includes('order_channel')) {
     if (/\bifood\b/u.test(text)) output.order_channel = 'marketplace';
     else if (/\bdelivery\b/u.test(text)) output.order_channel = 'own_delivery';
@@ -135,6 +146,73 @@ class NativeConversationRuntime {
       payload: { message_id: messageId, stage, ...payload, seed: this.seed, clock: this.clock.iso(), synthetic: true }
     });
     if (crashAfter === stage) throw new SimulatedCrashError(stage);
+  }
+
+  previousResponseContext(conversationId, excludeMessageId = null) {
+    const previousOutputs = this.store.eventsOfType('runtime.response_registered')
+      .map((event) => event.payload?.result)
+      .filter((saved) => saved?.conversation_id === conversationId && saved?.message_id !== excludeMessageId);
+    return {
+      previous_responses: previousOutputs.map((saved) => saved.response?.text).filter(Boolean),
+      asked_fields: previousOutputs.flatMap((saved) => saved.response?.plan?.mandatory_questions || []),
+      known_facts: previousOutputs.flatMap((saved) => [
+        ...(saved.response?.plan?.known_facts || []),
+        ...(saved.response?.plan?.new_facts || [])
+      ])
+    };
+  }
+
+  contextBeforeMessage(conversationId, caseId, messageId) {
+    const output = {};
+    for (const event of this.context.events(conversationId, { case_id: caseId })) {
+      const payload = event.payload;
+      if (payload.message_id === messageId || payload.state === 'superseded') continue;
+      const current = output[payload.field];
+      if (!current || payload.revision > current.revision || (payload.revision === current.revision && event.sequence > current.sequence)) {
+        output[payload.field] = { ...payload, event_id: event.event_id, sequence: event.sequence };
+      }
+    }
+    return output;
+  }
+
+  classificationBeforeMessage(conversationId, caseId, messageId) {
+    return this.store.eventsOfType('crm.classification_recorded')
+      .filter((event) => (
+        event.payload.conversation_id === conversationId
+        && event.payload.case_id === caseId
+        && event.payload.message_id !== messageId
+      ))
+      .at(-1)?.payload || null;
+  }
+
+  recomposeStoredResponse(raw, saved) {
+    if (!saved?.input_content_hash || saved.input_content_hash !== sha256(String(raw.content || ''))) {
+      return saved.response;
+    }
+    const history = this.previousResponseContext(saved.conversation_id, saved.message_id);
+    const projected = saved.case_id
+      ? this.context.project(saved.conversation_id, { case_id: saved.case_id })
+      : {};
+    const context = {
+      ...Object.fromEntries(Object.entries(projected).map(([key, item]) => [key, item.value])),
+      ...(raw.context || {}),
+      unit_id: raw.unit_id || null,
+      continuation_intent: saved.classification?.intent || null,
+      short_reply_resolved: Number(raw.turn_order) > 1
+    };
+    return composeHumanizedResponse({
+      classification: saved.classification,
+      result: saved.result,
+      handoff: saved.handoff,
+      seed: this.seed,
+      conversation: {
+        conversation_id: saved.conversation_id,
+        turn_order: raw.turn_order,
+        source_text: raw.content,
+        ...history,
+        context
+      }
+    });
   }
 
   selectCase(input, classification, entities, shortEntities = {}) {
@@ -218,7 +296,8 @@ class NativeConversationRuntime {
       }
       const observed = this.store.findByIdempotency(`observability:${raw.correlation_id}:complete:1`);
       if (!observed) this.recordCompletion(saved, raw.correlation_id);
-      return deepFreeze({ ...saved, duplicate: true, recovered: true });
+      const response = this.recomposeStoredResponse(raw, saved);
+      return deepFreeze({ ...saved, response, duplicate: true, recovered: true });
     }
 
     let gateway;
@@ -235,12 +314,16 @@ class NativeConversationRuntime {
       this.crm.recordMessage(gateway.input);
 
       const latestCase = this.crm.latestCase(gateway.input.conversation_id, { open_only: true });
-      const latestClassification = latestCase ? this.crm.latestClassification(gateway.input.conversation_id, latestCase.case_id) : null;
+      const latestClassification = latestCase
+        ? this.classificationBeforeMessage(gateway.input.conversation_id, latestCase.case_id, gateway.input.message_id)
+        : null;
       const pendingFields = latestClassification?.classification?.fields_missing || [];
       const shortEntities = resolveShortReply(gateway.input.content, pendingFields);
       const preliminaryEntities = extractEntities(gateway.input.content, { unit_id: gateway.input.unit_id });
       const provisionalCaseId = latestCase?.case_id || null;
-      const projected = provisionalCaseId ? this.context.project(gateway.input.conversation_id, { case_id: provisionalCaseId }) : {};
+      const projected = provisionalCaseId
+        ? this.contextBeforeMessage(gateway.input.conversation_id, provisionalCaseId, gateway.input.message_id)
+        : {};
       const mergedContext = {
         ...Object.fromEntries(Object.entries(projected).map(([key, item]) => [key, item.value])),
         ...gateway.input.context,
@@ -410,7 +493,36 @@ class NativeConversationRuntime {
           additionalHandoffs.push(this.queue.create({ case_id: caseId, conversation_id: gateway.input.conversation_id, escalation, reason: 'food_safety', idempotency_key: `${caseId}:${escalation}:food_safety` }));
         }
       }
-      const response = composeResponse({ classification, result, handoff });
+      const responseContext = this.previousResponseContext(gateway.input.conversation_id);
+      const response = composeHumanizedResponse({
+        classification,
+        result,
+        handoff,
+        seed: this.seed,
+        conversation: {
+          conversation_id: gateway.input.conversation_id,
+          turn_order: gateway.input.turn_order,
+          source_text: gateway.input.content,
+          ...responseContext,
+          context: mergedContext
+        }
+      });
+      if (response.validation.fallback_used) {
+        this.store.append({
+          event_id: `response_validation_${gateway.input.message_id}`,
+          idempotency_key: `response-validation:${gateway.input.message_id}`,
+          type: 'runtime.response_validation_failed',
+          occurred_at: this.clock.iso(),
+          payload: {
+            message_id: gateway.input.message_id,
+            conversation_id: gateway.input.conversation_id,
+            case_id: caseId,
+            finding_codes: response.validation.rejected_finding_codes,
+            fallback_used: true,
+            synthetic: true
+          }
+        });
+      }
       this.stage(raw.message_id, 'response_composed', { response_status: result.status }, options.crashAfter);
       const responseId = `response_${sha256(gateway.input.message_id).slice(0, 20)}`;
       this.crm.recordResponse({ response_id: responseId, case_id: caseId, conversation_id: gateway.input.conversation_id, status_reflected: result.status, text_hash: sha256(response.text), handoff_confirmed: handoff?.status === 'confirmed', synthetic: true });
@@ -422,6 +534,7 @@ class NativeConversationRuntime {
         scenario_id: scenarioId,
         conversation_id: gateway.input.conversation_id,
         message_id: gateway.input.message_id,
+        input_content_hash: sha256(gateway.input.content),
         case_id: caseId,
         order_id: orderId,
         gateway: { status: 'accepted', out_of_order: gateway.out_of_order, privacy: gateway.privacy },

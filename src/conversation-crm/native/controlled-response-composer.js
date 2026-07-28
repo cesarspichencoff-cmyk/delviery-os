@@ -173,11 +173,16 @@ function informationText(input) {
 }
 
 function reservationText(input) {
-  const { plan, authorizedText, conversation, variationContext } = input;
+  const { classification, plan, authorizedText, conversation, variationContext } = input;
   const source = String(conversation.source_text || '');
   const asksToAct = /\b(?:quero fazer|quero reservar|reservar para|confirmar minha|entrar na fila)\b/iu.test(source);
   const question = asksToAct || plan.conversation_stage === 'continuation' ? minimalQuestions(plan.mandatory_questions, { limit: 1 }) : '';
   const intro = plan.conversation_stage === 'continuation' ? acknowledgement(plan, variationContext) : 'Claro.';
+  const partySize = entityValue(classification, plan, 'party_size');
+  if (plan.conversation_stage === 'continuation') {
+    const continuity = partySize ? `${intro.replace(/[.]$/u, '')}, para ${partySize} pessoas.` : intro;
+    return `${continuity}${question ? ` ${question}` : ''}`;
+  }
   return `${intro} ${sentence(authorizedText)}${question ? ` ${question}` : ''}`;
 }
 
@@ -202,6 +207,9 @@ function occurrenceText(input) {
   if (plan.strategy_id === 'quality') {
     return `${intro} Vou preservar ${issue} para análise da equipe de qualidade e da gestão, sem antecipar causa ou compensação.${question ? ` ${question}` : ''}`;
   }
+  if (classification.intent === 'occurrence.refund_request' && authorizedText) {
+    return sentence(authorizedText);
+  }
   if (classification.intent === 'occurrence.missing_item') {
     const item = entityValue(classification, plan, 'item_name');
     const concrete = item ? `a falta de ${item}` : 'o item faltante';
@@ -209,9 +217,9 @@ function occurrenceText(input) {
       return `${intro} Sobre ${concrete}, ${authorizedText.charAt(0).toLowerCase()}${sentence(authorizedText).slice(1)}`;
     }
     const next = question || 'O caso permanece aberto com as informações já fornecidas.';
-    return `${intro} Registrei no contexto ${concrete}, sem presumir reposição, crédito ou reembolso. ${next}`;
+    return `${intro} Sobre ${concrete}, não vou presumir reposição, crédito ou reembolso. ${next}`;
   }
-  return `${intro} Registrei no contexto ${issue}, sem antecipar uma conclusão ou compensação.${question ? ` ${question}` : ''}`;
+  return `${intro} Sobre ${issue}, não vou antecipar uma conclusão ou compensação.${question ? ` ${question}` : ''}`;
 }
 
 function capabilityLimitText(input) {
