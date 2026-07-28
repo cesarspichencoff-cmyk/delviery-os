@@ -31,4 +31,3 @@ Verificador tautológico, heurística tratada como verdade, corpus contaminado p
 ## Artefatos
 
 `AGENTS.md`, memória em `docs/execution/chatbot`, três skills, corpus em `evals/human-review`, scripts em `scripts/verifiers/chatbot`, relatórios e esqueleto da Mudança 002.
-

@@ -26,4 +26,3 @@ Perguntar somente o mínimo ainda ausente. Não repetir pergunta já respondida.
 ## Mudanças de linguagem
 
 Templates, estratégias, perfil de voz, compositor, validador e fallback pertencem a mudança própria. Devem receber um plano decidido pelo DeliveryOS, preservar fatos e autoridade e passar por verificador independente. Não editar essas áreas durante uma missão de baseline.
-

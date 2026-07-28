@@ -15,4 +15,3 @@ description: Create, verify or resume an atomic DeliveryOS chatbot checkpoint wh
 8. Encerrar com working tree limpo, commit local claro e confirmação de ausência de push, merge e deploy.
 
 Controle negativo: bloquear qualquer retomada que proponha sobrescrever arquivos desconhecidos ou misturar duas mudanças.
-

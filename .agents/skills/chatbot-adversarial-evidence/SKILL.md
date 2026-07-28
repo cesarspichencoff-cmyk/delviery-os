@@ -15,4 +15,3 @@ description: Audit chatbot behavior with independent evidence, negative controls
 8. Registrar comando, esperado, obtido, hash, impacto e limitação.
 
 Proibir: `scenario_id` influenciar classificação, oráculo dentro do runtime, snapshot permissivo e atualização de expectativa feita apenas para passar.
-

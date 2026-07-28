@@ -28,3 +28,34 @@
 
 **Reversibilidade:** alta; os artefatos são autocontidos.
 
+## D-003 — Hash ancorado no comportamento, não no commit documental
+
+**Contexto:** a primeira versão do artefato incluía o HEAD corrente e mudava
+quando somente documentação era commitada.
+
+**Alternativas:** aceitar o hash volátil; remover toda proveniência; ancorar no
+commit comportamental medido.
+
+**Decisão:** registrar `26922b9` como `source_behavior_commit` e excluí-lo de
+variações acidentais de HEAD.
+
+**Motivo:** o mesmo comportamento e corpus devem produzir o mesmo artefato.
+
+**Impacto:** duas execuções produziram arquivos idênticos byte a byte.
+
+**Reversibilidade:** alta; a proveniência continua explícita.
+
+## D-004 — Mudança 002 somente como especificação
+
+**Contexto:** o baseline encontrou cinco lacunas de superfície e repetição
+mensurável.
+
+**Alternativas:** corrigir imediatamente; apenas preparar o próximo contrato.
+
+**Decisão:** criar `SPEC`, `TASKS` e `ACCEPTANCE`, sem implementar humanização.
+
+**Motivo:** preserva uma mudança por execução e permite gate de César.
+
+**Impacto:** nenhuma resposta, decisão, política ou capacidade foi alterada.
+
+**Reversibilidade:** total.

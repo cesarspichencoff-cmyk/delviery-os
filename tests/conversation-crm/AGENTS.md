@@ -15,4 +15,3 @@ Não usar snapshot permissivo, expectativa genérica ou normalização que escon
 Verificadores de linguagem devem analisar somente a saída pública e dados explicitamente permitidos. Eles não podem consultar `ideal_response`, intenção esperada do cenário ou decisões internas do compositor para concluir que a própria resposta está correta.
 
 Controles negativos devem provar detecção de: resposta vazia, link ou valor desconhecido, promessa sem evidência, linguagem burocrática, pergunta repetida e vazamento técnico. Se um controle negativo não fica vermelho, o verificador falha.
-

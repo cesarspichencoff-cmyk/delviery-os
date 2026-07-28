@@ -20,3 +20,11 @@
 
 As regras acima foram promovidas para `AGENTS.md` e para as skills locais. A ferramenta deve registrar comandos, hashes e limitações em vez de depender do histórico da conversa.
 
+## Retrabalho evitável identificado
+
+Um hash de evidência não deve incluir o HEAD de documentação quando mede somente
+comportamento. A mutação do commit, sem mutação do runtime, revelou a falha e a
+regra foi promovida para a decisão D-003.
+
+O baseline também mostrou que cobertura de intenção não equivale a riqueza de
+superfície: estado lembrado pelo CRM pode continuar invisível na frase.

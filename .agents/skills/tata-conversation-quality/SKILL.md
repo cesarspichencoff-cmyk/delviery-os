@@ -15,4 +15,3 @@ description: Evaluate or design TATÁ chatbot language for natural Brazilian Por
 8. Entregar fatos observáveis, heurísticas e itens que exigem avaliação humana em seções separadas.
 
 Controle negativo: rejeitar uma versão “mais simpática” que invente confirmação, compensação, prazo ou dado.
-

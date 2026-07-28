@@ -67,4 +67,3 @@ Mudanças transversais devem considerar, conforme escopo:
 - `node tools/teste_fonte_real.js`.
 
 Um verificador verde não é evidência suficiente sem controle negativo, expectativa independente e código de saída não zero quando o contrato é violado.
-

@@ -18,4 +18,3 @@ Fluxo:
 Estados válidos: `pending`, `active`, `blocked`, `completed`, `rejected`.
 
 Para retomar, ler primeiro `docs/execution/chatbot/STATE.json` e `NEXT_RESUME.md`; depois executar apenas o próximo comando técnico registrado.
-

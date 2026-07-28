@@ -14,6 +14,9 @@ Nenhum no início da Mudança 001.
 - concorrência multiprocesso do simulador não está homologada;
 - `npm ci` informa uma vulnerabilidade alta preexistente em `xlsx@0.18.5`;
 - métricas de acolhimento e secura são heurísticas, não verdade objetiva.
+- o validador oficial dos skills em Python ficou `N/A` porque `PyYAML` não está
+  instalado e esta mudança proíbe adicionar dependências; a estrutura foi
+  validada por Node nativo e por testes prospectivos independentes.
 
 ## Trabalho preservado
 
@@ -22,4 +25,3 @@ A branch local `feature/conversation-native-deliveryos-humanized-v1` foi conclu�
 ## Dados pendentes e dívidas aceitas
 
 Nenhum dado real é necessário para o corpus sintético. Políticas ou fatos institucionais não confirmados continuam desconhecidos.
-
