@@ -1,9 +1,9 @@
 # Tarefas — Mudança 002
 
-- `pending` — criar branch própria somente após autorização;
-- `pending` — formalizar Response Plan;
-- `pending` — definir perfil `tata_warm`;
-- `pending` — implementar estratégias sem alterar o Engine;
+- `completed` — criar branch própria somente após autorização;
+- `completed` — formalizar Response Plan;
+- `completed` — definir perfil `tata_warm`;
+- `active` — implementar estratégias sem alterar o Engine;
 - `pending` — implementar continuidade linguística;
 - `pending` — implementar compositor e fallback;
 - `pending` — criar validador factual independente;

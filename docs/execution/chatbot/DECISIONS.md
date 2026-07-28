@@ -59,3 +59,21 @@ mensurável.
 **Impacto:** nenhuma resposta, decisão, política ou capacidade foi alterada.
 
 **Reversibilidade:** total.
+
+## D-005 — Reuso seletivo da branch humanizada anterior
+
+**Contexto:** `1b914c10` contém uma tentativa anterior de perfil, estratégias,
+compositor, validador, testes e painel.
+
+**Alternativas:** fazer merge; copiar os arquivos; rejeitar tudo; reaproveitar
+somente conceitos comprováveis.
+
+**Decisão:** portar manualmente apenas variação por hash, orçamento de emoji,
+consulta append-only para continuidade e evento sanitizado de rejeição.
+
+**Motivo:** o código anterior altera o Engine, usa schema incompatível, consulta
+`ideal_response` no validador e amplia o painel fora de escopo.
+
+**Impacto:** a fundação da Mudança 001 permanece soberana.
+
+**Reversibilidade:** alta; os novos módulos são isolados e testáveis.

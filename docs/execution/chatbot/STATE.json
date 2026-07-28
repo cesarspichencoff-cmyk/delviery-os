@@ -1,9 +1,9 @@
 {
   "project": "DeliveryOS Chatbot TATÁ",
-  "active_change": "001-conversation-baseline-foundation",
-  "branch": "feature/conversation-baseline-foundation-v1",
-  "head": "2951ee99cc3b3b5bd80689276ad9e733b3ee7aae",
-  "working_tree": "final_documentation_ready",
+  "active_change": "002-humanized-response-strategy",
+  "branch": "feature/conversation-humanized-response-strategy-v1",
+  "head": "14a4f792eb3fbea225b427496eec6cdb11099eb2",
+  "working_tree": "response_plan_ready_for_commit",
   "completed_units": [
     "git_lineage_validation",
     "historical_baseline",
@@ -15,10 +15,26 @@
     "baseline_report",
     "change_002_skeleton",
     "final_regression",
+    "external_review_packet",
+    "change_002_lineage_validation",
+    "change_002_prechange_baseline",
+    "humanized_branch_assessment",
+    "response_plan_contract",
+    "response_strategy_catalog",
+    "tata_warm_profile"
+  ],
+  "active_unit": "controlled_composer",
+  "pending_units": [
+    "controlled_composer",
+    "post_composition_validator",
+    "humanized_continuity",
+    "fallback_taxonomy",
+    "five_contract_gaps",
+    "humanized_corpus",
+    "mutation_controls",
+    "final_regression",
     "external_review_packet"
   ],
-  "active_unit": "final_documentation_commit",
-  "pending_units": [],
   "test_status": {
     "conversation_native": "260/260 passed; 255 historical plus 5 verifier tests",
     "scenario_catalog": "200/200 passed; hash 258fece5f484f00e5a59ad2b45d2144af494da540941daccd53cf92c2e80a8e8",
@@ -38,6 +54,6 @@
   "external_gates": [
     "César reviews human experience in Change 002"
   ],
-  "next_step": "create the fourth local commit, verify clean tree, then await César before Change 002",
-  "updated_at": "2026-07-28T03:35:00-03:00"
+  "next_step": "commit Response Plan and strategy contracts, then implement the controlled composer",
+  "updated_at": "2026-07-28T05:10:00-03:00"
 }
