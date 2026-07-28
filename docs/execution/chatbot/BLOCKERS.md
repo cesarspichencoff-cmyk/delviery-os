@@ -2,11 +2,11 @@
 
 ## Bloqueadores locais
 
-Nenhum ao término técnico da Mudança 003.
+Nenhum ao término técnico da Mudança 004.
 
 ## Bloqueadores externos
 
-- avaliação humana da experiência ainda pertence a César;
+- nova homologação humana da experiência refinada ainda pertence a César;
 - produção permanece fora de escopo.
 
 ## Limitações conhecidas
@@ -35,8 +35,9 @@ Os cinco gaps do baseline foram corrigidos ou classificados com fallback
 explícito. Não há falha silenciosa restante no corpus, mas a aprovação humana da
 voz continua pendente e não bloqueia a homologação técnica.
 
-## Mudança 003
+## Mudança 004
 
-O painel está pronto, mas contém zero voto real de César. Qualidade subjetiva,
-preferência A/B e aprovação final continuam desconhecidas. A Mudança 004 está
-somente especificada e bloqueada por esse gate.
+Os 50 votos V1 foram preservados e a rodada V2 está tecnicamente pronta.
+Qualidade subjetiva e aprovação final da experiência refinada continuam
+desconhecidas até a nova homologação de César. Produção, provider generativo,
+integrações reais e concorrência multiprocesso permanecem fora de escopo.

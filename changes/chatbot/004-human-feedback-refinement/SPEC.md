@@ -17,3 +17,14 @@ do oráculo continuam invariantes.
 
 Fora de escopo: provider generativo, API paga, integrações reais, alteração de
 política TATÁ, envio de mensagem, push, merge e deploy.
+
+## Resultado
+
+- 52 intenções cobertas por contrato;
+- 16 playbooks versionados;
+- Response Plan V2 com candidatos, seleção, rejeição, fontes e modo de ação;
+- dois gates independentes do compositor;
+- 14 mutações negativas sem falso verde;
+- corpus V2 com 64 turnos e hash determinístico;
+- nova rodada de homologação separada da avaliação V1;
+- certificação completa concluída sem integração externa.

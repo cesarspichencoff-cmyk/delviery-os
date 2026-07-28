@@ -137,3 +137,44 @@ apontar explicitamente para um Chrome local no comando de teste.
 
 **Impacto:** nenhuma dependência de produção foi alterada; o teste de navegador
 continua reproduzível e falha fechado sem o caminho explícito.
+
+## D-012 — Conhecimento selecionado antes do fallback
+
+**Decisão:** pesquisar fatos operacionais, conteúdo público confirmado,
+conhecimento relacionado e procedimentos oficiais antes de classificar um
+fallback como legítimo.
+
+**Motivo:** o feedback mostrou respostas genéricas mesmo quando o banco já
+possuía informação aplicável.
+
+**Impacto:** o Response Plan V2 registra candidatos, seleção, rejeições e fontes.
+
+## D-013 — Dois gates independentes de qualidade de serviço
+
+**Decisão:** separar `available_knowledge_unused` de
+`humanized_but_unhelpful`, ambos fora do compositor.
+
+**Motivo:** uma resposta pode soar acolhedora e ainda não responder nem orientar.
+
+**Impacto:** 64/64 turnos refinados passam os dois gates e 14 mutações negativas
+provam sensibilidade.
+
+## D-014 — Re-homologação versionada
+
+**Decisão:** preservar `humanized-ratings.jsonl` e gravar a rodada refinada em
+`refined-ratings-v2.jsonl`.
+
+**Motivo:** feedback anterior é evidência, não estado descartável.
+
+**Impacto:** 43 casos críticos ou amostrais e oito inéditos podem ser
+reavaliados sem alterar votos V1.
+
+## D-015 — Sem limiar iFood inferido
+
+**Decisão:** não hardcodar prazo de atraso a partir da pesquisa externa.
+
+**Motivo:** páginas oficiais consultadas apresentaram referências de 10 e 15
+minutos em contextos diferentes.
+
+**Impacto:** o chatbot orienta o fluxo oficial sem transformar divergência
+documental em regra operacional.

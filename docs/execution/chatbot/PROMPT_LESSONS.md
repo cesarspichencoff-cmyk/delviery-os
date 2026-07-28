@@ -58,3 +58,22 @@ superfície: estado lembrado pelo CRM pode continuar invisível na frase.
   mobile, teclado e falha segura;
 - defeito encontrado durante homologação é evidência para a mudança seguinte,
   não autorização para corrigir respostas no mesmo sprint.
+
+## Mudança 004
+
+- busca de conhecimento precisa ser ampla e rastreável; parar no primeiro fato
+  produz respostas formalmente válidas, mas operacionalmente pobres;
+- acolhimento deve ser separado de utilidade: empatia sem resposta, direção ou
+  pergunta mínima precisa falhar;
+- fatos disponíveis e fallback legítimo exigem um gate independente do
+  compositor;
+- autosserviço já disponível deve retirar perguntas incompatíveis do plano, não
+  apenas escondê-las na frase;
+- URLs devem ser removidas antes de detectar pontuação interrogativa;
+- re-homologação precisa de namespace de armazenamento próprio para preservar a
+  rodada anterior;
+- comparação antes/depois deve ser liberada após o voto e não incorporar
+  comentários privados;
+- teste independente que exige raiz-alvo deve falhar explicitamente quando a
+  variável não existe; a correção é a invocação documentada, não afrouxar o
+  teste.
