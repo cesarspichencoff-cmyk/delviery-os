@@ -2,6 +2,7 @@
 
 const { deepFreeze } = require('./catalogs/operational');
 const { countEmoji, emojiLimit, TATA_WARM_PROFILE } = require('./voice-profile');
+const { runServiceQualityGates } = require('./service-quality-gates');
 
 const URL_PATTERN = /https?:\/\/[^\s)\]}>,]+/giu;
 const NUMBER_PATTERN = /(?:R\$\s*)?\d+(?:[.,]\d+)?/giu;
@@ -11,6 +12,7 @@ const AUTOMATIC_COMPENSATION = /\b(?:reembolso|cr[eé]dito|cortesia|reposi[cç][
 const UNVERIFIED_ACTION = /\b(?:reserva|fila|pedido|transfer[eê]ncia|encaminhamento)\b.{0,45}\b(?:confirmad[oa]|conclu[ií]d[oa]|realizad[oa])\b/iu;
 const LIABILITY = /(?:\ba culpa [eé]|\b[eé] responsabilidade (?:do|da)|\bn[oó]s causamos|\bcausou com certeza)/iu;
 const MEDICAL = /(?:\bo diagn[oó]stico [eé]|\bdiagnosticamos|\bfoi causado por|\bcom certeza foi|\bn[aã]o [eé] nada|\btome (?:um|o) rem[eé]dio)/iu;
+const PLATFORM_BLAME = /\b(?:a culpa [eé] do iFood|o iFood [eé] o culpado|responsabilidade do iFood|problema [eé] do iFood)\b/iu;
 const QUESTION_SIGNATURES = Object.freeze({
   intent: /(?:\b(?:d[uú]vida|assunto).*(?:restaurante|reserva|pedido)\b|\bo que .*\bconfirmar sobre\b)/iu,
   date: /\b(?:qual|que) (?:dia|data)\b/iu,
@@ -76,6 +78,7 @@ function validatePostComposition(input = {}) {
   if (AUTOMATIC_COMPENSATION.test(text)) findings.push('AUTOMATIC_COMPENSATION');
   if (LIABILITY.test(text)) findings.push('LIABILITY_ADMISSION');
   if (MEDICAL.test(text)) findings.push('MEDICAL_OR_CAUSALITY_CLAIM');
+  if (PLATFORM_BLAME.test(text)) findings.push('PLATFORM_BLAME');
   if (UNVERIFIED_ACTION.test(text) && !(plan.verified_actions || []).length) findings.push('UNVERIFIED_ACTION_CONFIRMATION');
   if (countEmoji(text) > emojiLimit(plan.emoji_policy)) findings.push('EMOJI_POLICY_VIOLATION');
   if (['sensitive', 'critical'].includes(plan.gravity) && /\p{Extended_Pictographic}/u.test(text)) findings.push('SENSITIVE_EMOJI');
@@ -106,6 +109,9 @@ function validatePostComposition(input = {}) {
 
   const maximum = { short: 500, medium: 700, careful: 900 }[plan.length] || 700;
   if (text.length > maximum) findings.push('RESPONSE_TOO_LONG');
+  const serviceQuality = runServiceQualityGates({ text, plan });
+  if (!serviceQuality.gates.available_knowledge_unused.passed) findings.push('AVAILABLE_KNOWLEDGE_UNUSED');
+  if (!serviceQuality.gates.humanized_but_unhelpful.passed) findings.push('HUMANIZED_BUT_UNHELPFUL');
 
   return deepFreeze({
     passed: findings.length === 0,
@@ -115,7 +121,8 @@ function validatePostComposition(input = {}) {
       numbers: numbersOf(text).length,
       questions: currentQuestions.length,
       emoji: countEmoji(text),
-      maximum_length: maximum
+      maximum_length: maximum,
+      service_quality: serviceQuality
     }
   });
 }
@@ -179,6 +186,7 @@ module.exports = {
   NUMBER_PATTERN,
   TECHNICAL_PATTERN,
   ORACLE_PATTERN,
+  PLATFORM_BLAME,
   QUESTION_SIGNATURES,
   normalize,
   urlsOf,
