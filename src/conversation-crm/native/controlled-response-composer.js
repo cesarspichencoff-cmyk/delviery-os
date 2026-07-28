@@ -135,7 +135,7 @@ function concreteIssue(classification, sourceText) {
 function fallbackText(input) {
   const { plan, classification, conversation, variationContext } = input;
   const subject = subjectFromText(conversation.source_text);
-  const question = minimalQuestions(plan.mandatory_questions, { limit: 1 });
+  const question = minimalQuestions(plan.mandatory_questions, { limit: plan.strategy_id === 'oke_events' ? 2 : 1 });
   switch (plan.fallback_reason) {
     case 'context_conflict':
       return `Recebi informações diferentes sobre ${subject || 'o contexto'} e não vou escolher uma sem confirmação.${question ? ` ${question}` : ''}`;
@@ -154,10 +154,13 @@ function fallbackText(input) {
       return `Esse caso precisa de acompanhamento humano antes de qualquer conclusão.${question ? ` ${question}` : ''}`;
     case 'intent_ambiguous': {
       const text = String(conversation.source_text || '');
-      if (/\b(?:gostei|adorei|amei)\b/iu.test(text)) return 'Que bom saber que você gostou da experiência 😊 Obrigado por contar.';
+      if (/\b(?:gostei|adorei|amei)\b/iu.test(text)) {
+        const emoji = plan.emoji_policy === 'none' ? '' : ' 😊';
+        return `Que bom saber que você gostou da experiência${emoji} Obrigado por contar.`;
+      }
       if (subject === 'atendimento humano') return 'Entendi que você quer falar com uma pessoa. Ainda não tenho confirmação de transferência, mas posso preservar o contexto para o atendimento.';
       if (subject === 'privacidade dos seus dados') return 'Entendi sua dúvida sobre privacidade. Ainda não tenho uma política confirmada para detalhar a retenção dos dados, então não vou inventar esse prazo.';
-      if (subject) return `Entendi que sua dúvida é sobre ${subject}. Ainda não tenho uma informação confirmada para responder isso com segurança.`;
+      if (subject) return `${acknowledgement(plan, variationContext)} Sobre ${subject}, ainda não tenho uma informação confirmada para responder isso com segurança. O que você gostaria de confirmar sobre esse assunto?`;
       return `${acknowledgement(plan, variationContext)} Você pode me contar se a dúvida é sobre o restaurante, uma reserva ou um pedido?`;
     }
     default:
@@ -214,7 +217,8 @@ function occurrenceText(input) {
     const item = entityValue(classification, plan, 'item_name');
     const concrete = item ? `a falta de ${item}` : 'o item faltante';
     if (classification.information_source && authorizedText) {
-      return `${intro} Sobre ${concrete}, ${authorizedText.charAt(0).toLowerCase()}${sentence(authorizedText).slice(1)}`;
+      const operationalText = sentence(authorizedText).replace(/^Sinto muito pelo ocorrido\.\s*/iu, '');
+      return `${intro} Sobre ${concrete}, ${operationalText.charAt(0).toLowerCase()}${operationalText.slice(1)}`;
     }
     const next = question || 'O caso permanece aberto com as informações já fornecidas.';
     return `${intro} Sobre ${concrete}, não vou presumir reposição, crédito ou reembolso. ${next}`;

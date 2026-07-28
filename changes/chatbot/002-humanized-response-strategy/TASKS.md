@@ -4,14 +4,14 @@
 - `completed` — formalizar Response Plan;
 - `completed` — definir perfil `tata_warm`;
 - `completed` — implementar estratégias sem alterar o Engine;
-- `pending` — implementar continuidade linguística;
+- `completed` — implementar continuidade linguística;
 - `completed` — implementar compositor e fallback;
-- `active` — criar validador factual independente;
-- `pending` — executar corpus de 50 conversas;
-- `pending` — executar controles negativos e mutações;
-- `pending` — comparar métricas com o baseline;
+- `completed` — criar validador factual independente;
+- `completed` — executar corpus de 50 conversas;
+- `completed` — executar controles negativos e mutações;
+- `completed` — comparar métricas com o baseline;
 - `pending` — realizar gate humano com César;
-- `pending` — executar regressões históricas;
+- `active` — executar regressões históricas;
 - `pending` — documentar evidência e rollback.
 
-Nenhuma tarefa desta mudança foi iniciada.
+O gate humano permanece deliberadamente para a Mudança 003; não é preenchido por avaliação automática.

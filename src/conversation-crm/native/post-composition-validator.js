@@ -12,7 +12,7 @@ const UNVERIFIED_ACTION = /\b(?:reserva|fila|pedido|transfer[eê]ncia|encaminham
 const LIABILITY = /(?:\ba culpa [eé]|\b[eé] responsabilidade (?:do|da)|\bn[oó]s causamos|\bcausou com certeza)/iu;
 const MEDICAL = /(?:\bo diagn[oó]stico [eé]|\bdiagnosticamos|\bfoi causado por|\bcom certeza foi|\bn[aã]o [eé] nada|\btome (?:um|o) rem[eé]dio)/iu;
 const QUESTION_SIGNATURES = Object.freeze({
-  intent: /\b(?:d[uú]vida|assunto).*(?:restaurante|reserva|pedido)\b/iu,
+  intent: /(?:\b(?:d[uú]vida|assunto).*(?:restaurante|reserva|pedido)\b|\bo que .*\bconfirmar sobre\b)/iu,
   date: /\b(?:qual|que) (?:dia|data)\b/iu,
   time: /\bqual hor[aá]rio\b/iu,
   party_size: /\bquantas pessoas\b/iu,
@@ -95,7 +95,8 @@ function validatePostComposition(input = {}) {
   const facts = [...(plan.known_facts || []), ...(plan.new_facts || [])];
   const requiredConcrete = plan.strategy_contract?.mandatory_components || [];
   if (requiredConcrete.includes('concrete_item_reference')) {
-    const item = facts.find((fact) => fact.field === 'item_name')?.value;
+    const item = (plan.new_facts || []).find((fact) => fact.field === 'item_name')?.value
+      ?? [...(plan.known_facts || [])].reverse().find((fact) => fact.field === 'item_name')?.value;
     if (item && !normalize(text).includes(normalize(item))) findings.push('KNOWN_ITEM_OMITTED');
   }
   if (requiredConcrete.includes('concrete_group_reference')) {
@@ -127,11 +128,20 @@ function independentQuestion(field) {
     party_size: 'Para quantas pessoas seria?',
     customer_name: 'Qual nome devo usar?',
     arrival_estimate: 'Qual é a previsão aproximada de chegada?',
+    pickup_time: 'Qual horário você planeja para a retirada?',
+    requested_items: 'O que você gostaria de pedir?',
     order_reference: 'Qual é o número do pedido?',
     order_channel: 'O pedido foi feito pelo delivery do TATÁ ou pelo iFood?',
     item_name: 'Qual item foi afetado?',
+    expected_quantity: 'Qual era a quantidade esperada?',
+    received_quantity: 'Qual quantidade chegou?',
+    personalization: 'Qual personalização foi pedida?',
+    evidence_available: 'Você tem alguma foto disponível?',
+    allergen_signal: 'Qual foi o possível alergênico?',
     symptoms: 'Quais sintomas apareceram?',
-    onset: 'Quando os sintomas começaram?'
+    onset: 'Quando os sintomas começaram?',
+    people_affected: 'Quantas pessoas foram afetadas?',
+    quality_signal: 'O que chamou sua atenção na qualidade do item?'
   }[field];
   return text || '';
 }

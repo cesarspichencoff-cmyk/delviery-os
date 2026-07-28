@@ -2,8 +2,8 @@
   "project": "DeliveryOS Chatbot TATÁ",
   "active_change": "002-humanized-response-strategy",
   "branch": "feature/conversation-humanized-response-strategy-v1",
-  "head": "23efddf6f40df9190137c324cab71fa3daa9094e",
-  "working_tree": "post_composition_validation_ready_for_commit",
+  "head": "135d1c0a8853e626126777d10043106a2ce17cfb",
+  "working_tree": "humanized_corpus_and_mutations_ready_for_commit",
   "completed_units": [
     "git_lineage_validation",
     "historical_baseline",
@@ -27,13 +27,14 @@
     "post_composition_validator",
     "humanized_continuity",
     "fallback_taxonomy",
-    "deterministic_response_recomposition"
-  ],
-  "active_unit": "humanized_corpus_and_mutation_controls",
-  "pending_units": [
+    "deterministic_response_recomposition",
     "five_contract_gaps",
     "humanized_corpus",
-    "mutation_controls",
+    "humanized_metrics",
+    "mutation_controls"
+  ],
+  "active_unit": "final_regression_and_documentation",
+  "pending_units": [
     "final_regression",
     "external_review_packet"
   ],
@@ -51,12 +52,14 @@
     "baseline_corpus": "50 conversations and 56 turns; deterministic hash 894e8246aea72267cba4eb111d936421e76ff23859b191917a9b093b2a10fca9",
     "baseline_verifiers": "595/600 passed; 5 measured surface gaps",
     "negative_controls": "7/7 rejected with exit code 1",
-    "humanized_validation": "72/72 focused integration and recovery tests passed"
+    "humanized_validation": "72/72 focused integration and recovery tests passed",
+    "humanized_corpus": "50 conversations, 56 turns, 616/616 checks; hash d7c879de2f30258534e143d542278b37d1429572f1cfbcfd0728827efb990a6e",
+    "humanized_mutations": "12/12 rejected with exit code 1"
   },
   "blockers": [],
   "external_gates": [
     "César reviews human experience in Change 002"
   ],
-  "next_step": "commit validator and continuity, then generate the humanized corpus and mutation controls",
-  "updated_at": "2026-07-28T03:26:42-03:00"
+  "next_step": "commit corpus and mutation evidence, then run inherited regressions and build the external review packet",
+  "updated_at": "2026-07-28T03:31:59-03:00"
 }

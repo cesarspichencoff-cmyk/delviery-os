@@ -91,11 +91,20 @@ function extractSurfaceFacts(authorizedText = '') {
 function answeredFieldsFromSource(sourceText = '') {
   const text = normalizeText(sourceText);
   const fields = new Set();
+  if (/\b(?:gostei|adorei|amei|parabens)\b/u.test(text)) fields.add('intent');
   if (/\b(?:hoje|amanha|segunda|terca|quarta|quinta|sexta|sabado|domingo|\d{1,2}\/\d{1,2})\b/u.test(text)) fields.add('date');
   if (/\b(?:as|a)\s+\d{1,2}(?:h|:\d{2})\b/u.test(text)) fields.add('time');
   if (/\b(?:somos|estamos em|mesa para|grupo de)\s+(?:\d{1,2}|um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove|dez|onze|doze)\b/u.test(text)) fields.add('party_size');
   if (/^(?:\d{1,2}|um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove|dez|onze|doze)[.!]?$/u.test(text)) fields.add('party_size');
   return fields;
+}
+
+function isInformationalReservationQuery(sourceText = '') {
+  const text = normalizeText(sourceText);
+  const asksToAct = /\b(?:quero fazer|quero reservar|reservar para|confirmar minha|entrar na fila)\b/u.test(text);
+  const asksInformation = /^(?:qual|como|quanto|recebi|quando)\b/u.test(text)
+    || /\b(?:tolerancia|funciona|quanto tempo)\b/u.test(text);
+  return asksInformation && !asksToAct;
 }
 
 function questionPriority(strategyId, fields) {
@@ -123,10 +132,13 @@ function buildResponsePlan(input = {}) {
   const strategy = strategyFor(strategyId);
   const asked = new Set(conversation.asked_fields || []);
   const answeredNow = answeredFieldsFromSource(conversation.source_text);
-  const pendingQuestions = questionPriority(
+  let pendingQuestions = questionPriority(
     strategyId,
     [...new Set(classification.fields_missing || [])].filter((field) => !asked.has(field) && !answeredNow.has(field))
   );
+  if (['reservation', 'waitlist'].includes(strategyId) && isInformationalReservationQuery(conversation.source_text)) {
+    pendingQuestions = [];
+  }
   const questionLimit = {
     reservation: 1,
     waitlist: 1,
@@ -227,6 +239,7 @@ module.exports = {
   safeEntityFacts,
   extractSurfaceFacts,
   answeredFieldsFromSource,
+  isInformationalReservationQuery,
   questionPriority,
   buildResponsePlan,
   validateResponsePlan
