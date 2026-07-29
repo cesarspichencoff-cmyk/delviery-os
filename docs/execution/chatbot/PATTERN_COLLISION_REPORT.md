@@ -37,4 +37,3 @@ e posição de prioridade. Nenhum candidato é escolhido por modelo ou
 
 O corpus contém 390 casos de turno único e 20 conversas de oito turnos. A
 latência p95 local permanece abaixo de 50 ms no teste de 1.000 resoluções.
-

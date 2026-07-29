@@ -20,4 +20,3 @@ proibidas: contratar, ativar trial, autorizar cobrança ou contornar gate.
 Testes automatizados cobrem 15 casos financeiros, inclusive custo ausente,
 desconhecido, positivo, potencialmente tarifado, trial, provedor externo e
 WhatsApp iniciado pela empresa.
-

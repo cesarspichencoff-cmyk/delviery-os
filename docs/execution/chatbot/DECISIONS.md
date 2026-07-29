@@ -299,3 +299,58 @@ vermelho em escolha do menos ruim.
 
 **Impacto:** César não recebe uma falsa escolha. `human_winner` continua `null`
 e o baseline permanece soberano.
+
+## Mudança 006
+
+### D-030 — O Pattern Engine é soberano sobre o Writer
+
+**Decisão:** resolver movimento conversacional, Journey, fatos, correções,
+referências, pergunta obrigatória e limites antes de chamar qualquer Writer.
+
+**Motivo:** fluência não é autoridade operacional. O modelo local pode redigir
+somente dentro do envelope aprovado e cai em fallback determinístico se alterar
+fato, pergunta, ação, canal ou política.
+
+### D-031 — Estado conversacional estrutural é event-sourced
+
+**Decisão:** persistir decisões sanitizadas e reconstruir Journey, step, stack,
+pendências e correções por replay, com stack máxima de três jornadas.
+
+**Motivo:** retomada e idempotência não podem depender da memória do processo ou
+de texto bruto do cliente.
+
+### D-032 — Contextos futuros entram por contratos fechados
+
+**Decisão:** Customer Context, Menu Context, Recommendation Context, Channel
+Policy e Cost Policy são entradas opcionais validadas. Mocks de ferramentas
+futuras retornam indisponibilidade e não ecoam dados.
+
+**Motivo:** preparar compatibilidade sem antecipar CRM, catálogo, recomendador
+ou gateway real.
+
+### D-033 — Cardápio oficial é inventariado, não consolidado
+
+**Decisão:** tratar as seis fontes internas localizadas como oficiais para
+auditoria de cobertura do contrato, preservando origem, canal, unidade,
+ausências e divergências. Nenhum preço, descrição ou ingrediente foi alterado.
+
+**Motivo:** a página do DeliveryOS consome uma base operacional, mas não prova
+um catálogo único por canal e unidade. A consolidação pertence à Mudança 008.
+
+### D-034 — Custo externo zero é gate fail-closed
+
+**Decisão:** manter `FINANCIAL_MODE=ZERO_EXTERNAL_COST`, gasto externo máximo de
+R$ 0,00 e bloquear custo pago, desconhecido, trial com cobrança, BSP pago,
+campanha ou infraestrutura adicional.
+
+**Motivo:** ausência de evidência de gratuidade não é autorização financeira.
+
+### D-035 — Homologação usa saídas armazenadas sem promoção
+
+**Decisão:** comparar o compositor determinístico com as saídas Writer já
+armazenadas de Gemma 4 E4B e Qwen3.5 4B em 20 casos cegos, com o mesmo plano e
+estado por trio.
+
+**Motivo:** isolar qualidade de linguagem, evitar nova inferência e impedir que
+identidade técnica ou métricas escolham por César. `human_winner` permanece
+`null` e `promotion_authorized=false`.

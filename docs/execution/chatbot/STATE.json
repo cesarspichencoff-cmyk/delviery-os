@@ -1,9 +1,9 @@
 {
   "project": "DeliveryOS Chatbot TATÁ",
-  "active_change": "005b-current-open-model-rebakeoff",
-  "branch": "feature/conversation-current-open-model-rebakeoff-v1",
-  "base": "ffc312ca47cb05fe18304dba5e33b2b098ac7f78",
-  "behavioral_checkpoint": "ffc312ca47cb05fe18304dba5e33b2b098ac7f78",
+  "active_change": "006-deterministic-conversation-pattern-engine-local-writers",
+  "branch": "feature/conversation-pattern-engine-local-writer-v1",
+  "base": "34698b655fa9344d5392801de5240b6b431deeed",
+  "behavioral_checkpoint": "34698b655fa9344d5392801de5240b6b431deeed",
   "working_tree": "clean_after_final_commit",
   "completed_units": [
     "hosting_inspection",
@@ -37,12 +37,24 @@
     "005b_optional_gemma4_12b_doctor_gate",
     "005b_technical_comparison",
     "005b_full_regression",
-    "005b_final_certification"
+    "005b_final_certification",
+    "006_pattern_contract",
+    "006_conversation_pattern_engine",
+    "006_versioned_journey_graphs",
+    "006_event_sourced_journey_state",
+    "006_approved_response_envelope",
+    "006_writer_role_isolation",
+    "006_product_context_contracts",
+    "006_zero_external_cost_gate",
+    "006_official_menu_source_inventory",
+    "006_pattern_corpus_and_mutations",
+    "006_blind_writer_bundle",
+    "006_full_regression"
   ],
   "active_unit": null,
   "pending_units": [],
   "test_status": {
-    "conversation_native": "523/523 passed; historical generator test rewrote two tracked artifacts, which were restored byte-identical to HEAD",
+    "conversation_native": "600/600 passed; historical generator test rewrote two tracked artifacts, which were restored byte-identical to HEAD",
     "scenario_catalog": "200/200 passed; hash ddabec0dbf3c47adfb886b28556b96a47fcfcf90d709ec101b14fefee5f1a798",
     "privacy": "passed; zero findings; positive control detected",
     "scenario_194": "passed; no external access",
@@ -57,8 +69,13 @@
     "historical_homologation_isolated": "31/31 passed after tracked test artifacts were restored",
     "local_bakeoff_tests": "20/20 focused; included in Conversation 480/480",
     "panel_visual_qa": "passed; blind before vote, reveal after vote, automatic advance, zero console errors",
-    "005b_directed_baseline": "151/151 passed"
-    ,"005b_local_ai_focused": "179/179 passed after grammar alignment; 46/46 seed-directed checks passed; 35/35 current-model focused checks passed after Qwen evidence runner; 8/8 comparison checks passed"
+    "005b_directed_baseline": "151/151 passed",
+    "005b_local_ai_focused": "179/179 passed after grammar alignment; 46/46 seed-directed checks passed; 35/35 current-model focused checks passed after Qwen evidence runner; 8/8 comparison checks passed",
+    "006_focused": "114/114 passed",
+    "006_pattern_corpus": "390 single-turn cases and 20 eight-turn conversations; canonical hash 3b2d78aaf15afe9544d7a112ef80327b0e1e12587b6bfbecd71cbaedd9199bd4",
+    "006_mutations": "16/16 killed; zero survivors",
+    "006_contracts": "18/18 final-product checks and 15/15 zero-external-cost checks included in focused suite",
+    "006_recovery": "TATA-SC-193 action_started recovered with result confirmed; snapshot hash 4e430ce5fc4089aec285b7b0f80f6ac777583b20f7cc98072efb90ec00bb834d"
   },
   "bakeoff": {
     "seed": "TATA-LOCAL-AI-BAKEOFF-V1",
@@ -116,19 +133,31 @@
       "human_winner": null
     }
   },
+  "pattern_homologation": {
+    "seed": "TATA-PATTERN-HOMOLOGATION-V1",
+    "total_cases": 20,
+    "candidates": [
+      "deterministic_pattern_engine",
+      "gemma4_e4b_writer_stored_output",
+      "qwen35_4b_writer_stored_output"
+    ],
+    "human_winner": null,
+    "promotion_authorized": false,
+    "new_model_inference_performed": false
+  },
   "blockers": [
-    "005b_no_current_candidate_technical",
+    "006_human_writer_homologation_pending",
     "restaurant_hardware_unverified",
     "hosted_runtime_not_connected"
   ],
   "external_gates": [
-    "César completes blind local bake-off",
+    "César completes the Change 006 blind writer homologation",
     "restaurant computer passes Doctor",
     "hosted bridge endpoint is approved and wired"
   ],
   "production_authorized": false,
   "paid_api_or_infrastructure_added": false,
   "push_merge_deploy_performed": false,
-  "next_step": "no human bake-off for 005B; preserve baseline and wait for a separately authorized future model change",
-  "updated_at": "2026-07-29T04:15:00-03:00"
+  "next_step": "run only the local blind Change 006 homologation; do not promote a writer or start Changes 007-010 without a new authorization",
+  "updated_at": "2026-07-29T12:30:00-03:00"
 }

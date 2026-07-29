@@ -104,3 +104,24 @@ superfície: estado lembrado pelo CRM pode continuar invisível na frase.
   fora da classe de hardware certificada;
 - modelo reprovado não deve consumir uma rodada adversarial ou humana apenas
   para completar uma lista de artefatos.
+
+## Mudança 006
+
+- movimento conversacional deve ser um contrato determinístico anterior à
+  redação, não uma instrução implícita no prompt do Writer;
+- respostas curtas só são seguras quando vinculadas à pergunta pendente e ao
+  step atual da Journey;
+- correção precisa registrar valor anterior e novo sem apagar o histórico;
+- pergunta lateral deve responder e preservar explicitamente a pergunta de
+  retomada;
+- colisões precisam de ordem declarada e log auditável, especialmente quando
+  segurança, cancelamento e correção aparecem juntos;
+- o Writer deve receber contexto resumido por campos e estados, sem copiar PII
+  ou valores internos desnecessários;
+- fonte oficial de cardápio não implica catálogo único: canal, unidade e
+  proveniência continuam obrigatórios;
+- custo desconhecido é bloqueio, não oportunidade para fallback pago;
+- teste cego só compara linguagem quando plano e estado são idênticos e a
+  identidade técnica fica fora do artefato público;
+- corpus amplo precisa de mutações adversariais; volume sem controles negativos
+  não prova prioridade, isolamento de oráculo ou fail-closed.

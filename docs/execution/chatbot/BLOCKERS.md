@@ -80,3 +80,26 @@ o gerador de respostas contra dois artefatos rastreados. A suíte passou 523/523
 mas deixou esses arquivos modificados; eles foram restaurados byte a byte e a
 homologação isolada passou 31/31. A correção do isolamento pertence a mudança
 separada e não altera o veredito dos modelos.
+
+## Mudança 006
+
+Não há bloqueador técnico para a homologação humana do Pattern Engine e dos
+Writers. Permanecem limites deliberados:
+
+- `human_winner=null`; nenhum Writer foi promovido;
+- os dois Writers usam somente saídas locais já armazenadas da Mudança 005B;
+  não houve nova inferência nem download de modelo;
+- o catálogo de cardápio definitivo, a inteligência de recomendação e a
+  separação validada por canal/unidade pertencem à Mudança 008;
+- CRM completo, importações reais e Customer Intelligence pertencem à Mudança
+  007;
+- gateway real de WhatsApp permanece bloqueado, inclusive quando custo ou
+  política forem desconhecidos;
+- qualquer operação com custo externo diferente de zero, desconhecido ou com
+  cobrança futura está bloqueada;
+- computador do restaurante, hospedagem real e concorrência multiprocesso
+  continuam não homologados.
+
+Limitação de QA herdada mantida: a suíte Conversation passou 600/600, mas o
+teste gerador ainda reescreve dois artefatos rastreados; eles foram novamente
+restaurados byte a byte antes do fechamento.

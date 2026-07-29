@@ -10,4 +10,3 @@
 
 Nenhuma etapa futura foi antecipada por conexão real, banco, catálogo,
 recomendação, envio ou custo externo.
-

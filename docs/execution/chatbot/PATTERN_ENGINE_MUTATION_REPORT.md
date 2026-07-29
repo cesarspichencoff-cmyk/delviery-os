@@ -24,4 +24,3 @@ Foram executadas 16 mutações/controles negativos independentes. Resultado:
 
 O relatório é gerado por `runPatternMutationCertification()` e testado sem
 dependência externa.
-

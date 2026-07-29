@@ -53,4 +53,3 @@ momento da última revisão. Não deve ativar compras, trials ou provedores.
 - zero promoção automática de Gemma ou Qwen;
 - zero custo externo novo;
 - Mudanças 007–010 permanecem apenas sequenciadas.
-

@@ -31,3 +31,15 @@ confiança e “César enviaria?”. O voto não promove modelo automaticamente.
 promoção exige autorização explícita de César e nova mudança; esta branch não
 faz push, merge, deploy ou instalação.
 
+## Execução local
+
+A partir da raiz do projeto, depois de receber o pacote externo da Mudança 006:
+
+```powershell
+node tools/conversation-crm/local-ai-bakeoff/server.js --bundle-root ..\deliveryos-review-packets\chatbot-change-006-pattern-engine-local-writer\homologation --votes-root ..\deliveryos-review-packets\chatbot-change-006-pattern-engine-local-writer\votes
+```
+
+Abrir somente `http://127.0.0.1:4189`. O servidor faz bind em loopback. O
+diretório `votes` fica fora do Git e não deve ser publicado. Se a porta já
+estiver ocupada, definir `PORT` explicitamente para outra porta local antes do
+comando.

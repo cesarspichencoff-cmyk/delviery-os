@@ -31,4 +31,3 @@ fabricada pelo adaptador.
 `human_winner=null`, `promotion_authorized=false`, sem peso novo, sem download,
 sem API, sem custo externo e sem mudança no instalador certificado da Mudança
 005.
-

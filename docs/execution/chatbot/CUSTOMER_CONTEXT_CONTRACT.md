@@ -34,4 +34,3 @@ personalização.
 Todos são mocks fechados nesta mudança. Não há SQL, busca real, merge de
 identidade ou persistência de telefone. A implementação integral pertence à
 Mudança 007.
-

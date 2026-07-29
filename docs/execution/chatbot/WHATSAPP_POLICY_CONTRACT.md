@@ -20,4 +20,3 @@ No modo `ZERO_EXTERNAL_COST`:
 
 A integração oficial e o WhatsApp Policy Gate operacional pertencem à Mudança
 009.
-

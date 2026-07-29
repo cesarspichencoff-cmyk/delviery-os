@@ -69,4 +69,3 @@ preenchida. O catálogo definitivo permanece reservado para a Mudança 008.
 `get_recommendation_candidates` e `get_pairing_candidates`.
 
 Todos retornam indisponível nesta mudança.
-

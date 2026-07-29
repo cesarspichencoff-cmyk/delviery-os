@@ -1,28 +1,21 @@
-# Retomada única — Mudança 005B
+# Retomada única — Mudança 006
 
-- Diretório: raiz atual do projeto
-- Branch: `feature/conversation-current-open-model-rebakeoff-v1`
-- Base: `ffc312ca47cb05fe18304dba5e33b2b098ac7f78`
-- Checkpoint comportamental: `ffc312ca47cb05fe18304dba5e33b2b098ac7f78`
-- Upstream: ausente; nenhum push
-- Working tree esperado: limpo após commit documental final
-- Bridge: outbound HTTPS claim/lease, store em memória testado e contrato PostgreSQL injetável
-- AI Node: instalador, Doctor, updater, repair, uninstall, modo offline, DPAPI, ACL e loopback
-- Modelos avaliados: Qwen3 4B Q4_K_M e Qwen3 1.7B Q8_0
-- Bake-off: 260 casos; hash público `d911147cec578b628fb4666366b98f86b2d113a194c74837560c094966b69261`
-- 4B: 250/260 aceitas; p95 8,43 s; 10 fallbacks
-- 1.7B: 217/260 aceitas; p95 5,30 s; 43 fallbacks
-- Vencedor humano: nenhum
-- Regressão: Conversation 480/480; catálogo 200/200; privacidade aprovada; Conference 350/350; Live 243/243; Capacidade 43/43; Copiloto 53/53; Playwright 11/11; cardápio 199; fonte histórica aprovada
-- Pacote externo: `deliveryos-review-packets/chatbot-change-005-portable-ai-node/`
-- Baseline 005B: 151/151 testes direcionados
-- Pesquisa: Gemma 4 E4B GGUF oficial; Qwen3.5 4B oficial com GGUF secundário rastreado
-- Runtime: b10172 provado com GBNF fixada, parsing estrito e validação semântica
-- Gemma 4 E4B: Writer 292/292, zero fallback, p95 10,38 s; Director 2/8, p95 30,47 s; não qualificado
-- Qwen3.5 4B: Writer 289/292, três fallbacks seguros, p95 9,70 s; Director 2/8, p95 26,83 s; não qualificado
-- Gemma 4 12B: não executado; Doctor pós-Qwen classificou a máquina como intermediária e não incluiu 12B na matriz compatível
-- Regressão final: Conversation 523/523; catálogo 200/200; privacidade aprovada; homologação isolada 31/31; Conference 350/350; Live 243/243; Capacidade 43/43; Copiloto 53/53; Playwright 11/11; cardápio 199; fonte histórica aprovada
-- Instalador anterior: SHA-256 `9ec05a9223e6b1b3ea76bb88d4c29d5a9280750b60b6a9a600841df4c88756c9`, imutável
-- Resultado: zero candidato técnico novo; nenhum painel 005B, vencedor, push, merge, deploy ou instalação
-- Próximo passo: somente uma mudança futura separadamente autorizada; não abrir homologação da 005B
-- Não fazer: produção, cliente real, push, merge, deploy, API paga ou instalação no restaurante antes dos três gates externos.
+- Diretório: raiz atual do projeto; nenhum caminho absoluto é requisito do produto.
+- Branch: `feature/conversation-pattern-engine-local-writer-v1`.
+- Base e checkpoint comportamental: `34698b655fa9344d5392801de5240b6b431deeed`.
+- Upstream: ausente; nenhum push, merge, deploy ou instalação no restaurante.
+- Working tree esperado: limpo após o commit documental final.
+- Pattern Engine: determinístico, antes do Writer, com prioridade segurança/handoff → correção → cancelamento → resposta pendente → referência → pergunta lateral → mudança de assunto → repetição/reformulação → saudação/chitchat.
+- Journey Graphs: 16 fluxos versionados; stack limitado a 3; estado estrutural persistido e reconstruível.
+- Writer: recebe `deliveryos-approved-response-envelope-v1`; pode redigir, mas não decidir, alterar fatos, pergunta obrigatória, canal, custo ou ação.
+- Contextos futuros: Customer, Menu, Recommendation, Channel Policy e Cost Policy possuem contratos e mocks fechados; CRM, catálogo, recomendador e gateway completos não foram implementados.
+- Cardápio: seis fontes internas inventariadas em `MENU_CONTEXT_CONTRACT.md`; canal e unidade ausentes permanecem desconhecidos; implementação integral reservada à Mudança 008.
+- Custo: `FINANCIAL_MODE=ZERO_EXTERNAL_COST`, limite `R$ 0,00`, campanhas desligadas e operações externas pagas/desconhecidas bloqueadas.
+- Corpus: 390 casos de turno único + 20 conversas de 8 turnos; hash `3b2d78aaf15afe9544d7a112ef80327b0e1e12587b6bfbecd71cbaedd9199bd4`.
+- Mutações: 16/16 eliminadas; zero sobreviventes.
+- Homologação cega: 20 casos, três opções; saídas locais da Mudança 005B reutilizadas sem nova inferência; `human_winner=null` e `promotion_authorized=false`.
+- Regressão: foco 114/114; Conversation 600/600; catálogo 200/200; privacidade aprovada; Conference 350/350; Live 243/243; Capacidade 43/43; Copiloto 53/53; Playwright 11/11; cardápio 199; fonte histórica aprovada.
+- Recuperação: TATA-SC-193 em `action_started` recuperado, sem efeito externo, snapshot `4e430ce5fc4089aec285b7b0f80f6ac777583b20f7cc98072efb90ec00bb834d`.
+- Instalador anterior: SHA-256 `9ec05a9223e6b1b3ea76bb88d4c29d5a9280750b60b6a9a600841df4c88756c9`, imutável.
+- Próximo passo: César executa somente a homologação humana cega da Mudança 006.
+- Não fazer: promover modelo, iniciar Mudanças 007–010, produção, cliente real, hospedagem real, API paga, push, merge, deploy ou instalação no restaurante sem nova autorização.
