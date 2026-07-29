@@ -1,9 +1,9 @@
 {
   "project": "DeliveryOS Chatbot TATÁ",
-  "active_change": "006-deterministic-conversation-pattern-engine-local-writers",
-  "branch": "feature/conversation-pattern-engine-local-writer-v1",
-  "base": "34698b655fa9344d5392801de5240b6b431deeed",
-  "behavioral_checkpoint": "34698b655fa9344d5392801de5240b6b431deeed",
+  "active_change": "007-008-customer-menu-intelligence",
+  "branch": "feature/customer-menu-intelligence-v1",
+  "base": "0ef86d8086326d9e9f9e059e134cb3d2cc6af605",
+  "behavioral_checkpoint": "0ef86d8086326d9e9f9e059e134cb3d2cc6af605",
   "working_tree": "clean_after_final_commit",
   "completed_units": [
     "hosting_inspection",
@@ -49,12 +49,24 @@
     "006_official_menu_source_inventory",
     "006_pattern_corpus_and_mutations",
     "006_blind_writer_bundle",
-    "006_full_regression"
+    "006_full_regression",
+    "007_customer_event_model",
+    "007_identity_resolution",
+    "007_versioned_import_pipeline",
+    "007_consent_and_privacy",
+    "008_real_source_inventory",
+    "008_canonical_menu_model",
+    "008_channel_and_unit_separation",
+    "008_recommendation_and_allergen_safety",
+    "007_008_pattern_writer_tools",
+    "007_008_local_homologation_panel",
+    "007_008_mutation_controls",
+    "007_008_full_regression"
   ],
   "active_unit": null,
   "pending_units": [],
   "test_status": {
-    "conversation_native": "600/600 passed; historical generator test rewrote two tracked artifacts, which were restored byte-identical to HEAD",
+    "conversation_native": "658/658 passed on final implementation; historical generator rewrote one tracked artifact, which was restored byte-identical to HEAD",
     "scenario_catalog": "200/200 passed; hash ddabec0dbf3c47adfb886b28556b96a47fcfcf90d709ec101b14fefee5f1a798",
     "privacy": "passed; zero findings; positive control detected",
     "scenario_194": "passed; no external access",
@@ -75,7 +87,12 @@
     "006_pattern_corpus": "390 single-turn cases and 20 eight-turn conversations; canonical hash 3b2d78aaf15afe9544d7a112ef80327b0e1e12587b6bfbecd71cbaedd9199bd4",
     "006_mutations": "16/16 killed; zero survivors",
     "006_contracts": "18/18 final-product checks and 15/15 zero-external-cost checks included in focused suite",
-    "006_recovery": "TATA-SC-193 action_started recovered with result confirmed; snapshot hash 4e430ce5fc4089aec285b7b0f80f6ac777583b20f7cc98072efb90ec00bb834d"
+    "006_recovery": "TATA-SC-193 action_started recovered with result confirmed; snapshot hash 4e430ce5fc4089aec285b7b0f80f6ac777583b20f7cc98072efb90ec00bb834d",
+    "007_008_focused": "58/58 passed, including CRM, identity, consent, CSV/XLSX preview, compensating rollback, channel isolation, allergens, recommendations, tools and panel",
+    "007_008_mutations": "15/15 killed; zero survivors",
+    "007_008_panel": "six local areas passed structural and visual QA; zero browser console errors; inherited local Playwright 11/11",
+    "007_008_source_validation": "DOCX rendered and inspected across 13 pages; salon and own-delivery public links verified; public iFood URL located but content access remained blocked",
+    "007_008_security": "zero real customer record in Git; recursive PII controls passed; no paid service, real WhatsApp, external write or production migration"
   },
   "bakeoff": {
     "seed": "TATA-LOCAL-AI-BAKEOFF-V1",
@@ -147,17 +164,24 @@
   },
   "blockers": [
     "006_human_writer_homologation_pending",
+    "007_008_human_homologation_pending",
+    "real_menu_catalog_curation_pending",
+    "real_allergen_and_pairing_approval_pending",
+    "postgres_production_migration_not_authorized",
     "restaurant_hardware_unverified",
     "hosted_runtime_not_connected"
   ],
   "external_gates": [
     "César completes the Change 006 blind writer homologation",
+    "César validates the local Customer and Menu Intelligence panel",
+    "operation approves real menu variants, allergens, availability and pairings before production import",
+    "production database migration receives a separate authorization",
     "restaurant computer passes Doctor",
     "hosted bridge endpoint is approved and wired"
   ],
   "production_authorized": false,
   "paid_api_or_infrastructure_added": false,
   "push_merge_deploy_performed": false,
-  "next_step": "run only the local blind Change 006 homologation; do not promote a writer or start Changes 007-010 without a new authorization",
-  "updated_at": "2026-07-29T12:30:00-03:00"
+  "next_step": "run only local human homologation of Customer and Menu Intelligence; do not connect WhatsApp, import real customers, migrate production, host, push, merge or deploy without new authorization",
+  "updated_at": "2026-07-29T14:00:00-03:00"
 }

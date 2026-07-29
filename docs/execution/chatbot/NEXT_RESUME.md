@@ -1,21 +1,16 @@
-# Retomada única — Mudança 006
+# Retomada única — Mudanças 007+008
 
-- Diretório: raiz atual do projeto; nenhum caminho absoluto é requisito do produto.
-- Branch: `feature/conversation-pattern-engine-local-writer-v1`.
-- Base e checkpoint comportamental: `34698b655fa9344d5392801de5240b6b431deeed`.
-- Upstream: ausente; nenhum push, merge, deploy ou instalação no restaurante.
-- Working tree esperado: limpo após o commit documental final.
-- Pattern Engine: determinístico, antes do Writer, com prioridade segurança/handoff → correção → cancelamento → resposta pendente → referência → pergunta lateral → mudança de assunto → repetição/reformulação → saudação/chitchat.
-- Journey Graphs: 16 fluxos versionados; stack limitado a 3; estado estrutural persistido e reconstruível.
-- Writer: recebe `deliveryos-approved-response-envelope-v1`; pode redigir, mas não decidir, alterar fatos, pergunta obrigatória, canal, custo ou ação.
-- Contextos futuros: Customer, Menu, Recommendation, Channel Policy e Cost Policy possuem contratos e mocks fechados; CRM, catálogo, recomendador e gateway completos não foram implementados.
-- Cardápio: seis fontes internas inventariadas em `MENU_CONTEXT_CONTRACT.md`; canal e unidade ausentes permanecem desconhecidos; implementação integral reservada à Mudança 008.
-- Custo: `FINANCIAL_MODE=ZERO_EXTERNAL_COST`, limite `R$ 0,00`, campanhas desligadas e operações externas pagas/desconhecidas bloqueadas.
-- Corpus: 390 casos de turno único + 20 conversas de 8 turnos; hash `3b2d78aaf15afe9544d7a112ef80327b0e1e12587b6bfbecd71cbaedd9199bd4`.
-- Mutações: 16/16 eliminadas; zero sobreviventes.
-- Homologação cega: 20 casos, três opções; saídas locais da Mudança 005B reutilizadas sem nova inferência; `human_winner=null` e `promotion_authorized=false`.
-- Regressão: foco 114/114; Conversation 600/600; catálogo 200/200; privacidade aprovada; Conference 350/350; Live 243/243; Capacidade 43/43; Copiloto 53/53; Playwright 11/11; cardápio 199; fonte histórica aprovada.
-- Recuperação: TATA-SC-193 em `action_started` recuperado, sem efeito externo, snapshot `4e430ce5fc4089aec285b7b0f80f6ac777583b20f7cc98072efb90ec00bb834d`.
+- Branch: `feature/customer-menu-intelligence-v1`.
+- Base: `0ef86d8086326d9e9f9e059e134cb3d2cc6af605`; upstream ausente.
+- Escopo concluído: CRM orientado a eventos, resolução conservadora de identidade, consentimento, importação versionada com prévia/aprovação/rollback compensatório, catálogo multicanal/multiunidade, segurança de alergênicos, recomendação limitada e ferramentas aprovadas para Pattern Engine e Writer.
+- Dados: somente clientes, pedidos, unidades e cardápios sintéticos entram no runtime demonstrativo. Fontes reais foram apenas inventariadas; o DOCX original e os arquivos de origem permanecem fora do Git.
+- Cardápio: salão, delivery próprio e iFood nunca são unidos silenciosamente. Preço, disponibilidade, ingrediente, alergênico e harmonização exigem origem e estado de revisão.
+- Identidade: somente correspondência exata pode resolver automaticamente; provável, possível e conflito exigem revisão humana.
+- Consentimento: desconhecido não equivale a permitido; opt-out e retirada prevalecem.
+- Pattern Engine decide; ferramentas transportam contexto; Writer não altera fatos, consentimento, origem, alergênicos, preço ou recomendação.
+- Painel local: modo `CRM e Cardápio`, com Clientes, Imports, Menu knowledge, Recomendações, Consentimento e Auditoria.
+- Testes: foco 58/58; mutações 15/15; Conversation 658/658; catálogo 200/200; privacidade aprovada; Conference 350/350; Live 243/243; Capacidade 43/43; Copiloto 53/53; Playwright 11/11.
+- Fontes públicas: links de salão e delivery próprio verificados; URL pública do iFood localizada, porém o conteúdo não pôde ser inspecionado diretamente.
 - Instalador anterior: SHA-256 `9ec05a9223e6b1b3ea76bb88d4c29d5a9280750b60b6a9a600841df4c88756c9`, imutável.
-- Próximo passo: César executa somente a homologação humana cega da Mudança 006.
-- Não fazer: promover modelo, iniciar Mudanças 007–010, produção, cliente real, hospedagem real, API paga, push, merge, deploy ou instalação no restaurante sem nova autorização.
+- Próximo passo: César executa somente a homologação local de CRM e Cardápio.
+- Não fazer: cliente real, importação real, WhatsApp real, migração de produção, preço inferido, alergênico presumido, hospedagem, push, merge, deploy ou instalação no restaurante sem nova autorização.
