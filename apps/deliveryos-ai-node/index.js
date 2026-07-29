@@ -18,6 +18,8 @@ module.exports = {
   ...require('./dialogue/director-contract'),
   ...require('./dialogue/deterministic-director'),
   ...require('./dialogue/director'),
+  ...require('./dialogue/pattern-contract'),
+  ...require('./dialogue/conversation-pattern-engine'),
   ...require('./dialogue/writer-contract'),
   ...require('./dialogue/response-writer'),
   ...require('./dialogue/tool-router'),
