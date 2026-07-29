@@ -3,8 +3,8 @@
 const { DIRECTOR_JSON_SCHEMA, validateDirectorSemantics } = require('./director-contract');
 const { deterministicDirector } = require('./deterministic-director');
 
-function buildDirectorPrompt(input = {}) {
-  return {
+function buildDirectorPrompt(input = {}, options = {}) {
+  const prompt = {
     messages: [
       {
         role: 'system',
@@ -22,6 +22,8 @@ function buildDirectorPrompt(input = {}) {
     temperature: 0.1,
     max_tokens: 700
   };
+  if (Number.isInteger(options.seed)) prompt.seed = options.seed;
+  return prompt;
 }
 
 class ConversationDirector {
@@ -30,9 +32,9 @@ class ConversationDirector {
     this.fallback = options.fallback || deterministicDirector;
   }
 
-  async direct(input = {}) {
+  async direct(input = {}, options = {}) {
     try {
-      const generated = await this.runtime.generateStructured(buildDirectorPrompt(input));
+      const generated = await this.runtime.generateStructured(buildDirectorPrompt(input, options));
       const validated = validateDirectorSemantics(generated, input);
       if (!validated.accepted) return { source: 'deterministic_fallback', reason: validated.reason, directive: this.fallback(input) };
       return { source: 'local_model', reason: null, directive: validated.output };

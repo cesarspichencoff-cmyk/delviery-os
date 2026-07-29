@@ -78,6 +78,15 @@ test('saída válida do modelo é aceita sem reinterpretação', async () => {
   assert.strictEqual(result.directive, generated);
 });
 
+test('Director encaminha seed explícita para reprodução', async () => {
+  let request;
+  const generated = directive({ dialogue_act: 'start_journey', facts_added: { party_size: 4 } });
+  const director = new ConversationDirector({ runtime: { generateStructured: async (input) => { request = input; return generated; } } });
+  const result = await director.direct({ message: 'Quero reservar para quatro' }, { seed: 20260729 });
+  assert.equal(result.source, 'local_model');
+  assert.equal(request.seed, 20260729);
+});
+
 test('JSON inválido aciona controlador determinístico', async () => {
   const director = new ConversationDirector({ runtime: { generateStructured: async () => ({ dialogue_act: 'greet' }) } });
   const result = await director.direct({ message: 'Oi' });
