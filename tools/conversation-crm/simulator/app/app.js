@@ -4,7 +4,9 @@ const state = {
   data: null,
   reviewIndex: 0,
   blindIndex: 0,
-  lastChat: null
+  lastChat: null,
+  intelligence: null,
+  intelligenceView: 'crm'
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -49,7 +51,133 @@ function showMode(mode) {
     button.setAttribute('aria-pressed', String(active));
   });
   if (mode === 'dashboard') refreshDashboard();
+  if (mode === 'intelligence') loadIntelligence();
   $(`#mode-${mode}`)?.querySelector('h2')?.focus({ preventScroll: true });
+}
+
+function intelligenceBadge(value, good = false) {
+  return `<span class="badge ${good ? 'good' : 'warning'}">${escapeHtml(value)}</span>`;
+}
+
+function renderIntelligenceCrm() {
+  const customers = state.intelligence.customers;
+  $('#intelligence-content').innerHTML = `<div class="intelligence-grid">${customers.map((customer) => `
+    <article class="intelligence-card">
+      <strong>${escapeHtml(customer.customer_id)}</strong>
+      <p>${escapeHtml(customer.provenance)} · ${customer.identity_count} identidade(s) tokenizada(s)</p>
+      ${intelligenceBadge(customer.consent_state, customer.consent_state === 'allowed')}
+      ${customer.review_required ? intelligenceBadge('revisão necessária') : intelligenceBadge('sem conflito aberto', true)}
+      <button type="button" data-customer-detail="${escapeHtml(customer.customer_id)}">Ver ficha segura</button>
+    </article>`).join('')}</div>`;
+}
+
+function renderIntelligenceImports() {
+  $('#intelligence-content').innerHTML = `<div class="intelligence-grid">${state.intelligence.imports.map((batch) => `
+    <article class="intelligence-card">
+      <strong>${escapeHtml(batch.batch_id)}</strong>
+      <dl>
+        <div><dt>Origem</dt><dd>${escapeHtml(batch.source)}</dd></div>
+        <div><dt>Estado</dt><dd>${escapeHtml(batch.state)}</dd></div>
+        <div><dt>Válidas</dt><dd>${batch.valid}/${batch.total}</dd></div>
+        <div><dt>Inválidas</dt><dd>${batch.invalid}</dd></div>
+        <div><dt>Duplicidades</dt><dd>${batch.duplicates}</dd></div>
+      </dl>
+      <p>A importação não ocorre sem aprovação humana.</p>
+    </article>`).join('')}</div>`;
+}
+
+function renderIntelligenceMenu() {
+  const menu = state.intelligence.menu;
+  $('#intelligence-content').innerHTML = `
+    <div class="tag-summary">${menu.channels.map((channel) => `<span>${escapeHtml(channel)}</span>`).join('')}</div>
+    <div class="intelligence-grid">${menu.items.map((item) => `
+      <article class="intelligence-card">
+        <strong>${escapeHtml(item.name)}</strong>
+        <p>${escapeHtml(item.channel)} · ${escapeHtml(item.unit_id)} · ${escapeHtml(item.category)}</p>
+        ${intelligenceBadge(item.review_status, item.review_status === 'confirmed')}
+        ${intelligenceBadge(item.availability.state, item.availability.state === 'available')}
+        <dl><div><dt>Preço do canal</dt><dd>${item.price == null ? 'desconhecido' : `R$ ${Number(item.price).toFixed(2).replace('.', ',')}`}</dd></div></dl>
+      </article>`).join('')}</div>
+    <p class="lead">${menu.conflicts.length} conflito(s) aberto(s). Variantes de canais diferentes não são fundidas.</p>`;
+}
+
+function renderIntelligenceRecommendations() {
+  $('#intelligence-content').innerHTML = `
+    <form id="recommendation-form" class="intelligence-form">
+      <label>Canal<select id="recommendation-channel"><option value="dining_room">Salão</option><option value="ifood">iFood</option><option value="own_delivery">Delivery próprio</option></select></label>
+      <label>Unidade<select id="recommendation-unit"><option value="SIM-UNIT-ITAIM">Unidade sintética</option></select></label>
+      <label>Preparo<select id="recommendation-preparation"><option value="">Sem preferência</option><option value="raw">Cru</option><option value="cooked">Cozido</option></select></label>
+      <label>Cream cheese<select id="recommendation-cream"><option value="">Não informado</option><option value="without">Sem cream cheese</option></select></label>
+      <label>Alergia sintética<select id="recommendation-allergy"><option value="">Nenhuma informada</option><option value="crustacean">Crustáceos</option><option value="gluten">Glúten</option></select></label>
+      <button class="primary" type="submit">Encontrar opções seguras</button>
+    </form>
+    <div id="recommendation-result" class="intelligence-grid"></div>`;
+  $('#recommendation-form').addEventListener('submit', runRecommendation);
+}
+
+function renderIntelligenceConsents() {
+  $('#intelligence-content').innerHTML = `
+    <div class="intelligence-grid">${state.intelligence.consent_states.map((consent) => `
+      <article class="intelligence-card"><strong>${escapeHtml(consent)}</strong><p>Estado separado do cadastro e do histórico de pedidos.</p></article>`).join('')}</div>
+    <p class="lead">Opt-out prevalece. Atendimento operacional não depende de autorização de marketing.</p>`;
+}
+
+function renderIntelligenceAudit() {
+  const audit = state.intelligence.audit;
+  $('#intelligence-content').innerHTML = `
+    <div class="intelligence-grid">
+      <article class="intelligence-card"><strong>${audit.event_count}</strong><p>eventos append-only sintéticos</p></article>
+      <article class="intelligence-card"><strong>${audit.append_only ? 'Preservado' : 'Falha'}</strong><p>histórico não sobrescrito</p></article>
+      <article class="intelligence-card"><strong>${audit.pii_visible ? 'Falha' : 'Zero PII visível'}</strong><p>identidades tokenizadas e logs redigidos</p></article>
+    </div>`;
+}
+
+function renderIntelligence() {
+  if (!state.intelligence) return;
+  $$('[data-intelligence-view]').forEach((button) => button.classList.toggle('active', button.dataset.intelligenceView === state.intelligenceView));
+  const renderers = {
+    crm: renderIntelligenceCrm,
+    imports: renderIntelligenceImports,
+    menu: renderIntelligenceMenu,
+    recommendations: renderIntelligenceRecommendations,
+    consents: renderIntelligenceConsents,
+    audit: renderIntelligenceAudit
+  };
+  renderers[state.intelligenceView]();
+}
+
+async function loadIntelligence() {
+  if (state.intelligence) {
+    renderIntelligence();
+    return;
+  }
+  try {
+    state.intelligence = await api('/api/customer-menu/bootstrap');
+    $('#intelligence-state').textContent = 'Pronto. Todos os registros desta área são sintéticos e revisáveis.';
+    renderIntelligence();
+  } catch {
+    $('#intelligence-state').textContent = 'A inteligência local está indisponível. Nenhum dado foi enviado.';
+  }
+}
+
+async function runRecommendation(event) {
+  event.preventDefault();
+  const allergy = $('#recommendation-allergy').value;
+  const body = await api('/api/customer-menu/recommend', {
+    method: 'POST',
+    body: JSON.stringify({
+      customer_id: 'SIM-CUSTOMER-001',
+      channel: $('#recommendation-channel').value,
+      unit_id: $('#recommendation-unit').value,
+      raw_or_cooked: $('#recommendation-preparation').value || null,
+      cream_cheese: $('#recommendation-cream').value || null,
+      allergies: allergy ? [allergy] : []
+    })
+  });
+  const result = body.result.data;
+  $('#recommendation-result').innerHTML = result.candidates.length
+    ? result.candidates.map((item) => `<article class="intelligence-card"><strong>${escapeHtml(item.name)}</strong><p>${escapeHtml(item.reasons.join(' · ') || 'canal, unidade e disponibilidade confirmados')}</p>${intelligenceBadge(item.availability.state, true)}</article>`).join('')
+    : '<article class="intelligence-card"><strong>Nenhuma opção segura confirmada</strong><p>A incerteza foi preservada; confirme a restrição com a equipe.</p></article>';
 }
 
 function checkboxChoices(items, name) {
@@ -221,6 +349,27 @@ async function initialize() {
 }
 
 $$('[data-mode]').forEach((button) => button.addEventListener('click', () => showMode(button.dataset.mode)));
+$$('[data-intelligence-view]').forEach((button) => button.addEventListener('click', () => {
+  state.intelligenceView = button.dataset.intelligenceView;
+  renderIntelligence();
+}));
+
+$('#intelligence-content').addEventListener('click', async (event) => {
+  const customerId = event.target.dataset.customerDetail;
+  if (!customerId) return;
+  const body = await api(`/api/customer-menu/customers/${encodeURIComponent(customerId)}`);
+  const summary = body.result.data;
+  $('#intelligence-content').innerHTML = `
+    <button type="button" id="back-to-customers">← Voltar</button>
+    <article class="intelligence-card">
+      <strong>${escapeHtml(summary.customer_id)}</strong>
+      <p>Fontes: ${escapeHtml(summary.sources.join(', ') || 'desconhecidas')}</p>
+      <p>Fatos: ${escapeHtml(summary.facts.map((fact) => `${fact.field} (${fact.state})`).join(', ') || 'nenhum')}</p>
+      <p>Restrições: ${escapeHtml(summary.restrictions.map((item) => `${item.type}: ${item.value} (${item.status})`).join(', ') || 'nenhuma')}</p>
+      <p>Consentimento de marketing: ${escapeHtml(summary.consent.all_marketing)}</p>
+    </article>`;
+  $('#back-to-customers').addEventListener('click', renderIntelligenceCrm);
+});
 
 $('#chat-form').addEventListener('submit', async (event) => {
   event.preventDefault();

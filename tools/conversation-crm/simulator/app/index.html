@@ -29,6 +29,7 @@
       <button data-mode="review" aria-pressed="false">Nova homologação <span id="review-tab-count">0/0</span></button>
       <button data-mode="blind" aria-pressed="false">Comparação cega A/B</button>
       <button data-mode="bank" aria-pressed="false">Explorar banco</button>
+      <button data-mode="intelligence" aria-pressed="false">CRM e Cardápio</button>
       <button data-mode="dashboard" aria-pressed="false">Resultados</button>
     </nav>
 
@@ -146,6 +147,24 @@
         <button id="reset-review-session" type="button">Reiniciar sessão</button>
         <button id="delete-test-feedback" type="button">Apagar somente feedback de teste</button>
       </details>
+    </section>
+
+    <section id="mode-intelligence" class="mode-panel hidden" aria-labelledby="intelligence-title">
+      <div class="panel-heading">
+        <div><p class="eyebrow">CUSTOMER + MENU INTELLIGENCE</p><h2 id="intelligence-title">Contexto revisável, nunca inventado</h2></div>
+        <div class="mode"><span></span>Sintético · custo externo R$ 0,00</div>
+      </div>
+      <p class="lead">Clientes, importações e cardápios permanecem separados por fonte, certeza, canal e unidade. Use esta área apenas para homologação.</p>
+      <nav class="intelligence-tabs" aria-label="Áreas de inteligência">
+        <button type="button" data-intelligence-view="crm" class="active">Clientes — CRM</button>
+        <button type="button" data-intelligence-view="imports">Importações</button>
+        <button type="button" data-intelligence-view="menu">Cardápios e conhecimento</button>
+        <button type="button" data-intelligence-view="recommendations">Recomendações</button>
+        <button type="button" data-intelligence-view="consents">Consentimentos</button>
+        <button type="button" data-intelligence-view="audit">Auditoria</button>
+      </nav>
+      <p id="intelligence-state" class="status" aria-live="polite">Carregando dados sintéticos…</p>
+      <div id="intelligence-content"></div>
     </section>
 
     <section id="legacy-technical-support" class="hidden" hidden aria-hidden="true">
