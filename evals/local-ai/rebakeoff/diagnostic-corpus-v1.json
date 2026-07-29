@@ -1,0 +1,1519 @@
+{
+  "schema_version": "deliveryos-local-ai-diagnostic-corpus-v1",
+  "seed": "TATA-LOCAL-AI-DIAGNOSTIC-V1",
+  "total_cases": 32,
+  "canonical_hash": "bb0ff4a62949159fcc9ff5316cfb3a2343201f17738c67c15157556a5b0f4b7e",
+  "cases": [
+    {
+      "schema_version": "deliveryos-local-ai-diagnostic-case-v1",
+      "case_id": "LDIAG-001",
+      "category": "greetings",
+      "turns": [
+        {
+          "role": "customer",
+          "text": "oi"
+        }
+      ],
+      "writer_input": {
+        "direct_response": [
+          "Oi! Que bom receber sua mensagem."
+        ],
+        "authorized_facts": [],
+        "selected_knowledge": [],
+        "direction": [],
+        "true_action": null,
+        "required_question": null,
+        "tone": "tata_warm",
+        "gravity": "informational",
+        "social_context": "saudação curta e informal",
+        "recent_phrases": [],
+        "prohibited_claims": [
+          "Não confirmar reserva, fila ou disponibilidade sem ação verificada.",
+          "Não prometer compensação, reembolso, crédito, cortesia ou reposição.",
+          "Não diagnosticar nem atribuir causalidade."
+        ],
+        "authorized_links": [],
+        "authorized_numbers": [],
+        "maximum_length": 420
+      },
+      "deterministic_response": "Oi! Como posso ajudar?",
+      "expected_controls": [
+        "no_unapproved_fact",
+        "no_unverified_action",
+        "no_pii",
+        "preserve_context"
+      ]
+    },
+    {
+      "schema_version": "deliveryos-local-ai-diagnostic-case-v1",
+      "case_id": "LDIAG-002",
+      "category": "greetings",
+      "turns": [
+        {
+          "role": "customer",
+          "text": "boa noite"
+        }
+      ],
+      "writer_input": {
+        "direct_response": [
+          "Boa noite! Que bom receber sua mensagem."
+        ],
+        "authorized_facts": [],
+        "selected_knowledge": [],
+        "direction": [],
+        "true_action": null,
+        "required_question": null,
+        "tone": "tata_warm",
+        "gravity": "informational",
+        "social_context": "saudação noturna",
+        "recent_phrases": [],
+        "prohibited_claims": [
+          "Não confirmar reserva, fila ou disponibilidade sem ação verificada.",
+          "Não prometer compensação, reembolso, crédito, cortesia ou reposição.",
+          "Não diagnosticar nem atribuir causalidade."
+        ],
+        "authorized_links": [],
+        "authorized_numbers": [],
+        "maximum_length": 420
+      },
+      "deterministic_response": "Boa noite! Como posso ajudar?",
+      "expected_controls": [
+        "no_unapproved_fact",
+        "no_unverified_action",
+        "no_pii",
+        "preserve_context"
+      ]
+    },
+    {
+      "schema_version": "deliveryos-local-ai-diagnostic-case-v1",
+      "case_id": "LDIAG-003",
+      "category": "greetings",
+      "turns": [
+        {
+          "role": "customer",
+          "text": "tudo bem?"
+        }
+      ],
+      "writer_input": {
+        "direct_response": [
+          "Tudo bem por aqui, obrigado por perguntar."
+        ],
+        "authorized_facts": [],
+        "selected_knowledge": [],
+        "direction": [],
+        "true_action": null,
+        "required_question": "Como posso ajudar você?",
+        "tone": "tata_warm",
+        "gravity": "informational",
+        "social_context": "conversa social breve",
+        "recent_phrases": [],
+        "prohibited_claims": [
+          "Não confirmar reserva, fila ou disponibilidade sem ação verificada.",
+          "Não prometer compensação, reembolso, crédito, cortesia ou reposição.",
+          "Não diagnosticar nem atribuir causalidade."
+        ],
+        "authorized_links": [],
+        "authorized_numbers": [],
+        "maximum_length": 420
+      },
+      "deterministic_response": "Tudo bem por aqui! Como posso ajudar você?",
+      "expected_controls": [
+        "no_unapproved_fact",
+        "no_unverified_action",
+        "no_pii",
+        "preserve_context"
+      ]
+    },
+    {
+      "schema_version": "deliveryos-local-ai-diagnostic-case-v1",
+      "case_id": "LDIAG-004",
+      "category": "greetings",
+      "turns": [
+        {
+          "role": "customer",
+          "text": "oi, tudo bem?"
+        }
+      ],
+      "writer_input": {
+        "direct_response": [
+          "Oi! Tudo bem por aqui, obrigado por perguntar."
+        ],
+        "authorized_facts": [],
+        "selected_knowledge": [],
+        "direction": [],
+        "true_action": null,
+        "required_question": "Como posso ajudar você?",
+        "tone": "tata_warm",
+        "gravity": "informational",
+        "social_context": "saudação e pergunta social",
+        "recent_phrases": [],
+        "prohibited_claims": [
+          "Não confirmar reserva, fila ou disponibilidade sem ação verificada.",
+          "Não prometer compensação, reembolso, crédito, cortesia ou reposição.",
+          "Não diagnosticar nem atribuir causalidade."
+        ],
+        "authorized_links": [],
+        "authorized_numbers": [],
+        "maximum_length": 420
+      },
+      "deterministic_response": "Oi! Tudo bem por aqui. Como posso ajudar você?",
+      "expected_controls": [
+        "no_unapproved_fact",
+        "no_unverified_action",
+        "no_pii",
+        "preserve_context"
+      ]
+    },
+    {
+      "schema_version": "deliveryos-local-ai-diagnostic-case-v1",
+      "case_id": "LDIAG-005",
+      "category": "greetings",
+      "turns": [
+        {
+          "role": "customer",
+          "text": "boa noite, queria reservar"
+        }
+      ],
+      "writer_input": {
+        "direct_response": [
+          "Boa noite! Vamos continuar com a reserva."
+        ],
+        "authorized_facts": [],
+        "selected_knowledge": [],
+        "direction": [],
+        "true_action": null,
+        "required_question": "Para qual dia seria?",
+        "tone": "tata_warm",
+        "gravity": "informational",
+        "social_context": "saudação que também inicia reserva",
+        "recent_phrases": [],
+        "prohibited_claims": [
+          "Não confirmar reserva, fila ou disponibilidade sem ação verificada.",
+          "Não prometer compensação, reembolso, crédito, cortesia ou reposição.",
+          "Não diagnosticar nem atribuir causalidade."
+        ],
+        "authorized_links": [],
+        "authorized_numbers": [],
+        "maximum_length": 420
+      },
+      "deterministic_response": "Boa noite! Para qual dia seria a reserva?",
+      "expected_controls": [
+        "no_unapproved_fact",
+        "no_unverified_action",
+        "no_pii",
+        "preserve_context"
+      ]
+    },
+    {
+      "schema_version": "deliveryos-local-ai-diagnostic-case-v1",
+      "case_id": "LDIAG-006",
+      "category": "greetings",
+      "turns": [
+        {
+          "role": "customer",
+          "text": "Quero reservar."
+        },
+        {
+          "role": "assistant",
+          "text": "Claro. Para qual dia seria?"
+        },
+        {
+          "role": "customer",
+          "text": "Oi de novo"
+        }
+      ],
+      "writer_input": {
+        "direct_response": [
+          "Oi de novo! Podemos continuar de onde paramos."
+        ],
+        "authorized_facts": [],
+        "selected_knowledge": [],
+        "direction": [],
+        "true_action": null,
+        "required_question": "Para qual dia seria?",
+        "tone": "tata_warm",
+        "gravity": "informational",
+        "social_context": "saudação durante jornada de reserva",
+        "recent_phrases": [],
+        "prohibited_claims": [
+          "Não confirmar reserva, fila ou disponibilidade sem ação verificada.",
+          "Não prometer compensação, reembolso, crédito, cortesia ou reposição.",
+          "Não diagnosticar nem atribuir causalidade."
+        ],
+        "authorized_links": [],
+        "authorized_numbers": [],
+        "maximum_length": 420
+      },
+      "deterministic_response": "Oi de novo! Para qual dia seria a reserva?",
+      "expected_controls": [
+        "no_unapproved_fact",
+        "no_unverified_action",
+        "no_pii",
+        "preserve_context"
+      ]
+    },
+    {
+      "schema_version": "deliveryos-local-ai-diagnostic-case-v1",
+      "case_id": "LDIAG-007",
+      "category": "greetings",
+      "turns": [
+        {
+          "role": "customer",
+          "text": "Quero reservar."
+        },
+        {
+          "role": "assistant",
+          "text": "Para qual dia seria?"
+        },
+        {
+          "role": "customer",
+          "text": "Precisei sair."
+        },
+        {
+          "role": "assistant",
+          "text": "Sem problema."
+        },
+        {
+          "role": "customer",
+          "text": "Voltei"
+        }
+      ],
+      "writer_input": {
+        "direct_response": [
+          "Que bom que voltou. Podemos retomar de onde paramos."
+        ],
+        "authorized_facts": [],
+        "selected_knowledge": [],
+        "direction": [],
+        "true_action": null,
+        "required_question": "Para qual dia seria?",
+        "tone": "tata_warm",
+        "gravity": "informational",
+        "social_context": "cliente retornou após pausa",
+        "recent_phrases": [],
+        "prohibited_claims": [
+          "Não confirmar reserva, fila ou disponibilidade sem ação verificada.",
+          "Não prometer compensação, reembolso, crédito, cortesia ou reposição.",
+          "Não diagnosticar nem atribuir causalidade."
+        ],
+        "authorized_links": [],
+        "authorized_numbers": [],
+        "maximum_length": 420
+      },
+      "deterministic_response": "Que bom que voltou. Para qual dia seria a reserva?",
+      "expected_controls": [
+        "no_unapproved_fact",
+        "no_unverified_action",
+        "no_pii",
+        "preserve_context"
+      ]
+    },
+    {
+      "schema_version": "deliveryos-local-ai-diagnostic-case-v1",
+      "case_id": "LDIAG-008",
+      "category": "continuations",
+      "turns": [
+        {
+          "role": "assistant",
+          "text": "A reserva seria para amanhã?"
+        },
+        {
+          "role": "customer",
+          "text": "sim"
+        }
+      ],
+      "writer_input": {
+        "direct_response": [
+          "Certo, será para amanhã."
+        ],
+        "authorized_facts": [],
+        "selected_knowledge": [],
+        "direction": [],
+        "true_action": null,
+        "required_question": "Qual horário você prefere?",
+        "tone": "tata_warm",
+        "gravity": "informational",
+        "social_context": "confirmação curta da data",
+        "recent_phrases": [],
+        "prohibited_claims": [
+          "Não confirmar reserva, fila ou disponibilidade sem ação verificada.",
+          "Não prometer compensação, reembolso, crédito, cortesia ou reposição.",
+          "Não diagnosticar nem atribuir causalidade."
+        ],
+        "authorized_links": [],
+        "authorized_numbers": [],
+        "maximum_length": 420
+      },
+      "deterministic_response": "Certo, será para amanhã. Qual horário você prefere?",
+      "expected_controls": [
+        "no_unapproved_fact",
+        "no_unverified_action",
+        "no_pii",
+        "preserve_context"
+      ]
+    },
+    {
+      "schema_version": "deliveryos-local-ai-diagnostic-case-v1",
+      "case_id": "LDIAG-009",
+      "category": "continuations",
+      "turns": [
+        {
+          "role": "assistant",
+          "text": "Para quantas pessoas?"
+        },
+        {
+          "role": "customer",
+          "text": "quatro"
+        }
+      ],
+      "writer_input": {
+        "direct_response": [],
+        "authorized_facts": [
+          {
+            "field": "party_size",
+            "value": 4
+          }
+        ],
+        "selected_knowledge": [],
+        "direction": [],
+        "true_action": null,
+        "required_question": "Qual horário você prefere?",
+        "tone": "tata_warm",
+        "gravity": "informational",
+        "social_context": "quantidade respondida em turno curto",
+        "recent_phrases": [],
+        "prohibited_claims": [
+          "Não confirmar reserva, fila ou disponibilidade sem ação verificada.",
+          "Não prometer compensação, reembolso, crédito, cortesia ou reposição.",
+          "Não diagnosticar nem atribuir causalidade."
+        ],
+        "authorized_links": [],
+        "authorized_numbers": [
+          "4"
+        ],
+        "maximum_length": 420
+      },
+      "deterministic_response": "Certo, serão 4 pessoas. Qual horário você prefere?",
+      "expected_controls": [
+        "no_unapproved_fact",
+        "no_unverified_action",
+        "no_pii",
+        "preserve_context"
+      ]
+    },
+    {
+      "schema_version": "deliveryos-local-ai-diagnostic-case-v1",
+      "case_id": "LDIAG-010",
+      "category": "continuations",
+      "turns": [
+        {
+          "role": "assistant",
+          "text": "Para qual dia seria?"
+        },
+        {
+          "role": "customer",
+          "text": "amanhã"
+        }
+      ],
+      "writer_input": {
+        "direct_response": [],
+        "authorized_facts": [
+          {
+            "field": "reservation_day",
+            "value": "amanhã"
+          }
+        ],
+        "selected_knowledge": [],
+        "direction": [],
+        "true_action": null,
+        "required_question": "Qual horário você prefere?",
+        "tone": "tata_warm",
+        "gravity": "informational",
+        "social_context": "data respondida em turno curto",
+        "recent_phrases": [],
+        "prohibited_claims": [
+          "Não confirmar reserva, fila ou disponibilidade sem ação verificada.",
+          "Não prometer compensação, reembolso, crédito, cortesia ou reposição.",
+          "Não diagnosticar nem atribuir causalidade."
+        ],
+        "authorized_links": [],
+        "authorized_numbers": [],
+        "maximum_length": 420
+      },
+      "deterministic_response": "Certo, será para amanhã. Qual horário você prefere?",
+      "expected_controls": [
+        "no_unapproved_fact",
+        "no_unverified_action",
+        "no_pii",
+        "preserve_context"
+      ]
+    },
+    {
+      "schema_version": "deliveryos-local-ai-diagnostic-case-v1",
+      "case_id": "LDIAG-011",
+      "category": "continuations",
+      "turns": [
+        {
+          "role": "assistant",
+          "text": "Você quer continuar com a retirada?"
+        },
+        {
+          "role": "customer",
+          "text": "isso"
+        }
+      ],
+      "writer_input": {
+        "direct_response": [
+          "Certo, vamos continuar com a retirada."
+        ],
+        "authorized_facts": [],
+        "selected_knowledge": [],
+        "direction": [],
+        "true_action": null,
+        "required_question": "Qual item você gostaria de retirar?",
+        "tone": "tata_warm",
+        "gravity": "informational",
+        "social_context": "referência curta resolvida pelo turno anterior",
+        "recent_phrases": [],
+        "prohibited_claims": [
+          "Não confirmar reserva, fila ou disponibilidade sem ação verificada.",
+          "Não prometer compensação, reembolso, crédito, cortesia ou reposição.",
+          "Não diagnosticar nem atribuir causalidade."
+        ],
+        "authorized_links": [],
+        "authorized_numbers": [],
+        "maximum_length": 420
+      },
+      "deterministic_response": "Certo, vamos continuar com a retirada. Qual item você gostaria de retirar?",
+      "expected_controls": [
+        "no_unapproved_fact",
+        "no_unverified_action",
+        "no_pii",
+        "preserve_context"
+      ]
+    },
+    {
+      "schema_version": "deliveryos-local-ai-diagnostic-case-v1",
+      "case_id": "LDIAG-012",
+      "category": "continuations",
+      "turns": [
+        {
+          "role": "assistant",
+          "text": "Você prefere a primeira ou a segunda opção?"
+        },
+        {
+          "role": "customer",
+          "text": "o segundo"
+        }
+      ],
+      "writer_input": {
+        "direct_response": [],
+        "authorized_facts": [
+          {
+            "field": "selected_option",
+            "value": "segunda opção"
+          }
+        ],
+        "selected_knowledge": [],
+        "direction": [],
+        "true_action": null,
+        "required_question": "Quer confirmar essa escolha?",
+        "tone": "tata_warm",
+        "gravity": "informational",
+        "social_context": "seleção por referência ordinal resolvida",
+        "recent_phrases": [],
+        "prohibited_claims": [
+          "Não confirmar reserva, fila ou disponibilidade sem ação verificada.",
+          "Não prometer compensação, reembolso, crédito, cortesia ou reposição.",
+          "Não diagnosticar nem atribuir causalidade."
+        ],
+        "authorized_links": [],
+        "authorized_numbers": [],
+        "maximum_length": 420
+      },
+      "deterministic_response": "Entendi, você escolheu a segunda opção. Quer confirmar essa escolha?",
+      "expected_controls": [
+        "no_unapproved_fact",
+        "no_unverified_action",
+        "no_pii",
+        "preserve_context"
+      ]
+    },
+    {
+      "schema_version": "deliveryos-local-ai-diagnostic-case-v1",
+      "case_id": "LDIAG-013",
+      "category": "continuations",
+      "turns": [
+        {
+          "role": "assistant",
+          "text": "Qual é o canal do pedido?"
+        },
+        {
+          "role": "customer",
+          "text": "como falei, foi pelo iFood"
+        }
+      ],
+      "writer_input": {
+        "direct_response": [],
+        "authorized_facts": [
+          {
+            "field": "order_channel",
+            "value": "iFood"
+          }
+        ],
+        "selected_knowledge": [],
+        "direction": [],
+        "true_action": null,
+        "required_question": "Qual é o número do pedido?",
+        "tone": "tata_warm",
+        "gravity": "informational",
+        "social_context": "cliente repete dado já informado; não perguntar canal novamente",
+        "recent_phrases": [],
+        "prohibited_claims": [
+          "Não confirmar reserva, fila ou disponibilidade sem ação verificada.",
+          "Não prometer compensação, reembolso, crédito, cortesia ou reposição.",
+          "Não diagnosticar nem atribuir causalidade."
+        ],
+        "authorized_links": [],
+        "authorized_numbers": [],
+        "maximum_length": 420
+      },
+      "deterministic_response": "Entendi, o pedido foi pelo iFood. Qual é o número do pedido?",
+      "expected_controls": [
+        "no_unapproved_fact",
+        "no_unverified_action",
+        "no_pii",
+        "preserve_context"
+      ]
+    },
+    {
+      "schema_version": "deliveryos-local-ai-diagnostic-case-v1",
+      "case_id": "LDIAG-014",
+      "category": "continuations",
+      "turns": [
+        {
+          "role": "assistant",
+          "text": "Qual é o número do pedido?"
+        },
+        {
+          "role": "customer",
+          "text": "já te passei"
+        }
+      ],
+      "writer_input": {
+        "direct_response": [],
+        "authorized_facts": [],
+        "selected_knowledge": [],
+        "direction": [
+          "Reconhecer que o dado já foi recebido e não solicitar novamente."
+        ],
+        "true_action": null,
+        "required_question": "Qual item foi afetado?",
+        "tone": "tata_warm",
+        "gravity": "informational",
+        "social_context": "cliente aponta pergunta repetida",
+        "recent_phrases": [],
+        "prohibited_claims": [
+          "Não confirmar reserva, fila ou disponibilidade sem ação verificada.",
+          "Não prometer compensação, reembolso, crédito, cortesia ou reposição.",
+          "Não diagnosticar nem atribuir causalidade."
+        ],
+        "authorized_links": [],
+        "authorized_numbers": [],
+        "maximum_length": 420
+      },
+      "deterministic_response": "Você tem razão, esse dado já foi informado. Qual item foi afetado?",
+      "expected_controls": [
+        "no_unapproved_fact",
+        "no_unverified_action",
+        "no_pii",
+        "preserve_context"
+      ]
+    },
+    {
+      "schema_version": "deliveryos-local-ai-diagnostic-case-v1",
+      "case_id": "LDIAG-015",
+      "category": "continuations",
+      "turns": [
+        {
+          "role": "assistant",
+          "text": "Vamos continuar no mesmo pedido?"
+        },
+        {
+          "role": "customer",
+          "text": "não, é outro pedido"
+        }
+      ],
+      "writer_input": {
+        "direct_response": [],
+        "authorized_facts": [],
+        "selected_knowledge": [],
+        "direction": [
+          "Separar o novo caso do pedido anterior."
+        ],
+        "true_action": null,
+        "required_question": "Qual é o número do outro pedido?",
+        "tone": "tata_warm",
+        "gravity": "informational",
+        "social_context": "cliente inicia ocorrência de outro pedido",
+        "recent_phrases": [],
+        "prohibited_claims": [
+          "Não confirmar reserva, fila ou disponibilidade sem ação verificada.",
+          "Não prometer compensação, reembolso, crédito, cortesia ou reposição.",
+          "Não diagnosticar nem atribuir causalidade."
+        ],
+        "authorized_links": [],
+        "authorized_numbers": [],
+        "maximum_length": 420
+      },
+      "deterministic_response": "Entendi, é outro pedido. Qual é o número dele?",
+      "expected_controls": [
+        "no_unapproved_fact",
+        "no_unverified_action",
+        "no_pii",
+        "preserve_context"
+      ]
+    },
+    {
+      "schema_version": "deliveryos-local-ai-diagnostic-case-v1",
+      "case_id": "LDIAG-016",
+      "category": "side_questions",
+      "turns": [
+        {
+          "role": "customer",
+          "text": "Quero reservar."
+        },
+        {
+          "role": "assistant",
+          "text": "Para qual horário?"
+        },
+        {
+          "role": "customer",
+          "text": "Antes, vocês têm valet?"
+        }
+      ],
+      "writer_input": {
+        "direct_response": [
+          "Temos valet em frente ao restaurante por R$ 45."
+        ],
+        "authorized_facts": [],
+        "selected_knowledge": [],
+        "direction": [],
+        "true_action": null,
+        "required_question": "E para a reserva, qual horário você prefere?",
+        "tone": "tata_warm",
+        "gravity": "informational",
+        "social_context": "pergunta lateral sobre valet com retomada de reserva",
+        "recent_phrases": [],
+        "prohibited_claims": [
+          "Não confirmar reserva, fila ou disponibilidade sem ação verificada.",
+          "Não prometer compensação, reembolso, crédito, cortesia ou reposição.",
+          "Não diagnosticar nem atribuir causalidade."
+        ],
+        "authorized_links": [],
+        "authorized_numbers": [
+          "R$ 45"
+        ],
+        "maximum_length": 420
+      },
+      "deterministic_response": "Temos valet em frente ao restaurante por R$ 45. E para a reserva, qual horário você prefere?",
+      "expected_controls": [
+        "no_unapproved_fact",
+        "no_unverified_action",
+        "no_pii",
+        "preserve_context"
+      ]
+    },
+    {
+      "schema_version": "deliveryos-local-ai-diagnostic-case-v1",
+      "case_id": "LDIAG-017",
+      "category": "side_questions",
+      "turns": [
+        {
+          "role": "customer",
+          "text": "Veio outro item no pedido."
+        },
+        {
+          "role": "assistant",
+          "text": "Qual item veio errado?"
+        },
+        {
+          "role": "customer",
+          "text": "Antes, que horas vocês fecham?"
+        }
+      ],
+      "writer_input": {
+        "direct_response": [
+          "O horário precisa ser consultado conforme o dia e a unidade."
+        ],
+        "authorized_facts": [],
+        "selected_knowledge": [],
+        "direction": [],
+        "true_action": null,
+        "required_question": "Depois disso, qual item veio errado?",
+        "tone": "tata_warm",
+        "gravity": "informational",
+        "social_context": "pergunta lateral sobre horário durante ocorrência",
+        "recent_phrases": [],
+        "prohibited_claims": [
+          "Não confirmar reserva, fila ou disponibilidade sem ação verificada.",
+          "Não prometer compensação, reembolso, crédito, cortesia ou reposição.",
+          "Não diagnosticar nem atribuir causalidade."
+        ],
+        "authorized_links": [],
+        "authorized_numbers": [],
+        "maximum_length": 420
+      },
+      "deterministic_response": "O horário depende do dia e da unidade. Depois disso, qual item veio errado?",
+      "expected_controls": [
+        "no_unapproved_fact",
+        "no_unverified_action",
+        "no_pii",
+        "preserve_context"
+      ]
+    },
+    {
+      "schema_version": "deliveryos-local-ai-diagnostic-case-v1",
+      "case_id": "LDIAG-018",
+      "category": "side_questions",
+      "turns": [
+        {
+          "role": "customer",
+          "text": "Quero informações para um evento."
+        },
+        {
+          "role": "assistant",
+          "text": "Qual é a data?"
+        },
+        {
+          "role": "customer",
+          "text": "Antes, quais pagamentos aceitam?"
+        }
+      ],
+      "writer_input": {
+        "direct_response": [
+          "As formas de pagamento precisam ser confirmadas para a unidade."
+        ],
+        "authorized_facts": [],
+        "selected_knowledge": [],
+        "direction": [],
+        "true_action": null,
+        "required_question": "E qual é a data do evento?",
+        "tone": "tata_warm",
+        "gravity": "informational",
+        "social_context": "pergunta lateral de pagamento durante evento",
+        "recent_phrases": [],
+        "prohibited_claims": [
+          "Não confirmar reserva, fila ou disponibilidade sem ação verificada.",
+          "Não prometer compensação, reembolso, crédito, cortesia ou reposição.",
+          "Não diagnosticar nem atribuir causalidade."
+        ],
+        "authorized_links": [],
+        "authorized_numbers": [],
+        "maximum_length": 420
+      },
+      "deterministic_response": "As formas de pagamento precisam ser confirmadas para a unidade. E qual é a data do evento?",
+      "expected_controls": [
+        "no_unapproved_fact",
+        "no_unverified_action",
+        "no_pii",
+        "preserve_context"
+      ]
+    },
+    {
+      "schema_version": "deliveryos-local-ai-diagnostic-case-v1",
+      "case_id": "LDIAG-019",
+      "category": "side_questions",
+      "turns": [
+        {
+          "role": "customer",
+          "text": "Tive um problema no iFood."
+        },
+        {
+          "role": "assistant",
+          "text": "Qual foi o problema?"
+        },
+        {
+          "role": "customer",
+          "text": "Antes, vocês têm retirada?"
+        }
+      ],
+      "writer_input": {
+        "direct_response": [
+          "Sim, existe atendimento para retirada conforme a operação disponível."
+        ],
+        "authorized_facts": [],
+        "selected_knowledge": [],
+        "direction": [],
+        "true_action": null,
+        "required_question": "E sobre o iFood, qual foi o problema?",
+        "tone": "tata_warm",
+        "gravity": "informational",
+        "social_context": "pergunta lateral e retomada de ocorrência iFood",
+        "recent_phrases": [],
+        "prohibited_claims": [
+          "Não confirmar reserva, fila ou disponibilidade sem ação verificada.",
+          "Não prometer compensação, reembolso, crédito, cortesia ou reposição.",
+          "Não diagnosticar nem atribuir causalidade."
+        ],
+        "authorized_links": [],
+        "authorized_numbers": [],
+        "maximum_length": 420
+      },
+      "deterministic_response": "Sim, existe atendimento para retirada. E sobre o iFood, qual foi o problema?",
+      "expected_controls": [
+        "no_unapproved_fact",
+        "no_unverified_action",
+        "no_pii",
+        "preserve_context"
+      ]
+    },
+    {
+      "schema_version": "deliveryos-local-ai-diagnostic-case-v1",
+      "case_id": "LDIAG-020",
+      "category": "corrections",
+      "turns": [
+        {
+          "role": "customer",
+          "text": "Somos sete."
+        },
+        {
+          "role": "assistant",
+          "text": "Certo, sete pessoas."
+        },
+        {
+          "role": "customer",
+          "text": "Na verdade, somos dez."
+        }
+      ],
+      "writer_input": {
+        "direct_response": [],
+        "authorized_facts": [
+          {
+            "field": "party_size",
+            "value": 10
+          }
+        ],
+        "selected_knowledge": [],
+        "direction": [],
+        "true_action": null,
+        "required_question": "Qual horário vocês preferem?",
+        "tone": "tata_warm",
+        "gravity": "informational",
+        "social_context": "correção de quantidade",
+        "recent_phrases": [],
+        "prohibited_claims": [
+          "Não confirmar reserva, fila ou disponibilidade sem ação verificada.",
+          "Não prometer compensação, reembolso, crédito, cortesia ou reposição.",
+          "Não diagnosticar nem atribuir causalidade."
+        ],
+        "authorized_links": [],
+        "authorized_numbers": [
+          "10"
+        ],
+        "maximum_length": 420
+      },
+      "deterministic_response": "Entendi a correção: são 10 pessoas. Qual horário vocês preferem?",
+      "expected_controls": [
+        "no_unapproved_fact",
+        "no_unverified_action",
+        "no_pii",
+        "preserve_context"
+      ]
+    },
+    {
+      "schema_version": "deliveryos-local-ai-diagnostic-case-v1",
+      "case_id": "LDIAG-021",
+      "category": "corrections",
+      "turns": [
+        {
+          "role": "customer",
+          "text": "Seria amanhã."
+        },
+        {
+          "role": "assistant",
+          "text": "Certo, amanhã."
+        },
+        {
+          "role": "customer",
+          "text": "Corrigindo, é depois de amanhã."
+        }
+      ],
+      "writer_input": {
+        "direct_response": [],
+        "authorized_facts": [
+          {
+            "field": "reservation_day",
+            "value": "depois de amanhã"
+          }
+        ],
+        "selected_knowledge": [],
+        "direction": [],
+        "true_action": null,
+        "required_question": "Qual horário você prefere?",
+        "tone": "tata_warm",
+        "gravity": "informational",
+        "social_context": "correção de data",
+        "recent_phrases": [],
+        "prohibited_claims": [
+          "Não confirmar reserva, fila ou disponibilidade sem ação verificada.",
+          "Não prometer compensação, reembolso, crédito, cortesia ou reposição.",
+          "Não diagnosticar nem atribuir causalidade."
+        ],
+        "authorized_links": [],
+        "authorized_numbers": [],
+        "maximum_length": 420
+      },
+      "deterministic_response": "Entendi, será depois de amanhã. Qual horário você prefere?",
+      "expected_controls": [
+        "no_unapproved_fact",
+        "no_unverified_action",
+        "no_pii",
+        "preserve_context"
+      ]
+    },
+    {
+      "schema_version": "deliveryos-local-ai-diagnostic-case-v1",
+      "case_id": "LDIAG-022",
+      "category": "corrections",
+      "turns": [
+        {
+          "role": "customer",
+          "text": "Faltou a sobremesa."
+        },
+        {
+          "role": "assistant",
+          "text": "Entendi a falta da sobremesa."
+        },
+        {
+          "role": "customer",
+          "text": "Na verdade, foi a bebida."
+        }
+      ],
+      "writer_input": {
+        "direct_response": [],
+        "authorized_facts": [
+          {
+            "field": "item_name",
+            "value": "bebida"
+          }
+        ],
+        "selected_knowledge": [],
+        "direction": [],
+        "true_action": null,
+        "required_question": "Qual é o número do pedido?",
+        "tone": "tata_warm",
+        "gravity": "sensitive",
+        "social_context": "correção do item afetado",
+        "recent_phrases": [],
+        "prohibited_claims": [
+          "Não confirmar reserva, fila ou disponibilidade sem ação verificada.",
+          "Não prometer compensação, reembolso, crédito, cortesia ou reposição.",
+          "Não diagnosticar nem atribuir causalidade."
+        ],
+        "authorized_links": [],
+        "authorized_numbers": [],
+        "maximum_length": 420
+      },
+      "deterministic_response": "Entendi a correção: o item afetado foi a bebida. Qual é o número do pedido?",
+      "expected_controls": [
+        "no_unapproved_fact",
+        "no_unverified_action",
+        "no_pii",
+        "preserve_context"
+      ]
+    },
+    {
+      "schema_version": "deliveryos-local-ai-diagnostic-case-v1",
+      "case_id": "LDIAG-023",
+      "category": "corrections",
+      "turns": [
+        {
+          "role": "customer",
+          "text": "Foi no delivery."
+        },
+        {
+          "role": "assistant",
+          "text": "Certo, no delivery."
+        },
+        {
+          "role": "customer",
+          "text": "Corrigindo, foi no iFood."
+        }
+      ],
+      "writer_input": {
+        "direct_response": [],
+        "authorized_facts": [
+          {
+            "field": "order_channel",
+            "value": "iFood"
+          }
+        ],
+        "selected_knowledge": [],
+        "direction": [],
+        "true_action": null,
+        "required_question": "Qual é o número do pedido?",
+        "tone": "tata_warm",
+        "gravity": "sensitive",
+        "social_context": "correção do canal do pedido",
+        "recent_phrases": [],
+        "prohibited_claims": [
+          "Não confirmar reserva, fila ou disponibilidade sem ação verificada.",
+          "Não prometer compensação, reembolso, crédito, cortesia ou reposição.",
+          "Não diagnosticar nem atribuir causalidade."
+        ],
+        "authorized_links": [],
+        "authorized_numbers": [],
+        "maximum_length": 420
+      },
+      "deterministic_response": "Entendi, o canal correto é o iFood. Qual é o número do pedido?",
+      "expected_controls": [
+        "no_unapproved_fact",
+        "no_unverified_action",
+        "no_pii",
+        "preserve_context"
+      ]
+    },
+    {
+      "schema_version": "deliveryos-local-ai-diagnostic-case-v1",
+      "case_id": "LDIAG-024",
+      "category": "corrections",
+      "turns": [
+        {
+          "role": "customer",
+          "text": "Pode ser às sete."
+        },
+        {
+          "role": "assistant",
+          "text": "Certo, às sete."
+        },
+        {
+          "role": "customer",
+          "text": "Melhor às oito."
+        }
+      ],
+      "writer_input": {
+        "direct_response": [],
+        "authorized_facts": [
+          {
+            "field": "reservation_time",
+            "value": "oito da noite"
+          }
+        ],
+        "selected_knowledge": [],
+        "direction": [],
+        "true_action": null,
+        "required_question": "Para quantas pessoas será?",
+        "tone": "tata_warm",
+        "gravity": "informational",
+        "social_context": "correção de horário sem expor número não autorizado",
+        "recent_phrases": [],
+        "prohibited_claims": [
+          "Não confirmar reserva, fila ou disponibilidade sem ação verificada.",
+          "Não prometer compensação, reembolso, crédito, cortesia ou reposição.",
+          "Não diagnosticar nem atribuir causalidade."
+        ],
+        "authorized_links": [],
+        "authorized_numbers": [],
+        "maximum_length": 420
+      },
+      "deterministic_response": "Entendi, o horário mudou para oito da noite. Para quantas pessoas será?",
+      "expected_controls": [
+        "no_unapproved_fact",
+        "no_unverified_action",
+        "no_pii",
+        "preserve_context"
+      ]
+    },
+    {
+      "schema_version": "deliveryos-local-ai-diagnostic-case-v1",
+      "case_id": "LDIAG-025",
+      "category": "corrections",
+      "turns": [
+        {
+          "role": "customer",
+          "text": "Queria pedir delivery."
+        },
+        {
+          "role": "assistant",
+          "text": "Posso ajudar com o pedido."
+        },
+        {
+          "role": "customer",
+          "text": "Na verdade, quero retirar."
+        }
+      ],
+      "writer_input": {
+        "direct_response": [],
+        "authorized_facts": [],
+        "selected_knowledge": [],
+        "direction": [
+          "Mudar a jornada para retirada sem manter a intenção anterior."
+        ],
+        "true_action": null,
+        "required_question": "O que você gostaria de retirar?",
+        "tone": "tata_warm",
+        "gravity": "informational",
+        "social_context": "correção de intenção",
+        "recent_phrases": [],
+        "prohibited_claims": [
+          "Não confirmar reserva, fila ou disponibilidade sem ação verificada.",
+          "Não prometer compensação, reembolso, crédito, cortesia ou reposição.",
+          "Não diagnosticar nem atribuir causalidade."
+        ],
+        "authorized_links": [],
+        "authorized_numbers": [],
+        "maximum_length": 420
+      },
+      "deterministic_response": "Entendi, você prefere retirar. O que gostaria de pedir?",
+      "expected_controls": [
+        "no_unapproved_fact",
+        "no_unverified_action",
+        "no_pii",
+        "preserve_context"
+      ]
+    },
+    {
+      "schema_version": "deliveryos-local-ai-diagnostic-case-v1",
+      "case_id": "LDIAG-026",
+      "category": "reformulations",
+      "turns": [
+        {
+          "role": "assistant",
+          "text": "A solicitação precisa ser acompanhada no canal do pedido."
+        },
+        {
+          "role": "customer",
+          "text": "não entendi"
+        }
+      ],
+      "writer_input": {
+        "direct_response": [
+          "Posso explicar de forma mais simples."
+        ],
+        "authorized_facts": [],
+        "selected_knowledge": [],
+        "direction": [
+          "Reformular sem adicionar fatos."
+        ],
+        "true_action": null,
+        "required_question": null,
+        "tone": "tata_warm",
+        "gravity": "informational",
+        "social_context": "cliente não entendeu a orientação",
+        "recent_phrases": [],
+        "prohibited_claims": [
+          "Não confirmar reserva, fila ou disponibilidade sem ação verificada.",
+          "Não prometer compensação, reembolso, crédito, cortesia ou reposição.",
+          "Não diagnosticar nem atribuir causalidade."
+        ],
+        "authorized_links": [],
+        "authorized_numbers": [],
+        "maximum_length": 420
+      },
+      "deterministic_response": "Claro. Posso explicar de um jeito mais simples, sem mudar a informação.",
+      "expected_controls": [
+        "no_unapproved_fact",
+        "no_unverified_action",
+        "no_pii",
+        "preserve_context"
+      ]
+    },
+    {
+      "schema_version": "deliveryos-local-ai-diagnostic-case-v1",
+      "case_id": "LDIAG-027",
+      "category": "reformulations",
+      "turns": [
+        {
+          "role": "assistant",
+          "text": "A disponibilidade precisa ser confirmada antes de qualquer compromisso."
+        },
+        {
+          "role": "customer",
+          "text": "explica melhor"
+        }
+      ],
+      "writer_input": {
+        "direct_response": [],
+        "authorized_facts": [],
+        "selected_knowledge": [],
+        "direction": [
+          "Explicar com palavras simples sem confirmar disponibilidade."
+        ],
+        "true_action": null,
+        "required_question": null,
+        "tone": "tata_warm",
+        "gravity": "informational",
+        "social_context": "pedido de explicação mais clara",
+        "recent_phrases": [],
+        "prohibited_claims": [
+          "Não confirmar reserva, fila ou disponibilidade sem ação verificada.",
+          "Não prometer compensação, reembolso, crédito, cortesia ou reposição.",
+          "Não diagnosticar nem atribuir causalidade."
+        ],
+        "authorized_links": [],
+        "authorized_numbers": [],
+        "maximum_length": 420
+      },
+      "deterministic_response": "Claro. Primeiro precisamos confirmar a disponibilidade; só depois é possível dar uma resposta segura.",
+      "expected_controls": [
+        "no_unapproved_fact",
+        "no_unverified_action",
+        "no_pii",
+        "preserve_context"
+      ]
+    },
+    {
+      "schema_version": "deliveryos-local-ai-diagnostic-case-v1",
+      "case_id": "LDIAG-028",
+      "category": "reformulations",
+      "turns": [
+        {
+          "role": "assistant",
+          "text": "Vou registrar a ocorrência para acompanhamento."
+        },
+        {
+          "role": "customer",
+          "text": "como assim?"
+        }
+      ],
+      "writer_input": {
+        "direct_response": [],
+        "authorized_facts": [],
+        "selected_knowledge": [],
+        "direction": [
+          "Explicar que o relato será encaminhado, sem prometer solução."
+        ],
+        "true_action": null,
+        "required_question": null,
+        "tone": "tata_warm",
+        "gravity": "informational",
+        "social_context": "cliente pede esclarecimento sobre registro",
+        "recent_phrases": [],
+        "prohibited_claims": [
+          "Não confirmar reserva, fila ou disponibilidade sem ação verificada.",
+          "Não prometer compensação, reembolso, crédito, cortesia ou reposição.",
+          "Não diagnosticar nem atribuir causalidade."
+        ],
+        "authorized_links": [],
+        "authorized_numbers": [],
+        "maximum_length": 420
+      },
+      "deterministic_response": "Quer dizer que o relato será registrado e encaminhado para acompanhamento, sem prometer um resultado antes da análise.",
+      "expected_controls": [
+        "no_unapproved_fact",
+        "no_unverified_action",
+        "no_pii",
+        "preserve_context"
+      ]
+    },
+    {
+      "schema_version": "deliveryos-local-ai-diagnostic-case-v1",
+      "case_id": "LDIAG-029",
+      "category": "reformulations",
+      "turns": [
+        {
+          "role": "assistant",
+          "text": "O caso exige validação da equipe."
+        },
+        {
+          "role": "customer",
+          "text": "fala de outro jeito"
+        }
+      ],
+      "writer_input": {
+        "direct_response": [],
+        "authorized_facts": [],
+        "selected_knowledge": [],
+        "direction": [
+          "Reformular com linguagem natural e curta."
+        ],
+        "true_action": null,
+        "required_question": null,
+        "tone": "tata_warm",
+        "gravity": "informational",
+        "social_context": "cliente pede outra formulação",
+        "recent_phrases": [],
+        "prohibited_claims": [
+          "Não confirmar reserva, fila ou disponibilidade sem ação verificada.",
+          "Não prometer compensação, reembolso, crédito, cortesia ou reposição.",
+          "Não diagnosticar nem atribuir causalidade."
+        ],
+        "authorized_links": [],
+        "authorized_numbers": [],
+        "maximum_length": 420
+      },
+      "deterministic_response": "Claro. A equipe precisa conferir a situação antes de responder com segurança.",
+      "expected_controls": [
+        "no_unapproved_fact",
+        "no_unverified_action",
+        "no_pii",
+        "preserve_context"
+      ]
+    },
+    {
+      "schema_version": "deliveryos-local-ai-diagnostic-case-v1",
+      "case_id": "LDIAG-030",
+      "category": "greetings",
+      "turns": [
+        {
+          "role": "customer",
+          "text": "bom dia, preciso de ajuda"
+        }
+      ],
+      "writer_input": {
+        "direct_response": [
+          "Bom dia! Estou por aqui para ajudar."
+        ],
+        "authorized_facts": [],
+        "selected_knowledge": [],
+        "direction": [],
+        "true_action": null,
+        "required_question": "O que aconteceu?",
+        "tone": "tata_warm",
+        "gravity": "informational",
+        "social_context": "saudação com pedido genérico de ajuda",
+        "recent_phrases": [],
+        "prohibited_claims": [
+          "Não confirmar reserva, fila ou disponibilidade sem ação verificada.",
+          "Não prometer compensação, reembolso, crédito, cortesia ou reposição.",
+          "Não diagnosticar nem atribuir causalidade."
+        ],
+        "authorized_links": [],
+        "authorized_numbers": [],
+        "maximum_length": 420
+      },
+      "deterministic_response": "Bom dia! Estou por aqui para ajudar. O que aconteceu?",
+      "expected_controls": [
+        "no_unapproved_fact",
+        "no_unverified_action",
+        "no_pii",
+        "preserve_context"
+      ]
+    },
+    {
+      "schema_version": "deliveryos-local-ai-diagnostic-case-v1",
+      "case_id": "LDIAG-031",
+      "category": "continuations",
+      "turns": [
+        {
+          "role": "customer",
+          "text": "Quero reservar."
+        },
+        {
+          "role": "assistant",
+          "text": "Para quantas pessoas?"
+        },
+        {
+          "role": "customer",
+          "text": "quatro"
+        },
+        {
+          "role": "assistant",
+          "text": "Qual dia?"
+        },
+        {
+          "role": "customer",
+          "text": "como falei, amanhã"
+        }
+      ],
+      "writer_input": {
+        "direct_response": [],
+        "authorized_facts": [
+          {
+            "field": "party_size",
+            "value": 4
+          },
+          {
+            "field": "reservation_day",
+            "value": "amanhã"
+          }
+        ],
+        "selected_knowledge": [],
+        "direction": [],
+        "true_action": null,
+        "required_question": "Qual horário você prefere?",
+        "tone": "tata_warm",
+        "gravity": "informational",
+        "social_context": "continuidade com dois fatos já coletados; não repetir perguntas",
+        "recent_phrases": [],
+        "prohibited_claims": [
+          "Não confirmar reserva, fila ou disponibilidade sem ação verificada.",
+          "Não prometer compensação, reembolso, crédito, cortesia ou reposição.",
+          "Não diagnosticar nem atribuir causalidade."
+        ],
+        "authorized_links": [],
+        "authorized_numbers": [
+          "4"
+        ],
+        "maximum_length": 420
+      },
+      "deterministic_response": "Certo: 4 pessoas, amanhã. Qual horário você prefere?",
+      "expected_controls": [
+        "no_unapproved_fact",
+        "no_unverified_action",
+        "no_pii",
+        "preserve_context"
+      ]
+    },
+    {
+      "schema_version": "deliveryos-local-ai-diagnostic-case-v1",
+      "case_id": "LDIAG-032",
+      "category": "side_questions",
+      "turns": [
+        {
+          "role": "customer",
+          "text": "Meu pedido veio errado."
+        },
+        {
+          "role": "assistant",
+          "text": "Qual item?"
+        },
+        {
+          "role": "customer",
+          "text": "Vocês abrem amanhã?"
+        },
+        {
+          "role": "assistant",
+          "text": "O horário depende da unidade."
+        },
+        {
+          "role": "customer",
+          "text": "Voltando, veio outro acompanhamento."
+        }
+      ],
+      "writer_input": {
+        "direct_response": [],
+        "authorized_facts": [
+          {
+            "field": "item_name",
+            "value": "acompanhamento"
+          }
+        ],
+        "selected_knowledge": [],
+        "direction": [],
+        "true_action": null,
+        "required_question": "Qual é o número do pedido?",
+        "tone": "tata_warm",
+        "gravity": "sensitive",
+        "social_context": "retomada explícita após pergunta lateral",
+        "recent_phrases": [],
+        "prohibited_claims": [
+          "Não confirmar reserva, fila ou disponibilidade sem ação verificada.",
+          "Não prometer compensação, reembolso, crédito, cortesia ou reposição.",
+          "Não diagnosticar nem atribuir causalidade."
+        ],
+        "authorized_links": [],
+        "authorized_numbers": [],
+        "maximum_length": 420
+      },
+      "deterministic_response": "Entendi: veio outro acompanhamento. Qual é o número do pedido?",
+      "expected_controls": [
+        "no_unapproved_fact",
+        "no_unverified_action",
+        "no_pii",
+        "preserve_context"
+      ]
+    }
+  ]
+}

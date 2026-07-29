@@ -24,6 +24,7 @@ module.exports = {
   ...require('./dialogue/journey-reducer'),
   ...require('./dialogue/journey-store'),
   ...require('./bakeoff/corpus'),
+  ...require('./bakeoff/diagnostic-corpus'),
   ...require('./bakeoff/runner'),
   ...require('./bakeoff/store')
 };
