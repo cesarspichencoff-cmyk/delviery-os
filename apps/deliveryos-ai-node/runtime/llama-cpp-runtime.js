@@ -104,7 +104,8 @@ class LlamaCppRuntime extends LocalInferenceRuntime {
       messages: input.messages,
       temperature: Number(input.temperature ?? 0.2),
       max_tokens: Number(input.max_tokens || 512),
-      response_format: { type: 'json_schema', json_schema: input.json_schema }
+      response_format: { type: 'json_schema', json_schema: input.json_schema },
+      ...(Number.isInteger(input.seed) ? { seed: input.seed } : {})
     }, input.signal);
     try { return JSON.parse(text); } catch { fail('LLAMA_CPP_INVALID_JSON'); }
   }
@@ -114,7 +115,8 @@ class LlamaCppRuntime extends LocalInferenceRuntime {
       model: this.model,
       messages: input.messages,
       temperature: Number(input.temperature ?? 0.35),
-      max_tokens: Number(input.max_tokens || 256)
+      max_tokens: Number(input.max_tokens || 256),
+      ...(Number.isInteger(input.seed) ? { seed: input.seed } : {})
     }, input.signal);
   }
 

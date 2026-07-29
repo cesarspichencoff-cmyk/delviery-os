@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 
+const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 const {
@@ -54,7 +55,11 @@ class LocalCandidate {
     await this.runtime.waitUntilReady({ timeout_ms: 120_000 });
   }
 
-  write(input) { return this.writer.write(input); }
+  write(input, item = {}) {
+    const digest = crypto.createHash('sha256').update(String(this.model_version) + '|' + String(item.case_id || 'case')).digest();
+    const seed = digest.readUInt32BE(0) & 0x7fffffff;
+    return this.writer.write(input, { seed });
+  }
   metrics() { return this.runtime.metrics(); }
   stop() { return this.runtime.shutdown(); }
 }

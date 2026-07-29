@@ -144,7 +144,16 @@ test('prompt restringe o modelo aos fatos e ações recebidos', () => {
   assert.equal(prompt.json_schema.name, 'deliveryos_response_writer_v1');
   assert.match(prompt.messages[0].content, /Use somente os fatos/iu);
   assert.match(prompt.messages[0].content, /Não acrescente conhecimento próprio/iu);
+  assert.match(prompt.messages[0].content, /required_question.*ponto de interrogação/iu);
   assert.match(prompt.messages[0].content, /Não revele.*raciocínio/iu);
+});
+
+test('Response Writer encaminha seed explícita para reprodução', async () => {
+  let request;
+  const writer = new ResponseWriter({ runtime: { generateStructured: async (input) => { request = input; return { text: VALID_TEXT }; } } });
+  const result = await writer.write(writerInput(), { seed: 20260728 });
+  assert.equal(result.accepted, true);
+  assert.equal(request.seed, 20260728);
 });
 
 test('Response Writer aceita geração estruturada válida', async () => {

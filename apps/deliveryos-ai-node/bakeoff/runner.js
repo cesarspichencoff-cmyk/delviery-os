@@ -22,7 +22,7 @@ function blindLabels(caseId, candidateKeys, seed) {
 async function evaluateCandidate(candidate, item) {
   const started = process.hrtime.bigint();
   try {
-    const result = await candidate.write(item.writer_input);
+    const result = await candidate.write(item.writer_input, item);
     const checked = result?.accepted
       ? validateWriterOutput(result.output, item.writer_input)
       : { accepted: false, reason: result?.reason || 'CANDIDATE_REJECTED' };
