@@ -1,6 +1,7 @@
 'use strict';
 
 const { sanitizePatternFacts, validatePatternInput, validatePatternDecision } = require('./pattern-contract');
+const { INTENT_JOURNEY_RULES, journeyForIntent, nextJourneyStep } = require('./journey-graph-catalog');
 
 const WRITTEN_NUMBERS = Object.freeze({
   zero: 0, um: 1, uma: 1, dois: 2, duas: 2, tres: 3, quatro: 4,
@@ -14,24 +15,7 @@ const PRIORITY = Object.freeze([
   'resume', 'greeting_with_need', 'greeting', 'chitchat', 'new_journey',
   'fallback'
 ]);
-const JOURNEY_BY_INTENT = Object.freeze([
-  [/^reservation\./u, 'reservation'],
-  [/^waitlist\./u, 'waitlist'],
-  [/^(?:group\.|large_group)/u, 'large_group'],
-  [/^information\./u, 'restaurant_information'],
-  [/^(?:delivery\.own|order\.create|pickup\.)/u, 'own_delivery'],
-  [/^(?:ifood\.|occurrence\.ifood)/u, 'ifood_problem'],
-  [/^occurrence\.missing_item$/u, 'missing_item'],
-  [/^occurrence\.wrong_item$/u, 'wrong_item'],
-  [/^occurrence\.wrong_quantity$/u, 'wrong_quantity'],
-  [/^occurrence\.personalization_ignored$/u, 'personalization'],
-  [/^(?:occurrence\.delay|order\.status)/u, 'delay'],
-  [/^(?:occurrence\.quality|occurrence\.foreign_body)/u, 'quality'],
-  [/^(?:occurrence\.allergen|occurrence\.health_symptom|food_safety)/u, 'food_safety'],
-  [/^(?:oke\.|event\.)/u, 'oke_event'],
-  [/^(?:praise\.|suggestion\.)/u, 'praise'],
-  [/^(?:handoff\.|privacy\.|abuse\.)/u, 'handoff']
-]);
+const JOURNEY_BY_INTENT = INTENT_JOURNEY_RULES;
 const JOURNEY_HINTS = Object.freeze([
   [/\b(?:reserv|mesa para)\b/u, 'reservation'],
   [/\b(?:fila|espera)\b/u, 'waitlist'],
@@ -106,10 +90,6 @@ function correctionPartySize(text) {
 
 function intentId(item) {
   return typeof item === 'string' ? item : String(item?.intent || item?.id || '');
-}
-
-function journeyForIntent(intent) {
-  return JOURNEY_BY_INTENT.find(([pattern]) => pattern.test(intent))?.[1] || null;
 }
 
 function hintedJourney(text, intents = []) {
@@ -261,35 +241,46 @@ function resolveConversationPattern(raw = {}) {
   const signals = detectedSignals(text, input);
   const active = input.active_journey;
   const nextStep = pendingField(input.pending_question) || input.active_step || null;
+  const stateFacts = input.collected_facts;
+  const targetStep = (journey, newFacts = {}) => nextJourneyStep(journey, { ...stateFacts, ...newFacts }) || nextStep;
 
   if (signals.safety || signals.handoff) {
     const target = signals.safety ? 'food_safety' : 'handoff';
-    return decision({ pattern: 'handoff', confidence: 0.99, journey_action: active && active !== target ? 'suspend' : (active === target ? 'advance' : 'start'), target_journey: target, target_step: signals.safety ? 'safety_triage' : 'handoff_context', requires_clarification: false, clarification_question: null, collision_log: collisionLog(signals, 'safety_handoff') });
+    return decision({ pattern: 'handoff', confidence: 0.99, journey_action: active && active !== target ? 'suspend' : (active === target ? 'advance' : 'start'), target_journey: target, target_step: targetStep(target), requires_clarification: false, clarification_question: null, collision_log: collisionLog(signals, 'safety_handoff') });
   }
   if (signals.correction) {
     const correction = correctionFacts(text, input);
     if (correction.ambiguous) return decision({ pattern: 'clarification', confidence: 0.48, target_journey: active, target_step: nextStep, requires_clarification: true, clarification_question: 'Qual informação você quer corrigir: quantidade, data, horário, canal ou item?', collision_log: collisionLog(signals, 'explicit_correction') });
-    return decision({ pattern: 'correction', confidence: 0.96, journey_action: 'backtrack', target_journey: active || signals.target, target_step: nextStep, facts_corrected: correction.facts, question_to_resume: pendingPrompt(input.pending_question), requires_clarification: false, clarification_question: null, collision_log: collisionLog(signals, 'explicit_correction') });
+    return decision({ pattern: 'correction', confidence: 0.96, journey_action: 'backtrack', target_journey: active || signals.target, target_step: targetStep(active || signals.target, correction.facts), facts_corrected: correction.facts, question_to_resume: pendingPrompt(input.pending_question), requires_clarification: false, clarification_question: null, collision_log: collisionLog(signals, 'explicit_correction') });
   }
   if (signals.cancel) return decision({ pattern: 'cancel', confidence: 0.98, journey_action: 'cancel', target_journey: active, target_step: null, requires_clarification: false, clarification_question: null, collision_log: collisionLog(signals, 'cancel') });
   if (signals.close) return decision({ pattern: 'close', confidence: 0.96, journey_action: active ? 'complete' : 'none', target_journey: active, target_step: null, requires_clarification: false, clarification_question: null, collision_log: collisionLog(signals, 'cancel') });
   if (signals.repeat || signals.reformulate) return decision({ pattern: 'repeat', confidence: 0.97, journey_action: 'none', target_journey: active, target_step: nextStep, reference_resolution: { mode: signals.reformulate ? 'reformulate' : 'repeat', last_assistant_act: input.last_assistant_act || null }, question_to_resume: pendingPrompt(input.pending_question), requires_clarification: false, clarification_question: null, collision_log: collisionLog(signals, 'repeat_reformulate') });
-  if (input.pending_question && signals.short) return decision({ pattern: 'continue', confidence: 0.99, journey_action: 'advance', target_journey: active, target_step: nextStep, facts_added: { [signals.short.field]: signals.short.value }, requires_clarification: false, clarification_question: null, collision_log: collisionLog(signals, 'pending_answer') });
+  if (input.pending_question && signals.short) return decision({ pattern: 'continue', confidence: 0.99, journey_action: 'advance', target_journey: active, target_step: targetStep(active, { [signals.short.field]: signals.short.value }), facts_added: { [signals.short.field]: signals.short.value }, requires_clarification: false, clarification_question: null, collision_log: collisionLog(signals, 'pending_answer') });
   if (signals.reference) {
     const reference = resolveReference(text, input);
     if (!reference.resolved) return decision({ pattern: 'clarification', confidence: 0.42, target_journey: active, target_step: nextStep, reference_resolution: { status: 'ambiguous', candidates: reference.candidates }, requires_clarification: true, clarification_question: 'A qual item, pedido ou opção você está se referindo?', collision_log: collisionLog(signals, 'context_reference') });
     return decision({ pattern: 'continue', confidence: 0.94, journey_action: 'advance', target_journey: active, target_step: nextStep, reference_resolution: { status: 'resolved', ...reference.value }, facts_added: { [reference.value.field]: reference.value.value }, requires_clarification: false, clarification_question: null, collision_log: collisionLog(signals, 'context_reference') });
   }
   if (signals.side) return decision({ pattern: 'side_question', confidence: 0.97, journey_action: 'none', target_journey: active, target_step: input.active_step, question_to_answer: signals.side, question_to_resume: pendingPrompt(input.pending_question), requires_clarification: false, clarification_question: null, collision_log: collisionLog(signals, 'side_question') });
-  if (active && signals.target && signals.target !== active) return decision({ pattern: 'switch_topic', confidence: 0.92, journey_action: 'suspend', target_journey: signals.target, target_step: null, facts_added: contextualNumber(text) ? { party_size: contextualNumber(text) } : {}, requires_clarification: false, clarification_question: null, collision_log: collisionLog(signals, 'topic_change') });
+  if (active && signals.target && signals.target !== active) {
+    const facts = contextualNumber(text) ? { party_size: contextualNumber(text) } : {};
+    return decision({ pattern: 'switch_topic', confidence: 0.92, journey_action: 'suspend', target_journey: signals.target, target_step: targetStep(signals.target, facts), facts_added: facts, requires_clarification: false, clarification_question: null, collision_log: collisionLog(signals, 'topic_change') });
+  }
   if (signals.resume && input.suspended_journeys.length) {
     const suspended = input.suspended_journeys.at(-1);
     return decision({ pattern: 'resume', confidence: 0.96, journey_action: 'resume', target_journey: suspended.journey_id, target_step: suspended.active_step || null, question_to_resume: pendingPrompt(suspended.pending_question), requires_clarification: false, clarification_question: null, collision_log: collisionLog(signals, 'resume') });
   }
-  if (signals.greeting && signals.target) return decision({ pattern: 'continue', confidence: 0.97, journey_action: active === signals.target ? 'advance' : (active ? 'suspend' : 'start'), target_journey: signals.target, target_step: null, facts_added: contextualNumber(text) ? { party_size: contextualNumber(text) } : {}, requires_clarification: false, clarification_question: null, collision_log: collisionLog(signals, 'greeting_with_need') });
+  if (signals.greeting && signals.target) {
+    const facts = contextualNumber(text) ? { party_size: contextualNumber(text) } : {};
+    return decision({ pattern: 'continue', confidence: 0.97, journey_action: active === signals.target ? 'advance' : (active ? 'suspend' : 'start'), target_journey: signals.target, target_step: targetStep(signals.target, facts), facts_added: facts, requires_clarification: false, clarification_question: null, collision_log: collisionLog(signals, 'greeting_with_need') });
+  }
   if (signals.greeting) return decision({ pattern: 'greeting', confidence: 0.99, journey_action: 'none', target_journey: active, target_step: input.active_step, question_to_resume: active ? pendingPrompt(input.pending_question) : null, requires_clarification: false, clarification_question: null, collision_log: collisionLog(signals, 'greeting') });
   if (signals.chitchat) return decision({ pattern: 'chitchat', confidence: 0.93, journey_action: 'none', target_journey: active, target_step: input.active_step, question_to_resume: active ? pendingPrompt(input.pending_question) : null, requires_clarification: false, clarification_question: null, collision_log: collisionLog(signals, 'chitchat') });
-  if (signals.target) return decision({ pattern: 'continue', confidence: 0.9, journey_action: active === signals.target ? 'advance' : (active ? 'suspend' : 'start'), target_journey: signals.target, target_step: null, facts_added: contextualNumber(text) ? { party_size: contextualNumber(text) } : {}, requires_clarification: false, clarification_question: null, collision_log: collisionLog(signals, 'new_journey') });
+  if (signals.target) {
+    const facts = contextualNumber(text) ? { party_size: contextualNumber(text) } : {};
+    return decision({ pattern: 'continue', confidence: 0.9, journey_action: active === signals.target ? 'advance' : (active ? 'suspend' : 'start'), target_journey: signals.target, target_step: targetStep(signals.target, facts), facts_added: facts, requires_clarification: false, clarification_question: null, collision_log: collisionLog(signals, 'new_journey') });
+  }
   return decision({ target_journey: active, target_step: nextStep, question_to_resume: pendingPrompt(input.pending_question), collision_log: collisionLog(signals, 'fallback') });
 }
 
