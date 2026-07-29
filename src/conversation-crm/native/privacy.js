@@ -15,7 +15,13 @@ const SAFE_TOKEN_KEYS = new Set([
   'content_hash', 'hash', 'original_fingerprint', 'incoming_hash', 'existing_hash', 'idempotency_key_hash',
   'error_code', 'result_status', 'route_status', 'availability', 'health', 'circuit_state', 'clock',
   'simulation_outcome', 'semantic_version', 'conflict_state', 'closure_state', 'expected_state',
-  'read_mode', 'write_mode', 'content_type', 'root_label', 'relative_path', 'basis', 'value', 'topic'
+  'read_mode', 'write_mode', 'content_type', 'root_label', 'relative_path', 'basis', 'value', 'topic',
+  'pattern', 'journey_action', 'target_journey', 'target_step', 'active_journey', 'active_step',
+  'pending_question', 'question_to_answer', 'last_assistant_act', 'last_pattern', 'winner',
+  'party_size', 'reservation_day', 'reservation_date', 'date', 'reservation_time', 'time',
+  'pickup_time', 'order_channel', 'order_reference', 'arrival_estimate', 'selected_option',
+  'expected_quantity', 'received_quantity', 'personalization', 'evidence_available',
+  'symptoms', 'onset', 'people_affected', 'requested_items', 'request_scope'
 ]);
 const SAFE_ARRAY_KEYS = new Set([
   'finding_types', 'removed_fields', 'fields_missing', 'escalations', 'candidate_driver_ids',

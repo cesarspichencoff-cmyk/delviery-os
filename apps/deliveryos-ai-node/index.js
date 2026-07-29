@@ -21,6 +21,7 @@ module.exports = {
   ...require('./dialogue/pattern-contract'),
   ...require('./dialogue/journey-graph-catalog'),
   ...require('./dialogue/conversation-pattern-engine'),
+  ...require('./dialogue/pattern-journey-state'),
   ...require('./dialogue/writer-contract'),
   ...require('./dialogue/response-writer'),
   ...require('./dialogue/tool-router'),
