@@ -195,6 +195,7 @@ test('runtime inicia llama-server com 127.0.0.1 e shell desativado', async () =>
   });
   await runtime.start({ model: 'model.gguf', context_size: 2048, gpu_layers: 0 });
   assert.deepEqual(captured.args.slice(0, 4), ['--host', '127.0.0.1', '--port', '4191']);
+  assert.deepEqual(captured.args.slice(captured.args.indexOf('--reasoning'), captured.args.indexOf('--reasoning') + 2), ['--reasoning', 'off']);
   assert.equal(captured.options.shell, false);
   fs.rmSync(root, { recursive: true, force: true });
 });

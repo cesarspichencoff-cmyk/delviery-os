@@ -40,7 +40,8 @@ class LlamaCppRuntime extends LocalInferenceRuntime {
       '--model', model,
       '--ctx-size', String(Number(input.context_size || 4096)),
       '--parallel', '1',
-      '--jinja'
+      '--jinja',
+      '--reasoning', 'off'
     ];
     if (Number.isInteger(input.gpu_layers) && input.gpu_layers >= 0) args.push('--n-gpu-layers', String(input.gpu_layers));
     this.process = this.spawn(this.executable, args, {
