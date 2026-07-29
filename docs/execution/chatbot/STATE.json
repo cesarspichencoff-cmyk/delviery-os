@@ -28,11 +28,14 @@
     "external_review_and_installer_packages",
     "005b_initial_baseline_151_of_151",
     "005b_current_model_research",
-    "005b_candidate_provenance"
+    "005b_candidate_provenance",
+    "005b_structured_output_three_layers",
+    "005b_current_model_adapters",
+    "005b_diagnostic_corpus_frozen",
+    "005b_gemma4_e4b_evaluation"
   ],
-  "active_unit": "runtime_structured_output_certification",
+  "active_unit": "qwen35_4b_evaluation",
   "pending_units": [
-    "gemma4_e4b_evaluation",
     "qwen35_4b_evaluation",
     "optional_gemma4_12b_doctor_gate",
     "technical_comparison",
@@ -54,6 +57,7 @@
     "local_bakeoff_tests": "20/20 focused; included in Conversation 480/480",
     "panel_visual_qa": "passed; blind before vote, reveal after vote, automatic advance, zero console errors",
     "005b_directed_baseline": "151/151 passed"
+    ,"005b_local_ai_focused": "179/179 passed after grammar alignment; 46/46 seed-directed checks passed"
   },
   "bakeoff": {
     "seed": "TATA-LOCAL-AI-BAKEOFF-V1",
@@ -74,10 +78,28 @@
       "p95_ms": 5300.68,
       "max_ms": 9482.32
     },
-    "human_winner": null
+    "human_winner": null,
+    "current_005b": {
+      "base_cases": 260,
+      "diagnostic_cases": 32,
+      "gemma4_e4b": {
+        "writer_accepted": 292,
+        "writer_fallback": 0,
+        "writer_p50_ms": 4861.1801,
+        "writer_p95_ms": 10378.175,
+        "writer_max_ms": 15961.6932,
+        "director_expected": "2/8",
+        "director_fallback": 1,
+        "director_p50_ms": 28587,
+        "director_p95_ms": 30469,
+        "director_max_ms": 30469,
+        "technical_status": "not_qualified"
+      },
+      "human_winner": null
+    }
   },
   "blockers": [
-    "005b_candidates_not_yet_executed",
+    "005b_qwen35_not_yet_executed",
     "human_blind_bakeoff_pending",
     "restaurant_hardware_unverified",
     "hosted_runtime_not_connected"
@@ -90,6 +112,6 @@
   "production_authorized": false,
   "paid_api_or_infrastructure_added": false,
   "push_merge_deploy_performed": false,
-  "next_step": "certify b10172 grammar and model adapters before downloading Gemma 4 E4B",
-  "updated_at": "2026-07-29T01:53:19.4639629-03:00"
+  "next_step": "download and evaluate only Qwen3.5 4B after the closed Gemma 4 E4B result",
+  "updated_at": "2026-07-29T02:56:00-03:00"
 }

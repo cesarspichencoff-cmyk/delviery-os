@@ -17,6 +17,7 @@
 - Pacote externo: `deliveryos-review-packets/chatbot-change-005-portable-ai-node/`
 - Baseline 005B: 151/151 testes direcionados
 - Pesquisa: Gemma 4 E4B GGUF oficial; Qwen3.5 4B oficial com GGUF secundário rastreado
-- Runtime: provar b10172 com grammar antes de considerar b10173
-- Próximo passo: certificar structured output e adapters; depois baixar somente Gemma 4 E4B
+- Runtime: b10172 provado com GBNF fixada, parsing estrito e validação semântica
+- Gemma 4 E4B: Writer 292/292, zero fallback, p95 10,38 s; Director 2/8, p95 30,47 s; não qualificado
+- Próximo passo: baixar e fechar somente o Qwen3.5 4B rastreado; não iniciar 12B antes disso
 - Não fazer: produção, cliente real, push, merge, deploy, API paga ou instalação no restaurante antes dos três gates externos.

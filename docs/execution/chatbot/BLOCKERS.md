@@ -61,7 +61,9 @@ Nenhum desses pontos autoriza escolher o menos ruim, ativar clientes ou instalar
 
 Não há bloqueio para iniciar a certificação local. Permanecem abertos:
 
-- Gemma 4 E4B e Qwen3.5 4B ainda não foram executados;
+- Gemma 4 E4B foi executado e não se qualificou: Writer 292/292, mas Director
+  apenas 2/8 e p95 de 30,47 s;
+- Qwen3.5 4B ainda não foi executado;
 - o GGUF do Qwen3.5 é conversão secundária e não pode ser promovido sem nova
   decisão de distribuição;
 - Gemma 4 12B é opcional e depende de Doctor posterior;

@@ -238,3 +238,27 @@ depois e não contém justificativa material para substituir o runtime aprovado.
 **Motivo:** Gemma 4 e Qwen3.5 já eram suportados em releases anteriores.
 
 **Impacto:** rollback é o próprio runtime canônico e o instalador fica imutável.
+
+### D-025 — GBNF deve refletir o validador semântico
+
+**Decisão:** restringir os mapas de fatos e referências a valores escalares no
+schema canônico antes de gerar a GBNF.
+
+**Motivo:** o primeiro probe real do Gemma produziu uma lista dentro de
+`references_resolved`; a gramática permitia, mas o validador corretamente
+recusava. O desalinhamento era do schema, não um caso para prompt tuning.
+
+**Impacto:** a geração não consegue mais emitir coleção nesses mapas; parsing e
+semântica continuam independentes e qualquer divergência cai em fallback.
+
+### D-026 — Gemma 4 E4B não é candidato completo
+
+**Decisão:** encerrar o Gemma E4B como `not_qualified` e não executar a bateria
+adversarial reservada aos candidatos qualificados.
+
+**Motivo:** o Writer passou 292/292 com p95 de 10,38 s, mas o Director acertou
+apenas 2/8 movimentos e teve p95 de 30,47 s.
+
+**Impacto:** preservar o resultado excelente do Writer para análise futura sem
+enviar o modelo à homologação humana desta mudança. Qwen3.5 será avaliado sem
+qualquer ajuste derivado das respostas do Gemma.
