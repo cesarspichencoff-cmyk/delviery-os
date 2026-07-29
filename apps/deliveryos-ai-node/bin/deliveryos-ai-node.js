@@ -16,7 +16,8 @@ const {
   LocalModelProvider,
   OutboundCloudConnector,
   DeliveryOsAiNode,
-  buildDirectorPrompt
+  buildDirectorPrompt,
+  buildWriterPrompt
 } = require('..');
 
 function argument(name, fallback = null) {
@@ -98,15 +99,11 @@ async function run(root) {
     node_id: identity.node_id,
     heartbeat_ms: config.heartbeat_ms,
     poll: { minimum: config.poll_min_ms, maximum: config.poll_max_ms },
-    contractFactory: (job) => job.request_type === 'conversation_director'
-      ? buildDirectorPrompt(job.payload)
-      : ({
-          messages: [
-            { role: 'system', content: 'Produza somente a saída solicitada pelo contrato DeliveryOS. Não invente fatos nem ações.' },
-            { role: 'user', content: JSON.stringify(job.payload) }
-          ],
-          max_tokens: 512
-        })
+    contractFactory: (job) => {
+      if (job.request_type === 'conversation_director') return buildDirectorPrompt(job.payload);
+      if (job.request_type === 'response_writer') return buildWriterPrompt(job.payload);
+      throw Object.assign(new Error('AI_NODE_REQUEST_TYPE_UNSUPPORTED'), { code: 'AI_NODE_REQUEST_TYPE_UNSUPPORTED' });
+    }
   });
   const controller = new AbortController();
   process.once('SIGINT', () => { node.stop(); controller.abort(); });

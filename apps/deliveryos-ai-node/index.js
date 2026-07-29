@@ -16,6 +16,8 @@ module.exports = {
   ...require('./dialogue/director-contract'),
   ...require('./dialogue/deterministic-director'),
   ...require('./dialogue/director'),
+  ...require('./dialogue/writer-contract'),
+  ...require('./dialogue/response-writer'),
   ...require('./dialogue/tool-router'),
   ...require('./dialogue/journey-reducer'),
   ...require('./dialogue/journey-store')

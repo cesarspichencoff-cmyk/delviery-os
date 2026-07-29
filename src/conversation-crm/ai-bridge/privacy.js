@@ -8,7 +8,9 @@ const ALLOWED_TOP_LEVEL = new Set([
   'message', 'recent_history', 'structured_summary', 'authorized_facts',
   'active_task', 'active_journey', 'suspended_journeys', 'pending_questions',
   'playbook', 'prohibited_claims', 'allowed_actions', 'social_context',
-  'knowledge', 'tone', 'gravity', 'recent_phrases'
+  'knowledge', 'tone', 'gravity', 'recent_phrases', 'direct_response',
+  'selected_knowledge', 'direction', 'true_action', 'required_question',
+  'authorized_links', 'authorized_numbers', 'maximum_length'
 ]);
 
 function redactSensitiveText(value, findings) {

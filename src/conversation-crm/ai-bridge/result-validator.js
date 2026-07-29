@@ -33,7 +33,7 @@ class AiResultValidator {
     if (result.model_version !== input.job.requested_model || result.provider_version !== input.job.provider_version) return { accepted: false, reason: 'RESULT_PROVIDER_MISMATCH' };
     const specialized = this.validators[input.job.request_type];
     if (specialized) {
-      const checked = specialized(result.output);
+      const checked = specialized(result.output, { job: input.job, result, node_id: input.node_id });
       if (!checked?.accepted) return { accepted: false, reason: checked?.reason || 'RESULT_CONTRACT_INVALID' };
     }
     const timing = result.timing_metrics || {};
