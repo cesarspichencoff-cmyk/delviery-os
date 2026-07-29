@@ -41,17 +41,19 @@ class LocalCandidate {
     this.modelFile = options.model_file;
     this.contextSize = options.context_size;
     this.gpuLayers = options.gpu_layers;
+    this.adapterId = options.adapter_id;
     this.runtime = new LlamaCppRuntime({
       executable: options.executable,
       models_root: options.models_root,
       host: '127.0.0.1',
-      port: options.port
+      port: options.port,
+      adapter_id: options.adapter_id
     });
     this.writer = new ResponseWriter({ runtime: this.runtime });
   }
 
   async start() {
-    await this.runtime.start({ model: this.modelFile, context_size: this.contextSize, gpu_layers: this.gpuLayers });
+    await this.runtime.start({ model: this.modelFile, context_size: this.contextSize, gpu_layers: this.gpuLayers, adapter_id: this.adapterId });
     await this.runtime.waitUntilReady({ timeout_ms: 120_000 });
   }
 
@@ -75,9 +77,10 @@ function candidate(prefix, port) {
     model_file: modelFile,
     executable: required('llama-executable'),
     models_root: required('models-root'),
-    context_size: Number(argument('context-size', '4096')),
+    context_size: argument('context-size') ? Number(argument('context-size')) : undefined,
     gpu_layers: Number(argument(`${prefix}-gpu-layers`, argument('gpu-layers', '0'))),
-    port
+    port,
+    adapter_id: argument(`${prefix}-adapter`, 'default')
   });
 }
 

@@ -14,6 +14,7 @@ module.exports = {
   ...require('./runtime/local-inference-runtime'),
   ...require('./runtime/llama-cpp-runtime'),
   ...require('./runtime/structured-output'),
+  ...require('./model-adapters'),
   ...require('./dialogue/director-contract'),
   ...require('./dialogue/deterministic-director'),
   ...require('./dialogue/director'),
