@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { spawn } = require('node:child_process');
 const { LocalInferenceRuntime } = require('./local-inference-runtime');
+const { fixedGrammar, parseStrictJsonObject } = require('./structured-output');
 
 function fail(code) { throw Object.assign(new Error(code), { code }); }
 
@@ -95,19 +96,24 @@ class LlamaCppRuntime extends LocalInferenceRuntime {
       prompt_tokens: Number(body.usage?.prompt_tokens || 0),
       completion_tokens: Number(body.usage?.completion_tokens || 0)
     };
-    return String(body.choices?.[0]?.message?.content || '');
+    const content = body.choices?.[0]?.message?.content;
+    if (typeof content !== 'string') fail('LLAMA_CPP_CONTENT_TYPE_INVALID');
+    return content;
   }
 
   async generateStructured(input = {}) {
-    const text = await this.request({
+    const grammar = fixedGrammar(input.json_schema);
+    const payload = {
       model: this.model,
       messages: input.messages,
       temperature: Number(input.temperature ?? 0.2),
       max_tokens: Number(input.max_tokens || 512),
-      response_format: { type: 'json_schema', json_schema: input.json_schema },
       ...(Number.isInteger(input.seed) ? { seed: input.seed } : {})
-    }, input.signal);
-    try { return JSON.parse(text); } catch { fail('LLAMA_CPP_INVALID_JSON'); }
+    };
+    if (grammar) payload.grammar = grammar;
+    else payload.response_format = { type: 'json_schema', json_schema: input.json_schema };
+    const text = await this.request(payload, input.signal);
+    return parseStrictJsonObject(text);
   }
 
   generateText(input = {}) {

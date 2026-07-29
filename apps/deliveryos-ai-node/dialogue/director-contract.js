@@ -47,6 +47,21 @@ function validateDirectorOutput(value) {
   return { accepted: true, reason: null, output: value };
 }
 
+function validateDirectorSemantics(value, input = {}) {
+  const checked = validateDirectorOutput(value);
+  if (!checked.accepted) return checked;
+  const state = input.journey_state || {};
+  const active = state.active_journey || null;
+  const suspended = Array.isArray(state.suspended_journeys) ? state.suspended_journeys : [];
+  const continuationActs = new Set(['continue_journey', 'answer_side_question', 'suspend_journey', 'correct_information', 'repeat']);
+  if (active && continuationActs.has(value.dialogue_act) && value.active_journey !== active) return fail('DIRECTOR_JOURNEY_STATE_CONFLICT');
+  if (value.dialogue_act === 'continue_journey' && !active) return fail('DIRECTOR_JOURNEY_MISSING');
+  if (value.dialogue_act === 'resume_journey' && !suspended.some((journey) => journey?.journey_id === value.active_journey)) return fail('DIRECTOR_RESUME_TARGET_INVALID');
+  if (value.dialogue_act === 'switch_topic' && (!active || !value.active_journey || value.active_journey === active)) return fail('DIRECTOR_TOPIC_SWITCH_INVALID');
+  if (value.next_required_information && Object.hasOwn(state.collected_facts || {}, value.next_required_information)) return fail('DIRECTOR_INFORMATION_ALREADY_KNOWN');
+  return checked;
+}
+
 const DIRECTOR_JSON_SCHEMA = Object.freeze({
   name: 'deliveryos_conversation_director_v1',
   strict: true,
@@ -83,4 +98,4 @@ const DIRECTOR_JSON_SCHEMA = Object.freeze({
   }
 });
 
-module.exports = { DIALOGUE_ACTS, SOCIAL_ACTS, DIRECTOR_KEYS, DIRECTOR_JSON_SCHEMA, validateDirectorOutput };
+module.exports = { DIALOGUE_ACTS, SOCIAL_ACTS, DIRECTOR_KEYS, DIRECTOR_JSON_SCHEMA, validateDirectorOutput, validateDirectorSemantics };

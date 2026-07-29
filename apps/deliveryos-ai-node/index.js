@@ -13,6 +13,7 @@ module.exports = {
   ...require('./update-manager'),
   ...require('./runtime/local-inference-runtime'),
   ...require('./runtime/llama-cpp-runtime'),
+  ...require('./runtime/structured-output'),
   ...require('./dialogue/director-contract'),
   ...require('./dialogue/deterministic-director'),
   ...require('./dialogue/director'),

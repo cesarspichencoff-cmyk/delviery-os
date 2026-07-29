@@ -1,0 +1,22 @@
+{
+  "schema_version": "deliveryos-structured-grammar-manifest-v1",
+  "generator": {
+    "name": "llama.cpp json_schema_to_grammar.py",
+    "release": "b10172",
+    "commit": "bc71c24c9da1e7ba6f5993da0e61476155720b06",
+    "source": "https://github.com/ggml-org/llama.cpp/blob/b10172/examples/json_schema_to_grammar.py",
+    "sha256": "ee451dc460aa31185226e58988626f64e75ab735169fa3e484fcf16889475ae3"
+  },
+  "schemas": {
+    "deliveryos_conversation_director_v1": {
+      "schema_sha256": "2af6ee974d8a568e09562412ccc41ccf7bb3e106f042e1fe79334642c7e6a44f",
+      "grammar_file": "director-v1.gbnf",
+      "grammar_sha256": "f04b12d0c50be5fcae83e4627714e7beb856878e5c9897c7c9dc9d960e7b3f13"
+    },
+    "deliveryos_response_writer_v1": {
+      "schema_sha256": "c10d7331188198a56a4bec3e24bf7066652c531894776d1a4abd714527c45456",
+      "grammar_file": "writer-v1.gbnf",
+      "grammar_sha256": "5d40b99c8d017b741f108b128b42a26090f68b4f6055f0e726b273e69e977f4a"
+    }
+  }
+}

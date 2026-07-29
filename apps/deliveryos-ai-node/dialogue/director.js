@@ -1,6 +1,6 @@
 'use strict';
 
-const { DIRECTOR_JSON_SCHEMA, validateDirectorOutput } = require('./director-contract');
+const { DIRECTOR_JSON_SCHEMA, validateDirectorSemantics } = require('./director-contract');
 const { deterministicDirector } = require('./deterministic-director');
 
 function buildDirectorPrompt(input = {}) {
@@ -33,7 +33,7 @@ class ConversationDirector {
   async direct(input = {}) {
     try {
       const generated = await this.runtime.generateStructured(buildDirectorPrompt(input));
-      const validated = validateDirectorOutput(generated);
+      const validated = validateDirectorSemantics(generated, input);
       if (!validated.accepted) return { source: 'deterministic_fallback', reason: validated.reason, directive: this.fallback(input) };
       return { source: 'local_model', reason: null, directive: validated.output };
     } catch (error) {
