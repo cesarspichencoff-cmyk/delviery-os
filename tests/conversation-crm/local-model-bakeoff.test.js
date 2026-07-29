@@ -58,6 +58,14 @@ test('corpus canônico possui os 260 casos e todos os mínimos', () => {
   assert.deepEqual(validateBakeoffCorpus(corpus), { passed: true, findings: [], total_cases: 260 });
 });
 
+test('casos públicos exibem contexto sintético específico em vez de mensagem genérica', () => {
+  const corpus = createBakeoffCorpus({ seed: 'CONTEXT-SEED' });
+  for (const item of corpus.cases) {
+    assert.ok(item.turns.length >= 1, item.case_id);
+    assert.notEqual(item.turns[0].text, 'Mensagem sintética do cenário.', item.case_id);
+    assert.ok(item.turns.every((turn) => ['customer', 'assistant'].includes(turn.role) && turn.text.length > 1), item.case_id);
+  }
+});
 test('vinte conversas livres possuem pelo menos oito turnos', () => {
   const items = createBakeoffCorpus().cases.filter((item) => item.category === 'free_conversations');
   assert.equal(items.length, 20);

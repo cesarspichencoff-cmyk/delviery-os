@@ -46,13 +46,30 @@ function writerInput(overrides = {}) {
 }
 
 function syntheticTurns(category, index) {
-  if (category !== 'free_conversations') return [{ role: 'customer', text: 'Mensagem sintética do cenário.' }];
-  const variants = [
-    ['Oi', 'Olá! Como posso ajudar?', 'Quero organizar uma visita.', 'Claro. Para quando?', 'Amanhã.', 'Perfeito. Qual horário?', 'Antes, vocês têm valet?', 'Temos valet; qual horário você prefere?'],
-    ['Boa noite', 'Boa noite! Em que posso ajudar?', 'Tenho uma dúvida sobre retirada.', 'Pode me contar.', 'Quero retirar um pedido.', 'Certo. O que deseja pedir?', 'Ainda estou escolhendo.', 'Sem problema. Posso ajudar com o cardápio.'],
-    ['Olá', 'Olá! Como posso ajudar?', 'Tive um problema com um item.', 'Sinto muito. O que aconteceu?', 'O item não veio.', 'Qual item foi afetado?', 'Foi a bebida.', 'Entendi a falta da bebida.']
-  ];
-  return variants[index % variants.length].map((text, turn) => ({ role: turn % 2 === 0 ? 'customer' : 'assistant', text }));
+  if (category === 'free_conversations') {
+    const variants = [
+      ['Oi', 'Olá! Como posso ajudar?', 'Quero organizar uma visita.', 'Claro. Para quando?', 'Amanhã.', 'Perfeito. Qual horário?', 'Antes, vocês têm valet?', 'Temos valet; qual horário você prefere?'],
+      ['Boa noite', 'Boa noite! Em que posso ajudar?', 'Tenho uma dúvida sobre retirada.', 'Pode me contar.', 'Quero retirar um pedido.', 'Certo. O que deseja pedir?', 'Ainda estou escolhendo.', 'Sem problema. Posso ajudar com o cardápio.'],
+      ['Olá', 'Olá! Como posso ajudar?', 'Tive um problema com um item.', 'Sinto muito. O que aconteceu?', 'O item não veio.', 'Qual item foi afetado?', 'Foi a bebida.', 'Entendi a falta da bebida.']
+    ];
+    return variants[index % variants.length].map((text, turn) => ({ role: turn % 2 === 0 ? 'customer' : 'assistant', text }));
+  }
+  const messages = {
+    greetings: ['Oi!', 'Boa noite!', 'Olá, tudo bem?', 'Bom dia!'],
+    continuations: ['Pode ser às oito?', 'Seria para amanhã.', 'O pedido foi pelo iFood.', 'O item afetado foi a bebida.'],
+    corrections: ['Na verdade, somos 10 pessoas.', 'Corrigindo: seria amanhã.', 'O canal correto é o iFood.', 'Eu me referia à sobremesa.'],
+    side_questions: ['Antes, vocês têm valet?', 'E qual é o valor do valet?', 'Posso ver o cardápio antes?', 'Vocês abrem no jantar?'],
+    interruptions_resumptions: ['Voltei, podemos continuar?', 'Desculpe a interrupção; quero retomar.', 'Podemos voltar à reserva?', 'Quero continuar de onde paramos.'],
+    vague_references: ['Quero aquele.', 'É sobre isso.', 'Pode ser o mesmo.', 'Quero retomar aquilo.'],
+    reformulations: ['Pode explicar de um jeito mais simples?', 'Não entendi; pode falar de outra forma?', 'Pode resumir?', 'Como funciona, em outras palavras?'],
+    farewells_reopenings: ['Obrigado, até mais.', 'Voltei com outra dúvida.', 'Boa noite, podemos encerrar.', 'Quero abrir um novo assunto.'],
+    operational_problems: ['Faltou o refrigerante no pedido.', 'Esqueceram o shoyu.', 'A sobremesa não veio.', 'Veio um acompanhamento diferente.'],
+    ifood: ['Meu pedido foi feito pelo iFood.', 'Como acompanho uma solicitação no iFood?', 'Tive um problema com um item do iFood.', 'Já abri uma solicitação no aplicativo.'],
+    sensitive: ['Encontrei algo estranho no alimento.', 'O alimento estava com cheiro estranho.', 'Uma pessoa teve sinais depois da refeição.', 'Mais de uma pessoa relatou mal-estar.']
+  };
+  const options = messages[category];
+  if (!options) throw Object.assign(new Error('BAKEOFF_CATEGORY_CONTEXT_MISSING'), { code: 'BAKEOFF_CATEGORY_CONTEXT_MISSING' });
+  return [{ role: 'customer', text: options[index % options.length] }];
 }
 
 function blueprint(category, index) {
