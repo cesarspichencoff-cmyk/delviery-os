@@ -20,5 +20,8 @@ module.exports = {
   ...require('./dialogue/response-writer'),
   ...require('./dialogue/tool-router'),
   ...require('./dialogue/journey-reducer'),
-  ...require('./dialogue/journey-store')
+  ...require('./dialogue/journey-store'),
+  ...require('./bakeoff/corpus'),
+  ...require('./bakeoff/runner'),
+  ...require('./bakeoff/store')
 };

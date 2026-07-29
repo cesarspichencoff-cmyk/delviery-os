@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>DeliveryOS — Bake-off local</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <main>
+    <header><p class="eyebrow">DeliveryOS · homologação local</p><h1>Qual resposta você enviaria?</h1><p id="progress">Carregando comparação cega…</p></header>
+    <section id="context" aria-live="polite"></section>
+    <section id="options" class="options"></section>
+    <form id="vote">
+      <div id="criteria" class="criteria"></div>
+      <button type="submit">Registrar escolha</button>
+    </form>
+    <section id="reveal" class="reveal" hidden></section>
+  </main>
+  <script src="/app.js" defer></script>
+</body>
+</html>

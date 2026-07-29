@@ -23,6 +23,8 @@
     "conversation-native:catalog": "node tools/conversation-crm/native-simulator.js all",
     "conversation-native:reproduce": "node tools/conversation-crm/native-simulator.js reproduce",
     "conversation-native:privacy": "node tools/conversation-crm/native-privacy-scan.js",
+    "conversation-local-ai:bakeoff": "node tools/conversation-crm/local-ai-bakeoff/run.js",
+    "conversation-local-ai:bakeoff-panel": "node tools/conversation-crm/local-ai-bakeoff/server.js",
     "serve": "node tools/servir_v1.js"
   },
   "devDependencies": {
