@@ -1,0 +1,57 @@
+{
+  "schema_version": "deliveryos-current-model-metrics-v1",
+  "corpus": {
+    "base_cases": 260,
+    "diagnostic_cases": 32,
+    "total_cases": 292
+  },
+  "structured_output": {
+    "generation": "fixed_gbnf",
+    "parsing": "strict_complete_json_object",
+    "semantics": "state_and_allowlist_validation",
+    "negative_controls": 15,
+    "rejected_negative_controls": 15
+  },
+  "gemma4_e4b": {
+    "writer": {
+      "accepted": 292,
+      "fallback": 0,
+      "p50_ms": 4861.1801,
+      "p95_ms": 10378.175,
+      "max_ms": 15961.6932
+    },
+    "director": {
+      "expected": 2,
+      "total": 8,
+      "fallback": 1,
+      "p50_ms": 28587,
+      "p95_ms": 30469,
+      "max_ms": 30469
+    },
+    "technical_status": "not_qualified"
+  },
+  "qwen35_4b": {
+    "writer": {
+      "accepted": 289,
+      "fallback": 3,
+      "p50_ms": 4596.0633,
+      "p95_ms": 9696.6359,
+      "max_ms": 12492.6702
+    },
+    "director": {
+      "expected": 2,
+      "total": 8,
+      "fallback": 0,
+      "p50_ms": 22613,
+      "p95_ms": 26834,
+      "max_ms": 26834
+    },
+    "technical_status": "not_qualified"
+  },
+  "gemma4_12b": {
+    "technical_status": "not_executed_doctor_gate"
+  },
+  "new_candidate_count": 0,
+  "human_winner": null,
+  "canonical_hash": "f8767aec6ee257abf068a4417df27edeafd109d9895dd6937f64fd33e5150c44"
+}

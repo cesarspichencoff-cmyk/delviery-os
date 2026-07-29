@@ -1,0 +1,35 @@
+{
+  "schema_version": "deliveryos-historical-model-result-v1",
+  "source_change": "005-portable-local-ai-node",
+  "execution_status": "preserved_not_reexecuted",
+  "candidate": {
+    "candidate_id": "Qwen3-4B-Q4_K_M-official",
+    "organization": "Qwen",
+    "model_revision": "bc640142c66e1fdd12af0bd68f40445458f3869b",
+    "quantization": "Q4_K_M",
+    "model_sha256": "7485fe6f11af29433bc51cab58009521f205840f5b4ae3a32fa7f92e8534fdf5",
+    "model_size_bytes": 2497280256,
+    "license": "Apache-2.0",
+    "runtime": "llama.cpp-b10172"
+  },
+  "corpus": {
+    "total_cases": 260,
+    "public_hash": "d911147cec578b628fb4666366b98f86b2d113a194c74837560c094966b69261",
+    "private_hash": "92bc0889d958d5015570551b6102f5af9ecd685f8b6695ee89727231df772d09"
+  },
+  "writer": {
+    "accepted": 250,
+    "fallback": 10,
+    "p50_ms": 3945.53,
+    "p95_ms": 8425.83,
+    "max_ms": 17024.35
+  },
+  "director": {
+    "status": "not_reexecuted_in_005b"
+  },
+  "qualification": {
+    "status": "historical_baseline_only",
+    "human_winner": null
+  },
+  "canonical_hash": "03dca8938264ee84423638aa470d09a931f4620ff8ebc05ea3a2c3549cfab965"
+}
