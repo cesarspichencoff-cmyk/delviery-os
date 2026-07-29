@@ -74,3 +74,9 @@ o gate técnico completo:
 
 Como não existe candidato técnico novo, não há rodada humana a abrir nesta
 mudança. O baseline e o instalador anterior permanecem disponíveis e imutáveis.
+
+Limitação de QA herdada: `conversation-native:test` inclui um teste que executa
+o gerador de respostas contra dois artefatos rastreados. A suíte passou 523/523,
+mas deixou esses arquivos modificados; eles foram restaurados byte a byte e a
+homologação isolada passou 31/31. A correção do isolamento pertence a mudança
+separada e não altera o veredito dos modelos.

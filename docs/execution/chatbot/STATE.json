@@ -4,7 +4,7 @@
   "branch": "feature/conversation-current-open-model-rebakeoff-v1",
   "base": "ffc312ca47cb05fe18304dba5e33b2b098ac7f78",
   "behavioral_checkpoint": "ffc312ca47cb05fe18304dba5e33b2b098ac7f78",
-  "working_tree": "active_atomic_unit",
+  "working_tree": "clean_after_final_commit",
   "completed_units": [
     "hosting_inspection",
     "outbound_https_claim_lease_bridge",
@@ -34,15 +34,15 @@
     "005b_diagnostic_corpus_frozen",
     "005b_gemma4_e4b_evaluation",
     "005b_qwen35_4b_evaluation",
-    "005b_optional_gemma4_12b_doctor_gate"
+    "005b_optional_gemma4_12b_doctor_gate",
+    "005b_technical_comparison",
+    "005b_full_regression",
+    "005b_final_certification"
   ],
-  "active_unit": "technical_comparison",
-  "pending_units": [
-    "technical_comparison",
-    "full_regression_and_certification"
-  ],
+  "active_unit": null,
+  "pending_units": [],
   "test_status": {
-    "conversation_native": "480/480 passed",
+    "conversation_native": "523/523 passed; historical generator test rewrote two tracked artifacts, which were restored byte-identical to HEAD",
     "scenario_catalog": "200/200 passed; hash ddabec0dbf3c47adfb886b28556b96a47fcfcf90d709ec101b14fefee5f1a798",
     "privacy": "passed; zero findings; positive control detected",
     "scenario_194": "passed; no external access",
@@ -54,10 +54,11 @@
     "cardapio": "199 items verified",
     "historical_source": "approved; same production API and real-item fixture checks",
     "playwright_homologation": "11/11 passed in local Chrome",
+    "historical_homologation_isolated": "31/31 passed after tracked test artifacts were restored",
     "local_bakeoff_tests": "20/20 focused; included in Conversation 480/480",
     "panel_visual_qa": "passed; blind before vote, reveal after vote, automatic advance, zero console errors",
     "005b_directed_baseline": "151/151 passed"
-    ,"005b_local_ai_focused": "179/179 passed after grammar alignment; 46/46 seed-directed checks passed; 35/35 current-model focused checks passed after Qwen evidence runner"
+    ,"005b_local_ai_focused": "179/179 passed after grammar alignment; 46/46 seed-directed checks passed; 35/35 current-model focused checks passed after Qwen evidence runner; 8/8 comparison checks passed"
   },
   "bakeoff": {
     "seed": "TATA-LOCAL-AI-BAKEOFF-V1",
@@ -128,6 +129,6 @@
   "production_authorized": false,
   "paid_api_or_infrastructure_added": false,
   "push_merge_deploy_performed": false,
-  "next_step": "consolidate the no-candidate comparison, run inherited regressions and issue the final 005B certification",
-  "updated_at": "2026-07-29T03:40:00-03:00"
+  "next_step": "no human bake-off for 005B; preserve baseline and wait for a separately authorized future model change",
+  "updated_at": "2026-07-29T04:15:00-03:00"
 }

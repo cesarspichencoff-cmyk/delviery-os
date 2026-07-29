@@ -21,5 +21,8 @@
 - Gemma 4 E4B: Writer 292/292, zero fallback, p95 10,38 s; Director 2/8, p95 30,47 s; não qualificado
 - Qwen3.5 4B: Writer 289/292, três fallbacks seguros, p95 9,70 s; Director 2/8, p95 26,83 s; não qualificado
 - Gemma 4 12B: não executado; Doctor pós-Qwen classificou a máquina como intermediária e não incluiu 12B na matriz compatível
-- Próximo passo: consolidar comparação, regressões, pacote externo e veredito sem candidato técnico
+- Regressão final: Conversation 523/523; catálogo 200/200; privacidade aprovada; homologação isolada 31/31; Conference 350/350; Live 243/243; Capacidade 43/43; Copiloto 53/53; Playwright 11/11; cardápio 199; fonte histórica aprovada
+- Instalador anterior: SHA-256 `9ec05a9223e6b1b3ea76bb88d4c29d5a9280750b60b6a9a600841df4c88756c9`, imutável
+- Resultado: zero candidato técnico novo; nenhum painel 005B, vencedor, push, merge, deploy ou instalação
+- Próximo passo: somente uma mudança futura separadamente autorizada; não abrir homologação da 005B
 - Não fazer: produção, cliente real, push, merge, deploy, API paga ou instalação no restaurante antes dos três gates externos.

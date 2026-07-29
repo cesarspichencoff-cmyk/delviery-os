@@ -287,3 +287,15 @@ operacional; RAM nominal e espaço em disco não substituem o gate completo.
 
 **Impacto:** evita carga e aquecimento sem hipótese técnica suficiente. A
 ausência do opcional não bloqueia a conclusão da Mudança 005B.
+
+### D-029 — Não fabricar rodada humana sem candidato técnico
+
+**Decisão:** não criar `blind-round-1.json`, `blind-round-2.json` ou bundle de
+homologação 005B.
+
+**Motivo:** ambos os modelos novos falharam o Director. A infraestrutura cega
+anterior permanece testada, mas abrir votação transformaria um gate técnico
+vermelho em escolha do menos ruim.
+
+**Impacto:** César não recebe uma falsa escolha. `human_winner` continua `null`
+e o baseline permanece soberano.
