@@ -22,6 +22,8 @@ module.exports = {
   ...require('./dialogue/journey-graph-catalog'),
   ...require('./dialogue/conversation-pattern-engine'),
   ...require('./dialogue/pattern-journey-state'),
+  ...require('./dialogue/product-context-contracts'),
+  ...require('./dialogue/approved-response-envelope'),
   ...require('./dialogue/writer-contract'),
   ...require('./dialogue/response-writer'),
   ...require('./dialogue/tool-router'),
@@ -30,5 +32,8 @@ module.exports = {
   ...require('./bakeoff/corpus'),
   ...require('./bakeoff/diagnostic-corpus'),
   ...require('./bakeoff/runner'),
-  ...require('./bakeoff/store')
+  ...require('./bakeoff/store'),
+  ...require('./evals/pattern-corpus'),
+  ...require('./evals/pattern-mutations'),
+  ...require('./evals/pattern-homologation')
 };

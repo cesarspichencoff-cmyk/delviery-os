@@ -1,6 +1,7 @@
 'use strict';
 
 const { validateWriterInput, validateWriterOutput } = require('../../../apps/deliveryos-ai-node/dialogue/writer-contract');
+const { approvedEnvelopeToWriterInput, validateApprovedWriterOutput } = require('../../../apps/deliveryos-ai-node/dialogue/approved-response-envelope');
 const { independentQuestion, validatePostComposition } = require('../native/post-composition-validator');
 
 const MAXIMUM_BY_LENGTH = Object.freeze({ short: 500, medium: 700, careful: 900 });
@@ -17,6 +18,7 @@ function requiredQuestion(plan = {}) {
 }
 
 function buildWriterInput(input = {}) {
+  if (input.approved_response_envelope) return approvedEnvelopeToWriterInput(input.approved_response_envelope);
   const plan = input.plan || {};
   const value = {
     direct_response: [...(plan.direct_answer || [])],
@@ -40,7 +42,9 @@ function buildWriterInput(input = {}) {
 }
 
 function validateLocalWriterCandidate(input = {}) {
-  const writer = validateWriterOutput(input.output, input.writer_input);
+  const writer = input.approved_response_envelope
+    ? validateApprovedWriterOutput(input.output, input.approved_response_envelope)
+    : validateWriterOutput(input.output, input.writer_input);
   if (!writer.accepted) return { accepted: false, reason: writer.reason, text: input.deterministic_text };
   const post = validatePostComposition({
     text: writer.output.text,

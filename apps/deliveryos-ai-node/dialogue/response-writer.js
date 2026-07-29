@@ -1,6 +1,7 @@
 'use strict';
 
 const { WRITER_JSON_SCHEMA, validateWriterInput, validateWriterOutput } = require('./writer-contract');
+const { approvedEnvelopeToWriterInput, validateApprovedWriterOutput } = require('./approved-response-envelope');
 
 function buildWriterPrompt(input = {}, options = {}) {
   const checked = validateWriterInput(input);
@@ -37,6 +38,21 @@ class ResponseWriter {
     try {
       const generated = await this.runtime.generateStructured(buildWriterPrompt(checked.input, options));
       const validation = validateWriterOutput(generated, checked.input);
+      return validation.accepted
+        ? { accepted: true, source: 'local_model', reason: null, output: validation.output }
+        : { accepted: false, source: 'rejected', reason: validation.reason, output: null };
+    } catch (error) {
+      return { accepted: false, source: 'rejected', reason: error.code || 'WRITER_GENERATION_FAILED', output: null };
+    }
+  }
+
+  async writeApproved(envelope, options = {}) {
+    let input;
+    try { input = approvedEnvelopeToWriterInput(envelope); }
+    catch (error) { return { accepted: false, source: 'rejected', reason: error.code || 'APPROVED_ENVELOPE_INVALID', output: null }; }
+    try {
+      const generated = await this.runtime.generateStructured(buildWriterPrompt(input, options));
+      const validation = validateApprovedWriterOutput(generated, envelope);
       return validation.accepted
         ? { accepted: true, source: 'local_model', reason: null, output: validation.output }
         : { accepted: false, source: 'rejected', reason: validation.reason, output: null };

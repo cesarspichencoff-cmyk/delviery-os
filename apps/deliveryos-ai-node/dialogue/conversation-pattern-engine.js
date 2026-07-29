@@ -2,6 +2,7 @@
 
 const { sanitizePatternFacts, validatePatternInput, validatePatternDecision } = require('./pattern-contract');
 const { INTENT_JOURNEY_RULES, journeyForIntent, nextJourneyStep } = require('./journey-graph-catalog');
+const { validateProductContexts, evaluateRecommendationSafety } = require('./product-context-contracts');
 
 const WRITTEN_NUMBERS = Object.freeze({
   zero: 0, um: 1, uma: 1, dois: 2, duas: 2, tres: 3, quatro: 4,
@@ -37,7 +38,8 @@ const SIDE_TOPICS = Object.freeze([
   [/\b(?:que horas|horario|abrem|fecham)\b/u, 'hours_information'],
   [/\b(?:pagamento|cartao|pix|vale refeicao)\b/u, 'payment_information'],
   [/\b(?:retirada|retirar)\b/u, 'pickup_information'],
-  [/\b(?:endereco|onde fica)\b/u, 'address_information']
+  [/\b(?:endereco|onde fica)\b/u, 'address_information'],
+  [/\b(?:cardapio|prato|sushi|bebida|drink|recomend)\b/u, 'menu_information']
 ]);
 
 function normalizeConversationText(value) {
@@ -202,7 +204,7 @@ function detectedSignals(text, input) {
   const cancel = /\b(?:cancela|cancelar|deixa pra la|nao quero mais|pode encerrar essa)\b/u.test(text);
   const close = /\b(?:tchau|ate mais|ate logo|obrigad[oa],? tchau|por hoje e so)\b/u.test(text);
   const reformulate = /\b(?:nao entendi|explica melhor|fala de outro jeito|o que isso quer dizer|como assim)\b/u.test(text);
-  const repeat = /\b(?:pode repetir|repete|como\?|nao ouvi)\b/u.test(text);
+  const repeat = /\b(?:pode repetir|repete|nao ouvi)\b/u.test(text) || /^como\?$/u.test(text);
   const reference = /\b(?:esse|essa|isso|aquele|aquela|o segundo|a segunda|o primeiro|a primeira|o de amanha|pedido do ifood|o link|como falei|ja te passei)\b/u.test(text);
   const side = input.active_journey ? sideTopic(text) : null;
   const resume = /\b(?:voltando|retomando|podemos continuar|quero retomar|e a reserva|sobre o pedido)\b/u.test(text) || (/^(?:voltei|retornei)[.!]?$/u.test(text));
@@ -237,8 +239,11 @@ function resolveConversationPattern(raw = {}) {
   const checked = validatePatternInput(raw);
   if (!checked.accepted) throw Object.assign(new Error(checked.reason), { code: checked.reason, missing: checked.missing || [] });
   const input = checked.input;
+  const productContexts = validateProductContexts(input);
+  if (!productContexts.accepted) throw Object.assign(new Error(productContexts.reason), { code: productContexts.reason });
   const text = normalizeConversationText(input.normalized_message || input.current_message);
   const signals = detectedSignals(text, input);
+  const recommendationSafety = evaluateRecommendationSafety(productContexts.contexts);
   const active = input.active_journey;
   const nextStep = pendingField(input.pending_question) || input.active_step || null;
   const stateFacts = input.collected_facts;
@@ -247,6 +252,12 @@ function resolveConversationPattern(raw = {}) {
   if (signals.safety || signals.handoff) {
     const target = signals.safety ? 'food_safety' : 'handoff';
     return decision({ pattern: 'handoff', confidence: 0.99, journey_action: active && active !== target ? 'suspend' : (active === target ? 'advance' : 'start'), target_journey: target, target_step: targetStep(target), requires_clarification: false, clarification_question: null, collision_log: collisionLog(signals, 'safety_handoff') });
+  }
+  if (productContexts.contexts.customer_context?.identity_status === 'ambiguous') {
+    return decision({ pattern: 'clarification', confidence: 0.99, target_journey: active, target_step: nextStep, requires_clarification: true, clarification_question: 'Pode confirmar qual cadastro deve ser usado antes de continuarmos?', collision_log: collisionLog(signals, 'context_reference') });
+  }
+  if (recommendationSafety.requires_allergen_guidance && /\b(?:cardapio|prato|sushi|bebida|drink|comer|recomend)\b/u.test(text)) {
+    return decision({ pattern: 'clarification', confidence: 0.99, target_journey: active, target_step: nextStep, question_to_answer: 'allergen_guidance', requires_clarification: true, clarification_question: 'Antes de recomendar, pode confirmar a restrição e o item que deseja avaliar?', collision_log: collisionLog(signals, 'safety_handoff') });
   }
   if (signals.correction) {
     const correction = correctionFacts(text, input);

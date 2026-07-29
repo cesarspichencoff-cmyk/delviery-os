@@ -12,6 +12,9 @@ const PATTERN_INPUT_KEYS = Object.freeze([
   'side_questions', 'last_assistant_act', 'recent_turns',
   'candidate_intents', 'candidate_entities'
 ]);
+const PATTERN_OPTIONAL_CONTEXT_KEYS = Object.freeze([
+  'customer_context', 'menu_context', 'recommendation_context', 'channel_policy', 'cost_policy'
+]);
 const PATTERN_DECISION_KEYS = Object.freeze([
   'schema_version', 'pattern', 'confidence', 'journey_action',
   'target_journey', 'target_step', 'facts_added', 'facts_corrected',
@@ -44,6 +47,8 @@ function validatePatternInput(value) {
   if (!value.collected_facts || typeof value.collected_facts !== 'object' || Array.isArray(value.collected_facts)) return { accepted: false, reason: 'PATTERN_FACTS_INVALID' };
   if (![value.suspended_journeys, value.side_questions, value.recent_turns, value.candidate_intents, value.candidate_entities].every(Array.isArray)) return { accepted: false, reason: 'PATTERN_ARRAY_INVALID' };
   if (typeof value.last_assistant_act !== 'string') return { accepted: false, reason: 'PATTERN_ASSISTANT_ACT_INVALID' };
+  const extras = Object.keys(value).filter((key) => !PATTERN_INPUT_KEYS.includes(key) && !PATTERN_OPTIONAL_CONTEXT_KEYS.includes(key));
+  if (extras.length) return { accepted: false, reason: 'PATTERN_INPUT_KEYS_INVALID', extra: extras };
   return { accepted: true, reason: null, input: Object.freeze({ ...value, collected_facts: Object.freeze(sanitizePatternFacts(value.collected_facts)) }) };
 }
 
@@ -64,6 +69,7 @@ module.exports = {
   PATTERNS,
   JOURNEY_ACTIONS,
   PATTERN_INPUT_KEYS,
+  PATTERN_OPTIONAL_CONTEXT_KEYS,
   PATTERN_DECISION_KEYS,
   FORBIDDEN_KEY,
   FORBIDDEN_VALUE,
