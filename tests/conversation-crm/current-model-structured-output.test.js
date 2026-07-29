@@ -116,3 +116,19 @@ test('pergunta já respondida não pode ser solicitada outra vez', async () => {
   const result = await director.direct({ message: 'sim', journey_state: { active_journey: 'reservation', collected_facts: { reservation_time: '20:00' } } });
   assert.equal(result.reason, 'DIRECTOR_INFORMATION_ALREADY_KNOWN');
 });
+
+test('sentinela textual não substitui null nem cria jornada', async () => {
+  const generated = validDirective({ dialogue_act: 'greet', active_journey: 'none', next_required_information: null });
+  const director = new ConversationDirector({ runtime: { generateStructured: async () => generated } });
+  const result = await director.direct({ message: 'Oi', journey_state: { active_journey: null, collected_facts: {} } });
+  assert.equal(result.source, 'deterministic_fallback');
+  assert.equal(result.reason, 'DIRECTOR_JOURNEY_SENTINEL_INVALID');
+  assert.equal(result.directive.active_journey, null);
+});
+
+test('movimento passivo não pode criar nem apagar jornada silenciosamente', async () => {
+  const creates = new ConversationDirector({ runtime: { generateStructured: async () => validDirective({ dialogue_act: 'greet', active_journey: 'reservation', next_required_information: null }) } });
+  assert.equal((await creates.direct({ message: 'Oi', journey_state: { active_journey: null, collected_facts: {} } })).reason, 'DIRECTOR_JOURNEY_UNSUPPORTED');
+  const erases = new ConversationDirector({ runtime: { generateStructured: async () => validDirective({ dialogue_act: 'greet', active_journey: null, next_required_information: null }) } });
+  assert.equal((await erases.direct({ message: 'Oi', journey_state: { active_journey: 'reservation', collected_facts: {} } })).reason, 'DIRECTOR_JOURNEY_STATE_CONFLICT');
+});

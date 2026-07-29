@@ -60,9 +60,13 @@ function validateDirectorSemantics(value, input = {}) {
   const state = input.journey_state || {};
   const active = state.active_journey || null;
   const suspended = Array.isArray(state.suspended_journeys) ? state.suspended_journeys : [];
+  if (typeof value.active_journey === 'string' && /^(?:none|null|unknown|n\/a)$/iu.test(value.active_journey)) return fail('DIRECTOR_JOURNEY_SENTINEL_INVALID');
   const continuationActs = new Set(['continue_journey', 'answer_side_question', 'suspend_journey', 'correct_information', 'repeat']);
-  if (active && continuationActs.has(value.dialogue_act) && value.active_journey !== active) return fail('DIRECTOR_JOURNEY_STATE_CONFLICT');
+  const preservingActs = new Set([...continuationActs, 'greet', 'chitchat', 'clarify_reference', 'cancel', 'close', 'handoff']);
+  if (active && preservingActs.has(value.dialogue_act) && value.active_journey !== active) return fail('DIRECTOR_JOURNEY_STATE_CONFLICT');
+  if (!active && preservingActs.has(value.dialogue_act) && value.active_journey !== null) return fail('DIRECTOR_JOURNEY_UNSUPPORTED');
   if (value.dialogue_act === 'continue_journey' && !active) return fail('DIRECTOR_JOURNEY_MISSING');
+  if (value.dialogue_act === 'start_journey' && !value.active_journey) return fail('DIRECTOR_JOURNEY_MISSING');
   if (value.dialogue_act === 'resume_journey' && !suspended.some((journey) => journey?.journey_id === value.active_journey)) return fail('DIRECTOR_RESUME_TARGET_INVALID');
   if (value.dialogue_act === 'switch_topic' && (!active || !value.active_journey || value.active_journey === active)) return fail('DIRECTOR_TOPIC_SWITCH_INVALID');
   if (value.next_required_information && Object.hasOwn(state.collected_facts || {}, value.next_required_information)) return fail('DIRECTOR_INFORMATION_ALREADY_KNOWN');
