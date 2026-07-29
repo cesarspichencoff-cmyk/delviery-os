@@ -168,7 +168,10 @@ test('rollback por lote preserva dados anteriores', () => {
     pipeline.apply(batch.batch_id);
     const rolled = pipeline.rollback(batch.batch_id, { approved_by_human: 'SIM-OPERATOR' });
     assert.equal(rolled.rollback.preserves_prior_data, true);
+    assert.equal(rolled.rollback.compensating_events_recorded, true);
     assert.ok(store.list().some((item) => item.customer_id === 'SIM-PRIOR'));
+    assert.equal(store.customer('SIM-PRIOR').status, 'active');
+    assert.equal(store.list().filter((item) => item.customer_id !== 'SIM-PRIOR').every((item) => item.status === 'rolled_back'), true);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }

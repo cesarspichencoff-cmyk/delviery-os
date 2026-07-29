@@ -138,6 +138,30 @@ class CustomerIntelligenceStore {
     return cloneFrozen(fact);
   }
 
+  retractFacts(customerId, factIds = [], metadata = {}) {
+    const customer = this.mutable(customerId);
+    const requested = new Set(factIds);
+    const existing = customer.facts.filter((fact) => requested.has(fact.fact_id));
+    customer.facts = customer.facts.filter((fact) => !requested.has(fact.fact_id));
+    existing.forEach((fact) => this.append('customer_fact_retracted', customerId, {
+      fact_id: fact.fact_id,
+      field: fact.field,
+      original_source: fact.source,
+      reason: metadata.reason || 'import_batch_rollback'
+    }, metadata));
+    return cloneFrozen({ retracted_fact_ids: existing.map((fact) => fact.fact_id) });
+  }
+
+  rollbackImportedCustomer(customerId, metadata = {}) {
+    const customer = this.mutable(customerId);
+    customer.status = 'rolled_back';
+    this.append('customer_import_rolled_back', customerId, {
+      batch_id: metadata.batch_id || null,
+      prior_data_preserved: true
+    }, metadata);
+    return this.customer(customerId);
+  }
+
   recordFactCandidate(customerId, input = {}, metadata = {}) {
     const customer = this.mutable(customerId);
     const candidate = {

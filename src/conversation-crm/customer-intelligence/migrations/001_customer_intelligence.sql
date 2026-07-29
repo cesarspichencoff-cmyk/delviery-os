@@ -65,6 +65,26 @@ create table if not exists customer_relations (
   occurred_at timestamptz not null
 );
 
+create table if not exists customer_restrictions (
+  restriction_id text primary key,
+  customer_id text not null references customers(customer_id),
+  restriction_type text not null,
+  restriction_value jsonb not null,
+  certainty_state text not null,
+  source text not null,
+  created_at timestamptz not null
+);
+
+create table if not exists customer_data_requests (
+  data_request_id text primary key,
+  customer_id text not null references customers(customer_id),
+  request_type text not null,
+  state text not null,
+  requested_at timestamptz not null,
+  completed_at timestamptz,
+  evidence_code text
+);
+
 create table if not exists customer_merge_history (
   merge_event_id text primary key,
   surviving_customer_id text not null references customers(customer_id),

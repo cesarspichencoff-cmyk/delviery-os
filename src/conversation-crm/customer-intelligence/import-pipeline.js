@@ -186,31 +186,41 @@ class CustomerImportPipeline {
         continue;
       }
       let customerId;
+      let createdNew = false;
       if (row.resolution.classification === 'exact_match') {
         customerId = row.resolution.candidates[0].customer_id;
       } else {
         customerId = this.store.createCustomer({ provenance: `import:${batch.source}` }).customer_id;
+        createdNew = true;
         row.normalized.identities.forEach((identity) => this.store.addIdentity(customerId, identity, { source: batch.source }));
       }
+      const factIds = [];
       if (row.normalized.unit) {
-        this.store.recordFact(customerId, {
+        const fact = this.store.recordFact(customerId, {
           field: 'unit_affinity',
           value: String(row.normalized.unit),
           state: 'imported',
           source: batch.source
         });
+        factIds.push(fact.fact_id);
       }
       if (row.normalized.order_count !== null) {
-        this.store.recordFact(customerId, {
+        const fact = this.store.recordFact(customerId, {
           field: 'historical_order_count',
           value: row.normalized.order_count,
           state: 'imported',
           source: batch.source
         });
+        factIds.push(fact.fact_id);
       }
       row.state = 'imported';
       row.customer_id = customerId;
-      batch.effects.push({ import_row_id: row.import_row_id, customer_id: customerId });
+      batch.effects.push({
+        import_row_id: row.import_row_id,
+        customer_id: customerId,
+        created_new: createdNew,
+        fact_ids: factIds
+      });
     }
     batch.state = 'imported';
     return cloneFrozen(batch);
@@ -221,11 +231,28 @@ class CustomerImportPipeline {
     if (!batch) throw customerError('IMPORT_BATCH_NOT_FOUND');
     if (batch.state !== 'imported') throw customerError('IMPORT_BATCH_NOT_IMPORTED');
     if (!input.approved_by_human) throw customerError('ROLLBACK_REQUIRES_HUMAN_APPROVAL');
+    for (const effect of batch.effects) {
+      if (effect.created_new) {
+        this.store.rollbackImportedCustomer(effect.customer_id, {
+          source: batch.source,
+          actor: input.approved_by_human,
+          batch_id: batch.batch_id
+        });
+      } else if (effect.fact_ids.length) {
+        this.store.retractFacts(effect.customer_id, effect.fact_ids, {
+          source: batch.source,
+          actor: input.approved_by_human,
+          batch_id: batch.batch_id,
+          reason: 'import_batch_rollback'
+        });
+      }
+    }
     batch.state = 'rolled_back';
     batch.rollback = {
       approved_by: input.approved_by_human,
       preserves_prior_data: true,
-      effect_ids: batch.effects.map((effect) => effect.import_row_id)
+      effect_ids: batch.effects.map((effect) => effect.import_row_id),
+      compensating_events_recorded: true
     };
     return cloneFrozen(batch);
   }
