@@ -28,4 +28,3 @@ exigirá conversão própria ou artefato oficial do Qwen.
 - nenhuma credencial do Hugging Face;
 - nenhum projetor multimodal, imagem, áudio ou conversa real;
 - nenhuma promoção ao instalador antes de vencedor humano.
-

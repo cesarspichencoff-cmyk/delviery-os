@@ -106,4 +106,3 @@ e [documentação de memória](https://ai.google.dev/gemma/docs/core).
   `9ec05a9223e6b1b3ea76bb88d4c29d5a9280750b60b6a9a600841df4c88756c9`.
 
 Fonte: [releases oficiais do llama.cpp](https://github.com/ggml-org/llama.cpp/releases).
-
