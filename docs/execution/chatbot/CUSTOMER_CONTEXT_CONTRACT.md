@@ -24,13 +24,14 @@ Um mesmo campo não pode existir simultaneamente como confirmado e inferido.
 Identidade ambígua força esclarecimento antes de qualquer ação ou
 personalização.
 
-## Interfaces reservadas
+## Interfaces implementadas na Mudança 007+008
 
 `find_customer_by_phone`, `get_customer_summary`,
 `get_customer_preferences`, `get_recent_orders`,
 `get_recent_reservations`, `get_recent_incidents`,
 `record_customer_fact_candidate` e `request_customer_confirmation`.
 
-Todos são mocks fechados nesta mudança. Não há SQL, busca real, merge de
-identidade ou persistência de telefone. A implementação integral pertence à
-Mudança 007.
+As interfaces são implementadas por `CustomerMenuToolRouter`. Telefone e
+e-mail são normalizados e tokenizados na fronteira; o modelo não recebe SQL,
+credencial ou tabela. Merge ambíguo permanece bloqueado e qualquer fato novo
+entra como candidato pendente de confirmação.

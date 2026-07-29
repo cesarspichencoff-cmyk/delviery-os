@@ -62,10 +62,13 @@ disponibilidade por canal/unidade, origem e última revisão.
 Nenhum preço, descrição ou ingrediente foi alterado. Nenhuma lacuna foi
 preenchida. O catálogo definitivo permanece reservado para a Mudança 008.
 
-## Interfaces reservadas
+## Interfaces implementadas na Mudança 007+008
 
 `search_menu_items`, `get_menu_item_details`, `get_channel_menu`,
 `get_item_availability`, `get_item_allergens`, `get_item_customizations`,
 `get_recommendation_candidates` e `get_pairing_candidates`.
 
-Todos retornam indisponível nesta mudança.
+As interfaces retornam `deliveryos-customer-menu-tool-result-v1` com fonte e
+desconhecidos. `compare_menu_variants` foi incluída. Somente o catálogo
+sintético revisado pode gerar recomendações; as fontes reais inventariadas
+permanecem candidatas à curadoria e não são promovidas silenciosamente.
