@@ -14,6 +14,13 @@ const DIRECTOR_KEYS = Object.freeze([
   'references_resolved', 'customer_need', 'question_to_answer',
   'next_required_information', 'knowledge_queries', 'requested_action', 'confidence'
 ]);
+const DIRECTOR_SCALAR_SCHEMA = Object.freeze({ anyOf: [{ type: 'null' }, { type: 'string', maxLength: 500 }, { type: 'number' }, { type: 'boolean' }] });
+const DIRECTOR_MAP_SCHEMA = Object.freeze({
+  type: 'object',
+  maxProperties: 20,
+  propertyNames: { pattern: '^[A-Za-z0-9._:-]{1,80}$' },
+  additionalProperties: DIRECTOR_SCALAR_SCHEMA
+});
 
 function fail(reason) { return { accepted: false, reason }; }
 function isObject(value) { return value && typeof value === 'object' && !Array.isArray(value); }
@@ -72,16 +79,16 @@ const DIRECTOR_JSON_SCHEMA = Object.freeze({
     properties: {
       dialogue_act: { type: 'string', enum: DIALOGUE_ACTS },
       social_act: { type: 'string', enum: SOCIAL_ACTS },
-      active_journey: { type: ['string', 'null'] },
+      active_journey: { anyOf: [{ type: 'null' }, { type: 'string', maxLength: 500, pattern: '^[A-Za-z0-9._:-]+$' }] },
       topic_changed: { type: 'boolean' },
       return_to_previous_topic: { type: 'boolean' },
-      facts_added: { type: 'object' },
-      facts_corrected: { type: 'object' },
-      references_resolved: { type: 'object' },
-      customer_need: { type: 'string' },
-      question_to_answer: { type: ['string', 'null'] },
-      next_required_information: { type: ['string', 'null'] },
-      knowledge_queries: { type: 'array', items: { type: 'string' } },
+      facts_added: DIRECTOR_MAP_SCHEMA,
+      facts_corrected: DIRECTOR_MAP_SCHEMA,
+      references_resolved: DIRECTOR_MAP_SCHEMA,
+      customer_need: { type: 'string', maxLength: 500 },
+      question_to_answer: { anyOf: [{ type: 'null' }, { type: 'string', maxLength: 500 }] },
+      next_required_information: { anyOf: [{ type: 'null' }, { type: 'string', maxLength: 500 }] },
+      knowledge_queries: { type: 'array', maxItems: 8, items: { type: 'string', maxLength: 120, pattern: '^[A-Za-z0-9._:-]{1,120}$' } },
       requested_action: {
         anyOf: [
           { type: 'null' },
@@ -89,7 +96,7 @@ const DIRECTOR_JSON_SCHEMA = Object.freeze({
             type: 'object',
             additionalProperties: false,
             required: ['tool', 'arguments'],
-            properties: { tool: { type: 'string' }, arguments: { type: 'object' } }
+            properties: { tool: { type: 'string', enum: ALLOWED_DIALOGUE_TOOLS }, arguments: { type: 'object' } }
           }
         ]
       },
@@ -98,4 +105,4 @@ const DIRECTOR_JSON_SCHEMA = Object.freeze({
   }
 });
 
-module.exports = { DIALOGUE_ACTS, SOCIAL_ACTS, DIRECTOR_KEYS, DIRECTOR_JSON_SCHEMA, validateDirectorOutput, validateDirectorSemantics };
+module.exports = { DIALOGUE_ACTS, SOCIAL_ACTS, DIRECTOR_KEYS, DIRECTOR_SCALAR_SCHEMA, DIRECTOR_MAP_SCHEMA, DIRECTOR_JSON_SCHEMA, validateDirectorOutput, validateDirectorSemantics };

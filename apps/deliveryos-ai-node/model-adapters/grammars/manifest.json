@@ -9,9 +9,9 @@
   },
   "schemas": {
     "deliveryos_conversation_director_v1": {
-      "schema_sha256": "2af6ee974d8a568e09562412ccc41ccf7bb3e106f042e1fe79334642c7e6a44f",
+      "schema_sha256": "9e9a4a7d644adb583f668e067364b1ddfa8f3a1c59f66bbf63339d36829aa666",
       "grammar_file": "director-v1.gbnf",
-      "grammar_sha256": "f04b12d0c50be5fcae83e4627714e7beb856878e5c9897c7c9dc9d960e7b3f13"
+      "grammar_sha256": "0efa8e7996bd0c822d65b4d49c0491db01180628b3d8b41d340e58c545dc8ee7"
     },
     "deliveryos_response_writer_v1": {
       "schema_sha256": "c10d7331188198a56a4bec3e24bf7066652c531894776d1a4abd714527c45456",
