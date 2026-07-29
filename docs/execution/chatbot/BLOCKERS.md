@@ -41,3 +41,18 @@ Os 50 votos V1 foram preservados e a rodada V2 está tecnicamente pronta.
 Qualidade subjetiva e aprovação final da experiência refinada continuam
 desconhecidas até a nova homologação de César. Produção, provider generativo,
 integrações reais e concorrência multiprocesso permanecem fora de escopo.
+
+## Mudança 005
+
+Não há bloqueio técnico para iniciar a homologação humana local. Permanecem bloqueios para piloto/produção:
+
+- nenhum vencedor humano: `human_winner=null`;
+- computador do restaurante ainda não passou pelo Doctor;
+- hospedagem real não foi identificada nem conectada nesta branch;
+- Qwen3 4B ainda usa fallback em 10/260 casos e teve máximo de 17,0 s em CPU;
+- Qwen3 1.7B usa fallback em 43/260 casos;
+- aceleração CUDA não foi homologada;
+- concorrência multiprocesso segue não homologada;
+- endpoint, unidade e código de instalação reais não existem nesta execução.
+
+Nenhum desses pontos autoriza escolher o menos ruim, ativar clientes ou instalar no restaurante.

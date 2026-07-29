@@ -77,3 +77,16 @@ superfície: estado lembrado pelo CRM pode continuar invisível na frase.
 - teste independente que exige raiz-alvo deve falhar explicitamente quando a
   variável não existe; a correção é a invocação documentada, não afrouxar o
   teste.
+
+## Mudança 005
+
+- JSON Schema não desliga thinking; o runtime precisa definir reasoning explicitamente;
+- validação de pergunta não basta: o prompt também precisa dizer que a pergunta obrigatória deve aparecer;
+- seed deve ser derivada por caso/modelo para reproduzir falha sem depender da ordem;
+- fallback não pode ser contado como geração aceita;
+- contexto exibido ao avaliador faz parte do contrato do teste cego;
+- artefato público cego e evidência privada auditável devem ter hashes separados;
+- QA visual deve testar o momento da revelação e o avanço, não apenas a API;
+- taxa automática e latência não substituem a pergunta “César enviaria?”;
+- hardware de desenvolvimento não prova hardware do restaurante;
+- peso verificado fora do Git não deve ser confundido com pacote redistribuível.

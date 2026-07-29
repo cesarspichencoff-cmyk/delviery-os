@@ -178,3 +178,35 @@ minutos em contextos diferentes.
 
 **Impacto:** o chatbot orienta o fluxo oficial sem transformar divergência
 documental em regra operacional.
+
+## Mudança 005
+
+### D-016 — Transporte outbound HTTPS claim/lease
+
+**Decisão:** o AI Node inicia heartbeat, claim e resultado; nenhuma porta do restaurante é publicada. WebSocket não é requisito e PostgreSQL é injetado pela plataforma futura.
+
+### D-017 — Artefatos oficiais fixados
+
+**Decisão:** Node 24.18.0, llama.cpp b10172 e GGUFs Qwen usam versão, URL oficial, tamanho, licença e SHA-256. Pesos e binários não entram no Git.
+
+### D-018 — Reasoning local desligado
+
+**Decisão:** iniciar llama.cpp com `--reasoning off`.
+
+**Evidência:** a saudação caiu de 37,7 s/295 tokens para 8,6 s/17 tokens, sem mudar o texto validado.
+
+### D-019 — Writer estrito e reproduzível
+
+**Decisão:** Writer recebe 14 campos, produz somente `text`, inclui pergunta obrigatória e aceita seed explícita. Modelo nunca corrige fatos ou ações.
+
+### D-020 — Bake-off cego de três candidatos
+
+**Decisão:** comparar determinístico, Qwen3 4B e Qwen3 1.7B. Payload público não contém identidade, versão, natureza, latência ou avaliação automática; revelação exige voto.
+
+### D-021 — Contexto público específico sem reinferência
+
+**Decisão:** substituir somente mensagens genéricas exibidas e recalcular envelopes/hashes após prova de zero divergência de input/opções/resultados. Reexecutar modelos seria custo de CPU sem mudança semântica.
+
+### D-022 — Nenhum vencedor sem César
+
+**Decisão:** métricas automáticas habilitam o painel, mas não escolhem modelo. `human_winner` permanece `null` até homologação cega.
