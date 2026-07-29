@@ -262,3 +262,28 @@ apenas 2/8 movimentos e teve p95 de 30,47 s.
 **Impacto:** preservar o resultado excelente do Writer para análise futura sem
 enviar o modelo à homologação humana desta mudança. Qwen3.5 será avaliado sem
 qualquer ajuste derivado das respostas do Gemma.
+
+### D-027 — Qwen3.5 4B não é candidato completo
+
+**Decisão:** encerrar o Qwen3.5 4B como `not_qualified` e não executar a bateria
+adversarial reservada aos candidatos tecnicamente qualificados.
+
+**Motivo:** o Writer passou o gate com 289/292 saídas aceitas, três fallbacks
+seguros e p95 de 9,70 s, mas o Director acertou apenas 2/8 movimentos em duas
+execuções com as mesmas seeds e teve p95 de 26,83 s.
+
+**Impacto:** nenhum candidato atual segue ao painel cego. O resultado não
+altera o baseline Qwen3 4B, o fallback determinístico ou o instalador.
+
+### D-028 — Não executar Gemma 4 12B na máquina intermediária
+
+**Decisão:** encerrar o candidato opcional como `not_executed_doctor_gate`, sem
+download e sem criar arquivo de resultado fictício.
+
+**Motivo:** o Doctor pós-Qwen classificou o equipamento como `intermediario` e
+sua lista certificada de modelos compatíveis não contém 12B. Além disso, os dois
+candidatos obrigatórios já falharam o Director e o E4B excedeu a latência
+operacional; RAM nominal e espaço em disco não substituem o gate completo.
+
+**Impacto:** evita carga e aquecimento sem hipótese técnica suficiente. A
+ausência do opcional não bloqueia a conclusão da Mudança 005B.

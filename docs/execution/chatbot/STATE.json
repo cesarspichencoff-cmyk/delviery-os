@@ -32,14 +32,14 @@
     "005b_structured_output_three_layers",
     "005b_current_model_adapters",
     "005b_diagnostic_corpus_frozen",
-    "005b_gemma4_e4b_evaluation"
+    "005b_gemma4_e4b_evaluation",
+    "005b_qwen35_4b_evaluation",
+    "005b_optional_gemma4_12b_doctor_gate"
   ],
-  "active_unit": "qwen35_4b_evaluation",
+  "active_unit": "technical_comparison",
   "pending_units": [
-    "qwen35_4b_evaluation",
-    "optional_gemma4_12b_doctor_gate",
     "technical_comparison",
-    "blind_human_homologation"
+    "full_regression_and_certification"
   ],
   "test_status": {
     "conversation_native": "480/480 passed",
@@ -57,7 +57,7 @@
     "local_bakeoff_tests": "20/20 focused; included in Conversation 480/480",
     "panel_visual_qa": "passed; blind before vote, reveal after vote, automatic advance, zero console errors",
     "005b_directed_baseline": "151/151 passed"
-    ,"005b_local_ai_focused": "179/179 passed after grammar alignment; 46/46 seed-directed checks passed"
+    ,"005b_local_ai_focused": "179/179 passed after grammar alignment; 46/46 seed-directed checks passed; 35/35 current-model focused checks passed after Qwen evidence runner"
   },
   "bakeoff": {
     "seed": "TATA-LOCAL-AI-BAKEOFF-V1",
@@ -95,12 +95,28 @@
         "director_max_ms": 30469,
         "technical_status": "not_qualified"
       },
+      "qwen35_4b": {
+        "writer_accepted": 289,
+        "writer_fallback": 3,
+        "writer_p50_ms": 4596.0633,
+        "writer_p95_ms": 9696.6359,
+        "writer_max_ms": 12492.6702,
+        "director_expected": "2/8",
+        "director_fallback": 0,
+        "director_p50_ms": 22613,
+        "director_p95_ms": 26834,
+        "director_max_ms": 26834,
+        "technical_status": "not_qualified"
+      },
+      "gemma4_12b": {
+        "technical_status": "not_executed_doctor_gate",
+        "reason": "hardware classified as intermediate; certified matrix excludes 12B and required candidates already failed Director"
+      },
       "human_winner": null
     }
   },
   "blockers": [
-    "005b_qwen35_not_yet_executed",
-    "human_blind_bakeoff_pending",
+    "005b_no_current_candidate_technical",
     "restaurant_hardware_unverified",
     "hosted_runtime_not_connected"
   ],
@@ -112,6 +128,6 @@
   "production_authorized": false,
   "paid_api_or_infrastructure_added": false,
   "push_merge_deploy_performed": false,
-  "next_step": "download and evaluate only Qwen3.5 4B after the closed Gemma 4 E4B result",
-  "updated_at": "2026-07-29T02:56:00-03:00"
+  "next_step": "consolidate the no-candidate comparison, run inherited regressions and issue the final 005B certification",
+  "updated_at": "2026-07-29T03:40:00-03:00"
 }

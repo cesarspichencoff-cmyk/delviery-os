@@ -19,5 +19,7 @@
 - Pesquisa: Gemma 4 E4B GGUF oficial; Qwen3.5 4B oficial com GGUF secundário rastreado
 - Runtime: b10172 provado com GBNF fixada, parsing estrito e validação semântica
 - Gemma 4 E4B: Writer 292/292, zero fallback, p95 10,38 s; Director 2/8, p95 30,47 s; não qualificado
-- Próximo passo: baixar e fechar somente o Qwen3.5 4B rastreado; não iniciar 12B antes disso
+- Qwen3.5 4B: Writer 289/292, três fallbacks seguros, p95 9,70 s; Director 2/8, p95 26,83 s; não qualificado
+- Gemma 4 12B: não executado; Doctor pós-Qwen classificou a máquina como intermediária e não incluiu 12B na matriz compatível
+- Próximo passo: consolidar comparação, regressões, pacote externo e veredito sem candidato técnico
 - Não fazer: produção, cliente real, push, merge, deploy, API paga ou instalação no restaurante antes dos três gates externos.

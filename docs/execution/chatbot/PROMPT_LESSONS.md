@@ -90,3 +90,17 @@ superfície: estado lembrado pelo CRM pode continuar invisível na frase.
 - taxa automática e latência não substituem a pergunta “César enviaria?”;
 - hardware de desenvolvimento não prova hardware do restaurante;
 - peso verificado fora do Git não deve ser confundido com pacote redistribuível.
+
+## Mudança 005B
+
+- Writer fluente não prova Director correto; os dois papéis precisam de gates
+  independentes de qualidade e latência;
+- grammar, parsing e semântica podem garantir saída segura sem tornar a decisão
+  operacionalmente correta;
+- seeds fixas precisam acompanhar predicados explícitos do movimento esperado,
+  não somente snapshots de JSON;
+- uma correção pode ter o ato correto e ainda inverter valor anterior e novo;
+- RAM nominal suficiente para carregar pesos não autoriza candidato opcional
+  fora da classe de hardware certificada;
+- modelo reprovado não deve consumir uma rodada adversarial ou humana apenas
+  para completar uma lista de artefatos.

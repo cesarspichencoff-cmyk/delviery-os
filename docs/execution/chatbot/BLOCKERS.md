@@ -59,12 +59,18 @@ Nenhum desses pontos autoriza escolher o menos ruim, ativar clientes ou instalar
 
 ## Mudança 005B
 
-Não há bloqueio para iniciar a certificação local. Permanecem abertos:
+Não houve bloqueio de proveniência ou runtime, mas nenhum candidato novo passou
+o gate técnico completo:
 
 - Gemma 4 E4B foi executado e não se qualificou: Writer 292/292, mas Director
   apenas 2/8 e p95 de 30,47 s;
-- Qwen3.5 4B ainda não foi executado;
+- Qwen3.5 4B foi executado e não se qualificou: Writer 289/292, mas Director
+  apenas 2/8 e p95 de 26,83 s;
 - o GGUF do Qwen3.5 é conversão secundária e não pode ser promovido sem nova
   decisão de distribuição;
-- Gemma 4 12B é opcional e depende de Doctor posterior;
+- Gemma 4 12B permaneceu opcional e não passou o Doctor: máquina classificada
+  como intermediária e modelo fora da lista compatível certificada;
 - nenhum candidato pode ser chamado de vencedor antes do voto de César.
+
+Como não existe candidato técnico novo, não há rodada humana a abrir nesta
+mudança. O baseline e o instalador anterior permanecem disponíveis e imutáveis.
