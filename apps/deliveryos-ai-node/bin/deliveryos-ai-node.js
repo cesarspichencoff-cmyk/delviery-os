@@ -15,7 +15,8 @@ const {
   LlamaCppRuntime,
   LocalModelProvider,
   OutboundCloudConnector,
-  DeliveryOsAiNode
+  DeliveryOsAiNode,
+  buildDirectorPrompt
 } = require('..');
 
 function argument(name, fallback = null) {
@@ -97,13 +98,15 @@ async function run(root) {
     node_id: identity.node_id,
     heartbeat_ms: config.heartbeat_ms,
     poll: { minimum: config.poll_min_ms, maximum: config.poll_max_ms },
-    contractFactory: (job) => ({
-      messages: [
-        { role: 'system', content: 'Produza somente a saída solicitada pelo contrato DeliveryOS. Não invente fatos nem ações.' },
-        { role: 'user', content: JSON.stringify(job.payload) }
-      ],
-      max_tokens: 512
-    })
+    contractFactory: (job) => job.request_type === 'conversation_director'
+      ? buildDirectorPrompt(job.payload)
+      : ({
+          messages: [
+            { role: 'system', content: 'Produza somente a saída solicitada pelo contrato DeliveryOS. Não invente fatos nem ações.' },
+            { role: 'user', content: JSON.stringify(job.payload) }
+          ],
+          max_tokens: 512
+        })
   });
   const controller = new AbortController();
   process.once('SIGINT', () => { node.stop(); controller.abort(); });

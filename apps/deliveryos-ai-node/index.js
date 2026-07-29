@@ -12,5 +12,11 @@ module.exports = {
   ...require('./node-runtime'),
   ...require('./update-manager'),
   ...require('./runtime/local-inference-runtime'),
-  ...require('./runtime/llama-cpp-runtime')
+  ...require('./runtime/llama-cpp-runtime'),
+  ...require('./dialogue/director-contract'),
+  ...require('./dialogue/deterministic-director'),
+  ...require('./dialogue/director'),
+  ...require('./dialogue/tool-router'),
+  ...require('./dialogue/journey-reducer'),
+  ...require('./dialogue/journey-store')
 };
