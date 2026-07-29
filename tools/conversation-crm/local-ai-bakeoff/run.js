@@ -9,6 +9,8 @@ const {
   ResponseWriter,
   createBakeoffCorpus,
   validateBakeoffCorpus,
+  createDiagnosticCorpus,
+  validateDiagnosticCorpus,
   runBlindBakeoff
 } = require('../../../apps/deliveryos-ai-node');
 
@@ -66,6 +68,24 @@ class LocalCandidate {
   stop() { return this.runtime.shutdown(); }
 }
 
+function selectedCorpus(mode, seed) {
+  const base = createBakeoffCorpus({ seed });
+  const diagnostic = createDiagnosticCorpus();
+  if (!validateBakeoffCorpus(base).passed || !validateDiagnosticCorpus(diagnostic).passed) throw Object.assign(new Error('BAKEOFF_CORPUS_INVALID'), { code: 'BAKEOFF_CORPUS_INVALID' });
+  if (mode === 'base') return base;
+  if (mode === 'diagnostic') return Object.freeze({
+    schema_version: 'deliveryos-local-ai-diagnostic-run-v1', seed,
+    counts: Object.freeze(Object.fromEntries([...new Set(diagnostic.cases.map((item) => item.category))].map((category) => [category, diagnostic.cases.filter((item) => item.category === category).length]))),
+    cases: diagnostic.cases
+  });
+  if (mode === 'combined') return Object.freeze({
+    schema_version: 'deliveryos-local-ai-current-combined-corpus-v1', seed,
+    counts: Object.freeze({ ...base.counts, diagnostic: diagnostic.cases.length }),
+    cases: Object.freeze([...base.cases, ...diagnostic.cases])
+  });
+  throw Object.assign(new Error('BAKEOFF_CORPUS_MODE_INVALID'), { code: 'BAKEOFF_CORPUS_MODE_INVALID' });
+}
+
 function candidate(prefix, port) {
   const modelFile = required(`${prefix}-model-file`);
   const modelVersion = required(`${prefix}-model-version`);
@@ -87,9 +107,9 @@ function candidate(prefix, port) {
 async function main() {
   const outputRoot = outsideProject(required('output-root'));
   const seed = argument('seed', 'TATA-LOCAL-AI-BAKEOFF-V1');
-  const corpus = createBakeoffCorpus({ seed });
-  const validation = validateBakeoffCorpus(corpus);
-  if (!validation.passed) throw Object.assign(new Error('BAKEOFF_CORPUS_INVALID'), { code: 'BAKEOFF_CORPUS_INVALID', findings: validation.findings });
+  const corpusMode = argument('corpus', 'base');
+  const corpus = selectedCorpus(corpusMode, seed);
+  const validation = { passed: true, findings: [], total_cases: corpus.cases.length, corpus_mode: corpusMode };
   const candidates = [candidate('primary', Number(argument('port', '4191')))];
   if (argument('secondary-model-file')) candidates.push(candidate('secondary', Number(argument('secondary-port', '4192'))));
   const bundle = await runBlindBakeoff({
@@ -123,4 +143,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { argument, required, outsideProject, LocalCandidate, candidate, main };
+module.exports = { argument, required, outsideProject, LocalCandidate, selectedCorpus, candidate, main };

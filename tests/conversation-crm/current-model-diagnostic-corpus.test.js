@@ -4,6 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 
 const { createBakeoffCorpus, createDiagnosticCorpus, validateDiagnosticCorpus, canonicalHash } = require('../../apps/deliveryos-ai-node');
+const { selectedCorpus } = require('../../tools/conversation-crm/local-ai-bakeoff/run');
 
 test('corpus anterior permanece com os mesmos 260 casos e hash reproduzível', () => {
   const first = createBakeoffCorpus({ seed: 'TATA-LOCAL-AI-BAKEOFF-V1' });
@@ -35,4 +36,12 @@ test('diagnósticos não contêm PII, caminho local ou resposta esperada no adap
   assert.doesNotMatch(serialized, /C:\\Users\\|Desktop\\|Downloads\\/iu);
   assert.doesNotMatch(serialized, /\b\d{3}[. ]?\d{3}[. ]?\d{3}[- ]?\d{2}\b/iu);
   assert.doesNotMatch(serialized, /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/iu);
+});
+
+test('executor combina 260 casos preservados e 32 diagnósticos sem colisão', () => {
+  const corpus = selectedCorpus('combined', 'TATA-LOCAL-AI-BAKEOFF-V1');
+  assert.equal(corpus.cases.length, 292);
+  assert.equal(new Set(corpus.cases.map((item) => item.case_id)).size, 292);
+  assert.equal(corpus.counts.diagnostic, 32);
+  assert.throws(() => selectedCorpus('unknown', 'seed'), { code: 'BAKEOFF_CORPUS_MODE_INVALID' });
 });
