@@ -25,23 +25,28 @@ class UpdateManager {
   constructor(options = {}) {
     this.fetch = options.fetch || globalThis.fetch;
     this.root = path.resolve(options.root);
+    this.fs = options.fs || fs;
   }
 
   async download(artifact) {
     validateArtifact(artifact);
-    fs.mkdirSync(this.root, { recursive: true });
+    this.fs.mkdirSync(this.root, { recursive: true });
     const temporary = path.join(this.root, `.${artifact.id}.partial`);
     const destination = path.join(this.root, artifact.filename);
     const response = await this.fetch(artifact.url, { redirect: 'error' });
     if (!response.ok) fail('UPDATE_DOWNLOAD_FAILED');
     const bytes = Buffer.from(await response.arrayBuffer());
     if (bytes.length !== artifact.size_bytes) fail('UPDATE_SIZE_MISMATCH');
-    fs.writeFileSync(temporary, bytes, { flag: 'wx' });
-    if (sha256File(temporary) !== artifact.sha256.toLowerCase()) {
-      fs.rmSync(temporary, { force: true });
-      fail('UPDATE_HASH_MISMATCH');
+    const digest = crypto.createHash('sha256').update(bytes).digest('hex');
+    if (digest !== artifact.sha256.toLowerCase()) fail('UPDATE_HASH_MISMATCH');
+    this.fs.rmSync(temporary, { force: true });
+    try {
+      this.fs.writeFileSync(temporary, bytes, { flag: 'wx' });
+      this.fs.renameSync(temporary, destination);
+    } catch (error) {
+      try { this.fs.rmSync(temporary, { force: true }); } catch {}
+      throw error;
     }
-    fs.renameSync(temporary, destination);
     return destination;
   }
 }
