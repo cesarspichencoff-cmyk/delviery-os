@@ -210,3 +210,31 @@ documental em regra operacional.
 ### D-022 — Nenhum vencedor sem César
 
 **Decisão:** métricas automáticas habilitam o painel, mas não escolhem modelo. `human_winner` permanece `null` até homologação cega.
+
+## Mudança 005B
+
+### D-023 — Priorizar pesos oficiais e preservar o instalador
+
+**Contexto:** Gemma 4 E4B já possui GGUF QAT oficial; Qwen3.5 4B possui pesos
+oficiais pós-treinados, mas não GGUF no namespace Qwen.
+
+**Decisão:** usar o GGUF oficial Google para Gemma e aceitar o Qwen3.5 de
+bartowski somente como conversão secundária rastreada para teste. Nenhum deles
+entra no manifesto ou ZIP da Mudança 005.
+
+**Motivo:** maximizar proveniência sem baixar 25 GB de pesos oficiais e criar
+uma cadeia de conversão não instalada apenas para o bake-off.
+
+**Impacto:** Qwen3.5 pode ser qualificado tecnicamente, mas promoção futura
+exige nova decisão de distribuição.
+
+**Reversibilidade:** total; artefatos ficam fora do Git e candidatos desligados.
+
+### D-024 — Não atualizar llama.cpp sem falha reproduzida
+
+**Decisão:** testar b10172 primeiro. A release b10173 foi publicada 37 minutos
+depois e não contém justificativa material para substituir o runtime aprovado.
+
+**Motivo:** Gemma 4 e Qwen3.5 já eram suportados em releases anteriores.
+
+**Impacto:** rollback é o próprio runtime canônico e o instalador fica imutável.

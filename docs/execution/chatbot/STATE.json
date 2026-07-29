@@ -1,10 +1,10 @@
 {
   "project": "DeliveryOS Chatbot TATÁ",
-  "active_change": "005-portable-local-ai-node",
-  "branch": "feature/conversation-portable-local-ai-node-v1",
-  "base": "4f8a66f1be26f44995e814f7cffaadc499292f7e",
-  "behavioral_checkpoint": "a1bef237b9540794660b136423e38bd0b57effbd",
-  "working_tree": "expected_clean_after_final_documentation_commit",
+  "active_change": "005b-current-open-model-rebakeoff",
+  "branch": "feature/conversation-current-open-model-rebakeoff-v1",
+  "base": "ffc312ca47cb05fe18304dba5e33b2b098ac7f78",
+  "behavioral_checkpoint": "ffc312ca47cb05fe18304dba5e33b2b098ac7f78",
+  "working_tree": "active_atomic_unit",
   "completed_units": [
     "hosting_inspection",
     "outbound_https_claim_lease_bridge",
@@ -25,13 +25,18 @@
     "blind_bakeoff_260",
     "browser_panel_qa",
     "full_inherited_regression",
-    "external_review_and_installer_packages"
+    "external_review_and_installer_packages",
+    "005b_initial_baseline_151_of_151",
+    "005b_current_model_research",
+    "005b_candidate_provenance"
   ],
-  "active_unit": "none",
+  "active_unit": "runtime_structured_output_certification",
   "pending_units": [
-    "cesar_blind_homologation",
-    "restaurant_hardware_doctor",
-    "hosted_bridge_wiring"
+    "gemma4_e4b_evaluation",
+    "qwen35_4b_evaluation",
+    "optional_gemma4_12b_doctor_gate",
+    "technical_comparison",
+    "blind_human_homologation"
   ],
   "test_status": {
     "conversation_native": "480/480 passed",
@@ -47,7 +52,8 @@
     "historical_source": "approved; same production API and real-item fixture checks",
     "playwright_homologation": "11/11 passed in local Chrome",
     "local_bakeoff_tests": "20/20 focused; included in Conversation 480/480",
-    "panel_visual_qa": "passed; blind before vote, reveal after vote, automatic advance, zero console errors"
+    "panel_visual_qa": "passed; blind before vote, reveal after vote, automatic advance, zero console errors",
+    "005b_directed_baseline": "151/151 passed"
   },
   "bakeoff": {
     "seed": "TATA-LOCAL-AI-BAKEOFF-V1",
@@ -71,6 +77,7 @@
     "human_winner": null
   },
   "blockers": [
+    "005b_candidates_not_yet_executed",
     "human_blind_bakeoff_pending",
     "restaurant_hardware_unverified",
     "hosted_runtime_not_connected"
@@ -83,6 +90,6 @@
   "production_authorized": false,
   "paid_api_or_infrastructure_added": false,
   "push_merge_deploy_performed": false,
-  "next_step": "César performs the blind local bake-off; do not activate clients",
-  "updated_at": "2026-07-29T04:29:17.866Z"
+  "next_step": "certify b10172 grammar and model adapters before downloading Gemma 4 E4B",
+  "updated_at": "2026-07-29T01:53:19.4639629-03:00"
 }

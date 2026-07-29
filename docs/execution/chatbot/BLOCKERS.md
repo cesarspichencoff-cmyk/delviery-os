@@ -56,3 +56,13 @@ Não há bloqueio técnico para iniciar a homologação humana local. Permanecem
 - endpoint, unidade e código de instalação reais não existem nesta execução.
 
 Nenhum desses pontos autoriza escolher o menos ruim, ativar clientes ou instalar no restaurante.
+
+## Mudança 005B
+
+Não há bloqueio para iniciar a certificação local. Permanecem abertos:
+
+- Gemma 4 E4B e Qwen3.5 4B ainda não foram executados;
+- o GGUF do Qwen3.5 é conversão secundária e não pode ser promovido sem nova
+  decisão de distribuição;
+- Gemma 4 12B é opcional e depende de Doctor posterior;
+- nenhum candidato pode ser chamado de vencedor antes do voto de César.

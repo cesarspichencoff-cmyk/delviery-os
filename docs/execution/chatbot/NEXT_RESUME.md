@@ -1,9 +1,9 @@
-# Retomada única — Mudança 005
+# Retomada única — Mudança 005B
 
 - Diretório: raiz atual do projeto
-- Branch: `feature/conversation-portable-local-ai-node-v1`
-- Base: `4f8a66f1be26f44995e814f7cffaadc499292f7e`
-- Checkpoint comportamental: `a1bef237b9540794660b136423e38bd0b57effbd`
+- Branch: `feature/conversation-current-open-model-rebakeoff-v1`
+- Base: `ffc312ca47cb05fe18304dba5e33b2b098ac7f78`
+- Checkpoint comportamental: `ffc312ca47cb05fe18304dba5e33b2b098ac7f78`
 - Upstream: ausente; nenhum push
 - Working tree esperado: limpo após commit documental final
 - Bridge: outbound HTTPS claim/lease, store em memória testado e contrato PostgreSQL injetável
@@ -15,5 +15,8 @@
 - Vencedor humano: nenhum
 - Regressão: Conversation 480/480; catálogo 200/200; privacidade aprovada; Conference 350/350; Live 243/243; Capacidade 43/43; Copiloto 53/53; Playwright 11/11; cardápio 199; fonte histórica aprovada
 - Pacote externo: `deliveryos-review-packets/chatbot-change-005-portable-ai-node/`
-- Próximo passo: César executar `LOCAL_AI_HOMOLOGATION_GUIDE.md`
+- Baseline 005B: 151/151 testes direcionados
+- Pesquisa: Gemma 4 E4B GGUF oficial; Qwen3.5 4B oficial com GGUF secundário rastreado
+- Runtime: provar b10172 com grammar antes de considerar b10173
+- Próximo passo: certificar structured output e adapters; depois baixar somente Gemma 4 E4B
 - Não fazer: produção, cliente real, push, merge, deploy, API paga ou instalação no restaurante antes dos três gates externos.
