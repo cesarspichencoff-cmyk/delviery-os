@@ -2,8 +2,10 @@
 
 const CUSTOMER_TOOL_NAMES = Object.freeze([
   'find_customer_by_phone',
+  'find_customer_candidates',
   'get_customer_summary',
   'get_customer_preferences',
+  'get_customer_restrictions',
   'get_recent_orders',
   'get_recent_reservations',
   'get_recent_incidents',
@@ -19,7 +21,8 @@ const MENU_TOOL_NAMES = Object.freeze([
   'get_item_allergens',
   'get_item_customizations',
   'get_recommendation_candidates',
-  'get_pairing_candidates'
+  'get_pairing_candidates',
+  'compare_menu_variants'
 ]);
 
 const FUTURE_MENU_JOURNEYS = Object.freeze([
@@ -28,7 +31,8 @@ const FUTURE_MENU_JOURNEYS = Object.freeze([
   'drink_pairing',
   'dietary_filter',
   'allergen_guidance',
-  'order_composition'
+  'order_composition',
+  'menu_comparison'
 ]);
 
 const PRODUCT_CONTEXT_KEYS = Object.freeze([

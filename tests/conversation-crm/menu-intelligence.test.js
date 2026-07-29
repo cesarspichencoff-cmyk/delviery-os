@@ -15,9 +15,10 @@ const {
 test('salão e iFood permanecem variantes distintas', () => {
   const catalog = createSyntheticCatalog();
   const comparison = catalog.compare('SIM-SALMON-LIGHT');
-  assert.equal(comparison.variants.length, 2);
+  assert.equal(comparison.variants.length, 3);
   assert.deepEqual(new Set(comparison.variants.map((item) => item.channel)), new Set(['dining_room', 'ifood']));
   assert.notEqual(comparison.variants[0].price, comparison.variants[1].price);
+  assert.equal(comparison.conflicts.length, 1);
 });
 
 test('busca por canal não vaza preço de outro canal', () => {

@@ -49,6 +49,21 @@ function createSyntheticCatalog() {
     },
     {
       ...shared,
+      item_id: 'SIM-MENU-SALMON-LIGHT-DINING-CONFLICT',
+      commercial_identity: 'SIM-SALMON-LIGHT',
+      name: 'Opção Sintética Salmão Leve — fonte divergente',
+      description: 'Variante sintética conflitante mantida para revisão humana.',
+      channel: 'dining_room',
+      category: 'sushi',
+      price: 74,
+      ingredients: [{ name: 'salmon', status: 'confirmed', source_id: 'SIM-SOURCE-MENU-V1' }],
+      flavor_profile: ['light'],
+      preparation: { raw: true, cooked: false, fried: false, torched: false, cream_cheese: false, spicy: false, vegetarian: false },
+      review_status: 'conflicting',
+      review_notes: ['material_variant_difference_same_scope']
+    },
+    {
+      ...shared,
       item_id: 'SIM-MENU-COOKED-OWN',
       commercial_identity: 'SIM-COOKED',
       name: 'Opção Sintética Cozida',
