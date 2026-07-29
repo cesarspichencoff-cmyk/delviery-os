@@ -89,8 +89,8 @@ test('05 alergia declarada recebe prioridade de segurança', () => {
   assert.equal(evaluateRecommendationSafety({ customer_context: context, menu_context: menu() }).requires_allergen_guidance, true);
 });
 
-test('06 contrato reserva exatamente as oito ferramentas de cliente', () => {
-  assert.equal(CUSTOMER_TOOL_NAMES.length, 8);
+test('06 contrato expõe exatamente as dez ferramentas autorizadas de cliente', () => {
+  assert.equal(CUSTOMER_TOOL_NAMES.length, 10);
   assert.deepEqual(CUSTOMER_TOOL_NAMES, [...new Set(CUSTOMER_TOOL_NAMES)]);
 });
 
@@ -116,8 +116,8 @@ test('10 Menu Context bloqueia mistura de unidades', () => {
   assert.equal(result.reason, 'MENU_CONTEXT_UNIT_MIXED');
 });
 
-test('11 contrato reserva exatamente as oito ferramentas de cardápio', () => {
-  assert.equal(MENU_TOOL_NAMES.length, 8);
+test('11 contrato expõe exatamente as nove ferramentas autorizadas de cardápio', () => {
+  assert.equal(MENU_TOOL_NAMES.length, 9);
   assert.deepEqual(MENU_TOOL_NAMES, [...new Set(MENU_TOOL_NAMES)]);
 });
 
@@ -125,8 +125,8 @@ test('12 recomendação não aceita ranking ou score nesta mudança', () => {
   assert.equal(validateRecommendationContext(recommendation({ ranking: ['SIM-ITEM-001'] })).reason, 'RECOMMENDATION_RANKING_NOT_AUTHORIZED');
 });
 
-test('13 seis jornadas futuras ficam apenas reservadas', () => {
-  assert.deepEqual(FUTURE_MENU_JOURNEYS, ['menu_discovery', 'dish_recommendation', 'drink_pairing', 'dietary_filter', 'allergen_guidance', 'order_composition']);
+test('13 sete jornadas de menu permanecem explicitamente contratadas', () => {
+  assert.deepEqual(FUTURE_MENU_JOURNEYS, ['menu_discovery', 'dish_recommendation', 'drink_pairing', 'dietary_filter', 'allergen_guidance', 'order_composition', 'menu_comparison']);
 });
 
 test('14 Pattern Engine aceita contextos opcionais válidos sem os transformar em fatos', () => {

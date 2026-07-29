@@ -38,11 +38,26 @@ test('metas estruturais, cinco lacunas e segurança permanecem verdes', () => {
 
 test('mesmo corpus e seed produzem hash humanizado idêntico', () => {
   const runner = path.join(projectRoot, 'scripts', 'verifiers', 'chatbot', 'run-humanized.js');
-  const first = spawnSync(process.execPath, [runner], { cwd: projectRoot, encoding: 'utf8', windowsHide: true });
-  const second = spawnSync(process.execPath, [runner], { cwd: projectRoot, encoding: 'utf8', windowsHide: true });
-  assert.equal(first.status, 0, first.stderr);
-  assert.equal(second.status, 0, second.stderr);
-  assert.equal(JSON.parse(first.stdout).hash, JSON.parse(second.stdout).hash);
+  const outputRoot = fs.mkdtempSync(path.join(require('node:os').tmpdir(), 'deliveryos-humanized-test-'));
+  try {
+    const run = (name) => spawnSync(process.execPath, [runner], {
+      cwd: projectRoot,
+      encoding: 'utf8',
+      windowsHide: true,
+      env: { ...process.env, DELIVERYOS_HUMANIZED_OUTPUT_FILE: path.join(outputRoot, name) }
+    });
+    const first = run('first.json');
+    const second = run('second.json');
+    assert.equal(first.status, 0, first.stderr);
+    assert.equal(second.status, 0, second.stderr);
+    assert.equal(JSON.parse(first.stdout).hash, JSON.parse(second.stdout).hash);
+    assert.equal(
+      JSON.parse(fs.readFileSync(path.join(outputRoot, 'first.json'), 'utf8')).canonical_hash,
+      JSON.parse(fs.readFileSync(path.join(outputRoot, 'second.json'), 'utf8')).canonical_hash
+    );
+  } finally {
+    fs.rmSync(outputRoot, { recursive: true, force: true });
+  }
 });
 
 test('doze mutações independentes ficam vermelhas', () => {

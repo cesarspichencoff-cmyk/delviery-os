@@ -8,7 +8,9 @@ const { sha256, canonicalJson } = require('../../../src/conversation-crm/native/
 
 const projectRoot = path.resolve(__dirname, '..', '..', '..');
 const corpusFile = path.join(projectRoot, 'evals', 'human-review', 'baseline-conversations-v1.json');
-const outputFile = path.join(projectRoot, 'evals', 'human-review', 'results', 'humanized-responses-v1.json');
+const outputFile = process.env.DELIVERYOS_HUMANIZED_OUTPUT_FILE
+  ? path.resolve(process.env.DELIVERYOS_HUMANIZED_OUTPUT_FILE)
+  : path.join(projectRoot, 'evals', 'human-review', 'results', 'humanized-responses-v1.json');
 
 function inputFor(runtime, item, turn, turnIndex) {
   const serial = String(turnIndex + 1).padStart(2, '0');
