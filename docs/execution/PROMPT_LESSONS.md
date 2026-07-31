@@ -359,3 +359,23 @@ coisa depois de muito mais esforco.
 
 **Regra:** para saber se uma peca cabe, tente encaixa-la. Um teste copiado e
 executado custa segundos e responde o que a analise estatica so estima.
+
+## L24 - O caminho padrao e o menos testado
+
+Ao tornar o relogio do observador injetavel, uma substituicao global reescreveu
+tambem o INTERIOR do fallback: `() => agora()`. Recursao infinita para quem nao
+injeta relogio nenhum — ou seja, para producao.
+
+Os 25 testes continuaram verdes. Todos injetavam relogio, porque era disso que
+eles tratavam. O unico caminho que ninguem exercitava era o que a operacao real
+usaria.
+
+O defeito apareceu por acaso: uma mutacao adversarial "nao aplicou", fui ler a
+linha, e a recursao estava ali.
+
+**Regra:** ao tornar algo injetavel, escreva UM teste que nao injeta nada.
+O default existe justamente para quem nao configura — e por isso e o caminho
+que nenhum teste configurado percorre.
+
+**Sinal:** se toda a suite passa um parametro, aquele parametro tem um valor
+padrao que ninguem esta testando.

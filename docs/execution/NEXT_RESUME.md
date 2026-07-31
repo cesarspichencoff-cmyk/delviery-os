@@ -1,5 +1,14 @@
 # Retomada — leia este arquivo primeiro
 
+> **ATUALIZADO 2026-07-27 — Bloco 4B3 CONCLUIDO.**
+> `CONFERENCE_BRAIN_4B3_COMPLETE` em `b9525dc`. 24 de 65 arquivos, 26 testes.
+> O observador aceita relogio injetavel — foi preciso acrescentar, e a
+> injecao introduziu um defeito no caminho padrao que os 25 testes de entao
+> nao pegavam (todos injetavam relogio). Reproduzido, corrigido e coberto.
+> **Proximo: 4B4 — adapter Operacao Viva -> Conference Brain.** O risco
+> registrado no mapa forense continua valendo: as duas listas de nove
+> dimensoes descrevem coisas diferentes.
+>
 > **ATUALIZADO 2026-07-27 — Bloco 4B2 CONCLUIDO.**
 > `CONFERENCE_BRAIN_4B2_COMPLETE` em `cdaf066`. 21 de 65 arquivos, 23 testes.
 > **FRONTEIRA ESTRUTURAL:** o patrimonio historico de testes NAO cabe aqui, e

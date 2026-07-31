@@ -402,6 +402,29 @@
         "mapping-mode.js",
         "painel HTTP"
       ]
+    },
+    "unidade_4B3_conference_brain": {
+      "veredito": "CONFERENCE_BRAIN_4B3_COMPLETE",
+      "commit": "b9525dc",
+      "portados": 24,
+      "de": 65,
+      "novos": [
+        "live/observer.js",
+        "live/health.js",
+        "live/metrics.js"
+      ],
+      "testes": {
+        "conference-4b3": 26
+      },
+      "mudanca_deliberada": "o observador aceita `now` injetavel — antes chamava new Date() em cinco pontos e o requisito de relogio deterministico era falso",
+      "defeito_proprio": "a injecao introduziu recursao infinita no caminho padrao; os 25 testes passavam porque todos injetavam relogio. Reproduzido, corrigido, e coberto por teste novo",
+      "fronteira": "live-observer.test.js continua no WIP — exige mapping-mode, browser-adapter e flags",
+      "nao_entrou": [
+        "browser-adapter.js",
+        "playwright-preflight.js",
+        "mapping-mode.js",
+        "painel HTTP"
+      ]
     }
   }
 }
