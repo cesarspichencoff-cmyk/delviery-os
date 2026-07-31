@@ -341,6 +341,37 @@
       "fluxo_real": "rota autenticada -> ingerir -> event log + outbox na mesma transacao -> worker real -> handler -> Operacao Viva -> replay",
       "afirmacao_permitida": "cadeia local comprovada em testes, incluindo os pontos reais de composicao",
       "nao_exercitado": "a rota nao foi chamada por HTTP real neste gate; nenhum aparelho fisico; nenhum GPS real"
+    },
+    "unidade_4B1_conference_brain": {
+      "veredito": "CONFERENCE_BRAIN_4B1_COMPLETE",
+      "commit": "abbb56f",
+      "portados": 15,
+      "de": 65,
+      "metodo": "port seletivo do WIP 2d298cb (D28) — sem merge, cherry-pick ou importacao integral",
+      "arquivos": [
+        "contracts/ (4)",
+        "normalize/ (2)",
+        "storage/store.js",
+        "live/pii-guard.js",
+        "live/reconciliation.js",
+        "live/grouping.js",
+        "live/multidimensional-observation.js",
+        "live/status-map.js",
+        "live/operator-panel.js",
+        "live/store-state.js",
+        "live/clock.js"
+      ],
+      "fecho_transitivo": "FECHADO — todo require interno resolve; unica dependencia externa: crypto, fs, path",
+      "testes": {
+        "conference-4b1": 23
+      },
+      "gate": {
+        "PII": "comprovada",
+        "idempotencia_do_store": "comprovada",
+        "recuperacao_do_store": "comprovada"
+      },
+      "nao_executado": "os 309 testes do nucleo e o gate independente 12/12 — vivem em tests/conference-brain/, que entra no 4B2",
+      "nota_de_escopo": "live/operator-panel.js entrou por ser dependencia do pii-guard, nao por escolha; o painel HTTP em tools/ continua fora"
     }
   }
 }

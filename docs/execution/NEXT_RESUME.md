@@ -1,5 +1,13 @@
 # Retomada — leia este arquivo primeiro
 
+> **ATUALIZADO 2026-07-27 — Bloco 4B1 CONCLUIDO.**
+> `CONFERENCE_BRAIN_4B1_COMPLETE` em `abbb56f`. 15 dos 65 arquivos portados,
+> fecho transitivo FECHADO, 23 testes verdes. PII, idempotencia e recuperacao
+> do store comprovadas neste repositorio.
+> **NAO executados aqui:** os 309 testes do nucleo e o gate independente
+> 12/12 — vivem em `tests/conference-brain/`, que entra no **4B2**.
+> **Proximo: 4B2 — nucleo multidimensional + as duas suites.**
+>
 > **ATUALIZADO 2026-07-27 — Unidade 4A (forense) CONCLUIDA.**
 > `CONFERENCE_BRAIN_FORENSIC_MAP_COMPLETE`. Leia
 > `docs/execution/CONFERENCE_BRAIN_FORENSE.md` antes de tocar no Conference

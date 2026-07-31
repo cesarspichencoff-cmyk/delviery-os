@@ -294,3 +294,29 @@ rota ou no handler, nenhuma chamada a `projetar`, e uso obrigatorio de
 **Regra:** quando a missao e integrar, escreva o teste que proibe a segunda
 implementacao ANTES de escrever a integracao. Duas pontes nao sao redundancia -
 sao duas verdades que divergem no primeiro defeito.
+
+## L21 - Ler a superficie antes de testar contra ela
+
+Escrevendo os testes do 4B1, presumi a API duas vezes e errei nas duas:
+
+- `store.load()` nao devolve a lista de registros. Ele carrega do disco para a
+  memoria; quem devolve e `all()`/`count()`. E o arquivo em disco e
+  `<entidade>.runtime.jsonl`, nao `<entidade>.jsonl`;
+- `sanitizeText()` nao devolve texto sanitizado. Devolve o texto ORIGINAL
+  quando ele esta na allowlist, e um objeto marcador de redacao quando nao
+  esta.
+
+A fixture tambem estava errada: `live_observations` exige `raw_status` e
+`confidence`, e o `put` recusou com o motivo exato.
+
+Nada disso custou caro porque os testes acusaram na primeira execucao — mas o
+custo evitado e o que importa: um teste escrito contra uma API imaginada pode
+passar por acidente e afirmar algo que nao e verdade.
+
+**Regra:** ao testar codigo que voce nao escreveu, LEIA a superficie primeiro —
+o `return` da fabrica, a assinatura da funcao, o `required` do schema. Ler tres
+linhas custa menos que um teste que mente.
+
+**Corolario:** quando um teste falha logo na primeira execucao contra codigo
+portado, a hipotese inicial deve ser "meu teste esta errado", nao "o codigo
+esta quebrado". O codigo portado tinha 309 testes verdes na origem.
