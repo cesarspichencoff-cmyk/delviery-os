@@ -477,3 +477,71 @@ valer. Apagar remove a protecao, nao o problema.
 coisas diferentes - as do Brain sao sobre PEDIDO observado em tela, as da
 Operacao Viva sao sobre CARGA da operacao. Forcar correspondencia campo a campo
 produziria um mapeamento que parece certo e mente.
+
+---
+
+## D29 - O adapter da Operacao Viva nao emite pedido nenhum
+
+**Decidido:** `orders` e sempre `[]`. O adapter atravessa escopo, saude da
+fonte, contexto e procedencia - e recusa, por escrito, tudo que exigiria
+identidade de pedido.
+
+**Contra:** (A) usar `trip_id` como `external_id`, que era o caminho obvio e o
+unico que produziria um adapter "que funciona"; (B) mapear `estado` da viagem
+para `order_state`; (C) mapear a viagem para `courier_state`.
+
+**Por que:** o risco registrado no 4B4 nao era teorico, e a causa dele e mais
+funda do que vocabulario divergente. O Brain indexa por **pedido**
+(`external_id`); a Operacao Viva indexa por **viagem** (`trip_id`); e a
+projecao do HEAD **nao carrega identidade de pedido**. `order_id` existe no
+envelope (`contracts/event-catalog.ts:95`) e e usado como chave de particao na
+ingestao (`ingest/ingest-service.ts:131`), mas `projetar()` nao o propaga para
+`ViagemAcumulada`. Nao ha a que prender uma observacao de pedido.
+
+(A) faria o Brain gravar `live_observations` com um `trip_id` no campo do
+pedido, abrir relogio de Conferencia para uma viagem e reconciliar dimensoes de
+pedido a partir de fato de motoboy. (B) fundiria LOGISTICA com PRODUCAO -
+`entregue` e sobre a rua, `finalized` e sobre a cozinha - que e exatamente o
+erro que o modelo multidimensional do Sprint 2.1 existe para impedir. (C)
+afirmaria que o iFood alocou entregador, quando o motoboy e da propria loja.
+
+As tres produziriam um sistema que roda, mostra numero e mente. Ausencia
+declarada e pior de vender e melhor de operar.
+
+**Custo:** o Brain nao recebe nenhuma dimensao de pedido desta fonte, e vai
+continuar assim ate alguem decidir - com evidencia, no lugar certo - o que uma
+viagem afirma sobre um pedido. O custo esta pago em visibilidade: os dez campos
+ausentes viajam em `signals.criticalFieldsMissing` e o observador os grava em
+`live_cycle_runs.fields_missing`, entao a ausencia vive no registro duravel do
+proprio Brain, nao num comentario.
+
+**O que destravaria:** propagar `order_id` em `ViagemAcumulada`. E decisao de
+produto, nao de adapter - por isso, se um `order_id` aparecer numa viagem hoje,
+o adapter o REGISTRA em `recusas.identidade_de_pedido` e continua nao emitindo
+pedido. Aparecer e motivo de decisao humana, nunca de mapeamento automatico.
+
+---
+
+## D30 - A unica ponte semantica e a saude da fonte
+
+**Decidido:** `integridade_sinal` da Operacao Viva traduz para
+`LIVE_SOURCE_HEALTH` do Brain. E a unica traducao de valor que este adapter faz.
+
+**Contra:** nao traduzir nada, deixando o Brain classificar a saude por conta
+propria com `classifyCycleHealth`.
+
+**Por que:** e legitima por um motivo preciso, e nao por conveniencia: os dois
+lados falam da **qualidade da observacao**, nao da operacao. `stale` de um lado
+e `stale` do outro querem dizer a mesma coisa - "o que eu sei esta velho".
+
+A alternativa foi rejeitada por ser ativamente mentirosa: `classifyCycleHealth`
+espera sinais de TELA (`containerFound`, `captchaDetected`,
+`layoutSignatureMatch`). Sem `containerFound`, ela devolve `layout_changed` -
+e nao existe layout nenhum aqui para ter mudado. Por isso o adapter entrega
+`health` pronta e nao fabrica um unico sinal de tela.
+
+**Custo:** `available` nunca e emitido, em nenhum caminho. No Brain, `available`
+e o que autoriza `mayAffirmOperationalLoad`, e esta fonte nao observa um unico
+pedido - deixar passar um `available` daqui faria a Conferencia afirmar carga
+com base em dado que nao e dela. Consequencia aceita: a Conferencia nunca fica
+"disponivel" so porque a Operacao Viva esta saudavel.

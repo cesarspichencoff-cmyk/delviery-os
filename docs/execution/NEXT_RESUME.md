@@ -1,5 +1,37 @@
 # Retomada — leia este arquivo primeiro
 
+> **ATUALIZADO 2026-07-31 — Bloco 4B4 CONCLUIDO. MACRO2_CHECKPOINT_REACHED.**
+> `CONFERENCE_BRAIN_4B4_COMPLETE` em `fe6c2e5`. 41 testes.
+>
+> O risco que a forense vinha registrando desde o 4A **se confirmou, e a causa
+> era mais funda que vocabulario divergente.** Nao e so que as duas listas de
+> nove dimensoes descrevem coisas diferentes: **a projecao da Operacao Viva nao
+> carrega identidade de pedido.** `order_id` existe no envelope
+> (`contracts/event-catalog.ts:95`) e e chave de particao da outbox
+> (`ingest/ingest-service.ts:131`), mas `projetar()` nao o propaga para
+> `ViagemAcumulada`. O Brain indexa por PEDIDO; a Operacao Viva, por VIAGEM.
+>
+> Consequencia, decidida em D29: **o adapter nunca emite pedido.** `orders` e
+> sempre vazio, com motivo legivel por maquina, e os dez campos que faltam
+> viajam em `signals.criticalFieldsMissing` — que o observador grava em
+> `live_cycle_runs.fields_missing`, deixando a ausencia no registro duravel do
+> proprio Brain. O que atravessa e escopo, saude, contexto rotulado como
+> contexto, inferencia rotulada como inferencia, e procedencia.
+>
+> A unica ponte semantica real e `integridade_sinal` -> saude da fonte (D30),
+> legitima porque os dois lados falam da qualidade da OBSERVACAO. `available`
+> nunca e emitido: no Brain ele autoriza afirmar carga, e esta fonte nao
+> observa um unico pedido.
+>
+> **Proximo: 4B5 — gate adversarial do nucleo.** Nao iniciado, de proposito:
+> o bloco pedia parar aqui.
+>
+> **O que destravaria pedido de verdade:** propagar `order_id` em
+> `ViagemAcumulada` e decidir, com evidencia, o que uma viagem afirma sobre um
+> pedido. E decisao de produto, nao de adapter — se um `order_id` aparecer numa
+> viagem hoje, o adapter o registra em `recusas.identidade_de_pedido` e continua
+> nao emitindo pedido.
+>
 > **ATUALIZADO 2026-07-27 — Bloco 4B3 CONCLUIDO.**
 > `CONFERENCE_BRAIN_4B3_COMPLETE` em `b9525dc`. 24 de 65 arquivos, 26 testes.
 > O observador aceita relogio injetavel — foi preciso acrescentar, e a

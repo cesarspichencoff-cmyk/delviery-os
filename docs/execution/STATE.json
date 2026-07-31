@@ -1,6 +1,6 @@
 {
   "_leia_primeiro": "Estado executavel do DeliveryOS. So entra aqui o que foi VERIFICADO. Escrito por quem termina uma missao, lido por quem comeca a proxima. Para retomar a execucao interrompida, leia docs/execution/NEXT_RESUME.md primeiro.",
-  "atualizado_em": "2026-07-27",
+  "atualizado_em": "2026-07-31",
   "missao": "MACRO-PROMPT 1/3 — Hybrid Platform + PostgreSQL + Cloud Foundation",
   "veredito": "READY_FOR_MACRO_PROMPT_2_FIELD_AND_COPILOT_BRIDGE",
   "repositorio": {
@@ -187,8 +187,8 @@
     "executado_contra_provedor": false
   },
   "macro_prompt_2": {
-    "estado": "INTERROMPIDO por fim de creditos — NAO concluido",
-    "veredito": "RECOVERY_CHECKPOINT_COMPLETE (recuperacao), NAO e veredito do Macro-Prompt 2",
+    "estado": "EM ANDAMENTO — Unidade 4B no bloco 4B4 concluido; 4B5 nao iniciado",
+    "veredito": "CONFERENCE_BRAIN_4B4_COMPLETE / MACRO2_CHECKPOINT_REACHED",
     "leia_primeiro": "docs/execution/NEXT_RESUME.md",
     "preservacao": {
       "branch_wip": "wip/macro2-interrupted-recovery-20260727",
@@ -425,6 +425,42 @@
         "mapping-mode.js",
         "painel HTTP"
       ]
+    },
+    "unidade_4B4_conference_brain": {
+      "veredito": "CONFERENCE_BRAIN_4B4_COMPLETE",
+      "commit": "fe6c2e5",
+      "arquivo_novo": "src/conference-brain/ingestion/operacao-viva-adapter.js",
+      "portados": 24,
+      "de": 65,
+      "_nota_portados": "o 4B4 nao portou arquivo nenhum: o adapter e o unico arquivo NOVO do plano, escrito aqui",
+      "testes": {
+        "conference-4b4": 41
+      },
+      "achado_que_decide_o_desenho": {
+        "afirmacao": "a projecao da Operacao Viva NAO carrega identidade de pedido",
+        "evidencia": "order_id existe em EventEnvelope (contracts/event-catalog.ts:95) e e chave de particao da outbox (ingest/ingest-service.ts:131), mas projetar() nao o propaga para ViagemAcumulada",
+        "consequencia": "o Brain indexa por PEDIDO (external_id) e a Operacao Viva por VIAGEM (trip_id). Sem identidade de pedido, emitir observacao de pedido exigiria INVENTAR identidade",
+        "decisao": "D29 — orders e sempre vazio, com motivo legivel por maquina"
+      },
+      "classificacao_exigida_pelo_bloco": {
+        "observacao_direta": "unit_id, source_mode, trip_id, ultimo_fato_em, source_mode da viagem",
+        "inferencia": "frescor, expiracao e 7 das 9 dimensoes (atraso, mobilidade, integridade, sincronizacao, confianca, capacidade, risco)",
+        "evidencia_auxiliar": "projection_version, calculada_em, cursor, quarentena, eventos[], ultima_posicao_em",
+        "contexto_operacional": "carga, ocorrencias, ocorrencias_abertas",
+        "sem_equivalencia_segura": "estado da viagem e device_id — recusados com motivo escrito",
+        "_guarda": "o teste 4c enumera Object.keys da projecao REAL; campo novo sem classificacao derruba o gate"
+      },
+      "unica_ponte_semantica": "integridade_sinal -> LIVE_SOURCE_HEALTH. Legitima porque os dois lados falam da QUALIDADE DA OBSERVACAO, nao da operacao. `available` nunca e emitido (D30)",
+      "integracao_real": "o observador do 4B3 roda dois ciclos sobre o adapter: source_health=partial, orders_observed=0, fields_missing com os 10 campos criticos, e ZERO live_observations e ZERO conference_clock_events",
+      "controle_adversarial": "7 mutacoes, todas verificadas como aplicadas antes de interpretar (L22); todas derrubaram a garantia certa; zero mutacoes cegas; arquivo restaurado byte a byte",
+      "defeito_proprio": "o teste de vazamento acusou falso positivo ao confundir declaracao de ausencia com dado; a correcao tentadora teria encolhido a guarda. Licao L25",
+      "nao_entrou": [
+        "browser-adapter.js",
+        "playwright-preflight.js",
+        "mapping-mode.js",
+        "painel HTTP"
+      ],
+      "limitacao": "nenhum pedido real atravessa a ponte, porque nenhum pode. As 9 dimensoes de pedido do Brain seguem sem fonte neste repositorio"
     }
   }
 }

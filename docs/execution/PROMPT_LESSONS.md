@@ -379,3 +379,31 @@ que nenhum teste configurado percorre.
 
 **Sinal:** se toda a suite passa um parametro, aquele parametro tem um valor
 padrao que ninguem esta testando.
+
+## L25 - Citar um campo para declarar que ele falta nao e preenche-lo
+
+O teste de vazamento do 4B4 varria a saida INTEIRA do adapter procurando nomes
+de dimensao de pedido (`order_state`, `courier`, `external_id`...). Ele falhou
+na primeira execucao — e nao havia defeito nenhum.
+
+`order_state` estava em `signals.criticalFieldsMissing`, que existe justamente
+para dizer "esta fonte nao tem como fornecer este campo". Declarar uma ausencia
+exige nomear o que falta. A varredura confundia a declaracao com o dado.
+
+**A correcao tentadora era remover `order_state` da lista do teste.** Isso
+teria funcionado, ficado verde, e desligado a guarda para os outros quatro
+termos junto — a classe inteira de vazamento passaria a nao ser testada, sem
+que nada no placar acusasse.
+
+O que foi feito: a assercao virou duas. Os blocos que carregam DADO (`escopo`,
+`contexto`, `procedencia`) nao podem conter o nome; a lista de ausencia
+declarada PRECISA conter. Nenhum termo saiu da lista, e agora o teste tambem
+pega o caso oposto — alguem apagar a declaracao de ausencia.
+
+**Regra:** quando um teste de vazamento acusa, pergunte primeiro se aquilo e
+dado ou declaracao ANTES de mexer no teste. Se for declaracao, a saida nunca e
+encolher o alvo: e separar "onde nao pode aparecer" de "onde tem de aparecer".
+
+**Sinal de alarme:** toda correcao de teste que REDUZ o conjunto verificado
+merece a mesma suspeita de uma assercao enfraquecida (L18) — as duas compram
+verde vendendo cobertura.
