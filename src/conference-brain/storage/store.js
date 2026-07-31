@@ -24,6 +24,25 @@ function sha256(v) {
   return crypto.createHash("sha256").update(typeof v === "string" ? v : JSON.stringify(v)).digest("hex");
 }
 
+/**
+ * Códigos de erro de validação cujo sufixo é NOME DE CAMPO — decidível, e o
+ * contrato já nomeia chave proibida ao recusar (mesma escolha de
+ * `checkEvent`). Os demais códigos podem carregar VALOR do registro
+ * (`status_invalido:<valor>`), e valor de registro inválido é exatamente o
+ * que não pode ser guardado num diagnóstico.
+ */
+const ERRO_COM_NOME_DE_CAMPO = new Set([
+  "campo_obrigatorio_ausente", "campo_desconhecido", "campo_proibido_pii"
+]);
+
+function erroSeguro(e) {
+  const s = String(e);
+  const i = s.indexOf(":");
+  if (i < 0) return s;
+  const codigo = s.slice(0, i);
+  return ERRO_COM_NOME_DE_CAMPO.has(codigo) ? s : codigo;
+}
+
 function createStore(opts) {
   const options = opts || {};
   const dir = options.dir || process.env.CONFERENCE_BRAIN_DATA_DIR || DEFAULT_DIR;
@@ -31,6 +50,7 @@ function createStore(opts) {
   const mem = new Map();          // entidade -> Map(chave -> registro)
   const failures = [];
   const corrupted = [];           // Sprint 2.2 (Fase 7/12, bloqueador 12): linhas JSONL ilegíveis, NUNCA descartadas em silêncio
+  const invalid = [];             // 4B5: linhas legíveis que NÃO passam no schema — quarentena, nunca admissão silenciosa
 
   function fileFor(entity) { return path.join(dir, entity + ".runtime.jsonl"); }
 
@@ -53,6 +73,18 @@ function createStore(opts) {
    * ignorada — o evento correspondente sumia sem deixar rastro nenhum. Agora
    * toda linha corrompida vira uma entrada em `corrupted` (linha, entidade,
    * trecho sanitizado, erro) — visível em `health()`, nunca escondida.
+   *
+   * 4B5 — a assimetria que faltava: `put()` validava contra o schema e `load()`
+   * NÃO. Uma linha sintaticamente válida mas proibida pelo contrato — inclusive
+   * uma carregando `customer_name` — entrava inteira na memória no reinício,
+   * porque só o caminho de ESCRITA tinha porteiro. O arquivo é editável por
+   * fora (correção manual, restauração de backup ruim, versão antiga do
+   * código), então "só o put grava" nunca foi garantia do que está no disco.
+   *
+   * Agora a carga valida com o MESMO `validate()` da escrita, e o que não passa
+   * vai para `invalid` em vez da memória. O diagnóstico guarda os códigos de
+   * erro, o tamanho e o hash — nunca o conteúdo do registro recusado, que é
+   * justamente o que pode estar carregando dado de pessoa.
    */
   function load(entity) {
     if (memoryOnly) return table(entity).size;
@@ -64,7 +96,19 @@ function createStore(opts) {
       for (let i = 0; i < lines.length; i++) {
         const s = lines[i].trim();
         if (!s) continue;
-        try { const r = JSON.parse(s); t.set(naturalKey(entity, r), r); }
+        try {
+          const r = JSON.parse(s);
+          const v = validate(entity, r);
+          if (!v.ok) {
+            invalid.push({
+              entity, line_number: i + 1, file: f,
+              errors: v.errors.map(erroSeguro),
+              excerpt_length: s.length, excerpt_hash: sha256(s)
+            });
+            continue;
+          }
+          t.set(naturalKey(entity, r), r);
+        }
         catch (e) {
           corrupted.push({
             entity, line_number: i + 1, file: f,
@@ -119,7 +163,11 @@ function createStore(opts) {
       memory_only: memoryOnly,
       entities: Array.from(mem.keys()).map((e) => ({ entity: e, records: mem.get(e).size })),
       io_failures: failures.slice(),
-      corrupted_lines: corrupted.slice()
+      corrupted_lines: corrupted.slice(),
+      // Separadas de propósito: linha ilegível e linha legível-mas-proibida são
+      // falhas de natureza diferente. A primeira é dano físico; a segunda é
+      // registro que alguém conseguiu colocar no disco por fora do contrato.
+      invalid_lines: invalid.slice()
     };
   }
 
