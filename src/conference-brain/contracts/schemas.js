@@ -91,8 +91,35 @@ const SCHEMAS = Object.freeze({
     required: ["event_id", "order_id", "event_type", "event_time", "observed_at",
                "origin", "confidence", "collector_version"],
     optional: ["reason", "raw_status", "sequence"]
+  },
+
+  /* ---- Unidade 5: Copiloto em sombra --------------------------------------
+   * Mora AQUI, e não num store proprio, de proposito. O Copiloto herda de
+   * graca tudo o que este armazenamento ja teve provado: chave natural
+   * idempotente, JSONL append-only, recuperacao por `load` com validacao de
+   * schema, contagem de linha corrompida e a guarda de PII por nome de campo.
+   * Um store paralelo significaria reprovar tudo isso do zero — e um deles
+   * divergiria no primeiro defeito.
+   * ---------------------------------------------------------------------- */
+  copilot_recommendations: {
+    key: ["recommendation_id"],
+    required: ["recommendation_id", "unit_id", "source_mode", "conclusion_ref",
+               "conclusion_version", "policy_id", "bridge_version", "escopo",
+               "titulo", "descricao", "evidencias", "evidence_grade", "confidence",
+               "risk_level", "recommended_action", "requires_human", "shadow",
+               "created_at", "expires_at", "status"],
+    optional: ["policy_version", "external_id", "limitacoes", "motivo_de_saida"]
   }
 });
+
+/* --- Vocabulário do Copiloto em sombra ------------------------------------ */
+
+const COPILOT_STATUS = Object.freeze([
+  "proposed", "expired", "dismissed", "accepted_for_future", "invalidated"
+]);
+const COPILOT_ESCOPO = Object.freeze(["fonte", "pedido"]);
+const COPILOT_EVIDENCE_GRADE = Object.freeze(["sustentada", "degradada", "stale"]);
+const COPILOT_SOURCE_MODE = Object.freeze(["real", "simulated", "control"]);
 
 /**
  * Valida um registro contra um schema. Nunca lança por dado de negócio —
@@ -136,6 +163,43 @@ function validate(entity, record) {
     }
     if (record.raw_status !== undefined && typeof record.raw_status !== "string") {
       errors.push("raw_status_deve_ser_texto_bruto_da_tela");
+    }
+  }
+  if (entity === "copilot_recommendations") {
+    if (record.status && !COPILOT_STATUS.includes(record.status)) {
+      errors.push("status_invalido:" + record.status);
+    }
+    if (record.escopo && !COPILOT_ESCOPO.includes(record.escopo)) {
+      errors.push("escopo_invalido:" + record.escopo);
+    }
+    if (record.evidence_grade && !COPILOT_EVIDENCE_GRADE.includes(record.evidence_grade)) {
+      // `insuficiente` NAO entra aqui de proposito: evidencia insuficiente e o
+      // motivo de a recomendacao nao existir, nunca um atributo de uma que existe.
+      errors.push("evidence_grade_invalido:" + record.evidence_grade);
+    }
+    if (record.source_mode && !COPILOT_SOURCE_MODE.includes(record.source_mode)) {
+      errors.push("source_mode_invalido:" + record.source_mode);
+    }
+    // O modo sombra e' condicao de existencia, nao configuracao. Um registro
+    // que nao se declara sombra nao entra no armazenamento — mesma escolha do
+    // `conference_state`, que recusa `mode !== "shadow"`.
+    if (record.shadow !== true) errors.push("recomendacao_fora_do_modo_sombra");
+    if (record.requires_human !== true) errors.push("recomendacao_sem_exigencia_de_humano");
+    // Confianca sem evidencia rastreavel e palpite com cara de medida.
+    if (!Array.isArray(record.evidencias) || record.evidencias.length === 0) {
+      errors.push("confianca_sem_evidencia_rastreavel");
+    }
+    if (typeof record.confidence !== "number" || !(record.confidence >= 0 && record.confidence <= 1)) {
+      errors.push("confianca_invalida");
+    }
+    // Recomendacao sobre PEDIDO exige identidade de pedido observada. Sem ela,
+    // sobra `trip_id` querendo passar por `external_id` — a fronteira da
+    // Unidade 4 aplicada ao armazenamento.
+    if (record.escopo === "pedido" && !record.external_id) {
+      errors.push("recomendacao_de_pedido_sem_identidade_de_pedido");
+    }
+    if (record.escopo === "fonte" && record.external_id) {
+      errors.push("recomendacao_de_fonte_com_identidade_de_pedido");
     }
   }
   if (entity === "conference_clock_events") {
