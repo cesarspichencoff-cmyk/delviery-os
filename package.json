@@ -53,7 +53,8 @@
     "test:platform:consumer": "npx tsx src/platform/run-bridge-consumer-tests.ts",
     "test:platform:wiring": "npx tsx src/platform/run-runtime-wiring-tests.ts",
     "test:platform:cb4b1": "npx tsx src/platform/run-conference-4b1-tests.ts",
-    "test:platform:cb4b2": "npx tsx src/platform/run-conference-4b2-tests.ts"
+    "test:platform:cb4b2": "npx tsx src/platform/run-conference-4b2-tests.ts",
+    "test:platform:cb4b3": "npx tsx src/platform/run-conference-4b3-tests.ts"
   },
   "devDependencies": {
     "@types/node": "20.14.10",
