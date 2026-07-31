@@ -320,3 +320,42 @@ linhas custa menos que um teste que mente.
 **Corolario:** quando um teste falha logo na primeira execucao contra codigo
 portado, a hipotese inicial deve ser "meu teste esta errado", nao "o codigo
 esta quebrado". O codigo portado tinha 309 testes verdes na origem.
+
+## L22 - Controle adversarial que nao falha pode nao ter rodado
+
+No 4B2, a primeira rodada adversarial nao produziu falha nenhuma. A leitura
+confortavel seria "as garantias sao tao solidas que nem as mutacoes derrubam".
+A leitura correta e o oposto: **um controle que nao acusa nada provavelmente
+nao aplicou nada.**
+
+E era isso. O script de mutacao procurava strings que nao existiam no arquivo,
+substituia zero ocorrencias, e seguia em silencio. Os testes passaram porque o
+codigo estava intacto.
+
+Refeito com verificacao explicita — o script imprime "aplicou" ou "NAO APLICOU"
+para cada mutacao antes de qualquer teste rodar — tres garantias removidas
+derrubaram quatro testes.
+
+**Regra:** o controle antifalso-positivo tambem precisa de controle. Antes de
+concluir que a prova se sustenta, confirme que a mutacao entrou: conte as
+substituicoes, ou faca o script falhar alto quando o alvo nao existir.
+
+**Sinal de alarme:** zero falhas num controle adversarial e mais suspeito que
+muitas falhas.
+
+## L23 - Fronteira se descobre executando, nao lendo
+
+O plano do 4B2 previa portar o patrimonio historico de testes. O grep de
+dependencias mostrou so os requires de `src/conference-brain/`, e a conclusao
+natural foi "cabe".
+
+Nao cabia. Ao COPIAR um dos testes e rodar, ele falhou por
+`tools/conference-brain/operator-panel-server` — o painel HTTP, que o grep
+anterior nao pegou porque eu filtrei so por `src/`.
+
+O custo foi baixo porque a execucao veio antes do trabalho. Se eu tivesse
+portado os seis arquivos de teste confiando no grep, teria descoberto a mesma
+coisa depois de muito mais esforco.
+
+**Regra:** para saber se uma peca cabe, tente encaixa-la. Um teste copiado e
+executado custa segundos e responde o que a analise estatica so estima.

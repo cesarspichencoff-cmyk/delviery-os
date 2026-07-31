@@ -1,5 +1,16 @@
 # Retomada — leia este arquivo primeiro
 
+> **ATUALIZADO 2026-07-27 — Bloco 4B2 CONCLUIDO.**
+> `CONFERENCE_BRAIN_4B2_COMPLETE` em `cdaf066`. 21 de 65 arquivos, 23 testes.
+> **FRONTEIRA ESTRUTURAL:** o patrimonio historico de testes NAO cabe aqui, e
+> isso foi reproduzido. `multidimensional-model` exige mapping-mode e
+> playwright-preflight; `sprint24-adversarial` exige observer (4B3); e os DOIS
+> testes do gate 12/12 exigem `tools/conference-brain/operator-panel-server`,
+> o painel HTTP. Os 309/309 e o 12/12 seguem NAO executados aqui.
+> Para retomar no 4B3: portar `live/observer.js` + `live/health.js`, e so
+> entao decidir se o painel entra para desbloquear o gate independente.
+> **Proximo: 4B3 — observador e relogio.**
+>
 > **ATUALIZADO 2026-07-27 — Bloco 4B1 CONCLUIDO.**
 > `CONFERENCE_BRAIN_4B1_COMPLETE` em `abbb56f`. 15 dos 65 arquivos portados,
 > fecho transitivo FECHADO, 23 testes verdes. PII, idempotencia e recuperacao

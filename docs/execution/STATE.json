@@ -372,6 +372,36 @@
       },
       "nao_executado": "os 309 testes do nucleo e o gate independente 12/12 — vivem em tests/conference-brain/, que entra no 4B2",
       "nota_de_escopo": "live/operator-panel.js entrou por ser dependencia do pii-guard, nao por escolha; o painel HTTP em tools/ continua fora"
+    },
+    "unidade_4B2_conference_brain": {
+      "veredito": "CONFERENCE_BRAIN_4B2_COMPLETE",
+      "commit": "cdaf066",
+      "portados": 21,
+      "de": 65,
+      "novos": [
+        "live/indicators.js",
+        "live/evidence.js",
+        "live/dimension-events.js",
+        "live/legacy-compat.js",
+        "live/schedule.js",
+        "live/ready-departure.js"
+      ],
+      "testes": {
+        "conference-4b2": 23
+      },
+      "fronteira_estrutural": {
+        "achado": "o patrimonio historico de testes nao cabe no 4B2, e foi REPRODUZIDO",
+        "multidimensional-model.test.js": "exige mapping-mode e playwright-preflight — fora de escopo por decisao",
+        "sprint24-adversarial.test.js": "exige observer — pertence ao 4B3",
+        "gate_independente_12_12": "os DOIS arquivos exigem tools/conference-brain/operator-panel-server, o painel HTTP — fora de escopo",
+        "consequencia": "os 309/309 e o 12/12 continuam NAO executados neste repositorio; permanecem preservados no WIP 2d298cb"
+      },
+      "nao_entrou": [
+        "browser-adapter.js",
+        "playwright-preflight.js",
+        "mapping-mode.js",
+        "painel HTTP"
+      ]
     }
   }
 }
