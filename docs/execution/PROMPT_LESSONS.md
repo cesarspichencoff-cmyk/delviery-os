@@ -407,3 +407,53 @@ encolher o alvo: e separar "onde nao pode aparecer" de "onde tem de aparecer".
 **Sinal de alarme:** toda correcao de teste que REDUZ o conjunto verificado
 merece a mesma suspeita de uma assercao enfraquecida (L18) — as duas compram
 verde vendendo cobertura.
+
+---
+
+# Licoes do gate final — 2026-07-31
+
+## L26 - Zero e a assercao mais facil de falsificar por acidente
+
+Metade do gate do 4B5 afirma ZERO: zero pedidos emitidos, zero eventos de
+relogio, zero observacao sem identidade. Todas verdadeiras, todas verdes.
+
+E todas continuariam verdes com o observador quebrado, com o store nao
+gravando, ou com o `fetchOrders` devolvendo lista vazia por defeito. Cano
+entupido devolve exatamente o mesmo zero que a recusa deliberada.
+
+A diferenca entre "o sistema se recusou" e "o sistema nao funcionou" nao esta
+no numero — esta em provar que o mesmo caminho PRODUZ quando deve produzir.
+Por isso cada zero no 4B5 tem, ao lado, a mesma cadeia (observer + nucleo +
+store) alimentada por uma fonte legitima de pedido, exigindo 1 observacao e 1
+`ready_observed`.
+
+**Regra:** nenhuma assercao de ausencia vale sozinha. Ela precisa de um par
+que exercite o MESMO caminho ate a presenca. Sem isso, o teste nao distingue
+recusa de pane — e a pane e sempre mais provavel que a recusa.
+
+**Corolario:** o par positivo tem que passar pelo mesmo codigo, nao por um
+atalho. Um controle positivo que monta o resultado a mao prova so que a fixture
+funciona.
+
+## L27 - O teste media a garantia do vizinho
+
+A primeira rodada adversarial do 4B5 acusou UMA mutacao cega: remover a
+idempotencia da chave natural do store deixou a suite verde.
+
+O motivo nao era mutacao mal aplicada (a contagem confirmou que entrou). Era
+que os dois testes de duplicacao exercitavam a guarda do **relogio** — o
+observador so emite `ready_observed` uma vez — e nunca chegavam a fazer dois
+`put` com a mesma chave. O gate reivindicava "duplicacao e idempotente" medindo
+outra coisa que tambem produz o numero certo.
+
+A garantia real estava coberta, mas no 4B1. Um gate que se apoia na cobertura
+de outro bloco parece completo e nao e: quem le o 4B5 acredita que ele prova o
+que diz.
+
+**Regra:** quando um item do gate reivindica uma garantia, o teste precisa
+tocar a CAMADA que a implementa. Se a mutacao naquela camada nao derruba nada,
+o teste esta medindo o vizinho.
+
+**Como isso apareceu:** so pelo controle adversarial. Nenhuma leitura do teste
+6b denunciava o problema — ele e correto, passa, e testa algo verdadeiro. Era
+o alvo que estava errado, e isso e invisivel sem remover a garantia e olhar.

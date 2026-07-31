@@ -1,5 +1,52 @@
 # Retomada — leia este arquivo primeiro
 
+> **ATUALIZADO 2026-07-31 — UNIDADE 4 CONCLUIDA.**
+> `CONFERENCE_BRAIN_UNIT_COMPLETE` · `MACRO2_CHECKPOINT_REACHED`
+> Blocos 4B1 a 4B5 fechados. **149 testes da unidade, 313 verdes no total**,
+> `tsc --noEmit` exit 0. Comando agregado: `npm run test:platform:conference`.
+>
+> A cadeia esta provada ponta a ponta contra a arquitetura atual:
+> **Operacao Viva → adapter semantico → observer → nucleo multidimensional →
+> store.** O gate do 4B5 tem 36 testes: os 16 itens pedidos mais 8 guardas
+> estruturais que impedem a regressao em vez de detecta-la depois.
+>
+> **O metodo que sustenta o gate — nao remova sem entender.** Metade das
+> afirmacoes do 4B5 sao ZEROS (zero pedidos, zero relogio, zero observacao sem
+> identidade), e um cano entupido devolve o mesmo zero que a recusa
+> deliberada. Por isso cada zero tem, ao lado, a MESMA cadeia alimentada por
+> uma fonte legitima de pedido, exigindo 1 observacao e 1 `ready_observed`.
+> Sem esse par, o gate inteiro passaria com o observador quebrado (L26, D32).
+>
+> **Defeito real encontrado e corrigido no caminho:** `put()` validava contra o
+> schema e `load()` NAO. Um registro proibido acrescentado ao arquivo por fora
+> — com PII — voltava inteiro na memoria no reinicio, e a saude nao acusava
+> porque so contava linha ILEGIVEL. Reproduzido antes de corrigir. A carga
+> agora usa o mesmo `validate()` da escrita; recusados vao para
+> `health().invalid_lines`, com codigo, tamanho e hash — nunca o conteudo
+> (D31, commit `a62136a`).
+>
+> **O controle adversarial acusou um buraco no proprio gate.** Remover a
+> idempotencia da chave natural do store deixou a suite verde: os testes de
+> duplicacao mediam a guarda do RELOGIO e nunca faziam dois `put` com a mesma
+> chave. A garantia estava coberta — no 4B1. Um gate que se apoia no vizinho
+> parece completo e nao e. Fechado pelo teste 6c (L27).
+>
+> **Estado honesto preservado, sem uma unica excecao:** a Operacao Viva produz
+> contexto de VIAGEM; o Brain indexa por PEDIDO; `order_id` nao esta propagado
+> em `ViagemAcumulada`; por isso o adapter nao emite pedido, `orders` continua
+> vazio, os campos ausentes continuam declarados, e nenhuma dimensao de pedido
+> foi fabricada. `available` nunca e emitido.
+>
+> **NAO perseguimos os 309/309 nem o 12/12.** Nada foi importado para
+> alcanca-los — sem painel HTTP, sem Playwright, sem mapping mode. O
+> patrimonio historico foi usado como REFERENCIA DE COMPORTAMENTO, e os riscos
+> que ele cobre estao provados contra o codigo que este repositorio tem. Os
+> cinco guardas historicos seguem preservados no WIP `2d298cb`, intocados.
+>
+> **Proxima unidade: 5.** NAO iniciada — o bloco mandava parar aqui.
+>
+> ---
+>
 > **ATUALIZADO 2026-07-31 — Bloco 4B4 CONCLUIDO. MACRO2_CHECKPOINT_REACHED.**
 > `CONFERENCE_BRAIN_4B4_COMPLETE` em `fe6c2e5`. 41 testes.
 >

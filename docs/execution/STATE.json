@@ -187,8 +187,8 @@
     "executado_contra_provedor": false
   },
   "macro_prompt_2": {
-    "estado": "EM ANDAMENTO — Unidade 4B no bloco 4B4 concluido; 4B5 nao iniciado",
-    "veredito": "CONFERENCE_BRAIN_4B4_COMPLETE / MACRO2_CHECKPOINT_REACHED",
+    "estado": "Unidade 4 (Conference Brain) CONCLUIDA — blocos 4B1 a 4B5 fechados",
+    "veredito": "CONFERENCE_BRAIN_UNIT_COMPLETE / MACRO2_CHECKPOINT_REACHED",
     "leia_primeiro": "docs/execution/NEXT_RESUME.md",
     "preservacao": {
       "branch_wip": "wip/macro2-interrupted-recovery-20260727",
@@ -461,6 +461,92 @@
         "painel HTTP"
       ],
       "limitacao": "nenhum pedido real atravessa a ponte, porque nenhum pode. As 9 dimensoes de pedido do Brain seguem sem fonte neste repositorio"
+    },
+    "unidade_4B5_conference_brain": {
+      "veredito": "CONFERENCE_BRAIN_UNIT_COMPLETE",
+      "commits": [
+        "a62136a (store: valida na carga)",
+        "73f0672 (gate final)"
+      ],
+      "testes": {
+        "conference-4b5": 36
+      },
+      "cadeia_provada": "Operacao Viva (projetar real) -> adapter semantico -> observer -> nucleo multidimensional -> store em diretorio temporario real",
+      "escopo": "16 itens do gate + 8 guardas estruturais",
+      "guardas_estruturais": [
+        "trip_id nunca vira external_id",
+        "a viagem inteira nunca e copiada para o Brain",
+        "available nunca e emitido sem observacao de pedido",
+        "order_id sem contrato e registrado, nunca consumido",
+        "o adapter nao chama a projecao critica — recebe objeto simples",
+        "nada do Conference Brain entra no runtime critico",
+        "PII nao aparece em erro, saude nem log",
+        "ausencia nao vira valor neutro"
+      ],
+      "metodo_central": {
+        "nome": "controle positivo ao lado de toda afirmacao de zero",
+        "por_que": "cano entupido devolve o mesmo zero que a recusa deliberada; sem o par, metade do gate passaria com a cadeia morta",
+        "como": "a MESMA cadeia alimentada por fonte legitima de pedido EXIGE 1 live_observation e 1 ready_observed para PED-1",
+        "licao": "L26",
+        "decisao": "D32"
+      },
+      "defeito_encontrado_e_corrigido": {
+        "afirmacao": "put() validava contra o schema e load() NAO",
+        "impacto": "reinicio ressuscitava registro proibido, com PII, e a saude nao acusava — so contava linha ILEGIVEL",
+        "reproduzido": "sim, por sonda, antes de corrigir",
+        "correcao": "a carga usa o MESMO validate() da escrita; recusados vao para health().invalid_lines, separados de corrupted_lines",
+        "cuidado": "o diagnostico guarda codigo, tamanho e hash — nunca o conteudo do registro recusado (erroSeguro)",
+        "decisao": "D31"
+      },
+      "controle_adversarial": {
+        "mutacoes": 8,
+        "arquivos_mutados": [
+          "operacao-viva-adapter.js",
+          "store.js",
+          "reconciliation.js",
+          "operacao-viva.ts"
+        ],
+        "todas_verificadas_como_aplicadas": true,
+        "restauracao": "4/4 byte a byte",
+        "mutacoes_cegas_na_primeira_rodada": 1,
+        "_a_cega": "M5 removeu a idempotencia da chave natural e a suite ficou verde: os testes de duplicacao mediam a guarda do RELOGIO, nao a do store. Teste 6c fechou o buraco. Licao L27",
+        "mutacoes_cegas_final": 0
+      },
+      "patrimonio_historico": "usado como REFERENCIA DE COMPORTAMENTO. Nenhum painel HTTP, Playwright ou mapping mode importado para alcancar 309/309 ou 12/12. Os cinco guardas historicos seguem preservados no WIP 2d298cb, intocados",
+      "nao_provado": "nenhum pedido REAL atravessa a ponte (falta identidade de pedido — D29). O controle positivo usa fonte sintetica: prova que a cadeia esta viva, nao que existe fonte real de pedido",
+      "contencao_de_falha": "arquitetural, nao por try/catch: runCycle propaga excecao de store para quem chama. A garantia e que nenhum modulo do caminho critico chama o Brain — afirmado pelos testes 15 e 15b"
+    },
+    "unidade_4_conference_brain_fechamento": {
+      "veredito": "CONFERENCE_BRAIN_UNIT_COMPLETE",
+      "blocos": [
+        "4B1 abbb56f",
+        "4B2 cdaf066",
+        "4B3 b9525dc",
+        "4B4 fe6c2e5",
+        "4B5 a62136a + 73f0672"
+      ],
+      "arquivos_no_brain": 25,
+      "_nota_arquivos": "24 portados do WIP + 1 novo (o adapter). Fecho transitivo fechado: crypto, fs, path",
+      "testes_da_unidade": {
+        "cb4b1": 23,
+        "cb4b2": 23,
+        "cb4b3": 26,
+        "cb4b4": 41,
+        "cb4b5": 36,
+        "total": 149
+      },
+      "verificacao_final": "tsc exit 0 + 313 testes verdes (149 da unidade + 164 de regressao: bridge, runtime-wiring, ingest, consumer, event-contract, device-auth, skills)",
+      "comando_agregado": "npm run test:platform:conference",
+      "nao_executados_por_decisao": [
+        "309/309 historicos",
+        "gate independente 12/12",
+        "suite global",
+        "Android instrumentado",
+        "APK",
+        "Figma",
+        "nuvem",
+        "aparelho fisico"
+      ]
     }
   }
 }

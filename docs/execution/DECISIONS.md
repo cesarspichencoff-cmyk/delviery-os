@@ -545,3 +545,59 @@ e o que autoriza `mayAffirmOperationalLoad`, e esta fonte nao observa um unico
 pedido - deixar passar um `available` daqui faria a Conferencia afirmar carga
 com base em dado que nao e dela. Consequencia aceita: a Conferencia nunca fica
 "disponivel" so porque a Operacao Viva esta saudavel.
+
+---
+
+## D31 - A carga do store valida com o mesmo porteiro da escrita
+
+**Decidido:** `load()` valida cada registro com o MESMO `validate()` que `put()`
+usa. O que nao passa vai para `invalid_lines`, contado em `health()`, nunca para
+a memoria.
+
+**Contra:** manter a carga rapida e confiar que, como so o `put` grava, o que
+esta no disco ja passou pelo porteiro uma vez.
+
+**Por que:** o argumento do "ja passou uma vez" descreve o caminho feliz e
+ignora todos os outros. O arquivo e JSONL em disco, editavel por fora:
+correcao manual num incidente, restauracao de um backup ruim, uma versao
+anterior do codigo com schema diferente, um merge de arquivos. Foi reproduzido
+antes de corrigir - um registro com `customer_name` acrescentado ao arquivo
+voltava inteiro na memoria no reinicio, com PII e tudo, e a saude nao acusava
+nada porque so contava linha ILEGIVEL.
+
+Uma garantia que vale so no caminho de escrita nao e garantia do sistema, e sim
+do caminho. E o custo de descobrir isso e assimetrico: quem escreve errado
+descobre na hora; quem CARREGA errado descobre meses depois, decidindo com base
+no dado ressuscitado.
+
+**Custo:** a carga passa a validar registro a registro. Aceito - e o mesmo
+trabalho que a escrita ja fazia, e acontece uma vez por reinicio, nao por
+operacao.
+
+**Detalhe que precisou de cuidado:** o diagnostico da linha recusada nao pode
+guardar o registro. `erroSeguro` mantem o sufixo so dos codigos cujo sufixo e
+NOME DE CAMPO - decidivel, e o contrato ja nomeia chave proibida ao recusar
+(mesma escolha de `checkEvent`). Os codigos que podem embutir VALOR
+(`status_invalido:<valor>`) perdem o sufixo. Guardar o diagnostico bruto teria
+reaberto exatamente o vazamento que a validacao existe para fechar.
+
+---
+
+## D32 - Toda afirmacao de ZERO carrega um controle positivo
+
+**Decidido:** no gate do 4B5, cada teste que afirma "a Operacao Viva nao produz
+pedido / nao abre relogio / nao cria observacao" tem, ao lado, a MESMA cadeia
+alimentada por uma fonte legitima de pedido, exigindo que ela produza um.
+
+**Contra:** afirmar so os zeros, que e o que o bloco pedia literalmente.
+
+**Por que:** zero e a asserção mais facil de falsificar por acidente que existe.
+Um observador quebrado, um store que nao grava, um `fetchOrders` que devolve
+lista vazia por bug - todos produzem exatamente o mesmo zero que a recusa
+deliberada produz. Sem o par positivo, metade do gate passaria com a cadeia
+morta, e passaria em silencio, com placar verde.
+
+**Custo:** uma fonte de teste a mais para manter, e a lembranca de que o
+controle positivo usa fonte SINTETICA - ele prova que a cadeia esta viva, nao
+que existe fonte real de pedido neste repositorio. Essa ausencia continua
+registrada em D29 e no `nao_comprovado`.
