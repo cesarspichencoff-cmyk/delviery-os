@@ -55,7 +55,9 @@
     "test:platform:cb4b1": "npx tsx src/platform/run-conference-4b1-tests.ts",
     "test:platform:cb4b2": "npx tsx src/platform/run-conference-4b2-tests.ts",
     "test:platform:cb4b3": "npx tsx src/platform/run-conference-4b3-tests.ts",
-    "test:platform:cb4b4": "npx tsx src/platform/run-conference-4b4-tests.ts"
+    "test:platform:cb4b4": "npx tsx src/platform/run-conference-4b4-tests.ts",
+    "test:platform:cb4b5": "npx tsx src/platform/run-conference-4b5-tests.ts",
+    "test:platform:conference": "npm run test:platform:cb4b1 && npm run test:platform:cb4b2 && npm run test:platform:cb4b3 && npm run test:platform:cb4b4 && npm run test:platform:cb4b5"
   },
   "devDependencies": {
     "@types/node": "20.14.10",
