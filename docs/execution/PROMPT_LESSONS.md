@@ -457,3 +457,46 @@ o teste esta medindo o vizinho.
 **Como isso apareceu:** so pelo controle adversarial. Nenhuma leitura do teste
 6b denunciava o problema — ele e correto, passa, e testa algo verdadeiro. Era
 o alvo que estava errado, e isso e invisivel sem remover a garantia e olhar.
+
+---
+
+# Licoes da Unidade 5 — 2026-07-31
+
+## L28 - Defesa em profundidade e invisivel para o teste de fora
+
+Na Unidade 5, remover o bloqueio que impede uma conclusao de FONTE virar
+recomendacao de PEDIDO nao derrubou nada. A leitura confortavel seria "o teste
+esta fraco". A leitura correta era outra: a garantia esta aplicada em DOIS
+lugares independentes — a politica declara a que especie serve, e o laco
+impede que uma politica futura esqueca. Remover uma das duas nao muda nada do
+lado de fora, porque a outra continua valendo.
+
+Isso e uma qualidade do codigo e um problema do controle, ao mesmo tempo. Um
+teste de comportamento so consegue ver o RESULTADO, e o resultado nao mudou.
+
+**Regra:** quando uma mutacao nao derruba nada, pergunte antes de tudo se a
+garantia tem mais de uma aplicacao. Se tiver, a mutacao honesta remove TODAS —
+e o que precisa sumir para o teste falar e a garantia, nunca uma linha dela.
+Enfraquecer o teste ate uma camada isolada ser detectavel seria trocar uma
+protecao real por um alarme bonito.
+
+**Corolario:** documente a redundancia no proprio teste. Um leitor futuro que
+encontre as duas checagens vai querer apagar uma por parecer morta.
+
+## L29 - A fixture pode morrer antes de chegar na trava que voce quer provar
+
+Ainda na Unidade 5: a primeira fixture do teste da trava de especie usava uma
+conclusao com `pode_afirmar: false`. Com as duas camadas da trava removidas, o
+caso ainda assim nao produzia recomendacao — porque morria antes, numa
+TERCEIRA garantia (evidencia insuficiente).
+
+O teste passava, a mutacao nao derrubava nada, e as duas coisas eram verdade
+pelo motivo errado: a trava que ele dizia provar nunca chegava a ser exercida.
+
+**Regra:** para provar uma trava especifica, a fixture precisa passar por todas
+as anteriores. Escreva-a adversarial de proposito — trazendo tudo o que o caso
+legitimo traria e mentindo so no ponto sob teste — e confirme que, sem a trava,
+o caso REALMENTE chegaria ao outro lado.
+
+**Sinal:** se o teste continua verde depois de remover a garantia que ele
+nomeia, ou o alvo esta errado (L27), ou a fixture nao chega la.

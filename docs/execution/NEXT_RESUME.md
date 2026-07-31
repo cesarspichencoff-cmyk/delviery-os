@@ -1,5 +1,59 @@
 # Retomada — leia este arquivo primeiro
 
+> **ATUALIZADO 2026-07-31 — UNIDADE 5 CONCLUIDA.**
+> `COPILOT_SHADOW_UNIT_COMPLETE` · `MACRO2_CHECKPOINT_REACHED`
+> **352 testes verdes**, `tsc --noEmit` exit 0.
+> Gate: `npm run test:platform:copiloto` (39). Agregado da frente:
+> `npm run test:platform:conference`.
+>
+> A cadeia autorizada esta provada inteira: **Operacao Viva → adapter →
+> observer → conclusoes versionadas → Copiloto shadow.**
+>
+> **A simetria que fecha o desenho.** As duas fronteiras sao espelhos: cada
+> subsistema recebe do outro um OBJETO SIMPLES, e **nenhum importa o outro em
+> nenhuma direcao**. A extracao de conclusoes mora do lado do BRAIN porque e la
+> que vivem `PiiGuard`, `mayAffirmOperationalLoad` e a reconciliacao — leva-las
+> para o Copiloto seria reimplementa-las (D33).
+>
+> **A limitacao semantica atravessou inteira, sem remendo.** O adapter nao
+> emite pedido (D29) → o Brain nao tem observacao de pedido vinda dali →
+> nenhuma conclusao `order_dimension` nasce → **a cadeia real e
+> estruturalmente incapaz de gerar recomendacao de pedido hoje.** Ela gera
+> recomendacao de FONTE, e so. Nenhum `trip_id` chega ao Copiloto.
+>
+> **Dois eixos que nao compartilham campo** (D34): `status` e ciclo de vida,
+> `evidence_grade` e qualidade da evidencia. `insuficiente` nunca e atributo de
+> recomendacao que existe — e o motivo de ela nao existir, e viaja em
+> `recusas`. Fundi-los repetiria o erro que o modelo multidimensional do Brain
+> existe para corrigir.
+>
+> **Sem store paralelo** (D35): `copilot_recommendations` vive no store do
+> Conference Brain e herda tudo o que ja foi provado ali. Ganho que nao estava
+> no plano: as travas da Unidade 4 passaram a valer **no disco** — o schema
+> recusa recomendacao de pedido sem identidade de pedido, e recomendacao de
+> fonte COM identidade de pedido.
+>
+> **O controle adversarial acusou TRES mutacoes cegas, e as tres eram buracos
+> reais.** Expiracao (o teste media invalidacao, nao validade vencida); PII (o
+> observador ja sanitizava antes, o guard da conclusao nunca era exercitado);
+> bloqueio de recomendacao de pedido (a garantia tem DUAS aplicacoes
+> independentes, e remover uma nao muda o resultado observavel). Fechados por
+> 10b, 17b e por uma fixture que isola a especie. Licoes L28 e L29.
+>
+> **Nada executa.** `requires_human` e literal no gerador, o estado `executed`
+> nao existe, nenhum verbo de acao operacional aparece no codigo, e o schema
+> recusa registro que dispense humano.
+>
+> **Proxima unidade: 6.** NAO iniciada — o bloco mandava parar aqui.
+>
+> **O que a Unidade 5 NAO prova:** nenhuma recomendacao de PEDIDO nasce da
+> cadeia real; o controle positivo usa conclusao sintetica, entao ele prova que
+> a ponte funciona, nao que existe fonte real de pedido. Nao ha painel —
+> `paraPainel` existe no `shadow.ts` e nao foi ligado. A retirada e funcao
+> pura: nao ha UI nem autenticacao para um humano retirar de verdade.
+>
+> ---
+>
 > **ATUALIZADO 2026-07-31 — UNIDADE 4 CONCLUIDA.**
 > `CONFERENCE_BRAIN_UNIT_COMPLETE` · `MACRO2_CHECKPOINT_REACHED`
 > Blocos 4B1 a 4B5 fechados. **149 testes da unidade, 313 verdes no total**,

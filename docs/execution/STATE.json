@@ -187,8 +187,8 @@
     "executado_contra_provedor": false
   },
   "macro_prompt_2": {
-    "estado": "Unidade 4 (Conference Brain) CONCLUIDA — blocos 4B1 a 4B5 fechados",
-    "veredito": "CONFERENCE_BRAIN_UNIT_COMPLETE / MACRO2_CHECKPOINT_REACHED",
+    "estado": "Unidade 5 (Copiloto shadow) CONCLUIDA — Unidade 6 nao iniciada",
+    "veredito": "COPILOT_SHADOW_UNIT_COMPLETE / MACRO2_CHECKPOINT_REACHED",
     "leia_primeiro": "docs/execution/NEXT_RESUME.md",
     "preservacao": {
       "branch_wip": "wip/macro2-interrupted-recovery-20260727",
@@ -547,6 +547,72 @@
         "nuvem",
         "aparelho fisico"
       ]
+    },
+    "unidade_5_copiloto_shadow": {
+      "veredito": "COPILOT_SHADOW_UNIT_COMPLETE",
+      "commits": [
+        "9ca865d (conclusoes + entidade no store)",
+        "a0576c1 (ponte + gate)"
+      ],
+      "testes": {
+        "copiloto-shadow": 39
+      },
+      "cadeia_provada": "Operacao Viva -> adapter -> observer -> conclusoes versionadas -> Copiloto shadow",
+      "arquivos_novos": [
+        "src/conference-brain/copiloto/conclusoes.js",
+        "src/platform/copiloto/conference-bridge.ts"
+      ],
+      "arquivo_reusado_intocado": "src/platform/copiloto/shadow.ts — exigirConfianca, invalidarSuperadas e o contrato de recomendacao vieram dele",
+      "arquitetura": {
+        "principio": "as duas fronteiras sao espelhos: cada subsistema recebe do outro um OBJETO SIMPLES; nenhum importa o outro em nenhuma direcao",
+        "extracao_mora_no_brain": "porque la vivem PiiGuard, mayAffirmOperationalLoad e a reconciliacao — ja provados",
+        "contrato": "conference-brain-conclusion@1.0.0; major diferente e recusa explicita",
+        "decisao": "D33"
+      },
+      "duas_especies_de_conclusao": {
+        "source_health": "o que da para confiar na FONTE. Sempre disponivel",
+        "order_dimension": "o que se sabe de um PEDIDO. So com observacao legitima de pedido",
+        "consequencia": "a cadeia real produz APENAS source_health, porque o adapter nao emite pedido (D29). Ela e estruturalmente incapaz de gerar recomendacao de pedido hoje"
+      },
+      "dois_eixos_separados": {
+        "status": "ciclo de vida: proposed, expired, dismissed, invalidated, accepted_for_future",
+        "evidence_grade": "qualidade da evidencia: sustentada, degradada, stale",
+        "insuficiente": "NAO e atributo de recomendacao existente — e o motivo de ela nao existir, e viaja em `recusas`",
+        "decisao": "D34"
+      },
+      "persistencia": {
+        "onde": "entidade copilot_recommendations no store do Conference Brain — sem store paralelo",
+        "herdado": "chave natural idempotente, JSONL append-only, recuperacao com validacao de schema, contagem de linha corrompida, guarda de PII",
+        "recusas_na_porta": [
+          "fora do modo sombra",
+          "sem exigencia de humano",
+          "confianca sem evidencia rastreavel",
+          "confianca fora de faixa",
+          "recomendacao de pedido sem identidade de pedido",
+          "recomendacao de fonte COM identidade de pedido"
+        ],
+        "decisao": "D35"
+      },
+      "controle_adversarial": {
+        "mutacoes": 9,
+        "arquivos_mutados": [
+          "conference-bridge.ts",
+          "conclusoes.js",
+          "schemas.js"
+        ],
+        "todas_verificadas_como_aplicadas": true,
+        "restauracao": "3/3 byte a byte",
+        "mutacoes_cegas_na_primeira_rodada": 3,
+        "_as_cegas": "expiracao (o teste media INVALIDACAO, nao validade vencida); PII (o observador ja sanitizava antes, o guard da conclusao nunca era exercitado); bloqueio de recomendacao de pedido (a garantia tem DUAS aplicacoes independentes). Fechados por 10b, 17b e por fixture que isola a especie",
+        "mutacoes_cegas_final": 0,
+        "licoes": [
+          "L27",
+          "L28",
+          "L29"
+        ]
+      },
+      "nao_executa_nada": "requires_human e literal `true` no gerador; nao existe estado `executed`; nenhum verbo de acao operacional no codigo; o schema recusa registro que dispense humano",
+      "nao_provado": "nenhuma recomendacao de PEDIDO nasce da cadeia real — o controle positivo usa conclusao sintetica. Nao ha painel: `paraPainel` existe e nao foi ligado. A retirada e funcao pura, sem UI nem autenticacao"
     }
   }
 }

@@ -601,3 +601,87 @@ morta, e passaria em silencio, com placar verde.
 controle positivo usa fonte SINTETICA - ele prova que a cadeia esta viva, nao
 que existe fonte real de pedido neste repositorio. Essa ausencia continua
 registrada em D29 e no `nao_comprovado`.
+
+---
+
+# Decisoes da Unidade 5 - Copiloto em sombra
+
+## D33 - As duas fronteiras sao espelhos, e nenhuma e uma dependencia
+
+**Decidido:** o Copiloto recebe conclusoes do Brain como OBJETO SIMPLES, e a
+extracao dessas conclusoes mora do lado do Brain. Nenhum dos dois subsistemas
+importa o outro, em nenhuma direcao.
+
+**Contra:** (A) o Copiloto importar `src/conference-brain/` e ler o store
+direto, que e o caminho curto; (B) o extrator morar do lado do Copiloto, junto
+de quem consome.
+
+**Por que:** a Unidade 4 ja tinha estabelecido a metade dessa simetria - o
+adapter e Brain-side e recebe a projecao como objeto simples. Fechar o espelho
+custa quase nada agora e vale muito depois: os dois subsistemas podem ser
+movidos, versionados ou substituidos sem que o outro recompile.
+
+(B) foi rejeitada por um motivo mais forte que simetria: do lado do Brain vivem
+as tres coisas que a extracao precisa e que ja foram provadas - o `PiiGuard`,
+o `mayAffirmOperationalLoad` que decide o que pode ser afirmado, e a
+reconciliacao recalculada do historico. Move-la para o outro lado significaria
+reimplementar as tres (L20).
+
+**Custo:** a fronteira e um contrato de dados versionado
+(`conference-brain-conclusion@1.0.0`), e major diferente e recusa explicita.
+Alguem precisa mante-lo dos dois lados - o teste G11 exige que as duas pontas
+declarem a mesma versao.
+
+## D34 - `status` e `evidence_grade` sao eixos separados
+
+**Decidido:** o ciclo de vida da recomendacao (proposta, vencida, retirada,
+invalidada) e a qualidade da evidencia que a sustenta (sustentada, degradada,
+stale) sao dois campos, nunca um.
+
+**Contra:** um `status` unico com mais valores - `insufficient_evidence` e
+`degraded` entrando como estados ao lado de `expired` e `dismissed`, que e o
+que a leitura literal do briefing sugeria.
+
+**Por que:** sao fatos independentes que mudam em momentos diferentes e por
+causas diferentes. Uma recomendacao degradada pode expirar; uma sustentada pode
+ser retirada. Num campo so, cada combinacao viraria um valor novo, e a lista
+cresceria ate ninguem conseguir dizer o que cada um significa.
+
+E o argumento decisivo e local: este repositorio ja pagou por esse erro. O
+modelo multidimensional do Sprint 2.1 do Brain existe porque um unico
+`LIVE_ORDER_STATUS` estava carregando producao, prontidao e logistica ao mesmo
+tempo. Repetir isso na Unidade 5 seria desaprender.
+
+**Custo:** dois campos para ler em vez de um. Aceito.
+
+**Consequencia que precisou de cuidado:** `insuficiente` NAO e um valor de
+`evidence_grade` no armazenamento. Evidencia insuficiente e o motivo de a
+recomendacao NAO existir - ela viaja em `recusas`, nunca como atributo de uma
+recomendacao que existe. O schema recusa o valor.
+
+## D35 - O Copiloto grava no store do Conference Brain
+
+**Decidido:** a entidade `copilot_recommendations` entra em
+`contracts/schemas.js` e usa o store que ja existe.
+
+**Contra:** um store proprio do Copiloto, que manteria os subsistemas
+independentes tambem na persistencia.
+
+**Por que:** aquele armazenamento ja teve provado, uma peca de cada vez, tudo o
+que a Unidade 5 precisa: chave natural idempotente, JSONL append-only,
+recuperacao por `load` COM validacao de schema (D31), contagem de linha
+corrompida e a guarda de PII por nome de campo. Um store proprio significaria
+reprovar tudo isso do zero - e, pior, dois caminhos de persistencia que
+divergiriam no primeiro defeito corrigido so de um lado.
+
+A independencia que importa e a de CODIGO, e ela esta preservada por D33: o
+Copiloto nao importa o Brain nem para gravar. Quem persiste e quem compoe.
+
+**Custo:** o store do Brain passa a hospedar dado de outro subsistema, e o
+`schemas.js` cresce. Aceito - o schema e o registro de entidades daquele
+armazenamento, e e exatamente onde uma entidade nova deve ser declarada.
+
+**Ganho que nao estava no plano:** as travas da Unidade 4 passaram a valer no
+disco. O schema recusa recomendacao de pedido sem identidade de pedido e
+recomendacao de fonte com identidade de pedido - a fronteira semantica deixou
+de depender so do motor.
