@@ -55,14 +55,17 @@
         <label>Contexto de cardápio (substituição opcional)
           <select id="chat-menu-channel">
             <option value="">Sem cardápio associado</option>
-            <option value="dining_room">Salão sintético</option>
-            <option value="ifood">iFood sintético</option>
-            <option value="own_delivery">Delivery próprio sintético</option>
+            <option value="dining_room">Salão</option>
+            <option value="ifood">iFood</option>
+            <option value="own_delivery">Delivery próprio</option>
           </select>
+        </label>
+        <label>Unidade do catálogo
+          <select id="chat-menu-unit"><option value="">Definida pelo catálogo ativo</option></select>
         </label>
         <label class="diagnostic-toggle"><input id="chat-diagnostic" type="checkbox" checked> Mostrar diagnóstico sanitizado</label>
       </div>
-      <p class="runtime-truth">Pattern Engine, Journey State e contexto automático sintético ativos. LINGUAGEM NATURAL FINAL NÃO IMPLEMENTADA: não há Writer local disponível nesta máquina; o compositor determinístico seguro permanece ativo.</p>
+      <p id="runtime-truth" class="runtime-truth">Verificando Writer local e catálogo ativo…</p>
       <form id="chat-form" class="chat-composer">
         <label for="chat-message">Sua mensagem</label>
         <div>
@@ -179,6 +182,7 @@
         <button type="button" data-intelligence-view="crm" class="active">Clientes — CRM</button>
         <button type="button" data-intelligence-view="imports">Importações</button>
         <button type="button" data-intelligence-view="menu">Cardápios e conhecimento</button>
+        <button type="button" data-intelligence-view="menu_review">Curadoria humana</button>
         <button type="button" data-intelligence-view="recommendations">Recomendações</button>
         <button type="button" data-intelligence-view="consents">Consentimentos</button>
         <button type="button" data-intelligence-view="audit">Auditoria</button>

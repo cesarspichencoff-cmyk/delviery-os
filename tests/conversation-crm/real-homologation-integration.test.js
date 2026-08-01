@@ -142,7 +142,8 @@ test('bootstrap declara com honestidade o que está conectado e o que não está
   assert.equal(integration.journey_state, 'event_sourced');
   assert.equal(integration.response_plan, 'active');
   assert.equal(integration.deterministic_composer, 'active');
-  assert.equal(integration.response_writer, 'unavailable_no_local_runtime');
+  assert.equal(integration.response_writer, 'deterministic_fallback');
+  assert.equal(integration.response_writer_reason, 'LOCAL_WRITER_NOT_CONFIGURED');
   assert.equal(integration.real_data, false);
 });
 
@@ -174,9 +175,9 @@ test('interface mostra diagnóstico e campos reais do catálogo sintético', () 
   const html = fs.readFileSync(path.join(PROJECT_ROOT, 'tools', 'conversation-crm', 'simulator', 'app', 'index.html'), 'utf8');
   const script = fs.readFileSync(path.join(PROJECT_ROOT, 'tools', 'conversation-crm', 'simulator', 'app', 'app.js'), 'utf8');
   for (const expected of [
-    'chat-customer', 'chat-menu-channel', 'chat-diagnostic',
-    'Pattern Engine, Journey State e contexto automático sintético ativos',
-    'LINGUAGEM NATURAL FINAL NÃO IMPLEMENTADA'
+    'chat-customer', 'chat-menu-channel', 'chat-menu-unit', 'chat-diagnostic',
+    'Verificando Writer local e catálogo ativo',
+    'Curadoria humana'
   ]) assert.ok(html.includes(expected), expected);
   for (const expected of [
     'ingredients', 'allergens', 'pairings',
@@ -197,7 +198,9 @@ test('endpoint real do painel devolve saudação e diagnóstico aprovados', asyn
   assert.equal(response.status, 200);
   assert.equal(body.turn.response, 'Olá! Como posso ajudar?');
   assert.equal(body.turn.diagnostic.pattern, 'greeting');
-  assert.equal(body.turn.diagnostic.fallback_used, false);
+  assert.equal(body.turn.diagnostic.fallback_used, true);
+  assert.equal(body.turn.diagnostic.writer_status, 'deterministic_fallback');
+  assert.equal(body.turn.diagnostic.fallback_reason, 'LOCAL_WRITER_DISABLED_FOR_PROCESS');
 });
 
 test('replay da rota manual preserva contador e não devolve resposta antiga', async (t) => {

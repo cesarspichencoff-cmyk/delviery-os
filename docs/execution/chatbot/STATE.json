@@ -1,10 +1,10 @@
 {
   "project": "DeliveryOS Chatbot TATÁ",
-  "active_change": "007-008-customer-menu-intelligence",
-  "branch": "feature/customer-menu-intelligence-v1",
-  "base": "0ef86d8086326d9e9f9e059e134cb3d2cc6af605",
-  "behavioral_checkpoint": "0ef86d8086326d9e9f9e059e134cb3d2cc6af605",
-  "working_tree": "clean_after_final_commit",
+  "active_change": "final-local-writer-real-menu-homologation",
+  "branch": "fix/customer-menu-real-homologation-v1",
+  "base": "4144d50b9e26a30453d4b5a77233302e6b810077",
+  "behavioral_checkpoint": "4144d50b9e26a30453d4b5a77233302e6b810077",
+  "working_tree": "clean_after_local_commit",
   "completed_units": [
     "hosting_inspection",
     "outbound_https_claim_lease_bridge",
@@ -61,7 +61,12 @@
     "007_008_pattern_writer_tools",
     "007_008_local_homologation_panel",
     "007_008_mutation_controls",
-    "007_008_full_regression"
+    "007_008_full_regression",
+    "final_writer_artifact_inventory",
+    "final_gemma_local_writer_connection",
+    "final_real_menu_review_queue",
+    "final_pairing_review_queue",
+    "final_panel_homologation"
   ],
   "active_unit": null,
   "pending_units": [],
@@ -92,7 +97,17 @@
     "007_008_mutations": "15/15 killed; zero survivors",
     "007_008_panel": "six local areas passed structural and visual QA; zero browser console errors; inherited local Playwright 11/11",
     "007_008_source_validation": "DOCX rendered and inspected across 13 pages; salon and own-delivery public links verified; public iFood URL located but content access remained blocked",
-    "007_008_security": "zero real customer record in Git; recursive PII controls passed; no paid service, real WhatsApp, external write or production migration"
+    "007_008_security": "zero real customer record in Git; recursive PII controls passed; no paid service, real WhatsApp, external write or production migration",
+    "final_writer_and_menu_focused": "33/33 passed",
+    "conversation_native_final": "685/685 passed",
+    "scenario_catalog_final": "200/200 passed; hash 9f470846ae0d0c0a96f821288732738cedc53057edaac8429b4aa19d56613b20",
+    "privacy_final": "passed; zero findings; positive control detected",
+    "conference_brain_final": "314/314 passed",
+    "live_final": "243/243 passed",
+    "capacidade_final": "43/43 passed",
+    "copiloto_final": "53/53 passed",
+    "panel_final": "13/13 mandatory messages executed through the real panel; Gemma local used in all; zero console errors",
+    "menu_review_final": "199 item proposals plus 86 pairing proposals; 285 pending; zero automatic approval"
   },
   "bakeoff": {
     "seed": "TATA-LOCAL-AI-BAKEOFF-V1",
@@ -167,6 +182,7 @@
     "007_008_human_homologation_pending",
     "real_menu_catalog_curation_pending",
     "real_allergen_and_pairing_approval_pending",
+    "isolated_menu_preferences_can_still_receive_generic_pattern_clarification",
     "postgres_production_migration_not_authorized",
     "restaurant_hardware_unverified",
     "hosted_runtime_not_connected"
@@ -182,6 +198,6 @@
   "production_authorized": false,
   "paid_api_or_infrastructure_added": false,
   "push_merge_deploy_performed": false,
-  "next_step": "run only local human homologation of Customer and Menu Intelligence; do not connect WhatsApp, import real customers, migrate production, host, push, merge or deploy without new authorization",
-  "updated_at": "2026-07-29T14:00:00-03:00"
+  "next_step": "César curates real menu items and pairings in the local panel; do not connect WhatsApp, import real customers, migrate production, host, push, merge or deploy without new authorization",
+  "updated_at": "2026-08-01T00:00:00-03:00"
 }

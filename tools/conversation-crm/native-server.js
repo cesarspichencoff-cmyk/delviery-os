@@ -7,6 +7,7 @@ const path=require('node:path');
 const {NativeConversationRuntime,safeError,loadCanonicalCatalogs,runScenarioOnRuntime}=require('../../src/conversation-crm/native');
 const {HomologationService}=require('./homologation/service');
 const {CustomerMenuHomologationService}=require('./customer-menu/service');
+const {LocalHomologationWriter}=require('./homologation/local-writer');
 
 const APP_ROOT=path.join(__dirname,'simulator','app');
 const MAX_BODY_BYTES=32*1024;
@@ -26,14 +27,21 @@ function createNativeServer(options={}){
   const runtimeOptions={runtimeRoot:options.runtimeRoot,projectRoot:options.projectRoot,flagsFile:options.flagsFile};
   const scenarios=loadCanonicalCatalogs().scenarios.scenarios;
   let runtime=options.runtime||new NativeConversationRuntime(runtimeOptions);
-  const customerMenu=options.customerMenu||new CustomerMenuHomologationService();
+  const localWriter=options.localWriter||new LocalHomologationWriter({...options.localWriterOptions,enabled:options.enableLocalWriter===true});
+  const customerMenu=options.customerMenu||new CustomerMenuHomologationService({
+    projectRoot:options.projectRoot,
+    menuReviewRoot:options.menuReviewRoot,
+    now:options.now,
+    writerStatus:()=>localWriter.inspect()
+  });
   const homologation=options.homologation||new HomologationService({
     projectRoot:options.projectRoot,
     feedbackRoot:options.feedbackRoot||options.runtimeRoot,
     chatRuntimeRoot:options.chatRuntimeRoot,
     exportRoot:options.exportRoot,
     now:options.now,
-    customerMenu
+    customerMenu,
+    localWriter
   });
   let manualTurn=restoredManualTurn(runtime);
   const server=http.createServer(async(req,res)=>{try{
@@ -55,7 +63,8 @@ function createNativeServer(options={}){
     if(req.method==='GET'&&customerMenuMatch)return json(res,200,customerMenu.customer(customerMenuMatch[1]));
     if(req.method==='POST'&&req.url==='/api/customer-menu/recommend'){const body=await readJson(req);return json(res,200,customerMenu.recommend(body));}
     if(req.method==='POST'&&req.url==='/api/customer-menu/imports/action'){const body=await readJson(req);return json(res,200,customerMenu.importAction(body));}
-    if(req.method==='POST'&&req.url==='/api/homologation/chat'){const body=await readJson(req);return json(res,200,homologation.chat(body));}
+    if(req.method==='POST'&&req.url==='/api/customer-menu/review/action'){const body=await readJson(req);return json(res,200,customerMenu.menuReviewAction(body));}
+    if(req.method==='POST'&&req.url==='/api/homologation/chat'){const body=await readJson(req);return json(res,200,await homologation.chatWithWriter(body));}
     if(req.method==='POST'&&req.url==='/api/homologation/chat/reset')return json(res,200,homologation.resetChat());
     if(req.method==='POST'&&req.url==='/api/homologation/feedback'){const body=await readJson(req);return json(res,200,homologation.feedback(body));}
     if(req.method==='POST'&&req.url==='/api/homologation/export')return json(res,200,homologation.export());
@@ -68,9 +77,10 @@ function createNativeServer(options={}){
     if(req.method==='POST'&&req.url==='/api/native/reset'){const root=runtime.runtimeRoot;fs.rmSync(root,{recursive:true,force:true});runtime=new NativeConversationRuntime({...runtimeOptions,runtimeRoot:root});manualTurn=0;return json(res,200,{ok:true,reset:true,clock:runtime.clock.iso()});}
     return json(res,404,{ok:false,error_code:'NOT_FOUND'});
   }catch(error){const safe=safeError(error);return json(res,error?.code==='PAYLOAD_TOO_LARGE'?413:400,{ok:false,...safe});}});
-  server.nativeRuntime=()=>runtime;server.homologation=homologation;server.customerMenu=customerMenu;return server;
+  server.on('close',()=>{void localWriter.close();});
+  server.nativeRuntime=()=>runtime;server.homologation=homologation;server.customerMenu=customerMenu;server.localWriter=localWriter;return server;
 }
 
-function start(options={}){const host=validateHost(options.host||'127.0.0.1',options.allowIpv6Loopback===true);const port=options.port===undefined?4179:Number(options.port);if(!Number.isInteger(port)||port<0||port>65535){const error=new Error('port_invalid');error.code='PORTA_INVALIDA';throw error;}const server=createNativeServer(options);server.listen(port,host,()=>{const actual=server.address().port;process.stdout.write(`Chatbot Nativo DeliveryOS V1 em http://${host}:${actual}\n`);process.stdout.write('Somente simulação local; drivers reais desativados.\n');});return server;}
+function start(options={}){const host=validateHost(options.host||'127.0.0.1',options.allowIpv6Loopback===true);const port=options.port===undefined?4179:Number(options.port);if(!Number.isInteger(port)||port<0||port>65535){const error=new Error('port_invalid');error.code='PORTA_INVALIDA';throw error;}const server=createNativeServer({...options,enableLocalWriter:options.enableLocalWriter!==false});server.listen(port,host,()=>{const actual=server.address().port;process.stdout.write(`Chatbot Nativo DeliveryOS V1 em http://${host}:${actual}\n`);process.stdout.write('Somente simulação local; drivers reais desativados.\n');});return server;}
 if(require.main===module)start();
 module.exports={MAX_BODY_BYTES,validateHost,createNativeServer,start};

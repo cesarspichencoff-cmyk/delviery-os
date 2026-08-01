@@ -97,10 +97,12 @@ class HomologationService {
     };
     this.runtime = options.runtime || null;
     this.customerMenu = options.customerMenu || null;
+    this.localWriter = options.localWriter || null;
   }
 
   bootstrap() {
     const summary = summarize(this.data, this.store);
+    const writer = this.localWriter?.inspect?.() || { status: 'deterministic_fallback', reason: 'LOCAL_WRITER_NOT_CONFIGURED' };
     const rated = new Set([...this.store.latest('refined').keys()].map((key) => key.split(':')[1]));
     const compared = new Set([...this.store.latest('blind').keys()].map((key) => key.split(':')[1]));
     return {
@@ -111,6 +113,12 @@ class HomologationService {
       review_cases: this.data.rehomologation_cases.map((item) => ({ ...publicReviewCase(item), evaluated: rated.has(item.review_id) })),
       blind_cases: this.data.cases.map((item) => ({ ...publicBlindCase(item), evaluated: compared.has(item.review_id) })),
       bank: this.data.bank,
+      local_writer: {
+        status: writer.status,
+        reason: writer.reason || null,
+        model_id: writer.model_id || null,
+        runtime_release: writer.runtime_release || null
+      },
       summary
     };
   }
@@ -155,7 +163,7 @@ class HomologationService {
     };
   }
 
-  chat(input) {
+  chatExecution(input) {
     const request = typeof input === 'string' ? { message: input } : (input || {});
     const value = String(request.message || '').trim();
     if (!value) throw Object.assign(new Error('message_required'), { code: 'MESSAGE_REQUIRED' });
@@ -175,7 +183,9 @@ class HomologationService {
           message: value,
           customer_id: request.customer_id || null,
           channel: request.channel || null,
-          unit_id: request.channel ? (request.unit_id || 'SIM-UNIT-ITAIM') : null,
+          unit_id: request.channel
+            ? (request.unit_id || this.customerMenu.defaultUnitForChannel?.(request.channel) || null)
+            : null,
           allergies: Array.isArray(request.allergies) ? request.allergies : []
         })
       : {};
@@ -197,7 +207,7 @@ class HomologationService {
       product_contexts: productContexts
     });
     const response = String(result.response?.text || '');
-    return {
+    return { result, publicResult: {
       ok: true,
       turn: {
         review_id: next.review_id,
@@ -228,7 +238,51 @@ class HomologationService {
           source_of_final_text: result.execution_diagnostics?.source_of_final_text || null
         }
       }
+    } };
+  }
+
+  chat(input) {
+    return this.chatExecution(input).publicResult;
+  }
+
+  async chatWithWriter(input) {
+    const execution = this.chatExecution(input);
+    const output = structuredClone(execution.publicResult);
+    const deterministicText = output.turn.response;
+    if (!this.localWriter) {
+      output.turn.diagnostic.writer_status = 'deterministic_fallback';
+      output.turn.diagnostic.response_path = 'deterministic_fallback';
+      output.turn.diagnostic.fallback_used = true;
+      output.turn.diagnostic.fallback_reason = 'LOCAL_WRITER_NOT_CONFIGURED';
+      output.turn.diagnostic.source_of_final_text = 'controlled_response_composer';
+      return output;
+    }
+    const generated = await this.localWriter.writeApproved(execution.result.approved_response_envelope);
+    if (!generated.accepted) {
+      output.turn.diagnostic.writer_status = 'deterministic_fallback';
+      output.turn.diagnostic.response_path = 'deterministic_fallback';
+      output.turn.diagnostic.fallback_used = true;
+      output.turn.diagnostic.fallback_reason = generated.reason || 'LOCAL_WRITER_REJECTED';
+      output.turn.diagnostic.source_of_final_text = 'controlled_response_composer';
+      return output;
+    }
+    const writerText = String(generated.output.text || '');
+    output.turn.response = writerText;
+    output.turn.response_hash = sha256(writerText);
+    output.turn.diagnostic.writer_status = 'gemma_local';
+    output.turn.diagnostic.response_path = 'gemma_local_writer';
+    output.turn.diagnostic.fallback_used = false;
+    output.turn.diagnostic.fallback_reason = null;
+    output.turn.diagnostic.source_of_final_text = 'gemma_local_writer';
+    output.turn.diagnostic.deterministic_reference_hash = sha256(deterministicText);
+    output.turn.writer_comparison = {
+      schema_version: 'deliveryos-writer-human-comparison-v1',
+      approved_envelope_hash: sha256(JSON.stringify(execution.result.approved_response_envelope)),
+      A: deterministicText,
+      B: writerText,
+      reveal: { A: 'deterministic_composer', B: 'gemma_local_writer' }
     };
+    return output;
   }
 
   resetChat() {

@@ -103,3 +103,21 @@ Writers. Permanecem limites deliberados:
 Limitação de QA herdada mantida: a suíte Conversation passou 600/600, mas o
 teste gerador ainda reescreve dois artefatos rastreados; eles foram novamente
 restaurados byte a byte antes do fechamento.
+
+## Fontes reais de cardápio + Writer local final
+
+Não há bloqueio de artefato ou runtime para o Writer local: llama.cpp b10172 e
+Gemma 4 E4B foram verificados pelos hashes aprovados e executados no painel.
+
+Permanecem bloqueios deliberados para chamar o cardápio de real e homologado:
+
+- 199 itens e 86 harmonizações aguardam curadoria humana;
+- canal e unidade não estão confirmados nas propostas iniciais;
+- preços, disponibilidade, alergênicos e contaminação cruzada permanecem
+  desconhecidos quando a fonte não os confirma;
+- iFood continua sem conteúdo inspecionado;
+- preferências isoladas podem receber clarificação genérica do Pattern Engine;
+- WhatsApp, hospedagem, produção e drivers reais continuam fora de escopo.
+
+Nenhum desses pontos autoriza promover extração, fixture sintética ou inferência
+do Writer a fato comercial.

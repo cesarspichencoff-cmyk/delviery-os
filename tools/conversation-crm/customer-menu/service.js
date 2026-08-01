@@ -7,7 +7,7 @@ const {
   CustomerIntelligenceStore, CustomerImportPipeline, normalizedIdentity
 } = require('../../../src/conversation-crm/customer-intelligence');
 const {
-  createSyntheticCatalog
+  createSyntheticCatalog, MenuCatalog
 } = require('../../../src/conversation-crm/menu-intelligence');
 const {
   createCustomerMenuTools
@@ -17,8 +17,13 @@ const {
   menuContextFromRecommendation,
   recommendationContextFromResult
 } = require('../../../src/conversation-crm/native/customer-menu-integration');
+const { MenuReviewService } = require('./review-service');
 
 const SYNTHETIC_SECRET = 'deliveryos-synthetic-panel-identity-secret-v1';
+
+function stableReviewId(value) {
+  return String(value || '').replace(/[^A-Z0-9]/giu, '').slice(0, 32).toUpperCase();
+}
 
 const WRITTEN_NUMBERS = Object.freeze({
   um: 1, uma: 1, dois: 2, duas: 2, tres: 3, quatro: 4, cinco: 5,
@@ -52,10 +57,10 @@ function allergyFromText(text) {
   return { value: 'allergen_unspecified', label: 'a restrição informada' };
 }
 
-function initialChatContext() {
+function initialChatContext(defaultUnitId = 'SIM-UNIT-ITAIM') {
   return {
     channel: null,
-    unit_id: 'SIM-UNIT-ITAIM',
+    unit_id: defaultUnitId,
     preferred_ingredients: [],
     excluded_ingredients: [],
     cream_cheese: null,
@@ -147,14 +152,17 @@ function buildSyntheticCustomerStore() {
 }
 
 class CustomerMenuHomologationService {
-  constructor() {
+  constructor(options = {}) {
     this.customerStore = buildSyntheticCustomerStore();
-    this.menuCatalog = createSyntheticCatalog();
-    this.tools = createCustomerMenuTools({
-      customerStore: this.customerStore,
-      menuCatalog: this.menuCatalog,
-      identitySecret: SYNTHETIC_SECRET
+    this.menuReview = options.menuReview || new MenuReviewService({
+      projectRoot: options.projectRoot,
+      root: options.menuReviewRoot,
+      now: options.now
     });
+    this.writerStatus = options.writerStatus || (() => ({ status: 'deterministic_fallback', reason: 'LOCAL_WRITER_NOT_CONFIGURED' }));
+    this.menuCatalog = null;
+    this.catalogMode = null;
+    this.rebuildMenuCatalog();
     this.importPipeline = new CustomerImportPipeline({
       store: this.customerStore,
       secret: SYNTHETIC_SECRET
@@ -167,6 +175,59 @@ class CustomerMenuHomologationService {
     ].join('\n');
     this.importBatchId = this.stageSyntheticImport().batch_id;
     this.chatContexts = new Map();
+  }
+
+  rebuildMenuCatalog() {
+    const approved = this.menuReview.approvedItems();
+    if (!approved.length) {
+      this.menuCatalog = createSyntheticCatalog();
+      this.catalogMode = 'synthetic_until_human_approval';
+    } else {
+      const catalog = new MenuCatalog({ clock: () => new Date('2026-07-01T15:00:00.000Z') });
+      const sources = [...new Set(approved.map((item) => item.source_id))];
+      for (const sourceId of sources) {
+        catalog.registerSource({
+          source_id: sourceId,
+          title: 'Fonte real aprovada em homologação humana',
+          format: sourceId.includes('seed') ? 'json' : 'reviewed_source',
+          channel: 'multiple',
+          authority: 'human_homologation',
+          review_status: 'confirmed'
+        });
+      }
+      for (const proposal of approved) {
+        const extracted = proposal.information_extracted || {};
+        catalog.addItem({
+          item_id: `REAL-${stableReviewId(proposal.review_id)}`,
+          commercial_identity: proposal.source_record_id || proposal.review_id,
+          name: extracted.name || proposal.item,
+          description: extracted.description ?? null,
+          channel: proposal.channel,
+          unit_id: proposal.unit_id,
+          category: extracted.operational_category || 'unknown',
+          price: Object.hasOwn(extracted, 'price') ? extracted.price : null,
+          ingredients: (extracted.ingredients || []).map((name) => ({ name, status: 'confirmed', source_id: proposal.source_id })),
+          preparation: {},
+          allergens: [],
+          cross_contact: { state: 'unknown', source_id: proposal.source_id },
+          availability: {
+            state: extracted.availability || 'unknown',
+            checked_at: null,
+            source_id: proposal.source_id
+          },
+          source_records: [proposal.source_id],
+          review_status: 'confirmed',
+          review_notes: ['human_review_approved', 'unknown_fields_preserved']
+        });
+      }
+      this.menuCatalog = catalog;
+      this.catalogMode = 'real_human_approved';
+    }
+    this.tools = createCustomerMenuTools({
+      customerStore: this.customerStore,
+      menuCatalog: this.menuCatalog,
+      identitySecret: SYNTHETIC_SECRET
+    });
   }
 
   stageSyntheticImport() {
@@ -223,9 +284,23 @@ class CustomerMenuHomologationService {
     return { ok: true, synthetic: true, batch: this.publicImport() };
   }
 
+  currentMenuSourceId() {
+    return this.menuCatalog.snapshot().sources.map((source) => source.source_id).join('+') || 'none';
+  }
+
+  currentMenuLabel() {
+    return this.catalogMode === 'real_human_approved'
+      ? 'catálogo real aprovado em homologação humana'
+      : 'catálogo sintético de homologação';
+  }
+
+  defaultUnitForChannel(channel) {
+    return this.menuCatalog.snapshot().items.find((item) => !channel || item.channel === channel)?.unit_id || null;
+  }
+
   contextForChat(input = {}) {
     const conversationId = String(input.conversation_id || 'SIM-CONV-HOMO-UNKNOWN');
-    const state = this.chatContexts.get(conversationId) || initialChatContext();
+    const state = this.chatContexts.get(conversationId) || initialChatContext(this.defaultUnitForChannel(input.channel));
     const text = normalizeChatText(input.message);
     const explicitChannel = input.channel || channelFromText(text);
     if (explicitChannel) state.channel = explicitChannel;
@@ -304,7 +379,7 @@ class CustomerMenuHomologationService {
         items: [],
         unknowns: ['menu_channel_missing'],
         divergences: [],
-        provenance: ['SIM-SOURCE-MENU-V1']
+        provenance: [this.currentMenuSourceId()]
       });
       recommendationContext = Object.freeze({
         schema_version: 'deliveryos-recommendation-context-v1',
@@ -345,23 +420,27 @@ class CustomerMenuHomologationService {
       conversation_guidance: guidance,
       source_summary: {
         customer: input.customer_id ? 'customer_intelligence_synthetic' : 'anonymous_synthetic_session',
-        menu: menuContext ? 'menu_intelligence_synthetic' : 'none'
+        menu: menuContext
+          ? (this.catalogMode === 'real_human_approved' ? 'menu_intelligence_real_human_approved' : 'menu_intelligence_synthetic')
+          : 'none'
       }
     };
   }
 
   guidanceForChat({ text, state, allergy, asksRecommendation, asksPairing, menuContext, pairing }) {
     const candidates = menuContext?.items || [];
+    const menuLabel = this.currentMenuLabel();
+    const menuSource = this.currentMenuSourceId();
     const channelQuestion = 'Você está escolhendo para o salão, para pedir pelo iFood ou pelo delivery próprio?';
     const resumeQuestion = state.awaiting_channel ? channelQuestion : null;
     if (allergy) {
       return Object.freeze({
         schema_version: 'deliveryos-homologation-guidance-v1',
         mode: 'preventive_allergy',
-        direct_answers: [`Certo — vou considerar ${allergy.label} como uma restrição preventiva nesta conversa. Como o catálogo sintético de homologação não confirma ausência de contaminação cruzada, confirme a composição e o preparo com a equipe antes de pedir.`],
+        direct_answers: [`Certo — vou considerar ${allergy.label} como uma restrição preventiva nesta conversa. Como o ${menuLabel} não confirma ausência de contaminação cruzada, confirme a composição e o preparo com a equipe antes de pedir.`],
         question: resumeQuestion,
         context_reason: 'preventive_allergy_declared',
-        knowledge_source: 'current_conversation+SIM-SOURCE-MENU-V1',
+        knowledge_source: `current_conversation+${menuSource}`,
         candidates_found: []
       });
     }
@@ -369,7 +448,7 @@ class CustomerMenuHomologationService {
       if (pairing?.status === 'ready') {
         return Object.freeze({
           schema_version: 'deliveryos-homologation-guidance-v1', mode: 'pairing',
-          direct_answers: [`No catálogo sintético de homologação, ${pairing.beverage_item_name} é uma harmonização aprovada para ${pairing.menu_item_name}.`],
+          direct_answers: [`No ${menuLabel}, ${pairing.beverage_item_name} é uma harmonização aprovada para ${pairing.menu_item_name}.`],
           question: null, context_reason: null, knowledge_source: pairing.source,
           candidates_found: [pairing.menu_item_id, pairing.beverage_item_id]
         });
@@ -380,7 +459,7 @@ class CustomerMenuHomologationService {
           ? 'Ainda não há uma harmonização aprovada para a opção sintética selecionada.'
           : 'Ainda não existe uma opção sugerida nesta conversa para eu consultar uma harmonização aprovada.'],
         question: resumeQuestion, context_reason: state.awaiting_channel ? 'menu_channel_missing' : 'pairing_not_approved',
-        knowledge_source: 'SIM-SOURCE-MENU-V1', candidates_found: []
+        knowledge_source: menuSource, candidates_found: []
       });
     }
     if (/\bna verdade\b/u.test(text) && state.number_of_people) {
@@ -402,25 +481,25 @@ class CustomerMenuHomologationService {
           direct_answers: [statesSpecificPreference
             ? 'Entendi a preferência e vou mantê-la nesta conversa sem inventar um prato real.'
             : state.fried === false
-            ? 'O catálogo sintético de homologação possui opções registradas como não fritas.'
+            ? `O ${menuLabel} possui opções registradas como não fritas.`
             : 'Entendi a preferência e vou mantê-la nesta conversa sem inventar um prato real.'],
           question: channelQuestion, context_reason: 'menu_channel_missing',
-          knowledge_source: 'SIM-SOURCE-MENU-V1', candidates_found: []
+          knowledge_source: menuSource, candidates_found: []
         });
       }
       if (candidates.length) {
         return Object.freeze({
           schema_version: 'deliveryos-homologation-guidance-v1', mode: 'menu_candidates',
-          direct_answers: [`No catálogo sintético de homologação, encontrei ${candidates[0].name} como opção compatível com os filtros informados.`],
-          question: null, context_reason: null, knowledge_source: 'SIM-SOURCE-MENU-V1',
+          direct_answers: [`No ${menuLabel}, encontrei ${candidates[0].name} como opção compatível com os filtros informados.`],
+          question: null, context_reason: null, knowledge_source: menuSource,
           candidates_found: candidates.map((item) => item.item_id)
         });
       }
       return Object.freeze({
         schema_version: 'deliveryos-homologation-guidance-v1', mode: 'no_safe_candidate',
-        direct_answers: ['Não encontrei candidato seguro no catálogo sintético de homologação com os filtros informados. Não vou inventar uma opção.'],
+        direct_answers: [`Não encontrei candidato seguro no ${menuLabel} com os filtros informados. Não vou inventar uma opção.`],
         question: null, context_reason: 'no_compatible_menu_candidate',
-        knowledge_source: 'SIM-SOURCE-MENU-V1', candidates_found: []
+        knowledge_source: menuSource, candidates_found: []
       });
     }
     if (/\bvalet\b/u.test(text) && state.recommendation_active) {
@@ -440,6 +519,8 @@ class CustomerMenuHomologationService {
 
   bootstrap() {
     const menu = this.menuCatalog.snapshot();
+    const review = this.menuReview.bootstrap();
+    const writer = this.writerStatus();
     return {
       ok: true,
       schema_version: 'deliveryos-customer-menu-homologation-v1',
@@ -448,13 +529,16 @@ class CustomerMenuHomologationService {
       real_drivers: false,
       customers: this.customerStore.list(),
       menu: {
+        catalog_mode: this.catalogMode,
+        real_items_active: this.catalogMode === 'real_human_approved',
         channels: ['dining_room', 'ifood', 'own_delivery'],
-        units: ['SIM-UNIT-ITAIM'],
+        units: [...new Set(menu.items.map((item) => item.unit_id))],
         items: menu.items,
         conflicts: menu.conflicts,
         pairings: menu.pairings,
         sources: menu.sources
       },
+      menu_review: review,
       imports: [this.publicImport()],
       consent_states: ['unknown', 'allowed', 'blocked', 'withdrawn', 'expired'],
       audit: {
@@ -474,12 +558,24 @@ class CustomerMenuHomologationService {
         pattern_engine: 'active',
         journey_state: 'event_sourced',
         response_plan: 'active',
-        response_writer: 'unavailable_no_local_runtime',
+        response_writer: writer.status,
+        response_writer_reason: writer.reason || null,
         deterministic_composer: 'active',
         customer_context: 'automatic_anonymous_or_selected_synthetic',
         menu_context: 'automatic_from_conversation_or_optional_override',
-        real_data: false
+        real_data: this.catalogMode === 'real_human_approved'
       }
+    };
+  }
+
+  menuReviewAction(input = {}) {
+    const reviewed = this.menuReview.action(input);
+    this.rebuildMenuCatalog();
+    return {
+      ok: true,
+      reviewed,
+      summary: this.menuReview.summary(),
+      catalog_mode: this.catalogMode
     };
   }
 

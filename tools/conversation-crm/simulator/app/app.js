@@ -66,7 +66,7 @@ function renderIntelligenceCrm() {
     <article class="integration-truth">
       <strong>Caminho realmente conectado</strong>
       <p>${escapeHtml(integration.chat_endpoint)} · Pattern Engine ${escapeHtml(integration.pattern_engine)} · Journey State ${escapeHtml(integration.journey_state)} · compositor ${escapeHtml(integration.deterministic_composer)}</p>
-      <p>Writer local: ${escapeHtml(integration.response_writer)}. Linguagem natural final por modelo local: não implementada nesta máquina. Dados reais: ${integration.real_data ? 'sim' : 'não'}.</p>
+      <p>Writer local: ${escapeHtml(integration.response_writer)}${integration.response_writer_reason ? ` · motivo ${escapeHtml(integration.response_writer_reason)}` : ''}. Cardápio real ativo: ${integration.real_data ? 'sim, após aprovação humana' : 'não; curadoria pendente'}.</p>
     </article>
     <div class="intelligence-grid">${customers.map((customer) => `
     <article class="intelligence-card">
@@ -104,6 +104,7 @@ function renderIntelligenceImports() {
 function renderIntelligenceMenu() {
   const menu = state.intelligence.menu;
   $('#intelligence-content').innerHTML = `
+    <article class="integration-truth"><strong>Catálogo ativo</strong><p>${escapeHtml(menu.catalog_mode)} · ${menu.real_items_active ? 'itens reais aprovados por humano' : 'sete fixtures sintéticas preservadas até existir aprovação humana real'}</p></article>
     <div class="tag-summary">${menu.channels.map((channel) => `<span>${escapeHtml(channel)}</span>`).join('')}</div>
     <div class="intelligence-grid">${menu.items.map((item) => `
       <article class="intelligence-card">
@@ -119,7 +120,53 @@ function renderIntelligenceMenu() {
         </dl>
       </article>`).join('')}</div>
     <p class="lead">${menu.conflicts.length} conflito(s) aberto(s). Variantes de canais diferentes não são fundidas.</p>
-    <p class="lead">${menu.pairings.length} harmonização sintética aprovada: ${escapeHtml(menu.pairings.map((item) => `${item.menu_item_id} + ${item.beverage_item_id}`).join(', ') || 'nenhuma')}.</p>`;
+    <p class="lead">${menu.pairings.length} harmonização ativa: ${escapeHtml(menu.pairings.map((item) => `${item.menu_item_id} + ${item.beverage_item_id}`).join(', ') || 'nenhuma')}.</p>`;
+}
+
+function renderMenuReview() {
+  const review = state.intelligence.menu_review;
+  const summary = review.summary;
+  $('#intelligence-content').innerHTML = `
+    <article class="integration-truth">
+      <strong>Curadoria humana soberana</strong>
+      <p>${summary.items} itens e ${summary.pairings} harmonizações extraídos. ${summary.approved} aprovados · ${summary.pending} pendentes · ${summary.rejected} rejeitados · ${summary.conflicting} conflitantes.</p>
+      <p>Original externo fora do Git. Nenhuma extração é confirmada automaticamente.</p>
+    </article>
+    <form id="menu-review-filter" class="intelligence-form">
+      <label>Tipo<select id="menu-review-kind"><option value="">Todos</option><option value="item">Itens</option><option value="pairing">Harmonizações</option></select></label>
+      <label>Estado<select id="menu-review-status"><option value="pending">Pendentes</option><option value="">Todos</option><option value="approved">Aprovados</option><option value="rejected">Rejeitados</option><option value="conflicting">Conflitantes</option></select></label>
+      <button type="submit">Aplicar filtro</button>
+    </form>
+    <div id="menu-review-list" class="intelligence-grid"></div>`;
+  const draw = () => {
+    const kind = $('#menu-review-kind').value;
+    const status = $('#menu-review-status').value;
+    const rows = review.proposals.filter((item) => (!kind || item.kind === kind) && (!status || item.review_status === status));
+    $('#menu-review-list').innerHTML = rows.map((item) => {
+      const info = item.information_extracted || {};
+      const label = item.kind === 'pairing'
+        ? `${info.menu_item_name} + ${info.beverage_name}`
+        : (info.name || item.item || item.source_record_id);
+      return `<article class="intelligence-card" data-menu-review-card="${escapeHtml(item.review_id)}">
+        <strong>${escapeHtml(label)}</strong>
+        <p>${escapeHtml(item.source_id)} · ${escapeHtml(item.kind)} · ${escapeHtml(item.review_status)}</p>
+        ${item.kind === 'pairing' ? `<p>${escapeHtml(info.rationale)}</p>` : `<p>${escapeHtml(info.description || 'Descrição ausente')}</p>`}
+        <p><b>Divergências:</b> ${escapeHtml((item.divergence || []).join(' · ') || 'nenhuma registrada')}</p>
+        <p><b>Campos ausentes:</b> ${escapeHtml((item.missing_fields || []).join(', ') || 'nenhum')}</p>
+        <label>Canal<select data-review-field="channel"><option value="">Não confirmado</option><option value="dining_room" ${item.channel === 'dining_room' ? 'selected' : ''}>Salão</option><option value="ifood" ${item.channel === 'ifood' ? 'selected' : ''}>iFood</option><option value="own_delivery" ${item.channel === 'own_delivery' ? 'selected' : ''}>Delivery próprio</option></select></label>
+        <label>Unidade<input data-review-field="unit_id" maxlength="120" value="${escapeHtml(item.unit_id || '')}" placeholder="Identificador confirmado"></label>
+        ${item.kind === 'pairing' ? `<label>Identidade do prato<input data-review-field="menu_item_identity" maxlength="120" placeholder="Item real aprovado"></label><label>Identidade da bebida<input data-review-field="beverage_item_identity" maxlength="120" placeholder="Bebida real aprovada"></label>` : ''}
+        <div class="inline-actions">
+          <button type="button" data-menu-review-action="correct">Registrar correção</button>
+          <button type="button" data-menu-review-action="approve">Aprovar</button>
+          <button type="button" data-menu-review-action="reject">Rejeitar</button>
+          <button type="button" data-menu-review-action="conflict">Marcar conflito</button>
+        </div>
+      </article>`;
+    }).join('') || '<p class="lead">Nenhum registro neste filtro.</p>';
+  };
+  $('#menu-review-filter').addEventListener('submit', (event) => { event.preventDefault(); draw(); });
+  draw();
 }
 
 function renderIntelligenceRecommendations() {
@@ -161,6 +208,7 @@ function renderIntelligence() {
     crm: renderIntelligenceCrm,
     imports: renderIntelligenceImports,
     menu: renderIntelligenceMenu,
+    menu_review: renderMenuReview,
     recommendations: renderIntelligenceRecommendations,
     consents: renderIntelligenceConsents,
     audit: renderIntelligenceAudit
@@ -175,7 +223,12 @@ async function loadIntelligence() {
   }
   try {
     state.intelligence = await api('/api/customer-menu/bootstrap');
-    $('#intelligence-state').textContent = 'Pronto. Todos os registros desta área são sintéticos e revisáveis.';
+    const units = state.intelligence.menu.units;
+    $('#chat-menu-unit').innerHTML = '<option value="">Definida pelo catálogo ativo</option>'
+      + units.map((unit) => `<option value="${escapeHtml(unit)}">${escapeHtml(unit)}</option>`).join('');
+    $('#intelligence-state').textContent = state.intelligence.menu.real_items_active
+      ? 'Pronto. O catálogo ativo contém somente itens reais aprovados em revisão humana.'
+      : 'Pronto. Fontes reais estão em curadoria; as fixtures sintéticas continuam isoladas no catálogo ativo.';
     renderIntelligence();
   } catch {
     $('#intelligence-state').textContent = 'A inteligência local está indisponível. Nenhum dado foi enviado.';
@@ -240,6 +293,17 @@ function diagnosticHtml(diagnostic) {
     ['Fonte do texto', diagnostic.source_of_final_text]
   ];
   return `<details class="runtime-diagnostic"><summary>Diagnóstico sanitizado desta resposta</summary><dl>${entries.map(([label, value]) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value || 'unknown')}</dd></div>`).join('')}</dl></details>`;
+}
+
+function writerComparisonHtml(comparison) {
+  if (!comparison) return '';
+  return `<details class="runtime-diagnostic"><summary>Comparação humana A/B · mesmo plano e mesmos fatos</summary>
+    <div class="blind-grid">
+      <article><h3>Resposta A</h3><p>${escapeHtml(comparison.A)}</p></article>
+      <article><h3>Resposta B</h3><p>${escapeHtml(comparison.B)}</p></article>
+    </div>
+    <p>Envelope aprovado: ${escapeHtml(comparison.approved_envelope_hash)}. A origem só aparece para conferência técnica: A = compositor determinístico; B = Gemma local.</p>
+  </details>`;
 }
 
 function renderReviewSelectors() {
@@ -385,6 +449,10 @@ async function initialize() {
   // mesmo estado para não reaproveitar contexto oculto após um recarregamento.
   await api('/api/homologation/chat/reset', { method: 'POST' });
   state.data = await api('/api/homologation/bootstrap');
+  const writer = state.data.local_writer;
+  $('#runtime-truth').textContent = writer.status === 'gemma_local'
+    ? `Pattern Engine e Journey State ativos. Writer: gemma_local (${writer.model_id}, ${writer.runtime_release}); fallback determinístico permanece protegido.`
+    : `Pattern Engine e Journey State ativos. Writer: deterministic_fallback. Motivo: ${writer.reason || 'indisponível'}.`;
   $('#free-tags').innerHTML = checkboxChoices(FREE_TAGS, 'free-tag');
   $('#review-tags').innerHTML = checkboxChoices(REVIEW_TAGS, 'review-tag');
   $('#overall-rating').innerHTML = scale('overall', 'Nota geral');
@@ -405,6 +473,30 @@ $$('[data-intelligence-view]').forEach((button) => button.addEventListener('clic
 }));
 
 $('#intelligence-content').addEventListener('click', async (event) => {
+  const menuReviewAction = event.target.dataset.menuReviewAction;
+  if (menuReviewAction) {
+    const card = event.target.closest('[data-menu-review-card]');
+    const correction = {};
+    card.querySelectorAll('[data-review-field]').forEach((field) => {
+      if (field.value.trim()) correction[field.dataset.reviewField] = field.value.trim();
+    });
+    try {
+      const result = await api('/api/customer-menu/review/action', {
+        method: 'POST',
+        body: JSON.stringify({ review_id: card.dataset.menuReviewCard, action: menuReviewAction, correction })
+      });
+      state.intelligence = await api('/api/customer-menu/bootstrap');
+      $('#intelligence-state').textContent = `Revisão registrada como ${result.reviewed.review_status}. Catálogo: ${result.catalog_mode}.`;
+      renderMenuReview();
+    } catch (error) {
+      $('#intelligence-state').textContent = error.code === 'MENU_REVIEW_SCOPE_REQUIRED'
+        ? 'Confirme canal e unidade antes de aprovar.'
+        : error.code === 'MENU_REVIEW_PAIRING_LINK_REQUIRED'
+          ? 'Vincule prato e bebida reais aprovados antes de aprovar a harmonização.'
+          : 'A revisão não foi registrada; os dados anteriores permanecem preservados.';
+    }
+    return;
+  }
   const importAction = event.target.dataset.importAction;
   if (importAction) {
     const result = await api('/api/customer-menu/imports/action', {
@@ -457,11 +549,11 @@ $('#chat-form').addEventListener('submit', async (event) => {
         message,
         customer_id: $('#chat-customer').value || null,
         channel: channel || null,
-        unit_id: channel ? 'SIM-UNIT-ITAIM' : null
+        unit_id: channel ? ($('#chat-menu-unit').value || null) : null
       })
     });
     state.lastChat = body.turn;
-    $('#chat-thread').insertAdjacentHTML('beforeend', `${conversationHtml([{ customer: message, response: body.turn.response }])}${diagnosticHtml(body.turn.diagnostic)}`);
+    $('#chat-thread').insertAdjacentHTML('beforeend', `${conversationHtml([{ customer: message, response: body.turn.response }])}${writerComparisonHtml(body.turn.writer_comparison)}${diagnosticHtml(body.turn.diagnostic)}`);
     $('#chat-message').value = '';
     $('#free-feedback').classList.remove('hidden');
     $('#global-state').textContent = `Resposta pronta pelo ${body.turn.diagnostic.response_path}; Pattern ${body.turn.diagnostic.pattern || 'unknown'}.`;

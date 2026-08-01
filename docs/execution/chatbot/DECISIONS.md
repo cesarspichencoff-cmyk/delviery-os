@@ -354,3 +354,58 @@ estado por trio.
 **Motivo:** isolar qualidade de linguagem, evitar nova inferência e impedir que
 identidade técnica ou métricas escolham por César. `human_winner` permanece
 `null` e `promotion_authorized=false`.
+
+## Fontes reais de cardápio + Writer local final
+
+### D-036 — Gemma 4 E4B entra somente como Writer local
+
+**Contexto:** os artefatos aprovados da Mudança 005B não estavam instalados no
+runtime de homologação, embora a proveniência e os hashes estivessem disponíveis.
+
+**Alternativas:** manter o painel desconectado; promover o modelo a Director;
+ou instalar os artefatos certificados fora do Git e chamá-lo apenas depois do
+envelope aprovado.
+
+**Decisão:** instalar llama.cpp b10172 e Gemma 4 E4B no diretório local
+configurável, validar os hashes e usar o modelo exclusivamente como Writer.
+
+**Motivo:** entrega linguagem local sem transferir autoridade de jornada, fatos,
+perguntas, canais, segurança ou ações ao modelo.
+
+**Impacto e reversibilidade:** falha fecha no compositor determinístico com
+código específico. A integração pode ser desligada sem alterar Pattern Engine,
+CRM, catálogo, contrato ou dados.
+
+### D-037 — Extração real entra como proposta, nunca como fato
+
+**Contexto:** existem 199 registros operacionais e 86 harmonizações extraídas de
+fonte oficial interna, mas faltam canal, unidade e confirmações comerciais ou de
+segurança em parte relevante do material.
+
+**Alternativas:** promover automaticamente; ignorar as fontes; ou criar uma fila
+de revisão humana append-only.
+
+**Decisão:** manter 285 propostas pendentes e exigir revisão humana soberana.
+Item aprovado exige canal e unidade; harmonização exige também vínculos com
+prato e bebida reais.
+
+**Motivo:** dado incompleto é preferível a dado errado, especialmente para
+preço, disponibilidade, ingrediente, alergênico e contaminação cruzada.
+
+**Impacto e reversibilidade:** as sete fixtures sintéticas continuam isoladas
+até a primeira aprovação válida. Decisões de revisão geram novos eventos e não
+alteram a fonte original.
+
+### D-038 — Limite do Pattern Engine não será corrigido nesta mudança
+
+**Contexto:** a homologação real mostrou que preferências isoladas como “mais
+leve” e “maçaricado” podem cair em clarificação genérica sem canal e item real
+aprovados.
+
+**Decisão:** registrar o comportamento e não alterar o Pattern Engine.
+
+**Motivo:** o escopo autoriza conexão, roteamento de Writer e curadoria de fonte;
+proíbe trocar ou ampliar o Pattern Engine.
+
+**Impacto e reversibilidade:** não há claim comercial inventado. A melhoria
+conversacional fica para autorização futura baseada nesta evidência.

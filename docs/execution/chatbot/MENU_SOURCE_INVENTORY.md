@@ -14,7 +14,7 @@ próprio ou unidades.
 | `menu-source-operational-architecture-v1` | Arquitetura de conhecimento | `docs/Arquitetura_Conhecimento_Cardapio.md`, Markdown | operação | arquitetura interna | modelo de praça e produção | não é cardápio de atendimento |
 | `menu-source-public-links-v1` | Catálogo público operacional | `src/conversation-crm/native/catalogs/TATA_OPERATIONAL_PUBLIC_INFO_V1.json`, JSON | Itaim; links separados por canal | confirmado por César em 26/07/2026 | link curto/institucional, salão e delivery próprio | iFood é declarado disponível, mas sem URL no catálogo |
 | `menu-source-deliveryos-page-v1` | Página existente do DeliveryOS | `app-v1/app.js`, JavaScript | fonte atual e simulada | superfície consumidora | carrega a seed operacional | não é fonte autônoma nem catálogo comercial |
-| `menu-source-project-docx-v1` | Projeto Cardápio e Sugestões (Alimentos e Bebidas) | anexo externo fora do repositório, DOCX, 34.031 bytes, 13 páginas | principalmente salão; unidade e vigência não codificadas | fonte oficial interna fornecida por César; revisão operacional pendente | descrições, categorias, bebidas e cerca de 70 sugestões de harmonização | sem preços, disponibilidade, unidade, validade ou garantia de alergênicos; nomes e sugestões apresentam divergências |
+| `menu-source-project-docx-v1` | Projeto Cardápio e Sugestões (Alimentos e Bebidas) | anexo externo fora do repositório, DOCX, 34.031 bytes, 13 páginas | principalmente salão; unidade e vigência não codificadas | fonte oficial interna fornecida por César; revisão operacional pendente | descrições, categorias, bebidas e 86 sugestões de harmonização extraídas (16 entradas, 10 combinados e 60 demais sugestões) | sem preços, disponibilidade, unidade, validade ou garantia de alergênicos; nomes e sugestões apresentam divergências |
 | `menu-source-live-menu-v1` | Live Menu Tagme | URL pública `https://livemenu.app/menu/6407492af6880700523699bf?cross_session=done` | salão, Tatá Sushi Itaim Bibi | página pública acessível | sequência Tatá, cursos, combinados e preços visíveis na consulta | página exibiu aviso parcial de falha de carregamento; conteúdo não foi importado |
 | `menu-source-short-link-v1` | Link recomendado ao cliente | URL pública `https://abre.ai/ni3n` | salão, Itaim | link do catálogo confirmado | redirecionou ao Live Menu acima | depende de redirecionador externo |
 | `menu-source-own-delivery-v1` | Neemo / DeliveryApp | URL pública `https://loja.neemo.com.br/tatasushi` | delivery próprio, unidade da Rua João Cachoeira | página pública acessível | categorias comerciais separadas e estado de funcionamento | itens, preços e disponibilidade não foram importados |
@@ -47,7 +47,9 @@ próprio ou unidades.
 
 ## Política de uso nesta mudança
 
-O catálogo inicial usa apenas fixtures sintéticas e registros de fonte
-revisáveis. Nenhuma descrição, ingrediente, preço ou harmonização do anexo é
-promovido automaticamente a `confirmed`. A implementação definitiva da
-curadoria depende de revisão humana e de dados por canal/unidade.
+O painel agora apresenta 199 itens operacionais e 86 harmonizações como fila
+revisável, com decisão append-only de aprovar, corrigir, rejeitar ou marcar
+conflito. Nenhuma descrição, ingrediente, preço ou harmonização é promovida
+automaticamente a `confirmed`. As sete fixtures sintéticas só deixam o catálogo
+ativo depois que pelo menos um item real recebe aprovação humana com canal e
+unidade explícitos.
