@@ -495,10 +495,11 @@ class NativeConversationRuntime {
       const patternNoAction = ['greeting', 'chitchat', 'repeat', 'close', 'cancel', 'side_question', 'resume']
         .includes(pattern.decision?.pattern)
         && pattern.decision?.journey_action === 'none';
-      const socialNoAction = patternNoAction && (
+      const productGuidanceNoAction = productContexts.conversation_guidance?.mode === 'party_size_update';
+      const socialNoAction = productGuidanceNoAction || (patternNoAction && (
         classification.intent === 'conversation.ambiguous'
         || ['side_question', 'resume'].includes(pattern.decision?.pattern)
-      );
+      ));
       const effectiveCapability = socialNoAction ? 'conversation.no_action' : classification.capability_id;
       const selectedAction = socialNoAction ? 'none' : executionAction(classification, simulationStatus);
       const request = {
@@ -518,7 +519,11 @@ class NativeConversationRuntime {
         deadline: new Date(this.clock.date().getTime() + 60000).toISOString()
       };
       const route = socialNoAction
-        ? deepFreeze({ status: 'not_required', driver: null, reason: 'social_pattern_no_action' })
+        ? deepFreeze({
+            status: 'not_required',
+            driver: null,
+            reason: productGuidanceNoAction ? 'product_context_no_action' : 'social_pattern_no_action'
+          })
         : this.router.route(request);
       this.crm.recordCapability({ request_id: request.request_id, case_id: caseId, conversation_id: gateway.input.conversation_id, capability_id: request.capability_id, driver_id: route.driver?.manifest.id || null, route_status: route.status, synthetic: true });
       this.stage(raw.message_id, 'capability_requested', { request_id: request.request_id, driver_id: route.driver?.manifest.id || null }, options.crashAfter);
@@ -657,7 +662,8 @@ class NativeConversationRuntime {
           ...responseContext,
           context: conversationContext,
           pattern_decision: pattern.decision,
-          journey_state: pattern.state
+          journey_state: pattern.state,
+          product_guidance: productContexts.conversation_guidance || null
         }
       });
       const approvedEnvelope = response.plan
@@ -726,6 +732,13 @@ class NativeConversationRuntime {
           pattern_engine: pattern.enabled ? 'active' : 'disabled',
           pattern: pattern.decision?.pattern || null,
           journey: pattern.state?.active_journey || null,
+          journey_state: pattern.state ? {
+            version: pattern.state.version,
+            active_step: pattern.state.active_step || null,
+            pending_question: typeof pattern.state.pending_question === 'string'
+              ? pattern.state.pending_question
+              : (pattern.state.pending_question?.field || null)
+          } : null,
           capability: effectiveCapability,
           route_reason: route.reason || null,
           response_path: response.validation.fallback_used ? 'deterministic_safe_fallback' : 'deterministic_composer',
@@ -734,10 +747,17 @@ class NativeConversationRuntime {
           writer: {
             requested: false,
             used: false,
-            status: 'not_connected_in_local_panel'
+            status: 'unavailable_no_local_runtime'
           },
-          customer_context_source: productContexts.customer_context ? 'customer_intelligence_synthetic' : 'none',
-          menu_context_source: productContexts.menu_context ? 'menu_intelligence_synthetic' : 'none',
+          channel: productContexts.menu_context?.channel || 'unknown',
+          unit_id: productContexts.menu_context?.unit_id || gateway.input.unit_id || null,
+          knowledge_sources: response.plan?.knowledge_sources_used || [],
+          candidates_found: response.plan?.candidates_found || [],
+          context_reason: response.plan?.context_reason || null,
+          customer_context_source: productContexts.source_summary?.customer
+            || (productContexts.customer_context ? 'customer_intelligence_synthetic' : 'none'),
+          menu_context_source: productContexts.source_summary?.menu
+            || (productContexts.menu_context ? 'menu_intelligence_synthetic' : 'none'),
           response_contract: response.schema_version,
           envelope_contract: approvedEnvelope?.schema_version || null,
           source_of_final_text: response.validation.fallback_used

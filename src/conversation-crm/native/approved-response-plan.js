@@ -13,6 +13,7 @@ const {
 const MAXIMUM_BY_LENGTH = Object.freeze({ short: 500, medium: 700, careful: 900 });
 
 function requiredQuestion(plan = {}) {
+  if (typeof plan.contextual_question === 'string' && plan.contextual_question.trim()) return plan.contextual_question;
   const questions = (plan.mandatory_questions || []).map(independentQuestion).filter(Boolean);
   return questions.length ? questions.join(' ') : null;
 }

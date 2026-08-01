@@ -60,8 +60,10 @@ function recommend(catalog, request = {}, customerContext = {}) {
   }).filter((item) => {
     if (request.raw_or_cooked === 'raw' && item.preparation.raw !== true) return false;
     if (request.raw_or_cooked === 'cooked' && item.preparation.cooked !== true) return false;
+    if (request.fried === false && item.preparation.fried !== false) return false;
     if (request.cream_cheese === 'without' && item.preparation.cream_cheese !== false) return false;
     if (request.dietary_restrictions?.includes('vegetarian') && item.preparation.vegetarian !== true) return false;
+    if (request.preferred_ingredients?.length && !request.preferred_ingredients.some((value) => item.ingredients.some((ingredient) => ingredient.name === value))) return false;
     if (item.ingredients.some((ingredient) => exclusions.has(ingredient.name))) return false;
     return allergenDecision(item, request.allergies || []).allowed;
   }).map((item) => {
@@ -87,7 +89,10 @@ function recommend(catalog, request = {}, customerContext = {}) {
     constraints_applied: [
       'channel', 'unit', 'review_status', 'availability',
       ...(request.allergies || []).map((item) => `allergy:${item}`),
-      ...(request.dietary_restrictions || []).map((item) => `diet:${item}`)
+      ...(request.dietary_restrictions || []).map((item) => `diet:${item}`),
+      ...(request.fried === false ? ['preparation:fried:false'] : []),
+      ...(request.cream_cheese === 'without' ? ['preparation:cream_cheese:false'] : []),
+      ...(request.preferred_ingredients || []).map((item) => `preferred_ingredient:${item}`)
     ],
     candidates: candidates.slice(0, 3),
     unknowns: candidates.length ? [] : ['safe_candidate_not_found'],

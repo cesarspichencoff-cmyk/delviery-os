@@ -24,8 +24,9 @@ function normalizeText(value) {
 
 const INTENT_RULES = Object.freeze([
   ['occurrence.health_symptom', /\b(dificuldade (?:para )?respirar|respirar (?:esta )?dificil|sem ar|vomito|vomitei|diarreia|febre|mal estar|passei mal|fiquei ruim|passaram mal|ficaram ruins|mesmos sintomas|mais de uma pessoa|depois de comer|depois da refeicao)\b/],
-  ['information.allergen', /\b(confirmar se|antes de pedir|esse prato tem|contem um ingrediente|confirmar um alergenico|ingrediente que me faz mal)\b/],
-  ['occurrence.allergen', /\b(alergia|alergico|alergica|reacao alergica|ingrediente que pode me causar)\b/],
+  ['occurrence.allergen', /\b(?:tenho alergia|sou alergic[oa])\b.*\b(?:veio|recebi|mandaram|chegou)\b/],
+  ['information.allergen', /\b(confirmar se|antes de pedir|esse prato tem|contem um ingrediente|confirmar um alergenico|ingrediente que me faz mal|tenho alergia|sou alergic[oa]|nao posso comer|tenho intolerancia)\b/],
+  ['occurrence.allergen', /\b(reacao alergica|tive uma reacao|comecei a co[cç]ar|me causou reacao|passei mal.*(?:alerg|depois de comer)|ingrediente que pode me causar)\b/],
   ['occurrence.foreign_body', /\b(cabelo|fio de cabelo|corpo estranho|objeto estranho|algo duro)\b/],
   ['occurrence.freshness', /\b(nao parecia fresco|n tava fresco|frescor)\b/],
   ['occurrence.taste', /\b(sabor estava estranho|gosto esquisito|gosto estava diferente)\b/],
@@ -217,7 +218,8 @@ function behaviorFor(intentId, content, intentDefinition) {
   let escalation = 'E1';
   if (/^occurrence\.(?:missing_item|wrong_item|wrong_quantity|personalization_ignored|leak|packaging_damage|order_disrupted|temperature|driver|charge|address|refund_request|appearance|dining_room)$/u.test(intentId)) escalation = 'E2';
   if (['order.modify', 'order.cancel', 'conversation.multiple_intents', 'privacy.access_request', 'privacy.correction_request'].includes(intentId)) escalation = 'E2';
-  if (['occurrence.quality', 'occurrence.taste', 'occurrence.freshness', 'occurrence.allergen', 'occurrence.foreign_body', 'information.allergen', 'occurrence.valet', 'occurrence.prior_promise', 'abuse.review', 'public_exposure', 'handoff.failure'].includes(intentId)) escalation = 'E3';
+  if (['occurrence.quality', 'occurrence.taste', 'occurrence.freshness', 'occurrence.allergen', 'occurrence.foreign_body', 'occurrence.valet', 'occurrence.prior_promise', 'abuse.review', 'public_exposure', 'handoff.failure'].includes(intentId)) escalation = 'E3';
+  if (intentId === 'information.allergen') escalation = 'E0';
   if (intentId === 'occurrence.health_symptom') escalation = 'E4';
   let output = {
     capability_id: capability,

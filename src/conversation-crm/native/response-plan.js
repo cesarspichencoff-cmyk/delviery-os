@@ -186,6 +186,16 @@ function buildResponsePlan(input = {}) {
     conversation,
     authorized_text: input.authorized_text
   });
+  const productGuidance = conversation.product_guidance?.schema_version === 'deliveryos-homologation-guidance-v1'
+    ? conversation.product_guidance
+    : null;
+  const guidedAnswers = Array.isArray(productGuidance?.direct_answers)
+    ? productGuidance.direct_answers.filter((item) => typeof item === 'string' && item.trim())
+    : [];
+  if (['preventive_allergy', 'party_size_update'].includes(productGuidance?.mode)) {
+    pendingQuestions = [];
+    mandatoryQuestions = [];
+  }
   const hasReservationSelfService = ['reservation', 'waitlist'].includes(strategyId)
     && knowledge.direct_answer.some((message) => /https:\/\/reservation\.getin\.app\//iu.test(message));
   if (hasReservationSelfService) {
@@ -212,7 +222,9 @@ function buildResponsePlan(input = {}) {
   const plan = {
     version: '2.0.0',
     customer_need: knowledge.customer_need,
-    direct_answer: [...knowledge.direct_answer],
+    direct_answer: productGuidance?.mode === 'preventive_allergy'
+      ? [...new Set(guidedAnswers)]
+      : [...new Set([...guidedAnswers, ...knowledge.direct_answer])],
     knowledge_candidates: knowledge.candidates.map((item) => ({
       knowledge_id: item.knowledge_id,
       playbook: item.playbook,
@@ -221,7 +233,10 @@ function buildResponsePlan(input = {}) {
       sources: [...item.sources]
     })),
     knowledge_selected: knowledge.selected.map((item) => item.knowledge_id),
-    knowledge_sources_used: [...knowledge.knowledge_sources_used],
+    knowledge_sources_used: [...new Set([
+      ...(productGuidance?.knowledge_source ? [productGuidance.knowledge_source] : []),
+      ...knowledge.knowledge_sources_used
+    ])],
     knowledge_rejected: knowledge.rejected.map((item) => item.knowledge_id),
     rejection_reason: Object.fromEntries(knowledge.rejected.map((item) => [item.knowledge_id, item.rejection_reason])),
     action_playbook: knowledge.playbook.id,
@@ -249,6 +264,9 @@ function buildResponsePlan(input = {}) {
     verified_actions: verifiedActions,
     pending_actions: pendingActions,
     mandatory_questions: mandatoryQuestions,
+    contextual_question: typeof productGuidance?.question === 'string' ? productGuidance.question : null,
+    context_reason: productGuidance?.context_reason || null,
+    candidates_found: Array.isArray(productGuidance?.candidates_found) ? [...productGuidance.candidates_found] : [],
     deferred_questions: pendingQuestions.slice(questionLimit),
     optional_information: [],
     prohibited_claims: [...new Set([...STANDARD_PROHIBITED, ...(classification.prohibited_responses || []), ...strategy.prohibited_claims])],
@@ -256,7 +274,9 @@ function buildResponsePlan(input = {}) {
     emoji_policy: gravity === 'critical' || gravity === 'sensitive' ? 'none' : strategy.emoji_policy,
     tone_profile: 'tata_warm',
     strategy_id: strategyId,
-    fallback_reason: recognizedPattern ? null : fallbackReason(classification, result, strategyId),
+    fallback_reason: guidedAnswers.length || productGuidance?.question
+      ? null
+      : (recognizedPattern ? null : fallbackReason(classification, result, strategyId)),
     intent: classification.intent || 'conversation.ambiguous',
     subintent: classification.subintent || null,
     result_status: result.status || 'unknown',
@@ -278,7 +298,7 @@ function validateResponsePlan(plan) {
     'knowledge_sources_used', 'knowledge_rejected', 'rejection_reason',
     'action_playbook', 'action_available', 'action_mode',
     'channel_guidance', 'explanation_needed', 'direction', 'optional_enrichment',
-    'humanity_requirements'
+    'humanity_requirements', 'candidates_found'
   ];
   const missing = required.filter((field) => plan?.[field] == null);
   const invalid = [
@@ -298,6 +318,8 @@ function validateResponsePlan(plan) {
     !Array.isArray(plan?.knowledge_sources_used),
     !Array.isArray(plan?.humanity_requirements),
     !Array.isArray(plan?.direction),
+    !Array.isArray(plan?.candidates_found),
+    (plan?.contextual_question !== null && typeof plan?.contextual_question !== 'string'),
     new Set(plan?.mandatory_questions || []).size !== (plan?.mandatory_questions || []).length,
     (plan?.verified_actions || []).some((action) => (plan?.pending_actions || []).includes(action))
   ].some(Boolean);

@@ -20,6 +20,56 @@ const {
 
 const SYNTHETIC_SECRET = 'deliveryos-synthetic-panel-identity-secret-v1';
 
+const WRITTEN_NUMBERS = Object.freeze({
+  um: 1, uma: 1, dois: 2, duas: 2, tres: 3, quatro: 4, cinco: 5,
+  seis: 6, sete: 7, oito: 8, nove: 9, dez: 10, onze: 11, doze: 12
+});
+
+function normalizeChatText(value) {
+  return String(value || '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().replace(/\s+/gu, ' ').trim();
+}
+
+function channelFromText(text) {
+  if (/\bifood\b/u.test(text)) return 'ifood';
+  if (/\b(?:delivery proprio|delivery do tata|pedir pelo delivery)\b/u.test(text)) return 'own_delivery';
+  if (/\b(?:salao|presencial|no restaurante)\b/u.test(text)) return 'dining_room';
+  return null;
+}
+
+function partySizeFromText(text) {
+  const token = text.match(/\b(?:somos|estamos em|para)\s+(\d{1,2}|[a-z]+)(?:\s+pessoas?)?\b/u)?.[1];
+  if (!token) return null;
+  const value = /^\d+$/u.test(token) ? Number(token) : WRITTEN_NUMBERS[token];
+  return Number.isInteger(value) && value > 0 ? value : null;
+}
+
+function allergyFromText(text) {
+  if (!/\b(?:tenho alergia|sou alergic[oa]|nao posso comer|tenho intolerancia)\b/u.test(text)) return null;
+  if (/\b(?:veio|recebi|mandaram|chegou|comi|reacao|passei mal)\b/u.test(text)) return null;
+  if (/\b(?:camarao|crustaceo|crustaceos)\b/u.test(text)) return { value: 'crustacean', label: 'camarão' };
+  if (/\b(?:lactose|leite)\b/u.test(text)) return { value: 'lactose', label: 'lactose' };
+  if (/\bgluten\b/u.test(text)) return { value: 'gluten', label: 'glúten' };
+  return { value: 'allergen_unspecified', label: 'a restrição informada' };
+}
+
+function initialChatContext() {
+  return {
+    channel: null,
+    unit_id: 'SIM-UNIT-ITAIM',
+    preferred_ingredients: [],
+    excluded_ingredients: [],
+    cream_cheese: null,
+    fried: null,
+    number_of_people: null,
+    allergies: [],
+    allergy_labels: {},
+    recommendation_active: false,
+    awaiting_channel: false,
+    selected_item_id: null,
+    selected_item_name: null
+  };
+}
+
 function buildSyntheticCustomerStore() {
   const store = new CustomerIntelligenceStore({
     clock: () => new Date('2026-07-01T15:00:00.000Z')
@@ -116,6 +166,7 @@ class CustomerMenuHomologationService {
       ',SIM-UNIT-ITAIM,0'
     ].join('\n');
     this.importBatchId = this.stageSyntheticImport().batch_id;
+    this.chatContexts = new Map();
   }
 
   stageSyntheticImport() {
@@ -173,20 +224,64 @@ class CustomerMenuHomologationService {
   }
 
   contextForChat(input = {}) {
+    const conversationId = String(input.conversation_id || 'SIM-CONV-HOMO-UNKNOWN');
+    const state = this.chatContexts.get(conversationId) || initialChatContext();
+    const text = normalizeChatText(input.message);
+    const explicitChannel = input.channel || channelFromText(text);
+    if (explicitChannel) state.channel = explicitChannel;
+    if (input.unit_id) state.unit_id = input.unit_id;
+    if (/\bsem (?:fritura|frito|fritos|frita|fritas)\b/u.test(text)) state.fried = false;
+    if (/\b(?:salmao|salmão)\b/u.test(String(input.message || '').toLowerCase())) {
+      state.preferred_ingredients = [...new Set([...state.preferred_ingredients, 'salmon'])];
+      state.recommendation_active = true;
+    }
+    if (/\bsem cream cheese\b/u.test(text)) {
+      state.cream_cheese = 'without';
+      state.recommendation_active = true;
+    }
+    const partySize = partySizeFromText(text);
+    if (partySize) state.number_of_people = partySize;
+    const allergy = allergyFromText(text);
+    if (allergy) {
+      state.allergies = [...new Set([...state.allergies, allergy.value])];
+      state.allergy_labels[allergy.value] = allergy.label;
+    }
+
+    const asksRecommendation = /\b(?:recomend|sugest|op[cç][aã]o|sem fritura|salm[aã]o|cream cheese)\b/iu.test(input.message || '');
+    const asksPairing = /\b(?:bebida|drink|harmoniza|combina)\b/u.test(text);
+    if (asksRecommendation || asksPairing) state.recommendation_active = true;
+
     let customerContext = null;
     let menuContext = null;
     let recommendationContext = null;
     if (input.customer_id) {
       const customerResult = this.tools.get_customer_summary({ customer_id: input.customer_id });
       customerContext = customerContextFromSummary(customerResult);
+    } else {
+      customerContext = customerContextFromSummary(null);
     }
-    if (input.channel && input.unit_id) {
+    if (state.allergies.length) {
+      customerContext = Object.freeze({
+        ...customerContext,
+        status: 'partial',
+        declared_restrictions: state.allergies.map((value) => ({
+          type: 'allergy', value, status: 'confirmed', source: 'current_conversation'
+        })),
+        unknowns: [...new Set([...(customerContext.unknowns || []), 'cross_contact_confirmation'])]
+      });
+    }
+    if (state.channel && state.unit_id && (state.recommendation_active || input.channel)) {
       const declaredAllergies = (customerContext?.declared_restrictions || [])
         .filter((item) => item.type === 'allergy' && item.status === 'confirmed' && typeof item.value === 'string')
         .map((item) => item.value);
       const request = {
-        channel: input.channel,
-        unit_id: input.unit_id,
+        channel: state.channel,
+        unit_id: state.unit_id,
+        fried: state.fried,
+        cream_cheese: state.cream_cheese,
+        preferred_ingredients: [...state.preferred_ingredients],
+        excluded_ingredients: [...state.excluded_ingredients],
+        number_of_people: state.number_of_people,
         allergies: [...new Set([...(input.allergies || []), ...declaredAllergies])]
       };
       const recommendationResult = this.tools.get_recommendation_candidates({
@@ -195,16 +290,152 @@ class CustomerMenuHomologationService {
       });
       menuContext = menuContextFromRecommendation(recommendationResult, request);
       recommendationContext = recommendationContextFromResult(recommendationResult);
+      const selected = recommendationResult.data?.candidates?.[0] || null;
+      state.selected_item_id = selected?.item_id || null;
+      state.selected_item_name = selected?.name || null;
+      state.awaiting_channel = false;
+    } else if (state.recommendation_active) {
+      state.awaiting_channel = true;
+      menuContext = Object.freeze({
+        schema_version: 'deliveryos-menu-context-v1',
+        status: 'partial',
+        channel: 'unknown',
+        unit_id: state.unit_id,
+        items: [],
+        unknowns: ['menu_channel_missing'],
+        divergences: [],
+        provenance: ['SIM-SOURCE-MENU-V1']
+      });
+      recommendationContext = Object.freeze({
+        schema_version: 'deliveryos-recommendation-context-v1',
+        status: 'partial',
+        objectives: ['safe_relevant_menu_guidance'],
+        constraints: [],
+        candidate_item_ids: [],
+        unknowns: ['menu_channel_missing']
+      });
     }
+
+    let pairing = null;
+    if (asksPairing && state.selected_item_id && state.channel) {
+      const result = this.tools.get_pairing_candidates({
+        item_id: state.selected_item_id,
+        channel: state.channel,
+        unit_id: state.unit_id
+      });
+      const pair = result.data?.pairings?.[0] || null;
+      pairing = pair
+        ? {
+            status: 'ready',
+            menu_item_id: pair.menu_item_id,
+            menu_item_name: state.selected_item_name,
+            beverage_item_id: pair.beverage_item_id,
+            beverage_item_name: this.tools.get_menu_item_details({ item_id: pair.beverage_item_id }).data.name,
+            source: pair.source_id
+          }
+        : { status: 'not_found' };
+    }
+
+    const guidance = this.guidanceForChat({ text, input, state, allergy, asksRecommendation, asksPairing, menuContext, pairing });
+    this.chatContexts.set(conversationId, state);
     return {
       customer_context: customerContext,
       menu_context: menuContext,
       recommendation_context: recommendationContext,
+      conversation_guidance: guidance,
       source_summary: {
-        customer: customerContext ? 'customer_intelligence_synthetic' : 'none',
+        customer: input.customer_id ? 'customer_intelligence_synthetic' : 'anonymous_synthetic_session',
         menu: menuContext ? 'menu_intelligence_synthetic' : 'none'
       }
     };
+  }
+
+  guidanceForChat({ text, state, allergy, asksRecommendation, asksPairing, menuContext, pairing }) {
+    const candidates = menuContext?.items || [];
+    const channelQuestion = 'Você está escolhendo para o salão, para pedir pelo iFood ou pelo delivery próprio?';
+    const resumeQuestion = state.awaiting_channel ? channelQuestion : null;
+    if (allergy) {
+      return Object.freeze({
+        schema_version: 'deliveryos-homologation-guidance-v1',
+        mode: 'preventive_allergy',
+        direct_answers: [`Certo — vou considerar ${allergy.label} como uma restrição preventiva nesta conversa. Como o catálogo sintético de homologação não confirma ausência de contaminação cruzada, confirme a composição e o preparo com a equipe antes de pedir.`],
+        question: resumeQuestion,
+        context_reason: 'preventive_allergy_declared',
+        knowledge_source: 'current_conversation+SIM-SOURCE-MENU-V1',
+        candidates_found: []
+      });
+    }
+    if (asksPairing) {
+      if (pairing?.status === 'ready') {
+        return Object.freeze({
+          schema_version: 'deliveryos-homologation-guidance-v1', mode: 'pairing',
+          direct_answers: [`No catálogo sintético de homologação, ${pairing.beverage_item_name} é uma harmonização aprovada para ${pairing.menu_item_name}.`],
+          question: null, context_reason: null, knowledge_source: pairing.source,
+          candidates_found: [pairing.menu_item_id, pairing.beverage_item_id]
+        });
+      }
+      return Object.freeze({
+        schema_version: 'deliveryos-homologation-guidance-v1', mode: 'pairing_pending',
+        direct_answers: [state.selected_item_id
+          ? 'Ainda não há uma harmonização aprovada para a opção sintética selecionada.'
+          : 'Ainda não existe uma opção sugerida nesta conversa para eu consultar uma harmonização aprovada.'],
+        question: resumeQuestion, context_reason: state.awaiting_channel ? 'menu_channel_missing' : 'pairing_not_approved',
+        knowledge_source: 'SIM-SOURCE-MENU-V1', candidates_found: []
+      });
+    }
+    if (/\bna verdade\b/u.test(text) && state.number_of_people) {
+      return Object.freeze({
+        schema_version: 'deliveryos-homologation-guidance-v1', mode: 'party_size_update',
+        direct_answers: [state.recommendation_active
+          ? `Certo — vou considerar ${state.number_of_people} pessoas ao calcular a sugestão.`
+          : `Entendi que são ${state.number_of_people} pessoas.`],
+        question: state.recommendation_active ? resumeQuestion : `As ${state.number_of_people} pessoas são para uma reserva ou para calcular uma sugestão de pedido?`,
+        context_reason: state.recommendation_active ? null : 'party_size_reference_missing',
+        knowledge_source: 'current_conversation', candidates_found: candidates.map((item) => item.item_id)
+      });
+    }
+    if (asksRecommendation) {
+      if (state.awaiting_channel) {
+        const statesSpecificPreference = /\b(?:salmao|cream cheese)\b/u.test(text);
+        return Object.freeze({
+          schema_version: 'deliveryos-homologation-guidance-v1', mode: 'menu_channel_required',
+          direct_answers: [statesSpecificPreference
+            ? 'Entendi a preferência e vou mantê-la nesta conversa sem inventar um prato real.'
+            : state.fried === false
+            ? 'O catálogo sintético de homologação possui opções registradas como não fritas.'
+            : 'Entendi a preferência e vou mantê-la nesta conversa sem inventar um prato real.'],
+          question: channelQuestion, context_reason: 'menu_channel_missing',
+          knowledge_source: 'SIM-SOURCE-MENU-V1', candidates_found: []
+        });
+      }
+      if (candidates.length) {
+        return Object.freeze({
+          schema_version: 'deliveryos-homologation-guidance-v1', mode: 'menu_candidates',
+          direct_answers: [`No catálogo sintético de homologação, encontrei ${candidates[0].name} como opção compatível com os filtros informados.`],
+          question: null, context_reason: null, knowledge_source: 'SIM-SOURCE-MENU-V1',
+          candidates_found: candidates.map((item) => item.item_id)
+        });
+      }
+      return Object.freeze({
+        schema_version: 'deliveryos-homologation-guidance-v1', mode: 'no_safe_candidate',
+        direct_answers: ['Não encontrei candidato seguro no catálogo sintético de homologação com os filtros informados. Não vou inventar uma opção.'],
+        question: null, context_reason: 'no_compatible_menu_candidate',
+        knowledge_source: 'SIM-SOURCE-MENU-V1', candidates_found: []
+      });
+    }
+    if (/\bvalet\b/u.test(text) && state.recommendation_active) {
+      return Object.freeze({
+        schema_version: 'deliveryos-homologation-guidance-v1', mode: 'side_information',
+        direct_answers: [], question: resumeQuestion, context_reason: null,
+        knowledge_source: 'TATA_OPERATIONAL_PUBLIC_INFO_V1', candidates_found: candidates.map((item) => item.item_id)
+      });
+    }
+    return null;
+  }
+
+  resetChatContext() {
+    this.chatContexts.clear();
+    return { context_reset: true };
   }
 
   bootstrap() {
@@ -243,10 +474,10 @@ class CustomerMenuHomologationService {
         pattern_engine: 'active',
         journey_state: 'event_sourced',
         response_plan: 'active',
-        response_writer: 'not_connected_in_local_panel',
+        response_writer: 'unavailable_no_local_runtime',
         deterministic_composer: 'active',
-        customer_context: 'available_when_selected',
-        menu_context: 'available_when_channel_selected',
+        customer_context: 'automatic_anonymous_or_selected_synthetic',
+        menu_context: 'automatic_from_conversation_or_optional_override',
         real_data: false
       }
     };

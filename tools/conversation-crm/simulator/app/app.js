@@ -66,7 +66,7 @@ function renderIntelligenceCrm() {
     <article class="integration-truth">
       <strong>Caminho realmente conectado</strong>
       <p>${escapeHtml(integration.chat_endpoint)} · Pattern Engine ${escapeHtml(integration.pattern_engine)} · Journey State ${escapeHtml(integration.journey_state)} · compositor ${escapeHtml(integration.deterministic_composer)}</p>
-      <p>Writer local: ${escapeHtml(integration.response_writer)}. Dados reais: ${integration.real_data ? 'sim' : 'não'}.</p>
+      <p>Writer local: ${escapeHtml(integration.response_writer)}. Linguagem natural final por modelo local: não implementada nesta máquina. Dados reais: ${integration.real_data ? 'sim' : 'não'}.</p>
     </article>
     <div class="intelligence-grid">${customers.map((customer) => `
     <article class="intelligence-card">
@@ -223,11 +223,17 @@ function diagnosticHtml(diagnostic) {
     ['Endpoint', diagnostic.endpoint],
     ['Pattern', diagnostic.pattern],
     ['Jornada', diagnostic.journey || 'nenhuma'],
+    ['Estado', diagnostic.journey_state ? `${diagnostic.journey_state.active_step || 'sem etapa'} · v${diagnostic.journey_state.version}` : 'sem jornada ativa'],
     ['Movimento', diagnostic.journey_action || 'none'],
+    ['Canal', diagnostic.channel || 'unknown'],
+    ['Unidade', diagnostic.unit_id || 'unknown'],
     ['Caminho da resposta', diagnostic.response_path],
-    ['Fallback', diagnostic.fallback_used ? `sim · ${diagnostic.fallback_reason || 'sem código'}` : 'não'],
+    ['Fallback', diagnostic.fallback_used ? `sim · ${diagnostic.fallback_reason || diagnostic.context_reason || 'safe_response_rejected'}` : 'não'],
+    ['Motivo de contexto', diagnostic.context_reason || 'nenhum'],
+    ['Fontes do conhecimento', (diagnostic.knowledge_sources || []).join(', ') || 'nenhuma'],
     ['Contexto de cliente', diagnostic.customer_context_source],
     ['Contexto de cardápio', diagnostic.menu_context_source],
+    ['Candidatos', (diagnostic.candidates_found || []).join(', ') || 'nenhum'],
     ['Writer', diagnostic.writer_status],
     ['Contrato', diagnostic.response_contract],
     ['Envelope', diagnostic.envelope_contract],

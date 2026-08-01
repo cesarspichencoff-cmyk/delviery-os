@@ -207,10 +207,11 @@ function informationText(input) {
   const base = informed || (authorizedText ? sentence(authorizedText) : '');
   if (!base) return fallbackText(input);
   const closing = warmClosing(plan, conversation, variationContext);
+  const followUp = plan.contextual_question || conversation.pattern_decision?.question_to_resume || '';
   if (plan.customer_state === 'interested' && plan.conversation_stage === 'opening') {
-    return `${acknowledgement(plan, variationContext)} ${base}${closing ? ` ${closing}` : ''}`;
+    return `${acknowledgement(plan, variationContext)} ${base}${closing ? ` ${closing}` : ''}${followUp ? ` ${followUp}` : ''}`;
   }
-  return `${base}${closing ? ` ${closing}` : ''}`;
+  return `${base}${closing ? ` ${closing}` : ''}${followUp ? ` ${followUp}` : ''}`;
 }
 
 function reservationText(input) {
@@ -314,7 +315,10 @@ function patternDirectedText(input) {
     return previous ? `Claro. ${previous}` : 'Claro. O que você gostaria que eu repetisse?';
   }
   if (pattern.pattern === 'correction') {
-    return `Certo, atualizei essa informação.${pattern.question_to_resume ? ` ${pattern.question_to_resume}` : ''}`;
+    const answer = knowledgeMessages(input.plan, { limit: 1 });
+    const question = input.plan.contextual_question || pattern.question_to_resume;
+    if (answer) return `${answer}${question ? ` ${question}` : ''}`;
+    return `Certo, atualizei essa informação.${question ? ` ${question}` : ''}`;
   }
   if (pattern.pattern === 'resume') {
     const answer = knowledgeMessages(input.plan, { limit: 1 });

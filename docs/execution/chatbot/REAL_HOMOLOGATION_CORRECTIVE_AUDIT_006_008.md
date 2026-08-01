@@ -83,8 +83,8 @@ reais foram somente inventariadas e não são consultadas pelo painel.
 | Journey Stack | sim | `NativePatternStateStore` | runtime/event store | diagnóstico resumido | sintéticos | IMPLEMENTADO E INTEGRADO |
 | Response Plan V2 | sim | `response-plan.js` | runtime | não expõe detalhes internos | sintéticos | IMPLEMENTADO E INTEGRADO |
 | ApprovedResponseEnvelope | sim | `approved-response-plan.js` | runtime | versão no diagnóstico | sintéticos | IMPLEMENTADO E INTEGRADO |
-| Gemma Writer | candidato avaliado | adaptadores e resultados de avaliação | não participa do painel | aviso explícito de indisponibilidade | artefatos sintéticos de avaliação | SOMENTE MOCK |
-| Qwen Writer | candidato avaliado | adaptadores e resultados de avaliação | não participa do painel | aviso explícito de indisponibilidade | artefatos sintéticos de avaliação | SOMENTE MOCK |
+| Gemma Writer | candidato avaliado | adaptadores e resultados de avaliação | não participa do painel sem runtime/modelo local | aviso explícito de indisponibilidade | artefatos sintéticos de avaliação | IMPLEMENTADO, MAS NÃO INTEGRADO — runtime e modelo ausentes |
+| Qwen Writer | candidato avaliado | adaptadores e resultados de avaliação | não participa do painel sem runtime/modelo local | aviso explícito de indisponibilidade | artefatos sintéticos de avaliação | IMPLEMENTADO, MAS NÃO INTEGRADO — runtime e modelo ausentes |
 | fallback determinístico | sim | compositor + validador | runtime | resposta segura + diagnóstico | sintéticos | IMPLEMENTADO E INTEGRADO |
 | lista de clientes | sim | `CustomerIntelligenceStore.list` | `/api/customer-menu/bootstrap` | aba Clientes | sintéticos | IMPLEMENTADO E INTEGRADO |
 | ficha do cliente | sim | ferramenta `get_customer_summary` | `/api/customer-menu/customers/:id` | detalhe com fatos e relações | sintéticos | IMPLEMENTADO E INTEGRADO |
@@ -147,9 +147,9 @@ reais foram somente inventariadas e não são consultadas pelo painel.
 
 ## Evidências de validação
 
-- suíte Conversation: 670 testes, 670 aprovados, zero falha;
+- suíte Conversation: 675 testes, 675 aprovados, zero falha;
 - catálogo nativo: 200 de 200 cenários, 51 intenções, hash
-  `ddabec0dbf3c47adfb886b28556b96a47fcfcf90d709ec101b14fefee5f1a798`;
+  `9f470846ae0d0c0a96f821288732738cedc53057edaac8429b4aa19d56613b20`;
 - scanner de privacidade: aprovado, zero achado e controle positivo detectado;
 - Conference Brain: 314 de 314 testes;
 - Live: 243 de 243 testes;
@@ -157,10 +157,14 @@ reais foram somente inventariadas e não são consultadas pelo painel.
 - Copiloto: 53 de 53 testes;
 - integridade do cardápio: 199 itens e oito praças oficiais;
 - fonte histórica: verificação concluída com código de saída zero;
-- painel real: `oii` e `Boa noite, tudo bem?` seguiram o padrão de saudação
-  sem fallback; recomendação com restrição sintética pediu confirmação de
-  segurança; recarregamento iniciou sessão limpa; diagnóstico declarou
-  compositor determinístico e Writer não conectado;
+- painel real: a sequência corretiva de nove turnos foi executada sem seleção
+  prévia de contexto; conhecimento do restaurante, cardápio, preferência,
+  valet, quantidade, harmonização pendente e alergia preventiva não caíram em
+  fallback genérico;
+- painel real com salão sintético: `Opção Sintética Salmão Leve` foi selecionada
+  para os filtros e `Bebida Sintética Seca` apareceu somente como harmonização
+  aprovada; o diagnóstico mostrou `dining_room`, `SIM-UNIT-ITAIM`, fonte
+  `SIM-SOURCE-MENU-V1`, os dois candidatos e `fallback: não`;
 - CRM, importação, auditoria e cardápio foram inspecionados na interface real:
   relações sintéticas, pipeline de importação, eventos sanitizados, canais,
   ingredientes, alergênicos, contaminação cruzada e harmonizações apareceram
@@ -170,10 +174,40 @@ reais foram somente inventariadas e não são consultadas pelo painel.
 ## Limites preservados
 
 - nenhum cliente, pedido, consentimento ou cardápio real foi importado;
-- nenhum Writer local está conectado ao painel;
+- `LINGUAGEM NATURAL FINAL NÃO IMPLEMENTADA`: nenhum runtime ou modelo local
+  compatível foi encontrado nesta máquina, portanto nenhum Writer participa do
+  painel e o compositor determinístico seguro permanece ativo;
 - nenhum modelo foi promovido;
 - nenhum preço, ingrediente ou alergênico foi inferido;
 - nenhum canal ou unidade foi unido silenciosamente;
 - nenhuma migration PostgreSQL foi executada;
 - nenhuma integração externa, WhatsApp, iFood, Neemo ou Odhen foi acessada;
 - o painel continua sendo uma homologação local, não uma superfície de produção.
+
+## Correção final de homologação — conhecimento e contexto automático
+
+As causas dos fallbacks finais eram localizadas: perguntas amplas não acionavam
+a informação pública verificada; o contexto sintético de cliente e cardápio só
+era transportado quando selecionado manualmente; preferências não formavam um
+estado conversacional; perguntas laterais não retomavam a recomendação; a
+correção de quantidade herdava uma classificação ambígua; e a declaração
+preventiva de alergia compartilhava sinais com ocorrências após consumo.
+
+A correção mantém estado sintético por conversa, pergunta canal quando ele é
+necessário, conserva filtros e candidato selecionado, consulta apenas
+harmonizações allowlisted e separa três classes: restrição preventiva, possível
+incidente após consumo e urgência médica. A correção `somos cinco` atualiza a
+quantidade sem solicitar capacidade operacional. Os dois validadores de saída
+passaram a reconhecer a pergunta contextual autorizada e a orientação
+preventiva sem duplicar conhecimento.
+
+Antes, a sequência terminava repetidamente em `deterministic_safe_fallback`,
+com `customer_context=none`, `menu_context=none` e alergia tratada como reação.
+Depois, a sequência sem seletor usa sessão anônima sintética, contexto parcial
+de cardápio, motivo `menu_channel_missing` e respostas específicas. Com salão
+sintético selecionado, a recomendação e a harmonização são rastreáveis ao
+catálogo sintético e não são apresentadas como itens reais.
+
+Não houve acesso a API externa, sistema de pedidos, WhatsApp ou dado real. O
+custo externo permaneceu em R$ 0,00. Nenhum push, merge ou deploy faz parte
+desta correção.

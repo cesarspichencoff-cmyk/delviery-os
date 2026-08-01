@@ -34,13 +34,15 @@ function normalizePublicText(value) {
 function detectPublicTopic(content) {
   const text = normalizePublicText(content);
   if (/\b(oke|okes|tabua de sushi|evento com sushi)\b/u.test(text)) return 'oke_pickup';
-  if (/\b(valet|manobrista)\b/u.test(text) && /\b(valor|quanto|preco|custa|onde|fica|local)\b/u.test(text)) return 'valet_information';
+  if (/\b(valet|manobrista)\b/u.test(text)) return 'valet_information';
+  if (/\b(conhecer melhor|conhecer o|sobre o|como e o)\b.*\b(restaurante|tata)\b/u.test(text)) return 'restaurant_overview';
   if (/\b(rodizio|rodizio japones)\b/u.test(text)) return 'restaurant_model';
   if (/\b(almoco executivo|sete cursos|7 cursos)\b/u.test(text)) return 'executive_lunch';
   if (/\b(sugestao tata|cinco cursos|5 cursos)\b/u.test(text)) return 'tata_suggestion';
   if (/\b(cardapio|menu)\b/u.test(text) && /\b(delivery|entrega|neemo)\b/u.test(text)) return 'delivery_menu';
   if (/\b(cardapio|menu)\b/u.test(text) && /\b(presencial|salao|restaurante|completo)\b/u.test(text)) return 'dining_room_menu';
   if (/\b(cardapio|menu|precos dos itens|ver as opcoes)\b/u.test(text)) return 'institutional_menu';
+  if (/\b(sem fritura|nao frit[oa]s?|salm[aã]o|cream cheese|harmoniza|bebida combina|op[cç][aã]o sugerida|recomend)\b/u.test(text)) return 'menu_guidance';
   if (/\b(onde|como)\b.*\b(pedir|fazer pedido)\b/u.test(text) || /\b(delivery proprio|pedir pelo ifood|ifood ou delivery)\b/u.test(text)) return 'delivery_options';
   if (/\b(reserva|reservar)\b/u.test(text)) return 'reservation';
   if (/\b(fila|espera|posicao)\b/u.test(text)) return 'waitlist';
@@ -55,7 +57,7 @@ function detectPublicTopic(content) {
 function intentForPublicTopic(topic) {
   if (topic === 'oke_pickup') return 'event.oke_pickup';
   if (topic === 'valet_information' || topic === 'address') return 'information.address';
-  if (['executive_lunch', 'tata_suggestion', 'restaurant_model', 'delivery_menu', 'dining_room_menu', 'institutional_menu', 'delivery_options'].includes(topic)) return 'information.menu';
+  if (['executive_lunch', 'tata_suggestion', 'restaurant_model', 'restaurant_overview', 'delivery_menu', 'dining_room_menu', 'institutional_menu', 'delivery_options', 'menu_guidance'].includes(topic)) return 'information.menu';
   if (topic === 'reservation') return 'reservation.create';
   if (topic === 'waitlist') return 'waitlist.create';
   if (topic === 'holiday_hours' || topic === 'opening_hours') return 'information.hours';
@@ -129,6 +131,7 @@ function publicInformationResponse(input) {
   if (topic === 'institutional_menu') return `Este é o cardápio com os preços dos itens: ${publicInfo.menus.institutional_with_prices}`;
   if (topic === 'delivery_options') return `Você pode pedir pelo delivery próprio em ${publicInfo.delivery.own_delivery_url} ou pelo iFood. Não há preferência automática entre as opções.`;
   if (topic === 'restaurant_model') return 'O TATÁ trabalha à la carte. O Almoço Executivo e a Sugestão Tatá são menus em cursos, não rodízio.';
+  if (topic === 'restaurant_overview') return 'O TATÁ Sushi trabalha à la carte e oferece Almoço Executivo nos almoços de dias úteis e Sugestão Tatá no jantar, fins de semana e feriados. Posso te contar sobre a experiência, o ambiente, a unidade, os horários, as reservas ou o cardápio.';
   if (topic === 'executive_lunch') {
     const offer = publicInfo.executive_lunch;
     if (/\b(o que vem|quais cursos|inclui|composicao)\b/u.test(text)) return `O Almoço Executivo tem sete cursos: ${listCourseCategories(offer.courses)}. Custa R$ 136 por pessoa e inclui uma repetição.`;
@@ -162,7 +165,7 @@ function publicInformationResponse(input) {
 }
 
 function publicBehaviorOverride(topic) {
-  if (['address', 'opening_hours', 'holiday_hours', 'dining_room_menu', 'delivery_menu', 'institutional_menu', 'delivery_options', 'restaurant_model', 'executive_lunch', 'tata_suggestion', 'payment', 'corkage', 'valet_information'].includes(topic)) {
+  if (['address', 'opening_hours', 'holiday_hours', 'dining_room_menu', 'delivery_menu', 'institutional_menu', 'delivery_options', 'restaurant_model', 'restaurant_overview', 'menu_guidance', 'executive_lunch', 'tata_suggestion', 'payment', 'corkage', 'valet_information'].includes(topic)) {
     return deepFreeze({ escalation: 'E0' });
   }
   if (topic === 'oke_pickup') {

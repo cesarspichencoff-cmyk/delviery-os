@@ -29,7 +29,7 @@ const JOURNEY_HINTS = Object.freeze([
   [/\b(?:sem cebola|personalizacao|veio com)\b/u, 'personalization'],
   [/\b(?:atras|demorando)\b/u, 'delay'],
   [/\b(?:qualidade|cheiro estranho|corpo estranho|cabelo)\b/u, 'quality'],
-  [/\b(?:alerg|dificuldade para respirar|vomito|diarreia)\b/u, 'food_safety'],
+  [/\b(?:alerg|dificuldade para respirar|falta de ar|vomito|diarreia)\b/u, 'food_safety'],
   [/\b(?:elogio|adorei|parabens)\b/u, 'praise'],
   [/\b(?:humano|atendente|falar com uma pessoa)\b/u, 'handoff']
 ]);
@@ -197,7 +197,7 @@ function sideTopic(text) {
 function detectedSignals(text, input) {
   const target = hintedJourney(text, input.candidate_intents);
   const greeting = /^(?:oi+|ola|bom dia|boa tarde|boa noite|e ai|tudo bem)(?:[!,.? ]|$)/u.test(text);
-  const safety = /\b(?:dificuldade para respirar|desmaio|alerg|vomito|diarreia|intoxic|corpo estranho|cabelo)\b/u.test(text);
+  const safety = /\b(?:dificuldade para respirar|falta de ar|garganta fechando|desmaio|vomito|diarreia|intoxic|corpo estranho|cabelo|tive uma reacao|reacao intensa|comecei a cocar|passei mal)\b/u.test(text);
   const handoff = /\b(?:falar com (?:uma pessoa|alguem|humano)|atendente|chamar responsavel)\b/u.test(text);
   const correction = /\b(?:na verdade|quis dizer|corrigindo|corrigi|agora somos|nao (?:foi|era)|melhor as|melhor às)\b/u.test(text)
     || /\b(?:somos|sao)\s+(?:\d{1,3}|[a-z]+)\s*,?\s*nao\s+(?:\d{1,3}|[a-z]+)\b/u.test(text);

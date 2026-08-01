@@ -168,8 +168,11 @@ class HomologationService {
     const session = String(next.session).padStart(4, '0');
     const turn = String(next.turn).padStart(4, '0');
     const messageId = `SIM-HOMO-${session}-${turn}`;
+    const conversationId = `SIM-CONV-HOMO-${session}`;
     const productContexts = this.customerMenu
       ? this.customerMenu.contextForChat({
+          conversation_id: conversationId,
+          message: value,
           customer_id: request.customer_id || null,
           channel: request.channel || null,
           unit_id: request.channel ? (request.unit_id || 'SIM-UNIT-ITAIM') : null,
@@ -182,7 +185,7 @@ class HomologationService {
       content: value,
       channel: 'synthetic',
       subject_id: `SIM-SUBJECT-HOMO-${session}`,
-      conversation_id: `SIM-CONV-HOMO-${session}`,
+       conversation_id: conversationId,
       message_id: messageId,
       correlation_id: `SIM-CORR-${messageId}`,
       idempotency_key: `homologation:${messageId}`,
@@ -205,12 +208,18 @@ class HomologationService {
           endpoint: '/api/homologation/chat',
           pattern: result.execution_diagnostics?.pattern || null,
           journey: result.execution_diagnostics?.journey || null,
+          journey_state: result.execution_diagnostics?.journey_state || null,
           journey_action: result.pattern?.journey_action || null,
           capability: result.execution_diagnostics?.capability || null,
           route_reason: result.execution_diagnostics?.route_reason || null,
           response_path: result.execution_diagnostics?.response_path || 'unknown',
           fallback_used: result.execution_diagnostics?.fallback_used === true,
           fallback_reason: result.execution_diagnostics?.fallback_reason || null,
+          context_reason: result.execution_diagnostics?.context_reason || null,
+          channel: result.execution_diagnostics?.channel || 'unknown',
+          unit_id: result.execution_diagnostics?.unit_id || null,
+          knowledge_sources: result.execution_diagnostics?.knowledge_sources || [],
+          candidates_found: result.execution_diagnostics?.candidates_found || [],
           customer_context_source: result.execution_diagnostics?.customer_context_source || 'none',
           menu_context_source: result.execution_diagnostics?.menu_context_source || 'none',
           writer_status: result.execution_diagnostics?.writer?.status || 'unknown',
@@ -223,7 +232,9 @@ class HomologationService {
   }
 
   resetChat() {
-    return { ok: true, ...this.store.resetChat() };
+    const reset = this.store.resetChat();
+    const context = this.customerMenu?.resetChatContext?.() || { context_reset: false };
+    return { ok: true, ...reset, ...context };
   }
 
   summary() {

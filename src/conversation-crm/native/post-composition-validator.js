@@ -97,7 +97,12 @@ function validatePostComposition(input = {}) {
     if (signature && !signature.test(text)) findings.push(`MANDATORY_QUESTION_MISSING:${field}`);
   }
   const socialQuestionAllowed = ['greeting', 'chitchat', 'repeat', 'resume'].includes(input.pattern_decision?.pattern);
-  if (!(plan.mandatory_questions || []).length && currentQuestions.length && plan.response_goal !== 'clarify' && !socialQuestionAllowed) findings.push('UNAUTHORIZED_QUESTION');
+  const contextualQuestion = normalize(plan.contextual_question || '');
+  const contextualQuestionAllowed = Boolean(contextualQuestion) && currentQuestions.some((question) => {
+    const current = normalize(question);
+    return current === contextualQuestion || current.endsWith(contextualQuestion) || contextualQuestion.endsWith(current);
+  });
+  if (!(plan.mandatory_questions || []).length && currentQuestions.length && plan.response_goal !== 'clarify' && !socialQuestionAllowed && !contextualQuestionAllowed) findings.push('UNAUTHORIZED_QUESTION');
 
   const facts = [...(plan.known_facts || []), ...(plan.new_facts || [])];
   const requiredConcrete = plan.strategy_contract?.mandatory_components || [];

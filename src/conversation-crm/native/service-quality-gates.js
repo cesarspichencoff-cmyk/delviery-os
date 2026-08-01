@@ -57,6 +57,7 @@ function directionRepresented(text, plan) {
   const directions = plan.direction || [];
   if (!directions.length) return true;
   if (directions.some((message) => messageRepresented(text, message))) return true;
+  if (plan.contextual_question && messageRepresented(text, plan.contextual_question)) return true;
   if ((plan.mandatory_questions || []).length && String(text).includes('?')) return true;
   return plan.action_available === true && plan.action_selected != null;
 }
