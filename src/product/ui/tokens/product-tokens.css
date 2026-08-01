@@ -1,0 +1,312 @@
+/* DeliveryOS — Product System · tokens
+   ---------------------------------------------------------------------------
+   Esta folha NAO redeclara o que ja existe em src/entregas/ui/shared/tokens.css.
+   O shell carrega as duas: a canonica primeiro, esta depois. Um token tem UM
+   lugar de nascimento — quem procurar `--brand-deep` acha na canonica, quem
+   procurar `--signal-calm` acha aqui, e nunca nos dois.
+
+   Herdados da canonica (nao redeclarar): --brand-deep --brand-deep-2
+   --brand-action --brand-action-hover --surface-work --surface-elevated
+   --surface-secondary --surface-muted --text-primary --text-muted
+   --text-on-dark --line-work --space-1..5 --radius-sm --radius-pill
+   --font-editorial --font-ui.
+
+   Fonte de verdade dos valores: docs/figma/DESIGN_TOKENS.json e
+   docs/figma/MOTION_TOKENS.json, ambos extraidos das variaveis reais do
+   arquivo Figma IMWH8ZKMF5ra3QJYiR6vGa. A divergencia e proibida por teste.
+   --------------------------------------------------------------------------- */
+
+:root {
+  /* —— Fundacao que existe no Figma e faltava no CSS —— */
+  --surface-canvas: #e7decd;
+  --text-faint: #8e836f;
+  --line-signal: #e4dbcb;
+  --line-dashed-unknown: #b7ae9d;
+
+  /* Cores de SINAL. Campo Vivo: descrevem o clima da operacao, nao a marca.
+     ATENCAO: servem a ponto, traco e glifo grande. Nenhuma delas alcanca
+     4.5:1 sobre --surface-work — texto pequeno usa os tokens `ink`. */
+  --signal-prep: #5e6b86;
+  --signal-calm: #5e8f70;
+  --signal-age: #b0812f;
+  --signal-reduce: #a65e3c;
+  --signal-lost: #8c8677;
+  --signal-fail: #8e3b2e;
+
+  --semantic-attention: #b0812f;
+  --semantic-danger: #8e3b2e;
+  --semantic-future: #8c8677;
+
+  --space-6: 64px;
+  --radius-md: 18px;
+
+  --stroke-hairline: 1px;
+  --stroke-emphasis: 1.5px;
+  --stroke-signal: 3px;
+
+  --type-display: 44px;
+  --type-title: 28px;
+  --type-heading: 20px;
+  --type-body: 16px;
+  --type-small: 14px;
+  --type-meta: 11px;
+  --type-technical: 13px;
+
+  --font-technical: "IBM Plex Mono", ui-monospace, monospace;
+
+  --touch-min: 48px;
+
+  /* —— Ink: as versoes de TEXTO dos sinais ——
+     Existem porque signal/* e text-faint reprovam em 4.5:1 sobre fundo claro.
+     Todos os valores abaixo passam 4.5:1 sobre #ffffff e sobre #faf8f4. */
+  --ink-calm: #2f6b4a;
+  --ink-age: #8a6218;
+  --ink-reduce: #8c4a28;
+  --ink-lost: #6b665a;
+  --ink-fail: #8e3b2e;
+  --ink-prep: #4a5670;
+  --ink-faint: #6f6656;
+
+  /* —— Wash: fundo tenue do badge. Nunca sozinho. —— */
+  --wash-calm: rgba(47, 107, 74, 0.10);
+  --wash-age: rgba(138, 98, 24, 0.10);
+  --wash-reduce: rgba(140, 74, 40, 0.10);
+  --wash-lost: rgba(107, 102, 90, 0.10);
+  --wash-fail: rgba(142, 59, 46, 0.10);
+  --wash-prep: rgba(74, 86, 112, 0.10);
+  --wash-faint: rgba(111, 102, 86, 0.10);
+  --wash-action: rgba(34, 86, 60, 0.10);
+
+  /* —— Grid e leitura —— */
+  --breakpoint-compact: 600px;
+  --breakpoint-medium: 905px;
+  --breakpoint-expanded: 1240px;
+  --breakpoint-wide: 1600px;
+  --shell-rail: 264px;
+  --reading-max: 68ch;
+  --content-max: 1320px;
+
+  /* —— Foco —— */
+  --focus-ring-width: 3px;
+  --focus-ring-offset: 2px;
+  --focus-ring-color: rgba(34, 86, 60, 0.55);
+
+  /* —— Motion —— */
+  --motion-instant: 0ms;
+  --motion-quick: 120ms;
+  --motion-base: 200ms;
+  --motion-calm: 320ms;
+  --motion-slow: 520ms;
+  --motion-ambient: 2400ms;
+
+  --motion-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --motion-ease-enter: cubic-bezier(0, 0, 0, 1);
+  --motion-ease-exit: cubic-bezier(0.3, 0, 1, 1);
+  --motion-ease-calm: cubic-bezier(0.4, 0, 0.2, 1);
+
+  --motion-nudge: 4px;
+  --motion-rise: 8px;
+  --motion-enter: 16px;
+
+  --motion-scale-rest: 1;
+  --motion-scale-press: 0.985;
+
+  --motion-opacity-hidden: 0;
+  --motion-opacity-ghost: 0.45;
+  --motion-opacity-full: 1;
+
+  --motion-stagger-step: 40ms;
+}
+
+/* ===========================================================================
+   FOCO — um so anel, em toda superficie do produto.
+   Declarado sem transicao de proposito: foco nunca chega atrasado.
+   =========================================================================== */
+.ds :focus-visible,
+.ds:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+  border-radius: var(--radius-sm);
+}
+
+/* ===========================================================================
+   ESTADO SEMANTICO — quatro canais independentes
+   1. rotulo textual  (o unico canal que o leitor de tela consome)
+   2. glifo           (canal monocromatico)
+   3. padrao de borda (canal de textura; sobrevive a impressao em preto)
+   4. cor             (canal de varredura; NUNCA sozinho)
+   =========================================================================== */
+.ds-state {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 3px var(--space-2);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-technical);
+  font-size: var(--type-meta);
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  border-width: var(--stroke-hairline);
+  border-style: solid;
+  transition: background-color var(--motion-base) var(--motion-ease-standard),
+    border-color var(--motion-base) var(--motion-ease-standard),
+    color var(--motion-base) var(--motion-ease-standard);
+}
+
+/* Canal 2 — glifo. aria-hidden no markup: ele repete o rotulo, nao o substitui. */
+.ds-state__glyph {
+  font-size: 1.05em;
+  line-height: 1;
+}
+
+/* Canal 3 — padrao de borda. Quatro texturas mutuamente distinguiveis. */
+.ds-state[data-padrao="solid"] {
+  border-style: solid;
+}
+.ds-state[data-padrao="hatch"] {
+  border-style: double;
+  border-width: 3px;
+}
+.ds-state[data-padrao="dashed"] {
+  border-style: dashed;
+}
+.ds-state[data-padrao="dotted"] {
+  border-style: dotted;
+}
+
+/* Canal 4 — cor, por token de ink/wash. */
+.ds-state[data-ink="ink-calm"] { color: var(--ink-calm); border-color: var(--ink-calm); }
+.ds-state[data-ink="ink-age"] { color: var(--ink-age); border-color: var(--ink-age); }
+.ds-state[data-ink="ink-reduce"] { color: var(--ink-reduce); border-color: var(--ink-reduce); }
+.ds-state[data-ink="ink-lost"] { color: var(--ink-lost); border-color: var(--ink-lost); }
+.ds-state[data-ink="ink-fail"] { color: var(--ink-fail); border-color: var(--ink-fail); }
+.ds-state[data-ink="ink-prep"] { color: var(--ink-prep); border-color: var(--ink-prep); }
+.ds-state[data-ink="ink-faint"] { color: var(--ink-faint); border-color: var(--ink-faint); }
+
+.ds-state[data-wash="wash-calm"] { background: var(--wash-calm); }
+.ds-state[data-wash="wash-age"] { background: var(--wash-age); }
+.ds-state[data-wash="wash-reduce"] { background: var(--wash-reduce); }
+.ds-state[data-wash="wash-lost"] { background: var(--wash-lost); }
+.ds-state[data-wash="wash-fail"] { background: var(--wash-fail); }
+.ds-state[data-wash="wash-prep"] { background: var(--wash-prep); }
+.ds-state[data-wash="wash-faint"] { background: var(--wash-faint); }
+.ds-state[data-wash="wash-action"] { background: var(--wash-action); }
+
+/* Impressao e captura monocromatica: a cor some, os outros tres canais ficam. */
+@media print {
+  .ds-state {
+    background: transparent !important;
+    color: #000 !important;
+    border-color: #000 !important;
+  }
+}
+
+/* ===========================================================================
+   MOVIMENTO
+   Somente opacity, transform, cor e grid-template-rows. Nada que mova layout.
+   =========================================================================== */
+@keyframes ds-reveal {
+  from {
+    opacity: var(--motion-opacity-hidden);
+    transform: translateY(var(--motion-rise));
+  }
+  to {
+    opacity: var(--motion-opacity-full);
+    transform: translateY(0);
+  }
+}
+
+@keyframes ds-breathe {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 1; }
+}
+
+.ds-reveal {
+  animation: ds-reveal var(--motion-base) var(--motion-ease-enter) both;
+}
+
+/* Escalonamento ate 8; do 9o em diante todos entram juntos. */
+.ds-reveal[data-stagger="1"] { animation-delay: calc(var(--motion-stagger-step) * 1); }
+.ds-reveal[data-stagger="2"] { animation-delay: calc(var(--motion-stagger-step) * 2); }
+.ds-reveal[data-stagger="3"] { animation-delay: calc(var(--motion-stagger-step) * 3); }
+.ds-reveal[data-stagger="4"] { animation-delay: calc(var(--motion-stagger-step) * 4); }
+.ds-reveal[data-stagger="5"] { animation-delay: calc(var(--motion-stagger-step) * 5); }
+.ds-reveal[data-stagger="6"] { animation-delay: calc(var(--motion-stagger-step) * 6); }
+.ds-reveal[data-stagger="7"] { animation-delay: calc(var(--motion-stagger-step) * 7); }
+.ds-reveal[data-stagger="8"] { animation-delay: calc(var(--motion-stagger-step) * 8); }
+
+/* pulse_line — so em fonte observada viva. Ver MOTION_TOKENS.json. */
+.ds-pulse {
+  height: var(--stroke-signal);
+  border-radius: var(--radius-pill);
+  background: var(--signal-calm);
+  animation: ds-breathe var(--motion-ambient) var(--motion-ease-calm) infinite;
+}
+/* Degradado, stale e indisponivel NAO respiram: pulsar afirmaria vida
+   que ninguem observou. O traco fica parado e muda de cor. */
+.ds-pulse[data-vivo="nao"] {
+  animation: none;
+  opacity: var(--motion-opacity-ghost);
+  background: var(--line-dashed-unknown);
+}
+
+/* connection_recovery — so enquanto sincroniza. Offline nao pulsa. */
+.ds-syncing {
+  animation: ds-breathe var(--motion-ambient) var(--motion-ease-calm) infinite;
+}
+
+/* expiration_fade — o item continua no DOM e continua legivel. */
+.ds-expired {
+  opacity: var(--motion-opacity-ghost);
+  transition: opacity var(--motion-slow) var(--motion-ease-exit);
+}
+
+/* expand — 0fr -> 1fr nao mede altura em JS e nao empurra o vizinho. */
+.ds-expand {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--motion-calm) var(--motion-ease-standard);
+}
+.ds-expand > * {
+  overflow: hidden;
+}
+.ds-expand[data-aberto="sim"] {
+  grid-template-rows: 1fr;
+}
+
+/* progress / confidence — barra em caixa de largura fixa. */
+.ds-meter {
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-muted);
+  overflow: hidden;
+}
+.ds-meter__fill {
+  height: 100%;
+  background: var(--ink-calm);
+  transition: width var(--motion-calm) var(--motion-ease-standard),
+    background-color var(--motion-calm) var(--motion-ease-standard);
+}
+
+/* ===========================================================================
+   REDUCED MOTION — o conteudo nao muda; so a travessia ate ele.
+   =========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .ds-reveal,
+  .ds-pulse,
+  .ds-syncing {
+    animation: none !important;
+  }
+  .ds-reveal {
+    opacity: var(--motion-opacity-full);
+    transform: none;
+  }
+  .ds-state,
+  .ds-expired,
+  .ds-expand,
+  .ds-meter__fill {
+    transition-duration: var(--motion-instant) !important;
+  }
+}

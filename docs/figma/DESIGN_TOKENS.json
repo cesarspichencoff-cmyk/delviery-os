@@ -1,0 +1,346 @@
+{
+  "_leia_primeiro": "Fonte unica dos tokens do DeliveryOS Product System. Os blocos 'foundation' foram EXTRAIDOS das variaveis reais do arquivo Figma IMWH8ZKMF5ra3QJYiR6vGa (colecao 'DeliveryOS', 49 variaveis) — nao foram inventados aqui. Os blocos 'estado' e 'ink' foram criados nesta unidade porque a fundacao nao tinha vocabulario de estado semantico. Cada token abaixo e verificado contra src/product/ui/tokens/product-tokens.css pelo teste 'tokens: DESIGN_TOKENS.json e o CSS nao divergem'.",
+  "versao": "deliveryos-design-tokens@1.0.0",
+  "gerado_em": "2026-08-01",
+  "origem": {
+    "figma_file_key": "IMWH8ZKMF5ra3QJYiR6vGa",
+    "figma_colecao": "DeliveryOS",
+    "figma_variaveis_lidas": 49,
+    "css_implementado": "src/product/ui/tokens/product-tokens.css",
+    "css_canonico_herdado": "src/entregas/ui/shared/tokens.css"
+  },
+  "foundation": {
+    "_nota": "Espelho 1:1 das variaveis do Figma. Nome do token = nome da variavel com '/' trocado por '-', prefixado por '--'.",
+    "cor": {
+      "brand-deep": "#143528",
+      "brand-deep-2": "#1b4430",
+      "brand-action": "#22563c",
+      "brand-action-hover": "#24603f",
+      "surface-work": "#faf8f4",
+      "surface-elevated": "#ffffff",
+      "surface-secondary": "#efe7d6",
+      "surface-muted": "#f3f0ea",
+      "surface-canvas": "#e7decd",
+      "text-primary": "#1c1915",
+      "text-muted": "#5a544a",
+      "text-faint": "#8e836f",
+      "text-on-dark": "#f4efe6",
+      "text-on-dark-muted": "#c9bfa9",
+      "line-work": "#e4e0d8",
+      "line-signal": "#e4dbcb",
+      "line-on-dark": "#4a443a",
+      "line-dashed-unknown": "#b7ae9d",
+      "signal-prep": "#5e6b86",
+      "signal-calm": "#5e8f70",
+      "signal-age": "#b0812f",
+      "signal-reduce": "#a65e3c",
+      "signal-lost": "#8c8677",
+      "signal-fail": "#8e3b2e",
+      "semantic-attention": "#b0812f",
+      "semantic-danger": "#8e3b2e",
+      "semantic-future": "#8c8677"
+    },
+    "espaco": {
+      "space-1": "4px",
+      "space-2": "8px",
+      "space-3": "16px",
+      "space-4": "24px",
+      "space-5": "40px",
+      "space-6": "64px"
+    },
+    "raio": {
+      "radius-sm": "12px",
+      "radius-md": "18px",
+      "radius-pill": "999px"
+    },
+    "traco": {
+      "stroke-hairline": "1px",
+      "stroke-emphasis": "1.5px",
+      "stroke-signal": "3px"
+    },
+    "tipo_tamanho": {
+      "type-display": "44px",
+      "type-title": "28px",
+      "type-heading": "20px",
+      "type-body": "16px",
+      "type-small": "14px",
+      "type-meta": "11px",
+      "type-technical": "13px"
+    },
+    "fonte": {
+      "font-editorial": "\"Spectral\", Georgia, serif",
+      "font-ui": "\"Hanken Grotesk\", system-ui, sans-serif",
+      "font-technical": "\"IBM Plex Mono\", ui-monospace, monospace"
+    },
+    "alvo": {
+      "touch-min": "48px"
+    }
+  },
+  "ink": {
+    "_por_que_existe": "ACHADO DESTA UNIDADE: as cores signal/* e text/faint da fundacao do Figma NAO alcancam 4.5:1 sobre surface-work. Medido: signal-calm 3.72:1, text-faint 3.77:1. Elas servem para ponto, traco e glifo grande — nunca para texto pequeno. Os tokens 'ink' abaixo sao as versoes escuras usadas em TEXTO de badge e rotulo, e todos passam 4.5:1 sobre #ffffff e sobre #faf8f4.",
+    "ink-calm": "#2f6b4a",
+    "ink-age": "#8a6218",
+    "ink-reduce": "#8c4a28",
+    "ink-lost": "#6b665a",
+    "ink-fail": "#8e3b2e",
+    "ink-prep": "#4a5670",
+    "ink-faint": "#6f6656"
+  },
+  "wash": {
+    "_por_que_existe": "Fundo tenue do badge. Nunca e o unico portador do estado — sempre acompanha rotulo textual e glifo.",
+    "wash-calm": "rgba(47, 107, 74, 0.10)",
+    "wash-age": "rgba(138, 98, 24, 0.10)",
+    "wash-reduce": "rgba(140, 74, 40, 0.10)",
+    "wash-lost": "rgba(107, 102, 90, 0.10)",
+    "wash-fail": "rgba(142, 59, 46, 0.10)",
+    "wash-prep": "rgba(74, 86, 112, 0.10)",
+    "wash-faint": "rgba(111, 102, 86, 0.10)",
+    "wash-action": "rgba(34, 86, 60, 0.10)"
+  },
+  "grid": {
+    "breakpoint-compact": "600px",
+    "breakpoint-medium": "905px",
+    "breakpoint-expanded": "1240px",
+    "breakpoint-wide": "1600px",
+    "shell-rail": "264px",
+    "reading-max": "68ch",
+    "content-max": "1320px"
+  },
+  "foco": {
+    "focus-ring-width": "3px",
+    "focus-ring-offset": "2px",
+    "focus-ring-color": "rgba(34, 86, 60, 0.55)"
+  },
+  "estados": {
+    "_leia_primeiro": "As 21 especies de estado exigidas pela Unidade 6. Cada estado carrega QUATRO canais independentes: rotulo textual (canal primario, o unico que o leitor de tela usa), glifo (canal monocromatico), padrao de borda (canal de textura, sobrevive a impressao) e cor (canal de varredura rapida, NUNCA sozinho). Os estados vivem em EIXOS que nao compartilham campo — um dado pode ser 'real' e 'stale' ao mesmo tempo; nao pode ser 'expirado' e 'retirado' ao mesmo tempo.",
+    "_eixos": {
+      "procedencia": ["real", "simulado", "controle", "controle_positivo_sintetico"],
+      "observacao": ["saudavel", "parcial", "degradado", "stale", "evidencia_insuficiente", "indisponivel"],
+      "ciclo_de_vida": ["shadow", "expirado", "retirado", "invalidado", "acao_humana_necessaria"],
+      "conexao": ["offline", "sincronizando", "conflito"],
+      "erro": ["erro_recuperavel", "erro_bloqueante"],
+      "disponibilidade": ["futuro", "somente_demonstracao"]
+    },
+    "real": {
+      "eixo": "procedencia",
+      "rotulo": "REAL",
+      "glifo": "●",
+      "padrao": "solid",
+      "ink": "ink-prep",
+      "wash": "wash-prep",
+      "descricao_curta": "Observado na operacao.",
+      "texto_acessivel": "procedencia: dado real, observado na operacao"
+    },
+    "simulado": {
+      "eixo": "procedencia",
+      "rotulo": "SIMULADO",
+      "glifo": "○",
+      "padrao": "dashed",
+      "ink": "ink-prep",
+      "wash": "wash-prep",
+      "descricao_curta": "Gerado para exercicio. Nao aconteceu.",
+      "texto_acessivel": "procedencia: dado simulado, nao aconteceu na operacao"
+    },
+    "controle": {
+      "eixo": "procedencia",
+      "rotulo": "CONTROLE",
+      "glifo": "◇",
+      "padrao": "dotted",
+      "ink": "ink-faint",
+      "wash": "wash-faint",
+      "descricao_curta": "Referencia que prova que o cano esta vivo.",
+      "texto_acessivel": "procedencia: controle, referencia de verificacao e nao operacao"
+    },
+    "controle_positivo_sintetico": {
+      "eixo": "procedencia",
+      "rotulo": "CONTROLE POSITIVO",
+      "glifo": "◆",
+      "padrao": "dotted",
+      "ink": "ink-faint",
+      "wash": "wash-faint",
+      "descricao_curta": "Fonte sintetica legitima. Prova a cadeia, nao a operacao.",
+      "texto_acessivel": "procedencia: controle positivo sintetico, prova que a cadeia esta viva e nao que existe fonte real"
+    },
+    "saudavel": {
+      "eixo": "observacao",
+      "rotulo": "SAUDAVEL",
+      "glifo": "●",
+      "padrao": "solid",
+      "ink": "ink-calm",
+      "wash": "wash-calm",
+      "descricao_curta": "Observado inteiro e recente.",
+      "texto_acessivel": "observacao saudavel: sinal completo e recente"
+    },
+    "parcial": {
+      "eixo": "observacao",
+      "rotulo": "PARCIAL",
+      "glifo": "◐",
+      "padrao": "hatch",
+      "ink": "ink-age",
+      "wash": "wash-age",
+      "descricao_curta": "Parte do sinal chegou. Parcial nao e saudavel.",
+      "texto_acessivel": "observacao parcial: parte do sinal chegou, isto nao significa saudavel"
+    },
+    "degradado": {
+      "eixo": "observacao",
+      "rotulo": "DEGRADADO",
+      "glifo": "▲",
+      "padrao": "hatch",
+      "ink": "ink-reduce",
+      "wash": "wash-reduce",
+      "descricao_curta": "Chega menos do que deveria.",
+      "texto_acessivel": "observacao degradada: chega menos sinal do que o esperado"
+    },
+    "stale": {
+      "eixo": "observacao",
+      "rotulo": "DESATUALIZADO",
+      "glifo": "○",
+      "padrao": "dashed",
+      "ink": "ink-age",
+      "wash": "wash-age",
+      "descricao_curta": "Ultimo fato e velho. Desatualizado nao e atual.",
+      "texto_acessivel": "desatualizado: o ultimo fato observado e antigo, isto nao representa o estado atual"
+    },
+    "evidencia_insuficiente": {
+      "eixo": "observacao",
+      "rotulo": "EVIDENCIA INSUFICIENTE",
+      "glifo": "?",
+      "padrao": "dotted",
+      "ink": "ink-faint",
+      "wash": "wash-faint",
+      "descricao_curta": "Nao ha base para afirmar. Por isso nada e afirmado.",
+      "texto_acessivel": "evidencia insuficiente: nao existe base rastreavel para afirmar, por isso nada e afirmado"
+    },
+    "indisponivel": {
+      "eixo": "observacao",
+      "rotulo": "INDISPONIVEL",
+      "glifo": "−",
+      "padrao": "dotted",
+      "ink": "ink-faint",
+      "wash": "wash-faint",
+      "descricao_curta": "Nao ha o que perguntar. Ausencia nao e zero.",
+      "texto_acessivel": "indisponivel: nao ha resposta apuravel, ausencia nao e zero"
+    },
+    "shadow": {
+      "eixo": "ciclo_de_vida",
+      "rotulo": "SOMBRA",
+      "glifo": "◐",
+      "padrao": "hatch",
+      "ink": "ink-prep",
+      "wash": "wash-prep",
+      "descricao_curta": "Observa e propoe. Nenhuma acao foi executada.",
+      "texto_acessivel": "modo sombra: o Copiloto observa e propoe, e nenhuma acao foi ou sera executada automaticamente"
+    },
+    "expirado": {
+      "eixo": "ciclo_de_vida",
+      "rotulo": "EXPIRADO",
+      "glifo": "×",
+      "padrao": "dashed",
+      "ink": "ink-lost",
+      "wash": "wash-lost",
+      "descricao_curta": "A validade venceu. Nao esta ativa.",
+      "texto_acessivel": "expirado: a validade venceu, esta recomendacao nao esta ativa"
+    },
+    "retirado": {
+      "eixo": "ciclo_de_vida",
+      "rotulo": "RETIRADO",
+      "glifo": "−",
+      "padrao": "dashed",
+      "ink": "ink-lost",
+      "wash": "wash-lost",
+      "descricao_curta": "Um humano retirou. Nao esta ativa.",
+      "texto_acessivel": "retirado: retirado por decisao humana, esta recomendacao nao esta ativa"
+    },
+    "invalidado": {
+      "eixo": "ciclo_de_vida",
+      "rotulo": "INVALIDADO",
+      "glifo": "×",
+      "padrao": "solid",
+      "ink": "ink-fail",
+      "wash": "wash-fail",
+      "descricao_curta": "Fato novo derrubou a base. Nao esta ativa.",
+      "texto_acessivel": "invalidado: um fato novo derrubou a base desta recomendacao, ela nao esta ativa"
+    },
+    "acao_humana_necessaria": {
+      "eixo": "ciclo_de_vida",
+      "rotulo": "DECISAO HUMANA",
+      "glifo": "△",
+      "padrao": "solid",
+      "ink": "ink-calm",
+      "wash": "wash-action",
+      "descricao_curta": "So um humano decide. O sistema nao decide sozinho.",
+      "texto_acessivel": "decisao humana necessaria: somente uma pessoa pode decidir, o sistema nao executa"
+    },
+    "offline": {
+      "eixo": "conexao",
+      "rotulo": "OFFLINE",
+      "glifo": "□",
+      "padrao": "dashed",
+      "ink": "ink-prep",
+      "wash": "wash-prep",
+      "descricao_curta": "Sem rede. O trabalho local continua.",
+      "texto_acessivel": "offline: sem rede, o trabalho local continua e sera enviado depois"
+    },
+    "sincronizando": {
+      "eixo": "conexao",
+      "rotulo": "SINCRONIZANDO",
+      "glifo": "↻",
+      "padrao": "hatch",
+      "ink": "ink-prep",
+      "wash": "wash-prep",
+      "descricao_curta": "Ha rede e ha fila. Nao e o mesmo que offline.",
+      "texto_acessivel": "sincronizando: existe rede e existe fila pendente, isto nao e o mesmo que estar offline"
+    },
+    "conflito": {
+      "eixo": "conexao",
+      "rotulo": "CONFLITO",
+      "glifo": "▲",
+      "padrao": "solid",
+      "ink": "ink-reduce",
+      "wash": "wash-reduce",
+      "descricao_curta": "Duas versoes do mesmo fato.",
+      "texto_acessivel": "conflito: existem duas versoes do mesmo fato e nenhuma foi escolhida automaticamente"
+    },
+    "erro_recuperavel": {
+      "eixo": "erro",
+      "rotulo": "FALHA RECUPERAVEL",
+      "glifo": "!",
+      "padrao": "hatch",
+      "ink": "ink-age",
+      "wash": "wash-age",
+      "descricao_curta": "Falhou e vai tentar de novo.",
+      "texto_acessivel": "falha recuperavel: a operacao falhou e sera tentada novamente"
+    },
+    "erro_bloqueante": {
+      "eixo": "erro",
+      "rotulo": "FALHA BLOQUEANTE",
+      "glifo": "■",
+      "padrao": "solid",
+      "ink": "ink-fail",
+      "wash": "wash-fail",
+      "descricao_curta": "Nao segue sozinho. Precisa de gente.",
+      "texto_acessivel": "falha bloqueante: nao ha como seguir sem intervencao humana"
+    },
+    "futuro": {
+      "eixo": "disponibilidade",
+      "rotulo": "PLANEJADO",
+      "glifo": "▷",
+      "padrao": "dotted",
+      "ink": "ink-faint",
+      "wash": "wash-faint",
+      "descricao_curta": "Tem lugar na navegacao. Nao existe ainda.",
+    "_por_que_este_glifo": "Nao pode ser o losango de `controle`: os dois usam ink-faint e borda pontilhada, e a colisao deixaria os dois indistinguiveis em preto e branco.",
+      "texto_acessivel": "planejado: este modulo tem lugar previsto e ainda nao existe"
+    },
+    "somente_demonstracao": {
+      "eixo": "disponibilidade",
+      "rotulo": "SOMENTE DEMONSTRACAO",
+      "glifo": "○",
+      "padrao": "dotted",
+      "ink": "ink-prep",
+      "wash": "wash-prep",
+      "descricao_curta": "Dado de exercicio. Nao e a operacao.",
+      "texto_acessivel": "somente demonstracao: o que aparece aqui e dado de exercicio e nao a operacao real"
+    }
+  }
+}

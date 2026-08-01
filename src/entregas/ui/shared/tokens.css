@@ -16,10 +16,14 @@
   --text-primary: #1c1915;
   --text-muted: #5a544a;
   --text-on-dark: #f4efe6;
-  --text-on-dark-muted: rgba(244, 239, 230, 0.72);
+  /* Unidade 6: valor OPACO da variavel do Figma (text/on-dark-muted). Antes era
+     alfa sobre o verde profundo, o que produzia uma cor diferente da que o
+     Design System publica — divergencia real achada pelo gate de paridade. */
+  --text-on-dark-muted: #c9bfa9;
   --attention: #b0812f;
   --line-work: #e4e0d8;
-  --line-on-dark: rgba(244, 239, 230, 0.14);
+  /* Unidade 6: idem — valor opaco de line/on-dark, vindo do Figma. */
+  --line-on-dark: #4a443a;
 
   /* —— Compatibilidade legada (aliases) —— */
   --cream-0: #f6f1e7;

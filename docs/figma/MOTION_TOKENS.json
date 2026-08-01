@@ -1,0 +1,124 @@
+{
+  "_leia_primeiro": "Tokens de movimento do DeliveryOS Product System. O repositorio NAO tem biblioteca de motion e nenhuma foi instalada nesta unidade — tudo abaixo e implementavel com CSS transition/animation puro. O OriginKit foi usado como REFERENCIA CONCEITUAL de padroes (reveal, pulse, expiration fade, state handoff); nada dele foi instalado, importado ou copiado. Verificado contra src/product/ui/tokens/product-tokens.css pelo teste 'motion: MOTION_TOKENS.json e o CSS nao divergem'.",
+  "versao": "deliveryos-motion-tokens@1.0.0",
+  "gerado_em": "2026-08-01",
+  "implementacao": {
+    "biblioteca": null,
+    "_nota_biblioteca": "Nenhuma. CSS transition e @keyframes apenas. Nao adicionar dependencia para produzir ornamento.",
+    "css": "src/product/ui/tokens/product-tokens.css",
+    "js_de_apoio": "src/product/ui/components/motion.js"
+  },
+  "duracao": {
+    "motion-instant": "0ms",
+    "motion-quick": "120ms",
+    "motion-base": "200ms",
+    "motion-calm": "320ms",
+    "motion-slow": "520ms",
+    "motion-ambient": "2400ms"
+  },
+  "easing": {
+    "motion-ease-standard": "cubic-bezier(0.2, 0, 0, 1)",
+    "motion-ease-enter": "cubic-bezier(0, 0, 0, 1)",
+    "motion-ease-exit": "cubic-bezier(0.3, 0, 1, 1)",
+    "motion-ease-calm": "cubic-bezier(0.4, 0, 0.2, 1)"
+  },
+  "distancia": {
+    "motion-nudge": "4px",
+    "motion-rise": "8px",
+    "motion-enter": "16px"
+  },
+  "escala": {
+    "motion-scale-rest": "1",
+    "motion-scale-press": "0.985"
+  },
+  "opacidade": {
+    "motion-opacity-hidden": "0",
+    "motion-opacity-ghost": "0.45",
+    "motion-opacity-full": "1"
+  },
+  "stagger": {
+    "motion-stagger-step": "40ms",
+    "motion-stagger-max-itens": 8,
+    "_regra": "Passado o item 8, todos entram juntos. Uma lista operacional longa nunca deve levar segundos para aparecer."
+  },
+  "padroes": {
+    "_leia_primeiro": "Cada padrao declara O QUE COMUNICA. Movimento que nao comunica mudanca de estado nao entra em superficie operacional.",
+    "reveal": {
+      "comunica": "chegada de conteudo novo na superficie",
+      "duracao": "motion-base",
+      "easing": "motion-ease-enter",
+      "propriedades": ["opacity", "transform: translateY"],
+      "distancia": "motion-rise",
+      "permitido_em": ["overview", "painel de saude", "bloco de evidencia", "cartao de recomendacao"],
+      "proibido_em": ["lista de viagens", "alertas criticos", "ocorrencias", "erros", "tabelas operacionais"]
+    },
+    "expand": {
+      "comunica": "abertura de detalhe sob demanda",
+      "duracao": "motion-calm",
+      "easing": "motion-ease-standard",
+      "propriedades": ["grid-template-rows", "opacity"],
+      "_por_que_grid_rows": "Anima de 0fr para 1fr sem medir altura em JS e sem provocar layout shift do conteudo vizinho.",
+      "permitido_em": ["evidence inspector", "detalhe de recomendacao", "detalhe de viagem"]
+    },
+    "state_handoff": {
+      "comunica": "um estado semantico virou outro no mesmo lugar",
+      "duracao": "motion-base",
+      "easing": "motion-ease-standard",
+      "propriedades": ["background-color", "border-color", "color"],
+      "_regra": "Nunca anima o GLIFO nem o ROTULO — so a cor. O canal textual troca instantaneamente para nao existir instante em que o rotulo mente."
+    },
+    "expiration_fade": {
+      "comunica": "a validade venceu; o item saiu de ativo",
+      "duracao": "motion-slow",
+      "easing": "motion-ease-exit",
+      "propriedades": ["opacity"],
+      "opacidade_final": "motion-opacity-ghost",
+      "_regra": "NUNCA remove o item da arvore. Expirado continua legivel e continua no DOM — sumir seria esconder que existiu."
+    },
+    "progress_transition": {
+      "comunica": "progresso mensuravel de uma etapa",
+      "duracao": "motion-calm",
+      "easing": "motion-ease-standard",
+      "propriedades": ["width"],
+      "_regra": "So aparece quando ha valor apurado. Progresso desconhecido usa o estado indisponivel, nunca uma barra indeterminada que sugere trabalho acontecendo."
+    },
+    "connection_recovery": {
+      "comunica": "a rede voltou e a fila esta sendo drenada",
+      "duracao": "motion-ambient",
+      "easing": "motion-ease-calm",
+      "propriedades": ["opacity"],
+      "iteracao": "infinite",
+      "_regra": "So enquanto o estado for 'sincronizando'. Offline NAO pulsa — ausencia de rede e quietude, nao agitacao."
+    },
+    "pulse_line": {
+      "comunica": "a fonte esta viva e entregando sinal",
+      "duracao": "motion-ambient",
+      "easing": "motion-ease-calm",
+      "propriedades": ["opacity"],
+      "iteracao": "infinite",
+      "_regra": "Reinterpretacao do padrao de linha pulsante: e um traco de 3px que respira, no maximo UM por regiao. Nunca pulsa em estado degradado, stale ou indisponivel — pulsar seria afirmar vida que nao foi observada."
+    },
+    "confidence_transition": {
+      "comunica": "a confianca mudou de faixa",
+      "duracao": "motion-calm",
+      "easing": "motion-ease-standard",
+      "propriedades": ["width", "background-color"],
+      "_regra": "Confianca sem evidencia rastreavel nao e desenhada — nao existe barra vazia esperando numero."
+    }
+  },
+  "regras": {
+    "prevencao_de_layout_shift": "Somente opacity, transform, color, background-color, border-color, grid-template-rows e width de barra em caixa de largura fixa. Nunca height, margin, padding, font-size ou top/left de elemento em fluxo.",
+    "concorrencia": "No maximo 1 animacao ambiente (pulse_line, connection_recovery) por regiao visivel. Animacoes de entrada de itens sao escalonadas ate 8 e depois simultaneas.",
+    "prioridade": "Estado critico vence movimento: quando um bloco entra em erro_bloqueante, conflito ou acao_humana_necessaria, toda animacao ambiente daquela regiao para.",
+    "interrupcao": "Trocar de estado durante uma transicao NAO enfileira: a nova transicao substitui a anterior a partir do valor corrente (comportamento nativo de CSS transition).",
+    "performance": "Nenhum timer de JS conduz animacao. O unico JS de motion existente observa 'prefers-reduced-motion' e aplica classes; a animacao roda no compositor.",
+    "fallback": "Sem suporte a @keyframes ou a prefers-reduced-motion, o estado final e o estado padrao no CSS — a interface nasce correta e a animacao so a atravessa.",
+    "teclado": "Nenhuma animacao atrasa foco. :focus-visible aplica o anel imediatamente, sem transicao de outline.",
+    "leitor_de_tela": "Movimento nao carrega significado: todo estado que anima ja esta escrito em texto no DOM antes da animacao comecar. Regioes que mudam sozinhas usam aria-live='polite'; nada usa 'assertive'."
+  },
+  "reduced_motion": {
+    "media_query": "@media (prefers-reduced-motion: reduce)",
+    "comportamento": "Todas as duracoes viram motion-instant e todas as iteracoes infinitas param no estado de repouso. O conteudo permanece identico — nenhuma informacao vive so no movimento.",
+    "_verificado_por": "teste 'reduced motion: nenhuma informacao vive so no movimento'"
+  }
+}
