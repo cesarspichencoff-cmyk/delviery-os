@@ -745,3 +745,89 @@ mudaria a leitura de toda a paleta para resolver um problema que é só de texto
 **Custo aceito.** Duas famílias de cor para o mesmo conceito. Mitigado por um teste com **controle
 positivo**: ele exige que `signal-calm` continue reprovando, senão a razão de existir dos `ink`
 teria desaparecido sem ninguém notar.
+
+---
+
+## Checkpoint canônico de realinhamento (2026-08-01)
+
+> Consolida as declarações do César e a documentação recuperada pelas duas auditorias.
+> Índice vinculante: `docs/product/DELIVERYOS_CANONICAL_SOURCE_INDEX.md`.
+
+### D40 — DeliveryOS é a plataforma; o Copiloto é um ativo dentro dela
+
+**Decisão.** DeliveryOS é a plataforma operacional completa — domínios, dados, interfaces, memória e
+ativos de inteligência. O Copiloto é um ativo operacional central **dentro** dela: atua sobre sinais
+e estados já sustentados e, dentro do Foco, reduz a decisão e oferece orientação prática. Não é banco
+de dados, não é a plataforma inteira, não é rede de informações. A decisão operacional relevante
+permanece humana.
+
+**Alternativa recusada.** Tratar DeliveryOS e Copiloto como sinônimos — leitura que a primeira
+auditoria fez a partir de `PRODUCT_CONSTITUTION.md` §1.
+
+**Por quê.** O César corrigiu explicitamente, e o `Mapa_Mestre_Dominios` §1 lhe dá razão: a
+plataforma tem domínios (Operação Viva, Entregas, Suprimentos, Caixa e Atendimento) e um motor
+soberano. A frase da constituição de produto é sobre **nome de marca**, não sobre arquitetura.
+
+**Custo.** Nenhum. Corrige um erro de leitura antes que ele governasse um redesenho.
+
+### D41 — Operação Viva é a única dona de Calmo, Ambiente e Foco
+
+**Decisão.** Operação Viva é o núcleo de consciência e a única dona dos três estados. Nenhum outro
+domínio cria Foco diretamente. A projeção de viagens hoje chamada `operacao-viva.ts` **é preservada**,
+mas representa apenas uma camada menor da definição original.
+
+**Alternativa recusada.** Renomear qualquer um dos dois agora.
+
+**Por quê.** `Mapa_Mestre_Dominios` §2.1 é explícito. E o código atual tem **zero** ocorrências de
+calmo/ambiente/foco — o nome sobreviveu, a função foi trocada, e nenhum documento registrou a troca.
+Renomear antes de decidir quem fica com o nome só trocaria a confusão de lugar.
+
+**Custo.** A divergência de nome permanece aberta (conflito C2), deliberadamente.
+
+### D42 — Calmo não é tela vazia, e nenhum problema relevante fica escondido
+
+**Decisão.** Todos os problemas relevantes permanecem visíveis; os mais urgentes recebem maior
+destaque; apenas **uma** orientação principal ocupa o Foco; os demais sinais **não desaparecem**.
+Verde/amarelo/vermelho dos ambientes não substituem Calmo/Ambiente/Foco. Um ambiente vermelho nunca
+fica escondido.
+
+**Alternativa recusada.** A leitura da primeira auditoria — "um foco por vez, esconde o resto".
+
+**Por quê.** Três provas convergem: o protótipo original em execução mostra **três problemas
+simultâneos** (dois em Ambiente, um em Foco); `Mapa_Ambientes` §10 diz que *"Vermelho não fica
+escondido no Ambiente"*; e `Mapa_Sinais_Operacionais` classifica 🟢 calmo como *"responde sempre"*.
+A exclusividade de slot governa a **ação prescrita**, não a visibilidade.
+
+**Custo.** Resta o conflito C1: o César quer orientação prática também nos secundários, e o
+`Modelo` §3 proíbe bloco de ação em Ambiente. Só ele resolve.
+
+### D43 — Os dois motores do Copiloto não são conectados neste checkpoint
+
+**Decisão.** O motor original (`src/perfil-delivery/decisao.js`) e o Copiloto Shadow
+(`src/platform/copiloto/`) são ativos diferentes, aparentemente complementares, e **não devem ser
+conectados** antes de decisão explícita do César sobre quem é o dono da atenção.
+
+**Alternativa recusada.** Ligar `decisao.js` ao pipeline novo agora, aproveitando que os dois existem
+e funcionam.
+
+**Por quê.** `sess.active.sit` é a fonte da verdade da atenção. Dois donos do Foco recriam exatamente
+o defeito medido em **30,8% dos onsets** e corrigido no commit `37ca1c9`. O ganho aparente de ligar
+cedo é menor que o custo de reabrir um defeito já fechado.
+
+**Custo.** O produto continua sem o ranking por impacto físico até a decisão. Registrado como
+bloqueio PB9/C3.
+
+### D44 — Bloqueio de produto passa a ser categoria de primeira classe
+
+**Decisão.** `BLOCKERS.md` ganha a seção **BLOQUEIOS DE PRODUTO E DECISÕES HUMANAS**, separada de
+infraestrutura, Android, PostgreSQL, Docker, nuvem e aparelho físico. `CLAUDE.md` §11 passa a mandar
+ler o índice canônico do produto **antes** do estado técnico.
+
+**Alternativa recusada.** Registrar as perguntas pendentes apenas no relatório de auditoria.
+
+**Por quê.** Esta é a correção da causa-raiz. 32 perguntas ao César ficaram sem resposta em quatro
+documentos, e nenhuma aparecia em `BLOCKERS.md` — que registrava Docker e backup. O sistema de
+memória tinha lugar para bloqueio técnico e nenhum lugar para bloqueio humano. Sem esta mudança, a
+deriva se repete na próxima sessão longa.
+
+**Custo.** Nenhum. Só disciplina.

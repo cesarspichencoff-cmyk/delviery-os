@@ -1,5 +1,69 @@
 # Retomada — leia este arquivo primeiro
 
+> ## ⚠ LEIA ANTES DESTE ARQUIVO
+>
+> **1.** `docs/product/DELIVERYOS_CANONICAL_SOURCE_INDEX.md` — o índice vinculante do produto.
+> **2.** Os documentos de produto que ele indicar para a sua missão.
+> **3.** `docs/auditoria/DELIVERYOS_PRODUCT_REALIGNMENT_AUDIT.md` e
+> `docs/auditoria/DELIVERYOS_SOURCE_OF_TRUTH_RECOVERY.md`.
+> **4.** Só então este arquivo.
+>
+> Esta ordem existe porque as Unidades 1 a 6 foram executadas sem o produto em contexto. Não repita.
+>
+> ---
+>
+> **ATUALIZADO 2026-08-01 — CHECKPOINT CANONICO DE REALINHAMENTO.**
+> `DELIVERYOS_CANONICAL_REALIGNMENT_CHECKPOINT_COMPLETE` · `MACRO2_CHECKPOINT_REACHED`
+>
+> **PROXIMA FASE, REGISTRADA E NAO INICIADA:**
+> ### FASE DE RECUPERACAO DO PRODUTO OPERACIONAL
+>
+> Ela devera, quando autorizada: comparar o prototipo original e a plataforma atual · definir a
+> arquitetura de integracao entre o motor original e as garantias shadow · restaurar a home
+> operacional · recuperar Calmo, Ambiente e Foco · recuperar os sinais e ambientes · reposicionar as
+> telas da Unidade 6 · recuperar Memoria Operacional, Resolucao e Evolucao · **preservar toda a
+> infraestrutura tecnica valida**.
+>
+> **O plano detalhado de implementacao NAO foi escrito, de proposito.**
+> Pre-requisito: as 8 perguntas materiais do indice canonico §5.
+>
+> ---
+>
+> **O que este checkpoint descobriu, e por que ele existe.**
+>
+> O produto do DeliveryOS nao derivou por decisao de arquitetura. Ele **parou** porque **32 perguntas
+> objetivas ao Cesar**, espalhadas por quatro documentos de produto, ficaram sem resposta — e
+> **nenhuma delas estava registrada como bloqueio**, porque `BLOCKERS.md` so sabia representar
+> infraestrutura. Em paralelo, `CLAUDE.md` §11 mandava ler apenas `docs/execution/`, que nao
+> referenciava nenhum documento de produto. Quem retomava o trabalho encontrava o estado tecnico e
+> **nao encontrava o produto**. Foi assim que as seis unidades foram executadas.
+>
+> **O produto que o Cesar descreveu ja estava desenhado.** Os 22 sinais de
+> `docs/Mapa_Sinais_Operacionais.md` cobrem praca sobrecarregada (S5), so quentes (S12), duas sacolas
+> (S14), itens saindo rapido (S18), pausa (S15/S17), cliente reclamando (S19) e pedido atrasado
+> (S1/S3/S4). Os seis ambientes que ele nomeou — **Caixa, Sushi, Quentes, Cozinha, Conferencia,
+> Motoboy** — estao em `docs/Mapa_Ambientes_V1.md`, com Verde/Amarelo/Vermelho e a regra
+> *"Vermelho nunca fica escondido no Ambiente"*.
+>
+> **Nao havia contradicao entre o Cesar e o Manifesto.** O prototipo original (porta 5178) mostra
+> `em fluxo` + dois rotulos de Ambiente + um Foco com acao, ao mesmo tempo, em 16 elementos de texto,
+> **zero tabelas, zero menus, zero botoes, sem scroll**. A exclusividade de slot governa a **acao
+> prescrita**, nao a visibilidade.
+>
+> **Achado que destrava algo parado desde julho:** a comanda **existe e e unica**.
+> `docs/Auditoria_Fonte_Viva_Loja_V1.md` §10.3 confirma que o "Relatorio de Entrega" do Odhen/Teknisa
+> traz os tres campos e e capturavel na fila de impressao do Windows. Duas das perguntas antigas
+> (P1 e P3) ja estavam respondidas dentro do proprio repositorio.
+>
+> **Decisoes canonicas registradas:** D40 (DeliveryOS e a plataforma; o Copiloto e um ativo dentro
+> dela) · D41 (Operacao Viva e a unica dona de Calmo/Ambiente/Foco; nada foi renomeado) · D42 (Calmo
+> nao e tela vazia; nenhum problema relevante fica escondido) · D43 (**os dois motores NAO foram
+> conectados**) · D44 (bloqueio de produto virou categoria de primeira classe). Licao L32.
+>
+> **Nada de codigo, Figma, frontend ou arquitetura foi alterado neste checkpoint.**
+>
+> ---
+>
 > **ATUALIZADO 2026-08-01 — UNIDADE 6 CONCLUIDA.**
 > `PRODUCT_SYSTEM_UNIT_COMPLETE` · `MACRO2_CHECKPOINT_REACHED`
 > **419 testes verdes**, `tsc --noEmit` exit 0.

@@ -1,5 +1,5 @@
 {
-  "_leia_primeiro": "Estado executavel do DeliveryOS. So entra aqui o que foi VERIFICADO. Escrito por quem termina uma missao, lido por quem comeca a proxima. Para retomar a execucao interrompida, leia docs/execution/NEXT_RESUME.md primeiro.",
+  "_leia_primeiro": "Estado executavel do DeliveryOS. So entra aqui o que foi VERIFICADO. ORDEM DE LEITURA OBRIGATORIA: (1) docs/product/DELIVERYOS_CANONICAL_SOURCE_INDEX.md — o produto; (2) os documentos de produto que ele indicar; (3) as duas auditorias em docs/auditoria/; (4) so entao este arquivo e o NEXT_RESUME.md. O produto vem antes do estado tecnico — ver DECISIONS.md D44 e PROMPT_LESSONS.md L32.",
   "atualizado_em": "2026-08-01",
   "missao": "MACRO-PROMPT 1/3 — Hybrid Platform + PostgreSQL + Cloud Foundation",
   "veredito": "READY_FOR_MACRO_PROMPT_2_FIELD_AND_COPILOT_BRIDGE",
@@ -187,8 +187,8 @@
     "executado_contra_provedor": false
   },
   "macro_prompt_2": {
-    "estado": "Unidade 6 (Product System) CONCLUIDA — Unidade 7 nao iniciada",
-    "veredito": "PRODUCT_SYSTEM_UNIT_COMPLETE / MACRO2_CHECKPOINT_REACHED",
+    "estado": "Unidade 6 CONCLUIDA — CHECKPOINT CANONICO DE REALINHAMENTO aplicado. Proxima fase: RECUPERACAO DO PRODUTO OPERACIONAL (nao iniciada)",
+    "veredito": "DELIVERYOS_CANONICAL_REALIGNMENT_CHECKPOINT_COMPLETE / MACRO2_CHECKPOINT_REACHED",
     "leia_primeiro": "docs/execution/NEXT_RESUME.md",
     "preservacao": {
       "branch_wip": "wip/macro2-interrupted-recovery-20260727",
@@ -693,5 +693,116 @@
       ],
       "nao_provado": "NENHUMA tela mostra dado real de operacao — todas carregam somente_demonstracao. Nao ha rota de leitura para credencial, GPS, ultima sincronizacao nem fila do aparelho. Nao ha historico em nenhuma superficie. Nao ha busca, filtro, permissao nem autenticacao — e por isso nao ha acao. A retirada de recomendacao continua sem UI"
     }
+  },
+  "indice_canonico_do_produto": "docs/product/DELIVERYOS_CANONICAL_SOURCE_INDEX.md",
+  "checkpoint_canonico_realinhamento": {
+    "data": "2026-08-01",
+    "origem": [
+      "docs/auditoria/DELIVERYOS_PRODUCT_REALIGNMENT_AUDIT.md",
+      "docs/auditoria/DELIVERYOS_SOURCE_OF_TRUTH_RECOVERY.md"
+    ],
+    "indice_vinculante": "docs/product/DELIVERYOS_CANONICAL_SOURCE_INDEX.md",
+    "causa_raiz": "32 perguntas objetivas ao Cesar, em 4 documentos de produto, ficaram sem resposta e NENHUMA estava registrada como bloqueio — BLOCKERS.md so representava bloqueio tecnico. Em paralelo, CLAUDE.md mandava ler apenas docs/execution/, que nao referenciava nenhum documento de produto. As Unidades 1 a 6 foram executadas sem o produto em contexto",
+    "correcao_aplicada": [
+      "CLAUDE.md §11: ordem de leitura passa a comecar pelo indice canonico do produto",
+      "BLOCKERS.md: nova categoria BLOQUEIOS DE PRODUTO E DECISOES HUMANAS, separada de infraestrutura",
+      "DECISIONS.md: D40 a D44",
+      "PROMPT_LESSONS.md: L32"
+    ],
+    "decisoes_canonicas": {
+      "D40": "DeliveryOS e a plataforma; o Copiloto e um ativo dentro dela; nao sao sinonimos",
+      "D41": "Operacao Viva e a unica dona de Calmo, Ambiente e Foco; a projecao de viagens e preservada como camada menor; nada foi renomeado",
+      "D42": "Calmo nao e tela vazia; todos os problemas relevantes ficam visiveis; so UMA orientacao ocupa o Foco; ambiente vermelho nunca fica escondido",
+      "D43": "os dois motores do Copiloto NAO sao conectados neste checkpoint",
+      "D44": "bloqueio de produto passa a ser categoria de primeira classe"
+    },
+    "perguntas_antigas": {
+      "total": 32,
+      "_nota": "as auditorias falavam em 24; o quarto conjunto (Auditoria_Fonte_Viva_Loja_V1 §8) nao havia sido catalogado",
+      "fontes": [
+        "Logica_Embalagens_DeliveryOS_V0.md §15 (8)",
+        "Mapa_Ambientes_V1.md §13 (8)",
+        "Auditoria_Praca_Comanda_Atencoes_V1.md (8)",
+        "Auditoria_Fonte_Viva_Loja_V1.md §8 (8)"
+      ],
+      "respondidas_pelo_documento": 3,
+      "respondidas_por_cesar": 1,
+      "duplicadas": 5,
+      "obsoletas": 2,
+      "abertas_e_materiais": 8,
+      "abertas_nao_bloqueantes": 13,
+      "_achado": "a comanda EXISTE e e unica — Auditoria_Fonte_Viva_Loja_V1 §10.3 confirma que o Relatorio de Entrega do Odhen/Teknisa traz os tres campos e e capturavel na fila de impressao. Isso responde P1 e P3, que estavam abertas desde julho",
+      "classificacao_completa": "docs/product/DELIVERYOS_CANONICAL_SOURCE_INDEX.md §5"
+    },
+    "patrimonio_original_reconhecido": {
+      "sinais": "22 em docs/Mapa_Sinais_Operacionais.md",
+      "ambientes": [
+        "Caixa",
+        "Sushi",
+        "Quentes",
+        "Cozinha",
+        "Conferencia",
+        "Motoboy"
+      ],
+      "prototipo_original": "tools/serve_prototipo.js (porta 5178) — mostra Calmo, Ambiente, Foco e pulso ao mesmo tempo; 16 elementos de texto, 0 tabelas, 0 menus, 0 botoes, sem scroll",
+      "motor": "src/perfil-delivery/motor.js + decisao.js — funcional, calibrado em 30 dias reais, DESCONECTADO da plataforma"
+    },
+    "classificacao_das_superficies_da_unidade_6": {
+      "componentes_e_design_system": "reaproveitaveis — preservar integralmente",
+      "entregas": "superficie operacional de aprofundamento — NAO e a home; virou home por ser a primeira implementada",
+      "operacao_viva_9_dimensoes": "superficie tecnica de aprofundamento",
+      "conference_brain": "console de inspecao e auditoria — NAO e jornada principal da operacao",
+      "copiloto_shadow": "console de inspecao e auditoria — NAO representa sozinho a experiencia completa do Copiloto",
+      "capa_do_figma": "substituir — nao pode medir o valor do produto principalmente por quantidade de testes",
+      "_regra": "nenhuma delas e substituta da home operacional original"
+    },
+    "decisoes_que_exigem_cesar": [
+      "mudanca da home",
+      "mudanca de dono de Calmo/Ambiente/Foco",
+      "mudanca do papel do Copiloto",
+      "criacao remocao ou reorganizacao de modulos visiveis",
+      "alteracao das jornadas de gerente boqueta caixa e atendimento",
+      "mudanca no significado de um ambiente",
+      "conexao entre os dois motores",
+      "abandono de um sinal original",
+      "transformar tela tecnica em experiencia principal",
+      "mudanca das regras de pausa",
+      "mudanca das acoes recomendadas",
+      "uso de dado de funcionario que amplie vigilancia"
+    ],
+    "conflitos_abertos": [
+      "C1 Ambiente pode carregar acao?",
+      "C2 quem e Operacao Viva",
+      "C3 qual motor e dono da atencao",
+      "C4 Quentes x Cozinha",
+      "C5 Caixa e Conferencia sem dado",
+      "C6 duas sacolas heuristica x regra",
+      "C7 modulos sem origem documental",
+      "C8 notificacao fora da tela"
+    ],
+    "nao_alterado": [
+      "codigo funcional",
+      "Figma",
+      "frontend",
+      "arquitetura",
+      "nenhum motor conectado",
+      "nada renomeado"
+    ]
+  },
+  "proxima_fase": {
+    "nome": "FASE DE RECUPERACAO DO PRODUTO OPERACIONAL",
+    "estado": "REGISTRADA, NAO INICIADA",
+    "_nota": "o plano detalhado de implementacao NAO foi escrito, de proposito",
+    "escopo_futuro": [
+      "comparar o prototipo original e a plataforma atual",
+      "definir a arquitetura de integracao entre motor original e garantias shadow",
+      "restaurar a home operacional",
+      "recuperar Calmo Ambiente e Foco",
+      "recuperar os sinais e ambientes",
+      "reposicionar as telas da Unidade 6",
+      "recuperar Memoria Operacional Resolucao e Evolucao",
+      "preservar toda a infraestrutura tecnica valida"
+    ],
+    "pre_requisito": "as 8 perguntas materiais do indice canonico §5 — quatro ja estao com o Cesar, quatro nunca foram feitas"
   }
 }

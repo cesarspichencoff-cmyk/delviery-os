@@ -536,3 +536,29 @@ números da cadeia. O controle positivo sintético também devolvia vazio — e 
 
 **Regra que fica.** Antes de construir tela sobre uma cadeia, imprima os números dela. E quando um
 par controle/tratamento der o mesmo resultado, suspeite do instrumento antes de acreditar no dado.
+
+---
+
+## L32 — Pergunta de produto que não vira bloqueio some
+
+**O que quase passou.** Quatro documentos de produto terminam com perguntas objetivas ao César —
+`Logica_Embalagens` §15 (8), `Mapa_Ambientes_V1` §13 (8), `Auditoria_Praca_Comanda_Atencoes` (8) e
+`Auditoria_Fonte_Viva_Loja_V1` §8 (8). **32 no total.** Todas respondíveis por áudio. Todas travando
+a camada de produto. **Nenhuma estava em `BLOCKERS.md`**, que registrava Android, PostgreSQL, Docker
+e backup externo.
+
+**Por que importa.** O trabalho não parou — ele migrou. O projeto avançou por sete meses no que não
+dependia dessas respostas (plataforma, contratos, Brain, Copiloto shadow, Product System), e essa
+camada acabou ocupando o lugar do produto. Ninguém desobedeceu nada: a pergunta simplesmente não
+existia no único artefato que sobrevive à troca de sessão.
+
+**Como foi fechado.** `BLOCKERS.md` ganhou a categoria `BLOQUEIOS DE PRODUTO E DECISÕES HUMANAS`, e
+`CLAUDE.md` §11 passou a exigir a leitura do índice canônico do produto antes do estado técnico.
+
+**Família.** É prima de L26/L27/L30, mas num nível acima: ali o instrumento media o vizinho; aqui o
+instrumento **não tinha como medir a coisa certa**. Um sistema de memória que só sabe representar
+bloqueio técnico produz, com o tempo, um projeto só técnico.
+
+**Regra que fica.** Ao terminar um documento com perguntas para um humano, a última ação da missão é
+registrá-las em `BLOCKERS.md`. Pergunta que mora só no corpo de um documento não é bloqueio — é um
+bilhete que ninguém vai ler.

@@ -1,5 +1,102 @@
 # Bloqueadores e trabalho não integrado
 
+> **LEIA PRIMEIRO — 2026-08-01.** Este arquivo passou a ter DUAS naturezas de bloqueio, separadas de
+> propósito. A seção **BLOQUEIOS DE PRODUTO E DECISÕES HUMANAS** foi criada porque o produto do
+> DeliveryOS ficou parado de julho a agosto de 2026 por perguntas que só o César responde — e
+> nenhuma delas aparecia aqui, porque este arquivo só registrava infraestrutura. Uma pergunta de
+> produto sem resposta é um bloqueio tão real quanto um banco que não sobe.
+>
+> Índice canônico do produto: `docs/product/DELIVERYOS_CANONICAL_SOURCE_INDEX.md`.
+
+---
+
+# BLOQUEIOS DE PRODUTO E DECISÕES HUMANAS
+
+> **Categoria separada de infraestrutura, Android, PostgreSQL, Docker, nuvem e aparelho físico.**
+> Nada aqui se resolve com código. Tudo aqui bloqueia a recuperação do produto operacional.
+> Classificação completa das 32 perguntas antigas: índice canônico §5.
+
+## PB1 — "Quentes" × "Cozinha": colisão de nome não resolvida
+
+- **Bloqueia:** os 6 ambientes inteiros (`Mapa_Ambientes_V1.md`).
+- **Evidência:** o motor exibe `DISPLAY.cozinha_quentes = "Quentes"`, mas o César usa "Quentes" para
+  hot roll/tempura e "Cozinha" para os pratos da cozinha. Implementar hoje mostraria a área errada.
+- **Pergunta:** "Quentes" para você é hot roll e tempura, ou os pratos da cozinha? E "Cozinha"?
+- **Estado:** perguntado (auditoria de recuperação §20 Q2) · **sem resposta**.
+
+## PB2 — Limiar de amarelo e vermelho
+
+- **Bloqueia:** todos os limiares dos 6 ambientes.
+- **Pergunta:** a diferença entre "acompanhar" e "agir agora" é em pedidos esperando ou em minutos?
+- **Estado:** perguntado (§20 Q6) · **sem resposta**.
+
+## PB3 — "Duas sacolas": heurística × regra real
+
+- **Bloqueia:** o sinal S14 e as Atenções Leves no Calmo.
+- **Evidência:** o motor usa `segundaSacola = combo ou ≥8 itens`, que atinge **47–61%** dos pedidos —
+  comum demais para ser sinal. `Logica_Embalagens` §11 tem 6 causas reais, nunca validadas.
+- **Estado:** perguntado (§20 Q3) · **sem resposta**.
+
+## PB4 — "Só quente" é acionável ou informativo?
+
+- **Bloqueia:** o sinal S12.
+- **Evidência:** dado real e disponível (14–23% dos pedidos); a **ação** é indefinida.
+- **Pergunta:** "só quente" muda o que a equipe faz (sacola separada, prioridade), ou é só uma
+  característica?
+- **Estado:** **nunca perguntado**.
+
+## PB5 — Caixa tem sinal digital?
+
+- **Bloqueia:** o ambiente Caixa existir ou entrar como "sem medição".
+- **Evidência:** `Mapa_Ambientes` §7 — o motor não modela comanda nem organização inicial. Mostrar
+  Verde seria inventar operação (viola Lei 5 e Lei 12).
+- **Estado:** perguntado (§20 Q5) · **sem resposta**.
+
+## PB6 — Conferência: estação ou risco por pedido?
+
+- **Bloqueia:** o ambiente Conferência.
+- **Evidência:** o motor mede risco por pedido, não fila da bancada.
+- **Estado:** **nunca perguntado**.
+
+## PB7 — Mapa praça → ambiente
+
+- **Bloqueia:** o fechamento do mapa dos 6 ambientes.
+- **Pergunta:** Sushi = Combinados + Duplas + Enrolados frios?
+- **Estado:** **nunca perguntado**.
+
+## PB8 — O pedido some do Odhen/Teknisa: fica gravado?
+
+- **Bloqueia:** a arquitetura de captura da fonte viva da loja.
+- **Evidência:** `Auditoria_Fonte_Viva_Loja_V1.md` §8.1. Se não fica gravado, a captura **no instante
+  da impressão** é obrigatória, não opcional.
+- **Estado:** **nunca perguntado**.
+
+## PB9 — Conflitos de produto sem dono (não são perguntas soltas)
+
+Registrados no índice canônico §7. Os que travam implementação:
+
+- **C2** — quem é "Operação Viva": o núcleo cognitivo ou a projeção de viagens?
+- **C3** — qual motor é dono da atenção: `decisao.js` ou `shadow.ts`? **Ligar os dois sem decidir
+  recria o defeito de 30,8% corrigido em `37ca1c9`.**
+- **C1** — Ambiente pode carregar orientação de ação? (César quer; `Modelo` §3 proíbe.)
+- **C7** — CRM, Evolução, Treinamento, RH e Gestão são módulos do DeliveryOS? (Não existem em fonte
+  original; foram criados na Unidade 6.)
+- **C8** — notificação fora da tela é permitida? (Jornadas 15/16 nunca foram desenhadas.)
+
+## PB10 — Fontes canônicas nunca examinadas
+
+- `docs/design/canonical/deliveryos-visual-v2/*.zip` — **cânone visual soberano**, nunca aberto.
+- Worktree `deliveryos-copiloto-v33-implementation` — implementação validada do Copiloto, fora deste
+  repositório.
+
+---
+
+# BLOQUEIOS DE INFRAESTRUTURA E AMBIENTE
+
+> A partir daqui, o conteúdo histórico deste arquivo, preservado integralmente.
+
+---
+
 > Estado em **2026-07-27**, checkpoint do Macro-Prompt 2/3 por limite de crédito.
 > O Macro-Prompt 2 **NÃO está concluído**. Este arquivo existe para a retomada
 > não precisar redescobrir nada.
