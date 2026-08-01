@@ -12,6 +12,8 @@
     "deliveryosEvidenceStoreV1": false,
     "deliveryosHumanQueueV1": false,
     "deliveryosNotificationEngineV1": false,
+    "conversationPatternEngineV1": false,
+    "customerMenuContextV1": false,
     "simulatedDriversV1": false,
     "realDriversReadV1": false,
     "realDriversWriteV1": false

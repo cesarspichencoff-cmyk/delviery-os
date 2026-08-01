@@ -196,7 +196,7 @@ function sideTopic(text) {
 
 function detectedSignals(text, input) {
   const target = hintedJourney(text, input.candidate_intents);
-  const greeting = /^(?:oi|ola|bom dia|boa tarde|boa noite|e ai|tudo bem)(?:[!,.? ]|$)/u.test(text);
+  const greeting = /^(?:oi+|ola|bom dia|boa tarde|boa noite|e ai|tudo bem)(?:[!,.? ]|$)/u.test(text);
   const safety = /\b(?:dificuldade para respirar|desmaio|alerg|vomito|diarreia|intoxic|corpo estranho|cabelo)\b/u.test(text);
   const handoff = /\b(?:falar com (?:uma pessoa|alguem|humano)|atendente|chamar responsavel)\b/u.test(text);
   const correction = /\b(?:na verdade|quis dizer|corrigindo|corrigi|agora somos|nao (?:foi|era)|melhor as|melhor às)\b/u.test(text)
@@ -281,6 +281,9 @@ function resolveConversationPattern(raw = {}) {
   if (signals.resume && input.suspended_journeys.length) {
     const suspended = input.suspended_journeys.at(-1);
     return decision({ pattern: 'resume', confidence: 0.96, journey_action: 'resume', target_journey: suspended.journey_id, target_step: suspended.active_step || null, question_to_resume: pendingPrompt(suspended.pending_question), requires_clarification: false, clarification_question: null, collision_log: collisionLog(signals, 'resume') });
+  }
+  if (signals.resume && active) {
+    return decision({ pattern: 'resume', confidence: 0.94, journey_action: 'none', target_journey: active, target_step: input.active_step, question_to_resume: pendingPrompt(input.pending_question), requires_clarification: false, clarification_question: null, collision_log: collisionLog(signals, 'resume') });
   }
   if (signals.greeting && signals.target) {
     const facts = contextualNumber(text) ? { party_size: contextualNumber(text) } : {};

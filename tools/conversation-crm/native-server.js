@@ -15,20 +15,27 @@ function send(res,status,body,type='application/json; charset=utf-8'){res.writeH
 function json(res,status,value){send(res,status,JSON.stringify(value));}
 async function readJson(req){let size=0;const chunks=[];for await(const chunk of req){size+=chunk.length;if(size>MAX_BODY_BYTES){const error=new Error('payload_too_large');error.code='PAYLOAD_TOO_LARGE';throw error;}chunks.push(chunk);}try{return JSON.parse(Buffer.concat(chunks).toString('utf8')||'{}');}catch{const error=new Error('invalid_json');error.code='INVALID_JSON';throw error;}}
 function staticFile(res,name,type){send(res,200,fs.readFileSync(path.join(APP_ROOT,name)),type);}
+function restoredManualTurn(runtime){
+  return runtime.store.eventsOfType('runtime.response_registered').reduce((maximum,event)=>{
+    const match=String(event.payload?.result?.message_id||'').match(/^SIM-MANUAL-(\d{4,})$/);
+    return match?Math.max(maximum,Number(match[1])):maximum;
+  },0);
+}
 
 function createNativeServer(options={}){
   const runtimeOptions={runtimeRoot:options.runtimeRoot,projectRoot:options.projectRoot,flagsFile:options.flagsFile};
   const scenarios=loadCanonicalCatalogs().scenarios.scenarios;
   let runtime=options.runtime||new NativeConversationRuntime(runtimeOptions);
+  const customerMenu=options.customerMenu||new CustomerMenuHomologationService();
   const homologation=options.homologation||new HomologationService({
     projectRoot:options.projectRoot,
     feedbackRoot:options.feedbackRoot||options.runtimeRoot,
     chatRuntimeRoot:options.chatRuntimeRoot,
     exportRoot:options.exportRoot,
-    now:options.now
+    now:options.now,
+    customerMenu
   });
-  const customerMenu=options.customerMenu||new CustomerMenuHomologationService();
-  let manualTurn=0;
+  let manualTurn=restoredManualTurn(runtime);
   const server=http.createServer(async(req,res)=>{try{
     if(req.method==='GET'&&req.url==='/')return staticFile(res,'index.html','text/html; charset=utf-8');
     if(req.method==='GET'&&req.url==='/app.js')return staticFile(res,'app.js','application/javascript; charset=utf-8');
@@ -47,7 +54,8 @@ function createNativeServer(options={}){
     const customerMenuMatch=req.url?.match(/^\/api\/customer-menu\/customers\/(SIM-CUSTOMER-\d{3})$/);
     if(req.method==='GET'&&customerMenuMatch)return json(res,200,customerMenu.customer(customerMenuMatch[1]));
     if(req.method==='POST'&&req.url==='/api/customer-menu/recommend'){const body=await readJson(req);return json(res,200,customerMenu.recommend(body));}
-    if(req.method==='POST'&&req.url==='/api/homologation/chat'){const body=await readJson(req);return json(res,200,homologation.chat(body.message));}
+    if(req.method==='POST'&&req.url==='/api/customer-menu/imports/action'){const body=await readJson(req);return json(res,200,customerMenu.importAction(body));}
+    if(req.method==='POST'&&req.url==='/api/homologation/chat'){const body=await readJson(req);return json(res,200,homologation.chat(body));}
     if(req.method==='POST'&&req.url==='/api/homologation/chat/reset')return json(res,200,homologation.resetChat());
     if(req.method==='POST'&&req.url==='/api/homologation/feedback'){const body=await readJson(req);return json(res,200,homologation.feedback(body));}
     if(req.method==='POST'&&req.url==='/api/homologation/export')return json(res,200,homologation.export());
@@ -56,7 +64,7 @@ function createNativeServer(options={}){
     if(req.method==='POST'&&req.url==='/api/triage'){const body=await readJson(req);manualTurn+=1;const messageId=`SIM-MANUAL-${String(manualTurn).padStart(4,'0')}`;const input={synthetic:true,message_type:'text',content:String(body.message||''),channel:'synthetic',subject_id:'SIM-SUBJECT-MANUAL',conversation_id:'SIM-CONV-MANUAL',message_id:messageId,correlation_id:`SIM-CORR-${messageId}`,idempotency_key:`manual:${messageId}`,occurred_at:runtime.clock.iso(),turn_order:manualTurn,unit_id:'SIM-UNIT-001',context:{...(body.context||{}),synthetic:true}};return json(res,200,{ok:true,result:runtime.processMessage(input)});}
     const scenarioMatch=req.url?.match(/^\/api\/native\/scenarios\/(TATA-SC-\d{3})$/);if(req.method==='POST'&&scenarioMatch)return json(res,200,{ok:true,result:runScenarioOnRuntime(runtime,scenarioMatch[1])});
     if(req.method==='POST'&&req.url==='/api/native/clock'){const body=await readJson(req);return json(res,200,{ok:true,clock:runtime.clock.advance(Number(body.advance_ms))});}
-    if(req.method==='POST'&&req.url==='/api/native/replay'){runtime=new NativeConversationRuntime(runtimeOptions);return json(res,200,{ok:true,replay_status:'completed',snapshot:runtime.snapshot()});}
+    if(req.method==='POST'&&req.url==='/api/native/replay'){runtime=new NativeConversationRuntime(runtimeOptions);manualTurn=restoredManualTurn(runtime);return json(res,200,{ok:true,replay_status:'completed',snapshot:runtime.snapshot()});}
     if(req.method==='POST'&&req.url==='/api/native/reset'){const root=runtime.runtimeRoot;fs.rmSync(root,{recursive:true,force:true});runtime=new NativeConversationRuntime({...runtimeOptions,runtimeRoot:root});manualTurn=0;return json(res,200,{ok:true,reset:true,clock:runtime.clock.iso()});}
     return json(res,404,{ok:false,error_code:'NOT_FOUND'});
   }catch(error){const safe=safeError(error);return json(res,error?.code==='PAYLOAD_TOO_LARGE'?413:400,{ok:false,...safe});}});

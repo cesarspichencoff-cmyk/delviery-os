@@ -22,8 +22,15 @@ const { extractEntities, extractPartyCandidates, normalizeText } = require('./en
 const { NUMBER_WORDS } = require('../engine/classifier');
 const { createRuntimeConversationEngine } = require('./engine-factory');
 const { composeHumanizedResponse } = require('./humanized-response');
+const { NativePatternStateStore, publishPatternState } = require('./conversation-pattern-state');
+const { buildApprovedResponseEnvelope } = require('./approved-response-plan');
 const { loadPlaceholderRegistry } = require('./placeholders');
 const { nativeError } = require('./errors');
+const {
+  normalizeConversationText,
+  resolveConversationPattern,
+  ZERO_EXTERNAL_COST_POLICY
+} = require('../../../apps/deliveryos-ai-node');
 
 const CHECKPOINTS = Object.freeze([
   'message_received',
@@ -133,6 +140,7 @@ class NativeConversationRuntime {
     this.notifications = new NotificationEngine({ store: this.store, flags: this.flags, clock: this.clock, ids: this.ids });
     this.observability = new NativeObservability({ store: this.store, clock: this.clock });
     this.engine = createRuntimeConversationEngine({ flags: this.flags, operationalCatalog: this.catalogs });
+    this.patternState = new NativePatternStateStore({ store: this.store, clock: this.clock });
     this.placeholders = loadPlaceholderRegistry(this.catalogs);
   }
 
@@ -210,7 +218,9 @@ class NativeConversationRuntime {
         turn_order: raw.turn_order,
         source_text: raw.content,
         ...history,
-        context
+        context,
+        pattern_decision: saved.pattern || null,
+        journey_state: saved.journey_state || null
       }
     });
   }
@@ -283,6 +293,85 @@ class NativeConversationRuntime {
     }
   }
 
+  recentPatternTurns(conversationId, limit = 6) {
+    return this.store.eventsOfType('crm.classification_recorded')
+      .filter((event) => event.payload.conversation_id === conversationId)
+      .slice(-limit)
+      .map((event) => ({
+        intent: event.payload.classification?.intent || null,
+        entities: Object.entries(event.payload.classification?.entities || {})
+          .filter(([field, entity]) => (
+            !/(?:name|phone|email|cpf|address|token|cookie)/iu.test(field)
+            && entity
+            && ['string', 'number', 'boolean'].includes(typeof entity.value)
+          ))
+          .map(([field, entity]) => ({ field, value: entity.value }))
+      }));
+  }
+
+  resolvePattern(input, classification, productContexts = {}) {
+    if (this.flags.flags.conversationPatternEngineV1 !== true) {
+      return { decision: null, state: null, enabled: false };
+    }
+    const state = this.patternState.reconstruct(input.conversation_id);
+    const candidateEntities = Object.entries(classification.entities || {})
+      .filter(([field, entity]) => (
+        !/(?:name|phone|email|cpf|address|token|cookie)/iu.test(field)
+        && entity
+        && ['string', 'number', 'boolean'].includes(typeof entity.value)
+      ))
+      .map(([field, entity]) => ({ field, value: entity.value }));
+    const decision = resolveConversationPattern({
+      current_message: input.content,
+      normalized_message: normalizeConversationText(input.content),
+      active_journey: state.active_journey,
+      active_step: state.active_step,
+      pending_question: state.pending_question,
+      collected_facts: state.collected_facts,
+      suspended_journeys: state.suspended_journeys,
+      side_questions: state.side_questions,
+      last_assistant_act: state.last_assistant_act,
+      recent_turns: this.recentPatternTurns(input.conversation_id),
+      candidate_intents: [classification.intent],
+      candidate_entities: candidateEntities,
+      ...(productContexts.customer_context ? { customer_context: productContexts.customer_context } : {}),
+      ...(productContexts.menu_context ? { menu_context: productContexts.menu_context } : {}),
+      ...(productContexts.recommendation_context ? { recommendation_context: productContexts.recommendation_context } : {}),
+      ...(productContexts.channel_policy ? { channel_policy: productContexts.channel_policy } : {}),
+      cost_policy: productContexts.cost_policy || ZERO_EXTERNAL_COST_POLICY
+    });
+    const applied = this.patternState.apply({
+      conversation_id: input.conversation_id,
+      turn_id: input.message_id,
+      occurred_at: input.occurred_at,
+      decision
+    });
+    return { decision, state: applied.state, enabled: true };
+  }
+
+  previewPattern(input, productContexts = {}) {
+    if (this.flags.flags.conversationPatternEngineV1 !== true) return null;
+    const state = this.patternState.reconstruct(input.conversation_id);
+    return resolveConversationPattern({
+      current_message: input.content,
+      normalized_message: normalizeConversationText(input.content),
+      active_journey: state.active_journey,
+      active_step: state.active_step,
+      pending_question: state.pending_question,
+      collected_facts: state.collected_facts,
+      suspended_journeys: state.suspended_journeys,
+      side_questions: state.side_questions,
+      last_assistant_act: state.last_assistant_act,
+      recent_turns: this.recentPatternTurns(input.conversation_id),
+      candidate_intents: [],
+      candidate_entities: [],
+      ...(productContexts.customer_context ? { customer_context: productContexts.customer_context } : {}),
+      ...(productContexts.menu_context ? { menu_context: productContexts.menu_context } : {}),
+      ...(productContexts.recommendation_context ? { recommendation_context: productContexts.recommendation_context } : {}),
+      cost_policy: productContexts.cost_policy || ZERO_EXTERNAL_COST_POLICY
+    });
+  }
+
   processMessage(raw, options = {}) {
     const scenarioId = options.scenario_id || raw.report_scenario_id || null;
     const finalKey = `runtime:response:${raw.idempotency_key}`;
@@ -332,7 +421,23 @@ class NativeConversationRuntime {
         continuation_intent: latestClassification?.classification?.intent || null,
         short_reply_resolved: Object.keys(shortEntities).length > 0
       };
-      const classification = this.engine.analyze({ content: gateway.input.content, context: mergedContext });
+      const productContexts = options.product_contexts || {};
+      if (Object.keys(productContexts).length && this.flags.flags.customerMenuContextV1 !== true) {
+        throw nativeError('FEATURE_DISABLED', { feature: 'customerMenuContextV1' });
+      }
+      const preliminaryPattern = this.previewPattern(gateway.input, productContexts);
+      const independentMove = ['greeting', 'chitchat', 'side_question', 'switch_topic', 'resume', 'repeat', 'cancel', 'close', 'correction']
+        .includes(preliminaryPattern?.pattern);
+      const classificationContext = independentMove
+        ? { ...mergedContext, continuation_intent: null }
+        : mergedContext;
+      const classification = this.engine.analyze({ content: gateway.input.content, context: classificationContext });
+      const pattern = this.resolvePattern(gateway.input, classification, productContexts);
+      const conversationContext = {
+        ...mergedContext,
+        ...(pattern.decision?.facts_added || {}),
+        ...(pattern.decision?.facts_corrected || {})
+      };
       const selected = this.selectCase(gateway.input, classification, preliminaryEntities, shortEntities);
       const caseId = selected.case_id;
       const orderId = selected.order_id || preliminaryEntities.order_reference?.value || null;
@@ -387,11 +492,19 @@ class NativeConversationRuntime {
       this.stage(raw.message_id, 'crm_updated', { case_id: caseId }, options.crashAfter);
 
       const simulationStatus = gateway.input.context.simulation_status || classification.expected_result?.status || 'unknown';
-      const selectedAction = executionAction(classification, simulationStatus);
+      const patternNoAction = ['greeting', 'chitchat', 'repeat', 'close', 'cancel', 'side_question', 'resume']
+        .includes(pattern.decision?.pattern)
+        && pattern.decision?.journey_action === 'none';
+      const socialNoAction = patternNoAction && (
+        classification.intent === 'conversation.ambiguous'
+        || ['side_question', 'resume'].includes(pattern.decision?.pattern)
+      );
+      const effectiveCapability = socialNoAction ? 'conversation.no_action' : classification.capability_id;
+      const selectedAction = socialNoAction ? 'none' : executionAction(classification, simulationStatus);
       const request = {
         synthetic: true,
-        request_id: `req_${sha256(`${gateway.input.message_id}|${classification.capability_id}`).slice(0, 20)}`,
-        capability_id: classification.capability_id,
+        request_id: `req_${sha256(`${gateway.input.message_id}|${effectiveCapability}`).slice(0, 20)}`,
+        capability_id: effectiveCapability,
         conversation_id: gateway.input.conversation_id,
         case_id: caseId,
         unit_id: gateway.input.unit_id || 'SIM-UNIT-001',
@@ -400,32 +513,63 @@ class NativeConversationRuntime {
         authority: classification.authority,
         policy_id: classification.policy_id,
         evidence_requirements: ['source', 'observed_at', 'confidence', 'freshness', 'conflict'],
-        idempotency_key: `cap:${gateway.input.message_id}:${classification.capability_id}`,
+        idempotency_key: `cap:${gateway.input.message_id}:${effectiveCapability}`,
         correlation_id: gateway.input.correlation_id,
         deadline: new Date(this.clock.date().getTime() + 60000).toISOString()
       };
-      const route = this.router.route(request);
+      const route = socialNoAction
+        ? deepFreeze({ status: 'not_required', driver: null, reason: 'social_pattern_no_action' })
+        : this.router.route(request);
       this.crm.recordCapability({ request_id: request.request_id, case_id: caseId, conversation_id: gateway.input.conversation_id, capability_id: request.capability_id, driver_id: route.driver?.manifest.id || null, route_status: route.status, synthetic: true });
       this.stage(raw.message_id, 'capability_requested', { request_id: request.request_id, driver_id: route.driver?.manifest.id || null }, options.crashAfter);
       this.stage(raw.message_id, 'action_started', { request_id: request.request_id }, options.crashAfter);
-      const action = this.executor.execute(route, { status: simulationStatus, scenario_id: scenarioId, outcome: gateway.input.context.simulation_outcome, retryable: classification.expected_result?.retryable === true });
+      const action = socialNoAction
+        ? deepFreeze({
+            action: {
+              action_id: `action_${sha256(`${request.request_id}|none`).slice(0, 20)}`,
+              request_id: request.request_id,
+              capability_id: effectiveCapability,
+              driver_id: null,
+              authority: 'A1',
+              policy_id: classification.policy_id,
+              synthetic: true,
+              started_at: this.clock.iso(),
+              executed: false,
+              completed_at: this.clock.iso()
+            },
+            result: {
+              schema_version: 'deliveryos-capability-result-v1',
+              synthetic: true,
+              request_id: request.request_id,
+              capability: effectiveCapability,
+              status: 'not_required',
+              source: 'conversation-pattern-engine',
+              performed_at: this.clock.iso(),
+              confidence: pattern.decision.confidence,
+              freshness: { state: 'updated', observed_at: this.clock.iso(), age_ms: 0 },
+              retryable: false,
+              payload: { synthetic: true, operation: 'none' },
+              confirmation: 'not_required'
+            }
+          })
+        : this.executor.execute(route, { status: simulationStatus, scenario_id: scenarioId, outcome: gateway.input.context.simulation_outcome, retryable: classification.expected_result?.retryable === true });
       if (route.driver) this.health.record(route.driver.manifest.id, action.result.status, request.request_id);
       const evidence = this.evidence.record({
         evidence_type: 'capability_result',
         source: action.result.source,
-        capability: classification.capability_id,
+        capability: effectiveCapability,
         driver: route.driver?.manifest.id || null,
         result: { status: action.result.status, confidence: action.result.confidence, freshness: action.result.freshness },
         correlation_id: gateway.input.correlation_id,
         scenario_id: scenarioId
       });
       const result = deepFreeze({ ...action.result, evidence_id: evidence.evidence_id });
-      const factRevision = this.stateHub.facts(capabilityEntity(classification.capability_id), orderId || caseId, classification.capability_id).length + 1;
+      const factRevision = this.stateHub.facts(capabilityEntity(effectiveCapability), orderId || caseId, effectiveCapability).length + 1;
       this.stateHub.ingestFact({
         synthetic: true,
-        entity_type: capabilityEntity(classification.capability_id),
+        entity_type: capabilityEntity(effectiveCapability),
         entity_id: orderId || caseId,
-        field: classification.capability_id,
+        field: effectiveCapability,
         value: { status: result.status },
         source: result.source,
         observed_at: this.clock.iso(),
@@ -436,7 +580,14 @@ class NativeConversationRuntime {
         revision: factRevision,
         conflict_state: result.status === 'conflict' ? 'conflict' : 'none'
       });
-      this.crm.recordAction({ action_id: action.action.action_id, case_id: caseId, conversation_id: gateway.input.conversation_id, capability_id: classification.capability_id, result_status: result.status, evidence_id: evidence.evidence_id, executed: action.action.executed, synthetic: true });
+      if (pattern.state) {
+        publishPatternState(this.stateHub, pattern.state, {
+          observed_at: this.clock.iso(),
+          confidence: pattern.decision.confidence,
+          evidence_id: evidence.evidence_id
+        });
+      }
+      this.crm.recordAction({ action_id: action.action.action_id, case_id: caseId, conversation_id: gateway.input.conversation_id, capability_id: effectiveCapability, result_status: result.status, evidence_id: evidence.evidence_id, executed: action.action.executed, synthetic: true });
       this.stage(raw.message_id, 'result_persisted', { result_status: result.status, evidence_id: evidence.evidence_id }, options.crashAfter);
 
       let notification = null;
@@ -484,7 +635,7 @@ class NativeConversationRuntime {
 
       let handoff = null;
       const additionalHandoffs = [];
-      if (classification.escalation && classification.escalation !== 'E0') {
+      if (!socialNoAction && classification.escalation && classification.escalation !== 'E0') {
         handoff = this.queue.create({ case_id: caseId, conversation_id: gateway.input.conversation_id, escalation: classification.escalation, reason: classification.intent, idempotency_key: `${caseId}:${classification.escalation}`, questions_asked: classification.fields_missing });
       }
       if (classification.policies.food_safety) {
@@ -504,9 +655,26 @@ class NativeConversationRuntime {
           turn_order: gateway.input.turn_order,
           source_text: gateway.input.content,
           ...responseContext,
-          context: mergedContext
+          context: conversationContext,
+          pattern_decision: pattern.decision,
+          journey_state: pattern.state
         }
       });
+      const approvedEnvelope = response.plan
+        ? buildApprovedResponseEnvelope({
+            plan: response.plan,
+            journey_state: pattern.state,
+            customer_context: productContexts.customer_context || null,
+            menu_context: productContexts.menu_context || null,
+            recommendation_context: productContexts.recommendation_context || null,
+            channel_policy: productContexts.channel_policy || null,
+            cost_policy: productContexts.cost_policy || ZERO_EXTERNAL_COST_POLICY,
+            question_to_ask: pattern.decision?.requires_clarification
+              ? pattern.decision.clarification_question
+              : undefined,
+            recent_phrases: responseContext.previous_responses || []
+          })
+        : null;
       if (response.validation.fallback_used) {
         this.store.append({
           event_id: `response_validation_${gateway.input.message_id}`,
@@ -549,6 +717,33 @@ class NativeConversationRuntime {
         handoff,
         additional_handoffs: additionalHandoffs,
         response,
+        pattern: pattern.decision,
+        journey_state: pattern.state,
+        approved_response_envelope: approvedEnvelope,
+        execution_diagnostics: {
+          schema_version: 'deliveryos-runtime-diagnostic-v1',
+          endpoint_family: 'native_runtime',
+          pattern_engine: pattern.enabled ? 'active' : 'disabled',
+          pattern: pattern.decision?.pattern || null,
+          journey: pattern.state?.active_journey || null,
+          capability: effectiveCapability,
+          route_reason: route.reason || null,
+          response_path: response.validation.fallback_used ? 'deterministic_safe_fallback' : 'deterministic_composer',
+          fallback_used: response.validation.fallback_used,
+          fallback_reason: response.fallback_reason || null,
+          writer: {
+            requested: false,
+            used: false,
+            status: 'not_connected_in_local_panel'
+          },
+          customer_context_source: productContexts.customer_context ? 'customer_intelligence_synthetic' : 'none',
+          menu_context_source: productContexts.menu_context ? 'menu_intelligence_synthetic' : 'none',
+          response_contract: response.schema_version,
+          envelope_contract: approvedEnvelope?.schema_version || null,
+          source_of_final_text: response.validation.fallback_used
+            ? 'post_composition_safe_fallback'
+            : 'controlled_response_composer'
+        },
         closure: executionClosure(classification, result.status),
         production_blocked: this.placeholders.production_blockers_open > 0,
         external_system_accessed: false,

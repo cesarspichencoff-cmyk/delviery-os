@@ -36,6 +36,8 @@ function normalizeText(value) {
 function conversationStage(conversation = {}, result = {}, classification = {}) {
   if (conversation.reopening === true) return 'reopening';
   if (result.status === 'confirmed' && classification.closure?.expected_state === 'resolved') return 'resolution';
+  if (conversation.pattern_decision?.journey_action === 'start') return 'opening';
+  if (['greeting', 'chitchat'].includes(conversation.pattern_decision?.pattern) && !conversation.journey_state?.active_journey) return 'opening';
   if (Number(conversation.turn_order) > 1) return 'continuation';
   if (classification.intent === 'conversation.ambiguous') return 'clarification';
   return 'opening';
@@ -128,8 +130,17 @@ function buildResponsePlan(input = {}) {
   const classification = input.classification || {};
   const result = input.result || { status: 'unknown' };
   const conversation = input.conversation || {};
+  const patternDecision = conversation.pattern_decision || null;
   const stage = conversationStage(conversation, result, classification);
-  const strategyId = selectStrategyId({ classification, conversation_stage: stage, result_status: result.status });
+  const strategyId = patternDecision?.pattern === 'greeting'
+    ? 'social_greeting'
+    : (patternDecision?.pattern === 'chitchat'
+      ? 'social_chitchat'
+      : (['close', 'cancel'].includes(patternDecision?.pattern)
+        ? 'social_close'
+        : (['repeat', 'correction', 'resume'].includes(patternDecision?.pattern)
+          ? 'continuation'
+          : selectStrategyId({ classification, conversation_stage: stage, result_status: result.status }))));
   const strategy = strategyFor(strategyId);
   const asked = new Set(conversation.asked_fields || []);
   const answeredNow = answeredFieldsFromSource(conversation.source_text);
@@ -137,6 +148,13 @@ function buildResponsePlan(input = {}) {
     strategyId,
     [...new Set(classification.fields_missing || [])].filter((field) => !asked.has(field) && !answeredNow.has(field))
   );
+  if (
+    ['social_greeting', 'social_chitchat', 'social_close'].includes(strategyId)
+    || ['side_question', 'repeat'].includes(patternDecision?.pattern)
+    || patternDecision?.requires_clarification === true
+  ) {
+    pendingQuestions = [];
+  }
   if (['reservation', 'waitlist'].includes(strategyId) && isInformationalReservationQuery(conversation.source_text)) {
     pendingQuestions = [];
   }
@@ -190,6 +208,7 @@ function buildResponsePlan(input = {}) {
     ? 'executed'
     : (knowledge.directions.length ? 'orientation' : (pendingActions.length ? 'handoff_required' : 'unavailable'));
   const gravity = gravityFor(classification);
+  const recognizedPattern = Boolean(patternDecision);
   const plan = {
     version: '2.0.0',
     customer_need: knowledge.customer_need,
@@ -237,7 +256,7 @@ function buildResponsePlan(input = {}) {
     emoji_policy: gravity === 'critical' || gravity === 'sensitive' ? 'none' : strategy.emoji_policy,
     tone_profile: 'tata_warm',
     strategy_id: strategyId,
-    fallback_reason: fallbackReason(classification, result, strategyId),
+    fallback_reason: recognizedPattern ? null : fallbackReason(classification, result, strategyId),
     intent: classification.intent || 'conversation.ambiguous',
     subintent: classification.subintent || null,
     result_status: result.status || 'unknown',

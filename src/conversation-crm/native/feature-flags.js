@@ -8,7 +8,8 @@ const { deepFreeze } = require('./catalogs');
 
 const FLAG_NAMES = Object.freeze([
   'conversationNativeV1','conversationGatewayV1','conversationEngineV1','conversationCrmV1','deliveryosCapabilityRouterV1','deliveryosStateHubV1',
-  'deliveryosActionExecutorV1','deliveryosEvidenceStoreV1','deliveryosHumanQueueV1','deliveryosNotificationEngineV1','simulatedDriversV1','realDriversReadV1','realDriversWriteV1'
+  'deliveryosActionExecutorV1','deliveryosEvidenceStoreV1','deliveryosHumanQueueV1','deliveryosNotificationEngineV1','simulatedDriversV1','realDriversReadV1','realDriversWriteV1',
+  'conversationPatternEngineV1','customerMenuContextV1'
 ]);
 const DEFAULT_FLAGS = deepFreeze(Object.fromEntries(FLAG_NAMES.map((name) => [name, false])));
 

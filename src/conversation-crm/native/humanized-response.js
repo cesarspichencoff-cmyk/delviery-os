@@ -47,6 +47,7 @@ function composeHumanizedResponse(input = {}) {
   const first = validatePostComposition({
     text: draft.text,
     plan,
+    pattern_decision: input.conversation?.pattern_decision || null,
     previous_responses: input.conversation?.previous_responses || []
   });
   const fallbackText = first.passed ? null : safeResponseAfterRejection({ plan });
@@ -54,10 +55,11 @@ function composeHumanizedResponse(input = {}) {
   const finalValidation = first.passed
     ? first
     : validatePostComposition({
-        text,
-        plan,
-        previous_responses: input.conversation?.previous_responses || []
-      });
+      text,
+      plan,
+      pattern_decision: input.conversation?.pattern_decision || null,
+      previous_responses: input.conversation?.previous_responses || []
+    });
 
   return deepFreeze({
     ...legacy,

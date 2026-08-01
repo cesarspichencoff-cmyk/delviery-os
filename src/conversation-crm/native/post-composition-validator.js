@@ -96,7 +96,8 @@ function validatePostComposition(input = {}) {
     const signature = QUESTION_SIGNATURES[field];
     if (signature && !signature.test(text)) findings.push(`MANDATORY_QUESTION_MISSING:${field}`);
   }
-  if (!(plan.mandatory_questions || []).length && currentQuestions.length && plan.response_goal !== 'clarify') findings.push('UNAUTHORIZED_QUESTION');
+  const socialQuestionAllowed = ['greeting', 'chitchat', 'repeat', 'resume'].includes(input.pattern_decision?.pattern);
+  if (!(plan.mandatory_questions || []).length && currentQuestions.length && plan.response_goal !== 'clarify' && !socialQuestionAllowed) findings.push('UNAUTHORIZED_QUESTION');
 
   const facts = [...(plan.known_facts || []), ...(plan.new_facts || [])];
   const requiredConcrete = plan.strategy_contract?.mandatory_components || [];

@@ -19,6 +19,9 @@ function strategy(id, goal, components, options = {}) {
 }
 
 const STRATEGIES = deepFreeze({
+  social_greeting: strategy('social_greeting', 'acknowledge', ['greeting'], { optional: ['journey_resume'], emoji: 'optional_one' }),
+  social_chitchat: strategy('social_chitchat', 'acknowledge', ['social_reply'], { optional: ['journey_resume'], emoji: 'optional_one' }),
+  social_close: strategy('social_close', 'close', ['farewell'], { length: 'short' }),
   information_direct: strategy('information_direct', 'inform', ['fact'], { optional: ['brief_acknowledgement'], emoji: 'optional_one' }),
   information_enriched: strategy('information_enriched', 'inform', ['acknowledgement', 'fact'], { optional: ['related_confirmed_fact'], length: 'medium', emoji: 'optional_one' }),
   customer_interested: strategy('customer_interested', 'acknowledge', ['acknowledgement', 'fact'], { optional: ['invitation_to_continue'], length: 'medium', emoji: 'optional_one' }),

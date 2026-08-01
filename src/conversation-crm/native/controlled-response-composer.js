@@ -288,6 +288,53 @@ function capabilityLimitText(input) {
   return informationText(input);
 }
 
+function socialGreetingText(input) {
+  const source = normalize(input.conversation.source_text);
+  const salutation = source.startsWith('bom dia')
+    ? 'Bom dia'
+    : (source.startsWith('boa tarde')
+      ? 'Boa tarde'
+      : (source.startsWith('boa noite') ? 'Boa noite' : 'Olá'));
+  const social = source.includes('tudo bem')
+    ? `${salutation}! Tudo bem, e com você?`
+    : `${salutation}!`;
+  const resume = input.conversation.pattern_decision?.question_to_resume;
+  return `${social} ${resume || 'Como posso ajudar?'}`;
+}
+
+function patternDirectedText(input) {
+  const pattern = input.conversation.pattern_decision;
+  if (!pattern) return null;
+  if (pattern.pattern === 'greeting') return socialGreetingText(input);
+  if (pattern.pattern === 'chitchat') {
+    return `${acknowledgement(input.plan, input.variationContext)} ${pattern.question_to_resume || 'Como posso ajudar?'}`;
+  }
+  if (pattern.pattern === 'repeat') {
+    const previous = (input.conversation.previous_responses || []).filter(Boolean).at(-1);
+    return previous ? `Claro. ${previous}` : 'Claro. O que você gostaria que eu repetisse?';
+  }
+  if (pattern.pattern === 'correction') {
+    return `Certo, atualizei essa informação.${pattern.question_to_resume ? ` ${pattern.question_to_resume}` : ''}`;
+  }
+  if (pattern.pattern === 'resume') {
+    const answer = knowledgeMessages(input.plan, { limit: 1 });
+    const question = pattern.question_to_resume || minimalQuestions(input.plan.mandatory_questions, { limit: 1 });
+    return `Claro, vamos retomar de onde paramos.${answer ? ` ${answer}` : ''}${question ? ` ${question}` : ''}`;
+  }
+  if (pattern.pattern === 'side_question' && !(input.plan.direct_answer || []).length) {
+    const subject = subjectFromText(input.conversation.source_text);
+    return `Ainda não tenho uma confirmação segura sobre ${subject || 'essa pergunta lateral'}.${pattern.question_to_resume ? ` ${pattern.question_to_resume}` : ''}`;
+  }
+  if (pattern.pattern === 'cancel') return 'Tudo bem. Interrompi este fluxo sem apagar o histórico da conversa.';
+  if (pattern.pattern === 'close') return 'Tudo bem. Até logo!';
+  if (
+    pattern.pattern === 'clarification'
+    && pattern.clarification_question
+    && !(input.plan.direct_answer || []).length
+  ) return pattern.clarification_question;
+  return null;
+}
+
 function composeControlledText(input = {}) {
   const plan = input.plan;
   const classification = input.classification || {};
@@ -302,8 +349,10 @@ function composeControlledText(input = {}) {
     customer_state: plan.customer_state
   };
   const shared = { ...input, plan, classification, conversation, authorizedText, variationContext };
-  let text;
-  if (plan.action_playbook === 'praise_and_suggestion') text = praiseText(shared);
+  let text = patternDirectedText(shared);
+  if (text) {
+    // O Pattern Engine escolheu o movimento; esta camada apenas o verbaliza.
+  } else if (plan.action_playbook === 'praise_and_suggestion') text = praiseText(shared);
   else if (plan.action_playbook === 'events_oke') text = eventText(shared);
   else if (plan.direct_answer?.length && ['ambiguity', 'continuation', 'capability_limit'].includes(plan.strategy_id)) text = informationText(shared);
   else if (plan.strategy_id === 'large_group') text = largeGroupText(shared);
@@ -346,5 +395,7 @@ module.exports = {
   praiseText,
   knowledgeMessages,
   warmClosing,
+  socialGreetingText,
+  patternDirectedText,
   composeControlledText
 };

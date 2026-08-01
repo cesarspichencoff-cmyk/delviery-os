@@ -92,9 +92,11 @@ class HomologationService {
     this.exportRoot = path.resolve(options.exportRoot || process.env.DELIVERYOS_HOMOLOGATION_EXPORT_ROOT || path.join(this.projectRoot, '..', 'deliveryos-review-packets'));
     this.runtimeOptions = {
       projectRoot: this.projectRoot,
-      runtimeRoot: path.resolve(options.chatRuntimeRoot || path.join(this.store.root, 'chat-runtime'))
+      runtimeRoot: path.resolve(options.chatRuntimeRoot || path.join(this.store.root, 'chat-runtime')),
+      flagsFile: options.flagsFile || 'config/conversation-crm/native-flags.homologation.json'
     };
     this.runtime = options.runtime || null;
+    this.customerMenu = options.customerMenu || null;
   }
 
   bootstrap() {
@@ -153,8 +155,9 @@ class HomologationService {
     };
   }
 
-  chat(message) {
-    const value = String(message || '').trim();
+  chat(input) {
+    const request = typeof input === 'string' ? { message: input } : (input || {});
+    const value = String(request.message || '').trim();
     if (!value) throw Object.assign(new Error('message_required'), { code: 'MESSAGE_REQUIRED' });
     if (value.length > 2000) throw Object.assign(new Error('message_too_long'), { code: 'MESSAGE_TOO_LONG' });
     if (!this.runtime) {
@@ -165,6 +168,14 @@ class HomologationService {
     const session = String(next.session).padStart(4, '0');
     const turn = String(next.turn).padStart(4, '0');
     const messageId = `SIM-HOMO-${session}-${turn}`;
+    const productContexts = this.customerMenu
+      ? this.customerMenu.contextForChat({
+          customer_id: request.customer_id || null,
+          channel: request.channel || null,
+          unit_id: request.channel ? (request.unit_id || 'SIM-UNIT-ITAIM') : null,
+          allergies: Array.isArray(request.allergies) ? request.allergies : []
+        })
+      : {};
     const result = this.runtime.processMessage({
       synthetic: true,
       message_type: 'text',
@@ -179,6 +190,8 @@ class HomologationService {
       turn_order: next.turn,
       unit_id: 'SIM-UNIT-001',
       context: { synthetic: true }
+    }, {
+      product_contexts: productContexts
     });
     const response = String(result.response?.text || '');
     return {
@@ -187,7 +200,24 @@ class HomologationService {
         review_id: next.review_id,
         customer: value,
         response,
-        response_hash: sha256(response)
+        response_hash: sha256(response),
+        diagnostic: {
+          endpoint: '/api/homologation/chat',
+          pattern: result.execution_diagnostics?.pattern || null,
+          journey: result.execution_diagnostics?.journey || null,
+          journey_action: result.pattern?.journey_action || null,
+          capability: result.execution_diagnostics?.capability || null,
+          route_reason: result.execution_diagnostics?.route_reason || null,
+          response_path: result.execution_diagnostics?.response_path || 'unknown',
+          fallback_used: result.execution_diagnostics?.fallback_used === true,
+          fallback_reason: result.execution_diagnostics?.fallback_reason || null,
+          customer_context_source: result.execution_diagnostics?.customer_context_source || 'none',
+          menu_context_source: result.execution_diagnostics?.menu_context_source || 'none',
+          writer_status: result.execution_diagnostics?.writer?.status || 'unknown',
+          response_contract: result.execution_diagnostics?.response_contract || null,
+          envelope_contract: result.execution_diagnostics?.envelope_contract || null,
+          source_of_final_text: result.execution_diagnostics?.source_of_final_text || null
+        }
       }
     };
   }

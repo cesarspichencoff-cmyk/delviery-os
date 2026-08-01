@@ -39,6 +39,11 @@ function customerContextFromSummary(toolResult) {
 
 function menuContextFromRecommendation(toolResult, request = {}) {
   const recommendation = toolResult?.data || { candidates: [], unknowns: ['menu_context'] };
+  const allergenUnknowns = Array.isArray(request.allergies)
+    && request.allergies.length
+    && !(recommendation.candidates || []).length
+    ? ['allergen_information_incomplete']
+    : [];
   return deepFreeze({
     schema_version: 'deliveryos-menu-context-v1',
     status: recommendation.candidates?.length ? 'ready' : 'partial',
@@ -52,7 +57,7 @@ function menuContextFromRecommendation(toolResult, request = {}) {
       price: item.price,
       source_records: item.source_records
     })),
-    unknowns: recommendation.unknowns || [],
+    unknowns: [...new Set([...(recommendation.unknowns || []), ...allergenUnknowns])],
     divergences: [],
     provenance: toolResult?.sources || []
   });

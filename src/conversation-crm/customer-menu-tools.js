@@ -58,6 +58,15 @@ function safeCustomerSummary(customer, store) {
     restrictions: customer.restrictions.map((item) => ({
       type: item.type, value: item.value, status: item.status, source: item.source
     })),
+    recent_orders: customer.orders.slice(-5),
+    recent_reservations: customer.reservations.slice(-5),
+    recent_incidents: customer.incidents.slice(-5),
+    fact_candidates: customer.fact_candidates.map((item) => ({
+      candidate_id: item.candidate_id,
+      field: item.field,
+      source: item.source,
+      status: item.status
+    })),
     consent: { all_marketing: store.consentState(customer.customer_id, 'all_marketing') },
     unknowns: customer.identities.length ? [] : ['identity'],
     review_required: customer.fact_candidates.length > 0 || customer.facts.some((fact) => fact.state === 'conflicting')

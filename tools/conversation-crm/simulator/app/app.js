@@ -61,7 +61,14 @@ function intelligenceBadge(value, good = false) {
 
 function renderIntelligenceCrm() {
   const customers = state.intelligence.customers;
-  $('#intelligence-content').innerHTML = `<div class="intelligence-grid">${customers.map((customer) => `
+  const integration = state.intelligence.integration;
+  $('#intelligence-content').innerHTML = `
+    <article class="integration-truth">
+      <strong>Caminho realmente conectado</strong>
+      <p>${escapeHtml(integration.chat_endpoint)} · Pattern Engine ${escapeHtml(integration.pattern_engine)} · Journey State ${escapeHtml(integration.journey_state)} · compositor ${escapeHtml(integration.deterministic_composer)}</p>
+      <p>Writer local: ${escapeHtml(integration.response_writer)}. Dados reais: ${integration.real_data ? 'sim' : 'não'}.</p>
+    </article>
+    <div class="intelligence-grid">${customers.map((customer) => `
     <article class="intelligence-card">
       <strong>${escapeHtml(customer.customer_id)}</strong>
       <p>${escapeHtml(customer.provenance)} · ${customer.identity_count} identidade(s) tokenizada(s)</p>
@@ -80,9 +87,17 @@ function renderIntelligenceImports() {
         <div><dt>Estado</dt><dd>${escapeHtml(batch.state)}</dd></div>
         <div><dt>Válidas</dt><dd>${batch.valid}/${batch.total}</dd></div>
         <div><dt>Inválidas</dt><dd>${batch.invalid}</dd></div>
-        <div><dt>Duplicidades</dt><dd>${batch.duplicates}</dd></div>
+        <div><dt>Adapter</dt><dd>${escapeHtml(batch.adapter_version)}</dd></div>
+        <div><dt>Correspondências exatas</dt><dd>${batch.exact_matches}</dd></div>
+        <div><dt>Revisão humana</dt><dd>${batch.human_review}</dd></div>
       </dl>
       <p>A importação não ocorre sem aprovação humana.</p>
+      <div class="inline-actions">
+        <button type="button" data-import-action="duplicate_probe">Provar deduplicação</button>
+        ${batch.state === 'previewed' ? '<button type="button" data-import-action="approve_and_apply">Aprovar e aplicar lote sintético</button>' : ''}
+        ${batch.state === 'imported' ? '<button type="button" data-import-action="rollback">Rollback compensatório</button>' : ''}
+      </div>
+      <p>${batch.rollback ? 'Rollback registrado por eventos compensatórios; dados anteriores preservados.' : `Linhas: ${escapeHtml(batch.row_states.map((row) => `${row.row_number}:${row.state}/${row.resolution}`).join(' · '))}`}</p>
     </article>`).join('')}</div>`;
 }
 
@@ -96,9 +111,15 @@ function renderIntelligenceMenu() {
         <p>${escapeHtml(item.channel)} · ${escapeHtml(item.unit_id)} · ${escapeHtml(item.category)}</p>
         ${intelligenceBadge(item.review_status, item.review_status === 'confirmed')}
         ${intelligenceBadge(item.availability.state, item.availability.state === 'available')}
-        <dl><div><dt>Preço do canal</dt><dd>${item.price == null ? 'desconhecido' : `R$ ${Number(item.price).toFixed(2).replace('.', ',')}`}</dd></div></dl>
+        <dl>
+          <div><dt>Preço do canal</dt><dd>${item.price == null ? 'desconhecido' : `R$ ${Number(item.price).toFixed(2).replace('.', ',')}`}</dd></div>
+          <div><dt>Ingredientes</dt><dd>${escapeHtml((item.ingredients || []).map((entry) => `${entry.name} (${entry.status})`).join(', ') || 'desconhecidos')}</dd></div>
+          <div><dt>Alergênicos</dt><dd>${escapeHtml((item.allergens || []).map((entry) => `${entry.allergen}: ${entry.assertion}`).join(', ') || 'sem garantia confirmada')}</dd></div>
+          <div><dt>Contato cruzado</dt><dd>${escapeHtml(item.cross_contact?.state || 'unknown')}</dd></div>
+        </dl>
       </article>`).join('')}</div>
-    <p class="lead">${menu.conflicts.length} conflito(s) aberto(s). Variantes de canais diferentes não são fundidas.</p>`;
+    <p class="lead">${menu.conflicts.length} conflito(s) aberto(s). Variantes de canais diferentes não são fundidas.</p>
+    <p class="lead">${menu.pairings.length} harmonização sintética aprovada: ${escapeHtml(menu.pairings.map((item) => `${item.menu_item_id} + ${item.beverage_item_id}`).join(', ') || 'nenhuma')}.</p>`;
 }
 
 function renderIntelligenceRecommendations() {
@@ -129,7 +150,8 @@ function renderIntelligenceAudit() {
       <article class="intelligence-card"><strong>${audit.event_count}</strong><p>eventos append-only sintéticos</p></article>
       <article class="intelligence-card"><strong>${audit.append_only ? 'Preservado' : 'Falha'}</strong><p>histórico não sobrescrito</p></article>
       <article class="intelligence-card"><strong>${audit.pii_visible ? 'Falha' : 'Zero PII visível'}</strong><p>identidades tokenizadas e logs redigidos</p></article>
-    </div>`;
+    </div>
+    <div class="audit-stream">${audit.recent_events.map((event) => `<article><strong>${escapeHtml(event.event_id)}</strong><span>${escapeHtml(event.type)} · ${escapeHtml(event.aggregate_id)} · ${escapeHtml(event.source)}</span></article>`).join('')}</div>`;
 }
 
 function renderIntelligence() {
@@ -193,6 +215,25 @@ function conversationHtml(turns, responseKey = 'response') {
     <div class="message customer"><span>Cliente</span><p>${escapeHtml(turn.customer)}</p></div>
     <div class="message bot"><span>TATÁ</span><p>${escapeHtml(turn[responseKey])}</p></div>
   `).join('');
+}
+
+function diagnosticHtml(diagnostic) {
+  if (!diagnostic || !$('#chat-diagnostic').checked) return '';
+  const entries = [
+    ['Endpoint', diagnostic.endpoint],
+    ['Pattern', diagnostic.pattern],
+    ['Jornada', diagnostic.journey || 'nenhuma'],
+    ['Movimento', diagnostic.journey_action || 'none'],
+    ['Caminho da resposta', diagnostic.response_path],
+    ['Fallback', diagnostic.fallback_used ? `sim · ${diagnostic.fallback_reason || 'sem código'}` : 'não'],
+    ['Contexto de cliente', diagnostic.customer_context_source],
+    ['Contexto de cardápio', diagnostic.menu_context_source],
+    ['Writer', diagnostic.writer_status],
+    ['Contrato', diagnostic.response_contract],
+    ['Envelope', diagnostic.envelope_contract],
+    ['Fonte do texto', diagnostic.source_of_final_text]
+  ];
+  return `<details class="runtime-diagnostic"><summary>Diagnóstico sanitizado desta resposta</summary><dl>${entries.map(([label, value]) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value || 'unknown')}</dd></div>`).join('')}</dl></details>`;
 }
 
 function renderReviewSelectors() {
@@ -334,6 +375,9 @@ function selectedValues(selector) {
 }
 
 async function initialize() {
+  // A interface começa visualmente sem conversa; o runtime deve começar no
+  // mesmo estado para não reaproveitar contexto oculto após um recarregamento.
+  await api('/api/homologation/chat/reset', { method: 'POST' });
   state.data = await api('/api/homologation/bootstrap');
   $('#free-tags').innerHTML = checkboxChoices(FREE_TAGS, 'free-tag');
   $('#review-tags').innerHTML = checkboxChoices(REVIEW_TAGS, 'review-tag');
@@ -355,6 +399,25 @@ $$('[data-intelligence-view]').forEach((button) => button.addEventListener('clic
 }));
 
 $('#intelligence-content').addEventListener('click', async (event) => {
+  const importAction = event.target.dataset.importAction;
+  if (importAction) {
+    const result = await api('/api/customer-menu/imports/action', {
+      method: 'POST',
+      body: JSON.stringify({ action: importAction })
+    });
+    if (importAction === 'duplicate_probe') {
+      $('#intelligence-state').textContent = result.batch.duplicate_upload
+        ? 'Deduplicação comprovada: o mesmo arquivo não criou outro lote.'
+        : 'Falha: o reenvio não foi reconhecido como duplicado.';
+    } else {
+      state.intelligence = await api('/api/customer-menu/bootstrap');
+      $('#intelligence-state').textContent = importAction === 'rollback'
+        ? 'Rollback compensatório concluído no lote sintético.'
+        : 'Lote sintético aprovado e aplicado pelo pipeline real.';
+      renderIntelligenceImports();
+    }
+    return;
+  }
   const customerId = event.target.dataset.customerDetail;
   if (!customerId) return;
   const body = await api(`/api/customer-menu/customers/${encodeURIComponent(customerId)}`);
@@ -366,6 +429,10 @@ $('#intelligence-content').addEventListener('click', async (event) => {
       <p>Fontes: ${escapeHtml(summary.sources.join(', ') || 'desconhecidas')}</p>
       <p>Fatos: ${escapeHtml(summary.facts.map((fact) => `${fact.field} (${fact.state})`).join(', ') || 'nenhum')}</p>
       <p>Restrições: ${escapeHtml(summary.restrictions.map((item) => `${item.type}: ${item.value} (${item.status})`).join(', ') || 'nenhuma')}</p>
+      <p>Pedidos: ${escapeHtml(summary.recent_orders.map((item) => `${item.order_id} (${item.channel})`).join(', ') || 'nenhum')}</p>
+      <p>Reservas: ${escapeHtml(summary.recent_reservations.map((item) => `${item.reservation_id} (${item.state})`).join(', ') || 'nenhuma')}</p>
+      <p>Incidentes: ${escapeHtml(summary.recent_incidents.map((item) => `${item.incident_id} (${item.state})`).join(', ') || 'nenhum')}</p>
+      <p>Candidatos pendentes: ${escapeHtml(summary.fact_candidates.map((item) => `${item.field} (${item.status})`).join(', ') || 'nenhum')}</p>
       <p>Consentimento de marketing: ${escapeHtml(summary.consent.all_marketing)}</p>
     </article>`;
   $('#back-to-customers').addEventListener('click', renderIntelligenceCrm);
@@ -377,12 +444,21 @@ $('#chat-form').addEventListener('submit', async (event) => {
   if (!message) return;
   $('#global-state').textContent = 'Processando localmente…';
   try {
-    const body = await api('/api/homologation/chat', { method: 'POST', body: JSON.stringify({ message }) });
+    const channel = $('#chat-menu-channel').value;
+    const body = await api('/api/homologation/chat', {
+      method: 'POST',
+      body: JSON.stringify({
+        message,
+        customer_id: $('#chat-customer').value || null,
+        channel: channel || null,
+        unit_id: channel ? 'SIM-UNIT-ITAIM' : null
+      })
+    });
     state.lastChat = body.turn;
-    $('#chat-thread').insertAdjacentHTML('beforeend', conversationHtml([{ customer: message, response: body.turn.response }]));
+    $('#chat-thread').insertAdjacentHTML('beforeend', `${conversationHtml([{ customer: message, response: body.turn.response }])}${diagnosticHtml(body.turn.diagnostic)}`);
     $('#chat-message').value = '';
     $('#free-feedback').classList.remove('hidden');
-    $('#global-state').textContent = 'Resposta pronta. Nenhuma informação técnica foi exibida.';
+    $('#global-state').textContent = `Resposta pronta pelo ${body.turn.diagnostic.response_path}; Pattern ${body.turn.diagnostic.pattern || 'unknown'}.`;
   } catch {
     $('#global-state').textContent = 'Não foi possível responder agora. Nenhum detalhe técnico foi exposto.';
   }
