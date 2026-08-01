@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>DeliveryOS — Product System</title>
+    <!--
+      Duas folhas, por decisao: a canonica de ENTREGAS nasce em
+      src/entregas/ui/shared/tokens.css e e servida em /shared/tokens.css pelo
+      MESMO arquivo, sem copia. A do Product System so acrescenta o que faltava.
+      Um token tem um lugar de nascimento.
+    -->
+    <link rel="stylesheet" href="/shared/tokens.css" />
+    <link rel="stylesheet" href="/tokens/product-tokens.css" />
+    <link rel="stylesheet" href="/shell/shell.css" />
+    <link rel="stylesheet" href="/components/components.css" />
+  </head>
+  <body class="ds">
+    <a class="skip-link" href="#conteudo">Ir direto para o conteudo</a>
+
+    <!-- Faixa de ambiente. Preenchida por /api/health; nunca some em silencio. -->
+    <div id="faixaAmbiente" class="faixa-ambiente" role="status">
+      AMBIENTE DE DEMONSTRACAO · DELIVERYOS PRODUCT SYSTEM
+    </div>
+
+    <div class="shell">
+      <header class="shell__topo shell-deep">
+        <button
+          id="btnMenu"
+          class="shell__menu"
+          type="button"
+          aria-expanded="false"
+          aria-controls="navPrincipal"
+          aria-label="Abrir navegacao"
+        >
+          <span aria-hidden="true">☰</span>
+        </button>
+
+        <div class="shell__marca">
+          <strong>DeliveryOS</strong>
+          <span>Product System</span>
+        </div>
+
+        <div class="shell__unidade">
+          <label class="sr-only" for="seletorUnidade">Unidade ativa</label>
+          <select id="seletorUnidade" aria-describedby="unidadeAtiva"></select>
+          <!-- A unidade ativa fica visivel SEMPRE, nao so quando o select abre. -->
+          <p id="unidadeAtiva" class="shell__unidade-ativa"></p>
+        </div>
+
+        <div class="shell__estado">
+          <div id="conexaoShell" class="shell__conexao"></div>
+        </div>
+      </header>
+
+      <div class="shell__corpo">
+        <nav
+          id="navPrincipal"
+          class="shell__nav"
+          aria-label="Modulos do DeliveryOS"
+        ></nav>
+
+        <main id="conteudo" class="shell__conteudo" tabindex="-1">
+          <div id="contexto" class="contexto"></div>
+          <!--
+            aria-live="polite": a regiao troca quando a pessoa navega. Nunca
+            "assertive" — nada aqui interrompe quem esta lendo outra coisa.
+          -->
+          <div id="superficie" aria-live="polite" aria-busy="false"></div>
+        </main>
+      </div>
+
+      <!-- Navegacao mobile: so os modulos implementados; o resto vive no menu. -->
+      <nav id="navMobile" class="shell__nav-mobile" aria-label="Modulos principais"></nav>
+    </div>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

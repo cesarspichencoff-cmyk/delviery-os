@@ -8,6 +8,12 @@
       "runtimeExecutable": "node",
       "runtimeArgs": ["dist/tools/entregas_pilot_server.js"],
       "port": 5193
+    },
+    {
+      "name": "product-system",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "ui:product"],
+      "port": 5290
     }
   ]
 }

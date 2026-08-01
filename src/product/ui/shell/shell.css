@@ -1,0 +1,338 @@
+/* DeliveryOS — Product System · App Shell
+   A navegacao reflete o trabalho, nao a arvore de pastas. Tres grupos: Agora,
+   Entendimento, A casa. */
+
+.skip-link {
+  position: absolute;
+  left: var(--space-2);
+  top: -100px;
+  z-index: 50;
+  background: var(--surface-elevated);
+  color: var(--text-primary);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  border: var(--stroke-emphasis) solid var(--brand-action);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-min);
+  transition: top var(--motion-quick) var(--motion-ease-standard);
+}
+.skip-link:focus {
+  top: var(--space-2);
+}
+
+.faixa-ambiente {
+  background: var(--brand-deep-2);
+  color: var(--text-on-dark);
+  text-align: center;
+  font-family: var(--font-technical);
+  font-size: var(--type-meta);
+  letter-spacing: 0.12em;
+  padding: 6px var(--space-3);
+  border-bottom: var(--stroke-hairline) solid var(--line-on-dark);
+}
+
+.shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-work);
+}
+
+/* ---------------------------------------------------------------- topo --- */
+.shell__topo {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-areas: "menu marca estado" "unidade unidade unidade";
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+.shell__menu {
+  grid-area: menu;
+  min-height: var(--touch-min);
+  min-width: var(--touch-min);
+  background: transparent;
+  border: var(--stroke-hairline) solid var(--line-on-dark);
+  color: var(--text-on-dark);
+  font-size: var(--type-heading);
+  box-shadow: none;
+}
+.shell__marca {
+  grid-area: marca;
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.shell__marca strong {
+  font-family: var(--font-editorial);
+  font-size: var(--type-heading);
+  font-weight: 400;
+  color: var(--text-on-dark);
+}
+.shell__marca span {
+  font-family: var(--font-technical);
+  font-size: var(--type-meta);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-on-dark-muted);
+  white-space: nowrap;
+}
+.shell__unidade {
+  grid-area: unidade;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.shell__unidade select {
+  width: auto;
+  max-width: 100%;
+  min-height: 40px;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--line-on-dark);
+  color: var(--text-on-dark);
+}
+.shell__unidade-ativa {
+  margin: 0;
+  font-family: var(--font-technical);
+  font-size: var(--type-meta);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-on-dark-muted);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.shell__estado {
+  grid-area: estado;
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (min-width: 905px) {
+  .shell__topo {
+    grid-template-columns: auto auto 1fr auto;
+    grid-template-areas: "menu marca unidade estado";
+  }
+  .shell__menu {
+    display: none;
+  }
+}
+
+/* ---------------------------------------------------------------- corpo --- */
+.shell__corpo {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.shell__nav {
+  display: none;
+  flex-direction: column;
+  gap: var(--space-4);
+  width: var(--shell-rail);
+  flex-shrink: 0;
+  padding: var(--space-4) var(--space-3);
+  border-right: var(--stroke-hairline) solid var(--line-work);
+  background: var(--surface-elevated);
+  overflow-y: auto;
+}
+.shell__nav[data-aberto="sim"] {
+  display: flex;
+}
+@media (min-width: 905px) {
+  .shell__nav {
+    display: flex;
+  }
+}
+/* Em tela pequena o menu vira lamina sobre o conteudo, nao empurra o layout. */
+@media (max-width: 904px) {
+  .shell__nav[data-aberto="sim"] {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: min(var(--shell-rail), 86vw);
+    z-index: 30;
+    box-shadow: 0 0 0 100vmax rgba(20, 53, 40, 0.35);
+  }
+}
+
+.nav-grupo__titulo {
+  font-family: var(--font-technical);
+  font-size: var(--type-meta);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin: 0 0 var(--space-1) 0;
+}
+.nav-grupo__descricao {
+  font-family: var(--font-editorial);
+  font-style: italic;
+  font-size: var(--type-small);
+  color: var(--text-muted);
+  margin: 0 0 var(--space-2) 0;
+  max-width: var(--reading-max);
+}
+.nav-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.nav-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: var(--touch-min);
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+  border: var(--stroke-hairline) solid transparent;
+  background: transparent;
+  color: var(--text-primary);
+  text-align: left;
+  text-decoration: none;
+  font-weight: 500;
+  box-shadow: none;
+  transition: background-color var(--motion-quick) var(--motion-ease-standard);
+}
+.nav-item:hover {
+  background: var(--surface-muted);
+}
+.nav-item[aria-current="page"] {
+  background: var(--wash-action);
+  border-color: rgba(34, 86, 60, 0.32);
+  font-weight: 600;
+}
+.nav-item__icone {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--text-muted);
+}
+.nav-item[aria-current="page"] .nav-item__icone {
+  color: var(--brand-action);
+}
+.nav-item__texto {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.nav-item__nome {
+  font-size: var(--type-small);
+}
+.nav-item__descricao {
+  font-size: var(--type-meta);
+  color: var(--text-muted);
+  font-weight: 400;
+  line-height: 1.4;
+}
+/* Modulo futuro nao se disfarca de disponivel. */
+.nav-item[data-disponibilidade="futuro"] .nav-item__nome {
+  color: var(--ink-faint);
+}
+
+.shell__conteudo {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-4) var(--space-3) calc(var(--touch-min) + var(--space-5));
+  overflow-x: hidden;
+}
+@media (min-width: 905px) {
+  .shell__conteudo {
+    padding: var(--space-5) var(--space-5) var(--space-6);
+  }
+}
+.shell__conteudo > * {
+  max-width: var(--content-max);
+}
+
+.contexto {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  min-width: 0;
+}
+.contexto__trilha {
+  font-family: var(--font-technical);
+  font-size: var(--type-meta);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.contexto__voltar {
+  min-height: 36px;
+  padding: 0.3rem 0.7rem;
+  font-size: var(--type-small);
+  background: transparent;
+  border: var(--stroke-hairline) solid var(--line-work);
+  box-shadow: none;
+}
+
+/* -------------------------------------------------------- nav mobile ----- */
+.shell__nav-mobile {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 25;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  background: var(--surface-elevated);
+  border-top: var(--stroke-hairline) solid var(--line-work);
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+@media (min-width: 905px) {
+  .shell__nav-mobile {
+    display: none;
+  }
+}
+.nav-mobile__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: var(--touch-min);
+  padding: var(--space-1);
+  border: none;
+  border-top: var(--stroke-signal) solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 600;
+  text-decoration: none;
+  text-align: center;
+  box-shadow: none;
+  line-height: 1.2;
+}
+.nav-mobile__item[aria-current="page"] {
+  color: var(--brand-action);
+  border-top-color: var(--brand-action);
+  background: var(--wash-action);
+}
+
+.shell__conexao {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+/* No shell escuro o badge precisa do proprio contraste. */
+.shell__conexao .ds-state {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-on-dark);
+  border-color: var(--text-on-dark-muted);
+}

@@ -15,7 +15,8 @@
     "src/**/*.ts",
     "demo/**/*.ts",
     "tools/entregas_ui_server.ts",
-    "tools/entregas_pilot_server.ts"
+    "tools/entregas_pilot_server.ts",
+    "tools/product_system_server.ts"
   ],
   "exclude": ["node_modules", "dist"]
 }
