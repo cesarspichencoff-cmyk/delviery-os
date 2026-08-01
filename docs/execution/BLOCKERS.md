@@ -264,3 +264,41 @@ agendamento desativado, acoes/indicadores antigos, e recuperacao apos
 corrupcao. Classificados como PARECE CORRIGIDO, NAO PROVADO.
 
 Os 21 documentos de `docs/conference-brain/` nao foram auditados linha a linha.
+
+## Atualizacao — Unidade 6 (2026-08-01)
+
+**B2 (Figma) RESOLVIDO.** `docs/figma/` existe com 13 documentos, e as tres paginas do arquivo
+`IMWH8ZKMF5ra3QJYiR6vGa` estao preenchidas. Correcao de registro: o Figma **nao estava vazio**
+quando esta unidade comecou — `01.1`, `01.2` e 49 variaveis ja existiam, e o registro anterior
+dizia o contrario. Ver E154 e `docs/figma/FIGMA_IMPLEMENTATION_PLAN.md`.
+
+### Bloqueadores novos, todos de LEITURA (nenhum impede o trabalho local seguir)
+
+**B5 — nao existe rota de leitura do estado do aparelho.** O Android publica por
+`POST /api/gps/batch`; nao ha endpoint que devolva credencial, GPS, ultima sincronizacao, fila
+offline ou revogacao. A tela de Entregas declara os cinco como `integracao_pendente` em vez de
+desenhar zero. **O que destravaria:** uma rota de leitura sobre `identity.device` e sobre o estado
+de sincronizacao — decisao de produto, porque expor saude de aparelho por unidade toca vigilancia.
+
+**B6 — nao existe historico em superficie nenhuma.** A projecao devolve o estado atual e a ponte
+devolve a avaliacao atual. Reconstruir historico exigiria varrer o event log (Operacao Viva) ou ler
+o status ja gravado no store (Copiloto), e nao ha rota para nenhum dos dois.
+
+**B7 — nao ha autenticacao no Product System, e por isso nao ha acao.** A retirada de recomendacao
+e funcao pura. Sem identidade de quem retira, oferecer o botao seria fingir um controle. **O que
+destravaria:** decidir o modelo de sessao humana desta superficie.
+
+**B8 — multi-unidade e de apresentacao.** O seletor funciona e preserva contexto, mas so ha uma
+unidade de demonstracao. Trocar de unidade nao muda fonte de dados porque nao ha segunda fonte.
+
+### Divergencias Figma ↔ codigo ainda abertas
+
+`wash/*`, grid, foco e motion existem no codigo e nao como variavel no Figma (alfa e breakpoint nao
+sao expressaveis como variavel no plano atual). Sem prototipo interativo — por decisao. Sem Code
+Connect. `inspetor`, `tabela` e `skeleton` existem no codigo e nao no Figma. Ver
+`docs/figma/FIGMA_CODE_PARITY_MATRIX.md` §4.
+
+### C2, C3, C4, C5 seguem abertos
+
+Reavaliacao do portao durante a viagem · corrida na `sequenceLocal` · GPS do piloto em RAM ·
+residuos de bind `0.0.0.0` e extrator de dimensoes. A Unidade 6 nao os tocou.

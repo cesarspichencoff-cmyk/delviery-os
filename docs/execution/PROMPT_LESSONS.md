@@ -500,3 +500,39 @@ o caso REALMENTE chegaria ao outro lado.
 
 **Sinal:** se o teste continua verde depois de remover a garantia que ele
 nomeia, ou o alvo esta errado (L27), ou a fixture nao chega la.
+
+---
+
+## L30 — O teste que reprova a própria garantia que deveria proteger
+
+**O que quase passou.** O teste do Copiloto procurava a palavra `executed` no JSON serializado
+inteiro da view model, para provar que nenhum vocabulário de execução vaza. Ele falhou — acusando
+a **frase que nega a execução**: *"o estado `executed` não existe no vocabulário"*.
+
+**Por que importa.** A correção tentadora era apagar a frase. Isso teria removido uma das
+declarações mais importantes da superfície para fazer um teste passar — trocar uma garantia real
+por uma verde.
+
+**Como foi fechado.** O teste passou a andar pelos **valores** da estrutura (um walker que coleta
+strings e compara por igualdade), em vez de procurar substring no texto serializado. A prosa
+continua dizendo o que precisa dizer, e o teste continua proibindo o que precisa proibir.
+
+**Família.** É primo de L26/L27: uma medição que parece medir a coisa certa e mede o vizinho. Aqui
+o vizinho era a própria documentação da garantia.
+
+## L31 — Chamada posicional numa API que espera um objeto devolve zero em silêncio
+
+**O que quase passou.** `extrairConclusoes({store, unit_id, source_mode, run_id, observer})` recebe
+**um** objeto. Foi chamada como `(store, opts)`. Ela não lança: cai no ramo `escopo_incompleto` e
+devolve `{conclusoes: [], recusadas: [...]}`.
+
+**Por que importa.** Zero conclusões é exatamente o que a cadeia real deveria devolver para
+**pedido**. A tela teria mostrado "0 conclusões", que é plausível, e o defeito teria atravessado a
+unidade inteira parecendo verdade operacional.
+
+**Como foi pego.** Por um smoke test escrito antes de construir a interface, que imprimiu os
+números da cadeia. O controle positivo sintético também devolvia vazio — e é isso que denunciou:
+**os dois lados do par deram zero**, e o par existe justamente para isso.
+
+**Regra que fica.** Antes de construir tela sobre uma cadeia, imprima os números dela. E quando um
+par controle/tratamento der o mesmo resultado, suspeite do instrumento antes de acreditar no dado.

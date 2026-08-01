@@ -1,6 +1,6 @@
 {
   "_leia_primeiro": "Estado executavel do DeliveryOS. So entra aqui o que foi VERIFICADO. Escrito por quem termina uma missao, lido por quem comeca a proxima. Para retomar a execucao interrompida, leia docs/execution/NEXT_RESUME.md primeiro.",
-  "atualizado_em": "2026-07-31",
+  "atualizado_em": "2026-08-01",
   "missao": "MACRO-PROMPT 1/3 — Hybrid Platform + PostgreSQL + Cloud Foundation",
   "veredito": "READY_FOR_MACRO_PROMPT_2_FIELD_AND_COPILOT_BRIDGE",
   "repositorio": {
@@ -187,8 +187,8 @@
     "executado_contra_provedor": false
   },
   "macro_prompt_2": {
-    "estado": "Unidade 5 (Copiloto shadow) CONCLUIDA — Unidade 6 nao iniciada",
-    "veredito": "COPILOT_SHADOW_UNIT_COMPLETE / MACRO2_CHECKPOINT_REACHED",
+    "estado": "Unidade 6 (Product System) CONCLUIDA — Unidade 7 nao iniciada",
+    "veredito": "PRODUCT_SYSTEM_UNIT_COMPLETE / MACRO2_CHECKPOINT_REACHED",
     "leia_primeiro": "docs/execution/NEXT_RESUME.md",
     "preservacao": {
       "branch_wip": "wip/macro2-interrupted-recovery-20260727",
@@ -255,14 +255,21 @@
     "figma_fatos_verificados_nao_reinvestigar": {
       "fileKey": "IMWH8ZKMF5ra3QJYiR6vGa",
       "escrita_permitida": true,
-      "_como_foi_provado": "criando e removendo um retangulo; o whoami reporta seat View e isso NAO impede escrever",
+      "_como_foi_provado": "6 scripts de escrita executados com sucesso na Unidade 6; o whoami reporta seat View e isso NAO impede escrever",
+      "_CORRIGIDO_EM_2026_08_01": "o registro anterior dizia paginas 01 e 02 VAZIAS e 0 variaveis. Era falso: alguma sessao escreveu no Figma sem registrar. Ver E154",
       "paginas": {
-        "00 — Overview & Architecture": "0:1 (tem capa)",
-        "01 — Design System": "2:2 (vazia)",
-        "02 — Product Flows & Screens": "2:3 (vazia)"
+        "00 — Overview & Architecture": "0:1 — capa + 00.1 Arquitetura do produto (27:2)",
+        "01 — Design System": "2:2 — 01.1 Foundations, 01.2 Runtime (preexistentes, intocadas), 01.3 Estados (8:66), 01.4 Componentes (8:67)",
+        "02 — Product Flows & Screens": "2:3 — 8 frames (desktop+mobile das 4 superficies) + 02.5 Estados essenciais (26:2)"
       },
-      "_armadilha": "get_metadata sem nodeId listou UMA pagina; a API do plugin e a autoridade",
-      "variaveis_estilos": 0
+      "_armadilha": "get_metadata sem nodeId lista UMA pagina. A API do plugin e a autoridade — confirmado de novo na Unidade 6",
+      "variaveis": 56,
+      "_nota_variaveis": "49 preexistentes + 7 ink/* criadas na Unidade 6",
+      "estilos_texto": 9,
+      "estilos_efeito": 3,
+      "estilos_cor": 0,
+      "componentes": 6,
+      "variant_sets": 4
     },
     "unidade_1_android_device_auth": {
       "veredito": "ANDROID_DEVICE_AUTH_UNIT_COMPLETE",
@@ -613,6 +620,78 @@
       },
       "nao_executa_nada": "requires_human e literal `true` no gerador; nao existe estado `executed`; nenhum verbo de acao operacional no codigo; o schema recusa registro que dispense humano",
       "nao_provado": "nenhuma recomendacao de PEDIDO nasce da cadeia real — o controle positivo usa conclusao sintetica. Nao ha painel: `paraPainel` existe e nao foi ligado. A retirada e funcao pura, sem UI nem autenticacao"
+    },
+    "unidade_6_product_system": {
+      "veredito": "PRODUCT_SYSTEM_UNIT_COMPLETE",
+      "testes": {
+        "product-system": 44
+      },
+      "comando": "npm run test:platform:product",
+      "verificacao_final": "tsc exit 0 + 419 testes verdes (44 product + 23 UI entregas + 188 conference/copiloto + 12 skills + 45 bridge + 23 contracts + 24 auth + 17 ingest + 23 consumer + 20 wiring)",
+      "descoberta_que_decide_o_desenho": {
+        "afirmacao": "nao existe framework frontend neste repositorio",
+        "evidencia": "package.json tem pg, typescript, playwright e xlsx; zero arquivos .tsx/.jsx",
+        "consequencia": "a Unidade 6 ESTENDEU o frontend vanilla existente e serve src/entregas/ui/shared/tokens.css pelo MESMO arquivo, sem copia",
+        "decisao": "D36"
+      },
+      "arquivos_novos": [
+        "src/product/viewmodels/ (estados, modulos, entregas-vm, operacao-viva-vm, conference-vm, copiloto-vm)",
+        "src/product/ui/ (index.html, app.js, tokens/, shell/, components/, surfaces/)",
+        "src/product/demo/seed-demonstracao.ts (FIXTURE)",
+        "tools/product_system_server.ts",
+        "src/platform/run-product-system-tests.ts",
+        "docs/figma/ (13 documentos)"
+      ],
+      "superficies_implementadas": [
+        "Entregas",
+        "Operacao Viva",
+        "Conference Brain",
+        "Copiloto Shadow"
+      ],
+      "modulos_futuros": 7,
+      "_nota_modulos_futuros": "tem lugar, icone, descricao, estado e visao — e ZERO dado, zero metrica, zero tabela. Afirmado por teste",
+      "travas_estruturais": {
+        "ausencia_nunca_vira_zero": "Campo<T> nao tem campo `valor` quando observado===false (D37)",
+        "sem_acao_operacional": "o servidor recusa metodo != GET/HEAD antes de rotear; nao existe rota de escrita para desativar (D38)",
+        "viagem_nao_e_pedido": "rotulo_identidade literal + teste que proibe trip_id em campo de pedido",
+        "confianca_exige_evidencia": "confiancaApresentavel devolve ausencia quando evidencias.length===0",
+        "pii_da_linha_recusada": "LinhaInvalidaLida nao TEM campo de conteudo — nao ha por onde exibir",
+        "fixture_fora_de_producao": "critical.ts e async-runtime.ts nao importam product/ nem a fixture"
+      },
+      "acessibilidade": {
+        "contraste": "todo ink/* >= 4.5:1 sobre surface-elevated e surface-work, com controle positivo exigindo que signal-calm CONTINUE reprovando",
+        "sem_cor": "22 estados com rotulo + glifo + padrao de borda; nenhum par colide nos tres canais",
+        "teclado": "so links, button e select nativos; zero div clicavel; foco sem transicao",
+        "leitor_de_tela": "glifo aria-hidden, .sr-only com o texto do estado, aria-live polite (assertive proibido por teste)",
+        "reduced_motion": "animacoes paradas E transicoes zeradas; nenhuma informacao vive so no movimento"
+      },
+      "controle_adversarial": {
+        "mutacoes": 6,
+        "todas_verificadas_como_aplicadas": true,
+        "mutacoes_cegas": 0,
+        "restauracao": "6/6 com hash identico",
+        "alvos": [
+          "marcacao shadow",
+          "ausencia virando zero",
+          "prefers-reduced-motion",
+          "recusa de metodo de escrita",
+          "conteudo de linha recusada",
+          "trip_id como pedido"
+        ]
+      },
+      "divergencias_fechadas": [
+        "text/on-dark-muted e line/on-dark tinham valores DIFERENTES no Figma e no CSS — o codigo adotou o do Figma (E157)",
+        "controle e futuro eram indistinguiveis sem cor — glifo de futuro trocado (E159)",
+        "signal/* reprovava em 4.5:1 como cor de texto — criados os 7 ink/* (E158)",
+        "STATE.json registrava o Figma como vazio — corrigido (E154)"
+      ],
+      "divergencias_abertas": [
+        "wash/*, grid, foco e motion existem no codigo e nao como variavel no Figma",
+        "sem prototipo interativo no Figma (por decisao)",
+        "sem Code Connect",
+        "inspetor, tabela e skeleton existem no codigo e nao no Figma"
+      ],
+      "nao_provado": "NENHUMA tela mostra dado real de operacao — todas carregam somente_demonstracao. Nao ha rota de leitura para credencial, GPS, ultima sincronizacao nem fila do aparelho. Nao ha historico em nenhuma superficie. Nao ha busca, filtro, permissao nem autenticacao — e por isso nao ha acao. A retirada de recomendacao continua sem UI"
     }
   }
 }

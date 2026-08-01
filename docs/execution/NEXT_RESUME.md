@@ -1,5 +1,58 @@
 # Retomada — leia este arquivo primeiro
 
+> **ATUALIZADO 2026-08-01 — UNIDADE 6 CONCLUIDA.**
+> `PRODUCT_SYSTEM_UNIT_COMPLETE` · `MACRO2_CHECKPOINT_REACHED`
+> **419 testes verdes**, `tsc --noEmit` exit 0.
+> Gate: `npm run test:platform:product` (44). Ver a superficie:
+> `npm run ui:product` → http://127.0.0.1:5290/
+>
+> **A descoberta que decidiu o desenho.** Nao existe framework frontend neste
+> repositorio — `package.json` tem `pg`, `typescript`, `playwright` e `xlsx`, e
+> zero arquivos `.tsx`. O frontend real e HTML/CSS/JS vanilla servido por Node.
+> A Unidade 6 **estendeu** esse frontend em vez de criar um segundo, e serve
+> `src/entregas/ui/shared/tokens.css` pelo **mesmo arquivo**, sem copia (D36).
+>
+> **O Figma NAO estava vazio, e a memoria dizia que estava.** O registro anterior
+> afirmava paginas `01` e `02` vazias e 0 variaveis. O real: `01.1` e `01.2` ja
+> completas e **49 variaveis**. Alguma sessao escreveu e nao registrou. O
+> trabalho foi **preservado**, nao substituido; `01.3`, `01.4`, `02` inteira e
+> `00.1` foram preenchidas. Hoje: 56 variaveis, 6 componentes, 4 variant sets,
+> 8 telas e 10 estados essenciais (E154).
+>
+> **A trava que faz a interface nao mentir e de TIPO, nao de disciplina.**
+> `Campo<T>` nao tem campo `valor` quando `observado === false` — nao existe
+> caminho que leia um numero sem antes provar que ele foi observado (D37). E o
+> servidor de apresentacao **nao tem rota de escrita para desativar**: ele recusa
+> todo metodo diferente de GET/HEAD antes de rotear (D38).
+>
+> **O par que da sentido ao zero atravessou para a tela.** A superficie do
+> Conference Brain mostra a cadeia real com **0 observacoes de pedido** e, logo
+> abaixo, o **controle positivo sintetico com 1**, pelo mesmo cano. Sem o
+> segundo painel, o zero do primeiro seria indistinguivel de defeito — e foi
+> exatamente esse par que denunciou um defeito proprio (L31).
+>
+> **Tres divergencias reais entre design e codigo, achadas por teste e fechadas:**
+> `text/on-dark-muted` e `line/on-dark` eram **cores diferentes** no Figma e no
+> CSS; `controle` e `planejado` eram indistinguiveis em preto e branco; e as
+> cores `signal/*` **reprovam em 4,5:1** como texto (3,72:1), o que criou os
+> sete tokens `ink/*` — com controle positivo exigindo que `signal-calm`
+> continue reprovando.
+>
+> **Controle adversarial: 6 mutacoes, 6 derrubaram o teste certo, 0 cegas,
+> 6/6 restauradas byte a byte.**
+>
+> **Proxima unidade: 7.** NAO iniciada — o bloco mandava parar aqui.
+>
+> **O que a Unidade 6 NAO prova:** nenhuma tela mostra dado real de operacao —
+> todas carregam `somente_demonstracao`. Nao ha rota de leitura para credencial,
+> GPS, ultima sincronizacao nem fila do aparelho, e os cinco campos aparecem
+> como `integracao pendente`. Nao ha historico em superficie nenhuma. Nao ha
+> busca, filtro, permissao nem autenticacao — e **por isso** nao ha acao. A
+> retirada de recomendacao continua sem UI. No Figma nao ha prototipo
+> interativo nem Code Connect.
+>
+> ---
+>
 > **ATUALIZADO 2026-07-31 — UNIDADE 5 CONCLUIDA.**
 > `COPILOT_SHADOW_UNIT_COMPLETE` · `MACRO2_CHECKPOINT_REACHED`
 > **352 testes verdes**, `tsc --noEmit` exit 0.

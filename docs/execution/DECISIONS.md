@@ -685,3 +685,63 @@ armazenamento, e e exatamente onde uma entidade nova deve ser declarada.
 disco. O schema recusa recomendacao de pedido sem identidade de pedido e
 recomendacao de fonte com identidade de pedido - a fronteira semantica deixou
 de depender so do motor.
+
+---
+
+## Unidade 6 — Product System (2026-08-01)
+
+### D36 — Estender o frontend existente, não criar um segundo
+
+**Decisão.** O Product System vive em `src/product/`, em HTML/CSS/JS vanilla, servido por
+`tools/product_system_server.ts`, e carrega `src/entregas/ui/shared/tokens.css` **pelo mesmo
+arquivo**, servido em `/shared/tokens.css` — sem cópia.
+
+**Alternativa recusada.** Introduzir React/Vite e construir um frontend moderno separado.
+
+**Por quê.** O repositório não tem framework nenhum: `package.json` tem `pg`, `typescript`,
+`playwright` e `xlsx`. Trazer um framework criaria um segundo frontend, um segundo Design System e
+uma segunda verdade — exatamente o que o bloco proíbe. O custo é real: sem componentização de
+framework, a reutilização é por função e por classe CSS.
+
+**Custo aceito.** Sem type-checking no JS das superfícies (elas são `.js`, não `.ts`). Mitigado por
+view models tipadas: toda regra e toda forma de dado vivem no TS, e o `.js` só desenha.
+
+### D37 — `Campo<T>` como trava de tipo contra `null` virando zero
+
+**Decisão.** Todo valor que pode faltar viaja como
+`{observado: true, valor, origem, observado_em} | {observado: false, motivo, explicacao}`.
+Não existe caminho de tipo que leia `valor` sem antes provar `observado === true`.
+
+**Alternativa recusada.** `valor: number | null` com o componente decidindo o que fazer com `null`.
+
+**Por quê.** `null | number` deixa o `?? 0` a uma tecla de distância, e um `0` falso numa tela
+operacional é indistinguível de um `0` medido. A mutação M2 confirmou: transformar a ausência de
+capacidade em `observado(0)` derruba o gate.
+
+**Custo aceito.** Mais verboso em todo ponto de leitura.
+
+### D38 — Superfície de leitura sem rota de escrita, e não com rota de escrita desativada
+
+**Decisão.** `product_system_server.ts` recusa qualquer método diferente de `GET`/`HEAD` **antes**
+de olhar o caminho, e não tem leitura de corpo de requisição.
+
+**Alternativa recusada.** Implementar as rotas de ação e desativá-las por flag.
+
+**Por quê.** Flag se liga. Rota que não existe não se liga por engano, e a garantia deixa de
+depender da disciplina de quem escrever a próxima tela. A mutação M4 confirmou que remover a trava
+derruba dois testes.
+
+### D39 — Tokens `ink/*` separados das cores de sinal
+
+**Decisão.** `signal/*` serve a ponto, traço e glifo. Texto pequeno usa `ink/*`, sete cores novas
+criadas no Figma e no CSS ao mesmo tempo.
+
+**Alternativa recusada.** Escurecer as próprias `signal/*` para passarem em 4,5:1.
+
+**Por quê.** As `signal/*` já estão em uso na fundação e carregam o clima do Campo Vivo; escurecê-las
+mudaria a leitura de toda a paleta para resolver um problema que é só de texto pequeno. Medido:
+`signal-calm` 3,72:1 e `text-faint` 3,77:1 sobre `surface/work`.
+
+**Custo aceito.** Duas famílias de cor para o mesmo conceito. Mitigado por um teste com **controle
+positivo**: ele exige que `signal-calm` continue reprovando, senão a razão de existir dos `ink`
+teria desaparecido sem ninguém notar.
