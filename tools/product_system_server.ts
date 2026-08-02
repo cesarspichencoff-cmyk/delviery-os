@@ -27,6 +27,8 @@ import {
   montarEntregasDemo,
   AGORA_DEMO,
 } from "../src/product/demo/seed-demonstracao";
+import { homeVM } from "../src/product/viewmodels/home-vm";
+import { CENAS, cena, type CenaHome } from "../src/product/demo/seed-home-demonstracao";
 
 const PORT = Number(process.env.PRODUCT_UI_PORT || 5290);
 const RAIZ_UI = join(process.cwd(), "src", "product", "ui");
@@ -55,6 +57,7 @@ function json(res: http.ServerResponse, code: number, body: unknown): void {
  * ------------------------------------------------------------------ */
 
 interface Pronto {
+  home: Record<CenaHome, unknown>;
   entregas: unknown;
   operacaoViva: unknown;
   conference: unknown;
@@ -76,7 +79,15 @@ async function calcular(): Promise<Pronto> {
     unknown
   >;
 
+  // As quatro cenas da home sao calculadas no boot, como todo o resto. Cada uma
+  // carrega `procedencia: "simulado"` desde a leitura — a marcacao de
+  // demonstracao nao e acrescentada aqui, ela ATRAVESSA o contrato.
+  const home = Object.fromEntries(
+    (Object.keys(CENAS) as CenaHome[]).map((c) => [c, homeVM(cena(c))]),
+  ) as Record<CenaHome, unknown>;
+
   return {
+    home,
     entregas: entregasVM(snap, AGORA_DEMO, facade.getPolicyMaxStops()),
     operacaoViva: operacaoVivaVM(cadeia.projecao),
     conference: {
@@ -157,6 +168,18 @@ export async function criarServidor(): Promise<http.Server> {
           grupos: GRUPOS,
           modulos: MODULOS,
           unidades: UNIDADES,
+        });
+      }
+      if (p === "/api/home") {
+        // `cena` so existe porque esta build e de DEMONSTRACAO. Numa build com
+        // fonte real haveria uma leitura, nao um seletor de cena.
+        const pedida = url.searchParams.get("cena") as CenaHome | null;
+        const escolhida: CenaHome =
+          pedida !== null && pedida in CENAS ? pedida : "ambiente";
+        return json(res, 200, {
+          ...(pronto.home[escolhida] as object),
+          cena: escolhida,
+          cenas_disponiveis: Object.keys(CENAS),
         });
       }
       if (p === "/api/entregas") return json(res, 200, pronto.entregas);

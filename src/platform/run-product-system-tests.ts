@@ -623,8 +623,10 @@ teste("fixture: a fixture esta rotulada e o rotulo nao e comentario solto", () =
 teste("navegacao: modulo futuro nunca se apresenta como disponivel", () => {
   const implementados = MODULOS.filter((m) => m.disponibilidade === "implementado");
   const futuros = MODULOS.filter((m) => m.disponibilidade === "futuro");
-  assert.equal(implementados.length, 4, "as quatro superficies prioritarias");
-  assert.equal(MODULOS.length, 11, "os onze modulos da arquitetura");
+  // 5 desde a recuperacao do produto: a HOME operacional passou a existir, e as
+  // quatro superficies da Unidade 6 continuam inteiras como aprofundamento.
+  assert.equal(implementados.length, 5, "home + as quatro superficies tecnicas");
+  assert.equal(MODULOS.length, 12, "os doze modulos da arquitetura (11 + a home)");
   for (const m of futuros) {
     assert.equal(m.estado, "futuro", `${m.id} nao carrega o estado futuro`);
     assert.ok(m.visao.length > 40, `${m.id} precisa declarar a visao`);

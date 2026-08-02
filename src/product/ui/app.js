@@ -17,6 +17,7 @@ import {
   selo,
   skeleton,
 } from "./components/ui.js";
+import { telaHome } from "./surfaces/home.js";
 import { telaEntregas } from "./surfaces/entregas.js";
 import { telaOperacaoViva } from "./surfaces/operacao-viva.js";
 import { telaConferenceBrain } from "./surfaces/conference-brain.js";
@@ -140,6 +141,7 @@ function grupoDaRota(modulo) {
  * ------------------------------------------------------------------ */
 
 const SUPERFICIES = {
+  "/": { api: "/api/home", tela: telaHome },
   "/entregas": { api: "/api/entregas", tela: telaEntregas },
   "/operacao-viva": { api: "/api/operacao-viva", tela: telaOperacaoViva },
   "/conference-brain": { api: "/api/conference-brain", tela: telaConferenceBrain },
@@ -148,7 +150,9 @@ const SUPERFICIES = {
 
 function rotaDoHash() {
   const h = window.location.hash.replace(/^#/, "");
-  return h && h.startsWith("/") ? h : "/entregas";
+  // A rota inicial e a HOME OPERACIONAL. Entregas deixou de ser a home: ela
+  // virou home por ter sido a primeira implementada, nao por decisao de produto.
+  return h && h.startsWith("/") ? h : "/";
 }
 
 async function desenhar(rota, opcoes = {}) {
@@ -173,10 +177,14 @@ async function desenhar(rota, opcoes = {}) {
   }
 
   const s = SUPERFICIES[rota];
+  // A cena so viaja para a HOME, e so porque esta build e de demonstracao.
+  const cena = new URLSearchParams(window.location.search).get("cena");
+  const api =
+    rota === "/" && cena ? `${s.api}?cena=${encodeURIComponent(cena)}` : s.api;
   alvo.setAttribute("aria-busy", "true");
   alvo.innerHTML = skeleton(4);
   try {
-    const vm = await obter(s.api);
+    const vm = await obter(api);
     alvo.innerHTML = s.tela(vm);
     ligarInspetores(alvo);
   } catch (e) {

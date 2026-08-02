@@ -60,6 +60,8 @@
     "test:platform:copiloto": "npx tsx src/platform/run-copiloto-shadow-tests.ts",
     "test:platform:product": "npx tsx src/platform/run-product-system-tests.ts",
     "test:platform:r1": "npx tsx src/platform/run-recovery-r1-tests.ts",
+    "test:platform:home": "npx tsx src/platform/run-home-signals-tests.ts",
+    "test:platform:recuperacao": "npm run test:platform:r1 && npm run test:platform:home && npm run test:platform:product",
     "ui:product": "npx tsx tools/product_system_server.ts",
     "test:platform:conference": "npm run test:platform:cb4b1 && npm run test:platform:cb4b2 && npm run test:platform:cb4b3 && npm run test:platform:cb4b4 && npm run test:platform:cb4b5 && npm run test:platform:copiloto"
   },

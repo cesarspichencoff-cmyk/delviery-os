@@ -197,3 +197,29 @@ export function pracasDe(ambiente: AmbienteId): readonly Praca[] {
 export function ambientesSemMedicao(): readonly Ambiente[] {
   return AMBIENTES.filter((a) => a.medicao === "sem_medicao_automatica");
 }
+
+/**
+ * Rotulo humano de uma `categoria_operacional` do seed. Os valores crus
+ * (`enrolado_quente`, `prato_quente`, `nao_producao`) sao identificadores: eles
+ * nunca podem chegar a uma pessoa. Categoria desconhecida devolve `null` — a
+ * interface omite em vez de exibir o identificador.
+ */
+const ROTULO_CATEGORIA: Readonly<Record<string, string>> = {
+  acompanhamento: "Acompanhamentos",
+  bebida: "Bebidas",
+  combinado: "Combinados",
+  complemento: "Complementos",
+  dupla: "Duplas",
+  enrolado: "Enrolados",
+  enrolado_quente: "Sushi Quentes",
+  entrada: "Entradas",
+  menu_composto: "Menus compostos",
+  nao_producao: "Sem producao",
+  outros: "Outros",
+  prato_quente: "Pratos quentes",
+  sobremesa: "Sobremesas",
+};
+
+export function rotuloDaCategoria(categoria: string): string | null {
+  return ROTULO_CATEGORIA[categoria] ?? null;
+}

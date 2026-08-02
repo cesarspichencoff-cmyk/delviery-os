@@ -55,9 +55,20 @@ export const GRUPOS: readonly {
 
 export const MODULOS: readonly Modulo[] = [
   {
+    id: "home",
+    nome: "Operacao",
+    descricao: "Como a casa esta agora, e o que merece atencao.",
+    icone: "pulso",
+    grupo: "agora",
+    rota: "/",
+    disponibilidade: "implementado",
+    estado: "somente_demonstracao",
+    visao: "",
+  },
+  {
     id: "entregas",
     nome: "Entregas",
-    descricao: "Quem esta na rua, com o que, e o que precisa de gente.",
+    descricao: "Aprofundamento: quem esta na rua, com o que, e o que precisa de gente.",
     icone: "rota",
     grupo: "agora",
     rota: "/entregas",
@@ -68,7 +79,7 @@ export const MODULOS: readonly Modulo[] = [
   {
     id: "operacao-viva",
     nome: "Operacao Viva",
-    descricao: "As dimensoes da unidade e a integridade de cada sinal.",
+    descricao: "Detalhe tecnico: as dimensoes da unidade e a integridade de cada sinal.",
     icone: "pulso",
     grupo: "agora",
     rota: "/operacao-viva",
@@ -79,7 +90,7 @@ export const MODULOS: readonly Modulo[] = [
   {
     id: "conference-brain",
     nome: "Conference Brain",
-    descricao: "O que foi observado, o que foi concluido, e o que falta observar.",
+    descricao: "Auditoria: o que foi observado, concluido, e o que falta observar.",
     icone: "camadas",
     grupo: "entendimento",
     rota: "/conference-brain",
@@ -90,7 +101,7 @@ export const MODULOS: readonly Modulo[] = [
   {
     id: "copiloto",
     nome: "Copiloto",
-    descricao: "Propostas em sombra. Nenhuma acao e executada.",
+    descricao: "Inspecao: propostas em sombra. Nenhuma acao e executada.",
     icone: "sombra",
     grupo: "entendimento",
     rota: "/copiloto",
