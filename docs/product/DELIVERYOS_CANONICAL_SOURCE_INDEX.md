@@ -102,6 +102,61 @@ Consolidadas das declarações do César e da documentação recuperada. **Não 
 > "um foco por vez, esconde o resto". **Está errado.** A exclusividade de slot governa a **ação
 > prescrita**, não a visibilidade. O protótipo original mostra três problemas ao mesmo tempo.
 
+
+### 3.5 Confirmações canônicas do César — 2026-08-01
+
+**Estas três questões estão ENCERRADAS. Não reabrir, não perguntar de novo.**
+Elas não criaram produto novo: confirmaram a arquitetura já desenhada nos mapas originais.
+
+#### Nomenclatura das praças — verificada contra o seed e o motor
+
+| Praça (código) | Nome canônico | Ambiente |
+|---|---|---|
+| `combinados` · `duplas` · `enrolados` | Combinados · Duplas · Enrolados | **Sushi** (subáreas) |
+| `enrolados_quentes` | **Sushi Quentes** | **Sushi** (subárea) |
+| `cozinha_quentes` | **Cozinha / Quentes da Cozinha** | **Cozinha** |
+
+**"Sushi Quentes" é praça/fluxo, não temperatura.** Os 11 itens de `enrolados_quentes` cobrem item
+por item a lista do César: `Ceviche · Hot Roll · Hot Roll Tatá · Hot Roll com Shimeji · Tartar de
+Salmão · Temaki Ebiten · Temaki de Salmão Skin · Tuna Shisô Tartar · Uramaki Ebiten · Uramaki Ebiten
+Especial · Uramaki de Salmão Skin`. Tartar e ceviche são frios e pertencem ao grupo — o que confirma
+que o nome descreve o fluxo operacional.
+
+**Cozinha / Quentes da Cozinha:** pratos quentes e entradas produzidos pela cozinha (yakisoba e
+equivalentes). No seed são 31 itens em `cozinha_quentes`. *Nota: "yakisoba" não existe no seed atual
+— lacuna E2, já registrada, não bloqueante.*
+
+> ⚠ **Defeito de rótulo a corrigir (ação R1):** `DISPLAY.cozinha_quentes = "Quentes"` exibe a
+> **Cozinha** com o nome que o César usa para **Sushi Quentes**. Não implementar ambientes antes de
+> corrigir. Não corrigido neste checkpoint — `motor.js` é núcleo.
+
+#### Ambiente Sushi — alternativa B
+
+Sushi é **ambiente geral**, com **Combinados, Duplas, Enrolados e Sushi Quentes visíveis como
+subáreas**. O sistema pode dizer "Sushi carregado" **sem esconder** qual subárea está causando o
+congestionamento.
+
+#### "Só quentes" — sinal de roteamento
+
+> **Significa que o pedido vem de lugares que não precisam passar pela área do Sushi.**
+> O pedido **pode ser montado na bancada do caixa**; a equipe entende que não há dependência da praça
+> Sushi; serve para **roteamento e simplificação da montagem**. Não é etiqueta de temperatura.
+> **Não significa prioridade automática**, salvo regra canônica que a sustente.
+
+Compatível com S12 do `Mapa_Sinais_Operacionais` (*"só pratos quentes, sem itens frios pendentes"*),
+e mais específico: a fonte dizia "verificar se dá pra fechar"; o César especifica **o destino**.
+A redação operacional a preservar é a do César.
+
+#### Reclassificação das cinco restantes — nenhuma bloqueia a recuperação inicial
+
+| Questão | Nova classificação |
+|---|---|
+| Amarelo × vermelho (limiar) | usar a **calibração real já existente** como ponto de partida e validar no piloto. O César não precisa inventar números antes de ver o comportamento |
+| Caixa | apresentar como **`sem medição automática`** quando não houver fonte. **Nunca verde por ausência de dado** |
+| Conferência | preservar **risco por pedido**; carga da área permanece `sem medição` enquanto não houver fonte |
+| Duas sacolas | só afirmar **com motivo sustentado**. A heurística ampla (47–61%) **não é verdade operacional** |
+| Histórico Odhen/Teknisa | **bloqueio de fonte externa**, não de arquitetura visual nem da recuperação do produto |
+
 ---
 
 ## 4. Patrimônio original que não pode ser redefinido em silêncio
@@ -212,13 +267,13 @@ Estados: `respondida pelo documento` · `respondida por César` · `respondida p
 
 | P | Pergunta | Já perguntada? | Destrava |
 |---|---|---|---|
-| **P1** | "Quentes" para você é hot roll/tempura, ou os pratos da cozinha? E "Cozinha" é o quê? | sim — auditoria de recuperação §20 Q2 | os 6 ambientes; sem isso a tela mostra a área errada |
+| ~~P1~~ | ~~"Quentes" é hot roll/tempura ou pratos da cozinha?~~ | **RESOLVIDA 2026-08-01** | ver §3.5 |
 | **P2** | Uma área "amarela" e uma "vermelha": a diferença é em pedidos esperando ou em minutos? | sim — §20 Q6 | limiares de todos os ambientes |
 | **P3** | O que faz um pedido virar "duas sacolas" na prática? | sim — §20 Q3 | substitui a heurística de 47–61% pela regra real (S14) |
-| **P4** | "Só quente" muda o que a equipe faz, ou é só uma característica? | **não** | define se S12 é acionável ou informativo |
+| ~~P4~~ | ~~"Só quente" muda o que a equipe faz?~~ | **RESOLVIDA 2026-08-01** | ver §3.5 |
 | **P5** | Existe sinal digital de que a **caixa** está atolada, ou só se vê no olho? | sim — §20 Q5 | se Caixa é ambiente ou "sem medição" |
 | **P6** | Dá para saber que a **conferência** está lotada, ou só que um pedido é arriscado? | **não** | se Conferência é estação ou risco por pedido |
-| **P7** | Sushi = Combinados + Duplas + Enrolados frios? | **não** | fecha o mapa praça→ambiente |
+| ~~P7~~ | ~~Sushi = Combinados + Duplas + Enrolados?~~ | **RESOLVIDA 2026-08-01** | ver §3.5 |
 | **P8** | Quando o pedido sai da tela do Odhen/Teknisa, ele fica gravado em algum lugar? | **não** | define se a captura na impressão é obrigatória |
 
 **Não reapresentar as 32.** Quatro (P4, P6, P7, P8) ainda não foram feitas; as outras quatro já estão
