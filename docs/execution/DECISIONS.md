@@ -831,3 +831,70 @@ memória tinha lugar para bloqueio técnico e nenhum lugar para bloqueio humano.
 deriva se repete na próxima sessão longa.
 
 **Custo.** Nenhum. Só disciplina.
+
+---
+
+## Fase de recuperação do produto operacional — checkpoint (2026-08-01)
+
+### D45 — Nomenclatura das praças, confirmada por dado
+
+**Decisão.** `enrolados_quentes` = **Sushi Quentes**, subárea de **Sushi**.
+`cozinha_quentes` = **Cozinha / Quentes da Cozinha**, ambiente próprio.
+"Sushi Quentes" nomeia **praça e fluxo**, nunca temperatura.
+
+**Alternativa recusada.** Reclassificar itens por conhecimento genérico de culinária — o que teria
+tirado tartar de salmão e ceviche do grupo por serem frios.
+
+**Por quê.** Os 11 itens de `enrolados_quentes` cobrem item por item a lista do César (hot roll,
+skin, Tuna Shisô, tartar de salmão, ceviche, ebiten, Hot Tatá). O mapa original estava certo desde
+julho; faltava só a confirmação humana. Encerra a questão material P1 e o conflito C4.
+
+**Custo.** Fica registrado um defeito de rótulo: `DISPLAY.cozinha_quentes = "Quentes"` exibe a
+Cozinha com o nome que o César usa para Sushi Quentes. **Não corrigido** — `motor.js` é núcleo e
+exige gate próprio (ação R1).
+
+### D46 — Sushi é ambiente geral com subáreas visíveis
+
+**Decisão.** Sushi é ambiente geral; Combinados, Duplas, Enrolados e Sushi Quentes permanecem
+visíveis como subáreas. O sistema pode dizer "Sushi carregado" **sem esconder** qual subárea causa o
+congestionamento.
+
+**Alternativa recusada.** Sushi como área única e opaca — que teria escondido a bancada gargalo.
+
+**Por quê.** É a alternativa B escolhida pelo César, e é coerente com o protótipo original, que já
+mostrava "Duplas carregando" e "Combinados acima do normal" como dois rótulos distintos. Encerra P7.
+
+**Custo.** Mais de um rótulo por ambiente; o teto de 2 rótulos do Ambiente precisa ser reavaliado
+quando a home for construída.
+
+### D47 — "Só quentes" é sinal de roteamento, não de temperatura
+
+**Decisão.** "Só quentes" significa que o pedido **não precisa passar pela área do Sushi** e **pode
+ser montado na bancada do caixa**. Serve a roteamento e simplificação da montagem. **Não** implica
+prioridade automática.
+
+**Alternativa recusada.** Tratar como etiqueta de temperatura ou como prioridade — as duas leituras
+que a auditoria tinha levantado como hipótese.
+
+**Por quê.** Confirmação do César. É compatível com S12 (*"só pratos quentes, sem itens frios
+pendentes"*) e mais específico: a fonte dizia "verificar se dá pra fechar"; o César especifica o
+destino. Encerra P4.
+
+**Custo.** Nenhum. O dado já existe e é real (14–23% dos pedidos).
+
+### D48 — Contrato antes de conexão; a fase para no contrato
+
+**Decisão.** O contrato de responsabilidades entre Operação Viva, motor do Copiloto, garantias
+Shadow e Conference Brain foi escrito (`docs/product/CONTRATO_CONSCIENCIA_COPILOTO.md`), com dez
+invariantes (I1–I10) que precisam estar verdes **antes** de qualquer conexão de runtime. A home, os
+sinais e o Figma **não foram implementados** nesta sessão.
+
+**Alternativa recusada.** Implementar uma home parcial com o contexto restante.
+
+**Por quê.** A própria missão determina: *"caso a conexão segura não caiba nesta sessão, conclua a
+home e os contratos, registre o checkpoint e não improvise"*. Uma home construída às pressas sobre um
+contrato não testado reproduziria o defeito de 30,8% que `37ca1c9` corrigiu — e seria exatamente a
+entrega por aproximação que o §16 proíbe.
+
+**Custo.** A fase fica em checkpoint, não concluída. Registrado com honestidade em vez de veredito
+inflado.

@@ -187,8 +187,8 @@
     "executado_contra_provedor": false
   },
   "macro_prompt_2": {
-    "estado": "Unidade 6 CONCLUIDA — CHECKPOINT CANONICO DE REALINHAMENTO aplicado. Proxima fase: RECUPERACAO DO PRODUTO OPERACIONAL (nao iniciada)",
-    "veredito": "DELIVERYOS_CANONICAL_REALIGNMENT_CHECKPOINT_COMPLETE / MACRO2_CHECKPOINT_REACHED",
+    "estado": "FASE DE RECUPERACAO DO PRODUTO OPERACIONAL em CHECKPOINT — matriz e contrato concluidos; home, sinais e Figma NAO iniciados",
+    "veredito": "DELIVERYOS_OPERATIONAL_PRODUCT_RECOVERY_CHECKPOINT / MACRO2_CHECKPOINT_REACHED",
     "leia_primeiro": "docs/execution/NEXT_RESUME.md",
     "preservacao": {
       "branch_wip": "wip/macro2-interrupted-recovery-20260727",
@@ -790,19 +790,52 @@
     ]
   },
   "proxima_fase": {
-    "nome": "FASE DE RECUPERACAO DO PRODUTO OPERACIONAL",
-    "estado": "REGISTRADA, NAO INICIADA",
-    "_nota": "o plano detalhado de implementacao NAO foi escrito, de proposito",
-    "escopo_futuro": [
-      "comparar o prototipo original e a plataforma atual",
-      "definir a arquitetura de integracao entre motor original e garantias shadow",
-      "restaurar a home operacional",
-      "recuperar Calmo Ambiente e Foco",
-      "recuperar os sinais e ambientes",
-      "reposicionar as telas da Unidade 6",
-      "recuperar Memoria Operacional Resolucao e Evolucao",
-      "preservar toda a infraestrutura tecnica valida"
+    "nome": "FASE DE RECUPERACAO DO PRODUTO OPERACIONAL — continuacao",
+    "estado": "CHECKPOINT ABERTO",
+    "proxima_acao": "R2 (home operacional) sobre o Design System existente, seguida de R4 (os 11 sinais sustentados). R1 exige gate proprio. R5 somente apos I1-I10 verdes"
+  },
+  "fase_recuperacao_produto_operacional": {
+    "data": "2026-08-01",
+    "estado": "CHECKPOINT — nao concluida",
+    "motivo_da_parada": "limite de contexto da sessao; a missao §6 determina concluir contratos e registrar checkpoint sem improvisar",
+    "entregue": [
+      "docs/product/RECOVERY_MAP.md — matriz de recuperacao e classificacao dos 22 sinais",
+      "docs/product/CONTRATO_CONSCIENCIA_COPILOTO.md — contrato de responsabilidades com invariantes I1 a I10"
     ],
-    "pre_requisito": "as 8 perguntas materiais do indice canonico §5 — quatro ja estao com o Cesar, quatro nunca foram feitas"
+    "nao_entregue": [
+      "home operacional (R2)",
+      "sinais implementados (R4)",
+      "conexao dos motores (R5)",
+      "correcao dos rotulos do motor (R1)",
+      "Figma",
+      "qualquer alteracao de codigo funcional"
+    ],
+    "confirmacoes_canonicas_do_cesar": {
+      "D45": "enrolados_quentes = Sushi Quentes (subarea de Sushi); cozinha_quentes = Cozinha. O nome e praca/fluxo, nao temperatura. Confirmado item a item contra o seed",
+      "D46": "Sushi e ambiente geral, com Combinados, Duplas, Enrolados e Sushi Quentes visiveis como subareas",
+      "D47": "so quentes e sinal de ROTEAMENTO: o pedido nao passa pelo Sushi e pode ser montado na bancada do caixa; nao implica prioridade automatica"
+    },
+    "questoes_encerradas": [
+      "P1 Quentes x Cozinha",
+      "P7 ambiente Sushi",
+      "P4 so quentes"
+    ],
+    "questoes_rebaixadas": [
+      "limiar amarelo/vermelho — usar a calibracao real existente e validar no piloto",
+      "Caixa — sem medicao automatica, nunca verde por ausencia de dado",
+      "Conferencia — risco por pedido preservado; carga da area sem medicao",
+      "duas sacolas — so afirmar com motivo sustentado",
+      "Odhen/Teknisa — bloqueio de fonte externa, nao de arquitetura"
+    ],
+    "sinais_classificados": {
+      "implementaveis_hoje": 11,
+      "dependentes_de_fonte_inexistente": 8,
+      "bloqueado_por_fonte_externa": 1,
+      "funcao_mae": 1,
+      "total": 22,
+      "_nota": "nenhum implementado ainda"
+    },
+    "defeito_registrado_nao_corrigido": "DISPLAY.cozinha_quentes = Quentes exibe a Cozinha com o nome que o Cesar usa para Sushi Quentes (acao R1; motor.js e nucleo, exige gate proprio)",
+    "gate_para_conectar_motores": "invariantes I1 a I10 do contrato precisam estar verdes; D43 continua de pe"
   }
 }

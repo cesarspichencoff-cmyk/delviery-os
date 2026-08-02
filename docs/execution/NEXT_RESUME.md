@@ -12,6 +12,49 @@
 >
 > ---
 >
+> **ATUALIZADO 2026-08-01 — FASE DE RECUPERACAO DO PRODUTO OPERACIONAL: CHECKPOINT.**
+> `DELIVERYOS_OPERATIONAL_PRODUCT_RECOVERY_CHECKPOINT` · `MACRO2_CHECKPOINT_REACHED`
+>
+> **Tres questoes de produto ENCERRADAS pelo Cesar. Nao perguntar de novo.**
+> Elas nao criaram produto novo — confirmaram a arquitetura ja desenhada nos mapas originais.
+>
+> - **D45** `enrolados_quentes` = **Sushi Quentes** (subarea de Sushi) · `cozinha_quentes` =
+>   **Cozinha**. O nome e de PRACA e FLUXO, nunca de temperatura. Provado item a item: os 11 itens
+>   da praca cobrem exatamente a lista do Cesar (hot roll, skin, Tuna Shiso, tartar de salmao,
+>   ceviche, ebiten, Hot Tata). O mapa original estava certo desde julho.
+> - **D46** Sushi e **ambiente geral** com Combinados, Duplas, Enrolados e Sushi Quentes **visiveis
+>   como subareas**. "Sushi carregado" nunca esconde qual subarea causa o congestionamento.
+> - **D47** "so quentes" e **sinal de ROTEAMENTO**: o pedido nao passa pelo Sushi e **pode ser
+>   montado na bancada do caixa**. Nao e etiqueta de temperatura e nao implica prioridade.
+>
+> **Cinco questoes rebaixadas** — nenhuma bloqueia a recuperacao inicial: limiar amarelo/vermelho
+> (usar a calibracao real existente e validar no piloto) · Caixa (`sem medicao automatica`, **nunca
+> verde**) · Conferencia (risco por pedido preservado) · duas sacolas (**so com motivo sustentado**;
+> a heuristica de 47-61% nao e verdade operacional) · Odhen/Teknisa (bloqueio de **fonte externa**).
+>
+> **ENTREGUE nesta fase:**
+> `docs/product/RECOVERY_MAP.md` — matriz de recuperacao, nomenclatura resolvida por dado, e os 22
+> sinais classificados: **11 sao implementaveis hoje**, 8 dependem de fonte inexistente, 1 esta
+> bloqueado por fonte externa, 1 e a funcao-mae. **Nenhum implementado ainda.**
+> `docs/product/CONTRATO_CONSCIENCIA_COPILOTO.md` — quem decide o que entre Operacao Viva, motor do
+> Copiloto, garantias Shadow e Conference Brain, com **10 invariantes (I1-I10)** que precisam estar
+> verdes antes de qualquer conexao de runtime.
+>
+> **NAO ENTREGUE, e o motivo e honesto:** home operacional (R2), sinais (R4), conexao dos motores
+> (R5), correcao dos rotulos do motor (R1) e Figma. A sessao chegou ao limite de contexto, e a
+> propria missao manda, nesse caso, **concluir os contratos e nao improvisar**. Uma home construida
+> as pressas sobre contrato nao testado reproduziria o defeito de 30,8% corrigido em `37ca1c9`.
+>
+> **DEFEITO REGISTRADO, NAO CORRIGIDO (R1):** `DISPLAY.cozinha_quentes = "Quentes"` no `motor.js`
+> exibe a **Cozinha** com o nome que o Cesar usa para **Sushi Quentes**. Implementar ambientes antes
+> de corrigir mostraria a area errada. `motor.js` e nucleo — exige gate proprio.
+>
+> **PROXIMA ACAO SEGURA:** R2 — a home operacional (Calmo/Ambiente/Foco + pulso) sobre o Design
+> System que ja existe, seguida de R4 (os 11 sinais sustentados). **R5 so depois de I1-I10.**
+> **Nada de codigo foi alterado neste checkpoint.**
+>
+> ---
+>
 > **ATUALIZADO 2026-08-01 — CHECKPOINT CANONICO DE REALINHAMENTO.**
 > `DELIVERYOS_CANONICAL_REALIGNMENT_CHECKPOINT_COMPLETE` · `MACRO2_CHECKPOINT_REACHED`
 >

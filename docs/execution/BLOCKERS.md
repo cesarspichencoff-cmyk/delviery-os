@@ -12,6 +12,46 @@
 
 # BLOQUEIOS DE PRODUTO E DECISÕES HUMANAS
 
+## ✅ ENCERRADOS em 2026-08-01 — não reabrir
+
+- **PB1 — Quentes × Cozinha.** RESOLVIDO. `enrolados_quentes` = **Sushi Quentes** (subárea de Sushi);
+  `cozinha_quentes` = **Cozinha**. Confirmado item a item contra o seed. Ver D45 e índice §3.5.
+- **PB4 — "Só quente" é acionável?** RESOLVIDO. É **sinal de roteamento**: o pedido não passa pelo
+  Sushi e pode ser montado na bancada do caixa. Ver D47.
+- **PB7 — Mapa praça → ambiente (Sushi).** RESOLVIDO. Sushi é **ambiente geral com subáreas
+  visíveis** (Combinados, Duplas, Enrolados, Sushi Quentes). Ver D46.
+
+## ⬇ REBAIXADOS em 2026-08-01 — não bloqueiam a recuperação inicial
+
+- **PB2 — limiar amarelo/vermelho.** Usar a **calibração real já existente** (`FLOORS`, baselines
+  medidos) como ponto de partida e validar no piloto. O César não precisa inventar números antes de
+  ver o comportamento.
+- **PB3 — regra das duas sacolas.** Só afirmar **com motivo sustentado**. A heurística ampla
+  (47–61%) **não é verdade operacional** e não pode ser exibida sozinha.
+- **PB5 — Caixa.** Apresentar como **`sem medição automática`** quando não houver fonte.
+  **Nunca verde por ausência de dado.**
+- **PB6 — Conferência.** Preservar **risco por pedido**; carga da área permanece `sem medição`
+  enquanto não houver fonte.
+- **PB8 — histórico Odhen/Teknisa.** Permanece **bloqueio de fonte externa**, não bloqueio de
+  arquitetura visual nem da recuperação do produto.
+
+## 🔴 ABERTOS — decisões de produto que ainda travam runtime
+
+- **PB9/C2** — quem fica com o nome "Operação Viva": o núcleo cognitivo ou a projeção de viagens.
+- **PB9/C3** — qual motor é dono da atenção. **Os dois não se conectam até I1–I10 do contrato
+  estarem verdes** (`docs/product/CONTRATO_CONSCIENCIA_COPILOTO.md` §6).
+- **PB9/C1** — Ambiente pode carregar orientação de ação? O César pediu "dicas práticas" nos
+  secundários; `Modelo` §3 e `Mapa_Ambientes` §11 proíbem bloco de ação em Ambiente.
+  **Conflito real, não resolvível por hierarquia de fontes.**
+- **PB9/C7** — CRM, Evolução, Treinamento, RH e Gestão são módulos do DeliveryOS?
+- **PB9/C8** — notificação fora da tela é permitida?
+- **PB10** — fontes canônicas nunca examinadas (Sprint Visual V2 `.zip`; worktree do Copiloto v33).
+
+---
+
+### Registro histórico dos bloqueios de produto (mantido para rastreabilidade)
+
+
 > **Categoria separada de infraestrutura, Android, PostgreSQL, Docker, nuvem e aparelho físico.**
 > Nada aqui se resolve com código. Tudo aqui bloqueia a recuperação do produto operacional.
 > Classificação completa das 32 perguntas antigas: índice canônico §5.
