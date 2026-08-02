@@ -1,6 +1,6 @@
 {
   "_leia_primeiro": "Estado executavel do DeliveryOS. So entra aqui o que foi VERIFICADO. ORDEM DE LEITURA OBRIGATORIA: (1) docs/product/DELIVERYOS_CANONICAL_SOURCE_INDEX.md — o produto; (2) os documentos de produto que ele indicar; (3) as duas auditorias em docs/auditoria/; (4) so entao este arquivo e o NEXT_RESUME.md. O produto vem antes do estado tecnico — ver DECISIONS.md D44 e PROMPT_LESSONS.md L32.",
-  "atualizado_em": "2026-08-01",
+  "atualizado_em": "2026-08-02",
   "missao": "MACRO-PROMPT 1/3 — Hybrid Platform + PostgreSQL + Cloud Foundation",
   "veredito": "READY_FOR_MACRO_PROMPT_2_FIELD_AND_COPILOT_BRIDGE",
   "repositorio": {
@@ -187,8 +187,8 @@
     "executado_contra_provedor": false
   },
   "macro_prompt_2": {
-    "estado": "FASE DE RECUPERACAO DO PRODUTO OPERACIONAL em CHECKPOINT — matriz e contrato concluidos; home, sinais e Figma NAO iniciados",
-    "veredito": "DELIVERYOS_OPERATIONAL_PRODUCT_RECOVERY_CHECKPOINT / MACRO2_CHECKPOINT_REACHED",
+    "estado": "RECUPERACAO OPERACIONAL BLOCO 1 em CHECKPOINT — R1 e R4 concluidos, R2 concluido em COMPORTAMENTO e INCORRETO em EXPRESSAO VISUAL (PB9); Figma nao iniciado",
+    "veredito": "DELIVERYOS_OPERATIONAL_HOME_SIGNALS_CHECKPOINT / MACRO2_CHECKPOINT_REACHED",
     "leia_primeiro": "docs/execution/NEXT_RESUME.md",
     "preservacao": {
       "branch_wip": "wip/macro2-interrupted-recovery-20260727",
@@ -790,9 +790,9 @@
     ]
   },
   "proxima_fase": {
-    "nome": "FASE DE RECUPERACAO DO PRODUTO OPERACIONAL — continuacao",
+    "nome": "RECUPERACAO OPERACIONAL — BLOCO 1, continuacao",
     "estado": "CHECKPOINT ABERTO",
-    "proxima_acao": "R2 (home operacional) sobre o Design System existente, seguida de R4 (os 11 sinais sustentados). R1 exige gate proprio. R5 somente apos I1-I10 verdes"
+    "proxima_acao": "1) corrigir CLAUDE.md §11 e o indice canonico para incluir docs/design/VISUAL_REFERENCE_HIERARCHY.md; 2) refazer a EXPRESSAO da home sobre o Sprint Visual V2 / Organismo V3.3, preservando as view models; 3) so entao o Figma; 4) rodada adversarial. R5 continua proibido"
   },
   "fase_recuperacao_produto_operacional": {
     "data": "2026-08-01",
@@ -837,5 +837,74 @@
     },
     "defeito_registrado_nao_corrigido": "DISPLAY.cozinha_quentes = Quentes exibe a Cozinha com o nome que o Cesar usa para Sushi Quentes (acao R1; motor.js e nucleo, exige gate proprio)",
     "gate_para_conectar_motores": "invariantes I1 a I10 do contrato precisam estar verdes; D43 continua de pe"
+  },
+  "recuperacao_operacional_bloco_1": {
+    "data": "2026-08-02",
+    "estado": "CHECKPOINT — nao concluido",
+    "head_inicial": "e308835",
+    "commits": [
+      "61e0495 (R1)",
+      "d07493b (R2+R4)"
+    ],
+    "motivo_da_parada": "limite de contexto da sessao E o achado PB9, que torna a expressao visual da home invalida. A missao manda, nesse caso, registrar e nao improvisar.",
+    "R1": {
+      "estado": "CONCLUIDO",
+      "gate": "npm run test:platform:r1 — 24 testes",
+      "o_que_mudou": "DISPLAY.cozinha_quentes 'Quentes'->'Cozinha'; DISPLAY.enrolados_quentes 'Enrolados Quentes'->'Sushi Quentes'; app-v1 deixou de nomear um ambiente 'Quentes'",
+      "identificadores_internos": "NAO renomeados (D49)",
+      "arquivo_novo": "src/product/viewmodels/areas.ts — unico lugar onde id de praca vira nome humano",
+      "achado": "o campo `temperatura` do seed marca Ceviche, Tartar e Tuna Shiso como quente. E sombra do nome da praca, nao classificacao — 43 quentes contra 31 na Cozinha"
+    },
+    "R2": {
+      "estado": "COMPORTAMENTO CONCLUIDO · EXPRESSAO VISUAL INVALIDA",
+      "gate": "npm run test:platform:home — 44 testes",
+      "comportamento_provado": [
+        "Calmo nao e tela vazia: 8 sinais, pulso e os 5 ambientes",
+        "no maximo UMA orientacao principal",
+        "dois ambientes vermelhos simultaneos (Sushi e Cozinha) nao se escondem",
+        "Sushi geral E as 4 subareas ao mesmo tempo; a subarea causadora e identificavel",
+        "area sem fonte nunca verde; pressao ausente nunca 0",
+        "degradado identifica a fonte que parou",
+        "nenhum identificador interno chega a uma pessoa"
+      ],
+      "expressao_invalida": "construida sobre o Design System da Unidade 6 e sobre app-v1 (Nivel 5, historical_reference_only). A autoridade e o Sprint Visual V2 (Nivel 1) e o Organismo V3.3 (Nivel 2). Ver PB9",
+      "arquivos_a_refazer": [
+        "src/product/ui/surfaces/home.css",
+        "src/product/ui/surfaces/home.js"
+      ],
+      "arquivos_que_sobrevivem": [
+        "src/product/viewmodels/home-vm.ts",
+        "src/product/viewmodels/sinais.ts",
+        "src/product/viewmodels/areas.ts"
+      ]
+    },
+    "R4": {
+      "estado": "CONCLUIDO",
+      "implementados": 11,
+      "codigos": [
+        "S1",
+        "S2",
+        "S3",
+        "S4",
+        "S5",
+        "S6",
+        "S7",
+        "S8",
+        "S12",
+        "S18",
+        "S22"
+      ],
+      "condicionais": [
+        "S14 duas sacolas — SO com motivo comprovado",
+        "S14c risco de conferencia por pedido"
+      ],
+      "indisponiveis": 9,
+      "_nota_indisponiveis": "8 sem fonte (KDS, impressora, pausa do iFood, ficha tecnica) + S19 bloqueado por SAC. DECLARADOS na tela com motivo e fonte que falta",
+      "nenhuma_pausa_automatica": true
+    },
+    "R5": "NAO iniciado, conforme a missao. D43 continua de pe",
+    "figma": "NAO iniciado — o orcamento de contexto proibia abrir nova superficie grande, e PB9 tornaria o desenho invalido de qualquer forma",
+    "rodada_adversarial": "NAO executada — parada por contexto",
+    "conteudo_real_versus_demonstracao": "as REGRAS dos sinais, o cardapio (199 itens/8 pracas) e os baselines calibrados sao reais; os pedidos, tempos e cargas das 4 cenas sao fixture com procedencia `simulado` no contrato"
   }
 }

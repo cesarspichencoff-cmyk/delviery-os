@@ -439,3 +439,51 @@ Connect. `inspetor`, `tabela` e `skeleton` existem no codigo e nao no Figma. Ver
 
 Reavaliacao do portao durante a viagem · corrida na `sequenceLocal` · GPS do piloto em RAM ·
 residuos de bind `0.0.0.0` e extrator de dimensoes. A Unidade 6 nao os tocou.
+
+---
+
+## PB9 — A home foi construida sobre a linguagem visual ERRADA
+
+**Categoria:** bloqueio de produto · **Aberto em** 2026-08-02 · **Severidade:** alta
+
+**O fato.** A home operacional de R2 foi construida sobre o Design System da
+Unidade 6 (paleta clara "Campo Vivo", cartoes em grade) usando `app-v1` como
+referencia de comportamento. `docs/design/VISUAL_REFERENCE_HIERARCHY.md` diz, em
+letra propria, que `app-v1` e **Nivel 5 — `historical_reference_only`, NAO pode
+definir direcao visual**, e que a autoridade e:
+
+```
+Nivel 1  Sprint Visual DeliveryOS V2        prevalece sempre
+Nivel 2  Organismo Operacional V3.3         implementacao validada
+Nivel 5  app-v1 e demos iniciais            NAO define direcao
+```
+
+O V3.3 existe no repositorio, inteiro:
+`docs/design/canonical/deliveryos-visual-v2/extracted/DeliveryOS Organismo Operacional.dc.html`
+— superficie escura (verde profundo `#08130D`, verde vivo `#8CC63F`, creme,
+ambar, neutro tracejado, cinza-ardosia), areas que CRESCEM em degraus, ligacoes
+que aparecem so quando a dependencia esta ativa, pressao que se espalha pelo
+caminho do pedido, fluxo mobile geral -> area -> atencao -> voltar, voz,
+fechamento de turno, e dez estados tecnicos que "falam em cinza, nunca viram
+pressao".
+
+**A causa raiz e a MESMA da auditoria de realinhamento.** `CLAUDE.md` §11 e o
+indice canonico do produto nao referenciam `docs/design/`. Quem retoma encontra o
+estado tecnico e o Design System da Unidade 6, e **nao encontra a hierarquia
+visual**. Foi assim que a Unidade 6 desenhou, e foi assim que R2 desenhou de novo.
+A propria missao deste bloco listou como fonte "o prototipo original executado por
+`tools/servir_v1.js`" e "o Design System atual" — nunca `docs/design/`.
+
+**O que NAO esta errado.** A camada de comportamento: view models, contrato de
+areas, motor de sinais, travas de ausencia, procedencia e os tres gates. Nada
+disso depende da paleta. O que precisa ser refeito e a EXPRESSAO.
+
+**O que destrava.** Ler `docs/design/CANONICAL_VISUAL_MANIFEST.json` e a
+hierarquia ANTES de qualquer trabalho visual, e reconstruir a expressao da home
+sobre o Nivel 1/2. `src/product/ui/surfaces/home.css` e
+`src/product/ui/surfaces/home.js` sao os arquivos a refazer; `home-vm.ts`,
+`sinais.ts` e `areas.ts` sobrevivem.
+
+**Correcao de processo exigida:** `CLAUDE.md` §11 e o indice canonico precisam
+incluir `docs/design/VISUAL_REFERENCE_HIERARCHY.md` na ordem obrigatoria de
+leitura. Sem isso, a proxima sessao repete pela terceira vez.

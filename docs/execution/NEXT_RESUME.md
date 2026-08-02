@@ -12,6 +12,66 @@
 >
 > ---
 >
+> **ATUALIZADO 2026-08-02 — RECUPERACAO OPERACIONAL BLOCO 1: CHECKPOINT.**
+> `DELIVERYOS_OPERATIONAL_HOME_SIGNALS_CHECKPOINT` · `MACRO2_CHECKPOINT_REACHED`
+> HEAD inicial `e308835` -> final `d07493b`. Commits: `61e0495` (R1), `d07493b` (R2+R4).
+>
+> **LEIA TAMBEM, ANTES DE QUALQUER TRABALHO VISUAL:**
+> `docs/design/VISUAL_REFERENCE_HIERARCHY.md`. Ele NAO estava na ordem de leitura, e por
+> isso a Unidade 6 e este bloco desenharam sobre a referencia errada. Ver **PB9**.
+>
+> **R1 CONCLUIDO.** `DISPLAY.cozinha_quentes` deixou de valer `"Quentes"` — o nome que a
+> operacao usa para OUTRA praca. Hoje: `cozinha_quentes -> Cozinha`,
+> `enrolados_quentes -> Sushi Quentes`. Os identificadores internos NAO foram renomeados
+> (D49): eles sao chave do seed, do baseline e dos replays. `src/product/viewmodels/areas.ts`
+> passa a ser o unico lugar onde id de praca vira nome humano.
+> Gate proprio: `npm run test:platform:r1` — **24 testes**.
+>
+> **Achado de R1 que vale guardar:** o campo `temperatura` do seed marca Ceviche, Tartar de
+> Salmao e Tuna Shiso Tartar como `"quente"` — pratos frios. Ele e sombra do nome da praca,
+> nao classificacao independente (43 itens quentes contra 31 na Cozinha). Nenhuma heuristica
+> termica pode substituir o mapa canonico.
+>
+> **R4 CONCLUIDO — 11 sinais.** S1, S2, S3, S4, S5, S6, S7, S8, S12, S18, S22. Mais dois
+> condicionais: **S14 duas sacolas so com motivo comprovado** (a heuristica de 47-61% nunca
+> preenche a lacuna) e **risco de conferencia POR PEDIDO**, que existe mesmo sem medicao da
+> area. Os **9 sem fonte** (8 tecnicos + S19 bloqueado por SAC) sao DECLARADOS na tela com
+> motivo e fonte que falta. **Nenhuma pausa automatica.**
+>
+> **R2 — comportamento CONCLUIDO, expressao visual INVALIDA.**
+> Gate: `npm run test:platform:home` — **44 testes**. Estao provados: Calmo nao e tela vazia ·
+> uma unica orientacao principal · dois vermelhos simultaneos que nao se escondem · Sushi geral
+> E as quatro subareas · a subarea causadora identificavel · area sem fonte nunca verde ·
+> ausencia nunca zero · degradado que nomeia a fonte parada · nenhum identificador interno
+> chegando a uma pessoa · nada executando.
+>
+> **MAS a expressao esta errada, e o motivo e estrutural.** A home foi desenhada sobre o
+> Design System da Unidade 6 e sobre `app-v1`, que a hierarquia oficial classifica como
+> **Nivel 5, `historical_reference_only`, NAO pode definir direcao visual**. A autoridade e o
+> **Sprint Visual V2 (Nivel 1)** e o **Organismo Operacional V3.3 (Nivel 2)** —
+> superficie escura, areas que crescem em degraus, ligacoes que so aparecem com dependencia
+> ativa, pressao que se espalha pelo caminho do pedido. O V3.3 esta no repositorio inteiro em
+> `docs/design/canonical/deliveryos-visual-v2/extracted/`. Ver **PB9**.
+>
+> **O que sobrevive e o que se refaz.** Sobrevivem `home-vm.ts`, `sinais.ts` e `areas.ts` —
+> nada neles depende de paleta. Refazem-se `src/product/ui/surfaces/home.css` e `home.js`.
+>
+> **Tres defeitos reais achados pelos testes e corrigidos no caminho:** sinal informativo
+> pintava ambiente e uma operacao calma aparecia inteira em atencao (D50) · o cardapio estava
+> modelado como fonte de CARGA de Sushi e Cozinha, quando sustenta composicao e roteamento ·
+> identificadores crus vazavam para a tela nos alvos de sinal e nas categorias.
+>
+> **NAO FEITO, e o motivo e honesto:** Figma · rodada adversarial dirigida · matriz Figma-codigo.
+> A sessao chegou ao orcamento de contexto, e PB9 tornaria o desenho invalido de qualquer forma.
+> **R5 nao foi iniciado.** D43 continua de pe.
+>
+> **PROXIMA ACAO SEGURA, nesta ordem:** (1) por `docs/design/VISUAL_REFERENCE_HIERARCHY.md` na
+> ordem obrigatoria de leitura de `CLAUDE.md` §11 e do indice canonico; (2) refazer a expressao
+> da home sobre o Nivel 1/2, preservando as view models; (3) so entao o Figma; (4) rodada
+> adversarial.
+>
+> ---
+>
 > **ATUALIZADO 2026-08-01 — FASE DE RECUPERACAO DO PRODUTO OPERACIONAL: CHECKPOINT.**
 > `DELIVERYOS_OPERATIONAL_PRODUCT_RECOVERY_CHECKPOINT` · `MACRO2_CHECKPOINT_REACHED`
 >

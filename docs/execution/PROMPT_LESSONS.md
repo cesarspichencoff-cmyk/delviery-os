@@ -562,3 +562,34 @@ bloqueio técnico produz, com o tempo, um projeto só técnico.
 **Regra que fica.** Ao terminar um documento com perguntas para um humano, a última ação da missão é
 registrá-las em `BLOCKERS.md`. Pergunta que mora só no corpo de um documento não é bloqueio — é um
 bilhete que ninguém vai ler.
+
+---
+
+## L33 — A ordem de leitura decide o resultado, e ela falhou DUAS vezes pelo mesmo motivo
+
+**O que quase passou.** A home operacional foi construida inteira — view models,
+sinais, superficie, CSS, 44 testes verdes — sobre a linguagem visual errada. So
+apareceu porque o Cesar abriu o arquivo do V3.3 e perguntou "o que aconteceu para
+estar tao feio e diferente?".
+
+**Por que passou.** `docs/design/VISUAL_REFERENCE_HIERARCHY.md` existe, diz em
+letra propria que `app-v1` e Nivel 5 e **nao pode definir direcao visual**, e
+**nao esta em nenhuma ordem obrigatoria de leitura**. `CLAUDE.md` §11 aponta para
+o indice canonico do produto e para `docs/execution/`; nenhum dos dois referencia
+`docs/design/`. A propria missao deste bloco listou como fonte "o prototipo
+original executado por `tools/servir_v1.js`" — que e exatamente o Nivel 5.
+
+**A familia.** E a MESMA falha que a auditoria de realinhamento diagnosticou em
+L32: um patrimonio existe no repositorio, e a ordem de leitura nao o alcanca.
+Naquele caso era o produto; neste, a linguagem visual. Corrigir o §11 uma vez nao
+bastou porque a correcao foi feita para o eixo que doia, nao para a classe.
+
+**O que fazer.** Antes de escrever a primeira linha de CSS ou abrir o Figma,
+perguntar: **qual documento e a autoridade visual, e onde ele diz que e?** Se a
+resposta vier de um Design System encontrado no codigo em vez de uma hierarquia
+declarada, parar e procurar a hierarquia.
+
+**Guarda estrutural sugerida, ainda NAO implementada:** um teste que exija que
+todo arquivo listado como autoridade em `docs/design/CANONICAL_VISUAL_MANIFEST.json`
+esteja citado na ordem de leitura de `CLAUDE.md`. Sem guarda, a terceira repeticao
+e questao de tempo.

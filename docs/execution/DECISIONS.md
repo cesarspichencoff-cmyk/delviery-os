@@ -898,3 +898,56 @@ entrega por aproximação que o §16 proíbe.
 
 **Custo.** A fase fica em checkpoint, não concluída. Registrado com honestidade em vez de veredito
 inflado.
+
+### D49 — A correcao de nomenclatura vive na apresentacao, nao no identificador
+
+**Decisao.** `DISPLAY.cozinha_quentes` passou a valer `"Cozinha"` e
+`DISPLAY.enrolados_quentes` passou a valer `"Sushi Quentes"`. As chaves internas
+`cozinha_quentes` e `enrolados_quentes` **nao foram renomeadas**.
+
+**Alternativa recusada:** renomear os identificadores para `cozinha` e
+`sushi_quentes`. Recusada porque eles sao chave de `cardapio_knowledge_seed.json`
+(199 itens), do `BASELINE` calibrado em 30 dias reais e de todos os replays
+historicos em `data/generated/`. Renomear exigiria migrar dado historico para
+corrigir um defeito que vivia inteiro na camada de exibicao.
+
+**Custo aceito:** duas nomenclaturas coexistem, e um leitor de codigo ve
+`enrolados_quentes` onde a operacao diz "Sushi Quentes". Mitigado por
+`src/product/viewmodels/areas.ts`, que e o unico lugar onde id vira nome, e pelo
+gate `test:platform:r1`, que proibe identificador interno de chegar a uma pessoa.
+
+**Achado que sustenta a decisao:** o campo `temperatura` do seed marca Ceviche,
+Tartar de Salmao e Tuna Shiso Tartar como `"quente"` — pratos frios. O campo e
+sombra do nome da praca, nao classificacao independente (43 itens "quentes"
+contra 31 na Cozinha). Nenhuma heuristica termica pode substituir o mapa canonico.
+
+---
+
+### D50 — Sinal declara se e PRESSAO ou informacao
+
+**Decisao.** Todo sinal carrega `pinta_ambiente: boolean`. So sinal de pressao
+muda a cor de uma area.
+
+**Alternativa recusada:** colorir por severidade pura, como o prototipo fazia.
+Recusada por medicao: com severidade pura, a cena Calmo — cinco pedidos, nenhum
+atraso — pintava Sushi, Cozinha e Conferencia de amarelo, porque "so quentes",
+"pedido simples" e "item saindo rapido" tem severidade 1. Uma operacao saudavel
+aparecia inteira em atencao, e a tela mentia para baixo.
+
+**Custo aceito:** cada sinal novo precisa declarar sua especie, e errar a
+declaracao e silencioso. Mitigado pelo teste H18 (roteamento nao pode pintar).
+
+---
+
+### D51 — Verde exige leitura observada, nao promessa de fonte
+
+**Decisao.** Um ambiente medido por carga so aparece verde se a carga foi
+OBSERVADA. Fonte que se declara saudavel e nao entrega leitura nenhuma nao
+sustenta verde; a area cai para `sem_medicao`.
+
+**Alternativa recusada:** confiar no estado declarado da fonte. Recusada porque
+uma fonte saudavel com zero leituras e indistinguivel de um cano entupido — o
+mesmo argumento do controle positivo de L26/D32, aplicado a cor da area.
+
+**Custo aceito:** uma area genuinamente vazia e com fonte viva aparece
+`sem_medicao` ate a primeira leitura chegar. Preferimos isso a verde falso.
