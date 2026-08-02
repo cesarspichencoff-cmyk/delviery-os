@@ -22,9 +22,17 @@
   // praças de CONFERÊNCIA/MONTAGEM (geram esquecimento/fechamento/conferência/sacola — não sobrecarga)
   const CONFERENCIA = ["sobremesa","bar_bebidas","montagem_outros"];
   // rótulo para a operação (interface)
+  // NOMENCLATURA CANÔNICA — D45 (César, 01/08/2026). O nome da praça é de FLUXO,
+  // nunca de temperatura: `enrolados_quentes` é a praça que a operação chama de
+  // "Sushi Quentes" (hot roll, skin, Tuna Shisô, tartar, ceviche, ebiten, Hot Tatá —
+  // tartar e ceviche são frios e pertencem ao grupo), e `cozinha_quentes` é a
+  // "Cozinha". O rótulo anterior exibia a Cozinha como "Quentes", que é o nome que a
+  // operação usa para OUTRA praça — ver docs/product/RECOVERY_MAP.md §1.
+  // Os identificadores internos NÃO foram renomeados de propósito: eles são chave do
+  // seed, do baseline e dos replays históricos.
   const DISPLAY = {
     combinados:"Combinados", duplas:"Duplas", enrolados:"Enrolados",
-    enrolados_quentes:"Enrolados Quentes", cozinha_quentes:"Quentes",
+    enrolados_quentes:"Sushi Quentes", cozinha_quentes:"Cozinha",
     sobremesa:"Sobremesa", bar_bebidas:"Bar", montagem_outros:"Montagem"
   };
 

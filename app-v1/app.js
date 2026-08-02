@@ -200,9 +200,10 @@
      Os 6 ambientes reais do César, coloridos SÓ com dado que o motor já produz.
      Honestidade obrigatória (docs/Mapa_Ambientes_V1.md):
        - Caixa: o motor não modela a fila da caixa → sempre "Em validação".
-       - Cozinha: colisão de nome (o motor rotula cozinha_quentes como "Quentes") e a
-         separação fina não foi validada pelo César → "Em validação".
-       - Sushi / Quentes / Conferência / Motoboy: mensuráveis por load/severidade/sinais reais.
+       - Cozinha: a colisão de nome foi RESOLVIDA por D45 (cozinha_quentes = Cozinha,
+         enrolados_quentes = Sushi Quentes). Este protótipo mantém o card em validação
+         porque a leitura reestruturada de Cozinha pertence à home nova, não a ele.
+       - Sushi / Sushi Quentes / Conferência / Motoboy: mensuráveis por load/severidade/sinais reais.
      Cor: verde (tudo fluindo) · amarelo (atenção) · vermelho (virando foco, só sev 3) ·
      neutro (em validação). Vermelho nunca decorativo — sev 3 é praça a 2x do baseline. */
   const AMB_ESTADO = { verde: "Tudo fluindo", amarelo: "Atenção", vermelho: "Virando foco", validacao: "Em validação" };
@@ -241,13 +242,14 @@
       motivo: su.pr
         ? (MOTOR.DISPLAY[su.pr] + (suCor === "vermelho" ? " segurando o fluxo" : " com pedidos acumulando"))
         : "Sushi em ritmo normal" };
-    // Quentes = enrolados quentes (Hot Roll e afins) — mapeamento com as próprias palavras do César
+    // Sushi Quentes = enrolados_quentes (Hot Roll, skin, tartar, ceviche, ebiten) — nome de
+    // PRAÇA/FLUXO, não de temperatura. Nomenclatura canônica: D45.
     const qu = piorPraca(R, ["enrolados_quentes"]);
     const quCor = corPorSev(qu.sev);
-    const quentes = { nome: "Quentes", cor: quCor, pressao: pressaoPorRatio(R, ["enrolados_quentes"]),
+    const quentes = { nome: "Sushi Quentes", cor: quCor, pressao: pressaoPorRatio(R, ["enrolados_quentes"]),
       motivo: qu.sev
-        ? ("Enrolados quentes " + (quCor === "vermelho" ? "segurando o fluxo" : "puxando espera"))
-        : "Quentes em ritmo normal" };
+        ? ("Sushi Quentes " + (quCor === "vermelho" ? "segurando o fluxo" : "puxando espera"))
+        : "Sushi Quentes em ritmo normal" };
     // Conferência = sinal por pedido (não fila); honesto sobre isso
     const confSit = R.sits.find(s => s.kind === "conferencia");
     const conf = { nome: "Conferência", cor: confSit ? "amarelo" : "verde", pressao: pressaoPorSeveridade(confSit ? confSit.sev : 0),
@@ -259,7 +261,7 @@
       motivo: saida ? (moCor === "vermelho" ? "Saída travando, prontos parados" : "Prontos esperando saída") : "Despacho sem acúmulo" };
     // Caixa e Cozinha: honestamente em validação (ver cabeçalho) — barra sem percentual
     const caixa = { nome: "Caixa", cor: "validacao", pressao: null, motivo: "Fonte atual ainda não mede esta fila" };
-    const cozinha = { nome: "Cozinha", cor: "validacao", pressao: null, motivo: "Separação fina ainda depende do mapa operacional" };
+    const cozinha = { nome: "Cozinha", cor: "validacao", pressao: null, motivo: "Leitura própria da Cozinha vive na home operacional" };
     // ordem de leitura: entrada → produção fria → produção quente → cozinha → conferência → saída
     return [caixa, sushi, quentes, cozinha, conf, motoboy].map(a => ({ nome: a.nome, cor: a.cor, pressao: a.pressao, estadoTxt: AMB_ESTADO[a.cor], motivo: a.motivo }));
   }
