@@ -68,12 +68,15 @@ function inspectLocalWriterArtifacts(options = {}) {
 }
 
 function timeoutResult(milliseconds) {
-  return new Promise((resolve) => setTimeout(() => resolve({
-    accepted: false,
-    source: 'rejected',
-    reason: 'LOCAL_WRITER_TIMEOUT',
-    output: null
-  }), milliseconds));
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => resolve({
+      accepted: false,
+      source: 'rejected',
+      reason: 'LOCAL_WRITER_TIMEOUT',
+      output: null
+    }), milliseconds);
+    timer.unref?.();
+  });
 }
 
 class LocalHomologationWriter {

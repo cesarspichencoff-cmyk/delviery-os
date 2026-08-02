@@ -64,6 +64,9 @@ function createNativeServer(options={}){
     if(req.method==='POST'&&req.url==='/api/customer-menu/recommend'){const body=await readJson(req);return json(res,200,customerMenu.recommend(body));}
     if(req.method==='POST'&&req.url==='/api/customer-menu/imports/action'){const body=await readJson(req);return json(res,200,customerMenu.importAction(body));}
     if(req.method==='POST'&&req.url==='/api/customer-menu/review/action'){const body=await readJson(req);return json(res,200,customerMenu.menuReviewAction(body));}
+    if(req.method==='POST'&&req.url==='/api/customer-menu/public-review/preview'){const body=await readJson(req);return json(res,200,customerMenu.publicMenuReviewPreview(body));}
+    if(req.method==='POST'&&req.url==='/api/customer-menu/public-review/commit'){const body=await readJson(req);return json(res,200,customerMenu.publicMenuReviewCommit(body));}
+    if(req.method==='POST'&&req.url==='/api/customer-menu/public-review/action'){const body=await readJson(req);return json(res,200,customerMenu.publicMenuFieldAction(body));}
     if(req.method==='POST'&&req.url==='/api/homologation/chat'){const body=await readJson(req);return json(res,200,await homologation.chatWithWriter(body));}
     if(req.method==='POST'&&req.url==='/api/homologation/chat/reset')return json(res,200,homologation.resetChat());
     if(req.method==='POST'&&req.url==='/api/homologation/feedback'){const body=await readJson(req);return json(res,200,homologation.feedback(body));}

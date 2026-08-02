@@ -44,6 +44,10 @@
         <div class="welcome"><strong>Olá! Como posso ajudar?</strong><span>Use somente situações sintéticas.</span></div>
       </div>
       <div class="chat-runtime-controls" aria-label="Contexto sintético da conversa">
+        <label>Roteiro de hospitalidade
+          <select id="hospitality-case"><option value="">Conversa livre</option></select>
+        </label>
+        <button id="load-hospitality-turn" type="button">Carregar próximo turno do roteiro</button>
         <label>Cliente sintético (opcional)
           <select id="chat-customer">
             <option value="">Sem cliente associado</option>
@@ -63,7 +67,7 @@
         <label>Unidade do catálogo
           <select id="chat-menu-unit"><option value="">Definida pelo catálogo ativo</option></select>
         </label>
-        <label class="diagnostic-toggle"><input id="chat-diagnostic" type="checkbox" checked> Mostrar diagnóstico sanitizado</label>
+        <label class="diagnostic-toggle"><input id="chat-diagnostic" type="checkbox" disabled> Diagnóstico disponível após avaliar</label>
       </div>
       <p id="runtime-truth" class="runtime-truth">Verificando Writer local e catálogo ativo…</p>
       <form id="chat-form" class="chat-composer">
@@ -75,6 +79,17 @@
       </form>
       <section id="free-feedback" class="feedback-card hidden" aria-label="Feedback da resposta">
         <h3>Como ficou esta resposta?</h3>
+        <div class="criteria-grid">
+          <label>Experiência geral (0–10)<input id="free-experience-score" type="number" min="0" max="10" value="5" required></label>
+          <label>Compreende o cliente?<input id="free-compreensao" type="number" min="0" max="10" value="5" required></label>
+          <label>Parece um bom anfitrião?<input id="free-anfitriao" type="number" min="0" max="10" value="5" required></label>
+          <label>Usa o que já foi dito?<input id="free-uso-contexto" type="number" min="0" max="10" value="5" required></label>
+          <label>Ajuda a decidir?<input id="free-ajuda-decidir" type="number" min="0" max="10" value="5" required></label>
+          <label>Naturalidade<input id="free-naturalidade" type="number" min="0" max="10" value="5" required></label>
+          <label>Utilidade<input id="free-utilidade" type="number" min="0" max="10" value="5" required></label>
+          <label>Segurança<input id="free-seguranca" type="number" min="0" max="10" value="5" required></label>
+          <label>Você enviaria esta resposta?<input id="free-enviaria" type="number" min="0" max="10" value="5" required></label>
+        </div>
         <div class="choice-grid compact" id="free-tags"></div>
         <label for="free-comment">O que ficou estranho nesta resposta? <span>Opcional</span></label>
         <textarea id="free-comment" maxlength="1200" rows="2" placeholder="Não inclua dados pessoais ou informações reais de clientes."></textarea>

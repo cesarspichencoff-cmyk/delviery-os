@@ -34,6 +34,18 @@ function scoreCandidate(item, request, customer = {}) {
     score += Math.max(0, 15 - (distance * 5));
     reasons.push('party_size_fit');
   }
+  if (request.occasion && item.hospitality_tags.includes(request.occasion)) {
+    score += 25;
+    reasons.push(`occasion_match:${request.occasion}`);
+  }
+  if (request.desired_experience && item.hospitality_tags.includes(request.desired_experience)) {
+    score += 20;
+    reasons.push(`experience_match:${request.desired_experience}`);
+  }
+  if (request.texture_preferences?.some((value) => item.texture.includes(value))) {
+    score += 10;
+    reasons.push('texture_match');
+  }
   const confirmedPreferences = customer.confirmed_facts || [];
   if (confirmedPreferences.some((fact) => fact.field === 'preferred_item' && fact.value === item.commercial_identity)) {
     score += 10;
@@ -54,10 +66,10 @@ function recommend(catalog, request = {}, customerContext = {}) {
   const candidates = catalog.search({
     channel: request.channel,
     unit_id: request.unit_id,
-    availability: 'available',
-    review_status: 'confirmed',
     maximum_price: request.price_range?.maximum ?? null
   }).filter((item) => {
+    if (!['confirmed', 'approved_for_recommendation'].includes(item.review_status)) return false;
+    if (['unavailable', 'stale'].includes(item.availability.state)) return false;
     if (request.raw_or_cooked === 'raw' && item.preparation.raw !== true) return false;
     if (request.raw_or_cooked === 'cooked' && item.preparation.cooked !== true) return false;
     if (request.fried === false && item.preparation.fried !== false) return false;
@@ -78,6 +90,7 @@ function recommend(catalog, request = {}, customerContext = {}) {
       score: scored.score,
       source_records: item.source_records,
       availability: item.availability
+      ,warnings: item.availability.state === 'unknown' ? ['availability_unconfirmed'] : []
     };
   }).sort((left, right) => right.score - left.score || left.item_id.localeCompare(right.item_id));
 
@@ -87,12 +100,14 @@ function recommend(catalog, request = {}, customerContext = {}) {
     channel: request.channel,
     unit_id: request.unit_id,
     constraints_applied: [
-      'channel', 'unit', 'review_status', 'availability',
+      'channel', 'unit', 'review_status', 'availability_not_unavailable',
       ...(request.allergies || []).map((item) => `allergy:${item}`),
       ...(request.dietary_restrictions || []).map((item) => `diet:${item}`),
       ...(request.fried === false ? ['preparation:fried:false'] : []),
       ...(request.cream_cheese === 'without' ? ['preparation:cream_cheese:false'] : []),
-      ...(request.preferred_ingredients || []).map((item) => `preferred_ingredient:${item}`)
+      ...(request.preferred_ingredients || []).map((item) => `preferred_ingredient:${item}`),
+      ...(request.occasion ? [`occasion:${request.occasion}`] : []),
+      ...(request.desired_experience ? [`desired_experience:${request.desired_experience}`] : [])
     ],
     candidates: candidates.slice(0, 3),
     unknowns: candidates.length ? [] : ['safe_candidate_not_found'],

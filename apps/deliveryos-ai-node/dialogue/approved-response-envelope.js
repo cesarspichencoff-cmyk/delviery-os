@@ -88,6 +88,36 @@ function normalize(value) {
   return String(value || '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().replace(/\s+/gu, ' ').trim();
 }
 
+const CONTROLLED_TOPIC_PATTERNS = Object.freeze([
+  ['marketplace', /\bmarketplace\b/u],
+  ['ifood', /\bifood\b/u],
+  ['delivery', /\bdelivery\b/u],
+  ['pedido', /\bpedid[oa]s?\b/u],
+  ['reserva', /\breservas?\b/u],
+  ['fila', /\bfilas?\b/u],
+  ['cardapio', /\bcardapios?\b/u],
+  ['bebida', /\bbebidas?\b/u],
+  ['drink', /\bdrinks?\b/u],
+  ['alergia', /\balergi(?:a|as|co|ca|cos|cas)\b/u],
+  ['preco', /\bprecos?\b/u],
+  ['promocao', /\bpromoc(?:ao|oes)\b/u]
+]);
+
+function unapprovedTopics(text, envelope) {
+  const normalizedText = normalize(text);
+  const authorized = normalize(JSON.stringify({
+    direct_answer: envelope.direct_answer,
+    explanation: envelope.explanation,
+    facts: envelope.facts,
+    action_truth: envelope.action_truth,
+    question_to_ask: envelope.question_to_ask,
+    menu_context_summary: envelope.menu_context_summary,
+    recommendation_context: envelope.recommendation_context
+  }));
+  return CONTROLLED_TOPIC_PATTERNS.filter(([, pattern]) => pattern.test(normalizedText) && !pattern.test(authorized))
+    .map(([topic]) => topic);
+}
+
 function validateApprovedWriterOutput(output, envelope) {
   const checked = validateApprovedResponseEnvelope(envelope);
   if (!checked.accepted) return { accepted: false, reason: checked.reason };
@@ -95,6 +125,8 @@ function validateApprovedWriterOutput(output, envelope) {
   const base = validateWriterOutput(output, writerInput);
   if (!base.accepted) return base;
   const text = base.output.text;
+  const topics = unapprovedTopics(text, checked.envelope);
+  if (topics.length) return { accepted: false, reason: 'WRITER_UNAPPROVED_TOPIC', details: { topics } };
   if (checked.envelope.question_to_ask && !normalize(text).includes(normalize(checked.envelope.question_to_ask))) return { accepted: false, reason: 'WRITER_QUESTION_CHANGED' };
   for (const claim of checked.envelope.prohibited_claims) {
     if (claim && normalize(text).includes(normalize(claim))) return { accepted: false, reason: 'WRITER_PROHIBITED_CLAIM' };
@@ -108,5 +140,7 @@ module.exports = {
   APPROVED_RESPONSE_ENVELOPE_KEYS,
   validateApprovedResponseEnvelope,
   approvedEnvelopeToWriterInput,
-  validateApprovedWriterOutput
+  validateApprovedWriterOutput,
+  CONTROLLED_TOPIC_PATTERNS,
+  unapprovedTopics
 };

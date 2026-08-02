@@ -192,7 +192,16 @@ function buildResponsePlan(input = {}) {
   const guidedAnswers = Array.isArray(productGuidance?.direct_answers)
     ? productGuidance.direct_answers.filter((item) => typeof item === 'string' && item.trim())
     : [];
-  if (['preventive_allergy', 'party_size_update'].includes(productGuidance?.mode)) {
+  const guidedKnowledgeAnswers = productGuidance
+    && productGuidance.mode !== 'preventive_allergy'
+    && classification.intent?.startsWith('information.')
+    ? knowledge.direct_answer
+    : [];
+  const productGuidanceSurface = extractSurfaceFacts([
+    ...guidedAnswers,
+    typeof productGuidance?.question === 'string' ? productGuidance.question : ''
+  ].filter(Boolean).join(' '));
+  if (productGuidance) {
     pendingQuestions = [];
     mandatoryQuestions = [];
   }
@@ -208,8 +217,17 @@ function buildResponsePlan(input = {}) {
     knowledge.selected.map((item) => item.customer_message).filter(Boolean).join(' ')
   );
   authorizedSurface.text = [authorizedSurface.text, knowledgeSurface.text].filter(Boolean).join(' ');
-  authorizedSurface.links = [...new Set([...authorizedSurface.links, ...knowledgeSurface.links])];
-  authorizedSurface.numbers = [...new Set([...authorizedSurface.numbers, ...knowledgeSurface.numbers])];
+  authorizedSurface.text = [authorizedSurface.text, productGuidanceSurface.text].filter(Boolean).join(' ');
+  authorizedSurface.links = [...new Set([
+    ...authorizedSurface.links,
+    ...knowledgeSurface.links,
+    ...productGuidanceSurface.links
+  ])];
+  authorizedSurface.numbers = [...new Set([
+    ...authorizedSurface.numbers,
+    ...knowledgeSurface.numbers,
+    ...productGuidanceSurface.numbers
+  ])];
   const verifiedActions = result.status === 'confirmed' && classification.action ? [classification.action] : [];
   const pendingActions = result.status === 'confirmed' || !classification.action ? [] : [classification.action];
   const handoffConfirmed = input.handoff?.status === 'confirmed';
@@ -222,9 +240,9 @@ function buildResponsePlan(input = {}) {
   const plan = {
     version: '2.0.0',
     customer_need: knowledge.customer_need,
-    direct_answer: productGuidance?.mode === 'preventive_allergy'
-      ? [...new Set(guidedAnswers)]
-      : [...new Set([...guidedAnswers, ...knowledge.direct_answer])],
+    direct_answer: productGuidance
+      ? [...new Set([...guidedAnswers, ...guidedKnowledgeAnswers])]
+      : [...new Set(knowledge.direct_answer)],
     knowledge_candidates: knowledge.candidates.map((item) => ({
       knowledge_id: item.knowledge_id,
       playbook: item.playbook,
@@ -264,6 +282,7 @@ function buildResponsePlan(input = {}) {
     verified_actions: verifiedActions,
     pending_actions: pendingActions,
     mandatory_questions: mandatoryQuestions,
+    product_guidance_mode: productGuidance?.mode || null,
     contextual_question: typeof productGuidance?.question === 'string' ? productGuidance.question : null,
     context_reason: productGuidance?.context_reason || null,
     candidates_found: Array.isArray(productGuidance?.candidates_found) ? [...productGuidance.candidates_found] : [],
@@ -319,6 +338,7 @@ function validateResponsePlan(plan) {
     !Array.isArray(plan?.humanity_requirements),
     !Array.isArray(plan?.direction),
     !Array.isArray(plan?.candidates_found),
+    (plan?.product_guidance_mode !== null && typeof plan?.product_guidance_mode !== 'string'),
     (plan?.contextual_question !== null && typeof plan?.contextual_question !== 'string'),
     new Set(plan?.mandatory_questions || []).size !== (plan?.mandatory_questions || []).length,
     (plan?.verified_actions || []).some((action) => (plan?.pending_actions || []).includes(action))

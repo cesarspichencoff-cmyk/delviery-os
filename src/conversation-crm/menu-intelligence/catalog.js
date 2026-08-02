@@ -55,6 +55,7 @@ function createMenuItem(input = {}) {
     customizations: (input.customizations || []).map((entry) => ({ ...entry })),
     flavor_profile: input.flavor_profile || [],
     texture: input.texture || [],
+    hospitality_tags: input.hospitality_tags || [],
     preparation: {
       raw: input.preparation?.raw ?? null,
       cooked: input.preparation?.cooked ?? null,

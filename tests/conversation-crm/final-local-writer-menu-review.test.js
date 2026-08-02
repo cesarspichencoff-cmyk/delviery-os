@@ -87,10 +87,15 @@ test('saída local que muda pergunta aprovada cai no fallback com motivo especí
 test('curadoria inventaria 199 itens e 86 harmonizações sem aprovação automática', (t) => {
   const review = new MenuReviewService({ projectRoot: PROJECT_ROOT, root: temporary(t, 'deliveryos-menu-review-') });
   const bootstrap = review.bootstrap();
-  assert.deepEqual(bootstrap.summary, {
+  assert.deepEqual({ ...bootstrap.summary, public_catalog: undefined }, {
     total: 285, items: 199, pairings: 86, pending: 285, approved: 0,
     rejected: 0, conflicting: 0, active_real_items: 0,
-    original_sources_in_git: false, append_only: true
+    original_sources_in_git: false, append_only: true, public_catalog: undefined
+  });
+  assert.deepEqual(bootstrap.summary.public_catalog, {
+    total: 426, dining_room: 268, ifood: 158,
+    approved_for_information: 0, approved_for_recommendation: 0,
+    blocked: 0, conflicting: 0, human_approved_fields: 0
   });
   assert.equal(bootstrap.proposals.every((item) => item.review_status === 'pending'), true);
   assert.equal(bootstrap.policy.automatic_confirmation, false);
@@ -145,12 +150,12 @@ test('harmonização não pode ser aprovada sem escopo e vínculos reais', (t) =
   assert.equal(review.summary().approved, 0);
 });
 
-test('fontes preservam separação de canal sem importar conteúdo público', (t) => {
+test('fontes preservam separação de canal com evidência pública ainda sem aprovação humana', (t) => {
   const review = new MenuReviewService({ projectRoot: PROJECT_ROOT, root: temporary(t, 'deliveryos-source-registry-') });
   const sources = review.bootstrap().sources;
   assert.equal(sources.find((item) => item.source_id === 'menu-source-live-menu-v1').channel, 'dining_room');
   assert.equal(sources.find((item) => item.source_id === 'menu-source-own-delivery-v1').channel, 'own_delivery');
-  assert.equal(sources.find((item) => item.source_id === 'menu-source-ifood-v1').state, 'blocked_not_imported');
+  assert.equal(sources.find((item) => item.source_id === 'menu-source-ifood-v1').state, 'captured_public_evidence');
   assert.equal(sources.some((item) => /C:\\Users\\/iu.test(item.location)), false);
 });
 

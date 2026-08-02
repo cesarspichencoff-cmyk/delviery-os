@@ -207,7 +207,9 @@ function informationText(input) {
   const base = informed || (authorizedText ? sentence(authorizedText) : '');
   if (!base) return fallbackText(input);
   const closing = warmClosing(plan, conversation, variationContext);
-  const followUp = plan.contextual_question || conversation.pattern_decision?.question_to_resume || '';
+  const followUp = plan.product_guidance_mode
+    ? (plan.contextual_question || '')
+    : (plan.contextual_question || conversation.pattern_decision?.question_to_resume || '');
   if (plan.customer_state === 'interested' && plan.conversation_stage === 'opening') {
     return `${acknowledgement(plan, variationContext)} ${base}${closing ? ` ${closing}` : ''}${followUp ? ` ${followUp}` : ''}`;
   }
@@ -297,7 +299,7 @@ function socialGreetingText(input) {
       ? 'Boa tarde'
       : (source.startsWith('boa noite') ? 'Boa noite' : 'Olá'));
   const social = source.includes('tudo bem')
-    ? `${salutation}! Tudo bem, e com você?`
+    ? (source === 'tudo bem?' || source === 'tudo bem' ? 'Tudo bem por aqui.' : `${salutation}! Tudo bem por aqui.`)
     : `${salutation}!`;
   const resume = input.conversation.pattern_decision?.question_to_resume;
   return `${social} ${resume || 'Como posso ajudar?'}`;
@@ -358,6 +360,7 @@ function composeControlledText(input = {}) {
     // O Pattern Engine escolheu o movimento; esta camada apenas o verbaliza.
   } else if (plan.action_playbook === 'praise_and_suggestion') text = praiseText(shared);
   else if (plan.action_playbook === 'events_oke') text = eventText(shared);
+  else if (plan.product_guidance_mode && plan.direct_answer?.length) text = informationText(shared);
   else if (plan.direct_answer?.length && ['ambiguity', 'continuation', 'capability_limit'].includes(plan.strategy_id)) text = informationText(shared);
   else if (plan.strategy_id === 'large_group') text = largeGroupText(shared);
   else if (['missing_item', 'wrong_item', 'wrong_quantity', 'personalization_ignored', 'complaint', 'quality', 'food_safety', 'delay'].includes(plan.strategy_id)) text = occurrenceText(shared);

@@ -7,6 +7,30 @@ const { stableHash, cloneFrozen } = require('../../../src/conversation-crm/menu-
 
 const REVIEW_ACTIONS = Object.freeze(['approve', 'correct', 'reject', 'conflict']);
 const REVIEW_STATUSES = Object.freeze(['pending', 'approved', 'rejected', 'conflicting']);
+const FIELD_CURATION_STATES = Object.freeze([
+  'confirmed_public', 'confirmed_internal', 'human_approved', 'inferred',
+  'unknown', 'conflicting', 'outdated', 'rejected'
+]);
+const PUBLIC_ITEM_STATUSES = Object.freeze([
+  'extracted', 'under_review', 'approved_for_information',
+  'approved_for_recommendation', 'blocked', 'conflicting', 'outdated'
+]);
+const PUBLIC_BATCH_FIELDS = Object.freeze(['name', 'category', 'description', 'quantity', 'price']);
+const PUBLIC_BATCH_FORBIDDEN = Object.freeze([
+  'availability', 'allergens', 'cross_contact', 'adaptations', 'substitutions', 'pairings'
+]);
+const RECOMMENDATION_CHARACTERISTICS = Object.freeze([
+  'contains_confirmed_salmon', 'contains_confirmed_tuna', 'contains_confirmed_white_fish',
+  'not_fried', 'cream_cheese_absence_confirmed_internal', 'raw', 'cooked', 'torched',
+  'vegetarian', 'shareable', 'single_person', 'two_people', 'group',
+  'light_profile', 'intense_profile', 'beverage', 'dessert'
+]);
+const HOSPITALITY_COMPATIBILITY_TAGS = Object.freeze([
+  'first_visit', 'menu_discovery', 'quick_meal', 'romantic_dinner', 'celebration',
+  'large_group', 'family_meal', 'business_lunch', 'delivery_choice', 'budget_conscious',
+  'premium_experience', 'traditional_preference', 'adventurous_preference', 'light_meal',
+  'comfort_food', 'drink_pairing', 'dietary_restriction', 'allergen_guidance'
+]);
 const CHANNELS = Object.freeze(['dining_room', 'ifood', 'own_delivery']);
 const ALLOWED_CORRECTION_KEYS = Object.freeze([
   'name', 'description', 'channel', 'unit_id', 'price', 'availability',
@@ -65,8 +89,8 @@ function sourceRegistry() {
     },
     {
       source_id: 'menu-source-live-menu-v1', title: 'Live Menu público', format: 'url',
-      location: 'https://livemenu.app/menu/6407492af6880700523699bf?cross_session=done',
-      channel: 'dining_room', unit_id: 'itaim_bibi_unconfirmed', hash: null, state: 'not_imported'
+      location: 'https://livemenu.app/menu/6407492af6880700523699bf',
+      channel: 'dining_room', unit_id: 'tata-sushi-itaim-bibi', hash: null, state: 'captured_public_evidence'
     },
     {
       source_id: 'menu-source-own-delivery-v1', title: 'Delivery próprio público', format: 'url',
@@ -75,8 +99,9 @@ function sourceRegistry() {
     },
     {
       source_id: 'menu-source-ifood-v1', title: 'iFood TATÁ Sushi', format: 'url',
-      location: 'public_url_not_imported', channel: 'ifood', unit_id: 'vila_nova_conceicao_unconfirmed',
-      hash: null, state: 'blocked_not_imported'
+      location: 'https://www.ifood.com.br/delivery/sao-paulo-sp/tata-sushi-vila-nova-conceicao/039ed60c-0ea5-4660-900a-265a720d7869',
+      channel: 'ifood', unit_id: 'tata-sushi-vila-nova-conceicao',
+      hash: null, state: 'captured_public_evidence'
     }
   ]);
 }
@@ -133,6 +158,10 @@ class MenuReviewService {
     this.now = options.now || (() => new Date().toISOString());
     this.proposals = [...itemProposals(this.projectRoot), ...pairingProposals(this.projectRoot)];
     this.byId = new Map(this.proposals.map((item) => [item.review_id, item]));
+    const publicEvidenceFile = path.join(this.projectRoot, 'tools', 'conversation-crm', 'customer-menu', 'public-menu-evidence.v1.json');
+    this.publicEvidence = JSON.parse(fs.readFileSync(publicEvidenceFile, 'utf8'));
+    this.publicRecords = this.publicEvidence.records;
+    this.publicById = new Map(this.publicRecords.map((item) => [item.public_record_id, item]));
     this.events = [];
     this.load();
   }
@@ -142,7 +171,10 @@ class MenuReviewService {
     for (const line of fs.readFileSync(this.file, 'utf8').split(/\r?\n/u).filter(Boolean)) {
       try {
         const event = JSON.parse(line);
-        if (this.byId.has(event.review_id) && REVIEW_ACTIONS.includes(event.action)) this.events.push(event);
+        const legacy = this.byId.has(event.review_id) && REVIEW_ACTIONS.includes(event.action);
+        const publicReview = this.publicById.has(event.public_record_id)
+          && event.event_kind === 'public_field_review';
+        if (legacy || publicReview) this.events.push(event);
       } catch {}
     }
   }
@@ -151,6 +183,159 @@ class MenuReviewService {
     const latest = new Map();
     for (const event of this.events) latest.set(event.review_id, event);
     return latest;
+  }
+
+  latestPublicMap() {
+    const latest = new Map();
+    for (const event of this.events) {
+      if (event.event_kind === 'public_field_review') latest.set(event.public_record_id, event);
+    }
+    return latest;
+  }
+
+  publicRecord(record, latest = this.latestPublicMap().get(record.public_record_id)) {
+    const decisions = latest?.field_decisions || {};
+    const fields = Object.fromEntries(Object.entries(record.fields).map(([name, evidence]) => [name, {
+      ...evidence,
+      curation_state: decisions[name] || evidence.curation_state,
+      reviewed_at: decisions[name] ? latest.occurred_at : null
+    }]));
+    return cloneFrozen({
+      ...record,
+      fields,
+      item_status: latest?.item_status || record.capture_status,
+      recommendation_evidence: latest?.recommendation_evidence || null,
+      reviewed_at: latest?.occurred_at || null,
+      decision_source: latest ? 'human_review' : null
+    });
+  }
+
+  listPublic(filters = {}) {
+    const latest = this.latestPublicMap();
+    return this.publicRecords.map((item) => this.publicRecord(item, latest.get(item.public_record_id)))
+      .filter((item) => (!filters.channel || item.channel === filters.channel)
+        && (!filters.status || item.item_status === filters.status)
+        && (!filters.source_id || item.source_id === filters.source_id));
+  }
+
+  validatePublicDecision(record, fieldDecisions, itemStatus) {
+    if (!PUBLIC_ITEM_STATUSES.includes(itemStatus)) reviewError('MENU_PUBLIC_ITEM_STATUS_INVALID');
+    for (const [fieldName, state] of Object.entries(fieldDecisions)) {
+      if (!Object.hasOwn(record.fields, fieldName)) reviewError('MENU_PUBLIC_FIELD_UNKNOWN');
+      if (!FIELD_CURATION_STATES.includes(state)) reviewError('MENU_PUBLIC_FIELD_STATE_INVALID');
+      if (PUBLIC_BATCH_FORBIDDEN.includes(fieldName) && state === 'human_approved') reviewError('MENU_PUBLIC_FIELD_BATCH_FORBIDDEN');
+    }
+    const projected = Object.fromEntries(Object.entries(record.fields).map(([name, evidence]) => [
+      name, fieldDecisions[name] || evidence.curation_state
+    ]));
+    if (['approved_for_information', 'approved_for_recommendation'].includes(itemStatus)) {
+      if (!['human_approved', 'confirmed_internal'].includes(projected.name)
+        || !['human_approved', 'confirmed_internal'].includes(projected.category)) {
+        reviewError('MENU_PUBLIC_INFORMATION_FIELDS_NOT_APPROVED');
+      }
+    }
+  }
+
+  normalizeRecommendationEvidence(value) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) reviewError('MENU_PUBLIC_RECOMMENDATION_EVIDENCE_REQUIRED');
+    const characteristics = [...new Set((value.characteristics || []).map(String).map((item) => item.trim()).filter(Boolean))];
+    const compatibilityTags = [...new Set((value.compatibility_tags || []).map(String).map((item) => item.trim()).filter(Boolean))];
+    if (!characteristics.length || !compatibilityTags.length
+      || value.conflicts_checked !== true || value.restrictions_preserved !== true) {
+      reviewError('MENU_PUBLIC_RECOMMENDATION_EVIDENCE_REQUIRED');
+    }
+    if (characteristics.some((item) => !RECOMMENDATION_CHARACTERISTICS.includes(item))
+      || compatibilityTags.some((item) => !HOSPITALITY_COMPATIBILITY_TAGS.includes(item))) {
+      reviewError('MENU_PUBLIC_RECOMMENDATION_EVIDENCE_INVALID');
+    }
+    if ([...characteristics, ...compatibilityTags].some((item) => item.length > 120)) reviewError('MENU_PUBLIC_RECOMMENDATION_EVIDENCE_INVALID');
+    return {
+      characteristics,
+      compatibility_tags: compatibilityTags,
+      conflicts_checked: true,
+      restrictions_preserved: true,
+      notes: typeof value.notes === 'string' ? value.notes.trim().slice(0, 500) : null
+    };
+  }
+
+  publicBatchPreview(input = {}) {
+    const ids = [...new Set((input.public_record_ids || []).map(String))];
+    const fields = [...new Set((input.fields || []).map(String))];
+    const itemStatus = String(input.item_status || 'under_review');
+    if (!ids.length || ids.length > 100) reviewError('MENU_PUBLIC_BATCH_SIZE_INVALID');
+    if (!fields.length || fields.some((field) => !PUBLIC_BATCH_FIELDS.includes(field))) reviewError('MENU_PUBLIC_BATCH_FIELD_INVALID');
+    if (!PUBLIC_ITEM_STATUSES.includes(itemStatus)) reviewError('MENU_PUBLIC_ITEM_STATUS_INVALID');
+    if (itemStatus === 'approved_for_recommendation') reviewError('MENU_PUBLIC_RECOMMENDATION_BATCH_FORBIDDEN');
+    const records = ids.map((id) => this.publicById.get(id));
+    if (records.some((item) => !item)) reviewError('MENU_PUBLIC_RECORD_NOT_FOUND');
+    const scopes = new Set(records.map((item) => `${item.source_id}:${item.channel}:${item.unit_id}`));
+    if (scopes.size !== 1) reviewError('MENU_PUBLIC_BATCH_NOT_HOMOGENEOUS');
+    const ineligible = records.filter((record) => fields.some((field) => record.fields[field]?.curation_state !== 'confirmed_public'));
+    if (ineligible.length) reviewError('MENU_PUBLIC_BATCH_FIELD_NOT_PUBLIC_CONFIRMED');
+    const previewHash = stableHash('public-menu-batch-v1', ids.slice().sort().join(','), fields.slice().sort().join(','), itemStatus);
+    return cloneFrozen({
+      schema_version: 'deliveryos-public-menu-batch-preview-v1',
+      preview_hash: previewHash,
+      record_count: records.length,
+      fields,
+      item_status: itemStatus,
+      scope: [...scopes][0],
+      requires_human_confirmation: true,
+      records: records.map((item) => ({
+        public_record_id: item.public_record_id,
+        name: item.fields.name.value,
+        channel: item.channel,
+        unit_id: item.unit_id
+      }))
+    });
+  }
+
+  publicBatchCommit(input = {}) {
+    const preview = this.publicBatchPreview(input);
+    if (input.confirmation_hash !== preview.preview_hash) reviewError('MENU_PUBLIC_BATCH_CONFIRMATION_REQUIRED');
+    return preview.records.map((summary) => this.publicFieldAction({
+      public_record_id: summary.public_record_id,
+      field_decisions: Object.fromEntries(preview.fields.map((field) => [field, 'human_approved'])),
+      item_status: preview.item_status,
+      confirmation: 'CONFIRM_PUBLIC_MENU_REVIEW'
+    }));
+  }
+
+  publicFieldAction(input = {}) {
+    if (input.confirmation !== 'CONFIRM_PUBLIC_MENU_REVIEW') reviewError('MENU_PUBLIC_CONFIRMATION_REQUIRED');
+    const recordId = String(input.public_record_id || '');
+    const record = this.publicById.get(recordId);
+    if (!record) reviewError('MENU_PUBLIC_RECORD_NOT_FOUND');
+    const previous = this.latestPublicMap().get(recordId);
+    const fieldDecisions = { ...(previous?.field_decisions || {}), ...(input.field_decisions || {}) };
+    const itemStatus = String(input.item_status || previous?.item_status || 'under_review');
+    this.validatePublicDecision(record, fieldDecisions, itemStatus);
+    const recommendationEvidence = itemStatus === 'approved_for_recommendation'
+      ? this.normalizeRecommendationEvidence(input.recommendation_evidence || previous?.recommendation_evidence)
+      : (previous?.recommendation_evidence || null);
+    if (itemStatus === 'approved_for_recommendation') {
+      const projectedDescription = fieldDecisions.description || record.fields.description.curation_state;
+      if (!['human_approved', 'confirmed_internal'].includes(projectedDescription)) reviewError('MENU_PUBLIC_RECOMMENDATION_FIELDS_NOT_APPROVED');
+    }
+    const event = cloneFrozen({
+      schema_version: 'deliveryos-menu-review-event-v2',
+      event_kind: 'public_field_review',
+      event_id: `MENU-PUBLIC-${stableHash(recordId, this.events.length + 1).slice(0, 18).toUpperCase()}`,
+      public_record_id: recordId,
+      revision: (previous?.revision || 0) + 1,
+      field_decisions: fieldDecisions,
+      item_status: itemStatus,
+      recommendation_evidence: recommendationEvidence,
+      occurred_at: this.now(),
+      authority: 'human_homologation',
+      source_id: record.source_id,
+      channel: record.channel,
+      unit_id: record.unit_id
+    });
+    fs.mkdirSync(this.root, { recursive: true });
+    fs.appendFileSync(this.file, `${JSON.stringify(event)}\n`, 'utf8');
+    this.events.push(event);
+    return this.publicRecord(record, event);
   }
 
   publicProposal(proposal, latest = this.latestMap().get(proposal.review_id)) {
@@ -183,6 +368,7 @@ class MenuReviewService {
   summary() {
     const items = this.list();
     const counts = Object.fromEntries(REVIEW_STATUSES.map((status) => [status, items.filter((item) => item.review_status === status).length]));
+    const publicRecords = this.listPublic();
     return cloneFrozen({
       total: items.length,
       items: items.filter((item) => item.kind === 'item').length,
@@ -190,7 +376,18 @@ class MenuReviewService {
       ...counts,
       active_real_items: items.filter((item) => item.kind === 'item' && item.review_status === 'approved').length,
       original_sources_in_git: false,
-      append_only: true
+      append_only: true,
+      public_catalog: {
+        total: publicRecords.length,
+        dining_room: publicRecords.filter((item) => item.channel === 'dining_room').length,
+        ifood: publicRecords.filter((item) => item.channel === 'ifood').length,
+        approved_for_information: publicRecords.filter((item) => item.item_status === 'approved_for_information').length,
+        approved_for_recommendation: publicRecords.filter((item) => item.item_status === 'approved_for_recommendation').length,
+        blocked: publicRecords.filter((item) => item.item_status === 'blocked').length,
+        conflicting: publicRecords.filter((item) => item.item_status === 'conflicting').length,
+        human_approved_fields: publicRecords.reduce((total, item) => total
+          + Object.values(item.fields).filter((field) => field.curation_state === 'human_approved').length, 0)
+      }
     });
   }
 
@@ -234,17 +431,29 @@ class MenuReviewService {
     return this.list({ kind: 'item', status: 'approved' });
   }
 
+  approvedPublicItems() {
+    return this.listPublic().filter((item) => ['approved_for_information', 'approved_for_recommendation'].includes(item.item_status));
+  }
+
   bootstrap() {
     return cloneFrozen({
       schema_version: 'deliveryos-menu-human-review-v1',
       sources: sourceRegistry(),
       summary: this.summary(),
       proposals: this.list(),
+      public_records: this.listPublic(),
+      public_capture: this.publicEvidence.generated_from,
       policy: {
         automatic_confirmation: false,
         synthetic_catalog_replaced_only_after_real_approval: true,
         pairings_used_only_when_approved_and_linked: true,
-        channel_and_unit_required_for_item_approval: true
+        channel_and_unit_required_for_item_approval: true,
+        field_level_curation: true,
+        field_states: FIELD_CURATION_STATES,
+        public_item_statuses: PUBLIC_ITEM_STATUSES,
+        batch_fields: PUBLIC_BATCH_FIELDS,
+        batch_forbidden_fields: PUBLIC_BATCH_FORBIDDEN,
+        human_confirmation_required: true
       }
     });
   }
@@ -253,6 +462,12 @@ class MenuReviewService {
 module.exports = {
   REVIEW_ACTIONS,
   REVIEW_STATUSES,
+  FIELD_CURATION_STATES,
+  PUBLIC_ITEM_STATUSES,
+  PUBLIC_BATCH_FIELDS,
+  PUBLIC_BATCH_FORBIDDEN,
+  RECOMMENDATION_CHARACTERISTICS,
+  HOSPITALITY_COMPATIBILITY_TAGS,
   CHANNELS,
   normalizeCorrection,
   sourceRegistry,

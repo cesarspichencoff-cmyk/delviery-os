@@ -478,7 +478,8 @@ class NativeConversationRuntime {
         }
       });
       this.stage(raw.message_id, 'classification_completed', { intent: classification.intent, confidence: classification.confidence }, options.crashAfter);
-      if (classification.intent.startsWith('occurrence.') || classification.intent === 'public_exposure') {
+      const productGuidanceNoAction = Boolean(productContexts.conversation_guidance);
+      if (!productGuidanceNoAction && (classification.intent.startsWith('occurrence.') || classification.intent === 'public_exposure')) {
         this.crm.recordOccurrence({
           occurrence_id: `occ_${sha256(`${caseId}|${classification.intent}`).slice(0, 20)}`,
           case_id: caseId,
@@ -495,7 +496,6 @@ class NativeConversationRuntime {
       const patternNoAction = ['greeting', 'chitchat', 'repeat', 'close', 'cancel', 'side_question', 'resume']
         .includes(pattern.decision?.pattern)
         && pattern.decision?.journey_action === 'none';
-      const productGuidanceNoAction = productContexts.conversation_guidance?.mode === 'party_size_update';
       const socialNoAction = productGuidanceNoAction || (patternNoAction && (
         classification.intent === 'conversation.ambiguous'
         || ['side_question', 'resume'].includes(pattern.decision?.pattern)

@@ -5,6 +5,8 @@ const state = {
   reviewIndex: 0,
   blindIndex: 0,
   lastChat: null,
+  pendingPublicBatch: null,
+  hospitalityTurn: 0,
   intelligence: null,
   intelligenceView: 'crm'
 };
@@ -22,7 +24,14 @@ const REVIEW_TAGS = [
 const FREE_TAGS = [
   ['gostei', 'Gostei'], ['seco', 'Seco'], ['robotico', 'Robótico'], ['longo', 'Longo'],
   ['pouco_acolhedor', 'Pouco acolhedor'], ['informacao_errada', 'Informação errada'],
-  ['pergunta_repetida', 'Pergunta repetida'], ['nao_respondeu', 'Não respondeu'], ['estranho', 'Estranho']
+  ['pergunta_repetida', 'Pergunta repetida'], ['nao_respondeu', 'Não respondeu'], ['estranho', 'Estranho'],
+  ['respondeu_primeiro', 'Respondeu antes de perguntar'], ['pergunta_util', 'Pergunta útil'],
+  ['recomendacao_contextual', 'Recomendação contextual'], ['pareceu_humano', 'Pareceu humano'],
+  ['fonte_confiavel', 'Fonte ficou clara e confiável'], ['excelente', 'Excelente'],
+  ['humano', 'Humano'], ['acolhedor', 'Acolhedor'], ['inteligente', 'Inteligente'],
+  ['natural', 'Natural'], ['util', 'Útil'], ['generico', 'Genérico'], ['repetitivo', 'Repetitivo'],
+  ['superficial', 'Superficial'], ['invasivo', 'Invasivo'], ['perdeu_contexto', 'Perdeu contexto'],
+  ['inventou', 'Inventou'], ['perguntou_demais', 'Perguntou demais']
 ];
 const CRITERIA = [
   ['naturalidade', 'Naturalidade'], ['acolhimento', 'Acolhimento'], ['clareza', 'Clareza'],
@@ -130,8 +139,27 @@ function renderMenuReview() {
     <article class="integration-truth">
       <strong>Curadoria humana soberana</strong>
       <p>${summary.items} itens e ${summary.pairings} harmonizações extraídos. ${summary.approved} aprovados · ${summary.pending} pendentes · ${summary.rejected} rejeitados · ${summary.conflicting} conflitantes.</p>
-      <p>Original externo fora do Git. Nenhuma extração é confirmada automaticamente.</p>
+      <p>${summary.public_catalog.total} registros públicos por campo: ${summary.public_catalog.dining_room} salão e ${summary.public_catalog.ifood} iFood. ${summary.public_catalog.approved_for_information} aprovados para informar e ${summary.public_catalog.approved_for_recommendation} para recomendar.</p>
+      <p>Nenhuma extração vira aprovação humana automaticamente. Alergênicos, disponibilidade, adaptações e harmonizações não entram em lote.</p>
     </article>
+    <form id="public-menu-review-filter" class="intelligence-form">
+      <label>Canal<select id="public-review-channel"><option value="dining_room">Salão</option><option value="ifood">iFood</option></select></label>
+      <label>Estado<select id="public-review-status"><option value="extracted">Extraídos</option><option value="under_review">Em revisão</option><option value="approved_for_information">Aprovados para informar</option><option value="approved_for_recommendation">Aprovados para recomendar</option><option value="">Todos</option></select></label>
+      <label>Prioridade<select id="public-review-facet"><option value="">Todas</option><option value="both_channels">Ambos os canais</option><option value="price_divergent">Preço divergente</option><option value="composition_or_description_divergent">Descrição/composição divergente</option><option value="salmon">Salmão</option><option value="tuna">Atum</option><option value="white_fish">Peixe branco</option><option value="combined">Combinado</option><option value="beverage">Bebida</option><option value="raw_candidate">Cru citado</option><option value="torched_candidate">Maçaricado/selado citado</option><option value="fried_mentioned">Fritura citada</option><option value="cream_cheese_mentioned">Cream cheese citado</option></select></label>
+      <label>Buscar item<input id="public-review-query" placeholder="Nome, categoria ou descrição"></label>
+      <label>Destino do lote<select id="public-review-target"><option value="under_review">Manter em revisão</option><option value="approved_for_information">Aprovar para informar</option><option value="blocked">Bloquear</option><option value="conflicting">Conflitante</option></select></label>
+      <fieldset><legend>Campos públicos visíveis</legend>
+        <label><input type="checkbox" data-public-field value="name" checked> Nome</label>
+        <label><input type="checkbox" data-public-field value="category" checked> Categoria</label>
+        <label><input type="checkbox" data-public-field value="description" checked> Descrição</label>
+        <label><input type="checkbox" data-public-field value="quantity"> Quantidade</label>
+        <label><input type="checkbox" data-public-field value="price" checked> Preço do canal</label>
+      </fieldset>
+      <button type="submit">Pré-visualizar lote selecionado</button>
+    </form>
+    <div id="public-review-preview"></div>
+    <div id="public-menu-review-list" class="intelligence-grid"></div>
+    <h3>Base interna e harmonizações pendentes</h3>
     <form id="menu-review-filter" class="intelligence-form">
       <label>Tipo<select id="menu-review-kind"><option value="">Todos</option><option value="item">Itens</option><option value="pairing">Harmonizações</option></select></label>
       <label>Estado<select id="menu-review-status"><option value="pending">Pendentes</option><option value="">Todos</option><option value="approved">Aprovados</option><option value="rejected">Rejeitados</option><option value="conflicting">Conflitantes</option></select></label>
@@ -165,7 +193,93 @@ function renderMenuReview() {
       </article>`;
     }).join('') || '<p class="lead">Nenhum registro neste filtro.</p>';
   };
+  const drawPublic = () => {
+    const channel = $('#public-review-channel').value;
+    const status = $('#public-review-status').value;
+    const facet = $('#public-review-facet').value;
+    const query = $('#public-review-query').value.trim().toLocaleLowerCase('pt-BR');
+    const rows = review.public_records.filter((item) => item.channel === channel
+      && (!status || item.item_status === status)
+      && (!facet || item.review_facets.includes(facet))
+      && (!query || `${item.fields.name.value} ${item.fields.category.value} ${item.fields.description.value || ''}`.toLocaleLowerCase('pt-BR').includes(query)));
+    $('#public-menu-review-list').innerHTML = rows.slice(0, 100).map((item) => {
+      const fields = item.fields;
+      const price = fields.price.value?.current;
+      return `<article class="intelligence-card" data-public-record-card="${escapeHtml(item.public_record_id)}">
+        <label><input type="checkbox" data-public-record value="${escapeHtml(item.public_record_id)}"> Selecionar</label>
+        <strong>${escapeHtml(fields.name.value)}</strong>
+        <p>${escapeHtml(item.channel)} · ${escapeHtml(item.unit_id)} · ${escapeHtml(item.item_status)}</p>
+        <p>${escapeHtml(fields.category.value || 'Categoria desconhecida')}</p>
+        <p>${escapeHtml(fields.description.value || 'Descrição pública ausente')}</p>
+        <p>Preço capturado: ${price == null ? 'desconhecido' : `R$ ${Number(price).toFixed(2).replace('.', ',')}`}</p>
+        <p>Estados: ${escapeHtml(Object.entries(fields).map(([name, value]) => `${name}=${value.curation_state}`).join(' · '))}</p>
+        ${item.item_status === 'approved_for_information' ? `<details><summary>Avaliar individualmente para recomendação</summary>
+          <p>Não use este passo sem revisar composição, compatibilidade, conflitos e restrições.</p>
+          <label>Características confirmadas<input data-recommendation-characteristics placeholder="ex.: contains_confirmed_salmon, not_fried, light_profile"></label>
+          <label>Usos compatíveis<input data-recommendation-tags placeholder="ex.: light_meal, first_visit"></label>
+          <label><input type="checkbox" data-recommendation-conflicts> Revisei os conflitos relevantes</label>
+          <label><input type="checkbox" data-recommendation-restrictions> Restrições e desconhecidos permanecem preservados</label>
+          <button type="button" data-public-recommend="${escapeHtml(item.public_record_id)}">Aprovar individualmente para recomendação</button>
+        </details>` : ''}
+      </article>`;
+    }).join('') || '<p class="lead">Nenhum registro neste filtro.</p>';
+    if (rows.length > 100) $('#public-menu-review-list').insertAdjacentHTML('beforeend', `<p class="lead">Mostrando 100 de ${rows.length}; refine o filtro para lotes homogêneos.</p>`);
+  };
+  $('#public-menu-review-filter').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const ids = selectedValues('[data-public-record]');
+    const fields = selectedValues('[data-public-field]');
+    try {
+      const body = await api('/api/customer-menu/public-review/preview', {
+        method: 'POST', body: JSON.stringify({ public_record_ids: ids, fields, item_status: $('#public-review-target').value })
+      });
+      state.pendingPublicBatch = { public_record_ids: ids, fields, item_status: body.preview.item_status, confirmation_hash: body.preview.preview_hash };
+      $('#public-review-preview').innerHTML = `<article class="integration-truth"><strong>Confirmação humana necessária</strong><p>${body.preview.record_count} registros · ${escapeHtml(body.preview.scope)} · campos ${escapeHtml(body.preview.fields.join(', '))}.</p><button type="button" id="confirm-public-review">Confirmar e registrar no log append-only</button></article>`;
+      $('#confirm-public-review').addEventListener('click', async () => {
+        await api('/api/customer-menu/public-review/commit', { method: 'POST', body: JSON.stringify(state.pendingPublicBatch) });
+        state.intelligence = await api('/api/customer-menu/bootstrap');
+        state.pendingPublicBatch = null;
+        $('#intelligence-state').textContent = 'Lote confirmado por humano; campos e status foram registrados sem inferir dados ausentes.';
+        renderMenuReview();
+      });
+    } catch (error) {
+      $('#public-review-preview').innerHTML = `<p class="error">Lote não registrado: ${escapeHtml(error.code)}.</p>`;
+    }
+  });
+  $('#public-review-channel').addEventListener('change', drawPublic);
+  $('#public-review-status').addEventListener('change', drawPublic);
+  $('#public-review-facet').addEventListener('change', drawPublic);
+  $('#public-review-query').addEventListener('input', drawPublic);
+  $('#public-menu-review-list').addEventListener('click', async (event) => {
+    const recordId = event.target.dataset.publicRecommend;
+    if (!recordId) return;
+    const card = event.target.closest('[data-public-record-card]');
+    const split = (selector) => card.querySelector(selector).value.split(',').map((item) => item.trim()).filter(Boolean);
+    try {
+      await api('/api/customer-menu/public-review/action', {
+        method: 'POST',
+        body: JSON.stringify({
+          public_record_id: recordId,
+          item_status: 'approved_for_recommendation',
+          confirmation: 'CONFIRM_PUBLIC_MENU_REVIEW',
+          field_decisions: {},
+          recommendation_evidence: {
+            characteristics: split('[data-recommendation-characteristics]'),
+            compatibility_tags: split('[data-recommendation-tags]'),
+            conflicts_checked: card.querySelector('[data-recommendation-conflicts]').checked,
+            restrictions_preserved: card.querySelector('[data-recommendation-restrictions]').checked
+          }
+        })
+      });
+      state.intelligence = await api('/api/customer-menu/bootstrap');
+      $('#intelligence-state').textContent = 'Item aprovado individualmente para recomendação, com evidência e desconhecidos preservados.';
+      renderMenuReview();
+    } catch (error) {
+      $('#intelligence-state').textContent = `Recomendação não liberada: ${error.code}.`;
+    }
+  });
   $('#menu-review-filter').addEventListener('submit', (event) => { event.preventDefault(); draw(); });
+  drawPublic();
   draw();
 }
 
@@ -454,6 +568,8 @@ async function initialize() {
     ? `Pattern Engine e Journey State ativos. Writer: gemma_local (${writer.model_id}, ${writer.runtime_release}); fallback determinístico permanece protegido.`
     : `Pattern Engine e Journey State ativos. Writer: deterministic_fallback. Motivo: ${writer.reason || 'indisponível'}.`;
   $('#free-tags').innerHTML = checkboxChoices(FREE_TAGS, 'free-tag');
+  $('#hospitality-case').innerHTML = '<option value="">Conversa livre</option>'
+    + state.data.hospitality_cases.map((item) => `<option value="${escapeHtml(item.case_id)}">${escapeHtml(item.case_id)} · ${escapeHtml(item.title)}</option>`).join('');
   $('#review-tags').innerHTML = checkboxChoices(REVIEW_TAGS, 'review-tag');
   $('#overall-rating').innerHTML = scale('overall', 'Nota geral');
   $('#criteria-grid').innerHTML = CRITERIA.map(([key, label]) => `<div><span>${escapeHtml(label)}</span>${scale(`criterion-${key}`, label)}</div>`).join('');
@@ -553,10 +669,12 @@ $('#chat-form').addEventListener('submit', async (event) => {
       })
     });
     state.lastChat = body.turn;
-    $('#chat-thread').insertAdjacentHTML('beforeend', `${conversationHtml([{ customer: message, response: body.turn.response }])}${writerComparisonHtml(body.turn.writer_comparison)}${diagnosticHtml(body.turn.diagnostic)}`);
+    $('#chat-thread').insertAdjacentHTML('beforeend', conversationHtml([{ customer: message, response: body.turn.response }]));
     $('#chat-message').value = '';
     $('#free-feedback').classList.remove('hidden');
-    $('#global-state').textContent = `Resposta pronta pelo ${body.turn.diagnostic.response_path}; Pattern ${body.turn.diagnostic.pattern || 'unknown'}.`;
+    $('#chat-diagnostic').checked = false;
+    $('#chat-diagnostic').disabled = true;
+    $('#global-state').textContent = 'Resposta pronta. Avalie a experiência antes de abrir o diagnóstico técnico.';
   } catch {
     $('#global-state').textContent = 'Não foi possível responder agora. Nenhum detalhe técnico foi exposto.';
   }
@@ -566,8 +684,27 @@ $('#reset-chat').addEventListener('click', async () => {
   if (!window.confirm('Iniciar uma nova conversa sintética?')) return;
   await api('/api/homologation/chat/reset', { method: 'POST' });
   state.lastChat = null;
+  state.hospitalityTurn = 0;
   $('#chat-thread').innerHTML = '<div class="welcome"><strong>Nova conversa iniciada.</strong><span>O contexto anterior não será misturado.</span></div>';
   $('#free-feedback').classList.add('hidden');
+});
+
+$('#hospitality-case').addEventListener('change', async () => {
+  await api('/api/homologation/chat/reset', { method: 'POST' });
+  state.hospitalityTurn = 0;
+  $('#chat-thread').innerHTML = '<div class="welcome"><strong>Roteiro pronto.</strong><span>As mensagens são sintéticas; envie um turno por vez e avalie antes de abrir o diagnóstico.</span></div>';
+});
+
+$('#load-hospitality-turn').addEventListener('click', () => {
+  const selected = state.data.hospitality_cases.find((item) => item.case_id === $('#hospitality-case').value);
+  if (!selected) return;
+  if (state.hospitalityTurn >= selected.turns.length) {
+    $('#global-state').textContent = 'Roteiro concluído. Registre a avaliação humana antes de escolher outro caso.';
+    return;
+  }
+  $('#chat-message').value = selected.turns[state.hospitalityTurn];
+  state.hospitalityTurn += 1;
+  $('#global-state').textContent = `Turno ${state.hospitalityTurn}/${selected.turns.length} carregado. Revise e envie.`;
 });
 
 $('#save-free-feedback').addEventListener('click', async () => {
@@ -580,10 +717,24 @@ $('#save-free-feedback').addEventListener('click', async () => {
         review_id: state.lastChat.review_id,
         response_hash: state.lastChat.response_hash,
         tags: selectedValues('#free-tags input'),
-        comment: $('#free-comment').value
+        comment: $('#free-comment').value,
+        experience_score: Number($('#free-experience-score').value),
+        criteria_10: {
+          compreensao: Number($('#free-compreensao').value),
+          anfitriao: Number($('#free-anfitriao').value),
+          uso_contexto: Number($('#free-uso-contexto').value),
+          ajuda_decidir: Number($('#free-ajuda-decidir').value),
+          naturalidade: Number($('#free-naturalidade').value),
+          utilidade: Number($('#free-utilidade').value),
+          seguranca: Number($('#free-seguranca').value),
+          enviaria: Number($('#free-enviaria').value)
+        }
       })
     });
-    $('#free-feedback-state').textContent = 'Feedback salvo localmente. A resposta não foi alterada.';
+    $('#free-feedback-state').textContent = 'Feedback salvo. O diagnóstico técnico agora pode ser inspecionado.';
+    $('#chat-diagnostic').disabled = false;
+    $('#chat-diagnostic').checked = true;
+    $('#chat-thread').insertAdjacentHTML('beforeend', `${writerComparisonHtml(state.lastChat.writer_comparison)}${diagnosticHtml(state.lastChat.diagnostic)}`);
   } catch (error) {
     $('#free-feedback-state').textContent = error.code === 'FEEDBACK_CONTAINS_PERSONAL_DATA'
       ? 'O comentário parece conter dado pessoal. Remova-o antes de salvar.'

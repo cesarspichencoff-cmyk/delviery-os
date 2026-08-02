@@ -3,7 +3,10 @@
 const crypto = require('node:crypto');
 
 const CHANNELS = Object.freeze(['dining_room', 'ifood', 'own_delivery']);
-const REVIEW_STATES = Object.freeze(['confirmed', 'unconfirmed', 'conflicting', 'missing', 'deprecated']);
+const REVIEW_STATES = Object.freeze([
+  'confirmed', 'unconfirmed', 'conflicting', 'missing', 'deprecated',
+  'approved_for_information', 'approved_for_recommendation', 'blocked', 'outdated'
+]);
 const AVAILABILITY_STATES = Object.freeze(['available', 'unavailable', 'unknown', 'stale']);
 const ALLERGEN_ASSERTIONS = Object.freeze([
   'not_listed_in_recipe',

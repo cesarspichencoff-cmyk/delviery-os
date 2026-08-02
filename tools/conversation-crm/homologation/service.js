@@ -6,6 +6,23 @@ const { NativeConversationRuntime } = require('../../../src/conversation-crm/nat
 const { loadHomologationData, publicBlindCase, publicReviewCase, sha256 } = require('./data');
 const { FeedbackStore } = require('./feedback-store');
 const { exportReview } = require('./exporter');
+const {
+  validateApprovedWriterOutput, unapprovedTopics, CONTROLLED_TOPIC_PATTERNS
+} = require('../../../apps/deliveryos-ai-node/dialogue/approved-response-envelope');
+
+function normalizeTopicText(value) {
+  return String(value || '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
+}
+
+function publicationTopicDrift(writerText, deterministicText, pattern) {
+  const writer = normalizeTopicText(writerText);
+  const deterministic = normalizeTopicText(deterministicText);
+  const drift = CONTROLLED_TOPIC_PATTERNS.filter(([, topicPattern]) => (
+    topicPattern.test(writer) && !topicPattern.test(deterministic)
+  )).map(([topic]) => topic);
+  if (/\bmarketplace\b/u.test(writer) && !/\bmarketplace\b/u.test(deterministic)) drift.push('marketplace');
+  return ['greeting', 'chitchat', 'repeat'].includes(pattern) ? [...new Set(drift)] : [];
+}
 
 function asPublicTechnical(item, field = 'technical_refined') {
   return {
@@ -80,6 +97,11 @@ class HomologationService {
   constructor(options = {}) {
     this.projectRoot = path.resolve(options.projectRoot || path.resolve(__dirname, '..', '..', '..'));
     this.data = loadHomologationData(this.projectRoot);
+    this.hospitalityCatalog = JSON.parse(fs.readFileSync(path.join(__dirname, 'hospitality-conversations.v1.json'), 'utf8'));
+    if (this.hospitalityCatalog.conversation_count !== 20
+      || this.hospitalityCatalog.cases.some((item) => item.turns.length < 4 || item.turns.length > 10)) {
+      throw Object.assign(new Error('hospitality_catalog_invalid'), { code: 'HOSPITALITY_CATALOG_INVALID' });
+    }
     this.store = options.store || new FeedbackStore({
       root: options.feedbackRoot,
       now: options.now,
@@ -113,6 +135,12 @@ class HomologationService {
       review_cases: this.data.rehomologation_cases.map((item) => ({ ...publicReviewCase(item), evaluated: rated.has(item.review_id) })),
       blind_cases: this.data.cases.map((item) => ({ ...publicBlindCase(item), evaluated: compared.has(item.review_id) })),
       bank: this.data.bank,
+      hospitality_cases: this.hospitalityCatalog.cases.map((item) => ({
+        case_id: item.case_id,
+        title: item.title,
+        turn_count: item.turns.length,
+        turns: item.turns
+      })),
       local_writer: {
         status: writer.status,
         reason: writer.reason || null,
@@ -235,7 +263,8 @@ class HomologationService {
           writer_status: result.execution_diagnostics?.writer?.status || 'unknown',
           response_contract: result.execution_diagnostics?.response_contract || null,
           envelope_contract: result.execution_diagnostics?.envelope_contract || null,
-          source_of_final_text: result.execution_diagnostics?.source_of_final_text || null
+          source_of_final_text: result.execution_diagnostics?.source_of_final_text || null,
+          hospitality_context: productContexts.hospitality_context || null
         }
       }
     } };
@@ -257,7 +286,24 @@ class HomologationService {
       output.turn.diagnostic.source_of_final_text = 'controlled_response_composer';
       return output;
     }
-    const generated = await this.localWriter.writeApproved(execution.result.approved_response_envelope);
+    let generated = await this.localWriter.writeApproved(execution.result.approved_response_envelope);
+    if (generated.accepted) {
+      const publicationGate = validateApprovedWriterOutput(generated.output, execution.result.approved_response_envelope);
+      const topics = unapprovedTopics(generated.output?.text, execution.result.approved_response_envelope);
+      const drift = publicationTopicDrift(
+        generated.output?.text,
+        deterministicText,
+        execution.result.execution_diagnostics?.pattern
+      );
+      if (!publicationGate.accepted || topics.length || drift.length) {
+        generated = {
+          accepted: false,
+          source: 'rejected',
+          reason: publicationGate.reason || 'WRITER_UNAPPROVED_TOPIC',
+          output: null
+        };
+      }
+    }
     if (!generated.accepted) {
       output.turn.diagnostic.writer_status = 'deterministic_fallback';
       output.turn.diagnostic.response_path = 'deterministic_fallback';
@@ -267,6 +313,19 @@ class HomologationService {
       return output;
     }
     const writerText = String(generated.output.text || '');
+    const publicationTopics = [
+      ...unapprovedTopics(writerText, execution.result.approved_response_envelope),
+      ...publicationTopicDrift(writerText, deterministicText, execution.result.execution_diagnostics?.pattern)
+    ];
+    if (publicationTopics.length) {
+      output.turn.diagnostic.writer_status = 'deterministic_fallback';
+      output.turn.diagnostic.response_path = 'deterministic_fallback';
+      output.turn.diagnostic.fallback_used = true;
+      output.turn.diagnostic.fallback_reason = 'WRITER_UNAPPROVED_TOPIC';
+      output.turn.diagnostic.source_of_final_text = 'controlled_response_composer';
+      output.turn.diagnostic.publication_gate = 'deliveryos-writer-publication-gate-v1';
+      return output;
+    }
     output.turn.response = writerText;
     output.turn.response_hash = sha256(writerText);
     output.turn.diagnostic.writer_status = 'gemma_local';
@@ -274,6 +333,7 @@ class HomologationService {
     output.turn.diagnostic.fallback_used = false;
     output.turn.diagnostic.fallback_reason = null;
     output.turn.diagnostic.source_of_final_text = 'gemma_local_writer';
+    output.turn.diagnostic.publication_gate = 'deliveryos-writer-publication-gate-v1';
     output.turn.diagnostic.deterministic_reference_hash = sha256(deterministicText);
     output.turn.writer_comparison = {
       schema_version: 'deliveryos-writer-human-comparison-v1',
@@ -314,4 +374,4 @@ class HomologationService {
   }
 }
 
-module.exports = { HomologationService, asPublicTechnical, average, summarize };
+module.exports = { HomologationService, asPublicTechnical, average, summarize, publicationTopicDrift };

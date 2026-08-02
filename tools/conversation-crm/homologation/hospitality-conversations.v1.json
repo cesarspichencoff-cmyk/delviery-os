@@ -1,0 +1,27 @@
+{
+  "schema_version": "deliveryos-hospitality-homologation-catalog-v1",
+  "synthetic": true,
+  "conversation_count": 20,
+  "cases": [
+    { "case_id": "HOSP-001", "title": "Saudação simples", "turns": ["Oi, boa noite!", "Tudo bem?", "Quero conhecer o cardápio.", "É para o salão."], "expected": { "channel": "dining_room" } },
+    { "case_id": "HOSP-002", "title": "Primeira visita", "turns": ["É minha primeira vez no TATÁ.", "Quero escolher para o salão.", "Prefiro algo leve.", "Até R$ 120."], "expected": { "occasion": "first_visit", "channel": "dining_room", "budget_maximum_brl": 120 } },
+    { "case_id": "HOSP-003", "title": "Não conhece comida japonesa", "turns": ["Nunca comi comida japonesa.", "Quero começar com calma.", "É no salão.", "Prefiro sabores suaves."], "expected": { "occasion": "first_visit", "channel": "dining_room" } },
+    { "case_id": "HOSP-004", "title": "Jantar de casal", "turns": ["É um jantar romântico.", "No salão.", "Somos duas pessoas.", "Queremos compartilhar."], "expected": { "occasion": "romantic_dinner", "number_of_people": 2, "desired_experience": "sharing" } },
+    { "case_id": "HOSP-005", "title": "Aniversário", "turns": ["É uma comemoração de aniversário.", "No salão.", "Somos seis pessoas.", "Pode recomendar?"], "expected": { "occasion": "celebration", "number_of_people": 6 } },
+    { "case_id": "HOSP-006", "title": "Grupo de cinco", "turns": ["Somos cinco pessoas.", "É no salão.", "Queremos compartilhar.", "O que faz sentido?"], "expected": { "number_of_people": 5, "desired_experience": "sharing" } },
+    { "case_id": "HOSP-007", "title": "Cliente apressado", "turns": ["Tenho pouco tempo.", "Vou comer no salão.", "Quero algo rápido.", "O que você indica?"], "expected": { "occasion": "quick_meal", "channel": "dining_room" } },
+    { "case_id": "HOSP-008", "title": "Pedido pelo iFood", "turns": ["Quero pedir em casa.", "Pelo iFood.", "Somos duas pessoas.", "Pode sugerir?"], "expected": { "occasion": "delivery_choice", "channel": "ifood", "number_of_people": 2 } },
+    { "case_id": "HOSP-009", "title": "Comparação salão e iFood", "turns": ["Quero comparar salão e iFood.", "Somos duas pessoas.", "Prefiro algo tradicional.", "Os preços são iguais?"], "expected": { "number_of_people": 2 } },
+    { "case_id": "HOSP-010", "title": "Salmão sem cream cheese", "turns": ["Quero algo com salmão.", "É no salão.", "Sem cream cheese.", "Prefiro algo leve."], "expected": { "channel": "dining_room", "preferred_ingredient": "salmon", "preparation": "without_cream_cheese" } },
+    { "case_id": "HOSP-011", "title": "Sem fritura", "turns": ["Quero algo sem fritura.", "No salão.", "Para duas pessoas.", "O que combina?"], "expected": { "channel": "dining_room", "number_of_people": 2, "preparation": "not_fried" } },
+    { "case_id": "HOSP-012", "title": "Opção leve", "turns": ["Quero uma opção mais leve.", "É no salão.", "Gosto de salmão.", "Pode sugerir?"], "expected": { "occasion": "light_meal", "preferred_ingredient": "salmon" } },
+    { "case_id": "HOSP-013", "title": "Opção maçaricada", "turns": ["Prefiro algo maçaricado.", "No salão.", "Gosto de atum.", "Pode sugerir?"], "expected": { "preferred_ingredient": "tuna", "preparation": "torched" } },
+    { "case_id": "HOSP-014", "title": "Cliente vegetariano", "turns": ["Quero uma opção vegetariana.", "No salão.", "É para uma pessoa.", "Pode orientar?"], "expected": { "dietary_restriction": "vegetarian", "number_of_people": 1 } },
+    { "case_id": "HOSP-015", "title": "Alergia a camarão", "turns": ["Tenho alergia a camarão.", "É no salão.", "Quero ver o cardápio.", "O que é seguro confirmar?"], "expected": { "allergy": "crustacean" } },
+    { "case_id": "HOSP-016", "title": "Contaminação cruzada", "turns": ["Tenho alergia a camarão.", "É no salão.", "E sobre contaminação cruzada?", "Como devo confirmar com a equipe?"], "expected": { "allergy": "crustacean" } },
+    { "case_id": "HOSP-017", "title": "Recomendação de bebida", "turns": ["Quero escolher uma bebida.", "É no salão.", "Gosto de salmão.", "O que harmoniza?"], "expected": { "occasion": "drink_pairing", "preferred_ingredient": "salmon" } },
+    { "case_id": "HOSP-018", "title": "Orçamento limitado", "turns": ["Quero algo mais em conta.", "No iFood.", "Até R$ 80.", "Quais opções combinam?"], "expected": { "occasion": "delivery_choice", "channel": "ifood", "budget_maximum_brl": 80 } },
+    { "case_id": "HOSP-019", "title": "Mudança de ideia", "turns": ["Quero algo tradicional.", "No salão.", "Na verdade prefiro algo diferente.", "Pode ajustar?"], "expected": { "occasion": "adventurous_preference" } },
+    { "case_id": "HOSP-020", "title": "Pergunta lateral e retomada", "turns": ["Quero uma sugestão leve.", "No salão.", "Tem valet?", "Voltando ao cardápio, o que sugere?"], "expected": { "occasion": "light_meal", "channel": "dining_room" } }
+  ]
+}

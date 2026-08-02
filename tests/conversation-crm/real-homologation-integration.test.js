@@ -79,7 +79,7 @@ test('painel real reconhece oii como saudação sem fallback ou ação operacion
 test('saudação composta preserva o tom e usa o compositor determinístico', (t) => {
   const { homologation } = localServices(t);
   const turn = homologation.chat({ message: 'Boa noite, tudo bem?' }).turn;
-  assert.match(turn.response, /^Boa noite! Tudo bem, e com você\?/u);
+  assert.match(turn.response, /^Boa noite! Tudo bem por aqui\. Como posso ajudar\?/u);
   assert.equal(turn.diagnostic.response_path, 'deterministic_composer');
   assert.equal(turn.diagnostic.writer_status, 'unavailable_no_local_runtime');
   assert.equal(turn.diagnostic.fallback_used, false);
@@ -231,14 +231,14 @@ test('sequência humana completa usa conhecimento e contexto automático sem sel
   assert.match(turns[1].response, /TATÁ Sushi trabalha à la carte/iu);
   assert.equal(turns[1].diagnostic.fallback_used, false);
   assert.match(turns[2].response, /cardápio com os preços/iu);
-  assert.match(turns[3].response, /catálogo sintético de homologação/iu);
-  assert.match(turns[3].response, /salão.*iFood.*delivery próprio/iu);
+  assert.match(turns[3].response, /manter essa preferência para orientar a escolha/iu);
+  assert.doesNotMatch(turns[3].response, /salão.*iFood.*delivery próprio/iu);
   assert.equal(turns[3].diagnostic.context_reason, 'menu_channel_missing');
-  assert.match(turns[4].response, /preferência.*sem inventar um prato real/iu);
+  assert.match(turns[4].response, /manter essa preferência para orientar a escolha/iu);
   assert.match(turns[5].response, /valet custa R\$ 45/iu);
-  assert.match(turns[5].response, /salão.*iFood.*delivery próprio/iu);
+  assert.doesNotMatch(turns[5].response, /salão.*iFood.*delivery próprio/iu);
   assert.match(turns[6].response, /considerar 5 pessoas/iu);
-  assert.match(turns[7].response, /ainda não existe uma opção sugerida/iu);
+  assert.match(turns[7].response, /ainda não há uma harmonização revisada e liberada/iu);
   assert.match(turns[8].response, /restrição preventiva/iu);
   assert.doesNotMatch(turns[8].response, /serviço de saúde|número do pedido|reação clínica/iu);
   assert.equal(turns[8].diagnostic.customer_context_source, 'anonymous_synthetic_session');
@@ -250,11 +250,11 @@ test('contexto sintético selecionado recomenda, preserva filtros e harmoniza so
   const first = homologation.chat({ message: 'Tem opção sem fritura?', channel: 'dining_room' }).turn;
   const recommendation = homologation.chat({ message: 'Prefiro alguma coisa com salmão e sem cream cheese.' }).turn;
   const pairing = homologation.chat({ message: 'Qual bebida combina com a opção que você sugeriu?' }).turn;
-  assert.match(first.response, /Opção Sintética Salmão Leve/iu);
-  assert.match(recommendation.response, /Opção Sintética Salmão Leve/iu);
+  assert.match(first.response, /opções deste canal.*revisadas o bastante/iu);
+  assert.match(recommendation.response, /opções deste canal.*revisadas o bastante/iu);
   assert.deepEqual(recommendation.diagnostic.candidates_found, ['SIM-MENU-SALMON-LIGHT-DINING']);
-  assert.match(pairing.response, /Bebida Sintética Seca.*harmonização aprovada/iu);
-  assert.deepEqual(pairing.diagnostic.candidates_found, ['SIM-MENU-SALMON-LIGHT-DINING', 'SIM-BEVERAGE-DRY']);
+  assert.match(pairing.response, /ainda não há uma harmonização revisada e liberada/iu);
+  assert.deepEqual(pairing.diagnostic.candidates_found, []);
   assert.equal(pairing.diagnostic.knowledge_sources.includes('SIM-SOURCE-MENU-V1'), true);
 });
 
@@ -291,7 +291,7 @@ test('diagnóstico expõe estado, canal, unidade, fonte, candidatos e limitaçã
 test('reset remove canal e recomendação automáticos da conversa anterior', (t) => {
   const { homologation } = localServices(t);
   const selected = homologation.chat({ message: 'Prefiro salmão sem cream cheese.', channel: 'dining_room' }).turn;
-  assert.match(selected.response, /Opção Sintética Salmão Leve/iu);
+  assert.match(selected.response, /opções deste canal.*revisadas o bastante/iu);
   homologation.resetChat();
   const afterReset = homologation.chat({ message: 'Tem opção sem fritura?' }).turn;
   assert.equal(afterReset.diagnostic.channel, 'unknown');

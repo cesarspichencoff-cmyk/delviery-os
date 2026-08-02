@@ -7,7 +7,8 @@ const {
   CustomerIntelligenceStore, CustomerImportPipeline, normalizedIdentity
 } = require('../../../src/conversation-crm/customer-intelligence');
 const {
-  createSyntheticCatalog, MenuCatalog
+  createSyntheticCatalog, MenuCatalog, initialHospitalityContext,
+  updateHospitalityContext, hospitalityRequest
 } = require('../../../src/conversation-crm/menu-intelligence');
 const {
   createCustomerMenuTools
@@ -20,6 +21,8 @@ const {
 const { MenuReviewService } = require('./review-service');
 
 const SYNTHETIC_SECRET = 'deliveryos-synthetic-panel-identity-secret-v1';
+const MENU_CHANNEL_QUESTION = 'Você está escolhendo para o salão, para pedir pelo iFood ou pelo delivery próprio?';
+const OCCURRENCE_SIGNAL = /\b(?:faltou|nao veio|esqueceram|nao mandaram|veio (?:outro|errado|com)|reacao|passei mal|vomito|diarreia|dificuldade para respirar|cabelo|corpo estranho)\b/u;
 
 function stableReviewId(value) {
   return String(value || '').replace(/[^A-Z0-9]/giu, '').slice(0, 32).toUpperCase();
@@ -69,9 +72,13 @@ function initialChatContext(defaultUnitId = 'SIM-UNIT-ITAIM') {
     allergies: [],
     allergy_labels: {},
     recommendation_active: false,
+    operational_flow_active: false,
     awaiting_channel: false,
+    channel_question_asked: false,
+    guidance_questions_asked: [],
     selected_item_id: null,
-    selected_item_name: null
+    selected_item_name: null,
+    hospitality_context: initialHospitalityContext()
   };
 }
 
@@ -178,7 +185,8 @@ class CustomerMenuHomologationService {
   }
 
   rebuildMenuCatalog() {
-    const approved = this.menuReview.approvedItems();
+    const publicApproved = this.menuReview.approvedPublicItems();
+    const approved = publicApproved.length ? publicApproved : this.menuReview.approvedItems();
     if (!approved.length) {
       this.menuCatalog = createSyntheticCatalog();
       this.catalogMode = 'synthetic_until_human_approval';
@@ -196,32 +204,67 @@ class CustomerMenuHomologationService {
         });
       }
       for (const proposal of approved) {
-        const extracted = proposal.information_extracted || {};
+        const isPublic = Boolean(proposal.public_record_id);
+        const extracted = isPublic
+          ? Object.fromEntries(Object.entries(proposal.fields).map(([name, evidence]) => [name, evidence.value]))
+          : (proposal.information_extracted || {});
+        const price = isPublic ? extracted.price?.current : (Object.hasOwn(extracted, 'price') ? extracted.price : null);
+        const characteristics = proposal.recommendation_evidence?.characteristics || [];
+        const ingredients = [
+          ...(characteristics.includes('contains_confirmed_salmon') ? ['salmon'] : []),
+          ...(characteristics.includes('contains_confirmed_tuna') ? ['tuna'] : []),
+          ...(characteristics.includes('contains_confirmed_white_fish') ? ['white_fish'] : [])
+        ];
         catalog.addItem({
-          item_id: `REAL-${stableReviewId(proposal.review_id)}`,
-          commercial_identity: proposal.source_record_id || proposal.review_id,
+          item_id: `REAL-${stableReviewId(proposal.public_record_id || proposal.review_id)}`,
+          commercial_identity: proposal.public_identity || proposal.source_record_id || proposal.public_record_id || proposal.review_id,
           name: extracted.name || proposal.item,
           description: extracted.description ?? null,
           channel: proposal.channel,
           unit_id: proposal.unit_id,
-          category: extracted.operational_category || 'unknown',
-          price: Object.hasOwn(extracted, 'price') ? extracted.price : null,
-          ingredients: (extracted.ingredients || []).map((name) => ({ name, status: 'confirmed', source_id: proposal.source_id })),
-          preparation: {},
+          category: extracted.category || extracted.operational_category || 'unknown',
+          price,
+          quantity: characteristics.includes('single_person') ? { people: 1 }
+            : (characteristics.includes('two_people') ? { people: 2 }
+              : (Array.isArray(extracted.quantity) ? { labels: extracted.quantity } : null)),
+          ingredients: [...new Set([...(extracted.ingredients || []), ...ingredients])]
+            .map((name) => ({ name, status: isPublic ? 'human_approved' : 'confirmed', source_id: proposal.source_id })),
+          flavor_profile: [
+            ...(characteristics.includes('light_profile') ? ['light'] : []),
+            ...(characteristics.includes('intense_profile') ? ['intense'] : [])
+          ],
+          hospitality_tags: [
+            ...(proposal.recommendation_evidence?.compatibility_tags || []),
+            ...(characteristics.includes('shareable') ? ['sharing'] : []),
+            ...(characteristics.includes('single_person') ? ['small_portion'] : []),
+            ...(characteristics.includes('group') ? ['substantial_meal'] : [])
+          ],
+          preparation: {
+            raw: characteristics.includes('raw') ? true : null,
+            cooked: characteristics.includes('cooked') ? true : null,
+            fried: characteristics.includes('not_fried') ? false : null,
+            torched: characteristics.includes('torched') ? true : null,
+            cream_cheese: characteristics.includes('cream_cheese_absence_confirmed_internal') ? false : null,
+            vegetarian: characteristics.includes('vegetarian') ? true : null
+          },
           allergens: [],
           cross_contact: { state: 'unknown', source_id: proposal.source_id },
           availability: {
-            state: extracted.availability || 'unknown',
-            checked_at: null,
+            state: isPublic ? 'unknown' : (extracted.availability || 'unknown'),
+            checked_at: isPublic ? proposal.fields.price?.captured_at || null : null,
             source_id: proposal.source_id
           },
           source_records: [proposal.source_id],
-          review_status: 'confirmed',
-          review_notes: ['human_review_approved', 'unknown_fields_preserved']
+          review_status: isPublic ? proposal.item_status : 'confirmed',
+          review_notes: [
+            'human_review_approved', 'unknown_fields_preserved',
+            ...(isPublic ? ['public_fields_reviewed', 'availability_not_confirmed'] : []),
+            ...(proposal.recommendation_evidence ? [`recommendation_evidence:${proposal.recommendation_evidence.compatibility_tags.join(',')}`] : [])
+          ]
         });
       }
       this.menuCatalog = catalog;
-      this.catalogMode = 'real_human_approved';
+      this.catalogMode = publicApproved.length ? 'real_public_fields_human_approved' : 'real_human_approved';
     }
     this.tools = createCustomerMenuTools({
       customerStore: this.customerStore,
@@ -289,9 +332,9 @@ class CustomerMenuHomologationService {
   }
 
   currentMenuLabel() {
-    return this.catalogMode === 'real_human_approved'
-      ? 'catálogo real aprovado em homologação humana'
-      : 'catálogo sintético de homologação';
+    return this.catalogMode.startsWith('real_')
+      ? 'cardápio aprovado para este canal'
+      : 'cardápio deste canal';
   }
 
   defaultUnitForChannel(channel) {
@@ -302,6 +345,7 @@ class CustomerMenuHomologationService {
     const conversationId = String(input.conversation_id || 'SIM-CONV-HOMO-UNKNOWN');
     const state = this.chatContexts.get(conversationId) || initialChatContext(this.defaultUnitForChannel(input.channel));
     const text = normalizeChatText(input.message);
+    if (OCCURRENCE_SIGNAL.test(text)) state.operational_flow_active = true;
     const explicitChannel = input.channel || channelFromText(text);
     if (explicitChannel) state.channel = explicitChannel;
     if (input.unit_id) state.unit_id = input.unit_id;
@@ -315,7 +359,11 @@ class CustomerMenuHomologationService {
       state.recommendation_active = true;
     }
     const partySize = partySizeFromText(text);
-    if (partySize) state.number_of_people = partySize;
+    if (partySize) {
+      state.number_of_people = partySize;
+      state.operational_flow_active = partySize > 8;
+      if (partySize <= 8 && !/\b(?:reserva|fila|mesa|chegando)\b/u.test(text)) state.recommendation_active = true;
+    }
     const allergy = allergyFromText(text);
     if (allergy) {
       state.allergies = [...new Set([...state.allergies, allergy.value])];
@@ -325,6 +373,17 @@ class CustomerMenuHomologationService {
     const asksRecommendation = /\b(?:recomend|sugest|op[cç][aã]o|sem fritura|salm[aã]o|cream cheese)\b/iu.test(input.message || '');
     const asksPairing = /\b(?:bebida|drink|harmoniza|combina)\b/u.test(text);
     if (asksRecommendation || asksPairing) state.recommendation_active = true;
+    state.hospitality_context = updateHospitalityContext(state.hospitality_context, {
+      normalized_text: text,
+      channel: state.channel,
+      unit_id: state.unit_id,
+      number_of_people: state.number_of_people,
+      allergies: state.allergies
+    });
+    if (state.hospitality_context.occasion || state.hospitality_context.preferred_ingredients.length
+      || state.hospitality_context.preparation_preferences.length || state.hospitality_context.budget) {
+      state.recommendation_active = true;
+    }
 
     let customerContext = null;
     let menuContext = null;
@@ -350,6 +409,7 @@ class CustomerMenuHomologationService {
         .filter((item) => item.type === 'allergy' && item.status === 'confirmed' && typeof item.value === 'string')
         .map((item) => item.value);
       const request = {
+        ...hospitalityRequest(state.hospitality_context),
         channel: state.channel,
         unit_id: state.unit_id,
         fried: state.fried,
@@ -364,11 +424,12 @@ class CustomerMenuHomologationService {
         request
       });
       menuContext = menuContextFromRecommendation(recommendationResult, request);
-      recommendationContext = recommendationContextFromResult(recommendationResult);
+      recommendationContext = recommendationContextFromResult(recommendationResult, state.hospitality_context);
       const selected = recommendationResult.data?.candidates?.[0] || null;
       state.selected_item_id = selected?.item_id || null;
       state.selected_item_name = selected?.name || null;
       state.awaiting_channel = false;
+      state.channel_question_asked = false;
     } else if (state.recommendation_active) {
       state.awaiting_channel = true;
       menuContext = Object.freeze({
@@ -387,7 +448,8 @@ class CustomerMenuHomologationService {
         objectives: ['safe_relevant_menu_guidance'],
         constraints: [],
         candidate_item_ids: [],
-        unknowns: ['menu_channel_missing']
+        unknowns: ['menu_channel_missing'],
+        hospitality_context: state.hospitality_context
       });
     }
 
@@ -411,33 +473,57 @@ class CustomerMenuHomologationService {
         : { status: 'not_found' };
     }
 
-    const guidance = this.guidanceForChat({ text, input, state, allergy, asksRecommendation, asksPairing, menuContext, pairing });
+    let guidance = this.guidanceForChat({ text, input, state, allergy, asksRecommendation, asksPairing, menuContext, pairing });
+    if (guidance?.question) {
+      const questionKey = normalizeChatText(guidance.question);
+      if (state.guidance_questions_asked.includes(questionKey)) {
+        guidance = Object.freeze({ ...guidance, question: null });
+      } else {
+        state.guidance_questions_asked = [...state.guidance_questions_asked, questionKey];
+      }
+    }
+    if (guidance?.question === MENU_CHANNEL_QUESTION) state.channel_question_asked = true;
     this.chatContexts.set(conversationId, state);
     return {
       customer_context: customerContext,
       menu_context: menuContext,
       recommendation_context: recommendationContext,
+      hospitality_context: state.hospitality_context,
       conversation_guidance: guidance,
       source_summary: {
         customer: input.customer_id ? 'customer_intelligence_synthetic' : 'anonymous_synthetic_session',
         menu: menuContext
-          ? (this.catalogMode === 'real_human_approved' ? 'menu_intelligence_real_human_approved' : 'menu_intelligence_synthetic')
+          ? (this.catalogMode.startsWith('real_') ? 'menu_intelligence_real_human_approved' : 'menu_intelligence_synthetic')
           : 'none'
       }
     };
   }
 
   guidanceForChat({ text, state, allergy, asksRecommendation, asksPairing, menuContext, pairing }) {
+    if (state.operational_flow_active || OCCURRENCE_SIGNAL.test(text)) return null;
     const candidates = menuContext?.items || [];
     const menuLabel = this.currentMenuLabel();
     const menuSource = this.currentMenuSourceId();
-    const channelQuestion = 'Você está escolhendo para o salão, para pedir pelo iFood ou pelo delivery próprio?';
-    const resumeQuestion = state.awaiting_channel ? channelQuestion : null;
-    if (allergy) {
+    const publishesRealItems = this.catalogMode.startsWith('real_');
+    const activeAllergyValue = allergy?.value || state.allergies[0] || null;
+    const activeAllergy = activeAllergyValue
+      ? { value: activeAllergyValue, label: allergy?.label || state.allergy_labels[activeAllergyValue] || 'a restrição informada' }
+      : null;
+    const channelQuestion = MENU_CHANNEL_QUESTION;
+    const resumeQuestion = state.awaiting_channel && !state.channel_question_asked ? channelQuestion : null;
+    if (/\b(?:comparar|comparacao).*(?:salao).*(?:ifood)|\bprecos? (?:sao )?iguais\b/u.test(text)) {
+      return Object.freeze({
+        schema_version: 'deliveryos-homologation-guidance-v1', mode: 'channel_comparison',
+        direct_answers: ['Salão e iFood são catálogos separados, e o preço pode variar entre eles.'],
+        question: 'Qual item você quer comparar?', context_reason: 'item_for_channel_comparison_missing',
+        knowledge_source: 'menu-public-source-coverage-2026-08-01', candidates_found: []
+      });
+    }
+    if (activeAllergy) {
       return Object.freeze({
         schema_version: 'deliveryos-homologation-guidance-v1',
         mode: 'preventive_allergy',
-        direct_answers: [`Certo — vou considerar ${allergy.label} como uma restrição preventiva nesta conversa. Como o ${menuLabel} não confirma ausência de contaminação cruzada, confirme a composição e o preparo com a equipe antes de pedir.`],
+        direct_answers: [`Vou considerar ${activeAllergy.label} como uma restrição preventiva nesta conversa. O ${menuLabel} não confirma ausência de contaminação cruzada; por isso, a composição e o preparo precisam ser confirmados com a equipe antes do pedido.`],
         question: resumeQuestion,
         context_reason: 'preventive_allergy_declared',
         knowledge_source: `current_conversation+${menuSource}`,
@@ -445,6 +531,14 @@ class CustomerMenuHomologationService {
       });
     }
     if (asksPairing) {
+      if (!publishesRealItems) {
+        return Object.freeze({
+          schema_version: 'deliveryos-homologation-guidance-v1', mode: 'pairing_pending',
+          direct_answers: ['Posso preservar sua preferência, mas ainda não há uma harmonização revisada e liberada para eu indicar com segurança.'],
+          question: resumeQuestion, context_reason: state.awaiting_channel ? 'menu_channel_missing' : 'pairing_not_approved',
+          knowledge_source: menuSource, candidates_found: []
+        });
+      }
       if (pairing?.status === 'ready') {
         return Object.freeze({
           schema_version: 'deliveryos-homologation-guidance-v1', mode: 'pairing',
@@ -473,31 +567,39 @@ class CustomerMenuHomologationService {
         knowledge_source: 'current_conversation', candidates_found: candidates.map((item) => item.item_id)
       });
     }
-    if (asksRecommendation) {
+    if (asksRecommendation || state.recommendation_active) {
       if (state.awaiting_channel) {
         const statesSpecificPreference = /\b(?:salmao|cream cheese)\b/u.test(text);
         return Object.freeze({
           schema_version: 'deliveryos-homologation-guidance-v1', mode: 'menu_channel_required',
-          direct_answers: [statesSpecificPreference
-            ? 'Entendi a preferência e vou mantê-la nesta conversa sem inventar um prato real.'
-            : state.fried === false
-            ? `O ${menuLabel} possui opções registradas como não fritas.`
-            : 'Entendi a preferência e vou mantê-la nesta conversa sem inventar um prato real.'],
-          question: channelQuestion, context_reason: 'menu_channel_missing',
+          direct_answers: [statesSpecificPreference || state.fried === false
+            ? 'Vou manter essa preferência para orientar a escolha.'
+            : 'Vou considerar esse momento para orientar a escolha.'],
+          question: resumeQuestion, context_reason: 'menu_channel_missing',
           knowledge_source: menuSource, candidates_found: []
         });
       }
       if (candidates.length) {
+        if (!publishesRealItems) {
+          return Object.freeze({
+            schema_version: 'deliveryos-homologation-guidance-v1', mode: 'menu_approval_pending',
+            direct_answers: ['Vou manter essas preferências. As opções deste canal ainda não estão revisadas o bastante para uma indicação segura.'],
+            question: null, context_reason: 'real_menu_items_not_human_approved',
+            knowledge_source: menuSource, candidates_found: candidates.map((item) => item.item_id)
+          });
+        }
+        const names = candidates.slice(0, 3).map((item) => item.name);
+        const availabilityUnknown = candidates.some((item) => item.availability?.state === 'unknown');
         return Object.freeze({
           schema_version: 'deliveryos-homologation-guidance-v1', mode: 'menu_candidates',
-          direct_answers: [`No ${menuLabel}, encontrei ${candidates[0].name} como opção compatível com os filtros informados.`],
+          direct_answers: [`No ${menuLabel}, ${names.join(names.length > 1 ? ', ' : '')} ${names.length > 1 ? 'são opções' : 'é uma opção'} compatível com o que você contou.${availabilityUnknown ? ' A disponibilidade no momento precisa ser confirmada.' : ''}`],
           question: null, context_reason: null, knowledge_source: menuSource,
           candidates_found: candidates.map((item) => item.item_id)
         });
       }
       return Object.freeze({
         schema_version: 'deliveryos-homologation-guidance-v1', mode: 'no_safe_candidate',
-        direct_answers: [`Não encontrei candidato seguro no ${menuLabel} com os filtros informados. Não vou inventar uma opção.`],
+        direct_answers: [`Não encontrei uma opção compatível no ${menuLabel} com os filtros informados. Prefiro não indicar um item sem base suficiente.`],
         question: null, context_reason: 'no_compatible_menu_candidate',
         knowledge_source: menuSource, candidates_found: []
       });
@@ -530,7 +632,7 @@ class CustomerMenuHomologationService {
       customers: this.customerStore.list(),
       menu: {
         catalog_mode: this.catalogMode,
-        real_items_active: this.catalogMode === 'real_human_approved',
+        real_items_active: this.catalogMode.startsWith('real_'),
         channels: ['dining_room', 'ifood', 'own_delivery'],
         units: [...new Set(menu.items.map((item) => item.unit_id))],
         items: menu.items,
@@ -563,13 +665,39 @@ class CustomerMenuHomologationService {
         deterministic_composer: 'active',
         customer_context: 'automatic_anonymous_or_selected_synthetic',
         menu_context: 'automatic_from_conversation_or_optional_override',
-        real_data: this.catalogMode === 'real_human_approved'
+        real_data: this.catalogMode.startsWith('real_')
       }
     };
   }
 
   menuReviewAction(input = {}) {
     const reviewed = this.menuReview.action(input);
+    this.rebuildMenuCatalog();
+    return {
+      ok: true,
+      reviewed,
+      summary: this.menuReview.summary(),
+      catalog_mode: this.catalogMode
+    };
+  }
+
+  publicMenuReviewPreview(input = {}) {
+    return { ok: true, preview: this.menuReview.publicBatchPreview(input) };
+  }
+
+  publicMenuReviewCommit(input = {}) {
+    const reviewed = this.menuReview.publicBatchCommit(input);
+    this.rebuildMenuCatalog();
+    return {
+      ok: true,
+      reviewed_count: reviewed.length,
+      summary: this.menuReview.summary(),
+      catalog_mode: this.catalogMode
+    };
+  }
+
+  publicMenuFieldAction(input = {}) {
+    const reviewed = this.menuReview.publicFieldAction(input);
     this.rebuildMenuCatalog();
     return {
       ok: true,

@@ -13,7 +13,13 @@ const FILES = Object.freeze({
   free: 'free-chat-feedback.jsonl'
 });
 const RATING_TAGS = new Set(['seco', 'robotico', 'longo', 'curto_demais', 'generico', 'pouco_acolhedor', 'informacao_errada', 'pergunta_repetida', 'nao_respondeu', 'parece_mensagem_pronta', 'muito_bom']);
-const FREE_TAGS = new Set(['gostei', 'seco', 'robotico', 'longo', 'pouco_acolhedor', 'informacao_errada', 'pergunta_repetida', 'nao_respondeu', 'estranho']);
+const FREE_TAGS = new Set([
+  'gostei', 'seco', 'robotico', 'longo', 'pouco_acolhedor', 'informacao_errada',
+  'pergunta_repetida', 'nao_respondeu', 'estranho', 'respondeu_primeiro',
+  'pergunta_util', 'recomendacao_contextual', 'pareceu_humano', 'fonte_confiavel',
+  'excelente', 'humano', 'acolhedor', 'inteligente', 'natural', 'util', 'generico',
+  'repetitivo', 'superficial', 'invasivo', 'perdeu_contexto', 'inventou', 'perguntou_demais'
+]);
 const CRITERIA = Object.freeze(['naturalidade', 'acolhimento', 'clareza', 'utilidade', 'tamanho', 'confianca']);
 
 function defaultFeedbackRoot() {
@@ -128,7 +134,16 @@ class FeedbackStore {
       const winner = choice === 'A' || choice === 'B' ? context.order[choice] : choice;
       Object.assign(base, { choice, winner, blind_order: context.order });
     } else {
-      Object.assign(base, { evaluated_version: 'runtime_current' });
+      const experienceScore = body.experience_score === undefined ? null : Number(body.experience_score);
+      if (experienceScore !== null && (!Number.isInteger(experienceScore) || experienceScore < 0 || experienceScore > 10)) throw Object.assign(new Error('experience_score_invalid'), { code: 'EXPERIENCE_SCORE_INVALID' });
+      const criteria10 = {};
+      for (const key of ['compreensao', 'anfitriao', 'uso_contexto', 'ajuda_decidir', 'naturalidade', 'utilidade', 'seguranca', 'enviaria']) {
+        if (body.criteria_10?.[key] === undefined) continue;
+        const value = Number(body.criteria_10[key]);
+        if (!Number.isInteger(value) || value < 0 || value > 10) throw Object.assign(new Error('criteria_10_invalid'), { code: 'CRITERIA_10_INVALID' });
+        criteria10[key] = value;
+      }
+      Object.assign(base, { evaluated_version: 'runtime_current', experience_score: experienceScore, criteria_10: criteria10 });
     }
     return this.append(mode, Object.freeze(base));
   }

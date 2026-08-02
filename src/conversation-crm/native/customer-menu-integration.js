@@ -55,6 +55,8 @@ function menuContextFromRecommendation(toolResult, request = {}) {
       channel: item.channel,
       unit_id: item.unit_id,
       price: item.price,
+      availability: item.availability,
+      warnings: item.warnings || [],
       source_records: item.source_records
     })),
     unknowns: [...new Set([...(recommendation.unknowns || []), ...allergenUnknowns])],
@@ -64,6 +66,7 @@ function menuContextFromRecommendation(toolResult, request = {}) {
 }
 
 function recommendationContextFromResult(toolResult) {
+  const hospitalityContext = arguments[1] || null;
   const result = toolResult?.data || { candidates: [], unknowns: ['recommendation'] };
   return deepFreeze({
     schema_version: 'deliveryos-recommendation-context-v1',
@@ -71,7 +74,8 @@ function recommendationContextFromResult(toolResult) {
     objectives: ['safe_relevant_menu_guidance'],
     constraints: result.constraints_applied || [],
     candidate_item_ids: (result.candidates || []).map((item) => item.item_id),
-    unknowns: result.unknowns || []
+    unknowns: result.unknowns || [],
+    hospitality_context: hospitalityContext
   });
 }
 
