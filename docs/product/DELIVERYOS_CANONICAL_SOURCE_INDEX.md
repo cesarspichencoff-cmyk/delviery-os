@@ -51,6 +51,26 @@ Quando dois documentos discordarem, **vence o de número menor**.
 **Regra:** um documento de execução (12) ou de apresentação (13) **nunca** revoga um documento de
 produto (1–11). Se contradisser, é o documento de execução que está errado.
 
+### 2.1 Ordem visual vinculante — obrigatória antes de qualquer interface, CSS ou Figma
+
+Autoridade declarada em **`docs/design/VISUAL_REFERENCE_HIERARCHY.md`**, com
+`docs/design/CANONICAL_VISUAL_MANIFEST.json` e `docs/design/VISUAL_SOURCE_OF_TRUTH.md`.
+
+| # | Fonte | Papel |
+|---|---|---|
+| 1 | **Sprint Visual DeliveryOS V2** | autoridade principal; prevalece sempre |
+| 2 | **Organismo Operacional V3.3** | implementação validada da mesma linguagem |
+| 3 | handoffs e regras canônicas associados (estados técnicos, cor, pressão, mobile, motion) | contrato de aplicação |
+| 4 | Design System atual (`docs/figma/**`, tokens) | produção e acessibilidade |
+| 5 | `app-v1`, protótipos e demos antigos | **só** referência histórica ou comportamental |
+
+**Nível 5 não pode definir a expressão visual final.** O acervo dos níveis 1–3 está inteiro em
+`docs/design/canonical/deliveryos-visual-v2/extracted/` — inclusive
+`DeliveryOS Organismo Operacional.dc.html`, que é a expressão canônica da home.
+
+Esta seção existe porque a ordem falhou duas vezes: a Unidade 6 e o bloco R2 desenharam sobre o
+Nível 5. Ver **PB9** e **L33**. Guarda executável: `npm run test:platform:visual-order`.
+
 ---
 
 ## 3. Decisões canônicas
@@ -400,6 +420,9 @@ formal."* A proibição está certa e permanece.
 - **Início de sessão:** ler este arquivo e `docs/execution/NEXT_RESUME.md`. Se a missão tocar
   produto, experiência, home, Copiloto, sinais ou ambientes, ler também os documentos 1–11 da §2.
 - **Antes de propor qualquer tela:** conferir §3.4, §4 e §8.
+- **Antes de escrever a primeira linha de CSS ou abrir o Figma:** ler **§2.1** e
+  `docs/design/VISUAL_REFERENCE_HIERARCHY.md`. Se a direção visual vier de um Design System
+  encontrado no código, ou de `app-v1`, ela está vindo do nível errado — parar e voltar ao Nível 1/2.
 - **Antes de qualquer decisão da lista §6:** parar e perguntar ao César.
 - **Ao encontrar uma pergunta de produto sem resposta:** registrá-la em
   `docs/execution/BLOCKERS.md`, seção **BLOQUEIOS DE PRODUTO E DECISÕES HUMANAS** — nunca deixá-la

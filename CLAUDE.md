@@ -106,9 +106,17 @@ estados. Nunca aceitar "parece igual" — sempre diff byte a byte ou contagem ex
    abertos, e a lista das decisões que **exigem o César**.
 2. Os documentos de produto que o índice indicar para a missão em curso.
 3. As decisões atuais do César registradas no índice (§3) e em `DECISIONS.md`.
-4. As duas auditorias: `docs/auditoria/DELIVERYOS_PRODUCT_REALIGNMENT_AUDIT.md` e
+4. **`docs/design/VISUAL_REFERENCE_HIERARCHY.md`** — a autoridade visual, e **obrigatório antes de
+   qualquer trabalho de interface, CSS, Figma ou design**. Com ele:
+   `docs/design/CANONICAL_VISUAL_MANIFEST.json` e `docs/design/VISUAL_SOURCE_OF_TRUTH.md`.
+   A ordem visual vinculante é: **(1) Sprint Visual DeliveryOS V2 → (2) Organismo Operacional V3.3 →
+   (3) handoffs e regras canônicas associados → (4) Design System atual, para produção e
+   acessibilidade → (5) `app-v1` e protótipos antigos, só como referência histórica ou
+   comportamental.** **Nível 5 não pode definir a expressão visual final.** O V2/V3.3 está inteiro em
+   `docs/design/canonical/deliveryos-visual-v2/extracted/`.
+5. As duas auditorias: `docs/auditoria/DELIVERYOS_PRODUCT_REALIGNMENT_AUDIT.md` e
    `docs/auditoria/DELIVERYOS_SOURCE_OF_TRUTH_RECOVERY.md`.
-5. Só então os quatro arquivos de `docs/execution/`.
+6. Só então os quatro arquivos de `docs/execution/`.
 
 > **Por que esta ordem existe.** Entre 05/07 e 12/07 de 2026 o produto parou porque 32 perguntas
 > objetivas ao César ficaram sem resposta em quatro documentos — e **nenhuma estava registrada como
@@ -116,6 +124,12 @@ estados. Nunca aceitar "parece igual" — sempre diff byte a byte ou contagem ex
 > mandava ler apenas `docs/execution/`, que não referenciava nenhum documento de produto. Quem
 > retomava o trabalho encontrava o estado técnico e **não encontrava o produto**. As Unidades 1 a 6
 > foram executadas assim. Ver as duas auditorias.
+>
+> **A mesma falha se repetiu no eixo visual, e é por isso que o item 4 existe.** A Unidade 6 e o
+> bloco R2 desenharam a home sobre `app-v1` e sobre o Design System — Nível 5 e Nível 4 — porque
+> `docs/design/` não estava em nenhuma ordem de leitura. Ver **PB9** e **L33**. A guarda
+> `npm run test:platform:visual-order` falha se este item deixar de apontar para
+> `docs/design/VISUAL_REFERENCE_HIERARCHY.md`.
 
 Quatro arquivos em `docs/execution/` carregam o estado real entre sessões. Quem começa uma missão lê
 os quatro; quem termina uma missão atualiza os quatro. Eles existem porque contexto de conversa se

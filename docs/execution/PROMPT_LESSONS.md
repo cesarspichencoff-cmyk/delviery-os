@@ -589,7 +589,39 @@ perguntar: **qual documento e a autoridade visual, e onde ele diz que e?** Se a
 resposta vier de um Design System encontrado no codigo em vez de uma hierarquia
 declarada, parar e procurar a hierarquia.
 
-**Guarda estrutural sugerida, ainda NAO implementada:** um teste que exija que
-todo arquivo listado como autoridade em `docs/design/CANONICAL_VISUAL_MANIFEST.json`
-esteja citado na ordem de leitura de `CLAUDE.md`. Sem guarda, a terceira repeticao
-e questao de tempo.
+**Guarda estrutural — IMPLEMENTADA em 2026-08-02.**
+`npm run test:platform:visual-order` (`src/platform/run-visual-order-tests.ts`, 6
+testes). Ela falha quando a ordem obrigatoria de leitura de `CLAUDE.md` §11 ou do
+indice canonico deixa de apontar para `docs/design/VISUAL_REFERENCE_HIERARCHY.md`,
+quando a ordem Sprint V2 -> V3.3 -> Design System se inverte, ou quando a
+hierarquia deixa de declarar `app-v1` como incapaz de definir direcao visual.
+
+**A primeira versao da guarda era CEGA, e a mutacao pegou.** Ela lia a secao 11
+inteira e procurava o caminho em qualquer lugar. Apagar a hierarquia do item 4 da
+lista numerada nao a derrubou: o caminho continuava citado na justificativa em
+prosa logo abaixo, escrita no mesmo commit. Corrigida para ler **so a lista
+numerada** — o corte e no primeiro bloco de citacao. Mutacao reaplicada: a guarda
+caiu de 6 para 5 e nomeou o item exato. Restauracao conferida por sha256.
+
+**A familia, de novo:** o teste passava porque media a presenca da palavra, nao a
+posicao dela na ordem. Mesma especie de L26, L27 e L30.
+
+---
+
+## L34 — Screenshot dentro do pacote canonico nao e, por isso, expressao canonica
+
+**O que quase passou.** Os tres PNGs em
+`docs/design/canonical/deliveryos-visual-v2/extracted/uploads/` estao dentro do
+acervo de Nivel 1 e mostram fundo creme claro, "Em fluxo" em tipografia pesada e
+um cartao de Foco branco com botao verde. Usa-los como alvo visual reproduziria
+exatamente o desenho que o Sprint V2 existe para corrigir.
+
+**Por que quase passou.** Estar no diretorio canonico parece credencial. Nao e:
+os PNGs sao capturas do `app-v1` — **Nivel 5** — anexadas ao pacote como
+**diagnostico**, o "antes" que o §01 do contrato de estados tecnicos descreve
+("vazio parece calma", "gravidade sem proporcao"). O documento que manda e o
+`.dc.html`, com superficie `#08130D`, areas em degraus e ligacoes condicionais.
+
+**O que fazer.** Dentro do acervo canonico, a autoridade e o documento que
+DECLARA a regra, nao o anexo que a ilustra. Antes de mirar num screenshot,
+perguntar: **isto e o alvo ou e o diagnostico?**

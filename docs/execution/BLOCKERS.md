@@ -487,3 +487,17 @@ sobre o Nivel 1/2. `src/product/ui/surfaces/home.css` e
 **Correcao de processo exigida:** `CLAUDE.md` §11 e o indice canonico precisam
 incluir `docs/design/VISUAL_REFERENCE_HIERARCHY.md` na ordem obrigatoria de
 leitura. Sem isso, a proxima sessao repete pela terceira vez.
+
+### PB9-visual — SITUACAO EM 2026-08-02
+
+**Causa de processo: FECHADA.** `CLAUDE.md` §11 ganhou o item 4, e o indice
+canonico ganhou a §2.1 com a ordem visual vinculante (D52). A ordem e executavel:
+`npm run test:platform:visual-order` — 6 testes, e a mutacao que apaga a
+hierarquia do item 4 derruba a guarda (ver L33).
+
+**Expressao visual: REFEITA sobre o Nivel 1/2** em `home.css` e `home.js`, com
+`ligacoes` acrescentadas a `home-vm.ts` (D53). `sinais.ts` e `areas.ts` nao
+mudaram de regra. O bloqueio deixa de valer para a home; ele **continua valendo
+para toda superficie ainda desenhada sobre o Design System da Unidade 6** —
+Entregas, Operacao Viva, Conference Brain, Copiloto e modulo futuro nao foram
+tocadas nesta missao e seguem em linguagem de Nivel 4.

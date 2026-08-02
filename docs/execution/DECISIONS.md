@@ -951,3 +951,50 @@ mesmo argumento do controle positivo de L26/D32, aplicado a cor da area.
 
 **Custo aceito:** uma area genuinamente vazia e com fonte viva aparece
 `sem_medicao` ate a primeira leitura chegar. Preferimos isso a verde falso.
+
+---
+
+### D52 — A ordem visual e vinculante e mora na ordem de leitura, nao no codigo
+
+**Decisao.** A expressao visual do DeliveryOS obedece, nesta ordem: **(1) Sprint
+Visual DeliveryOS V2 · (2) Organismo Operacional V3.3 · (3) handoffs e regras
+canonicas associados · (4) Design System atual, para producao e acessibilidade ·
+(5) `app-v1` e prototipos antigos, so como referencia historica ou
+comportamental.** O Nivel 5 **nao** define expressao visual final. A ordem passa
+a viver em `CLAUDE.md` §11 item 4 e no indice canonico §2.1, com guarda
+executavel `npm run test:platform:visual-order`.
+
+**Alternativa recusada:** deixar a hierarquia so em `docs/design/` e confiar em
+disciplina. Recusada porque foi exatamente isso que ja existia — e falhou duas
+vezes, na Unidade 6 e no bloco R2. Um documento que a ordem de leitura nao
+alcanca nao e autoridade, e decoracao.
+
+**Segunda alternativa recusada:** uma auditoria visual extensa que medisse
+parentesco de cor, tipografia e forma contra o canone. Recusada por
+desproporcao: o defeito nao foi de execucao visual, foi de **fonte de
+autoridade**. Uma terceira camada de processo sobre o mesmo erro de uma linha
+custa mais do que protege. A guarda checa a ordem, nao o CSS.
+
+**Custo aceito:** a guarda nao impede que alguem leia a hierarquia e mesmo assim
+desenhe errado. Ela impede que alguem **nao a encontre**, que e a causa raiz
+registrada em L33.
+
+---
+
+### D53 — A ligacao entre areas nasce no view model, nunca no CSS
+
+**Decisao.** As relacoes ativas entre areas (`ligacoes` em `home-vm.ts`) sao
+derivadas da leitura operacional na camada de view model, com o caminho real do
+pedido declarado em `areas.ts`. A superficie so as desenha. Uma ligacao existe
+como caminho e so fica **ativa** quando a area de origem esta em degrau de
+atencao ou pressao com medicao observada.
+
+**Alternativa recusada:** deixar `home.js` decidir quando desenhar a linha,
+olhando a cor da area. Recusada porque seria a interface escolhendo ligacao — o
+contrato canonico diz, em letra propria, que a interface nao calcula, nao
+escolhe e nao inventa ligacoes. Alem disso um teste sobre o view model consegue
+provar "ligacao so aparece quando ativa"; um teste sobre CSS, nao.
+
+**Custo aceito:** area sem medicao nunca origina ligacao ativa, mesmo que a
+operacao real esteja empurrando pressao por ali. E o mesmo custo de D51: sem
+observacao, o sistema nao afirma.

@@ -906,5 +906,31 @@
     "figma": "NAO iniciado — o orcamento de contexto proibia abrir nova superficie grande, e PB9 tornaria o desenho invalido de qualquer forma",
     "rodada_adversarial": "NAO executada — parada por contexto",
     "conteudo_real_versus_demonstracao": "as REGRAS dos sinais, o cardapio (199 itens/8 pracas) e os baselines calibrados sao reais; os pedidos, tempos e cargas das 4 cenas sao fixture com procedencia `simulado` no contrato"
+  },
+  "recuperacao_visual_canonica_v2": {
+    "data": "2026-08-02",
+    "estado": "EM ANDAMENTO — correcao da fonte de autoridade CONCLUIDA",
+    "head_inicial": "678c61a",
+    "ordem_visual_vinculante": [
+      "1 Sprint Visual DeliveryOS V2",
+      "2 Organismo Operacional V3.3",
+      "3 handoffs e regras canonicas associados",
+      "4 Design System atual — producao e acessibilidade",
+      "5 app-v1 e prototipos antigos — referencia historica ou comportamental, NUNCA direcao visual"
+    ],
+    "correcao_de_processo": {
+      "estado": "CONCLUIDA",
+      "onde": [
+        "CLAUDE.md secao 11 item 4",
+        "docs/product/DELIVERYOS_CANONICAL_SOURCE_INDEX.md secao 2.1"
+      ],
+      "decisao": "D52",
+      "licao": "L33 (guarda implementada) e L34 (screenshot canonico e diagnostico, nao alvo)",
+      "guarda": "npm run test:platform:visual-order — 6 testes",
+      "guarda_verificada_por_mutacao": "apagar a hierarquia do item 4 de CLAUDE.md derruba V1; a PRIMEIRA versao da guarda era cega e passou na mesma mutacao, porque lia a secao inteira em vez da lista numerada. Restauracao conferida por sha256"
+    },
+    "expressao_visual": "EM ANDAMENTO",
+    "figma": "NAO iniciado — so depois da revisao visual do frontend",
+    "R5": "NAO iniciado. D43 continua de pe"
   }
 }
