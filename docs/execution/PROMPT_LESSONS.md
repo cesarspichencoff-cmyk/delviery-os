@@ -660,3 +660,56 @@ ambiente em pressao) voltou como "guarda cega" e **nao era**: o trecho-alvo
 estava escrito errado no roteiro da mutacao e ela nunca chegou a ser aplicada.
 Mutacao que nao altera o arquivo nao prova nada — o roteiro precisa afirmar que
 aplicou, e o desta rodada afirma.
+
+## L36 — Presenca textual nao prova codigo, e a guarda que confunde as duas mente duas vezes
+
+**Onde apareceu.** Tres guardas do gate R5-B nasceram erradas, e uma delas de um
+jeito que vale guardar: a guarda "os motores continuam desconectados" procurava
+a string `conference-brain` no `home-vm.ts` e reprovava — por causa de
+`rota: "/conference-brain"`, que e **navegacao**, nao import.
+
+As outras duas foram da mesma familia: contar `orientacao_permitida:` incluia a
+DECLARACAO DE TIPO junto com a atribuicao; e uma sonda por `pendente` reprovava
+por causa de `integracao_pendente`, que e estado legitimo de fonte.
+
+**A regra que ficou.** Uma guarda de invariante verifica **comportamento**,
+estrutura executavel ou contrato de tipo real. Nunca:
+`includes("palavra")` · regex sobre comentario · presenca de nome de funcao ·
+contagem de ocorrencia textual · documentacao lida como prova de runtime.
+
+Quando a estrutura E a garantia, sonde a estrutura: extraia os ESPECIFICADORES
+DE IMPORT e compare-os; leia a UNIAO DE TIPOS e verifique o membro; conte so as
+ATRIBUICOES. Foi assim que as tres foram refeitas.
+
+**O caso irmao, em R5-A:** a guarda de preempcao acusou preempcao lendo o
+comentario que explica que preempcao **nao** existe. Comentario que descreve uma
+proibicao nao pode reprovar a guarda que a verifica — as guardas passaram a ler
+codigo sem comentario.
+
+---
+
+## L37 — Uma mutacao que nao aplica nao e invariante verde, e o harness precisa saber a diferenca
+
+**O fato.** A mutacao de I1 (neutralizar `dentroDoEscopo()`) foi escrita com
+ancora em `\n`. `decisao.js` esta no disco em **CRLF** — arquivo antigo do repo,
+enquanto os arquivos novos nasceram em LF. O `replace` nao casou, o arquivo ficou
+identico, o gate passou, e o relatorio bruto teria dito **"I1 cega"**.
+
+Cega e a palavra errada. O gate nao deixou de acusar: **nao houve o que acusar.**
+Um harness que so olha "o gate ficou vermelho?" registra as duas situacoes com o
+mesmo carimbo, e a segunda e muito pior — ela parece cobertura e e ausencia.
+
+**A regra que ficou.** Toda mutacao precisa provar TRES coisas separadas:
+
+```
+aplicada            o texto do arquivo mudou
+mutante carregado   o artefato que o teste LEU e o mutado (sha256 conferido na saida do gate)
+acusada             o gate falhou pelo motivo esperado
+```
+
+O gate R5-B imprime `ARTEFATOS {arquivo: sha256_curto}` justamente para isso: o
+harness compara com o sha do original. Marca igual = o teste rodou uma copia
+limpa, e a mutacao **nao conta**.
+
+**Efeito colateral util:** a distincao pegou o defeito na hora, e o conserto foi
+uma regex tolerante a fim de linha — nao um invariante enfraquecido.

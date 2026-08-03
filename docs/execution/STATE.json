@@ -1193,7 +1193,7 @@
   },
   "retomada_r5": {
     "data": "2026-08-03",
-    "estado": "R5-A CONCLUIDO. R5-B, R5-C e R5-D nao iniciados.",
+    "estado": "R5-A e R5-B CONCLUIDOS. R5-C e R5-D nao iniciados.",
     "decisao_do_cesar": "Figma pendente, sem upgrade e sem redesenho manual. R5 pode retomar.",
     "congelado_durante_r5": [
       "frontend (home.js, home.css, organismo-tokens.css)",
@@ -1291,6 +1291,91 @@
       "as cenas de demonstracao continuam elegendo por severidade, porque sao instantes isolados sem eixo de tempo (D61)",
       "os pisos de severidade divergem entre motor (ambiente = qualquer situacao, foco = sev>=2) e produto (2 e 3). A politica parametriza e usa os do produto; a divergencia e PB2 e nao foi resolvida aqui",
       "nao ha persistencia real: o estado e serializavel e foi provado em round-trip, mas nenhum banco, fila ou runtime foi criado"
+    ]
+  },
+  "r5b_invariantes": {
+    "data": "2026-08-03",
+    "estado": "CONCLUIDO",
+    "head_inicial": "bd1ad55",
+    "matriz": "docs/product/MATRIZ_INVARIANTES_I1_I10.md",
+    "gate": {
+      "comando": "npm run test:platform:r5b",
+      "testes": 30,
+      "resultado": "R5B_INVARIANTS_GATE_GREEN"
+    },
+    "agregador": "npm run test:platform:r5 (R5-A + R5-B) — NAO alega R5 completo",
+    "donos": {
+      "I1": "motor original (decisao.js)",
+      "I2": "motor original (decisao.js)",
+      "I3": "politica temporal + view model",
+      "I4": "view model (estrutura) + politica (tipo)",
+      "I5": "view model / sinais",
+      "I6": "areas.ts (contrato) + view model",
+      "I7": "politica temporal (R5-A)",
+      "I8": "view model + Shadow",
+      "I9": "view model / estados.ts",
+      "I10": "view model"
+    },
+    "classificacao": {
+      "comprovado_no_dominio": [
+        "I1",
+        "I2",
+        "I3",
+        "I4",
+        "I5",
+        "I6",
+        "I7",
+        "I8",
+        "I10"
+      ],
+      "comprovado_por_tipo_e_comportamento": [
+        "I9"
+      ],
+      "sem_gate": [],
+      "inaplicavel_antes_de_r5c": [],
+      "bloqueado_por_contrato_ausente": []
+    },
+    "lacunas_fechadas": "I1 e I2 estavam SEM GATE; I3, I4 e I7 estavam comprovados SOMENTE na superficie. O motor original ja estava no repositorio — bastou um harness isolado (D64)",
+    "provas": "cada invariante tem prova positiva E negativa; metade deles e uma ausencia, e um cano entupido devolve a mesma ausencia que a recusa deliberada",
+    "adversarial": {
+      "mutacoes": 11,
+      "invariantes": 10,
+      "bypass": 1,
+      "acusadas": 11,
+      "cegas": 0,
+      "nao_aplicadas": 0,
+      "mutantes_nao_carregados": 0,
+      "restauracao": "byte a byte por sha256",
+      "prova_de_carregamento": "o gate imprime ARTEFATOS com sha256 curto de cada arquivo lido; o harness compara com o do original"
+    },
+    "bypass_temporal": "FECHADO por tipo discriminado OrigemDaLeitura + recusa executavel: leitura com procedencia real sem tipo real LANCA (D63)",
+    "d29": "PRESERVADA, nao resolvida — sem order_id real nao existe recomendacao de pedido; o gate recusa numero visual, indice, posicao, texto ou hash improvisado como identidade",
+    "alteracoes_de_producao": "somente o tipo OrigemDaLeitura e a recusa em home-vm.ts, exigidos pela fronteira anti-bypass (§13 permite tornar explicito um contrato que ja existe)",
+    "congelamento_visual": "git diff bd1ad55 vazio em src/product/ui/, sinais.ts, areas.ts e docs/figma/",
+    "regressoes": {
+      "r5a": 30,
+      "r5b": 30,
+      "home": 44,
+      "organismo": 27,
+      "product_system": 44,
+      "r1": 24,
+      "ordem_visual": 6,
+      "paridade_figma": 23,
+      "copiloto_shadow": 39,
+      "tsc": "exit 0"
+    },
+    "nao_feito": {
+      "r5c": "NAO INICIADO",
+      "r5d": "NAO INICIADO",
+      "motores": "DESCONECTADOS — D43 de pe",
+      "flag": "INEXISTENTE",
+      "recomendacao_real": "NENHUMA emitida",
+      "runtime": "NENHUM ativado"
+    },
+    "limitacoes": [
+      "o harness de I1/I2 constroi sits e INFO na mao: ele prova a REGRA DE ESCOPO, nao a producao de situacoes pelo MOTOR.step",
+      "a Caixa pode aparecer em ambar — o texto canonico de I6 e nunca VERDE, e e isso que o gate exige; a pressao dela continua observado:false",
+      "nenhuma sequencia foi exercitada contra fonte real"
     ]
   }
 }

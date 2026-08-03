@@ -1252,3 +1252,54 @@ tensao (`fonte_obsoleta` contra `causa_desapareceu`).
 
 **Custo aceito:** sem limiar, uma fonte que envelhece devagar so e tratada quando
 alguem a declara obsoleta. Preferivel a fabricar o momento.
+
+---
+
+### D63 — Uma leitura REAL nao pode omitir a eleicao temporal, e a recusa e executavel
+
+**Decisao.** `home-vm.ts` passa a receber `OrigemDaLeitura`, um tipo
+discriminado: `{ tipo: "demonstracao", motivo }` ou `{ tipo: "real", temporal }`.
+Uma leitura com `procedencia === "real"` que chegue sem `tipo: "real"` **lanca**.
+
+**Por que isso e uma decisao e nao um detalhe.** R5-A deixou a eleicao temporal
+OPCIONAL, e por um bom motivo: as cenas de demonstracao sao instantes isolados,
+sem eixo de tempo. Isso resolveu a fixture e **abriu uma porta** — um chamador
+real poderia simplesmente nao passar o resultado da politica e voltar a eleger
+por fotografia, sem que nada acusasse. O bypass nao seria uma violacao visivel;
+seria uma omissao silenciosa, que e a especie que este repositorio mais sofre.
+
+`motivo` e obrigatorio no ramo de demonstracao porque "nao passei" nao e motivo,
+e omissao. Uma demonstracao precisa DIZER por que pode pular a politica.
+
+**Alternativa recusada:** deixar a fronteira como convencao documentada. Recusada
+porque prosa nao e executavel, e a proxima sessao que escrever o primeiro
+chamador real nao vai ler este arquivo antes de chamar a funcao.
+
+**Custo aceito:** o controle positivo H28b do gate da home precisou passar a
+fornecer a eleicao temporal. O que ele prova continua identico — leitura real nao
+vira demonstracao —, mas ele nao pode mais entrar pela porta de fixture. Foi a
+UNICA alteracao de teste exigida pela fronteira.
+
+---
+
+### D64 — I1 e I2 sao invariantes de DOMINIO, e o motor original ja estava aqui
+
+**Achado.** O contrato dizia que I1 e I2 exigiriam integracao para serem
+provados. Nao exigiam: `src/perfil-delivery/decisao.js` esta neste repositorio,
+e `decidir(snap, INFO, opts)` e uma funcao chamavel. Um harness isolado monta a
+fotografia do minuto, chama, e inspeciona o retorno.
+
+**Decisao.** I1 e I2 sao provados no DOMINIO, executando o motor de verdade —
+nunca por regex sobre `dentroDoEscopo`. Neutralizar a funcao muda o VALOR que
+`decidir()` devolve, e e o valor que o teste examina. Nenhuma conexao foi criada:
+o harness le comportamento, nao integra nada. D43 continua de pe.
+
+**Alternativa recusada:** adiar I1 e I2 para R5-C, sob o argumento de que "a
+integracao que poderia viola-los ainda nao existe". Recusada pela regra da
+propria missao: nao se declara verde um invariante porque a violacao e
+impossivel hoje. E, no caso, nem era necessario — o motor estava a um `require`
+de distancia.
+
+**Custo aceito:** o harness constroi `sits` e `INFO` na mao, entao ele prova a
+REGRA DE ESCOPO, nao a producao de situacoes pelo `MOTOR.step`. Registrado como
+limitacao, nao como cobertura.

@@ -12,6 +12,70 @@
 >
 > ---
 >
+> **ATUALIZADO 2026-08-03 — R5-B CONCLUIDO.**
+> `DELIVERYOS_R5B_INVARIANTS_GATE_COMPLETE` · `MACRO2_CHECKPOINT_REACHED`
+> HEAD inicial `bd1ad55`. **R5-C e R5-D NAO iniciados.**
+>
+> **Os dez invariantes do contrato da consciencia viraram executaveis.** O proprio contrato dizia,
+> em letra propria, *"Nenhuma destas foi testada ainda"*. Matriz com o texto canonico **transcrito**:
+> `docs/product/MATRIZ_INVARIANTES_I1_I10.md`. Gate: `npm run test:platform:r5b` — **30 testes**.
+> Agregador `npm run test:platform:r5` (R5-A + R5-B) — ele **nao** alega R5 completo.
+>
+> **I1 E I2 NAO PRECISAVAM DE R5-C, e essa foi a descoberta que destravou a missao.** O contrato
+> supunha integracao; `src/perfil-delivery/decisao.js` esta **neste repositorio** e `decidir()` e uma
+> funcao chamavel. Um harness isolado monta a fotografia do minuto, chama e inspeciona o retorno —
+> **nunca regex sobre `dentroDoEscopo`**. Com foco ativo em `combinados` e um candidato mais forte em
+> `enrolados` disponivel, a acao eleita e `combinados`; **sem** foco ativo, e `enrolados`. Foco de
+> conferencia sem candidato compativel devolve `null`, e o **mesmo snapshot** com foco de praca
+> devolve acao. Nenhuma conexao foi criada — **D43 de pe** (D64).
+>
+> **CLASSIFICACAO HONESTA DO QUE MUDOU.** I1 e I2 estavam **sem gate**. I3, I4 e I7 estavam
+> comprovados **somente na superficie** — verdes desde R2 e nao provados no dominio. Agora os dez tem
+> dono, prova positiva **e** negativa. **Nenhum ficou `inaplicavel antes de R5-C` ou `bloqueado por
+> contrato ausente`.**
+>
+> **Por que prova negativa em todos:** metade destes invariantes e uma AUSENCIA (`null` de
+> orientacao, nenhuma acao, nenhum segundo foco), e um cano entupido devolve a mesma ausencia que a
+> recusa deliberada.
+>
+> **ADVERSARIAL: 11 mutacoes semanticas (10 invariantes + bypass), 11 acusadas, 0 cegas, 0 mutantes
+> nao carregados, restauracao byte a byte.** O gate imprime `ARTEFATOS {arquivo: sha256}` e o harness
+> compara com o original — marca igual significa que o teste rodou copia limpa, e a mutacao **nao
+> conta**. Foi essa checagem que pegou a primeira tentativa de I1: a ancora estava em `\n` e
+> `decisao.js` esta em **CRLF**, entao a mutacao **nao aplicou**. Registrada como `nao_aplicada`,
+> **nunca** como invariante verde. Ver **L37**.
+>
+> **BYPASS TEMPORAL FECHADO (D63).** `home-vm.ts` recebe `OrigemDaLeitura` — tipo discriminado
+> `{demonstracao, motivo}` ou `{real, temporal}`. Leitura com `procedencia === "real"` sem
+> `tipo: "real"` **lanca**. Omitir nao passa; disfarcar de demonstracao nao passa. `motivo` e
+> obrigatorio: "nao passei" e omissao, nao motivo. **Nenhum runtime foi conectado** — a fronteira vale
+> para quem ainda nem foi escrito.
+>
+> **ALTERACAO DE PRODUCAO, e foi a unica:** o tipo `OrigemDaLeitura` e a recusa em `home-vm.ts`. A
+> §13 permite tornar explicito um contrato que ja existe. Um unico teste precisou mudar — o controle
+> positivo **H28b**, que passou a fornecer a eleicao temporal.
+>
+> **CONGELAMENTO VISUAL VERDE.** `git diff bd1ad55` vazio em `src/product/ui/`, `sinais.ts`,
+> `areas.ts` e `docs/figma/`. Regressoes: R5-A 30 · R5-B 30 · home 44 · organismo 27 · Product System
+> 44 · R1 24 · ordem visual 6 · paridade Figma 23 · copiloto shadow 39 · `tsc` exit 0.
+>
+> **D29 PRESERVADA, NAO RESOLVIDA.** Sem `order_id` real nao existe recomendacao de pedido, e o gate
+> recusa numero visual, indice, posicao, texto ou hash improvisado como identidade.
+>
+> **LICOES NOVAS — L36 e L37.** Presenca textual nao prova codigo: tres guardas deste gate nasceram
+> erradas, e uma reprovava porque `rota: "/conference-brain"` **contem** a palavra. E uma mutacao que
+> nao aplica nao e invariante verde — o harness precisa distinguir *aplicada*, *mutante carregado* e
+> *acusada*, tres coisas separadas.
+>
+> **LIMITACAO REGISTRADA:** o harness de I1/I2 constroi `sits` e `INFO` na mao. Ele prova a **regra de
+> escopo**, nao a producao de situacoes pelo `MOTOR.step`.
+>
+> **PROXIMA ACAO SEGURA:** **R5-C** — o contrato de traducao motor→Shadow como TIPO, sem ligar nada.
+> A lacuna ja esta nomeada: o motor devolve 4 linhas + sussurro, o Shadow valida recomendacao
+> versionada, e **nada converte um no outro**.
+>
+> ---
+>
 > **ATUALIZADO 2026-08-03 — R5-A CONCLUIDO.**
 > `DELIVERYOS_R5A_TEMPORAL_POLICY_COMPLETE` · `MACRO2_CHECKPOINT_REACHED`
 > HEAD inicial `4365c61`. **R5-B, R5-C e R5-D NAO iniciados.**
