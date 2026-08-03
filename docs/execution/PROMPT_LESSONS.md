@@ -625,3 +625,38 @@ os PNGs sao capturas do `app-v1` — **Nivel 5** — anexadas ao pacote como
 **O que fazer.** Dentro do acervo canonico, a autoridade e o documento que
 DECLARA a regra, nao o anexo que a ilustra. Antes de mirar num screenshot,
 perguntar: **isto e o alvo ou e o diagnostico?**
+
+---
+
+## L35 — Medir a regua nao e medir o que foi medido com ela
+
+**O que quase passou.** O gate da expressao canonica tinha um teste que provava
+os degraus: o CSS declara quatro tamanhos, o de atencao e maior que o normal, o
+de pressao e maior que o de atencao, e o de area sem medicao e menor que todos.
+Tudo verdadeiro. A rodada adversarial trocou UMA linha em `degrau()` — a que
+devolve `"0"` para `sem_medicao` — fazendo toda area sem fonte receber o degrau
+saudavel. **Os 17 testes continuaram verdes.**
+
+**Por que passou.** O teste media a REGUA (o CSS dos degraus) e nunca perguntava
+qual degrau cada area recebe no HTML. As duas coisas parecem a mesma quando se
+lê o teste, e nao sao: uma prova que a escala existe, a outra prova que a escala
+foi aplicada ao dado certo. So a segunda protege a garantia "area sem fonte nunca
+aparece saudavel".
+
+**Como foi fechado.** O4b renderiza as quatro cenas e compara, area por area e
+subarea por subarea, o `data-degrau` do HTML com a `cor` que o motor deu. Tem par
+proprio: exige ver pelo menos quatro areas sem fonte, senao uma leitura sem
+ausencia passaria sem exercitar nada.
+
+**A familia.** L26, L27, L30 e L33. Todas sao o mesmo animal — o teste que mede
+uma coisa vizinha da garantia e parece medir a garantia.
+
+**Regra pratica que sobra.** Ao testar apresentacao, perguntar sempre: *estou
+provando que a regra EXISTE, ou que ela foi APLICADA a este dado?* Se a asercao
+so le arquivo de estilo, e a primeira.
+
+**Nota de metodo, do mesmo dia.** Uma segunda mutacao (esconder o segundo
+ambiente em pressao) voltou como "guarda cega" e **nao era**: o trecho-alvo
+estava escrito errado no roteiro da mutacao e ela nunca chegou a ser aplicada.
+Mutacao que nao altera o arquivo nao prova nada — o roteiro precisa afirmar que
+aplicou, e o desta rodada afirma.

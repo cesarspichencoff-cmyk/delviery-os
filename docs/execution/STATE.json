@@ -908,9 +908,14 @@
     "conteudo_real_versus_demonstracao": "as REGRAS dos sinais, o cardapio (199 itens/8 pracas) e os baselines calibrados sao reais; os pedidos, tempos e cargas das 4 cenas sao fixture com procedencia `simulado` no contrato"
   },
   "recuperacao_visual_canonica_v2": {
-    "data": "2026-08-02",
-    "estado": "EM ANDAMENTO — correcao da fonte de autoridade CONCLUIDA",
+    "data": "2026-08-03",
+    "estado": "CHECKPOINT — frontend CONCLUIDO e revisado no navegador · Figma NAO iniciado",
     "head_inicial": "678c61a",
+    "commits": [
+      "32270ea (ordem de leitura + guarda da hierarquia visual)",
+      "245ac38 (expressao canonica da home)",
+      "01b6de2 (gate do organismo + rodada adversarial)"
+    ],
     "ordem_visual_vinculante": [
       "1 Sprint Visual DeliveryOS V2",
       "2 Organismo Operacional V3.3",
@@ -924,13 +929,90 @@
         "CLAUDE.md secao 11 item 4",
         "docs/product/DELIVERYOS_CANONICAL_SOURCE_INDEX.md secao 2.1"
       ],
-      "decisao": "D52",
-      "licao": "L33 (guarda implementada) e L34 (screenshot canonico e diagnostico, nao alvo)",
+      "decisoes": [
+        "D52 ordem visual vinculante",
+        "D53 ligacao nasce no view model"
+      ],
+      "licoes": [
+        "L33 guarda implementada",
+        "L34 screenshot canonico e diagnostico, nao alvo",
+        "L35 medir a regua nao e medir o que foi medido com ela"
+      ],
       "guarda": "npm run test:platform:visual-order — 6 testes",
-      "guarda_verificada_por_mutacao": "apagar a hierarquia do item 4 de CLAUDE.md derruba V1; a PRIMEIRA versao da guarda era cega e passou na mesma mutacao, porque lia a secao inteira em vez da lista numerada. Restauracao conferida por sha256"
+      "guarda_verificada_por_mutacao": "apagar a hierarquia do item 4 de CLAUDE.md derruba V1. A PRIMEIRA versao da guarda era cega e passou na mesma mutacao, porque lia a secao inteira em vez da lista numerada. Restauracao conferida por sha256"
     },
-    "expressao_visual": "EM ANDAMENTO",
-    "figma": "NAO iniciado — so depois da revisao visual do frontend",
-    "R5": "NAO iniciado. D43 continua de pe"
+    "expressao_visual": {
+      "estado": "CONCLUIDA",
+      "arquivos_refeitos": [
+        "src/product/ui/surfaces/home.css",
+        "src/product/ui/surfaces/home.js"
+      ],
+      "arquivo_novo": "src/product/ui/tokens/organismo-tokens.css — paleta, tipografia e movimento do V2/V3.3, com os valores literais do canone",
+      "ajuste_no_view_model": "home-vm.ts ganhou ligacoes (LigacaoVM) e areas.ts ganhou CAMINHO_DO_PEDIDO. Nenhuma regra de sinal mudou (D53)",
+      "preservado_sem_mudanca_de_regra": [
+        "home-vm.ts — logica e contratos",
+        "sinais.ts — as regras dos 11 sinais e os 9 declarados sem fonte",
+        "areas.ts — o contrato de areas, D45/D46"
+      ],
+      "superficie": "uma so, na forma do caminho do pedido: Caixa -> Sushi e Cozinha -> Conferencia -> Motoboy. Sushi com as 4 subareas visiveis (D46), e a subarea causadora nomeada",
+      "degraus": "o tamanho da area vem da cor (o degrau do motor). A pressao em porcentagem NUNCA vira dimensao — provado por O5, e o degrau aplicado e conferido area a area por O4b",
+      "ligacoes": "inerte por padrao; ativa com origem amarela; carregada com origem vermelha. Area sem medicao nunca origina ligacao ativa",
+      "falha_tecnica": "cinza-ardosia, faixa com a hora da ultima leitura, sem crescimento e sem ambar. Distinta de sem-integracao, que e tracejado neutro. As duas linguagens nunca se cruzam",
+      "shell": "recua na home por :has(). As superficies tecnicas seguem no Design System da Unidade 6, que e o nivel certo para elas"
+    },
+    "defeitos_reais_encontrados_na_inspecao": [
+      "O painel de Foco, absoluto como no V3.3, COBRIA a Conferencia e o Motoboy no desktop. Corrigido com coluna propria. Nenhum teste estrutural acusaria isso",
+      "A evidencia mostrava enrolados_quentes para uma pessoa. Cinco pontos de sinais.ts montavam a referencia com o identificador cru; agora passam por rotuloDaPraca. Zero ids crus nas evidencias das 4 cenas — guarda O17",
+      "O codigo tecnico do tipo de evidencia aparecia cru na tela; agora vira frase na apresentacao, e o codigo segue inteiro no view model e na trilha de auditoria"
+    ],
+    "revisao_visual_no_navegador": {
+      "servidor": "npm run ui:product — http://127.0.0.1:5290/",
+      "larguras": [
+        "1440x960 desktop amplo",
+        "1024x820 desktop menor",
+        "375x812 mobile"
+      ],
+      "cenarios_inspecionados": [
+        "Calmo",
+        "Ambiente com duas pressoes simultaneas",
+        "Foco",
+        "aproximacao de area (Sushi e Cozinha)",
+        "informacao parcial",
+        "fonte sem integracao",
+        "falha persistente (cena degradado)"
+      ],
+      "overflow_horizontal": "nenhum, medido por scrollWidth contra clientWidth em 375 e 1440",
+      "reduced_motion": "verificado por CSS e por teste O14: animacao e transicao desligadas, e o anel de pressao vira anel fixo em vez de sumir. NAO foi exercitado com a preferencia real do sistema operacional"
+    },
+    "testes": {
+      "R1": "24 verdes",
+      "home_comportamental": "44 verdes",
+      "product_system": "44 verdes",
+      "ordem_visual_novo": "6 verdes — npm run test:platform:visual-order",
+      "organismo_visual_novo": "18 verdes — npm run test:platform:organismo",
+      "typecheck": "tsc --noEmit exit 0",
+      "agregado": "npm run test:platform:recuperacao"
+    },
+    "rodada_adversarial": {
+      "mutacoes": 6,
+      "acusadas": 6,
+      "cegas": 0,
+      "restauracao": "byte a byte, conferida por sha256 nas seis",
+      "buraco_real_encontrado": "M5 converteu sem_medicao no degrau saudavel e a suite continuou verde. O teste media o CSS dos degraus e nunca o degrau aplicado no HTML. Fechado por O4b. Ver L35",
+      "nota_de_metodo": "M2 voltou como cega na primeira rodada e nao era: o trecho-alvo estava escrito errado no roteiro e a mutacao nunca chegou a ser aplicada"
+    },
+    "conteudo_real_versus_demonstracao": "REAL: as regras dos 11 sinais, o cardapio de 199 itens em 8 pracas, os baselines calibrados e o contrato de areas. DEMONSTRACAO: pedidos, tempos e cargas das 4 cenas, com procedencia simulado, faixa propria na superficie e marca no container — guarda O15. Nenhum valor demonstrativo do V3.3 foi copiado para o caminho real",
+    "figma": "NAO INICIADO. A missao proibe abrir nova superficie entre 60% e 72% de contexto, e o Figma so podia comecar DEPOIS da revisao visual do frontend — que consumiu o orcamento. Arquivo alvo intocado: DeliveryOS — Product System / IMWH8ZKMF5ra3QJYiR6vGa",
+    "matriz_figma_codigo": "NAO ATUALIZADA — depende do Figma",
+    "limitacoes": [
+      "Tipografia: o canone pede Spectral, Hanken Grotesk e IBM Plex Mono. Nenhuma folha externa e carregada (servidor local, sem rede). Os tokens declaram as tres familias com fallback do sistema; preserva-se a HIERARQUIA editorial/interface/tecnico, nao os desenhos das letras",
+      "A referencia da evidencia ainda usa notacao compacta. O identificador de praca saiu; a notacao ficou",
+      "Voz, fechamento de turno e previsao continuam fora: sao demonstracao no V3.3 e nao viraram funcao",
+      "O recuo do shell exige :has(). Sem suporte, o shell fica claro em volta do organismo — degradacao cosmetica, nenhuma verdade se perde",
+      "Sobreposicao do shell no topo do mobile (marca e selo) e defeito PRE-EXISTENTE do shell, fora do escopo desta missao e nao corrigido",
+      "As superficies tecnicas (Entregas, Operacao Viva, Conference Brain, Copiloto, modulo futuro) seguem em linguagem de Nivel 4. PB9 continua valendo para elas"
+    ],
+    "R5": "NAO iniciado. D43 continua de pe",
+    "limites_respeitados": "sem push, sem merge, sem PR, sem deploy, sem rota B5, sem tocar Conference Brain, CRM ou Android, sem conectar os motores do Copiloto, zero subagentes"
   }
 }

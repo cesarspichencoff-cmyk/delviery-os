@@ -12,6 +12,59 @@
 >
 > ---
 >
+> **ATUALIZADO 2026-08-03 — RECUPERACAO DA EXPRESSAO VISUAL CANONICA: CHECKPOINT.**
+> `DELIVERYOS_CANONICAL_VISUAL_RECOVERY_CHECKPOINT` · `MACRO2_CHECKPOINT_REACHED`
+> HEAD inicial `678c61a` -> final `01b6de2`.
+> Commits: `32270ea` (ordem de leitura), `245ac38` (expressao), `01b6de2` (gate + adversarial).
+>
+> **A CAUSA DE PB9 ESTA FECHADA, E ELA ERA DE PROCESSO.** `CLAUDE.md` §11 ganhou o **item 4**
+> e o indice canonico ganhou a **§2.1**: a ordem visual vinculante e **Sprint Visual V2 ->
+> Organismo V3.3 -> handoffs -> Design System -> app-v1 como historia**, e o Nivel 5 nao define
+> expressao. Guarda: `npm run test:platform:visual-order` (6). Decisao **D52**.
+>
+> **Vale saber como a guarda quase nasceu inutil.** A primeira versao lia a secao 11 inteira e
+> passou na mutacao que apagou a hierarquia do item 4 — o caminho continuava citado na prosa logo
+> abaixo. Agora ela le so a lista numerada. **L33** atualizada.
+>
+> **A EXPRESSAO DA HOME FOI REFEITA sobre o Nivel 1/2.** `home.css` e `home.js` inteiros, mais
+> `src/product/ui/tokens/organismo-tokens.css` com os valores literais do canone. A superficie e
+> UMA so, na forma do caminho do pedido — Caixa, depois Sushi e Cozinha, depois Conferencia,
+> depois Motoboy — com as quatro subareas do Sushi visiveis e a causadora nomeada. A area cresce
+> em **degraus**, e o degrau e a `cor` que o motor da: a pressao em porcentagem nunca vira
+> tamanho. `home-vm.ts` ganhou `ligacoes` e `areas.ts` ganhou `CAMINHO_DO_PEDIDO` (**D53**);
+> nenhuma regra de sinal mudou.
+>
+> **Dois defeitos reais so apareceram olhando a tela, e nenhum teste estrutural os pegaria.**
+> O painel de Foco, absoluto como no V3.3, **cobria a Conferencia e o Motoboy** — a regra
+> "nenhum outro ambiente vermelho fica escondido" morre quando o painel tapa o caminho. E a
+> **evidencia mostrava `enrolados_quentes` para uma pessoa**: cinco pontos de `sinais.ts`
+> montavam a referencia com o identificador cru. E o mesmo defeito que R1 fechou no motor, vivo
+> em outro lugar. Ver **L34**.
+>
+> **GATES.** R1 **24** · home comportamental **44** · Product System **44** · ordem visual **6**
+> (novo) · organismo visual **18** (novo) · `tsc --noEmit` exit 0.
+> Agregado: `npm run test:platform:recuperacao`.
+>
+> **ADVERSARIAL: 6 mutacoes, 6 acusadas, 0 cegas, restauracao byte a byte por sha256.**
+> Uma delas achou um buraco de verdade: converter `sem_medicao` no degrau saudavel deixou a suite
+> inteira verde, porque os testes mediam o **CSS dos degraus** e nunca o degrau **aplicado** no
+> HTML. Fechado por O4b. **L35** — medir a regua nao e medir o que foi medido com ela.
+>
+> **NAO FEITO, e o motivo e o orcamento de contexto, nao esquecimento:** **Figma** e a **matriz
+> Figma-codigo**. A missao proibe abrir superficie nova depois de 60% de contexto, e o Figma so
+> podia comecar **depois** da revisao visual do frontend — que consumiu o orcamento. O arquivo
+> `IMWH8ZKMF5ra3QJYiR6vGa` segue intocado. **R5 nao foi iniciado. D43 continua de pe.**
+>
+> **PB9 continua valendo para as OUTRAS superficies.** Entregas, Operacao Viva, Conference Brain,
+> Copiloto e modulo futuro seguem desenhadas no Design System da Unidade 6 — Nivel 4. Nenhuma foi
+> tocada.
+>
+> **PROXIMA ACAO SEGURA, nesta ordem:** (1) Figma — pagina 00 e 02 do arquivo existente, sobre a
+> expressao ja aprovada localmente, preservando `01 — Design System`; (2) matriz Figma-codigo;
+> (3) so entao R5, e so depois de I1-I10 do contrato da consciencia.
+>
+> ---
+>
 > **ATUALIZADO 2026-08-02 — RECUPERACAO OPERACIONAL BLOCO 1: CHECKPOINT.**
 > `DELIVERYOS_OPERATIONAL_HOME_SIGNALS_CHECKPOINT` · `MACRO2_CHECKPOINT_REACHED`
 > HEAD inicial `e308835` -> final `d07493b`. Commits: `61e0495` (R1), `d07493b` (R2+R4).

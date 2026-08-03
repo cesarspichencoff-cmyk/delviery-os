@@ -501,3 +501,25 @@ mudaram de regra. O bloqueio deixa de valer para a home; ele **continua valendo
 para toda superficie ainda desenhada sobre o Design System da Unidade 6** —
 Entregas, Operacao Viva, Conference Brain, Copiloto e modulo futuro nao foram
 tocadas nesta missao e seguem em linguagem de Nivel 4.
+
+### PB10 — O Figma nao acompanhou a expressao canonica
+
+**Categoria:** bloqueio de produto · **Aberto em** 2026-08-03 · **Severidade:** media
+
+**O fato.** A expressao da home foi refeita sobre o Nivel 1/2 e revisada no
+navegador, mas o arquivo `DeliveryOS — Product System` (`IMWH8ZKMF5ra3QJYiR6vGa`)
+continua mostrando a linguagem do Design System da Unidade 6. Codigo e desenho
+divergiram, e a matriz Figma-codigo nao foi atualizada.
+
+**Por que ficou assim, e nao e esquecimento.** A missao ordena, em letra propria,
+que o Figma so comece **depois** da revisao visual do frontend, e proibe abrir
+superficie nova depois de 60% do contexto. A revisao — que achou dois defeitos
+reais — consumiu o orcamento. Parar aqui foi cumprir a regra, nao ignora-la.
+
+**O que destrava.** Uma sessao nova, com a expressao ja aprovada localmente:
+pagina 00 orientada ao valor operacional, pagina 02 com Calmo, Ambiente, Foco,
+aproximacao, falha tecnica, parcial e sem integracao — desktop e mobile.
+Preservar `01 — Design System`. Registrar node IDs e conferir por screenshot.
+
+**O que NAO destrava.** Recomecar o desenho da home. A expressao esta aprovada
+localmente e coberta por 18 testes; o Figma precisa alcanca-la, nao substitui-la.
