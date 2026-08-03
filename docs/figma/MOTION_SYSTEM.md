@@ -58,8 +58,39 @@ foi **observada viva**, porque pulsar sobre um sinal degradado afirmaria vida qu
 > título chega, mas toda leitura de conteúdo falha (`Policy check temporarily unavailable` no
 > navegador, `403` no WebFetch). O trabalho de movimento daquela sessão derivou **deste documento**,
 > do Organismo V3.3 e das decisões visuais do César — não dele. A matriz de referência OriginKit em
-> `docs/design/CANONICAL_MOTION_PARITY.md` §1 está **deliberadamente vazia**, e preenchê-la é o
-> primeiro trabalho de quem retomar.
+> `docs/design/CANONICAL_MOTION_PARITY.md` §1 está **deliberadamente vazia**.
+>
+> ✅ **Reclassificado no mesmo dia — `OriginKit external review deferred — non-blocking` (D57).**
+> A evidência de indisponibilidade continua registrada; o que caiu foi o **bloqueio**. O OriginKit é
+> referência externa **opcional** de qualidade: não é autoridade visual, não é dependência, não
+> prevalece sobre V2/V3.3, e não trava Figma, paridade nem fechamento visual. A revisão vira
+> refinamento futuro, nunca reconstrução obrigatória. **A etapa de movimento não depende dele.**
+
+### Reduced motion — exercitado com a preferência real, 2026-08-03
+
+O checkpoint anterior mediu **cobertura pelo CSSOM**: 21 elementos animam, 0 descobertos. Isso prova
+que a regra alcança tudo — não prova o que a pessoa vê quando liga a preferência.
+
+Esta sessão exercitou a preferência de verdade, nos dois valores, com Chromium 1228 dirigido por
+Playwright 1.61.1 (`Emulation.setEmulatedMedia`, no nível do navegador — não CSS injetado, não
+classe aplicada à mão). `matchMedia("(prefers-reduced-motion: reduce)")` devolveu `true` nas seis
+cenas do segundo passe e `false` nas seis do primeiro.
+
+| Cena | `no-preference` → `reduce` (animando / infinitas) | Texto | Áreas visíveis |
+|---|---|---|---|
+| Calmo | 1 / 1 → **0 / 0** | 8524 = 8524 | 5 = 5 |
+| Ambiente | 1 / 1 → **0 / 0** | 10947 = 10947 | 5 = 5 |
+| Foco | 4 / 3 → **0 / 0** | 12133 = 12133 | 5 = 5 |
+| Degradado | 0 / 0 → **0 / 0** | 8474 = 8474 | 5 = 5 |
+| Aproximação Sushi | 3 / 1 → **0 / 0** | 11244 = 11244 | 1 = 1 |
+| Aproximação Cozinha | 3 / 1 → **0 / 0** | 10882 = 10882 | 1 = 1 |
+
+Pulsos repetidos cessam · o fluxo do fio vira tracejado estático · a contagem de caracteres é
+**idêntica** nos dois passes, então nenhuma informação vive só no movimento · nenhuma área
+desaparece · o Foco continua presente e legível · a pressão continua identificável, porque o degrau
+é atributo do elemento e não animação. **Falha técnica mede 0 nos dois passes** — ela já não animava.
+
+Detalhe da matriz: `docs/figma/FIGMA_ORGANISMO_PARITY_MATRIX.md` §7.
 
 ## 3. Padrões implementados
 

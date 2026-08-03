@@ -33,6 +33,22 @@ deixaria o elemento no estado inicial (invisível) se a animação fosse cancela
 **Guarda:** a mutação adversarial M3 trocou a media query por uma que nunca casa. O teste
 `motion: reduced motion existe e nada informativo vive so no movimento` caiu.
 
+### A preferência foi exercitada de verdade, em 2026-08-03
+
+Até este dia a garantia era medida no **CSSOM** — quais seletores a regra alcança. Isso não é a
+mesma coisa que ligar a preferência e olhar. Chromium 1228 dirigido por Playwright 1.61.1
+(`Emulation.setEmulatedMedia`, nível de navegador), seis cenas do organismo, dois valores:
+
+- `no-preference` → **6 cenas animando** (1, 1, 4, 0, 3, 3 elementos)
+- `reduce` → **0 animando em todas as seis**, incluindo **0 infinitas**
+- contagem de caracteres do texto **idêntica** nos dois passes, cena a cena
+- todas as áreas continuam visíveis (5 = 5 na visão geral, 1 = 1 na aproximação)
+- o Foco continua presente e legível; a pressão continua identificável pelo `data-degrau`
+
+O par que dá sentido ao resultado: sem o passe `no-preference` mostrando animação, o zero do passe
+`reduce` seria indistinguível de uma página que simplesmente não anima nada. Ver
+`docs/figma/FIGMA_ORGANISMO_PARITY_MATRIX.md` §7.
+
 ## 3. Teclado
 
 - Nenhuma animação atrasa foco. O anel de `:focus-visible` é declarado **sem `transition`**, e um

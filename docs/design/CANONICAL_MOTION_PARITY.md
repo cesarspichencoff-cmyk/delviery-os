@@ -32,7 +32,7 @@ para que, no dia em que houver atualização em vigor, a mudança atravesse em v
 
 ---
 
-## 1. Matriz de referência OriginKit
+## 1. Matriz de referência OriginKit — `OriginKit external review deferred — non-blocking`
 
 | Padrão observado | O que comunica | Aplicação possível no DeliveryOS | Onde não usar |
 |---|---|---|---|
@@ -43,7 +43,23 @@ A tabela fica vazia de propósito. Preenchê-la com nomes vindos da busca (`Clic
 busca**, não padrões observados — e os que apareceram são de família decorativa, justamente a que a
 §8 restringe a capa e onboarding. Classificar comportamento exige ver o comportamento.
 
-Quando o acesso existir, esta seção é o primeiro trabalho da retomada.
+### PB12 reclassificado em 2026-08-03 — o OriginKit **não bloqueia** nada
+
+A evidência de indisponibilidade continua registrada, inteira, em `docs/execution/BLOCKERS.md`
+(PB12) e não foi apagada. O que mudou é a **classificação**, e ela é definitiva:
+
+O OriginKit é **referência externa opcional de qualidade**. Ele **não** é autoridade visual, **não**
+é dependência, **não** prevalece sobre V2/V3.3, **não** bloqueia o Figma, **não** bloqueia a
+paridade e **não** bloqueia o fechamento visual. A revisão poderá acontecer depois como
+**refinamento**, nunca como reconstrução obrigatória.
+
+Consequência prática: a etapa de movimento deixa de depender desta seção. O movimento do organismo
+deriva — e sempre derivou — de `docs/figma/MOTION_SYSTEM.md`, do Organismo V3.3 e das decisões
+visuais do César. Ver **D57**.
+
+**O que continua proibido:** declarar que o OriginKit foi analisado, reconstruir componentes de
+memória, ou inventar uma matriz de referência. Se a tabela acima for preenchida um dia, será porque
+alguém viu o comportamento.
 
 ---
 
