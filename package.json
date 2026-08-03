@@ -66,7 +66,8 @@
     "ui:product": "npx tsx tools/product_system_server.ts",
     "test:platform:conference": "npm run test:platform:cb4b1 && npm run test:platform:cb4b2 && npm run test:platform:cb4b3 && npm run test:platform:cb4b4 && npm run test:platform:cb4b5 && npm run test:platform:copiloto",
     "test:platform:organismo": "npx tsx src/platform/run-organismo-visual-tests.ts",
-    "test:platform:figma-parity": "npx tsx src/platform/run-figma-parity-tests.ts"
+    "test:platform:figma-parity": "npx tsx src/platform/run-figma-parity-tests.ts",
+    "test:platform:r5a": "npx tsx src/platform/run-r5a-temporal-tests.ts"
   },
   "devDependencies": {
     "@types/node": "20.14.10",
