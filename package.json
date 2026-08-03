@@ -69,7 +69,8 @@
     "test:platform:figma-parity": "npx tsx src/platform/run-figma-parity-tests.ts",
     "test:platform:r5a": "npx tsx src/platform/run-r5a-temporal-tests.ts",
     "test:platform:r5b": "npx tsx src/platform/run-r5b-invariant-tests.ts",
-    "test:platform:r5": "npm run test:platform:r5a && npm run test:platform:r5b"
+    "test:platform:r5c": "npx tsx src/platform/run-r5c-translation-tests.ts",
+    "test:platform:r5": "npm run test:platform:r5a && npm run test:platform:r5b && npm run test:platform:r5c"
   },
   "devDependencies": {
     "@types/node": "20.14.10",
