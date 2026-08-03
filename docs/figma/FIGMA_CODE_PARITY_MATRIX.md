@@ -1,5 +1,12 @@
-# Matriz de paridade Figma ↔ código
+# Matriz de paridade Figma ↔ código — superfícies técnicas da Unidade 6
 
+> **ESCOPO, definido em 2026-08-03.** Esta matriz cobre **Entregas, Operação Viva, Conference Brain,
+> Copiloto, estados essenciais e módulo futuro** — as superfícies do Design System (Nível 4).
+> O **organismo operacional** (a home: Calmo, Ambiente, Foco, aproximação, ausências, falha técnica)
+> tem matriz própria em [`FIGMA_ORGANISMO_PARITY_MATRIX.md`](FIGMA_ORGANISMO_PARITY_MATRIX.md),
+> porque a autoridade visual dele é outra: Nível 1/2, Sprint Visual V2 e Organismo V3.3.
+> As duas convivem; nenhuma substitui a outra.
+>
 > Esta matriz existe para impedir cinco coisas: fixture apresentada como dado real · visão futura
 > apresentada como funcional · protótipo confundido com runtime · componente Figma sem código
 > declarado pronto · código sem representação no Figma ignorado.
