@@ -228,22 +228,21 @@ export function recomendar(p: Projecao, opcoes: OpcoesShadow): Recomendacao[] {
     }
     if (!crua) continue;
 
-    if (crua.input_event_ids.length === 0) {
-      // Recomendação sem evidência é palpite. Descartada em silêncio seria
-      // pior — mas apresentá-la seria pior ainda.
-      continue;
-    }
     const confianca = exigirConfianca(crua.confidence);
-    if (confianca === null) continue;
-
-    saida.push({
+    // A proposta é montada e SÓ ENTÃO validada, pelo mesmo `validarDraftShadow`
+    // que o harness de tradução usa. Antes as recusas moravam soltas aqui, e o
+    // teste tinha a sua própria cópia parecida — duas verdades que divergiriam
+    // no dia em que uma delas mudasse.
+    const candidata: Recomendacao = {
       recommendation_id: idDeterministico(pol.policy_id, p, crua.recommended_action),
       policy_id: pol.policy_id,
       policy_version: POLICY_VERSION,
       input_event_ids: crua.input_event_ids,
       projection_version: p.projection_version,
       source_mode: p.source_mode,
-      confidence: confianca,
+      // `confianca` já vem arredondada; `null` cai na recusa do validador logo
+      // abaixo, sem nunca virar um número inventado.
+      confidence: confianca as number,
       risk_level: crua.risk_level,
       recommended_action: crua.recommended_action,
       reason: crua.reason,
@@ -254,10 +253,68 @@ export function recomendar(p: Projecao, opcoes: OpcoesShadow): Recomendacao[] {
       created_at: opcoes.agora.toISOString(),
       expires_at: new Date(opcoes.agora.getTime() + pol.validade_s * 1000).toISOString(),
       status: "proposed",
-    });
+    };
+
+    if (!validarDraftShadow(candidata).aceito) continue;
+    saida.push(candidata);
   }
 
   return saida.sort((a, b) => a.recommendation_id.localeCompare(b.recommendation_id));
+}
+
+/* ------------------------------------------------------------------ *
+ * Validação pura — UM único lugar
+ * ------------------------------------------------------------------ */
+
+export type MotivoRejeicaoShadow =
+  | "evidencia_vazia"
+  | "confianca_invalida"
+  | "status_nao_proposto"
+  | "sem_exigencia_humana"
+  | "campo_executavel"
+  | "validade_incoerente"
+  | "versao_de_politica_divergente";
+
+export type ResultadoValidacaoShadow =
+  | { readonly aceito: true }
+  | { readonly aceito: false; readonly motivo: MotivoRejeicaoShadow };
+
+/**
+ * As recusas que uma recomendação precisa sobreviver, **sem nenhum efeito**.
+ *
+ * Ela mora aqui, e não no teste, porque R5-C descobriu a duplicação do jeito
+ * ruim: o harness reproduzia estas mesmas regras por conta própria, e um
+ * validador de runtime ao lado de um validador parecido de teste é um par que
+ * diverge em silêncio — o dia em que a regra mudar de um lado, o outro continua
+ * aprovando o que já não vale. `recomendar()` chama esta função, e o harness
+ * chama esta função. Não existe segunda cópia.
+ *
+ * Separação deliberada: aqui só há decisão. Ciclo de vida, ordenação e store
+ * ficam fora — validar não pode ter efeito.
+ */
+export function validarDraftShadow(draft: Recomendacao): ResultadoValidacaoShadow {
+  // Recomendação sem evidência é palpite.
+  if (draft.input_event_ids.length === 0) return { aceito: false, motivo: "evidencia_vazia" };
+  if (exigirConfianca(draft.confidence) === null) {
+    return { aceito: false, motivo: "confianca_invalida" };
+  }
+  if (draft.status !== "proposed") return { aceito: false, motivo: "status_nao_proposto" };
+  // Nesta fase, sempre. O campo existe para o dia em que houver ação automática.
+  if (draft.requires_human !== true) return { aceito: false, motivo: "sem_exigencia_humana" };
+  if (draft.policy_version !== POLICY_VERSION) {
+    return { aceito: false, motivo: "versao_de_politica_divergente" };
+  }
+  const criado = Date.parse(draft.created_at);
+  const expira = Date.parse(draft.expires_at);
+  if (!Number.isFinite(criado) || !Number.isFinite(expira) || expira <= criado) {
+    return { aceito: false, motivo: "validade_incoerente" };
+  }
+  // Nenhum campo carrega comportamento: callback ou comando transformariam uma
+  // proposta em uma ação.
+  for (const v of Object.values(draft as unknown as Record<string, unknown>)) {
+    if (typeof v === "function") return { aceito: false, motivo: "campo_executavel" };
+  }
+  return { aceito: true };
 }
 
 /**

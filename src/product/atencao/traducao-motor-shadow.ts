@@ -31,7 +31,10 @@ import type { SourceMode } from "../../platform/contracts/event-catalog";
 import {
   POLICY_VERSION,
   exigirConfianca,
+  validarDraftShadow,
+  type MotivoRejeicaoShadow,
   type Recomendacao,
+  type ResultadoValidacaoShadow,
   type RiskLevel,
 } from "../../platform/copiloto/shadow";
 import type { AmbienteId, PracaId } from "../viewmodels/areas";
@@ -453,52 +456,13 @@ export function traduzirParaShadow(
 }
 
 /* ------------------------------------------------------------------ *
- * Validador puro de fronteira                                         *
- * ------------------------------------------------------------------ */
-
-export type MotivoRejeicaoShadow =
-  | "evidencia_vazia"
-  | "confianca_invalida"
-  | "status_nao_proposto"
-  | "sem_exigencia_humana"
-  | "campo_executavel"
-  | "validade_incoerente"
-  | "versao_de_politica_divergente";
-
-/**
- * Aplica ao draft as MESMAS recusas que `recomendar()` aplica antes de aceitar
- * uma proposta, sem inserir nada no runtime:
- *
- *   - `input_event_ids` vazio  -> descartada (shadow.ts:231)
- *   - `exigirConfianca` nulo   -> descartada (shadow.ts:235) — IMPORTADA, nao reescrita
- *   - `requires_human` literal -> true       (shadow.ts:252)
- *   - `status`                 -> "proposed" (shadow.ts:256)
- *
- * Mais duas de estrutura: nenhum campo executavel, e validade coerente com o
- * instante de criacao. Isto NAO e um segundo modelo de recomendacao — o draft e
- * o proprio `Recomendacao` do Shadow.
+ * Validador de fronteira — REEXPORTADO, nunca reimplementado            *
+ * ------------------------------------------------------------------ *
+ * R5-C tinha aqui uma copia das recusas de `recomendar()`. R5-D0 apagou a
+ * copia: a validacao canonica agora mora em `shadow.ts` e o runtime a chama.
+ * Este reexport existe para que o chamador da traducao nao precise conhecer
+ * dois modulos — e para que nunca mais existam duas verdades sobre o que o
+ * Shadow aceita. Mudar a regra la muda os dois lados no mesmo commit.
  */
-export function validarDraftShadow(
-  draft: Recomendacao,
-): { readonly aceito: true } | { readonly aceito: false; readonly motivo: MotivoRejeicaoShadow } {
-  if (draft.input_event_ids.length === 0) return { aceito: false, motivo: "evidencia_vazia" };
-  if (exigirConfianca(draft.confidence) === null) {
-    return { aceito: false, motivo: "confianca_invalida" };
-  }
-  if (draft.status !== "proposed") return { aceito: false, motivo: "status_nao_proposto" };
-  if (draft.requires_human !== true) return { aceito: false, motivo: "sem_exigencia_humana" };
-  if (draft.policy_version !== SAIDA_SUPORTADA) {
-    return { aceito: false, motivo: "versao_de_politica_divergente" };
-  }
-  const criado = Date.parse(draft.created_at);
-  const expira = Date.parse(draft.expires_at);
-  if (!Number.isFinite(criado) || !Number.isFinite(expira) || expira <= criado) {
-    return { aceito: false, motivo: "validade_incoerente" };
-  }
-  // Nenhum campo pode carregar comportamento: callback, comando ou credencial
-  // transformariam uma proposta em uma acao.
-  for (const v of Object.values(draft as unknown as Record<string, unknown>)) {
-    if (typeof v === "function") return { aceito: false, motivo: "campo_executavel" };
-  }
-  return { aceito: true };
-}
+
+export { validarDraftShadow, type MotivoRejeicaoShadow, type ResultadoValidacaoShadow };
