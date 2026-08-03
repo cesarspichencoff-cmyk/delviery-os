@@ -102,3 +102,82 @@ em silêncio.
   existir instante em que o rótulo minta.
 - **Não põe partícula, 3D ou fundo reativo em superfície operacional.** §8 desta missão.
 - **Não transforma voz, previsão, progresso ou fechamento em função real.**
+
+**Contradição registrada, não resolvida.** `MOTION_TOKENS.json` lista `bloco de evidencia` em
+`reveal.permitido_em`; `MOTION_COMPONENT_MAPPING.md` diz *"evidência não anima, em hipótese
+nenhuma"*. Os dois são canônicos e discordam. Aqui prevaleceu **não animar** — ver **D56**. Os dois
+documentos precisam concordar, e decidir qual cede é decisão de produto, não de sincronização.
+
+---
+
+## 5. Estado DEPOIS da sincronização — medido em `d9a7438`
+
+Medições feitas no navegador, em `http://localhost:5290`, com o servidor real.
+
+### 5.1 Animação ambiente por cena
+
+| Cena | Pulso de vida | Anéis de pressão | Fios em movimento | **Total ambiente** |
+|---|---|---|---|---|
+| Calmo | 1 | 0 | 0 | **1** |
+| Ambiente | 1 | 0 | 0 | **1** |
+| Foco | 0 (estado crítico vence) | 2 | 3 | **5** |
+| Degradado | 0 (fonte parada não pulsa) | 0 | 0 | **0** |
+
+Antes desta sessão o Foco tinha **8**. A queda não veio de apagar movimento: veio de separar
+fluxo de espera (**D55**) e de parar o pulso ambiente quando a pressão já respira (**D22/O22**).
+
+### 5.2 Tokens — todos resolvidos do cânone
+
+| Token do organismo | Resolve para | Origem |
+|---|---|---|
+| `--org-pulso` | `2400ms` | `motion-ambient` |
+| `--org-fluxo` | `calc(2400ms / 2)` | derivado, declarado no arquivo |
+| `--org-troca` | `200ms` | `motion-base` |
+| `--org-chegada` | `200ms` | `motion-base` |
+| `--org-resposta` | `120ms` | `motion-quick` |
+
+Nenhuma duração literal restou no CSS da home. Guarda **O19**.
+
+### 5.3 Reduced motion
+
+Cobertura medida pelo CSSOM no navegador: **21 elementos animam ou transicionam · 0 descobertos**.
+O bloco não usa `display: none` nem zera opacidade. O anel de pressão vira anel fixo em `0.55` em
+vez de sumir, porque ele carrega degrau.
+
+**Não exercitado com a preferência real do sistema operacional** — a verificação é estrutural
+(CSSOM + guardas O14 e O24), não comportamental.
+
+---
+
+## 6. Matriz Figma ↔ código ↔ motion
+
+| Cenário | Node ID | Rota/estado | Componente | Origem | Real/demonstração | Movimento | Token | Reduced motion | Teste | Divergência |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Calmo desktop | — | `?cena=calmo#/` | `.org` | fixture | **demonstração** | pulso de vida | `--org-pulso` | para | O15, O24 | **Figma não sincronizado** |
+| Ambiente desktop | — | `?cena=ambiente#/` | `.org` | fixture | **demonstração** | pulso de vida; linhas de espera paradas | `--org-pulso` | para | O20, O22 | **Figma não sincronizado** |
+| Foco desktop | — | `?cena=foco#/` | `.org-foco` | fixture | **demonstração** | `reveal` do painel; 3 fios em fluxo; 2 anéis | `--org-chegada`, `--org-fluxo`, `--org-pulso` | para; anel fixo | O11, O20, O22, O24 | **Figma não sincronizado** |
+| Aproximação Sushi | — | `?cena=foco&area=sushi#/` | `.org-aprox` | fixture | **demonstração** | `reveal` do corpo e do minimapa | `--org-chegada` | para | O12, O24 | **Figma não sincronizado** |
+| Aproximação Cozinha | — | `?cena=foco&area=cozinha#/` | `.org-aprox` | fixture | **demonstração** | idem | `--org-chegada` | para | O12 | **Figma não sincronizado** |
+| Informação parcial | — | `?cena=degradado#/` | `.org-area[data-degrau="0"]` | fixture | **demonstração** | nenhum | — | n/a | O9 | **Figma não sincronizado** |
+| Sem integração | — | todas as cenas | `[data-ausencia="sem_integracao"]` | contrato de áreas | **real** (a ausência é real) | nenhum | — | n/a | O4b, O9 | **Figma não sincronizado** |
+| Falha persistente | — | `?cena=degradado#/` | `.org-tecnico` | fixture | **demonstração** | **nenhum, por regra** | — | n/a | O8, O21 | **Figma não sincronizado** |
+| Recuperação | — | — | — | — | **futuro** | não implementado | — | — | — | exige leitura em vigor |
+| Mobile (todas) | — | 375px | `.org` | fixture | **demonstração** | idêntico ao desktop | mesmos | para | O13 | **Figma não sincronizado** |
+
+**Nenhum node ID foi inventado.** A coluna está vazia porque o Figma **não foi aberto nesta
+sessão** — ver **PB11** e §7 abaixo. Preencher com IDs plausíveis seria a pior linha deste
+documento.
+
+---
+
+## 7. Por que o Figma não foi aberto
+
+A §18 desta missão proíbe abrir **nova categoria** depois de 60% do contexto consumido. A
+inspeção do OriginKit (bloqueada, PB12), a matriz, a correção de movimento e a rodada adversarial
+consumiram o orçamento antes disso.
+
+Um Figma sincronizado pela metade — algumas frames na expressão nova, outras na antiga, sem matriz
+e sem node IDs — é **pior** que um Figma coerentemente desatualizado: ele passa a mentir sobre
+qual é a expressão vigente, e a próxima sessão não sabe de onde partir.
+
+**PB11 continua aberto.** É a próxima ação segura.

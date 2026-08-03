@@ -14,14 +14,52 @@ O repositório não tem biblioteca de motion e **nenhuma foi instalada**. Tudo �
 `@keyframes`. O teste `motion: nenhuma dependencia de biblioteca foi adicionada` verifica
 `package.json` contra `originkit`, `framer-motion`, `gsap`, `motion`, `animejs` e `lottie`.
 
+### O organismo operacional (home) — 2026-08-03
+
+A home tinha, até `9f3b115`, **movimento próprio**: `1.6s`, `2.8s` e `0.18s ease` escritos à mão em
+`organismo-tokens.css`. Nenhum dos três existia neste sistema. Era um sistema de movimento paralelo
+ao do produto — a mesma espécie de erro que **PB9** registrou para a cor.
+
+Hoje os tokens do organismo **derivam** dos daqui:
+
+| Token | Deriva de | Comunica |
+|---|---|---|
+| `--org-pulso` | `motion-ambient` | a fonte está viva |
+| `--org-fluxo` | `calc(motion-ambient / 2)` — derivação declarada no arquivo | a pressão atravessa a relação |
+| `--org-troca` | `motion-base` | um estado virou outro no mesmo lugar |
+| `--org-chegada` | `motion-base` + `motion-rise` + `motion-ease-enter` | chegada de conteúdo (`reveal`) |
+| `--org-resposta` | `motion-quick` | resposta ao ponteiro e ao foco |
+
+**Três regras próprias do organismo**, todas com guarda:
+
+1. **Fluxo ≠ espera** (**D55**). `ativa` é tracejado **parado**; `carregada` é tracejado **em
+   movimento**. V3.3 prancha 13. Guarda O20.
+2. **Estado crítico vence movimento.** No Foco, o pulso de vida do cabeçalho para — as áreas em
+   pressão já respiram, e somar as duas coisas faz a superfície parecer agitada quando ela precisa
+   parecer grave. Guarda O22, com par simétrico. Contagem medida: Calmo 1 · Ambiente 1 · Foco 5 ·
+   Degradado 0.
+3. **Falha técnica não anima.** Nem pulsa, nem cresce, nem usa âmbar. O ponto de vida em falha para
+   explicitamente, porque herdaria a regra do estado vivo. Guarda O21.
+
 ### Sobre o OriginKit
 
-Usado como **referência conceitual** de padrões — reveal, linha pulsante, fade de expiração,
-handoff de estado. Nada foi instalado, importado por MCP ou copiado. Os padrões foram
-reinterpretados para o vocabulário do DeliveryOS, e cada um ganhou uma regra que a referência não
-tem: *o que ele afirma sobre a operação*. Exemplo: a linha pulsante do OriginKit é decorativa;
-aqui ela só pulsa quando a fonte foi **observada viva**, porque pulsar sobre um sinal degradado
-afirmaria vida que ninguém observou.
+**Decisão permanente — D54.** O OriginKit é **referência externa de movimento e microinteração**.
+Não é dependência, não governa a identidade e **não prevalece sobre o V2/V3.3**. Referência de
+ritmo, continuidade, suavidade, feedback, transição e clareza de estado — nunca de arquitetura,
+taxonomia, conteúdo, regras, dados, identidade ou estrutura operacional.
+
+Nada foi instalado, importado por MCP ou copiado. Os padrões deste sistema — reveal, linha
+pulsante, fade de expiração, handoff de estado — foram reinterpretados para o vocabulário do
+DeliveryOS, e cada um ganhou uma regra que a referência não tem: *o que ele afirma sobre a
+operação*. Exemplo: a linha pulsante do OriginKit é decorativa; aqui ela só pulsa quando a fonte
+foi **observada viva**, porque pulsar sobre um sinal degradado afirmaria vida que ninguém observou.
+
+> ⚠ **O OriginKit NÃO foi inspecionado na sessão de 2026-08-03.** Ver **PB12**: a navegação abre e o
+> título chega, mas toda leitura de conteúdo falha (`Policy check temporarily unavailable` no
+> navegador, `403` no WebFetch). O trabalho de movimento daquela sessão derivou **deste documento**,
+> do Organismo V3.3 e das decisões visuais do César — não dele. A matriz de referência OriginKit em
+> `docs/design/CANONICAL_MOTION_PARITY.md` §1 está **deliberadamente vazia**, e preenchê-la é o
+> primeiro trabalho de quem retomar.
 
 ## 3. Padrões implementados
 

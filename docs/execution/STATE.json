@@ -1014,5 +1014,96 @@
     ],
     "R5": "NAO iniciado. D43 continua de pe",
     "limites_respeitados": "sem push, sem merge, sem PR, sem deploy, sem rota B5, sem tocar Conference Brain, CRM ou Android, sem conectar os motores do Copiloto, zero subagentes"
+  },
+  "sincronizacao_figma_motion": {
+    "data": "2026-08-03",
+    "estado": "CHECKPOINT — movimento CONCLUIDO e medido no navegador · OriginKit BLOQUEADO · Figma NAO iniciado",
+    "head_inicial": "c055535",
+    "commits": [
+      "9f3b115 (o organismo passa a usar o sistema de movimento do produto)",
+      "d9a7438 (nove guardas de movimento e seis mutacoes)"
+    ],
+    "correcao_de_contagem_do_relatorio_anterior": "o relatorio anterior declarou 'cinco commits' e listou SEIS hashes. A contagem correta e 6, conferida por `git rev-list --count 678c61a..c055535`. A lista de hashes estava certa; a prosa estava errada. Historico NAO foi alterado",
+    "originkit": {
+      "estado": "NAO INSPECIONADO — PB12",
+      "o_que_funciona": "a navegacao abre e o titulo da pagina chega ao agente",
+      "o_que_falha": "screenshot, get_page_text, read_page e javascript_tool devolvem 'Policy check temporarily unavailable'; WebFetch devolve 403 na raiz e em /intro",
+      "controle": "o mesmo navegador le http://localhost:5290 normalmente na mesma sessao — o bloqueio e da origem externa",
+      "consequencia": "a etapa de motion NAO e declarada completa. Nada foi reconstruido de memoria, e a matriz de referencia OriginKit ficou deliberadamente VAZIA",
+      "decisao_permanente": "D54 — referencia externa de movimento e microinteracao; nunca dependencia, nunca identidade, nunca acima do V2/V3.3"
+    },
+    "movimento": {
+      "estado": "CONCLUIDO",
+      "arquivos": [
+        "src/product/ui/tokens/organismo-tokens.css",
+        "src/product/ui/surfaces/home.css"
+      ],
+      "divergencia_corrigida": "a home tinha 1.6s, 2.8s e 0.18s ease inventados — um sistema de movimento paralelo ao do produto. Agora todos os tokens do organismo derivam de MOTION_TOKENS.json, e o unico derivado (o fluxo do fio) declara a derivacao no proprio arquivo",
+      "decisoes_novas": [
+        "D54 OriginKit e referencia externa, nunca dependencia",
+        "D55 tracejado em movimento e FLUXO; parado e ESPERA",
+        "D56 a evidencia nao anima, e a contradicao entre MOTION_TOKENS e MOTION_COMPONENT_MAPPING fica registrada"
+      ],
+      "animacao_ambiente_por_cena_medida_no_navegador": {
+        "calmo": 1,
+        "ambiente": 1,
+        "foco": 5,
+        "degradado": 0,
+        "_antes_no_foco": 8,
+        "_por_que_caiu": "nao foi apagar movimento: foi separar fluxo de espera (D55) e parar o pulso ambiente quando a pressao ja respira (O22). A queda veio com MAIS informacao, nao menos"
+      },
+      "reduced_motion": "cobertura medida pelo CSSOM no navegador: 21 elementos animam ou transicionam, 0 descobertos. Sem display:none, sem opacidade zerada. NAO exercitado com a preferencia real do sistema operacional — a verificacao e estrutural",
+      "nao_implementado_e_por_que": {
+        "text_morph": "BLOQUEADO. A home recarrega a cada leitura: nenhum texto evolui no lugar. Implementar seria encenacao, que a propria missao proibe",
+        "recuperacao": "BLOQUEADO. Exige duas leituras em sequencia na mesma sessao",
+        "confirmacao": "FUTURO. Nao existe acao a confirmar — nada executa",
+        "progresso": "FUTURO. Representacao demonstrativa; nao virar funcao nesta missao",
+        "expiration_fade": "AUSENTE no organismo. A faixa tecnica ja declara idade em texto e hora; o fade entra quando houver envelhecimento em vigor"
+      }
+    },
+    "inspecao_visual": {
+      "larguras": [
+        "1440x900",
+        "375x812"
+      ],
+      "cenarios": [
+        "Calmo",
+        "Ambiente",
+        "Foco",
+        "aproximacao de Sushi",
+        "degradado"
+      ],
+      "overflow_horizontal": "nenhum em 375",
+      "alvo_de_toque_medido": "64px no corpo da area",
+      "achado_que_so_a_tela_deu": "o Foco tinha OITO animacoes infinitas simultaneas. Nenhum teste estrutural reprovaria isso — foi olhar a tela e perguntar 'parece vivo ou parece agitado?'"
+    },
+    "testes": {
+      "R1": "24 verdes",
+      "home_comportamental": "44 verdes",
+      "product_system": "44 verdes",
+      "ordem_visual": "6 verdes",
+      "organismo_visual": "27 verdes (18 anteriores + 9 de movimento)",
+      "typecheck": "tsc --noEmit exit 0"
+    },
+    "rodada_adversarial_motion": {
+      "mutacoes": 6,
+      "acusadas": 6,
+      "cegas": 0,
+      "restauracao": "byte a byte, conferida por sha256 nas seis",
+      "lista": [
+        "N1 falha tecnica pulsando -> O21",
+        "N2 linha de espera correndo como fluxo -> O20",
+        "N3 reduced motion removido -> O14",
+        "N4 pulso de vida virando alerta no Foco -> O22",
+        "N5 aproximacao escondendo informacao -> O14",
+        "N6 marcacao de demonstracao removida -> O15"
+      ]
+    },
+    "figma": "NAO INICIADO — PB11 continua aberto. A secao 18 desta missao proibe abrir nova categoria depois de 60% do contexto. Um Figma sincronizado pela metade e pior que um Figma coerentemente desatualizado: ele passa a mentir sobre qual e a expressao vigente",
+    "matriz": "docs/design/CANONICAL_MOTION_PARITY.md — paridade por cenario, tokens, reduced motion e a matriz Figma-codigo-motion com a coluna de node ID VAZIA. Nenhum ID foi inventado",
+    "PB11": "ABERTO — o Figma nao acompanhou a expressao canonica",
+    "PB12": "ABERTO — o OriginKit nao e inspecionavel deste ambiente",
+    "R5": "NAO iniciado. D43 continua de pe",
+    "limites_respeitados": "home-vm.ts, sinais.ts e areas.ts NAO foram tocados. Sem push, merge, PR, deploy, rota B5, Conference Brain, CRM, Android ou conexao dos motores. Zero subagentes"
   }
 }

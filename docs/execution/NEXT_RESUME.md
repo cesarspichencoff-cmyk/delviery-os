@@ -12,6 +12,58 @@
 >
 > ---
 >
+> **ATUALIZADO 2026-08-03 — SINCRONIZACAO CANONICA DE MOVIMENTO: CHECKPOINT.**
+> `DELIVERYOS_FIGMA_MOTION_CANONICAL_SYNC_CHECKPOINT` · `MACRO2_CHECKPOINT_REACHED`
+> HEAD inicial `c055535`. Commits: `9f3b115` (movimento), `d9a7438` (guardas e mutacoes),
+> mais o commit que carrega este checkpoint.
+>
+> **CORRECAO DE CONTAGEM.** O relatorio do bloco anterior disse "cinco commits" e listou **seis**
+> hashes. A contagem certa e **6** (`git rev-list --count 678c61a..c055535`). A lista estava certa,
+> a prosa estava errada. **O historico nao foi alterado por causa disso.**
+>
+> **O ORIGINKIT NAO PODE SER INSPECIONADO DESTE AMBIENTE — PB12.** A navegacao abre e o titulo da
+> pagina chega; **toda leitura de conteudo falha**: `screenshot`, `get_page_text`, `read_page` e
+> `javascript_tool` devolvem `Policy check temporarily unavailable`, e o `WebFetch` devolve **403**.
+> Controle: o mesmo navegador le `localhost:5290` normalmente na mesma sessao. **A etapa de motion
+> NAO e declarada completa**, nada foi reconstruido de memoria, e a matriz de referencia OriginKit
+> em `docs/design/CANONICAL_MOTION_PARITY.md` §1 ficou **deliberadamente vazia**. Preenche-la e o
+> primeiro trabalho de quem retomar.
+>
+> **A DIVERGENCIA QUE ESTA MISSAO ACHOU.** A home tinha **movimento proprio** — `1.6s`, `2.8s` e
+> `0.18s ease` escritos a mao — enquanto `MOTION_TOKENS.json` ja era o sistema canonico do produto.
+> Nenhum dos tres valores existia no canone. Era um sistema de movimento paralelo, **a mesma
+> especie de erro que PB9 registrou para a cor**. Agora todos os tokens do organismo derivam dos
+> canonicos, e o unico derivado — o fluxo do fio — declara a derivacao no proprio arquivo (O19).
+>
+> **DUAS CORRECOES DE SIGNIFICADO, e as duas vieram de olhar a tela.**
+> O Foco tinha **oito animacoes infinitas simultaneas**. O canone separa fluxo de espera com a
+> MESMA linha — *"o tracejado em movimento indica fluxo; parado, indica espera"* — e as duas
+> intensidades estavam animando. Nao era so agitacao: **era informacao perdida**. Agora `ativa` e
+> tracejado parado e `carregada` e tracejado em movimento (**D55**). E o pulso de vida do cabecalho
+> **para no Foco**, porque estado critico vence movimento e as areas em pressao ja respiram.
+> Medido: Calmo **1** · Ambiente **1** · Foco **5** · Degradado **0**.
+>
+> **GATES.** R1 24 · home 44 · Product System 44 · ordem visual 6 · organismo visual **27**
+> (18 + 9 de movimento) · `tsc` exit 0.
+> **ADVERSARIAL: 6 mutacoes de movimento, 6 acusadas, 0 cegas, restauracao byte a byte.**
+>
+> **REDUCED MOTION:** cobertura medida no CSSOM — 21 elementos animam, **0 descobertos**. Sem
+> `display:none`, sem opacidade zerada. **Nao** exercitado com a preferencia real do sistema.
+>
+> **NAO FEITO:** **Figma** (PB11 continua aberto) e a coluna de node IDs da matriz. A §18 da missao
+> proibe abrir nova categoria depois de 60% do contexto. **Nenhum node ID foi inventado** — um
+> Figma sincronizado pela metade mente sobre qual e a expressao vigente. **R5 nao iniciado.**
+>
+> **NAO IMPLEMENTADO, com motivo estrutural:** Text Morph e recuperacao estao **bloqueados** porque
+> a home recarrega a cada leitura e **nenhum texto evolui no lugar**; confirmacao e progresso sao
+> **futuro** porque nada executa. Implementa-los agora seria encenacao.
+>
+> **PROXIMA ACAO SEGURA:** (1) OriginKit, quando o acesso existir — preencher a matriz §1;
+> (2) Figma, paginas 00/01/02 sobre a expressao ja aprovada, preservando `01 — Design System`;
+> (3) node IDs na matriz; (4) so entao R5, depois de I1-I10.
+>
+> ---
+>
 > **ATUALIZADO 2026-08-03 — RECUPERACAO DA EXPRESSAO VISUAL CANONICA: CHECKPOINT.**
 > `DELIVERYOS_CANONICAL_VISUAL_RECOVERY_CHECKPOINT` · `MACRO2_CHECKPOINT_REACHED`
 > HEAD inicial `678c61a`. HEAD final = o commit que carrega este proprio checkpoint (`git log -1`).

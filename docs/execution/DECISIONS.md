@@ -1003,3 +1003,79 @@ provar "ligacao so aparece quando ativa"; um teste sobre CSS, nao.
 **Custo aceito:** area sem medicao nunca origina ligacao ativa, mesmo que a
 operacao real esteja empurrando pressao por ali. E o mesmo custo de D51: sem
 observacao, o sistema nao afirma.
+
+---
+
+### D54 — OriginKit e referencia externa de movimento, nunca dependencia
+
+**Decisao.** O OriginKit e **referencia de ritmo, continuidade, suavidade,
+feedback, transicao, qualidade de microinteracao e clareza de estado**. Ele
+**nao** e dependencia, **nao** governa a identidade e **nao** prevalece sobre o
+Sprint Visual V2 nem sobre o Organismo V3.3. Nao entra no `package.json`, nao
+entra por MCP, nao e copiado componente a componente.
+
+A identidade, a composicao, a hierarquia e os estados continuam vindo do V2/V3.3.
+O sistema de movimento executavel continua sendo `docs/figma/MOTION_SYSTEM.md` e
+`MOTION_TOKENS.json`, deste repositorio.
+
+**Alternativa recusada:** instalar a biblioteca e usar os componentes prontos.
+Recusada porque movimento aqui precisa declarar **o que afirma sobre a operacao**
+— a linha que pulsa so pode pulsar quando a fonte foi observada viva. Uma
+biblioteca de efeito nao carrega essa regra, e adota-la significaria herdar
+movimento que nao comunica mudanca, que a Lei do movimento deste produto proibe.
+
+**Custo aceito:** tudo e CSS `transition` e `@keyframes` escritos aqui. Menos
+sofisticacao de animacao do que uma biblioteca daria, em troca de cada animacao
+ter dono, motivo e guarda. Guardas: O18 e o teste `motion: nenhuma dependencia de
+biblioteca foi adicionada`.
+
+---
+
+### D55 — Tracejado em movimento e FLUXO; tracejado parado e ESPERA
+
+**Decisao.** As tres intensidades de ligacao tem tres linguagens visuais
+distintas, e nenhuma depende de animacao para ser lida:
+
+| Intensidade | Linha | Movimento | Significado |
+|---|---|---|---|
+| `inerte` | 1px cheia, cor de caminho | nenhum | o caminho existe; a dependencia nao esta ativa |
+| `ativa` | 2px tracejada | **parado** | a tensao chegou na relacao e ainda nao passou — espera |
+| `carregada` | 3px tracejada | **em movimento** | a pressao esta atravessando — fluxo |
+
+Fonte: Organismo V3.3, prancha 13 — *"O tracejado em movimento indica fluxo;
+parado, indica espera."*
+
+**Alternativa recusada:** animar as duas intensidades ativas, que era o estado
+anterior. Recusada por medicao: no Foco isso produzia **oito animacoes infinitas
+simultaneas**, e o custo nao era so agitacao — era **informacao perdida**. A
+diferenca entre uma dependencia que se forma e uma que ja e atravessada
+desaparecia dentro do mesmo movimento.
+
+**Efeito colateral, e ele e desejado:** o Ambiente passou a nao ter nenhuma linha
+correndo. Ambiente e clima; Foco e o trecho que carrega. A superficie deixou de
+parecer agitada exatamente onde precisa parecer grave.
+
+**Custo aceito:** quem esperava ver movimento em toda relacao ativa vai achar o
+Ambiente parado. E o ponto. Guarda O20, com par simetrico.
+
+---
+
+### D56 — A evidencia nao anima, e a contradicao entre dois documentos canonicos fica registrada
+
+**Decisao.** Evidencia, sinal, ocorrencia, fonte e erro **aparecem inteiros**,
+sem `reveal` e sem stagger. Guarda O25.
+
+**A contradicao, que NAO foi resolvida em silencio.** `MOTION_TOKENS.json` lista
+`bloco de evidencia` em `reveal.permitido_em`. `MOTION_COMPONENT_MAPPING.md` diz,
+na linha de `bloco-evidencia`: *"evidência não anima, em hipótese nenhuma"*. Os
+dois sao canonicos e discordam.
+
+**Alternativa recusada:** seguir o `MOTION_TOKENS.json` por ser o arquivo de
+valores. Recusada porque, em duvida entre animar e nao animar numa superficie
+operacional, a regra do proprio sistema decide: movimento que nao comunica
+mudanca nao entra. A evidencia nao muda — ela sustenta. Atrasa-la em 200ms na
+sexta-feira de pico e custo sem contrapartida.
+
+**Pendencia registrada:** os dois documentos precisam concordar. Nao foi
+corrigido aqui porque decidir qual dos dois cede e decisao de produto, e este
+bloco e de sincronizacao. Fica em `CANONICAL_MOTION_PARITY.md` §4.
