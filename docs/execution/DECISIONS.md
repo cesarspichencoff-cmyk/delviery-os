@@ -1303,3 +1303,54 @@ de distancia.
 **Custo aceito:** o harness constroi `sits` e `INFO` na mao, entao ele prova a
 REGRA DE ESCOPO, nao a producao de situacoes pelo `MOTOR.step`. Registrado como
 limitacao, nao como cobertura.
+
+---
+
+### D65 — O Shadow nao tem SUJEITO, e por isso D29 e protegida no tradutor
+
+**Achado, da comparacao formal dos dois lados.** `Recomendacao` (shadow.ts:43)
+nao tem campo de sujeito: `recommended_action` e texto. Logo **o contrato do
+Shadow nao consegue distinguir** uma recomendacao de pedido de uma de fonte, e
+**D29 nao e protegida por ele**.
+
+**Decisao.** `EscopoDoSujeito` — `fonte | ambiente | subarea | pedido` — vive na
+ENTRADA do tradutor, e a recusa acontece **antes de o draft nascer**. Sujeito
+`pedido` exige `order_id` real; `identidadeDePedidoLegitima()` recusa numero
+visual, posicao, indice, horario, hash improvisado, chave de fixture e o id curto
+do iFood que o motor exibe. E **nao ha downgrade silencioso**: quando a acao fala
+de um pedido e o sujeito declarado nao e pedido, bloqueia — trocar o sujeito para
+caber e exatamente o que D29 proibe.
+
+**Alternativa recusada:** acrescentar sujeito ao `Recomendacao` do Shadow.
+Recusada porque criaria um segundo modelo de recomendacao concorrente, e porque
+o Shadow ja esta provado por 39 testes — mexer nele para acomodar uma fronteira
+que ainda nao existe em runtime inverteria a ordem de risco.
+
+**Custo aceito:** a garantia mora fora do schema que persiste. Mitigacao: o draft
+so pode nascer pelo tradutor, e o gate prova que nenhum caminho de runtime o
+chama.
+
+---
+
+### D66 — Confianca nao atravessa a fronteira: rotulo nao vira numero
+
+**Achado.** O motor devolve `confianca: "alta" | "média" | "baixa"` — rotulo. O
+Shadow exige `confidence: number` em 0..1. **Nao existe regra canonica** ligando
+os dois no patrimonio do projeto.
+
+**Decisao.** O tradutor **nao converte**. `confianca_rotulo` permanece no
+adaptador da saida legada, sem virar numero, e o `confidence` vem do chamador,
+sustentado por evidencia. Sem numero: `bloqueada: confianca_sem_evidencia`. Fora
+de faixa: `confianca_fora_de_faixa`, usando `exigirConfianca` **importada** do
+Shadow, nunca reescrita.
+
+**Alternativa recusada:** mapear alta=0,9 · media=0,6 · baixa=0,3. Recusada por
+fabricar precisao — os tres numeros teriam a aparencia de medicao e a origem de
+palpite, que e a Lei 5 invertida.
+
+**Custo aceito:** nenhuma traducao passa hoje sem um chamador que forneca
+confianca com lastro. E o ponto: hoje esse chamador nao existe, e a fronteira
+declara isso em vez de simular.
+
+**Nota que vale guardar:** zero **nao** e ausencia. `confidence: 0` traduz
+normalmente; ausencia e `null` e bloqueia.

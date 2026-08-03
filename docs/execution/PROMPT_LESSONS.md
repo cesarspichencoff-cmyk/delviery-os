@@ -713,3 +713,43 @@ limpa, e a mutacao **nao conta**.
 
 **Efeito colateral util:** a distincao pegou o defeito na hora, e o conserto foi
 uma regex tolerante a fim de linha — nao um invariante enfraquecido.
+
+## L38 — Uma mutacao cega pode estar acusando a guarda ERRADA
+
+**O fato.** A mutacao MT01 do R5-C removeu a linha que retem a traducao em
+Ambiente. O gate continuou verde. A leitura ingenua seria "a guarda e cega".
+
+A leitura certa e outra: o teste T02 usava uma fixture com
+`orientacao_permitida: false`, e a linha SEGUINTE do tradutor — outra protecao,
+que existe para o caso do chamador dizer que orientacao esta liberada — prendia
+o Ambiente do mesmo jeito. **O gate estava protegido por acidente, pela guarda
+vizinha.** E o mesmo defeito que L27 registrou no Conference Brain: um gate que
+se apoia no vizinho parece completo e nao e.
+
+**O conserto nao foi enfraquecer a mutacao.** T02 ganhou o caso do chamador que
+MENTE: Ambiente com `orientacao_permitida: true` precisa continuar retido. Com
+ele, a guarda de MODO passa a ser carregada sozinha, e a mutacao acusa.
+
+**A regra:** quando uma mutacao dirigida sai cega, pergunte primeiro **qual outra
+protecao esta segurando o caso** — antes de concluir que a guarda nao existe.
+
+---
+
+## L39 — Mutacao que nao altera execucao nao e mutacao, mesmo aplicando
+
+**O fato.** A primeira MT15 acrescentava um campo opcional `acoes_extras` ao tipo
+de entrada do tradutor. Ela **aplicou** (o arquivo mudou), o **mutante foi
+carregado** (o sha bateu diferente), e mesmo assim o gate ficou verde — porque um
+campo que ninguem le nao altera execucao nenhuma.
+
+Isto e diferente de L37, onde a mutacao nao chegou a ser aplicada. Aqui as tres
+checagens de carregamento passaram e a mutacao ainda assim nao valia: ela nao era
+**material ao contrato**.
+
+**O conserto foi trocar a mutacao, nao afrouxar o teste.** A garantia de fato e
+"uma acao entra, uma recomendacao sai" — entao a mutacao material devolve DUAS
+recomendacoes. Acusada por quatro testes de uma vez.
+
+**A regra:** alem de *aplicada*, *carregada* e *acusada*, uma mutacao precisa ser
+**material**: ela tem que mudar o comportamento que o invariante descreve. Uma
+mutacao so de tipo, so de nome ou so de campo nao lido nao prova cobertura.

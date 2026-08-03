@@ -1193,7 +1193,7 @@
   },
   "retomada_r5": {
     "data": "2026-08-03",
-    "estado": "R5-A e R5-B CONCLUIDOS. R5-C e R5-D nao iniciados.",
+    "estado": "R5-A, R5-B e R5-C CONCLUIDOS. R5-D nao iniciado.",
     "decisao_do_cesar": "Figma pendente, sem upgrade e sem redesenho manual. R5 pode retomar.",
     "congelado_durante_r5": [
       "frontend (home.js, home.css, organismo-tokens.css)",
@@ -1377,5 +1377,67 @@
       "a Caixa pode aparecer em ambar — o texto canonico de I6 e nunca VERDE, e e isso que o gate exige; a pressao dela continua observado:false",
       "nenhuma sequencia foi exercitada contra fonte real"
     ]
+  },
+  "r5c_traducao": {
+    "data": "2026-08-03",
+    "estado": "CONCLUIDO",
+    "head_inicial": "ad3b1bc",
+    "contrato": "docs/product/CONTRATO_TRADUCAO_MOTOR_SHADOW.md",
+    "implementacao": "src/product/atencao/traducao-motor-shadow.ts",
+    "gate": {
+      "comando": "npm run test:platform:r5c",
+      "testes": 38,
+      "resultado": "R5C_TRANSLATION_GATE_GREEN"
+    },
+    "agregador": "npm run test:platform:r5 = A + B + C. NAO significa R5 completo: R5-D nao iniciado",
+    "incompatibilidades": {
+      "evidencia": "o motor nao conhece o event log; o Shadow exige input_event_ids nao vazio. Evidencia vem tipada do chamador ou bloqueia",
+      "confianca": "rotulo alta/media/baixa contra numero 0..1, sem regra canonica ligando. O tradutor NAO converte (D66)",
+      "sujeito": "o Shadow nao tem campo de sujeito, entao D29 e protegida no tradutor, antes de o draft nascer (D65)"
+    },
+    "resultados_discriminados": [
+      "traduzida",
+      "retida",
+      "bloqueada",
+      "incompativel"
+    ],
+    "motivos": {
+      "retencao": 3,
+      "bloqueio": 15,
+      "incompatibilidade": 1
+    },
+    "calmo": "retida: modo_sem_orientacao",
+    "ambiente": "retida: ambiente_informa_sem_orientar — inclusive quando o chamador diz que a orientacao esta liberada",
+    "foco": "unico modo que pode traduzir, e ainda assim so com causa coincidente, escopo valido, evidencia, procedencia, confianca, validade e retirada",
+    "i1": "defesa em profundidade na fronteira: causa da acao conferida contra a causa do Foco; divergiu, bloqueia. A causa nunca e reescrita",
+    "i2": "sem acao candidata o Foco continua PURO; o tradutor retem sem recomendacao e NAO retira o Foco",
+    "d29": "PRESERVADA — identidadeDePedidoLegitima recusa numero visual, posicao, indice, horario, hash improvisado, chave de fixture e o id curto do iFood. Sem downgrade silencioso de pedido para fonte",
+    "validador_shadow": "validarDraftShadow aplica as mesmas recusas de recomendar(), importando exigirConfianca em vez de reescrever. Rejeita seis adulteracoes distintas",
+    "adversarial": {
+      "mutacoes": 18,
+      "acusadas": 18,
+      "cegas": 0,
+      "nao_carregadas": 0,
+      "restauracao": "byte a byte por sha256",
+      "substituicoes": "MT15 trocada por mutacao material (L39); T02 reforcado apos MT01 sair cega por protecao vizinha (L38)"
+    },
+    "congelamento_visual": "git diff ad3b1bc vazio em src/product/ui/, src/product/viewmodels/ e docs/figma/",
+    "arquivos_de_producao_alterados": [
+      "src/product/atencao/traducao-motor-shadow.ts (novo)"
+    ],
+    "runtime": {
+      "conexao": "NAO IMPLEMENTADA",
+      "flag": "INEXISTENTE",
+      "recomendacao_real": "NENHUMA emitida",
+      "store": "NAO TOCADO",
+      "evento": "NENHUM emitido",
+      "chamadores_do_tradutor": "somente o proprio modulo e o gate — provado por git grep no gate"
+    },
+    "limitacoes": [
+      "nenhum chamador real existe: a fronteira esta provada como contrato, nao em uso",
+      "o adaptador da saida legada e um TIPO fiel, mas nenhuma chamada real de decidir() foi convertida por ele nesta missao",
+      "o validador de fronteira reproduz as recusas de recomendar() sem executar recomendar(): se o Shadow mudar as suas regras, o validador precisa acompanhar"
+    ],
+    "r5d": "NAO INICIADO"
   }
 }

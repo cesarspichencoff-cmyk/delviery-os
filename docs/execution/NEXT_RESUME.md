@@ -12,6 +12,72 @@
 >
 > ---
 >
+> **ATUALIZADO 2026-08-03 — R5-C CONCLUIDO.**
+> `DELIVERYOS_R5C_TRANSLATION_CONTRACT_COMPLETE` · `MACRO2_CHECKPOINT_REACHED`
+> HEAD inicial `ad3b1bc`. **R5-D NAO iniciado.**
+>
+> Contrato: `docs/product/CONTRATO_TRADUCAO_MOTOR_SHADOW.md` · tradutor:
+> `src/product/atencao/traducao-motor-shadow.ts` · gate: `npm run test:platform:r5c` — **38 testes**.
+> Agregador `npm run test:platform:r5` = A + B + C, e **nao** significa R5 completo.
+>
+> **AS TRES INCOMPATIBILIDADES, achadas comparando os dois lados ANTES de escrever o tradutor:**
+> 1. **O motor nao conhece o event log.** `input_event_ids` e a evidencia que o Shadow exige, e o
+>    motor trabalha sobre a fotografia do minuto. Evidencia vem tipada do chamador **ou bloqueia** —
+>    nenhuma e inventada.
+> 2. **Confianca e rotulo de um lado e numero do outro**, e nao existe regra canonica ligando
+>    `"alta"` a `0,9`. O tradutor **nao converte** (**D66**). Mapear seria fabricar precisao.
+> 3. **O Shadow NAO TEM SUJEITO** — `recommended_action` e texto. Entao **D29 nao e protegida pelo
+>    contrato do Shadow**: ela e protegida no `EscopoDoSujeito` da entrada, **antes de o draft
+>    nascer** (**D65**).
+>
+> **RESULTADOS DISCRIMINADOS, nunca `null` ambiguo:** `traduzida` · `retida` (3 motivos) ·
+> `bloqueada` (15 motivos) · `incompativel` (versao). Motivo e **enum**, nunca texto livre.
+>
+> **Calmo** retem `modo_sem_orientacao`. **Ambiente** retem `ambiente_informa_sem_orientar` —
+> inclusive quando o chamador **diz** que a orientacao esta liberada. **So o Foco traduz**, e ainda
+> assim precisa de causa coincidente, escopo valido, evidencia vinculada, procedencia estruturada,
+> confianca com lastro, validade e retirada.
+>
+> **I1 na fronteira:** a causa da acao e conferida contra a causa do Foco — defesa em profundidade,
+> que **nao substitui** `dentroDoEscopo()`. Divergiu, bloqueia, e **a causa nunca e reescrita**.
+> **I2:** sem acao candidata o Foco continua **puro**; o tradutor retem sem recomendacao e **nao
+> retira o Foco** — a permanencia continua sendo da politica temporal.
+>
+> **VALIDADE nunca reutiliza DEBOUNCE, COOLDOWN, MAXFOCUS nem STALE.** O tradutor **nao importa** a
+> politica temporal, e a guarda prova isso estruturalmente **e** por comportamento.
+>
+> **A CADEIA ISOLADA, provada ponta a ponta sem runtime:**
+> `saida legada -> tradutor -> serializar -> restaurar -> validarDraftShadow`. O validador aplica as
+> **mesmas** recusas de `recomendar()`, importando `exigirConfianca` em vez de reescrever — e
+> **rejeita seis adulteracoes distintas**, entao ele nao e carimbo.
+>
+> **ADVERSARIAL: 18 mutacoes, 18 acusadas, 0 cegas, 0 mutantes nao carregados, restauracao byte a
+> byte.** Precisou de duas rodadas, e as duas cegas ensinaram coisas diferentes:
+> **L38** — MT01 saiu cega porque T02 estava protegido pela guarda **vizinha**, nao pela que a
+> mutacao removia. O conserto foi reforcar o teste, nao afrouxar a mutacao.
+> **L39** — MT15 aplicou, o mutante carregou, e ainda assim nao valia: acrescentar campo opcional
+> nao lido **nao e material**. Trocada por mutacao que devolve duas recomendacoes.
+>
+> **RUNTIME CONFIRMADO INEXISTENTE.** Nenhuma conexao, nenhuma flag, nenhuma recomendacao real,
+> nenhum store, nenhum evento. O gate prova por `git grep` que os **unicos** lugares que citam
+> `traduzirParaShadow` sao o proprio modulo e o gate. **D43 de pe.**
+>
+> **CONGELAMENTO VISUAL VERDE.** `git diff ad3b1bc` vazio em `src/product/ui/`,
+> `src/product/viewmodels/` e `docs/figma/`. Regressoes: R5-A 30 · R5-B 30 · R5-C 38 · copiloto 39 ·
+> home 44 · organismo 27 · Product System 44 · R1 24 · ordem visual 6 · paridade Figma 23 ·
+> `tsc` exit 0.
+>
+> **LIMITACOES:** nenhum chamador real existe — a fronteira esta provada como **contrato**, nao em
+> uso. O adaptador da saida legada e um tipo fiel, mas **nenhuma chamada real de `decidir()` foi
+> convertida por ele**. E o validador de fronteira reproduz as recusas de `recomendar()` sem
+> executa-lo: se o Shadow mudar as suas regras, ele precisa acompanhar.
+>
+> **PROXIMA ACAO SEGURA:** **R5-D** — a conexao em sombra, atras de flag desligada por padrao. Ela e
+> a unica etapa que ainda exige runtime, e so deve comecar com o chamador que hoje nao existe:
+> alguem que produza `input_event_ids` reais e confianca com lastro.
+>
+> ---
+>
 > **ATUALIZADO 2026-08-03 — R5-B CONCLUIDO.**
 > `DELIVERYOS_R5B_INVARIANTS_GATE_COMPLETE` · `MACRO2_CHECKPOINT_REACHED`
 > HEAD inicial `bd1ad55`. **R5-C e R5-D NAO iniciados.**
