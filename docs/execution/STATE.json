@@ -1002,8 +1002,8 @@
       "nota_de_metodo": "M2 voltou como cega na primeira rodada e nao era: o trecho-alvo estava escrito errado no roteiro e a mutacao nunca chegou a ser aplicada"
     },
     "conteudo_real_versus_demonstracao": "REAL: as regras dos 11 sinais, o cardapio de 199 itens em 8 pracas, os baselines calibrados e o contrato de areas. DEMONSTRACAO: pedidos, tempos e cargas das 4 cenas, com procedencia simulado, faixa propria na superficie e marca no container — guarda O15. Nenhum valor demonstrativo do V3.3 foi copiado para o caminho real",
-    "figma": "NAO INICIADO. A missao proibe abrir nova superficie entre 60% e 72% de contexto, e o Figma so podia comecar DEPOIS da revisao visual do frontend — que consumiu o orcamento. Arquivo alvo intocado: DeliveryOS — Product System / IMWH8ZKMF5ra3QJYiR6vGa",
-    "matriz_figma_codigo": "NAO ATUALIZADA — depende do Figma",
+    "figma": "NAO INICIADO — registrado como PB11. A missao proibe abrir nova superficie entre 60% e 72% de contexto, e o Figma so podia comecar DEPOIS da revisao visual do frontend, que consumiu o orcamento. Arquivo alvo intocado: DeliveryOS — Product System / IMWH8ZKMF5ra3QJYiR6vGa",
+    "matriz_figma_codigo": "NAO ATUALIZADA — depende do Figma (PB11)",
     "limitacoes": [
       "Tipografia: o canone pede Spectral, Hanken Grotesk e IBM Plex Mono. Nenhuma folha externa e carregada (servidor local, sem rede). Os tokens declaram as tres familias com fallback do sistema; preserva-se a HIERARQUIA editorial/interface/tecnico, nao os desenhos das letras",
       "A referencia da evidencia ainda usa notacao compacta. O identificador de praca saiu; a notacao ficou",

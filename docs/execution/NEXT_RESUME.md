@@ -50,7 +50,7 @@
 > inteira verde, porque os testes mediam o **CSS dos degraus** e nunca o degrau **aplicado** no
 > HTML. Fechado por O4b. **L35** — medir a regua nao e medir o que foi medido com ela.
 >
-> **NAO FEITO, e o motivo e o orcamento de contexto, nao esquecimento:** **Figma** e a **matriz
+> **NAO FEITO, e virou bloqueio PB11 em vez de nota de rodape:** **Figma** e a **matriz
 > Figma-codigo**. A missao proibe abrir superficie nova depois de 60% de contexto, e o Figma so
 > podia comecar **depois** da revisao visual do frontend — que consumiu o orcamento. O arquivo
 > `IMWH8ZKMF5ra3QJYiR6vGa` segue intocado. **R5 nao foi iniciado. D43 continua de pe.**

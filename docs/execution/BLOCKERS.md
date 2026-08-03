@@ -45,7 +45,7 @@
   **Conflito real, não resolvível por hierarquia de fontes.**
 - **PB9/C7** — CRM, Evolução, Treinamento, RH e Gestão são módulos do DeliveryOS?
 - **PB9/C8** — notificação fora da tela é permitida?
-- **PB10** — fontes canônicas nunca examinadas (Sprint Visual V2 `.zip`; worktree do Copiloto v33).
+- **PB11** — o Figma não acompanhou a expressão canônica da home (aberto em 2026-08-03; detalhe no fim deste arquivo).
 
 ---
 
@@ -123,9 +123,9 @@ Registrados no índice canônico §7. Os que travam implementação:
   original; foram criados na Unidade 6.)
 - **C8** — notificação fora da tela é permitida? (Jornadas 15/16 nunca foram desenhadas.)
 
-## PB10 — Fontes canônicas nunca examinadas
+## PB10 — Fontes canônicas nunca examinadas · **PARCIALMENTE RESOLVIDO em 2026-08-03**
 
-- `docs/design/canonical/deliveryos-visual-v2/*.zip` — **cânone visual soberano**, nunca aberto.
+- `docs/design/canonical/deliveryos-visual-v2/*.zip` — **cânone visual soberano**. ✅ **EXAMINADO** na recuperação da expressão visual: o conteúdo extraído foi lido inteiro (Organismo Operacional V3.3, Pacote Visual V2, Contrato Visual dos Estados Técnicos) e é a autoridade da home. O ZIP original segue imutável.
 - Worktree `deliveryos-copiloto-v33-implementation` — implementação validada do Copiloto, fora deste
   repositório.
 
@@ -502,7 +502,7 @@ para toda superficie ainda desenhada sobre o Design System da Unidade 6** —
 Entregas, Operacao Viva, Conference Brain, Copiloto e modulo futuro nao foram
 tocadas nesta missao e seguem em linguagem de Nivel 4.
 
-### PB10 — O Figma nao acompanhou a expressao canonica
+### PB11 — O Figma nao acompanhou a expressao canonica
 
 **Categoria:** bloqueio de produto · **Aberto em** 2026-08-03 · **Severidade:** media
 
