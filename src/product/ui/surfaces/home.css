@@ -130,12 +130,27 @@ body:has(.org) .nav-item[aria-current="page"] {
 }
 
 .org-topo__vida[data-estado="vivo"] .org-topo__ponto {
-  animation: orgPulso var(--org-pulso) ease-out infinite;
+  animation: orgPulso var(--org-pulso) var(--motion-ease-calm) infinite;
 }
 
 /* Fonte degradada NAO pulsa e NAO fica verde: ela e cinza e parada. */
 .org-topo__vida[data-estado="falha"] .org-topo__ponto {
   background: var(--org-falha-clara);
+  animation: none;
+}
+
+/*
+  ESTADO CRITICO VENCE MOVIMENTO — MOTION_SYSTEM §5.
+
+  No Foco, as areas em pressao ja respiram. Somar a elas o pulso de vida do
+  cabecalho poe tres animacoes ambiente na mesma regiao, e a superficie passa a
+  parecer agitada num momento em que ela precisa parecer GRAVE. A vida continua
+  dita, so que pelos canais que nao competem: o ponto segue verde e o texto
+  segue dizendo "ao vivo".
+
+  Isto nao apaga informacao. Apaga repeticao.
+*/
+.org[data-modo="foco"] .org-topo__vida[data-estado="vivo"] .org-topo__ponto {
   animation: none;
 }
 
@@ -339,7 +354,12 @@ body:has(.org) .nav-item[aria-current="page"] {
   color: inherit;
   border: 1px solid var(--org-vivo-borda);
   background: radial-gradient(circle at 50% 40%, var(--org-vivo-veu), transparent 72%);
-  transition: transform 0.18s ease, border-color 0.18s ease;
+  transition:
+    transform var(--org-resposta) var(--org-resposta-easing),
+    border-color var(--org-troca) var(--org-troca-easing),
+    background var(--org-troca) var(--org-troca-easing),
+    width var(--org-troca) var(--org-troca-easing),
+    height var(--org-troca) var(--org-troca-easing);
 }
 
 .org-area__corpo:hover {
@@ -409,7 +429,7 @@ body:has(.org) .nav-item[aria-current="page"] {
   inset: -1px;
   border-radius: inherit;
   border: 1px solid var(--org-ambar-pulso);
-  animation: orgPulso var(--org-pulso) ease-out infinite;
+  animation: orgPulso var(--org-pulso) var(--motion-ease-calm) infinite;
 }
 
 /* —— DEGRAU 0 · sem medicao. Tracejado, e NAO cresce. —— */
@@ -601,13 +621,38 @@ body:has(.org) .nav-item[aria-current="page"] {
   stroke-width: 1;
   fill: none;
   vector-effect: non-scaling-stroke;
+  /* state_handoff: se a intensidade mudar em vigor, ela ATRAVESSA em vez de
+     saltar. Hoje a home recarrega a cada leitura e esta transicao nunca chega a
+     rodar — ela existe declarada para o dia em que houver atualizacao no lugar,
+     e nao custa um quadro enquanto isso. */
+  transition:
+    stroke var(--org-troca) var(--org-troca-easing),
+    stroke-width var(--org-troca) var(--org-troca-easing);
 }
 
+/*
+  FLUXO NAO E ESPERA — e o canone separa os dois com a MESMA linha.
+
+  V3.3, prancha 13: "O tracejado em movimento indica fluxo; parado, indica
+  espera." A primeira versao desta folha animava as duas intensidades, e o
+  resultado media na tela era oito animacoes infinitas simultaneas no Foco. Nao
+  era so agitacao: era informacao PERDIDA, porque a diferenca entre uma
+  dependencia que esta se formando e uma que ja esta sendo atravessada tinha
+  sumido no mesmo movimento.
+
+  Agora:
+    · `ativa`     — a tensao chegou na relacao, e ainda nao passou. Tracejado
+                    PARADO. Espera.
+    · `carregada` — a pressao esta atravessando. Tracejado EM MOVIMENTO. Fluxo.
+
+  Efeito colateral bem-vindo: o Ambiente fica sem nenhuma linha correndo, e o
+  Foco fica com as tres do trecho que realmente carrega. A superficie deixa de
+  parecer agitada exatamente onde precisa parecer grave.
+*/
 .org-fio[data-intensidade="ativa"] {
   stroke: var(--org-ambar-traco);
   stroke-width: 2;
   stroke-dasharray: 4 6;
-  animation: orgFluxo var(--org-fluxo) linear infinite;
 }
 
 .org-fio[data-intensidade="carregada"] {
@@ -651,6 +696,17 @@ body:has(.org) .nav-item[aria-current="page"] {
   border: 1px solid var(--org-linha-forte);
   background: linear-gradient(180deg, var(--org-painel-topo), var(--org-painel-base));
   box-shadow: var(--org-sombra-painel);
+}
+
+/*
+  O Foco EMERGE. Ele nasce da superficie que ja estava ali — sobe o `motion-rise`
+  canonico e assume. Nao e modal, nao cobre area, nao tem fundo escurecendo o
+  resto: quando ele chega, todo o caminho do pedido continua na tela.
+
+  Uma vez so. Um painel que reaparecesse a cada leitura viraria piscada.
+*/
+.org-foco {
+  animation: orgChegada var(--org-chegada) var(--org-chegada-easing) both;
 }
 
 .org-foco__entalhe {
@@ -918,6 +974,22 @@ body:has(.org) .nav-item[aria-current="page"] {
   flex-wrap: wrap;
   gap: clamp(1.4rem, 3.5vw, 2.6rem);
   align-items: flex-start;
+}
+
+/*
+  APROXIMACAO — continuidade, nao troca de tela.
+
+  A area aproximada e as duas colunas de leitura chegam pelo mesmo `reveal`; o
+  minimapa do resto da operacao chega junto, e nao depois, porque "o resto
+  continua ali" e a informacao mais importante desta vista. Escalonar o minimapa
+  para o fim faria a superficie parecer, por um instante, que perdeu a operacao.
+
+  O caminho e o botao de volta NAO animam: eles precisam estar clicaveis no
+  primeiro quadro.
+*/
+.org-aprox__corpo,
+.org-aprox .org-minimapa {
+  animation: orgChegada var(--org-chegada) var(--org-chegada-easing) both;
 }
 
 .org-area--focada {
@@ -1266,6 +1338,26 @@ body:has(.org) .nav-item[aria-current="page"] {
   }
 }
 
+/*
+  `reveal` — chegada de conteudo novo na superficie. Padrao canonico do
+  MOTION_TOKENS.json: opacity + translateY de `motion-rise`, `motion-base`,
+  `motion-ease-enter`. Ele roda UMA vez, nao repete, e o estado final e o estado
+  padrao: sem suporte a keyframes a superficie ja nasce correta.
+
+  Onde ele NAO entra, e o motivo esta escrito no proprio canone: evidencia,
+  sinal, ocorrencia e erro nao animam. A evidencia aparece inteira, sempre.
+*/
+@keyframes orgChegada {
+  from {
+    opacity: var(--motion-opacity-hidden);
+    transform: translateY(var(--org-chegada-distancia));
+  }
+  to {
+    opacity: var(--motion-opacity-full);
+    transform: translateY(0);
+  }
+}
+
 @keyframes orgPulso {
   0% {
     opacity: 0.4;
@@ -1278,12 +1370,26 @@ body:has(.org) .nav-item[aria-current="page"] {
 }
 
 /*
-  Com menos animacao, a espessura e a cor bastam — o fluxo para e o pulso vira
-  um anel fixo, em vez de sumir e levar informacao junto. V3.3, prancha 13.
+  MENOS MOVIMENTO — e nenhuma informacao a menos.
+
+  O contrato, item a item:
+    · pulsos repetidos param (cabecalho e anel de pressao);
+    · o fluxo do fio para, e a INTENSIDADE continua legivel por espessura e cor
+      — 1px caminho, 2px ativa, 3px carregada;
+    · o `reveal` vira chegada direta: com `animation: none`, um keyframe com
+      `both` renderiza o estado final, que ja e o estado padrao do CSS;
+    · nada e escondido: nenhum `display: none`, nenhum `opacity: 0`;
+    · o anel de pressao vira anel FIXO em vez de sumir, porque ele carrega
+      degrau — some-lo levaria informacao junto.
+
+  V3.3 prancha 13 e MOTION_ACCESSIBILITY.
 */
 @media (prefers-reduced-motion: reduce) {
   .org *,
   .org-fio,
+  .org-foco,
+  .org-aprox__corpo,
+  .org-aprox .org-minimapa,
   .org-topo__vida[data-estado="vivo"] .org-topo__ponto,
   .org-area[data-degrau="3"] .org-area__corpo::after {
     animation: none !important;

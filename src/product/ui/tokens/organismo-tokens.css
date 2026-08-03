@@ -91,7 +91,37 @@
   --org-raio-pilula: 999px;
   --org-sombra-painel: 0 30px 70px -32px rgba(0, 0, 0, 0.8);
 
-  /* —— Movimento. So comunica mudanca; desligado em prefers-reduced-motion. —— */
-  --org-fluxo: 1.6s;
-  --org-pulso: 2.8s;
+  /* —— MOVIMENTO ——————————————————————————————————————————————————
+     Estes valores NAO sao proprios: eles DERIVAM de `docs/figma/MOTION_TOKENS.json`,
+     que e o sistema de movimento canonico do produto e ja e carregado por
+     `/tokens/product-tokens.css`. A home tinha `1.6s`, `2.8s` e `0.18s ease`
+     inventados aqui — um sistema de movimento paralelo ao do produto, que e a
+     mesma especie de erro que PB9 registrou para a cor.
+
+     Onde o canone nao tem valor, a derivacao esta escrita, nunca escondida.
+     Regra que decide tudo (MOTION_SYSTEM §1): movimento comunica mudanca de
+     estado. Movimento que nao comunica nao entra em superficie operacional. */
+
+  /* Presenca ambiente: a fonte esta viva. Token canonico, sem alteracao. */
+  --org-pulso: var(--motion-ambient);
+
+  /* Fluxo do fio. O canone nao tem duracao de fluxo continuo — o padrao mais
+     proximo, `pulse_line`, e ambiente e respira em 2400ms. O fio precisa ser
+     mais rapido que a respiracao para LER como deslocamento em vez de
+     piscada, e mais lento que uma transicao de estado para nao competir com
+     leitura. Derivado: metade do ambiente. */
+  --org-fluxo: calc(var(--motion-ambient) / 2);
+
+  /* Resposta ao ponteiro e ao foco. Token canonico. */
+  --org-resposta: var(--motion-quick);
+  --org-resposta-easing: var(--motion-ease-standard);
+
+  /* Um estado semantico virou outro no mesmo lugar (`state_handoff`). */
+  --org-troca: var(--motion-base);
+  --org-troca-easing: var(--motion-ease-standard);
+
+  /* Chegada de conteudo novo na superficie (`reveal`). */
+  --org-chegada: var(--motion-base);
+  --org-chegada-easing: var(--motion-ease-enter);
+  --org-chegada-distancia: var(--motion-rise);
 }

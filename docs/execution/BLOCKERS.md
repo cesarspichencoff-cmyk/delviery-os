@@ -46,6 +46,7 @@
 - **PB9/C7** — CRM, Evolução, Treinamento, RH e Gestão são módulos do DeliveryOS?
 - **PB9/C8** — notificação fora da tela é permitida?
 - **PB11** — o Figma não acompanhou a expressão canônica da home (aberto em 2026-08-03; detalhe no fim deste arquivo).
+- **PB12** — o OriginKit não é inspecionável deste ambiente (403 + policy check fora do ar). A etapa de motion **não pode ser declarada completa** enquanto isso valer.
 
 ---
 
@@ -523,3 +524,38 @@ Preservar `01 — Design System`. Registrar node IDs e conferir por screenshot.
 
 **O que NAO destrava.** Recomecar o desenho da home. A expressao esta aprovada
 localmente e coberta por 18 testes; o Figma precisa alcanca-la, nao substitui-la.
+
+### PB12 — O OriginKit nao pode ser inspecionado deste ambiente
+
+**Categoria:** bloqueio de ambiente · **Aberto em** 2026-08-03 · **Severidade:** media
+
+**O fato, medido.** `https://www.originkit.dev/` **abre**: a navegacao completa e o
+titulo da pagina chega ao agente (`Originkit — Free Animated component library
+for modern websites`, `Click Effects — ... · Originkit`, `Background Components ·
+Originkit`). Mas **toda leitura de conteudo falha**:
+
+| Caminho tentado | Resultado |
+|---|---|
+| `screenshot` (3 tabs, 6 tentativas) | `Policy check temporarily unavailable; retry.` |
+| `get_page_text` | idem |
+| `read_page` | idem |
+| `javascript_tool` | idem |
+| `WebFetch` na raiz e em `/intro` | **HTTP 403 Forbidden** |
+
+O mesmo navegador le `http://localhost:5290` normalmente na mesma sessao — o
+bloqueio e da origem externa, nao do navegador.
+
+**Consequencia declarada, e ela e a instrucao da propria missao.** A etapa de
+motion **NAO pode ser declarada completa**. Nada do OriginKit foi analisado nesta
+sessao, e **nada foi reconstruido de memoria** — reconstruir seria inventar a
+fonte, que e exatamente o que a missao proibe.
+
+**O que NAO fica bloqueado por isso.** O `MOTION_SYSTEM.md` deste repositorio ja
+existe, ja e canonico e ja governa o movimento (autoridade 6 da ordem desta
+missao). O trabalho de movimento desta sessao deriva dele, do Organismo V3.3 e
+das decisoes visuais do Cesar — nao do OriginKit. A coluna OriginKit da matriz
+fica marcada **NAO INSPECIONADO**, nunca preenchida por suposicao.
+
+**O que destrava.** Uma sessao em que o servico de verificacao do navegador
+esteja no ar, ou o conteudo do OriginKit trazido por outro caminho autorizado
+pelo Cesar. Nao ha nada a corrigir no repositorio.
