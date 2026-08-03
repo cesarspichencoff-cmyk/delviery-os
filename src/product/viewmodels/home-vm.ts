@@ -410,6 +410,27 @@ export interface EleicaoTemporal {
   readonly orientacao_permitida: boolean;
 }
 
+/**
+ * De onde vem a leitura — e este tipo existe para fechar um bypass, nao para
+ * decorar a assinatura.
+ *
+ * R5-A deixou a eleicao temporal OPCIONAL porque as cenas de demonstracao sao
+ * instantes isolados, sem eixo de tempo. Isso resolveu a fixture e abriu uma
+ * porta: um chamador real poderia simplesmente NAO passar o resultado da
+ * politica e voltar a eleger por fotografia, sem que nada acusasse.
+ *
+ * A regra, agora executavel:
+ *
+ *   fallback instantaneo  -> so em fixture ou demonstracao EXPLICITAMENTE identificada
+ *   caminho real          -> obrigado a fornecer a eleicao temporal
+ *
+ * `motivo` existe para que uma demonstracao precise dizer POR QUE pode pular a
+ * politica. "Nao passei" nao e motivo; e omissao.
+ */
+export type OrigemDaLeitura =
+  | { readonly tipo: "demonstracao"; readonly motivo: string }
+  | { readonly tipo: "real"; readonly temporal: EleicaoTemporal };
+
 function elegerFoco(sinais: readonly Sinal[]): Sinal | null {
   const candidatos = sinais.filter((s) => s.severidade >= 3);
   return candidatos[0] ?? null;
@@ -609,7 +630,19 @@ function ligacoesVM(ambientes: readonly AmbienteVM[]): readonly LigacaoVM[] {
   });
 }
 
-export function homeVM(l: LeituraOperacional, temporal?: EleicaoTemporal): HomeVM {
+export function homeVM(l: LeituraOperacional, origem?: OrigemDaLeitura): HomeVM {
+  // A FRONTEIRA. Uma leitura de procedencia `real` que chega sem eleicao
+  // temporal esta pedindo a eleicao por fotografia de volta — e e exatamente
+  // isso que R5-A existe para acabar. Recusar aqui e a unica forma de a regra
+  // valer para quem ainda nem foi escrito.
+  if (l.procedencia === "real" && (origem === undefined || origem.tipo !== "real")) {
+    throw new Error(
+      "leitura real sem eleicao temporal: a Operacao Viva e a dona da atencao (C3). " +
+        "O fallback instantaneo so vale para demonstracao declarada.",
+    );
+  }
+  const temporal: EleicaoTemporal | undefined =
+    origem !== undefined && origem.tipo === "real" ? origem.temporal : undefined;
   const sinais = sinaisDe(l);
   const foco = elegerFoco(sinais);
 
