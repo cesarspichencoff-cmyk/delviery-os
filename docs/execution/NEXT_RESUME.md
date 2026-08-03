@@ -12,6 +12,63 @@
 >
 > ---
 >
+> **ATUALIZADO 2026-08-03 — R5 PREPARADO, NAO INICIADO. Decisao do Cesar.**
+>
+> **O FIGMA FICA PENDENTE.** Sem upgrade de plano, sem redesenho manual dos 18 cenarios.
+> **PB11 reclassificado (D59):** bloqueia **somente** o fechamento documental e a paridade NATIVA
+> com o Figma. **Nao bloqueia a continuidade tecnica do DeliveryOS e nao bloqueia R5.** A autoridade
+> visual nunca foi o Figma — e o Sprint Visual V2 e o Organismo V3.3, e a expressao vigente ja esta
+> implementada e coberta por 27 + 44 + 23 testes.
+>
+> **CONGELADO DURANTE R5, sem excecao:** frontend (`home.js`, `home.css`, `organismo-tokens.css`),
+> Figma, `sinais.ts`, `areas.ts`, identidade visual e tokens do organismo. R5 e uma missao de
+> **motor**, e nao encosta em expressao.
+>
+> **I1-I10 REVALIDADOS contra o codigo de hoje** (o contrato dizia "nenhuma foi testada"; parte foi,
+> desde entao, e parte continua sem gate):
+>
+> | | Estado | Onde |
+> |---|---|---|
+> | **I1** ação nunca troca a causa raiz | **NAO VALIDADO** | `dentroDoEscopo()` existe (`decisao.js:46`, usado em `:175`) e **nenhum gate o exercita** |
+> | **I2** sem candidato no escopo → foco puro | **NAO VALIDADO** | nenhuma fixture |
+> | **I3** Calmo devolve `null` | verde **na superficie** | `orientacao` e campo de `foco` (`home-vm.ts:129`); inalcancavel em Calmo. Nao validado no motor |
+> | **I4** Ambiente sem bloco de ação | verde **no codigo**, travado em **produto** | conflito **C1** continua aberto |
+> | **I5** dois vermelhos nao se escondem | **verde** | gate home · organismo O10 |
+> | **I6** area sem fonte nunca verde | **verde** | gate home · organismo O7 · `areas.ts` |
+> | **I7** exclusividade de slot | verde **na superficie** | UMA orientacao principal; a exclusividade **temporal** de `motor.js` nao e exercitada |
+> | **I8** nada executa | **verde** | H25/H26 · `shadow.ts` sem estado `executed` |
+> | **I9** confianca sem evidencia | **verde** | gate Product System |
+> | **I10** procedencia declarada | **verde** | H27 · gate Product System |
+>
+> **O ACHADO QUE MUDA O ESCOPO DE R5 — D60, e ele veio de olhar o codigo.** O contrato diz que a
+> Operacao Viva e dona do estado cognitivo com mecanismos que "nao se negociam": DEBOUNCE 3 ·
+> COOLDOWN 45 · MAXFOCUS 8 · STALE 120 · exclusividade de slot. Eles existem em
+> `src/perfil-delivery/motor.js:42-46` e `:274-278`. **E a superficie que hoje e dona de
+> Calmo/Ambiente/Foco nao os tem:** `home-vm.ts:607` elege o modo por **severidade instantanea**,
+> sem debounce, sem cooldown, sem teto, sem histerese. Nao aparece porque cada cena e fixture
+> estatica — ao vivo, a mesma operacao oscilaria entre Calmo e Foco a cada leitura.
+>
+> **Consequencia:** R5 **nao** comeca ligando `decisao.js` a `shadow.ts`. Comeca dando a Operacao
+> Viva a dimensao temporal que o contrato ja lhe atribui. Ranquear orientacao dentro de um Foco sem
+> persistencia garantida e refinar uma causa raiz que pode ter mudado entre duas leituras — a mesma
+> familia do defeito de **30,8%** corrigido em `37ca1c9`.
+>
+> **A LACUNA DE INTEGRACAO, nomeada.** O motor devolve **orientacao de 4 linhas + sussurro**; o
+> Shadow valida **recomendacao com dimensao, evidencia, procedencia, confianca em faixa, validade e
+> retirada**. **Nao existe traducao entre os dois formatos em lugar nenhum do repositorio.** Agrava:
+> **D29** — a cadeia real nao propaga `order_id`, entao ela e estruturalmente incapaz de gerar
+> recomendacao de PEDIDO hoje; gera recomendacao de FONTE.
+>
+> **ESCOPO FECHADO RECOMENDADO — quatro blocos, nesta ordem, com parada entre eles:**
+> **R5-A** dimensao temporal da Operacao Viva (D60) · **R5-B** gate I1-I10 com mutacao dirigida em
+> cada invariante · **R5-C** o contrato de traducao motor→shadow, como TIPO, sem ligar nada ·
+> **R5-D** a conexao em sombra, atras de flag desligada por padrao.
+> **Gate de conclusao proposto:** `npm run test:platform:r5`.
+>
+> **R5 NAO FOI INICIADO NESTA SESSAO.** Nenhum arquivo de motor, contrato ou runtime foi tocado.
+>
+> ---
+>
 > **ATUALIZADO 2026-08-03 — FECHAMENTO CANONICO DO FIGMA: CHECKPOINT.**
 > `DELIVERYOS_FIGMA_CANONICAL_SYNC_CHECKPOINT` · `MACRO2_CHECKPOINT_REACHED`
 > HEAD inicial `ae607ca`. Commits: matriz e gate · memoria.

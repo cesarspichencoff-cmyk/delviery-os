@@ -1183,12 +1183,60 @@
       "src/product/viewmodels/sinais.ts",
       "src/product/viewmodels/areas.ts"
     ],
-    "pb11": "ABERTO — o Figma continua sem a expressao canonica; resolver so depois de Figma, screenshots e matriz com node IDs reais",
+    "pb11": "RECLASSIFICADO por decisao do Cesar (D59) — bloqueia SOMENTE o fechamento documental e a paridade nativa com o Figma. Nao bloqueia continuidade tecnica nem R5",
     "pb12": "RECLASSIFICADO — revisao externa nao bloqueante (D57)",
     "pb13": "ABERTO — cota do plano Figma",
     "pb9": "PRESERVADO para as superficies ainda nao migradas: Entregas, Operacao Viva, Conference Brain, Copiloto, modulo futuro e o shell do organismo",
     "r2_visual": "NAO concluido integralmente — a paridade exige o Figma",
     "r5": "NAO iniciado",
     "d43": "valida — os dois motores continuam desligados"
+  },
+  "retomada_r5": {
+    "data": "2026-08-03",
+    "estado": "PREPARADA, NAO INICIADA — o Cesar pediu escopo, riscos e gate; a implementacao nao comecou",
+    "decisao_do_cesar": "Figma pendente, sem upgrade e sem redesenho manual. R5 pode retomar.",
+    "congelado_durante_r5": [
+      "frontend (home.js, home.css, organismo-tokens.css)",
+      "Figma",
+      "sinais.ts",
+      "areas.ts",
+      "identidade visual",
+      "tokens do organismo"
+    ],
+    "releitura_do_contrato": {
+      "arquivo": "docs/product/CONTRATO_CONSCIENCIA_COPILOTO.md",
+      "papeis": {
+        "operacao_viva": "unica dona de Calmo/Ambiente/Foco — nenhum outro componente cria Foco",
+        "motor_do_copiloto": "dono da orientacao; nao decide interromper; dentroDoEscopo() em src/perfil-delivery/decisao.js:46, usado em :175",
+        "garantias_shadow": "dona da confiabilidade; envolve a orientacao, nao a substitui; src/platform/copiloto/shadow.ts",
+        "conference_brain": "infraestrutura de raciocinio e auditoria; nunca no caminho do Foco"
+      }
+    },
+    "i1_a_i10_validacao_2026_08_03": {
+      "I1": "NAO VALIDADO neste repositorio — dentroDoEscopo existe (decisao.js:46/175) e nenhum gate o exercita; a mutacao prevista pelo contrato nao existe",
+      "I2": "NAO VALIDADO — nenhuma fixture de foco sem candidato compativel",
+      "I3": "VERDE na superficie — orientacao e campo de foco (home-vm.ts:129), inalcancavel em Calmo. NAO validado no motor",
+      "I4": "VERDE no codigo — Ambiente nao tem bloco de acao. BLOQUEADO como produto pelo conflito C1, que continua aberto",
+      "I5": "VERDE — gate home (2 vermelhos simultaneos) e organismo O10",
+      "I6": "VERDE — gate home e organismo O7; areas.ts declara sem_medicao_automatica",
+      "I7": "VERDE na superficie (UMA orientacao principal). A exclusividade TEMPORAL de motor.js nao e exercitada aqui",
+      "I8": "VERDE — home gate H25/H26, shadow.ts sem estado executed, requires_human literal",
+      "I9": "VERDE — gate Product System (44)",
+      "I10": "VERDE — H27 e gate Product System; toda cena se declara demonstracao",
+      "resumo": "2 nao validados (I1, I2) · 2 validados so na superficie (I3, I7) · 1 verde em codigo e travado em produto (I4) · 5 verdes (I5, I6, I8, I9, I10)"
+    },
+    "achado_que_muda_o_escopo": {
+      "id": "D60",
+      "fato": "home-vm.ts:607 elege o modo por severidade instantanea, sem DEBOUNCE, COOLDOWN, MAXFOCUS, STALE nem histerese. Esses mecanismos existem so em src/perfil-delivery/motor.js:42-46 e 274-278, que a superficie do produto nao usa",
+      "consequencia": "R5 nao comeca conectando os motores. Comeca dando a Operacao Viva a dimensao temporal que o contrato ja lhe atribui"
+    },
+    "lacuna_de_integracao": {
+      "formato_do_motor": "orientacao de 4 linhas + sussurro (ACAO, Por que, Primeiro olhar, Impacto, Confianca)",
+      "formato_do_shadow": "recomendacao com dimensao, evidencia, procedencia, confianca em faixa, validade e retirada",
+      "fato": "nao existe traducao entre os dois formatos em lugar nenhum do repositorio",
+      "agravante": "D29 — a cadeia real nao propaga order_id, entao ela e estruturalmente incapaz de gerar recomendacao de PEDIDO hoje; gera recomendacao de FONTE"
+    },
+    "gate_de_conclusao_proposto": "npm run test:platform:r5 — I1 a I10 com mutacao dirigida em cada uma, mais as guardas de congelamento visual",
+    "nao_iniciado": true
   }
 }

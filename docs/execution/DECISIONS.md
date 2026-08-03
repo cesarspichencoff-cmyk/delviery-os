@@ -1130,3 +1130,71 @@ indistinguivel de um numero medido quando alguem le a tabela seis meses depois.
 **Custo aceito:** o gate nasce verde com 18 linhas pendentes, o que pode parecer
 aprovacao. Nao e, e a §0 da matriz diz isso em letra propria: o gate prova que a
 matriz e honesta sobre o estado, nao que o Figma esta sincronizado.
+
+---
+
+### D59 — PB11 bloqueia o fechamento documental, nao o produto
+
+**Decisao do Cesar, 2026-08-03.** O Figma permanece pendente: **sem upgrade de
+plano** e **sem redesenho manual** dos 18 cenarios. PB11 passa a bloquear
+**apenas** (a) o fechamento documental do ciclo visual e (b) a paridade NATIVA
+com o Figma. Ele **nao** bloqueia a continuidade tecnica do DeliveryOS e **nao**
+bloqueia R5.
+
+**O que sustenta.** A autoridade visual nunca foi o Figma — e o Sprint Visual V2
+e o Organismo Operacional V3.3. A expressao vigente ja esta implementada,
+revisada no navegador e coberta por 27 testes de organismo, 44 de home e 23 de
+paridade. O Figma e o **espelho documental** dessa expressao: exigido, util, e
+nao soberano. Tratar o espelho como pre-requisito do produto inverteria a
+hierarquia que PB9 existe para proteger.
+
+**O que continua em vigor, sem excecao:** PB13 registrado com a medicao intacta ·
+os 18 `PENDENTE-PB13` e nenhum node ID inventado · o frontend aprovado como
+referencia visual EXECUTAVEL · V2 e V3.3 como autoridades · Motion System e as
+duas matrizes como documentacao canonica · **proibicao de qualquer alteracao
+visual durante R5**.
+
+**Alternativa recusada:** manter PB11 como bloqueio duro ate o Figma existir.
+Recusada porque prenderia o produto inteiro a uma cota de plano de terceiro —
+exatamente o erro que D57 acabou de corrigir para o OriginKit, na mesma semana.
+
+**Custo aceito:** o ciclo visual fica formalmente ABERTO por tempo
+indeterminado, e o Figma continua mostrando a linguagem da Unidade 6 para quem
+o abrir. Mitigacao: a §0 e a §9 da matriz do organismo dizem isso em letra
+propria, e o gate impede que qualquer linha se declare sincronizada.
+
+---
+
+### D60 — R5 nao comeca pelo fio: a dona de Calmo/Ambiente/Foco nao tem dimensao temporal
+
+**Achado, medido nesta sessao, antes de qualquer implementacao.** O contrato da
+consciencia (§1) diz que a Operacao Viva e dona do estado cognitivo e lista
+mecanismos que "nao se negociam": DEBOUNCE 3 min · COOLDOWN 45 min · MAXFOCUS
+8 min · STALE 120 min · exclusividade de slot. Eles existem — em
+`src/perfil-delivery/motor.js:42-46`, com estado de sessao (`sess.pending`,
+`sess.active`, `sess.firedAt`) em `motor.js:274-278`.
+
+**E a superficie que hoje e dona de Calmo/Ambiente/Foco nao os tem.**
+`src/product/viewmodels/home-vm.ts:607` elege o modo assim:
+
+```
+foco !== null ? "foco" : sinais.some(s => s.severidade >= 2) ? "ambiente" : "calmo"
+```
+
+Severidade instantanea. **Zero tempo.** Sem debounce, sem cooldown, sem teto de
+duracao, sem histerese. Nao aparece hoje porque cada cena e uma fixture estatica
+— numa leitura ao vivo, a mesma operacao oscilaria entre Calmo e Foco a cada
+atualizacao.
+
+**Decisao.** R5 **nao** comeca conectando `decisao.js` a `shadow.ts`. Comeca
+dando a Operacao Viva a dimensao temporal que o contrato ja lhe atribui. Ranquear
+orientacao dentro de um Foco sem persistencia garantida e refinar uma causa raiz
+que pode ter mudado entre duas leituras — que e a familia do defeito de 30,8%
+corrigido em `37ca1c9`.
+
+**Alternativa recusada:** ligar os motores primeiro e tratar a histerese como
+ajuste posterior. Recusada porque o defeito so apareceria com fonte ao vivo, que
+e exatamente quando ele custa caro.
+
+**Custo aceito:** R5 fica maior do que "ligar dois motores", e o primeiro bloco
+nao produz nada visivel. E o preco de nao repetir 30,8%.

@@ -45,7 +45,7 @@
   **Conflito real, não resolvível por hierarquia de fontes.**
 - **PB9/C7** — CRM, Evolução, Treinamento, RH e Gestão são módulos do DeliveryOS?
 - **PB9/C8** — notificação fora da tela é permitida?
-- **PB11** — o Figma não acompanhou a expressão canônica da home (aberto em 2026-08-03; detalhe no fim deste arquivo). **Continua aberto**, agora bloqueado por PB13.
+- **PB11** — o Figma não acompanhou a expressão canônica da home. **RECLASSIFICADO em 2026-08-03 pelo César:** bloqueia **apenas o fechamento documental e a paridade nativa com o Figma**. **Não** bloqueia a continuidade técnica do DeliveryOS e **não** bloqueia R5. Ver **D59**.
 - **PB13** — a cota do plano Figma cortou leitura **e** escrita no meio da sincronização (2026-08-03). Detalhe no fim deste arquivo.
 
 ## ⬇ RECLASSIFICADOS
@@ -532,6 +532,28 @@ Preservar `01 — Design System`. Registrar node IDs e conferir por screenshot.
 
 **O que NAO destrava.** Recomecar o desenho da home. A expressao esta aprovada
 localmente e coberta por 18 testes; o Figma precisa alcanca-la, nao substitui-la.
+
+**RECLASSIFICADO em 2026-08-03, por decisao do Cesar (D59).** PB11 bloqueia
+**apenas duas coisas**: o fechamento documental do ciclo visual e a paridade
+NATIVA com o Figma. Ele **nao** bloqueia a continuidade tecnica do DeliveryOS e
+**nao** bloqueia R5.
+
+O que sustenta a reclassificacao: a autoridade visual nunca foi o Figma. Ela e o
+Sprint Visual V2 e o Organismo Operacional V3.3, e a expressao vigente ja esta
+implementada, aprovada e coberta por 27 testes de organismo mais 44 de home. O
+Figma e o espelho documental dessa expressao — util, exigido, e nao soberano.
+
+**O que permanece em vigor enquanto PB11 estiver aberto:**
+- PB13 registrado, com a medicao da cota intacta;
+- os 18 `PENDENTE-PB13` na matriz, e **nenhum node ID inventado**;
+- o **frontend aprovado** como referencia visual EXECUTAVEL (`npm run ui:product`);
+- Sprint Visual V2 e Organismo V3.3 como autoridades visuais;
+- `MOTION_SYSTEM.md`, `MOTION_TOKENS.json` e as duas matrizes como documentacao canonica;
+- **proibicao de qualquer alteracao visual durante R5** — frontend, Figma, sinais,
+  areas e identidade visual ficam congelados.
+
+**Decisao registrada do Cesar:** nao havera upgrade de plano e os 18 cenarios nao
+serao redesenhados a mao. O Figma fica pendente.
 
 ### PB12 — O OriginKit nao pode ser inspecionado deste ambiente
 
