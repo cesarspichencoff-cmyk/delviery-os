@@ -465,6 +465,196 @@ teste("O17 nenhum identificador interno chega a uma pessoa pela evidencia", () =
   }
 });
 
+/* ================================================================== *
+ * 8. MOVIMENTO — comunica mudanca, ou nao entra
+ * ================================================================== *
+ * Autoridade: Organismo V3.3 prancha 13 e `docs/figma/MOTION_SYSTEM.md`.
+ * O OriginKit NAO foi inspecionado nesta sessao (PB12) — nada aqui deriva dele.
+ */
+
+/** As declaracoes de um @keyframes, para inspecionar o que ele anima. */
+function keyframes(nome: string): string {
+  const i = CSS.indexOf(`@keyframes ${nome}`);
+  if (i < 0) return "";
+  const abre = CSS.indexOf("{", i);
+  let nivel = 0;
+  for (let j = abre; j < CSS.length; j += 1) {
+    if (CSS[j] === "{") nivel += 1;
+    else if (CSS[j] === "}") {
+      nivel -= 1;
+      if (nivel === 0) return CSS.slice(abre + 1, j);
+    }
+  }
+  return "";
+}
+
+teste("O18 nenhuma biblioteca de motion foi instalada", () => {
+  const pkg = JSON.parse(ler("package.json")) as {
+    dependencies?: Record<string, string>;
+    devDependencies?: Record<string, string>;
+  };
+  const todas = Object.keys({ ...pkg.dependencies, ...pkg.devDependencies });
+  for (const proibida of ["originkit", "framer-motion", "gsap", "animejs", "lottie"]) {
+    assert.equal(
+      todas.some((d) => d.toLowerCase().includes(proibida)),
+      false,
+      `dependencia de motion adicionada: ${proibida}`,
+    );
+  }
+  // E nem por MCP nem por import direto na superficie.
+  const js = ler("src/product/ui/surfaces/home.js");
+  assert.ok(!/originkit/i.test(js), "a superficie importou OriginKit");
+  assert.ok(!/from ["']https?:/.test(js), "a superficie importou de origem externa");
+});
+
+teste("O19 o movimento do organismo DERIVA do sistema canonico", () => {
+  const motion = JSON.parse(ler("docs/figma/MOTION_TOKENS.json")) as {
+    duracao: Record<string, string>;
+  };
+  // Nenhuma duracao literal no CSS da home: tudo por token.
+  const literais = CSS.match(/animation:[^;]*?(\d+(?:\.\d+)?)(s|ms)/g) || [];
+  assert.deepEqual(
+    literais,
+    [],
+    `duracao literal na home em vez de token: ${literais.join(" | ")}`,
+  );
+  const transicoesLiterais = CSS.match(/transition:[^;]*?\b\d+(?:\.\d+)?(s|ms)\b/g) || [];
+  assert.deepEqual(
+    transicoesLiterais,
+    [],
+    `transicao com duracao literal: ${transicoesLiterais.join(" | ")}`,
+  );
+  // E os tokens do organismo apontam para os canonicos, nao para valores proprios.
+  assert.match(TOKENS, /--org-pulso:\s*var\(--motion-ambient\)/);
+  assert.match(TOKENS, /--org-troca:\s*var\(--motion-base\)/);
+  assert.match(TOKENS, /--org-chegada:\s*var\(--motion-base\)/);
+  // O unico valor derivado precisa DECLARAR de onde deriva.
+  assert.match(TOKENS, /--org-fluxo:\s*calc\(var\(--motion-ambient\)/);
+  assert.ok(Object.keys(motion.duracao).includes("motion-ambient"));
+});
+
+teste("O20 fluxo e espera sao linguagens DIFERENTES na mesma linha", () => {
+  const inerte = bloco('.org-fio[data-intensidade="inerte"]');
+  const ativa = bloco('.org-fio[data-intensidade="ativa"]');
+  const carregada = bloco('.org-fio[data-intensidade="carregada"]');
+  // Espera: tracejada e PARADA. Fluxo: tracejada e EM MOVIMENTO. V3.3 prancha 13.
+  assert.ok(!/animation:/.test(ativa), "a linha de espera esta correndo como fluxo");
+  assert.match(carregada, /animation:\s*orgFluxo/);
+  // PAR SIMETRICO: sem isto, remover a animacao das DUAS passaria.
+  assert.match(ativa, /stroke-dasharray/);
+  assert.match(carregada, /stroke-dasharray/);
+  // E a inerte nao pode nem tracejar nem animar — ela e caminho, nao relacao ativa.
+  assert.equal(inerte, "", "a linha inerte ganhou tratamento proprio de pressao");
+  assert.ok(!/animation:/.test(bloco(".org-fio")), "a linha base ganhou animacao");
+});
+
+teste("O21 falha tecnica nao recebe NENHUMA animacao de pressao", () => {
+  for (const seletor of [
+    ".org-tecnico",
+    '.org-area[data-ausencia="sem_leitura"] .org-area__corpo',
+    '.org-topo__vida[data-estado="falha"] .org-topo__ponto',
+  ]) {
+    const b = bloco(seletor);
+    assert.ok(
+      !/animation:\s*org(Pulso|Fluxo)/.test(b),
+      `${seletor}: falha tecnica ganhou animacao de pressao`,
+    );
+    assert.ok(!/--org-ambar/.test(b), `${seletor}: falha tecnica usa ambar`);
+  }
+  // O ponto de vida em falha precisa PARAR — nao basta nao ganhar animacao nova,
+  // porque ele herda a regra do estado vivo.
+  assert.match(
+    bloco('.org-topo__vida[data-estado="falha"] .org-topo__ponto'),
+    /animation:\s*none/,
+  );
+});
+
+teste("O22 o pulso ambiente nao se acumula: estado critico vence movimento", () => {
+  // No Foco as areas em pressao ja respiram; o pulso de vida do cabecalho para.
+  assert.match(
+    bloco('.org[data-modo="foco"] .org-topo__vida[data-estado="vivo"] .org-topo__ponto'),
+    /animation:\s*none/,
+    "no Foco o pulso de vida continua somando com o anel de pressao",
+  );
+  // PAR: fora do Foco ele PRECISA pulsar, senao 'parar sempre' passaria neste teste.
+  assert.match(
+    bloco('.org-topo__vida[data-estado="vivo"] .org-topo__ponto'),
+    /animation:\s*orgPulso/,
+    "o pulso de vida sumiu tambem fora do Foco",
+  );
+});
+
+teste("O23 nenhuma animacao move layout", () => {
+  const nomes = (CSS.match(/@keyframes\s+([A-Za-z0-9_-]+)/g) || []).map((k) =>
+    k.replace(/@keyframes\s+/, ""),
+  );
+  assert.ok(nomes.length > 0, "sem keyframes para inspecionar");
+  for (const nome of nomes) {
+    const corpo = keyframes(nome);
+    for (const prop of ["height:", "margin", "padding", "font-size", "top:", "left:", "width:"]) {
+      assert.ok(
+        !corpo.includes(prop),
+        `@keyframes ${nome} anima propriedade que move layout: ${prop}`,
+      );
+    }
+  }
+});
+
+teste("O24 reduced motion alcanca TUDO que anima, e nao esconde nada", () => {
+  const i = CSS.indexOf("@media (prefers-reduced-motion: reduce)");
+  assert.ok(i > 0, "a preferencia por menos movimento sumiu");
+  const rm = CSS.slice(i);
+  // Todo seletor que recebe `animation:` fora do bloco precisa estar coberto.
+  const animados = new Set<string>();
+  for (const m of CSS.slice(0, i).matchAll(/([^{}]+)\{[^}]*animation:\s*org[^}]*\}/g)) {
+    for (const s of m[1]!.split(",")) animados.add(s.trim());
+  }
+  assert.ok(animados.size >= 3, "o inventario de animacoes ficou vazio demais para valer");
+  for (const s of animados) {
+    const base = s.replace(/::(after|before)$/, "").trim();
+    assert.ok(
+      rm.includes(base) || rm.includes(".org *"),
+      `reduced motion nao alcanca ${s}`,
+    );
+  }
+  assert.ok(!/display:\s*none/.test(rm), "reduced motion escondeu elemento");
+  assert.ok(!/opacity:\s*0[;\s}]/.test(rm), "reduced motion zerou opacidade de algo");
+});
+
+teste("O25 a evidencia nunca anima", () => {
+  // MOTION_SYSTEM §4 e MOTION_COMPONENT_MAPPING: evidencia, sinal, ocorrencia e
+  // erro aparecem inteiros. Um `reveal` aqui atrasaria a leitura do que importa.
+  for (const seletor of [
+    ".org-foco__evidencias",
+    ".org-sinal",
+    ".org-sinais",
+    ".org-aprox__linhas",
+    ".org-fontes",
+  ]) {
+    assert.ok(
+      !/animation:/.test(bloco(seletor)),
+      `${seletor}: evidencia ou sinal ganhou animacao`,
+    );
+  }
+});
+
+teste("O26 movimento nao carrega informacao sozinho", () => {
+  // Toda intensidade de ligacao precisa ser legivel SEM animacao: espessura e
+  // cor bastam. E o degrau precisa ser legivel sem o anel que pulsa.
+  const larguras = ["inerte", "ativa", "carregada"].map((i) => {
+    const b = i === "inerte" ? bloco(".org-fio") : bloco(`.org-fio[data-intensidade="${i}"]`);
+    const m = /stroke-width:\s*(\d+)/.exec(b);
+    return m ? Number(m[1]) : null;
+  });
+  assert.deepEqual(larguras, [1, 2, 3], `as tres intensidades precisam de espessura propria: ${larguras.join(",")}`);
+  // O degrau 3 tem escala e cor proprias alem do anel.
+  assert.match(
+    bloco('.org-area[data-degrau="3"][data-forma="nucleo"] .org-area__corpo'),
+    /width:\s*\d+px/,
+  );
+  assert.match(bloco('.org-area[data-degrau="3"] .org-area__estado'), /color/);
+});
+
 /* ================================================================== */
 
 void Promise.all(pend).then(() => {
