@@ -1,0 +1,97 @@
+/* DeliveryOS — ORGANISMO OPERACIONAL · tokens canonicos V2 / V3.3
+   ===========================================================================
+   FONTE: docs/design/VISUAL_REFERENCE_HIERARCHY.md, Nivel 1 e 2.
+   Valores extraidos de
+     docs/design/canonical/deliveryos-visual-v2/extracted/
+       DeliveryOS Organismo Operacional.dc.html      (superficie, areas, foco)
+       Contrato Visual Estados Tecnicos.dc.html      (estados tecnicos)
+   Nenhum valor aqui foi escolhido: todos existem, literais, nos arquivos acima.
+
+   POR QUE ESTA FOLHA EXISTE, SEPARADA. O Design System da Unidade 6
+   (`/shared/tokens.css` + `product-tokens.css`) e Nivel 4: ele governa producao
+   e acessibilidade das superficies TECNICAS. A home e o organismo operacional, e
+   a autoridade dela e o Nivel 1/2. Misturar as duas paletas num arquivo so foi
+   exatamente o que produziu PB9 — a home saiu com a cara do Design System.
+
+   Um token tem UM lugar de nascimento. Nada aqui redeclara token da canonica.
+   =========================================================================== */
+
+:root {
+  /* —— Superficie. "O verde profundo e a superficie Tata. Onde a operacao vive." —— */
+  --org-fundo: #08130d;
+  --org-fundo-alto: #0f241a;
+  --org-palco: #0c1811;
+  --org-palco-fundo: #06120d;
+  --org-painel-topo: #13291d;
+  --org-painel-base: #0e2016;
+
+  /* —— Linhas. A hierarquia inteira de contorno da superficie escura. —— */
+  --org-linha-fraca: #1b3527;
+  --org-linha: #1f3e2e;
+  --org-linha-viva: #274b39;
+  --org-linha-forte: #2c5940;
+  --org-linha-caminho: #22402f;
+  --org-linha-discreta: #2c4a36;
+  --org-linha-clara: #3e6b4f;
+
+  /* —— Verde vivo. "Confianca, presenca ativa e a acao principal. Nunca em tudo." —— */
+  --org-vivo: #8cc63f;
+  --org-vivo-hover: #9ed64f;
+  --org-vivo-tinta: #0b1a11;
+  --org-vivo-veu: rgba(140, 198, 63, 0.15);
+  --org-vivo-borda: rgba(140, 198, 63, 0.4);
+  --org-vivo-borda-forte: rgba(140, 198, 63, 0.62);
+
+  /* —— Creme. "Alta legibilidade e conteudo principal: nomes, titulos, atencao." —— */
+  --org-creme: #f2ebd9;
+  --org-creme-2: #efe6d3;
+  --org-creme-3: #e9e2ce;
+  --org-creme-4: #e3dac2;
+  --org-creme-5: #ddd4bc;
+  --org-creme-serifa: #d9c9a8;
+
+  /* —— Vegetacao: o texto que nao e conteudo principal. —— */
+  --org-verde-texto: #bfcbb2;
+  --org-verde-texto-2: #a8bca0;
+  --org-verde-texto-3: #8fa588;
+  --org-verde-texto-4: #7e9478;
+  --org-verde-texto-5: #5f7a62;
+  --org-verde-apagado: #b9c4ac;
+
+  /* —— Ambar. "Tensao operacional em formacao. Nao significa ruim." —— */
+  --org-ambar: #e0a25a;
+  --org-ambar-claro: #f0b36a;
+  --org-ambar-texto: #e7c089;
+  --org-ambar-traco: #c98a46;
+  --org-ambar-veu: rgba(224, 142, 58, 0.32);
+  --org-ambar-veu-fraco: rgba(224, 162, 90, 0.2);
+  --org-ambar-borda: rgba(240, 179, 106, 0.62);
+  --org-ambar-borda-fraca: rgba(224, 162, 90, 0.55);
+  --org-ambar-pulso: rgba(240, 179, 106, 0.5);
+
+  /* —— Neutro tracejado. "Informacao incompleta. Forma, nao so cor." —— */
+  --org-neutro: rgba(126, 148, 120, 0.5);
+  --org-neutro-traco: #7e9478;
+
+  /* —— Cinza-ardosia. "Falha e atraso tecnico. Nunca se confunde com pressao." —— */
+  --org-falha: #6e7b84;
+  --org-falha-clara: #9aa7b0;
+  --org-falha-texto: #c3cdd4;
+  --org-falha-veu: rgba(110, 123, 132, 0.14);
+  --org-falha-borda: rgba(154, 167, 176, 0.45);
+
+  /* —— Tipografia canonica: editorial, interface, tecnica. —— */
+  --org-serifa: "Spectral", Georgia, "Times New Roman", serif;
+  --org-interface: "Hanken Grotesk", system-ui, -apple-system, sans-serif;
+  --org-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+
+  /* —— Raio e sombra do painel que emerge da superficie. —— */
+  --org-raio: 16px;
+  --org-raio-p: 11px;
+  --org-raio-pilula: 999px;
+  --org-sombra-painel: 0 30px 70px -32px rgba(0, 0, 0, 0.8);
+
+  /* —— Movimento. So comunica mudanca; desligado em prefers-reduced-motion. —— */
+  --org-fluxo: 1.6s;
+  --org-pulso: 2.8s;
+}

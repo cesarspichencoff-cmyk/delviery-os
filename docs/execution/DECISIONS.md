@@ -985,9 +985,14 @@ registrada em L33.
 
 **Decisao.** As relacoes ativas entre areas (`ligacoes` em `home-vm.ts`) sao
 derivadas da leitura operacional na camada de view model, com o caminho real do
-pedido declarado em `areas.ts`. A superficie so as desenha. Uma ligacao existe
-como caminho e so fica **ativa** quando a area de origem esta em degrau de
-atencao ou pressao com medicao observada.
+pedido declarado em `areas.ts` (`CAMINHO_DO_PEDIDO`). A superficie so as
+desenha. Uma ligacao existe sempre como caminho e so fica **ativa** quando a area
+de ORIGEM esta no degrau `amarelo` (ativa) ou `vermelho` (carregada). O degrau
+vem do motor; a ligacao apenas o transpoe.
+
+Area em `sem_medicao` nunca origina ligacao ativa. Sem leitura, o sistema nao
+afirma que a pressao esta passando por ali — e por isso a cena `degradado` tem o
+caminho inteiro inerte, mesmo com a Cozinha respondendo.
 
 **Alternativa recusada:** deixar `home.js` decidir quando desenhar a linha,
 olhando a cor da area. Recusada porque seria a interface escolhendo ligacao — o

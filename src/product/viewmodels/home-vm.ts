@@ -31,9 +31,11 @@
 
 import {
   AMBIENTES,
+  CAMINHO_DO_PEDIDO,
   ambientePorId,
   pracasDe,
   rotuloDaPraca,
+  rotuloDoAmbiente,
   subareasDe,
   type Ambiente,
   type AmbienteId,
@@ -128,6 +130,35 @@ export interface FocoVM {
   readonly sinal: Sinal;
 }
 
+/**
+ * Quanto uma relacao entre areas esta carregada AGORA. E o degrau da area de
+ * origem, transposto para a relacao — a superficie nao escolhe nada disso.
+ */
+export type IntensidadeDeLigacao = "inerte" | "ativa" | "carregada";
+
+/**
+ * Uma relacao do caminho do pedido (`CAMINHO_DO_PEDIDO`, em `areas.ts`).
+ *
+ * O contrato canonico (Organismo V3.3, prancha 13) diz que a ligacao **so
+ * aparece quando a dependencia esta ativa agora**, e engrossa quando a pressao
+ * comeca a atravessa-la. Ela nasce aqui, e nao no CSS, porque a interface nao
+ * escolhe ligacao — ver DECISIONS.md D53.
+ *
+ * `inerte` e o estado normal: o caminho existe, a linha fica quase invisivel.
+ * Area em `sem_medicao` nunca origina relacao ativa: sem degrau observado, o
+ * sistema nao afirma que a pressao esta passando por ali.
+ */
+export interface LigacaoVM {
+  readonly de: AmbienteId;
+  readonly para: AmbienteId;
+  readonly de_rotulo: string;
+  readonly para_rotulo: string;
+  readonly ativa: boolean;
+  readonly intensidade: IntensidadeDeLigacao;
+  /** Frase operacional. `null` quando a relacao esta inerte — nada a dizer. */
+  readonly texto: string | null;
+}
+
 export interface FonteVM {
   readonly id: string;
   readonly rotulo: string;
@@ -162,6 +193,8 @@ export interface HomeVM {
   readonly selos: readonly Selo[];
   readonly pulso: Campo<number>;
   readonly ambientes: readonly AmbienteVM[];
+  /** O caminho do pedido, com as relacoes ATIVAS marcadas. Nunca vazio. */
+  readonly ligacoes: readonly LigacaoVM[];
   readonly foco: FocoVM | null;
   /** Todos os sinais ativos que NAO ocupam o foco. Nunca escondidos. */
   readonly sinais_em_segundo_plano: readonly Sinal[];
@@ -528,6 +561,43 @@ function fonteVM(f: {
   };
 }
 
+/**
+ * As relacoes do caminho do pedido, com o degrau da origem transposto.
+ *
+ * A regra e curta de proposito, e ela e a mesma da prancha 13 do V3.3:
+ *   - origem `verde` ou `sem_medicao` -> `inerte`, sem texto;
+ *   - origem `amarelo`  -> `ativa`;
+ *   - origem `vermelho` -> `carregada`.
+ *
+ * `sem_medicao` cair em `inerte` e deliberado: uma area sem leitura nao pode
+ * afirmar que esta empurrando pressao adiante. E o mesmo custo aceito em D51.
+ */
+function ligacoesVM(ambientes: readonly AmbienteVM[]): readonly LigacaoVM[] {
+  const porId = new Map(ambientes.map((a) => [a.id, a]));
+  return CAMINHO_DO_PEDIDO.map(({ de, para }) => {
+    const origem = porId.get(de);
+    const cor = origem ? origem.cor : "sem_medicao";
+    const de_rotulo = rotuloDoAmbiente(de);
+    const para_rotulo = rotuloDoAmbiente(para);
+    const intensidade: IntensidadeDeLigacao =
+      cor === "vermelho" ? "carregada" : cor === "amarelo" ? "ativa" : "inerte";
+    return {
+      de,
+      para,
+      de_rotulo,
+      para_rotulo,
+      ativa: intensidade !== "inerte",
+      intensidade,
+      texto:
+        intensidade === "inerte"
+          ? null
+          : intensidade === "carregada"
+            ? `${de_rotulo} esta segurando o fluxo que chega em ${para_rotulo}.`
+            : `A tensao em ${de_rotulo} comeca a alcancar ${para_rotulo}.`,
+    };
+  });
+}
+
 export function homeVM(l: LeituraOperacional): HomeVM {
   const sinais = sinaisDe(l);
   const foco = elegerFoco(sinais);
@@ -595,6 +665,8 @@ export function homeVM(l: LeituraOperacional): HomeVM {
     });
   }
 
+  const ambientes = AMBIENTES.map((a) => ambienteVM(l, a, sinais));
+
   return {
     modo,
     titulo,
@@ -608,7 +680,8 @@ export function homeVM(l: LeituraOperacional): HomeVM {
         ? [selo("real")]
         : [selo("somente_demonstracao", "leitura de demonstracao")],
     pulso,
-    ambientes: AMBIENTES.map((a) => ambienteVM(l, a, sinais)),
+    ambientes,
+    ligacoes: ligacoesVM(ambientes),
     foco: foco !== null ? focoVM(foco, l) : null,
     sinais_em_segundo_plano: sinais.filter((s) => s !== foco),
     total_de_sinais: sinais.length,

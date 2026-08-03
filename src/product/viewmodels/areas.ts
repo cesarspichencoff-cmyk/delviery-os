@@ -145,6 +145,29 @@ export const AMBIENTES: readonly Ambiente[] = [
   },
 ];
 
+/**
+ * O caminho real do pedido, declarado. Ele existe porque a expressao canonica
+ * (Organismo V3.3, prancha 13) manda a pressao se espalhar pelo CAMINHO, e nao
+ * para vizinhos arbitrarios: "a area seguinte no caminho do pedido ganha o
+ * primeiro degrau e o texto diz de onde vem".
+ *
+ * Isto e topologia da operacao, nao layout: a superficie desenha a partir daqui,
+ * mas quem decide se a relacao esta ativa e o degrau que o motor entrega.
+ * Ver DECISIONS.md D53.
+ */
+export interface Aresta {
+  readonly de: AmbienteId;
+  readonly para: AmbienteId;
+}
+
+export const CAMINHO_DO_PEDIDO: readonly Aresta[] = [
+  { de: "caixa", para: "sushi" },
+  { de: "caixa", para: "cozinha" },
+  { de: "sushi", para: "conferencia" },
+  { de: "cozinha", para: "conferencia" },
+  { de: "conferencia", para: "motoboy" },
+];
+
 const PORCA: ReadonlyMap<PracaId, Praca> = new Map(PRACAS.map((p) => [p.id, p]));
 const PORAMB: ReadonlyMap<AmbienteId, Ambiente> = new Map(
   AMBIENTES.map((a) => [a.id, a]),

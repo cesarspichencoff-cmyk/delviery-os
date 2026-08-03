@@ -1,155 +1,380 @@
 /**
- * DeliveryOS — HOME OPERACIONAL
+ * DeliveryOS — HOME · O ORGANISMO OPERACIONAL
+ * ============================================================================
+ * AUTORIDADE VISUAL: Sprint Visual DeliveryOS V2 (Nivel 1) e Organismo
+ * Operacional V3.3 (Nivel 2), em
+ * `docs/design/canonical/deliveryos-visual-v2/extracted/`. NAO o Design System
+ * da Unidade 6, e NAO `app-v1` — os dois sao Nivel 4 e 5. Ver PB9, L33 e D52.
  *
- * A primeira tela. Ela responde, de cima para baixo e sem scroll obrigatorio no
- * desktop: como esta a operacao, o que esta acontecendo, o que e mais urgente,
- * por que, o que a equipe pode fazer, o que mais segue ativo, e o que falta.
+ * A home nao e uma grade de cartoes. E UMA superficie unica onde a operacao
+ * inteira aparece na forma do caminho do pedido:
  *
- * A hierarquia visual e a hierarquia da decisao:
- *   estado geral -> pulso -> ambientes -> foco (UMA orientacao) -> demais sinais
- *   -> fontes ausentes -> aprofundamento
+ *        Caixa
+ *      /       \
+ *   Sushi     Cozinha        (Sushi carrega suas 4 subareas — D46)
+ *      \       /
+ *     Conferencia
+ *          |
+ *       Motoboy
  *
- * Nao ha um unico controle que execute acao. A pilula de orientacao e uma DIV,
- * de proposito: nao existe o que clicar porque nao existe o que executar.
+ * As quatro leis desta superficie, todas do V3.3 prancha 13:
+ *   1. A area CRESCE em degraus (normal, atencao, pressao), nunca continuamente.
+ *      O degrau e `cor`, que vem do motor. A pressao em % nunca vira tamanho.
+ *   2. A ligacao so aparece quando a dependencia esta ATIVA agora, e engrossa
+ *      quando a pressao a atravessa. Quem decide isso e `vm.ligacoes` (D53).
+ *   3. Cor nunca e o unico sinal: escala, texto e informacao mudam juntos.
+ *   4. O resto RECUA, e recuar nunca e sumir.
+ *
+ * O QUE ESTA SUPERFICIE NAO FAZ: nao calcula estado, gravidade, ligacao,
+ * orientacao, confianca nem acao. Tudo isso chega pronto na view model.
+ *
+ * NENHUM CONTROLE EXECUTA. Nao ha botao, formulario, campo de entrada nem
+ * handler neste arquivo — H25 le o proprio codigo-fonte e reprova qualquer um
+ * deles. Aproximar-se de uma area e NAVEGACAO: um link que troca a consulta da
+ * URL. A pilula de orientacao continua sendo uma div, porque continua nao
+ * existindo o que executar.
  */
 
-import {
-  blocoEvidencia,
-  blocoLimitacoes,
-  campo,
-  esc,
-  inspetor,
-  secao,
-  selos,
-} from "../components/ui.js";
+import { blocoLimitacoes, campo, esc, inspetor, selos } from "../components/ui.js";
 
 /* ------------------------------------------------------------------ *
- * Pulso e estado geral
+ * Vocabulario visual — a traducao, e so ela
  * ------------------------------------------------------------------ */
 
-function pulso(vm) {
-  if (!vm.pulso || vm.pulso.observado !== true) {
-    return `<div class="home-pulso home-pulso--ausente">${campo(
-      "Pulso",
-      vm.pulso,
-    )}</div>`;
-  }
-  const n = vm.pulso.valor;
-  return `<div class="home-pulso" data-modo="${esc(vm.modo)}"><div class="home-pulso__anel"><span class="home-pulso__num">${esc(
-    n,
-  )}</span><span class="home-pulso__cap">${
-    n === 1 ? "pedido em andamento" : "pedidos em andamento"
-  }</span></div></div>`;
+/**
+ * A forma de cada area na superficie. Nao sao seis retangulos iguais: o caminho
+ * do pedido tem entrada, producao, fechamento e saida, e cada um tem corpo
+ * proprio. `nucleo` e circulo (producao viva); `pilula` e travessia.
+ */
+const FORMA = {
+  caixa: "pilula",
+  sushi: "nucleo",
+  cozinha: "nucleo",
+  conferencia: "pilula",
+  motoboy: "pilula",
+};
+
+/** As tres fileiras da superficie, na ordem do pedido. */
+const FILEIRAS = [
+  { id: "entrada", areas: ["caixa"] },
+  { id: "producao", areas: ["sushi", "cozinha"] },
+  { id: "fechamento", areas: ["conferencia"] },
+  { id: "saida", areas: ["motoboy"] },
+];
+
+/**
+ * Como a ausencia se apresenta. Sao motivos DIFERENTES e o contrato canonico
+ * mantem as duas linguagens separadas: falta de integracao fala em neutro
+ * tracejado ("informacao incompleta, forma nao so cor"), falha de leitura fala
+ * em cinza-ardosia e "nunca se confunde com pressao ambar".
+ *
+ * A interface nao classifica nada aqui: `motivo` ja vem do `Campo<T>`, que
+ * obriga quem produz o dado a dizer POR QUE ele nao existe.
+ */
+function especieDeAusencia(a) {
+  if (a.pressao.observado === true) return null;
+  if (a.medicao === "sem_medicao_automatica") return "sem_integracao";
+  if (a.pressao.motivo === "nao_observado") return "sem_leitura";
+  return "sem_integracao";
 }
 
 /**
- * Seletor de cena. Existe SOMENTE porque esta build e de demonstracao — numa
- * build com fonte real haveria uma leitura, nao um seletor. Ele fica dentro de
- * uma faixa que se anuncia como demonstracao para que ninguem o confunda com um
- * filtro operacional.
+ * O tipo de evidencia e um codigo de catalogo (`tempo_sem_ficar_pronto`), util
+ * para auditoria e ilegivel numa sexta-feira de pico. Aqui ele vira frase.
+ *
+ * Isto e formatacao, nao traducao de dado: o codigo continua inteiro no view
+ * model e na trilha de auditoria. O que a superficie nao faz e mostrar
+ * `sublinhado_com_underscore` para quem esta operando.
  */
-function seletorDeCena(vm) {
-  if (!vm.demonstracao || !vm.cenas_disponiveis) return "";
-  return `<div class="home-demo" role="note">
-    <p class="home-demo__aviso">Demonstracao. Os pedidos, tempos e cargas sao fixture; as regras e o cardapio sao reais.</p>
-    <nav class="home-demo__cenas" aria-label="Cenas de demonstracao">${vm.cenas_disponiveis
-      .map(
-        (c) =>
-          `<a class="home-demo__cena" href="?cena=${esc(c)}#/"${
-            c === vm.cena ? ' aria-current="true"' : ""
-          }>${esc(c)}</a>`,
-      )
-      .join("")}</nav>
-  </div>`;
+function legivel(codigo) {
+  return String(codigo).replace(/_/g, " ");
 }
 
-function cabecalho(vm) {
-  return `<header class="home-topo">
-    <p class="home-topo__eyebrow">Operacao Viva</p>
-    <h1 class="home-topo__titulo display">${esc(vm.titulo)}</h1>
-    <p class="home-topo__apoio">${esc(vm.apoio)}</p>
-    <div class="home-topo__selos">${selos(vm.selos)}${
-      vm.degradado
-        ? `<span class="home-topo__degradado">Leitura degradada</span>`
-        : ""
-    }</div>
-  </header>`;
+/** O degrau da area, e nada mais. Nunca a porcentagem. */
+function degrau(cor) {
+  if (cor === "vermelho") return "3";
+  if (cor === "amarelo") return "2";
+  if (cor === "verde") return "1";
+  return "0";
 }
 
 /* ------------------------------------------------------------------ *
- * Ambientes e subareas
+ * Cabecalho vivo
  * ------------------------------------------------------------------ */
 
+function hora(iso) {
+  // A hora exata do ultimo dado confiavel, em mono. Contrato dos estados
+  // tecnicos, secao 03: "a memoria, recuada, com hora exata em fonte mono".
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return `${String(d.getHours()).padStart(2, "0")}h${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
+function topo(vm) {
+  const h = hora(vm.observado_em);
+  const vivo = vm.degradado ? "falha" : "vivo";
+  return `<header class="org-topo">
+    <span class="org-topo__marca">DeliveryOS</span>
+    <span class="org-topo__casa">Tata</span>
+    <span class="org-topo__vida" data-estado="${vivo}">
+      <span class="org-topo__ponto" aria-hidden="true"></span>
+      <span class="org-topo__nota">${
+        vm.degradado
+          ? `leitura degradada${h ? ` · ultima leitura ${esc(h)}` : ""}`
+          : `ao vivo${h ? ` · leitura ${esc(h)}` : ""}`
+      }</span>
+    </span>
+  </header>`;
+}
+
+/**
+ * A faixa de demonstracao. Ela e larga e explicita de proposito: o V3.3 tem
+ * cenarios demonstrativos, e o contrato canonico proibe que um valor de
+ * demonstracao seja confundido com leitura real.
+ */
+function faixaDemonstracao(vm) {
+  if (!vm.demonstracao) return "";
+  const cenas = vm.cenas_disponiveis
+    ? `<nav class="org-demo__cenas" aria-label="Cenas de demonstracao">${vm.cenas_disponiveis
+        .map(
+          (c) =>
+            `<a class="org-demo__cena" href="?cena=${esc(c)}#/"${
+              c === vm.cena ? ' aria-current="true"' : ""
+            }>${esc(c)}</a>`,
+        )
+        .join("")}</nav>`
+    : "";
+  return `<div class="org-demo" role="note">
+    <span class="org-demo__ponto" aria-hidden="true"></span>
+    <p class="org-demo__aviso">Demonstracao. Pedidos, tempos e cargas sao fixture; as regras, o cardapio e os limiares sao reais.</p>
+    ${cenas}
+  </div>`;
+}
+
+/**
+ * Faixa de falha tecnica. Cinza-ardosia, no topo do palco, com a hora. Ela NAO
+ * cresce, NAO fica ambar e NAO entra na contagem de pressao.
+ */
+function faixaTecnica(vm) {
+  if (!vm.degradado) return "";
+  const nomes = vm.fontes_degradadas.map((f) => f.rotulo).join(", ");
+  const h = hora(vm.observado_em);
+  return `<div class="org-tecnico" role="status">
+    <span class="org-tecnico__ponto" aria-hidden="true"></span>
+    <span class="org-tecnico__texto">${esc(nomes)} sem leitura confiavel${
+      h ? ` · ultima leitura as ${esc(h)}` : ""
+    }. O resto da operacao segue normal.</span>
+  </div>`;
+}
+
+/* ------------------------------------------------------------------ *
+ * A legenda editorial — o que a operacao esta dizendo agora
+ * ------------------------------------------------------------------ */
+
+function legenda(vm) {
+  const p = vm.pulso;
+  const pulso =
+    p.observado === true
+      ? `<p class="org-legenda__pulso"><span class="org-legenda__num">${esc(
+          p.valor,
+        )}</span> ${p.valor === 1 ? "pedido em andamento" : "pedidos em andamento"}</p>`
+      : `<p class="org-legenda__pulso org-legenda__pulso--ausente">${esc(
+          p.explicacao,
+        )}</p>`;
+  return `<div class="org-legenda">
+    <span class="org-legenda__kicker">${esc(vm.modo)}</span>
+    <p class="org-legenda__frase">${esc(vm.titulo)}</p>
+    <p class="org-legenda__apoio">${esc(vm.apoio)}</p>
+    ${pulso}
+  </div>`;
+}
+
+/* ------------------------------------------------------------------ *
+ * As areas — corpos numa superficie, nao cartoes numa grade
+ * ------------------------------------------------------------------ */
+
+/**
+ * A marca de solidez. "Confianca e solidez": o que foi observado aparece cheio,
+ * o que nao foi aparece vazado. Nunca inventamos quantidade — a marca conta se
+ * ha leitura, nao quantos pedidos existem.
+ */
+function marca(a) {
+  const cheia = a.pressao.observado === true;
+  return `<span class="org-marca" aria-hidden="true"><span class="org-marca__ponto" data-solida="${
+    cheia ? "sim" : "nao"
+  }"></span></span>`;
+}
+
 function subarea(s) {
-  return `<li class="home-sub" data-cor="${esc(s.cor)}"${
-    s.causadora ? ' data-causadora="sim"' : ""
-  }>
-    <span class="home-sub__nome">${esc(s.rotulo)}</span>
-    <span class="home-sub__estado">${esc(s.estado_texto)}</span>
-    ${
-      s.causadora
-        ? '<span class="home-sub__causa">segurando o ambiente</span>'
-        : ""
-    }
+  return `<li class="org-sub" data-cor="${esc(s.cor)}" data-degrau="${degrau(
+    s.cor,
+  )}"${s.causadora ? ' data-causadora="sim"' : ""}>
+    <span class="org-sub__nome">${esc(s.rotulo)}</span>
+    <span class="org-sub__estado">${esc(s.estado_texto)}</span>
+    ${s.causadora ? '<span class="org-sub__causa">segurando o ambiente</span>' : ""}
     <span class="sr-only">${esc(s.motivo)}</span>
   </li>`;
 }
 
-function ambiente(a) {
-  const barra =
-    a.pressao && a.pressao.observado === true
-      ? `<div class="home-amb__barra"><div class="home-amb__barra-fill" style="width:${esc(
-          a.pressao.valor,
-        )}%"></div></div><p class="home-amb__pressao">Pressao ${esc(
-          a.pressao.valor,
-        )}%</p>`
-      : `<div class="home-amb__barra home-amb__barra--vazia"></div><p class="home-amb__pressao home-amb__pressao--ausente">${esc(
-          a.pressao && a.pressao.explicacao ? a.pressao.explicacao : "Sem medicao.",
-        )}</p>`;
+/**
+ * Uma area na superficie geral.
+ *
+ * `data-degrau` e o unico eixo de tamanho. `data-ausencia` separa "ainda sem
+ * dados" de "leitura indisponivel" — as duas linguagens que o contrato dos
+ * estados tecnicos manda nunca cruzar.
+ */
+function area(a, vm) {
+  const ausencia = especieDeAusencia(a);
+  const forma = FORMA[a.id] || "pilula";
+  const href = `?${new URLSearchParams({
+    ...(vm.cena ? { cena: vm.cena } : {}),
+    area: a.id,
+  }).toString()}#/`;
 
-  return `<article class="home-amb" data-cor="${esc(a.cor)}" data-ambiente="${esc(
-    a.id,
-  )}">
-    <div class="home-amb__cab">
-      <h3 class="home-amb__nome">${esc(a.rotulo)}</h3>
-      <span class="home-amb__ponto" aria-hidden="true"></span>
-    </div>
-    <p class="home-amb__estado">${esc(a.estado_texto)}</p>
-    <p class="home-amb__motivo">${esc(a.motivo)}</p>
-    ${a.selos.length ? `<div class="home-amb__selos">${selos(a.selos)}</div>` : ""}
-    ${barra}
-    ${
-      a.subareas.length
-        ? `<ul class="home-amb__subs">${a.subareas.map(subarea).join("")}</ul>`
-        : ""
-    }
-  </article>`;
+  const subs = a.subareas.length
+    ? `<ul class="org-subs">${a.subareas.map(subarea).join("")}</ul>`
+    : "";
+
+  return `<div class="org-area" data-area="${esc(a.id)}" data-forma="${forma}" data-cor="${esc(
+    a.cor,
+  )}" data-degrau="${degrau(a.cor)}"${
+    ausencia ? ` data-ausencia="${ausencia}"` : ""
+  }>
+    <a class="org-area__corpo" href="${esc(href)}" aria-label="Aproximar de ${esc(
+      a.rotulo,
+    )}">
+      ${marca(a)}
+      <span class="org-area__nome">${esc(a.rotulo)}</span>
+      <span class="org-area__estado">${esc(a.estado_texto)}</span>
+    </a>
+    <p class="org-area__info">${esc(a.motivo)}</p>
+    ${subs}
+  </div>`;
 }
 
 /* ------------------------------------------------------------------ *
- * Foco
+ * As ligacoes — so aparecem quando a dependencia esta ativa
+ * ------------------------------------------------------------------ */
+
+function achar(ligacoes, de, para) {
+  return ligacoes.find((l) => l.de === de && l.para === para) || null;
+}
+
+/** Um segmento. A intensidade decide espessura, cor, tracejado e movimento. */
+function segmento(l, d) {
+  const i = l ? l.intensidade : "inerte";
+  const titulo = l && l.texto ? `<title>${esc(l.texto)}</title>` : "";
+  return `<line class="org-fio" data-intensidade="${i}" x1="${d.x1}" y1="${d.y1}" x2="${d.x2}" y2="${d.y2}">${titulo}</line>`;
+}
+
+function ligacoesEntrada(vm) {
+  const a = achar(vm.ligacoes, "caixa", "sushi");
+  const b = achar(vm.ligacoes, "caixa", "cozinha");
+  // O tronco herda a maior das duas intensidades: ele carrega as duas.
+  const tronco =
+    a && a.intensidade === "carregada"
+      ? a
+      : b && b.intensidade === "carregada"
+        ? b
+        : a && a.ativa
+          ? a
+          : b;
+  return `<svg class="org-lig" viewBox="0 0 100 20" preserveAspectRatio="none" aria-hidden="true">
+    ${segmento(tronco, { x1: 50, y1: 0, x2: 50, y2: 6 })}
+    ${segmento(a, { x1: 50, y1: 6, x2: 25, y2: 20 })}
+    ${segmento(b, { x1: 50, y1: 6, x2: 75, y2: 20 })}
+  </svg>`;
+}
+
+function ligacoesFechamento(vm) {
+  const a = achar(vm.ligacoes, "sushi", "conferencia");
+  const b = achar(vm.ligacoes, "cozinha", "conferencia");
+  const tronco =
+    a && a.intensidade === "carregada"
+      ? a
+      : b && b.intensidade === "carregada"
+        ? b
+        : a && a.ativa
+          ? a
+          : b;
+  return `<svg class="org-lig" viewBox="0 0 100 20" preserveAspectRatio="none" aria-hidden="true">
+    ${segmento(a, { x1: 25, y1: 0, x2: 50, y2: 13 })}
+    ${segmento(b, { x1: 75, y1: 0, x2: 50, y2: 13 })}
+    ${segmento(tronco, { x1: 50, y1: 13, x2: 50, y2: 20 })}
+  </svg>`;
+}
+
+function ligacaoSaida(vm) {
+  const l = achar(vm.ligacoes, "conferencia", "motoboy");
+  return `<svg class="org-lig org-lig--curta" viewBox="0 0 100 14" preserveAspectRatio="none" aria-hidden="true">
+    ${segmento(l, { x1: 50, y1: 0, x2: 50, y2: 14 })}
+  </svg>`;
+}
+
+/**
+ * As relacoes ativas em texto. A linha SVG comunica intensidade; esta lista
+ * comunica CAUSA, e ela existe para quem le por leitor de tela e para quem
+ * precisa da frase. Relacao inerte nao aparece — nem aqui, nem la.
+ */
+function relacoesAtivas(vm) {
+  const ativas = vm.ligacoes.filter((l) => l.ativa);
+  if (ativas.length === 0) return "";
+  return `<ul class="org-relacoes">${ativas
+    .map(
+      (l) =>
+        `<li class="org-relacao" data-intensidade="${esc(l.intensidade)}">${esc(
+          l.texto,
+        )}</li>`,
+    )
+    .join("")}</ul>`;
+}
+
+/* ------------------------------------------------------------------ *
+ * A superficie
+ * ------------------------------------------------------------------ */
+
+function superficie(vm) {
+  const porId = new Map(vm.ambientes.map((a) => [a.id, a]));
+  const fileira = (f) =>
+    `<div class="org-fila" data-fila="${f.id}">${f.areas
+      .map((id) => (porId.has(id) ? area(porId.get(id), vm) : ""))
+      .join("")}</div>`;
+
+  return `<div class="org-superficie">
+    ${fileira(FILEIRAS[0])}
+    ${ligacoesEntrada(vm)}
+    ${fileira(FILEIRAS[1])}
+    ${ligacoesFechamento(vm)}
+    ${fileira(FILEIRAS[2])}
+    ${ligacaoSaida(vm)}
+    ${fileira(FILEIRAS[3])}
+  </div>`;
+}
+
+/* ------------------------------------------------------------------ *
+ * O Foco — emerge da superficie, nunca e outra pagina
  * ------------------------------------------------------------------ */
 
 function orientacao(o) {
   if (!o) {
-    return `<div class="home-acao home-acao--pura">
-      <p class="home-acao__hint">Sem orientacao prescrita</p>
-      <div class="home-acao__pilula home-acao__pilula--pura">O foco mostra onde olhar</div>
+    return `<div class="org-acao org-acao--pura">
+      <p class="org-acao__hint">Sem orientacao prescrita</p>
+      <div class="org-acao__pilula org-acao__pilula--pura">O foco mostra onde olhar</div>
     </div>`;
   }
-  return `<div class="home-acao">
-    <p class="home-acao__hint">Uma orientacao</p>
+  return `<div class="org-acao">
+    <p class="org-acao__hint">Uma orientacao</p>
     <!-- DIV, nao botao: nao existe acao a executar. -->
-    <div class="home-acao__pilula">${esc(o.acao)}</div>
-    <dl class="home-acao__detalhe">
+    <div class="org-acao__pilula">${esc(o.acao)}</div>
+    <dl class="org-acao__detalhe">
       <dt>Por que</dt><dd>${esc(o.porque)}</dd>
       <dt>Primeiro olhar</dt><dd>${esc(o.primeiro_olhar)}</dd>
       <dt>Limite</dt><dd>${esc(o.impacto)}</dd>
     </dl>
-    <div class="home-acao__rodape">
+    <div class="org-acao__rodape">
       ${selos(o.selos)}
       ${campo("Confianca", o.confianca)}
-      <p class="home-acao__nada">Nada foi executado. Uma pessoa decide.</p>
+      <p class="org-acao__nada">Nada foi executado. Uma pessoa decide.</p>
     </div>
   </div>`;
 }
@@ -157,141 +382,257 @@ function orientacao(o) {
 function foco(vm) {
   if (!vm.foco) return "";
   const f = vm.foco;
-  const local = [f.ambiente_rotulo, f.subarea_rotulo]
-    .filter(Boolean)
-    .join(" · ");
-  return `<section class="home-foco" aria-labelledby="focoTitulo">
-    <div class="home-foco__cartao">
-      <div class="home-foco__cab">
-        <span class="home-foco__eyebrow">Foco</span>
-        ${local ? `<span class="home-foco__local">${esc(local)}</span>` : ""}
-      </div>
-      <h2 class="home-foco__titulo" id="focoTitulo">${esc(f.situacao)}</h2>
-      <p class="home-foco__tempo">${esc(f.tempo)}</p>
-      ${blocoEvidencia(f.evidencias, "Evidencias")}
-      <p class="home-foco__impacto">${esc(f.impacto)}</p>
-    </div>
+  const local = [f.ambiente_rotulo, f.subarea_rotulo].filter(Boolean).join(" · ");
+  const evid = f.evidencias.length
+    ? `<ul class="org-foco__evidencias">${f.evidencias
+        .map(
+          (e) =>
+            `<li><span class="org-foco__ev-tipo">${esc(legivel(e.tipo))}</span> ${esc(
+              e.referencia,
+            )}</li>`,
+        )
+        .join("")}</ul>`
+    : "";
+  return `<aside class="org-foco" aria-labelledby="focoTitulo">
+    <span class="org-foco__entalhe" aria-hidden="true"></span>
+    <span class="org-foco__eyebrow">Precisa de atencao${local ? ` · ${esc(local)}` : ""}</span>
+    <h2 class="org-foco__titulo" id="focoTitulo">${esc(f.situacao)}</h2>
+    <p class="org-foco__consequencia">${esc(f.impacto)}</p>
+    ${evid}
+    <p class="org-foco__tempo">${esc(f.tempo)}</p>
     ${orientacao(f.orientacao)}
-  </section>`;
+  </aside>`;
 }
 
 /* ------------------------------------------------------------------ *
- * Demais sinais — nunca escondidos
+ * Aproximacao de uma area
+ * ------------------------------------------------------------------ */
+
+/**
+ * Aproximar-se e NAVEGACAO, e por isso o "resto da operacao" nunca sai da tela:
+ * o rodape carrega todas as outras areas com o degrau delas. O V3.3 chama isso
+ * de minimapa, e a regra e a mesma da prancha 13 — recuar nunca e sumir.
+ */
+function minimapa(vm, focada) {
+  return `<div class="org-minimapa">
+    <span class="org-minimapa__rotulo">resto da operacao</span>
+    ${vm.ambientes
+      .filter((a) => a.id !== focada)
+      .map(
+        (a) =>
+          `<span class="org-minimapa__item" data-cor="${esc(a.cor)}" data-degrau="${degrau(
+            a.cor,
+          )}"><span class="org-minimapa__ponto" aria-hidden="true"></span>${esc(
+            a.rotulo,
+          )} <span class="org-minimapa__estado">${esc(a.estado_texto)}</span></span>`,
+      )
+      .join("")}
+  </div>`;
+}
+
+function aproximacao(vm, id) {
+  const a = vm.ambientes.find((x) => x.id === id);
+  if (!a) return "";
+  const ausencia = especieDeAusencia(a);
+  const volta = `?${new URLSearchParams(vm.cena ? { cena: vm.cena } : {}).toString()}#/`;
+
+  const entram = vm.ligacoes.filter((l) => l.para === id);
+  const saem = vm.ligacoes.filter((l) => l.de === id);
+  const caminho = [...entram.map((l) => l.de_rotulo), a.rotulo, ...saem.map((l) => l.para_rotulo)]
+    .filter((v, i, arr) => arr.indexOf(v) === i)
+    .join(" → ");
+
+  const daArea = vm.sinais_em_segundo_plano.filter((s) => s.ambiente === id);
+  const acontecendo = daArea.length
+    ? `<ul class="org-aprox__linhas">${daArea
+        .slice(0, 6)
+        .map(
+          (s) =>
+            `<li data-sev="${esc(s.severidade)}"><span class="org-aprox__alvo">${esc(
+              s.alvo_rotulo,
+            )}</span> ${esc(s.resumo)}</li>`,
+        )
+        .join("")}${
+        daArea.length > 6
+          ? `<li class="org-aprox__resto">Mais ${daArea.length - 6} nesta area.</li>`
+          : ""
+      }</ul>`
+    : `<p class="org-aprox__vazio">Nenhum sinal sustentado aponta para esta area nesta leitura.</p>`;
+
+  const relacoes = [...entram, ...saem].filter((l) => l.ativa);
+
+  return `<div class="org-aprox">
+    <div class="org-aprox__topo">
+      <a class="org-aprox__voltar" href="${esc(volta)}">← Visao geral</a>
+      <span class="org-aprox__caminho">${esc(caminho)}</span>
+    </div>
+    <div class="org-aprox__corpo">
+      <div class="org-area org-area--focada" data-area="${esc(a.id)}" data-forma="${
+        FORMA[a.id] || "pilula"
+      }" data-cor="${esc(a.cor)}" data-degrau="${degrau(a.cor)}"${
+        ausencia ? ` data-ausencia="${ausencia}"` : ""
+      }>
+        <span class="org-area__corpo">
+          ${marca(a)}
+          <span class="org-area__nome">${esc(a.rotulo)}</span>
+          <span class="org-area__estado">${esc(a.estado_texto)}</span>
+        </span>
+      </div>
+      <div class="org-aprox__coluna">
+        <h2 class="org-aprox__rotulo">O que esta acontecendo</h2>
+        <p class="org-aprox__descricao">${esc(a.descricao)}</p>
+        <p class="org-aprox__motivo">${esc(a.motivo)}</p>
+        ${acontecendo}
+        ${
+          a.subareas.length
+            ? `<h3 class="org-aprox__rotulo">Subareas</h3><ul class="org-subs org-subs--aberta">${a.subareas
+                .map(subarea)
+                .join("")}</ul>`
+            : ""
+        }
+        ${
+          a.pressao.observado === true
+            ? `<p class="org-aprox__medida">Carga observada: ${esc(
+                a.pressao.valor,
+              )}% do ritmo normal desta area.</p>`
+            : `<p class="org-aprox__medida org-aprox__medida--ausente">${esc(
+                a.pressao.explicacao,
+              )}</p>`
+        }
+      </div>
+      <div class="org-aprox__coluna org-aprox__coluna--causa">
+        <h2 class="org-aprox__rotulo">Causa e efeito</h2>
+        ${
+          relacoes.length
+            ? relacoes
+                .map(
+                  (l) =>
+                    `<p class="org-relacao" data-intensidade="${esc(
+                      l.intensidade,
+                    )}" data-direcao="${l.para === id ? "entra" : "sai"}">${esc(
+                      l.texto,
+                    )}</p>`,
+                )
+                .join("")
+            : `<p class="org-aprox__vazio">Nenhuma dependencia ativa entra ou sai desta area agora.</p>`
+        }
+      </div>
+    </div>
+    ${minimapa(vm, id)}
+  </div>`;
+}
+
+/* ------------------------------------------------------------------ *
+ * O que segue acontecendo — nada some
  * ------------------------------------------------------------------ */
 
 function linhaSinal(s) {
   // `alvo_rotulo` ja vem humano da view model. A tela nunca compoe alvo a partir
   // de `subarea`/`ambiente` crus — foi assim que `enrolados_quentes` vazou.
-  const alvo = s.alvo_rotulo;
-  return `<li class="home-sinal" data-sev="${esc(s.severidade)}" data-codigo="${esc(
+  return `<li class="org-sinal" data-sev="${esc(s.severidade)}" data-codigo="${esc(
     s.codigo,
   )}">
-    <span class="home-sinal__nome">${esc(s.nome)}</span>
-    <span class="home-sinal__resumo">${esc(s.resumo)}</span>
-    <span class="home-sinal__alvo">${esc(alvo)}</span>
-    ${s.orientacao ? `<span class="home-sinal__orient">${esc(s.orientacao)}</span>` : ""}
+    <span class="org-sinal__nome">${esc(s.nome)}</span>
+    <span class="org-sinal__resumo">${esc(s.resumo)}</span>
+    <span class="org-sinal__alvo">${esc(s.alvo_rotulo)}</span>
+    ${s.orientacao ? `<span class="org-sinal__orient">${esc(s.orientacao)}</span>` : ""}
   </li>`;
+}
+
+function bloco(titulo, sub, corpo) {
+  return `<section class="org-bloco">
+    <h2 class="org-bloco__titulo">${esc(titulo)}</h2>
+    <p class="org-bloco__sub">${esc(sub)}</p>
+    ${corpo}
+  </section>`;
 }
 
 function segundoPlano(vm) {
   if (!vm.sinais_em_segundo_plano.length) {
-    return secao(
-      "Outros sinais ativos",
-      "Nenhum outro sinal ativo nesta leitura.",
-      `<p class="home-vazio">A ausencia de sinal aqui significa que nenhuma regra sustentada disparou — nao que o sistema deixou de olhar.</p>`,
+    return bloco(
+      "O que segue acontecendo",
+      "Nenhum outro sinal sustentado nesta leitura.",
+      `<p class="org-vazio">A ausencia de sinal aqui significa que nenhuma regra sustentada disparou — nao que o sistema deixou de olhar.</p>`,
     );
   }
-  return secao(
-    vm.foco ? "Outros problemas continuam ativos" : "O que segue acontecendo",
+  return bloco(
+    vm.foco ? "Os outros problemas continuam ativos" : "O que segue acontecendo",
     `${vm.sinais_em_segundo_plano.length} sinais, do mais severo ao menos.`,
-    `<ul class="home-sinais">${vm.sinais_em_segundo_plano
-      .map(linhaSinal)
-      .join("")}</ul>`,
+    `<ul class="org-sinais">${vm.sinais_em_segundo_plano.map(linhaSinal).join("")}</ul>`,
   );
 }
 
-/* ------------------------------------------------------------------ *
- * Fontes e o que ainda nao existe
- * ------------------------------------------------------------------ */
+function contextos(vm) {
+  const corpo = vm.contextos
+    .map(
+      (c) => `<article class="org-ctx" data-funcao="${esc(c.funcao)}">
+        <h3 class="org-ctx__nome">${esc(c.rotulo)}</h3>
+        <p class="org-ctx__pergunta">${esc(c.pergunta)}</p>
+        ${
+          c.sinais.length
+            ? `<ul class="org-ctx__sinais">${c.sinais
+                .slice(0, 4)
+                .map((s) => `<li>${esc(s.nome)}: ${esc(s.resumo)}</li>`)
+                .join("")}${
+                c.sinais.length > 4
+                  ? `<li class="org-ctx__resto">Mais ${c.sinais.length - 4}.</li>`
+                  : ""
+              }</ul>`
+            : `<p class="org-ctx__vazio">Nenhum sinal para esta funcao nesta leitura.</p>`
+        }
+        ${c.ausencia ? `<p class="org-ctx__ausencia">${esc(c.ausencia)}</p>` : ""}
+      </article>`,
+    )
+    .join("");
+  return bloco(
+    "O que cada funcao ve",
+    "A mesma leitura, lida pela pergunta de quem esta operando.",
+    `<div class="org-ctxs">${corpo}</div>`,
+  );
+}
 
 function fontes(vm) {
   const linhas = vm.fontes
     .map(
-      (f) => `<li class="home-fonte" data-estado="${esc(f.estado)}">
-        <span class="home-fonte__nome">${esc(f.rotulo)}</span>
-        <span class="home-fonte__selo">${selos(f.selos)}</span>
-        <span class="home-fonte__detalhe">${esc(f.detalhe)}</span>
+      (f) => `<li class="org-fonte" data-estado="${esc(f.estado)}">
+        <span class="org-fonte__nome">${esc(f.rotulo)}</span>
+        <span class="org-fonte__selo">${selos(f.selos)}</span>
+        <span class="org-fonte__detalhe">${esc(f.detalhe)}</span>
       </li>`,
     )
     .join("");
   const indisponiveis = vm.sinais_indisponiveis
     .map(
-      (s) => `<li class="home-bloqueado">
-        <span class="home-bloqueado__cod">${esc(s.codigo)}</span>
-        <span class="home-bloqueado__nome">${esc(s.nome)}</span>
-        <span class="home-bloqueado__motivo">${esc(s.motivo)}</span>
-        <span class="home-bloqueado__fonte">Falta: ${esc(s.fonte_que_falta)}</span>
+      (s) => `<li class="org-bloqueado">
+        <span class="org-bloqueado__cod">${esc(s.codigo)}</span>
+        <span class="org-bloqueado__nome">${esc(s.nome)}</span>
+        <span class="org-bloqueado__motivo">${esc(s.motivo)}</span>
+        <span class="org-bloqueado__fonte">Falta: ${esc(s.fonte_que_falta)}</span>
       </li>`,
     )
     .join("");
-  return secao(
+  return bloco(
     "O que ainda nao esta disponivel",
     "Ausencia declarada. Nenhuma delas foi convertida em zero nem em verde.",
-    `<ul class="home-fontes">${linhas}</ul>` +
+    `<ul class="org-fontes">${linhas}</ul>` +
       inspetor(
         "sinais-bloqueados",
         `${vm.sinais_indisponiveis.length} sinais do catalogo sem fonte`,
-        `<ul class="home-bloqueados">${indisponiveis}</ul>`,
+        `<ul class="org-bloqueados">${indisponiveis}</ul>`,
       ),
   );
 }
 
-/* ------------------------------------------------------------------ *
- * Contextos por funcao e aprofundamento
- * ------------------------------------------------------------------ */
-
-function contextos(vm) {
-  const corpo = vm.contextos
-    .map(
-      (c) => `<article class="home-ctx" data-funcao="${esc(c.funcao)}">
-        <h3 class="home-ctx__nome">${esc(c.rotulo)}</h3>
-        <p class="home-ctx__pergunta">${esc(c.pergunta)}</p>
-        ${
-          c.sinais.length
-            ? `<ul class="home-ctx__sinais">${c.sinais
-                .slice(0, 4)
-                .map(
-                  (s) =>
-                    `<li>${esc(s.nome)}: ${esc(s.resumo)}</li>`,
-                )
-                .join("")}${
-                c.sinais.length > 4
-                  ? `<li class="home-ctx__resto">Mais ${c.sinais.length - 4}.</li>`
-                  : ""
-              }</ul>`
-            : `<p class="home-ctx__vazio">Nenhum sinal para esta funcao nesta leitura.</p>`
-        }
-        ${c.ausencia ? `<p class="home-ctx__ausencia">${esc(c.ausencia)}</p>` : ""}
-      </article>`,
-    )
-    .join("");
-  return secao(
-    "O que cada funcao ve",
-    "A mesma leitura, lida pela pergunta de quem esta operando.",
-    `<div class="home-ctxs">${corpo}</div>`,
-  );
-}
-
 function aprofundamento(vm) {
-  return secao(
+  return bloco(
     "Aprofundar",
     "As telas tecnicas continuam existindo. Elas sao detalhe e auditoria, nao a jornada principal.",
-    `<ul class="home-aprof">${vm.aprofundamentos
+    `<ul class="org-aprof">${vm.aprofundamentos
       .map(
         (a) =>
-          `<li><a class="home-aprof__link" href="#${esc(a.rota)}"><span class="home-aprof__nome">${esc(
+          `<li><a class="org-aprof__link" href="#${esc(a.rota)}"><span class="org-aprof__nome">${esc(
             a.nome,
-          )}</span><span class="home-aprof__papel">${esc(a.papel)}</span></a></li>`,
+          )}</span><span class="org-aprof__papel">${esc(a.papel)}</span></a></li>`,
       )
       .join("")}</ul>`,
   );
@@ -299,19 +640,33 @@ function aprofundamento(vm) {
 
 /* ------------------------------------------------------------------ */
 
+/**
+ * Qual area esta ampliada. Vem da URL porque aproximar-se e navegacao — nao ha
+ * estado de componente, nao ha handler, e recarregar a pagina nao perde nada.
+ */
+function areaAmpliada(vm) {
+  if (typeof window === "undefined" || !window.location) return null;
+  const id = new URLSearchParams(window.location.search).get("area");
+  return id && vm.ambientes.some((a) => a.id === id) ? id : null;
+}
+
 export function telaHome(vm) {
-  return `<div class="home" data-modo="${esc(vm.modo)}" data-degradado="${
+  const ampliada = areaAmpliada(vm);
+  return `<div class="org" data-modo="${esc(vm.modo)}" data-degradado="${
     vm.degradado ? "sim" : "nao"
-  }" data-demonstracao="${vm.demonstracao ? "sim" : "nao"}">
-    ${seletorDeCena(vm)}
-    ${cabecalho(vm)}
-    ${pulso(vm)}
-    ${secao(
-      "Ambientes",
-      "Todos, sempre. Nenhum some por estar bem — e nenhum fica verde por falta de fonte.",
-      `<div class="home-ambs">${vm.ambientes.map(ambiente).join("")}</div>`,
-    )}
-    ${foco(vm)}
+  }" data-demonstracao="${vm.demonstracao ? "sim" : "nao"}" data-vista="${
+    ampliada ? "area" : "geral"
+  }">
+    ${faixaDemonstracao(vm)}
+    ${topo(vm)}
+    <div class="org-palco">
+      ${faixaTecnica(vm)}
+      ${
+        ampliada
+          ? aproximacao(vm, ampliada)
+          : `${legenda(vm)}${superficie(vm)}${relacoesAtivas(vm)}${foco(vm)}`
+      }
+    </div>
     ${segundoPlano(vm)}
     ${contextos(vm)}
     ${fontes(vm)}

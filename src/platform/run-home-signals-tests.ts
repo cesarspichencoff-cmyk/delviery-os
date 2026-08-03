@@ -502,7 +502,11 @@ teste("H25 a superficie nao tem controle operacional", () => {
   assert.ok(!/<form/.test(fonte), "a home ganhou um formulario");
   assert.ok(!/<input/.test(fonte), "a home ganhou um campo de entrada");
   assert.ok(/onclick|addEventListener/.test(fonte) === false, "a home ganhou handler");
-  assert.match(fonte, /home-acao__pilula/);
+  // Classe renomeada com a expressao canonica (`home-` -> `org-`). A garantia e
+  // a mesma: a orientacao e uma DIV, e o unico controle da superficie e o link
+  // que aproxima de uma area — navegacao, nunca execucao.
+  assert.match(fonte, /org-acao__pilula/);
+  assert.match(fonte, /class="org-acao__pilula"/);
 });
 
 teste("H26 o Copiloto nao esta conectado", () => {

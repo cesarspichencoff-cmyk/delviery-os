@@ -1,568 +1,1404 @@
-/* ==========================================================================
-   DeliveryOS — HOME OPERACIONAL
-   --------------------------------------------------------------------------
-   Nenhum token novo nasce aqui. Tudo vem de /shared/tokens.css (canonico de
-   Entregas) e de /tokens/product-tokens.css (Unidade 6).
+/* DeliveryOS — HOME · O ORGANISMO OPERACIONAL
+   ===========================================================================
+   AUTORIDADE: Sprint Visual DeliveryOS V2 (Nivel 1) e Organismo Operacional
+   V3.3 (Nivel 2). Ver docs/design/VISUAL_REFERENCE_HIERARCHY.md, PB9 e D52.
 
-   Regra visual que sustenta a honestidade da tela:
-     `sem_medicao` NAO tem cor de saude e NAO tem barra preenchida. Ela usa o
-     tracejado de ausencia (--line-dashed-unknown), a mesma linguagem que o
-     componente `campo` usa quando um valor nao foi observado. Um ambiente sem
-     fonte nunca se parece com um ambiente verde.
+   Esta folha nao declara token proprio: todo valor de marca vem de
+   /tokens/organismo-tokens.css, que carrega os valores literais do canone.
 
-   Acessibilidade sem cor: cada estado carrega rotulo textual (`estado_texto`) e
-   padrao de borda proprio. Cor e o TERCEIRO canal, nunca o unico.
-   ========================================================================== */
+   AS QUATRO LEIS QUE ESTE CSS PRECISA OBEDECER (V3.3, prancha 13):
+     1. o tamanho da area vem de `data-degrau`, e so dele — a pressao em % nunca
+        vira largura, altura ou barra;
+     2. `.org-fio[data-intensidade="inerte"]` e quase invisivel: a ligacao so
+        aparece com dependencia ativa;
+     3. cor nunca e o unico sinal — cada degrau muda escala, brilho e texto;
+     4. falha tecnica fala em cinza-ardosia, nao cresce e nunca vira ambar.
 
-.home {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-5, 40px);
-  max-width: var(--content-max);
+   Sobre a tipografia: o canone pede Spectral, Hanken Grotesk e IBM Plex Mono.
+   Este servidor e local e nenhuma folha externa e carregada, de proposito. Os
+   tokens declaram as tres familias com fallback do sistema; o que se preserva
+   sempre e a HIERARQUIA — editorial serifada, interface sem serifa, tecnico
+   monoespacado. Limitacao registrada no checkpoint.
+   =========================================================================== */
+
+/* ------------------------------------------------------------------ *
+ * O shell RECUA quando a home esta na tela.
+ * ------------------------------------------------------------------ *
+ * O canone e explicito: "a operacao inteira, viva, em UMA so superficie". Um
+ * organismo escuro dentro de um aplicativo claro nao e uma superficie — sao
+ * duas, e a de fora ganha. Entao, e so na home, a moldura escurece e some como
+ * assunto: ela continua inteira, navegavel e focavel, mas para de competir.
+ *
+ * O escopo e `:has(.org)`. As superficies TECNICAS continuam no Design System
+ * da Unidade 6, que e o nivel certo para elas — nenhuma regra daqui as alcanca.
+ */
+body:has(.org) {
+  background: var(--org-fundo);
 }
 
-/* -------------------------------------------------- faixa de demonstracao */
+body:has(.org) .shell__topo,
+body:has(.org) .shell__nav,
+body:has(.org) .shell__nav-mobile,
+body:has(.org) .faixa-ambiente {
+  background: var(--org-palco-fundo);
+  border-color: var(--org-linha-fraca);
+  color: var(--org-verde-texto-3);
+}
 
-.home-demo {
-  border: var(--stroke-emphasis) dashed var(--ink-age);
-  border-radius: var(--radius-md);
-  background: var(--wash-age);
-  padding: 12px 16px;
+body:has(.org) .shell__conteudo,
+body:has(.org) .shell__corpo,
+body:has(.org) .shell {
+  background: var(--org-fundo);
+}
+
+body:has(.org) .nav-item,
+body:has(.org) .nav-grupo__titulo,
+body:has(.org) .nav-grupo__descricao,
+body:has(.org) .shell__marca,
+body:has(.org) .shell__unidade-ativa,
+body:has(.org) .contexto {
+  color: var(--org-verde-texto-3);
+}
+
+body:has(.org) .nav-item__nome,
+body:has(.org) .shell__marca strong {
+  color: var(--org-creme-3);
+}
+
+body:has(.org) .nav-item[aria-current="page"] {
+  border-color: var(--org-vivo-borda);
+  background: rgba(140, 198, 63, 0.06);
+}
+
+/* ------------------------------------------------------------------ *
+ * A superficie sangra. O organismo nao mora dentro de um cartao.
+ * ------------------------------------------------------------------ */
+
+.org {
+  margin: calc(var(--space-4) * -1) calc(var(--space-4) * -1) 0;
+  padding: clamp(1.1rem, 4vw, 2.6rem) clamp(1rem, 4vw, 2.4rem) 3rem;
+  background: radial-gradient(1300px 680px at 50% -8%, var(--org-fundo-alto), var(--org-fundo) 68%);
+  color: var(--org-creme-2);
+  font-family: var(--org-interface);
+  min-height: 100%;
+}
+
+.org ::selection {
+  background: var(--org-vivo);
+  color: var(--org-fundo);
+}
+
+/* ------------------------------------------------------------------ *
+ * Cabecalho vivo e faixas
+ * ------------------------------------------------------------------ */
+
+.org-topo {
   display: flex;
+  align-items: baseline;
+  gap: 0.85rem;
   flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  padding-bottom: 1.1rem;
+  border-bottom: 1px solid var(--org-linha);
 }
-.home-demo__aviso {
-  margin: 0;
-  font-size: var(--type-small);
-  color: var(--ink-age);
+
+.org-topo__marca {
+  font-family: var(--org-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--org-verde-texto-4);
 }
-.home-demo__cenas {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+
+.org-topo__casa {
+  font-family: var(--org-serifa);
+  font-size: 1.1rem;
+  color: var(--org-creme);
 }
-.home-demo__cena {
-  font-size: var(--type-small);
-  padding: 4px 12px;
-  border-radius: 999px;
-  border: var(--stroke-hairline) solid var(--ink-age);
-  color: var(--ink-age);
-  text-decoration: none;
-  min-height: var(--touch-min);
+
+.org-topo__vida {
+  margin-left: auto;
   display: inline-flex;
   align-items: center;
-}
-.home-demo__cena[aria-current="true"] {
-  background: var(--ink-age);
-  color: var(--surface-elevated);
-  font-weight: 600;
+  gap: 0.5rem;
 }
 
-/* ---------------------------------------------------------------- topo */
+.org-topo__ponto {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--org-vivo);
+}
 
-.home-topo {
+.org-topo__vida[data-estado="vivo"] .org-topo__ponto {
+  animation: orgPulso var(--org-pulso) ease-out infinite;
+}
+
+/* Fonte degradada NAO pulsa e NAO fica verde: ela e cinza e parada. */
+.org-topo__vida[data-estado="falha"] .org-topo__ponto {
+  background: var(--org-falha-clara);
+  animation: none;
+}
+
+.org-topo__nota {
+  font-family: var(--org-mono);
+  font-size: 0.76rem;
+  color: var(--org-verde-texto-2);
+}
+
+.org-topo__vida[data-estado="falha"] .org-topo__nota {
+  color: var(--org-falha-clara);
+}
+
+.org-demo {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+  padding: 0.5rem 1rem;
+  border-radius: var(--org-raio-pilula);
+  border: 1px dashed var(--org-neutro);
+  background: rgba(126, 148, 120, 0.06);
+}
+
+.org-demo__ponto {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  border: 1px dashed var(--org-neutro-traco);
+}
+
+.org-demo__aviso {
+  margin: 0;
+  font-family: var(--org-mono);
+  font-size: 0.72rem;
+  line-height: 1.4;
+  color: var(--org-verde-texto-3);
+}
+
+.org-demo__cenas {
+  display: flex;
+  gap: 0.35rem;
+  margin-left: auto;
+}
+
+.org-demo__cena {
+  font-family: var(--org-mono);
+  font-size: 0.72rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 7px;
+  border: 1px solid var(--org-linha-viva);
+  color: var(--org-verde-texto);
+  text-decoration: none;
+}
+
+.org-demo__cena[aria-current="true"] {
+  border-color: var(--org-vivo-borda);
+  color: var(--org-vivo);
+}
+
+/* Falha tecnica: cinza-ardosia, sem crescimento, sem ambar. */
+.org-tecnico {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0 auto 1.4rem;
+  padding: 0.5rem 1rem;
+  border-radius: var(--org-raio-pilula);
+  background: var(--org-falha-veu);
+  border: 1px solid var(--org-falha-borda);
+}
+
+.org-tecnico__ponto {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--org-falha-clara);
+}
+
+.org-tecnico__texto {
+  font-family: var(--org-mono);
+  font-size: 0.76rem;
+  line-height: 1.4;
+  color: var(--org-falha-texto);
+}
+
+/* ------------------------------------------------------------------ *
+ * O palco
+ * ------------------------------------------------------------------ */
+
+.org-palco {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  align-items: center;
+  padding: 1.8rem 0 2.4rem;
 }
-.home-topo__eyebrow {
-  font-size: var(--type-meta);
-  letter-spacing: 0.14em;
+
+.org-legenda {
+  align-self: flex-start;
+  max-width: 34ch;
+  margin-bottom: 0.6rem;
+}
+
+.org-legenda__kicker {
+  font-family: var(--org-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--text-muted);
+  color: var(--org-verde-texto-4);
 }
-.home-topo__titulo {
-  font-size: var(--type-display);
-  line-height: 1.05;
-  color: var(--text-primary);
-  margin: 0;
+
+.org[data-modo="ambiente"] .org-legenda__kicker {
+  color: var(--org-ambar);
 }
-.home-topo__apoio {
-  font-size: var(--type-body);
-  color: var(--text-muted);
-  max-width: var(--reading-max);
+
+.org[data-modo="foco"] .org-legenda__kicker {
+  color: var(--org-ambar-claro);
 }
-.home-topo__selos {
+
+.org-legenda__frase {
+  margin: 0.45rem 0 0;
+  font-family: var(--org-serifa);
+  font-weight: 300;
+  font-size: clamp(1.9rem, 4.4vw, 3rem);
+  line-height: 1.08;
+  letter-spacing: -0.015em;
+  color: var(--org-creme);
+}
+
+.org-legenda__apoio {
+  margin: 0.5rem 0 0;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--org-verde-texto);
+  max-width: 52ch;
+}
+
+.org-legenda__pulso {
+  margin: 0.6rem 0 0;
+  font-family: var(--org-mono);
+  font-size: 0.8rem;
+  color: var(--org-verde-texto-3);
+}
+
+.org-legenda__num {
+  font-size: 1.05rem;
+  color: var(--org-vivo);
+}
+
+.org-legenda__pulso--ausente {
+  color: var(--org-falha-clara);
+}
+
+/* ------------------------------------------------------------------ *
+ * A superficie unica, com o caminho do pedido dentro dela
+ * ------------------------------------------------------------------ */
+
+.org-superficie {
+  width: 100%;
+  max-width: 760px;
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  flex-direction: column;
   align-items: center;
 }
-.home-topo__degradado {
-  font-size: var(--type-small);
-  color: var(--ink-age);
-  background: var(--wash-age);
-  border: var(--stroke-hairline) dashed var(--ink-age);
-  border-radius: 999px;
-  padding: 2px 10px;
-}
 
-/* ---------------------------------------------------------------- pulso */
-
-.home-pulso {
+.org-fila {
   display: flex;
-  justify-content: flex-start;
+  width: 100%;
+  align-items: flex-start;
+  justify-content: center;
+  gap: clamp(1rem, 4vw, 2.4rem);
 }
-.home-pulso__anel {
+
+.org-fila[data-fila="producao"] > .org-area {
+  flex: 1;
+}
+
+/* ------------------------------------------------------------------ *
+ * A area. O tamanho vem de data-degrau, e de nada mais.
+ * ------------------------------------------------------------------ */
+
+.org-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  text-align: center;
+}
+
+.org-area__corpo {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
-  min-width: 168px;
-  min-height: 168px;
-  padding: 24px;
+  gap: 3px;
+  text-decoration: none;
+  color: inherit;
+  border: 1px solid var(--org-vivo-borda);
+  background: radial-gradient(circle at 50% 40%, var(--org-vivo-veu), transparent 72%);
+  transition: transform 0.18s ease, border-color 0.18s ease;
+}
+
+.org-area__corpo:hover {
+  transform: scale(1.04);
+  border-color: var(--org-vivo);
+}
+
+.org-area__corpo:focus-visible {
+  outline: 2px solid var(--org-vivo);
+  outline-offset: 3px;
+}
+
+.org-area[data-forma="nucleo"] .org-area__corpo {
   border-radius: 50%;
-  border: var(--stroke-signal) solid var(--brand-action);
-  background: var(--wash-action);
+  width: 128px;
+  height: 128px;
 }
-.home-pulso__num {
-  font-size: 56px;
-  line-height: 1;
+
+.org-area[data-forma="pilula"] .org-area__corpo {
+  border-radius: var(--org-raio-pilula);
+  min-width: 200px;
+  min-height: 56px;
+  padding: 0.55rem 1.3rem;
+}
+
+/* —— DEGRAU 2 · atencao. Ambar entra junto com o segundo degrau. —— */
+.org-area[data-degrau="2"] .org-area__corpo {
+  border-color: var(--org-ambar-borda-fraca);
+  background: radial-gradient(circle at 50% 40%, var(--org-ambar-veu-fraco), transparent 78%);
+}
+
+.org-area[data-degrau="2"][data-forma="nucleo"] .org-area__corpo {
+  width: 156px;
+  height: 156px;
+}
+
+.org-area[data-degrau="2"][data-forma="pilula"] .org-area__corpo {
+  min-width: 244px;
+  min-height: 64px;
+}
+
+/* —— DEGRAU 3 · pressao. Cresce mais, brilha mais, e ganha pulso. —— */
+.org-area[data-degrau="3"] .org-area__corpo {
+  border-color: var(--org-ambar-borda);
+  background: radial-gradient(
+    circle at 50% 40%,
+    var(--org-ambar-veu),
+    rgba(224, 142, 58, 0.08) 60%,
+    transparent 78%
+  );
+  box-shadow: 0 14px 34px -16px rgba(224, 142, 58, 0.5);
+}
+
+.org-area[data-degrau="3"][data-forma="nucleo"] .org-area__corpo {
+  width: 190px;
+  height: 190px;
+}
+
+.org-area[data-degrau="3"][data-forma="pilula"] .org-area__corpo {
+  min-width: 288px;
+  min-height: 72px;
+}
+
+.org-area[data-degrau="3"] .org-area__corpo::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  border: 1px solid var(--org-ambar-pulso);
+  animation: orgPulso var(--org-pulso) ease-out infinite;
+}
+
+/* —— DEGRAU 0 · sem medicao. Tracejado, e NAO cresce. —— */
+.org-area[data-degrau="0"] .org-area__corpo {
+  border: 1px dashed var(--org-neutro);
+  background: none;
+}
+
+.org-area[data-degrau="0"][data-forma="nucleo"] .org-area__corpo {
+  width: 118px;
+  height: 118px;
+}
+
+.org-area[data-degrau="0"] .org-area__nome {
+  color: var(--org-verde-apagado);
+}
+
+/* —— Falha de leitura: cinza-ardosia. Nunca ambar, nunca maior. —— */
+.org-area[data-ausencia="sem_leitura"] .org-area__corpo {
+  border: 1px solid var(--org-falha-borda);
+  background: linear-gradient(var(--org-falha-veu), var(--org-falha-veu));
+}
+
+.org-area[data-ausencia="sem_leitura"] .org-area__estado,
+.org-area[data-ausencia="sem_leitura"] .org-area__info {
+  color: var(--org-falha-clara);
+}
+
+.org-area__nome {
+  font-family: var(--org-serifa);
+  font-size: 1.02rem;
+  line-height: 1.08;
+  color: var(--org-creme);
+}
+
+.org-area[data-degrau="3"] .org-area__nome {
+  font-size: 1.25rem;
+}
+
+.org-area__estado {
+  font-family: var(--org-mono);
+  font-size: 0.66rem;
+  line-height: 1.3;
+  color: var(--org-verde-texto-2);
+  max-width: 15ch;
+}
+
+.org-area[data-degrau="2"] .org-area__estado {
+  color: var(--org-ambar);
+}
+
+.org-area[data-degrau="3"] .org-area__estado {
+  color: var(--org-ambar-claro);
+}
+
+.org-area[data-degrau="0"] .org-area__estado {
+  color: var(--org-verde-texto-3);
+}
+
+.org-area__info {
+  margin: 0;
+  max-width: 26ch;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: var(--org-verde-texto-3);
+}
+
+.org-area[data-degrau="3"] .org-area__info {
+  color: var(--org-creme-4);
   font-weight: 600;
-  color: var(--text-primary);
-}
-.home-pulso__cap {
-  font-size: var(--type-small);
-  color: var(--text-muted);
-  text-align: center;
-}
-/* Foco: o pulso recua. Ele e clima, e o clima nao compete com a decisao. */
-.home[data-modo="foco"] .home-pulso__anel {
-  min-width: 112px;
-  min-height: 112px;
-  border-width: var(--stroke-emphasis);
-}
-.home[data-modo="foco"] .home-pulso__num {
-  font-size: 32px;
-}
-.home-pulso--ausente {
-  border: var(--stroke-hairline) dashed var(--line-dashed-unknown);
-  border-radius: var(--radius-md);
-  padding: 16px;
 }
 
-/* ---------------------------------------------------------------- ambientes */
-
-.home-ambs {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 16px;
-}
-
-.home-amb {
-  border: var(--stroke-hairline) solid var(--line-work);
-  border-left-width: var(--stroke-signal);
-  border-radius: var(--radius-md);
-  background: var(--surface-elevated);
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.home-amb[data-cor="verde"] {
-  border-left-color: var(--ink-calm);
-}
-.home-amb[data-cor="amarelo"] {
-  border-left-color: var(--ink-age);
-  background: var(--wash-age);
-}
-.home-amb[data-cor="vermelho"] {
-  border-left-color: var(--ink-fail);
-  background: var(--wash-fail);
-  border-left-style: solid;
-}
-/* Ausencia de fonte: tracejado, sem preenchimento, sem cor de saude. */
-.home-amb[data-cor="sem_medicao"] {
-  border-style: dashed;
-  border-color: var(--line-dashed-unknown);
-  background: transparent;
-}
-
-.home-amb__cab {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-.home-amb__nome {
-  font-size: var(--type-heading);
-  margin: 0;
-  color: var(--text-primary);
-}
-.home-amb__ponto {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: currentColor;
-}
-.home-amb[data-cor="verde"] .home-amb__ponto { color: var(--ink-calm); }
-.home-amb[data-cor="amarelo"] .home-amb__ponto { color: var(--ink-age); }
-.home-amb[data-cor="vermelho"] .home-amb__ponto { color: var(--ink-fail); }
-.home-amb[data-cor="sem_medicao"] .home-amb__ponto {
-  background: transparent;
-  border: var(--stroke-hairline) dashed var(--line-dashed-unknown);
-}
-
-.home-amb__estado {
-  font-size: var(--type-small);
-  font-weight: 600;
-  margin: 0;
-}
-.home-amb[data-cor="verde"] .home-amb__estado { color: var(--ink-calm); }
-.home-amb[data-cor="amarelo"] .home-amb__estado { color: var(--ink-age); }
-.home-amb[data-cor="vermelho"] .home-amb__estado { color: var(--ink-fail); }
-.home-amb[data-cor="sem_medicao"] .home-amb__estado { color: var(--ink-faint); }
-
-.home-amb__motivo {
-  font-size: var(--type-small);
-  color: var(--text-muted);
-  margin: 0;
-}
-.home-amb__barra {
+/* A marca de solidez: cheia quando observado, vazada quando nao. */
+.org-marca__ponto {
+  display: block;
+  width: 6px;
   height: 6px;
-  border-radius: 3px;
-  background: var(--surface-muted);
-  overflow: hidden;
-}
-.home-amb__barra--vazia {
-  background: transparent;
-  border: var(--stroke-hairline) dashed var(--line-dashed-unknown);
-}
-.home-amb__barra-fill {
-  height: 100%;
-  background: currentColor;
-}
-.home-amb[data-cor="verde"] .home-amb__barra-fill { color: var(--ink-calm); }
-.home-amb[data-cor="amarelo"] .home-amb__barra-fill { color: var(--ink-age); }
-.home-amb[data-cor="vermelho"] .home-amb__barra-fill { color: var(--ink-fail); }
-.home-amb__pressao {
-  font-size: var(--type-meta);
-  color: var(--text-muted);
-  margin: 0;
-}
-.home-amb__pressao--ausente {
-  color: var(--ink-faint);
-  font-style: italic;
+  border-radius: 50%;
+  background: var(--org-vivo);
 }
 
-/* subareas: visiveis dentro do ambiente, sempre (D46) */
-.home-amb__subs {
+.org-marca__ponto[data-solida="nao"] {
+  background: none;
+  border: 1px dashed var(--org-neutro-traco);
+}
+
+.org-area[data-degrau="2"] .org-marca__ponto[data-solida="sim"] {
+  background: var(--org-ambar);
+}
+
+.org-area[data-degrau="3"] .org-marca__ponto[data-solida="sim"] {
+  background: var(--org-ambar-claro);
+}
+
+/* ------------------------------------------------------------------ *
+ * Subareas: dentro do ambiente, nunca escondidas por ele (D46)
+ * ------------------------------------------------------------------ */
+
+.org-subs {
   list-style: none;
-  margin: 4px 0 0;
-  padding: 8px 0 0;
-  border-top: var(--stroke-hairline) solid var(--line-work);
+  margin: 0.2rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.3rem;
+  max-width: 32ch;
+}
+
+.org-sub {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  padding: 0.22rem 0.55rem;
+  border-radius: var(--org-raio-pilula);
+  border: 1px solid var(--org-linha-viva);
+  font-size: 0.72rem;
+  color: var(--org-verde-texto-2);
+}
+
+.org-sub__nome {
+  color: var(--org-creme-5);
+}
+
+.org-sub__estado {
+  font-family: var(--org-mono);
+  font-size: 0.62rem;
+  color: var(--org-verde-texto-4);
+}
+
+.org-sub[data-degrau="2"] {
+  border-color: var(--org-ambar-borda-fraca);
+}
+
+.org-sub[data-degrau="2"] .org-sub__estado {
+  color: var(--org-ambar);
+}
+
+.org-sub[data-degrau="3"] {
+  border-color: var(--org-ambar-borda);
+  background: rgba(224, 142, 58, 0.1);
+}
+
+.org-sub[data-degrau="3"] .org-sub__estado {
+  color: var(--org-ambar-claro);
+}
+
+.org-sub[data-degrau="0"] {
+  border-style: dashed;
+  border-color: var(--org-neutro);
+}
+
+.org-sub__causa {
+  font-family: var(--org-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--org-ambar-texto);
+}
+
+.org-subs--aberta {
+  justify-content: flex-start;
+  max-width: none;
+  margin-top: 0.5rem;
+}
+
+/* ------------------------------------------------------------------ *
+ * As ligacoes. Inerte e quase invisivel — essa e a lei.
+ * ------------------------------------------------------------------ */
+
+/*
+  A altura do fio importa: com `preserveAspectRatio: none` num viewBox de 100x20
+  esticado para 760px, uma diagonal de 25 para 50 vira quase uma horizontal, e o
+  caminho para de parecer caminho. Altura generosa devolve a diagonal.
+*/
+.org-lig {
+  width: 100%;
+  max-width: 760px;
+  height: 52px;
+  display: block;
+}
+
+.org-lig--curta {
+  height: 30px;
+}
+
+.org-fio {
+  stroke: var(--org-linha-caminho);
+  stroke-width: 1;
+  fill: none;
+  vector-effect: non-scaling-stroke;
+}
+
+.org-fio[data-intensidade="ativa"] {
+  stroke: var(--org-ambar-traco);
+  stroke-width: 2;
+  stroke-dasharray: 4 6;
+  animation: orgFluxo var(--org-fluxo) linear infinite;
+}
+
+.org-fio[data-intensidade="carregada"] {
+  stroke: var(--org-ambar);
+  stroke-width: 3;
+  stroke-dasharray: 5 5;
+  animation: orgFluxo var(--org-fluxo) linear infinite;
+}
+
+.org-relacoes {
+  list-style: none;
+  margin: 1.2rem 0 0;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 0.35rem;
+  align-items: center;
 }
-.home-sub {
+
+.org-relacao {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.4;
+  color: var(--org-ambar-texto);
+}
+
+.org-relacao[data-intensidade="carregada"] {
+  color: var(--org-ambar-claro);
+}
+
+/* ------------------------------------------------------------------ *
+ * O Foco. Emerge da superficie: fica SOBRE ela, nunca no lugar dela.
+ * ------------------------------------------------------------------ */
+
+.org-foco {
+  position: relative;
+  width: min(440px, 100%);
+  margin-top: 1.6rem;
+  padding: 1.4rem 1.5rem;
+  border-radius: var(--org-raio);
+  border: 1px solid var(--org-linha-forte);
+  background: linear-gradient(180deg, var(--org-painel-topo), var(--org-painel-base));
+  box-shadow: var(--org-sombra-painel);
+}
+
+.org-foco__entalhe {
+  position: absolute;
+  top: -1px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 52px;
+  height: 3px;
+  border-radius: 0 0 3px 3px;
+  background: var(--org-ambar);
+}
+
+.org-foco__eyebrow {
+  font-family: var(--org-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--org-ambar);
+}
+
+.org-foco__titulo {
+  margin: 0.6rem 0 0.45rem;
+  font-family: var(--org-serifa);
+  font-weight: 400;
+  font-size: 1.5rem;
+  line-height: 1.15;
+  color: var(--org-creme);
+}
+
+.org-foco__consequencia {
+  margin: 0 0 1rem;
+  font-family: var(--org-serifa);
+  font-style: italic;
+  font-size: 1.02rem;
+  line-height: 1.45;
+  color: var(--org-creme-serifa);
+}
+
+.org-foco__evidencias {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.org-foco__evidencias li {
   display: flex;
   align-items: baseline;
-  gap: 8px;
-  font-size: var(--type-small);
-  padding-left: 10px;
-  border-left: var(--stroke-emphasis) solid var(--line-work);
-}
-.home-sub[data-cor="verde"] { border-left-color: var(--ink-calm); }
-.home-sub[data-cor="amarelo"] { border-left-color: var(--ink-age); }
-.home-sub[data-cor="vermelho"] { border-left-color: var(--ink-fail); }
-.home-sub[data-cor="sem_medicao"] {
-  border-left-style: dashed;
-  border-left-color: var(--line-dashed-unknown);
-}
-.home-sub__nome { color: var(--text-primary); }
-.home-sub__estado { color: var(--text-muted); font-size: var(--type-meta); }
-.home-sub[data-causadora="sim"] .home-sub__nome { font-weight: 600; }
-.home-sub__causa {
-  font-size: var(--type-meta);
-  color: var(--ink-fail);
-  border: var(--stroke-hairline) solid var(--ink-fail);
-  border-radius: 999px;
-  padding: 0 6px;
+  gap: 0.55rem;
+  font-size: 0.96rem;
+  line-height: 1.35;
+  color: var(--org-creme-4);
 }
 
-/* ---------------------------------------------------------------- foco */
-
-.home-foco {
-  display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
-  gap: 16px;
-  align-items: start;
-}
-.home-foco__cartao {
-  border: var(--stroke-emphasis) solid var(--ink-fail);
-  border-radius: var(--radius-md);
-  background: var(--surface-elevated);
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.home-foco__cab {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-.home-foco__eyebrow {
-  font-size: var(--type-meta);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--ink-fail);
-  font-weight: 600;
-}
-.home-foco__local {
-  font-size: var(--type-small);
-  color: var(--text-muted);
-}
-.home-foco__titulo {
-  font-size: var(--type-title);
-  line-height: 1.15;
-  margin: 0;
-  color: var(--text-primary);
-}
-.home-foco__tempo,
-.home-foco__impacto {
-  font-size: var(--type-small);
-  color: var(--text-muted);
-  margin: 0;
+.org-foco__evidencias li::before {
+  content: "";
+  flex: none;
+  width: 3px;
+  height: 14px;
+  border-radius: 2px;
+  background: var(--org-ambar);
+  transform: translateY(2px);
 }
 
-.home-acao {
-  border: var(--stroke-hairline) solid var(--line-work);
-  border-radius: var(--radius-md);
-  background: var(--surface-muted);
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.home-acao__hint {
-  font-size: var(--type-meta);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  margin: 0;
-}
-/* Nao e botao. Nao tem cursor de clique, nao tem hover, nao tem foco. */
-.home-acao__pilula {
-  font-size: var(--type-heading);
-  font-weight: 600;
-  color: var(--text-on-dark);
-  background: var(--brand-action);
-  border-radius: 999px;
-  padding: 10px 20px;
-  align-self: flex-start;
-  cursor: default;
-}
-.home-acao__pilula--pura {
-  background: transparent;
-  color: var(--text-primary);
-  border: var(--stroke-emphasis) dashed var(--line-dashed-unknown);
-}
-.home-acao__detalhe {
-  margin: 0;
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 4px 12px;
-  font-size: var(--type-small);
-}
-.home-acao__detalhe dt {
-  color: var(--text-muted);
-  font-size: var(--type-meta);
-  text-transform: uppercase;
+.org-foco__ev-tipo {
+  font-family: var(--org-mono);
+  font-size: 0.68rem;
   letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--org-verde-texto-4);
 }
-.home-acao__detalhe dd {
+
+.org-foco__tempo {
+  margin: 0 0 1rem;
+  font-family: var(--org-mono);
+  font-size: 0.68rem;
+  color: var(--org-verde-texto-5);
+}
+
+/* ------------------------------------------------------------------ *
+ * Desktop largo: a legenda vira coluna, e o organismo cabe numa olhada
+ * ------------------------------------------------------------------ *
+ * O canone poe a frase editorial no canto superior esquerdo do palco, com
+ * largura curta, e deixa o organismo ocupar o centro. Empilhar os dois joga a
+ * Conferencia e o Motoboy para fora da tela — e o teste de dois segundos morre
+ * quando o caminho do pedido precisa de rolagem para ser visto inteiro.
+ */
+@media (min-width: 960px) {
+  .org-palco {
+    display: grid;
+    grid-template-columns: minmax(240px, 22ch) 1fr;
+    align-items: start;
+    column-gap: clamp(1.5rem, 3vw, 3rem);
+    padding-top: 2.2rem;
+  }
+
+  .org-legenda {
+    grid-column: 1;
+    margin-bottom: 0;
+    padding-top: 0.5rem;
+  }
+
+  .org-superficie,
+  .org-relacoes {
+    grid-column: 2;
+  }
+
+  .org-relacoes {
+    align-items: flex-start;
+    margin-top: 1rem;
+  }
+
+  .org-aprox {
+    grid-column: 1 / -1;
+  }
+
+  .org-tecnico {
+    grid-column: 1 / -1;
+    justify-self: center;
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * O Foco emerge do canto da superficie — e nunca cobre uma area
+ * ------------------------------------------------------------------ *
+ * A primeira versao deixava o painel absoluto sobre o palco, como no V3.3. Na
+ * inspecao real ele cobriu a Conferencia e o Motoboy, e a regra "nenhum outro
+ * ambiente vermelho fica escondido" morre quando o painel tapa o caminho.
+ *
+ * Solucao: o painel ganha coluna propria, ancorada no rodape da superficie —
+ * continua emergindo do canto inferior direito do organismo, sem tapar nada.
+ */
+@media (min-width: 1240px) {
+  .org[data-modo="foco"] .org-palco {
+    grid-template-columns: minmax(220px, 20ch) minmax(0, 1fr) minmax(360px, 26rem);
+  }
+
+  .org[data-modo="foco"] .org-foco {
+    grid-column: 3;
+    grid-row: 1 / span 3;
+    align-self: end;
+    margin-top: 0;
+    width: 100%;
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Orientacao — uma so, e ela nao executa
+ * ------------------------------------------------------------------ */
+
+.org-acao__hint {
+  margin: 0 0 0.4rem;
+  font-family: var(--org-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--org-verde-texto-4);
+}
+
+.org-acao__pilula {
+  display: inline-block;
+  padding: 0.75rem 1.3rem;
+  border-radius: var(--org-raio-p);
+  background: var(--org-vivo);
+  color: var(--org-vivo-tinta);
+  font-weight: 600;
+  font-size: 1rem;
+  line-height: 1.3;
+}
+
+.org-acao__pilula--pura {
+  background: none;
+  border: 1px solid var(--org-linha-forte);
+  color: var(--org-verde-texto);
+  font-weight: 500;
+}
+
+.org-acao__detalhe {
+  margin: 1rem 0 0;
+  display: grid;
+  grid-template-columns: minmax(84px, auto) 1fr;
+  gap: 0.3rem 0.8rem;
+  font-size: 0.9rem;
+}
+
+.org-acao__detalhe dt {
+  font-family: var(--org-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--org-verde-texto-4);
+}
+
+.org-acao__detalhe dd {
   margin: 0;
-  color: var(--text-primary);
+  color: var(--org-creme-4);
+  line-height: 1.4;
 }
-.home-acao__rodape {
+
+.org-acao__rodape {
+  margin-top: 0.9rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--org-linha-forte);
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  border-top: var(--stroke-hairline) solid var(--line-work);
-  padding-top: 10px;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  color: var(--org-verde-texto-3);
 }
-.home-acao__nada {
-  font-size: var(--type-meta);
-  color: var(--text-muted);
+
+.org-acao__nada {
   margin: 0;
+  font-family: var(--org-mono);
+  font-size: 0.68rem;
+  color: var(--org-verde-texto-5);
 }
 
-/* ---------------------------------------------------------------- sinais */
+/* ------------------------------------------------------------------ *
+ * Aproximacao de uma area
+ * ------------------------------------------------------------------ */
 
-.home-sinais,
-.home-fontes,
-.home-bloqueados,
-.home-aprof {
+.org-aprox {
+  width: 100%;
+  max-width: 1120px;
+}
+
+.org-aprox__topo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.4rem;
+}
+
+.org-aprox__voltar {
+  font-family: var(--org-mono);
+  font-size: 0.8rem;
+  letter-spacing: 0.06em;
+  color: var(--org-verde-texto);
+  border: 1px solid var(--org-linha-viva);
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.org-aprox__voltar:hover {
+  border-color: var(--org-linha-clara);
+  color: var(--org-creme-2);
+}
+
+.org-aprox__caminho {
+  font-family: var(--org-mono);
+  font-size: 0.74rem;
+  color: var(--org-verde-texto-4);
+}
+
+.org-aprox__corpo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(1.4rem, 3.5vw, 2.6rem);
+  align-items: flex-start;
+}
+
+.org-area--focada {
+  flex: none;
+}
+
+.org-aprox__coluna {
+  flex: 1.4;
+  min-width: min(300px, 100%);
+}
+
+.org-aprox__coluna--causa {
+  flex: 0.9;
+  min-width: min(240px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.org-aprox__rotulo {
+  margin: 0 0 0.5rem;
+  font-family: var(--org-mono);
+  font-size: 0.72rem;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--org-verde-texto-4);
+}
+
+.org-aprox__descricao,
+.org-aprox__motivo,
+.org-aprox__medida,
+.org-aprox__vazio {
+  margin: 0 0 0.7rem;
+  font-size: 0.98rem;
+  line-height: 1.45;
+  color: var(--org-verde-texto);
+}
+
+.org-aprox__motivo {
+  color: var(--org-creme-3);
+}
+
+.org-aprox__medida--ausente {
+  color: var(--org-falha-clara);
+}
+
+.org-aprox__linhas {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.org-aprox__linhas li {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  font-size: 1rem;
+  line-height: 1.4;
+  color: var(--org-creme-3);
+}
+
+.org-aprox__linhas li::before {
+  content: "";
+  flex: none;
+  width: 3px;
+  height: 15px;
+  border-radius: 2px;
+  background: var(--org-linha-clara);
+  transform: translateY(2px);
+}
+
+.org-aprox__linhas li[data-sev="2"]::before {
+  background: var(--org-ambar);
+}
+
+.org-aprox__linhas li[data-sev="3"]::before {
+  background: var(--org-ambar-claro);
+}
+
+.org-aprox__alvo {
+  font-family: var(--org-mono);
+  font-size: 0.72rem;
+  color: var(--org-verde-texto-4);
+}
+
+.org-aprox__coluna--causa .org-relacao {
+  padding: 0.65rem 0.85rem;
+  border-left: 2px solid var(--org-ambar);
+  background: rgba(140, 198, 63, 0.03);
+  border-radius: 0 8px 8px 0;
+}
+
+.org-minimapa {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+  margin-top: 1.6rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--org-linha-fraca);
+}
+
+.org-minimapa__rotulo {
+  font-family: var(--org-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--org-verde-texto-5);
+}
+
+.org-minimapa__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.86rem;
+  color: var(--org-verde-texto);
+}
+
+.org-minimapa__ponto {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--org-vivo);
+}
+
+.org-minimapa__item[data-degrau="2"] .org-minimapa__ponto {
+  background: var(--org-ambar);
+}
+
+.org-minimapa__item[data-degrau="3"] .org-minimapa__ponto {
+  background: var(--org-ambar-claro);
+}
+
+.org-minimapa__item[data-degrau="0"] .org-minimapa__ponto {
+  background: none;
+  border: 1px dashed var(--org-neutro-traco);
+}
+
+.org-minimapa__estado {
+  font-family: var(--org-mono);
+  font-size: 0.68rem;
+  color: var(--org-verde-texto-4);
+}
+
+/* ------------------------------------------------------------------ *
+ * O rodape da consciencia: nada some
+ * ------------------------------------------------------------------ */
+
+.org-bloco {
+  margin-top: 2.4rem;
+  padding-top: 1.4rem;
+  border-top: 1px solid var(--org-linha-fraca);
+}
+
+.org-bloco__titulo {
+  margin: 0;
+  font-family: var(--org-serifa);
+  font-weight: 400;
+  font-size: 1.3rem;
+  color: var(--org-creme-2);
+}
+
+.org-bloco__sub {
+  margin: 0.25rem 0 1rem;
+  font-size: 0.9rem;
+  color: var(--org-verde-texto-3);
+}
+
+.org-vazio {
+  margin: 0;
+  font-size: 0.92rem;
+  color: var(--org-verde-texto-3);
+}
+
+.org-sinais,
+.org-fontes,
+.org-bloqueados,
+.org-aprof {
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0.4rem;
 }
 
-.home-sinal {
+.org-sinal {
   display: grid;
-  grid-template-columns: minmax(120px, auto) minmax(0, 1fr) auto;
-  gap: 4px 12px;
-  align-items: baseline;
-  padding: 10px 12px;
-  border-radius: var(--radius-md);
-  background: var(--surface-elevated);
-  border-left: var(--stroke-signal) solid var(--line-work);
-  font-size: var(--type-small);
+  grid-template-columns: minmax(140px, 200px) 1fr minmax(90px, 150px);
+  gap: 0.2rem 1rem;
+  padding: 0.6rem 0.85rem;
+  border-left: 2px solid var(--org-linha-clara);
+  background: rgba(140, 198, 63, 0.03);
+  border-radius: 0 8px 8px 0;
+  font-size: 0.9rem;
 }
-.home-sinal[data-sev="3"] { border-left-color: var(--ink-fail); }
-.home-sinal[data-sev="2"] { border-left-color: var(--ink-age); }
-.home-sinal[data-sev="1"] { border-left-color: var(--ink-prep); }
-.home-sinal__nome { font-weight: 600; color: var(--text-primary); }
-.home-sinal__resumo { color: var(--text-muted); }
-.home-sinal__alvo {
-  font-family: var(--font-technical);
-  font-size: var(--type-technical);
-  color: var(--ink-faint);
+
+.org-sinal[data-sev="2"] {
+  border-left-color: var(--org-ambar);
 }
-.home-sinal__orient {
+
+.org-sinal[data-sev="3"] {
+  border-left-color: var(--org-ambar-claro);
+}
+
+.org-sinal__nome {
+  color: var(--org-creme-3);
+  font-weight: 600;
+}
+
+.org-sinal__resumo {
+  color: var(--org-verde-texto);
+}
+
+.org-sinal__alvo,
+.org-sinal__orient {
+  font-family: var(--org-mono);
+  font-size: 0.72rem;
+  color: var(--org-verde-texto-4);
+}
+
+.org-sinal__orient {
   grid-column: 2 / -1;
-  color: var(--ink-prep);
-}
-.home-vazio {
-  font-size: var(--type-small);
-  color: var(--text-muted);
+  color: var(--org-ambar-texto);
 }
 
-/* ---------------------------------------------------------------- fontes */
-
-.home-fonte {
-  display: grid;
-  grid-template-columns: minmax(140px, auto) auto minmax(0, 1fr);
-  gap: 4px 12px;
-  align-items: baseline;
-  padding: 10px 12px;
-  border-radius: var(--radius-md);
-  border: var(--stroke-hairline) solid var(--line-work);
-  font-size: var(--type-small);
-}
-.home-fonte[data-estado="indisponivel"],
-.home-fonte[data-estado="stale"],
-.home-fonte[data-estado="parcial"] {
-  border-style: dashed;
-  border-color: var(--line-dashed-unknown);
-}
-.home-fonte__nome { font-weight: 600; }
-.home-fonte__detalhe { color: var(--text-muted); }
-
-.home-bloqueado {
-  display: grid;
-  grid-template-columns: auto minmax(140px, auto) minmax(0, 1fr) auto;
-  gap: 4px 12px;
-  font-size: var(--type-small);
-  padding: 6px 0;
-  border-bottom: var(--stroke-hairline) dashed var(--line-dashed-unknown);
-}
-.home-bloqueado__cod {
-  font-family: var(--font-technical);
-  font-size: var(--type-technical);
-  color: var(--ink-faint);
-}
-.home-bloqueado__nome { font-weight: 600; }
-.home-bloqueado__motivo { color: var(--text-muted); }
-.home-bloqueado__fonte { color: var(--ink-age); }
-
-/* ---------------------------------------------------------------- contextos */
-
-.home-ctxs {
+.org-ctxs {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 16px;
+  gap: 0.9rem;
 }
-.home-ctx {
-  border: var(--stroke-hairline) solid var(--line-work);
-  border-radius: var(--radius-md);
-  padding: 16px;
-  background: var(--surface-elevated);
+
+.org-ctx {
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--org-linha-fraca);
+  border-radius: 11px;
+  background: var(--org-palco);
 }
-.home-ctx__nome { margin: 0 0 4px; font-size: var(--type-heading); }
-.home-ctx__pergunta {
-  font-size: var(--type-small);
-  color: var(--text-muted);
-  margin: 0 0 8px;
-}
-.home-ctx__sinais {
+
+.org-ctx__nome {
   margin: 0;
-  padding-left: 18px;
-  font-size: var(--type-small);
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.home-ctx__resto,
-.home-ctx__vazio {
-  color: var(--ink-faint);
-  font-size: var(--type-small);
-}
-.home-ctx__ausencia {
-  margin: 8px 0 0;
-  font-size: var(--type-meta);
-  color: var(--ink-age);
-  border-left: var(--stroke-emphasis) dashed var(--ink-age);
-  padding-left: 8px;
+  font-family: var(--org-serifa);
+  font-weight: 400;
+  font-size: 1.05rem;
+  color: var(--org-creme-2);
 }
 
-/* ---------------------------------------------------------------- aprofundar */
+.org-ctx__pergunta {
+  margin: 0.2rem 0 0.6rem;
+  font-size: 0.86rem;
+  color: var(--org-verde-texto-3);
+}
 
-.home-aprof__link {
+.org-ctx__sinais {
+  list-style: none;
+  margin: 0;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 10px 12px;
-  border-radius: var(--radius-md);
-  border: var(--stroke-hairline) solid var(--line-work);
+  gap: 0.28rem;
+  font-size: 0.88rem;
+  color: var(--org-verde-texto);
+}
+
+.org-ctx__vazio,
+.org-ctx__ausencia,
+.org-ctx__resto {
+  font-size: 0.82rem;
+  color: var(--org-verde-texto-5);
+}
+
+.org-fonte,
+.org-bloqueado {
+  display: flex;
+  align-items: baseline;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--org-linha-fraca);
+  font-size: 0.9rem;
+}
+
+.org-fonte__nome,
+.org-bloqueado__nome {
+  color: var(--org-creme-3);
+  min-width: 14ch;
+}
+
+.org-fonte__detalhe,
+.org-bloqueado__motivo,
+.org-bloqueado__fonte,
+.org-bloqueado__cod {
+  color: var(--org-verde-texto-3);
+}
+
+.org-bloqueado__cod {
+  font-family: var(--org-mono);
+  font-size: 0.74rem;
+  min-width: 4ch;
+}
+
+/* Fonte tecnicamente parada fala em cinza, aqui tambem. */
+.org-fonte[data-estado="stale"] .org-fonte__nome,
+.org-fonte[data-estado="indisponivel"] .org-fonte__nome,
+.org-fonte[data-estado="parcial"] .org-fonte__nome {
+  color: var(--org-falha-texto);
+}
+
+.org-aprof__link {
+  display: flex;
+  align-items: baseline;
+  gap: 0.7rem;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid var(--org-linha-fraca);
+  border-radius: 9px;
   text-decoration: none;
-  color: inherit;
+  min-height: 44px;
+  color: var(--org-verde-texto);
 }
-.home-aprof__nome { font-weight: 600; font-size: var(--type-small); }
-.home-aprof__papel { font-size: var(--type-meta); color: var(--text-muted); }
 
-/* ---------------------------------------------------------------- mobile */
+.org-aprof__link:hover {
+  border-color: var(--org-linha-clara);
+}
 
-@media (max-width: 905px) {
-  .home-foco {
-    grid-template-columns: 1fr;
-  }
-  .home-topo__titulo {
-    font-size: var(--type-title);
-  }
-  .home-pulso__anel {
-    min-width: 128px;
-    min-height: 128px;
-  }
-  .home-pulso__num {
-    font-size: 40px;
-  }
-  .home-sinal,
-  .home-fonte,
-  .home-bloqueado {
-    grid-template-columns: 1fr;
-  }
-  .home-acao__detalhe {
-    grid-template-columns: 1fr;
+.org-aprof__nome {
+  color: var(--org-creme-3);
+}
+
+.org-aprof__papel {
+  font-family: var(--org-mono);
+  font-size: 0.72rem;
+  color: var(--org-verde-texto-5);
+}
+
+/* ------------------------------------------------------------------ *
+ * Movimento — so comunica mudanca
+ * ------------------------------------------------------------------ */
+
+@keyframes orgFluxo {
+  to {
+    stroke-dashoffset: -28;
   }
 }
 
-/* Nenhuma informacao vive so no movimento. */
+@keyframes orgPulso {
+  0% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.5);
+  }
+}
+
+/*
+  Com menos animacao, a espessura e a cor bastam — o fluxo para e o pulso vira
+  um anel fixo, em vez de sumir e levar informacao junto. V3.3, prancha 13.
+*/
 @media (prefers-reduced-motion: reduce) {
-  .home *,
-  .home *::before,
-  .home *::after {
+  .org *,
+  .org-fio,
+  .org-topo__vida[data-estado="vivo"] .org-topo__ponto,
+  .org-area[data-degrau="3"] .org-area__corpo::after {
     animation: none !important;
     transition: none !important;
+  }
+
+  .org-area[data-degrau="3"] .org-area__corpo::after {
+    opacity: 0.55;
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Mobile — a mesma verdade, nao um resumo dela
+ * ------------------------------------------------------------------ */
+
+@media (max-width: 720px) {
+  .org {
+    margin: calc(var(--space-3) * -1) calc(var(--space-3) * -1) 0;
+    padding: 1rem 1rem 2.4rem;
+  }
+
+  .org-fila {
+    gap: 0.6rem;
+  }
+
+  .org-lig {
+    height: 26px;
+  }
+
+  .org-lig--curta {
+    height: 16px;
+  }
+
+  .org-area[data-forma="nucleo"] .org-area__corpo {
+    width: 92px;
+    height: 92px;
+  }
+
+  .org-area[data-degrau="2"][data-forma="nucleo"] .org-area__corpo {
+    width: 112px;
+    height: 112px;
+  }
+
+  .org-area[data-degrau="3"][data-forma="nucleo"] .org-area__corpo {
+    width: 132px;
+    height: 132px;
+  }
+
+  .org-area[data-degrau="0"][data-forma="nucleo"] .org-area__corpo {
+    width: 84px;
+    height: 84px;
+  }
+
+  .org-area[data-forma="pilula"] .org-area__corpo {
+    min-width: 158px;
+    min-height: 50px;
+    padding: 0.5rem 0.9rem;
+  }
+
+  .org-area[data-degrau="2"][data-forma="pilula"] .org-area__corpo {
+    min-width: 186px;
+  }
+
+  .org-area[data-degrau="3"][data-forma="pilula"] .org-area__corpo {
+    min-width: 210px;
+  }
+
+  .org-area__nome {
+    font-size: 0.88rem;
+  }
+
+  .org-area[data-degrau="3"] .org-area__nome {
+    font-size: 1rem;
+  }
+
+  .org-area__estado {
+    font-size: 0.58rem;
+  }
+
+  .org-area__info {
+    font-size: 0.72rem;
+    max-width: 22ch;
+  }
+
+  /* Subarea no celular: continua inteira, so mais compacta. Esconder subarea
+     seria esconder a subarea CAUSADORA — a verdade mudaria. */
+  .org-subs {
+    max-width: 100%;
+    gap: 0.22rem;
+  }
+
+  .org-sub {
+    padding: 0.18rem 0.45rem;
+    font-size: 0.66rem;
+  }
+
+  .org-legenda__frase {
+    font-size: 1.55rem;
+  }
+
+  .org-sinal {
+    grid-template-columns: 1fr;
+    gap: 0.15rem;
+  }
+
+  .org-sinal__orient {
+    grid-column: 1;
+  }
+
+  .org-aprox__corpo {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .org-aprox__coluna {
+    min-width: 100%;
   }
 }

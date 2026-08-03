@@ -383,7 +383,7 @@ function s4(l: LeituraOperacional): Sinal[] {
         }.`,
         evidencias: [
           ev("tempo_sem_ficar_pronto", `${p.id}=${p.minutos_sem_ficar_pronto}min`, l.observado_em),
-          ...(pior ? [ev("praca_do_pedido", `${p.id}->${pior}`, l.observado_em)] : []),
+          ...(pior ? [ev("praca_do_pedido", `${p.id} -> ${rotuloDaPraca(pior)}`, l.observado_em)] : []),
         ],
         orientacao: pior
           ? `Olhar ${rotuloDaPraca(pior)} primeiro.`
@@ -423,8 +423,8 @@ function s5(l: LeituraOperacional): Sinal[] {
         razao * 100,
       )}% do normal.`,
       evidencias: [
-        ev("carga_por_praca", `${praca}=${carga}`, l.observado_em),
-        ev("baseline_calibrado", `${praca}=${base}`, l.observado_em),
+        ev("carga_por_praca", `${rotuloDaPraca(praca)}=${carga}`, l.observado_em),
+        ev("baseline_calibrado", `${rotuloDaPraca(praca)}=${base}`, l.observado_em),
       ],
       orientacao:
         s < 3
@@ -502,8 +502,8 @@ function s7(l: LeituraOperacional): Sinal[] {
       alvo_rotulo: alvo(p.id, null, null),
       resumo: `Pedido ${p.id} depende so de ${rotuloDaPraca(praca)}, que esta pressionada.`,
       evidencias: [
-        ev("praca_unica_do_pedido", `${p.id}->${praca}`, l.observado_em),
-        ev("carga_por_praca", `${praca}=${carga}`, l.observado_em),
+        ev("praca_unica_do_pedido", `${p.id} -> ${rotuloDaPraca(praca)}`, l.observado_em),
+        ev("carga_por_praca", `${rotuloDaPraca(praca)}=${carga}`, l.observado_em),
       ],
       orientacao: `Destravar ${rotuloDaPraca(praca)} libera este pedido inteiro.`,
       limitacao: "Composicao do pedido; nao o estado de producao de cada item.",
@@ -571,7 +571,7 @@ function s12(l: LeituraOperacional): Sinal[] {
       evidencias: [
         ev(
           "pracas_do_pedido",
-          `${p.id}: ${pracasDoPedido(p).join(",")} — nenhuma no ambiente Sushi`,
+          `${p.id}: ${pracasDoPedido(p).map(rotuloDaPraca).join(", ")} — nenhuma no ambiente Sushi`,
           l.observado_em,
         ),
       ],
