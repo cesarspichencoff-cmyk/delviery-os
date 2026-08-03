@@ -753,3 +753,25 @@ recomendacoes. Acusada por quatro testes de uma vez.
 **A regra:** alem de *aplicada*, *carregada* e *acusada*, uma mutacao precisa ser
 **material**: ela tem que mudar o comportamento que o invariante descreve. Uma
 mutacao so de tipo, so de nome ou so de campo nao lido nao prova cobertura.
+
+## L40 — Uma guarda que mora no gate errado deixa a mutacao cega no gate certo
+
+**O fato.** A mutacao MD05 do R5-D0 injetava `Date.now()` no `recommendation_id`
+do tradutor. Ela aplicou, o mutante carregou, e o gate R5-D0 ficou verde — porque
+a pureza do tradutor era provada **no gate de R5-C**, nao neste.
+
+O invariante estava coberto. O gate que precisava dele, nao. E como R5-D0 e a
+missao que fala de LINHAGEM — de onde cada identidade vem —, deixar "o tradutor
+nao inventa identidade" fora dela era exatamente a lacuna que o tema pede.
+
+**O conserto foi acrescentar a guarda no gate certo (D-PUR), nao remover a
+mutacao.** Depois disso ela acusa.
+
+**A regra:** cobertura nao e propriedade do repositorio, e sim de cada gate.
+Quando uma mutacao dirigida sai cega, verifique tambem se o invariante esta
+provado em OUTRO lugar — se estiver, o buraco e do gate que voce esta rodando, e
+o conserto e mover ou duplicar a guarda para onde o tema vive.
+
+**Nota:** este e o terceiro parente de L37/L38/L39, e os quatro juntos formam a
+regra completa de uma mutacao valida — ela precisa ser **aplicada**, **carregada**,
+**material** e **coberta pelo gate que a executa**.

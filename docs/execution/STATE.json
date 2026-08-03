@@ -1193,7 +1193,7 @@
   },
   "retomada_r5": {
     "data": "2026-08-03",
-    "estado": "R5-A, R5-B e R5-C CONCLUIDOS. R5-D nao iniciado.",
+    "estado": "R5-A, R5-B, R5-C e R5-D0 CONCLUIDOS. R5-D BLOQUEADO por linhagem e confianca.",
     "decisao_do_cesar": "Figma pendente, sem upgrade e sem redesenho manual. R5 pode retomar.",
     "congelado_durante_r5": [
       "frontend (home.js, home.css, organismo-tokens.css)",
@@ -1439,5 +1439,52 @@
       "o validador de fronteira reproduz as recusas de recomendar() sem executar recomendar(): se o Shadow mudar as suas regras, o validador precisa acompanhar"
     ],
     "r5d": "NAO INICIADO"
+  },
+  "r5d0_prontidao": {
+    "data": "2026-08-03",
+    "estado": "CONCLUIDO — veredito R5D_BLOCKED",
+    "head_inicial": "27ccfd2",
+    "contrato": "docs/product/CONTRATO_LINHAGEM_EVIDENCIA.md",
+    "implementacao": "src/product/atencao/prontidao-r5d.ts",
+    "gate": {
+      "comando": "npm run test:platform:r5d0",
+      "testes": 28,
+      "resultado": "R5D0_READINESS_GATE_GREEN"
+    },
+    "agregador": "npm run test:platform:r5 = A + B + C + D0. NAO significa R5 completo",
+    "tres_respostas": {
+      "event_lineage": "BLOQUEADO — so o Caminho A (event log -> projetar -> eventos[]) preserva event ID. O Caminho B, que produz o Foco, nao tem nenhum: LeituraOperacional nao tem campo de evento e sinais.ts tem 0 ocorrencias de event_id. A identidade NUNCA ENTRA (D68)",
+      "confianca": "BLOQUEADO — Caso C. O Shadow exige confidence number obrigatorio e nao existe politica canonica que o produza a partir do Caminho B. A regra nao foi inventada; 3 alternativas registradas para o Cesar (D69)",
+      "validador": "RESOLVIDO — validarDraftShadow mora em shadow.ts, recomendar() a chama, o tradutor reexporta. Provado por identidade de referencia, e os 39 testes do Shadow seguem verdes (D67)"
+    },
+    "sinais_elegiveis": "as politicas do Shadow sobre Projecao (sinal-velho, capacidade-saturada) — evidencia real do Caminho A",
+    "sinais_inelegiveis": "TODOS os sinais de sinais.ts (S1..S22) — eligible_for_shadow false, reason event_lineage_unavailable",
+    "defeito_registrado_nao_corrigido": "home-vm.ts:474 usa severidade >= 3 ? 0.8 : 0.6 como confianca — severidade virando confianca. View models congeladas nesta missao; a guarda D16 impede a regra de entrar no caminho novo",
+    "adversarial": {
+      "mutacoes": 15,
+      "acusadas": 15,
+      "cegas": 0,
+      "nao_carregadas": 0,
+      "restauracao": "byte a byte por sha256",
+      "duas_rodadas": "MD12 nao aplicou por CRLF (L37); MD05 saiu cega por guarda no gate errado (L40)"
+    },
+    "congelamento_visual": "git diff 27ccfd2 vazio em src/product/ui/, src/product/viewmodels/ e docs/figma/",
+    "arquivos_de_producao_alterados": [
+      "src/platform/copiloto/shadow.ts (validador extraido e chamado por recomendar)",
+      "src/product/atencao/traducao-motor-shadow.ts (copia removida, passa a reexportar)",
+      "src/product/atencao/prontidao-r5d.ts (novo)"
+    ],
+    "runtime": {
+      "conexao": "NAO IMPLEMENTADA",
+      "flag": "INEXISTENTE",
+      "recomendacao_real": "NENHUMA",
+      "store": "NAO TOCADO",
+      "evento": "NENHUM emitido"
+    },
+    "bloqueadores_restantes": [
+      "event_lineage_unavailable no Caminho B",
+      "confidence_contract_missing — decisao de produto do Cesar entre 3 alternativas"
+    ],
+    "r5d": "BLOQUEADO — nao iniciar ate as duas respostas serem executaveis"
   }
 }

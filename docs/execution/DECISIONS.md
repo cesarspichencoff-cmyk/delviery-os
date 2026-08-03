@@ -1354,3 +1354,84 @@ declara isso em vez de simular.
 
 **Nota que vale guardar:** zero **nao** e ausencia. `confidence: 0` traduz
 normalmente; ausencia e `null` e bloqueia.
+
+---
+
+### D67 — O validador do Shadow passa a ter UM lugar, e o runtime o chama
+
+**Decisao.** `validarDraftShadow()` mora em `src/platform/copiloto/shadow.ts`,
+`recomendar()` monta a candidata e **chama a funcao** antes de empilhar, e o
+tradutor de R5-C **reexporta** a mesma referencia. Nao existe segunda
+implementacao.
+
+**Por que era urgente.** R5-C declarou, no proprio relatorio, que o harness
+"reproduz as recusas de `recomendar()`". Isso e um par que diverge em silencio: o
+dia em que a regra mudar de um lado, o outro continua aprovando o que ja nao
+vale — e o teste continuaria verde, que e a pior forma de falhar.
+
+**Como a equivalencia foi provada:** os 39 testes do Shadow continuam verdes, sem
+regra alterada, reduzida ou acrescentada. A validacao continua **sem efeito** —
+ciclo de vida, ordenacao e store ficaram fora da funcao.
+
+**A guarda que texto nao daria:** o teste compara a **identidade de referencia**
+das duas importacoes (`validadorDaFronteira === validadorDoShadow`). Duas copias
+parecidas passariam em qualquer comparacao textual e falham nesta.
+
+**Alternativa recusada:** manter o validador do teste e sincronizar por
+disciplina. Recusada pelo mesmo motivo de sempre — disciplina nao e executavel.
+
+---
+
+### D68 — O Caminho B nao tem linhagem de evento, e a identidade NUNCA ENTRA
+
+**Achado, medido.** Existem dois caminhos, e so um preserva identidade:
+
+```
+A  event log -> projetar() -> ViagemProjetada.eventos[] -> input_event_ids   PRESERVA
+B  LeituraOperacional -> sinaisDe() -> causa -> politica -> decidir()        NAO TEM
+```
+
+O Caminho B e o que produz o **Foco**. `LeituraOperacional` (`sinais.ts:91`) nao
+tem campo de evento, e `sinais.ts` **nao cita `event_id` em nenhuma linha**. A
+`Evidencia` do produto e `{tipo, referencia, observado_em}`, e `referencia` e um
+alvo de dominio — nunca um id do log.
+
+**Entao a identidade nao se perde no meio: ela nunca entra.** A diferenca importa,
+porque "perdeu" sugere um ponto para consertar, e o que existe e uma fonte que
+nasceu sem o campo.
+
+**Decisao.** Todo sinal de `sinais.ts` fica `eligible_for_shadow: false` com
+`reason: event_lineage_unavailable`. **Nenhum backfill sintetico** — um id
+inventado depois e pior que a ausencia, porque parece verificavel.
+
+**Mudanca minima registrada e NAO implementada:** fazer `LeituraOperacional`
+carregar os `event_id` que a sustentam e `sinaisDe()` propaga-los. Isso exige que
+a leitura nasca do event log em vez de nascer de uma fotografia — runtime amplo,
+fora desta missao.
+
+---
+
+### D69 — Confianca e Caso C: o Shadow exige numero e nenhuma politica existe
+
+**Achado.** `Recomendacao.confidence` e `number` **obrigatorio**
+(`shadow.ts:52`), e nao existe politica canonica que produza esse numero a partir
+do Caminho B. `exigirConfianca` valida FAIXA, nunca ORIGEM.
+
+**Decisao.** A regra **nao foi inventada**. `ConfiancaDeclarada` tem dois ramos —
+`nao_estimada` (ausencia explicita, que **nao e zero**) e `apurada` com **regra
+declarada** —, e `conferirConfianca` recusa duas conversoes proibidas: regra que
+menciona severidade (`severity_used_as_confidence`) e regra que menciona rotulo
+qualitativo (`qualitative_label_not_convertible`).
+
+As tres alternativas reais ficam registradas com impacto e risco em
+`CONTRATO_LINHAGEM_EVIDENCIA.md` §3, para o Cesar decidir: tornar a confianca
+opcional no Shadow · definir politica canonica com evidencia · manter bloqueado.
+**Nenhuma foi escolhida em silencio, e R5-D permanece bloqueado.**
+
+**Defeito registrado, NAO corrigido:** `home-vm.ts:474` faz
+`severidade >= 3 ? 0.8 : 0.6` — severidade virando confianca, exatamente o que a
+separacao conceitual proibe. Nao foi corrigido porque as view models estao
+congeladas nesta missao. A guarda D16 impede que essa regra entre no caminho novo.
+
+**Custo aceito:** nenhuma recomendacao do Caminho B pode nascer hoje. E o ponto:
+o contrato declara a ausencia em vez de simular precisao.

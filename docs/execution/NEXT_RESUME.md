@@ -12,7 +12,68 @@
 >
 > ---
 >
-> **ATUALIZADO 2026-08-03 — R5-C CONCLUIDO.**
+> **ATUALIZADO 2026-08-03 — R5-D0 CONCLUIDO. VEREDITO: `R5D_BLOCKED`.**
+> `DELIVERYOS_R5D0_READINESS_CHECKPOINT` · `R5D_BLOCKED` · `MACRO2_CHECKPOINT_REACHED`
+> HEAD inicial `27ccfd2`. **R5-D NAO iniciado, e agora com motivo tipado.**
+>
+> Contrato: `docs/product/CONTRATO_LINHAGEM_EVIDENCIA.md` · preflight:
+> `src/product/atencao/prontidao-r5d.ts` · gate: `npm run test:platform:r5d0` — **28 testes**.
+>
+> **AS TRES RESPOSTAS, e duas sao NAO:**
+>
+> **1. De quais eventos reais virao os `input_event_ids`? — BLOQUEADO.** Existem dois caminhos:
+> ```
+> A  event log -> projetar() -> ViagemProjetada.eventos[] -> input_event_ids   PRESERVA
+> B  LeituraOperacional -> sinaisDe() -> causa -> politica -> decidir()        NAO TEM
+> ```
+> O Caminho B e o que produz o **Foco**. `LeituraOperacional` (`sinais.ts:91`) **nao tem campo de
+> evento**, `sinais.ts` tem **zero** ocorrencias de `event_id`, e a `Evidencia` do produto e
+> `{tipo, referencia, observado_em}` — `referencia` e alvo de dominio, nunca id do log.
+> **A identidade nao se perde no meio: ela nunca entra** (**D68**). A diferenca importa, porque
+> "perdeu" sugere um ponto para consertar, e o que existe e uma fonte que nasceu sem o campo.
+> **Todos os sinais de `sinais.ts` ficam `eligible_for_shadow: false`.** Nenhum backfill sintetico.
+>
+> **2. Como a confianca sera representada? — BLOQUEADO, Caso C.** `Recomendacao.confidence` e
+> `number` **obrigatorio** e **nao existe politica canonica** que o produza a partir do Caminho B.
+> A regra **nao foi inventada**: `ConfiancaDeclarada` tem `nao_estimada` (ausencia explicita, que
+> **nao e zero**) e `apurada` com regra declarada, e `conferirConfianca` recusa regra que mencione
+> **severidade** ou **rotulo qualitativo**. As tres alternativas reais estao registradas com impacto
+> e risco, **para o Cesar decidir** (**D69**).
+>
+> **DEFEITO REAL ACHADO E NAO CORRIGIDO:** `home-vm.ts:474` faz `severidade >= 3 ? 0.8 : 0.6` —
+> **severidade virando confianca**, que e a conversao que a separacao conceitual proibe. Nao foi
+> corrigido porque as view models estao congeladas nesta missao. A guarda **D16** impede a regra de
+> entrar no caminho novo.
+>
+> **3. O harness e o runtime usam o mesmo validador? — RESOLVIDO (D67).** `validarDraftShadow` mora
+> em `shadow.ts`, `recomendar()` monta a candidata e **a chama**, e o tradutor **reexporta** a mesma
+> referencia. A prova que texto nao daria: o teste compara **identidade de referencia** entre as duas
+> importacoes — duas copias parecidas passariam em qualquer comparacao textual e falham nesta.
+> Equivalencia: os **39** testes do Shadow seguem verdes, sem regra alterada, reduzida ou
+> acrescentada.
+>
+> **ADVERSARIAL: 15 mutacoes, 15 acusadas, 0 cegas, 0 nao carregadas, restauracao byte a byte.**
+> Duas rodadas. **MD12** nao aplicou na primeira — ancora em `
+` contra `shadow.ts` em **CRLF**,
+> L37 outra vez. **MD05** saiu cega porque a pureza do tradutor era provada no gate de R5-C e nao
+> neste — **L40**: cobertura e propriedade de cada gate, nao do repositorio. O gate ganhou **D-PUR**.
+>
+> **RUNTIME CONFIRMADO INEXISTENTE.** Sem conexao, flag, recomendacao real, store ou evento. O
+> preflight **devolve veredito e nao liga nada**. **D43 de pe. D29 preservada.**
+>
+> **CONGELAMENTO VISUAL VERDE.** `git diff 27ccfd2` vazio em `src/product/ui/`,
+> `src/product/viewmodels/` e `docs/figma/`. Regressoes: R5-A 30 · R5-B 30 · R5-C 38 · R5-D0 28 ·
+> copiloto 39 · home 44 · organismo 27 · Product System 44 · R1 24 · ordem visual 6 · `tsc` exit 0.
+>
+> **PROXIMA ACAO SEGURA — e ela e uma PERGUNTA, nao um bloco de codigo.** R5-D so comeca quando as
+> duas respostas forem executaveis. A de confianca depende do Cesar escolher entre as tres
+> alternativas da §3 do contrato. A de linhagem depende de decidir se a leitura operacional passa a
+> nascer do event log — mudanca de runtime amplo, ja registrada como minima necessaria e **nao**
+> implementada.
+>
+> ---
+>
+> > **ATUALIZADO 2026-08-03 — R5-C CONCLUIDO.**
 > `DELIVERYOS_R5C_TRANSLATION_CONTRACT_COMPLETE` · `MACRO2_CHECKPOINT_REACHED`
 > HEAD inicial `ad3b1bc`. **R5-D NAO iniciado.**
 >
