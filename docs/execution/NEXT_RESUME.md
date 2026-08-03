@@ -12,6 +12,66 @@
 >
 > ---
 >
+> **ATUALIZADO 2026-08-03 — R5-A CONCLUIDO.**
+> `DELIVERYOS_R5A_TEMPORAL_POLICY_COMPLETE` · `MACRO2_CHECKPOINT_REACHED`
+> HEAD inicial `4365c61`. **R5-B, R5-C e R5-D NAO iniciados.**
+>
+> **A eleicao deixou de ser fotografia.** `home-vm.ts:607` decidia o modo por severidade
+> instantanea, sem uma unica dimensao de tempo. Agora existe
+> `src/product/atencao/politica-temporal.ts` — funcao PURA, relogio injetado pela entrada,
+> estado JSON serializavel, replayable e idempotente. Contrato em
+> `docs/product/CONTRATO_TEMPORAL_ATENCAO.md`. Gate: `npm run test:platform:r5a` — **30 testes**.
+>
+> **A SEMANTICA FOI LIDA, NAO PRESUMIDA — e tres achados mudaram o desenho.**
+> Unidade: **minuto** (`motor.js:200`, *"fotografa o minuto t"*).
+> - **DEBOUNCE 3** · inicio na troca da chave do topo · comparacao `>=` · topo ausente **apaga** o
+>   pendente, nao pausa · continua correndo durante um Foco ativo.
+> - **MAXFOCUS 8** · `ate_min` fixado na eleicao e **nunca renovado** · a retirada por teto **grava**
+>   a marcacao.
+> - **COOLDOWN 45** · por causa, nunca global · comparacao **estrita `>`**, diferente do `>=` do
+>   debounce · gravado na eleicao **e** na retirada por teto. **Assimetria comprovada:** retirada por
+>   **desaparecimento** nao grava — nao inicia cooldown.
+> - **STALE 120 NAO e frescor de fonte** (**D62**). E teto de plausibilidade da **espera observada de
+>   um pedido** (`motor.js:212` e `:218`). **Nenhum limiar de frescor foi inventado**: a
+>   obsolescencia entra como estado observado mais idade da leitura, e a politica decide so a
+>   consequencia.
+> - **NAO EXISTE PREEMPCAO.** A eleicao so ocorre com o slot livre (`motor.js:277`). Uma causa mais
+>   severa **nao rouba** o Foco. Nenhuma excecao foi criada — a missao proibia inventar, e as fontes
+>   nao tem nenhuma.
+>
+> **C1 e C3 executados como TIPO, nao como disciplina.** `orientacao_permitida` so e `true` no Foco,
+> com **caminho unico** no codigo (R5A-20 conta as atribuicoes). O slot e `FocoAtivo | null` — o tipo
+> nao admite dois. A view model recebe um parametro **opcional** de dois campos e apenas consome
+> (**D61**); ela nao guarda estado temporal, nao chama relogio e nao decide permanencia.
+>
+> **ADVERSARIAL: 8 mutacoes, 8 acusadas, 0 cegas, restauracao byte a byte.** Remover debounce caiu em
+> 11 testes · remover cooldown em R5A-08/09/10 · permitir dois Focos em R5A-06 e 07 · stale virar
+> Calmo em R5A-14 · texto na identidade em R5A-22 · relogio global em 17 testes · perda na
+> serializacao em R5A-17 · orientacao no Ambiente em R5A-20.
+>
+> **CONGELAMENTO VISUAL RESPEITADO.** `git diff 4365c61` vazio em `home.js`, `home.css`,
+> `organismo-tokens.css`, `sinais.ts`, `areas.ts` e `docs/figma/` — e a guarda **R5A-30** roda a
+> mesma comparacao. Gates: visual-order 6 · R1 24 · home 44 · organismo 27 · Product System 44 ·
+> paridade Figma 23 · `tsc` exit 0.
+>
+> **O QUE R5-A NAO PROVA, e precisa ser dito:** nenhuma sequencia foi exercitada contra fonte real —
+> as do gate sao construidas. As cenas de demonstracao **continuam elegendo por severidade**, porque
+> sao instantes isolados sem eixo de tempo; semea-las para caírem em Foco produziria um Foco que
+> nenhum debounce sustentou. Nao ha persistencia real: o estado e serializavel e foi provado em
+> round-trip, mas nenhum banco, fila ou runtime foi criado.
+>
+> **DIVERGENCIA REGISTRADA, NAO CORRIGIDA:** os pisos de severidade discordam — motor tem Ambiente
+> em qualquer situacao e Foco em `sev>=2`; o produto tem 2 e 3. A politica **parametriza** e usa os
+> do produto, porque corrigir mudaria o modo visivel de cenas aprovadas. Isso e **PB2**.
+>
+> **MOTORES DESCONECTADOS. D43 DE PE.** A politica nao importa `decisao.js` nem `shadow.ts`
+> (guarda R5A-29). **Flag inexistente. Nenhuma recomendacao real emitida.**
+>
+> **PROXIMA ACAO SEGURA:** **R5-B** — o gate I1-I10 com mutacao dirigida por invariante. Os dois que
+> continuam sem gate sao **I1** e **I2**, e agora ha onde ancora-los.
+>
+> ---
+>
 > **ATUALIZADO 2026-08-03 — R5 PREPARADO, NAO INICIADO. Decisao do Cesar.**
 >
 > **O FIGMA FICA PENDENTE.** Sem upgrade de plano, sem redesenho manual dos 18 cenarios.

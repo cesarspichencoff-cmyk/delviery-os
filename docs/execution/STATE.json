@@ -1193,7 +1193,7 @@
   },
   "retomada_r5": {
     "data": "2026-08-03",
-    "estado": "PREPARADA, NAO INICIADA — o Cesar pediu escopo, riscos e gate; a implementacao nao comecou",
+    "estado": "R5-A CONCLUIDO. R5-B, R5-C e R5-D nao iniciados.",
     "decisao_do_cesar": "Figma pendente, sem upgrade e sem redesenho manual. R5 pode retomar.",
     "congelado_durante_r5": [
       "frontend (home.js, home.css, organismo-tokens.css)",
@@ -1238,5 +1238,59 @@
     },
     "gate_de_conclusao_proposto": "npm run test:platform:r5 — I1 a I10 com mutacao dirigida em cada uma, mais as guardas de congelamento visual",
     "nao_iniciado": true
+  },
+  "r5a_politica_temporal": {
+    "data": "2026-08-03",
+    "estado": "CONCLUIDO",
+    "head_inicial": "4365c61",
+    "contrato": "docs/product/CONTRATO_TEMPORAL_ATENCAO.md",
+    "implementacao": "src/product/atencao/politica-temporal.ts",
+    "gate": {
+      "comando": "npm run test:platform:r5a",
+      "testes": 30,
+      "resultado": "R5A_TEMPORAL_GATE_GREEN"
+    },
+    "semantica_comprovada": {
+      "unidade": "MINUTO — motor.js:200 fotografa o minuto t",
+      "debounce": "3 min · inicio na troca da chave do topo · comparacao >= · topo ausente APAGA o pendente · continua correndo durante um Foco ativo",
+      "max_foco": "8 min · ate_min fixado na eleicao e nunca renovado · comparacao >= · a retirada por teto GRAVA a marcacao",
+      "cooldown": "45 min · por causa, nunca global · comparacao ESTRITA > · gravado na eleicao E na retirada por teto · retirada por desaparecimento NAO grava",
+      "stale": "120 min NAO e frescor de fonte — e teto de plausibilidade da espera observada de um pedido (motor.js:212 e :218). Nenhum limiar de frescor foi inventado (D62)",
+      "preempcao": "NAO EXISTE nas fontes. A eleicao so ocorre com o slot livre (motor.js:277). Nenhuma excecao foi criada"
+    },
+    "estados": [
+      "calmo",
+      "candidato_ambiente",
+      "ambiente",
+      "candidato_foco",
+      "foco",
+      "cooldown",
+      "degradado",
+      "retirada"
+    ],
+    "integracao": "home-vm.ts recebe um parametro OPCIONAL EleicaoTemporal (modo + orientacao_permitida) e apenas CONSOME. Nao guarda estado temporal, nao chama relogio, nao decide permanencia (D61)",
+    "adversarial": {
+      "mutacoes": 8,
+      "acusadas": 8,
+      "cegas": 0,
+      "restauracao": "byte a byte por sha256"
+    },
+    "congelamento_visual": "git diff 4365c61 vazio em home.js, home.css, organismo-tokens.css, sinais.ts, areas.ts e docs/figma — guarda R5A-30 executa a mesma comparacao",
+    "c1": "ENCERRADO — Ambiente informa e nao orienta. orientacao_permitida so e true no Foco, com caminho unico no codigo (R5A-20)",
+    "c3": "ENCERRADO — a Operacao Viva e a dona final da atencao; a politica E esse dono",
+    "nao_feito": {
+      "r5b": "NAO INICIADO — gate I1-I10 com mutacao por invariante",
+      "r5c": "NAO INICIADO — contrato de traducao motor->shadow como TIPO",
+      "r5d": "NAO INICIADO — conexao em sombra atras de flag",
+      "motores": "DESCONECTADOS — D43 de pe; a politica nao importa decisao.js nem shadow.ts (R5A-29)",
+      "flag": "INEXISTENTE",
+      "recomendacao_real": "NENHUMA emitida"
+    },
+    "limitacoes": [
+      "nenhuma sequencia foi exercitada contra fonte real; as sequencias do gate sao construidas",
+      "as cenas de demonstracao continuam elegendo por severidade, porque sao instantes isolados sem eixo de tempo (D61)",
+      "os pisos de severidade divergem entre motor (ambiente = qualquer situacao, foco = sev>=2) e produto (2 e 3). A politica parametriza e usa os do produto; a divergencia e PB2 e nao foi resolvida aqui",
+      "nao ha persistencia real: o estado e serializavel e foi provado em round-trip, mas nenhum banco, fila ou runtime foi criado"
+    ]
   }
 }

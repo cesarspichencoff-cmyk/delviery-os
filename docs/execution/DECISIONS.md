@@ -1198,3 +1198,57 @@ e exatamente quando ele custa caro.
 
 **Custo aceito:** R5 fica maior do que "ligar dois motores", e o primeiro bloco
 nao produz nada visivel. E o preco de nao repetir 30,8%.
+
+---
+
+### D61 — A politica temporal e domínio proprio, e o view model so consome
+
+**Decisao.** `TemporalAttentionPolicy` vive em
+`src/product/atencao/politica-temporal.ts`, como funcao pura de dominio.
+`home-vm.ts` recebe o resultado por um parametro OPCIONAL `EleicaoTemporal` com
+dois campos — `modo` e `orientacao_permitida` — e nada mais.
+
+**Por que o parametro e opcional, e por que isso nao e afrouxamento.** As cenas
+de demonstracao sao INSTANTES ISOLADOS, nao sequencias: nenhuma delas tem eixo
+de tempo, e nenhuma consegue provar debounce. Sem o parametro, a view model
+mantem o caminho de fotografia e **declara** que e fotografia, no proprio codigo.
+Fingir que uma fixture estatica prova permanencia seria pior do que dizer que ela
+nao prova. O dominio nao foi enfraquecido — ele so nao e exercitado por uma
+entrada que nao tem tempo.
+
+**Alternativa recusada:** semear o estado temporal das fixtures para que elas
+caissem em Foco na primeira leitura. Recusada porque produziria um Foco que
+nenhum debounce sustentou, e o gate deixaria de distinguir uma eleicao legitima
+de uma eleicao encenada.
+
+**Custo aceito:** enquanto nao houver leitura ao vivo, a home continua elegendo
+por severidade. O ganho e que agora existe UM lugar que sabe eleger com tempo, e
+ele e testado com relogio controlado.
+
+---
+
+### D62 — `STALE:120` nao e frescor de fonte, e por isso nenhum limiar foi inventado
+
+**Achado.** `FLOORS.STALE = 120` do `motor.js` e **teto de plausibilidade da
+espera observada de um pedido**, aplicado em `motor.js:212` e `:218` sobre
+`wmin = t - o.p` e `wait = t - o.r`, com o comentario canonico: *"no dado real,
+NENHUMA espera legitima passou de 104 min... Acima de STALE o dado e suspeito:
+nao entra em contagem, nao vira foco, nao e nomeado."*
+
+**Decisao.** A politica temporal NAO define limiar de frescor de fonte. Nenhum
+existe no canone. A obsolescencia entra como **estado observado** (`saudavel ·
+parcial · stale · indisponivel`, de `sinais.ts:76`) mais a **idade da leitura**;
+a politica decide a CONSEQUENCIA — nunca o diagnostico.
+
+**Alternativa recusada:** reaproveitar 120 min como "fonte parada ha mais de 2
+horas". Recusada porque sao grandezas diferentes — uma mede a espera de um
+pedido, a outra mede o silencio de uma fonte — e usar o numero de uma para a
+outra inventaria uma regra com aparencia de medicao.
+
+**Consequencia comprovada:** fonte obsoleta nunca vira Calmo (guarda R5A-14),
+nao promove a Foco (R5A-12), preserva o Foco vivo com a degradacao declarada
+(R5A-13), e a retirada por obsolescencia tem motivo proprio, distinto do fim da
+tensao (`fonte_obsoleta` contra `causa_desapareceu`).
+
+**Custo aceito:** sem limiar, uma fonte que envelhece devagar so e tratada quando
+alguem a declara obsoleta. Preferivel a fabricar o momento.
