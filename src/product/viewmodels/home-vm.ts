@@ -399,6 +399,17 @@ function ambienteVM(
  * Eleger o foco. Exclusividade de slot: exatamente UM candidato, ou nenhum.
  * Criterio: severidade 3. Severidade 2 e Ambiente; severidade 1 e clima.
  */
+/**
+ * O que esta view model aceita da politica temporal. Deliberadamente MINIMO: so
+ * o modo eleito e se a orientacao esta liberada. Tudo o mais — pendente, foco
+ * ativo, cooldown, marcacoes — pertence ao estado da politica, e trazer para ca
+ * seria recriar aqui o dono da atencao que C3 ja definiu.
+ */
+export interface EleicaoTemporal {
+  readonly modo: ModoOperacional;
+  readonly orientacao_permitida: boolean;
+}
+
 function elegerFoco(sinais: readonly Sinal[]): Sinal | null {
   const candidatos = sinais.filter((s) => s.severidade >= 3);
   return candidatos[0] ?? null;
@@ -598,14 +609,31 @@ function ligacoesVM(ambientes: readonly AmbienteVM[]): readonly LigacaoVM[] {
   });
 }
 
-export function homeVM(l: LeituraOperacional): HomeVM {
+export function homeVM(l: LeituraOperacional, temporal?: EleicaoTemporal): HomeVM {
   const sinais = sinaisDe(l);
   const foco = elegerFoco(sinais);
 
   // O modo. Calmo NAO significa ausencia de informacao: significa que nada
   // esta acima do piso de interrupcao.
+  //
+  // R5-A: quem elege o modo e a POLITICA TEMPORAL da Operacao Viva (C3), em
+  // `src/product/atencao/politica-temporal.ts`. Esta view model apenas CONSOME o
+  // resultado — ela nao guarda estado temporal, nao chama relogio e nao decide
+  // permanencia, retirada nem cooldown.
+  //
+  // Quando `temporal` nao vem, a leitura e uma FOTOGRAFIA sem eixo de tempo: e o
+  // caso das cenas de demonstracao, que sao instantes isolados e nao uma
+  // sequencia. Nesse caminho o modo continua vindo da severidade, e isso esta
+  // declarado aqui em vez de escondido — uma fixture sem tempo nao pode provar
+  // debounce, e fingir que prova seria pior do que dizer que nao prova.
   const modo: ModoOperacional =
-    foco !== null ? "foco" : sinais.some((s) => s.severidade >= 2) ? "ambiente" : "calmo";
+    temporal !== undefined
+      ? temporal.modo
+      : foco !== null
+        ? "foco"
+        : sinais.some((s) => s.severidade >= 2)
+          ? "ambiente"
+          : "calmo";
 
   const emAndamento = l.pedidos.length;
   const pulso: Campo<number> =
