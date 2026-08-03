@@ -14,8 +14,9 @@
 >
 > **ATUALIZADO 2026-08-03 — RECUPERACAO DA EXPRESSAO VISUAL CANONICA: CHECKPOINT.**
 > `DELIVERYOS_CANONICAL_VISUAL_RECOVERY_CHECKPOINT` · `MACRO2_CHECKPOINT_REACHED`
-> HEAD inicial `678c61a` -> final `01b6de2`.
-> Commits: `32270ea` (ordem de leitura), `245ac38` (expressao), `01b6de2` (gate + adversarial).
+> HEAD inicial `678c61a`. HEAD final = o commit que carrega este proprio checkpoint (`git log -1`).
+> Commits: `32270ea` (ordem de leitura e guarda), `245ac38` (expressao canonica),
+> `01b6de2` (gate do organismo e rodada adversarial), `07a8776` e `3c331d5` (memoria).
 >
 > **A CAUSA DE PB9 ESTA FECHADA, E ELA ERA DE PROCESSO.** `CLAUDE.md` §11 ganhou o **item 4**
 > e o indice canonico ganhou a **§2.1**: a ordem visual vinculante e **Sprint Visual V2 ->
