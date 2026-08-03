@@ -12,6 +12,55 @@
 >
 > ---
 >
+> **ATUALIZADO 2026-08-03 — FECHAMENTO CANONICO DO FIGMA: CHECKPOINT.**
+> `DELIVERYOS_FIGMA_CANONICAL_SYNC_CHECKPOINT` · `MACRO2_CHECKPOINT_REACHED`
+> HEAD inicial `ae607ca`. Commits: matriz e gate · memoria.
+>
+> **O ORIGINKIT DEIXOU DE SER BLOQUEIO — `OriginKit external review deferred — non-blocking`
+> (D57).** A evidencia de PB12 continua inteira em `BLOCKERS.md`; o que caiu foi o peso. Ele e
+> **referencia externa opcional de qualidade**: nao e autoridade visual, nao e dependencia, nao
+> prevalece sobre V2/V3.3, e nao trava Figma, paridade nem fechamento visual. **Nenhuma tentativa de
+> acesso foi feita nesta missao**, de proposito. A matriz de referencia em
+> `CANONICAL_MOTION_PARITY.md` §1 segue **vazia**, e isso agora e um estado aceito, nao uma divida.
+>
+> **O QUE ESTA MISSAO ENTREGOU, e esta provado:**
+> - `docs/figma/FIGMA_ORGANISMO_PARITY_MATRIX.md` — a matriz canonica do organismo: **18 cenarios
+>   obrigatorios** (10 desktop, 8 mobile), 12 colunas, taxonomia das 9 areas conferida contra
+>   `areas.ts` uma a uma, movimento classificado item a item, e a §9 dizendo em letra propria o que
+>   a matriz **proibe afirmar**.
+> - `npm run test:platform:figma-parity` — **23 testes**, `FIGMA_PARITY_GATE_GREEN`. Protege
+>   presenca, semantica, rastreabilidade e classificacao; **nao** mede pixel.
+> - **ADVERSARIAL: 6 mutacoes na matriz, 6 acusadas, 0 cegas, restauracao byte a byte por sha256.**
+> - **REDUCED MOTION REAL, e o checkpoint anterior nao tinha isso.** Chromium 1228 via Playwright
+>   1.61.1, `Emulation.setEmulatedMedia` nos dois valores, seis cenas: `no-preference` anima
+>   1/1/4/0/3/3 e `reduce` anima **0 em todas**, com **contagem de caracteres identica** cena a
+>   cena, **nenhuma area sumindo** (5=5 e 1=1) e o Foco presente nos dois passes. Nenhum significado
+>   vive so no movimento — agora medido, nao inferido do CSSOM.
+>
+> **O QUE ESTA MISSAO NAO ENTREGOU, e o motivo e externo: PB13.** A cota do plano Figma cortou
+> `use_figma` **e** `get_metadata` na quarta chamada (`mcp_rate_limit_paywall`), e nao voltou minutos
+> depois. As tres paginas foram inspecionadas ANTES do corte — o inventario esta na §5 da matriz.
+> Depois disso: **zero frames criados, zero paginas reescritas, zero screenshots de Figma.**
+>
+> **NENHUM NODE ID FOI INVENTADO.** As 18 linhas trazem o token `PENDENTE-PB13`, e o gate aceita
+> **so** um ID real `\d+:\d+` ou esse token exato — vazio, tracinho e "TBD" reprovam (**D58**). O dia
+> em que os frames existirem, trocar o token pelo ID deixa o gate verde sozinho.
+>
+> **PB11 CONTINUA ABERTO.** Ele so fecha com Figma, screenshots e matriz com IDs reais — as tres
+> coisas juntas. **R2 visual NAO esta concluido integralmente**, porque paridade exige o desenho.
+> **PB9 preservado** para Entregas, Operacao Viva, Conference Brain, Copiloto, modulo futuro e o
+> **shell** que emoldura o organismo (D-O5 da matriz). **R5 nao iniciado. D43 de pe.**
+>
+> **NADA DE FRONTEND FOI TOCADO.** `home.js`, `home.css`, `organismo-tokens.css`, `home-vm.ts`,
+> `sinais.ts` e `areas.ts` tem diff vazio nesta missao — conferido.
+>
+> **PROXIMA ACAO SEGURA:** (1) destravar o acesso ao Figma — cota renovada, plano com mais chamadas
+> de MCP, ou o desenho feito na interface pelo Cesar; (2) as paginas 00/01/02 sobre a expressao ja
+> aprovada, preservando `01 — Design System` e os 6 componentes de `01.4`; (3) trocar os 18
+> `PENDENTE-PB13` por IDs reais e rodar o gate; (4) so entao R5, depois de I1-I10.
+>
+> ---
+>
 > **ATUALIZADO 2026-08-03 — SINCRONIZACAO CANONICA DE MOVIMENTO: CHECKPOINT.**
 > `DELIVERYOS_FIGMA_MOTION_CANONICAL_SYNC_CHECKPOINT` · `MACRO2_CHECKPOINT_REACHED`
 > HEAD inicial `c055535`. Commits: `9f3b115` (movimento), `d9a7438` (guardas e mutacoes),

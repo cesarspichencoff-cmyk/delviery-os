@@ -45,8 +45,16 @@
   **Conflito real, não resolvível por hierarquia de fontes.**
 - **PB9/C7** — CRM, Evolução, Treinamento, RH e Gestão são módulos do DeliveryOS?
 - **PB9/C8** — notificação fora da tela é permitida?
-- **PB11** — o Figma não acompanhou a expressão canônica da home (aberto em 2026-08-03; detalhe no fim deste arquivo).
-- **PB12** — o OriginKit não é inspecionável deste ambiente (403 + policy check fora do ar). A etapa de motion **não pode ser declarada completa** enquanto isso valer.
+- **PB11** — o Figma não acompanhou a expressão canônica da home (aberto em 2026-08-03; detalhe no fim deste arquivo). **Continua aberto**, agora bloqueado por PB13.
+- **PB13** — a cota do plano Figma cortou leitura **e** escrita no meio da sincronização (2026-08-03). Detalhe no fim deste arquivo.
+
+## ⬇ RECLASSIFICADOS
+
+- **PB12 — OriginKit.** Deixou de ser bloqueio em 2026-08-03: `OriginKit external review deferred —
+  non-blocking` (**D57**). A evidência de indisponibilidade fica preservada abaixo, inteira. O que
+  caiu foi a consequência: o OriginKit é referência externa **opcional** de qualidade, não é
+  autoridade visual, não é dependência, não prevalece sobre V2/V3.3 e não trava Figma, paridade nem
+  fechamento visual. A revisão vira refinamento futuro, nunca reconstrução obrigatória.
 
 ---
 
@@ -559,3 +567,44 @@ fica marcada **NAO INSPECIONADO**, nunca preenchida por suposicao.
 **O que destrava.** Uma sessao em que o servico de verificacao do navegador
 esteja no ar, ou o conteudo do OriginKit trazido por outro caminho autorizado
 pelo Cesar. Nao ha nada a corrigir no repositorio.
+
+**RECLASSIFICADO em 2026-08-03 — `OriginKit external review deferred — non-blocking` (D57).**
+A medição acima continua válida e não foi apagada. O que muda é o peso: o OriginKit é **referência
+externa opcional de qualidade**. Não é autoridade visual · não é dependência · não prevalece sobre
+V2/V3.3 · não bloqueia Figma · não bloqueia paridade · não bloqueia o fechamento visual. A etapa de
+movimento **não** fica presa a ele — ela deriva de `MOTION_SYSTEM.md`, do V3.3 e das decisões do
+César, e agora está medida com a preferência real de reduced motion. Continua proibido declarar que
+o OriginKit foi analisado, reconstruir componentes de memória ou inventar a matriz de referência.
+
+### PB13 — A cota do plano Figma cortou leitura e escrita no meio da sincronização
+
+**Categoria:** bloqueio de ambiente · **Aberto em** 2026-08-03 · **Severidade:** alta
+(é o que segura PB11)
+
+**O fato, medido.** As três páginas do arquivo `IMWH8ZKMF5ra3QJYiR6vGa` foram inspecionadas com
+sucesso no início da missão — inventário completo em `docs/figma/FIGMA_ORGANISMO_PARITY_MATRIX.md`
+§5. Na quarta chamada, o servidor passou a responder:
+
+| Chamada | Resultado |
+|---|---|
+| `use_figma` (ler fontes disponíveis e a estrutura da capa) | `You've reached the Figma MCP tool call limit on the Starter plan` |
+| `get_metadata` (`0:1`) | idem |
+| `get_metadata` (`2:2`), minutos depois | idem — **não é limite de rajada** |
+| `whoami` | responde: `Cesar Spichencoff`, seat **View**, tier **starter** |
+
+A mensagem aponta para a página de upgrade (`upgrade=mcp_rate_limit_paywall`), então é cota de
+plano, não indisponibilidade momentânea.
+
+**Consequência declarada.** Nenhum frame do organismo foi criado, nenhuma página foi reescrita,
+nenhum screenshot de Figma foi tirado. **Nenhum node ID foi inventado** — a matriz traz o token
+`PENDENTE-PB13` nas 18 linhas obrigatórias, e a guarda `npm run test:platform:figma-parity` aceita
+**apenas** um ID real (`\d+:\d+`) ou esse token exato. Um Figma sincronizado pela metade mente sobre
+qual é a expressão vigente; uma matriz com ID inventado mente pior, porque parece verificável.
+
+**O que NÃO fica bloqueado por isso.** A matriz canônica, o gate de paridade, as seis mutações
+dirigidas, a validação real de reduced motion e a reclassificação do OriginKit — tudo feito e
+provado nesta sessão. Falta o desenho.
+
+**O que destrava.** Cota renovada, plano com mais chamadas de MCP, ou o desenho feito na interface
+do Figma pelo César com os node IDs trazidos de volta para a coluna da matriz. Não há nada a
+corrigir no repositório.

@@ -1079,3 +1079,54 @@ sexta-feira de pico e custo sem contrapartida.
 **Pendencia registrada:** os dois documentos precisam concordar. Nao foi
 corrigido aqui porque decidir qual dos dois cede e decisao de produto, e este
 bloco e de sincronizacao. Fica em `CANONICAL_MOTION_PARITY.md` §4.
+
+---
+
+### D57 — O OriginKit e referencia externa OPCIONAL, e nao bloqueia nada
+
+**Decisao.** `OriginKit external review deferred — non-blocking`. O OriginKit
+**nao** e autoridade visual, **nao** e dependencia, **nao** prevalece sobre
+V2/V3.3, **nao** bloqueia o Figma, **nao** bloqueia a paridade e **nao** bloqueia
+o fechamento visual. A revisao podera acontecer depois como **refinamento**,
+nunca como reconstrucao obrigatoria.
+
+**O que NAO muda.** A evidencia de PB12 fica preservada inteira: a navegacao
+abre, o titulo chega, e toda leitura de conteudo falha (`Policy check temporarily
+unavailable` no navegador, `403` no WebFetch), com localhost lendo normal na
+mesma sessao. Continua proibido declarar que ele foi analisado, reconstruir
+componentes de memoria ou inventar a matriz de referencia — ela segue vazia de
+proposito em `CANONICAL_MOTION_PARITY.md` §1.
+
+**Alternativa recusada:** manter PB12 como bloqueio ate o acesso existir.
+Recusada porque prendia o fechamento visual do produto a um site de terceiro que
+nunca foi autoridade de nada aqui. O movimento canonico do DeliveryOS mora em
+`docs/figma/MOTION_SYSTEM.md`, neste repositorio, e ja governava tudo.
+
+**Custo aceito:** a matriz de referencia OriginKit pode ficar vazia para sempre.
+E o preco certo — melhor uma coluna honestamente vazia do que uma coluna
+preenchida com titulo de resultado de busca.
+
+---
+
+### D58 — Node ID pendente tem um token, e ele e verificavel
+
+**Decisao.** Na matriz de paridade do organismo, a coluna Node ID aceita
+**dois** valores e so dois: um ID real no formato `123:456`, lido do arquivo, ou
+o token exato `PENDENTE-PB13`. Vazio, tracinho, "TBD" ou ID malformado
+**reprovam** no gate (`npm run test:platform:figma-parity`, teste R1). E uma
+linha pendente nao pode declarar paridade no campo Divergencia (teste R2).
+
+**Por que isso e uma decisao e nao um detalhe de formato.** A cota do plano Figma
+cortou leitura e escrita no meio desta missao (**PB13**). O caminho facil seria
+deixar a celula vazia e escrever a ressalva em prosa — e prosa nao e executavel.
+Com o token, a matriz declara a ausencia de um jeito que uma maquina checa, e o
+dia em que os frames existirem basta trocar o token pelo ID: o gate fica verde
+sozinho, sem que nenhuma asercao precise ser afrouxada.
+
+**Alternativa recusada:** preencher a coluna com IDs plausiveis e corrigir
+depois. Recusada pelo motivo de sempre neste repositorio — um numero inventado e
+indistinguivel de um numero medido quando alguem le a tabela seis meses depois.
+
+**Custo aceito:** o gate nasce verde com 18 linhas pendentes, o que pode parecer
+aprovacao. Nao e, e a §0 da matriz diz isso em letra propria: o gate prova que a
+matriz e honesta sobre o estado, nao que o Figma esta sincronizado.

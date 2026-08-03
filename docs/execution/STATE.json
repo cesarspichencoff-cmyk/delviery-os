@@ -1,6 +1,6 @@
 {
   "_leia_primeiro": "Estado executavel do DeliveryOS. So entra aqui o que foi VERIFICADO. ORDEM DE LEITURA OBRIGATORIA: (1) docs/product/DELIVERYOS_CANONICAL_SOURCE_INDEX.md — o produto; (2) os documentos de produto que ele indicar; (3) as duas auditorias em docs/auditoria/; (4) so entao este arquivo e o NEXT_RESUME.md. O produto vem antes do estado tecnico — ver DECISIONS.md D44 e PROMPT_LESSONS.md L32.",
-  "atualizado_em": "2026-08-02",
+  "atualizado_em": "2026-08-03",
   "missao": "MACRO-PROMPT 1/3 — Hybrid Platform + PostgreSQL + Cloud Foundation",
   "veredito": "READY_FOR_MACRO_PROMPT_2_FIELD_AND_COPILOT_BRIDGE",
   "repositorio": {
@@ -1105,5 +1105,90 @@
     "PB12": "ABERTO — o OriginKit nao e inspecionavel deste ambiente",
     "R5": "NAO iniciado. D43 continua de pe",
     "limites_respeitados": "home-vm.ts, sinais.ts e areas.ts NAO foram tocados. Sem push, merge, PR, deploy, rota B5, Conference Brain, CRM, Android ou conexao dos motores. Zero subagentes"
+  },
+  "fechamento_canonico_figma_paridade": {
+    "data": "2026-08-03",
+    "estado": "CHECKPOINT — matriz, gate, mutacoes e reduced motion REAL concluidos · Figma NAO sincronizado, bloqueado por cota de plano (PB13)",
+    "head_inicial": "ae607ca",
+    "originkit": {
+      "reclassificacao": "OriginKit external review deferred — non-blocking (D57)",
+      "o_que_caiu": "o bloqueio. Nao e autoridade visual, nao e dependencia, nao prevalece sobre V2/V3.3, nao bloqueia Figma, paridade nem fechamento visual",
+      "o_que_permanece": "a evidencia de PB12 fica inteira em BLOCKERS.md. Continua proibido declarar que foi analisado, reconstruir de memoria ou inventar a matriz de referencia — CANONICAL_MOTION_PARITY.md §1 segue vazia de proposito",
+      "tentativas_nesta_missao": 0
+    },
+    "figma": {
+      "arquivo": "IMWH8ZKMF5ra3QJYiR6vGa",
+      "paginas_preservadas": [
+        "00 — Overview & Architecture (0:1)",
+        "01 — Design System (2:2)",
+        "02 — Product Flows & Screens (2:3)"
+      ],
+      "inventario_lido": "3 paginas, colecao DeliveryOS com 56 variaveis, 9 estilos de texto, 6 componentes em 01.4, 9 frames em 02",
+      "frames_criados": 0,
+      "paginas_reescritas": 0,
+      "screenshots_de_figma": 0,
+      "node_ids_inventados": 0,
+      "motivo": "PB13 — cota do plano Starter cortou use_figma e get_metadata na quarta chamada; confirmado nao ser limite de rajada"
+    },
+    "matriz": {
+      "arquivo": "docs/figma/FIGMA_ORGANISMO_PARITY_MATRIX.md",
+      "linhas_obrigatorias": 18,
+      "desktop": 10,
+      "mobile": 8,
+      "colunas": 12,
+      "node_id": "todas as 18 trazem o token PENDENTE-PB13; nenhuma traz ID inventado (D58)",
+      "taxonomia": "9 areas conferidas contra areas.ts, uma a uma"
+    },
+    "gate": {
+      "comando": "npm run test:platform:figma-parity",
+      "testes": 23,
+      "resultado": "FIGMA_PARITY_GATE_GREEN",
+      "o_que_protege": "presenca, semantica, rastreabilidade e classificacao — nunca posicao absoluta de pixel"
+    },
+    "adversarial": {
+      "mutacoes": 6,
+      "acusadas": 6,
+      "cegas": 0,
+      "restauracao": "byte a byte por sha256",
+      "escopo": "somente a matriz"
+    },
+    "reduced_motion_real": {
+      "ferramenta": "Chromium 1228 via Playwright 1.61.1, Emulation.setEmulatedMedia",
+      "no_preference": {
+        "calmo": 1,
+        "ambiente": 1,
+        "foco": 4,
+        "degradado": 0,
+        "aproximacao_sushi": 3,
+        "aproximacao_cozinha": 3
+      },
+      "reduce": {
+        "calmo": 0,
+        "ambiente": 0,
+        "foco": 0,
+        "degradado": 0,
+        "aproximacao_sushi": 0,
+        "aproximacao_cozinha": 0
+      },
+      "informacao_preservada": "contagem de caracteres identica cena a cena",
+      "areas_preservadas": "5=5 na visao geral, 1=1 na aproximacao",
+      "foco_legivel": true,
+      "falhou": false
+    },
+    "arquivos_funcionais_confirmados_sem_alteracao": [
+      "src/product/ui/surfaces/home.js",
+      "src/product/ui/surfaces/home.css",
+      "src/product/ui/tokens/organismo-tokens.css",
+      "src/product/viewmodels/home-vm.ts",
+      "src/product/viewmodels/sinais.ts",
+      "src/product/viewmodels/areas.ts"
+    ],
+    "pb11": "ABERTO — o Figma continua sem a expressao canonica; resolver so depois de Figma, screenshots e matriz com node IDs reais",
+    "pb12": "RECLASSIFICADO — revisao externa nao bloqueante (D57)",
+    "pb13": "ABERTO — cota do plano Figma",
+    "pb9": "PRESERVADO para as superficies ainda nao migradas: Entregas, Operacao Viva, Conference Brain, Copiloto, modulo futuro e o shell do organismo",
+    "r2_visual": "NAO concluido integralmente — a paridade exige o Figma",
+    "r5": "NAO iniciado",
+    "d43": "valida — os dois motores continuam desligados"
   }
 }
