@@ -105,10 +105,17 @@ const SCHEMAS = Object.freeze({
     key: ["recommendation_id"],
     required: ["recommendation_id", "unit_id", "source_mode", "conclusion_ref",
                "conclusion_version", "policy_id", "bridge_version", "escopo",
-               "titulo", "descricao", "evidencias", "evidence_grade", "confidence",
+               "titulo", "descricao", "evidencias", "evidence_grade",
+               "confianca_schema", "confianca",
                "risk_level", "recommended_action", "requires_human", "shadow",
                "created_at", "expires_at", "status"],
-    optional: ["policy_version", "external_id", "limitacoes", "motivo_de_saida"]
+    // `confidence` saiu de required em R5-D0-S. Ele continua sendo ESCRITO
+    // quando a confianca e apurada, como espelho de leitura para quem le o
+    // registro antigo — mas a verdade duravel passou a ser `confianca`, a uniao
+    // discriminada. Uma recomendacao `nao_estimada` simplesmente nao tem numero,
+    // e exigi-lo aqui era o que a matava na hora de gravar. Ver D74.
+    optional: ["policy_version", "external_id", "limitacoes", "motivo_de_saida",
+               "confidence"]
   }
 });
 
@@ -189,8 +196,40 @@ function validate(entity, record) {
     if (!Array.isArray(record.evidencias) || record.evidencias.length === 0) {
       errors.push("confianca_sem_evidencia_rastreavel");
     }
-    if (typeof record.confidence !== "number" || !(record.confidence >= 0 && record.confidence <= 1)) {
-      errors.push("confianca_invalida");
+    // CONFIANCA DURAVEL, discriminada e versionada. `nao_estimada` e legitima e
+    // NAO carrega numero; `apurada` exige valor em faixa, politica, versao e
+    // evidencias — um numero sem as tres e palpite com cara de medida.
+    if (record.confianca_schema !== "confianca@2") {
+      errors.push("confianca_schema_desconhecido:" + String(record.confianca_schema));
+    } else {
+      const c = record.confianca;
+      if (!c || typeof c !== "object") {
+        errors.push("confianca_invalida");
+      } else if (c.estado === "nao_estimada") {
+        // Ausencia declarada. Nao pode carregar valor: `nao_estimada` com numero
+        // e a ambiguidade que a uniao existe para desfazer.
+        if ("valor" in c) errors.push("nao_estimada_com_valor");
+        if (record.confidence !== undefined) errors.push("nao_estimada_com_espelho_numerico");
+      } else if (c.estado === "apurada") {
+        if (typeof c.valor !== "number" || !(c.valor >= 0 && c.valor <= 1)) {
+          errors.push("confianca_invalida");
+        }
+        if (typeof c.politica !== "string" || c.politica.trim() === "") {
+          errors.push("confianca_apurada_sem_politica");
+        }
+        if (typeof c.versao_da_politica !== "string" || c.versao_da_politica.trim() === "") {
+          errors.push("confianca_apurada_sem_versao_de_politica");
+        }
+        if (!Array.isArray(c.evidencias) || c.evidencias.length === 0) {
+          errors.push("confianca_apurada_sem_evidencias");
+        }
+        // O espelho, quando existe, precisa concordar com a verdade.
+        if (record.confidence !== undefined && record.confidence !== c.valor) {
+          errors.push("espelho_numerico_divergente");
+        }
+      } else {
+        errors.push("confianca_estado_desconhecido:" + String(c.estado));
+      }
     }
     // Recomendacao sobre PEDIDO exige identidade de pedido observada. Sem ela,
     // sobra `trip_id` querendo passar por `external_id` — a fronteira da

@@ -33,6 +33,7 @@
  * síncrono de ninguém.
  */
 
+import { paraConfiancaDuravel } from "./confianca-duravel";
 import { createHash } from "node:crypto";
 import type { SourceMode } from "../contracts/event-catalog";
 import type { Recomendacao, RecommendationStatus, RiskLevel } from "./shadow";
@@ -492,11 +493,10 @@ export function paraRegistro(r: RecomendacaoShadow): Record<string, unknown> {
     evidencias: r.evidencias,
     evidence_grade: r.evidence_grade,
     limitacoes: r.limitacoes,
-    // O REGISTRO duravel mantem o numero: o schema do store nao muda nesta
-    // missao. Este caminho sempre apura (as politicas do bridge calculam), entao
-    // `nao_estimada` nao chega aqui — e se um dia chegar, chega como `null`, que
-    // o schema recusa em voz alta em vez de gravar zero.
-    confidence: r.confianca.estado === "apurada" ? r.confianca.valor : null,
+    // R5-D0-S: o registro passa a carregar a MESMA uniao do dominio, versionada.
+    // `confidence` continua sendo escrito quando apurada, como espelho de
+    // leitura — nunca como verdade. `nao_estimada` nao ganha numero nenhum.
+    ...paraConfiancaDuravel(r.confianca),
     risk_level: r.risk_level,
     recommended_action: r.recommended_action,
     requires_human: r.requires_human,
