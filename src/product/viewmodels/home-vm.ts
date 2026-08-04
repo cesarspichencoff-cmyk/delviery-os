@@ -470,13 +470,21 @@ function orientacaoVM(
 }
 
 function focoVM(sinal: Sinal, l: LeituraOperacional): FocoVM {
-  // Confianca so aparece com evidencia rastreavel — regra da Unidade 6, reaplicada.
+  // CONFIANCA NAO ESTIMADA — e a correcao de um defeito real.
+  //
+  // Ate 2026-08-03 esta linha fazia `sinal.severidade >= 3 ? 0.8 : 0.6`. Era
+  // SEVERIDADE VIRANDO CONFIANCA: um numero com a aparencia de medicao e a
+  // origem de um degrau de severidade. Severidade e confianca sao conceitos
+  // diferentes, e nenhuma regra canonica liga um ao outro (D69, D70).
+  //
+  // Nenhuma politica apura confianca neste caminho hoje — a linhagem de evento
+  // que sustentaria a apuracao nao existe no Caminho B (D68). Entao a home
+  // declara ausencia, e a superficie simplesmente NAO APRESENTA o campo.
   const confianca: Campo<number> =
     sinal.evidencias.length > 0
-      ? observado(
-          sinal.severidade >= 3 ? 0.8 : 0.6,
-          l.procedencia,
-          l.observado_em,
+      ? ausente(
+          "nao_observado",
+          "Nenhuma politica apurou confianca para este sinal. O sistema nao estima.",
         )
       : ausente(
           "evidencia_insuficiente",

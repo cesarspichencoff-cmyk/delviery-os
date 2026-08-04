@@ -373,7 +373,14 @@ function orientacao(o) {
     </dl>
     <div class="org-acao__rodape">
       ${selos(o.selos)}
-      ${campo("Confianca", o.confianca)}
+      ${
+        /* Confianca NAO ESTIMADA nao vira campo na tela. Mostrar um bloco de
+           ausencia aqui ocuparia espaco para dizer "nao sei" numa superficie
+           cuja regra e dar a unica coisa e esconder o resto. */
+        o.confianca && o.confianca.observado === true
+          ? campo("Confianca", o.confianca)
+          : ""
+      }
       <p class="org-acao__nada">Nada foi executado. Uma pessoa decide.</p>
     </div>
   </div>`;
