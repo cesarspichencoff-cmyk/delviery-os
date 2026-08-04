@@ -241,11 +241,29 @@ export function conferirConfianca(
  */
 export const CONFIANCA_DURAVEL_COMPATIVEL = true;
 
+/**
+ * O catalogo de eventos operacionais e a projecao existem e sao compativeis
+ * desde R5-D1. Constantes, e nao literais soltos, para que a mutacao que as
+ * derruba seja UMA.
+ */
+export const CATALOGO_EVENTOS_COMPATIVEL = true;
+export const PROJECAO_COMPATIVEL = true;
+/**
+ * **NAO EXISTE PRODUTOR VIVO.** Nenhuma fonte real emite
+ * `pedido_ciclo_observado`, `trabalho_praca_observado` nem
+ * `capacidade_praca_observada`. O contrato esta pronto e vazio — e essa
+ * distincao e o resultado inteiro de R5-D1: schema passar nao e fonte existir.
+ */
+export const PRODUTOR_VIVO_DISPONIVEL = false;
+
 export type MotivoBloqueioR5D =
   | MotivoLinhagem
   | MotivoConfianca
   | "shadow_validator_divergent"
-  | "durable_confidence_incompatible";
+  | "durable_confidence_incompatible"
+  | "event_catalog_incompatible"
+  | "event_projection_incompatible"
+  | "live_event_producer_unavailable";
 
 export interface BloqueioR5D {
   readonly motivo: MotivoBloqueioR5D;
@@ -263,6 +281,9 @@ export type ProntidaoR5D =
   | {
       readonly status: "ready";
       readonly event_lineage: "proven";
+      readonly event_catalog_compatibility: "compatible";
+      readonly event_projection_compatibility: "compatible";
+      readonly live_event_producer_availability: "available";
       readonly confidence_contract: "supported";
       readonly durable_confidence_compatibility: "compatible";
       readonly shadow_validator: "shared";
@@ -290,6 +311,14 @@ export function avaliarProntidaoR5D(entrada: {
    * chamador pode estar apontando para um store antigo, e nesse caso ele diz.
    */
   readonly confianca_duravel_compativel?: boolean;
+  /**
+   * As tres condicoes de R5-D1, SEPARADAS de proposito. Fundi-las num
+   * "compatible" generico esconderia o unico degrau que sobra: os schemas
+   * passarem nao significa que exista fonte emitindo.
+   */
+  readonly catalogo_compativel?: boolean;
+  readonly projecao_compativel?: boolean;
+  readonly produtor_vivo_disponivel?: boolean;
 }): ProntidaoR5D {
   const bloqueios: BloqueioR5D[] = [];
   if (!entrada.linhagem.elegivel) {
@@ -317,10 +346,32 @@ export function avaliarProntidaoR5D(entrada: {
         "o schema duravel ainda exige confianca numerica: `nao_estimada` passaria no validador e morreria no registro",
     });
   }
+  if ((entrada.catalogo_compativel ?? CATALOGO_EVENTOS_COMPATIVEL) !== true) {
+    bloqueios.push({
+      motivo: "event_catalog_incompatible",
+      detalhe: "o catalogo de eventos operacionais nao esta compativel",
+    });
+  }
+  if ((entrada.projecao_compativel ?? PROJECAO_COMPATIVEL) !== true) {
+    bloqueios.push({
+      motivo: "event_projection_incompatible",
+      detalhe: "a projecao de LeituraOperacional nao esta compativel",
+    });
+  }
+  if ((entrada.produtor_vivo_disponivel ?? PRODUTOR_VIVO_DISPONIVEL) !== true) {
+    bloqueios.push({
+      motivo: "live_event_producer_unavailable",
+      detalhe:
+        "nenhuma fonte real emite os eventos operacionais: o contrato esta pronto e vazio",
+    });
+  }
   if (bloqueios.length > 0) return { status: "blocked", bloqueios };
   return {
     status: "ready",
     event_lineage: "proven",
+    event_catalog_compatibility: "compatible",
+    event_projection_compatibility: "compatible",
+    live_event_producer_availability: "available",
     confidence_contract: "supported",
     durable_confidence_compatibility: "compatible",
     shadow_validator: "shared",

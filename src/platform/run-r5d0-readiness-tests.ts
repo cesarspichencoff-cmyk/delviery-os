@@ -260,6 +260,7 @@ teste("D18 fixture nao declara confianca real: a linhagem barra antes", () => {
     confianca: conferirConfianca(apurada, 2),
     validador_compartilhado: true,
     confianca_duravel_compativel: true,
+    produtor_vivo_disponivel: true,
   });
   assert.equal(p.status, "blocked");
   assert.ok(
@@ -376,6 +377,7 @@ teste("D24 preflight BLOQUEIA quando falta linhagem", () => {
     confianca: conferirConfianca(apurada, 2),
     validador_compartilhado: true,
     confianca_duravel_compativel: true,
+    produtor_vivo_disponivel: true,
   });
   assert.equal(p.status, "blocked");
   assert.equal(p.status === "blocked" && p.bloqueios[0]!.motivo, "event_lineage_unavailable");
@@ -387,6 +389,7 @@ teste("D25 preflight BLOQUEIA quando falta confianca", () => {
     confianca: { suportada: false, motivo: "confidence_contract_missing" },
     validador_compartilhado: true,
     confianca_duravel_compativel: true,
+    produtor_vivo_disponivel: true,
   });
   assert.equal(p.status, "blocked");
   assert.equal(p.status === "blocked" && p.bloqueios[0]!.motivo, "confidence_contract_missing");
@@ -398,12 +401,13 @@ teste("D26 preflight BLOQUEIA quando os validadores divergem", () => {
     confianca: conferirConfianca(apurada, 2),
     validador_compartilhado: false,
     confianca_duravel_compativel: true,
+    produtor_vivo_disponivel: true,
   });
   assert.equal(p.status, "blocked");
   assert.equal(p.status === "blocked" && p.bloqueios[0]!.motivo, "shadow_validator_divergent");
 });
 
-teste("D27 preflight fica ready SOMENTE com as QUATRO condicoes", () => {
+teste("D27 preflight fica ready SOMENTE com TODAS as condicoes", () => {
   const completo = {
     linhagem: conferirLinhagem(linhagem(), ctx()),
     confianca: conferirConfianca(apurada, 2),
@@ -411,6 +415,11 @@ teste("D27 preflight fica ready SOMENTE com as QUATRO condicoes", () => {
     // R5-D0-L: a quarta condicao. Sem ela o preflight bloqueia, e e o estado
     // real hoje — o schema duravel nao foi alterado.
     confianca_duravel_compativel: true,
+    // R5-D1: as tres condicoes novas, isoladas aqui para que este teste continue
+    // medindo as quatro que ele nomeia.
+    catalogo_compativel: true,
+    projecao_compativel: true,
+    produtor_vivo_disponivel: true,
   };
   const p = avaliarProntidaoR5D(completo);
   assert.equal(p.status, "ready");
@@ -437,6 +446,7 @@ teste("D27 preflight fica ready SOMENTE com as QUATRO condicoes", () => {
       validador_compartilhado: true,
       confianca_duravel_compativel: true,
       ...quebra,
+      produtor_vivo_disponivel: true,
     });
     assert.equal(q.status, "blocked", `ficou ready com ${JSON.stringify(quebra)}`);
   }
@@ -466,8 +476,9 @@ teste("D28/D29/D30 nada e persistido, emitido ou ligado por flag", () => {
     confianca: conferirConfianca(apurada, 2),
     validador_compartilhado: true,
     confianca_duravel_compativel: true,
+    produtor_vivo_disponivel: true,
   });
-  assert.equal(Object.keys(p).length, 5, "o preflight passou a devolver mais que veredito");
+  assert.equal(Object.keys(p).length, 8, "o preflight passou a devolver mais que veredito");
 });
 
 /* ================================================================== *

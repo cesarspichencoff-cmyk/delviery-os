@@ -305,6 +305,7 @@ teste("S10 o preflight fecha SOMENTE a compatibilidade duravel", () => {
     linhagem: { elegivel: true, input_event_ids: ["evt-aaa"] },
     confianca: { suportada: true, valor: null },
     validador_compartilhado: true,
+    produtor_vivo_disponivel: true,
   });
   assert.equal(p.status, "ready", p.status === "blocked" ? JSON.stringify(p.bloqueios) : "");
   assert.equal(p.status === "ready" && p.durable_confidence_compatibility, "compatible");
@@ -317,6 +318,7 @@ teste("S11 event lineage continua BLOQUEADA — nada aqui a destravou", () => {
     linhagem: { elegivel: false, motivo: "event_lineage_unavailable" },
     confianca: { suportada: true, valor: null },
     validador_compartilhado: true,
+    produtor_vivo_disponivel: true,
   });
   assert.equal(p.status, "blocked");
   assert.deepEqual(
