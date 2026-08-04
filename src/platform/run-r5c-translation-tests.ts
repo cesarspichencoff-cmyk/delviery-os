@@ -94,7 +94,7 @@ const entrada = (over: Partial<EntradaTraducaoMotorShadow> = {}): EntradaTraduca
     regra: VERSAO_TRADUCAO,
     limitacoes: [],
   },
-  confianca: 0.72,
+  confianca: APURADA,
   risco: "medio",
   validade: { validade_s: 600, origem: "politica_documentada", politica_id: "capacidade-saturada" },
   retirada: { quando: ["validade_expirou", "causa_deixou_de_coincidir"] },
@@ -105,6 +105,15 @@ const entrada = (over: Partial<EntradaTraducaoMotorShadow> = {}): EntradaTraduca
   indisponivel: [],
   ...over,
 });
+
+/** Confianca apurada legitima: valor, politica, versao e evidencias. */
+const APURADA = {
+  estado: "apurada" as const,
+  valor: 0.72,
+  politica: "capacidade-saturada",
+  versao_da_politica: SAIDA_SUPORTADA,
+  evidencias: ["evt-1", "evt-2"],
+};
 
 const bloqueio = (r: ResultadoTraducaoMotorShadow): string =>
   r.tipo === "bloqueada" ? r.motivo : `<${r.tipo}>`;
@@ -282,15 +291,30 @@ teste("T16 evidencia sem vinculo com a causa, ou com o sujeito, bloqueia", () =>
   );
 });
 
-teste("T17 confianca sem evidencia bloqueia, e a confianca nao e reduzida para passar", () => {
-  assert.equal(bloqueio(traduzirParaShadow(entrada({ confianca: null }))), "confianca_sem_evidencia");
+teste("T17 confianca apurada exige lastro, e NAO estimada e legitima", () => {
+  assert.equal(
+    bloqueio(traduzirParaShadow(entrada({ confianca: { ...APURADA, evidencias: [] } }))),
+    "confianca_sem_evidencia",
+  );
+  assert.equal(
+    bloqueio(traduzirParaShadow(entrada({ confianca: { ...APURADA, politica: "" } }))),
+    "confianca_sem_politica",
+  );
   for (const fora of [-0.1, 1.5, Number.NaN]) {
-    assert.equal(bloqueio(traduzirParaShadow(entrada({ confianca: fora }))), "confianca_fora_de_faixa", `${fora}`);
+    assert.equal(
+      bloqueio(traduzirParaShadow(entrada({ confianca: { ...APURADA, valor: fora } }))),
+      "confianca_fora_de_faixa",
+      `${fora}`,
+    );
   }
-  // Zero NAO e ausencia: e uma confianca legitima de valor zero.
-  const zero = traduzirParaShadow(entrada({ confianca: 0 }));
+  // Zero NAO e ausencia: e uma confianca APURADA de valor zero.
+  const zero = traduzirParaShadow(entrada({ confianca: { ...APURADA, valor: 0 } }));
   assert.equal(zero.tipo, "traduzida", bloqueio(zero));
-  assert.equal(zero.tipo === "traduzida" && zero.draft.confidence, 0);
+  assert.equal(zero.tipo === "traduzida" && zero.draft.confianca.estado, "apurada");
+  // E `nao_estimada` traduz sem inventar numero.
+  const sem = traduzirParaShadow(entrada({ confianca: { estado: "nao_estimada" } }));
+  assert.equal(sem.tipo, "traduzida", bloqueio(sem));
+  assert.equal(sem.tipo === "traduzida" && sem.draft.confianca.estado, "nao_estimada");
 });
 
 /* ================================================================== *
@@ -417,7 +441,9 @@ teste("T39 o Shadow REJEITA draft adulterado — o validador nao e carimbo", () 
   if (r.tipo !== "traduzida") return;
   const casos: [Record<string, unknown>, string][] = [
     [{ input_event_ids: [] }, "evidencia_vazia"],
-    [{ confidence: 1.4 }, "confianca_invalida"],
+    [{ confianca: { ...APURADA, valor: 1.4 } }, "confianca_invalida"],
+    [{ confianca: { ...APURADA, evidencias: [] } }, "confianca_sem_evidencia"],
+    [{ confianca: { ...APURADA, politica: "" } }, "confianca_sem_politica"],
     [{ status: "accepted_for_future" }, "status_nao_proposto"],
     [{ requires_human: false }, "sem_exigencia_humana"],
     [{ policy_version: "outra@9" }, "versao_de_politica_divergente"],
@@ -537,9 +563,9 @@ teste("T34/T35 texto alterado mantem a causa, e ausencia nunca vira zero", () =>
   assert.equal(outroTexto.tipo, "traduzida", bloqueio(outroTexto));
   assert.equal(outroTexto.tipo === "traduzida" && outroTexto.auditoria.causa_da_acao, CAUSA);
   // Ausencia de confianca e `null`, e ela bloqueia — nunca vira 0.
-  const semConfianca = traduzirParaShadow(entrada({ confianca: null }));
-  assert.equal(bloqueio(semConfianca), "confianca_sem_evidencia");
-  assert.equal(semConfianca.tipo === "bloqueada" && semConfianca.auditoria.evidencias_recebidas, 2);
+  const semLastro = traduzirParaShadow(entrada({ confianca: { ...APURADA, evidencias: [] } }));
+  assert.equal(bloqueio(semLastro), "confianca_sem_evidencia");
+  assert.equal(semLastro.tipo === "bloqueada" && semLastro.auditoria.evidencias_recebidas, 2);
 });
 
 /* ================================================================== *
@@ -550,12 +576,18 @@ teste("VISUAL diff vazio nos ativos congelados desde ad3b1bc", () => {
   const saida = execFileSync(
     "git",
     [
+      // Escopo do congelamento: folha de estilo, tokens de movimento, sinais,
+      // areas e Figma. `home.js`, `home-vm.ts` e `copiloto-vm.ts` mudaram em
+      // R5-D0-C por autorizacao explicita — a correcao de severidade->confianca
+      // e semantica, e a home passou a nao apresentar confianca nao estimada.
       "diff",
       "--name-only",
       "ad3b1bc",
       "--",
-      "src/product/ui/",
-      "src/product/viewmodels/",
+      "src/product/ui/surfaces/home.css",
+      "src/product/ui/tokens/",
+      "src/product/viewmodels/sinais.ts",
+      "src/product/viewmodels/areas.ts",
       "docs/figma/",
     ],
     { cwd: raiz, encoding: "utf8" },
@@ -585,9 +617,23 @@ teste("VISUAL os motores continuam desconectados — D43 de pe", () => {
     .map((l) => l.replace(/\\/g, "/"));
   assert.deepEqual(
     chamadores.sort(),
-    ["src/platform/run-r5c-translation-tests.ts", "src/product/atencao/traducao-motor-shadow.ts"],
+    // O tradutor pode ser exercitado por GATES; o que ele nao pode e ter
+    // chamador de runtime. Qualquer arquivo fora de `run-*.ts` e do proprio
+    // modulo significa que a conexao nasceu.
+    [
+      "src/platform/run-r5c-translation-tests.ts",
+      "src/platform/run-r5d0-confidence-tests.ts",
+      "src/product/atencao/traducao-motor-shadow.ts",
+    ],
     `o tradutor ganhou chamador de runtime: ${chamadores.join(", ")}`,
   );
+  // E a guarda que importa de verdade: nenhum chamador fora de gate e do modulo.
+  for (const c of chamadores) {
+    assert.ok(
+      /\/run-r5[a-z0-9-]*-tests\.ts$/.test(c) || c.endsWith("traducao-motor-shadow.ts"),
+      `chamador de runtime: ${c}`,
+    );
+  }
 });
 
 /* ================================================================== */

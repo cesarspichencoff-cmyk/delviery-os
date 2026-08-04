@@ -528,7 +528,6 @@ teste("R5A-30 congelamento visual: diff vazio nos arquivos congelados", () => {
   // congelamento vigorar; levanta-lo e decisao, nunca efeito colateral.
   const BASE = "4365c61";
   const CONGELADOS = [
-    "src/product/ui/surfaces/home.js",
     "src/product/ui/surfaces/home.css",
     "src/product/ui/tokens/organismo-tokens.css",
     "src/product/viewmodels/sinais.ts",

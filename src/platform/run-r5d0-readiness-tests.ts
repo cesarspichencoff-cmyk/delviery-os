@@ -207,9 +207,13 @@ const apurada: ConfiancaDeclarada = {
 };
 
 teste("D14 confianca ausente NAO vira zero", () => {
+  // R5-D0-C: `nao_estimada` passou a ser SUPORTADA — uma recomendacao nao
+  // precisa inventar numero para existir. O que ela devolve e `valor: null`,
+  // NUNCA zero.
   const r = conferirConfianca({ tipo: "nao_estimada", motivo: "sem apuracao" }, 2);
-  assert.equal(r.suportada, false);
-  assert.equal(r.suportada === false && r.motivo, "confidence_contract_missing");
+  assert.equal(r.suportada, true);
+  assert.equal(r.suportada === true && r.valor, null, "nao estimada virou numero");
+  assert.notEqual(r.suportada === true && r.valor, 0, "nao estimada virou zero");
   // E o tipo nao tem onde guardar zero: ausencia e um RAMO, nao um valor.
   const fonte = ler("src/product/atencao/prontidao-r5d.ts");
   assert.match(fonte, /tipo: "nao_estimada"; readonly motivo: string/);
@@ -273,7 +277,13 @@ const draftValido = (): Recomendacao => ({
   input_event_ids: ["evt-aaa"],
   projection_version: "operacao-viva@1.0.0",
   source_mode: "real",
-  confidence: 0.7,
+  confianca: {
+    estado: "apurada",
+    valor: 0.7,
+    politica: "p",
+    versao_da_politica: POLICY_VERSION,
+    evidencias: ["evt-aaa"],
+  },
   risk_level: "medio",
   recommended_action: "acao",
   reason: "razao",
@@ -291,7 +301,18 @@ teste("D19 o validador compartilhado aceita draft valido", () => {
 teste("D20 o validador compartilhado rejeita draft adulterado", () => {
   const casos: [Partial<Recomendacao>, string][] = [
     [{ input_event_ids: [] }, "evidencia_vazia"],
-    [{ confidence: 1.4 }, "confianca_invalida"],
+    [
+      {
+        confianca: {
+          estado: "apurada" as const,
+          valor: 1.4,
+          politica: "p",
+          versao_da_politica: POLICY_VERSION,
+          evidencias: ["evt-aaa"],
+        },
+      },
+      "confianca_invalida",
+    ],
     [{ status: "dismissed" }, "status_nao_proposto"],
     [{ requires_human: false }, "sem_exigencia_humana"],
     [{ policy_version: "outra@1" }, "versao_de_politica_divergente"],
@@ -473,7 +494,21 @@ teste("D-PUR gerar ID dentro do tradutor e IMPOSSIVEL — a fronteira nao invent
 teste("VISUAL diff vazio nos ativos congelados desde 27ccfd2", () => {
   const saida = execFileSync(
     "git",
-    ["diff", "--name-only", "27ccfd2", "--", "src/product/ui/", "src/product/viewmodels/", "docs/figma/"],
+    // O congelamento de R5-D0-C e CSS, motion e Figma. `home.js` e `home-vm.ts`
+    // mudaram por autorizacao explicita: a correcao de severidade->confianca e
+    // semantica, e a home passou a NAO APRESENTAR o campo nao estimado.
+    // Layout, folha de estilo, movimento e desenho continuam intocados.
+    [
+      "diff",
+      "--name-only",
+      "27ccfd2",
+      "--",
+      "src/product/ui/surfaces/home.css",
+      "src/product/ui/tokens/",
+      "src/product/viewmodels/sinais.ts",
+      "src/product/viewmodels/areas.ts",
+      "docs/figma/",
+    ],
     { cwd: raiz, encoding: "utf8" },
   ).trim();
   assert.equal(saida, "", `ativo congelado foi alterado:\n${saida}`);

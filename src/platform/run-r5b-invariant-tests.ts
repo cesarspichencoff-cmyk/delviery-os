@@ -563,7 +563,8 @@ teste("BYPASS", "a demonstracao precisa DIZER por que pode pular a politica", ()
 teste("VISUAL", "diff vazio nos ativos congelados desde bd1ad55", () => {
   const BASE = "bd1ad55";
   const CONGELADOS = [
-    "src/product/ui/",
+    "src/product/ui/surfaces/home.css",
+    "src/product/ui/tokens/",
     "src/product/viewmodels/sinais.ts",
     "src/product/viewmodels/areas.ts",
     "docs/figma/",

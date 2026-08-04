@@ -544,7 +544,14 @@ teste("13 · replay repetido produz exatamente o mesmo resultado", async () => {
           policy_id: x.policy_id,
           escopo: x.escopo,
           external_id: x.external_id,
-          confidence: x.confidence,
+          // So a DECISAO de confianca entra na essencia. As `evidencias` da
+          // confianca sao as mesmas refs que carregam `cycle_id` — aleatorio por
+          // construcao, como o proprio comentario acima diz. Comparar as refs
+          // faria o teste medir o gerador de id em vez da decisao.
+          confianca:
+            x.confianca.estado === "apurada"
+              ? { estado: x.confianca.estado, valor: x.confianca.valor }
+              : { estado: x.confianca.estado },
           risk_level: x.risk_level,
           evidence_grade: x.evidence_grade,
           status: x.status,
