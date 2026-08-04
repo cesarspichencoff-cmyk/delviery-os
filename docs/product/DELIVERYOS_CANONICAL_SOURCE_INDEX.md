@@ -36,20 +36,28 @@ Quando dois documentos discordarem, **vence o de número menor**.
 | 1 | `docs/Constituicao.md` | filosofia; sobrevive ao próprio DeliveryOS |
 | 2 | `docs/Leis_Fundamentais.md` | 12 leis red-teamed; teste único de qualquer ideia |
 | 3 | `docs/Manifesto_Produto_Design.md` | constituição do produto; emoção, proibições, assinatura |
-| 4 | `docs/Modelo_Operacional_Consciencia_DeliveryOS.md` | como a consciência decide (Calmo/Ambiente/Foco/Resolução) |
-| 5 | `docs/deliveryos/Mapa_Mestre_Dominios_DeliveryOS_V0_1.md` | plataforma, domínios e fronteiras |
-| 6 | `docs/Mapa_Sinais_Operacionais.md` | **o que** o sistema percebe — os 22 sinais |
-| 7 | `docs/Mapa_Ambientes_V1.md` | **onde** isso aparece — os 6 ambientes |
-| 8 | `docs/Logica_Embalagens_DeliveryOS_V0.md` | regra física: sacola, quente/frio, caixa |
-| 9 | `docs/Camada_Decisao_Operacional.md` | **como** prioriza — o Copiloto |
-| 10 | `docs/Estado_Atual_DeliveryOS.md` | memória executiva de produto |
-| 11 | `docs/PRODUCT_CONSTITUTION.md` | identidade e cânone visual do ecossistema TATÁ |
+| **4** | **`docs/product/DELIVERYOS_PRODUCT_CONSTITUTION.md`** | **o que o DeliveryOS É: produto principal, princípios obrigatórios, proibições** |
+| 5 | `docs/Modelo_Operacional_Consciencia_DeliveryOS.md` | como a consciência decide (Calmo/Ambiente/Foco/Resolução) |
+| 6 | `docs/deliveryos/Mapa_Mestre_Dominios_DeliveryOS_V0_1.md` | plataforma, domínios e fronteiras |
+| 7 | `docs/Mapa_Sinais_Operacionais.md` | **o que** o sistema percebe — os 22 sinais |
+| 8 | `docs/Mapa_Ambientes_V1.md` | **onde** isso aparece — os 6 ambientes |
+| 9 | `docs/Logica_Embalagens_DeliveryOS_V0.md` | regra física: sacola, quente/frio, caixa |
+| 10 | `docs/Camada_Decisao_Operacional.md` | **como** prioriza — o Copiloto |
+| 11 | `docs/Estado_Atual_DeliveryOS.md` | memória executiva de produto |
+| 12 | `docs/PRODUCT_CONSTITUTION.md` | identidade e cânone visual do ecossistema TATÁ |
 | — | *(abaixo desta linha: execução, não produto)* | |
-| 12 | `CLAUDE.md` · `docs/execution/**` | contrato de trabalho e memória técnica |
-| 13 | `docs/figma/**` | camada de apresentação da Unidade 6 |
+| 13 | `CLAUDE.md` · `docs/execution/**` | contrato de trabalho e memória técnica |
+| 14 | `docs/figma/**` | camada de apresentação da Unidade 6 |
 
-**Regra:** um documento de execução (12) ou de apresentação (13) **nunca** revoga um documento de
-produto (1–11). Se contradisser, é o documento de execução que está errado.
+**Regra:** um documento de execução (13) ou de apresentação (14) **nunca** revoga um documento de
+produto (1–12). Se contradisser, é o documento de execução que está errado.
+
+> **O nível 4 entrou em 2026-08-04, pela missão `REVOLUTION 0-A`.** Ele fica **abaixo** dos três
+> fundadores e **acima** dos mapas: os mapas dizem o que o sistema percebe e onde; a constituição diz
+> **qual é o produto**. Ela existe porque a definição vivia espalhada, e por isso Entregas virou a
+> home por ordem de implementação, e não por decisão. Duas coisas que ela fixa e que este índice
+> passa a herdar: **o produto principal é o Copiloto da operação do restaurante**, e **a recomendação
+> antiga de tratar Entregas como lançamento principal está revogada**.
 
 ### 2.1 Ordem visual vinculante — obrigatória antes de qualquer interface, CSS ou Figma
 
@@ -418,7 +426,8 @@ formal."* A proibição está certa e permanece.
 ## 11. Como usar este índice
 
 - **Início de sessão:** ler este arquivo e `docs/execution/NEXT_RESUME.md`. Se a missão tocar
-  produto, experiência, home, Copiloto, sinais ou ambientes, ler também os documentos 1–11 da §2.
+  produto, experiência, home, Copiloto, sinais ou ambientes, ler também os documentos 1–12 da §2 —
+  e, **antes deles**, `docs/product/DELIVERYOS_PRODUCT_CONSTITUTION.md`, que diz qual é o produto.
 - **Antes de propor qualquer tela:** conferir §3.4, §4 e §8.
 - **Antes de escrever a primeira linha de CSS ou abrir o Figma:** ler **§2.1** e
   `docs/design/VISUAL_REFERENCE_HIERARCHY.md`. Se a direção visual vier de um Design System

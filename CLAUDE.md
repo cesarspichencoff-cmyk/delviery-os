@@ -4,6 +4,8 @@
 > Não é documentação de código — é a forma de trabalhar. Carregado em toda sessão.
 > Os documentos fundadores mandam mais que este arquivo: `docs/Constituicao.md` →
 > `docs/Leis_Fundamentais.md` → `docs/Manifesto_Produto_Design.md`. Em conflito, eles vencem.
+> **O que o produto É está em `docs/product/DELIVERYOS_PRODUCT_CONSTITUTION.md`** — vinculante, logo
+> abaixo dos três, e acima de qualquer documento técnico.
 
 ## 1. Papel: parceiro, não executor
 
