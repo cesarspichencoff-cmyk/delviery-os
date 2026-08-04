@@ -256,6 +256,46 @@ export const PROJECAO_COMPATIVEL = true;
  */
 export const PRODUTOR_VIVO_DISPONIVEL = false;
 
+/**
+ * QUALIFICACAO POR EVENTO — R5-D2. Cada tipo tem produtor autoritativo proprio,
+ * e a qualificacao e por EVENTO, nao por sistema.
+ *
+ * `pedido` esta PARCIAL: o Gestor iFood e a fonte viva de status, mas o
+ * relatorio em lote nao traz carimbo absoluto por etapa (reconstroi de duracao)
+ * e nao ha chave idempotente estavel.
+ *
+ * `trabalho_praca` esta REJEITADO, e o motivo e canonico: **nao existe comanda
+ * separada por praca** (`Auditoria_Fonte_Viva_Loja_V1.md` §85). A praca seria
+ * INFERIDA do item, nunca declarada pela fonte — e o interior da producao nao e
+ * emitido pelo iFood (`adaptadores.ts:66`). Ver D79.
+ *
+ * `capacidade` esta INACESSIVEL: nenhuma fonte declara capacidade de praca.
+ *
+ * `saude` esta QUALIFICADO — e o unico, porque e o unico que nao depende de
+ * fonte externa.
+ */
+/**
+ * Tipadas como a UNIAO, e nao como o literal atual. Com `as const`, o
+ * compilador provava que a comparacao com `"qualificada"` era sempre falsa e
+ * recusava o codigo — o que esta certo hoje e viraria uma guarda morta amanha,
+ * quando a qualificacao mudar. A uniao mantem a checagem viva.
+ */
+export type NivelQualificacao =
+  | "qualificada"
+  | "parcialmente_qualificada"
+  | "rejeitada"
+  | "ainda_inacessivel";
+
+export const QUALIFICACAO_PEDIDO: NivelQualificacao = "parcialmente_qualificada";
+export const QUALIFICACAO_TRABALHO_PRACA: NivelQualificacao = "rejeitada";
+export const QUALIFICACAO_CAPACIDADE: NivelQualificacao = "ainda_inacessivel";
+/**
+ * Nenhum probe contra fonte externa foi executado: nao ha implementacao de
+ * captura, nao ha credencial, e este ambiente **nao e o computador da loja**.
+ * Seguranca de probe que nao se prova vira `nao_qualificada`, sem tentar.
+ */
+export const CAMINHO_DE_LEITURA_SEGURO = false;
+
 export type MotivoBloqueioR5D =
   | MotivoLinhagem
   | MotivoConfianca
@@ -263,7 +303,11 @@ export type MotivoBloqueioR5D =
   | "durable_confidence_incompatible"
   | "event_catalog_incompatible"
   | "event_projection_incompatible"
-  | "live_event_producer_unavailable";
+  | "live_event_producer_unavailable"
+  | "pedido_producer_not_qualified"
+  | "trabalho_praca_producer_not_qualified"
+  | "capacidade_producer_not_qualified"
+  | "producer_read_path_unsafe";
 
 export interface BloqueioR5D {
   readonly motivo: MotivoBloqueioR5D;
@@ -284,6 +328,10 @@ export type ProntidaoR5D =
       readonly event_catalog_compatibility: "compatible";
       readonly event_projection_compatibility: "compatible";
       readonly live_event_producer_availability: "available";
+      readonly pedido_event_producer_qualification: "qualified";
+      readonly trabalho_praca_event_producer_qualification: "qualified";
+      readonly capacidade_event_producer_qualification: "qualified";
+      readonly producer_read_path_safety: "safe";
       readonly confidence_contract: "supported";
       readonly durable_confidence_compatibility: "compatible";
       readonly shadow_validator: "shared";
@@ -319,6 +367,11 @@ export function avaliarProntidaoR5D(entrada: {
   readonly catalogo_compativel?: boolean;
   readonly projecao_compativel?: boolean;
   readonly produtor_vivo_disponivel?: boolean;
+  /** As cinco condicoes de R5-D2, separadas por EVENTO e por caminho de leitura. */
+  readonly pedido_qualificado?: boolean;
+  readonly trabalho_praca_qualificado?: boolean;
+  readonly capacidade_qualificada?: boolean;
+  readonly caminho_de_leitura_seguro?: boolean;
 }): ProntidaoR5D {
   const bloqueios: BloqueioR5D[] = [];
   if (!entrada.linhagem.elegivel) {
@@ -365,10 +418,39 @@ export function avaliarProntidaoR5D(entrada: {
         "nenhuma fonte real emite os eventos operacionais: o contrato esta pronto e vazio",
     });
   }
+  if ((entrada.pedido_qualificado ?? QUALIFICACAO_PEDIDO === "qualificada") !== true) {
+    bloqueios.push({
+      motivo: "pedido_producer_not_qualified",
+      detalhe: `qualificacao do produtor de pedido: ${QUALIFICACAO_PEDIDO}`,
+    });
+  }
+  if ((entrada.trabalho_praca_qualificado ?? QUALIFICACAO_TRABALHO_PRACA === "qualificada") !== true) {
+    bloqueios.push({
+      motivo: "trabalho_praca_producer_not_qualified",
+      detalhe:
+        "nao existe comanda separada por praca: a praca seria inferida do item, nunca declarada",
+    });
+  }
+  if ((entrada.capacidade_qualificada ?? QUALIFICACAO_CAPACIDADE === "qualificada") !== true) {
+    bloqueios.push({
+      motivo: "capacidade_producer_not_qualified",
+      detalhe: `qualificacao do produtor de capacidade: ${QUALIFICACAO_CAPACIDADE}`,
+    });
+  }
+  if ((entrada.caminho_de_leitura_seguro ?? CAMINHO_DE_LEITURA_SEGURO) !== true) {
+    bloqueios.push({
+      motivo: "producer_read_path_unsafe",
+      detalhe: "nenhum probe read-only pode ser provado seguro deste ambiente",
+    });
+  }
   if (bloqueios.length > 0) return { status: "blocked", bloqueios };
   return {
     status: "ready",
     event_lineage: "proven",
+    pedido_event_producer_qualification: "qualified",
+    trabalho_praca_event_producer_qualification: "qualified",
+    capacidade_event_producer_qualification: "qualified",
+    producer_read_path_safety: "safe",
     event_catalog_compatibility: "compatible",
     event_projection_compatibility: "compatible",
     live_event_producer_availability: "available",

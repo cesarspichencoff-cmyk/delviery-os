@@ -530,6 +530,10 @@ teste("PF1 preflight: catalogo compativel, projecao compativel, produtor INDISPO
     linhagem: { elegivel: true, input_event_ids: ["evt-aaa"] },
     confianca: { suportada: true, valor: null },
     validador_compartilhado: true,
+    pedido_qualificado: true,
+    trabalho_praca_qualificado: true,
+    capacidade_qualificada: true,
+    caminho_de_leitura_seguro: true,
   });
   assert.equal(p.status, "blocked");
   assert.deepEqual(

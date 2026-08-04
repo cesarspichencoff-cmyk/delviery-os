@@ -343,6 +343,10 @@ teste("C11 o preflight passa a SUPORTAR confianca e continua bloqueado por linha
     validador_compartilhado: true,
     confianca_duravel_compativel: true,
     produtor_vivo_disponivel: true,
+    pedido_qualificado: true,
+    trabalho_praca_qualificado: true,
+    capacidade_qualificada: true,
+    caminho_de_leitura_seguro: true,
   });
   assert.equal(p.status, "blocked");
   assert.equal(p.status === "blocked" && p.bloqueios.length, 1, "sobrou mais de um bloqueio");

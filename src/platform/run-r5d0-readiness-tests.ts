@@ -261,6 +261,10 @@ teste("D18 fixture nao declara confianca real: a linhagem barra antes", () => {
     validador_compartilhado: true,
     confianca_duravel_compativel: true,
     produtor_vivo_disponivel: true,
+    pedido_qualificado: true,
+    trabalho_praca_qualificado: true,
+    capacidade_qualificada: true,
+    caminho_de_leitura_seguro: true,
   });
   assert.equal(p.status, "blocked");
   assert.ok(
@@ -378,6 +382,10 @@ teste("D24 preflight BLOQUEIA quando falta linhagem", () => {
     validador_compartilhado: true,
     confianca_duravel_compativel: true,
     produtor_vivo_disponivel: true,
+    pedido_qualificado: true,
+    trabalho_praca_qualificado: true,
+    capacidade_qualificada: true,
+    caminho_de_leitura_seguro: true,
   });
   assert.equal(p.status, "blocked");
   assert.equal(p.status === "blocked" && p.bloqueios[0]!.motivo, "event_lineage_unavailable");
@@ -390,6 +398,10 @@ teste("D25 preflight BLOQUEIA quando falta confianca", () => {
     validador_compartilhado: true,
     confianca_duravel_compativel: true,
     produtor_vivo_disponivel: true,
+    pedido_qualificado: true,
+    trabalho_praca_qualificado: true,
+    capacidade_qualificada: true,
+    caminho_de_leitura_seguro: true,
   });
   assert.equal(p.status, "blocked");
   assert.equal(p.status === "blocked" && p.bloqueios[0]!.motivo, "confidence_contract_missing");
@@ -402,6 +414,10 @@ teste("D26 preflight BLOQUEIA quando os validadores divergem", () => {
     validador_compartilhado: false,
     confianca_duravel_compativel: true,
     produtor_vivo_disponivel: true,
+    pedido_qualificado: true,
+    trabalho_praca_qualificado: true,
+    capacidade_qualificada: true,
+    caminho_de_leitura_seguro: true,
   });
   assert.equal(p.status, "blocked");
   assert.equal(p.status === "blocked" && p.bloqueios[0]!.motivo, "shadow_validator_divergent");
@@ -420,6 +436,12 @@ teste("D27 preflight fica ready SOMENTE com TODAS as condicoes", () => {
     catalogo_compativel: true,
     projecao_compativel: true,
     produtor_vivo_disponivel: true,
+    // R5-D2: as cinco condicoes de qualificacao, isoladas aqui pelo mesmo
+    // motivo de sempre — este teste mede as que ele nomeia.
+    pedido_qualificado: true,
+    trabalho_praca_qualificado: true,
+    capacidade_qualificada: true,
+    caminho_de_leitura_seguro: true,
   };
   const p = avaliarProntidaoR5D(completo);
   assert.equal(p.status, "ready");
@@ -447,6 +469,10 @@ teste("D27 preflight fica ready SOMENTE com TODAS as condicoes", () => {
       confianca_duravel_compativel: true,
       ...quebra,
       produtor_vivo_disponivel: true,
+      pedido_qualificado: true,
+      trabalho_praca_qualificado: true,
+      capacidade_qualificada: true,
+      caminho_de_leitura_seguro: true,
     });
     assert.equal(q.status, "blocked", `ficou ready com ${JSON.stringify(quebra)}`);
   }
@@ -477,8 +503,12 @@ teste("D28/D29/D30 nada e persistido, emitido ou ligado por flag", () => {
     validador_compartilhado: true,
     confianca_duravel_compativel: true,
     produtor_vivo_disponivel: true,
+    pedido_qualificado: true,
+    trabalho_praca_qualificado: true,
+    capacidade_qualificada: true,
+    caminho_de_leitura_seguro: true,
   });
-  assert.equal(Object.keys(p).length, 8, "o preflight passou a devolver mais que veredito");
+  assert.equal(Object.keys(p).length, 12, "o preflight passou a devolver mais que veredito");
 });
 
 /* ================================================================== *
