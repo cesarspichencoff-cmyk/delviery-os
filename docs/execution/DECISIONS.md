@@ -1548,3 +1548,53 @@ recuperacao, compatibilidade com o que ja esta gravado.
 
 **Custo aceito:** R5-D continua bloqueado mesmo com a linhagem completa. E o
 estado honesto: o bloqueio mudou de nome, nao desapareceu.
+
+---
+
+### D74 — A confianca duravel vira a MESMA uniao do dominio, versionada
+
+**Decisao.** O registro passa a carregar `confianca_schema: "confianca@2"` e
+`confianca`, a uniao discriminada de D70. `confidence` **saiu de `required`** e
+continua sendo escrito **apenas quando apurada**, como ESPELHO de leitura — nunca
+como verdade.
+
+**Por que era bloqueio e nao detalhe.** R5-D0-C resolveu a confianca em memoria e
+deixou um degrau: uma recomendacao `nao_estimada` **passava no validador e morria
+na hora de gravar**, porque o schema exigia numero. Contrato e disco discordando e
+a especie de divergencia que so aparece em producao.
+
+**O espelho tem guarda propria.** Quando `confidence` existe, ele precisa
+concordar com `confianca.valor` (`espelho_numerico_divergente`), e
+`nao_estimada` nao pode carrega-lo (`nao_estimada_com_espelho_numerico`). Dois
+registros da mesma coisa discordando no disco seria pior que um registro so.
+
+**Alternativa recusada:** manter `confidence: number | null`. Recusada porque
+`null` recria a ambiguidade que a uniao existe para desfazer — nao diz se ninguem
+apurou, se falhou, ou se esqueceram.
+
+**Custo aceito:** o schema mudou de forma, e um registro gravado antes desta
+missao nao passa mais na carga. E rejeicao CONTROLADA — o store ja empurra linha
+invalida para `health().invalid_lines` com codigo (D31), entao ninguem perde dado
+em silencio.
+
+---
+
+### D75 — Numero legado nao e promovido: ele ganha um ramo proprio
+
+**Decisao.** `deConfiancaDuravel` devolve tres ramos: `ok` (a uniao do dominio),
+**`legado`** (um numero antigo, sem uniao e sem schema) e `incompativel`.
+
+**Por que `legado` existe.** Um numero gravado antes desta missao **nao tem
+politica e nao tem as evidencias** que sustentariam a apuracao. Chama-lo de
+`apurada` seria inventar as duas coisas — exatamente o que D69 recusou quando o
+assunto era rotulo virando numero. O ramo proprio permite LER e auditar o
+registro antigo sem nunca promove-lo, e o dominio nao aceita esse ramo: ninguem
+consegue confundi-lo com uma apuracao.
+
+**Alternativa recusada:** migracao automatica preenchendo `politica: "legado"`.
+Recusada porque uma politica inventada tem a aparencia de procedencia e a origem
+de um `replace`.
+
+**Custo aceito:** nao existe caminho automatico do formato antigo para o novo.
+Migracao, quando alguem quiser, e funcao separada e testada — e vai precisar
+decidir o que fazer com a politica que nunca foi registrada.

@@ -12,7 +12,55 @@
 >
 > ---
 >
-> **ATUALIZADO 2026-08-04 — R5-D0-L CONCLUIDO. `R5D_BLOCKED`.**
+> **ATUALIZADO 2026-08-04 — R5-D0-S CONCLUIDO. `R5D_BLOCKED_EVENT_PRODUCER`.**
+> `DELIVERYOS_R5D0_DURABLE_CONFIDENCE_COMPLETE` · `MACRO2_CHECKPOINT_REACHED`
+> HEAD inicial `2af52e1`. Gate: `npm run test:platform:r5d0-storage` — **12 testes**.
+>
+> **O DISCO PASSOU A CONTAR A MESMA VERDADE QUE O DOMINIO.** Antes:
+> `confidence: number` **obrigatorio** no schema — uma recomendacao `nao_estimada` **passava no
+> validador e morria na hora de gravar**. Contrato e disco discordando e a especie de divergencia que
+> so aparece em producao.
+>
+> **Representacao nova, versionada (D74):** `confianca_schema: "confianca@2"` + `confianca`, a MESMA
+> uniao discriminada de D70. `confidence` **saiu de `required`** e virou **espelho de leitura**,
+> escrito so quando apurada — nunca a verdade. E o espelho tem guarda propria: quando existe, precisa
+> concordar com `confianca.valor` (`espelho_numerico_divergente`), e `nao_estimada` nao pode
+> carrega-lo. Dois registros da mesma coisa discordando no disco seria pior que um registro so.
+>
+> **`nao_estimada` grava SEM NUMERO NENHUM** — nem `0`, nem `null`, nem o campo presente. Provado no
+> store REAL do Conference Brain, em diretorio temporario: grava, reprocessa (replay) e **recarrega
+> do disco com `load()` em outro processo**.
+>
+> **NUMERO LEGADO NAO E PROMOVIDO (D75).** `deConfiancaDuravel` tem tres ramos: `ok`, **`legado`** e
+> `incompativel`. Um numero antigo **nao tem politica e nao tem evidencias** — chama-lo de `apurada`
+> seria inventar as duas, e o dominio nao aceita esse ramo. O store recusa o registro antigo com
+> `confianca_schema_desconhecido`: **rejeicao controlada**, com a linha indo para
+> `health().invalid_lines` (D31). Ninguem perde dado em silencio, e a migracao — se alguem quiser —
+> e funcao separada que vai ter de decidir o que fazer com a politica que nunca foi registrada.
+>
+> **ADVERSARIAL: 6 mutacoes, 6 acusadas, 0 cegas, restauracao byte a byte.** `nao_estimada` -> `null`
+> e `nao_estimada` -> zero derrubaram **quatro testes cada**.
+>
+> **PREFLIGHT: `durable_confidence_compatibility` fechou.** Sobra **UM** bloqueio:
+> `event_lineage_unavailable`.
+>
+> **REGRESSOES:** R5-A 30 · R5-B 30 · R5-C 38 · R5-D0 28 · R5-D0-C 12 · R5-D0-L 15 · **R5-D0-S 12** ·
+> copiloto 39 · bridge 45 · conference 6 suites · home 44 · `tsc` exit 0.
+> **CONGELAMENTO:** `sinais.ts`, politica temporal, linhagem, home, CSS, motion, Figma e motor
+> original com diff vazio desde `2af52e1`.
+>
+> **EVENT LINEAGE VIVA CONTINUA INDISPONIVEL.** Nada nesta missao a destravou: o unico produtor de
+> `LeituraOperacional` segue sendo a fixture, e o catalogo continua sem tipo de evento que descreva
+> carga por praca ou producao de pedido. **R5-D NAO COMECOU.** Sem conexao, sem flag, sem
+> recomendacao real, sem produtor. **D43 de pe. D29 preservada.**
+>
+> **PROXIMA ACAO SEGURA:** a unica que resta e **decisao de produto sobre a fonte viva da loja** — se
+> a leitura operacional passa a nascer de eventos, e quais tipos de evento precisam existir para
+> isso. E a mesma pergunta que **PB8** registra desde julho, agora com o resto do caminho pronto.
+>
+> ---
+>
+> > **ATUALIZADO 2026-08-04 — R5-D0-L CONCLUIDO. `R5D_BLOCKED`.**
 > `DELIVERYOS_R5D0_EVENT_LINEAGE_COMPLETE` · `MACRO2_CHECKPOINT_REACHED`
 > HEAD inicial `ced38da`. Gate: `npm run test:platform:r5d0-lineage` — **15 testes**.
 >

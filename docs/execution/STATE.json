@@ -1193,7 +1193,7 @@
   },
   "retomada_r5": {
     "data": "2026-08-03",
-    "estado": "R5-A/B/C/D0/D0-C/D0-L CONCLUIDOS. R5-D BLOQUEADO por compatibilidade duravel e por ausencia de produtor real.",
+    "estado": "R5-A/B/C/D0/D0-C/D0-L/D0-S CONCLUIDOS. R5-D BLOQUEADO por ausencia de produtor de evento.",
     "decisao_do_cesar": "Figma pendente, sem upgrade e sem redesenho manual. R5 pode retomar.",
     "congelado_durante_r5": [
       "frontend (home.js, home.css, organismo-tokens.css)",
@@ -1579,6 +1579,42 @@
       "durable_confidence_incompatible — o schema duravel ainda exige confianca numerica",
       "event_lineage_unavailable na pratica — o mecanismo existe, o produtor real nao"
     ],
+    "r5d": "NAO INICIADO"
+  },
+  "r5d0s_confianca_duravel": {
+    "data": "2026-08-04",
+    "estado": "CONCLUIDO",
+    "head_inicial": "2af52e1",
+    "gate": {
+      "comando": "npm run test:platform:r5d0-storage",
+      "testes": 12,
+      "resultado": "R5D0_STORAGE_GATE_GREEN"
+    },
+    "representacao_anterior": "confidence: number, obrigatorio no schema. nao_estimada nao tinha como ser gravada — passava no validador e morria no registro",
+    "representacao_nova": "confianca_schema: \"confianca@2\" + confianca (a MESMA uniao do dominio). confidence saiu de required e virou espelho de leitura, escrito so quando apurada (D74)",
+    "guardas_do_espelho": [
+      "espelho_numerico_divergente quando confidence != confianca.valor",
+      "nao_estimada_com_espelho_numerico",
+      "nao_estimada_com_valor"
+    ],
+    "legado": "ramo proprio LEGADO em deConfiancaDuravel — le e audita sem promover. O store recusa o registro antigo com confianca_schema_desconhecido: rejeicao controlada, linha vai para health().invalid_lines (D75)",
+    "round_trip": "provado no store REAL do Conference Brain, em diretorio temporario: grava, reprocessa (replay) e recarrega do disco com load() em outro processo",
+    "adversarial": {
+      "mutacoes": 6,
+      "acusadas": 6,
+      "cegas": 0,
+      "nao_carregadas": 0,
+      "restauracao": "byte a byte por sha256"
+    },
+    "preflight": "durable_confidence_compatibility passa a COMPATIBLE (CONFIANCA_DURAVEL_COMPATIVEL = true). Sobra UM bloqueio: event_lineage_unavailable",
+    "congelamento": "sinais.ts, politica temporal, linhagem-eventos, home, CSS, motion, Figma e motor original com diff vazio desde 2af52e1",
+    "runtime": {
+      "conexao": "NAO IMPLEMENTADA",
+      "flag": "INEXISTENTE",
+      "recomendacao_real": "NENHUMA",
+      "produtor": "NENHUM"
+    },
+    "bloqueador_restante": "event_lineage_unavailable — nao existe produtor operacional real que forneca event ids aos sinais S1-S22",
     "r5d": "NAO INICIADO"
   }
 }
