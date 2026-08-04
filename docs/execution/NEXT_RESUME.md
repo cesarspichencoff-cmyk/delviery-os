@@ -12,7 +12,67 @@
 >
 > ---
 >
-> **ATUALIZADO 2026-08-04 — R5-D0-S CONCLUIDO. `R5D_BLOCKED_EVENT_PRODUCER`.**
+> **ATUALIZADO 2026-08-04 — R5-D1 CONCLUIDO. `R5D_BLOCKED_LIVE_EVENT_PRODUCER`.**
+> `DELIVERYOS_R5D1_EVENT_LINEAGE_FOUNDATION_COMPLETE` · `MACRO2_CHECKPOINT_PRESERVED`
+> HEAD inicial `73f2f0b`. Gate: `npm run test:platform:r5d1-event-lineage` — **31 testes**.
+>
+> **A DECISAO VINCULANTE, e ela governa tudo o que vier: a `LeituraOperacional` e PROJECAO.**
+> Nao e verdade primaria, nao vem de adapter, nao e promovida de fixture — e **nao existe
+> `leitura_operacional_criada`** (**D76**). Um evento que declarasse a leitura criada transformaria o
+> RESULTADO em fato de origem, e reconstruir por replay deixaria de ser possivel: dois lugares
+> dizendo a mesma coisa, e ninguem sabendo qual manda no dia em que discordassem.
+>
+> **QUATRO FATOS DE ORIGEM, versionados:** `pedido_ciclo_observado@1` ·
+> `trabalho_praca_observado@1` · `capacidade_praca_observada@1` · `source_health_changed@1`.
+> Catalogo IRMAO do de viagem, que fica **intocado** — os dois falam de operacoes diferentes e
+> versionam separado.
+>
+> **CARGA NASCE DE TRABALHO ABERTO CONTADO (D77).** Ela nunca chega como numero: aceitar o numero de
+> volta pela porta do evento recriaria o problema que R5-D0 achou, agora com aparencia de event
+> sourcing. **As cinco capacidades sao distintas e nenhuma e zero** — validade vencida vira
+> `observacao_expirada`, nao capacidade zero. **Trabalho sem praca** e fato legitimo que a
+> **projecao** recusa em voz alta; recusar no envelope esconderia a falha da fonte.
+>
+> **ORDEM CANONICA E `occurred_at`, NUNCA `ingested_at` (D78).** `ingested_at` diz quando o sistema
+> soube, nao quando o fato aconteceu — ordenar por ele faria a leitura depender de quem chegou
+> primeiro no cano. Estado **nao regride em silencio**: o atrasado vira
+> `regressao_de_estado_recusada` e o conflito FICA. Duplicata identica e idempotente; **divergente e
+> conflito e nao sobrescreve**.
+>
+> **20 CASOS ADVERSARIAIS, sobre ledger JSONL real em disco** — duplicata, fora de ordem, atrasado,
+> versao e tipo desconhecidos, trabalho sem praca, conclusao antes do inicio, cancelamento apos
+> conclusao, pedido cancelado com trabalho aberto, capacidade expirada e ausente, fonte degradada e
+> indisponivel, sequencia incompleta, **linha corrompida**, replay duplo, duas ordens de ingestao,
+> `occurred_at` futuro e conflito entre fontes. Nenhum corrigido por fabricacao de dado.
+>
+> **ADVERSARIAL: 8 mutacoes, 8 acusadas, 0 cegas, restauracao byte a byte.** MD8 exigiu **tres
+> rodadas** — a fixture reproduzia a ordem causal **por acidente**, primeiro pelo desempate de
+> revisao e depois pelo de chave. Corrigida para CONTRADIZER o tempo. **L41**: quando uma mutacao sai
+> cega, olhe os desempates; o proprio dado do teste pode estar segurando o caso.
+>
+> **PREFLIGHT COM AS TRES CONDICOES SEPARADAS.** `event_catalog_compatibility: compatible` ·
+> `event_projection_compatibility: compatible` · **`live_event_producer_availability: unavailable`**.
+> Fundi-las num "compatible" generico esconderia o unico degrau que sobra — **schema passar nao e
+> fonte existir**. O preflight devolve exatamente UM bloqueio.
+>
+> **REGRESSOES:** R5-A 30 · R5-B 30 · R5-C 38 · R5-D0 28 · R5-D0-C 12 · R5-D0-L 15 · R5-D0-S 12 ·
+> **R5-D1 31** · copiloto 39 · bridge 45 · conference 6 suites · home 44 · organismo 27 · Product
+> System 44 · R1 24 · ordem visual 6 · paridade Figma 23 · `tsc` exit 0.
+> **CONGELADAS com diff vazio:** motor original, `sinais.ts`, politica temporal, linhagem, confianca
+> duravel, home, CSS, motion e Figma.
+>
+> **NENHUM PRODUTOR VIVO FOI INVENTADO.** Sem integracao, sem flag, sem runtime, sem recomendacao
+> real. O contrato esta **pronto e vazio**, esperando a fonte. **R5-D NAO COMECOU. D43 de pe. D29
+> preservada.**
+>
+> **PROXIMA ACAO SEGURA:** a unica que resta e **decisao de produto sobre a fonte viva da loja** —
+> quem emite `pedido_ciclo_observado` e `trabalho_praca_observado`, e por qual caminho. A pergunta
+> e a de **PB8** desde julho; a diferenca e que agora o contrato que ela precisa preencher existe,
+> esta versionado e esta provado por replay.
+>
+> ---
+>
+> > **ATUALIZADO 2026-08-04 — R5-D0-S CONCLUIDO. `R5D_BLOCKED_EVENT_PRODUCER`.**
 > `DELIVERYOS_R5D0_DURABLE_CONFIDENCE_COMPLETE` · `MACRO2_CHECKPOINT_REACHED`
 > HEAD inicial `2af52e1`. Gate: `npm run test:platform:r5d0-storage` — **12 testes**.
 >

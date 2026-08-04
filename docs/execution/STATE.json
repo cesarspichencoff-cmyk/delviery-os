@@ -1193,7 +1193,7 @@
   },
   "retomada_r5": {
     "data": "2026-08-03",
-    "estado": "R5-A/B/C/D0/D0-C/D0-L/D0-S CONCLUIDOS. R5-D BLOQUEADO por ausencia de produtor de evento.",
+    "estado": "R5-A/B/C/D0/D0-C/D0-L/D0-S/D1 CONCLUIDOS. R5-D BLOQUEADO exclusivamente pela ausencia de produtor vivo.",
     "decisao_do_cesar": "Figma pendente, sem upgrade e sem redesenho manual. R5 pode retomar.",
     "congelado_durante_r5": [
       "frontend (home.js, home.css, organismo-tokens.css)",
@@ -1615,6 +1615,53 @@
       "produtor": "NENHUM"
     },
     "bloqueador_restante": "event_lineage_unavailable — nao existe produtor operacional real que forneca event ids aos sinais S1-S22",
+    "r5d": "NAO INICIADO"
+  },
+  "r5d1_fundacao_eventos": {
+    "data": "2026-08-04",
+    "estado": "CONCLUIDO",
+    "head_inicial": "73f2f0b",
+    "gate": {
+      "comando": "npm run test:platform:r5d1-event-lineage",
+      "testes": 31,
+      "resultado": "R5D1_EVENT_LINEAGE_GATE_GREEN"
+    },
+    "decisao_vinculante": "a LeituraOperacional e PROJECAO deterministica de eventos. Nao e verdade primaria, nao vem de adapter, nao e promovida de fixture, e NAO existe leitura_operacional_criada (D76)",
+    "eventos_criados": [
+      "pedido_ciclo_observado@1",
+      "trabalho_praca_observado@1",
+      "capacidade_praca_observada@1",
+      "source_health_changed@1"
+    ],
+    "catalogo": "src/product/eventos/catalogo-operacional.ts — IRMAO do catalogo de viagem, que fica intocado",
+    "projetor": "src/product/eventos/projetar-leitura.ts — puro, sem relogio, sem random, sem I/O; o instante entra pela entrada",
+    "ordem_canonica": "occurred_at, depois source_revision, depois chave idempotente. ingested_at fica FORA: ele diz quando o sistema soube, nao quando o fato aconteceu (D78)",
+    "carga": "derivada de trabalho ABERTO contado; nunca recebida como numero (D77)",
+    "capacidade": "cinco modos distintos, e nenhum e zero. Validade vencida vira observacao_expirada, nao capacidade zero",
+    "confianca": "sempre nao_estimada — o projetor nao inventa a politica que falta (D69)",
+    "adversarial": {
+      "casos": 20,
+      "mutacoes": 8,
+      "acusadas": 8,
+      "cegas": 0,
+      "nao_carregadas": 0,
+      "restauracao": "byte a byte por sha256",
+      "nota": "MD8 exigiu tres rodadas: a fixture reproduzia a ordem causal por acidente, duas vezes (L41)"
+    },
+    "preflight": {
+      "event_catalog_compatibility": "compatible",
+      "event_projection_compatibility": "compatible",
+      "live_event_producer_availability": "unavailable",
+      "bloqueio_unico": "live_event_producer_unavailable"
+    },
+    "congelamento": "motor original, sinais.ts, politica temporal, linhagem, confianca duravel, home, CSS, motion e Figma com diff vazio desde 73f2f0b",
+    "runtime": {
+      "conexao": "NAO IMPLEMENTADA",
+      "flag": "INEXISTENTE",
+      "recomendacao_real": "NENHUMA",
+      "produtor_vivo": "NENHUM",
+      "integracao_externa": "NENHUMA"
+    },
     "r5d": "NAO INICIADO"
   }
 }

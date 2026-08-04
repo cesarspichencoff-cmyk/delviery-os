@@ -1598,3 +1598,83 @@ de um `replace`.
 **Custo aceito:** nao existe caminho automatico do formato antigo para o novo.
 Migracao, quando alguem quiser, e funcao separada e testada — e vai precisar
 decidir o que fazer com a politica que nunca foi registrada.
+
+---
+
+### D76 — A LeituraOperacional e projecao, e nao existe evento que a declare criada
+
+**Decisao vinculante.** A `LeituraOperacional` e uma **projecao deterministica**
+de eventos operacionais observados. Ela nao e persistida como verdade primaria,
+nao e criada por adapter, nao e promovida de fixture em runtime, e **nao existe
+`leitura_operacional_criada`**.
+
+**Por que o evento nao existe.** Um evento que declara a leitura criada
+transformaria o RESULTADO em FATO DE ORIGEM. A partir dele, reconstruir por
+replay deixaria de ser possivel — o sistema teria dois lugares dizendo a mesma
+coisa, e o dia em que discordassem ninguem saberia qual manda. Projecao se
+reconstroi; fato se guarda. Misturar os dois e o erro que event sourcing existe
+para nao cometer.
+
+**Quatro fatos de origem, versionados:** `pedido_ciclo_observado@1`,
+`trabalho_praca_observado@1`, `capacidade_praca_observada@1` e
+`source_health_changed@1`. Catalogo IRMAO do de viagem
+(`platform/contracts/event-catalog.ts`), que fica intocado: os dois falam de
+operacoes diferentes e versionam separado.
+
+**Alternativa recusada:** estender o catalogo de viagem com os tipos da cozinha.
+Recusada porque acoplaria duas versoes que precisam evoluir em ritmos diferentes
+— e porque `trip_*` e `gps_batch_received` descrevem a rua, nao a bancada.
+
+**Custo aceito:** dois catalogos para manter. Mitigado por versao propria em cada
+um e por validacao que recusa tipo e versao desconhecidos em voz alta.
+
+---
+
+### D77 — Carga nasce de trabalho aberto contado; ausencia nunca vira numero
+
+**Decisao.** A carga por praca e DERIVADA de `trabalho_praca_observado` — abertos
+contados, aguardando e iniciados separados, idade do mais antigo calculada. Ela
+**nunca chega como numero** no payload.
+
+**Por que.** R5-D0 encontrou exatamente isso na leitura antiga: `carga_por_praca`
+era um numero sem linhagem. Aceitar o numero de volta pela porta do evento
+recriaria o problema com aparencia de event sourcing.
+
+**As cinco capacidades sao distintas, e nenhuma e zero:** `observada`,
+`indisponivel`, `nao_fornecida`, `praca_temporariamente_indisponivel`,
+`observacao_expirada`. Fundir qualquer par faz ausencia virar numero em algum
+ponto — e validade vencida vira o quarto modo, nunca capacidade zero.
+
+**Trabalho sem praca** e fato observado legitimo: o envelope o aceita e a
+**projecao o recusa em voz alta**, como lacuna. Recusar no envelope esconderia a
+falha da fonte dentro de "evento invalido".
+
+**Confianca: sempre `nao_estimada`.** Nao existe politica canonica de confianca
+operacional (D69), e o projetor nao inventa a regra que falta. Quantidade de
+eventos nao e confianca.
+
+---
+
+### D78 — Ordem canonica e `occurred_at`, nunca `ingested_at`
+
+**Decisao.** A projecao ordena por `occurred_at`, depois `source_revision`,
+depois a chave idempotente como desempate estavel. **`ingested_at` fica fora.**
+
+**Por que.** `ingested_at` descreve quando o sistema soube, nao quando o fato
+aconteceu. Ordenar por ele faria a leitura depender de quem chegou primeiro no
+cano — duas ingestoes da mesma ordem causal produziriam leituras diferentes, e a
+diferenca apareceria como conflito inventado.
+
+**Estado nao regride em silencio.** Um evento atrasado que tentaria voltar o
+ciclo e recusado e vira `regressao_de_estado_recusada` — o conflito FICA na
+leitura, porque uma fonte que emite fora de ordem e coisa que quem opera precisa
+saber.
+
+**Duplicata identica e idempotente; duplicata divergente e conflito.** O primeiro
+fato permanece e o divergente **nao sobrescreve**. A impressao do fato exclui
+`event_id`, `ingested_at` e `correlation_id` de proposito: dois envelopes que
+descrevem o MESMO fato precisam colidir, senao reingerir viraria divergencia.
+
+**Custo aceito:** relogios de origem ruins produzem ordem ruim. Mitigado pela
+recusa de `occurred_at > observed_at`, que impede o relogio da origem de mandar
+sozinho.

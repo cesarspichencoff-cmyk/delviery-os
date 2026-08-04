@@ -775,3 +775,33 @@ o conserto e mover ou duplicar a guarda para onde o tema vive.
 **Nota:** este e o terceiro parente de L37/L38/L39, e os quatro juntos formam a
 regra completa de uma mutacao valida — ela precisa ser **aplicada**, **carregada**,
 **material** e **coberta pelo gate que a executa**.
+
+## L41 — Uma fixture pode reproduzir a ordem certa por acidente, e cegar a mutacao
+
+**O fato.** A mutacao MD8 do R5-D1 trocava a ordenacao canonica (`occurred_at`)
+por ordenacao de ingestao. O gate ficou verde **duas vezes seguidas**, por dois
+acidentes diferentes da mesma fixture:
+
+1. na primeira versao, as `source_revision` eram 1, 2 e 1 — e o desempate por
+   revisao reproduzia a ordem causal;
+2. corrigidas para 1, 1 e 1, o desempate seguinte — a chave idempotente
+   `src-0001`, `src-0002`, `src-0003` — **tambem** reproduzia a ordem causal,
+   porque as fixtures nasceram em ordem.
+
+Em nenhum dos dois casos a mutacao era imaterial: ela quebra a ordenacao de
+verdade. O que faltava era uma fixture em que **so** o campo mutado pudesse
+acertar.
+
+**O conserto.** A fixture passou a CONTRADIZER: o fato mais antigo recebeu a
+chave lexicograficamente maior (`src-zzz`), o mais novo a menor (`src-aaa`).
+Agora, quem nao ordenar por `occurred_at` inverte o ciclo do pedido e produz
+conflito. Somado a isso, uma prova positiva — na ordem canonica, `conflitos` e
+lista vazia.
+
+**A regra.** Quando uma mutacao dirigida sai cega, olhe os **desempates**. Se
+qualquer criterio subordinado reproduz o resultado do criterio mutado, o teste
+nao esta medindo o que voce pensa. Uma fixture boa e a que **so passa** pelo
+caminho que se quer provar.
+
+**Familia:** L38 dizia que a guarda vizinha pode estar segurando o caso. L41 diz
+que o proprio dado do teste pode estar segurando.
