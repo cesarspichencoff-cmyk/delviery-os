@@ -238,18 +238,27 @@ export function conferirConfianca(
 export type MotivoBloqueioR5D =
   | MotivoLinhagem
   | MotivoConfianca
-  | "shadow_validator_divergent";
+  | "shadow_validator_divergent"
+  | "durable_confidence_incompatible";
 
 export interface BloqueioR5D {
   readonly motivo: MotivoBloqueioR5D;
   readonly detalhe: string;
 }
 
+/**
+ * As QUATRO condicoes, verificadas separadamente. Sao quatro e nao tres porque
+ * R5-D0-C resolveu a confianca no contrato em memoria e deixou uma consequencia
+ * viva: o **schema duravel** do store continua exigindo numero, entao uma
+ * recomendacao `nao_estimada` seria aceita pelo validador e recusada no registro.
+ * Fundir as duas verificacoes esconderia exatamente esse degrau. Ver D73.
+ */
 export type ProntidaoR5D =
   | {
       readonly status: "ready";
       readonly event_lineage: "proven";
-      readonly confidence: "supported";
+      readonly confidence_contract: "supported";
+      readonly durable_confidence_compatibility: "compatible";
       readonly shadow_validator: "shared";
     }
   | { readonly status: "blocked"; readonly bloqueios: readonly BloqueioR5D[] };
@@ -265,6 +274,12 @@ export function avaliarProntidaoR5D(entrada: {
   readonly linhagem: ResultadoLinhagem;
   readonly confianca: ResultadoConfianca;
   readonly validador_compartilhado: boolean;
+  /**
+   * O schema duravel aceita confianca `nao_estimada`? Enquanto nao aceitar, uma
+   * recomendacao sem numero passa no validador e morre no registro — e isso e
+   * bloqueio, nao detalhe. Padrao `false`: o schema nao foi alterado.
+   */
+  readonly confianca_duravel_compativel?: boolean;
 }): ProntidaoR5D {
   const bloqueios: BloqueioR5D[] = [];
   if (!entrada.linhagem.elegivel) {
@@ -285,11 +300,19 @@ export function avaliarProntidaoR5D(entrada: {
       detalhe: "runtime e harness precisam chamar a MESMA validarDraftShadow",
     });
   }
+  if (entrada.confianca_duravel_compativel !== true) {
+    bloqueios.push({
+      motivo: "durable_confidence_incompatible",
+      detalhe:
+        "o schema duravel ainda exige confianca numerica: `nao_estimada` passaria no validador e morreria no registro",
+    });
+  }
   if (bloqueios.length > 0) return { status: "blocked", bloqueios };
   return {
     status: "ready",
     event_lineage: "proven",
-    confidence: "supported",
+    confidence_contract: "supported",
+    durable_confidence_compatibility: "compatible",
     shadow_validator: "shared",
   };
 }
