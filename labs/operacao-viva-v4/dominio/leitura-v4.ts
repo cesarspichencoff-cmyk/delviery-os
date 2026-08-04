@@ -60,6 +60,16 @@ export interface FonteV4 {
    * VISÍVEL — e isso é outra coisa.
    */
   readonly necessaria_para_calmo: boolean;
+  /**
+   * Se é ESTA fonte que conta quantos pedidos existem.
+   *
+   * Existe para fechar um buraco fino do produto: `homeVM` afirma o pulso
+   * quando *qualquer* fonte se diz saudável — e o Cardápio, que é um seed
+   * estático, está sempre saudável. Numa cena em que a fonte de pedidos não
+   * respondeu, isso produziria um pulso `0` com cara de medição. Zero medido e
+   * zero por falta de fonte são coisas diferentes, e a segunda não é um número.
+   */
+  readonly conta_pedidos: boolean;
 }
 
 /* ================================================================== *

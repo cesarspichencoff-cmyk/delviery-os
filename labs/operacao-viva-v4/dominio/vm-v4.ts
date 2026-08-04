@@ -83,6 +83,7 @@ export interface FonteVM {
   readonly detalhe: string;
   readonly ultima_atualizacao: string | null;
   readonly necessaria_para_calmo: boolean;
+  readonly conta_pedidos: boolean;
   readonly unidades: readonly UnidadeOperacionalId[];
 }
 
@@ -261,6 +262,20 @@ function cargaDaUnidade(l: LeituraV4, u: UnidadeOperacional): Campo<number> {
  * de engolir Sushi Quentes: um sinal de `enrolados_quentes` responde por
  * `sushi_quentes`, mesmo carregando `ambiente: "sushi"` do lado canônico.
  */
+/**
+ * A identidade de um sinal pelo CONTEÚDO, não pela referência.
+ *
+ * Ela existe por causa de um defeito real, encontrado rodando as cenas: o Lab
+ * chama `sinaisDe()` e `homeVM()` chama `sinaisDe()` de novo, internamente. Os
+ * dois arrays descrevem os mesmos sinais e são objetos DIFERENTES — então
+ * `s !== focoSinal` nunca casava, e **o sinal do Foco aparecia também na lista
+ * de secundários**, duplicado. Comparar por referência entre dois resultados de
+ * funções puras distintas é sempre essa armadilha.
+ */
+function chaveDoSinal(s: Sinal): string {
+  return `${s.codigo}|${s.alvo_rotulo}|${s.pedido_id ?? ""}|${s.resumo}`;
+}
+
 export function unidadeDoSinal(s: Sinal): UnidadeOperacionalId | null {
   if (s.subarea !== null) return unidadeDaPraca(s.subarea);
   if (s.ambiente !== null) return s.ambiente as UnidadeOperacionalId;
@@ -303,6 +318,29 @@ function itensDasPracas(
  * Fontes
  * ================================================================== */
 
+/**
+ * O pulso — quantos pedidos estão em andamento.
+ *
+ * Ele **não** é reaproveitado de `homeVM`, e o motivo é um caso real: lá o pulso
+ * é afirmado quando qualquer fonte se diz saudável, e o Cardápio (seed estático)
+ * está sempre saudável. Numa cena em que a fonte de pedidos não respondeu, isso
+ * devolveria `0` com aparência de medição. Aqui o pulso exige a fonte que
+ * realmente conta pedidos.
+ */
+function pulsoV4(l: LeituraV4): Campo<number> {
+  const contadoras = l.fontes.filter((f) => f.conta_pedidos);
+  const alguemContou = contadoras.some((f) => descricao(f.estado).sustenta_calmo);
+  if (!alguemContou) {
+    return ausente(
+      "indisponivel",
+      contadoras.length === 0
+        ? "Nenhuma fonte desta leitura conta pedidos. O pulso não pode ser afirmado, e ausência não é zero."
+        : "A fonte que conta pedidos não está saudável. O pulso não pode ser afirmado, e ausência não é zero.",
+    );
+  }
+  return observado(l.base.pedidos.length, l.procedencia, l.observado_em);
+}
+
 function fonteVM(f: FonteV4): FonteVM {
   return {
     id: f.id,
@@ -311,6 +349,7 @@ function fonteVM(f: FonteV4): FonteVM {
     detalhe: f.detalhe,
     ultima_atualizacao: f.ultima_atualizacao,
     necessaria_para_calmo: f.necessaria_para_calmo,
+    conta_pedidos: f.conta_pedidos,
     unidades: f.unidades,
   };
 }
@@ -526,7 +565,15 @@ export function operacaoVivaV4VM(l: LeituraV4): OperacaoVivaV4VM {
   );
 
   const unidades = UNIDADES.map((u) => unidadeVM(l, u, sinais, fontes));
-  const focoSinal = canonica.foco !== null ? canonica.foco.sinal : null;
+
+  // O sinal eleito, reencontrado NESTE array por chave de conteúdo. Sem isto o
+  // Foco apareceria duas vezes: uma no painel e outra entre os secundários.
+  const chaveDoFoco =
+    canonica.foco !== null ? chaveDoSinal(canonica.foco.sinal) : null;
+  const focoSinal =
+    chaveDoFoco !== null
+      ? (sinais.find((s) => chaveDoSinal(s) === chaveDoFoco) ?? null)
+      : null;
 
   const limitacoes: Limitacao[] = [
     {
@@ -569,7 +616,7 @@ export function operacaoVivaV4VM(l: LeituraV4): OperacaoVivaV4VM {
     titulo: tituloDoModo(eleicao),
     apoio: apoioDoModo(eleicao),
 
-    pulso: canonica.pulso,
+    pulso: pulsoV4(l),
     ritmo: l.ritmo,
     unidades,
     ligacoes: ligacoesVM(unidades),
