@@ -75,7 +75,8 @@
     "test:platform:r5d0-lineage": "npx tsx src/platform/run-r5d0-lineage-tests.ts",
     "test:platform:r5d0-storage": "npx tsx src/platform/run-r5d0-storage-tests.ts",
     "test:platform:r5d1-event-lineage": "npx tsx src/platform/run-r5d1-event-lineage-tests.ts",
-    "test:platform:r5": "npm run test:platform:r5a && npm run test:platform:r5b && npm run test:platform:r5c && npm run test:platform:r5d0 && npm run test:platform:r5d0-confidence && npm run test:platform:r5d0-lineage && npm run test:platform:r5d0-storage && npm run test:platform:r5d1-event-lineage"
+    "test:platform:r5d2-producer-qualification": "npx tsx src/platform/run-r5d2-producer-qualification-tests.ts",
+    "test:platform:r5": "npm run test:platform:r5a && npm run test:platform:r5b && npm run test:platform:r5c && npm run test:platform:r5d0 && npm run test:platform:r5d0-confidence && npm run test:platform:r5d0-lineage && npm run test:platform:r5d0-storage && npm run test:platform:r5d1-event-lineage && npm run test:platform:r5d2-producer-qualification"
   },
   "devDependencies": {
     "@types/node": "20.14.10",
