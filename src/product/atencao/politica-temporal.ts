@@ -35,6 +35,7 @@
  * serializar, reiniciar e restaurar produza a mesma eleicao.
  */
 
+import type { LinhagemDeEventos } from "./linhagem-eventos";
 import type { AmbienteId, PracaId } from "../viewmodels/areas";
 
 /* ------------------------------------------------------------------ *
@@ -97,6 +98,14 @@ export interface CausaCandidata {
   readonly fonte_id: string | null;
   /** Quantas evidencias sustentam. Nao entra na identidade; entra na auditoria. */
   readonly evidencias: number;
+  /**
+   * A linhagem de eventos que sustenta esta causa (R5-D0-L). PRESERVADA, nunca
+   * reconstruida — e deliberadamente FORA de `identidadeDaCausa`: trocar de
+   * evento nao troca a causa, e a mesma tensao observada por outros eventos
+   * continua sendo a mesma tensao. Fundir as duas coisas reiniciaria o debounce
+   * a cada leitura nova.
+   */
+  readonly linhagem?: LinhagemDeEventos | null;
 }
 
 /**
@@ -205,6 +214,8 @@ export interface ResultadoDaEleicao {
   /** A causa eleita, ou `null`. Nunca duas — o tipo nao admite. */
   readonly causa: CausaCandidata | null;
   readonly identidade: string | null;
+  /** A linhagem da causa eleita, intacta. `null` quando nao houve eleicao. */
+  readonly linhagem: LinhagemDeEventos | null;
   readonly estado: EstadoTemporal;
   /** Instante de entrada no Foco corrente. */
   readonly entrou_min: number | null;
@@ -279,6 +290,7 @@ export function elegerModo(entrada: EntradaDaEleicao): ResultadoDaEleicao {
     modo,
     causa,
     identidade: causa === null ? null : identidadeDaCausa(causa),
+    linhagem: causa === null ? null : (causa.linhagem ?? null),
     estado,
     entrou_min: estado.foco?.entrou_min ?? null,
     ultima_confirmacao_min: estado.foco?.ultima_confirmacao_min ?? null,

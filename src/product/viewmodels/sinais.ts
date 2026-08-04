@@ -20,6 +20,7 @@
  * existe pausa automatica, e nenhuma orientacao daqui e executavel.
  */
 
+import type { LinhagemDeEventos } from "../atencao/linhagem-eventos";
 import {
   ambienteDaPraca,
   rotuloDaCategoria,
@@ -104,6 +105,14 @@ export interface LeituraOperacional {
   /** Media de chegadas por hora ja observada, se houver. */
   readonly chegadas_normais: number | null;
   readonly fontes: readonly FonteLeitura[];
+  /**
+   * A linhagem de eventos que sustenta ESTA leitura (R5-D0-L).
+   *
+   * Opcional porque o unico produtor que existe hoje e a fixture, e ela nao tem
+   * evento nenhum. Uma leitura sem linhagem nao vira sinal elegivel — ela
+   * continua respondendo `event_lineage_unavailable`, que e o estado honesto.
+   */
+  readonly linhagem?: LinhagemDeEventos;
 }
 
 /* ================================================================== *
@@ -137,6 +146,12 @@ export interface Sinal {
   /** O que este sinal explicitamente nao prova. */
   readonly limitacao: string;
   readonly publico: readonly Publico[];
+  /**
+   * A linhagem da leitura que produziu este sinal. `null` quando a leitura nao
+   * trouxe nenhuma. Ela e CARIMBADA em `sinaisDe()` e nunca reconstruida aqui:
+   * um sinal nao inventa a propria origem.
+   */
+  readonly linhagem: LinhagemDeEventos | null;
   readonly procedencia: Procedencia;
   /**
    * Se este sinal e PRESSAO — algo que muda a cor de uma area — ou informacao
@@ -146,6 +161,15 @@ export interface Sinal {
    */
   readonly pinta_ambiente: boolean;
 }
+
+/**
+ * O sinal ANTES do carimbo de linhagem.
+ *
+ * Os construtores devolvem isto, e nao `Sinal`: assim um construtor nao CONSEGUE
+ * produzir linhagem, mesmo que alguem tente. A origem entra num lugar so —
+ * `sinaisDe()` —, e vem da leitura. Um sinal nunca inventa de onde veio.
+ */
+type SinalBruto = Omit<Sinal, "linhagem">;
 
 /** Um sinal do catalogo que NAO pode ser produzido hoje, e por que. */
 export interface SinalIndisponivel {
@@ -266,7 +290,7 @@ export const PISOS = {
  * ================================================================== */
 
 /** S1 — pedido pronto sem sair. Fonte: tempos reais do iFood. */
-function s1(l: LeituraOperacional): Sinal[] {
+function s1(l: LeituraOperacional): SinalBruto[] {
   return l.pedidos
     .filter(
       (p) =>
@@ -297,7 +321,7 @@ function s1(l: LeituraOperacional): Sinal[] {
 }
 
 /** S2 — expedicao carregada / saida lenta. */
-function s2(l: LeituraOperacional): Sinal[] {
+function s2(l: LeituraOperacional): SinalBruto[] {
   const esperando = l.pedidos.filter(
     (p) =>
       p.minutos_pronto_sem_sair !== null &&
@@ -329,7 +353,7 @@ function s2(l: LeituraOperacional): Sinal[] {
 }
 
 /** S3 — saiu e nao entregou ha muito tempo. */
-function s3(l: LeituraOperacional): Sinal[] {
+function s3(l: LeituraOperacional): SinalBruto[] {
   return l.pedidos
     .filter(
       (p) =>
@@ -358,7 +382,7 @@ function s3(l: LeituraOperacional): Sinal[] {
 }
 
 /** S4 — pedido X min sem ficar pronto (producao travada). */
-function s4(l: LeituraOperacional): Sinal[] {
+function s4(l: LeituraOperacional): SinalBruto[] {
   return l.pedidos
     .filter(
       (p) =>
@@ -398,8 +422,8 @@ function s4(l: LeituraOperacional): Sinal[] {
 }
 
 /** S5 — praca ou subarea sobrecarregada. Derivado de carga/baseline. */
-function s5(l: LeituraOperacional): Sinal[] {
-  const out: Sinal[] = [];
+function s5(l: LeituraOperacional): SinalBruto[] {
+  const out: SinalBruto[] = [];
   for (const [praca, carga] of Object.entries(l.carga_por_praca) as [
     PracaId,
     number,
@@ -443,7 +467,7 @@ function s5(l: LeituraOperacional): Sinal[] {
 }
 
 /** S6 — surto de zona: chegada acima do normal. */
-function s6(l: LeituraOperacional): Sinal[] {
+function s6(l: LeituraOperacional): SinalBruto[] {
   if (l.chegadas_na_hora === null || l.chegadas_normais === null) return [];
   if (l.chegadas_normais <= 0) return [];
   const razao = l.chegadas_na_hora / l.chegadas_normais;
@@ -481,8 +505,8 @@ function pracasDoPedido(p: PedidoLeitura): PracaId[] {
 }
 
 /** S7 — pedido que trava a fila: depende de uma unica praca, e ela esta pressionada. */
-function s7(l: LeituraOperacional): Sinal[] {
-  const out: Sinal[] = [];
+function s7(l: LeituraOperacional): SinalBruto[] {
+  const out: SinalBruto[] = [];
   for (const p of l.pedidos) {
     const pracas = pracasDoPedido(p);
     if (pracas.length !== 1) continue;
@@ -516,7 +540,7 @@ function s7(l: LeituraOperacional): Sinal[] {
 }
 
 /** S8 — pedido simples que pode ser adiantado (poucas pracas, sem trava). */
-function s8(l: LeituraOperacional): Sinal[] {
+function s8(l: LeituraOperacional): SinalBruto[] {
   return l.pedidos
     .filter((p) => p.itens.length > 0 && pracasDoPedido(p).length === 1)
     .filter((p) => p.itens.reduce((n, i) => n + i.qtd, 0) <= 2)
@@ -548,7 +572,7 @@ function s8(l: LeituraOperacional): Sinal[] {
  * S12 — "so quentes". ROTEAMENTO, nao temperatura (D47): o pedido nao depende da
  * praca Sushi, entao pode ser montado na bancada do caixa. Nao implica prioridade.
  */
-function s12(l: LeituraOperacional): Sinal[] {
+function s12(l: LeituraOperacional): SinalBruto[] {
   return l.pedidos
     .filter((p) => p.itens.length > 0)
     .filter((p) => {
@@ -595,7 +619,7 @@ const ROTULO_MOTIVO: Record<MotivoDuasSacolas, string> = {
  * tamanho cobre 47-61% e NAO e verdade operacional (PB3): quando nao ha motivo,
  * este sinal simplesmente nao e produzido.
  */
-function s14(l: LeituraOperacional): Sinal[] {
+function s14(l: LeituraOperacional): SinalBruto[] {
   return l.pedidos
     .filter((p) => p.motivo_duas_sacolas !== null)
     .map((p) => ({
@@ -621,7 +645,7 @@ function s14(l: LeituraOperacional): Sinal[] {
 }
 
 /** Risco de conferencia por pedido. Existe mesmo sem medicao da area. */
-function conferenciaPorPedido(l: LeituraOperacional): Sinal[] {
+function conferenciaPorPedido(l: LeituraOperacional): SinalBruto[] {
   return l.pedidos
     .filter((p) => p.risco_de_conferencia !== null)
     .map((p) => ({
@@ -647,7 +671,7 @@ function conferenciaPorPedido(l: LeituraOperacional): Sinal[] {
 }
 
 /** S18 — item ou grupo saindo rapido agora. */
-function s18(l: LeituraOperacional): Sinal[] {
+function s18(l: LeituraOperacional): SinalBruto[] {
   const contagem = new Map<string, { qtd: number; praca: PracaId | null }>();
   for (const p of l.pedidos) {
     for (const i of p.itens) {
@@ -685,7 +709,7 @@ function s18(l: LeituraOperacional): Sinal[] {
 }
 
 /** S22 — ritmo acima do normal (volume total em andamento). */
-function s22(l: LeituraOperacional): Sinal[] {
+function s22(l: LeituraOperacional): SinalBruto[] {
   if (l.chegadas_na_hora === null || l.chegadas_normais === null) return [];
   if (l.chegadas_normais <= 0) return [];
   if (l.chegadas_na_hora / l.chegadas_normais < 1.25) return [];
@@ -722,7 +746,12 @@ function s22(l: LeituraOperacional): Sinal[] {
  * sempre a mesma tela.
  */
 export function sinaisDe(l: LeituraOperacional): readonly Sinal[] {
-  const todos = [
+  // O CARIMBO DA LINHAGEM — um lugar so, e nunca uma reconstrucao. Cada sinal
+  // recebe a linhagem da LEITURA que o produziu; nenhum deles a deriva, a
+  // completa ou a inventa. Se a leitura nao tem origem comprovada, o sinal
+  // tambem nao tem, e a elegibilidade cai em `event_lineage_unavailable`.
+  const linhagem: LinhagemDeEventos | null = l.linhagem ?? null;
+  const todos: SinalBruto[] = [
     ...s1(l),
     ...s2(l),
     ...s3(l),
@@ -737,12 +766,14 @@ export function sinaisDe(l: LeituraOperacional): readonly Sinal[] {
     ...s18(l),
     ...s22(l),
   ];
-  return todos.sort(
-    (a, b) =>
-      b.severidade - a.severidade ||
-      a.codigo.localeCompare(b.codigo) ||
-      (a.pedido_id ?? "").localeCompare(b.pedido_id ?? ""),
-  );
+  return todos
+    .map((s) => ({ ...s, linhagem }))
+    .sort(
+      (a, b) =>
+        b.severidade - a.severidade ||
+        a.codigo.localeCompare(b.codigo) ||
+        (a.pedido_id ?? "").localeCompare(b.pedido_id ?? ""),
+    );
 }
 
 /** Os codigos que este motor sabe produzir. Usado pelo gate e pela documentacao. */
