@@ -72,7 +72,8 @@
     "test:platform:r5c": "npx tsx src/platform/run-r5c-translation-tests.ts",
     "test:platform:r5d0": "npx tsx src/platform/run-r5d0-readiness-tests.ts",
     "test:platform:r5d0-confidence": "npx tsx src/platform/run-r5d0-confidence-tests.ts",
-    "test:platform:r5": "npm run test:platform:r5a && npm run test:platform:r5b && npm run test:platform:r5c && npm run test:platform:r5d0 && npm run test:platform:r5d0-confidence"
+    "test:platform:r5d0-lineage": "npx tsx src/platform/run-r5d0-lineage-tests.ts",
+    "test:platform:r5": "npm run test:platform:r5a && npm run test:platform:r5b && npm run test:platform:r5c && npm run test:platform:r5d0 && npm run test:platform:r5d0-confidence && npm run test:platform:r5d0-lineage"
   },
   "devDependencies": {
     "@types/node": "20.14.10",

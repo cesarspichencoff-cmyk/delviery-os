@@ -259,6 +259,7 @@ teste("D18 fixture nao declara confianca real: a linhagem barra antes", () => {
     linhagem: l,
     confianca: conferirConfianca(apurada, 2),
     validador_compartilhado: true,
+    confianca_duravel_compativel: true,
   });
   assert.equal(p.status, "blocked");
   assert.ok(
@@ -374,6 +375,7 @@ teste("D24 preflight BLOQUEIA quando falta linhagem", () => {
     linhagem: { elegivel: false, motivo: "event_lineage_unavailable" },
     confianca: conferirConfianca(apurada, 2),
     validador_compartilhado: true,
+    confianca_duravel_compativel: true,
   });
   assert.equal(p.status, "blocked");
   assert.equal(p.status === "blocked" && p.bloqueios[0]!.motivo, "event_lineage_unavailable");
@@ -384,6 +386,7 @@ teste("D25 preflight BLOQUEIA quando falta confianca", () => {
     linhagem: conferirLinhagem(linhagem(), ctx()),
     confianca: { suportada: false, motivo: "confidence_contract_missing" },
     validador_compartilhado: true,
+    confianca_duravel_compativel: true,
   });
   assert.equal(p.status, "blocked");
   assert.equal(p.status === "blocked" && p.bloqueios[0]!.motivo, "confidence_contract_missing");
@@ -394,21 +397,34 @@ teste("D26 preflight BLOQUEIA quando os validadores divergem", () => {
     linhagem: conferirLinhagem(linhagem(), ctx()),
     confianca: conferirConfianca(apurada, 2),
     validador_compartilhado: false,
+    confianca_duravel_compativel: true,
   });
   assert.equal(p.status, "blocked");
   assert.equal(p.status === "blocked" && p.bloqueios[0]!.motivo, "shadow_validator_divergent");
 });
 
-teste("D27 preflight fica ready SOMENTE com as tres condicoes", () => {
-  const p = avaliarProntidaoR5D({
+teste("D27 preflight fica ready SOMENTE com as QUATRO condicoes", () => {
+  const completo = {
     linhagem: conferirLinhagem(linhagem(), ctx()),
     confianca: conferirConfianca(apurada, 2),
     validador_compartilhado: true,
-  });
+    // R5-D0-L: a quarta condicao. Sem ela o preflight bloqueia, e e o estado
+    // real hoje — o schema duravel nao foi alterado.
+    confianca_duravel_compativel: true,
+  };
+  const p = avaliarProntidaoR5D(completo);
   assert.equal(p.status, "ready");
   assert.equal(p.status === "ready" && p.event_lineage, "proven");
-  assert.equal(p.status === "ready" && p.confidence, "supported");
+  assert.equal(p.status === "ready" && p.confidence_contract, "supported");
+  assert.equal(p.status === "ready" && p.durable_confidence_compatibility, "compatible");
   assert.equal(p.status === "ready" && p.shadow_validator, "shared");
+  // E sem a quarta, bloqueia — que e o caminho vigente.
+  const semDuravel = avaliarProntidaoR5D({ ...completo, confianca_duravel_compativel: false });
+  assert.equal(semDuravel.status, "blocked");
+  assert.equal(
+    semDuravel.status === "blocked" && semDuravel.bloqueios[0]!.motivo,
+    "durable_confidence_incompatible",
+  );
   // Duas verdes e uma vermelha continua bloqueado — nao existe "quase pronto".
   for (const quebra of [
     { linhagem: { elegivel: false as const, motivo: "event_not_persisted" as const } },
@@ -419,6 +435,7 @@ teste("D27 preflight fica ready SOMENTE com as tres condicoes", () => {
       linhagem: conferirLinhagem(linhagem(), ctx()),
       confianca: conferirConfianca(apurada, 2),
       validador_compartilhado: true,
+      confianca_duravel_compativel: true,
       ...quebra,
     });
     assert.equal(q.status, "blocked", `ficou ready com ${JSON.stringify(quebra)}`);
@@ -448,8 +465,9 @@ teste("D28/D29/D30 nada e persistido, emitido ou ligado por flag", () => {
     linhagem: conferirLinhagem(linhagem(), ctx()),
     confianca: conferirConfianca(apurada, 2),
     validador_compartilhado: true,
+    confianca_duravel_compativel: true,
   });
-  assert.equal(Object.keys(p).length, 4, "o preflight passou a devolver mais que veredito");
+  assert.equal(Object.keys(p).length, 5, "o preflight passou a devolver mais que veredito");
 });
 
 /* ================================================================== *
@@ -462,14 +480,44 @@ teste("D-LIN o Caminho A preserva event ID e o Caminho B nao tem nenhum", () => 
   assert.match(projecao, /eventos: readonly string\[\]/, "a projecao parou de preservar event id");
   const shadow = ler("src/platform/copiloto/shadow.ts");
   assert.match(shadow, /v\.eventos\[v\.eventos\.length - 1\]/, "o Shadow parou de usar os eventos");
-  // Caminho B: `sinais.ts` nao cita evento em nenhuma linha, e
-  // `LeituraOperacional` nunca teve campo de evento. A identidade nao se perde
-  // no meio — ela NUNCA ENTRA.
+  // R5-D0-L: o Caminho B ganhou o MECANISMO de linhagem — `LeituraOperacional`
+  // carrega `linhagem` e `sinaisDe()` a carimba num lugar so. O que NAO mudou e
+  // o que decide a elegibilidade: continua sem PRODUTOR REAL. Esta guarda passou
+  // a proteger as duas coisas ao mesmo tempo.
   const sinais = ler("src/product/viewmodels/sinais.ts");
-  assert.doesNotMatch(sinais, /event_id|evento_id|input_event_ids/,
-    "sinais.ts passou a citar evento: reavaliar a elegibilidade do Caminho B");
-  const leitura = /export interface LeituraOperacional \{[\s\S]*?\n\}/.exec(sinais)![0];
-  assert.doesNotMatch(leitura, /event/i, "LeituraOperacional ganhou evento — atualizar a matriz");
+  assert.match(
+    sinais,
+    /readonly linhagem\?: LinhagemDeEventos;/,
+    "o mecanismo de linhagem sumiu da leitura",
+  );
+  assert.match(
+    sinais,
+    /\.map\(\(s\) => \(\{ \.\.\.s, linhagem \}\)\)/,
+    "sinaisDe deixou de carimbar a linhagem",
+  );
+  // E o unico produtor de leitura continua sendo a fixture. Se aparecer outro, a
+  // matriz de elegibilidade precisa ser reavaliada — nunca herdada.
+  let produtores: string[] = [];
+  try {
+    produtores = execFileSync(
+      "git",
+      ["grep", "-l", "--untracked", "): LeituraOperacional", "--", "src/", "tools/"],
+      { cwd: raiz, encoding: "utf8" },
+    )
+      .trim()
+      .split("\n")
+      .filter((l) => l !== "")
+      .map((l) => l.split("\\").join("/"))
+      // O proprio gate cita a assinatura no texto da asercao; ele nao e produtor.
+      .filter((l) => !/\/run-[a-z0-9-]+-tests\.ts$/.test(l));
+  } catch {
+    produtores = [];
+  }
+  assert.deepEqual(
+    produtores,
+    ["src/product/demo/seed-home-demonstracao.ts"],
+    `apareceu produtor de LeituraOperacional fora da fixture: ${produtores.join(", ")}`,
+  );
 });
 
 teste("D-PUR gerar ID dentro do tradutor e IMPOSSIVEL — a fronteira nao inventa identidade", () => {
@@ -505,8 +553,7 @@ teste("VISUAL diff vazio nos ativos congelados desde 27ccfd2", () => {
       "--",
       "src/product/ui/surfaces/home.css",
       "src/product/ui/tokens/",
-      "src/product/viewmodels/sinais.ts",
-      "src/product/viewmodels/areas.ts",
+        "src/product/viewmodels/areas.ts",
       "docs/figma/",
     ],
     { cwd: raiz, encoding: "utf8" },

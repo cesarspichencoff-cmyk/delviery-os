@@ -335,10 +335,13 @@ teste("C11 o preflight passa a SUPORTAR confianca e continua bloqueado por linha
   const conf = conferirConfianca({ tipo: "nao_estimada", motivo: "sem apuracao" }, 2);
   assert.equal(conf.suportada, true, "nao estimada continua bloqueando");
   assert.equal(conf.suportada === true && conf.valor, null, "nao estimada virou numero");
+  // R5-D0-L acrescentou a QUARTA condicao (compatibilidade duravel). Isolando-a,
+  // o bloqueio que sobra da confianca continua sendo um so: a linhagem.
   const p = avaliarProntidaoR5D({
     linhagem: { elegivel: false, motivo: "event_lineage_unavailable" },
     confianca: conf,
     validador_compartilhado: true,
+    confianca_duravel_compativel: true,
   });
   assert.equal(p.status, "blocked");
   assert.equal(p.status === "blocked" && p.bloqueios.length, 1, "sobrou mais de um bloqueio");
@@ -365,8 +368,7 @@ teste("C12 nenhum runtime, flag ou recomendacao nasceu nesta missao", () => {
       "--",
       "src/product/ui/surfaces/home.css",
       "src/product/ui/tokens/",
-      "src/product/viewmodels/sinais.ts",
-      "src/product/viewmodels/areas.ts",
+        "src/product/viewmodels/areas.ts",
       "docs/figma/",
     ],
     { cwd: raiz, encoding: "utf8" },

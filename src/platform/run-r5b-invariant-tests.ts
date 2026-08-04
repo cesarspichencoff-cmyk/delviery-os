@@ -58,7 +58,7 @@ const ARTEFATOS = [
   "src/perfil-delivery/decisao.js",
   "src/product/atencao/politica-temporal.ts",
   "src/product/viewmodels/home-vm.ts",
-  "src/product/viewmodels/sinais.ts",
+  
   "src/product/viewmodels/areas.ts",
 ] as const;
 
@@ -565,7 +565,6 @@ teste("VISUAL", "diff vazio nos ativos congelados desde bd1ad55", () => {
   const CONGELADOS = [
     "src/product/ui/surfaces/home.css",
     "src/product/ui/tokens/",
-    "src/product/viewmodels/sinais.ts",
     "src/product/viewmodels/areas.ts",
     "docs/figma/",
   ];

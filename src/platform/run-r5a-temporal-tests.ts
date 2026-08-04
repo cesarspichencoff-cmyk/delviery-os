@@ -530,7 +530,6 @@ teste("R5A-30 congelamento visual: diff vazio nos arquivos congelados", () => {
   const CONGELADOS = [
     "src/product/ui/surfaces/home.css",
     "src/product/ui/tokens/organismo-tokens.css",
-    "src/product/viewmodels/sinais.ts",
     "src/product/viewmodels/areas.ts",
   ];
   const saida = execFileSync("git", ["diff", "--name-only", BASE, "--", ...CONGELADOS], {
