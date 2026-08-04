@@ -12,7 +12,54 @@
 >
 > ---
 >
-> **ATUALIZADO 2026-08-03 — R5-D0 CONCLUIDO. VEREDITO: `R5D_BLOCKED`.**
+> **ATUALIZADO 2026-08-03 — R5-D0-C CONCLUIDO. `R5D_BLOCKED_EVENT_LINEAGE`.**
+> `DELIVERYOS_R5D0_CONFIDENCE_CONTRACT_COMPLETE` · `MACRO2_CHECKPOINT_REACHED`
+> HEAD inicial `b100943`. Gate: `npm run test:platform:r5d0-confidence` — **12 testes**.
+>
+> **A CONFIANCA DEIXOU DE SER INVENTADA.** `Recomendacao.confidence: number` obrigatorio deu lugar a
+> uma **uniao discriminada** (**D70**):
+> ```ts
+> | { estado: "nao_estimada" }
+> | { estado: "apurada"; valor; politica; versao_da_politica; evidencias }
+> ```
+> **Nao foi `confidence?: number`**, e o motivo e o de sempre neste repositorio: um campo opcional
+> deixaria a ausencia AMBIGUA — ninguem saberia se nao apuraram, se falhou, ou se esqueceram. Com o
+> discriminante, nao estimar e uma decisao declarada.
+>
+> **`nao_estimada` nao e zero e nao e confianca baixa.** O ramo **nem tem campo `valor`**, entao a
+> confusao e estruturalmente impossivel. Zero apurado continua legitimo e distinto.
+> **`apurada` exige politica, versao e evidencias** — numero sem as tres e palpite com aparencia de
+> medicao, e agora tem motivo proprio de recusa.
+>
+> **O DEFEITO DA HOME FOI CORRIGIDO (D71).** `home-vm.ts` fazia `severidade >= 3 ? 0.8 : 0.6` e
+> apresentava aquilo como confianca observada. Nao faz mais: declara `nao_observado` com motivo, e a
+> superficie **nao apresenta o campo** — mostrar um bloco de ausencia ocuparia espaco para dizer "nao
+> sei" numa tela cuja regra e dar a unica coisa e esconder o resto.
+>
+> **O PREFLIGHT MUDOU DE FORMA, NAO DE VEREDITO.** Confianca **SUPORTADA** · validador
+> **COMPARTILHADO** · linhagem **BLOQUEADA**. O preflight devolve agora **exatamente um** bloqueio:
+> `event_lineage_unavailable`. Era o objetivo — sobrar um so, e ele ser o verdadeiro.
+>
+> **ADVERSARIAL: 8 mutacoes, 8 acusadas, 0 cegas, restauracao byte a byte.** MC5 precisou de duas
+> tentativas, e a primeira e uma L39 ao vivo: ela removeu a **primeira** ocorrencia de
+> `qualitative_label_not_convertible`, que e o membro da uniao de **TIPO** — o `tsx` nao avalia tipo,
+> entao o mutante carregou sem alterar execucao. Corrigida para a ultima ocorrencia, acusou em C05.
+>
+> **REGRESSOES:** R5-A 30 · R5-B 30 · R5-C 38 · R5-D0 28 · R5-D0-C 12 · copiloto 39 · bridge 45 ·
+> home 44 · organismo 27 · Product System 44 · R1 24 · ordem visual 6 · `tsc` exit 0.
+> **CONGELAMENTO:** CSS, tokens de movimento, `sinais.ts`, `areas.ts` e `docs/figma/` com diff vazio.
+> `home.js` e `home-vm.ts` mudaram por autorizacao explicita, e a mudanca e semantica.
+>
+> **RUNTIME CONFIRMADO INEXISTENTE.** Sem conexao, sem flag, sem recomendacao real. O schema do store
+> **nao** mudou. **R5-D nao iniciado. D43 de pe. D29 preservada.**
+>
+> **PROXIMA ACAO SEGURA:** o unico bloqueio que sobra e **event lineage**. Ele exige decidir se a
+> leitura operacional passa a nascer do event log — mudanca de runtime amplo, ja registrada como
+> minima necessaria em `CONTRATO_LINHAGEM_EVIDENCIA.md` §2 e **nao** implementada.
+>
+> ---
+>
+> > **ATUALIZADO 2026-08-03 — R5-D0 CONCLUIDO. VEREDITO: `R5D_BLOCKED`.**
 > `DELIVERYOS_R5D0_READINESS_CHECKPOINT` · `R5D_BLOCKED` · `MACRO2_CHECKPOINT_REACHED`
 > HEAD inicial `27ccfd2`. **R5-D NAO iniciado, e agora com motivo tipado.**
 >

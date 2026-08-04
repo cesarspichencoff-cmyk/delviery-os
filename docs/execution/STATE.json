@@ -1193,7 +1193,7 @@
   },
   "retomada_r5": {
     "data": "2026-08-03",
-    "estado": "R5-A, R5-B, R5-C e R5-D0 CONCLUIDOS. R5-D BLOQUEADO por linhagem e confianca.",
+    "estado": "R5-A, R5-B, R5-C, R5-D0 e R5-D0-C CONCLUIDOS. R5-D BLOQUEADO SOMENTE por event lineage.",
     "decisao_do_cesar": "Figma pendente, sem upgrade e sem redesenho manual. R5 pode retomar.",
     "congelado_durante_r5": [
       "frontend (home.js, home.css, organismo-tokens.css)",
@@ -1454,7 +1454,7 @@
     "agregador": "npm run test:platform:r5 = A + B + C + D0. NAO significa R5 completo",
     "tres_respostas": {
       "event_lineage": "BLOQUEADO — so o Caminho A (event log -> projetar -> eventos[]) preserva event ID. O Caminho B, que produz o Foco, nao tem nenhum: LeituraOperacional nao tem campo de evento e sinais.ts tem 0 ocorrencias de event_id. A identidade NUNCA ENTRA (D68)",
-      "confianca": "BLOQUEADO — Caso C. O Shadow exige confidence number obrigatorio e nao existe politica canonica que o produza a partir do Caminho B. A regra nao foi inventada; 3 alternativas registradas para o Cesar (D69)",
+      "confianca": "RESOLVIDO em R5-D0-C — uniao discriminada nao_estimada|apurada (D70)",
       "validador": "RESOLVIDO — validarDraftShadow mora em shadow.ts, recomendar() a chama, o tradutor reexporta. Provado por identidade de referencia, e os 39 testes do Shadow seguem verdes (D67)"
     },
     "sinais_elegiveis": "as politicas do Shadow sobre Projecao (sinal-velho, capacidade-saturada) — evidencia real do Caminho A",
@@ -1486,5 +1486,61 @@
       "confidence_contract_missing — decisao de produto do Cesar entre 3 alternativas"
     ],
     "r5d": "BLOQUEADO — nao iniciar ate as duas respostas serem executaveis"
+  },
+  "r5d0c_confianca": {
+    "data": "2026-08-03",
+    "estado": "CONCLUIDO",
+    "head_inicial": "b100943",
+    "gate": {
+      "comando": "npm run test:platform:r5d0-confidence",
+      "testes": 12,
+      "resultado": "R5D0_CONFIDENCE_GATE_GREEN"
+    },
+    "contrato_anterior": "Recomendacao.confidence: number OBRIGATORIO — toda recomendacao precisava carregar um numero, mesmo sem politica que o apurasse",
+    "contrato_novo": "confianca: { estado: \"nao_estimada\" } | { estado: \"apurada\", valor, politica, versao_da_politica, evidencias } — uniao discriminada, nunca confidence?: number (D70)",
+    "regras": [
+      "nao_estimada nao e zero nem confianca baixa; o ramo nem tem campo valor",
+      "apurada exige politica, versao e evidencias",
+      "severidade, quantidade de eventos e rotulos alta/media/baixa nao viram numero",
+      "o tradutor PRESERVA e nunca calcula"
+    ],
+    "correcao_home": "home-vm.ts nao faz mais severidade >= 3 ? 0.8 : 0.6 (D71). Declara nao_observado com motivo, e home.js NAO apresenta o campo quando a confianca nao foi observada",
+    "impacto": {
+      "shadow": "tipo, validador, recomendar() e paraPainel",
+      "bridge": "conference-bridge monta a uniao; o registro duravel mantem numero, e null quando nao apurado",
+      "tradutor": "recebe e preserva a uniao; novos motivos confianca_sem_politica e confianca_sem_evidencia",
+      "preflight": "conferirConfianca passa a devolver suportada:true com valor null para nao_estimada"
+    },
+    "preflight": "confianca SUPORTADA · validador COMPARTILHADO · linhagem BLOQUEADA — o preflight devolve exatamente 1 bloqueio: event_lineage_unavailable",
+    "adversarial": {
+      "mutacoes": 8,
+      "acusadas": 8,
+      "cegas": 0,
+      "restauracao": "byte a byte por sha256",
+      "nota": "MC5 exigiu duas tentativas: a primeira removeu o membro da uniao de TIPO, que o tsx nao avalia — mutante carregado sem alterar execucao (L39)"
+    },
+    "regressoes": {
+      "r5a": 30,
+      "r5b": 30,
+      "r5c": 38,
+      "r5d0": 28,
+      "r5d0_confidence": 12,
+      "copiloto": 39,
+      "bridge": 45,
+      "home": 44,
+      "organismo": 27,
+      "product_system": 44,
+      "r1": 24,
+      "ordem_visual": 6,
+      "tsc": "exit 0"
+    },
+    "congelamento": "CSS, tokens de movimento, sinais, areas e Figma com diff vazio desde b100943. home.js e home-vm.ts mudaram por autorizacao explicita, e a mudanca e semantica",
+    "runtime": {
+      "conexao": "NAO IMPLEMENTADA",
+      "flag": "INEXISTENTE",
+      "recomendacao_real": "NENHUMA",
+      "store": "schema NAO alterado"
+    },
+    "bloqueador_restante": "event_lineage_unavailable — unico"
   }
 }

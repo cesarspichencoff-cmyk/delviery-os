@@ -1435,3 +1435,62 @@ congeladas nesta missao. A guarda D16 impede que essa regra entre no caminho nov
 
 **Custo aceito:** nenhuma recomendacao do Caminho B pode nascer hoje. E o ponto:
 o contrato declara a ausencia em vez de simular precisao.
+
+---
+
+### D70 — Confianca vira uniao discriminada: `nao_estimada` ou `apurada`
+
+**Decisao do Cesar, 2026-08-03.** `Recomendacao.confidence: number` obrigatorio
+deu lugar a `confianca: ConfiancaDaRecomendacao`:
+
+```ts
+| { estado: "nao_estimada" }
+| { estado: "apurada"; valor; politica; versao_da_politica; evidencias }
+```
+
+**Por que NAO `confidence?: number`.** Um campo opcional deixaria a ausencia
+AMBIGUA: quem le nao saberia se ninguem apurou, se a apuracao falhou, ou se
+alguem esqueceu de preencher. Com o discriminante, nao estimar e uma decisao
+declarada — e ela tem forma, cabe no tipo e sobrevive a serializacao.
+
+**`nao_estimada` nao e zero e nao e confianca baixa.** Zero e uma apuracao de
+valor zero, que e uma afirmacao. Nao estimada e a recusa de afirmar. O ramo nem
+sequer tem campo `valor`, entao a confusao e estruturalmente impossivel.
+
+**`apurada` exige politica, versao e evidencias** — um numero sem as tres coisas
+e palpite com aparencia de medicao, e agora o validador recusa com motivo proprio
+(`confianca_sem_politica`, `confianca_sem_evidencia`).
+
+**O tradutor PRESERVA e nunca calcula.** Nao arredonda, nao completa, nao
+converte. O rotulo do motor continua rotulo (D66), e severidade continua sem
+virar confianca.
+
+**Alternativa recusada:** definir uma politica canonica de calculo agora — a
+alternativa 2 do Caso C. Recusada porque exige medicao que nao existe: inventar a
+formula repetiria o erro que D66 evitou. Ela continua disponivel para quando
+houver dado real.
+
+**Custo aceito:** o contrato do Shadow mudou de forma, e isso alcancou
+`conference-bridge.ts`, `copiloto-vm.ts` e tres gates. O registro duravel do
+store **nao** mudou: `paraRegistro` continua emitindo numero quando apurado, e
+`null` quando nao — que o schema recusa em voz alta em vez de gravar zero.
+
+---
+
+### D71 — A severidade deixou de virar confianca na home
+
+**Defeito corrigido.** `home-vm.ts:474` fazia `sinal.severidade >= 3 ? 0.8 : 0.6`
+e apresentava o resultado como confianca observada. Era um numero com a aparencia
+de medicao e a origem de um degrau de severidade — a conversao que a separacao
+conceitual proibe, e que R5-D0 registrou sem poder corrigir porque as view models
+estavam congeladas.
+
+**Agora** a home declara `nao_observado` com motivo, e a superficie **nao
+apresenta o campo**: mostrar um bloco de ausencia ocuparia espaco para dizer "nao
+sei" numa tela cuja regra e dar a unica coisa e esconder o resto.
+
+**Alternativa recusada:** manter o numero e marca-lo como derivado. Recusada
+porque um numero exibido e lido como medicao, por mais rotulo que tenha ao lado.
+
+**Custo aceito:** o Foco perde uma linha de informacao. Ela nao fazia falta —
+fazia dano.
