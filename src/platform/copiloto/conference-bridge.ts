@@ -392,7 +392,13 @@ export function recomendarDeConclusoes(
         evidence_grade: grau,
         projection_version: c.conclusion_version,
         source_mode: c.source_mode,
-        confidence: confianca,
+        confianca: {
+          estado: "apurada" as const,
+          valor: confianca,
+          politica: proposta.policy_id,
+          versao_da_politica: BRIDGE_VERSION,
+          evidencias: c.evidence.map((e) => e.ref),
+        },
         risk_level: proposta.risk_level,
         recommended_action: proposta.recommended_action,
         reason: proposta.descricao,
@@ -486,7 +492,11 @@ export function paraRegistro(r: RecomendacaoShadow): Record<string, unknown> {
     evidencias: r.evidencias,
     evidence_grade: r.evidence_grade,
     limitacoes: r.limitacoes,
-    confidence: r.confidence,
+    // O REGISTRO duravel mantem o numero: o schema do store nao muda nesta
+    // missao. Este caminho sempre apura (as politicas do bridge calculam), entao
+    // `nao_estimada` nao chega aqui — e se um dia chegar, chega como `null`, que
+    // o schema recusa em voz alta em vez de gravar zero.
+    confidence: r.confianca.estado === "apurada" ? r.confianca.valor : null,
     risk_level: r.risk_level,
     recommended_action: r.recommended_action,
     requires_human: r.requires_human,

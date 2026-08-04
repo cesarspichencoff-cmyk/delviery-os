@@ -32,6 +32,7 @@ import {
   POLICY_VERSION,
   exigirConfianca,
   validarDraftShadow,
+  type ConfiancaDaRecomendacao,
   type MotivoRejeicaoShadow,
   type Recomendacao,
   type ResultadoValidacaoShadow,
@@ -188,8 +189,13 @@ export interface EntradaTraducaoMotorShadow {
   readonly escopo: EscopoDoSujeito;
   readonly evidencias: PacoteDeEvidencias | null;
   readonly procedencia: ProcedenciaEstruturada | null;
-  /** 0..1, sustentada por evidencia. `null` = nao observada — nunca zero. */
-  readonly confianca: number | null;
+  /**
+   * A confianca JA DECIDIDA pelo chamador. O tradutor a PRESERVA e nunca a
+   * calcula: `nao_estimada` atravessa como `nao_estimada`, e `apurada` atravessa
+   * com politica, versao e evidencias intactas. Nao ha default, nao ha
+   * conversao, e o rotulo do motor continua sem virar numero (D66, D70).
+   */
+  readonly confianca: ConfiancaDaRecomendacao;
   readonly risco: RiskLevel;
   readonly validade: PoliticaDeValidade | null;
   readonly retirada: CondicoesDeRetirada | null;
@@ -217,6 +223,7 @@ export type MotivoBloqueio =
   | "evidencia_sem_vinculo_com_a_causa"
   | "evidencia_sem_vinculo_com_o_sujeito"
   | "confianca_sem_evidencia"
+  | "confianca_sem_politica"
   | "confianca_fora_de_faixa"
   | "procedencia_ausente"
   | "procedencia_incompativel"
@@ -406,10 +413,23 @@ export function traduzirParaShadow(
   }
   if (p.projection_version.trim() === "") return bloqueada("procedencia_ausente");
 
-  /* -- 7. Confianca. Nunca criada aqui, nunca reduzida para passar. ---- */
-  if (e.confianca === null) return bloqueada("confianca_sem_evidencia");
-  const confianca = exigirConfianca(e.confianca);
-  if (confianca === null) return bloqueada("confianca_fora_de_faixa");
+  /* -- 7. Confianca. PRESERVADA, nunca criada nem reduzida para passar.
+     `nao_estimada` e legitima: uma recomendacao nao precisa inventar numero
+     para existir. O que ela nao pode e afirmar numero sem lastro. */
+  if (e.confianca.estado === "apurada") {
+    if (exigirConfianca(e.confianca.valor) === null) {
+      return bloqueada("confianca_fora_de_faixa");
+    }
+    if (
+      e.confianca.politica.trim() === "" ||
+      e.confianca.versao_da_politica.trim() === ""
+    ) {
+      return bloqueada("confianca_sem_politica");
+    }
+    if (e.confianca.evidencias.length === 0) {
+      return bloqueada("confianca_sem_evidencia");
+    }
+  }
 
   /* -- 8. Validade. Explicita, auditavel, e NUNCA derivada de DEBOUNCE,
      COOLDOWN, MAXFOCUS ou STALE — semanticas diferentes (D62). --------- */
@@ -440,7 +460,9 @@ export function traduzirParaShadow(
     input_event_ids: [...e.evidencias.evento_ids],
     projection_version: p.projection_version,
     source_mode: p.source_mode,
-    confidence: confianca,
+    // PRESERVADA byte a byte: o tradutor nao arredonda, nao completa e nao
+    // converte. O que o chamador decidiu e o que atravessa.
+    confianca: e.confianca,
     risk_level: e.risco,
     recommended_action: e.acao.acao,
     reason: e.acao.porque,

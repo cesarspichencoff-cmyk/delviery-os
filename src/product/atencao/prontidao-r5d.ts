@@ -189,7 +189,8 @@ export type MotivoConfianca =
   | "severity_used_as_confidence";
 
 export type ResultadoConfianca =
-  | { readonly suportada: true; readonly valor: number }
+  /** `valor: null` = nao estimada. NUNCA zero: zero e uma apuracao de valor zero. */
+  | { readonly suportada: true; readonly valor: number | null }
   | { readonly suportada: false; readonly motivo: MotivoConfianca };
 
 /**
@@ -200,8 +201,11 @@ export function conferirConfianca(
   c: ConfiancaDeclarada,
   evidencias: number,
 ): ResultadoConfianca {
+  // R5-D0-C: `nao_estimada` passou a ser SUPORTADA. Uma recomendacao nao precisa
+  // inventar numero para existir — e o contrato do Shadow agora sabe representar
+  // a recusa de afirmar. O que continua recusado e numero sem lastro (D70).
   if (c.tipo === "nao_estimada") {
-    return { suportada: false, motivo: "confidence_contract_missing" };
+    return { suportada: true, valor: null };
   }
   if (evidencias === 0) {
     return { suportada: false, motivo: "confidence_without_evidence" };

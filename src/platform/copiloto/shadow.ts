@@ -40,6 +40,30 @@ export type RecommendationStatus =
 
 export type RiskLevel = "baixo" | "medio" | "alto";
 
+/**
+ * Confiança — união discriminada, e não `number | undefined`.
+ *
+ * `confidence?: number` deixaria a ausência AMBÍGUA: um campo que some não diz
+ * se ninguém apurou, se a apuração falhou, ou se alguém esqueceu de preencher.
+ * Com o discriminante, não estimar é uma decisão declarada, e ela tem forma.
+ *
+ * **`nao_estimada` não é zero e não é confiança baixa.** Zero é uma confiança
+ * apurada de valor zero — uma afirmação. Não estimada é a recusa de afirmar.
+ * Confundi-las é a mentira que I9 existe para impedir.
+ *
+ * `apurada` exige política, versão e evidências: um número sem essas três coisas
+ * é palpite com aparência de medição. Ver D70.
+ */
+export type ConfiancaDaRecomendacao =
+  | { readonly estado: "nao_estimada" }
+  | {
+      readonly estado: "apurada";
+      readonly valor: number;
+      readonly politica: string;
+      readonly versao_da_politica: string;
+      readonly evidencias: readonly string[];
+    };
+
 export interface Recomendacao {
   recommendation_id: string;
   policy_id: string;
@@ -48,8 +72,12 @@ export interface Recomendacao {
   input_event_ids: readonly string[];
   projection_version: string;
   source_mode: SourceMode;
-  /** 0..1. Ausente nunca — ver `exigirConfianca`. */
-  confidence: number;
+  /**
+   * Confiança declarada. Antes era `number` obrigatório, e isso forçava toda
+   * recomendação a carregar um número — mesmo quando nenhuma política o tinha
+   * apurado. Hoje ela pode dizer, com forma própria, que não foi estimada.
+   */
+  confianca: ConfiancaDaRecomendacao;
   risk_level: RiskLevel;
   recommended_action: string;
   /** Por que, em português, para quem vai ler no balcão. */
@@ -240,9 +268,16 @@ export function recomendar(p: Projecao, opcoes: OpcoesShadow): Recomendacao[] {
       input_event_ids: crua.input_event_ids,
       projection_version: p.projection_version,
       source_mode: p.source_mode,
-      // `confianca` já vem arredondada; `null` cai na recusa do validador logo
-      // abaixo, sem nunca virar um número inventado.
-      confidence: confianca as number,
+      // A politica apurou um numero com regra propria — entao ela declara
+      // politica, versao e as evidencias que o sustentam. Numero invalido cai na
+      // recusa do validador logo abaixo, sem nunca virar valor inventado.
+      confianca: {
+        estado: "apurada",
+        valor: confianca as number,
+        politica: pol.policy_id,
+        versao_da_politica: POLICY_VERSION,
+        evidencias: crua.input_event_ids,
+      },
       risk_level: crua.risk_level,
       recommended_action: crua.recommended_action,
       reason: crua.reason,
@@ -269,6 +304,8 @@ export function recomendar(p: Projecao, opcoes: OpcoesShadow): Recomendacao[] {
 export type MotivoRejeicaoShadow =
   | "evidencia_vazia"
   | "confianca_invalida"
+  | "confianca_sem_politica"
+  | "confianca_sem_evidencia"
   | "status_nao_proposto"
   | "sem_exigencia_humana"
   | "campo_executavel"
@@ -295,8 +332,18 @@ export type ResultadoValidacaoShadow =
 export function validarDraftShadow(draft: Recomendacao): ResultadoValidacaoShadow {
   // Recomendação sem evidência é palpite.
   if (draft.input_event_ids.length === 0) return { aceito: false, motivo: "evidencia_vazia" };
-  if (exigirConfianca(draft.confidence) === null) {
-    return { aceito: false, motivo: "confianca_invalida" };
+  // `nao_estimada` e ACEITA: uma recomendacao nao precisa inventar numero para
+  // existir. O que ela nao pode e afirmar um numero sem lastro.
+  if (draft.confianca.estado === "apurada") {
+    if (exigirConfianca(draft.confianca.valor) === null) {
+      return { aceito: false, motivo: "confianca_invalida" };
+    }
+    if (draft.confianca.politica.trim() === "" || draft.confianca.versao_da_politica.trim() === "") {
+      return { aceito: false, motivo: "confianca_sem_politica" };
+    }
+    if (draft.confianca.evidencias.length === 0) {
+      return { aceito: false, motivo: "confianca_sem_evidencia" };
+    }
   }
   if (draft.status !== "proposed") return { aceito: false, motivo: "status_nao_proposto" };
   // Nesta fase, sempre. O campo existe para o dia em que houver ação automática.
@@ -368,7 +415,11 @@ export function paraPainel(r: Recomendacao): Record<string, unknown> {
     recomendacao: r.recommended_action,
     motivo: r.reason,
     fatos_utilizados: r.input_event_ids,
-    confianca: r.confidence,
+    // Nao estimada NAO vira zero na apresentacao: o painel recebe `null` e o
+    // estado ao lado, para que quem le saiba a diferenca entre "nao apuramos" e
+    // "apuramos e deu zero".
+    confianca: r.confianca.estado === "apurada" ? r.confianca.valor : null,
+    confianca_estado: r.confianca.estado,
     risco: r.risk_level,
     origem: r.source_mode,
     validade: r.expires_at,

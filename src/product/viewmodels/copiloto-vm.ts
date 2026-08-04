@@ -180,7 +180,12 @@ function recomendacaoVM(
       "acao_humana_necessaria",
       "Esta proposta exige decisao humana para virar qualquer coisa.",
     ),
-    confianca: confiancaApresentavel(r.confidence, evidencias),
+    // Nao estimada nao vira zero nem numero: `confiancaApresentavel` recebe
+    // `null` e devolve ausencia declarada.
+    confianca: confiancaApresentavel(
+      r.confianca.estado === "apurada" ? r.confianca.valor : null,
+      evidencias,
+    ),
     risco: r.risk_level,
     evidencias,
     limitacoes: r.limitacoes,
