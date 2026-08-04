@@ -1193,7 +1193,7 @@
   },
   "retomada_r5": {
     "data": "2026-08-03",
-    "estado": "R5-A ate R5-D2 CONCLUIDOS. R5-D bloqueado pela implementacao do adapter vivo.",
+    "estado": "R5-A ate R5-D3 CONCLUIDOS. R5-D bloqueado pela validacao do caminho shadow em campo.",
     "decisao_do_cesar": "Figma pendente, sem upgrade e sem redesenho manual. R5 pode retomar.",
     "congelado_durante_r5": [
       "frontend (home.js, home.css, organismo-tokens.css)",
@@ -1707,6 +1707,36 @@
       "evento_no_ledger_oficial": "NENHUM"
     },
     "proximo_adapter_qualificado": "ObservadorSaudeFonte — sem credencial, sem rede, sem loja",
+    "r5d": "NAO INICIADO"
+  },
+  "r5d3_caminho_shadow": {
+    "data": "2026-08-04",
+    "estado": "CONCLUIDO",
+    "head_inicial": "1a35ebe",
+    "handoff": "docs/execution/HANDOFF_R5.md — continuidade apos compactacao",
+    "gate": {
+      "comando": "npm run test:platform:r5d3-shadow-path",
+      "testes": 10,
+      "resultado": "R5D3_SHADOW_PATH_GATE_GREEN"
+    },
+    "produtor_trabalho": "src/product/eventos/produtor-trabalho-praca.ts — registro explicito da bancada, nunca inferencia do Odhen (D81). Emite SO trabalho_praca_observado@1",
+    "observador_saude": "src/product/eventos/observador-saude.ts — emite SO source_health_changed@1; ausencia de sinal nunca vira saudavel",
+    "ledger_shadow": "src/product/eventos/ledger-shadow.ts — arquivo proprio, DESLIGADO por padrao, recusa caminho oficial, replay auditavel (D82)",
+    "adversarial": {
+      "mutacoes": 4,
+      "acusadas": 4,
+      "cegas": 0,
+      "restauracao": "byte a byte por sha256"
+    },
+    "pii": "operador e pseudonimo opaco; nome, e-mail, telefone e CPF sao recusados",
+    "runtime": {
+      "recomendacao": "NENHUMA",
+      "escrita_externa": "NENHUMA",
+      "ledger_oficial": "NAO TOCADO",
+      "flag": "INEXISTENTE",
+      "shadow": "DESLIGADO por padrao"
+    },
+    "bloqueador": "R5D_BLOCKED_SHADOW_VALIDATION — os produtores existem, mas o caminho nunca rodou com operacao real",
     "r5d": "NAO INICIADO"
   }
 }

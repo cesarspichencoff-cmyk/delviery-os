@@ -12,7 +12,28 @@
 >
 > ---
 >
-> **ATUALIZADO 2026-08-04 — R5-D2 CONCLUIDO. PB8 RESOLVIDO.**
+> **ATUALIZADO 2026-08-04 — R5-D3 CONCLUIDO. `R5D_BLOCKED_SHADOW_VALIDATION`.**
+> `DELIVERYOS_R5D3_OPERATIONAL_SHADOW_PATH_COMPLETE` · `MACRO2_CONTEXT_HANDOFF_COMPLETE`
+> HEAD inicial `1a35ebe`. Gate: `npm run test:platform:r5d3-shadow-path` — **10 riscos materiais**.
+>
+> **LEIA `docs/execution/HANDOFF_R5.md` PRIMEIRO** para retomar R5 — ele substitui a releitura deste
+> arquivo inteiro.
+>
+> **`trabalho_praca_observado@1` ganhou produtor (D81):** registro explicito da bancada, nunca
+> inferencia do Odhen. R5-D2 provou que a comanda e unica, sem separacao por praca — nenhum acesso
+> conserta o dado que nao existe na fonte. Exige gesto humano, e e infinitamente mais honesto.
+> **`source_health_changed@1`** ganhou o observador interno, com a regra que ele existe para
+> proteger: **ausencia de sinal nunca vira saudavel**.
+>
+> **Shadow mode DESLIGADO por padrao (D82).** Arquivo proprio, `registrar()` nao escreve com o modo
+> off, e o construtor **lanca** se o caminho contiver `oficial`. Replay auditavel, de outro processo.
+>
+> **4 mutacoes, 4 acusadas, 0 cegas.** **Regressoes verdes**, incluindo R5-D1 31 e R5-D2 38.
+> **R5-D NAO COMECOU.**
+>
+> ---
+>
+> > **ATUALIZADO 2026-08-04 — R5-D2 CONCLUIDO. PB8 RESOLVIDO.**
 > `DELIVERYOS_R5D2_PRODUCER_QUALIFICATION_COMPLETE` · `PB8_RESOLVED_BY_EVENT_AUTHORITY` ·
 > `R5D_BLOCKED_LIVE_ADAPTER_IMPLEMENTATION` · `MACRO2_CHECKPOINT_PRESERVED`
 > HEAD inicial `f1fe480`. Gate: `npm run test:platform:r5d2-producer-qualification` — **38 testes**.

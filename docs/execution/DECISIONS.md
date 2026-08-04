@@ -1735,3 +1735,42 @@ nao observacao — e numa sexta-feira de pico ninguem quer descobrir isso.
 **Custo aceito:** a qualificacao e documental e contratual, nao empirica. Ela
 prova que existe um caminho POSSIVEL, e nao que ele funciona. Disponibilidade
 viva so pode ser declarada quando o adapter real existir, testado e conectado.
+
+---
+
+### D81 — Trabalho por praca vem de REGISTRO EXPLICITO, nunca de inferencia
+
+**Decisao.** O primeiro produtor de `trabalho_praca_observado@1` e a propria
+bancada declarando o que fez — `src/product/eventos/produtor-trabalho-praca.ts`.
+
+**Por que nao o Odhen.** R5-D2 provou (D79) que a comanda e UNICA, sem separacao
+por praca: a praca so poderia ser INFERIDA do item, e a impressao prova emissao,
+nunca inicio de preparo. Nenhum acesso conserta — o dado nao existe na fonte.
+
+**Alternativa recusada:** derivar trabalho do status geral do pedido, ou tratar
+impressao como inicio. Recusada porque inventaria o interior da cozinha, que e a
+mesma familia do defeito que D77 fechou para a carga.
+
+**Custo aceito:** exige gesto humano na bancada. E menos automatico e
+infinitamente mais honesto — quem registra sabe qual praca e sabe quando comecou.
+
+**PII:** `operador` e pseudonimo OPACO (terminal, cracha, apelido de turno). O
+produtor recusa o que parecer nome, e-mail, telefone ou CPF.
+
+---
+
+### D82 — Shadow mode e desligado por padrao, e o ledger e outro arquivo
+
+**Decisao.** `criarLedgerShadow` nasce `habilitado: false`; desligado,
+`registrar()` nao escreve e devolve `ignorado_shadow_desligado`. O construtor
+**lanca** se o caminho contiver `oficial`/`official`.
+
+**Por que as duas guardas.** Um shadow que nasce ligado vira producao por
+descuido; um shadow que grava no ledger de verdade nao e shadow. As duas falhas
+sao silenciosas — so aparecem quando alguem confia no dado errado.
+
+**Alternativa recusada:** flag de ambiente. Recusada porque esta missao proibe
+flag, e porque variavel de ambiente e configuracao invisivel: ligar precisa ser
+decisao de quem chama, no codigo.
+
+**Custo aceito:** ninguem coleta nada ate alguem ligar explicitamente. E o ponto.
