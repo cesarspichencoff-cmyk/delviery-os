@@ -235,6 +235,12 @@ export function conferirConfianca(
  * Preflight                                                           *
  * ------------------------------------------------------------------ */
 
+/**
+ * A representacao duravel da confianca acompanha o dominio desde R5-D0-S.
+ * Constante e nao literal solto para que a mutacao que a derruba seja UMA.
+ */
+export const CONFIANCA_DURAVEL_COMPATIVEL = true;
+
 export type MotivoBloqueioR5D =
   | MotivoLinhagem
   | MotivoConfianca
@@ -275,9 +281,13 @@ export function avaliarProntidaoR5D(entrada: {
   readonly confianca: ResultadoConfianca;
   readonly validador_compartilhado: boolean;
   /**
-   * O schema duravel aceita confianca `nao_estimada`? Enquanto nao aceitar, uma
-   * recomendacao sem numero passa no validador e morre no registro — e isso e
-   * bloqueio, nao detalhe. Padrao `false`: o schema nao foi alterado.
+   * O schema duravel aceita confianca `nao_estimada`?
+   *
+   * R5-D0-S fechou isto: a representacao duravel virou a MESMA uniao do dominio,
+   * versionada em `confianca@2`, com round-trip provado — serializa, restaura,
+   * sobrevive a replay e a recuperacao. Por isso o padrao passou de `false` para
+   * `CONFIANCA_DURAVEL_COMPATIVEL` (D74). Continua sendo parametro porque um
+   * chamador pode estar apontando para um store antigo, e nesse caso ele diz.
    */
   readonly confianca_duravel_compativel?: boolean;
 }): ProntidaoR5D {
@@ -300,7 +310,7 @@ export function avaliarProntidaoR5D(entrada: {
       detalhe: "runtime e harness precisam chamar a MESMA validarDraftShadow",
     });
   }
-  if (entrada.confianca_duravel_compativel !== true) {
+  if ((entrada.confianca_duravel_compativel ?? CONFIANCA_DURAVEL_COMPATIVEL) !== true) {
     bloqueios.push({
       motivo: "durable_confidence_incompatible",
       detalhe:
