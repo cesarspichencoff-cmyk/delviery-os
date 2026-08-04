@@ -1193,7 +1193,7 @@
   },
   "retomada_r5": {
     "data": "2026-08-03",
-    "estado": "R5-A, R5-B, R5-C, R5-D0 e R5-D0-C CONCLUIDOS. R5-D BLOQUEADO SOMENTE por event lineage.",
+    "estado": "R5-A/B/C/D0/D0-C/D0-L CONCLUIDOS. R5-D BLOQUEADO por compatibilidade duravel e por ausencia de produtor real.",
     "decisao_do_cesar": "Figma pendente, sem upgrade e sem redesenho manual. R5 pode retomar.",
     "congelado_durante_r5": [
       "frontend (home.js, home.css, organismo-tokens.css)",
@@ -1542,5 +1542,43 @@
       "store": "schema NAO alterado"
     },
     "bloqueador_restante": "event_lineage_unavailable — unico"
+  },
+  "r5d0l_linhagem": {
+    "data": "2026-08-04",
+    "estado": "CONCLUIDO — mecanismo pronto, produtor real INEXISTENTE",
+    "head_inicial": "ced38da",
+    "gate": {
+      "comando": "npm run test:platform:r5d0-lineage",
+      "testes": 15,
+      "resultado": "R5D0_LINEAGE_GATE_GREEN"
+    },
+    "produtores_reais_encontrados": "NENHUM. O unico produtor de LeituraOperacional e src/product/demo/seed-home-demonstracao.ts (fixture). O catalogo de eventos tem 11 tipos, todos de viagem e entrega; nenhum descreve carga por praca, baseline, chegadas ou producao (D72)",
+    "contrato": "LinhagemDeEventos { input_event_ids, natureza, observado_em, transformacoes, produtor, event_catalog_version } — serializavel, deterministica, replayable",
+    "caminho_dos_ids": "EventEnvelope -> LeituraOperacional.linhagem -> Sinal.linhagem (carimbado em sinaisDe, lugar unico) -> CausaCandidata.linhagem -> ResultadoDaEleicao.linhagem",
+    "carimbo_estrutural": "os 13 construtores devolvem SinalBruto = Omit<Sinal,\"linhagem\">: um construtor NAO CONSEGUE produzir linhagem",
+    "identidade": "a linhagem fica FORA de identidadeDaCausa — trocar de evento nao troca a causa nem reinicia o debounce",
+    "ordem_e_duplicata": "ordem do LOG, sem reordenacao; duplicata resolve pela PRIMEIRA ocorrencia preservando a ordem de chegada",
+    "sinais_elegiveis": "NENHUM",
+    "sinais_inelegiveis": "TODOS (S1..S22) — eligible_for_shadow false, reason event_lineage_unavailable. Elegibilidade exige produtor real comprovado",
+    "adversarial": {
+      "mutacoes": 8,
+      "acusadas": 8,
+      "cegas": 0,
+      "nao_carregadas": 0,
+      "restauracao": "byte a byte por sha256"
+    },
+    "preflight": "QUATRO condicoes separadas: event_lineage, confidence_contract, durable_confidence_compatibility, shared_shadow_validator (D73)",
+    "congelamento": "confianca, src/product/ui/, areas.ts, motor original e docs/figma com diff vazio desde ced38da. sinais.ts e politica-temporal.ts mudaram: sao o alvo da propagacao",
+    "runtime": {
+      "conexao": "NAO IMPLEMENTADA",
+      "flag": "INEXISTENTE",
+      "recomendacao_real": "NENHUMA",
+      "schema_duravel": "NAO ALTERADO"
+    },
+    "bloqueadores_restantes": [
+      "durable_confidence_incompatible — o schema duravel ainda exige confianca numerica",
+      "event_lineage_unavailable na pratica — o mecanismo existe, o produtor real nao"
+    ],
+    "r5d": "NAO INICIADO"
   }
 }

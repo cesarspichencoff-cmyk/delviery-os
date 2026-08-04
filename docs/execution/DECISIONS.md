@@ -1494,3 +1494,57 @@ porque um numero exibido e lido como medicao, por mais rotulo que tenha ao lado.
 
 **Custo aceito:** o Foco perde uma linha de informacao. Ela nao fazia falta —
 fazia dano.
+
+---
+
+### D72 — O mecanismo de linhagem existe; o produtor real nao
+
+**Achado, medido antes de implementar.** O UNICO produtor de
+`LeituraOperacional` no repositorio e
+`src/product/demo/seed-home-demonstracao.ts` — quatro cenas de fixture. **Nao
+existe produtor real**, e nao e so ausencia de codigo: o catalogo de eventos tem
+`trip_created`, `gps_batch_received`, `arrival_detected`, `delivery_confirmed`,
+`occurrence_created`, `trip_closed` — **eventos de viagem e entrega**. Nenhum
+descreve carga por praca, baseline, chegadas na hora ou estado de producao de
+pedido, que e o que a leitura carrega. Os dois que poderiam
+(`source_event_received`, `order_state_changed`) sao recusados no roteamento por
+nao terem produtor nem consumidor (B4).
+
+**Decisao.** Construir o MECANISMO inteiro e prova-lo ponta a ponta —
+`EventEnvelope -> LeituraOperacional -> Sinal -> CausaCandidata -> Foco` — e
+**nao declarar nenhum sinal elegivel**. Elegibilidade exige produtor real
+comprovado. Um tipo que aceita ids nao produz ids.
+
+**Como o carimbo ficou estruturalmente honesto:** os 13 construtores de sinal
+passaram a devolver `SinalBruto = Omit<Sinal, "linhagem">`. Um construtor **nao
+consegue** produzir linhagem, mesmo que alguem tente; ela entra num lugar so,
+`sinaisDe()`, e vem da leitura.
+
+**Alternativa recusada:** adaptar as viagens para produzir `LeituraOperacional`.
+Recusada porque as viagens nao descrevem a cozinha — seria fabricar semantica, que
+e pior que fabricar id, porque parece integracao de verdade.
+
+**Custo aceito:** o gate prova um caminho que ninguem percorre hoje. E o preco de
+ter a fronteira pronta quando o produtor existir, em vez de improvisa-la no dia.
+
+---
+
+### D73 — O preflight passa a ter QUATRO condicoes, e a quarta e a duravel
+
+**Decisao.** `avaliarProntidaoR5D` verifica separadamente `event_lineage`,
+`confidence_contract`, `durable_confidence_compatibility` e
+`shared_shadow_validator`.
+
+**Por que a quarta existe.** R5-D0-C resolveu a confianca no contrato em memoria
+e deixou uma consequencia viva: o **schema duravel** do store continua exigindo
+numero. Uma recomendacao `nao_estimada` seria **aceita pelo validador e recusada
+no registro** — passaria em todos os testes de contrato e morreria na hora de
+gravar. Fundir as duas verificacoes esconderia exatamente esse degrau.
+
+**Alternativa recusada:** alterar o schema duravel agora para aceitar
+`nao_estimada`. Recusada porque esta missao proibe tocar o schema duravel, e
+porque mudar formato de registro pede a sua propria rodada de prova — replay,
+recuperacao, compatibilidade com o que ja esta gravado.
+
+**Custo aceito:** R5-D continua bloqueado mesmo com a linhagem completa. E o
+estado honesto: o bloqueio mudou de nome, nao desapareceu.

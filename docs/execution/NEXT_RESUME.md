@@ -12,7 +12,53 @@
 >
 > ---
 >
-> **ATUALIZADO 2026-08-03 — R5-D0-C CONCLUIDO. `R5D_BLOCKED_EVENT_LINEAGE`.**
+> **ATUALIZADO 2026-08-04 — R5-D0-L CONCLUIDO. `R5D_BLOCKED`.**
+> `DELIVERYOS_R5D0_EVENT_LINEAGE_COMPLETE` · `MACRO2_CHECKPOINT_REACHED`
+> HEAD inicial `ced38da`. Gate: `npm run test:platform:r5d0-lineage` — **15 testes**.
+>
+> **O MECANISMO DE LINHAGEM EXISTE, PONTA A PONTA:**
+> `EventEnvelope -> LeituraOperacional.linhagem -> Sinal.linhagem -> CausaCandidata -> Foco`.
+> Os ids chegam intactos a causa temporalmente eleita, na **ordem do log**, com duplicata resolvida
+> pela primeira ocorrencia. E a linhagem fica **fora** de `identidadeDaCausa`: trocar de evento nao
+> troca a causa nem reinicia o debounce.
+>
+> **O CARIMBO E ESTRUTURALMENTE HONESTO.** Os 13 construtores de sinal passaram a devolver
+> `SinalBruto = Omit<Sinal, "linhagem">` — um construtor **nao consegue** produzir linhagem, mesmo
+> que alguem tente. Ela entra num lugar so, `sinaisDe()`, e vem da leitura.
+>
+> **E NENHUM SINAL FICOU ELEGIVEL — este e o resultado da missao (D72).** O unico produtor de
+> `LeituraOperacional` no repositorio e a **fixture**. E nao e so ausencia de codigo: o catalogo tem
+> 11 tipos de evento, **todos de viagem e entrega**, e nenhum descreve carga por praca, baseline,
+> chegadas ou producao. Adaptar as viagens para produzir a leitura seria **fabricar semantica** — pior
+> que fabricar id, porque parece integracao de verdade. **Todos os S1-S22 seguem
+> `eligible_for_shadow: false`.**
+>
+> **O PREFLIGHT PASSOU A TER QUATRO CONDICOES (D73):** `event_lineage` · `confidence_contract` ·
+> **`durable_confidence_compatibility`** · `shared_shadow_validator`. A quarta existe porque R5-D0-C
+> resolveu a confianca **em memoria** e deixou uma consequencia viva: o **schema duravel ainda exige
+> numero**, entao `nao_estimada` seria aceita pelo validador e **recusada no registro**. Fundir as
+> duas verificacoes esconderia esse degrau.
+>
+> **ADVERSARIAL: 8 mutacoes, 8 acusadas, 0 cegas, 0 nao carregadas, restauracao byte a byte.**
+>
+> **REGRESSOES:** R5-A 30 · R5-B 30 · R5-C 38 · R5-D0 28 · R5-D0-C 12 · R5-D0-L 15 · copiloto 39 ·
+> bridge 45 · home 44 · organismo 27 · Product System 44 · R1 24 · ordem visual 6 · `tsc` exit 0.
+> **CONGELAMENTO:** confianca, `src/product/ui/`, `areas.ts`, motor original e `docs/figma/` com diff
+> vazio. `sinais.ts` e `politica-temporal.ts` mudaram — sao o alvo da propagacao.
+>
+> **RUNTIME CONFIRMADO INEXISTENTE.** Sem conexao, sem flag, sem recomendacao real, schema duravel
+> intocado. **R5-D NAO INICIADO. D43 de pe. D29 preservada.**
+>
+> **PROXIMA ACAO SEGURA — duas, e nenhuma e "ligar o cabo":**
+> (1) **compatibilidade duravel** — decidir se o schema do store passa a aceitar `nao_estimada`;
+> mexer em formato de registro pede rodada propria de replay e recuperacao.
+> (2) **produtor real** — decidir se a leitura operacional passa a nascer de eventos, o que hoje
+> exige **tipos de evento que nao existem** (carga por praca, producao de pedido). Isso e decisao de
+> produto sobre a fonte viva da loja, nao de arquitetura.
+>
+> ---
+>
+> > **ATUALIZADO 2026-08-03 — R5-D0-C CONCLUIDO. `R5D_BLOCKED_EVENT_LINEAGE`.**
 > `DELIVERYOS_R5D0_CONFIDENCE_CONTRACT_COMPLETE` · `MACRO2_CHECKPOINT_REACHED`
 > HEAD inicial `b100943`. Gate: `npm run test:platform:r5d0-confidence` — **12 testes**.
 >
