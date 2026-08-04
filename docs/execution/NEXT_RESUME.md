@@ -12,7 +12,73 @@
 >
 > ---
 >
-> **ATUALIZADO 2026-08-04 — R5-D1 CONCLUIDO. `R5D_BLOCKED_LIVE_EVENT_PRODUCER`.**
+> **ATUALIZADO 2026-08-04 — R5-D2 CONCLUIDO. PB8 RESOLVIDO.**
+> `DELIVERYOS_R5D2_PRODUCER_QUALIFICATION_COMPLETE` · `PB8_RESOLVED_BY_EVENT_AUTHORITY` ·
+> `R5D_BLOCKED_LIVE_ADAPTER_IMPLEMENTATION` · `MACRO2_CHECKPOINT_PRESERVED`
+> HEAD inicial `f1fe480`. Gate: `npm run test:platform:r5d2-producer-qualification` — **38 testes**.
+> Documento: `docs/product/QUALIFICACAO_PRODUTORES_VIVOS.md`.
+>
+> **O INVENTARIO, e ele desmonta uma suposicao antiga.** O UNICO caminho iFood implementado neste
+> repositorio e o **relatorio em LOTE** (`ifoodRelatorio.ts`) — e ele **nao traz carimbo absoluto por
+> etapa**: reconstroi o instante a partir de DURACAO. Gestor iFood, fila do Odhen e banco local
+> existem **so em documentacao**. `git grep` por `Get-PrintJob`, `puppeteer` e `spooler` volta
+> **vazio**, e o `browser-adapter.js` citado em C5 **nao esta neste repositorio**.
+>
+> **PB8 RESOLVIDO — e a resposta muda a NATUREZA do bloqueio (D79).** A pergunta era de ACESSO. Para
+> `trabalho_praca_observado`, **nenhum acesso resolve**: a comanda do Odhen e **UNICA, sem separacao
+> por praca**, entao a praca seria **inferida do item, nunca declarada** — e o interior da producao
+> nao e emitido pelo iFood, o que `adaptadores.ts:66` ja registrava em codigo.
+> **PB8 deixa de ser bloqueio de acesso e vira bloqueio de EMISSAO.**
+>
+> **DECISAO POR EVENTO, nao por sistema:**
+> - `pedido_ciclo_observado@1` — **parcialmente qualificada.** Gestor iFood primario, relatorio em
+>   lote secundario. Lacunas: sem carimbo absoluto por etapa, sem historico, sem chave idempotente.
+> - `trabalho_praca_observado@1` — **REJEITADA.** Sem produtor possivel hoje.
+> - `capacidade_praca_observada@1` — **ainda inacessivel.** Nenhuma fonte declara capacidade.
+> - `source_health_changed@1` — **qualificada.** O unico, e justamente o que **nao depende de fonte
+>   externa**. Nao e coincidencia: e a medida de quanto o produto ainda depende de uma fonte que
+>   ninguem construiu.
+>
+> **NENHUM PROBE FOI EXECUTADO, e a recusa e a resposta (D80).** Sem implementacao para exercitar,
+> sem credencial, e **este ambiente nao e o computador da loja**. Seguranca de probe que nao se prova
+> vira `nao_qualificada`, **sem tentar** — abrir cada pedido no Gestor para ler itens e INTERACAO,
+> nao observacao.
+>
+> **AS QUATRO PORTAS EXISTEM, sem implementacao viva.** `ProdutorEventosPedido`,
+> `ProdutorEventosTrabalhoPraca`, `ProdutorEventosCapacidade`, `ObservadorSaudeFonte` — com cursor,
+> watermark, replay, conflitos, saude e versao. **Nenhuma entrega `LeituraOperacional`**: o unico
+> resultado permitido e fato validavel ou diagnostico tipado.
+>
+> **A GUARDA QUE ACHOU UM ACOPLAMENTO REAL.** Q04 exige que a porta nao conheca Odhen nem iFood — e
+> acusou o proprio arquivo, porque a QUALIFICACAO citava `gestor_ifood_dom`. A guarda estava certa:
+> contrato e medicao foram separados em `portas-produtores.ts` e `qualificacao-produtores.ts`. A
+> porta precisa sobreviver a troca de fonte; a qualificacao e um retrato datado.
+>
+> **PREFLIGHT com cinco condicoes novas**, todas bloqueando:
+> `pedido_event_producer_qualification` · `trabalho_praca_event_producer_qualification` ·
+> `capacidade_event_producer_qualification` · `producer_read_path_safety` ·
+> `live_event_producer_availability`. **Qualificar nao e conectar.**
+>
+> **REGRESSOES:** R5-A 30 · R5-B 30 · R5-C 38 · R5-D0 28 · R5-D0-C 12 · R5-D0-L 15 · R5-D0-S 12 ·
+> R5-D1 31 · **R5-D2 38** · copiloto 39 · bridge 45 · home 44 · organismo 27 · Product System 44 ·
+> R1 24 · ordem visual 6 · `tsc` exit 0.
+> **CONGELADAS com diff vazio:** motor original, viewmodels, politica temporal, linhagem, confianca
+> duravel, **catalogo e projetor de R5-D1**, home, CSS, motion e Figma.
+>
+> **NENHUM SEGREDO** em codigo, fixture, contrato, relatorio ou commit — guarda Q13.
+> **Nenhuma integracao ativada, nenhum evento no ledger oficial, nenhuma escrita externa.**
+> **R5-D NAO COMECOU.**
+>
+> **PROXIMA ACAO SEGURA:** implementar **exatamente um** adapter qualificado — `ObservadorSaudeFonte`,
+> sobre o vocabulario interno, sem credencial, sem rede, sem loja. Para os outros tres, a decisao **nao
+> e de engenharia**: (1) o Odhen consegue emitir comanda separada por praca, ou a bancada passa a
+> registrar inicio e fim? (2) vale construir o leitor passivo do DOM do Gestor, sabendo que ele nao
+> tem historico nem chave idempotente? (3) alguem declara capacidade por praca, ou o campo fica
+> permanentemente ausente?
+>
+> ---
+>
+> > **ATUALIZADO 2026-08-04 — R5-D1 CONCLUIDO. `R5D_BLOCKED_LIVE_EVENT_PRODUCER`.**
 > `DELIVERYOS_R5D1_EVENT_LINEAGE_FOUNDATION_COMPLETE` · `MACRO2_CHECKPOINT_PRESERVED`
 > HEAD inicial `73f2f0b`. Gate: `npm run test:platform:r5d1-event-lineage` — **31 testes**.
 >

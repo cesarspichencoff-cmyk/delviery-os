@@ -1678,3 +1678,60 @@ descrevem o MESMO fato precisam colidir, senao reingerir viraria divergencia.
 **Custo aceito:** relogios de origem ruins produzem ordem ruim. Mitigado pela
 recusa de `occurred_at > observed_at`, que impede o relogio da origem de mandar
 sozinho.
+
+---
+
+### D79 — PB8 resolvido por autoridade de evento: o bloqueio e de EMISSAO, nao de acesso
+
+**Decisao.** Nao existe fonte unica. **Cada tipo de evento tem produtor
+autoritativo proprio**, e uma fonte so pode emitir os fatos que efetivamente
+conhece. A qualificacao completa esta em
+`docs/product/QUALIFICACAO_PRODUTORES_VIVOS.md`.
+
+**O achado que muda a natureza de PB8.** A pergunta antiga era de ACESSO — "o
+pedido some do Odhen, fica gravado?". A resposta e que, para
+`trabalho_praca_observado`, **nenhum acesso resolve**: a comanda do Odhen e
+UNICA, sem separacao por praca (`Auditoria_Fonte_Viva_Loja_V1.md` §85). A praca
+seria INFERIDA do item, nunca declarada pela fonte. E o interior da producao nao
+e emitido pelo iFood — `src/core/adaptadores.ts:66` ja registrava isso em codigo.
+
+**Decisao por evento:** `pedido_ciclo_observado` **parcialmente qualificada**
+(Gestor iFood como primario, relatorio em lote como secundario; sem carimbo
+absoluto por etapa, sem historico, sem chave idempotente) · `trabalho_praca_
+observado` **REJEITADA** · `capacidade_praca_observada` **ainda inacessivel** ·
+`source_health_changed` **qualificada** — o unico, e justamente o que nao depende
+de fonte externa.
+
+**Alternativa recusada:** derivar trabalho por praca do status geral do pedido,
+ou chamar impressao de comanda de "inicio de producao". Recusada porque o canal
+de impressao prova **emissao**, e promover emissao a inicio inventaria o interior
+da cozinha — a mesma familia do defeito que D77 fechou para a carga.
+
+**Custo aceito:** dois dos quatro eventos ficam sem produtor por tempo
+indeterminado. E o preco de nao fabricar operacao: **PB8 deixa de ser bloqueio de
+acesso e vira bloqueio de EMISSAO**, e a proxima decisao e da operacao, nao da
+engenharia.
+
+---
+
+### D80 — Probe cuja seguranca nao se prova e recusado, sem tentar
+
+**Decisao.** Nenhum probe contra fonte externa foi executado em R5-D2.
+`CAMINHO_DE_LEITURA_SEGURO = false`.
+
+**Por que, e nao e falta de vontade.** Nao ha implementacao de captura para
+exercitar; nao ha credencial, e credencial nao entra em codigo, fixture, log nem
+commit; e **este ambiente nao e o computador da loja** — o spool, o banco e a
+sessao do Gestor vivem la.
+
+**A regra que fica:** seguranca de probe que nao se prova vira `nao_qualificada`,
+sem tentar. Tentar para ver o que acontece, numa fonte que atende a operacao ao
+vivo, e o oposto de leitura passiva.
+
+**Alternativa recusada:** rodar um probe "so de leitura" contra o Gestor iFood
+por curiosidade. Recusada porque abrir cada pedido para ler itens **e interacao**,
+nao observacao — e numa sexta-feira de pico ninguem quer descobrir isso.
+
+**Custo aceito:** a qualificacao e documental e contratual, nao empirica. Ela
+prova que existe um caminho POSSIVEL, e nao que ele funciona. Disponibilidade
+viva so pode ser declarada quando o adapter real existir, testado e conectado.

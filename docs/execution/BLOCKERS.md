@@ -32,8 +32,12 @@
   **Nunca verde por ausência de dado.**
 - **PB6 — Conferência.** Preservar **risco por pedido**; carga da área permanece `sem medição`
   enquanto não houver fonte.
-- **PB8 — histórico Odhen/Teknisa.** Permanece **bloqueio de fonte externa**, não bloqueio de
-  arquitetura visual nem da recuperação do produto.
+- **PB8 — histórico Odhen/Teknisa.** **RESOLVIDO POR AUTORIDADE DE EVENTO em 2026-08-04 (D79).**
+  Deixou de ser bloqueio de ACESSO e virou bloqueio de **EMISSÃO**: para `trabalho_praca_observado`,
+  nenhum acesso resolve, porque **a comanda do Odhen é única, sem separação por praça** — a praça
+  seria inferida do item, nunca declarada. Decisão por evento em
+  `docs/product/QUALIFICACAO_PRODUTORES_VIVOS.md`. A próxima decisão é da operação, não da
+  engenharia.
 
 ## 🔴 ABERTOS — decisões de produto que ainda travam runtime
 

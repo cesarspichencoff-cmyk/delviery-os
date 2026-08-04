@@ -1193,7 +1193,7 @@
   },
   "retomada_r5": {
     "data": "2026-08-03",
-    "estado": "R5-A/B/C/D0/D0-C/D0-L/D0-S/D1 CONCLUIDOS. R5-D BLOQUEADO exclusivamente pela ausencia de produtor vivo.",
+    "estado": "R5-A ate R5-D2 CONCLUIDOS. R5-D bloqueado pela implementacao do adapter vivo.",
     "decisao_do_cesar": "Figma pendente, sem upgrade e sem redesenho manual. R5 pode retomar.",
     "congelado_durante_r5": [
       "frontend (home.js, home.css, organismo-tokens.css)",
@@ -1662,6 +1662,51 @@
       "produtor_vivo": "NENHUM",
       "integracao_externa": "NENHUMA"
     },
+    "r5d": "NAO INICIADO"
+  },
+  "r5d2_qualificacao_produtores": {
+    "data": "2026-08-04",
+    "estado": "CONCLUIDO",
+    "head_inicial": "f1fe480",
+    "gate": {
+      "comando": "npm run test:platform:r5d2-producer-qualification",
+      "testes": 38,
+      "resultado": "R5D2_PRODUCER_QUALIFICATION_GATE_GREEN"
+    },
+    "documento": "docs/product/QUALIFICACAO_PRODUTORES_VIVOS.md",
+    "decisao_vinculante": "nao existe fonte unica; cada tipo de evento tem produtor autoritativo proprio (D79)",
+    "inventario": "o UNICO caminho iFood implementado e o relatorio em LOTE (ifoodRelatorio.ts). Gestor iFood, fila do Odhen e banco local existem so em documentacao. git grep por Get-PrintJob, puppeteer e spooler volta vazio. O browser-adapter.js de BLOCKERS C5 nao existe neste repositorio",
+    "decisao_por_evento": {
+      "pedido_ciclo_observado": "parcialmente_qualificada — Gestor iFood primario, relatorio em lote secundario; sem carimbo absoluto por etapa, sem historico, sem chave idempotente",
+      "trabalho_praca_observado": "REJEITADA — a comanda do Odhen e UNICA, sem separacao por praca; a praca seria inferida do item, nunca declarada; o interior da producao nao e emitido",
+      "capacidade_praca_observada": "ainda_inacessivel — nenhuma fonte declara capacidade de praca",
+      "source_health_changed": "qualificada — observador interno, o unico que nao depende de fonte externa"
+    },
+    "pb8": "RESOLVIDO POR AUTORIDADE DE EVENTO. Deixa de ser bloqueio de ACESSO e vira bloqueio de EMISSAO: para trabalho por praca, nenhum acesso resolve, porque o dado nao existe na fonte",
+    "probes": "TODOS RECUSADOS. Sem implementacao para exercitar, sem credencial, e este ambiente nao e o computador da loja. CAMINHO_DE_LEITURA_SEGURO = false (D80)",
+    "portas": [
+      "ProdutorEventosPedido",
+      "ProdutorEventosTrabalhoPraca",
+      "ProdutorEventosCapacidade",
+      "ObservadorSaudeFonte"
+    ],
+    "separacao": "contrato (portas-produtores.ts) e medicao (qualificacao-produtores.ts) ficam em arquivos diferentes — a guarda Q04 acusou o acoplamento e a separacao foi o conserto",
+    "preflight": {
+      "pedido_event_producer_qualification": "not_qualified",
+      "trabalho_praca_event_producer_qualification": "not_qualified",
+      "capacidade_event_producer_qualification": "not_qualified",
+      "producer_read_path_safety": "unsafe",
+      "live_event_producer_availability": "unavailable"
+    },
+    "congelamento": "motor original, viewmodels, politica temporal, linhagem, confianca duravel, catalogo e projetor R5-D1, home, CSS, motion e Figma com diff vazio desde f1fe480",
+    "runtime": {
+      "integracao_viva": "NENHUMA",
+      "flag": "INEXISTENTE",
+      "recomendacao_real": "NENHUMA",
+      "escrita_externa": "NENHUMA",
+      "evento_no_ledger_oficial": "NENHUM"
+    },
+    "proximo_adapter_qualificado": "ObservadorSaudeFonte — sem credencial, sem rede, sem loja",
     "r5d": "NAO INICIADO"
   }
 }
