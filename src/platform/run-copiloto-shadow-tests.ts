@@ -291,9 +291,25 @@ teste("3b · o store recusa persistir recomendação sem evidência ou com confi
     assert.equal(semEvidencia.ok, false);
     assert.ok(semEvidencia.errors?.includes("confianca_sem_evidencia_rastreavel"));
 
-    const confRuim = store.put("copilot_recommendations", { ...base, recommendation_id: "x2", confidence: 1.5 });
+    // R5-D0-S: a VERDADE duravel da confianca passou a ser a uniao `confianca`;
+    // `confidence` e so espelho de leitura. O teste passa a mutar a verdade.
+    const confRuim = store.put("copilot_recommendations", {
+      ...base,
+      recommendation_id: "x2",
+      confianca: { ...(base.confianca as object), valor: 1.5 },
+      confidence: 1.5,
+    });
     assert.equal(confRuim.ok, false);
     assert.ok(confRuim.errors?.includes("confianca_invalida"));
+    // E o espelho nao pode divergir da verdade: gravar um numero que contradiz a
+    // uniao seria deixar dois registros da mesma coisa discordarem no disco.
+    const espelhoRuim = store.put("copilot_recommendations", {
+      ...base,
+      recommendation_id: "x3",
+      confidence: 0.11,
+    });
+    assert.equal(espelhoRuim.ok, false);
+    assert.ok(espelhoRuim.errors?.includes("espelho_numerico_divergente"));
   });
 });
 
@@ -750,7 +766,16 @@ teste("18 · Copiloto não afeta Entregas, ingestão, outbox, Operação Viva ne
   for (const i of imports) {
     assert.ok(!i.includes("conference-brain"), `a ponte importa ${i}`);
   }
-  assert.deepEqual(imports.sort(), ["../contracts/event-catalog", "./shadow", "./shadow", "node:crypto"]);
+  // R5-D0-S acrescentou `./confianca-duravel`, irmao dentro de `copiloto/` que
+  // so importa `./shadow`. A lista continua fechada de proposito: ela e a guarda
+  // que impede a ponte de ganhar dependencia nova sem alguem decidir.
+  assert.deepEqual(imports.sort(), [
+    "../contracts/event-catalog",
+    "./confianca-duravel",
+    "./shadow",
+    "./shadow",
+    "node:crypto",
+  ]);
 });
 
 teste("18b · conclusão malformada vira recusa declarada, nunca exceção", () => {
