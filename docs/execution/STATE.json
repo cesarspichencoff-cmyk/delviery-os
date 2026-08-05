@@ -1738,5 +1738,62 @@
     },
     "bloqueador": "R5D_BLOCKED_SHADOW_VALIDATION — os produtores existem, mas o caminho nunca rodou com operacao real",
     "r5d": "NAO INICIADO"
+  },
+  "revolution_0a": {
+    "data": "2026-08-05",
+    "estado": "CONCLUIDA — AGUARDANDO REVISAO HUMANA DO CESAR",
+    "head_inicial": "fae35c9",
+    "branch": "feature/deliveryos-hybrid-platform-foundation-v1",
+    "publicado": false,
+    "_nota_publicacao": "Nenhum push, merge, PR ou deploy. Nenhuma escrita fora desta worktree.",
+    "rota": "/lab/operacao-viva-v4 — npm run ui:lab, http://127.0.0.1:5291/lab/operacao-viva-v4/",
+    "onde_mora": "labs/operacao-viva-v4/ — FORA dos caminhos protegidos pelo PF4. O repositorio nao usa apps/, entao vale a segunda opcao autorizada pelo Cesar (D83)",
+    "congelamento": "src/perfil-delivery/, src/product/viewmodels/, src/product/ui/, politica-temporal.ts, linhagem-eventos.ts, confianca-duravel.ts e docs/figma/ com diff VAZIO desde 73f2f0b. Nenhum baseline reancorado, nenhum gate afrouxado, nenhuma excecao criada",
+    "gates": {
+      "test:lab:v4": "46 guardas, 8 mutacoes, 8 acusadas, 0 cegas, restauracao byte a byte por sha256",
+      "test:lab:v4:browser": "28 testes, 3 viewports, 12 capturas, inclui os 10 casos C1..C10 exigidos pelo Cesar",
+      "typecheck:lab:v4": "exit 0, tsconfig proprio; o raiz NAO foi alterado"
+    },
+    "regressao_verde": [
+      "test:platform:r5 (10 gates)",
+      "test:platform:recuperacao",
+      "test:platform:figma-parity (23)",
+      "test:platform:copiloto (39)",
+      "test:platform:bridge (45)",
+      "tsc --noEmit exit 0"
+    ],
+    "cenas": 18,
+    "_nota_cenas": "FIXTURE. Real nelas: cardapio de 199 itens, mapa praca->ambiente, baselines calibrados do motor e as REGRAS dos sinais. Fixture: pedidos, tempos, cargas e estados de fonte",
+    "sushi_quentes": "PROJECAO EXPERIMENTAL DO LAB. areas.ts, D45 e D46 continuam canonicos; a migracao de dominio NAO ocorreu. Impacto medido em docs/product/PROPOSTA_EVOLUCAO_SUSHI_QUENTES.md. Ver PB14",
+    "validacao_humana": "IndexedDB LOCAL ao navegador, atras de ValidationRepository. Nao autenticada, nao sincronizada, nao multiusuario, nao e persistencia operacional. Ator LOCAL_ANONYMOUS_VALIDATOR, que nao e identidade. D38 e B7 preservados: o servidor recusa tudo que nao e GET/HEAD com 405 e Allow",
+    "runtime": {
+      "acao_operacional": "NENHUMA",
+      "escrita_no_servidor": "NENHUMA",
+      "integracao_externa": "NENHUMA",
+      "motores_conectados": "NAO — D43 de pe",
+      "confianca": "sempre nao_estimada, e a ausencia e EXIBIDA (D87)"
+    },
+    "limite_declarado": "Com as fontes de hoje a rota do Caixa e inalcancavel fora de fixture: nenhuma fonte mede a fila da Caixa, entao capacidade_do_caixa nao pode ser comprovada por medicao. Ver PB15",
+    "decisoes": [
+      "D83",
+      "D84",
+      "D85",
+      "D86",
+      "D87"
+    ],
+    "licoes": [
+      "L42",
+      "L43"
+    ],
+    "documentos": [
+      "docs/product/DELIVERYOS_PRODUCT_CONSTITUTION.md",
+      "docs/product/PROPOSTA_EVOLUCAO_SUSHI_QUENTES.md",
+      "docs/design/DELIVERYOS_EXPERIENCE_V4_BRIEF.md",
+      "docs/execution/DELIVERYOS_REVOLUTION_0A_PLAN.md",
+      "docs/execution/DELIVERYOS_REVOLUTION_0A_PROGRESS.md",
+      "docs/auditoria/DELIVERYOS_REVOLUTION_0A_EXPERIENCE_AUDIT.md",
+      "docs/auditoria/DELIVERYOS_REVOLUTION_0A_INDEPENDENT_EVALUATION.md"
+    ],
+    "aguarda": "REVISAO HUMANA DO CESAR. Estado maximo permitido nesta missao: AWAITING_CESAR_REVIEW. HUMAN_APPROVED e RELEASED nao podem ser registrados antes de ele abrir e avaliar pessoalmente. Ver PB16"
   }
 }

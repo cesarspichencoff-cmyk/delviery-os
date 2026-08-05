@@ -805,3 +805,59 @@ caminho que se quer provar.
 
 **Familia:** L38 dizia que a guarda vizinha pode estar segurando o caso. L41 diz
 que o proprio dado do teste pode estar segurando.
+
+---
+
+## L42 — A ordenacao da lista pode fazer a mutacao acertar sozinha
+
+**O caso.** No gate do Lab V4, a mutacao `MD6` fazia `chaveDoSinal()` devolver
+uma constante. A intencao era quebrar a busca do sinal do Foco dentro do array
+de sinais. A suite ficou **verde**.
+
+**Por que.** Com chave constante, `sinais.find(...)` passa a devolver o
+**primeiro** elemento. E a lista vem ordenada por severidade decrescente — entao
+o primeiro **ja era** o sinal eleito. A mutacao foi aplicada, foi carregada pelo
+processo filho, e **nao mudou a execucao**.
+
+**O conserto.** A mutacao passou a reintroduzir o defeito ORIGINAL, que e
+material: pegar a referencia vinda do outro array. `homeVM()` chama `sinaisDe()`
+por dentro e devolve objetos diferentes, entao `s !== focoSinal` nunca casa e o
+Foco aparece duplicado entre os secundarios.
+
+**A regra.** Antes de escrever uma mutacao, pergunte que outro criterio da
+estrutura poderia produzir o mesmo resultado. Ordenacao, unicidade e cardinalidade
+sao os tres suspeitos. Mutar a chave de uma busca numa lista ordenada e o caso
+classico.
+
+**Familia:** L38 — a guarda vizinha segura o caso. L41 — o dado do teste segura o
+caso. L42 — a **forma da estrutura** segura o caso.
+
+---
+
+## L43 — Guarda que reprova o caso legitimo ensina a ser ignorada
+
+**O caso.** A guarda de PII do Modo de Validação varria todo texto do pacote de
+exportacao. Ela recusou duas coisas que nao eram PII:
+
+- `validation_id` e UUID, e um segmento com oito digitos seguidos casa com o
+  padrao de CEP — a exportacao falhava **de vez em quando**, sem padrao visivel;
+- `versao_fixture` vale `lab-v4-fixtures@1.0.0`, indistinguivel de e-mail para
+  qualquer expressao razoavel — e esse recusava **toda** exportacao, sempre.
+
+**O que isso produz.** Uma guarda que reprova o caso correto e pior que uma
+guarda ausente. A ausente todo mundo sabe que falta; a que erra treina quem opera
+a clicar de novo, a desligar, ou a nao ler mais a mensagem. Depois disso ela nao
+protege mais nada — e continua parecendo protecao.
+
+**O conserto.** Campos ESTRUTURAIS (identificador, versao, carimbo, schema) saem
+da varredura de PII, com a lista escrita e o custo declarado. A varredura de
+conteudo EXECUTAVEL continua valendo em **todo** campo, sem excecao — nao existe
+identificador legitimo que contenha `<script`, e ali o falso positivo custa zero.
+
+**O par que fecha.** Todo recorte de guarda precisa do caso simetrico ao lado: a
+MESMA sequencia, num campo de texto livre, continua sendo recusada. Sem o par, o
+recorte vira buraco silencioso.
+
+**A regra.** Ao apertar uma guarda, gere o caso legitimo mais parecido com o
+ataque e prove que ele passa. Se voce nao consegue construir esse caso, a guarda
+ainda nao esta pronta.

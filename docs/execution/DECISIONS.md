@@ -1774,3 +1774,117 @@ flag, e porque variavel de ambiente e configuracao invisivel: ligar precisa ser
 decisao de quem chama, no codigo.
 
 **Custo aceito:** ninguem coleta nada ate alguem ligar explicitamente. E o ponto.
+
+---
+
+### D83 — O laboratório experimental nasce fora dos caminhos protegidos
+
+**Decisão.** A rota `/lab/operacao-viva-v4` vive em `labs/operacao-viva-v4/`, com entrypoint, base
+path, fixtures, componentes e testes próprios. Ela reutiliza o produto **por importação**
+(`sinaisDe`, `homeVM`, `areas.ts`, `estados.ts`, `motor.js`) e não altera nenhum arquivo de
+`src/product/ui/` nem de `src/product/viewmodels/`.
+
+**Por que, e não é preferência de organização.** Os gates R5 congelam por
+`git diff --name-only <baseline> -- <pathspecs>` exigindo saída vazia. Isso não protege só edição: um
+arquivo **novo** commitado nesses caminhos passa a aparecer no diff e derruba o **PF4**
+(`run-r5d1-event-lineage-tests.ts`, baseline `73f2f0b`) e com ele `npm run test:platform:r5`.
+
+**Alternativa recusada:** reancorar o baseline do PF4 ou abrir exceção de caminho para acomodar o
+Lab. Recusada pelo César em letra própria — enfraquecer um gate para caber trabalho novo é como
+apagar o teste que reprova.
+
+**Segunda opção aplicada:** o César autorizou `apps/deliveryos-experience-lab/`, com
+`labs/operacao-viva-v4/` caso o repositório não usasse `apps/`. Não usa. Razão registrada em
+`docs/execution/DELIVERYOS_REVOLUTION_0A_PROGRESS.md` §5.
+
+**Custo aceito:** o Lab tem `tsconfig.json` e servidor próprios, e não aparece na navegação do
+Product System. Ele é experimental — aparecer lá seria promovê-lo sem decisão.
+
+---
+
+### D84 — Sushi Quentes é unidade operacional EXPERIMENTAL, e o domínio não mudou
+
+**Decisão.** Dentro do Lab, `enrolados_quentes` é representado como unidade operacional própria
+(`SUSHI_QUENTES`, `parent = SUSHI`), com estado, carga, ritmo, gargalo e Foco próprios.
+**`src/product/viewmodels/areas.ts` não foi alterado. D45 e D46 continuam canônicos. A migração de
+domínio NÃO ocorreu.**
+
+**Por que.** O César declarou em 2026-08-04 que o Sushi Quentes fica fisicamente separado do Sushi, no
+salão e perto do Caixa, com produção própria — e pode estar sobrecarregado com o Sushi calmo. Tratado
+só como subárea agregada, esse gargalo pode desaparecer dentro do estado do Sushi.
+
+**Medido, não suposto.** Na cena `sushi-quentes-isolado`, com carga 6 contra baseline real 3, o Lab
+mostra Sushi Quentes vermelho **e o Sushi verde ao lado**. Guarda `G2b`, com par simétrico; mutação
+`MD3` devolve a absorção e é acusada.
+
+**Divergência registrada, não corrigida:** `sinais.ts` decide S12 ("só quentes") por
+`ambienteDaPraca(pr) !== "sushi"`, então um pedido só de Sushi Quentes **não** recebe o sinal.
+`sinais.ts` está protegido pelo PF4 e mudar regra de sinal exige o César (índice canônico §6).
+
+**Custo aceito:** existe uma diferença viva entre o domínio canônico e a leitura do Lab, e ela está
+escrita em `docs/product/PROPOSTA_EVOLUCAO_SUSHI_QUENTES.md`, com o impacto em contratos, sinais,
+projeções, fixtures, replay, testes e migração — inclusive o fato de que migrar exige **reancorar os
+sete gates de congelamento**.
+
+---
+
+### D85 — Um pedido, um ponto de consolidação. E o Caixa nunca por omissão
+
+**Decisão.** `ONE_ORDER_ONE_CONSOLIDATION_ENVIRONMENT`, declarada pelo César em 2026-08-04: para cada
+pedido existe **um** ponto de abertura e consolidação; todas as sacolas daquele pedido são abertas
+ali; não existe parte no Caixa e parte no Delivery, não existe junção posterior, e sacola já aberta
+não muda de ambiente.
+
+- pedido **com qualquer item de Sushi** → Delivery/Conferência, **obrigatório**;
+- pedido **sem Sushi** → **apenas candidato**. O Caixa só é recomendado com as **seis** condições
+  positivamente comprovadas antes da abertura da sacola.
+
+**Ausência de Sushi não é elegibilidade.** Condição não observada, desconhecida ou não comprovada
+mantém o pedido no fluxo normal. Guardas `G8a`–`G8e`; mutação `MD4` transforma o padrão de
+`nao_observada` em `comprovada` e é acusada.
+
+**Alternativa recusada:** tratar "sem Sushi" como rota direta ao Caixa. Recusada porque independência
+produtiva não é independência de consolidação, e porque decidir por omissão é decidir sem lastro.
+
+**Custo aceito, e ele é grande:** com as fontes de hoje a rota do Caixa é **inalcançável fora de
+fixture** — `capacidade_do_caixa` não pode ser comprovada por medição, porque nenhuma fonte mede a
+fila da Caixa (PB5). A regra está implementada, testada, e se recusa a funcionar sem fonte.
+
+---
+
+### D86 — A validação humana é local ao navegador, e o servidor continua sem escrita
+
+**Decisão.** O Modo de Validação persiste em **IndexedDB**, no navegador de quem valida, atrás da
+interface `ValidationRepository`. O servidor do Lab recusa qualquer método que não seja GET ou HEAD,
+com **405** e `Allow: GET, HEAD`, antes de olhar o caminho.
+
+**Por que.** D38 (não existe rota de escrita) e B7 (não existe autenticação, logo não existe ação)
+continuam valendo. Oferecer um controle de escrita sem identidade de quem escreve seria fingir um
+controle — e feedback humano é parte permanente do produto, então ele precisava existir sem quebrar
+nenhuma das duas.
+
+**Alternativa recusada:** criar a primeira rota de escrita do produto para receber validação.
+Recusada porque exigiria decidir sessão, identidade, idempotência, CSRF, retenção e LGPD — e nada
+disso cabe numa missão de experiência.
+
+**Custo aceito:** a validação **não** é multiusuário, **não** é sincronizada, **não** é autenticada e
+**não** é persistência operacional. O ator é `LOCAL_ANONYMOUS_VALIDATOR`, que não é identidade. A tela
+diz isso permanentemente. Provado em navegador: `[C6]` isolamento entre contextos, `[C7]` nenhuma
+requisição de escrita sai do cliente, `[C8]` o servidor recusa.
+
+---
+
+### D87 — Confiança não estimada é EXIBIDA, não omitida
+
+**Decisão.** Quando nenhuma política apurou confiança, a superfície escreve literalmente
+`Confiança: não estimada`, sem percentual, score, nota ou cor. Ela não some da tela.
+
+**Por que.** D69/D70/D71 já proibiam inventar confiança, e a home passou a **não apresentar** o campo.
+Não apresentar resolve a mentira e cria outra: quem lê não sabe que aquele limite existe. O César
+determinou em 2026-08-04 que o usuário precisa enxergar o limite da leitura.
+
+**Alternativa recusada:** exibir `—`, `n/d` ou uma barra vazia. Recusada porque símbolo de ausência
+sem explicação é indistinguível de dado que não carregou.
+
+**Custo aceito:** ocupa espaço numa tela que já é densa. Guarda `G4` exige o texto **e** proíbe
+qualquer `%` no campo.

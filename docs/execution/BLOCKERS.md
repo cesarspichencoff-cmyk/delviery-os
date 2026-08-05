@@ -51,6 +51,21 @@
 - **PB9/C8** — notificação fora da tela é permitida?
 - **PB11** — o Figma não acompanhou a expressão canônica da home. **RECLASSIFICADO em 2026-08-03 pelo César:** bloqueia **apenas o fechamento documental e a paridade nativa com o Figma**. **Não** bloqueia a continuidade técnica do DeliveryOS e **não** bloqueia R5. Ver **D59**.
 - **PB13** — a cota do plano Figma cortou leitura **e** escrita no meio da sincronização (2026-08-03). Detalhe no fim deste arquivo.
+- **PB14** — **Sushi Quentes: ambiente canônico ou subárea?** A realidade física (bancada separada, no
+  salão, com produção e gargalo próprios) diverge de D45/D46. O Lab V4 o representa como unidade
+  operacional **experimental**; `areas.ts` segue intocado e a migração **não ocorreu**. Impacto medido
+  em `docs/product/PROPOSTA_EVOLUCAO_SUSHI_QUENTES.md` — inclusive que migrar exige **reancorar os sete
+  gates de congelamento**. **Só o César decide** (índice canônico §6, "mudança no significado de um
+  ambiente"). Junto vai a decisão sobre **S12**, que hoje não nasce para pedido só de Sushi Quentes.
+- **PB15** — **a rota do Caixa não é alcançável por medição.** A regra
+  `ONE_ORDER_ONE_CONSOLIDATION_ENVIRONMENT` exige `capacidade_do_caixa` **comprovada** antes de abrir a
+  sacola, e nenhuma fonte mede a fila da Caixa (mesma raiz de PB5). Fora de fixture, o Caixa nunca é
+  recomendado. **Não é defeito** — é a regra se recusando a funcionar sem lastro. Destrava com fonte de
+  capacidade da Caixa, que é decisão de operação, não de engenharia.
+- **PB16** — **o Lab V4 aguarda revisão humana do César.** Ele está `BROWSER_VALIDATED` e
+  `INDEPENDENTLY_EVALUATED`; o estado máximo permitido nesta missão é **`AWAITING_CESAR_REVIEW`**.
+  `HUMAN_APPROVED` e `RELEASED` **não** podem ser registrados antes de o César abrir e avaliar
+  pessoalmente. Abrir com `npm run ui:lab` → http://127.0.0.1:5291/lab/operacao-viva-v4/
 
 ## ⬇ RECLASSIFICADOS
 
