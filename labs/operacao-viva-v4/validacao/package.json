@@ -1,0 +1,4 @@
+{
+  "//": "Estes arquivos são ES modules — o navegador os carrega com <script type=\"module\"> e o gate precisa lê-los do Node. O repositório inteiro é `type: commonjs`, então sem este marcador o Node trataria `.js` daqui como CommonJS e o `export` viraria erro de sintaxe. O marcador vale só para esta pasta.",
+  "type": "module"
+}

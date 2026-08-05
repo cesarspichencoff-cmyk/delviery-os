@@ -53,20 +53,51 @@ const PADROES_DE_EXECUCAO = [
   { id: "manipulador", re: /\bon[a-z]+\s*=/i },
 ];
 
-/** Varre TODO texto de um objeto, em profundidade. Chave também é texto. */
-function textosDe(valor, saida = []) {
+/**
+ * Campos ESTRUTURAIS: identificadores opacos e carimbos que o próprio Lab
+ * gera. Eles não recebem os padrões NUMÉRICOS.
+ *
+ * Isto não é conveniência — é a correção de um defeito real, e intermitente.
+ * `validation_id` é um UUID, e um UUID cujo segmento caísse com oito dígitos
+ * seguidos casava com o padrão de CEP. O resultado: a exportação recusava
+ * pacotes perfeitamente limpos, de vez em quando, sem que ninguém entendesse
+ * por quê. Uma guarda que reprova por sorte é pior do que uma guarda ausente,
+ * porque ensina a ignorá-la.
+ *
+ * Os padrões de TEXTO (e-mail, endereço) continuam valendo aqui: o custo do
+ * recorte é conhecido e é pequeno — alguém poderia esconder um telefone dentro
+ * de um identificador importado, e nenhuma tela do Lab exibe identificador.
+ */
+const CHAVES_ESTRUTURAIS = new Set([
+  "schema",
+  "validation_id",
+  "scenario_id",
+  "reading_id",
+  "versao_fixture",
+  "created_at",
+  "updated_at",
+  "exportado_em",
+]);
+
+const PADROES_NUMERICOS = new Set(["cpf", "telefone", "cep", "cartao"]);
+
+/**
+ * Varre todo texto de um objeto, em profundidade, dizendo de onde cada pedaço
+ * veio. A chave também é texto e também é varrida.
+ */
+function textosDe(valor, chave = null, saida = []) {
   if (typeof valor === "string") {
-    saida.push(valor);
+    saida.push({ texto: valor, chave });
     return saida;
   }
   if (Array.isArray(valor)) {
-    for (const v of valor) textosDe(v, saida);
+    for (const v of valor) textosDe(v, chave, saida);
     return saida;
   }
   if (valor !== null && typeof valor === "object") {
     for (const [k, v] of Object.entries(valor)) {
-      saida.push(k);
-      textosDe(v, saida);
+      saida.push({ texto: k, chave: null });
+      textosDe(v, k, saida);
     }
   }
   return saida;
@@ -75,19 +106,26 @@ function textosDe(valor, saida = []) {
 /** Os achados de PII de um valor qualquer. Vazio = limpo. */
 export function acharPII(valor) {
   const achados = [];
-  for (const t of textosDe(valor)) {
+  for (const { texto, chave } of textosDe(valor)) {
+    const estrutural = chave !== null && CHAVES_ESTRUTURAIS.has(chave);
     for (const p of PADROES_DE_PII) {
-      if (p.re.test(t) && !achados.includes(p.id)) achados.push(p.id);
+      if (estrutural && PADROES_NUMERICOS.has(p.id)) continue;
+      if (p.re.test(texto) && !achados.includes(p.id)) achados.push(p.id);
     }
   }
   return achados;
 }
 
+/**
+ * Marcação e execução são procuradas em TODO texto, sem recorte nenhum —
+ * inclusive nos campos estruturais. Não existe identificador legítimo que
+ * contenha `<script`, e o custo de um falso positivo aqui é zero.
+ */
 export function acharExecutavel(valor) {
   const achados = [];
-  for (const t of textosDe(valor)) {
+  for (const { texto } of textosDe(valor)) {
     for (const p of PADROES_DE_EXECUCAO) {
-      if (p.re.test(t) && !achados.includes(p.id)) achados.push(p.id);
+      if (p.re.test(texto) && !achados.includes(p.id)) achados.push(p.id);
     }
   }
   return achados;
