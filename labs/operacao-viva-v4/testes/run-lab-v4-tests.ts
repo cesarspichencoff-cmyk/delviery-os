@@ -357,12 +357,25 @@ teste("G7 sem fonte de pedido, o pulso é AUSENTE e não `0`", () => {
   assert.match(v.pulso.observado ? "" : v.pulso.explicacao, /não é zero|nao e zero/i);
 });
 
-teste("G7b área sem medição nunca aparece verde", () => {
+/**
+ * ESTA GUARDA JÁ TEVE UMA ISENÇÃO, E ELA ERA O DEFEITO.
+ *
+ * A primeira versão dizia `u.pressao.observado || u.id === "motoboy"`. Ou seja:
+ * a guarda que existe para impedir "verde sem medição" foi ensinada a ignorar
+ * **justamente a unidade que violava a regra** — e ficou verde por isso, em 15
+ * das 18 cenas, até o avaliador independente encontrar pelo produto o que ela
+ * estava desculpando (achado 5.1).
+ *
+ * A regra que fica: exceção dentro de guarda é confissão. Se um caso não passa,
+ * ou o produto está errado, ou a regra está errada. Isentar não é nenhum dos
+ * dois — é apagar a pergunta.
+ */
+teste("G7b área sem medição nunca aparece verde — SEM exceção para ninguém", () => {
   for (const [id, v] of VMS) {
     for (const u of v.unidades) {
       if (u.cor !== "verde") continue;
       assert.ok(
-        u.pressao.observado || u.id === "motoboy",
+        u.pressao.observado,
         `${id}: ${u.id} está verde sem pressão observada`,
       );
       for (const f of u.fontes) {
@@ -375,12 +388,44 @@ teste("G7b área sem medição nunca aparece verde", () => {
   }
 });
 
-teste("G7c a Caixa e a Conferência nunca aparecem verdes em cena nenhuma", () => {
+teste("G7c Caixa, Conferência e Motoboy nunca aparecem verdes em cena nenhuma", () => {
+  // As três unidades sem medição automática de carga. O Motoboy entrou aqui
+  // depois do achado 5.1 — ele estava fora, e era exatamente o que faltava.
   for (const [id, v] of VMS) {
-    for (const alvo of ["caixa", "conferencia"] as const) {
+    for (const alvo of ["caixa", "conferencia", "motoboy"] as const) {
       const u = v.unidades.find((x) => x.id === alvo)!;
       assert.notEqual(u.cor, "verde", `${id}: ${alvo} apareceu verde`);
     }
+  }
+});
+
+teste("G7d toda unidade sem medição de carga tem fonte que DECLARA a ausência", () => {
+  // O par estrutural do 5.1: não basta o Motoboy não ficar verde por acidente
+  // de severidade. Ele precisa ter, como Caixa e Conferência, uma fonte que
+  // diga em voz alta que ninguém mede aquilo.
+  for (const [id, v] of VMS) {
+    for (const alvo of ["caixa", "conferencia", "motoboy"] as const) {
+      const u = v.unidades.find((x) => x.id === alvo)!;
+      assert.ok(
+        u.fontes.some((f) => f.estado.estado === "sem_medicao_automatica"),
+        `${id}: ${alvo} não tem fonte declarando ausência de medição`,
+      );
+    }
+  }
+});
+
+teste("G7e nenhuma cena lista a mesma fonte duas vezes", () => {
+  // Nasceu de um erro meu ao inserir a fonte do despacho em massa: o padrão
+  // curto era SUBSTRING do indentado, e quatro cenas ficaram com a fonte
+  // repetida. O sintoma na tela era discreto — "Fila do despacho e Fila do
+  // despacho" no motivo — e nenhuma guarda existente pegava.
+  for (const [id, v] of VMS) {
+    const ids = v.fontes.map((f) => f.id);
+    assert.equal(
+      new Set(ids).size,
+      ids.length,
+      `${id}: fonte repetida na leitura — ${ids.join(", ")}`,
+    );
   }
 });
 
@@ -838,6 +883,21 @@ const MUTACOES: readonly Mutacao[] = [
     para: `      ? (canonica.foco !== null ? canonica.foco.sinal : null)
       : null;`,
     acusa: "G3",
+  },
+  {
+    /**
+     * A mutação que teria pego o achado 5.1 antes do avaliador. Ela remove a
+     * fonte que declara a ausência de medição do despacho — e o Motoboy volta a
+     * pintar verde sem nada por trás, exatamente como estava.
+     */
+    id: "MD9 o Motoboy perde a fonte que declara a ausência de medição",
+    arquivo: "fixtures/cenarios.ts",
+    de: `  FONTE_COMANDA,
+  FONTE_MOTOBOY,
+];`,
+    para: `  FONTE_COMANDA,
+];`,
+    acusa: "G7",
   },
   {
     id: "MD7 a importação deixa de procurar PII",

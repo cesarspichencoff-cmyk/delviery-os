@@ -167,6 +167,36 @@ export const FONTE_COMANDA = fonte(
   null,
 );
 
+/**
+ * A QUARTA ausência estrutural, e ela entrou por um defeito encontrado pelo
+ * avaliador independente (achado 5.1, `APPROVED_WITH_RESERVATIONS`).
+ *
+ * O Motoboy pintava **verde** em 15 das 18 cenas, sem nenhuma medição da fila
+ * de despacho — contradizendo o item 10 da Constituição e o comentário do
+ * próprio `vm-v4.ts`. A causa: Caixa e Conferência tinham fonte estrutural
+ * declarada e o Motoboy não tinha. A única fonte ligada a ele eram os Tempos do
+ * iFood, que medem **etapa de pedido** (recebido, pronto, saiu), e não a fila da
+ * bancada de despacho. Como essa fonte está saudável na maioria das cenas, o
+ * verde passava trivialmente.
+ *
+ * A correção é declarar a AUSÊNCIA, não inventar a medição. Contar fila de
+ * despacho a partir de tempo por pedido seria fabricar operação — a mesma
+ * família do defeito que D77 fechou para a carga.
+ *
+ * O que NÃO muda: S1, S2 e S3 continuam pintando o Motoboy quando observam
+ * pedido pronto parado. Sinal de pressão vence ausência de medição — é a ordem
+ * que já valia para todas as unidades.
+ */
+export const FONTE_MOTOBOY = fonte(
+  "fila_despacho",
+  "Fila do despacho",
+  "sem_medicao_automatica",
+  "Nenhuma fonte conta quantos pedidos esperam motoboy. Os tempos do iFood medem etapa de pedido, não a fila da bancada.",
+  ["motoboy"],
+  false,
+  null,
+);
+
 export const FONTE_CARDAPIO = fonte(
   "cardapio_seed",
   "Cardápio",
@@ -200,6 +230,15 @@ export const AUSENCIAS_ESTRUTURAIS: readonly AusenciaMaterial[] = [
       "Observação e alergia do cliente não chegam. Ausência aqui não significa que não existem.",
     natureza: "estrutural",
     unidades: ["conferencia"],
+  },
+  {
+    o_que: "A fila do despacho não é contada",
+    por_que:
+      "Os tempos do iFood medem etapa de pedido — recebido, pronto, saiu. Nenhuma fonte conta quantos pedidos esperam motoboy na bancada.",
+    consequencia:
+      "O Motoboy nunca aparece verde. Um pedido pronto e parado ainda vira sinal; o tamanho da fila, não.",
+    natureza: "estrutural",
+    unidades: ["motoboy"],
   },
 ];
 

@@ -28,6 +28,7 @@ import {
   FONTE_CARDAPIO,
   FONTE_COMANDA,
   FONTE_CONFERENCIA,
+  FONTE_MOTOBOY,
   fonte,
   item,
   pedido,
@@ -111,6 +112,7 @@ const SAUDAVEIS = (): FonteV4[] => [
   FONTE_CAIXA,
   FONTE_CONFERENCIA,
   FONTE_COMANDA,
+  FONTE_MOTOBOY,
 ];
 
 /* ================================================================== *
@@ -196,6 +198,7 @@ const ausenciaDeDados = (): LeituraV4 =>
       FONTE_CAIXA,
       FONTE_CONFERENCIA,
       FONTE_COMANDA,
+      FONTE_MOTOBOY,
     ],
     ritmo: RITMO_NAO_OBSERVADO,
     ausencias: [
@@ -247,6 +250,7 @@ const fonteAtrasada = (): LeituraV4 =>
       FONTE_CAIXA,
       FONTE_CONFERENCIA,
       FONTE_COMANDA,
+      FONTE_MOTOBOY,
     ],
     ritmo: RITMO_ESTAVEL,
     ausencias: [
@@ -308,6 +312,7 @@ const fonteIndisponivel = (): LeituraV4 =>
       FONTE_CAIXA,
       FONTE_CONFERENCIA,
       FONTE_COMANDA,
+      FONTE_MOTOBOY,
     ],
     ritmo: RITMO_ESTAVEL,
     ausencias: [
@@ -367,6 +372,7 @@ const fonteDivergente = (): LeituraV4 =>
       FONTE_CAIXA,
       FONTE_CONFERENCIA,
       FONTE_COMANDA,
+      FONTE_MOTOBOY,
     ],
     ritmo: RITMO_ESTAVEL,
     divergencias: [

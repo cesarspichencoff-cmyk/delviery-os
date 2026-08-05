@@ -30,8 +30,28 @@ import { IDS_DAS_CENAS } from "../fixtures/cenarios";
 import { acharPII } from "../validacao/schema.js";
 
 const raiz = process.cwd();
-const EVID = join(raiz, "labs", "operacao-viva-v4", "evidencias");
-const PORTA = 5292;
+
+/**
+ * Onde as capturas e os arquivos temporários do gate são gravados.
+ *
+ * Por padrão, o diretório versionado de evidências. Mas `LAB_V4_EVIDENCIAS`
+ * redireciona tudo para fora da worktree — e isso existe por causa de um desvio
+ * real: numa avaliação declarada **read-only**, o avaliador rodou este gate (com
+ * autorização do construtor) e ele apagou e recriou o diretório versionado,
+ * modificando quatro PNGs rastreados.
+ *
+ * A falha foi de método, não do avaliador: autorizar um comando com efeito de
+ * escrita numa sessão read-only. Daqui em diante, avaliação independente roda
+ * com:
+ *
+ *   LAB_V4_EVIDENCIAS=<caminho fora da worktree> npm run test:lab:v4:browser
+ *
+ * e a leitura passa a ser efetivamente read-only sobre arquivos versionados.
+ */
+const EVID =
+  process.env.LAB_V4_EVIDENCIAS ??
+  join(raiz, "labs", "operacao-viva-v4", "evidencias");
+const PORTA = Number(process.env.LAB_V4_PORTA_TESTE ?? 5292);
 const URLBASE = `http://127.0.0.1:${PORTA}${BASE}/`;
 
 const VIEWPORTS = [
