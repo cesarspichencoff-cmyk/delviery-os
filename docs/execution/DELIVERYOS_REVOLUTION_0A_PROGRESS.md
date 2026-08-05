@@ -211,18 +211,48 @@ rede, esses gates param. O fato fica registrado; **nada foi instalado nesta miss
 
 ## 7. Andamento
 
-| Etapa | Estado |
+| Etapa | Estado | Commit |
+|---|---|---|
+| 1. Estado inicial + referências tipográficas | **concluída** | `cfd35d8` |
+| 2. Constituição + índice canônico + `CLAUDE.md` | **concluída** | `665d359` |
+| 3. Domínio do Lab V4 | **concluída** | `2b64881` |
+| 4. 18 cenários de fixture | **concluída** | `79dc94c` |
+| 5. Superfície V4 + servidor | **concluída** | `2fa67ad` |
+| 6. Modo de Validação (IndexedDB) | **concluída** | `2fa67ad` |
+| 7. Gate determinístico com mutações | **concluída** | `a80f62c` |
+| 8. Playwright em 3 viewports + evidências | **concluída** | `f29b0ff` |
+| 9. Brief + proposta de evolução + plano | **concluída** | `f164520` |
+| 10. Registros canônicos + auditoria do construtor | **concluída** | `f28fcf1`, `5306074` |
+| 11. Avaliação independente | *(ver §8)* | |
+
+---
+
+## 8. Gates ao fim da construção
+
+Todos executados nesta worktree, nesta ordem, antes da avaliação independente.
+
+| Gate | Resultado |
 |---|---|
-| 1. Estado inicial + referências tipográficas | **concluída** |
-| 2. Constituição + índice canônico + `CLAUDE.md` | pendente |
-| 3. Domínio do Lab V4 | pendente |
-| 4. 18 cenários de fixture | pendente |
-| 5. Superfície V4 + servidor | pendente |
-| 6. Modo de Validação (IndexedDB) | pendente |
-| 7. Gate determinístico com mutações | pendente |
-| 8. Playwright em 3 viewports + evidências | pendente |
-| 9. Brief de experiência + proposta de evolução | pendente |
-| 10. Avaliação independente + fechamento | pendente |
+| `npx tsc --noEmit` (raiz) | exit **0** |
+| `npm run typecheck:lab:v4` | exit **0** |
+| `npm run test:lab:v4` | **46 guardas, 8 mutações, 8 acusadas, 0 cegas** · `LAB_V4_GATE_GREEN` |
+| `npm run test:lab:v4:browser` | **28 testes, 3 viewports, 12 capturas** · `LAB_V4_BROWSER_GATE_GREEN` |
+| `npm run test:platform:r5` | **10 gates verdes** — o congelamento aguentou |
+| `npm run test:platform:recuperacao` | visual-order 6 · R1 24 · home 44 · organismo 27 · Product System |
+| `npm run test:platform:figma-parity` | 23 verdes |
+| `npm run test:platform:copiloto` | 39 verdes |
+| `npm run test:platform:bridge` | 45 verdes |
+
+**A verificação que mais importa**, repetida ao fim:
+
+```
+git diff --name-only 73f2f0b -- src/perfil-delivery/ src/product/viewmodels/ \
+  src/product/atencao/politica-temporal.ts src/product/atencao/linhagem-eventos.ts \
+  src/platform/copiloto/confianca-duravel.ts src/product/ui/ docs/figma/
+(vazio)
+```
+
+**Nenhum baseline foi alterado. Nenhum gate foi afrouxado. Nenhuma exceção foi criada.**
 
 **HEAD final:** *(preenchido no fechamento)*
 **Working tree final:** *(preenchido no fechamento)*
