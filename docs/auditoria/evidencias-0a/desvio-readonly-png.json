@@ -1,0 +1,118 @@
+[
+  {
+    "caminho": "labs/operacao-viva-v4/evidencias/calma-real--celular.png",
+    "sha256_commitado": "50d6ba6f3dbeba0fd7b1bfafc32217788c4d119db6be2aac5cdcf63f0563582f",
+    "sha256_regravado": "660b5316588c24521085b123179f7f682ca8f39ca4d29f1af524fffba2e8d3ab",
+    "bytes_commitado": 295370,
+    "bytes_regravado": 295369,
+    "dimensoes_commitado": {
+      "w": 390,
+      "h": 5725
+    },
+    "dimensoes_regravado": {
+      "w": 390,
+      "h": 5725
+    },
+    "comparacao": {
+      "largura": 390,
+      "altura": 5725,
+      "totalPixels": 2232750,
+      "diferentes": 182,
+      "maxDelta": 2,
+      "deltaMedio": 1.77,
+      "caixa": {
+        "minX": 55,
+        "minY": 1117,
+        "maxX": 61,
+        "maxY": 2111
+      }
+    }
+  },
+  {
+    "caminho": "labs/operacao-viva-v4/evidencias/calma-real--tablet.png",
+    "sha256_commitado": "8bc3aeb0852a77e38c3bca73fc5b3cb31edea2af751eefcc3a83d0c804941171",
+    "sha256_regravado": "fc3fc5ef61bc8a8b7febbe80b320145a97963adb90f9444aed5020b589ce01e4",
+    "bytes_commitado": 290694,
+    "bytes_regravado": 290723,
+    "dimensoes_commitado": {
+      "w": 768,
+      "h": 3895
+    },
+    "dimensoes_regravado": {
+      "w": 768,
+      "h": 3895
+    },
+    "comparacao": {
+      "largura": 768,
+      "altura": 3895,
+      "totalPixels": 2991360,
+      "diferentes": 181,
+      "maxDelta": 2,
+      "deltaMedio": 1.77,
+      "caixa": {
+        "minX": 71,
+        "minY": 980,
+        "maxX": 525,
+        "maxY": 1589
+      }
+    }
+  },
+  {
+    "caminho": "labs/operacao-viva-v4/evidencias/sushi-quentes-isolado--desktop.png",
+    "sha256_commitado": "648ec3ccb8f6f9f590945dd8c7be309261c2b0630e88aec1f5a38b833a28bc05",
+    "sha256_regravado": "bb4f6a09200d6bff35c95af4aa112b69593d6e73d88274b1e4717f4c828de869",
+    "bytes_commitado": 392585,
+    "bytes_regravado": 392605,
+    "dimensoes_commitado": {
+      "w": 1280,
+      "h": 4184
+    },
+    "dimensoes_regravado": {
+      "w": 1280,
+      "h": 4184
+    },
+    "comparacao": {
+      "largura": 1280,
+      "altura": 4184,
+      "totalPixels": 5355520,
+      "diferentes": 136,
+      "maxDelta": 2,
+      "deltaMedio": 1.78,
+      "caixa": {
+        "minX": 327,
+        "minY": 1292,
+        "maxX": 781,
+        "maxY": 1911
+      }
+    }
+  },
+  {
+    "caminho": "labs/operacao-viva-v4/evidencias/sushi-quentes-isolado--tablet.png",
+    "sha256_commitado": "981ec82fc55927bb8c7fdd16fc465a3ebe84b8fe5ceaef41a062a173b3edf1aa",
+    "sha256_regravado": "089b690f4b5285d1b6e66a5aeb4626331e9135b3f20acd1ed8a9f381c7fb0a18",
+    "bytes_commitado": 384145,
+    "bytes_regravado": 384157,
+    "dimensoes_commitado": {
+      "w": 768,
+      "h": 4471
+    },
+    "dimensoes_regravado": {
+      "w": 768,
+      "h": 4471
+    },
+    "comparacao": {
+      "largura": 768,
+      "altura": 4471,
+      "totalPixels": 3433728,
+      "diferentes": 137,
+      "maxDelta": 2,
+      "deltaMedio": 1.78,
+      "caixa": {
+        "minX": 71,
+        "minY": 1435,
+        "maxX": 525,
+        "maxY": 2054
+      }
+    }
+  }
+]
