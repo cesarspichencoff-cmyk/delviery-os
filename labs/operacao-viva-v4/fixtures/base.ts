@@ -48,8 +48,15 @@ import type {
 
 const requireCJS = createRequire(__filename);
 
-/** Instante fixo. Cena de demonstração não pode depender do relógio da máquina. */
-export const AGORA = "2026-08-04T20:40:00.000Z";
+/**
+ * Instante fixo. Cena de demonstração não pode depender do relógio da máquina.
+ *
+ * Em UTC porque é assim que carimbo se escreve; a tela renderiza no fuso da
+ * LOJA (`America/Sao_Paulo`), e não no de quem abriu a página — senão o mesmo
+ * instante viraria duas leituras diferentes, e nenhuma captura de tela seria
+ * reproduzível. `23:40Z` é **20h40 em São Paulo**: uma sexta no pico do jantar.
+ */
+export const AGORA = "2026-08-04T23:40:00.000Z";
 
 /** Versão da fixture. Toda validação registrada guarda este valor. */
 export const VERSAO_FIXTURE = "lab-v4-fixtures@1.0.0";

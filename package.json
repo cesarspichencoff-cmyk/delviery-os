@@ -77,7 +77,12 @@
     "test:platform:r5d1-event-lineage": "npx tsx src/platform/run-r5d1-event-lineage-tests.ts",
     "test:platform:r5d2-producer-qualification": "npx tsx src/platform/run-r5d2-producer-qualification-tests.ts",
     "test:platform:r5d3-shadow-path": "npx tsx src/platform/run-r5d3-shadow-path-tests.ts",
-    "test:platform:r5": "npm run test:platform:r5a && npm run test:platform:r5b && npm run test:platform:r5c && npm run test:platform:r5d0 && npm run test:platform:r5d0-confidence && npm run test:platform:r5d0-lineage && npm run test:platform:r5d0-storage && npm run test:platform:r5d1-event-lineage && npm run test:platform:r5d2-producer-qualification && npm run test:platform:r5d3-shadow-path"
+    "test:platform:r5": "npm run test:platform:r5a && npm run test:platform:r5b && npm run test:platform:r5c && npm run test:platform:r5d0 && npm run test:platform:r5d0-confidence && npm run test:platform:r5d0-lineage && npm run test:platform:r5d0-storage && npm run test:platform:r5d1-event-lineage && npm run test:platform:r5d2-producer-qualification && npm run test:platform:r5d3-shadow-path",
+    "ui:lab": "npx tsx labs/operacao-viva-v4/servidor/servidor.ts",
+    "typecheck:lab:v4": "npx tsc --noEmit -p labs/operacao-viva-v4/tsconfig.json",
+    "test:lab:v4": "npx tsx labs/operacao-viva-v4/testes/run-lab-v4-tests.ts",
+    "test:lab:v4:browser": "node labs/operacao-viva-v4/testes/run-lab-v4-browser.mjs",
+    "test:lab": "npm run typecheck:lab:v4 && npm run test:lab:v4 && npm run test:lab:v4:browser"
   },
   "devDependencies": {
     "@types/node": "20.14.10",

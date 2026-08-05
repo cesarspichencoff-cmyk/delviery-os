@@ -103,6 +103,13 @@ export interface UnidadeVM {
   readonly motivo: string;
   readonly carga: Campo<number>;
   readonly pressao: Campo<number>;
+  /**
+   * Quantas praças a carga soma. Existe porque `carga 14 · pressão 50%` mentia
+   * por omissão: 14 é a SOMA de três praças e 50% é a pressão da praça MAIS
+   * carregada. Sem dizer quantas praças entraram, os dois números pareciam
+   * falar da mesma coisa.
+   */
+  readonly pracas_contadas: number;
   readonly fontes: readonly FonteVM[];
   readonly sinais_ativos: readonly Sinal[];
   readonly itens_em_producao: readonly ItemEmProducao[];
@@ -390,13 +397,19 @@ function unidadeVM(
         : corPorSeveridade(sevPintura);
 
   const degradadas = minhasFontes.filter((f) => !f.estado.sustenta_calmo);
+  // A ORDEM IMPORTA, e ela foi corrigida olhando a tela. A versão anterior
+  // preferia o sinal que pinta, e a Caixa — que nunca tem medição — passou a
+  // explicar o próprio estado com "18 pedidos na última hora": um sinal de
+  // chegada respondendo por uma área que ninguém mede. Numa unidade sem
+  // medição, a manchete é a AUSÊNCIA. O sinal não some: ele continua inteiro
+  // em `sinais_ativos` e no bloco de Ambiente.
   const motivo =
-    daUnidade.find((s) => s.pinta_ambiente)?.resumo ??
-    (cor === "sem_medicao"
+    cor === "sem_medicao"
       ? degradadas.length > 0
         ? `${degradadas.map((f) => f.rotulo).join(" e ")}: ${degradadas[0]!.estado.consequencia}`
         : (u.motivo_sem_medicao ?? "Sem fonte de medição para esta unidade.")
-      : `${u.rotulo} em ritmo normal.`);
+      : (daUnidade.find((s) => s.pinta_ambiente)?.resumo ??
+        `${u.rotulo} em ritmo normal.`);
 
   const ultima = minhasFontes
     .map((f) => f.ultima_atualizacao)
@@ -415,6 +428,9 @@ function unidadeVM(
     motivo,
     carga,
     pressao,
+    pracas_contadas: u.pracas.filter(
+      (p) => l.base.carga_por_praca[p] !== undefined,
+    ).length,
     fontes: minhasFontes,
     sinais_ativos: daUnidade,
     itens_em_producao: itensDasPracas(l.base.pedidos, u.pracas),

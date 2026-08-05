@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>DeliveryOS · Operação Viva V4 — laboratório experimental</title>
+    <!--
+      Os tokens canônicos são servidos PELO MESMO ARQUIVO do produto, sem cópia:
+      `src/product/ui/tokens/`. Um token tem um lugar de nascimento.
+
+      `product-tokens.css` entra apenas porque os tokens de MOVIMENTO do
+      organismo derivam dele (`--org-pulso: var(--motion-ambient)`). Ele é
+      inteiramente escopado em `:root`, `@keyframes` e `.ds` — e esta página não
+      usa a classe `.ds`, então a linguagem do Design System (Nível 4) não
+      alcança esta superfície. A autoridade aqui é o Nível 1/2.
+    -->
+    <link rel="stylesheet" href="/lab/operacao-viva-v4/tokens/product-tokens.css" />
+    <link rel="stylesheet" href="/lab/operacao-viva-v4/tokens/organismo-tokens.css" />
+    <link rel="stylesheet" href="/lab/operacao-viva-v4/ui/lab.css" />
+  </head>
+  <body>
+    <a class="pular" href="#leitura">Ir direto para a leitura</a>
+
+    <div class="faixa" role="status" id="faixa">
+      LABORATÓRIO EXPERIMENTAL · FIXTURE · NADA AQUI É OPERAÇÃO REAL
+    </div>
+
+    <header class="topo">
+      <div class="topo__marca">
+        <strong>Operação Viva</strong>
+        <span class="topo__versao">V4 · laboratório</span>
+      </div>
+      <p class="topo__aviso" id="avisoValidacao"></p>
+      <div class="topo__hora"><span id="hora"></span></div>
+    </header>
+
+    <nav class="cenas" aria-label="Cenas do laboratório">
+      <label class="sr-only" for="seletorCena">Cena</label>
+      <select id="seletorCena"></select>
+      <p class="cenas__demonstra" id="cenaDemonstra"></p>
+    </nav>
+
+    <main id="leitura" tabindex="-1" aria-live="polite" aria-busy="false">
+      <p class="carregando" id="carregando">Carregando a cena…</p>
+      <div id="superficie"></div>
+    </main>
+
+    <footer class="rodape">
+      <p>
+        Laboratório experimental do DeliveryOS. Servidor somente leitura (GET e HEAD).
+        A validação humana é salva apenas neste navegador e nunca é enviada a lugar nenhum.
+      </p>
+    </footer>
+
+    <script type="module" src="/lab/operacao-viva-v4/ui/lab.js"></script>
+  </body>
+</html>

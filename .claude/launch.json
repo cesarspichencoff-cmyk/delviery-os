@@ -14,6 +14,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "ui:product"],
       "port": 5290
+    },
+    {
+      "name": "lab-operacao-viva-v4",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "ui:lab"],
+      "port": 5291
     }
   ]
 }

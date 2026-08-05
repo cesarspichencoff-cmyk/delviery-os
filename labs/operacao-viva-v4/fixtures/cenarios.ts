@@ -238,7 +238,7 @@ const fonteAtrasada = (): LeituraV4 =>
       fIfood(
         "atrasada",
         "Última leitura às 20:05, mais velha do que o aceitável para decidir agora.",
-        "2026-08-04T20:05:00.000Z",
+        "2026-08-04T23:05:00.000Z",
       ),
       fSushi("saudavel", "Pedidos em produção por praça, contra o baseline calibrado."),
       fSushiQuentes("saudavel", "Contagem da bancada do salão, contra o baseline calibrado."),
@@ -264,7 +264,7 @@ const fonteAtrasada = (): LeituraV4 =>
         codigo: "S1",
         nome: "Pronto sem sair",
         alvo_rotulo: "Pedido B-198",
-        retirado_em: "2026-08-04T20:06:00.000Z",
+        retirado_em: "2026-08-04T23:06:00.000Z",
         motivo:
           "A fonte que sustentava o tempo atrasou. O sinal saiu por falta de lastro, não porque o pedido saiu.",
       },
@@ -297,11 +297,11 @@ const fonteIndisponivel = (): LeituraV4 =>
     fontes: [
       fPedidos("saudavel", "A lista de pedidos abertos, atualizada a cada leitura."),
       fIfood("saudavel", "Recebido, pronto, saiu e cancelado — a única fonte de tempo real."),
-      fSushi("indisponivel", "Não responde desde as 20:12.", "2026-08-04T20:12:00.000Z"),
+      fSushi("indisponivel", "Não responde desde as 20:12.", "2026-08-04T23:12:00.000Z"),
       fSushiQuentes(
         "recuperando",
         "Voltou às 20:37 e ainda está reconstruindo. O que aparece é menos do que existe.",
-        "2026-08-04T20:37:00.000Z",
+        "2026-08-04T23:37:00.000Z",
       ),
       fCozinha("saudavel", "Pedidos em produção na cozinha, contra o baseline calibrado."),
       FONTE_CARDAPIO,
@@ -432,7 +432,7 @@ const focoComSecundarios = (): LeituraV4 =>
       {
         codigo: "S5",
         alvo_rotulo: "Cozinha",
-        validade_ate: "2026-08-04T21:10:00.000Z",
+        validade_ate: "2026-08-05T00:10:00.000Z",
         condicao_de_retirada:
           "A carga da Cozinha voltar abaixo de 1,3 vez o baseline por três leituras seguidas.",
         motivo_da_escolha:
@@ -482,7 +482,7 @@ const ambienteCriticoPersistente = (): LeituraV4 =>
       {
         codigo: "S5",
         alvo_rotulo: "Sushi Quentes",
-        validade_ate: "2026-08-04T21:05:00.000Z",
+        validade_ate: "2026-08-05T00:05:00.000Z",
         condicao_de_retirada:
           "A carga do Sushi Quentes voltar abaixo de 1,3 vez o baseline por três leituras seguidas.",
         motivo_da_escolha:
@@ -646,7 +646,7 @@ const recomendacaoValidada = (): LeituraV4 =>
       {
         codigo: "S5",
         alvo_rotulo: "Cozinha",
-        validade_ate: "2026-08-04T21:10:00.000Z",
+        validade_ate: "2026-08-05T00:10:00.000Z",
         condicao_de_retirada:
           "A carga da Cozinha voltar abaixo de 1,3 vez o baseline por três leituras seguidas.",
         motivo_da_escolha:
@@ -687,7 +687,7 @@ const recomendacaoCorrigida = (): LeituraV4 =>
       {
         codigo: "S5",
         alvo_rotulo: "Sushi Quentes",
-        validade_ate: "2026-08-04T21:15:00.000Z",
+        validade_ate: "2026-08-05T00:15:00.000Z",
         condicao_de_retirada:
           "A carga do Sushi Quentes voltar abaixo de 1,3 vez o baseline por três leituras seguidas.",
         motivo_da_escolha:
@@ -729,7 +729,7 @@ const recomendacaoExpirada = (): LeituraV4 =>
         codigo: "S5",
         alvo_rotulo: "Cozinha",
         // Anterior a `observado_em`: a leitura já venceu quando esta tela abriu.
-        validade_ate: "2026-08-04T20:25:00.000Z",
+        validade_ate: "2026-08-04T23:25:00.000Z",
         condicao_de_retirada:
           "Já retirada: a validade venceu às 20:25 e ninguém confirmou a leitura.",
         motivo_da_escolha:
@@ -743,7 +743,7 @@ const recomendacaoExpirada = (): LeituraV4 =>
         codigo: "S5",
         nome: "Praça sobrecarregada",
         alvo_rotulo: "Duplas",
-        retirado_em: "2026-08-04T20:22:00.000Z",
+        retirado_em: "2026-08-04T23:22:00.000Z",
         motivo: "A carga voltou ao baseline por três leituras seguidas.",
       },
     ],
@@ -781,7 +781,7 @@ const sushiQuentesIsolado = (): LeituraV4 =>
       {
         codigo: "S5",
         alvo_rotulo: "Sushi Quentes",
-        validade_ate: "2026-08-04T21:20:00.000Z",
+        validade_ate: "2026-08-05T00:20:00.000Z",
         condicao_de_retirada:
           "A carga do Sushi Quentes voltar abaixo de 1,3 vez o baseline por três leituras seguidas.",
         motivo_da_escolha:
