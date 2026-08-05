@@ -54,19 +54,25 @@ const PADROES_DE_EXECUCAO = [
 ];
 
 /**
- * Campos ESTRUTURAIS: identificadores opacos e carimbos que o próprio Lab
- * gera. Eles não recebem os padrões NUMÉRICOS.
+ * Campos ESTRUTURAIS: identificadores opacos, versões e carimbos que o próprio
+ * Lab gera. Eles ficam FORA da varredura de PII.
  *
- * Isto não é conveniência — é a correção de um defeito real, e intermitente.
- * `validation_id` é um UUID, e um UUID cujo segmento caísse com oito dígitos
- * seguidos casava com o padrão de CEP. O resultado: a exportação recusava
- * pacotes perfeitamente limpos, de vez em quando, sem que ninguém entendesse
- * por quê. Uma guarda que reprova por sorte é pior do que uma guarda ausente,
- * porque ensina a ignorá-la.
+ * Isto não é conveniência — é a correção de dois defeitos reais, e os dois
+ * foram encontrados pelo gate, não pela leitura:
  *
- * Os padrões de TEXTO (e-mail, endereço) continuam valendo aqui: o custo do
- * recorte é conhecido e é pequeno — alguém poderia esconder um telefone dentro
- * de um identificador importado, e nenhuma tela do Lab exibe identificador.
+ *   `validation_id` é um UUID, e um segmento com oito dígitos seguidos casava
+ *   com o padrão de CEP. A exportação recusava pacotes limpos **de vez em
+ *   quando**, sem ninguém entender por quê.
+ *
+ *   `versao_fixture` vale `lab-v4-fixtures@1.0.0`, e um nome com `@` seguido de
+ *   semver é indistinguível de um e-mail para qualquer expressão razoável. Esse
+ *   era pior: recusava **toda** exportação, sempre.
+ *
+ * Uma guarda que reprova o caso legítimo ensina a ignorá-la, e aí ela não
+ * protege mais nada. O custo do recorte está declarado: alguém poderia esconder
+ * um telefone dentro de um identificador importado. Nenhuma tela do Lab exibe
+ * identificador, e a varredura de conteúdo EXECUTÁVEL continua valendo em todo
+ * campo, sem exceção.
  */
 const CHAVES_ESTRUTURAIS = new Set([
   "schema",
@@ -74,12 +80,11 @@ const CHAVES_ESTRUTURAIS = new Set([
   "scenario_id",
   "reading_id",
   "versao_fixture",
+  "ator",
   "created_at",
   "updated_at",
   "exportado_em",
 ]);
-
-const PADROES_NUMERICOS = new Set(["cpf", "telefone", "cep", "cartao"]);
 
 /**
  * Varre todo texto de um objeto, em profundidade, dizendo de onde cada pedaço
@@ -107,9 +112,8 @@ function textosDe(valor, chave = null, saida = []) {
 export function acharPII(valor) {
   const achados = [];
   for (const { texto, chave } of textosDe(valor)) {
-    const estrutural = chave !== null && CHAVES_ESTRUTURAIS.has(chave);
+    if (chave !== null && CHAVES_ESTRUTURAIS.has(chave)) continue;
     for (const p of PADROES_DE_PII) {
-      if (estrutural && PADROES_NUMERICOS.has(p.id)) continue;
       if (p.re.test(texto) && !achados.includes(p.id)) achados.push(p.id);
     }
   }

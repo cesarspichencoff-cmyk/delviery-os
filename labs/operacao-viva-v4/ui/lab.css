@@ -234,6 +234,101 @@ main {
   max-width: 88ch;
 }
 
+/* —— Blocos recolhíveis ——————————————————————————————————
+   Aprofundamento em LINHA, não em modal. A manchete fica sempre visível, e é
+   ela que impede o recolhimento de virar sumiço. */
+
+.bloco--recolhivel {
+  padding: 0;
+}
+
+.bloco__resumo {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 16px 0;
+  cursor: pointer;
+  list-style: none;
+}
+.bloco__resumo::-webkit-details-marker {
+  display: none;
+}
+.bloco__resumo::before {
+  content: "+";
+  font-family: var(--org-mono);
+  font-size: 13px;
+  color: var(--org-verde-texto-4);
+  width: 12px;
+  flex: none;
+}
+.bloco--recolhivel[open] > .bloco__resumo::before {
+  content: "−";
+}
+.bloco__resumo:hover .bloco__titulo {
+  color: var(--org-creme-4);
+}
+
+.bloco__manchete {
+  font-size: 13px;
+  color: var(--org-verde-texto-3);
+}
+
+.bloco__corpo {
+  padding: 2px 0 22px 26px;
+}
+
+/* —— Tira de fontes: sempre visível, mesmo com o detalhe recolhido —— */
+
+.tira {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tira__item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
+  border: 1px solid var(--org-linha);
+  border-left-width: 3px;
+  border-radius: var(--org-raio-pilula);
+  padding: 4px 11px;
+  font-size: 12px;
+  color: var(--org-verde-texto-2);
+}
+.tira__item[data-estado="saudavel"] {
+  border-left-color: var(--org-vivo);
+}
+.tira__item[data-estado="atrasada"],
+.tira__item[data-estado="recuperando"] {
+  border-left-color: var(--org-ambar-traco);
+  color: var(--org-ambar-texto);
+}
+.tira__item[data-estado="indisponivel"],
+.tira__item[data-estado="divergente"],
+.tira__item[data-estado="desconhecida"],
+.tira__item[data-estado="conectada"] {
+  border-left-color: var(--org-falha-clara);
+  color: var(--org-falha-texto);
+}
+.tira__item[data-estado="sem_medicao_automatica"] {
+  border-style: dashed;
+  border-left-color: var(--org-neutro-traco);
+  color: var(--org-verde-texto-4);
+}
+
+.tira__estado {
+  font-family: var(--org-mono);
+  font-size: 10px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
 /* —— Rebaixamento do Calmo ————————————————————————————————— */
 
 .rebaixado {

@@ -46,6 +46,7 @@ import {
 } from "../dominio/unidade-operacional";
 import { operacaoVivaV4VM } from "../dominio/vm-v4";
 import { IDS_DAS_CENAS, leitura, type CenaId } from "../fixtures/cenarios";
+import { VERSAO_FIXTURE } from "../fixtures/base";
 import { criarServidor } from "../servidor/servidor";
 import type { EstadoDeFonte } from "../../../src/product/viewmodels/sinais";
 
@@ -489,6 +490,19 @@ const schema = requireCJS(join(LAB, "validacao", "schema.js")) as typeof import(
 const repositorio = requireCJS(join(LAB, "validacao", "repositorio.js")) as typeof import("../validacao/repositorio.js");
 const resumo = requireCJS(join(LAB, "validacao", "resumo-turno.js")) as typeof import("../validacao/resumo-turno.js");
 
+/**
+ * O resumo vem de um módulo JavaScript, então o TypeScript infere uma união de
+ * `{observado, valor}` e `{observado, explicacao}`. Nas asserções o ramo é
+ * conhecido, e este acessor evita espalhar `as` pelo arquivo.
+ */
+interface CampoDoResumo {
+  observado: boolean;
+  valor?: unknown;
+  explicacao?: string;
+  detalhe?: unknown;
+}
+const c = (x: unknown): CampoDoResumo => x as CampoDoResumo;
+
 function registro(extra: Record<string, unknown> = {}) {
   return contrato.montarRegistro({
     scenario_id: "calma-real",
@@ -550,14 +564,14 @@ teste("G10e o repositório é idempotente pela chave natural", async () => {
 
 teste("G10f o resumo declara ausência em vez de devolver zero", () => {
   const r = resumo.resumoDoTurno([]);
-  assert.equal(r.unidade_de_maior_divergencia.observado, false);
-  assert.equal(r.problemas_nao_detectados.observado, false);
-  assert.equal(r.utilidade.observado, false);
-  assert.equal(r.sinais_observados.observado, false);
+  assert.equal(c(r.unidade_de_maior_divergencia).observado, false);
+  assert.equal(c(r.problemas_nao_detectados).observado, false);
+  assert.equal(c(r.utilidade).observado, false);
+  assert.equal(c(r.sinais_observados).observado, false);
   // Contagem de verdicts É zero legítimo: ninguém avaliou, e zero avaliações
   // é um número medido. A distinção é o ponto.
-  assert.equal(r.total_avaliado.observado, true);
-  assert.equal(r.total_avaliado.valor, 0);
+  assert.equal(c(r.total_avaliado).observado, true);
+  assert.equal(c(r.total_avaliado).valor, 0);
 });
 
 teste("G10g o resumo conta o que foi registrado", () => {
@@ -571,11 +585,11 @@ teste("G10g o resumo conta o que foi registrado", () => {
       contexto: { unidade_id: "cozinha", fonte_id: "carga_cozinha" },
     }),
   ]);
-  assert.equal(r.total_avaliado.valor, 2);
-  assert.equal(r.incorreto.valor, 1);
-  assert.equal(r.falsos_positivos.valor, 1);
-  assert.equal(r.problemas_nao_detectados.valor, 1);
-  assert.equal(r.unidade_de_maior_divergencia.valor, "cozinha");
+  assert.equal(c(r.total_avaliado).valor, 2);
+  assert.equal(c(r.incorreto).valor, 1);
+  assert.equal(c(r.falsos_positivos).valor, 1);
+  assert.equal(c(r.problemas_nao_detectados).valor, 1);
+  assert.equal(c(r.unidade_de_maior_divergencia).valor, "cozinha");
 });
 
 /* ================================================================== *
@@ -627,19 +641,49 @@ teste("G11d CONTROLE POSITIVO: um pacote legítimo do próprio Lab entra", () =>
   assert.equal(r.registros[0].marcacao.autenticado, false);
 });
 
-teste("G11f identificador com cara de número NÃO é PII — e no texto ainda é", () => {
-  // Este par nasceu de um defeito INTERMITENTE: um `validation_id` cujo
-  // segmento caísse com oito dígitos casava com o padrão de CEP, e a
-  // exportação recusava pacotes limpos de vez em quando.
+teste("G11f campo estrutural NÃO é PII — e no texto livre ainda é", () => {
+  // Este par nasceu de DOIS defeitos, os dois achados pelo gate:
+  //
+  //   `validation_id` é UUID, e um segmento com oito dígitos casava com CEP —
+  //   a exportação recusava pacotes limpos DE VEZ EM QUANDO;
+  //   `versao_fixture` vale `lab-v4-fixtures@1.0.0`, indistinguível de e-mail —
+  //   e esse recusava TODA exportação, sempre.
   const idNumerico = "01310-100-4f2a-9c11-aa0000000001";
   const comId = schema.exportar([registro({ validation_id: idNumerico })], {});
   assert.equal(comId.ok, true, `identificador estrutural foi lido como PII: ${comId.detalhe}`);
 
-  // O PAR SIMÉTRICO, sem o qual o recorte acima viraria um buraco: a MESMA
-  // sequência, num campo que a pessoa digita, continua sendo recusada.
-  const noTexto = schema.exportar([registro({ comentario: "entregar no 01310-100" })], {});
-  assert.equal(noTexto.ok, false, "CEP em campo de texto livre passou");
-  assert.equal(noTexto.json, null);
+  // A versão REAL da fixture, e não uma inventada para o teste passar.
+  const comVersao = schema.exportar([registro({ versao_fixture: VERSAO_FIXTURE })], {});
+  assert.equal(
+    comVersao.ok,
+    true,
+    `a versão da fixture foi lida como PII: ${comVersao.detalhe}`,
+  );
+
+  // OS PARES SIMÉTRICOS, sem os quais o recorte acima viraria um buraco: as
+  // MESMAS sequências, em campo que a pessoa digita, continuam recusadas.
+  const cepNoTexto = schema.exportar([registro({ comentario: "entregar no 01310-100" })], {});
+  assert.equal(cepNoTexto.ok, false, "CEP em campo de texto livre passou");
+  assert.equal(cepNoTexto.json, null);
+
+  const emailNoTexto = schema.exportar(
+    [registro({ acao_mais_util: "avisar joao@exemplo.com.br" })],
+    {},
+  );
+  assert.equal(emailNoTexto.ok, false, "e-mail em campo de texto livre passou");
+});
+
+teste("G11g conteúdo executável é procurado ATÉ nos campos estruturais", () => {
+  // O recorte de PII não vale para marcação: não existe identificador legítimo
+  // que contenha `<script`, e o custo de um falso positivo aqui é zero.
+  const r = schema.importar(
+    JSON.stringify({
+      schema: "deliveryos-lab-validation-export@1",
+      registros: [{ ...registro(), scenario_id: "<script>x</script>" }],
+    }),
+  );
+  assert.equal(r.ok, false);
+  assert.equal(r.motivo, "conteudo_executavel");
 });
 
 teste("G11e a exportação também recusa PII, na porta de saída", () => {

@@ -81,7 +81,7 @@
     "ui:lab": "npx tsx labs/operacao-viva-v4/servidor/servidor.ts",
     "typecheck:lab:v4": "npx tsc --noEmit -p labs/operacao-viva-v4/tsconfig.json",
     "test:lab:v4": "npx tsx labs/operacao-viva-v4/testes/run-lab-v4-tests.ts",
-    "test:lab:v4:browser": "node labs/operacao-viva-v4/testes/run-lab-v4-browser.mjs",
+    "test:lab:v4:browser": "npx tsx labs/operacao-viva-v4/testes/run-lab-v4-browser.ts",
     "test:lab": "npm run typecheck:lab:v4 && npm run test:lab:v4 && npm run test:lab:v4:browser"
   },
   "devDependencies": {

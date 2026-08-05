@@ -1,7 +1,10 @@
 {
+  "_leia_primeiro": "Configuração LOCAL do Lab. O tsconfig raiz não é alterado — o Lab é experimental e não deve mudar a compilação do produto. `allowJs` existe porque o Modo de Validação é JavaScript puro, para rodar igual no navegador e no gate: o TypeScript precisa LER esses módulos para tipar o gate a partir deles. `checkJs` fica desligado porque eles não são TypeScript e não devem ser cobrados como tal.",
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "noEmit": true
+    "noEmit": true,
+    "allowJs": true,
+    "checkJs": false
   },
   "include": ["**/*.ts"]
 }

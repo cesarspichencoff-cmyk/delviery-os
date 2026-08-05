@@ -138,6 +138,32 @@ function bloco(titulo, sub, corpo) {
   }${corpo}</section>`;
 }
 
+/**
+ * Um bloco que abre sob demanda.
+ *
+ * Existe porque a primeira versão desta tela tinha **8346 pixels de altura**:
+ * dez telas de rolagem para uma leitura só. Isso é densidade sem hierarquia, e
+ * a missão proíbe.
+ *
+ * A regra do recolhimento, e ela não é estética:
+ *
+ *   - o que decide agora fica SEMPRE aberto — modo, Foco, organismo, sinais
+ *     ativos, divergência e ausência superveniente;
+ *   - o que é aprofundamento recolhe — mas o `summary` carrega a manchete e a
+ *     contagem, então nada some sem deixar rastro;
+ *   - `<details>` é inline e faz parte do fluxo da página. Não é modal, e a
+ *     missão proíbe informação crítica em modal, não aprofundamento em linha.
+ */
+function blocoRecolhivel(titulo, manchete, corpo, aberto = false) {
+  return `<details class="bloco bloco--recolhivel"${aberto ? " open" : ""}>
+    <summary class="bloco__resumo">
+      <span class="bloco__titulo">${esc(titulo)}</span>
+      <span class="bloco__manchete">${esc(manchete)}</span>
+    </summary>
+    <div class="bloco__corpo">${corpo}</div>
+  </details>`;
+}
+
 function campo(rot, val, ausente = false) {
   return `<div class="campo${ausente ? " campo--ausente" : ""}"><p class="campo__rot">${esc(
     rot,
@@ -283,6 +309,25 @@ function sinais(lista) {
     .join("")}</ul>`;
 }
 
+/**
+ * A tira compacta de fontes, SEMPRE visível.
+ *
+ * Ela existe para que recolher o detalhe das fontes não esconda a saúde delas.
+ * Uma linha por fonte seria honesto e caro; um chip por fonte é honesto e cabe.
+ * O detalhe inteiro — significado, consequência, confiança permitida, ação —
+ * continua uma abertura de distância.
+ */
+function tiraDeFontes(vm) {
+  return `<ul class="tira">${vm.fontes
+    .map(
+      (f) => `<li class="tira__item" data-estado="${esc(f.estado.estado)}">
+        <span class="tira__nome">${esc(f.rotulo)}</span>
+        <span class="tira__estado">${esc(f.estado.rotulo)}</span>
+      </li>`,
+    )
+    .join("")}</ul>`;
+}
+
 function fontes(vm) {
   return `<div class="fontes">${vm.fontes
     .map(
@@ -304,30 +349,56 @@ function fontes(vm) {
     .join("")}</div>`;
 }
 
-function avisos(vm) {
-  const partes = [];
-  for (const d of vm.divergencias) {
-    partes.push(`<div class="aviso" data-tipo="divergencia">
-      <strong>${esc(d.fonte_a)} × ${esc(d.fonte_b)}</strong>
-      <p class="aviso__linha">${esc(d.fonte_a)}: ${esc(d.leitura_a)}</p>
-      <p class="aviso__linha">${esc(d.fonte_b)}: ${esc(d.leitura_b)}</p>
-      <p class="aviso__linha">${esc(d.incompatibilidade)}</p>
-    </div>`);
-  }
-  for (const a of vm.ausencias_materiais) {
-    partes.push(`<div class="aviso" data-tipo="${esc(a.natureza)}">
-      <strong>${esc(a.o_que)}</strong>
-      <p class="aviso__linha">${esc(a.por_que)}</p>
-      <p class="aviso__linha">${esc(a.consequencia)}</p>
-    </div>`);
-  }
-  for (const s of vm.sinais_retirados) {
-    partes.push(`<div class="aviso" data-tipo="retirado">
-      <strong>Retirado · ${esc(s.nome)} — ${esc(s.alvo_rotulo)}</strong>
-      <p class="aviso__linha">${esc(hora(s.retirado_em) ?? s.retirado_em)} · ${esc(s.motivo)}</p>
-    </div>`);
-  }
+function avisoDivergencia(d) {
+  return `<div class="aviso" data-tipo="divergencia">
+    <strong>${esc(d.fonte_a)} × ${esc(d.fonte_b)}</strong>
+    <p class="aviso__linha">${esc(d.fonte_a)}: ${esc(d.leitura_a)}</p>
+    <p class="aviso__linha">${esc(d.fonte_b)}: ${esc(d.leitura_b)}</p>
+    <p class="aviso__linha">${esc(d.incompatibilidade)}</p>
+  </div>`;
+}
+
+function avisoAusencia(a) {
+  return `<div class="aviso" data-tipo="${esc(a.natureza)}">
+    <strong>${esc(a.o_que)}</strong>
+    <p class="aviso__linha">${esc(a.por_que)}</p>
+    <p class="aviso__linha">${esc(a.consequencia)}</p>
+  </div>`;
+}
+
+/**
+ * O que MUDA a leitura agora: divergência entre fontes e ausência
+ * superveniente — havia leitura e parou. Estes dois são exatamente os que
+ * proíbem Calmo, e por isso não recolhem.
+ */
+function avisosQuePesam(vm) {
+  const partes = [
+    ...vm.divergencias.map(avisoDivergencia),
+    ...vm.ausencias_materiais.filter((a) => a.natureza === "superveniente").map(avisoAusencia),
+  ];
+  if (partes.length === 0) return null;
   return `<div class="avisos">${partes.join("")}</div>`;
+}
+
+/**
+ * O que é PANO DE FUNDO: ausência estrutural (permanente e conhecida) e sinais
+ * já retirados. Continuam na página, recolhidos, com a contagem na manchete.
+ */
+function avisosDeFundo(vm) {
+  const estruturais = vm.ausencias_materiais.filter((a) => a.natureza === "estrutural");
+  const partes = [
+    ...estruturais.map(avisoAusencia),
+    ...vm.sinais_retirados.map(
+      (s) => `<div class="aviso" data-tipo="retirado">
+        <strong>Retirado · ${esc(s.nome)} — ${esc(s.alvo_rotulo)}</strong>
+        <p class="aviso__linha">${esc(hora(s.retirado_em) ?? s.retirado_em)} · ${esc(s.motivo)}</p>
+      </div>`,
+    ),
+  ];
+  return {
+    html: `<div class="avisos">${partes.join("")}</div>`,
+    manchete: `${estruturais.length} ausência(s) estrutural(is) · ${vm.sinais_retirados.length} sinal(is) retirado(s)`,
+  };
 }
 
 function consolidacao(vm) {
@@ -489,15 +560,21 @@ function validacao(vm) {
   ];
   const idRec = idDaRecomendacao(vm);
   if (idRec !== null) {
+    // A validação da ORIENTAÇÃO recolhe: só existe quando há Foco, e o
+    // formulário é longo. A da LEITURA fica aberta, porque toda cena tem uma.
     partes.push(
-      formulario(
-        vm,
-        "recomendacao",
-        idRec,
+      blocoRecolhivel(
         "A orientação do Foco",
-        `${vm.foco.situacao} ${vm.foco.acao_humana ?? ""}`.trim(),
-        vm.validacao_esperada.realidade_demonstrada,
-        vencida,
+        `${estadoDeValidacao(registroDe(idRec), { validadeVencida: vencida }) === "nao_avaliado" ? "não avaliada" : "já avaliada"} · ${vm.foco.unidade_rotulo ?? "a casa"}`,
+        formulario(
+          vm,
+          "recomendacao",
+          idRec,
+          "A orientação do Foco",
+          `${vm.foco.situacao} ${vm.foco.acao_humana ?? ""}`.trim(),
+          vm.validacao_esperada.realidade_demonstrada,
+          vencida,
+        ),
       ),
     );
   }
@@ -524,6 +601,14 @@ function itemResumo(rot, c) {
   return `<div class="resumo__item"><p class="resumo__rot">${esc(rot)}</p><p class="resumo__val">${esc(
     valor,
   )}</p>${c.detalhe ? `<p class="resumo__det">${esc(c.detalhe)}</p>` : ""}</div>`;
+}
+
+/** A manchete do resumo, para ele poder recolher sem sumir. */
+function resumoManchete() {
+  const n = estado.registros.length;
+  if (n === 0) return "nenhuma validação registrada neste navegador";
+  const certos = estado.registros.filter((r) => r.verdict === "CORRECT").length;
+  return `${n} avaliação(ões) · ${certos} correta(s)`;
 }
 
 function resumo() {
@@ -574,6 +659,11 @@ function desenhar() {
         .join("")}</ul></div>`
     : "";
 
+  const pesam = avisosQuePesam(vm);
+  const fundo = avisosDeFundo(vm);
+  const saudaveis = vm.fontes.filter((f) => f.estado.sustenta_calmo).length;
+  const noCaixa = vm.consolidacoes.filter((cc) => cc.fluxo === "caixa").length;
+
   $("#superficie").innerHTML = `
     <div class="estado chega" data-modo="${esc(vm.modo)}">
       <div>
@@ -588,33 +678,36 @@ function desenhar() {
       </div>
     </div>
     ${rebaixado}
+    ${pesam ?? ""}
     ${bloco("O que merece atenção agora", null, foco(vm))}
     ${bloco(
       "O caminho do pedido",
       `Ritmo: ${vm.ritmo.texto} — ${vm.ritmo.lastro}`,
-      organismo(vm),
+      organismo(vm) + tiraDeFontes(vm),
     )}
     ${bloco(
       "Ambiente — o que segue ativo",
-      `${vm.total_de_sinais} sinal(is) nesta leitura. Nada aqui é escondido pelo Foco.`,
+      vm.foco === null
+        ? `${vm.total_de_sinais} sinal(is) nesta leitura, nenhum acima do piso de interrupção.`
+        : `${vm.total_de_sinais} sinal(is) nesta leitura: 1 ocupa o Foco e ${vm.ambiente.length} seguem visíveis aqui. Nada é escondido pelo Foco.`,
       sinais(vm.ambiente),
     )}
-    ${bloco("Saúde das fontes", null, fontes(vm))}
-    ${bloco(
-      "Divergências, ausências e sinais retirados",
-      "Ausência estrutural nunca houve fonte; ausência superveniente havia leitura e parou.",
-      avisos(vm),
+    ${bloco("Validação humana", AVISO_PERMANENTE, validacao(vm))}
+    ${blocoRecolhivel("Resumo do turno", resumoManchete(), resumo())}
+    ${blocoRecolhivel(
+      "Saúde das fontes, em detalhe",
+      `${vm.fontes.length} fonte(s) · ${saudaveis} saudável(is)`,
+      fontes(vm),
     )}
-    ${bloco(
+    ${blocoRecolhivel("O que já se sabia que falta", fundo.manchete, fundo.html)}
+    ${blocoRecolhivel(
       "Onde cada pedido é aberto e fechado",
-      "ONE_ORDER_ONE_CONSOLIDATION_ENVIRONMENT — um ponto único por pedido, sem divisão e sem junção posterior.",
+      `${vm.consolidacoes.length} pedido(s) · ${noCaixa} no Caixa · regra ONE_ORDER_ONE_CONSOLIDATION_ENVIRONMENT`,
       consolidacao(vm),
     )}
-    ${bloco("Validação humana", AVISO_PERMANENTE, validacao(vm))}
-    ${bloco("Resumo do turno", "Calculado dos registros deste navegador.", resumo())}
-    ${bloco(
+    ${blocoRecolhivel(
       "Sinais que este sistema não consegue produzir",
-      "Declarados, nunca em silêncio: um sinal ausente sem explicação é indistinguível de um sinal que não disparou.",
+      `${vm.sinais_indisponiveis.length} declarados — nunca em silêncio`,
       `<ul class="sinais">${vm.sinais_indisponiveis
         .map(
           (s) =>
@@ -626,9 +719,9 @@ function desenhar() {
         )
         .join("")}</ul>`,
     )}
-    ${bloco(
+    ${blocoRecolhivel(
       "O que esta tela não prova",
-      null,
+      `${vm.limitacoes.length} limitação(ões) declarada(s)`,
       `<div class="avisos">${vm.limitacoes
         .map(
           (l) =>
@@ -723,8 +816,18 @@ function ligarResumo() {
     const a = document.createElement("a");
     a.href = url;
     a.download = "deliveryos-lab-v4-validacoes.json";
+    // O âncora precisa estar NO documento antes do clique. Desanexado, o
+    // Chromium simplesmente não inicia o download — silenciosamente, e foi
+    // assim que o gate de navegador pegou: o botão "funcionava" e nenhum
+    // arquivo saía.
+    a.style.display = "none";
+    document.body.appendChild(a);
     a.click();
-    URL.revokeObjectURL(url);
+    a.remove();
+    // Revogar no MESMO tick cancela o download antes de o navegador ler o
+    // blob. O botão parecia funcionar e nenhum arquivo saía — dois defeitos
+    // silenciosos no mesmo lugar, os dois pegos pelo gate de navegador.
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
     recado.dataset.erro = "nao";
     recado.textContent = `Exportadas ${estado.registros.length} validação(ões). Nada foi enviado a lugar nenhum.`;
   });
