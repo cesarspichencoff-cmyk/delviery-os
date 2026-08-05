@@ -1,5 +1,14 @@
 # DeliveryOS — estado canônico em 2026-08-04
 
+> **Continuação em 2026-08-05 — `REVOLUTION 0-A`.** Nada abaixo foi invalidado. O que mudou:
+> a **Constituição do produto** passou a existir e é o nível 4 do índice canônico
+> (`docs/product/DELIVERYOS_PRODUCT_CONSTITUTION.md`) — o produto principal é o **Copiloto da
+> operação do restaurante**, e a recomendação antiga de tratar Entregas como lançamento principal
+> está **revogada**. Nasceu também um laboratório experimental, `/lab/operacao-viva-v4`, em
+> `labs/operacao-viva-v4/` — fora de todo caminho protegido, com os sete gates de congelamento ainda
+> verdes nos baselines originais. Ele **não é a home** e **aguarda revisão humana do César** (PB16).
+> Ler `DELIVERYOS_REVOLUTION_0A_PLAN.md` e `DELIVERYOS_REVOLUTION_0A_PROGRESS.md`.
+
 > **Esta é a fonte principal de continuidade.** Substitui os resumos empilhados em `NEXT_RESUME.md`
 > como ponto de partida; o histórico permanece intocado. Auditoria feita no repositório, não em
 > documentos. Nenhum código de produção foi alterado nesta missão.
