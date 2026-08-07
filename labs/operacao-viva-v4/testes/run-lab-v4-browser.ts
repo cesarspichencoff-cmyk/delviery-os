@@ -652,7 +652,11 @@ async function principal(): Promise<void> {
   );
 
   console.log(`\nNavegador: ${passaram} passaram, ${falhas.length} falharam`);
-  console.log(`Capturas: ${capturas.length} em labs/operacao-viva-v4/evidencias/`);
+  // O caminho REAL, não o padrão. A primeira versão imprimia
+  // `labs/operacao-viva-v4/evidencias/` fixo, e continuava dizendo isso mesmo
+  // quando `LAB_V4_EVIDENCIAS` mandava as capturas para outro lugar — um log
+  // que afirma onde gravou sem saber onde gravou.
+  console.log(`Capturas: ${capturas.length} em ${EVID}`);
   for (const f of falhas) console.error(`  ✗ ${f}`);
   if (falhas.length > 0) {
     console.error("\nLAB_V4_BROWSER_GATE_RED");
