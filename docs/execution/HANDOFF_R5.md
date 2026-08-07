@@ -1,7 +1,19 @@
-# Handoff R5 — continuidade após compactação
+---
+lifecycle:
+  artefato: docs/execution/HANDOFF_R5.md
+  status: SUPERSEDED
+  authority_scope: mission_continuity
+  superseded_by: docs/execution/MISSION_LEDGER.jsonl
+  atualizado_em: "2026-08-07"
+  state_basis: 420591e
+---
 
-> Leia este arquivo primeiro. Ele substitui a releitura de `NEXT_RESUME.md` inteiro para retomar R5.
-> Ordem de leitura completa continua em `CLAUDE.md` §11.
+# Handoff R5 — histórico, fora da rota ativa
+
+> **APOSENTADO EM 2026-08-07.** A continuidade entre missões é `docs/execution/MISSION_LEDGER.jsonl`.
+> O detalhe técnico de R5 abaixo permanece íntegro e continua correto para consulta; o que mudou é
+> que ele deixou de ser porta de entrada. Ele nasceu declarando substituir o `NEXT_RESUME.md`, e
+> nenhum dos dois foi retirado — foi essa colisão de autoridades que a Fase 2 do VÉRTICE encerrou.
 
 ## 1. Estado
 

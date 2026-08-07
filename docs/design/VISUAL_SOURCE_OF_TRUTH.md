@@ -1,3 +1,14 @@
+---
+lifecycle:
+  artefato: docs/design/VISUAL_SOURCE_OF_TRUTH.md
+  status: ACTIVE
+  authority_scope: visual_canon
+  superseded_by: null
+  atualizado_em: "2026-08-07"
+  state_basis: 953a3fb
+  question_refs: ["Q-011"]
+---
+
 # Fonte visual canônica global — Ecossistema TATA
 
 | Campo | Valor |
@@ -45,3 +56,43 @@ Ver `VISUAL_REFERENCE_HIERARCHY.md`.
 ## Proibido
 
 Reduzir o Sprint a paleta de cores · usar app-v1 como baseline · declarar parentesco só por hex iguais.
+
+---
+
+## Decisão de expressão — César, 2026-08-07 (`Q-011`, origem PB18)
+
+> **Aditivo, não substitutivo.** Nada acima foi alterado. Esta seção estende a lista de anti-padrões
+> e a lista do que o cânone define, com a decisão humana que encerrou a rejeição da expressão V4.
+> O Nível 1 continua sendo o Sprint Visual DeliveryOS V2. Isto não cria autoridade nova: registra,
+> na autoridade que já existia, o que a próxima exploração deve perseguir e o que não pode repetir.
+> A rejeição de 2026-08-05 é fato; esta é a resposta dela.
+
+### Rejeitado na expressão V4 — some da mesa
+
+- cards e blocos empilhados;
+- dashboard convencional;
+- texto pequeno demais;
+- grande vazio sem função;
+- área tratada como widget;
+- foco tratado como mais um card;
+- aparência genérica de produto de IA.
+
+### Direção aceita para a próxima exploração
+
+- uma **superfície operacional viva**, não uma composição de painéis;
+- **territórios e células** no lugar de cards;
+- **topologia coerente com a operação real** — o desenho tem a forma do trabalho;
+- **pressão representada espacialmente**, não por barra nem por número solto;
+- **o foco transforma a superfície** em vez de ocupar mais um lugar nela;
+- **o estado calmo respira sem parecer vazio** — silêncio com presença, não tela morta;
+- **narrativa editorial premium**;
+- **hierarquia tipográfica forte**;
+- **movimento semântico, nunca decorativo**;
+- **evidência não anima**;
+- **validação humana junto da recomendação**, não em outra tela;
+- **mobile com fluxo próprio**, nunca desktop comprimido.
+
+### O que esta seção não faz
+
+Não escolhe fonte · não altera a hierarquia de níveis · não promove o Lab V4 · não inicia redesenho ·
+não abre Visual Excellence. A exploração é missão separada, e começa por aqui, não pelo código.

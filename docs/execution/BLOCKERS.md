@@ -1,4 +1,42 @@
+---
+lifecycle:
+  artefato: docs/execution/BLOCKERS.md
+  status: ACTIVE
+  authority_scope: infra_blockers
+  superseded_by: null
+  atualizado_em: "2026-08-07"
+  state_basis: 953a3fb
+  question_refs: ["Q-001","Q-002","Q-003","Q-004","Q-005","Q-006","Q-007","Q-008","Q-009","Q-010","Q-011"]
+---
+
 # Bloqueadores e trabalho não integrado
+
+> **2026-08-07 — as decisões humanas saíram daqui.** Este arquivo continua ACTIVE e é a autoridade de
+> **bloqueio de infraestrutura e ambiente**: Android, PostgreSQL, Docker, nuvem, aparelho físico,
+> trabalho não integrado e defeitos reproduzidos. As perguntas que só o César responde passaram a
+> viver em `docs/execution/PERGUNTAS.jsonl`, com ID estável, relógio e `default_behavior`.
+> O texto histórico abaixo **não foi alterado nem removido** — recebeu apenas o marcador de migração.
+> Fonte única garantida por escopo: só um artefato ACTIVE pode ter `authority_scope: human_questions`,
+> e este não é ele. Não reabrir uma pergunta aqui; responder na fila.
+
+| Registro histórico | Migrado para | Estado |
+|---|---|---|
+| PB9/C1 | **Q-001** | aberta |
+| PB9/C2 | **Q-002** | aberta |
+| PB9/C3 | **Q-003** | aberta |
+| PB9/C7 | **Q-004** | aberta |
+| PB9/C8 | **Q-005** | aberta |
+| PB11 | **Q-006** | aberta · `PROCEED_REVERSIBLY` autorizado por D59 |
+| PB13 | **Q-007** | aberta |
+| PB14 | **Q-008** | aberta |
+| PB15 | **Q-009** | aberta |
+| PB16 | **Q-010** | aberta |
+| PB18 | **Q-011** | **respondida em 2026-08-07** |
+
+> Não migrados, com motivo: PB1, PB4, PB7, PB8 e PB17 estão **resolvidos**; PB2, PB3, PB5 e PB6 foram
+> **rebaixados em 2026-08-01** e não bloqueiam; PB10 está parcialmente resolvido e PB12 deixou de ser
+> bloqueio por D57. Nenhum deles é pergunta aberta hoje, e inventar entrada para eles seria fabricar
+> fila.
 
 > **LEIA PRIMEIRO — 2026-08-01.** Este arquivo passou a ter DUAS naturezas de bloqueio, separadas de
 > propósito. A seção **BLOQUEIOS DE PRODUTO E DECISÕES HUMANAS** foi criada porque o produto do

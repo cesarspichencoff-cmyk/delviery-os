@@ -1,3 +1,18 @@
+---
+lifecycle:
+  artefato: docs/execution/DELIVERYOS_CANONICAL_STATE_2026-08-04.md
+  status: SUPERSEDED
+  authority_scope: mission_continuity
+  superseded_by: docs/execution/MISSION_LEDGER.jsonl
+  atualizado_em: "2026-08-07"
+  state_basis: 5306074
+---
+
+> **APOSENTADO EM 2026-08-07 — deixou de ser porta de entrada.** A auditoria abaixo continua válida
+> e é a leitura recomendada para entender a linha integrada, as 22 worktrees e o achado que muda o
+> planejamento. O que caiu foi a frase "esta é a fonte principal de continuidade": essa função é do
+> `docs/execution/MISSION_LEDGER.jsonl`. Nada foi removido.
+
 # DeliveryOS — estado canônico em 2026-08-04
 
 > **Continuação em 2026-08-05 — `REVOLUTION 0-A`.** Nada abaixo foi invalidado. O que mudou:

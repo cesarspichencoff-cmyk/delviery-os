@@ -62,6 +62,8 @@
     "test:platform:r1": "npx tsx src/platform/run-recovery-r1-tests.ts",
     "test:platform:home": "npx tsx src/platform/run-home-signals-tests.ts",
     "test:platform:visual-order": "npx tsx src/platform/run-visual-order-tests.ts",
+    "test:platform:governanca": "npx tsx src/platform/run-governance-tests.ts",
+    "test:platform:governanca:mutacoes": "npx tsx src/platform/run-governance-tests.ts mutacoes",
     "test:platform:recuperacao": "npm run test:platform:visual-order && npm run test:platform:r1 && npm run test:platform:home && npm run test:platform:organismo && npm run test:platform:product",
     "ui:product": "npx tsx tools/product_system_server.ts",
     "test:platform:conference": "npm run test:platform:cb4b1 && npm run test:platform:cb4b2 && npm run test:platform:cb4b3 && npm run test:platform:cb4b4 && npm run test:platform:cb4b5 && npm run test:platform:copiloto",

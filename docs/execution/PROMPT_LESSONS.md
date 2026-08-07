@@ -1,3 +1,13 @@
+---
+lifecycle:
+  artefato: docs/execution/PROMPT_LESSONS.md
+  status: ACTIVE
+  authority_scope: lessons
+  superseded_by: null
+  atualizado_em: "2026-08-07"
+  state_basis: 953a3fb
+---
+
 # Lições de execução
 
 > O que quase passou, e como foi pego. Escrito para a próxima missão não

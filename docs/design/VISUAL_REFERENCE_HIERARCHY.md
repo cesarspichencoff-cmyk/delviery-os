@@ -1,3 +1,13 @@
+---
+lifecycle:
+  artefato: docs/design/VISUAL_REFERENCE_HIERARCHY.md
+  status: ACTIVE
+  authority_scope: visual_order
+  superseded_by: null
+  atualizado_em: "2026-08-07"
+  state_basis: 953a3fb
+---
+
 # Hierarquia oficial de referências visuais
 
 ```text

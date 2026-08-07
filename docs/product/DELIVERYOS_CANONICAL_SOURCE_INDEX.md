@@ -1,3 +1,13 @@
+---
+lifecycle:
+  artefato: docs/product/DELIVERYOS_CANONICAL_SOURCE_INDEX.md
+  status: ACTIVE
+  authority_scope: product_authority_index
+  superseded_by: null
+  atualizado_em: "2026-08-07"
+  state_basis: 953a3fb
+---
+
 # Índice canônico do DeliveryOS — fonte de verdade do produto
 
 > **Este arquivo é índice vinculante, não manifesto.** Ele não redefine o produto e não concorre com
@@ -8,7 +18,9 @@
 > Origem: `docs/auditoria/DELIVERYOS_PRODUCT_REALIGNMENT_AUDIT.md` e
 > `docs/auditoria/DELIVERYOS_SOURCE_OF_TRUTH_RECOVERY.md`.
 >
-> **Leitura obrigatória no início de qualquer sessão**, junto com `docs/execution/NEXT_RESUME.md`.
+> **Leitura obrigatória no início de qualquer sessão**, junto com `docs/execution/MISSION_LEDGER.jsonl`
+> e `docs/execution/PERGUNTAS.jsonl`. *(O `NEXT_RESUME.md` saiu da rota em 2026-08-07 — ver o lifecycle
+> daquele arquivo.)*
 
 ---
 
@@ -425,7 +437,8 @@ formal."* A proibição está certa e permanece.
 
 ## 11. Como usar este índice
 
-- **Início de sessão:** ler este arquivo e `docs/execution/NEXT_RESUME.md`. Se a missão tocar
+- **Início de sessão:** ler este arquivo, `docs/execution/MISSION_LEDGER.jsonl` (onde a última missão
+  parou) e `docs/execution/PERGUNTAS.jsonl` (o que espera decisão do César). Se a missão tocar
   produto, experiência, home, Copiloto, sinais ou ambientes, ler também os documentos 1–12 da §2 —
   e, **antes deles**, `docs/product/DELIVERYOS_PRODUCT_CONSTITUTION.md`, que diz qual é o produto.
 - **Antes de propor qualquer tela:** conferir §3.4, §4 e §8.
@@ -434,7 +447,9 @@ formal."* A proibição está certa e permanece.
   encontrado no código, ou de `app-v1`, ela está vindo do nível errado — parar e voltar ao Nível 1/2.
 - **Antes de qualquer decisão da lista §6:** parar e perguntar ao César.
 - **Ao encontrar uma pergunta de produto sem resposta:** registrá-la em
-  `docs/execution/BLOCKERS.md`, seção **BLOQUEIOS DE PRODUTO E DECISÕES HUMANAS** — nunca deixá-la
-  apenas no corpo de um documento.
+  `docs/execution/PERGUNTAS.jsonl`, com ID `Q-0NN` e `default_behavior` — nunca deixá-la apenas no
+  corpo de um documento. *(Até 2026-08-07 o destino era a seção de produto de `BLOCKERS.md`; aquele
+  arquivo continua ACTIVE para bloqueio de infraestrutura, e o histórico das perguntas segue lá,
+  com o marcador de migração.)*
 
 *Índice vinculante. Não redefine o produto; aponta onde ele está escrito.*

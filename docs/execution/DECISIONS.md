@@ -1,3 +1,13 @@
+---
+lifecycle:
+  artefato: docs/execution/DECISIONS.md
+  status: ACTIVE
+  authority_scope: decisions
+  superseded_by: null
+  atualizado_em: "2026-08-07"
+  state_basis: 953a3fb
+---
+
 # Decisões — Macro-Prompt 1/3
 
 > Uma decisão entra aqui quando escolher diferente teria produzido um sistema

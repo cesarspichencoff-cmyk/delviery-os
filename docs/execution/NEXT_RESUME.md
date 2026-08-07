@@ -1,4 +1,20 @@
-# Retomada — leia este arquivo primeiro
+---
+lifecycle:
+  artefato: docs/execution/NEXT_RESUME.md
+  status: SUPERSEDED
+  authority_scope: mission_continuity
+  superseded_by: docs/execution/MISSION_LEDGER.jsonl
+  atualizado_em: "2026-08-07"
+  state_basis: 0ec944d
+---
+
+# Retomada — histórico, fora da rota ativa
+
+> **APOSENTADO EM 2026-08-07 — não é mais ponto de partida.** A continuidade entre missões passou a
+> ser `docs/execution/MISSION_LEDGER.jsonl`. Nada aqui foi apagado: 87% deste arquivo é bloco de
+> citação empilhado, resumo sobre resumo acumulado ao longo de dez missões, e foi exatamente esse
+> empilhamento que motivou a aposentadoria. Permanece por rastreabilidade, e por nenhum outro motivo.
+> Não voltar a citá-lo em ordem de leitura — a guarda `test:platform:governanca` reprova.
 
 > ## ⚠ LEIA ANTES DESTE ARQUIVO
 >
