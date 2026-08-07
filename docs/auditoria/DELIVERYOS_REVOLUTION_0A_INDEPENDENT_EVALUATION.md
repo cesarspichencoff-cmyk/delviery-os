@@ -442,13 +442,11 @@ despacho a partir de tempo por pedido seria fabricar operação — proibição 
 
 ---
 
-## 5. Reverificação independente — TENTADA E NÃO CONCLUÍDA
+## 5. Reverificação independente — CONCLUÍDA
 
-**O mesmo avaliador foi retomado** — não foi criado nenhum avaliador novo. A retomada foi feita sobre
-o transcrito dele, com o commit `0f1dd50`, com instrução de usar `LAB_V4_EVIDENCIAS` para não escrever
-na worktree, e com pedido explícito de veredito delta.
+### 5.0 Histórico honesto das duas tentativas
 
-**Ele terminou antes de produzir qualquer resultado.** Motivo literal, como recebido:
+A **primeira tentativa** de retomada, em 2026-08-05, **terminou sem produzir resultado**:
 
 ```
 Agent "Avaliação independente do Lab V4" failed:
@@ -456,41 +454,109 @@ Agent terminated early due to an API error:
 You've hit your weekly limit · resets Aug 6, 11pm (America/Sao_Paulo)
 ```
 
-Evidência de que ele não chegou a executar nada da segunda rodada:
+Provado por: o diretório redirecionado nunca foi criado, e `git status` ficou limpo. Naquele momento a
+missão foi fechada como `FUNCTIONAL_SUBSTRATE_LOCKED_WITH_RESERVATIONS`, com a reserva nomeada —
+**nenhum avaliador novo foi criado, e nenhum veredito foi inferido.**
 
-- o diretório de evidências redirecionado (`.../scratchpad/reaval-evidencias`) **não existe** — ele
-  nunca rodou o gate de navegador;
-- `git status --porcelain` está **limpo** — nenhum arquivo foi tocado na segunda tentativa.
+A **segunda tentativa**, em 2026-08-07, com **o mesmo avaliador**, concluiu.
 
-### O que isto significa, sem suavizar
+### 5.1 Contexto fixado desta rodada
 
-- **A correção de `0f1dd50` NÃO foi verificada por avaliador independente.** Ela tem 48 guardas, 9
-  mutações e medição direta do construtor — e nada disso é auditoria independente.
-- **O único veredito independente existente é o da §2**, sobre o commit **`f164520`**, e ele é
-  **`APPROVED_WITH_RESERVATIONS`**.
-- **Nenhum avaliador novo foi criado.** A instrução do César é explícita, e substituir o avaliador
-  silenciosamente destruiria justamente a propriedade que a reverificação existe para provar.
-- **Não há delta de veredito.** Declarar um seria inventá-lo.
+| Campo | Valor |
+|---|---|
+| **HEAD efetivamente auditado** | **`9845e15`** |
+| Avaliador | **O MESMO da primeira rodada**, retomado do próprio transcrito |
+| Avaliador novo criado | **não** — nem nesta rodada, nem na tentativa anterior |
+| Modelo | Sonnet 5 (`claude-sonnet-5`) |
+| `git status --porcelain` | **limpo** no início **e** no fim |
+| Modo | read-only, com `LAB_V4_EVIDENCIAS` redirecionando as capturas para fora da worktree |
+| **Veredito** | **`APPROVED`** |
+| Delta | **muda** — de `APPROVED_WITH_RESERVATIONS` para `APPROVED` |
 
-### O que destrava
+**A mitigação do desvio read-only foi provada, não declarada:** ele rodou o gate de navegador
+completo, os 12 PNGs foram para `scratchpad/reaval2` (fora do repositório), e a worktree ficou
+**intocada**. É a diferença entre a 1ª e a 2ª rodada.
 
-Retomar **o mesmo avaliador** depois de **2026-08-06, 23h (America/Sao_Paulo)**, quando o limite
-reseta, sobre o commit `0f1dd50` — ou o que for HEAD à época, com o commit reavaliado registrado.
+### 5.2 Inspeção `0f1dd50..9845e15` — feita antes de acionar, e refeita por ele
+
+| Classificação | Arquivos |
+|---|---|
+| Documentação | `EXPERIENCE_AUDIT` · `INDEPENDENT_EVALUATION` · `BLOCKERS` · `PROGRESS` · `PROMPT_LESSONS` · `STATE.json` |
+| Testes / harness | `run-lab-v4-browser.ts` — 1 linha de `console.log` + 4 de comentário |
+| Evidências | nenhuma — os 12 PNGs **idênticos** |
+| **Código funcional do Lab/produto** | **nenhum** |
+
+Medições do construtor, **refeitas e confirmadas pelo avaliador**: contagens idênticas (22 testes de
+navegador, 48 guardas, 9 mutações, 43 `assert.`) e sha256 idêntico do harness excluindo a linha de log
+— `9dd62c74b6a3d8f8`. O avaliador registrou que **não aceitou a afirmação sem checar** e leu o diff
+integral.
+
+Como `9845e15` contém alteração executável — ainda que só de log — a reverificação considerou
+`9845e15`, e não `0f1dd50`.
+
+### 5.3 Relatório do avaliador — literal, segunda rodada
+
+> **Nada foi editado.** Reproduzido integralmente em
+> `evidencias-0a/avaliacao-independente-bruta-rodada2.md`, que é a saída bruta desta rodada.
+
+**Achado 5.1 — `RESOLVIDO`**, com evidência própria dele em quatro camadas independentes:
+
+1. **código-fonte da correção**, lido linha a linha: `FONTE_MOTOBOY` aparece **6 vezes** em
+   `cenarios.ts` — as mesmas 6 de `FONTE_CONFERENCIA`, cobertura total e não parcial; a isenção
+   `|| u.id === "motoboy"` **não existe mais no código**, confirmado lendo o código e não o changelog;
+   e `labs/operacao-viva-v4/dominio/` está **byte a byte idêntico** desde antes da correção — *"a
+   correção foi inteiramente declarativa: nasceu um dado novo, nenhuma lógica mudou"*;
+2. **mutação `MD9` rodada por ele**, reaplicando o defeito e vendo `G7b`/`G7c`/`G7d` acusarem —
+   *"apliquei o próprio defeito de volta e o produto reagiu como deveria"*;
+3. **API nas 18 cenas**, não amostra: `motoboy.cor` nunca é `verde`; `carga.observado` e
+   `pressao.observado` seguem `false` — *"a cor mudou, a honestidade sobre o que não é medido não"*;
+4. **tela e CSS computado ao vivo**: a borda virou `dashed`, igual a Caixa e Conferência.
+
+**Sobre o Motoboy ficar âmbar em `foco-com-secundarios`**, que era a pergunta mais perigosa: ele
+julgou **legítimo**, porque o motivo nomeia pedido e duração concretos sustentados por fonte que
+realmente mede aquilo, `carga`/`pressao` seguem não observadas, e o mecanismo é *"o mesmo código, sem
+exceção por unidade"*.
+
+**Busca por um segundo caso:** ele varreu `dominio/*.ts` por `.id === "<literal>"` — **zero
+ocorrências** — e reconferiu os 5 ramos de escape de `run-lab-v4-tests.ts`, concordando com a
+classificação da auditoria do construtor. **Não encontrou um segundo caso**, e registrou isso *"como
+resultado de uma busca real, não como garantia de inexistência"*.
+
+**Regressões: nenhuma.** **Achados novos de severidade alta ou média: nenhum.**
+
+**Rubrica que mudou:** distinção fato/inferência/ausência **6 → 9** · consistência **6 → 9** · falsa
+certeza **4 → 8** · acabamento **8 → 9**. Ele recusou nota 10 em falsa certeza porque *"uma busca de
+segundo caso, por mais real que tenha sido, não é prova de ausência total no repositório"*.
+
+### 5.4 Reservas que ele manteve
+
+Nenhuma delas bloqueia o substrato; todas são limites declarados desde o início da missão:
+
+- rota do Caixa inalcançável fora de fixture (**PB15**);
+- Sushi Quentes ainda experimental, domínio canônico intocado (**PB14**);
+- validação não-operacional — local, sem autenticação, sem sincronização, por desenho;
+- **nada disto viu operação real** — *"74+ testes verdes não substituem uma sexta de pico, e o César
+  abrindo a rota pessoalmente continua sendo o único checkpoint que importa depois deste"*.
+
+E o limite que ele declarou sobre a própria cobertura: a varredura de segundo caso foi exaustiva
+**dentro de `labs/operacao-viva-v4/`**, não do repositório inteiro.
 
 ---
 
-## 6. Estado do ciclo
+## 6. Estado do ciclo — FECHADO
 
 | Item | Estado |
 |---|---|
-| **Primeiro veredito registrado** | **`APPROVED_WITH_RESERVATIONS`** · commit de código **`f164520`** |
-| Achado material | 5.1 — Motoboy verde sem medição, severidade **alta** |
-| Correção material aplicada | **`0f1dd50`**, depois do veredito registrado |
-| Verificação da correção pelo construtor | Motoboy verde em **0/18**; gates verdes |
-| **Reverificação pelo mesmo avaliador** | **PENDENTE — tentada, interrompida por limite de API** |
-| **Delta do veredito** | **NÃO EXISTE.** Não foi produzido, e não é inferido |
-| Avaliador novo criado | **nenhum** |
+| **1º veredito** | **`APPROVED_WITH_RESERVATIONS`** · commit **`f164520`** · registrado em `cfa2fdb` |
+| Achado material | 5.1 — Motoboy verde sem medição · severidade **alta** |
+| Correção | **`0f1dd50`**, aplicada **depois** do veredito registrado |
+| 1ª tentativa de reverificação | **falhou** — limite de API, sem produzir resultado |
+| **2º veredito** | **`APPROVED`** · HEAD **`9845e15`** · **mesmo avaliador** |
+| **Delta** | **`APPROVED_WITH_RESERVATIONS` → `APPROVED`** |
+| Avaliadores criados no total | **um** |
+| Achados novos | **nenhum** |
+| Regressões | **nenhuma** |
 
 **Checkpoint máximo permitido nesta missão:** `AWAITING_CESAR_REVIEW`.
 `HUMAN_APPROVED` e `RELEASED` **não** podem ser registrados antes de o César abrir e avaliar
-pessoalmente o Lab.
+pessoalmente o Lab — e o próprio avaliador disse isso, com todas as letras, ao fechar.

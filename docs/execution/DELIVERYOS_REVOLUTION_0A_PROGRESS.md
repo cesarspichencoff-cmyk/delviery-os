@@ -281,26 +281,39 @@ git diff --name-only 73f2f0b -- src/perfil-delivery/ src/product/viewmodels/ \
 | Restauração | por caminho nomeado, sem `reset` nem `clean`; 4 SHA-256 conferidos |
 | Registro do veredito | commit **`cfa2fdb`**, **antes** de qualquer correção |
 
-**B. Reverificação — tentada e NÃO concluída**
+**B. Reverificação — CONCLUÍDA na segunda tentativa**
 
 | | |
 |---|---|
-| Commit corrigido | **`0f1dd50`** |
-| Mesmo avaliador retomado | **sim** |
-| Avaliador novo criado | **não** |
-| Resultado | **nenhum** — terminou por limite de API antes de executar |
-| Prova de que nada rodou | diretório redirecionado nunca criado; `git status` limpo |
-| Veredito delta | **NÃO EXISTE**, e não é inferido |
-| Destrava | retomar o mesmo avaliador após **2026-08-06 23h** (America/Sao_Paulo) |
+| 1ª tentativa (05/08) | **falhou** — limite de API, sem produzir resultado. Missão fechada com a reserva **nomeada**, sem inferir veredito |
+| 2ª tentativa (07/08) | **concluída** |
+| **HEAD auditado** | **`9845e15`** |
+| Mesmo avaliador | **sim**, retomado do próprio transcrito nas duas vezes |
+| Avaliadores criados no total | **um** |
+| **Veredito** | **`APPROVED`** |
+| **Delta** | **`APPROVED_WITH_RESERVATIONS` → `APPROVED`** |
+| Achado 5.1 | **RESOLVIDO**, com evidência própria dele em 4 camadas |
+| Regressões | **nenhuma** |
+| Achados novos | **nenhum** de severidade alta ou média |
+| Read-only | **provado** — gate rodado com `LAB_V4_EVIDENCIAS`, worktree limpa nos dois extremos |
+
+Rubrica que mudou: fato/inferência/ausência **6→9** · consistência **6→9** · falsa certeza **4→8** ·
+acabamento **8→9**.
 
 ### Estado declarado
 
-**`FUNCTIONAL_SUBSTRATE_LOCKED_WITH_RESERVATIONS`**
+**`FUNCTIONAL_SUBSTRATE_LOCKED`**
 
-A reserva é uma só e está nomeada: **a correção `0f1dd50` não passou por auditoria independente.**
-Ela tem 48 guardas, 9 mutações e medição direta do construtor — e nada disso é auditoria
-independente.
+A única reserva que sustentava o estado anterior — *a correção não passou por auditoria independente* —
+**foi resolvida por auditoria independente real**, feita pelo mesmo avaliador, sobre o HEAD atual, com
+evidência que ele próprio produziu.
+
+As reservas que ele manteve não bloqueiam o substrato: são limites declarados desde o começo da missão
+(PB14, PB15, validação não-operacional, nada viu operação real).
 
 **`VISUAL_EXPRESSION_REJECTED_BY_CESAR`** — declaração do César em 2026-08-05. O que está fechado
 aqui é o **substrato funcional**. A direção visual volta para missão própria, e nenhum redesenho foi
 feito nesta missão.
+
+**O checkpoint máximo continua sendo `AWAITING_CESAR_REVIEW`.** O próprio avaliador escreveu: *"Isto
+não é aprovação para operação — é o César, não este avaliador, quem decide se o Lab vai além disso."*

@@ -1741,7 +1741,7 @@
   },
   "revolution_0a": {
     "data": "2026-08-05",
-    "estado": "FUNCTIONAL_SUBSTRATE_LOCKED_WITH_RESERVATIONS — AGUARDANDO CESAR",
+    "estado": "FUNCTIONAL_SUBSTRATE_LOCKED — AGUARDANDO REVISAO PESSOAL DO CESAR",
     "head_inicial": "fae35c9",
     "branch": "feature/deliveryos-hybrid-platform-foundation-v1",
     "publicado": false,
@@ -1796,7 +1796,7 @@
       "docs/auditoria/DELIVERYOS_REVOLUTION_0A_INDEPENDENT_EVALUATION.md"
     ],
     "aguarda": "REVISAO HUMANA DO CESAR. Estado maximo permitido nesta missao: AWAITING_CESAR_REVIEW. HUMAN_APPROVED e RELEASED nao podem ser registrados antes de ele abrir e avaliar pessoalmente. Ver PB16",
-    "head_final": "0f1dd50",
+    "head_final": "(o commit de fechamento; ver git log -1)",
     "avaliacao_independente": {
       "avaliador": "Sonnet 5 (claude-sonnet-5), contexto novo e minimo, read-only. Politica: DELIVERYOS_MODEL_ROUTING — modelo diferente do que implementou",
       "primeira_rodada": {
@@ -1816,14 +1816,36 @@
         "_limite": "verificacao do CONSTRUTOR. Nao substitui auditoria independente"
       },
       "segunda_rodada": {
-        "estado": "PENDENTE — TENTADA E NAO CONCLUIDA",
+        "estado": "CONCLUIDA",
+        "data": "2026-08-07",
+        "head_auditado": "9845e15",
         "mesmo_avaliador_retomado": true,
         "avaliador_novo_criado": false,
-        "motivo_literal": "Agent terminated early due to an API error: You have hit your weekly limit, resets Aug 6, 11pm (America/Sao_Paulo)",
-        "evidencia_de_que_nada_rodou": "o diretorio redirecionado .../scratchpad/reaval-evidencias nunca foi criado, e git status ficou limpo",
-        "veredito": "NAO EXISTE",
-        "delta": "NAO EXISTE — nao foi produzido e nao e inferido",
-        "destrava": "retomar O MESMO avaliador apos 2026-08-06 23h America/Sao_Paulo, sobre 0f1dd50"
+        "_nota_avaliadores": "UM avaliador em toda a missao, retomado duas vezes do proprio transcrito",
+        "primeira_tentativa": "FALHOU sem produzir resultado — limite semanal de API. Provado pelo diretorio redirecionado nunca criado e git status limpo. A missao foi fechada naquele momento com a reserva NOMEADA, sem inferir veredito e sem criar avaliador novo",
+        "veredito": "APPROVED",
+        "delta": "APPROVED_WITH_RESERVATIONS -> APPROVED",
+        "achado_5_1": "RESOLVIDO",
+        "_evidencia_do_avaliador": "quatro camadas independentes: leitura do codigo da correcao (dominio/ byte a byte identico — correcao inteiramente declarativa); mutacao MD9 reaplicando o defeito e sendo acusada por G7b/G7c/G7d; API nas 18 cenas (motoboy.cor nunca verde, carga e pressao seguem nao observadas); tela com CSS computado (borda dashed, igual a Caixa e Conferencia)",
+        "motoboy_ambar_em_foco_com_secundarios": "julgado LEGITIMO pelo avaliador: motivo nomeia pedido e duracao concretos, sustentados por fonte que realmente mede aquilo; carga e pressao seguem nao observadas; e o mecanismo e o mesmo codigo, sem excecao por unidade",
+        "busca_por_segundo_caso": "varreu dominio/*.ts por `.id === literal` — ZERO ocorrencias; reconferiu os 5 ramos de escape de run-lab-v4-tests.ts e concordou com a classificacao. NAO encontrou segundo caso, e registrou isso como resultado de busca real, nao como garantia de inexistencia",
+        "regressoes": "NENHUMA",
+        "achados_novos": "NENHUM de severidade alta ou media",
+        "rubrica_que_mudou": {
+          "4 distincao fato/inferencia/ausencia": "6 -> 9",
+          "12 consistencia": "6 -> 9",
+          "14 falsa certeza": "4 -> 8",
+          "15 acabamento": "8 -> 9"
+        },
+        "read_only": "PROVADO nesta rodada: rodou o gate de navegador com LAB_V4_EVIDENCIAS, as 12 capturas foram para fora do repositorio e a worktree ficou LIMPA. E a diferenca entre a 1a e a 2a rodada",
+        "literal": "docs/auditoria/evidencias-0a/avaliacao-independente-bruta-rodada2.md",
+        "reservas_mantidas_pelo_avaliador": [
+          "rota do Caixa inalcancavel fora de fixture (PB15) — limite declarado, nao defeito",
+          "Sushi Quentes ainda experimental, dominio canonico intocado (PB14)",
+          "validacao nao-operacional: local, sem autenticacao, sem sincronizacao, por desenho",
+          "nada disto viu operacao real — 74+ testes verdes nao substituem uma sexta de pico",
+          "a varredura de segundo caso foi exaustiva dentro de labs/operacao-viva-v4/, nao do repositorio inteiro"
+        ]
       }
     },
     "expressao_visual": "REJEITADA PELO CESAR (declaracao dele, 2026-08-05). O substrato FUNCIONAL e o que esta fechado; a direcao visual volta para missao propria. Nenhum redesenho feito nesta missao. Ver PB18",
@@ -1834,13 +1856,22 @@
       "DELIVERYOS_VALIDATION_MODE_RUNNING",
       "DELIVERYOS_SOURCE_STATES_RUNNING",
       "DELIVERYOS_EXPERIENCE_BROWSER_VALIDATED",
-      "INDEPENDENTLY_EVALUATED (somente para f164520)",
+      "INDEPENDENTLY_EVALUATED",
+      "FUNCTIONAL_SUBSTRATE_LOCKED",
       "AWAITING_CESAR_REVIEW"
     ],
     "checkpoints_NAO_alcancados": [
       "HUMAN_APPROVED",
-      "RELEASED",
-      "reverificacao independente de 0f1dd50"
-    ]
+      "RELEASED"
+    ],
+    "diff_0f1dd50_ate_9845e15": {
+      "arquivos": 7,
+      "documentacao": 6,
+      "testes_harness": "run-lab-v4-browser.ts — 1 linha de console.log + 4 de comentario",
+      "evidencias": "nenhuma — os 12 PNGs identicos",
+      "codigo_funcional_do_lab_ou_produto": "NENHUM",
+      "prova": "contagens identicas nos dois commits (22 testes de navegador, 48 guardas, 9 mutacoes, 43 assert.) e sha256 identico do harness excluindo a linha de log: 9dd62c74b6a3d8f8",
+      "_nota": "como 9845e15 contem alteracao executavel, ainda que so de log, a reverificacao considerou 9845e15. O avaliador refez a inspecao e registrou que nao aceitou a afirmacao sem checar"
+    }
   }
 }

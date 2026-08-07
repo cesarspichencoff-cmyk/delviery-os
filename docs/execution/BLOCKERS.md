@@ -62,13 +62,14 @@
   sacola, e nenhuma fonte mede a fila da Caixa (mesma raiz de PB5). Fora de fixture, o Caixa nunca é
   recomendado. **Não é defeito** — é a regra se recusando a funcionar sem lastro. Destrava com fonte de
   capacidade da Caixa, que é decisão de operação, não de engenharia.
-- **PB17** — **a correção do achado 5.1 não foi reverificada por avaliador independente.** O primeiro
-  veredito (`APPROVED_WITH_RESERVATIONS`, commit `f164520`) está registrado; a correção está em
-  `0f1dd50` e tem 48 guardas, 9 mutações e medição do construtor — **e nada disso é auditoria
-  independente**. O **mesmo** avaliador foi retomado e terminou por limite de API antes de produzir
-  qualquer resultado; não foi criado avaliador novo, por determinação do César. **Não existe delta de
-  veredito, e ele não é inferido.** Destrava retomando o mesmo avaliador após **2026-08-06 23h
-  (America/Sao_Paulo)**, sobre `0f1dd50`.
+- ~~**PB17** — a correção do achado 5.1 não foi reverificada por avaliador independente.~~
+  **RESOLVIDO em 2026-08-07.** A primeira retomada falhou por limite de API sem produzir resultado, e
+  a missão foi fechada com a reserva nomeada — sem inferir veredito e sem criar avaliador novo. Na
+  segunda retomada, **o mesmo avaliador** concluiu sobre HEAD `9845e15` e emitiu **`APPROVED`**, com
+  evidência própria em quatro camadas: leitura do código da correção, mutação `MD9` reaplicando o
+  defeito e sendo acusada, API nas 18 cenas, e tela com CSS computado. Achado 5.1 **RESOLVIDO**,
+  **nenhuma regressão**, **nenhum achado novo**. Literal em
+  `docs/auditoria/evidencias-0a/avaliacao-independente-bruta-rodada2.md`.
 - **PB18** — **a expressão visual da V4 foi REJEITADA pelo César** (declaração dele, 2026-08-05).
   O substrato funcional é o que está fechado; a direção visual volta para missão própria. Nenhum
   redesenho foi feito nesta missão, por instrução expressa.
