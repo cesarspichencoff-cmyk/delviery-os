@@ -569,6 +569,10 @@ if (modo === "mutacoes") {
     ["M10", "G4", "superseded_by apontando para arquivo inexistente", (m) => { m.artefatos.get("docs/execution/HANDOFF_R5.md")!.superseded_by = "docs/execution/NAO_EXISTE.jsonl"; }],
     ["M11", "G12", "linha de ledger com narrativa acima do limite", (m) => { m.ledger[0]!.bytes = 9000; m.ledger[0]!.camposLongos = ["produto_terminado"]; }],
     ["M12", "G2", "rota citando arquivo sem lifecycle", (m) => { m.claudeRota.push("docs/execution/NEXT_RESUME_ANTIGO.md"); }],
+    // O manifesto visual entrou no modelo em 2026-08-07. Esta mutacao prova que ele
+    // esta MESMO governado e que seu escopo e distinto do da prosa canonica: se ele
+    // reivindicar `visual_canon`, colide com VISUAL_SOURCE_OF_TRUTH.md e G5 acusa.
+    ["M13", "G5", "manifesto visual reivindicando o escopo da prosa canonica", (m) => { m.artefatos.get("docs/design/CANONICAL_VISUAL_MANIFEST.json")!.authority_scope = "visual_canon"; }],
   ];
 
   const linhas: string[] = [];

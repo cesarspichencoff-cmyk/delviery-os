@@ -1,4 +1,13 @@
 {
+  "_lifecycle": {
+    "artefato": "docs/design/CANONICAL_VISUAL_MANIFEST.json",
+    "status": "ACTIVE",
+    "authority_scope": "visual_canon_integrity",
+    "superseded_by": null,
+    "atualizado_em": "2026-08-07",
+    "state_basis": "30835be",
+    "_nota_escopo": "Escopo PROPRIO, nao derivado. VISUAL_REFERENCE_HIERARCHY.md diz qual nivel manda (visual_order); VISUAL_SOURCE_OF_TRUTH.md diz o que o canone define em prosa (visual_canon); ESTE arquivo registra QUAL pacote, em QUAL hash, e esse canone — archive_sha256, pdf_sha256, extracted_content_hash, source_commit e immutable_original nao existem em nenhum outro artefato. E o que torna 'o ZIP e imutavel' verificavel em vez de aspiracional. Entrou no modelo de lifecycle em 2026-08-07: a Fase 2 o havia deixado de fora por ele nao aparecer na rota do CLAUDE.md, e isso era erro — autoridade material nao depende de estar na rota."
+  },
   "canonical_visual_name": "Sprint Visual DeliveryOS V2",
   "original_filename": "Sprint Visual DeliveryOS V2 (1).zip",
   "status": "canonical",

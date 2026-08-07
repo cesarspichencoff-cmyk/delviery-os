@@ -1752,7 +1752,7 @@
   },
   "revolution_0a": {
     "data": "2026-08-05",
-    "estado": "FUNCTIONAL_SUBSTRATE_LOCKED — AGUARDANDO REVISAO PESSOAL DO CESAR",
+    "estado": "FUNCTIONAL_SUBSTRATE_LOCKED — REVISAO PESSOAL DO CESAR OCORRIDA, VEREDITO DIVIDIDO",
     "head_inicial": "fae35c9",
     "branch": "feature/deliveryos-hybrid-platform-foundation-v1",
     "publicado": false,
@@ -1806,7 +1806,7 @@
       "docs/auditoria/DELIVERYOS_REVOLUTION_0A_EXPERIENCE_AUDIT.md",
       "docs/auditoria/DELIVERYOS_REVOLUTION_0A_INDEPENDENT_EVALUATION.md"
     ],
-    "aguarda": "REVISAO HUMANA DO CESAR. Estado maximo permitido nesta missao: AWAITING_CESAR_REVIEW. HUMAN_APPROVED e RELEASED nao podem ser registrados antes de ele abrir e avaliar pessoalmente. Ver PB16",
+    "aguarda": "NADA — a revisao pessoal do Cesar ocorreu. Veredito DIVIDIDO: substrato funcional travado (veredito independente APPROVED sobre 9845e15) e expressao visual REJEITADA (2026-08-05, respondida em Q-011). HUMAN_APPROVED e RELEASED continuam NAO registrados e a promocao do Lab a produto segue sendo missao separada. Ver Q-010 em docs/execution/PERGUNTAS.jsonl",
     "head_final": "(o commit de fechamento; ver git log -1)",
     "avaliacao_independente": {
       "avaliador": "Sonnet 5 (claude-sonnet-5), contexto novo e minimo, read-only. Politica: DELIVERYOS_MODEL_ROUTING — modelo diferente do que implementou",
