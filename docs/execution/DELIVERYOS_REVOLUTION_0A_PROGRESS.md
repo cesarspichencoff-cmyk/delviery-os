@@ -254,5 +254,53 @@ git diff --name-only 73f2f0b -- src/perfil-delivery/ src/product/viewmodels/ \
 
 **Nenhum baseline foi alterado. Nenhum gate foi afrouxado. Nenhuma exceção foi criada.**
 
-**HEAD final:** *(preenchido no fechamento)*
-**Working tree final:** *(preenchido no fechamento)*
+---
+
+## 9. Fechamento
+
+| Campo | Valor |
+|---|---|
+| **HEAD inicial** | **`fae35c9`** |
+| **HEAD final** | *(o commit de fechamento; ver `git log -1`)* |
+| Working tree final | **limpo** |
+| Push / merge / PR / deploy | **nenhum** |
+| Outras worktrees | **nenhuma tocada** |
+
+### O ciclo da avaliação independente, nos dois momentos
+
+**A. Primeira avaliação — concluída**
+
+| | |
+|---|---|
+| Commit de código avaliado | **`f164520`** |
+| Avaliador | Sonnet 5, contexto novo e mínimo, read-only |
+| Veredito | **`APPROVED_WITH_RESERVATIONS`** |
+| Achado material | 5.1 · **alta** · Motoboy verde em 15/18 sem medição |
+| Desvio read-only | 4 PNGs versionados regravados pelo gate que o construtor autorizou |
+| Medição do desvio | 136–182 px de milhões, delta máx. **2/255** — `evidencias-0a/desvio-readonly-png.json` |
+| Restauração | por caminho nomeado, sem `reset` nem `clean`; 4 SHA-256 conferidos |
+| Registro do veredito | commit **`cfa2fdb`**, **antes** de qualquer correção |
+
+**B. Reverificação — tentada e NÃO concluída**
+
+| | |
+|---|---|
+| Commit corrigido | **`0f1dd50`** |
+| Mesmo avaliador retomado | **sim** |
+| Avaliador novo criado | **não** |
+| Resultado | **nenhum** — terminou por limite de API antes de executar |
+| Prova de que nada rodou | diretório redirecionado nunca criado; `git status` limpo |
+| Veredito delta | **NÃO EXISTE**, e não é inferido |
+| Destrava | retomar o mesmo avaliador após **2026-08-06 23h** (America/Sao_Paulo) |
+
+### Estado declarado
+
+**`FUNCTIONAL_SUBSTRATE_LOCKED_WITH_RESERVATIONS`**
+
+A reserva é uma só e está nomeada: **a correção `0f1dd50` não passou por auditoria independente.**
+Ela tem 48 guardas, 9 mutações e medição direta do construtor — e nada disso é auditoria
+independente.
+
+**`VISUAL_EXPRESSION_REJECTED_BY_CESAR`** — declaração do César em 2026-08-05. O que está fechado
+aqui é o **substrato funcional**. A direção visual volta para missão própria, e nenhum redesenho foi
+feito nesta missão.

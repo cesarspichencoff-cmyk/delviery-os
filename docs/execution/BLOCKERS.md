@@ -62,6 +62,16 @@
   sacola, e nenhuma fonte mede a fila da Caixa (mesma raiz de PB5). Fora de fixture, o Caixa nunca é
   recomendado. **Não é defeito** — é a regra se recusando a funcionar sem lastro. Destrava com fonte de
   capacidade da Caixa, que é decisão de operação, não de engenharia.
+- **PB17** — **a correção do achado 5.1 não foi reverificada por avaliador independente.** O primeiro
+  veredito (`APPROVED_WITH_RESERVATIONS`, commit `f164520`) está registrado; a correção está em
+  `0f1dd50` e tem 48 guardas, 9 mutações e medição do construtor — **e nada disso é auditoria
+  independente**. O **mesmo** avaliador foi retomado e terminou por limite de API antes de produzir
+  qualquer resultado; não foi criado avaliador novo, por determinação do César. **Não existe delta de
+  veredito, e ele não é inferido.** Destrava retomando o mesmo avaliador após **2026-08-06 23h
+  (America/Sao_Paulo)**, sobre `0f1dd50`.
+- **PB18** — **a expressão visual da V4 foi REJEITADA pelo César** (declaração dele, 2026-08-05).
+  O substrato funcional é o que está fechado; a direção visual volta para missão própria. Nenhum
+  redesenho foi feito nesta missão, por instrução expressa.
 - **PB16** — **o Lab V4 aguarda revisão humana do César.** Ele está `BROWSER_VALIDATED` e
   `INDEPENDENTLY_EVALUATED`; o estado máximo permitido nesta missão é **`AWAITING_CESAR_REVIEW`**.
   `HUMAN_APPROVED` e `RELEASED` **não** podem ser registrados antes de o César abrir e avaliar

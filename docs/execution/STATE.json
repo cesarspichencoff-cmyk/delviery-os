@@ -1741,7 +1741,7 @@
   },
   "revolution_0a": {
     "data": "2026-08-05",
-    "estado": "CONCLUIDA — AGUARDANDO REVISAO HUMANA DO CESAR",
+    "estado": "FUNCTIONAL_SUBSTRATE_LOCKED_WITH_RESERVATIONS — AGUARDANDO CESAR",
     "head_inicial": "fae35c9",
     "branch": "feature/deliveryos-hybrid-platform-foundation-v1",
     "publicado": false,
@@ -1783,7 +1783,8 @@
     ],
     "licoes": [
       "L42",
-      "L43"
+      "L43",
+      "L44"
     ],
     "documentos": [
       "docs/product/DELIVERYOS_PRODUCT_CONSTITUTION.md",
@@ -1794,6 +1795,52 @@
       "docs/auditoria/DELIVERYOS_REVOLUTION_0A_EXPERIENCE_AUDIT.md",
       "docs/auditoria/DELIVERYOS_REVOLUTION_0A_INDEPENDENT_EVALUATION.md"
     ],
-    "aguarda": "REVISAO HUMANA DO CESAR. Estado maximo permitido nesta missao: AWAITING_CESAR_REVIEW. HUMAN_APPROVED e RELEASED nao podem ser registrados antes de ele abrir e avaliar pessoalmente. Ver PB16"
+    "aguarda": "REVISAO HUMANA DO CESAR. Estado maximo permitido nesta missao: AWAITING_CESAR_REVIEW. HUMAN_APPROVED e RELEASED nao podem ser registrados antes de ele abrir e avaliar pessoalmente. Ver PB16",
+    "head_final": "0f1dd50",
+    "avaliacao_independente": {
+      "avaliador": "Sonnet 5 (claude-sonnet-5), contexto novo e minimo, read-only. Politica: DELIVERYOS_MODEL_ROUTING — modelo diferente do que implementou",
+      "primeira_rodada": {
+        "commit_de_codigo_avaliado": "f164520",
+        "veredito": "APPROVED_WITH_RESERVATIONS",
+        "achado_material": "5.1 ALTA — Motoboy pintava verde em 15 de 18 cenas sem medicao da fila de despacho, contra o item 10 da Constituicao",
+        "literal": "docs/auditoria/DELIVERYOS_REVOLUTION_0A_INDEPENDENT_EVALUATION.md secao 2",
+        "bruto": "docs/auditoria/evidencias-0a/avaliacao-independente-bruta.md",
+        "desvio_readonly": "quatro PNGs versionados regravados pelo gate de navegador que o construtor autorizou. Medido pixel a pixel (136-182 px de milhoes, delta max 2/255), preservado em evidencias-0a/desvio-readonly-png.json, restaurado por caminho nomeado sem reset nem clean, sha256 conferidos"
+      },
+      "correcao": {
+        "commit": "0f1dd50",
+        "aplicada_depois_do_veredito": true,
+        "o_que": "FONTE_MOTOBOY sem_medicao_automatica nas 18 cenas; a isencao || u.id === motoboy REMOVIDA da guarda G7b; G7c ampliada; G7d e G7e novas; MD9 nova; LAB_V4_EVIDENCIAS para avaliacao read-only",
+        "nao_feito": "nenhuma fonte ficticia de capacidade — a correcao declara a ausencia, nao inventa medicao",
+        "verificacao_do_construtor": "Motoboy verde em 0 de 18; 48 guardas, 9 mutacoes, 9 acusadas, 0 cegas; 28 testes de navegador; 10 gates R5; PF4 vazio; tsc raiz exit 0",
+        "_limite": "verificacao do CONSTRUTOR. Nao substitui auditoria independente"
+      },
+      "segunda_rodada": {
+        "estado": "PENDENTE — TENTADA E NAO CONCLUIDA",
+        "mesmo_avaliador_retomado": true,
+        "avaliador_novo_criado": false,
+        "motivo_literal": "Agent terminated early due to an API error: You have hit your weekly limit, resets Aug 6, 11pm (America/Sao_Paulo)",
+        "evidencia_de_que_nada_rodou": "o diretorio redirecionado .../scratchpad/reaval-evidencias nunca foi criado, e git status ficou limpo",
+        "veredito": "NAO EXISTE",
+        "delta": "NAO EXISTE — nao foi produzido e nao e inferido",
+        "destrava": "retomar O MESMO avaliador apos 2026-08-06 23h America/Sao_Paulo, sobre 0f1dd50"
+      }
+    },
+    "expressao_visual": "REJEITADA PELO CESAR (declaracao dele, 2026-08-05). O substrato FUNCIONAL e o que esta fechado; a direcao visual volta para missao propria. Nenhum redesenho feito nesta missao. Ver PB18",
+    "checkpoints_alcancados": [
+      "DELIVERYOS_PRODUCT_CONSTITUTION_LOCKED",
+      "DELIVERYOS_REPOSITORY_STATE_VERIFIED",
+      "DELIVERYOS_EXPERIENCE_V4_LAB_RUNNING",
+      "DELIVERYOS_VALIDATION_MODE_RUNNING",
+      "DELIVERYOS_SOURCE_STATES_RUNNING",
+      "DELIVERYOS_EXPERIENCE_BROWSER_VALIDATED",
+      "INDEPENDENTLY_EVALUATED (somente para f164520)",
+      "AWAITING_CESAR_REVIEW"
+    ],
+    "checkpoints_NAO_alcancados": [
+      "HUMAN_APPROVED",
+      "RELEASED",
+      "reverificacao independente de 0f1dd50"
+    ]
   }
 }

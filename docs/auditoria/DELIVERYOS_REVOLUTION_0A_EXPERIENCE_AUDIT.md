@@ -91,6 +91,39 @@ Todos foram **corrigidos** e cada um tem guarda ou evidência. Nenhum foi encont
 
 ---
 
+## 4-B. O achado do avaliador independente, e a varredura que ele obrigou
+
+O avaliador independente encontrou, no produto, um defeito de severidade **alta** que nenhuma das
+guardas acusou — porque **uma delas estava escrita para não acusar**:
+
+| | |
+|---|---|
+| Achado | 5.1 — Motoboy verde em 15 de 18 cenas, sem medição da fila de despacho |
+| Viola | Constituição §4.3 item 10, e o comentário do próprio `vm-v4.ts` |
+| Agravante | a guarda `G7b` tinha `\|\| u.id === "motoboy"`, escrito pelo construtor |
+| Correção | `0f1dd50` — declara a ausência (`FONTE_MOTOBOY`), não inventa medição |
+| Lição | **L44** — exceção dentro de guarda é confissão, e sempre isenta quem viola |
+
+### A varredura que L44 obriga
+
+Se uma exceção passou, outras podem ter passado. Varridos **todos** os ramos de escape do gate do
+Lab (`assert.ok(... || ...)`, `continue`, `return` dentro de teste). Restaram cinco, e **nenhum é
+isenção** — os cinco são pré-condição de escopo, e cada um tem controle positivo em outra guarda:
+
+| Ramo | Guarda | Por que não é isenção | Controle positivo |
+|---|---|---|---|
+| `if (v.foco === null) continue` | `G3` | cena sem Foco não tem duplicata para checar | `G3b` exige que uma cena TENHA Foco |
+| `if (v.foco === null) continue` | `G4` | idem, para confiança | idem |
+| `if (fraca === undefined) continue` | `G6` | cena sem fonte fraca está fora do escopo da regra | `G6c` — Calmo legítimo existe |
+| `if (!v.eleicao.rebaixado) continue` | `G6b` | só valida quem foi rebaixado | `G6c` |
+| `if (u.cor !== "verde") continue` | `G7b` | a asserção é sobre unidade verde | `G7c` e `G7d` — as três sem medição nunca ficam verdes |
+
+**A única isenção real era a do Motoboy, e ela caiu.** Esta varredura é evidência de que a família foi
+procurada, não de que ela não existe em outro lugar do repositório — `run-lab-v4-tests.ts` foi o único
+arquivo varrido, porque é o único que esta missão escreveu.
+
+---
+
 ## 5. Veredito do construtor
 
 **PARCIAL — pronto para avaliação, não para operação.**

@@ -406,14 +406,90 @@ regra passar.
 
 ---
 
-## 4. Estado do ciclo
+## 4. Correção do achado 5.1 — aplicada DEPOIS do veredito registrado
+
+Commit **`0f1dd50`**, posterior a `cfa2fdb` (o commit que registrou o primeiro veredito). A ordem é
+deliberada e foi determinação do César: nada é corrigido antes de o veredito original estar gravado.
+
+| O que mudou | Onde |
+|---|---|
+| `FONTE_MOTOBOY` (`fila_despacho`), estado `sem_medicao_automatica`, nas 18 cenas | `fixtures/base.ts`, `fixtures/cenarios.ts` |
+| Quarta ausência estrutural declarada | `fixtures/base.ts` |
+| **A isenção `\|\| u.id === "motoboy"` foi REMOVIDA da guarda `G7b`** | `testes/run-lab-v4-tests.ts` |
+| `G7c` passa a cobrir o Motoboy | idem |
+| `G7d` — toda unidade sem medição precisa de fonte que DECLARE a ausência | idem |
+| `G7e` — nenhuma cena lista a mesma fonte duas vezes | idem |
+| `MD9` — remove a fonte e precisa derrubar `G7` | idem |
+| `LAB_V4_EVIDENCIAS` redireciona capturas para fora da worktree | `testes/run-lab-v4-browser.ts` |
+
+**Nenhuma fonte fictícia de capacidade foi criada.** A correção declara a **ausência**; contar fila de
+despacho a partir de tempo por pedido seria fabricar operação — proibição explícita do César.
+
+### Verificação do construtor sobre `0f1dd50`
+
+| Prova | Resultado |
+|---|---|
+| Motoboy verde | **0 de 18 cenas** (era 15 de 18) |
+| `foco-com-secundarios` | Motoboy **âmbar**, porque S1 observou pedido pronto parado — sinal vence ausência |
+| `npm run test:lab:v4` | **48 guardas · 9 mutações · 9 acusadas · 0 cegas** |
+| `npm run test:lab:v4:browser` | **28 testes · 3 viewports · 12 capturas** |
+| `npm run test:platform:r5` | **10 gates verdes** |
+| PF4 | **vazio** |
+| `npx tsc --noEmit` (raiz) | exit **0** |
+
+> **Esta verificação é do CONSTRUTOR, não do avaliador.** Ela não substitui reverificação
+> independente, e não é apresentada como se substituísse.
+
+---
+
+## 5. Reverificação independente — TENTADA E NÃO CONCLUÍDA
+
+**O mesmo avaliador foi retomado** — não foi criado nenhum avaliador novo. A retomada foi feita sobre
+o transcrito dele, com o commit `0f1dd50`, com instrução de usar `LAB_V4_EVIDENCIAS` para não escrever
+na worktree, e com pedido explícito de veredito delta.
+
+**Ele terminou antes de produzir qualquer resultado.** Motivo literal, como recebido:
+
+```
+Agent "Avaliação independente do Lab V4" failed:
+Agent terminated early due to an API error:
+You've hit your weekly limit · resets Aug 6, 11pm (America/Sao_Paulo)
+```
+
+Evidência de que ele não chegou a executar nada da segunda rodada:
+
+- o diretório de evidências redirecionado (`.../scratchpad/reaval-evidencias`) **não existe** — ele
+  nunca rodou o gate de navegador;
+- `git status --porcelain` está **limpo** — nenhum arquivo foi tocado na segunda tentativa.
+
+### O que isto significa, sem suavizar
+
+- **A correção de `0f1dd50` NÃO foi verificada por avaliador independente.** Ela tem 48 guardas, 9
+  mutações e medição direta do construtor — e nada disso é auditoria independente.
+- **O único veredito independente existente é o da §2**, sobre o commit **`f164520`**, e ele é
+  **`APPROVED_WITH_RESERVATIONS`**.
+- **Nenhum avaliador novo foi criado.** A instrução do César é explícita, e substituir o avaliador
+  silenciosamente destruiria justamente a propriedade que a reverificação existe para provar.
+- **Não há delta de veredito.** Declarar um seria inventá-lo.
+
+### O que destrava
+
+Retomar **o mesmo avaliador** depois de **2026-08-06, 23h (America/Sao_Paulo)**, quando o limite
+reseta, sobre o commit `0f1dd50` — ou o que for HEAD à época, com o commit reavaliado registrado.
+
+---
+
+## 6. Estado do ciclo
 
 | Item | Estado |
 |---|---|
-| **Primeiro veredito registrado** | **`APPROVED_WITH_RESERVATIONS`** · commit de código `f164520` |
-| Correção material aplicada | *(registrada abaixo quando existir)* |
-| Reverificação pelo mesmo avaliador | *(pendente)* |
-| Delta do veredito | *(pendente)* |
+| **Primeiro veredito registrado** | **`APPROVED_WITH_RESERVATIONS`** · commit de código **`f164520`** |
+| Achado material | 5.1 — Motoboy verde sem medição, severidade **alta** |
+| Correção material aplicada | **`0f1dd50`**, depois do veredito registrado |
+| Verificação da correção pelo construtor | Motoboy verde em **0/18**; gates verdes |
+| **Reverificação pelo mesmo avaliador** | **PENDENTE — tentada, interrompida por limite de API** |
+| **Delta do veredito** | **NÃO EXISTE.** Não foi produzido, e não é inferido |
+| Avaliador novo criado | **nenhum** |
 
 **Checkpoint máximo permitido nesta missão:** `AWAITING_CESAR_REVIEW`.
 `HUMAN_APPROVED` e `RELEASED` **não** podem ser registrados antes de o César abrir e avaliar

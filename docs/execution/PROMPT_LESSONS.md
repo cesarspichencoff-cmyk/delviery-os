@@ -861,3 +861,56 @@ recorte vira buraco silencioso.
 **A regra.** Ao apertar uma guarda, gere o caso legitimo mais parecido com o
 ataque e prove que ele passa. Se voce nao consegue construir esse caso, a guarda
 ainda nao esta pronta.
+
+---
+
+## L44 — Excecao dentro de guarda e confissao, e ela sempre isenta quem viola
+
+**O caso.** A guarda `G7b` do Lab V4 existia para provar a regra mais protegida
+da Constituicao: **area sem medicao nunca aparece verde**. Ela estava escrita
+assim:
+
+```ts
+assert.ok(
+  u.pressao.observado || u.id === "motoboy",
+  `${id}: ${u.id} esta verde sem pressao observada`,
+);
+```
+
+O `|| u.id === "motoboy"` foi escrito pelo proprio construtor, durante a
+construcao, porque a unidade nao passava. A guarda ficou verde. O produto
+continuou pintando o Motoboy de **verde em 15 de 18 cenas**, sem nenhuma medicao
+da fila de despacho, ate um avaliador independente encontrar pelo PRODUTO o que a
+guarda estava desculpando.
+
+**O padrao.** Ninguem isenta um caso que passa. A excecao so aparece quando o
+caso falha — ou seja, **a unidade isentada e, por construcao, a que viola a
+regra**. Uma guarda com excecao nao esta protegendo com uma lacuna; ela esta
+protegendo exatamente tudo, menos o unico lugar onde havia defeito.
+
+**Como isso passa despercebido.** A excecao parece razoavel no momento em que e
+escrita ("essa unidade e diferente, nao tem carga por praca"). Ela vira uma
+afirmacao de dominio embutida num `assert`, onde ninguem revisa afirmacao de
+dominio. E o contador de testes continua subindo.
+
+**A regra.** Quando um caso nao passa numa guarda, existem dois consertos
+legitimos: **o produto esta errado**, e se corrige o produto; ou **a regra esta
+errada**, e se corrige a regra, por escrito, com o motivo. Isentar nao e nenhum
+dos dois — e apagar a pergunta.
+
+**O conserto que ficou.** A isencao caiu; o produto passou a declarar a ausencia
+com uma fonte estrutural (`FONTE_MOTOBOY`, `sem_medicao_automatica`), no mesmo
+padrao de Caixa e Conferencia; e entrou uma guarda IRMA (`G7d`) que exige que
+toda unidade sem medicao tenha uma fonte DECLARANDO isso — para que nao bastasse
+"nao ficar verde por acidente de severidade". Mais a mutacao `MD9`, que remove a
+fonte e precisa derrubar a guarda.
+
+**Familia:** L36 dizia que presenca textual nao prova codigo. L37, L38, L41 e L42
+dizem que a mutacao pode nao provar nada. L44 diz que a **guarda pode estar
+escrita para nao provar** — e essa e a unica das cinco que nasce de uma decisao
+consciente de quem escreve o teste.
+
+**Como caçar isto no resto do repositorio.** Procurar por `||` e por `if (...)
+return;` dentro de `assert`/`teste`, e perguntar de cada um: **este ramo existe
+porque um caso real falhava?** Se sim, ele e um defeito conhecido e nao
+registrado.
