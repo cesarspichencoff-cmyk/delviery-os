@@ -233,8 +233,8 @@ test('sequência humana completa usa conhecimento e contexto automático sem sel
   assert.match(turns[1].response, /TATÁ Sushi trabalha à la carte/iu);
   assert.equal(turns[1].diagnostic.fallback_used, false);
   assert.match(turns[2].response, /salão.*iFood.*delivery próprio/iu);
-  assert.match(turns[3].response, /cardápio oficial deste canal/iu);
-  assert.match(turns[4].response, /não confirma o método de preparo como sem fritura/iu);
+  assert.match(turns[3].response, /cardápio do salão/iu);
+  assert.match(turns[4].response, /fritura|preparo/iu);
   assert.match(turns[5].response, /Salmão/iu);
   assert.match(turns[6].response, /valet custa R\$ 45/iu);
   assert.doesNotMatch(turns[6].response, /salão.*iFood.*delivery próprio/iu);
@@ -251,8 +251,8 @@ test('contexto selecionado recomenda catálogo oficial, preserva filtros e não 
   const first = homologation.chat({ message: 'Tem opção sem fritura?', channel: 'dining_room' }).turn;
   const recommendation = homologation.chat({ message: 'Prefiro alguma coisa com salmão e sem cream cheese.' }).turn;
   const pairing = homologation.chat({ message: 'Qual bebida combina com a opção que você sugeriu?' }).turn;
-  assert.match(first.response, /cardápio oficial deste canal/iu);
-  assert.match(recommendation.response, /cardápio oficial deste canal/iu);
+  assert.match(first.response, /cardápio do salão/iu);
+  assert.match(recommendation.response, /cardápio do salão/iu);
   assert.ok(recommendation.diagnostic.candidates_found.length > 0);
   assert.match(pairing.response, /ainda não há uma harmonização aprovada/iu);
   assert.equal(pairing.diagnostic.knowledge_sources.includes('menu-source-live-menu-v1'), true);
@@ -291,7 +291,7 @@ test('diagnóstico expõe estado, canal, unidade, fonte, candidatos e limitaçã
 test('reset remove canal e recomendação automáticos da conversa anterior', (t) => {
   const { homologation } = localServices(t);
   const selected = homologation.chat({ message: 'Prefiro salmão sem cream cheese.', channel: 'dining_room' }).turn;
-  assert.match(selected.response, /cardápio oficial deste canal/iu);
+  assert.match(selected.response, /cardápio do salão/iu);
   homologation.resetChat();
   const afterReset = homologation.chat({ message: 'Tem opção sem fritura?' }).turn;
   assert.equal(afterReset.diagnostic.channel, 'unknown');

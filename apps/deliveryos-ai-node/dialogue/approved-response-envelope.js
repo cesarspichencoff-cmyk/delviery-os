@@ -11,6 +11,18 @@ const APPROVED_RESPONSE_ENVELOPE_KEYS = Object.freeze([
   'customer_context_summary',
   'menu_context_summary',
   'recommendation_context',
+  'customer_goal',
+  'active_context',
+  'confirmed_facts',
+  'active_preferences',
+  'active_restrictions',
+  'candidate_options',
+  'candidate_reasons',
+  'candidate_tradeoffs',
+  'uncertainties_to_translate',
+  'questions_answerable_now',
+  'unresolved_reference',
+  'next_best_question',
   'channel_policy_summary',
   'cost_policy_summary',
   'facts',
@@ -37,9 +49,10 @@ function validateApprovedResponseEnvelope(value) {
   if (!isPlainObject(value)) return { accepted: false, reason: 'APPROVED_ENVELOPE_NOT_OBJECT' };
   if (JSON.stringify(Object.keys(value).sort()) !== JSON.stringify([...APPROVED_RESPONSE_ENVELOPE_KEYS].sort())) return { accepted: false, reason: 'APPROVED_ENVELOPE_KEYS_INVALID' };
   if (value.schema_version !== 'deliveryos-approved-response-envelope-v1') return { accepted: false, reason: 'APPROVED_ENVELOPE_VERSION_INVALID' };
-  if (![value.social_acknowledgement, value.question_to_ask].every((item) => item === null || typeof item === 'string')) return { accepted: false, reason: 'APPROVED_ENVELOPE_TEXT_INVALID' };
-  if (!stringArray(value.direct_answer) || !stringArray(value.explanation) || !stringArray(value.prohibited_claims) || !stringArray(value.recent_phrases_to_avoid) || !stringArray(value.authorized_links) || !stringArray(value.authorized_numbers)) return { accepted: false, reason: 'APPROVED_ENVELOPE_ARRAY_INVALID' };
-  if (![value.journey_context, value.customer_context_summary, value.menu_context_summary, value.recommendation_context, value.channel_policy_summary, value.cost_policy_summary].every((item) => item === null || isPlainObject(item))) return { accepted: false, reason: 'APPROVED_ENVELOPE_CONTEXT_INVALID' };
+  if (![value.social_acknowledgement, value.question_to_ask, value.customer_goal, value.next_best_question].every((item) => item === null || typeof item === 'string')) return { accepted: false, reason: 'APPROVED_ENVELOPE_TEXT_INVALID' };
+  if (!stringArray(value.direct_answer) || !stringArray(value.explanation) || !stringArray(value.prohibited_claims) || !stringArray(value.recent_phrases_to_avoid) || !stringArray(value.authorized_links) || !stringArray(value.authorized_numbers) || !stringArray(value.active_preferences) || !stringArray(value.active_restrictions) || !stringArray(value.uncertainties_to_translate) || !stringArray(value.questions_answerable_now)) return { accepted: false, reason: 'APPROVED_ENVELOPE_ARRAY_INVALID' };
+  if (![value.journey_context, value.customer_context_summary, value.menu_context_summary, value.recommendation_context, value.active_context, value.unresolved_reference, value.channel_policy_summary, value.cost_policy_summary].every((item) => item === null || isPlainObject(item))) return { accepted: false, reason: 'APPROVED_ENVELOPE_CONTEXT_INVALID' };
+  if (![value.confirmed_facts, value.candidate_options, value.candidate_reasons, value.candidate_tradeoffs].every((items) => Array.isArray(items) && items.length <= 100 && items.every(isPlainObject))) return { accepted: false, reason: 'APPROVED_ENVELOPE_DECISION_SUPPORT_INVALID' };
   if (!Array.isArray(value.facts) || value.facts.some((fact) => !isPlainObject(fact) || typeof fact.field !== 'string' || !['string', 'number', 'boolean'].includes(typeof fact.value))) return { accepted: false, reason: 'APPROVED_ENVELOPE_FACTS_INVALID' };
   if (value.action_truth !== null && typeof value.action_truth !== 'string') return { accepted: false, reason: 'APPROVED_ENVELOPE_ACTION_INVALID' };
   if (typeof value.tone !== 'string' || !['informational', 'operational', 'sensitive', 'critical'].includes(value.gravity)) return { accepted: false, reason: 'APPROVED_ENVELOPE_TONE_INVALID' };
@@ -52,7 +65,23 @@ function contextSummaryLines(envelope) {
     envelope.journey_context,
     envelope.customer_context_summary,
     envelope.menu_context_summary,
-    envelope.recommendation_context,
+    envelope.recommendation_context ? {
+      status: envelope.recommendation_context.status,
+      candidate_item_ids: envelope.recommendation_context.candidate_item_ids,
+      unknowns: envelope.recommendation_context.unknowns
+    } : null,
+    {
+      customer_goal: envelope.customer_goal,
+      active_preferences: envelope.active_preferences,
+      active_restrictions: envelope.active_restrictions,
+      candidate_options: envelope.candidate_options,
+      candidate_reasons: envelope.candidate_reasons,
+      candidate_tradeoffs: envelope.candidate_tradeoffs,
+      uncertainties_to_translate: envelope.uncertainties_to_translate,
+      questions_answerable_now: envelope.questions_answerable_now,
+      unresolved_reference: envelope.unresolved_reference,
+      next_best_question: envelope.next_best_question
+    },
     envelope.channel_policy_summary,
     envelope.cost_policy_summary
   ].filter(Boolean);

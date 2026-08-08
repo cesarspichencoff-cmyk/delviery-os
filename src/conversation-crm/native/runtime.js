@@ -675,9 +675,11 @@ class NativeConversationRuntime {
             recommendation_context: productContexts.recommendation_context || null,
             channel_policy: productContexts.channel_policy || null,
             cost_policy: productContexts.cost_policy || ZERO_EXTERNAL_COST_POLICY,
-            question_to_ask: pattern.decision?.requires_clarification
+            question_to_ask: productContexts.conversation_guidance
+              ? undefined
+              : (pattern.decision?.requires_clarification
               ? pattern.decision.clarification_question
-              : undefined,
+              : undefined),
             recent_phrases: responseContext.previous_responses || []
           })
         : null;

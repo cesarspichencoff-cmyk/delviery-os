@@ -266,8 +266,8 @@ function buildResponsePlan(input = {}) {
     action_selected: actionSelected,
     action_mode: actionMode,
     channel_guidance: [...knowledge.playbook.channel_guidance],
-    explanation_needed: [...knowledge.explanations],
-    direction: [...knowledge.directions],
+    explanation_needed: productGuidance ? [] : [...knowledge.explanations],
+    direction: productGuidance ? [] : [...knowledge.directions],
     optional_enrichment: knowledge.selected
       .filter((item) => item.purpose !== 'direct_answer')
       .map((item) => item.knowledge_id),
@@ -293,7 +293,7 @@ function buildResponsePlan(input = {}) {
     deferred_questions: pendingQuestions.slice(questionLimit),
     optional_information: [],
     prohibited_claims: [...new Set([...STANDARD_PROHIBITED, ...(classification.prohibited_responses || []), ...strategy.prohibited_claims])],
-    length: strategy.length,
+    length: productGuidance ? 'medium' : strategy.length,
     emoji_policy: gravity === 'critical' || gravity === 'sensitive' ? 'none' : strategy.emoji_policy,
     tone_profile: 'tata_warm',
     strategy_id: strategyId,

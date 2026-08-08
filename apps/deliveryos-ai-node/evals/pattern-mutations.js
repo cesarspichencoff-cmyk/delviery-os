@@ -16,6 +16,9 @@ function baseEnvelope() {
     schema_version: 'deliveryos-approved-response-envelope-v1', social_acknowledgement: null,
     direct_answer: [], explanation: [], journey_context: null, customer_context_summary: null,
     menu_context_summary: null, recommendation_context: null,
+    customer_goal: null, active_context: null, confirmed_facts: [], active_preferences: [], active_restrictions: [],
+    candidate_options: [], candidate_reasons: [], candidate_tradeoffs: [], uncertainties_to_translate: [],
+    questions_answerable_now: [], unresolved_reference: null, next_best_question: 'Qual é o número do pedido?',
     channel_policy_summary: { status: 'not_requested' }, cost_policy_summary: { status: 'free_verified' },
     facts: [], action_truth: null, question_to_ask: 'Qual é o número do pedido?', tone: 'tata_warm', gravity: 'sensitive',
     prohibited_claims: [], recent_phrases_to_avoid: [], authorized_links: [], authorized_numbers: [], maximum_length: 500

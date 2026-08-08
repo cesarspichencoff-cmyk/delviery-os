@@ -121,3 +121,12 @@ Permanecem bloqueios deliberados para chamar o cardápio de real e homologado:
 
 Nenhum desses pontos autoriza promover extração, fixture sintética ou inferência
 do Writer a fato comercial.
+
+## Correção pós-homologação humana 01
+
+Não há bloqueador técnico conhecido para a segunda homologação humana local.
+Permanece deliberadamente pendente a decisão de César sobre a qualidade da
+experiência. Gemma pode ser rejeitado pelo gate e cair no compositor
+determinístico; isso preserva a verdade, mas ainda deve ser avaliado por César
+como experiência. WhatsApp, hospedagem, produção, drivers reais, curadoria
+comercial e qualquer custo externo continuam bloqueados.

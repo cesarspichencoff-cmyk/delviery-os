@@ -10,6 +10,7 @@ const WRITER_INPUT_KEYS = Object.freeze([
 const URL_PATTERN = /https?:\/\/[^\s)\]}>,]+/giu;
 const NUMBER_PATTERN = /(?:R\$\s*)?\d+(?:[.,]\d+)?/giu;
 const TECHNICAL_PATTERN = /\b(?:intent|subintent|capability_id|policy_id|scenario_id|idempotency|stack trace|event_id|chain of thought|reasoning|racioc[ií]nio|guardrail|limitad[oa] tecnicamente)\b/iu;
+const CUSTOMER_INTERNAL_LANGUAGE_PATTERN = /(?:evid[eê]ncia p[uú]blica|filtros? confirmados?|crit[eé]rios? confirmados?|fonte p[uú]blica|\bcandidat[oa]s?\b|\bconfidence\b|\binfer[eê]ncia\b|\bprovenance\b|\bjourney\b|approved envelope|response plan|\bfallback\b|pattern engine|\bwriter\b|mantive (?:os )?crit[eé]rios|processei (?:os )?dados|registrei (?:o|a|sua) prefer[eê]ncia)/iu;
 const COMPENSATION_PROMISE_PATTERN = /\b(?:vou|vamos|iremos|posso|ser[aá]|est[aá])\b.{0,45}\b(?:reembolso|cr[eé]dito|cortesia|reposi[cç][aã]o)\b|\b(?:reembolso|cr[eé]dito|cortesia|reposi[cç][aã]o)\b.{0,45}\b(?:confirmad[oa]|liberad[oa]|concedid[oa]|enviad[oa]|garantid[oa])\b/iu;
 
 function arrayOfStrings(value, maximum = 50) {
@@ -36,6 +37,7 @@ function validateWriterOutput(output, input) {
   if (!text) return { accepted: false, reason: 'WRITER_TEXT_EMPTY' };
   if (text.length > input.maximum_length) return { accepted: false, reason: 'WRITER_TEXT_TOO_LONG' };
   if (TECHNICAL_PATTERN.test(text)) return { accepted: false, reason: 'WRITER_TECHNICAL_EXPOSURE' };
+  if (CUSTOMER_INTERNAL_LANGUAGE_PATTERN.test(text)) return { accepted: false, reason: 'WRITER_CUSTOMER_INTERNAL_LANGUAGE_LEAK' };
   if (['sensitive', 'critical'].includes(input.gravity) && /\p{Extended_Pictographic}/u.test(text)) return { accepted: false, reason: 'WRITER_SENSITIVE_EMOJI' };
   const links = [...text.matchAll(URL_PATTERN)].map((match) => match[0].replace(/[.!?]+$/u, ''));
   if (links.some((link) => !input.authorized_links.includes(link))) return { accepted: false, reason: 'WRITER_UNAPPROVED_LINK' };
@@ -59,4 +61,4 @@ const WRITER_JSON_SCHEMA = Object.freeze({
   }
 });
 
-module.exports = { WRITER_INPUT_KEYS, URL_PATTERN, NUMBER_PATTERN, TECHNICAL_PATTERN, COMPENSATION_PROMISE_PATTERN, WRITER_JSON_SCHEMA, validateWriterInput, validateWriterOutput };
+module.exports = { WRITER_INPUT_KEYS, URL_PATTERN, NUMBER_PATTERN, TECHNICAL_PATTERN, CUSTOMER_INTERNAL_LANGUAGE_PATTERN, COMPENSATION_PROMISE_PATTERN, WRITER_JSON_SCHEMA, validateWriterInput, validateWriterOutput };

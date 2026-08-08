@@ -7,6 +7,7 @@ const { runServiceQualityGates } = require('./service-quality-gates');
 const URL_PATTERN = /https?:\/\/[^\s)\]}>,]+/giu;
 const NUMBER_PATTERN = /(?:R\$\s*)?\d+(?:[.,]\d+)?/giu;
 const TECHNICAL_PATTERN = /\b(?:intent|subintent|capability_id|policy_id|scenario_id|idempotency|persist[eê]ncia|stack trace|event_id)\b/iu;
+const CUSTOMER_INTERNAL_LANGUAGE_PATTERN = /(?:evid[eê]ncia p[uú]blica|filtros? confirmados?|crit[eé]rios? confirmados?|fonte p[uú]blica|\bcandidat[oa]s?\b|\bconfidence\b|\binfer[eê]ncia\b|\bprovenance\b|\bjourney\b|approved envelope|response plan|\bfallback\b|pattern engine|\bwriter\b|mantive (?:os )?crit[eé]rios|processei (?:os )?dados|registrei (?:o|a|sua) prefer[eê]ncia)/iu;
 const ORACLE_PATTERN = /\b(?:TATA-SC-\d+|SCENARIO_CATALOG|scenario_oracle|ideal_response|oracle_payload)\b/iu;
 const AUTOMATIC_COMPENSATION = /\b(?:reembolso|cr[eé]dito|cortesia|reposi[cç][aã]o)\b.{0,40}\b(?:confirmad[oa]|liberad[oa]|concedid[oa]|enviad[oa]|autom[aá]tic[oa])\b/iu;
 const UNVERIFIED_ACTION = /\b(?:reserva|fila|pedido|transfer[eê]ncia|encaminhamento)\b.{0,45}\b(?:confirmad[oa]|conclu[ií]d[oa]|realizad[oa])\b/iu;
@@ -77,6 +78,7 @@ function validatePostComposition(input = {}) {
   for (const link of urlsOf(text)) if (!allowedLinks.has(link)) findings.push('UNAPPROVED_LINK');
   for (const number of numbersOf(text)) if (!allowedNumberSet.has(number)) findings.push('UNAPPROVED_NUMBER');
   if (TECHNICAL_PATTERN.test(text)) findings.push('TECHNICAL_INFORMATION_EXPOSED');
+  if (CUSTOMER_INTERNAL_LANGUAGE_PATTERN.test(text)) findings.push('CUSTOMER_FACING_INTERNAL_LANGUAGE_LEAK');
   if (ORACLE_PATTERN.test(text)) findings.push('ORACLE_INFORMATION_EXPOSED');
   if (AUTOMATIC_COMPENSATION.test(text)) findings.push('AUTOMATIC_COMPENSATION');
   if (LIABILITY.test(text)) findings.push('LIABILITY_ADMISSION');
@@ -194,6 +196,7 @@ module.exports = {
   URL_PATTERN,
   NUMBER_PATTERN,
   TECHNICAL_PATTERN,
+  CUSTOMER_INTERNAL_LANGUAGE_PATTERN,
   ORACLE_PATTERN,
   PLATFORM_BLAME,
   QUESTION_SIGNATURES,

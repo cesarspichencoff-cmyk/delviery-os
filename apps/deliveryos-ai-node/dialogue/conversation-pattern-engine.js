@@ -18,6 +18,7 @@ const PRIORITY = Object.freeze([
 ]);
 const JOURNEY_BY_INTENT = INTENT_JOURNEY_RULES;
 const JOURNEY_HINTS = Object.freeze([
+  [/\b(?:primeira vez|nunca (?:fui|comi|pedi)|nao conheco|nao entendo (?:nada |muito )?(?:de )?(?:japones|sushi)|quero experimentar mas nao sei o que pedir|nao conheco esses nomes|me ajuda a escolher porque eu nao entendo muito|sou meio perdido com sushi)\b/u, 'restaurant_information'],
   [/\b(?:reserv|mesa para)\b/u, 'reservation'],
   [/\b(?:fila|espera)\b/u, 'waitlist'],
   [/\b(?:grupo grande|evento|oke)\b/u, 'oke_event'],

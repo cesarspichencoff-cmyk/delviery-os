@@ -1,10 +1,10 @@
 {
   "project": "DeliveryOS Chatbot TATÁ",
-  "active_change": "final-local-writer-real-menu-homologation",
-  "branch": "fix/customer-menu-real-homologation-v1",
-  "base": "4144d50b9e26a30453d4b5a77233302e6b810077",
-  "behavioral_checkpoint": "4144d50b9e26a30453d4b5a77233302e6b810077",
-  "working_tree": "clean_after_local_commit",
+  "active_change": "human-experience-correction-01",
+  "branch": "feature/hospitality-intelligence-final-v1",
+  "base": "76e605890430c7582586e2baef25833c86a6b723",
+  "behavioral_checkpoint": "76e605890430c7582586e2baef25833c86a6b723",
+  "working_tree": "clean_after_atomic_local_commit",
   "completed_units": [
     "hosting_inspection",
     "outbound_https_claim_lease_bridge",
@@ -66,7 +66,13 @@
     "final_gemma_local_writer_connection",
     "final_real_menu_review_queue",
     "final_pairing_review_queue",
-    "final_panel_homologation"
+    "final_panel_homologation",
+    "human_experience_compound_turn",
+    "human_experience_preference_replanning",
+    "human_experience_language_gate",
+    "human_experience_first_visit",
+    "human_experience_decision_support",
+    "human_experience_real_route_and_playwright"
   ],
   "active_unit": null,
   "pending_units": [],
@@ -107,7 +113,14 @@
     "capacidade_final": "43/43 passed",
     "copiloto_final": "53/53 passed",
     "panel_final": "13/13 mandatory messages executed through the real panel; Gemma local used in all; zero console errors",
-    "menu_review_final": "199 item proposals plus 86 pairing proposals; 285 pending; zero automatic approval"
+    "menu_review_final": "199 item proposals plus 86 pairing proposals; 285 pending; zero automatic approval",
+    "human_experience_focused": "20/20 passed",
+    "conversation_native_human_experience": "725/725 passed",
+    "scenario_catalog_human_experience": "200/200 passed; hash 9f470846ae0d0c0a96f821288732738cedc53057edaac8429b4aa19d56613b20",
+    "privacy_human_experience": "passed; zero findings; positive control detected",
+    "protected_regressions_human_experience": "Conference Brain passed; Live 243/243; Capacity 43/43; Copilot 53/53; menu 199; historical source passed",
+    "playwright_human_experience": "12/12 passed, including the four rejected human flows through the interface",
+    "real_route_human_experience": "four cases repeated at http://127.0.0.1:4179; diagnostic hidden; real drivers disabled; Gemma 4 E4B available only as Writer"
   },
   "bakeoff": {
     "seed": "TATA-LOCAL-AI-BAKEOFF-V1",
@@ -182,7 +195,7 @@
     "007_008_human_homologation_pending",
     "real_menu_catalog_curation_pending",
     "real_allergen_and_pairing_approval_pending",
-    "isolated_menu_preferences_can_still_receive_generic_pattern_clarification",
+    "cesar_human_experience_review_v2_pending",
     "postgres_production_migration_not_authorized",
     "restaurant_hardware_unverified",
     "hosted_runtime_not_connected"
@@ -198,6 +211,6 @@
   "production_authorized": false,
   "paid_api_or_infrastructure_added": false,
   "push_merge_deploy_performed": false,
-  "next_step": "César curates real menu items and pairings in the local panel; do not connect WhatsApp, import real customers, migrate production, host, push, merge or deploy without new authorization",
-  "updated_at": "2026-08-01T00:00:00-03:00"
+  "next_step": "César repeats the four human-experience cases in the local panel; do not start another mission, connect WhatsApp, host, push, merge or deploy",
+  "updated_at": "2026-08-08T03:25:00-03:00"
 }

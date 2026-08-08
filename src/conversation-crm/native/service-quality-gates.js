@@ -42,7 +42,7 @@ function availableKnowledgeUnused(input = {}) {
   const plan = input.plan || {};
   const direct = plan.direct_answer || [];
   const missing = direct.filter((message) => !messageRepresented(text, message));
-  const falseFallback = direct.length > 0
+  const falseFallback = direct.length > 0 && missing.length > 0
     && /\b(?:n[aã]o (?:tenho|sei|possuo)|sem informa[cç][aã]o|falar com humano)\b/iu.test(text);
   return deepFreeze({
     gate: 'available_knowledge_unused',

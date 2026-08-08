@@ -77,6 +77,8 @@ function buildApprovedResponseEnvelope(input = {}) {
   const checked = validateProductContexts(input);
   if (!checked.accepted) throw Object.assign(new Error(checked.reason), { code: checked.reason });
   const contexts = checked.contexts;
+  const recommendation = contexts.recommendation_context || {};
+  const activeContext = recommendation.hospitality_context || null;
   const safety = evaluateRecommendationSafety(contexts);
   const policies = policySummary(input, contexts);
   let question = input.question_to_ask === undefined ? requiredQuestion(plan) : input.question_to_ask;
@@ -107,6 +109,18 @@ function buildApprovedResponseEnvelope(input = {}) {
     customer_context_summary: customerContextSummary(contexts.customer_context),
     menu_context_summary: menuContextSummary(contexts.menu_context),
     recommendation_context: contexts.recommendation_context,
+    customer_goal: recommendation.customer_goal || plan.customer_need || null,
+    active_context: activeContext,
+    confirmed_facts: (activeContext?.confirmed_facts || []).map(({ field, value }) => ({ field, value })),
+    active_preferences: [...(recommendation.active_preferences || [])],
+    active_restrictions: [...(recommendation.active_restrictions || [])],
+    candidate_options: [...(recommendation.candidate_options || [])],
+    candidate_reasons: [...(recommendation.candidate_reasons || [])],
+    candidate_tradeoffs: [...(recommendation.candidate_tradeoffs || [])],
+    uncertainties_to_translate: [...(recommendation.unknowns || [])],
+    questions_answerable_now: [...(recommendation.questions_answerable_now || [])],
+    unresolved_reference: recommendation.unresolved_reference || null,
+    next_best_question: question,
     channel_policy_summary: policies.channel,
     cost_policy_summary: policies.cost,
     facts: factsFromPlan(plan),

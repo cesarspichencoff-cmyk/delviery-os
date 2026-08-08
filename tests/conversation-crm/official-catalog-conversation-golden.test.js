@@ -103,7 +103,7 @@ test('leve, sem fritura, maçaricado e duas pessoas refinam sem inventar certeza
   send(GOLDEN);
   send('iFood');
   const light = send('quero algo mais leve');
-  assert.match(light.response, /fonte pública não classifica essas opções como leves/iu);
+  assert.match(light.response, /não consigo afirmar qual é realmente mais leve/iu);
   const notFried = send('sem fritura');
   assert.equal(notFried.diagnostic.preferences.fried, false);
   assert.match(notFried.response, /não confirma o método de preparo como sem fritura/iu);
@@ -135,7 +135,7 @@ test('pergunta lateral, retomada, troca de canal, correção e reset preservam l
   assert.doesNotMatch(side.response, /Salmão Grelhado/iu);
   const resumed = send('voltando ao cardápio');
   assert.match(resumed.response, /retomar de onde paramos/iu);
-  assert.match(resumed.response, /cardápio oficial deste canal/iu);
+  assert.match(resumed.response, /cardápio do iFood/iu);
   const corrected = send('na verdade atum');
   assert.deepEqual(corrected.diagnostic.preferences.preferred_ingredients, ['tuna']);
   assert.equal(menuItems(server, corrected.diagnostic.candidates_found).every((item) => item.ingredients.some((ingredient) => ingredient.name === 'tuna')), true);
@@ -158,5 +158,5 @@ test('pergunta lateral natural sobre endereço não repete recomendações', (t)
   assert.equal(side.diagnostic.pattern, 'side_question');
   const resumed = send('voltando ao cardápio');
   assert.match(resumed.response, /retomar de onde paramos/iu);
-  assert.match(resumed.response, /cardápio oficial deste canal/iu);
+  assert.match(resumed.response, /cardápio do iFood/iu);
 });

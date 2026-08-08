@@ -84,6 +84,58 @@ test('Atendimento Livre mantém multiturno e reset separa a conversa', async ({ 
   await expect(page.locator('#chat-thread .message.bot')).toHaveCount(0);
 });
 
+test('homologação humana pós-correção preserva turno composto, replano e primeira visita', async ({ page }) => {
+  const send = async (message) => {
+    const before = await page.locator('#chat-thread .message.bot').count();
+    await page.locator('#chat-message').fill(message);
+    await page.getByRole('button', { name: 'Enviar' }).click();
+    await expect(page.locator('#chat-thread .message.bot')).toHaveCount(before + 1);
+    return page.locator('#chat-thread .message.bot').nth(before);
+  };
+  const reset = async () => {
+    page.once('dialog', (dialog) => dialog.accept());
+    await page.getByRole('button', { name: 'Nova conversa' }).click();
+    await expect(page.locator('#chat-thread .message.bot')).toHaveCount(0);
+  };
+  const internalLanguage = /evidência pública|filtros confirmados|fonte pública|candidato|confidence|inferência|proveniência|response plan|pattern engine|fallback/iu;
+
+  await open(page);
+  const compound = await send(`Boa noite, quero pedir alguma coisa com salmão
+pelo iFood
+queria algo mais leve
+não curto muito cream cheese
+somos duas pessoas
+o que você me indica?
+essa segunda opção é crua?
+quanto custa?
+e tem alguma bebida que combina?`);
+  await expect(compound).toContainText(/salmão/iu);
+  await expect(compound).toContainText(/R\$/u);
+  await expect(compound).toContainText(/cream cheese/iu);
+  await expect(compound).toContainText(/bebida|harmoniza/iu);
+  await expect(compound).not.toContainText(internalLanguage);
+
+  await reset();
+  const initial = await send('Boa noite, quero pedir alguma coisa com salmão pelo iFood');
+  const initialText = await initial.textContent();
+  const light = await send('queria algo mais leve');
+  const lightText = await light.textContent();
+  const cream = await send('não curto muito cream cheese');
+  const creamText = await cream.textContent();
+  expect(lightText).not.toBe(initialText);
+  expect(creamText).not.toBe(lightText);
+  await expect(light).toContainText(/cru|maçaricado|fritura|preparo/iu);
+  await expect(cream).toContainText(/cream cheese/iu);
+  await expect(cream).not.toContainText(internalLanguage);
+
+  await reset();
+  const firstVisit = await send('Oi, nunca pedi no Tatá e não entendo muito de japonês');
+  await expect(firstVisit).toContainText(/familiar|cru|cozido/iu);
+  await expect(firstVisit).not.toContainText(/Entendi\. Você pode me contar/iu);
+  await expect(firstVisit).not.toContainText(internalLanguage);
+  await expect(page.locator('#legacy-technical-support')).toBeHidden();
+});
+
 test('avaliação exige voto e só então revela decisão técnica', async ({ page }) => {
   await open(page);
   await openMode(page, /Nova homologação/);

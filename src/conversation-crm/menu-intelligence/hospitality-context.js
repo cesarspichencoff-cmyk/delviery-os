@@ -3,7 +3,7 @@
 const { cloneFrozen } = require('./contracts');
 
 const OCCASIONS = Object.freeze([
-  ['first_visit', /\b(?:primeira vez|nunca (?:fui|comi)|nao conheco)\b/u],
+  ['first_visit', /\b(?:primeira vez|nunca (?:fui|comi|pedi)|nao conheco|nao entendo (?:nada |muito )?(?:de )?(?:japones|sushi)|nao conheco esses nomes|quero experimentar mas nao sei o que pedir|me ajuda a escolher porque eu nao entendo muito)\b/u],
   ['romantic_dinner', /\b(?:romantico|encontro|a dois|casal)\b/u],
   ['celebration', /\b(?:aniversario|comemora|celebra)\b/u],
   ['business_lunch', /\b(?:almoco de negocios|reuniao de trabalho|executivo)\b/u],
@@ -15,7 +15,7 @@ const OCCASIONS = Object.freeze([
   ['premium_experience', /\b(?:especial|premium|experiencia completa)\b/u],
   ['traditional_preference', /\b(?:tradicional|classico|classica)\b/u],
   ['adventurous_preference', /\b(?:diferente|ousado|ousada|surpreenda|aventur)\b/u],
-  ['light_meal', /\b(?:leve|mais leve)\b/u],
+  ['light_meal', /\b(?:leve|mais leve|menos pesad[ao])\b/u],
   ['comfort_food', /\b(?:conforto|quentinho|bem servido)\b/u],
   ['drink_pairing', /\b(?:bebida|drink|harmoniza|combina)\b/u],
   ['dietary_restriction', /\b(?:vegetarian|vegano|restricao|sem gluten|sem lactose)\b/u],
@@ -69,6 +69,10 @@ function extractBudget(text) {
   return match ? { maximum_brl: Number(match[1]) } : null;
 }
 
+function avoidsCreamCheese(text) {
+  return /\b(?:sem|evito|evitar|nao (?:quero|gosto(?: muito)?|curto(?: muito)?)|nao sou (?:muito )?fa de)\s+(?:de\s+)?cream cheese\b/u.test(String(text || ''));
+}
+
 function updateHospitalityContext(previous, input = {}) {
   const context = structuredClone(previous || initialHospitalityContext());
   const text = String(input.normalized_text || '');
@@ -86,7 +90,7 @@ function updateHospitalityContext(previous, input = {}) {
   if (input.number_of_people) { context.number_of_people = input.number_of_people; fact(context, 'number_of_people', input.number_of_people); }
   const budget = extractBudget(text);
   if (budget) { context.budget = budget; fact(context, 'budget_maximum_brl', budget.maximum_brl); }
-  if (/\b(?:primeira vez|iniciante|nao conheco)\b/u.test(text)) context.experience_level = 'first_time';
+  if (/\b(?:primeira vez|iniciante|nao conheco|nunca (?:fui|comi|pedi)|nao entendo (?:nada |muito )?(?:de )?(?:japones|sushi)|quero experimentar mas nao sei o que pedir|me ajuda a escolher porque eu nao entendo muito)\b/u.test(text)) context.experience_level = 'first_time';
   if (/\b(?:conheco bem|ja conheco|frequente)\b/u.test(text)) context.experience_level = 'experienced';
   const ingredientMap = [
     ['salmon', /\bsalmao\b/u, 'salmao'], ['tuna', /\batum\b/u, 'atum'], ['shrimp', /\bcamarao\b/u, 'camarao'],
@@ -103,7 +107,7 @@ function updateHospitalityContext(previous, input = {}) {
     ? [...new Set(preferredMentioned)]
     : addUnique(context.preferred_ingredients, preferredMentioned);
   if (ingredientCorrection) fact(context, 'preferred_ingredients', context.preferred_ingredients);
-  if (/\b(?:leve|fresco|fresca)\b/u.test(text)) context.flavor_preferences = addUnique(context.flavor_preferences, ['light']);
+  if (/\b(?:leve|fresco|fresca|menos pesad[ao])\b/u.test(text)) context.flavor_preferences = addUnique(context.flavor_preferences, ['light']);
   if (/\b(?:intenso|intensa|marcante)\b/u.test(text)) context.flavor_preferences = addUnique(context.flavor_preferences, ['intense']);
   if (/\b(?:picante|spicy)\b/u.test(text)) context.flavor_preferences = addUnique(context.flavor_preferences, ['spicy']);
   if (/\b(?:crocante|crispy)\b/u.test(text)) context.texture_preferences = addUnique(context.texture_preferences, ['crunchy']);
@@ -112,7 +116,7 @@ function updateHospitalityContext(previous, input = {}) {
   if (/\b(?:cru|sashimi)\b/u.test(text)) context.preparation_preferences = addUnique(context.preparation_preferences, ['raw']);
   if (/\b(?:cozido|quente)\b/u.test(text)) context.preparation_preferences = addUnique(context.preparation_preferences, ['cooked']);
   if (/\bsem (?:fritura|frito|fritos|frita|fritas)\b/u.test(text)) context.preparation_preferences = addUnique(context.preparation_preferences, ['not_fried']);
-  if (/\bsem cream cheese\b/u.test(text)) context.preparation_preferences = addUnique(context.preparation_preferences, ['without_cream_cheese']);
+  if (avoidsCreamCheese(text)) context.preparation_preferences = addUnique(context.preparation_preferences, ['without_cream_cheese']);
   if (/\bvegetarian[oa]?\b/u.test(text)) context.dietary_restrictions = addUnique(context.dietary_restrictions, ['vegetarian']);
   if (/\b(?:para compartilhar|dividir|compartilhar)\b/u.test(text)) {
     context.desired_experience = 'sharing';
@@ -161,5 +165,6 @@ module.exports = {
   initialHospitalityContext,
   updateHospitalityContext,
   hospitalityRequest,
-  extractBudget
+  extractBudget,
+  avoidsCreamCheese
 };

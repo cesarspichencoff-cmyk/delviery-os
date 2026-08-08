@@ -125,3 +125,14 @@ superfície: estado lembrado pelo CRM pode continuar invisível na frase.
   identidade técnica fica fora do artefato público;
 - corpus amplo precisa de mutações adversariais; volume sem controles negativos
   não prova prioridade, isolamento de oráculo ou fail-closed.
+
+## Correção pós-homologação humana 01
+
+- uma mensagem real pode conter fatos, preferências, restrições e várias
+  perguntas; classificar só a intenção dominante perde o objetivo humano;
+- mudança no contexto sem mudança perceptível no plano não é inteligência útil;
+- verdade auditável deve permanecer no diagnóstico, mas chegar ao cliente como
+  orientação natural, nunca como relato do mecanismo;
+- primeira visita é uma jornada de redução de complexidade, não ausência de fato;
+- testes de API precisam ser complementados por espera correta e inspeção da
+  resposta efetivamente renderizada no painel.

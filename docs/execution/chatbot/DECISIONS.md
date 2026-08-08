@@ -409,3 +409,21 @@ proíbe trocar ou ampliar o Pattern Engine.
 
 **Impacto e reversibilidade:** não há claim comercial inventado. A melhoria
 conversacional fica para autorização futura baseada nesta evidência.
+
+## Correção pós-homologação humana 01
+
+### D-039 — Turno é analisado antes de ser redigido
+
+**Contexto:** a rota real colapsava um turno composto na última subintenção,
+atualizava preferências sem replanejar e expunha linguagem interna de auditoria.
+
+**Decisão:** decompor deterministicamente o turno, alimentar o plano aprovado
+com contexto, razões, trade-offs e incertezas e manter Gemma apenas na redação.
+O validador pós-Writer bloqueia linguagem de mecanismo.
+
+**Motivo:** a resposta precisa preservar verdade e estado enquanto aproxima o
+cliente de uma escolha; fluência não pode corrigir perda estrutural nem ganhar
+autoridade sobre item, preço, canal, referência ou segurança.
+
+**Impacto e reversibilidade:** a mudança fica restrita à rota conversacional e
+seus contratos/testes. Não altera catálogo, CRM, modelo ou integração externa.

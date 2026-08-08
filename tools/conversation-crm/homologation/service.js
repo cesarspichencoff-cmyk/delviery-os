@@ -265,6 +265,7 @@ class HomologationService {
           repetition_detected: productContexts.conversation_state?.repetition_detected === true,
           repetition_streak: productContexts.conversation_state?.repetition_streak || 0,
           facts_added: productContexts.conversation_state?.facts_added || [],
+          turn_analysis: productContexts.conversation_state?.turn_analysis || null,
           customer_context_source: result.execution_diagnostics?.customer_context_source || 'none',
           menu_context_source: result.execution_diagnostics?.menu_context_source || 'none',
           writer_status: result.execution_diagnostics?.writer?.status || 'unknown',

@@ -1,20 +1,15 @@
-# Retomada única — Writer local e curadoria real
+# Retomada única — homologação humana V2
 
-- Branch: `fix/customer-menu-real-homologation-v1`.
-- Base: `4144d50b9e26a30453d4b5a77233302e6b810077`.
-- Writer: Gemma 4 E4B conectado somente depois do Approved Response Envelope;
-  fallback determinístico fail-closed; artefatos fora do Git.
-- Painel: 13 mensagens obrigatórias executadas; Writer local usado em todas;
-  comparação A/B pelo mesmo envelope; zero erro de console.
-- Curadoria: 199 itens + 86 harmonizações, 285 pendentes e zero aprovação
-  automática. As sete fixtures sintéticas permanecem isoladas.
-- Segurança: alergia preservada como restrição preventiva; nenhuma garantia de
-  contaminação cruzada; preço, disponibilidade e canal não são inferidos.
-- Testes: foco 33/33; Conversation 685/685; catálogo 200/200; privacidade
-  aprovada; Conference 314/314; Live 243/243; Capacidade 43/43; Copiloto 53/53;
-  cardápio 199; fonte histórica aprovada.
-- Limite observado: “mais leve” e “maçaricado” podem receber clarificação
-  genérica sem canal e item real aprovado. Pattern Engine ficou intocado.
-- Próximo passo: César faz a curadoria humana local de itens e harmonizações.
-- Não fazer: WhatsApp, hospedagem, produção, API paga, cliente real, migração,
-  alteração do Pattern Engine/CRM, push, merge ou deploy sem nova autorização.
+- Branch: `feature/hospitality-intelligence-final-v1`.
+- Base da correção: `76e605890430c7582586e2baef25833c86a6b723`.
+- Foco concluído: turno composto, replano de preferências, linguagem ao cliente,
+  primeira visita e apoio à decisão.
+- Prova: foco 20/20; Conversation 725/725; catálogo 200/200; privacidade verde;
+  regressões protegidas verdes; Playwright 12/12; quatro casos repetidos em
+  `http://127.0.0.1:4179` com diagnóstico oculto.
+- Writer: Gemma 4 E4B continua somente Writer; decisão, fatos, estado e gate são
+  determinísticos; fallback protegido continua autorizado.
+- Próximo passo único: César repete os quatro casos pela interface local e julga
+  a experiência humana.
+- Não fazer: nova missão, redesign, WhatsApp, hospedagem, produção, novo modelo,
+  push, merge ou deploy sem autorização.
