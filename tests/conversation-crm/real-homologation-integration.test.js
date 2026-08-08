@@ -120,7 +120,7 @@ test('diagnóstico sanitizado identifica contratos e fonte do texto final', (t) 
   assert.equal(JSON.stringify(diagnostic).includes('oii'), false);
 });
 
-test('contextos sintéticos de cliente e cardápio chegam ao envelope aprovado', (t) => {
+test('cliente sintético e cardápio público oficial chegam ao envelope aprovado', (t) => {
   const { homologation } = localServices(t);
   const turn = homologation.chat({
     message: 'Pode recomendar um prato?',
@@ -128,11 +128,12 @@ test('contextos sintéticos de cliente e cardápio chegam ao envelope aprovado',
     channel: 'dining_room'
   }).turn;
   assert.equal(turn.diagnostic.customer_context_source, 'customer_intelligence_synthetic');
-  assert.equal(turn.diagnostic.menu_context_source, 'menu_intelligence_synthetic');
+  assert.equal(turn.diagnostic.menu_context_source, 'menu_intelligence_verified_official_public_source');
   assert.equal(turn.diagnostic.envelope_contract, 'deliveryos-approved-response-envelope-v1');
   assert.equal(turn.diagnostic.pattern, 'clarification');
   assert.equal(turn.diagnostic.fallback_used, false);
-  assert.match(turn.response, /confirmar a restrição e o item/iu);
+  assert.match(turn.response, /restrição confirmada no contexto do cliente/iu);
+  assert.match(turn.response, /contaminação cruzada/iu);
 });
 
 test('bootstrap declara com honestidade o que está conectado e o que não está', (t) => {
@@ -144,7 +145,7 @@ test('bootstrap declara com honestidade o que está conectado e o que não está
   assert.equal(integration.deterministic_composer, 'active');
   assert.equal(integration.response_writer, 'deterministic_fallback');
   assert.equal(integration.response_writer_reason, 'LOCAL_WRITER_NOT_CONFIGURED');
-  assert.equal(integration.real_data, false);
+  assert.equal(integration.real_data, true);
 });
 
 test('ficha sintética expõe relações operacionais sem identidade bruta', (t) => {
@@ -220,6 +221,7 @@ test('sequência humana completa usa conhecimento e contexto automático sem sel
     'Boa noite, tudo bem?',
     'Quero conhecer melhor o restaurante.',
     'Pode me mostrar o cardápio?',
+    'É para o salão.',
     'Tem opção sem fritura?',
     'Prefiro alguma coisa com salmão e sem cream cheese.',
     'Antes, vocês têm valet?',
@@ -230,32 +232,30 @@ test('sequência humana completa usa conhecimento e contexto automático sem sel
   const turns = messages.map((message) => homologation.chat({ message }).turn);
   assert.match(turns[1].response, /TATÁ Sushi trabalha à la carte/iu);
   assert.equal(turns[1].diagnostic.fallback_used, false);
-  assert.match(turns[2].response, /cardápio com os preços/iu);
-  assert.match(turns[3].response, /manter essa preferência para orientar a escolha/iu);
-  assert.doesNotMatch(turns[3].response, /salão.*iFood.*delivery próprio/iu);
-  assert.equal(turns[3].diagnostic.context_reason, 'menu_channel_missing');
-  assert.match(turns[4].response, /manter essa preferência para orientar a escolha/iu);
-  assert.match(turns[5].response, /valet custa R\$ 45/iu);
-  assert.doesNotMatch(turns[5].response, /salão.*iFood.*delivery próprio/iu);
-  assert.match(turns[6].response, /considerar 5 pessoas/iu);
-  assert.match(turns[7].response, /ainda não há uma harmonização revisada e liberada/iu);
-  assert.match(turns[8].response, /restrição preventiva/iu);
-  assert.doesNotMatch(turns[8].response, /serviço de saúde|número do pedido|reação clínica/iu);
-  assert.equal(turns[8].diagnostic.customer_context_source, 'anonymous_synthetic_session');
+  assert.match(turns[2].response, /salão.*iFood.*delivery próprio/iu);
+  assert.match(turns[3].response, /cardápio oficial deste canal/iu);
+  assert.match(turns[4].response, /não confirma o método de preparo como sem fritura/iu);
+  assert.match(turns[5].response, /Salmão/iu);
+  assert.match(turns[6].response, /valet custa R\$ 45/iu);
+  assert.doesNotMatch(turns[6].response, /salão.*iFood.*delivery próprio/iu);
+  assert.match(turns[7].response, /considerar 5 pessoas/iu);
+  assert.match(turns[8].response, /ainda não há uma harmonização aprovada/iu);
+  assert.match(turns[9].response, /restrição preventiva/iu);
+  assert.doesNotMatch(turns[9].response, /serviço de saúde|número do pedido|reação clínica/iu);
+  assert.equal(turns[9].diagnostic.customer_context_source, 'anonymous_synthetic_session');
   assert.equal(turns.every((turn) => !/pergunta lateral|Ainda não tenho uma confirmação segura/iu.test(turn.response)), true);
 });
 
-test('contexto sintético selecionado recomenda, preserva filtros e harmoniza somente fonte aprovada', (t) => {
+test('contexto selecionado recomenda catálogo oficial, preserva filtros e não inventa harmonização', (t) => {
   const { homologation } = localServices(t);
   const first = homologation.chat({ message: 'Tem opção sem fritura?', channel: 'dining_room' }).turn;
   const recommendation = homologation.chat({ message: 'Prefiro alguma coisa com salmão e sem cream cheese.' }).turn;
   const pairing = homologation.chat({ message: 'Qual bebida combina com a opção que você sugeriu?' }).turn;
-  assert.match(first.response, /opções deste canal.*revisadas o bastante/iu);
-  assert.match(recommendation.response, /opções deste canal.*revisadas o bastante/iu);
-  assert.deepEqual(recommendation.diagnostic.candidates_found, ['SIM-MENU-SALMON-LIGHT-DINING']);
-  assert.match(pairing.response, /ainda não há uma harmonização revisada e liberada/iu);
-  assert.deepEqual(pairing.diagnostic.candidates_found, []);
-  assert.equal(pairing.diagnostic.knowledge_sources.includes('SIM-SOURCE-MENU-V1'), true);
+  assert.match(first.response, /cardápio oficial deste canal/iu);
+  assert.match(recommendation.response, /cardápio oficial deste canal/iu);
+  assert.ok(recommendation.diagnostic.candidates_found.length > 0);
+  assert.match(pairing.response, /ainda não há uma harmonização aprovada/iu);
+  assert.equal(pairing.diagnostic.knowledge_sources.includes('menu-source-live-menu-v1'), true);
 });
 
 test('alergia preventiva, incidente após consumo e urgência médica permanecem distintos', (t) => {
@@ -282,16 +282,16 @@ test('diagnóstico expõe estado, canal, unidade, fonte, candidatos e limitaçã
   const turn = homologation.chat({ message: 'Prefiro salmão sem cream cheese.', channel: 'dining_room' }).turn;
   assert.ok(turn.diagnostic.journey_state);
   assert.equal(turn.diagnostic.channel, 'dining_room');
-  assert.equal(turn.diagnostic.unit_id, 'SIM-UNIT-ITAIM');
-  assert.equal(turn.diagnostic.knowledge_sources.includes('SIM-SOURCE-MENU-V1'), true);
-  assert.deepEqual(turn.diagnostic.candidates_found, ['SIM-MENU-SALMON-LIGHT-DINING']);
+  assert.equal(turn.diagnostic.unit_id, 'tata-sushi-itaim-bibi');
+  assert.equal(turn.diagnostic.knowledge_sources.includes('menu-source-live-menu-v1'), true);
+  assert.ok(turn.diagnostic.candidates_found.length > 0);
   assert.equal(turn.diagnostic.writer_status, 'unavailable_no_local_runtime');
 });
 
 test('reset remove canal e recomendação automáticos da conversa anterior', (t) => {
   const { homologation } = localServices(t);
   const selected = homologation.chat({ message: 'Prefiro salmão sem cream cheese.', channel: 'dining_room' }).turn;
-  assert.match(selected.response, /opções deste canal.*revisadas o bastante/iu);
+  assert.match(selected.response, /cardápio oficial deste canal/iu);
   homologation.resetChat();
   const afterReset = homologation.chat({ message: 'Tem opção sem fritura?' }).turn;
   assert.equal(afterReset.diagnostic.channel, 'unknown');

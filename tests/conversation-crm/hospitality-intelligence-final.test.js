@@ -44,12 +44,15 @@ function request(port, route, body = null) {
 test('inventário público certificado preserva contagem, origem e desconhecidos protegidos', (t) => {
   const review = new MenuReviewService({ projectRoot: PROJECT_ROOT, root: temporary(t, 'deliveryos-public-evidence-') });
   const bootstrap = review.bootstrap();
-  assert.equal(bootstrap.public_records.length, 426);
-  assert.equal(bootstrap.public_records.filter((item) => item.channel === 'dining_room').length, 268);
-  assert.equal(bootstrap.public_records.filter((item) => item.channel === 'ifood').length, 158);
+  const publicRecords = review.listPublic();
+  assert.equal(publicRecords.length, 426);
+  assert.equal(new Set(publicRecords.map((item) => item.public_record_id)).size, 426);
+  assert.equal(publicRecords.filter((item) => item.channel === 'dining_room').length, 268);
+  assert.equal(publicRecords.filter((item) => item.channel === 'ifood').length, 158);
   assert.equal(bootstrap.public_capture.report_sha256, 'b63812ea7db5b55f1bfb035041e0a6e196b8f3e6fbdd7077859a39f548e3924e');
-  assert.equal(bootstrap.public_records.every((item) => item.item_status === 'extracted'), true);
-  assert.equal(bootstrap.public_records.every((item) => item.protected_unknowns.includes('allergens')), true);
+  assert.equal(publicRecords.every((item) => item.certification.status === 'verified_official_public_source'), true);
+  assert.equal(publicRecords.every((item) => item.protected_unknowns.includes('allergens')), true);
+  assert.equal(bootstrap.public_records.length, 0);
 });
 
 test('lote público exige escopo homogêneo, prévia e confirmação humana', (t) => {
@@ -88,7 +91,7 @@ test('alergênicos, disponibilidade, substituições e harmonizações não entr
   }
 });
 
-test('catálogo real só substitui fixture após aprovação humana e mantém disponibilidade desconhecida', (t) => {
+test('catálogo oficial ativa campos públicos e mantém disponibilidade desconhecida', (t) => {
   const root = temporary(t, 'deliveryos-public-activation-');
   const service = new CustomerMenuHomologationService({ projectRoot: PROJECT_ROOT, menuReviewRoot: root });
   const records = service.menuReview.listPublic({ channel: 'dining_room' }).filter((item) => item.fields.description.value).slice(0, 3);
@@ -99,31 +102,11 @@ test('catálogo real só substitui fixture após aprovação humana e mantém di
   const preview = service.publicMenuReviewPreview(input).preview;
   service.publicMenuReviewCommit({ ...input, confirmation_hash: preview.preview_hash });
   const bootstrap = service.bootstrap();
-  assert.equal(bootstrap.menu.catalog_mode, 'real_public_fields_human_approved');
-  assert.equal(bootstrap.menu.items.length, 3);
-  assert.equal(bootstrap.menu.items.every((item) => item.review_status === 'approved_for_information'), true);
+  assert.equal(bootstrap.menu.catalog_mode, 'real_public_official_source_verified');
+  assert.equal(bootstrap.menu.items.length, 426);
   assert.equal(bootstrap.menu.items.every((item) => item.availability.state === 'unknown'), true);
-  assert.throws(() => service.publicMenuFieldAction({
-    public_record_id: records[0].public_record_id,
-    item_status: 'approved_for_recommendation',
-    confirmation: 'CONFIRM_PUBLIC_MENU_REVIEW',
-    field_decisions: {}
-  }), { code: 'MENU_PUBLIC_RECOMMENDATION_EVIDENCE_REQUIRED' });
-  service.publicMenuFieldAction({
-    public_record_id: records[0].public_record_id,
-    item_status: 'approved_for_recommendation',
-    confirmation: 'CONFIRM_PUBLIC_MENU_REVIEW',
-    field_decisions: {},
-    recommendation_evidence: {
-      characteristics: ['light_profile'],
-      compatibility_tags: ['menu_discovery'],
-      conflicts_checked: true,
-      restrictions_preserved: true
-    }
-  });
-  const result = service.recommend({ channel: 'dining_room', unit_id: 'tata-sushi-itaim-bibi' }).result.data;
-  assert.equal(result.candidates.length, 1);
-  assert.equal(result.candidates.every((item) => item.warnings.includes('availability_unconfirmed')), true);
+  assert.equal(bootstrap.menu.items.some((item) => item.item_id.startsWith('SIM-')), false);
+  assert.equal(records.every((record) => record.fields.name.curation_state === 'verified_official_public_source'), true);
 });
 
 test('contexto de hospitalidade acumula ocasião, orçamento, preferências e restrições', () => {

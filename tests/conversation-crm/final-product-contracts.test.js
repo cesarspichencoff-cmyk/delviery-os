@@ -167,3 +167,17 @@ test('18 Writer não pode trocar a pergunta aprovada', () => {
   assert.equal(changed.reason, 'WRITER_QUESTION_CHANGED');
   assert.equal(preserved.accepted, true);
 });
+
+test('Writer não pode omitir saudação aprovada antes da pergunta', () => {
+  const envelope = buildApprovedResponseEnvelope({
+    plan: plan({
+      direct_answer: ['Boa noite! Claro.'],
+      contextual_question: 'Você prefere salão ou iFood?'
+    }),
+    cost_policy: ZERO_EXTERNAL_COST_POLICY
+  });
+  const omitted = validateApprovedWriterOutput({ text: 'Você prefere salão ou iFood?' }, envelope);
+  const preserved = validateApprovedWriterOutput({ text: 'Boa noite! Você prefere salão ou iFood?' }, envelope);
+  assert.equal(omitted.reason, 'WRITER_SOCIAL_ACKNOWLEDGEMENT_OMITTED');
+  assert.equal(preserved.accepted, true);
+});

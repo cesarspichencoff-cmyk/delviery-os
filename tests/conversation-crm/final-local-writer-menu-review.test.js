@@ -84,21 +84,27 @@ test('saída local que muda pergunta aprovada cai no fallback com motivo especí
   assert.equal(body.turn.diagnostic.source_of_final_text, 'controlled_response_composer');
 });
 
-test('curadoria inventaria 199 itens e 86 harmonizações sem aprovação automática', (t) => {
+test('fontes oficiais são autocertificadas e a fila humana contém somente exceções', (t) => {
   const review = new MenuReviewService({ projectRoot: PROJECT_ROOT, root: temporary(t, 'deliveryos-menu-review-') });
   const bootstrap = review.bootstrap();
-  assert.deepEqual({ ...bootstrap.summary, public_catalog: undefined }, {
+  assert.deepEqual({ ...bootstrap.summary, public_catalog: undefined, internal_linking: undefined }, {
     total: 285, items: 199, pairings: 86, pending: 285, approved: 0,
     rejected: 0, conflicting: 0, active_real_items: 0,
-    original_sources_in_git: false, append_only: true, public_catalog: undefined
+    original_sources_in_git: false, append_only: true, public_catalog: undefined, internal_linking: undefined
   });
   assert.deepEqual(bootstrap.summary.public_catalog, {
     total: 426, dining_room: 268, ifood: 158,
-    approved_for_information: 0, approved_for_recommendation: 0,
-    blocked: 0, conflicting: 0, human_approved_fields: 0
+    approved_for_information: 225, approved_for_recommendation: 201,
+    blocked: 0, conflicting: 0, human_approved_fields: 0,
+    verified_official_public_source: 426, certified_public_fields: 1725
+  });
+  assert.deepEqual(bootstrap.summary.internal_linking, {
+    total: 199, auto_linked_exact: 154, auto_linked_strong_variant: 16,
+    human_review: 10, not_found: 19
   });
   assert.equal(bootstrap.proposals.every((item) => item.review_status === 'pending'), true);
-  assert.equal(bootstrap.policy.automatic_confirmation, false);
+  assert.equal(bootstrap.proposals.filter((item) => item.kind === 'item').length, 29);
+  assert.equal(bootstrap.policy.automatic_confirmation, true);
 });
 
 test('aprovação de item real exige canal e unidade confirmados', (t) => {
@@ -108,7 +114,7 @@ test('aprovação de item real exige canal e unidade confirmados', (t) => {
   assert.equal(review.summary().approved, 0);
 });
 
-test('correção e aprovação humanas substituem as fixtures por catálogo real isolado', (t) => {
+test('aprovação interna excepcional é adicionada sem substituir o catálogo público oficial', (t) => {
   const root = temporary(t, 'deliveryos-menu-activation-');
   const service = new CustomerMenuHomologationService({ projectRoot: PROJECT_ROOT, menuReviewRoot: root });
   const item = service.menuReview.list({ kind: 'item' })[0];
@@ -119,11 +125,11 @@ test('correção e aprovação humanas substituem as fixtures por catálogo real
   });
   service.menuReviewAction({ review_id: item.review_id, action: 'approve' });
   const bootstrap = service.bootstrap();
-  assert.equal(bootstrap.menu.catalog_mode, 'real_human_approved');
-  assert.equal(bootstrap.menu.items.length, 1);
-  assert.equal(bootstrap.menu.items[0].review_status, 'confirmed');
-  assert.equal(bootstrap.menu.items[0].channel, 'dining_room');
-  assert.equal(bootstrap.menu.items[0].unit_id, 'TATA-UNIT-REVIEWED');
+  assert.equal(bootstrap.menu.catalog_mode, 'real_public_official_source_verified');
+  assert.equal(bootstrap.menu.items.length, 427);
+  const reviewed = bootstrap.menu.items.find((entry) => entry.unit_id === 'TATA-UNIT-REVIEWED');
+  assert.equal(reviewed.review_status, 'confirmed');
+  assert.equal(reviewed.channel, 'dining_room');
   assert.equal(bootstrap.menu.items.some((entry) => entry.item_id.startsWith('SIM-')), false);
 });
 
@@ -150,12 +156,13 @@ test('harmonização não pode ser aprovada sem escopo e vínculos reais', (t) =
   assert.equal(review.summary().approved, 0);
 });
 
-test('fontes preservam separação de canal com evidência pública ainda sem aprovação humana', (t) => {
+test('fontes oficiais preservam separação de canal e autoridade confirmada por César', (t) => {
   const review = new MenuReviewService({ projectRoot: PROJECT_ROOT, root: temporary(t, 'deliveryos-source-registry-') });
   const sources = review.bootstrap().sources;
   assert.equal(sources.find((item) => item.source_id === 'menu-source-live-menu-v1').channel, 'dining_room');
   assert.equal(sources.find((item) => item.source_id === 'menu-source-own-delivery-v1').channel, 'own_delivery');
-  assert.equal(sources.find((item) => item.source_id === 'menu-source-ifood-v1').state, 'captured_public_evidence');
+  assert.equal(sources.find((item) => item.source_id === 'menu-source-live-menu-v1').state, 'verified_official_public_source');
+  assert.equal(sources.find((item) => item.source_id === 'menu-source-ifood-v1').state, 'verified_official_public_source');
   assert.equal(sources.some((item) => /C:\\Users\\/iu.test(item.location)), false);
 });
 

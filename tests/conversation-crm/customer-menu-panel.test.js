@@ -52,7 +52,7 @@ test('painel mantém navegação nativa e seis áreas de inteligência', () => {
   assert.ok(html.includes('AMBIENTE DE SIMULAÇÃO'));
 });
 
-test('bootstrap do painel contém somente dados sintéticos e custo zero', async (t) => {
+test('bootstrap do painel mantém clientes sintéticos, catálogo oficial e custo zero', async (t) => {
   const port = await withServer(t);
   const response = await request(port, 'GET', '/api/customer-menu/bootstrap');
   const body = JSON.parse(response.body);
@@ -61,7 +61,7 @@ test('bootstrap do painel contém somente dados sintéticos e custo zero', async
   assert.equal(body.external_cost_brl, 0);
   assert.equal(body.real_drivers, false);
   assert.equal(body.customers.length, 3);
-  assert.equal(body.menu.items.length, 7);
+  assert.equal(body.menu.items.length, 426);
   assert.equal(body.menu.conflicts.length, 1);
 });
 
@@ -77,7 +77,7 @@ test('recomendação do painel respeita canal', async (t) => {
   const response = await request(port, 'POST', '/api/customer-menu/recommend', {
     customer_id: 'SIM-CUSTOMER-001',
     channel: 'ifood',
-    unit_id: 'SIM-UNIT-ITAIM',
+    unit_id: 'tata-sushi-vila-nova-conceicao',
     cream_cheese: 'without'
   });
   const body = JSON.parse(response.body);
@@ -90,7 +90,7 @@ test('alergia sem garantia devolve nenhuma opção segura', async (t) => {
   const response = await request(port, 'POST', '/api/customer-menu/recommend', {
     customer_id: 'SIM-CUSTOMER-002',
     channel: 'dining_room',
-    unit_id: 'SIM-UNIT-ITAIM',
+    unit_id: 'tata-sushi-itaim-bibi',
     allergies: ['gluten']
   });
   const body = JSON.parse(response.body);

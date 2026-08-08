@@ -125,6 +125,10 @@ function validateApprovedWriterOutput(output, envelope) {
   const base = validateWriterOutput(output, writerInput);
   if (!base.accepted) return base;
   const text = base.output.text;
+  const approvedGreeting = checked.envelope.direct_answer.find((answer) => /^(?:ol[aá]|bom dia|boa tarde|boa noite)\b/iu.test(answer));
+  if (approvedGreeting && !/^(?:ol[aá]|bom dia|boa tarde|boa noite)\b/iu.test(text)) {
+    return { accepted: false, reason: 'WRITER_SOCIAL_ACKNOWLEDGEMENT_OMITTED' };
+  }
   const topics = unapprovedTopics(text, checked.envelope);
   if (topics.length) return { accepted: false, reason: 'WRITER_UNAPPROVED_TOPIC', details: { topics } };
   if (checked.envelope.question_to_ask && !normalize(text).includes(normalize(checked.envelope.question_to_ask))) return { accepted: false, reason: 'WRITER_QUESTION_CHANGED' };

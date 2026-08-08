@@ -192,14 +192,18 @@ function buildResponsePlan(input = {}) {
   const guidedAnswers = Array.isArray(productGuidance?.direct_answers)
     ? productGuidance.direct_answers.filter((item) => typeof item === 'string' && item.trim())
     : [];
+  const sideQuestionOverridesProductGuidance = patternDecision?.pattern === 'side_question'
+    && knowledge.direct_answer.length > 0;
+  const activeGuidedAnswers = sideQuestionOverridesProductGuidance ? [] : guidedAnswers;
   const guidedKnowledgeAnswers = productGuidance
+    && activeGuidedAnswers.length === 0
     && productGuidance.mode !== 'preventive_allergy'
     && classification.intent?.startsWith('information.')
     ? knowledge.direct_answer
     : [];
   const productGuidanceSurface = extractSurfaceFacts([
-    ...guidedAnswers,
-    typeof productGuidance?.question === 'string' ? productGuidance.question : ''
+    ...activeGuidedAnswers,
+    !sideQuestionOverridesProductGuidance && typeof productGuidance?.question === 'string' ? productGuidance.question : ''
   ].filter(Boolean).join(' '));
   if (productGuidance) {
     pendingQuestions = [];
@@ -241,7 +245,7 @@ function buildResponsePlan(input = {}) {
     version: '2.0.0',
     customer_need: knowledge.customer_need,
     direct_answer: productGuidance
-      ? [...new Set([...guidedAnswers, ...guidedKnowledgeAnswers])]
+      ? [...new Set([...activeGuidedAnswers, ...guidedKnowledgeAnswers])]
       : [...new Set(knowledge.direct_answer)],
     knowledge_candidates: knowledge.candidates.map((item) => ({
       knowledge_id: item.knowledge_id,
@@ -252,7 +256,7 @@ function buildResponsePlan(input = {}) {
     })),
     knowledge_selected: knowledge.selected.map((item) => item.knowledge_id),
     knowledge_sources_used: [...new Set([
-      ...(productGuidance?.knowledge_source ? [productGuidance.knowledge_source] : []),
+      ...(!sideQuestionOverridesProductGuidance && productGuidance?.knowledge_source ? [productGuidance.knowledge_source] : []),
       ...knowledge.knowledge_sources_used
     ])],
     knowledge_rejected: knowledge.rejected.map((item) => item.knowledge_id),
@@ -282,7 +286,7 @@ function buildResponsePlan(input = {}) {
     verified_actions: verifiedActions,
     pending_actions: pendingActions,
     mandatory_questions: mandatoryQuestions,
-    product_guidance_mode: productGuidance?.mode || null,
+    product_guidance_mode: sideQuestionOverridesProductGuidance ? null : (productGuidance?.mode || null),
     contextual_question: typeof productGuidance?.question === 'string' ? productGuidance.question : null,
     context_reason: productGuidance?.context_reason || null,
     candidates_found: Array.isArray(productGuidance?.candidates_found) ? [...productGuidance.candidates_found] : [],

@@ -206,7 +206,7 @@ function informationText(input) {
   const informed = knowledgeMessages(plan, { limit: 2 });
   const base = informed || (authorizedText ? sentence(authorizedText) : '');
   if (!base) return fallbackText(input);
-  const closing = warmClosing(plan, conversation, variationContext);
+  const closing = plan.product_guidance_mode ? '' : warmClosing(plan, conversation, variationContext);
   const followUp = plan.product_guidance_mode
     ? (plan.contextual_question || '')
     : (plan.contextual_question || conversation.pattern_decision?.question_to_resume || '');
@@ -302,6 +302,11 @@ function socialGreetingText(input) {
     ? (source === 'tudo bem?' || source === 'tudo bem' ? 'Tudo bem por aqui.' : `${salutation}! Tudo bem por aqui.`)
     : `${salutation}!`;
   const resume = input.conversation.pattern_decision?.question_to_resume;
+  if (input.plan.product_guidance_mode === 'journey_greeting_resume') {
+    const context = knowledgeMessages(input.plan, { limit: 1 });
+    const question = input.plan.contextual_question || resume;
+    return `${social}${context ? ` ${context}` : ''}${question ? ` ${question}` : ''}`;
+  }
   return `${social} ${resume || 'Como posso ajudar?'}`;
 }
 

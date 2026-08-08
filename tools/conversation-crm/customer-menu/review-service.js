@@ -8,7 +8,7 @@ const { stableHash, cloneFrozen } = require('../../../src/conversation-crm/menu-
 const REVIEW_ACTIONS = Object.freeze(['approve', 'correct', 'reject', 'conflict']);
 const REVIEW_STATUSES = Object.freeze(['pending', 'approved', 'rejected', 'conflicting']);
 const FIELD_CURATION_STATES = Object.freeze([
-  'confirmed_public', 'confirmed_internal', 'human_approved', 'inferred',
+  'confirmed_public', 'verified_official_public_source', 'confirmed_internal', 'human_approved', 'inferred',
   'unknown', 'conflicting', 'outdated', 'rejected'
 ]);
 const PUBLIC_ITEM_STATUSES = Object.freeze([
@@ -21,7 +21,7 @@ const PUBLIC_BATCH_FORBIDDEN = Object.freeze([
 ]);
 const RECOMMENDATION_CHARACTERISTICS = Object.freeze([
   'contains_confirmed_salmon', 'contains_confirmed_tuna', 'contains_confirmed_white_fish',
-  'not_fried', 'cream_cheese_absence_confirmed_internal', 'raw', 'cooked', 'torched',
+  'not_fried', 'fried', 'cream_cheese_absence_confirmed_internal', 'raw', 'cooked', 'torched',
   'vegetarian', 'shareable', 'single_person', 'two_people', 'group',
   'light_profile', 'intense_profile', 'beverage', 'dessert'
 ]);
@@ -39,6 +39,11 @@ const ALLOWED_CORRECTION_KEYS = Object.freeze([
 
 function reviewError(code) {
   throw Object.assign(new Error(code.toLowerCase()), { code });
+}
+
+function normalizedName(value) {
+  return String(value || '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase()
+    .replace(/[^a-z0-9]+/gu, ' ').trim();
 }
 
 function normalizeCorrection(value = {}) {
@@ -90,7 +95,7 @@ function sourceRegistry() {
     {
       source_id: 'menu-source-live-menu-v1', title: 'Live Menu público', format: 'url',
       location: 'https://livemenu.app/menu/6407492af6880700523699bf',
-      channel: 'dining_room', unit_id: 'tata-sushi-itaim-bibi', hash: null, state: 'captured_public_evidence'
+      channel: 'dining_room', unit_id: 'tata-sushi-itaim-bibi', hash: null, state: 'verified_official_public_source'
     },
     {
       source_id: 'menu-source-own-delivery-v1', title: 'Delivery próprio público', format: 'url',
@@ -101,7 +106,7 @@ function sourceRegistry() {
       source_id: 'menu-source-ifood-v1', title: 'iFood TATÁ Sushi', format: 'url',
       location: 'https://www.ifood.com.br/delivery/sao-paulo-sp/tata-sushi-vila-nova-conceicao/039ed60c-0ea5-4660-900a-265a720d7869',
       channel: 'ifood', unit_id: 'tata-sushi-vila-nova-conceicao',
-      hash: null, state: 'captured_public_evidence'
+      hash: null, state: 'verified_official_public_source'
     }
   ]);
 }
@@ -162,6 +167,8 @@ class MenuReviewService {
     this.publicEvidence = JSON.parse(fs.readFileSync(publicEvidenceFile, 'utf8'));
     this.publicRecords = this.publicEvidence.records;
     this.publicById = new Map(this.publicRecords.map((item) => [item.public_record_id, item]));
+    this.internalLinks = this.publicEvidence.internal_links || [];
+    this.internalLinkByName = new Map(this.internalLinks.map((item) => [normalizedName(item.internal_name), item]));
     this.events = [];
     this.load();
   }
@@ -203,10 +210,10 @@ class MenuReviewService {
     return cloneFrozen({
       ...record,
       fields,
-      item_status: latest?.item_status || record.capture_status,
-      recommendation_evidence: latest?.recommendation_evidence || null,
+      item_status: latest?.item_status || record.item_status || record.capture_status,
+      recommendation_evidence: latest?.recommendation_evidence || record.recommendation_evidence || null,
       reviewed_at: latest?.occurred_at || null,
-      decision_source: latest ? 'human_review' : null
+      decision_source: latest ? 'human_review' : (record.certification?.status || null)
     });
   }
 
@@ -229,8 +236,8 @@ class MenuReviewService {
       name, fieldDecisions[name] || evidence.curation_state
     ]));
     if (['approved_for_information', 'approved_for_recommendation'].includes(itemStatus)) {
-      if (!['human_approved', 'confirmed_internal'].includes(projected.name)
-        || !['human_approved', 'confirmed_internal'].includes(projected.category)) {
+      const trusted = ['human_approved', 'confirmed_internal', 'verified_official_public_source'];
+      if (!trusted.includes(projected.name) || !trusted.includes(projected.category)) {
         reviewError('MENU_PUBLIC_INFORMATION_FIELDS_NOT_APPROVED');
       }
     }
@@ -270,7 +277,9 @@ class MenuReviewService {
     if (records.some((item) => !item)) reviewError('MENU_PUBLIC_RECORD_NOT_FOUND');
     const scopes = new Set(records.map((item) => `${item.source_id}:${item.channel}:${item.unit_id}`));
     if (scopes.size !== 1) reviewError('MENU_PUBLIC_BATCH_NOT_HOMOGENEOUS');
-    const ineligible = records.filter((record) => fields.some((field) => record.fields[field]?.curation_state !== 'confirmed_public'));
+    const ineligible = records.filter((record) => fields.some((field) => (
+      !['confirmed_public', 'verified_official_public_source'].includes(record.fields[field]?.curation_state)
+    )));
     if (ineligible.length) reviewError('MENU_PUBLIC_BATCH_FIELD_NOT_PUBLIC_CONFIRMED');
     const previewHash = stableHash('public-menu-batch-v1', ids.slice().sort().join(','), fields.slice().sort().join(','), itemStatus);
     return cloneFrozen({
@@ -315,7 +324,7 @@ class MenuReviewService {
       : (previous?.recommendation_evidence || null);
     if (itemStatus === 'approved_for_recommendation') {
       const projectedDescription = fieldDecisions.description || record.fields.description.curation_state;
-      if (!['human_approved', 'confirmed_internal'].includes(projectedDescription)) reviewError('MENU_PUBLIC_RECOMMENDATION_FIELDS_NOT_APPROVED');
+      if (!['human_approved', 'confirmed_internal', 'verified_official_public_source'].includes(projectedDescription)) reviewError('MENU_PUBLIC_RECOMMENDATION_FIELDS_NOT_APPROVED');
     }
     const event = cloneFrozen({
       schema_version: 'deliveryos-menu-review-event-v2',
@@ -386,7 +395,17 @@ class MenuReviewService {
         blocked: publicRecords.filter((item) => item.item_status === 'blocked').length,
         conflicting: publicRecords.filter((item) => item.item_status === 'conflicting').length,
         human_approved_fields: publicRecords.reduce((total, item) => total
-          + Object.values(item.fields).filter((field) => field.curation_state === 'human_approved').length, 0)
+          + Object.values(item.fields).filter((field) => field.curation_state === 'human_approved').length, 0),
+        verified_official_public_source: publicRecords.filter((item) => item.certification?.status === 'verified_official_public_source').length,
+        certified_public_fields: publicRecords.reduce((total, item) => total
+          + Object.values(item.fields).filter((field) => field.curation_state === 'verified_official_public_source').length, 0)
+      },
+      internal_linking: {
+        total: this.internalLinks.length,
+        auto_linked_exact: this.internalLinks.filter((item) => item.link_status === 'auto_linked_exact').length,
+        auto_linked_strong_variant: this.internalLinks.filter((item) => item.link_status === 'auto_linked_strong_variant').length,
+        human_review: this.internalLinks.filter((item) => item.link_status === 'human_review').length,
+        not_found: this.internalLinks.filter((item) => item.link_status === 'not_found').length
       }
     });
   }
@@ -435,17 +454,45 @@ class MenuReviewService {
     return this.listPublic().filter((item) => ['approved_for_information', 'approved_for_recommendation'].includes(item.item_status));
   }
 
+  exceptionProposals() {
+    const internal = this.list({ kind: 'item' }).filter((item) => {
+      const link = this.internalLinkByName.get(normalizedName(item.item));
+      return ['human_review', 'not_found'].includes(link?.link_status);
+    }).map((item) => ({
+      ...item,
+      public_link: this.internalLinkByName.get(normalizedName(item.item))
+    }));
+    return cloneFrozen([
+      ...internal,
+      ...this.list({ kind: 'pairing' })
+    ]);
+  }
+
+  exceptionQueue() {
+    return cloneFrozen({
+      item_links: this.internalLinks.filter((item) => ['human_review', 'not_found'].includes(item.link_status)),
+      protected_field_groups: [
+        'allergens', 'cross_contact', 'adaptations', 'substitutions', 'availability_realtime', 'pairings'
+      ],
+      pairing_count: this.list({ kind: 'pairing' }).length,
+      same_scope_conflicts: this.listPublic({ status: 'conflicting' }).map((item) => item.public_record_id),
+      cross_channel_differences_are_conflicts: false
+    });
+  }
+
   bootstrap() {
     return cloneFrozen({
       schema_version: 'deliveryos-menu-human-review-v1',
       sources: sourceRegistry(),
       summary: this.summary(),
-      proposals: this.list(),
-      public_records: this.listPublic(),
+      proposals: this.exceptionProposals(),
+      public_records: this.listPublic().filter((item) => item.item_status === 'conflicting'),
+      exception_queue: this.exceptionQueue(),
       public_capture: this.publicEvidence.generated_from,
       policy: {
-        automatic_confirmation: false,
-        synthetic_catalog_replaced_only_after_real_approval: true,
+        automatic_confirmation: true,
+        automatic_confirmation_basis: 'verified_official_public_source',
+        synthetic_catalog_replaced_only_after_real_approval: false,
         pairings_used_only_when_approved_and_linked: true,
         channel_and_unit_required_for_item_approval: true,
         field_level_curation: true,
@@ -453,7 +500,11 @@ class MenuReviewService {
         public_item_statuses: PUBLIC_ITEM_STATUSES,
         batch_fields: PUBLIC_BATCH_FIELDS,
         batch_forbidden_fields: PUBLIC_BATCH_FORBIDDEN,
-        human_confirmation_required: true
+        human_confirmation_required: false,
+        human_confirmation_required_for: [
+          'ambiguous_links', 'not_found_items', 'allergens', 'cross_contact',
+          'adaptations', 'substitutions', 'availability_realtime', 'pairings', 'same_scope_conflicts'
+        ]
       }
     });
   }

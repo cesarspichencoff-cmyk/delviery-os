@@ -75,7 +75,7 @@ function renderIntelligenceCrm() {
     <article class="integration-truth">
       <strong>Caminho realmente conectado</strong>
       <p>${escapeHtml(integration.chat_endpoint)} · Pattern Engine ${escapeHtml(integration.pattern_engine)} · Journey State ${escapeHtml(integration.journey_state)} · compositor ${escapeHtml(integration.deterministic_composer)}</p>
-      <p>Writer local: ${escapeHtml(integration.response_writer)}${integration.response_writer_reason ? ` · motivo ${escapeHtml(integration.response_writer_reason)}` : ''}. Cardápio real ativo: ${integration.real_data ? 'sim, após aprovação humana' : 'não; curadoria pendente'}.</p>
+      <p>Writer local: ${escapeHtml(integration.response_writer)}${integration.response_writer_reason ? ` · motivo ${escapeHtml(integration.response_writer_reason)}` : ''}. Cardápio oficial ativo: ${integration.real_data ? 'sim; campos públicos certificados pela fonte, com exceções sob revisão humana' : 'não; curadoria pendente'}.</p>
     </article>
     <div class="intelligence-grid">${customers.map((customer) => `
     <article class="intelligence-card">
@@ -113,7 +113,7 @@ function renderIntelligenceImports() {
 function renderIntelligenceMenu() {
   const menu = state.intelligence.menu;
   $('#intelligence-content').innerHTML = `
-    <article class="integration-truth"><strong>Catálogo ativo</strong><p>${escapeHtml(menu.catalog_mode)} · ${menu.real_items_active ? 'itens reais aprovados por humano' : 'sete fixtures sintéticas preservadas até existir aprovação humana real'}</p></article>
+    <article class="integration-truth"><strong>Catálogo ativo</strong><p>${escapeHtml(menu.catalog_mode)} · ${menu.real_items_active ? 'campos públicos certificados das fontes oficiais, com desconhecidos preservados' : 'fixtures sintéticas'}</p></article>
     <div class="tag-summary">${menu.channels.map((channel) => `<span>${escapeHtml(channel)}</span>`).join('')}</div>
     <div class="intelligence-grid">${menu.items.map((item) => `
       <article class="intelligence-card">
@@ -137,17 +137,17 @@ function renderMenuReview() {
   const summary = review.summary;
   $('#intelligence-content').innerHTML = `
     <article class="integration-truth">
-      <strong>Curadoria humana soberana</strong>
-      <p>${summary.items} itens e ${summary.pairings} harmonizações extraídos. ${summary.approved} aprovados · ${summary.pending} pendentes · ${summary.rejected} rejeitados · ${summary.conflicting} conflitantes.</p>
-      <p>${summary.public_catalog.total} registros públicos por campo: ${summary.public_catalog.dining_room} salão e ${summary.public_catalog.ifood} iFood. ${summary.public_catalog.approved_for_information} aprovados para informar e ${summary.public_catalog.approved_for_recommendation} para recomendar.</p>
-      <p>Nenhuma extração vira aprovação humana automaticamente. Alergênicos, disponibilidade, adaptações e harmonizações não entram em lote.</p>
+      <strong>Fila humana de exceções</strong>
+      <p>${summary.public_catalog.total} registros das fontes oficiais: ${summary.public_catalog.dining_room} salão e ${summary.public_catalog.ifood} iFood. ${summary.public_catalog.verified_official_public_source} certificados pela aprovação da fonte.</p>
+      <p>${summary.internal_linking.auto_linked_exact} vínculos exatos e ${summary.internal_linking.auto_linked_strong_variant} variantes fortes foram ligados automaticamente. Permanecem ${summary.internal_linking.human_review} ambíguos e ${summary.internal_linking.not_found} não localizados.</p>
+      <p>Alergênicos, contato cruzado, adaptações, disponibilidade em tempo real e ${review.exception_queue.pairing_count} harmonizações continuam sob decisão humana.</p>
     </article>
     <form id="public-menu-review-filter" class="intelligence-form">
       <label>Canal<select id="public-review-channel"><option value="dining_room">Salão</option><option value="ifood">iFood</option></select></label>
-      <label>Estado<select id="public-review-status"><option value="extracted">Extraídos</option><option value="under_review">Em revisão</option><option value="approved_for_information">Aprovados para informar</option><option value="approved_for_recommendation">Aprovados para recomendar</option><option value="">Todos</option></select></label>
+      <label>Estado<select id="public-review-status"><option value="">Conflitos reais do mesmo canal</option><option value="conflicting">Conflitantes</option></select></label>
       <label>Prioridade<select id="public-review-facet"><option value="">Todas</option><option value="both_channels">Ambos os canais</option><option value="price_divergent">Preço divergente</option><option value="composition_or_description_divergent">Descrição/composição divergente</option><option value="salmon">Salmão</option><option value="tuna">Atum</option><option value="white_fish">Peixe branco</option><option value="combined">Combinado</option><option value="beverage">Bebida</option><option value="raw_candidate">Cru citado</option><option value="torched_candidate">Maçaricado/selado citado</option><option value="fried_mentioned">Fritura citada</option><option value="cream_cheese_mentioned">Cream cheese citado</option></select></label>
       <label>Buscar item<input id="public-review-query" placeholder="Nome, categoria ou descrição"></label>
-      <label>Destino do lote<select id="public-review-target"><option value="under_review">Manter em revisão</option><option value="approved_for_information">Aprovar para informar</option><option value="blocked">Bloquear</option><option value="conflicting">Conflitante</option></select></label>
+      <label>Destino do lote<select id="public-review-target"><option value="conflicting">Revisar conflito real</option></select></label>
       <fieldset><legend>Campos públicos visíveis</legend>
         <label><input type="checkbox" data-public-field value="name" checked> Nome</label>
         <label><input type="checkbox" data-public-field value="category" checked> Categoria</label>
@@ -159,7 +159,7 @@ function renderMenuReview() {
     </form>
     <div id="public-review-preview"></div>
     <div id="public-menu-review-list" class="intelligence-grid"></div>
-    <h3>Base interna e harmonizações pendentes</h3>
+    <h3>Itens ambíguos/ausentes e harmonizações pendentes</h3>
     <form id="menu-review-filter" class="intelligence-form">
       <label>Tipo<select id="menu-review-kind"><option value="">Todos</option><option value="item">Itens</option><option value="pairing">Harmonizações</option></select></label>
       <label>Estado<select id="menu-review-status"><option value="pending">Pendentes</option><option value="">Todos</option><option value="approved">Aprovados</option><option value="rejected">Rejeitados</option><option value="conflicting">Conflitantes</option></select></label>
@@ -341,7 +341,7 @@ async function loadIntelligence() {
     $('#chat-menu-unit').innerHTML = '<option value="">Definida pelo catálogo ativo</option>'
       + units.map((unit) => `<option value="${escapeHtml(unit)}">${escapeHtml(unit)}</option>`).join('');
     $('#intelligence-state').textContent = state.intelligence.menu.real_items_active
-      ? 'Pronto. O catálogo ativo contém somente itens reais aprovados em revisão humana.'
+      ? 'Pronto. Fontes oficiais ativas; campos públicos certificados e exceções reservadas à revisão humana.'
       : 'Pronto. Fontes reais estão em curadoria; as fixtures sintéticas continuam isoladas no catálogo ativo.';
     renderIntelligence();
   } catch {
@@ -388,6 +388,8 @@ function diagnosticHtml(diagnostic) {
   if (!diagnostic || !$('#chat-diagnostic').checked) return '';
   const entries = [
     ['Endpoint', diagnostic.endpoint],
+    ['Ato social', diagnostic.social_act || 'nenhum'],
+    ['Intenção', diagnostic.intent || 'unknown'],
     ['Pattern', diagnostic.pattern],
     ['Jornada', diagnostic.journey || 'nenhuma'],
     ['Estado', diagnostic.journey_state ? `${diagnostic.journey_state.active_step || 'sem etapa'} · v${diagnostic.journey_state.version}` : 'sem jornada ativa'],
@@ -397,6 +399,10 @@ function diagnosticHtml(diagnostic) {
     ['Caminho da resposta', diagnostic.response_path],
     ['Fallback', diagnostic.fallback_used ? `sim · ${diagnostic.fallback_reason || diagnostic.context_reason || 'safe_response_rejected'}` : 'não'],
     ['Motivo de contexto', diagnostic.context_reason || 'nenhum'],
+    ['Pergunta pendente', diagnostic.pending_question || 'nenhuma'],
+    ['Preferências', diagnostic.preferences ? JSON.stringify(diagnostic.preferences) : 'nenhuma'],
+    ['Repetição', diagnostic.repetition_detected ? `sim · sequência ${diagnostic.repetition_streak}` : 'não'],
+    ['Fatos adicionados', (diagnostic.facts_added || []).map((item) => `${item.field}=${item.value}`).join(', ') || 'nenhum'],
     ['Fontes do conhecimento', (diagnostic.knowledge_sources || []).join(', ') || 'nenhuma'],
     ['Contexto de cliente', diagnostic.customer_context_source],
     ['Contexto de cardápio', diagnostic.menu_context_source],

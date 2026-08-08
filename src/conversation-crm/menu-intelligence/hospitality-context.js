@@ -93,11 +93,16 @@ function updateHospitalityContext(previous, input = {}) {
     ['white_fish', /\bpeixe branco\b/u, 'peixe branco'], ['mushroom', /\b(?:shimeji|shitake|cogumelo)\b/u, '(?:shimeji|shitake|cogumelo)']
   ];
   const mentioned = ingredientMap.filter(([, pattern]) => pattern.test(text)).map(([name]) => name);
+  const ingredientCorrection = /\b(?:na verdade|corrigindo|melhor)\b/u.test(text) && mentioned.length > 0;
   const excludedMentioned = ingredientMap.filter(([, pattern, source]) => (
     pattern.test(text) && new RegExp(`\\b(?:sem|nao quero|evitar)\\s+(?:(?:o|a|de)\\s+)?${source}\\b`, 'u').test(text)
   )).map(([name]) => name);
   context.excluded_ingredients = addUnique(context.excluded_ingredients, excludedMentioned);
-  context.preferred_ingredients = addUnique(context.preferred_ingredients, mentioned.filter((name) => !excludedMentioned.includes(name)));
+  const preferredMentioned = mentioned.filter((name) => !excludedMentioned.includes(name));
+  context.preferred_ingredients = ingredientCorrection
+    ? [...new Set(preferredMentioned)]
+    : addUnique(context.preferred_ingredients, preferredMentioned);
+  if (ingredientCorrection) fact(context, 'preferred_ingredients', context.preferred_ingredients);
   if (/\b(?:leve|fresco|fresca)\b/u.test(text)) context.flavor_preferences = addUnique(context.flavor_preferences, ['light']);
   if (/\b(?:intenso|intensa|marcante)\b/u.test(text)) context.flavor_preferences = addUnique(context.flavor_preferences, ['intense']);
   if (/\b(?:picante|spicy)\b/u.test(text)) context.flavor_preferences = addUnique(context.flavor_preferences, ['spicy']);
@@ -140,6 +145,7 @@ function hospitalityRequest(context) {
     flavor_profile: context.flavor_preferences[0] || null,
     raw_or_cooked: context.preparation_preferences.includes('raw') ? 'raw'
       : (context.preparation_preferences.includes('cooked') ? 'cooked' : null),
+    torched: context.preparation_preferences.includes('torched') ? true : null,
     fried: context.preparation_preferences.includes('not_fried') ? false : null,
     cream_cheese: context.preparation_preferences.includes('without_cream_cheese') ? 'without' : null,
     dietary_restrictions: context.dietary_restrictions,

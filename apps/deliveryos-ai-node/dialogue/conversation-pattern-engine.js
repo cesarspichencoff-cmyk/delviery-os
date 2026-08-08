@@ -38,7 +38,7 @@ const SIDE_TOPICS = Object.freeze([
   [/\b(?:que horas|horario|abrem|fecham)\b/u, 'hours_information'],
   [/\b(?:pagamento|cartao|pix|vale refeicao)\b/u, 'payment_information'],
   [/\b(?:retirada|retirar)\b/u, 'pickup_information'],
-  [/\b(?:endereco|onde fica)\b/u, 'address_information'],
+  [/\b(?:endereco|onde fic(?:a|am)(?: (?:vcs|voces))?|onde (?:vcs|voces) ficam)\b/u, 'address_information'],
   [/\b(?:cardapio|prato|sushi|bebida|drink|recomend)\b/u, 'menu_information']
 ]);
 
@@ -242,7 +242,10 @@ function resolveConversationPattern(raw = {}) {
   const productContexts = validateProductContexts(input);
   if (!productContexts.accepted) throw Object.assign(new Error(productContexts.reason), { code: productContexts.reason });
   const text = normalizeConversationText(input.normalized_message || input.current_message);
-  const signals = detectedSignals(text, input);
+  const detected = detectedSignals(text, input);
+  const channelSelectionInsideRecommendation = Boolean(productContexts.contexts.recommendation_context)
+    && /^(?:ifood|salao|no salao|delivery proprio|delivery do tata|quero pedir pelo ifood|no salao mesmo)[.! ]*$/u.test(text);
+  const signals = channelSelectionInsideRecommendation ? { ...detected, target: null } : detected;
   const recommendationSafety = evaluateRecommendationSafety(productContexts.contexts);
   const active = input.active_journey;
   const nextStep = pendingField(input.pending_question) || input.active_step || null;
@@ -273,17 +276,17 @@ function resolveConversationPattern(raw = {}) {
     if (!reference.resolved) return decision({ pattern: 'clarification', confidence: 0.42, target_journey: active, target_step: nextStep, reference_resolution: { status: 'ambiguous', candidates: reference.candidates }, requires_clarification: true, clarification_question: 'A qual item, pedido ou opção você está se referindo?', collision_log: collisionLog(signals, 'context_reference') });
     return decision({ pattern: 'continue', confidence: 0.94, journey_action: 'advance', target_journey: active, target_step: nextStep, reference_resolution: { status: 'resolved', ...reference.value }, facts_added: { [reference.value.field]: reference.value.value }, requires_clarification: false, clarification_question: null, collision_log: collisionLog(signals, 'context_reference') });
   }
-  if (signals.side) return decision({ pattern: 'side_question', confidence: 0.97, journey_action: 'none', target_journey: active, target_step: input.active_step, question_to_answer: signals.side, question_to_resume: pendingPrompt(input.pending_question), requires_clarification: false, clarification_question: null, collision_log: collisionLog(signals, 'side_question') });
-  if (active && signals.target && signals.target !== active) {
-    const facts = contextualNumber(text) ? { party_size: contextualNumber(text) } : {};
-    return decision({ pattern: 'switch_topic', confidence: 0.92, journey_action: 'suspend', target_journey: signals.target, target_step: targetStep(signals.target, facts), facts_added: facts, requires_clarification: false, clarification_question: null, collision_log: collisionLog(signals, 'topic_change') });
-  }
   if (signals.resume && input.suspended_journeys.length) {
     const suspended = input.suspended_journeys.at(-1);
     return decision({ pattern: 'resume', confidence: 0.96, journey_action: 'resume', target_journey: suspended.journey_id, target_step: suspended.active_step || null, question_to_resume: pendingPrompt(suspended.pending_question), requires_clarification: false, clarification_question: null, collision_log: collisionLog(signals, 'resume') });
   }
   if (signals.resume && active) {
-    return decision({ pattern: 'resume', confidence: 0.94, journey_action: 'none', target_journey: active, target_step: input.active_step, question_to_resume: pendingPrompt(input.pending_question), requires_clarification: false, clarification_question: null, collision_log: collisionLog(signals, 'resume') });
+    return decision({ pattern: 'resume', confidence: 0.96, journey_action: 'none', target_journey: active, target_step: input.active_step, question_to_resume: pendingPrompt(input.pending_question), requires_clarification: false, clarification_question: null, collision_log: collisionLog(signals, 'resume') });
+  }
+  if (signals.side) return decision({ pattern: 'side_question', confidence: 0.97, journey_action: 'none', target_journey: active, target_step: input.active_step, question_to_answer: signals.side, question_to_resume: pendingPrompt(input.pending_question), requires_clarification: false, clarification_question: null, collision_log: collisionLog(signals, 'side_question') });
+  if (active && signals.target && signals.target !== active) {
+    const facts = contextualNumber(text) ? { party_size: contextualNumber(text) } : {};
+    return decision({ pattern: 'switch_topic', confidence: 0.92, journey_action: 'suspend', target_journey: signals.target, target_step: targetStep(signals.target, facts), facts_added: facts, requires_clarification: false, clarification_question: null, collision_log: collisionLog(signals, 'topic_change') });
   }
   if (signals.greeting && signals.target) {
     const facts = contextualNumber(text) ? { party_size: contextualNumber(text) } : {};

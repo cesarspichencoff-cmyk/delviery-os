@@ -50,7 +50,7 @@ function detectPublicTopic(content) {
   if (/\b(horario|funcionamento|abre|aberto|fecha)\b/u.test(text)) return 'opening_hours';
   if (/\b(pagamentos?|aceitam? pix|aceitam? dinheiro|cartao|vale refeicao|alelo|pluxee|ticket restaurante)\b/u.test(text)) return 'payment';
   if (/\b(rolha|levar vinho)\b/u.test(text)) return 'corkage';
-  if (/\b(endereco|onde fica|localizacao)\b/u.test(text)) return 'address';
+  if (/\b(endereco|onde fic(?:a|am)(?: (?:vcs|voces))?|onde (?:vcs|voces) ficam|localizacao)\b/u.test(text)) return 'address';
   return null;
 }
 

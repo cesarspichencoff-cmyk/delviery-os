@@ -63,17 +63,22 @@ function recommend(catalog, request = {}, customerContext = {}) {
   if (!request.channel) throw menuError('RECOMMENDATION_CHANNEL_REQUIRED');
   if (!request.unit_id) throw menuError('RECOMMENDATION_UNIT_REQUIRED');
   const exclusions = new Set(request.excluded_ingredients || []);
+  const conflictedItemIds = new Set(catalog.snapshot().conflicts
+    .filter((conflict) => conflict.status === 'open')
+    .flatMap((conflict) => conflict.variant_ids));
   const candidates = catalog.search({
     channel: request.channel,
     unit_id: request.unit_id,
-    maximum_price: request.price_range?.maximum ?? null
+    maximum_price: request.price_range?.maximum_brl ?? request.price_range?.maximum ?? null
   }).filter((item) => {
+    if (conflictedItemIds.has(item.item_id) && item.review_status === 'approved_for_recommendation') return false;
     if (!['confirmed', 'approved_for_recommendation'].includes(item.review_status)) return false;
     if (['unavailable', 'stale'].includes(item.availability.state)) return false;
     if (request.raw_or_cooked === 'raw' && item.preparation.raw !== true) return false;
     if (request.raw_or_cooked === 'cooked' && item.preparation.cooked !== true) return false;
-    if (request.fried === false && item.preparation.fried !== false) return false;
-    if (request.cream_cheese === 'without' && item.preparation.cream_cheese !== false) return false;
+    if (request.torched === true && item.preparation.torched !== true) return false;
+    if (request.fried === false && item.preparation.fried === true) return false;
+    if (request.cream_cheese === 'without' && item.preparation.cream_cheese === true) return false;
     if (request.dietary_restrictions?.includes('vegetarian') && item.preparation.vegetarian !== true) return false;
     if (request.preferred_ingredients?.length && !request.preferred_ingredients.some((value) => item.ingredients.some((ingredient) => ingredient.name === value))) return false;
     if (item.ingredients.some((ingredient) => exclusions.has(ingredient.name))) return false;
@@ -89,8 +94,13 @@ function recommend(catalog, request = {}, customerContext = {}) {
       reasons: scored.reasons,
       score: scored.score,
       source_records: item.source_records,
-      availability: item.availability
-      ,warnings: item.availability.state === 'unknown' ? ['availability_unconfirmed'] : []
+      availability: item.availability,
+      warnings: [
+        ...(item.availability.state === 'unknown' ? ['availability_unconfirmed'] : []),
+        ...(request.fried === false && item.preparation.fried === null ? ['frying_status_unknown'] : []),
+        ...(request.cream_cheese === 'without' && item.preparation.cream_cheese === null ? ['cream_cheese_status_unknown'] : [])
+        , ...(request.flavor_profile && !item.flavor_profile.includes(request.flavor_profile) ? ['flavor_profile_unconfirmed'] : [])
+      ]
     };
   }).sort((left, right) => right.score - left.score || left.item_id.localeCompare(right.item_id));
 
@@ -105,12 +115,15 @@ function recommend(catalog, request = {}, customerContext = {}) {
       ...(request.dietary_restrictions || []).map((item) => `diet:${item}`),
       ...(request.fried === false ? ['preparation:fried:false'] : []),
       ...(request.cream_cheese === 'without' ? ['preparation:cream_cheese:false'] : []),
+      ...(request.torched === true ? ['preparation:torched:true'] : []),
       ...(request.preferred_ingredients || []).map((item) => `preferred_ingredient:${item}`),
       ...(request.occasion ? [`occasion:${request.occasion}`] : []),
       ...(request.desired_experience ? [`desired_experience:${request.desired_experience}`] : [])
     ],
     candidates: candidates.slice(0, 3),
-    unknowns: candidates.length ? [] : ['safe_candidate_not_found'],
+    unknowns: candidates.length
+      ? [...new Set(candidates.flatMap((item) => item.warnings).filter((warning) => warning !== 'availability_unconfirmed'))]
+      : ['safe_candidate_not_found'],
     explanation: candidates.slice(0, 3).map((item) => ({
       item_id: item.item_id,
       reasons: item.reasons.length ? item.reasons : ['channel_unit_availability_match']

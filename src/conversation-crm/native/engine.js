@@ -70,7 +70,7 @@ const INTENT_RULES = Object.freeze([
   ['information.payment', /\b(meios? de pagamento|aceita pix|pagar de outro jeito)\b/],
   ['information.menu', /\b(cardapio|menu|ver as opcoes)\b/],
   ['information.hours', /\b(abrem?|aberto|horario|funcionamento|mais tarde)\b/],
-  ['information.address', /\b(endereco|onde fica|onde e a unidade)\b/],
+  ['information.address', /\b(endereco|onde fic(?:a|am)(?: (?:vcs|voces))?|onde (?:vcs|voces) ficam|onde e a unidade)\b/],
   ['order.status', /\b(onde esta meu pedido|cade meu pedido|pedido.*(?:ja saiu|esta pronto|sumiu|consulta|atualizacao|informacao antiga|entregador)|consultar meu pedido|ifood saiu|retirada.*pronta|ir buscar meu pedido|status|cada tela fala|observador mostra|ser avisado quando houver mudanca|consulta demorou|consulta falhou|ultima atualizacao|um sistema diz pronto)\b/],
   ['occurrence.missing_item', /\b(i need help with a missing item|falto una bebida|outro idioma.*pedido|n veio|item faltando)\b/]
 ]);
