@@ -1,15 +1,14 @@
-# Retomada única — homologação humana V2
+# Retomada única — confiança humana após Experience Lab
 
 - Branch: `feature/hospitality-intelligence-final-v1`.
-- Base da correção: `76e605890430c7582586e2baef25833c86a6b723`.
-- Foco concluído: turno composto, replano de preferências, linguagem ao cliente,
-  primeira visita e apoio à decisão.
-- Prova: foco 20/20; Conversation 725/725; catálogo 200/200; privacidade verde;
-  regressões protegidas verdes; Playwright 12/12; quatro casos repetidos em
-  `http://127.0.0.1:4179` com diagnóstico oculto.
-- Writer: Gemma 4 E4B continua somente Writer; decisão, fatos, estado e gate são
-  determinísticos; fallback protegido continua autorizado.
-- Próximo passo único: César repete os quatro casos pela interface local e julga
-  a experiência humana.
+- Base do laboratório: `1967a9378ae516dc91f3954834b019bdb1fdd1eb`.
+- Foco concluído: harness adaptativo pela rota real, golden failures V2, gates
+  A–O, três ciclos máximos, duas seeds frescas e prova local do Writer.
+- Prova final: duas rodadas de 80 conversas/380 turnos sem falha; 20 famílias e
+  95 turnos com Gemma sem falha; regressões integrais e navegador verdes.
+- Limite: Experience Evaluator é `ADVISORY_NOT_INDEPENDENT`; não substitui César.
+- Próximo passo único: César realiza 5–10 conversas livres e representativas e
+  responde “Eu confiaria isso a um cliente real do TATÁ?”.
+- Não pedir roteiro mecânico já coberto pelo laboratório.
 - Não fazer: nova missão, redesign, WhatsApp, hospedagem, produção, novo modelo,
   push, merge ou deploy sem autorização.

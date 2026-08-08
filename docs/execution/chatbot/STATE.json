@@ -1,8 +1,8 @@
 {
   "project": "DeliveryOS Chatbot TATÁ",
-  "active_change": "human-experience-correction-01",
+  "active_change": "autonomous-experience-lab-v1",
   "branch": "feature/hospitality-intelligence-final-v1",
-  "base": "76e605890430c7582586e2baef25833c86a6b723",
+  "base": "1967a9378ae516dc91f3954834b019bdb1fdd1eb",
   "behavioral_checkpoint": "76e605890430c7582586e2baef25833c86a6b723",
   "working_tree": "clean_after_atomic_local_commit",
   "completed_units": [
@@ -72,7 +72,15 @@
     "human_experience_language_gate",
     "human_experience_first_visit",
     "human_experience_decision_support",
-    "human_experience_real_route_and_playwright"
+    "human_experience_real_route_and_playwright",
+    "autonomous_experience_lab_real_route_harness",
+    "autonomous_experience_lab_40_structured_40_mutated",
+    "autonomous_experience_lab_hard_evaluator_a_to_o",
+    "autonomous_experience_lab_advisory_experience_evaluator",
+    "autonomous_experience_lab_golden_failures_v2",
+    "autonomous_experience_lab_three_root_cause_cycles",
+    "autonomous_experience_lab_two_fresh_comprehensive_rounds",
+    "autonomous_experience_lab_local_writer_proof"
   ],
   "active_unit": null,
   "pending_units": [],
@@ -120,7 +128,14 @@
     "privacy_human_experience": "passed; zero findings; positive control detected",
     "protected_regressions_human_experience": "Conference Brain passed; Live 243/243; Capacity 43/43; Copilot 53/53; menu 199; historical source passed",
     "playwright_human_experience": "12/12 passed, including the four rejected human flows through the interface",
-    "real_route_human_experience": "four cases repeated at http://127.0.0.1:4179; diagnostic hidden; real drivers disabled; Gemma 4 E4B available only as Writer"
+    "real_route_human_experience": "four cases repeated at http://127.0.0.1:4179; diagnostic hidden; real drivers disabled; Gemma 4 E4B available only as Writer",
+    "autonomous_experience_lab": "1240 completed synthetic conversations and 6297 turns across red, correction, fresh, coverage and Writer runs",
+    "experience_lab_fresh_final_e": "80/80 conversations; 380 turns; zero critical failures; hash e8f225cc527e0811f19f1425e222699d9be5de58edf96a1e68e86bbed0fcb03f",
+    "experience_lab_fresh_final_f": "80/80 conversations; 380 turns; zero critical failures; hash 3d7a7545cb286fb88cbfb98b318aeede00752e89375ab5bbada9e3c876629d43",
+    "experience_lab_writer_comprehensive": "20/20 families; 95 turns; Gemma local; zero critical failures; hash 8b76e522665c8d639b45a42302638d9ee7a96d22ed313573d4340333c6832b28",
+    "conversation_native_experience_lab": "734/734 passed with the final comprehensive harness",
+    "playwright_experience_lab": "12/12 passed in local Chrome",
+    "protected_regressions_experience_lab": "Conference 314/314; Live 243/243; Capacity 43/43; Copilot 53/53; catalog 200/200; privacy passed; menu 199; historical source passed"
   },
   "bakeoff": {
     "seed": "TATA-LOCAL-AI-BAKEOFF-V1",
@@ -195,7 +210,7 @@
     "007_008_human_homologation_pending",
     "real_menu_catalog_curation_pending",
     "real_allergen_and_pairing_approval_pending",
-    "cesar_human_experience_review_v2_pending",
+    "cesar_free_human_trust_review_pending",
     "postgres_production_migration_not_authorized",
     "restaurant_hardware_unverified",
     "hosted_runtime_not_connected"
@@ -211,6 +226,6 @@
   "production_authorized": false,
   "paid_api_or_infrastructure_added": false,
   "push_merge_deploy_performed": false,
-  "next_step": "César repeats the four human-experience cases in the local panel; do not start another mission, connect WhatsApp, host, push, merge or deploy",
-  "updated_at": "2026-08-08T03:25:00-03:00"
+  "next_step": "César evaluates 5 to 10 free representative conversations and answers whether he would trust the experience with a real TATA customer; do not ask him to rerun scripted QA",
+  "updated_at": "2026-08-08T04:13:45-03:00"
 }

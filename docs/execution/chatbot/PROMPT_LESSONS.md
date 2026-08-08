@@ -136,3 +136,17 @@ superfície: estado lembrado pelo CRM pode continuar invisível na frase.
 - primeira visita é uma jornada de redução de complexidade, não ausência de fato;
 - testes de API precisam ser complementados por espera correta e inspeção da
   resposta efetivamente renderizada no painel.
+
+## Autonomous Experience Lab V1
+
+- preservar uma falha como frase não basta; o ativo reutilizável é a classe,
+  seu primeiro desvio e um oráculo que reprova novas formulações;
+- estado correto não garante plano seguro: a ordem de precedência entre
+  segurança, referência e apoio à decisão também precisa de prova;
+- duas respostas iguais podem ser corretas apenas quando explicam por que a
+  nova solicitação não pode mudar o resultado;
+- cobertura declarada deve ser inventariada por família, não inferida do volume;
+- Writer local deve ser exercitado por família, mas o gate determinístico
+  completo não deve depender do custo temporal da inferência;
+- um avaliador escrito pelo construtor pode aconselhar, nunca homologar a
+  experiência humana.

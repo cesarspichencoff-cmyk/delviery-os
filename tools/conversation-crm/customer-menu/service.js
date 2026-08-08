@@ -58,27 +58,29 @@ function greetingLabel(text) {
 }
 
 function channelFromText(text) {
-  if (/\bifood\b/u.test(text)) return 'ifood';
+  if (/\b(?:vou|quero|prefiro|comer) (?:ai|no|ao) (?:restaurante|salao)|\b(?:restaurante|salao|presencial)\b.*\b(?:em vez|ao inves)\b.*\bifood\b|\btalvez eu va ai\b/u.test(text)) return 'dining_room';
+  if (/\bifood\b|\b(?:pelo|no) aplicativo\b|\bmelhor pedir pelo aplicativo\b/u.test(text)) return 'ifood';
   if (/\b(?:delivery proprio|delivery do tata|pedir pelo delivery)\b/u.test(text)) return 'own_delivery';
   if (/\b(?:salao|presencial|no restaurante)\b/u.test(text)) return 'dining_room';
   return null;
 }
 
 function firstVisitFromText(text) {
-  return /\b(?:primeira vez|nunca (?:fui|comi|pedi)|nao conheco|nao entendo (?:nada |muito )?(?:de )?(?:japones|sushi)|quero experimentar mas nao sei o que pedir|nao conheco esses nomes|me ajuda a escolher porque eu nao entendo muito|sou meio perdido com sushi)\b/u.test(text);
+  return /\b(?:primeira vez|nunca (?:fui|comi|pedi)|(?:nao|n) conheco|(?:nao|n) entendo (?:nada |muito )?(?:de )?(?:japones|sushi)|quero experimentar mas (?:nao|n) sei o que pedir|(?:nao|n) conheco esses nomes|me ajuda a escolher porque eu (?:nao|n) entendo muito|sou meio perdido com sushi)\b/u.test(text);
 }
 
 function customerTurnQuestions(text) {
   const questions = [];
   if (/\b(?:o que (?:voce )?(?:me )?(?:indica|recomenda|sugere|escolheria)|me indica|me recomenda|qual (?:opcao|prato).*(?:indica|recomenda)|ajuda a escolher)\b/u.test(text)) questions.push('recommendation');
+  if (/\b(?:qual (?:dessas|desses|delas|deles).*(?:escolheria|melhor)|(?:dessas|desses|delas|deles) (?:opcoes )?qual (?:voce|vc) acha melhor|qual (?:voce|vc) acha melhor|o que (?:voce|vc) escolheria entre|qual faz mais sentido)\b/u.test(text)) questions.push('decision_support');
   if (/\b(?:cru|crua|crus|cruas)\b/u.test(text) && /\b(?:opcao|segunda|primeira|qual deles|essa|esse)\b/u.test(text)) questions.push('raw_preparation');
-  if (/\b(?:quanto custa|quanto fica|qual (?:e )?o preco|preco)\b/u.test(text)) questions.push('price');
+  if (/\b(?:quanto custa|quanto fica|qual (?:e )?o preco|preco|(?:e )?valor)\b/u.test(text)) questions.push('price');
   if (/\b(?:bebida|drink|saque|sake)\b/u.test(text) && /\b(?:combina|harmoniza|indica|tem)\b/u.test(text)) questions.push('drink_pairing');
   return [...new Set(questions)];
 }
 
 function ordinalReferenceFromText(text) {
-  const match = text.match(/\b(?:essa|esse|a|o)?\s*(primeir[ao]|segund[ao]|terceir[ao])\s+opcao\b/u);
+  const match = text.match(/\b(?:essa|esse|a|o)?\s*(primeir[ao]|segund[ao]|terceir[ao])(?:\s+opcao)?\b/u);
   if (!match) return null;
   const position = match[1].startsWith('primeir') ? 1 : (match[1].startsWith('segund') ? 2 : 3);
   return { kind: 'ordinal_option', position };
@@ -126,7 +128,7 @@ function partySizeFromText(text) {
 }
 
 function allergyFromText(text) {
-  if (!/\b(?:tenho alergia|sou alergic[oa]|nao posso comer|tenho intolerancia)\b/u.test(text)) return null;
+  if (!/\b(?:tenho|temos|tem) alergia|\b(?:sou|e|eh) alergic[oa]|\b(?:pessoa|irma|irmao|filh[oa]|amig[oa]).{0,24}\balergic[oa]|\b(?:nao|n) posso comer|\btenho intolerancia\b/u.test(text)) return null;
   if (/\b(?:veio|recebi|mandaram|chegou|comi|reacao|passei mal)\b/u.test(text)) return null;
   if (/\b(?:camarao|crustaceo|crustaceos)\b/u.test(text)) return { value: 'crustacean', label: 'camarão' };
   if (/\b(?:lactose|leite)\b/u.test(text)) return { value: 'lactose', label: 'lactose' };
@@ -583,7 +585,8 @@ class CustomerMenuHomologationService {
         : null;
       const refersToSuggested = /\b(?:opcao que (?:voce )?sugeriu|opcao sugerida|a sugestao)\b/u.test(text);
       const selected = priorReference
-        || (refersToSuggested ? priorPresentedOptions[0] || null : recommendationResult.data?.candidates?.[0] || null);
+        || (refersToSuggested ? priorPresentedOptions[0] || null : null)
+        || (state.selected_item_id ? priorPresentedOptions.find((item) => item.item_id === state.selected_item_id) || null : null);
       state.selected_item_id = selected?.item_id || null;
       state.selected_item_name = selected?.name || null;
       state.awaiting_channel = false;
@@ -753,6 +756,54 @@ class CustomerMenuHomologationService {
     return lines;
   }
 
+  concisePriceAnswer(options = []) {
+    const prices = options.slice(0, 3).map((option) => {
+      const detail = this.tools.get_menu_item_details({ item_id: option.item_id }).data;
+      const price = formatPrice(detail.price);
+      return price ? `${detail.name}: ${price}` : `${detail.name}: preço não confirmado`;
+    });
+    return prices.length ? `Os valores informados são ${prices.join('; ')}.` : 'Ainda não há uma opção anterior com preço para comparar.';
+  }
+
+  decisionSupportForOptions(options, state) {
+    const detailed = options.slice(0, 3).map((option) => this.tools.get_menu_item_details({ item_id: option.item_id }).data);
+    const choose = (item, reason) => {
+      state.selected_item_id = item.item_id;
+      state.selected_item_name = item.name;
+      return { answer: `Pelo que você me contou, eu começaria por ${item.name}, ${reason}`, question: null };
+    };
+    const torched = detailed.find((item) => item.preparation.torched === true);
+    if (state.hospitality_context.preparation_preferences.includes('torched') && torched) return choose(torched, 'porque é a opção com preparo maçaricado confirmado entre estas.');
+    const notFried = detailed.find((item) => item.preparation.fried === false);
+    if (state.fried === false && notFried) return choose(notFried, 'porque é a opção com preparo sem fritura confirmado entre estas.');
+    const withoutCream = detailed.find((item) => item.preparation.cream_cheese === false);
+    if (state.cream_cheese === 'without' && withoutCream) return choose(withoutCream, 'porque a composição sem cream cheese está confirmada.');
+    if (state.number_of_people >= 4) {
+      const enough = detailed.find((item) => Number(item.quantity?.people) >= state.number_of_people);
+      if (enough) return choose(enough, `porque a quantidade informada atende ${state.number_of_people} pessoas.`);
+      return {
+        answer: `Para ${state.number_of_people} pessoas, eu não fecharia a escolha só com ${detailed.map((item) => item.name).join(', ')}: o cardápio não confirma que sejam suficientes. Faz mais sentido procurar por quantidade ou montar mais de uma opção.`,
+        question: 'Você quer que eu procure combinados por quantidade ou ajude a montar mais de uma opção?'
+      };
+    }
+    const fried = detailed.filter((item) => item.preparation.fried === true);
+    const cheapest = detailed.filter((item) => Number.isFinite(Number(item.price))).sort((a, b) => Number(a.price) - Number(b.price))[0];
+    if (state.hospitality_context.flavor_preferences.includes('light')) {
+      if (notFried) return choose(notFried, 'porque o preparo sem fritura está confirmado; ainda assim, o cardápio não permite afirmar que seja a mais leve.');
+      return {
+        answer: `Entre ${detailed.map((item) => item.name).join(', ')}, ${fried.length ? `${fried.map((item) => item.name).join(' e ')} têm fritura informada; ` : ''}o preparo das demais não está detalhado o suficiente para eu chamar alguma de mais leve. Se você quer leveza, eu afunilaria pelo tipo de preparo.`,
+        question: 'Você quer que eu afunile por cru, maçaricado ou sem fritura?'
+      };
+    }
+    const parts = [];
+    if (fried.length) parts.push(`${fried.map((item) => item.name).join(' e ')} têm fritura confirmada`);
+    if (cheapest) parts.push(`${cheapest.name} tem o menor preço informado, ${formatPrice(cheapest.price)}`);
+    return {
+      answer: `${parts.join('; ')}. Sem saber se você quer priorizar preço ou tipo de preparo, eu não escolheria uma por você.`,
+      question: 'Qual desses dois critérios pesa mais?'
+    };
+  }
+
   referenceAnswers(turnAnalysis, pairing = null) {
     const reference = turnAnalysis.resolved_reference;
     if (!reference) return [];
@@ -790,7 +841,7 @@ class CustomerMenuHomologationService {
     return answers;
   }
 
-  guidanceForChat({ text, state, allergy, asksRecommendation, asksPairing, menuContext, pairing, turnAnalysis }) {
+  guidanceForChat({ text, state, allergy, asksRecommendation, asksPairing, menuContext, pairing, turnAnalysis, priorPresentedOptions }) {
     if (state.operational_flow_active || OCCURRENCE_SIGNAL.test(text)) return null;
     const candidates = menuContext?.items || [];
     const menuLabel = this.currentMenuLabel();
@@ -830,6 +881,20 @@ class CustomerMenuHomologationService {
         candidates_found: []
       });
     }
+    if (activeAllergy) {
+      const decisionUnderAllergy = turnAnalysis.questions.includes('decision_support');
+      return Object.freeze({
+        schema_version: 'deliveryos-homologation-guidance-v1',
+        mode: 'preventive_allergy',
+        direct_answers: [decisionUnderAllergy
+          ? `Com ${activeAllergy.label} como restrição ativa, eu não escolheria entre essas opções sem a confirmação da equipe. O ${menuLabel} não confirma ausência de contaminação cruzada nem garante o preparo seguro.`
+          : `Vou considerar ${activeAllergy.label} como uma restrição preventiva nesta conversa. O ${menuLabel} não confirma ausência de contaminação cruzada; por isso, a composição e o preparo precisam ser confirmados com a equipe antes do pedido.`],
+        question: resumeQuestion,
+        context_reason: 'preventive_allergy_declared',
+        knowledge_source: `current_conversation+${menuSource}`,
+        candidates_found: []
+      });
+    }
     if (turnAnalysis.resolved_reference && turnAnalysis.questions.some((question) => ['raw_preparation', 'price', 'drink_pairing'].includes(question))) {
       return Object.freeze({
         schema_version: 'deliveryos-homologation-guidance-v1',
@@ -863,6 +928,23 @@ class CustomerMenuHomologationService {
         candidates_found: []
       });
     }
+    if (turnAnalysis.questions.includes('decision_support') && priorPresentedOptions.length) {
+      const support = this.decisionSupportForOptions(priorPresentedOptions, state);
+      return Object.freeze({
+        schema_version: 'deliveryos-homologation-guidance-v1', mode: 'decision_support',
+        direct_answers: [support.answer], question: support.question,
+        context_reason: null, knowledge_source: menuSource,
+        candidates_found: priorPresentedOptions.map((item) => item.item_id)
+      });
+    }
+    if (turnAnalysis.questions.length === 1 && turnAnalysis.questions[0] === 'price' && priorPresentedOptions.length) {
+      return Object.freeze({
+        schema_version: 'deliveryos-homologation-guidance-v1', mode: 'concise_price',
+        direct_answers: [this.concisePriceAnswer(priorPresentedOptions)], question: null,
+        context_reason: null, knowledge_source: menuSource,
+        candidates_found: priorPresentedOptions.map((item) => item.item_id)
+      });
+    }
     if (isGreetingOnly && state.awaiting_channel && state.recommendation_active) {
       const ingredient = state.preferred_ingredients.includes('salmon') ? 'algo com salmão' : 'uma opção do cardápio';
       return Object.freeze({
@@ -877,17 +959,6 @@ class CustomerMenuHomologationService {
         direct_answers: ['Salão e iFood são catálogos separados, e o preço pode variar entre eles.'],
         question: 'Qual item você quer comparar?', context_reason: 'item_for_channel_comparison_missing',
         knowledge_source: 'menu-public-source-coverage-2026-08-01', candidates_found: []
-      });
-    }
-    if (activeAllergy) {
-      return Object.freeze({
-        schema_version: 'deliveryos-homologation-guidance-v1',
-        mode: 'preventive_allergy',
-        direct_answers: [`Vou considerar ${activeAllergy.label} como uma restrição preventiva nesta conversa. O ${menuLabel} não confirma ausência de contaminação cruzada; por isso, a composição e o preparo precisam ser confirmados com a equipe antes do pedido.`],
-        question: resumeQuestion,
-        context_reason: 'preventive_allergy_declared',
-        knowledge_source: `current_conversation+${menuSource}`,
-        candidates_found: []
       });
     }
     if (turnAnalysis.questions.length >= 2 && candidates.length) {
@@ -931,19 +1002,26 @@ class CustomerMenuHomologationService {
       return Object.freeze({
         schema_version: 'deliveryos-homologation-guidance-v1', mode: 'pairing_pending',
         direct_answers: [state.selected_item_id
-          ? 'Ainda não há uma harmonização aprovada para a opção selecionada.'
-          : 'Ainda não existe uma opção sugerida nesta conversa para eu consultar uma harmonização aprovada.'],
-        question: resumeQuestion, context_reason: state.awaiting_channel ? 'menu_channel_missing' : 'pairing_not_approved',
+          ? `Ainda não há uma bebida revisada para harmonizar com ${state.selected_item_name}.`
+          : (priorPresentedOptions.length
+            ? 'Ainda não há uma opção escolhida para eu consultar a harmonização.'
+            : 'Ainda não existe uma opção sugerida nesta conversa para eu consultar uma harmonização revisada.')],
+        question: state.selected_item_id ? resumeQuestion : (priorPresentedOptions.length ? 'Qual das opções você quer harmonizar?' : resumeQuestion),
+        context_reason: state.awaiting_channel ? 'menu_channel_missing' : 'pairing_not_approved',
         knowledge_source: menuSource, candidates_found: []
       });
     }
-    if (/\bna verdade\b.*\b(?:somos|pessoas?)\b/u.test(text) && state.number_of_people) {
+    if (turnAnalysis.facts.number_of_people && priorPresentedOptions.length && state.number_of_people) {
       return Object.freeze({
         schema_version: 'deliveryos-homologation-guidance-v1', mode: 'party_size_update',
-        direct_answers: [state.recommendation_active
-          ? `Certo — vou considerar ${state.number_of_people} pessoas ao calcular a sugestão.`
-          : `Entendi que são ${state.number_of_people} pessoas.`],
-        question: state.recommendation_active ? resumeQuestion : `As ${state.number_of_people} pessoas são para uma reserva ou para calcular uma sugestão de pedido?`,
+        direct_answers: [state.recommendation_active && state.number_of_people >= 4
+          ? `Certo — agora são ${state.number_of_people} pessoas. As opções anteriores não têm quantidade confirmada para esse grupo, então não vou tratá-las como suficientes.`
+          : (state.recommendation_active
+            ? `Certo — vou considerar ${state.number_of_people} pessoas ao calcular a sugestão.`
+            : `Entendi que são ${state.number_of_people} pessoas.`)],
+        question: state.recommendation_active && state.number_of_people >= 4
+          ? 'Você quer que eu procure combinados por quantidade ou ajude a montar mais de uma opção?'
+          : (state.recommendation_active ? resumeQuestion : `As ${state.number_of_people} pessoas são para uma reserva ou para calcular uma sugestão de pedido?`),
         context_reason: state.recommendation_active ? null : 'party_size_reference_missing',
         knowledge_source: 'current_conversation', candidates_found: candidates.map((item) => item.item_id)
       });

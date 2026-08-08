@@ -130,3 +130,18 @@ experiência. Gemma pode ser rejeitado pelo gate e cair no compositor
 determinístico; isso preserva a verdade, mas ainda deve ser avaliado por César
 como experiência. WhatsApp, hospedagem, produção, drivers reais, curadoria
 comercial e qualquer custo externo continuam bloqueados.
+
+## Autonomous Experience Lab V1
+
+Não há bloqueador técnico conhecido para uma nova avaliação humana livre. Os
+hard gates, golden failures, duas seeds frescas abrangentes e a amostra das 20
+famílias com Writer estão verdes.
+
+Permanecem limites deliberados:
+
+- `ADVISORY_NOT_INDEPENDENT` não equivale a aprovação humana;
+- excelência, naturalidade e confiança final continuam dependentes de César;
+- inferência Gemma completa 40+40 tem custo temporal local alto e não foi usada
+  como condição única do gate;
+- produção, WhatsApp, hospedagem, drivers reais, curadoria comercial e custo
+  externo continuam bloqueados.

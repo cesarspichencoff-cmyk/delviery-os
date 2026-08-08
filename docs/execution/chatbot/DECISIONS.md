@@ -427,3 +427,36 @@ autoridade sobre item, preço, canal, referência ou segurança.
 
 **Impacto e reversibilidade:** a mudança fica restrita à rota conversacional e
 seus contratos/testes. Não altera catálogo, CRM, modelo ou integração externa.
+
+## Autonomous Experience Lab V1
+
+### D-040 — Homologação técnica conversacional vira laboratório autônomo
+
+**Contexto:** a homologação humana V2 encontrou 12 falhas que um harness
+adaptativo poderia ter detectado antes de consumir atenção de César.
+
+**Decisão:** executar 40 conversas estruturadas e 40 mutadas pela rota real,
+avaliar cada turno por gates determinísticos A–O e manter as reprovações humanas
+como golden failures por classe.
+
+**Motivo:** César deve julgar confiança e hospitalidade, não atuar como executor
+manual de regressão previsível.
+
+### D-041 — Segurança preventiva precede apoio à decisão
+
+**Contexto:** o estado preservava alergia, mas o apoio à decisão era resolvido
+antes do gate preventivo e permitia ao Writer comparar pratos.
+
+**Decisão:** alergia ativa impede escolha ou ranqueamento e produz orientação
+específica de confirmação com a equipe, inclusive nos turnos seguintes.
+
+**Motivo:** continuidade de segurança é soberana; fluência não autoriza inferir
+preparo seguro ou ausência de contaminação cruzada.
+
+### D-042 — Avaliação de experiência permanece advisory
+
+**Decisão:** registrar o avaliador de experiência como
+`ADVISORY_NOT_INDEPENDENT` e nunca tratá-lo como aprovação humana.
+
+**Motivo:** isolamento de entrada não transforma código do próprio sprint em
+uma pessoa independente.

@@ -3,7 +3,7 @@
 const { cloneFrozen } = require('./contracts');
 
 const OCCASIONS = Object.freeze([
-  ['first_visit', /\b(?:primeira vez|nunca (?:fui|comi|pedi)|nao conheco|nao entendo (?:nada |muito )?(?:de )?(?:japones|sushi)|nao conheco esses nomes|quero experimentar mas nao sei o que pedir|me ajuda a escolher porque eu nao entendo muito)\b/u],
+  ['first_visit', /\b(?:primeira vez|nunca (?:fui|comi|pedi)|(?:nao|n) conheco|(?:nao|n) entendo (?:nada |muito )?(?:de )?(?:japones|sushi)|(?:nao|n) conheco esses nomes|quero experimentar mas (?:nao|n) sei o que pedir|me ajuda a escolher porque eu (?:nao|n) entendo muito)\b/u],
   ['romantic_dinner', /\b(?:romantico|encontro|a dois|casal)\b/u],
   ['celebration', /\b(?:aniversario|comemora|celebra)\b/u],
   ['business_lunch', /\b(?:almoco de negocios|reuniao de trabalho|executivo)\b/u],
@@ -70,7 +70,7 @@ function extractBudget(text) {
 }
 
 function avoidsCreamCheese(text) {
-  return /\b(?:sem|evito|evitar|nao (?:quero|gosto(?: muito)?|curto(?: muito)?)|nao sou (?:muito )?fa de)\s+(?:de\s+)?cream cheese\b/u.test(String(text || ''));
+  return /\b(?:sem|evito|evitar|(?:nao|n) (?:quero|gosto(?: muito)?|curto(?: muito)?)|(?:nao|n) sou (?:muito )?fa de)\s+(?:de\s+)?cream cheese\b/u.test(String(text || ''));
 }
 
 function updateHospitalityContext(previous, input = {}) {
@@ -90,7 +90,7 @@ function updateHospitalityContext(previous, input = {}) {
   if (input.number_of_people) { context.number_of_people = input.number_of_people; fact(context, 'number_of_people', input.number_of_people); }
   const budget = extractBudget(text);
   if (budget) { context.budget = budget; fact(context, 'budget_maximum_brl', budget.maximum_brl); }
-  if (/\b(?:primeira vez|iniciante|nao conheco|nunca (?:fui|comi|pedi)|nao entendo (?:nada |muito )?(?:de )?(?:japones|sushi)|quero experimentar mas nao sei o que pedir|me ajuda a escolher porque eu nao entendo muito)\b/u.test(text)) context.experience_level = 'first_time';
+  if (/\b(?:primeira vez|iniciante|(?:nao|n) conheco|nunca (?:fui|comi|pedi)|(?:nao|n) entendo (?:nada |muito )?(?:de )?(?:japones|sushi)|quero experimentar mas (?:nao|n) sei o que pedir|me ajuda a escolher porque eu (?:nao|n) entendo muito)\b/u.test(text)) context.experience_level = 'first_time';
   if (/\b(?:conheco bem|ja conheco|frequente)\b/u.test(text)) context.experience_level = 'experienced';
   const ingredientMap = [
     ['salmon', /\bsalmao\b/u, 'salmao'], ['tuna', /\batum\b/u, 'atum'], ['shrimp', /\bcamarao\b/u, 'camarao'],
@@ -102,7 +102,10 @@ function updateHospitalityContext(previous, input = {}) {
     pattern.test(text) && new RegExp(`\\b(?:sem|nao quero|evitar)\\s+(?:(?:o|a|de)\\s+)?${source}\\b`, 'u').test(text)
   )).map(([name]) => name);
   context.excluded_ingredients = addUnique(context.excluded_ingredients, excludedMentioned);
-  const preferredMentioned = mentioned.filter((name) => !excludedMentioned.includes(name));
+  const preferredMentioned = mentioned.filter((name) => (
+    !excludedMentioned.includes(name)
+    && !(name === 'shrimp' && (input.allergies || []).includes('crustacean'))
+  ));
   context.preferred_ingredients = ingredientCorrection
     ? [...new Set(preferredMentioned)]
     : addUnique(context.preferred_ingredients, preferredMentioned);
@@ -112,7 +115,7 @@ function updateHospitalityContext(previous, input = {}) {
   if (/\b(?:picante|spicy)\b/u.test(text)) context.flavor_preferences = addUnique(context.flavor_preferences, ['spicy']);
   if (/\b(?:crocante|crispy)\b/u.test(text)) context.texture_preferences = addUnique(context.texture_preferences, ['crunchy']);
   if (/\b(?:cremoso|cremosa)\b/u.test(text)) context.texture_preferences = addUnique(context.texture_preferences, ['creamy']);
-  if (/\b(?:macaricado|ma[çc]aricado|selado|torch)\b/u.test(text)) context.preparation_preferences = addUnique(context.preparation_preferences, ['torched']);
+  if (/\b(?:macaricad[oa]|ma[çc]aricad[oa]|selad[oa]|torch)\b/u.test(text)) context.preparation_preferences = addUnique(context.preparation_preferences, ['torched']);
   if (/\b(?:cru|sashimi)\b/u.test(text)) context.preparation_preferences = addUnique(context.preparation_preferences, ['raw']);
   if (/\b(?:cozido|quente)\b/u.test(text)) context.preparation_preferences = addUnique(context.preparation_preferences, ['cooked']);
   if (/\bsem (?:fritura|frito|fritos|frita|fritas)\b/u.test(text)) context.preparation_preferences = addUnique(context.preparation_preferences, ['not_fried']);

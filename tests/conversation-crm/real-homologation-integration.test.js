@@ -238,8 +238,9 @@ test('sequência humana completa usa conhecimento e contexto automático sem sel
   assert.match(turns[5].response, /Salmão/iu);
   assert.match(turns[6].response, /valet custa R\$ 45/iu);
   assert.doesNotMatch(turns[6].response, /salão.*iFood.*delivery próprio/iu);
-  assert.match(turns[7].response, /considerar 5 pessoas/iu);
-  assert.match(turns[8].response, /ainda não há uma harmonização aprovada/iu);
+  assert.match(turns[7].response, /agora são 5 pessoas|considerar 5 pessoas/iu);
+  assert.match(turns[7].response, /não.*suficientes|quantidade/iu);
+  assert.match(turns[8].response, /ainda não há uma bebida revisada/iu);
   assert.match(turns[9].response, /restrição preventiva/iu);
   assert.doesNotMatch(turns[9].response, /serviço de saúde|número do pedido|reação clínica/iu);
   assert.equal(turns[9].diagnostic.customer_context_source, 'anonymous_synthetic_session');
@@ -254,7 +255,7 @@ test('contexto selecionado recomenda catálogo oficial, preserva filtros e não 
   assert.match(first.response, /cardápio do salão/iu);
   assert.match(recommendation.response, /cardápio do salão/iu);
   assert.ok(recommendation.diagnostic.candidates_found.length > 0);
-  assert.match(pairing.response, /ainda não há uma harmonização aprovada/iu);
+  assert.match(pairing.response, /ainda não há uma bebida revisada.*Salmão/iu);
   assert.equal(pairing.diagnostic.knowledge_sources.includes('menu-source-live-menu-v1'), true);
 });
 
