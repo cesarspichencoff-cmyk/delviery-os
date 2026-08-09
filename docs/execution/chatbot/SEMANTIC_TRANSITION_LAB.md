@@ -23,6 +23,8 @@ A transição de jornada ocorria depois de decisões que reutilizavam contexto a
 
 O cliente sintético anterior cooperava com o roteiro, o oráculo mantinha expectativas antigas após mutações e o detector de loop não vinculava rejeição explícita à resposta seguinte. Assim, cobertura alta não exercitava autoridade do turno atual.
 
+Limitação permanente: um adversário que compartilha a ontologia do construtor pode produzir falso verde. Resultados do harness continuam evidência técnica, nunca substituto de conversa humana livre ou avaliação externa à ontologia.
+
 ## NEW IMMUNITIES
 
 Hard gates: `USER_REPAIR_IGNORED`, `REJECTED_RESPONSE_REPEATED`, `STALE_JOURNEY_RESPONSE`, `EXPLICIT_INTENT_SWITCH_IGNORED`, `CATEGORY_MISMATCH` e `RESERVATION_SWITCH_FAILURE`. O catálogo contém 100 transições/reparos, 100 conversas de categoria, 100 adversariais multiturno e 100 livres; estas recebem somente persona, objetivo, humor e restrições.

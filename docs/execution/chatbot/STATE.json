@@ -1,8 +1,8 @@
 {
   "project": "DeliveryOS Chatbot TATÁ",
-  "active_change": "semantic-transition-lab-v1",
-  "branch": "feature/hospitality-intelligence-final-v1",
-  "base": "78164320d8d8996e266d075f702ad558f6b0e10d",
+  "active_change": "cognitive-authority-experiment-v1",
+  "branch": "experiment/hospitality-cognitive-authority-v1",
+  "base": "0cdc09f030938c84dcaf6a6d69276ceb7e5b78b7",
   "behavioral_checkpoint": "76e605890430c7582586e2baef25833c86a6b723",
   "working_tree": "clean_after_atomic_local_commit",
   "completed_units": [
@@ -86,7 +86,11 @@
     "semantic_transition_category_sovereignty",
     "semantic_transition_reservation_switch",
     "semantic_transition_independent_hard_gates",
-    "semantic_transition_400_conversation_campaign"
+    "semantic_transition_400_conversation_campaign",
+    "cognitive_authority_variant_a_preserved",
+    "cognitive_authority_minimal_variant_b",
+    "cognitive_authority_blind_local_panel",
+    "cognitive_authority_golden_hard_stop_inconclusive"
   ],
   "active_unit": null,
   "pending_units": [],
@@ -146,7 +150,12 @@
     "semantic_transition_campaign": "400/400 conversations; 1750 turns; zero critical, high or medium failures; hash 826a5a3c5e945727057a41b54a97680e12b0d8d46dd2671d77dc2af6e1c3c875 reproduced in a clean runtime",
     "conversation_native_semantic_transition": "758/758 passed in final clean execution",
     "scenario_catalog_semantic_transition": "200/200 passed twice; no real driver or external access; hash b335eeff0dc0ad2f1a19b146f7518562003c68d73cf508510e7ecd1f086ebf19",
-    "privacy_semantic_transition": "passed; zero findings; positive control detected"
+    "privacy_semantic_transition": "passed; zero findings; positive control detected",
+    "cognitive_authority_focused": "7/7 passed; contract, factual allowlist, safety boundary, blind panel and no literal paraphrase handlers",
+    "cognitive_authority_golden": "failed before paired campaign completion; B confused channel refinement with expansion and expansion with selection explanation",
+    "cognitive_authority_latency": "B-only turns measured 46-90 seconds; paired turn measured 81 seconds after minimal contract reduction",
+    "conversation_native_cognitive_authority": "765/765 passed",
+    "protected_regressions_cognitive_authority": "Conference 314/314; Live 243/243; Capacity 43/43; Copilot 53/53; catalog 200/200; menu 199; privacy passed"
   },
   "bakeoff": {
     "seed": "TATA-LOCAL-AI-BAKEOFF-V1",
@@ -222,6 +231,8 @@
     "real_menu_catalog_curation_pending",
     "real_allergen_and_pairing_approval_pending",
     "cesar_free_human_trust_review_pending",
+    "cognitive_authority_hypothesis_inconclusive",
+    "gemma_cognitive_planning_latency_and_semantic_drift",
     "postgres_production_migration_not_authorized",
     "restaurant_hardware_unverified",
     "hosted_runtime_not_connected"
@@ -237,6 +248,6 @@
   "production_authorized": false,
   "paid_api_or_infrastructure_added": false,
   "push_merge_deploy_performed": false,
-  "next_step": "César evaluates 5 to 10 free representative conversations and answers whether he would trust the experience with a real TATA customer; do not ask him to rerun scripted QA",
-  "updated_at": "2026-08-09T04:00:00-03:00"
+  "next_step": "César decides whether to close the cognitive-authority hypothesis or authorize a separate future local-capacity experiment; do not migrate variant B or request another human review now",
+  "updated_at": "2026-08-09T04:42:09-03:00"
 }
