@@ -8,6 +8,7 @@ const PHRASES = Object.freeze({
   nonexpert: ['Não entendo nada de comida japonesa, você me ajuda?', 'Não manjo dos nomes do sushi', 'Queria provar, mas não conheço o cardápio'],
   recommend_salmon: ['Quero algo com salmão, o que você sugere?', 'Tô a fim de salmão. O que você escolheria?', 'Me ajuda a escolher uma opção com salmão'],
   recommend_tuna: ['Quero alguma coisa com atum', 'Na verdade eu prefiro atum', 'Tem uma boa opção com atum?'],
+  recommend_general: ['o que você recomenda pra mim?', 'me ajuda a escolher alguma coisa?', 'quero pedir mas tô meio na dúvida'],
   channel_ifood: ['Vou pedir pelo iFood', 'é pelo aplicativo do iFood', 'quero no iFood'],
   channel_salon: ['Vou comer no salão', 'acho que vou ao restaurante', 'prefiro presencial no salão'],
   switch_salon: ['talvez eu vá aí então', 'acho q vou ao restaurante em vez do iFood', 'mudei de ideia, quero no salão'],
@@ -15,16 +16,29 @@ const PHRASES = Object.freeze({
   light: ['queria algo mais leve', 'tem algo menos pesado?', 'queria uma coisa leve'],
   torched: ['queria algo maçaricado', 'prefiro uma opção maçaricada', 'tem algum salmão maçaricado?'],
   not_fried: ['sem fritura, por favor', 'n quero nada frito', 'dá para ser sem fritura?'],
+  raw: ['pode ser algo cru', 'eu gosto de peixe cru', 'quero uma opção crua'],
+  cooked: ['prefiro algo cozido', 'prefiro cozido em vez de cru', 'pode ser uma opção quente'],
+  traditional: ['queria algo mais tradicional', 'prefiro um clássico', 'tem uma opção mais tradicional?'],
+  different: ['quero provar algo diferente', 'me surpreende com algo menos óbvio', 'queria uma opção mais ousada'],
+  budget_low: ['queria algo mais em conta', 'até R$ 60 pra mim', 'tem uma opção mais barata?'],
+  premium: ['quero uma experiência mais especial', 'pode ser algo premium', 'queria uma opção mais completa'],
+  share: ['queremos algo para compartilhar', 'dá pra dividir?', 'queria uma opção pra mesa toda'],
   no_cream: ['não curto muito cream cheese', 'n curto cream cheese', 'não sou muito fã de cream cheese'],
   party_two: ['somos duas pessoas', 'é pra 2', 'vamos em dois'],
+  party_one: ['é só pra uma pessoa', 'sou só eu', 'estou em 1 pessoa'],
+  party_three: ['somos três pessoas', 'é pra 3', 'estamos em três'],
   party_five: ['somos cinco na verdade', 'agora somos 5', 'vai ser pra cinco pessoas'],
+  party_large: ['somos 10 pessoas e estamos chegando', 'mesa para nove pessoas', 'estamos em doze'],
   decision: ['qual dessas você escolheria?', 'dessas opções qual você acha melhor?', 'o que você escolheria entre esses?'],
   reference_second: ['essa segunda é crua?', 'e a segunda, é crua?', 'essa segunda opção tem peixe cru?'],
   reference_false: ['essa segunda é crua?', 'e a primeira quanto custa?', 'essa opção é frita?'],
   price: ['quanto custa?', 'e valor?', 'quanto fica?'],
   pairing: ['tem alguma bebida que combina?', 'tem bebida?', 'tem um sake que harmoniza?'],
   allergy: ['minha irmã tem alergia a camarão', 'uma pessoa do grupo é alérgica a camarão', 'temos alergia a crustáceos no grupo'],
-  incident: ['depois de comer uma pessoa passou mal', 'minha irmã teve vômito depois da refeição', 'duas pessoas tiveram diarreia depois de comer'],
+  allergy_interrupt: ['pera, minha irmã tem alergia a camarão', 'antes de decidir: uma pessoa tem alergia a crustáceos', 'opa, tem alergia a camarão no grupo'],
+  intolerance: ['tenho intolerância a lactose', 'uma pessoa não pode consumir leite', 'temos intolerância a glúten no grupo'],
+  incident: ['depois de comer uma pessoa passou mal', 'minha irmã teve vômito depois da refeição', 'duas pessoas tiveram diarreia depois de comer', 'ela comeu camarão e começou a passar mal', 'tá tendo uma reação'],
+  urgency: ['ela está com dificuldade para respirar', 'a pessoa está passando muito mal agora', 'teve reação e não consegue respirar direito', 'ela tá sem ar', 'comeu e agora tá com dificuldade pra respirar', 'meu namorado teve reação e não respira direito', 'acho que deu alergia e ela tá ficando sem ar', 'minha irmã não consegue respirar', 'começou a inchar e tá difícil respirar'],
   incident_detail: ['foi depois do jantar de hoje', 'aconteceu com duas pessoas', 'a pessoa ainda não está se sentindo bem'],
   human_request: ['quero falar com uma pessoa', 'pode chamar alguém da equipe?', 'preciso de atendimento humano'],
   valet: ['e tem valet?', 'como funciona o valet?', 'pergunta rápida: tem estacionamento com valet?'],
@@ -34,10 +48,16 @@ const PHRASES = Object.freeze({
   repetition: ['e aí?', 'você pode me ajudar?', 'não entendi, tenta de outro jeito'],
   multiple_info: ['somos 5, queremos salmão e vamos comer no salão', 'somos cinco e vamos comer no salão, queria salmão', 'estamos em 5 pessoas no salão, de preferência salmão'],
   multiple_questions: ['quanto custa a segunda e ela é crua?', 'a segunda é crua e qual o valor?', 'qual o preço da segunda opção e o preparo é cru?'],
-  unknown: ['vocês têm menu secreto?', 'tem omakase de madrugada?', 'posso levar meu próprio peixe?']
+  unknown: ['vocês têm menu secreto?', 'tem omakase de madrugada?', 'posso levar meu próprio peixe?'],
+  hesitation: ['hmm não sei ainda', 'talvez, tô pensando', 'pera aí deixa eu ver'],
+  decision_short: ['qual vc pegaria?', 'tá mas qual é melhor?', 'dessas qual?'],
+  reference_first: ['e a primeira?', 'essa primeira é frita?', 'quanto fica a primeira?'],
+  switch_salon_question: ['e se eu for no restaurante?', 'se eu for aí muda alguma coisa?', 'acho q vou aí'],
+  correction_quantity: ['na verdade agora somos 5', 'corrigindo, vai ser pra três', 'mudou: estamos em cinco']
 });
 
 function phraseFor(action, random, mutation) {
+  if (action.message) return action.message;
   const variants = PHRASES[action.type];
   if (!variants) throw new Error(`EXPERIENCE_LAB_UNKNOWN_ACTION:${action.type}`);
   const chosen = random.pick(variants);

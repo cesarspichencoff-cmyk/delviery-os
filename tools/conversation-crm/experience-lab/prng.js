@@ -28,6 +28,23 @@ class SeededRandom {
     if (!Array.isArray(values) || !values.length) throw new Error('EXPERIENCE_LAB_EMPTY_VARIANT_SET');
     return values[Math.floor(this.next() * values.length)];
   }
+
+  int(minimum, maximum) {
+    return minimum + Math.floor(this.next() * ((maximum - minimum) + 1));
+  }
+
+  chance(probability) {
+    return this.next() < probability;
+  }
+
+  shuffle(values) {
+    const copy = [...values];
+    for (let index = copy.length - 1; index > 0; index -= 1) {
+      const target = Math.floor(this.next() * (index + 1));
+      [copy[index], copy[target]] = [copy[target], copy[index]];
+    }
+    return copy;
+  }
 }
 
 module.exports = { hashSeed, SeededRandom };

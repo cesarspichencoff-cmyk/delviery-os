@@ -46,7 +46,7 @@ function conversationStage(conversation = {}, result = {}, classification = {}) 
 function customerState(classification = {}, sourceText = '') {
   const text = normalizeText(sourceText);
   if (classification.policies?.food_safety || classification.severity === 'critical') return 'sensitive';
-  if (/\b(?:dificuldade para respirar|desmaio|urgente|socorro)\b/u.test(text)) return 'urgent';
+  if (/\b(?:dificuldade (?:para|pra) respirar|(?:nao|n) consegue respirar|(?:nao|n) respira direito|sem ar|passando muito mal|desmaio|urgente|socorro)\b/u.test(text)) return 'urgent';
   if (/\b(?:frustrad|irritad|absurdo|decepcionad|chatead)\b/u.test(text)) return 'frustrated';
   if (classification.intent === 'conversation.ambiguous') return 'confused';
   if (/\b(?:quero conhecer|gostei|adorei|como funciona|pode me explicar)\b/u.test(text)) return 'interested';
@@ -172,6 +172,8 @@ function buildResponsePlan(input = {}) {
     continuation: 1
   }[strategyId] || 2;
   let mandatoryQuestions = pendingQuestions.slice(0, questionLimit);
+  const urgentSafetyGate = classification.policy_id === 'URGENT_SAFETY_GATE';
+  if (urgentSafetyGate) mandatoryQuestions = [];
   const newFacts = safeEntityFacts(classification);
   const suppliedKnownFacts = Array.isArray(conversation.known_facts) ? conversation.known_facts.filter((fact) => fact && typeof fact === 'object') : [];
   const contextualFacts = Object.entries(conversation.context || {})
@@ -290,7 +292,7 @@ function buildResponsePlan(input = {}) {
     contextual_question: typeof productGuidance?.question === 'string' ? productGuidance.question : null,
     context_reason: productGuidance?.context_reason || null,
     candidates_found: Array.isArray(productGuidance?.candidates_found) ? [...productGuidance.candidates_found] : [],
-    deferred_questions: pendingQuestions.slice(questionLimit),
+    deferred_questions: urgentSafetyGate ? pendingQuestions : pendingQuestions.slice(questionLimit),
     optional_information: [],
     prohibited_claims: [...new Set([...STANDARD_PROHIBITED, ...(classification.prohibited_responses || []), ...strategy.prohibited_claims])],
     length: productGuidance ? 'medium' : strategy.length,

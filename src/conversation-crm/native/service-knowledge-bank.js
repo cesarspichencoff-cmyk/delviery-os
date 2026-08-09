@@ -174,7 +174,7 @@ const SERVICE_KNOWLEDGE = deepFreeze([
     'Se há dificuldade para respirar, desmaio ou outro sinal de urgência, procure atendimento imediato ou acione o SAMU 192.',
     {
       intents: ['occurrence.allergen', 'occurrence.health_symptom'],
-      triggers: [/\bdificuldade para respirar|falta de ar|desmai|urg[eê]ncia|socorro/iu],
+      triggers: [/\bdificuldade (?:para|pra) respirar|(?:n[aã]o|n) consegue respirar|(?:n[aã]o|n) respira direito|sem ar|falta de ar|respira[cç][aã]o ruim|incha(?:r|ndo|ou)?[^.?!]{0,60}(?:respirar|sem ar)|passando muito mal|desmai|urg[eê]ncia|socorro/iu],
       sources: ['ministerio-saude:samu-192:consultado-2026-07-28'],
       priority: 110,
       severeOnly: true,

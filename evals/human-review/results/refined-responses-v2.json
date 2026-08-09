@@ -5482,11 +5482,11 @@
       "results": [
         {
           "input_fingerprint": "87eaa0017154217079ebcaceaa44c1a2dfee11da9a571a6e87ac4d72a57b99a3",
-          "response_text": "Obrigado por nos contar o que aconteceu. Entendi os sintomas relatados. Se há dificuldade para respirar, desmaio ou outro sinal de urgência, procure atendimento imediato ou acione o SAMU 192. Por segurança, procure um serviço de saúde o mais rápido possível. A equipe de qualidade e da gestão também precisa acompanhar o relato, sem concluir clinicamente nem apontar causa. Quais sintomas apareceram? Quando os sintomas começaram?",
+          "response_text": "Obrigado por nos contar o que aconteceu. Entendi os sintomas relatados. Se há dificuldade para respirar, desmaio ou outro sinal de urgência, procure atendimento imediato ou acione o SAMU 192. Por segurança, procure um serviço de saúde o mais rápido possível. A equipe de qualidade e da gestão também precisa acompanhar o relato, sem concluir clinicamente nem apontar causa.",
           "response_status": "unknown",
           "result_status": "unknown",
           "intent": "occurrence.health_symptom",
-          "subintent": "health_symptom",
+          "subintent": "respiratory_emergency",
           "entities": {
             "unit": {
               "value": "SIM-UNIT-001",
@@ -5497,10 +5497,8 @@
           },
           "fields_missing": [
             "order_reference",
-            "item_name",
-            "symptoms",
-            "onset",
-            "people_affected"
+            "order_channel",
+            "item_name"
           ],
           "capability_id": "health.incident.create",
           "authority": "A1",
@@ -5509,6 +5507,9 @@
           "closure": {
             "expected_state": "open",
             "blocked_by": [
+              "missing:order_reference",
+              "missing:order_channel",
+              "missing:item_name",
               "result:unknown"
             ]
           },
@@ -5588,14 +5589,11 @@
             "pending_actions": [
               "emergency_guidance_and_handoff"
             ],
-            "mandatory_questions": [
-              "symptoms",
-              "onset"
-            ],
+            "mandatory_questions": [],
             "deferred_questions": [
-              "people_affected",
               "order_reference",
-              "item_name"
+              "item_name",
+              "order_channel"
             ],
             "optional_information": [],
             "prohibited_claims": [
@@ -5605,6 +5603,9 @@
               "diagnosticar",
               "atribuir_causalidade",
               "expor_informacao_tecnica",
+              "minimizar",
+              "continuar_recomendacao_gastronomica",
+              "pedir_dados_antes_da_orientacao_urgente",
               "medical_diagnosis",
               "medical_causality",
               "minimization",
@@ -5625,7 +5626,7 @@
             "checks": {
               "links": 0,
               "numbers": 1,
-              "questions": 2,
+              "questions": 0,
               "emoji": 0,
               "maximum_length": 900,
               "service_quality": {
@@ -9860,11 +9861,11 @@
       "results": [
         {
           "input_fingerprint": "51603c01f08dd7aac0726ac9e56ab9907ae10c86d338844a46fb7f79332788e1",
-          "response_text": "Sinto muito pelo que aconteceu. Entendi os sintomas relatados. Se há dificuldade para respirar, desmaio ou outro sinal de urgência, procure atendimento imediato ou acione o SAMU 192. Por segurança, procure um serviço de saúde o mais rápido possível. A equipe de qualidade e da gestão também precisa acompanhar o relato, sem concluir clinicamente nem apontar causa. Quais sintomas apareceram? Quando os sintomas começaram?",
+          "response_text": "Sinto muito pelo que aconteceu. Entendi os sintomas relatados. Se há dificuldade para respirar, desmaio ou outro sinal de urgência, procure atendimento imediato ou acione o SAMU 192. Por segurança, procure um serviço de saúde o mais rápido possível. A equipe de qualidade e da gestão também precisa acompanhar o relato, sem concluir clinicamente nem apontar causa.",
           "response_status": "unknown",
           "result_status": "unknown",
           "intent": "occurrence.health_symptom",
-          "subintent": "health_symptom",
+          "subintent": "respiratory_emergency",
           "entities": {
             "unit": {
               "value": "SIM-UNIT-001",
@@ -9875,10 +9876,8 @@
           },
           "fields_missing": [
             "order_reference",
-            "item_name",
-            "symptoms",
-            "onset",
-            "people_affected"
+            "order_channel",
+            "item_name"
           ],
           "capability_id": "health.incident.create",
           "authority": "A1",
@@ -9887,6 +9886,9 @@
           "closure": {
             "expected_state": "open",
             "blocked_by": [
+              "missing:order_reference",
+              "missing:order_channel",
+              "missing:item_name",
               "result:unknown"
             ]
           },
@@ -9966,14 +9968,11 @@
             "pending_actions": [
               "emergency_guidance_and_handoff"
             ],
-            "mandatory_questions": [
-              "symptoms",
-              "onset"
-            ],
+            "mandatory_questions": [],
             "deferred_questions": [
-              "people_affected",
               "order_reference",
-              "item_name"
+              "item_name",
+              "order_channel"
             ],
             "optional_information": [],
             "prohibited_claims": [
@@ -9983,6 +9982,9 @@
               "diagnosticar",
               "atribuir_causalidade",
               "expor_informacao_tecnica",
+              "minimizar",
+              "continuar_recomendacao_gastronomica",
+              "pedir_dados_antes_da_orientacao_urgente",
               "medical_diagnosis",
               "medical_causality",
               "minimization",
@@ -10003,7 +10005,7 @@
             "checks": {
               "links": 0,
               "numbers": 1,
-              "questions": 2,
+              "questions": 0,
               "emoji": 0,
               "maximum_length": 900,
               "service_quality": {
@@ -10847,5 +10849,5 @@
       ]
     }
   ],
-  "canonical_hash": "e54171b06305c488c5a9eadd87215eb86395c4af4ac57c5d7a38752cd2d0429a"
+  "canonical_hash": "a16fd03eee1d16d94eb6735bae7277eb33768171d0440cf6d865c66dd905141f"
 }

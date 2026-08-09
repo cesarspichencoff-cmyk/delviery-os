@@ -15,6 +15,10 @@ function option(name, fallback = null) {
     seed: option('--seed', 'TATA-EXPERIENCE-LAB-V1'),
     mode: option('--mode', 'all'),
     limit: Number(option('--limit', 0)),
+    wave: Number(option('--wave', 0)),
+    waveCount: Number(option('--count', 0)),
+    profile: option('--profile', null),
+    countPerGroup: Number(option('--count-per-group', 50)),
     enableLocalWriter: process.argv.includes('--writer')
   });
   const output = option('--output');
@@ -32,7 +36,7 @@ function option(name, fallback = null) {
     report_hash: report.report_hash,
     experience_evaluator: 'ADVISORY_NOT_INDEPENDENT'
   })}\n`);
-  process.exitCode = report.metrics.critical_failures ? 1 : 0;
+  process.exitCode = (report.metrics.critical_failures || report.metrics.high_failures) ? 1 : 0;
 })().catch((error) => {
   process.stderr.write(`${JSON.stringify({ error: error.code || error.message })}\n`);
   process.exitCode = 2;

@@ -2,7 +2,7 @@
   "schema_version": "deliveryos-conversation-human-feedback-before-after-v2",
   "synthetic": true,
   "source_artifact_hash": "cfe462fe00147c6b0642fbd9e9fe15f19c8120781d5829d62f3dda663814dc04",
-  "refined_artifact_hash": "e54171b06305c488c5a9eadd87215eb86395c4af4ac57c5d7a38752cd2d0429a",
+  "refined_artifact_hash": "a16fd03eee1d16d94eb6735bae7277eb33768171d0440cf6d865c66dd905141f",
   "cases": 50,
   "changed_turns": 47,
   "rows": [
@@ -633,7 +633,7 @@
           "turn": 1,
           "input_fingerprint": "87eaa0017154217079ebcaceaa44c1a2dfee11da9a571a6e87ac4d72a57b99a3",
           "before_response": "Obrigado por nos contar o que aconteceu. Vou preservar os sintomas relatados para acompanhamento da equipe de qualidade e da gestão, sem tirar conclusão médica nem apontar causa. Quais sintomas apareceram? Quando os sintomas começaram?",
-          "after_response": "Obrigado por nos contar o que aconteceu. Entendi os sintomas relatados. Se há dificuldade para respirar, desmaio ou outro sinal de urgência, procure atendimento imediato ou acione o SAMU 192. Por segurança, procure um serviço de saúde o mais rápido possível. A equipe de qualidade e da gestão também precisa acompanhar o relato, sem concluir clinicamente nem apontar causa. Quais sintomas apareceram? Quando os sintomas começaram?",
+          "after_response": "Obrigado por nos contar o que aconteceu. Entendi os sintomas relatados. Se há dificuldade para respirar, desmaio ou outro sinal de urgência, procure atendimento imediato ou acione o SAMU 192. Por segurança, procure um serviço de saúde o mais rápido possível. A equipe de qualidade e da gestão também precisa acompanhar o relato, sem concluir clinicamente nem apontar causa.",
           "changed": true,
           "knowledge_selected": [
             "food_safety.emergency",
@@ -1025,5 +1025,5 @@
       ]
     }
   ],
-  "canonical_hash": "b586fee6400dd130687b7b4a73684caea1ea6b63443ad9c55ae1f7de32bd1710"
+  "canonical_hash": "2280c4142e48090979b879fa885c9dc9cc0f40af58bbb90e9cb6853b31b0cc5c"
 }

@@ -12,7 +12,7 @@ const OCCASIONS = Object.freeze([
   ['quick_meal', /\b(?:rapido|rapida|pouco tempo|com pressa)\b/u],
   ['delivery_choice', /\b(?:ifood|delivery|entrega|pedir em casa)\b/u],
   ['budget_conscious', /\b(?:barato|barata|economico|economica|mais em conta|ate r?\$?\s*\d+)\b/u],
-  ['premium_experience', /\b(?:especial|premium|experiencia completa)\b/u],
+  ['premium_experience', /\b(?:especial|premium|experiencia completa|mais complet[ao])\b/u],
   ['traditional_preference', /\b(?:tradicional|classico|classica)\b/u],
   ['adventurous_preference', /\b(?:diferente|ousado|ousada|surpreenda|aventur)\b/u],
   ['light_meal', /\b(?:leve|mais leve|menos pesad[ao])\b/u],
@@ -116,9 +116,15 @@ function updateHospitalityContext(previous, input = {}) {
   if (/\b(?:crocante|crispy)\b/u.test(text)) context.texture_preferences = addUnique(context.texture_preferences, ['crunchy']);
   if (/\b(?:cremoso|cremosa)\b/u.test(text)) context.texture_preferences = addUnique(context.texture_preferences, ['creamy']);
   if (/\b(?:macaricad[oa]|ma[çc]aricad[oa]|selad[oa]|torch)\b/u.test(text)) context.preparation_preferences = addUnique(context.preparation_preferences, ['torched']);
-  if (/\b(?:cru|sashimi)\b/u.test(text)) context.preparation_preferences = addUnique(context.preparation_preferences, ['raw']);
-  if (/\b(?:cozido|quente)\b/u.test(text)) context.preparation_preferences = addUnique(context.preparation_preferences, ['cooked']);
-  if (/\bsem (?:fritura|frito|fritos|frita|fritas)\b/u.test(text)) context.preparation_preferences = addUnique(context.preparation_preferences, ['not_fried']);
+  const asksAboutRawPreparation = /\b(?:primeir[ao]|segund[ao]|terceir[ao]|essa|esse|opcao|prato)\b[^.?!]{0,50}\b(?:e|eh|tem|leva)\b[^.?!]{0,30}\bcru[ao]?\b/u.test(text)
+    || /\b(?:e|eh)\s+cru[ao]?\b/u.test(text);
+  if (/\b(?:cru[ao]?|sashimi)\b/u.test(text) && !asksAboutRawPreparation && !/\b(?:nao|n) (?:quero|gosto de?) (?:peixe )?cru[ao]?\b/u.test(text)) {
+    context.preparation_preferences = addUnique(context.preparation_preferences.filter((value) => value !== 'cooked'), ['raw']);
+  }
+  if (/\b(?:cozid[oa]|quente)\b/u.test(text) || /\b(?:nao|n) quero (?:peixe )?cru[ao]?\b/u.test(text)) {
+    context.preparation_preferences = addUnique(context.preparation_preferences.filter((value) => value !== 'raw'), ['cooked']);
+  }
+  if (/\b(?:sem (?:fritura|frito|fritos|frita|fritas)|(?:nao|n) (?:quero|curto) (?:nada )?frit[oa]s?)\b/u.test(text)) context.preparation_preferences = addUnique(context.preparation_preferences, ['not_fried']);
   if (avoidsCreamCheese(text)) context.preparation_preferences = addUnique(context.preparation_preferences, ['without_cream_cheese']);
   if (/\bvegetarian[oa]?\b/u.test(text)) context.dietary_restrictions = addUnique(context.dietary_restrictions, ['vegetarian']);
   if (/\b(?:para compartilhar|dividir|compartilhar)\b/u.test(text)) {

@@ -22,10 +22,21 @@ function normalizeText(value) {
     .trim();
 }
 
+const RESPIRATORY_EMERGENCY = /\b(?:(?:nao|n)\s+(?:consegue|conseguindo|conseguem|respira)\s+(?:respirar|direito)|dificuldade\s+(?:(?:para|pra)\s+)?respirar|(?:ta|esta|ficou|fica)\s+(?:dificil\s+)?(?:de\s+)?respirar|respira(?:cao)?\s+(?:esta\s+)?(?:ruim|dificil)|(?:(?:ta|esta)\s+ficando|ta|esta|ficando|ficou)\s+sem\s+ar|falta\s+de\s+ar|incha(?:r|ndo|cou|co)?[^.?!]{0,60}(?:respirar|sem\s+ar)|passando\s+muito\s+mal)\b/u;
+
+const ACTIVE_REACTION = /\b(?:(?:ta|esta|teve|tendo|comecou|comecando)\s+(?:uma\s+)?reacao|(?:comeu|depois\s+de\s+comer)[^.?!]{0,80}(?:passou\s+mal|comecou\s+a\s+passar\s+mal|reacao|alergia|inchou|vomit|diarreia)|(?:passou\s+mal|comecou\s+uma\s+alergia)\s+(?:depois\s+de\s+comer)?)\b/u;
+
+function safetyStateFromText(value) {
+  const text = normalizeText(value);
+  if (RESPIRATORY_EMERGENCY.test(text)) return 'respiratory_emergency';
+  if (ACTIVE_REACTION.test(text)) return 'active_reaction';
+  return null;
+}
+
 const INTENT_RULES = Object.freeze([
-  ['occurrence.health_symptom', /\b(dificuldade (?:para )?respirar|respirar (?:esta )?dificil|sem ar|vomito|vomitei|diarreia|febre|mal estar|passei mal|fiquei ruim|passaram mal|ficaram ruins|mesmos sintomas|mais de uma pessoa|depois de comer|depois da refeicao)\b/],
+  ['occurrence.health_symptom', /\b(dificuldade (?:para )?respirar|nao consegue respirar|respirar (?:esta )?dificil|sem ar|vomito|vomitei|diarreia|febre|mal estar|passei mal|fiquei ruim|passando muito mal|passaram mal|ficaram ruins|mesmos sintomas|mais de uma pessoa|depois de comer|depois da refeicao)\b/],
   ['occurrence.allergen', /\b(?:tenho alergia|sou alergic[oa])\b.*\b(?:veio|recebi|mandaram|chegou)\b/],
-  ['information.allergen', /\b(confirmar se|antes de pedir|esse prato tem|contem um ingrediente|confirmar um alergenico|ingrediente que me faz mal|tenho alergia|sou alergic[oa]|nao posso comer|tenho intolerancia)\b/],
+  ['information.allergen', /\b(confirmar se|antes de pedir|esse prato tem|contem um ingrediente|confirmar um alergenico|ingrediente que me faz mal|tenho alergia|sou alergic[oa]|nao posso comer|tenho intolerancia|(?:ela|ele|minha irma|meu irmao|meu namorado|minha namorada) (?:so )?tem alergia)\b/],
   ['occurrence.allergen', /\b(reacao alergica|tive uma reacao|comecei a co[cç]ar|me causou reacao|passei mal.*(?:alerg|depois de comer)|ingrediente que pode me causar)\b/],
   ['occurrence.foreign_body', /\b(cabelo|fio de cabelo|corpo estranho|objeto estranho|algo duro)\b/],
   ['occurrence.freshness', /\b(nao parecia fresco|n tava fresco|frescor)\b/],
@@ -280,6 +291,9 @@ class NativeConversationEngine {
     assertFeature(this.flags, 'conversationEngineV1');
     const content = String(input.content || '');
     const context = input.context || {};
+    const safetyState = safetyStateFromText(content);
+    if (safetyState === 'respiratory_emergency') return this.urgentSafety(content, context);
+    if (safetyState === 'active_reaction') return this.activeReaction(content, context);
     const publicTopic = detectPublicTopic(content);
     const candidates = extractPartyCandidates(content);
     if (publicTopic !== 'oke_pickup' && candidates.length > 1 && candidates.some((value) => value > 8)) {
@@ -386,6 +400,60 @@ class NativeConversationEngine {
     }, content);
   }
 
+  urgentSafety(content, context) {
+    const intent = this.intentById.get('occurrence.health_symptom');
+    const entities = extractEntities(content, context);
+    return this.finish({
+      intent: intent.id,
+      subintent: 'respiratory_emergency',
+      entities: Object.keys(entities).length ? entities : { expected: intent.minimum_entities || [], values: 'synthetic_or_missing_only' },
+      origin: context.origin || 'unknown',
+      severity: 'critical',
+      fields_missing: ['order_reference', 'order_channel', 'item_name'],
+      capability_id: 'health.incident.create',
+      capability_state: 'degraded',
+      authority: 'A1',
+      escalation: 'E4',
+      action: 'emergency_guidance_and_handoff',
+      expected_result: { status: 'unknown' },
+      closure: { expected_state: 'open', blocked_by: ['missing:order_reference', 'missing:order_channel', 'missing:item_name', 'result:unknown'] },
+      policy_id: 'URGENT_SAFETY_GATE',
+      ideal_response: 'Essa situação exige atendimento de emergência imediato. Priorize a segurança da pessoa: procure agora o serviço de emergência apropriado ou acione o SAMU 192. Não espere novas perguntas por aqui antes de buscar ajuda.',
+      prohibited_responses: ['diagnosticar', 'atribuir_causalidade', 'minimizar', 'continuar_recomendacao_gastronomica', 'pedir_dados_antes_da_orientacao_urgente'],
+      legacy_blocks: intent.legacy_blocks,
+      scenario_id: null,
+      basis_classifications: ['CANÔNICO_INTERNO'],
+      confidence: 1
+    }, content);
+  }
+
+  activeReaction(content, context) {
+    const intent = this.intentById.get('occurrence.allergen');
+    const entities = extractEntities(content, context);
+    return this.finish({
+      intent: intent.id,
+      subintent: 'active_reaction',
+      entities: Object.keys(entities).length ? entities : { expected: intent.minimum_entities || [], values: 'synthetic_or_missing_only' },
+      origin: context.origin || 'unknown',
+      severity: 'sensitive',
+      fields_missing: [],
+      capability_id: 'human.queue.create',
+      capability_state: 'requires_human',
+      authority: 'A1',
+      escalation: 'E3',
+      action: 'health_guidance_and_handoff',
+      expected_result: { status: 'requires_human' },
+      closure: { expected_state: 'open', blocked_by: ['active_health_incident'] },
+      policy_id: 'ACTIVE_INCIDENT_SAFETY_GATE',
+      ideal_response: 'Sinto muito. Como a reação já está acontecendo, interrompa a escolha de alimentos e priorize a saúde da pessoa. Procure atendimento apropriado; se houver dificuldade para respirar, inchaço importante, desmaio ou piora rápida, acione imediatamente o serviço de emergência.',
+      prohibited_responses: ['diagnosticar', 'atribuir_causalidade', 'minimizar', 'continuar_recomendacao_gastronomica', 'oferecer_compensacao_automatica'],
+      legacy_blocks: intent.legacy_blocks,
+      scenario_id: null,
+      basis_classifications: ['CANÔNICO_INTERNO'],
+      confidence: 0.98
+    }, content);
+  }
+
   finish(classification, content) {
     const policies = {
       food_safety: foodSafetyPolicy(classification, content),
@@ -408,5 +476,6 @@ module.exports = {
   extractEntities,
   addOkeEntities,
   behaviorFor,
+  safetyStateFromText,
   NativeConversationEngine
 };

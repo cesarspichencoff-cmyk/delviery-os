@@ -5,6 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const { buildExperienceCatalog } = require('../../tools/conversation-crm/experience-lab/catalog');
+const { buildWaveCatalog, buildDirectedCatalog, buildConfirmationCatalog, ARCHETYPES } = require('../../tools/conversation-crm/experience-lab/wave-catalog');
 const { SyntheticCustomer } = require('../../tools/conversation-crm/experience-lab/synthetic-customer');
 const { similarity, evaluateTurn } = require('../../tools/conversation-crm/experience-lab/hard-evaluator');
 const { evaluateExperience } = require('../../tools/conversation-crm/experience-lab/experience-evaluator');
@@ -48,7 +49,7 @@ test('hard evaluator detecta canal, segurança, referência e apoio à decisão'
     diagnostic: { channel: 'ifood', candidates_found: [], hospitality_context: { allergies: [] }, turn_analysis: {} }
   };
   const failures = evaluateTurn(turn, { response: 'Encontrei três opções.' }, new Map());
-  assert.ok(failures.some((item) => item.failure_class === 'SAFETY_CONTEXT_LOST'));
+  assert.ok(failures.some((item) => item.failure_class === 'ALLERGY_CONTEXT_LOST'));
   assert.ok(failures.some((item) => item.failure_class === 'RESPONSE_LOOP'));
 });
 
@@ -63,7 +64,7 @@ test('hard evaluator mantém alergia soberana no apoio à decisão posterior', (
     }
   };
   const failures = evaluateTurn(turn, { response: 'Alergia registrada.' }, new Map());
-  assert.ok(failures.some((item) => item.failure_class === 'SAFETY_CONTEXT_LOST'));
+  assert.ok(failures.some((item) => item.failure_class === 'ALLERGY_CONTEXT_LOST'));
   assert.ok(!failures.some((item) => item.failure_class === 'DECISION_SUPPORT_FAILURE'));
 });
 
@@ -71,6 +72,52 @@ test('Experience Evaluator é explicitamente advisory e não independente', () =
   const result = evaluateExperience([{ response: 'Vou registrar essa preferência.' }], { synthetic: true });
   assert.equal(result.independence, 'ADVISORY_NOT_INDEPENDENT');
   assert.equal(result.passed, false);
+  assert.ok(result.average < 10);
+});
+
+test('wave catalog é determinístico, diverso e inclui conversas longas', () => {
+  const first = buildWaveCatalog({ count: 100, seed: 'WAVE-A', wave: 1 });
+  const replay = buildWaveCatalog({ count: 100, seed: 'WAVE-A', wave: 1 });
+  const fresh = buildWaveCatalog({ count: 100, seed: 'WAVE-B', wave: 1 });
+  assert.deepEqual(first, replay);
+  assert.notDeepEqual(first, fresh);
+  assert.equal(first.length, 100);
+  assert.ok(new Set(first.map((item) => item.family)).size >= 20);
+  assert.ok(first.some((item) => item.actions.length >= 12));
+  assert.equal(ARCHETYPES.length, 25);
+});
+
+test('bateria dirigida contém 50 safety, 50 compound e 50 mixed com seed reproduzível', () => {
+  const first = buildDirectedCatalog({ seed: 'DIRECTED-A', countPerGroup: 50 });
+  const replay = buildDirectedCatalog({ seed: 'DIRECTED-A', countPerGroup: 50 });
+  const fresh = buildDirectedCatalog({ seed: 'DIRECTED-B', countPerGroup: 50 });
+  assert.deepEqual(first, replay);
+  assert.notDeepEqual(first, fresh);
+  assert.equal(first.length, 150);
+  assert.equal(first.filter((item) => item.family === 'directed_safety').length, 50);
+  assert.equal(first.filter((item) => item.family === 'directed_compound').length, 50);
+  assert.equal(first.filter((item) => item.family === 'directed_mixed').length, 50);
+});
+
+test('fresh confirmation contém 200 conversas e peso maior em safety e transições', () => {
+  const catalog = buildConfirmationCatalog({ seed: 'CONFIRMATION-A' });
+  assert.equal(catalog.length, 200);
+  assert.equal(catalog.filter((item) => item.family === 'confirmation_safety').length, 70);
+  assert.equal(catalog.filter((item) => item.family === 'confirmation_compound').length, 50);
+  assert.equal(catalog.filter((item) => item.family === 'confirmation_mixed').length, 80);
+  assert.deepEqual(catalog, buildConfirmationCatalog({ seed: 'CONFIRMATION-A' }));
+  assert.notDeepEqual(catalog, buildConfirmationCatalog({ seed: 'CONFIRMATION-B' }));
+});
+
+test('hard evaluator bloqueia candidato com alergênico confirmado', () => {
+  const turn = {
+    index: 3, action: { type: 'allergy_interrupt', expect: { allergy: 'crustacean' } }, input: 'alergia a camarão',
+    response: 'Vou considerar a alergia e confirmar com a equipe.',
+    diagnostic: { candidates_found: ['ITEM-SHRIMP'], hospitality_context: { allergies: ['crustacean'], confirmed_facts: [] } }
+  };
+  const menu = new Map([['ITEM-SHRIMP', { name: 'Item sintético', allergens: [{ allergen: 'crustacean', assertion: 'contains' }] }]]);
+  const failures = evaluateTurn(turn, null, menu);
+  assert.ok(failures.some((item) => item.failure_class === 'ALLERGY_INCOMPATIBLE_CANDIDATE' && item.severity === 'critical'));
 });
 
 test('golden failures preservam as 12 reprovações humanas sem PII', () => {
