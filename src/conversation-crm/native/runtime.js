@@ -29,6 +29,7 @@ const { nativeError } = require('./errors');
 const {
   normalizeConversationText,
   resolveConversationPattern,
+  transitionForDecision,
   ZERO_EXTERNAL_COST_POLICY
 } = require('../../../apps/deliveryos-ai-node');
 
@@ -346,7 +347,7 @@ class NativeConversationRuntime {
       occurred_at: input.occurred_at,
       decision
     });
-    return { decision, state: applied.state, enabled: true };
+    return { decision, state: applied.state, previousJourney: state.active_journey, enabled: true };
   }
 
   previewPattern(input, productContexts = {}) {
@@ -433,8 +434,18 @@ class NativeConversationRuntime {
         : mergedContext;
       const classification = this.engine.analyze({ content: gateway.input.content, context: classificationContext });
       const pattern = this.resolvePattern(gateway.input, classification, productContexts);
+      const switchedJourney = (pattern.decision?.pattern === 'switch_topic'
+        && pattern.previousJourney
+        && pattern.decision.target_journey !== pattern.previousJourney)
+        || (productContexts.conversation_state?.semantic_transition === 'SWITCH'
+          && productContexts.conversation_state?.active_goal === 'reservation');
+      const scopedContext = switchedJourney
+        ? Object.fromEntries(Object.entries(mergedContext).filter(([field]) => ![
+            'order_channel', 'order_reference', 'item_name', 'selected_option', 'continuation_intent', 'short_reply_resolved'
+          ].includes(field)))
+        : mergedContext;
       const conversationContext = {
-        ...mergedContext,
+        ...scopedContext,
         ...(pattern.decision?.facts_added || {}),
         ...(pattern.decision?.facts_corrected || {})
       };
@@ -733,6 +744,11 @@ class NativeConversationRuntime {
           endpoint_family: 'native_runtime',
           pattern_engine: pattern.enabled ? 'active' : 'disabled',
           pattern: pattern.decision?.pattern || null,
+          semantic_transition: transitionForDecision(pattern.decision, pattern.previousJourney),
+          user_repair_signal: productContexts.conversation_state?.user_repair_signal === true
+            || pattern.decision?.reference_resolution?.user_repair_signal === true,
+          negative_feedback_signal: productContexts.conversation_state?.negative_feedback_signal === true
+            || pattern.decision?.reference_resolution?.negative_feedback_signal === true,
           journey: pattern.state?.active_journey || null,
           journey_state: pattern.state ? {
             version: pattern.state.version,

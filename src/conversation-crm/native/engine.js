@@ -74,7 +74,7 @@ const INTENT_RULES = Object.freeze([
   ['handoff.failure', /\b(encaminharam.*ninguem recebeu|lugar nenhum|caso sumiu|atendimento reiniciou)\b/],
   ['conversation.multiple_intents', /\b(porcaria.*resolv\w*|pessimos.*resolv\w*|muito irritado|reservar e tambem reclamar|reserva e pedido errado|duas coisas.*reserva)\b/],
   ['reservation.update', /\b(mudar.*reserva|alterar.*horario|atualizar minha reserva)\b/],
-  ['reservation.create', /\b(reservar|reserva p|queriamos reservar|acao parece ter ocorrido)\b/],
+  ['reservation.create', /\b(reservar|reserva p|queriamos reservar|acao parece ter ocorrido|tem mesa|(?:quero|preciso de) uma mesa|quero ir ai com|acho que vou pessoalmente|vou no restaurante entao)\b/],
   ['waitlist.read', /\b(posicao.*fila|q posicao|falta muito na fila|consulte a fila)\b/],
   ['waitlist.create', /\b(entrar na fila|inclua meu grupo|criacao da fila|estamos em (?:quatro|4|seis|6) pessoas e chegando|somos 6 chegando|estamos chegando e somos seis)\b/],
   ['information.corkage', /\b(taxa de rolha|tem rolha|levar vinho)\b/],
@@ -139,7 +139,7 @@ function extractPartyCandidates(content) {
   const numberToken = `(?:\\d{1,2}|${Object.keys(NUMBER_WORDS).join('|')})`;
   const patterns = [
     new RegExp(`\\b(?:somos|estamos\\s+em|estaremos\\s+em)\\s+(${numberToken})\\b`, 'g'),
-    new RegExp(`\\bmesa\\s+(?:para|de)\\s+(${numberToken})\\b`, 'g'),
+    new RegExp(`\\bmesa\\s+(?:para|pra|de)\\s+(${numberToken})\\b`, 'g'),
     new RegExp(`\\bgrupo\\s+(?:de|com)\\s+(${numberToken})\\b`, 'g'),
     new RegExp(`\\b(${numberToken})\\s+(?:pessoa|pessoas|lugares)\\b`, 'g')
   ];
@@ -332,6 +332,9 @@ class NativeConversationEngine {
     const effectivePublicTopic = publicIntent === intentId ? publicTopic : null;
     const intent = this.intentById.get(intentId);
     const entities = extractEntities(content, context);
+    if (party.value && (intentId.startsWith('reservation.') || intentId.startsWith('waitlist.'))) {
+      entities.party_size = { value: party.value, state: 'provided', provenance: 'message', confidence: party.confidence };
+    }
     if (effectivePublicTopic) entities.unit = { value: this.catalogs.publicInfo.unit.unit_id, state: 'confirmed', provenance: 'confirmed_public_catalog', confidence: 1 };
     if (effectivePublicTopic === 'oke_pickup') addOkeEntities(entities, content, party);
     const known = new Set([

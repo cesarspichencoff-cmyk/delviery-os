@@ -29,6 +29,21 @@ const MENU_CHANNEL_REPEAT_QUESTIONS = Object.freeze([
   'Só preciso confirmar o canal: salão, iFood ou delivery próprio?'
 ]);
 const OCCURRENCE_SIGNAL = /\b(?:faltou|nao veio|esqueceram|nao mandaram|veio (?:outro|errado|com)|reacao|pass(?:ei|ou|ar|ando) mal|vomito|diarreia|dificuldade (?:para|pra) respirar|(?:nao|n) consegue respirar|(?:nao|n) respira direito|sem ar|cabelo|corpo estranho)\b/u;
+const USER_REPAIR_SIGNAL = /\b(?:voce|vc) (?:nao|n) (?:esta|ta) entendendo|\b(?:nao|n) foi (?:isso|o que eu (?:falei|pedi))|\bquem falou em\b|\beu falei\b|\b(?:nao|n) quero isso\b|\bja disse que\b|\b(?:voce|vc) entendeu errado\b/u;
+const NEGATIVE_FEEDBACK_SIGNAL = /\b(?:ja vi que (?:voce|vc) (?:nao|n) sabe|(?:voce|vc) (?:nao|n) (?:esta|ta) ajudando|isso (?:nao|n) tem nada a ver|(?:voce|vc) (?:esta|ta) perdido)\b/u;
+const RESERVATION_INTENT_SIGNAL = /\b(?:quero|queria|gostaria de|como (?:faco|faz)(?: para)?|pode me dizer como (?:faco|faz)(?: para)?)?\s*reserv(?:ar|a)|\btem mesa(?: para| pra)?\b|\b(?:quero|preciso de) uma mesa (?:para|pra)\b|\b(?:vou|quero ir|acho que vou) (?:no|ao) restaurante\b|\bquero ir ai com\b|\b(?:vou|quero|acho que vou) (?:ai )?pessoalmente\b|\besquece (?:o )?delivery,? quero reservar\b/u;
+const DINE_OUT_SIGNAL = /\b(?:preciso|quero|queria|to procurando|estou procurando).{0,36}\b(?:lugar (?:para|pra) (?:comer|jantar)|onde (?:comer|jantar)|sair (?:para|pra) comer)\b|\bqueria comer japones hoje\b|\bqueria ir no tata hoje\b|\bcomo faco (?:para|pra) ir ai\b/u;
+
+const REQUESTED_CATEGORY_PATTERNS = Object.freeze([
+  ['hot_roll', /\bhot roll\b/u],
+  ['sashimi', /\bsashimis?\b/u],
+  ['temaki', /\btemakis?\b/u],
+  ['combinado', /\bcombinados?\b/u],
+  ['entrada', /\bentradas?\b/u],
+  ['sobremesa', /\bsobremesas?\b/u],
+  ['drink', /\b(?:drinks?|coqueteis?)\b/u],
+  ['sushi', /\bsushis?\b/u]
+]);
 
 function stableReviewId(value) {
   return String(value || '').replace(/[^A-Z0-9]/giu, '').slice(0, 32).toUpperCase();
@@ -45,6 +60,21 @@ function normalizeChatText(value) {
 
 function socialActFromText(text) {
   return /^(?:oi+|ola|bom dia|boa tarde|boa noite)\b/u.test(text) ? 'greeting' : null;
+}
+
+function requestedCategoryFromText(text) {
+  return REQUESTED_CATEGORY_PATTERNS.find(([, pattern]) => pattern.test(text))?.[0] || null;
+}
+
+function semanticTransitionForTurn(text, state, turnAnalysis) {
+  if (USER_REPAIR_SIGNAL.test(text) || NEGATIVE_FEEDBACK_SIGNAL.test(text)) return 'CORRECT';
+  const nextGoal = RESERVATION_INTENT_SIGNAL.test(text)
+    ? 'reservation'
+    : (DINE_OUT_SIGNAL.test(text) ? 'dine_out' : turnAnalysis.goal);
+  if (nextGoal && state.active_goal && nextGoal !== state.active_goal) return 'SWITCH';
+  if (nextGoal && (state.active_goal === nextGoal || state.active_goal === null)) return state.active_goal ? 'REFINE' : 'CONTINUE';
+  if (channelFromText(text) && state.recommendation_active) return 'REFINE';
+  return 'CONTINUE';
 }
 
 function greetingOnly(text) {
@@ -96,9 +126,15 @@ function analyzeCustomerTurn(text, priorOptions = []) {
   const referenced = ordinal ? priorOptions[ordinal.position - 1] || null : null;
   const recommendationSignal = questions.includes('recommendation')
     || /\b(?:salmao|atum|peixe|sushi|prato|opcao|leve|menos pesada|cream cheese|sem fritura)\b/u.test(text);
+  const dineOut = DINE_OUT_SIGNAL.test(text);
+  const reservation = RESERVATION_INTENT_SIGNAL.test(text);
+  const requestedCategory = requestedCategoryFromText(text);
   return {
     social_act: socialActFromText(text),
-    goal: firstVisit ? 'menu_discovery' : (recommendationSignal ? 'recommendation' : null),
+    goal: reservation ? 'reservation' : (dineOut ? 'dine_out' : (firstVisit ? 'menu_discovery' : (recommendationSignal ? 'recommendation' : null))),
+    requested_category: requestedCategory,
+    user_repair_signal: USER_REPAIR_SIGNAL.test(text),
+    negative_feedback_signal: NEGATIVE_FEEDBACK_SIGNAL.test(text),
     facts: {
       channel: channelFromText(text),
       number_of_people: partySizeFromText(text)
@@ -163,6 +199,9 @@ function initialChatContext(defaultUnitId = 'SIM-UNIT-ITAIM') {
     guidance_questions_asked: [],
     selected_item_id: null,
     selected_item_name: null,
+    requested_category: null,
+    active_goal: null,
+    suspended_goals: [],
     presented_options: [],
     turn_analysis: null,
     pending_question: null,
@@ -452,6 +491,16 @@ class CustomerMenuHomologationService {
     let priorPresentedOptions = [...state.presented_options];
     const turnAnalysis = analyzeCustomerTurn(text, priorPresentedOptions);
     state.turn_analysis = turnAnalysis;
+    const semanticTransition = semanticTransitionForTurn(text, state, turnAnalysis);
+    const previousGoal = state.active_goal;
+    const explicitGoal = turnAnalysis.goal;
+    if (explicitGoal && explicitGoal !== state.active_goal) {
+      if (state.active_goal) state.suspended_goals = [...state.suspended_goals, state.active_goal].slice(-4);
+      state.active_goal = explicitGoal;
+    }
+    turnAnalysis.semantic_transition = semanticTransition;
+    turnAnalysis.previous_goal = previousGoal;
+    turnAnalysis.active_goal = state.active_goal;
     const repeated = Boolean(text && state.last_message_normalized === text);
     state.repetition_detected = repeated;
     state.repetition_streak = repeated ? state.repetition_streak + 1 : 0;
@@ -460,20 +509,30 @@ class CustomerMenuHomologationService {
     const addFact = (field, value) => factsAdded.push({ field, value });
     if (OCCURRENCE_SIGNAL.test(text) || safetyStateFromText(text)) state.operational_flow_active = true;
     const explicitChannel = input.channel || channelFromText(text);
-    if (explicitChannel) {
-      if (state.channel !== explicitChannel) {
-        addFact('channel', explicitChannel);
+    const dineOutChannel = turnAnalysis.goal === 'dine_out' ? 'dining_room' : null;
+    if (explicitChannel || dineOutChannel) {
+      const selectedChannel = explicitChannel || dineOutChannel;
+      if (state.channel !== selectedChannel) {
+        addFact('channel', selectedChannel);
         state.presented_options = [];
         state.selected_item_id = null;
         state.selected_item_name = null;
         priorPresentedOptions = [];
       }
-      state.channel = explicitChannel;
-      state.unit_id = input.unit_id || this.defaultUnitForChannel(explicitChannel);
+      state.channel = selectedChannel;
+      state.unit_id = input.unit_id || this.defaultUnitForChannel(selectedChannel);
     } else if (input.unit_id) state.unit_id = input.unit_id;
     if (/\b(?:sem (?:fritura|frito|fritos|frita|fritas)|(?:nao|n) (?:quero|curto) (?:nada )?frit[oa]s?)\b/u.test(text) && state.fried !== false) {
       state.fried = false;
       addFact('fried', false);
+    }
+    if (turnAnalysis.user_repair_signal && /\bquem falou em (?:fritura|frito)|\b(?:nao|n) falei (?:de )?(?:fritura|frito)\b/u.test(text)) {
+      state.fried = null;
+      state.hospitality_context = Object.freeze({
+        ...state.hospitality_context,
+        preparation_preferences: Object.freeze(state.hospitality_context.preparation_preferences.filter((value) => value !== 'not_fried'))
+      });
+      addFact('rejected_attribute', 'fried_preference');
     }
     const ingredientPatterns = [
       ['salmon', /\bsalmao\b/u],
@@ -522,6 +581,14 @@ class CustomerMenuHomologationService {
     const asksPairing = /\b(?:bebida|drink|harmoniza|combina)\b/u.test(text);
     if (turnAnalysis.goal === 'menu_discovery') state.recommendation_active = true;
     if (asksRecommendation || asksPairing) state.recommendation_active = true;
+    if (turnAnalysis.requested_category) {
+      if (state.requested_category !== turnAnalysis.requested_category) addFact('requested_category', turnAnalysis.requested_category);
+      state.requested_category = turnAnalysis.requested_category;
+      state.recommendation_active = true;
+      state.active_goal = 'recommendation';
+      turnAnalysis.active_goal = state.active_goal;
+    }
+    turnAnalysis.requested_category = turnAnalysis.requested_category || state.requested_category;
     const previousHospitality = state.hospitality_context;
     state.hospitality_context = updateHospitalityContext(state.hospitality_context, {
       normalized_text: text,
@@ -587,6 +654,7 @@ class CustomerMenuHomologationService {
         cream_cheese: state.cream_cheese,
         preferred_ingredients: [...state.preferred_ingredients],
         excluded_ingredients: [...state.excluded_ingredients],
+        requested_category: state.requested_category,
         number_of_people: state.number_of_people,
         allergies: [...new Set([...(input.allergies || []), ...declaredAllergies])]
       };
@@ -669,6 +737,12 @@ class CustomerMenuHomologationService {
       turnAnalysis,
       priorPresentedOptions
     });
+    const explicitOperationalSwitch = turnAnalysis.goal === 'reservation';
+    if (explicitOperationalSwitch) {
+      guidance = null;
+      menuContext = null;
+      recommendationContext = null;
+    }
     if (guidance?.question) {
       const questionKey = normalizeChatText(guidance.question);
       const resumableChannelQuestion = ['menu_channel_required', 'journey_greeting_resume'].includes(guidance.mode);
@@ -704,6 +778,11 @@ class CustomerMenuHomologationService {
           fried: state.fried,
           cream_cheese: state.cream_cheese
         },
+        requested_category: state.requested_category,
+        active_goal: state.active_goal,
+        semantic_transition: semanticTransition,
+        user_repair_signal: turnAnalysis.user_repair_signal,
+        negative_feedback_signal: turnAnalysis.negative_feedback_signal,
         turn_analysis: state.turn_analysis,
         repetition_detected: state.repetition_detected,
         repetition_streak: state.repetition_streak,
@@ -750,8 +829,6 @@ class CustomerMenuHomologationService {
       lines.push(fried.length
         ? `Não consigo afirmar qual é realmente mais leve; ${fried.join(' e ')} ${fried.length > 1 ? 'têm' : 'tem'} fritura informada, e os demais detalhes de preparo não estão completos.`
         : 'Não consigo afirmar qual é realmente mais leve porque o cardápio não detalha esse atributo.');
-    } else if (fried.length && fried.length < detailed.length) {
-      lines.push(`${fried.join(' e ')} ${fried.length > 1 ? 'têm' : 'tem'} fritura informada; nas outras opções esse detalhe não está confirmado.`);
     }
     if (state.cream_cheese === 'without') {
       const confirmedWithout = detailed.filter((item) => item.details.preparation.cream_cheese === false).map((item) => item.name);
@@ -766,7 +843,7 @@ class CustomerMenuHomologationService {
       }).filter(Boolean);
       if (prices.length) lines.push(`Os preços informados são ${prices.join('; ')}.`);
     }
-    if (options.includeAvailability !== false && detailed.some((item) => item.availability?.state === 'unknown')) {
+    if (options.includeAvailability === true && detailed.some((item) => item.availability?.state === 'unknown')) {
       lines.push('A disponibilidade precisa ser conferida no canal antes de fechar o pedido.');
     }
     return lines;
@@ -880,6 +957,70 @@ class CustomerMenuHomologationService {
         : (isGreetingOnly ? 'Você prefere salão, iFood ou delivery próprio?'
           : (state.repetition_detected ? repeatedQuestion : null)))
       : null;
+    if (turnAnalysis.goal === 'reservation') return null;
+    if (turnAnalysis.negative_feedback_signal) {
+      const category = state.requested_category ? state.requested_category.replace('_', ' ') : null;
+      return Object.freeze({
+        schema_version: 'deliveryos-homologation-guidance-v1',
+        mode: 'interaction_repair',
+        direct_answers: [category
+          ? `Você tem razão em apontar isso. Eu saí do que você pediu; vou ficar em ${category}.`
+          : 'Você tem razão em apontar isso. Eu saí do que você pediu e vou corrigir o rumo.'],
+        question: category ? 'Você prefere uma opção individual ou um combinado?' : 'Qual parte do seu pedido você quer que eu retome agora?',
+        context_reason: 'negative_feedback_repair',
+        knowledge_source: 'current_conversation',
+        candidates_found: []
+      });
+    }
+    if (turnAnalysis.goal === 'dine_out') {
+      return Object.freeze({
+        schema_version: 'deliveryos-homologation-guidance-v1',
+        mode: 'restaurant_discovery',
+        direct_answers: ['Posso ajudar você a planejar uma ida ao TATÁ hoje, seja para escolher a unidade, consultar o endereço ou entender como reservar.'],
+        question: 'Você já sabe em qual unidade quer ir?',
+        context_reason: 'dine_out_intent',
+        knowledge_source: 'current_conversation',
+        candidates_found: []
+      });
+    }
+    if (turnAnalysis.user_repair_signal && state.requested_category) {
+      const category = state.requested_category.replace('_', ' ');
+      if (candidates.length) {
+        const direct = this.candidateDecisionSupport(candidates, state, { includeAvailability: false });
+        return Object.freeze({
+          schema_version: 'deliveryos-homologation-guidance-v1',
+          mode: 'category_correction',
+          direct_answers: [`Entendi a correção: você pediu ${category}. ${direct.join(' ')}`],
+          question: null,
+          context_reason: 'user_repair_applied',
+          knowledge_source: menuSource,
+          candidates_found: candidates.map((item) => item.item_id)
+        });
+      }
+      return Object.freeze({
+        schema_version: 'deliveryos-homologation-guidance-v1',
+        mode: 'category_correction',
+        direct_answers: [`Entendi a correção: você pediu ${category}. Não vou ampliar para outras categorias só para preencher opções.`],
+        question: state.awaiting_channel ? resumeQuestion : 'Você quer que eu procure outra opção dentro dessa categoria?',
+        context_reason: 'category_candidate_not_confirmed',
+        knowledge_source: menuSource,
+        candidates_found: []
+      });
+    }
+    if (turnAnalysis.user_repair_signal) {
+      const dineOutRepair = state.active_goal === 'dine_out';
+      return Object.freeze({
+        schema_version: 'deliveryos-homologation-guidance-v1',
+        mode: 'interaction_repair',
+        direct_answers: [dineOutRepair
+          ? 'Entendi a correção: você quer um lugar para comer hoje, e eu posso ajudar a planejar uma ida ao TATÁ.'
+          : 'Entendi a correção. Vou deixar de lado a interpretação anterior e retomar o que você pediu.'],
+        question: dineOutRepair ? 'Você quer ver a unidade e o endereço ou prefere partir para uma reserva?' : null,
+        context_reason: 'user_repair_applied',
+        knowledge_source: 'current_conversation',
+        candidates_found: []
+      });
+    }
     if (turnAnalysis.goal === 'menu_discovery' && activeAllergy) {
       return Object.freeze({
         schema_version: 'deliveryos-homologation-guidance-v1',

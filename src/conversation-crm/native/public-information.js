@@ -44,7 +44,7 @@ function detectPublicTopic(content) {
   if (/\b(cardapio|menu|precos dos itens|ver as opcoes)\b/u.test(text)) return 'institutional_menu';
   if (/\b(sem fritura|nao frit[oa]s?|salm[aã]o|cream cheese|harmoniza|bebida combina|op[cç][aã]o sugerida|recomend)\b/u.test(text)) return 'menu_guidance';
   if (/\b(onde|como)\b.*\b(pedir|fazer pedido)\b/u.test(text) || /\b(delivery proprio|pedir pelo ifood|ifood ou delivery)\b/u.test(text)) return 'delivery_options';
-  if (/\b(reserva|reservar)\b/u.test(text)) return 'reservation';
+  if (/\b(reserva|reservar|tem mesa|(?:quero|preciso de) uma mesa|acho que vou pessoalmente|vou (?:ai )?pessoalmente|vou (?:no|ao) restaurante)\b/u.test(text)) return 'reservation';
   if (/\b(fila|espera|posicao)\b/u.test(text)) return 'waitlist';
   if (/\b(feriado)\b/u.test(text) && /\b(horario|abre|aberto|funciona)\b/u.test(text)) return 'holiday_hours';
   if (/\b(horario|funcionamento|abre|aberto|fecha)\b/u.test(text)) return 'opening_hours';

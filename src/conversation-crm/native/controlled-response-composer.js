@@ -226,11 +226,12 @@ function reservationText(input) {
     : '';
   const intro = plan.conversation_stage === 'continuation' ? acknowledgement(plan, variationContext) : 'Claro.';
   const partySize = entityValue(classification, plan, 'party_size');
+  const answer = knowledgeMessages(plan, { limit: 2 }) || sentence(authorizedText);
   if (plan.conversation_stage === 'continuation') {
     const continuity = partySize ? `${intro.replace(/[.]$/u, '')}, para ${partySize} pessoas.` : intro;
-    return `${continuity}${question ? ` ${question}` : ''}`;
+    return `${continuity}${answer ? ` ${answer}` : ''}${question ? ` ${question}` : ''}`;
   }
-  const answer = knowledgeMessages(plan, { limit: 2 }) || sentence(authorizedText);
+  if (!answer) return `${intro} Posso ajudar com a reserva.${question ? ` ${question}` : ''}`;
   return `${intro} ${answer}${question ? ` ${question}` : ''} Se precisar, eu sigo com você por aqui.`;
 }
 

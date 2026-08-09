@@ -19,6 +19,7 @@ function option(name, fallback = null) {
     waveCount: Number(option('--count', 0)),
     profile: option('--profile', null),
     countPerGroup: Number(option('--count-per-group', 50)),
+    freeCount: Number(option('--free-count', 100)),
     enableLocalWriter: process.argv.includes('--writer')
   });
   const output = option('--output');

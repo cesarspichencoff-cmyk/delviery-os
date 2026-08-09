@@ -8,7 +8,8 @@ const { createHash } = require('node:crypto');
 const { createNativeServer } = require('../native-server');
 const { buildExperienceCatalog } = require('./catalog');
 const { buildWaveCatalog, buildDirectedCatalog, buildConfirmationCatalog } = require('./wave-catalog');
-const { SyntheticCustomer } = require('./synthetic-customer');
+const { buildSemanticTransitionCatalog } = require('./semantic-transition-catalog');
+const { SyntheticCustomer, FreeSyntheticCustomer } = require('./synthetic-customer');
 const { evaluateConversation } = require('./hard-evaluator');
 const { evaluateExperience } = require('./experience-evaluator');
 
@@ -42,6 +43,10 @@ function summarize(conversations, hardResults, experienceResults, seed, mode) {
   const experienceAverage = Number((scoreDimensions.reduce((sum, dimension) => sum + experienceScores[dimension], 0) / scoreDimensions.length).toFixed(2));
   const metrics = {
     conversations_run: conversations.length,
+    transition_conversations: conversations.filter((item) => item.family === 'semantic_transition').length,
+    category_conversations: conversations.filter((item) => item.family === 'category_semantics').length,
+    adversarial_conversations: conversations.filter((item) => item.family === 'adversarial_multiturn').length,
+    free_conversations: conversations.filter((item) => item.family === 'free_conversation').length,
     turns_run: conversations.reduce((sum, item) => sum + item.turns.length, 0),
     critical_failures: severityCounts.critical,
     high_failures: severityCounts.high,
@@ -49,6 +54,12 @@ function summarize(conversations, hardResults, experienceResults, seed, mode) {
     total_failures: failures.length,
     new_failure_classes: Object.keys(byClass).length,
     response_loops: byClass.RESPONSE_LOOP || 0,
+    user_repair_ignored: byClass.USER_REPAIR_IGNORED || 0,
+    rejected_response_repeated: byClass.REJECTED_RESPONSE_REPEATED || 0,
+    stale_journey_response: byClass.STALE_JOURNEY_RESPONSE || 0,
+    explicit_intent_switch_ignored: byClass.EXPLICIT_INTENT_SWITCH_IGNORED || 0,
+    category_mismatch: byClass.CATEGORY_MISMATCH || 0,
+    reservation_switch_failure: byClass.RESERVATION_SWITCH_FAILURE || 0,
     lost_context: (byClass.LOST_CONTEXT || 0) + (byClass.SIDE_QUESTION_DESTROYS_JOURNEY || 0),
     wrong_channel: byClass.WRONG_CHANNEL || 0,
     unsupported_fact: byClass.UNSUPPORTED_FACT || 0,
@@ -82,13 +93,19 @@ async function runExperienceLab(options = {}) {
     const bootstrap = await request(base, '/api/customer-menu/bootstrap');
     const menuIndex = new Map(bootstrap.menu.items.map((item) => [item.item_id, item]));
     const catalog = buildExperienceCatalog();
-    const allScenarios = options.profile === 'fresh-confirmation'
+    const allScenarios = options.profile === 'semantic-transition'
+      ? buildSemanticTransitionCatalog({
+          seed,
+          countPerGroup: Number(options.countPerGroup || 100),
+          freeCount: Number(options.freeCount || 100)
+        }).all
+      : (options.profile === 'fresh-confirmation'
       ? buildConfirmationCatalog({ seed })
       : (options.profile === 'directed-blockers'
         ? buildDirectedCatalog({ seed, countPerGroup: Number(options.countPerGroup || 50) })
       : (options.waveCount
         ? buildWaveCatalog({ count: Number(options.waveCount), seed, wave: Number(options.wave || 1) })
-        : (mode === 'structured' ? catalog.structured : (mode === 'mutated' ? catalog.mutated : [...catalog.structured, ...catalog.mutated]))));
+        : (mode === 'structured' ? catalog.structured : (mode === 'mutated' ? catalog.mutated : [...catalog.structured, ...catalog.mutated])))));
     const limit = Number(options.limit || 0);
     const scenarios = Number.isInteger(limit) && limit > 0 ? allScenarios.slice(0, limit) : allScenarios;
     const conversations = [];
@@ -96,7 +113,9 @@ async function runExperienceLab(options = {}) {
     const experienceResults = [];
     for (const scenario of scenarios) {
       await request(base, '/api/homologation/chat/reset', { method: 'POST', body: {} });
-      const customer = new SyntheticCustomer(scenario, seed);
+      const customer = scenario.free_customer
+        ? new FreeSyntheticCustomer(scenario, seed)
+        : new SyntheticCustomer(scenario, seed);
       const turns = [];
       let customerTurn = customer.nextTurn();
       while (customerTurn) {

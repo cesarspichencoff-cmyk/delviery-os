@@ -53,7 +53,20 @@ const PHRASES = Object.freeze({
   decision_short: ['qual vc pegaria?', 'tá mas qual é melhor?', 'dessas qual?'],
   reference_first: ['e a primeira?', 'essa primeira é frita?', 'quanto fica a primeira?'],
   switch_salon_question: ['e se eu for no restaurante?', 'se eu for aí muda alguma coisa?', 'acho q vou aí'],
-  correction_quantity: ['na verdade agora somos 5', 'corrigindo, vai ser pra três', 'mudou: estamos em cinco']
+  correction_quantity: ['na verdade agora somos 5', 'corrigindo, vai ser pra três', 'mudou: estamos em cinco'],
+  open_dining: ['Preciso de um lugar para comer hoje', 'quero um lugar pra jantar hoje', 'tô procurando onde comer hoje', 'queria ir no Tatá hoje'],
+  user_repair: ['você não está entendendo, eu falei sushi', 'não foi isso que eu pedi', 'quem falou em fritura? eu falei sushi', 'vc entendeu errado'],
+  negative_feedback: ['você não está ajudando', 'isso não tem nada a ver', 'já vi que você não sabe de nada', 'vc tá perdido'],
+  reservation_switch: ['quero reservar para 7 pessoas', 'esquece o delivery, quero reservar', 'tem mesa pra 7?', 'acho que vou pessoalmente'],
+  journey_abandonment: ['esquece isso, quero reservar agora', 'não quero saber disso, vou no restaurante então', 'deixa o pedido, quero uma mesa para 7'],
+  category_sushi: ['quero comer sushi', 'quero sushi', 'quero opções de sushi'],
+  category_sashimi: ['quero sashimi', 'tem opções de sashimi?', 'quero comer sashimi'],
+  category_temaki: ['quero temaki', 'tem opções de temaki?', 'quero comer um temaki'],
+  category_hot_roll: ['quero hot roll', 'tem opções de hot roll?', 'eu pedi hot roll'],
+  category_combinado: ['quero um combinado', 'tem opções de combinado?', 'quero ver os combinados'],
+  category_entrada: ['quero uma entrada', 'tem opções de entrada?', 'quero ver as entradas'],
+  category_sobremesa: ['quero uma sobremesa', 'tem opções de sobremesa?', 'quero ver as sobremesas'],
+  category_drink: ['quero um drink', 'tem opções de drink?', 'quero ver os drinks']
 });
 
 function phraseFor(action, random, mutation) {
@@ -91,4 +104,47 @@ class SyntheticCustomer {
   }
 }
 
-module.exports = { PHRASES, phraseFor, SyntheticCustomer };
+class FreeSyntheticCustomer {
+  constructor(scenario, seed) {
+    this.context = Object.freeze({ ...scenario.free_customer });
+    this.random = new SeededRandom(`${seed}:${scenario.scenario_id}:free`);
+    this.index = 0;
+    this.lastResponse = '';
+    this.repaired = false;
+  }
+
+  opening() {
+    if (this.context.goal === 'dine_out') return this.random.pick(PHRASES.open_dining);
+    if (this.context.goal === 'reservation') return this.random.pick(PHRASES.reservation_switch);
+    return this.random.pick(PHRASES[`category_${this.context.goal}`] || PHRASES.category_sushi);
+  }
+
+  nextTurn(lastAssistantTurn = null) {
+    const response = String(lastAssistantTurn?.response || '');
+    const normalized = response.toLowerCase();
+    if (this.index === 0) {
+      this.index += 1;
+      return Object.freeze({ action: { type: this.context.goal === 'dine_out' ? 'open_dining' : `category_${this.context.goal}` }, message: this.opening() });
+    }
+    if (this.index >= Number(this.context.maximum_turns || 5)) return null;
+    let action;
+    if (/sal[aã]o|ifood|delivery pr[oó]prio/iu.test(response) && /\?/u.test(response)) {
+      action = { type: this.context.constraints.channel === 'dining_room' ? 'channel_salon' : 'channel_ifood', expect: { channel: this.context.constraints.channel } };
+    } else if (!this.repaired && (/ainda n[aã]o tenho|restaurante, uma reserva ou um pedido/iu.test(response)
+      || (this.context.goal !== 'dine_out' && !normalized.includes(this.context.goal.replace('_', ' '))))) {
+      action = { type: 'user_repair' };
+    } else if (this.context.mood === 'impatient' && this.index === 2) {
+      action = { type: 'negative_feedback' };
+    } else if (this.index >= 3) {
+      action = { type: 'reservation_switch' };
+    } else {
+      action = this.context.goal === 'dine_out' ? { type: 'category_sushi' } : { type: 'user_repair' };
+    }
+    if (action.type === 'user_repair') this.repaired = true;
+    this.index += 1;
+    this.lastResponse = response;
+    return Object.freeze({ action, message: phraseFor(action, this.random, this.context.mood !== 'calm') });
+  }
+}
+
+module.exports = { PHRASES, phraseFor, SyntheticCustomer, FreeSyntheticCustomer };

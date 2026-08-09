@@ -11,7 +11,7 @@ const NUMBER_WORDS = Object.freeze({
 const NUMBER_TOKEN = `(?:\\d{1,2}|${Object.keys(NUMBER_WORDS).join('|')})`;
 const PARTY_PATTERNS = Object.freeze([
   new RegExp(`\\b(?:somos|estamos\\s+em|estaremos\\s+em)\\s+(${NUMBER_TOKEN})\\b`),
-  new RegExp(`\\bmesa\\s+(?:para|de)\\s+(${NUMBER_TOKEN})\\b`),
+  new RegExp(`\\bmesa\\s+(?:para|pra|de)\\s+(${NUMBER_TOKEN})\\b`),
   new RegExp(`\\bgrupo\\s+(?:de|com)\\s+(${NUMBER_TOKEN})\\b`),
   new RegExp(`\\b(${NUMBER_TOKEN})\\s+(?:pessoa|pessoas|lugares)\\b`)
 ]);

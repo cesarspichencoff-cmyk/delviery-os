@@ -1,15 +1,24 @@
 'use strict';
 
+const { itemMatchesRequestedCategory } = require('../../../src/conversation-crm/menu-intelligence/recommendation');
+
 const INTERNAL = /evid[eê]ncia p[uú]blica|filtros? confirmados?|crit[eé]rios? confirmados?|fonte p[uú]blica|\bconfidence\b|\bprovenance\b|response plan|pattern engine|\bfallback\b|\bwriter\b/iu;
 const GENERIC_FALLBACK = /ainda n[aã]o tenho uma confirma[cç][aã]o segura para concluir esse ponto|entendi\. voc[eê] pode me contar/iu;
 const SAFETY_LANGUAGE = /alerg|intoler|camar[aã]o|crust[aá]ce|lactose|gl[uú]ten|contamina[cç][aã]o cruzada|equipe|restri[cç][aã]o/iu;
-const MATERIAL_ACTIONS = new Set(['light', 'no_cream', 'torched', 'not_fried', 'raw', 'cooked', 'traditional', 'different', 'budget_low', 'premium', 'share', 'party_one', 'party_two', 'party_three', 'party_five', 'party_large', 'switch_salon', 'switch_ifood', 'switch_salon_question', 'allergy', 'allergy_interrupt', 'intolerance', 'correction_tuna', 'decision', 'decision_short', 'price', 'pairing', 'reference_first', 'reference_second', 'multiple_info', 'multiple_questions']);
+const CATEGORY_SIGNALS = Object.freeze([
+  ['hot_roll', /\bhot roll\b/iu], ['sashimi', /\bsashimis?\b/iu], ['temaki', /\btemakis?\b/iu],
+  ['combinado', /\bcombinados?\b/iu], ['entrada', /\bentradas?\b/iu], ['sobremesa', /\bsobremesas?\b/iu],
+  ['drink', /\b(?:drinks?|coquet[eé]is?)\b/iu], ['sushi', /\bsushis?\b/iu]
+]);
+const MATERIAL_ACTIONS = new Set(['light', 'no_cream', 'torched', 'not_fried', 'raw', 'cooked', 'traditional', 'different', 'budget_low', 'premium', 'share', 'party_one', 'party_two', 'party_three', 'party_five', 'party_large', 'switch_salon', 'switch_ifood', 'switch_salon_question', 'allergy', 'allergy_interrupt', 'intolerance', 'correction_tuna', 'decision', 'decision_short', 'price', 'pairing', 'reference_first', 'reference_second', 'multiple_info', 'multiple_questions', 'open_dining', 'user_repair', 'negative_feedback', 'category_sushi', 'category_correction', 'reservation_switch', 'journey_abandonment']);
 const SEVERITY = Object.freeze({
   ALLERGY_CONTEXT_LOST: 'critical', ALLERGY_INCOMPATIBLE_CANDIDATE: 'critical', UNSAFE_ALLERGY_CLAIM: 'critical',
   WRONG_CHANNEL: 'high', CHANNEL_SWITCH_FAILURE: 'high', UNSUPPORTED_FACT: 'high', INTERNAL_LANGUAGE_LEAK: 'high',
   LOST_CONTEXT: 'high', RESPONSE_LOOP: 'high', VALID_REFERENCE_FAILURE: 'high', FALSE_REFERENCE_RESOLUTION: 'high',
   PRICE_FAILURE: 'high', QUANTITY_IGNORED: 'high', DECISION_SUPPORT_FAILURE: 'high', COMPOUND_TURN_COLLAPSE: 'high',
   MATERIAL_DELTA_IGNORED: 'high', FIRST_VISIT_FAILURE: 'high', SIDE_QUESTION_DESTROYS_JOURNEY: 'high',
+  USER_REPAIR_IGNORED: 'critical', REJECTED_RESPONSE_REPEATED: 'critical', STALE_JOURNEY_RESPONSE: 'high',
+  EXPLICIT_INTENT_SWITCH_IGNORED: 'high', CATEGORY_MISMATCH: 'high', RESERVATION_SWITCH_FAILURE: 'high',
   REPEATED_QUESTION: 'medium', DUPLICATED_CONTEXT: 'medium'
 });
 
@@ -66,6 +75,10 @@ function priceNumbers(response) {
   return [...String(response || '').matchAll(/R\$\s*(\d+(?:[.,]\d{2})?)/giu)].map((match) => Number(match[1].replace(',', '.')));
 }
 
+function categoryFromInput(value) {
+  return CATEGORY_SIGNALS.find(([, pattern]) => pattern.test(String(value || '')))?.[0] || null;
+}
+
 function evaluateTurn(turn, previous, menuIndex, recent = []) {
   const failures = [];
   const response = String(turn.response || '');
@@ -79,7 +92,56 @@ function evaluateTurn(turn, previous, menuIndex, recent = []) {
   if (/\b(?:é|são) (?:a |as )?mais leve\b/iu.test(response)) failures.push(failure('UNSUPPORTED_FACT', turn, 'do not assert unproven lightness', response));
   if ((context.allergies || []).length && /\b(?:item|op[cç][aã]o|prato|preparo) (?:é|esta|est[aá]) (?:segur[oa]|sem risco)|\b(?:livre de|garantid[oa] sem) (?:alerg|contamina)/iu.test(response)) failures.push(failure('UNSAFE_ALLERGY_CLAIM', turn, 'never guarantee allergy safety without evidence', response));
 
-  if (previous && (MATERIAL_ACTIONS.has(action) || Object.keys(expected).length)) {
+  const repairTurn = action === 'user_repair' || action === 'category_correction' || diagnostic.user_repair_signal === true;
+  const negativeFeedbackTurn = action === 'negative_feedback' || diagnostic.negative_feedback_signal === true;
+  if (repairTurn && (diagnostic.user_repair_signal !== true || GENERIC_FALLBACK.test(response))) {
+    failures.push(failure('USER_REPAIR_IGNORED', turn, 'explicit user repair replaces the rejected hypothesis', { diagnostic, response }));
+  }
+  if ((repairTurn || negativeFeedbackTurn) && previous && similarity(previous.response, response) >= 0.88) {
+    failures.push(failure('REJECTED_RESPONSE_REPEATED', turn, 'a rejected response is never repeated semantically', {
+      compared_turn: previous.index,
+      similarity: Number(similarity(previous.response, response).toFixed(3))
+    }));
+    if (repairTurn) failures.push(failure('USER_REPAIR_IGNORED', turn, 'repair must change the active interpretation and response', response));
+  }
+  if (action === 'negative_feedback' && (diagnostic.negative_feedback_signal !== true || GENERIC_FALLBACK.test(response))) {
+    failures.push(failure('USER_REPAIR_IGNORED', turn, 'negative interaction feedback triggers a specific repair of the active goal', { diagnostic, response }));
+  }
+
+  if (action === 'open_dining' && (
+    diagnostic.turn_analysis?.goal !== 'dine_out'
+    || diagnostic.journey !== 'restaurant_information'
+    || GENERIC_FALLBACK.test(response)
+  )) {
+    failures.push(failure('EXPLICIT_INTENT_SWITCH_IGNORED', turn, 'open dining language is understood as a visit to TATÁ', { diagnostic, response }));
+  }
+
+  const reservationSwitch = ['reservation_switch', 'journey_abandonment'].includes(action) || /\breserv(?:ar|a)\b/iu.test(turn.input || '');
+  if (reservationSwitch) {
+    const staleCandidates = (diagnostic.candidates_found || []).length > 0;
+    const staleResponse = /\b(?:encontrei|card[aá]pio|sushi|sashimi|hot roll)\b/iu.test(response);
+    if (diagnostic.intent !== 'reservation.create' || diagnostic.journey !== 'reservation' || !['SWITCH', 'CONTINUE', 'REFINE'].includes(diagnostic.semantic_transition)) {
+      failures.push(failure('EXPLICIT_INTENT_SWITCH_IGNORED', turn, 'explicit reservation intent becomes active immediately', diagnostic));
+    }
+    if (staleCandidates || staleResponse) failures.push(failure('STALE_JOURNEY_RESPONSE', turn, 'stale recommendation cannot answer a reservation turn', { candidates: diagnostic.candidates_found, response }));
+    if (staleCandidates || staleResponse || !/reserv|mesa|reservation\.getin\.app/iu.test(response)) failures.push(failure('RESERVATION_SWITCH_FAILURE', turn, 'reservation switch produces reservation guidance', response));
+  }
+
+  const requestedCategory = categoryFromInput(turn.input) || expected.category || diagnostic.turn_analysis?.requested_category || null;
+  if (requestedCategory && (diagnostic.candidates_found || []).length) {
+    const mismatched = diagnostic.candidates_found
+      .map((id) => menuIndex.get(id))
+      .filter((item) => item && !itemMatchesRequestedCategory(item, requestedCategory));
+    if (mismatched.length) failures.push(failure('CATEGORY_MISMATCH', turn, `all candidates remain inside ${requestedCategory}`, mismatched.map((item) => ({ name: item.name, category: item.category }))));
+  }
+
+  const redundantChannelSelection = Boolean(expected.channel)
+    && previousContext.channel === expected.channel
+    && context.channel === expected.channel;
+  const redundantReservationSelection = ['reservation_switch', 'journey_abandonment'].includes(action)
+    && previous?.diagnostic?.intent === 'reservation.create'
+    && diagnostic.intent === 'reservation.create';
+  if (previous && (MATERIAL_ACTIONS.has(action) || Object.keys(expected).length) && !redundantChannelSelection && !redundantReservationSelection) {
     const comparisonTurns = recent.length ? recent.slice(-3) : [previous];
     for (const prior of comparisonTurns) {
       if (prior.action?.type === action) continue;
@@ -108,7 +170,7 @@ function evaluateTurn(turn, previous, menuIndex, recent = []) {
     const lost = (previousContext[field] || []).filter((value) => !(context[field] || []).includes(value));
     if (lost.length) failures.push(failure(field === 'allergies' ? 'ALLERGY_CONTEXT_LOST' : 'LOST_CONTEXT', turn, `${field} remains until explicit correction`, lost));
   }
-  if (previousContext.channel && !['switch_salon', 'switch_ifood', 'switch_salon_question'].includes(action) && context.channel !== previousContext.channel) failures.push(failure('LOST_CONTEXT', turn, 'channel remains until explicit switch', `${previousContext.channel}->${context.channel}`));
+  if (previousContext.channel && !['channel_salon', 'channel_ifood', 'switch_salon', 'switch_ifood', 'switch_salon_question'].includes(action) && context.channel !== previousContext.channel) failures.push(failure('LOST_CONTEXT', turn, 'channel remains until explicit switch', `${previousContext.channel}->${context.channel}`));
   if (previousContext.number_of_people && !['party_one', 'party_two', 'party_three', 'party_five', 'party_large', 'correction_quantity', 'multiple_info'].includes(action) && context.number_of_people !== previousContext.number_of_people) failures.push(failure('LOST_CONTEXT', turn, 'party size remains until explicit correction', `${previousContext.number_of_people}->${context.number_of_people}`));
 
   const facts = context.confirmed_facts || [];

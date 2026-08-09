@@ -52,6 +52,7 @@ function menuContextFromRecommendation(toolResult, request = {}) {
     items: (recommendation.candidates || []).map((item) => ({
       item_id: item.item_id,
       name: item.name,
+      category: item.category || null,
       channel: item.channel,
       unit_id: item.unit_id,
       price: item.price,
@@ -94,6 +95,7 @@ function recommendationContextFromResult(toolResult) {
     candidate_options: (result.candidates || []).map((item) => ({
       item_id: item.item_id,
       name: item.name,
+      category: item.category || null,
       price: item.price ?? null
     })),
     candidate_reasons: (result.candidates || []).map((item) => ({
@@ -111,6 +113,7 @@ function recommendationContextFromResult(toolResult) {
       ...(hospitalityContext?.allergies || [])
     ],
     customer_goal: turnAnalysis?.goal || null,
+    requested_category: turnAnalysis?.requested_category || null,
     questions_answerable_now: questionsAnswerableNow,
     unresolved_reference: turnAnalysis?.unresolved_reference || null,
     hospitality_context: hospitalityContext

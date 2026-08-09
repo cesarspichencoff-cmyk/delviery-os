@@ -97,7 +97,7 @@ function answeredFieldsFromSource(sourceText = '') {
   if (/\b(?:gostei|adorei|amei|parabens)\b/u.test(text)) fields.add('intent');
   if (/\b(?:hoje|amanha|segunda|terca|quarta|quinta|sexta|sabado|domingo|\d{1,2}\/\d{1,2})\b/u.test(text)) fields.add('date');
   if (/\b(?:as|a)\s+\d{1,2}(?:h|:\d{2})\b/u.test(text)) fields.add('time');
-  if (/\b(?:somos|estamos em|mesa para|grupo de)\s+(?:\d{1,2}|um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove|dez|onze|doze)\b/u.test(text)) fields.add('party_size');
+  if (/\b(?:somos|estamos em|mesa (?:para|pra)|grupo de)\s+(?:\d{1,2}|um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove|dez|onze|doze)\b/u.test(text)) fields.add('party_size');
   if (/^(?:\d{1,2}|um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove|dez|onze|doze)[.!]?$/u.test(text)) fields.add('party_size');
   return fields;
 }

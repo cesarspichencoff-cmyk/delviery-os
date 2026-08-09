@@ -247,6 +247,12 @@ class HomologationService {
           social_act: productContexts.conversation_state?.social_act || null,
           intent: result.classification?.intent || null,
           pattern: result.execution_diagnostics?.pattern || null,
+          semantic_transition: productContexts.conversation_state?.semantic_transition
+            || result.execution_diagnostics?.semantic_transition || null,
+          user_repair_signal: productContexts.conversation_state?.user_repair_signal === true
+            || result.execution_diagnostics?.user_repair_signal === true,
+          negative_feedback_signal: productContexts.conversation_state?.negative_feedback_signal === true
+            || result.execution_diagnostics?.negative_feedback_signal === true,
           journey: result.execution_diagnostics?.journey || null,
           journey_state: result.execution_diagnostics?.journey_state || null,
           journey_action: result.pattern?.journey_action || null,

@@ -1,8 +1,8 @@
 {
   "project": "DeliveryOS Chatbot TATÁ",
-  "active_change": "autonomous-experience-lab-v1",
+  "active_change": "semantic-transition-lab-v1",
   "branch": "feature/hospitality-intelligence-final-v1",
-  "base": "1967a9378ae516dc91f3954834b019bdb1fdd1eb",
+  "base": "78164320d8d8996e266d075f702ad558f6b0e10d",
   "behavioral_checkpoint": "76e605890430c7582586e2baef25833c86a6b723",
   "working_tree": "clean_after_atomic_local_commit",
   "completed_units": [
@@ -80,12 +80,18 @@
     "autonomous_experience_lab_golden_failures_v2",
     "autonomous_experience_lab_three_root_cause_cycles",
     "autonomous_experience_lab_two_fresh_comprehensive_rounds",
-    "autonomous_experience_lab_local_writer_proof"
+    "autonomous_experience_lab_local_writer_proof",
+    "semantic_transition_current_intent_authority",
+    "semantic_transition_user_repair_and_negative_feedback",
+    "semantic_transition_category_sovereignty",
+    "semantic_transition_reservation_switch",
+    "semantic_transition_independent_hard_gates",
+    "semantic_transition_400_conversation_campaign"
   ],
   "active_unit": null,
   "pending_units": [],
   "test_status": {
-    "conversation_native": "658/658 passed on final implementation; historical generator rewrote one tracked artifact, which was restored byte-identical to HEAD",
+    "conversation_native": "758/758 passed on final implementation; historical generated artifacts remained semantically identical and their deterministic byte comparison passed",
     "scenario_catalog": "200/200 passed; hash ddabec0dbf3c47adfb886b28556b96a47fcfcf90d709ec101b14fefee5f1a798",
     "privacy": "passed; zero findings; positive control detected",
     "scenario_194": "passed; no external access",
@@ -135,7 +141,12 @@
     "experience_lab_writer_comprehensive": "20/20 families; 95 turns; Gemma local; zero critical failures; hash 8b76e522665c8d639b45a42302638d9ee7a96d22ed313573d4340333c6832b28",
     "conversation_native_experience_lab": "734/734 passed with the final comprehensive harness",
     "playwright_experience_lab": "12/12 passed in local Chrome",
-    "protected_regressions_experience_lab": "Conference 314/314; Live 243/243; Capacity 43/43; Copilot 53/53; catalog 200/200; privacy passed; menu 199; historical source passed"
+    "protected_regressions_experience_lab": "Conference 314/314; Live 243/243; Capacity 43/43; Copilot 53/53; catalog 200/200; privacy passed; menu 199; historical source passed",
+    "semantic_transition_directed": "13/13 passed; exact rejected human transcript diverged positively from the first semantic need and ended in reservation",
+    "semantic_transition_campaign": "400/400 conversations; 1750 turns; zero critical, high or medium failures; hash 826a5a3c5e945727057a41b54a97680e12b0d8d46dd2671d77dc2af6e1c3c875 reproduced in a clean runtime",
+    "conversation_native_semantic_transition": "758/758 passed in final clean execution",
+    "scenario_catalog_semantic_transition": "200/200 passed twice; no real driver or external access; hash b335eeff0dc0ad2f1a19b146f7518562003c68d73cf508510e7ecd1f086ebf19",
+    "privacy_semantic_transition": "passed; zero findings; positive control detected"
   },
   "bakeoff": {
     "seed": "TATA-LOCAL-AI-BAKEOFF-V1",
@@ -227,5 +238,5 @@
   "paid_api_or_infrastructure_added": false,
   "push_merge_deploy_performed": false,
   "next_step": "César evaluates 5 to 10 free representative conversations and answers whether he would trust the experience with a real TATA customer; do not ask him to rerun scripted QA",
-  "updated_at": "2026-08-08T04:13:45-03:00"
+  "updated_at": "2026-08-09T04:00:00-03:00"
 }

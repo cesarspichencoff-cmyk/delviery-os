@@ -2,6 +2,27 @@
 
 const { menuError, cloneFrozen } = require('./contracts');
 
+function normalizedCategory(value) {
+  return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/gu, '').toLowerCase().trim();
+}
+
+function itemMatchesRequestedCategory(item, requestedCategory) {
+  if (!requestedCategory) return true;
+  const category = normalizedCategory(item.category);
+  const name = normalizedCategory(item.name);
+  const rules = {
+    sushi: () => /^sushis?(?:\s|$)/u.test(category),
+    sashimi: () => /^sashimis?(?:\s|$)/u.test(category) || /^sashimi\b/u.test(name),
+    temaki: () => /^temakis?(?:\s|$)/u.test(category) || /^temaki\b/u.test(name),
+    hot_roll: () => /\bhot roll\b/u.test(category) || /\bhot roll\b/u.test(name),
+    combinado: () => /^combinados?(?:\s|$)/u.test(category) || /^combinado\b/u.test(name),
+    entrada: () => /^entradas?(?:\s|$)/u.test(category),
+    sobremesa: () => /^sobremesas?(?:\s|$)/u.test(category),
+    drink: () => /^drinks?(?:\s|$)/u.test(category)
+  };
+  return typeof rules[requestedCategory] === 'function' && rules[requestedCategory]();
+}
+
 function allergenDecision(item, allergies = []) {
   const reasons = [];
   for (const allergen of allergies) {
@@ -80,6 +101,7 @@ function recommend(catalog, request = {}, customerContext = {}) {
     if (request.fried === false && item.preparation.fried === true) return false;
     if (request.cream_cheese === 'without' && item.preparation.cream_cheese === true) return false;
     if (request.dietary_restrictions?.includes('vegetarian') && item.preparation.vegetarian !== true) return false;
+    if (!itemMatchesRequestedCategory(item, request.requested_category)) return false;
     if (request.preferred_ingredients?.length && !request.preferred_ingredients.some((value) => item.ingredients.some((ingredient) => ingredient.name === value))) return false;
     if (item.ingredients.some((ingredient) => exclusions.has(ingredient.name))) return false;
     return allergenDecision(item, request.allergies || []).allowed;
@@ -88,6 +110,7 @@ function recommend(catalog, request = {}, customerContext = {}) {
     return {
       item_id: item.item_id,
       name: item.name,
+      category: item.category,
       channel: item.channel,
       unit_id: item.unit_id,
       price: item.price,
@@ -118,7 +141,8 @@ function recommend(catalog, request = {}, customerContext = {}) {
       ...(request.torched === true ? ['preparation:torched:true'] : []),
       ...(request.preferred_ingredients || []).map((item) => `preferred_ingredient:${item}`),
       ...(request.occasion ? [`occasion:${request.occasion}`] : []),
-      ...(request.desired_experience ? [`desired_experience:${request.desired_experience}`] : [])
+      ...(request.desired_experience ? [`desired_experience:${request.desired_experience}`] : []),
+      ...(request.requested_category ? [`requested_category:${request.requested_category}`] : [])
     ],
     candidates: candidates.slice(0, 3),
     unknowns: candidates.length
@@ -138,4 +162,4 @@ function approvedPairings(catalog, itemId, input = {}) {
   )));
 }
 
-module.exports = { allergenDecision, scoreCandidate, recommend, approvedPairings };
+module.exports = { normalizedCategory, itemMatchesRequestedCategory, allergenDecision, scoreCandidate, recommend, approvedPairings };
