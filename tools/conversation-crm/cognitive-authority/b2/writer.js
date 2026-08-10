@@ -4,23 +4,28 @@ const { canonicalHash } = require('./contract');
 const { validateWriterOutput } = require('../../../../apps/deliveryos-ai-node/dialogue/writer-contract');
 
 function factValues(plan) {
-  return (plan.approved_facts || []).map((fact) => String(fact.value)).filter(Boolean);
+  return (plan.approved_facts || [])
+    .map((fact) => String(fact.value || '').trim())
+    .filter((value) => value && !/\b(?:fixture|sint[eé]tic[oa]s?|fonte sint[eé]tica|prova|oracle|gold)\b/iu.test(value));
 }
 
 function deterministicText(plan) {
-  if (plan.status === 'NEEDS_TOOL') return 'Vou conferir essa informação antes de responder.';
+  if (plan.status === 'NEEDS_TOOL') {
+    return ['Vou conferir essa informação antes de responder.', plan.required_question].filter(Boolean).join(' ');
+  }
   if (plan.status === 'NEEDS_CLARIFICATION') return plan.required_question;
   if (plan.safety_priority === 'URGENT') return String(plan.safety_directive);
   const facts = factValues(plan);
-  const unknown = facts.some((value) => /desconhecid|n[aã]o confirmad/iu.test(value));
   const repair = plan.repair_acknowledgement ? `${plan.repair_acknowledgement} ` : '';
+  const question = plan.required_question ? String(plan.required_question) : '';
+  const appendQuestion = (text) => [String(text || '').trim(), question].filter(Boolean).join(' ').trim();
   const templates = {
-    ANSWER: unknown ? `${repair}Ainda não tenho essa informação confirmada.` : `${repair}${facts.length ? facts.join('; ') : 'Posso ajudar com o próximo passo.'}`,
-    EXPAND: `${repair}${facts.length ? `Posso considerar ${facts.join(' e ')}.` : 'Posso buscar outras opções.'}`,
-    EXPLAIN: `${repair}${facts.length ? facts.join('; ') : 'Posso explicar com o que já sabemos.'}`,
-    COMPARE: `${repair}${facts.length ? facts.join('; ') : 'Preciso de um critério para comparar com segurança.'}`,
+    ANSWER: appendQuestion(`${repair}${facts.length ? facts.join('; ') : 'Posso ajudar com o próximo passo.'}`),
+    EXPAND: appendQuestion(`${repair}${facts.length ? `Posso considerar ${facts.join(' e ')}.` : 'Posso buscar outras opções.'}`),
+    EXPLAIN: appendQuestion(`${repair}${facts.length ? facts.join('; ') : 'Posso explicar com o que já sabemos.'}`),
+    COMPARE: appendQuestion(`${repair}${facts.length ? facts.join('; ') : 'Preciso de um critério para comparar com segurança.'}`),
     CLARIFY: `${repair}${plan.required_question || 'Pode me contar um pouco mais?'}`,
-    REPAIR: `${repair}${plan.required_question || 'Vamos corrigir isso antes de continuar.'}`,
+    REPAIR: appendQuestion(`${repair}${facts.length ? facts.join('; ') : 'Vamos corrigir isso antes de continuar.'}`),
     DISCOVER: `${repair}${plan.required_question || 'O que pesa mais para você nessa escolha?'}`,
     SWITCH_FLOW: `${repair}${plan.required_question || 'Vamos seguir por esse novo caminho.'}`,
     RESUME_FLOW: `${repair}${plan.required_question || 'Vamos retomar de onde paramos.'}`
@@ -47,6 +52,17 @@ function validateWriterText(text, plan) {
   }
   if (plan.safety_priority === 'URGENT' && value !== String(plan.safety_directive)) {
     return { accepted: false, reason: 'B2_WRITER_CHANGED_URGENT_DIRECTIVE' };
+  }
+  const factBearingMoves = new Set(['ANSWER', 'EXPAND', 'EXPLAIN', 'COMPARE', 'REPAIR']);
+  const approvedValues = factValues(plan);
+  if (plan.status === 'APPROVED' && approvedValues.length && factBearingMoves.has(plan.conversational_move)) {
+    const preservesFact = approvedValues.some((factValue) => normalized.includes(
+      factValue.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase()
+    ));
+    if (!preservesFact) return { accepted: false, reason: 'B2_WRITER_DROPPED_APPROVED_FACT' };
+  }
+  if (plan.required_question && !value.includes('?')) {
+    return { accepted: false, reason: 'B2_WRITER_DROPPED_REQUIRED_QUESTION' };
   }
   return { accepted: true, reason: null, text: value, hash: canonicalHash({ text: value, authority: plan.authority_evidence_hash }) };
 }

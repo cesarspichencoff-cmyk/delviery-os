@@ -11,3 +11,14 @@
   independente e com contexto A/B equivalente.
 - Não fazer: migração, integração externa, fornecedor, produção, WhatsApp,
   redesign, push, merge ou deploy.
+
+## Checkpoint overnight
+
+- Branch: `experiment/hospitality-b2-cognitive-planner-v1`.
+- Resultado: `B2_PROMISING_NOT_VALIDATED`.
+- Fechado: Planner Port, proteção de superfície, alinhamento Writer/Response
+  Plan, fallback completo e replay histórico 40/40.
+- Pendente: validação independente com cliente adaptativo, fatos equivalentes e
+  runtime cognitivo separado; recertificação local do Writer.
+- Próxima decisão única: César autoriza ou encerra essa validação independente.
+- Não iniciar automaticamente robustez, migração, runtime externo ou produção.

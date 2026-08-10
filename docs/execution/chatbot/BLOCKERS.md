@@ -158,3 +158,17 @@ Permanecem limites deliberados:
 - Impacto: impede `B2_ARCHITECTURE_VALIDATED`, mas não apaga a melhora observada.
 - Correção futura mínima: uma única validação independente, com contexto
   equivalente e controle explícito dos gaps de publicação.
+
+## B2 Overnight Autonomous Build & Proof
+
+- `B2_PUBLICATION_GAPS_RESOLVED`: replay histórico passou 40/40 e os três
+  controles direcionados do Writer/fallback publicaram sem silêncio.
+- `B2_GENERALIZATION_NOT_INDEPENDENT`: as 30 conversas usaram planos fortes
+  offline e sequência previamente roteirizada; não provam adaptação cognitiva
+  em runtime.
+- `B2_AB_IDENTITY_PARTLY_INFERABLE`: nomes artificiais e estilo tornaram A/B
+  parcialmente reconhecível antes de abrir o selo.
+- `B2_GEMMA_RECERTIFICATION_INCOMPLETE`: a repetição completa pós-gate terminou
+  com crash local `1073807364`; não houve aprovação por amostra parcial.
+- Impacto: bloqueia validação, robustez e pacote de migração; não bloqueia a
+  preservação do protótipo B2 como hipótese promissora.

@@ -3,9 +3,18 @@
 const { validatePlan, canonicalHash } = require('./contract');
 
 const UNSUPPORTED_FACT_PATTERN = /\b(?:custa|pre[cç]o|dispon[ií]vel|cont[eé]m|leva|ingrediente|sem risco|seguro para alergia|reserva confirmada)\b/iu;
+const INTERNAL_SURFACE_PATTERN = /\b(?:fixture|sint[eé]tic[oa]s?|fonte sint[eé]tica|prova|oracle|gold)\b/iu;
 
 function factArray(value) {
   return Array.isArray(value) ? value.filter((item) => item && typeof item === 'object' && typeof item.field === 'string') : [];
+}
+
+function writerSafeFact(fact) {
+  const candidate = fact.public_value ?? fact.value;
+  if (candidate === undefined || candidate === null) return null;
+  const value = String(candidate).trim();
+  if (!value || INTERNAL_SURFACE_PATTERN.test(value)) return null;
+  return Object.freeze({ field: fact.field, value });
 }
 
 function authorityStatus(plan, context) {
@@ -25,9 +34,10 @@ function approvePlan(rawPlan, context = {}) {
   const plan = checked.plan;
   const status = authorityStatus(plan, context);
   const toolResult = context.tool_results?.[plan.tool_requirement] || null;
-  const approvedFacts = factArray(context.confirmed_facts).concat(factArray(toolResult?.facts));
-  const authorizedText = JSON.stringify({ approvedFacts, toolResult, safety: context.safety_directive || null });
-  if (UNSUPPORTED_FACT_PATTERN.test(plan.next_best_step) && approvedFacts.length === 0 && !context.safety_directive) {
+  const authorityFacts = factArray(context.confirmed_facts).concat(factArray(toolResult?.facts));
+  const approvedFacts = authorityFacts.map(writerSafeFact).filter(Boolean);
+  const authorizedText = JSON.stringify({ authorityFacts, toolResult, safety: context.safety_directive || null });
+  if (UNSUPPORTED_FACT_PATTERN.test(plan.next_best_step) && authorityFacts.length === 0 && !context.safety_directive) {
     return { accepted: false, status: 'BLOCKED', reason: 'B2_UNSUPPORTED_FACT_IN_PLAN', response_plan: null };
   }
   if (status === 'BLOCKED') return { accepted: false, status, reason: 'B2_SAFETY_DIRECTIVE_MISSING', response_plan: null };

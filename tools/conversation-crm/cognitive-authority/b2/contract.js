@@ -78,7 +78,9 @@ function buildBlindPlannerPacket(input = {}) {
     transcript: Array.isArray(input.transcript) ? input.transcript : [],
     compact_state: input.compact_state || null,
     references: input.references || {},
-    confirmed_facts: Array.isArray(input.established_facts) ? input.established_facts : [],
+    confirmed_facts: Array.isArray(input.confirmed_facts)
+      ? input.confirmed_facts
+      : (Array.isArray(input.established_facts) ? input.established_facts : []),
     available_capabilities: Array.isArray(input.available_capabilities) ? input.available_capabilities : [],
     limits: Array.isArray(input.limits) ? input.limits : [],
     safety_state: input.safety_state || 'NONE',

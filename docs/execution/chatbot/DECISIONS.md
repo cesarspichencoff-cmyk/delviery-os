@@ -474,3 +474,44 @@ uma pessoa independente.
 - Impacto: `B2_PROMISING_NOT_VALIDATED`; nenhuma promoção.
 - Reversibilidade: remover a branch experimental restaura integralmente o estado
   anterior; nenhum arquivo de produto foi alterado.
+
+## 2026-08-10 — Overnight B2 mantém promoção bloqueada
+
+### D-043 — Planner Port desacopla capacidade de orquestração
+
+**Contexto:** a prova B2 anterior usava um objeto Planner compatível, mas não
+declarava uma fronteira verificável entre fornecedor e pipeline.
+
+**Decisão:** criar `ConversationPlannerPort`, `ReplayPlanner` e um adapter de
+harness. O packet é normalizado e o replay exige hash congelado.
+
+**Motivo:** trocar capacidade experimental não pode mudar autoridade, Writer ou
+contrato factual.
+
+**Impacto e reversibilidade:** somente código experimental B2; A e `src/**`
+permanecem intactos.
+
+### D-044 — Writer deve preservar conteúdo mínimo aprovado
+
+**Contexto:** a Gemma reconheceu uma correção de categoria, mas descartou as
+opções aprovadas; o fallback também omitia fatos/perguntas em alguns estados.
+
+**Decisão:** bloquear output que abandona todos os fatos aprovados ou pergunta
+obrigatória e alinhar o fallback ao mesmo Response Plan.
+
+**Motivo:** Writer é expressão, não autoridade para remover a decisão útil.
+
+**Impacto e reversibilidade:** 40/40 turnos históricos voltaram a publicar; o
+gate continua fail-closed e não cria fatos.
+
+### D-045 — Não executar robustez sem generalização válida
+
+**Contexto:** 30 conversas/180 turnos passaram, mas seus planos e sequência
+foram roteirizados offline pela mesma sessão; a repetição Gemma final sofreu
+crash local.
+
+**Decisão:** manter `B2_PROMISING_NOT_VALIDATED` e não executar as 60 conversas
+de robustez.
+
+**Motivo:** volume adicional não corrige dependência metodológica nem prova
+capacidade de runtime.

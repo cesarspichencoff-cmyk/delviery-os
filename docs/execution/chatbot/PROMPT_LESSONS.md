@@ -159,3 +159,11 @@ superfície: estado lembrado pelo CRM pode continuar invisível na frase.
 - Linguagem de fixture, fonte sintética ou mecanismo nunca pertence à resposta.
 - Fallback seguro sem resposta útil evita mentira, mas não valida experiência.
 - Comparação A/B só é causal quando ambos recebem fatos equivalentes.
+- Publicação aceita não prova alinhamento: o Writer pode reconhecer o erro e
+  ainda remover o fato que tornava a resposta útil.
+- Fallback deve obedecer ao mesmo conteúdo mínimo do Writer; fail-closed com
+  silêncio preserva segurança, mas reprova experiência.
+- Conversa longa roteirizada pelo construtor é soak de pipeline, não prova de
+  generalização cognitiva.
+- Um A/B tecnicamente selado deixa de ser verdadeiramente cego quando o estilo
+  ou os nomes artificiais revelam a variante.

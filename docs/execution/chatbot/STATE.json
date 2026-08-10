@@ -1,8 +1,8 @@
 {
   "project": "DeliveryOS Chatbot TATÁ",
-  "active_change": "b2-minimal-architecture-proof-v1",
-  "branch": "experiment/b2-minimal-architecture-proof-v1",
-  "base": "e602b8f4ea96aba39ab7353cba715c0d9cef9af2",
+  "active_change": "b2-overnight-autonomous-build-proof-v1",
+  "branch": "experiment/hospitality-b2-cognitive-planner-v1",
+  "base": "a1d73220c0926fdbb302d72d542d793b960ed713",
   "behavioral_checkpoint": "76e605890430c7582586e2baef25833c86a6b723",
   "working_tree": "clean_after_atomic_local_commit",
   "completed_units": [
@@ -97,7 +97,13 @@
     "b2_24_case_gate",
     "b2_human_goldens",
     "b2_20_free_conversation_probe",
-    "b2_blind_a_vs_b2_comparison"
+    "b2_blind_a_vs_b2_comparison",
+    "b2_conversation_planner_port",
+    "b2_recursive_public_surface_protection",
+    "b2_writer_response_plan_alignment_gate",
+    "b2_complete_deterministic_fallback",
+    "b2_30_conversation_pipeline_soak",
+    "b2_20_pair_advisory_comparison"
   ],
   "active_unit": null,
   "pending_units": [],
@@ -169,7 +175,14 @@
     "b2_free_conversations": "20 conversations, 40 turns, 38 publications, 13 Writer limits, 2 safe non-publications",
     "b2_a_vs_b2": "B2 won 16/20 overall; A won 3; both bad 1; two context asymmetries recorded",
     "conversation_native_b2": "784/784 passed",
-    "privacy_b2": "passed; zero findings; positive control detected"
+    "privacy_b2": "passed; zero findings; positive control detected",
+    "b2_overnight_focused": "19/19 passed",
+    "b2_overnight_24_cases": "22/24 hard semantic; 24/24 safety; 24/24 repair; 23/24 reference; zero catastrophic",
+    "b2_overnight_free_soak": "30 conversations; 180 turns; 180 publications; zero public scan finding; not independent generalization",
+    "b2_overnight_prior_replay": "20 conversations; 40/40 published after hardening",
+    "b2_overnight_writer_targeted": "3/3 blocked bad Writer output and published complete fallback",
+    "b2_overnight_conversation": "791/791 passed",
+    "b2_overnight_privacy": "passed; zero findings; positive control detected"
   },
   "bakeoff": {
     "seed": "TATA-LOCAL-AI-BAKEOFF-V1",
@@ -246,9 +259,10 @@
     "real_allergen_and_pairing_approval_pending",
     "cesar_free_human_trust_review_pending",
     "cognitive_authority_hypothesis_inconclusive",
-    "b2_two_safe_non_publications",
     "b2_independent_human_validation_missing",
     "b2_context_equivalence_not_proven",
+    "b2_generalization_not_independent",
+    "b2_gemma_recertification_incomplete_runtime_crash",
     "gemma_cognitive_planning_latency_and_semantic_drift",
     "postgres_production_migration_not_authorized",
     "restaurant_hardware_unverified",
@@ -265,6 +279,6 @@
   "production_authorized": false,
   "paid_api_or_infrastructure_added": false,
   "push_merge_deploy_performed": false,
-  "next_step": "César decides whether to authorize one independent bounded B2 validation with matched A/B context and focus on the two publication gaps; do not integrate, migrate or deploy B2",
+  "next_step": "César decides whether to authorize one genuinely independent B2 validation with adaptive customer, matched A/B facts and a separate cognitive runtime; do not integrate, migrate or deploy B2",
   "updated_at": "2026-08-10T00:00:00-03:00"
 }
