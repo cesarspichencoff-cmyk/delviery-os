@@ -7,7 +7,7 @@ const path = require('node:path');
 
 const { PLAN_SCHEMA, validatePlan, buildBlindPlannerPacket } = require('../../tools/conversation-crm/cognitive-authority/b2/contract');
 const { approvePlan } = require('../../tools/conversation-crm/cognitive-authority/b2/authority');
-const { DeterministicB2Writer, GemmaB2Writer, toWriterInput, validateWriterText } = require('../../tools/conversation-crm/cognitive-authority/b2/writer');
+const { DeterministicB2Writer, GemmaB2Writer, toWriterInput, deterministicText, validateWriterText } = require('../../tools/conversation-crm/cognitive-authority/b2/writer');
 const { B2Pipeline } = require('../../tools/conversation-crm/cognitive-authority/b2/pipeline');
 const { scorePlan, summarize } = require('../../tools/conversation-crm/cognitive-authority/b2/evaluator');
 const { ConversationPlannerPort, ReplayPlanner, FunctionPlannerAdapter, validatePlannerPacket } = require('../../tools/conversation-crm/cognitive-authority/b2/planner-port');
@@ -146,6 +146,30 @@ test('post-validation bloqueia Writer que abandona fato aprovado ou pergunta obr
     required_question: 'Você prefere algo leve ou intenso?'
   }).response_plan;
   assert.equal(validateWriterText('Posso ajudar a escolher.', withQuestion).reason, 'B2_WRITER_DROPPED_REQUIRED_QUESTION');
+});
+
+test('post-validation preserva todos os fatos aprovados mesmo em troca de fluxo', () => {
+  const switchPlan = approvePlan(plan({
+    relation_to_history: 'SWITCH', conversational_move: 'SWITCH_FLOW',
+    tool_requirement: 'RESERVATION_INFO',
+    user_goal: 'iniciar uma reserva',
+    what_changed: 'a pessoa mudou para reserva',
+    reference: { required: false, status: 'NOT_REQUIRED', target: null },
+    next_best_step: 'preservar a quantidade e pedir data e horário'
+  }), {
+    tool_results: { RESERVATION_INFO: { facts: [{ field: 'party_size', value: 'sete pessoas' }] } },
+    required_question: 'Para qual dia e horário?'
+  }).response_plan;
+
+  assert.equal(
+    validateWriterText('Para quantas pessoas seria a reserva? Para qual dia e horário?', switchPlan).reason,
+    'B2_WRITER_DROPPED_APPROVED_FACT'
+  );
+  assert.equal(
+    validateWriterText('Para sete pessoas. Para qual dia e horário?', switchPlan).accepted,
+    true
+  );
+  assert.equal(deterministicText(switchPlan).includes('sete pessoas'), true);
 });
 
 test('metadado interno não atravessa a autoridade e fallback ainda publica resposta segura', async () => {

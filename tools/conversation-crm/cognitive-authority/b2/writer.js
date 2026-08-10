@@ -24,11 +24,11 @@ function deterministicText(plan) {
     EXPAND: appendQuestion(`${repair}${facts.length ? `Posso considerar ${facts.join(' e ')}.` : 'Posso buscar outras opções.'}`),
     EXPLAIN: appendQuestion(`${repair}${facts.length ? facts.join('; ') : 'Posso explicar com o que já sabemos.'}`),
     COMPARE: appendQuestion(`${repair}${facts.length ? facts.join('; ') : 'Preciso de um critério para comparar com segurança.'}`),
-    CLARIFY: `${repair}${plan.required_question || 'Pode me contar um pouco mais?'}`,
+    CLARIFY: appendQuestion(`${repair}${facts.length ? facts.join('; ') : ''}`) || 'Pode me contar um pouco mais?',
     REPAIR: appendQuestion(`${repair}${facts.length ? facts.join('; ') : 'Vamos corrigir isso antes de continuar.'}`),
-    DISCOVER: `${repair}${plan.required_question || 'O que pesa mais para você nessa escolha?'}`,
-    SWITCH_FLOW: `${repair}${plan.required_question || 'Vamos seguir por esse novo caminho.'}`,
-    RESUME_FLOW: `${repair}${plan.required_question || 'Vamos retomar de onde paramos.'}`
+    DISCOVER: appendQuestion(`${repair}${facts.length ? facts.join('; ') : ''}`) || 'O que pesa mais para você nessa escolha?',
+    SWITCH_FLOW: appendQuestion(`${repair}${facts.length ? facts.join('; ') : ''}`) || 'Vamos seguir por esse novo caminho.',
+    RESUME_FLOW: appendQuestion(`${repair}${facts.length ? facts.join('; ') : ''}`) || 'Vamos retomar de onde paramos.'
   };
   return String(templates[plan.conversational_move] || plan.next_best_step).trim();
 }
@@ -53,13 +53,12 @@ function validateWriterText(text, plan) {
   if (plan.safety_priority === 'URGENT' && value !== String(plan.safety_directive)) {
     return { accepted: false, reason: 'B2_WRITER_CHANGED_URGENT_DIRECTIVE' };
   }
-  const factBearingMoves = new Set(['ANSWER', 'EXPAND', 'EXPLAIN', 'COMPARE', 'REPAIR']);
   const approvedValues = factValues(plan);
-  if (plan.status === 'APPROVED' && approvedValues.length && factBearingMoves.has(plan.conversational_move)) {
-    const preservesFact = approvedValues.some((factValue) => normalized.includes(
+  if (plan.status === 'APPROVED' && approvedValues.length) {
+    const preservesFacts = approvedValues.every((factValue) => normalized.includes(
       factValue.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase()
     ));
-    if (!preservesFact) return { accepted: false, reason: 'B2_WRITER_DROPPED_APPROVED_FACT' };
+    if (!preservesFacts) return { accepted: false, reason: 'B2_WRITER_DROPPED_APPROVED_FACT' };
   }
   if (plan.required_question && !value.includes('?')) {
     return { accepted: false, reason: 'B2_WRITER_DROPPED_REQUIRED_QUESTION' };
