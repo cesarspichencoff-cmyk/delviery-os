@@ -1,8 +1,8 @@
 {
   "project": "DeliveryOS Chatbot TATÁ",
-  "active_change": "cognitive-authority-experiment-v1",
-  "branch": "experiment/hospitality-cognitive-authority-v1",
-  "base": "0cdc09f030938c84dcaf6a6d69276ceb7e5b78b7",
+  "active_change": "b2-minimal-architecture-proof-v1",
+  "branch": "experiment/b2-minimal-architecture-proof-v1",
+  "base": "e602b8f4ea96aba39ab7353cba715c0d9cef9af2",
   "behavioral_checkpoint": "76e605890430c7582586e2baef25833c86a6b723",
   "working_tree": "clean_after_atomic_local_commit",
   "completed_units": [
@@ -90,7 +90,14 @@
     "cognitive_authority_variant_a_preserved",
     "cognitive_authority_minimal_variant_b",
     "cognitive_authority_blind_local_panel",
-    "cognitive_authority_golden_hard_stop_inconclusive"
+    "cognitive_authority_golden_hard_stop_inconclusive",
+    "b2_contract_v2_planner_separation",
+    "b2_deliveryos_authority_gate",
+    "b2_gemma_writer_isolation",
+    "b2_24_case_gate",
+    "b2_human_goldens",
+    "b2_20_free_conversation_probe",
+    "b2_blind_a_vs_b2_comparison"
   ],
   "active_unit": null,
   "pending_units": [],
@@ -155,7 +162,14 @@
     "cognitive_authority_golden": "failed before paired campaign completion; B confused channel refinement with expansion and expansion with selection explanation",
     "cognitive_authority_latency": "B-only turns measured 46-90 seconds; paired turn measured 81 seconds after minimal contract reduction",
     "conversation_native_cognitive_authority": "765/765 passed",
-    "protected_regressions_cognitive_authority": "Conference 314/314; Live 243/243; Capacity 43/43; Copilot 53/53; catalog 200/200; menu 199; privacy passed"
+    "protected_regressions_cognitive_authority": "Conference 314/314; Live 243/243; Capacity 43/43; Copilot 53/53; catalog 200/200; menu 199; privacy passed",
+    "b2_focused": "26/26 passed across B2, original capacity probe and cognitive-authority experiment",
+    "b2_24_cases": "22/24 hard semantic; 24/24 safety; 24/24 repair; 23/24 reference; zero catastrophic failure",
+    "b2_human_goldens": "12/12 published under final gate; one Writer limit used deterministic fallback",
+    "b2_free_conversations": "20 conversations, 40 turns, 38 publications, 13 Writer limits, 2 safe non-publications",
+    "b2_a_vs_b2": "B2 won 16/20 overall; A won 3; both bad 1; two context asymmetries recorded",
+    "conversation_native_b2": "784/784 passed",
+    "privacy_b2": "passed; zero findings; positive control detected"
   },
   "bakeoff": {
     "seed": "TATA-LOCAL-AI-BAKEOFF-V1",
@@ -232,6 +246,9 @@
     "real_allergen_and_pairing_approval_pending",
     "cesar_free_human_trust_review_pending",
     "cognitive_authority_hypothesis_inconclusive",
+    "b2_two_safe_non_publications",
+    "b2_independent_human_validation_missing",
+    "b2_context_equivalence_not_proven",
     "gemma_cognitive_planning_latency_and_semantic_drift",
     "postgres_production_migration_not_authorized",
     "restaurant_hardware_unverified",
@@ -248,6 +265,6 @@
   "production_authorized": false,
   "paid_api_or_infrastructure_added": false,
   "push_merge_deploy_performed": false,
-  "next_step": "César decides whether to close the cognitive-authority hypothesis or authorize a separate future local-capacity experiment; do not migrate variant B or request another human review now",
-  "updated_at": "2026-08-09T04:42:09-03:00"
+  "next_step": "César decides whether to authorize one independent bounded B2 validation with matched A/B context and focus on the two publication gaps; do not integrate, migrate or deploy B2",
+  "updated_at": "2026-08-10T00:00:00-03:00"
 }

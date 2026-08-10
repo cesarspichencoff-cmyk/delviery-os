@@ -460,3 +460,17 @@ preparo seguro ou ausência de contaminação cruzada.
 
 **Motivo:** isolamento de entrada não transforma código do próprio sprint em
 uma pessoa independente.
+
+## 2026-08-10 — B2 permanece experimental e não validada
+
+- Contexto: o Contract/Oracle V2 mostrou capacidade semântica forte, mas faltava
+  prova de ponta a ponta com autoridade factual separada.
+- Alternativas: migrar a variante cognitiva; rejeitá-la pelo histórico da Gemma;
+  executar uma prova híbrida mínima e reversível.
+- Decisão: executar apenas a prova B2 com Planner, DeliveryOS authority e Writer
+  separados, preservando A e sem integração externa.
+- Motivo: B2 venceu A materialmente, porém dois turnos ficaram sem publicação e
+  a avaliação não foi independente.
+- Impacto: `B2_PROMISING_NOT_VALIDATED`; nenhuma promoção.
+- Reversibilidade: remover a branch experimental restaura integralmente o estado
+  anterior; nenhum arquivo de produto foi alterado.

@@ -150,3 +150,12 @@ superfície: estado lembrado pelo CRM pode continuar invisível na frase.
   completo não deve depender do custo temporal da inferência;
 - um avaliador escrito pelo construtor pode aconselhar, nunca homologar a
   experiência humana.
+
+## B2 — lições permanentes
+
+- Não transformar alinhamento taxonômico em correção semântica dura.
+- `NEEDS_CONTEXT_LOOKUP` sem ferramenta deve produzir clarificação segura.
+- Writer pode degradar plano correto; disponibilidade exige fato explícito.
+- Linguagem de fixture, fonte sintética ou mecanismo nunca pertence à resposta.
+- Fallback seguro sem resposta útil evita mentira, mas não valida experiência.
+- Comparação A/B só é causal quando ambos recebem fatos equivalentes.

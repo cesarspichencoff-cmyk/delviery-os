@@ -1,14 +1,13 @@
-# Retomada única — confiança humana após Experience Lab
+# Retomada única — decisão sobre B2
 
-- Branch: `feature/hospitality-intelligence-final-v1`.
-- Base do laboratório: `1967a9378ae516dc91f3954834b019bdb1fdd1eb`.
-- Foco concluído: harness adaptativo pela rota real, golden failures V2, gates
-  A–O, três ciclos máximos, duas seeds frescas e prova local do Writer.
-- Prova final: duas rodadas de 80 conversas/380 turnos sem falha; 20 famílias e
-  95 turnos com Gemma sem falha; regressões integrais e navegador verdes.
-- Limite: Experience Evaluator é `ADVISORY_NOT_INDEPENDENT`; não substitui César.
-- Próximo passo único: César realiza 5–10 conversas livres e representativas e
-  responde “Eu confiaria isso a um cliente real do TATÁ?”.
-- Não pedir roteiro mecânico já coberto pelo laboratório.
-- Não fazer: nova missão, redesign, WhatsApp, hospedagem, produção, novo modelo,
-  push, merge ou deploy sem autorização.
+- Branch: `experiment/b2-minimal-architecture-proof-v1`.
+- Base: `e602b8f4ea96aba39ab7353cba715c0d9cef9af2`.
+- Resultado: `B2_PROMISING_NOT_VALIDATED`.
+- Prova: 22/24 hard semantic, 100% safety, 12 goldens publicados e 20
+  conversas livres com vitória B2 em 16/20 comparações gerais.
+- Limites: dois turnos sem publicação, avaliador não independente, duas
+  assimetrias de contexto e conversas livres de apenas dois turnos.
+- Próxima decisão única: César autoriza ou não uma segunda validação B2 pequena,
+  independente e com contexto A/B equivalente.
+- Não fazer: migração, integração externa, fornecedor, produção, WhatsApp,
+  redesign, push, merge ou deploy.

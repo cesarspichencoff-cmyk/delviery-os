@@ -145,3 +145,16 @@ Permanecem limites deliberados:
   como condição única do gate;
 - produção, WhatsApp, hospedagem, drivers reais, curadoria comercial e custo
   externo continuam bloqueados.
+
+## B2 Minimal Architecture Proof V1
+
+- `B2_TWO_SAFE_NON_PUBLICATIONS`: dois turnos foram bloqueados porque até os
+  nomes das fixtures apareciam como linguagem interna; segurança preservada,
+  experiência incompleta.
+- `B2_INDEPENDENT_REVIEW_MISSING`: candidato, construtor e avaliação advisory
+  pertencem à mesma sessão do Work.
+- `B2_CONTEXT_EQUIVALENCE_NOT_PROVEN`: dois cenários compararam A com fatos reais
+  disponíveis e B2 com fatos sintéticos desconhecidos.
+- Impacto: impede `B2_ARCHITECTURE_VALIDATED`, mas não apaga a melhora observada.
+- Correção futura mínima: uma única validação independente, com contexto
+  equivalente e controle explícito dos gaps de publicação.
