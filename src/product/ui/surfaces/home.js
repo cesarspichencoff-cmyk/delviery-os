@@ -645,6 +645,117 @@ function aprofundamento(vm) {
   );
 }
 
+/* ------------------------------------------------------------------ *
+ * O RESTO — condensado, nunca escondido (M1B)
+ * ------------------------------------------------------------------ */
+
+/**
+ * Antes daqui saiam QUATRO secoes empilhadas: uma tabela operacional de 25
+ * linhas, uma grade de quatro cartoes iguais, uma tabela de fontes e uma lista
+ * de aprofundamento — mais a pilha de limitacoes. Medido: a pagina tinha
+ * 10 308px em 1440, e a operacao ocupava ~12% do topo. Isso e a arquitetura de
+ * dashboard por baixo da superficie, que a §10 desta missao manda remover em vez
+ * de repintar.
+ *
+ * A regra que nao muda: RECUAR NUNCA E SUMIR (D42). Nenhum sinal, nenhuma fonte
+ * e nenhuma limitacao foi removida — todas continuam no DOM, na mesma ordem de
+ * severidade, atras de um `inspetor` que abre sem sair da pagina. O que muda e
+ * que a primeira dobra deixa de competir com uma planilha.
+ *
+ * A contagem fica VISIVEL fechada: quem passa os olhos precisa saber que existem
+ * 25 sinais ativos sem precisar abrir.
+ */
+function resto(vm) {
+  const n = vm.sinais_em_segundo_plano.length;
+  const criticos = vm.sinais_em_segundo_plano.filter((s) => s.severidade >= 3).length;
+  const semFonte = vm.sinais_indisponiveis.length;
+  const degradadas = vm.fontes.filter((f) => f.estado !== "saudavel").length;
+
+  const resumoLinha = [
+    n === 0
+      ? "Nenhum outro sinal sustentado nesta leitura"
+      : `${n} ${n === 1 ? "sinal segue ativo" : "sinais seguem ativos"}${
+          criticos > 0 ? `, ${criticos} em pressao` : ""
+        }`,
+    `${semFonte} do catalogo sem fonte`,
+    degradadas > 0 ? `${degradadas} fonte(s) sem leitura confiavel` : "fontes respondendo",
+  ].join(" · ");
+
+  return `<section class="org-resto">
+    <div class="org-resto__linha">
+      <span class="org-resto__rotulo">resto da operacao</span>
+      <span class="org-resto__conta">${esc(resumoLinha)}</span>
+    </div>
+    ${inspetor(
+      "resto-sinais",
+      n === 0 ? "Nenhum outro sinal" : `Ver os ${n} sinais ativos`,
+      `<ul class="org-sinais">${vm.sinais_em_segundo_plano.map(linhaSinal).join("")}</ul>`,
+    )}
+    ${inspetor(
+      "resto-funcoes",
+      "Ver a mesma leitura pela pergunta de cada funcao",
+      `<div class="org-ctxs">${vm.contextos
+        .map(
+          (c) => `<article class="org-ctx" data-funcao="${esc(c.funcao)}">
+            <h3 class="org-ctx__nome">${esc(c.rotulo)}</h3>
+            <p class="org-ctx__pergunta">${esc(c.pergunta)}</p>
+            ${
+              c.sinais.length
+                ? `<ul class="org-ctx__sinais">${c.sinais
+                    .slice(0, 4)
+                    .map((s) => `<li>${esc(s.nome)}: ${esc(s.resumo)}</li>`)
+                    .join("")}${
+                    c.sinais.length > 4
+                      ? `<li class="org-ctx__resto">Mais ${c.sinais.length - 4}.</li>`
+                      : ""
+                  }</ul>`
+                : `<p class="org-ctx__vazio">Nenhum sinal para esta funcao nesta leitura.</p>`
+            }
+            ${c.ausencia ? `<p class="org-ctx__ausencia">${esc(c.ausencia)}</p>` : ""}
+          </article>`,
+        )
+        .join("")}</div>`,
+    )}
+    ${inspetor(
+      "resto-fontes",
+      "Ver o que ainda nao esta disponivel",
+      `<p class="org-resto__nota">Ausencia declarada. Nenhuma delas foi convertida em zero nem em verde.</p>
+       <ul class="org-fontes">${vm.fontes
+         .map(
+           (f) => `<li class="org-fonte" data-estado="${esc(f.estado)}">
+             <span class="org-fonte__nome">${esc(f.rotulo)}</span>
+             <span class="org-fonte__selo">${selos(f.selos)}</span>
+             <span class="org-fonte__detalhe">${esc(f.detalhe)}</span>
+           </li>`,
+         )
+         .join("")}</ul>
+       <ul class="org-bloqueados">${vm.sinais_indisponiveis
+         .map(
+           (s) => `<li class="org-bloqueado">
+             <span class="org-bloqueado__cod">${esc(s.codigo)}</span>
+             <span class="org-bloqueado__nome">${esc(s.nome)}</span>
+             <span class="org-bloqueado__motivo">${esc(s.motivo)}</span>
+             <span class="org-bloqueado__fonte">Falta: ${esc(s.fonte_que_falta)}</span>
+           </li>`,
+         )
+         .join("")}</ul>`,
+    )}
+    ${inspetor(
+      "resto-limites",
+      `Ver o que esta leitura nao prova (${vm.limitacoes.length})`,
+      blocoLimitacoes(vm.limitacoes),
+    )}
+    <ul class="org-aprof">${vm.aprofundamentos
+      .map(
+        (a) =>
+          `<li><a class="org-aprof__link" href="#${esc(a.rota)}"><span class="org-aprof__nome">${esc(
+            a.nome,
+          )}</span><span class="org-aprof__papel">${esc(a.papel)}</span></a></li>`,
+      )
+      .join("")}</ul>
+  </section>`;
+}
+
 /* ------------------------------------------------------------------ */
 
 /**
@@ -671,13 +782,15 @@ export function telaHome(vm) {
       ${
         ampliada
           ? aproximacao(vm, ampliada)
-          : `${legenda(vm)}${superficie(vm)}${relacoesAtivas(vm)}${foco(vm)}`
+          : /* Tres regioes do palco, e so tres: a VOZ (o que a operacao esta
+               dizendo), a MASSA (o territorio) e a DECISAO (o Foco, quando
+               existe). O Foco nao e um quarto bloco empilhado — ele reorganiza
+               a proporcao entre voz e massa. Ver home.css, `.org-palco`. */
+            `${legenda(vm)}<div class="org-massa">${superficie(vm)}${relacoesAtivas(
+              vm,
+            )}</div>${foco(vm)}`
       }
     </div>
-    ${segundoPlano(vm)}
-    ${contextos(vm)}
-    ${fontes(vm)}
-    ${aprofundamento(vm)}
-    ${blocoLimitacoes(vm.limitacoes)}
+    ${resto(vm)}
   </div>`;
 }

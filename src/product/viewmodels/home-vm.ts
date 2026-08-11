@@ -219,6 +219,59 @@ const TEXTO_COR: Record<CorDeAmbiente, string> = {
   sem_medicao: "Sem medicao automatica",
 };
 
+/* ------------------------------------------------------------------ *
+ * A frase que o operador le — unidade canonica (D-M1A1-08)            *
+ * ------------------------------------------------------------------ */
+
+/**
+ * `carga_por_praca` e CONTAGEM DE UNIDADES OPERACIONAIS DE TRABALHO ABERTAS —
+ * o agrupamento `pedido x praca x grupo` do registro atual. D-M1A1-08 proibe
+ * apresenta-la como contagem de pedidos ou de itens enquanto nenhuma fonte
+ * provar a equivalencia. M1A.1 mediu: o mesmo pedido com cinco itens vira carga
+ * 5 ou carga 1 conforme o granulo com que a bancada registra, e `quantidade`
+ * entra no payload e sai da contagem.
+ *
+ * `sinais.ts` compoe hoje "com N pedidos, X% do normal". Ele e caminho
+ * PROIBIDO no envelope M1 — mudar regra de sinal exige o Cesar (D84) — entao a
+ * correcao acontece aqui, na apresentacao, e o `resumo` original continua
+ * inteiro na trilha de auditoria.
+ *
+ * ESTA FUNCAO NAO CALCULA NADA. Os dois numeros que ela usa ja viajam com o
+ * sinal, em `evidencias`, medidos por quem os observou:
+ *
+ *   ev("carga_por_praca",    "Sushi Quentes=6")
+ *   ev("baseline_calibrado", "Sushi Quentes=3")
+ *
+ * Se qualquer um faltar, a frase original e devolvida sem alteracao: inventar
+ * um numero para consertar um rotulo seria trocar um defeito por outro pior.
+ */
+function valorDaEvidencia(sinal: Sinal, tipo: string): number | null {
+  const e = sinal.evidencias.find((x) => x.tipo === tipo);
+  if (e === undefined) return null;
+  const m = /=(\d+(?:\.\d+)?)$/.exec(e.referencia);
+  if (m === null) return null;
+  const n = Number(m[1]);
+  return Number.isFinite(n) ? n : null;
+}
+
+/** A mesma frase, tolerando ausencia de sinal. */
+function fraseOuNada(s: Sinal | undefined): string | undefined {
+  return s === undefined ? undefined : fraseDoSinal(s);
+}
+
+export function fraseDoSinal(sinal: Sinal): string {
+  // Somente S5 fala de carga. Os outros sinais nao carregam esta unidade, e
+  // reescrever a frase deles seria mexer em texto que ja esta correto.
+  if (sinal.codigo !== "S5") return sinal.resumo;
+  const carga = valorDaEvidencia(sinal, "carga_por_praca");
+  const base = valorDaEvidencia(sinal, "baseline_calibrado");
+  if (carga === null || base === null || base <= 0) return sinal.resumo;
+  const unidade = carga === 1 ? "trabalho aberto" : "trabalhos abertos";
+  return `${sinal.alvo_rotulo} com ${carga} ${unidade}, ${Math.round(
+    (carga / base) * 100,
+  )}% do ritmo normal.`;
+}
+
 function corPorSeveridade(maior: 0 | 1 | 2 | 3): CorDeAmbiente {
   if (maior >= 3) return "vermelho";
   if (maior >= 1) return "amarelo";
@@ -301,7 +354,7 @@ function subareaVM(
   // O motivo prefere o sinal de PRESSAO. Um sinal informativo nao explica a cor
   // da subarea — e explicar a cor e a unica funcao desta linha.
   const motivo =
-    daSubarea.find((s) => s.pinta_ambiente)?.resumo ??
+    fraseOuNada(daSubarea.find((s) => s.pinta_ambiente)) ??
     (pressao.observado
       ? `${rotuloDaPraca(praca)} em ritmo normal.`
       : pressao.explicacao);
@@ -356,7 +409,7 @@ function ambienteVM(
 
   const fontesFaltando = fontesDaArea.filter((f) => f.estado !== "saudavel");
   const motivo =
-    doAmbiente.find((s) => s.pinta_ambiente)?.resumo ??
+    fraseOuNada(doAmbiente.find((s) => s.pinta_ambiente)) ??
     (cor === "sem_medicao"
       ? fontesFaltando.length > 0
         ? `${fontesFaltando.map((f) => f.rotulo).join(" e ")}: ${fontesFaltando[0]!.detalhe}`
@@ -449,7 +502,7 @@ function orientacaoVM(
   if (sinal.orientacao === null) return null;
   return {
     acao: sinal.orientacao,
-    porque: sinal.resumo,
+    porque: fraseDoSinal(sinal),
     primeiro_olhar:
       sinal.pedido_id !== null
         ? `Pedido ${sinal.pedido_id}`
@@ -491,7 +544,7 @@ function focoVM(sinal: Sinal, l: LeituraOperacional): FocoVM {
           "Sem evidencia rastreavel, nenhuma confianca e apresentada.",
         );
   return {
-    situacao: sinal.resumo,
+    situacao: fraseDoSinal(sinal),
     ambiente: sinal.ambiente,
     ambiente_rotulo:
       sinal.ambiente !== null ? ambientePorId(sinal.ambiente).rotulo : null,

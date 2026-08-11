@@ -103,7 +103,7 @@ body:has(.org) .nav-item[aria-current="page"] {
 
 .org-topo__marca {
   font-family: var(--org-mono);
-  font-size: 0.72rem;
+  font-size: 0.82rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--org-verde-texto-4);
@@ -156,7 +156,7 @@ body:has(.org) .nav-item[aria-current="page"] {
 
 .org-topo__nota {
   font-family: var(--org-mono);
-  font-size: 0.76rem;
+  font-size: 0.86rem;
   color: var(--org-verde-texto-2);
 }
 
@@ -186,7 +186,7 @@ body:has(.org) .nav-item[aria-current="page"] {
 .org-demo__aviso {
   margin: 0;
   font-family: var(--org-mono);
-  font-size: 0.72rem;
+  font-size: 0.82rem;
   line-height: 1.4;
   color: var(--org-verde-texto-3);
 }
@@ -199,7 +199,7 @@ body:has(.org) .nav-item[aria-current="page"] {
 
 .org-demo__cena {
   font-family: var(--org-mono);
-  font-size: 0.72rem;
+  font-size: 0.82rem;
   padding: 0.25rem 0.6rem;
   border-radius: 7px;
   border: 1px solid var(--org-linha-viva);
@@ -234,7 +234,7 @@ body:has(.org) .nav-item[aria-current="page"] {
 
 .org-tecnico__texto {
   font-family: var(--org-mono);
-  font-size: 0.76rem;
+  font-size: 0.86rem;
   line-height: 1.4;
   color: var(--org-falha-texto);
 }
@@ -243,23 +243,70 @@ body:has(.org) .nav-item[aria-current="page"] {
  * O palco
  * ------------------------------------------------------------------ */
 
+/*
+  O PALCO — M1B.
+  ---------------------------------------------------------------------------
+  Antes: coluna centrada de 760px, com a operacao ocupando ~12% de uma pagina de
+  10 308px. A massa nao tinha presenca; o vazio nas laterais nao era tensao, era
+  area sobrando. Medido em `docs/design/m1b-evidencia/antes/`.
+
+  Agora: DUAS colunas em desktop. A voz ocupa a coluna estreita e a massa
+  operacional ocupa a larga, sangrando ate a borda direita do palco. Em Foco a
+  proporcao inverte — e essa inversao E a transformacao (§11): nada aparece,
+  nada some, a geometria se reorganiza.
+*/
 .org-palco {
   position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 1.8rem 0 2.4rem;
+  display: grid;
+  grid-template-columns: minmax(26ch, 30ch) minmax(0, 1fr);
+  grid-template-areas: "voz massa";
+  align-items: start;
+  gap: clamp(1.6rem, 4vw, 3.4rem);
+  padding: clamp(1.6rem, 4vw, 3rem) 0 clamp(2rem, 5vw, 3.6rem);
+  /* A geometria interpola: e a unica transformacao estrutural da cena, e ela
+     so roda quando o estado muda de verdade (a home recarrega). Nenhum timer. */
+  transition:
+    grid-template-columns var(--org-troca) var(--org-troca-easing);
 }
 
 .org-legenda {
-  align-self: flex-start;
-  max-width: 34ch;
-  margin-bottom: 0.6rem;
+  grid-area: voz;
+  position: sticky;
+  top: 1.5rem;
+}
+
+.org-massa {
+  grid-area: massa;
+  min-width: 0;
+}
+
+/*
+  A TRANSFORMACAO DO FOCO. Nenhum elemento aparece ou desaparece: a mesma voz, a
+  mesma massa, as mesmas relacoes. O que muda e a PROPORCAO — a coluna da
+  decisao ganha corpo e a massa recua. Foi assim que a North Star descreveu, e e
+  a unica mudanca estrutural da cena.
+
+  Ela nao roda sozinha: a home so atravessa estados por recarga hoje
+  (D-M1A1-12). A `transition` fica declarada para o dia em que houver
+  atualizacao em vigor, e nenhum timer a dispara.
+*/
+.org[data-modo="foco"] .org-palco {
+  grid-template-columns: minmax(32ch, 40ch) minmax(0, 1fr);
+  grid-template-areas:
+    "voz massa"
+    "decisao massa";
+  row-gap: 0;
+}
+
+.org[data-modo="foco"] .org-massa {
+  /* A massa recua: continua inteira, com menos corpo. Recuar nunca e sumir. */
+  opacity: 0.88;
+  transition: opacity var(--org-troca) var(--org-troca-easing);
 }
 
 .org-legenda__kicker {
   font-family: var(--org-mono);
-  font-size: 0.72rem;
+  font-size: 0.82rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--org-verde-texto-4);
@@ -311,12 +358,22 @@ body:has(.org) .nav-item[aria-current="page"] {
  * A superficie unica, com o caminho do pedido dentro dela
  * ------------------------------------------------------------------ */
 
+/*
+  A MASSA. Ela nao e um diagrama centrado num quadro: e o territorio inteiro da
+  coluna, sangrado ate a borda. `max-width` saiu porque limitar a massa a 760px
+  era o que a mantinha pequena em qualquer tela grande.
+*/
 .org-superficie {
   width: 100%;
-  max-width: 760px;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
+  border-radius: var(--org-raio);
+  /* A pedra onde as camaras sao escavadas. Um plano so, nao seis caixas. */
+  background:
+    radial-gradient(120% 90% at 50% 0%, var(--org-palco) 0%, var(--org-palco-fundo) 100%);
+  border: 1px solid var(--org-linha-fraca);
+  padding: clamp(1rem, 2.4vw, 1.9rem) clamp(0.9rem, 2.4vw, 2rem);
 }
 
 .org-fila {
@@ -471,7 +528,7 @@ body:has(.org) .nav-item[aria-current="page"] {
 
 .org-area__estado {
   font-family: var(--org-mono);
-  font-size: 0.66rem;
+  font-size: 0.8rem;
   line-height: 1.3;
   color: var(--org-verde-texto-2);
   max-width: 15ch;
@@ -492,7 +549,7 @@ body:has(.org) .nav-item[aria-current="page"] {
 .org-area__info {
   margin: 0;
   max-width: 26ch;
-  font-size: 0.78rem;
+  font-size: 0.86rem;
   line-height: 1.35;
   color: var(--org-verde-texto-3);
 }
@@ -546,7 +603,7 @@ body:has(.org) .nav-item[aria-current="page"] {
   padding: 0.22rem 0.55rem;
   border-radius: var(--org-raio-pilula);
   border: 1px solid var(--org-linha-viva);
-  font-size: 0.72rem;
+  font-size: 0.82rem;
   color: var(--org-verde-texto-2);
 }
 
@@ -556,7 +613,7 @@ body:has(.org) .nav-item[aria-current="page"] {
 
 .org-sub__estado {
   font-family: var(--org-mono);
-  font-size: 0.62rem;
+  font-size: 0.78rem;
   color: var(--org-verde-texto-4);
 }
 
@@ -584,7 +641,7 @@ body:has(.org) .nav-item[aria-current="page"] {
 
 .org-sub__causa {
   font-family: var(--org-mono);
-  font-size: 0.6rem;
+  font-size: 0.78rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--org-ambar-texto);
@@ -687,15 +744,28 @@ body:has(.org) .nav-item[aria-current="page"] {
  * O Foco. Emerge da superficie: fica SOBRE ela, nunca no lugar dela.
  * ------------------------------------------------------------------ */
 
+/*
+  O FOCO — M1B. §11: o Foco NAO e um cartao destacado, nao e um painel maior,
+  nao e modal e nao e borda brilhante.
+  ---------------------------------------------------------------------------
+  Antes ele era um `<aside>` de 440px com borda e sombra, pendurado embaixo da
+  superficie. Isso e "mais um lugar na tela" — exatamente o que a decisao visual
+  de 2026-08-07 rejeitou ("o foco transforma a superficie em vez de ocupar mais
+  um lugar nela").
+
+  Agora ele ocupa a coluna da VOZ, abaixo da legenda, enquanto a massa recua e
+  as pracas laterais viram lascas. O espaco de decisao e o que SOBRA desse
+  movimento. Sem borda de cartao: o entalhe ambar no topo e a unica marca, e ele
+  ja existia no V3.3.
+*/
 .org-foco {
+  grid-area: decisao;
   position: relative;
-  width: min(440px, 100%);
-  margin-top: 1.6rem;
-  padding: 1.4rem 1.5rem;
-  border-radius: var(--org-raio);
-  border: 1px solid var(--org-linha-forte);
-  background: linear-gradient(180deg, var(--org-painel-topo), var(--org-painel-base));
-  box-shadow: var(--org-sombra-painel);
+  padding: 1.2rem 0 0;
+  border: 0;
+  border-top: 1px solid var(--org-linha);
+  background: none;
+  box-shadow: none;
 }
 
 /*
@@ -722,7 +792,7 @@ body:has(.org) .nav-item[aria-current="page"] {
 
 .org-foco__eyebrow {
   font-family: var(--org-mono);
-  font-size: 0.7rem;
+  font-size: 0.82rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--org-ambar);
@@ -776,7 +846,7 @@ body:has(.org) .nav-item[aria-current="page"] {
 
 .org-foco__ev-tipo {
   font-family: var(--org-mono);
-  font-size: 0.68rem;
+  font-size: 0.8rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--org-verde-texto-4);
@@ -785,7 +855,7 @@ body:has(.org) .nav-item[aria-current="page"] {
 .org-foco__tempo {
   margin: 0 0 1rem;
   font-family: var(--org-mono);
-  font-size: 0.68rem;
+  font-size: 0.8rem;
   color: var(--org-verde-texto-5);
 }
 
@@ -863,7 +933,7 @@ body:has(.org) .nav-item[aria-current="page"] {
 .org-acao__hint {
   margin: 0 0 0.4rem;
   font-family: var(--org-mono);
-  font-size: 0.66rem;
+  font-size: 0.8rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--org-verde-texto-4);
@@ -897,7 +967,7 @@ body:has(.org) .nav-item[aria-current="page"] {
 
 .org-acao__detalhe dt {
   font-family: var(--org-mono);
-  font-size: 0.66rem;
+  font-size: 0.8rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--org-verde-texto-4);
@@ -923,7 +993,7 @@ body:has(.org) .nav-item[aria-current="page"] {
 .org-acao__nada {
   margin: 0;
   font-family: var(--org-mono);
-  font-size: 0.68rem;
+  font-size: 0.8rem;
   color: var(--org-verde-texto-5);
 }
 
@@ -965,7 +1035,7 @@ body:has(.org) .nav-item[aria-current="page"] {
 
 .org-aprox__caminho {
   font-family: var(--org-mono);
-  font-size: 0.74rem;
+  font-size: 0.84rem;
   color: var(--org-verde-texto-4);
 }
 
@@ -1012,7 +1082,7 @@ body:has(.org) .nav-item[aria-current="page"] {
 .org-aprox__rotulo {
   margin: 0 0 0.5rem;
   font-family: var(--org-mono);
-  font-size: 0.72rem;
+  font-size: 0.82rem;
   font-weight: 400;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -1075,7 +1145,7 @@ body:has(.org) .nav-item[aria-current="page"] {
 
 .org-aprox__alvo {
   font-family: var(--org-mono);
-  font-size: 0.72rem;
+  font-size: 0.82rem;
   color: var(--org-verde-texto-4);
 }
 
@@ -1098,7 +1168,7 @@ body:has(.org) .nav-item[aria-current="page"] {
 
 .org-minimapa__rotulo {
   font-family: var(--org-mono);
-  font-size: 0.7rem;
+  font-size: 0.82rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--org-verde-texto-5);
@@ -1134,7 +1204,7 @@ body:has(.org) .nav-item[aria-current="page"] {
 
 .org-minimapa__estado {
   font-family: var(--org-mono);
-  font-size: 0.68rem;
+  font-size: 0.8rem;
   color: var(--org-verde-texto-4);
 }
 
@@ -1211,7 +1281,7 @@ body:has(.org) .nav-item[aria-current="page"] {
 .org-sinal__alvo,
 .org-sinal__orient {
   font-family: var(--org-mono);
-  font-size: 0.72rem;
+  font-size: 0.82rem;
   color: var(--org-verde-texto-4);
 }
 
@@ -1291,7 +1361,7 @@ body:has(.org) .nav-item[aria-current="page"] {
 
 .org-bloqueado__cod {
   font-family: var(--org-mono);
-  font-size: 0.74rem;
+  font-size: 0.84rem;
   min-width: 4ch;
 }
 
@@ -1324,7 +1394,7 @@ body:has(.org) .nav-item[aria-current="page"] {
 
 .org-aprof__papel {
   font-family: var(--org-mono);
-  font-size: 0.72rem;
+  font-size: 0.82rem;
   color: var(--org-verde-texto-5);
 }
 
@@ -1466,11 +1536,11 @@ body:has(.org) .nav-item[aria-current="page"] {
   }
 
   .org-area__estado {
-    font-size: 0.58rem;
+    font-size: 0.78rem;
   }
 
   .org-area__info {
-    font-size: 0.72rem;
+    font-size: 0.82rem;
     max-width: 22ch;
   }
 
@@ -1483,7 +1553,7 @@ body:has(.org) .nav-item[aria-current="page"] {
 
   .org-sub {
     padding: 0.18rem 0.45rem;
-    font-size: 0.66rem;
+    font-size: 0.8rem;
   }
 
   .org-legenda__frase {
@@ -1507,4 +1577,71 @@ body:has(.org) .nav-item[aria-current="page"] {
   .org-aprox__coluna {
     min-width: 100%;
   }
+}
+
+/* ------------------------------------------------------------------ *
+ * O RESTO — condensado, nunca escondido (M1B)
+ * ------------------------------------------------------------------ *
+ * Quatro secoes empilhadas viraram um registro baixo. A contagem fica legivel
+ * fechada; o conteudo inteiro continua no DOM, atras de `inspetor`.
+ * Recuar nunca e sumir.
+ */
+
+.org-resto {
+  margin-top: clamp(1.6rem, 4vw, 2.8rem);
+  padding-top: 1.2rem;
+  border-top: 1px solid var(--org-linha-fraca);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.org-resto__linha {
+  display: flex;
+  align-items: baseline;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+  padding-bottom: 0.3rem;
+}
+
+.org-resto__rotulo {
+  font-family: var(--org-mono);
+  font-size: 0.82rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--org-verde-texto-5);
+}
+
+.org-resto__conta {
+  font-size: 0.95rem;
+  color: var(--org-verde-texto-2);
+}
+
+.org-resto__nota {
+  margin: 0 0 0.7rem;
+  font-size: 0.9rem;
+  color: var(--org-verde-texto-3);
+}
+
+.org-resto .org-aprof {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.4rem;
+  margin: 0.8rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.org-resto .org-aprof__link {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+.org-resto .org-aprof__papel {
+  font-size: 0.84rem;
+  color: var(--org-verde-texto-5);
 }
