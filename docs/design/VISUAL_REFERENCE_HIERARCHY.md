@@ -4,7 +4,7 @@ lifecycle:
   status: ACTIVE
   authority_scope: visual_order
   superseded_by: null
-  atualizado_em: "2026-08-07"
+  atualizado_em: "2026-08-11"
   state_basis: 953a3fb
 ---
 
