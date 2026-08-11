@@ -363,20 +363,60 @@ teste("C5 o envelope M1 declara baseline, caminhos e estado de aprovacao", () =>
   assert.ok(e.includes(M1_BASELINE), "o envelope nao ancora no baseline real desta worktree");
 });
 
+/**
+ * Somente o bloco `AUTHORIZED_PATHS` do envelope.
+ *
+ * Procurar o caminho no documento INTEIRO seria pior que nao checar: os
+ * caminhos PROIBIDOS estao escritos la tambem, na lista de proibicoes, entao
+ * `areas.ts` "estaria no envelope" e passaria. A autorizacao mora numa secao,
+ * nao no arquivo.
+ */
+function caminhosAutorizados(): readonly string[] {
+  const e = ler(ENVELOPE);
+  const bloco = /### `AUTHORIZED_PATHS`([\s\S]*?)### `AUTHORIZED_CHANGE_CLASSES`/.exec(e);
+  assert.ok(bloco, "o envelope perdeu a secao AUTHORIZED_PATHS");
+  return [...bloco[1]!.matchAll(/^\s*([A-Za-z0-9_./-]+\.[a-z]+|[A-Za-z0-9_./-]+\/)\s*(?:AUTHORIZED_WITH_GATE)?\s*$/gm)]
+    .map((m) => m[1]!)
+    .filter((p) => p.includes("/"));
+}
+
 teste("C6 a metade do FUTURO: mudanca pos-baseline so passa dentro do envelope", () => {
   // A afirmacao que os gates deixaram de fazer, agora feita UMA vez e no lugar
   // certo. Uniao de todos os caminhos protegidos, comparada com HEAD.
+  const autorizados = caminhosAutorizados();
+  assert.ok(autorizados.length >= 10, `o envelope autoriza so ${autorizados.length} caminhos`);
   const todos = [...new Set(GATES.flatMap((g) => g.caminhos))];
   const mudou = git("diff", "--name-only", M1_BASELINE, "--", ...todos)
     .split("\n")
     .filter((l) => l !== "");
-  const envelope = ler(ENVELOPE);
-  const foraDoEnvelope = mudou.filter((p) => !envelope.includes(p));
-  assert.deepEqual(
-    foraDoEnvelope,
-    [],
-    `caminho protegido mudou depois do baseline sem estar no envelope:\n${foraDoEnvelope.join("\n")}`,
+  const fora = mudou.filter(
+    (p) => !autorizados.some((a) => (a.endsWith("/") ? p.startsWith(a) : p === a)),
   );
+  assert.deepEqual(
+    fora,
+    [],
+    `caminho protegido mudou depois do baseline sem estar AUTORIZADO:\n${fora.join("\n")}`,
+  );
+});
+
+teste("C6b controle: um caminho proibido nao conta como autorizado", () => {
+  // `areas.ts` aparece no envelope — na lista de PROIBIDOS. Se a leitura fosse
+  // pelo arquivo inteiro, ele passaria por autorizado, e a guarda inteira
+  // deixaria de valer.
+  const autorizados = caminhosAutorizados();
+  for (const proibido of [
+    "src/product/viewmodels/areas.ts",
+    "src/product/viewmodels/sinais.ts",
+  ]) {
+    assert.ok(
+      ler(ENVELOPE).includes(proibido),
+      `${proibido} sumiu do envelope — a lista de proibidos encolheu`,
+    );
+    assert.ok(
+      !autorizados.some((a) => (a.endsWith("/") ? proibido.startsWith(a) : proibido === a)),
+      `${proibido} entrou na lista de caminhos AUTORIZADOS`,
+    );
+  }
 });
 
 teste("C7 o envelope inventaria os dez gates com o baseline que eles usam", () => {
