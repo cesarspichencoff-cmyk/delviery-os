@@ -588,9 +588,18 @@ teste("PF3 nenhum produtor vivo, flag ou recomendacao nasceu", () => {
   }
   // GATES podem exercitar o projetor; o que ele nao pode e ter chamador de
   // RUNTIME. R5-D3 acrescentou o seu, e a lista continua fechada de proposito.
+  //
+  // M1A.1 acrescentou `run-m1-bridge-tests.ts`, POR NOME e nao alargando o
+  // padrao: ele exercita o projetor para medir a unidade de `carga_por_praca`
+  // (1 pedido / 5 itens). A lista continua fechada e enumerada — se ela virasse
+  // `/run-.*-tests\.ts$/`, qualquer arquivo de teste novo entraria sozinho e a
+  // guarda passaria a afirmar menos do que afirma hoje. Nenhum comportamento de
+  // produto muda: o projetor continua sem chamador de runtime.
   for (const c of chamadores) {
     assert.ok(
-      /\/run-r5[a-z0-9-]*-tests\.ts$/.test(c) || c.endsWith("projetar-leitura.ts"),
+      /\/run-r5[a-z0-9-]*-tests\.ts$/.test(c) ||
+        c.endsWith("/run-m1-bridge-tests.ts") ||
+        c.endsWith("projetar-leitura.ts"),
       `o projetor ganhou chamador de runtime: ${c}`,
     );
   }
