@@ -91,6 +91,31 @@ Autoridade declarada em **`docs/design/VISUAL_REFERENCE_HIERARCHY.md`**, com
 Esta seção existe porque a ordem falhou duas vezes: a Unidade 6 e o bloco R2 desenharam sobre o
 Nível 5. Ver **PB9** e **L33**. Guarda executável: `npm run test:platform:visual-order`.
 
+### 2.2 Superfície alvo e sucessão M1 — registrado em 2026-08-11 pela missão `M1A.1`
+
+**Aditivo. A tabela de 2.1 não mudou.** O que segue resolve quatro incompatibilidades que a
+missão M1A encontrou e que travariam M1B.
+
+| Pergunta | Resposta canônica |
+|---|---|
+| Qual superfície M1 implementa? | **a Home `/`** — é ela a experiência Copiloto / consciência operacional |
+| O que é `/copiloto`? | rota **Shadow**, de inspeção e diagnóstico. `estado: "shadow"` em `modulos.ts`. Não é a experiência aprovada, e não é renomeada |
+| O que governa a expressão estática? | **De-Mechanization**, `ACTIVE` |
+| O que governa a expressão temporal? | **Motion North Star** (H3 + pausa da H2), transcrita em `docs/design/M1_MOTION_GRAMMAR.md`, que passa a ser a **única** autoridade de movimento |
+| O que governa o DNA de família? | **Family System Foundation V1**, `GUARDRAIL` — Family M0 está fechado e não reabre aqui |
+| O que ainda é implementação antiga? | toda `src/product/ui/**` — congelada por **dez** gates R5 |
+| O que espera M1B? | a implementação visual, dentro de `docs/design/M1_VISUAL_CHANGE_ENVELOPE.md` |
+
+Detalhe, procedência de aprovação e comparação do V3.3:
+`docs/design/M1_CANONICAL_SUCCESSION.md`.
+Guarda executável: `npm run test:platform:m1-bridge`.
+
+**Decisão de domínio ainda aberta, e ela é do César:** `carga_por_praca` está provado como
+**contagem de unidades de trabalho abertas (pedido × grupo) por praça** — não pedidos, não itens;
+`quantidade` é observada e descartada. O pacote visual pede "itens nas praças produtivas, pedidos
+em Caixa e Motoboy", e a Caixa hoje é `sem_medicao_automatica`. Falta contrato de granularidade.
+Registrada como `Q-013` em `docs/execution/PERGUNTAS.jsonl`.
+
 ---
 
 ## 3. Decisões canônicas

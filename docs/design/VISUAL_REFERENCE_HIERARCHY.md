@@ -34,6 +34,24 @@ Se app-v1 **ou** qualquer demo divergir do Sprint Visual V2 → **prevalece o Sp
 
 app-v1 = `historical_reference_only`.
 
+## Sucessão M1 — aditivo, 2026-08-11
+
+> Nada acima foi alterado. O Sprint Visual V2 continua Nível 1 e o V3.3 continua
+> Nível 2. Esta seção registra que os dois passaram a ter **descendência aprovada**,
+> e nomeia qual artefato governa o quê hoje.
+
+| Governa | Artefato | Papel |
+|---|---|---|
+| expressão **estática** | **De-Mechanization** (*Static North Star Closure*) | `ACTIVE` |
+| expressão **temporal** | **Motion North Star** (H3 + pausa da H2) | `ACTIVE`, transcrita em `M1_MOTION_GRAMMAR.md` |
+| DNA de família | **Family System Foundation V1** | `GUARDRAIL` — não define forma do Copiloto |
+| geração anterior | Copiloto Signature North Star · Sculpted Operation · Form Language Convergence | `SUPERSEDED`, preservadas como evidência |
+
+Sucessão, procedência de aprovação, comparação do V3.3 e veredito de unidade:
+`docs/design/M1_CANONICAL_SUCCESSION.md`. Autorização de mudança visual:
+`docs/design/M1_VISUAL_CHANGE_ENVELOPE.md`.
+Guarda executável: `npm run test:platform:m1-bridge`.
+
 ## Metáforas de módulo (Nível 4)
 
 | Módulo | Metáfora |
