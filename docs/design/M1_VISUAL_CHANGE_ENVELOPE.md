@@ -265,30 +265,44 @@ Se a implementação visual exigir qualquer um destes, o veredito é
 
 ---
 
-## 7. Migração dos gates — especificada, **não aplicada**
+## 7. Migração dos gates — **APLICADA** em 2026-08-11 (D-M1A1-10)
 
-Esta missão **não** editou nenhum dos dez gates. Eles são prova histórica de missões
-fechadas, e reescrevê-los numa missão de ponte apagaria a evidência que eles são.
-
-Quando o envelope for aprovado, cada gate recebe **uma** mudança, mecânica e idêntica:
-o segundo argumento de commit passa a existir, fechando o intervalo.
+Autorizada por César. Cada gate recebeu **uma** mudança, mecânica e idêntica: o
+segundo argumento de commit passou a existir, fechando o intervalo.
 
 ```diff
 - git diff --name-only 73f2f0b -- <paths>
-+ git diff --name-only 73f2f0b f87a36dfd39c9989344f0fed6ebf8db5db1a8c35 -- <paths>
++ git diff --name-only 73f2f0b FIM_HISTORICO -- <paths>
 ```
 
-E a metade do futuro passa a ser afirmada uma vez só, na guarda desta ponte
-(`C5`), em vez de dez vezes de forma implícita.
+```
+FIM_HISTORICO = f87a36dfd39c9989344f0fed6ebf8db5db1a8c35
+```
 
-**Propriedades preservadas pela migração:**
+**Por que este fim, e não o commit em que cada missão terminou.** O fim
+certificado é o **último commit em que a propriedade foi verificada verde**. Todos
+os dez estavam verdes em `f87a36d`. Escolher o encerramento de cada missão
+encurtaria o intervalo provado — e encurtar a janela é enfraquecer a garantia,
+que D-M1A1-10 proíbe. Cada gate mantém o **seu** baseline; o que passou a ser
+comum é o fim.
 
-- adulterar história dentro do intervalo continua derrubando o gate — `C3` prova;
-- arquivo **novo** commitado dentro do intervalo continua derrubando — a forma
-  `--name-only` não muda;
-- o baseline **não** é reancorado: `73f2f0b` continua sendo `73f2f0b`;
-- nenhuma exceção de caminho é aberta;
-- o que sai do gate é apenas a parte que ele nunca afirmou — o futuro.
+**Preservado, item por item:**
 
-**Estado:** `AWAITING_CESAR_M1B_EXECUTION_APPROVAL`. Sem isso, nenhum gate muda, e
-M1B não começa.
+| Requisito de D-M1A1-10 | Como |
+|---|---|
+| preservar cada baseline | `C2` compara com a tabela dos dez originais e reprova reancoragem |
+| identificar o fim certificado | `FIM_HISTORICO` declarado em cada gate, com a razão no comentário |
+| preservar caminhos e propriedade | pathspecs intocados; `--name-only` intocado; arquivo **novo** continua derrubando |
+| preservar o comando de reprodução | `npm run test:platform:r5` e cada `run-r5*-tests.ts` continuam valendo |
+| mutação de adulteração | `C4` executa o mesmo comando sobre `fcfc21d..f87a36d` e **exige** saída não vazia, gate a gate |
+| não reancorar história | nenhum baseline mudou |
+| não apagar evidência | nenhum teste removido; os dez continuam onde estavam |
+| não enfraquecer o passado | a janela provada não encolheu |
+
+**Como o controle não pode envelhecer:** a família C **lê os pathspecs da fonte
+dos próprios gates** (`lerGate`), com os comentários removidos antes da leitura.
+Se um gate mudar de baseline, de fim ou de caminho, a guarda lê a mudança — não
+existe cópia paralela para divergir em silêncio.
+
+**A metade do futuro** é afirmada uma vez só, em `C6`: a união de todos os
+caminhos protegidos, comparada com HEAD, precisa caber em `AUTHORIZED_PATHS`.

@@ -11,6 +11,64 @@ lifecycle:
 
 # Sucessão canônica M1 — quem manda, quem é ancestral, quem é história
 
+## 0. Decisões humanas — César, 2026-08-11
+
+Registradas aqui como **canônicas**. Não reabrir sem nova evidência.
+
+### D-M1A1-08 — semântica de `carga_por_praca`
+
+```
+CARGA_UNIT        = OPEN_OPERATIONAL_WORK_UNITS
+CARGA_GRANULARITY = CALIBRATION_PENDING
+```
+
+`carga_por_praca` é o **número de unidades operacionais de trabalho abertas**
+registradas para uma praça. Uma unidade é o agrupamento operacional representado
+pelo registro atual `pedido × praça × grupo`.
+
+**Não pode ser descrito canonicamente como** contagem de itens físicos **nem**
+contagem de pedidos, enquanto uma fonte ou contrato futuro não provar a
+equivalência. `quantidade` **não** entra na contagem da projeção e portanto não
+pode ser silenciosamente interpretada como quantidade de itens.
+
+**A camada visual não pode rerrotular este valor como "itens" ou "pedidos"** sem
+mapeamento provado. Guarda `D4`.
+
+### D-M1A1-09 — Caixa
+
+A Caixa permanece `sem_medicao_automatica`. Não criar medição automática só
+porque um README ancestral descreveu a Caixa em pedidos. **Ausência de medição
+não é zero e não é saúde.** Promoção futura exige fonte real mais contrato de
+ciclo de vida de evento/trabalho. Guarda `D5`.
+
+### D-M1A1-10 — gates históricos de congelamento
+
+**Aprovada** a migração das dez asserções abertas para provas de **intervalo
+histórico fechado**, preservando baseline, fim certificado, caminhos,
+propriedade, comando de reprodução e mutação de adulteração. Sem reancorar
+história, sem apagar evidência, sem enfraquecer a garantia. Aplicada — ver
+[M1_VISUAL_CHANGE_ENVELOPE.md](M1_VISUAL_CHANGE_ENVELOPE.md) §7.
+
+### D-M1A1-11 — prova de build
+
+```
+FULL_LOCAL_BUILD_PROOF = NOT_PROVEN
+```
+
+A worktree M1 não tem instalação de dependências própria; `npm run typecheck` e
+`npm run build` **não foram executados aqui**. O `tsc` do worktree vizinho é
+evidência de apoio, não prova de build. Não instalar dependências em M1A.1 só
+para melhorar o veredito.
+
+### D-M1A1-12 — movimento e estado ao vivo
+
+A Motion North Star continua autoritativa. **Mas o produto não pode simular
+causalidade operacional ao vivo enquanto a Home ainda exige recarga para
+materializar mudança de estado.** Detalhe em
+[M1_MOTION_GRAMMAR.md](M1_MOTION_GRAMMAR.md) §4.
+
+---
+
 > **Escopo próprio.** `VISUAL_REFERENCE_HIERARCHY.md` diz qual **nível** manda.
 > `VISUAL_SOURCE_OF_TRUTH.md` diz **o que** o cânone define em prosa.
 > `CANONICAL_VISUAL_MANIFEST.json` diz **qual pacote em qual hash**.
@@ -179,6 +237,7 @@ maior que o acervo registrado.
 
 ```
 CARGA_UNIT_VERDICT        = PROVEN_OTHER
+CARGA_UNIT                = OPEN_OPERATIONAL_WORK_UNITS      (D-M1A1-08)
 CARGA_GRANULARITY_VERDICT = CALIBRATION_PENDING
 CARGA_DOMAIN_DIVERGENCE   = REGISTRADA, NAO RESOLVIDA
 ```
@@ -246,8 +305,11 @@ de pedidos."* O domínio, em `areas.ts`, diz outra coisa:
 (índice canônico §6). Guarda `D5` reprova se a Caixa ganhar medição automática sem
 decisão registrada.
 
-**Esta é a decisão humana que M1B precisa.** Ver §28 do relatório e a pergunta
-registrada em `PERGUNTAS.jsonl`.
+**Decidida por César em 2026-08-11 — D-M1A1-08 e D-M1A1-09, §0.** A unidade
+canônica é `OPEN_OPERATIONAL_WORK_UNITS`; a Caixa continua sem medição
+automática; a granularidade segue `CALIBRATION_PENDING` até que uma fonte real
+prove a equivalência. `Q-013` fica **respondida em parte**: a semântica está
+fechada, o contrato de granularidade não.
 
 ---
 

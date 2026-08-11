@@ -205,48 +205,139 @@ teste("B6 controle positivo: uma tabela sem SUPERSEDED_BY reprova", () => {
  * ================================================================== */
 
 /**
- * Os caminhos que o PF4 certificou. Copiados do proprio PF4
- * (`run-r5d1-event-lineage-tests.ts`), nao reinventados aqui.
+ * Os DEZ gates de congelamento, lidos da PROPRIA FONTE.
+ *
+ * Nada aqui e transcrito a mao. Se um gate mudar de baseline, de fim ou de
+ * pathspec, esta familia le a mudanca e continua afirmando sobre o que o gate
+ * realmente faz — em vez de sobre uma copia que envelhece em silencio.
  */
-const PF4_PATHS = [
-  "src/perfil-delivery/",
-  "src/product/viewmodels/",
-  "src/product/atencao/politica-temporal.ts",
-  "src/product/atencao/linhagem-eventos.ts",
-  "src/platform/copiloto/confianca-duravel.ts",
-  "src/product/ui/",
-  "docs/figma/",
+const GATES_CONGELAMENTO = [
+  "run-r5a-temporal-tests.ts",
+  "run-r5b-invariant-tests.ts",
+  "run-r5c-translation-tests.ts",
+  "run-r5d0-readiness-tests.ts",
+  "run-r5d0-confidence-tests.ts",
+  "run-r5d0-lineage-tests.ts",
+  "run-r5d0-storage-tests.ts",
+  "run-r5d1-event-lineage-tests.ts",
+  "run-r5d2-producer-qualification-tests.ts",
+  "run-r5d3-shadow-path-tests.ts",
 ] as const;
 
-const PF4_BASE = "73f2f0b";
-/** Baseline de M1: o commit de onde esta worktree limpa nasceu. */
+/** Baseline de M1: fim do intervalo historico certificado (D-M1A1-10). */
 const M1_BASELINE = "f87a36dfd39c9989344f0fed6ebf8db5db1a8c35";
+/**
+ * Primeiro commit do repositorio. Serve de intervalo SABIDAMENTE adulterado:
+ * entre ele e o baseline, todos os caminhos protegidos mudaram. E o controle
+ * antifalso-positivo de cada gate — sem ele, um pathspec que nao casa com nada
+ * produziria diff vazio e passaria por prova.
+ */
+const RAIZ_HISTORICA = "fcfc21db8fa7e505e4d7879a1c2b103ef7b33c17";
 
-teste("C1 o PF4 continua existindo, com o baseline e os caminhos originais", () => {
-  const pf4 = ler("src/platform/run-r5d1-event-lineage-tests.ts");
-  assert.match(pf4, /PF4 areas congeladas com diff vazio desde 73f2f0b/, "o PF4 sumiu ou mudou de nome");
-  for (const p of PF4_PATHS) {
-    assert.ok(pf4.includes(`"${p}"`), `o PF4 perdeu o caminho protegido ${p}`);
+interface GateCongelado {
+  readonly arquivo: string;
+  readonly base: string;
+  readonly caminhos: readonly string[];
+}
+
+/** Extrai baseline e pathspec do codigo do gate, sem executa-lo. */
+function lerGate(arquivo: string): GateCongelado {
+  // R9 do gate de evidencia: comentario nao e codigo. Os pathspecs sao lidos de
+  // uma fonte SEM comentarios — um caminho citado dentro de `//` ja entrou por
+  // engano em varredura estatica nesta base antes.
+  const fonte = ler(`src/platform/${arquivo}`)
+    .split("\n")
+    .map((l) => l.replace(/(^|\s)\/\/.*$/, "$1"))
+    .join("\n");
+  const chamada =
+    /"diff",\s*"--name-only",\s*([A-Z_]+|"[0-9a-f]{7}"),\s*FIM_HISTORICO,\s*"--",([\s\S]*?)\]/.exec(
+      fonte,
+    );
+  assert.ok(chamada, `${arquivo}: nao achei a chamada de diff em forma FECHADA`);
+
+  /** Resolve `NOME` para o literal declarado com `const NOME = "..."`. */
+  const literalDe = (nome: string, padrao: string): RegExpExecArray => {
+    const r = new RegExp(`const ${nome}\\s*=\\s*${padrao}`).exec(fonte);
+    assert.ok(r, `${arquivo}: constante ${nome} sem declaracao`);
+    return r;
+  };
+
+  let base = chamada[1]!;
+  base = base.startsWith('"')
+    ? base.slice(1, -1)
+    : literalDe(base, '"([0-9a-f]{7,40})"')[1]!;
+
+  // Pathspec inline, ou espalhado de uma constante (`...CONGELADOS`).
+  let bruto = chamada[2]!;
+  const espalha = /\.\.\.([A-Z_]+)/.exec(bruto);
+  if (espalha) bruto = literalDe(espalha[1]!, "\\[([\\s\\S]*?)\\]")[1]!;
+  const caminhos = [...bruto.matchAll(/"([^"]+)"/g)].map((m) => m[1]!);
+  assert.ok(caminhos.length > 0, `${arquivo}: pathspec vazio`);
+  return { arquivo, base, caminhos };
+}
+
+const GATES = GATES_CONGELAMENTO.map(lerGate);
+
+teste("C1 os dez gates existem e usam INTERVALO FECHADO", () => {
+  assert.equal(GATES.length, 10, "o inventario de gates de congelamento mudou de tamanho");
+  for (const g of GATES) {
+    const fonte = ler(`src/platform/${g.arquivo}`);
+    assert.ok(
+      fonte.includes(`const FIM_HISTORICO = "${M1_BASELINE}"`),
+      `${g.arquivo}: o fim historico nao e o baseline de M1`,
+    );
+    // A forma ABERTA nao pode voltar: `"<sha>", "--"` sem o fim no meio.
+    assert.doesNotMatch(
+      fonte,
+      /"--name-only",\s*(?:[A-Z_]+|"[0-9a-f]{7}"),\s*"--"/,
+      `${g.arquivo}: voltou a forma aberta, que congela o futuro`,
+    );
   }
 });
 
-teste("C2 PF4-H: o intervalo historico 73f2f0b..baseline M1 continua sem diff", () => {
-  // Esta e a afirmacao HISTORICA, e ela e fechada nos dois lados. Ela nao fala
-  // sobre o futuro, e por isso trabalho autorizado depois do baseline nao pode
-  // faze-la mentir sobre o passado.
-  const saida = git("diff", "--name-only", PF4_BASE, M1_BASELINE, "--", ...PF4_PATHS);
-  assert.equal(saida, "", `o intervalo historico do PF4 foi adulterado:\n${saida}`);
+teste("C2 cada baseline continua sendo o original, e ancestral do fim", () => {
+  // D-M1A1-10: preservar cada baseline. Reancorar historia e proibido.
+  const ORIGINAIS: Readonly<Record<string, string>> = {
+    "run-r5a-temporal-tests.ts": "4365c61",
+    "run-r5b-invariant-tests.ts": "bd1ad55",
+    "run-r5c-translation-tests.ts": "ad3b1bc",
+    "run-r5d0-readiness-tests.ts": "27ccfd2",
+    "run-r5d0-confidence-tests.ts": "b100943",
+    "run-r5d0-lineage-tests.ts": "ced38da",
+    "run-r5d0-storage-tests.ts": "2af52e1",
+    "run-r5d1-event-lineage-tests.ts": "73f2f0b",
+    "run-r5d2-producer-qualification-tests.ts": "f1fe480",
+    "run-r5d3-shadow-path-tests.ts": "1a35ebe",
+  };
+  for (const g of GATES) {
+    assert.equal(g.base, ORIGINAIS[g.arquivo], `${g.arquivo}: o baseline historico foi reancorado`);
+    // E precisa estar mesmo nesta linha da historia, antes do fim.
+    const merge = git("merge-base", "--is-ancestor", g.base, M1_BASELINE);
+    assert.equal(merge, "", `${g.arquivo}: ${g.base} nao e ancestral do fim certificado`);
+  }
 });
 
-teste("C3 PF4-H falha de verdade quando o intervalo historico e adulterado", () => {
-  // Controle antifalso-positivo: o mesmo comando, sobre um intervalo que
-  // SABIDAMENTE mexeu nos caminhos protegidos, precisa acusar. Sem isto, C2
-  // poderia estar verde por o pathspec nao casar com nada.
-  const saida = git("diff", "--name-only", "4365c61", M1_BASELINE, "--", ...PF4_PATHS);
-  assert.notEqual(saida, "", "o comando do PF4 nao acusa nem um intervalo que mudou os caminhos");
+teste("C3 o intervalo historico de cada gate continua com diff vazio", () => {
+  for (const g of GATES) {
+    const saida = git("diff", "--name-only", g.base, M1_BASELINE, "--", ...g.caminhos);
+    assert.equal(saida, "", `${g.arquivo}: o intervalo historico foi adulterado:\n${saida}`);
+  }
 });
 
-teste("C4 o envelope M1 declara baseline, caminhos e estado de aprovacao", () => {
+teste("C4 CONTROLE: cada gate acusa um intervalo sabidamente adulterado", () => {
+  // Remova a garantia e exija a falha. Se este teste ficar verde com o pathspec
+  // quebrado, o vazio de C3 nao prova nada.
+  for (const g of GATES) {
+    const saida = git("diff", "--name-only", RAIZ_HISTORICA, M1_BASELINE, "--", ...g.caminhos);
+    assert.notEqual(
+      saida,
+      "",
+      `${g.arquivo}: a asercao nao acusa nem um intervalo que mudou os caminhos`,
+    );
+  }
+});
+
+teste("C5 o envelope M1 declara baseline, caminhos e estado de aprovacao", () => {
   const e = ler(ENVELOPE);
   for (const campo of [
     "BASELINE",
@@ -264,11 +355,11 @@ teste("C4 o envelope M1 declara baseline, caminhos e estado de aprovacao", () =>
   assert.ok(e.includes(M1_BASELINE), "o envelope nao ancora no baseline real desta worktree");
 });
 
-teste("C5 PF4-E: mudanca posterior ao baseline so passa dentro do envelope", () => {
-  // A segunda metade do par. O que mudou DEPOIS do baseline nos caminhos
-  // protegidos precisa estar autorizado por caminho. Hoje o conjunto e vazio, e
-  // o teste continua valendo quando deixar de ser.
-  const mudou = git("diff", "--name-only", M1_BASELINE, "--", ...PF4_PATHS)
+teste("C6 a metade do FUTURO: mudanca pos-baseline so passa dentro do envelope", () => {
+  // A afirmacao que os gates deixaram de fazer, agora feita UMA vez e no lugar
+  // certo. Uniao de todos os caminhos protegidos, comparada com HEAD.
+  const todos = [...new Set(GATES.flatMap((g) => g.caminhos))];
+  const mudou = git("diff", "--name-only", M1_BASELINE, "--", ...todos)
     .split("\n")
     .filter((l) => l !== "");
   const envelope = ler(ENVELOPE);
@@ -276,38 +367,19 @@ teste("C5 PF4-E: mudanca posterior ao baseline so passa dentro do envelope", () 
   assert.deepEqual(
     foraDoEnvelope,
     [],
-    `caminho congelado mudou depois do baseline sem estar no envelope:\n${foraDoEnvelope.join("\n")}`,
+    `caminho protegido mudou depois do baseline sem estar no envelope:\n${foraDoEnvelope.join("\n")}`,
   );
 });
 
-teste("C6 os dez gates de congelamento estao inventariados com baseline e caminhos", () => {
-  // M1A tratou o PF4 como caso unico. Ele nao e: nove irmaos congelam os mesmos
-  // caminhos com outros baselines, e M1B esbarra em todos. Um inventario que
-  // esquece um deles e pior que nenhum.
+teste("C7 o envelope inventaria os dez gates com o baseline que eles usam", () => {
   const e = ler(ENVELOPE);
-  const gates: readonly [string, string][] = [
-    ["run-r5a-temporal-tests.ts", "4365c61"],
-    ["run-r5b-invariant-tests.ts", "bd1ad55"],
-    ["run-r5c-translation-tests.ts", "ad3b1bc"],
-    ["run-r5d0-readiness-tests.ts", "27ccfd2"],
-    ["run-r5d0-confidence-tests.ts", "b100943"],
-    ["run-r5d0-lineage-tests.ts", "ced38da"],
-    ["run-r5d0-storage-tests.ts", "2af52e1"],
-    ["run-r5d1-event-lineage-tests.ts", "73f2f0b"],
-    ["run-r5d2-producer-qualification-tests.ts", "f1fe480"],
-    ["run-r5d3-shadow-path-tests.ts", "1a35ebe"],
-  ];
-  for (const [arquivo, base] of gates) {
-    assert.ok(e.includes(arquivo), `o envelope nao inventaria o gate ${arquivo}`);
-    assert.ok(e.includes(base), `o envelope nao registra o baseline ${base}`);
-    // E o baseline precisa realmente estar no arquivo — inventario que copia
-    // numero errado e pior que inventario ausente.
-    const fonte = ler(`src/platform/${arquivo}`);
-    assert.ok(fonte.includes(base), `${arquivo} nao usa mais o baseline ${base}`);
+  for (const g of GATES) {
+    assert.ok(e.includes(g.arquivo), `o envelope nao inventaria o gate ${g.arquivo}`);
+    assert.ok(e.includes(g.base), `o envelope nao registra o baseline ${g.base}`);
   }
 });
 
-teste("C7 controle positivo: um envelope sem HUMAN_APPROVAL_STATE reprova", () => {
+teste("C8 controle positivo: um envelope sem HUMAN_APPROVAL_STATE reprova", () => {
   const falso = "BASELINE: x\nAUTHORIZED_PATHS: y\n";
   assert.equal(falso.includes("HUMAN_APPROVAL_STATE"), false);
 });

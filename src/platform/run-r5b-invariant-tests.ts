@@ -49,6 +49,25 @@ import {
   cenaFoco,
 } from "../product/demo/seed-home-demonstracao";
 
+/**
+ * FIM DO INTERVALO HISTORICO CERTIFICADO — M1A.1, decisao D-M1A1-10.
+ *
+ * O baseline do congelamento NAO mudou. O que entrou foi o SEGUNDO commit: sem
+ * ele, `git diff <base> -- <paths>` comparava com a arvore ATUAL — intervalo
+ * aberto a direita, que nunca fecha. A prova historica so continuava verde
+ * enquanto o futuro nao existisse. Medido em M1A.1: UMA linha autorizada em
+ * `home.css` deixava os DEZ gates de congelamento vermelhos de uma vez.
+ *
+ * Este e o ultimo commit em que a propriedade congelada foi verificada verde, e
+ * tambem o baseline de M1. Trabalho autorizado depois dele e governado por
+ * `docs/design/M1_VISUAL_CHANGE_ENVELOPE.md`, nao por esta asercao.
+ *
+ * Uma prova historica protege o passado. Ela nao congela o futuro autorizado.
+ * Controle antifalso-positivo: `run-m1-bridge-tests.ts`, familia C, que le os
+ * caminhos DESTE arquivo — os dois nao podem divergir em silencio.
+ */
+const FIM_HISTORICO = "f87a36dfd39c9989344f0fed6ebf8db5db1a8c35";
+
 const raiz = process.cwd();
 const ler = (p: string): string => readFileSync(join(raiz, p), "utf8");
 const sha = (s: string): string => createHash("sha256").update(s).digest("hex");
@@ -568,7 +587,7 @@ teste("VISUAL", "diff vazio nos ativos congelados desde bd1ad55", () => {
     "src/product/viewmodels/areas.ts",
     "docs/figma/",
   ];
-  const saida = execFileSync("git", ["diff", "--name-only", BASE, "--", ...CONGELADOS], {
+  const saida = execFileSync("git", ["diff", "--name-only", BASE, FIM_HISTORICO, "--", ...CONGELADOS], {
     cwd: raiz,
     encoding: "utf8",
   }).trim();

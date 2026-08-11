@@ -133,8 +133,23 @@ legítimas, e a escolha é de produto:
 2. introduzir atualização em vigor na Home — o que sai do escopo "camada visual" e
    precisa de decisão registrada.
 
-**Isto não é bloqueio de M1A.1.** É a condição que M1B precisa enxergar antes de
-prometer a cena inteira.
+### Decidido por César em 2026-08-11 — D-M1A1-12
+
+A Motion North Star **continua autoritativa**. Mas o produto **não pode simular
+causalidade operacional ao vivo** enquanto a Home ainda exigir recarga para
+materializar mudança de estado. Para M1B:
+
+- implementar **representação visual verdadeira** de estado;
+- implementar capacidade de transição **apenas** onde houver transição de estado
+  real, ou fixture/lab **explicitamente rotulado** como tal;
+- **não fabricar movimento operacional ao vivo**;
+- preservar **espera ≠ fluxo**;
+- **evidência permanece estática**;
+- **a verdade do runtime governa se há movimento** — não o desenho.
+
+Uma missão de runtime posterior pode entregar propagação de estado ao vivo de
+verdade. Até lá, a saída legítima é a opção 1 acima: expressão estática com as
+transições **declaradas** nas propriedades que mudariam.
 
 ---
 
