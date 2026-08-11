@@ -324,16 +324,24 @@ teste("C3 o intervalo historico de cada gate continua com diff vazio", () => {
   }
 });
 
-teste("C4 CONTROLE: cada gate acusa um intervalo sabidamente adulterado", () => {
+teste("C4 CONTROLE: cada CAMINHO de cada gate acusa um intervalo adulterado", () => {
   // Remova a garantia e exija a falha. Se este teste ficar verde com o pathspec
   // quebrado, o vazio de C3 nao prova nada.
+  //
+  // CAMINHO A CAMINHO, e nao o conjunto de uma vez. A primeira versao media o
+  // pathspec inteiro e ficou VERDE quando a mutacao M-S trocou UM caminho por
+  // `src/nao_existe_em_lugar_nenhum/`: os vizinhos bons sustentavam a saida nao
+  // vazia e escondiam o quebrado. Um typo em um caminho protegido e exatamente
+  // a forma silenciosa de um congelamento parar de proteger.
   for (const g of GATES) {
-    const saida = git("diff", "--name-only", RAIZ_HISTORICA, M1_BASELINE, "--", ...g.caminhos);
-    assert.notEqual(
-      saida,
-      "",
-      `${g.arquivo}: a asercao nao acusa nem um intervalo que mudou os caminhos`,
-    );
+    for (const c of g.caminhos) {
+      const saida = git("diff", "--name-only", RAIZ_HISTORICA, M1_BASELINE, "--", c);
+      assert.notEqual(
+        saida,
+        "",
+        `${g.arquivo}: o caminho protegido ${c} nao casa com nada nem no intervalo adulterado`,
+      );
+    }
   }
 });
 
@@ -497,12 +505,31 @@ teste("D4 M-F: o veredito de unidade vem da linhagem, nunca do rotulo visual", (
     /CARGA_UNIT_VERDICT\s*=\s*(PROVEN_ORDERS|PROVEN_ITEMS|PROVEN_WEIGHTED_LOAD|PROVEN_OTHER|CALIBRATED_DERIVED_VALUE|CALIBRATION_PENDING|UNKNOWN)/,
     "a sucessao nao emite veredito de unidade para carga_por_praca",
   );
-  // Fabricar a unidade a partir do rotulo do desenho e a mutacao M-F. O veredito
-  // so pode ser PROVEN_ITEMS se o projetor usar `quantidade`, e ele nao usa.
+  // D-M1A1-08: a unidade canonica, decidida por Cesar em 2026-08-11. A primeira
+  // versao desta guarda so olhava `CARGA_UNIT_VERDICT` e ficou verde quando a
+  // mutacao M-T trocou `CARGA_UNIT` — o campo que a decisao humana criou.
+  assert.match(
+    s,
+    /^CARGA_UNIT\s+= OPEN_OPERATIONAL_WORK_UNITS/m,
+    "D-M1A1-08: a unidade canonica deixou de ser OPEN_OPERATIONAL_WORK_UNITS",
+  );
+  assert.match(
+    s,
+    /^CARGA_GRANULARITY\s+= CALIBRATION_PENDING/m,
+    "D-M1A1-08: a granularidade deixou de estar pendente de calibracao",
+  );
+  // Fabricar a unidade a partir do rotulo do desenho e a mutacao M-F. Itens ou
+  // pedidos so podem ser afirmados se o projetor provar a equivalencia, e ele
+  // conta REGISTROS: `quantidade` entra no payload e sai da contagem.
   const projetor = ler("src/product/eventos/projetar-leitura.ts");
   const usaQuantidade = /abertos:\s*[^,\n]*quantidade/.test(projetor);
-  if (/CARGA_UNIT_VERDICT\s*=\s*PROVEN_ITEMS/.test(s)) {
-    assert.ok(usaQuantidade, "M-F: o canone afirma ITENS, e o projetor nao le `quantidade`");
+  for (const rotulo of ["PROVEN_ITEMS", "PROVEN_ORDERS"]) {
+    if (new RegExp(`CARGA_UNIT(_VERDICT)?\\s*=\\s*${rotulo}`).test(s)) {
+      assert.ok(
+        usaQuantidade,
+        `M-F/M-T: o canone afirma ${rotulo}, e o projetor nao prova a equivalencia`,
+      );
+    }
   }
 });
 
