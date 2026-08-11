@@ -526,16 +526,28 @@ teste("E1 M-J: skill marcada INSPECTED prova leitura inteira, nao frontmatter", 
   }
 });
 
-teste("E2 M-K: capacidade de escrita no Figma nao e inferida de rotulo de assento", () => {
+teste("E2 M-K: escrita no Figma so pode ser VERIFIED com probe executado", () => {
   const s = ler(SUCESSAO);
-  assert.match(
-    s,
-    /FIGMA_WRITE_CAPABILITY\s*=\s*(VERIFIED|NOT_EXPOSED|UNKNOWN|NOT_PROVEN)/,
-    "a matriz Figma nao declara a capacidade de escrita em termos verificaveis",
-  );
+  const m = /FIGMA_WRITE_CAPABILITY\s*=\s*(VERIFIED|NOT_EXPOSED|UNKNOWN|NOT_PROVEN)/.exec(s);
+  assert.ok(m, "a matriz Figma nao declara a capacidade de escrita em termos verificaveis");
+  // A mutacao M-K nao e escrever a palavra errada: e AFIRMAR capacidade sem ter
+  // medido. A primeira versao desta guarda aceitava `VERIFIED` como valor
+  // legitimo e ficou verde na mutacao — ela media vocabulario, nao evidencia.
+  if (m[1] === "VERIFIED") {
+    const probe = /CREATE_RESULT\s*=\s*(\S+)/.exec(s);
+    assert.ok(probe, "M-K: escrita declarada VERIFIED sem registro de probe");
+    assert.notEqual(
+      probe[1],
+      "NOT_RUN",
+      "M-K: escrita declarada VERIFIED com o probe registrado como NOT_RUN",
+    );
+    assert.match(s, /DELETE_RESULT\s*=\s*(?!NOT_RUN)\S+/, "M-K: probe sem prova de remocao");
+    assert.match(s, /RESIDUE_CHECK/, "M-K: probe sem verificacao de residuo");
+  }
+  // E o assento nunca e a base do veredito, em nenhuma direcao.
   assert.doesNotMatch(
     s,
-    /FIGMA_WRITE_CAPABILITY\s*=\s*(VERIFIED|NOT_PROVEN)\s*\(?por assento|seat implies/i,
+    /FIGMA_WRITE_CAPABILITY\s*=\s*\w+\s*\(?(por assento|pelo assento|seat implies)/i,
     "M-K: a capacidade de escrita foi inferida do assento",
   );
 });
@@ -583,8 +595,11 @@ teste("E4 M-H: existe exatamente UMA autoridade de movimento ativa", () => {
 teste("E5 M-I: porcentagem de demonstracao nao virou constante de runtime", () => {
   const g = ler(GRAMATICA);
   assert.ok(
-    g.includes("CALIBRATION_PENDING"),
-    "a gramatica nao marca a duracao absoluta como pendente de calibracao",
+    /^CALIBRATION_PENDING\s*=\s*\S+/m.test(g),
+    // A DECLARACAO, nao a palavra solta. A primeira versao aceitava a ocorrencia
+    // em qualquer lugar do texto e ficou verde quando a mutacao apagou justamente
+    // a linha que declara — havia outra mencao em prosa logo abaixo.
+    "a gramatica nao DECLARA a duracao absoluta como pendente de calibracao",
   );
   // E o codigo nao pode ter ganhado os numeros da demo.
   const css = ler("src/product/ui/tokens/organismo-tokens.css");
