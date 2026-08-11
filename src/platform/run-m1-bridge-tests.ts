@@ -27,11 +27,17 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 
 import { projetarLeitura, type LeituraProjetada } from "../product/eventos/projetar-leitura";
-import { VERSOES_SUPORTADAS, type EnvelopeOperacional } from "../product/eventos/catalogo-operacional";
+import { VERSOES_SUPORTADAS } from "../product/eventos/catalogo-operacional";
 import { AMBIENTES } from "../product/viewmodels/areas";
 import type { PracaId } from "../product/viewmodels/areas";
-import { sinaisDe, type LeituraOperacional } from "../product/viewmodels/sinais";
-import { homeVM } from "../product/viewmodels/home-vm";
+import type { LeituraOperacional } from "../product/viewmodels/sinais";
+import { homeVM, type OrigemDaLeitura } from "../product/viewmodels/home-vm";
+
+/** A home exige origem declarada. Fixture se identifica como fixture (I9). */
+const ORIGEM_DEMO: OrigemDaLeitura = {
+  tipo: "demonstracao",
+  motivo: "fixture da ponte M1A.1 — nenhuma fonte viva",
+};
 
 const raiz = process.cwd();
 const ler = (p: string): string => readFileSync(join(raiz, p), "utf8");
@@ -335,7 +341,7 @@ const env = (
     ingested_at: AGORA,
     correlation_id: `m1cor-${String(seq).padStart(4, "0")}`,
     payload,
-  } satisfies Partial<EnvelopeOperacional> as Record<string, unknown>;
+  };
 };
 
 /** Grava no ledger real e projeta — o mesmo caminho que o R5-D1 exercita. */
@@ -465,7 +471,7 @@ teste("D6 a cadeia sinal -> view model preserva a unidade sem inventar numero", 
       },
     ],
   };
-  const vm = homeVM(l, sinaisDe(l));
+  const vm = homeVM(l, ORIGEM_DEMO);
   const sushi = vm.ambientes.find((a) => a.id === "sushi");
   assert.ok(sushi, "o ambiente sushi sumiu do view model");
   const sub = sushi.subareas.find((x) => x.id === "enrolados");
@@ -486,7 +492,7 @@ teste("D7 sem baseline a carga NAO vira pressao — ausencia nunca vira zero", (
     chegadas_normais: null,
     fontes: [],
   };
-  const vm = homeVM(l, sinaisDe(l));
+  const vm = homeVM(l, ORIGEM_DEMO);
   const sub = vm.ambientes
     .find((a) => a.id === "sushi")
     ?.subareas.find((x) => x.id === "enrolados");
