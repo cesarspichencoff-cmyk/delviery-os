@@ -69,6 +69,22 @@ Prova executável nos dois sentidos: guardas `C2` (histórico limpo), `C3` (o me
 comando **acusa** um intervalo adulterado) e `C5` (mudança pós-baseline fora do
 envelope reprova) em `src/platform/run-m1-bridge-tests.ts`.
 
+### Medido, não estimado
+
+Uma linha autorizada acrescentada a `src/product/ui/surfaces/home.css`, commitada
+sobre o baseline, e cada gate executado isoladamente:
+
+| | Resultado |
+|---|---|
+| gates de congelamento vermelhos | **10 de 10** |
+| `PF4-H` (intervalo fechado `73f2f0b..f87a36d`) | **verde** |
+| `PF4-E` (envelope) | **verde** — `home.css` está em `AUTHORIZED_PATHS` |
+| após reverter | 10 de 10 verdes de novo |
+
+É a demonstração inteira em um experimento: o passado continua provado, a mudança
+autorizada continua autorizada, e o que quebrava era só a metade que a asserção
+nunca deveria ter afirmado.
+
 ---
 
 ## 3. Inventário dos dez gates de congelamento
