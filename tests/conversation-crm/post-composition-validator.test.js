@@ -7,10 +7,37 @@ const os = require('node:os');
 const path = require('node:path');
 const {
   buildResponsePlan,
+  mergeAuthorizedSurfaceText,
   validatePostComposition,
+  safeResponseAfterRejection,
   composeHumanizedResponse,
   NativeConversationRuntime
 } = require('../../src/conversation-crm/native');
+
+test('superfície autorizada elimina frase equivalente antes da composição', () => {
+  const text = mergeAuthorizedSurfaceText(
+    'Este é o cardápio: https://example.invalid/menu',
+    'Este é o cardápio: https://example.invalid/menu.',
+    'Posso ajudar a escolher.'
+  );
+  assert.equal((text.match(/Este é o cardápio/gu) || []).length, 1);
+  assert.equal((text.match(/https:\/\/example\.invalid\/menu/gu) || []).length, 1);
+  assert.match(text, /Posso ajudar a escolher/u);
+});
+
+test('validador detecta frase e link duplicados e fallback limpa a superfície', () => {
+  const plan = planFor({ authorized_text: 'Este é o cardápio: https://example.invalid/menu' });
+  const duplicated = 'Este é o cardápio: https://example.invalid/menu. Este é o cardápio: https://example.invalid/menu.';
+  const result = validatePostComposition({ text: duplicated, plan });
+  assert.equal(result.passed, false);
+  assert.ok(result.finding_codes.includes('DUPLICATE_SENTENCE'));
+  assert.ok(result.finding_codes.includes('DUPLICATE_LINK'));
+  const fallback = safeResponseAfterRejection({
+    plan: { ...plan, response_goal: 'inform', authorized_surface: { ...plan.authorized_surface, text: duplicated } }
+  });
+  assert.equal((fallback.match(/Este é o cardápio/gu) || []).length, 1);
+  assert.equal((fallback.match(/https:\/\/example\.invalid\/menu/gu) || []).length, 1);
+});
 
 function classification(overrides = {}) {
   return {

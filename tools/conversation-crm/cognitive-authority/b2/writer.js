@@ -108,11 +108,16 @@ function validateWriterText(text, plan) {
       return { accepted: false, reason: 'B2_WRITER_UNSUPPORTED_AVAILABILITY' };
     }
   }
-  if (UNAUTHORIZED_PRICE_PATTERN.test(value)) {
-    const authorizedPrice = (plan.approved_facts || []).some((fact) => fact.field === 'price' && value.includes(String(fact.value)))
-      || knowledgeValues(plan).some((item) => item.includes(value.match(UNAUTHORIZED_PRICE_PATTERN)?.[0] || ''))
-      || (plan.required_response_commitments || []).some((item) => item.kind === 'CONSTRAINT' && item.content.includes(value.match(UNAUTHORIZED_PRICE_PATTERN)?.[0] || ''));
-    if (!authorizedPrice) return { accepted: false, reason: 'B2_WRITER_UNSUPPORTED_PRICE' };
+  const priceTokens = [...value.matchAll(new RegExp(UNAUTHORIZED_PRICE_PATTERN.source, 'giu'))].map((match) => match[0]);
+  if (priceTokens.length) {
+    const authorizedPrices = [
+      ...(plan.approved_facts || []).filter((fact) => fact.field === 'price').map((fact) => String(fact.value)),
+      ...knowledgeValues(plan),
+      ...(plan.required_response_commitments || []).filter((item) => item.kind === 'CONSTRAINT').map((item) => String(item.content))
+    ];
+    if (priceTokens.some((token) => !authorizedPrices.some((authorized) => authorized.includes(token)))) {
+      return { accepted: false, reason: 'B2_WRITER_UNSUPPORTED_PRICE' };
+    }
   }
   if (plan.publication_outcome === 'EXPLICIT_LIMITATION' && UNEXECUTED_FUTURE_PROMISE_PATTERN.test(value)) {
     return { accepted: false, reason: 'B2_WRITER_UNEXECUTED_FUTURE_PROMISE' };

@@ -109,6 +109,79 @@ test('reformular a espera sem mudança de estado também não conta como progres
   assert.equal(second.reason, 'B2_NO_PROGRESS_WITHOUT_STATE_CHANGE');
 });
 
+test('mudança real de operação não é bloqueada como repetição de estado', async () => {
+  const pipeline = pipelineFor(plan());
+  const first = await pipeline.execute({
+    planner_packet: { current_message: 'Quero saber do combinado.' },
+    authority_context: {
+      operation_fingerprint: 'operation-combinado',
+      tool_results: {
+        CATALOG_SEARCH: {
+          status: 'completed', request_fingerprint: 'operation-combinado', result_fingerprint: 'operation-combinado',
+          knowledge: ['Ainda não há preço confirmado para o combinado.']
+        }
+      }
+    }
+  });
+  const second = await pipeline.execute({
+    planner_packet: { current_message: 'Quero saber do menu executivo.' },
+    authority_context: {
+      operation_fingerprint: 'operation-menu-executivo',
+      tool_results: {
+        CATALOG_SEARCH: {
+          status: 'completed', request_fingerprint: 'operation-menu-executivo', result_fingerprint: 'operation-menu-executivo',
+          knowledge: ['Ainda não há preço confirmado para o combinado.']
+        }
+      }
+    },
+    previous_publication: {
+      response: first.response,
+      progress_state_hash: first.progress_state_hash,
+      operation_fingerprint: first.response_plan.operation_fingerprint
+    }
+  });
+  assert.equal(first.accepted, true);
+  assert.equal(second.accepted, true);
+  assert.notEqual(first.progress_state_hash, second.progress_state_hash);
+});
+
+test('resultado factual ligado a outra consulta é removido antes da publicação', async () => {
+  const output = await pipelineFor(plan({
+    required_response_commitments: [{ kind: 'GOAL', content: 'preço do rodízio' }]
+  })).execute({
+    planner_packet: { current_message: 'Quanto custa o rodízio?' },
+    authority_context: {
+      operation_fingerprint: 'price:rodizio',
+      tool_results: {
+        CATALOG_SEARCH: {
+          status: 'completed',
+          request_fingerprint: 'price:itens-anteriores',
+          result_fingerprint: 'price:itens-anteriores',
+          knowledge: ['Salmão R$ 92,00, Hot Roll R$ 46,00 e Ebi R$ 80,00.']
+        }
+      }
+    }
+  });
+  assert.equal(output.accepted, true);
+  assert.equal(output.response_plan.publication_outcome, 'EXPLICIT_LIMITATION');
+  assert.equal(output.response_plan.fact_boundary_reason, 'STALE_FACT_RESULT_REUSE');
+  assert.equal(output.response_plan.approved_tool_result, null);
+  assert.doesNotMatch(output.response, /R\$\s*(?:92|46|80)/u);
+  assert.match(output.response, /rodízio/iu);
+});
+
+test('cada token de preço publicado precisa existir na autoridade', () => {
+  const approved = approvePlan(plan(), {
+    tool_results: {
+      CATALOG_SEARCH: { status: 'completed', knowledge: ['O combinado custa R$ 92,00.'] }
+    }
+  }).response_plan;
+  assert.equal(validateWriterText('O combinado custa R$ 92,00.', approved).accepted, true);
+  const mixed = validateWriterText('O combinado custa R$ 92,00 e o rodízio custa R$ 180,00.', approved);
+  assert.equal(mixed.accepted, false);
+  assert.equal(mixed.reason, 'B2_WRITER_UNSUPPORTED_PRICE');
+});
+
 test('pergunta específica necessária sobrevive até a publicação', async () => {
   const rawPlan = plan({
     conversational_move: 'CLARIFY',

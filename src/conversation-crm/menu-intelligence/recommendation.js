@@ -23,6 +23,35 @@ function itemMatchesRequestedCategory(item, requestedCategory) {
   return typeof rules[requestedCategory] === 'function' && rules[requestedCategory]();
 }
 
+function itemTemperatureSemantics(item) {
+  const category = normalizedCategory(item.category);
+  if (/^pratos? quentes?(?:\s|$)/u.test(category)) return 'hot';
+  return 'unknown';
+}
+
+function selectionSignals(request = {}, customer = {}) {
+  const signals = [];
+  if (request.requested_category) signals.push('requested_category');
+  if (request.preferred_ingredients?.length) signals.push('preferred_ingredient');
+  if (request.excluded_ingredients?.length) signals.push('excluded_ingredient');
+  if (request.flavor_profile) signals.push('flavor_profile');
+  if (request.texture_preferences?.length) signals.push('texture_preference');
+  if (request.raw_or_cooked) signals.push('raw_or_cooked');
+  if (request.temperature_preference) signals.push('temperature_preference');
+  if (request.torched === true) signals.push('torched');
+  if (request.fried === false) signals.push('not_fried');
+  if (request.cream_cheese === 'without') signals.push('without_cream_cheese');
+  if (request.number_of_people) signals.push('number_of_people');
+  if (request.price_range?.maximum_brl != null || request.price_range?.maximum != null) signals.push('maximum_price');
+  if (request.dietary_restrictions?.length) signals.push('dietary_restriction');
+  if (request.allergies?.length) signals.push('allergy');
+  if (request.occasion && !['delivery_choice', 'menu_discovery'].includes(request.occasion)) signals.push('occasion');
+  if (request.desired_experience && !['delivery_choice', 'menu_discovery'].includes(request.desired_experience)) signals.push('desired_experience');
+  if ([...(customer.confirmed_facts || []), ...(customer.inferred_facts || [])]
+    .some((fact) => fact?.field === 'preferred_item' && fact.value)) signals.push('customer_preference');
+  return [...new Set(signals)];
+}
+
 function allergenDecision(item, allergies = []) {
   const reasons = [];
   for (const allergen of allergies) {
@@ -97,6 +126,7 @@ function recommend(catalog, request = {}, customerContext = {}) {
     if (['unavailable', 'stale'].includes(item.availability.state)) return false;
     if (request.raw_or_cooked === 'raw' && item.preparation.raw !== true) return false;
     if (request.raw_or_cooked === 'cooked' && item.preparation.cooked !== true) return false;
+    if (request.temperature_preference === 'not_hot' && itemTemperatureSemantics(item) === 'hot') return false;
     if (request.torched === true && item.preparation.torched !== true) return false;
     if (request.fried === false && item.preparation.fried === true) return false;
     if (request.cream_cheese === 'without' && item.preparation.cream_cheese === true) return false;
@@ -121,15 +151,24 @@ function recommend(catalog, request = {}, customerContext = {}) {
       warnings: [
         ...(item.availability.state === 'unknown' ? ['availability_unconfirmed'] : []),
         ...(request.fried === false && item.preparation.fried === null ? ['frying_status_unknown'] : []),
-        ...(request.cream_cheese === 'without' && item.preparation.cream_cheese === null ? ['cream_cheese_status_unknown'] : [])
-        , ...(request.flavor_profile && !item.flavor_profile.includes(request.flavor_profile) ? ['flavor_profile_unconfirmed'] : [])
+        ...(request.cream_cheese === 'without' && item.preparation.cream_cheese === null ? ['cream_cheese_status_unknown'] : []),
+        ...(request.temperature_preference === 'not_hot' && itemTemperatureSemantics(item) === 'unknown' ? ['temperature_status_unknown'] : []),
+        ...(request.flavor_profile && !item.flavor_profile.includes(request.flavor_profile) ? ['flavor_profile_unconfirmed'] : [])
       ]
     };
   }).sort((left, right) => right.score - left.score || left.item_id.localeCompare(right.item_id));
 
+  const rankingSignals = selectionSignals(request, customerContext);
+  const needsPreference = candidates.length > 0 && rankingSignals.length === 0;
+  const selectionLimit = 3;
+  const selected = needsPreference ? [] : candidates.slice(0, selectionLimit);
+
   return cloneFrozen({
     schema_version: 'deliveryos-recommendation-result-v1',
-    status: candidates.length ? 'ready' : 'no_safe_candidate',
+    status: needsPreference ? 'needs_preference' : (candidates.length ? 'ready' : 'no_safe_candidate'),
+    ranking_status: needsPreference ? 'insufficient_customer_signal' : (candidates.length ? 'ranked_by_customer_signal' : 'not_applicable'),
+    ranking_signals: rankingSignals,
+    selection_limit: needsPreference ? 0 : selectionLimit,
     channel: request.channel,
     unit_id: request.unit_id,
     constraints_applied: [
@@ -139,16 +178,19 @@ function recommend(catalog, request = {}, customerContext = {}) {
       ...(request.fried === false ? ['preparation:fried:false'] : []),
       ...(request.cream_cheese === 'without' ? ['preparation:cream_cheese:false'] : []),
       ...(request.torched === true ? ['preparation:torched:true'] : []),
+      ...(request.temperature_preference === 'not_hot' ? ['temperature:exclude_confirmed_hot'] : []),
       ...(request.preferred_ingredients || []).map((item) => `preferred_ingredient:${item}`),
       ...(request.occasion ? [`occasion:${request.occasion}`] : []),
       ...(request.desired_experience ? [`desired_experience:${request.desired_experience}`] : []),
       ...(request.requested_category ? [`requested_category:${request.requested_category}`] : [])
     ],
-    candidates: candidates.slice(0, 3),
-    unknowns: candidates.length
-      ? [...new Set(candidates.flatMap((item) => item.warnings).filter((warning) => warning !== 'availability_unconfirmed'))]
-      : ['safe_candidate_not_found'],
-    explanation: candidates.slice(0, 3).map((item) => ({
+    candidates: selected,
+    unknowns: needsPreference
+      ? ['recommendation_preference_missing']
+      : (candidates.length
+        ? [...new Set(selected.flatMap((item) => item.warnings).filter((warning) => warning !== 'availability_unconfirmed'))]
+        : ['safe_candidate_not_found']),
+    explanation: selected.map((item) => ({
       item_id: item.item_id,
       reasons: item.reasons.length ? item.reasons : ['channel_unit_availability_match']
     }))
@@ -162,4 +204,13 @@ function approvedPairings(catalog, itemId, input = {}) {
   )));
 }
 
-module.exports = { normalizedCategory, itemMatchesRequestedCategory, allergenDecision, scoreCandidate, recommend, approvedPairings };
+module.exports = {
+  normalizedCategory,
+  itemMatchesRequestedCategory,
+  itemTemperatureSemantics,
+  selectionSignals,
+  allergenDecision,
+  scoreCandidate,
+  recommend,
+  approvedPairings
+};

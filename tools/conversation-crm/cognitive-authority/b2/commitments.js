@@ -152,6 +152,8 @@ function progressStateHash(responsePlan) {
     tool_requirement: responsePlan.tool_requirement,
     approved_facts: responsePlan.approved_facts,
     approved_tool_result: responsePlan.approved_tool_result,
+    operation_fingerprint: responsePlan.operation_fingerprint,
+    fact_boundary_reason: responsePlan.fact_boundary_reason,
     required_question: responsePlan.required_question,
     required_response_commitments: responsePlan.required_response_commitments,
     next_best_step: responsePlan.next_best_step,

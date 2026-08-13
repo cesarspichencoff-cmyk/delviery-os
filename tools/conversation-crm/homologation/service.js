@@ -2,7 +2,13 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
-const { NativeConversationRuntime } = require('../../../src/conversation-crm/native');
+const {
+  NativeConversationRuntime,
+  detectPublicTopic,
+  intentForPublicTopic,
+  loadRuntimeCatalogs,
+  publicInformationResponse
+} = require('../../../src/conversation-crm/native');
 const { loadHomologationData, publicBlindCase, publicReviewCase, sha256 } = require('./data');
 const { FeedbackStore } = require('./feedback-store');
 const { exportReview } = require('./exporter');
@@ -22,6 +28,86 @@ function publicationTopicDrift(writerText, deterministicText, pattern) {
   )).map(([topic]) => topic);
   if (/\bmarketplace\b/u.test(writer) && !/\bmarketplace\b/u.test(deterministic)) drift.push('marketplace');
   return ['greeting', 'chitchat', 'repeat'].includes(pattern) ? [...new Set(drift)] : [];
+}
+
+function publicSurface(value) {
+  const text = String(value || '').trim();
+  return Object.freeze({
+    text,
+    links: Object.freeze([...new Set([...text.matchAll(/https?:\/\/[^\s)\]}>,]+/giu)]
+      .map((match) => match[0].replace(/[.!?]+$/u, '')))]),
+    numbers: Object.freeze([...new Set([...text.replace(/https?:\/\/\S+/giu, ' ').matchAll(/(?:R\$\s*)?\d+(?:[.,]\d+)?/giu)]
+      .map((match) => match[0].replace(/\s+/gu, ' ').trim()))])
+  });
+}
+
+function structuredAuthorityFromContexts(message, productContexts, catalogs) {
+  const detectedTopic = detectPublicTopic(message);
+  const state = productContexts.conversation_state || {};
+  const topic = detectedTopic === 'institutional_menu' && state.channel === 'dining_room'
+    ? 'dining_room_menu'
+    : (detectedTopic === 'institutional_menu' && state.channel === 'own_delivery'
+      ? 'delivery_menu'
+      : detectedTopic);
+  const intent = intentForPublicTopic(topic);
+  const guidance = productContexts.conversation_guidance || null;
+  const catalogAnswer = topic && !(topic === 'institutional_menu' && state.channel === 'ifood')
+    ? publicInformationResponse({
+        topic,
+        content: message,
+        publicInfo: catalogs.publicInfo,
+        fieldsMissing: [],
+        intentId: intent
+      })
+    : null;
+  const guidedAnswers = Array.isArray(guidance?.direct_answers)
+    ? guidance.direct_answers.map(String).map((value) => value.trim()).filter(Boolean)
+    : [];
+  const knowledge = catalogAnswer ? [catalogAnswer] : guidedAnswers;
+  const surface = publicSurface(knowledge.join(' '));
+  const hospitality = productContexts.hospitality_context || {};
+  const menu = productContexts.menu_context || {};
+  const sourceIds = [...new Set([
+    ...(catalogAnswer ? ['TATA_OPERATIONAL_PUBLIC_INFO_V1'] : []),
+    guidance?.knowledge_source,
+    ...(Array.isArray(menu.sources) ? menu.sources : []),
+    ...(Array.isArray(productContexts.source_summary?.menu) ? productContexts.source_summary.menu : [])
+  ].filter(Boolean).map(String))];
+  const queryFilter = Object.freeze({
+    public_topic: topic,
+    intent,
+    channel: state.channel || menu.channel || hospitality.channel || null,
+    unit_id: state.unit_id || menu.unit_id || hospitality.unit_id || null,
+    active_goal: state.turn_analysis?.active_goal || null,
+    requested_category: state.turn_analysis?.requested_category || state.preferences?.requested_category || null,
+    number_of_people: hospitality.number_of_people ?? null,
+    budget: hospitality.budget ?? null,
+    preparation_preferences: Object.freeze([...(hospitality.preparation_preferences || [])]),
+    preferred_ingredients: Object.freeze([...(hospitality.preferred_ingredients || [])]),
+    excluded_ingredients: Object.freeze([...(hospitality.excluded_ingredients || [])]),
+    dietary_restrictions: Object.freeze([...(hospitality.dietary_restrictions || [])]),
+    allergies: Object.freeze([...(hospitality.allergies || [])]),
+    candidate_item_ids: Object.freeze([...(menu.items || []).map((item) => item.item_id).filter(Boolean)])
+  });
+  return Object.freeze({
+    schema_version: 'deliveryos-product-structured-authority-v1',
+    status: knowledge.length ? 'completed' : (guidance?.question ? 'needs_clarification' : 'unknown'),
+    topic,
+    intent,
+    source_ids: Object.freeze(sourceIds),
+    source_classification: catalogAnswer ? catalogs.publicInfo.classification : null,
+    catalog_version: catalogAnswer ? catalogs.publicInfo.version : null,
+    catalog_hash: catalogAnswer ? catalogs.hashes.TATA_OPERATIONAL_PUBLIC_INFO_V1 : null,
+    query_filter: queryFilter,
+    facts: Object.freeze([]),
+    knowledge: Object.freeze(knowledge),
+    authorized_links: surface.links,
+    authorized_numbers: surface.numbers,
+    required_question: typeof guidance?.question === 'string' ? guidance.question : null,
+    candidates_found: Object.freeze([...(guidance?.candidates_found || [])]),
+    unknowns: Object.freeze([...(menu.unknowns || [])]),
+    result_hash: sha256(JSON.stringify({ topic, intent, sourceIds, queryFilter, knowledge }))
+  });
 }
 
 function asPublicTechnical(item, field = 'technical_refined') {
@@ -188,6 +274,83 @@ class HomologationService {
             }))
           }
         : undefined
+    };
+  }
+
+  productExecutionStructured(input) {
+    const request = typeof input === 'string' ? { message: input } : (input || {});
+    const value = String(request.message || '').trim();
+    if (!value) throw Object.assign(new Error('message_required'), { code: 'MESSAGE_REQUIRED' });
+    if (value.length > 2000) throw Object.assign(new Error('message_too_long'), { code: 'MESSAGE_TOO_LONG' });
+    const next = this.store.nextChatTurn();
+    const session = String(next.session).padStart(4, '0');
+    const turn = String(next.turn).padStart(4, '0');
+    const messageId = `SIM-HOMO-${session}-${turn}`;
+    const conversationId = `SIM-CONV-HOMO-${session}`;
+    const businessChannel = ['dining_room', 'ifood', 'own_delivery'].includes(String(request.channel || ''))
+      ? String(request.channel)
+      : null;
+    const productContexts = this.customerMenu
+      ? this.customerMenu.contextForChat({
+          conversation_id: conversationId,
+          message: value,
+          customer_id: request.customer_id || null,
+          channel: businessChannel,
+          unit_id: businessChannel
+            ? (request.unit_id || this.customerMenu.defaultUnitForChannel?.(businessChannel) || null)
+            : null,
+          allergies: Array.isArray(request.allergies) ? request.allergies : []
+        })
+      : {};
+    const catalogs = loadRuntimeCatalogs();
+    const structuredAuthority = structuredAuthorityFromContexts(value, productContexts, catalogs);
+    const state = productContexts.conversation_state || {};
+    return {
+      result: {
+        schema_version: 'deliveryos-product-structured-execution-v1',
+        synthetic: true,
+        conversation_id: conversationId,
+        message_id: messageId,
+        input_content_hash: sha256(value),
+        structured_authority: structuredAuthority,
+        product_contexts: productContexts,
+        native_response_composer_executed: false,
+        external_system_accessed: false,
+        real_driver_used: false
+      },
+      publicResult: {
+        ok: true,
+        turn: {
+          review_id: next.review_id,
+          customer: value,
+          response: null,
+          response_hash: null,
+          diagnostic: {
+            endpoint: '/api/product/turn',
+            runtime: 'structured_product_context',
+            intent: structuredAuthority.intent,
+            pattern: null,
+            semantic_transition: state.semantic_transition || null,
+            user_repair_signal: state.user_repair_signal === true,
+            negative_feedback_signal: state.negative_feedback_signal === true,
+            journey: null,
+            journey_state: null,
+            pending_question: state.pending_question || null,
+            channel: state.channel || structuredAuthority.query_filter.channel || 'unknown',
+            unit_id: state.unit_id || structuredAuthority.query_filter.unit_id || null,
+            knowledge_sources: [...structuredAuthority.source_ids],
+            candidates_found: [...structuredAuthority.candidates_found],
+            preferences: state.preferences || null,
+            repetition_detected: state.repetition_detected === true,
+            repetition_streak: state.repetition_streak || 0,
+            facts_added: state.facts_added || [],
+            turn_analysis: state.turn_analysis || null,
+            hospitality_context: productContexts.hospitality_context || null,
+            source_of_final_text: null,
+            native_response_composer_executed: false
+          }
+        }
+      }
     };
   }
 
@@ -388,4 +551,12 @@ class HomologationService {
   }
 }
 
-module.exports = { HomologationService, asPublicTechnical, average, summarize, publicationTopicDrift };
+module.exports = {
+  HomologationService,
+  asPublicTechnical,
+  average,
+  summarize,
+  publicationTopicDrift,
+  publicSurface,
+  structuredAuthorityFromContexts
+};

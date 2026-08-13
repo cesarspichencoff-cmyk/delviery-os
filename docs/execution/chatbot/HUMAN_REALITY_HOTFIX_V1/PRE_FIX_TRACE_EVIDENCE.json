@@ -1,0 +1,1337 @@
+{
+  "schema_version": "deliveryos-human-reality-trace-capture-v1",
+  "label": "PRE_FIX_OBSERVED_FAILURE",
+  "source": {
+    "base_url": "http://127.0.0.1:4179",
+    "customer_surface": "http://127.0.0.1:4179/customer",
+    "trace_route": "http://127.0.0.1:4179/trace/<turn_id>",
+    "git_branch": "fix/b2-human-reality-hotfix",
+    "git_head": "313c08fd699a9091e8a47f4796e2c63e63575107",
+    "working_tree_clean": false,
+    "health": {
+      "ok": true,
+      "mode": "conversation_native_simulated_v1",
+      "synthetic": true,
+      "seed": "TATA-SIM-V1",
+      "clock": "2026-07-01T15:00:00.000Z",
+      "real_drivers": false
+    }
+  },
+  "turn_count": 8,
+  "turn_ids": [
+    "B2-TURN-0001",
+    "B2-TURN-0002",
+    "B2-TURN-0003",
+    "B2-TURN-0004",
+    "B2-TURN-0005",
+    "B2-TURN-0006",
+    "B2-TURN-0007",
+    "B2-TURN-0008"
+  ],
+  "trace_hashes": {
+    "B2-TURN-0001": "4130bfa13891d93503597aedbc4752e8df3c3f6eb7cd3ddd45d12a2db57afefe",
+    "B2-TURN-0002": "bd3bd1a2cef79633a934f4967cc5cc102cd50cb200999cb377d46f7c7d1ced63",
+    "B2-TURN-0003": "cf83d8b65fbc4b7cd19d7b9dfeac27c4c8c7bcacbdd0f0c8737c3d7c5e1b5764",
+    "B2-TURN-0004": "48df03a306398bb023f4561d9054fb489ab2d2b29f4dea049003c42f6ce4f41f",
+    "B2-TURN-0005": "7c021871c98bd28dff152330baba935dd72016962d4ad93b522236824123c5c3",
+    "B2-TURN-0006": "c5a1f0aabeabe3bba4ccd9b943ba9245dd535ec96b748b7a842090daf50784a8",
+    "B2-TURN-0007": "5353fd84d6d12307fcbdd7d55cf96fa6687733fe3ff2d7aebc946c6a46e8acd2",
+    "B2-TURN-0008": "79b3e377f2df884cd2a5ec0db8d4e1025692d5e2b85961bab66c7f8b999e4e86"
+  },
+  "traces": [
+    {
+      "schema_version": "deliveryos-b2-truth-trace-v1",
+      "turn_id": "B2-TURN-0001",
+      "created_at": "2026-08-13T19:33:11.958Z",
+      "mode": "LOCAL_SHADOW_PREVIEW",
+      "gate": {
+        "FINANCIAL_MODE": "ZERO_EXTERNAL_COST",
+        "MAX_EXTERNAL_SPEND_BRL": 0,
+        "EXTERNAL_ACTION_ALLOWED": false,
+        "CHANNEL_AUTHORIZED": true,
+        "COST_AUTHORIZED": true,
+        "SHADOW_MODE": true,
+        "LOCAL_PREVIEW_ALLOWED": true,
+        "EXTERNAL_PUBLICATION_ALLOWED": false,
+        "reasons": []
+      },
+      "first_divergence": null,
+      "steps": [
+        {
+          "id": "USER",
+          "label": "USER",
+          "status": "observed",
+          "detail": "Preciso fazer uma reserva"
+        },
+        {
+          "id": "UNDERSTANDING",
+          "label": "UNDERSTANDING",
+          "status": "completed",
+          "detail": "consultar ou iniciar uma reserva"
+        },
+        {
+          "id": "REQUIRED_COMMITMENTS",
+          "label": "REQUIRED COMMITMENTS",
+          "status": "none",
+          "detail": []
+        },
+        {
+          "id": "CAPABILITY_FACT_NEED",
+          "label": "CAPABILITY / FACT NEED",
+          "status": "evaluated",
+          "detail": {
+            "tool_requirement": "OTHER_ALLOWED_TOOL",
+            "authorized_fact_count": 0,
+            "authorized_knowledge_count": 1
+          }
+        },
+        {
+          "id": "AUTHORITY_RESULT",
+          "label": "AUTHORITY RESULT",
+          "status": "completed",
+          "detail": {
+            "status": "APPROVED",
+            "outcome": "AUTHORIZED_RESULT",
+            "evidence_hash": "39626f2e91696a6935510d07732f5831628afc937d70e8e3659e622b47f99720"
+          }
+        },
+        {
+          "id": "RESPONSE_PLAN",
+          "label": "RESPONSE PLAN",
+          "status": "completed",
+          "detail": {
+            "required_question": null,
+            "next_best_step": "responder somente com o resultado autorizado já obtido",
+            "progress_state_hash": "37f5711041ad806b3283196ef8ecb1461188e4ef5f0fbfce062402337b2c06b4"
+          }
+        },
+        {
+          "id": "WRITER_FALLBACK",
+          "label": "WRITER / FALLBACK",
+          "status": "completed",
+          "detail": {
+            "source": "gemma_local_writer",
+            "limit": null
+          }
+        },
+        {
+          "id": "VALIDATOR",
+          "label": "VALIDATOR",
+          "status": "accepted",
+          "detail": "Commitments, authority and progress contract preserved."
+        },
+        {
+          "id": "PUBLISHED_RESPONSE",
+          "label": "PUBLISHED RESPONSE",
+          "status": "local_shadow_preview",
+          "detail": "Claro. Você pode consultar a reserva por este link: https://reservation.getin.app/MP9xnVkL. A tolerância é de 15 minutos. A confirmação depende do retorno do sistema. Se precisar, eu sigo com você por aqui."
+        }
+      ],
+      "stages": [
+        {
+          "id": "USER",
+          "label": "USER",
+          "status": "observed",
+          "detail": "Preciso fazer uma reserva"
+        },
+        {
+          "id": "UNDERSTANDING",
+          "label": "UNDERSTANDING",
+          "status": "completed",
+          "detail": "consultar ou iniciar uma reserva"
+        },
+        {
+          "id": "REQUIRED_COMMITMENTS",
+          "label": "REQUIRED COMMITMENTS",
+          "status": "none",
+          "detail": []
+        },
+        {
+          "id": "CAPABILITY_FACT_NEED",
+          "label": "CAPABILITY / FACT NEED",
+          "status": "evaluated",
+          "detail": {
+            "tool_requirement": "OTHER_ALLOWED_TOOL",
+            "authorized_fact_count": 0,
+            "authorized_knowledge_count": 1
+          }
+        },
+        {
+          "id": "AUTHORITY_RESULT",
+          "label": "AUTHORITY RESULT",
+          "status": "completed",
+          "detail": {
+            "status": "APPROVED",
+            "outcome": "AUTHORIZED_RESULT",
+            "evidence_hash": "39626f2e91696a6935510d07732f5831628afc937d70e8e3659e622b47f99720"
+          }
+        },
+        {
+          "id": "RESPONSE_PLAN",
+          "label": "RESPONSE PLAN",
+          "status": "completed",
+          "detail": {
+            "required_question": null,
+            "next_best_step": "responder somente com o resultado autorizado já obtido",
+            "progress_state_hash": "37f5711041ad806b3283196ef8ecb1461188e4ef5f0fbfce062402337b2c06b4"
+          }
+        },
+        {
+          "id": "WRITER_FALLBACK",
+          "label": "WRITER / FALLBACK",
+          "status": "completed",
+          "detail": {
+            "source": "gemma_local_writer",
+            "limit": null
+          }
+        },
+        {
+          "id": "VALIDATOR",
+          "label": "VALIDATOR",
+          "status": "accepted",
+          "detail": "Commitments, authority and progress contract preserved."
+        },
+        {
+          "id": "PUBLISHED_RESPONSE",
+          "label": "PUBLISHED RESPONSE",
+          "status": "local_shadow_preview",
+          "detail": "Claro. Você pode consultar a reserva por este link: https://reservation.getin.app/MP9xnVkL. A tolerância é de 15 minutos. A confirmação depende do retorno do sistema. Se precisar, eu sigo com você por aqui."
+        }
+      ],
+      "trace_hash": "4130bfa13891d93503597aedbc4752e8df3c3f6eb7cd3ddd45d12a2db57afefe"
+    },
+    {
+      "schema_version": "deliveryos-b2-truth-trace-v1",
+      "turn_id": "B2-TURN-0002",
+      "created_at": "2026-08-13T19:33:42.747Z",
+      "mode": "LOCAL_SHADOW_PREVIEW",
+      "gate": {
+        "FINANCIAL_MODE": "ZERO_EXTERNAL_COST",
+        "MAX_EXTERNAL_SPEND_BRL": 0,
+        "EXTERNAL_ACTION_ALLOWED": false,
+        "CHANNEL_AUTHORIZED": true,
+        "COST_AUTHORIZED": true,
+        "SHADOW_MODE": true,
+        "LOCAL_PREVIEW_ALLOWED": true,
+        "EXTERNAL_PUBLICATION_ALLOWED": false,
+        "reasons": []
+      },
+      "first_divergence": null,
+      "steps": [
+        {
+          "id": "USER",
+          "label": "USER",
+          "status": "observed",
+          "detail": "Estou com fome"
+        },
+        {
+          "id": "UNDERSTANDING",
+          "label": "UNDERSTANDING",
+          "status": "completed",
+          "detail": "esclarecer a necessidade principal"
+        },
+        {
+          "id": "REQUIRED_COMMITMENTS",
+          "label": "REQUIRED COMMITMENTS",
+          "status": "none",
+          "detail": []
+        },
+        {
+          "id": "CAPABILITY_FACT_NEED",
+          "label": "CAPABILITY / FACT NEED",
+          "status": "evaluated",
+          "detail": {
+            "tool_requirement": "OTHER_ALLOWED_TOOL",
+            "authorized_fact_count": 0,
+            "authorized_knowledge_count": 1
+          }
+        },
+        {
+          "id": "AUTHORITY_RESULT",
+          "label": "AUTHORITY RESULT",
+          "status": "completed",
+          "detail": {
+            "status": "NEEDS_CLARIFICATION",
+            "outcome": "CONCRETE_NEXT_STEP",
+            "evidence_hash": "242bccb21a75bf94307587a7fe6189cbac9137a7458d4eea2cc80f1655127449"
+          }
+        },
+        {
+          "id": "RESPONSE_PLAN",
+          "label": "RESPONSE PLAN",
+          "status": "completed",
+          "detail": {
+            "required_question": "Você pode me dizer se precisa de ajuda com o restaurante, uma reserva ou um pedido?",
+            "next_best_step": "pedir Você pode me dizer se precisa de ajuda com o restaurante, uma reserva ou um pedido",
+            "progress_state_hash": "90c481e09744857cf163d89b26961ebc347d0fdaec98b709fd2936991b7d99fb"
+          }
+        },
+        {
+          "id": "WRITER_FALLBACK",
+          "label": "WRITER / FALLBACK",
+          "status": "completed",
+          "detail": {
+            "source": "gemma_local_writer",
+            "limit": null
+          }
+        },
+        {
+          "id": "VALIDATOR",
+          "label": "VALIDATOR",
+          "status": "accepted",
+          "detail": "Commitments, authority and progress contract preserved."
+        },
+        {
+          "id": "PUBLISHED_RESPONSE",
+          "label": "PUBLISHED RESPONSE",
+          "status": "local_shadow_preview",
+          "detail": "Ainda não tenho uma confirmação segura para concluir esse ponto. Você pode me dizer se precisa de ajuda com o restaurante, uma reserva ou um pedido?"
+        }
+      ],
+      "stages": [
+        {
+          "id": "USER",
+          "label": "USER",
+          "status": "observed",
+          "detail": "Estou com fome"
+        },
+        {
+          "id": "UNDERSTANDING",
+          "label": "UNDERSTANDING",
+          "status": "completed",
+          "detail": "esclarecer a necessidade principal"
+        },
+        {
+          "id": "REQUIRED_COMMITMENTS",
+          "label": "REQUIRED COMMITMENTS",
+          "status": "none",
+          "detail": []
+        },
+        {
+          "id": "CAPABILITY_FACT_NEED",
+          "label": "CAPABILITY / FACT NEED",
+          "status": "evaluated",
+          "detail": {
+            "tool_requirement": "OTHER_ALLOWED_TOOL",
+            "authorized_fact_count": 0,
+            "authorized_knowledge_count": 1
+          }
+        },
+        {
+          "id": "AUTHORITY_RESULT",
+          "label": "AUTHORITY RESULT",
+          "status": "completed",
+          "detail": {
+            "status": "NEEDS_CLARIFICATION",
+            "outcome": "CONCRETE_NEXT_STEP",
+            "evidence_hash": "242bccb21a75bf94307587a7fe6189cbac9137a7458d4eea2cc80f1655127449"
+          }
+        },
+        {
+          "id": "RESPONSE_PLAN",
+          "label": "RESPONSE PLAN",
+          "status": "completed",
+          "detail": {
+            "required_question": "Você pode me dizer se precisa de ajuda com o restaurante, uma reserva ou um pedido?",
+            "next_best_step": "pedir Você pode me dizer se precisa de ajuda com o restaurante, uma reserva ou um pedido",
+            "progress_state_hash": "90c481e09744857cf163d89b26961ebc347d0fdaec98b709fd2936991b7d99fb"
+          }
+        },
+        {
+          "id": "WRITER_FALLBACK",
+          "label": "WRITER / FALLBACK",
+          "status": "completed",
+          "detail": {
+            "source": "gemma_local_writer",
+            "limit": null
+          }
+        },
+        {
+          "id": "VALIDATOR",
+          "label": "VALIDATOR",
+          "status": "accepted",
+          "detail": "Commitments, authority and progress contract preserved."
+        },
+        {
+          "id": "PUBLISHED_RESPONSE",
+          "label": "PUBLISHED RESPONSE",
+          "status": "local_shadow_preview",
+          "detail": "Ainda não tenho uma confirmação segura para concluir esse ponto. Você pode me dizer se precisa de ajuda com o restaurante, uma reserva ou um pedido?"
+        }
+      ],
+      "trace_hash": "bd3bd1a2cef79633a934f4967cc5cc102cd50cb200999cb377d46f7c7d1ced63"
+    },
+    {
+      "schema_version": "deliveryos-b2-truth-trace-v1",
+      "turn_id": "B2-TURN-0003",
+      "created_at": "2026-08-13T19:34:14.077Z",
+      "mode": "LOCAL_SHADOW_PREVIEW",
+      "gate": {
+        "FINANCIAL_MODE": "ZERO_EXTERNAL_COST",
+        "MAX_EXTERNAL_SPEND_BRL": 0,
+        "EXTERNAL_ACTION_ALLOWED": false,
+        "CHANNEL_AUTHORIZED": true,
+        "COST_AUTHORIZED": true,
+        "SHADOW_MODE": true,
+        "LOCAL_PREVIEW_ALLOWED": true,
+        "EXTERNAL_PUBLICATION_ALLOWED": false,
+        "reasons": []
+      },
+      "first_divergence": null,
+      "steps": [
+        {
+          "id": "USER",
+          "label": "USER",
+          "status": "observed",
+          "detail": "Restaurante, estou com fome, o que me sugere?\\"
+        },
+        {
+          "id": "UNDERSTANDING",
+          "label": "UNDERSTANDING",
+          "status": "completed",
+          "detail": "recommendation"
+        },
+        {
+          "id": "REQUIRED_COMMITMENTS",
+          "label": "REQUIRED COMMITMENTS",
+          "status": "none",
+          "detail": []
+        },
+        {
+          "id": "CAPABILITY_FACT_NEED",
+          "label": "CAPABILITY / FACT NEED",
+          "status": "evaluated",
+          "detail": {
+            "tool_requirement": "OTHER_ALLOWED_TOOL",
+            "authorized_fact_count": 0,
+            "authorized_knowledge_count": 1
+          }
+        },
+        {
+          "id": "AUTHORITY_RESULT",
+          "label": "AUTHORITY RESULT",
+          "status": "completed",
+          "detail": {
+            "status": "NEEDS_CLARIFICATION",
+            "outcome": "CONCRETE_NEXT_STEP",
+            "evidence_hash": "306fc3f9251b9f9d6a24144175a3c96961b0c4bff8737d4092c3ebe8b6a229b8"
+          }
+        },
+        {
+          "id": "RESPONSE_PLAN",
+          "label": "RESPONSE PLAN",
+          "status": "completed",
+          "detail": {
+            "required_question": "Você está escolhendo para o salão, para pedir pelo iFood ou pelo delivery próprio?",
+            "next_best_step": "pedir Você está escolhendo para o salão, para pedir pelo iFood ou pelo delivery próprio",
+            "progress_state_hash": "0a6f445a84abbc08a79e794d0eaa9b3530c540d205276557ff6f0b038a0c28af"
+          }
+        },
+        {
+          "id": "WRITER_FALLBACK",
+          "label": "WRITER / FALLBACK",
+          "status": "completed",
+          "detail": {
+            "source": "gemma_local_writer",
+            "limit": null
+          }
+        },
+        {
+          "id": "VALIDATOR",
+          "label": "VALIDATOR",
+          "status": "accepted",
+          "detail": "Commitments, authority and progress contract preserved."
+        },
+        {
+          "id": "PUBLISHED_RESPONSE",
+          "label": "PUBLISHED RESPONSE",
+          "status": "local_shadow_preview",
+          "detail": "Vamos escolher uma opção adequada. Você está escolhendo para o salão, para pedir pelo iFood ou pelo delivery próprio?"
+        }
+      ],
+      "stages": [
+        {
+          "id": "USER",
+          "label": "USER",
+          "status": "observed",
+          "detail": "Restaurante, estou com fome, o que me sugere?\\"
+        },
+        {
+          "id": "UNDERSTANDING",
+          "label": "UNDERSTANDING",
+          "status": "completed",
+          "detail": "recommendation"
+        },
+        {
+          "id": "REQUIRED_COMMITMENTS",
+          "label": "REQUIRED COMMITMENTS",
+          "status": "none",
+          "detail": []
+        },
+        {
+          "id": "CAPABILITY_FACT_NEED",
+          "label": "CAPABILITY / FACT NEED",
+          "status": "evaluated",
+          "detail": {
+            "tool_requirement": "OTHER_ALLOWED_TOOL",
+            "authorized_fact_count": 0,
+            "authorized_knowledge_count": 1
+          }
+        },
+        {
+          "id": "AUTHORITY_RESULT",
+          "label": "AUTHORITY RESULT",
+          "status": "completed",
+          "detail": {
+            "status": "NEEDS_CLARIFICATION",
+            "outcome": "CONCRETE_NEXT_STEP",
+            "evidence_hash": "306fc3f9251b9f9d6a24144175a3c96961b0c4bff8737d4092c3ebe8b6a229b8"
+          }
+        },
+        {
+          "id": "RESPONSE_PLAN",
+          "label": "RESPONSE PLAN",
+          "status": "completed",
+          "detail": {
+            "required_question": "Você está escolhendo para o salão, para pedir pelo iFood ou pelo delivery próprio?",
+            "next_best_step": "pedir Você está escolhendo para o salão, para pedir pelo iFood ou pelo delivery próprio",
+            "progress_state_hash": "0a6f445a84abbc08a79e794d0eaa9b3530c540d205276557ff6f0b038a0c28af"
+          }
+        },
+        {
+          "id": "WRITER_FALLBACK",
+          "label": "WRITER / FALLBACK",
+          "status": "completed",
+          "detail": {
+            "source": "gemma_local_writer",
+            "limit": null
+          }
+        },
+        {
+          "id": "VALIDATOR",
+          "label": "VALIDATOR",
+          "status": "accepted",
+          "detail": "Commitments, authority and progress contract preserved."
+        },
+        {
+          "id": "PUBLISHED_RESPONSE",
+          "label": "PUBLISHED RESPONSE",
+          "status": "local_shadow_preview",
+          "detail": "Vamos escolher uma opção adequada. Você está escolhendo para o salão, para pedir pelo iFood ou pelo delivery próprio?"
+        }
+      ],
+      "trace_hash": "cf83d8b65fbc4b7cd19d7b9dfeac27c4c8c7bcacbdd0f0c8737c3d7c5e1b5764"
+    },
+    {
+      "schema_version": "deliveryos-b2-truth-trace-v1",
+      "turn_id": "B2-TURN-0004",
+      "created_at": "2026-08-13T19:34:34.137Z",
+      "mode": "LOCAL_SHADOW_PREVIEW",
+      "gate": {
+        "FINANCIAL_MODE": "ZERO_EXTERNAL_COST",
+        "MAX_EXTERNAL_SPEND_BRL": 0,
+        "EXTERNAL_ACTION_ALLOWED": false,
+        "CHANNEL_AUTHORIZED": true,
+        "COST_AUTHORIZED": true,
+        "SHADOW_MODE": true,
+        "LOCAL_PREVIEW_ALLOWED": true,
+        "EXTERNAL_PUBLICATION_ALLOWED": false,
+        "reasons": []
+      },
+      "first_divergence": null,
+      "steps": [
+        {
+          "id": "USER",
+          "label": "USER",
+          "status": "observed",
+          "detail": "iFood"
+        },
+        {
+          "id": "UNDERSTANDING",
+          "label": "UNDERSTANDING",
+          "status": "completed",
+          "detail": "esclarecer a necessidade principal"
+        },
+        {
+          "id": "REQUIRED_COMMITMENTS",
+          "label": "REQUIRED COMMITMENTS",
+          "status": "none",
+          "detail": []
+        },
+        {
+          "id": "CAPABILITY_FACT_NEED",
+          "label": "CAPABILITY / FACT NEED",
+          "status": "evaluated",
+          "detail": {
+            "tool_requirement": "OTHER_ALLOWED_TOOL",
+            "authorized_fact_count": 0,
+            "authorized_knowledge_count": 1
+          }
+        },
+        {
+          "id": "AUTHORITY_RESULT",
+          "label": "AUTHORITY RESULT",
+          "status": "completed",
+          "detail": {
+            "status": "APPROVED",
+            "outcome": "AUTHORIZED_RESULT",
+            "evidence_hash": "5b9750e772e1368bf634f2d717cb6e2f336ca5f5a068f7cb4703fb408962ba82"
+          }
+        },
+        {
+          "id": "RESPONSE_PLAN",
+          "label": "RESPONSE PLAN",
+          "status": "completed",
+          "detail": {
+            "required_question": null,
+            "next_best_step": "responder somente com o resultado autorizado já obtido",
+            "progress_state_hash": "a9f9037847ef617a8867d523189e42a7d5ada605590eaaf052a8637ac135a9ff"
+          }
+        },
+        {
+          "id": "WRITER_FALLBACK",
+          "label": "WRITER / FALLBACK",
+          "status": "completed",
+          "detail": {
+            "source": "gemma_local_writer",
+            "limit": null
+          }
+        },
+        {
+          "id": "VALIDATOR",
+          "label": "VALIDATOR",
+          "status": "accepted",
+          "detail": "Commitments, authority and progress contract preserved."
+        },
+        {
+          "id": "PUBLISHED_RESPONSE",
+          "label": "PUBLISHED RESPONSE",
+          "status": "local_shadow_preview",
+          "detail": "No cardápio do iFood, você encontrou Salmão Grelhado, Hot Roll Tatá e Ebi Spicy."
+        }
+      ],
+      "stages": [
+        {
+          "id": "USER",
+          "label": "USER",
+          "status": "observed",
+          "detail": "iFood"
+        },
+        {
+          "id": "UNDERSTANDING",
+          "label": "UNDERSTANDING",
+          "status": "completed",
+          "detail": "esclarecer a necessidade principal"
+        },
+        {
+          "id": "REQUIRED_COMMITMENTS",
+          "label": "REQUIRED COMMITMENTS",
+          "status": "none",
+          "detail": []
+        },
+        {
+          "id": "CAPABILITY_FACT_NEED",
+          "label": "CAPABILITY / FACT NEED",
+          "status": "evaluated",
+          "detail": {
+            "tool_requirement": "OTHER_ALLOWED_TOOL",
+            "authorized_fact_count": 0,
+            "authorized_knowledge_count": 1
+          }
+        },
+        {
+          "id": "AUTHORITY_RESULT",
+          "label": "AUTHORITY RESULT",
+          "status": "completed",
+          "detail": {
+            "status": "APPROVED",
+            "outcome": "AUTHORIZED_RESULT",
+            "evidence_hash": "5b9750e772e1368bf634f2d717cb6e2f336ca5f5a068f7cb4703fb408962ba82"
+          }
+        },
+        {
+          "id": "RESPONSE_PLAN",
+          "label": "RESPONSE PLAN",
+          "status": "completed",
+          "detail": {
+            "required_question": null,
+            "next_best_step": "responder somente com o resultado autorizado já obtido",
+            "progress_state_hash": "a9f9037847ef617a8867d523189e42a7d5ada605590eaaf052a8637ac135a9ff"
+          }
+        },
+        {
+          "id": "WRITER_FALLBACK",
+          "label": "WRITER / FALLBACK",
+          "status": "completed",
+          "detail": {
+            "source": "gemma_local_writer",
+            "limit": null
+          }
+        },
+        {
+          "id": "VALIDATOR",
+          "label": "VALIDATOR",
+          "status": "accepted",
+          "detail": "Commitments, authority and progress contract preserved."
+        },
+        {
+          "id": "PUBLISHED_RESPONSE",
+          "label": "PUBLISHED RESPONSE",
+          "status": "local_shadow_preview",
+          "detail": "No cardápio do iFood, você encontrou Salmão Grelhado, Hot Roll Tatá e Ebi Spicy."
+        }
+      ],
+      "trace_hash": "48df03a306398bb023f4561d9054fb489ab2d2b29f4dea049003c42f6ce4f41f"
+    },
+    {
+      "schema_version": "deliveryos-b2-truth-trace-v1",
+      "turn_id": "B2-TURN-0005",
+      "created_at": "2026-08-13T19:35:53.855Z",
+      "mode": "LOCAL_SHADOW_PREVIEW",
+      "gate": {
+        "FINANCIAL_MODE": "ZERO_EXTERNAL_COST",
+        "MAX_EXTERNAL_SPEND_BRL": 0,
+        "EXTERNAL_ACTION_ALLOWED": false,
+        "CHANNEL_AUTHORIZED": true,
+        "COST_AUTHORIZED": true,
+        "SHADOW_MODE": true,
+        "LOCAL_PREVIEW_ALLOWED": true,
+        "EXTERNAL_PUBLICATION_ALLOWED": false,
+        "reasons": []
+      },
+      "first_divergence": null,
+      "steps": [
+        {
+          "id": "USER",
+          "label": "USER",
+          "status": "observed",
+          "detail": "Sim, mas nao quero nada quente"
+        },
+        {
+          "id": "UNDERSTANDING",
+          "label": "UNDERSTANDING",
+          "status": "completed",
+          "detail": "esclarecer a necessidade principal"
+        },
+        {
+          "id": "REQUIRED_COMMITMENTS",
+          "label": "REQUIRED COMMITMENTS",
+          "status": "none",
+          "detail": []
+        },
+        {
+          "id": "CAPABILITY_FACT_NEED",
+          "label": "CAPABILITY / FACT NEED",
+          "status": "evaluated",
+          "detail": {
+            "tool_requirement": "OTHER_ALLOWED_TOOL",
+            "authorized_fact_count": 0,
+            "authorized_knowledge_count": 1
+          }
+        },
+        {
+          "id": "AUTHORITY_RESULT",
+          "label": "AUTHORITY RESULT",
+          "status": "completed",
+          "detail": {
+            "status": "APPROVED",
+            "outcome": "AUTHORIZED_RESULT",
+            "evidence_hash": "b2b80bab793e03744a10f64aac2e2ee5b6407cfa6e5284a1d7949f8cbf6d26e3"
+          }
+        },
+        {
+          "id": "RESPONSE_PLAN",
+          "label": "RESPONSE PLAN",
+          "status": "completed",
+          "detail": {
+            "required_question": null,
+            "next_best_step": "responder somente com o resultado autorizado já obtido",
+            "progress_state_hash": "62f9d3d6e396cd590f458148ab1821c8605dd558e9c4202d4966d169c6e87493"
+          }
+        },
+        {
+          "id": "WRITER_FALLBACK",
+          "label": "WRITER / FALLBACK",
+          "status": "completed",
+          "detail": {
+            "source": "gemma_local_writer",
+            "limit": null
+          }
+        },
+        {
+          "id": "VALIDATOR",
+          "label": "VALIDATOR",
+          "status": "accepted",
+          "detail": "Commitments, authority and progress contract preserved."
+        },
+        {
+          "id": "PUBLISHED_RESPONSE",
+          "label": "PUBLISHED RESPONSE",
+          "status": "local_shadow_preview",
+          "detail": "Não encontrei uma opção compatível no cardápio oficial deste canal com os filtros informados. Prefiro não indicar um item sem base suficiente."
+        }
+      ],
+      "stages": [
+        {
+          "id": "USER",
+          "label": "USER",
+          "status": "observed",
+          "detail": "Sim, mas nao quero nada quente"
+        },
+        {
+          "id": "UNDERSTANDING",
+          "label": "UNDERSTANDING",
+          "status": "completed",
+          "detail": "esclarecer a necessidade principal"
+        },
+        {
+          "id": "REQUIRED_COMMITMENTS",
+          "label": "REQUIRED COMMITMENTS",
+          "status": "none",
+          "detail": []
+        },
+        {
+          "id": "CAPABILITY_FACT_NEED",
+          "label": "CAPABILITY / FACT NEED",
+          "status": "evaluated",
+          "detail": {
+            "tool_requirement": "OTHER_ALLOWED_TOOL",
+            "authorized_fact_count": 0,
+            "authorized_knowledge_count": 1
+          }
+        },
+        {
+          "id": "AUTHORITY_RESULT",
+          "label": "AUTHORITY RESULT",
+          "status": "completed",
+          "detail": {
+            "status": "APPROVED",
+            "outcome": "AUTHORIZED_RESULT",
+            "evidence_hash": "b2b80bab793e03744a10f64aac2e2ee5b6407cfa6e5284a1d7949f8cbf6d26e3"
+          }
+        },
+        {
+          "id": "RESPONSE_PLAN",
+          "label": "RESPONSE PLAN",
+          "status": "completed",
+          "detail": {
+            "required_question": null,
+            "next_best_step": "responder somente com o resultado autorizado já obtido",
+            "progress_state_hash": "62f9d3d6e396cd590f458148ab1821c8605dd558e9c4202d4966d169c6e87493"
+          }
+        },
+        {
+          "id": "WRITER_FALLBACK",
+          "label": "WRITER / FALLBACK",
+          "status": "completed",
+          "detail": {
+            "source": "gemma_local_writer",
+            "limit": null
+          }
+        },
+        {
+          "id": "VALIDATOR",
+          "label": "VALIDATOR",
+          "status": "accepted",
+          "detail": "Commitments, authority and progress contract preserved."
+        },
+        {
+          "id": "PUBLISHED_RESPONSE",
+          "label": "PUBLISHED RESPONSE",
+          "status": "local_shadow_preview",
+          "detail": "Não encontrei uma opção compatível no cardápio oficial deste canal com os filtros informados. Prefiro não indicar um item sem base suficiente."
+        }
+      ],
+      "trace_hash": "7c021871c98bd28dff152330baba935dd72016962d4ad93b522236824123c5c3"
+    },
+    {
+      "schema_version": "deliveryos-b2-truth-trace-v1",
+      "turn_id": "B2-TURN-0006",
+      "created_at": "2026-08-13T19:36:25.768Z",
+      "mode": "LOCAL_SHADOW_PREVIEW",
+      "gate": {
+        "FINANCIAL_MODE": "ZERO_EXTERNAL_COST",
+        "MAX_EXTERNAL_SPEND_BRL": 0,
+        "EXTERNAL_ACTION_ALLOWED": false,
+        "CHANNEL_AUTHORIZED": true,
+        "COST_AUTHORIZED": true,
+        "SHADOW_MODE": true,
+        "LOCAL_PREVIEW_ALLOWED": true,
+        "EXTERNAL_PUBLICATION_ALLOWED": false,
+        "reasons": []
+      },
+      "first_divergence": {
+        "stage": "validator",
+        "reason": "B2_NO_PROGRESS_WITHOUT_STATE_CHANGE"
+      },
+      "steps": [
+        {
+          "id": "USER",
+          "label": "USER",
+          "status": "observed",
+          "detail": "gosto de sushi entendeu?"
+        },
+        {
+          "id": "UNDERSTANDING",
+          "label": "UNDERSTANDING",
+          "status": "completed",
+          "detail": "recommendation"
+        },
+        {
+          "id": "REQUIRED_COMMITMENTS",
+          "label": "REQUIRED COMMITMENTS",
+          "status": "none",
+          "detail": []
+        },
+        {
+          "id": "CAPABILITY_FACT_NEED",
+          "label": "CAPABILITY / FACT NEED",
+          "status": "evaluated",
+          "detail": {
+            "tool_requirement": "OTHER_ALLOWED_TOOL",
+            "authorized_fact_count": 0,
+            "authorized_knowledge_count": 1
+          }
+        },
+        {
+          "id": "AUTHORITY_RESULT",
+          "label": "AUTHORITY RESULT",
+          "status": "completed",
+          "detail": {
+            "status": "APPROVED",
+            "outcome": "AUTHORIZED_RESULT",
+            "evidence_hash": "643333b46169ec0ae5b650ef007ce190e7425da44047bcb5478f5145a3d23c66"
+          }
+        },
+        {
+          "id": "RESPONSE_PLAN",
+          "label": "RESPONSE PLAN",
+          "status": "completed",
+          "detail": {
+            "required_question": null,
+            "next_best_step": "responder somente com o resultado autorizado já obtido",
+            "progress_state_hash": "62f9d3d6e396cd590f458148ab1821c8605dd558e9c4202d4966d169c6e87493"
+          }
+        },
+        {
+          "id": "WRITER_FALLBACK",
+          "label": "WRITER / FALLBACK",
+          "status": "blocked",
+          "detail": {
+            "source": null,
+            "limit": "B2_NO_PROGRESS_WITHOUT_STATE_CHANGE"
+          }
+        },
+        {
+          "id": "VALIDATOR",
+          "label": "VALIDATOR",
+          "status": "blocked",
+          "detail": "B2_NO_PROGRESS_WITHOUT_STATE_CHANGE"
+        },
+        {
+          "id": "PUBLISHED_RESPONSE",
+          "label": "PUBLISHED RESPONSE",
+          "status": "not_published",
+          "detail": null
+        }
+      ],
+      "stages": [
+        {
+          "id": "USER",
+          "label": "USER",
+          "status": "observed",
+          "detail": "gosto de sushi entendeu?"
+        },
+        {
+          "id": "UNDERSTANDING",
+          "label": "UNDERSTANDING",
+          "status": "completed",
+          "detail": "recommendation"
+        },
+        {
+          "id": "REQUIRED_COMMITMENTS",
+          "label": "REQUIRED COMMITMENTS",
+          "status": "none",
+          "detail": []
+        },
+        {
+          "id": "CAPABILITY_FACT_NEED",
+          "label": "CAPABILITY / FACT NEED",
+          "status": "evaluated",
+          "detail": {
+            "tool_requirement": "OTHER_ALLOWED_TOOL",
+            "authorized_fact_count": 0,
+            "authorized_knowledge_count": 1
+          }
+        },
+        {
+          "id": "AUTHORITY_RESULT",
+          "label": "AUTHORITY RESULT",
+          "status": "completed",
+          "detail": {
+            "status": "APPROVED",
+            "outcome": "AUTHORIZED_RESULT",
+            "evidence_hash": "643333b46169ec0ae5b650ef007ce190e7425da44047bcb5478f5145a3d23c66"
+          }
+        },
+        {
+          "id": "RESPONSE_PLAN",
+          "label": "RESPONSE PLAN",
+          "status": "completed",
+          "detail": {
+            "required_question": null,
+            "next_best_step": "responder somente com o resultado autorizado já obtido",
+            "progress_state_hash": "62f9d3d6e396cd590f458148ab1821c8605dd558e9c4202d4966d169c6e87493"
+          }
+        },
+        {
+          "id": "WRITER_FALLBACK",
+          "label": "WRITER / FALLBACK",
+          "status": "blocked",
+          "detail": {
+            "source": null,
+            "limit": "B2_NO_PROGRESS_WITHOUT_STATE_CHANGE"
+          }
+        },
+        {
+          "id": "VALIDATOR",
+          "label": "VALIDATOR",
+          "status": "blocked",
+          "detail": "B2_NO_PROGRESS_WITHOUT_STATE_CHANGE"
+        },
+        {
+          "id": "PUBLISHED_RESPONSE",
+          "label": "PUBLISHED RESPONSE",
+          "status": "not_published",
+          "detail": null
+        }
+      ],
+      "trace_hash": "c5a1f0aabeabe3bba4ccd9b943ba9245dd535ec96b748b7a842090daf50784a8"
+    },
+    {
+      "schema_version": "deliveryos-b2-truth-trace-v1",
+      "turn_id": "B2-TURN-0007",
+      "created_at": "2026-08-13T19:38:24.860Z",
+      "mode": "LOCAL_SHADOW_PREVIEW",
+      "gate": {
+        "FINANCIAL_MODE": "ZERO_EXTERNAL_COST",
+        "MAX_EXTERNAL_SPEND_BRL": 0,
+        "EXTERNAL_ACTION_ALLOWED": false,
+        "CHANNEL_AUTHORIZED": true,
+        "COST_AUTHORIZED": true,
+        "SHADOW_MODE": true,
+        "LOCAL_PREVIEW_ALLOWED": true,
+        "EXTERNAL_PUBLICATION_ALLOWED": false,
+        "reasons": []
+      },
+      "first_divergence": {
+        "stage": "WRITER_FALLBACK",
+        "reason": "B2_WRITER_UNSUPPORTED_AVAILABILITY"
+      },
+      "steps": [
+        {
+          "id": "USER",
+          "label": "USER",
+          "status": "observed",
+          "detail": "Me manda o cardapio"
+        },
+        {
+          "id": "UNDERSTANDING",
+          "label": "UNDERSTANDING",
+          "status": "completed",
+          "detail": "conhecer cardápio ou experiências"
+        },
+        {
+          "id": "REQUIRED_COMMITMENTS",
+          "label": "REQUIRED COMMITMENTS",
+          "status": "none",
+          "detail": []
+        },
+        {
+          "id": "CAPABILITY_FACT_NEED",
+          "label": "CAPABILITY / FACT NEED",
+          "status": "evaluated",
+          "detail": {
+            "tool_requirement": "OTHER_ALLOWED_TOOL",
+            "authorized_fact_count": 0,
+            "authorized_knowledge_count": 1
+          }
+        },
+        {
+          "id": "AUTHORITY_RESULT",
+          "label": "AUTHORITY RESULT",
+          "status": "completed",
+          "detail": {
+            "status": "APPROVED",
+            "outcome": "AUTHORIZED_RESULT",
+            "evidence_hash": "fc2ff4355abfdc29060695cd2d5e2ff5faeb8ef3a3e682f865445d8cad5644a6"
+          }
+        },
+        {
+          "id": "RESPONSE_PLAN",
+          "label": "RESPONSE PLAN",
+          "status": "completed",
+          "detail": {
+            "required_question": null,
+            "next_best_step": "responder somente com o resultado autorizado já obtido",
+            "progress_state_hash": "3c47217adb33b0ef0dd4de72f7433aa432fe4a5f481f81997b66c25e3ffe094d"
+          }
+        },
+        {
+          "id": "WRITER_FALLBACK",
+          "label": "WRITER / FALLBACK",
+          "status": "completed",
+          "detail": {
+            "source": "deterministic_b2_writer",
+            "limit": "B2_WRITER_UNSUPPORTED_AVAILABILITY"
+          }
+        },
+        {
+          "id": "VALIDATOR",
+          "label": "VALIDATOR",
+          "status": "accepted",
+          "detail": "Commitments, authority and progress contract preserved."
+        },
+        {
+          "id": "PUBLISHED_RESPONSE",
+          "label": "PUBLISHED RESPONSE",
+          "status": "local_shadow_preview",
+          "detail": "Este é o cardápio com os preços dos itens: https://abre.ai/ni3n Este é o cardápio com os preços dos itens: https://abre.ai/ni3n."
+        }
+      ],
+      "stages": [
+        {
+          "id": "USER",
+          "label": "USER",
+          "status": "observed",
+          "detail": "Me manda o cardapio"
+        },
+        {
+          "id": "UNDERSTANDING",
+          "label": "UNDERSTANDING",
+          "status": "completed",
+          "detail": "conhecer cardápio ou experiências"
+        },
+        {
+          "id": "REQUIRED_COMMITMENTS",
+          "label": "REQUIRED COMMITMENTS",
+          "status": "none",
+          "detail": []
+        },
+        {
+          "id": "CAPABILITY_FACT_NEED",
+          "label": "CAPABILITY / FACT NEED",
+          "status": "evaluated",
+          "detail": {
+            "tool_requirement": "OTHER_ALLOWED_TOOL",
+            "authorized_fact_count": 0,
+            "authorized_knowledge_count": 1
+          }
+        },
+        {
+          "id": "AUTHORITY_RESULT",
+          "label": "AUTHORITY RESULT",
+          "status": "completed",
+          "detail": {
+            "status": "APPROVED",
+            "outcome": "AUTHORIZED_RESULT",
+            "evidence_hash": "fc2ff4355abfdc29060695cd2d5e2ff5faeb8ef3a3e682f865445d8cad5644a6"
+          }
+        },
+        {
+          "id": "RESPONSE_PLAN",
+          "label": "RESPONSE PLAN",
+          "status": "completed",
+          "detail": {
+            "required_question": null,
+            "next_best_step": "responder somente com o resultado autorizado já obtido",
+            "progress_state_hash": "3c47217adb33b0ef0dd4de72f7433aa432fe4a5f481f81997b66c25e3ffe094d"
+          }
+        },
+        {
+          "id": "WRITER_FALLBACK",
+          "label": "WRITER / FALLBACK",
+          "status": "completed",
+          "detail": {
+            "source": "deterministic_b2_writer",
+            "limit": "B2_WRITER_UNSUPPORTED_AVAILABILITY"
+          }
+        },
+        {
+          "id": "VALIDATOR",
+          "label": "VALIDATOR",
+          "status": "accepted",
+          "detail": "Commitments, authority and progress contract preserved."
+        },
+        {
+          "id": "PUBLISHED_RESPONSE",
+          "label": "PUBLISHED RESPONSE",
+          "status": "local_shadow_preview",
+          "detail": "Este é o cardápio com os preços dos itens: https://abre.ai/ni3n Este é o cardápio com os preços dos itens: https://abre.ai/ni3n."
+        }
+      ],
+      "trace_hash": "5353fd84d6d12307fcbdd7d55cf96fa6687733fe3ff2d7aebc946c6a46e8acd2"
+    },
+    {
+      "schema_version": "deliveryos-b2-truth-trace-v1",
+      "turn_id": "B2-TURN-0008",
+      "created_at": "2026-08-13T19:39:08.275Z",
+      "mode": "LOCAL_SHADOW_PREVIEW",
+      "gate": {
+        "FINANCIAL_MODE": "ZERO_EXTERNAL_COST",
+        "MAX_EXTERNAL_SPEND_BRL": 0,
+        "EXTERNAL_ACTION_ALLOWED": false,
+        "CHANNEL_AUTHORIZED": true,
+        "COST_AUTHORIZED": true,
+        "SHADOW_MODE": true,
+        "LOCAL_PREVIEW_ALLOWED": true,
+        "EXTERNAL_PUBLICATION_ALLOWED": false,
+        "reasons": []
+      },
+      "first_divergence": null,
+      "steps": [
+        {
+          "id": "USER",
+          "label": "USER",
+          "status": "observed",
+          "detail": "qual o preco do rodizio?"
+        },
+        {
+          "id": "UNDERSTANDING",
+          "label": "UNDERSTANDING",
+          "status": "completed",
+          "detail": "conhecer cardápio ou experiências"
+        },
+        {
+          "id": "REQUIRED_COMMITMENTS",
+          "label": "REQUIRED COMMITMENTS",
+          "status": "none",
+          "detail": []
+        },
+        {
+          "id": "CAPABILITY_FACT_NEED",
+          "label": "CAPABILITY / FACT NEED",
+          "status": "evaluated",
+          "detail": {
+            "tool_requirement": "OTHER_ALLOWED_TOOL",
+            "authorized_fact_count": 0,
+            "authorized_knowledge_count": 1
+          }
+        },
+        {
+          "id": "AUTHORITY_RESULT",
+          "label": "AUTHORITY RESULT",
+          "status": "completed",
+          "detail": {
+            "status": "APPROVED",
+            "outcome": "AUTHORIZED_RESULT",
+            "evidence_hash": "964843516a4acffd7c8a9614aa6f230046f5ca7178dc12b1d6c655f92d6d9a0f"
+          }
+        },
+        {
+          "id": "RESPONSE_PLAN",
+          "label": "RESPONSE PLAN",
+          "status": "completed",
+          "detail": {
+            "required_question": null,
+            "next_best_step": "responder somente com o resultado autorizado já obtido",
+            "progress_state_hash": "222a2f393d5403628e5e9414cdf24d672a9aabff533f7b8c344cdde5bdc7987a"
+          }
+        },
+        {
+          "id": "WRITER_FALLBACK",
+          "label": "WRITER / FALLBACK",
+          "status": "completed",
+          "detail": {
+            "source": "gemma_local_writer",
+            "limit": null
+          }
+        },
+        {
+          "id": "VALIDATOR",
+          "label": "VALIDATOR",
+          "status": "accepted",
+          "detail": "Commitments, authority and progress contract preserved."
+        },
+        {
+          "id": "PUBLISHED_RESPONSE",
+          "label": "PUBLISHED RESPONSE",
+          "status": "local_shadow_preview",
+          "detail": "Os valores são: Salmão Grelhado R$ 92,00, Hot Roll Tatá R$ 46,00 e Ebi Spicy R$ 80,00. Gostaria de saber mais sobre o cardápio?"
+        }
+      ],
+      "stages": [
+        {
+          "id": "USER",
+          "label": "USER",
+          "status": "observed",
+          "detail": "qual o preco do rodizio?"
+        },
+        {
+          "id": "UNDERSTANDING",
+          "label": "UNDERSTANDING",
+          "status": "completed",
+          "detail": "conhecer cardápio ou experiências"
+        },
+        {
+          "id": "REQUIRED_COMMITMENTS",
+          "label": "REQUIRED COMMITMENTS",
+          "status": "none",
+          "detail": []
+        },
+        {
+          "id": "CAPABILITY_FACT_NEED",
+          "label": "CAPABILITY / FACT NEED",
+          "status": "evaluated",
+          "detail": {
+            "tool_requirement": "OTHER_ALLOWED_TOOL",
+            "authorized_fact_count": 0,
+            "authorized_knowledge_count": 1
+          }
+        },
+        {
+          "id": "AUTHORITY_RESULT",
+          "label": "AUTHORITY RESULT",
+          "status": "completed",
+          "detail": {
+            "status": "APPROVED",
+            "outcome": "AUTHORIZED_RESULT",
+            "evidence_hash": "964843516a4acffd7c8a9614aa6f230046f5ca7178dc12b1d6c655f92d6d9a0f"
+          }
+        },
+        {
+          "id": "RESPONSE_PLAN",
+          "label": "RESPONSE PLAN",
+          "status": "completed",
+          "detail": {
+            "required_question": null,
+            "next_best_step": "responder somente com o resultado autorizado já obtido",
+            "progress_state_hash": "222a2f393d5403628e5e9414cdf24d672a9aabff533f7b8c344cdde5bdc7987a"
+          }
+        },
+        {
+          "id": "WRITER_FALLBACK",
+          "label": "WRITER / FALLBACK",
+          "status": "completed",
+          "detail": {
+            "source": "gemma_local_writer",
+            "limit": null
+          }
+        },
+        {
+          "id": "VALIDATOR",
+          "label": "VALIDATOR",
+          "status": "accepted",
+          "detail": "Commitments, authority and progress contract preserved."
+        },
+        {
+          "id": "PUBLISHED_RESPONSE",
+          "label": "PUBLISHED RESPONSE",
+          "status": "local_shadow_preview",
+          "detail": "Os valores são: Salmão Grelhado R$ 92,00, Hot Roll Tatá R$ 46,00 e Ebi Spicy R$ 80,00. Gostaria de saber mais sobre o cardápio?"
+        }
+      ],
+      "trace_hash": "79b3e377f2df884cd2a5ec0db8d4e1025692d5e2b85961bab66c7f8b999e4e86"
+    }
+  ]
+}

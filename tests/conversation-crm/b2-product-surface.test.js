@@ -91,6 +91,38 @@ test('customer turn percorre o B2 corrigido e entrega trace de nove etapas', asy
   ]);
   assert.equal(trace.gate.SHADOW_MODE, true);
   assert.equal(trace.gate.EXTERNAL_ACTION_ALLOWED, false);
+  const byStage = Object.fromEntries(trace.steps.map((step) => [step.id, step]));
+  assert.equal(byStage.USER.detail.history_state.prior_turn_count, 0);
+  assert.equal(byStage.UNDERSTANDING.detail.cognitive_planner.contract, 'Contract V2');
+  assert.equal(byStage.UNDERSTANDING.detail.cognitive_planner.relation_to_history, 'CONTINUE');
+  assert.equal(byStage.UNDERSTANDING.detail.repair_interpretation.required, false);
+  assert.equal(byStage.CAPABILITY_FACT_NEED.detail.query_filter.source, 'deliveryos_native_authority');
+  assert.equal(byStage.AUTHORITY_RESULT.detail.request_result_bound, true);
+  assert.ok(byStage.AUTHORITY_RESULT.detail.evidence_hash);
+  assert.deepEqual(byStage.RESPONSE_PLAN.detail.required_response_commitments, trace.steps[2].detail.preserved_in_response_plan);
+  assert.equal(byStage.WRITER_FALLBACK.detail.primary_attempt.outcome, 'accepted');
+  assert.equal(byStage.WRITER_FALLBACK.detail.fallback_attempt.used, false);
+  assert.equal(byStage.VALIDATOR.detail.accepted, true);
+  assert.equal(byStage.PUBLISHED_RESPONSE.detail.publication_path, 'local_shadow_preview');
+  assert.equal(byStage.PUBLISHED_RESPONSE.detail.response, output.response);
+});
+
+test('trace preserva histórico público e aponta causa upstream de bloqueio', async () => {
+  const fixture = homologationFixture({ question: null, response: 'Resultado autorizado estável.' });
+  const service = new B2ProductService({ homologation: fixture });
+  const first = await service.process({ message: 'Primeiro pedido', channel: 'local_simulator' });
+  assert.equal(first.ok, true);
+  const second = await service.process({ message: 'Segundo pedido', channel: 'local_simulator' });
+  assert.equal(second.ok, false);
+  const trace = service.trace(second.turn_id).trace;
+  const byStage = Object.fromEntries(trace.steps.map((step) => [step.id, step]));
+  assert.equal(byStage.USER.detail.history_state.prior_turn_count, 2);
+  assert.equal(trace.first_divergence.stage, 'RESPONSE_PLAN');
+  assert.equal(trace.first_divergence.detected_at, 'VALIDATOR');
+  assert.equal(trace.first_divergence.reason, 'B2_NO_PROGRESS_WITHOUT_STATE_CHANGE');
+  assert.equal(trace.first_divergence.upstream_cause.same_progress_state, true);
+  assert.equal(byStage.VALIDATOR.detail.same_progress_state, true);
+  assert.equal(byStage.PUBLISHED_RESPONSE.detail.publication_path, 'not_published');
 });
 
 test('shadow desligado bloqueia antes do runtime e reset elimina traces', async () => {
@@ -110,6 +142,38 @@ test('PII é redigida no trace efêmero', async () => {
   const marker = 'cliente@example.test';
   const output = await service.process({ message: `Meu e-mail é ${marker}; quero ajuda.`, channel: 'local_simulator', shadow_mode: true });
   assert.equal(JSON.stringify(service.trace(output.turn_id)).includes(marker), false);
+});
+
+test('produto usa authority estruturada e não executa o compositor Native legado', async () => {
+  let structuredCalls = 0;
+  let legacyCalls = 0;
+  const homologation = {
+    productExecutionStructured() {
+      structuredCalls += 1;
+      return {
+        result: {
+          native_response_composer_executed: false,
+          structured_authority: {
+            status: 'completed', intent: 'information.menu', topic: 'institutional_menu',
+            query_filter: { public_topic: 'institutional_menu' },
+            facts: [], knowledge: ['Menu oficial: https://example.invalid/menu'],
+            authorized_links: ['https://example.invalid/menu'], authorized_numbers: [],
+            required_question: null, source_ids: ['PUBLIC_MENU'], result_hash: 'structured-result'
+          },
+          product_contexts: {}
+        },
+        publicResult: { turn: { response: null, diagnostic: { intent: 'information.menu', turn_analysis: {} } } }
+      };
+    },
+    chatExecution() { legacyCalls += 1; throw new Error('legacy composer must not run'); },
+    resetChat() { return { chat_reset: true }; }
+  };
+  const service = new B2ProductService({ homologation });
+  const output = await service.process({ message: 'Me passa o menu.', channel: 'local_simulator', shadow_mode: true });
+  assert.equal(output.ok, true);
+  assert.match(output.response, /https:\/\/example\.invalid\/menu/u);
+  assert.equal(structuredCalls, 1);
+  assert.equal(legacyCalls, 0);
 });
 
 test('mesmo servidor canônico entrega customer surface, B2 corrigido e truth trace separado', async (t) => {
@@ -143,6 +207,14 @@ test('mesmo servidor canônico entrega customer surface, B2 corrigido e truth tr
     'USER', 'UNDERSTANDING', 'REQUIRED_COMMITMENTS', 'CAPABILITY_FACT_NEED',
     'AUTHORITY_RESULT', 'RESPONSE_PLAN', 'WRITER_FALLBACK', 'VALIDATOR', 'PUBLISHED_RESPONSE'
   ]);
+  const traceByStage = Object.fromEntries(trace.trace.stages.map((stage) => [stage.id, stage]));
+  assert.equal(traceByStage.UNDERSTANDING.detail.runtime_context.structured_authority_used, true);
+  assert.equal(traceByStage.UNDERSTANDING.detail.runtime_context.native_response_composer_executed, false);
+  assert.equal(traceByStage.CAPABILITY_FACT_NEED.detail.query_filter.source, 'deliveryos_structured_authority');
+  assert.ok(traceByStage.CAPABILITY_FACT_NEED.detail.operation_fingerprint);
+  assert.equal(traceByStage.AUTHORITY_RESULT.detail.request_result_bound, true);
+  assert.equal(traceByStage.VALIDATOR.detail.accepted, true);
+  assert.equal(traceByStage.PUBLISHED_RESPONSE.detail.response, turn.response);
   assert.equal(trace.trace.gate.SHADOW_MODE, true);
   assert.equal(trace.trace.gate.EXTERNAL_ACTION_ALLOWED, false);
   assert.equal(trace.trace.gate.CHANNEL_AUTHORIZED, true);
@@ -152,6 +224,7 @@ test('mesmo servidor canônico entrega customer surface, B2 corrigido e truth tr
   const traceScript = await (await fetch(`${base}/trace/trace.js`)).text();
   assert.match(traceScript, /^'use strict';/u);
   assert.equal(traceScript.includes('<!doctype html>'), false);
+  assert.match(traceScript, /raw\.detail/u);
 
   const blocked = await fetch(`${base}/api/product/turn`, {
     method: 'POST',

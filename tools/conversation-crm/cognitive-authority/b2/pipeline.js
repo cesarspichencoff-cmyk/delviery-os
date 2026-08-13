@@ -10,6 +10,8 @@ function validatePublication(written, responsePlan, previousPublication = null) 
     return { accepted: false, reason: 'B2_NEEDS_TOOL_PUBLICATION_CONTRACT' };
   }
   if (previousPublication
+    && (previousPublication.operation_fingerprint === undefined
+      || previousPublication.operation_fingerprint === responsePlan.operation_fingerprint)
     && previousPublication.progress_state_hash === responsePlan.progress_state_hash) {
     return { accepted: false, reason: 'B2_NO_PROGRESS_WITHOUT_STATE_CHANGE' };
   }

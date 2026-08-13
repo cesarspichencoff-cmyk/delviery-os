@@ -8,7 +8,8 @@ const {
 } = require('../../../src/conversation-crm/customer-intelligence');
 const {
   createSyntheticCatalog, MenuCatalog, initialHospitalityContext,
-  updateHospitalityContext, hospitalityRequest, avoidsCreamCheese
+  updateHospitalityContext, hospitalityRequest, avoidsCreamCheese,
+  temperaturePreferenceFromText
 } = require('../../../src/conversation-crm/menu-intelligence');
 const {
   createCustomerMenuTools
@@ -29,10 +30,11 @@ const MENU_CHANNEL_REPEAT_QUESTIONS = Object.freeze([
   'Só preciso confirmar o canal: salão, iFood ou delivery próprio?'
 ]);
 const OCCURRENCE_SIGNAL = /\b(?:faltou|nao veio|esqueceram|nao mandaram|veio (?:outro|errado|com)|reacao|pass(?:ei|ou|ar|ando) mal|vomito|diarreia|dificuldade (?:para|pra) respirar|(?:nao|n) consegue respirar|(?:nao|n) respira direito|sem ar|cabelo|corpo estranho)\b/u;
-const USER_REPAIR_SIGNAL = /\b(?:voce|vc) (?:nao|n) (?:esta|ta) entendendo|\b(?:nao|n) foi (?:isso|o que eu (?:falei|pedi))|\bquem falou em\b|\beu falei\b|\b(?:nao|n) quero isso\b|\bja disse que\b|\b(?:voce|vc) entendeu errado\b/u;
+const USER_REPAIR_SIGNAL = /\b(?:voce|vc) (?:nao|n) (?:esta|ta) entendendo|\b(?:nao|n) foi (?:isso|o que eu (?:falei|pedi))|\bquem falou em\b|\beu falei\b|\b(?:nao|n) quero isso\b|\bja disse que\b|\b(?:voce|vc) entendeu errado\b|\b(?:entendeu|deu para entender|ficou claro)\??$/u;
 const NEGATIVE_FEEDBACK_SIGNAL = /\b(?:ja vi que (?:voce|vc) (?:nao|n) sabe|(?:voce|vc) (?:nao|n) (?:esta|ta) ajudando|isso (?:nao|n) tem nada a ver|(?:voce|vc) (?:esta|ta) perdido)\b/u;
 const RESERVATION_INTENT_SIGNAL = /\b(?:quero|queria|gostaria de|como (?:faco|faz)(?: para)?|pode me dizer como (?:faco|faz)(?: para)?)?\s*reserv(?:ar|a)|\btem mesa(?: para| pra)?\b|\b(?:quero|preciso de) uma mesa (?:para|pra)\b|\b(?:vou|quero ir|acho que vou) (?:no|ao) restaurante\b|\bquero ir ai com\b|\b(?:vou|quero|acho que vou) (?:ai )?pessoalmente\b|\besquece (?:o )?delivery,? quero reservar\b/u;
 const DINE_OUT_SIGNAL = /\b(?:preciso|quero|queria|to procurando|estou procurando).{0,36}\b(?:lugar (?:para|pra) (?:comer|jantar)|onde (?:comer|jantar)|sair (?:para|pra) comer)\b|\bqueria comer japones hoje\b|\bqueria ir no tata hoje\b|\bcomo faco (?:para|pra) ir ai\b/u;
+const FOOD_CHOICE_SIGNAL = /\b(?:(?:estou|to|fiquei)\s+com\s+(?:muita\s+)?fome|(?:quero|queria|preciso)\s+(?:comer|jantar|almocar|pedir)(?:\s+(?:algo|alguma coisa))?|me ajuda\s+(?:a\s+)?(?:escolher|decidir)(?:\s+o que comer)?)\b/u;
 
 const REQUESTED_CATEGORY_PATTERNS = Object.freeze([
   ['hot_roll', /\bhot roll\b/u],
@@ -64,6 +66,38 @@ function socialActFromText(text) {
 
 function requestedCategoryFromText(text) {
   return REQUESTED_CATEGORY_PATTERNS.find(([, pattern]) => pattern.test(text))?.[0] || null;
+}
+
+function hasRecommendationSelectionSignal(state) {
+  const hospitality = state.hospitality_context || initialHospitalityContext();
+  const occasion = hospitality.occasion;
+  const experience = hospitality.desired_experience;
+  return Boolean(
+    state.requested_category
+    || state.preferred_ingredients?.length
+    || state.excluded_ingredients?.length
+    || state.fried !== null
+    || state.cream_cheese
+    || state.number_of_people
+    || state.allergies?.length
+    || hospitality.budget
+    || hospitality.flavor_preferences?.length
+    || hospitality.texture_preferences?.length
+    || hospitality.preparation_preferences?.length
+    || hospitality.dietary_restrictions?.length
+    || (occasion && !['delivery_choice', 'menu_discovery'].includes(occasion))
+    || (experience && !['delivery_choice', 'menu_discovery'].includes(experience))
+  );
+}
+
+function foodPreferenceDiscoveryQuestion(state) {
+  const questions = [
+    'Você está com vontade de algo mais fresco, maçaricado ou quente?',
+    'Entre sushi, sashimi e pratos quentes, por onde você quer começar?',
+    'Tem algum ingrediente ou tipo de preparo que você quer priorizar ou evitar?'
+  ];
+  const asked = new Set(state.guidance_questions_asked || []);
+  return questions.find((question) => !asked.has(normalizeChatText(question))) || questions.at(-1);
 }
 
 function semanticTransitionForTurn(text, state, turnAnalysis) {
@@ -121,10 +155,11 @@ function ordinalReferenceFromText(text) {
 function analyzeCustomerTurn(text, priorOptions = []) {
   const questions = customerTurnQuestions(text);
   const firstVisit = firstVisitFromText(text);
+  const foodChoiceSignal = FOOD_CHOICE_SIGNAL.test(text);
   const ordinal = ordinalReferenceFromText(text);
   const groupReferenceRequested = /\bqual (?:deles|delas)\b/u.test(text);
   const referenced = ordinal ? priorOptions[ordinal.position - 1] || null : null;
-  const recommendationSignal = questions.includes('recommendation')
+  const recommendationSignal = foodChoiceSignal || questions.includes('recommendation')
     || /\b(?:salmao|atum|peixe|sushi|prato|opcao|leve|menos pesada|cream cheese|sem fritura)\b/u.test(text);
   const dineOut = DINE_OUT_SIGNAL.test(text);
   const reservation = RESERVATION_INTENT_SIGNAL.test(text);
@@ -133,6 +168,7 @@ function analyzeCustomerTurn(text, priorOptions = []) {
     social_act: socialActFromText(text),
     goal: reservation ? 'reservation' : (dineOut ? 'dine_out' : (firstVisit ? 'menu_discovery' : (recommendationSignal ? 'recommendation' : null))),
     requested_category: requestedCategory,
+    food_choice_signal: foodChoiceSignal,
     user_repair_signal: USER_REPAIR_SIGNAL.test(text),
     negative_feedback_signal: NEGATIVE_FEEDBACK_SIGNAL.test(text),
     facts: {
@@ -141,7 +177,8 @@ function analyzeCustomerTurn(text, priorOptions = []) {
     },
     preferences: {
       light: /\b(?:leve|mais leve|menos pesada|menos pesado)\b/u.test(text),
-      avoid_cream_cheese: avoidsCreamCheese(text)
+      avoid_cream_cheese: avoidsCreamCheese(text),
+      temperature: temperaturePreferenceFromText(text)
     },
     questions,
     resolved_reference: referenced ? { ...ordinal, item_id: referenced.item_id, name: referenced.name } : null,
@@ -205,6 +242,7 @@ function initialChatContext(defaultUnitId = 'SIM-UNIT-ITAIM') {
     presented_options: [],
     turn_analysis: null,
     pending_question: null,
+    direct_menu_request_pending: false,
     last_message_normalized: null,
     repetition_detected: false,
     repetition_streak: 0,
@@ -473,6 +511,16 @@ class CustomerMenuHomologationService {
       .map((source) => source.source_id).join('+') || 'none';
   }
 
+  currentPublicMenuSource(channel) {
+    const source = this.menuReview.publicEvidence?.sources?.find((item) => (
+      item.channel === channel
+      && item.authority === 'verified_official_public_source'
+      && typeof item.url === 'string'
+      && /^https:\/\//u.test(item.url)
+    ));
+    return source ? { source_id: source.source_id, location: source.url } : null;
+  }
+
   currentMenuLabel() {
     return this.catalogMode.startsWith('real_')
       ? 'cardápio oficial deste canal'
@@ -577,8 +625,12 @@ class CustomerMenuHomologationService {
     }
 
     const asksRecommendation = turnAnalysis.goal === 'recommendation'
+      || turnAnalysis.food_choice_signal
       || /\b(?:recomend(?:a(?:r|cao)?|e)?|sugest(?:ao|ao|ion)?|opcao|sem fritura|salmao|atum|cream cheese|macaricad[oa])\b/u.test(text);
     const asksPairing = /\b(?:bebida|drink|harmoniza|combina)\b/u.test(text);
+    const directMenuRequest = /\b(?:cardapio|menu)\b/u.test(text) && !asksRecommendation;
+    if (directMenuRequest) state.direct_menu_request_pending = true;
+    else if (asksRecommendation || turnAnalysis.goal === 'reservation') state.direct_menu_request_pending = false;
     if (turnAnalysis.goal === 'menu_discovery') state.recommendation_active = true;
     if (asksRecommendation || asksPairing) state.recommendation_active = true;
     if (turnAnalysis.requested_category) {
@@ -607,6 +659,9 @@ class CustomerMenuHomologationService {
     if (priorPrimaryPreparation && currentPrimaryPreparation && priorPrimaryPreparation !== currentPrimaryPreparation) {
       addFact('preparation_preference_corrected', currentPrimaryPreparation);
     }
+    const hadNotHotPreference = previousHospitality.preparation_preferences.includes('not_hot');
+    const hasNotHotPreference = state.hospitality_context.preparation_preferences.includes('not_hot');
+    if (!hadNotHotPreference && hasNotHotPreference) addFact('temperature_preference', 'not_hot');
     if (previousHospitality.occasion !== 'first_visit' && state.hospitality_context.occasion === 'first_visit') {
       addFact('first_visit', true);
     }
@@ -677,15 +732,19 @@ class CustomerMenuHomologationService {
       state.pending_question = null;
       state.channel_question_asked = false;
     } else if (state.recommendation_active) {
-      state.awaiting_channel = true;
-      state.pending_question = 'menu_channel';
+      const discoverPreferenceFirst = asksRecommendation
+        && !hasRecommendationSelectionSignal(state)
+        && !turnAnalysis.questions.includes('price');
+      state.awaiting_channel = !discoverPreferenceFirst;
+      state.pending_question = discoverPreferenceFirst ? 'food_preference' : 'menu_channel';
+      const missingContext = discoverPreferenceFirst ? 'recommendation_preference_missing' : 'menu_channel_missing';
       menuContext = Object.freeze({
         schema_version: 'deliveryos-menu-context-v1',
         status: 'partial',
         channel: 'unknown',
         unit_id: state.unit_id,
         items: [],
-        unknowns: ['menu_channel_missing'],
+        unknowns: [missingContext],
         divergences: [],
         provenance: [this.currentMenuSourceId()]
       });
@@ -695,7 +754,7 @@ class CustomerMenuHomologationService {
         objectives: ['safe_relevant_menu_guidance'],
         constraints: [],
         candidate_item_ids: [],
-        unknowns: ['menu_channel_missing'],
+        unknowns: [missingContext],
         customer_goal: turnAnalysis.goal,
         questions_answerable_now: [],
         unresolved_reference: turnAnalysis.unresolved_reference,
@@ -836,6 +895,9 @@ class CustomerMenuHomologationService {
       if (confirmedWithout.length) lines.push(`${confirmedWithout.join(' e ')} ${confirmedWithout.length > 1 ? 'têm' : 'tem'} composição confirmada sem cream cheese.`);
       if (unknown.length) lines.push('Nessas opções, a presença de cream cheese não está confirmada; não vou tratá-las como se fossem sem.');
     }
+    if (state.hospitality_context.preparation_preferences.includes('not_hot')) {
+      lines.push('Excluí a seção explicitamente identificada como Pratos Quentes. Nas demais opções, o cardápio não confirma a temperatura; por isso, não vou chamá-las de frias sem confirmação.');
+    }
     if (options.includePrices) {
       const prices = detailed.map((item) => {
         const price = formatPrice(item.price);
@@ -939,7 +1001,7 @@ class CustomerMenuHomologationService {
     return answers;
   }
 
-  guidanceForChat({ text, state, allergy, asksRecommendation, asksPairing, menuContext, pairing, turnAnalysis, priorPresentedOptions }) {
+  guidanceForChat({ text, state, allergy, asksRecommendation, asksPairing, menuContext, recommendationResult, pairing, turnAnalysis, priorPresentedOptions }) {
     if (state.operational_flow_active || OCCURRENCE_SIGNAL.test(text)) return null;
     const candidates = menuContext?.items || [];
     const menuLabel = this.currentMenuLabel();
@@ -979,6 +1041,33 @@ class CustomerMenuHomologationService {
         direct_answers: ['Posso ajudar você a planejar uma ida ao TATÁ hoje, seja para escolher a unidade, consultar o endereço ou entender como reservar.'],
         question: 'Você já sabe em qual unidade quer ir?',
         context_reason: 'dine_out_intent',
+        knowledge_source: 'current_conversation',
+        candidates_found: []
+      });
+    }
+    if (state.direct_menu_request_pending && state.channel) {
+      const source = this.currentPublicMenuSource(state.channel);
+      const channelLabel = state.channel === 'dining_room' ? 'salão' : (state.channel === 'ifood' ? 'iFood' : 'delivery próprio');
+      state.direct_menu_request_pending = false;
+      return Object.freeze({
+        schema_version: 'deliveryos-homologation-guidance-v1',
+        mode: 'direct_menu_link',
+        direct_answers: [source
+          ? `Este é o cardápio do ${channelLabel}: ${source.location}`
+          : `O link do cardápio do ${channelLabel} ainda não está confirmado nesta fonte.`],
+        question: null,
+        context_reason: source ? null : 'channel_menu_link_unknown',
+        knowledge_source: source?.source_id || menuSource,
+        candidates_found: []
+      });
+    }
+    if (state.pending_question === 'food_preference' && !state.channel) {
+      return Object.freeze({
+        schema_version: 'deliveryos-homologation-guidance-v1',
+        mode: 'food_preference_discovery',
+        direct_answers: ['Claro — eu te ajudo a afunilar pelo que você está com vontade.'],
+        question: foodPreferenceDiscoveryQuestion(state),
+        context_reason: 'recommendation_preference_missing',
         knowledge_source: 'current_conversation',
         candidates_found: []
       });
@@ -1215,9 +1304,18 @@ class CustomerMenuHomologationService {
         knowledge_source: 'current_conversation', candidates_found: candidates.map((item) => item.item_id)
       });
     }
-    const preparationChange = state.facts_added.find((fact) => fact.field === 'preparation_preference_corrected');
+    const preparationChange = state.facts_added.find((fact) => ['preparation_preference_corrected', 'temperature_preference'].includes(fact.field));
     if (preparationChange && state.recommendation_active) {
       const current = state.hospitality_context.preparation_preferences;
+      if (preparationChange.value === 'not_hot') {
+        return Object.freeze({
+          schema_version: 'deliveryos-homologation-guidance-v1', mode: 'temperature_preference_update',
+          direct_answers: ['Entendi — retirei da busca a seção explicitamente identificada como Pratos Quentes. Nos demais itens, o cardápio não confirma a temperatura; por isso, não vou chamar nenhum deles de frio sem confirmação.'],
+          question: state.requested_category ? null : 'Você prefere que eu afunile por sushi, sashimi ou outra categoria?',
+          context_reason: 'temperature_unconfirmed_outside_explicit_hot_section',
+          knowledge_source: menuSource, candidates_found: candidates.map((item) => item.item_id)
+        });
+      }
       const label = current.includes('cooked') ? 'cozido ou quente' : (current.includes('raw') ? 'cru' : 'com o preparo informado');
       return Object.freeze({
         schema_version: 'deliveryos-homologation-guidance-v1', mode: 'preparation_preference_update',
@@ -1269,6 +1367,15 @@ class CustomerMenuHomologationService {
           schema_version: 'deliveryos-homologation-guidance-v1', mode: 'menu_channel_required',
           direct_answers: [direct],
           question: resumeQuestion, context_reason: 'menu_channel_missing',
+          knowledge_source: menuSource, candidates_found: []
+        });
+      }
+      if (recommendationResult?.data?.status === 'needs_preference') {
+        return Object.freeze({
+          schema_version: 'deliveryos-homologation-guidance-v1', mode: 'food_preference_discovery',
+          direct_answers: [`Perfeito — vou considerar somente o ${menuLabel}. Antes de escolher itens ao acaso, quero afunilar pelo que você está com vontade.`],
+          question: foodPreferenceDiscoveryQuestion(state),
+          context_reason: 'recommendation_preference_missing',
           knowledge_source: menuSource, candidates_found: []
         });
       }

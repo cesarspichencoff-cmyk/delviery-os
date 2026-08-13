@@ -22,9 +22,13 @@ function writerSafeFact(fact) {
   return Object.freeze({ field: fact.field, value });
 }
 
-function usableToolResult(value) {
+function usableToolResult(value, expectedOperationFingerprint = null) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
   if (['unavailable', 'failed', 'error', 'blocked', 'prohibited'].includes(String(value.status || '').toLowerCase())) return null;
+  if (expectedOperationFingerprint) {
+    if (value.request_fingerprint !== expectedOperationFingerprint
+      || value.result_fingerprint !== expectedOperationFingerprint) return null;
+  }
   const hasFacts = factArray(value.facts).length > 0;
   const hasKnowledge = Array.isArray(value.knowledge) && value.knowledge.some((item) => typeof item === 'string' && item.trim());
   return hasFacts || hasKnowledge ? value : null;
@@ -34,11 +38,11 @@ function authorityStatus(plan, context) {
   if (plan.safety_priority === 'URGENT') return context.safety_directive ? 'APPROVED_URGENT' : 'BLOCKED';
   if (plan.reference.required && plan.reference.status === 'NEEDS_CLARIFICATION') return 'NEEDS_CLARIFICATION';
   if (plan.reference.required && plan.reference.status === 'NEEDS_CONTEXT_LOOKUP') {
-    if (context.reference_lookup_result || usableToolResult(context.tool_results?.[plan.tool_requirement])) return 'APPROVED';
+    if (context.reference_lookup_result || usableToolResult(context.tool_results?.[plan.tool_requirement], context.operation_fingerprint)) return 'APPROVED';
     return plan.tool_requirement === 'NONE' ? 'NEEDS_CLARIFICATION' : 'NEEDS_TOOL';
   }
   if (plan.tool_requirement === 'NONE') return 'APPROVED';
-  return usableToolResult(context.tool_results?.[plan.tool_requirement]) ? 'APPROVED' : 'NEEDS_TOOL';
+  return usableToolResult(context.tool_results?.[plan.tool_requirement], context.operation_fingerprint) ? 'APPROVED' : 'NEEDS_TOOL';
 }
 
 function publicationOutcome(status, toolResult, requiredQuestion) {
@@ -54,7 +58,9 @@ function approvePlan(rawPlan, context = {}) {
   if (!checked.accepted) return { accepted: false, status: 'REJECTED', reason: checked.reason, response_plan: null };
   const plan = checked.plan;
   let status = authorityStatus(plan, context);
-  const toolResult = usableToolResult(context.tool_results?.[plan.tool_requirement]);
+  const rawToolResult = context.tool_results?.[plan.tool_requirement];
+  const toolResult = usableToolResult(rawToolResult, context.operation_fingerprint);
+  const staleFactResult = Boolean(context.operation_fingerprint && rawToolResult && !toolResult);
   const authorityFacts = factArray(context.confirmed_facts).concat(factArray(toolResult?.facts));
   const approvedFacts = authorityFacts.map(writerSafeFact).filter(Boolean);
   const authorizedText = JSON.stringify({ authorityFacts, toolResult, safety: context.safety_directive || null });
@@ -87,6 +93,8 @@ function approvePlan(rawPlan, context = {}) {
     next_best_step: plan.next_best_step,
     required_question: requiredQuestion,
     required_response_commitments: requiredResponseCommitments,
+    operation_fingerprint: context.operation_fingerprint || null,
+    fact_boundary_reason: staleFactResult ? 'STALE_FACT_RESULT_REUSE' : null,
     approved_facts: approvedFacts,
     approved_tool_result: toolResult,
     safety_directive: plan.safety_priority === 'URGENT' ? context.safety_directive : null,
@@ -98,7 +106,13 @@ function approvePlan(rawPlan, context = {}) {
       tone: String(context.tone || 'calmo, direto e acolhedor'),
       gravity: plan.safety_priority === 'URGENT' ? 'critical' : (plan.safety_priority === 'PREVENTIVE' ? 'sensitive' : 'informational')
     }),
-    authority_evidence_hash: canonicalHash({ plan_hash: checked.hash, status, authorizedText })
+    authority_evidence_hash: canonicalHash({
+      plan_hash: checked.hash,
+      status,
+      authorizedText,
+      operation_fingerprint: context.operation_fingerprint || null,
+      fact_boundary_reason: staleFactResult ? 'STALE_FACT_RESULT_REUSE' : null
+    })
   };
   draftResponsePlan.progress_state_hash = progressStateHash(draftResponsePlan);
   const responsePlan = Object.freeze(draftResponsePlan);

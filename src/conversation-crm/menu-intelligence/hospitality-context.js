@@ -73,6 +73,18 @@ function avoidsCreamCheese(text) {
   return /\b(?:sem|evito|evitar|(?:nao|n) (?:quero|gosto(?: muito)?|curto(?: muito)?)|(?:nao|n) sou (?:muito )?fa de)\s+(?:de\s+)?cream cheese\b/u.test(String(text || ''));
 }
 
+function temperaturePreferenceFromText(value) {
+  const text = String(value || '');
+  const rejectsHot = /\b(?:(?:nao|n)\s+(?:quero|gosto|curto|prefiro|estou a fim de)(?:\s+nada)?|sem)\s+(?:algo\s+|comida\s+|prato\s+|itens?\s+)?quent(?:e|es)\b/u.test(text)
+    || /\b(?:nada|nenhum(?:a)?\s+(?:opcao|comida|prato|item))\s+quent(?:e|es)\b/u.test(text);
+  const requestsCold = /\b(?:algo|comida|prato|opcao|itens?)?\s*fri(?:o|a|os|as)\b/u.test(text)
+    && !/\b(?:nao|n)\s+(?:quero|gosto|curto|prefiro)(?:\s+nada)?\s+(?:algo\s+|comida\s+|prato\s+|itens?\s+)?fri(?:o|a|os|as)\b/u.test(text);
+  if (rejectsHot || requestsCold) return 'not_hot';
+  const requestsHot = /\b(?:cozid[oa]s?|quent(?:e|es))\b/u.test(text)
+    && !/\b(?:nao|n|sem)\b[^.?!]{0,28}\b(?:cozid[oa]s?|quent(?:e|es))\b/u.test(text);
+  return requestsHot ? 'cooked' : null;
+}
+
 function updateHospitalityContext(previous, input = {}) {
   const context = structuredClone(previous || initialHospitalityContext());
   const text = String(input.normalized_text || '');
@@ -121,8 +133,14 @@ function updateHospitalityContext(previous, input = {}) {
   if (/\b(?:cru[ao]?|sashimi)\b/u.test(text) && !asksAboutRawPreparation && !/\b(?:nao|n) (?:quero|gosto de?) (?:peixe )?cru[ao]?\b/u.test(text)) {
     context.preparation_preferences = addUnique(context.preparation_preferences.filter((value) => value !== 'cooked'), ['raw']);
   }
-  if (/\b(?:cozid[oa]|quente)\b/u.test(text) || /\b(?:nao|n) quero (?:peixe )?cru[ao]?\b/u.test(text)) {
-    context.preparation_preferences = addUnique(context.preparation_preferences.filter((value) => value !== 'raw'), ['cooked']);
+  const temperaturePreference = temperaturePreferenceFromText(text);
+  if (temperaturePreference === 'not_hot') {
+    context.preparation_preferences = addUnique(context.preparation_preferences.filter((value) => value !== 'cooked'), ['not_hot']);
+  } else if (temperaturePreference === 'cooked' || /\b(?:nao|n) quero (?:peixe )?cru[ao]?\b/u.test(text)) {
+    context.preparation_preferences = addUnique(
+      context.preparation_preferences.filter((value) => !['raw', 'not_hot'].includes(value)),
+      ['cooked']
+    );
   }
   if (/\b(?:sem (?:fritura|frito|fritos|frita|fritas)|(?:nao|n) (?:quero|curto) (?:nada )?frit[oa]s?)\b/u.test(text)) context.preparation_preferences = addUnique(context.preparation_preferences, ['not_fried']);
   if (avoidsCreamCheese(text)) context.preparation_preferences = addUnique(context.preparation_preferences, ['without_cream_cheese']);
@@ -158,6 +176,7 @@ function hospitalityRequest(context) {
     flavor_profile: context.flavor_preferences[0] || null,
     raw_or_cooked: context.preparation_preferences.includes('raw') ? 'raw'
       : (context.preparation_preferences.includes('cooked') ? 'cooked' : null),
+    temperature_preference: context.preparation_preferences.includes('not_hot') ? 'not_hot' : null,
     torched: context.preparation_preferences.includes('torched') ? true : null,
     fried: context.preparation_preferences.includes('not_fried') ? false : null,
     cream_cheese: context.preparation_preferences.includes('without_cream_cheese') ? 'without' : null,
@@ -175,5 +194,6 @@ module.exports = {
   updateHospitalityContext,
   hospitalityRequest,
   extractBudget,
-  avoidsCreamCheese
+  avoidsCreamCheese,
+  temperaturePreferenceFromText
 };

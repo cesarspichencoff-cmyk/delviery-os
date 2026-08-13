@@ -91,6 +91,22 @@ function extractSurfaceFacts(authorizedText = '') {
   return { text, links: [...new Set(links)], numbers: [...new Set(numbers)] };
 }
 
+function mergeAuthorizedSurfaceText(...values) {
+  const messages = values.flatMap((value) => String(value || '').split(/(?<=[.!?])\s+/u));
+  const selected = [];
+  const keys = [];
+  for (const message of messages) {
+    const text = message.trim();
+    const key = normalizeText(text).replace(/[.!?]+$/gu, '').replace(/\s+/gu, ' ').trim();
+    if (!key) continue;
+    const duplicate = keys.some((known) => known === key || known.includes(key) || key.includes(known));
+    if (duplicate) continue;
+    keys.push(key);
+    selected.push(text);
+  }
+  return selected.join(' ');
+}
+
 function answeredFieldsFromSource(sourceText = '') {
   const text = normalizeText(sourceText);
   const fields = new Set();
@@ -222,8 +238,7 @@ function buildResponsePlan(input = {}) {
   const knowledgeSurface = extractSurfaceFacts(
     knowledge.selected.map((item) => item.customer_message).filter(Boolean).join(' ')
   );
-  authorizedSurface.text = [authorizedSurface.text, knowledgeSurface.text].filter(Boolean).join(' ');
-  authorizedSurface.text = [authorizedSurface.text, productGuidanceSurface.text].filter(Boolean).join(' ');
+  authorizedSurface.text = mergeAuthorizedSurfaceText(authorizedSurface.text, knowledgeSurface.text, productGuidanceSurface.text);
   authorizedSurface.links = [...new Set([
     ...authorizedSurface.links,
     ...knowledgeSurface.links,
@@ -373,6 +388,7 @@ module.exports = {
   fallbackReason,
   safeEntityFacts,
   extractSurfaceFacts,
+  mergeAuthorizedSurfaceText,
   answeredFieldsFromSource,
   isInformationalReservationQuery,
   questionPriority,

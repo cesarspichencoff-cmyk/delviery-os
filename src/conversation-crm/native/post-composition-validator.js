@@ -65,6 +65,39 @@ function questionSentences(text) {
     .filter((part) => part.includes('?'));
 }
 
+function duplicateSentenceKeys(text) {
+  const seen = new Set();
+  const duplicates = [];
+  for (const part of String(text || '').split(/(?<=[.!?])\s+/u)) {
+    const key = normalize(part).replace(/[.!?]+$/gu, '').trim();
+    if (!key) continue;
+    if (seen.has(key)) duplicates.push(key);
+    else seen.add(key);
+  }
+  return duplicates;
+}
+
+function deduplicateCustomerText(text) {
+  const seenSentences = new Set();
+  const seenLinks = new Set();
+  const output = [];
+  for (const part of String(text || '').split(/(?<=[.!?])\s+/u)) {
+    let sentenceValue = part.trim();
+    const key = normalize(sentenceValue).replace(/[.!?]+$/gu, '').trim();
+    if (!key || seenSentences.has(key)) continue;
+    seenSentences.add(key);
+    sentenceValue = sentenceValue.replace(URL_PATTERN, (link) => {
+      const suffix = link.match(/[.!?]+$/u)?.[0] || '';
+      const clean = link.replace(/[.!?]+$/u, '');
+      if (seenLinks.has(clean)) return suffix;
+      seenLinks.add(clean);
+      return link;
+    }).replace(/\s+([.!?])/gu, '$1').replace(/\s{2,}/gu, ' ').trim();
+    if (sentenceValue && !/^[.!?]+$/u.test(sentenceValue)) output.push(sentenceValue);
+  }
+  return output.join(' ');
+}
+
 function validatePostComposition(input = {}) {
   const text = String(input.text || '').trim();
   const plan = input.plan || {};
@@ -75,7 +108,10 @@ function validatePostComposition(input = {}) {
   const currentQuestions = questionSentences(text);
 
   if (!text) findings.push('EMPTY_RESPONSE');
-  for (const link of urlsOf(text)) if (!allowedLinks.has(link)) findings.push('UNAPPROVED_LINK');
+  const responseLinks = urlsOf(text);
+  for (const link of responseLinks) if (!allowedLinks.has(link)) findings.push('UNAPPROVED_LINK');
+  if (new Set(responseLinks).size !== responseLinks.length) findings.push('DUPLICATE_LINK');
+  if (duplicateSentenceKeys(text).length) findings.push('DUPLICATE_SENTENCE');
   for (const number of numbersOf(text)) if (!allowedNumberSet.has(number)) findings.push('UNAPPROVED_NUMBER');
   if (TECHNICAL_PATTERN.test(text)) findings.push('TECHNICAL_INFORMATION_EXPOSED');
   if (CUSTOMER_INTERNAL_LANGUAGE_PATTERN.test(text)) findings.push('CUSTOMER_FACING_INTERNAL_LANGUAGE_LEAK');
@@ -180,7 +216,7 @@ function safeResponseAfterRejection(input = {}) {
   } else if (plan.strategy_id === 'large_group') {
     text = `${party ? `Como são ${party} pessoas, e` : 'E'}sse atendimento precisa de acompanhamento operacional antes de confirmar fila ou reserva.${questions ? ` ${questions}` : ''}`;
   } else if (plan.authorized_surface?.text && plan.response_goal === 'inform') {
-    text = plan.authorized_surface.text;
+    text = deduplicateCustomerText(plan.authorized_surface.text);
   } else {
     text = `Ainda não tenho uma confirmação segura para concluir esse ponto.${questions ? ` ${questions}` : ''}`;
   }
@@ -205,6 +241,8 @@ module.exports = {
   numbersOf,
   allowedNumbers,
   questionSentences,
+  duplicateSentenceKeys,
+  deduplicateCustomerText,
   validatePostComposition,
   independentQuestion,
   safeResponseAfterRejection

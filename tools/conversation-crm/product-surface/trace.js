@@ -196,25 +196,28 @@ function statusText(status) {
 function stageSummary(raw, definition) {
   if (raw == null) return 'A API não forneceu informação para esta etapa.';
   if (typeof raw !== 'object') return displayValue(raw);
-  const direct = raw.summary || raw.description || raw.message;
+  const payload = raw.detail === undefined ? raw : raw.detail;
+  if (payload == null) return 'Etapa sem resultado publicável.';
+  if (typeof payload !== 'object') return displayValue(payload);
+  const direct = payload.summary || payload.description || payload.message;
   if (typeof direct === 'string' && direct.trim()) return direct.trim();
   const candidates = {
-    user: raw.current_message || raw.input,
-    understanding: raw.user_goal || raw.what_changed,
-    required_commitments: Array.isArray(raw.commitments) ? `${raw.commitments.length} commitment(s) registrado(s).` : null,
-    capability_fact_need: raw.tool_requirement || raw.fact_need || raw.capability,
-    authority_result: raw.publication_outcome || raw.reason,
-    response_plan: raw.next_best_step || raw.required_question,
-    writer_fallback: raw.writer_source || raw.writer_limit,
-    validator: raw.reason || raw.validator_reason,
-    published_response: raw.response || raw.text
+    user: payload.current_message || payload.input,
+    understanding: payload.user_goal || payload.what_changed,
+    required_commitments: Array.isArray(payload.commitments) ? `${payload.commitments.length} commitment(s) registrado(s).` : null,
+    capability_fact_need: payload.tool_requirement || payload.fact_need || payload.capability,
+    authority_result: payload.outcome || payload.publication_outcome || payload.reason,
+    response_plan: payload.next_best_step || payload.required_question,
+    writer_fallback: payload.writer_source || payload.writer_limit,
+    validator: payload.reason || payload.validator_reason || payload.status,
+    published_response: payload.response || payload.text
   };
   return displayValue(candidates[definition.key] || 'Etapa registrada.');
 }
 
 function detailSource(raw) {
   if (!raw || typeof raw !== 'object') return null;
-  return raw.details || raw.data || raw.payload || raw;
+  return raw.detail || raw.details || raw.data || raw.payload || raw;
 }
 
 function stageIdentity(value) {
