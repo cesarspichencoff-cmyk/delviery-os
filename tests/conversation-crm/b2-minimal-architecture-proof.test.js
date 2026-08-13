@@ -221,7 +221,7 @@ test('fallback determinístico preserva fato aprovado e pergunta obrigatória', 
   assert.equal(output.response.includes('Quer comparar com outra opção?'), true);
 });
 
-test('fallback NEEDS_TOOL preserva pergunta obrigatória sem fingir que a ferramenta concluiu', async () => {
+test('fallback pendente preserva pergunta obrigatória sem fingir que a ferramenta concluiu', async () => {
   const pending = approvePlan(plan({
     conversational_move: 'CLARIFY', tool_requirement: 'RESERVATION_INFO',
     reference: { required: true, status: 'NEEDS_CONTEXT_LOOKUP', target: 'data relativa' }
@@ -231,7 +231,7 @@ test('fallback NEEDS_TOOL preserva pergunta obrigatória sem fingir que a ferram
   }).response_plan;
   const output = await new DeterministicB2Writer().write(pending);
   assert.equal(output.accepted, true);
-  assert.equal(output.text.includes('Vou conferir'), true);
+  assert.equal(output.text.includes('Vou conferir'), false);
   assert.equal(output.text.includes('Qual horário você prefere?'), true);
 });
 

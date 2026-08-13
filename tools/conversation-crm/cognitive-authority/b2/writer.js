@@ -2,6 +2,11 @@
 
 const { canonicalHash } = require('./contract');
 const { validateWriterOutput } = require('../../../../apps/deliveryos-ai-node/dialogue/writer-contract');
+const { semanticAnchors, validateCommitments } = require('./commitments');
+
+const UNAUTHORIZED_PRICE_PATTERN = /R\$\s*\d+(?:[.,]\d+)?/iu;
+const UNEXECUTED_FUTURE_PROMISE_PATTERN = /\b(?:vou|vamos|iremos)\s+(?:conferir|verificar|consultar|buscar|confirmar|avisar|retornar)\b/iu;
+const REDUNDANT_COMMITMENT_ACK_PATTERN = /^(?:certo|entendi|perfeito|[oó]timo)?\s*[—,:-]*\s*(?:vou|vamos)\s+(?:considerar|levar em conta|usar)\b/iu;
 
 function factValues(plan) {
   return (plan.approved_facts || [])
@@ -9,26 +14,83 @@ function factValues(plan) {
     .filter((value) => value && !/\b(?:fixture|sint[eé]tic[oa]s?|fonte sint[eé]tica|prova|oracle|gold)\b/iu.test(value));
 }
 
+function knowledgeValues(plan) {
+  return (Array.isArray(plan.approved_tool_result?.knowledge) ? plan.approved_tool_result.knowledge : [])
+    .map((value) => String(value || '').trim())
+    .filter(Boolean);
+}
+
+function composableKnowledgeValues(plan) {
+  const commitments = (plan.required_response_commitments || [])
+    .filter((item) => !['QUESTION', 'REPAIR'].includes(item.kind));
+  const commitmentAnchors = new Set(commitments.flatMap((item) => semanticAnchors(item.content)));
+  return knowledgeValues(plan).flatMap((value) => value.split(/(?<=[.!?])\s+/u)).filter((sentence) => {
+    if (!commitments.length || !REDUNDANT_COMMITMENT_ACK_PATTERN.test(sentence)) return true;
+    return !semanticAnchors(sentence).some((anchor) => commitmentAnchors.has(anchor));
+  });
+}
+
+function authorizedValues(plan) {
+  return [...factValues(plan), ...composableKnowledgeValues(plan)];
+}
+
+function commitmentValues(plan) {
+  return (plan.required_response_commitments || [])
+    .filter((item) => !['QUESTION', 'REPAIR'].includes(item.kind))
+    .map((item) => String(item.content || '').replace(/[.;,\s]+$/gu, '').trim())
+    .filter(Boolean);
+}
+
+function commitmentAcknowledgement(plan) {
+  const values = commitmentValues(plan);
+  return values.length ? `Entendi: ${values.join('; ')}.` : '';
+}
+
+function explicitLimitation(plan) {
+  const messages = {
+    CATALOG_SEARCH: 'Não consigo consultar o cardápio por aqui agora. Posso deixar seus critérios organizados para você confirmar diretamente com o restaurante.',
+    DETAIL_LOOKUP: 'Não consigo consultar os detalhes do item por aqui agora. Posso deixar a informação necessária organizada para você confirmar diretamente com o restaurante.',
+    PRICE_LOOKUP: 'Não consigo consultar o preço por aqui agora. Posso deixar a opção e o valor que precisam ser confirmados organizados para você verificar diretamente com o restaurante.',
+    RESTAURANT_INFO: 'Não consigo consultar essa informação operacional por aqui agora. Posso deixar o que precisa ser confirmado organizado para você verificar diretamente com o restaurante.',
+    RESERVATION_INFO: 'Não consigo consultar a reserva por aqui agora. Posso deixar os dados necessários organizados para você confirmar diretamente com o restaurante.',
+    SAFETY_GATE: 'Não consigo verificar ingredientes e contato cruzado por aqui agora. Por segurança, não vou indicar um item; confirme diretamente com a equipe do restaurante antes de escolher.',
+    OTHER_ALLOWED_TOOL: 'Não consigo acessar os dados necessários por aqui agora. Posso organizar o que você precisa ter em mãos para falar com o atendimento.'
+  };
+  return messages[plan.tool_requirement]
+    || 'Não consigo consultar essa informação por aqui agora. Posso organizar o que precisa ser confirmado para o próximo contato.';
+}
+
 function deterministicText(plan) {
+  const commitmentText = commitmentAcknowledgement(plan);
   if (plan.status === 'NEEDS_TOOL') {
-    return ['Vou conferir essa informação antes de responder.', plan.required_question].filter(Boolean).join(' ');
+    return [plan.repair_acknowledgement, commitmentText, plan.required_question
+      ? `Para avançar, preciso de uma informação: ${plan.required_question}`
+      : explicitLimitation(plan)]
+      .filter(Boolean).join(' ');
   }
-  if (plan.status === 'NEEDS_CLARIFICATION') return plan.required_question;
+  if (plan.status === 'NEEDS_CLARIFICATION') {
+    const authorized = authorizedValues(plan);
+    const question = String(plan.required_question || '').trim();
+    const normalizedQuestion = question.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
+    const questionAlreadyPresent = normalizedQuestion && authorized.some((value) => value.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().includes(normalizedQuestion));
+    return [plan.repair_acknowledgement, commitmentText, ...authorized, questionAlreadyPresent ? null : question].filter(Boolean).join(' ');
+  }
   if (plan.safety_priority === 'URGENT') return String(plan.safety_directive);
-  const facts = factValues(plan);
-  const repair = plan.repair_acknowledgement ? `${plan.repair_acknowledgement} ` : '';
+  const facts = authorizedValues(plan);
+  const repair = [plan.repair_acknowledgement, commitmentText].filter(Boolean).join(' ');
+  const prefix = repair ? `${repair} ` : '';
   const question = plan.required_question ? String(plan.required_question) : '';
   const appendQuestion = (text) => [String(text || '').trim(), question].filter(Boolean).join(' ').trim();
   const templates = {
-    ANSWER: appendQuestion(`${repair}${facts.length ? facts.join('; ') : 'Posso ajudar com o próximo passo.'}`),
-    EXPAND: appendQuestion(`${repair}${facts.length ? `Posso considerar ${facts.join(' e ')}.` : 'Posso buscar outras opções.'}`),
-    EXPLAIN: appendQuestion(`${repair}${facts.length ? facts.join('; ') : 'Posso explicar com o que já sabemos.'}`),
-    COMPARE: appendQuestion(`${repair}${facts.length ? facts.join('; ') : 'Preciso de um critério para comparar com segurança.'}`),
-    CLARIFY: appendQuestion(`${repair}${facts.length ? facts.join('; ') : ''}`) || 'Pode me contar um pouco mais?',
-    REPAIR: appendQuestion(`${repair}${facts.length ? facts.join('; ') : 'Vamos corrigir isso antes de continuar.'}`),
-    DISCOVER: appendQuestion(`${repair}${facts.length ? facts.join('; ') : ''}`) || 'O que pesa mais para você nessa escolha?',
-    SWITCH_FLOW: appendQuestion(`${repair}${facts.length ? facts.join('; ') : ''}`) || 'Vamos seguir por esse novo caminho.',
-    RESUME_FLOW: appendQuestion(`${repair}${facts.length ? facts.join('; ') : ''}`) || 'Vamos retomar de onde paramos.'
+    ANSWER: appendQuestion(`${prefix}${facts.length ? facts.join('; ') : 'Posso ajudar com o próximo passo.'}`),
+    EXPAND: appendQuestion(`${prefix}${facts.length ? `Posso considerar ${facts.join(' e ')}.` : 'Posso buscar outras opções.'}`),
+    EXPLAIN: appendQuestion(`${prefix}${facts.length ? facts.join('; ') : 'Posso explicar com o que já sabemos.'}`),
+    COMPARE: appendQuestion(`${prefix}${facts.length ? facts.join('; ') : 'Preciso de um critério para comparar com segurança.'}`),
+    CLARIFY: appendQuestion(`${prefix}${facts.length ? facts.join('; ') : ''}`) || 'Pode me contar um pouco mais?',
+    REPAIR: appendQuestion(`${prefix}${facts.length ? facts.join('; ') : 'Vamos corrigir isso antes de continuar.'}`),
+    DISCOVER: appendQuestion(`${prefix}${facts.length ? facts.join('; ') : ''}`) || 'O que pesa mais para você nessa escolha?',
+    SWITCH_FLOW: appendQuestion(`${prefix}${facts.length ? facts.join('; ') : ''}`) || 'Vamos seguir por esse novo caminho.',
+    RESUME_FLOW: appendQuestion(`${prefix}${facts.length ? facts.join('; ') : ''}`) || 'Vamos retomar de onde paramos.'
   };
   return String(templates[plan.conversational_move] || plan.next_best_step).trim();
 }
@@ -46,12 +108,24 @@ function validateWriterText(text, plan) {
       return { accepted: false, reason: 'B2_WRITER_UNSUPPORTED_AVAILABILITY' };
     }
   }
+  if (UNAUTHORIZED_PRICE_PATTERN.test(value)) {
+    const authorizedPrice = (plan.approved_facts || []).some((fact) => fact.field === 'price' && value.includes(String(fact.value)))
+      || knowledgeValues(plan).some((item) => item.includes(value.match(UNAUTHORIZED_PRICE_PATTERN)?.[0] || ''))
+      || (plan.required_response_commitments || []).some((item) => item.kind === 'CONSTRAINT' && item.content.includes(value.match(UNAUTHORIZED_PRICE_PATTERN)?.[0] || ''));
+    if (!authorizedPrice) return { accepted: false, reason: 'B2_WRITER_UNSUPPORTED_PRICE' };
+  }
+  if (plan.publication_outcome === 'EXPLICIT_LIMITATION' && UNEXECUTED_FUTURE_PROMISE_PATTERN.test(value)) {
+    return { accepted: false, reason: 'B2_WRITER_UNEXECUTED_FUTURE_PROMISE' };
+  }
   for (const forbidden of plan.prohibited_claims || []) {
     const needle = String(forbidden).normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
     if (needle && normalized.includes(needle)) return { accepted: false, reason: 'B2_WRITER_PROHIBITED_CLAIM' };
   }
   if (plan.safety_priority === 'URGENT' && value !== String(plan.safety_directive)) {
     return { accepted: false, reason: 'B2_WRITER_CHANGED_URGENT_DIRECTIVE' };
+  }
+  if (plan.safety_priority === 'URGENT') {
+    return { accepted: true, reason: null, text: value, hash: canonicalHash({ text: value, authority: plan.authority_evidence_hash }) };
   }
   const approvedValues = factValues(plan);
   if (plan.status === 'APPROVED' && approvedValues.length) {
@@ -63,6 +137,8 @@ function validateWriterText(text, plan) {
   if (plan.required_question && !value.includes('?')) {
     return { accepted: false, reason: 'B2_WRITER_DROPPED_REQUIRED_QUESTION' };
   }
+  const commitmentCheck = validateCommitments(value, plan.required_response_commitments || []);
+  if (!commitmentCheck.accepted) return commitmentCheck;
   return { accepted: true, reason: null, text: value, hash: canonicalHash({ text: value, authority: plan.authority_evidence_hash }) };
 }
 
@@ -85,7 +161,8 @@ function toWriterInput(plan) {
     direction: [
       `Objetivo da pessoa: ${plan.user_goal}`,
       `Movimento conversacional: ${plan.conversational_move}`,
-      `Próximo passo autorizado: ${plan.next_best_step}`
+      `Próximo passo autorizado: ${plan.next_best_step}`,
+      ...(plan.required_response_commitments || []).map((item) => `Conteúdo obrigatório (${item.kind}): ${item.content}`)
     ],
     true_action: null,
     required_question: plan.required_question,
@@ -123,4 +200,14 @@ class GemmaB2Writer {
   }
 }
 
-module.exports = { DeterministicB2Writer, GemmaB2Writer, toWriterInput, deterministicText, validateWriterText };
+module.exports = {
+  DeterministicB2Writer,
+  GemmaB2Writer,
+  toWriterInput,
+  deterministicText,
+  explicitLimitation,
+  validateWriterText,
+  UNAUTHORIZED_PRICE_PATTERN,
+  UNEXECUTED_FUTURE_PROMISE_PATTERN,
+  REDUNDANT_COMMITMENT_ACK_PATTERN
+};

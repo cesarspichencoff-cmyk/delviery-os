@@ -30,6 +30,7 @@ async function runFrozenConversation(options = {}) {
   const pipeline = new B2Pipeline({ planner, writer: options.writer, fallbackWriter: options.fallbackWriter });
   const transcript = [];
   const outputs = [];
+  let previousPublication = null;
   for (let index = 0; index < turns.length; index += 1) {
     const turn = turns[index];
     const plannerPacket = {
@@ -42,7 +43,11 @@ async function runFrozenConversation(options = {}) {
       safety_state: turn.safety_state || 'NONE',
       current_message: turn.message
     };
-    const output = await pipeline.execute({ planner_packet: plannerPacket, authority_context: turn.authority_context || {} });
+    const output = await pipeline.execute({
+      planner_packet: plannerPacket,
+      authority_context: turn.authority_context || {},
+      previous_publication: previousPublication
+    });
     const publicScan = scanPublicText(output.response);
     outputs.push(Object.freeze({
       turn: index + 1,
@@ -55,8 +60,18 @@ async function runFrozenConversation(options = {}) {
       writer_limit: output.writer_limit || null,
       planner_packet_hash: output.planner_packet_hash || null,
       planner_plan_hash: output.planner_plan_hash || null,
+      progress_state_hash: output.progress_state_hash || null,
+      publication_outcome: output.response_plan?.publication_outcome || null,
+      required_question: output.response_plan?.required_question || null,
+      required_response_commitments: output.response_plan?.required_response_commitments || [],
       public_scan: publicScan
     }));
+    if (output.accepted) {
+      previousPublication = Object.freeze({
+        response: output.response,
+        progress_state_hash: output.progress_state_hash
+      });
+    }
     transcript.push({ role: 'user', text: turn.message }, { role: 'assistant', text: output.response || '' });
   }
   const stable = {

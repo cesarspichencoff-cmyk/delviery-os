@@ -7,11 +7,14 @@ const MOVES = Object.freeze(['ANSWER', 'EXPAND', 'EXPLAIN', 'COMPARE', 'CLARIFY'
 const TOOLS = Object.freeze(['NONE', 'CATALOG_SEARCH', 'DETAIL_LOOKUP', 'PRICE_LOOKUP', 'RESTAURANT_INFO', 'RESERVATION_INFO', 'SAFETY_GATE', 'OTHER_ALLOWED_TOOL']);
 const SAFETY = Object.freeze(['NONE', 'PREVENTIVE', 'URGENT']);
 const REFERENCE_STATUS = Object.freeze(['NOT_REQUIRED', 'RESOLVED', 'NEEDS_CLARIFICATION', 'NEEDS_CONTEXT_LOOKUP']);
+const COMMITMENT_KINDS = Object.freeze(['GOAL', 'CONSTRAINT', 'REFERENCE', 'REPAIR', 'QUESTION']);
 
 const PLAN_KEYS = Object.freeze([
   'relation_to_history', 'conversational_move', 'tool_requirement', 'user_goal',
   'what_changed', 'repair', 'reference', 'safety_priority', 'next_best_step'
 ]);
+
+const PLAN_OPTIONAL_KEYS = Object.freeze(['required_response_commitments']);
 
 const PLAN_SCHEMA = Object.freeze({
   name: 'deliveryos_b2_cognitive_plan_v2',
@@ -44,7 +47,10 @@ function shortText(value, maximum = 500) {
 
 function validatePlan(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return { accepted: false, reason: 'B2_PLAN_NOT_OBJECT' };
-  if (JSON.stringify(Object.keys(value).sort()) !== JSON.stringify([...PLAN_KEYS].sort())) return { accepted: false, reason: 'B2_PLAN_KEYS_INVALID' };
+  const keys = Object.keys(value);
+  if (PLAN_KEYS.some((key) => !keys.includes(key)) || keys.some((key) => !PLAN_KEYS.includes(key) && !PLAN_OPTIONAL_KEYS.includes(key))) {
+    return { accepted: false, reason: 'B2_PLAN_KEYS_INVALID' };
+  }
   if (!RELATIONS.includes(value.relation_to_history)) return { accepted: false, reason: 'B2_RELATION_INVALID' };
   if (!MOVES.includes(value.conversational_move)) return { accepted: false, reason: 'B2_MOVE_INVALID' };
   if (!TOOLS.includes(value.tool_requirement)) return { accepted: false, reason: 'B2_TOOL_INVALID' };
@@ -69,6 +75,19 @@ function validatePlan(value) {
   if (value.safety_priority === 'URGENT' && value.conversational_move !== 'ANSWER') {
     return { accepted: false, reason: 'B2_URGENT_MOVE_INVALID' };
   }
+  if (value.required_response_commitments !== undefined) {
+    if (!Array.isArray(value.required_response_commitments) || value.required_response_commitments.length > 20) {
+      return { accepted: false, reason: 'B2_COMMITMENTS_INVALID' };
+    }
+    for (const item of value.required_response_commitments) {
+      if (!item || typeof item !== 'object' || Array.isArray(item)
+        || JSON.stringify(Object.keys(item).sort()) !== JSON.stringify(['content', 'kind'].sort())
+        || !COMMITMENT_KINDS.includes(item.kind)
+        || !shortText(item.content, 500)) {
+        return { accepted: false, reason: 'B2_COMMITMENTS_INVALID' };
+      }
+    }
+  }
   return { accepted: true, reason: null, plan: Object.freeze(structuredClone(value)), hash: canonicalHash(value) };
 }
 
@@ -89,6 +108,6 @@ function buildBlindPlannerPacket(input = {}) {
 }
 
 module.exports = {
-  RELATIONS, MOVES, TOOLS, SAFETY, REFERENCE_STATUS,
+  RELATIONS, MOVES, TOOLS, SAFETY, REFERENCE_STATUS, COMMITMENT_KINDS,
   PLAN_SCHEMA, validatePlan, buildBlindPlannerPacket, canonicalHash
 };
