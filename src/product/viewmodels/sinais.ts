@@ -443,9 +443,22 @@ function s5(l: LeituraOperacional): SinalBruto[] {
       subarea: praca,
       pedido_id: null,
       alvo_rotulo: alvo(null, praca, amb),
-      resumo: `${rotuloDaPraca(praca)} com ${carga} pedidos, ${Math.round(
-        razao * 100,
-      )}% do normal.`,
+      // A UNIDADE, corrigida na fonte em 2026-08-11 (D-M1A1-08, com excecao
+      // estreita autorizada pelo Cesar em M1B-R1).
+      //
+      // Ate aqui esta frase dizia "com N pedidos". `carga` e
+      // `carga_por_praca`, e M1A.1 mediu o que ela e: CONTAGEM DE UNIDADES
+      // OPERACIONAIS DE TRABALHO ABERTAS — o agrupamento `pedido x praca x
+      // grupo` do registro. O mesmo pedido com cinco itens vira carga 5 ou
+      // carga 1 conforme o granulo com que a bancada registra, e `quantidade`
+      // entra no payload e sai da contagem. Chamar isso de "pedidos" era falso
+      // nos dois sentidos: nao e pedido, e nao e item.
+      //
+      // MUDOU SO A PALAVRA. O numero, a razao, a severidade, a elegibilidade,
+      // a evidencia e o agrupamento sao exatamente os de antes.
+      resumo: `${rotuloDaPraca(praca)} com ${carga} ${
+        carga === 1 ? "trabalho aberto" : "trabalhos abertos"
+      }, ${Math.round(razao * 100)}% do normal.`,
       evidencias: [
         ev("carga_por_praca", `${rotuloDaPraca(praca)}=${carga}`, l.observado_em),
         ev("baseline_calibrado", `${rotuloDaPraca(praca)}=${base}`, l.observado_em),

@@ -224,6 +224,12 @@ const GATES_CONGELAMENTO = [
   "run-r5d3-shadow-path-tests.ts",
 ] as const;
 
+/**
+ * O DECIMO PRIMEIRO. M1A.1 disse "dez" e errou: esta asercao mora no Lab, fora
+ * de `src/platform/`, e o inventario nao olhou la. Migrada em M1B-R1.
+ */
+const GATE_DO_LAB = "labs/operacao-viva-v4/testes/run-lab-v4-tests.ts";
+
 /** Baseline de M1: fim do intervalo historico certificado (D-M1A1-10). */
 const M1_BASELINE = "f87a36dfd39c9989344f0fed6ebf8db5db1a8c35";
 /**
@@ -280,6 +286,18 @@ const GATES = GATES_CONGELAMENTO.map(lerGate);
 
 teste("C1 os dez gates existem e usam INTERVALO FECHADO", () => {
   assert.equal(GATES.length, 10, "o inventario de gates de congelamento mudou de tamanho");
+  // O decimo primeiro nao mora em `src/platform/`, entao ele e verificado por
+  // nome. Deixa-lo de fora foi o erro de M1A.1.
+  const lab = ler(GATE_DO_LAB);
+  assert.ok(
+    lab.includes(`const FIM_HISTORICO = "${M1_BASELINE}"`),
+    "o gate de congelamento do Lab voltou a forma aberta",
+  );
+  assert.doesNotMatch(
+    lab,
+    /"--name-only", PF4_BASE, "--"/,
+    "o gate do Lab voltou a comparar com a arvore atual",
+  );
   for (const g of GATES) {
     const fonte = ler(`src/platform/${g.arquivo}`);
     assert.ok(
@@ -389,8 +407,21 @@ teste("C6 a metade do FUTURO: mudanca pos-baseline so passa dentro do envelope",
   const mudou = git("diff", "--name-only", M1_BASELINE, "--", ...todos)
     .split("\n")
     .filter((l) => l !== "");
+  // EXCECAO ESTREITA — Cesar, 2026-08-11 (M1B-R1). UM arquivo, UMA classe de
+  // mudanca: a frase do sinal S5 dizia "N pedidos" para `carga_por_praca`, e
+  // D-M1A1-08 provou isso falso. A excecao e nomeada aqui porque um caminho
+  // proibido nao pode entrar em `AUTHORIZED_PATHS` — se entrasse, ele deixaria
+  // de ser proibido para todo o resto. Ela nao se estende a nenhum outro
+  // arquivo e nao vale para nenhuma outra classe de mudanca.
+  const EXCECAO_ESTREITA = "src/product/viewmodels/sinais.ts";
+  const env = ler(ENVELOPE);
+  const excecaoRegistrada =
+    env.includes(EXCECAO_ESTREITA) &&
+    env.includes("TEXTUAL_SEMANTIC_TRUTH_CORRECTION_ONLY");
   const fora = mudou.filter(
-    (p) => !autorizados.some((a) => (a.endsWith("/") ? p.startsWith(a) : p === a)),
+    (p) =>
+      !autorizados.some((a) => (a.endsWith("/") ? p.startsWith(a) : p === a)) &&
+      !(p === EXCECAO_ESTREITA && excecaoRegistrada),
   );
   assert.deepEqual(
     fora,

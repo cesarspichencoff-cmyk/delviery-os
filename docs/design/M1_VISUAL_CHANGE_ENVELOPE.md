@@ -182,11 +182,37 @@ aplicada e aprovada.
 - **novos campos de apresentação** no view model da Home que sejam função pura de
   dado já existente — nunca fonte nova de verdade.
 
+### Exceção estreita — César, 2026-08-11 (M1B-R1)
+
+```
+src/product/viewmodels/sinais.ts   TEXTUAL_SEMANTIC_TRUTH_CORRECTION_ONLY
+```
+
+Autorizada **uma** correção, e só ela: a frase do sinal S5 dizia
+*"com N pedidos"* para `carga_por_praca`, o que D-M1A1-08 provou falso.
+`"N pedidos"` → `"N trabalhos abertos"`.
+
+**Raio de alcance provado antes da edição.** Consumidores de `.resumo`:
+`home.js` (4 sítios de exibição), `home-vm.ts`, o Lab V4 (exibição e uma
+comparação de `resumo` consigo mesmo) e duas varreduras de texto. **Nenhum
+depende do literal "pedidos"** — `run-r5c-translation-tests.ts:84` e
+`run-r5d0-confidence-tests.ts:107` constroem fixtures de entrada, e
+`run-home-signals-tests.ts:405` asserta a frase de outro sinal.
+
+Não mudaram: o número, a razão, a severidade, a elegibilidade, a projeção, o
+tratamento de `quantidade`, o agrupamento, a evidência, a confiança, a
+propriedade de área nem a lógica de estado do sinal.
+
+**Consequência:** a compensação `fraseDoSinal()` que M1B tinha posto em
+`home-vm.ts` foi **removida**. Uma verdade só, na fonte, em vez de duas.
+
 ### `FORBIDDEN_PATHS`
 
 ```
 src/product/viewmodels/areas.ts            (contrato de domínio)
-src/product/viewmodels/sinais.ts           (regra de sinal — exige o César)
+src/product/viewmodels/sinais.ts           (regra de sinal — exige o César;
+                                            exceção textual acima é a única
+                                            aberta, e não se estende)
 src/product/viewmodels/copiloto-vm.ts
 src/product/atencao/**
 src/product/eventos/**

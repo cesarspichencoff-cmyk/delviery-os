@@ -100,13 +100,42 @@ const PF4_CAMINHOS = [
   "docs/figma/",
 ];
 
+/**
+ * O DECIMO PRIMEIRO GATE DE CONGELAMENTO — migrado em M1B-R1.
+ *
+ * M1A.1 inventariou DEZ asercoes de congelamento aberto e migrou as dez para
+ * intervalo fechado (D-M1A1-10). Esta aqui passou despercebida: ela mora no
+ * Lab, nao em `src/platform/`, e o inventario procurou no lugar errado. O
+ * numero "dez" no envelope e nesta guarda de ponte estava ERRADO — sao onze.
+ *
+ * Ela tinha o mesmo defeito das outras: `git diff <base> -- <paths>` sem o
+ * segundo commit compara com a arvore ATUAL, entao a afirmacao "o LAB nao
+ * encostou" passava a falhar quando QUALQUER outra missao tocasse os caminhos.
+ * Foi o que aconteceu: M1B mexeu em `home.css`, `home.js` e `sinais.ts`, e esta
+ * guarda acusou o Lab por trabalho que nao era dele.
+ *
+ * O fim certificado e o mesmo das outras dez: `f87a36d`, o baseline de M1 e o
+ * ultimo commit em que a propriedade foi verificada verde. O baseline do Lab
+ * nao mudou. A afirmacao historica — "o Lab nasceu sem encostar em caminho
+ * protegido" — continua inteira, e agora e a unica que ela faz.
+ */
+const FIM_HISTORICO = "f87a36dfd39c9989344f0fed6ebf8db5db1a8c35";
+
 teste("G1 PF4 continua vazio — o Lab não encostou em caminho protegido", () => {
   const saida = execFileSync(
     "git",
-    ["diff", "--name-only", PF4_BASE, "--", ...PF4_CAMINHOS],
+    ["diff", "--name-only", PF4_BASE, FIM_HISTORICO, "--", ...PF4_CAMINHOS],
     { cwd: raiz, encoding: "utf8" },
   ).trim();
   assert.equal(saida, "", `caminho protegido pelo PF4 foi alterado:\n${saida}`);
+  // Controle antifalso-positivo: o mesmo comando, sobre um intervalo que
+  // SABIDAMENTE mexeu nestes caminhos, precisa acusar.
+  const adulterado = execFileSync(
+    "git",
+    ["diff", "--name-only", "fcfc21db8fa7e505e4d7879a1c2b103ef7b33c17", FIM_HISTORICO, "--", ...PF4_CAMINHOS],
+    { cwd: raiz, encoding: "utf8" },
+  ).trim();
+  assert.notEqual(adulterado, "", "a asercao nao acusa nem um intervalo que mudou os caminhos");
 });
 
 teste("G1b o Lab não importa nada de dentro de src/product/ui", () => {

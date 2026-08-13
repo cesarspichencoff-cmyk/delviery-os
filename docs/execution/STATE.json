@@ -5,9 +5,13 @@
     "status": "ACTIVE",
     "authority_scope": "technical_state",
     "superseded_by": null,
-    "atualizado_em": "2026-08-07",
-    "state_basis": "953a3fb",
-    "observa": ["src/product/", "src/perfil-delivery/", "labs/"],
+    "atualizado_em": "2026-08-11",
+    "state_basis": "b24fd222",
+    "observa": [
+      "src/product/",
+      "src/perfil-delivery/",
+      "labs/"
+    ],
     "_nota_observa": "Os tres troncos cujo estado este arquivo realmente afirma: produto, perfil e o Lab V4. src/platform/ fica de fora porque o que STATE.json diz dele sao contagens de teste, que esta guarda nao verifica — declarar escopo que a guarda nao cobre seria comprar confianca que ela nao entrega. Escolhido antes de rodar, e nao para acomodar caso que falhava (L44)."
   },
   "atualizado_em": "2026-08-07",
