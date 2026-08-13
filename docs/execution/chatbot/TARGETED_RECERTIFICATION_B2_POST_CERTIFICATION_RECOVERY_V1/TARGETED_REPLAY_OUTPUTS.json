@@ -1,0 +1,1906 @@
+{
+  "schema_version": "deliveryos-b2-targeted-replay-outputs-v1",
+  "replay_semantics": "INDEPENDENT_BOUNDED_UNITS_NOT_CONTINUOUS_CONVERSATION",
+  "units": [
+    {
+      "unit_id": "F001-R1",
+      "scenario_id": "F001",
+      "source_round": 1,
+      "accepted": true,
+      "stage": "published",
+      "response": "Entendi: algo empanado, sem peixe cru, para uma pessoa. Não consigo consultar o cardápio por aqui agora. Posso deixar seus critérios organizados para você confirmar diretamente com o restaurante.",
+      "response_hash": "d8a8b49fef6b83f6ac56356ec23327a80693a6deff5ec9bdef9581a414d7cfbe",
+      "writer_source": "deterministic_b2_writer",
+      "writer_limit": null,
+      "progress_state_hash": "e784b5511321615d097eae7cf2c2b60945be0cd55c79747d47759ab0e0c1cb0c",
+      "approved_response_plan": {
+        "schema_version": "deliveryos-approved-b2-response-plan-v1",
+        "status": "NEEDS_TOOL",
+        "publication_outcome": "EXPLICIT_LIMITATION",
+        "tool_requirement": "CATALOG_SEARCH",
+        "relation_to_history": "OPEN",
+        "conversational_move": "ANSWER",
+        "user_goal": "Encontrar um jantar individual parecido com o item empanado de que gostou, sem peixe cru e sem exigir conhecimento dos nomes do cardápio.",
+        "what_changed": "A necessidade inicial já traz duas preferências observáveis: algo empanado e ausência de peixe cru.",
+        "repair_acknowledgement": null,
+        "reference": {
+          "required": true,
+          "status": "RESOLVED",
+          "target": "Algo semelhante ao item empanado mencionado, sem peixe cru."
+        },
+        "safety_priority": "NONE",
+        "next_best_step": "Consultar o catálogo por opções individuais que correspondam aos critérios informados e só então apresentar alternativas, sem inventar nomes, composição ou disponibilidade.",
+        "required_question": null,
+        "required_response_commitments": [
+          {
+            "id": "a18bc6156e25b51b",
+            "kind": "CONSTRAINT",
+            "content": "algo empanado, sem peixe cru, para uma pessoa",
+            "anchors": [
+              "algo",
+              "empanado",
+              "peixe",
+              "cru",
+              "pessoa"
+            ],
+            "source": "conversation_plan"
+          }
+        ],
+        "approved_facts": [],
+        "approved_tool_result": null,
+        "safety_directive": null,
+        "prohibited_claims": [
+          "reserva confirmada",
+          "preço confirmado",
+          "disponibilidade confirmada",
+          "seguro para alergia"
+        ],
+        "writer_surface": {
+          "authorized_links": [],
+          "authorized_numbers": [],
+          "recent_phrases": [],
+          "tone": "calmo, direto e acolhedor",
+          "gravity": "informational"
+        },
+        "authority_evidence_hash": "3ada51e5e28a0234860538470370f61a350fd7203f4fab10c9db7848a06ed0e2",
+        "progress_state_hash": "e784b5511321615d097eae7cf2c2b60945be0cd55c79747d47759ab0e0c1cb0c"
+      },
+      "public_text_scan": {
+        "accepted": true
+      }
+    },
+    {
+      "unit_id": "F001-R2",
+      "scenario_id": "F001",
+      "source_round": 2,
+      "accepted": true,
+      "stage": "published",
+      "response": "Entendi: algo empanado, sem peixe cru, para uma pessoa. Não consigo consultar o cardápio por aqui agora. Posso deixar seus critérios organizados para você confirmar diretamente com o restaurante.",
+      "response_hash": "066b077b1f79014d496c843efe8603db08698693e8b317625345e34d0ebf156e",
+      "writer_source": "deterministic_b2_writer",
+      "writer_limit": null,
+      "progress_state_hash": "4cc8127e440dd47038f37e74871e6de6dfd5048054411e5e79150c97b0b974b0",
+      "approved_response_plan": {
+        "schema_version": "deliveryos-approved-b2-response-plan-v1",
+        "status": "NEEDS_TOOL",
+        "publication_outcome": "EXPLICIT_LIMITATION",
+        "tool_requirement": "CATALOG_SEARCH",
+        "relation_to_history": "CONTINUE",
+        "conversational_move": "ANSWER",
+        "user_goal": "Encontrar uma opção de jantar individual que seja empanada e não tenha peixe cru, sem precisar conhecer os nomes do cardápio.",
+        "what_changed": "A pessoa confirmou que aguardará a consulta e reiterou os três critérios já observáveis: empanado, sem peixe cru e porção para uma pessoa.",
+        "repair_acknowledgement": null,
+        "reference": {
+          "required": true,
+          "status": "RESOLVED",
+          "target": "As opções empanadas, sem peixe cru e adequadas a uma pessoa pelas quais a pessoa está aguardando."
+        },
+        "safety_priority": "NONE",
+        "next_best_step": "Consultar o catálogo pelos critérios informados e apresentar somente opções, composição e porção sustentadas pelo resultado autorizado, sem presumir disponibilidade.",
+        "required_question": null,
+        "required_response_commitments": [
+          {
+            "id": "a18bc6156e25b51b",
+            "kind": "CONSTRAINT",
+            "content": "algo empanado, sem peixe cru, para uma pessoa",
+            "anchors": [
+              "algo",
+              "empanado",
+              "peixe",
+              "cru",
+              "pessoa"
+            ],
+            "source": "conversation_plan"
+          }
+        ],
+        "approved_facts": [],
+        "approved_tool_result": null,
+        "safety_directive": null,
+        "prohibited_claims": [
+          "reserva confirmada",
+          "preço confirmado",
+          "disponibilidade confirmada",
+          "seguro para alergia"
+        ],
+        "writer_surface": {
+          "authorized_links": [],
+          "authorized_numbers": [],
+          "recent_phrases": [],
+          "tone": "calmo, direto e acolhedor",
+          "gravity": "informational"
+        },
+        "authority_evidence_hash": "46e7128ed14ffa81304b6b6ce0c0a309c5566a4b52a4a56e7f781eaebcf5ac0d",
+        "progress_state_hash": "4cc8127e440dd47038f37e74871e6de6dfd5048054411e5e79150c97b0b974b0"
+      },
+      "public_text_scan": {
+        "accepted": true
+      }
+    },
+    {
+      "unit_id": "F002-R1",
+      "scenario_id": "F002",
+      "source_round": 1,
+      "accepted": true,
+      "stage": "published",
+      "response": "Entendi: pedido para quatro adultos hoje às oito; opções sem peixe cru para uma pessoa. Não consigo consultar o cardápio por aqui agora. Posso deixar seus critérios organizados para você confirmar diretamente com o restaurante.",
+      "response_hash": "55ba5779eeb19c1318854b84a5492b837007906f1d5fb5055026e3e9e55e0389",
+      "writer_source": "deterministic_b2_writer",
+      "writer_limit": null,
+      "progress_state_hash": "6bdb2fe6f506e16ba7cb61df0073e6f6fc20d6b737125f40f56ce326fe0ea4e4",
+      "approved_response_plan": {
+        "schema_version": "deliveryos-approved-b2-response-plan-v1",
+        "status": "NEEDS_TOOL",
+        "publication_outcome": "EXPLICIT_LIMITATION",
+        "tool_requirement": "CATALOG_SEARCH",
+        "relation_to_history": "REFINE",
+        "conversational_move": "ANSWER",
+        "user_goal": "Encontrar para hoje às oito uma opção para quatro adultos que também atenda uma pessoa que não come peixe cru.",
+        "what_changed": "Foi acrescentado ao pedido para quatro adultos o requisito de incluir opções sem peixe cru para uma das pessoas.",
+        "repair_acknowledgement": null,
+        "reference": {
+          "required": true,
+          "status": "RESOLVED",
+          "target": "A pessoa mencionada que não come peixe cru."
+        },
+        "safety_priority": "NONE",
+        "next_best_step": "Buscar no catálogo opções adequadas a quatro adultos e ao requisito sem peixe cru, verificando os dados autorizados antes de sugerir itens ou afirmar disponibilidade.",
+        "required_question": null,
+        "required_response_commitments": [
+          {
+            "id": "fabbc66a74813740",
+            "kind": "CONSTRAINT",
+            "content": "pedido para quatro adultos hoje às oito",
+            "anchors": [
+              "pedido",
+              "quatro",
+              "adultos",
+              "hoje",
+              "oito"
+            ],
+            "source": "conversation_plan"
+          },
+          {
+            "id": "8a7ddfab143424f9",
+            "kind": "CONSTRAINT",
+            "content": "opções sem peixe cru para uma pessoa",
+            "anchors": [
+              "opcoes",
+              "peixe",
+              "cru",
+              "pessoa"
+            ],
+            "source": "conversation_plan"
+          }
+        ],
+        "approved_facts": [],
+        "approved_tool_result": null,
+        "safety_directive": null,
+        "prohibited_claims": [
+          "reserva confirmada",
+          "preço confirmado",
+          "disponibilidade confirmada",
+          "seguro para alergia"
+        ],
+        "writer_surface": {
+          "authorized_links": [],
+          "authorized_numbers": [],
+          "recent_phrases": [],
+          "tone": "calmo, direto e acolhedor",
+          "gravity": "informational"
+        },
+        "authority_evidence_hash": "3c87e0b38d15ec6d17b91a673cd9bf3f84ac07d1a151efd3548464ab50e6223b",
+        "progress_state_hash": "6bdb2fe6f506e16ba7cb61df0073e6f6fc20d6b737125f40f56ce326fe0ea4e4"
+      },
+      "public_text_scan": {
+        "accepted": true
+      }
+    },
+    {
+      "unit_id": "F002-R2",
+      "scenario_id": "F002",
+      "source_round": 2,
+      "accepted": true,
+      "stage": "published",
+      "response": "Entendi: pedido para quatro pessoas hoje às oito; opções sem peixe cru. Não consigo consultar o cardápio por aqui agora. Posso deixar seus critérios organizados para você confirmar diretamente com o restaurante.",
+      "response_hash": "20adbccb9c35b042b14f1eeae82bf86f291f70d08c74147f623bc8889e4f3d6b",
+      "writer_source": "deterministic_b2_writer",
+      "writer_limit": null,
+      "progress_state_hash": "1bbffdb78a2e078050f4c29819419342b65e4e763be61421577bafac9e6b586c",
+      "approved_response_plan": {
+        "schema_version": "deliveryos-approved-b2-response-plan-v1",
+        "status": "NEEDS_TOOL",
+        "publication_outcome": "EXPLICIT_LIMITATION",
+        "tool_requirement": "CATALOG_SEARCH",
+        "relation_to_history": "CONTINUE",
+        "conversational_move": "ANSWER",
+        "user_goal": "Confirmar uma opção para quatro pessoas, com alternativas sem peixe cru para uma delas, e saber se pode ficar pronta hoje às oito.",
+        "what_changed": "A pessoa reiterou o pedido e tornou explícito que precisa confirmar tanto a composição para quatro pessoas quanto a possibilidade de ficar pronto às oito.",
+        "repair_acknowledgement": null,
+        "reference": {
+          "required": true,
+          "status": "RESOLVED",
+          "target": "O combinado para quatro adultos, incluindo opções para a pessoa que não come peixe cru, para hoje às oito."
+        },
+        "safety_priority": "NONE",
+        "next_best_step": "Consultar o catálogo para verificar opções que atendam ao grupo e ao critério sem peixe cru, e só afirmar composição ou possibilidade para as oito com suporte factual autorizado.",
+        "required_question": null,
+        "required_response_commitments": [
+          {
+            "id": "5fa5e296aa4d3bfa",
+            "kind": "CONSTRAINT",
+            "content": "pedido para quatro pessoas hoje às oito",
+            "anchors": [
+              "pedido",
+              "quatro",
+              "pessoas",
+              "hoje",
+              "oito"
+            ],
+            "source": "conversation_plan"
+          },
+          {
+            "id": "0da36e85030c2344",
+            "kind": "CONSTRAINT",
+            "content": "opções sem peixe cru",
+            "anchors": [
+              "opcoes",
+              "peixe",
+              "cru"
+            ],
+            "source": "conversation_plan"
+          }
+        ],
+        "approved_facts": [],
+        "approved_tool_result": null,
+        "safety_directive": null,
+        "prohibited_claims": [
+          "reserva confirmada",
+          "preço confirmado",
+          "disponibilidade confirmada",
+          "seguro para alergia"
+        ],
+        "writer_surface": {
+          "authorized_links": [],
+          "authorized_numbers": [],
+          "recent_phrases": [],
+          "tone": "calmo, direto e acolhedor",
+          "gravity": "informational"
+        },
+        "authority_evidence_hash": "ca37ab873ae9eba9a34e8b24e7b2dc64a7ad5c834ef4e73940b04246b52c94d6",
+        "progress_state_hash": "1bbffdb78a2e078050f4c29819419342b65e4e763be61421577bafac9e6b586c"
+      },
+      "public_text_scan": {
+        "accepted": true
+      }
+    },
+    {
+      "unit_id": "F003-R1",
+      "scenario_id": "F003",
+      "source_round": 1,
+      "accepted": true,
+      "stage": "published",
+      "response": "Você pode informar o bairro de entrega corrigido?",
+      "response_hash": "ab62efd5884953d1975fa5eccbdcf57f22639923a32d9bd25a2522b389e75d30",
+      "writer_source": "deterministic_b2_writer",
+      "writer_limit": null,
+      "progress_state_hash": "22c5bb28ba67cec589e4cd0eff57a92b1dfd37b5a5cea0d24691916a194e1d14",
+      "approved_response_plan": {
+        "schema_version": "deliveryos-approved-b2-response-plan-v1",
+        "status": "NEEDS_CLARIFICATION",
+        "publication_outcome": "CONCRETE_NEXT_STEP",
+        "tool_requirement": "RESTAURANT_INFO",
+        "relation_to_history": "CORRECT",
+        "conversational_move": "CLARIFY",
+        "user_goal": "Verificar se há entrega no bairro correto antes das 13h.",
+        "what_changed": "O bairro de entrega anteriormente informado foi corrigido, mas o novo bairro não aparece no estado observável.",
+        "repair_acknowledgement": null,
+        "reference": {
+          "required": true,
+          "status": "NEEDS_CLARIFICATION",
+          "target": null
+        },
+        "safety_priority": "NONE",
+        "next_best_step": "Pedir o bairro de entrega corrigido e, depois de recebê-lo, consultar a informação operacional autorizada para verificar atendimento e prazo sem prometer entrega.",
+        "required_question": "Você pode informar o bairro de entrega corrigido?",
+        "required_response_commitments": [
+          {
+            "id": "32d53bac6c157e60",
+            "kind": "QUESTION",
+            "content": "Você pode informar o bairro de entrega corrigido?",
+            "anchors": [
+              "voce",
+              "pode",
+              "informar",
+              "bairro",
+              "entrega",
+              "corrigido"
+            ],
+            "source": "approved_response_plan.required_question"
+          }
+        ],
+        "approved_facts": [],
+        "approved_tool_result": null,
+        "safety_directive": null,
+        "prohibited_claims": [
+          "reserva confirmada",
+          "preço confirmado",
+          "disponibilidade confirmada",
+          "seguro para alergia"
+        ],
+        "writer_surface": {
+          "authorized_links": [],
+          "authorized_numbers": [],
+          "recent_phrases": [],
+          "tone": "calmo, direto e acolhedor",
+          "gravity": "informational"
+        },
+        "authority_evidence_hash": "08512ab3ea5f2937544b3e9c3a6c43efb58d826758e1693eb69be03e04a73b1e",
+        "progress_state_hash": "22c5bb28ba67cec589e4cd0eff57a92b1dfd37b5a5cea0d24691916a194e1d14"
+      },
+      "public_text_scan": {
+        "accepted": true
+      }
+    },
+    {
+      "unit_id": "F004-R1",
+      "scenario_id": "F004",
+      "source_round": 1,
+      "accepted": true,
+      "stage": "published",
+      "response": "Entendi: parte da criança simples, sem pimenta e separada. Não consigo consultar o cardápio por aqui agora. Posso deixar seus critérios organizados para você confirmar diretamente com o restaurante.",
+      "response_hash": "d20c227955e79e2318af5fc6fb637ff1ba55b45964545ff644c207e7bf58b82a",
+      "writer_source": "deterministic_b2_writer",
+      "writer_limit": null,
+      "progress_state_hash": "a76299af787e864edb7f715a5cd415ab133cca205daba381965ee7d4207f796c",
+      "approved_response_plan": {
+        "schema_version": "deliveryos-approved-b2-response-plan-v1",
+        "status": "NEEDS_TOOL",
+        "publication_outcome": "EXPLICIT_LIMITATION",
+        "tool_requirement": "CATALOG_SEARCH",
+        "relation_to_history": "REFINE",
+        "conversational_move": "ANSWER",
+        "user_goal": "Escolher sushi para hoje e uma opção simples, não apimentada e separada para uma criança.",
+        "what_changed": "Ao desejo de experimentar sushi foi acrescentada a necessidade específica da criança e o pedido de separação da parte dela.",
+        "repair_acknowledgement": null,
+        "reference": {
+          "required": true,
+          "status": "RESOLVED",
+          "target": "A parte destinada à criança que não gosta de itens apimentados."
+        },
+        "safety_priority": "NONE",
+        "next_best_step": "Consultar opções do catálogo que atendam aos critérios e verificar de forma autorizada a possibilidade de envio separado antes de sugerir item, composição ou confirmação operacional.",
+        "required_question": null,
+        "required_response_commitments": [
+          {
+            "id": "bb288ff3d90b3939",
+            "kind": "CONSTRAINT",
+            "content": "parte da criança simples, sem pimenta e separada",
+            "anchors": [
+              "parte",
+              "crianca",
+              "simples",
+              "pimenta",
+              "separada"
+            ],
+            "source": "conversation_plan"
+          }
+        ],
+        "approved_facts": [],
+        "approved_tool_result": null,
+        "safety_directive": null,
+        "prohibited_claims": [
+          "reserva confirmada",
+          "preço confirmado",
+          "disponibilidade confirmada",
+          "seguro para alergia"
+        ],
+        "writer_surface": {
+          "authorized_links": [],
+          "authorized_numbers": [],
+          "recent_phrases": [],
+          "tone": "calmo, direto e acolhedor",
+          "gravity": "informational"
+        },
+        "authority_evidence_hash": "f2824d2cc5e7a2f9947b6b3727686bb6a7f2c651eb09efd35878d2c19ca74935",
+        "progress_state_hash": "a76299af787e864edb7f715a5cd415ab133cca205daba381965ee7d4207f796c"
+      },
+      "public_text_scan": {
+        "accepted": true
+      }
+    },
+    {
+      "unit_id": "F004-R2",
+      "scenario_id": "F004",
+      "source_round": 2,
+      "accepted": true,
+      "stage": "published",
+      "response": "Entendi: parte da criança simples, sem pimenta e separada. Não consigo consultar o cardápio por aqui agora. Posso deixar seus critérios organizados para você confirmar diretamente com o restaurante.",
+      "response_hash": "ca332049b26336217b89140b040246026a687cb22bc1808f73a5bf16aedeb94e",
+      "writer_source": "deterministic_b2_writer",
+      "writer_limit": null,
+      "progress_state_hash": "a81b21ca41f9647d8f8c43059e48ef05e8089680ed2d6361da8d07eb2949bd1c",
+      "approved_response_plan": {
+        "schema_version": "deliveryos-approved-b2-response-plan-v1",
+        "status": "NEEDS_TOOL",
+        "publication_outcome": "EXPLICIT_LIMITATION",
+        "tool_requirement": "CATALOG_SEARCH",
+        "relation_to_history": "CONTINUE",
+        "conversational_move": "ANSWER",
+        "user_goal": "Escolher algo para experimentar e uma opção infantil simples, sem pimenta e enviada separadamente.",
+        "what_changed": "A pessoa reiterou que sua própria escolha pode ser algo para experimentar e reforçou como obrigatórios os critérios da parte infantil: simples, sem pimenta e separada.",
+        "repair_acknowledgement": null,
+        "reference": {
+          "required": true,
+          "status": "RESOLVED",
+          "target": "A parte destinada à criança, que deve ser simples, sem pimenta e separada."
+        },
+        "safety_priority": "NONE",
+        "next_best_step": "Consultar o catálogo por opções compatíveis e verificar com fonte autorizada a possibilidade de separação antes de sugerir itens, descrever composição ou confirmar o envio separado.",
+        "required_question": null,
+        "required_response_commitments": [
+          {
+            "id": "bb288ff3d90b3939",
+            "kind": "CONSTRAINT",
+            "content": "parte da criança simples, sem pimenta e separada",
+            "anchors": [
+              "parte",
+              "crianca",
+              "simples",
+              "pimenta",
+              "separada"
+            ],
+            "source": "conversation_plan"
+          }
+        ],
+        "approved_facts": [],
+        "approved_tool_result": null,
+        "safety_directive": null,
+        "prohibited_claims": [
+          "reserva confirmada",
+          "preço confirmado",
+          "disponibilidade confirmada",
+          "seguro para alergia"
+        ],
+        "writer_surface": {
+          "authorized_links": [],
+          "authorized_numbers": [],
+          "recent_phrases": [],
+          "tone": "calmo, direto e acolhedor",
+          "gravity": "informational"
+        },
+        "authority_evidence_hash": "898bec3480d193cf1065eee4d87ebcc0076df4c4ef967992c3bb63462ca1669f",
+        "progress_state_hash": "a81b21ca41f9647d8f8c43059e48ef05e8089680ed2d6361da8d07eb2949bd1c"
+      },
+      "public_text_scan": {
+        "accepted": true
+      }
+    },
+    {
+      "unit_id": "F005-R1",
+      "scenario_id": "F005",
+      "source_round": 1,
+      "accepted": true,
+      "stage": "published",
+      "response": "Entendi: alergia a crustáceos; informação sobre ingredientes e contato cruzado antes de escolher. Não consigo verificar ingredientes e contato cruzado por aqui agora. Por segurança, não vou indicar um item; confirme diretamente com a equipe do restaurante antes de escolher.",
+      "response_hash": "ee6e8376658e3bbf8d9d7a111bfc8b87c8680fb07ac63ed11cf296b8e5aa9ab8",
+      "writer_source": "deterministic_b2_writer",
+      "writer_limit": null,
+      "progress_state_hash": "aef72a3096eaf8466d80ceb89e2199367e58073764a9f47915fb5e02427fdafb",
+      "approved_response_plan": {
+        "schema_version": "deliveryos-approved-b2-response-plan-v1",
+        "status": "NEEDS_TOOL",
+        "publication_outcome": "EXPLICIT_LIMITATION",
+        "tool_requirement": "SAFETY_GATE",
+        "relation_to_history": "OPEN",
+        "conversational_move": "ANSWER",
+        "user_goal": "Obter informação confiável sobre itens sem crustáceos e sobre risco de contato cruzado antes de escolher.",
+        "what_changed": "A escolha está condicionada a uma alergia a crustáceos e à avaliação de contato cruzado; retirar camarão não atende ao limite informado.",
+        "repair_acknowledgement": null,
+        "reference": {
+          "required": false,
+          "status": "NOT_REQUIRED",
+          "target": null
+        },
+        "safety_priority": "PREVENTIVE",
+        "next_best_step": "Acionar a verificação de segurança e obter informação autorizada sobre ingredientes e contato cruzado antes de indicar qualquer item, sem declarar que algo é seguro para alergia.",
+        "required_question": null,
+        "required_response_commitments": [
+          {
+            "id": "b01e67e61c9adf81",
+            "kind": "CONSTRAINT",
+            "content": "alergia a crustáceos",
+            "anchors": [
+              "alergia",
+              "crustaceos"
+            ],
+            "source": "conversation_plan"
+          },
+          {
+            "id": "51b8e4c43d42f3ce",
+            "kind": "CONSTRAINT",
+            "content": "informação sobre ingredientes e contato cruzado antes de escolher",
+            "anchors": [
+              "informacao",
+              "sobre",
+              "ingredientes",
+              "contato",
+              "cruzado",
+              "antes",
+              "escolher"
+            ],
+            "source": "conversation_plan"
+          }
+        ],
+        "approved_facts": [],
+        "approved_tool_result": null,
+        "safety_directive": null,
+        "prohibited_claims": [
+          "reserva confirmada",
+          "preço confirmado",
+          "disponibilidade confirmada",
+          "seguro para alergia"
+        ],
+        "writer_surface": {
+          "authorized_links": [],
+          "authorized_numbers": [],
+          "recent_phrases": [],
+          "tone": "calmo, direto e acolhedor",
+          "gravity": "sensitive"
+        },
+        "authority_evidence_hash": "c44335eaedfeb84988b8804b1752aeca5057d4ec7888bb88b2d76a9f573f157f",
+        "progress_state_hash": "aef72a3096eaf8466d80ceb89e2199367e58073764a9f47915fb5e02427fdafb"
+      },
+      "public_text_scan": {
+        "accepted": true
+      }
+    },
+    {
+      "unit_id": "F005-R2",
+      "scenario_id": "F005",
+      "source_round": 2,
+      "accepted": true,
+      "stage": "published",
+      "response": "Entendi: alergia a crustáceos; confirmação de ingredientes e contato cruzado antes de escolher. Não consigo verificar ingredientes e contato cruzado por aqui agora. Por segurança, não vou indicar um item; confirme diretamente com a equipe do restaurante antes de escolher.",
+      "response_hash": "5ab19911f510398f20d5786fdc5951f38312f8dbf0502f115043b5dd82402b5f",
+      "writer_source": "deterministic_b2_writer",
+      "writer_limit": null,
+      "progress_state_hash": "86200db2564fcaa9205ac792e84e1c4a48907db2fe2d212ad283862502edc7bf",
+      "approved_response_plan": {
+        "schema_version": "deliveryos-approved-b2-response-plan-v1",
+        "status": "NEEDS_TOOL",
+        "publication_outcome": "EXPLICIT_LIMITATION",
+        "tool_requirement": "SAFETY_GATE",
+        "relation_to_history": "CONTINUE",
+        "conversational_move": "ANSWER",
+        "user_goal": "Obter informação confiável sobre ingredientes com crustáceos e risco de contato cruzado antes de escolher qualquer item.",
+        "what_changed": "A pessoa reafirmou que não escolherá nenhum item antes da verificação de ingredientes e contato cruzado relacionada à alergia a crustáceos.",
+        "repair_acknowledgement": null,
+        "reference": {
+          "required": true,
+          "status": "RESOLVED",
+          "target": "A confirmação solicitada sobre ingredientes com crustáceos e risco de contato cruzado no preparo."
+        },
+        "safety_priority": "PREVENTIVE",
+        "next_best_step": "Acionar a verificação de segurança e aguardar informação autorizada sobre ingredientes e contato cruzado antes de apresentar qualquer opção, sem declarar que um item é seguro para alergia.",
+        "required_question": null,
+        "required_response_commitments": [
+          {
+            "id": "b01e67e61c9adf81",
+            "kind": "CONSTRAINT",
+            "content": "alergia a crustáceos",
+            "anchors": [
+              "alergia",
+              "crustaceos"
+            ],
+            "source": "conversation_plan"
+          },
+          {
+            "id": "e201e262f0faaa48",
+            "kind": "CONSTRAINT",
+            "content": "confirmação de ingredientes e contato cruzado antes de escolher",
+            "anchors": [
+              "confirmacao",
+              "ingredientes",
+              "contato",
+              "cruzado",
+              "antes",
+              "escolher"
+            ],
+            "source": "conversation_plan"
+          }
+        ],
+        "approved_facts": [],
+        "approved_tool_result": null,
+        "safety_directive": null,
+        "prohibited_claims": [
+          "reserva confirmada",
+          "preço confirmado",
+          "disponibilidade confirmada",
+          "seguro para alergia"
+        ],
+        "writer_surface": {
+          "authorized_links": [],
+          "authorized_numbers": [],
+          "recent_phrases": [],
+          "tone": "calmo, direto e acolhedor",
+          "gravity": "sensitive"
+        },
+        "authority_evidence_hash": "55c11aec14971d8e9de2b5be1cde9f8ba1223b11e345bd05e791cf0d35d27687",
+        "progress_state_hash": "86200db2564fcaa9205ac792e84e1c4a48907db2fe2d212ad283862502edc7bf"
+      },
+      "public_text_scan": {
+        "accepted": true
+      }
+    },
+    {
+      "unit_id": "F006-R1",
+      "scenario_id": "F006",
+      "source_round": 1,
+      "accepted": true,
+      "stage": "published",
+      "response": "Entendi: corrigir somente o número sem duplicar pedido ou cobrança; o pedido feito agora e o endereço associado a ele. Você pode informar os dados mínimos para localizar o pedido e o número correto?",
+      "response_hash": "582290135215f83ddf996b932a622c011b615ca6cfcf00f533d864f743388c52",
+      "writer_source": "deterministic_b2_writer",
+      "writer_limit": null,
+      "progress_state_hash": "0d31878605a8a3b9198c4d2f8f8ceb9be5c3b00ea42796f69dc3d671bb787074",
+      "approved_response_plan": {
+        "schema_version": "deliveryos-approved-b2-response-plan-v1",
+        "status": "NEEDS_CLARIFICATION",
+        "publication_outcome": "CONCRETE_NEXT_STEP",
+        "tool_requirement": "OTHER_ALLOWED_TOOL",
+        "relation_to_history": "CORRECT",
+        "conversational_move": "CLARIFY",
+        "user_goal": "Corrigir o número do endereço no pedido já feito e saber se a alteração afeta entrega ou cobrança.",
+        "what_changed": "O número do endereço informado no pedido está errado; rua e bairro permanecem os mesmos.",
+        "repair_acknowledgement": null,
+        "reference": {
+          "required": true,
+          "status": "NEEDS_CONTEXT_LOOKUP",
+          "target": "O pedido feito agora e o endereço associado a ele."
+        },
+        "safety_priority": "NONE",
+        "next_best_step": "Solicitar os dados mínimos para localizar o pedido e o número correto, então usar a capacidade autorizada para verificar se a alteração é possível e se há impacto, sem confirmar mudança ou cobrança antes do resultado.",
+        "required_question": "Você pode informar os dados mínimos para localizar o pedido e o número correto?",
+        "required_response_commitments": [
+          {
+            "id": "6a5fa7659e5db487",
+            "kind": "GOAL",
+            "content": "corrigir somente o número sem duplicar pedido ou cobrança",
+            "anchors": [
+              "corrigir",
+              "somente",
+              "numero",
+              "duplicar",
+              "pedido",
+              "cobranca"
+            ],
+            "source": "conversation_plan"
+          },
+          {
+            "id": "5d9b624442a8a982",
+            "kind": "REFERENCE",
+            "content": "o pedido feito agora e o endereço associado a ele.",
+            "anchors": [
+              "pedido",
+              "feito",
+              "agora",
+              "endereco",
+              "associado"
+            ],
+            "source": "conversation_plan.reference"
+          },
+          {
+            "id": "701f1b4a68404da0",
+            "kind": "QUESTION",
+            "content": "Você pode informar os dados mínimos para localizar o pedido e o número correto?",
+            "anchors": [
+              "voce",
+              "pode",
+              "informar",
+              "dados",
+              "minimos",
+              "localizar",
+              "pedido",
+              "numero",
+              "correto"
+            ],
+            "source": "approved_response_plan.required_question"
+          }
+        ],
+        "approved_facts": [],
+        "approved_tool_result": null,
+        "safety_directive": null,
+        "prohibited_claims": [
+          "reserva confirmada",
+          "preço confirmado",
+          "disponibilidade confirmada",
+          "seguro para alergia"
+        ],
+        "writer_surface": {
+          "authorized_links": [],
+          "authorized_numbers": [],
+          "recent_phrases": [],
+          "tone": "calmo, direto e acolhedor",
+          "gravity": "informational"
+        },
+        "authority_evidence_hash": "d2a46f800b5f80a7c5156c08b6ad4167b030153ce7cef8b75215e926fbc58d3f",
+        "progress_state_hash": "0d31878605a8a3b9198c4d2f8f8ceb9be5c3b00ea42796f69dc3d671bb787074"
+      },
+      "public_text_scan": {
+        "accepted": true
+      }
+    },
+    {
+      "unit_id": "F006-R2",
+      "scenario_id": "F006",
+      "source_round": 2,
+      "accepted": true,
+      "stage": "published",
+      "response": "Entendi: corrigir somente o número sem duplicar pedido ou cobrança; o pedido feito agora e o endereço registrado nele. Você pode informar o número correto e os dados mínimos para localizar o pedido?",
+      "response_hash": "6f38f100e8ed1a607dc4705c5c7cc00c4fa11404ba59b4c28c42db017e72af5d",
+      "writer_source": "deterministic_b2_writer",
+      "writer_limit": null,
+      "progress_state_hash": "fef18aba0658d4cb8dd3e996cf508d3786da83b09a935092ab5b9781baf43b1c",
+      "approved_response_plan": {
+        "schema_version": "deliveryos-approved-b2-response-plan-v1",
+        "status": "NEEDS_CLARIFICATION",
+        "publication_outcome": "CONCRETE_NEXT_STEP",
+        "tool_requirement": "OTHER_ALLOWED_TOOL",
+        "relation_to_history": "CORRECT",
+        "conversational_move": "CLARIFY",
+        "user_goal": "Corrigir somente o número do endereço no pedido recém-feito sem duplicar o pedido ou a cobrança.",
+        "what_changed": "A pessoa reiterou que quer localizar o pedido atual e corrigir apenas o número, preservando o pedido e evitando duplicidade; o número correto ainda não foi informado.",
+        "repair_acknowledgement": null,
+        "reference": {
+          "required": true,
+          "status": "NEEDS_CONTEXT_LOOKUP",
+          "target": "O pedido feito agora e o endereço registrado nele."
+        },
+        "safety_priority": "NONE",
+        "next_best_step": "Obter o número correto e os dados mínimos para localizar o pedido, então usar a capacidade autorizada para verificar a alteração e qualquer impacto sem criar outro pedido nem confirmar mudança ou cobrança antes do resultado.",
+        "required_question": "Você pode informar o número correto e os dados mínimos para localizar o pedido?",
+        "required_response_commitments": [
+          {
+            "id": "6a5fa7659e5db487",
+            "kind": "GOAL",
+            "content": "corrigir somente o número sem duplicar pedido ou cobrança",
+            "anchors": [
+              "corrigir",
+              "somente",
+              "numero",
+              "duplicar",
+              "pedido",
+              "cobranca"
+            ],
+            "source": "conversation_plan"
+          },
+          {
+            "id": "052a6d890d26c861",
+            "kind": "REFERENCE",
+            "content": "o pedido feito agora e o endereço registrado nele.",
+            "anchors": [
+              "pedido",
+              "feito",
+              "agora",
+              "endereco",
+              "registrado",
+              "nele"
+            ],
+            "source": "conversation_plan.reference"
+          },
+          {
+            "id": "7e5efdb3b0363fee",
+            "kind": "QUESTION",
+            "content": "Você pode informar o número correto e os dados mínimos para localizar o pedido?",
+            "anchors": [
+              "voce",
+              "pode",
+              "informar",
+              "numero",
+              "correto",
+              "dados",
+              "minimos",
+              "localizar",
+              "pedido"
+            ],
+            "source": "approved_response_plan.required_question"
+          }
+        ],
+        "approved_facts": [],
+        "approved_tool_result": null,
+        "safety_directive": null,
+        "prohibited_claims": [
+          "reserva confirmada",
+          "preço confirmado",
+          "disponibilidade confirmada",
+          "seguro para alergia"
+        ],
+        "writer_surface": {
+          "authorized_links": [],
+          "authorized_numbers": [],
+          "recent_phrases": [],
+          "tone": "calmo, direto e acolhedor",
+          "gravity": "informational"
+        },
+        "authority_evidence_hash": "2e75e2d66ab1c40385353ace434bcec8753cbaa79b120b448f94bf6726196c9e",
+        "progress_state_hash": "fef18aba0658d4cb8dd3e996cf508d3786da83b09a935092ab5b9781baf43b1c"
+      },
+      "public_text_scan": {
+        "accepted": true
+      }
+    },
+    {
+      "unit_id": "F007-R1",
+      "scenario_id": "F007",
+      "source_round": 1,
+      "accepted": true,
+      "stage": "published",
+      "response": "Entendi: opção para duas pessoas; itens vegetarianos e custo contido. Não consigo consultar o cardápio por aqui agora. Posso deixar seus critérios organizados para você confirmar diretamente com o restaurante.",
+      "response_hash": "6435e50f8dfe5fc85f8b038fbf9e4ba3f1a9479cde3917791555b1a5f259dee3",
+      "writer_source": "deterministic_b2_writer",
+      "writer_limit": null,
+      "progress_state_hash": "dc7119f2987efcb248b362e83ba1fbff9f054f23b88111a43739777be8d323bf",
+      "approved_response_plan": {
+        "schema_version": "deliveryos-approved-b2-response-plan-v1",
+        "status": "NEEDS_TOOL",
+        "publication_outcome": "EXPLICIT_LIMITATION",
+        "tool_requirement": "CATALOG_SEARCH",
+        "relation_to_history": "OPEN",
+        "conversational_move": "COMPARE",
+        "user_goal": "Comparar opções para duas pessoas equilibrando custo, variedade, quantidade e preferência vegetariana de uma delas.",
+        "what_changed": "A escolha inicial está aberta entre variedade e quantidade, com limite de custo ainda não quantificado e necessidade de opções vegetarianas.",
+        "repair_acknowledgement": null,
+        "reference": {
+          "required": true,
+          "status": "RESOLVED",
+          "target": "Uma das duas pessoas, que prefere opções vegetarianas."
+        },
+        "safety_priority": "NONE",
+        "next_best_step": "Consultar o catálogo para identificar alternativas reais para duas pessoas e comparar variedade e quantidade com opção vegetariana; pedir um teto de gasto se ele for necessário para concluir a comparação.",
+        "required_question": null,
+        "required_response_commitments": [
+          {
+            "id": "49f456a2f81184ae",
+            "kind": "CONSTRAINT",
+            "content": "opção para duas pessoas",
+            "anchors": [
+              "opcao",
+              "duas",
+              "pessoas"
+            ],
+            "source": "conversation_plan"
+          },
+          {
+            "id": "5c215f4378469f2d",
+            "kind": "CONSTRAINT",
+            "content": "itens vegetarianos e custo contido",
+            "anchors": [
+              "itens",
+              "vegetarianos",
+              "custo",
+              "contido"
+            ],
+            "source": "conversation_plan"
+          }
+        ],
+        "approved_facts": [],
+        "approved_tool_result": null,
+        "safety_directive": null,
+        "prohibited_claims": [
+          "reserva confirmada",
+          "preço confirmado",
+          "disponibilidade confirmada",
+          "seguro para alergia"
+        ],
+        "writer_surface": {
+          "authorized_links": [],
+          "authorized_numbers": [],
+          "recent_phrases": [],
+          "tone": "calmo, direto e acolhedor",
+          "gravity": "informational"
+        },
+        "authority_evidence_hash": "85e5c490494e2bb8207415663d5a998caf8dcda749fd718d6365448a951910b1",
+        "progress_state_hash": "dc7119f2987efcb248b362e83ba1fbff9f054f23b88111a43739777be8d323bf"
+      },
+      "public_text_scan": {
+        "accepted": true
+      }
+    },
+    {
+      "unit_id": "F007-R2",
+      "scenario_id": "F007",
+      "source_round": 2,
+      "accepted": true,
+      "stage": "published",
+      "response": "Entendi: opção para duas pessoas com variedade; itens vegetarianos. Você pode informar o teto de gasto?",
+      "response_hash": "ee65df067bf4a827ac6d955cf4c7a6fb5ff8437c7b6836bd04590598e8e53be4",
+      "writer_source": "deterministic_b2_writer",
+      "writer_limit": null,
+      "progress_state_hash": "5b2e989b46c64deaadd2ad0fb3c94fcec66261c5df5d1d10fe9b0cb1c6e3a9dd",
+      "approved_response_plan": {
+        "schema_version": "deliveryos-approved-b2-response-plan-v1",
+        "status": "NEEDS_CLARIFICATION",
+        "publication_outcome": "CONCRETE_NEXT_STEP",
+        "tool_requirement": "CATALOG_SEARCH",
+        "relation_to_history": "REFINE",
+        "conversational_move": "CLARIFY",
+        "user_goal": "Encontrar uma opção para duas pessoas com variedade e itens vegetarianos sem ultrapassar o limite de gasto pretendido.",
+        "what_changed": "A pessoa deixou de pedir uma comparação aberta entre variedade e quantidade e passou a pedir uma opção com variedade e itens vegetarianos, mas referiu um valor máximo que não aparece no transcript.",
+        "repair_acknowledgement": null,
+        "reference": {
+          "required": true,
+          "status": "NEEDS_CLARIFICATION",
+          "target": "O valor máximo mencionado, que não foi quantificado no estado observável."
+        },
+        "safety_priority": "NONE",
+        "next_best_step": "Pedir o teto de gasto e, após recebê-lo, consultar o catálogo por uma opção real para duas pessoas com variedade e itens vegetarianos, sem inventar preço, composição ou quantidade.",
+        "required_question": "Você pode informar o teto de gasto?",
+        "required_response_commitments": [
+          {
+            "id": "b98e40adb116db61",
+            "kind": "CONSTRAINT",
+            "content": "opção para duas pessoas com variedade",
+            "anchors": [
+              "opcao",
+              "duas",
+              "pessoas",
+              "variedade"
+            ],
+            "source": "conversation_plan"
+          },
+          {
+            "id": "771b9050713553b9",
+            "kind": "CONSTRAINT",
+            "content": "itens vegetarianos",
+            "anchors": [
+              "itens",
+              "vegetarianos"
+            ],
+            "source": "conversation_plan"
+          },
+          {
+            "id": "e7f79a3aa972bafc",
+            "kind": "QUESTION",
+            "content": "Você pode informar o teto de gasto?",
+            "anchors": [
+              "voce",
+              "pode",
+              "informar",
+              "teto",
+              "gasto"
+            ],
+            "source": "approved_response_plan.required_question"
+          }
+        ],
+        "approved_facts": [],
+        "approved_tool_result": null,
+        "safety_directive": null,
+        "prohibited_claims": [
+          "reserva confirmada",
+          "preço confirmado",
+          "disponibilidade confirmada",
+          "seguro para alergia"
+        ],
+        "writer_surface": {
+          "authorized_links": [],
+          "authorized_numbers": [],
+          "recent_phrases": [],
+          "tone": "calmo, direto e acolhedor",
+          "gravity": "informational"
+        },
+        "authority_evidence_hash": "4607ef799aed2ff3dcccfdecf7cdba9092dfe84862dbcfcb7ff13c54cddb99cb",
+        "progress_state_hash": "5b2e989b46c64deaadd2ad0fb3c94fcec66261c5df5d1d10fe9b0cb1c6e3a9dd"
+      },
+      "public_text_scan": {
+        "accepted": true
+      }
+    },
+    {
+      "unit_id": "F008-R1",
+      "scenario_id": "F008",
+      "source_round": 1,
+      "accepted": true,
+      "stage": "published",
+      "response": "Sinto muito pela demora e pela falta de atualização. Entendi: previsão concreta para decidir se ainda espera; o pedido ainda não entregue e o horário anteriormente informado. Não consigo acessar os dados necessários por aqui agora. Posso organizar o que você precisa ter em mãos para falar com o atendimento.",
+      "response_hash": "07ecf9685efdfb642e032b2730970aa67380772f903b154643e8cc9873a885b1",
+      "writer_source": "deterministic_b2_writer",
+      "writer_limit": null,
+      "progress_state_hash": "d450b7e426cd0a6ed66202921ae3e4f666e19c32dfb797cccf6651455551a2fd",
+      "approved_response_plan": {
+        "schema_version": "deliveryos-approved-b2-response-plan-v1",
+        "status": "NEEDS_TOOL",
+        "publication_outcome": "EXPLICIT_LIMITATION",
+        "tool_requirement": "OTHER_ALLOWED_TOOL",
+        "relation_to_history": "CONTINUE",
+        "conversational_move": "REPAIR",
+        "user_goal": "Obter uma atualização confiável sobre o pedido atrasado para decidir se espera ou reorganiza o jantar.",
+        "what_changed": "O prazo informado já passou e não houve atualização observável sobre a entrega.",
+        "repair_acknowledgement": "Sinto muito pela demora e pela falta de atualização.",
+        "reference": {
+          "required": true,
+          "status": "NEEDS_CONTEXT_LOOKUP",
+          "target": "O pedido ainda não entregue e o horário anteriormente informado."
+        },
+        "safety_priority": "NONE",
+        "next_best_step": "Reconhecer a falha relatada, localizar o pedido com a capacidade autorizada e informar somente o estado e a previsão retornados, sem inventar causa ou prazo.",
+        "required_question": null,
+        "required_response_commitments": [
+          {
+            "id": "bb6c3b5fe176db13",
+            "kind": "GOAL",
+            "content": "previsão concreta para decidir se ainda espera",
+            "anchors": [
+              "previsao",
+              "concreta",
+              "decidir",
+              "ainda",
+              "espera"
+            ],
+            "source": "conversation_plan"
+          },
+          {
+            "id": "aedb74ad9b1dc5a8",
+            "kind": "REFERENCE",
+            "content": "o pedido ainda não entregue e o horário anteriormente informado.",
+            "anchors": [
+              "pedido",
+              "ainda",
+              "nao",
+              "entregue",
+              "horario",
+              "anteriormente",
+              "informado"
+            ],
+            "source": "conversation_plan.reference"
+          },
+          {
+            "id": "5b159ce7403c5025",
+            "kind": "REPAIR",
+            "content": "Sinto muito pela demora e pela falta de atualização.",
+            "anchors": [
+              "sinto",
+              "muito",
+              "demora",
+              "falta",
+              "atualizacao"
+            ],
+            "source": "conversation_plan.repair"
+          }
+        ],
+        "approved_facts": [],
+        "approved_tool_result": null,
+        "safety_directive": null,
+        "prohibited_claims": [
+          "reserva confirmada",
+          "preço confirmado",
+          "disponibilidade confirmada",
+          "seguro para alergia"
+        ],
+        "writer_surface": {
+          "authorized_links": [],
+          "authorized_numbers": [],
+          "recent_phrases": [],
+          "tone": "calmo, direto e acolhedor",
+          "gravity": "informational"
+        },
+        "authority_evidence_hash": "bce9848b5a68b3d46f101f58dce0452e792d26ff27b7ae6ce3dce8ca7bdbddb9",
+        "progress_state_hash": "d450b7e426cd0a6ed66202921ae3e4f666e19c32dfb797cccf6651455551a2fd"
+      },
+      "public_text_scan": {
+        "accepted": true
+      }
+    },
+    {
+      "unit_id": "F008-R2",
+      "scenario_id": "F008",
+      "source_round": 2,
+      "accepted": true,
+      "stage": "published",
+      "response": "Sinto muito pela demora e pela falta de atualização. Entendi: previsão concreta para decidir se ainda espera; o pedido ainda não entregue e a previsão associada a ele. Não consigo acessar os dados necessários por aqui agora. Posso organizar o que você precisa ter em mãos para falar com o atendimento.",
+      "response_hash": "5b3014906c9b6a33862ca1fe28fe8a103251a8cb87f51abca6a59946845a5564",
+      "writer_source": "deterministic_b2_writer",
+      "writer_limit": null,
+      "progress_state_hash": "ddd5f1683a80d60b8403ceae7eec2aa4f45d128988f753f54ee2dce96b66b955",
+      "approved_response_plan": {
+        "schema_version": "deliveryos-approved-b2-response-plan-v1",
+        "status": "NEEDS_TOOL",
+        "publication_outcome": "EXPLICIT_LIMITATION",
+        "tool_requirement": "OTHER_ALLOWED_TOOL",
+        "relation_to_history": "CONTINUE",
+        "conversational_move": "REPAIR",
+        "user_goal": "Obter rapidamente uma previsão concreta do pedido atrasado para decidir se ainda espera.",
+        "what_changed": "A pessoa reforçou a urgência da consulta e a necessidade de uma previsão concreta; o pedido continua atrasado e sem atualização observável.",
+        "repair_acknowledgement": "Sinto muito pela demora e pela falta de atualização.",
+        "reference": {
+          "required": true,
+          "status": "NEEDS_CONTEXT_LOOKUP",
+          "target": "O pedido ainda não entregue e a previsão associada a ele."
+        },
+        "safety_priority": "NONE",
+        "next_best_step": "Reconhecer a falha relatada, localizar o pedido com a capacidade autorizada e informar somente o estado e a previsão efetivamente retornados, sem inventar causa ou prazo.",
+        "required_question": null,
+        "required_response_commitments": [
+          {
+            "id": "bb6c3b5fe176db13",
+            "kind": "GOAL",
+            "content": "previsão concreta para decidir se ainda espera",
+            "anchors": [
+              "previsao",
+              "concreta",
+              "decidir",
+              "ainda",
+              "espera"
+            ],
+            "source": "conversation_plan"
+          },
+          {
+            "id": "f2e03b92955f5d64",
+            "kind": "REFERENCE",
+            "content": "o pedido ainda não entregue e a previsão associada a ele.",
+            "anchors": [
+              "pedido",
+              "ainda",
+              "nao",
+              "entregue",
+              "previsao",
+              "associada"
+            ],
+            "source": "conversation_plan.reference"
+          },
+          {
+            "id": "5b159ce7403c5025",
+            "kind": "REPAIR",
+            "content": "Sinto muito pela demora e pela falta de atualização.",
+            "anchors": [
+              "sinto",
+              "muito",
+              "demora",
+              "falta",
+              "atualizacao"
+            ],
+            "source": "conversation_plan.repair"
+          }
+        ],
+        "approved_facts": [],
+        "approved_tool_result": null,
+        "safety_directive": null,
+        "prohibited_claims": [
+          "reserva confirmada",
+          "preço confirmado",
+          "disponibilidade confirmada",
+          "seguro para alergia"
+        ],
+        "writer_surface": {
+          "authorized_links": [],
+          "authorized_numbers": [],
+          "recent_phrases": [],
+          "tone": "calmo, direto e acolhedor",
+          "gravity": "informational"
+        },
+        "authority_evidence_hash": "bbf64448955752798cf2788e4391bd9a26478c78399c3d420804984df0bf4742",
+        "progress_state_hash": "ddd5f1683a80d60b8403ceae7eec2aa4f45d128988f753f54ee2dce96b66b955"
+      },
+      "public_text_scan": {
+        "accepted": true
+      }
+    },
+    {
+      "unit_id": "F009-R1",
+      "scenario_id": "F009",
+      "source_round": 1,
+      "accepted": true,
+      "stage": "published",
+      "response": "Entendi: aniversário daqui a dois dias; planejamento para cinco ou sete adultos; a data correspondente a daqui a dois dias. Você pode confirmar a data e se a encomenda deve incluir porções para as duas pessoas que podem chegar?",
+      "response_hash": "02effe38cf57d98ed51296c6e209e7a40ae38359847c98c1263ff3f668aa43ab",
+      "writer_source": "deterministic_b2_writer",
+      "writer_limit": null,
+      "progress_state_hash": "0ca61423a0336c27753622b791d7ddab4b4dcc904058bc25f1466c4de98ef079",
+      "approved_response_plan": {
+        "schema_version": "deliveryos-approved-b2-response-plan-v1",
+        "status": "NEEDS_CLARIFICATION",
+        "publication_outcome": "CONCRETE_NEXT_STEP",
+        "tool_requirement": "CATALOG_SEARCH",
+        "relation_to_history": "OPEN",
+        "conversational_move": "CLARIFY",
+        "user_goal": "Planejar uma encomenda variada para um aniversário daqui a dois dias considerando entre cinco e sete adultos.",
+        "what_changed": "O número de pessoas a contemplar ainda está indefinido porque duas talvez cheguem somente depois do jantar.",
+        "repair_acknowledgement": null,
+        "reference": {
+          "required": true,
+          "status": "NEEDS_CONTEXT_LOOKUP",
+          "target": "A data correspondente a daqui a dois dias."
+        },
+        "safety_priority": "NONE",
+        "next_best_step": "Confirmar a data e se a encomenda deve incluir porções para as duas pessoas que podem chegar depois; então buscar opções reais para o total definido sem supor quantidade, preço ou disponibilidade.",
+        "required_question": "Você pode confirmar a data e se a encomenda deve incluir porções para as duas pessoas que podem chegar?",
+        "required_response_commitments": [
+          {
+            "id": "63531d1b660a0ae7",
+            "kind": "CONSTRAINT",
+            "content": "aniversário daqui a dois dias",
+            "anchors": [
+              "aniversario",
+              "daqui",
+              "dois",
+              "dias"
+            ],
+            "source": "conversation_plan"
+          },
+          {
+            "id": "d735538ea06820fb",
+            "kind": "CONSTRAINT",
+            "content": "planejamento para cinco ou sete adultos",
+            "anchors": [
+              "planejamento",
+              "cinco",
+              "sete",
+              "adultos"
+            ],
+            "source": "conversation_plan"
+          },
+          {
+            "id": "251f991ce09327e6",
+            "kind": "REFERENCE",
+            "content": "a data correspondente a daqui a dois dias.",
+            "anchors": [
+              "data",
+              "correspondente",
+              "daqui",
+              "dois",
+              "dias"
+            ],
+            "source": "conversation_plan.reference"
+          },
+          {
+            "id": "53c8f0204da14b07",
+            "kind": "QUESTION",
+            "content": "Você pode confirmar a data e se a encomenda deve incluir porções para as duas pessoas que podem chegar?",
+            "anchors": [
+              "voce",
+              "pode",
+              "confirmar",
+              "data",
+              "encomenda",
+              "deve",
+              "incluir",
+              "porcoes",
+              "duas",
+              "pessoas",
+              "podem",
+              "chegar"
+            ],
+            "source": "approved_response_plan.required_question"
+          }
+        ],
+        "approved_facts": [],
+        "approved_tool_result": null,
+        "safety_directive": null,
+        "prohibited_claims": [
+          "reserva confirmada",
+          "preço confirmado",
+          "disponibilidade confirmada",
+          "seguro para alergia"
+        ],
+        "writer_surface": {
+          "authorized_links": [],
+          "authorized_numbers": [],
+          "recent_phrases": [],
+          "tone": "calmo, direto e acolhedor",
+          "gravity": "informational"
+        },
+        "authority_evidence_hash": "946e547624002eacf2b2a932d40de008e03f57c019614dc5c4e97e16834899d9",
+        "progress_state_hash": "0ca61423a0336c27753622b791d7ddab4b4dcc904058bc25f1466c4de98ef079"
+      },
+      "public_text_scan": {
+        "accepted": true
+      }
+    },
+    {
+      "unit_id": "F009-R2",
+      "scenario_id": "F009",
+      "source_round": 2,
+      "accepted": true,
+      "stage": "published",
+      "response": "Entendi: aniversário daqui a dois dias; opções e quantidades para cinco e sete adultos; a data correspondente a daqui a dois dias. Não consigo consultar o cardápio por aqui agora. Posso deixar seus critérios organizados para você confirmar diretamente com o restaurante.",
+      "response_hash": "988d6e4632d1ce9b538c672b32167b04abd10f461530aa98ee26b1c27aaf3b3c",
+      "writer_source": "deterministic_b2_writer",
+      "writer_limit": null,
+      "progress_state_hash": "0b068567bd224691c10c0a474f24a4228cf3ce3a37004793dd76030ff7ec6b17",
+      "approved_response_plan": {
+        "schema_version": "deliveryos-approved-b2-response-plan-v1",
+        "status": "NEEDS_TOOL",
+        "publication_outcome": "EXPLICIT_LIMITATION",
+        "tool_requirement": "CATALOG_SEARCH",
+        "relation_to_history": "REFINE",
+        "conversational_move": "COMPARE",
+        "user_goal": "Receber opções variadas e quantidades para dois cenários de aniversário, um com cinco e outro com sete adultos.",
+        "what_changed": "Em vez de aguardar a confirmação das duas pessoas, a pessoa pediu que o planejamento prossiga em paralelo para cinco e para sete adultos.",
+        "repair_acknowledgement": null,
+        "reference": {
+          "required": true,
+          "status": "NEEDS_CONTEXT_LOOKUP",
+          "target": "A data correspondente a daqui a dois dias."
+        },
+        "safety_priority": "NONE",
+        "next_best_step": "Consultar o catálogo para comparar opções e quantidades sustentadas para cinco e sete adultos; resolver a data relativa antes de afirmar disponibilidade para a encomenda.",
+        "required_question": null,
+        "required_response_commitments": [
+          {
+            "id": "63531d1b660a0ae7",
+            "kind": "CONSTRAINT",
+            "content": "aniversário daqui a dois dias",
+            "anchors": [
+              "aniversario",
+              "daqui",
+              "dois",
+              "dias"
+            ],
+            "source": "conversation_plan"
+          },
+          {
+            "id": "040d5cf75bc4812d",
+            "kind": "CONSTRAINT",
+            "content": "opções e quantidades para cinco e sete adultos",
+            "anchors": [
+              "opcoes",
+              "quantidades",
+              "cinco",
+              "sete",
+              "adultos"
+            ],
+            "source": "conversation_plan"
+          },
+          {
+            "id": "251f991ce09327e6",
+            "kind": "REFERENCE",
+            "content": "a data correspondente a daqui a dois dias.",
+            "anchors": [
+              "data",
+              "correspondente",
+              "daqui",
+              "dois",
+              "dias"
+            ],
+            "source": "conversation_plan.reference"
+          }
+        ],
+        "approved_facts": [],
+        "approved_tool_result": null,
+        "safety_directive": null,
+        "prohibited_claims": [
+          "reserva confirmada",
+          "preço confirmado",
+          "disponibilidade confirmada",
+          "seguro para alergia"
+        ],
+        "writer_surface": {
+          "authorized_links": [],
+          "authorized_numbers": [],
+          "recent_phrases": [],
+          "tone": "calmo, direto e acolhedor",
+          "gravity": "informational"
+        },
+        "authority_evidence_hash": "8fe0e0b398a93baa319e3d14a9c654d8c5acbf3c9370fdc3b724cdd1561dc224",
+        "progress_state_hash": "0b068567bd224691c10c0a474f24a4228cf3ce3a37004793dd76030ff7ec6b17"
+      },
+      "public_text_scan": {
+        "accepted": true
+      }
+    },
+    {
+      "unit_id": "F010-R1",
+      "scenario_id": "F010",
+      "source_round": 1,
+      "accepted": true,
+      "stage": "published",
+      "response": "Entendi: confirmar o horário limite de retirada hoje antes de escolher os itens; hoje, na data e no horário local da conversa. Não consigo consultar essa informação operacional por aqui agora. Posso deixar o que precisa ser confirmado organizado para você verificar diretamente com o restaurante.",
+      "response_hash": "2d39a799184f367413b37e655c4b471aa37b8c206de09d963ba857a963ebb786",
+      "writer_source": "deterministic_b2_writer",
+      "writer_limit": null,
+      "progress_state_hash": "9a69ddd967a4ef710111859ea88dd98a55b84aeb0d77262b62fa4e7a271f29ee",
+      "approved_response_plan": {
+        "schema_version": "deliveryos-approved-b2-response-plan-v1",
+        "status": "NEEDS_TOOL",
+        "publication_outcome": "EXPLICIT_LIMITATION",
+        "tool_requirement": "RESTAURANT_INFO",
+        "relation_to_history": "OPEN",
+        "conversational_move": "ANSWER",
+        "user_goal": "Saber até que horas é possível retirar um pedido hoje antes de escolher os dois itens.",
+        "what_changed": "A continuidade do pedido depende primeiro do limite de horário de retirada de hoje.",
+        "repair_acknowledgement": null,
+        "reference": {
+          "required": true,
+          "status": "NEEDS_CONTEXT_LOOKUP",
+          "target": "Hoje, na data e no horário local da conversa."
+        },
+        "safety_priority": "NONE",
+        "next_best_step": "Consultar a informação autorizada de funcionamento e retirada para o dia correspondente antes de informar o horário limite, sem afirmar disponibilidade operacional sem resultado.",
+        "required_question": null,
+        "required_response_commitments": [
+          {
+            "id": "68935e3fadd6c7bd",
+            "kind": "GOAL",
+            "content": "confirmar o horário limite de retirada hoje antes de escolher os itens",
+            "anchors": [
+              "confirmar",
+              "horario",
+              "limite",
+              "retirada",
+              "hoje",
+              "antes",
+              "escolher",
+              "itens"
+            ],
+            "source": "conversation_plan"
+          },
+          {
+            "id": "3601d14c901771b7",
+            "kind": "REFERENCE",
+            "content": "hoje, na data e no horário local da conversa.",
+            "anchors": [
+              "hoje",
+              "data",
+              "horario",
+              "local",
+              "conversa"
+            ],
+            "source": "conversation_plan.reference"
+          }
+        ],
+        "approved_facts": [],
+        "approved_tool_result": null,
+        "safety_directive": null,
+        "prohibited_claims": [
+          "reserva confirmada",
+          "preço confirmado",
+          "disponibilidade confirmada",
+          "seguro para alergia"
+        ],
+        "writer_surface": {
+          "authorized_links": [],
+          "authorized_numbers": [],
+          "recent_phrases": [],
+          "tone": "calmo, direto e acolhedor",
+          "gravity": "informational"
+        },
+        "authority_evidence_hash": "3bd1a11e7d29466d6aa1f66ec3959546f2895d962359fe55537648cc74619360",
+        "progress_state_hash": "9a69ddd967a4ef710111859ea88dd98a55b84aeb0d77262b62fa4e7a271f29ee"
+      },
+      "public_text_scan": {
+        "accepted": true
+      }
+    },
+    {
+      "unit_id": "F010-R2",
+      "scenario_id": "F010",
+      "source_round": 2,
+      "accepted": true,
+      "stage": "published",
+      "response": "Entendi: confirmar o horário limite de retirada hoje antes de fechar os itens; hoje, conforme a data e o horário local da conversa. Não consigo consultar essa informação operacional por aqui agora. Posso deixar o que precisa ser confirmado organizado para você verificar diretamente com o restaurante.",
+      "response_hash": "c95bac521101c07dc7a7944f5f108167188eb22b8d6fc115d648b501a4d118e9",
+      "writer_source": "deterministic_b2_writer",
+      "writer_limit": null,
+      "progress_state_hash": "cc20d65761588f81f9294715e305f3c1d524f03710bdaf8041f73ef440a7897b",
+      "approved_response_plan": {
+        "schema_version": "deliveryos-approved-b2-response-plan-v1",
+        "status": "NEEDS_TOOL",
+        "publication_outcome": "EXPLICIT_LIMITATION",
+        "tool_requirement": "RESTAURANT_INFO",
+        "relation_to_history": "CONTINUE",
+        "conversational_move": "ANSWER",
+        "user_goal": "Confirmar o horário limite de retirada hoje antes de escolher os itens do pedido.",
+        "what_changed": "A pessoa reiterou que a escolha dos itens permanece condicionada à confirmação do horário limite de retirada de hoje.",
+        "repair_acknowledgement": null,
+        "reference": {
+          "required": true,
+          "status": "NEEDS_CONTEXT_LOOKUP",
+          "target": "Hoje, conforme a data e o horário local da conversa."
+        },
+        "safety_priority": "NONE",
+        "next_best_step": "Consultar as informações autorizadas de funcionamento e retirada para o dia correspondente e informar somente o horário limite retornado, sem presumir disponibilidade operacional.",
+        "required_question": null,
+        "required_response_commitments": [
+          {
+            "id": "54acb97d91e69fe0",
+            "kind": "GOAL",
+            "content": "confirmar o horário limite de retirada hoje antes de fechar os itens",
+            "anchors": [
+              "confirmar",
+              "horario",
+              "limite",
+              "retirada",
+              "hoje",
+              "antes",
+              "fechar",
+              "itens"
+            ],
+            "source": "conversation_plan"
+          },
+          {
+            "id": "d26058dbc883c435",
+            "kind": "REFERENCE",
+            "content": "hoje, conforme a data e o horário local da conversa.",
+            "anchors": [
+              "hoje",
+              "conforme",
+              "data",
+              "horario",
+              "local",
+              "conversa"
+            ],
+            "source": "conversation_plan.reference"
+          }
+        ],
+        "approved_facts": [],
+        "approved_tool_result": null,
+        "safety_directive": null,
+        "prohibited_claims": [
+          "reserva confirmada",
+          "preço confirmado",
+          "disponibilidade confirmada",
+          "seguro para alergia"
+        ],
+        "writer_surface": {
+          "authorized_links": [],
+          "authorized_numbers": [],
+          "recent_phrases": [],
+          "tone": "calmo, direto e acolhedor",
+          "gravity": "informational"
+        },
+        "authority_evidence_hash": "1f9a7a428fbf8e9cc50d484379cdbd0b9efd6f1561a8bcda44e9c34f14fbbc1e",
+        "progress_state_hash": "cc20d65761588f81f9294715e305f3c1d524f03710bdaf8041f73ef440a7897b"
+      },
+      "public_text_scan": {
+        "accepted": true
+      }
+    },
+    {
+      "unit_id": "F011-R1",
+      "scenario_id": "F011",
+      "source_round": 1,
+      "accepted": true,
+      "stage": "published",
+      "response": "Entendi: opção compartilhável para três pessoas; peixe cru, itens quentes e alternativa sem fritura. Não consigo consultar o cardápio por aqui agora. Posso deixar seus critérios organizados para você confirmar diretamente com o restaurante.",
+      "response_hash": "b9f18aba4a5ee5b0c21d78761316df1b719d87087ae3dc911f00b4c9d187be5c",
+      "writer_source": "deterministic_b2_writer",
+      "writer_limit": null,
+      "progress_state_hash": "caa72d8d76252dc9c487a7ca700982cef80b6451d5c2d340033eb447c0f64eed",
+      "approved_response_plan": {
+        "schema_version": "deliveryos-approved-b2-response-plan-v1",
+        "status": "NEEDS_TOOL",
+        "publication_outcome": "EXPLICIT_LIMITATION",
+        "tool_requirement": "CATALOG_SEARCH",
+        "relation_to_history": "REFINE",
+        "conversational_move": "ANSWER",
+        "user_goal": "Encontrar uma opção compartilhável para três pessoas que reúna peixe cru, itens quentes e alternativas sem fritura sem separar tudo.",
+        "what_changed": "Foram combinadas três preferências distintas, incluindo a decisão da pessoa que fala de evitar fritura.",
+        "repair_acknowledgement": null,
+        "reference": {
+          "required": true,
+          "status": "RESOLVED",
+          "target": "Uma opção compartilhável que atenda às preferências das três pessoas."
+        },
+        "safety_priority": "NONE",
+        "next_best_step": "Buscar no catálogo uma composição compartilhável que preserve os três critérios e apresentar somente itens e características confirmados pela fonte autorizada.",
+        "required_question": null,
+        "required_response_commitments": [
+          {
+            "id": "7e7546a520ff414f",
+            "kind": "CONSTRAINT",
+            "content": "opção compartilhável para três pessoas",
+            "anchors": [
+              "opcao",
+              "compartilhavel",
+              "tres",
+              "pessoas"
+            ],
+            "source": "conversation_plan"
+          },
+          {
+            "id": "c166415b0c646b81",
+            "kind": "CONSTRAINT",
+            "content": "peixe cru, itens quentes e alternativa sem fritura",
+            "anchors": [
+              "peixe",
+              "cru",
+              "itens",
+              "quentes",
+              "alternativa",
+              "fritura"
+            ],
+            "source": "conversation_plan"
+          }
+        ],
+        "approved_facts": [],
+        "approved_tool_result": null,
+        "safety_directive": null,
+        "prohibited_claims": [
+          "reserva confirmada",
+          "preço confirmado",
+          "disponibilidade confirmada",
+          "seguro para alergia"
+        ],
+        "writer_surface": {
+          "authorized_links": [],
+          "authorized_numbers": [],
+          "recent_phrases": [],
+          "tone": "calmo, direto e acolhedor",
+          "gravity": "informational"
+        },
+        "authority_evidence_hash": "5b594a6974aa6fd5c620a868788705b23db6500db792ce9fcf5a1e5ff9f8893b",
+        "progress_state_hash": "caa72d8d76252dc9c487a7ca700982cef80b6451d5c2d340033eb447c0f64eed"
+      },
+      "public_text_scan": {
+        "accepted": true
+      }
+    },
+    {
+      "unit_id": "F011-R2",
+      "scenario_id": "F011",
+      "source_round": 2,
+      "accepted": true,
+      "stage": "published",
+      "response": "Entendi: opção compartilhável para três pessoas; peixe cru, itens quentes e alternativa sem fritura. Não consigo consultar o cardápio por aqui agora. Posso deixar seus critérios organizados para você confirmar diretamente com o restaurante.",
+      "response_hash": "6e2f632d142adc6334fb4cb0617dc25fe9824cbe00422e560435e32f85ee015e",
+      "writer_source": "deterministic_b2_writer",
+      "writer_limit": null,
+      "progress_state_hash": "584b7a8373d512bd961250733bde0517d93919a89287b69b90c220ebc04e527f",
+      "approved_response_plan": {
+        "schema_version": "deliveryos-approved-b2-response-plan-v1",
+        "status": "NEEDS_TOOL",
+        "publication_outcome": "EXPLICIT_LIMITATION",
+        "tool_requirement": "CATALOG_SEARCH",
+        "relation_to_history": "CONTINUE",
+        "conversational_move": "ANSWER",
+        "user_goal": "Encontrar uma opção compartilhável para três pessoas que reúna peixe cru, itens quentes e pelo menos uma alternativa sem fritura.",
+        "what_changed": "A pessoa reiterou a preferência por uma única opção para compartilhar e confirmou os três critérios que precisam coexistir.",
+        "repair_acknowledgement": null,
+        "reference": {
+          "required": true,
+          "status": "RESOLVED",
+          "target": "Uma opção compartilhável entre os três com peixe cru, itens quentes e alguma alternativa sem fritura."
+        },
+        "safety_priority": "NONE",
+        "next_best_step": "Consultar o catálogo por uma opção compartilhável que preserve os três critérios e apresentar somente itens, composição e quantidade confirmados pela fonte autorizada.",
+        "required_question": null,
+        "required_response_commitments": [
+          {
+            "id": "7e7546a520ff414f",
+            "kind": "CONSTRAINT",
+            "content": "opção compartilhável para três pessoas",
+            "anchors": [
+              "opcao",
+              "compartilhavel",
+              "tres",
+              "pessoas"
+            ],
+            "source": "conversation_plan"
+          },
+          {
+            "id": "c166415b0c646b81",
+            "kind": "CONSTRAINT",
+            "content": "peixe cru, itens quentes e alternativa sem fritura",
+            "anchors": [
+              "peixe",
+              "cru",
+              "itens",
+              "quentes",
+              "alternativa",
+              "fritura"
+            ],
+            "source": "conversation_plan"
+          }
+        ],
+        "approved_facts": [],
+        "approved_tool_result": null,
+        "safety_directive": null,
+        "prohibited_claims": [
+          "reserva confirmada",
+          "preço confirmado",
+          "disponibilidade confirmada",
+          "seguro para alergia"
+        ],
+        "writer_surface": {
+          "authorized_links": [],
+          "authorized_numbers": [],
+          "recent_phrases": [],
+          "tone": "calmo, direto e acolhedor",
+          "gravity": "informational"
+        },
+        "authority_evidence_hash": "5a6e3758e2e40a83895b85a6ef364a4768694d79182b8e640eaa2a06c4601d26",
+        "progress_state_hash": "584b7a8373d512bd961250733bde0517d93919a89287b69b90c220ebc04e527f"
+      },
+      "public_text_scan": {
+        "accepted": true
+      }
+    },
+    {
+      "unit_id": "F012-R1",
+      "scenario_id": "F012",
+      "source_round": 1,
+      "accepted": true,
+      "stage": "published",
+      "response": "Entendi: conferir o conteúdo antes de afirmar que falta algum item; a foto enviada, o pedido recebido e a relação esperada de itens. Não consigo acessar os dados necessários por aqui agora. Posso organizar o que você precisa ter em mãos para falar com o atendimento.",
+      "response_hash": "8b999c3ac10a3a7d07449052e469a8fe4557f464f6bfa946859e05da82ee064a",
+      "writer_source": "deterministic_b2_writer",
+      "writer_limit": null,
+      "progress_state_hash": "29b3126cd7042a0394603f23ca4d99b3a72340509a8926671deb0f4c648658b7",
+      "approved_response_plan": {
+        "schema_version": "deliveryos-approved-b2-response-plan-v1",
+        "status": "NEEDS_TOOL",
+        "publication_outcome": "EXPLICIT_LIMITATION",
+        "tool_requirement": "OTHER_ALLOWED_TOOL",
+        "relation_to_history": "CONTINUE",
+        "conversational_move": "EXPLAIN",
+        "user_goal": "Verificar o conteúdo recebido antes de afirmar que faltam itens no pedido.",
+        "what_changed": "A quantidade aparente de embalagens parece menor que a esperada, mas a sacola ainda está fechada e a falta não foi confirmada.",
+        "repair_acknowledgement": null,
+        "reference": {
+          "required": true,
+          "status": "NEEDS_CONTEXT_LOOKUP",
+          "target": "A foto enviada, o pedido recebido e a relação esperada de itens."
+        },
+        "safety_priority": "NONE",
+        "next_best_step": "Acessar a foto e os dados autorizados do pedido, orientar a conferência item a item e só tratar algo como faltante depois de comparar o conteúdo observado com o pedido registrado.",
+        "required_question": null,
+        "required_response_commitments": [
+          {
+            "id": "6c272ac4d2d301cf",
+            "kind": "GOAL",
+            "content": "conferir o conteúdo antes de afirmar que falta algum item",
+            "anchors": [
+              "conferir",
+              "conteudo",
+              "antes",
+              "afirmar",
+              "falta",
+              "algum",
+              "item"
+            ],
+            "source": "conversation_plan"
+          },
+          {
+            "id": "de7841d8c634d3bd",
+            "kind": "REFERENCE",
+            "content": "a foto enviada, o pedido recebido e a relação esperada de itens.",
+            "anchors": [
+              "foto",
+              "enviada",
+              "pedido",
+              "recebido",
+              "relacao",
+              "esperada",
+              "itens"
+            ],
+            "source": "conversation_plan.reference"
+          }
+        ],
+        "approved_facts": [],
+        "approved_tool_result": null,
+        "safety_directive": null,
+        "prohibited_claims": [
+          "reserva confirmada",
+          "preço confirmado",
+          "disponibilidade confirmada",
+          "seguro para alergia"
+        ],
+        "writer_surface": {
+          "authorized_links": [],
+          "authorized_numbers": [],
+          "recent_phrases": [],
+          "tone": "calmo, direto e acolhedor",
+          "gravity": "informational"
+        },
+        "authority_evidence_hash": "fc5d6c9bd9676a6fdf9b3cb5fdcdaa0ca87b516d8dfb1990899a15eddb04e215",
+        "progress_state_hash": "29b3126cd7042a0394603f23ca4d99b3a72340509a8926671deb0f4c648658b7"
+      },
+      "public_text_scan": {
+        "accepted": true
+      }
+    },
+    {
+      "unit_id": "F012-R2",
+      "scenario_id": "F012",
+      "source_round": 2,
+      "accepted": true,
+      "stage": "published",
+      "response": "Entendi: conferir o conteúdo antes de afirmar que falta algum item; a foto da sacola, o pedido recebido e a relação de itens registrada. Não consigo acessar os dados necessários por aqui agora. Posso organizar o que você precisa ter em mãos para falar com o atendimento.",
+      "response_hash": "c9c7aaf2a4da9b6e38fc64c1dedb7a54cfb1a2b0d81157928066ba388f003536",
+      "writer_source": "deterministic_b2_writer",
+      "writer_limit": null,
+      "progress_state_hash": "d615abc8ca0bb440f65c96a5290423222a6958c618bca4b0a439fb63f599e908",
+      "approved_response_plan": {
+        "schema_version": "deliveryos-approved-b2-response-plan-v1",
+        "status": "NEEDS_TOOL",
+        "publication_outcome": "EXPLICIT_LIMITATION",
+        "tool_requirement": "OTHER_ALLOWED_TOOL",
+        "relation_to_history": "CONTINUE",
+        "conversational_move": "EXPLAIN",
+        "user_goal": "Conferir corretamente o conteúdo recebido antes de afirmar que falta algum item no pedido.",
+        "what_changed": "A pessoa decidiu aguardar a orientação antes de abrir e reforçou que não quer tratar a aparente diferença de embalagens como falta confirmada.",
+        "repair_acknowledgement": null,
+        "reference": {
+          "required": true,
+          "status": "NEEDS_CONTEXT_LOOKUP",
+          "target": "A foto da sacola, o pedido recebido e a relação de itens registrada."
+        },
+        "safety_priority": "NONE",
+        "next_best_step": "Acessar a foto e os dados autorizados do pedido, orientar a conferência item a item e só tratar algo como faltante após comparar o conteúdo observado com o pedido registrado.",
+        "required_question": null,
+        "required_response_commitments": [
+          {
+            "id": "6c272ac4d2d301cf",
+            "kind": "GOAL",
+            "content": "conferir o conteúdo antes de afirmar que falta algum item",
+            "anchors": [
+              "conferir",
+              "conteudo",
+              "antes",
+              "afirmar",
+              "falta",
+              "algum",
+              "item"
+            ],
+            "source": "conversation_plan"
+          },
+          {
+            "id": "6ec37d18f3b170e0",
+            "kind": "REFERENCE",
+            "content": "a foto da sacola, o pedido recebido e a relação de itens registrada.",
+            "anchors": [
+              "foto",
+              "sacola",
+              "pedido",
+              "recebido",
+              "relacao",
+              "itens",
+              "registrada"
+            ],
+            "source": "conversation_plan.reference"
+          }
+        ],
+        "approved_facts": [],
+        "approved_tool_result": null,
+        "safety_directive": null,
+        "prohibited_claims": [
+          "reserva confirmada",
+          "preço confirmado",
+          "disponibilidade confirmada",
+          "seguro para alergia"
+        ],
+        "writer_surface": {
+          "authorized_links": [],
+          "authorized_numbers": [],
+          "recent_phrases": [],
+          "tone": "calmo, direto e acolhedor",
+          "gravity": "informational"
+        },
+        "authority_evidence_hash": "c9a27d2f2c10aefc1b538bd4b135a3f23ee76b85a2c05e7408f566667a9cbfe5",
+        "progress_state_hash": "d615abc8ca0bb440f65c96a5290423222a6958c618bca4b0a439fb63f599e908"
+      },
+      "public_text_scan": {
+        "accepted": true
+      }
+    }
+  ]
+}

@@ -18,3 +18,7 @@
 # `text eol=lf` resolve o problema sem perder diff legível.
 # ============================================================================
 data/capacidade-viva/calibration/configs/cv-cal-tata-human-v2.json text eol=lf
+
+# Frozen targeted-recertification payloads are byte-hashed in their manifest.
+docs/execution/chatbot/TARGETED_RECERTIFICATION_B2_POST_CERTIFICATION_RECOVERY_V1/** text eol=lf
+docs/execution/chatbot/TARGETED_RECERTIFICATION_B2_POST_CERTIFICATION_RECOVERY_V1.zip.sha256 text eol=lf

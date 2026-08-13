@@ -1,0 +1,969 @@
+{
+  "schema_version": "deliveryos-b2-targeted-replay-inputs-v1",
+  "source_packet_sha256": "8b69861212e575969472713dcb28af9be5568e2039f9a98ee9083c815d5f1420",
+  "replay_semantics": "INDEPENDENT_BOUNDED_UNITS_NOT_CONTINUOUS_CONVERSATION",
+  "units": [
+    {
+      "unit_id": "F001-R1",
+      "scenario_id": "F001",
+      "source_round": 1,
+      "bounded_replay_unit": true,
+      "public_context_before_current_turn": [],
+      "current_customer_turn": "Oi, queria pedir um jantar só pra mim, mas eu não entendo muito dos nomes. Uma vez comi um que era empanado e gostei. Tem algo assim, sem peixe cru?",
+      "authority_policy_ref": "SOURCE_PHASE2_AUTHORITY_POLICY.json",
+      "authorized_capabilities_ref": "SOURCE_PHASE2_AUTHORIZED_CAPABILITIES.json",
+      "conversation_plan": {
+        "relation_to_history": "OPEN",
+        "conversational_move": "ANSWER",
+        "tool_requirement": "CATALOG_SEARCH",
+        "user_goal": "Encontrar um jantar individual parecido com o item empanado de que gostou, sem peixe cru e sem exigir conhecimento dos nomes do cardápio.",
+        "what_changed": "A necessidade inicial já traz duas preferências observáveis: algo empanado e ausência de peixe cru.",
+        "repair": {
+          "required": false,
+          "acknowledgement": null
+        },
+        "reference": {
+          "required": true,
+          "status": "RESOLVED",
+          "target": "Algo semelhante ao item empanado mencionado, sem peixe cru."
+        },
+        "safety_priority": "NONE",
+        "next_best_step": "Consultar o catálogo por opções individuais que correspondam aos critérios informados e só então apresentar alternativas, sem inventar nomes, composição ou disponibilidade.",
+        "required_response_commitments": [
+          {
+            "kind": "CONSTRAINT",
+            "content": "algo empanado, sem peixe cru, para uma pessoa"
+          }
+        ]
+      },
+      "planner_packet_hash": "287d4bbfa34f2f3f88ea7816d58d97fb4f40106fb4ea72e1a72d3ebaa4170cea",
+      "previous_publication": null
+    },
+    {
+      "unit_id": "F001-R2",
+      "scenario_id": "F001",
+      "source_round": 2,
+      "bounded_replay_unit": true,
+      "public_context_before_current_turn": [
+        {
+          "speaker": "CUSTOMER",
+          "text": "Oi, queria pedir um jantar só pra mim, mas eu não entendo muito dos nomes. Uma vez comi um que era empanado e gostei. Tem algo assim, sem peixe cru?"
+        },
+        {
+          "speaker": "TATÁ",
+          "text": "Vou conferir essa informação antes de responder."
+        }
+      ],
+      "current_customer_turn": "Tá bom, obrigada. Fico no aguardo para saber o que vocês têm que seja empanado, sem peixe cru e numa porção para uma pessoa.",
+      "authority_policy_ref": "SOURCE_PHASE2_AUTHORITY_POLICY.json",
+      "authorized_capabilities_ref": "SOURCE_PHASE2_AUTHORIZED_CAPABILITIES.json",
+      "conversation_plan": {
+        "relation_to_history": "CONTINUE",
+        "conversational_move": "ANSWER",
+        "tool_requirement": "CATALOG_SEARCH",
+        "user_goal": "Encontrar uma opção de jantar individual que seja empanada e não tenha peixe cru, sem precisar conhecer os nomes do cardápio.",
+        "what_changed": "A pessoa confirmou que aguardará a consulta e reiterou os três critérios já observáveis: empanado, sem peixe cru e porção para uma pessoa.",
+        "repair": {
+          "required": false,
+          "acknowledgement": null
+        },
+        "reference": {
+          "required": true,
+          "status": "RESOLVED",
+          "target": "As opções empanadas, sem peixe cru e adequadas a uma pessoa pelas quais a pessoa está aguardando."
+        },
+        "safety_priority": "NONE",
+        "next_best_step": "Consultar o catálogo pelos critérios informados e apresentar somente opções, composição e porção sustentadas pelo resultado autorizado, sem presumir disponibilidade.",
+        "required_response_commitments": [
+          {
+            "kind": "CONSTRAINT",
+            "content": "algo empanado, sem peixe cru, para uma pessoa"
+          }
+        ]
+      },
+      "planner_packet_hash": "6d35f6e3689d35b14334061d2358fd249667bd62fcd7f218a4b06728b6a20239",
+      "previous_publication": null
+    },
+    {
+      "unit_id": "F002-R1",
+      "scenario_id": "F002",
+      "source_round": 1,
+      "bounded_replay_unit": true,
+      "public_context_before_current_turn": [],
+      "current_customer_turn": "Oi, queria ver um combinado para quatro adultos para hoje às oito. Só lembrei agora que uma pessoa não come peixe cru, então precisava ter opções pra ela também.",
+      "authority_policy_ref": "SOURCE_PHASE2_AUTHORITY_POLICY.json",
+      "authorized_capabilities_ref": "SOURCE_PHASE2_AUTHORIZED_CAPABILITIES.json",
+      "conversation_plan": {
+        "relation_to_history": "REFINE",
+        "conversational_move": "ANSWER",
+        "tool_requirement": "CATALOG_SEARCH",
+        "user_goal": "Encontrar para hoje às oito uma opção para quatro adultos que também atenda uma pessoa que não come peixe cru.",
+        "what_changed": "Foi acrescentado ao pedido para quatro adultos o requisito de incluir opções sem peixe cru para uma das pessoas.",
+        "repair": {
+          "required": false,
+          "acknowledgement": null
+        },
+        "reference": {
+          "required": true,
+          "status": "RESOLVED",
+          "target": "A pessoa mencionada que não come peixe cru."
+        },
+        "safety_priority": "NONE",
+        "next_best_step": "Buscar no catálogo opções adequadas a quatro adultos e ao requisito sem peixe cru, verificando os dados autorizados antes de sugerir itens ou afirmar disponibilidade.",
+        "required_response_commitments": [
+          {
+            "kind": "CONSTRAINT",
+            "content": "pedido para quatro adultos hoje às oito"
+          },
+          {
+            "kind": "CONSTRAINT",
+            "content": "opções sem peixe cru para uma pessoa"
+          }
+        ]
+      },
+      "planner_packet_hash": "9aea7b94c2bba35edf381a0dff1a537b08d37b1d009a56d2f2a629be18ccde62",
+      "previous_publication": null
+    },
+    {
+      "unit_id": "F002-R2",
+      "scenario_id": "F002",
+      "source_round": 2,
+      "bounded_replay_unit": true,
+      "public_context_before_current_turn": [
+        {
+          "speaker": "CUSTOMER",
+          "text": "Oi, queria ver um combinado para quatro adultos para hoje às oito. Só lembrei agora que uma pessoa não come peixe cru, então precisava ter opções pra ela também."
+        },
+        {
+          "speaker": "TATÁ",
+          "text": "Vou conferir essa informação antes de responder."
+        }
+      ],
+      "current_customer_turn": "Certo, obrigada. Preciso só confirmar se dá para montar algo para quatro pessoas com opções sem peixe cru e se fica pronto para as oito.",
+      "authority_policy_ref": "SOURCE_PHASE2_AUTHORITY_POLICY.json",
+      "authorized_capabilities_ref": "SOURCE_PHASE2_AUTHORIZED_CAPABILITIES.json",
+      "conversation_plan": {
+        "relation_to_history": "CONTINUE",
+        "conversational_move": "ANSWER",
+        "tool_requirement": "CATALOG_SEARCH",
+        "user_goal": "Confirmar uma opção para quatro pessoas, com alternativas sem peixe cru para uma delas, e saber se pode ficar pronta hoje às oito.",
+        "what_changed": "A pessoa reiterou o pedido e tornou explícito que precisa confirmar tanto a composição para quatro pessoas quanto a possibilidade de ficar pronto às oito.",
+        "repair": {
+          "required": false,
+          "acknowledgement": null
+        },
+        "reference": {
+          "required": true,
+          "status": "RESOLVED",
+          "target": "O combinado para quatro adultos, incluindo opções para a pessoa que não come peixe cru, para hoje às oito."
+        },
+        "safety_priority": "NONE",
+        "next_best_step": "Consultar o catálogo para verificar opções que atendam ao grupo e ao critério sem peixe cru, e só afirmar composição ou possibilidade para as oito com suporte factual autorizado.",
+        "required_response_commitments": [
+          {
+            "kind": "CONSTRAINT",
+            "content": "pedido para quatro pessoas hoje às oito"
+          },
+          {
+            "kind": "CONSTRAINT",
+            "content": "opções sem peixe cru"
+          }
+        ]
+      },
+      "planner_packet_hash": "88346db5b16722d16f5333ad5e2d3b4295faf526ee1923ee97369ee301c435cc",
+      "previous_publication": null
+    },
+    {
+      "unit_id": "F003-R1",
+      "scenario_id": "F003",
+      "source_round": 1,
+      "bounded_replay_unit": true,
+      "public_context_before_current_turn": [],
+      "current_customer_turn": "Oi, vocês conseguem entregar algo antes das 13h? Meu intervalo acaba nesse horário. Desculpa, corrigi aqui: o bairro de entrega é diferente do que eu tinha escrito primeiro.",
+      "authority_policy_ref": "SOURCE_PHASE2_AUTHORITY_POLICY.json",
+      "authorized_capabilities_ref": "SOURCE_PHASE2_AUTHORIZED_CAPABILITIES.json",
+      "conversation_plan": {
+        "relation_to_history": "CORRECT",
+        "conversational_move": "CLARIFY",
+        "tool_requirement": "RESTAURANT_INFO",
+        "user_goal": "Verificar se há entrega no bairro correto antes das 13h.",
+        "what_changed": "O bairro de entrega anteriormente informado foi corrigido, mas o novo bairro não aparece no estado observável.",
+        "repair": {
+          "required": false,
+          "acknowledgement": null
+        },
+        "reference": {
+          "required": true,
+          "status": "NEEDS_CLARIFICATION",
+          "target": null
+        },
+        "safety_priority": "NONE",
+        "next_best_step": "Pedir o bairro de entrega corrigido e, depois de recebê-lo, consultar a informação operacional autorizada para verificar atendimento e prazo sem prometer entrega.",
+        "required_response_commitments": []
+      },
+      "planner_packet_hash": "fc09ef87d0f84d38d9ac156e74a79b356485bd0e16811d845ddee44eb3d9a7be",
+      "previous_publication": null
+    },
+    {
+      "unit_id": "F004-R1",
+      "scenario_id": "F004",
+      "source_round": 1,
+      "bounded_replay_unit": true,
+      "public_context_before_current_turn": [],
+      "current_customer_turn": "Oi, queria experimentar sushi hoje, mas também preciso de uma opção bem simples para uma criança que não gosta de nada apimentado. Dá pra mandar a parte dela separada?",
+      "authority_policy_ref": "SOURCE_PHASE2_AUTHORITY_POLICY.json",
+      "authorized_capabilities_ref": "SOURCE_PHASE2_AUTHORIZED_CAPABILITIES.json",
+      "conversation_plan": {
+        "relation_to_history": "REFINE",
+        "conversational_move": "ANSWER",
+        "tool_requirement": "CATALOG_SEARCH",
+        "user_goal": "Escolher sushi para hoje e uma opção simples, não apimentada e separada para uma criança.",
+        "what_changed": "Ao desejo de experimentar sushi foi acrescentada a necessidade específica da criança e o pedido de separação da parte dela.",
+        "repair": {
+          "required": false,
+          "acknowledgement": null
+        },
+        "reference": {
+          "required": true,
+          "status": "RESOLVED",
+          "target": "A parte destinada à criança que não gosta de itens apimentados."
+        },
+        "safety_priority": "NONE",
+        "next_best_step": "Consultar opções do catálogo que atendam aos critérios e verificar de forma autorizada a possibilidade de envio separado antes de sugerir item, composição ou confirmação operacional.",
+        "required_response_commitments": [
+          {
+            "kind": "CONSTRAINT",
+            "content": "parte da criança simples, sem pimenta e separada"
+          }
+        ]
+      },
+      "planner_packet_hash": "79921621697daaebcaf517314162d17dcac0edd40361ee32d3c25004b4ea0f6b",
+      "previous_publication": null
+    },
+    {
+      "unit_id": "F004-R2",
+      "scenario_id": "F004",
+      "source_round": 2,
+      "bounded_replay_unit": true,
+      "public_context_before_current_turn": [
+        {
+          "speaker": "CUSTOMER",
+          "text": "Oi, queria experimentar sushi hoje, mas também preciso de uma opção bem simples para uma criança que não gosta de nada apimentado. Dá pra mandar a parte dela separada?"
+        },
+        {
+          "speaker": "TATÁ",
+          "text": "Vou conferir essa informação antes de responder."
+        }
+      ],
+      "current_customer_turn": "Tudo bem, obrigada. Para mim pode ser algo para experimentar, mas a parte da criança precisa mesmo ser simples, sem pimenta e separada.",
+      "authority_policy_ref": "SOURCE_PHASE2_AUTHORITY_POLICY.json",
+      "authorized_capabilities_ref": "SOURCE_PHASE2_AUTHORIZED_CAPABILITIES.json",
+      "conversation_plan": {
+        "relation_to_history": "CONTINUE",
+        "conversational_move": "ANSWER",
+        "tool_requirement": "CATALOG_SEARCH",
+        "user_goal": "Escolher algo para experimentar e uma opção infantil simples, sem pimenta e enviada separadamente.",
+        "what_changed": "A pessoa reiterou que sua própria escolha pode ser algo para experimentar e reforçou como obrigatórios os critérios da parte infantil: simples, sem pimenta e separada.",
+        "repair": {
+          "required": false,
+          "acknowledgement": null
+        },
+        "reference": {
+          "required": true,
+          "status": "RESOLVED",
+          "target": "A parte destinada à criança, que deve ser simples, sem pimenta e separada."
+        },
+        "safety_priority": "NONE",
+        "next_best_step": "Consultar o catálogo por opções compatíveis e verificar com fonte autorizada a possibilidade de separação antes de sugerir itens, descrever composição ou confirmar o envio separado.",
+        "required_response_commitments": [
+          {
+            "kind": "CONSTRAINT",
+            "content": "parte da criança simples, sem pimenta e separada"
+          }
+        ]
+      },
+      "planner_packet_hash": "4082f5a5b969e032faf58c0d5674e16c0539fd07eaaa1d4d4e970b07329cdb25",
+      "previous_publication": null
+    },
+    {
+      "unit_id": "F005-R1",
+      "scenario_id": "F005",
+      "source_round": 1,
+      "bounded_replay_unit": true,
+      "public_context_before_current_turn": [],
+      "current_customer_turn": "Oi, antes de escolher eu preciso confirmar uma coisa: tenho alergia a crustáceos. Vocês conseguem me informar com segurança quais itens não levam crustáceos e se há risco de contato cruzado no preparo? Só tirar o camarão não é suficiente pra mim.",
+      "authority_policy_ref": "SOURCE_PHASE2_AUTHORITY_POLICY.json",
+      "authorized_capabilities_ref": "SOURCE_PHASE2_AUTHORIZED_CAPABILITIES.json",
+      "conversation_plan": {
+        "relation_to_history": "OPEN",
+        "conversational_move": "ANSWER",
+        "tool_requirement": "SAFETY_GATE",
+        "user_goal": "Obter informação confiável sobre itens sem crustáceos e sobre risco de contato cruzado antes de escolher.",
+        "what_changed": "A escolha está condicionada a uma alergia a crustáceos e à avaliação de contato cruzado; retirar camarão não atende ao limite informado.",
+        "repair": {
+          "required": false,
+          "acknowledgement": null
+        },
+        "reference": {
+          "required": false,
+          "status": "NOT_REQUIRED",
+          "target": null
+        },
+        "safety_priority": "PREVENTIVE",
+        "next_best_step": "Acionar a verificação de segurança e obter informação autorizada sobre ingredientes e contato cruzado antes de indicar qualquer item, sem declarar que algo é seguro para alergia.",
+        "required_response_commitments": [
+          {
+            "kind": "CONSTRAINT",
+            "content": "alergia a crustáceos"
+          },
+          {
+            "kind": "CONSTRAINT",
+            "content": "informação sobre ingredientes e contato cruzado antes de escolher"
+          }
+        ]
+      },
+      "planner_packet_hash": "6ba2847f4287fe98b0b405fde39dfd8f44e57106031b94aec1e464a833b5d28d",
+      "previous_publication": null
+    },
+    {
+      "unit_id": "F005-R2",
+      "scenario_id": "F005",
+      "source_round": 2,
+      "bounded_replay_unit": true,
+      "public_context_before_current_turn": [
+        {
+          "speaker": "CUSTOMER",
+          "text": "Oi, antes de escolher eu preciso confirmar uma coisa: tenho alergia a crustáceos. Vocês conseguem me informar com segurança quais itens não levam crustáceos e se há risco de contato cruzado no preparo? Só tirar o camarão não é suficiente pra mim."
+        },
+        {
+          "speaker": "TATÁ",
+          "text": "Vou conferir essa informação antes de responder."
+        }
+      ],
+      "current_customer_turn": "Certo, aguardo. Preciso dessa confirmação sobre os ingredientes e o contato cruzado antes de escolher qualquer item.",
+      "authority_policy_ref": "SOURCE_PHASE2_AUTHORITY_POLICY.json",
+      "authorized_capabilities_ref": "SOURCE_PHASE2_AUTHORIZED_CAPABILITIES.json",
+      "conversation_plan": {
+        "relation_to_history": "CONTINUE",
+        "conversational_move": "ANSWER",
+        "tool_requirement": "SAFETY_GATE",
+        "user_goal": "Obter informação confiável sobre ingredientes com crustáceos e risco de contato cruzado antes de escolher qualquer item.",
+        "what_changed": "A pessoa reafirmou que não escolherá nenhum item antes da verificação de ingredientes e contato cruzado relacionada à alergia a crustáceos.",
+        "repair": {
+          "required": false,
+          "acknowledgement": null
+        },
+        "reference": {
+          "required": true,
+          "status": "RESOLVED",
+          "target": "A confirmação solicitada sobre ingredientes com crustáceos e risco de contato cruzado no preparo."
+        },
+        "safety_priority": "PREVENTIVE",
+        "next_best_step": "Acionar a verificação de segurança e aguardar informação autorizada sobre ingredientes e contato cruzado antes de apresentar qualquer opção, sem declarar que um item é seguro para alergia.",
+        "required_response_commitments": [
+          {
+            "kind": "CONSTRAINT",
+            "content": "alergia a crustáceos"
+          },
+          {
+            "kind": "CONSTRAINT",
+            "content": "confirmação de ingredientes e contato cruzado antes de escolher"
+          }
+        ]
+      },
+      "planner_packet_hash": "c39cac52d0748b091d687ff67f015d03a179914dfcb40bfe82f76b818c734e41",
+      "previous_publication": null
+    },
+    {
+      "unit_id": "F006-R1",
+      "scenario_id": "F006",
+      "source_round": 1,
+      "bounded_replay_unit": true,
+      "public_context_before_current_turn": [],
+      "current_customer_turn": "Oi, acabei de perceber que passei o número errado no endereço do pedido que fiz agora. A rua e o bairro são os mesmos, só muda o número. Dá para corrigir sem fazer outro pedido? Isso muda alguma coisa na entrega ou na cobrança?",
+      "authority_policy_ref": "SOURCE_PHASE2_AUTHORITY_POLICY.json",
+      "authorized_capabilities_ref": "SOURCE_PHASE2_AUTHORIZED_CAPABILITIES.json",
+      "conversation_plan": {
+        "relation_to_history": "CORRECT",
+        "conversational_move": "CLARIFY",
+        "tool_requirement": "OTHER_ALLOWED_TOOL",
+        "user_goal": "Corrigir o número do endereço no pedido já feito e saber se a alteração afeta entrega ou cobrança.",
+        "what_changed": "O número do endereço informado no pedido está errado; rua e bairro permanecem os mesmos.",
+        "repair": {
+          "required": false,
+          "acknowledgement": null
+        },
+        "reference": {
+          "required": true,
+          "status": "NEEDS_CONTEXT_LOOKUP",
+          "target": "O pedido feito agora e o endereço associado a ele."
+        },
+        "safety_priority": "NONE",
+        "next_best_step": "Solicitar os dados mínimos para localizar o pedido e o número correto, então usar a capacidade autorizada para verificar se a alteração é possível e se há impacto, sem confirmar mudança ou cobrança antes do resultado.",
+        "required_response_commitments": [
+          {
+            "kind": "GOAL",
+            "content": "corrigir somente o número sem duplicar pedido ou cobrança"
+          }
+        ]
+      },
+      "planner_packet_hash": "a01f27f8eb841dfffdc781fc2474ab8dda203b9177b32b78f37459a0170b83e6",
+      "previous_publication": null
+    },
+    {
+      "unit_id": "F006-R2",
+      "scenario_id": "F006",
+      "source_round": 2,
+      "bounded_replay_unit": true,
+      "public_context_before_current_turn": [
+        {
+          "speaker": "CUSTOMER",
+          "text": "Oi, acabei de perceber que passei o número errado no endereço do pedido que fiz agora. A rua e o bairro são os mesmos, só muda o número. Dá para corrigir sem fazer outro pedido? Isso muda alguma coisa na entrega ou na cobrança?"
+        },
+        {
+          "speaker": "TATÁ",
+          "text": "Vou conferir essa informação antes de responder."
+        }
+      ],
+      "current_customer_turn": "Tá bem. Você consegue verificar o pedido que acabei de fazer e me orientar para corrigir só o número, sem duplicar o pedido ou a cobrança?",
+      "authority_policy_ref": "SOURCE_PHASE2_AUTHORITY_POLICY.json",
+      "authorized_capabilities_ref": "SOURCE_PHASE2_AUTHORIZED_CAPABILITIES.json",
+      "conversation_plan": {
+        "relation_to_history": "CORRECT",
+        "conversational_move": "CLARIFY",
+        "tool_requirement": "OTHER_ALLOWED_TOOL",
+        "user_goal": "Corrigir somente o número do endereço no pedido recém-feito sem duplicar o pedido ou a cobrança.",
+        "what_changed": "A pessoa reiterou que quer localizar o pedido atual e corrigir apenas o número, preservando o pedido e evitando duplicidade; o número correto ainda não foi informado.",
+        "repair": {
+          "required": false,
+          "acknowledgement": null
+        },
+        "reference": {
+          "required": true,
+          "status": "NEEDS_CONTEXT_LOOKUP",
+          "target": "O pedido feito agora e o endereço registrado nele."
+        },
+        "safety_priority": "NONE",
+        "next_best_step": "Obter o número correto e os dados mínimos para localizar o pedido, então usar a capacidade autorizada para verificar a alteração e qualquer impacto sem criar outro pedido nem confirmar mudança ou cobrança antes do resultado.",
+        "required_response_commitments": [
+          {
+            "kind": "GOAL",
+            "content": "corrigir somente o número sem duplicar pedido ou cobrança"
+          }
+        ]
+      },
+      "planner_packet_hash": "c72a34ea420dc95fd8f842a8c44b7b2d4c169105338146b65c6128ec68639541",
+      "previous_publication": null
+    },
+    {
+      "unit_id": "F007-R1",
+      "scenario_id": "F007",
+      "source_round": 1,
+      "bounded_replay_unit": true,
+      "public_context_before_current_turn": [],
+      "current_customer_turn": "Oi, o que vocês têm que serve bem duas pessoas sem ficar muito caro? Estou em dúvida entre ter mais variedade ou mais quantidade, e uma das pessoas prefere opções vegetarianas.",
+      "authority_policy_ref": "SOURCE_PHASE2_AUTHORITY_POLICY.json",
+      "authorized_capabilities_ref": "SOURCE_PHASE2_AUTHORIZED_CAPABILITIES.json",
+      "conversation_plan": {
+        "relation_to_history": "OPEN",
+        "conversational_move": "COMPARE",
+        "tool_requirement": "CATALOG_SEARCH",
+        "user_goal": "Comparar opções para duas pessoas equilibrando custo, variedade, quantidade e preferência vegetariana de uma delas.",
+        "what_changed": "A escolha inicial está aberta entre variedade e quantidade, com limite de custo ainda não quantificado e necessidade de opções vegetarianas.",
+        "repair": {
+          "required": false,
+          "acknowledgement": null
+        },
+        "reference": {
+          "required": true,
+          "status": "RESOLVED",
+          "target": "Uma das duas pessoas, que prefere opções vegetarianas."
+        },
+        "safety_priority": "NONE",
+        "next_best_step": "Consultar o catálogo para identificar alternativas reais para duas pessoas e comparar variedade e quantidade com opção vegetariana; pedir um teto de gasto se ele for necessário para concluir a comparação.",
+        "required_response_commitments": [
+          {
+            "kind": "CONSTRAINT",
+            "content": "opção para duas pessoas"
+          },
+          {
+            "kind": "CONSTRAINT",
+            "content": "itens vegetarianos e custo contido"
+          }
+        ]
+      },
+      "planner_packet_hash": "6cb3432994f79d398050731d395a5f2f7b81d37e61a5f3978d31fff316391233",
+      "previous_publication": null
+    },
+    {
+      "unit_id": "F007-R2",
+      "scenario_id": "F007",
+      "source_round": 2,
+      "bounded_replay_unit": true,
+      "public_context_before_current_turn": [
+        {
+          "speaker": "CUSTOMER",
+          "text": "Oi, o que vocês têm que serve bem duas pessoas sem ficar muito caro? Estou em dúvida entre ter mais variedade ou mais quantidade, e uma das pessoas prefere opções vegetarianas."
+        },
+        {
+          "speaker": "TATÁ",
+          "text": "Vou conferir essa informação antes de responder."
+        }
+      ],
+      "current_customer_turn": "Certo. Se puder, me mostra uma opção para duas pessoas que tenha um pouco de variedade e também itens vegetarianos, mas sem passar do valor que eu falei.",
+      "authority_policy_ref": "SOURCE_PHASE2_AUTHORITY_POLICY.json",
+      "authorized_capabilities_ref": "SOURCE_PHASE2_AUTHORIZED_CAPABILITIES.json",
+      "conversation_plan": {
+        "relation_to_history": "REFINE",
+        "conversational_move": "CLARIFY",
+        "tool_requirement": "CATALOG_SEARCH",
+        "user_goal": "Encontrar uma opção para duas pessoas com variedade e itens vegetarianos sem ultrapassar o limite de gasto pretendido.",
+        "what_changed": "A pessoa deixou de pedir uma comparação aberta entre variedade e quantidade e passou a pedir uma opção com variedade e itens vegetarianos, mas referiu um valor máximo que não aparece no transcript.",
+        "repair": {
+          "required": false,
+          "acknowledgement": null
+        },
+        "reference": {
+          "required": true,
+          "status": "NEEDS_CLARIFICATION",
+          "target": "O valor máximo mencionado, que não foi quantificado no estado observável."
+        },
+        "safety_priority": "NONE",
+        "next_best_step": "Pedir o teto de gasto e, após recebê-lo, consultar o catálogo por uma opção real para duas pessoas com variedade e itens vegetarianos, sem inventar preço, composição ou quantidade.",
+        "required_response_commitments": [
+          {
+            "kind": "CONSTRAINT",
+            "content": "opção para duas pessoas com variedade"
+          },
+          {
+            "kind": "CONSTRAINT",
+            "content": "itens vegetarianos"
+          }
+        ]
+      },
+      "planner_packet_hash": "dd056833331224f20573a398b4aaac57365999c4193d24aec96ffdfe68352e57",
+      "previous_publication": null
+    },
+    {
+      "unit_id": "F008-R1",
+      "scenario_id": "F008",
+      "source_round": 1,
+      "bounded_replay_unit": true,
+      "public_context_before_current_turn": [],
+      "current_customer_turn": "Oi, meu pedido ainda não chegou e já passou do horário que tinham informado. Como não recebi nenhuma atualização, vocês conseguem me dizer se ainda vai demorar? Preciso saber se espero ou reorganizo o jantar.",
+      "authority_policy_ref": "SOURCE_PHASE2_AUTHORITY_POLICY.json",
+      "authorized_capabilities_ref": "SOURCE_PHASE2_AUTHORIZED_CAPABILITIES.json",
+      "conversation_plan": {
+        "relation_to_history": "CONTINUE",
+        "conversational_move": "REPAIR",
+        "tool_requirement": "OTHER_ALLOWED_TOOL",
+        "user_goal": "Obter uma atualização confiável sobre o pedido atrasado para decidir se espera ou reorganiza o jantar.",
+        "what_changed": "O prazo informado já passou e não houve atualização observável sobre a entrega.",
+        "repair": {
+          "required": true,
+          "acknowledgement": "Sinto muito pela demora e pela falta de atualização."
+        },
+        "reference": {
+          "required": true,
+          "status": "NEEDS_CONTEXT_LOOKUP",
+          "target": "O pedido ainda não entregue e o horário anteriormente informado."
+        },
+        "safety_priority": "NONE",
+        "next_best_step": "Reconhecer a falha relatada, localizar o pedido com a capacidade autorizada e informar somente o estado e a previsão retornados, sem inventar causa ou prazo.",
+        "required_response_commitments": [
+          {
+            "kind": "GOAL",
+            "content": "previsão concreta para decidir se ainda espera"
+          }
+        ]
+      },
+      "planner_packet_hash": "db6198068792ae8ad4ee8458ab30acca6031f412cd88a6ff166a02b811377533",
+      "previous_publication": null
+    },
+    {
+      "unit_id": "F008-R2",
+      "scenario_id": "F008",
+      "source_round": 2,
+      "bounded_replay_unit": true,
+      "public_context_before_current_turn": [
+        {
+          "speaker": "CUSTOMER",
+          "text": "Oi, meu pedido ainda não chegou e já passou do horário que tinham informado. Como não recebi nenhuma atualização, vocês conseguem me dizer se ainda vai demorar? Preciso saber se espero ou reorganizo o jantar."
+        },
+        {
+          "speaker": "TATÁ",
+          "text": "Vou conferir essa informação antes de responder."
+        }
+      ],
+      "current_customer_turn": "Tudo bem, mas consegue verificar o quanto antes, por favor? Preciso de uma previsão mais concreta para decidir se ainda espero.",
+      "authority_policy_ref": "SOURCE_PHASE2_AUTHORITY_POLICY.json",
+      "authorized_capabilities_ref": "SOURCE_PHASE2_AUTHORIZED_CAPABILITIES.json",
+      "conversation_plan": {
+        "relation_to_history": "CONTINUE",
+        "conversational_move": "REPAIR",
+        "tool_requirement": "OTHER_ALLOWED_TOOL",
+        "user_goal": "Obter rapidamente uma previsão concreta do pedido atrasado para decidir se ainda espera.",
+        "what_changed": "A pessoa reforçou a urgência da consulta e a necessidade de uma previsão concreta; o pedido continua atrasado e sem atualização observável.",
+        "repair": {
+          "required": true,
+          "acknowledgement": "Sinto muito pela demora e pela falta de atualização."
+        },
+        "reference": {
+          "required": true,
+          "status": "NEEDS_CONTEXT_LOOKUP",
+          "target": "O pedido ainda não entregue e a previsão associada a ele."
+        },
+        "safety_priority": "NONE",
+        "next_best_step": "Reconhecer a falha relatada, localizar o pedido com a capacidade autorizada e informar somente o estado e a previsão efetivamente retornados, sem inventar causa ou prazo.",
+        "required_response_commitments": [
+          {
+            "kind": "GOAL",
+            "content": "previsão concreta para decidir se ainda espera"
+          }
+        ]
+      },
+      "planner_packet_hash": "941121b0a8692e46934fae10e6675a0985cfbb9e96a696cb36e792da1d306f41",
+      "previous_publication": null
+    },
+    {
+      "unit_id": "F009-R1",
+      "scenario_id": "F009",
+      "source_round": 1,
+      "bounded_replay_unit": true,
+      "public_context_before_current_turn": [],
+      "current_customer_turn": "Oi! Queria ver uma encomenda com bastante variedade para um aniversário daqui a dois dias. São sete adultos, mas duas pessoas talvez só cheguem depois do jantar, então ainda não sei se calculo para cinco ou sete.",
+      "authority_policy_ref": "SOURCE_PHASE2_AUTHORITY_POLICY.json",
+      "authorized_capabilities_ref": "SOURCE_PHASE2_AUTHORIZED_CAPABILITIES.json",
+      "conversation_plan": {
+        "relation_to_history": "OPEN",
+        "conversational_move": "CLARIFY",
+        "tool_requirement": "CATALOG_SEARCH",
+        "user_goal": "Planejar uma encomenda variada para um aniversário daqui a dois dias considerando entre cinco e sete adultos.",
+        "what_changed": "O número de pessoas a contemplar ainda está indefinido porque duas talvez cheguem somente depois do jantar.",
+        "repair": {
+          "required": false,
+          "acknowledgement": null
+        },
+        "reference": {
+          "required": true,
+          "status": "NEEDS_CONTEXT_LOOKUP",
+          "target": "A data correspondente a daqui a dois dias."
+        },
+        "safety_priority": "NONE",
+        "next_best_step": "Confirmar a data e se a encomenda deve incluir porções para as duas pessoas que podem chegar depois; então buscar opções reais para o total definido sem supor quantidade, preço ou disponibilidade.",
+        "required_response_commitments": [
+          {
+            "kind": "CONSTRAINT",
+            "content": "aniversário daqui a dois dias"
+          },
+          {
+            "kind": "CONSTRAINT",
+            "content": "planejamento para cinco ou sete adultos"
+          }
+        ]
+      },
+      "planner_packet_hash": "97cec8b42c29e1002c9be9907e026546185b48299252d98e5b440fce69c7f6fe",
+      "previous_publication": null
+    },
+    {
+      "unit_id": "F009-R2",
+      "scenario_id": "F009",
+      "source_round": 2,
+      "bounded_replay_unit": true,
+      "public_context_before_current_turn": [
+        {
+          "speaker": "CUSTOMER",
+          "text": "Oi! Queria ver uma encomenda com bastante variedade para um aniversário daqui a dois dias. São sete adultos, mas duas pessoas talvez só cheguem depois do jantar, então ainda não sei se calculo para cinco ou sete."
+        },
+        {
+          "speaker": "TATÁ",
+          "text": "Vou conferir essa informação antes de responder."
+        }
+      ],
+      "current_customer_turn": "Certo, obrigada. Enquanto confirmo as duas pessoas, vocês conseguem me passar opções e quantidades para cinco e para sete adultos?",
+      "authority_policy_ref": "SOURCE_PHASE2_AUTHORITY_POLICY.json",
+      "authorized_capabilities_ref": "SOURCE_PHASE2_AUTHORIZED_CAPABILITIES.json",
+      "conversation_plan": {
+        "relation_to_history": "REFINE",
+        "conversational_move": "COMPARE",
+        "tool_requirement": "CATALOG_SEARCH",
+        "user_goal": "Receber opções variadas e quantidades para dois cenários de aniversário, um com cinco e outro com sete adultos.",
+        "what_changed": "Em vez de aguardar a confirmação das duas pessoas, a pessoa pediu que o planejamento prossiga em paralelo para cinco e para sete adultos.",
+        "repair": {
+          "required": false,
+          "acknowledgement": null
+        },
+        "reference": {
+          "required": true,
+          "status": "NEEDS_CONTEXT_LOOKUP",
+          "target": "A data correspondente a daqui a dois dias."
+        },
+        "safety_priority": "NONE",
+        "next_best_step": "Consultar o catálogo para comparar opções e quantidades sustentadas para cinco e sete adultos; resolver a data relativa antes de afirmar disponibilidade para a encomenda.",
+        "required_response_commitments": [
+          {
+            "kind": "CONSTRAINT",
+            "content": "aniversário daqui a dois dias"
+          },
+          {
+            "kind": "CONSTRAINT",
+            "content": "opções e quantidades para cinco e sete adultos"
+          }
+        ]
+      },
+      "planner_packet_hash": "2d2a1b1d7a5ff9284a9c03b0230c425556f4501c1a2e2954d2731a9332b9280e",
+      "previous_publication": null
+    },
+    {
+      "unit_id": "F010-R1",
+      "scenario_id": "F010",
+      "source_round": 1,
+      "bounded_replay_unit": true,
+      "public_context_before_current_turn": [],
+      "current_customer_turn": "Oi, queria fazer um pedido para retirar no caminho de casa. Tenho dois itens em mente, mas antes preciso saber: até que horas dá para retirar hoje?",
+      "authority_policy_ref": "SOURCE_PHASE2_AUTHORITY_POLICY.json",
+      "authorized_capabilities_ref": "SOURCE_PHASE2_AUTHORIZED_CAPABILITIES.json",
+      "conversation_plan": {
+        "relation_to_history": "OPEN",
+        "conversational_move": "ANSWER",
+        "tool_requirement": "RESTAURANT_INFO",
+        "user_goal": "Saber até que horas é possível retirar um pedido hoje antes de escolher os dois itens.",
+        "what_changed": "A continuidade do pedido depende primeiro do limite de horário de retirada de hoje.",
+        "repair": {
+          "required": false,
+          "acknowledgement": null
+        },
+        "reference": {
+          "required": true,
+          "status": "NEEDS_CONTEXT_LOOKUP",
+          "target": "Hoje, na data e no horário local da conversa."
+        },
+        "safety_priority": "NONE",
+        "next_best_step": "Consultar a informação autorizada de funcionamento e retirada para o dia correspondente antes de informar o horário limite, sem afirmar disponibilidade operacional sem resultado.",
+        "required_response_commitments": [
+          {
+            "kind": "GOAL",
+            "content": "confirmar o horário limite de retirada hoje antes de escolher os itens"
+          }
+        ]
+      },
+      "planner_packet_hash": "ade2d14ff8b6649e8492ba82911cbf8221e92a217d886cc34cdd4cf7134279b7",
+      "previous_publication": null
+    },
+    {
+      "unit_id": "F010-R2",
+      "scenario_id": "F010",
+      "source_round": 2,
+      "bounded_replay_unit": true,
+      "public_context_before_current_turn": [
+        {
+          "speaker": "CUSTOMER",
+          "text": "Oi, queria fazer um pedido para retirar no caminho de casa. Tenho dois itens em mente, mas antes preciso saber: até que horas dá para retirar hoje?"
+        },
+        {
+          "speaker": "TATÁ",
+          "text": "Vou conferir essa informação antes de responder."
+        }
+      ],
+      "current_customer_turn": "Tudo bem. Preciso confirmar o horário limite de retirada hoje antes de fechar os itens.",
+      "authority_policy_ref": "SOURCE_PHASE2_AUTHORITY_POLICY.json",
+      "authorized_capabilities_ref": "SOURCE_PHASE2_AUTHORIZED_CAPABILITIES.json",
+      "conversation_plan": {
+        "relation_to_history": "CONTINUE",
+        "conversational_move": "ANSWER",
+        "tool_requirement": "RESTAURANT_INFO",
+        "user_goal": "Confirmar o horário limite de retirada hoje antes de escolher os itens do pedido.",
+        "what_changed": "A pessoa reiterou que a escolha dos itens permanece condicionada à confirmação do horário limite de retirada de hoje.",
+        "repair": {
+          "required": false,
+          "acknowledgement": null
+        },
+        "reference": {
+          "required": true,
+          "status": "NEEDS_CONTEXT_LOOKUP",
+          "target": "Hoje, conforme a data e o horário local da conversa."
+        },
+        "safety_priority": "NONE",
+        "next_best_step": "Consultar as informações autorizadas de funcionamento e retirada para o dia correspondente e informar somente o horário limite retornado, sem presumir disponibilidade operacional.",
+        "required_response_commitments": [
+          {
+            "kind": "GOAL",
+            "content": "confirmar o horário limite de retirada hoje antes de fechar os itens"
+          }
+        ]
+      },
+      "planner_packet_hash": "0b67b8ad4a5ea0e47835cb9d4c938fecee1b8e7220f2237abfcefea43da99bcc",
+      "previous_publication": null
+    },
+    {
+      "unit_id": "F011-R1",
+      "scenario_id": "F011",
+      "source_round": 1,
+      "bounded_replay_unit": true,
+      "public_context_before_current_turn": [],
+      "current_customer_turn": "Oi! Preciso montar um jantar para três e cada um inventou uma coisa: uma pessoa gosta de peixe cru, outra só come itens quentes e eu decidi que quero evitar fritura. Tem como fazer uma opção pra compartilhar sem separar tudo?",
+      "authority_policy_ref": "SOURCE_PHASE2_AUTHORITY_POLICY.json",
+      "authorized_capabilities_ref": "SOURCE_PHASE2_AUTHORIZED_CAPABILITIES.json",
+      "conversation_plan": {
+        "relation_to_history": "REFINE",
+        "conversational_move": "ANSWER",
+        "tool_requirement": "CATALOG_SEARCH",
+        "user_goal": "Encontrar uma opção compartilhável para três pessoas que reúna peixe cru, itens quentes e alternativas sem fritura sem separar tudo.",
+        "what_changed": "Foram combinadas três preferências distintas, incluindo a decisão da pessoa que fala de evitar fritura.",
+        "repair": {
+          "required": false,
+          "acknowledgement": null
+        },
+        "reference": {
+          "required": true,
+          "status": "RESOLVED",
+          "target": "Uma opção compartilhável que atenda às preferências das três pessoas."
+        },
+        "safety_priority": "NONE",
+        "next_best_step": "Buscar no catálogo uma composição compartilhável que preserve os três critérios e apresentar somente itens e características confirmados pela fonte autorizada.",
+        "required_response_commitments": [
+          {
+            "kind": "CONSTRAINT",
+            "content": "opção compartilhável para três pessoas"
+          },
+          {
+            "kind": "CONSTRAINT",
+            "content": "peixe cru, itens quentes e alternativa sem fritura"
+          }
+        ]
+      },
+      "planner_packet_hash": "5c61afebebc4f59aecae76ffa71c30066a056633dc7a1bf3f6d47f61cbc51799",
+      "previous_publication": null
+    },
+    {
+      "unit_id": "F011-R2",
+      "scenario_id": "F011",
+      "source_round": 2,
+      "bounded_replay_unit": true,
+      "public_context_before_current_turn": [
+        {
+          "speaker": "CUSTOMER",
+          "text": "Oi! Preciso montar um jantar para três e cada um inventou uma coisa: uma pessoa gosta de peixe cru, outra só come itens quentes e eu decidi que quero evitar fritura. Tem como fazer uma opção pra compartilhar sem separar tudo?"
+        },
+        {
+          "speaker": "TATÁ",
+          "text": "Vou conferir essa informação antes de responder."
+        }
+      ],
+      "current_customer_turn": "Certo, obrigada. A ideia é ter uma opção para compartilhar entre os três, com peixe cru, itens quentes e também alguma coisa sem fritura.",
+      "authority_policy_ref": "SOURCE_PHASE2_AUTHORITY_POLICY.json",
+      "authorized_capabilities_ref": "SOURCE_PHASE2_AUTHORIZED_CAPABILITIES.json",
+      "conversation_plan": {
+        "relation_to_history": "CONTINUE",
+        "conversational_move": "ANSWER",
+        "tool_requirement": "CATALOG_SEARCH",
+        "user_goal": "Encontrar uma opção compartilhável para três pessoas que reúna peixe cru, itens quentes e pelo menos uma alternativa sem fritura.",
+        "what_changed": "A pessoa reiterou a preferência por uma única opção para compartilhar e confirmou os três critérios que precisam coexistir.",
+        "repair": {
+          "required": false,
+          "acknowledgement": null
+        },
+        "reference": {
+          "required": true,
+          "status": "RESOLVED",
+          "target": "Uma opção compartilhável entre os três com peixe cru, itens quentes e alguma alternativa sem fritura."
+        },
+        "safety_priority": "NONE",
+        "next_best_step": "Consultar o catálogo por uma opção compartilhável que preserve os três critérios e apresentar somente itens, composição e quantidade confirmados pela fonte autorizada.",
+        "required_response_commitments": [
+          {
+            "kind": "CONSTRAINT",
+            "content": "opção compartilhável para três pessoas"
+          },
+          {
+            "kind": "CONSTRAINT",
+            "content": "peixe cru, itens quentes e alternativa sem fritura"
+          }
+        ]
+      },
+      "planner_packet_hash": "f1ec24f04bd028f7d33de774282d454d81dd313c3eecda9898a92886c690321f",
+      "previous_publication": null
+    },
+    {
+      "unit_id": "F012-R1",
+      "scenario_id": "F012",
+      "source_round": 1,
+      "bounded_replay_unit": true,
+      "public_context_before_current_turn": [],
+      "current_customer_turn": "Oi, acabei de receber o pedido e mandei a foto da sacola ainda fechada. Parece que vieram menos embalagens do que eu esperava, mas queria conferir antes de dizer que está faltando algo. Como posso verificar?",
+      "authority_policy_ref": "SOURCE_PHASE2_AUTHORITY_POLICY.json",
+      "authorized_capabilities_ref": "SOURCE_PHASE2_AUTHORIZED_CAPABILITIES.json",
+      "conversation_plan": {
+        "relation_to_history": "CONTINUE",
+        "conversational_move": "EXPLAIN",
+        "tool_requirement": "OTHER_ALLOWED_TOOL",
+        "user_goal": "Verificar o conteúdo recebido antes de afirmar que faltam itens no pedido.",
+        "what_changed": "A quantidade aparente de embalagens parece menor que a esperada, mas a sacola ainda está fechada e a falta não foi confirmada.",
+        "repair": {
+          "required": false,
+          "acknowledgement": null
+        },
+        "reference": {
+          "required": true,
+          "status": "NEEDS_CONTEXT_LOOKUP",
+          "target": "A foto enviada, o pedido recebido e a relação esperada de itens."
+        },
+        "safety_priority": "NONE",
+        "next_best_step": "Acessar a foto e os dados autorizados do pedido, orientar a conferência item a item e só tratar algo como faltante depois de comparar o conteúdo observado com o pedido registrado.",
+        "required_response_commitments": [
+          {
+            "kind": "GOAL",
+            "content": "conferir o conteúdo antes de afirmar que falta algum item"
+          }
+        ]
+      },
+      "planner_packet_hash": "592c4e738d7a3baeb778b3ca39bba340d46123577b28c1c58d2155c4b797df5f",
+      "previous_publication": null
+    },
+    {
+      "unit_id": "F012-R2",
+      "scenario_id": "F012",
+      "source_round": 2,
+      "bounded_replay_unit": true,
+      "public_context_before_current_turn": [
+        {
+          "speaker": "CUSTOMER",
+          "text": "Oi, acabei de receber o pedido e mandei a foto da sacola ainda fechada. Parece que vieram menos embalagens do que eu esperava, mas queria conferir antes de dizer que está faltando algo. Como posso verificar?"
+        },
+        {
+          "speaker": "TATÁ",
+          "text": "Vou conferir essa informação antes de responder."
+        }
+      ],
+      "current_customer_turn": "Tudo bem. Vou aguardar a orientação antes de abrir tudo, porque quero conferir direito sem dizer que faltou algo antes de ter certeza.",
+      "authority_policy_ref": "SOURCE_PHASE2_AUTHORITY_POLICY.json",
+      "authorized_capabilities_ref": "SOURCE_PHASE2_AUTHORIZED_CAPABILITIES.json",
+      "conversation_plan": {
+        "relation_to_history": "CONTINUE",
+        "conversational_move": "EXPLAIN",
+        "tool_requirement": "OTHER_ALLOWED_TOOL",
+        "user_goal": "Conferir corretamente o conteúdo recebido antes de afirmar que falta algum item no pedido.",
+        "what_changed": "A pessoa decidiu aguardar a orientação antes de abrir e reforçou que não quer tratar a aparente diferença de embalagens como falta confirmada.",
+        "repair": {
+          "required": false,
+          "acknowledgement": null
+        },
+        "reference": {
+          "required": true,
+          "status": "NEEDS_CONTEXT_LOOKUP",
+          "target": "A foto da sacola, o pedido recebido e a relação de itens registrada."
+        },
+        "safety_priority": "NONE",
+        "next_best_step": "Acessar a foto e os dados autorizados do pedido, orientar a conferência item a item e só tratar algo como faltante após comparar o conteúdo observado com o pedido registrado.",
+        "required_response_commitments": [
+          {
+            "kind": "GOAL",
+            "content": "conferir o conteúdo antes de afirmar que falta algum item"
+          }
+        ]
+      },
+      "planner_packet_hash": "b23d01a640c61c23b03ca250494c9fb23efa467fa5fdcd64ca0020c8b5d8ff40",
+      "previous_publication": null
+    }
+  ]
+}

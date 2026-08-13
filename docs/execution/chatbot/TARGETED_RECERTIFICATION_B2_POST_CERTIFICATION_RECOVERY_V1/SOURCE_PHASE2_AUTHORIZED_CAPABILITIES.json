@@ -1,0 +1,41 @@
+{
+  "schema_version": "deliveryos_b2_round1_capabilities_v1",
+  "capabilities": [
+    {
+      "id": "CATALOG_SEARCH",
+      "availability": "DECLARED",
+      "result_state": "NOT_PRELOADED"
+    },
+    {
+      "id": "DETAIL_LOOKUP",
+      "availability": "DECLARED",
+      "result_state": "NOT_PRELOADED"
+    },
+    {
+      "id": "PRICE_LOOKUP",
+      "availability": "DECLARED",
+      "result_state": "NOT_PRELOADED"
+    },
+    {
+      "id": "RESTAURANT_INFO",
+      "availability": "DECLARED",
+      "result_state": "NOT_PRELOADED"
+    },
+    {
+      "id": "RESERVATION_INFO",
+      "availability": "DECLARED",
+      "result_state": "NOT_PRELOADED"
+    },
+    {
+      "id": "SAFETY_GATE",
+      "availability": "DECLARED",
+      "result_state": "NOT_PRELOADED"
+    },
+    {
+      "id": "OTHER_ALLOWED_TOOL",
+      "availability": "DECLARED",
+      "result_state": "NOT_PRELOADED"
+    }
+  ],
+  "restaurant_fact_pack_included": false
+}
