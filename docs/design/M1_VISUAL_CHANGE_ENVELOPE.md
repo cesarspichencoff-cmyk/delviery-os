@@ -4,9 +4,9 @@ lifecycle:
   status: ACTIVE
   authority_scope: m1_visual_change_authorization
   superseded_by: null
-  atualizado_em: "2026-08-11"
-  state_basis: f87a36dfd39c9989344f0fed6ebf8db5db1a8c35
-  missao: M1A.1 — ponte canônica e estrutural
+  atualizado_em: "2026-08-13"
+  state_basis: 0d34287
+  missao: M1A.1 — ponte canônica e estrutural · M1B-R1 · M1B-R2
 ---
 
 # Envelope de mudança visual M1
@@ -109,6 +109,50 @@ Medido em `f87a36d`. Todos os baselines são ancestrais de HEAD — verificado c
 caminhos. Um envelope que resolvesse só o PF4 deixaria M1B esbarrando em nove muros
 invisíveis no primeiro commit. Guarda `C6` reprova se o inventário perder um deles ou
 copiar baseline errado.
+
+---
+
+## 3-bis. Procedência do inventário: de dez para onze
+
+> Esta seção **não corrige** a §3 acima. A §3 é o registro do que M1A.1 mediu, e
+> ela continua sendo o que M1A.1 sabia. O que entra aqui é a sucessão: a
+> afirmação anterior, a evidência que a falsificou, e o estado atual.
+
+```
+PREVIOUS_INVENTORY  = 10
+PREVIOUS_STATUS     = FALSIFIED_BY_LATER_DISCOVERY
+PREVIOUS_SOURCE     = M1A.1 (§3 desta folha) — dez gates, todos em src/platform/
+
+CURRENT_PROVEN_INVENTORY = 11
+CURRENT_STATUS           = ACTIVE
+CURRENT_SOURCE           = M1B-R1 — o décimo primeiro é G1 do Lab V4, em
+                           labs/operacao-viva-v4/testes/run-lab-v4-tests.ts
+```
+
+**Como o décimo primeiro apareceu.** Ele tinha o mesmo defeito de intervalo
+aberto dos outros dez (`git diff <base> -- <paths>` sem o segundo commit compara
+com a árvore ATUAL). Quando M1B tocou `home.css`, `home.js` e `sinais.ts`, essa
+guarda passou a acusar o Lab por trabalho que não era dele. Foi a falha que
+revelou o gate, não uma busca que o encontrou.
+
+**Por que M1A.1 não o viu.** O inventário procurou onde gates de congelamento
+*moram* — `src/platform/` — em vez de procurar pela *propriedade* que os define.
+Este é o genoma de falha `EXPECTED_DIRECTORY_INVENTORY_BLINDNESS`.
+
+### Regra de projeto que nasce daqui
+
+> **Inventarie a propriedade, não apenas o lugar onde espera encontrá-la.**
+>
+> Inventários de invariantes, gates, contratos e mecanismos críticos devem
+> procurar pelo COMPORTAMENTO que define a família, e não só nos diretórios onde
+> se espera que ela viva. Um inventário estruturalmente estreito produz um número
+> que parece completo e não é — e um número que parece completo é pior do que
+> nenhum, porque ninguém volta a conferir.
+
+Guarda executável hoje: `C1` em `src/platform/run-m1-bridge-tests.ts` verifica os
+dez de `src/platform/` **e** o décimo primeiro POR NOME, fora dele. Uma guarda
+que procure por propriedade em toda a árvore ainda **NÃO EXISTE** — está
+registrada como pendência em §29 desta missão, e não conto como fechada.
 
 ---
 

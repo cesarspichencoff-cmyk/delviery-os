@@ -5,8 +5,8 @@
     "status": "ACTIVE",
     "authority_scope": "technical_state",
     "superseded_by": null,
-    "atualizado_em": "2026-08-11",
-    "state_basis": "b24fd222",
+    "atualizado_em": "2026-08-13",
+    "state_basis": "0d34287",
     "observa": [
       "src/product/",
       "src/perfil-delivery/",
