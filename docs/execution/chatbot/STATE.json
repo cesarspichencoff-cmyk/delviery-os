@@ -1,9 +1,9 @@
 {
   "project": "DeliveryOS Chatbot TATÁ",
-  "active_change": "b2-overnight-autonomous-build-proof-v1",
-  "branch": "experiment/hospitality-b2-cognitive-planner-v1",
-  "base": "a1d73220c0926fdbb302d72d542d793b960ed713",
-  "behavioral_checkpoint": "76e605890430c7582586e2baef25833c86a6b723",
+  "active_change": "b2-post-certification-recovery-v1",
+  "branch": "fix/b2-post-certification-recovery",
+  "base": "c80a31fbab25692666a88976b312f03b75fa1799",
+  "behavioral_checkpoint": "60ba67b035a3790ab56751cb94b6eaef430f1a93",
   "working_tree": "clean_after_atomic_local_commit",
   "completed_units": [
     "hosting_inspection",
@@ -103,7 +103,16 @@
     "b2_writer_response_plan_alignment_gate",
     "b2_complete_deterministic_fallback",
     "b2_30_conversation_pipeline_soak",
-    "b2_20_pair_advisory_comparison"
+    "b2_20_pair_advisory_comparison",
+    "b2_certification_verdict_received",
+    "b2_no_progress_without_state_change",
+    "b2_required_response_commitments",
+    "b2_central_publication_validator",
+    "b2_customer_surface",
+    "b2_truth_trace_nine_stages",
+    "b2_shadow_zero_cost_gate",
+    "b2_human_use_test_one_iteration",
+    "b2_targeted_recertification_packet"
   ],
   "active_unit": null,
   "pending_units": [],
@@ -182,7 +191,13 @@
     "b2_overnight_prior_replay": "20 conversations; 40/40 published after hardening",
     "b2_overnight_writer_targeted": "3/3 blocked bad Writer output and published complete fallback",
     "b2_overnight_conversation": "791/791 passed",
-    "b2_overnight_privacy": "passed; zero findings; positive control detected"
+    "b2_overnight_privacy": "passed; zero findings; positive control detected",
+    "b2_post_certification_directed": "40/40 passed; both systemic root causes and product gates covered",
+    "b2_post_certification_regression": "812/812 passed on the final implementation",
+    "b2_post_certification_catalog": "200/200 passed; no real driver or external system access; hash b335eeff0dc0ad2f1a19b146f7518562003c68d73cf508510e7ecd1f086ebf19",
+    "b2_post_certification_privacy": "passed; zero findings; positive control detected",
+    "b2_post_certification_human_use": "passed through http://127.0.0.1:4179/customer; one naturalness correction applied; urgent safety route and separate nine-stage trace verified",
+    "b2_targeted_recertification": "23/23 bounded replay units published across 12 scenarios; packet hash 11631f8314bd942f50a06f66b3c2fe32192ce77e944156207b659237a6def203; independent execution pending"
   },
   "bakeoff": {
     "seed": "TATA-LOCAL-AI-BAKEOFF-V1",
@@ -259,7 +274,7 @@
     "real_allergen_and_pairing_approval_pending",
     "cesar_free_human_trust_review_pending",
     "cognitive_authority_hypothesis_inconclusive",
-    "b2_independent_human_validation_missing",
+    "b2_targeted_independent_recertification_pending",
     "b2_context_equivalence_not_proven",
     "b2_generalization_not_independent",
     "b2_gemma_recertification_incomplete_runtime_crash",
@@ -279,6 +294,6 @@
   "production_authorized": false,
   "paid_api_or_infrastructure_added": false,
   "push_merge_deploy_performed": false,
-  "next_step": "César decides whether to authorize one genuinely independent B2 validation with adaptive customer, matched A/B facts and a separate cognitive runtime; do not integrate, migrate or deploy B2",
-  "updated_at": "2026-08-10T00:00:00-03:00"
+  "next_step": "Run npm run conversation-native:start and open http://127.0.0.1:4179/customer; keep product integration blocked until an independent certifier executes only the frozen targeted packet",
+  "updated_at": "2026-08-13T13:20:00-03:00"
 }

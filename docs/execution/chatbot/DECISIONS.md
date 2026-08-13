@@ -515,3 +515,35 @@ de robustez.
 
 **Motivo:** volume adicional não corrige dependência metodológica nem prova
 capacidade de runtime.
+
+## 2026-08-13 — Recovery pós-certificação B2
+
+### D-046 — Ausência de mudança de estado bloqueia nova publicação
+
+**Contexto:** a certificação independente fixou `B2_NOT_VALIDATED` porque
+`NEEDS_TOOL` podia publicar a mesma espera sem execução ou progresso.
+
+**Decisão:** todo Response Plan recebe um `progress_state_hash`; uma publicação
+consecutiva com o mesmo estado é bloqueada mesmo quando o Writer apenas
+reformula a espera. Resultado autorizado, limitação explícita ou pergunta
+concreta são as únicas saídas publicáveis.
+
+### D-047 — Commitments são parte opcional do Contract V2 e gate central
+
+**Decisão:** preservar goal, restrição material, referência, repair e pergunta
+específica em `required_response_commitments`, sem criar Contract V3. Writer e
+fallback passam pelo mesmo validator central; número e sentido negativo de uma
+restrição não podem desaparecer.
+
+### D-048 — Produto local usa o pipeline corrigido em shadow e custo zero
+
+**Decisão:** manter o processo e comando existentes, acrescentar `/customer` e
+`/trace/<turn_id>`, e combinar `EXTERNAL_ACTION_ALLOWED`,
+`CHANNEL_AUTHORIZED` e `COST_AUTHORIZED`. Nenhum canal externo foi conectado.
+
+### D-049 — Recertificação é targeted e usa unidades limitadas
+
+**Decisão:** congelar 23 unidades independentes — R1 e R2 de 11 cenários mais
+F003-R1 — porque os turnos posteriores do Actor dependem das respostas antigas.
+Não costurar essas unidades como conversa contínua e não executar a
+recertificação no papel de construtor.

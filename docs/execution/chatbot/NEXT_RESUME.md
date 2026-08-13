@@ -1,24 +1,14 @@
-# Retomada única — decisão sobre B2
+# Retomada única — recovery pós-certificação B2
 
-- Branch: `experiment/b2-minimal-architecture-proof-v1`.
-- Base: `e602b8f4ea96aba39ab7353cba715c0d9cef9af2`.
-- Resultado: `B2_PROMISING_NOT_VALIDATED`.
-- Prova: 22/24 hard semantic, 100% safety, 12 goldens publicados e 20
-  conversas livres com vitória B2 em 16/20 comparações gerais.
-- Limites: dois turnos sem publicação, avaliador não independente, duas
-  assimetrias de contexto e conversas livres de apenas dois turnos.
-- Próxima decisão única: César autoriza ou não uma segunda validação B2 pequena,
-  independente e com contexto A/B equivalente.
-- Não fazer: migração, integração externa, fornecedor, produção, WhatsApp,
-  redesign, push, merge ou deploy.
-
-## Checkpoint overnight
-
-- Branch: `experiment/hospitality-b2-cognitive-planner-v1`.
-- Resultado: `B2_PROMISING_NOT_VALIDATED`.
-- Fechado: Planner Port, proteção de superfície, alinhamento Writer/Response
-  Plan, fallback completo e replay histórico 40/40.
-- Pendente: validação independente com cliente adaptativo, fatos equivalentes e
-  runtime cognitivo separado; recertificação local do Writer.
-- Próxima decisão única: César autoriza ou encerra essa validação independente.
-- Não iniciar automaticamente robustez, migração, runtime externo ou produção.
+- Branch: `fix/b2-post-certification-recovery`.
+- Base preservada: `c80a31fbab25692666a88976b312f03b75fa1799`.
+- Veredito canônico recebido: `B2_NOT_VALIDATED`.
+- Fechado: as duas causas sistêmicas, validator central, customer surface,
+  truth trace, shadow, gate de custo zero e uma iteração humana.
+- Prova: 812/812 testes; catálogo 200/200; privacy sem achados; pacote targeted
+  SHA-256 `11631f8314bd942f50a06f66b3c2fe32192ce77e944156207b659237a6def203`.
+- Próxima ação única: executar `npm run conversation-native:start` e abrir
+  `http://127.0.0.1:4179/customer`.
+- Gate seguinte: um certificador independente executa somente o pacote targeted
+  de 23 unidades. O construtor não executa essa recertificação.
+- Não fazer: push, merge, deploy, WhatsApp, drivers reais ou gasto externo.

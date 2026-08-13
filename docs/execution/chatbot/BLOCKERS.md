@@ -172,3 +172,15 @@ Permanecem limites deliberados:
   com crash local `1073807364`; não houve aprovação por amostra parcial.
 - Impacto: bloqueia validação, robustez e pacote de migração; não bloqueia a
   preservação do protótipo B2 como hipótese promissora.
+
+## Recovery pós-certificação B2
+
+Não há bloqueador técnico conhecido para abrir o atendimento local ou entregar
+o pacote targeted ao certificador independente.
+
+Permanece um gate externo deliberado:
+
+- integração de produto continua bloqueada até a recertificação independente
+  das 23 unidades congeladas;
+- produção, WhatsApp, deploy, drivers reais e gasto externo não foram
+  autorizados nem executados.

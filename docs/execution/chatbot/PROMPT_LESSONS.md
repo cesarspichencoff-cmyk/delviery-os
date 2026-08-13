@@ -167,3 +167,19 @@ superfície: estado lembrado pelo CRM pode continuar invisível na frase.
   generalização cognitiva.
 - Um A/B tecnicamente selado deixa de ser verdadeiramente cego quando o estilo
   ou os nomes artificiais revelam a variante.
+
+## Recovery pós-certificação B2
+
+- autorização para solicitar uma ferramenta não prova que ela executou;
+- `NEEDS_TOOL` sem resultado precisa assumir a limitação e oferecer um próximo
+  passo que o cliente possa realmente tomar;
+- mudar palavras sem mudar estado não é progresso;
+- pergunta obrigatória deve preservar o dado específico faltante, não apenas um
+  ponto de interrogação;
+- commitments precisam chegar ao validator central; validação dentro de um
+  Writer isolado não protege fallback nem novos adapters;
+- números e negações são partes materiais de restrições, não detalhes de estilo;
+- replay targeted sobre conversa congelada deve manter cada unidade separada
+  quando o Actor posterior reagiu a uma resposta antiga;
+- customer surface e truth trace servem públicos diferentes e não devem dividir
+  a mesma densidade visual.
