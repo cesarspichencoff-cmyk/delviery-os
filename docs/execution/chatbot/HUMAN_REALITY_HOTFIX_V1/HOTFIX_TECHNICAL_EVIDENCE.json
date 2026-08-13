@@ -1,0 +1,227 @@
+{
+  "schema_version": "deliveryos-human-reality-hotfix-technical-evidence-v1",
+  "evidence_label": "TECHNICAL_CAUSAL_EVIDENCE_NOT_A_CERTIFICATION",
+  "created_at": "2026-08-13T20:28:06.341Z",
+  "self_certification_included": false,
+  "repository_identity": {
+    "branch": "fix/b2-human-reality-hotfix",
+    "base_head": "313c08fd699a9091e8a47f4796e2c63e63575107",
+    "implementation_head": "7e46015d536c803384f7a1437a182ae6b954664c",
+    "implementation_tree": "41a7f076cf96e315d01d47ace1a17440f74ba363"
+  },
+  "customer_runtime": {
+    "start_command": "npm run conversation-native:start",
+    "customer_surface": "http://127.0.0.1:4179/customer",
+    "turn_endpoint_used_by_customer_surface": "POST /api/product/turn",
+    "trace_surface": "/trace/<turn_id>",
+    "runtime": "structured_product_context",
+    "cognitive_planner": "deliveryos-native-to-b2-product-adapter / Contract V2",
+    "authority": "deliveryos-product-structured-authority-v1",
+    "primary_writer": "gemma_local_writer",
+    "fallback_writer": "deterministic_b2_writer",
+    "validator": "B2 publication validator",
+    "mode": "LOCAL_SHADOW_PREVIEW",
+    "real_drivers": false,
+    "external_action_allowed": false,
+    "max_external_spend_brl": 0
+  },
+  "wiring_evidence": {
+    "pre_fix_b2_recovery_active": true,
+    "pre_fix_legacy_interception_found": true,
+    "pre_fix_path": "customer -> product turn -> Native Pattern/Journey/composer -> B2 adapter -> authority -> writer -> validator",
+    "post_fix_path": "customer -> product turn -> structured product context -> B2 adapter -> structured authority -> writer/fallback -> validator",
+    "post_fix_native_response_composer_executed": false,
+    "post_fix_trace_stage_count": 9,
+    "post_fix_trace_stages": [
+      "USER",
+      "UNDERSTANDING",
+      "REQUIRED_COMMITMENTS",
+      "CAPABILITY_FACT_NEED",
+      "AUTHORITY_RESULT",
+      "RESPONSE_PLAN",
+      "WRITER_FALLBACK",
+      "VALIDATOR",
+      "PUBLISHED_RESPONSE"
+    ],
+    "browser_http_cache": "not_used; customer assets and API responses declare no-store",
+    "transient_state": "B2 traces/history and customer-menu context are in memory and were cleared through POST /api/product/reset",
+    "persistent_state_boundary": "synthetic chat session counter persisted only for identity; conversation context was reset"
+  },
+  "first_divergences_pre_fix": [
+    {
+      "failure": "A",
+      "turn_id": "B2-TURN-0002",
+      "stage": "UNDERSTANDING",
+      "cause": "hunger was not represented as a recommendation goal while stale reservation journey state remained active"
+    },
+    {
+      "failure": "B",
+      "turn_id": "B2-TURN-0003",
+      "stage": "RECOMMENDATION_POLICY",
+      "cause": "channel selection was required before preference discovery"
+    },
+    {
+      "failure": "C",
+      "turn_id": "B2-TURN-0004",
+      "stage": "RETRIEVAL_RANKING",
+      "cause": "a hard-coded top-k of three was published without a customer selection signal"
+    },
+    {
+      "failure": "D",
+      "turn_id": "B2-TURN-0005",
+      "stage": "UNDERSTANDING_FILTERS",
+      "cause": "the token hot was interpreted as cooked without respecting negation"
+    },
+    {
+      "failure": "E",
+      "turn_id": "B2-TURN-0006",
+      "stage": "UNDERSTANDING_COMMITMENTS",
+      "cause": "the sushi correction was not represented as repair/progress, so the no-progress gate blocked publication"
+    },
+    {
+      "failure": "F",
+      "turn_id": "B2-TURN-0007",
+      "stage": "AUTHORIZED_SURFACE_COMPOSITION",
+      "cause": "the same authorized sentence and link entered the response surface twice without provenance-aware deduplication"
+    },
+    {
+      "failure": "G",
+      "turn_id": "B2-TURN-0008",
+      "stage": "AUTHORITY_QUERY_BINDING",
+      "cause": "the price shortcut reused prior options without binding the result to the current rodizio entity and intent"
+    }
+  ],
+  "systemic_root_cause_groups": [
+    "legacy pre-composition and stale journey state ahead of B2",
+    "food-intent discovery, channel sequencing, and arbitrary top-k policy",
+    "negation-insensitive temperature semantics",
+    "incomplete repair/progress commitments and missing request-result entity binding",
+    "duplicate authorized-surface composition and unsafe deterministic fallback rendering"
+  ],
+  "implemented_controls": [
+    "structured authority path bypasses the Native response composer for /customer",
+    "hunger starts preference discovery before channel selection",
+    "recommendation does not publish an arbitrary top three without a customer signal",
+    "not_hot is distinct from raw and cooked and excludes only the explicit Pratos Quentes section",
+    "repair and current category become required response commitments",
+    "operation fingerprints bind tool requests and results and mismatches fail closed as STALE_FACT_RESULT_REUSE",
+    "all published price tokens must be authorized",
+    "authorized sentences and links are normalized and deduplicated before publication"
+  ],
+  "frozen_execution": {
+    "exact_replay": {
+      "customer_turns": 8,
+      "assistant_turns": 8,
+      "public_turns": 16,
+      "rerun_performed": false,
+      "turn_ids": [
+        "B2-TURN-0001",
+        "B2-TURN-0002",
+        "B2-TURN-0003",
+        "B2-TURN-0004",
+        "B2-TURN-0005",
+        "B2-TURN-0006",
+        "B2-TURN-0007",
+        "B2-TURN-0008"
+      ],
+      "request_result_bound_turns": 8,
+      "native_composer_executed_turns": 0,
+      "external_actions": 0,
+      "external_spend_brl": 0,
+      "transport_note": "Browser control rejected the loopback URL before any message was sent. The frozen first execution used the same POST /api/product/turn endpoint called by /customer. Turn 7 was accepted once and awaited after the client command timeout; it was not resent."
+    },
+    "paraphrase_sequence": {
+      "customer_turns": 5,
+      "assistant_turns": 5,
+      "public_turns": 10,
+      "rerun_performed": false,
+      "external_actions": 0,
+      "external_spend_brl": 0
+    }
+  },
+  "remaining_observations": [
+    {
+      "scope": "exact replay turns B2-TURN-0006 and B2-TURN-0008; paraphrase turn B2-TURN-0005",
+      "fact": "the primary writer was rejected with B2_WRITER_DROPPED_REQUIRED_COMMITMENT and deterministic fallback published broken .; separators; the repair response also repeated Entendi"
+    },
+    {
+      "scope": "paraphrase turn B2-TURN-0003",
+      "fact": "the published response acknowledged sushi but provided neither a concrete option nor the next necessary question"
+    }
+  ],
+  "tests": {
+    "canonical_command": "npm run conversation-native:test",
+    "canonical_result": {
+      "total": 830,
+      "passed": 830,
+      "failed": 0
+    },
+    "focused_result": {
+      "total": 42,
+      "passed": 42,
+      "failed": 0,
+      "phase": "pre-final integration focus"
+    },
+    "final_focused_result": {
+      "total": 28,
+      "passed": 28,
+      "failed": 0,
+      "phase": "final recommendation, structured wiring, and integration focus"
+    },
+    "diff_check": "PASS"
+  },
+  "file_hashes": [
+    {
+      "path": "tools/conversation-crm/native-server.js",
+      "sha256": "9148060944b373668651709197e6e9e7834b8a15d76c2bd41ec1d62ae9007d1f"
+    },
+    {
+      "path": "tools/conversation-crm/homologation/service.js",
+      "sha256": "22b36fb2154488a5a5ff0a47585ed03aaa8182007adacc21901b913094e33621"
+    },
+    {
+      "path": "tools/conversation-crm/customer-menu/service.js",
+      "sha256": "69000914e099a12cac008143506bee42060ca5e7f4ad6cca852af988ffa92321"
+    },
+    {
+      "path": "tools/conversation-crm/cognitive-authority/b2/product-service.js",
+      "sha256": "070ca16f93a09acb62e5474faa9f2f11dee395b5f23f27009f98b26a3dcf43b7"
+    },
+    {
+      "path": "tools/conversation-crm/cognitive-authority/b2/pipeline.js",
+      "sha256": "204b7dea98197cc4a2651023bc9119b67e04be91a2a76f33c31d3a90348fde3c"
+    },
+    {
+      "path": "tools/conversation-crm/cognitive-authority/b2/authority.js",
+      "sha256": "01ec2d25c7f4af2a323e3e1fb5a0021cf2e0539936ef4f1b3f175efec9072a23"
+    },
+    {
+      "path": "tools/conversation-crm/cognitive-authority/b2/writer.js",
+      "sha256": "f597a81665a8e953a58e9ca0371148fb5a4d5b213c7cb79560a50ad8b23e7af8"
+    },
+    {
+      "path": "src/conversation-crm/menu-intelligence/hospitality-context.js",
+      "sha256": "d932c6743ff9b1682e03623f4656c8bc5a725c0fa9256de2fa3a2104ab4131f2"
+    },
+    {
+      "path": "src/conversation-crm/menu-intelligence/recommendation.js",
+      "sha256": "cb9ecd056680bce7aa055b02086b78a5f02d93b9845717c9ca25c4f22d10887e"
+    },
+    {
+      "path": "docs/execution/chatbot/HUMAN_REALITY_HOTFIX_V1/PRE_FIX_TRACE_EVIDENCE.json",
+      "sha256": "3606b857d2106806c157f62135e112c942a1e29e9e79b883d23a82e503ea2f25"
+    },
+    {
+      "path": "docs/execution/chatbot/HUMAN_REALITY_HOTFIX_V1/REPLAY_TRANSCRIPT.json",
+      "sha256": "28678dd81d06382228e99981c1e3978425a05d3d1728a98df9463b5f12474108"
+    },
+    {
+      "path": "docs/execution/chatbot/HUMAN_REALITY_HOTFIX_V1/TRACE_EVIDENCE.json",
+      "sha256": "326f3b0c375b228f433b2ca27d77960daf9ccb5436ff5d320b989c9f4c2fabe3"
+    },
+    {
+      "path": "docs/execution/chatbot/HUMAN_REALITY_HOTFIX_V1/PARAPHRASE_PROOF.json",
+      "sha256": "76b77f0a8931748a5784c26faf97b48c9d74fa5f01f0983b441d008f4b2ce944"
+    }
+  ]
+}

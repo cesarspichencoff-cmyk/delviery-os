@@ -1,0 +1,145 @@
+{
+  "schema_version": "deliveryos-human-reality-replay-v1",
+  "evidence_label": "EXACT_HUMAN_REPLAY_FIRST_POST_FIX_EXECUTION",
+  "frozen": true,
+  "rerun_performed": false,
+  "source": {
+    "base_url": "http://127.0.0.1:4179",
+    "customer_surface": "http://127.0.0.1:4179/customer",
+    "trace_route": "http://127.0.0.1:4179/trace/<turn_id>",
+    "git_branch": "fix/b2-human-reality-hotfix",
+    "git_head": "7e46015d536c803384f7a1437a182ae6b954664c",
+    "working_tree_clean": true,
+    "health": {
+      "ok": true,
+      "mode": "conversation_native_simulated_v1",
+      "synthetic": true,
+      "seed": "TATA-SIM-V1",
+      "clock": "2026-07-01T15:00:00.000Z",
+      "real_drivers": false
+    }
+  },
+  "customer_turn_count": 8,
+  "assistant_turn_count": 8,
+  "public_turn_count": 16,
+  "turn_ids": [
+    "B2-TURN-0001",
+    "B2-TURN-0002",
+    "B2-TURN-0003",
+    "B2-TURN-0004",
+    "B2-TURN-0005",
+    "B2-TURN-0006",
+    "B2-TURN-0007",
+    "B2-TURN-0008"
+  ],
+  "trace_hashes": {
+    "B2-TURN-0001": "cc6097f544f4c12683a6d7e53eb516165af9b9f82c3512ef06b9ebf9c5c709a0",
+    "B2-TURN-0002": "4cb852c5a1f9c270f9fbff656a2f36899f7ffaab6490aa4c707c7f7b2e36b3e6",
+    "B2-TURN-0003": "f99559af28ce06c0ffbe6ec0c7044b21d97ab82e938e8b6455f85e9b52acbb9a",
+    "B2-TURN-0004": "bfd147046c76ea8fdd11375bb92c6f5ce9761cc3f8aab2e45fdaf465358eb49c",
+    "B2-TURN-0005": "40369f088d6366dbc010bca2520925272bdf893ec1d40c784ea691a6f9e8fe82",
+    "B2-TURN-0006": "73f4d1f65f3b68546ea22516de30759fa3a3acfc60c7ab672c415220e6a17763",
+    "B2-TURN-0007": "e2217bcd9f1dd38f5a7d0f9a20a6042aa0831c6a734a8b4b48aa92845b20b145",
+    "B2-TURN-0008": "9a5bb07fbfccb17df9a2ed67782bc5b89124b7b263f1e1f980db62a34bcf5d1d"
+  },
+  "transcript": [
+    {
+      "sequence": 1,
+      "role": "CUSTOMER",
+      "text": "Preciso fazer uma reserva",
+      "turn_id": "B2-TURN-0001"
+    },
+    {
+      "sequence": 2,
+      "role": "TATA",
+      "text": "Você pode consultar a reserva por este link: https://reservation.getin.app/MP9xnVkL. A tolerância é de 15 minutos, e a confirmação depende do retorno do sistema.",
+      "turn_id": "B2-TURN-0001"
+    },
+    {
+      "sequence": 3,
+      "role": "CUSTOMER",
+      "text": "Estou com fome",
+      "turn_id": "B2-TURN-0002"
+    },
+    {
+      "sequence": 4,
+      "role": "TATA",
+      "text": "Claro — eu te ajudo a afunilar pelo que você está com vontade. Você está com vontade de algo mais fresco, maçaricado ou quente?",
+      "turn_id": "B2-TURN-0002"
+    },
+    {
+      "sequence": 5,
+      "role": "CUSTOMER",
+      "text": "Restaurante, estou com fome, o que me sugere?",
+      "turn_id": "B2-TURN-0003"
+    },
+    {
+      "sequence": 6,
+      "role": "TATA",
+      "text": "Claro — eu te ajudo a afunilar pelo que você está com vontade. Entre sushi, sashimi e pratos quentes, por onde você quer começar?",
+      "turn_id": "B2-TURN-0003"
+    },
+    {
+      "sequence": 7,
+      "role": "CUSTOMER",
+      "text": "iFood",
+      "turn_id": "B2-TURN-0004"
+    },
+    {
+      "sequence": 8,
+      "role": "TATA",
+      "text": "Perfeito — vou considerar somente o cardápio oficial deste canal. Antes de escolher itens ao acaso, tem algum ingrediente ou tipo de preparo que você quer priorizar ou evitar?",
+      "turn_id": "B2-TURN-0004"
+    },
+    {
+      "sequence": 9,
+      "role": "CUSTOMER",
+      "text": "Sim, mas nao quero nada quente",
+      "turn_id": "B2-TURN-0005"
+    },
+    {
+      "sequence": 10,
+      "role": "TATA",
+      "text": "Entendi. Retirei a seção Pratos Quentes. Para te ajudar melhor, você prefere que eu afunile por sushi, sashimi ou outra categoria?",
+      "turn_id": "B2-TURN-0005"
+    },
+    {
+      "sequence": 11,
+      "role": "CUSTOMER",
+      "text": "gosto de sushi entendeu?",
+      "turn_id": "B2-TURN-0006"
+    },
+    {
+      "sequence": 12,
+      "role": "TATA",
+      "text": "Você tem razão; vou considerar a correção antes de continuar. Entendi: priorizar sushi. Entendi a correção: você pediu sushi.; Encontrei Sushi de Salmão Maçaricado Trufado, Sushi de Salmão e Sushi de Ikura no cardápio do iFood.; Excluí a seção explicitamente identificada como Pratos Quentes.; Nas demais opções, o cardápio não confirma a temperatura; por isso, não vou chamá-las de frias sem confirmação.",
+      "turn_id": "B2-TURN-0006"
+    },
+    {
+      "sequence": 13,
+      "role": "CUSTOMER",
+      "text": "Me manda o cardapio",
+      "turn_id": "B2-TURN-0007"
+    },
+    {
+      "sequence": 14,
+      "role": "TATA",
+      "text": "O cardápio do Tata Sushi Vila Nova Conceição no iFood pode ser acessado neste link: https://www.ifood.com.br/delivery/sao-paulo-sp/tata-sushi-vila-nova-conceicao/039ed60c-0ea5-4660-900a-265a720d7869",
+      "turn_id": "B2-TURN-0007"
+    },
+    {
+      "sequence": 15,
+      "role": "CUSTOMER",
+      "text": "qual o preco do rodizio?",
+      "turn_id": "B2-TURN-0008"
+    },
+    {
+      "sequence": 16,
+      "role": "TATA",
+      "text": "Entendi: preço de rodizio. O TATÁ trabalha à la carte.; O Almoço Executivo e a Sugestão Tatá são menus em cursos, não rodízio.",
+      "turn_id": "B2-TURN-0008"
+    }
+  ],
+  "external_action_performed": false,
+  "external_spend_brl": 0
+}
