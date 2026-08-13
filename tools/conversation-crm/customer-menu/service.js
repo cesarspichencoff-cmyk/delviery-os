@@ -34,7 +34,7 @@ const USER_REPAIR_SIGNAL = /\b(?:voce|vc) (?:nao|n) (?:esta|ta) entendendo|\b(?:
 const NEGATIVE_FEEDBACK_SIGNAL = /\b(?:ja vi que (?:voce|vc) (?:nao|n) sabe|(?:voce|vc) (?:nao|n) (?:esta|ta) ajudando|isso (?:nao|n) tem nada a ver|(?:voce|vc) (?:esta|ta) perdido)\b/u;
 const RESERVATION_INTENT_SIGNAL = /\b(?:quero|queria|gostaria de|como (?:faco|faz)(?: para)?|pode me dizer como (?:faco|faz)(?: para)?)?\s*reserv(?:ar|a)|\btem mesa(?: para| pra)?\b|\b(?:quero|preciso de) uma mesa (?:para|pra)\b|\b(?:vou|quero ir|acho que vou) (?:no|ao) restaurante\b|\bquero ir ai com\b|\b(?:vou|quero|acho que vou) (?:ai )?pessoalmente\b|\besquece (?:o )?delivery,? quero reservar\b/u;
 const DINE_OUT_SIGNAL = /\b(?:preciso|quero|queria|to procurando|estou procurando).{0,36}\b(?:lugar (?:para|pra) (?:comer|jantar)|onde (?:comer|jantar)|sair (?:para|pra) comer)\b|\bqueria comer japones hoje\b|\bqueria ir no tata hoje\b|\bcomo faco (?:para|pra) ir ai\b/u;
-const FOOD_CHOICE_SIGNAL = /\b(?:(?:estou|to|fiquei)\s+com\s+(?:muita\s+)?fome|(?:quero|queria|preciso)\s+(?:comer|jantar|almocar|pedir)(?:\s+(?:algo|alguma coisa))?|me ajuda\s+(?:a\s+)?(?:escolher|decidir)(?:\s+o que comer)?)\b/u;
+const FOOD_CHOICE_SIGNAL = /\b(?:(?:estou|to|fiquei)\s+com\s+(?:muita\s+)?fome|(?:quero|queria|preciso)\s+(?:comer|jantar|almocar|pedir)(?:\s+(?:algo|alguma coisa)(?:\s+gostos[oa])?)?|me ajuda\s+(?:a\s+)?(?:escolher|decidir)(?:\s+(?:alguma coisa|o que comer))?|(?:nao|n) sei o que (?:comer|pedir))\b/u;
 
 const REQUESTED_CATEGORY_PATTERNS = Object.freeze([
   ['hot_roll', /\bhot roll\b/u],
@@ -142,6 +142,8 @@ function customerTurnQuestions(text) {
   if (/\b(?:frit[oa]|fritura)\b/u.test(text) && /\b(?:opcao|segunda|primeira|qual deles|essa|esse)\b/u.test(text)) questions.push('fried_preparation');
   if (/\b(?:quanto custa|quanto fica|qual (?:e )?o preco|preco|(?:e )?valor)\b/u.test(text)) questions.push('price');
   if (/\b(?:bebida|drink|saque|sake)\b/u.test(text) && /\b(?:combina|harmoniza|indica|tem)\b/u.test(text)) questions.push('drink_pairing');
+  if (/\b(?:por que|porque)\s+(?:(?:voce|vc)\s+)?(?:sugeriu|indicou|escolheu|separou)\s+(?:essas|esses|isso|opcoes?)\b|\bqual foi (?:o )?(?:criterio|motivo)\b/u.test(text)) questions.push('recommendation_explanation');
+  if (/\b(?:tem|manda|mostra|quero ver)\s+(?:mais|outras?)\s+(?:opcoes?)?\b|\b(?:mais|outras?) opcoes?\b/u.test(text)) questions.push('more_options');
   return [...new Set(questions)];
 }
 
@@ -711,7 +713,10 @@ class CustomerMenuHomologationService {
         excluded_ingredients: [...state.excluded_ingredients],
         requested_category: state.requested_category,
         number_of_people: state.number_of_people,
-        allergies: [...new Set([...(input.allergies || []), ...declaredAllergies])]
+        allergies: [...new Set([...(input.allergies || []), ...declaredAllergies])],
+        exclude_item_ids: turnAnalysis.questions.includes('more_options')
+          ? priorPresentedOptions.map((item) => item.item_id)
+          : []
       };
       recommendationResult = this.tools.get_recommendation_candidates({
         customer_id: input.customer_id || null,
@@ -812,8 +817,9 @@ class CustomerMenuHomologationService {
       }
     }
     if (guidance?.question && state.awaiting_channel) state.channel_question_asked = true;
-    if (['menu_candidates', 'compound_recommendation', 'decision_support_current_candidates'].includes(guidance?.mode)) {
-      state.presented_options = (menuContext?.items || []).slice(0, 3).map((item) => ({
+    if (['menu_candidates', 'compound_recommendation', 'decision_support_current_candidates', 'category_correction', 'more_recommendation_options'].includes(guidance?.mode)) {
+      const publishedIds = new Set(guidance.candidates_found || []);
+      state.presented_options = (menuContext?.items || []).filter((item) => publishedIds.has(item.item_id)).map((item) => ({
         item_id: item.item_id,
         name: item.name,
         price: item.price ?? null
@@ -866,13 +872,22 @@ class CustomerMenuHomologationService {
       if (seenNames.has(key)) return false;
       seenNames.add(key);
       return true;
-    }).slice(0, options.limit || 3);
+    }).slice(0, options.limit || candidates.length);
     if (!detailed.length) return [];
     const names = detailed.map((item) => item.name);
     const joinedNames = names.length > 1 ? `${names.slice(0, -1).join(', ')} e ${names.at(-1)}` : names[0];
-    const lines = [`Encontrei ${joinedNames} no cardápio do ${state.channel === 'ifood' ? 'iFood' : (state.channel === 'dining_room' ? 'salão' : 'delivery próprio')}.`];
+    const preferenceReasons = [];
+    if (state.requested_category) preferenceReasons.push(state.requested_category.replace('_', ' '));
+    if (state.preferred_ingredients.includes('salmon')) preferenceReasons.push('salmão');
+    if (state.hospitality_context.preparation_preferences.includes('not_hot')) preferenceReasons.push('fora da seção de pratos quentes');
+    if (state.fried === false) preferenceReasons.push('fritura como restrição');
+    if (state.cream_cheese === 'without') preferenceReasons.push('cream cheese como restrição');
+    const relation = preferenceReasons.length
+      ? `Com base em ${preferenceReasons.join(', ')}, separei ${joinedNames}`
+      : `Separei ${joinedNames}`;
+    const lines = [`${relation} no cardápio do ${state.channel === 'ifood' ? 'iFood' : (state.channel === 'dining_room' ? 'salão' : 'delivery próprio')}.`];
     const salmonNames = detailed.filter((item) => item.details.ingredients.some((ingredient) => ingredient.name === 'salmon')).map((item) => item.name);
-    if (state.preferred_ingredients.includes('salmon') && salmonNames.length) {
+    if (!options.compact && state.preferred_ingredients.includes('salmon') && salmonNames.length) {
       lines.push(salmonNames.length === detailed.length
         ? 'Todas têm salmão confirmado na descrição.'
         : `${salmonNames.join(' e ')} ${salmonNames.length > 1 ? 'têm' : 'tem'} salmão confirmado na descrição.`);
@@ -885,15 +900,19 @@ class CustomerMenuHomologationService {
       if (fryingUnknown.length) lines.push('Nas demais opções, o cardápio não confirma o método de preparo como sem fritura.');
     }
     if (state.hospitality_context.flavor_preferences.includes('light')) {
-      lines.push(fried.length
-        ? `Não consigo afirmar qual é realmente mais leve; ${fried.join(' e ')} ${fried.length > 1 ? 'têm' : 'tem'} fritura informada, e os demais detalhes de preparo não estão completos.`
-        : 'Não consigo afirmar qual é realmente mais leve porque o cardápio não detalha esse atributo.');
+      lines.push(options.compact
+        ? (fried.length
+          ? `Não consigo afirmar leveza; ${fried.join(' e ')} ${fried.length > 1 ? 'têm' : 'tem'} fritura informada, e os demais preparos estão incompletos.`
+          : 'O cardápio não confirma qual opção é mais leve.')
+        : (fried.length
+          ? `Não consigo afirmar qual é realmente mais leve; ${fried.join(' e ')} ${fried.length > 1 ? 'têm' : 'tem'} fritura informada, e os demais detalhes de preparo não estão completos.`
+          : 'Não consigo afirmar qual é realmente mais leve porque o cardápio não detalha esse atributo.'));
     }
     if (state.cream_cheese === 'without') {
       const confirmedWithout = detailed.filter((item) => item.details.preparation.cream_cheese === false).map((item) => item.name);
       const unknown = detailed.filter((item) => item.details.preparation.cream_cheese === null).map((item) => item.name);
-      if (confirmedWithout.length) lines.push(`${confirmedWithout.join(' e ')} ${confirmedWithout.length > 1 ? 'têm' : 'tem'} composição confirmada sem cream cheese.`);
-      if (unknown.length) lines.push('Nessas opções, a presença de cream cheese não está confirmada; não vou tratá-las como se fossem sem.');
+      if (confirmedWithout.length) lines.push(`${confirmedWithout.join(' e ')} ${confirmedWithout.length > 1 ? 'têm' : 'tem'} ausência de cream cheese confirmada na composição.`);
+      if (unknown.length) lines.push('A presença de cream cheese não está confirmada nessas opções.');
     }
     if (state.hospitality_context.preparation_preferences.includes('not_hot')) {
       lines.push('Excluí a seção explicitamente identificada como Pratos Quentes. Nas demais opções, o cardápio não confirma a temperatura; por isso, não vou chamá-las de frias sem confirmação.');
@@ -903,12 +922,39 @@ class CustomerMenuHomologationService {
         const price = formatPrice(item.price);
         return price ? `${item.name}: ${price}` : null;
       }).filter(Boolean);
-      if (prices.length) lines.push(`Os preços informados são ${prices.join('; ')}.`);
+      if (prices.length) lines.push(`${options.compact ? 'Preços' : 'Os preços informados são'}: ${prices.join('; ')}.`);
     }
     if (options.includeAvailability === true && detailed.some((item) => item.availability?.state === 'unknown')) {
       lines.push('A disponibilidade precisa ser conferida no canal antes de fechar o pedido.');
     }
     return lines;
+  }
+
+  recommendationExplanation(options, state) {
+    if (!options.length) {
+      return {
+        answer: 'Ainda não apresentei opções suficientes para explicar uma escolha sem inventar um critério.',
+        question: 'Você quer que eu afunile por sushi, sashimi ou tipo de preparo?'
+      };
+    }
+    const names = options.map((item) => item.name);
+    const joinedNames = names.length > 1 ? `${names.slice(0, -1).join(', ')} e ${names.at(-1)}` : names[0];
+    const facts = [];
+    if (state.requested_category) facts.push(`você pediu ${state.requested_category.replace('_', ' ')}`);
+    if (state.preferred_ingredients.includes('salmon')) facts.push('você disse que prefere salmão');
+    if (state.hospitality_context.preparation_preferences.includes('not_hot')) facts.push('você pediu para excluir a seção de pratos quentes');
+    if (state.fried === false) facts.push('você pediu para evitar fritura');
+    if (state.cream_cheese === 'without') facts.push('você pediu para evitar cream cheese');
+    if (!facts.length) {
+      return {
+        answer: `Eu ainda não tenho uma preferência sua que diferencie ${joinedNames}. Em vez de inventar um motivo, preciso de um critério simples.`,
+        question: 'O que pesa mais para você agora: ingrediente, preparo ou tipo de prato?'
+      };
+    }
+    return {
+      answer: `Separei ${joinedNames} porque ${facts.join(' e ')}. Usei apenas essas preferências e os dados confirmados deste cardápio.`,
+      question: null
+    };
   }
 
   concisePriceAnswer(options = []) {
@@ -1197,6 +1243,34 @@ class CustomerMenuHomologationService {
         candidates_found: []
       });
     }
+    if (turnAnalysis.questions.includes('recommendation_explanation')) {
+      const explanation = this.recommendationExplanation(priorPresentedOptions, state);
+      return Object.freeze({
+        schema_version: 'deliveryos-homologation-guidance-v1', mode: 'recommendation_explanation',
+        direct_answers: [explanation.answer], question: explanation.question,
+        context_reason: explanation.question ? 'recommendation_criterion_missing' : null,
+        knowledge_source: priorPresentedOptions.length ? menuSource : 'current_conversation',
+        candidates_found: priorPresentedOptions.map((item) => item.item_id)
+      });
+    }
+    if (turnAnalysis.questions.includes('more_options')) {
+      if (candidates.length) {
+        const direct = this.candidateDecisionSupport(candidates, state, { includeAvailability: false });
+        return Object.freeze({
+          schema_version: 'deliveryos-homologation-guidance-v1', mode: 'more_recommendation_options',
+          direct_answers: [direct.join(' ')], question: null,
+          context_reason: null, knowledge_source: menuSource,
+          candidates_found: candidates.map((item) => item.item_id)
+        });
+      }
+      return Object.freeze({
+        schema_version: 'deliveryos-homologation-guidance-v1', mode: 'more_recommendation_options',
+        direct_answers: ['Não encontrei outras opções confirmadas com os mesmos filtros neste cardápio.'],
+        question: 'Você quer mudar algum ingrediente, preparo ou tipo de prato?',
+        context_reason: 'additional_compatible_candidate_not_found', knowledge_source: menuSource,
+        candidates_found: []
+      });
+    }
     if (turnAnalysis.questions.includes('decision_support') && priorPresentedOptions.length) {
       const support = this.decisionSupportForOptions(priorPresentedOptions, state);
       return Object.freeze({
@@ -1243,7 +1317,8 @@ class CustomerMenuHomologationService {
       const direct = this.candidateDecisionSupport(candidates, state, {
         includePrices: turnAnalysis.questions.includes('price'),
         includeAvailability: false,
-        limit: 2
+        limit: 2,
+        compact: true
       });
       if (turnAnalysis.unresolved_reference) {
         direct.push('Como ainda não havia uma lista anterior, não consigo afirmar qual seria a segunda opção nem se ela é crua.');

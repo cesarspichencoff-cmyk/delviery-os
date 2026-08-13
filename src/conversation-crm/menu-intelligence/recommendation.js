@@ -71,9 +71,18 @@ function allergenDecision(item, allergies = []) {
 function scoreCandidate(item, request, customer = {}) {
   let score = 0;
   const reasons = [];
+  if (request.requested_category && itemMatchesRequestedCategory(item, request.requested_category)) {
+    score += 40;
+    reasons.push(`requested_category:${request.requested_category}`);
+  }
   if (request.preferred_ingredients?.some((value) => item.ingredients.some((ingredient) => ingredient.name === value))) {
     score += 30;
     reasons.push('preferred_ingredient');
+    const namedIngredient = request.preferred_ingredients.find((value) => normalizedCategory(item.name).includes(normalizedCategory(value === 'salmon' ? 'salmao' : value)));
+    if (namedIngredient) {
+      score += 5;
+      reasons.push('preferred_ingredient_in_item_name');
+    }
   }
   if (request.flavor_profile && item.flavor_profile.includes(request.flavor_profile)) {
     score += 20;
@@ -96,6 +105,34 @@ function scoreCandidate(item, request, customer = {}) {
     score += 10;
     reasons.push('texture_match');
   }
+  if (request.raw_or_cooked === 'raw' && item.preparation.raw === true) {
+    score += 20;
+    reasons.push('raw_preparation_confirmed');
+  }
+  if (request.raw_or_cooked === 'cooked' && item.preparation.cooked === true) {
+    score += 20;
+    reasons.push('cooked_preparation_confirmed');
+  }
+  if (request.torched === true && item.preparation.torched === true) {
+    score += 20;
+    reasons.push('torched_preparation_confirmed');
+  }
+  if (request.fried === false && item.preparation.fried === false) {
+    score += 15;
+    reasons.push('not_fried_confirmed');
+  }
+  if (request.cream_cheese === 'without' && item.preparation.cream_cheese === false) {
+    score += 15;
+    reasons.push('without_cream_cheese_confirmed');
+  }
+  if (request.temperature_preference === 'not_hot') {
+    score += 5;
+    reasons.push('confirmed_hot_section_excluded');
+  }
+  if (request.price_range?.maximum_brl != null || request.price_range?.maximum != null) {
+    score += 10;
+    reasons.push('within_confirmed_budget');
+  }
   const confirmedPreferences = customer.confirmed_facts || [];
   if (confirmedPreferences.some((fact) => fact.field === 'preferred_item' && fact.value === item.commercial_identity)) {
     score += 10;
@@ -109,10 +146,56 @@ function scoreCandidate(item, request, customer = {}) {
   return { score, reasons };
 }
 
+function evidenceCompleteness(item) {
+  return [
+    item.price != null,
+    item.ingredients?.length > 0,
+    item.preparation?.raw !== null,
+    item.preparation?.cooked !== null,
+    item.preparation?.torched !== null,
+    item.preparation?.fried !== null,
+    item.quantity?.people != null
+  ].filter(Boolean).length;
+}
+
+function selectDiverseShortlist(candidates, limit = 3) {
+  const selected = [];
+  const selectedIds = new Set();
+  const scoreTiers = [...new Set(candidates.map((item) => item.score))].sort((left, right) => right - left);
+  for (const score of scoreTiers) {
+    const tier = candidates.filter((item) => item.score === score);
+    const dimensions = [
+      (item) => normalizedCategory(item.category),
+      (item) => `${normalizedCategory(item.category)}|${item.evidence_score}`,
+      (item) => item.reasons.slice().sort().join('|')
+    ];
+    for (const dimension of dimensions) {
+      const seen = new Set(selected.map(dimension));
+      for (const candidate of tier) {
+        if (selected.length >= limit) break;
+        const key = dimension(candidate);
+        if (selectedIds.has(candidate.item_id) || seen.has(key)) continue;
+        selected.push(candidate);
+        selectedIds.add(candidate.item_id);
+        seen.add(key);
+      }
+    }
+    for (const candidate of tier) {
+      if (selected.length >= limit) break;
+      if (selectedIds.has(candidate.item_id)) continue;
+      selected.push(candidate);
+      selectedIds.add(candidate.item_id);
+    }
+    if (selected.length >= limit) break;
+  }
+  return selected;
+}
+
 function recommend(catalog, request = {}, customerContext = {}) {
   if (!request.channel) throw menuError('RECOMMENDATION_CHANNEL_REQUIRED');
   if (!request.unit_id) throw menuError('RECOMMENDATION_UNIT_REQUIRED');
   const exclusions = new Set(request.excluded_ingredients || []);
+  const excludedItemIds = new Set(request.exclude_item_ids || []);
   const conflictedItemIds = new Set(catalog.snapshot().conflicts
     .filter((conflict) => conflict.status === 'open')
     .flatMap((conflict) => conflict.variant_ids));
@@ -121,6 +204,7 @@ function recommend(catalog, request = {}, customerContext = {}) {
     unit_id: request.unit_id,
     maximum_price: request.price_range?.maximum_brl ?? request.price_range?.maximum ?? null
   }).filter((item) => {
+    if (excludedItemIds.has(item.item_id)) return false;
     if (conflictedItemIds.has(item.item_id) && item.review_status === 'approved_for_recommendation') return false;
     if (!['confirmed', 'approved_for_recommendation'].includes(item.review_status)) return false;
     if (['unavailable', 'stale'].includes(item.availability.state)) return false;
@@ -146,6 +230,7 @@ function recommend(catalog, request = {}, customerContext = {}) {
       price: item.price,
       reasons: scored.reasons,
       score: scored.score,
+      evidence_score: evidenceCompleteness(item),
       source_records: item.source_records,
       availability: item.availability,
       warnings: [
@@ -156,17 +241,22 @@ function recommend(catalog, request = {}, customerContext = {}) {
         ...(request.flavor_profile && !item.flavor_profile.includes(request.flavor_profile) ? ['flavor_profile_unconfirmed'] : [])
       ]
     };
-  }).sort((left, right) => right.score - left.score || left.item_id.localeCompare(right.item_id));
+  }).sort((left, right) => (
+    right.score - left.score
+    || right.evidence_score - left.evidence_score
+    || left.name.localeCompare(right.name, 'pt-BR')
+    || left.item_id.localeCompare(right.item_id)
+  ));
 
   const rankingSignals = selectionSignals(request, customerContext);
   const needsPreference = candidates.length > 0 && rankingSignals.length === 0;
   const selectionLimit = 3;
-  const selected = needsPreference ? [] : candidates.slice(0, selectionLimit);
+  const selected = needsPreference ? [] : selectDiverseShortlist(candidates, selectionLimit);
 
   return cloneFrozen({
     schema_version: 'deliveryos-recommendation-result-v1',
     status: needsPreference ? 'needs_preference' : (candidates.length ? 'ready' : 'no_safe_candidate'),
-    ranking_status: needsPreference ? 'insufficient_customer_signal' : (candidates.length ? 'ranked_by_customer_signal' : 'not_applicable'),
+    ranking_status: needsPreference ? 'insufficient_customer_signal' : (candidates.length ? 'ranked_and_diversified_by_customer_signal' : 'not_applicable'),
     ranking_signals: rankingSignals,
     selection_limit: needsPreference ? 0 : selectionLimit,
     channel: request.channel,
@@ -182,7 +272,8 @@ function recommend(catalog, request = {}, customerContext = {}) {
       ...(request.preferred_ingredients || []).map((item) => `preferred_ingredient:${item}`),
       ...(request.occasion ? [`occasion:${request.occasion}`] : []),
       ...(request.desired_experience ? [`desired_experience:${request.desired_experience}`] : []),
-      ...(request.requested_category ? [`requested_category:${request.requested_category}`] : [])
+      ...(request.requested_category ? [`requested_category:${request.requested_category}`] : []),
+      ...(request.exclude_item_ids || []).map((item) => `exclude_previously_presented:${item}`)
     ],
     candidates: selected,
     unknowns: needsPreference
@@ -192,7 +283,7 @@ function recommend(catalog, request = {}, customerContext = {}) {
         : ['safe_candidate_not_found']),
     explanation: selected.map((item) => ({
       item_id: item.item_id,
-      reasons: item.reasons.length ? item.reasons : ['channel_unit_availability_match']
+      reasons: item.reasons
     }))
   });
 }
@@ -211,6 +302,7 @@ module.exports = {
   selectionSignals,
   allergenDecision,
   scoreCandidate,
+  selectDiverseShortlist,
   recommend,
   approvedPairings
 };
