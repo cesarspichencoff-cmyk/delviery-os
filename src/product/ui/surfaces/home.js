@@ -35,7 +35,7 @@
  * existindo o que executar.
  */
 
-import { blocoLimitacoes, campo, esc, inspetor, selos } from "../components/ui.js";
+import { blocoLimitacoes, campo, esc, selos } from "../components/ui.js";
 
 /* ------------------------------------------------------------------ *
  * Vocabulario visual — a traducao, e so ela
@@ -205,13 +205,41 @@ function marca(a) {
   }"></span></span>`;
 }
 
+/**
+ * Uma subarea dentro do ambiente.
+ *
+ * MEDIDO ANTES DE MEXER (M1B-R2, B2). A versao anterior punha TRES corridas de
+ * texto — nome, estado e causa — na mesma linha `inline-flex` com
+ * `align-items: baseline`, dentro de um contentor de `max-width: 32ch`. Na
+ * subarea causadora isso nao cabia, e as tres quebravam INDEPENDENTEMENTE:
+ * "Sushi Quentes" virava 68x38 (duas linhas), "segurando o ambiente" virava
+ * 135x36 (duas linhas) e "Atencao" ficava com 52x18 (uma linha), todas
+ * ancoradas na mesma primeira baseline. O resultado lido na tela era
+ * "Sushi Quentes Segurando SEGURANDO o fluxo O AMBIENTE".
+ *
+ * Duas correcoes, e as duas sao de apresentacao:
+ *
+ * 1. ESTRUTURA. Nome e estado passam a viver numa linha propria que nao quebra
+ *    no meio da palavra; a causa desce para a sua. A subarea causadora deixa de
+ *    disputar espaco com as caladas e ganha a largura inteira (CSS).
+ *
+ * 2. REPETICAO. O texto fixo "segurando o ambiente" repetia o `estado_texto`
+ *    que vem da view model — em pressao ele diz "Segurando o fluxo", e a tela
+ *    dizia o mesmo verbo duas vezes. `causadora` afirma outra coisa, e o
+ *    proprio contrato diz qual: "se esta subarea e a que causa o
+ *    congestionamento do ambiente". Entao a frase passa a afirmar a RELACAO, que
+ *    e o que o estado nao diz. Nenhum dado mudou: `causadora` continua vindo
+ *    pronta, e nada foi escondido.
+ */
 function subarea(s) {
   return `<li class="org-sub" data-cor="${esc(s.cor)}" data-degrau="${degrau(
     s.cor,
   )}"${s.causadora ? ' data-causadora="sim"' : ""}>
-    <span class="org-sub__nome">${esc(s.rotulo)}</span>
-    <span class="org-sub__estado">${esc(s.estado_texto)}</span>
-    ${s.causadora ? '<span class="org-sub__causa">segurando o ambiente</span>' : ""}
+    <span class="org-sub__linha">
+      <span class="org-sub__nome">${esc(s.rotulo)}</span>
+      <span class="org-sub__estado">${esc(s.estado_texto)}</span>
+    </span>
+    ${s.causadora ? '<span class="org-sub__causa">origem do congestionamento</span>' : ""}
     <span class="sr-only">${esc(s.motivo)}</span>
   </li>`;
 }
@@ -231,15 +259,21 @@ function area(a, vm) {
     area: a.id,
   }).toString()}#/`;
 
+  // A causadora vem PRIMEIRO, e a troca acontece no DOM — nao com `order` no
+  // CSS, que separaria a ordem vista da ordem lida por teclado e por leitor de
+  // tela. `sort` e estavel, entao as caladas mantem a ordem que chegou.
+  const ordenadas = [...a.subareas].sort(
+    (x, y) => Number(y.causadora) - Number(x.causadora),
+  );
   const subs = a.subareas.length
-    ? `<ul class="org-subs">${a.subareas.map(subarea).join("")}</ul>`
+    ? `<ul class="org-subs">${ordenadas.map(subarea).join("")}</ul>`
     : "";
 
   return `<div class="org-area" data-area="${esc(a.id)}" data-forma="${forma}" data-cor="${esc(
     a.cor,
   )}" data-degrau="${degrau(a.cor)}"${
     ausencia ? ` data-ausencia="${ausencia}"` : ""
-  }>
+  }${vm.foco && vm.foco.ambiente === a.id ? ' data-foco="sim"' : ""}>
     <a class="org-area__corpo" href="${esc(href)}" aria-label="Aproximar de ${esc(
       a.rotulo,
     )}">
@@ -335,8 +369,14 @@ function relacoesAtivas(vm) {
 
 function superficie(vm) {
   const porId = new Map(vm.ambientes.map((a) => [a.id, a]));
+  // Qual area o Foco aponta. Nao e decisao desta tela: vem pronta em
+  // `vm.foco.ambiente`. Serve para o TERRITORIO se reorganizar em volta dela —
+  // a fileira que a contem segue inteira, e as outras recuam (lei 4).
+  const idFoco = vm.foco ? vm.foco.ambiente : null;
   const fileira = (f) =>
-    `<div class="org-fila" data-fila="${f.id}">${f.areas
+    `<div class="org-fila" data-fila="${f.id}"${
+      idFoco !== null && f.areas.includes(idFoco) ? ' data-tem-foco="sim"' : ""
+    }>${f.areas
       .map((id) => (porId.has(id) ? area(porId.get(id), vm) : ""))
       .join("")}</div>`;
 
@@ -622,7 +662,7 @@ function fontes(vm) {
     "O que ainda nao esta disponivel",
     "Ausencia declarada. Nenhuma delas foi convertida em zero nem em verde.",
     `<ul class="org-fontes">${linhas}</ul>` +
-      inspetor(
+      dobra(
         "sinais-bloqueados",
         `${vm.sinais_indisponiveis.length} sinais do catalogo sem fonte`,
         `<ul class="org-bloqueados">${indisponiveis}</ul>`,
@@ -665,6 +705,42 @@ function aprofundamento(vm) {
  * A contagem fica VISIVEL fechada: quem passa os olhos precisa saber que existem
  * 25 sinais ativos sem precisar abrir.
  */
+/**
+ * A DOBRA — o recuo que PERTENCE a este organismo.
+ * ============================================================================
+ * Antes daqui saia `inspetor()`, do Design System (Nivel 4). Medido no
+ * navegador, ele trazia dois defeitos para dentro do organismo (M1B-R2, B1), e
+ * os dois eram reais:
+ *
+ * MATERIAL. `.inspetor` pinta `--surface-work` sobre `--line-work`: medido,
+ * `rgb(250,248,244)` com texto `rgb(28,25,21)` em cima de um corpo
+ * `rgb(8,19,13)`. Quatro lajes brancas dentro da superficie escura. Nao e
+ * questao de gosto — e material de outra familia enxertado no organismo, e faz
+ * a home voltar a parecer Nivel 4.
+ *
+ * ESTRUTURAL. `.ds-expand` fecha com `grid-template-rows: 0fr`, mas o filho tem
+ * `padding-bottom: var(--space-3)`. Padding nao colapsa por `min-height: 0`,
+ * entao a linha media 16px FECHADA em vez de 0 — medido, `rows: 16px` nos
+ * quatro. O conteudo recortado continuava ocupando layout, e por isso os sinais
+ * de um acordeao apareciam por cima dos contextos do seguinte.
+ *
+ * `<details>` resolve os dois de uma vez: fecha de verdade (sem linha
+ * fantasma), e ja chega com teclado, `aria-expanded` implicito e ordem de
+ * leitura corretos, sem JS nenhum. `inspetor()` continua intacto para
+ * ENTREGAS, Conference Brain e Copiloto — o que muda e so quem o organismo usa.
+ *
+ * A LEI QUE NAO MUDA: recuar nunca e sumir (D42). Nada saiu do DOM.
+ */
+function dobra(id, rotulo, corpo) {
+  return `<details class="org-dobra" id="dobra-${esc(id)}">
+    <summary class="org-dobra__gatilho">
+      <span class="org-dobra__rotulo">${esc(rotulo)}</span>
+      <span class="org-dobra__sinal" aria-hidden="true"></span>
+    </summary>
+    <div class="org-dobra__corpo">${corpo}</div>
+  </details>`;
+}
+
 function resto(vm) {
   const n = vm.sinais_em_segundo_plano.length;
   const criticos = vm.sinais_em_segundo_plano.filter((s) => s.severidade >= 3).length;
@@ -686,12 +762,12 @@ function resto(vm) {
       <span class="org-resto__rotulo">resto da operacao</span>
       <span class="org-resto__conta">${esc(resumoLinha)}</span>
     </div>
-    ${inspetor(
+    ${dobra(
       "resto-sinais",
       n === 0 ? "Nenhum outro sinal" : `Ver os ${n} sinais ativos`,
       `<ul class="org-sinais">${vm.sinais_em_segundo_plano.map(linhaSinal).join("")}</ul>`,
     )}
-    ${inspetor(
+    ${dobra(
       "resto-funcoes",
       "Ver a mesma leitura pela pergunta de cada funcao",
       `<div class="org-ctxs">${vm.contextos
@@ -716,7 +792,7 @@ function resto(vm) {
         )
         .join("")}</div>`,
     )}
-    ${inspetor(
+    ${dobra(
       "resto-fontes",
       "Ver o que ainda nao esta disponivel",
       `<p class="org-resto__nota">Ausencia declarada. Nenhuma delas foi convertida em zero nem em verde.</p>
@@ -740,7 +816,7 @@ function resto(vm) {
          )
          .join("")}</ul>`,
     )}
-    ${inspetor(
+    ${dobra(
       "resto-limites",
       `Ver o que esta leitura nao prova (${vm.limitacoes.length})`,
       blocoLimitacoes(vm.limitacoes),
@@ -785,10 +861,25 @@ export function telaHome(vm) {
           : /* Tres regioes do palco, e so tres: a VOZ (o que a operacao esta
                dizendo), a MASSA (o territorio) e a DECISAO (o Foco, quando
                existe). O Foco nao e um quarto bloco empilhado — ele reorganiza
-               a proporcao entre voz e massa. Ver home.css, `.org-palco`. */
-            `${legenda(vm)}<div class="org-massa">${superficie(vm)}${relacoesAtivas(
-              vm,
-            )}</div>${foco(vm)}`
+               a proporcao entre voz e massa. Ver home.css, `.org-palco`.
+
+               A TERCEIRA REGIAO NUNCA FICA VAZIA (M1B-R2, B4). Medido: em
+               Ambiente a coluna da voz tinha 240x900 com conteudo so nos
+               primeiros ~200px — cerca de 700px de coluna vazia, que e "area
+               sobrando", nao vazio com funcao. Quando nao ha Foco, quem ocupa a
+               regiao da decisao sao as RELACOES ATIVAS: o lugar certo para
+               "que relacao importa agora" e ao lado do estado, nao empilhado
+               debaixo do territorio. Quando ha Foco, a decisao e dele e as
+               relacoes voltam para junto da massa. */
+            `<div class="org-voz">${legenda(vm)}${
+              vm.foco
+                ? foco(vm)
+                : relacoesAtivas(vm)
+                  ? `<div class="org-relato">${relacoesAtivas(vm)}</div>`
+                  : ""
+            }</div><div class="org-massa">${superficie(vm)}${
+              vm.foco ? relacoesAtivas(vm) : ""
+            }</div>`
       }
     </div>
     ${resto(vm)}

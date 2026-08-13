@@ -200,7 +200,12 @@ body:has(.org) .nav-item[aria-current="page"] {
 .org-demo__cena {
   font-family: var(--org-mono);
   font-size: 0.82rem;
-  padding: 0.25rem 0.6rem;
+  /* 44px em TODA largura, nao so no telefone: era 29px de altura, e o piso de
+     alvo de toque nao muda porque a tela e grande (M1B-R2, acessibilidade). */
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0.25rem 0.7rem;
   border-radius: 7px;
   border: 1px solid var(--org-linha-viva);
   color: var(--org-verde-texto);
@@ -255,11 +260,35 @@ body:has(.org) .nav-item[aria-current="page"] {
   proporcao inverte — e essa inversao E a transformacao (§11): nada aparece,
   nada some, a geometria se reorganiza.
 */
+/*
+  UMA COLUNA PRIMEIRO (M1B-R2, B5).
+
+  MEDIDO, e este era o defeito mais grave do telefone: a grade de DUAS colunas
+  nao tinha ponto de quebra, entao ela valia em qualquer largura. Com
+  `minmax(26ch,30ch)` fixando ~269px para a voz e `minmax(0,1fr)` deixando a
+  massa encolher ate ZERO, o territorio da operacao media:
+
+      768px -> 423px (59%)    414px ->  88px (23%)
+      375px ->  49px (14%)    320px ->   0px  (0%)
+
+  A 320px a operacao tinha largura ZERO. O conteudo dela vazava para fora de uma
+  coluna de zero pixel e so nao aparecia como barra de rolagem porque
+  `.shell__conteudo` tem `overflow-x: hidden` — ou seja, a superficie estava
+  RECORTANDO a operacao, que e exatamente "informacao critica escondida".
+
+  Isto nao era "desktop empilhado". Era desktop NAO empilhado: as colunas do
+  desktop esmagadas dentro da tela do telefone.
+
+  Agora a base e uma coluna so, e as duas colunas sao a EXCECAO, a partir de
+  900px, onde ha largura para as duas existirem de verdade.
+*/
 .org-palco {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(26ch, 30ch) minmax(0, 1fr);
-  grid-template-areas: "voz massa";
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    "voz"
+    "massa";
   align-items: start;
   gap: clamp(1.6rem, 4vw, 3.4rem);
   padding: clamp(1.6rem, 4vw, 3rem) 0 clamp(2rem, 5vw, 3.6rem);
@@ -269,15 +298,46 @@ body:has(.org) .nav-item[aria-current="page"] {
     grid-template-columns var(--org-troca) var(--org-troca-easing);
 }
 
-.org-legenda {
+/*
+  A COLUNA DA VOZ — uma coluna, um fluxo (M1B-R2, B4).
+
+  Antes a legenda e a decisao eram DUAS areas de grade separadas, e a massa
+  atravessava as duas. Como a massa e alta, a linha de cima esticava e sobrava
+  buraco entre a legenda e o que vinha embaixo — medido em ~340px de coluna
+  vazia depois de ja ter sido ~700px. Vazio sem funcao nao e respiro, e area
+  sobrando.
+
+  Agora e uma coluna so, em fluxo: primeiro o estado, logo abaixo o que decorre
+  dele — as relacoes ativas em Ambiente, o Foco em Foco. A proximidade passou a
+  significar alguma coisa.
+*/
+.org-voz {
   grid-area: voz;
   position: sticky;
   top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.6rem;
+  min-width: 0;
+}
+
+.org-legenda {
+  min-width: 0;
 }
 
 .org-massa {
   grid-area: massa;
   min-width: 0;
+}
+
+/*
+  As relacoes ativas quando NAO ha Foco. Elas ocupam a regiao da decisao — nao
+  para preencher buraco, mas porque "que relacao importa" pertence ao lado do
+  estado. Ficam recuadas em relacao a legenda: quem le primeiro e o estado.
+*/
+.org-relato {
+  padding-top: 1.2rem;
+  border-top: 1px solid var(--org-linha-fraca);
 }
 
 /*
@@ -290,18 +350,69 @@ body:has(.org) .nav-item[aria-current="page"] {
   (D-M1A1-12). A `transition` fica declarada para o dia em que houver
   atualizacao em vigor, e nenhum timer a dispara.
 */
-.org[data-modo="foco"] .org-palco {
-  grid-template-columns: minmax(32ch, 40ch) minmax(0, 1fr);
-  grid-template-areas:
-    "voz massa"
-    "decisao massa";
-  row-gap: 0;
+/*
+  AS DUAS COLUNAS SAO A EXCECAO, e comecam onde cabem.
+
+  1200px foi escolhido MEDINDO, e a primeira tentativa (900px) estava errada
+  pelo motivo que so a medicao mostra: o ponto de quebra olha a JANELA, mas quem
+  divide o espaco e o PALCO — e a partir de 905px a barra lateral do shell ja
+  levou 264px. Com a quebra em 900px, a 1024 a massa caia para 381px (59%) em
+  Ambiente e 262px (40%) em Foco: a mesma fome de territorio que o B3 tinha
+  acabado de corrigir, so que causada pela lateral em vez da terceira coluna.
+
+  Em 1200 a janela menos a lateral deixa ~880px de palco, e as duas colunas
+  cabem sem que nenhuma seja espremida. Abaixo disso, uma coluna so.
+*/
+@media (min-width: 1200px) {
+  .org-palco {
+    grid-template-columns: minmax(26ch, 30ch) minmax(0, 1fr);
+    grid-template-areas: "voz massa";
+  }
+
+  .org[data-modo="foco"] .org-palco {
+    grid-template-columns: minmax(32ch, 40ch) minmax(0, 1fr);
+  }
 }
 
-.org[data-modo="foco"] .org-massa {
-  /* A massa recua: continua inteira, com menos corpo. Recuar nunca e sumir. */
-  opacity: 0.88;
-  transition: opacity var(--org-troca) var(--org-troca-easing);
+/*
+  O RECUO DA MASSA — territorio, nao transparencia (M1B-R2, B3).
+
+  Antes isto era `opacity: 0.88`, e so. Opacidade a 0.88 nao e percebida como
+  recuo: e quase o mesmo elemento, um pouco mais apagado. Nao muda relacao, nao
+  muda hierarquia, nao muda territorio — e nenhuma das tres e opcional aqui.
+
+  Agora a fileira que carrega o Foco continua INTEIRA e as outras recuam de
+  verdade: menos corpo, menos respiro, texto de apoio mais discreto. A geometria
+  da operacao se reorganiza em volta da situacao soberana, que e o que a
+  transformacao tinha que fazer.
+
+  LEI 1 PRESERVADA: a area focada NAO cresce. O tamanho continua vindo so de
+  `data-degrau`, que vem de `cor`, que vem do motor. Se o Foco tambem inflasse a
+  area, "maior" passaria a significar duas coisas — pressao e foco — e a leitura
+  de pressao ficaria ambigua. Quem se move e o resto (lei 4).
+*/
+.org[data-modo="foco"] .org-fila:not([data-tem-foco="sim"]) {
+  gap: 1.1rem;
+  transition:
+    gap var(--org-troca) var(--org-troca-easing),
+    padding var(--org-troca) var(--org-troca-easing);
+}
+
+.org[data-modo="foco"] .org-fila:not([data-tem-foco="sim"]) .org-area__corpo {
+  /* 0.84 literal, e nao token: `home.css` nao declara token proprio (H36/O16),
+     e isto e razao de composicao, nao valor de marca. */
+  scale: 0.84;
+}
+
+.org[data-modo="foco"] .org-fila:not([data-tem-foco="sim"]) .org-area__info {
+  font-size: 0.84rem;
+  color: var(--org-verde-texto-4);
+}
+
+/* A fileira do Foco ganha ar em volta: o territorio dela se destaca porque as
+   vizinhas se aproximaram, nao porque ela inchou. */
+.org[data-modo="foco"] .org-fila[data-tem-foco="sim"] {
+  padding-block: 0.6rem;
 }
 
 .org-legenda__kicker {
@@ -359,21 +470,37 @@ body:has(.org) .nav-item[aria-current="page"] {
  * ------------------------------------------------------------------ */
 
 /*
-  A MASSA. Ela nao e um diagrama centrado num quadro: e o territorio inteiro da
-  coluna, sangrado ate a borda. `max-width` saiu porque limitar a massa a 760px
-  era o que a mantinha pequena em qualquer tela grande.
+  A MASSA — territorio, nao objeto sobre a pagina (M1B-R2, B4).
+
+  O comentario anterior ja dizia "nao e um diagrama centrado num quadro". A
+  regra dizia o contrario: `border: 1px solid` mais `border-radius: 16px` mais
+  um plano de gradiente. Isso e um CARTAO, e um cartao com um grafo dentro le
+  como "diagrama dentro de uma caixa" por mais que o comentario peca outra
+  coisa. Quem desenha e a regra.
+
+  A moldura saiu. O que sobra e CHAO: o mesmo plano do palco, um pouco mais
+  fundo no alto, sem contorno e sem canto — o territorio nao termina numa borda
+  arredondada, ele continua para fora do campo de visao. E por isso que o
+  gradiente perde o raio e ganha `inline` sangrado: a operacao encosta na borda
+  da coluna em vez de flutuar no meio dela.
+
+  O QUE NAO FOI FEITO: nao inventamos presenca com brilho, vidro, particula nem
+  borda luminosa. A presenca vem de ocupar o espaco — escala, continuidade e
+  vazio com funcao.
 */
 .org-superficie {
   width: 100%;
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  border-radius: var(--org-raio);
-  /* A pedra onde as camaras sao escavadas. Um plano so, nao seis caixas. */
+  /*
+    O chao. Comeca mais claro no alto, onde o pedido entra, e escurece na
+    descida — a mesma direcao do caminho. Sem borda: continuidade, nao contorno.
+  */
   background:
-    radial-gradient(120% 90% at 50% 0%, var(--org-palco) 0%, var(--org-palco-fundo) 100%);
-  border: 1px solid var(--org-linha-fraca);
-  padding: clamp(1rem, 2.4vw, 1.9rem) clamp(0.9rem, 2.4vw, 2rem);
+    linear-gradient(180deg, var(--org-palco) 0%, var(--org-palco-fundo) 78%, transparent 100%);
+  padding: clamp(1.4rem, 3vw, 2.6rem) clamp(0.9rem, 2.4vw, 2rem)
+    clamp(2rem, 4vw, 3.2rem);
 }
 
 .org-fila {
@@ -598,8 +725,9 @@ body:has(.org) .nav-item[aria-current="page"] {
 
 .org-sub {
   display: inline-flex;
-  align-items: baseline;
-  gap: 0.35rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
   padding: 0.22rem 0.55rem;
   border-radius: var(--org-raio-pilula);
   border: 1px solid var(--org-linha-viva);
@@ -607,14 +735,28 @@ body:has(.org) .nav-item[aria-current="page"] {
   color: var(--org-verde-texto-2);
 }
 
+/*
+  A linha que nao colide. Nome e estado ficam lado a lado e podem quebrar ENTRE
+  si, nunca DENTRO de si: o defeito B2 era exatamente "Sushi Quentes" partido em
+  "Sushi" / "Quentes" enquanto a causa se partia em paralelo na mesma baseline.
+*/
+.org-sub__linha {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem;
+}
+
 .org-sub__nome {
   color: var(--org-creme-5);
+  white-space: nowrap;
 }
 
 .org-sub__estado {
   font-family: var(--org-mono);
   font-size: 0.78rem;
   color: var(--org-verde-texto-4);
+  white-space: nowrap;
 }
 
 .org-sub[data-degrau="2"] {
@@ -639,12 +781,31 @@ body:has(.org) .nav-item[aria-current="page"] {
   border-color: var(--org-neutro);
 }
 
+/*
+  A SUBAREA QUE CAUSA. Ela nao e mais uma pilula igual as outras disputando a
+  mesma fileira: toma a largura inteira da fileira e vira a primeira coisa lida.
+  Isso e hierarquia por TERRITORIO, nao por cor — a regra 3 da superficie diz
+  que cor nunca e o unico sinal, e aqui a posicao, a largura e a linha de apoio
+  mudam junto com ela.
+*/
+.org-sub[data-causadora="sim"] {
+  flex-basis: 100%;
+  align-items: stretch;
+  border-left: 2px solid var(--org-ambar);
+  border-top-left-radius: 0.25rem;
+  border-bottom-left-radius: 0.25rem;
+  padding-left: 0.6rem;
+}
+
 .org-sub__causa {
   font-family: var(--org-mono);
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--org-ambar-texto);
+  /* A area centraliza o texto; aqui as duas linhas precisam da MESMA margem
+     esquerda, senao a linha de causa flutua em relacao ao nome. */
+  text-align: left;
 }
 
 .org-subs--aberta {
@@ -729,6 +890,17 @@ body:has(.org) .nav-item[aria-current="page"] {
   align-items: center;
 }
 
+/* Na coluna da decisao a lista deixa de ser legenda centrada de figura e vira
+   texto lido: alinhada a esquerda, na mesma margem da voz. */
+.org-relato .org-relacoes {
+  margin-top: 0;
+  align-items: flex-start;
+}
+
+.org-relato .org-relacao {
+  text-align: left;
+}
+
 .org-relacao {
   margin: 0;
   font-size: 0.92rem;
@@ -759,7 +931,7 @@ body:has(.org) .nav-item[aria-current="page"] {
   ja existia no V3.3.
 */
 .org-foco {
-  grid-area: decisao;
+  /* Vive dentro de `.org-voz`, em fluxo. Nao e area de grade, nao e coluna. */
   position: relative;
   padding: 1.2rem 0 0;
   border: 0;
@@ -867,33 +1039,32 @@ body:has(.org) .nav-item[aria-current="page"] {
  * Conferencia e o Motoboy para fora da tela — e o teste de dois segundos morre
  * quando o caminho do pedido precisa de rolagem para ser visto inteiro.
  */
-@media (min-width: 960px) {
+/*
+  ESTE BLOCO FOI REMOVIDO EM M1B-R2 (B5), e o motivo importa.
+
+  Ele era a grade de duas colunas ANTERIOR ao M1B: `min-width: 960px` com
+  `grid-template-columns: minmax(240px,22ch) 1fr` e posicionamento por
+  `grid-column` em `.org-legenda` e `.org-superficie`. Ficou para tras quando a
+  coluna da voz virou `.org-voz` e a massa virou `.org-massa`, posicionadas por
+  AREA NOMEADA — os dois seletores antigos deixaram de ser itens da grade e as
+  regras deles viraram letra morta.
+
+  A parte que NAO era letra morta fez estrago silencioso: ele continuava
+  declarando `grid-template-columns` com duas colunas sem declarar
+  `grid-template-areas`. Como as areas nomeadas da regra base definem UMA coluna
+  e duas linhas, `voz` e `massa` caiam as duas na coluna 1 — travada em 240px
+  pelo `minmax`. Medido a 1024: a massa ficava com 240px (37% do palco) e a
+  coluna 2 ficava vazia.
+
+  Duas fontes de verdade para a mesma grade, e a mais velha ganhando em parte da
+  faixa. Quem governa a grade agora e uma so: a regra base (uma coluna) e o
+  `@media (min-width: 1200px)` logo acima.
+*/
+
+@media (min-width: 1200px) {
   .org-palco {
-    display: grid;
-    grid-template-columns: minmax(240px, 22ch) 1fr;
-    align-items: start;
     column-gap: clamp(1.5rem, 3vw, 3rem);
     padding-top: 2.2rem;
-  }
-
-  .org-legenda {
-    grid-column: 1;
-    margin-bottom: 0;
-    padding-top: 0.5rem;
-  }
-
-  .org-superficie,
-  .org-relacoes {
-    grid-column: 2;
-  }
-
-  .org-relacoes {
-    align-items: flex-start;
-    margin-top: 1rem;
-  }
-
-  .org-aprox {
-    grid-column: 1 / -1;
   }
 
   .org-tecnico {
@@ -903,28 +1074,24 @@ body:has(.org) .nav-item[aria-current="page"] {
 }
 
 /* ------------------------------------------------------------------ *
- * O Foco emerge do canto da superficie — e nunca cobre uma area
+ * O Foco NAO e uma terceira coluna (M1B-R2, B3)
  * ------------------------------------------------------------------ *
- * A primeira versao deixava o painel absoluto sobre o palco, como no V3.3. Na
- * inspecao real ele cobriu a Conferencia e o Motoboy, e a regra "nenhum outro
- * ambiente vermelho fica escondido" morre quando o painel tapa o caminho.
+ * O QUE ESTAVA AQUI, e por que saiu. Acima de 1240px o palco virava
+ * `minmax(220px,20ch) minmax(0,1fr) minmax(360px,26rem)` e o Foco tomava
+ * `grid-column: 3`. Medido no navegador em 1440: a massa operacional caia de
+ * 781px em Ambiente para 342px em Foco — a operacao perdia 56% do seu
+ * territorio para abrir um painel a direita.
  *
- * Solucao: o painel ganha coluna propria, ancorada no rodape da superficie —
- * continua emergindo do canto inferior direito do organismo, sem tapar nada.
+ * Isso e exatamente a forma que a North Star recusa: "coluna direita", "painel
+ * destacado". O Foco chegava ocupando MAIS UM LUGAR na tela em vez de
+ * transformar a tela. E a massa nao recuava — ela era espremida, que e outra
+ * coisa: espremer aperta o texto e quebra a leitura (o mesmo B2 voltava dentro
+ * das pracas, medido em 190px de fileira).
+ *
+ * O que existe agora esta em `.org[data-modo="foco"]`, mais acima: duas colunas
+ * nas duas cenas, e a transformacao acontece DENTRO da massa — a fileira que
+ * carrega o Foco fica inteira, e as outras recuam. Recuar nunca e sumir.
  */
-@media (min-width: 1240px) {
-  .org[data-modo="foco"] .org-palco {
-    grid-template-columns: minmax(220px, 20ch) minmax(0, 1fr) minmax(360px, 26rem);
-  }
-
-  .org[data-modo="foco"] .org-foco {
-    grid-column: 3;
-    grid-row: 1 / span 3;
-    align-self: end;
-    margin-top: 0;
-    width: 100%;
-  }
-}
 
 /* ------------------------------------------------------------------ *
  * Orientacao — uma so, e ela nao executa
@@ -939,22 +1106,37 @@ body:has(.org) .nav-item[aria-current="page"] {
   color: var(--org-verde-texto-4);
 }
 
+/*
+  A ORIENTACAO — uma frase, nao um botao (M1B-R2).
+
+  Ela era um retangulo verde saturado com texto escuro: exatamente a forma de um
+  botao primario de SaaS. E o arquivo desta superficie abre dizendo que NENHUM
+  CONTROLE EXECUTA, e que isto continua sendo uma `div` "porque continua nao
+  existindo o que executar". Um elemento que parece o botao mais clicavel da
+  tela, e nao faz nada, mente sobre o que a tela e — ainda mais numa cena em que
+  a frase seguinte e "Nada foi executado. Uma pessoa decide."
+
+  Agora ela e o que e: a frase mais importante do Foco. O peso vem do tamanho e
+  da familia editorial, e a marca viva fica numa barra a esquerda — presente,
+  sem fingir affordance. Nada de brilho, nada de borda luminosa.
+*/
 .org-acao__pilula {
-  display: inline-block;
-  padding: 0.75rem 1.3rem;
-  border-radius: var(--org-raio-p);
-  background: var(--org-vivo);
-  color: var(--org-vivo-tinta);
-  font-weight: 600;
-  font-size: 1rem;
-  line-height: 1.3;
+  display: block;
+  padding: 0.1rem 0 0.1rem 0.9rem;
+  border-left: 2px solid var(--org-vivo);
+  font-family: var(--org-serifa);
+  font-size: 1.24rem;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--org-creme);
 }
 
+/* Foco puro: nao ha orientacao prescrita, e a barra viva nao pode sugerir que
+   ha. Fica o traco neutro. */
 .org-acao__pilula--pura {
-  background: none;
-  border: 1px solid var(--org-linha-forte);
+  border-left-color: var(--org-linha-forte);
+  font-size: 1.1rem;
   color: var(--org-verde-texto);
-  font-weight: 500;
 }
 
 .org-acao__detalhe {
@@ -1439,6 +1621,98 @@ body:has(.org) .nav-item[aria-current="page"] {
   }
 }
 
+/* ------------------------------------------------------------------ *
+ * A DOBRA — o recuo com a materialidade DESTE organismo (M1B-R2, B1)
+ * ------------------------------------------------------------------ *
+ * Media antes: `.inspetor` do Design System entrava aqui com fundo
+ * `rgb(250,248,244)` e texto `rgb(28,25,21)` sobre um corpo `rgb(8,19,13)` —
+ * quatro lajes brancas dentro da superficie escura — e fechava em 16px em vez
+ * de 0, deixando conteudo recortado ocupando layout por cima do vizinho.
+ *
+ * A dobra nao e o mesmo componente repintado: e `<details>`, que fecha de
+ * verdade. A materialidade vem so de token do organismo. Nada de vidro, brilho
+ * ou borda luminosa — a dobra e uma DEPRESSAO na superficie, mais escura que o
+ * palco, e o que a marca e a linha da esquerda, nao um retangulo aceso.
+ */
+
+.org-dobra {
+  border-left: 1px solid var(--org-linha);
+  background: var(--org-palco-fundo);
+  border-radius: 0 var(--org-raio-p) var(--org-raio-p) 0;
+}
+
+.org-dobra + .org-dobra {
+  margin-top: 0.35rem;
+}
+
+.org-dobra__gatilho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.9rem;
+  /* 44px de alvo de toque, sem depender de altura implicita de texto. */
+  min-height: 44px;
+  padding: 0.5rem 0.9rem;
+  cursor: pointer;
+  list-style: none;
+  color: var(--org-verde-texto-2);
+  font-size: 0.95rem;
+}
+
+/* O triangulo nativo do Safari/Chrome nao pertence a esta familia. */
+.org-dobra__gatilho::-webkit-details-marker {
+  display: none;
+}
+
+.org-dobra__gatilho:hover {
+  color: var(--org-creme-5);
+}
+
+.org-dobra__gatilho:focus-visible {
+  outline: 2px solid var(--org-vivo);
+  outline-offset: -2px;
+}
+
+.org-dobra__rotulo {
+  font-size: 0.95rem;
+}
+
+/*
+  O sinal de abrir. Um sinal de mais desenhado em duas linhas: a barra vertical
+  some quando abre e sobra o traco. Nao e enfeite — e a unica coisa que diz, sem
+  cor, se a dobra esta aberta ou fechada.
+*/
+.org-dobra__sinal {
+  position: relative;
+  flex: none;
+  width: 11px;
+  height: 11px;
+}
+
+.org-dobra__sinal::before,
+.org-dobra__sinal::after {
+  content: "";
+  position: absolute;
+  background: var(--org-verde-texto-4);
+  inset-block-start: 5px;
+  inset-inline-start: 0;
+  width: 11px;
+  height: 1px;
+}
+
+.org-dobra__sinal::after {
+  transform: rotate(90deg);
+  transition: transform var(--org-resposta) var(--org-resposta-easing);
+}
+
+.org-dobra[open] .org-dobra__sinal::after {
+  transform: rotate(0deg);
+}
+
+.org-dobra__corpo {
+  padding: 0 0.9rem 0.9rem;
+}
+
 /*
   MENOS MOVIMENTO — e nenhuma informacao a menos.
 
@@ -1475,10 +1749,89 @@ body:has(.org) .nav-item[aria-current="page"] {
  * Mobile — a mesma verdade, nao um resumo dela
  * ------------------------------------------------------------------ */
 
+/* ------------------------------------------------------------------ *
+ * MOBILE — composicao propria, nao desktop empilhado (M1B-R2, B5)
+ * ------------------------------------------------------------------ *
+ * A ordem de leitura ja e a certa no DOM e nao muda aqui: ESTADO (a voz) ->
+ * DECISAO (o Foco, ou a relacao ativa) -> TERRITORIO (o caminho) -> RESTO. Ela
+ * nao foi herdada do desktop por acomodacao: e a mesma ordem porque e a ordem
+ * de quem pergunta "o que esta acontecendo, e o que eu faco".
+ *
+ * O que muda no telefone e o que DISPUTA a primeira tela. Medido em 320px antes
+ * desta missao: a primeira dobra continha a faixa de ambiente, a faixa de
+ * demonstracao com quatro pilulas de cena (a quarta cortada pela borda), a
+ * marca pintada por cima do selo, e a palavra "Ambiente" — a operacao nao
+ * aparecia. Chrome de fixture ocupava a tela inteira que pertence a operacao.
+ */
 @media (max-width: 720px) {
   .org {
     margin: calc(var(--space-3) * -1) calc(var(--space-3) * -1) 0;
     padding: 1rem 1rem 2.4rem;
+  }
+
+  /*
+    A faixa de demonstracao encolhe, mas nao mente: o aviso continua inteiro e
+    continua legivel. O que sai e o corpo de pilula e o respiro de desktop.
+  */
+  .org-demo {
+    gap: 0.4rem;
+    margin-bottom: 0.7rem;
+    padding: 0.4rem 0.7rem;
+    border-radius: var(--org-raio-p);
+  }
+
+  .org-demo__aviso {
+    font-size: 0.76rem;
+    line-height: 1.35;
+  }
+
+  /*
+    As cenas sao ferramenta de demonstracao, e em 320px elas transbordavam: a
+    quarta pilula era cortada pela borda da tela. Agora a fileira quebra em vez
+    de vazar — `margin-left: auto` era o que a prendia numa linha so.
+  */
+  .org-demo__cenas {
+    margin-left: 0;
+    width: 100%;
+    /* Quatro cenas numa fileira so. Em duas fileiras a faixa de FIXTURE passava
+       de 200px de altura e empurrava a operacao inteira para fora da primeira
+       tela — chrome de demonstracao comendo o lugar do que a tela existe para
+       mostrar. */
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.3rem;
+  }
+
+  .org-demo__cena {
+    /* 44px de alvo de toque: eram 29px de altura (M1B-R2). */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding-inline: 0.2rem;
+    font-size: 0.74rem;
+    text-align: center;
+  }
+
+  /*
+    O RECUO DO FOCO NAO ENCOLHE TEXTO NO TELEFONE. No desktop as fileiras sem
+    Foco recuam com `scale: 0.84`, que reduz o corpo E a letra junto. Em 375 e
+    320 a letra ja esta no piso, e 0.84 a levaria para baixo de 11px — trocar um
+    blocker (composicao) por outro (microtipografia) nao e conserto. Aqui o
+    recuo vem so do espaco entre as fileiras, que e o que sobra de barato.
+  */
+  .org[data-modo="foco"] .org-fila:not([data-tem-foco="sim"]) .org-area__corpo {
+    scale: none;
+  }
+
+  .org[data-modo="foco"] .org-fila:not([data-tem-foco="sim"]) {
+    gap: 0.5rem;
+  }
+
+  .org-voz {
+    /* Sticky num telefone rouba altura da operacao e nao devolve nada. */
+    position: static;
+    gap: 1.1rem;
   }
 
   .org-fila {
@@ -1583,7 +1936,7 @@ body:has(.org) .nav-item[aria-current="page"] {
  * O RESTO — condensado, nunca escondido (M1B)
  * ------------------------------------------------------------------ *
  * Quatro secoes empilhadas viraram um registro baixo. A contagem fica legivel
- * fechada; o conteudo inteiro continua no DOM, atras de `inspetor`.
+ * fechada; o conteudo inteiro continua no DOM, atras de uma dobra.
  * Recuar nunca e sumir.
  */
 

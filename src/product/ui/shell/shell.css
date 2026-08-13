@@ -113,6 +113,48 @@
   grid-area: estado;
   display: flex;
   justify-content: flex-end;
+  /* Sem isto a coluna `auto` da direita nao cede, a do meio (1fr) e espremida e
+     a marca transborda POR CIMA do selo — medido em 320px (M1B-R2, B5). */
+  min-width: 0;
+}
+
+/*
+  A FAIXA DE TOPO EM TELA ESTREITA (M1B-R2, B5).
+
+  Medido em 320px: `strong "DeliveryOS"` e o selo "SOMENTE DEMONSTRACAO" pintavam
+  um por cima do outro, e "Product System" tambem. A grade e
+  `auto 1fr auto`: com o selo em `nowrap` a coluna do meio encolhia abaixo do
+  conteudo e a marca vazava.
+
+  A correcao nao esconde informacao: "PRODUCT SYSTEM" ja e dito, inteiro, na
+  faixa de ambiente logo acima ("AMBIENTE DE DEMONSTRACAO · DELIVERYOS PRODUCT
+  SYSTEM"). O que sai daqui e a TERCEIRA copia da mesma frase numa tela onde nao
+  cabe nem a primeira.
+*/
+@media (max-width: 600px) {
+  .shell__marca span {
+    display: none;
+  }
+  .shell__marca strong {
+    font-size: var(--type-body);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  /*
+    O selo de estado encolhe em vez de empurrar. Ele NAO sai: e ele que diz que
+    esta build e de demonstracao, e o contrato canonico proibe que valor de
+    demonstracao passe por leitura real. O que ele perde e corpo, nao a frase —
+    com 175px de selo contra 88px de sobra, era a marca que virava "Delivery...".
+  */
+  .shell__conexao {
+    min-width: 0;
+    font-size: 10px;
+  }
+  .shell__topo {
+    gap: var(--space-1) var(--space-2);
+    padding-inline: var(--space-2);
+  }
 }
 
 @media (min-width: 905px) {
@@ -312,12 +354,21 @@
   border-radius: 0;
   background: transparent;
   color: var(--text-muted);
-  font-size: 10px;
+  /*
+    11px, nao 10px. Era a UNICA microtipografia medida na home em 375 e 320
+    (M1B-R2), e microtipografia num rotulo de navegacao permanente e o pior
+    lugar possivel: ele fica na tela o tempo todo, e quem opera esta de pe, com
+    a mao ocupada. 11px e o piso que o resto da superficie ja respeita.
+  */
+  font-size: 11px;
   font-weight: 600;
   text-decoration: none;
   text-align: center;
   box-shadow: none;
   line-height: 1.2;
+  /* Cinco rotulos em 320px: quebra por palavra, nunca no meio da palavra. */
+  overflow-wrap: break-word;
+  hyphens: none;
 }
 .nav-mobile__item[aria-current="page"] {
   color: var(--brand-action);
