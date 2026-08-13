@@ -109,3 +109,16 @@ test('shortlist não nasce apenas de canal e ordem técnica', (t) => {
   assert.equal(channelOnly.conversation_guidance.mode, 'food_preference_discovery');
   assert.deepEqual(channelOnly.conversation_guidance.candidates_found, []);
 });
+
+test('preço operacional não reutiliza shortlist anterior como alvo', (t) => {
+  const service = serviceFixture(t);
+  const conversationId = 'REC-OPERATIONAL-PRICE-BOUNDARY';
+  turn(service, conversationId, 'quero uma sugestão pelo iFood');
+  turn(service, conversationId, 'não quero nada quente');
+  turn(service, conversationId, 'prefiro sushi');
+  const operational = turn(service, conversationId, 'qual o preço do rodízio?');
+
+  assert.notEqual(operational.conversation_guidance?.mode, 'concise_price');
+  assert.equal(operational.conversation_state.channel, 'ifood');
+  assert.equal(operational.conversation_state.requested_category, 'sushi');
+});

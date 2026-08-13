@@ -147,6 +147,10 @@ function customerTurnQuestions(text) {
   return [...new Set(questions)];
 }
 
+function namesIndependentOperationalPriceTarget(text) {
+  return /\b(?:rodizio|almoco executivo|sugestao tata|valet|rolha)\b/u.test(text);
+}
+
 function ordinalReferenceFromText(text) {
   const match = text.match(/\b(?:essa|esse|a|o)?\s*(primeir[ao]|segund[ao]|terceir[ao])(?:\s+opcao)?\b/u);
   if (!match) return null;
@@ -1289,7 +1293,10 @@ class CustomerMenuHomologationService {
         candidates_found: candidates.slice(0, 3).map((item) => item.item_id)
       });
     }
-    if (turnAnalysis.questions.length === 1 && turnAnalysis.questions[0] === 'price' && priorPresentedOptions.length) {
+    if (turnAnalysis.questions.length === 1
+      && turnAnalysis.questions[0] === 'price'
+      && priorPresentedOptions.length
+      && !namesIndependentOperationalPriceTarget(text)) {
       return Object.freeze({
         schema_version: 'deliveryos-homologation-guidance-v1', mode: 'concise_price',
         direct_answers: [this.concisePriceAnswer(priorPresentedOptions)], question: null,
