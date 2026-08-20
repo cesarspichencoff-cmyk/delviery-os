@@ -183,7 +183,20 @@ function legenda(vm) {
         )}</p>`;
   return `<div class="org-legenda">
     <span class="org-legenda__kicker">${esc(vm.modo)}</span>
-    <p class="org-legenda__frase">${esc(vm.titulo)}</p>
+    <!--
+      H1, e nao <p>. A pagina nao tinha nenhum h1 (medido em M1B-R2 §D): a
+      estrutura comecava em h2, e leitor de tela e navegacao por cabecalho
+      entram numa arvore sem raiz.
+
+      O h1 e ESTE porque o assunto desta superficie e o ESTADO DA OPERACAO —
+      "Calmo", "Ambiente", "Foco" — e nao o nome do modulo. Nao foi acrescentado
+      cabecalho invisivel para agradar ferramenta: o h1 e a maior palavra da
+      tela, a primeira que a pessoa le, e agora e tambem a primeira que o
+      leitor de tela anuncia. A aparencia nao muda em um pixel: a regra ja
+      declarava familia, peso, tamanho, entrelinha, espacamento e cor, entao
+      nenhum padrao de agente de usuario aparece.
+    -->
+    <h1 class="org-legenda__frase">${esc(vm.titulo)}</h1>
     <p class="org-legenda__apoio">${esc(vm.apoio)}</p>
     ${pulso}
   </div>`;

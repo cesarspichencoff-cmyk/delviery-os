@@ -71,6 +71,110 @@ body:has(.org) .nav-item[aria-current="page"] {
 }
 
 /* ------------------------------------------------------------------ *
+ * O QUE AINDA VAZAVA DO NIVEL 4 (M1B-R2, §D — B1 nao estava fechado)
+ * ------------------------------------------------------------------ *
+ * B1 tratou os quatro acordeoes e parou ali. A medicao de contraste, feita
+ * agora com composicao alfa correta e nas QUATRO cenas, mostrou que o
+ * vazamento continuava em outros componentes do Design System — e em dois
+ * deles o texto estava simplesmente INVISIVEL:
+ *
+ *   h2.secao__titulo      #1c1915 sobre #06120d  ->  1.09
+ *   p.bloco-limitacao__titulo  #efe6d3 sobre #f3f0ea  ->  1.09
+ *
+ * O primeiro herda a tinta escura do Design System dentro da superficie
+ * escura. O segundo e o oposto e pior: `.bloco-limitacao` pinta
+ * `--surface-muted` (#f3f0ea, quase branco) DENTRO do organismo, e o creme por
+ * cima some. Uma laje clara sobrou de pe — o mesmo defeito de B1, noutro
+ * componente. Contraste de 1.09 nao e "contraste baixo": e texto que ninguem
+ * le, e vinha aparecendo nas quatro cenas desde antes desta missao.
+ *
+ * A CORRECAO NAO TOCA EM VALOR DE MARCA. Nenhum token canonico muda: o que
+ * muda e QUEM se aplica dentro de `.org`, exatamente como esta folha ja fazia
+ * com a moldura do shell. Isto e uso local corrigido, nao redefinicao de
+ * paleta — e por isso nao precisa do Cesar.
+ */
+
+.org .secao__titulo {
+  color: var(--org-creme-2);
+}
+
+.org .secao__sub {
+  color: var(--org-verde-texto-3);
+}
+
+.org .bloco-limitacao {
+  background: var(--org-palco-fundo);
+  border-color: var(--org-linha);
+  border-left-color: var(--org-neutro-traco);
+}
+
+.org .bloco-limitacao__titulo {
+  color: var(--org-creme-3);
+}
+
+.org .bloco-limitacao__texto {
+  color: var(--org-verde-texto-2);
+}
+
+/*
+  Os selos de estado do Design System carregam SIGNIFICADO — "saudavel",
+  "planejado", "somente demonstracao", "desatualizado" — e as tintas deles
+  foram escolhidas para superficie clara. Sobre o organismo elas caem para
+  2,43-3,37. Aqui cada uma recebe a tinta equivalente DESTA familia, com a
+  mesma leitura: vivo para saudavel, ambar para desatualizado, neutro para o
+  resto. A forma (borda, glifo, padrao) nao muda — so a tinta.
+*/
+.org .ds-state[data-ink="ink-calm"] {
+  color: var(--org-vivo);
+  border-color: var(--org-vivo-borda);
+}
+
+.org .ds-state[data-ink="ink-age"] {
+  color: var(--org-ambar-texto);
+  border-color: var(--org-ambar-borda-fraca);
+}
+
+.org .ds-state[data-ink="ink-prep"] {
+  color: var(--org-verde-texto-2);
+  border-color: var(--org-linha-clara);
+}
+
+.org .ds-state[data-ink="ink-faint"] {
+  color: var(--org-verde-texto-3);
+  border-color: var(--org-linha-viva);
+}
+
+/*
+  A moldura do shell. `body:has(.org)` ja recuava a navegacao, mas parou na
+  cor do NOME do modulo e deixou de fora a descricao e a trilha — que ficaram
+  com a tinta clara do Design System sobre fundo escuro, medidas em 2,33-3,37.
+*/
+body:has(.org) .nav-item__descricao,
+body:has(.org) .contexto__trilha {
+  color: var(--org-verde-texto-4);
+}
+
+body:has(.org) .nav-item__nome {
+  color: var(--org-creme-4);
+}
+
+/*
+  MODULO PLANEJADO. `shell.css` pinta o nome e o selo com `--ink-faint`
+  (#6f6656), que sobre o organismo mede 3,13-3,37. O significado — "existe, mas
+  ainda nao" — continua inteiro: o que muda e a tinta, para a equivalente desta
+  familia. A distincao entre planejado e disponivel NAO passa a depender so de
+  cor: o selo com o glifo continua ali, e ele e que carrega o estado.
+*/
+body:has(.org) .nav-item[data-disponibilidade="futuro"] .nav-item__nome {
+  color: var(--org-verde-texto-3);
+}
+
+body:has(.org) .ds-state[data-ink="ink-faint"] {
+  color: var(--org-verde-texto-3);
+  border-color: var(--org-linha-viva);
+}
+
+/* ------------------------------------------------------------------ *
  * A superficie sangra. O organismo nao mora dentro de um cartao.
  * ------------------------------------------------------------------ */
 
