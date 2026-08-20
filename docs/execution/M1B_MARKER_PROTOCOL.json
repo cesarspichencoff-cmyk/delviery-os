@@ -1,0 +1,51 @@
+{
+  "_leia_primeiro": "O conjunto LEGAL de marcadores de fim de missao M1B, e a condicao que cada um afirma. Existe porque o protocolo anterior tinha um BURACO DE ESTADO: ambiente sadio + nenhuma decisao estrutural + nenhuma contaminacao + implementacao incompleta nao tinha marcador nenhum, e o construtor era empurrado a escolher entre mentir que estava pronto, inventar marcador ou declarar blocker inexistente. Genoma: PROTOCOL_STATE_GAP.",
+  "_lifecycle": {
+    "artefato": "docs/execution/M1B_MARKER_PROTOCOL.json",
+    "status": "ACTIVE",
+    "authority_scope": "m1b_marker_protocol",
+    "superseded_by": null,
+    "atualizado_em": "2026-08-13",
+    "state_basis": "4e42583"
+  },
+  "_ordem": "Avaliado de cima para baixo. A PRIMEIRA regra que casa vence. A ordem nao e estilo: contaminacao e procedencia falsa precisam vencer qualquer alegacao de progresso.",
+  "marcadores": [
+    {
+      "marcador": "M1B_WORKTREE_CONTAMINATION",
+      "quando": { "contaminacao": true },
+      "afirma": "Houve escrita nova na worktree original. Nada mais importa ate isso ser resolvido."
+    },
+    {
+      "marcador": "M1B_SERVER_PROVENANCE_FAILURE",
+      "quando": { "procedencia_servidor": false },
+      "afirma": "A prova visual veio de origem nao provada. As capturas nao valem."
+    },
+    {
+      "marcador": "M1_STRUCTURAL_DECISION_REQUIRED",
+      "quando": { "decisao_estrutural": true },
+      "afirma": "Existe decisao de dominio ou arquitetura que o construtor nao pode tomar."
+    },
+    {
+      "marcador": "M1B_ENVIRONMENT_BLOCKED",
+      "quando": { "ambiente": "quebrado" },
+      "afirma": "O ambiente impede execucao ou prova."
+    },
+    {
+      "marcador": "M1B_CONTINUATION_REQUIRED",
+      "quando": { "implementacao": "incompleta" },
+      "afirma": "Trabalho legitimo restante, sem blocker estrutural, ambiente sadio, sem contaminacao. ESTE E O MARCADOR QUE FALTAVA."
+    },
+    {
+      "marcador": "BUILDER_READY_FOR_CESAR_VISUAL_REVIEW",
+      "quando": { "implementacao": "completa" },
+      "afirma": "O construtor terminou o que podia terminar. NAO afirma aprovacao, auditoria independente, North Star certificada nem 10/10 — nada disso e do construtor."
+    }
+  ],
+  "_proibido": [
+    "Cesar aprovou",
+    "final visual pass",
+    "independent audit",
+    "10/10 certified",
+    "final North Star certified"
+  ]
+}

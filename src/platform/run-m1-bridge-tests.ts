@@ -211,6 +211,12 @@ teste("B6 controle positivo: uma tabela sem SUPERSEDED_BY reprova", () => {
  * pathspec, esta familia le a mudanca e continua afirmando sobre o que o gate
  * realmente faz — em vez de sobre uma copia que envelhece em silencio.
  */
+import {
+  inventarioDeCongelamento,
+  arquivosComGate,
+  FIM_CERTIFICADO,
+} from "./inventario-congelamento";
+
 const GATES_CONGELAMENTO = [
   "run-r5a-temporal-tests.ts",
   "run-r5b-invariant-tests.ts",
@@ -284,33 +290,73 @@ function lerGate(arquivo: string): GateCongelado {
 
 const GATES = GATES_CONGELAMENTO.map(lerGate);
 
-teste("C1 os dez gates existem e usam INTERVALO FECHADO", () => {
-  assert.equal(GATES.length, 10, "o inventario de gates de congelamento mudou de tamanho");
-  // O decimo primeiro nao mora em `src/platform/`, entao ele e verificado por
-  // nome. Deixa-lo de fora foi o erro de M1A.1.
-  const lab = ler(GATE_DO_LAB);
+teste("C1 o inventario descobre os gates pela PROPRIEDADE, e todos sao FECHADOS", () => {
+  // ------------------------------------------------------------------
+  // O QUE MUDOU AQUI, e por que (M1B-R2, B).
+  //
+  // Antes esta guarda lia uma LISTA: dez nomes de arquivo em `src/platform/`
+  // mais um caminho do Lab escrito a mao. Uma lista responde "os que eu conheco
+  // estao certos?" — nunca "existe algum que eu nao conheco?". Foi assim que
+  // M1A.1 declarou dez com onze existindo: `EXPECTED_DIRECTORY_INVENTORY_
+  // BLINDNESS`.
+  //
+  // Agora quem manda e a DESCOBERTA. O inventario varre a arvore inteira
+  // procurando o COMPORTAMENTO — `git diff --name-only <base> <fim certificado>
+  // -- <caminhos>` — sem supor diretorio nenhum. A lista continua existindo,
+  // mas rebaixada a PISO: ela diz o que nao pode sumir, e nao o que existe.
+  // Um gate novo em qualquer pasta entra no inventario sozinho.
+  // ------------------------------------------------------------------
+  const inventario = inventarioDeCongelamento(raiz);
+  const arquivos = arquivosComGate(raiz);
+
+  // (a) NENHUM intervalo aberto, em lugar nenhum da arvore.
+  const abertos = inventario.filter((g) => !g.fechado);
+  assert.deepEqual(
+    abertos.map((g) => `${g.arquivo} :: ${g.invocacao}`),
+    [],
+    "intervalo ABERTO encontrado: ele congela o futuro alem do que foi certificado",
+  );
+
+  // (b) O PISO. Cada gate conhecido continua descoberto — se um sumir do
+  //     inventario, some por remocao ou por mudanca de forma, e os dois casos
+  //     precisam reprovar.
+  const piso = [...GATES_CONGELAMENTO.map((g) => `src/platform/${g}`), GATE_DO_LAB];
+  const sumidos = piso.filter((p) => !arquivos.includes(p));
+  assert.deepEqual(sumidos, [], "gate conhecido deixou de ser descoberto pelo inventario");
+
+  // (c) ONZE e o minimo provado, nao o total. O inventario pode achar MAIS —
+  //     e achar mais e o comportamento correto, nao um erro.
   assert.ok(
-    lab.includes(`const FIM_HISTORICO = "${M1_BASELINE}"`),
-    "o gate de congelamento do Lab voltou a forma aberta",
+    piso.length === 11,
+    `o piso deveria ter onze gates provados, tem ${piso.length}`,
   );
-  assert.doesNotMatch(
-    lab,
-    /"--name-only", PF4_BASE, "--"/,
-    "o gate do Lab voltou a comparar com a arvore atual",
+  assert.ok(
+    arquivos.length >= 11,
+    `o inventario descobriu ${arquivos.length} arquivos com gate; o minimo provado e 11`,
   );
+
+  // (d) O fim do intervalo e o mesmo commit certificado em toda a familia.
+  assert.equal(FIM_CERTIFICADO, M1_BASELINE, "o fim certificado divergiu entre modulo e guarda");
+
+  // (e) As checagens de forma que ja existiam CONTINUAM, arquivo a arquivo.
+  //     Descobrir por propriedade nao substitui verificar o conteudo.
   for (const g of GATES) {
     const fonte = ler(`src/platform/${g.arquivo}`);
     assert.ok(
       fonte.includes(`const FIM_HISTORICO = "${M1_BASELINE}"`),
       `${g.arquivo}: o fim historico nao e o baseline de M1`,
     );
-    // A forma ABERTA nao pode voltar: `"<sha>", "--"` sem o fim no meio.
     assert.doesNotMatch(
       fonte,
       /"--name-only",\s*(?:[A-Z_]+|"[0-9a-f]{7}"),\s*"--"/,
       `${g.arquivo}: voltou a forma aberta, que congela o futuro`,
     );
   }
+  const lab = ler(GATE_DO_LAB);
+  assert.ok(
+    lab.includes(`const FIM_HISTORICO = "${M1_BASELINE}"`),
+    "o gate de congelamento do Lab voltou a forma aberta",
+  );
 });
 
 teste("C2 cada baseline continua sendo o original, e ancestral do fim", () => {

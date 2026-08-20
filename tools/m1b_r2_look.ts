@@ -79,6 +79,8 @@ async function medir(page: Page): Promise<Medida> {
     //
     // Folha de texto: elemento com texto próprio, visível ao olho.
     const folhas: { el: HTMLElement; r: DOMRect; txt: string; nome: string }[] = [];
+    // Todas as folhas, inclusive as de barra fixa. Serve a tipografia.
+    const todasAsFolhas: { el: HTMLElement; r: DOMRect; txt: string; nome: string }[] = [];
     for (const el of Array.from(document.querySelectorAll<HTMLElement>("body *"))) {
       const cs = getComputedStyle(el);
       const r = el.getBoundingClientRect();
@@ -106,13 +108,20 @@ async function medir(page: Page): Promise<Medida> {
           break;
         }
       }
-      if (visivel && proprio && !fixo) {
-        folhas.push({
+      if (visivel && proprio) {
+        const folha = {
           el,
           r,
           txt: (el.textContent ?? "").trim(),
           nome: `${el.tagName.toLowerCase()}.${(el.className || "(sem-classe)").toString().split(" ").join(".")}`,
-        });
+        };
+        // TIPOGRAFIA mede TUDO; COLISÃO ignora barra fixa.
+        // A exclusão de `fixed` nasceu para a colisão, e por descuido também
+        // cegava a menor fonte — bem onde a única microtipografia morava, na
+        // navegação inferior do celular (M1B-R2 §C). Tamanho de letra não
+        // depende de posicionamento.
+        todasAsFolhas.push(folha);
+        if (!fixo) folhas.push(folha);
       }
     }
 
@@ -155,7 +164,7 @@ async function medir(page: Page): Promise<Medida> {
     // REPETIÇÃO. A mesma frase inteira desenhada em dois lugares é o outro
     // sintoma de B2, e não aparece como sobreposição geométrica nenhuma.
     const contagem = new Map<string, number>();
-    for (const f of folhas) {
+    for (const f of todasAsFolhas) {
       const t = f.txt;
       if (t.length > 25) contagem.set(t, (contagem.get(t) ?? 0) + 1);
     }
@@ -166,7 +175,7 @@ async function medir(page: Page): Promise<Medida> {
     let menor = Infinity;
     let menorAlvo = "";
     let animando = 0;
-    for (const f of folhas) {
+    for (const f of todasAsFolhas) {
       const px = parseFloat(getComputedStyle(f.el).fontSize);
       if (Number.isFinite(px) && px > 0 && px < menor) {
         menor = px;

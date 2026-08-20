@@ -999,17 +999,68 @@ async function rodarMutacoes(): Promise<void> {
     const original = readFileSync(caminho, "utf8");
     const hashOriginal = sha(original);
 
-    if (!original.includes(m.de)) {
+    // ------------------------------------------------------------------
+    // O FIM DA CEGUEIRA DE CRLF (M1B-R2, A).
+    //
+    // Seis das nove mutações — MD1, MD2, MD6, MD7, MD8, MD9 — nunca chegaram a
+    // ser aplicadas, e o gate ficava VERMELHO por "âncora não encontrada" em
+    // vez de por defeito. A causa não estava no domínio nem nas guardas:
+    //
+    //   · `core.autocrlf=true` e nenhum `.gitattributes`: o checkout escreve o
+    //     arquivo de trabalho com CR LF;
+    //   · `readFileSync` devolve esses bytes como estão;
+    //   · a âncora `m.de` é um template literal, e a spec do ECMAScript
+    //     NORMALIZA CR LF para LF dentro dele.
+    //
+    // `includes()` comparava LF contra CRLF e nunca casava. Fim de linha é
+    // artefato de checkout, não semântica — comparar em LF é a comparação
+    // CORRETA, e não um afrouxamento: nenhuma asserção mudou, nenhuma mutação
+    // virou casamento de token e nenhuma guarda ficou mais fácil. O que mudou é
+    // que agora a mutação CHEGA no arquivo.
+    //
+    // O disco recebe de volta a convenção do próprio arquivo, e a restauração
+    // continua escrevendo `original` byte a byte.
+    // ------------------------------------------------------------------
+    const usaCRLF = original.includes("\r\n");
+    const emLF = original.replace(/\r\n/g, "\n");
+    const paraODisco = (t: string): string =>
+      usaCRLF ? t.replace(/\n/g, "\r\n") : t;
+
+    if (!emLF.includes(m.de)) {
       naoAplicadas.push(`${m.id}: âncora não encontrada em ${m.arquivo}`);
       continue;
     }
-    const mutado = original.replace(m.de, m.para);
-    if (mutado === original) {
+    // A função de substituição impede que `$&`/`$1` dentro de `m.para` virem
+    // referência de captura — o texto entra literal.
+    const mutadoLF = emLF.replace(m.de, () => m.para);
+    if (mutadoLF === emLF) {
       naoAplicadas.push(`${m.id}: a substituição não mudou nada`);
       continue;
     }
 
-    writeFileSync(caminho, mutado);
+    writeFileSync(caminho, paraODisco(mutadoLF));
+
+    // APLICAÇÃO PROVADA NO DISCO, nunca inferida da string em memória.
+    // "a suíte reprovou" e "a mutação foi aplicada" são duas afirmações
+    // diferentes. Uma mutação que não entrou no arquivo, com um teste que
+    // reprovou por outro motivo, passaria por prova sem ser prova nenhuma.
+    const noDisco = readFileSync(caminho, "utf8");
+    const hashMutado = sha(noDisco);
+    const aplicou =
+      hashMutado !== hashOriginal &&
+      noDisco.replace(/\r\n/g, "\n").includes(m.para);
+    if (!aplicou) {
+      writeFileSync(caminho, original);
+      naoAplicadas.push(`${m.id}: escrita feita, mas o disco não confirmou a mutação`);
+      continue;
+    }
+    console.log(
+      `    ${m.id}`,
+    );
+    console.log(
+      `      aplicada em ${m.arquivo} · ${hashOriginal.slice(0, 12)} -> ${hashMutado.slice(0, 12)}`,
+    );
+
     try {
       // ETAPA "carregada": processo filho, senão o módulo já importado aqui
       // continuaria valendo e a mutação sairia cega por acidente de cache.
@@ -1029,6 +1080,8 @@ async function rodarMutacoes(): Promise<void> {
       const restaurado = sha(readFileSync(caminho, "utf8"));
       if (restaurado !== hashOriginal) {
         falhas.push(`${m.id}: RESTAURAÇÃO FALHOU — ${m.arquivo} não voltou byte a byte`);
+      } else {
+        console.log(`      restaurado · ${restaurado.slice(0, 12)} == origem`);
       }
     }
   }
