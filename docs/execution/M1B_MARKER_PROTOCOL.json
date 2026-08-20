@@ -5,8 +5,8 @@
     "status": "ACTIVE",
     "authority_scope": "m1b_marker_protocol",
     "superseded_by": null,
-    "atualizado_em": "2026-08-13",
-    "state_basis": "4e42583"
+    "atualizado_em": "2026-08-20",
+    "state_basis": "274141e"
   },
   "_ordem": "Avaliado de cima para baixo. A PRIMEIRA regra que casa vence. A ordem nao e estilo: contaminacao e procedencia falsa precisam vencer qualquer alegacao de progresso.",
   "marcadores": [
