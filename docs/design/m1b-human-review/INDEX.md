@@ -3,13 +3,13 @@
 > Sem cabeçalho `lifecycle:` de propósito. Este arquivo **não é autoridade** —
 > é um guia de leitura de um pacote de capturas. Quem responde pelo escopo
 > `evidence` é `docs/execution/EVIDENCE.jsonl`, e um escopo tem um dono só
-> (guarda `G5`). Capturado em `0d34287`, 2026-08-13.
+> (guarda `G5`). Capturado em `3e19f56`, 2026-08-20.
 
 Dez itens. O material técnico completo (24 combinações de cena × largura, com
 medições) fica fora deste pacote, em `docs/design/m1b-evidencia/`.
 
 **Procedência de tudo aqui:** capturas de uma build de **DEMONSTRAÇÃO**, servida
-pelo próprio produto no worktree M1 (`0d34287`, porta 5292, procedência de
+pelo próprio produto no worktree M1 (`3e19f56`, porta 5292, procedência de
 servidor provada antes de qualquer captura). Pedidos, tempos e cargas são
 fixture; regras, cardápio e limiares são reais. **Nada aqui é operação real.**
 
@@ -47,13 +47,46 @@ os itens 01–09 existem.
 
 ## O que eu sei que ainda não está resolvido
 
+- **Sete reprovações de contraste WCAG AA**, todas do **mesmo** token canônico
+  `--org-verde-texto-5` (#5f7a62), em texto recuado: 3,85 e 4,01 contra um piso
+  de 4,5. O mínimo que passa preservando matiz e saturação é `#68866c` (4,52 e
+  4,70). **Não apliquei**: valor canônico de marca não se muda em silêncio.
+  Está em `docs/execution/PERGUNTAS.jsonl` como **Q-014**, com
+  `default_behavior: PAUSE`. Todo o resto do vazamento de contraste — de 21 para
+  7 — já foi corrigido por escopo local, sem tocar em nenhum valor de marca.
+
+- **Leitor de tela real: NÃO TESTADO.** Foram medidos landmarks, estrutura de
+  cabeçalhos, nomes acessíveis, foco visível, ordem de tabulação, alvo de toque
+  e contraste. Nada disso substitui NVDA ou VoiceOver com uma pessoa usando.
+  Onde eu não medi, está escrito que não medi.
+
 - **Primeira tela no celular.** Em 375 a dobra entrega estado, pulso e as
-  relações ativas — não entrega onde está a pressão nem o que está ausente. Parte
-  do que come a dobra é chrome de **fixture** (a faixa de demonstração e as
+  relações ativas — não entrega onde está a pressão nem o que está ausente.
+  Parte do que come a dobra é chrome de **fixture** (faixa de demonstração e as
   quatro cenas) que **não existe numa build real**; a outra parte é o shell.
-  Medido, não estimado, e não vou chamar isso de aprovado.
+
 - **A lateral do shell** continua dominando o desktop. Ela é Nível 4 e está fora
   do que esta missão foi autorizada a redesenhar.
+
+- **A marca "DeliveryOS" trunca em 320px** (81px de texto em 48px de espaço,
+  com reticências). É nome de marca, não informação operacional, e a faixa
+  acima diz "DELIVERYOS PRODUCT SYSTEM" inteiro. Medido: nenhum texto do
+  organismo vaza ou é recortado em 320, 375 ou 414.
+
+- **Cabeçalhos**: o `h1` agora existe e é o estado da operação. Os `h2` dos
+  grupos da navegação vêm **antes** dele no DOM — artefato de ordenação do
+  shell, dentro de um landmark `<nav>`. Não é falha de WCAG, mas não é o ideal.
+
 - **Repetição de frase.** A mesma sentença aparece na massa e na lista completa
-  de sinais atrás da dobra. Isso é o "recuar nunca é sumir" funcionando, mas vale
-  sua opinião se incomoda.
+  de sinais atrás da dobra. É o "recuar nunca é sumir" funcionando, mas vale sua
+  opinião se incomoda.
+
+## O que passou a ser testado contra si mesmo
+
+Onze mutações semânticas e temporais, cinco perceptivas medidas em geometria
+real, e as nove do Lab que **durante meses nunca chegaram a ser aplicadas**.
+Cada uma prova que foi aplicada (hash antes → depois, conferido no disco),
+que alguma guarda a acusou, e que o arquivo voltou byte a byte.
+
+Três instrumentos meus estavam errados e foram corrigidos — dois deles
+**escondiam** defeito, e um **inventava**. Está tudo escrito nos commits.
