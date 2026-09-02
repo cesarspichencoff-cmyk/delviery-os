@@ -62,11 +62,13 @@ Zero dependências npm externas — só stdlib do Node (`fs`, `path`, `crypto`, 
 Nenhum binding nativo carregado em import-time (llama.cpp é `spawn`ado como subprocesso em
 runtime, não linkado).
 
-## Tarefa futura registrada — fora do escopo do C1
+## Tarefa futura registrada — fora do escopo do C1 e do C2
 
 Reduzir a superfície reescrevendo os 6 root-requires para subpath, para que o barrel completo deixe
 de ser obrigatório. Isso é **edição semântica**, não porte mecânico — não faz parte do C1 e não foi
-feita nesta sessão.
+feita nesta sessão. Também não é C2: C2 é reaplicar semanticamente o hardening B2 e recertificar,
+não reduzir superfície de dependência. Fica registrada aqui como tarefa futura solta, sem etapa
+numerada atribuída.
 
 ## Decisão sobre `public-menu-evidence.v1.json`
 

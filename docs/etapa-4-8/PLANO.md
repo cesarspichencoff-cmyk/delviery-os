@@ -45,11 +45,15 @@ diferentes inteligências. Política de acesso desse repositório é `Q-012`, ai
   `C1-PORT.md`) mais as dependências reais de `apps/deliveryos-ai-node/**`, sem integração, sem
   wiring em navegação/Home, sem merge cego. Código chega ao repositório mas não é ativado.
   Concluído nesta sessão — commits detalhados em `C1-PORT.md`.
-- **C2 — (não iniciado)**: qualquer trabalho de redução de superfície (reescrever os root-requires
-  de `apps/deliveryos-ai-node` para subpath) e qualquer decisão de integração real do CRM ao
-  produto pertence aqui, não ao C1. C2 esbarra de frente em `Q-004` em aberto — ver
-  `BLOQUEIO-Q-004.md`.
-- **C3 — (não iniciado, não definido nesta sessão)**: fora do escopo desta etapa.
+- **C2 — (não iniciado)**: reaplicar semanticamente o hardening B2, sem merge cego, e recertificar.
+  Não é porte mecânico como o C1 — é trabalho de edição semântica sobre o que o C1 trouxe. Qualquer
+  decisão de integração real do CRM ao produto (navegação, Home, wiring) pertence aqui, não ao C1,
+  e esbarra de frente em `Q-004` em aberto — ver `BLOQUEIO-Q-004.md`.
+- **C3 — (não iniciado)**: implementar a Intelligence Spine, sem criar novo Copiloto nem
+  supermotor.
+
+A redução de superfície de `apps/deliveryos-ai-node` (reescrever os 6 root-requires para subpath)
+**não é C2** — é tarefa futura fora do escopo de ambos, registrada em `C1-PORT.md`.
 
 ## 4. Preservation Set — nada disso pode ser alterado ou respondido implicitamente pelo código
 

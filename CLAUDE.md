@@ -4,7 +4,7 @@ lifecycle:
   status: ACTIVE
   authority_scope: session_routing
   superseded_by: null
-  atualizado_em: "2026-08-07"
+  atualizado_em: "2026-09-02"
   state_basis: 953a3fb
 ---
 
@@ -123,9 +123,12 @@ código: Copiloto M1 · Entregas (`src/entregas/`) · Home M1 · Event Log appen
 FACT ≠ INFERENCE ≠ SIMULATION ≠ UNKNOWN · autoridade humana final · `Q-001`, `Q-002`, `Q-003`,
 `Q-004`, `Q-005`, `Q-007`, `Q-008`, `Q-009` (todas abertas, `default_behavior: PAUSE`).
 
-**Estágio atual**: C0 concluído (baseline verde, ver `docs/etapa-4-8/C0-BASELINE.md`). C1 concluído em 5 commits
-isolados — `apps/deliveryos-ai-node/`, `src/conversation-crm/` + `tools/conversation-crm/`,
+**Estágio atual**: C0 concluído (baseline verde, ver `docs/etapa-4-8/C0-BASELINE.md`). C1 concluído
+em commits isolados — `apps/deliveryos-ai-node/`, `src/conversation-crm/` + `tools/conversation-crm/`,
 `tests/conversation-crm/`, `config/conversation-crm/`, documentação. Código portado, não
-integrado — nada em navegação/Home/runtime real referencia `conversation-crm`. C2 (redução de
-superfície de `apps/deliveryos-ai-node`, qualquer integração real) esbarra em `Q-004` aberta —
-ver `docs/etapa-4-8/BLOQUEIO-Q-004.md`. C3 não definido.
+integrado — nada em navegação/Home/runtime real referencia `conversation-crm`. **C2 = reaplicar
+semanticamente o hardening B2, sem merge cego, e recertificar** (não é a redução de superfície de
+`apps/deliveryos-ai-node` — isso é tarefa futura solta, fora de C1 e C2, ver
+`docs/etapa-4-8/C1-PORT.md`). Qualquer integração real do CRM ao produto esbarra em `Q-004`
+aberta — ver `docs/etapa-4-8/BLOQUEIO-Q-004.md`. **C3 = implementar a Intelligence Spine, sem
+criar novo Copiloto nem supermotor** (não iniciado).
