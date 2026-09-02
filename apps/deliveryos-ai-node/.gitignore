@@ -1,0 +1,9 @@
+/models/
+/state/
+/logs/
+/updates/
+/runtime/node/
+/runtime/llama.cpp/
+/config/node-config.json
+*.gguf
+*.partial
