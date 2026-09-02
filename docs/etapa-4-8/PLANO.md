@@ -45,10 +45,15 @@ diferentes inteligências. Política de acesso desse repositório é `Q-012`, ai
   `C1-PORT.md`) mais as dependências reais de `apps/deliveryos-ai-node/**`, sem integração, sem
   wiring em navegação/Home, sem merge cego. Código chega ao repositório mas não é ativado.
   Concluído nesta sessão — commits detalhados em `C1-PORT.md`.
-- **C2 — (não iniciado)**: reaplicar semanticamente o hardening B2, sem merge cego, e recertificar.
-  Não é porte mecânico como o C1 — é trabalho de edição semântica sobre o que o C1 trouxe. Qualquer
-  decisão de integração real do CRM ao produto (navegação, Home, wiring) pertence aqui, não ao C1,
-  e esbarra de frente em `Q-004` em aberto — ver `BLOQUEIO-Q-004.md`.
+- **C2 — concluído**: reaplicar semanticamente o hardening B2, sem merge cego, e recertificar.
+  Resultado registrado em `C2-HARDENING.md`. A reaplicação se mostrou **desnecessária**: os 301
+  arquivos portados pelo C1 são byte a byte idênticos à origem `3549327`, logo os 14 commits de
+  hardening já estavam aplicados. O FAIL real estava na fronteira do porte, não na semântica — o C1
+  deixou de fora quatro grupos de arquivos dos quais o código depende, causando 115 falhas
+  inexistentes na origem. Fechados byte a byte, sem edição de código: targeted B2 84/84 verde, suíte
+  isolada de 119 para 6 falhas, produto sem regressão. Nenhuma integração real do CRM foi feita — ela
+  esbarra em `Q-004` em aberto (ver `BLOQUEIO-Q-004.md`), e os 3 testes que exigiriam tocar
+  `package.json`/`.gitignore` ficaram parados por decisão explícita do César.
 - **C3 — (não iniciado)**: implementar a Intelligence Spine, sem criar novo Copiloto nem
   supermotor.
 

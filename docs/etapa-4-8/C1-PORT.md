@@ -54,13 +54,26 @@ direta de 17 arquivos já presentes em `src/conversation-crm`/`tools/conversatio
   `evals/*`).
 
 Consequência: não foi possível isolar uma fatia mínima. Os 6 consumidores de root-require obrigaram
-o porte de 46 dos 58 arquivos do pacote de origem. Excluído (nada os requer):
+o porte de 46 dos 58 arquivos do pacote de origem. Excluído inicialmente:
 `installer/*.ps1`, `scripts/*.ps1`, `bin/deliveryos-ai-node.js`, `manifests/*`,
 `config/node-config.example.json`.
+
+> **Correção aplicada pelo C2 (2026-09-02).** A justificativa original desta exclusão era
+> "nada os requer", e **isso estava factualmente errado**. A verificação do C1 inspecionou os
+> `require()` do código de produção e não os acessos de sistema de arquivos feitos pelos testes:
+> `tests/conversation-crm/ai-node-portable.test.js` faz `scandir` em `installer/` e lê
+> `manifests/model-manifest.json` e `installer/Install-DeliveryOS-AINode.ps1` diretamente. Os 12
+> arquivos foram portados pelo C2 no commit "porta os 12 arquivos de apps/deliveryos-ai-node
+> excluidos pelo C1". Ver `C2-HARDENING.md` §4, grupo C.
 
 Zero dependências npm externas — só stdlib do Node (`fs`, `path`, `crypto`, `child_process`).
 Nenhum binding nativo carregado em import-time (llama.cpp é `spawn`ado como subprocesso em
 runtime, não linkado).
+
+> **Precisão adicionada pelo C2.** A afirmação vale para o código de produção portado. A suíte de
+> testes não: `tests/conversation-crm/customer-intelligence.test.js` requer `xlsx`. Não gera dívida
+> — `xlsx@^0.18.5` já está em `devDependencies` desta branch —, mas a redação original dava a
+> entender que nada em `conversation-crm` dependia de pacote externo.
 
 ## Tarefa futura registrada — fora do escopo do C1 e do C2
 
@@ -69,6 +82,14 @@ de ser obrigatório. Isso é **edição semântica**, não porte mecânico — n
 feita nesta sessão. Também não é C2: C2 é reaplicar semanticamente o hardening B2 e recertificar,
 não reduzir superfície de dependência. Fica registrada aqui como tarefa futura solta, sem etapa
 numerada atribuída.
+
+## Fronteira do porte — quatro grupos que ficaram de fora (fechados pelo C2)
+
+Além dos 12 arquivos acima, o C1 não trouxe três diretórios dos quais o código portado depende em
+runtime de teste: `evals/` (18), `scripts/verifiers/chatbot/` (11) e `docs/execution/chatbot/` (88).
+A consequência foi medida pelo C2: **115 falhas** na suíte isolada que não existem na árvore de
+origem, todas por arquivo ausente, nenhuma por defeito de lógica. Fechadas em quatro commits do C2,
+byte a byte, sem editar código. Detalhe e prova em `C2-HARDENING.md`.
 
 ## Decisão sobre `public-menu-evidence.v1.json`
 

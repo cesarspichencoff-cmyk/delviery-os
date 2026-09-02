@@ -123,12 +123,17 @@ código: Copiloto M1 · Entregas (`src/entregas/`) · Home M1 · Event Log appen
 FACT ≠ INFERENCE ≠ SIMULATION ≠ UNKNOWN · autoridade humana final · `Q-001`, `Q-002`, `Q-003`,
 `Q-004`, `Q-005`, `Q-007`, `Q-008`, `Q-009` (todas abertas, `default_behavior: PAUSE`).
 
-**Estágio atual**: C0 concluído (baseline verde, ver `docs/etapa-4-8/C0-BASELINE.md`). C1 concluído
-em commits isolados — `apps/deliveryos-ai-node/`, `src/conversation-crm/` + `tools/conversation-crm/`,
-`tests/conversation-crm/`, `config/conversation-crm/`, documentação. Código portado, não
-integrado — nada em navegação/Home/runtime real referencia `conversation-crm`. **C2 = reaplicar
-semanticamente o hardening B2, sem merge cego, e recertificar** (não é a redução de superfície de
-`apps/deliveryos-ai-node` — isso é tarefa futura solta, fora de C1 e C2, ver
-`docs/etapa-4-8/C1-PORT.md`). Qualquer integração real do CRM ao produto esbarra em `Q-004`
-aberta — ver `docs/etapa-4-8/BLOQUEIO-Q-004.md`. **C3 = implementar a Intelligence Spine, sem
+**Estágio atual**: C0 concluído (`docs/etapa-4-8/C0-BASELINE.md`). C1 concluído
+(`docs/etapa-4-8/C1-PORT.md`) — código portado, não integrado; nada em navegação/Home/runtime real
+referencia `conversation-crm`. **C2 concluído** (`docs/etapa-4-8/C2-HARDENING.md`): provado byte a
+byte que os 14 commits do hardening B2 já estavam aplicados pelo C1 — reaplicá-los seria no-op ou
+conflito. O FAIL real era outro: o C1 deixou de fora quatro grupos de arquivos dos quais o código
+portado depende (`evals/`, `scripts/verifiers/chatbot/`, 12 de `apps/deliveryos-ai-node/`,
+`docs/execution/chatbot/`), o que produzia 115 falhas inexistentes na origem. Fechados em quatro
+commits byte-exatos, **sem editar uma linha de código**: recertificação targeted B2 **84/84 verde**,
+suíte isolada de 119 para 6 falhas, produto sem regressão. Sobram 3 falhas idênticas às da origem
+(2 presas ao Windows, 1 sem PowerShell) e 3 do grupo E — manifesto npm e arquivo de ignore do
+Git, ambos compartilhados do produto —, **paradas por decisão do César para não responder `Q-004`
+por conveniência técnica**. A redução de superfície
+de `apps/deliveryos-ai-node` continua fora de C1/C2/C3. **C3 = implementar a Intelligence Spine, sem
 criar novo Copiloto nem supermotor** (não iniciado).
