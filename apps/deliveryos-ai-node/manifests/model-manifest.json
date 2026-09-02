@@ -1,0 +1,62 @@
+{
+  "schema_version": "deliveryos-ai-node-artifacts-v1",
+  "generated_at": "2026-07-28",
+  "artifacts": [
+    {
+      "id": "node-portable-24.18.0-win-x64",
+      "kind": "node_runtime",
+      "version": "24.18.0",
+      "filename": "node-v24.18.0-win-x64.zip",
+      "url": "https://nodejs.org/dist/v24.18.0/node-v24.18.0-win-x64.zip",
+      "size_bytes": 37176245,
+      "sha256": "0ae68406b42d7725661da979b1403ec9926da205c6770827f33aac9d8f26e821",
+      "license": "MIT"
+    },
+    {
+      "id": "llama-cpp-b10172-win-cpu-x64",
+      "kind": "inference_runtime",
+      "version": "b10172",
+      "filename": "llama-b10172-bin-win-cpu-x64.zip",
+      "url": "https://github.com/ggml-org/llama.cpp/releases/download/b10172/llama-b10172-bin-win-cpu-x64.zip",
+      "size_bytes": 18338109,
+      "sha256": "9a2c7b98925cc4cea59d9e6de1e4ea3cbb07c26245410d5da653bceef9ee6e62",
+      "license": "MIT"
+    },
+    {
+      "id": "qwen3-4b-q4km",
+      "kind": "model",
+      "tier": "primary",
+      "version": "bc640142c66e1fdd12af0bd68f40445458f3869b",
+      "filename": "Qwen3-4B-Q4_K_M.gguf",
+      "url": "https://huggingface.co/Qwen/Qwen3-4B-GGUF/resolve/bc640142c66e1fdd12af0bd68f40445458f3869b/Qwen3-4B-Q4_K_M.gguf",
+      "size_bytes": 2497280256,
+      "sha256": "7485fe6f11af29433bc51cab58009521f205840f5b4ae3a32fa7f92e8534fdf5",
+      "license": "Apache-2.0",
+      "minimum_class": "intermediario"
+    },
+    {
+      "id": "qwen3-1.7b-q8",
+      "kind": "model",
+      "tier": "fallback",
+      "version": "90862c4b9d2787eaed51d12237eafdfe7c5f6077",
+      "filename": "Qwen3-1.7B-Q8_0.gguf",
+      "url": "https://huggingface.co/Qwen/Qwen3-1.7B-GGUF/resolve/90862c4b9d2787eaed51d12237eafdfe7c5f6077/Qwen3-1.7B-Q8_0.gguf",
+      "size_bytes": 1834426016,
+      "sha256": "061b54daade076b5d3362dac252678d17da8c68f07560be70818cace6590cb1a",
+      "license": "Apache-2.0",
+      "minimum_class": "basico"
+    },
+    {
+      "id": "gpt-oss-20b-mxfp4",
+      "kind": "model",
+      "tier": "advanced_candidate",
+      "version": "ef9b12f2ff56c69cf32153a02784e7a3c88bf524",
+      "filename": "gpt-oss-20b-MXFP4.gguf",
+      "url": "https://huggingface.co/ggml-org/gpt-oss-20b-GGUF/resolve/ef9b12f2ff56c69cf32153a02784e7a3c88bf524/gpt-oss-20b-MXFP4.gguf",
+      "size_bytes": 12109566624,
+      "sha256": "27cd6c432c7672cb812a92f611cf3ba7bbc35928262bb1e1253ff4ee6ae35901",
+      "license": "Apache-2.0 plus OpenAI usage policy",
+      "minimum_class": "avancado"
+    }
+  ]
+}

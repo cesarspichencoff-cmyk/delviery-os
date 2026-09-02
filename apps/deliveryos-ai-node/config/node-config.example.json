@@ -1,0 +1,17 @@
+{
+  "schema_version": "deliveryos-ai-node-config-v1",
+  "bridge_url": "https://deliveryos.example.invalid",
+  "bridge_host": "deliveryos.example.invalid",
+  "model_version": "qwen3-4b-q4km",
+  "model_file": "Qwen3-4B-Q4_K_M.gguf",
+  "provider_version": "llama.cpp-b10172",
+  "context_size": 4096,
+  "gpu_layers": 0,
+  "local_host": "127.0.0.1",
+  "local_port": 4191,
+  "poll_min_ms": 750,
+  "poll_max_ms": 15000,
+  "heartbeat_ms": 15000,
+  "request_timeout_ms": 20000,
+  "real_drivers_enabled": false
+}
