@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>TATÁ · Atendimento</title>
+  <link rel="stylesheet" href="/customer/styles.css">
+</head>
+<body>
+  <div class="page-glow page-glow-one" aria-hidden="true"></div>
+  <div class="page-glow page-glow-two" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <a class="brand" href="/customer" aria-label="TATÁ — início do atendimento">
+      <span class="brand-mark">T</span>
+      <span>TATÁ</span>
+    </a>
+    <div class="topbar-actions">
+      <span class="safe-mode"><i aria-hidden="true"></i> Local e seguro</span>
+      <button id="new-conversation" class="quiet-button" type="button">Nova conversa</button>
+    </div>
+  </header>
+
+  <main class="page-shell">
+    <section class="chat-card" aria-labelledby="chat-title">
+      <header class="chat-heading">
+        <p class="eyebrow">ATENDIMENTO TATÁ</p>
+        <h1 id="chat-title">Como posso ajudar?</h1>
+        <p>Converse normalmente. Eu vou usar o que você disser para seguir com clareza.</p>
+      </header>
+
+      <div id="chat-thread" class="chat-thread" aria-live="polite" aria-label="Conversa"></div>
+
+      <form id="chat-form" class="composer">
+        <label class="sr-only" for="chat-message">Sua mensagem</label>
+        <textarea id="chat-message" name="message" rows="2" maxlength="2000" placeholder="Escreva sua mensagem…" autocomplete="off" required></textarea>
+        <button id="send-message" class="send-button" type="submit">
+          <span>Enviar</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M5 12h13M13 6l6 6-6 6"></path>
+          </svg>
+        </button>
+      </form>
+
+      <div class="conversation-footer">
+        <p id="chat-status" role="status">Pronto para conversar.</p>
+        <p>Ambiente local. Evite compartilhar dados pessoais.</p>
+      </div>
+    </section>
+  </main>
+
+  <noscript>Ative o JavaScript para usar o atendimento local.</noscript>
+  <script src="/customer/app.js"></script>
+</body>
+</html>
+

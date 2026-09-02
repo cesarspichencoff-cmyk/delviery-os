@@ -1,0 +1,1491 @@
+{
+  "schema_version": "tata-intent-entity-catalog-v1.1-native-deliveryos",
+  "generated_at": "2026-07-25",
+  "intent_families": [
+    "information",
+    "reservation",
+    "waitlist",
+    "event",
+    "order",
+    "occurrence",
+    "food_safety",
+    "feedback",
+    "privacy",
+    "risk",
+    "handoff"
+  ],
+  "intents": [
+    {
+      "id": "information.address",
+      "family": "informação",
+      "default_severity": "low",
+      "minimum_entities": [
+        "unit"
+      ],
+      "record_required": false,
+      "classification": "INFERÊNCIA",
+      "capability_candidates": [
+        "information.unit.read"
+      ],
+      "legacy_blocks": [
+        "I01",
+        "I02"
+      ],
+      "native_route": "conversation_engine_to_deliveryos_capability_router"
+    },
+    {
+      "id": "information.hours",
+      "family": "informação",
+      "default_severity": "low",
+      "minimum_entities": [
+        "unit",
+        "date"
+      ],
+      "record_required": false,
+      "classification": "INFERÊNCIA",
+      "capability_candidates": [
+        "information.unit.read"
+      ],
+      "legacy_blocks": [
+        "I01",
+        "I02"
+      ],
+      "native_route": "conversation_engine_to_deliveryos_capability_router"
+    },
+    {
+      "id": "information.menu",
+      "family": "informação",
+      "default_severity": "low",
+      "minimum_entities": [
+        "unit"
+      ],
+      "record_required": false,
+      "classification": "INFERÊNCIA",
+      "capability_candidates": [
+        "menu.read"
+      ],
+      "legacy_blocks": [
+        "I01",
+        "I02"
+      ],
+      "native_route": "conversation_engine_to_deliveryos_capability_router"
+    },
+    {
+      "id": "information.payment",
+      "family": "informação",
+      "default_severity": "low",
+      "minimum_entities": [
+        "unit"
+      ],
+      "record_required": false,
+      "classification": "INFERÊNCIA",
+      "capability_candidates": [
+        "information.unit.read"
+      ],
+      "legacy_blocks": [
+        "I01",
+        "I02"
+      ],
+      "native_route": "conversation_engine_to_deliveryos_capability_router"
+    },
+    {
+      "id": "information.corkage",
+      "family": "informação",
+      "default_severity": "low",
+      "minimum_entities": [
+        "unit"
+      ],
+      "record_required": false,
+      "classification": "INFERÊNCIA",
+      "capability_candidates": [
+        "information.unit.read"
+      ],
+      "legacy_blocks": [
+        "I01",
+        "I02"
+      ],
+      "native_route": "conversation_engine_to_deliveryos_capability_router"
+    },
+    {
+      "id": "information.allergen",
+      "family": "segurança_alimentar",
+      "default_severity": "serious",
+      "minimum_entities": [
+        "unit",
+        "item_name",
+        "allergen_signal"
+      ],
+      "record_required": true,
+      "classification": "INFERÊNCIA",
+      "capability_candidates": [
+        "menu.read"
+      ],
+      "legacy_blocks": [
+        "I01",
+        "I02"
+      ],
+      "native_route": "conversation_engine_to_deliveryos_capability_router"
+    },
+    {
+      "id": "reservation.create",
+      "family": "reserva",
+      "default_severity": "operational",
+      "minimum_entities": [
+        "unit",
+        "date",
+        "time",
+        "party_size",
+        "customer_name"
+      ],
+      "record_required": true,
+      "classification": "INFERÊNCIA",
+      "capability_candidates": [
+        "reservation.create"
+      ],
+      "legacy_blocks": [
+        "R01",
+        "R02",
+        "R03",
+        "R04",
+        "R05"
+      ],
+      "native_route": "conversation_engine_to_deliveryos_capability_router"
+    },
+    {
+      "id": "reservation.update",
+      "family": "reserva",
+      "default_severity": "operational",
+      "minimum_entities": [
+        "reservation_reference",
+        "requested_change"
+      ],
+      "record_required": true,
+      "classification": "INFERÊNCIA",
+      "capability_candidates": [
+        "reservation.update"
+      ],
+      "legacy_blocks": [
+        "R01",
+        "R02",
+        "R03",
+        "R04",
+        "R05"
+      ],
+      "native_route": "conversation_engine_to_deliveryos_capability_router"
+    },
+    {
+      "id": "waitlist.create",
+      "family": "fila",
+      "default_severity": "operational",
+      "minimum_entities": [
+        "unit",
+        "party_size",
+        "customer_name",
+        "arrival_estimate"
+      ],
+      "record_required": true,
+      "classification": "INFERÊNCIA",
+      "capability_candidates": [
+        "waitlist.create"
+      ],
+      "legacy_blocks": [
+        "R01",
+        "R02",
+        "R03",
+        "R04",
+        "R05"
+      ],
+      "native_route": "conversation_engine_to_deliveryos_capability_router"
+    },
+    {
+      "id": "waitlist.read",
+      "family": "fila",
+      "default_severity": "operational",
+      "minimum_entities": [
+        "waitlist_reference"
+      ],
+      "record_required": false,
+      "classification": "INFERÊNCIA",
+      "capability_candidates": [
+        "waitlist.read"
+      ],
+      "legacy_blocks": [
+        "R01",
+        "R02",
+        "R03",
+        "R04",
+        "R05"
+      ],
+      "native_route": "conversation_engine_to_deliveryos_capability_router"
+    },
+    {
+      "id": "reservation.large_group",
+      "family": "reserva",
+      "default_severity": "operational",
+      "minimum_entities": [
+        "unit",
+        "party_size",
+        "customer_name",
+        "arrival_estimate"
+      ],
+      "record_required": true,
+      "classification": "INFERÊNCIA",
+      "capability_candidates": [
+        "waitlist.create"
+      ],
+      "legacy_blocks": [
+        "R01",
+        "R02",
+        "R03",
+        "R04",
+        "R05"
+      ],
+      "native_route": "conversation_engine_to_deliveryos_capability_router"
+    },
+    {
+      "id": "order.status",
+      "family": "delivery",
+      "default_severity": "operational",
+      "minimum_entities": [
+        "order_reference",
+        "order_channel"
+      ],
+      "record_required": false,
+      "classification": "INFERÊNCIA",
+      "capability_candidates": [
+        "notification.send",
+        "order.status.read"
+      ],
+      "legacy_blocks": [
+        "D01",
+        "D02",
+        "D03",
+        "D04",
+        "D05"
+      ],
+      "native_route": "conversation_engine_to_deliveryos_capability_router"
+    },
+    {
+      "id": "order.modify",
+      "family": "delivery",
+      "default_severity": "sensitive",
+      "minimum_entities": [
+        "order_reference",
+        "requested_change"
+      ],
+      "record_required": true,
+      "classification": "INFERÊNCIA",
+      "capability_candidates": [
+        "order.modify"
+      ],
+      "legacy_blocks": [
+        "D01",
+        "D02",
+        "D03",
+        "D04",
+        "D05"
+      ],
+      "native_route": "conversation_engine_to_deliveryos_capability_router"
+    },
+    {
+      "id": "order.cancel",
+      "family": "delivery",
+      "default_severity": "sensitive",
+      "minimum_entities": [
+        "order_reference",
+        "reason_code"
+      ],
+      "record_required": true,
+      "classification": "INFERÊNCIA",
+      "capability_candidates": [
+        "order.cancel.request"
+      ],
+      "legacy_blocks": [
+        "D01",
+        "D02",
+        "D03",
+        "D04",
+        "D05"
+      ],
+      "native_route": "conversation_engine_to_deliveryos_capability_router"
+    },
+    {
+      "id": "occurrence.missing_item",
+      "family": "ocorrência",
+      "default_severity": "sensitive",
+      "minimum_entities": [
+        "order_reference",
+        "order_channel",
+        "item_name"
+      ],
+      "record_required": true,
+      "classification": "INFERÊNCIA",
+      "capability_candidates": [
+        "occurrence.create"
+      ],
+      "legacy_blocks": [
+        "O00",
+        "O01",
+        "O02",
+        "O03",
+        "O04",
+        "O05",
+        "O06",
+        "O07",
+        "O08"
+      ],
+      "native_route": "conversation_engine_to_deliveryos_capability_router"
+    },
+    {
+      "id": "occurrence.wrong_item",
+      "family": "ocorrência",
+      "default_severity": "sensitive",
+      "minimum_entities": [
+        "order_reference",
+        "order_channel",
+        "item_name"
+      ],
+      "record_required": true,
+      "classification": "INFERÊNCIA",
+      "capability_candidates": [
+        "occurrence.create"
+      ],
+      "legacy_blocks": [
+        "O00",
+        "O01",
+        "O02",
+        "O03",
+        "O04",
+        "O05",
+        "O06",
+        "O07",
+        "O08"
+      ],
+      "native_route": "conversation_engine_to_deliveryos_capability_router"
+    },
+    {
+      "id": "occurrence.wrong_quantity",
+      "family": "ocorrência",
+      "default_severity": "sensitive",
+      "minimum_entities": [
+        "order_reference",
+        "order_channel",
+        "item_name",
+        "expected_quantity",
+        "received_quantity"
+      ],
+      "record_required": true,
+      "classification": "INFERÊNCIA",
+      "capability_candidates": [
+        "occurrence.create"
+      ],
+      "legacy_blocks": [
+        "O00",
+        "O01",
+        "O02",
+        "O03",
+        "O04",
+        "O05",
+        "O06",
+        "O07",
+        "O08"
+      ],
+      "native_route": "conversation_engine_to_deliveryos_capability_router"
+    },
+    {
+      "id": "occurrence.personalization_ignored",
+      "family": "ocorrência",
+      "default_severity": "sensitive",
+      "minimum_entities": [
+        "order_reference",
+        "order_channel",
+        "personalization"
+      ],
+      "record_required": true,
+      "classification": "INFERÊNCIA",
+      "capability_candidates": [
+        "occurrence.create"
+      ],
+      "legacy_blocks": [
+        "O00",
+        "O01",
+        "O02",
+        "O03",
+        "O04",
+        "O05",
+        "O06",
+        "O07",
+        "O08"
+      ],
+      "native_route": "conversation_engine_to_deliveryos_capability_router"
+    },
+    {
+      "id": "occurrence.leak",
+      "family": "ocorrência",
+      "default_severity": "sensitive",
+      "minimum_entities": [
+        "order_reference",
+        "item_name"
+      ],
+      "record_required": true,
+      "classification": "INFERÊNCIA",
+      "capability_candidates": [
+        "occurrence.create"
+      ],
+      "legacy_blocks": [
+        "O00",
+        "O01",
+        "O02",
+        "O03",
+        "O04",
+        "O05",
+        "O06",
+        "O07",
+        "O08"
+      ],
+      "native_route": "conversation_engine_to_deliveryos_capability_router"
+    },
+    {
+      "id": "occurrence.packaging_damage",
+      "family": "ocorrência",
+      "default_severity": "sensitive",
+      "minimum_entities": [
+        "order_reference"
+      ],
+      "record_required": true,
+      "classification": "INFERÊNCIA",
+      "capability_candidates": [
+        "occurrence.create"
+      ],
+      "legacy_blocks": [
+        "O00",
+        "O01",
+        "O02",
+        "O03",
+        "O04",
+        "O05",
+        "O06",
+        "O07",
+        "O08"
+      ],
+      "native_route": "conversation_engine_to_deliveryos_capability_router"
+    },
+    {
+      "id": "occurrence.order_disrupted",
+      "family": "ocorrência",
+      "default_severity": "sensitive",
+      "minimum_entities": [
+        "order_reference"
+      ],
+      "record_required": true,
+      "classification": "INFERÊNCIA",
+      "capability_candidates": [
+        "occurrence.create"
+      ],
+      "legacy_blocks": [
+        "O00",
+        "O01",
+        "O02",
+        "O03",
+        "O04",
+        "O05",
+        "O06",
+        "O07",
+        "O08"
+      ],
+      "native_route": "conversation_engine_to_deliveryos_capability_router"
+    },
+    {
+      "id": "occurrence.temperature",
+      "family": "ocorrência",
+      "default_severity": "sensitive",
+      "minimum_entities": [
+        "order_reference",
+        "item_name"
+      ],
+      "record_required": true,
+      "classification": "INFERÊNCIA",
+      "capability_candidates": [
+        "occurrence.create"
+      ],
+      "legacy_blocks": [
+        "O00",
+        "O01",
+        "O02",
+        "O03",
+        "O04",
+        "O05",
+        "O06",
+        "O07",
+        "O08"
+      ],
+      "native_route": "conversation_engine_to_deliveryos_capability_router"
+    },
+    {
+      "id": "occurrence.preparation_delay",
+      "family": "ocorrência",
+      "default_severity": "operational",
+      "minimum_entities": [
+        "order_reference"
+      ],
+      "record_required": true,
+      "classification": "INFERÊNCIA",
+      "capability_candidates": [
+        "order.status.read"
+      ],
+      "legacy_blocks": [
+        "O00",
+        "O01",
+        "O02",
+        "O03",
+        "O04",
+        "O05",
+        "O06",
+        "O07",
+        "O08"
+      ],
+      "native_route": "conversation_engine_to_deliveryos_capability_router"
+    },
+    {
+      "id": "occurrence.collection_delay",
+      "family": "ocorrência",
+      "default_severity": "operational",
+      "minimum_entities": [
+        "order_reference"
+      ],
+      "record_required": true,
+      "classification": "INFERÊNCIA",
+      "capability_candidates": [
+        "delivery.driver.read"
+      ],
+      "legacy_blocks": [
+        "O00",
+        "O01",
+        "O02",
+        "O03",
+        "O04",
+        "O05",
+        "O06",
+        "O07",
+        "O08"
+      ],
+      "native_route": "conversation_engine_to_deliveryos_capability_router"
+    },
+    {
+      "id": "occurrence.route_delay",
+      "family": "ocorrência",
+      "default_severity": "operational",
+      "minimum_entities": [
+        "order_reference"
+      ],
+      "record_required": true,
+      "classification": "INFERÊNCIA",
+      "capability_candidates": [
+        "delivery.eta.read"
+      ],
+      "legacy_blocks": [
+        "O00",
+        "O01",
+        "O02",
+        "O03",
+        "O04",
+        "O05",
+        "O06",
+        "O07",
+        "O08"
+      ],
+      "native_route": "conversation_engine_to_deliveryos_capability_router"
+    },
+    {
+      "id": "occurrence.driver",
+      "family": "ocorrência",
+      "default_severity": "sensitive",
+      "minimum_entities": [
+        "order_reference",
+        "occurrence_summary_code"
+      ],
+      "record_required": true,
+      "classification": "INFERÊNCIA",
+      "capability_candidates": [
+        "occurrence.create"
+      ],
+      "legacy_blocks": [
+        "O00",
+        "O01",
+        "O02",
+        "O03",
+        "O04",
+        "O05",
+        "O06",
+        "O07",
+        "O08"
+      ],
+      "native_route": "conversation_engine_to_deliveryos_capability_router"
+    },
+    {
+      "id": "occurrence.charge",
+      "family": "ocorrência",
+      "default_severity": "sensitive",
+      "minimum_entities": [
+        "order_reference",
+        "charge_issue_code"
+      ],
+      "record_required": true,
+      "classification": "INFERÊNCIA",
+      "capability_candidates": [
+        "human.queue.create",
+        "occurrence.create"
+      ],
+      "legacy_blocks": [
+        "O00",
+        "O01",
+        "O02",
+        "O03",
+        "O04",
+        "O05",
+        "O06",
+        "O07",
+        "O08"
+      ],
+      "native_route": "conversation_engine_to_deliveryos_capability_router"
+    },
+    {
+      "id": "occurrence.refund_request",
+      "family": "ocorrência",
+      "default_severity": "sensitive",
+      "minimum_entities": [
+        "order_reference",
+        "order_channel",
+        "occurrence_reference"
+      ],
+      "record_required": true,
+      "classification": "INFERÊNCIA",
+      "capability_candidates": [
+        "compensation.suggest"
+      ],
+      "legacy_blocks": [
+        "O00",
+        "O01",
+        "O02",
+        "O03",
+        "O04",
+        "O05",
+        "O06",
+        "O07",
+        "O08"
+      ],
+      "native_route": "conversation_engine_to_deliveryos_capability_router"
+    },
+    {
+      "id": "occurrence.coupon",
+      "family": "ocorrência",
+      "default_severity": "operational",
+      "minimum_entities": [
+        "order_reference",
+        "coupon_issue_code"
+      ],
+      "record_required": true,
+      "classification": "INFERÊNCIA",
+      "capability_candidates": [
+        "occurrence.create"
+      ],
+      "legacy_blocks": [
+        "O00",
+        "O01",
+        "O02",
+        "O03",
+        "O04",
+        "O05",
+        "O06",
+        "O07",
+        "O08"
+      ],
+      "native_route": "conversation_engine_to_deliveryos_capability_router"
+    },
+    {
+      "id": "occurrence.address",
+      "family": "ocorrência",
+      "default_severity": "sensitive",
+      "minimum_entities": [
+        "order_reference",
+        "address_issue_code"
+      ],
+      "record_required": true,
+      "classification": "INFERÊNCIA",
+      "capability_candidates": [
+        "order.modify"
+      ],
+      "legacy_blocks": [
+        "O00",
+        "O01",
+        "O02",
+        "O03",
+        "O04",
+        "O05",
+        "O06",
+        "O07",
+        "O08"
+      ],
+      "native_route": "conversation_engine_to_deliveryos_capability_router"
+    },
+    {
+      "id": "occurrence.quality",
+      "family": "qualidade",
+      "default_severity": "serious",
+      "minimum_entities": [
+        "order_reference",
+        "item_name",
+        "quality_signal"
+      ],
+      "record_required": true,
+      "classification": "INFERÊNCIA",
+      "capability_candidates": [
+        "health.incident.create"
+      ],
+      "legacy_blocks": [
+        "O00",
+        "O01",
+        "O02",
+        "O03",
+        "O04",
+        "O05",
+        "O06",
+        "O07",
+        "O08"
+      ],
+      "native_route": "conversation_engine_to_deliveryos_capability_router"
+    },
+    {
+      "id": "occurrence.appearance",
+      "family": "qualidade",
+      "default_severity": "sensitive",
+      "minimum_entities": [
+        "order_reference",
+        "item_name"
+      ],
+      "record_required": true,
+      "classification": "INFERÊNCIA",
+      "capability_candidates": [
+        "occurrence.create"
+      ],
+      "legacy_blocks": [
+        "O00",
+        "O01",
+        "O02",
+        "O03",
+        "O04",
+        "O05",
+        "O06",
+        "O07",
+        "O08"
+      ],
+      "native_route": "conversation_engine_to_deliveryos_capability_router"
+    },
+    {
+      "id": "occurrence.taste",
+      "family": "qualidade",
+      "default_severity": "serious",
+      "minimum_entities": [
+        "order_reference",
+        "item_name",
+        "quality_signal"
+      ],
+      "record_required": true,
+      "classification": "INFERÊNCIA",
+      "capability_candidates": [
+        "health.incident.create"
+      ],
+      "legacy_blocks": [
+        "O00",
+        "O01",
+        "O02",
+        "O03",
+        "O04",
+        "O05",
+        "O06",
+        "O07",
+        "O08"
+      ],
+      "native_route": "conversation_engine_to_deliveryos_capability_router"
+    },
+    {
+      "id": "occurrence.freshness",
+      "family": "qualidade",
+      "default_severity": "serious",
+      "minimum_entities": [
+        "order_reference",
+        "item_name",
+        "quality_signal"
+      ],
+      "record_required": true,
+      "classification": "INFERÊNCIA",
+      "capability_candidates": [
+        "health.incident.create"
+      ],
+      "legacy_blocks": [
+        "O00",
+        "O01",
+        "O02",
+        "O03",
+        "O04",
+        "O05",
+        "O06",
+        "O07",
+        "O08"
+      ],
+      "native_route": "conversation_engine_to_deliveryos_capability_router"
+    },
+    {
+      "id": "occurrence.allergen",
+      "family": "segurança_alimentar",
+      "default_severity": "serious",
+      "minimum_entities": [
+        "order_reference",
+        "item_name",
+        "allergen_signal"
+      ],
+      "record_required": true,
+      "classification": "INFERÊNCIA",
+      "capability_candidates": [
+        "health.incident.create"
+      ],
+      "legacy_blocks": [
+        "O00",
+        "O01",
+        "O02",
+        "O03",
+        "O04",
+        "O05",
+        "O06",
+        "O07",
+        "O08"
+      ],
+      "native_route": "conversation_engine_to_deliveryos_capability_router"
+    },
+    {
+      "id": "occurrence.foreign_body",
+      "family": "segurança_alimentar",
+      "default_severity": "serious",
+      "minimum_entities": [
+        "order_reference",
+        "item_name",
+        "evidence_available"
+      ],
+      "record_required": true,
+      "classification": "INFERÊNCIA",
+      "capability_candidates": [
+        "health.incident.create"
+      ],
+      "legacy_blocks": [
+        "O00",
+        "O01",
+        "O02",
+        "O03",
+        "O04",
+        "O05",
+        "O06",
+        "O07",
+        "O08"
+      ],
+      "native_route": "conversation_engine_to_deliveryos_capability_router"
+    },
+    {
+      "id": "occurrence.health_symptom",
+      "family": "segurança_alimentar",
+      "default_severity": "critical",
+      "minimum_entities": [
+        "order_reference",
+        "item_name",
+        "symptoms",
+        "onset",
+        "people_affected"
+      ],
+      "record_required": true,
+      "classification": "INFERÊNCIA",
+      "capability_candidates": [
+        "health.incident.create"
+      ],
+      "legacy_blocks": [
+        "O00",
+        "O01",
+        "O02",
+        "O03",
+        "O04",
+        "O05",
+        "O06",
+        "O07",
+        "O08"
+      ],
+      "native_route": "conversation_engine_to_deliveryos_capability_router"
+    },
+    {
+      "id": "occurrence.dining_room",
+      "family": "salão",
+      "default_severity": "sensitive",
+      "minimum_entities": [
+        "unit",
+        "date",
+        "occurrence_summary_code"
+      ],
+      "record_required": true,
+      "classification": "INFERÊNCIA",
+      "capability_candidates": [
+        "occurrence.create"
+      ],
+      "legacy_blocks": [
+        "O00",
+        "O01",
+        "O02",
+        "O03",
+        "O04",
+        "O05",
+        "O06",
+        "O07",
+        "O08"
+      ],
+      "native_route": "conversation_engine_to_deliveryos_capability_router"
+    },
+    {
+      "id": "occurrence.valet",
+      "family": "valet",
+      "default_severity": "serious",
+      "minimum_entities": [
+        "unit",
+        "date",
+        "occurrence_summary_code"
+      ],
+      "record_required": true,
+      "classification": "INFERÊNCIA",
+      "capability_candidates": [
+        "occurrence.create"
+      ],
+      "legacy_blocks": [
+        "O00",
+        "O01",
+        "O02",
+        "O03",
+        "O04",
+        "O05",
+        "O06",
+        "O07",
+        "O08"
+      ],
+      "native_route": "conversation_engine_to_deliveryos_capability_router"
+    },
+    {
+      "id": "occurrence.prior_promise",
+      "family": "promessa",
+      "default_severity": "serious",
+      "minimum_entities": [
+        "promise_reference",
+        "occurrence_reference"
+      ],
+      "record_required": true,
+      "classification": "INFERÊNCIA",
+      "capability_candidates": [
+        "promise.read"
+      ],
+      "legacy_blocks": [
+        "O00",
+        "O01",
+        "O02",
+        "O03",
+        "O04",
+        "O05",
+        "O06",
+        "O07",
+        "O08"
+      ],
+      "native_route": "conversation_engine_to_deliveryos_capability_router"
+    },
+    {
+      "id": "occurrence.alert_only",
+      "family": "alerta",
+      "default_severity": "low",
+      "minimum_entities": [
+        "occurrence_summary_code"
+      ],
+      "record_required": true,
+      "classification": "INFERÊNCIA",
+      "capability_candidates": [
+        "occurrence.create"
+      ],
+      "legacy_blocks": [
+        "O00",
+        "O01",
+        "O02",
+        "O03",
+        "O04",
+        "O05",
+        "O06",
+        "O07",
+        "O08"
+      ],
+      "native_route": "conversation_engine_to_deliveryos_capability_router"
+    },
+    {
+      "id": "feedback.praise",
+      "family": "feedback",
+      "default_severity": "low",
+      "minimum_entities": [
+        "feedback_topic"
+      ],
+      "record_required": false,
+      "classification": "INFERÊNCIA",
+      "capability_candidates": [
+        "occurrence.create"
+      ],
+      "legacy_blocks": [
+        "C01",
+        "C02",
+        "C03",
+        "H01",
+        "H02",
+        "H03"
+      ],
+      "native_route": "conversation_engine_to_deliveryos_capability_router"
+    },
+    {
+      "id": "feedback.suggestion",
+      "family": "feedback",
+      "default_severity": "low",
+      "minimum_entities": [
+        "feedback_topic"
+      ],
+      "record_required": true,
+      "classification": "INFERÊNCIA",
+      "capability_candidates": [
+        "occurrence.create"
+      ],
+      "legacy_blocks": [
+        "C01",
+        "C02",
+        "C03",
+        "H01",
+        "H02",
+        "H03"
+      ],
+      "native_route": "conversation_engine_to_deliveryos_capability_router"
+    },
+    {
+      "id": "privacy.opt_out",
+      "family": "privacidade",
+      "default_severity": "low",
+      "minimum_entities": [
+        "channel"
+      ],
+      "record_required": true,
+      "classification": "INFERÊNCIA",
+      "capability_candidates": [
+        "occurrence.update"
+      ],
+      "legacy_blocks": [
+        "C01",
+        "C02",
+        "C03",
+        "H01",
+        "H02",
+        "H03"
+      ],
+      "native_route": "conversation_engine_to_deliveryos_capability_router"
+    },
+    {
+      "id": "privacy.access_request",
+      "family": "privacidade",
+      "default_severity": "sensitive",
+      "minimum_entities": [
+        "request_scope"
+      ],
+      "record_required": true,
+      "classification": "INFERÊNCIA",
+      "capability_candidates": [
+        "human.queue.create"
+      ],
+      "legacy_blocks": [
+        "C01",
+        "C02",
+        "C03",
+        "H01",
+        "H02",
+        "H03"
+      ],
+      "native_route": "conversation_engine_to_deliveryos_capability_router"
+    },
+    {
+      "id": "privacy.correction_request",
+      "family": "privacidade",
+      "default_severity": "sensitive",
+      "minimum_entities": [
+        "request_scope"
+      ],
+      "record_required": true,
+      "classification": "INFERÊNCIA",
+      "capability_candidates": [
+        "human.queue.create"
+      ],
+      "legacy_blocks": [
+        "C01",
+        "C02",
+        "C03",
+        "H01",
+        "H02",
+        "H03"
+      ],
+      "native_route": "conversation_engine_to_deliveryos_capability_router"
+    },
+    {
+      "id": "abuse.review",
+      "family": "risco",
+      "default_severity": "serious",
+      "minimum_entities": [
+        "occurrence_reference",
+        "evidence_summary"
+      ],
+      "record_required": true,
+      "classification": "INFERÊNCIA",
+      "capability_candidates": [
+        "abuse.classify"
+      ],
+      "legacy_blocks": [
+        "O00",
+        "O01",
+        "O02",
+        "O03",
+        "O04",
+        "O05",
+        "O06",
+        "O07",
+        "O08"
+      ],
+      "native_route": "conversation_engine_to_deliveryos_capability_router"
+    },
+    {
+      "id": "public_exposure",
+      "family": "reputação",
+      "default_severity": "serious",
+      "minimum_entities": [
+        "channel",
+        "occurrence_reference"
+      ],
+      "record_required": true,
+      "classification": "INFERÊNCIA",
+      "capability_candidates": [
+        "occurrence.create"
+      ],
+      "legacy_blocks": [
+        "O00",
+        "O01",
+        "O02",
+        "O03",
+        "O04",
+        "O05",
+        "O06",
+        "O07",
+        "O08"
+      ],
+      "native_route": "conversation_engine_to_deliveryos_capability_router"
+    },
+    {
+      "id": "conversation.multiple_intents",
+      "family": "triagem",
+      "default_severity": "operational",
+      "minimum_entities": [
+        "primary_intent"
+      ],
+      "record_required": false,
+      "classification": "INFERÊNCIA",
+      "capability_candidates": [
+        "occurrence.create"
+      ],
+      "legacy_blocks": [
+        "B00",
+        "B01",
+        "B02",
+        "B03",
+        "B04"
+      ],
+      "native_route": "conversation_engine_to_deliveryos_capability_router"
+    },
+    {
+      "id": "conversation.ambiguous",
+      "family": "triagem",
+      "default_severity": "unknown",
+      "minimum_entities": [
+        "intent"
+      ],
+      "record_required": false,
+      "classification": "INFERÊNCIA",
+      "capability_candidates": [
+        "human.queue.create",
+        "occurrence.create"
+      ],
+      "legacy_blocks": [
+        "B00",
+        "B01",
+        "B02",
+        "B03",
+        "B04"
+      ],
+      "native_route": "conversation_engine_to_deliveryos_capability_router"
+    },
+    {
+      "id": "handoff.failure",
+      "family": "continuidade",
+      "default_severity": "serious",
+      "minimum_entities": [
+        "occurrence_reference"
+      ],
+      "record_required": true,
+      "classification": "INFERÊNCIA",
+      "capability_candidates": [
+        "customer.history.read",
+        "human.queue.create"
+      ],
+      "legacy_blocks": [
+        "C01",
+        "C02",
+        "C03",
+        "H01",
+        "H02",
+        "H03"
+      ],
+      "native_route": "conversation_engine_to_deliveryos_capability_router"
+    },
+    {
+      "id": "event.oke_pickup",
+      "aliases": [
+        "evento_oke_retirada"
+      ],
+      "family": "evento_retirada",
+      "default_severity": "operational",
+      "minimum_entities": [
+        "unit",
+        "party_size",
+        "pickup_time",
+        "requested_items"
+      ],
+      "record_required": true,
+      "classification": "CANÔNICO_INTERNO",
+      "capability_candidates": [
+        "human.queue.create"
+      ],
+      "legacy_blocks": [
+        "C01",
+        "H01"
+      ],
+      "native_route": "conversation_engine_to_deliveryos_capability_router"
+    }
+  ],
+  "entities": [
+    {
+      "id": "unit",
+      "type": "enum",
+      "privacy": "operational",
+      "examples": [
+        "UNIDADE_EXEMPLO_A"
+      ]
+    },
+    {
+      "id": "customer_name",
+      "type": "text",
+      "privacy": "personal",
+      "storage": "restricted_runtime_only"
+    },
+    {
+      "id": "party_size",
+      "type": "integer",
+      "privacy": "operational",
+      "constraints": {
+        "min": 1
+      }
+    },
+    {
+      "id": "arrival_estimate",
+      "type": "time_window",
+      "privacy": "operational"
+    },
+    {
+      "id": "pickup_time",
+      "type": "time_window",
+      "privacy": "operational"
+    },
+    {
+      "id": "requested_items",
+      "type": "array",
+      "privacy": "operational"
+    },
+    {
+      "id": "order_reference",
+      "type": "token",
+      "privacy": "pseudonymous",
+      "rule": "Nunca exibir número completo real em log ou fixture."
+    },
+    {
+      "id": "order_channel",
+      "type": "enum",
+      "values": [
+        "ifood",
+        "delivery_own",
+        "pickup",
+        "dining_room",
+        "unknown"
+      ]
+    },
+    {
+      "id": "item_name",
+      "type": "text",
+      "privacy": "operational",
+      "rule": "Normalizar contra cardápio confirmado; texto livre fica restrito."
+    },
+    {
+      "id": "symptoms",
+      "type": "restricted_array",
+      "privacy": "sensitive_health",
+      "storage": "need_to_know"
+    },
+    {
+      "id": "onset",
+      "type": "restricted_time_window",
+      "privacy": "sensitive_health"
+    },
+    {
+      "id": "people_affected",
+      "type": "integer",
+      "privacy": "sensitive_health"
+    },
+    {
+      "id": "evidence_available",
+      "type": "enum",
+      "values": [
+        "yes",
+        "no",
+        "unknown"
+      ]
+    },
+    {
+      "id": "message_original",
+      "type": "text",
+      "privacy": "personal_possible",
+      "storage": "handoff_restricted_only",
+      "rule": "Não copiar para analytics ou fixtures."
+    },
+    {
+      "id": "photo_reference",
+      "type": "opaque_reference",
+      "privacy": "personal_possible",
+      "storage": "restricted_runtime_only"
+    },
+    {
+      "id": "capability_state",
+      "type": "enum",
+      "values": [
+        "available",
+        "unavailable",
+        "degraded",
+        "unknown",
+        "requires_human",
+        "prohibited"
+      ]
+    },
+    {
+      "id": "evidence_state",
+      "type": "enum",
+      "values": [
+        "confirmed",
+        "processing",
+        "stale",
+        "unavailable",
+        "conflict",
+        "unknown"
+      ]
+    },
+    {
+      "id": "freshness",
+      "type": "object",
+      "fields": [
+        "observed_at",
+        "age_ms",
+        "state",
+        "reason"
+      ]
+    },
+    {
+      "id": "promise_reference",
+      "type": "token",
+      "privacy": "pseudonymous"
+    },
+    {
+      "id": "occurrence_reference",
+      "type": "token",
+      "privacy": "pseudonymous"
+    },
+    {
+      "id": "consent_state",
+      "type": "enum",
+      "values": [
+        "unknown",
+        "opt_in",
+        "opt_out"
+      ]
+    },
+    {
+      "id": "capability_result_status",
+      "type": "enum",
+      "values": [
+        "confirmed",
+        "processing",
+        "unavailable",
+        "degraded",
+        "conflict",
+        "unknown",
+        "failed",
+        "requires_human"
+      ]
+    },
+    {
+      "id": "driver_health",
+      "type": "enum",
+      "values": [
+        "healthy",
+        "degraded",
+        "unavailable",
+        "unknown"
+      ]
+    },
+    {
+      "id": "human_queue_state",
+      "type": "enum",
+      "values": [
+        "waiting_customer",
+        "waiting_operation",
+        "waiting_manager",
+        "waiting_quality",
+        "waiting_platform",
+        "waiting_approval",
+        "in_progress",
+        "resolved",
+        "closed"
+      ]
+    },
+    {
+      "id": "closure_state",
+      "type": "enum",
+      "values": [
+        "open",
+        "blocked",
+        "resolved",
+        "closed"
+      ]
+    }
+  ],
+  "extraction_rules": [
+    "Usar informação já fornecida e não perguntar de novo.",
+    "Quantidade de pessoas aceita algarismos e números por extenso.",
+    "Sinais de ocorrência prevalecem sobre palavras genéricas como pedido ou delivery.",
+    "Negação e incerteza devem ser preservadas.",
+    "Entidade inferida não vira confirmed sem evidência.",
+    "Campo sensível só é coletado se necessário à finalidade e com acesso restrito."
+  ],
+  "routing_rule": "Intenção não seleciona fornecedor. Ela seleciona uma capacidade de domínio; o DeliveryOS Capability Router escolhe driver ou simulador."
+}
+

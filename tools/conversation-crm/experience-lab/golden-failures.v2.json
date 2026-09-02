@@ -1,0 +1,20 @@
+{
+  "schema_version": "deliveryos-human-golden-failures-v2",
+  "source": "cesar_human_homologation_v2",
+  "synthetic_only": true,
+  "failures": [
+    { "failure_class": "RESPONSE_LOOP", "example": "nova pergunta recebia a recomendação anterior quase idêntica" },
+    { "failure_class": "DECISION_SUPPORT_FAILURE", "example": "qual dessas você escolheria?" },
+    { "failure_class": "REFERENCE_FAILURE", "example": "essa segunda é crua?" },
+    { "failure_class": "DECISION_SUPPORT_FAILURE", "example": "quanto custa? repetia a recomendação antes dos preços" },
+    { "failure_class": "DECISION_SUPPORT_FAILURE", "example": "harmonização isolada da opção anterior" },
+    { "failure_class": "MATERIAL_DELTA_IGNORED", "example": "algo mais leve" },
+    { "failure_class": "MATERIAL_DELTA_IGNORED", "example": "não curto cream cheese" },
+    { "failure_class": "CHANNEL_SWITCH_FAILURE", "example": "talvez eu vá aí então" },
+    { "failure_class": "QUANTITY_DELTA_IGNORED", "example": "somos cinco na verdade" },
+    { "failure_class": "SAFETY_CONTEXT_LOST", "example": "minha irmã tem alergia a camarão" },
+    { "failure_class": "RESPONSE_LOOP", "example": "resposta semanticamente idêntica após mudança material" },
+    { "failure_class": "FIRST_VISIT_FALLBACK", "example": "primeira visita rígida e limitada" }
+  ]
+}
+

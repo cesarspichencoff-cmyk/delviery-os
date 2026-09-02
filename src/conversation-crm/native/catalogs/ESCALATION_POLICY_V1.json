@@ -1,0 +1,148 @@
+{
+  "schema_version": "tata-escalation-policy-v1.1-native-deliveryos",
+  "generated_at": "2026-07-25",
+  "levels": [
+    {
+      "id": "E0",
+      "name": "self_service_confirmed",
+      "authority": "A0-A2",
+      "human": false,
+      "criteria": [
+        "baixo risco",
+        "capacidade available",
+        "evidência confirmed e fresca"
+      ]
+    },
+    {
+      "id": "E1",
+      "name": "human_operational",
+      "authority": "A1-A2",
+      "human": true,
+      "criteria": [
+        "fila/reserva sem integração",
+        "status indisponível",
+        "alteração operacional",
+        "atraso sem evidência suficiente"
+      ]
+    },
+    {
+      "id": "E2",
+      "name": "human_commercial_operational",
+      "authority": "A3",
+      "human": true,
+      "criteria": [
+        "item faltante/errado",
+        "cobrança",
+        "cancelamento",
+        "compensação",
+        "reclamação recorrente"
+      ]
+    },
+    {
+      "id": "E3",
+      "name": "management_quality",
+      "authority": "A3",
+      "human": true,
+      "criteria": [
+        "qualidade/frescor",
+        "alergênico",
+        "corpo estranho",
+        "valet",
+        "promessa anterior",
+        "exposição pública",
+        "conflito de evidência grave"
+      ]
+    },
+    {
+      "id": "E4",
+      "name": "health_urgent",
+      "authority": "A3",
+      "human": true,
+      "criteria": [
+        "reação alérgica",
+        "dificuldade respiratória",
+        "desmaio",
+        "sintomas intensos",
+        "duas ou mais pessoas afetadas",
+        "possível DTHA"
+      ]
+    }
+  ],
+  "queues": [
+    {
+      "id": "Q_OPS",
+      "owner_placeholder": "{{HUMAN_HANDOFF_OWNERS}}",
+      "target_placeholder": "{{OPERATIONAL_RESPONSE_TARGET}}"
+    },
+    {
+      "id": "Q_COMMERCIAL_OPS",
+      "owner_placeholder": "{{HUMAN_HANDOFF_OWNERS}}",
+      "target_placeholder": "{{COMMERCIAL_OPERATIONAL_RESPONSE_TARGET}}"
+    },
+    {
+      "id": "Q_MANAGEMENT",
+      "owner_placeholder": "{{HUMAN_HANDOFF_OWNERS}}",
+      "target_placeholder": "{{MANAGEMENT_RESPONSE_TARGET}}"
+    },
+    {
+      "id": "Q_FOOD_SAFETY",
+      "owner_placeholder": "{{HUMAN_HANDOFF_OWNERS}}",
+      "target_placeholder": "{{FOOD_SAFETY_RESPONSE_TARGET}}"
+    },
+    {
+      "id": "Q_PRIVACY",
+      "owner_placeholder": "{{HUMAN_HANDOFF_OWNERS}}",
+      "target_placeholder": "{{PRIVACY_RESPONSE_TARGET}}"
+    }
+  ],
+  "triggers": {
+    "immediate": [
+      "ameaça à vida ou dificuldade respiratória",
+      "múltiplas pessoas com sintomas",
+      "corpo estranho com lesão",
+      "alergênico com reação",
+      "ameaça/violência",
+      "exposição pública em curso com risco material"
+    ],
+    "never_auto_close": [
+      "E3",
+      "E4",
+      "prior_promise",
+      "compensation_pending",
+      "evidence_conflict",
+      "human_queue_unconfirmed"
+    ],
+    "fallback": "Se fila humana não puder ser criada, declarar a limitação e fornecer o canal humano configurado; nunca afirmar encaminhamento."
+  },
+  "promise_policy": {
+    "rule": "Somente humano autorizado cria promessa.",
+    "required": [
+      "occurrence_id",
+      "authorized_by",
+      "authorized_at",
+      "commitment",
+      "due_at",
+      "customer_notification_confirmation"
+    ],
+    "append_only": true
+  },
+  "native_owner": "deliveryos_human_queue",
+  "queue_states": [
+    "waiting_customer",
+    "waiting_operation",
+    "waiting_manager",
+    "waiting_quality",
+    "waiting_platform",
+    "waiting_approval",
+    "in_progress",
+    "resolved",
+    "closed"
+  ],
+  "handoff_confirmation": "Encaminhamento só existe quando Human Queue devolver confirmed e o Conversation CRM persistir o evento.",
+  "fallback_contract": {
+    "queue_unavailable": "declarar limitação e oferecer canal humano configurado",
+    "queue_processing": "informar processamento sem afirmar encaminhamento",
+    "queue_failed": "preservar contexto, registrar falha sanitizada e não encerrar"
+  }
+}
+

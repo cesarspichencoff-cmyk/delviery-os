@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>DeliveryOS · Trace do turno</title>
+  <link rel="stylesheet" href="/trace/trace.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="back-link" href="/customer">← Voltar ao atendimento</a>
+    <span class="diagnostic-label">MODO DIAGNÓSTICO</span>
+  </header>
+
+  <main class="page-shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">DELIVERYOS · VERDADE DO TURNO</p>
+        <h1>Trace da resposta</h1>
+        <p class="subtitle">Acompanhe a cadeia completa e localize a primeira divergência sem percorrer logs.</p>
+      </div>
+      <div class="turn-reference">
+        <span>Turno</span>
+        <strong id="turn-id">—</strong>
+      </div>
+    </header>
+
+    <section id="safety-summary" class="safety-summary" aria-label="Gates de execução">
+      <article>
+        <span class="signal signal-safe" aria-hidden="true"></span>
+        <div><small>Shadow</small><strong id="shadow-state">Verificando…</strong></div>
+      </article>
+      <article>
+        <span class="signal signal-safe" aria-hidden="true"></span>
+        <div><small>Custo externo</small><strong id="cost-state">Verificando…</strong></div>
+      </article>
+      <article>
+        <span class="signal signal-safe" aria-hidden="true"></span>
+        <div><small>Publicação externa</small><strong id="publication-state">Verificando…</strong></div>
+      </article>
+    </section>
+
+    <section id="first-divergence" class="divergence-summary loading" aria-live="polite">
+      <span class="summary-icon" aria-hidden="true">•</span>
+      <div>
+        <small>PRIMEIRA DIVERGÊNCIA</small>
+        <strong id="divergence-title">Carregando trace…</strong>
+        <p id="divergence-reason">Aguarde um instante.</p>
+      </div>
+    </section>
+
+    <section class="trace-section" aria-labelledby="trace-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">FLUXO COMPLETO</p>
+          <h2 id="trace-title">Do cliente à resposta publicada</h2>
+        </div>
+        <span id="trace-status" role="status">Carregando…</span>
+      </div>
+      <ol id="trace-stages" class="trace-stages" aria-label="Etapas do trace"></ol>
+    </section>
+
+    <section class="gate-section" aria-labelledby="gate-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">CONTROLE EXPLÍCITO</p>
+          <h2 id="gate-title">Gates deste turno</h2>
+        </div>
+      </div>
+      <div id="gate-grid" class="gate-grid"></div>
+    </section>
+
+    <section id="error-state" class="error-state hidden" role="alert">
+      <h2>Trace indisponível</h2>
+      <p>Não foi possível abrir os detalhes deste turno.</p>
+      <button id="retry-trace" type="button">Tentar novamente</button>
+    </section>
+  </main>
+
+  <script src="/trace/trace.js"></script>
+</body>
+</html>
+

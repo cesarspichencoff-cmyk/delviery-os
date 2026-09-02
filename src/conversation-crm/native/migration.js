@@ -1,0 +1,10 @@
+'use strict';
+
+const {loadRuntimeCatalogs,validateOperationalCatalogs,deepFreeze}=require('./catalogs/operational');
+
+const BLOCK_IDS=Object.freeze(['B00','B01','B02','B03','B04','R01','R02','R03','R04','R05','I01','I02','D01','D02','D03','D04','D05','O00','O01','O02','O03','O04','O05','O06','O07','O08','H01','H02','H03','F01','F02','F03','C01','C02','C03']);
+function createMigrationMap(catalogs=loadRuntimeCatalogs()){validateOperationalCatalogs(catalogs);const map=new Map(BLOCK_IDS.map((id)=>[id,[]]));for(const intent of catalogs.intents.intents)for(const block of intent.legacy_blocks)if(map.has(block))map.get(block).push(intent.id);map.get('F01').push('information.address','information.hours','information.menu','information.payment');map.get('F02').push('privacy.opt_out','occurrence.alert_only','occurrence.prior_promise');map.get('F03').push('order.status','occurrence.route_delay','occurrence.collection_delay');return deepFreeze({block_ids:BLOCK_IDS,map,covered:[...map].filter(([,intents])=>intents.length>0).map(([id])=>id)});}
+function legacyProjection(classification){let primary=classification.legacy_blocks?.[0]||'B01';if(classification.intent==='reservation.large_group')primary='R05';if(['occurrence.missing_item','occurrence.wrong_item','occurrence.wrong_quantity','occurrence.personalization_ignored'].includes(classification.intent))primary='O02';const tags=primary==='R05'?['TAG_FILA','TAG_SALAO','TAG_AGUARDANDO_HUMANO']:primary==='O02'?(classification.intent==='occurrence.missing_item'?['TAG_ITEM_FALTANDO','TAG_AGUARDANDO_HUMANO']:['item_issue']):[];return Object.freeze({schema_version:'conversation-legacy-projection-v1',primary_block:primary,compatible_blocks:classification.legacy_blocks||[],tags,rollback_available:true});}
+
+module.exports={BLOCK_IDS,createMigrationMap,legacyProjection};
+

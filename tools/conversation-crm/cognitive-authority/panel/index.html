@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>TATÁ · Comparação de conversa</title>
+  <link rel="stylesheet" href="/cognitive-authority/styles.css">
+</head>
+<body>
+  <main>
+    <header>
+      <p class="eyebrow">Experimento local · custo externo zero</p>
+      <h1>Qual conversa ajuda melhor?</h1>
+      <p>As duas experiências recebem a mesma mensagem. A arquitetura permanece oculta até o voto.</p>
+    </header>
+    <section class="conversations" aria-live="polite">
+      <article><h2>Conversa A</h2><div id="left" class="stream"></div></article>
+      <article><h2>Conversa B</h2><div id="right" class="stream"></div></article>
+    </section>
+    <form id="composer">
+      <label for="message">Mensagem</label>
+      <div><input id="message" maxlength="2000" autocomplete="off" required><button>Enviar para as duas</button></div>
+    </form>
+    <section class="vote" aria-label="Avaliação cega">
+      <button data-vote="left">A ajudou mais</button>
+      <button data-vote="right">B ajudou mais</button>
+      <button data-vote="equivalent">Equivalentes</button>
+      <button data-vote="both_bad">As duas falharam</button>
+      <button id="reset" class="quiet">Nova conversa</button>
+    </section>
+    <p id="status" role="status"></p>
+  </main>
+  <script src="/cognitive-authority/app.js"></script>
+</body>
+</html>
+

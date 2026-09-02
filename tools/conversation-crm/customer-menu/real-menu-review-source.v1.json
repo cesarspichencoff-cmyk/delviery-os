@@ -1,0 +1,1649 @@
+{
+  "schema_version": "deliveryos-real-menu-review-source-v1",
+  "generated_from": {
+    "authority": "official_internal_source_human_review_pending",
+    "pages": 13,
+    "filename": "00006194-PROJETO CARDAPIO e SUGESTÕES (Alimentos e Bebidas).docx",
+    "source_id": "menu-source-project-docx-v1",
+    "sha256": "f8b01ba855e689176fdc684b065deb7bace86751dc6e1b310d3478273dbbec4d"
+  },
+  "pairing_count": 86,
+  "pairings": [
+    {
+      "review_id": "PAIRING-DOCX-001",
+      "kind": "pairing",
+      "section": "entradas",
+      "source_number": 1,
+      "menu_item_name": "NASU NO MISSÔ (Berinjela japonesa no molho missô)",
+      "beverage_name": "Sake da Casa Suave (Sake Honjozo)",
+      "rationale": "A suavidade do sake complementa o sabor do missô e equilibra a textura da berinjela.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-002",
+      "kind": "pairing",
+      "section": "entradas",
+      "source_number": 2,
+      "menu_item_name": "CARPACCIO DE SALMÃO TRUFADO",
+      "beverage_name": "Sake Ginjo Namachoso",
+      "rationale": "A suavidade do sake Ginjo realça a delicadeza do salmão e a trufa, criando uma combinação equilibrada.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-003",
+      "kind": "pairing",
+      "section": "entradas",
+      "source_number": 3,
+      "menu_item_name": "CARPACCIO DE POLVO MEDITERRÂNEO",
+      "beverage_name": "Sake Junmai Ginjo",
+      "rationale": "A textura suave do polvo se conecta com a suavidade deste sake, realçando a experiência.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-004",
+      "kind": "pairing",
+      "section": "entradas",
+      "source_number": 4,
+      "menu_item_name": "TATÁ BOX (Tartar de atum ou salmão batido com ovas e outros ingredientes)",
+      "beverage_name": "Sake Ginjo Namachoso",
+      "rationale": "A suavidade do sake Ginjo complementa a textura e as notas do tartar.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-005",
+      "kind": "pairing",
+      "section": "entradas",
+      "source_number": 5,
+      "menu_item_name": "EBI SPICY (Tempurá de camarão picante)",
+      "beverage_name": "Sake Hakushika Tradicional Suave",
+      "rationale": "A suavidade do sake suave equilibra o picante do camarão.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-006",
+      "kind": "pairing",
+      "section": "entradas",
+      "source_number": 6,
+      "menu_item_name": "TARTAR DE ATUM SPICY",
+      "beverage_name": "Sake Kizakura Karakuchi Seco",
+      "rationale": "A secura deste sake realça as notas picantes do tartar, criando um contraste equilibrado.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-007",
+      "kind": "pairing",
+      "section": "entradas",
+      "source_number": 7,
+      "menu_item_name": "TARTAR DE SALMÃO",
+      "beverage_name": "Sake Hakushika Ginjo Namachoso",
+      "rationale": "A suavidade do sake realça as notas frescas e suaves do salmão.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-008",
+      "kind": "pairing",
+      "section": "entradas",
+      "source_number": 8,
+      "menu_item_name": "GUIOZA (frito ou no vapor)",
+      "beverage_name": "Cerveja Heineken",
+      "rationale": "A suavidade da cerveja não domina o sabor da guioza, criando uma experiência harmoniosa.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-009",
+      "kind": "pairing",
+      "section": "entradas",
+      "source_number": 9,
+      "menu_item_name": "SHIMEJI",
+      "beverage_name": "Sake Hakushika Karakuchi",
+      "rationale": "A secura do sake corta através da riqueza do shimeji, realçando suas notas terrosas.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-010",
+      "kind": "pairing",
+      "section": "entradas",
+      "source_number": 10,
+      "menu_item_name": "SHITAKE",
+      "beverage_name": "Sake Hakushika Karakuchi",
+      "rationale": "A secura do sake complementa os sabores ricos e terrosos do shitake.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-011",
+      "kind": "pairing",
+      "section": "entradas",
+      "source_number": 11,
+      "menu_item_name": "SHIMEJI E SHITAKE",
+      "beverage_name": "Sake Hakushika Karakuchi",
+      "rationale": "A secura do sake equilibra os sabores e texturas dos cogumelos.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-012",
+      "kind": "pairing",
+      "section": "entradas",
+      "source_number": 12,
+      "menu_item_name": "TUNA SHISSÔ TARTAR",
+      "beverage_name": "Sake Ginjo Namachoso",
+      "rationale": "A suavidade do sake realça a textura e os sabores picantes do atum.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-013",
+      "kind": "pairing",
+      "section": "entradas",
+      "source_number": 13,
+      "menu_item_name": "TATAKI DE SALMÃO",
+      "beverage_name": "Sake Ginjo Namachoso",
+      "rationale": "A suavidade do sake realça a frescura e o sabor cítrico do tataki.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-014",
+      "kind": "pairing",
+      "section": "entradas",
+      "source_number": 14,
+      "menu_item_name": "TATAKI DE ATUM",
+      "beverage_name": "Sake Ginjo Namachoso",
+      "rationale": "A suavidade do sake realça a textura e o sabor do atum.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-015",
+      "kind": "pairing",
+      "section": "entradas",
+      "source_number": 15,
+      "menu_item_name": "CEVICHE",
+      "beverage_name": "Sake Hakushika Ginjo Namachoso",
+      "rationale": "A suavidade do sake realça a frescura e acidez do ceviche.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-016",
+      "kind": "pairing",
+      "section": "entradas",
+      "source_number": 16,
+      "menu_item_name": "EDAMAME (Soja verde cozida)",
+      "beverage_name": "Cerveja Heineken",
+      "rationale": "A suavidade da cerveja não interfere nos sabores delicados do edamame.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-017",
+      "kind": "pairing",
+      "section": "combinados",
+      "source_number": 1,
+      "menu_item_name": "SUSHI ESPECIAL 1 PESSOA",
+      "beverage_name": "Sake Hakushika Junmai Ginjo",
+      "rationale": "A suavidade deste sake realça os sabores variados dos sushis e rolls.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-018",
+      "kind": "pairing",
+      "section": "combinados",
+      "source_number": 2,
+      "menu_item_name": "SUSHI ESPECIAL 2 PESSOAS",
+      "beverage_name": "Sake Zaku Megumi no Tomo Junmai Ginjo",
+      "rationale": "A suavidade deste sake harmoniza com a diversidade de sushis e rolls.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-019",
+      "kind": "pairing",
+      "section": "combinados",
+      "source_number": 3,
+      "menu_item_name": "SUSHI + SASHIMI ESPECIAL 1 PESSOA",
+      "beverage_name": "Sake Hakushika Ginjo Namachoso",
+      "rationale": "A suavidade deste sake realça a frescura dos sashimis e sushis.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-020",
+      "kind": "pairing",
+      "section": "combinados",
+      "source_number": 4,
+      "menu_item_name": "SUSHI + SASHIMI ESPECIAL 2 PESSOAS",
+      "beverage_name": "Sake Hakushika Junmai Ginjo",
+      "rationale": "A suavidade deste sake harmoniza com a variedade de sashimis e sushis.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-021",
+      "kind": "pairing",
+      "section": "combinados",
+      "source_number": 5,
+      "menu_item_name": "TRADICIONAL 1 PESSOA",
+      "beverage_name": "Sake Kizakura Karakuchi Seco",
+      "rationale": "A secura deste sake equilibra os sabores do sashimi e dos rolls.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-022",
+      "kind": "pairing",
+      "section": "combinados",
+      "source_number": 6,
+      "menu_item_name": "TRADICIONAL 2 PESSOAS",
+      "beverage_name": "Sake Goutte D'Argent Sauvignon Blanc",
+      "rationale": "A secura deste vinho branco complementa a variedade de sashimis e sushis.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-023",
+      "kind": "pairing",
+      "section": "combinados",
+      "source_number": 7,
+      "menu_item_name": "SALMÃO/ATUM 1 PESSOA",
+      "beverage_name": "Sake Hakushika Junmai Ginjo",
+      "rationale": "A suavidade deste sake realça os sabores do sashimi e dos rolls.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-024",
+      "kind": "pairing",
+      "section": "combinados",
+      "source_number": 8,
+      "menu_item_name": "SALMÃO/ATUM 2 PESSOAS",
+      "beverage_name": "Sake Hakushika Junmai Ginjo",
+      "rationale": "A suavidade deste sake harmoniza com a variedade de sashimis e sushis.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-025",
+      "kind": "pairing",
+      "section": "combinados",
+      "source_number": 9,
+      "menu_item_name": "SUSHIS",
+      "beverage_name": "Sake da Casa Karakuchi (Sake Honjozo)",
+      "rationale": "A secura deste sake harmoniza com as variedades de sushis.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-026",
+      "kind": "pairing",
+      "section": "combinados",
+      "source_number": 10,
+      "menu_item_name": "DYOS",
+      "beverage_name": "Sake Ginjo Namachoso",
+      "rationale": "A suavidade deste sake realça a diversidade de sabores dos dyos.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-027",
+      "kind": "pairing",
+      "section": "sushis_especiais",
+      "source_number": 11,
+      "menu_item_name": "BY LUIZINHO ESPECIAL",
+      "beverage_name": "Sake Hakushika Ginjo Namachoso",
+      "rationale": "A suavidade deste sake realça as notas de ovas ikura e gema de codorna.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-028",
+      "kind": "pairing",
+      "section": "sushis_especiais",
+      "source_number": 12,
+      "menu_item_name": "VIEIRA",
+      "beverage_name": "Espumante Terra Serena Extra Dry Rose",
+      "rationale": "A acidez refrescante do espumante complementa a textura suave da vieira.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-029",
+      "kind": "pairing",
+      "section": "sushis_especiais",
+      "source_number": 13,
+      "menu_item_name": "POLVO",
+      "beverage_name": "Sake Hakushika Junmai Ginjo",
+      "rationale": "A suavidade deste sake realça a textura macia do polvo.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-030",
+      "kind": "pairing",
+      "section": "sushis_especiais",
+      "source_number": 14,
+      "menu_item_name": "POLVO TERIYAKI",
+      "beverage_name": "Vinho Tinto Goutte D'Argent Pinot Noir",
+      "rationale": "A secura deste vinho realça os sabores da carne suave do polvo.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-031",
+      "kind": "pairing",
+      "section": "sushis_especiais",
+      "source_number": 15,
+      "menu_item_name": "LULA",
+      "beverage_name": "Sake Kizakura Karakuchi Seco",
+      "rationale": "A secura deste sake equilibra os sabores suaves da lula.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-032",
+      "kind": "pairing",
+      "section": "sushis_especiais",
+      "source_number": 16,
+      "menu_item_name": "EBI NIKKEI",
+      "beverage_name": "Vinho Branco Goutte D'Argent Sauvignon Blanc",
+      "rationale": "A secura deste vinho realça os sabores do camarão levemente maçaricado.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-033",
+      "kind": "pairing",
+      "section": "sushis_especiais",
+      "source_number": 17,
+      "menu_item_name": "BLACK COD",
+      "beverage_name": "Vinho Branco Alfredo Roca Glera",
+      "rationale": "A suavidade deste vinho realça a textura macia do black cod.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-034",
+      "kind": "pairing",
+      "section": "sushis_especiais",
+      "source_number": 18,
+      "menu_item_name": "ATUM FOIE GRAS",
+      "beverage_name": "Vinho Tinto Goutte D'Argent Pinot Noir",
+      "rationale": "A secura deste vinho equilibra os sabores intensos do atum e foie gras.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-035",
+      "kind": "pairing",
+      "section": "sushis_especiais",
+      "source_number": 19,
+      "menu_item_name": "VIEIRA FOIE GRAS",
+      "beverage_name": "Champagne Veuve Clicquot Brut",
+      "rationale": "A acidez e complexidade do champagne complementam a riqueza do foie gras.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-036",
+      "kind": "pairing",
+      "section": "sushis_especiais",
+      "source_number": 20,
+      "menu_item_name": "CENTOLLA NIGIRI",
+      "beverage_name": "Vinho Branco Leyda Reserva Chardonnay",
+      "rationale": "A suavidade deste vinho realça a delicadeza da centolla.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-037",
+      "kind": "pairing",
+      "section": "sushis_especiais",
+      "source_number": 21,
+      "menu_item_name": "CENTOLLA GUNKAN",
+      "beverage_name": "Espumante Terra Serena Gran Cuvee Extra Dry",
+      "rationale": "A secura deste espumante equilibra os sabores do caranguejo gigante.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-038",
+      "kind": "pairing",
+      "section": "sushis_especiais",
+      "source_number": 22,
+      "menu_item_name": "UNAGUI",
+      "beverage_name": "Sake da Casa Suave (Sake Honjozo)",
+      "rationale": "A suavidade deste sake realça a textura da enguia de água doce.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-039",
+      "kind": "pairing",
+      "section": "sushis_especiais",
+      "source_number": 23,
+      "menu_item_name": "WAGYU",
+      "beverage_name": "Vinho Tinto Poderi Dal Nespoli Nespolino",
+      "rationale": "A suavidade deste vinho complementa a carne macia do wagyu.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-040",
+      "kind": "pairing",
+      "section": "sushis_especiais",
+      "source_number": 24,
+      "menu_item_name": "LAGOSTIM",
+      "beverage_name": "Vinho Tinto Riccitelli This Is Not Another Lovely Malbec",
+      "rationale": "A secura deste vinho realça os sabores intensos do lagostim.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-041",
+      "kind": "pairing",
+      "section": "sushis_especiais",
+      "source_number": 25,
+      "menu_item_name": "IKURA",
+      "beverage_name": "Sake Hakushika Ginjo Namachoso",
+      "rationale": "A suavidade deste sake realça as notas das ovas de salmão.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-042",
+      "kind": "pairing",
+      "section": "sushis_especiais",
+      "source_number": 26,
+      "menu_item_name": "UNI",
+      "beverage_name": "Vinho Branco Alfredo Roca Glera",
+      "rationale": "A suavidade deste vinho complementa a delicadeza das ovas de ouriço do mar.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-043",
+      "kind": "pairing",
+      "section": "sushis_especiais",
+      "source_number": 27,
+      "menu_item_name": "HAMACHI - YELOWTAIL JAPONÊS",
+      "beverage_name": "Sake Hakushika Junmai Ginjo",
+      "rationale": "A suavidade deste sake realça a textura suave do hamachi.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-044",
+      "kind": "pairing",
+      "section": "sushis_especiais",
+      "source_number": 28,
+      "menu_item_name": "TIRASHI TATÁ",
+      "beverage_name": "Sake Hakushika Junmai Ginjo",
+      "rationale": "A suavidade deste sake harmoniza com a variedade de peixes e frutos do mar.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-045",
+      "kind": "pairing",
+      "section": "sushis_especiais",
+      "source_number": 29,
+      "menu_item_name": "BLUEFIN AKAMI",
+      "beverage_name": "Vinho Tinto Goutte D'Argent Pinot Noir",
+      "rationale": "A secura deste vinho realça a intensidade do bluefin akami.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-046",
+      "kind": "pairing",
+      "section": "sushis_especiais",
+      "source_number": 30,
+      "menu_item_name": "BLUEFIN TORO",
+      "beverage_name": "Vinho Tinto Goutte D'Argent Pinot Noir",
+      "rationale": "A secura deste vinho harmoniza com a riqueza do bluefin toro.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-047",
+      "kind": "pairing",
+      "section": "sashimis",
+      "source_number": 31,
+      "menu_item_name": "SALMÃO",
+      "beverage_name": "Sake Hakushika Junmai Ginjo",
+      "rationale": "A suavidade deste sake realça a textura e sabor do salmão.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-048",
+      "kind": "pairing",
+      "section": "sashimis",
+      "source_number": 32,
+      "menu_item_name": "BARRIGA DE SALMÃO SICILIANO",
+      "beverage_name": "Vinho Branco Goutte D'Argent Sauvignon Blanc",
+      "rationale": "A acidez e frescura deste vinho complementam as raspas de limão.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-049",
+      "kind": "pairing",
+      "section": "sashimis",
+      "source_number": 33,
+      "menu_item_name": "ATUM",
+      "beverage_name": "Sake Hakushika Junmai Ginjo",
+      "rationale": "A suavidade deste sake realça a textura e sabor do atum.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-050",
+      "kind": "pairing",
+      "section": "sashimis",
+      "source_number": 34,
+      "menu_item_name": "TORO",
+      "beverage_name": "Sake Hakushika Junmai Ginjo",
+      "rationale": "A suavidade deste sake realça a riqueza e delicadeza do toro.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-051",
+      "kind": "pairing",
+      "section": "sashimis",
+      "source_number": 35,
+      "menu_item_name": "ROBALO",
+      "beverage_name": "Vinho Branco Barone Montalto Acquerello Pinot Grigio",
+      "rationale": "A secura deste vinho complementa a textura do robalo.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-052",
+      "kind": "pairing",
+      "section": "sashimis",
+      "source_number": 36,
+      "menu_item_name": "BURI",
+      "beverage_name": "Sake Hakushika Junmai Ginjo",
+      "rationale": "A suavidade deste sake harmoniza com a textura suave do buri.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-053",
+      "kind": "pairing",
+      "section": "sashimis",
+      "source_number": 37,
+      "menu_item_name": "POLVO",
+      "beverage_name": "Sake Hakushika Junmai Ginjo",
+      "rationale": "A suavidade deste sake realça a textura macia do polvo.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-054",
+      "kind": "pairing",
+      "section": "sashimis",
+      "source_number": 38,
+      "menu_item_name": "VIEIRA",
+      "beverage_name": "Vinho Branco Leyda Reserva Chardonnay",
+      "rationale": "A suavidade deste vinho realça a delicadeza da vieira.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-055",
+      "kind": "pairing",
+      "section": "sashimis",
+      "source_number": 39,
+      "menu_item_name": "LULA",
+      "beverage_name": "Vinho Branco Goutte D'Argent Sauvignon Blanc",
+      "rationale": "A secura deste vinho realça os sabores suaves da lula.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-056",
+      "kind": "pairing",
+      "section": "sashimis",
+      "source_number": 40,
+      "menu_item_name": "SERRA",
+      "beverage_name": "Vinho Branco Goutte D'Argent Sauvignon Blanc",
+      "rationale": "A secura deste vinho harmoniza com a frescura da Serra",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-057",
+      "kind": "pairing",
+      "section": "uramakis",
+      "source_number": 41,
+      "menu_item_name": "SALMÃO",
+      "beverage_name": "Sake Hakushika Junmai Ginjo",
+      "rationale": "A suavidade deste sake realça a textura e sabor do salmão.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-058",
+      "kind": "pairing",
+      "section": "uramakis",
+      "source_number": 42,
+      "menu_item_name": "SALMÃO ESPECIAL",
+      "beverage_name": "Sake Hakushika Junmai Ginjo",
+      "rationale": "A suavidade deste sake realça a textura e sabor do salmão especial.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-059",
+      "kind": "pairing",
+      "section": "uramakis",
+      "source_number": 43,
+      "menu_item_name": "ATUM",
+      "beverage_name": "Sake Hakushika Junmai Ginjo",
+      "rationale": "A suavidade deste sake realça a textura e sabor do atum.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-060",
+      "kind": "pairing",
+      "section": "uramakis",
+      "source_number": 44,
+      "menu_item_name": "ATUM SPICY AVOCADO",
+      "beverage_name": "Sake Kizakura Karakuchi Seco",
+      "rationale": "A secura deste sake equilibra o sabor picante do atum.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-061",
+      "kind": "pairing",
+      "section": "uramakis",
+      "source_number": 45,
+      "menu_item_name": "EBITEN",
+      "beverage_name": "Cerveja Blue Moon",
+      "rationale": "A cerveja realça a fritura dos camarões e acentua os sabores cítricos.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-062",
+      "kind": "pairing",
+      "section": "uramakis",
+      "source_number": 46,
+      "menu_item_name": "HOT ROLL",
+      "beverage_name": "Cerveja Eisenbahn Pale Ale",
+      "rationale": "A harmonia entre a cerveja e o prato é realçada pela intensidade maltada.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-063",
+      "kind": "pairing",
+      "section": "uramakis",
+      "source_number": 47,
+      "menu_item_name": "HOT ROLL COM SHIMEJI",
+      "beverage_name": "Cerveja Eisenbahn Pale Ale",
+      "rationale": "A cerveja equilibra a riqueza do shimeji e a fritura do hot roll.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-064",
+      "kind": "pairing",
+      "section": "uramakis",
+      "source_number": 48,
+      "menu_item_name": "HOT ROLL TATÁ",
+      "beverage_name": "Sake da Casa Karakuchi",
+      "rationale": "A secura do sake equilibra os sabores do hot roll.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-065",
+      "kind": "pairing",
+      "section": "uramakis",
+      "source_number": 49,
+      "menu_item_name": "BATERÁ DE SALMÃO",
+      "beverage_name": "Sake Hakushika Junmai Ginjo",
+      "rationale": "A suavidade deste sake realça a textura e sabor do salmão.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-066",
+      "kind": "pairing",
+      "section": "uramakis",
+      "source_number": 50,
+      "menu_item_name": "BATERÁ DE SPICY TUNA",
+      "beverage_name": "Vinho Branco Goutte D'Argent Sauvignon Blanc",
+      "rationale": "A acidez do vinho contrasta com o sabor picante.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-067",
+      "kind": "pairing",
+      "section": "hossomakis",
+      "source_number": 51,
+      "menu_item_name": "SALMÃO",
+      "beverage_name": "Sake Hakushika Junmai Ginjo",
+      "rationale": "A suavidade do sake realça a textura e sabor do salmão.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-068",
+      "kind": "pairing",
+      "section": "hossomakis",
+      "source_number": 52,
+      "menu_item_name": "ATUM",
+      "beverage_name": "Sake Hakushika Junmai Ginjo",
+      "rationale": "A suavidade do sake realça a textura e sabor do atum.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-069",
+      "kind": "pairing",
+      "section": "hossomakis",
+      "source_number": 53,
+      "menu_item_name": "PEPINO",
+      "beverage_name": "Sake Hakushika Junmai",
+      "rationale": "A suavidade do sake complementa a frescura do pepino.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-070",
+      "kind": "pairing",
+      "section": "temakis",
+      "source_number": 54,
+      "menu_item_name": "SALMÃO",
+      "beverage_name": "Sake Hakushika Junmai Ginjo",
+      "rationale": "A suavidade deste sake realça a textura e sabor do salmão.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-071",
+      "kind": "pairing",
+      "section": "temakis",
+      "source_number": 55,
+      "menu_item_name": "BARRIGA DE SALMÃO",
+      "beverage_name": "Sake Hakushika Junmai Ginjo",
+      "rationale": "A suavidade do sake complementa a textura e sabor da barriga de salmão.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-072",
+      "kind": "pairing",
+      "section": "temakis",
+      "source_number": 56,
+      "menu_item_name": "ATUM",
+      "beverage_name": "Sake Hakushika Junmai Ginjo",
+      "rationale": "A suavidade deste sake realça a textura e sabor do atum.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-073",
+      "kind": "pairing",
+      "section": "temakis",
+      "source_number": 57,
+      "menu_item_name": "ATUM SPICY",
+      "beverage_name": "Sake Kizakura Karakuchi Seco",
+      "rationale": "A secura do sake equilibra o sabor picante do atum.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-074",
+      "kind": "pairing",
+      "section": "temakis",
+      "source_number": 58,
+      "menu_item_name": "EBITEN",
+      "beverage_name": "Cerveja Blue Moon",
+      "rationale": "A cerveja realça a fritura dos camarões e acentua os sabores cítricos.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-075",
+      "kind": "pairing",
+      "section": "temakis",
+      "source_number": 59,
+      "menu_item_name": "SKIN",
+      "beverage_name": "Cerveja Heineken",
+      "rationale": "A suavidade da cerveja não domina o sabor do skin e realça a textura.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-076",
+      "kind": "pairing",
+      "section": "temakis",
+      "source_number": 60,
+      "menu_item_name": "SALMÃO GRELHADO",
+      "beverage_name": "Vinho Branco Alfredo Roca Glera",
+      "rationale": "A suavidade do vinho realça o sabor do salmão grelhado.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-077",
+      "kind": "pairing",
+      "section": "pratos_quentes",
+      "source_number": 61,
+      "menu_item_name": "BEEF COM NIRÁ",
+      "beverage_name": "Vinho Tinto Goutte D'Argent Pinot Noir",
+      "rationale": "A secura do vinho equilibra os sabores do beef.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-078",
+      "kind": "pairing",
+      "section": "pratos_quentes",
+      "source_number": 62,
+      "menu_item_name": "GRELHADO DE FRUTOS DO MAR",
+      "beverage_name": "Sake Hakushika Namachoso",
+      "rationale": "A secura deste sake complementa os sabores dos frutos do mar.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-079",
+      "kind": "pairing",
+      "section": "pratos_quentes",
+      "source_number": 63,
+      "menu_item_name": "SALMÃO GRELHADO",
+      "beverage_name": "Vinho Branco Barone Montalto Acquerello Pinot Grigio",
+      "rationale": "A secura do vinho realça o sabor do salmão grelhado.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-080",
+      "kind": "pairing",
+      "section": "pratos_quentes",
+      "source_number": 64,
+      "menu_item_name": "BLACK COD NO MISSÔ",
+      "beverage_name": "Sake Hakushika Tradicional Suave",
+      "rationale": "A suavidade deste sake realça os sabores do black cod.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-081",
+      "kind": "pairing",
+      "section": "pratos_quentes",
+      "source_number": 65,
+      "menu_item_name": "YAKISOBA DE MIGNON",
+      "beverage_name": "Sake da Casa Karakuchi",
+      "rationale": "A secura do sake equilibra os sabores do yakisoba.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-082",
+      "kind": "pairing",
+      "section": "pratos_quentes",
+      "source_number": 66,
+      "menu_item_name": "YAKISOBA DE FRUTOS DO MAR",
+      "beverage_name": "Sake Hakushika Namachoso",
+      "rationale": "A secura deste sake complementa os sabores dos frutos do mar.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-083",
+      "kind": "pairing",
+      "section": "pratos_quentes",
+      "source_number": 67,
+      "menu_item_name": "SPICY LAMEN",
+      "beverage_name": "Sake Kizakura Karakuchi Seco",
+      "rationale": "A secura do sake equilibra o caldo picante do lamen.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-084",
+      "kind": "pairing",
+      "section": "pratos_quentes",
+      "source_number": 68,
+      "menu_item_name": "TOKYO LAMEN",
+      "beverage_name": "Sake da Casa Suave",
+      "rationale": "A suavidade do sake complementa o caldo do lamen.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-085",
+      "kind": "pairing",
+      "section": "pratos_quentes",
+      "source_number": 69,
+      "menu_item_name": "FRANGO TERIYAKI",
+      "beverage_name": "Sake da Casa Suave",
+      "rationale": "A suavidade do sake realça os sabores do frango teriyaki.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    },
+    {
+      "review_id": "PAIRING-DOCX-086",
+      "kind": "pairing",
+      "section": "pratos_quentes",
+      "source_number": 70,
+      "menu_item_name": "TEMPURÁ DE CAMARÃO",
+      "beverage_name": "Cerveja Eisenbahn Pale Ale",
+      "rationale": "A cerveja acentua os sabores fritos do tempurá.",
+      "channel": "unknown",
+      "unit_id": null,
+      "review_status": "pending",
+      "missing_fields": [
+        "channel",
+        "unit_id",
+        "menu_item_identity",
+        "beverage_item_identity",
+        "availability"
+      ]
+    }
+  ]
+}
+
+

@@ -1,0 +1,12 @@
+{
+  "schema_version": "conversation-policies-v0",
+  "messages": {
+    "ambiguous": "Ainda não há evidência suficiente para escolher um fluxo. Selecione o assunto principal para continuar.",
+    "missing_data": "Faltam dados mínimos. Informe somente os campos indicados, sem acrescentar dados pessoais desnecessários.",
+    "opt_out": "A solicitação de não receber comunicações foi registrada. Nenhuma campanha é executada por este piloto.",
+    "human_required": "O caso permanece aberto para uma pessoa responsável. Nenhuma decisão foi tomada automaticamente.",
+    "privacy_detected": "A mensagem parece conter dado pessoal. O conteúdo não foi copiado para o registro interno."
+  }
+}
+
+
