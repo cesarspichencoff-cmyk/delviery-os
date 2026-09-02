@@ -105,3 +105,27 @@ Sete skills em `.claude/skills/` carregam sozinhas quando a situação aparece: 
 arquitetura · `deliveryos-execution-loop` (reproduzir **antes** de corrigir) · evidence gate ·
 figma-code-sync · release-readiness · adversarial-review · tata-product-system.
 Verificador: `npm run test:platform:skills`.
+
+## 13. Nesta branch: Etapa 4/8 — convergência de teste/RC (em andamento)
+
+Branch `feature/deliveryos-test-rc-convergence-v1`, base `9e738b11`. **Leia
+`docs/etapa-4-8/` inteiro antes de qualquer ação** — `docs/etapa-4-8/PLANO.md` (escopo, método
+VÉRTICE, C0/C1/C2/C3, Preservation Set), `docs/etapa-4-8/C0-BASELINE.md`,
+`docs/etapa-4-8/C1-PORT.md`, `docs/etapa-4-8/BLOQUEIO-Q-004.md`.
+
+**Restrições permanentes desta missão** (não expiram sozinhas, só por decisão explícita do César):
+não tocar em `main`, M1, B2 ou produção · sem merge em `main` · sem deploy · sem push sem
+confirmação explícita e específica para o push (uma autorização não vale para a próxima).
+
+**Preservation Set integral** — nada abaixo pode ser alterado ou respondido implicitamente por
+código: Copiloto M1 · Entregas (`src/entregas/`) · Home M1 · Event Log append-only
+(`platform.event_log`, nunca as réplicas isoladas de outros domínios) · distinção
+FACT ≠ INFERENCE ≠ SIMULATION ≠ UNKNOWN · autoridade humana final · `Q-001`, `Q-002`, `Q-003`,
+`Q-004`, `Q-005`, `Q-007`, `Q-008`, `Q-009` (todas abertas, `default_behavior: PAUSE`).
+
+**Estágio atual**: C0 concluído (baseline verde, ver `docs/etapa-4-8/C0-BASELINE.md`). C1 concluído em 5 commits
+isolados — `apps/deliveryos-ai-node/`, `src/conversation-crm/` + `tools/conversation-crm/`,
+`tests/conversation-crm/`, `config/conversation-crm/`, documentação. Código portado, não
+integrado — nada em navegação/Home/runtime real referencia `conversation-crm`. C2 (redução de
+superfície de `apps/deliveryos-ai-node`, qualquer integração real) esbarra em `Q-004` aberta —
+ver `docs/etapa-4-8/BLOQUEIO-Q-004.md`. C3 não definido.

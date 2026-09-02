@@ -1,3 +1,13 @@
+---
+lifecycle:
+  artefato: docs/etapa-4-8/BLOQUEIO-Q-004.md
+  status: ACTIVE
+  authority_scope: etapa_4_8_q004_bloqueio
+  superseded_by: null
+  atualizado_em: "2026-09-02"
+  state_basis: 9e738b1
+---
+
 # Bloqueio Q-004 — pré-condição explícita do C2
 
 ## A pergunta

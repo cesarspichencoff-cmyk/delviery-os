@@ -1,3 +1,13 @@
+---
+lifecycle:
+  artefato: docs/etapa-4-8/C0-BASELINE.md
+  status: ACTIVE
+  authority_scope: etapa_4_8_c0_baseline
+  superseded_by: null
+  atualizado_em: "2026-09-02"
+  state_basis: 9e738b1
+---
+
 # C0 — Baseline da branch candidata
 
 Base: `9e738b11060c4c9863d36162b45d9188adaf8091`, branch

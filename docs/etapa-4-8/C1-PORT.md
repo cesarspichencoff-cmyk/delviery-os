@@ -1,3 +1,13 @@
+---
+lifecycle:
+  artefato: docs/etapa-4-8/C1-PORT.md
+  status: ACTIVE
+  authority_scope: etapa_4_8_c1_port
+  superseded_by: null
+  atualizado_em: "2026-09-02"
+  state_basis: 9e738b1
+---
+
 # C1 — Porte isolado de conversation-crm
 
 ## Origem real (correção de premissa)

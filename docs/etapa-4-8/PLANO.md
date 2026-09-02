@@ -1,3 +1,13 @@
+---
+lifecycle:
+  artefato: docs/etapa-4-8/PLANO.md
+  status: ACTIVE
+  authority_scope: etapa_4_8_plano
+  superseded_by: null
+  atualizado_em: "2026-09-02"
+  state_basis: 9e738b1
+---
+
 # Etapa 4/8 — Convergência de teste/RC — PLANO
 
 > Documento de contexto. Se esta missão for interrompida e retomada por outra sessão, este arquivo
