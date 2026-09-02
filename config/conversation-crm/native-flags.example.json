@@ -1,0 +1,21 @@
+{
+  "schema_version": "conversation-native-feature-flags-v1",
+  "environment": "disabled",
+  "flags": {
+    "conversationNativeV1": false,
+    "conversationGatewayV1": false,
+    "conversationEngineV1": false,
+    "conversationCrmV1": false,
+    "deliveryosCapabilityRouterV1": false,
+    "deliveryosStateHubV1": false,
+    "deliveryosActionExecutorV1": false,
+    "deliveryosEvidenceStoreV1": false,
+    "deliveryosHumanQueueV1": false,
+    "deliveryosNotificationEngineV1": false,
+    "conversationPatternEngineV1": false,
+    "customerMenuContextV1": false,
+    "simulatedDriversV1": false,
+    "realDriversReadV1": false,
+    "realDriversWriteV1": false
+  }
+}

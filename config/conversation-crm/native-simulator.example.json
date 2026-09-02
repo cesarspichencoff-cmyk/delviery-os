@@ -1,0 +1,15 @@
+{
+  "schema_version": "conversation-native-simulator-v1",
+  "synthetic": true,
+  "seed": "TATA-SIM-V1",
+  "store_time_zone": "America/Sao_Paulo",
+  "initial_clock": "2026-07-01T12:00:00-03:00",
+  "scenario_catalog": "src/conversation-crm/native/catalogs/SCENARIO_CATALOG_V1.json",
+  "runtime_dir": "runtime/conversation-crm/native-v1",
+  "reset_isolated_scenarios": true,
+  "preserve_multi_turn_sequences": true,
+  "deterministic_event_order": true,
+  "real_drivers_enabled": false,
+  "real_read_enabled": false,
+  "real_write_enabled": false
+}

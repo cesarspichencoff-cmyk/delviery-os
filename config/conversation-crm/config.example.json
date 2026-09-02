@@ -1,0 +1,16 @@
+{
+  "schema_version": "conversation-crm-portable-config-v0",
+  "server": {
+    "host": "127.0.0.1",
+    "port": 4179
+  },
+  "paths": {
+    "flow_config_root": "src/conversation-crm/flows",
+    "runtime_dir": "runtime/conversation-crm",
+    "import_dir": "imports/conversation-crm",
+    "backup_dir": "backups/conversation-crm"
+  },
+  "privacy": {
+    "anon_secret_env": "DELIVERYOS_CRM_ANON_SECRET"
+  }
+}
