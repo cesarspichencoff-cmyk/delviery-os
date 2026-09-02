@@ -1,0 +1,1953 @@
+{
+  "schema_version": "deliveryos-conversation-baseline-vs-humanized-v1",
+  "synthetic": true,
+  "baseline_hash": "894e8246aea72267cba4eb111d936421e76ff23859b191917a9b093b2a10fca9",
+  "humanized_hash": "cfe462fe00147c6b0642fbd9e9fe15f19c8120781d5829d62f3dda663814dc04",
+  "rows": [
+    {
+      "case_id": "HREV-001",
+      "category": "informacoes_simples",
+      "turns": [
+        {
+          "turn": 1,
+          "before": "O TATÁ do Itaim fica na R. João Cachoeira, 278 - Itaim Bibi, São Paulo - SP, 04535-000, Brasil",
+          "after": "O TATÁ do Itaim fica na R. João Cachoeira, 278 - Itaim Bibi, São Paulo - SP, 04535-000, Brasil.",
+          "changed": true,
+          "facts": [
+            "endereço confirmado"
+          ],
+          "strategy": "information_direct",
+          "fallback_reason": null,
+          "characters_before": 94,
+          "characters_after": 95,
+          "opening_before": "o tata do itaim",
+          "opening_after": "o tata do itaim",
+          "questions_after": [],
+          "checks": {
+            "links": 0,
+            "numbers": 3,
+            "questions": 0,
+            "emoji": 0,
+            "maximum_length": 500
+          },
+          "human_review": {
+            "rating": null,
+            "tags": [],
+            "comment": null
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-002",
+      "category": "informacoes_simples",
+      "turns": [
+        {
+          "turn": 1,
+          "before": "No domingo, o horário regular é 11h às 16h30 e 18h às 22h.",
+          "after": "No domingo, o horário regular é 11h às 16h30 e 18h às 22h.",
+          "changed": false,
+          "facts": [
+            "horário regular"
+          ],
+          "strategy": "information_direct",
+          "fallback_reason": null,
+          "characters_before": 58,
+          "characters_after": 58,
+          "opening_before": "no domingo, o horario",
+          "opening_after": "no domingo, o horario",
+          "questions_after": [],
+          "checks": {
+            "links": 0,
+            "numbers": 5,
+            "questions": 0,
+            "emoji": 0,
+            "maximum_length": 500
+          },
+          "human_review": {
+            "rating": null,
+            "tags": [],
+            "comment": null
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-003",
+      "category": "informacoes_simples",
+      "turns": [
+        {
+          "turn": 1,
+          "before": "Ainda não tenho confirmação suficiente para afirmar a conclusão. Vou manter o contexto preservado.",
+          "after": "O horário de feriados ainda não está configurado. Para qual dia seria?",
+          "changed": true,
+          "facts": [
+            "feriado desconhecido"
+          ],
+          "strategy": "information_direct",
+          "fallback_reason": "public_fact_unconfirmed",
+          "characters_before": 98,
+          "characters_after": 70,
+          "opening_before": "ainda nao tenho confirmacao",
+          "opening_after": "o horario de feriados",
+          "questions_after": [
+            "para qual dia seria?"
+          ],
+          "checks": {
+            "links": 0,
+            "numbers": 0,
+            "questions": 1,
+            "emoji": 0,
+            "maximum_length": 500
+          },
+          "human_review": {
+            "rating": null,
+            "tags": [],
+            "comment": null
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-004",
+      "category": "informacoes_simples",
+      "turns": [
+        {
+          "turn": 1,
+          "before": "Quero entender bem antes de seguir. Qual é o assunto principal?",
+          "after": "Perfeito. Sobre acessibilidade, ainda não tenho uma informação confirmada para responder isso com segurança. O que você gostaria de confirmar sobre esse assunto?",
+          "changed": true,
+          "facts": [
+            "não inventar estrutura"
+          ],
+          "strategy": "ambiguity",
+          "fallback_reason": "intent_ambiguous",
+          "characters_before": 63,
+          "characters_after": 161,
+          "opening_before": "quero entender bem antes",
+          "opening_after": "perfeito. sobre acessibilidade, ainda",
+          "questions_after": [
+            "o que voce gostaria de confirmar sobre esse assunto?"
+          ],
+          "checks": {
+            "links": 0,
+            "numbers": 0,
+            "questions": 1,
+            "emoji": 0,
+            "maximum_length": 500
+          },
+          "human_review": {
+            "rating": null,
+            "tags": [],
+            "comment": null
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-005",
+      "category": "informacoes_simples",
+      "turns": [
+        {
+          "turn": 1,
+          "before": "Quero entender bem antes de seguir. Qual é o assunto principal?",
+          "after": "Entendi. Sobre atendimento para crianças, ainda não tenho uma informação confirmada para responder isso com segurança. O que você gostaria de confirmar sobre esse assunto?",
+          "changed": true,
+          "facts": [
+            "informação pública"
+          ],
+          "strategy": "ambiguity",
+          "fallback_reason": "intent_ambiguous",
+          "characters_before": 63,
+          "characters_after": 171,
+          "opening_before": "quero entender bem antes",
+          "opening_after": "entendi. sobre atendimento para",
+          "questions_after": [
+            "o que voce gostaria de confirmar sobre esse assunto?"
+          ],
+          "checks": {
+            "links": 0,
+            "numbers": 0,
+            "questions": 1,
+            "emoji": 0,
+            "maximum_length": 500
+          },
+          "human_review": {
+            "rating": null,
+            "tags": [],
+            "comment": null
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-006",
+      "category": "reservas_fila",
+      "turns": [
+        {
+          "turn": 1,
+          "before": "Você pode consultar a reserva por este link: https://reservation.getin.app/MP9xnVkL A tolerância é de 15 minutos. A confirmação depende do retorno do sistema.",
+          "after": "Claro. Você pode consultar a reserva por este link: https://reservation.getin.app/MP9xnVkL A tolerância é de 15 minutos. A confirmação depende do retorno do sistema. Para quantas pessoas seria?",
+          "changed": true,
+          "facts": [
+            "link oficial"
+          ],
+          "strategy": "reservation",
+          "fallback_reason": "human_assistance_needed",
+          "characters_before": 158,
+          "characters_after": 193,
+          "opening_before": "voce pode consultar a",
+          "opening_after": "claro. voce pode consultar",
+          "questions_after": [
+            "para quantas pessoas seria?"
+          ],
+          "checks": {
+            "links": 1,
+            "numbers": 1,
+            "questions": 1,
+            "emoji": 0,
+            "maximum_length": 700
+          },
+          "human_review": {
+            "rating": null,
+            "tags": [],
+            "comment": null
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-007",
+      "category": "reservas_fila",
+      "turns": [
+        {
+          "turn": 1,
+          "before": "Você pode consultar a reserva por este link: https://reservation.getin.app/MP9xnVkL A tolerância é de 15 minutos. A confirmação depende do retorno do sistema.",
+          "after": "Claro. Você pode consultar a reserva por este link: https://reservation.getin.app/MP9xnVkL A tolerância é de 15 minutos. A confirmação depende do retorno do sistema.",
+          "changed": true,
+          "facts": [
+            "tolerância confirmada"
+          ],
+          "strategy": "reservation",
+          "fallback_reason": "human_assistance_needed",
+          "characters_before": 158,
+          "characters_after": 165,
+          "opening_before": "voce pode consultar a",
+          "opening_after": "claro. voce pode consultar",
+          "questions_after": [],
+          "checks": {
+            "links": 1,
+            "numbers": 1,
+            "questions": 0,
+            "emoji": 0,
+            "maximum_length": 700
+          },
+          "human_review": {
+            "rating": null,
+            "tags": [],
+            "comment": null
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-008",
+      "category": "reservas_fila",
+      "turns": [
+        {
+          "turn": 1,
+          "before": "Quando não houver reserva disponível, a fila pode ser acessada pelo mesmo link: https://reservation.getin.app/MP9xnVkL Após a chamada da mesa, o prazo informado para chegada é de 5 minutos. Não vou estimar posição ou tempo de espera sem resultado observável.",
+          "after": "Claro. Quando não houver reserva disponível, a fila pode ser acessada pelo mesmo link: https://reservation.getin.app/MP9xnVkL Após a chamada da mesa, o prazo informado para chegada é de 5 minutos. Não vou estimar posição ou tempo de espera sem resultado observável.",
+          "changed": true,
+          "facts": [
+            "fila não confirmada"
+          ],
+          "strategy": "waitlist",
+          "fallback_reason": "human_assistance_needed",
+          "characters_before": 258,
+          "characters_after": 265,
+          "opening_before": "quando nao houver reserva",
+          "opening_after": "claro. quando nao houver",
+          "questions_after": [],
+          "checks": {
+            "links": 1,
+            "numbers": 1,
+            "questions": 0,
+            "emoji": 0,
+            "maximum_length": 700
+          },
+          "human_review": {
+            "rating": null,
+            "tags": [],
+            "comment": null
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-009",
+      "category": "reservas_fila",
+      "turns": [
+        {
+          "turn": 1,
+          "before": "Quando não houver reserva disponível, a fila pode ser acessada pelo mesmo link: https://reservation.getin.app/MP9xnVkL Após a chamada da mesa, o prazo informado para chegada é de 5 minutos. Não vou estimar posição ou tempo de espera sem resultado observável.",
+          "after": "Claro. Quando não houver reserva disponível, a fila pode ser acessada pelo mesmo link: https://reservation.getin.app/MP9xnVkL Após a chamada da mesa, o prazo informado para chegada é de 5 minutos. Não vou estimar posição ou tempo de espera sem resultado observável.",
+          "changed": true,
+          "facts": [
+            "prazo de chamada"
+          ],
+          "strategy": "waitlist",
+          "fallback_reason": "human_assistance_needed",
+          "characters_before": 258,
+          "characters_after": 265,
+          "opening_before": "quando nao houver reserva",
+          "opening_after": "claro. quando nao houver",
+          "questions_after": [],
+          "checks": {
+            "links": 1,
+            "numbers": 1,
+            "questions": 0,
+            "emoji": 0,
+            "maximum_length": 700
+          },
+          "human_review": {
+            "rating": null,
+            "tags": [],
+            "comment": null
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-010",
+      "category": "reservas_fila",
+      "turns": [
+        {
+          "turn": 1,
+          "before": "Você pode consultar a reserva por este link: https://reservation.getin.app/MP9xnVkL A tolerância é de 15 minutos. A confirmação depende do retorno do sistema.",
+          "after": "Claro. Você pode consultar a reserva por este link: https://reservation.getin.app/MP9xnVkL A tolerância é de 15 minutos. A confirmação depende do retorno do sistema. Para quantas pessoas seria?",
+          "changed": true,
+          "facts": [
+            "sem confirmação sem driver"
+          ],
+          "strategy": "reservation",
+          "fallback_reason": "human_assistance_needed",
+          "characters_before": 158,
+          "characters_after": 193,
+          "opening_before": "voce pode consultar a",
+          "opening_after": "claro. voce pode consultar",
+          "questions_after": [
+            "para quantas pessoas seria?"
+          ],
+          "checks": {
+            "links": 1,
+            "numbers": 1,
+            "questions": 1,
+            "emoji": 0,
+            "maximum_length": 700
+          },
+          "human_review": {
+            "rating": null,
+            "tags": [],
+            "comment": null
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-011",
+      "category": "cardapio_experiencias",
+      "turns": [
+        {
+          "turn": 1,
+          "before": "Este é o cardápio com os preços dos itens: https://abre.ai/ni3n",
+          "after": "Este é o cardápio com os preços dos itens: https://abre.ai/ni3n.",
+          "changed": true,
+          "facts": [
+            "somente link conhecido"
+          ],
+          "strategy": "menu",
+          "fallback_reason": null,
+          "characters_before": 63,
+          "characters_after": 64,
+          "opening_before": "este e o cardapio",
+          "opening_after": "este e o cardapio",
+          "questions_after": [],
+          "checks": {
+            "links": 1,
+            "numbers": 0,
+            "questions": 0,
+            "emoji": 0,
+            "maximum_length": 500
+          },
+          "human_review": {
+            "rating": null,
+            "tags": [],
+            "comment": null
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-012",
+      "category": "cardapio_experiencias",
+      "turns": [
+        {
+          "turn": 1,
+          "before": "Quero entender bem antes de seguir. Qual é o assunto principal?",
+          "after": "Certo. Sobre opções vegetarianas, ainda não tenho uma informação confirmada para responder isso com segurança. O que você gostaria de confirmar sobre esse assunto?",
+          "changed": true,
+          "facts": [
+            "não inventar disponibilidade"
+          ],
+          "strategy": "ambiguity",
+          "fallback_reason": "intent_ambiguous",
+          "characters_before": 63,
+          "characters_after": 163,
+          "opening_before": "quero entender bem antes",
+          "opening_after": "certo. sobre opcoes vegetarianas,",
+          "questions_after": [
+            "o que voce gostaria de confirmar sobre esse assunto?"
+          ],
+          "checks": {
+            "links": 0,
+            "numbers": 0,
+            "questions": 1,
+            "emoji": 0,
+            "maximum_length": 500
+          },
+          "human_review": {
+            "rating": null,
+            "tags": [],
+            "comment": null
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-013",
+      "category": "cardapio_experiencias",
+      "turns": [
+        {
+          "turn": 1,
+          "before": "Quero entender bem antes de seguir. Qual é o assunto principal?",
+          "after": "Entendi. Sobre experiência do chef, ainda não tenho uma informação confirmada para responder isso com segurança. O que você gostaria de confirmar sobre esse assunto?",
+          "changed": true,
+          "facts": [
+            "valor somente confirmado"
+          ],
+          "strategy": "ambiguity",
+          "fallback_reason": "intent_ambiguous",
+          "characters_before": 63,
+          "characters_after": 165,
+          "opening_before": "quero entender bem antes",
+          "opening_after": "entendi. sobre experiencia do",
+          "questions_after": [
+            "o que voce gostaria de confirmar sobre esse assunto?"
+          ],
+          "checks": {
+            "links": 0,
+            "numbers": 0,
+            "questions": 1,
+            "emoji": 0,
+            "maximum_length": 500
+          },
+          "human_review": {
+            "rating": null,
+            "tags": [],
+            "comment": null
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-014",
+      "category": "cardapio_experiencias",
+      "turns": [
+        {
+          "turn": 1,
+          "before": "O TATÁ trabalha à la carte. O Almoço Executivo e a Sugestão Tatá são menus em cursos, não rodízio.",
+          "after": "Certo. O TATÁ trabalha à la carte. O Almoço Executivo e a Sugestão Tatá são menus em cursos, não rodízio.",
+          "changed": true,
+          "facts": [
+            "não inventar formato"
+          ],
+          "strategy": "information_enriched",
+          "fallback_reason": null,
+          "characters_before": 98,
+          "characters_after": 105,
+          "opening_before": "o tata trabalha a",
+          "opening_after": "certo. o tata trabalha",
+          "questions_after": [],
+          "checks": {
+            "links": 0,
+            "numbers": 0,
+            "questions": 0,
+            "emoji": 0,
+            "maximum_length": 700
+          },
+          "human_review": {
+            "rating": null,
+            "tags": [],
+            "comment": null
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-015",
+      "category": "cardapio_experiencias",
+      "turns": [
+        {
+          "turn": 1,
+          "before": "Quero entender bem antes de seguir. Qual é o assunto principal?",
+          "after": "Entendi. Sobre opções sem glúten, ainda não tenho uma informação confirmada para responder isso com segurança. O que você gostaria de confirmar sobre esse assunto?",
+          "changed": true,
+          "facts": [
+            "segurança sem garantia absoluta"
+          ],
+          "strategy": "ambiguity",
+          "fallback_reason": "intent_ambiguous",
+          "characters_before": 63,
+          "characters_after": 163,
+          "opening_before": "quero entender bem antes",
+          "opening_after": "entendi. sobre opcoes sem",
+          "questions_after": [
+            "o que voce gostaria de confirmar sobre esse assunto?"
+          ],
+          "checks": {
+            "links": 0,
+            "numbers": 0,
+            "questions": 1,
+            "emoji": 0,
+            "maximum_length": 500
+          },
+          "human_review": {
+            "rating": null,
+            "tags": [],
+            "comment": null
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-016",
+      "category": "pagamentos_rolha_valet",
+      "turns": [
+        {
+          "turn": 1,
+          "before": "As formas confirmadas são: Visa débito, Visa crédito, Mastercard débito, Mastercard crédito, American Express, Ticket Restaurante, Alelo, Pluxee.",
+          "after": "As formas confirmadas são: Visa débito, Visa crédito, Mastercard débito, Mastercard crédito, American Express, Ticket Restaurante, Alelo, Pluxee.",
+          "changed": false,
+          "facts": [
+            "meios confirmados"
+          ],
+          "strategy": "payment",
+          "fallback_reason": null,
+          "characters_before": 145,
+          "characters_after": 145,
+          "opening_before": "as formas confirmadas sao:",
+          "opening_after": "as formas confirmadas sao:",
+          "questions_after": [],
+          "checks": {
+            "links": 0,
+            "numbers": 0,
+            "questions": 0,
+            "emoji": 0,
+            "maximum_length": 500
+          },
+          "human_review": {
+            "rating": null,
+            "tags": [],
+            "comment": null
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-017",
+      "category": "pagamentos_rolha_valet",
+      "turns": [
+        {
+          "turn": 1,
+          "before": "Quero entender bem antes de seguir. Qual é o assunto principal?",
+          "after": "Perfeito. Sobre vale-refeição, ainda não tenho uma informação confirmada para responder isso com segurança. O que você gostaria de confirmar sobre esse assunto?",
+          "changed": true,
+          "facts": [
+            "não generalizar bandeiras"
+          ],
+          "strategy": "ambiguity",
+          "fallback_reason": "intent_ambiguous",
+          "characters_before": 63,
+          "characters_after": 160,
+          "opening_before": "quero entender bem antes",
+          "opening_after": "perfeito. sobre vale-refeicao, ainda",
+          "questions_after": [
+            "o que voce gostaria de confirmar sobre esse assunto?"
+          ],
+          "checks": {
+            "links": 0,
+            "numbers": 0,
+            "questions": 1,
+            "emoji": 0,
+            "maximum_length": 500
+          },
+          "human_review": {
+            "rating": null,
+            "tags": [],
+            "comment": null
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-018",
+      "category": "pagamentos_rolha_valet",
+      "turns": [
+        {
+          "turn": 1,
+          "before": "A taxa de rolha é de R$ 70.",
+          "after": "A taxa de rolha é de R$ 70.",
+          "changed": false,
+          "facts": [
+            "valor confirmado ou desconhecido"
+          ],
+          "strategy": "corkage",
+          "fallback_reason": null,
+          "characters_before": 27,
+          "characters_after": 27,
+          "opening_before": "a taxa de rolha",
+          "opening_after": "a taxa de rolha",
+          "questions_after": [],
+          "checks": {
+            "links": 0,
+            "numbers": 1,
+            "questions": 0,
+            "emoji": 0,
+            "maximum_length": 500
+          },
+          "human_review": {
+            "rating": null,
+            "tags": [],
+            "comment": null
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-019",
+      "category": "pagamentos_rolha_valet",
+      "turns": [
+        {
+          "turn": 1,
+          "before": "O valet custa R$ 45 e fica em frente ao restaurante.",
+          "after": "O valet custa R$ 45 e fica em frente ao restaurante.",
+          "changed": false,
+          "facts": [
+            "serviço e valor sem invenção"
+          ],
+          "strategy": "valet",
+          "fallback_reason": null,
+          "characters_before": 52,
+          "characters_after": 52,
+          "opening_before": "o valet custa r$",
+          "opening_after": "o valet custa r$",
+          "questions_after": [],
+          "checks": {
+            "links": 0,
+            "numbers": 1,
+            "questions": 0,
+            "emoji": 0,
+            "maximum_length": 500
+          },
+          "human_review": {
+            "rating": null,
+            "tags": [],
+            "comment": null
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-020",
+      "category": "pagamentos_rolha_valet",
+      "turns": [
+        {
+          "turn": 1,
+          "before": "Quero entender bem antes de seguir. Qual é o assunto principal?",
+          "after": "Perfeito. Sobre divisão da conta, ainda não tenho uma informação confirmada para responder isso com segurança. O que você gostaria de confirmar sobre esse assunto?",
+          "changed": true,
+          "facts": [
+            "política confirmada"
+          ],
+          "strategy": "ambiguity",
+          "fallback_reason": "intent_ambiguous",
+          "characters_before": 63,
+          "characters_after": 163,
+          "opening_before": "quero entender bem antes",
+          "opening_after": "perfeito. sobre divisao da",
+          "questions_after": [
+            "o que voce gostaria de confirmar sobre esse assunto?"
+          ],
+          "checks": {
+            "links": 0,
+            "numbers": 0,
+            "questions": 1,
+            "emoji": 0,
+            "maximum_length": 500
+          },
+          "human_review": {
+            "rating": null,
+            "tags": [],
+            "comment": null
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-021",
+      "category": "delivery_ifood",
+      "turns": [
+        {
+          "turn": 1,
+          "before": "Você pode pedir pelo delivery próprio em https://deliveryapp.neemo.com.br/delivery/5936/menu ou pelo iFood. Não há preferência automática entre as opções.",
+          "after": "Entendi. Você pode pedir pelo delivery próprio em https://deliveryapp.neemo.com.br/delivery/5936/menu ou pelo iFood. Não há preferência automática entre as opções.",
+          "changed": true,
+          "facts": [
+            "canal informativo"
+          ],
+          "strategy": "own_delivery",
+          "fallback_reason": null,
+          "characters_before": 154,
+          "characters_after": 163,
+          "opening_before": "voce pode pedir pelo",
+          "opening_after": "entendi. voce pode pedir",
+          "questions_after": [],
+          "checks": {
+            "links": 1,
+            "numbers": 0,
+            "questions": 0,
+            "emoji": 0,
+            "maximum_length": 700
+          },
+          "human_review": {
+            "rating": null,
+            "tags": [],
+            "comment": null
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-022",
+      "category": "delivery_ifood",
+      "turns": [
+        {
+          "turn": 1,
+          "before": "Quero entender bem antes de seguir. Qual é o assunto principal?",
+          "after": "Perfeito. Sobre iFood, ainda não tenho uma informação confirmada para responder isso com segurança. O que você gostaria de confirmar sobre esse assunto?",
+          "changed": true,
+          "facts": [
+            "somente referência oficial"
+          ],
+          "strategy": "ambiguity",
+          "fallback_reason": "intent_ambiguous",
+          "characters_before": 63,
+          "characters_after": 152,
+          "opening_before": "quero entender bem antes",
+          "opening_after": "perfeito. sobre ifood, ainda",
+          "questions_after": [
+            "o que voce gostaria de confirmar sobre esse assunto?"
+          ],
+          "checks": {
+            "links": 0,
+            "numbers": 0,
+            "questions": 1,
+            "emoji": 0,
+            "maximum_length": 500
+          },
+          "human_review": {
+            "rating": null,
+            "tags": [],
+            "comment": null
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-023",
+      "category": "delivery_ifood",
+      "turns": [
+        {
+          "turn": 1,
+          "before": "Quero entender bem antes de seguir. Qual é o assunto principal?",
+          "after": "Certo. Sobre taxa de entrega, ainda não tenho uma informação confirmada para responder isso com segurança. O que você gostaria de confirmar sobre esse assunto?",
+          "changed": true,
+          "facts": [
+            "taxa não inventada"
+          ],
+          "strategy": "ambiguity",
+          "fallback_reason": "intent_ambiguous",
+          "characters_before": 63,
+          "characters_after": 159,
+          "opening_before": "quero entender bem antes",
+          "opening_after": "certo. sobre taxa de",
+          "questions_after": [
+            "o que voce gostaria de confirmar sobre esse assunto?"
+          ],
+          "checks": {
+            "links": 0,
+            "numbers": 0,
+            "questions": 1,
+            "emoji": 0,
+            "maximum_length": 500
+          },
+          "human_review": {
+            "rating": null,
+            "tags": [],
+            "comment": null
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-024",
+      "category": "delivery_ifood",
+      "turns": [
+        {
+          "turn": 1,
+          "before": "Quero entender bem antes de seguir. Qual é o assunto principal?",
+          "after": "Ainda não tenho uma confirmação segura para concluir esse ponto. Você pode me contar se a dúvida é sobre o restaurante, uma reserva ou um pedido?",
+          "changed": true,
+          "facts": [
+            "prazo não prometido"
+          ],
+          "strategy": "ambiguity",
+          "fallback_reason": "intent_ambiguous",
+          "characters_before": 63,
+          "characters_after": 145,
+          "opening_before": "quero entender bem antes",
+          "opening_after": "ainda nao tenho uma",
+          "questions_after": [
+            "voce pode me contar se a duvida e sobre o restaurante, uma reserva ou um pedido?"
+          ],
+          "checks": {
+            "links": 0,
+            "numbers": 0,
+            "questions": 1,
+            "emoji": 0,
+            "maximum_length": 500
+          },
+          "human_review": {
+            "rating": null,
+            "tags": [],
+            "comment": null
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-025",
+      "category": "delivery_ifood",
+      "turns": [
+        {
+          "turn": 1,
+          "before": "Quero entender bem antes de seguir. Qual é o assunto principal?",
+          "after": "Perfeito. Sobre retirada no restaurante, ainda não tenho uma informação confirmada para responder isso com segurança. O que você gostaria de confirmar sobre esse assunto?",
+          "changed": true,
+          "facts": [
+            "não confirmar ação"
+          ],
+          "strategy": "ambiguity",
+          "fallback_reason": "intent_ambiguous",
+          "characters_before": 63,
+          "characters_after": 170,
+          "opening_before": "quero entender bem antes",
+          "opening_after": "perfeito. sobre retirada no",
+          "questions_after": [
+            "o que voce gostaria de confirmar sobre esse assunto?"
+          ],
+          "checks": {
+            "links": 0,
+            "numbers": 0,
+            "questions": 1,
+            "emoji": 0,
+            "maximum_length": 500
+          },
+          "human_review": {
+            "rating": null,
+            "tags": [],
+            "comment": null
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-026",
+      "category": "pedidos_itens",
+      "turns": [
+        {
+          "turn": 1,
+          "before": "Ainda não tenho confirmação suficiente para afirmar a conclusão. Vou manter o contexto preservado. Pode me informar o número do pedido e se foi feito pelo delivery próprio ou iFood? Vou registrar a ocorrência somente após a persistência confirmada, sem oferecer compensação automática.",
+          "after": "Entendi o que aconteceu. Sobre a falta de refrigerante, não vou presumir reposição, crédito ou reembolso. Pode me informar o número do pedido e se ele foi feito pelo delivery do TATÁ ou pelo iFood?",
+          "changed": true,
+          "facts": [
+            "item faltante"
+          ],
+          "strategy": "missing_item",
+          "fallback_reason": "human_assistance_needed",
+          "characters_before": 285,
+          "characters_after": 197,
+          "opening_before": "ainda nao tenho confirmacao",
+          "opening_after": "entendi o que aconteceu.",
+          "questions_after": [
+            "pode me informar o numero do pedido e se ele foi feito pelo delivery do tata ou pelo ifood?"
+          ],
+          "checks": {
+            "links": 0,
+            "numbers": 0,
+            "questions": 1,
+            "emoji": 0,
+            "maximum_length": 900
+          },
+          "human_review": {
+            "rating": null,
+            "tags": [],
+            "comment": null
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-027",
+      "category": "pedidos_itens",
+      "turns": [
+        {
+          "turn": 1,
+          "before": "Sinto muito pelo ocorrido. Registre a solicitação pelo pedido no iFood, em Ajuda ou Reportar problema, e envie as evidências disponíveis. O relato também permanece no atendimento para preservar o contexto.",
+          "after": "Sinto muito pelo ocorrido. Sobre a falta de bebida. Registre a solicitação pelo pedido no iFood, em Ajuda ou Reportar problema, e envie as evidências disponíveis. O relato também permanece no atendimento para preservar o contexto.",
+          "changed": true,
+          "facts": [
+            "pedido e canal já informados"
+          ],
+          "strategy": "missing_item",
+          "fallback_reason": "human_assistance_needed",
+          "characters_before": 205,
+          "characters_after": 230,
+          "opening_before": "sinto muito pelo ocorrido.",
+          "opening_after": "sinto muito pelo ocorrido.",
+          "questions_after": [],
+          "checks": {
+            "links": 0,
+            "numbers": 0,
+            "questions": 0,
+            "emoji": 0,
+            "maximum_length": 900
+          },
+          "human_review": {
+            "rating": null,
+            "tags": [],
+            "comment": null
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-028",
+      "category": "pedidos_itens",
+      "turns": [
+        {
+          "turn": 1,
+          "before": "Ainda não tenho confirmação suficiente para afirmar a conclusão. Vou manter o contexto preservado.",
+          "after": "Sinto muito pelo ocorrido. Sobre a diferença entre a quantidade pedida e a recebida, não vou antecipar uma conclusão ou compensação. Pode me informar o número do pedido e se ele foi feito pelo delivery do TATÁ ou pelo iFood?",
+          "changed": true,
+          "facts": [
+            "quantidade divergente"
+          ],
+          "strategy": "wrong_quantity",
+          "fallback_reason": "human_assistance_needed",
+          "characters_before": 98,
+          "characters_after": 224,
+          "opening_before": "ainda nao tenho confirmacao",
+          "opening_after": "sinto muito pelo ocorrido.",
+          "questions_after": [
+            "pode me informar o numero do pedido e se ele foi feito pelo delivery do tata ou pelo ifood?"
+          ],
+          "checks": {
+            "links": 0,
+            "numbers": 0,
+            "questions": 1,
+            "emoji": 0,
+            "maximum_length": 900
+          },
+          "human_review": {
+            "rating": null,
+            "tags": [],
+            "comment": null
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-029",
+      "category": "pedidos_itens",
+      "turns": [
+        {
+          "turn": 1,
+          "before": "Ainda não tenho confirmação suficiente para afirmar a conclusão. Vou manter o contexto preservado.",
+          "after": "Poxa, sinto muito por isso. Sobre a personalização que não foi respeitada, não vou antecipar uma conclusão ou compensação. Pode me informar o número do pedido e se ele foi feito pelo delivery do TATÁ ou pelo iFood?",
+          "changed": true,
+          "facts": [
+            "personalização ignorada"
+          ],
+          "strategy": "personalization_ignored",
+          "fallback_reason": "human_assistance_needed",
+          "characters_before": 98,
+          "characters_after": 214,
+          "opening_before": "ainda nao tenho confirmacao",
+          "opening_after": "poxa, sinto muito por",
+          "questions_after": [
+            "pode me informar o numero do pedido e se ele foi feito pelo delivery do tata ou pelo ifood?"
+          ],
+          "checks": {
+            "links": 0,
+            "numbers": 0,
+            "questions": 1,
+            "emoji": 0,
+            "maximum_length": 900
+          },
+          "human_review": {
+            "rating": null,
+            "tags": [],
+            "comment": null
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-030",
+      "category": "pedidos_itens",
+      "turns": [
+        {
+          "turn": 1,
+          "before": "Ainda não tenho confirmação suficiente para afirmar a conclusão. Vou manter o contexto preservado.",
+          "after": "Entendi o que aconteceu. Sobre o item diferente que chegou, não vou antecipar uma conclusão ou compensação. Pode me informar o número do pedido e se ele foi feito pelo delivery do TATÁ ou pelo iFood?",
+          "changed": true,
+          "facts": [
+            "item errado"
+          ],
+          "strategy": "wrong_item",
+          "fallback_reason": "human_assistance_needed",
+          "characters_before": 98,
+          "characters_after": 199,
+          "opening_before": "ainda nao tenho confirmacao",
+          "opening_after": "entendi o que aconteceu.",
+          "questions_after": [
+            "pode me informar o numero do pedido e se ele foi feito pelo delivery do tata ou pelo ifood?"
+          ],
+          "checks": {
+            "links": 0,
+            "numbers": 0,
+            "questions": 1,
+            "emoji": 0,
+            "maximum_length": 900
+          },
+          "human_review": {
+            "rating": null,
+            "tags": [],
+            "comment": null
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-031",
+      "category": "qualidade_seguranca",
+      "turns": [
+        {
+          "turn": 1,
+          "before": "Ainda não tenho confirmação suficiente para afirmar a conclusão. Vou manter o contexto preservado.",
+          "after": "Obrigado por nos contar o que aconteceu. Vou preservar o cabelo encontrado na comida para acompanhamento da equipe de qualidade e da gestão, sem tirar conclusão médica nem apontar causa. Qual é o número do pedido? Qual item foi afetado?",
+          "changed": true,
+          "facts": [
+            "segurança alimentar"
+          ],
+          "strategy": "food_safety",
+          "fallback_reason": "human_assistance_needed",
+          "characters_before": 98,
+          "characters_after": 236,
+          "opening_before": "ainda nao tenho confirmacao",
+          "opening_after": "obrigado por nos contar",
+          "questions_after": [
+            "qual e o numero do pedido?",
+            "qual item foi afetado?"
+          ],
+          "checks": {
+            "links": 0,
+            "numbers": 0,
+            "questions": 2,
+            "emoji": 0,
+            "maximum_length": 900
+          },
+          "human_review": {
+            "rating": null,
+            "tags": [],
+            "comment": null
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-032",
+      "category": "qualidade_seguranca",
+      "turns": [
+        {
+          "turn": 1,
+          "before": "Ainda não tenho confirmação suficiente para afirmar a conclusão. Vou manter o contexto preservado.",
+          "after": "Sinto muito pelo que aconteceu. Vou preservar o cheiro diferente percebido para acompanhamento da equipe de qualidade e da gestão, sem tirar conclusão médica nem apontar causa. Qual é o número do pedido? Qual item foi afetado?",
+          "changed": true,
+          "facts": [
+            "possível impropriedade"
+          ],
+          "strategy": "food_safety",
+          "fallback_reason": "human_assistance_needed",
+          "characters_before": 98,
+          "characters_after": 226,
+          "opening_before": "ainda nao tenho confirmacao",
+          "opening_after": "sinto muito pelo que",
+          "questions_after": [
+            "qual e o numero do pedido?",
+            "qual item foi afetado?"
+          ],
+          "checks": {
+            "links": 0,
+            "numbers": 0,
+            "questions": 2,
+            "emoji": 0,
+            "maximum_length": 900
+          },
+          "human_review": {
+            "rating": null,
+            "tags": [],
+            "comment": null
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-033",
+      "category": "qualidade_seguranca",
+      "turns": [
+        {
+          "turn": 1,
+          "before": "Ainda não tenho confirmação suficiente para afirmar a conclusão. Vou manter o contexto preservado.",
+          "after": "Obrigado por nos contar o que aconteceu. Vou preservar a possível reação a um alergênico para acompanhamento da equipe de qualidade e da gestão, sem tirar conclusão médica nem apontar causa. Qual é o número do pedido? Qual item foi afetado?",
+          "changed": true,
+          "facts": [
+            "possível alergia"
+          ],
+          "strategy": "food_safety",
+          "fallback_reason": "human_assistance_needed",
+          "characters_before": 98,
+          "characters_after": 240,
+          "opening_before": "ainda nao tenho confirmacao",
+          "opening_after": "obrigado por nos contar",
+          "questions_after": [
+            "qual e o numero do pedido?",
+            "qual item foi afetado?"
+          ],
+          "checks": {
+            "links": 0,
+            "numbers": 0,
+            "questions": 2,
+            "emoji": 0,
+            "maximum_length": 900
+          },
+          "human_review": {
+            "rating": null,
+            "tags": [],
+            "comment": null
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-034",
+      "category": "qualidade_seguranca",
+      "turns": [
+        {
+          "turn": 1,
+          "before": "Ainda não tenho confirmação suficiente para afirmar a conclusão. Vou manter o contexto preservado.",
+          "after": "Obrigado por nos contar o que aconteceu. Vou preservar os sintomas relatados para acompanhamento da equipe de qualidade e da gestão, sem tirar conclusão médica nem apontar causa. Quais sintomas apareceram? Quando os sintomas começaram?",
+          "changed": true,
+          "facts": [
+            "urgência de saúde"
+          ],
+          "strategy": "food_safety",
+          "fallback_reason": "human_assistance_needed",
+          "characters_before": 98,
+          "characters_after": 235,
+          "opening_before": "ainda nao tenho confirmacao",
+          "opening_after": "obrigado por nos contar",
+          "questions_after": [
+            "quais sintomas apareceram?",
+            "quando os sintomas comecaram?"
+          ],
+          "checks": {
+            "links": 0,
+            "numbers": 0,
+            "questions": 2,
+            "emoji": 0,
+            "maximum_length": 900
+          },
+          "human_review": {
+            "rating": null,
+            "tags": [],
+            "comment": null
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-035",
+      "category": "qualidade_seguranca",
+      "turns": [
+        {
+          "turn": 1,
+          "before": "Ainda não tenho confirmação suficiente para afirmar a conclusão. Vou manter o contexto preservado.",
+          "after": "Obrigado por nos contar o que aconteceu. Vou preservar os sintomas relatados para acompanhamento da equipe de qualidade e da gestão, sem tirar conclusão médica nem apontar causa. Quais sintomas apareceram? Quando os sintomas começaram?",
+          "changed": true,
+          "facts": [
+            "mais de uma pessoa afetada"
+          ],
+          "strategy": "food_safety",
+          "fallback_reason": "human_assistance_needed",
+          "characters_before": 98,
+          "characters_after": 235,
+          "opening_before": "ainda nao tenho confirmacao",
+          "opening_after": "obrigado por nos contar",
+          "questions_after": [
+            "quais sintomas apareceram?",
+            "quando os sintomas comecaram?"
+          ],
+          "checks": {
+            "links": 0,
+            "numbers": 0,
+            "questions": 2,
+            "emoji": 0,
+            "maximum_length": 900
+          },
+          "human_review": {
+            "rating": null,
+            "tags": [],
+            "comment": null
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-036",
+      "category": "eventos_oke_grupo",
+      "turns": [
+        {
+          "turn": 1,
+          "before": "Quero entender bem antes de seguir. Qual é o assunto principal?",
+          "after": "Certo. Sobre eventos e grupos, ainda não tenho uma informação confirmada para responder isso com segurança. O que você gostaria de confirmar sobre esse assunto?",
+          "changed": true,
+          "facts": [
+            "consulta de evento"
+          ],
+          "strategy": "ambiguity",
+          "fallback_reason": "intent_ambiguous",
+          "characters_before": 63,
+          "characters_after": 160,
+          "opening_before": "quero entender bem antes",
+          "opening_after": "certo. sobre eventos e",
+          "questions_after": [
+            "o que voce gostaria de confirmar sobre esse assunto?"
+          ],
+          "checks": {
+            "links": 0,
+            "numbers": 0,
+            "questions": 1,
+            "emoji": 0,
+            "maximum_length": 500
+          },
+          "human_review": {
+            "rating": null,
+            "tags": [],
+            "comment": null
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-037",
+      "category": "eventos_oke_grupo",
+      "turns": [
+        {
+          "turn": 1,
+          "before": "Os okes são preparados para retirada na loja e dependem de confirmação da equipe. O retorno é informado até o dia seguinte, e as tábuas devem ser devolvidas em até dois dias. Pode me informar a quantidade exata de pessoas, o horário planejado para retirada e tudo o que deseja pedir?",
+          "after": "Esse caso precisa de acompanhamento humano antes de qualquer conclusão. Para quantas pessoas seria? Qual horário você planeja para a retirada?",
+          "changed": true,
+          "facts": [
+            "catálogo operacional Oke"
+          ],
+          "strategy": "oke_events",
+          "fallback_reason": "human_assistance_needed",
+          "characters_before": 283,
+          "characters_after": 142,
+          "opening_before": "os okes sao preparados",
+          "opening_after": "esse caso precisa de",
+          "questions_after": [
+            "para quantas pessoas seria?",
+            "qual horario voce planeja para a retirada?"
+          ],
+          "checks": {
+            "links": 0,
+            "numbers": 0,
+            "questions": 2,
+            "emoji": 0,
+            "maximum_length": 700
+          },
+          "human_review": {
+            "rating": null,
+            "tags": [],
+            "comment": null
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-038",
+      "category": "eventos_oke_grupo",
+      "turns": [
+        {
+          "turn": 1,
+          "before": "Perfeito. Como são 10 pessoas, vou preparar o atendimento específico. Pode me informar seu nome e a previsão aproximada de chegada?",
+          "after": "Perfeito. Como são 10 pessoas, esse atendimento precisa de acompanhamento operacional antes de confirmar fila ou reserva. Pode me informar seu nome e a previsão aproximada de chegada?",
+          "changed": true,
+          "facts": [
+            "grupo acima de oito"
+          ],
+          "strategy": "large_group",
+          "fallback_reason": "human_assistance_needed",
+          "characters_before": 131,
+          "characters_after": 183,
+          "opening_before": "perfeito. como sao 10",
+          "opening_after": "perfeito. como sao 10",
+          "questions_after": [
+            "pode me informar seu nome e a previsao aproximada de chegada?"
+          ],
+          "checks": {
+            "links": 0,
+            "numbers": 1,
+            "questions": 1,
+            "emoji": 0,
+            "maximum_length": 700
+          },
+          "human_review": {
+            "rating": null,
+            "tags": [],
+            "comment": null
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-039",
+      "category": "eventos_oke_grupo",
+      "turns": [
+        {
+          "turn": 1,
+          "before": "Quero entender bem antes de seguir. Qual é o assunto principal?",
+          "after": "Perfeito. Você pode me contar se a dúvida é sobre o restaurante, uma reserva ou um pedido?",
+          "changed": true,
+          "facts": [
+            "limiar não excedido"
+          ],
+          "strategy": "ambiguity",
+          "fallback_reason": "intent_ambiguous",
+          "characters_before": 63,
+          "characters_after": 90,
+          "opening_before": "quero entender bem antes",
+          "opening_after": "perfeito. voce pode me",
+          "questions_after": [
+            "voce pode me contar se a duvida e sobre o restaurante, uma reserva ou um pedido?"
+          ],
+          "checks": {
+            "links": 0,
+            "numbers": 0,
+            "questions": 1,
+            "emoji": 0,
+            "maximum_length": 500
+          },
+          "human_review": {
+            "rating": null,
+            "tags": [],
+            "comment": null
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-040",
+      "category": "eventos_oke_grupo",
+      "turns": [
+        {
+          "turn": 1,
+          "before": "Perfeito. Como são 10 pessoas, vou preparar o atendimento específico. Pode me informar seu nome?",
+          "after": "Perfeito. Como são 10 pessoas, esse atendimento precisa de acompanhamento operacional antes de confirmar fila ou reserva. Qual nome devo usar?",
+          "changed": true,
+          "facts": [
+            "correção de quantidade"
+          ],
+          "strategy": "large_group",
+          "fallback_reason": "human_assistance_needed",
+          "characters_before": 96,
+          "characters_after": 142,
+          "opening_before": "perfeito. como sao 10",
+          "opening_after": "perfeito. como sao 10",
+          "questions_after": [
+            "qual nome devo usar?"
+          ],
+          "checks": {
+            "links": 0,
+            "numbers": 1,
+            "questions": 1,
+            "emoji": 0,
+            "maximum_length": 700
+          },
+          "human_review": {
+            "rating": null,
+            "tags": [],
+            "comment": null
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-041",
+      "category": "multiturno",
+      "turns": [
+        {
+          "turn": 1,
+          "before": "Quero entender bem antes de seguir. Qual é o assunto principal?",
+          "after": "Certo. Sobre iFood, ainda não tenho uma informação confirmada para responder isso com segurança. O que você gostaria de confirmar sobre esse assunto?",
+          "changed": true,
+          "facts": [
+            "contexto anterior preservado"
+          ],
+          "strategy": "ambiguity",
+          "fallback_reason": "intent_ambiguous",
+          "characters_before": 63,
+          "characters_after": 149,
+          "opening_before": "quero entender bem antes",
+          "opening_after": "certo. sobre ifood, ainda",
+          "questions_after": [
+            "o que voce gostaria de confirmar sobre esse assunto?"
+          ],
+          "checks": {
+            "links": 0,
+            "numbers": 0,
+            "questions": 1,
+            "emoji": 0,
+            "maximum_length": 500
+          },
+          "human_review": {
+            "rating": null,
+            "tags": [],
+            "comment": null
+          }
+        },
+        {
+          "turn": 2,
+          "before": "Ainda não tenho confirmação suficiente para afirmar a conclusão. Vou manter o contexto preservado. Vou registrar a ocorrência somente após a persistência confirmada, sem oferecer compensação automática.",
+          "after": "Certo. Sobre a falta de bebida, não vou presumir reposição, crédito ou reembolso. O caso permanece aberto com as informações já fornecidas.",
+          "changed": true,
+          "facts": [
+            "contexto anterior preservado"
+          ],
+          "strategy": "missing_item",
+          "fallback_reason": "human_assistance_needed",
+          "characters_before": 202,
+          "characters_after": 139,
+          "opening_before": "ainda nao tenho confirmacao",
+          "opening_after": "certo. sobre a falta",
+          "questions_after": [],
+          "checks": {
+            "links": 0,
+            "numbers": 0,
+            "questions": 0,
+            "emoji": 0,
+            "maximum_length": 900
+          },
+          "human_review": {
+            "rating": null,
+            "tags": [],
+            "comment": null
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-042",
+      "category": "multiturno",
+      "turns": [
+        {
+          "turn": 1,
+          "before": "Sinto muito pelo ocorrido. Registre a solicitação pelo pedido no iFood, em Ajuda ou Reportar problema, e envie as evidências disponíveis. O relato também permanece no atendimento para preservar o contexto.",
+          "after": "Poxa, sinto muito por isso. Sobre a falta de shoyu. Registre a solicitação pelo pedido no iFood, em Ajuda ou Reportar problema, e envie as evidências disponíveis. O relato também permanece no atendimento para preservar o contexto.",
+          "changed": true,
+          "facts": [
+            "correção append-only"
+          ],
+          "strategy": "missing_item",
+          "fallback_reason": "human_assistance_needed",
+          "characters_before": 205,
+          "characters_after": 230,
+          "opening_before": "sinto muito pelo ocorrido.",
+          "opening_after": "poxa, sinto muito por",
+          "questions_after": [],
+          "checks": {
+            "links": 0,
+            "numbers": 0,
+            "questions": 0,
+            "emoji": 0,
+            "maximum_length": 900
+          },
+          "human_review": {
+            "rating": null,
+            "tags": [],
+            "comment": null
+          }
+        },
+        {
+          "turn": 2,
+          "before": "Quero entender bem antes de seguir. Qual é o assunto principal?",
+          "after": "Certo. Você pode me contar se a dúvida é sobre o restaurante, uma reserva ou um pedido?",
+          "changed": true,
+          "facts": [
+            "correção append-only"
+          ],
+          "strategy": "continuation",
+          "fallback_reason": "intent_ambiguous",
+          "characters_before": 63,
+          "characters_after": 87,
+          "opening_before": "quero entender bem antes",
+          "opening_after": "certo. voce pode me",
+          "questions_after": [
+            "voce pode me contar se a duvida e sobre o restaurante, uma reserva ou um pedido?"
+          ],
+          "checks": {
+            "links": 0,
+            "numbers": 0,
+            "questions": 1,
+            "emoji": 0,
+            "maximum_length": 500
+          },
+          "human_review": {
+            "rating": null,
+            "tags": [],
+            "comment": null
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-043",
+      "category": "multiturno",
+      "turns": [
+        {
+          "turn": 1,
+          "before": "Ainda não tenho confirmação suficiente para afirmar a conclusão. Vou manter o contexto preservado. Pode me informar o número do pedido e se foi feito pelo delivery próprio ou iFood? Vou registrar a ocorrência somente após a persistência confirmada, sem oferecer compensação automática.",
+          "after": "Sinto muito pelo ocorrido. Sobre a falta de refrigerante, não vou presumir reposição, crédito ou reembolso. Pode me informar o número do pedido e se ele foi feito pelo delivery do TATÁ ou pelo iFood?",
+          "changed": true,
+          "facts": [
+            "respostas curtas resolvidas"
+          ],
+          "strategy": "missing_item",
+          "fallback_reason": "human_assistance_needed",
+          "characters_before": 285,
+          "characters_after": 199,
+          "opening_before": "ainda nao tenho confirmacao",
+          "opening_after": "sinto muito pelo ocorrido.",
+          "questions_after": [
+            "pode me informar o numero do pedido e se ele foi feito pelo delivery do tata ou pelo ifood?"
+          ],
+          "checks": {
+            "links": 0,
+            "numbers": 0,
+            "questions": 1,
+            "emoji": 0,
+            "maximum_length": 900
+          },
+          "human_review": {
+            "rating": null,
+            "tags": [],
+            "comment": null
+          }
+        },
+        {
+          "turn": 2,
+          "before": "Sinto muito pelo ocorrido. Registre a solicitação pelo pedido no iFood, em Ajuda ou Reportar problema, e envie as evidências disponíveis. O relato também permanece no atendimento para preservar o contexto. Pode me informar o número do pedido?",
+          "after": "Certo. Sobre a falta de refrigerante. Registre a solicitação pelo pedido no iFood, em Ajuda ou Reportar problema, e envie as evidências disponíveis. O relato também permanece no atendimento para preservar o contexto. Pode me informar o número do pedido?",
+          "changed": true,
+          "facts": [
+            "respostas curtas resolvidas"
+          ],
+          "strategy": "missing_item",
+          "fallback_reason": "human_assistance_needed",
+          "characters_before": 242,
+          "characters_after": 253,
+          "opening_before": "sinto muito pelo ocorrido.",
+          "opening_after": "certo. sobre a falta",
+          "questions_after": [
+            "pode me informar o numero do pedido?"
+          ],
+          "checks": {
+            "links": 0,
+            "numbers": 0,
+            "questions": 1,
+            "emoji": 0,
+            "maximum_length": 900
+          },
+          "human_review": {
+            "rating": null,
+            "tags": [],
+            "comment": null
+          }
+        },
+        {
+          "turn": 3,
+          "before": "Ainda não tenho confirmação suficiente para afirmar a conclusão. Vou manter o contexto preservado. Vou registrar a ocorrência somente após a persistência confirmada, sem oferecer compensação automática.",
+          "after": "Entendi. Sobre a falta de refrigerante, não vou presumir reposição, crédito ou reembolso. O caso permanece aberto com as informações já fornecidas.",
+          "changed": true,
+          "facts": [
+            "respostas curtas resolvidas"
+          ],
+          "strategy": "missing_item",
+          "fallback_reason": "human_assistance_needed",
+          "characters_before": 202,
+          "characters_after": 147,
+          "opening_before": "ainda nao tenho confirmacao",
+          "opening_after": "entendi. sobre a falta",
+          "questions_after": [],
+          "checks": {
+            "links": 0,
+            "numbers": 0,
+            "questions": 0,
+            "emoji": 0,
+            "maximum_length": 900
+          },
+          "human_review": {
+            "rating": null,
+            "tags": [],
+            "comment": null
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-044",
+      "category": "multiturno",
+      "turns": [
+        {
+          "turn": 1,
+          "before": "Sinto muito pelo ocorrido. Registre a solicitação pelo pedido no iFood, em Ajuda ou Reportar problema, e envie as evidências disponíveis. O relato também permanece no atendimento para preservar o contexto.",
+          "after": "Entendi o que aconteceu. Sobre a falta de bebida. Registre a solicitação pelo pedido no iFood, em Ajuda ou Reportar problema, e envie as evidências disponíveis. O relato também permanece no atendimento para preservar o contexto.",
+          "changed": true,
+          "facts": [
+            "complemento no mesmo caso"
+          ],
+          "strategy": "missing_item",
+          "fallback_reason": "human_assistance_needed",
+          "characters_before": 205,
+          "characters_after": 228,
+          "opening_before": "sinto muito pelo ocorrido.",
+          "opening_after": "entendi o que aconteceu.",
+          "questions_after": [],
+          "checks": {
+            "links": 0,
+            "numbers": 0,
+            "questions": 0,
+            "emoji": 0,
+            "maximum_length": 900
+          },
+          "human_review": {
+            "rating": null,
+            "tags": [],
+            "comment": null
+          }
+        },
+        {
+          "turn": 2,
+          "before": "Ainda não tenho confirmação suficiente para afirmar a conclusão. Vou manter o contexto preservado. Vou registrar a ocorrência somente após a persistência confirmada, sem oferecer compensação automática.",
+          "after": "Entendi. Sobre a falta de shoyu, não vou presumir reposição, crédito ou reembolso. O caso permanece aberto com as informações já fornecidas.",
+          "changed": true,
+          "facts": [
+            "complemento no mesmo caso"
+          ],
+          "strategy": "missing_item",
+          "fallback_reason": "human_assistance_needed",
+          "characters_before": 202,
+          "characters_after": 140,
+          "opening_before": "ainda nao tenho confirmacao",
+          "opening_after": "entendi. sobre a falta",
+          "questions_after": [],
+          "checks": {
+            "links": 0,
+            "numbers": 0,
+            "questions": 0,
+            "emoji": 0,
+            "maximum_length": 900
+          },
+          "human_review": {
+            "rating": null,
+            "tags": [],
+            "comment": null
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-045",
+      "category": "multiturno",
+      "turns": [
+        {
+          "turn": 1,
+          "before": "Sinto muito pelo ocorrido. Registre a solicitação pelo pedido no iFood, em Ajuda ou Reportar problema, e envie as evidências disponíveis. O relato também permanece no atendimento para preservar o contexto.",
+          "after": "Sinto muito pelo ocorrido. Sobre a falta de bebida. Registre a solicitação pelo pedido no iFood, em Ajuda ou Reportar problema, e envie as evidências disponíveis. O relato também permanece no atendimento para preservar o contexto.",
+          "changed": true,
+          "facts": [
+            "novo assunto não misturado"
+          ],
+          "strategy": "missing_item",
+          "fallback_reason": "human_assistance_needed",
+          "characters_before": 205,
+          "characters_after": 230,
+          "opening_before": "sinto muito pelo ocorrido.",
+          "opening_after": "sinto muito pelo ocorrido.",
+          "questions_after": [],
+          "checks": {
+            "links": 0,
+            "numbers": 0,
+            "questions": 0,
+            "emoji": 0,
+            "maximum_length": 900
+          },
+          "human_review": {
+            "rating": null,
+            "tags": [],
+            "comment": null
+          }
+        },
+        {
+          "turn": 2,
+          "before": "No domingo, o horário regular é 11h às 16h30 e 18h às 22h.",
+          "after": "No domingo, o horário regular é 11h às 16h30 e 18h às 22h.",
+          "changed": false,
+          "facts": [
+            "novo assunto não misturado"
+          ],
+          "strategy": "information_direct",
+          "fallback_reason": null,
+          "characters_before": 58,
+          "characters_after": 58,
+          "opening_before": "no domingo, o horario",
+          "opening_after": "no domingo, o horario",
+          "questions_after": [],
+          "checks": {
+            "links": 0,
+            "numbers": 5,
+            "questions": 0,
+            "emoji": 0,
+            "maximum_length": 500
+          },
+          "human_review": {
+            "rating": null,
+            "tags": [],
+            "comment": null
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-046",
+      "category": "ambiguidade_elogio_privacidade_handoff",
+      "turns": [
+        {
+          "turn": 1,
+          "before": "Quero entender bem antes de seguir. Qual é o assunto principal?",
+          "after": "Perfeito. Você pode me contar se a dúvida é sobre o restaurante, uma reserva ou um pedido?",
+          "changed": true,
+          "facts": [
+            "ambiguidade explícita"
+          ],
+          "strategy": "ambiguity",
+          "fallback_reason": "intent_ambiguous",
+          "characters_before": 63,
+          "characters_after": 90,
+          "opening_before": "quero entender bem antes",
+          "opening_after": "perfeito. voce pode me",
+          "questions_after": [
+            "voce pode me contar se a duvida e sobre o restaurante, uma reserva ou um pedido?"
+          ],
+          "checks": {
+            "links": 0,
+            "numbers": 0,
+            "questions": 1,
+            "emoji": 0,
+            "maximum_length": 500
+          },
+          "human_review": {
+            "rating": null,
+            "tags": [],
+            "comment": null
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-047",
+      "category": "ambiguidade_elogio_privacidade_handoff",
+      "turns": [
+        {
+          "turn": 1,
+          "before": "Quero entender bem antes de seguir. Qual é o assunto principal?",
+          "after": "Que bom saber que você gostou da experiência Obrigado por contar.",
+          "changed": true,
+          "facts": [
+            "elogio"
+          ],
+          "strategy": "ambiguity",
+          "fallback_reason": "intent_ambiguous",
+          "characters_before": 63,
+          "characters_after": 65,
+          "opening_before": "quero entender bem antes",
+          "opening_after": "que bom saber que",
+          "questions_after": [],
+          "checks": {
+            "links": 0,
+            "numbers": 0,
+            "questions": 0,
+            "emoji": 0,
+            "maximum_length": 500
+          },
+          "human_review": {
+            "rating": null,
+            "tags": [],
+            "comment": null
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-048",
+      "category": "ambiguidade_elogio_privacidade_handoff",
+      "turns": [
+        {
+          "turn": 1,
+          "before": "Quero entender bem antes de seguir. Qual é o assunto principal?",
+          "after": "Ainda não tenho uma confirmação segura para concluir esse ponto. Você pode me contar se a dúvida é sobre o restaurante, uma reserva ou um pedido?",
+          "changed": true,
+          "facts": [
+            "privacidade sem invenção"
+          ],
+          "strategy": "ambiguity",
+          "fallback_reason": "intent_ambiguous",
+          "characters_before": 63,
+          "characters_after": 145,
+          "opening_before": "quero entender bem antes",
+          "opening_after": "ainda nao tenho uma",
+          "questions_after": [
+            "voce pode me contar se a duvida e sobre o restaurante, uma reserva ou um pedido?"
+          ],
+          "checks": {
+            "links": 0,
+            "numbers": 0,
+            "questions": 1,
+            "emoji": 0,
+            "maximum_length": 500
+          },
+          "human_review": {
+            "rating": null,
+            "tags": [],
+            "comment": null
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-049",
+      "category": "ambiguidade_elogio_privacidade_handoff",
+      "turns": [
+        {
+          "turn": 1,
+          "before": "Quero entender bem antes de seguir. Qual é o assunto principal?",
+          "after": "Ainda não tenho uma confirmação segura para concluir esse ponto. Você pode me contar se a dúvida é sobre o restaurante, uma reserva ou um pedido?",
+          "changed": true,
+          "facts": [
+            "handoff depende de confirmação"
+          ],
+          "strategy": "ambiguity",
+          "fallback_reason": "intent_ambiguous",
+          "characters_before": 63,
+          "characters_after": 145,
+          "opening_before": "quero entender bem antes",
+          "opening_after": "ainda nao tenho uma",
+          "questions_after": [
+            "voce pode me contar se a duvida e sobre o restaurante, uma reserva ou um pedido?"
+          ],
+          "checks": {
+            "links": 0,
+            "numbers": 0,
+            "questions": 1,
+            "emoji": 0,
+            "maximum_length": 500
+          },
+          "human_review": {
+            "rating": null,
+            "tags": [],
+            "comment": null
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-050",
+      "category": "ambiguidade_elogio_privacidade_handoff",
+      "turns": [
+        {
+          "turn": 1,
+          "before": "Os horários regulares são: segunda a quinta, 12h às 15h e 19h às 23h; sexta, 12h às 15h e 19h às 23h30; sábado, 12h às 16h30 e 19h às 23h30; domingo, 11h às 16h30 e 18h às 22h.",
+          "after": "Os horários regulares são: segunda a quinta, 12h às 15h e 19h às 23h; sexta, 12h às 15h e 19h às 23h30; sábado, 12h às 16h30 e 19h às 23h30; domingo, 11h às 16h30 e 18h às 22h.",
+          "changed": false,
+          "facts": [
+            "minimização de dados"
+          ],
+          "strategy": "information_direct",
+          "fallback_reason": null,
+          "characters_before": 176,
+          "characters_after": 176,
+          "opening_before": "os horarios regulares sao:",
+          "opening_after": "os horarios regulares sao:",
+          "questions_after": [],
+          "checks": {
+            "links": 0,
+            "numbers": 20,
+            "questions": 0,
+            "emoji": 0,
+            "maximum_length": 500
+          },
+          "human_review": {
+            "rating": null,
+            "tags": [],
+            "comment": null
+          }
+        }
+      ]
+    }
+  ],
+  "canonical_hash": "c275942e98a63228d18af5a3dc3cada204ace4840f16ce62ce69ff6021f5c6c2"
+}

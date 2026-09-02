@@ -1,0 +1,66 @@
+[
+  {
+    "case_id": "HREV2-001",
+    "category": "ifood_nao_recebido",
+    "initial_context": {},
+    "turns": [{"content": "O aplicativo mostra entregue, mas o pedido não chegou. O que faço?"}],
+    "expected_contract": {"must_include": ["iFood"], "must_not_include": ["culpa do iFood", "reembolso confirmado"], "maximum_length": 700},
+    "synthetic": true
+  },
+  {
+    "case_id": "HREV2-002",
+    "category": "grupo_limiar",
+    "initial_context": {},
+    "turns": [{"content": "Estamos em oito pessoas e chegando."}],
+    "expected_contract": {"must_not_include": ["grupo grande confirmado"], "maximum_length": 600},
+    "synthetic": true
+  },
+  {
+    "case_id": "HREV2-003",
+    "category": "seguranca_urgente",
+    "initial_context": {},
+    "turns": [{"content": "Depois de comer, estou com dificuldade para respirar."}],
+    "expected_contract": {"must_include": ["192"], "must_not_include": ["diagnóstico", "não é nada"], "maximum_length": 900},
+    "synthetic": true
+  },
+  {
+    "case_id": "HREV2-004",
+    "category": "seguranca_multiplas_pessoas",
+    "initial_context": {},
+    "turns": [{"content": "Três pessoas passaram mal depois da refeição."}],
+    "expected_contract": {"must_not_include": ["com certeza foi", "reembolso confirmado"], "maximum_length": 900},
+    "synthetic": true
+  },
+  {
+    "case_id": "HREV2-005",
+    "category": "restricao_alimentar",
+    "initial_context": {},
+    "turns": [{"content": "Há opções vegetarianas no cardápio?"}],
+    "expected_contract": {"must_not_include": ["garantimos ausência"], "maximum_length": 600},
+    "synthetic": true
+  },
+  {
+    "case_id": "HREV2-006",
+    "category": "pagamento_dividido",
+    "initial_context": {},
+    "turns": [{"content": "Posso dividir a conta em formas de pagamento diferentes?"}],
+    "expected_contract": {"must_not_include": ["confirmado sem restrições"], "maximum_length": 600},
+    "synthetic": true
+  },
+  {
+    "case_id": "HREV2-007",
+    "category": "taxa_delivery",
+    "initial_context": {},
+    "turns": [{"content": "Qual é a taxa do delivery?"}],
+    "expected_contract": {"must_not_include": ["taxa fixa"], "maximum_length": 600},
+    "synthetic": true
+  },
+  {
+    "case_id": "HREV2-008",
+    "category": "retirada",
+    "initial_context": {},
+    "turns": [{"content": "Quero retirar um pedido no restaurante. Como faço?"}],
+    "expected_contract": {"must_not_include": ["pedido confirmado"], "maximum_length": 700},
+    "synthetic": true
+  }
+]

@@ -1,0 +1,93 @@
+{
+  "schema_version": "deliveryos-current-model-technical-comparison-v1",
+  "change_id": "005b-current-open-model-rebakeoff",
+  "corpus": {
+    "base_cases": 260,
+    "diagnostic_cases": 32,
+    "total_cases": 292
+  },
+  "thresholds": {
+    "writer": {
+      "fallback_less_than": 10,
+      "p95_ms_less_than": 12000,
+      "max_ms_less_than": 25000
+    },
+    "director": {
+      "fallback": 0,
+      "expected_ratio_minimum": 0.9,
+      "p95_ms_maximum": 15000,
+      "max_ms_less_than": 25000
+    }
+  },
+  "candidates": [
+    {
+      "candidate_id": "Qwen3-4B-Q4_K_M-official",
+      "executed_in_005b": false,
+      "writer_accepted": 250,
+      "writer_fallback": 10,
+      "writer_p50_ms": 3945.53,
+      "writer_p95_ms": 8425.83,
+      "writer_max_ms": 17024.35,
+      "writer_qualified": null,
+      "director_expected": null,
+      "director_total": null,
+      "director_fallback": null,
+      "director_p50_ms": null,
+      "director_p95_ms": null,
+      "director_max_ms": null,
+      "director_qualified": null,
+      "technical_status": "historical_baseline_only",
+      "human_winner": null
+    },
+    {
+      "candidate_id": "gemma-4-E4B-it-qat-q4_0-official",
+      "executed_in_005b": true,
+      "writer_accepted": 292,
+      "writer_fallback": 0,
+      "writer_p50_ms": 4861.1801,
+      "writer_p95_ms": 10378.175,
+      "writer_max_ms": 15961.6932,
+      "writer_qualified": true,
+      "director_expected": 2,
+      "director_total": 8,
+      "director_fallback": 1,
+      "director_p50_ms": 28587,
+      "director_p95_ms": 30469,
+      "director_max_ms": 30469,
+      "director_qualified": false,
+      "technical_status": "not_qualified",
+      "human_winner": null
+    },
+    {
+      "candidate_id": "Qwen3.5-4B-Q4_K_M-bartowski",
+      "executed_in_005b": true,
+      "writer_accepted": 289,
+      "writer_fallback": 3,
+      "writer_p50_ms": 4596.0633,
+      "writer_p95_ms": 9696.6359,
+      "writer_max_ms": 12492.6702,
+      "writer_qualified": true,
+      "director_expected": 2,
+      "director_total": 8,
+      "director_fallback": 0,
+      "director_p50_ms": 22613,
+      "director_p95_ms": 26834,
+      "director_max_ms": 26834,
+      "director_qualified": false,
+      "technical_status": "not_qualified",
+      "human_winner": null
+    },
+    {
+      "candidate_id": "gemma-4-12b-it-qat-q4_0-official",
+      "executed_in_005b": false,
+      "technical_status": "not_executed_doctor_gate",
+      "reason": "hardware classified as intermediate; certified matrix excludes 12B and required candidates already failed Director",
+      "human_winner": null
+    }
+  ],
+  "technically_qualified_new_candidates": [],
+  "blind_rounds": "not_created_no_technical_candidate",
+  "human_winner": null,
+  "verdict": "RE-BAKE-OFF LOCAL SEM CANDIDATO TÉCNICO",
+  "canonical_hash": "de3d7ab1aaf2ac6e688685e9face260ac4784b9791710762604268c7b21cac5e"
+}

@@ -1,0 +1,1029 @@
+{
+  "schema_version": "deliveryos-conversation-human-feedback-before-after-v2",
+  "synthetic": true,
+  "source_artifact_hash": "cfe462fe00147c6b0642fbd9e9fe15f19c8120781d5829d62f3dda663814dc04",
+  "refined_artifact_hash": "a16fd03eee1d16d94eb6735bae7277eb33768171d0440cf6d865c66dd905141f",
+  "cases": 50,
+  "changed_turns": 47,
+  "rows": [
+    {
+      "case_id": "HREV-001",
+      "category": "informacoes_simples",
+      "turns": [
+        {
+          "turn": 1,
+          "input_fingerprint": "52825cd9e6abd03e632e24e734acae1a08b046ccfb2f3880c790c3939586e34e",
+          "before_response": "O TATÁ do Itaim fica na R. João Cachoeira, 278 - Itaim Bibi, São Paulo - SP, 04535-000, Brasil.",
+          "after_response": "O TATÁ do Itaim fica na R. João Cachoeira, 278 - Itaim Bibi, São Paulo - SP, 04535-000, Brasil. Vai ser um prazer receber você.",
+          "changed": true,
+          "knowledge_selected": [
+            "engine.authorized_surface"
+          ],
+          "action_playbook": "restaurant_information",
+          "action_mode": "handoff_required",
+          "service_quality_passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-002",
+      "category": "informacoes_simples",
+      "turns": [
+        {
+          "turn": 1,
+          "input_fingerprint": "6548aa0125bf729a83ad7be18e19cb4de674ee0a799639fb05e6479b6b1648b3",
+          "before_response": "No domingo, o horário regular é 11h às 16h30 e 18h às 22h.",
+          "after_response": "No domingo, o horário regular é 11h às 16h30 e 18h às 22h. Vai ser um prazer receber você.",
+          "changed": true,
+          "knowledge_selected": [
+            "engine.authorized_surface"
+          ],
+          "action_playbook": "restaurant_information",
+          "action_mode": "handoff_required",
+          "service_quality_passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-003",
+      "category": "informacoes_simples",
+      "turns": [
+        {
+          "turn": 1,
+          "input_fingerprint": "7ff499e2adcce74080d2fcf735672cc540b3de78347a0cb499fffb2ea67eaff1",
+          "before_response": "O horário de feriados ainda não está configurado. Para qual dia seria?",
+          "after_response": "O horário de feriados ainda não está configurado. Para qual dia seria?",
+          "changed": false,
+          "knowledge_selected": [],
+          "action_playbook": "restaurant_information",
+          "action_mode": "executed",
+          "service_quality_passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-004",
+      "category": "informacoes_simples",
+      "turns": [
+        {
+          "turn": 1,
+          "input_fingerprint": "39b3b2382223c42bccc10d1ed0ccbb6ba962c7a7938f2977eced9a48f2a2aad3",
+          "before_response": "Perfeito. Sobre acessibilidade, ainda não tenho uma informação confirmada para responder isso com segurança. O que você gostaria de confirmar sobre esse assunto?",
+          "after_response": "Perfeito. Sobre acessibilidade, ainda não tenho uma informação confirmada para responder isso com segurança. O que você gostaria de confirmar sobre esse assunto?",
+          "changed": false,
+          "knowledge_selected": [],
+          "action_playbook": "privacy_and_handoff",
+          "action_mode": "executed",
+          "service_quality_passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-005",
+      "category": "informacoes_simples",
+      "turns": [
+        {
+          "turn": 1,
+          "input_fingerprint": "96c517567ca412e300039cd8f712053c060f655350f68a291b783cc6197a0c38",
+          "before_response": "Entendi. Sobre atendimento para crianças, ainda não tenho uma informação confirmada para responder isso com segurança. O que você gostaria de confirmar sobre esse assunto?",
+          "after_response": "Sim, crianças podem acompanhar a família no restaurante.",
+          "changed": true,
+          "knowledge_selected": [
+            "restaurant.children"
+          ],
+          "action_playbook": "restaurant_information",
+          "action_mode": "executed",
+          "service_quality_passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-006",
+      "category": "reservas_fila",
+      "turns": [
+        {
+          "turn": 1,
+          "input_fingerprint": "1a6c3e6046be3d3194d76ac81b818c657dd627503c145611ef77bc45efc38422",
+          "before_response": "Claro. Você pode consultar a reserva por este link: https://reservation.getin.app/MP9xnVkL A tolerância é de 15 minutos. A confirmação depende do retorno do sistema. Para quantas pessoas seria?",
+          "after_response": "Claro. Você pode consultar a reserva por este link: https://reservation.getin.app/MP9xnVkL A tolerância é de 15 minutos. A confirmação depende do retorno do sistema. Se precisar, eu sigo com você por aqui.",
+          "changed": true,
+          "knowledge_selected": [
+            "engine.authorized_surface"
+          ],
+          "action_playbook": "reservation",
+          "action_mode": "executed",
+          "service_quality_passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-007",
+      "category": "reservas_fila",
+      "turns": [
+        {
+          "turn": 1,
+          "input_fingerprint": "d0234246d823edf958acc6678771170698859a8108bb0bb081aa457ae83e20d3",
+          "before_response": "Claro. Você pode consultar a reserva por este link: https://reservation.getin.app/MP9xnVkL A tolerância é de 15 minutos. A confirmação depende do retorno do sistema.",
+          "after_response": "Claro. Você pode consultar a reserva por este link: https://reservation.getin.app/MP9xnVkL A tolerância é de 15 minutos. A confirmação depende do retorno do sistema. Se precisar, eu sigo com você por aqui.",
+          "changed": true,
+          "knowledge_selected": [
+            "engine.authorized_surface"
+          ],
+          "action_playbook": "reservation",
+          "action_mode": "executed",
+          "service_quality_passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-008",
+      "category": "reservas_fila",
+      "turns": [
+        {
+          "turn": 1,
+          "input_fingerprint": "14db2da74185a9ad0622bebf4fc8524fefaff4d0d73a70543ff282bfae56b612",
+          "before_response": "Claro. Quando não houver reserva disponível, a fila pode ser acessada pelo mesmo link: https://reservation.getin.app/MP9xnVkL Após a chamada da mesa, o prazo informado para chegada é de 5 minutos. Não vou estimar posição ou tempo de espera sem resultado observável.",
+          "after_response": "Claro. Quando não houver reserva disponível, a fila pode ser acessada pelo mesmo link: https://reservation.getin.app/MP9xnVkL Após a chamada da mesa, o prazo informado para chegada é de 5 minutos. Não vou estimar posição ou tempo de espera sem resultado observável. Se precisar, eu sigo com você por aqui.",
+          "changed": true,
+          "knowledge_selected": [
+            "engine.authorized_surface"
+          ],
+          "action_playbook": "waitlist",
+          "action_mode": "executed",
+          "service_quality_passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-009",
+      "category": "reservas_fila",
+      "turns": [
+        {
+          "turn": 1,
+          "input_fingerprint": "ceae91a4b4427aff59fe7152b8ec8da6f684673f76c624b75f2f1214c4feca49",
+          "before_response": "Claro. Quando não houver reserva disponível, a fila pode ser acessada pelo mesmo link: https://reservation.getin.app/MP9xnVkL Após a chamada da mesa, o prazo informado para chegada é de 5 minutos. Não vou estimar posição ou tempo de espera sem resultado observável.",
+          "after_response": "Claro. Quando não houver reserva disponível, a fila pode ser acessada pelo mesmo link: https://reservation.getin.app/MP9xnVkL Após a chamada da mesa, o prazo informado para chegada é de 5 minutos. Não vou estimar posição ou tempo de espera sem resultado observável. Se precisar, eu sigo com você por aqui.",
+          "changed": true,
+          "knowledge_selected": [
+            "engine.authorized_surface"
+          ],
+          "action_playbook": "waitlist",
+          "action_mode": "executed",
+          "service_quality_passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-010",
+      "category": "reservas_fila",
+      "turns": [
+        {
+          "turn": 1,
+          "input_fingerprint": "e4301031cf0ba9d7f97330a9c3c51e5506b0aebe1543eaa3b3e91d70af27717a",
+          "before_response": "Claro. Você pode consultar a reserva por este link: https://reservation.getin.app/MP9xnVkL A tolerância é de 15 minutos. A confirmação depende do retorno do sistema. Para quantas pessoas seria?",
+          "after_response": "Claro. Você pode consultar a reserva por este link: https://reservation.getin.app/MP9xnVkL A tolerância é de 15 minutos. A confirmação depende do retorno do sistema. Se precisar, eu sigo com você por aqui.",
+          "changed": true,
+          "knowledge_selected": [
+            "engine.authorized_surface"
+          ],
+          "action_playbook": "reservation",
+          "action_mode": "executed",
+          "service_quality_passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-011",
+      "category": "cardapio_experiencias",
+      "turns": [
+        {
+          "turn": 1,
+          "input_fingerprint": "4c07f5ee6ff3f630cd785bf18ce1acb42266dea81f6915031e827314424a214a",
+          "before_response": "Este é o cardápio com os preços dos itens: https://abre.ai/ni3n.",
+          "after_response": "Este é o cardápio com os preços dos itens: https://abre.ai/ni3n. Se quiser, também posso te ajudar a escolher a experiência que combina melhor com o momento.",
+          "changed": true,
+          "knowledge_selected": [
+            "engine.authorized_surface"
+          ],
+          "action_playbook": "experiences",
+          "action_mode": "handoff_required",
+          "service_quality_passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-012",
+      "category": "cardapio_experiencias",
+      "turns": [
+        {
+          "turn": 1,
+          "input_fingerprint": "47152da4ca0901cb595e62879aab99284cfbc24cd41562c0c936221e7d8cf5da",
+          "before_response": "Certo. Sobre opções vegetarianas, ainda não tenho uma informação confirmada para responder isso com segurança. O que você gostaria de confirmar sobre esse assunto?",
+          "after_response": "Para consultar opções que se encaixem na sua alimentação, este é o cardápio presencial completo: https://livemenu.app/menu/6407492af6880700523699bf?cross_session=done Se houver alergia ou risco de contaminação cruzada, confirme a composição do item com a equipe antes de pedir. Se quiser, também posso te ajudar a escolher a experiência que combina melhor com o momento.",
+          "changed": true,
+          "knowledge_selected": [
+            "restaurant.dietary_menu"
+          ],
+          "action_playbook": "experiences",
+          "action_mode": "executed",
+          "service_quality_passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-013",
+      "category": "cardapio_experiencias",
+      "turns": [
+        {
+          "turn": 1,
+          "input_fingerprint": "588529abe9079551a26a3b26c038653fdbf838c8299b329808cb9a5c361b2bb1",
+          "before_response": "Entendi. Sobre experiência do chef, ainda não tenho uma informação confirmada para responder isso com segurança. O que você gostaria de confirmar sobre esse assunto?",
+          "after_response": "O TATÁ trabalha à la carte. Também há o Almoço Executivo nos almoços de dias úteis e a Sugestão Tatá no jantar, fins de semana e feriados. Você pode ver os pratos e preços em https://abre.ai/ni3n. Se quiser, também posso te ajudar a escolher a experiência que combina melhor com o momento.",
+          "changed": true,
+          "knowledge_selected": [
+            "restaurant.experiences"
+          ],
+          "action_playbook": "experiences",
+          "action_mode": "executed",
+          "service_quality_passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-014",
+      "category": "cardapio_experiencias",
+      "turns": [
+        {
+          "turn": 1,
+          "input_fingerprint": "d7d526c86a0221b3d6bb9b83524d57d2da8bc3cd69970bd95e2421f82a8d308a",
+          "before_response": "Certo. O TATÁ trabalha à la carte. O Almoço Executivo e a Sugestão Tatá são menus em cursos, não rodízio.",
+          "after_response": "O TATÁ trabalha à la carte. Também há o Almoço Executivo nos almoços de dias úteis e a Sugestão Tatá no jantar, fins de semana e feriados. Você pode ver os pratos e preços em https://abre.ai/ni3n. Se quiser, também posso te ajudar a escolher a experiência que combina melhor com o momento.",
+          "changed": true,
+          "knowledge_selected": [
+            "engine.authorized_surface",
+            "restaurant.experiences"
+          ],
+          "action_playbook": "experiences",
+          "action_mode": "handoff_required",
+          "service_quality_passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-015",
+      "category": "cardapio_experiencias",
+      "turns": [
+        {
+          "turn": 1,
+          "input_fingerprint": "ddcc9ba2be29c2d8bb95a1909d4c61fe4eef910653a929a22b057dd95f063fc2",
+          "before_response": "Entendi. Sobre opções sem glúten, ainda não tenho uma informação confirmada para responder isso com segurança. O que você gostaria de confirmar sobre esse assunto?",
+          "after_response": "Para consultar opções que se encaixem na sua alimentação, este é o cardápio presencial completo: https://livemenu.app/menu/6407492af6880700523699bf?cross_session=done Se houver alergia ou risco de contaminação cruzada, confirme a composição do item com a equipe antes de pedir. Se quiser, também posso te ajudar a escolher a experiência que combina melhor com o momento.",
+          "changed": true,
+          "knowledge_selected": [
+            "restaurant.dietary_menu"
+          ],
+          "action_playbook": "experiences",
+          "action_mode": "executed",
+          "service_quality_passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-016",
+      "category": "pagamentos_rolha_valet",
+      "turns": [
+        {
+          "turn": 1,
+          "input_fingerprint": "9ac2596e0d9acd790c5d046138d4818659ca55647a0d653dfe4d9a0761958eb0",
+          "before_response": "As formas confirmadas são: Visa débito, Visa crédito, Mastercard débito, Mastercard crédito, American Express, Ticket Restaurante, Alelo, Pluxee.",
+          "after_response": "Aceitamos Ticket Restaurante, Alelo e Pluxee, além dos cartões confirmados no restaurante.",
+          "changed": true,
+          "knowledge_selected": [
+            "engine.authorized_surface",
+            "payment.meal_voucher"
+          ],
+          "action_playbook": "restaurant_information",
+          "action_mode": "handoff_required",
+          "service_quality_passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-017",
+      "category": "pagamentos_rolha_valet",
+      "turns": [
+        {
+          "turn": 1,
+          "input_fingerprint": "6cdcddadd8aba265997db4c05582100695d0249f8063f3950a2818ac1be6afee",
+          "before_response": "Perfeito. Sobre vale-refeição, ainda não tenho uma informação confirmada para responder isso com segurança. O que você gostaria de confirmar sobre esse assunto?",
+          "after_response": "Aceitamos Ticket Restaurante, Alelo e Pluxee, além dos cartões confirmados no restaurante.",
+          "changed": true,
+          "knowledge_selected": [
+            "payment.meal_voucher"
+          ],
+          "action_playbook": "restaurant_information",
+          "action_mode": "executed",
+          "service_quality_passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-018",
+      "category": "pagamentos_rolha_valet",
+      "turns": [
+        {
+          "turn": 1,
+          "input_fingerprint": "e752c9a52b25af9b2b77ae53802606b6ca62f2fee2758980489a45bb312642ff",
+          "before_response": "A taxa de rolha é de R$ 70.",
+          "after_response": "A taxa de rolha é de R$ 70.",
+          "changed": false,
+          "knowledge_selected": [
+            "engine.authorized_surface"
+          ],
+          "action_playbook": "restaurant_information",
+          "action_mode": "handoff_required",
+          "service_quality_passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-019",
+      "category": "pagamentos_rolha_valet",
+      "turns": [
+        {
+          "turn": 1,
+          "input_fingerprint": "ec6bddd032b16c182fbf311a2acc1a7e327a2bf31dfdd6519a7aa6fa24b3dbdb",
+          "before_response": "O valet custa R$ 45 e fica em frente ao restaurante.",
+          "after_response": "O valet custa R$ 45 e fica em frente ao restaurante.",
+          "changed": false,
+          "knowledge_selected": [
+            "engine.authorized_surface"
+          ],
+          "action_playbook": "restaurant_information",
+          "action_mode": "handoff_required",
+          "service_quality_passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-020",
+      "category": "pagamentos_rolha_valet",
+      "turns": [
+        {
+          "turn": 1,
+          "input_fingerprint": "adbcadc711c7ad64bf0f340cb1382f28fb2bddcc21d687eb83dac5dad182b46a",
+          "before_response": "Perfeito. Sobre divisão da conta, ainda não tenho uma informação confirmada para responder isso com segurança. O que você gostaria de confirmar sobre esse assunto?",
+          "after_response": "Sim. Cada pessoa pode pagar a própria parte da conta com uma forma de pagamento aceita.",
+          "changed": true,
+          "knowledge_selected": [
+            "payment.split_bill"
+          ],
+          "action_playbook": "restaurant_information",
+          "action_mode": "executed",
+          "service_quality_passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-021",
+      "category": "delivery_ifood",
+      "turns": [
+        {
+          "turn": 1,
+          "input_fingerprint": "f172d0c964ada784e5b5f20b865c31751c5812b60cb6f3f4aa2b9274f6575d27",
+          "before_response": "Entendi. Você pode pedir pelo delivery próprio em https://deliveryapp.neemo.com.br/delivery/5936/menu ou pelo iFood. Não há preferência automática entre as opções.",
+          "after_response": "Você pode pedir pelo delivery próprio em https://deliveryapp.neemo.com.br/delivery/5936/menu ou procurar por TATÁ Sushi no aplicativo do iFood. Se quiser, também posso te ajudar a escolher a experiência que combina melhor com o momento.",
+          "changed": true,
+          "knowledge_selected": [
+            "engine.authorized_surface",
+            "delivery.options"
+          ],
+          "action_playbook": "experiences",
+          "action_mode": "handoff_required",
+          "service_quality_passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-022",
+      "category": "delivery_ifood",
+      "turns": [
+        {
+          "turn": 1,
+          "input_fingerprint": "70fd799e422c4c5c889ef94fae71668329620fd00c562c0ef5fd1826eec82f5c",
+          "before_response": "Perfeito. Sobre iFood, ainda não tenho uma informação confirmada para responder isso com segurança. O que você gostaria de confirmar sobre esse assunto?",
+          "after_response": "Você pode pedir pelo delivery próprio em https://deliveryapp.neemo.com.br/delivery/5936/menu ou procurar por TATÁ Sushi no aplicativo do iFood. Se quiser, me diga qual opção você prefere e eu te oriento pelo caminho certo.",
+          "changed": true,
+          "knowledge_selected": [
+            "delivery.options"
+          ],
+          "action_playbook": "own_delivery",
+          "action_mode": "executed",
+          "service_quality_passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-023",
+      "category": "delivery_ifood",
+      "turns": [
+        {
+          "turn": 1,
+          "input_fingerprint": "7ed377627fb975381aafad82fdb91740fe7ca6cc83a0b1337337a2e0e620a072",
+          "before_response": "Certo. Sobre taxa de entrega, ainda não tenho uma informação confirmada para responder isso com segurança. O que você gostaria de confirmar sobre esse assunto?",
+          "after_response": "A taxa de entrega depende do endereço e é calculada no canal no momento do pedido. Se quiser, me diga qual opção você prefere e eu te oriento pelo caminho certo.",
+          "changed": true,
+          "knowledge_selected": [
+            "delivery.fee"
+          ],
+          "action_playbook": "own_delivery",
+          "action_mode": "executed",
+          "service_quality_passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-024",
+      "category": "delivery_ifood",
+      "turns": [
+        {
+          "turn": 1,
+          "input_fingerprint": "0cf22b2aeb548a3bd6825d13ce14897c19d940b70de16da738b1e13291cbf74c",
+          "before_response": "Ainda não tenho uma confirmação segura para concluir esse ponto. Você pode me contar se a dúvida é sobre o restaurante, uma reserva ou um pedido?",
+          "after_response": "Para orientar sem inventar previsão, preciso do canal e do número do pedido. Com isso, o próximo passo é consultar o estado mostrado nesse canal.",
+          "changed": true,
+          "knowledge_selected": [
+            "delay.observable_state"
+          ],
+          "action_playbook": "delay_and_delivery",
+          "action_mode": "executed",
+          "service_quality_passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-025",
+      "category": "delivery_ifood",
+      "turns": [
+        {
+          "turn": 1,
+          "input_fingerprint": "75f108b9c59ed92a9ca086e5b973fb470b725ec845efaaea82138027c033be6e",
+          "before_response": "Perfeito. Sobre retirada no restaurante, ainda não tenho uma informação confirmada para responder isso com segurança. O que você gostaria de confirmar sobre esse assunto?",
+          "after_response": "Para retirada, preciso do nome e do que você deseja pedir. O lançamento e a previsão dependem da confirmação da equipe. Se quiser, me diga qual opção você prefere e eu te oriento pelo caminho certo.",
+          "changed": true,
+          "knowledge_selected": [
+            "delivery.pickup"
+          ],
+          "action_playbook": "own_delivery",
+          "action_mode": "executed",
+          "service_quality_passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-026",
+      "category": "pedidos_itens",
+      "turns": [
+        {
+          "turn": 1,
+          "input_fingerprint": "4d683f2acd35c7dc32b0457afae1f9f8df179dd6ae040fc26d72d9009eefd5a3",
+          "before_response": "Entendi o que aconteceu. Sobre a falta de refrigerante, não vou presumir reposição, crédito ou reembolso. Pode me informar o número do pedido e se ele foi feito pelo delivery do TATÁ ou pelo iFood?",
+          "after_response": "Entendi o que aconteceu. Entendi a falta de refrigerante. Vou conduzir o relato pelo canal do pedido e preservar o item afetado para a análise correta. Pode me informar o número do pedido e se ele foi feito pelo delivery do TATÁ ou pelo iFood?",
+          "changed": true,
+          "knowledge_selected": [
+            "occurrence.specific_direction"
+          ],
+          "action_playbook": "missing_item",
+          "action_mode": "executed",
+          "service_quality_passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-027",
+      "category": "pedidos_itens",
+      "turns": [
+        {
+          "turn": 1,
+          "input_fingerprint": "b565656a1368703590f78dc4025a0c63fe47601e459b94f6d0c2f60650404f74",
+          "before_response": "Sinto muito pelo ocorrido. Sobre a falta de bebida. Registre a solicitação pelo pedido no iFood, em Ajuda ou Reportar problema, e envie as evidências disponíveis. O relato também permanece no atendimento para preservar o contexto.",
+          "after_response": "Sinto muito pelo ocorrido. Entendi a falta de bebida. Registre a solicitação pelo pedido no iFood: abra Pedidos, toque em Ajuda e escolha “Tenho um problema com meu pedido”. Selecione o item afetado, descreva o que aconteceu e envie as evidências solicitadas no aplicativo. Vou conduzir o relato pelo canal do pedido e preservar o item afetado para a análise correta.",
+          "changed": true,
+          "knowledge_selected": [
+            "ifood.problem_path",
+            "occurrence.specific_direction"
+          ],
+          "action_playbook": "ifood",
+          "action_mode": "executed",
+          "service_quality_passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-028",
+      "category": "pedidos_itens",
+      "turns": [
+        {
+          "turn": 1,
+          "input_fingerprint": "a4c9e4a77f0d26ad106ccb89b689a1f4a4502909926fd7ffc9da0394e0cf5cde",
+          "before_response": "Sinto muito pelo ocorrido. Sobre a diferença entre a quantidade pedida e a recebida, não vou antecipar uma conclusão ou compensação. Pode me informar o número do pedido e se ele foi feito pelo delivery do TATÁ ou pelo iFood?",
+          "after_response": "Sinto muito pelo ocorrido. Entendi a diferença entre a quantidade pedida e a recebida. Vou preservar o relato para a análise correta. Pode me informar o número do pedido e se ele foi feito pelo delivery do TATÁ ou pelo iFood?",
+          "changed": true,
+          "knowledge_selected": [],
+          "action_playbook": "quantity_personalization",
+          "action_mode": "executed",
+          "service_quality_passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-029",
+      "category": "pedidos_itens",
+      "turns": [
+        {
+          "turn": 1,
+          "input_fingerprint": "a322e4a15e44c9fbef3203a720a3cd2c99b2fc3bd712cd84ad3931bbedd8d99a",
+          "before_response": "Poxa, sinto muito por isso. Sobre a personalização que não foi respeitada, não vou antecipar uma conclusão ou compensação. Pode me informar o número do pedido e se ele foi feito pelo delivery do TATÁ ou pelo iFood?",
+          "after_response": "Poxa, sinto muito por isso. Entendi a personalização que não foi respeitada. Vou preservar o relato para a análise correta. Pode me informar o número do pedido e se ele foi feito pelo delivery do TATÁ ou pelo iFood?",
+          "changed": true,
+          "knowledge_selected": [],
+          "action_playbook": "quantity_personalization",
+          "action_mode": "executed",
+          "service_quality_passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-030",
+      "category": "pedidos_itens",
+      "turns": [
+        {
+          "turn": 1,
+          "input_fingerprint": "9e079ab4cf3ac2c0f49ec7ebbaac28a3c61cb127af455ab018ca41b30d6cc6ae",
+          "before_response": "Entendi o que aconteceu. Sobre o item diferente que chegou, não vou antecipar uma conclusão ou compensação. Pode me informar o número do pedido e se ele foi feito pelo delivery do TATÁ ou pelo iFood?",
+          "after_response": "Entendi o que aconteceu. Entendi o item diferente que chegou. Vou preservar o relato para a análise correta. Pode me informar o número do pedido e se ele foi feito pelo delivery do TATÁ ou pelo iFood?",
+          "changed": true,
+          "knowledge_selected": [],
+          "action_playbook": "wrong_item",
+          "action_mode": "executed",
+          "service_quality_passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-031",
+      "category": "qualidade_seguranca",
+      "turns": [
+        {
+          "turn": 1,
+          "input_fingerprint": "daccb969bfaad6363bb12deda738a8161019a012ae562104fb69f64b479dc0af",
+          "before_response": "Obrigado por nos contar o que aconteceu. Vou preservar o cabelo encontrado na comida para acompanhamento da equipe de qualidade e da gestão, sem tirar conclusão médica nem apontar causa. Qual é o número do pedido? Qual item foi afetado?",
+          "after_response": "Obrigado por nos contar o que aconteceu. Entendi o cabelo encontrado na comida. Esse relato é sério e precisa de acompanhamento da equipe de qualidade e da gestão. Qual é o número do pedido? Qual item foi afetado?",
+          "changed": true,
+          "knowledge_selected": [],
+          "action_playbook": "food_safety",
+          "action_mode": "executed",
+          "service_quality_passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-032",
+      "category": "qualidade_seguranca",
+      "turns": [
+        {
+          "turn": 1,
+          "input_fingerprint": "8d14069edfda8564ac4e6dcb3b543a5bbefb0d10e5261b146e34e15a94d03b93",
+          "before_response": "Sinto muito pelo que aconteceu. Vou preservar o cheiro diferente percebido para acompanhamento da equipe de qualidade e da gestão, sem tirar conclusão médica nem apontar causa. Qual é o número do pedido? Qual item foi afetado?",
+          "after_response": "Sinto muito pelo que aconteceu. Entendi o cheiro diferente percebido. Vou preservar o item e o sinal relatado para análise, sem antecipar a causa. Qual é o número do pedido? Qual item foi afetado?",
+          "changed": true,
+          "knowledge_selected": [
+            "quality.analysis"
+          ],
+          "action_playbook": "quality",
+          "action_mode": "executed",
+          "service_quality_passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-033",
+      "category": "qualidade_seguranca",
+      "turns": [
+        {
+          "turn": 1,
+          "input_fingerprint": "5327af01fa21fd89dda7c31fb64244827831f40e950e15b65fbcc532d8d9b168",
+          "before_response": "Obrigado por nos contar o que aconteceu. Vou preservar a possível reação a um alergênico para acompanhamento da equipe de qualidade e da gestão, sem tirar conclusão médica nem apontar causa. Qual é o número do pedido? Qual item foi afetado?",
+          "after_response": "Obrigado por nos contar o que aconteceu. Entendi a possível reação a um alergênico. Por segurança, procure um serviço de saúde o mais rápido possível. A equipe de qualidade e da gestão também precisa acompanhar o relato, sem concluir clinicamente nem apontar causa. Qual é o número do pedido? Qual item foi afetado?",
+          "changed": true,
+          "knowledge_selected": [
+            "food_safety.health_service"
+          ],
+          "action_playbook": "food_safety",
+          "action_mode": "executed",
+          "service_quality_passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-034",
+      "category": "qualidade_seguranca",
+      "turns": [
+        {
+          "turn": 1,
+          "input_fingerprint": "87eaa0017154217079ebcaceaa44c1a2dfee11da9a571a6e87ac4d72a57b99a3",
+          "before_response": "Obrigado por nos contar o que aconteceu. Vou preservar os sintomas relatados para acompanhamento da equipe de qualidade e da gestão, sem tirar conclusão médica nem apontar causa. Quais sintomas apareceram? Quando os sintomas começaram?",
+          "after_response": "Obrigado por nos contar o que aconteceu. Entendi os sintomas relatados. Se há dificuldade para respirar, desmaio ou outro sinal de urgência, procure atendimento imediato ou acione o SAMU 192. Por segurança, procure um serviço de saúde o mais rápido possível. A equipe de qualidade e da gestão também precisa acompanhar o relato, sem concluir clinicamente nem apontar causa.",
+          "changed": true,
+          "knowledge_selected": [
+            "food_safety.emergency",
+            "food_safety.health_service"
+          ],
+          "action_playbook": "food_safety",
+          "action_mode": "executed",
+          "service_quality_passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-035",
+      "category": "qualidade_seguranca",
+      "turns": [
+        {
+          "turn": 1,
+          "input_fingerprint": "6148070baeee8d34e7c3fc4a52ce68a4090df49f79ec193ef3efa5c3372dc135",
+          "before_response": "Obrigado por nos contar o que aconteceu. Vou preservar os sintomas relatados para acompanhamento da equipe de qualidade e da gestão, sem tirar conclusão médica nem apontar causa. Quais sintomas apareceram? Quando os sintomas começaram?",
+          "after_response": "Obrigado por nos contar o que aconteceu. Entendi os sintomas relatados. Como mais de uma pessoa foi afetada, o relato exige acompanhamento imediato e deve preservar sintomas, momento de início, item e referência do pedido. Por segurança, procure um serviço de saúde o mais rápido possível. A equipe de qualidade e da gestão também precisa acompanhar o relato, sem concluir clinicamente nem apontar causa. Quais sintomas apareceram? Quando os sintomas começaram?",
+          "changed": true,
+          "knowledge_selected": [
+            "food_safety.multiple_people",
+            "food_safety.health_service"
+          ],
+          "action_playbook": "food_safety",
+          "action_mode": "executed",
+          "service_quality_passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-036",
+      "category": "eventos_oke_grupo",
+      "turns": [
+        {
+          "turn": 1,
+          "input_fingerprint": "feb453103fbc14bcc7fdb82f65e0169c9a0f2f25d672d0ed6b64f1925c0f3741",
+          "before_response": "Certo. Sobre eventos e grupos, ainda não tenho uma informação confirmada para responder isso com segurança. O que você gostaria de confirmar sobre esse assunto?",
+          "after_response": "Claro. Para um evento ou grupo, a equipe precisa avaliar quantidade de pessoas, data, horário e o formato desejado antes de confirmar disponibilidade.",
+          "changed": true,
+          "knowledge_selected": [
+            "events.general"
+          ],
+          "action_playbook": "events_oke",
+          "action_mode": "executed",
+          "service_quality_passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-037",
+      "category": "eventos_oke_grupo",
+      "turns": [
+        {
+          "turn": 1,
+          "input_fingerprint": "3772af9377cf5cee7ecf266367a9b381b365bfa90a4785c970aaaef9b6e077f7",
+          "before_response": "Esse caso precisa de acompanhamento humano antes de qualquer conclusão. Para quantas pessoas seria? Qual horário você planeja para a retirada?",
+          "after_response": "Claro. O Oke é preparado para retirada na loja. A quantidade e as opções dependem do grupo e da confirmação da equipe; o retorno é dado até o dia seguinte e as tábuas devem ser devolvidas em até dois dias. Para quantas pessoas seria? Qual horário você planeja para a retirada?",
+          "changed": true,
+          "knowledge_selected": [
+            "engine.authorized_surface",
+            "events.oke"
+          ],
+          "action_playbook": "events_oke",
+          "action_mode": "executed",
+          "service_quality_passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-038",
+      "category": "eventos_oke_grupo",
+      "turns": [
+        {
+          "turn": 1,
+          "input_fingerprint": "16e0885f418ee8bb52d116550c3ac441667568147361526ea2b9d3f2ba13311d",
+          "before_response": "Perfeito. Como são 10 pessoas, esse atendimento precisa de acompanhamento operacional antes de confirmar fila ou reserva. Pode me informar seu nome e a previsão aproximada de chegada?",
+          "after_response": "Perfeito. Como são 10 pessoas, a disponibilidade precisa ser verificada antes de confirmar mesa, fila ou reserva. Pode me informar seu nome e a previsão aproximada de chegada?",
+          "changed": true,
+          "knowledge_selected": [
+            "engine.authorized_surface"
+          ],
+          "action_playbook": "large_group",
+          "action_mode": "executed",
+          "service_quality_passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-039",
+      "category": "eventos_oke_grupo",
+      "turns": [
+        {
+          "turn": 1,
+          "input_fingerprint": "9ca1aa78da10459c0744f72571d8c3581f71804c48cc49ac5cbe3b42f7bc0a39",
+          "before_response": "Perfeito. Você pode me contar se a dúvida é sobre o restaurante, uma reserva ou um pedido?",
+          "after_response": "Perfeito. Você pode me contar se a dúvida é sobre o restaurante, uma reserva ou um pedido?",
+          "changed": false,
+          "knowledge_selected": [],
+          "action_playbook": "privacy_and_handoff",
+          "action_mode": "executed",
+          "service_quality_passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-040",
+      "category": "eventos_oke_grupo",
+      "turns": [
+        {
+          "turn": 1,
+          "input_fingerprint": "f6dccd3ffad50cc872e3cafc4dc63cc449b384183babbc50c88e9eddafd0ef25",
+          "before_response": "Perfeito. Como são 10 pessoas, esse atendimento precisa de acompanhamento operacional antes de confirmar fila ou reserva. Qual nome devo usar?",
+          "after_response": "Perfeito. Como são 10 pessoas, a disponibilidade precisa ser verificada antes de confirmar mesa, fila ou reserva. Qual nome devo usar?",
+          "changed": true,
+          "knowledge_selected": [
+            "engine.authorized_surface"
+          ],
+          "action_playbook": "large_group",
+          "action_mode": "executed",
+          "service_quality_passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-041",
+      "category": "multiturno",
+      "turns": [
+        {
+          "turn": 1,
+          "input_fingerprint": "59591ab620510bfb9cd19d366932bbf69fee3b2d1500fe415aa3ddf8ba779d19",
+          "before_response": "Certo. Sobre iFood, ainda não tenho uma informação confirmada para responder isso com segurança. O que você gostaria de confirmar sobre esse assunto?",
+          "after_response": "Certo. Sobre iFood, ainda não tenho uma informação confirmada para responder isso com segurança. O que você gostaria de confirmar sobre esse assunto?",
+          "changed": false,
+          "knowledge_selected": [],
+          "action_playbook": "privacy_and_handoff",
+          "action_mode": "executed",
+          "service_quality_passed": true
+        },
+        {
+          "turn": 2,
+          "input_fingerprint": "a13ece7b63518e08cf019f113364c4fa1259a89876c8ead93bcc53c0039350ac",
+          "before_response": "Certo. Sobre a falta de bebida, não vou presumir reposição, crédito ou reembolso. O caso permanece aberto com as informações já fornecidas.",
+          "after_response": "Certo. Entendi a falta de bebida. Vou conduzir o relato pelo canal do pedido e preservar o item afetado para a análise correta.",
+          "changed": true,
+          "knowledge_selected": [
+            "occurrence.specific_direction"
+          ],
+          "action_playbook": "missing_item",
+          "action_mode": "executed",
+          "service_quality_passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-042",
+      "category": "multiturno",
+      "turns": [
+        {
+          "turn": 1,
+          "input_fingerprint": "e0941413304f509ba261e7ea14428819bf61ef7569d0b423cfc07c5d39cad878",
+          "before_response": "Poxa, sinto muito por isso. Sobre a falta de shoyu. Registre a solicitação pelo pedido no iFood, em Ajuda ou Reportar problema, e envie as evidências disponíveis. O relato também permanece no atendimento para preservar o contexto.",
+          "after_response": "Poxa, sinto muito por isso. Entendi a falta de shoyu. Registre a solicitação pelo pedido no iFood: abra Pedidos, toque em Ajuda e escolha “Tenho um problema com meu pedido”. Selecione o item afetado, descreva o que aconteceu e envie as evidências solicitadas no aplicativo. Vou conduzir o relato pelo canal do pedido e preservar o item afetado para a análise correta.",
+          "changed": true,
+          "knowledge_selected": [
+            "ifood.problem_path",
+            "occurrence.specific_direction"
+          ],
+          "action_playbook": "ifood",
+          "action_mode": "executed",
+          "service_quality_passed": true
+        },
+        {
+          "turn": 2,
+          "input_fingerprint": "0878ad3171a3f62026d656c32abedf887f4f325307c4e92f75688568fb4881ff",
+          "before_response": "Certo. Você pode me contar se a dúvida é sobre o restaurante, uma reserva ou um pedido?",
+          "after_response": "Certo. Você pode me contar se a dúvida é sobre o restaurante, uma reserva ou um pedido?",
+          "changed": false,
+          "knowledge_selected": [],
+          "action_playbook": "privacy_and_handoff",
+          "action_mode": "executed",
+          "service_quality_passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-043",
+      "category": "multiturno",
+      "turns": [
+        {
+          "turn": 1,
+          "input_fingerprint": "590c824e3711d1cff986b395dff6ba797c6f52563b5a3b652ddd5bae085f3320",
+          "before_response": "Sinto muito pelo ocorrido. Sobre a falta de refrigerante, não vou presumir reposição, crédito ou reembolso. Pode me informar o número do pedido e se ele foi feito pelo delivery do TATÁ ou pelo iFood?",
+          "after_response": "Sinto muito pelo ocorrido. Entendi a falta de refrigerante. Vou conduzir o relato pelo canal do pedido e preservar o item afetado para a análise correta. Pode me informar o número do pedido e se ele foi feito pelo delivery do TATÁ ou pelo iFood?",
+          "changed": true,
+          "knowledge_selected": [
+            "occurrence.specific_direction"
+          ],
+          "action_playbook": "missing_item",
+          "action_mode": "executed",
+          "service_quality_passed": true
+        },
+        {
+          "turn": 2,
+          "input_fingerprint": "f654541fc3f5d261bfb251c6d2a1104b344b3461403b6fec48073c52b2885d80",
+          "before_response": "Certo. Sobre a falta de refrigerante. Registre a solicitação pelo pedido no iFood, em Ajuda ou Reportar problema, e envie as evidências disponíveis. O relato também permanece no atendimento para preservar o contexto. Pode me informar o número do pedido?",
+          "after_response": "Certo. Entendi a falta de refrigerante. Registre a solicitação pelo pedido no iFood: abra Pedidos, toque em Ajuda e escolha “Tenho um problema com meu pedido”. Selecione o item afetado, descreva o que aconteceu e envie as evidências solicitadas no aplicativo. Vou conduzir o relato pelo canal do pedido e preservar o item afetado para a análise correta. Qual é o número do pedido?",
+          "changed": true,
+          "knowledge_selected": [
+            "ifood.problem_path",
+            "occurrence.specific_direction"
+          ],
+          "action_playbook": "ifood",
+          "action_mode": "executed",
+          "service_quality_passed": true
+        },
+        {
+          "turn": 3,
+          "input_fingerprint": "726db8fcf2e3b1b17f8b8cd5c09e171b29be4431170159921f3865dae0b25920",
+          "before_response": "Entendi. Sobre a falta de refrigerante, não vou presumir reposição, crédito ou reembolso. O caso permanece aberto com as informações já fornecidas.",
+          "after_response": "Entendi. Entendi a falta de refrigerante. Vou conduzir o relato pelo canal do pedido e preservar o item afetado para a análise correta.",
+          "changed": true,
+          "knowledge_selected": [
+            "occurrence.specific_direction"
+          ],
+          "action_playbook": "missing_item",
+          "action_mode": "executed",
+          "service_quality_passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-044",
+      "category": "multiturno",
+      "turns": [
+        {
+          "turn": 1,
+          "input_fingerprint": "897fd8dd0280886d2df57d8e1917b9af76666b2681a7fb4ce5ba1ac8ab62a9f7",
+          "before_response": "Entendi o que aconteceu. Sobre a falta de bebida. Registre a solicitação pelo pedido no iFood, em Ajuda ou Reportar problema, e envie as evidências disponíveis. O relato também permanece no atendimento para preservar o contexto.",
+          "after_response": "Entendi o que aconteceu. Entendi a falta de bebida. Registre a solicitação pelo pedido no iFood: abra Pedidos, toque em Ajuda e escolha “Tenho um problema com meu pedido”. Selecione o item afetado, descreva o que aconteceu e envie as evidências solicitadas no aplicativo. Vou conduzir o relato pelo canal do pedido e preservar o item afetado para a análise correta.",
+          "changed": true,
+          "knowledge_selected": [
+            "ifood.problem_path",
+            "occurrence.specific_direction"
+          ],
+          "action_playbook": "ifood",
+          "action_mode": "executed",
+          "service_quality_passed": true
+        },
+        {
+          "turn": 2,
+          "input_fingerprint": "b56ff1b56271d7647fec96c95679838297a1cdb05669543281691e3aeb7792f3",
+          "before_response": "Entendi. Sobre a falta de shoyu, não vou presumir reposição, crédito ou reembolso. O caso permanece aberto com as informações já fornecidas.",
+          "after_response": "Entendi. Entendi a falta de shoyu. Vou conduzir o relato pelo canal do pedido e preservar o item afetado para a análise correta.",
+          "changed": true,
+          "knowledge_selected": [
+            "occurrence.specific_direction"
+          ],
+          "action_playbook": "missing_item",
+          "action_mode": "executed",
+          "service_quality_passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-045",
+      "category": "multiturno",
+      "turns": [
+        {
+          "turn": 1,
+          "input_fingerprint": "842718e704e5639642a92994cbca5527e5026a2989ef1491fcbc0eb5d28975e2",
+          "before_response": "Sinto muito pelo ocorrido. Sobre a falta de bebida. Registre a solicitação pelo pedido no iFood, em Ajuda ou Reportar problema, e envie as evidências disponíveis. O relato também permanece no atendimento para preservar o contexto.",
+          "after_response": "Sinto muito pelo ocorrido. Entendi a falta de bebida. Registre a solicitação pelo pedido no iFood: abra Pedidos, toque em Ajuda e escolha “Tenho um problema com meu pedido”. Selecione o item afetado, descreva o que aconteceu e envie as evidências solicitadas no aplicativo. Vou conduzir o relato pelo canal do pedido e preservar o item afetado para a análise correta.",
+          "changed": true,
+          "knowledge_selected": [
+            "ifood.problem_path",
+            "occurrence.specific_direction"
+          ],
+          "action_playbook": "ifood",
+          "action_mode": "executed",
+          "service_quality_passed": true
+        },
+        {
+          "turn": 2,
+          "input_fingerprint": "ab068101dd26ce97cf9dc5862614307f862762f4456ca3011db73e2297b859ee",
+          "before_response": "No domingo, o horário regular é 11h às 16h30 e 18h às 22h.",
+          "after_response": "No domingo, o horário regular é 11h às 16h30 e 18h às 22h. Vai ser um prazer receber você.",
+          "changed": true,
+          "knowledge_selected": [
+            "engine.authorized_surface"
+          ],
+          "action_playbook": "restaurant_information",
+          "action_mode": "handoff_required",
+          "service_quality_passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-046",
+      "category": "ambiguidade_elogio_privacidade_handoff",
+      "turns": [
+        {
+          "turn": 1,
+          "input_fingerprint": "07cd21930db80af97f5159fdc7fe46bf2eb1dd10d1d04d483f46de30cc78f489",
+          "before_response": "Perfeito. Você pode me contar se a dúvida é sobre o restaurante, uma reserva ou um pedido?",
+          "after_response": "Perfeito. Você pode me contar se a dúvida é sobre o restaurante, uma reserva ou um pedido?",
+          "changed": false,
+          "knowledge_selected": [],
+          "action_playbook": "privacy_and_handoff",
+          "action_mode": "executed",
+          "service_quality_passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-047",
+      "category": "ambiguidade_elogio_privacidade_handoff",
+      "turns": [
+        {
+          "turn": 1,
+          "input_fingerprint": "cab50211070f88333ca4bc82e9c9e4248691cac3ecf6a10e512402099c50ba94",
+          "before_response": "Que bom saber que você gostou da experiência Obrigado por contar.",
+          "after_response": "Que bom saber disso. Obrigado por contar o que tornou sua experiência especial — vou preservar esse reconhecimento para a equipe.",
+          "changed": true,
+          "knowledge_selected": [
+            "feedback.praise"
+          ],
+          "action_playbook": "praise_and_suggestion",
+          "action_mode": "executed",
+          "service_quality_passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-048",
+      "category": "ambiguidade_elogio_privacidade_handoff",
+      "turns": [
+        {
+          "turn": 1,
+          "input_fingerprint": "552edeafbfc27553d762dfb5ff9dae61cec8d56f1d601714d58801aaafa03ed3",
+          "before_response": "Ainda não tenho uma confirmação segura para concluir esse ponto. Você pode me contar se a dúvida é sobre o restaurante, uma reserva ou um pedido?",
+          "after_response": "Você pode tirar dúvidas sem informar dados pessoais. Quando um pedido precisa ser localizado, pedimos somente os dados necessários para acompanhar aquele caso.",
+          "changed": true,
+          "knowledge_selected": [
+            "privacy.minimum"
+          ],
+          "action_playbook": "privacy_and_handoff",
+          "action_mode": "executed",
+          "service_quality_passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-049",
+      "category": "ambiguidade_elogio_privacidade_handoff",
+      "turns": [
+        {
+          "turn": 1,
+          "input_fingerprint": "c19cd1a7b7675f2d3018fc36bc7624fd3082dfb4ffa03b2e087dc5bc6c7c100b",
+          "before_response": "Ainda não tenho uma confirmação segura para concluir esse ponto. Você pode me contar se a dúvida é sobre o restaurante, uma reserva ou um pedido?",
+          "after_response": "Ainda não tenho uma confirmação segura para concluir esse ponto. Você pode me contar se a dúvida é sobre o restaurante, uma reserva ou um pedido?",
+          "changed": false,
+          "knowledge_selected": [],
+          "action_playbook": "privacy_and_handoff",
+          "action_mode": "executed",
+          "service_quality_passed": true
+        }
+      ]
+    },
+    {
+      "case_id": "HREV-050",
+      "category": "ambiguidade_elogio_privacidade_handoff",
+      "turns": [
+        {
+          "turn": 1,
+          "input_fingerprint": "17fe79cf1dd494bd0cbf73aeaa88047d2149b5cce3fc59ea060750dbaa471c1f",
+          "before_response": "Os horários regulares são: segunda a quinta, 12h às 15h e 19h às 23h; sexta, 12h às 15h e 19h às 23h30; sábado, 12h às 16h30 e 19h às 23h30; domingo, 11h às 16h30 e 18h às 22h.",
+          "after_response": "Você pode tirar dúvidas sem informar dados pessoais. Quando um pedido precisa ser localizado, pedimos somente os dados necessários para acompanhar aquele caso. Esperamos ver você por aqui.",
+          "changed": true,
+          "knowledge_selected": [
+            "engine.authorized_surface",
+            "privacy.minimum"
+          ],
+          "action_playbook": "restaurant_information",
+          "action_mode": "handoff_required",
+          "service_quality_passed": true
+        }
+      ]
+    }
+  ],
+  "canonical_hash": "2280c4142e48090979b879fa885c9dc9cc0f40af58bbb90e9cb6853b31b0cc5c"
+}

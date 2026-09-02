@@ -1,0 +1,247 @@
+{
+  "schema_version": "deliveryos-conversation-humanized-metrics-v1",
+  "synthetic": true,
+  "source_hash": "cfe462fe00147c6b0642fbd9e9fe15f19c8120781d5829d62f3dda663814dc04",
+  "objective": {
+    "conversations": 50,
+    "turns": 56,
+    "repeated_openings": [
+      {
+        "value": "obrigado por nos contar",
+        "count": 4
+      },
+      {
+        "value": "sinto muito pelo ocorrido.",
+        "count": 4
+      },
+      {
+        "value": "ainda nao tenho uma",
+        "count": 3
+      },
+      {
+        "value": "claro. voce pode consultar",
+        "count": 3
+      },
+      {
+        "value": "entendi o que aconteceu.",
+        "count": 3
+      },
+      {
+        "value": "certo. sobre a falta",
+        "count": 2
+      },
+      {
+        "value": "claro. quando nao houver",
+        "count": 2
+      },
+      {
+        "value": "entendi. sobre a falta",
+        "count": 2
+      },
+      {
+        "value": "no domingo, o horario",
+        "count": 2
+      },
+      {
+        "value": "perfeito. como sao 10",
+        "count": 2
+      },
+      {
+        "value": "perfeito. voce pode me",
+        "count": 2
+      },
+      {
+        "value": "poxa, sinto muito por",
+        "count": 2
+      }
+    ],
+    "dominant_opening_count": 4,
+    "dominant_opening_limit": 11,
+    "generic_fallback_count": 0,
+    "generic_fallback_limit": 7,
+    "fallback_reasons": [
+      {
+        "value": "human_assistance_needed",
+        "count": 26
+      },
+      {
+        "value": "intent_ambiguous",
+        "count": 19
+      },
+      {
+        "value": "none",
+        "count": 10
+      },
+      {
+        "value": "public_fact_unconfirmed",
+        "count": 1
+      }
+    ],
+    "strategies": [
+      {
+        "value": "ambiguity",
+        "count": 18
+      },
+      {
+        "value": "missing_item",
+        "count": 10
+      },
+      {
+        "value": "food_safety",
+        "count": 5
+      },
+      {
+        "value": "information_direct",
+        "count": 5
+      },
+      {
+        "value": "reservation",
+        "count": 3
+      },
+      {
+        "value": "large_group",
+        "count": 2
+      },
+      {
+        "value": "waitlist",
+        "count": 2
+      },
+      {
+        "value": "continuation",
+        "count": 1
+      },
+      {
+        "value": "corkage",
+        "count": 1
+      },
+      {
+        "value": "information_enriched",
+        "count": 1
+      },
+      {
+        "value": "menu",
+        "count": 1
+      },
+      {
+        "value": "oke_events",
+        "count": 1
+      },
+      {
+        "value": "own_delivery",
+        "count": 1
+      },
+      {
+        "value": "payment",
+        "count": 1
+      },
+      {
+        "value": "personalization_ignored",
+        "count": 1
+      },
+      {
+        "value": "valet",
+        "count": 1
+      },
+      {
+        "value": "wrong_item",
+        "count": 1
+      },
+      {
+        "value": "wrong_quantity",
+        "count": 1
+      }
+    ],
+    "continuation_greeting_failures": [],
+    "repeated_question_failures": [],
+    "five_contract_gaps": [
+      {
+        "status": "passed",
+        "check": "must_include",
+        "case_id": "HREV-003",
+        "expected": "não está configurado",
+        "actual": "O horário de feriados ainda não está configurado. Para qual dia seria?",
+        "evidence": "final response"
+      },
+      {
+        "status": "passed",
+        "check": "must_include",
+        "case_id": "HREV-026",
+        "expected": "refrigerante",
+        "actual": "Entendi o que aconteceu. Sobre a falta de refrigerante, não vou presumir reposição, crédito ou reembolso. Pode me informar o número do pedido e se ele foi feito pelo delivery do TATÁ ou pelo iFood?",
+        "evidence": "final response"
+      },
+      {
+        "status": "passed",
+        "check": "must_include",
+        "case_id": "HREV-027",
+        "expected": "bebida",
+        "actual": "Sinto muito pelo ocorrido. Sobre a falta de bebida. Registre a solicitação pelo pedido no iFood, em Ajuda ou Reportar problema, e envie as evidências disponíveis. O relato também permanece no atendimento para preservar o contexto.",
+        "evidence": "final response"
+      },
+      {
+        "status": "passed",
+        "check": "must_include",
+        "case_id": "HREV-041",
+        "expected": "bebida",
+        "actual": "Certo. Sobre a falta de bebida, não vou presumir reposição, crédito ou reembolso. O caso permanece aberto com as informações já fornecidas.",
+        "evidence": "final response"
+      },
+      {
+        "status": "passed",
+        "check": "must_include",
+        "case_id": "HREV-044",
+        "expected": "shoyu",
+        "actual": "Entendi. Sobre a falta de shoyu, não vou presumir reposição, crédito ou reembolso. O caso permanece aberto com as informações já fornecidas.",
+        "evidence": "final response"
+      }
+    ],
+    "verifier": {
+      "total": 616,
+      "passed": 616,
+      "failed": 0
+    },
+    "verifier_failures": [],
+    "safety": {
+      "unknown_links": 0,
+      "unknown_values": 0,
+      "forbidden_promises": 0,
+      "automatic_compensation": 0,
+      "validator_rejections_unresolved": 0
+    }
+  },
+  "heuristic": {
+    "bureaucratic_patterns": [
+      {
+        "phrase": "setor responsável",
+        "count": 0
+      },
+      {
+        "phrase": "da forma correta",
+        "count": 0
+      },
+      {
+        "phrase": "com a devida atenção",
+        "count": 0
+      },
+      {
+        "phrase": "para que possamos",
+        "count": 0
+      },
+      {
+        "phrase": "seguimos à disposição",
+        "count": 0
+      }
+    ],
+    "note": "Métricas estruturais não substituem a avaliação humana de César."
+  },
+  "human_review_required": true,
+  "gates": {
+    "dominant_opening": true,
+    "generic_fallback": true,
+    "contract_gaps": true,
+    "continuity": true,
+    "safety": true,
+    "verifier": true
+  },
+  "canonical_hash": "cef16c378c8a4b41942338805e86cbec9a5fdc16e705ae03e4789aaa602c5935"
+}
