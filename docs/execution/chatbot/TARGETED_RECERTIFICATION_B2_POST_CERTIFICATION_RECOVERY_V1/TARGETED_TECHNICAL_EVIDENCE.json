@@ -1,0 +1,163 @@
+{
+  "schema_version": "deliveryos-b2-targeted-technical-evidence-v1",
+  "source_packet": {
+    "path": "08_B2_FRESH_FINAL_CERTIFICATION_PACKET.zip",
+    "sha256": "8b69861212e575969472713dcb28af9be5568e2039f9a98ee9083c815d5f1420",
+    "bytes": 23681,
+    "manifest_sha256": "53134442fa7bae3542fabe227fb49bcc2dd826f473704adeb6387271c9e0077c",
+    "declared_files_verified": 9
+  },
+  "scope": {
+    "scenarios": [
+      "F001",
+      "F002",
+      "F003",
+      "F004",
+      "F005",
+      "F006",
+      "F007",
+      "F008",
+      "F009",
+      "F010",
+      "F011",
+      "F012"
+    ],
+    "bounded_replay_units": 23,
+    "source_rounds_included": {
+      "first": 12,
+      "second": 11,
+      "third": 0
+    },
+    "private_evaluation_context_included": false,
+    "external_action_performed": false,
+    "external_spend_brl": 0
+  },
+  "contract": {
+    "schema_name": "deliveryos_b2_cognitive_plan_v2",
+    "schema_strict": true,
+    "commitment_kinds": [
+      "GOAL",
+      "CONSTRAINT",
+      "REFERENCE",
+      "REPAIR",
+      "QUESTION"
+    ]
+  },
+  "output_payload_sha256": "ce65aaec67fefa695bccde0fe5a99fd33478af2dcf452e982d03700d03981e85",
+  "unit_response_hashes": [
+    {
+      "unit_id": "F001-R1",
+      "response_hash": "d8a8b49fef6b83f6ac56356ec23327a80693a6deff5ec9bdef9581a414d7cfbe"
+    },
+    {
+      "unit_id": "F001-R2",
+      "response_hash": "066b077b1f79014d496c843efe8603db08698693e8b317625345e34d0ebf156e"
+    },
+    {
+      "unit_id": "F002-R1",
+      "response_hash": "55ba5779eeb19c1318854b84a5492b837007906f1d5fb5055026e3e9e55e0389"
+    },
+    {
+      "unit_id": "F002-R2",
+      "response_hash": "20adbccb9c35b042b14f1eeae82bf86f291f70d08c74147f623bc8889e4f3d6b"
+    },
+    {
+      "unit_id": "F003-R1",
+      "response_hash": "ab62efd5884953d1975fa5eccbdcf57f22639923a32d9bd25a2522b389e75d30"
+    },
+    {
+      "unit_id": "F004-R1",
+      "response_hash": "d20c227955e79e2318af5fc6fb637ff1ba55b45964545ff644c207e7bf58b82a"
+    },
+    {
+      "unit_id": "F004-R2",
+      "response_hash": "ca332049b26336217b89140b040246026a687cb22bc1808f73a5bf16aedeb94e"
+    },
+    {
+      "unit_id": "F005-R1",
+      "response_hash": "ee6e8376658e3bbf8d9d7a111bfc8b87c8680fb07ac63ed11cf296b8e5aa9ab8"
+    },
+    {
+      "unit_id": "F005-R2",
+      "response_hash": "5ab19911f510398f20d5786fdc5951f38312f8dbf0502f115043b5dd82402b5f"
+    },
+    {
+      "unit_id": "F006-R1",
+      "response_hash": "582290135215f83ddf996b932a622c011b615ca6cfcf00f533d864f743388c52"
+    },
+    {
+      "unit_id": "F006-R2",
+      "response_hash": "6f38f100e8ed1a607dc4705c5c7cc00c4fa11404ba59b4c28c42db017e72af5d"
+    },
+    {
+      "unit_id": "F007-R1",
+      "response_hash": "6435e50f8dfe5fc85f8b038fbf9e4ba3f1a9479cde3917791555b1a5f259dee3"
+    },
+    {
+      "unit_id": "F007-R2",
+      "response_hash": "ee65df067bf4a827ac6d955cf4c7a6fb5ff8437c7b6836bd04590598e8e53be4"
+    },
+    {
+      "unit_id": "F008-R1",
+      "response_hash": "07ecf9685efdfb642e032b2730970aa67380772f903b154643e8cc9873a885b1"
+    },
+    {
+      "unit_id": "F008-R2",
+      "response_hash": "5b3014906c9b6a33862ca1fe28fe8a103251a8cb87f51abca6a59946845a5564"
+    },
+    {
+      "unit_id": "F009-R1",
+      "response_hash": "02effe38cf57d98ed51296c6e209e7a40ae38359847c98c1263ff3f668aa43ab"
+    },
+    {
+      "unit_id": "F009-R2",
+      "response_hash": "988d6e4632d1ce9b538c672b32167b04abd10f461530aa98ee26b1c27aaf3b3c"
+    },
+    {
+      "unit_id": "F010-R1",
+      "response_hash": "2d39a799184f367413b37e655c4b471aa37b8c206de09d963ba857a963ebb786"
+    },
+    {
+      "unit_id": "F010-R2",
+      "response_hash": "c95bac521101c07dc7a7944f5f108167188eb22b8d6fc115d648b501a4d118e9"
+    },
+    {
+      "unit_id": "F011-R1",
+      "response_hash": "b9f18aba4a5ee5b0c21d78761316df1b719d87087ae3dc911f00b4c9d187be5c"
+    },
+    {
+      "unit_id": "F011-R2",
+      "response_hash": "6e2f632d142adc6334fb4cb0617dc25fe9824cbe00422e560435e32f85ee015e"
+    },
+    {
+      "unit_id": "F012-R1",
+      "response_hash": "8b999c3ac10a3a7d07449052e469a8fe4557f464f6bfa946859e05da82ee064a"
+    },
+    {
+      "unit_id": "F012-R2",
+      "response_hash": "c9c7aaf2a4da9b6e38fc64c1dedb7a54cfb1a2b0d81157928066ba388f003536"
+    }
+  ],
+  "implementation_files": [
+    {
+      "path": "tools/conversation-crm/cognitive-authority/b2/authority.js",
+      "sha256": "70ceec1336ac8dee71ebb33e18c40b4754184ed41114476e73a829a6cd194b28"
+    },
+    {
+      "path": "tools/conversation-crm/cognitive-authority/b2/commitments.js",
+      "sha256": "39a0c91bda8b9aca02753e90af00dcf6d00517c2ac4105c0b2a16643a9816a07"
+    },
+    {
+      "path": "tools/conversation-crm/cognitive-authority/b2/contract.js",
+      "sha256": "7aa768396254a025c99085789235f17ba315c30227e4abdbb4fe66e5ca6ffafe"
+    },
+    {
+      "path": "tools/conversation-crm/cognitive-authority/b2/pipeline.js",
+      "sha256": "bf296c797637d2379779124a1f6fab6040966e2ece6620e3b6be9672fa764008"
+    },
+    {
+      "path": "tools/conversation-crm/cognitive-authority/b2/writer.js",
+      "sha256": "875d5c1ef2799f94ab5768120972b52beefbdfb057b9ee29886d16a36e45472a"
+    }
+  ]
+}

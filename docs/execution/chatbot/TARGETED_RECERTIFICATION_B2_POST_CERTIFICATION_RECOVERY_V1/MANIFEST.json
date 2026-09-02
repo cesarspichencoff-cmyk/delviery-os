@@ -1,0 +1,40 @@
+{
+  "schema_version": "deliveryos-b2-targeted-recertification-manifest-v1",
+  "role": "INDEPENDENT_RECERTIFIER",
+  "source_packet_sha256": "8b69861212e575969472713dcb28af9be5568e2039f9a98ee9083c815d5f1420",
+  "scenario_count": 12,
+  "bounded_replay_unit_count": 23,
+  "continuous_conversation": false,
+  "files": [
+    {
+      "path": "SOURCE_PHASE2_AUTHORITY_POLICY.json",
+      "sha256": "b2656eeecd63c5d4449dcec7e85f3f377764d1617b0c0fcaeaf08f64fdc0adc8",
+      "bytes": 481
+    },
+    {
+      "path": "SOURCE_PHASE2_AUTHORIZED_CAPABILITIES.json",
+      "sha256": "09dec8ef6e90a37f55fbec230bf8cfea81b484a2224aaf91b28c75bd504656c3",
+      "bytes": 935
+    },
+    {
+      "path": "TARGETED_RECERTIFIER_INSTRUCTIONS.md",
+      "sha256": "4f0f3336990705a29fe99029ccf502c0e4f5274770ac8e64b394066b2d4be0b1",
+      "bytes": 1135
+    },
+    {
+      "path": "TARGETED_REPLAY_INPUTS.json",
+      "sha256": "f7c1d2ebbc1e277e038c2ad64a7375a67950fedf3ad32782385d8ed9deeea50a",
+      "bytes": 48027
+    },
+    {
+      "path": "TARGETED_REPLAY_OUTPUTS.json",
+      "sha256": "1becd238637f7964a59adc0308f3eca3bbe4bbd3d262f3785c2a5e375aa0aaf9",
+      "bytes": 79974
+    },
+    {
+      "path": "TARGETED_TECHNICAL_EVIDENCE.json",
+      "sha256": "07e85114d4207d9712f40742091ed2a541d577f671faa47f81cb27d390767b92",
+      "bytes": 5086
+    }
+  ]
+}

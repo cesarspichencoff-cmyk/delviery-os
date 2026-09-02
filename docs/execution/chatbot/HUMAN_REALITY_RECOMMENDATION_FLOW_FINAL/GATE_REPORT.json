@@ -1,0 +1,67 @@
+{
+  "schema_version": "deliveryos-recommendation-flow-final-gates-v1",
+  "frozen": true,
+  "scope": "recommendation_flow_only",
+  "root_cause": "Filtros fracos eram tratados como ranking suficiente e o resultado era truncado pela ordem técnica dos três primeiros itens.",
+  "correction": {
+    "preference_discovery_before_channel": true,
+    "candidate_hard_filtering": true,
+    "preference_scoring": true,
+    "evidence_tiebreak": true,
+    "score_preserving_diversity": true,
+    "previous_shortlist_exclusion_on_expansion": true,
+    "natural_explanation_from_conversation_facts": true,
+    "operational_price_boundary_preserved": true
+  },
+  "causal_proof": {
+    "phrases": [
+      "estou com fome, o que você sugere?",
+      "me ajuda a escolher alguma coisa",
+      "quero pedir algo gostoso",
+      "não quero nada quente",
+      "prefiro sushi",
+      "por que você sugeriu esses?",
+      "vai ser pelo iFood",
+      "tem mais opções?"
+    ],
+    "result": "PASS",
+    "expected_wording_used": false
+  },
+  "tests": {
+    "command": "npm run conversation-native:test",
+    "total": 836,
+    "passed": 836,
+    "failed": 0,
+    "skipped": 0,
+    "duration_ms": 15604.4454
+  },
+  "final_replay": {
+    "customer_turns": 8,
+    "assistant_turns": 8,
+    "transcript": "FINAL/REPLAY_TRANSCRIPT.json",
+    "trace_evidence": "FINAL/TRACE_EVIDENCE.json",
+    "transcript_sha256": "1aa89b41cffd070e0f5e207446288d3603dbb6db5b920bd8379ccc8bd878b144",
+    "trace_sha256": "f8182de0e36264c1a21154b095d312219d56e0bad724ace7298fd5702adcec85",
+    "first_incomplete_correction_preserved": "ATTEMPT1_REGRESSION/",
+    "rerun_after_final_boundary_fix": true
+  },
+  "gates": {
+    "RECOMMENDATION_FLOW": "PASS",
+    "MINIMUM_CUSTOMER_EFFORT": "PASS",
+    "ARBITRARY_TOP_K_REMOVED": "PASS",
+    "PREFERENCE_AWARE_RANKING": "PASS",
+    "CHANNEL_ROUTING": "PASS",
+    "REFINEMENT_CONTINUITY": "PASS",
+    "RECOMMENDATION_EXPLANATION": "PASS",
+    "FACTUALITY": "PASS",
+    "HUNGRY_CONTEXT": "PASS",
+    "COLD_REFINEMENT": "PASS",
+    "SUSHI_REPAIR": "PASS",
+    "MENU_DUPLICATION": "PASS",
+    "RODIZIO_INTENT_FACT_BOUNDARY": "PASS",
+    "STALE_FACT_REUSE_PROTECTION": "PASS"
+  },
+  "human_replay_ready": true,
+  "external_action_performed": false,
+  "external_spend_brl": 0
+}

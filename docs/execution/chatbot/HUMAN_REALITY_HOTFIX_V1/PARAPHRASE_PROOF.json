@@ -1,0 +1,3561 @@
+{
+  "schema_version": "deliveryos-human-reality-paraphrase-proof-v1",
+  "evidence_label": "SEQUENTIAL_PARAPHRASE_GENERALIZATION_FIRST_EXECUTION",
+  "frozen": true,
+  "rerun_performed": false,
+  "source": {
+    "base_url": "http://127.0.0.1:4179",
+    "customer_surface": "http://127.0.0.1:4179/customer",
+    "trace_route": "http://127.0.0.1:4179/trace/<turn_id>",
+    "git_branch": "fix/b2-human-reality-hotfix",
+    "git_head": "7e46015d536c803384f7a1437a182ae6b954664c",
+    "working_tree_clean": false,
+    "health": {
+      "ok": true,
+      "mode": "conversation_native_simulated_v1",
+      "synthetic": true,
+      "seed": "TATA-SIM-V1",
+      "clock": "2026-07-01T15:00:00.000Z",
+      "real_drivers": false
+    }
+  },
+  "customer_turn_count": 5,
+  "assistant_turn_count": 5,
+  "public_turn_count": 10,
+  "turn_ids": [
+    "B2-TURN-0001",
+    "B2-TURN-0002",
+    "B2-TURN-0003",
+    "B2-TURN-0004",
+    "B2-TURN-0005"
+  ],
+  "trace_hashes": {
+    "B2-TURN-0001": "831745297cbb10625aae5689ae35f34eb07c091cd3d2262898f5f078a6a72c62",
+    "B2-TURN-0002": "dbcfcdfe78bab6692a06f3d8d88d6acac1f934ca4547ed37bac659647d54e717",
+    "B2-TURN-0003": "85279dbb609774ec4a731a294baa946f5d158ababcbdd4fc146e5d9a856ced33",
+    "B2-TURN-0004": "69a0ac4fc27793606f232e470b09bdd99229c9d33db8d0ad0ec112743c7ddb0c",
+    "B2-TURN-0005": "e15112368aef8369339def5d543cc81af2072ba28a1fca113ae6751d07d27f45"
+  },
+  "transcript": [
+    {
+      "sequence": 1,
+      "role": "CUSTOMER",
+      "text": "quero comer alguma coisa, me ajuda",
+      "turn_id": "B2-TURN-0001"
+    },
+    {
+      "sequence": 2,
+      "role": "TATA",
+      "text": "Claro — eu te ajudo a afunilar pelo que você está com vontade. Você está com vontade de algo mais fresco, maçaricado ou quente?",
+      "turn_id": "B2-TURN-0001"
+    },
+    {
+      "sequence": 3,
+      "role": "CUSTOMER",
+      "text": "queria algo frio",
+      "turn_id": "B2-TURN-0002"
+    },
+    {
+      "sequence": 4,
+      "role": "TATA",
+      "text": "Entendi. Retirei a seção Pratos Quentes. Para os outros itens, o cardápio não confirma a temperatura. Você prefere que eu afunile por sushi, sashimi ou outra categoria?",
+      "turn_id": "B2-TURN-0002"
+    },
+    {
+      "sequence": 5,
+      "role": "CUSTOMER",
+      "text": "prefiro sushi",
+      "turn_id": "B2-TURN-0003"
+    },
+    {
+      "sequence": 6,
+      "role": "TATA",
+      "text": "Entendi: priorizar sushi. Vamos escolher uma opção adequada.",
+      "turn_id": "B2-TURN-0003"
+    },
+    {
+      "sequence": 7,
+      "role": "CUSTOMER",
+      "text": "me passa o menu",
+      "turn_id": "B2-TURN-0004"
+    },
+    {
+      "sequence": 8,
+      "role": "TATA",
+      "text": "Este é o cardápio com os preços dos itens: https://abre.ai/ni3n",
+      "turn_id": "B2-TURN-0004"
+    },
+    {
+      "sequence": 9,
+      "role": "CUSTOMER",
+      "text": "quanto custa o rodízio?",
+      "turn_id": "B2-TURN-0005"
+    },
+    {
+      "sequence": 10,
+      "role": "TATA",
+      "text": "Entendi: preço de rodizio. O TATÁ trabalha à la carte.; O Almoço Executivo e a Sugestão Tatá são menus em cursos, não rodízio.",
+      "turn_id": "B2-TURN-0005"
+    }
+  ],
+  "external_action_performed": false,
+  "external_spend_brl": 0,
+  "traces": [
+    {
+      "schema_version": "deliveryos-b2-truth-trace-v1",
+      "turn_id": "B2-TURN-0001",
+      "created_at": "2026-08-13T20:24:38.845Z",
+      "mode": "LOCAL_SHADOW_PREVIEW",
+      "gate": {
+        "FINANCIAL_MODE": "ZERO_EXTERNAL_COST",
+        "MAX_EXTERNAL_SPEND_BRL": 0,
+        "EXTERNAL_ACTION_ALLOWED": false,
+        "CHANNEL_AUTHORIZED": true,
+        "COST_AUTHORIZED": true,
+        "SHADOW_MODE": true,
+        "LOCAL_PREVIEW_ALLOWED": true,
+        "EXTERNAL_PUBLICATION_ALLOWED": false,
+        "reasons": []
+      },
+      "first_divergence": null,
+      "steps": [
+        {
+          "id": "USER",
+          "label": "USER",
+          "status": "observed",
+          "detail": {
+            "current_message": "quero comer alguma coisa, me ajuda",
+            "history_state": {
+              "prior_public_turns": [],
+              "prior_turn_count": 0,
+              "previous_publication": null,
+              "runtime_context": {
+                "endpoint": "/api/product/turn",
+                "runtime": "structured_product_context",
+                "conversation_id": "SIM-CONV-HOMO-0069",
+                "message_id": "SIM-HOMO-0069-0001",
+                "intent": null,
+                "pattern": null,
+                "semantic_transition": "CONTINUE",
+                "active_goal": "recommendation",
+                "previous_goal": null,
+                "journey": null,
+                "journey_state": null,
+                "pending_question": "food_preference",
+                "user_repair_signal": false,
+                "negative_feedback_signal": false,
+                "repetition_detected": false,
+                "repetition_streak": 0,
+                "facts_added": [],
+                "native_response_composer_executed": false,
+                "structured_authority_used": true
+              }
+            }
+          }
+        },
+        {
+          "id": "UNDERSTANDING",
+          "label": "UNDERSTANDING",
+          "status": "completed",
+          "detail": {
+            "user_goal": "recommendation",
+            "cognitive_planner": {
+              "adapter_id": "deliveryos-native-to-b2-product-adapter",
+              "contract": "Contract V2",
+              "packet_hash": "ed01a8176f487419b8f44f7222235d023e2eeb7f90b4cb8ffa1f4afb29a3739f",
+              "plan_hash": "b8ea8527c56b41d83b6a580cbddcc753bd2916e9b63a06f6b9981d9f0055f268",
+              "relation_to_history": "CONTINUE",
+              "conversational_move": "CLARIFY",
+              "user_goal": "recommendation",
+              "what_changed": "A mensagem atual acrescenta informação pública que precisa ser preservada na resposta.",
+              "repair": {
+                "required": false,
+                "acknowledgement": null
+              },
+              "reference": {
+                "required": true,
+                "status": "NEEDS_CLARIFICATION",
+                "target": "Você está com vontade de algo mais fresco, maçaricado ou quente"
+              },
+              "tool_requirement": "CATALOG_SEARCH",
+              "next_best_step": "pedir Você está com vontade de algo mais fresco, maçaricado ou quente"
+            },
+            "relation_interpretation": "CONTINUE",
+            "repair_interpretation": {
+              "required": false,
+              "acknowledgement": null
+            },
+            "reference_interpretation": {
+              "required": true,
+              "status": "NEEDS_CLARIFICATION",
+              "target": "Você está com vontade de algo mais fresco, maçaricado ou quente"
+            },
+            "runtime_context": {
+              "endpoint": "/api/product/turn",
+              "runtime": "structured_product_context",
+              "conversation_id": "SIM-CONV-HOMO-0069",
+              "message_id": "SIM-HOMO-0069-0001",
+              "intent": null,
+              "pattern": null,
+              "semantic_transition": "CONTINUE",
+              "active_goal": "recommendation",
+              "previous_goal": null,
+              "journey": null,
+              "journey_state": null,
+              "pending_question": "food_preference",
+              "user_repair_signal": false,
+              "negative_feedback_signal": false,
+              "repetition_detected": false,
+              "repetition_streak": 0,
+              "facts_added": [],
+              "native_response_composer_executed": false,
+              "structured_authority_used": true
+            }
+          }
+        },
+        {
+          "id": "REQUIRED_COMMITMENTS",
+          "label": "REQUIRED COMMITMENTS",
+          "status": "none",
+          "detail": {
+            "commitments": [],
+            "count": 0,
+            "preserved_in_response_plan": [
+              {
+                "id": "455fedae6f91e7f9",
+                "kind": "QUESTION",
+                "content": "Você está com vontade de algo mais fresco, maçaricado ou quente?",
+                "anchors": [
+                  "voce",
+                  "vontade",
+                  "algo",
+                  "fresco",
+                  "macaricado",
+                  "quente"
+                ],
+                "source": "approved_response_plan.required_question"
+              }
+            ]
+          }
+        },
+        {
+          "id": "CAPABILITY_FACT_NEED",
+          "label": "CAPABILITY / FACT NEED",
+          "status": "evaluated",
+          "detail": {
+            "tool_requirement": "CATALOG_SEARCH",
+            "operation": {
+              "intent": null,
+              "topic": null,
+              "query_filter": {
+                "public_topic": null,
+                "intent": null,
+                "channel": "unknown",
+                "unit_id": null,
+                "active_goal": "recommendation",
+                "requested_category": null,
+                "number_of_people": null,
+                "budget": null,
+                "preparation_preferences": [],
+                "preferred_ingredients": [],
+                "excluded_ingredients": [],
+                "dietary_restrictions": [],
+                "allergies": [],
+                "candidate_item_ids": []
+              },
+              "commitments": []
+            },
+            "operation_fingerprint": "77fca002292319d93406965d82c75ba25d63b8b147c8a6835c71c1e6ba9d641a",
+            "result_fingerprint": "77fca002292319d93406965d82c75ba25d63b8b147c8a6835c71c1e6ba9d641a",
+            "query_filter": {
+              "source": "deliveryos_structured_authority",
+              "source_ids": [
+                "current_conversation"
+              ],
+              "public_topic": null,
+              "intent": null,
+              "query_filter": {
+                "public_topic": null,
+                "intent": null,
+                "channel": "unknown",
+                "unit_id": null,
+                "active_goal": "recommendation",
+                "requested_category": null,
+                "number_of_people": null,
+                "budget": null,
+                "preparation_preferences": [],
+                "preferred_ingredients": [],
+                "excluded_ingredients": [],
+                "dietary_restrictions": [],
+                "allergies": [],
+                "candidate_item_ids": []
+              },
+              "candidates_returned": [],
+              "unknowns": [
+                "recommendation_preference_missing"
+              ],
+              "request_result_binding": {
+                "result_hash": "9ef3ddfc51a280454e03df23cb8530fd94a510aaf7c33b0d12c382deb83f5b67",
+                "source_catalog_hash": null,
+                "source_classification": null,
+                "catalog_version": null
+              }
+            },
+            "authorized_fact_count": 0,
+            "authorized_knowledge_count": 1
+          }
+        },
+        {
+          "id": "AUTHORITY_RESULT",
+          "label": "AUTHORITY RESULT",
+          "status": "completed",
+          "detail": {
+            "status": "NEEDS_CLARIFICATION",
+            "outcome": "CONCRETE_NEXT_STEP",
+            "evidence_hash": "2f159da636c46b6ded2b8d1ef5141bda56f594b734ce9acf493e0f6c37c41246",
+            "source_ids": [
+              "current_conversation"
+            ],
+            "source_catalog_hash": null,
+            "source_result_hash": "9ef3ddfc51a280454e03df23cb8530fd94a510aaf7c33b0d12c382deb83f5b67",
+            "request_fingerprint": "77fca002292319d93406965d82c75ba25d63b8b147c8a6835c71c1e6ba9d641a",
+            "result_fingerprint": "77fca002292319d93406965d82c75ba25d63b8b147c8a6835c71c1e6ba9d641a",
+            "request_result_bound": true,
+            "approved_facts": [],
+            "authorized_knowledge": [
+              "Claro — eu te ajudo a afunilar pelo que você está com vontade."
+            ],
+            "blocked_reason": null
+          }
+        },
+        {
+          "id": "RESPONSE_PLAN",
+          "label": "RESPONSE PLAN",
+          "status": "completed",
+          "detail": {
+            "status": "NEEDS_CLARIFICATION",
+            "publication_outcome": "CONCRETE_NEXT_STEP",
+            "relation_to_history": "CONTINUE",
+            "conversational_move": "CLARIFY",
+            "repair_acknowledgement": null,
+            "reference": {
+              "required": true,
+              "status": "NEEDS_CLARIFICATION",
+              "target": "Você está com vontade de algo mais fresco, maçaricado ou quente"
+            },
+            "required_question": "Você está com vontade de algo mais fresco, maçaricado ou quente?",
+            "required_response_commitments": [
+              {
+                "id": "455fedae6f91e7f9",
+                "kind": "QUESTION",
+                "content": "Você está com vontade de algo mais fresco, maçaricado ou quente?",
+                "anchors": [
+                  "voce",
+                  "vontade",
+                  "algo",
+                  "fresco",
+                  "macaricado",
+                  "quente"
+                ],
+                "source": "approved_response_plan.required_question"
+              }
+            ],
+            "next_best_step": "pedir Você está com vontade de algo mais fresco, maçaricado ou quente",
+            "operation_fingerprint": "77fca002292319d93406965d82c75ba25d63b8b147c8a6835c71c1e6ba9d641a",
+            "progress_state_hash": "46814a2cdfa497c2df89f7b58b39f3ddcb9a03dbd72e62b98c63c1eae2413c02",
+            "authority_evidence_hash": "2f159da636c46b6ded2b8d1ef5141bda56f594b734ce9acf493e0f6c37c41246"
+          }
+        },
+        {
+          "id": "WRITER_FALLBACK",
+          "label": "WRITER / FALLBACK",
+          "status": "completed",
+          "detail": {
+            "writer_source": "gemma_local_writer",
+            "writer_limit": null,
+            "primary_attempt": {
+              "writer": "gemma_local_writer",
+              "outcome": "accepted",
+              "reason": null
+            },
+            "fallback_attempt": {
+              "used": false,
+              "writer": "deterministic_b2_writer",
+              "outcome": "not_used",
+              "final_source": null
+            }
+          }
+        },
+        {
+          "id": "VALIDATOR",
+          "label": "VALIDATOR",
+          "status": "accepted",
+          "detail": {
+            "accepted": true,
+            "status": "accepted",
+            "detected_stage": "published",
+            "reason": null,
+            "candidate_response": null,
+            "publication_outcome": "CONCRETE_NEXT_STEP",
+            "authority_evidence_hash": "2f159da636c46b6ded2b8d1ef5141bda56f594b734ce9acf493e0f6c37c41246",
+            "previous_progress_state_hash": null,
+            "current_progress_state_hash": "46814a2cdfa497c2df89f7b58b39f3ddcb9a03dbd72e62b98c63c1eae2413c02",
+            "same_progress_state": false,
+            "required_commitment_count": 1
+          }
+        },
+        {
+          "id": "PUBLISHED_RESPONSE",
+          "label": "PUBLISHED RESPONSE",
+          "status": "local_shadow_preview",
+          "detail": {
+            "response": "Claro — eu te ajudo a afunilar pelo que você está com vontade. Você está com vontade de algo mais fresco, maçaricado ou quente?",
+            "response_hash": "f68deba812f2e6ac9b26cc98785a83bca627325f652db0498b14125b6effc903",
+            "publication_path": "local_shadow_preview",
+            "external_action_performed": false,
+            "external_spend_brl": 0
+          }
+        }
+      ],
+      "stages": [
+        {
+          "id": "USER",
+          "label": "USER",
+          "status": "observed",
+          "detail": {
+            "current_message": "quero comer alguma coisa, me ajuda",
+            "history_state": {
+              "prior_public_turns": [],
+              "prior_turn_count": 0,
+              "previous_publication": null,
+              "runtime_context": {
+                "endpoint": "/api/product/turn",
+                "runtime": "structured_product_context",
+                "conversation_id": "SIM-CONV-HOMO-0069",
+                "message_id": "SIM-HOMO-0069-0001",
+                "intent": null,
+                "pattern": null,
+                "semantic_transition": "CONTINUE",
+                "active_goal": "recommendation",
+                "previous_goal": null,
+                "journey": null,
+                "journey_state": null,
+                "pending_question": "food_preference",
+                "user_repair_signal": false,
+                "negative_feedback_signal": false,
+                "repetition_detected": false,
+                "repetition_streak": 0,
+                "facts_added": [],
+                "native_response_composer_executed": false,
+                "structured_authority_used": true
+              }
+            }
+          }
+        },
+        {
+          "id": "UNDERSTANDING",
+          "label": "UNDERSTANDING",
+          "status": "completed",
+          "detail": {
+            "user_goal": "recommendation",
+            "cognitive_planner": {
+              "adapter_id": "deliveryos-native-to-b2-product-adapter",
+              "contract": "Contract V2",
+              "packet_hash": "ed01a8176f487419b8f44f7222235d023e2eeb7f90b4cb8ffa1f4afb29a3739f",
+              "plan_hash": "b8ea8527c56b41d83b6a580cbddcc753bd2916e9b63a06f6b9981d9f0055f268",
+              "relation_to_history": "CONTINUE",
+              "conversational_move": "CLARIFY",
+              "user_goal": "recommendation",
+              "what_changed": "A mensagem atual acrescenta informação pública que precisa ser preservada na resposta.",
+              "repair": {
+                "required": false,
+                "acknowledgement": null
+              },
+              "reference": {
+                "required": true,
+                "status": "NEEDS_CLARIFICATION",
+                "target": "Você está com vontade de algo mais fresco, maçaricado ou quente"
+              },
+              "tool_requirement": "CATALOG_SEARCH",
+              "next_best_step": "pedir Você está com vontade de algo mais fresco, maçaricado ou quente"
+            },
+            "relation_interpretation": "CONTINUE",
+            "repair_interpretation": {
+              "required": false,
+              "acknowledgement": null
+            },
+            "reference_interpretation": {
+              "required": true,
+              "status": "NEEDS_CLARIFICATION",
+              "target": "Você está com vontade de algo mais fresco, maçaricado ou quente"
+            },
+            "runtime_context": {
+              "endpoint": "/api/product/turn",
+              "runtime": "structured_product_context",
+              "conversation_id": "SIM-CONV-HOMO-0069",
+              "message_id": "SIM-HOMO-0069-0001",
+              "intent": null,
+              "pattern": null,
+              "semantic_transition": "CONTINUE",
+              "active_goal": "recommendation",
+              "previous_goal": null,
+              "journey": null,
+              "journey_state": null,
+              "pending_question": "food_preference",
+              "user_repair_signal": false,
+              "negative_feedback_signal": false,
+              "repetition_detected": false,
+              "repetition_streak": 0,
+              "facts_added": [],
+              "native_response_composer_executed": false,
+              "structured_authority_used": true
+            }
+          }
+        },
+        {
+          "id": "REQUIRED_COMMITMENTS",
+          "label": "REQUIRED COMMITMENTS",
+          "status": "none",
+          "detail": {
+            "commitments": [],
+            "count": 0,
+            "preserved_in_response_plan": [
+              {
+                "id": "455fedae6f91e7f9",
+                "kind": "QUESTION",
+                "content": "Você está com vontade de algo mais fresco, maçaricado ou quente?",
+                "anchors": [
+                  "voce",
+                  "vontade",
+                  "algo",
+                  "fresco",
+                  "macaricado",
+                  "quente"
+                ],
+                "source": "approved_response_plan.required_question"
+              }
+            ]
+          }
+        },
+        {
+          "id": "CAPABILITY_FACT_NEED",
+          "label": "CAPABILITY / FACT NEED",
+          "status": "evaluated",
+          "detail": {
+            "tool_requirement": "CATALOG_SEARCH",
+            "operation": {
+              "intent": null,
+              "topic": null,
+              "query_filter": {
+                "public_topic": null,
+                "intent": null,
+                "channel": "unknown",
+                "unit_id": null,
+                "active_goal": "recommendation",
+                "requested_category": null,
+                "number_of_people": null,
+                "budget": null,
+                "preparation_preferences": [],
+                "preferred_ingredients": [],
+                "excluded_ingredients": [],
+                "dietary_restrictions": [],
+                "allergies": [],
+                "candidate_item_ids": []
+              },
+              "commitments": []
+            },
+            "operation_fingerprint": "77fca002292319d93406965d82c75ba25d63b8b147c8a6835c71c1e6ba9d641a",
+            "result_fingerprint": "77fca002292319d93406965d82c75ba25d63b8b147c8a6835c71c1e6ba9d641a",
+            "query_filter": {
+              "source": "deliveryos_structured_authority",
+              "source_ids": [
+                "current_conversation"
+              ],
+              "public_topic": null,
+              "intent": null,
+              "query_filter": {
+                "public_topic": null,
+                "intent": null,
+                "channel": "unknown",
+                "unit_id": null,
+                "active_goal": "recommendation",
+                "requested_category": null,
+                "number_of_people": null,
+                "budget": null,
+                "preparation_preferences": [],
+                "preferred_ingredients": [],
+                "excluded_ingredients": [],
+                "dietary_restrictions": [],
+                "allergies": [],
+                "candidate_item_ids": []
+              },
+              "candidates_returned": [],
+              "unknowns": [
+                "recommendation_preference_missing"
+              ],
+              "request_result_binding": {
+                "result_hash": "9ef3ddfc51a280454e03df23cb8530fd94a510aaf7c33b0d12c382deb83f5b67",
+                "source_catalog_hash": null,
+                "source_classification": null,
+                "catalog_version": null
+              }
+            },
+            "authorized_fact_count": 0,
+            "authorized_knowledge_count": 1
+          }
+        },
+        {
+          "id": "AUTHORITY_RESULT",
+          "label": "AUTHORITY RESULT",
+          "status": "completed",
+          "detail": {
+            "status": "NEEDS_CLARIFICATION",
+            "outcome": "CONCRETE_NEXT_STEP",
+            "evidence_hash": "2f159da636c46b6ded2b8d1ef5141bda56f594b734ce9acf493e0f6c37c41246",
+            "source_ids": [
+              "current_conversation"
+            ],
+            "source_catalog_hash": null,
+            "source_result_hash": "9ef3ddfc51a280454e03df23cb8530fd94a510aaf7c33b0d12c382deb83f5b67",
+            "request_fingerprint": "77fca002292319d93406965d82c75ba25d63b8b147c8a6835c71c1e6ba9d641a",
+            "result_fingerprint": "77fca002292319d93406965d82c75ba25d63b8b147c8a6835c71c1e6ba9d641a",
+            "request_result_bound": true,
+            "approved_facts": [],
+            "authorized_knowledge": [
+              "Claro — eu te ajudo a afunilar pelo que você está com vontade."
+            ],
+            "blocked_reason": null
+          }
+        },
+        {
+          "id": "RESPONSE_PLAN",
+          "label": "RESPONSE PLAN",
+          "status": "completed",
+          "detail": {
+            "status": "NEEDS_CLARIFICATION",
+            "publication_outcome": "CONCRETE_NEXT_STEP",
+            "relation_to_history": "CONTINUE",
+            "conversational_move": "CLARIFY",
+            "repair_acknowledgement": null,
+            "reference": {
+              "required": true,
+              "status": "NEEDS_CLARIFICATION",
+              "target": "Você está com vontade de algo mais fresco, maçaricado ou quente"
+            },
+            "required_question": "Você está com vontade de algo mais fresco, maçaricado ou quente?",
+            "required_response_commitments": [
+              {
+                "id": "455fedae6f91e7f9",
+                "kind": "QUESTION",
+                "content": "Você está com vontade de algo mais fresco, maçaricado ou quente?",
+                "anchors": [
+                  "voce",
+                  "vontade",
+                  "algo",
+                  "fresco",
+                  "macaricado",
+                  "quente"
+                ],
+                "source": "approved_response_plan.required_question"
+              }
+            ],
+            "next_best_step": "pedir Você está com vontade de algo mais fresco, maçaricado ou quente",
+            "operation_fingerprint": "77fca002292319d93406965d82c75ba25d63b8b147c8a6835c71c1e6ba9d641a",
+            "progress_state_hash": "46814a2cdfa497c2df89f7b58b39f3ddcb9a03dbd72e62b98c63c1eae2413c02",
+            "authority_evidence_hash": "2f159da636c46b6ded2b8d1ef5141bda56f594b734ce9acf493e0f6c37c41246"
+          }
+        },
+        {
+          "id": "WRITER_FALLBACK",
+          "label": "WRITER / FALLBACK",
+          "status": "completed",
+          "detail": {
+            "writer_source": "gemma_local_writer",
+            "writer_limit": null,
+            "primary_attempt": {
+              "writer": "gemma_local_writer",
+              "outcome": "accepted",
+              "reason": null
+            },
+            "fallback_attempt": {
+              "used": false,
+              "writer": "deterministic_b2_writer",
+              "outcome": "not_used",
+              "final_source": null
+            }
+          }
+        },
+        {
+          "id": "VALIDATOR",
+          "label": "VALIDATOR",
+          "status": "accepted",
+          "detail": {
+            "accepted": true,
+            "status": "accepted",
+            "detected_stage": "published",
+            "reason": null,
+            "candidate_response": null,
+            "publication_outcome": "CONCRETE_NEXT_STEP",
+            "authority_evidence_hash": "2f159da636c46b6ded2b8d1ef5141bda56f594b734ce9acf493e0f6c37c41246",
+            "previous_progress_state_hash": null,
+            "current_progress_state_hash": "46814a2cdfa497c2df89f7b58b39f3ddcb9a03dbd72e62b98c63c1eae2413c02",
+            "same_progress_state": false,
+            "required_commitment_count": 1
+          }
+        },
+        {
+          "id": "PUBLISHED_RESPONSE",
+          "label": "PUBLISHED RESPONSE",
+          "status": "local_shadow_preview",
+          "detail": {
+            "response": "Claro — eu te ajudo a afunilar pelo que você está com vontade. Você está com vontade de algo mais fresco, maçaricado ou quente?",
+            "response_hash": "f68deba812f2e6ac9b26cc98785a83bca627325f652db0498b14125b6effc903",
+            "publication_path": "local_shadow_preview",
+            "external_action_performed": false,
+            "external_spend_brl": 0
+          }
+        }
+      ],
+      "trace_hash": "831745297cbb10625aae5689ae35f34eb07c091cd3d2262898f5f078a6a72c62"
+    },
+    {
+      "schema_version": "deliveryos-b2-truth-trace-v1",
+      "turn_id": "B2-TURN-0002",
+      "created_at": "2026-08-13T20:24:50.633Z",
+      "mode": "LOCAL_SHADOW_PREVIEW",
+      "gate": {
+        "FINANCIAL_MODE": "ZERO_EXTERNAL_COST",
+        "MAX_EXTERNAL_SPEND_BRL": 0,
+        "EXTERNAL_ACTION_ALLOWED": false,
+        "CHANNEL_AUTHORIZED": true,
+        "COST_AUTHORIZED": true,
+        "SHADOW_MODE": true,
+        "LOCAL_PREVIEW_ALLOWED": true,
+        "EXTERNAL_PUBLICATION_ALLOWED": false,
+        "reasons": []
+      },
+      "first_divergence": null,
+      "steps": [
+        {
+          "id": "USER",
+          "label": "USER",
+          "status": "observed",
+          "detail": {
+            "current_message": "queria algo frio",
+            "history_state": {
+              "prior_public_turns": [
+                {
+                  "role": "user",
+                  "text": "quero comer alguma coisa, me ajuda"
+                },
+                {
+                  "role": "assistant",
+                  "text": "Claro — eu te ajudo a afunilar pelo que você está com vontade. Você está com vontade de algo mais fresco, maçaricado ou quente?",
+                  "turn_id": "B2-TURN-0001"
+                }
+              ],
+              "prior_turn_count": 2,
+              "previous_publication": {
+                "response": "Claro — eu te ajudo a afunilar pelo que você está com vontade. Você está com vontade de algo mais fresco, maçaricado ou quente?",
+                "progress_state_hash": "46814a2cdfa497c2df89f7b58b39f3ddcb9a03dbd72e62b98c63c1eae2413c02",
+                "operation_fingerprint": "77fca002292319d93406965d82c75ba25d63b8b147c8a6835c71c1e6ba9d641a"
+              },
+              "runtime_context": {
+                "endpoint": "/api/product/turn",
+                "runtime": "structured_product_context",
+                "conversation_id": "SIM-CONV-HOMO-0069",
+                "message_id": "SIM-HOMO-0069-0002",
+                "intent": null,
+                "pattern": null,
+                "semantic_transition": "CONTINUE",
+                "active_goal": "recommendation",
+                "previous_goal": "recommendation",
+                "journey": null,
+                "journey_state": null,
+                "pending_question": "menu_channel",
+                "user_repair_signal": false,
+                "negative_feedback_signal": false,
+                "repetition_detected": false,
+                "repetition_streak": 0,
+                "facts_added": [
+                  {
+                    "field": "temperature_preference",
+                    "value": "not_hot"
+                  }
+                ],
+                "native_response_composer_executed": false,
+                "structured_authority_used": true
+              }
+            }
+          }
+        },
+        {
+          "id": "UNDERSTANDING",
+          "label": "UNDERSTANDING",
+          "status": "completed",
+          "detail": {
+            "user_goal": "recommendation",
+            "cognitive_planner": {
+              "adapter_id": "deliveryos-native-to-b2-product-adapter",
+              "contract": "Contract V2",
+              "packet_hash": "e140ac2160868c5c03cb61a37d5bc3e052521ed733dd094379214433712a3748",
+              "plan_hash": "28b4fcfe1b728e9c2efc799a005324ecb7e717e451c3700857f52f1f2a292485",
+              "relation_to_history": "CONTINUE",
+              "conversational_move": "CLARIFY",
+              "user_goal": "recommendation",
+              "what_changed": "A mensagem atual acrescenta informação pública que precisa ser preservada na resposta.",
+              "repair": {
+                "required": false,
+                "acknowledgement": null
+              },
+              "reference": {
+                "required": true,
+                "status": "NEEDS_CLARIFICATION",
+                "target": "Você prefere que eu afunile por sushi, sashimi ou outra categoria"
+              },
+              "tool_requirement": "CATALOG_SEARCH",
+              "next_best_step": "pedir Você prefere que eu afunile por sushi, sashimi ou outra categoria"
+            },
+            "relation_interpretation": "CONTINUE",
+            "repair_interpretation": {
+              "required": false,
+              "acknowledgement": null
+            },
+            "reference_interpretation": {
+              "required": true,
+              "status": "NEEDS_CLARIFICATION",
+              "target": "Você prefere que eu afunile por sushi, sashimi ou outra categoria"
+            },
+            "runtime_context": {
+              "endpoint": "/api/product/turn",
+              "runtime": "structured_product_context",
+              "conversation_id": "SIM-CONV-HOMO-0069",
+              "message_id": "SIM-HOMO-0069-0002",
+              "intent": null,
+              "pattern": null,
+              "semantic_transition": "CONTINUE",
+              "active_goal": "recommendation",
+              "previous_goal": "recommendation",
+              "journey": null,
+              "journey_state": null,
+              "pending_question": "menu_channel",
+              "user_repair_signal": false,
+              "negative_feedback_signal": false,
+              "repetition_detected": false,
+              "repetition_streak": 0,
+              "facts_added": [
+                {
+                  "field": "temperature_preference",
+                  "value": "not_hot"
+                }
+              ],
+              "native_response_composer_executed": false,
+              "structured_authority_used": true
+            }
+          }
+        },
+        {
+          "id": "REQUIRED_COMMITMENTS",
+          "label": "REQUIRED COMMITMENTS",
+          "status": "required",
+          "detail": {
+            "commitments": [
+              {
+                "kind": "CONSTRAINT",
+                "content": "evitar a seção Pratos Quentes"
+              }
+            ],
+            "count": 1,
+            "preserved_in_response_plan": [
+              {
+                "id": "7f22f17875a10a33",
+                "kind": "CONSTRAINT",
+                "content": "evitar a seção Pratos Quentes",
+                "anchors": [
+                  "evitar",
+                  "secao",
+                  "pratos",
+                  "quentes"
+                ],
+                "source": "conversation_plan"
+              },
+              {
+                "id": "c078106fad886b47",
+                "kind": "QUESTION",
+                "content": "Você prefere que eu afunile por sushi, sashimi ou outra categoria?",
+                "anchors": [
+                  "voce",
+                  "prefere",
+                  "afunile",
+                  "sushi",
+                  "sashimi",
+                  "outra",
+                  "categoria"
+                ],
+                "source": "approved_response_plan.required_question"
+              }
+            ]
+          }
+        },
+        {
+          "id": "CAPABILITY_FACT_NEED",
+          "label": "CAPABILITY / FACT NEED",
+          "status": "evaluated",
+          "detail": {
+            "tool_requirement": "CATALOG_SEARCH",
+            "operation": {
+              "intent": null,
+              "topic": null,
+              "query_filter": {
+                "public_topic": null,
+                "intent": null,
+                "channel": "unknown",
+                "unit_id": null,
+                "active_goal": "recommendation",
+                "requested_category": null,
+                "number_of_people": null,
+                "budget": null,
+                "preparation_preferences": [
+                  "not_hot"
+                ],
+                "preferred_ingredients": [],
+                "excluded_ingredients": [],
+                "dietary_restrictions": [],
+                "allergies": [],
+                "candidate_item_ids": []
+              },
+              "commitments": [
+                "CONSTRAINT:evitar a secao pratos quentes"
+              ]
+            },
+            "operation_fingerprint": "94930470f6923baade1bbdcfc9d594340c757fde640f8cc99ce6d820a98c82c9",
+            "result_fingerprint": "94930470f6923baade1bbdcfc9d594340c757fde640f8cc99ce6d820a98c82c9",
+            "query_filter": {
+              "source": "deliveryos_structured_authority",
+              "source_ids": [
+                "menu-source-live-menu-v1+menu-source-ifood-v1"
+              ],
+              "public_topic": null,
+              "intent": null,
+              "query_filter": {
+                "public_topic": null,
+                "intent": null,
+                "channel": "unknown",
+                "unit_id": null,
+                "active_goal": "recommendation",
+                "requested_category": null,
+                "number_of_people": null,
+                "budget": null,
+                "preparation_preferences": [
+                  "not_hot"
+                ],
+                "preferred_ingredients": [],
+                "excluded_ingredients": [],
+                "dietary_restrictions": [],
+                "allergies": [],
+                "candidate_item_ids": []
+              },
+              "candidates_returned": [],
+              "unknowns": [
+                "menu_channel_missing"
+              ],
+              "request_result_binding": {
+                "result_hash": "71e1af449c84acd1001d112ef35a2ded999f72aee60cc3e1a5a77bc2f7aa637d",
+                "source_catalog_hash": null,
+                "source_classification": null,
+                "catalog_version": null
+              }
+            },
+            "authorized_fact_count": 0,
+            "authorized_knowledge_count": 1
+          }
+        },
+        {
+          "id": "AUTHORITY_RESULT",
+          "label": "AUTHORITY RESULT",
+          "status": "completed",
+          "detail": {
+            "status": "NEEDS_CLARIFICATION",
+            "outcome": "CONCRETE_NEXT_STEP",
+            "evidence_hash": "13c120b9664a050c8ff29aec3b085bef43c7a7b64047ebe3a1c794fa47f76691",
+            "source_ids": [
+              "menu-source-live-menu-v1+menu-source-ifood-v1"
+            ],
+            "source_catalog_hash": null,
+            "source_result_hash": "71e1af449c84acd1001d112ef35a2ded999f72aee60cc3e1a5a77bc2f7aa637d",
+            "request_fingerprint": "94930470f6923baade1bbdcfc9d594340c757fde640f8cc99ce6d820a98c82c9",
+            "result_fingerprint": "94930470f6923baade1bbdcfc9d594340c757fde640f8cc99ce6d820a98c82c9",
+            "request_result_bound": true,
+            "approved_facts": [],
+            "authorized_knowledge": [
+              "Entendi — retirei da busca a seção explicitamente identificada como Pratos Quentes. Nos demais itens, o cardápio não confirma a temperatura; por isso, não vou chamar nenhum deles de frio sem confirmação."
+            ],
+            "blocked_reason": null
+          }
+        },
+        {
+          "id": "RESPONSE_PLAN",
+          "label": "RESPONSE PLAN",
+          "status": "completed",
+          "detail": {
+            "status": "NEEDS_CLARIFICATION",
+            "publication_outcome": "CONCRETE_NEXT_STEP",
+            "relation_to_history": "CONTINUE",
+            "conversational_move": "CLARIFY",
+            "repair_acknowledgement": null,
+            "reference": {
+              "required": true,
+              "status": "NEEDS_CLARIFICATION",
+              "target": "Você prefere que eu afunile por sushi, sashimi ou outra categoria"
+            },
+            "required_question": "Você prefere que eu afunile por sushi, sashimi ou outra categoria?",
+            "required_response_commitments": [
+              {
+                "id": "7f22f17875a10a33",
+                "kind": "CONSTRAINT",
+                "content": "evitar a seção Pratos Quentes",
+                "anchors": [
+                  "evitar",
+                  "secao",
+                  "pratos",
+                  "quentes"
+                ],
+                "source": "conversation_plan"
+              },
+              {
+                "id": "c078106fad886b47",
+                "kind": "QUESTION",
+                "content": "Você prefere que eu afunile por sushi, sashimi ou outra categoria?",
+                "anchors": [
+                  "voce",
+                  "prefere",
+                  "afunile",
+                  "sushi",
+                  "sashimi",
+                  "outra",
+                  "categoria"
+                ],
+                "source": "approved_response_plan.required_question"
+              }
+            ],
+            "next_best_step": "pedir Você prefere que eu afunile por sushi, sashimi ou outra categoria",
+            "operation_fingerprint": "94930470f6923baade1bbdcfc9d594340c757fde640f8cc99ce6d820a98c82c9",
+            "progress_state_hash": "a216a52d292e9ac9653eb0e8c4942cc6bbf9ddff8f893803e22cc4399a0f8f7f",
+            "authority_evidence_hash": "13c120b9664a050c8ff29aec3b085bef43c7a7b64047ebe3a1c794fa47f76691"
+          }
+        },
+        {
+          "id": "WRITER_FALLBACK",
+          "label": "WRITER / FALLBACK",
+          "status": "completed",
+          "detail": {
+            "writer_source": "gemma_local_writer",
+            "writer_limit": null,
+            "primary_attempt": {
+              "writer": "gemma_local_writer",
+              "outcome": "accepted",
+              "reason": null
+            },
+            "fallback_attempt": {
+              "used": false,
+              "writer": "deterministic_b2_writer",
+              "outcome": "not_used",
+              "final_source": null
+            }
+          }
+        },
+        {
+          "id": "VALIDATOR",
+          "label": "VALIDATOR",
+          "status": "accepted",
+          "detail": {
+            "accepted": true,
+            "status": "accepted",
+            "detected_stage": "published",
+            "reason": null,
+            "candidate_response": null,
+            "publication_outcome": "CONCRETE_NEXT_STEP",
+            "authority_evidence_hash": "13c120b9664a050c8ff29aec3b085bef43c7a7b64047ebe3a1c794fa47f76691",
+            "previous_progress_state_hash": "46814a2cdfa497c2df89f7b58b39f3ddcb9a03dbd72e62b98c63c1eae2413c02",
+            "current_progress_state_hash": "a216a52d292e9ac9653eb0e8c4942cc6bbf9ddff8f893803e22cc4399a0f8f7f",
+            "same_progress_state": false,
+            "required_commitment_count": 2
+          }
+        },
+        {
+          "id": "PUBLISHED_RESPONSE",
+          "label": "PUBLISHED RESPONSE",
+          "status": "local_shadow_preview",
+          "detail": {
+            "response": "Entendi. Retirei a seção Pratos Quentes. Para os outros itens, o cardápio não confirma a temperatura. Você prefere que eu afunile por sushi, sashimi ou outra categoria?",
+            "response_hash": "fe53819a39e6c29b5c2e428811e1ee4e57a2e1989b5729d8c872a7f8ae343209",
+            "publication_path": "local_shadow_preview",
+            "external_action_performed": false,
+            "external_spend_brl": 0
+          }
+        }
+      ],
+      "stages": [
+        {
+          "id": "USER",
+          "label": "USER",
+          "status": "observed",
+          "detail": {
+            "current_message": "queria algo frio",
+            "history_state": {
+              "prior_public_turns": [
+                {
+                  "role": "user",
+                  "text": "quero comer alguma coisa, me ajuda"
+                },
+                {
+                  "role": "assistant",
+                  "text": "Claro — eu te ajudo a afunilar pelo que você está com vontade. Você está com vontade de algo mais fresco, maçaricado ou quente?",
+                  "turn_id": "B2-TURN-0001"
+                }
+              ],
+              "prior_turn_count": 2,
+              "previous_publication": {
+                "response": "Claro — eu te ajudo a afunilar pelo que você está com vontade. Você está com vontade de algo mais fresco, maçaricado ou quente?",
+                "progress_state_hash": "46814a2cdfa497c2df89f7b58b39f3ddcb9a03dbd72e62b98c63c1eae2413c02",
+                "operation_fingerprint": "77fca002292319d93406965d82c75ba25d63b8b147c8a6835c71c1e6ba9d641a"
+              },
+              "runtime_context": {
+                "endpoint": "/api/product/turn",
+                "runtime": "structured_product_context",
+                "conversation_id": "SIM-CONV-HOMO-0069",
+                "message_id": "SIM-HOMO-0069-0002",
+                "intent": null,
+                "pattern": null,
+                "semantic_transition": "CONTINUE",
+                "active_goal": "recommendation",
+                "previous_goal": "recommendation",
+                "journey": null,
+                "journey_state": null,
+                "pending_question": "menu_channel",
+                "user_repair_signal": false,
+                "negative_feedback_signal": false,
+                "repetition_detected": false,
+                "repetition_streak": 0,
+                "facts_added": [
+                  {
+                    "field": "temperature_preference",
+                    "value": "not_hot"
+                  }
+                ],
+                "native_response_composer_executed": false,
+                "structured_authority_used": true
+              }
+            }
+          }
+        },
+        {
+          "id": "UNDERSTANDING",
+          "label": "UNDERSTANDING",
+          "status": "completed",
+          "detail": {
+            "user_goal": "recommendation",
+            "cognitive_planner": {
+              "adapter_id": "deliveryos-native-to-b2-product-adapter",
+              "contract": "Contract V2",
+              "packet_hash": "e140ac2160868c5c03cb61a37d5bc3e052521ed733dd094379214433712a3748",
+              "plan_hash": "28b4fcfe1b728e9c2efc799a005324ecb7e717e451c3700857f52f1f2a292485",
+              "relation_to_history": "CONTINUE",
+              "conversational_move": "CLARIFY",
+              "user_goal": "recommendation",
+              "what_changed": "A mensagem atual acrescenta informação pública que precisa ser preservada na resposta.",
+              "repair": {
+                "required": false,
+                "acknowledgement": null
+              },
+              "reference": {
+                "required": true,
+                "status": "NEEDS_CLARIFICATION",
+                "target": "Você prefere que eu afunile por sushi, sashimi ou outra categoria"
+              },
+              "tool_requirement": "CATALOG_SEARCH",
+              "next_best_step": "pedir Você prefere que eu afunile por sushi, sashimi ou outra categoria"
+            },
+            "relation_interpretation": "CONTINUE",
+            "repair_interpretation": {
+              "required": false,
+              "acknowledgement": null
+            },
+            "reference_interpretation": {
+              "required": true,
+              "status": "NEEDS_CLARIFICATION",
+              "target": "Você prefere que eu afunile por sushi, sashimi ou outra categoria"
+            },
+            "runtime_context": {
+              "endpoint": "/api/product/turn",
+              "runtime": "structured_product_context",
+              "conversation_id": "SIM-CONV-HOMO-0069",
+              "message_id": "SIM-HOMO-0069-0002",
+              "intent": null,
+              "pattern": null,
+              "semantic_transition": "CONTINUE",
+              "active_goal": "recommendation",
+              "previous_goal": "recommendation",
+              "journey": null,
+              "journey_state": null,
+              "pending_question": "menu_channel",
+              "user_repair_signal": false,
+              "negative_feedback_signal": false,
+              "repetition_detected": false,
+              "repetition_streak": 0,
+              "facts_added": [
+                {
+                  "field": "temperature_preference",
+                  "value": "not_hot"
+                }
+              ],
+              "native_response_composer_executed": false,
+              "structured_authority_used": true
+            }
+          }
+        },
+        {
+          "id": "REQUIRED_COMMITMENTS",
+          "label": "REQUIRED COMMITMENTS",
+          "status": "required",
+          "detail": {
+            "commitments": [
+              {
+                "kind": "CONSTRAINT",
+                "content": "evitar a seção Pratos Quentes"
+              }
+            ],
+            "count": 1,
+            "preserved_in_response_plan": [
+              {
+                "id": "7f22f17875a10a33",
+                "kind": "CONSTRAINT",
+                "content": "evitar a seção Pratos Quentes",
+                "anchors": [
+                  "evitar",
+                  "secao",
+                  "pratos",
+                  "quentes"
+                ],
+                "source": "conversation_plan"
+              },
+              {
+                "id": "c078106fad886b47",
+                "kind": "QUESTION",
+                "content": "Você prefere que eu afunile por sushi, sashimi ou outra categoria?",
+                "anchors": [
+                  "voce",
+                  "prefere",
+                  "afunile",
+                  "sushi",
+                  "sashimi",
+                  "outra",
+                  "categoria"
+                ],
+                "source": "approved_response_plan.required_question"
+              }
+            ]
+          }
+        },
+        {
+          "id": "CAPABILITY_FACT_NEED",
+          "label": "CAPABILITY / FACT NEED",
+          "status": "evaluated",
+          "detail": {
+            "tool_requirement": "CATALOG_SEARCH",
+            "operation": {
+              "intent": null,
+              "topic": null,
+              "query_filter": {
+                "public_topic": null,
+                "intent": null,
+                "channel": "unknown",
+                "unit_id": null,
+                "active_goal": "recommendation",
+                "requested_category": null,
+                "number_of_people": null,
+                "budget": null,
+                "preparation_preferences": [
+                  "not_hot"
+                ],
+                "preferred_ingredients": [],
+                "excluded_ingredients": [],
+                "dietary_restrictions": [],
+                "allergies": [],
+                "candidate_item_ids": []
+              },
+              "commitments": [
+                "CONSTRAINT:evitar a secao pratos quentes"
+              ]
+            },
+            "operation_fingerprint": "94930470f6923baade1bbdcfc9d594340c757fde640f8cc99ce6d820a98c82c9",
+            "result_fingerprint": "94930470f6923baade1bbdcfc9d594340c757fde640f8cc99ce6d820a98c82c9",
+            "query_filter": {
+              "source": "deliveryos_structured_authority",
+              "source_ids": [
+                "menu-source-live-menu-v1+menu-source-ifood-v1"
+              ],
+              "public_topic": null,
+              "intent": null,
+              "query_filter": {
+                "public_topic": null,
+                "intent": null,
+                "channel": "unknown",
+                "unit_id": null,
+                "active_goal": "recommendation",
+                "requested_category": null,
+                "number_of_people": null,
+                "budget": null,
+                "preparation_preferences": [
+                  "not_hot"
+                ],
+                "preferred_ingredients": [],
+                "excluded_ingredients": [],
+                "dietary_restrictions": [],
+                "allergies": [],
+                "candidate_item_ids": []
+              },
+              "candidates_returned": [],
+              "unknowns": [
+                "menu_channel_missing"
+              ],
+              "request_result_binding": {
+                "result_hash": "71e1af449c84acd1001d112ef35a2ded999f72aee60cc3e1a5a77bc2f7aa637d",
+                "source_catalog_hash": null,
+                "source_classification": null,
+                "catalog_version": null
+              }
+            },
+            "authorized_fact_count": 0,
+            "authorized_knowledge_count": 1
+          }
+        },
+        {
+          "id": "AUTHORITY_RESULT",
+          "label": "AUTHORITY RESULT",
+          "status": "completed",
+          "detail": {
+            "status": "NEEDS_CLARIFICATION",
+            "outcome": "CONCRETE_NEXT_STEP",
+            "evidence_hash": "13c120b9664a050c8ff29aec3b085bef43c7a7b64047ebe3a1c794fa47f76691",
+            "source_ids": [
+              "menu-source-live-menu-v1+menu-source-ifood-v1"
+            ],
+            "source_catalog_hash": null,
+            "source_result_hash": "71e1af449c84acd1001d112ef35a2ded999f72aee60cc3e1a5a77bc2f7aa637d",
+            "request_fingerprint": "94930470f6923baade1bbdcfc9d594340c757fde640f8cc99ce6d820a98c82c9",
+            "result_fingerprint": "94930470f6923baade1bbdcfc9d594340c757fde640f8cc99ce6d820a98c82c9",
+            "request_result_bound": true,
+            "approved_facts": [],
+            "authorized_knowledge": [
+              "Entendi — retirei da busca a seção explicitamente identificada como Pratos Quentes. Nos demais itens, o cardápio não confirma a temperatura; por isso, não vou chamar nenhum deles de frio sem confirmação."
+            ],
+            "blocked_reason": null
+          }
+        },
+        {
+          "id": "RESPONSE_PLAN",
+          "label": "RESPONSE PLAN",
+          "status": "completed",
+          "detail": {
+            "status": "NEEDS_CLARIFICATION",
+            "publication_outcome": "CONCRETE_NEXT_STEP",
+            "relation_to_history": "CONTINUE",
+            "conversational_move": "CLARIFY",
+            "repair_acknowledgement": null,
+            "reference": {
+              "required": true,
+              "status": "NEEDS_CLARIFICATION",
+              "target": "Você prefere que eu afunile por sushi, sashimi ou outra categoria"
+            },
+            "required_question": "Você prefere que eu afunile por sushi, sashimi ou outra categoria?",
+            "required_response_commitments": [
+              {
+                "id": "7f22f17875a10a33",
+                "kind": "CONSTRAINT",
+                "content": "evitar a seção Pratos Quentes",
+                "anchors": [
+                  "evitar",
+                  "secao",
+                  "pratos",
+                  "quentes"
+                ],
+                "source": "conversation_plan"
+              },
+              {
+                "id": "c078106fad886b47",
+                "kind": "QUESTION",
+                "content": "Você prefere que eu afunile por sushi, sashimi ou outra categoria?",
+                "anchors": [
+                  "voce",
+                  "prefere",
+                  "afunile",
+                  "sushi",
+                  "sashimi",
+                  "outra",
+                  "categoria"
+                ],
+                "source": "approved_response_plan.required_question"
+              }
+            ],
+            "next_best_step": "pedir Você prefere que eu afunile por sushi, sashimi ou outra categoria",
+            "operation_fingerprint": "94930470f6923baade1bbdcfc9d594340c757fde640f8cc99ce6d820a98c82c9",
+            "progress_state_hash": "a216a52d292e9ac9653eb0e8c4942cc6bbf9ddff8f893803e22cc4399a0f8f7f",
+            "authority_evidence_hash": "13c120b9664a050c8ff29aec3b085bef43c7a7b64047ebe3a1c794fa47f76691"
+          }
+        },
+        {
+          "id": "WRITER_FALLBACK",
+          "label": "WRITER / FALLBACK",
+          "status": "completed",
+          "detail": {
+            "writer_source": "gemma_local_writer",
+            "writer_limit": null,
+            "primary_attempt": {
+              "writer": "gemma_local_writer",
+              "outcome": "accepted",
+              "reason": null
+            },
+            "fallback_attempt": {
+              "used": false,
+              "writer": "deterministic_b2_writer",
+              "outcome": "not_used",
+              "final_source": null
+            }
+          }
+        },
+        {
+          "id": "VALIDATOR",
+          "label": "VALIDATOR",
+          "status": "accepted",
+          "detail": {
+            "accepted": true,
+            "status": "accepted",
+            "detected_stage": "published",
+            "reason": null,
+            "candidate_response": null,
+            "publication_outcome": "CONCRETE_NEXT_STEP",
+            "authority_evidence_hash": "13c120b9664a050c8ff29aec3b085bef43c7a7b64047ebe3a1c794fa47f76691",
+            "previous_progress_state_hash": "46814a2cdfa497c2df89f7b58b39f3ddcb9a03dbd72e62b98c63c1eae2413c02",
+            "current_progress_state_hash": "a216a52d292e9ac9653eb0e8c4942cc6bbf9ddff8f893803e22cc4399a0f8f7f",
+            "same_progress_state": false,
+            "required_commitment_count": 2
+          }
+        },
+        {
+          "id": "PUBLISHED_RESPONSE",
+          "label": "PUBLISHED RESPONSE",
+          "status": "local_shadow_preview",
+          "detail": {
+            "response": "Entendi. Retirei a seção Pratos Quentes. Para os outros itens, o cardápio não confirma a temperatura. Você prefere que eu afunile por sushi, sashimi ou outra categoria?",
+            "response_hash": "fe53819a39e6c29b5c2e428811e1ee4e57a2e1989b5729d8c872a7f8ae343209",
+            "publication_path": "local_shadow_preview",
+            "external_action_performed": false,
+            "external_spend_brl": 0
+          }
+        }
+      ],
+      "trace_hash": "dbcfcdfe78bab6692a06f3d8d88d6acac1f934ca4547ed37bac659647d54e717"
+    },
+    {
+      "schema_version": "deliveryos-b2-truth-trace-v1",
+      "turn_id": "B2-TURN-0003",
+      "created_at": "2026-08-13T20:25:05.736Z",
+      "mode": "LOCAL_SHADOW_PREVIEW",
+      "gate": {
+        "FINANCIAL_MODE": "ZERO_EXTERNAL_COST",
+        "MAX_EXTERNAL_SPEND_BRL": 0,
+        "EXTERNAL_ACTION_ALLOWED": false,
+        "CHANNEL_AUTHORIZED": true,
+        "COST_AUTHORIZED": true,
+        "SHADOW_MODE": true,
+        "LOCAL_PREVIEW_ALLOWED": true,
+        "EXTERNAL_PUBLICATION_ALLOWED": false,
+        "reasons": []
+      },
+      "first_divergence": {
+        "stage": "WRITER_FALLBACK",
+        "detected_at": "WRITER_FALLBACK",
+        "reason": "B2_WRITER_DROPPED_REQUIRED_COMMITMENT",
+        "upstream_cause": {
+          "primary_writer": "gemma_local_writer",
+          "authority_evidence_hash": "b2d7d9917cab48128f44f77f8b543a3961769b7426947b459ddff7c17ea5d46b",
+          "authorized_knowledge_hashes": [
+            "d6b32752e98307585e080115607ab570e53fc8b532fc4062ed8601f63c4aae92"
+          ]
+        }
+      },
+      "steps": [
+        {
+          "id": "USER",
+          "label": "USER",
+          "status": "observed",
+          "detail": {
+            "current_message": "prefiro sushi",
+            "history_state": {
+              "prior_public_turns": [
+                {
+                  "role": "user",
+                  "text": "quero comer alguma coisa, me ajuda"
+                },
+                {
+                  "role": "assistant",
+                  "text": "Claro — eu te ajudo a afunilar pelo que você está com vontade. Você está com vontade de algo mais fresco, maçaricado ou quente?",
+                  "turn_id": "B2-TURN-0001"
+                },
+                {
+                  "role": "user",
+                  "text": "queria algo frio"
+                },
+                {
+                  "role": "assistant",
+                  "text": "Entendi. Retirei a seção Pratos Quentes. Para os outros itens, o cardápio não confirma a temperatura. Você prefere que eu afunile por sushi, sashimi ou outra categoria?",
+                  "turn_id": "B2-TURN-0002"
+                }
+              ],
+              "prior_turn_count": 4,
+              "previous_publication": {
+                "response": "Entendi. Retirei a seção Pratos Quentes. Para os outros itens, o cardápio não confirma a temperatura. Você prefere que eu afunile por sushi, sashimi ou outra categoria?",
+                "progress_state_hash": "a216a52d292e9ac9653eb0e8c4942cc6bbf9ddff8f893803e22cc4399a0f8f7f",
+                "operation_fingerprint": "94930470f6923baade1bbdcfc9d594340c757fde640f8cc99ce6d820a98c82c9"
+              },
+              "runtime_context": {
+                "endpoint": "/api/product/turn",
+                "runtime": "structured_product_context",
+                "conversation_id": "SIM-CONV-HOMO-0069",
+                "message_id": "SIM-HOMO-0069-0003",
+                "intent": null,
+                "pattern": null,
+                "semantic_transition": "REFINE",
+                "active_goal": "recommendation",
+                "previous_goal": "recommendation",
+                "journey": null,
+                "journey_state": null,
+                "pending_question": "menu_channel",
+                "user_repair_signal": false,
+                "negative_feedback_signal": false,
+                "repetition_detected": false,
+                "repetition_streak": 0,
+                "facts_added": [
+                  {
+                    "field": "requested_category",
+                    "value": "sushi"
+                  }
+                ],
+                "native_response_composer_executed": false,
+                "structured_authority_used": true
+              }
+            }
+          }
+        },
+        {
+          "id": "UNDERSTANDING",
+          "label": "UNDERSTANDING",
+          "status": "completed",
+          "detail": {
+            "user_goal": "recommendation",
+            "cognitive_planner": {
+              "adapter_id": "deliveryos-native-to-b2-product-adapter",
+              "contract": "Contract V2",
+              "packet_hash": "d85c4cb4251bf1031ff8d246e83402dcfe6a0feb7d27d36d9d319fa36f6c6284",
+              "plan_hash": "23eed005385879ee90729d7fa3b0ae7fc5a5aa57e1d8583af52b732841b9abf6",
+              "relation_to_history": "REFINE",
+              "conversational_move": "ANSWER",
+              "user_goal": "recommendation",
+              "what_changed": "A mensagem atual acrescenta informação pública que precisa ser preservada na resposta.",
+              "repair": {
+                "required": false,
+                "acknowledgement": null
+              },
+              "reference": {
+                "required": false,
+                "status": "NOT_REQUIRED",
+                "target": null
+              },
+              "tool_requirement": "CATALOG_SEARCH",
+              "next_best_step": "responder somente com o resultado autorizado já obtido"
+            },
+            "relation_interpretation": "REFINE",
+            "repair_interpretation": {
+              "required": false,
+              "acknowledgement": null
+            },
+            "reference_interpretation": {
+              "required": false,
+              "status": "NOT_REQUIRED",
+              "target": null
+            },
+            "runtime_context": {
+              "endpoint": "/api/product/turn",
+              "runtime": "structured_product_context",
+              "conversation_id": "SIM-CONV-HOMO-0069",
+              "message_id": "SIM-HOMO-0069-0003",
+              "intent": null,
+              "pattern": null,
+              "semantic_transition": "REFINE",
+              "active_goal": "recommendation",
+              "previous_goal": "recommendation",
+              "journey": null,
+              "journey_state": null,
+              "pending_question": "menu_channel",
+              "user_repair_signal": false,
+              "negative_feedback_signal": false,
+              "repetition_detected": false,
+              "repetition_streak": 0,
+              "facts_added": [
+                {
+                  "field": "requested_category",
+                  "value": "sushi"
+                }
+              ],
+              "native_response_composer_executed": false,
+              "structured_authority_used": true
+            }
+          }
+        },
+        {
+          "id": "REQUIRED_COMMITMENTS",
+          "label": "REQUIRED COMMITMENTS",
+          "status": "required",
+          "detail": {
+            "commitments": [
+              {
+                "kind": "GOAL",
+                "content": "priorizar sushi"
+              }
+            ],
+            "count": 1,
+            "preserved_in_response_plan": [
+              {
+                "id": "bff41c990ba6d849",
+                "kind": "GOAL",
+                "content": "priorizar sushi",
+                "anchors": [
+                  "priorizar",
+                  "sushi"
+                ],
+                "source": "conversation_plan"
+              }
+            ]
+          }
+        },
+        {
+          "id": "CAPABILITY_FACT_NEED",
+          "label": "CAPABILITY / FACT NEED",
+          "status": "evaluated",
+          "detail": {
+            "tool_requirement": "CATALOG_SEARCH",
+            "operation": {
+              "intent": null,
+              "topic": null,
+              "query_filter": {
+                "public_topic": null,
+                "intent": null,
+                "channel": "unknown",
+                "unit_id": null,
+                "active_goal": "recommendation",
+                "requested_category": "sushi",
+                "number_of_people": null,
+                "budget": null,
+                "preparation_preferences": [
+                  "not_hot"
+                ],
+                "preferred_ingredients": [],
+                "excluded_ingredients": [],
+                "dietary_restrictions": [],
+                "allergies": [],
+                "candidate_item_ids": []
+              },
+              "commitments": [
+                "GOAL:priorizar sushi"
+              ]
+            },
+            "operation_fingerprint": "05874cd2249a7d187a34c2f5860094f60feb04931632d9e3c22bec375c41ccb6",
+            "result_fingerprint": "05874cd2249a7d187a34c2f5860094f60feb04931632d9e3c22bec375c41ccb6",
+            "query_filter": {
+              "source": "deliveryos_structured_authority",
+              "source_ids": [
+                "menu-source-live-menu-v1+menu-source-ifood-v1"
+              ],
+              "public_topic": null,
+              "intent": null,
+              "query_filter": {
+                "public_topic": null,
+                "intent": null,
+                "channel": "unknown",
+                "unit_id": null,
+                "active_goal": "recommendation",
+                "requested_category": "sushi",
+                "number_of_people": null,
+                "budget": null,
+                "preparation_preferences": [
+                  "not_hot"
+                ],
+                "preferred_ingredients": [],
+                "excluded_ingredients": [],
+                "dietary_restrictions": [],
+                "allergies": [],
+                "candidate_item_ids": []
+              },
+              "candidates_returned": [],
+              "unknowns": [
+                "menu_channel_missing"
+              ],
+              "request_result_binding": {
+                "result_hash": "c300d8fedf6b65ffd732e05f1de7de6014d1c6d7697d109bba4e2a04396812b6",
+                "source_catalog_hash": null,
+                "source_classification": null,
+                "catalog_version": null
+              }
+            },
+            "authorized_fact_count": 0,
+            "authorized_knowledge_count": 1
+          }
+        },
+        {
+          "id": "AUTHORITY_RESULT",
+          "label": "AUTHORITY RESULT",
+          "status": "completed",
+          "detail": {
+            "status": "APPROVED",
+            "outcome": "AUTHORIZED_RESULT",
+            "evidence_hash": "b2d7d9917cab48128f44f77f8b543a3961769b7426947b459ddff7c17ea5d46b",
+            "source_ids": [
+              "menu-source-live-menu-v1+menu-source-ifood-v1"
+            ],
+            "source_catalog_hash": null,
+            "source_result_hash": "c300d8fedf6b65ffd732e05f1de7de6014d1c6d7697d109bba4e2a04396812b6",
+            "request_fingerprint": "05874cd2249a7d187a34c2f5860094f60feb04931632d9e3c22bec375c41ccb6",
+            "result_fingerprint": "05874cd2249a7d187a34c2f5860094f60feb04931632d9e3c22bec375c41ccb6",
+            "request_result_bound": true,
+            "approved_facts": [],
+            "authorized_knowledge": [
+              "Vamos escolher uma opção adequada."
+            ],
+            "blocked_reason": null
+          }
+        },
+        {
+          "id": "RESPONSE_PLAN",
+          "label": "RESPONSE PLAN",
+          "status": "completed",
+          "detail": {
+            "status": "APPROVED",
+            "publication_outcome": "AUTHORIZED_RESULT",
+            "relation_to_history": "REFINE",
+            "conversational_move": "ANSWER",
+            "repair_acknowledgement": null,
+            "reference": {
+              "required": false,
+              "status": "NOT_REQUIRED",
+              "target": null
+            },
+            "required_question": null,
+            "required_response_commitments": [
+              {
+                "id": "bff41c990ba6d849",
+                "kind": "GOAL",
+                "content": "priorizar sushi",
+                "anchors": [
+                  "priorizar",
+                  "sushi"
+                ],
+                "source": "conversation_plan"
+              }
+            ],
+            "next_best_step": "responder somente com o resultado autorizado já obtido",
+            "operation_fingerprint": "05874cd2249a7d187a34c2f5860094f60feb04931632d9e3c22bec375c41ccb6",
+            "progress_state_hash": "c1ffe28aafcef4bf75e39340afccefe13c10985d9b1350f201b060e80b35f790",
+            "authority_evidence_hash": "b2d7d9917cab48128f44f77f8b543a3961769b7426947b459ddff7c17ea5d46b"
+          }
+        },
+        {
+          "id": "WRITER_FALLBACK",
+          "label": "WRITER / FALLBACK",
+          "status": "completed",
+          "detail": {
+            "writer_source": "deterministic_b2_writer",
+            "writer_limit": "B2_WRITER_DROPPED_REQUIRED_COMMITMENT",
+            "primary_attempt": {
+              "writer": "gemma_local_writer",
+              "outcome": "rejected_or_invalidated",
+              "reason": "B2_WRITER_DROPPED_REQUIRED_COMMITMENT"
+            },
+            "fallback_attempt": {
+              "used": true,
+              "writer": "deterministic_b2_writer",
+              "outcome": "accepted",
+              "final_source": "deterministic_b2_writer"
+            }
+          }
+        },
+        {
+          "id": "VALIDATOR",
+          "label": "VALIDATOR",
+          "status": "accepted",
+          "detail": {
+            "accepted": true,
+            "status": "accepted",
+            "detected_stage": "published",
+            "reason": null,
+            "candidate_response": null,
+            "publication_outcome": "AUTHORIZED_RESULT",
+            "authority_evidence_hash": "b2d7d9917cab48128f44f77f8b543a3961769b7426947b459ddff7c17ea5d46b",
+            "previous_progress_state_hash": "a216a52d292e9ac9653eb0e8c4942cc6bbf9ddff8f893803e22cc4399a0f8f7f",
+            "current_progress_state_hash": "c1ffe28aafcef4bf75e39340afccefe13c10985d9b1350f201b060e80b35f790",
+            "same_progress_state": false,
+            "required_commitment_count": 1
+          }
+        },
+        {
+          "id": "PUBLISHED_RESPONSE",
+          "label": "PUBLISHED RESPONSE",
+          "status": "local_shadow_preview",
+          "detail": {
+            "response": "Entendi: priorizar sushi. Vamos escolher uma opção adequada.",
+            "response_hash": "a18c523075a7715e5f0d7619fcafd19f9be8d7141b34c578e1ae65a667f18863",
+            "publication_path": "local_shadow_preview",
+            "external_action_performed": false,
+            "external_spend_brl": 0
+          }
+        }
+      ],
+      "stages": [
+        {
+          "id": "USER",
+          "label": "USER",
+          "status": "observed",
+          "detail": {
+            "current_message": "prefiro sushi",
+            "history_state": {
+              "prior_public_turns": [
+                {
+                  "role": "user",
+                  "text": "quero comer alguma coisa, me ajuda"
+                },
+                {
+                  "role": "assistant",
+                  "text": "Claro — eu te ajudo a afunilar pelo que você está com vontade. Você está com vontade de algo mais fresco, maçaricado ou quente?",
+                  "turn_id": "B2-TURN-0001"
+                },
+                {
+                  "role": "user",
+                  "text": "queria algo frio"
+                },
+                {
+                  "role": "assistant",
+                  "text": "Entendi. Retirei a seção Pratos Quentes. Para os outros itens, o cardápio não confirma a temperatura. Você prefere que eu afunile por sushi, sashimi ou outra categoria?",
+                  "turn_id": "B2-TURN-0002"
+                }
+              ],
+              "prior_turn_count": 4,
+              "previous_publication": {
+                "response": "Entendi. Retirei a seção Pratos Quentes. Para os outros itens, o cardápio não confirma a temperatura. Você prefere que eu afunile por sushi, sashimi ou outra categoria?",
+                "progress_state_hash": "a216a52d292e9ac9653eb0e8c4942cc6bbf9ddff8f893803e22cc4399a0f8f7f",
+                "operation_fingerprint": "94930470f6923baade1bbdcfc9d594340c757fde640f8cc99ce6d820a98c82c9"
+              },
+              "runtime_context": {
+                "endpoint": "/api/product/turn",
+                "runtime": "structured_product_context",
+                "conversation_id": "SIM-CONV-HOMO-0069",
+                "message_id": "SIM-HOMO-0069-0003",
+                "intent": null,
+                "pattern": null,
+                "semantic_transition": "REFINE",
+                "active_goal": "recommendation",
+                "previous_goal": "recommendation",
+                "journey": null,
+                "journey_state": null,
+                "pending_question": "menu_channel",
+                "user_repair_signal": false,
+                "negative_feedback_signal": false,
+                "repetition_detected": false,
+                "repetition_streak": 0,
+                "facts_added": [
+                  {
+                    "field": "requested_category",
+                    "value": "sushi"
+                  }
+                ],
+                "native_response_composer_executed": false,
+                "structured_authority_used": true
+              }
+            }
+          }
+        },
+        {
+          "id": "UNDERSTANDING",
+          "label": "UNDERSTANDING",
+          "status": "completed",
+          "detail": {
+            "user_goal": "recommendation",
+            "cognitive_planner": {
+              "adapter_id": "deliveryos-native-to-b2-product-adapter",
+              "contract": "Contract V2",
+              "packet_hash": "d85c4cb4251bf1031ff8d246e83402dcfe6a0feb7d27d36d9d319fa36f6c6284",
+              "plan_hash": "23eed005385879ee90729d7fa3b0ae7fc5a5aa57e1d8583af52b732841b9abf6",
+              "relation_to_history": "REFINE",
+              "conversational_move": "ANSWER",
+              "user_goal": "recommendation",
+              "what_changed": "A mensagem atual acrescenta informação pública que precisa ser preservada na resposta.",
+              "repair": {
+                "required": false,
+                "acknowledgement": null
+              },
+              "reference": {
+                "required": false,
+                "status": "NOT_REQUIRED",
+                "target": null
+              },
+              "tool_requirement": "CATALOG_SEARCH",
+              "next_best_step": "responder somente com o resultado autorizado já obtido"
+            },
+            "relation_interpretation": "REFINE",
+            "repair_interpretation": {
+              "required": false,
+              "acknowledgement": null
+            },
+            "reference_interpretation": {
+              "required": false,
+              "status": "NOT_REQUIRED",
+              "target": null
+            },
+            "runtime_context": {
+              "endpoint": "/api/product/turn",
+              "runtime": "structured_product_context",
+              "conversation_id": "SIM-CONV-HOMO-0069",
+              "message_id": "SIM-HOMO-0069-0003",
+              "intent": null,
+              "pattern": null,
+              "semantic_transition": "REFINE",
+              "active_goal": "recommendation",
+              "previous_goal": "recommendation",
+              "journey": null,
+              "journey_state": null,
+              "pending_question": "menu_channel",
+              "user_repair_signal": false,
+              "negative_feedback_signal": false,
+              "repetition_detected": false,
+              "repetition_streak": 0,
+              "facts_added": [
+                {
+                  "field": "requested_category",
+                  "value": "sushi"
+                }
+              ],
+              "native_response_composer_executed": false,
+              "structured_authority_used": true
+            }
+          }
+        },
+        {
+          "id": "REQUIRED_COMMITMENTS",
+          "label": "REQUIRED COMMITMENTS",
+          "status": "required",
+          "detail": {
+            "commitments": [
+              {
+                "kind": "GOAL",
+                "content": "priorizar sushi"
+              }
+            ],
+            "count": 1,
+            "preserved_in_response_plan": [
+              {
+                "id": "bff41c990ba6d849",
+                "kind": "GOAL",
+                "content": "priorizar sushi",
+                "anchors": [
+                  "priorizar",
+                  "sushi"
+                ],
+                "source": "conversation_plan"
+              }
+            ]
+          }
+        },
+        {
+          "id": "CAPABILITY_FACT_NEED",
+          "label": "CAPABILITY / FACT NEED",
+          "status": "evaluated",
+          "detail": {
+            "tool_requirement": "CATALOG_SEARCH",
+            "operation": {
+              "intent": null,
+              "topic": null,
+              "query_filter": {
+                "public_topic": null,
+                "intent": null,
+                "channel": "unknown",
+                "unit_id": null,
+                "active_goal": "recommendation",
+                "requested_category": "sushi",
+                "number_of_people": null,
+                "budget": null,
+                "preparation_preferences": [
+                  "not_hot"
+                ],
+                "preferred_ingredients": [],
+                "excluded_ingredients": [],
+                "dietary_restrictions": [],
+                "allergies": [],
+                "candidate_item_ids": []
+              },
+              "commitments": [
+                "GOAL:priorizar sushi"
+              ]
+            },
+            "operation_fingerprint": "05874cd2249a7d187a34c2f5860094f60feb04931632d9e3c22bec375c41ccb6",
+            "result_fingerprint": "05874cd2249a7d187a34c2f5860094f60feb04931632d9e3c22bec375c41ccb6",
+            "query_filter": {
+              "source": "deliveryos_structured_authority",
+              "source_ids": [
+                "menu-source-live-menu-v1+menu-source-ifood-v1"
+              ],
+              "public_topic": null,
+              "intent": null,
+              "query_filter": {
+                "public_topic": null,
+                "intent": null,
+                "channel": "unknown",
+                "unit_id": null,
+                "active_goal": "recommendation",
+                "requested_category": "sushi",
+                "number_of_people": null,
+                "budget": null,
+                "preparation_preferences": [
+                  "not_hot"
+                ],
+                "preferred_ingredients": [],
+                "excluded_ingredients": [],
+                "dietary_restrictions": [],
+                "allergies": [],
+                "candidate_item_ids": []
+              },
+              "candidates_returned": [],
+              "unknowns": [
+                "menu_channel_missing"
+              ],
+              "request_result_binding": {
+                "result_hash": "c300d8fedf6b65ffd732e05f1de7de6014d1c6d7697d109bba4e2a04396812b6",
+                "source_catalog_hash": null,
+                "source_classification": null,
+                "catalog_version": null
+              }
+            },
+            "authorized_fact_count": 0,
+            "authorized_knowledge_count": 1
+          }
+        },
+        {
+          "id": "AUTHORITY_RESULT",
+          "label": "AUTHORITY RESULT",
+          "status": "completed",
+          "detail": {
+            "status": "APPROVED",
+            "outcome": "AUTHORIZED_RESULT",
+            "evidence_hash": "b2d7d9917cab48128f44f77f8b543a3961769b7426947b459ddff7c17ea5d46b",
+            "source_ids": [
+              "menu-source-live-menu-v1+menu-source-ifood-v1"
+            ],
+            "source_catalog_hash": null,
+            "source_result_hash": "c300d8fedf6b65ffd732e05f1de7de6014d1c6d7697d109bba4e2a04396812b6",
+            "request_fingerprint": "05874cd2249a7d187a34c2f5860094f60feb04931632d9e3c22bec375c41ccb6",
+            "result_fingerprint": "05874cd2249a7d187a34c2f5860094f60feb04931632d9e3c22bec375c41ccb6",
+            "request_result_bound": true,
+            "approved_facts": [],
+            "authorized_knowledge": [
+              "Vamos escolher uma opção adequada."
+            ],
+            "blocked_reason": null
+          }
+        },
+        {
+          "id": "RESPONSE_PLAN",
+          "label": "RESPONSE PLAN",
+          "status": "completed",
+          "detail": {
+            "status": "APPROVED",
+            "publication_outcome": "AUTHORIZED_RESULT",
+            "relation_to_history": "REFINE",
+            "conversational_move": "ANSWER",
+            "repair_acknowledgement": null,
+            "reference": {
+              "required": false,
+              "status": "NOT_REQUIRED",
+              "target": null
+            },
+            "required_question": null,
+            "required_response_commitments": [
+              {
+                "id": "bff41c990ba6d849",
+                "kind": "GOAL",
+                "content": "priorizar sushi",
+                "anchors": [
+                  "priorizar",
+                  "sushi"
+                ],
+                "source": "conversation_plan"
+              }
+            ],
+            "next_best_step": "responder somente com o resultado autorizado já obtido",
+            "operation_fingerprint": "05874cd2249a7d187a34c2f5860094f60feb04931632d9e3c22bec375c41ccb6",
+            "progress_state_hash": "c1ffe28aafcef4bf75e39340afccefe13c10985d9b1350f201b060e80b35f790",
+            "authority_evidence_hash": "b2d7d9917cab48128f44f77f8b543a3961769b7426947b459ddff7c17ea5d46b"
+          }
+        },
+        {
+          "id": "WRITER_FALLBACK",
+          "label": "WRITER / FALLBACK",
+          "status": "completed",
+          "detail": {
+            "writer_source": "deterministic_b2_writer",
+            "writer_limit": "B2_WRITER_DROPPED_REQUIRED_COMMITMENT",
+            "primary_attempt": {
+              "writer": "gemma_local_writer",
+              "outcome": "rejected_or_invalidated",
+              "reason": "B2_WRITER_DROPPED_REQUIRED_COMMITMENT"
+            },
+            "fallback_attempt": {
+              "used": true,
+              "writer": "deterministic_b2_writer",
+              "outcome": "accepted",
+              "final_source": "deterministic_b2_writer"
+            }
+          }
+        },
+        {
+          "id": "VALIDATOR",
+          "label": "VALIDATOR",
+          "status": "accepted",
+          "detail": {
+            "accepted": true,
+            "status": "accepted",
+            "detected_stage": "published",
+            "reason": null,
+            "candidate_response": null,
+            "publication_outcome": "AUTHORIZED_RESULT",
+            "authority_evidence_hash": "b2d7d9917cab48128f44f77f8b543a3961769b7426947b459ddff7c17ea5d46b",
+            "previous_progress_state_hash": "a216a52d292e9ac9653eb0e8c4942cc6bbf9ddff8f893803e22cc4399a0f8f7f",
+            "current_progress_state_hash": "c1ffe28aafcef4bf75e39340afccefe13c10985d9b1350f201b060e80b35f790",
+            "same_progress_state": false,
+            "required_commitment_count": 1
+          }
+        },
+        {
+          "id": "PUBLISHED_RESPONSE",
+          "label": "PUBLISHED RESPONSE",
+          "status": "local_shadow_preview",
+          "detail": {
+            "response": "Entendi: priorizar sushi. Vamos escolher uma opção adequada.",
+            "response_hash": "a18c523075a7715e5f0d7619fcafd19f9be8d7141b34c578e1ae65a667f18863",
+            "publication_path": "local_shadow_preview",
+            "external_action_performed": false,
+            "external_spend_brl": 0
+          }
+        }
+      ],
+      "trace_hash": "85279dbb609774ec4a731a294baa946f5d158ababcbdd4fc146e5d9a856ced33"
+    },
+    {
+      "schema_version": "deliveryos-b2-truth-trace-v1",
+      "turn_id": "B2-TURN-0004",
+      "created_at": "2026-08-13T20:25:34.945Z",
+      "mode": "LOCAL_SHADOW_PREVIEW",
+      "gate": {
+        "FINANCIAL_MODE": "ZERO_EXTERNAL_COST",
+        "MAX_EXTERNAL_SPEND_BRL": 0,
+        "EXTERNAL_ACTION_ALLOWED": false,
+        "CHANNEL_AUTHORIZED": true,
+        "COST_AUTHORIZED": true,
+        "SHADOW_MODE": true,
+        "LOCAL_PREVIEW_ALLOWED": true,
+        "EXTERNAL_PUBLICATION_ALLOWED": false,
+        "reasons": []
+      },
+      "first_divergence": {
+        "stage": "WRITER_FALLBACK",
+        "detected_at": "WRITER_FALLBACK",
+        "reason": "B2_WRITER_UNSUPPORTED_AVAILABILITY",
+        "upstream_cause": {
+          "primary_writer": "gemma_local_writer",
+          "authority_evidence_hash": "babdb5f0c6e97f36f76795c316372d389320a3a5a6b614a340fe0a5655682c6b",
+          "authorized_knowledge_hashes": [
+            "e4c7257c307e71839938a4f362a98703f135fcf569ffa9599f61c77bcdbfe636"
+          ]
+        }
+      },
+      "steps": [
+        {
+          "id": "USER",
+          "label": "USER",
+          "status": "observed",
+          "detail": {
+            "current_message": "me passa o menu",
+            "history_state": {
+              "prior_public_turns": [
+                {
+                  "role": "user",
+                  "text": "quero comer alguma coisa, me ajuda"
+                },
+                {
+                  "role": "assistant",
+                  "text": "Claro — eu te ajudo a afunilar pelo que você está com vontade. Você está com vontade de algo mais fresco, maçaricado ou quente?",
+                  "turn_id": "B2-TURN-0001"
+                },
+                {
+                  "role": "user",
+                  "text": "queria algo frio"
+                },
+                {
+                  "role": "assistant",
+                  "text": "Entendi. Retirei a seção Pratos Quentes. Para os outros itens, o cardápio não confirma a temperatura. Você prefere que eu afunile por sushi, sashimi ou outra categoria?",
+                  "turn_id": "B2-TURN-0002"
+                },
+                {
+                  "role": "user",
+                  "text": "prefiro sushi"
+                },
+                {
+                  "role": "assistant",
+                  "text": "Entendi: priorizar sushi. Vamos escolher uma opção adequada.",
+                  "turn_id": "B2-TURN-0003"
+                }
+              ],
+              "prior_turn_count": 6,
+              "previous_publication": {
+                "response": "Entendi: priorizar sushi. Vamos escolher uma opção adequada.",
+                "progress_state_hash": "c1ffe28aafcef4bf75e39340afccefe13c10985d9b1350f201b060e80b35f790",
+                "operation_fingerprint": "05874cd2249a7d187a34c2f5860094f60feb04931632d9e3c22bec375c41ccb6"
+              },
+              "runtime_context": {
+                "endpoint": "/api/product/turn",
+                "runtime": "structured_product_context",
+                "conversation_id": "SIM-CONV-HOMO-0069",
+                "message_id": "SIM-HOMO-0069-0004",
+                "intent": "information.menu",
+                "pattern": null,
+                "semantic_transition": "CONTINUE",
+                "active_goal": "recommendation",
+                "previous_goal": "recommendation",
+                "journey": null,
+                "journey_state": null,
+                "pending_question": "menu_channel",
+                "user_repair_signal": false,
+                "negative_feedback_signal": false,
+                "repetition_detected": false,
+                "repetition_streak": 0,
+                "facts_added": [
+                  {
+                    "field": "occasion",
+                    "value": "menu_discovery"
+                  },
+                  {
+                    "field": "desired_experience",
+                    "value": "menu_discovery"
+                  }
+                ],
+                "native_response_composer_executed": false,
+                "structured_authority_used": true
+              }
+            }
+          }
+        },
+        {
+          "id": "UNDERSTANDING",
+          "label": "UNDERSTANDING",
+          "status": "completed",
+          "detail": {
+            "user_goal": "recommendation",
+            "cognitive_planner": {
+              "adapter_id": "deliveryos-native-to-b2-product-adapter",
+              "contract": "Contract V2",
+              "packet_hash": "59f15d325c22eefa5ec89b7789d2dad4ae28262f62b7953b66951fe283cd5ed9",
+              "plan_hash": "833303ecf9f1f1e61baf33e84cc01f45cb8c4ac57ff7a4f1738cf1a990b600fb",
+              "relation_to_history": "CONTINUE",
+              "conversational_move": "ANSWER",
+              "user_goal": "recommendation",
+              "what_changed": "A mensagem atual acrescenta informação pública que precisa ser preservada na resposta.",
+              "repair": {
+                "required": false,
+                "acknowledgement": null
+              },
+              "reference": {
+                "required": false,
+                "status": "NOT_REQUIRED",
+                "target": null
+              },
+              "tool_requirement": "CATALOG_SEARCH",
+              "next_best_step": "responder somente com o resultado autorizado já obtido"
+            },
+            "relation_interpretation": "CONTINUE",
+            "repair_interpretation": {
+              "required": false,
+              "acknowledgement": null
+            },
+            "reference_interpretation": {
+              "required": false,
+              "status": "NOT_REQUIRED",
+              "target": null
+            },
+            "runtime_context": {
+              "endpoint": "/api/product/turn",
+              "runtime": "structured_product_context",
+              "conversation_id": "SIM-CONV-HOMO-0069",
+              "message_id": "SIM-HOMO-0069-0004",
+              "intent": "information.menu",
+              "pattern": null,
+              "semantic_transition": "CONTINUE",
+              "active_goal": "recommendation",
+              "previous_goal": "recommendation",
+              "journey": null,
+              "journey_state": null,
+              "pending_question": "menu_channel",
+              "user_repair_signal": false,
+              "negative_feedback_signal": false,
+              "repetition_detected": false,
+              "repetition_streak": 0,
+              "facts_added": [
+                {
+                  "field": "occasion",
+                  "value": "menu_discovery"
+                },
+                {
+                  "field": "desired_experience",
+                  "value": "menu_discovery"
+                }
+              ],
+              "native_response_composer_executed": false,
+              "structured_authority_used": true
+            }
+          }
+        },
+        {
+          "id": "REQUIRED_COMMITMENTS",
+          "label": "REQUIRED COMMITMENTS",
+          "status": "none",
+          "detail": {
+            "commitments": [],
+            "count": 0,
+            "preserved_in_response_plan": []
+          }
+        },
+        {
+          "id": "CAPABILITY_FACT_NEED",
+          "label": "CAPABILITY / FACT NEED",
+          "status": "evaluated",
+          "detail": {
+            "tool_requirement": "CATALOG_SEARCH",
+            "operation": {
+              "intent": "information.menu",
+              "topic": "institutional_menu",
+              "query_filter": {
+                "public_topic": "institutional_menu",
+                "intent": "information.menu",
+                "channel": "unknown",
+                "unit_id": null,
+                "active_goal": "recommendation",
+                "requested_category": "sushi",
+                "number_of_people": null,
+                "budget": null,
+                "preparation_preferences": [
+                  "not_hot"
+                ],
+                "preferred_ingredients": [],
+                "excluded_ingredients": [],
+                "dietary_restrictions": [],
+                "allergies": [],
+                "candidate_item_ids": []
+              },
+              "commitments": []
+            },
+            "operation_fingerprint": "91afee3c353eb9ade66a107f4389150e86bad34784e8baa94b43fcaca220c1ce",
+            "result_fingerprint": "91afee3c353eb9ade66a107f4389150e86bad34784e8baa94b43fcaca220c1ce",
+            "query_filter": {
+              "source": "deliveryos_structured_authority",
+              "source_ids": [
+                "TATA_OPERATIONAL_PUBLIC_INFO_V1",
+                "menu-source-live-menu-v1+menu-source-ifood-v1"
+              ],
+              "public_topic": "institutional_menu",
+              "intent": "information.menu",
+              "query_filter": {
+                "public_topic": "institutional_menu",
+                "intent": "information.menu",
+                "channel": "unknown",
+                "unit_id": null,
+                "active_goal": "recommendation",
+                "requested_category": "sushi",
+                "number_of_people": null,
+                "budget": null,
+                "preparation_preferences": [
+                  "not_hot"
+                ],
+                "preferred_ingredients": [],
+                "excluded_ingredients": [],
+                "dietary_restrictions": [],
+                "allergies": [],
+                "candidate_item_ids": []
+              },
+              "candidates_returned": [],
+              "unknowns": [
+                "menu_channel_missing"
+              ],
+              "request_result_binding": {
+                "result_hash": "5318c561d87e62d22154cc5cca8228f16222168f246673575472b272a75e1db2",
+                "source_catalog_hash": "c60b482d7325258f8c86009158f2262dab3d6810bc52823d0dd08c9f1d322bcc",
+                "source_classification": "CONFIRMADO_POR_CESAR",
+                "catalog_version": "1.0.0"
+              }
+            },
+            "authorized_fact_count": 0,
+            "authorized_knowledge_count": 1
+          }
+        },
+        {
+          "id": "AUTHORITY_RESULT",
+          "label": "AUTHORITY RESULT",
+          "status": "completed",
+          "detail": {
+            "status": "APPROVED",
+            "outcome": "AUTHORIZED_RESULT",
+            "evidence_hash": "babdb5f0c6e97f36f76795c316372d389320a3a5a6b614a340fe0a5655682c6b",
+            "source_ids": [
+              "TATA_OPERATIONAL_PUBLIC_INFO_V1",
+              "menu-source-live-menu-v1+menu-source-ifood-v1"
+            ],
+            "source_catalog_hash": "c60b482d7325258f8c86009158f2262dab3d6810bc52823d0dd08c9f1d322bcc",
+            "source_result_hash": "5318c561d87e62d22154cc5cca8228f16222168f246673575472b272a75e1db2",
+            "request_fingerprint": "91afee3c353eb9ade66a107f4389150e86bad34784e8baa94b43fcaca220c1ce",
+            "result_fingerprint": "91afee3c353eb9ade66a107f4389150e86bad34784e8baa94b43fcaca220c1ce",
+            "request_result_bound": true,
+            "approved_facts": [],
+            "authorized_knowledge": [
+              "Este é o cardápio com os preços dos itens: https://abre.ai/ni3n"
+            ],
+            "blocked_reason": null
+          }
+        },
+        {
+          "id": "RESPONSE_PLAN",
+          "label": "RESPONSE PLAN",
+          "status": "completed",
+          "detail": {
+            "status": "APPROVED",
+            "publication_outcome": "AUTHORIZED_RESULT",
+            "relation_to_history": "CONTINUE",
+            "conversational_move": "ANSWER",
+            "repair_acknowledgement": null,
+            "reference": {
+              "required": false,
+              "status": "NOT_REQUIRED",
+              "target": null
+            },
+            "required_question": null,
+            "required_response_commitments": [],
+            "next_best_step": "responder somente com o resultado autorizado já obtido",
+            "operation_fingerprint": "91afee3c353eb9ade66a107f4389150e86bad34784e8baa94b43fcaca220c1ce",
+            "progress_state_hash": "ff9b13414ebc6139ce7e81802444800867a5d9978e8d73131be4383ab7255fdf",
+            "authority_evidence_hash": "babdb5f0c6e97f36f76795c316372d389320a3a5a6b614a340fe0a5655682c6b"
+          }
+        },
+        {
+          "id": "WRITER_FALLBACK",
+          "label": "WRITER / FALLBACK",
+          "status": "completed",
+          "detail": {
+            "writer_source": "deterministic_b2_writer",
+            "writer_limit": "B2_WRITER_UNSUPPORTED_AVAILABILITY",
+            "primary_attempt": {
+              "writer": "gemma_local_writer",
+              "outcome": "rejected_or_invalidated",
+              "reason": "B2_WRITER_UNSUPPORTED_AVAILABILITY"
+            },
+            "fallback_attempt": {
+              "used": true,
+              "writer": "deterministic_b2_writer",
+              "outcome": "accepted",
+              "final_source": "deterministic_b2_writer"
+            }
+          }
+        },
+        {
+          "id": "VALIDATOR",
+          "label": "VALIDATOR",
+          "status": "accepted",
+          "detail": {
+            "accepted": true,
+            "status": "accepted",
+            "detected_stage": "published",
+            "reason": null,
+            "candidate_response": null,
+            "publication_outcome": "AUTHORIZED_RESULT",
+            "authority_evidence_hash": "babdb5f0c6e97f36f76795c316372d389320a3a5a6b614a340fe0a5655682c6b",
+            "previous_progress_state_hash": "c1ffe28aafcef4bf75e39340afccefe13c10985d9b1350f201b060e80b35f790",
+            "current_progress_state_hash": "ff9b13414ebc6139ce7e81802444800867a5d9978e8d73131be4383ab7255fdf",
+            "same_progress_state": false,
+            "required_commitment_count": 0
+          }
+        },
+        {
+          "id": "PUBLISHED_RESPONSE",
+          "label": "PUBLISHED RESPONSE",
+          "status": "local_shadow_preview",
+          "detail": {
+            "response": "Este é o cardápio com os preços dos itens: https://abre.ai/ni3n",
+            "response_hash": "89fb3566626b0c581b84d37e2771eee99e61fde34c6d0e7c96c17c8cf471c0c0",
+            "publication_path": "local_shadow_preview",
+            "external_action_performed": false,
+            "external_spend_brl": 0
+          }
+        }
+      ],
+      "stages": [
+        {
+          "id": "USER",
+          "label": "USER",
+          "status": "observed",
+          "detail": {
+            "current_message": "me passa o menu",
+            "history_state": {
+              "prior_public_turns": [
+                {
+                  "role": "user",
+                  "text": "quero comer alguma coisa, me ajuda"
+                },
+                {
+                  "role": "assistant",
+                  "text": "Claro — eu te ajudo a afunilar pelo que você está com vontade. Você está com vontade de algo mais fresco, maçaricado ou quente?",
+                  "turn_id": "B2-TURN-0001"
+                },
+                {
+                  "role": "user",
+                  "text": "queria algo frio"
+                },
+                {
+                  "role": "assistant",
+                  "text": "Entendi. Retirei a seção Pratos Quentes. Para os outros itens, o cardápio não confirma a temperatura. Você prefere que eu afunile por sushi, sashimi ou outra categoria?",
+                  "turn_id": "B2-TURN-0002"
+                },
+                {
+                  "role": "user",
+                  "text": "prefiro sushi"
+                },
+                {
+                  "role": "assistant",
+                  "text": "Entendi: priorizar sushi. Vamos escolher uma opção adequada.",
+                  "turn_id": "B2-TURN-0003"
+                }
+              ],
+              "prior_turn_count": 6,
+              "previous_publication": {
+                "response": "Entendi: priorizar sushi. Vamos escolher uma opção adequada.",
+                "progress_state_hash": "c1ffe28aafcef4bf75e39340afccefe13c10985d9b1350f201b060e80b35f790",
+                "operation_fingerprint": "05874cd2249a7d187a34c2f5860094f60feb04931632d9e3c22bec375c41ccb6"
+              },
+              "runtime_context": {
+                "endpoint": "/api/product/turn",
+                "runtime": "structured_product_context",
+                "conversation_id": "SIM-CONV-HOMO-0069",
+                "message_id": "SIM-HOMO-0069-0004",
+                "intent": "information.menu",
+                "pattern": null,
+                "semantic_transition": "CONTINUE",
+                "active_goal": "recommendation",
+                "previous_goal": "recommendation",
+                "journey": null,
+                "journey_state": null,
+                "pending_question": "menu_channel",
+                "user_repair_signal": false,
+                "negative_feedback_signal": false,
+                "repetition_detected": false,
+                "repetition_streak": 0,
+                "facts_added": [
+                  {
+                    "field": "occasion",
+                    "value": "menu_discovery"
+                  },
+                  {
+                    "field": "desired_experience",
+                    "value": "menu_discovery"
+                  }
+                ],
+                "native_response_composer_executed": false,
+                "structured_authority_used": true
+              }
+            }
+          }
+        },
+        {
+          "id": "UNDERSTANDING",
+          "label": "UNDERSTANDING",
+          "status": "completed",
+          "detail": {
+            "user_goal": "recommendation",
+            "cognitive_planner": {
+              "adapter_id": "deliveryos-native-to-b2-product-adapter",
+              "contract": "Contract V2",
+              "packet_hash": "59f15d325c22eefa5ec89b7789d2dad4ae28262f62b7953b66951fe283cd5ed9",
+              "plan_hash": "833303ecf9f1f1e61baf33e84cc01f45cb8c4ac57ff7a4f1738cf1a990b600fb",
+              "relation_to_history": "CONTINUE",
+              "conversational_move": "ANSWER",
+              "user_goal": "recommendation",
+              "what_changed": "A mensagem atual acrescenta informação pública que precisa ser preservada na resposta.",
+              "repair": {
+                "required": false,
+                "acknowledgement": null
+              },
+              "reference": {
+                "required": false,
+                "status": "NOT_REQUIRED",
+                "target": null
+              },
+              "tool_requirement": "CATALOG_SEARCH",
+              "next_best_step": "responder somente com o resultado autorizado já obtido"
+            },
+            "relation_interpretation": "CONTINUE",
+            "repair_interpretation": {
+              "required": false,
+              "acknowledgement": null
+            },
+            "reference_interpretation": {
+              "required": false,
+              "status": "NOT_REQUIRED",
+              "target": null
+            },
+            "runtime_context": {
+              "endpoint": "/api/product/turn",
+              "runtime": "structured_product_context",
+              "conversation_id": "SIM-CONV-HOMO-0069",
+              "message_id": "SIM-HOMO-0069-0004",
+              "intent": "information.menu",
+              "pattern": null,
+              "semantic_transition": "CONTINUE",
+              "active_goal": "recommendation",
+              "previous_goal": "recommendation",
+              "journey": null,
+              "journey_state": null,
+              "pending_question": "menu_channel",
+              "user_repair_signal": false,
+              "negative_feedback_signal": false,
+              "repetition_detected": false,
+              "repetition_streak": 0,
+              "facts_added": [
+                {
+                  "field": "occasion",
+                  "value": "menu_discovery"
+                },
+                {
+                  "field": "desired_experience",
+                  "value": "menu_discovery"
+                }
+              ],
+              "native_response_composer_executed": false,
+              "structured_authority_used": true
+            }
+          }
+        },
+        {
+          "id": "REQUIRED_COMMITMENTS",
+          "label": "REQUIRED COMMITMENTS",
+          "status": "none",
+          "detail": {
+            "commitments": [],
+            "count": 0,
+            "preserved_in_response_plan": []
+          }
+        },
+        {
+          "id": "CAPABILITY_FACT_NEED",
+          "label": "CAPABILITY / FACT NEED",
+          "status": "evaluated",
+          "detail": {
+            "tool_requirement": "CATALOG_SEARCH",
+            "operation": {
+              "intent": "information.menu",
+              "topic": "institutional_menu",
+              "query_filter": {
+                "public_topic": "institutional_menu",
+                "intent": "information.menu",
+                "channel": "unknown",
+                "unit_id": null,
+                "active_goal": "recommendation",
+                "requested_category": "sushi",
+                "number_of_people": null,
+                "budget": null,
+                "preparation_preferences": [
+                  "not_hot"
+                ],
+                "preferred_ingredients": [],
+                "excluded_ingredients": [],
+                "dietary_restrictions": [],
+                "allergies": [],
+                "candidate_item_ids": []
+              },
+              "commitments": []
+            },
+            "operation_fingerprint": "91afee3c353eb9ade66a107f4389150e86bad34784e8baa94b43fcaca220c1ce",
+            "result_fingerprint": "91afee3c353eb9ade66a107f4389150e86bad34784e8baa94b43fcaca220c1ce",
+            "query_filter": {
+              "source": "deliveryos_structured_authority",
+              "source_ids": [
+                "TATA_OPERATIONAL_PUBLIC_INFO_V1",
+                "menu-source-live-menu-v1+menu-source-ifood-v1"
+              ],
+              "public_topic": "institutional_menu",
+              "intent": "information.menu",
+              "query_filter": {
+                "public_topic": "institutional_menu",
+                "intent": "information.menu",
+                "channel": "unknown",
+                "unit_id": null,
+                "active_goal": "recommendation",
+                "requested_category": "sushi",
+                "number_of_people": null,
+                "budget": null,
+                "preparation_preferences": [
+                  "not_hot"
+                ],
+                "preferred_ingredients": [],
+                "excluded_ingredients": [],
+                "dietary_restrictions": [],
+                "allergies": [],
+                "candidate_item_ids": []
+              },
+              "candidates_returned": [],
+              "unknowns": [
+                "menu_channel_missing"
+              ],
+              "request_result_binding": {
+                "result_hash": "5318c561d87e62d22154cc5cca8228f16222168f246673575472b272a75e1db2",
+                "source_catalog_hash": "c60b482d7325258f8c86009158f2262dab3d6810bc52823d0dd08c9f1d322bcc",
+                "source_classification": "CONFIRMADO_POR_CESAR",
+                "catalog_version": "1.0.0"
+              }
+            },
+            "authorized_fact_count": 0,
+            "authorized_knowledge_count": 1
+          }
+        },
+        {
+          "id": "AUTHORITY_RESULT",
+          "label": "AUTHORITY RESULT",
+          "status": "completed",
+          "detail": {
+            "status": "APPROVED",
+            "outcome": "AUTHORIZED_RESULT",
+            "evidence_hash": "babdb5f0c6e97f36f76795c316372d389320a3a5a6b614a340fe0a5655682c6b",
+            "source_ids": [
+              "TATA_OPERATIONAL_PUBLIC_INFO_V1",
+              "menu-source-live-menu-v1+menu-source-ifood-v1"
+            ],
+            "source_catalog_hash": "c60b482d7325258f8c86009158f2262dab3d6810bc52823d0dd08c9f1d322bcc",
+            "source_result_hash": "5318c561d87e62d22154cc5cca8228f16222168f246673575472b272a75e1db2",
+            "request_fingerprint": "91afee3c353eb9ade66a107f4389150e86bad34784e8baa94b43fcaca220c1ce",
+            "result_fingerprint": "91afee3c353eb9ade66a107f4389150e86bad34784e8baa94b43fcaca220c1ce",
+            "request_result_bound": true,
+            "approved_facts": [],
+            "authorized_knowledge": [
+              "Este é o cardápio com os preços dos itens: https://abre.ai/ni3n"
+            ],
+            "blocked_reason": null
+          }
+        },
+        {
+          "id": "RESPONSE_PLAN",
+          "label": "RESPONSE PLAN",
+          "status": "completed",
+          "detail": {
+            "status": "APPROVED",
+            "publication_outcome": "AUTHORIZED_RESULT",
+            "relation_to_history": "CONTINUE",
+            "conversational_move": "ANSWER",
+            "repair_acknowledgement": null,
+            "reference": {
+              "required": false,
+              "status": "NOT_REQUIRED",
+              "target": null
+            },
+            "required_question": null,
+            "required_response_commitments": [],
+            "next_best_step": "responder somente com o resultado autorizado já obtido",
+            "operation_fingerprint": "91afee3c353eb9ade66a107f4389150e86bad34784e8baa94b43fcaca220c1ce",
+            "progress_state_hash": "ff9b13414ebc6139ce7e81802444800867a5d9978e8d73131be4383ab7255fdf",
+            "authority_evidence_hash": "babdb5f0c6e97f36f76795c316372d389320a3a5a6b614a340fe0a5655682c6b"
+          }
+        },
+        {
+          "id": "WRITER_FALLBACK",
+          "label": "WRITER / FALLBACK",
+          "status": "completed",
+          "detail": {
+            "writer_source": "deterministic_b2_writer",
+            "writer_limit": "B2_WRITER_UNSUPPORTED_AVAILABILITY",
+            "primary_attempt": {
+              "writer": "gemma_local_writer",
+              "outcome": "rejected_or_invalidated",
+              "reason": "B2_WRITER_UNSUPPORTED_AVAILABILITY"
+            },
+            "fallback_attempt": {
+              "used": true,
+              "writer": "deterministic_b2_writer",
+              "outcome": "accepted",
+              "final_source": "deterministic_b2_writer"
+            }
+          }
+        },
+        {
+          "id": "VALIDATOR",
+          "label": "VALIDATOR",
+          "status": "accepted",
+          "detail": {
+            "accepted": true,
+            "status": "accepted",
+            "detected_stage": "published",
+            "reason": null,
+            "candidate_response": null,
+            "publication_outcome": "AUTHORIZED_RESULT",
+            "authority_evidence_hash": "babdb5f0c6e97f36f76795c316372d389320a3a5a6b614a340fe0a5655682c6b",
+            "previous_progress_state_hash": "c1ffe28aafcef4bf75e39340afccefe13c10985d9b1350f201b060e80b35f790",
+            "current_progress_state_hash": "ff9b13414ebc6139ce7e81802444800867a5d9978e8d73131be4383ab7255fdf",
+            "same_progress_state": false,
+            "required_commitment_count": 0
+          }
+        },
+        {
+          "id": "PUBLISHED_RESPONSE",
+          "label": "PUBLISHED RESPONSE",
+          "status": "local_shadow_preview",
+          "detail": {
+            "response": "Este é o cardápio com os preços dos itens: https://abre.ai/ni3n",
+            "response_hash": "89fb3566626b0c581b84d37e2771eee99e61fde34c6d0e7c96c17c8cf471c0c0",
+            "publication_path": "local_shadow_preview",
+            "external_action_performed": false,
+            "external_spend_brl": 0
+          }
+        }
+      ],
+      "trace_hash": "69a0ac4fc27793606f232e470b09bdd99229c9d33db8d0ad0ec112743c7ddb0c"
+    },
+    {
+      "schema_version": "deliveryos-b2-truth-trace-v1",
+      "turn_id": "B2-TURN-0005",
+      "created_at": "2026-08-13T20:25:49.047Z",
+      "mode": "LOCAL_SHADOW_PREVIEW",
+      "gate": {
+        "FINANCIAL_MODE": "ZERO_EXTERNAL_COST",
+        "MAX_EXTERNAL_SPEND_BRL": 0,
+        "EXTERNAL_ACTION_ALLOWED": false,
+        "CHANNEL_AUTHORIZED": true,
+        "COST_AUTHORIZED": true,
+        "SHADOW_MODE": true,
+        "LOCAL_PREVIEW_ALLOWED": true,
+        "EXTERNAL_PUBLICATION_ALLOWED": false,
+        "reasons": []
+      },
+      "first_divergence": {
+        "stage": "WRITER_FALLBACK",
+        "detected_at": "WRITER_FALLBACK",
+        "reason": "B2_WRITER_DROPPED_REQUIRED_COMMITMENT",
+        "upstream_cause": {
+          "primary_writer": "gemma_local_writer",
+          "authority_evidence_hash": "0fc044dc743c31906625482754bceaada74b2ca54021ea494cb3930bedaf6790",
+          "authorized_knowledge_hashes": [
+            "70500ddb80a450562dddb07796feb7e1e689d60f973720361facd6d5862a49c0"
+          ]
+        }
+      },
+      "steps": [
+        {
+          "id": "USER",
+          "label": "USER",
+          "status": "observed",
+          "detail": {
+            "current_message": "quanto custa o rodízio?",
+            "history_state": {
+              "prior_public_turns": [
+                {
+                  "role": "user",
+                  "text": "quero comer alguma coisa, me ajuda"
+                },
+                {
+                  "role": "assistant",
+                  "text": "Claro — eu te ajudo a afunilar pelo que você está com vontade. Você está com vontade de algo mais fresco, maçaricado ou quente?",
+                  "turn_id": "B2-TURN-0001"
+                },
+                {
+                  "role": "user",
+                  "text": "queria algo frio"
+                },
+                {
+                  "role": "assistant",
+                  "text": "Entendi. Retirei a seção Pratos Quentes. Para os outros itens, o cardápio não confirma a temperatura. Você prefere que eu afunile por sushi, sashimi ou outra categoria?",
+                  "turn_id": "B2-TURN-0002"
+                },
+                {
+                  "role": "user",
+                  "text": "prefiro sushi"
+                },
+                {
+                  "role": "assistant",
+                  "text": "Entendi: priorizar sushi. Vamos escolher uma opção adequada.",
+                  "turn_id": "B2-TURN-0003"
+                },
+                {
+                  "role": "user",
+                  "text": "me passa o menu"
+                },
+                {
+                  "role": "assistant",
+                  "text": "Este é o cardápio com os preços dos itens: https://abre.ai/ni3n",
+                  "turn_id": "B2-TURN-0004"
+                }
+              ],
+              "prior_turn_count": 8,
+              "previous_publication": {
+                "response": "Este é o cardápio com os preços dos itens: https://abre.ai/ni3n",
+                "progress_state_hash": "ff9b13414ebc6139ce7e81802444800867a5d9978e8d73131be4383ab7255fdf",
+                "operation_fingerprint": "91afee3c353eb9ade66a107f4389150e86bad34784e8baa94b43fcaca220c1ce"
+              },
+              "runtime_context": {
+                "endpoint": "/api/product/turn",
+                "runtime": "structured_product_context",
+                "conversation_id": "SIM-CONV-HOMO-0069",
+                "message_id": "SIM-HOMO-0069-0005",
+                "intent": "information.menu",
+                "pattern": null,
+                "semantic_transition": "CONTINUE",
+                "active_goal": "recommendation",
+                "previous_goal": "recommendation",
+                "journey": null,
+                "journey_state": null,
+                "pending_question": "menu_channel",
+                "user_repair_signal": false,
+                "negative_feedback_signal": false,
+                "repetition_detected": false,
+                "repetition_streak": 0,
+                "facts_added": [],
+                "native_response_composer_executed": false,
+                "structured_authority_used": true
+              }
+            }
+          }
+        },
+        {
+          "id": "UNDERSTANDING",
+          "label": "UNDERSTANDING",
+          "status": "completed",
+          "detail": {
+            "user_goal": "recommendation",
+            "cognitive_planner": {
+              "adapter_id": "deliveryos-native-to-b2-product-adapter",
+              "contract": "Contract V2",
+              "packet_hash": "779505965739e7ec8132d362282e63cd2a4c222498b8473b59d8ebd6d16236ae",
+              "plan_hash": "827ffee86ba9b655458994f0523ba31280b78968b4ea5d86e170df4ce0bd98b5",
+              "relation_to_history": "CONTINUE",
+              "conversational_move": "ANSWER",
+              "user_goal": "recommendation",
+              "what_changed": "A mensagem atual acrescenta informação pública que precisa ser preservada na resposta.",
+              "repair": {
+                "required": false,
+                "acknowledgement": null
+              },
+              "reference": {
+                "required": false,
+                "status": "NOT_REQUIRED",
+                "target": null
+              },
+              "tool_requirement": "RESTAURANT_INFO",
+              "next_best_step": "responder somente com o resultado autorizado já obtido"
+            },
+            "relation_interpretation": "CONTINUE",
+            "repair_interpretation": {
+              "required": false,
+              "acknowledgement": null
+            },
+            "reference_interpretation": {
+              "required": false,
+              "status": "NOT_REQUIRED",
+              "target": null
+            },
+            "runtime_context": {
+              "endpoint": "/api/product/turn",
+              "runtime": "structured_product_context",
+              "conversation_id": "SIM-CONV-HOMO-0069",
+              "message_id": "SIM-HOMO-0069-0005",
+              "intent": "information.menu",
+              "pattern": null,
+              "semantic_transition": "CONTINUE",
+              "active_goal": "recommendation",
+              "previous_goal": "recommendation",
+              "journey": null,
+              "journey_state": null,
+              "pending_question": "menu_channel",
+              "user_repair_signal": false,
+              "negative_feedback_signal": false,
+              "repetition_detected": false,
+              "repetition_streak": 0,
+              "facts_added": [],
+              "native_response_composer_executed": false,
+              "structured_authority_used": true
+            }
+          }
+        },
+        {
+          "id": "REQUIRED_COMMITMENTS",
+          "label": "REQUIRED COMMITMENTS",
+          "status": "required",
+          "detail": {
+            "commitments": [
+              {
+                "kind": "GOAL",
+                "content": "preço de rodizio"
+              }
+            ],
+            "count": 1,
+            "preserved_in_response_plan": [
+              {
+                "id": "bff58ea47a024364",
+                "kind": "GOAL",
+                "content": "preço de rodizio",
+                "anchors": [
+                  "preco",
+                  "rodizio"
+                ],
+                "source": "conversation_plan"
+              }
+            ]
+          }
+        },
+        {
+          "id": "CAPABILITY_FACT_NEED",
+          "label": "CAPABILITY / FACT NEED",
+          "status": "evaluated",
+          "detail": {
+            "tool_requirement": "RESTAURANT_INFO",
+            "operation": {
+              "intent": "information.menu",
+              "topic": "restaurant_model",
+              "query_filter": {
+                "public_topic": "restaurant_model",
+                "intent": "information.menu",
+                "channel": "unknown",
+                "unit_id": null,
+                "active_goal": "recommendation",
+                "requested_category": "sushi",
+                "number_of_people": null,
+                "budget": null,
+                "preparation_preferences": [
+                  "not_hot"
+                ],
+                "preferred_ingredients": [],
+                "excluded_ingredients": [],
+                "dietary_restrictions": [],
+                "allergies": [],
+                "candidate_item_ids": []
+              },
+              "commitments": [
+                "GOAL:preco de rodizio"
+              ]
+            },
+            "operation_fingerprint": "6b5e37e5aa692f376065afb1ac7e0a9f0143d5c711b4d23c37cf4e18caa28ca5",
+            "result_fingerprint": "6b5e37e5aa692f376065afb1ac7e0a9f0143d5c711b4d23c37cf4e18caa28ca5",
+            "query_filter": {
+              "source": "deliveryos_structured_authority",
+              "source_ids": [
+                "TATA_OPERATIONAL_PUBLIC_INFO_V1",
+                "menu-source-live-menu-v1+menu-source-ifood-v1"
+              ],
+              "public_topic": "restaurant_model",
+              "intent": "information.menu",
+              "query_filter": {
+                "public_topic": "restaurant_model",
+                "intent": "information.menu",
+                "channel": "unknown",
+                "unit_id": null,
+                "active_goal": "recommendation",
+                "requested_category": "sushi",
+                "number_of_people": null,
+                "budget": null,
+                "preparation_preferences": [
+                  "not_hot"
+                ],
+                "preferred_ingredients": [],
+                "excluded_ingredients": [],
+                "dietary_restrictions": [],
+                "allergies": [],
+                "candidate_item_ids": []
+              },
+              "candidates_returned": [],
+              "unknowns": [
+                "menu_channel_missing"
+              ],
+              "request_result_binding": {
+                "result_hash": "5e7facec9fccd6e679a6b4cff0a3e66b76e90961821ffd8f37162d8f4a01e9bd",
+                "source_catalog_hash": "c60b482d7325258f8c86009158f2262dab3d6810bc52823d0dd08c9f1d322bcc",
+                "source_classification": "CONFIRMADO_POR_CESAR",
+                "catalog_version": "1.0.0"
+              }
+            },
+            "authorized_fact_count": 0,
+            "authorized_knowledge_count": 1
+          }
+        },
+        {
+          "id": "AUTHORITY_RESULT",
+          "label": "AUTHORITY RESULT",
+          "status": "completed",
+          "detail": {
+            "status": "APPROVED",
+            "outcome": "AUTHORIZED_RESULT",
+            "evidence_hash": "0fc044dc743c31906625482754bceaada74b2ca54021ea494cb3930bedaf6790",
+            "source_ids": [
+              "TATA_OPERATIONAL_PUBLIC_INFO_V1",
+              "menu-source-live-menu-v1+menu-source-ifood-v1"
+            ],
+            "source_catalog_hash": "c60b482d7325258f8c86009158f2262dab3d6810bc52823d0dd08c9f1d322bcc",
+            "source_result_hash": "5e7facec9fccd6e679a6b4cff0a3e66b76e90961821ffd8f37162d8f4a01e9bd",
+            "request_fingerprint": "6b5e37e5aa692f376065afb1ac7e0a9f0143d5c711b4d23c37cf4e18caa28ca5",
+            "result_fingerprint": "6b5e37e5aa692f376065afb1ac7e0a9f0143d5c711b4d23c37cf4e18caa28ca5",
+            "request_result_bound": true,
+            "approved_facts": [],
+            "authorized_knowledge": [
+              "O TATÁ trabalha à la carte. O Almoço Executivo e a Sugestão Tatá são menus em cursos, não rodízio."
+            ],
+            "blocked_reason": null
+          }
+        },
+        {
+          "id": "RESPONSE_PLAN",
+          "label": "RESPONSE PLAN",
+          "status": "completed",
+          "detail": {
+            "status": "APPROVED",
+            "publication_outcome": "AUTHORIZED_RESULT",
+            "relation_to_history": "CONTINUE",
+            "conversational_move": "ANSWER",
+            "repair_acknowledgement": null,
+            "reference": {
+              "required": false,
+              "status": "NOT_REQUIRED",
+              "target": null
+            },
+            "required_question": null,
+            "required_response_commitments": [
+              {
+                "id": "bff58ea47a024364",
+                "kind": "GOAL",
+                "content": "preço de rodizio",
+                "anchors": [
+                  "preco",
+                  "rodizio"
+                ],
+                "source": "conversation_plan"
+              }
+            ],
+            "next_best_step": "responder somente com o resultado autorizado já obtido",
+            "operation_fingerprint": "6b5e37e5aa692f376065afb1ac7e0a9f0143d5c711b4d23c37cf4e18caa28ca5",
+            "progress_state_hash": "e760c0a93b99b113f6ac08819a14e139bb2526a0e16ca2f54457355cc453e0d1",
+            "authority_evidence_hash": "0fc044dc743c31906625482754bceaada74b2ca54021ea494cb3930bedaf6790"
+          }
+        },
+        {
+          "id": "WRITER_FALLBACK",
+          "label": "WRITER / FALLBACK",
+          "status": "completed",
+          "detail": {
+            "writer_source": "deterministic_b2_writer",
+            "writer_limit": "B2_WRITER_DROPPED_REQUIRED_COMMITMENT",
+            "primary_attempt": {
+              "writer": "gemma_local_writer",
+              "outcome": "rejected_or_invalidated",
+              "reason": "B2_WRITER_DROPPED_REQUIRED_COMMITMENT"
+            },
+            "fallback_attempt": {
+              "used": true,
+              "writer": "deterministic_b2_writer",
+              "outcome": "accepted",
+              "final_source": "deterministic_b2_writer"
+            }
+          }
+        },
+        {
+          "id": "VALIDATOR",
+          "label": "VALIDATOR",
+          "status": "accepted",
+          "detail": {
+            "accepted": true,
+            "status": "accepted",
+            "detected_stage": "published",
+            "reason": null,
+            "candidate_response": null,
+            "publication_outcome": "AUTHORIZED_RESULT",
+            "authority_evidence_hash": "0fc044dc743c31906625482754bceaada74b2ca54021ea494cb3930bedaf6790",
+            "previous_progress_state_hash": "ff9b13414ebc6139ce7e81802444800867a5d9978e8d73131be4383ab7255fdf",
+            "current_progress_state_hash": "e760c0a93b99b113f6ac08819a14e139bb2526a0e16ca2f54457355cc453e0d1",
+            "same_progress_state": false,
+            "required_commitment_count": 1
+          }
+        },
+        {
+          "id": "PUBLISHED_RESPONSE",
+          "label": "PUBLISHED RESPONSE",
+          "status": "local_shadow_preview",
+          "detail": {
+            "response": "Entendi: preço de rodizio. O TATÁ trabalha à la carte.; O Almoço Executivo e a Sugestão Tatá são menus em cursos, não rodízio.",
+            "response_hash": "1dd4347220d8bc1670d9e05050f560ab4d315be3374385265879a7191f148e4f",
+            "publication_path": "local_shadow_preview",
+            "external_action_performed": false,
+            "external_spend_brl": 0
+          }
+        }
+      ],
+      "stages": [
+        {
+          "id": "USER",
+          "label": "USER",
+          "status": "observed",
+          "detail": {
+            "current_message": "quanto custa o rodízio?",
+            "history_state": {
+              "prior_public_turns": [
+                {
+                  "role": "user",
+                  "text": "quero comer alguma coisa, me ajuda"
+                },
+                {
+                  "role": "assistant",
+                  "text": "Claro — eu te ajudo a afunilar pelo que você está com vontade. Você está com vontade de algo mais fresco, maçaricado ou quente?",
+                  "turn_id": "B2-TURN-0001"
+                },
+                {
+                  "role": "user",
+                  "text": "queria algo frio"
+                },
+                {
+                  "role": "assistant",
+                  "text": "Entendi. Retirei a seção Pratos Quentes. Para os outros itens, o cardápio não confirma a temperatura. Você prefere que eu afunile por sushi, sashimi ou outra categoria?",
+                  "turn_id": "B2-TURN-0002"
+                },
+                {
+                  "role": "user",
+                  "text": "prefiro sushi"
+                },
+                {
+                  "role": "assistant",
+                  "text": "Entendi: priorizar sushi. Vamos escolher uma opção adequada.",
+                  "turn_id": "B2-TURN-0003"
+                },
+                {
+                  "role": "user",
+                  "text": "me passa o menu"
+                },
+                {
+                  "role": "assistant",
+                  "text": "Este é o cardápio com os preços dos itens: https://abre.ai/ni3n",
+                  "turn_id": "B2-TURN-0004"
+                }
+              ],
+              "prior_turn_count": 8,
+              "previous_publication": {
+                "response": "Este é o cardápio com os preços dos itens: https://abre.ai/ni3n",
+                "progress_state_hash": "ff9b13414ebc6139ce7e81802444800867a5d9978e8d73131be4383ab7255fdf",
+                "operation_fingerprint": "91afee3c353eb9ade66a107f4389150e86bad34784e8baa94b43fcaca220c1ce"
+              },
+              "runtime_context": {
+                "endpoint": "/api/product/turn",
+                "runtime": "structured_product_context",
+                "conversation_id": "SIM-CONV-HOMO-0069",
+                "message_id": "SIM-HOMO-0069-0005",
+                "intent": "information.menu",
+                "pattern": null,
+                "semantic_transition": "CONTINUE",
+                "active_goal": "recommendation",
+                "previous_goal": "recommendation",
+                "journey": null,
+                "journey_state": null,
+                "pending_question": "menu_channel",
+                "user_repair_signal": false,
+                "negative_feedback_signal": false,
+                "repetition_detected": false,
+                "repetition_streak": 0,
+                "facts_added": [],
+                "native_response_composer_executed": false,
+                "structured_authority_used": true
+              }
+            }
+          }
+        },
+        {
+          "id": "UNDERSTANDING",
+          "label": "UNDERSTANDING",
+          "status": "completed",
+          "detail": {
+            "user_goal": "recommendation",
+            "cognitive_planner": {
+              "adapter_id": "deliveryos-native-to-b2-product-adapter",
+              "contract": "Contract V2",
+              "packet_hash": "779505965739e7ec8132d362282e63cd2a4c222498b8473b59d8ebd6d16236ae",
+              "plan_hash": "827ffee86ba9b655458994f0523ba31280b78968b4ea5d86e170df4ce0bd98b5",
+              "relation_to_history": "CONTINUE",
+              "conversational_move": "ANSWER",
+              "user_goal": "recommendation",
+              "what_changed": "A mensagem atual acrescenta informação pública que precisa ser preservada na resposta.",
+              "repair": {
+                "required": false,
+                "acknowledgement": null
+              },
+              "reference": {
+                "required": false,
+                "status": "NOT_REQUIRED",
+                "target": null
+              },
+              "tool_requirement": "RESTAURANT_INFO",
+              "next_best_step": "responder somente com o resultado autorizado já obtido"
+            },
+            "relation_interpretation": "CONTINUE",
+            "repair_interpretation": {
+              "required": false,
+              "acknowledgement": null
+            },
+            "reference_interpretation": {
+              "required": false,
+              "status": "NOT_REQUIRED",
+              "target": null
+            },
+            "runtime_context": {
+              "endpoint": "/api/product/turn",
+              "runtime": "structured_product_context",
+              "conversation_id": "SIM-CONV-HOMO-0069",
+              "message_id": "SIM-HOMO-0069-0005",
+              "intent": "information.menu",
+              "pattern": null,
+              "semantic_transition": "CONTINUE",
+              "active_goal": "recommendation",
+              "previous_goal": "recommendation",
+              "journey": null,
+              "journey_state": null,
+              "pending_question": "menu_channel",
+              "user_repair_signal": false,
+              "negative_feedback_signal": false,
+              "repetition_detected": false,
+              "repetition_streak": 0,
+              "facts_added": [],
+              "native_response_composer_executed": false,
+              "structured_authority_used": true
+            }
+          }
+        },
+        {
+          "id": "REQUIRED_COMMITMENTS",
+          "label": "REQUIRED COMMITMENTS",
+          "status": "required",
+          "detail": {
+            "commitments": [
+              {
+                "kind": "GOAL",
+                "content": "preço de rodizio"
+              }
+            ],
+            "count": 1,
+            "preserved_in_response_plan": [
+              {
+                "id": "bff58ea47a024364",
+                "kind": "GOAL",
+                "content": "preço de rodizio",
+                "anchors": [
+                  "preco",
+                  "rodizio"
+                ],
+                "source": "conversation_plan"
+              }
+            ]
+          }
+        },
+        {
+          "id": "CAPABILITY_FACT_NEED",
+          "label": "CAPABILITY / FACT NEED",
+          "status": "evaluated",
+          "detail": {
+            "tool_requirement": "RESTAURANT_INFO",
+            "operation": {
+              "intent": "information.menu",
+              "topic": "restaurant_model",
+              "query_filter": {
+                "public_topic": "restaurant_model",
+                "intent": "information.menu",
+                "channel": "unknown",
+                "unit_id": null,
+                "active_goal": "recommendation",
+                "requested_category": "sushi",
+                "number_of_people": null,
+                "budget": null,
+                "preparation_preferences": [
+                  "not_hot"
+                ],
+                "preferred_ingredients": [],
+                "excluded_ingredients": [],
+                "dietary_restrictions": [],
+                "allergies": [],
+                "candidate_item_ids": []
+              },
+              "commitments": [
+                "GOAL:preco de rodizio"
+              ]
+            },
+            "operation_fingerprint": "6b5e37e5aa692f376065afb1ac7e0a9f0143d5c711b4d23c37cf4e18caa28ca5",
+            "result_fingerprint": "6b5e37e5aa692f376065afb1ac7e0a9f0143d5c711b4d23c37cf4e18caa28ca5",
+            "query_filter": {
+              "source": "deliveryos_structured_authority",
+              "source_ids": [
+                "TATA_OPERATIONAL_PUBLIC_INFO_V1",
+                "menu-source-live-menu-v1+menu-source-ifood-v1"
+              ],
+              "public_topic": "restaurant_model",
+              "intent": "information.menu",
+              "query_filter": {
+                "public_topic": "restaurant_model",
+                "intent": "information.menu",
+                "channel": "unknown",
+                "unit_id": null,
+                "active_goal": "recommendation",
+                "requested_category": "sushi",
+                "number_of_people": null,
+                "budget": null,
+                "preparation_preferences": [
+                  "not_hot"
+                ],
+                "preferred_ingredients": [],
+                "excluded_ingredients": [],
+                "dietary_restrictions": [],
+                "allergies": [],
+                "candidate_item_ids": []
+              },
+              "candidates_returned": [],
+              "unknowns": [
+                "menu_channel_missing"
+              ],
+              "request_result_binding": {
+                "result_hash": "5e7facec9fccd6e679a6b4cff0a3e66b76e90961821ffd8f37162d8f4a01e9bd",
+                "source_catalog_hash": "c60b482d7325258f8c86009158f2262dab3d6810bc52823d0dd08c9f1d322bcc",
+                "source_classification": "CONFIRMADO_POR_CESAR",
+                "catalog_version": "1.0.0"
+              }
+            },
+            "authorized_fact_count": 0,
+            "authorized_knowledge_count": 1
+          }
+        },
+        {
+          "id": "AUTHORITY_RESULT",
+          "label": "AUTHORITY RESULT",
+          "status": "completed",
+          "detail": {
+            "status": "APPROVED",
+            "outcome": "AUTHORIZED_RESULT",
+            "evidence_hash": "0fc044dc743c31906625482754bceaada74b2ca54021ea494cb3930bedaf6790",
+            "source_ids": [
+              "TATA_OPERATIONAL_PUBLIC_INFO_V1",
+              "menu-source-live-menu-v1+menu-source-ifood-v1"
+            ],
+            "source_catalog_hash": "c60b482d7325258f8c86009158f2262dab3d6810bc52823d0dd08c9f1d322bcc",
+            "source_result_hash": "5e7facec9fccd6e679a6b4cff0a3e66b76e90961821ffd8f37162d8f4a01e9bd",
+            "request_fingerprint": "6b5e37e5aa692f376065afb1ac7e0a9f0143d5c711b4d23c37cf4e18caa28ca5",
+            "result_fingerprint": "6b5e37e5aa692f376065afb1ac7e0a9f0143d5c711b4d23c37cf4e18caa28ca5",
+            "request_result_bound": true,
+            "approved_facts": [],
+            "authorized_knowledge": [
+              "O TATÁ trabalha à la carte. O Almoço Executivo e a Sugestão Tatá são menus em cursos, não rodízio."
+            ],
+            "blocked_reason": null
+          }
+        },
+        {
+          "id": "RESPONSE_PLAN",
+          "label": "RESPONSE PLAN",
+          "status": "completed",
+          "detail": {
+            "status": "APPROVED",
+            "publication_outcome": "AUTHORIZED_RESULT",
+            "relation_to_history": "CONTINUE",
+            "conversational_move": "ANSWER",
+            "repair_acknowledgement": null,
+            "reference": {
+              "required": false,
+              "status": "NOT_REQUIRED",
+              "target": null
+            },
+            "required_question": null,
+            "required_response_commitments": [
+              {
+                "id": "bff58ea47a024364",
+                "kind": "GOAL",
+                "content": "preço de rodizio",
+                "anchors": [
+                  "preco",
+                  "rodizio"
+                ],
+                "source": "conversation_plan"
+              }
+            ],
+            "next_best_step": "responder somente com o resultado autorizado já obtido",
+            "operation_fingerprint": "6b5e37e5aa692f376065afb1ac7e0a9f0143d5c711b4d23c37cf4e18caa28ca5",
+            "progress_state_hash": "e760c0a93b99b113f6ac08819a14e139bb2526a0e16ca2f54457355cc453e0d1",
+            "authority_evidence_hash": "0fc044dc743c31906625482754bceaada74b2ca54021ea494cb3930bedaf6790"
+          }
+        },
+        {
+          "id": "WRITER_FALLBACK",
+          "label": "WRITER / FALLBACK",
+          "status": "completed",
+          "detail": {
+            "writer_source": "deterministic_b2_writer",
+            "writer_limit": "B2_WRITER_DROPPED_REQUIRED_COMMITMENT",
+            "primary_attempt": {
+              "writer": "gemma_local_writer",
+              "outcome": "rejected_or_invalidated",
+              "reason": "B2_WRITER_DROPPED_REQUIRED_COMMITMENT"
+            },
+            "fallback_attempt": {
+              "used": true,
+              "writer": "deterministic_b2_writer",
+              "outcome": "accepted",
+              "final_source": "deterministic_b2_writer"
+            }
+          }
+        },
+        {
+          "id": "VALIDATOR",
+          "label": "VALIDATOR",
+          "status": "accepted",
+          "detail": {
+            "accepted": true,
+            "status": "accepted",
+            "detected_stage": "published",
+            "reason": null,
+            "candidate_response": null,
+            "publication_outcome": "AUTHORIZED_RESULT",
+            "authority_evidence_hash": "0fc044dc743c31906625482754bceaada74b2ca54021ea494cb3930bedaf6790",
+            "previous_progress_state_hash": "ff9b13414ebc6139ce7e81802444800867a5d9978e8d73131be4383ab7255fdf",
+            "current_progress_state_hash": "e760c0a93b99b113f6ac08819a14e139bb2526a0e16ca2f54457355cc453e0d1",
+            "same_progress_state": false,
+            "required_commitment_count": 1
+          }
+        },
+        {
+          "id": "PUBLISHED_RESPONSE",
+          "label": "PUBLISHED RESPONSE",
+          "status": "local_shadow_preview",
+          "detail": {
+            "response": "Entendi: preço de rodizio. O TATÁ trabalha à la carte.; O Almoço Executivo e a Sugestão Tatá são menus em cursos, não rodízio.",
+            "response_hash": "1dd4347220d8bc1670d9e05050f560ab4d315be3374385265879a7191f148e4f",
+            "publication_path": "local_shadow_preview",
+            "external_action_performed": false,
+            "external_spend_brl": 0
+          }
+        }
+      ],
+      "trace_hash": "e15112368aef8369339def5d543cc81af2072ba28a1fca113ae6751d07d27f45"
+    }
+  ]
+}

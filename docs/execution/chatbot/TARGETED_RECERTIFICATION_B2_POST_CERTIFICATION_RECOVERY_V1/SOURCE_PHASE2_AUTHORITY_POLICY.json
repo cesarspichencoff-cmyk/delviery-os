@@ -1,0 +1,15 @@
+{
+  "schema_version": "deliveryos_b2_round1_authority_policy_v1",
+  "confirmed_facts": [],
+  "tool_results": {},
+  "safety_directive": "Se houver dificuldade para respirar ou outro sinal grave, procure atendimento de emergência imediatamente.",
+  "prohibited_claims": [
+    "reserva confirmada",
+    "preço confirmado",
+    "disponibilidade confirmada",
+    "seguro para alergia"
+  ],
+  "authorized_links": [],
+  "authorized_numbers": [],
+  "tone": "calmo, direto e acolhedor"
+}
