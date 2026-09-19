@@ -1,5 +1,5 @@
 {
-  "schema_version": "0.1",
+  "schema_version": "0.2",
   "protocol": "VERTICE_AUTOMATIC_CONTINUITY_0.1",
   "project_id": "project.deliveryos",
   "project": "DeliveryOS",
@@ -26,5 +26,23 @@
     "continuity_update": "AUTHORIZED_METADATA_WRITE_WITHIN_PROJECT_SCOPE",
     "execution_ceiling": "NO_NEW_PRODUCTION_OR_DATA_AUTHORITY"
   },
-  "resume_rule": "Reconstruct from repository evidence and local-source availability; never fabricate missing raw data or treat generated derivatives as original source truth."
+  "resume_rule": "Reconstruct from repository evidence and local-source availability; never fabricate missing raw data or treat generated derivatives as original source truth.",
+  "rollover_protocol": "VERTICE_CONTEXT_ROLLOVER_0.1",
+  "session_management": {
+    "default_state": "KEEP_SAME_CHAT_WHILE_HEALTHY",
+    "soft_compaction": "When context burden rises but the session remains responsive, stop depending on early chat history and rehydrate working context from this checkpoint plus only the current unpersisted delta.",
+    "prepare_rollover": "Before a new long/tool-heavy/high-latency phase, persist any already-proven material state if interruption loss would be material.",
+    "hard_rollover": "When degradation is materially observed or reported, secure the checkpoint and move execution to a fresh chat; do not keep extending the degraded session merely for conversational continuity.",
+    "hard_rollover_signals": [
+      "user_reports_repeated_thinking_stall_or_hang",
+      "soft_compaction_did_not_restore_reliable_progress",
+      "two_or_more_continuity_repairs_or_state_reconstruction_failures_in_the_session",
+      "material_phase_or_branch_transition_plus_high_reentry_cost",
+      "next_phase_is_long_or_tool_heavy_and_current_state_is_fully_checkpointed"
+    ],
+    "user_action_when_rollover_required": "Open a new chat in the same ChatGPT project and say: Continue <project name>.",
+    "automatic_new_chat_control": "UNAVAILABLE_TO_ASSISTANT",
+    "physical_chat_deletion_or_compaction": "UNAVAILABLE_TO_ASSISTANT",
+    "authority_rule": "Session rollover preserves existing authority and never grants a new effect permission."
+  }
 }
