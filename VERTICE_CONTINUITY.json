@@ -1,0 +1,30 @@
+{
+  "schema_version": "0.1",
+  "protocol": "VERTICE_AUTOMATIC_CONTINUITY_0.1",
+  "project_id": "project.deliveryos",
+  "project": "DeliveryOS",
+  "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
+  "active_ref": "main",
+  "checkpoint_type": "BOOTSTRAP_FROM_VERIFIED_REPOSITORY_STATE",
+  "state_basis_head": "a441bc7e9ed209ca965be549dbbd0cd787867bd5",
+  "verified_state_refs": [
+    "README.md",
+    "docs/Politica_Dados.md"
+  ],
+  "verified_state": [
+    "Camada 0 canonical ingestion/replay path is documented and data/raw plus data/canonico remain local/gitignored by design.",
+    "The 8-praca backtest path exists, while the authoritative raw-source backup and parser/engine convergence remain unresolved.",
+    "The repository name is literally delviery-os and remains the known project code home."
+  ],
+  "next_action": "Revalidate main/head and continue from the current source-truth gaps: durable raw-source recovery, parser/event-log/8-praca convergence or behavioral-equivalence proof, and historical WhatsApp-count reconciliation. Do not refactor proven behavior merely for architectural aesthetics.",
+  "unknowns": [
+    "Any work not persisted after state_basis_head is UNKNOWN.",
+    "Durable integrity-checkable backup of original raw iFood/WhatsApp packages is not proven by this checkpoint.",
+    "Parser/engine convergence remains unproven unless newer evidence supersedes this checkpoint."
+  ],
+  "authority": {
+    "continuity_update": "AUTHORIZED_METADATA_WRITE_WITHIN_PROJECT_SCOPE",
+    "execution_ceiling": "NO_NEW_PRODUCTION_OR_DATA_AUTHORITY"
+  },
+  "resume_rule": "Reconstruct from repository evidence and local-source availability; never fabricate missing raw data or treat generated derivatives as original source truth."
+}
