@@ -1,0 +1,39 @@
+{
+  "schema_version": "0.3",
+  "project_id": "project.deliveryos",
+  "project": "DeliveryOS",
+  "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
+  "active_ref": "main",
+  "checkpoint_type": "BOOTSTRAP_FROM_VERIFIED_REPOSITORY_STATE",
+  "state_basis_head": "a441bc7e9ed209ca965be549dbbd0cd787867bd5",
+  "verified_state_refs": [
+    "README.md",
+    "docs/Politica_Dados.md"
+  ],
+  "verified_state": [
+    "Camada 0 canonical ingestion/replay path is documented and data/raw plus data/canonico remain local/gitignored by design.",
+    "The 8-praca backtest path exists, while the authoritative raw-source backup and parser/engine convergence remain unresolved.",
+    "The repository name is literally delviery-os and remains the known project code home."
+  ],
+  "next_action": "Revalidate main/head and continue from the current source-truth gaps: durable raw-source recovery, parser/event-log/8-praca convergence or behavioral-equivalence proof, and historical WhatsApp-count reconciliation. Do not refactor proven behavior merely for architectural aesthetics.",
+  "unknowns": [
+    "Any work not persisted after state_basis_head is UNKNOWN.",
+    "Durable integrity-checkable backup of original raw iFood/WhatsApp packages is not proven by this checkpoint.",
+    "Parser/engine convergence remains unproven unless newer evidence supersedes this checkpoint."
+  ],
+  "authority": {
+    "continuity_update": "AUTHORIZED_METADATA_WRITE_WITHIN_PROJECT_SCOPE",
+    "execution_ceiling": "NO_NEW_PRODUCTION_OR_DATA_AUTHORITY"
+  },
+  "resume_rule": "Reconstruct from repository evidence and local-source availability; never fabricate missing raw data or treat generated derivatives as original source truth.",
+  "session_policy": {
+    "default": "KEEP_SAME_SESSION_WHILE_HEALTHY",
+    "compact_when": "Context burden rises but execution remains reliable; rebuild working context from durable project state plus only the current unpersisted delta.",
+    "rollover_when": "The session materially degrades, repeated state repair is needed, or the next long/tool-heavy phase is safer from a fresh session after checkpointing.",
+    "new_session_instruction": "Open a new conversation in the same project and say: Continue DeliveryOS.",
+    "limits": [
+      "Conversation history is not project state.",
+      "Session rollover never expands authority."
+    ]
+  }
+}
