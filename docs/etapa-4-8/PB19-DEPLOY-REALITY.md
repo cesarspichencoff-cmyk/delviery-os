@@ -383,3 +383,319 @@ importar o carimbador não altera o arquivo.
 **`npm run test:platform:pb19` — 26/26, `PB19_GREEN`.**
 
 ---
+
+## Fase 5 — Prova da composição oficial
+
+### Docker estava disponível — e isso mudou o veredito do C3
+
+O C3 registrou o container como BLOCKED por ausência de daemon. **Nesta sessão
+o daemon subiu**: `dockerd`, `containerd` e `runc` estavam instalados e as
+capabilities permitiam. Duas adaptações de ambiente foram necessárias, ambas
+**de rede**, nenhuma tocando a aplicação:
+
+| Adaptação | Por quê | Esconde diferença no artefato? |
+|---|---|---|
+| `--registry-mirror=https://mirror.gcr.io` no daemon | `production.cloudfront.docker.com` (blobs do Docker Hub) responde **`CONNECT tunnel failed, 403`** pelo proxy. `registry-1.docker.io` e `auth.docker.io` respondem | **Não.** Imagem é endereçada por digest; `postgres:16-bookworm` veio com `sha256:efedf359…` |
+| CA do sandbox como **segredo de build** no `npm ci` | containers não alcançam `registry.npmjs.org` (o proxy vive em `127.0.0.1` do host, e esse domínio está na lista de acesso direto). Medido: `fetch` falha em bridge **e** em host network; com proxy + CA, `npm view express version` → `5.2.1` | **Não.** `--mount=type=secret` não vira camada. Verificado na imagem: `/run/secrets` não existe e nenhum `ca-bundle` é encontrado |
+
+O `Dockerfile` ganhou **uma** linha de adaptação, declarada e condicional: sem
+o segredo, o comando é exatamente o de antes.
+
+### BLOCKED honesto: o estágio de runtime não pôde ser construído
+
+`apt-get install dumb-init` falha porque a política de rede recusa **todos** os
+repositórios Debian — medido, `HTTP 403` em `deb.debian.org`,
+`security.debian.org`, `ftp.debian.org`, `cloudfront.debian.net`,
+`debian.map.fastlydns.net`, `mirrors.edge.kernel.org` e `archive.debian.org`.
+A imagem base não traz `dumb-init`.
+
+A imagem foi construída no estágio **`build`** do Dockerfile REAL
+(`deploy/compose.sandbox.override.yaml`, que muda só o `target` e nada mais).
+**O que fica por provar, declarado e não escondido:**
+
+1. `dumb-init` como PID 1 — encaminhamento de `SIGTERM` no `docker stop`;
+2. `USER node` — aqui o processo roda como root;
+3. `npm prune --omit=dev` — a imagem carrega dependências de desenvolvimento;
+4. o tamanho final da imagem.
+
+Os quatro dizem respeito a **empacotamento**, não ao comportamento que o PB19
+fecha.
+
+### A raiz mais funda do D3b, encontrada só aqui
+
+O primeiro `docker compose build` falhou com
+`"/docs/contracts": not found`. Causa: `.dockerignore` excluía `docs` com o
+comentário **"não muda o comportamento do serviço"** — premissa **falsa**.
+`docs/contracts/eventos.schema.json` é lido em runtime. Com a exclusão, o
+`COPY` do Dockerfile nem chegava a rodar: o arquivo não estava no contexto.
+
+Corrigido com `!docs/contracts` e a premissa reescrita. **Só isso reentra; o
+resto de `docs/` continua fora.** Travado por `D3b-6` e pela mutação `MP4`.
+
+### A composição oficial subiu — pela primeira vez
+
+```
+SERVICE               STATE     STATUS
+deliveryos-postgres   running   Up (healthy)
+deliveryos-migrate    exited    (completed successfully)
+deliveryos-critical   running   Up (healthy)
+deliveryos-async      running   Up
+deliveryos-backup     running   Up
+```
+
+Logs, com os três defeitos fechados visíveis:
+
+```
+[migrate]  alvo {... "tls":false, "rede_privada_declarada":"deliveryos-postgres",
+                  "commit":"e0ab86ba9c22d45e705bef337fd78883b77d7151" ...}
+[migrate]  aplicada: 0001_platform_foundation
+[migrate]  aplicada: 0002_event_log_contexto_dispositivo
+[critico]  contrato de eventos {"versao":"event-catalog@1.0.0","tipos":10}
+[critico]  ouvindo em 0.0.0.0:8080
+```
+
+### Provas exigidas
+
+| Exigência | Medido |
+|---|---|
+| `docker compose config` | **exit 0**; sem o segredo, **exit 1** com `required variable … is missing a value` |
+| build da imagem oficial | **442 MB**, do `Dockerfile` real |
+| migration oficial | 2 aplicadas pelo serviço `deliveryos-migrate` |
+| PostgreSQL healthy | healthcheck do compose |
+| crítico sobe | **healthy** — o healthcheck dele é o próprio `/ready` |
+| assíncrono sobe | up, consumindo a outbox |
+| `/ready` verdadeiro | 200 com a composição sã; **nunca responde** nos três casos negativos abaixo |
+| autenticação de dispositivo | token válido → 200 · **token falso → 401** |
+| lote GPS válido persistido | `GPS=200 aceitos=1`, confirmado em `platform.event_log` |
+| duplicata idempotente | `aceitos=0 duplicados=1` |
+| payload inválido recusado | `aceitos=0 rejeitados=1`, motivo `coordenada inválida` — é o CONTRATO agindo |
+| restart do async não derruba o crítico | crítico **healthy** o tempo todo |
+| async fora não interrompe ingestão | com o async parado: `READY=200`, `GPS=200 aceitos=1`, outbox `pending 1` |
+| async volta e consome o backlog | após `start`: outbox `done 2` |
+| asset corrompido não dá ready verde | **exit 78** · `contrato de eventos corrompido` |
+| segredo ausente não dá ready verde | **exit 78** · `DEVICE_TOKEN_SECRET ausente` |
+| banco externo sem TLS recusado | **exit 78** · mensagem apontando o remédio |
+
+Os três negativos foram medidos **na rede da própria composição**, com a imagem
+real, com o contrato corrompido montado por bind.
+
+---
+
+## Fase 6 — Gates adversariais
+
+**`npm run test:platform:pb19:mutacoes` — 14/14, ZERO cegas, `PB19_MUTATIONS_GREEN`.**
+
+Cada mutação **restaura o defeito** e exige que o gate acuse pela assinatura
+certa. Nenhuma procura palavra: todas trocam comportamento, contrato ou
+estrutura declarada.
+
+| # | Defeito restaurado | Acusado por |
+|---|---|---|
+| MP1 | contrato volta a resolver por `process.cwd()` | D3b-2 / D3b-3 |
+| MP2 | crítico volta a subir sem conferir o contrato | D3b-4 |
+| MP3 | contrato deixa de ser copiado para o artefato | D3b-1 |
+| MP4 | `.dockerignore` volta a excluir `docs/contracts` | D3b-6 |
+| MP5 | Dockerfile volta a não copiar o contrato | D3b-5 |
+| MP6 | compose deixa de EXIGIR o segredo | D2-1 |
+| MP7 | segredo vaza para serviços que não precisam | D2-2 |
+| MP8 | declaração de host vira regra larga (sufixo) | D1-6 |
+| MP9 | declarar o host passa a desligar TLS sozinho | D1-4 |
+| MP10 | compose deixa de declarar o host privado | D1-7 |
+| MP11 | carimbador volta a executar ao ser importado | D3a-3b |
+| MP12 | artefato perde identidade de commit | D3a-1 |
+| MP13 | runtimes deixam de esperar a migration | D3a-5 |
+
+### Duas cegueiras achadas — no gate e no próprio instrumento
+
+**MP3 ficou cega:** o gate confere que o contrato está no `dist`, mas o arquivo
+sobrava de um build anterior — remover o passo de cópia não o apagava.
+Fechado apagando `dist/` **antes de cada build** na suíte adversarial: o gate
+passou a perguntar quem PRODUZIU o asset, não apenas se ele está lá.
+
+**MP11 ficou cega:** `D3a-3b` chamava `hashAtualDasFontes()`, e `D3a-2` já
+havia importado a ferramenta no mesmo processo. Com o módulo em cache do
+`require`, a segunda importação não executava nada, e a checagem passava sem
+medir. Fechado com **processo novo**.
+
+Sem esta suíte, as duas teriam ido para o remoto com o gate verde em cima.
+
+---
+
+## Fase 7 — Regressão integral
+
+45 gates, cada um **isolado**, com exit code registrado, sobre a árvore final e
+contra o PostgreSQL 16.13 real em `127.0.0.1:5433/deliveryos`.
+
+```
+PASS: 41   FAIL: 4   TOTAL: 45
+```
+
+| classificação | quantos | quais |
+|---|---|---|
+| PASS | 41 | inclui os quatro gates novos do PB19 e os três do C3 |
+| FAIL_PREEXISTENTE | 3 | `governanca`, `governanca:mutacoes`, `entregas` |
+| BLOCKED | 1 | `m1b-perceptual` |
+| **FAIL_NOVO** | **0** | — |
+| NOT_RUN | 0 | — |
+
+Mais a suíte adversarial do PB19, rodada à parte por custar 240 s:
+`test:platform:pb19:mutacoes` — **14/14, zero mutações cegas**, `PB19_MUTATIONS_GREEN`.
+
+### As três falhas pré-existentes, provadas como tais
+
+**`test:platform:governanca`** — `G6b` (`docs/execution/STATE.json`: `observa`
+mudou em `9e738b1`, depois da base declarada `274141e`) e `G9` (`Q-014`: estado
+inválido). As duas linhas são **byte a byte idênticas** às do baseline C0/C3.0,
+colhido antes de qualquer commit desta missão. Nada que o PB19 tocou aparece
+nelas.
+
+**`test:platform:governanca:mutacoes`** — não é falha própria: a suíte aborta no
+controle positivo, que exige `governanca` verde ANTES de mutar. Imprime
+`G6b VERMELHO` e `G9 VERMELHO` e para. **Cascata** da anterior; some junto com
+ela.
+
+**`test:entregas`** — duas falhas, `impossible_timestamp` nos pontos de GPS,
+também **byte a byte idênticas** às do baseline. São fixtures com data fixa que
+saíram da janela de aceitação com a passagem do tempo. Dependente de data, não
+de código.
+
+### O bloqueio
+
+**`test:platform:m1b-perceptual`** — o próprio arquivo declara, na linha 17:
+"Exige o servidor M1 na 5292 com procedência já provada". Nenhum script deste
+repositório serve a 5292 — medido em `package.json` e em `tools/`, onde a única
+ocorrência de `5292` é a de **quem consome**. Sem servidor, morre em
+`ECONNREFUSED 127.0.0.1:5292`.
+
+Registrado como **BLOCKED**, e com uma observação que não é do PB19 resolver: o
+gate não se declara pulado em voz alta (CLAUDE.md §10) — ele estoura com stack
+trace cru. Vermelho por precondição ausente não é perigoso como um verde
+silencioso seria, mas também não é legível.
+
+### Duas falhas da execução anterior que NÃO eram do produto
+
+A regressão de 09:14 acusou quatro. Duas foram investigadas até a causa e
+deixaram de existir. Nenhuma delas era defeito do produto, e nenhuma foi
+declarada resolvida sem reprodução.
+
+#### `test:platform:spine:processos` — a guarda presumia a outbox vazia
+
+O relato dizia `P1` e `P3` vermelhos, e `P1` falhava com `'pending' !== 'done'`.
+O gate passara verde em execuções anteriores **desta mesma sessão**, então
+"pré-existente" estava descartado de saída.
+
+Quinze execuções isoladas depois, todas verdes: não reproduzia sozinho. A causa
+apareceu lendo o que `P1` realmente mede. Ele espera três padrões no stdout do
+worker e **logo em seguida** lê o estado da própria mensagem:
+
+```ts
+assert.ok(await ate(w, /\[assincrono\] passada/), ...);
+assert.ok(await ate(w, /\[assincrono\] espinha \{/), ...);
+assert.equal(sql("SELECT state ... 'c36-a'"), "done");   // leitura instantânea
+```
+
+Mas `[assincrono] passada` é impressa quando o tick move **qualquer** mensagem
+(`if (houve > 0)`), e `claim` pega `ORDER BY created_at, outbox_id LIMIT
+batch_size`, com `batch_size` = 25. Com 25 pendentes mais velhas de outra suíte
+no banco, o primeiro lote não contém a mensagem daqui: o gate lê `pending` e
+**reprova o produto por um fato do ambiente**.
+
+Reproduzido de propósito: 25 mensagens de `correlation_id = 'repro-pb19'`
+datadas de 2020 plantadas à frente. As duas falhas voltaram **idênticas** —
+mesma forma (5/7), mesmo texto no `P1`, mesma cascata no `P3`.
+
+O `P3` nunca foi defeito próprio: ele compara `attempts` contra a referência que
+o `P1` grava, e com o `P1` vermelho a referência é string vazia. `'0' !== ''`
+é o `P3` dizendo que não tinha com o que comparar — e dizendo mal.
+
+Fechado com `ateEstado(id, esperado, limiteMs)`, que espera **a mensagem deste
+teste**, com prazo finito, em `P1`, `P3` e `P5` — os três liam estado logo
+depois de um log que vale para qualquer mensagem; `P5` vinha passando por sorte,
+porque espera `"escopos":2` antes e isso lhe dava folga. Esperar não afrouxa
+nada: a falha continua dizendo o estado observado e agora também **o tamanho da
+fila alheia**, que é o que explica a demora sem ninguém precisar adivinhar de
+novo.
+
+Controle negativo, porque espera mal feita vira cegueira: worker são, espinha sã,
+150 pendentes mais velhas e `DELIVERYOS_BATCH_SIZE=1`, de modo que a mensagem
+fique fora de alcance no prazo. O gate reprovou, pela assinatura nova:
+
+```
+XX P1 ... : c36-a ficou em 'pending' e nao chegou a 'done' em 15000 ms
+            — havia 75 mensagem(ns) pendente(s) de outras suites na frente
+XX P3 ... : referencia do P1 ausente — o P3 nao tem contra o que comparar
+            (cascata, nao defeito proprio)
+```
+
+Com o backlog de volta e sem o `BATCH_SIZE=1`: **7/7 verde**. Mesmo cenário que
+reprovava.
+
+O carimbo de build **não mudou** com esta correção — `fcc42000356405e0` antes e
+depois. É a fronteira da Fase 4 funcionando: um runner de teste não está no fecho
+de imports dos binários, então não deveria invalidar o artefato, e não invalida.
+
+Uma linha `corr-o-tx-1`, pendente de uma suíte anterior, passou a `dead` durante
+os controles. É linha do PostgreSQL efêmero que esta sessão criou em
+`/var/lib/pg-c3` — não é patrimônio, não está no Git, e está dito aqui em vez de
+passar em silêncio.
+
+#### `test:lab` — build do navegador, não código
+
+O `test:lab:v4` determinístico já ia verde (9 mutações, 0 cegas). Quem reprovava
+era `test:lab:v4:browser`:
+
+```
+browserType.launch: Executable doesn't exist at
+/opt/pw-browsers/chromium_headless_shell-1228/chrome-headless-shell-linux64/chrome-headless-shell
+```
+
+O ambiente traz `chromium_headless_shell-1194`; o Playwright 1.61.1 fixado no
+projeto pede o **1228**. Descompasso de build entre o navegador pré-instalado e
+a versão fixada — nada do repositório.
+
+Resolvido **fora do repositório**, com um symlink em `/opt/pw-browsers/`
+apontando o caminho que o Playwright procura para o headless shell instalado.
+Zero linha de código alterada; `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` foi testada
+antes e **não** cobre o headless shell.
+
+`test:lab` passou a **PASS**: 28 provas de navegador, 12 capturas, exit 0.
+
+A diferença que isso carrega fica declarada, não escondida: o binário é o build
+**1194** (Chromium 141.0.7390.37), não o 1228. Verde aqui não é prova de verde
+no 1228.
+
+### D4 — diagnosticado, reproduzido, **não corrigido**
+
+Três vezes nesta sessão o `test:lab` apagou 13 arquivos versionados de
+`labs/operacao-viva-v4/evidencias/`. Com o navegador subindo, a causa ficou
+exata:
+
+```ts
+177:  rmSync(EVID, { recursive: true, force: true });   // apaga
+...
+182:  browser = await chromium.launch();                // depois tenta subir
+```
+
+Apaga **antes** da operação que pode falhar. Se o navegador não sobe, o
+patrimônio já foi e nada o regenera. Quando o navegador sobe, os arquivos
+voltam — foi por isso que o defeito só apareceu enquanto o gate estava
+bloqueado.
+
+Fica **sem correção, de propósito**: o PB19 fecha `D1`, `D2`, `D3a` e `D3b`, e
+`labs/` não é a composição oficial. Alargar a missão por conta própria seria
+exatamente o que ela proíbe. A correção cabe em inverter as duas linhas — subir
+o navegador, e só então limpar.
+
+Todas as restaurações desta missão foram por `git checkout --`, com
+`git diff --stat HEAD` vazio depois de cada uma.
+
+### Uma pergunta que o D4 abre e o código não pode responder
+
+As 12 capturas são **dado gerado** e estão versionadas. `docs/Politica_Dados.md`
+e o CLAUDE.md §9 dizem que dado gerado não entra no Git sem aprovação. Rodar o
+gate com o navegador no ar as reescreve — e com um build de Chromium diferente
+elas saem diferentes byte a byte.
+
+Aqui elas foram **restauradas**, nunca commitadas. Se devem continuar
+versionadas, e com qual build de navegador como referência, é decisão do César,
+não conveniência técnica desta missão.

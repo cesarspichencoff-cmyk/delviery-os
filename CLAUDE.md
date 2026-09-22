@@ -147,11 +147,23 @@ PostgreSQL real e os binários de `dist/`). `Q-003` e `Q-004` seguem abertas, tr
 executável. Abertas por esta etapa: `Q-015` (retenção do histórico) e `Q-016` (replay após
 restart). **D1, D2 e D3 do PB19 foram reproduzidos** e deixados sem correção pelo C3.
 
-**PB19 — Deploy Reality Closure em andamento** (`docs/etapa-4-8/PB19-DEPLOY-REALITY.md`):
-fechar os defeitos de implantação para que a composição oficial não possa declarar prontidão
-com capacidade operacional estruturalmente quebrada. **D3b fechado**: contrato de eventos vai
-ao `dist` por `tools/copiar_contratos.js`, resolução relativa ao módulo, e
-ausente/corrompido/incompatível faz o crítico sair 78 no boot. Gates novos:
-`test:platform:pb19` (7/7) e `test:platform:higiene` (5/5). A saída de runtime do Conference
-Brain que estava versionada sob `data/conference-brain/` foi classificada como resíduo (origem
-provada), removida, e travada pela regra de ignore que o `store.js` já prometia.
+**PB19 — Deploy Reality Closure concluído** (`docs/etapa-4-8/PB19-DEPLOY-REALITY.md`): a
+composição oficial não pode mais declarar prontidão com capacidade operacional estruturalmente
+quebrada. **D3b**: contrato de eventos vai ao `dist` por `tools/copiar_contratos.js`, resolução
+relativa ao módulo, e ausente/corrompido/incompatível faz o crítico sair 78 no boot. **D2**:
+segredo dos tokens de aparelho exigido pelo compose, escopado só ao crítico, nunca em log nem
+em `describe()`. **D1**: TLS dispensado só por **igualdade exata** de hostname contra
+`DELIVERYOS_DATABASE_PRIVATE_HOST`, e só com os dois atos declarados — nada de regra larga.
+**D3a**: o carimbo escrito em `dist/` guarda o SHA-256 do fecho de imports dos três binários,
+mais os assets e a identidade de commit. Gates novos: `test:platform:pb19` (27), `test:platform:higiene`
+(5) e `test:platform:pb19:mutacoes` (**14/14, zero cegas**). A saída de runtime do Conference
+Brain versionada sob `data/conference-brain/` foi classificada como resíduo (origem provada),
+removida e travada pela regra de ignore que o `store.js` já prometia. **A composição oficial
+subiu de verdade** — `Dockerfile.platform` e `compose.platform.yaml` reais, sem variante que
+contorne: crítico saudável, migration concluída, ingestão real aceita/duplicada/rejeitada,
+outbox drenada depois de restart, e três controles negativos saindo 78. Empacotamento
+(`dumb-init`, `USER node`, `prune --omit=dev`, tamanho) fica **BLOCKED e declarado**: a política
+de rede do sandbox recusa todo repositório Debian. Regressão final **41/45**, com zero
+`FAIL_NOVO` — três falhas pré-existentes byte a byte iguais ao baseline e um gate bloqueado por
+servidor ausente. `D4` (o gate de laboratório apaga evidência versionada antes de subir o
+navegador) foi reproduzido e **deixado sem correção**, fora do escopo declarado desta missão.

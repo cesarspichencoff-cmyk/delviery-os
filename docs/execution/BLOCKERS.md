@@ -699,7 +699,7 @@ provado nesta sessão. Falta o desenho.
 do Figma pelo César com os node IDs trazidos de volta para a coluna da matriz. Não há nada a
 corrigir no repositório.
 
-## PB19 — Defeitos de implantação da composição oficial · **EM FECHAMENTO em 2026-09-22**
+## PB19 — Defeitos de implantação da composição oficial · **FECHADO em 2026-09-22**
 
 Três defeitos **pré-existentes** encontrados pelo C3 e reproduzidos de novo no PB19. Nenhum é da
 Intelligence Spine; todos são da composição. Detalhe e prova em
@@ -715,9 +715,53 @@ Intelligence Spine; todos são da composição. Detalhe e prova em
   (`/ready` 200 + GPS 503). **D3b** (`docs/contracts/eventos.schema.json` fora da imagem, lido de
   `process.cwd()`) é a que acontece com o `Dockerfile` como estava, e foi **FECHADA**: asset no
   `dist` por `tools/copiar_contratos.js`, resolução relativa ao módulo, e falha fechada no boot.
-  **D3a** (schema/banco parcial) é tratada na Fase 4 do PB19.
+  **D3a** (schema/banco parcial) também foi **FECHADA**: o carimbo escrito em `dist/` guarda o
+  SHA-256 do fecho de imports dos três binários mais os assets, e o gate recalcula e compara —
+  artefato velho deixa de poder passar por novo.
 
-Também registrado: **D4** — `test:lab:v4:browser` apaga as 13 evidências de
-`labs/operacao-viva-v4/evidencias/` e não restaura quando morre por falta de browser
-(reproduzido 2 de 2). **D5** — `platform.event_log` não tem coluna `source_mode`; o modo viaja no
+**Os quatro estão fechados**, cada um com mutação que restaura o defeito e exige que a guarda
+acuse pela assinatura certa: `test:platform:pb19:mutacoes`, **14/14, zero cegas**. A composição
+oficial subiu de verdade, com os arquivos reais e sem variante que contorne.
+
+### Bloqueio declarado, não contornado
+
+O estágio de **runtime** de `deploy/Dockerfile.platform` instala `dumb-init` por `apt`, e a
+política de rede deste sandbox recusa **todos** os repositórios Debian — `HTTP 403` medido em
+`deb.debian.org`, `security.debian.org`, `ftp.debian.org`, `cloudfront.debian.net`,
+`debian.map.fastlydns.net`, `mirrors.edge.kernel.org` e `archive.debian.org`. Por isso a prova da
+Fase 5 rodou com um override **declarado**, que para no estágio `build` — onde a aplicação é
+produzida. Ficam por provar, e **não estão escondidos**: `dumb-init` como PID 1 (encaminhamento de
+SIGTERM), `USER node`, `npm prune --omit=dev` e o tamanho final da imagem. Os quatro dizem
+respeito a empacotamento, não ao comportamento que o PB19 fecha.
+
+### D4 — reproduzido, causa exata, **deixado sem correção**
+
+`labs/operacao-viva-v4/testes/run-lab-v4-browser.ts` apaga o diretório de evidências na linha
+**177** e só tenta subir o navegador na **182**. Apaga antes da operação que pode falhar: se o
+navegador não sobe, os 13 arquivos versionados já foram e nada os regenera. Reproduzido **3 de 3**
+nesta sessão; restaurado por `git checkout --` todas as vezes, com `git diff --stat HEAD` vazio
+depois de cada uma.
+
+Com o navegador no ar — destravado **fora do repositório**, por symlink em `/opt/pw-browsers/`,
+porque o ambiente traz o build `1194` e o Playwright 1.61.1 pede o `1228` — o gate vai a
+**PASS** e os arquivos voltam. Foi por isso que o defeito só aparecia enquanto o gate estava
+bloqueado.
+
+Sem correção **de propósito**: o PB19 fecha `D1`, `D2`, `D3a` e `D3b`, e `labs/` não é a
+composição oficial. A correção cabe em inverter as duas linhas — subir o navegador, e só então
+limpar.
+
+Fica aberto junto com ele: as 12 capturas são **dado gerado** e estão versionadas, e um build de
+navegador diferente as reescreve byte a byte diferentes. Se devem continuar no Git, e com qual
+build como referência, é decisão do César (`docs/Politica_Dados.md`, CLAUDE.md §9).
+
+### Bloqueio de precondição
+
+`test:platform:m1b-perceptual` exige um servidor M1 na porta `5292` — declarado na linha 17 do
+próprio arquivo. Nenhum script deste repositório serve essa porta; a única ocorrência de `5292`
+em `tools/` é a de quem consome. Morre em `ECONNREFUSED`, com stack trace cru em vez de se
+declarar pulado em voz alta (CLAUDE.md §10). Vermelho por precondição ausente não é perigoso como
+um verde silencioso, mas também não é legível.
+
+Também registrado: **D5** — `platform.event_log` não tem coluna `source_mode`; o modo viaja no
 envelope.

@@ -80,7 +80,7 @@ diferentes inteligências. Política de acesso desse repositório é `Q-012`, ai
   REPRODUZIDOS** e deixados como bloco independente, sem correção — endereçados em
   `docs/etapa-4-8/PB19-DEPLOY-REALITY.md`.
 
-- **PB19 — Deploy Reality Closure** (`docs/etapa-4-8/PB19-DEPLOY-REALITY.md`, em andamento):
+- **PB19 — Deploy Reality Closure · CONCLUÍDO** (`docs/etapa-4-8/PB19-DEPLOY-REALITY.md`):
   fazer a composição oficial sustentar as promessas que o código faz. **D3b fechado na classe**
   — o contrato de eventos era lido de `process.cwd()` e `docs/` não entra na imagem, o que
   produzia `/ready` 200 com TODO lote de GPS em 503 e nenhuma linha de log; agora o asset entra
@@ -91,6 +91,29 @@ diferentes inteligências. Política de acesso desse repositório é `Q-012`, ai
   `data/conference-brain/live_cycle_runs.runtime.jsonl` como **resíduo** (origem provada em
   `a6e38ed`, escrito pela mutação MS21): a regra de ignore que `store.js` prometia nunca
   existiu, agora existe, e `test:platform:higiene` (5/5) impede a volta.
+  **D2 fechado**: o compose EXIGE `DELIVERYOS_DEVICE_TOKEN_SECRET`, escopado só ao crítico, e o
+  segredo nunca aparece em log nem em `describe()`. **D1 fechado**: TLS só é dispensado por
+  **igualdade exata** de hostname contra `DELIVERYOS_DATABASE_PRIVATE_HOST`, com os dois atos
+  declarados — nenhuma regra larga do tipo "hostname sem ponto é local". **D3a fechado**: o
+  carimbo escrito em `dist/` guarda o SHA-256 do fecho de imports dos três binários mais os
+  assets e a identidade de commit, e o gate recalcula e compara.
+  **A composição oficial subiu de verdade**, com `deploy/Dockerfile.platform` e
+  `deploy/compose.platform.yaml` reais: crítico saudável, migration concluída, ingestão real
+  aceita/duplicada/rejeitada com os números lidos no banco, outbox drenada depois de restart do
+  assíncrono, e três controles negativos saindo `78` dentro da rede da composição. Empacotamento
+  (`dumb-init`, `USER node`, `prune --omit=dev`, tamanho) fica **BLOCKED e declarado** — a
+  política de rede do sandbox recusa todo repositório Debian.
+  Suíte adversarial `test:platform:pb19:mutacoes`: **14/14, zero mutações cegas**, cada mutação
+  restaurando o defeito e exigindo a assinatura certa.
+  **Regressão integral 41/45, zero `FAIL_NOVO`**: três falhas pré-existentes byte a byte iguais
+  ao baseline C0 (`governanca` G6b+G9, sua suíte de mutações por cascata, e `entregas` por
+  fixture com data fixa) e um gate bloqueado por servidor ausente (`m1b-perceptual`, porta 5292).
+  Duas falhas da execução anterior foram investigadas até a causa e **não eram do produto**:
+  `spine:processos` presumia a outbox vazia — reproduzido plantando 25 mensagens alheias mais
+  velhas, corrigido com espera pela própria mensagem e provado com controle negativo; e
+  `test:lab` caía por descompasso de build do Playwright, destravado **fora do repositório**.
+  `D4` foi reproduzido, teve a causa localizada na linha exata, e ficou **sem correção** por
+  estar fora do escopo declarado.
 
 A redução de superfície de `apps/deliveryos-ai-node` (reescrever os 6 root-requires para subpath)
 **não é C2** — é tarefa futura fora do escopo de ambos, registrada em `C1-PORT.md`.

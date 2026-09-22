@@ -112,6 +112,39 @@ async function ate(p: Processo, padrao: RegExp, limiteMs = 15000): Promise<boole
   return false;
 }
 
+/**
+ * Espera a MENSAGEM DESTE TESTE chegar ao estado pedido.
+ *
+ * A versão anterior lia `state` logo depois de casar `[assincrono] passada` no
+ * stdout — e essa linha é impressa quando o tick move QUALQUER mensagem, não a
+ * deste teste. `claim` pega `ORDER BY created_at, outbox_id LIMIT batch_size`,
+ * e `batch_size` é 25: com 25 pendentes mais velhas de outra suíte no banco, o
+ * primeiro lote não continha a mensagem daqui. O gate lia `pending` e reprovava
+ * o PRODUTO por um fato do AMBIENTE — foi o que aconteceu em 2026-09-22 09:14,
+ * e foi reproduzido de propósito plantando o backlog, com as duas falhas
+ * voltando idênticas.
+ *
+ * Esperar não enfraquece a prova: o prazo continua finito, a falha continua
+ * dizendo o estado observado, e agora também diz o tamanho da fila alheia —
+ * que é o que explica a demora sem precisar adivinhar.
+ */
+async function ateEstado(id: string, esperado: string, limiteMs = 15000): Promise<void> {
+  const fim = Date.now() + limiteMs;
+  let visto = "";
+  while (Date.now() < fim) {
+    visto = sql(`SELECT state FROM platform.outbox WHERE outbox_id = '${id}'`);
+    if (visto === esperado) return;
+    await esperar(150);
+  }
+  const fila = sql(
+    "SELECT count(*) FROM platform.outbox WHERE state = 'pending' AND correlation_id <> 'c3-6'",
+  );
+  assert.fail(
+    `${id} ficou em '${visto || "<sem linha>"}' e nao chegou a '${esperado}' em ${limiteMs} ms` +
+      ` — havia ${fila} mensagem(ns) pendente(s) de outras suites na frente`,
+  );
+}
+
 function enfileirar(id: string, modo: string, unidade = "ITAIM"): void {
   const payload = JSON.stringify({
     event_id: `e-${id}`,
@@ -168,7 +201,7 @@ void (async () => {
         /espinha falhou/,
         `a espinha falhou no processo real:\n${w.saida().slice(-800)}`,
       );
-      assert.equal(sql("SELECT state FROM platform.outbox WHERE outbox_id = 'c36-a'"), "done");
+      await ateEstado("c36-a", "done");
       // Guardado para o P3 comparar: o que a espinha quebrada faz com a
       // mensagem precisa ser medido contra a passada SAUDÁVEL, não contra um
       // número que eu tenha achado que devia ser.
@@ -220,10 +253,15 @@ void (async () => {
         await ate(w, /espinha falhou \(contida\)/),
         `a falha da espinha não ficou observável:\n${w.saida().slice(-600)}`,
       );
-      assert.equal(
-        sql("SELECT state FROM platform.outbox WHERE outbox_id = 'c36-c'"),
-        "done",
-        "fato processado foi reclassificado por causa da espinha",
+      // Se cair aqui em 'dead' ou 'pending', o fato foi reclassificado por causa
+      // da espinha — que é exatamente o que o P3 proíbe.
+      await ateEstado("c36-c", "done");
+      // A referência vem do P1. Sem ela não há comparação possível, e comparar
+      // contra string vazia esconderia que o P3 só caiu por cascata.
+      assert.notEqual(
+        attemptsSaudavel,
+        "",
+        "referencia do P1 ausente — o P3 nao tem contra o que comparar (cascata, nao defeito proprio)",
       );
       assert.equal(
         sql("SELECT attempts FROM platform.outbox WHERE outbox_id = 'c36-c'"),
@@ -270,7 +308,7 @@ void (async () => {
       assert.ok(viuDois, `a espinha não enxergou os dois escopos:\n${w.saida().slice(-800)}`);
       assert.doesNotMatch(w.saida(), /espinha falhou/, "a espinha falhou com dois modos");
       for (const id of ["c36-d", "c36-e"]) {
-        assert.equal(sql(`SELECT state FROM platform.outbox WHERE outbox_id = '${id}'`), "done");
+        await ateEstado(id, "done");
       }
     } finally {
       await w.fim();
