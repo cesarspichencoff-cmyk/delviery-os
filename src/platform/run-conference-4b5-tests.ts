@@ -22,6 +22,7 @@
  */
 
 import assert from "node:assert/strict";
+import { alcancaveis, alcancaPrefixo, alcancadosSob } from "./grafo-de-imports";
 import { readFileSync, mkdtempSync, rmSync, appendFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -740,9 +741,20 @@ teste("15 · Brain explodindo não muda um byte da projeção da Operação Viva
 });
 
 teste("15b · nenhum módulo do caminho crítico conhece o Conference Brain", () => {
+  // `bin/async-runtime.ts` SAIU desta lista no C3, e a saída é o oposto de
+  // afrouxamento. A lista compara TEXTO, e texto erra nos dois sentidos —
+  // medido nesta base: com a espinha ligando o worker ao Brain de verdade, a
+  // lista ficou VERDE (o import diz `intelligence-spine`, que não contém a
+  // palavra); e acrescentar a string a uma constante inerte, sem dependência
+  // nenhuma, deixou a lista VERMELHA. Guarda que muda de cor por nomenclatura
+  // defende vocabulário, não arquitetura.
+  //
+  // O assíncrono passou a ser medido por GRAFO, em `15c`, que é mais forte:
+  // exige que a porta exista, que seja ÚNICA, e que o crítico não tenha
+  // nenhuma. Os demais arquivos continuam aqui porque para eles a resposta
+  // certa é zero, e aí texto e grafo concordam.
   for (const arquivo of [
     "src/platform/bin/critical.ts",
-    "src/platform/bin/async-runtime.ts",
     "src/platform/runtime/rota-ingestao.ts",
     "src/platform/runtime/handler-operacao-viva.ts",
     "src/platform/runtime/async-worker.ts",
@@ -756,6 +768,35 @@ teste("15b · nenhum módulo do caminho crítico conhece o Conference Brain", ()
       `${arquivo} passou a depender do Conference Brain`,
     );
   }
+});
+
+teste("15c · o assíncrono alcança o Conference Brain SÓ pela espinha; o crítico, nunca", () => {
+  const ASSINCRONO = "src/platform/bin/async-runtime.ts";
+  const CRITICO = "src/platform/bin/critical.ts";
+  const ESPINHA = "src/platform/runtime/intelligence-spine.ts";
+  const BRAIN = "src/conference-brain";
+
+  // (1) CONTROLE POSITIVO: a porta existe. Sem isto, os dois testes abaixo
+  // passariam num repositório onde a espinha nem foi montada — verde vazio.
+  assert.ok(
+    alcancaPrefixo(alcancaveis(ASSINCRONO), BRAIN),
+    "o assíncrono não alcança o Conference Brain — a espinha saiu do worker",
+  );
+
+  // (2) A porta é ÚNICA: cortando a espinha, o Brain fica inalcançável.
+  const semEspinha = alcancaveis(ASSINCRONO, { cortar: [ESPINHA] });
+  assert.deepEqual(
+    alcancadosSob(semEspinha, BRAIN),
+    [],
+    "existe um segundo caminho do assíncrono até o Brain, fora da espinha",
+  );
+
+  // (3) O crítico continua sem nenhuma.
+  assert.deepEqual(
+    alcancadosSob(alcancaveis(CRITICO), BRAIN),
+    [],
+    "o Conference Brain entrou no caminho crítico",
+  );
 });
 
 /* ================================================================== *

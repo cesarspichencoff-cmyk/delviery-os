@@ -115,6 +115,13 @@ export interface EstadoDaEspinha {
    * é a medida de que viagem não virou pedido inferido.
    */
   recomendacoes_de_pedido: number;
+  /**
+   * Passadas que venceram o prazo. O trabalho abandonado pode continuar
+   * rodando em segundo plano — o que NÃO pode é segurar o laço do worker.
+   */
+  prazos_vencidos: number;
+  /** Passadas puladas porque a anterior ainda não voltou. */
+  sobreposicoes: number;
 }
 
 export interface OpcoesDaEspinha {
@@ -122,6 +129,15 @@ export interface OpcoesDaEspinha {
   ponte: PonteDaOperacaoViva;
   /** Relógio injetável: o replay precisa de tempo como dado, não como ambiente. */
   agora?: () => Date;
+  /**
+   * Prazo de uma passada, em ms. Padrão 30 s.
+   *
+   * MEDIDO antes de existir: sem prazo, um `runCycle()` que nunca resolve
+   * — não que lança, que TRAVA — fazia `executar()` não voltar, e como o laço
+   * do worker faz `await` nele, a outbox parava de ser consumida. Contenção de
+   * exceção não é contenção de travamento, e a invariante fala das duas.
+   */
+  prazo_ms?: number;
   /** Trocável no teste para provar isolamento de falha sem forjar dado ruim. */
   modulos?: {
     adapter?: ModuloAdapter;
@@ -149,6 +165,30 @@ interface CadeiaDoEscopo {
 
 export function montarEspinhaDeInteligencia(o: OpcoesDaEspinha): EspinhaDeInteligencia {
   const relogio = o.agora ?? ((): Date => new Date());
+  const prazoMs = o.prazo_ms ?? 30_000;
+
+  /** A passada que venceu o prazo e ainda não voltou. Ver `executar`. */
+  let emVoo: Promise<void> | null = null;
+
+  /**
+   * Corre a passada contra o prazo. Devolve `true` se ela venceu.
+   *
+   * O timer NÃO é `unref`: com `unref`, um laço de eventos sem mais nada
+   * pendente faz o processo sair ANTES de o prazo disparar, e o prazo vira
+   * decoração — foi o que aconteceu na primeira versão, e a suíte saiu com
+   * código 0 sem imprimir resultado nenhum. Em vez disso, o timer é LIMPO
+   * assim que a passada volta, e aí ele nunca atrasa um encerramento.
+   */
+  function dentroDoPrazo(p: Promise<unknown>, ms: number): Promise<boolean> {
+    return new Promise((resolve) => {
+      const t = setTimeout(() => resolve(false), ms);
+      const fim = (): void => {
+        clearTimeout(t);
+        resolve(true);
+      };
+      void p.then(fim, fim);
+    });
+  }
 
   // Carregamento preguiçoso: com a flag desligada nada disto é exigido do
   // disco, e a espinha off não pode derrubar o boot do worker.
@@ -185,6 +225,8 @@ export function montarEspinhaDeInteligencia(o: OpcoesDaEspinha): EspinhaDeInteli
     recusas: 0,
     recomendacoes_ativas: 0,
     recomendacoes_de_pedido: 0,
+    prazos_vencidos: 0,
+    sobreposicoes: 0,
   };
 
   function classeDe(e: unknown): string {
@@ -293,6 +335,41 @@ export function montarEspinhaDeInteligencia(o: OpcoesDaEspinha): EspinhaDeInteli
     async executar(): Promise<EstadoDaEspinha> {
       const agora = relogio();
       const em = agora.toISOString();
+
+      // A passada anterior venceu o prazo e ainda não voltou. Começar outra
+      // empilharia trabalho abandonado sobre trabalho abandonado.
+      if (emVoo) {
+        estado.sobreposicoes++;
+        estado.ultima_em = em;
+        return { ...estado };
+      }
+
+      const passada = corpoDaPassada(agora, em).catch((e: unknown) => {
+        // `corpoDaPassada` já contém tudo que era previsto. Este catch existe
+        // para o que NÃO era — e ele REGISTRA, não engole: um catch vazio aqui
+        // seria falha silenciosa, que é o defeito que esta unidade inteira
+        // existe para não cometer.
+        estado.falhas++;
+        estado.ultimo_erro = { classe: classeDe(e), escopo: "passada-nao-prevista", em };
+      });
+      emVoo = passada.finally(() => {
+        emVoo = null;
+      });
+
+      const venceu = await dentroDoPrazo(passada, prazoMs);
+
+      if (!venceu) {
+        // O laço do worker segue. O trabalho abandonado termina quando
+        // terminar, e a guarda acima impede que o próximo comece antes.
+        estado.prazos_vencidos++;
+        estado.ultima_em = em;
+        estado.ultimo_erro = { classe: "PrazoEsgotado", escopo: "passada", em };
+      }
+      return { ...estado };
+    },
+  };
+
+  async function corpoDaPassada(agora: Date, em: string): Promise<void> {
       try {
         const escopos = o.ponte.memoria.escopos();
         let conclusoes = 0;
@@ -339,7 +416,5 @@ export function montarEspinhaDeInteligencia(o: OpcoesDaEspinha): EspinhaDeInteli
         estado.ultima_em = em;
         estado.ultimo_erro = { classe: classeDe(e), escopo: "passada", em };
       }
-      return { ...estado };
-    },
-  };
+  }
 }

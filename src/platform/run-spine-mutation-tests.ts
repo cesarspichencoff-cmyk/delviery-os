@@ -78,6 +78,10 @@ function rodar(script: string): { ok: boolean; saida: string } {
       encoding: "utf8",
       stdio: ["ignore", "pipe", "pipe"],
       env: { ...process.env, CONFERENCE_BRAIN_DATA_DIR: DIR_DADOS_ISOLADO },
+      // Uma mutação pode produzir TRAVAMENTO, não só exceção. Sem teto, o
+      // guarda travado enforcaria a suíte inteira — e uma suíte que não
+      // termina não acusa nada.
+      timeout: 180_000,
     });
     return { ok: true, saida };
   } catch (e) {
@@ -167,7 +171,7 @@ console.log("\n=== C3.5 — SUITE ADVERSARIAL DA ESPINHA ===\n");
  * 0. CONTROLE POSITIVO — as guardas precisam estar verdes ANTES
  * ------------------------------------------------------------------ */
 console.log("0. CONTROLE POSITIVO");
-for (const g of [GUARDA_ESPINHA, GUARDA_TOPOLOGIA, GUARDA_COPILOTO]) {
+for (const g of [GUARDA_ESPINHA, GUARDA_TOPOLOGIA, GUARDA_COPILOTO, "src/platform/run-conference-4b5-tests.ts"]) {
   teste(`controle: ${g} verde antes das mutacoes`, () => {
     const r = rodar(g);
     assert.ok(r.ok, `guarda ja vermelha antes de qualquer mutacao:\n${r.saida.slice(-600)}`);
@@ -201,8 +205,14 @@ mutacao({
   id: "MS2",
   propriedade: "fato já processado não é reclassificado por erro secundário",
   arquivo: "src/platform/runtime/intelligence-spine.ts",
-  de: "        estado.ultimo_erro = { classe: classeDe(e), escopo: \"passada\", em };",
-  para: "        estado.ultimo_erro = { classe: classeDe(e), escopo: \"passada\", em };\n        throw e;",
+  // A versão anterior desta mutação acrescentava `throw e` ao anteparo
+  // externo. Ela ficou CEGA quando a passada passou a correr contra um prazo:
+  // o estado já tinha sido registrado antes do throw, e a corrida absorve a
+  // rejeição — ou seja, a propriedade virou estrutural e a mutação virou
+  // inócua. Foi trocada por esta, que apaga o REGISTRO: o anteparo que contém
+  // sem registrar é falha silenciosa com outro nome.
+  de: "        estado.falhas++;\n        estado.ultima_em = em;\n        estado.ultimo_erro = { classe: classeDe(e), escopo: \"passada\", em };",
+  para: "        estado.ultima_em = em;",
   guarda: GUARDA_ESPINHA,
   assinatura: /C3\.3-12/,
 });
@@ -444,6 +454,76 @@ mutacao({
   para: "      const store = M.store.createStore({ memoryOnly: false });",
   guarda: GUARDA_ESPINHA,
   assinatura: /C3\.5-G4/,
+});
+
+/* ------------------------------------------------------------------ *
+ * 8b. A PORTA É ÚNICA — e as guardas de grafo precisam morder
+ * ------------------------------------------------------------------ */
+console.log("\n8b. PORTA UNICA ATE BRAIN E COPILOTO");
+
+const GUARDA_4B5 = "src/platform/run-conference-4b5-tests.ts";
+
+mutacao({
+  id: "MS23",
+  propriedade: "segunda porta do assíncrono até o Copiloto é acusada",
+  arquivo: "src/platform/bin/async-runtime.ts",
+  de: "import { montarEspinhaDeInteligencia } from \"../runtime/intelligence-spine\";",
+  para:
+    "import { montarEspinhaDeInteligencia } from \"../runtime/intelligence-spine\";\n" +
+    "import { ativas } from \"../copiloto/conference-bridge\";\nvoid ativas;",
+  guarda: GUARDA_COPILOTO,
+  assinatura: /18c|segundo caminho/,
+});
+
+mutacao({
+  id: "MS24",
+  propriedade: "segunda porta do assíncrono até o Conference Brain é acusada",
+  arquivo: "src/platform/bin/async-runtime.ts",
+  de: "import { montarEspinhaDeInteligencia } from \"../runtime/intelligence-spine\";",
+  para:
+    "import { montarEspinhaDeInteligencia } from \"../runtime/intelligence-spine\";\n" +
+    "import \"../../conference-brain/live/clock.js\";",
+  guarda: GUARDA_4B5,
+  assinatura: /15c|segundo caminho/,
+});
+
+mutacao({
+  id: "MS25",
+  propriedade: "o CONTROLE POSITIVO das guardas de grafo não é decorativo",
+  // Tira a espinha do worker. As guardas 15c e 18c têm de acusar pela
+  // primeira asserção — a que exige que a porta EXISTA. Sem esta mutação,
+  // aquelas duas linhas passariam por um repositório onde a espinha nem foi
+  // montada, e o "porta única" seria verde vazio.
+  arquivo: "src/platform/bin/async-runtime.ts",
+  de: "import { montarEspinhaDeInteligencia } from \"../runtime/intelligence-spine\";",
+  para: "",
+  guarda: GUARDA_4B5,
+  assinatura: /15c|não alcança o Conference Brain/,
+});
+
+/* ------------------------------------------------------------------ *
+ * 8c. PASSADA PRESA — contenção de TRAVAMENTO, não só de exceção
+ * ------------------------------------------------------------------ */
+console.log("\n8c. PASSADA PRESA");
+
+mutacao({
+  id: "MS26",
+  propriedade: "o prazo vencido é contado — e por isso é observável",
+  arquivo: "src/platform/runtime/intelligence-spine.ts",
+  de: "        estado.prazos_vencidos++;",
+  para: "        void 0;",
+  guarda: GUARDA_ESPINHA,
+  assinatura: /C3\.3-13/,
+});
+
+mutacao({
+  id: "MS27",
+  propriedade: "a guarda de sobreposição impede empilhar passada abandonada",
+  arquivo: "src/platform/runtime/intelligence-spine.ts",
+  de: "      if (emVoo) {\n        estado.sobreposicoes++;",
+  para: "      if (false && emVoo) {\n        estado.sobreposicoes++;",
+  guarda: GUARDA_ESPINHA,
+  assinatura: /C3\.3-14/,
 });
 
 /* ------------------------------------------------------------------ *

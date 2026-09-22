@@ -25,8 +25,10 @@
  * pode ser.
  */
 
-import { readFileSync, existsSync, statSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
+
+import { alcancaveis } from "./grafo-de-imports";
 
 const RAIZ = process.cwd();
 
@@ -48,67 +50,6 @@ const CADEIA: readonly { seta: string; arquivo: string }[] = [
 
 /** Da seta 5 em diante é inteligência: nada disso pode entrar no crítico. */
 const PRIMEIRA_SETA_DE_INTELIGENCIA = 5;
-
-const ESPECIFICADORES =
-  /(?:\bfrom\s*|\bimport\s*|\brequire\s*\(\s*)["']([^"']+)["']/g;
-
-/**
- * `createRequire` cria um require com OUTRO nome, e um grafo que só procura
- * `require(` fica cego justamente onde um módulo CommonJS é carregado de
- * dentro de TypeScript. Esta auditoria nasceria mentindo: a espinha usa
- * `const req = createRequire(...)`, e `req("…")` não casa com `\brequire\(`.
- *
- * Então o identificador é descoberto no próprio arquivo e vira padrão.
- */
-function padroesDeRequireApelidado(codigo: string): RegExp[] {
-  const nomes = [...codigo.matchAll(/\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*createRequire\s*\(/g)]
-    .map((m) => m[1]);
-  return nomes.map((n) => new RegExp(`\\b${n}\\s*\\(\\s*["']([^"']+)["']`, "g"));
-}
-
-/** Resolve um especificador relativo para um caminho de arquivo real. */
-function resolver(deOndeVem: string, especificador: string): string | null {
-  if (!especificador.startsWith(".")) return null; // pacote: fora do grafo do repo
-  const base = resolve(dirname(deOndeVem), especificador);
-  const tentativas = [
-    base,
-    `${base}.ts`,
-    `${base}.js`,
-    join(base, "index.ts"),
-    join(base, "index.js"),
-  ];
-  for (const t of tentativas) {
-    // `base` sem extensão pode ser um diretório; só arquivo conta como nó.
-    if (existsSync(t) && statSync(t).isFile()) return t;
-  }
-  return null;
-}
-
-/** Fecho transitivo de imports a partir de um entrypoint. */
-function alcancaveis(entrada: string): Set<string> {
-  const vistos = new Set<string>();
-  const fila = [resolve(RAIZ, entrada)];
-  while (fila.length) {
-    const atual = fila.pop();
-    if (!atual || vistos.has(atual) || !existsSync(atual)) continue;
-    vistos.add(atual);
-    let fonte: string;
-    try {
-      fonte = readFileSync(atual, "utf8");
-    } catch {
-      continue;
-    }
-    // Comentários fora: um `require` citado em comentário não é uma aresta.
-    const codigo = fonte.replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g, "");
-    for (const padrao of [ESPECIFICADORES, ...padroesDeRequireApelidado(codigo)]) {
-      for (const m of codigo.matchAll(padrao)) {
-        const alvo = resolver(atual, m[1]);
-        if (alvo && !vistos.has(alvo)) fila.push(alvo);
-      }
-    }
-  }
-  return vistos;
-}
 
 function contem(conjunto: Set<string>, arquivo: string): boolean {
   return conjunto.has(resolve(RAIZ, arquivo));

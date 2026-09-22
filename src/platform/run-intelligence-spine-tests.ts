@@ -434,6 +434,64 @@ teste("C3.3-12 nem enumerar escopos pode escapar — o último anteparo existe",
     });
 });
 
+/** Módulo cujo ciclo NUNCA resolve. Não lança: trava. É outro defeito. */
+const TRAVA = {
+  ...EXPLODE,
+  adapter: {
+    criarFetchOrders: () => async () => ({ orders: [], health: { state: "unavailable", reason: "t" } }),
+    runIdDe: (u: string, m: string) => `x:${u}:${m}`,
+  },
+  observer: { createLiveObserver: () => ({ runCycle: () => new Promise<unknown>(() => {}) }) },
+};
+
+teste("C3.3-13 passada PRESA não segura o laço do worker", async () => {
+  // MEDIDO antes de existir prazo: `executar()` não voltava em 4 s, e como o
+  // laço do worker faz `await` nele, a outbox parava de ser consumida.
+  // Contenção de exceção não é contenção de travamento.
+  const { ponte, runtime } = await comFatos([mensagem(1)]);
+  await runtime.tick();
+  const espinha = montarEspinhaDeInteligencia({
+    ponte,
+    agora: () => AGORA,
+    prazo_ms: 150,
+    modulos: TRAVA,
+  });
+
+  const comeco = Date.now();
+  const s = await espinha.executar();
+  const levou = Date.now() - comeco;
+
+  assert.ok(levou < 3000, `executar() segurou o laço por ${levou} ms`);
+  assert.equal(s.prazos_vencidos, 1, "o prazo vencido não foi contado");
+  assert.equal(s.ultimo_erro?.classe, "PrazoEsgotado");
+});
+
+teste("C3.3-14 passada seguinte NÃO começa enquanto a presa não voltou", async () => {
+  const { ponte, runtime } = await comFatos([mensagem(1)]);
+  await runtime.tick();
+  const espinha = montarEspinhaDeInteligencia({
+    ponte,
+    agora: () => AGORA,
+    prazo_ms: 100,
+    modulos: TRAVA,
+  });
+  await espinha.executar();
+  const s = await espinha.executar();
+  assert.equal(s.sobreposicoes, 1, "a segunda passada começou sobre a primeira");
+  // E continua voltando rápido — a guarda não pode virar outro travamento.
+  const comeco = Date.now();
+  await espinha.executar();
+  assert.ok(Date.now() - comeco < 1000, "a guarda de sobreposição travou");
+});
+
+teste("C3.3-15 CONTROLE: com a cadeia sã, nada de prazo nem sobreposição", async () => {
+  const { espinha } = await espinhaReal([mensagem(1)]);
+  const s = await espinha.executar();
+  assert.equal(s.prazos_vencidos, 0, "passada sã venceu prazo");
+  assert.equal(s.sobreposicoes, 0, "passada sã acusou sobreposição");
+  assert.equal(s.passadas, 1);
+});
+
 /* ================================================================== *
  * CONTROLE POSITIVO DA MEDIDA DE PEDIDO
  * ================================================================== */

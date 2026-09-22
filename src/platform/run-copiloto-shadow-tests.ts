@@ -21,6 +21,7 @@
  */
 
 import assert from "node:assert/strict";
+import { alcancaveis, alcancaPrefixo, alcancadosSob } from "./grafo-de-imports";
 import { readFileSync, mkdtempSync, rmSync, appendFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -744,9 +745,13 @@ teste("17b · o guard de PII da CONCLUSÃO é exercitado, não o do observador",
 });
 
 teste("18 · Copiloto não afeta Entregas, ingestão, outbox, Operação Viva nem Conference Brain", () => {
+  // `bin/async-runtime.ts` saiu desta lista no C3. Ver a nota de `15b` em
+  // run-conference-4b5-tests: a varredura de texto ficou VERDE com a
+  // dependência real montada (o import diz `intelligence-spine`) e VERMELHA
+  // com só a palavra numa constante inerte. O assíncrono passou a ser medido
+  // por GRAFO em `18c`, que exige porta única.
   for (const arquivo of [
     "src/platform/bin/critical.ts",
-    "src/platform/bin/async-runtime.ts",
     "src/platform/runtime/rota-ingestao.ts",
     "src/platform/runtime/handler-operacao-viva.ts",
     "src/platform/runtime/async-worker.ts",
@@ -829,10 +834,34 @@ teste("20 · o estado shadow é explícito em TODOS os resultados", async () => 
  * GUARDAS ESTRUTURAIS
  * ================================================================== */
 
-teste("G1 · o Copiloto não entra no runtime crítico", () => {
-  const critico = semComentarios("src/platform/bin/critical.ts") + semComentarios("src/platform/bin/async-runtime.ts");
-  assert.ok(!critico.includes("copiloto"));
-  assert.ok(!critico.includes("shadow"));
+teste("G1 · o Copiloto não entra no runtime crítico — medido por GRAFO", () => {
+  // A versão anterior somava o TEXTO de `critical.ts` e `async-runtime.ts` e
+  // procurava "copiloto" e "shadow". Duas coisas erradas: media palavra (a
+  // espinha atravessa a ponte sem citar nenhuma das duas), e tratava o
+  // assíncrono como caminho crítico, que ele não é — é justamente onde a
+  // inteligência PODE viver.
+  assert.deepEqual(
+    alcancadosSob(alcancaveis("src/platform/bin/critical.ts"), "src/platform/copiloto"),
+    [],
+    "o Copiloto entrou no runtime crítico",
+  );
+});
+
+teste("18c · o assíncrono alcança o Copiloto SÓ pela espinha", () => {
+  const ASSINCRONO = "src/platform/bin/async-runtime.ts";
+  const ESPINHA = "src/platform/runtime/intelligence-spine.ts";
+  const COPILOTO = "src/platform/copiloto";
+
+  // CONTROLE POSITIVO: sem ele, os dois abaixo passariam com a espinha fora.
+  assert.ok(
+    alcancaPrefixo(alcancaveis(ASSINCRONO), COPILOTO),
+    "o assíncrono não alcança o Copiloto — a espinha saiu do worker",
+  );
+  assert.deepEqual(
+    alcancadosSob(alcancaveis(ASSINCRONO, { cortar: [ESPINHA] }), COPILOTO),
+    [],
+    "existe um segundo caminho do assíncrono até o Copiloto, fora da espinha",
+  );
 });
 
 teste("G2 · nenhuma ação operacional é chamada, e nenhuma execução automática existe", () => {

@@ -633,3 +633,143 @@ PostgreSQL real), `topology`, `conference`, `r5`, `m1b-mutations`, e `pg`/`repos
 
 **Dois defeitos que o desenho antigo tinha e este não tem**, ambos achados por medida própria: a
 imagem sem os módulos do Conference Brain, e a recomendação crescendo sem limite a cada passada.
+
+---
+
+## Apêndice — o documento do C3 perdido apareceu
+
+Depois desta reconstrução estar empurrada, o relatório da sessão perdida foi recuperado (HEAD de
+código que ele declara: `9fc3a8d`; espinha em `runtime/espinha-inteligencia.ts`, 887 linhas).
+
+Ele **continua sendo relato, não prova**. O que se fez foi outra coisa: ele contém **afirmações
+concretas e testáveis sobre esta árvore**, e cada uma foi testada. Três se sustentaram — duas
+delas apontando defeito no que eu havia entregado.
+
+### 1. Guardas cegas por nomenclatura — CONFIRMADO, era defeito meu
+
+O §3 achado 6 dele diz que três guardas varriam o **texto** de `async-runtime.ts` atrás de
+"copiloto", "shadow" e "conference-brain", e que a espinha passaria verde por acaso de nome.
+
+Medido nesta árvore, nos dois sentidos:
+
+| Situação | `cb4b5` e `copiloto` |
+|---|---|
+| dependência REAL montada (grafo confirma Brain, ponte e Shadow alcançáveis do worker) | **exit 0 — VERDE** |
+| só a string `"conference-brain"` numa constante inerte, zero dependência nova | **exit 1 — VERMELHO** |
+
+Meu import diz `from "../runtime/intelligence-spine"`. Nenhuma das três palavras. **Passei por
+acaso de nomenclatura**, e as guardas afirmavam duas coisas que tinham deixado de ser verdade.
+
+**Corrigido**, e a correção é estritamente mais forte que a anterior:
+
+- `src/platform/grafo-de-imports.ts` (novo) — alcançabilidade por grafo, **uma implementação só**,
+  usada pela auditoria de topologia e pelas guardas. Entende `createRequire` apelidado, que é como
+  a espinha carrega o Brain — sem isso o grafo ficaria cego no ponto que importa.
+- `15b` (4b5) e `18` (copiloto) deixaram de listar `async-runtime.ts`; `G1` deixou de somar o texto
+  dele. Os demais arquivos continuam na varredura, porque para eles a resposta certa é zero e aí
+  texto e grafo concordam.
+- Entraram `15c` e `18c`, que exigem três coisas: a porta **existe** (controle positivo), a porta é
+  **única** (cortando a espinha do grafo, Brain e Copiloto ficam inalcançáveis), e o crítico não tem
+  nenhuma. `G1` passou a medir o crítico por grafo.
+
+Contagens: `cb4b5` 36 → **37**, `copiloto` 39 → **40**.
+
+Três mutações novas provam que as guardas novas mordem — e que o controle positivo não é
+decorativo: **MS23** (segunda porta até o Copiloto), **MS24** (segunda porta até o Brain),
+**MS25** (espinha fora do worker → a asserção "a porta existe" tem de acusar).
+
+### 2. Passada PRESA segurava o laço do worker — CONFIRMADO, era defeito meu
+
+O documento tem `E3` ("passada presa não segura o laço") e `C4` (sem sobreposição). Eu não tinha
+nenhum dos dois: meu `async-runtime` fazia `await espinha.executar()` direto.
+
+Medido antes de corrigir, com um `runCycle()` que **não lança — trava**:
+
+```
+RESULTADO: TIMEOUT 4s — A PASSADA NAO VOLTOU
+```
+
+`executar()` não voltava. Como o laço do worker faz `await` nele, **a outbox parava de ser
+consumida**. Minhas 26 provas cobriam contenção de *exceção*; nenhuma cobria contenção de
+*travamento* — e a invariante fala das duas.
+
+**Corrigido:** prazo por passada (padrão 30 s, injetável) e guarda de sobreposição — a passada
+seguinte não começa enquanto a abandonada não voltar. Estado ganhou `prazos_vencidos` e
+`sobreposicoes`.
+
+Um erro meu no meio do caminho, registrado: a primeira versão do prazo usava `unref()` no timer.
+Com o laço de eventos vazio, o processo **saía antes de o prazo disparar** — a suíte terminou com
+código 0 e sem imprimir resultado nenhum. Trocado por timer real, limpo assim que a passada volta.
+
+Provas novas: **C3.3-13** (passada presa volta em <3 s e conta o prazo), **C3.3-14** (a seguinte
+não começa), **C3.3-15** (controle: cadeia sã não vence prazo nem acusa sobreposição). Mutações
+**MS26** e **MS27**. O `execFileSync` das mutações ganhou teto de 180 s: mutação que trava não pode
+enforcar a suíte.
+
+**MS2 ficou cega e foi retargetada, não removida.** A mutação antiga acrescentava `throw e` ao
+anteparo externo; com a passada correndo contra prazo, o estado já foi registrado antes do throw e
+a corrida absorve a rejeição — a propriedade virou **estrutural** e a mutação, inócua. A nova apaga
+o **registro**: anteparo que contém sem registrar é falha silenciosa com outro nome. No mesmo
+movimento, o `.catch` externo deixou de ser vazio e passou a registrar
+(`escopo: "passada-nao-prevista"`).
+
+Mutações: 25 → **31**, zero cegas. Provas da espinha: 26 → **29**.
+
+### 3. D3 tem DUAS causas independentes — a dele é pior, e é a que acontece
+
+Eu reproduzi D3 como **schema parcial** (migration 0002 ausente). O documento aponta outra coisa:
+`docs/contracts/eventos.schema.json` não entra na imagem.
+
+Verificado: `src/platform/contracts/event-schema.ts:30` lê esse arquivo em runtime,
+`ingest/ingest-service.ts:31` o importa, e o grafo confirma que **`bin/critical.ts` o alcança**. O
+`Dockerfile.platform` copia `src`, `tools`, `demo` para o build e `dist`, `node_modules`,
+`package.json` para o runtime — **`docs/` nunca entra**.
+
+Reproduzido com o banco **totalmente migrado** (2 colunas da 0002 confirmadas, para isolar da minha
+causa), escondendo só `docs/contracts`:
+
+```
+GET  /ready          → HTTP 200  {"ready":true,"state":"healthy"}
+POST /api/gps/batch  → HTTP 503  {"classe":"falha_de_persistencia","retentavel":true}
+GET  /ready (depois) → HTTP 200
+log do crítico: duas linhas, nenhuma de erro
+```
+
+| | D3a (minha) | D3b (do documento) |
+|---|---|---|
+| causa | schema parcial no banco | `docs/contracts/` ausente da imagem |
+| resposta ao aparelho | 503 **com** `detalhe` nomeando a coluna | 503 **sem detalhe nenhum** |
+| acontece com o Dockerfile como está? | só com `dist/` velho | **sim, sempre** |
+
+**D3b é estritamente pior** e é a que um piloto encontraria: a imagem construída do repositório
+recusa todo GPS, com `/ready` verde e zero diagnóstico. Registrada, **não corrigida** — corrigir
+D1–D3 continua fora do C3, e por isso `docs/contracts` não foi acrescentado ao Dockerfile mesmo
+tendo eu mexido nele para a espinha.
+
+### 4. O 3,1 KB por passada — a diferença agora tem explicação
+
+Medi ~0,34 KB; ele mediu ~3,1 KB. Lendo o desenho dele, a diferença deixa de ser mistério: **a
+espinha dele PERSISTE as recomendações em disco** (`copilot_recommendations` no store do Brain,
+JSONL, diretório configurado por `DELIVERYOS_INTELIGENCIA_DIR`), enquanto a minha usa
+`memoryOnly: true` e não cria artefato durável.
+
+São medidas de **coisas diferentes, de desenhos diferentes**. Nenhum dos dois números está errado;
+o meu continua valendo para esta árvore. A Q-015 fica ainda mais necessária: a escolha entre os
+dois desenhos **é** a pergunta dela.
+
+### 5. O que o desenho dele tem e o meu não — e continua sem ter
+
+Registrado como diferença consciente, não como pendência silenciosa:
+
+| | dele | meu |
+|---|---|---|
+| intervalo próprio, separado do tick | sim (padrão 60 s) | **não** — roda a cada tick |
+| recomendação persistida em disco | sim | não (`memoryOnly`) |
+| escopos declarados em configuração | sim (`UNIDADE:modo,...`) | derivados do fato observado |
+| configuração que **desliga com motivo** em vez de falhar fechada | sim | **não** — valor inválido em `DELIVERYOS_INTELLIGENCE_SPINE` derruba o boot do worker por `ConfigError` |
+
+As duas últimas linhas da minha coluna são fraquezas reais, não escolhas superiores. A do
+intervalo tem efeito medido: a 1 tick/s o histórico cresce ~1,2 MB/hora por escopo, contra
+~4,5 MB/dia no desenho dele. **Nenhuma foi corrigida aqui** — mexer em intervalo e em política de
+desligamento é exatamente o território da Q-015, e responder por código seria o oposto do que esta
+etapa faz.
