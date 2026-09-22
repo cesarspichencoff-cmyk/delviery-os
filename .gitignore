@@ -9,6 +9,13 @@ android/*.log
 # versionado em `a6e38ed`. Guarda: `npm run test:platform:higiene`.
 /data/conference-brain/*.runtime.jsonl
 **/*.runtime.jsonl
+# Estágio da publicação deliberada de evidências do Lab V4
+# (`npm run evidence:lab:v4:refresh`). Precisa ser ADJACENTE ao alvo, porque
+# `rename` só é atômico dentro do mesmo sistema de arquivos — e por isso cai
+# dentro da worktree. Uma execução morta no meio deixa o estágio para trás, e
+# isso não pode sujar `git status`. Guarda: `npm run test:lab:v4:evidencias`.
+/labs/operacao-viva-v4/.evidencias-staging-*/
+/labs/operacao-viva-v4/.evidencias-velho-*/
 /data/raw/*
 !/data/raw/.gitkeep
 !/data/raw/incoming/

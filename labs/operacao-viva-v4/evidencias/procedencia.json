@@ -1,0 +1,108 @@
+{
+  "manifesto_versao": 1,
+  "browser_provenance": "UNKNOWN_FOR_EXISTING_BASELINE",
+  "nota": "Estas imagens sao anteriores ao manifesto. Nenhum registro diz qual build de Chromium, qual versao de Playwright ou qual plataforma as produziu, e este repositorio NAO escolhe uma referencia canonica por conveniencia. A procedencia de navegador fica UNKNOWN ate uma regeneracao deliberada por `npm run evidence:lab:v4:refresh`, que mede o que rodou em vez de supor. As imagens permanecem preservadas ate la: UNKNOWN nao e motivo para apagar.",
+  "gerado_por": null,
+  "gerado_em": null,
+  "playwright": null,
+  "chromium": null,
+  "plataforma": null,
+  "node": null,
+  "publicado_por": "manual — anterior a `npm run evidence:lab:v4:refresh`",
+  "publicado_em": null,
+  "git": {
+    "nota": "Isto e procedencia de COMMIT, medida, e nao procedencia de navegador.",
+    "commits_dos_blobs_atuais": [
+      "0f1dd5031309f4f98b6fce2751601557a8b360f3"
+    ],
+    "homogeneo": true
+  },
+  "cenas": [
+    "ausencia-de-dados",
+    "calma-real",
+    "recomendacao-corrigida",
+    "sushi-quentes-isolado"
+  ],
+  "viewports_pelos_nomes_de_arquivo": [
+    "celular",
+    "desktop",
+    "tablet"
+  ],
+  "nota_viewports": "Derivados do NOME do arquivo. A largura real de cada imagem esta em `arquivos`.",
+  "fixture": true,
+  "declaracao": "Todas as cenas sao FIXTURE. Nenhuma captura mostra operacao real e nenhuma contem PII.",
+  "arquivos": {
+    "ausencia-de-dados--celular.png": {
+      "sha256": "bf4f6d774856dc1805ead1b9b651865d478540b4e7ab26da1f428281baa6d32f",
+      "bytes": 289728,
+      "largura": 390,
+      "altura": 5375
+    },
+    "ausencia-de-dados--desktop.png": {
+      "sha256": "9cf77f977bb0b223a5cde1caa470eeaceebffd3a66329443e6aaad32f9327723",
+      "bytes": 310023,
+      "largura": 1280,
+      "altura": 3757
+    },
+    "ausencia-de-dados--tablet.png": {
+      "sha256": "e723c55a31f65a5a2b78b60ed766ba39b7f17d1c1d6479e3717195f26b995f8b",
+      "bytes": 300121,
+      "largura": 768,
+      "altura": 3941
+    },
+    "calma-real--celular.png": {
+      "sha256": "6fbfded44e12ca7b2718a1b3db523f4b0672b231bc7ffebd7c87d86df266a43d",
+      "bytes": 300723,
+      "largura": 390,
+      "altura": 5794
+    },
+    "calma-real--desktop.png": {
+      "sha256": "e58da9127dbe6cbb28e3fac669ca2d7d7d347bac38fc623e35eaf3b713f1c4a7",
+      "bytes": 299347,
+      "largura": 1280,
+      "altura": 3770
+    },
+    "calma-real--tablet.png": {
+      "sha256": "520c83757326da4b1c30c4dd958ab0e9e43839cc5abb7055576c0e70c1818ac8",
+      "bytes": 297052,
+      "largura": 768,
+      "altura": 3948
+    },
+    "recomendacao-corrigida--celular.png": {
+      "sha256": "763e15dfd33d025bb0c6c6077e2d72414444888d76be72ff7fbacde452c13ad0",
+      "bytes": 375500,
+      "largura": 390,
+      "altura": 6468
+    },
+    "recomendacao-corrigida--desktop.png": {
+      "sha256": "d567ba4a13c3c060940a06d40a8af6ef4fc8d8ebf8db6bf633b7ad4203d12a9b",
+      "bytes": 383936,
+      "largura": 1280,
+      "altura": 4149
+    },
+    "recomendacao-corrigida--tablet.png": {
+      "sha256": "5ab0bc2670f6ef3d79c07d3aa989cf30cf4dc461b0dcbdd8e2fb0af65cc2e16f",
+      "bytes": 378989,
+      "largura": 768,
+      "altura": 4455
+    },
+    "sushi-quentes-isolado--celular.png": {
+      "sha256": "7da59434b66df4dbaeb8fad9814e0921ff117dfea6d538c3208f37e856a94a5b",
+      "bytes": 388364,
+      "largura": 390,
+      "altura": 6741
+    },
+    "sushi-quentes-isolado--desktop.png": {
+      "sha256": "5da94e2b6c972cc689afa164feadfecc936163925953a59bf3523a17e283e2fc",
+      "bytes": 397811,
+      "largura": 1280,
+      "altura": 4237
+    },
+    "sushi-quentes-isolado--tablet.png": {
+      "sha256": "7800600a2f072a1a9fc8117f7c2c8e8fc3a431226b50674dabc70a88d28f5c08",
+      "bytes": 390084,
+      "largura": 768,
+      "altura": 4524
+    }
+  }
+}

@@ -734,7 +734,7 @@ produzida. Ficam por provar, e **não estão escondidos**: `dumb-init` como PID 
 SIGTERM), `USER node`, `npm prune --omit=dev` e o tamanho final da imagem. Os quatro dizem
 respeito a empacotamento, não ao comportamento que o PB19 fecha.
 
-### D4 — reproduzido, causa exata, **deixado sem correção**
+### D4 — **FECHADO em 2026-09-22** (`docs/etapa-4-8/D4-EVIDENCIA.md`)
 
 `labs/operacao-viva-v4/testes/run-lab-v4-browser.ts` apaga o diretório de evidências na linha
 **177** e só tenta subir o navegador na **182**. Apaga antes da operação que pode falhar: se o
@@ -747,13 +747,31 @@ porque o ambiente traz o build `1194` e o Playwright 1.61.1 pede o `1228` — o 
 **PASS** e os arquivos voltam. Foi por isso que o defeito só aparecia enquanto o gate estava
 bloqueado.
 
-Sem correção **de propósito**: o PB19 fecha `D1`, `D2`, `D3a` e `D3b`, e `labs/` não é a
-composição oficial. A correção cabe em inverter as duas linhas — subir o navegador, e só então
-limpar.
+Ficou sem correção durante o PB19, por estar fora do escopo daquela missão, e foi **fechado em
+missão própria** — na classe, não só na ordem das linhas.
 
-Fica aberto junto com ele: as 12 capturas são **dado gerado** e estão versionadas, e um build de
-navegador diferente as reescreve byte a byte diferentes. Se devem continuar no Git, e com qual
-build como referência, é decisão do César (`docs/Politica_Dados.md`, CLAUDE.md §9).
+O que mudou: rodar teste e publicar evidência viraram superfícies separadas. O gate normal grava
+num temporário e o descarta, e **recusa** ser apontado para o diretório versionado por comparação
+de caminho real (symlink e `..` não contornam). `npm run evidence:lab:v4:refresh` é o único
+caminho que substitui o conjunto, com estágio adjacente e gitignorado, gate inteiro verde,
+conferência nome a nome e troca por dois `rename` — inteiro ou nada. Guardas:
+`test:lab:v4:evidencias` (11/11, dentro da cadeia `test:lab`) e
+`test:lab:v4:evidencias:mutacoes` (6/6, zero controles cegos).
+
+**A decisão do César sobre as 12 capturas:** continuam versionadas como evidência visual
+histórica, e continuam **preservadas**. Nenhum build de Chromium foi eleito referência canônica:
+o manifesto de procedência declara `browser_provenance: UNKNOWN_FOR_EXISTING_BASELINE`, porque
+nada registra qual navegador as gerou. A regeneração deliberada mede a procedência de verdade,
+inclusive o executável que **de fato rodou** — e este ambiente mostrou por que isso importa:
+`chromium.executablePath()` devolve um arquivo que não existe, já que `launch()` em headless usa
+outro caminho.
+
+**Registrado porque não pode se perder:** a primeira versão da suíte de controle **destruiu os 12
+PNGs que existia para proteger**. Dois casos rodavam o refresh contra o repositório, um tinha uma
+corrida entre `listen()` assíncrono e `spawnSync`, o bloqueio nunca existiu e o refresh publicou.
+Restaurado por `git checkout --`, conferido byte a byte. A correção não foi consertar aquele
+caso: todo exercício do refresh passou a rodar numa raiz espelho, onde o patrimônio nunca é o
+alvo.
 
 ### Bloqueio de precondição
 

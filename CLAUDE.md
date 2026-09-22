@@ -165,5 +165,17 @@ outbox drenada depois de restart, e três controles negativos saindo 78. Empacot
 (`dumb-init`, `USER node`, `prune --omit=dev`, tamanho) fica **BLOCKED e declarado**: a política
 de rede do sandbox recusa todo repositório Debian. Regressão final **41/45**, com zero
 `FAIL_NOVO` — três falhas pré-existentes byte a byte iguais ao baseline e um gate bloqueado por
-servidor ausente. `D4` (o gate de laboratório apaga evidência versionada antes de subir o
-navegador) foi reproduzido e **deixado sem correção**, fora do escopo declarado desta missão.
+servidor ausente.
+
+**D4 — política de evidências do Lab V4, fechado** (`docs/etapa-4-8/D4-EVIDENCIA.md`): rodar um
+teste deixou de poder destruir evidência histórica, e regenerá-la virou ato explícito, completo e
+rastreável. `test:lab:v4:browser` grava em **temporário** e descarta; se `LAB_V4_EVIDENCIAS`
+resolver para o diretório versionado, o gate **recusa** por comparação de caminho real — symlink
+e `..` não contornam. `evidence:lab:v4:refresh` é o único caminho que substitui o conjunto, e
+publica inteiro ou nada: estágio adjacente, gate inteiro verde, conferência nome a nome, e dois
+`rename`. O manifesto de procedência registra o executável que **de fato rodou** (medido por
+`launchServer`, porque `executablePath()` aponta um arquivo inexistente aqui) e guarda os dois
+caminhos quando divergem. As 12 imagens atuais ficam **`UNKNOWN_FOR_EXISTING_BASELINE`** e
+**preservadas** — nenhum build foi eleito referência canônica. Gates novos:
+`test:lab:v4:evidencias` (11/11, agora dentro da cadeia `test:lab`) e
+`test:lab:v4:evidencias:mutacoes` (**6/6, zero cegos**). Regressão **42/46**, zero `FAIL_NOVO`.

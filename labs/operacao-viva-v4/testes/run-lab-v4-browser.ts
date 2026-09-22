@@ -20,8 +20,18 @@
 
 import assert from "node:assert/strict";
 import http from "node:http";
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { execFileSync } from "node:child_process";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
+import { basename, dirname, join, resolve } from "node:path";
 
 import { chromium, type Browser, type BrowserContext, type Page } from "playwright";
 
@@ -31,26 +41,68 @@ import { acharPII } from "../validacao/schema.js";
 
 const raiz = process.cwd();
 
+/** O diretório VERSIONADO. Este gate nunca escreve aqui — ver abaixo. */
+const EVIDENCIAS_VERSIONADAS = join(raiz, "labs", "operacao-viva-v4", "evidencias");
+
 /**
  * Onde as capturas e os arquivos temporários do gate são gravados.
  *
- * Por padrão, o diretório versionado de evidências. Mas `LAB_V4_EVIDENCIAS`
- * redireciona tudo para fora da worktree — e isso existe por causa de um desvio
- * real: numa avaliação declarada **read-only**, o avaliador rodou este gate (com
- * autorização do construtor) e ele apagou e recriou o diretório versionado,
- * modificando quatro PNGs rastreados.
+ * **Diretório temporário por padrão.** Antes o padrão era o diretório
+ * VERSIONADO, e isso custou duas vezes: uma avaliação declarada read-only
+ * modificou quatro PNGs rastreados, e depois o próprio gate apagou os 13
+ * arquivos três vezes numa sessão só — porque limpava o diretório ANTES de
+ * tentar abrir o navegador, e quando o navegador não abria o patrimônio já
+ * tinha ido embora (D4).
  *
- * A falha foi de método, não do avaliador: autorizar um comando com efeito de
- * escrita numa sessão read-only. Daqui em diante, avaliação independente roda
- * com:
+ * `LAB_V4_EVIDENCIAS` continua redirecionando para um caminho explícito,
+ * porque avaliador independente precisa disso. O que mudou é que rodar um
+ * teste deixou de ser um ato de escrita sobre patrimônio: sem a variável, o
+ * gate grava num temporário e o **descarta** no fim.
  *
- *   LAB_V4_EVIDENCIAS=<caminho fora da worktree> npm run test:lab:v4:browser
+ * Atualizar a evidência versionada virou ato próprio e explícito:
  *
- * e a leitura passa a ser efetivamente read-only sobre arquivos versionados.
+ *   npm run evidence:lab:v4:refresh
+ *
+ * É o único caminho que substitui o conjunto versionado, e substitui inteiro
+ * ou não substitui nada.
  */
-const EVID =
-  process.env.LAB_V4_EVIDENCIAS ??
-  join(raiz, "labs", "operacao-viva-v4", "evidencias");
+const EVID_DECLARADO = (process.env.LAB_V4_EVIDENCIAS ?? "").trim();
+
+/**
+ * A recusa que fecha o D4 na classe, em vez de só na ordem das linhas.
+ *
+ * Inverter `rmSync` e `launch()` conserta o sintoma. O defeito é que rodar o
+ * gate normal podia, por padrão OU por variável, apontar para o patrimônio.
+ * Aqui apontar para ele é **impossível**: comparação por caminho real, então
+ * symlink e `..` não contornam.
+ */
+if (EVID_DECLARADO !== "") {
+  const alvo = resolve(EVID_DECLARADO);
+  const real = (c: string): string => (existsSync(c) ? realpathSync(c) : resolve(c));
+  if (real(alvo) === real(EVIDENCIAS_VERSIONADAS)) {
+    console.error(
+      "LAB_V4_EVIDENCIAS aponta para o diretório VERSIONADO de evidências.\n" +
+        "O gate de navegador não escreve em patrimônio rastreado. Para atualizar\n" +
+        "a evidência versionada, use o ato explícito:\n\n" +
+        "    npm run evidence:lab:v4:refresh\n",
+    );
+    process.exit(2);
+  }
+}
+
+const EVID_E_TEMPORARIO = EVID_DECLARADO === "";
+const EVID = EVID_E_TEMPORARIO
+  ? mkdtempSync(join(tmpdir(), "lab-v4-evidencias-"))
+  : resolve(EVID_DECLARADO);
+
+/**
+ * Executável de navegador alternativo, quando o avaliador tem o seu.
+ *
+ * Existe para que "qual build do Chromium" seja escolha DECLARADA de quem
+ * roda, e não uma referência canônica que este repositório fixe sozinho. O
+ * build usado entra no manifesto de procedência — medido, nunca presumido.
+ */
+const EXECUTAVEL = (process.env.LAB_V4_CHROMIUM ?? "").trim();
 const PORTA = Number(process.env.LAB_V4_PORTA_TESTE ?? 5292);
 const URLBASE = `http://127.0.0.1:${PORTA}${BASE}/`;
 
@@ -83,9 +135,18 @@ async function teste(nome: string, fn: () => Promise<void>): Promise<void> {
   }
 }
 
-/** Erros de console que importam. Falha de favicon não é defeito de produto. */
-function erroMaterial(texto: string): boolean {
-  if (/favicon/i.test(texto)) return false;
+/**
+ * Erros de console que importam. Falha de favicon não é defeito de produto.
+ *
+ * A URL entra no julgamento porque o texto sozinho NÃO basta, e isso foi
+ * medido: o Chrome completo pede `/favicon.ico` e o headless shell não pede.
+ * Quando pede, a mensagem é só "Failed to load resource: the server responded
+ * with a status of 404 (Not Found)" — sem a palavra `favicon`, que vive em
+ * `location().url`. Um filtro que lesse só o texto reprovaria o gate conforme
+ * o BUILD do navegador, e isso elegeria um build canônico por acidente.
+ */
+function erroMaterial(texto: string, url = ""): boolean {
+  if (/favicon/i.test(texto) || /\/favicon\.ico(\?|$)/i.test(url)) return false;
   return true;
 }
 
@@ -103,7 +164,9 @@ async function abrir(
   const erros: string[] = [];
   const escritas: string[] = [];
   page.on("console", (m) => {
-    if (m.type() === "error" && erroMaterial(m.text())) erros.push(m.text());
+    if (m.type() === "error" && erroMaterial(m.text(), m.location().url)) {
+      erros.push(`${m.text()} [${m.location().url}]`);
+    }
   });
   page.on("pageerror", (e) => erros.push(String(e)));
   // A trava do lado do cliente: nenhuma requisição de escrita deve nascer.
@@ -171,15 +234,125 @@ function requisitar(metodo: string, caminho: string): Promise<number> {
 
 /* ================================================================== */
 
+/**
+ * Qual binário o Playwright REALMENTE sobe.
+ *
+ * `chromium.executablePath()` não serve, e isso foi medido: aqui ele devolve
+ * `.../chromium-1228/chrome-linux64/chrome`, um arquivo que **não existe** —
+ * porque `launch()` em headless usa o *headless shell*, outro caminho.
+ * Registrar o que `executablePath()` diz seria anotar no manifesto um binário
+ * que nunca rodou.
+ *
+ * `launchServer()` expõe o processo, e `spawnfile` é o arquivo que o sistema
+ * operacional executou. É a mesma resolução que `launch()` faz — mesma
+ * `chromium`, mesmas opções — só que observável.
+ */
+async function binarioReal(): Promise<{ pedido: string | null; real: string | null }> {
+  if (EXECUTAVEL !== "") {
+    try {
+      return { pedido: EXECUTAVEL, real: realpathSync(EXECUTAVEL) };
+    } catch {
+      return { pedido: EXECUTAVEL, real: null };
+    }
+  }
+  let servidor: Awaited<ReturnType<typeof chromium.launchServer>> | null = null;
+  try {
+    servidor = await chromium.launchServer();
+    const pedido = servidor.process().spawnfile;
+    let real: string | null = null;
+    try {
+      real = realpathSync(pedido);
+    } catch {
+      real = null;
+    }
+    return { pedido, real };
+  } catch {
+    return { pedido: null, real: null };
+  } finally {
+    if (servidor !== null) await servidor.close();
+  }
+}
+
+/** O que a máquina consegue PROVAR sobre o navegador que acabou de abrir. */
+async function procedenciaMedida(browser: Browser): Promise<Record<string, unknown>> {
+  const { pedido, real } = await binarioReal();
+  const build = real !== null ? basename(dirname(dirname(real))) : null;
+  let playwright: string | null = null;
+  try {
+    playwright = String(
+      (JSON.parse(readFileSync(require.resolve("playwright/package.json"), "utf8")) as {
+        version?: string;
+      }).version ?? "",
+    ) || null;
+  } catch {
+    playwright = null;
+  }
+  // Mesmo padrão de `tools/carimbar_build.js`: o ambiente manda, o git é o
+  // padrão, e ausente fica `null` — declaradamente desconhecido, nunca
+  // inventado. Existe porque raiz sem `.git` (container, raiz de teste) não
+  // deveria produzir manifesto sem identidade quando quem chamou a conhece.
+  let commit: string | null = (process.env.DELIVERYOS_COMMIT ?? "").trim() || null;
+  if (commit === null) {
+    try {
+      commit = execFileSync("git", ["rev-parse", "HEAD"], { cwd: raiz, encoding: "utf8" }).trim();
+    } catch {
+      commit = null;
+    }
+  }
+  return {
+    browser_provenance: "MEDIDO",
+    gerado_por: "labs/operacao-viva-v4/testes/run-lab-v4-browser.ts",
+    gerado_em: new Date().toISOString(),
+    commit,
+    playwright,
+    chromium: {
+      // Medida no navegador que rodou, não deduzida de caminho.
+      versao_reportada: browser.version(),
+      // O caminho que o Playwright pede e o arquivo que existe de verdade. Os
+      // dois, porque podem divergir — e aqui divergem: o Playwright pede o
+      // build `1228` e o arquivo por trás do symlink é o `1194`. Um manifesto
+      // que guardasse só um dos dois esconderia exatamente essa diferença.
+      executavel_pedido: pedido,
+      executavel_real: real,
+      // O diretório do build, que é onde o número real mora
+      // (ex.: `chromium_headless_shell-1194`). Versão reportada e build são
+      // coisas diferentes, e as duas ficam registradas.
+      build_diretorio: build,
+      divergencia_de_build: pedido !== null && real !== null && pedido !== real,
+      escolhido_por: EXECUTAVEL !== "" ? "LAB_V4_CHROMIUM" : "padrao do Playwright",
+    },
+    plataforma: `${process.platform}-${process.arch}`,
+    node: process.version,
+    viewports: VIEWPORTS.map((v) => ({ nome: v.nome, width: v.width, height: v.height })),
+    cenas: [...CENAS_CAPTURADAS],
+    fixture: true,
+    declaracao:
+      "Todas as cenas sao FIXTURE. Nenhuma captura mostra operacao real e nenhuma contem PII.",
+  };
+}
+
 async function principal(): Promise<void> {
   const servidor = criarServidor();
   await new Promise<void>((r) => servidor.listen(PORTA, "127.0.0.1", () => r()));
-  rmSync(EVID, { recursive: true, force: true });
-  mkdirSync(EVID, { recursive: true });
 
   let browser: Browser | null = null;
+  // Medida enquanto o navegador está ABERTO — `browser.version()` não responde
+  // depois do `close()`, e o `finally` fecha antes de o manifesto ser escrito.
+  let procedencia: Record<string, unknown> | null = null;
   try {
-    browser = await chromium.launch();
+    // O NAVEGADOR PRIMEIRO, e a ordem é o defeito D4 fechado.
+    //
+    // A versão anterior apagava e recriava o diretório de evidências ANTES
+    // desta linha. Quando o `launch()` falhava — e falhou, por descompasso de
+    // build do Playwright — os arquivos já tinham sido apagados e nada os
+    // regenerava. Apagar antes da operação que pode falhar é o defeito; a
+    // ordem abaixo é a correção mínima, e o diretório temporário acima é a
+    // correção na classe.
+    browser = await chromium.launch(EXECUTAVEL !== "" ? { executablePath: EXECUTAVEL } : {});
+    procedencia = await procedenciaMedida(browser);
+
+    rmSync(EVID, { recursive: true, force: true });
+    mkdirSync(EVID, { recursive: true });
 
     /* ---------------- Carregamento e responsividade ---------------- */
 
@@ -640,9 +813,15 @@ async function principal(): Promise<void> {
     [
       "# Evidências — Lab Operação Viva V4",
       "",
-      "Geradas por `npm run test:lab:v4:browser`, com Playwright sobre o mesmo",
-      "`criarServidor()` que `npm run ui:lab` usa. Todas as cenas são FIXTURE:",
-      "nenhuma captura mostra operação real, e nenhuma contém PII.",
+      "Capturas geradas pelo gate de navegador (`npm run test:lab:v4:browser`), com",
+      "Playwright sobre o mesmo `criarServidor()` que `npm run ui:lab` usa. Todas as",
+      "cenas são FIXTURE: nenhuma captura mostra operação real, e nenhuma contém PII.",
+      "",
+      "**O gate normal grava num diretório temporário e o descarta.** Este conjunto só",
+      "chega ao diretório versionado pelo ato explícito `npm run evidence:lab:v4:refresh`,",
+      "que substitui o conjunto inteiro ou não substitui nada.",
+      "",
+      "A procedência do navegador que produziu estas imagens está em `procedencia.json`.",
       "",
       `Viewports: ${VIEWPORTS.map((v) => `${v.nome} ${v.width}×${v.height}`).join(" · ")}`,
       "",
@@ -651,13 +830,29 @@ async function principal(): Promise<void> {
     ].join("\n"),
   );
 
+  // O manifesto sai do processo que ABRIU o navegador. Quem publica não tem
+  // como saber qual binário rodou, e adivinhar seria procedência inventada.
+  if (procedencia !== null) {
+    writeFileSync(
+      join(EVID, "procedencia.json"),
+      `${JSON.stringify({ manifesto_versao: 1, ...procedencia }, null, 2)}\n`,
+    );
+  }
+
   console.log(`\nNavegador: ${passaram} passaram, ${falhas.length} falharam`);
   // O caminho REAL, não o padrão. A primeira versão imprimia
   // `labs/operacao-viva-v4/evidencias/` fixo, e continuava dizendo isso mesmo
   // quando `LAB_V4_EVIDENCIAS` mandava as capturas para outro lugar — um log
   // que afirma onde gravou sem saber onde gravou.
   console.log(`Capturas: ${capturas.length} em ${EVID}`);
+  console.log(`Diretório: ${EVID_E_TEMPORARIO ? "TEMPORARIO (sera descartado)" : "DECLARADO"}`);
   for (const f of falhas) console.error(`  ✗ ${f}`);
+
+  // Descartar SÓ o que este processo criou. Um diretório que veio por
+  // `LAB_V4_EVIDENCIAS` é de quem o passou, e apagá-lo repetiria o D4 com
+  // outro nome.
+  if (EVID_E_TEMPORARIO) rmSync(EVID, { recursive: true, force: true });
+
   if (falhas.length > 0) {
     console.error("\nLAB_V4_BROWSER_GATE_RED");
     process.exit(1);
@@ -667,5 +862,8 @@ async function principal(): Promise<void> {
 
 void principal().catch((e: unknown) => {
   console.error("falha ao executar o gate de navegador:", e);
+  // Morrer não é desculpa para deixar lixo: o temporário é criado no carregamento
+  // do módulo, antes de qualquer `try`, e o navegador que não abre passa por aqui.
+  if (EVID_E_TEMPORARIO) rmSync(EVID, { recursive: true, force: true });
   process.exit(1);
 });

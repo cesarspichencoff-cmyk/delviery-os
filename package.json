@@ -92,7 +92,10 @@
     "typecheck:lab:v4": "npx tsc --noEmit -p labs/operacao-viva-v4/tsconfig.json",
     "test:lab:v4": "npx tsx labs/operacao-viva-v4/testes/run-lab-v4-tests.ts",
     "test:lab:v4:browser": "npx tsx labs/operacao-viva-v4/testes/run-lab-v4-browser.ts",
-    "test:lab": "npm run typecheck:lab:v4 && npm run test:lab:v4 && npm run test:lab:v4:browser",
+    "test:lab:v4:evidencias": "npx tsx labs/operacao-viva-v4/testes/run-lab-v4-evidencias-tests.ts",
+    "test:lab:v4:evidencias:mutacoes": "npx tsx labs/operacao-viva-v4/testes/run-lab-v4-evidencias-mutacoes.ts",
+    "evidence:lab:v4:refresh": "npx tsx labs/operacao-viva-v4/testes/refrescar-evidencias.ts",
+    "test:lab": "npm run typecheck:lab:v4 && npm run test:lab:v4 && npm run test:lab:v4:browser && npm run test:lab:v4:evidencias",
     "test:platform:m1b-mutations": "npx tsx src/platform/run-m1b-mutation-tests.ts",
     "test:platform:m1b-perceptual": "npx tsx src/platform/run-m1b-perceptual-tests.ts"
   },

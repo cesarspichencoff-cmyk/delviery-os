@@ -112,8 +112,21 @@ diferentes inteligências. Política de acesso desse repositório é `Q-012`, ai
   `spine:processos` presumia a outbox vazia — reproduzido plantando 25 mensagens alheias mais
   velhas, corrigido com espera pela própria mensagem e provado com controle negativo; e
   `test:lab` caía por descompasso de build do Playwright, destravado **fora do repositório**.
-  `D4` foi reproduzido, teve a causa localizada na linha exata, e ficou **sem correção** por
-  estar fora do escopo declarado.
+  `D4` foi reproduzido e teve a causa localizada na linha exata; ficou sem correção por estar
+  fora do escopo declarado, e foi fechado depois, em missão própria.
+
+- **D4 — política de evidências do Lab V4 · CONCLUÍDO** (`docs/etapa-4-8/D4-EVIDENCIA.md`):
+  fechado **na classe**, não só na ordem das linhas. Rodar teste e publicar evidência viraram
+  superfícies separadas: `test:lab:v4:browser` grava em temporário e descarta, e **recusa** ser
+  apontado para o diretório versionado por comparação de caminho real;
+  `evidence:lab:v4:refresh` é o único que substitui o conjunto, com estágio adjacente,
+  conferência nome a nome e troca por dois `rename` — inteiro ou nada. `procedencia.json` mede o
+  executável que de fato rodou; as 12 imagens atuais ficam `UNKNOWN_FOR_EXISTING_BASELINE` e
+  **preservadas**, sem eleger build canônico. `test:lab:v4:evidencias` 11/11 e
+  `test:lab:v4:evidencias:mutacoes` **6/6 com zero controles cegos**. A primeira versão da suíte
+  de controle **destruiu o patrimônio que existia para proteger** — uma corrida entre `listen()`
+  e `spawnSync` — e a correção não foi consertar aquele caso, e sim passar todo exercício do
+  refresh para uma raiz espelho. Regressão **42/46**, zero `FAIL_NOVO`.
 
 A redução de superfície de `apps/deliveryos-ai-node` (reescrever os 6 root-requires para subpath)
 **não é C2** — é tarefa futura fora do escopo de ambos, registrada em `C1-PORT.md`.
