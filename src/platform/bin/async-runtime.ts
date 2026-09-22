@@ -21,6 +21,7 @@ import { createPgClient } from "../persistence/sql-client";
 import { PgJobRepository, PgOutboxRepository } from "../persistence/pg-repositories";
 import { AsyncRuntime, type JobHandler, type OutboxHandler } from "../runtime/async-worker";
 import { montarPonteDaOperacaoViva } from "../runtime/handler-operacao-viva";
+import { montarEspinhaDeInteligencia } from "../runtime/intelligence-spine";
 
 /**
  * Handlers registrados.
@@ -77,6 +78,20 @@ async function main(): Promise<void> {
 
   let rodando = true;
 
+  /**
+   * A espinha de inteligência.
+   *
+   * Só é montada quando a flag liga — desligada, nem o módulo do Conference
+   * Brain é exigido do disco, e o worker sobe exatamente como subia antes.
+   *
+   * Ela roda DEPOIS do `tick()`, fora do `try` dele e fora dos handlers da
+   * outbox. Essa posição é o desenho inteiro: é o que garante que uma falha
+   * da inteligência não faça um fato operacional já processado voltar para
+   * retry ou dead-letter.
+   */
+  const espinha = cfg.spine_enabled ? montarEspinhaDeInteligencia({ ponte: ponteOperacaoViva }) : null;
+  if (espinha) console.log("[assincrono] espinha de inteligência LIGADA (não crítica)");
+
   const laco = async (): Promise<void> => {
     while (rodando) {
       try {
@@ -91,6 +106,30 @@ async function main(): Promise<void> {
         // de rede de dois segundos em backlog parado até alguém reiniciar.
         console.error("[assincrono] erro na passada:", e instanceof Error ? e.message : e);
       }
+
+      // Fora do `try` do tick, de propósito: o resultado operacional acima já
+      // está decidido e nada daqui pode revisá-lo. `executar()` não lança —
+      // devolve o próprio estado, e é nele que a falha da inteligência mora.
+      if (espinha) {
+        const s = await espinha.executar();
+        if (s.ultimo_erro && s.ultima_em === s.ultimo_erro.em) {
+          console.error(
+            "[assincrono] espinha falhou (contida)",
+            JSON.stringify({ classe: s.ultimo_erro.classe, escopo: s.ultimo_erro.escopo, falhas: s.falhas }),
+          );
+        } else if (s.escopos_vistos > 0) {
+          console.log(
+            "[assincrono] espinha",
+            JSON.stringify({
+              escopos: s.escopos_vistos,
+              conclusoes: s.conclusoes_lidas,
+              recusas: s.recusas,
+              recomendacoes_ativas: s.recomendacoes_ativas,
+            }),
+          );
+        }
+      }
+
       // Espera DEPOIS de trabalhar: passadas nunca se sobrepõem.
       if (rodando) await dormir(cfg.tick_ms);
     }

@@ -33,6 +33,15 @@ export interface PlatformConfig {
   shutdown_timeout_ms: number;
   /** Aplica migrations pendentes no boot. */
   migrate_on_boot: boolean;
+  /**
+   * Liga a espinha de inteligência no worker assíncrono.
+   *
+   * Desligada por padrão em TODO ambiente, local inclusive. Inteligência que
+   * chega ligada é inteligência que ninguém decidiu ligar — e o custo de
+   * esquecer não é simétrico: desligada ela não faz nada, ligada por engano
+   * ela gasta passada e acumula histórico sem ninguém olhando.
+   */
+  spine_enabled: boolean;
 }
 
 export class ConfigError extends Error {
@@ -129,6 +138,7 @@ export function loadPlatformConfig(env: NodeJS.ProcessEnv = process.env): Platfo
     batch_size: numero(env, "DELIVERYOS_BATCH_SIZE", 25),
     shutdown_timeout_ms: numero(env, "DELIVERYOS_SHUTDOWN_TIMEOUT_MS", 25_000),
     migrate_on_boot,
+    spine_enabled: booleano(env, "DELIVERYOS_INTELLIGENCE_SPINE", false),
   };
 }
 
@@ -159,5 +169,6 @@ export function describe(cfg: PlatformConfig): Record<string, string | number | 
     tick_ms: cfg.tick_ms,
     lote: cfg.batch_size,
     migra_no_boot: cfg.migrate_on_boot,
+    espinha: cfg.spine_enabled,
   };
 }

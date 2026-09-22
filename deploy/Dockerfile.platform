@@ -24,9 +24,11 @@ COPY src ./src
 COPY tools ./tools
 COPY demo ./demo
 
-# Compila e copia as migrations para dist/. O `tsc` ignora .sql — sem este
-# passo a imagem sobe sem schema e, pior, acha que não há migration pendente.
-RUN npx tsc && node tools/copiar_migrations.js
+# Compila e copia para dist/ o que o `tsc` ignora. Sem o primeiro passo a
+# imagem sobe sem schema e, pior, acha que não há migration pendente; sem o
+# segundo ela sobe sem os módulos do Conference Brain e só quebra no dia em
+# que alguém ligar a espinha de inteligência.
+RUN npx tsc && node tools/copiar_migrations.js && node tools/copiar_conference_brain.js
 
 # `pg` é dependência de RUNTIME e precisa sobreviver ao prune.
 RUN npm prune --omit=dev

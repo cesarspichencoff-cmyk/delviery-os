@@ -86,6 +86,25 @@ export class MemoriaDaProjecao {
     return [...(this.porEscopo.get(this.escopo(unit, modo))?.values() ?? [])];
   }
 
+  /**
+   * Escopos observados, na ordem estável da chave.
+   *
+   * Existe para quem precisa percorrer o que REALMENTE chegou sem receber
+   * `unit_id` de configuração. Derivar do fato observado é o que impede a
+   * espinha de inventar uma unidade que ninguém produziu — e, como cada
+   * escopo carrega o seu `source_mode`, percorrer daqui nunca mistura modos.
+   */
+  escopos(): { unit_id: string; source_mode: SourceMode }[] {
+    return [...this.porEscopo.keys()].sort().map((chave) => {
+      // O modo vem por último e não contém `|`; o `unit_id` pode conter.
+      const corte = chave.lastIndexOf("|");
+      return {
+        unit_id: chave.slice(0, corte),
+        source_mode: chave.slice(corte + 1) as SourceMode,
+      };
+    });
+  }
+
   conhece(e: EventEnvelope): boolean {
     return this.porEscopo.get(this.escopo(e.unit_id, e.source_mode))?.has(e.idempotency_key) ?? false;
   }

@@ -52,6 +52,20 @@ const PRIMEIRA_SETA_DE_INTELIGENCIA = 5;
 const ESPECIFICADORES =
   /(?:\bfrom\s*|\bimport\s*|\brequire\s*\(\s*)["']([^"']+)["']/g;
 
+/**
+ * `createRequire` cria um require com OUTRO nome, e um grafo que só procura
+ * `require(` fica cego justamente onde um módulo CommonJS é carregado de
+ * dentro de TypeScript. Esta auditoria nasceria mentindo: a espinha usa
+ * `const req = createRequire(...)`, e `req("…")` não casa com `\brequire\(`.
+ *
+ * Então o identificador é descoberto no próprio arquivo e vira padrão.
+ */
+function padroesDeRequireApelidado(codigo: string): RegExp[] {
+  const nomes = [...codigo.matchAll(/\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*createRequire\s*\(/g)]
+    .map((m) => m[1]);
+  return nomes.map((n) => new RegExp(`\\b${n}\\s*\\(\\s*["']([^"']+)["']`, "g"));
+}
+
 /** Resolve um especificador relativo para um caminho de arquivo real. */
 function resolver(deOndeVem: string, especificador: string): string | null {
   if (!especificador.startsWith(".")) return null; // pacote: fora do grafo do repo
@@ -86,9 +100,11 @@ function alcancaveis(entrada: string): Set<string> {
     }
     // Comentários fora: um `require` citado em comentário não é uma aresta.
     const codigo = fonte.replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g, "");
-    for (const m of codigo.matchAll(ESPECIFICADORES)) {
-      const alvo = resolver(atual, m[1]);
-      if (alvo && !vistos.has(alvo)) fila.push(alvo);
+    for (const padrao of [ESPECIFICADORES, ...padroesDeRequireApelidado(codigo)]) {
+      for (const m of codigo.matchAll(padrao)) {
+        const alvo = resolver(atual, m[1]);
+        if (alvo && !vistos.has(alvo)) fila.push(alvo);
+      }
     }
   }
   return vistos;

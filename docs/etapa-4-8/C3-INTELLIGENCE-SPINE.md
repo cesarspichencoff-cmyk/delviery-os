@@ -172,3 +172,124 @@ provadas — o que a etapa proíbe.
 novo: é o que sustenta "sem nova tabela, sem migration".
 
 ---
+
+## C3.2 — Minimal shadow wiring
+
+**Um arquivo novo de runtime** (`src/platform/runtime/intelligence-spine.ts`, 345 linhas, a maior
+parte comentário de porquê) e **39 linhas** no `async-runtime.ts`. Confirmado por `git diff --numstat`.
+
+Não foi criado: Copiloto, motor, event bus, tabela, migration, fila. Não foi duplicado: projeção,
+store, regra, memória ou event log. A espinha **monta** o que já existia.
+
+### Arquitetura — antes e depois
+
+| | antes (`4974cf5`) | depois |
+|---|---|---|
+| arquivos alcançáveis do crítico | 17 | **17** (inalterado) |
+| arquivos alcançáveis do assíncrono | 13 | 36 |
+| setas 5–9 | só test harness | **runtime (assíncrono)** |
+| inteligência alcançável do crítico | não | **não** |
+
+### Arquivos alterados
+
+| arquivo | o quê |
+|---|---|
+| `src/platform/runtime/intelligence-spine.ts` | **novo** — a montagem |
+| `src/platform/bin/async-runtime.ts` | +39 — monta sob flag, executa depois do tick |
+| `src/platform/config/platform-config.ts` | +11 — `spine_enabled`, **falso por padrão** |
+| `src/platform/projections/consumidor.ts` | +19 — `MemoriaDaProjecao.escopos()` |
+| `src/platform/run-topology-audit-tests.ts` | +22 — enxergar `createRequire` apelidado |
+| `tools/copiar_conference_brain.js` | **novo** — módulos do Brain para `dist/` |
+| `deploy/Dockerfile.platform` | +8/-3 — o passo acima no build da imagem |
+| `src/platform/run-intelligence-spine-tests.ts` | **novo** — C3.3/C3.4, 19 provas |
+
+### Dois defeitos encontrados escrevendo isto — e corrigidos
+
+**(a) A imagem não levaria os módulos.** `tsc` ignora `.js`; `dist/src/conference-brain/` não
+existia. Pior: `deploy/Dockerfile.platform` copia para a imagem apenas `dist/`, `node_modules/` e
+`package.json` — `src/` **não vai**. Resolver por `process.cwd()` funcionaria aqui e falharia no
+container, e — como a espinha vem desligada — falharia **só no dia em que alguém ligasse a flag**.
+Resolvido com resolução relativa ao módulo mais `tools/copiar_conference_brain.js` (26 módulos
+copiados), no mesmo molde de `copiar_migrations.js`. Esta é a **mesma classe** do achado D3 do C3
+perdido, encontrada por caminho independente.
+
+**(b) A própria auditoria de topologia nasceria cega.** Ela procurava `require(`, e a espinha usa
+`const req = createRequire(...)`. Sem correção, o gate reportaria as setas 5–9 como ausentes
+**depois** de elas existirem. Corrigido descobrindo o identificador ligado a `createRequire` no
+próprio arquivo.
+
+---
+
+## C3.3 — Fail isolation
+
+`npm run test:platform:spine` — **19 provas, 19 passaram**. A falha é injetada **trocando o módulo
+por um que lança**, não forjando dado ruim: o que precisa de prova é o tratamento da exceção.
+
+| # | prova | resultado |
+|---|---|---|
+| C3.3-1 | CONTROLE: sem espinha, tick processa 2/2 e a projeção enche | PASS |
+| C3.3-2 | espinha explodindo não muda `outbox_processed`/`failed`, e a outbox fica byte-idêntica | PASS |
+| C3.3-3 | `executar()` não lança (sem try/catch no teste, de propósito) | PASS |
+| C3.3-4 | projeção da Operação Viva idêntica byte a byte; memória do mesmo tamanho | PASS |
+| C3.3-5 | falha observável: `falhas=1`, `passadas=0`, classe e escopo nomeados | PASS |
+| C3.3-6 | só a CLASSE atravessa — a mensagem do erro não vaza para o estado | PASS |
+| C3.3-7 | escopo que explode não impede o outro de ser percorrido | PASS |
+| C3.3-8 | ESTRUTURAL: `bin/critical.ts` não menciona a espinha → `/ready` independente | PASS |
+| C3.3-9 | flag **desligada por padrão** em `local`, `pilot` e `production` | PASS |
+| C3.3-10 | só a flag liga | PASS |
+| C3.3-11 | ESTRUTURAL: worker condiciona à flag e executa **depois** do tick | PASS |
+
+---
+
+## C3.4 — Replay / restart
+
+### Defeito real encontrado e corrigido: recomendação crescendo sem limite
+
+A montagem ingênua — a que o relato perdido descreve — tem um defeito que só aparece na **segunda**
+passada. Medido antes de corrigir, com a cadeia real:
+
+```
+passada 1: 1 conclusao  [source_health:r1:9bc051c9d8f5]
+passada 2: 2 conclusoes [… 9bc051c9d8f5, … 039d811efdc8]
+passada 3: 3 conclusoes [… 9bc051c9d8f5, … 039d811efdc8, … a4fac26058ae]
+```
+
+`extrairConclusoes` emite uma conclusão `source_health` **por ciclo já rodado** — é o registro dos
+ciclos, e está certo que seja. Mas entregar esse histórico inteiro ao Copiloto a cada passada faz
+cada ciclo passado valer como condição de agora: na passada N nascem **N recomendações ativas sobre
+a mesma fonte**, e o número só cresce. A um tick de 1 s, 3.600 por hora.
+
+A correção **não inventa regra**: `conclusoes.js` já declara a sua, na linha em que calcula
+`saudeVigente` — *"a saúde vigente é a do ciclo mais recente desta execução"*. A espinha passou a
+respeitá-la do lado de fora. Conclusão de PEDIDO não é tocada: nasce uma por pedido e é atual por
+construção.
+
+E o corte é **contável, nunca silencioso**: `conclusoes_lidas` (histórico) e `conclusoes_vigentes`
+(o que foi ao Copiloto) são campos separados do estado.
+
+| # | prova | resultado |
+|---|---|---|
+| C3.4-1 | duas passadas seguidas não duplicam recomendação | PASS |
+| C3.4-2 | leitura vigente estável em 3 passadas | PASS |
+| C3.4-2b | `lidas [1,2,3]` cresce · `vigentes [1,1,1]` · `ativas [1,1,1]` | PASS |
+| C3.4-3 | `source_mode` não cruza: `real`, `simulated` e `control` percorridos sozinhos | PASS |
+| C3.4-4 | `run_id` carrega o modo — dois escopos nunca compartilham identidade | PASS |
+| C3.4-5 | **LACUNA DECLARADA**: reinício zera a memória da espinha | PASS |
+| C3.4-6 | a cadeia real produz `recomendacoes_de_pedido = 0` — viagem não virou pedido | PASS |
+| C3.4-7 | `SPINE_VERSION` declarada e estável | PASS |
+
+**C3.4-5 é uma lacuna provada, não escondida.** A espinha guarda `anteriores` no processo; um worker
+reiniciado recomeça sem elas. O teste trava a lacuna e quebra no dia em que alguém a fechar,
+forçando a decisão a ser tomada em vez de silenciosamente superada. É o território da Q-016.
+
+### Fronteira semântica preservada
+
+`recomendacoes_de_pedido = 0` com a projeção de hoje. A cadeia real gera conclusão sobre **saúde da
+fonte** e nenhuma recomendação de pedido — exatamente a fronteira: a Operação Viva trabalha com
+VIAGEM, o Conference Brain com PEDIDO, e a projeção não carrega identidade legítima para atravessar.
+Nenhuma order fabricada, nenhum `trip_id` usado como `external_id`, ausência continua ausência.
+
+### Regressão nesta fase
+
+24 gates rodados isolados. **22 PASS.** As 2 falhas são as mesmas de `4974cf5`, byte a byte no
+motivo: `governanca` (G6b, G6c, G9) e `test:entregas` (2, bomba-relógio de data). Zero regressões.
