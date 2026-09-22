@@ -426,3 +426,210 @@ removido no fim. Reexecutado: 25/25, `git status` limpo.
 
 Só apareceu porque CLAUDE.md §9 obriga `git status` depois de todo script que escreve arquivo. É a
 segunda vez nesta etapa que essa regra pega algo (a primeira foram as 13 evidências do Lab).
+
+---
+
+## Achados PB19 (D1–D3) — reproduzidos, não presumidos
+
+O C3 perdido relatou três possíveis defeitos preexistentes de deploy. A instrução foi **tentar
+reproduzir cada um** e **não corrigir nenhum dentro do C3**. Os três foram reproduzidos. Nenhum foi
+corrigido.
+
+### D1 — compose sem TLS contra código que recusa remoto sem TLS · **REPRODUZIDO**
+
+`loadPlatformConfig` rodado com os valores **exatos** de `deploy/compose.platform.yaml`:
+
+```
+DELIVERYOS_DATABASE_URL: postgres://deliveryos:senha@deliveryos-postgres:5432/deliveryos
+DELIVERYOS_DATABASE_SSL: "false"
+  →  ConfigError: banco remoto sem TLS: defina DELIVERYOS_DATABASE_SSL=true
+     variavel: DELIVERYOS_DATABASE_SSL
+```
+
+Mecanismo: `isLocalUrl` (`persistence/sql-client.ts:104`) só aceita `localhost`, `127.0.0.1` e
+`::1`. O hostname do compose é `deliveryos-postgres` — **remoto** para essa regra. O comentário do
+compose (linhas 33-35) afirma que TLS está desligado "apenas aqui dentro" porque o tráfego não sai
+da rede do Docker; o código não conhece essa distinção.
+
+**Gravidade:** `x-ambiente` é herdado por `migrate`, `critical` e `async`. Os três saem com
+`exit 78` no boot. A composição **nunca sobe**.
+
+### D2 — o crítico não recebe o segredo dos tokens pelo compose · **REPRODUZIDO**
+
+Contado no arquivo:
+
+| bloco | variáveis `DELIVERYOS_*` |
+|---|---|
+| `x-ambiente` | COMMIT, DATABASE_SSL, DATABASE_URL, ENV, MIGRATE_ON_BOOT, VERSION |
+| `deliveryos-critical` acrescenta | HOST, PORT |
+| `DELIVERYOS_DEVICE_TOKEN_SECRET` no arquivo inteiro | **ausente** |
+
+**Gravidade:** `bin/critical.ts` falha fechada — lê o segredo, não acha, e sai com `exit 78`. O
+container do crítico **não sobe**. (Falhar fechado aqui é o comportamento certo: subir sem segredo
+daria a impressão de um servidor pronto que recusa todo aparelho em campo.)
+
+D1 dispara antes de D2 na ordem do boot, então D2 só apareceria depois que D1 fosse resolvido.
+
+### D3 — schema parcial: GPS 503 com `/ready` 200 e nenhuma linha de erro · **REPRODUZIDO**
+
+Reproduzido com PostgreSQL real, banco novo, aplicando **apenas a migration 0001**:
+
+```
+GET  /ready            → HTTP 200  {"ready":true,"state":"healthy","summary":"Operando normalmente."}
+POST /api/gps/batch    → HTTP 503  {"classe":"falha_de_persistencia","retentavel":true,
+                                    "detalhe":"column \"device_id\" of relation \"event_log\" does not exist"}
+GET  /ready (depois)   → HTTP 200
+
+log do crítico, INTEIRO:
+  [critico] iniciando {...}
+  [critico] ouvindo em 127.0.0.1:8199
+```
+
+**Duas linhas. Nenhuma corresponde ao 503.** É exatamente o sintoma relatado.
+
+Mecanismo, agora nomeado: a sonda do `/ready` **escreve em `platform.schema_migration`**, tabela da
+migration **0001**. A ingestão de GPS grava `event_log.device_id` e `sequence_local`, colunas da
+migration **0002**. Com schema parcial, a sonda continua verde e a rua quebra. O detalhe chega ao
+aparelho na resposta; ao operador que olha log, nada.
+
+Como o `dist/` chega à imagem sem `.sql` se ninguém copiar (é para isso que
+`tools/copiar_migrations.js` existe e falha alto com zero), uma imagem com `dist/` velho aplica
+menos migrations do que o código exige, o `migrate` termina "com sucesso", e o resultado é este.
+
+**Nenhum dos três foi corrigido aqui.** São bloco independente.
+
+### Achados adicionais desta execução
+
+| | |
+|---|---|
+| **D4** | `test:lab:v4:browser` apaga 13 evidências de `labs/operacao-viva-v4/evidencias/` e não restaura quando morre por falta de browser |
+| **D5** | `platform.event_log` **não tem** coluna `source_mode` (o modo viaja no envelope) — relevante para quem for auditar isolamento de modo por SQL |
+
+---
+
+## Crescimento do histórico — medido, e diferente do relato
+
+O C3 perdido observou ~**3,1 KB por passada**, sem retenção. **Medido nesta execução**, com a
+cadeia real e `store` `memoryOnly`, somando `live_cycle_runs` + `live_observations` +
+`conference_clock_events` serializados:
+
+```
+retido após  0 passadas:      6 B
+retido após 20 passadas:  6 905 B
+crescimento por passada:   344 B   (~0,34 KB)
+extrapolado a 1 tick/s:    ~1,2 MB/hora por escopo
+```
+
+**~0,34 KB, não ~3,1 KB — cerca de 9× menos.** O número desta execução é o que vale; o antigo não
+foi reconciliado nem ajustado para caber, porque não há como saber o que ele mediu.
+
+O que a medida mostra e importa: a **leitura vigente é limitada** (`conclusoes_vigentes` fica em 1),
+mas o **log de ciclos cresce sem teto** (`conclusoes_lidas` 1, 2, 3…). Nada disso sobrevive a
+reinício — o store é `memoryOnly` de propósito, porque criar tabela sem decisão humana responderia
+a Q-015 por código.
+
+---
+
+## Q-015 e Q-016 — lacunas confirmadas antes de serem escritas
+
+As duas foram **confirmadas por medida** antes de virarem linha em `docs/execution/PERGUNTAS.jsonl`.
+
+**Q-015 — retenção.** Confirmada pela medida acima: crescimento real, constante, sem teto e sem
+descarte, e sem lugar durável decidido.
+
+**Q-016 — replay após restart.** Confirmada assim:
+
+```
+reconstruirPorReplay  definido em  src/platform/projections/consumidor.ts:251
+                      chamado por  src/platform/run-bridge-consumer-tests.ts  (só testes)
+                      em bin/async-runtime.ts: aparece na LINHA 33, DENTRO DE UM COMENTÁRIO
+                      contagem fora de comentário: 0
+```
+
+O comentário do worker afirma que a memória "é descartável — o event log é a verdade, e
+`reconstruirPorReplay` a recompõe". **Nenhum código faz isso no boot.** O worker reiniciado começa
+com a projeção vazia. O teste C3.4-5 trava a consequência do lado da espinha.
+
+### Efeito colateral declarado na governança
+
+Acrescentar Q-015 e Q-016 exigiu editar `docs/execution/PERGUNTAS.jsonl`, e o lifecycle dele (a
+primeira linha do arquivo) passou a declarar `atualizado_em: 2026-09-22`, que é a verdade.
+
+Consequência: a falha pré-existente **G6c some** — ela dizia justamente que o arquivo declarava
+2026-08-20 e tinha commit de 2026-08-29. **Isso não é a guarda sendo silenciada:** o arquivo foi
+mudado de verdade, e a data nova é o registro correto dessa mudança. Deixar `2026-08-20` num
+arquivo alterado hoje seria a maquiagem.
+
+`STATE.json` **não foi tocado**. G6b e G9 continuam falhando, com o mesmo texto do baseline. G9
+(`Q-014: estado invalido`) tem causa identificada e **não corrigida**: o cabeçalho do arquivo
+declara `enum_estado: ["open","answered"]` e a Q-014 usa `"respondida"`.
+
+---
+
+## C3.7 — Container e regressão integral
+
+### Container — **BLOCKED**, com a razão medida
+
+```
+$ docker --version   →  Docker version 29.3.1, build c2be9cc
+$ docker info        →  failed to connect to the docker API at unix:///var/run/docker.sock
+                        dial unix /var/run/docker.sock: connect: no such file or directory
+```
+
+O CLI existe, o **daemon não**. `docker build` e `docker compose` não rodaram.
+
+O relato perdido dizia ter construído o container a partir do `Dockerfile`, com adaptação apenas da
+CA do sandbox para instalar dependências. **Aqui isso não foi possível e não está sendo afirmado.**
+Diferença registrada em vez de contornada.
+
+O que cobre parte do risco, sem substituir o container: **C3.6 sobe os binários reais de `dist/`**,
+que é o mesmo artefato que a imagem copia (`Dockerfile.platform` leva `dist/`, `node_modules/` e
+`package.json`). A P3 chega a **remover `dist/src/conference-brain` de propósito** e provar que a
+rua não sente. O que continua NÃO comprovado é a construção da imagem em si — camadas, `npm prune
+--omit=dev`, `dumb-init` no PID 1 e o encaminhamento de sinais.
+
+| origem | estado |
+|---|---|
+| `deploy/Dockerfile.platform` | alterado nesta etapa: o passo de build agora também roda `tools/copiar_conference_brain.js`. **Não construído.** |
+| adaptação exclusiva do ambiente | **nenhuma.** Nenhum arquivo de deploy foi alterado para caber neste sandbox |
+| `deploy/compose.platform.yaml` | **intocado.** D1 e D2 foram reproduzidos contra ele e deixados como estão |
+
+### Regressão integral no HEAD reconstruído
+
+**29 gates rodados isolados: 26 PASS, 3 conhecidos.**
+
+| Gate | Estado | Por quê |
+|---|---|---|
+| `test:platform:governanca` | FAIL pré-existente | G6b (`STATE.json`) e G9 (`Q-014`), idênticos ao baseline. G6c saiu pela edição legítima do `PERGUNTAS.jsonl` |
+| `test:entregas` | FAIL pré-existente | 2 falhas, bomba-relógio de data (`AT1` de 2026-07-26 vs. regra de 30 dias) |
+| `test:lab` | BLOCKED (ambiente) | Playwright quer `chromium_headless_shell-1228`, imagem traz `1194` |
+
+Os 26 PASS incluem `spine` (26), `spine:mutacoes` (25/25, zero cegas), `spine:processos` (7/7 com
+PostgreSQL real), `topology`, `conference`, `r5`, `m1b-mutations`, e `pg`/`repos`/`backup` com
+**0 pulos**.
+
+**Zero regressões.** Nenhum gate que passava em `4974cf5` passou a falhar.
+
+**D4 reproduzido de novo:** a execução do `test:lab` apagou outra vez as 13 evidências do Lab
+(2 de 2 — é determinístico). Restauradas com `git checkout --`, 0 diferenças contra `HEAD`.
+
+---
+
+## Critério de conclusão — o que foi reproduzido e o que não foi
+
+| Propriedade do C3 perdido | Estado nesta reconstrução |
+|---|---|
+| setas posteriores à Operação Viva existem no runtime assíncrono | **reproduzida**, medida por gate executável |
+| implementação pequena: 1 arquivo + ~35 linhas no async-runtime | **reproduzida** — 1 arquivo + **39** linhas |
+| sem Copiloto, motor, event bus, tabela, migration ou fila novos | **reproduzida**, travada por mutação |
+| não crítica e fail-isolated | **reproduzida**, provada em processo real |
+| desligada por padrão | **reproduzida** |
+| mutation gate forte | **reproduzida** — 25/25, zero cegas (o 23/23 e o 25/25 antigos não foram usados como prova) |
+| prova 6/6 com PostgreSQL real | **superada** — 7/7, número novo |
+| D1, D2, D3 | **reproduzidos os três**, não corrigidos |
+| ~3,1 KB por passada | **NÃO reproduzido** — medido ~0,34 KB, ~9× menos |
+| container construído a partir do Dockerfile | **NÃO reproduzido** — sem daemon Docker |
+| Q-015 e Q-016 | lacunas **confirmadas por medida** antes de serem escritas |
+
+**Dois defeitos que o desenho antigo tinha e este não tem**, ambos achados por medida própria: a
+imagem sem os módulos do Conference Brain, e a recomendação crescendo sem limite a cada passada.

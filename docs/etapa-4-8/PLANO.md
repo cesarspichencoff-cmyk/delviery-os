@@ -4,7 +4,7 @@ lifecycle:
   status: ACTIVE
   authority_scope: etapa_4_8_plano
   superseded_by: null
-  atualizado_em: "2026-09-02"
+  atualizado_em: "2026-09-22"
   state_basis: 9e738b1
 ---
 
@@ -54,8 +54,26 @@ diferentes inteligências. Política de acesso desse repositório é `Q-012`, ai
   isolada de 119 para 6 falhas, produto sem regressão. Nenhuma integração real do CRM foi feita — ela
   esbarra em `Q-004` em aberto (ver `BLOQUEIO-Q-004.md`), e os 3 testes que exigiriam tocar
   `package.json`/`.gitignore` ficaram parados por decisão explícita do César.
-- **C3 — (não iniciado)**: implementar a Intelligence Spine, sem criar novo Copiloto nem
-  supermotor.
+- **C3 — CONCLUÍDO** (`docs/etapa-4-8/C3-INTELLIGENCE-SPINE.md`): Intelligence Spine montada no
+  runtime assíncrono, sem novo Copiloto nem supermotor. **Esta é uma reconstrução:** uma execução
+  anterior produziu oito commits que nunca chegaram ao remoto e se perderam com o container; o
+  remoto nunca saiu de `4974cf5`. Nenhum número daquele relato foi reaproveitado como prova.
+  Auditoria de topologia executável (`test:platform:topology`) mediu que as setas 5–9 (adapter
+  Conference → observer → conclusões → bridge Copiloto → recomendação Shadow) existiam **só em test
+  harness**; agora existem no runtime, e o crítico continua alcançando os mesmos 17 arquivos de
+  antes. Um arquivo novo de runtime e 39 linhas no `async-runtime`; sem tabela, migration, fila ou
+  event bus. Flag `DELIVERYOS_INTELLIGENCE_SPINE` **falsa por padrão em local, pilot e production**.
+  Provas frescas: `spine` 26/26 · `spine:mutacoes` **25/25 com zero mutações cegas** ·
+  `spine:processos` **7/7 contra PostgreSQL 16.13 real, com os binários de `dist/`**.
+  Dois defeitos encontrados e corrigidos durante a escrita: (a) a imagem não levaria os módulos do
+  Conference Brain — mesma classe do D3 —, resolvido com `tools/copiar_conference_brain.js`;
+  (b) a montagem ingênua gerava **N recomendações ativas na passada N** sobre a mesma fonte,
+  resolvido honrando a regra que `conclusoes.js` já declara (saúde vigente = ciclo mais recente),
+  com o corte contável em `conclusoes_vigentes`. `Q-003` e `Q-004` continuam abertas, travadas por
+  guarda executável. Abertas por esta etapa: **`Q-015`** (retenção do histórico da espinha, medido
+  em ~0,34 KB por passada por escopo) e **`Q-016`** (replay da projeção após restart —
+  `reconstruirPorReplay` só aparece em comentário no worker). **D1, D2 e D3 do PB19 foram
+  REPRODUZIDOS** e deixados como bloco independente, sem correção.
 
 A redução de superfície de `apps/deliveryos-ai-node` (reescrever os 6 root-requires para subpath)
 **não é C2** — é tarefa futura fora do escopo de ambos, registrada em `C1-PORT.md`.
