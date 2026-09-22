@@ -4,7 +4,7 @@ lifecycle:
   status: ACTIVE
   authority_scope: session_routing
   superseded_by: null
-  atualizado_em: "2026-09-02"
+  atualizado_em: "2026-09-22"
   state_basis: 953a3fb
 ---
 
@@ -135,5 +135,15 @@ suíte isolada de 119 para 6 falhas, produto sem regressão. Sobram 3 falhas id�
 (2 presas ao Windows, 1 sem PowerShell) e 3 do grupo E — manifesto npm e arquivo de ignore do
 Git, ambos compartilhados do produto —, **paradas por decisão do César para não responder `Q-004`
 por conveniência técnica**. A redução de superfície
-de `apps/deliveryos-ai-node` continua fora de C1/C2/C3. **C3 = implementar a Intelligence Spine, sem
-criar novo Copiloto nem supermotor** (não iniciado).
+de `apps/deliveryos-ai-node` continua fora de C1/C2/C3. **C3 concluído**
+(`docs/etapa-4-8/C3-INTELLIGENCE-SPINE.md`): Intelligence Spine montada no runtime assíncrono — um
+arquivo novo e 39 linhas no `async-runtime`, sem Copiloto, motor, event bus, tabela, migration ou
+fila novos. **Reconstrução:** oito commits de uma execução anterior nunca chegaram ao remoto e se
+perderam com o container; nenhum número daquele relato foi usado como prova. Flag
+`DELIVERYOS_INTELLIGENCE_SPINE` **falsa por padrão em todo ambiente**; a espinha roda depois do tick
+e `executar()` nunca lança. Gates novos: `test:platform:topology`, `test:platform:spine` (26),
+`test:platform:spine:mutacoes` (25/25, zero cegas), `test:platform:spine:processos` (7/7 com
+PostgreSQL real e os binários de `dist/`). `Q-003` e `Q-004` seguem abertas, travadas por guarda
+executável. Abertas por esta etapa: `Q-015` (retenção do histórico) e `Q-016` (replay após
+restart). **D1, D2 e D3 do PB19 foram reproduzidos** e deixados sem correção, como bloco
+independente.
