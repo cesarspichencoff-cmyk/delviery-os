@@ -35,8 +35,14 @@ COPY docs/contracts ./docs/contracts
 #   Conference Brain  sem eles a espinha só quebra no dia em que alguém ligar;
 #   contratos  sem eles /ready responde 200 e TODO lote de GPS volta 503 sem
 #              uma linha de log (PB19-D3b).
+# Identidade de commit da imagem. Não é `LABEL` nem variável de runtime: entra
+# no carimbo de `dist/`, junto do hash das fontes, para que o artefato saiba de
+# onde veio mesmo depois de copiado para outro estágio.
+ARG DELIVERYOS_COMMIT=""
+ENV DELIVERYOS_COMMIT=$DELIVERYOS_COMMIT
+
 RUN npx tsc && node tools/copiar_migrations.js && node tools/copiar_conference_brain.js \
-    && node tools/copiar_contratos.js
+    && node tools/copiar_contratos.js && node tools/carimbar_build.js
 
 # `pg` é dependência de RUNTIME e precisa sobreviver ao prune.
 RUN npm prune --omit=dev

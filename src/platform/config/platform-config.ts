@@ -9,7 +9,7 @@
  * Nenhum valor sensível aparece em log. `describe()` existe para isso.
  */
 
-import { isLocalUrl } from "../persistence/sql-client";
+import { dispensadoDeTls, isLocalUrl } from "../persistence/sql-client";
 
 export type Ambiente = "local" | "pilot" | "production";
 
@@ -18,6 +18,12 @@ export interface PlatformConfig {
   /** URL do PostgreSQL. Fora de local, exige TLS. */
   database_url: string;
   database_ssl: boolean;
+  /**
+   * Hostname declarado como da rede privada da composição. Vazio = nenhum.
+   * Só ele, junto com `DELIVERYOS_DATABASE_SSL=false`, dispensa TLS fora de
+   * localhost. Ver `dispensadoDeTls`.
+   */
+  database_private_host: string;
   /** Porta HTTP do runtime. */
   port: number;
   /** Endereço de escuta. Fora de container, nunca 0.0.0.0 por acidente. */
@@ -101,11 +107,19 @@ export function loadPlatformConfig(env: NodeJS.ProcessEnv = process.env): Platfo
     );
   }
 
-  const local = isLocalUrl(database_url);
-  const database_ssl = booleano(env, "DELIVERYOS_DATABASE_SSL", !local);
-  if (!local && !database_ssl) {
+  // A fronteira de confiança é DECLARADA, nunca inferida do formato do nome.
+  const database_private_host = texto(env, "DELIVERYOS_DATABASE_PRIVATE_HOST", "");
+  // O PADRÃO não olha a declaração: fora de localhost, TLS é ligado por
+  // padrão, sempre. Declarar o host privado não DESLIGA nada sozinho — ele só
+  // torna legítimo um `false` explícito. São dois atos, e é de propósito:
+  // quem declara o host e esquece o `ssl` acaba com TLS ligado tentando falar
+  // com um container sem certificado, que falha alto. O contrário — texto
+  // claro por omissão — falha calado.
+  const database_ssl = booleano(env, "DELIVERYOS_DATABASE_SSL", !isLocalUrl(database_url));
+  if (!database_ssl && !dispensadoDeTls(database_url, database_private_host)) {
     throw new ConfigError(
-      "banco remoto sem TLS: defina DELIVERYOS_DATABASE_SSL=true",
+      "banco remoto sem TLS: defina DELIVERYOS_DATABASE_SSL=true, ou declare o host da " +
+        "rede privada em DELIVERYOS_DATABASE_PRIVATE_HOST se ele for interno à composição",
       "DELIVERYOS_DATABASE_SSL",
     );
   }
@@ -129,6 +143,7 @@ export function loadPlatformConfig(env: NodeJS.ProcessEnv = process.env): Platfo
     ambiente,
     database_url,
     database_ssl,
+    database_private_host,
     port: numero(env, "DELIVERYOS_PORT", 8080),
     host: texto(env, "DELIVERYOS_HOST", ambiente === "local" ? "127.0.0.1" : "0.0.0.0"),
     commit,
@@ -161,6 +176,10 @@ export function describe(cfg: PlatformConfig): Record<string, string | number | 
     ambiente: cfg.ambiente,
     banco: bancoVisivel,
     tls: cfg.database_ssl,
+    // Aparece no log de boot de propósito: dispensa de TLS é decisão de
+    // operação, e decisão de operação que não aparece no boot é decisão que
+    // ninguém revisa. É o NOME do host, nunca credencial.
+    rede_privada_declarada: cfg.database_private_host || "nenhuma",
     host: cfg.host,
     port: cfg.port,
     versao: cfg.version,

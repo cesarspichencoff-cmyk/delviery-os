@@ -30,7 +30,8 @@
 
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { cpSync, existsSync, mkdtempSync, rmSync, symlinkSync, writeFileSync, readFileSync } from "node:fs";
+import { cpSync, existsSync, mkdtempSync, readdirSync, rmSync, symlinkSync, writeFileSync, readFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -188,6 +189,313 @@ teste("D3b-5 a imagem NÃO carrega docs/ inteiro — só os contratos", () => {
     .replace(/#[^\n]*/g, "");
   assert.doesNotMatch(dockerfile, /COPY\s+docs\s/, "o Dockerfile passou a copiar docs/ inteiro");
   assert.match(dockerfile, /COPY\s+docs\/contracts/, "o Dockerfile não copia docs/contracts");
+});
+
+/* ================================================================== *
+ * D2 — segredo dos tokens de aparelho
+ * ================================================================== */
+console.log("\nD2 — SEGREDO DE APARELHO");
+
+const COMPOSE = readFileSync(join(raiz, "deploy/compose.platform.yaml"), "utf8");
+const COMPOSE_SEM_COMENTARIO = COMPOSE.replace(/^\s*#[^\n]*$/gm, "");
+
+teste("D2-1 o compose EXIGE o segredo, com `:?` — o erro chega antes do deploy", () => {
+  assert.match(
+    COMPOSE_SEM_COMENTARIO,
+    /DELIVERYOS_DEVICE_TOKEN_SECRET:\s*\$\{DELIVERYOS_DEVICE_TOKEN_SECRET:\?/,
+    "o compose não exige o segredo — `docker compose config` subiria sem ele",
+  );
+});
+
+teste("D2-2 o segredo fica SÓ no crítico — o assíncrono não emite token", () => {
+  // Medido por grafo: `bin/async-runtime.ts` não alcança `auth/device-token.ts`.
+  const ambiente = COMPOSE_SEM_COMENTARIO.split("services:")[0] ?? "";
+  assert.doesNotMatch(
+    ambiente,
+    /DELIVERYOS_DEVICE_TOKEN_SECRET/,
+    "o segredo entrou em `x-ambiente` e vaza para serviços que não precisam dele",
+  );
+});
+
+teste("D2-3 nenhum segredo REAL está versionado", () => {
+  const ignorado = execFileSync("git", ["check-ignore", "deploy/.env"], { cwd: raiz, encoding: "utf8" }).trim();
+  assert.equal(ignorado, "deploy/.env", "deploy/.env deixou de ser ignorado");
+  const exemplo = readFileSync(join(raiz, "deploy/.env.platform.example"), "utf8");
+  assert.match(
+    exemplo,
+    /^DELIVERYOS_DEVICE_TOKEN_SECRET=\s*$/m,
+    "o exemplo traz valor preenchido — exemplo com segredo dentro vira segredo commitado",
+  );
+});
+
+teste("D2-4 sem o segredo o crítico NÃO fica pronto: falha fechada no boot", () => {
+  const dir = raizDaImagem();
+  try {
+    const r = bootQueDeveMorrer(dir, { DELIVERYOS_DEVICE_TOKEN_SECRET: "" });
+    assert.equal(r.code, 78, `o crítico subiu sem segredo (exit ${String(r.code)})`);
+    assert.match(r.saida, /DEVICE_TOKEN_SECRET ausente/, `motivo ausente do log:\n${r.saida}`);
+    assert.doesNotMatch(r.saida, /ouvindo em/, "o crítico escutou sem segredo — /ready responderia 200");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+teste("D2-5 segredo curto demais também é recusado, não truncado", () => {
+  const dir = raizDaImagem();
+  try {
+    const r = bootQueDeveMorrer(dir, { DELIVERYOS_DEVICE_TOKEN_SECRET: "curto" });
+    assert.equal(r.code, 78, "segredo curto foi aceito");
+    assert.match(r.saida, /caracteres|m[íi]nimo/, `o motivo não ficou claro:\n${r.saida}`);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+teste("D2-6 o segredo NUNCA aparece no log de boot", () => {
+  const dir = raizDaImagem();
+  const marca = "SEGREDO-QUE-NAO-PODE-VAZAR-" + "z".repeat(24);
+  try {
+    // Este boot falha por outro motivo (contrato removido), e é bom: garante
+    // que o caminho de ERRO também não imprime o segredo — é justamente onde
+    // um `describe()` descuidado despeja o ambiente inteiro.
+    rmSync(join(dir, CONTRATO_NA_IMAGEM));
+    const r = bootQueDeveMorrer(dir, { DELIVERYOS_DEVICE_TOKEN_SECRET: marca });
+    assert.ok(!r.saida.includes(marca), `o segredo vazou para o log:\n${r.saida}`);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+/* ================================================================== *
+ * D1 — fronteira de confiança de rede
+ * ================================================================== */
+console.log("\nD1 — TLS E REDE PRIVADA");
+
+function config(extra: Record<string, string>): { ok: true; tls: boolean } | { ok: false; variavel: string } {
+  const r = spawnSync(
+    process.execPath,
+    [
+      "-e",
+      `const c=require('./dist/src/platform/config/platform-config.js');
+       try{const cfg=c.loadPlatformConfig(process.env);console.log('OK',cfg.database_ssl);}
+       catch(e){console.log('ERRO',e.variavel||'?');}`,
+    ],
+    {
+      cwd: raiz,
+      encoding: "utf8",
+      timeout: 20_000,
+      env: {
+        PATH: process.env.PATH ?? "",
+        DELIVERYOS_ENV: "pilot",
+        DELIVERYOS_COMMIT: "abcdef1234567",
+        ...extra,
+      },
+    },
+  );
+  const saida = `${r.stdout ?? ""}${r.stderr ?? ""}`.trim();
+  const m = /OK (true|false)/.exec(saida);
+  if (m) return { ok: true, tls: m[1] === "true" };
+  const e = /ERRO (\S+)/.exec(saida);
+  assert.ok(e, `configuração não respondeu nem OK nem ERRO:\n${saida}`);
+  return { ok: false, variavel: e[1] };
+}
+
+const INTERNO = "postgres://u:p@deliveryos-postgres:5432/d";
+const EXTERNO = "postgres://u:p@db.exemplo.com:5432/d";
+
+teste("D1-1 CONTROLE POSITIVO: o compose interno legítimo é aceito, sem TLS", () => {
+  const r = config({
+    DELIVERYOS_DATABASE_URL: INTERNO,
+    DELIVERYOS_DATABASE_SSL: "false",
+    DELIVERYOS_DATABASE_PRIVATE_HOST: "deliveryos-postgres",
+  });
+  assert.ok(r.ok, "a composição oficial continua sendo recusada");
+  assert.equal(r.tls, false);
+});
+
+teste("D1-2 banco EXTERNO sem TLS continua recusado", () => {
+  const r = config({ DELIVERYOS_DATABASE_URL: EXTERNO, DELIVERYOS_DATABASE_SSL: "false" });
+  assert.ok(!r.ok, "banco externo sem TLS passou — a política foi afrouxada");
+  assert.equal(r.variavel, "DELIVERYOS_DATABASE_SSL");
+});
+
+teste("D1-3 banco EXTERNO com TLS continua permitido", () => {
+  const r = config({ DELIVERYOS_DATABASE_URL: EXTERNO, DELIVERYOS_DATABASE_SSL: "true" });
+  assert.ok(r.ok, "banco externo com TLS foi recusado");
+  assert.equal(r.tls, true);
+});
+
+teste("D1-4 declarar o host NÃO desliga TLS sozinho — são dois atos", () => {
+  const r = config({ DELIVERYOS_DATABASE_URL: INTERNO, DELIVERYOS_DATABASE_PRIVATE_HOST: "deliveryos-postgres" });
+  assert.ok(r.ok);
+  assert.equal(r.tls, true, "a declaração sozinha desligou TLS — texto claro por omissão");
+});
+
+teste("D1-5 `ssl=false` sem declaração continua recusado", () => {
+  const r = config({ DELIVERYOS_DATABASE_URL: INTERNO, DELIVERYOS_DATABASE_SSL: "false" });
+  assert.ok(!r.ok, "ssl=false sozinho dispensou TLS fora de localhost");
+});
+
+teste("D1-6 a declaração é IGUALDADE EXATA: nada de sufixo nem parecido", () => {
+  for (const url of [
+    "postgres://u:p@mau-deliveryos-postgres:5432/d",
+    "postgres://u:p@deliveryos-postgres.exemplo.com:5432/d",
+    "postgres://u:p@outro-host:5432/d",
+  ]) {
+    const r = config({
+      DELIVERYOS_DATABASE_URL: url,
+      DELIVERYOS_DATABASE_SSL: "false",
+      DELIVERYOS_DATABASE_PRIVATE_HOST: "deliveryos-postgres",
+    });
+    assert.ok(!r.ok, `${url} foi aceito — a declaração virou regra larga`);
+  }
+});
+
+teste("D1-7 o compose DECLARA o host privado, e é o mesmo do serviço", () => {
+  assert.match(
+    COMPOSE_SEM_COMENTARIO,
+    /DELIVERYOS_DATABASE_PRIVATE_HOST:\s*deliveryos-postgres/,
+    "o compose não declara o host privado — a composição não sobe",
+  );
+  assert.match(
+    COMPOSE_SEM_COMENTARIO,
+    /container_name:\s*deliveryos-postgres/,
+    "o host declarado não corresponde a nenhum serviço da composição",
+  );
+  // E o banco não pode publicar porta: privado declarado que publica porta
+  // para o host não é privado.
+  const bloco = COMPOSE_SEM_COMENTARIO.split("deliveryos-migrate:")[0] ?? "";
+  assert.doesNotMatch(bloco, /^\s+ports:/m, "o PostgreSQL passou a publicar porta — a rede deixou de ser privada");
+});
+
+/* ================================================================== *
+ * D3a — coerência do artefato de build
+ * ================================================================== */
+console.log("\nD3a — COERENCIA DE BUILD");
+
+interface Carimbo {
+  fontes_sha256?: string;
+  fontes_arquivos?: number;
+  commit?: string | null;
+}
+
+function lerCarimbo(distDir: string): Carimbo | null {
+  const p = join(distDir, "build-stamp.json");
+  if (!existsSync(p)) return null;
+  try {
+    return JSON.parse(readFileSync(p, "utf8")) as Carimbo;
+  } catch {
+    return null;
+  }
+}
+
+/** Recalcula o hash das fontes AGORA, pela mesma função que carimbou. */
+function hashAtualDasFontes(): string {
+  const req = createRequire(join(raiz, "package.json"));
+  const t = req("./tools/carimbar_build.js") as { hashDasFontes(): { sha256: string } };
+  return t.hashDasFontes().sha256;
+}
+
+teste("D3a-1 o dist carrega carimbo com identidade de commit", () => {
+  const c = lerCarimbo(join(raiz, "dist"));
+  assert.ok(c, "dist/build-stamp.json ausente — o artefato não sabe de onde veio");
+  assert.ok(c.fontes_sha256 && c.fontes_sha256.length === 64, "carimbo sem hash de fontes");
+  assert.ok(
+    typeof c.commit === "string" && c.commit.length >= 7,
+    "o artefato não carrega identidade de commit — 'qual código está no ar' vira arqueologia",
+  );
+});
+
+teste("D3a-2 o dist é COERENTE com as fontes de agora", () => {
+  // MEDIDO nesta sessão: o gate leu `dist/.../platform-config.js` depois de eu
+  // corrigir a regra de TLS em `src/` sem reconstruir, e reprovou uma
+  // propriedade já correta. O falso VERMELHO foi barulhento; o perigo é o
+  // inverso — artefato velho que ainda passa, verde sobre código que ninguém
+  // mais roda.
+  const c = lerCarimbo(join(raiz, "dist"));
+  assert.ok(c, "sem carimbo não dá para afirmar coerência");
+  assert.equal(
+    c.fontes_sha256,
+    hashAtualDasFontes(),
+    "dist está VELHO em relação a src — rode npm run build:platform antes de confiar em qualquer gate que leia dist/",
+  );
+});
+
+teste("D3a-3b a checagem não é vazia: importar o carimbador NÃO reescreve o carimbo", () => {
+  // A primeira versão de `carimbar_build.js` executava o corpo ao ser
+  // importada. O gate importa a ferramenta para recalcular o hash — ou seja,
+  // ele REESCREVERIA o carimbo antes de compará-lo, e D3a-2 passaria sempre,
+  // medindo nada. Uma verificação que se conserta sozinha não é verificação.
+  const p = join(raiz, "dist", "build-stamp.json");
+  const antes = readFileSync(p, "utf8");
+  hashAtualDasFontes();
+  assert.equal(readFileSync(p, "utf8"), antes, "importar o carimbador reescreveu o carimbo");
+});
+
+teste("D3a-3 ADVERSARIAL: carimbo divergente é acusado, e carimbo ausente também", () => {
+  const dir = mkdtempSync(join(tmpdir(), "pb19-carimbo-"));
+  try {
+    // (a) divergente
+    writeFileSync(
+      join(dir, "build-stamp.json"),
+      JSON.stringify({ carimbo_versao: 1, fontes_sha256: "0".repeat(64), commit: "0".repeat(40) }),
+    );
+    const divergente = lerCarimbo(dir);
+    assert.ok(divergente, "o carimbo forjado nem foi lido — o teste não mede nada");
+    assert.notEqual(
+      divergente.fontes_sha256,
+      hashAtualDasFontes(),
+      "hash forjado bateu com o real — a comparação não distingue nada",
+    );
+    // (b) ausente
+    rmSync(join(dir, "build-stamp.json"));
+    assert.equal(lerCarimbo(dir), null, "carimbo ausente não foi detectado");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+teste("D3a-4 os assets do dist são byte a byte iguais à origem", () => {
+  const pares: [string, string][] = [
+    ["src/platform/migrations", "dist/src/platform/migrations"],
+    ["docs/contracts", "dist/docs/contracts"],
+  ];
+  for (const [de, para] of pares) {
+    const origem = readdirSync(join(raiz, de)).filter((f) => /\.(sql|json)$/.test(f)).sort();
+    assert.ok(origem.length > 0, `${de} vazio — o build copiaria nada`);
+    for (const f of origem) {
+      const a = readFileSync(join(raiz, de, f));
+      const b = existsSync(join(raiz, para, f)) ? readFileSync(join(raiz, para, f)) : null;
+      assert.ok(b, `${para}/${f} ausente no artefato`);
+      assert.ok(a.equals(b), `${para}/${f} difere da origem — artefato incoerente`);
+    }
+  }
+});
+
+teste("D3a-5 a composição IMPEDE schema parcial: migrate próprio, e os dois esperam por ele", () => {
+  // A classificação do D3a depende disto. O sintoma (ready 200 + GPS 503 com
+  // detalhe) foi reproduzido com schema parcial, mas a composição oficial não
+  // consegue produzir esse estado: `migrate` roda da MESMA imagem e os dois
+  // runtimes só sobem depois que ele termina com sucesso.
+  const semComentario = COMPOSE.replace(/^\s*#[^\n]*$/gm, "");
+  assert.match(semComentario, /deliveryos-migrate:/, "a composição perdeu o serviço de migration");
+  assert.match(
+    semComentario,
+    /command:\s*\["node",\s*"dist\/src\/platform\/bin\/migrate\.js"\]/,
+    "o serviço de migrate não roda o binário de migration",
+  );
+  for (const servico of ["deliveryos-critical", "deliveryos-async"]) {
+    const bloco = semComentario.split(`${servico}:`)[1]?.split("\n  deliveryos-")[0] ?? "";
+    assert.match(
+      bloco,
+      /deliveryos-migrate:\s*\n\s*condition:\s*service_completed_successfully/,
+      `${servico} não espera a migration terminar — schema parcial volta a ser possível`,
+    );
+  }
+  // E os três saem da MESMA imagem: migrate de uma versão com runtime de outra
+  // é exatamente como o schema fica parcial na vida real.
+  const ancoras = (semComentario.match(/<<:\s*\*imagem/g) ?? []).length;
+  assert.ok(ancoras >= 3, `só ${ancoras} serviços herdam a mesma imagem — migrate e runtime podem divergir`);
 });
 
 console.log(`\n${passaram}/${passaram + falhas.length} de PB19`);

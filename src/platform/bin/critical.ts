@@ -53,6 +53,7 @@ async function main(): Promise<void> {
   const cliente = await createPgClient({
     url: cfg.database_url,
     ssl: cfg.database_ssl,
+    host_privado: cfg.database_private_host,
     max: 10,
   });
 

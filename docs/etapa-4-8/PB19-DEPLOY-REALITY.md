@@ -212,3 +212,174 @@ incompatível  exit=78  /ready=sem-resposta  "contrato de eventos incompativel"
 | `.gitignore` | a regra que `store.js` já prometia |
 
 ---
+
+## Fase 2 — D2: segredo dos tokens de aparelho
+
+### Antes
+
+```
+grep -c DELIVERYOS_DEVICE_TOKEN_SECRET deploy/compose.platform.yaml  →  0
+```
+
+Reproduzido na raiz fiel à imagem: o crítico carrega config, carrega o
+contrato, e **sai `78`** — `DELIVERYOS_DEVICE_TOKEN_SECRET ausente`. O
+comportamento do código já era certo (falha fechada); o que faltava era a
+composição fornecer o valor.
+
+### Depois — o mecanismo mais simples que a composição já usava
+
+Nenhuma infraestrutura de secrets nova. O compose já tinha o padrão `:?` para
+`POSTGRES_PASSWORD`; o segredo passou a usá-lo:
+
+```yaml
+DELIVERYOS_DEVICE_TOKEN_SECRET: ${DELIVERYOS_DEVICE_TOKEN_SECRET:?segredo dos tokens de aparelho obrigatorio}
+```
+
+**Fica só no serviço do crítico, não em `x-ambiente`.** Medido por grafo:
+`bin/async-runtime.ts` **não alcança** `auth/device-token.ts`. Espalhar segredo
+por serviço que não precisa dele é superfície de graça.
+
+| Exigência | Como fica satisfeita |
+|---|---|
+| nenhum segredo real commitado | valor vem de `deploy/.env`, que é gitignorado (`.gitignore:65`) |
+| compose exige de modo claro | `:?` faz `docker compose config` recusar antes do deploy |
+| nunca em log/`describe()` | `describe()` não inclui o campo; provado por D2-6, que injeta uma marca e a procura na saída — inclusive no caminho de ERRO |
+| ausência impede prontidão | `exit 78` antes de escutar (D2-4) |
+| valor de teste é fixture | `.env.platform.example` traz a chave **vazia**, com instrução de geração (D2-3) |
+| rotação sem mudar código | trocar o valor em `deploy/.env` |
+
+**Provas:** D2-1 a D2-6, todas PASS. D2-5 cobre o segredo curto demais
+(mínimo 32) — recusado, nunca truncado.
+
+---
+
+## Fase 3 — D1: TLS contra rede privada da composição
+
+### Antes
+
+`loadPlatformConfig` com os valores exatos do compose devolvia
+`ConfigError: banco remoto sem TLS`. `isLocalUrl` só aceita `localhost`,
+`127.0.0.1` e `::1`; `deliveryos-postgres` é remoto por essa régua. Como
+`x-ambiente` é herdado por `migrate`, `critical` e `async`, **a composição
+nunca subia**.
+
+### Depois — fronteira DECLARADA, não inferida
+
+A política não foi afrouxada. Continua valendo que banco remoto sem TLS é
+recusado. O que mudou é que a fronteira passou a ser **declarada por quem
+opera, com nome exato**:
+
+```yaml
+DELIVERYOS_DATABASE_SSL: "false"
+DELIVERYOS_DATABASE_PRIVATE_HOST: deliveryos-postgres
+```
+
+Três decisões que definem o desenho:
+
+1. **Igualdade exata**, nunca sufixo, curinga ou "contém". Regra do tipo
+   "hostname sem ponto é local" seria adivinhação — liberaria qualquer nome
+   curto digitado por engano.
+2. **Dois atos explícitos.** Declarar o host **não desliga TLS sozinho**: o
+   padrão continua sendo TLS ligado fora de `localhost`, e a declaração apenas
+   torna legítimo um `false` explícito. Quem declara e esquece o `ssl` acaba
+   com TLS ligado falando com um container sem certificado — falha alto. O
+   contrário, texto claro por omissão, falha calado.
+3. **Uma implementação só.** `dispensadoDeTls()` vive em `sql-client.ts` e é
+   consumida pela configuração **e** pelo cliente `pg`, que recusavam
+   separadamente. Duas noções da mesma fronteira divergem, e a permissiva é a
+   que ninguém percebe.
+
+A dispensa aparece no log de boot (`rede_privada_declarada`) — é o **nome** do
+host, nunca credencial. Decisão de operação que não aparece no boot é decisão
+que ninguém revisa.
+
+### Controles adversariais — D1-1 a D1-7, todos PASS
+
+| Caso | Resultado exigido | Medido |
+|---|---|---|
+| compose interno legítimo | aceita, `tls=false` | **ACEITA** |
+| banco externo **sem** TLS | recusa | **RECUSA** (`DELIVERYOS_DATABASE_SSL`) |
+| banco externo **com** TLS | aceita | **ACEITA**, `tls=true` |
+| declara host, não declara `ssl=false` | aceita **com TLS ligado** | **tls=true** |
+| `ssl=false` sem declaração | recusa | **RECUSA** |
+| `mau-deliveryos-postgres` | recusa | **RECUSA** |
+| `deliveryos-postgres.exemplo.com` | recusa | **RECUSA** |
+
+D1-7 confere ainda que o host declarado corresponde a um `container_name` da
+própria composição e que o PostgreSQL **não publica porta** — privado que
+publica porta para o host não é privado.
+
+---
+
+## Fase 4 — D3a: coerência do artefato de build
+
+### Reproduzido em isolamento
+
+Banco com **apenas a migration 0001**, imagem íntegra:
+
+```
+GET  /ready          →  200
+POST /api/gps/batch  →  503  {"detalhe":"column \"device_id\" of relation \"event_log\" does not exist"}
+```
+
+O sintoma existe. A pergunta é outra: **a composição oficial consegue produzir
+esse estado?**
+
+### Classificação: impossível na composição oficial — e o risco real é outro
+
+Provado por `D3a-5`, sobre o compose do repositório:
+
+- existe o serviço `deliveryos-migrate`, rodando `dist/src/platform/bin/migrate.js`;
+- `deliveryos-critical` **e** `deliveryos-async` declaram
+  `deliveryos-migrate: condition: service_completed_successfully`;
+- os três herdam `<<: *imagem` — migrate de uma versão com runtime de outra é
+  exatamente como o schema fica parcial na vida real, e a âncora impede isso.
+
+Somado a `copiar_migrations.js`, que **falha o build com zero migration**, e ao
+`Dockerfile`, que roda `npx tsc` fresco no estágio de build: a imagem oficial
+não tem como carregar migrations defasadas em relação ao próprio código.
+**Nenhuma correção foi inventada para um estado impossível.**
+
+### O risco real, vivido nesta sessão
+
+O `dist` **local** pode ficar velho em relação a `src`, e os gates leem `dist`.
+Aconteceu: corrigi a regra de TLS em `src/`, rodei o gate sem reconstruir, e
+ele reprovou `D1-4` — uma propriedade que já estava certa. O falso vermelho foi
+barulhento. **O perigo é o inverso:** artefato velho que ainda passa, verde
+sobre código que ninguém mais roda.
+
+### Fechado com carimbo de build
+
+`tools/carimbar_build.js` escreve `dist/build-stamp.json` com o **SHA-256 do
+conteúdo** das fontes e a **identidade de commit** (`ARG DELIVERYOS_COMMIT` na
+imagem, `git rev-parse` fora dela, `null` declarado quando não há nenhum —
+nunca inventado).
+
+O que entra no hash é **medido, não listado por nome**: o fecho transitivo de
+imports a partir dos três binários que a composição roda, mais os assets
+copiados, mais `package.json` e `tsconfig.json`. A primeira versão hasheava
+`src/**` inteiro e virou ruído — editar um runner de teste invalidava o build,
+embora nenhum runner seja executado a partir de `dist/`. Excluir por nome
+(`run-*.ts`) seria a mesma classe de erro que o PB19 corrigiu nas guardas do
+C3. **416 → 51 arquivos**, e o grafo usado é o MESMO módulo das guardas.
+
+### Um teste que se consertava sozinho — achado e fechado
+
+A primeira versão de `carimbar_build.js` executava o corpo ao ser **importada**.
+O gate importa a ferramenta para recalcular o hash: ele **reescreveria o
+carimbo antes de compará-lo**, e `D3a-2` passaria sempre, medindo nada. Fechado
+com `require.main === module`, e travado por **`D3a-3b`**, que confere que
+importar o carimbador não altera o arquivo.
+
+| # | Prova | Resultado |
+|---|---|---|
+| D3a-1 | o `dist` carrega carimbo com identidade de commit | PASS |
+| D3a-2 | o `dist` é coerente com as fontes de agora | PASS |
+| D3a-3b | a checagem não é vazia: importar não reescreve | PASS |
+| D3a-3 | ADVERSARIAL: carimbo divergente e carimbo ausente são acusados | PASS |
+| D3a-4 | assets do `dist` byte a byte iguais à origem | PASS |
+| D3a-5 | a composição impede schema parcial | PASS |
+
+**`npm run test:platform:pb19` — 26/26, `PB19_GREEN`.**
+
+---

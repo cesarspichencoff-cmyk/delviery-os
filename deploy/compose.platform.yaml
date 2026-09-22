@@ -34,6 +34,21 @@ x-ambiente: &ambiente
   # Docker e o banco não tem certificado. Para um PostgreSQL hospedado, a URL
   # aponta para fora e este valor vira true — o código recusa remoto sem TLS.
   DELIVERYOS_DATABASE_SSL: "false"
+  # A DECLARAÇÃO que torna a linha acima legítima (PB19-D1).
+  #
+  # Antes disto a composição não subia: o código classifica como remoto tudo
+  # que não seja `localhost`, e `deliveryos-postgres` é remoto por essa régua —
+  # os três serviços saíam com `exit 78`. A saída não foi afrouxar a política,
+  # e sim tornar a fronteira de confiança EXPLÍCITA: quem opera nomeia o host
+  # que está dentro da rede privada, com nome exato.
+  #
+  # Este nome existe só dentro da rede `interna` deste compose, e o serviço do
+  # Postgres usa `expose`, nunca `ports` — ele não é alcançável de fora.
+  #
+  # Ao apontar para um PostgreSQL HOSPEDADO: apague esta linha e ponha
+  # `DELIVERYOS_DATABASE_SSL: "true"`. Mantê-la com um host externo seria
+  # declarar privada uma rede que não é.
+  DELIVERYOS_DATABASE_PRIVATE_HOST: deliveryos-postgres
   DELIVERYOS_COMMIT: ${DELIVERYOS_COMMIT:?commit da imagem obrigatorio}
   DELIVERYOS_VERSION: ${DELIVERYOS_VERSION:-0.1.0}
   # Nenhuma réplica aplica schema no boot: a migration é um passo explícito.
@@ -111,6 +126,17 @@ services:
       <<: *ambiente
       DELIVERYOS_HOST: 0.0.0.0
       DELIVERYOS_PORT: "8080"
+      # Segredo dos tokens de aparelho. Fica SÓ aqui, e não em `x-ambiente`:
+      # o worker assíncrono não emite nem verifica token — medido por grafo de
+      # imports, `bin/async-runtime.ts` não alcança `auth/device-token.ts`.
+      # Espalhar segredo por serviço que não precisa dele é superfície de graça.
+      #
+      # `:?` porque sem ele o crítico falha fechado no boot (exit 78) e a
+      # composição subiria com um servidor que recusa todo aparelho em campo.
+      # Com `:?`, `docker compose config` já recusa — o erro chega antes do
+      # deploy, não depois. Rotação é trocar o valor em `deploy/.env`; nenhuma
+      # linha de código muda.
+      DELIVERYOS_DEVICE_TOKEN_SECRET: ${DELIVERYOS_DEVICE_TOKEN_SECRET:?segredo dos tokens de aparelho obrigatorio}
     command: ["node", "dist/src/platform/bin/critical.js"]
     networks: [interna]
     # `expose`, não `ports`: quem publica para fora é o proxy, e só ele.

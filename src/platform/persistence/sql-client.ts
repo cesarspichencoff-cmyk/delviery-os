@@ -90,6 +90,26 @@ export class PgSqlClient implements TransactionalSqlClient {
 
 export interface PgConnectionOptions {
   url: string;
+  /**
+   * Hostname DECLARADO como pertencente à rede privada da composição.
+   *
+   * Existe por PB19-D1: `deploy/compose.platform.yaml` alcança o banco por
+   * `deliveryos-postgres`, um nome que só resolve dentro da rede bridge do
+   * Docker, e declara `DELIVERYOS_DATABASE_SSL=false` porque o tráfego não sai
+   * dessa rede e o container do Postgres não tem certificado. A regra antiga
+   * classificava tudo que não fosse `localhost` como remoto, e os três
+   * serviços saíam com `exit 78`: a composição oficial **nunca subia**.
+   *
+   * A saída NÃO foi afrouxar a política. Continua valendo que banco remoto sem
+   * TLS é recusado. O que mudou é que a fronteira de confiança passou a ser
+   * **declarada por quem opera**, com nome exato, em vez de adivinhada pelo
+   * código. Regra do tipo "hostname sem ponto é local" seria adivinhação: ela
+   * liberaria qualquer nome curto que alguém digitasse por engano.
+   *
+   * Exige DOIS atos explícitos para valer: nomear o host aqui **e** declarar
+   * `ssl=false`. Um sozinho não dispensa TLS.
+   */
+  host_privado?: string;
   /** Máximo de conexões. O crítico usa poucas e rápidas. */
   max?: number;
   /** Falha rápido em vez de pendurar a requisição esperando conexão. */
@@ -101,6 +121,31 @@ export interface PgConnectionOptions {
 }
 
 /** true quando a URL aponta para a própria máquina. */
+/** Hostname da URL, ou string vazia quando ela nem é URL. */
+export function hostnameDe(url: string): string {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * Este destino pode ser alcançado sem TLS?
+ *
+ * Uma função só, consumida pela configuração E pelo cliente. Duas
+ * implementações da mesma fronteira de confiança divergem, e a que diverge
+ * para o lado permissivo é a que ninguém percebe.
+ */
+export function dispensadoDeTls(url: string, hostPrivado?: string): boolean {
+  if (isLocalUrl(url)) return true;
+  const declarado = (hostPrivado ?? "").trim();
+  if (declarado === "") return false;
+  // Igualdade exata. Nada de sufixo, curinga ou "contém": cada uma dessas
+  // formas transforma uma declaração pontual numa política larga.
+  return hostnameDe(url) === declarado;
+}
+
 export function isLocalUrl(url: string): boolean {
   try {
     const h = new URL(url).hostname;
@@ -120,11 +165,13 @@ export function isLocalUrl(url: string): boolean {
  * empurraria alguém a desligar a checagem por completo.
  */
 export async function createPgClient(opts: PgConnectionOptions): Promise<PgSqlClient> {
-  const local = isLocalUrl(opts.url);
-  const ssl = opts.ssl ?? !local;
-  if (!local && !ssl) {
+  // Mesma regra da configuração, pela mesma função: o padrão é TLS fora de
+  // localhost, e a declaração do host privado só LEGITIMA um `false` explícito.
+  const ssl = opts.ssl ?? !isLocalUrl(opts.url);
+  if (!ssl && !dispensadoDeTls(opts.url, opts.host_privado)) {
     throw new Error(
-      "conexão remota com PostgreSQL sem TLS recusada: defina ssl=true ou use host local",
+      "conexão remota com PostgreSQL sem TLS recusada: defina ssl=true, use host local, " +
+        "ou declare o host da rede privada em DELIVERYOS_DATABASE_PRIVATE_HOST",
     );
   }
 
