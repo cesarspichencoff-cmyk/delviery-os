@@ -2,6 +2,13 @@
 /dist
 android/*.log
 /data/*.jsonl
+# Saída de runtime do Conference Brain. `storage/store.js` escreve
+# `<entidade>.runtime.jsonl` em `data/conference-brain/` e o comentário dele já
+# AFIRMAVA que isso era gitignorado — mas a regra acima (`/data/*.jsonl`) não
+# alcança subdiretório, e um arquivo de teste com `source_mode: "real"` acabou
+# versionado em `a6e38ed`. Guarda: `npm run test:platform:higiene`.
+/data/conference-brain/*.runtime.jsonl
+**/*.runtime.jsonl
 /data/raw/*
 !/data/raw/.gitkeep
 !/data/raw/incoming/

@@ -141,9 +141,17 @@ arquivo novo e 39 linhas no `async-runtime`, sem Copiloto, motor, event bus, tab
 fila novos. **Reconstrução:** oito commits de uma execução anterior nunca chegaram ao remoto e se
 perderam com o container; nenhum número daquele relato foi usado como prova. Flag
 `DELIVERYOS_INTELLIGENCE_SPINE` **falsa por padrão em todo ambiente**; a espinha roda depois do tick
-e `executar()` nunca lança. Gates novos: `test:platform:topology`, `test:platform:spine` (26),
-`test:platform:spine:mutacoes` (25/25, zero cegas), `test:platform:spine:processos` (7/7 com
+e `executar()` nunca lança. Gates novos: `test:platform:topology`, `test:platform:spine` (**29**),
+`test:platform:spine:mutacoes` (**31/31**, zero cegas), `test:platform:spine:processos` (7/7 com
 PostgreSQL real e os binários de `dist/`). `Q-003` e `Q-004` seguem abertas, travadas por guarda
 executável. Abertas por esta etapa: `Q-015` (retenção do histórico) e `Q-016` (replay após
-restart). **D1, D2 e D3 do PB19 foram reproduzidos** e deixados sem correção, como bloco
-independente.
+restart). **D1, D2 e D3 do PB19 foram reproduzidos** e deixados sem correção pelo C3.
+
+**PB19 — Deploy Reality Closure em andamento** (`docs/etapa-4-8/PB19-DEPLOY-REALITY.md`):
+fechar os defeitos de implantação para que a composição oficial não possa declarar prontidão
+com capacidade operacional estruturalmente quebrada. **D3b fechado**: contrato de eventos vai
+ao `dist` por `tools/copiar_contratos.js`, resolução relativa ao módulo, e
+ausente/corrompido/incompatível faz o crítico sair 78 no boot. Gates novos:
+`test:platform:pb19` (7/7) e `test:platform:higiene` (5/5). A saída de runtime do Conference
+Brain que estava versionada sob `data/conference-brain/` foi classificada como resíduo (origem
+provada), removida, e travada pela regra de ignore que o `store.js` já prometia.

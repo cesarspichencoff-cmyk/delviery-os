@@ -63,8 +63,12 @@ diferentes inteligências. Política de acesso desse repositório é `Q-012`, ai
   harness**; agora existem no runtime, e o crítico continua alcançando os mesmos 17 arquivos de
   antes. Um arquivo novo de runtime e 39 linhas no `async-runtime`; sem tabela, migration, fila ou
   event bus. Flag `DELIVERYOS_INTELLIGENCE_SPINE` **falsa por padrão em local, pilot e production**.
-  Provas frescas: `spine` 26/26 · `spine:mutacoes` **25/25 com zero mutações cegas** ·
-  `spine:processos` **7/7 contra PostgreSQL 16.13 real, com os binários de `dist/`**.
+  Provas **remedidas na sessão do PB19**: `spine` **29** · `spine:mutacoes`
+  **31/31 com zero mutações cegas** · `spine:processos` **7/7 contra PostgreSQL 16.13 real,
+  com os binários de `dist/`** · `cb4b5` **37** · `copiloto` **40** · `topology` OK.
+  As guardas `15b`/`18`/`G1`, que varriam TEXTO de `async-runtime.ts`, foram trocadas por
+  guardas de GRAFO (`15c`, `18c`, `G1`) depois de medido que ficavam verdes com a dependência
+  real montada e vermelhas com só a palavra numa constante inerte.
   Dois defeitos encontrados e corrigidos durante a escrita: (a) a imagem não levaria os módulos do
   Conference Brain — mesma classe do D3 —, resolvido com `tools/copiar_conference_brain.js`;
   (b) a montagem ingênua gerava **N recomendações ativas na passada N** sobre a mesma fonte,
@@ -73,7 +77,20 @@ diferentes inteligências. Política de acesso desse repositório é `Q-012`, ai
   guarda executável. Abertas por esta etapa: **`Q-015`** (retenção do histórico da espinha, medido
   em ~0,34 KB por passada por escopo) e **`Q-016`** (replay da projeção após restart —
   `reconstruirPorReplay` só aparece em comentário no worker). **D1, D2 e D3 do PB19 foram
-  REPRODUZIDOS** e deixados como bloco independente, sem correção.
+  REPRODUZIDOS** e deixados como bloco independente, sem correção — endereçados em
+  `docs/etapa-4-8/PB19-DEPLOY-REALITY.md`.
+
+- **PB19 — Deploy Reality Closure** (`docs/etapa-4-8/PB19-DEPLOY-REALITY.md`, em andamento):
+  fazer a composição oficial sustentar as promessas que o código faz. **D3b fechado na classe**
+  — o contrato de eventos era lido de `process.cwd()` e `docs/` não entra na imagem, o que
+  produzia `/ready` 200 com TODO lote de GPS em 503 e nenhuma linha de log; agora o asset entra
+  no `dist` por `tools/copiar_contratos.js`, a resolução é relativa ao módulo, e contrato
+  ausente/corrompido/incompatível faz o crítico **falhar fechado no boot** (`exit 78`).
+  Gate `test:platform:pb19` 7/7 com controle positivo (imagem íntegra aceita GPS, medido no
+  banco) e três controles adversariais. **Fase 0** reconciliou a continuidade e classificou
+  `data/conference-brain/live_cycle_runs.runtime.jsonl` como **resíduo** (origem provada em
+  `a6e38ed`, escrito pela mutação MS21): a regra de ignore que `store.js` prometia nunca
+  existiu, agora existe, e `test:platform:higiene` (5/5) impede a volta.
 
 A redução de superfície de `apps/deliveryos-ai-node` (reescrever os 6 root-requires para subpath)
 **não é C2** — é tarefa futura fora do escopo de ambos, registrada em `C1-PORT.md`.

@@ -149,7 +149,11 @@ export async function ingerir(
   fatos: readonly EventEnvelope[],
   o: OpcoesIngestao,
 ): Promise<ResultadoIngestao> {
-  const raiz = o.raiz ?? process.cwd();
+  // NÃO cai para `process.cwd()`: o contrato de eventos é resolvido
+  // relativamente ao módulo que o lê (ver `RAIZ_DOS_CONTRATOS`), e inventar
+  // uma raiz aqui reintroduziria a dependência do layout do checkout que o
+  // PB19-D3b expôs. `undefined` significa "use o padrão de quem sabe".
+  const raiz = o.raiz;
   const recusados: FatoRecusado[] = [];
   const aprovados: EventEnvelope[] = [];
 

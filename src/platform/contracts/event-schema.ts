@@ -29,6 +29,53 @@ import type { EventType } from "./event-catalog";
 
 export const CAMINHO_SCHEMA = join("docs", "contracts", "eventos.schema.json");
 
+/**
+ * Onde procurar o contrato quando ninguém diz onde.
+ *
+ * ERA `process.cwd()`, e isso produziu um defeito de deploy inteiro (PB19-D3b):
+ * a imagem oficial copia `dist/`, `node_modules/` e `package.json` para
+ * `/app` — `docs/` não entra. Com o padrão no diretório de trabalho, o crítico
+ * subia, respondia `/ready` 200, e devolvia **503 em todo lote de GPS**, sem
+ * uma linha de log. Infraestrutura aparentemente saudável recusando a função
+ * operacional.
+ *
+ * Agora o padrão é RELATIVO A ESTE MÓDULO, que é a única âncora que vale nos
+ * dois mundos:
+ *
+ *   desenvolvimento  src/platform/contracts/      → ../../../docs/contracts/
+ *   compilado        dist/src/platform/contracts/ → ../../../docs/contracts/
+ *
+ * Os dois caminhos são a MESMA expressão. Quem faz o segundo existir é
+ * `tools/copiar_contratos.js`, no build — e ele leva só `docs/contracts/*.json`,
+ * não `docs/` inteiro.
+ *
+ * O parâmetro `raiz` continua existindo para quem precisa apontar para outro
+ * lugar (teste com diretório temporário). O que mudou é o PADRÃO.
+ */
+export const RAIZ_DOS_CONTRATOS = join(__dirname, "..", "..", "..");
+
+/** Versão do catálogo que este código sabe ler. Major diferente é recusa. */
+export const VERSAO_CATALOGO_SUPORTADA = "event-catalog@1.0.0";
+
+/**
+ * O contrato obrigatório não pôde ser carregado.
+ *
+ * Classe própria porque o chamador precisa distinguir "o arquivo do contrato
+ * não está aqui" de "este payload é inválido". A primeira é defeito de
+ * implantação e tem de parar o processo; a segunda é dado ruim e tem de virar
+ * resposta ao aparelho.
+ */
+export class ContratoIndisponivel extends Error {
+  constructor(
+    message: string,
+    readonly motivo: "ausente" | "corrompido" | "incompativel",
+    readonly caminho: string,
+  ) {
+    super(message);
+    this.name = "ContratoIndisponivel";
+  }
+}
+
 interface RegraSchema {
   type?: string;
   required?: string[];
@@ -52,9 +99,49 @@ interface Catalogo {
 
 let cache: Catalogo | null = null;
 
-export function carregarCatalogo(raiz = process.cwd()): Catalogo {
+export function carregarCatalogo(raiz = RAIZ_DOS_CONTRATOS): Catalogo {
   if (cache) return cache;
-  cache = JSON.parse(readFileSync(join(raiz, CAMINHO_SCHEMA), "utf8")) as Catalogo;
+  const caminho = join(raiz, CAMINHO_SCHEMA);
+
+  let bruto: string;
+  try {
+    bruto = readFileSync(caminho, "utf8");
+  } catch {
+    throw new ContratoIndisponivel(
+      `contrato de eventos ausente em ${caminho}`,
+      "ausente",
+      caminho,
+    );
+  }
+
+  let lido: Catalogo;
+  try {
+    lido = JSON.parse(bruto) as Catalogo;
+  } catch {
+    // JSON ilegível é indistinguível de arquivo truncado por build ruim.
+    throw new ContratoIndisponivel(`contrato de eventos ilegível em ${caminho}`, "corrompido", caminho);
+  }
+
+  if (!lido || typeof lido !== "object" || !lido.properties || !lido.$defs) {
+    throw new ContratoIndisponivel(
+      `contrato de eventos sem as seções obrigatórias em ${caminho}`,
+      "corrompido",
+      caminho,
+    );
+  }
+
+  // Major diferente é recusa, não adaptação: um validador que tenta ler um
+  // contrato que não conhece aceita em silêncio o que não sabe verificar.
+  const major = (v: string): string => String(v ?? "").split("@").pop()?.split(".")[0] ?? "";
+  if (major(lido.version) !== major(VERSAO_CATALOGO_SUPORTADA)) {
+    throw new ContratoIndisponivel(
+      `contrato ${String(lido.version)} incompatível com ${VERSAO_CATALOGO_SUPORTADA}`,
+      "incompativel",
+      caminho,
+    );
+  }
+
+  cache = lido;
   return cache;
 }
 
@@ -81,7 +168,7 @@ const SUPORTADAS = new Set([
  * e o validador passaria por cima em silêncio. Uma garantia que ninguém aplica
  * é pior que garantia nenhuma, porque encerra a pergunta.
  */
-export function verificarCobertura(raiz = process.cwd()): string[] {
+export function verificarCobertura(raiz = RAIZ_DOS_CONTRATOS): string[] {
   const naoCobertas = new Set<string>();
   const andar = (n: unknown): void => {
     if (!n || typeof n !== "object") return;
@@ -179,7 +266,7 @@ export type ResultadoPayload =
 export function validarPayload(
   tipo: EventType | string,
   payload: unknown,
-  raiz = process.cwd(),
+  raiz = RAIZ_DOS_CONTRATOS,
 ): ResultadoPayload {
   const c = carregarCatalogo(raiz);
   const def = c.$defs[tipo];
@@ -228,18 +315,18 @@ export interface ContratoDeEvento {
   obrigatorios_extra?: string[];
 }
 
-export function contratoDe(tipo: string, raiz = process.cwd()): ContratoDeEvento | null {
+export function contratoDe(tipo: string, raiz = RAIZ_DOS_CONTRATOS): ContratoDeEvento | null {
   const def = carregarCatalogo(raiz).$defs[tipo];
   return (def?._contrato as unknown as ContratoDeEvento) ?? null;
 }
 
 /** Tipos com contrato de payload — os que têm produtor ou consumidor real. */
-export function tiposComContrato(raiz = process.cwd()): string[] {
+export function tiposComContrato(raiz = RAIZ_DOS_CONTRATOS): string[] {
   return Object.keys(carregarCatalogo(raiz).$defs).filter((k) => k !== "tipos").sort();
 }
 
 /** Tipos aceitos pelo runtime mas sem contrato. Ver o campo no schema. */
-export function tiposSemContrato(raiz = process.cwd()): string[] {
+export function tiposSemContrato(raiz = RAIZ_DOS_CONTRATOS): string[] {
   return [...carregarCatalogo(raiz)._declarados_sem_contrato.tipos].sort();
 }
 
@@ -251,6 +338,6 @@ export function tiposSemContrato(raiz = process.cwd()): string[] {
  * Sem esta checagem, um `trip_started` sem `trip_id` passaria e a projeção
  * simplesmente o ignoraria, em silêncio.
  */
-export function obrigatoriosExtraDe(tipo: string, raiz = process.cwd()): string[] {
+export function obrigatoriosExtraDe(tipo: string, raiz = RAIZ_DOS_CONTRATOS): string[] {
   return (contratoDe(tipo, raiz)?.obrigatorios_extra ?? []) as string[];
 }

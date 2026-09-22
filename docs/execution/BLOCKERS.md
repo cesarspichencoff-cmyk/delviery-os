@@ -4,7 +4,7 @@ lifecycle:
   status: ACTIVE
   authority_scope: infra_blockers
   superseded_by: null
-  atualizado_em: "2026-08-07"
+  atualizado_em: "2026-09-22"
   state_basis: 953a3fb
   question_refs: ["Q-001","Q-002","Q-003","Q-004","Q-005","Q-006","Q-007","Q-008","Q-009","Q-010","Q-011"]
 ---
@@ -698,3 +698,26 @@ provado nesta sessão. Falta o desenho.
 **O que destrava.** Cota renovada, plano com mais chamadas de MCP, ou o desenho feito na interface
 do Figma pelo César com os node IDs trazidos de volta para a coluna da matriz. Não há nada a
 corrigir no repositório.
+
+## PB19 — Defeitos de implantação da composição oficial · **EM FECHAMENTO em 2026-09-22**
+
+Três defeitos **pré-existentes** encontrados pelo C3 e reproduzidos de novo no PB19. Nenhum é da
+Intelligence Spine; todos são da composição. Detalhe e prova em
+`docs/etapa-4-8/PB19-DEPLOY-REALITY.md`.
+
+- **D1 — TLS contra rede privada.** `deploy/compose.platform.yaml` aponta o banco por
+  `deliveryos-postgres` com `DELIVERYOS_DATABASE_SSL=false`; `isLocalUrl` só aceita
+  `localhost`/`127.0.0.1`/`::1`, e a configuração recusa banco remoto sem TLS. Medido: os três
+  serviços que herdam `x-ambiente` sairiam `78` e a composição nunca sobe.
+- **D2 — segredo de aparelho ausente na composição.** `DELIVERYOS_DEVICE_TOKEN_SECRET` não
+  aparece em lugar nenhum do compose, e o crítico falha fechado sem ele.
+- **D3 — asset obrigatório fora da imagem.** Duas causas independentes com o mesmo sintoma
+  (`/ready` 200 + GPS 503). **D3b** (`docs/contracts/eventos.schema.json` fora da imagem, lido de
+  `process.cwd()`) é a que acontece com o `Dockerfile` como estava, e foi **FECHADA**: asset no
+  `dist` por `tools/copiar_contratos.js`, resolução relativa ao módulo, e falha fechada no boot.
+  **D3a** (schema/banco parcial) é tratada na Fase 4 do PB19.
+
+Também registrado: **D4** — `test:lab:v4:browser` apaga as 13 evidências de
+`labs/operacao-viva-v4/evidencias/` e não restaura quando morre por falta de browser
+(reproduzido 2 de 2). **D5** — `platform.event_log` não tem coluna `source_mode`; o modo viaja no
+envelope.

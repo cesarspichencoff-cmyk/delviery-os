@@ -29,6 +29,7 @@ import {
   PgTransactionalWriter,
 } from "../persistence/pg-repositories";
 import { lerSegredo, SegredoAusente } from "../auth/device-token";
+import { carregarCatalogo, ContratoIndisponivel } from "../contracts/event-schema";
 import type { SourceMode } from "../contracts/event-catalog";
 import { tratarLoteGps, ROTA_INGESTAO } from "../runtime/rota-ingestao";
 import { CriticalRuntime } from "../runtime/critical";
@@ -91,6 +92,31 @@ async function main(): Promise<void> {
 
   const escritor = new PgTransactionalWriter(cliente);
   const registro = new PgDeviceRegistry(cliente);
+
+  // Falha fechada: o contrato de eventos é lido em RUNTIME pela rota de
+  // ingestão, e sem ele NENHUM lote de GPS é aceito. Sem esta checagem o
+  // processo sobe, responde `/ready` 200 e devolve 503 em tudo — medido em
+  // PB19-D3b, com duas linhas de log e nenhuma sobre o 503. Um servidor que
+  // se declara pronto enquanto a função operacional está estruturalmente
+  // incapaz de funcionar é pior que um servidor que não sobe.
+  //
+  // Carregar aqui também AQUECE o cache: o primeiro lote em campo não paga
+  // leitura de disco, e um contrato que só seria lido sob carga passa a ser
+  // lido no boot, onde a falha é barata.
+  try {
+    const catalogo = carregarCatalogo();
+    console.log(
+      "[critico] contrato de eventos",
+      JSON.stringify({ versao: catalogo.version, tipos: Object.keys(catalogo.$defs).length }),
+    );
+  } catch (e) {
+    if (e instanceof ContratoIndisponivel) {
+      console.error(`[critico] contrato de eventos ${e.motivo}: ${e.message}`);
+      await cliente.close();
+      process.exit(78);
+    }
+    throw e;
+  }
 
   // Falha fechada: sem segredo, nenhum aparelho consegue autenticar, e subir
   // assim daria a impressão de um servidor pronto que recusa tudo em campo.
