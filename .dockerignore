@@ -46,8 +46,18 @@ data
 prototipos
 app-v1
 
-# Documentação e material de auditoria: não muda o comportamento do serviço.
+# Documentação e material de auditoria.
+#
+# A premissa antiga desta linha era "não muda o comportamento do serviço", e
+# ela era FALSA: `docs/contracts/eventos.schema.json` é lido em RUNTIME pela
+# rota de ingestão (`contracts/event-schema.ts`), e sem ele o crítico sobe,
+# responde `/ready` 200 e recusa TODO lote de GPS com 503 — sem uma linha de
+# log. Foi o PB19-D3b, e a exclusão aqui era a raiz mais funda dele: mesmo com
+# o `COPY` no Dockerfile, o arquivo não chegava ao contexto de build.
+#
+# O resto de `docs/` continua fora: o que entra é só o que o processo LÊ.
 docs
+!docs/contracts
 *.md
 !package.json
 

@@ -55,6 +55,7 @@
     "test:platform:topology": "npx tsx src/platform/run-topology-audit-tests.ts",
     "test:platform:higiene": "npx tsx src/platform/run-higiene-dados-tests.ts",
     "test:platform:pb19": "npx tsx src/platform/run-pb19-deploy-tests.ts",
+    "test:platform:pb19:mutacoes": "npx tsx src/platform/run-pb19-mutation-tests.ts",
     "test:platform:spine": "npx tsx src/platform/run-intelligence-spine-tests.ts",
     "test:platform:spine:mutacoes": "npx tsx src/platform/run-spine-mutation-tests.ts",
     "test:platform:spine:processos": "npx tsx src/platform/run-spine-process-tests.ts",

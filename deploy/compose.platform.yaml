@@ -19,6 +19,12 @@ x-imagem: &imagem
   build:
     context: ..
     dockerfile: deploy/Dockerfile.platform
+    args:
+      # Identidade de commit gravada DENTRO do artefato, em
+      # `dist/build-stamp.json`, junto do hash das fontes. Sem isto a imagem
+      # só sabe o commit por variável de runtime, que muda sem o artefato
+      # mudar — e "qual código está no ar" volta a ser arqueologia.
+      DELIVERYOS_COMMIT: ${DELIVERYOS_COMMIT:?commit da imagem obrigatorio}
   image: deliveryos-platform:v1
 
 x-logs: &logs

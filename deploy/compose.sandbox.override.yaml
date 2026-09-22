@@ -1,0 +1,46 @@
+# ADAPTAÇÃO DE AMBIENTE — não é parte da plataforma.
+#
+# Este arquivo existe por UMA razão medida, e não altera nada da aplicação.
+#
+# O estágio de runtime de `Dockerfile.platform` instala `dumb-init` por `apt`.
+# Neste sandbox a política de rede recusa TODOS os repositórios Debian —
+# medido, com `HTTP 403` em `deb.debian.org`, `security.debian.org`,
+# `ftp.debian.org`, `cloudfront.debian.net`, `debian.map.fastlydns.net`,
+# `mirrors.edge.kernel.org` e `archive.debian.org`. A imagem base
+# `node:22-bookworm-slim` não traz `dumb-init`. Portanto o estágio de runtime
+# **não pode ser construído aqui**, por bloqueio de ambiente e não por defeito
+# do repositório.
+#
+# O que este override faz: para o build no estágio `build`, que é onde a
+# APLICAÇÃO é produzida — `npm ci`, `tsc`, e as três cópias de asset
+# (migrations, Conference Brain, contratos) mais o carimbo. Tudo que o PB19
+# precisa provar sobre D1, D2, D3a e D3b vive nesse estágio.
+#
+# O QUE FICA POR PROVAR, e não está escondido:
+#
+#   1. `dumb-init` como PID 1 — encaminhamento de SIGTERM no `docker stop`;
+#   2. `USER node` — o processo roda como root aqui, e não como usuário sem
+#      privilégio;
+#   3. `npm prune --omit=dev` — a imagem carrega as dependências de
+#      desenvolvimento junto;
+#   4. o tamanho final da imagem.
+#
+# Nada disso é contornado: é DECLARADO como BLOCKED em
+# `docs/etapa-4-8/PB19-DEPLOY-REALITY.md`. Os quatro pontos dizem respeito ao
+# empacotamento, não ao comportamento que o PB19 fecha.
+#
+# Uso:
+#   docker compose -f compose.platform.yaml -f compose.sandbox.override.yaml up
+#
+# Em qualquer ambiente com acesso a repositório Debian, NÃO use este arquivo.
+
+services:
+  deliveryos-migrate:
+    build:
+      target: build
+  deliveryos-critical:
+    build:
+      target: build
+  deliveryos-async:
+    build:
+      target: build

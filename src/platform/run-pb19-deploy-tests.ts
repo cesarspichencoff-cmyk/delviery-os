@@ -182,6 +182,16 @@ for (const [nome, quebrar, motivo] of [
   });
 }
 
+teste("D3b-6 o .dockerignore deixa `docs/contracts` ENTRAR no contexto de build", () => {
+  // A raiz mais funda do D3b. O `.dockerignore` excluía `docs` com a premissa
+  // escrita "não muda o comportamento do serviço" — FALSA, porque
+  // `docs/contracts/eventos.schema.json` é lido em runtime. Com a exclusão, o
+  // `COPY` do Dockerfile nem chega a rodar: o arquivo não está no contexto.
+  const di = readFileSync(join(raiz, ".dockerignore"), "utf8").replace(/^\s*#[^\n]*$/gm, "");
+  assert.match(di, /^\s*docs\s*$/m, "o .dockerignore parou de excluir docs/ — a imagem carregaria documentação inteira");
+  assert.match(di, /^\s*!docs\/contracts\s*$/m, "o .dockerignore não reinclui docs/contracts — o COPY falha por arquivo fora do contexto");
+});
+
 teste("D3b-5 a imagem NÃO carrega docs/ inteiro — só os contratos", () => {
   // Resolver o asset levando documentação inteira para produção esconderia,
   // no volume, quais arquivos são realmente exigidos em runtime.
@@ -428,7 +438,14 @@ teste("D3a-3b a checagem não é vazia: importar o carimbador NÃO reescreve o c
   // medindo nada. Uma verificação que se conserta sozinha não é verificação.
   const p = join(raiz, "dist", "build-stamp.json");
   const antes = readFileSync(p, "utf8");
-  hashAtualDasFontes();
+  // Processo NOVO, de propósito: no mesmo processo o módulo já está em cache
+  // do `require`, e uma segunda importação não executaria nada — a checagem
+  // passaria sem medir. Foi assim que MP11 ficou cega na primeira execução.
+  spawnSync(process.execPath, ["-e", "require('./tools/carimbar_build.js')"], {
+    cwd: raiz,
+    encoding: "utf8",
+    timeout: 60_000,
+  });
   assert.equal(readFileSync(p, "utf8"), antes, "importar o carimbador reescreveu o carimbo");
 });
 
