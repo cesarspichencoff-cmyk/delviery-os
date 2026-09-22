@@ -369,3 +369,60 @@ e MS5 na primeira versão removia um `try` deixando `catch` órfão — o guarda
 sintaxe**, que é o mesmo falso verde que `__SPAWN_FALHOU__` existe para pegar, com outra roupa.
 
 Sem esta suíte, os três buracos teriam ido para o remoto com 26 testes verdes em cima deles.
+
+---
+
+## C3.6 — PostgreSQL e processos reais
+
+**`npm run test:platform:spine:processos` — 7/7, `SPINE_PROCESS_GREEN`.**
+
+O relato perdido citava 6/6. O número aqui é **7/7 medido nesta execução**, contra
+**PostgreSQL 16.13 real** em `127.0.0.1:5433`. Sem `DELIVERYOS_PG_URL`, a suíte **PULA EM VOZ
+ALTA** (CLAUDE.md §10).
+
+Esta suíte **não importa nada do runtime**. Ela sobe `node dist/src/platform/bin/*.js` — os
+binários compilados — e lê o que eles escrevem. É a única camada que pode pegar um defeito de
+empacotamento, e é onde a classe D3 vive.
+
+| # | Prova | Resultado |
+|---|---|---|
+| P0 | binários existem e `dist/src/conference-brain` está lá | PASS |
+| P1 | worker real com a flag consome a outbox (`state = done`) **e** roda a espinha | PASS |
+| P2 | sem a flag: boot declara `"espinha":false`, nenhuma execução, outbox consumida igual | PASS |
+| P3 | **espinha quebrada** (módulos removidos do `dist/`) não impede o consumo; falha fica observável; `attempts` idêntico à passada sã | PASS |
+| P4 | crítico real sobe e `/ready` responde **200 com a espinha quebrada** | PASS |
+| P5 | `real` e `simulated` convivem no processo real — `"escopos":2`, sem falha | PASS |
+| P6 | nenhuma tabela nova; `event_log` e `entregas.trip` com a contagem inalterada | PASS |
+
+**P3 é a reprodução deliberada da classe D3**, provocada em laboratório: a imagem sem o artefato
+que o código precisa. O que se mede é que a rua não sente — a outbox é consumida, a mensagem vai a
+`done`, e `attempts` fica **igual ao da passada saudável** (comparado, não presumido).
+
+### Quatro falsos vermelhos que esta suíte produziu antes de ficar honesta
+
+Todos meus, nenhum do código — e cada um é a mesma armadilha: **baseline inventado em vez de
+medido**.
+
+1. **P2** exigia que a palavra "espinha" não aparecesse. Mas o boot sempre publica a flag
+   (`"espinha":false`) — e é bom que publique. Passou a medir **execução**, não a palavra.
+2. **P3** exigia `attempts = 1`. O valor certo é o da passada sã, que agora é **medido no P1** e
+   comparado.
+3. **P6** consultava `platform.event_log.source_mode` — coluna que **não existe** (o modo viaja no
+   envelope). Passou a medir a contagem, que é a propriedade do limite L8: projeção não grava fato.
+4. **P6** presumia `entregas.trip = 0`. Havia 1 linha de outra suíte. Passou a medir antes.
+
+### Resíduo da própria suíte adversarial — achado e fechado
+
+Depois de rodar o mutation gate, `git status` acusou
+`data/conference-brain/live_cycle_runs.runtime.jsonl` **modificado (+10 linhas)**.
+
+Causa: MS21 troca `memoryOnly: true` por `false` — é essa a mutação. Sem isolamento, o store real
+passa a gravar em `data/conference-brain/`, que é patrimônio versionado. A suíte restaurava o
+CÓDIGO byte a byte e deixava resíduo nos DADOS.
+
+Restaurado com `git checkout -- data/` (0 diferenças contra `HEAD`), e fechado na origem: os
+guardas agora rodam com `CONFERENCE_BRAIN_DATA_DIR` apontando para um diretório temporário,
+removido no fim. Reexecutado: 25/25, `git status` limpo.
+
+Só apareceu porque CLAUDE.md §9 obriga `git status` depois de todo script que escreve arquivo. É a
+segunda vez nesta etapa que essa regra pega algo (a primeira foram as 13 evidências do Lab).

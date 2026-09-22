@@ -55,6 +55,7 @@
     "test:platform:topology": "npx tsx src/platform/run-topology-audit-tests.ts",
     "test:platform:spine": "npx tsx src/platform/run-intelligence-spine-tests.ts",
     "test:platform:spine:mutacoes": "npx tsx src/platform/run-spine-mutation-tests.ts",
+    "test:platform:spine:processos": "npx tsx src/platform/run-spine-process-tests.ts",
     "test:platform:cb4b1": "npx tsx src/platform/run-conference-4b1-tests.ts",
     "test:platform:cb4b2": "npx tsx src/platform/run-conference-4b2-tests.ts",
     "test:platform:cb4b3": "npx tsx src/platform/run-conference-4b3-tests.ts",

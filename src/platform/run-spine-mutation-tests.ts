@@ -23,7 +23,8 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 const raiz = process.cwd();
@@ -59,12 +60,24 @@ function flagsDeCarregamento(): string[] {
   return flags;
 }
 
+/**
+ * Onde o store do Conference Brain pode escrever durante as mutações.
+ *
+ * MS21 troca `memoryOnly: true` por `false` de propósito — é essa a mutação.
+ * Sem isolar o diretório, o store real passa a gravar em
+ * `data/conference-brain/*.runtime.jsonl`, que é patrimônio versionado: a
+ * suíte adversarial deixava resíduo no repositório. Só apareceu porque
+ * CLAUDE.md §9 obriga `git status` depois de todo script que escreve.
+ */
+const DIR_DADOS_ISOLADO = mkdtempSync(join(tmpdir(), "spine-mut-"));
+
 function rodar(script: string): { ok: boolean; saida: string } {
   try {
     const saida = execFileSync(process.execPath, [...flagsDeCarregamento(), script], {
       cwd: raiz,
       encoding: "utf8",
       stdio: ["ignore", "pipe", "pipe"],
+      env: { ...process.env, CONFERENCE_BRAIN_DATA_DIR: DIR_DADOS_ISOLADO },
     });
     return { ok: true, saida };
   } catch (e) {
@@ -479,4 +492,5 @@ if (falhas.length) {
   console.error("\nSPINE_MUTATIONS_RED");
   process.exit(1);
 }
+rmSync(DIR_DADOS_ISOLADO, { recursive: true, force: true });
 console.log("\nSPINE_MUTATIONS_GREEN");
