@@ -19,6 +19,7 @@ import type { OutboxMessage } from "./contracts/messaging";
 import type { SourceMode } from "./contracts/event-catalog";
 import { montarPonteDaOperacaoViva } from "./runtime/handler-operacao-viva";
 import { montarEspinhaDeInteligencia, SPINE_VERSION } from "./runtime/intelligence-spine";
+import type { Conclusao } from "./copiloto/conference-bridge";
 import { AsyncRuntime } from "./runtime/async-worker";
 import { MemoryOutboxRepository, MemoryJobRepository } from "./messaging/memory-queues";
 import { loadPlatformConfig } from "./config/platform-config";
@@ -409,6 +410,145 @@ teste("C3.4-6 a cadeia real não inventa pedido a partir de viagem", async () =>
   // O que a cadeia PODE dizer com o que existe hoje é saúde da fonte. Zero
   // aqui significaria espinha muda, que é outro defeito.
   assert.ok(s.recomendacoes_ativas >= 0 && s.conclusoes_vigentes >= 1, "a cadeia não leu nada");
+});
+
+teste("C3.3-12 nem enumerar escopos pode escapar — o último anteparo existe", () => {
+  // A suíte adversarial (MS2) mostrou que o catch externo nunca era exercido:
+  // tudo quebrava dentro do laço e era contido lá. Um anteparo que nenhum
+  // teste atravessa é um anteparo que ninguém sabe se funciona.
+  const ponteQuebrada = {
+    handlers: {},
+    memoria: {
+      escopos() {
+        throw new EvalError("escopos explodiu");
+      },
+    },
+    projecao: () => ({}),
+  } as never;
+  return montarEspinhaDeInteligencia({ ponte: ponteQuebrada, agora: () => AGORA })
+    .executar()
+    .then((s) => {
+      assert.equal(s.falhas, 1, "a falha na enumeração não foi contada");
+      assert.equal(s.ultimo_erro?.classe, "EvalError", "a classe do erro se perdeu");
+      assert.equal(s.ultimo_erro?.escopo, "passada", "o anteparo externo não se identificou");
+    });
+});
+
+/* ================================================================== *
+ * CONTROLE POSITIVO DA MEDIDA DE PEDIDO
+ * ================================================================== */
+
+/** Conclusão de PEDIDO legítima — a que a projeção de hoje NÃO consegue produzir. */
+function conclusaoDePedidoLegitima(podeAfirmar: boolean): Conclusao {
+  return {
+    conclusion_version: "conference-brain-conclusion@1.0.0",
+    conclusion_kind: "order_dimension" as const,
+    conclusion_ref: "order_dimension:PED-1",
+    unit_id: "ITAIM",
+    source_mode: "real" as SourceMode,
+    shadow: true,
+    observed_at: AGORA.toISOString(),
+    source_health: "available",
+    pode_afirmar: podeAfirmar,
+    evidence: [{ tipo: "live_observation", ref: "obs-1" }],
+    limitacoes: [],
+    external_id: "PED-1",
+    order_state: "ready",
+    readiness_state: "ready_notified",
+    saida_observada: false,
+  };
+}
+
+async function espinhaComConclusao(c: Conclusao) {
+  const { ponte, runtime } = await comFatos([mensagem(1)]);
+  await runtime.tick();
+  return montarEspinhaDeInteligencia({
+    ponte,
+    agora: () => AGORA,
+    modulos: {
+      ...EXPLODE,
+      adapter: {
+        criarFetchOrders: () => async () => ({ orders: [], health: { state: "available", reason: "t" } }),
+        runIdDe: (u: string, m: string) => `x:${u}:${m}`,
+      },
+      conclusoes: { extrairConclusoes: () => ({ conclusoes: [c], recusadas: [] }) },
+    },
+  }).executar();
+}
+
+teste("C3.4-8 CONTROLE POSITIVO: o contador de pedido CONTA quando há pedido legítimo", async () => {
+  // Sem este controle, `recomendacoes_de_pedido === 0` na cadeia real seria
+  // afirmação vazia: um contador quebrado dá zero do mesmo jeito. A suíte
+  // adversarial (MS15) provou que era exatamente esse o caso.
+  const s = await espinhaComConclusao(conclusaoDePedidoLegitima(true));
+  assert.equal(s.falhas, 0, `a cadeia falhou: ${JSON.stringify(s.ultimo_erro)}`);
+  assert.ok(
+    s.recomendacoes_de_pedido >= 1,
+    `o contador de pedido não contou um pedido legítimo (${s.recomendacoes_de_pedido})`,
+  );
+});
+
+teste("C3.4-9 sem autorização para afirmar, o MESMO pedido não vira recomendação", async () => {
+  const s = await espinhaComConclusao(conclusaoDePedidoLegitima(false));
+  assert.equal(s.falhas, 0, `a cadeia falhou: ${JSON.stringify(s.ultimo_erro)}`);
+  assert.equal(
+    s.recomendacoes_de_pedido,
+    0,
+    "conclusão sem pode_afirmar virou recomendação de pedido",
+  );
+});
+
+/* ================================================================== *
+ * FRONTEIRAS QUE A ESPINHA NÃO PODE ATRAVESSAR
+ * ================================================================== */
+
+/** Código do runtime da espinha, sem comentário: comentário que cita a
+ *  proibição já casou com ela antes. */
+function codigoDaEspinha(): string {
+  return [
+    "src/platform/runtime/intelligence-spine.ts",
+    "src/platform/bin/async-runtime.ts",
+  ]
+    .map((f) => readFileSync(f, "utf8"))
+    .join("\n")
+    .replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g, "");
+}
+
+teste("C3.5-G1 Q-003 CONTINUA ABERTA: a espinha não toca o motor de decisão", () => {
+  // Ligar `perfil-delivery/decisao.js` ao Copiloto escolheria, por código, qual
+  // motor é dono da atenção — que é exatamente a pergunta que espera o César.
+  assert.ok(
+    !/perfil-delivery|decisao\.js|decidir\(/.test(codigoDaEspinha()),
+    "a espinha passou a conhecer o motor de decisão — Q-003 respondida por conveniência técnica",
+  );
+});
+
+teste("C3.5-G2 Q-004 CONTINUA ABERTA: conversation-crm segue sem wiring", () => {
+  assert.ok(
+    !/conversation-crm|conversationCrm/.test(codigoDaEspinha()),
+    "o runtime passou a referenciar conversation-crm — Q-004 respondida por código",
+  );
+});
+
+teste("C3.5-G3 shadow não executa efeito externo: a espinha não tem como agir", () => {
+  // Não basta a recomendação dizer `shadow: true`. O processo que a produz não
+  // pode ter, em mãos, nenhum meio de agir no mundo.
+  const codigo = codigoDaEspinha();
+  for (const proibido of ["child_process", "node:http", "node:https", "fetch(", "execFile", "spawn("]) {
+    assert.ok(
+      !codigo.includes(proibido),
+      `a espinha ganhou acesso a ${proibido} — sombra com meio de execução não é sombra`,
+    );
+  }
+});
+
+teste("C3.5-G4 a espinha não escreve em disco nem cria tabela", () => {
+  const espinha = readFileSync("src/platform/runtime/intelligence-spine.ts", "utf8")
+    .replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g, "");
+  assert.ok(/memoryOnly:\s*true/.test(espinha), "o store da espinha deixou de ser memoryOnly");
+  for (const proibido of ["writeFileSync", "appendFileSync", "CREATE TABLE", "INSERT INTO"]) {
+    assert.ok(!espinha.includes(proibido), `a espinha passou a persistir por conta própria: ${proibido}`);
+  }
 });
 
 teste("C3.4-7 a versão da espinha é declarada e estável", () => {

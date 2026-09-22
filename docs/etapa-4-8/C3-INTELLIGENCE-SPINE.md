@@ -293,3 +293,79 @@ Nenhuma order fabricada, nenhum `trip_id` usado como `external_id`, ausência co
 
 24 gates rodados isolados. **22 PASS.** As 2 falhas são as mesmas de `4974cf5`, byte a byte no
 motivo: `governanca` (G6b, G6c, G9) e `test:entregas` (2, bomba-relógio de data). Zero regressões.
+
+---
+
+## C3.5 — Adversarial / mutation gate
+
+**`npm run test:platform:spine:mutacoes` — 25/25, ZERO mutações cegas, `SPINE_MUTATIONS_GREEN`.**
+
+O relato perdido citava 23/23 num relatório intermediário e 25/25 no fechamento. O número aqui é
+**25/25 medido nesta execução**; a coincidência com o fechamento antigo não é confirmação de nada e
+não está sendo tratada como tal.
+
+### O método, e as três recusas que ele herda
+
+Um gate verde prova que o código passa nos próprios testes. Não prova que os testes veriam o código
+ficar errado. Esta suíte mede a segunda coisa: quebra a propriedade **no disco** e exige que a
+guarda certa acuse.
+
+1. **Mutação que não entrou no disco não conta** — `aplicar` relê o arquivo e compara SHA-256.
+2. **Guarda que nem rodou não conta** — spawn sem saída vira `__SPAWN_FALHOU__` e grita.
+3. **Reprovar não basta: tem que ser pela ASSINATURA esperada** — quebrar por outro motivo
+   significa que aquela propriedade não estava sendo defendida.
+
+Restauração byte a byte em `finally`, conferida por hash. Prova independente: depois da suíte,
+`git status` não lista **nenhum** dos seis arquivos mutados.
+
+### As 25 mutações
+
+| # | Propriedade quebrada | Acusada por |
+|---|---|---|
+| MS1 | exceção da espinha escapa do laço de escopos | C3.3-5/7 |
+| MS2 | o anteparo externo deixa de conter | C3.3-12 |
+| MS3 | passada que quebrou é contada como boa | C3.3-5 |
+| MS4 | a mensagem do erro vaza no lugar da classe | C3.3-5/6 |
+| MS5 | um escopo que quebra interrompe os outros | C3.3-7 |
+| MS6 | a flag passa a vir LIGADA por padrão | C3.3-9 |
+| MS7 | a espinha é montada sem a flag | C3.3-11 |
+| MS8 | inteligência entra no caminho crítico | topologia: `INTELIGÊNCIA NO CAMINHO CRÍTICO` |
+| MS9 | o crítico passa a conhecer a espinha | C3.3-8 |
+| MS10 | o escopo recebe `source_mode` fixo | C3.4-3 |
+| MS11 | a memória perde o modo no escopo | C3.4-3/4 |
+| MS12 | o `run_id` deixa de separar modos | C3.4-4 |
+| MS13 | conclusão sem evidência vira sustentada | copiloto shadow |
+| MS14 | pedido sem `pode_afirmar` vira sustentado | C3.4-9 |
+| MS15 | o contador de recomendação de pedido para de contar | C3.4-8 |
+| MS16 | o histórico inteiro volta a valer como condição de agora | C3.4-1/2/2b |
+| MS17 | `conclusoes_vigentes` mente sobre o corte | C3.4-2b |
+| MS18 | Q-003: a espinha conhece o motor de decisão | C3.5-G1 |
+| MS19 | Q-004: `conversation-crm` ganha wiring | C3.5-G2 |
+| MS20 | a sombra ganha meio de executar (`child_process`) | C3.5-G3 |
+| MS21 | a espinha cria artefato durável (`memoryOnly: false`) | C3.5-G4 |
+| MS22 | **a própria auditoria de topologia fica cega** | `SÓ TEST HARNESS` |
+| — | 3 controles positivos: as guardas verdes ANTES de qualquer mutação | — |
+
+**MS22 é a mutação da MEDIDA, não da propriedade.** Se a auditoria continuasse verde depois de a
+espinha ser desligada do worker, ela não estaria medindo nada — seria decoração com cara de prova.
+
+### O que a suíte encontrou — três cegueiras reais nos MEUS testes
+
+A primeira execução deu **20/25 com 3 mutações cegas**. As três eram buracos de verdade:
+
+**(1) MS2 — o anteparo externo nunca era exercido.** Todas as falhas quebravam dentro do laço e
+eram contidas lá; o `catch` externo era código que nenhum teste atravessava. Fechado por C3.3-12.
+
+**(2) MS15 — `recomendacoes_de_pedido === 0` era afirmação vazia.** Trocar o filtro de `"pedido"`
+por `"nao_existe"` mantinha o gate verde: **um contador quebrado dá zero do mesmo jeito**. Fechado
+com um CONTROLE POSITIVO (C3.4-8): uma conclusão de pedido legítima, injetada, precisa fazer o
+contador contar. Só com ele o zero da cadeia real passa a significar alguma coisa.
+
+**(3) MS14 — a exigência de `pode_afirmar` não tinha guarda desta etapa.** Fechado por C3.4-9: a
+mesma conclusão, sem autorização para afirmar, não pode virar recomendação.
+
+Duas correções foram na própria suíte, não no código: MS1 e MS5 reprovavam pela assinatura errada,
+e MS5 na primeira versão removia um `try` deixando `catch` órfão — o guarda morria de **erro de
+sintaxe**, que é o mesmo falso verde que `__SPAWN_FALHOU__` existe para pegar, com outra roupa.
+
+Sem esta suíte, os três buracos teriam ido para o remoto com 26 testes verdes em cima deles.
