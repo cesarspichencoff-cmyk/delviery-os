@@ -65,6 +65,7 @@
     "test:platform:q017": "npx tsx src/platform/run-q017-source-mode-tests.ts",
     "test:platform:q017:compose": "npx tsx src/platform/run-q017-compose-tests.ts",
     "test:platform:q017:mutacoes": "npx tsx src/platform/run-q017-mutation-tests.ts",
+    "test:platform:append-only": "npx tsx src/platform/run-append-only-tests.ts",
     "test:platform:cb4b1": "npx tsx src/platform/run-conference-4b1-tests.ts",
     "test:platform:cb4b2": "npx tsx src/platform/run-conference-4b2-tests.ts",
     "test:platform:cb4b3": "npx tsx src/platform/run-conference-4b3-tests.ts",
