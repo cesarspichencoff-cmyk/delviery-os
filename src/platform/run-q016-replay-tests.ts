@@ -44,7 +44,15 @@ import { runMigrations } from "./migrations/runner";
 import { diretorioDeMigrations } from "./migrations/localizar";
 import { PgTransactionalWriter } from "./persistence/pg-repositories";
 import { createPgClient, type PgSqlClient } from "./persistence/sql-client";
-import { envelopeDaMensagem } from "./projections/consumidor";
+import {
+  envelopeDaMensagem,
+  MemoriaDaProjecao,
+  projecaoAtual,
+  reconstruirPorReplay,
+} from "./projections/consumidor";
+import type { Projecao } from "./projections/operacao-viva";
+import { lerFatosParaReplay } from "./projections/replay-do-event-log";
+import { TIPOS_DA_OPERACAO_VIVA } from "./runtime/handler-operacao-viva";
 
 const URL_PG = (process.env.DELIVERYOS_PG_URL ?? "").trim();
 
@@ -501,6 +509,190 @@ void (async () => {
     });
   } finally {
     await antigo.descartar();
+  }
+
+  /* ================================================================ *
+   * 3. A PORTA DE LEITURA
+   * ================================================================ */
+  console.log("\n3. A PORTA — le o que a Operacao Viva projeta, e nada mais");
+
+  const porta = await bancoIsolado("0002_event_log_contexto_dispositivo");
+  const pc = porta.cliente;
+
+  /** Todas as projeções, escopo a escopo, num mesmo relógio. */
+  function projecoes(memoria: MemoriaDaProjecao, agora: Date): Record<string, Projecao> {
+    const r: Record<string, Projecao> = {};
+    for (const e of memoria.escopos()) {
+      r[`${e.unit_id}|${e.source_mode}`] = projecaoAtual(memoria, { agora, ...e });
+    }
+    return r;
+  }
+
+  try {
+    // Histórico antes da 0003: sem modo, e portanto UNKNOWN.
+    await pc.query(
+      `INSERT INTO platform.event_log (event_id, unit_id, object_type, object_id, event_type,
+          payload, occurred_at, origin, idempotency_key, contract_version)
+       VALUES ('ev-velho-1','U-VELHA','trip','t-v','trip_created','{}'::jsonb,'2026-08-01T10:00:00Z','system','k-velho-1','trip_created@1.0.0'),
+              ('ev-velho-2','U-VELHA','trip','t-v','trip_started','{}'::jsonb,'2026-08-01T10:01:00Z','system','k-velho-2','trip_started@1.0.0')`,
+    );
+    await porta.migrarTudo();
+
+    // Fatos novos pelo caminho real: três modos, duas unidades, sequência,
+    // e uma grafia de instante que o log não preserva.
+    const novos = [
+      fato({ modo: "real", unidade: "U-1", viagem: "t-1", ocorreu: "2026-09-23T12:00:00.000Z", sequencia: 7 }),
+      fato({ modo: "real", unidade: "U-1", viagem: "t-1", tipo: "trip_started", ocorreu: "2026-09-23T12:01:00.000Z" }),
+      fato({ modo: "simulated", unidade: "U-1", viagem: "t-1", ocorreu: "2026-09-23T12:00:00.000Z" }),
+      fato({ modo: "control", unidade: "U-2", viagem: "t-9", ocorreu: "2026-09-23T09:00:00-03:00" }),
+    ];
+    const r = await ingerir(novos, { escritor: new PgTransactionalWriter(pc), recebido_em });
+    assert.equal(r.gravados, novos.length, `ingestão da seção 3 falhou: ${JSON.stringify(r)}`);
+
+    // Um tipo que a Operação Viva NÃO projeta, gravado com modo válido.
+    await pc.query(
+      `INSERT INTO platform.event_log (event_id, unit_id, object_type, object_id, event_type,
+          payload, occurred_at, origin, idempotency_key, contract_version, source_mode)
+       VALUES ('ev-alheio','U-1','order','o-1','order_confirmed','{}'::jsonb, now(),'source','k-alheio','x@1','real')`,
+    );
+
+    const leitura = await lerFatosParaReplay(pc, TIPOS_DA_OPERACAO_VIVA);
+
+    await teste("P1 só entram os tipos da Operação Viva — o alheio fica no log, fora da leitura", async () => {
+      assert.ok(!TIPOS_DA_OPERACAO_VIVA.includes("order_confirmed"), "o tipo 'alheio' não é alheio — teste inválido");
+      assert.equal(leitura.aptos.some((e) => e.event_id === "ev-alheio"), false, "a porta leu tipo que a projeção não entende");
+      assert.equal(leitura.lidas, 6, `esperava 6 linhas dos tipos pedidos (2 velhas + 4 novas), vieram ${leitura.lidas}`);
+    });
+
+    await teste("P2 histórico sem modo fica FORA e CONTADO como UNKNOWN — nunca vira real", async () => {
+      assert.equal(leitura.sem_modo, 2);
+      assert.equal(leitura.aptos.some((e) => e.event_id.startsWith("ev-velho")), false, "histórico sem modo entrou no replay");
+      assert.equal(leitura.aptos.length, 4);
+      assert.deepEqual(leitura.corrompidas, []);
+    });
+
+    await teste("P3 modo, unidade, identidade e instante preservados, fato a fato", async () => {
+      for (const f of novos) {
+        const e = leitura.aptos.find((x) => x.idempotency_key === f.idempotency_key);
+        assert.ok(e, `${f.idempotency_key} não voltou do log`);
+        assert.equal(e!.source_mode, f.source_mode, `${f.idempotency_key}: modo trocado`);
+        assert.equal(e!.unit_id, f.unit_id);
+        assert.equal(e!.event_id, f.event_id);
+        assert.equal(e!.trip_id, f.trip_id);
+        assert.equal(Date.parse(e!.occurred_at), Date.parse(f.occurred_at), `${f.idempotency_key}: instante mudou`);
+      }
+    });
+
+    await teste("P4 a sequência volta como NÚMERO — BIGINT chega do driver como texto", async () => {
+      const e = leitura.aptos.find((x) => x.idempotency_key === novos[0].idempotency_key)!;
+      assert.equal(e.sequence, 7);
+      assert.equal(typeof e.sequence, "number");
+    });
+
+    await teste("P5 UM reconstrutor só: o envelope relido é o MESMO que o consumidor vivo monta da outbox", async () => {
+      for (const f of novos) {
+        const [m] = await pc.query(`SELECT outbox_id, kind, idempotency_key, payload FROM platform.outbox WHERE idempotency_key = $1`, [
+          f.idempotency_key,
+        ]);
+        const vivo = envelopeDaMensagem({
+          outbox_id: String(m.outbox_id),
+          kind: String(m.kind),
+          idempotency_key: String(m.idempotency_key),
+          payload: m.payload as Record<string, unknown>,
+        })!;
+        const relido = leitura.aptos.find((x) => x.idempotency_key === f.idempotency_key)!;
+        const semInstante = (e: EventEnvelope) => ({ ...e, occurred_at: "(comparado como instante)" });
+        assert.deepEqual(semInstante(relido), semInstante(vivo), `${f.idempotency_key}: relido diverge do vivo`);
+        assert.equal(Date.parse(relido.occurred_at), Date.parse(vivo.occurred_at));
+      }
+    });
+
+    await teste("P6 a grafia que o log NÃO preserva: mesmo instante, texto canônico — declarado", async () => {
+      const f = novos[3];
+      const e = leitura.aptos.find((x) => x.idempotency_key === f.idempotency_key)!;
+      assert.equal(f.occurred_at, "2026-09-23T09:00:00-03:00");
+      assert.equal(e.occurred_at, "2026-09-23T12:00:00.000Z");
+      assert.equal(Date.parse(e.occurred_at), Date.parse(f.occurred_at));
+    });
+
+    await teste("P7 a ordem do banco não importa: normal, invertida e embaralhada dão a MESMA projeção", async () => {
+      const agora = new Date("2026-09-23T12:02:00.000Z");
+      const resultado = (fatos: EventEnvelope[]) => {
+        const m = new MemoriaDaProjecao();
+        reconstruirPorReplay(fatos, m, { agora, unit_id: "U-1", source_mode: "real" });
+        return projecoes(m, agora);
+      };
+      const base = resultado(leitura.aptos);
+      assert.equal(Object.keys(base).length, 3, `esperava 3 escopos, vieram ${Object.keys(base).join(",")}`);
+      const ids = (xs: EventEnvelope[]) => xs.map((x) => x.event_id).join(",");
+      // Ordens que COMPROVADAMENTE diferem da original. Embaralhar sem conferir
+      // poderia devolver a mesma ordem, e a prova de independência seria vazia.
+      const invertida = [...leitura.aptos].reverse();
+      const embaralhada = [...leitura.aptos];
+      let semente = 7;
+      for (let i = embaralhada.length - 1; i > 0; i -= 1) {
+        semente = (semente * 16807) % 2147483647;
+        const j = semente % (i + 1);
+        [embaralhada[i], embaralhada[j]] = [embaralhada[j], embaralhada[i]];
+      }
+      for (const [nome, ordem] of [["invertida", invertida], ["embaralhada", embaralhada]] as const) {
+        assert.notEqual(ids(ordem), ids(leitura.aptos), `a ordem ${nome} é a original — prova vazia`);
+        assert.deepEqual(resultado(ordem), base, `a ordem ${nome} mudou a projeção`);
+      }
+    });
+
+    await teste("P8 modos nunca se misturam: cada escopo só contém fatos do próprio modo", async () => {
+      const m = new MemoriaDaProjecao();
+      reconstruirPorReplay(leitura.aptos, m, { agora: new Date(), unit_id: "U-1", source_mode: "real" });
+      for (const e of m.escopos()) {
+        for (const x of m.fatos(e.unit_id, e.source_mode)) {
+          assert.equal(x.source_mode, e.source_mode, `${x.event_id} (${x.source_mode}) caiu no escopo ${e.source_mode}`);
+          assert.equal(x.unit_id, e.unit_id);
+        }
+      }
+      assert.deepEqual(
+        m.escopos().map((e) => `${e.unit_id}|${e.source_mode}`),
+        ["U-1|real", "U-1|simulated", "U-2|control"],
+      );
+    });
+
+    await teste("P9 a porta NÃO ESCREVE: event_log, outbox e job idênticos antes e depois", async () => {
+      const contar = async () =>
+        (
+          await pc.query(
+            `SELECT (SELECT count(*) FROM platform.event_log) AS l, (SELECT count(*) FROM platform.outbox) AS o,
+                    (SELECT count(*) FROM platform.job) AS j,
+                    (SELECT coalesce(sum(attempts),0) FROM platform.outbox) AS a`,
+          )
+        )[0];
+      const antes = await contar();
+      await lerFatosParaReplay(pc, TIPOS_DA_OPERACAO_VIVA);
+      await lerFatosParaReplay(pc, TIPOS_DA_OPERACAO_VIVA);
+      assert.deepEqual(await contar(), antes);
+    });
+  } finally {
+    await porta.descartar();
+  }
+
+  /* Corrupção: só num banco onde a restrição foi removida de propósito. */
+  const corrompido = await bancoIsolado();
+  try {
+    await teste("P10 modo fora do contrato é CORRUPÇÃO: fica fora, com motivo — nunca normalizado", async () => {
+      await corrompido.cliente.query(
+        `ALTER TABLE platform.event_log DROP CONSTRAINT event_log_source_mode_obrigatorio`,
+      );
+      await corrompido.cliente.query(
+        `INSERT INTO platform.event_log (event_id, unit_id, object_type, object_id, event_type,
+            payload, occurred_at, origin, idempotency_key, contract_version, source_mode)
+         VALUES ('ev-podre','U','trip','t','trip_created','{}'::jsonb, now(),'system','k-podre','x@1','REAL')`,
+      );
+      const l = await lerFatosParaReplay(corrompido.cliente, TIPOS_DA_OPERACAO_VIVA);
+      assert.equal(l.aptos.length, 0, "'REAL' virou 'real' — coerção silenciosa");
+      assert.equal(l.corrompidas.length, 1);
+      assert.match(l.corrompidas[0].motivo, /fora do contrato/);
+    });
+  } finally {
+    await corrompido.descartar();
   }
 
   const total = passaram + falhas.length;
