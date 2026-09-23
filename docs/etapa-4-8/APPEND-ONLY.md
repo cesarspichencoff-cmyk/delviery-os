@@ -317,7 +317,18 @@ documento, com a L3 da skill editada, derrubou o `test:platform:m1-bridge`
 (M-J, achado 5). A edição foi revertida e o gate voltou a 34/34. Por isso a
 regressão integral roda de novo sobre o commit que traz esta documentação,
 com a governança medida depois do commit (L45). O resultado entra no commit
-seguinte, que só o registra.
+seguinte, que só o registra:
+
+Sobre `5e60596`, com a árvore limpa: **57 gates isolados**, os 52 da rodada 1 mais o
+`test:entregas:deploy-audit` e as quatro suítes adversariais. **53 PASS**, os mesmos 3
+FAIL_PREEXISTENTE e o mesmo BLOCKED, **0 FAIL_NOVO**. O `test:platform:m1-bridge` volta a 34/34.
+Cada suíte adversarial repete as linhas de resultado da rodada 1 (append-only 14/14, q016 14/14,
+q017 17/17, pb19 14/14, espinha 31/31, evidências do Lab 6/6, zero cegas), e as falhas
+pré-existentes repetem o log do baseline da Q-017. O carimbo de build mantém o hash das fontes,
+`2e21deaa428a`: documentação não entra no artefato.
+
+**Governança medida depois do commit**, no `HEAD 5e60596`: 31 artefatos com lifecycle e rota de
+21 caminhos, com este documento dentro; só G6b e G9, as duas pré-existentes; G6c verde.
 
 ---
 
