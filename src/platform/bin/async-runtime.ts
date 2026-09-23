@@ -22,6 +22,7 @@ import { PgJobRepository, PgOutboxRepository } from "../persistence/pg-repositor
 import { AsyncRuntime, type JobHandler, type OutboxHandler } from "../runtime/async-worker";
 import { montarPonteDaOperacaoViva } from "../runtime/handler-operacao-viva";
 import { montarEspinhaDeInteligencia } from "../runtime/intelligence-spine";
+import { reconstruirNoBoot, resumoDaMemoria } from "../runtime/replay-no-boot";
 
 /**
  * Handlers registrados.
@@ -30,8 +31,9 @@ import { montarEspinhaDeInteligencia } from "../runtime/intelligence-spine";
  * Copiloto, notificações) entram do mesmo jeito: uma linha aqui.
  *
  * A memória da projeção vive no processo e é DESCARTÁVEL — o event log é a
- * verdade, e `reconstruirPorReplay` a recompõe. Um reinício do worker não
- * perde nada que não possa ser recalculado.
+ * verdade, e o boot a recompõe com `reconstruirNoBoot` antes do laço (Q-016).
+ * Até a Q-016 este comentário afirmava a recomposição e nenhuma linha de
+ * código a fazia: o worker reiniciado começava vazio.
  */
 const ponteOperacaoViva = montarPonteDaOperacaoViva();
 const OUTBOX_HANDLERS: Record<string, OutboxHandler> = { ...ponteOperacaoViva.handlers };
@@ -71,6 +73,26 @@ async function main(): Promise<void> {
     }
   }
 
+  // Q-016: a projeção é reconstruída do event log ANTES de o runtime existir.
+  // Construí-lo depois é o que garante que nenhum tick consome a fila sobre
+  // uma memória ainda vazia. A política de falha — recusar quando o log não
+  // pode ser lido, subir degradado quando há linha corrompida — está
+  // justificada em `replay-no-boot.ts`.
+  try {
+    const replay = await reconstruirNoBoot(cliente, ponteOperacaoViva, new Date());
+    if (replay.estado === "degradado") {
+      console.error("[assincrono] replay DEGRADADO", JSON.stringify(replay));
+    } else {
+      console.log("[assincrono] replay", JSON.stringify(replay));
+    }
+  } catch (e) {
+    console.error(
+      `[assincrono] replay impossível, boot recusado: ${e instanceof Error ? e.message : String(e)}`,
+    );
+    await cliente.close();
+    process.exit(78);
+  }
+
   const runtime = new AsyncRuntime({
     identity: { version: cfg.version, commit: cfg.commit, instance_id: cfg.instance_id },
     outbox: new PgOutboxRepository(cliente),
@@ -104,7 +126,19 @@ async function main(): Promise<void> {
         const houve =
           r.outbox_processed + r.outbox_failed + r.outbox_dead +
           r.jobs_processed + r.jobs_failed + r.jobs_dead + r.reclaimed;
-        if (houve > 0) console.log("[assincrono] passada", JSON.stringify(r));
+        if (houve > 0) {
+          console.log("[assincrono] passada", JSON.stringify(r));
+          // Cumulativo desde o boot. É o que distingue, por fora, uma mensagem
+          // reconhecida como duplicata de uma reaplicada como fato novo.
+          console.log(
+            "[assincrono] operacao-viva",
+            JSON.stringify({
+              ...ponteOperacaoViva.contagem,
+              fatos_em_memoria: ponteOperacaoViva.memoria.tamanho,
+              escopos: resumoDaMemoria(ponteOperacaoViva.memoria, new Date()),
+            }),
+          );
+        }
       } catch (e) {
         // Uma passada que explode não pode derrubar o worker: o próximo tick
         // pode encontrar o banco de volta. Cair aqui transformaria uma queda

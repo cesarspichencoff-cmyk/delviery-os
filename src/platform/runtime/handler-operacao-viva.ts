@@ -54,6 +54,16 @@ export interface PonteDaOperacaoViva {
   memoria: MemoriaDaProjecao;
   /** Projeção calculada no instante da leitura. */
   projecao(o: OpcoesProjecao): Projecao;
+  /**
+   * O que o consumo VIVO fez desde o boot, cumulativo.
+   *
+   * Existe para uma pergunta que só o processo real responde: depois do replay,
+   * uma mensagem ainda pendente na outbox de um fato já relido foi reconhecida
+   * como DUPLICATA, ou aplicada de novo como se fosse fato novo? Sem este
+   * contador, as duas coisas são invisíveis por fora — a memória é um mapa por
+   * chave, e a segunda aplicação sobrescreveria a primeira sem deixar rastro.
+   */
+  contagem: { aplicados: number; duplicados: number };
 }
 
 /**
@@ -70,8 +80,11 @@ export interface PonteDaOperacaoViva {
 export function montarPonteDaOperacaoViva(
   memoria: MemoriaDaProjecao = new MemoriaDaProjecao(),
 ): PonteDaOperacaoViva {
+  const contagem = { aplicados: 0, duplicados: 0 };
   const handler: OutboxHandler = (msg) => {
     const r = consumir([paraPonte(msg)], { memoria, suportados: TIPOS_DA_OPERACAO_VIVA });
+    contagem.aplicados += r.aplicados;
+    contagem.duplicados += r.duplicados;
 
     if (r.ignorados.length) {
       // Mensagem malformada ou de tipo alheio chegou a um handler registrado
@@ -89,5 +102,6 @@ export function montarPonteDaOperacaoViva(
     handlers,
     memoria,
     projecao: (o) => projecaoAtual(memoria, o),
+    contagem,
   };
 }

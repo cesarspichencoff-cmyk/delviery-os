@@ -30,6 +30,17 @@ const RAIZ = process.cwd();
 const ESPECIFICADORES = /(?:\bfrom\s*|\bimport\s*|\brequire\s*\(\s*)["']([^"']+)["']/g;
 
 /**
+ * `import("x")` dinâmico. Faltava, e o custo foi medido na Q-016: o fecho do
+ * replay inclui `persistence/sql-client.ts`, que carrega o driver com
+ * `await import("pg")`, e a extração devolvia "nenhum especificador externo"
+ * — um falso negativo exatamente na pergunta "este código alcança I/O?". O
+ * percurso tinha o mesmo ponto cego para `import("./modulo")` relativo: hoje
+ * latente (nenhum código de produção usa), e um falso verde no primeiro
+ * módulo carregado assim.
+ */
+const ESPECIFICADORES_DINAMICOS = /\bimport\s*\(\s*["']([^"']+)["']\s*\)/g;
+
+/**
  * `createRequire` cria um require com OUTRO nome, e um grafo que só procura
  * `require(` fica cego justamente onde um módulo CommonJS é carregado de
  * dentro de TypeScript — que é como a espinha carrega o Brain. O identificador
@@ -83,7 +94,7 @@ export function alcancaveis(entrada: string, opcoes: OpcoesDoGrafo = {}): Set<st
     // Comentário que cita a proibição já casou com ela antes de qualquer
     // medida: fora.
     const codigo = fonte.replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g, "");
-    for (const padrao of [ESPECIFICADORES, ...padroesDeRequireApelidado(codigo)]) {
+    for (const padrao of [ESPECIFICADORES, ESPECIFICADORES_DINAMICOS, ...padroesDeRequireApelidado(codigo)]) {
       for (const m of codigo.matchAll(padrao)) {
         const alvo = resolver(atual, m[1]);
         if (alvo && !vistos.has(alvo)) fila.push(alvo);
@@ -112,4 +123,32 @@ export function alcancadosSob(conjunto: Set<string>, prefixoRelativo: string): s
     .filter((a) => a.startsWith(prefixo))
     .map((a) => a.slice(RAIZ.length + 1))
     .sort();
+}
+
+/**
+ * Os especificadores NÃO relativos que um conjunto de arquivos importa —
+ * pacotes e módulos nativos (`node:http`, `pg`…), que o percurso não atravessa.
+ *
+ * Mesma extração do percurso, com comentário removido antes: é o que permite
+ * perguntar "este fecho alcança rede ou processo?" sem abrir uma segunda
+ * implementação do grafo. Existe para a Q-016 provar, por estrutura, que o
+ * replay do boot não tem por onde produzir efeito externo.
+ */
+export function especificadoresExternos(arquivos: Iterable<string>): Set<string> {
+  const externos = new Set<string>();
+  for (const arquivo of arquivos) {
+    let fonte: string;
+    try {
+      fonte = readFileSync(arquivo, "utf8");
+    } catch {
+      continue;
+    }
+    const codigo = fonte.replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g, "");
+    for (const padrao of [ESPECIFICADORES, ESPECIFICADORES_DINAMICOS, ...padroesDeRequireApelidado(codigo)]) {
+      for (const m of codigo.matchAll(padrao)) {
+        if (!m[1].startsWith(".")) externos.add(m[1]);
+      }
+    }
+  }
+  return externos;
 }
