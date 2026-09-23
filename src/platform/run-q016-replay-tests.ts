@@ -42,6 +42,8 @@ import type { EventEnvelope, SourceMode } from "./contracts/event-catalog";
 import { ingerir } from "./ingest/ingest-service";
 import { PgTransactionalWriter } from "./persistence/pg-repositories";
 import { bancoIsolado as bancoIsoladoDe } from "./banco-isolado";
+import { diretorioDeMigrations } from "./migrations/localizar";
+import { loadMigrations } from "./migrations/runner";
 import {
   envelopeDaMensagem,
   MemoriaDaProjecao,
@@ -332,7 +334,14 @@ void (async () => {
       }
       antes = await conteudoHistorico();
       const aplicadas = await antigo.migrarTudo();
-      assert.deepEqual(aplicadas, ["0003_event_log_source_mode"], `aplicou: ${aplicadas.join(",")}`);
+      // O que falta depois da 0002, DERIVADO do diretório: a lista escrita à
+      // mão ("só a 0003") quebrou quando a 0004 chegou, sem que nada do que
+      // este teste prova tivesse mudado. A propriedade é a 0003 entrar por cima.
+      const depoisDa0002 = loadMigrations(diretorioDeMigrations())
+        .map((m) => m.version)
+        .filter((v) => v > "0002_event_log_contexto_dispositivo");
+      assert.deepEqual(aplicadas, depoisDa0002, `aplicou: ${aplicadas.join(",")}`);
+      assert.equal(aplicadas[0], "0003_event_log_source_mode", "a 0003 não foi a primeira a entrar");
     });
 
     await teste("H2 a 0003 NÃO tocou o histórico: mesmas linhas, mesmo conteúdo, modo NULO", async () => {
@@ -379,7 +388,11 @@ void (async () => {
           WHERE n.nspname = 'platform' AND NOT t.tgisinternal`,
       );
       const porTabela = (x: string) => gatilhos.filter((g) => g.tabela === x).map((g) => g.tgname);
-      assert.deepEqual(porTabela("event_log"), ["event_log_sem_update"], "controle: o log perdeu a trigger");
+      // Controle: a consulta ENXERGA trava onde ela existe — sem isto, a outbox
+      // "sem nenhuma" não provaria nada. Presença, não lista exata: a 0004
+      // somou a trava de TRUNCATE ao log, e a lista escrita à mão quebrou sem
+      // que a propriedade desta prova mudasse.
+      assert.ok(porTabela("event_log").includes("event_log_sem_update"), "controle: o log perdeu a trigger");
       assert.deepEqual(porTabela("outbox"), [], "a outbox ganhou proteção — reavaliar H5");
       await hc.query(
         `INSERT INTO platform.outbox (outbox_id, stream, kind, payload, idempotency_key)

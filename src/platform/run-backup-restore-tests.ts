@@ -9,8 +9,9 @@
  * O que ele confere não é só a contagem de linhas. As coisas que costumam
  * sumir num restore e só dão sinal meses depois:
  *
- *  - as **triggers** de append-only. Se elas não voltarem, o event log fica
- *    editável e ninguém percebe — até o dia em que alguém edita;
+ *  - as **triggers** de append-only — contra UPDATE e DELETE (0001) e contra
+ *    TRUNCATE (0004). Se elas não voltarem, o event log fica editável ou
+ *    apagável e ninguém percebe — até o dia em que alguém edita ou apaga;
  *  - as **constraints**, inclusive a `NOT VALID` da 0003, que precisa voltar
  *    ainda NÃO validada — validada, ela recusaria o histórico sem modo;
  *  - os **índices**. Sem eles nada quebra: só fica lento, progressivamente,
@@ -410,7 +411,9 @@ void (async () => {
     await teste("B11 as triggers e as funções voltaram iguais, e habilitadas", async () => {
       const d = await triggers(destino);
       assert.deepEqual(d, antes.triggers);
-      assert.ok(d.some((t) => t.tgname === "event_log_sem_update"), "a trava de append-only não voltou");
+      for (const nome of ["event_log_sem_update", "event_log_sem_truncate"]) {
+        assert.ok(d.some((t) => t.tgname === nome), `a trava ${nome} não voltou`);
+      }
       assert.ok(d.every((t) => t.tgenabled === "O"), `trigger voltou desabilitada: ${json(d)}`);
       assert.deepEqual(await funcoes(destino), antes.funcoes);
     });
@@ -476,6 +479,14 @@ void (async () => {
                  'k-ev-sm', 'trip_started@1.0.0')`,
       );
       assert.match(String(semModo), /event_log_source_mode_obrigatorio/);
+    });
+
+    // Por último de propósito: se a trava não tivesse voltado, o TRUNCATE
+    // esvaziaria a tabela e contaminaria qualquer prova que viesse depois.
+    await teste("B18 TRUNCATE continua recusado no restaurado — a trava da 0004 voltou e protege", async () => {
+      const erro = await tentar(destino, `TRUNCATE platform.event_log`);
+      assert.match(String(erro), /append-only: TRUNCATE nao e permitido/, `TRUNCATE passou: ${String(erro)}`);
+      assert.equal((await contagens(destino))["platform.event_log"], antes.contagens["platform.event_log"] + 1);
     });
   } catch (e) {
     falhas.push(`preparação: ${e instanceof Error ? e.message : String(e)}`);
