@@ -309,8 +309,19 @@ por fora contra o SHA-256 de antes: idênticos; `git status` limpo.
 
 ### Governança depois do commit desta fase
 
-Medida no commit seguinte a este documento, depois que este existir — antes
-dele, o G6c não tem o que medir.
+Medida com `HEAD 40796dd` — o commit que trouxe este documento —, árvore
+limpa:
+
+```
+HEAD 40796dd · 30 artefatos com lifecycle · rota de 20 caminhos
+G6b FALHOU: docs/execution/STATE.json: observa mudou em baa46e3, depois da base declarada 274141e
+G9 FALHOU:  Q-014: estado invalido
+G6c verde
+```
+
+Só as duas pré-existentes. O G6c que a Q-016 criou está fechado, e agora
+medido onde ele mede. `governanca:mutacoes` segue abortando em cascata pelas
+mesmas duas.
 
 ---
 
