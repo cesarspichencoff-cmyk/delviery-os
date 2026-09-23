@@ -27,6 +27,7 @@ import {
   streamDe,
   type EventEnvelope,
   type EventType,
+  type SourceMode,
 } from "../contracts/event-catalog";
 import { validarPayload, tiposComContrato } from "../contracts/event-schema";
 import type { OutboxMessage } from "../contracts/messaging";
@@ -69,6 +70,12 @@ export interface FatoParaGravar {
   correlation_id?: string;
   sequence_local?: number;
   contract_version: string;
+  /**
+   * Obrigatório, e sem padrão. O banco recusa fato novo sem ele desde a
+   * migration 0003 — mas o tipo recusa antes, em tempo de compilação, para que
+   * nenhum escritor chegue ao banco podendo esquecer.
+   */
+  source_mode: SourceMode;
 }
 
 /**
@@ -225,6 +232,10 @@ export async function ingerir(
       correlation_id: e.correlation_id,
       sequence_local: e.sequence,
       contract_version: e.event_version,
+      // O modo vai para o FATO, não só para a mensagem. Até a Q-016 ele ia só
+      // para a outbox, e o log — que é a verdade — guardava o fato real e o
+      // simulado como a mesma linha (provado em run-q016-replay-tests.ts).
+      source_mode: e.source_mode,
     };
   });
 

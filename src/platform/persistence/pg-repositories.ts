@@ -29,6 +29,7 @@ import type {
 } from "../contracts/messaging";
 import { decideAfterFailure, nextAvailableAt } from "../contracts/messaging";
 import type { SqlClient, SqlRow } from "./sql-client";
+import type { SourceMode } from "../contracts/event-catalog";
 
 /** Converte TIMESTAMPTZ para ISO-8601 UTC, ou undefined. */
 function iso(v: unknown): string | undefined {
@@ -479,6 +480,12 @@ export interface FactRecord {
   correlation_id?: string;
   sequence_local?: number;
   contract_version: string;
+  /**
+   * Obrigatório, e sem padrão. O banco recusa fato novo sem ele desde a
+   * migration 0003 — mas o tipo recusa antes, em tempo de compilação, para que
+   * nenhum escritor chegue ao banco podendo esquecer.
+   */
+  source_mode: SourceMode;
 }
 
 /**
@@ -506,8 +513,8 @@ export class PgTransactionalWriter {
             `INSERT INTO platform.event_log
                (event_id, unit_id, object_type, object_id, event_type, payload, occurred_at,
                 recorded_at, origin, actor_id, device_id, idempotency_key, correlation_id,
-                sequence_local, contract_version)
-             VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+                sequence_local, contract_version, source_mode)
+             VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
              ON CONFLICT (idempotency_key) DO NOTHING
              RETURNING event_id`,
             [
@@ -526,6 +533,8 @@ export class PgTransactionalWriter {
               f.correlation_id ?? null,
               f.sequence_local ?? null,
               f.contract_version,
+              // Sem `?? "real"`: ausente vai como ausente, e o banco recusa.
+              f.source_mode,
             ],
           );
           gravados += r.length;
@@ -567,8 +576,8 @@ export class PgFactSink {
       await this.sql.query(
         `INSERT INTO platform.event_log
            (event_id, unit_id, object_type, object_id, event_type, payload, occurred_at,
-            origin, actor_id, idempotency_key, correlation_id, contract_version)
-         VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9,$10,$11,$12)
+            origin, actor_id, idempotency_key, correlation_id, contract_version, source_mode)
+         VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9,$10,$11,$12,$13)
          ON CONFLICT (idempotency_key) DO NOTHING`,
         [
           f.event_id,
@@ -583,6 +592,7 @@ export class PgFactSink {
           f.idempotency_key,
           f.correlation_id ?? null,
           f.contract_version,
+          f.source_mode,
         ],
       );
     }
@@ -619,6 +629,12 @@ export interface PlatformFactLike {
   origin: string;
   correlation_id?: string;
   contract_version: string;
+  /**
+   * Obrigatório, e sem padrão. O banco recusa fato novo sem ele desde a
+   * migration 0003 — mas o tipo recusa antes, em tempo de compilação, para que
+   * nenhum escritor chegue ao banco podendo esquecer.
+   */
+  source_mode: SourceMode;
 }
 
 /* ------------------------------------------------------------------ *

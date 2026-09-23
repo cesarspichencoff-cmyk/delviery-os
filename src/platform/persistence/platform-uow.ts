@@ -18,6 +18,7 @@
 
 import type { OutboxMessage, OutboxRepository, RetryPolicy } from "../contracts/messaging";
 import { DEFAULT_RETRY } from "../contracts/messaging";
+import type { SourceMode } from "../contracts/event-catalog";
 
 export interface PlatformFact {
   event_id: string;
@@ -32,6 +33,12 @@ export interface PlatformFact {
   origin: string;
   correlation_id?: string;
   contract_version: string;
+  /**
+   * Obrigatório, e sem padrão. O banco recusa fato novo sem ele desde a
+   * migration 0003 — mas o tipo recusa antes, em tempo de compilação, para que
+   * nenhum escritor chegue ao banco podendo esquecer.
+   */
+  source_mode: SourceMode;
 }
 
 export interface FactSink {

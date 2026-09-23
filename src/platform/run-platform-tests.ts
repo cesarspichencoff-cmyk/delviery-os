@@ -66,6 +66,9 @@ function fact(over: Partial<PlatformFact> = {}): PlatformFact {
     idempotency_key: "trip_created:trip-1",
     origin: "device",
     contract_version: "COR-ENTREGAS-V1@1.0.3",
+    // Fixture sintética: declarada `simulated`, não carimbada `real` por
+    // reflexo. O modo não entra no que estes testes medem.
+    source_mode: "simulated",
     ...over,
   };
 }

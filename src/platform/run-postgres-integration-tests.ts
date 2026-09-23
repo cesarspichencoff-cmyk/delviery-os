@@ -23,7 +23,7 @@
 
 import assert from "node:assert/strict";
 import { execFileSync, spawn } from "node:child_process";
-import { closeSync, existsSync, openSync, readFileSync, rmSync } from "node:fs";
+import { closeSync, existsSync, openSync, readFileSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -137,14 +137,30 @@ console.log("=== Integração PostgreSQL (servidor real) ===");
  * Migration
  * ------------------------------------------------------------------ */
 
+/**
+ * TODAS as migrations, em ordem — não só a 0001.
+ *
+ * Aplicar só a fundação bastava enquanto nenhuma migration posterior mudava
+ * o que os testes abaixo escrevem. Desde a 0003 o banco exige `source_mode` em
+ * fato novo; um banco limpo com só a 0001 não teria a coluna, e um banco
+ * compartilhado já migrado recusaria insert sem ela. "O schema" é a soma das
+ * migrations, e é contra ele que estas invariantes precisam valer.
+ */
+function aplicarTodasAsMigrations(): void {
+  const dir = "src/platform/migrations";
+  for (const f of readdirSync(dir).filter((n) => /^\d{4}_.+\.sql$/.test(n)).sort()) {
+    execFileSync(
+      PSQL,
+      ["-d", PG_URL as string, "-v", "ON_ERROR_STOP=1", "-f", `${dir}/${f}`],
+      { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
+    );
+  }
+}
+
 test("a migration aplica sem erro num banco limpo", () => {
   // Idempotente por construção (IF NOT EXISTS / OR REPLACE): reaplicar é
   // exatamente o que acontece num redeploy.
-  execFileSync(
-    PSQL,
-    ["-d", PG_URL as string, "-v", "ON_ERROR_STOP=1", "-f", "src/platform/migrations/0001_platform_foundation.sql"],
-    { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
-  );
+  aplicarTodasAsMigrations();
   const schemas = sql(
     `select count(*) from pg_namespace where nspname in
      ('platform','identity','entregas','sources','orders','crm','copiloto')`,
@@ -153,11 +169,7 @@ test("a migration aplica sem erro num banco limpo", () => {
 });
 
 test("reaplicar a migration não quebra — redeploy é seguro", () => {
-  execFileSync(
-    PSQL,
-    ["-d", PG_URL as string, "-v", "ON_ERROR_STOP=1", "-f", "src/platform/migrations/0001_platform_foundation.sql"],
-    { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
-  );
+  aplicarTodasAsMigrations();
   assert.ok(true);
 });
 
@@ -192,10 +204,16 @@ sql(`insert into entregas.trip(trip_id,unit_id,courier_actor_id,state,created_by
  * Invariantes que só o banco garante
  * ------------------------------------------------------------------ */
 
+// Os fatos abaixo carregam um modo VÁLIDO (`simulated`, dado sintético) de
+// propósito. Desde a 0003 o CHECK de modo roda antes de trigger, índice único e
+// outbox: um insert sem modo seria recusado pelo motivo errado, e cada teste
+// passaria a medir o CHECK em vez da invariante que o nome dele promete. Foi o
+// que a primeira execução pós-0003 mostrou — o DELETE "passou" porque o INSERT
+// de preparação nem tinha entrado.
 test("event log é append-only: UPDATE é rejeitado pelo banco", () => {
   sql(`insert into platform.event_log
-       (event_id,unit_id,object_type,object_id,event_type,payload,occurred_at,origin,idempotency_key,contract_version)
-       values ('ev-pg','ITAIM','trip','t-pg','trip_created','{}','2026-07-26T12:00:00Z','device','k-pg','COR@1.0.3')
+       (event_id,unit_id,object_type,object_id,event_type,payload,occurred_at,origin,idempotency_key,contract_version,source_mode)
+       values ('ev-pg','ITAIM','trip','t-pg','trip_created','{}','2026-07-26T12:00:00Z','device','k-pg','COR@1.0.3','simulated')
        on conflict do nothing`);
   const erro = sql(`update platform.event_log set event_type='alterado' where event_id='ev-pg'`, {
     expectError: true,
@@ -217,8 +235,8 @@ test("event log é append-only: DELETE é rejeitado pelo banco", () => {
 test("idempotency_key duplicada é rejeitada pelo índice", () => {
   const erro = sql(
     `insert into platform.event_log
-     (event_id,unit_id,object_type,object_id,event_type,payload,occurred_at,origin,idempotency_key,contract_version)
-     values ('ev-outro','ITAIM','trip','t-pg','trip_created','{}','2026-07-26T12:00:00Z','device','k-pg','COR@1.0.3')`,
+     (event_id,unit_id,object_type,object_id,event_type,payload,occurred_at,origin,idempotency_key,contract_version,source_mode)
+     values ('ev-outro','ITAIM','trip','t-pg','trip_created','{}','2026-07-26T12:00:00Z','device','k-pg','COR@1.0.3','simulated')`,
     { expectError: true },
   );
   assert.match(erro, /duplicate key|unique/i);
@@ -407,8 +425,8 @@ test("fato e outbox confirmam na MESMA transação — rollback desfaz os dois",
   const erro = sql(
     `begin;
      insert into platform.event_log
-       (event_id,unit_id,object_type,object_id,event_type,payload,occurred_at,origin,idempotency_key,contract_version)
-       values ('ev-tx','ITAIM','trip','t-pg','trip_started','{}','2026-07-26T12:00:00Z','device','k-tx','COR@1.0.3');
+       (event_id,unit_id,object_type,object_id,event_type,payload,occurred_at,origin,idempotency_key,contract_version,source_mode)
+       values ('ev-tx','ITAIM','trip','t-pg','trip_started','{}','2026-07-26T12:00:00Z','device','k-tx','COR@1.0.3','simulated');
      insert into platform.outbox(outbox_id,stream,kind,payload,idempotency_key,state)
        values ('o-tx','entregas','trip_started','{}','k-tx','estado_invalido');
      commit;`,

@@ -349,6 +349,9 @@ async function main(): Promise<void> {
       origin: "device",
       idempotency_key: k,
       contract_version: "COR-ENTREGAS-V1@1.0.3",
+      // Fixture sintética: declarada `simulated`. Desde a 0003 o banco recusa
+      // fato sem modo, e o tipo recusa antes.
+      source_mode: "simulated",
     });
 
     await test("fato e mensagem são gravados juntos", async () => {

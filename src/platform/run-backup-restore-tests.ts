@@ -98,13 +98,15 @@ try {
     `INSERT INTO entregas.trip(trip_id,unit_id,courier_actor_id,state,created_by,created_at,contract_version)
      VALUES ('t-bkp','ITAIM','rid-1','em_rota','ops','2026-07-26T12:00:00Z','COR-ENTREGAS-V1@1.0.3')`,
   );
+  // Fatos sintéticos, declarados `simulated`: desde a 0003 o banco recusa fato
+  // novo sem modo, e dado de teste não é carimbado `real` por reflexo.
   for (let i = 0; i < 3; i += 1) {
     psql(
       url,
       `INSERT INTO platform.event_log
-         (event_id,unit_id,object_type,object_id,event_type,payload,occurred_at,origin,idempotency_key,contract_version)
+         (event_id,unit_id,object_type,object_id,event_type,payload,occurred_at,origin,idempotency_key,contract_version,source_mode)
        VALUES ('ev-bkp-${i}','ITAIM','trip','t-bkp','trip_started','{"n":${i}}',
-               '2026-07-26T12:0${i}:00Z','device','k-bkp-${i}','COR-ENTREGAS-V1@1.0.3')`,
+               '2026-07-26T12:0${i}:00Z','device','k-bkp-${i}','COR-ENTREGAS-V1@1.0.3','simulated')`,
     );
   }
 
@@ -246,13 +248,17 @@ try {
   });
 
   test("a unicidade de idempotência voltou", () => {
+    // O insert carrega um modo VÁLIDO de propósito. Desde a 0003 o CHECK de
+    // modo roda antes do índice único; sem modo, a recusa viria do CHECK e esta
+    // prova passaria sem medir unicidade nenhuma. A única razão de recusa aqui
+    // precisa ser a chave repetida.
     let erro = "";
     try {
       psql(
         urlRestaurada,
         `INSERT INTO platform.event_log
-           (event_id,unit_id,object_type,object_id,event_type,payload,occurred_at,origin,idempotency_key,contract_version)
-         VALUES ('ev-dup','ITAIM','trip','t-bkp','trip_started','{}','2026-07-26T12:00:00Z','device','k-bkp-0','COR-ENTREGAS-V1@1.0.3')`,
+           (event_id,unit_id,object_type,object_id,event_type,payload,occurred_at,origin,idempotency_key,contract_version,source_mode)
+         VALUES ('ev-dup','ITAIM','trip','t-bkp','trip_started','{}','2026-07-26T12:00:00Z','device','k-bkp-0','COR-ENTREGAS-V1@1.0.3','simulated')`,
       );
     } catch (e) {
       erro = (e as { stderr?: string }).stderr ?? String(e);
@@ -284,8 +290,8 @@ try {
     psql(
       urlRestaurada,
       `INSERT INTO platform.event_log
-         (event_id,unit_id,object_type,object_id,event_type,payload,occurred_at,origin,idempotency_key,contract_version)
-       VALUES ('ev-pos','ITAIM','trip','t-bkp','trip_finished','{}','2026-07-26T13:00:00Z','device','k-pos','COR-ENTREGAS-V1@1.0.3')`,
+         (event_id,unit_id,object_type,object_id,event_type,payload,occurred_at,origin,idempotency_key,contract_version,source_mode)
+       VALUES ('ev-pos','ITAIM','trip','t-bkp','trip_finished','{}','2026-07-26T13:00:00Z','device','k-pos','COR-ENTREGAS-V1@1.0.3','simulated')`,
     );
     assert.equal(
       psql(urlRestaurada, `SELECT count(*) FROM platform.event_log`),
