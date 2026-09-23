@@ -52,6 +52,26 @@
  * Depois de backup e restauração, as mesmas proteções são executadas no banco
  * restaurado por `run-backup-restore-tests.ts`.
  *
+ * FASE 8 — A FRONTEIRA DE PRIVILÉGIO, MEDIDA
+ * ------------------------------------------
+ * Trigger é contrato do banco, não cofre. Quem é DONO da tabela, ou
+ * superusuário, pode desligá-la. A pergunta honesta é: a partir de que
+ * privilégio?
+ *
+ *   F0  quem roda estas provas, e quem é dono do event log;
+ *   F1  um papel NÃO dono com TODO privilégio de escrita no log — SELECT,
+ *       INSERT, UPDATE, DELETE, TRUNCATE — insere, e só: as três mutações são
+ *       recusadas pela trava. Privilégio concedido não basta;
+ *   F2  esse papel também não DESLIGA a trava: DISABLE TRIGGER, DROP
+ *       TRIGGER, DROP TABLE e `session_replication_role = replica` recusados;
+ *   F3  o DONO/superusuário consegue — medido dentro de transação desfeita:
+ *       DISABLE TRIGGER USER, e `session_replication_role = replica`, deixam o
+ *       TRUNCATE passar. Isso é administração, não caminho operacional, e fica
+ *       declarado como o limite desta garantia.
+ *
+ * O papel é global no servidor: nasce com nome único por `CREATE ROLE` (que
+ * falha se já existir) e só é apagado se foi criado aqui.
+ *
  * Nunca toca o banco compartilhado: exige `DELIVERYOS_PG_URL` só para chegar
  * ao SERVIDOR, e cria (e apaga) bancos próprios (`banco-isolado.ts`). Sem a
  * variável, PULA EM VOZ ALTA (CLAUDE.md §10).
@@ -61,7 +81,8 @@ import assert from "node:assert/strict";
 import { readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 
-import { bancoIsolado, migrationsAte, type BancoIsolado } from "./banco-isolado";
+import { bancoIsolado, migrationsAte, urlCom, type BancoIsolado } from "./banco-isolado";
+import { createPgClient } from "./persistence/sql-client";
 import { diretorioDeMigrations } from "./migrations/localizar";
 import { loadMigrations, runMigrations } from "./migrations/runner";
 
@@ -341,6 +362,124 @@ void (async () => {
     });
   } finally {
     await legado.descartar();
+  }
+
+  /* ---------------------------------------------------------------- *
+   * A fronteira de privilégio
+   * ---------------------------------------------------------------- */
+  console.log("\n4. FRONTEIRA DE PRIVILEGIO — o que o banco garante, e para quem");
+  const priv = await bancoIsolado(URL_SERVIDOR, undefined, "ao");
+  const papel = `ao_app_${process.pid}_${Math.random().toString(36).slice(2, 6)}`;
+  let papelCriado = false;
+  /** Executa como o papel NÃO dono, na mesma conexão, e devolve o erro ou null. */
+  const comoPapel = async (sql: string): Promise<string | null> => {
+    try {
+      await priv.cliente.transaction(async (tx) => {
+        await tx.query(`SET LOCAL ROLE ${papel}`);
+        await tx.query(sql);
+      });
+      return null;
+    } catch (e) {
+      return e instanceof Error ? e.message : String(e);
+    }
+  };
+  class Desfazer extends Error {}
+  /** Executa como o dono, mede dentro, e DESFAZ — a sabotagem não fica. */
+  const comoDonoDesfeito = async (comandos: string[]): Promise<{ erro: string | null; linhasDentro: number }> => {
+    let linhasDentro = -1;
+    try {
+      await priv.cliente.transaction(async (tx) => {
+        for (const c of comandos) await tx.query(c);
+        const r = await tx.query<{ n: string }>(`SELECT count(*) AS n FROM platform.event_log`);
+        linhasDentro = Number(r[0].n);
+        throw new Desfazer("desfazer");
+      });
+      return { erro: null, linhasDentro };
+    } catch (e) {
+      if (e instanceof Desfazer) return { erro: null, linhasDentro };
+      return { erro: e instanceof Error ? e.message : String(e), linhasDentro };
+    }
+  };
+
+  try {
+    await inserirFatos(priv, "priv", 2);
+
+    await teste("F0 quem roda estas provas é superusuário, e é o dono do event log", async () => {
+      const r = await priv.cliente.query<{ eu: string; super: boolean; dono: string }>(
+        `SELECT current_user AS eu, (SELECT rolsuper FROM pg_roles WHERE rolname = current_user) AS super,
+                (SELECT tableowner FROM pg_tables WHERE schemaname = 'platform' AND tablename = 'event_log') AS dono`,
+      );
+      assert.equal(r[0].super, true, "as provas de F3 exigem o dono/superusuário");
+      assert.equal(r[0].dono, r[0].eu, "o dono do log não é quem migrou");
+    });
+
+    await teste("F1 papel NÃO dono com todo privilégio de escrita: INSERT passa, UPDATE/DELETE/TRUNCATE recusados pela trava", async () => {
+      await priv.cliente.query(`CREATE ROLE ${papel} NOLOGIN`);
+      papelCriado = true;
+      await priv.cliente.query(`GRANT USAGE ON SCHEMA platform TO ${papel}`);
+      await priv.cliente.query(`GRANT SELECT, INSERT, UPDATE, DELETE, TRUNCATE ON platform.event_log TO ${papel}`);
+      const insert = await comoPapel(
+        `INSERT INTO platform.event_log (event_id, unit_id, object_type, object_id, event_type, payload,
+            occurred_at, origin, idempotency_key, contract_version, source_mode)
+         VALUES ('ev-papel', 'AO-U', 'trip', 't-ao', 'trip_created', '{}'::jsonb, now(), 'system',
+                 'k-papel', 'trip_created@1.0.0', 'simulated')`,
+      );
+      assert.equal(insert, null, `o papel não conseguiu nem inserir — a prova não mede a trava: ${String(insert)}`);
+      assert.equal(await linhas(priv), 3);
+      for (const [op, sql] of [
+        ["UPDATE", `UPDATE platform.event_log SET source_mode = 'real'`],
+        ["DELETE", `DELETE FROM platform.event_log`],
+        ["TRUNCATE", `TRUNCATE platform.event_log`],
+      ] as const) {
+        const erro = await comoPapel(sql);
+        assert.match(String(erro), new RegExp(`append-only: ${op} nao e permitido`), `${op} do papel: ${String(erro)}`);
+      }
+      assert.equal(await linhas(priv), 3);
+    });
+
+    await teste("F2 o papel NÃO dono não desliga nem derruba a trava", async () => {
+      for (const sql of [
+        `ALTER TABLE platform.event_log DISABLE TRIGGER event_log_sem_truncate`,
+        `ALTER TABLE platform.event_log DISABLE TRIGGER ALL`,
+        `DROP TRIGGER event_log_sem_truncate ON platform.event_log`,
+        `DROP TABLE platform.event_log`,
+      ]) {
+        const erro = await comoPapel(sql);
+        // "table" ou "relation", conforme o comando — a recusa é a mesma: não é o dono.
+        assert.match(String(erro), /must be owner of (table|relation) event_log/, `${sql}: ${String(erro)}`);
+      }
+      const replica = await comoPapel(`SET session_replication_role = replica`);
+      assert.match(String(replica), /permission denied to set parameter "session_replication_role"/, String(replica));
+      assert.match(String(await tentar(priv, `TRUNCATE platform.event_log`)), /TRUNCATE nao e permitido/);
+      assert.equal(await linhas(priv), 3);
+    });
+
+    await teste("F3 o DONO/superusuário ainda consegue sabotar — medido e DESFEITO", async () => {
+      const desliga = await comoDonoDesfeito([
+        `ALTER TABLE platform.event_log DISABLE TRIGGER USER`,
+        `TRUNCATE platform.event_log`,
+      ]);
+      assert.deepEqual(desliga, { erro: null, linhasDentro: 0 }, "o dono NÃO conseguiu — então o limite declarado está errado");
+      const replica = await comoDonoDesfeito([
+        `SET LOCAL session_replication_role = replica`,
+        `TRUNCATE platform.event_log`,
+      ]);
+      assert.deepEqual(replica, { erro: null, linhasDentro: 0 }, "replica não desligou a trava");
+      // Desfeito: nada ficou.
+      assert.equal(await linhas(priv), 3);
+      assert.match(String(await tentar(priv, `TRUNCATE platform.event_log`)), /TRUNCATE nao e permitido/);
+    });
+  } finally {
+    await priv.descartar();
+    if (papelCriado) {
+      // Depois do banco: as concessões moram nele, e o papel só cai sem elas.
+      const admin = await createPgClient({ url: urlCom(URL_SERVIDOR, "postgres"), max: 1 });
+      try {
+        await admin.query(`DROP ROLE IF EXISTS ${papel}`);
+      } finally {
+        await admin.close();
+      }
+    }
   }
 
   const total = passaram + falhas.length;
