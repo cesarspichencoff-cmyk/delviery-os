@@ -41,7 +41,7 @@ import { join } from "node:path";
 import type { EventEnvelope, SourceMode } from "./contracts/event-catalog";
 import { ingerir } from "./ingest/ingest-service";
 import { PgTransactionalWriter } from "./persistence/pg-repositories";
-import { bancoIsolado as bancoIsoladoDe } from "./q016-suporte";
+import { bancoIsolado as bancoIsoladoDe } from "./banco-isolado";
 import {
   envelopeDaMensagem,
   MemoriaDaProjecao,
@@ -77,10 +77,10 @@ async function teste(nome: string, fn: () => Promise<void>): Promise<void> {
 }
 
 /* ------------------------------------------------------------------ *
- * Banco isolado — implementação única em q016-suporte.ts
+ * Banco isolado — implementação única em banco-isolado.ts
  * ------------------------------------------------------------------ */
 
-const bancoIsolado = (ate?: string) => bancoIsoladoDe(URL_PG, ate);
+const bancoIsolado = (ate?: string) => bancoIsoladoDe(URL_PG, ate, "q016");
 
 /* ------------------------------------------------------------------ *
  * Fatos de teste — sintéticos, e declarados como tal

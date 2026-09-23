@@ -128,6 +128,22 @@ diferentes inteligências. Política de acesso desse repositório é `Q-012`, ai
   e `spawnSync` — e a correção não foi consertar aquele caso, e sim passar todo exercício do
   refresh para uma raiz espelho. Regressão **42/46**, zero `FAIL_NOVO`.
 
+- **Q-016 — replay da Operação Viva · RESPONDIDA** (`docs/etapa-4-8/Q016-REPLAY.md`): o gap foi
+  provado antes de corrigir (dois fatos iguais menos no modo viravam a MESMA linha no event log,
+  com os controles que dão sentido a isso). `source_mode` virou contrato durável do log pela
+  migration 0003 — sem default, obrigatório para fato novo pelo banco, histórico `NULL` = UNKNOWN
+  e sem backfill; `pg_dump`/`pg_restore` reais restauram o histórico sem violar a restrição. A
+  porta de leitura roda em `READ ONLY`, usa o MESMO reconstrutor do consumo vivo e não depende da
+  ordem do banco. O assíncrono reconstrói no boot, antes de o runtime existir; log ilegível
+  recusa (78), linha corrompida degrada declarada — decidido pelo append-only. Restart real com
+  PostgreSQL e binários: memória idêntica antes de qualquer fato novo, GPS que cruzou 120 s
+  desligado chega `aging`, mensagens pendentes de fatos relidos contam como duplicatas. 12
+  mutações, zero cegas — duas provas (P11, A6) foram escritas porque duas mutações seriam cegas.
+  Um ponto cego do grafo de imports (`import()` dinâmico) foi fechado com impacto zero medido
+  pelo carimbo. O `spine:processos` caiu na regressão porque presumia log vazio: reproduzido com
+  um fato alheio plantado, e corrigido na classe — a suíte passou a criar banco próprio.
+  **Q-015 continua aberta. Q-017 aberta** (padrão implícito `real` no crítico).
+
 A redução de superfície de `apps/deliveryos-ai-node` (reescrever os 6 root-requires para subpath)
 **não é C2** — é tarefa futura fora do escopo de ambos, registrada em `C1-PORT.md`.
 

@@ -21,12 +21,23 @@ import { execFileSync, spawn, type ChildProcess } from "node:child_process";
 import { existsSync, renameSync } from "node:fs";
 import { join } from "node:path";
 
+import { bancoIsolado } from "./banco-isolado";
+
 const raiz = process.cwd();
-const URL_PG = (process.env.DELIVERYOS_PG_URL ?? "").trim();
+/**
+ * O SERVIDOR, não o banco. A suíte cria um banco próprio nele (ver
+ * `banco-isolado.ts`): depois da Q-016 o worker reconstrói a projeção do
+ * event log no boot, e um fato de outra suíte no log compartilhado virava um
+ * escopo a mais — o P5 caía. Reproduzido: banco limpo 7/7, o mesmo banco com
+ * um fato alheio 6/7.
+ */
+const URL_SERVIDOR = (process.env.DELIVERYOS_PG_URL ?? "").trim();
+/** O banco ISOLADO desta execução. Atribuído antes de qualquer `sql()`. */
+let URL_PG = "";
 
 console.log("=== C3.6 — espinha nos processos reais (PostgreSQL real) ===\n");
 
-if (!URL_PG) {
+if (!URL_SERVIDOR) {
   console.log("PULADO: DELIVERYOS_PG_URL não definida — nenhum processo real foi exercitado.");
   console.log("Para rodar:  DELIVERYOS_PG_URL=postgres://user@host:porta/base");
   process.exit(0);
@@ -160,7 +171,8 @@ function enfileirar(id: string, modo: string, unidade = "ITAIM"): void {
   );
 }
 
-void (async () => {
+/** As sete provas. Rodam no banco isolado que o bloco abaixo cria e apaga. */
+async function provas(): Promise<void> {
   /* ---------------------------------------------------------------- *
    * P0 — precondições
    * ---------------------------------------------------------------- */
@@ -341,7 +353,20 @@ void (async () => {
     );
   });
 
-  sql("DELETE FROM platform.outbox WHERE correlation_id = 'c3-6'");
+}
+
+void (async () => {
+  const banco = await bancoIsolado(URL_SERVIDOR, undefined, "espinha");
+  URL_PG = banco.url;
+  ambienteBase.DELIVERYOS_DATABASE_URL = banco.url;
+  try {
+    await provas();
+  } finally {
+    // Com banco próprio, não há o que limpar na fila de ninguém: o banco inteiro
+    // vai embora. A limpeza por `correlation_id` que existia aqui era o
+    // remendo de quem dividia o banco com outras suítes.
+    await banco.descartar();
+  }
 
   console.log(`\n${passaram}/${passaram + falhas.length} provas com processo real`);
   for (const f of falhas) console.log(`  XX ${f}`);

@@ -381,11 +381,16 @@ teste("C3.4-4 o run_id carrega o modo — dois escopos nunca compartilham identi
 });
 
 teste("C3.4-5 LACUNA DECLARADA: reinício zera a memória da espinha", async () => {
-  // Não é um defeito escondido atrás de um teste verde: é a lacuna que a
-  // Q-016 registra. A espinha guarda `anteriores` no processo, e um worker
-  // reiniciado recomeça sem elas. Este teste PROVA a lacuna para que ela não
-  // possa ser esquecida — e quebra no dia em que alguém a fechar, forçando a
-  // Q-016 a ser respondida em vez de silenciosamente superada.
+  // Não é um defeito escondido atrás de um teste verde: é uma lacuna aberta.
+  //
+  // Até 2026-09-23 este comentário a atribuía à Q-016. A Q-016 foi respondida
+  // e fechou a parte que era dela: a memória da PROJEÇÃO, que a espinha lê, é
+  // reconstruída do event log no boot. O que continua em memória é o estado
+  // PRÓPRIO da espinha — `anteriores`, `passadas`, `ultima_em` —, e onde ele
+  // mora e por quanto tempo é exatamente a Q-015, ainda aberta. Este teste
+  // PROVA a lacuna para que ela não possa ser esquecida, e quebra no dia em
+  // que alguém a fechar, forçando a Q-015 a ser respondida em vez de
+  // silenciosamente superada.
   const { espinha: primeira } = await espinhaReal([mensagem(1)]);
   await primeira.executar();
 

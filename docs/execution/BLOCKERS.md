@@ -781,5 +781,17 @@ em `tools/` é a de quem consome. Morre em `ECONNREFUSED`, com stack trace cru e
 declarar pulado em voz alta (CLAUDE.md §10). Vermelho por precondição ausente não é perigoso como
 um verde silencioso, mas também não é legível.
 
-Também registrado: **D5** — `platform.event_log` não tem coluna `source_mode`; o modo viaja no
-envelope.
+**D5 — FECHADO pela Q-016 em 2026-09-23.** `platform.event_log` não tinha coluna `source_mode`, e o
+modo só viajava no envelope e na outbox. A migration 0003 o tornou durável, sem default e
+obrigatório para fato novo; o histórico anterior fica `NULL` = UNKNOWN. Ver
+`docs/etapa-4-8/Q016-REPLAY.md`.
+
+### Q-017 — o modo de todo fato vem de um padrão implícito
+
+`src/platform/bin/critical.ts` faz `process.env.DELIVERYOS_SOURCE_MODE ?? "real"`, contra o próprio
+comentário ("Sem padrão silencioso") e contra a interface da rota ("Nunca tem padrão implícito").
+Nenhum arquivo de `deploy/` declara a variável. Na composição oficial, todo fato é carimbado
+`real` por padrão — e desde a Q-016 esse carimbo é **durável** e alimenta o replay. Medido no banco
+de teste: os GPS gravados pelo binário crítico nos gates do PB19 estão `real` sem que nada os tenha
+declarado. Não corrigido: exige mudar o caminho crítico e a composição. Aberta como `Q-017`,
+`default_behavior: PAUSE` — o comportamento atual segue até decisão do César.

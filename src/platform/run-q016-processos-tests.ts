@@ -25,7 +25,7 @@ import { alcanca, alcancaveis, especificadoresExternos } from "./grafo-de-import
 import { ingerir } from "./ingest/ingest-service";
 import { PgTransactionalWriter } from "./persistence/pg-repositories";
 import { createPgClient } from "./persistence/sql-client";
-import { bancoIsolado as bancoIsoladoDe, type BancoIsolado } from "./q016-suporte";
+import { bancoIsolado as bancoIsoladoDe, type BancoIsolado } from "./banco-isolado";
 
 const URL_PG = (process.env.DELIVERYOS_PG_URL ?? "").trim();
 const raiz = process.cwd();
@@ -52,7 +52,7 @@ async function teste(nome: string, fn: () => Promise<void>): Promise<void> {
   }
 }
 
-const bancoIsolado = (ate?: string) => bancoIsoladoDe(URL_PG, ate);
+const bancoIsolado = (ate?: string) => bancoIsoladoDe(URL_PG, ate, "q016");
 
 /* ------------------------------------------------------------------ *
  * Processos

@@ -179,3 +179,15 @@ caminhos quando divergem. As 12 imagens atuais ficam **`UNKNOWN_FOR_EXISTING_BAS
 **preservadas** — nenhum build foi eleito referência canônica. Gates novos:
 `test:lab:v4:evidencias` (11/11, agora dentro da cadeia `test:lab`) e
 `test:lab:v4:evidencias:mutacoes` (**6/6, zero cegos**). Regressão **42/46**, zero `FAIL_NOVO`.
+
+**Q-016 — respondida** (`docs/etapa-4-8/Q016-REPLAY.md`): `platform.event_log` governa a
+reconstrução da projeção da Operação Viva, e o runtime assíncrono a executa no boot, **antes** do
+laço da outbox. O log passou a guardar `source_mode` (migration 0003: sem default, obrigatório para
+fato novo por `CHECK ... NOT VALID`); histórico sem modo fica **UNKNOWN**, fora do replay e
+contado — nenhum backfill, porque o append-only recusa `UPDATE` e a outbox é mutável. Log ilegível
+recusa o boot (78); linha corrompida sobe degradado e declarado. Restart real com os binários de
+`dist/`: memória idêntica escopo a escopo antes de qualquer fato novo, e sinal que envelheceu
+desligado chega envelhecido. Gates novos: `test:platform:q016` (27), `test:platform:q016:processos`
+(14) e `test:platform:q016:mutacoes` (**12 mutações, zero cegas**). **Q-015 continua aberta** — o
+estado próprio da espinha não sobrevive a reinício. **Q-017 aberta**: o crítico carimba `real` por
+padrão quando `DELIVERYOS_SOURCE_MODE` falta, e nenhum deploy a declara.
