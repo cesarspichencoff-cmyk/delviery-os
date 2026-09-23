@@ -4,7 +4,7 @@ lifecycle:
   status: ACTIVE
   authority_scope: lessons
   superseded_by: null
-  atualizado_em: "2026-08-07"
+  atualizado_em: "2026-09-23"
   state_basis: 953a3fb
 ---
 
@@ -924,3 +924,38 @@ consciente de quem escreve o teste.
 return;` dentro de `assert`/`teste`, e perguntar de cada um: **este ramo existe
 porque um caso real falhava?** Se sim, ele e um defeito conhecido e nao
 registrado.
+
+## L45 — Uma guarda que mede o commit não enxerga a árvore
+
+**O que quase passou.** A regressão da Q-016 deu a governança como
+`FAIL_PREEXISTENTE` (G6b + G9) e fechou a fase. O commit dessa mesma fase
+(`b52c572`) alterou `CLAUDE.md`, `PLANO.md`, `BLOCKERS.md`, `EVIDENCE.jsonl` e
+`PERGUNTAS.jsonl` em 2026-09-23 sem subir a data declarada nos cabeçalhos — e
+isso é exatamente o que o G6c reprova. Ninguém viu, porque a regressão rodou
+**antes** do commit: o G6c compara a data declarada com a do último commit
+que tocou o caminho, e mudança não commitada não tem data. A guarda estava
+certa; ela só não podia ver o que ainda não existia.
+
+**Como apareceu.** Na Q-017, a governança rodada na árvore limpa do HEAD
+remoto já trazia o G6c. Bisseção por worktree (`ae5b046`, `baa46e3`,
+`9ebe5ea`, `47c8060` sem; `b52c572` com) localizou o commit.
+
+**A regra.** Guarda que lê o histórico do Git mede o que foi COMMITADO. Rodar
+antes do commit é necessário e não é suficiente: a governança roda de novo
+**depois** do commit que fecha a fase, e só então a fase está fechada.
+
+## L46 — Padrão injetado antes do validador passa por ele como declaração
+
+**O que quase passou.** O contrato do envelope dizia, no código e no schema,
+"NÃO existe valor padrão; a ausência é recusada" — e recusava. Mesmo assim, por
+todo o C3, o PB19, a D4 e a Q-016, todo GPS do crítico sem modo configurado foi
+gravado `real`. O `?? "real"` de `bin/critical.ts` entrava **antes** de o
+envelope existir: o validador recebia um `real` bem formado e não tinha como
+distinguir declaração de omissão. O comentário ao lado dizia "sem padrão
+silencioso".
+
+**A regra.** Uma recusa de ausência só vale no ponto em que a ausência ainda é
+visível. Onde um valor pode ser preenchido por padrão, é ALI que a recusa
+precisa morar — na borda que lê a configuração, antes de qualquer efeito —, e
+a prova é comportamental: o binário real, sem a variável, tem de sair 78.
+Validador correto a jusante não prova nada sobre o que chega a ele.

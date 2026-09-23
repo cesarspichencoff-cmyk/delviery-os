@@ -4,7 +4,7 @@ lifecycle:
   status: ACTIVE
   authority_scope: infra_blockers
   superseded_by: null
-  atualizado_em: "2026-09-22"
+  atualizado_em: "2026-09-23"
   state_basis: 953a3fb
   question_refs: ["Q-001","Q-002","Q-003","Q-004","Q-005","Q-006","Q-007","Q-008","Q-009","Q-010","Q-011"]
 ---
@@ -786,7 +786,7 @@ modo só viajava no envelope e na outbox. A migration 0003 o tornou durável, se
 obrigatório para fato novo; o histórico anterior fica `NULL` = UNKNOWN. Ver
 `docs/etapa-4-8/Q016-REPLAY.md`.
 
-### Q-017 — o modo de todo fato vem de um padrão implícito
+### Q-017 — o modo de todo fato vem de um padrão implícito · **FECHADO em 2026-09-23**
 
 `src/platform/bin/critical.ts` faz `process.env.DELIVERYOS_SOURCE_MODE ?? "real"`, contra o próprio
 comentário ("Sem padrão silencioso") e contra a interface da rota ("Nunca tem padrão implícito").
@@ -795,3 +795,18 @@ Nenhum arquivo de `deploy/` declara a variável. Na composição oficial, todo f
 de teste: os GPS gravados pelo binário crítico nos gates do PB19 estão `real` sem que nada os tenha
 declarado. Não corrigido: exige mudar o caminho crítico e a composição. Aberta como `Q-017`,
 `default_behavior: PAUSE` — o comportamento atual segue até decisão do César.
+
+**Fechado pela decisão do César (2026-09-23): ausente não é real.** O crítico recusa o boot (78)
+sem modo declarado, antes de conexão e migration; o compose exige a variável só no crítico. A
+pegada do defeito, medida no banco compartilhado deste sandbox antes da regressão final: **11 GPS
+sintéticos do controle positivo do PB19 gravados `real`**. Depois da correção o mesmo controle
+grava `simulated`. Ver `docs/etapa-4-8/Q017-SOURCE-MODE.md`.
+
+### Achado da Q-017 — o append-only do event log não cobre `TRUNCATE`
+
+A trava da 0001 é `BEFORE UPDATE OR DELETE … FOR EACH ROW`; `TRUNCATE` não dispara gatilho de
+linha. Provado em banco isolado: `UPDATE` e `DELETE` recusados, `TRUNCATE` passa calado e leva
+tudo. As 11 linhas acima sumiram assim, no meio da regressão: `run-backup-restore-tests.ts`
+faz `TRUNCATE platform.event_log` para simular perda. A L3 promete mais do que o banco garante.
+**Não corrigido**: o event log está no Preservation Set, fechar o buraco é DDL nova e o teste de
+backup depende dele — decisão do César.

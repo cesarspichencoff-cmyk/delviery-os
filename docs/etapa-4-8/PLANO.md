@@ -4,7 +4,7 @@ lifecycle:
   status: ACTIVE
   authority_scope: etapa_4_8_plano
   superseded_by: null
-  atualizado_em: "2026-09-22"
+  atualizado_em: "2026-09-23"
   state_basis: 9e738b1
 ---
 
@@ -142,7 +142,20 @@ diferentes inteligências. Política de acesso desse repositório é `Q-012`, ai
   Um ponto cego do grafo de imports (`import()` dinâmico) foi fechado com impacto zero medido
   pelo carimbo. O `spine:processos` caiu na regressão porque presumia log vazio: reproduzido com
   um fato alheio plantado, e corrigido na classe — a suíte passou a criar banco próprio.
-  **Q-015 continua aberta. Q-017 aberta** (padrão implícito `real` no crítico).
+  **Q-015 continua aberta.**
+
+- **Q-017 — modo da instância · RESPONDIDA** (`docs/etapa-4-8/Q017-SOURCE-MODE.md`): o defeito
+  foi provado antes de corrigir, e era mais estreito que a premissa — só a AUSÊNCIA virava `real`
+  (vazio e `REAL` já saíam 78) — e de DEFAULT, não de propagação. O contrato do envelope já
+  recusava ausência; o padrão entrava antes dele. A recusa foi para a borda da configuração e
+  para ANTES de conexão e migration (o código antigo conferia depois) — provado com banco vazio
+  que continua vazio e banco inalcançável que dá 78 do modo, cada um com controle positivo. O
+  boot declara o modo; valor com cara de credencial não é ecoado. Compose `:?` só no crítico.
+  Troca de modo entre processos: reenvio de fato antigo é duplicata e o replay usa o modo
+  gravado, mesmo com a variável vazada de propósito para o assíncrono. Em containers, 31
+  medidas — e a ferramenta recusa rodar onde houver composição, porque termina em `down -v`
+  sobre volumes de nome fixo. 15 mutações, zero cegas. Achado: o G6c da governança nasceu no
+  commit final da própria Q-016 e passou porque a regressão rodou antes do commit — fechado.
 
 A redução de superfície de `apps/deliveryos-ai-node` (reescrever os 6 root-requires para subpath)
 **não é C2** — é tarefa futura fora do escopo de ambos, registrada em `C1-PORT.md`.

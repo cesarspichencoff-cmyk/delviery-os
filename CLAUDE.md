@@ -4,7 +4,7 @@ lifecycle:
   status: ACTIVE
   authority_scope: session_routing
   superseded_by: null
-  atualizado_em: "2026-09-22"
+  atualizado_em: "2026-09-23"
   state_basis: 953a3fb
 ---
 
@@ -189,5 +189,16 @@ recusa o boot (78); linha corrompida sobe degradado e declarado. Restart real co
 `dist/`: memória idêntica escopo a escopo antes de qualquer fato novo, e sinal que envelheceu
 desligado chega envelhecido. Gates novos: `test:platform:q016` (27), `test:platform:q016:processos`
 (14) e `test:platform:q016:mutacoes` (**12 mutações, zero cegas**). **Q-015 continua aberta** — o
-estado próprio da espinha não sobrevive a reinício. **Q-017 aberta**: o crítico carimba `real` por
-padrão quando `DELIVERYOS_SOURCE_MODE` falta, e nenhum deploy a declara.
+estado próprio da espinha não sobrevive a reinício.
+
+**Q-017 — respondida** (`docs/etapa-4-8/Q017-SOURCE-MODE.md`): ausente não é real. O crítico
+recusa o boot (78) sem `DELIVERYOS_SOURCE_MODE` válido — `real`, `simulated` ou `control`, exatos —
+logo depois da configuração, **antes** de conexão, migration ou porta, e o boot declara o modo. O
+contrato do envelope já recusava ausência; o `?? "real"` entrava antes do envelope existir, e o
+validador recebia um `real` bem formado. Compose: `:?` só no crítico; exemplo com a variável
+vazia. Trocar o modo nunca reclassifica fato antigo; histórico `NULL` segue UNKNOWN. Gates:
+`test:platform:q017` (18, binários + PostgreSQL), `test:platform:q017:compose` (7, pelo
+renderizador do compose) e `test:platform:q017:mutacoes` (**15, zero cegas**); em containers,
+`tools/q017_compose_real.sh` (31 medidas; recusa rodar onde já houver composição). **Achado, não
+corrigido:** o append-only do event log não cobre `TRUNCATE` — provado em banco isolado; fechar é
+DDL em item do Preservation Set, decisão do César.
