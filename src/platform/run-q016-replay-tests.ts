@@ -617,6 +617,24 @@ void (async () => {
       await lerFatosParaReplay(pc, TIPOS_DA_OPERACAO_VIVA);
       assert.deepEqual(await contar(), antes);
     });
+
+    await teste("P11 a fonte é o LOG: outbox purgada e adulterada não mudam uma vírgula da leitura", async () => {
+      // A decisão do César em forma executável. A outbox carrega o modo, e por
+      // isso é a tentação — mas ela é purgável e mutável (H5). Um replay que
+      // lesse dela perderia tudo depois de uma limpeza de rotina, e herdaria
+      // qualquer adulteração como se fosse fato.
+      const antes = await lerFatosParaReplay(pc, TIPOS_DA_OPERACAO_VIVA);
+      await pc.query(`UPDATE platform.outbox SET payload = jsonb_set(payload, '{source_mode}', '"real"')`);
+      await pc.query(`DELETE FROM platform.outbox WHERE idempotency_key = $1`, [novos[0].idempotency_key]);
+      const depois = await lerFatosParaReplay(pc, TIPOS_DA_OPERACAO_VIVA);
+      assert.deepEqual(depois, antes, "a leitura mudou quando só a outbox mudou");
+      await pc.query(`DELETE FROM platform.outbox`);
+      assert.deepEqual(
+        await lerFatosParaReplay(pc, TIPOS_DA_OPERACAO_VIVA),
+        antes,
+        "com a outbox VAZIA a leitura mudou — ela não vinha do log",
+      );
+    });
   } finally {
     await porta.descartar();
   }

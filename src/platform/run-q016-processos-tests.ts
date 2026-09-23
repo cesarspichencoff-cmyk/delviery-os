@@ -24,6 +24,7 @@ import type { EventEnvelope, SourceMode } from "./contracts/event-catalog";
 import { alcanca, alcancaveis, especificadoresExternos } from "./grafo-de-imports";
 import { ingerir } from "./ingest/ingest-service";
 import { PgTransactionalWriter } from "./persistence/pg-repositories";
+import { createPgClient } from "./persistence/sql-client";
 import { bancoIsolado as bancoIsoladoDe, type BancoIsolado } from "./q016-suporte";
 
 const URL_PG = (process.env.DELIVERYOS_PG_URL ?? "").trim();
@@ -349,6 +350,39 @@ void (async () => {
       assert.deepEqual(r.escopos, [], "histórico sem modo virou escopo — modo inventado");
     } finally {
       if (w) await w.fim();
+      await b.descartar();
+    }
+  });
+
+  await teste("A6 com o log TRAVADO, o worker espera o replay e NÃO consome antes — ordem forçada", async () => {
+    // A1 compara a ordem das linhas de log, e isso só prova a ordem quando o
+    // replay é mais rápido que o primeiro tick. Se alguém mover o replay para
+    // depois do laço, os dois CORREM — e quando o replay ganha, A1 passa com o
+    // defeito no lugar. Aqui a corrida é decidida de propósito: uma sessão
+    // segura LOCK exclusivo no event_log. O código certo fica parado no
+    // replay; o errado consome a fila enquanto o replay espera.
+    const b = await bancoIsolado();
+    let w: Processo | null = null;
+    const trava = await createPgClient({ url: b.url, max: 1 });
+    try {
+      const fs = [
+        fato({ modo: "real", unidade: "U-1", viagem: "t-1", ocorreu: agoraMenos(60) }),
+        fato({ modo: "control", unidade: "U-1", viagem: "t-2", ocorreu: agoraMenos(60) }),
+      ];
+      await gravar(b, fs);
+      await trava.transaction(async (tx) => {
+        await tx.query("LOCK TABLE platform.event_log IN ACCESS EXCLUSIVE MODE");
+        w = subir(b.url);
+        await esperar(2500);
+        assert.doesNotMatch(w!.saida(), /\[assincrono\] passada/, "o worker consumiu a fila com o replay bloqueado");
+        assert.doesNotMatch(w!.saida(), /\[assincrono\] replay/, "o replay terminou com o log travado — trava não valeu");
+      });
+      assert.ok(await ate(w!, /"duplicados":2/), `depois da trava, não consumiu como duplicata:\n${w!.saida().slice(-600)}`);
+      const s = w!.saida();
+      assert.ok(s.indexOf("[assincrono] replay ") < s.indexOf("[assincrono] passada"));
+    } finally {
+      await trava.close();
+      if (w) await (w as Processo).fim();
       await b.descartar();
     }
   });
