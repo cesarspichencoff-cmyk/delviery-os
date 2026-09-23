@@ -15,6 +15,20 @@
  * mensagem). A segunda trata a classe: o teste não compartilha estado durável
  * com ninguém.
  *
+ * O CONTRATO DE PATRIMÔNIO — a suíte só apaga o que criou:
+ *
+ *  - o nome é próprio (prefixo da suíte, pid, instante, sorteio) e o banco
+ *    nasce por `CREATE DATABASE`, que FALHA se o nome já existe. Colisão vira
+ *    `ColisaoDeBanco` — nunca `DROP ... IF EXISTS` antes de criar, que é como
+ *    uma suíte apaga o banco de outra achando que limpa o seu;
+ *  - `descartar()` só apaga o banco que ESTE objeto criou, e uma vez só;
+ *  - se algo falha DEPOIS de criar — migration, conexão —, o banco criado é
+ *    apagado antes de a falha subir. Banco pela metade não fica para trás.
+ *
+ * O que ele não cobre, e está dito: processo morto por SIGKILL não roda
+ * limpeza nenhuma, e o banco dele fica. A suíte nunca apaga "por prefixo"
+ * para compensar — seria exatamente o jeito de apagar o que não criou.
+ *
  * Um módulo só para todas as suítes que precisam disso: duas noções de "banco
  * limpo" divergiriam, e a mais frouxa é a que ninguém nota.
  */
@@ -58,33 +72,116 @@ export interface BancoIsolado {
   descartar(): Promise<void>;
 }
 
+export interface OpcoesDoBanco {
+  /**
+   * Nome exato, em vez do gerado. Existe para o controle de colisão: um nome
+   * que já existe tem de ser RECUSADO, e o banco alheio, deixado como estava.
+   */
+  nome?: string;
+}
+
+/** O nome pedido já é de um banco que existia. Nada foi criado nem apagado. */
+export class ColisaoDeBanco extends Error {
+  constructor(readonly nome: string) {
+    super(`o banco "${nome}" já existe e não foi criado por esta suíte — recusado, nada foi tocado`);
+    this.name = "ColisaoDeBanco";
+  }
+}
+
+const NOME_VALIDO = /^[a-z_][a-z0-9_]{0,62}$/;
+
 /**
+ * Cria o banco e devolve quem sabe apagá-lo. Núcleo único de `bancoIsolado`
+ * e `bancoVazio`: o contrato de patrimônio mora aqui e só aqui.
+ */
+async function criar(
+  urlBase: string,
+  prefixo: string,
+  opcoes: OpcoesDoBanco,
+  preparar: (cliente: PgSqlClient) => Promise<void>,
+): Promise<BancoIsolado> {
+  const nome =
+    opcoes.nome ??
+    `${prefixo}_${process.pid}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
+  if (!NOME_VALIDO.test(nome)) throw new Error(`nome de banco inválido: ${JSON.stringify(nome)}`);
+
+  const admin = await createPgClient({ url: urlCom(urlBase, "postgres"), max: 1 });
+  try {
+    await admin.query(`CREATE DATABASE ${nome}`);
+  } catch (e) {
+    await admin.close();
+    // 42P04 = duplicate_database. Qualquer outra falha sobe como veio.
+    if ((e as { code?: string }).code === "42P04") throw new ColisaoDeBanco(nome);
+    throw e;
+  }
+
+  // Daqui em diante o banco é DESTA execução — e só a partir daqui ele pode
+  // ser apagado por ela.
+  let descartado = false;
+  let cliente: PgSqlClient | null = null;
+  const apagar = async (): Promise<void> => {
+    if (descartado) return;
+    descartado = true;
+    if (cliente) await cliente.close().catch(() => undefined);
+    try {
+      await admin.query(`DROP DATABASE IF EXISTS ${nome} WITH (FORCE)`);
+    } finally {
+      await admin.close();
+    }
+  };
+
+  try {
+    const url = urlCom(urlBase, nome);
+    cliente = await createPgClient({ url, max: 4 });
+    await preparar(cliente);
+    const c = cliente;
+    return {
+      nome,
+      url,
+      cliente: c,
+      async migrarTudo() {
+        const r = await runMigrations(c, diretorioDeMigrations());
+        if (r.mismatch) throw new Error(`migration divergente: ${r.mismatch.version}`);
+        return r.applied;
+      },
+      descartar: apagar,
+    };
+  } catch (e) {
+    // Banco pela metade não fica para trás: a falha sobe DEPOIS da limpeza.
+    await apagar().catch(() => undefined);
+    throw e;
+  }
+}
+
+/**
+ * Banco migrado pelo runner real — todas as migrations, ou até `ate`.
+ *
  * @param prefixo nome da suíte, para um banco esquecido por uma execução morta
  *   ser atribuível a quem o criou.
  */
-export async function bancoIsolado(urlBase: string, ate?: string, prefixo = "iso"): Promise<BancoIsolado> {
-  const nome = `${prefixo}_${process.pid}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
-  const admin = await createPgClient({ url: urlCom(urlBase, "postgres"), max: 1 });
-  await admin.query(`CREATE DATABASE ${nome}`);
-  const url = urlCom(urlBase, nome);
-  const cliente = await createPgClient({ url, max: 4 });
-  const parcial = ate ? migrationsAte(ate) : null;
-  const m = await runMigrations(cliente, parcial ?? diretorioDeMigrations());
-  if (parcial) rmSync(parcial, { recursive: true, force: true });
-  if (m.mismatch) throw new Error(`migration divergente no banco isolado: ${m.mismatch.version}`);
-  return {
-    nome,
-    url,
-    cliente,
-    async migrarTudo() {
-      const r = await runMigrations(cliente, diretorioDeMigrations());
-      if (r.mismatch) throw new Error(`migration divergente: ${r.mismatch.version}`);
-      return r.applied;
-    },
-    async descartar() {
-      await cliente.close();
-      await admin.query(`DROP DATABASE IF EXISTS ${nome} WITH (FORCE)`);
-      await admin.close();
-    },
-  };
+export async function bancoIsolado(
+  urlBase: string,
+  ate?: string,
+  prefixo = "iso",
+  opcoes: OpcoesDoBanco = {},
+): Promise<BancoIsolado> {
+  return criar(urlBase, prefixo, opcoes, async (cliente) => {
+    const parcial = ate ? migrationsAte(ate) : null;
+    try {
+      const m = await runMigrations(cliente, parcial ?? diretorioDeMigrations());
+      if (m.mismatch) throw new Error(`migration divergente no banco isolado: ${m.mismatch.version}`);
+    } finally {
+      if (parcial) rmSync(parcial, { recursive: true, force: true });
+    }
+  });
+}
+
+/**
+ * Banco VAZIO de verdade: nem schema, nem a tabela de controle que o runner
+ * cria antes de tudo. É o alvo de um `pg_restore` — restaurar por cima de
+ * qualquer coisa esconderia justamente o que o dump não traz de volta — e o
+ * ponto de partida de quem aplica migrations por conta própria.
+ */
+export async function bancoVazio(urlBase: string, prefixo = "iso", opcoes: OpcoesDoBanco = {}): Promise<BancoIsolado> {
+  return criar(urlBase, prefixo, opcoes, async () => undefined);
 }

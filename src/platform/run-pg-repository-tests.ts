@@ -20,7 +20,8 @@ import {
   PgTransactionalWriter,
   type FactRecord,
 } from "./persistence/pg-repositories";
-import { createPgClient, isLocalUrl, type PgSqlClient } from "./persistence/sql-client";
+import { createPgClient, isLocalUrl } from "./persistence/sql-client";
+import { bancoIsolado, type BancoIsolado } from "./banco-isolado";
 
 const PG_URL = process.env.DELIVERYOS_PG_URL;
 
@@ -96,24 +97,27 @@ async function main(): Promise<void> {
     process.exit(0);
   }
 
-  let cliente: PgSqlClient;
+  // Banco PRÓPRIO, migrado pelo runner real e apagado no fim. Até 2026-09-23
+  // esta suíte limpava o banco de `DELIVERYOS_PG_URL` — outbox, job, inbox e
+  // audit alheios — e esvaziava o event log compartilhado com `TRUNCATE`, o
+  // buraco que a 0004 fecha. Uma suíte não fabrica fixture apagando o que é
+  // de outra; a URL serve só para chegar ao servidor.
+  let banco: BancoIsolado;
   try {
-    cliente = await createPgClient({ url: PG_URL, max: 4 });
-    await cliente.query("SELECT 1");
+    banco = await bancoIsolado(PG_URL, undefined, "repos");
   } catch (e) {
-    console.error(`FALHA: não conectou em DELIVERYOS_PG_URL — ${e instanceof Error ? e.message : e}`);
+    console.error(`FALHA: não criou o banco da suíte em DELIVERYOS_PG_URL — ${e instanceof Error ? e.message : e}`);
     process.exit(1);
   }
+  const cliente = banco.cliente;
 
   const limpar = async () => {
     await cliente.query("DELETE FROM platform.outbox");
     await cliente.query("DELETE FROM platform.job");
     await cliente.query("DELETE FROM platform.inbox");
     await cliente.query("DELETE FROM platform.audit");
-    // TRUNCATE, e não DELETE: o event_log é append-only por trigger de linha,
-    // e a própria limpeza do teste bate nessa trava. É a confirmação de que a
-    // proteção vale para todo mundo — inclusive para quem escreveu o teste.
-    await cliente.query("TRUNCATE platform.event_log");
+    // O event log NÃO é limpo: é append-only, e o banco é novo — ele nasce
+    // vazio e só esta suíte escreve nele.
   };
 
   try {
@@ -418,7 +422,7 @@ async function main(): Promise<void> {
       assert.equal(Number(eventos[0].n), 1);
     });
   } finally {
-    await cliente.close();
+    await banco.descartar();
   }
 
   if (failures.length) {
