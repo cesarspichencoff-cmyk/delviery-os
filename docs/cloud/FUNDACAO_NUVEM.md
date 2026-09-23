@@ -95,6 +95,9 @@ turno de sexta.
 - o assíncrono **não escuta porta nenhuma**. Um provedor que exija porta aberta
   para considerar o serviço vivo não serve para ele — use um provedor que
   aceite processo de trabalho, ou rode-o junto do banco;
+- o crítico exige **`DELIVERYOS_SOURCE_MODE` declarado** — `real`,
+  `simulated` ou `control` — e sai 78 sem ele (Q-017). Não existe padrão:
+  ausente não é real. Só o crítico recebe a variável; o assíncrono não a lê;
 - **encerramento gracioso**: o orquestrador precisa mandar `SIGTERM` e esperar.
   30 s para o crítico, 45 s para o assíncrono. Matar o assíncrono no meio
   devolve o job pelo lease, mas retrabalho sobre efeito externo pode duplicar.

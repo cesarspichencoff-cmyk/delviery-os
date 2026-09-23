@@ -293,7 +293,13 @@ async function provas(): Promise<void> {
     const escondido = `${MODULOS_NO_DIST}__escondido`;
     renameSync(MODULOS_NO_DIST, escondido);
     const porta = 8123;
-    const c = subir(BIN_CRITICO, { ...ambienteBase, DELIVERYOS_PORT: String(porta) });
+    // Modo declarado só aqui, no crítico — o assíncrono não lê a variável
+    // (Q-017). `simulated`: este processo não recebe nada da rua.
+    const c = subir(BIN_CRITICO, {
+      ...ambienteBase,
+      DELIVERYOS_PORT: String(porta),
+      DELIVERYOS_SOURCE_MODE: "simulated",
+    });
     try {
       assert.ok(await ate(c, /escutando|iniciando/i), `o crítico não subiu:\n${c.saida().slice(-600)}`);
       await esperar(700);

@@ -66,6 +66,9 @@ async function main() {
       DELIVERYOS_MIGRATE_ON_BOOT: "false",
       DELIVERYOS_DEVICE_TOKEN_SECRET: SEGREDO,
       DELIVERYOS_PORT: String(PORTA),
+      // DECLARADO (Q-017): o crítico não sobe sem modo. `simulated` sempre —
+      // o lote desta ferramenta é sintético, e nunca pode virar fato `real`.
+      DELIVERYOS_SOURCE_MODE: "simulated",
     },
   });
   let log = "";
@@ -140,6 +143,11 @@ async function main() {
       `SELECT count(*) FROM platform.event_log WHERE correlation_id = 'pb19-${SUFIXO}'`,
     );
     console.log(`ACEITOS=${aceitos}`);
+    // O modo que o BANCO guardou, não o que a instância diz ter.
+    const modos = sql(
+      `SELECT coalesce(string_agg(DISTINCT coalesce(source_mode, 'NULL'), ','), 'nenhum') FROM platform.event_log WHERE correlation_id = 'pb19-${SUFIXO}'`,
+    );
+    console.log(`MODO=${modos}`);
     console.log(`READY_FINAL=${(await fetch(`http://127.0.0.1:${PORTA}/ready`).catch(() => null))?.status ?? "sem-resposta"}`);
   } finally {
     filho.kill("SIGTERM");

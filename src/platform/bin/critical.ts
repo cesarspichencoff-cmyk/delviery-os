@@ -18,6 +18,7 @@
 
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { loadPlatformConfig, describe, ConfigError } from "../config/platform-config";
+import { lerModoDaInstancia } from "../config/modo-da-instancia";
 import { runMigrations } from "../migrations/runner";
 import { diretorioDeMigrations } from "../migrations/localizar";
 import { createPgClient } from "../persistence/sql-client";
@@ -37,8 +38,15 @@ import type { FactSink } from "../persistence/platform-uow";
 
 async function main(): Promise<void> {
   let cfg;
+  let modoDaInstancia: SourceMode;
   try {
     cfg = loadPlatformConfig();
+    // O modo desta instância é DECLARADO, nunca presumido (Q-017): ausente,
+    // vazio ou fora de real|simulated|control recusa o boot aqui — antes de
+    // conexão, migration ou porta. Uma instância de simulação esquecida
+    // ligada gravaria histórico como se fosse a rua, e desde a Q-016 esse
+    // carimbo é durável e governa o replay.
+    modoDaInstancia = lerModoDaInstancia();
   } catch (e) {
     // Fail-closed: configuração ruim não vira "sobe assim mesmo".
     if (e instanceof ConfigError) {
@@ -48,7 +56,10 @@ async function main(): Promise<void> {
     throw e;
   }
 
-  console.log("[critico] iniciando", JSON.stringify(describe(cfg)));
+  // O modo aparece no boot: é o que esta instância está autorizada a gravar
+  // como natureza de cada fato, e decisão que não aparece no boot é decisão
+  // que ninguém revisa.
+  console.log("[critico] iniciando", JSON.stringify({ ...describe(cfg), source_mode: modoDaInstancia }));
 
   const cliente = await createPgClient({
     url: cfg.database_url,
@@ -79,18 +90,6 @@ async function main(): Promise<void> {
 
   // A ponte. `PgTransactionalWriter` grava fato e mensagem na MESMA transação;
   // o registro decide revogação a cada requisição.
-  // O modo desta instância é EXPLÍCITO. Sem padrão silencioso: uma instância
-  // de simulação esquecida ligada gravaria histórico como se fosse a rua.
-  const modoBruto = (process.env.DELIVERYOS_SOURCE_MODE ?? "real").trim();
-  if (modoBruto !== "real" && modoBruto !== "simulated" && modoBruto !== "control") {
-    console.error(
-      `[critico] DELIVERYOS_SOURCE_MODE inválido: "${modoBruto}" (real, simulated ou control)`,
-    );
-    await cliente.close();
-    process.exit(78);
-  }
-  const modoDaInstancia = modoBruto as SourceMode;
-
   const escritor = new PgTransactionalWriter(cliente);
   const registro = new PgDeviceRegistry(cliente);
 

@@ -98,6 +98,10 @@ function bootQueDeveMorrer(dir: string, env: Record<string, string> = {}): Resul
       // de saída sem conferir o motivo já teria passado ali — foi o que
       // aconteceu na primeira versão desta suíte.
       DELIVERYOS_PORT: String(8700 + Math.floor(Math.random() * 200)),
+      // Modo DECLARADO pelo mesmo motivo (Q-017): sem ele o crítico sai 78
+      // antes de chegar ao contrato ou ao segredo, e cada caso abaixo morreria
+      // por um motivo que não é o dele. `simulated` porque nada aqui é da rua.
+      DELIVERYOS_SOURCE_MODE: "simulated",
       ...env,
     },
   });
@@ -150,6 +154,9 @@ teste("D3b-3 CONTROLE POSITIVO: imagem íntegra sobe e ACEITA lote de GPS", () =
     assert.match(saida, /READY=200/, `/ready não respondeu 200:\n${saida}`);
     assert.match(saida, /GPS=200/, `o lote de GPS não foi aceito:\n${saida}`);
     assert.match(saida, /ACEITOS=1/, `o lote não foi persistido:\n${saida}`);
+    // Lote sintético, instância declarada `simulated`: é o que o banco tem de
+    // guardar. `real` aqui seria dado de teste virando histórico da rua.
+    assert.match(saida, /MODO=simulated/, `o fato não ficou gravado como simulated:\n${saida}`);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -270,6 +277,10 @@ teste("D2-6 o segredo NUNCA aparece no log de boot", () => {
     // um `describe()` descuidado despeja o ambiente inteiro.
     rmSync(join(dir, CONTRATO_NA_IMAGEM));
     const r = bootQueDeveMorrer(dir, { DELIVERYOS_DEVICE_TOKEN_SECRET: marca });
+    // O caminho de erro tem de ser o do CONTRATO. Um boot que morresse antes,
+    // por qualquer outra recusa, não imprimiria o segredo por nunca ter
+    // chegado perto dele — e este teste passaria sem ter medido nada.
+    assert.match(r.saida, /contrato de eventos ausente/, `o boot não morreu no contrato:\n${r.saida}`);
     assert.ok(!r.saida.includes(marca), `o segredo vazou para o log:\n${r.saida}`);
   } finally {
     rmSync(dir, { recursive: true, force: true });

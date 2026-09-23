@@ -143,6 +143,15 @@ services:
       # deploy, não depois. Rotação é trocar o valor em `deploy/.env`; nenhuma
       # linha de código muda.
       DELIVERYOS_DEVICE_TOKEN_SECRET: ${DELIVERYOS_DEVICE_TOKEN_SECRET:?segredo dos tokens de aparelho obrigatorio}
+      # Natureza dos fatos que ESTA instância grava: real, simulated ou control
+      # (Q-017). Só aqui, e não em `x-ambiente`: só o crítico carimba fato. O
+      # assíncrono consome e reconstrói com o modo que cada fato já traz.
+      #
+      # `:?` e NENHUM padrão, de propósito: ausente não é real. Um `:-real`
+      # aqui faria uma composição de teste esquecida ligada gravar histórico
+      # da rua, durável, governando o replay. Sem valor, `docker compose
+      # config` recusa; com valor fora dos três, o crítico sai 78 no boot.
+      DELIVERYOS_SOURCE_MODE: ${DELIVERYOS_SOURCE_MODE:?source mode obrigatorio}
     command: ["node", "dist/src/platform/bin/critical.js"]
     networks: [interna]
     # `expose`, não `ports`: quem publica para fora é o proxy, e só ele.
