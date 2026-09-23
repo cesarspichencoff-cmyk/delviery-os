@@ -157,6 +157,16 @@ diferentes inteligências. Política de acesso desse repositório é `Q-012`, ai
   sobre volumes de nome fixo. 15 mutações, zero cegas. Achado: o G6c da governança nasceu no
   commit final da própria Q-016 e passou porque a regressão rodou antes do commit — fechado.
 
+- **Append-Only Closure · CONCLUÍDO** (`docs/etapa-4-8/APPEND-ONLY.md`): correção de invariante
+  existente, não decisão nova. O buraco foi reproduzido antes de fechar (`TRUNCATE` esvaziava o
+  log num banco na 0003, com UPDATE e DELETE recusados no mesmo banco) e tinha dependentes: três
+  suítes oficiais montavam fixture limpando o banco compartilhado, desde 2026-07-26. A classe veio
+  antes da trava; na ordem inversa, o push da 0004 sairia vermelho. A 0004 fecha com trigger de
+  comando e a mesma função, e a proteção sobrevive a `pg_dump`/`pg_restore`, provada executando.
+  O gate de backup passou a ter patrimônio próprio, medido de fora com a referência trancada. 11
+  mutações, zero cegas. A fronteira de privilégio foi medida e declarada: dono e superusuário
+  ainda sabotam, e no compose oficial o runtime é superusuário (IAM, fora do escopo).
+
 A redução de superfície de `apps/deliveryos-ai-node` (reescrever os 6 root-requires para subpath)
 **não é C2** — é tarefa futura fora do escopo de ambos, registrada em `C1-PORT.md`.
 
@@ -170,7 +180,8 @@ A redução de superfície de `apps/deliveryos-ai-node` (reescrever os 6 root-re
   `docs/design/VISUAL_REFERENCE_HIERARCHY.md` e `VISUAL_SOURCE_OF_TRUTH.md`.
 - **Event Log append-only** — o log canônico é `platform.event_log`
   (`src/platform/migrations/0001_platform_foundation.sql`), com trigger de banco que rejeita
-  `UPDATE`/`DELETE` (`platform.impedir_mutacao_event_log`). Qualquer novo event log introduzido por
+  `UPDATE`/`DELETE` (`platform.impedir_mutacao_event_log`) e, desde a 0004, `TRUNCATE`, pela
+  mesma função (`docs/etapa-4-8/APPEND-ONLY.md`). Qualquer novo event log introduzido por
   trabalho futuro deve seguir o mesmo padrão append-only, mas nunca escrever nessa tabela sem
   decisão explícita.
 - **Distinção FACT ≠ INFERENCE ≠ SIMULATION ≠ UNKNOWN** — expressão vinculante no CLAUDE.md:

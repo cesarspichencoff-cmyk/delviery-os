@@ -959,3 +959,22 @@ visível. Onde um valor pode ser preenchido por padrão, é ALI que a recusa
 precisa morar — na borda que lê a configuração, antes de qualquer efeito —, e
 a prova é comportamental: o binário real, sem a variável, tem de sair 78.
 Validador correto a jusante não prova nada sobre o que chega a ele.
+
+## L47 — Contornar a trava não prova a trava
+
+**O que quase passou.** Desde 2026-07-26, a decisão D10 citava como PROVA de
+que o append-only valia para todo mundo o fato de a limpeza da suíte de
+repositórios ter "batido na trava" e passado a usar `TRUNCATE`, e o
+comentário da suíte dizia o mesmo. O `TRUNCATE` passava porque a trava era
+de LINHA, e `TRUNCATE` não passa por linha: a garantia valia linha a linha e
+não valia para a tabela inteira. Por quase dois meses, dois gates oficiais
+montaram fixture pelo buraco, e na Q-017 a pegada de um defeito sumiu do
+banco compartilhado no meio da regressão.
+
+**A regra.** Quando um teste precisa TROCAR de operação para passar por uma
+proteção, a troca é um achado sobre a cobertura dela, não prova. Toda
+proteção é testada contra TODAS as operações com o mesmo efeito (aqui
+`UPDATE`, `DELETE` e `TRUNCATE`, de linha e de comando), nunca só contra as
+que a declaração dela nomeia. E teste que precisa de estado vazio cria o
+próprio estado: limpar o de outro é destruir patrimônio para fabricar
+fixture.

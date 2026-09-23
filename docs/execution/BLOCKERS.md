@@ -802,7 +802,7 @@ pegada do defeito, medida no banco compartilhado deste sandbox antes da regress�
 sintéticos do controle positivo do PB19 gravados `real`**. Depois da correção o mesmo controle
 grava `simulated`. Ver `docs/etapa-4-8/Q017-SOURCE-MODE.md`.
 
-### Achado da Q-017 — o append-only do event log não cobre `TRUNCATE`
+### Achado da Q-017 — o append-only do event log não cobre `TRUNCATE` · **FECHADO em 2026-09-23**
 
 A trava da 0001 é `BEFORE UPDATE OR DELETE … FOR EACH ROW`; `TRUNCATE` não dispara gatilho de
 linha. Provado em banco isolado: `UPDATE` e `DELETE` recusados, `TRUNCATE` passa calado e leva
@@ -810,3 +810,15 @@ tudo. As 11 linhas acima sumiram assim, no meio da regressão: `run-backup-resto
 faz `TRUNCATE platform.event_log` para simular perda. A L3 promete mais do que o banco garante.
 **Não corrigido**: o event log está no Preservation Set, fechar o buraco é DDL nova e o teste de
 backup depende dele — decisão do César.
+
+**Fechado pela decisão do César (2026-09-23), como correção de invariante existente.** Migration
+0004: `BEFORE TRUNCATE ... FOR EACH STATEMENT` com a mesma função da 0001. O teste de backup
+deixou de depender do buraco e de tocar no banco compartilhado: cria a própria fonte e o próprio
+destino, e só apaga os dois. Provado executando, também depois de `pg_dump`/`pg_restore`. Ver
+`docs/etapa-4-8/APPEND-ONLY.md`.
+
+**Limite que fica, declarado:** a trava recusa escrita de qualquer papel, mas quem é dono da
+tabela ou superusuário ainda consegue desligá-la (`DISABLE TRIGGER`, `session_replication_role`).
+Na composição oficial, o runtime conecta como `POSTGRES_USER`, que a imagem do PostgreSQL cria
+como superusuário. Separar o papel do runtime do dono do schema é IAM: hoje não bloqueia nada, e
+não foi aberto como pergunta.

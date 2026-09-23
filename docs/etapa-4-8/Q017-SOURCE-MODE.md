@@ -360,6 +360,8 @@ mesmas duas.
    `TRUNCATE platform.event_log` para simular perda. A L3 promete mais do que
    o banco garante. Não corrigido: o event log está no Preservation Set, fechar
    o buraco é DDL nova, e o teste de backup depende dele. Decisão do César.
+   **Fechado depois**, por decisão do César, na Append-Only Closure
+   (`docs/etapa-4-8/APPEND-ONLY.md`, migration 0004).
 8. **`MISSION_LEDGER.jsonl` não recebe linha desde a M1A.1 (2026-08-11).** C0
    a Q-017 vivem em `CLAUDE.md` §13 e `docs/etapa-4-8/`. Não alterado.
 

@@ -199,6 +199,23 @@ validador recebia um `real` bem formado. Compose: `:?` só no crítico; exemplo 
 vazia. Trocar o modo nunca reclassifica fato antigo; histórico `NULL` segue UNKNOWN. Gates:
 `test:platform:q017` (18, binários + PostgreSQL), `test:platform:q017:compose` (7, pelo
 renderizador do compose) e `test:platform:q017:mutacoes` (**15, zero cegas**); em containers,
-`tools/q017_compose_real.sh` (31 medidas; recusa rodar onde já houver composição). **Achado, não
-corrigido:** o append-only do event log não cobre `TRUNCATE` — provado em banco isolado; fechar é
-DDL em item do Preservation Set, decisão do César.
+`tools/q017_compose_real.sh` (31 medidas; recusa rodar onde já houver composição). **Achado:** o
+append-only do event log não cobria `TRUNCATE`; fechado pela Append-Only Closure, abaixo.
+
+**Append-Only Closure — fechado** (`docs/etapa-4-8/APPEND-ONLY.md`): `platform.event_log` é
+append-only também contra `TRUNCATE`. Correção de invariante que já existia (L3, D10), por decisão
+do César; nenhuma pergunta nova, nada de retenção ou purge. A trava da 0001 é de linha, e
+`TRUNCATE` não dispara trigger de linha: reproduzido antes de fechar, num banco na 0003. O buraco
+tinha dependentes: backup e repos montavam fixture com `TRUNCATE` no banco compartilhado, e o pg
+com `DELETE`. **Primeiro a classe**: as três suítes passaram a criar o próprio banco por
+`banco-isolado.ts`, que recusa colisão de nome e só apaga o que criou, também em falha e SIGTERM.
+**Depois a trava**: migration **0004**, trigger de comando `BEFORE TRUNCATE` com a mesma função da
+0001, que não foi editada. Provado executando, inclusive no banco restaurado por
+`pg_dump`/`pg_restore`, com o replay da Q-016 idêntico ao da fonte. Gates:
+`test:platform:append-only` (20), `test:platform:backup` (19), `test:platform:backup:patrimonio`
+(7, de fora: referência trancada, falha injetada, SIGTERM, nomes hostis) e
+`test:platform:append-only:mutacoes` (**11 mutações, zero cegas**); em containers,
+`tools/append_only_compose_real.sh` (10 medidas: o job oficial aplica a 0004 e o banco da composição
+recusa as três). **Limite declarado:** dono e superusuário ainda desligam a trava, e no compose
+oficial o runtime é superusuário. Separar papéis é IAM, fora do escopo. Regressão
+**48/52**, zero `FAIL_NOVO`.

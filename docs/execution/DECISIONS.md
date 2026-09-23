@@ -4,7 +4,7 @@ lifecycle:
   status: ACTIVE
   authority_scope: decisions
   superseded_by: null
-  atualizado_em: "2026-08-07"
+  atualizado_em: "2026-09-23"
   state_basis: 953a3fb
 ---
 
@@ -184,6 +184,14 @@ a limpeza da suíte de repositórios **bateu na trava** e teve que usar
 `TRUNCATE`.
 
 **Custo:** correções legítimas exigem passo deliberado.
+
+**Correção (2026-09-23, Append-Only Closure).** A "prova" acima era o buraco.
+A trava é `FOR EACH ROW`, e `TRUNCATE` não dispara trigger de linha: a suíte
+não bateu na trava, passou por baixo dela. A garantia valia linha a linha e
+não valia para a tabela inteira. A decisão não muda; a migration 0004 a
+estende ao `TRUNCATE`, com trigger de comando e a mesma função, e nenhuma
+suíte limpa mais o event log, porque cada uma cria o próprio banco. Ver
+`docs/etapa-4-8/APPEND-ONLY.md`.
 
 ---
 
