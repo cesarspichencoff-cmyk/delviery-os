@@ -23,6 +23,7 @@ export type BrowserSessionReason =
   | "session_expired"
   | "human_challenge"
   | "session_probe_failed"
+  | "source_mode_mismatch"
   | "unknown";
 
 export interface BrowserSessionSnapshot {
