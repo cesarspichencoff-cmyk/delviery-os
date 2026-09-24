@@ -78,8 +78,7 @@ assert.throws(
   /secret-like field forbidden/,
 );
 
-const review = portalRecordToObservation({
-  capture_id: "cap-review-1",
+const review = portalRecordToObservation({\n  source_mode: "synthetic",\n  capture_id: "cap-review-1",
   surface: "reviews",
   unit_id: "0001",
   observed_at: "2026-09-24T20:00:00.000Z",
@@ -91,8 +90,7 @@ assert.equal(review.source_ref.source, "review");
 assert.equal(review.kind, "review");
 assert.equal(review.payload.score, 2);
 
-const analytics = portalRecordToObservation({
-  capture_id: "cap-analytics-1",
+const analytics = portalRecordToObservation({\n  source_mode: "synthetic",\n  capture_id: "cap-analytics-1",
   surface: "analytics",
   unit_id: "0001",
   observed_at: "2026-09-24T20:01:00.000Z",
@@ -103,8 +101,7 @@ assert.notEqual(analytics.kind, "ifood_order");
 
 assert.throws(
   () =>
-    portalRecordToObservation({
-      capture_id: "cap-secret",
+    portalRecordToObservation({\n  source_mode: "synthetic",\n      capture_id: "cap-secret",
       surface: "analytics",
       unit_id: "0001",
       observed_at: "2026-09-24T20:02:00.000Z",
@@ -115,8 +112,7 @@ assert.throws(
 
 assert.throws(
   () =>
-    portalRecordToObservation({
-      capture_id: "cap-pii",
+    portalRecordToObservation({\n  source_mode: "synthetic",\n      capture_id: "cap-pii",
       surface: "orders",
       unit_id: "0001",
       observed_at: "2026-09-24T20:03:00.000Z",
