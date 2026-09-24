@@ -18,6 +18,9 @@
  *      unidade vinda do cadastro.
  *   C. A CADEIA, passos 1–20 do desenho, mais revogação, expiração e "A não
  *      fala como B".
+ *   D. A LEITURA: a porta somente-leitura devolve o que a cadeia sustenta, e a
+ *      superfície Entregas mostra realidade separada da demonstração — com
+ *      ausência declarada onde não há fonte, nunca zero, nunca "saudável".
  *
  * Cada asserção compara VALOR — nunca "não deu erro".
  */
@@ -36,6 +39,9 @@ import { emitirToken, verificarToken } from "./auth/device-token";
 import { lerFatosParaReplay } from "./projections/replay-do-event-log";
 import { projetar, mesmoEstadoLogico } from "./projections/operacao-viva";
 import { TIPOS_DA_OPERACAO_VIVA } from "./runtime/handler-operacao-viva";
+import { lerRealidadeDeEntregas } from "./leitura/realidade-de-entregas";
+import { entregasVM } from "../product/viewmodels/entregas-vm";
+import { montarEntregasDemo, AGORA_DEMO } from "../product/demo/seed-demonstracao";
 
 const URL_PG = (process.env.DELIVERYOS_PG_URL ?? "").trim();
 const raiz = process.cwd();
@@ -635,6 +641,120 @@ async function main(): Promise<void> {
       assert.equal(JSON.stringify(linha).includes(segredo), false, "o segredo está em claro no banco");
       const h = createHash("sha256").update(segredo).digest("hex");
       assert.equal(linha?.secret_hash, h);
+    });
+    /* -------------------------------------------------------------- *
+     * D. A leitura
+     * -------------------------------------------------------------- */
+    console.log("\nD. A LEITURA — a superfície Entregas mostra o que a cadeia sustenta");
+
+    const AGORA_LEITURA = new Date("2026-09-24T10:08:30.000Z");
+    let realidade: Awaited<ReturnType<typeof lerRealidadeDeEntregas>> | null = null;
+
+    await teste("D1 a porta lê o aparelho da cadeia: vínculo, sessão, versão, revogação, último lote e contagem por modo", async () => {
+      realidade = await lerRealidadeDeEntregas(b.cliente, { agora: AGORA_LEITURA, unit_id: UNIDADE });
+      const a = realidade.aparelhos.find((x) => x.device_id === ap.deviceId);
+      assert.ok(a, "o aparelho da cadeia não apareceu");
+      assert.equal(a.unit_id, UNIDADE);
+      assert.equal(a.actor_id, MOTOBOY);
+      assert.ok(a.credencial_vinculada_em, "vínculo não lido");
+      assert.ok(a.ultima_sessao_em, "última sessão não lida");
+      assert.equal(a.app_version, "1.0.0-logico");
+      assert.ok(a.revogado_em, "a revogação do R1 não apareceu");
+      assert.deepEqual(a.fatos_por_modo, { real: 0, simulated: 5, control: 0 });
+      assert.equal(a.ultimo_lote?.occurred_at, "2026-09-24T10:05:00.000Z");
+      assert.equal(a.ultimo_lote?.trip_id, VIAGEM);
+      assert.equal(a.ultimo_lote?.source_mode, MODO);
+      // `recorded_at` é o relógio do SERVIDOR; os instantes da cadeia são
+      // sintéticos e podem estar à frente dele. A relação entre os dois é
+      // latência, não propriedade desta porta — o achado (o crítico aceita
+      // occurred_at no futuro sem marcar clock_trust) está no documento.
+      assert.ok(a.ultimo_lote?.recorded_at && Number.isFinite(Date.parse(a.ultimo_lote.recorded_at)), "recorded_at ausente ou ilegível");
+      assert.equal(realidade.historico_sem_modo, 0);
+      const proj = realidade.projecoes.find((p) => p.unit_id === UNIDADE && p.source_mode === MODO);
+      assert.ok(proj, "sem projeção para a unidade/modo da cadeia");
+      const v = proj.viagens.find((x) => x.trip_id === VIAGEM);
+      assert.equal(v?.ultima_posicao_em, "2026-09-24T10:05:00.000Z");
+      assert.equal(v?.eventos.length, 5);
+      assert.equal(realidade.projecoes.some((p) => p.source_mode === "real"), false, "apareceu projeção real sem fato real");
+    });
+
+    await teste("D2 a porta é somente-leitura por construção: nenhuma escrita entra na conexão dela", async () => {
+      // A mesma transação READ ONLY que a leitura usa: uma escrita dentro dela
+      // é recusada pelo PostgreSQL, não por disciplina de quem escreve.
+      const erro = await b.cliente
+        .transaction(async (tx) => {
+          await tx.query("SET TRANSACTION READ ONLY");
+          await tx.query(`UPDATE identity.device SET label = 'x' WHERE device_id = $1`, [ap.deviceId]);
+        })
+        .then(() => null, (e: Error) => e.message);
+      assert.match(String(erro), /read-only/);
+      const fatosAntes = (await fatosDoAparelho(b, ap.deviceId)).length;
+      await lerRealidadeDeEntregas(b.cliente, { agora: AGORA_LEITURA });
+      assert.equal((await fatosDoAparelho(b, ap.deviceId)).length, fatosAntes);
+    });
+
+    await teste("D3 a superfície: realidade SEPARADA da demonstração, cada item com a procedência do seu fato", async () => {
+      const f = await montarEntregasDemo();
+      const vm = entregasVM(await f.snapshot(), AGORA_LEITURA.toISOString(), f.getPolicyMaxStops(), { disponivel: true, realidade: realidade! });
+      // A demonstração continua demonstração — nenhum selo saiu.
+      assert.equal(vm.procedencia, "simulado");
+      assert.ok(vm.selos_de_cabecalho.some((s) => s.estado === "somente_demonstracao"));
+      assert.ok(vm.selos_de_cabecalho.some((s) => s.estado === "parcial"));
+      // O bloco real não se mistura com as viagens do demo.
+      const idsDemo = vm.viagens.map((v) => v.viagem_id);
+      assert.equal(idsDemo.includes(VIAGEM), false, "a viagem real entrou na lista do demo");
+      const vr = vm.realidade.viagens.find((v) => v.viagem_id === VIAGEM);
+      assert.ok(vr, "a viagem real não apareceu no bloco de realidade");
+      assert.equal(vr.procedencia, "simulado", "fato simulated apareceu com outra procedência");
+      assert.equal(vr.estado, "desconhecido");
+      assert.ok(vr.selos.some((s) => s.estado === "evidencia_insuficiente"), "estado desconhecido sem selo que o explique");
+      const ar = vm.realidade.aparelhos.find((a) => a.device_id === ap.deviceId)!;
+      assert.equal(ar.credencial.observado && ar.credencial.valor, "vinculada");
+      assert.equal(ar.revogado.observado && ar.revogado.valor, true);
+      assert.ok(ar.selos.some((s) => s.estado === "retirado"));
+      assert.equal(ar.ultima_posicao_em.observado && ar.ultima_posicao_em.origem, "simulado");
+      assert.equal(ar.gps.observado && ar.gps.valor, "aging", "10:05 lido às 10:08:30 (210 s) não é aging?");
+      assert.equal(ar.fatos.observado && ar.fatos.valor, 5);
+      // O que o telefone guarda continua sem fonte.
+      assert.equal(ar.fila_offline.observado, false);
+      assert.equal(ar.fila_offline.observado === false && ar.fila_offline.motivo, "integracao_pendente");
+      // E o bloco antigo do demo continua declarando integração pendente.
+      for (const c of Object.values(vm.dispositivo)) assert.equal(c.observado, false);
+    });
+
+    await teste("D4 AUSÊNCIA nunca vira saúde: aparelho autorizado sem lote fica sem GPS, sem sincronização e sem modo", async () => {
+      const dirD = mkdtempSync(join(tmpdir(), "cadeia-aparelho-d-"));
+      try {
+        const apD = new AparelhoLogico({ diretorio: dirD, plataformaUrl: urlCritico });
+        await autorizarAparelho(b, apD.deviceId, UNIDADE, `${MOTOBOY}-d`);
+        const r = await lerRealidadeDeEntregas(b.cliente, { agora: AGORA_LEITURA, unit_id: UNIDADE });
+        const f = await montarEntregasDemo();
+        const vm = entregasVM(await f.snapshot(), AGORA_LEITURA.toISOString(), f.getPolicyMaxStops(), { disponivel: true, realidade: r });
+        const ad = vm.realidade.aparelhos.find((a) => a.device_id === apD.deviceId)!;
+        assert.ok(ad, "aparelho autorizado sem contato não apareceu");
+        assert.equal(ad.credencial.observado && ad.credencial.valor, "aguardando_primeiro_contato");
+        assert.ok(ad.selos.some((s) => s.estado === "acao_humana_necessaria"));
+        for (const [nome, c] of Object.entries({ gps: ad.gps, ultima_sincronizacao: ad.ultima_sincronizacao, ultima_posicao_em: ad.ultima_posicao_em, modo_dos_fatos: ad.modo_dos_fatos, fatos: ad.fatos })) {
+          assert.equal(c.observado, false, `${nome} afirmou valor sem lote`);
+          assert.equal(c.observado === false && c.motivo, "nao_observado", `${nome} usou o motivo errado`);
+        }
+        assert.equal(JSON.stringify(ad).includes('"valor":"fresh"'), false);
+        assert.equal(ad.selos.some((s) => s.estado === "saudavel"), false, "ausência virou saudável");
+      } finally {
+        rmSync(dirD, { recursive: true, force: true });
+      }
+    });
+
+    await teste("D5 sem banco, ou com o banco fora do ar, o bloco é AUSÊNCIA declarada — e a demonstração não muda", async () => {
+      const f = await montarEntregasDemo();
+      const semPorta = entregasVM(await f.snapshot(), AGORA_DEMO, f.getPolicyMaxStops());
+      assert.equal(semPorta.realidade.fonte.observado, false);
+      assert.equal(semPorta.realidade.fonte.observado === false && semPorta.realidade.fonte.motivo, "integracao_pendente");
+      assert.deepEqual(semPorta.realidade.aparelhos, []);
+      assert.equal(semPorta.selos_de_cabecalho.some((s) => s.estado === "parcial"), false);
+      const fora = entregasVM(await f.snapshot(), AGORA_DEMO, f.getPolicyMaxStops(), { disponivel: false, motivo: "indisponivel", explicacao: "banco fora" });
+      assert.equal(fora.realidade.lida_em.observado === false && fora.realidade.lida_em.motivo, "indisponivel");
+      assert.equal(JSON.stringify(fora.realidade).includes('"valor":0'), false, "ausência virou zero");
     });
   } finally {
     if (assincrono) await assincrono.fim();

@@ -28,9 +28,21 @@ import {
   AGORA_DEMO,
 } from "../src/product/demo/seed-demonstracao";
 import { homeVM } from "../src/product/viewmodels/home-vm";
+import { createPgClient, type PgSqlClient } from "../src/platform/persistence/sql-client";
+import { lerRealidadeDeEntregas } from "../src/platform/leitura/realidade-de-entregas";
+import type { LeituraDeRealidade } from "../src/product/viewmodels/entregas-vm";
 import { CENAS, cena, type CenaHome } from "../src/product/demo/seed-home-demonstracao";
 
 const PORT = Number(process.env.PRODUCT_UI_PORT || 5290);
+/**
+ * A porta de REALIDADE de Entregas. Com a URL do banco da plataforma, a
+ * superficie /entregas ganha um bloco lido de identity.device e de
+ * platform.event_log — somente leitura, a cada requisicao, separado da
+ * demonstracao. Sem a URL, o bloco declara integracao pendente. Com a URL e
+ * o banco fora do ar, declara indisponivel. Nunca zero, nunca saudavel por
+ * ausencia.
+ */
+const URL_PLATAFORMA = (process.env.DELIVERYOS_DATABASE_URL || process.env.DELIVERYOS_PG_URL || "").trim();
 const RAIZ_UI = join(process.cwd(), "src", "product", "ui");
 /** O MESMO arquivo de tokens que ENTREGAS usa. Nao ha copia. */
 const RAIZ_SHARED = join(process.cwd(), "src", "entregas", "ui", "shared");
@@ -134,8 +146,30 @@ function servirEstatico(res: http.ServerResponse, caminho: string): void {
  * Servidor
  * ------------------------------------------------------------------ */
 
+async function lerRealidade(cliente: PgSqlClient | null): Promise<LeituraDeRealidade> {
+  if (!cliente) {
+    return {
+      disponivel: false,
+      motivo: "integracao_pendente",
+      explicacao:
+        "Nenhum banco da plataforma foi configurado nesta build (DELIVERYOS_DATABASE_URL). O bloco de realidade nao foi lido.",
+    };
+  }
+  try {
+    return { disponivel: true, realidade: await lerRealidadeDeEntregas(cliente, { agora: new Date() }) };
+  } catch (e) {
+    return {
+      disponivel: false,
+      motivo: "indisponivel",
+      explicacao: `O banco da plataforma nao respondeu a esta leitura: ${e instanceof Error ? e.message : String(e)}`,
+    };
+  }
+}
+
 export async function criarServidor(): Promise<http.Server> {
   const pronto = await calcular();
+  const facade = await montarEntregasDemo();
+  const clientePlataforma = URL_PLATAFORMA ? await createPgClient({ url: URL_PLATAFORMA, max: 2 }) : null;
 
   return http.createServer((req, res) => {
     // A trava: metodo de escrita e recusado antes de qualquer roteamento.
@@ -182,7 +216,17 @@ export async function criarServidor(): Promise<http.Server> {
           cenas_disponiveis: Object.keys(CENAS),
         });
       }
-      if (p === "/api/entregas") return json(res, 200, pronto.entregas);
+      if (p === "/api/entregas") {
+        // A demonstracao e calculada no boot; a REALIDADE e lida agora. Um
+        // bloco congelado no boot mostraria o aparelho como estava quando o
+        // servidor subiu, e "agora" e o que quem olha esta perguntando.
+        void (async () => {
+          const snap = await facade.snapshot();
+          const leitura = await lerRealidade(clientePlataforma);
+          json(res, 200, entregasVM(snap, new Date().toISOString(), facade.getPolicyMaxStops(), leitura));
+        })().catch((e: unknown) => json(res, 500, { erro: e instanceof Error ? e.message : String(e) }));
+        return;
+      }
       if (p === "/api/operacao-viva") return json(res, 200, pronto.operacaoViva);
       if (p === "/api/conference-brain") return json(res, 200, pronto.conference);
       if (p === "/api/copiloto") return json(res, 200, pronto.copiloto);
