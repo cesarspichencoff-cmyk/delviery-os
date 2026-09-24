@@ -11,7 +11,7 @@ export interface AdapterCycleResult {
   collected: number;
   duplicates: number;
   status: "ok" | "failed";
-  error?: string;
+  error_code?: "adapter_failed";
 }
 
 export class EdgeAdapterSupervisor {
@@ -34,13 +34,15 @@ export class EdgeAdapterSupervisor {
           duplicates,
           status: "ok",
         });
-      } catch (error) {
+      } catch {
+        // Raw exception strings can contain URLs, credentials, tokens or PII.
+        // Keep the supervisor receipt intentionally generic.
         results.push({
           adapter_id: adapter.adapter_id,
           collected: 0,
           duplicates: 0,
           status: "failed",
-          error: error instanceof Error ? error.message : String(error),
+          error_code: "adapter_failed",
         });
       }
     }
