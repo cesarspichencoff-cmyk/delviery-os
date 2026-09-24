@@ -1,4 +1,4 @@
-# Edge Synthetic Suite Proof — 2026-09-24
+# Edge Synthetic Suite Status — 2026-09-24
 
 ## Scope
 
@@ -6,21 +6,21 @@ Branch: `design/tata-edge-runtime-foundation-v1`
 
 No production deployment, cashier-PC installation, live iFood browser session, real OTP, printer query, print submission or Teknisa write occurred.
 
-## Synthetic suite result
+## Synthetic suite execution status
 
-The Edge modules were compiled together in an isolated TypeScript harness and all proof runners passed.
+The Edge proof runners are implemented, but this session does not contain an observed successful execution receipt from a normal checkout. The connected Foxxy workstation is currently offline.
 
 ```text
-edge_shadow_proof                 PASS
-edge_runtime_proof                PASS
-edge_ifood_shadow_proof           PASS
-edge_print_shadow_proof           PASS
-edge_sources_bridge_proof         PASS
-edge_projection_rebuild_proof     PASS
-edge_admission_pipeline_proof      PASS
+edge_shadow_proof                 IMPLEMENTED / EXECUTION_PENDING
+edge_runtime_proof                IMPLEMENTED / EXECUTION_PENDING
+edge_ifood_shadow_proof           IMPLEMENTED / EXECUTION_PENDING
+edge_print_shadow_proof           IMPLEMENTED / EXECUTION_PENDING
+edge_sources_bridge_proof         IMPLEMENTED / EXECUTION_PENDING
+edge_projection_rebuild_proof     IMPLEMENTED / EXECUTION_PENDING
+edge_admission_pipeline_proof     IMPLEMENTED / EXECUTION_PENDING
 ```
 
-Verified properties:
+Assertions implemented:
 
 - replay adds zero duplicate accepted meaning;
 - runtime state survives restart;
@@ -53,15 +53,15 @@ Payment mapping remains source context only. Identity proposals require an actua
 
 ## Current classification
 
-- R0 contract convergence: `PROVEN_DESIGN`
-- R1 pure replay simulator: `PROVEN_SYNTHETIC`
-- R2 identity graph: `PROVEN_SYNTHETIC`
-- R3 local store-and-forward foundation: `PROVEN_SYNTHETIC`
-- R4 iFood auth/sidecar contract: `PROVEN_SYNTHETIC`
-- R5 print observer contract: `PROVEN_SYNTHETIC`
-- Teknisa source boundary: `PROVEN_SYNTHETIC`
-- TATÁ OS bridge boundary: `PROVEN_SYNTHETIC`
-- cross-source admission pipeline: `PROVEN_SYNTHETIC`
+- R0 contract convergence: `IMPLEMENTED_DESIGN`
+- R1 pure replay simulator: `IMPLEMENTED_SYNTHETIC / EXECUTION_PENDING`
+- R2 identity graph: `IMPLEMENTED_SYNTHETIC / EXECUTION_PENDING`
+- R3 local store-and-forward foundation: `IMPLEMENTED_SYNTHETIC / EXECUTION_PENDING`
+- R4 iFood auth/sidecar contract: `IMPLEMENTED_SYNTHETIC / EXECUTION_PENDING`
+- R5 print observer contract: `IMPLEMENTED_SYNTHETIC / EXECUTION_PENDING`
+- Teknisa source boundary: `IMPLEMENTED_SYNTHETIC / EXECUTION_PENDING`
+- TATÁ OS bridge boundary: `IMPLEMENTED_SYNTHETIC / EXECUTION_PENDING`
+- cross-source admission pipeline: `IMPLEMENTED_SYNTHETIC / EXECUTION_PENDING`
 - live source bindings: `NOT_PROVEN`
 - cashier-PC safety/resource impact: `UNKNOWN / DEFERRED`
 
