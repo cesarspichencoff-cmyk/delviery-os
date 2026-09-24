@@ -21,7 +21,7 @@ export const EDGE_SHADOW_FIXTURES: EdgeSourceObservation[] = [
           {
             evidence_id: "ev-teknisa-ifood-external-id",
             dimension: "exact_external_id",
-            detail: "synthetic fixture: Teknisa preserved the external iFood id",
+            detail: "teknisa_external_order_id_explicit",
           },
         ],
       },
@@ -40,7 +40,7 @@ export const EDGE_SHADOW_FIXTURES: EdgeSourceObservation[] = [
           {
             evidence_id: "ev-print-command-reference",
             dimension: "explicit_source_reference",
-            detail: "synthetic fixture: print metadata contains Teknisa sale/command reference",
+            detail: "print_metadata_teknisa_reference",
           },
         ],
       },
@@ -59,17 +59,17 @@ export const EDGE_SHADOW_FIXTURES: EdgeSourceObservation[] = [
           {
             evidence_id: "ev-trip-unit",
             dimension: "unit",
-            detail: "same unit",
+            detail: "same_unit",
           },
           {
             evidence_id: "ev-trip-amount",
             dimension: "amount",
-            detail: "synthetic fixture: amount matches",
+            detail: "amount_match",
           },
           {
             evidence_id: "ev-trip-time",
             dimension: "timestamp_window",
-            detail: "synthetic fixture: operational times are compatible",
+            detail: "time_window_compatible",
           },
         ],
       },
@@ -88,7 +88,7 @@ export const EDGE_SHADOW_FIXTURES: EdgeSourceObservation[] = [
           {
             evidence_id: "ev-review-order-reference",
             dimension: "explicit_source_reference",
-            detail: "synthetic fixture: review references order id",
+            detail: "review_order_reference_explicit",
           },
         ],
       },
@@ -107,7 +107,7 @@ export const EDGE_SHADOW_FIXTURES: EdgeSourceObservation[] = [
           {
             evidence_id: "ev-only-time",
             dimension: "timestamp_window",
-            detail: "timestamp proximity only; deliberately insufficient",
+            detail: "timestamp_only",
           },
         ],
       },
