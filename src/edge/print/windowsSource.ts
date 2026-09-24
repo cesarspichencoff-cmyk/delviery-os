@@ -37,9 +37,12 @@ export const WINDOWS_PRINT_JOBS_COMMAND = [
 ].join(" ");
 
 export function assertReadOnlyPrintCommand(command: string): void {
-  const forbidden = /\b(Set|Remove|Restart|Stop|Start|Suspend|Resume|Clear|Add)-/i;
-  if (forbidden.test(command)) {
-    throw new Error("mutating PowerShell verb forbidden in print source");
+  const allowed = new Set([
+    WINDOWS_PRINT_DISCOVERY_COMMAND,
+    WINDOWS_PRINT_JOBS_COMMAND,
+  ]);
+  if (!allowed.has(command)) {
+    throw new Error("PowerShell command not allowlisted for print source");
   }
 }
 
