@@ -1,5 +1,8 @@
 /**
  * TATÁ OS bridge boundary. Observation only; no inherited print authority.
+ *
+ * Only explicitly modeled safe receipt fields cross the boundary.
+ * Raw agent/provider payloads stay in the TATÁ OS domain.
  */
 import type { EdgeSourceObservation } from "../simulator";
 
@@ -18,7 +21,6 @@ export interface TataOsSafeReceipt {
   job_id?: string;
   operation_id?: string;
   software_state?: string;
-  payload?: Record<string, unknown>;
 }
 
 export interface TataOsBridgeObservation {
@@ -27,7 +29,9 @@ export interface TataOsBridgeObservation {
   physical_effect: "UNKNOWN";
 }
 
-export function tataOsReceiptToObservation(receipt: TataOsSafeReceipt): TataOsBridgeObservation {
+export function tataOsReceiptToObservation(
+  receipt: TataOsSafeReceipt,
+): TataOsBridgeObservation {
   return {
     observation: {
       observation_id: ["tata-os", receipt.type, receipt.receipt_id].join(":"),
@@ -39,7 +43,10 @@ export function tataOsReceiptToObservation(receipt: TataOsSafeReceipt): TataOsBr
         unit_id: receipt.unit_id,
       },
       observed_at: receipt.observed_at,
-      payload: { operation_id: receipt.operation_id, software_state: receipt.software_state, ...(receipt.payload ?? {}) },
+      payload: {
+        operation_id: receipt.operation_id,
+        software_state: receipt.software_state,
+      },
     },
     inherited_print_authority: false,
     physical_effect: "UNKNOWN",
