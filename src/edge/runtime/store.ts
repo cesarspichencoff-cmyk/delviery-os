@@ -18,6 +18,12 @@ import { randomUUID } from "node:crypto";
 import type { EdgeSourceObservation } from "../simulator";
 
 export type EdgeOutboxStatus = "pending" | "sent" | "failed";
+export type EdgeOutboxFailureCode =
+  | "network_unavailable"
+  | "upstream_unavailable"
+  | "timeout"
+  | "rejected"
+  | "unknown";
 
 export interface EdgeOutboxRecord {
   observation_id: string;
@@ -25,7 +31,7 @@ export interface EdgeOutboxRecord {
   attempts: number;
   created_at: string;
   last_attempt_at?: string;
-  last_error?: string;
+  last_error_code?: EdgeOutboxFailureCode;
   sent_at?: string;
 }
 
@@ -55,6 +61,14 @@ const FORBIDDEN_PERSISTED_KEYS = new Set([
   "access_token",
   "refresh_token",
   "secret",
+]);
+
+const ALLOWED_FAILURE_CODES = new Set<EdgeOutboxFailureCode>([
+  "network_unavailable",
+  "upstream_unavailable",
+  "timeout",
+  "rejected",
+  "unknown",
 ]);
 
 function isForbiddenPersistedKey(key: string): boolean {
@@ -87,7 +101,7 @@ export class FileEdgeStore {
   }
 
   ingest(observation: EdgeSourceObservation): IngestReceipt {
-    assertPersistable(observation.payload);
+    assertPersistable(observation);
 
     if (this.state.observations.some((item) => item.observation_id === observation.observation_id)) {
       return {
@@ -129,15 +143,18 @@ export class FileEdgeStore {
       record.last_attempt_at = this.now().toISOString();
       record.sent_at = record.last_attempt_at;
       record.status = "sent";
-      delete record.last_error;
+      delete record.last_error_code;
     });
   }
 
-  markFailed(observationId: string, error: string): void {
+  markFailed(observationId: string, errorCode: EdgeOutboxFailureCode): void {
+    if (!ALLOWED_FAILURE_CODES.has(errorCode)) {
+      throw new Error("invalid outbox failure code");
+    }
     this.mutateOutbox(observationId, (record) => {
       record.attempts += 1;
       record.last_attempt_at = this.now().toISOString();
-      record.last_error = error;
+      record.last_error_code = errorCode;
       record.status = "failed";
     });
   }
@@ -164,14 +181,34 @@ export class FileEdgeStore {
 }
 
 function loadState(filePath: string): EdgeStoreState {
-  if (existsSync(filePath)) {
-    return JSON.parse(readFileSync(filePath, "utf8")) as EdgeStoreState;
+  const primary = readState(filePath);
+  if (primary.ok) return primary.state;
+
+  const backupPath = `${filePath}.bak`;
+  const backup = readState(backupPath);
+  if (backup.ok) return backup.state;
+
+  if (!primary.exists && !backup.exists) return emptyState();
+
+  // Existing-but-unreadable local state is a fail-closed condition.
+  throw new Error("edge_store_corrupt");
+}
+
+function readState(
+  filePath: string,
+):
+  | { ok: true; exists: true; state: EdgeStoreState }
+  | { ok: false; exists: boolean } {
+  if (!existsSync(filePath)) return { ok: false, exists: false };
+  try {
+    const parsed = JSON.parse(readFileSync(filePath, "utf8")) as EdgeStoreState;
+    if (!Array.isArray(parsed.observations) || !Array.isArray(parsed.outbox)) {
+      return { ok: false, exists: true };
+    }
+    return { ok: true, exists: true, state: parsed };
+  } catch {
+    return { ok: false, exists: true };
   }
-  const backup = `${filePath}.bak`;
-  if (existsSync(backup)) {
-    return JSON.parse(readFileSync(backup, "utf8")) as EdgeStoreState;
-  }
-  return emptyState();
 }
 
 function saveState(filePath: string, state: EdgeStoreState): void {
@@ -190,7 +227,7 @@ function saveState(filePath: string, state: EdgeStoreState): void {
 }
 
 function assertPersistable(value: unknown, depth = 0): void {
-  if (depth > 12 || value === null || typeof value !== "object") return;
+  if (depth > 16 || value === null || typeof value !== "object") return;
   if (Array.isArray(value)) {
     for (const item of value) assertPersistable(item, depth + 1);
     return;
