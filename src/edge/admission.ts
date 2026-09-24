@@ -15,6 +15,11 @@ export class EdgeAdmissionPipeline {
   constructor(private readonly store: EdgeJournalPort) {}
 
   admit(observation: EdgeSourceObservation): EdgeJournalIngestReceipt {
+    const existing = this.store.observations();
+    const existingMode = existing[0]?.source_mode;
+    if (existingMode !== undefined && existingMode !== observation.source_mode) {
+      throw new Error("edge_source_mode_conflict");
+    }
     return this.store.ingest(observation);
   }
 
