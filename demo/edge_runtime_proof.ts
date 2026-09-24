@@ -33,7 +33,7 @@ async function main(): Promise<void> {
     );
     assert.ok(failed);
     assert.equal(failed.status, "failed");
-    assert.equal(failed.last_error, "network_unavailable");
+    assert.equal(failed.last_error_code, "network_unavailable");
 
     store3.markSent(EDGE_SHADOW_FIXTURES[0].observation_id);
     const store4 = new FileEdgeStore(file);
@@ -78,6 +78,7 @@ async function main(): Promise<void> {
     ]);
 
     assert.equal(cycle[0].status, "failed");
+    assert.equal(cycle[0].error_code, "adapter_failed");
     assert.equal(cycle[1].status, "ok");
     assert.equal(cycle[1].collected, 1);
     assert.equal(
@@ -93,6 +94,8 @@ async function main(): Promise<void> {
           duplicate_after_restart: true,
           failed_outbox_survives_restart: true,
           secret_persistence_blocked: true,
+          safe_failure_code_persisted: true,
+          raw_adapter_error_not_exposed: true,
           adapter_failure_isolated: true,
         },
         null,
