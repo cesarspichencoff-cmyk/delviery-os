@@ -14,7 +14,7 @@
     "test:edge:runtime": "tsc && node dist/demo/edge_runtime_proof.js",
     "test:edge:ifood": "tsc && node dist/demo/edge_ifood_shadow_proof.js",
     "test:edge:print": "tsc && node dist/demo/edge_print_shadow_proof.js",
-    "test:edge:shadow:all": "npm run test:edge:shadow && npm run test:edge:runtime && npm run test:edge:ifood && npm run test:edge:print && npm run test:edge:sources && npm run test:edge:projection && npm run test:edge:admission && npm run test:edge:browser && npm run test:edge:windows-print && npm run test:edge:transport && npm run test:edge:powershell-print && npm run test:edge:envelope && npm run test:edge:store-recovery",
+    "test:edge:shadow:all": "npm run test:edge:shadow && npm run test:edge:runtime && npm run test:edge:ifood && npm run test:edge:print && npm run test:edge:sources && npm run test:edge:projection && npm run test:edge:admission && npm run test:edge:browser && npm run test:edge:windows-print && npm run test:edge:transport && npm run test:edge:powershell-print && npm run test:edge:envelope && npm run test:edge:store-recovery && npm run test:edge:attention",
     "test:edge:sources": "tsc && node dist/demo/edge_sources_bridge_proof.js",
     "test:edge:projection": "tsc && node dist/demo/edge_projection_rebuild_proof.js",
     "test:edge:admission": "tsc && node dist/demo/edge_admission_pipeline_proof.js",
@@ -23,7 +23,8 @@
     "test:edge:transport": "tsc && node dist/demo/edge_transport_cycle_proof.js",
     "test:edge:powershell-print": "tsc && node dist/demo/edge_powershell_print_adapter_proof.js",
     "test:edge:envelope": "tsc && node dist/demo/edge_source_envelope_proof.js",
-    "test:edge:store-recovery": "tsc && node dist/demo/edge_store_recovery_proof.js"
+    "test:edge:store-recovery": "tsc && node dist/demo/edge_store_recovery_proof.js",
+    "test:edge:attention": "tsc && node dist/demo/edge_attention_projection_proof.js"
   },
   "devDependencies": {
     "@types/node": "20.14.10",
