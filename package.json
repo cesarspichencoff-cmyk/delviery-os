@@ -14,10 +14,12 @@
     "test:edge:runtime": "tsc && node dist/demo/edge_runtime_proof.js",
     "test:edge:ifood": "tsc && node dist/demo/edge_ifood_shadow_proof.js",
     "test:edge:print": "tsc && node dist/demo/edge_print_shadow_proof.js",
-    "test:edge:shadow:all": "npm run test:edge:shadow && npm run test:edge:runtime && npm run test:edge:ifood && npm run test:edge:print && npm run test:edge:sources && npm run test:edge:projection && npm run test:edge:admission",
+    "test:edge:shadow:all": "npm run test:edge:shadow && npm run test:edge:runtime && npm run test:edge:ifood && npm run test:edge:print && npm run test:edge:sources && npm run test:edge:projection && npm run test:edge:admission && npm run test:edge:browser && npm run test:edge:windows-print",
     "test:edge:sources": "tsc && node dist/demo/edge_sources_bridge_proof.js",
     "test:edge:projection": "tsc && node dist/demo/edge_projection_rebuild_proof.js",
-    "test:edge:admission": "tsc && node dist/demo/edge_admission_pipeline_proof.js"
+    "test:edge:admission": "tsc && node dist/demo/edge_admission_pipeline_proof.js",
+    "test:edge:browser": "tsc && node dist/demo/edge_ifood_browser_transport_proof.js",
+    "test:edge:windows-print": "tsc && node dist/demo/edge_windows_print_source_proof.js"
   },
   "devDependencies": {
     "@types/node": "20.14.10",
