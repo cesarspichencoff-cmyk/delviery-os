@@ -80,3 +80,48 @@ export const WINDOWS_PRINT_SOURCE_CAPABILITIES = Object.freeze([
   "discover_printers",
   "list_print_jobs",
 ] as const);
+interface PowerShellPrintJobJson {
+  PrinterName?: string;
+  ID?: string | number;
+  DocumentName?: string;
+  JobStatus?: string;
+  SubmittedTime?: string;
+}
+
+export class PowerShellWindowsPrintSource implements PrintSnapshotSource {
+  constructor(
+    private readonly runner: ReadOnlyCommandRunner,
+    private readonly unitId: string,
+    private readonly now: () => Date = () => new Date(),
+  ) {}
+
+  async listJobs(): Promise<PrintJobSnapshot[]> {
+    assertReadOnlyPrintCommand(WINDOWS_PRINT_JOBS_COMMAND);
+    const raw = await this.runner.run(WINDOWS_PRINT_JOBS_COMMAND);
+    if (!raw.trim()) return [];
+
+    const parsed = JSON.parse(raw) as PowerShellPrintJobJson | PowerShellPrintJobJson[];
+    const rows = Array.isArray(parsed) ? parsed : [parsed];
+    const observedAt = this.now().toISOString();
+
+    return rows
+      .filter((row) => row.PrinterName && row.ID !== undefined)
+      .map((row) => normalizeWindowsPrintRow({
+        printer_name: row.PrinterName as string,
+        queue_name: row.PrinterName as string,
+        job_id: row.ID as string | number,
+        document_name: row.DocumentName,
+        submitted_at: normalizeSubmittedTime(row.SubmittedTime),
+        observed_at: observedAt,
+        status: row.JobStatus,
+        unit_id: this.unitId,
+      }));
+  }
+}
+
+function normalizeSubmittedTime(value?: string): string | undefined {
+  if (!value) return undefined;
+  const parsed = Date.parse(value);
+  if (!Number.isFinite(parsed)) return undefined;
+  return new Date(parsed).toISOString();
+}
