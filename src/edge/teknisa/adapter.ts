@@ -41,14 +41,8 @@ export function teknisaRecordToObservation(record: TeknisaStructuredRecord): Edg
       }],
     });
   } else if (record.payment_mapping && KNOWN_IFOOD_PAYMENT_MAPPINGS.has(record.payment_mapping)) {
-    proposals.push({
-      target: { source: "ifood", kind: "order", id: "UNKNOWN", unit_id: record.unit_id },
-      evidence: [{
-        evidence_id: "teknisa:" + record.record_id + ":payment_mapping",
-        dimension: "payment_mapping",
-        detail: record.payment_mapping,
-      }],
-    });
+    // Channel/payment mapping is useful context, but it does not identify one order.
+    // Never create a fake "UNKNOWN" entity in the identity graph.
   }
   return {
     observation_id: ["teknisa", record.route, record.record_type, record.record_id].join(":"),
