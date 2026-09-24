@@ -17,31 +17,21 @@ No production deployment, browser automation, Windows installation, Teknisa muta
 - `demo/edge_shadow_proof.ts`
 - package script `test:edge:shadow`
 
-## Proof executed outside production
+## Proof runner implemented; execution evidence pending
 
-The three pure Edge TypeScript modules were compiled with strict TypeScript checking.
+The branch contains `demo/edge_shadow_proof.ts` and the command `npm run test:edge:shadow`.
 
-Result:
+In the current session there is no observed execution receipt from a normal checkout with dependencies installed. Therefore the correct status is:
 
 ```text
-TYPECHECK CORE = PASS
+PROOF_RUNNER_IMPLEMENTED = true
+EXECUTION_OBSERVED       = false
+TYPECHECK_OBSERVED        = false
 ```
 
-The compiled modules were then exercised with the same assertions represented by `demo/edge_shadow_proof.ts`.
+The assertions below describe the intended proof and become evidence only after an observed run.
 
-Result:
-
-```json
-{
-  "status": "PASS",
-  "observations": 6,
-  "links": 5,
-  "replay_duplicate_meaning": 0,
-  "timestamp_only_proven": false
-}
-```
-
-## What this proves
+## What the implemented proof is designed to prove
 
 - replaying the same six observations does not create new accepted observation meaning;
 - the graph snapshot remains deterministic across replay;
@@ -60,7 +50,7 @@ Result:
 - live DeliveryOS event admission;
 - cashier-PC resource safety.
 
-Those remain gates for later phases.
+Those remain gates for later phases. The synthetic assertions themselves also remain unproven until execution is observed.
 
 ## Next gate
 
