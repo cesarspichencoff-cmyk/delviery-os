@@ -1,10 +1,9 @@
 /**
  * One read-only Edge transport cycle.
  *
- * Sources are isolated: an iFood/browser failure must not block print
- * observation, and a print-source failure must not erase browser observations.
- * Only safe generic failure classes cross into the result; raw exception
- * messages are intentionally not persisted or returned.
+ * Source failures are isolated: browser trouble must not block print
+ * observation, and print trouble must not erase browser observations.
+ * Only generic failure classes cross the boundary.
  */
 import { EdgeAdmissionPipeline } from "./admission";
 import type { EdgeSourceObservation } from "./simulator";
