@@ -31,6 +31,8 @@ export interface PortalStructuredRecord {
   payload: Record<string, unknown>;
 }
 
+const SAFE_SOURCE_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$/;
+
 const FORBIDDEN_KEYS = new Set([
   "authorization",
   "cookie",
@@ -78,6 +80,7 @@ function isForbiddenPortalKey(key: string): boolean {
 export function portalRecordToObservation(
   record: PortalStructuredRecord,
 ): EdgeSourceObservation {
+  assertPortalRecordIdentifiers(record);
   assertPortalPayloadSafe(record.payload);
 
   return {
@@ -93,11 +96,24 @@ export function portalRecordToObservation(
     observed_at: record.observed_at,
     occurred_at: record.occurred_at,
     payload: {
+      ...record.payload,
       surface: record.surface,
       endpoint_fingerprint: record.endpoint_fingerprint,
-      ...record.payload,
     },
   };
+}
+
+function assertPortalRecordIdentifiers(record: PortalStructuredRecord): void {
+  const values: Array<[string, string | undefined]> = [
+    ["capture_id", record.capture_id],
+    ["unit_id", record.unit_id],
+    ["entity_id", record.entity_id],
+  ];
+  for (const [label, value] of values) {
+    if (value !== undefined && !SAFE_SOURCE_ID.test(value)) {
+      throw new Error(`invalid_portal_${label}`);
+    }
+  }
 }
 
 export function assertPortalPayloadSafe(value: unknown, depth = 0): void {

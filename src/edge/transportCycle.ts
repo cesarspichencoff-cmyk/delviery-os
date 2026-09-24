@@ -9,6 +9,7 @@ import { EdgeAdmissionPipeline } from "./admission";
 import type { EdgeSourceObservation } from "./simulator";
 import {
   networkCaptureToPortalRecord,
+  safeBrowserProfileId,
   safeSessionMetadata,
   type BrowserSessionHealth,
   type BrowserSessionSnapshot,
@@ -68,11 +69,12 @@ export async function runReadOnlyTransportCycle(args: {
     };
   }
 
+  const profileId = safeBrowserProfileId(session.profile_id);
   const authObservation: EdgeSourceObservation = {
     source_mode: session.source_mode,
     observation_id: [
       "ifood-auth",
-      session.profile_id,
+      profileId,
       session.observed_at,
       session.health,
     ].join(":"),
@@ -80,7 +82,7 @@ export async function runReadOnlyTransportCycle(args: {
     source_ref: {
       source: "ifood",
       kind: "auth_session",
-      id: session.profile_id,
+      id: profileId,
       unit_id: args.unit_id,
     },
     observed_at: session.observed_at,
@@ -97,6 +99,9 @@ export async function runReadOnlyTransportCycle(args: {
     structuredStatus = "ok";
     try {
       const captures = await args.browser.collectStructured();
+      if (captures.some((capture) => capture.source_mode !== args.source_mode)) {
+        throw new Error("source_mode_mismatch");
+      }
       for (const capture of captures) {
         args.pipeline.admit(
           portalRecordToObservation(networkCaptureToPortalRecord(capture)),
@@ -110,6 +115,9 @@ export async function runReadOnlyTransportCycle(args: {
     downloadStatus = "ok";
     try {
       const downloads = await args.browser.collectDownloadMetadata();
+      if (downloads.some((download) => download.source_mode !== args.source_mode)) {
+        throw new Error("source_mode_mismatch");
+      }
       downloadMetadataObserved = downloads.length;
     } catch {
       downloadStatus = "failed";

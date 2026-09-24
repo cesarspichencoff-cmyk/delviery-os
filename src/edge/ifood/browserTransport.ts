@@ -98,9 +98,15 @@ export function safeSessionMetadata(
     source_mode: snapshot.source_mode,
     health: snapshot.health,
     observed_at: snapshot.observed_at,
-    profile_id: snapshot.profile_id,
+    profile_id: safeBrowserProfileId(snapshot.profile_id),
     reason: snapshot.reason,
   };
+}
+
+export function safeBrowserProfileId(value: string): string {
+  return /^[A-Za-z0-9][A-Za-z0-9._:-]{0,95}$/.test(value)
+    ? value
+    : "redacted-profile";
 }
 
 function safeResourceFingerprint(input: string): string {

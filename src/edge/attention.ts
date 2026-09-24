@@ -19,7 +19,8 @@ export interface AttentionCandidate {
   kind: AttentionExceptionKind;
   attention_class: "HARD_EXCEPTION";
   delivery_hint: "SHOW";
-  fact_class: "FACT";
+  fact_class: "FACT" | "SIMULATION";
+  source_mode: "synthetic" | "live_observed";
   source: string;
   source_id: string;
   unit_id?: string;
@@ -60,6 +61,7 @@ export function projectObservationAttention(
 
 export function projectAdapterFailureAttention(args: {
   result: AdapterCycleResult;
+  source_mode: "synthetic" | "live_observed";
   observed_at: string;
   unit_id?: string;
 }): AttentionCandidate | null {
@@ -76,7 +78,8 @@ export function projectAdapterFailureAttention(args: {
     kind: "SOURCE_ADAPTER_FAILED",
     attention_class: "HARD_EXCEPTION",
     delivery_hint: "SHOW",
-    fact_class: "FACT",
+    fact_class: args.source_mode === "live_observed" ? "FACT" : "SIMULATION",
+    source_mode: args.source_mode,
     source: "edge_adapter",
     source_id: adapterId,
     unit_id: safeOptional(args.unit_id),
@@ -113,7 +116,8 @@ function buildCandidate(
     kind,
     attention_class: "HARD_EXCEPTION",
     delivery_hint: "SHOW",
-    fact_class: "FACT",
+    fact_class: observation.source_mode === "live_observed" ? "FACT" : "SIMULATION",
+    source_mode: observation.source_mode,
     source: safeComponent(observation.source_ref.source, "redacted-source"),
     source_id: safeComponent(observation.source_ref.id, "redacted-id"),
     unit_id: safeOptional(observation.source_ref.unit_id),
