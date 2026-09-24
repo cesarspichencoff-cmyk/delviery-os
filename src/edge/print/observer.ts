@@ -5,7 +5,10 @@
  * A spooler state can prove software-path facts, never physical print success.
  */
 
-import type { EdgeSourceObservation } from "../simulator";
+import type {
+  EdgeSourceObservation,
+  ObservationSourceMode,
+} from "../simulator";
 
 export type PrintJobObservedState =
   | "QUEUED"
@@ -16,6 +19,7 @@ export type PrintJobObservedState =
   | "NO_LONGER_LISTED";
 
 export interface PrintJobSnapshot {
+  source_mode: ObservationSourceMode;
   queue_name: string;
   printer_name: string;
   job_id: string;
@@ -54,6 +58,7 @@ export function printSnapshotToObservation(
   return {
     observation: {
       observation_id: eventId,
+      source_mode: snapshot.source_mode,
       kind: "print_job",
       source_ref: {
         source: "windows_print",
