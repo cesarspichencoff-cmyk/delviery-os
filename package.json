@@ -14,8 +14,9 @@
     "test:edge:runtime": "tsc && node dist/demo/edge_runtime_proof.js",
     "test:edge:ifood": "tsc && node dist/demo/edge_ifood_shadow_proof.js",
     "test:edge:print": "tsc && node dist/demo/edge_print_shadow_proof.js",
-    "test:edge:shadow:all": "npm run test:edge:shadow && npm run test:edge:runtime && npm run test:edge:ifood && npm run test:edge:print && npm run test:edge:sources",
-    "test:edge:sources": "tsc && node dist/demo/edge_sources_bridge_proof.js"
+    "test:edge:shadow:all": "npm run test:edge:shadow && npm run test:edge:runtime && npm run test:edge:ifood && npm run test:edge:print && npm run test:edge:sources && npm run test:edge:projection",
+    "test:edge:sources": "tsc && node dist/demo/edge_sources_bridge_proof.js",
+    "test:edge:projection": "tsc && node dist/demo/edge_projection_rebuild_proof.js"
   },
   "devDependencies": {
     "@types/node": "20.14.10",
