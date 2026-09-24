@@ -9,8 +9,7 @@ async function main(): Promise<void> {
   const observations = await observePrintJobs({
     listJobs() {
       return [
-        {
-          queue_name: "TEKNISA-KITCHEN",
+        {\n          source_mode: "synthetic",\n          queue_name: "TEKNISA-KITCHEN",
           printer_name: "Kitchen Printer",
           job_id: "501",
           document_name: "COMANDA-7001",
@@ -19,8 +18,7 @@ async function main(): Promise<void> {
           state: "QUEUED" as const,
           unit_id: "0001",
         },
-        {
-          queue_name: "TATA-OS",
+        {\n          source_mode: "synthetic",\n          queue_name: "TATA-OS",
           printer_name: "ELGIN L42Pro",
           job_id: "9001",
           document_name: "Cliente Fulano Rua Exemplo 123",
@@ -50,8 +48,7 @@ async function main(): Promise<void> {
   const disappeared = await observePrintJobs({
     listJobs() {
       return [
-        {
-          queue_name: "TEKNISA-KITCHEN",
+        {\n          source_mode: "synthetic",\n          queue_name: "TEKNISA-KITCHEN",
           printer_name: "Kitchen Printer",
           job_id: "501",
           observed_at: "2026-09-24T18:00:10.000Z",
