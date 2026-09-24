@@ -2,7 +2,11 @@
  * Teknisa shadow adapter.
  * API availability is optional. Structured read-only routes only.
  */
-import type { EdgeSourceObservation, CorrelationProposal } from "../simulator";
+import type {
+  EdgeSourceObservation,
+  CorrelationProposal,
+  ObservationSourceMode,
+} from "../simulator";
 
 export type TeknisaAccessRoute =
   | "official_api"
@@ -12,6 +16,7 @@ export type TeknisaAccessRoute =
 
 export interface TeknisaStructuredRecord {
   record_id: string;
+  source_mode: ObservationSourceMode;
   record_type: "sale" | "order" | "command" | "payment";
   unit_id: string;
   observed_at: string;
@@ -55,6 +60,7 @@ export function teknisaRecordToObservation(
   }
 
   return {
+    source_mode: record.source_mode,
     observation_id: [
       "teknisa",
       record.route,
