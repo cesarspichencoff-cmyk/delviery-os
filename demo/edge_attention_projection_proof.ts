@@ -6,35 +6,45 @@ import {
 } from "../src/edge/attention";
 import type { EdgeSourceObservation } from "../src/edge/simulator";
 
-const healthyAuth: EdgeSourceObservation = {\n  source_mode: "synthetic",\n  observation_id: "auth-ok",
+const healthyAuth: EdgeSourceObservation = {
+  source_mode: "synthetic",
+  observation_id: "auth-ok",
   kind: "auth_state",
   source_ref: { source: "ifood", kind: "auth_session", id: "profile-1", unit_id: "0001" },
   observed_at: "2026-09-24T20:00:00.000Z",
   payload: { health: "HEALTHY" },
 };
 
-const humanAuth: EdgeSourceObservation = {\n  source_mode: "synthetic",\n  observation_id: "auth-human",
+const humanAuth: EdgeSourceObservation = {
+  source_mode: "synthetic",
+  observation_id: "auth-human",
   kind: "auth_state",
   source_ref: { source: "ifood", kind: "auth_session", id: "profile-1", unit_id: "0001" },
   observed_at: "2026-09-24T20:01:00.000Z",
   payload: { health: "HUMAN_REQUIRED", customer_name: "must-not-cross" },
 };
 
-const queuedPrint: EdgeSourceObservation = {\n  source_mode: "synthetic",\n  observation_id: "print-queued",
+const queuedPrint: EdgeSourceObservation = {
+  source_mode: "synthetic",
+  observation_id: "print-queued",
   kind: "print_job",
   source_ref: { source: "windows_print", kind: "spool_job", id: "10", unit_id: "0001" },
   observed_at: "2026-09-24T20:02:00.000Z",
   payload: { state: "QUEUED" },
 };
 
-const failedPrint: EdgeSourceObservation = {\n  source_mode: "synthetic",\n  observation_id: "print-error",
+const failedPrint: EdgeSourceObservation = {
+  source_mode: "synthetic",
+  observation_id: "print-error",
   kind: "print_job",
   source_ref: { source: "windows_print", kind: "spool_job", id: "11", unit_id: "0001" },
   observed_at: "2026-09-24T20:03:00.000Z",
   payload: { state: "ERROR", raw_message: "must-not-cross" },
 };
 
-const analytics: EdgeSourceObservation = {\n  source_mode: "synthetic",\n  observation_id: "analytics",
+const analytics: EdgeSourceObservation = {
+  source_mode: "synthetic",
+  observation_id: "analytics",
   kind: "ifood_portal",
   source_ref: { source: "ifood", kind: "analytics", id: "cap-1", unit_id: "0001" },
   observed_at: "2026-09-24T20:04:00.000Z",
