@@ -21,8 +21,7 @@ async function main(): Promise<void> {
   );
 
   const source = new WindowsPrintReadOnlySource(async () => [
-    {
-      printer_name: "ELGIN L42Pro",
+    {\n      source_mode: "synthetic",\n      printer_name: "ELGIN L42Pro",
       queue_name: "TATA-OS",
       job_id: 10,
       document_name: "LABEL",
@@ -30,8 +29,7 @@ async function main(): Promise<void> {
       status: "Printing",
       unit_id: "0001",
     },
-    {
-      printer_name: "Kitchen Printer",
+    {\n      source_mode: "synthetic",\n      printer_name: "Kitchen Printer",
       job_id: 11,
       document_name: "COMANDA-7001",
       observed_at: "2026-09-24T23:45:01.000Z",
