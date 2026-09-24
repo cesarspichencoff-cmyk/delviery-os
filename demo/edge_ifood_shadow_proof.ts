@@ -3,6 +3,7 @@ import {
   assertMetadataSafe,
   authTransition,
   findEphemeralOtp,
+  type PortalAuthState,
 } from "../src/edge/ifood/auth";
 import {
   IFOOD_SIDECAR_CAPABILITIES,
@@ -44,11 +45,11 @@ const otp = findEphemeralOtp(
   now,
 );
 
-assert.ok(otp);
+if (!otp) throw new Error("expected matching OTP fixture");
 assert.equal(otp.code, "654321");
 assert.equal(otp.message_id, "mail-valid");
 
-let state = "AUTH_HEALTHY" as const;
+let state: PortalAuthState = "AUTH_HEALTHY";
 state = authTransition(state, "SESSION_EXPIRED");
 assert.equal(state, "AUTH_RECOVERING");
 assert.equal(authTransition(state, "OTP_FOUND"), "AUTH_RECOVERING");
