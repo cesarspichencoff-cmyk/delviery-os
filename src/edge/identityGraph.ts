@@ -40,6 +40,10 @@ export interface IdentityRef {
 export interface LinkEvidence {
   evidence_id: string;
   dimension: EvidenceDimension;
+  /**
+   * Safe semantic code only. Raw source text, PII and secrets do not belong here.
+   * Example: "teknisa_external_order_id_explicit".
+   */
   detail: string;
 }
 
@@ -66,6 +70,8 @@ const SUPPORT_DIMENSIONS = new Set<EvidenceDimension>([
   "item_fingerprint",
 ]);
 
+const SAFE_CODE = /^[a-z0-9][a-z0-9_.:-]{0,95}$/i;
+
 function refKey(ref: IdentityRef): string {
   return [ref.source, ref.kind, ref.unit_id ?? "", ref.id].join("|");
 }
@@ -86,7 +92,7 @@ export function classifyEvidence(evidence: LinkEvidence[]): ConfidenceClass {
     dimensions.has(dimension),
   );
 
-  // Temporal proximity can support another independent match, never prove identity alone.
+  // Temporal proximity can support another signal, never prove identity alone.
   if (
     independentSupport.length >= 2 ||
     (independentSupport.length >= 1 && dimensions.has("timestamp_window"))
@@ -107,14 +113,17 @@ export class OrderIdentityGraph {
     evidence: LinkEvidence[],
     seenAt: string,
   ): IdentityLink {
+    assertCompatibleRefs(left, right);
+    assertEvidenceSafe(evidence);
+
     const key = linkKey(left, right);
     const existing = this.links.get(key);
 
     if (!existing) {
       const unique = dedupeEvidence(evidence);
       const created: IdentityLink = {
-        left,
-        right,
+        left: { ...left },
+        right: { ...right },
         relation: "same_order",
         evidence: unique,
         confidence: classifyEvidence(unique),
@@ -151,10 +160,47 @@ export class OrderIdentityGraph {
   }
 }
 
+function assertCompatibleRefs(left: IdentityRef, right: IdentityRef): void {
+  for (const ref of [left, right]) {
+    if (!ref.id.trim() || ref.id.length > 160) throw new Error("invalid_identity_id");
+    if (!ref.kind.trim() || ref.kind.length > 80) throw new Error("invalid_identity_kind");
+    if (ref.unit_id !== undefined && (!ref.unit_id.trim() || ref.unit_id.length > 40)) {
+      throw new Error("invalid_identity_unit");
+    }
+  }
+
+  if (refKey(left) === refKey(right)) throw new Error("identity_self_link");
+
+  if (
+    left.unit_id !== undefined &&
+    right.unit_id !== undefined &&
+    left.unit_id !== right.unit_id
+  ) {
+    throw new Error("identity_unit_conflict");
+  }
+}
+
+function assertEvidenceSafe(items: readonly LinkEvidence[]): void {
+  for (const item of items) {
+    if (!SAFE_CODE.test(item.evidence_id)) throw new Error("unsafe_evidence_id");
+    if (!SAFE_CODE.test(item.detail)) throw new Error("unsafe_evidence_detail");
+  }
+}
+
 function dedupeEvidence(items: LinkEvidence[]): LinkEvidence[] {
   const byId = new Map<string, LinkEvidence>();
   for (const item of items) {
-    if (!byId.has(item.evidence_id)) byId.set(item.evidence_id, { ...item });
+    const existing = byId.get(item.evidence_id);
+    if (!existing) {
+      byId.set(item.evidence_id, { ...item });
+      continue;
+    }
+    if (
+      existing.dimension !== item.dimension ||
+      existing.detail !== item.detail
+    ) {
+      throw new Error("evidence_id_conflict");
+    }
   }
   return [...byId.values()].sort((a, b) => a.evidence_id.localeCompare(b.evidence_id));
 }
