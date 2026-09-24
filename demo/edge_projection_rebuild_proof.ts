@@ -12,7 +12,9 @@ const file = join(dir, "state.json");
 try {
   const store = new FileEdgeStore(file);
   for (const observation of EDGE_SHADOW_FIXTURES) store.ingest(observation);
-  store.ingest(teknisaRecordToObservation({\n    source_mode: "synthetic",\n    record_id: "sale-mapped-only",
+  store.ingest(teknisaRecordToObservation({
+    source_mode: "synthetic",
+    record_id: "sale-mapped-only",
     record_type: "sale",
     unit_id: "0001",
     observed_at: "2026-09-24T22:00:00.000Z",
