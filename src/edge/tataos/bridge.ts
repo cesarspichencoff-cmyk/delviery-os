@@ -4,7 +4,10 @@
  * Only explicitly modeled safe receipt fields cross the boundary.
  * Raw agent/provider payloads stay in the TATÁ OS domain.
  */
-import type { EdgeSourceObservation } from "../simulator";
+import type {
+  EdgeSourceObservation,
+  ObservationSourceMode,
+} from "../simulator";
 
 export type TataOsReceiptType =
   | "agent_heartbeat"
@@ -15,6 +18,7 @@ export type TataOsReceiptType =
 
 export interface TataOsSafeReceipt {
   receipt_id: string;
+  source_mode: ObservationSourceMode;
   type: TataOsReceiptType;
   unit_id: string;
   observed_at: string;
@@ -34,6 +38,7 @@ export function tataOsReceiptToObservation(
 ): TataOsBridgeObservation {
   return {
     observation: {
+      source_mode: receipt.source_mode,
       observation_id: ["tata-os", receipt.type, receipt.receipt_id].join(":"),
       kind: "tata_os_receipt",
       source_ref: {
