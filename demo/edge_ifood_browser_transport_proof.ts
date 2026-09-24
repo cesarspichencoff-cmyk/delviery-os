@@ -13,7 +13,7 @@ const transport: IfoodBrowserReadOnlyTransport = {
       health: "HEALTHY",
       observed_at: "2026-09-24T23:30:00.000Z",
       profile_id: "ifood-partner-dedicated",
-      reason: "synthetic session valid",
+      reason: "session_valid",
     };
   },
   async collectStructured() {
@@ -24,7 +24,7 @@ const transport: IfoodBrowserReadOnlyTransport = {
       observed_at: "2026-09-24T23:30:01.000Z",
       entity_id: "review-77",
       method: "GET",
-      resource_fingerprint: "/reviews",
+      resource_fingerprint: "/reviews?access_token=must-not-cross",
       content_type: "application/json",
       payload: { score: 4, order_reference: "IFOOD-77" },
     }];
@@ -54,6 +54,7 @@ async function main(): Promise<void> {
   const observation = portalRecordToObservation(networkCaptureToPortalRecord(captures[0]));
   assert.equal(observation.kind, "review");
   assert.equal(observation.payload.score, 4);
+  assert.equal(observation.payload.endpoint_fingerprint, "GET /reviews");
 
   const downloads = await transport.collectDownloadMetadata();
   assert.equal(downloads[0].surface, "financial");
@@ -70,6 +71,7 @@ async function main(): Promise<void> {
     generic_browser_control_exposed: false,
     session_secrets_cross_boundary: false,
     structured_capture_to_observation: true,
+    endpoint_query_removed: true,
     download_metadata_only: true,
   }, null, 2));
 }
