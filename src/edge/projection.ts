@@ -7,6 +7,10 @@ import type { EdgeSourceObservation } from "./simulator";
 
 export function rebuildIdentityGraph(observations: readonly EdgeSourceObservation[]): OrderIdentityGraph {
   const graph = new OrderIdentityGraph();
+  const modes = new Set(observations.map((observation) => observation.source_mode));
+  if (modes.size > 1) {
+    throw new Error("mixed_observation_source_modes");
+  }
   const ordered = [...observations].sort((a, b) => {
     const byObserved = a.observed_at.localeCompare(b.observed_at);
     if (byObserved !== 0) return byObserved;
