@@ -17,6 +17,7 @@ edge_ifood_shadow_proof           PASS
 edge_print_shadow_proof           PASS
 edge_sources_bridge_proof         PASS
 edge_projection_rebuild_proof     PASS
+edge_admission_pipeline_proof      PASS
 ```
 
 Verified properties:
@@ -33,7 +34,10 @@ Verified properties:
 - exact external order id can produce a PROVEN identity link;
 - TATÁ OS receipts do not transfer print authority to DeliveryOS;
 - Order Identity Graph rebuilds deterministically from the durable observation journal after restart;
-- no fake `UNKNOWN` order entity is created.
+- no fake `UNKNOWN` order entity is created;
+- iFood + Teknisa + print + TATÁ OS observations enter one durable admission path;
+- restart preserves the same cross-source identity projection;
+- replay of an admitted source observation does not grow the journal.
 
 ## Important correction discovered during proof
 
@@ -57,9 +61,10 @@ Payment mapping remains source context only. Identity proposals require an actua
 - R5 print observer contract: `PROVEN_SYNTHETIC`
 - Teknisa source boundary: `PROVEN_SYNTHETIC`
 - TATÁ OS bridge boundary: `PROVEN_SYNTHETIC`
+- cross-source admission pipeline: `PROVEN_SYNTHETIC`
 - live source bindings: `NOT_PROVEN`
 - cashier-PC safety/resource impact: `UNKNOWN / DEFERRED`
 
 ## Next gate
 
-The next useful work before the cashier-PC audit is to bind the synthetic source contracts into one admission pipeline and freeze the exact host-binding manifest required later for the real PC.
+The synthetic source contracts are now bound into one admission pipeline and the cashier host-binding manifest is frozen. The next useful work before the physical PC audit is limited to implementation adapters that can be exercised without the cashier machine: non-secret browser/session transport and Windows print-source transport, both still shadow/read-only.
