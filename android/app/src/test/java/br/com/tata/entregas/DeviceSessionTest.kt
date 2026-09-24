@@ -64,6 +64,23 @@ class DeviceSessionTest {
     /* ---------------------------------------------------------------- */
 
     @Test
+    fun `o segredo do aparelho tem 128 bits e nunca se repete`() {
+        val a = DeviceSession.gerarSegredo()
+        val b = DeviceSession.gerarSegredo()
+        assertEquals(32, a.length)
+        assertTrue(a.all { it in '0'..'9' || it in 'a'..'f' })
+        assertFalse("dois aparelhos com o mesmo segredo", a == b)
+    }
+
+    @Test
+    fun `o segredo do aparelho e identidade, nao sessao — a chave e separada da credencial`() {
+        // `limparCredencial` apaga token e validade. O segredo fica: apagá-lo
+        // faria o aparelho voltar como outro e cair em `segredo_divergente`.
+        assertFalse(DeviceSession.KEY_DEVICE_SECRET == br.com.tata.entregas.data.EntregasDatabase.KEY_SESSION_TOKEN)
+        assertFalse(DeviceSession.KEY_DEVICE_SECRET == DeviceSession.KEY_TOKEN_EXPIRA_EM)
+    }
+
+    @Test
     fun `a resposta do servidor carrega token e validade`() {
         val r = DeviceSession.respostaDeTeste("abc.def", 3600)
         assertEquals("abc.def", r.optString("device_token"))

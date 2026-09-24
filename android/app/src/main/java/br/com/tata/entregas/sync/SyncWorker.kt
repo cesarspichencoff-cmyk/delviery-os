@@ -54,10 +54,14 @@ class SyncWorker(
         // A credencial e obtida ANTES de qualquer envio, e renovada com folga.
         // Antes disto, `KEY_SESSION_TOKEN` era lida e nunca escrita: o header
         // nunca ia, tudo respondia 401, e o metodo ainda retornava sucesso.
+        //
+        // A credencial e da PLATAFORMA (runtime critico): e la que o fato de
+        // campo entra. O piloto nunca emitiu token de aparelho — respondia 200
+        // sem `device_token`, e este worker ficava em laco para sempre.
         var sessao = DeviceSession.sessaoAtual(db)
         if (DeviceSession.precisaAutenticar(sessao, agoraMs)) {
             val deviceId = br.com.tata.entregas.location.DeviceId.ensure(db)
-            val semCredencial = EntregasApi(BuildConfig.ENTREGAS_BASE_URL, { null })
+            val semCredencial = EntregasApi(BuildConfig.ENTREGAS_PLATFORM_URL, { null })
             when (val a = DeviceSession.autenticar(
                 db, semCredencial, deviceId, BuildConfig.VERSION_NAME, agoraMs,
             )) {
@@ -76,20 +80,27 @@ class SyncWorker(
         }
 
         val tokenAtual = sessao?.token
-        val api = EntregasApi(BuildConfig.ENTREGAS_BASE_URL, { tokenAtual })
+        // O token da plataforma vai SO para a plataforma. Mandar a credencial
+        // de um servidor para outro e como ela vaza — e o piloto nem a entende.
+        val api = EntregasApi(BuildConfig.ENTREGAS_PLATFORM_URL, { tokenAtual })
+        // O piloto: termo e comandos operacionais continuam la, em paralelo,
+        // ate esse caminho migrar. Sem credencial de aparelho, porque ele nao
+        // emite nenhuma; a recusa dele NAO e recusa da credencial da plataforma.
+        val piloto = EntregasApi(BuildConfig.ENTREGAS_BASE_URL, { null })
 
         var retryable = false
-        // Houve 401 depois de ja termos autenticado? Entao o token nao serve, e
-        // o lote precisa voltar para a fila — nunca ser descartado.
+        // Houve 401 da PLATAFORMA depois de ja termos autenticado? Entao o
+        // token nao serve, e o lote precisa voltar para a fila — nunca ser
+        // descartado.
         var credencialRecusada = false
 
         // 1. Aceites do termo primeiro: são a autorização de tudo o mais.
         val acks = db.termAcks().pending()
         for (ack in acks) {
-            when (val r = api.sendTermAcknowledgement(ackJson(ack))) {
+            when (val r = piloto.sendTermAcknowledgement(ackJson(ack))) {
                 is ApiResult.Ok -> db.termAcks().markSent(listOf(ack.acknowledgementId))
                 is ApiResult.Retryable -> retryable = true
-                is ApiResult.Unauthorized -> credencialRecusada = true
+                is ApiResult.Unauthorized -> Unit // integracao pendente no piloto; fica visivel
                 is ApiResult.Rejected -> Unit // fica visível; não insiste
             }
         }
@@ -108,19 +119,17 @@ class SyncWorker(
                     put("command", JSONObject(e.payload))
                 }
             }
-            when (val r = api.sendEvents(payloads, correlationId)) {
+            when (val r = piloto.sendEvents(payloads, correlationId)) {
                 is ApiResult.Ok -> db.outbox().markSent(ids)
                 is ApiResult.Retryable -> {
                     db.outbox().markFailed(ids, r.reason)
                     retryable = true
                 }
-                is ApiResult.Unauthorized -> {
+                is ApiResult.Unauthorized ->
                     // `markFailed` registra o motivo e mantem o item na fila.
-                    // O que NAO se faz aqui e desistir: credencial recusada e
-                    // problema de credencial, nao do que foi coletado.
+                    // O que NAO se faz aqui e desistir: o comando foi coletado
+                    // e fica; e a recusa e do piloto, nao da plataforma.
                     db.outbox().markFailed(ids, r.reason)
-                    credencialRecusada = true
-                }
                 is ApiResult.Rejected -> db.outbox().markFailed(ids, r.reason)
             }
         }
@@ -165,7 +174,7 @@ class SyncWorker(
         }
 
         // 4. Políticas e flags — aproveita a janela de rede aberta.
-        when (val r = api.policies()) {
+        when (val r = piloto.policies()) {
             is ApiResult.Ok -> br.com.tata.entregas.location.PolicyStore
                 .applyServerPolicies(db, r.value)
             else -> Unit

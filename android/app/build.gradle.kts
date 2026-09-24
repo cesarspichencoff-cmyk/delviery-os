@@ -12,6 +12,14 @@ val entregasBaseUrl: String =
     (project.findProperty("entregas.baseUrl") as String?) ?: "https://10.0.2.2:5193"
 
 /**
+ * Endereço da PLATAFORMA (runtime crítico): sessão do aparelho e lote de GPS.
+ * Separado do piloto de propósito — são dois servidores, e a fronteira entre
+ * eles é explícita no `SyncWorker`. Mesmas regras de campo do endereço acima.
+ */
+val entregasPlatformUrl: String =
+    (project.findProperty("entregas.platformUrl") as String?) ?: "https://10.0.2.2:8080"
+
+/**
  * Recusa endereço que não sustenta o que a variante promete.
  *
  * Vale para `pilot` e `release`: HTTPS obrigatório, e nada de apontar para a
@@ -24,11 +32,13 @@ val entregasBaseUrl: String =
  */
 fun problemasDoEndereco(): List<String> {
     val problemas = mutableListOf<String>()
-    if (!entregasBaseUrl.startsWith("https://")) {
-        problemas += "não é HTTPS"
-    }
-    for (local in listOf("10.0.2.2", "localhost", "127.0.0.1", "0.0.0.0")) {
-        if (entregasBaseUrl.contains(local)) problemas += "aponta para máquina local ($local)"
+    for ((nome, url) in listOf("piloto" to entregasBaseUrl, "plataforma" to entregasPlatformUrl)) {
+        if (!url.startsWith("https://")) {
+            problemas += "$nome não é HTTPS"
+        }
+        for (local in listOf("10.0.2.2", "localhost", "127.0.0.1", "0.0.0.0")) {
+            if (url.contains(local)) problemas += "$nome aponta para máquina local ($local)"
+        }
     }
     return problemas
 }
@@ -55,9 +65,9 @@ gradle.taskGraph.whenReady {
         val problemas = problemasDoEndereco()
         if (problemas.isNotEmpty()) {
             throw GradleException(
-                "Endereço inválido para a variante de campo (${alvo.name}): $entregasBaseUrl — " +
+                "Endereço inválido para a variante de campo (${alvo.name}): piloto=$entregasBaseUrl plataforma=$entregasPlatformUrl — " +
                     problemas.joinToString("; ") + ". " +
-                    "Defina o domínio real: ./gradlew ${alvo.name} -Pentregas.baseUrl=https://SEU_DOMINIO",
+                    "Defina os domínios reais: ./gradlew ${alvo.name} -Pentregas.baseUrl=https://SEU_DOMINIO -Pentregas.platformUrl=https://SUA_PLATAFORMA",
             )
         }
     }
@@ -79,6 +89,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         buildConfigField("String", "ENTREGAS_BASE_URL", "\"$entregasBaseUrl\"")
+        buildConfigField("String", "ENTREGAS_PLATFORM_URL", "\"$entregasPlatformUrl\"")
     }
 
     buildFeatures {

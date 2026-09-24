@@ -8,7 +8,13 @@ import java.net.URL
 import javax.net.ssl.HttpsURLConnection
 
 /**
- * Cliente do servidor do piloto.
+ * Cliente HTTP do aparelho.
+ *
+ * Fala com DOIS servidores, e a fronteira é explícita no `SyncWorker`: a
+ * PLATAFORMA (runtime crítico — sessão do aparelho e lote de GPS, o caminho
+ * canônico do fato de campo) e o PILOTO (interface do motoboy, políticas,
+ * termo, comandos operacionais — mantido em paralelo até migrar). A mesma
+ * classe serve os dois; o que muda é a `baseUrl` e o token que vai junto.
  *
  * Erro é ESTRUTURADO, nunca exceção solta: quem chama precisa distinguir
  * "não deu para falar agora" (tenta de novo) de "o servidor recusou" (não
@@ -104,13 +110,19 @@ class EntregasApi(
         }
     }
 
-    /** Autentica o aparelho e devolve o contexto do motoboy. */
-    fun authenticateDevice(deviceId: String, appVersion: String): ApiResult<JSONObject> =
+    /**
+     * Bootstrap e renovação da credencial, na PLATAFORMA.
+     *
+     * Leva o segredo do aparelho — a única requisição em que ele sai do Room.
+     * A resposta traz `device_token` e `expires_in_s`; nunca ecoa o segredo.
+     */
+    fun authenticateDevice(deviceId: String, deviceSecret: String, appVersion: String): ApiResult<JSONObject> =
         request(
             "/api/device/session",
             "POST",
             JSONObject().apply {
                 put("device_id", deviceId)
+                put("device_secret", deviceSecret)
                 put("app_version", appVersion)
                 put("client", CLIENT_SCHEMA_VERSION)
             },

@@ -3,6 +3,7 @@ package br.com.tata.entregas.sync
 import br.com.tata.entregas.data.DeviceStateEntity
 import br.com.tata.entregas.data.EntregasDatabase
 import org.json.JSONObject
+import java.security.SecureRandom
 
 /**
  * Credencial do aparelho: obter, guardar, usar, limpar.
@@ -30,6 +31,35 @@ object DeviceSession {
 
     /** Aparelho revogado pelo servidor. Enquanto verdadeiro, não se tenta mais. */
     const val KEY_REVOGADO_EM = "device_revoked_at"
+
+    /**
+     * O segredo PRÓPRIO do aparelho: gerado aqui, guardado no Room, e a única
+     * coisa que sai dele é no bootstrap (`POST /api/device/session`).
+     *
+     * É o que faz o `device_id` — que aparece em log, no event log e na tela —
+     * deixar de valer como credencial. O servidor guarda só o hash, vinculado
+     * no primeiro contato de um aparelho que o responsável autorizou; daí em
+     * diante, só quem apresenta o mesmo segredo recebe token para este id.
+     *
+     * Nunca é o segredo de assinatura do servidor, e nunca é credencial
+     * humana. Não há nada aqui que um APK vazado entregue além da identidade
+     * DESTE aparelho — que o responsável revoga com uma linha.
+     */
+    const val KEY_DEVICE_SECRET = "device_secret"
+
+    /** 128 bits do gerador criptográfico, em hexadecimal: 32 caracteres. */
+    fun gerarSegredo(): String {
+        val bytes = ByteArray(16)
+        SecureRandom().nextBytes(bytes)
+        return bytes.joinToString("") { "%02x".format(it) }
+    }
+
+    suspend fun segredoDoAparelho(db: EntregasDatabase, agoraMs: Long): String {
+        db.deviceState().get(KEY_DEVICE_SECRET)?.takeIf { it.length >= 32 }?.let { return it }
+        val s = gerarSegredo()
+        db.deviceState().put(DeviceStateEntity(KEY_DEVICE_SECRET, s, agoraMs))
+        return s
+    }
 
     data class Sessao(val token: String, val expiraEmMs: Long)
 
@@ -73,7 +103,8 @@ object DeviceSession {
         appVersion: String,
         agoraMs: Long,
     ): ResultadoAutenticacao {
-        return when (val r = api.authenticateDevice(deviceId, appVersion)) {
+        val segredo = segredoDoAparelho(db, agoraMs)
+        return when (val r = api.authenticateDevice(deviceId, segredo, appVersion)) {
             is ApiResult.Ok -> {
                 val token = r.value.optString("device_token", "")
                 if (token.isBlank()) {
@@ -94,9 +125,11 @@ object DeviceSession {
             }
 
             is ApiResult.Unauthorized ->
-                // Autenticar recebendo 401 significa que a credencial HUMANA que
-                // autoriza a emissão não vale. Não é o aparelho que está errado,
-                // e insistir não resolve.
+                // 401 no bootstrap: o aparelho ainda não foi autorizado pelo
+                // responsável (ou o app está velho e não apresentou o segredo).
+                // Não é o aparelho que está errado, e insistir não resolve —
+                // mas o servidor manda continuar tentando com folga, porque a
+                // autorização pode chegar a qualquer momento.
                 ResultadoAutenticacao.PrecisaDeHumano(r.reason)
 
             is ApiResult.Rejected -> {
@@ -138,6 +171,8 @@ object DeviceSession {
     /**
      * Apaga a credencial — e SOMENTE a credencial.
      *
+     * O segredo do aparelho FICA: ele é identidade, não sessão. Apagá-lo
+     * faria o aparelho voltar como outro e cair em `segredo_divergente`.
      * Nada aqui toca `gps_point`, `outbox_event` ou `term_ack`. É a diferença
      * entre "perdi o crachá" e "perdi o trabalho do dia": a fila local
      * sobrevive à revogação, e volta a sincronizar se o aparelho for
