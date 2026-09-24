@@ -1,5 +1,5 @@
 import type { EdgeSourceObservation } from "../simulator";
-import type { FileEdgeStore } from "./store";
+import type { EdgeJournalPort } from "./storePort";
 
 export interface EdgeAdapter {
   adapter_id: string;
@@ -15,7 +15,7 @@ export interface AdapterCycleResult {
 }
 
 export class EdgeAdapterSupervisor {
-  constructor(private readonly store: FileEdgeStore) {}
+  constructor(private readonly store: EdgeJournalPort) {}
 
   async runOnce(adapters: readonly EdgeAdapter[]): Promise<AdapterCycleResult[]> {
     const results: AdapterCycleResult[] = [];
