@@ -32,6 +32,14 @@ export interface PrintObservation {
   physical_effect: "UNKNOWN";
 }
 
+const SAFE_DOCUMENT_HINT = /^[A-Za-z0-9._:-]{1,80}$/;
+
+export function safeDocumentHint(value?: string): string | undefined {
+  if (!value) return undefined;
+  const trimmed=value.trim();
+  return SAFE_DOCUMENT_HINT.test(trimmed) ? trimmed : undefined;
+}
+
 export function printSnapshotToObservation(
   snapshot: PrintJobSnapshot,
 ): PrintObservation {
@@ -58,7 +66,7 @@ export function printSnapshotToObservation(
       payload: {
         queue_name: snapshot.queue_name,
         printer_name: snapshot.printer_name,
-        document_name: snapshot.document_name,
+        document_hint: safeDocumentHint(snapshot.document_name),
         state: snapshot.state,
       },
     },
