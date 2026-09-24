@@ -13,7 +13,11 @@ async function main(): Promise<void> {
   assert.doesNotThrow(() => assertReadOnlyPrintCommand(WINDOWS_PRINT_JOBS_COMMAND));
   assert.throws(
     () => assertReadOnlyPrintCommand("Remove-PrintJob -PrinterName X -ID 1"),
-    /mutating PowerShell verb forbidden/,
+    /not allowlisted/,
+  );
+  assert.throws(
+    () => assertReadOnlyPrintCommand("Get-Service"),
+    /not allowlisted/,
   );
 
   const source = new WindowsPrintReadOnlySource(async () => [
@@ -53,6 +57,7 @@ async function main(): Promise<void> {
     discovery_command_read_only: true,
     jobs_command_read_only: true,
     mutation_command_rejected: true,
+    arbitrary_read_command_rejected: true,
     physical_success_inferred: false,
   }, null, 2));
 }
