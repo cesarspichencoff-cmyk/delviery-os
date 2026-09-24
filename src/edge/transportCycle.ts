@@ -36,6 +36,7 @@ export async function runReadOnlyTransportCycle(args: {
   browser: IfoodBrowserReadOnlyTransport;
   printSource: PrintSnapshotSource;
   unit_id: string;
+  source_mode: "synthetic" | "live_observed";
   now?: () => Date;
 }): Promise<EdgeTransportCycleResult> {
   const now = args.now ?? (() => new Date());
@@ -43,11 +44,23 @@ export async function runReadOnlyTransportCycle(args: {
   let session: BrowserSessionSnapshot;
   let sessionStatus: TransportStageStatus = "ok";
   try {
-    session = await args.browser.sessionHealth();
+    const reported = await args.browser.sessionHealth();
+    if (reported.source_mode !== args.source_mode) {
+      sessionStatus = "failed";
+      session = {
+        source_mode: args.source_mode,
+        health: "UNKNOWN",
+        observed_at: now().toISOString(),
+        profile_id: "unknown-session",
+        reason: "source_mode_mismatch",
+      };
+    } else {
+      session = reported;
+    }
   } catch {
     sessionStatus = "failed";
     session = {
-      source_mode: "live_observed",
+      source_mode: args.source_mode,
       health: "UNKNOWN",
       observed_at: now().toISOString(),
       profile_id: "unknown-session",
