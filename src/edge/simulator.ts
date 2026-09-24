@@ -11,6 +11,8 @@ import {
   OrderIdentityGraph,
 } from "./identityGraph";
 
+export type ObservationSourceMode = "synthetic" | "live_observed";
+
 export type ObservationKind =
   | "ifood_order"
   | "ifood_portal"
@@ -28,6 +30,7 @@ export interface CorrelationProposal {
 
 export interface EdgeSourceObservation {
   observation_id: string;
+  source_mode: ObservationSourceMode;
   kind: ObservationKind;
   source_ref: IdentityRef;
   observed_at: string;
