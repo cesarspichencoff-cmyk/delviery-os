@@ -40,6 +40,15 @@ jobs:
           npm audit --json || true
           echo "::endgroup::"
 
+      - name: Edge dependency boundary
+        shell: bash
+        run: |
+          if git grep -nEi '(^|[^A-Za-z0-9_])(xlsx|XLSX|sheetjs)([^A-Za-z0-9_]|$)' -- 'src/edge/**' 'demo/edge_*.ts'; then
+            echo "Forbidden legacy spreadsheet dependency referenced by Edge"
+            exit 1
+          fi
+          npm audit --omit=dev --audit-level=high
+
       - name: Typecheck
         run: npm run typecheck
 
