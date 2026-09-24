@@ -50,8 +50,15 @@ export class EdgeShadowHarness {
   private readonly seen = new Set<string>();
   private readonly graph = new OrderIdentityGraph();
   private duplicates = 0;
+  private sourceMode?: ObservationSourceMode;
 
   ingest(observation: EdgeSourceObservation): boolean {
+    if (this.sourceMode === undefined) {
+      this.sourceMode = observation.source_mode;
+    } else if (this.sourceMode !== observation.source_mode) {
+      throw new Error("mixed_observation_source_modes");
+    }
+
     if (this.seen.has(observation.observation_id)) {
       this.duplicates += 1;
       return false;

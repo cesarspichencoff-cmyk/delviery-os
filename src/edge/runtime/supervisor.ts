@@ -1,5 +1,8 @@
 import type { EdgeSourceObservation } from "../simulator";
-import type { EdgeJournalPort } from "./storePort";
+import {
+  assertJournalSourceModeCompatibility,
+  type EdgeJournalPort,
+} from "./storePort";
 
 export interface EdgeAdapter {
   adapter_id: string;
@@ -25,6 +28,10 @@ export class EdgeAdapterSupervisor {
         const observations = await adapter.collect();
         let duplicates = 0;
         for (const observation of observations) {
+          assertJournalSourceModeCompatibility(
+            this.store.observations(),
+            observation,
+          );
           const receipt = this.store.ingest(observation);
           if (receipt.duplicate) duplicates += 1;
         }
