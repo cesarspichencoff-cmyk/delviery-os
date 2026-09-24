@@ -11,7 +11,10 @@
     "ingest": "tsc && node dist/demo/ingest_real.js",
     "verificar:cardapio": "node tools/verificar_integridade_cardapio.js",
     "test:edge:shadow": "tsc && node dist/demo/edge_shadow_proof.js",
-    "test:edge:runtime": "tsc && node dist/demo/edge_runtime_proof.js"
+    "test:edge:runtime": "tsc && node dist/demo/edge_runtime_proof.js",
+    "test:edge:ifood": "tsc && node dist/demo/edge_ifood_shadow_proof.js",
+    "test:edge:print": "tsc && node dist/demo/edge_print_shadow_proof.js",
+    "test:edge:shadow:all": "npm run test:edge:shadow && npm run test:edge:runtime && npm run test:edge:ifood && npm run test:edge:print"
   },
   "devDependencies": {
     "@types/node": "20.14.10",
