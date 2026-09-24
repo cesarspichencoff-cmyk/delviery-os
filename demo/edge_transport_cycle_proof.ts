@@ -18,14 +18,18 @@ async function main(): Promise<void> {
 
     const healthyBrowser: IfoodBrowserReadOnlyTransport = {
       async sessionHealth() {
-        return {\n          source_mode: "synthetic",\n          health: "HEALTHY",
+        return {
+          source_mode: "synthetic",
+          health: "HEALTHY",
           observed_at: "2026-09-25T00:00:00.000Z",
           profile_id: "profile-1",
         };
       },
       async collectStructured() {
         structuredCalls += 1;
-        return [{\n          source_mode: "synthetic",\n          capture_id: "cap-1",
+        return [{
+          source_mode: "synthetic",
+          capture_id: "cap-1",
           surface: "reviews",
           unit_id: "0001",
           observed_at: "2026-09-25T00:00:01.000Z",
@@ -37,7 +41,9 @@ async function main(): Promise<void> {
       },
       async collectDownloadMetadata() {
         downloadCalls += 1;
-        return [{\n          source_mode: "synthetic",\n          download_id: "d-1",
+        return [{
+          source_mode: "synthetic",
+          download_id: "d-1",
           surface: "financial",
           unit_id: "0001",
           observed_at: "2026-09-25T00:00:02.000Z",
@@ -48,7 +54,9 @@ async function main(): Promise<void> {
 
     const printSource: PrintSnapshotSource = {
       async listJobs() {
-        return [{\n          source_mode: "synthetic",\n          queue_name: "Q",
+        return [{
+          source_mode: "synthetic",
+          queue_name: "Q",
           printer_name: "P",
           job_id: "1",
           observed_at: "2026-09-25T00:00:03.000Z",
@@ -64,7 +72,9 @@ async function main(): Promise<void> {
       pipeline,
       browser: healthyBrowser,
       printSource,
-      unit_id: "0001",\n      source_mode: "synthetic",\n    });
+      unit_id: "0001",
+      source_mode: "synthetic",
+    });
     assert.equal(healthy.session_status, "ok");
     assert.equal(healthy.structured_status, "ok");
     assert.equal(healthy.download_status, "ok");
@@ -74,7 +84,9 @@ async function main(): Promise<void> {
 
     const expiredBrowser: IfoodBrowserReadOnlyTransport = {
       async sessionHealth() {
-        return {\n          source_mode: "synthetic",\n          health: "EXPIRED",
+        return {
+          source_mode: "synthetic",
+          health: "EXPIRED",
           observed_at: "2026-09-25T00:01:00.000Z",
           profile_id: "profile-1",
         };
@@ -93,7 +105,9 @@ async function main(): Promise<void> {
       pipeline,
       browser: expiredBrowser,
       printSource,
-      unit_id: "0001",\n      source_mode: "synthetic",\n    });
+      unit_id: "0001",
+      source_mode: "synthetic",
+    });
     assert.equal(expired.structured_status, "skipped");
     assert.equal(expired.download_status, "skipped");
     assert.equal(expired.print_status, "ok");
@@ -136,7 +150,9 @@ async function main(): Promise<void> {
       pipeline,
       browser: healthyBrowser,
       printSource: brokenPrintSource,
-      unit_id: "0001",\n      source_mode: "synthetic",\n    });
+      unit_id: "0001",
+      source_mode: "synthetic",
+    });
     assert.equal(printFailure.session_status, "ok");
     assert.equal(printFailure.structured_status, "ok");
     assert.equal(printFailure.print_status, "failed");
