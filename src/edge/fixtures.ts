@@ -1,16 +1,14 @@
 import type { EdgeSourceObservation } from "./simulator";
 
 export const EDGE_SHADOW_FIXTURES: EdgeSourceObservation[] = [
-  {
-    observation_id: "obs-ifood-1001",
+  {\n    source_mode: "synthetic",\n    observation_id: "obs-ifood-1001",
     kind: "ifood_order",
     source_ref: { source: "ifood", kind: "order", id: "IFOOD-1001", unit_id: "0001" },
     observed_at: "2026-09-24T18:00:01.000Z",
     occurred_at: "2026-09-24T18:00:00.000Z",
     payload: { payment_mapping: "ONLINE_IFOOD", amount: 189.4 },
   },
-  {
-    observation_id: "obs-teknisa-7001",
+  {\n    source_mode: "synthetic",\n    observation_id: "obs-teknisa-7001",
     kind: "teknisa_sale",
     source_ref: { source: "teknisa", kind: "sale", id: "7001", unit_id: "0001" },
     observed_at: "2026-09-24T18:00:04.000Z",
@@ -28,8 +26,7 @@ export const EDGE_SHADOW_FIXTURES: EdgeSourceObservation[] = [
     ],
     payload: { amount: 189.4, payment_mapping: "ONLINE_IFOOD" },
   },
-  {
-    observation_id: "obs-print-501",
+  {\n    source_mode: "synthetic",\n    observation_id: "obs-print-501",
     kind: "print_job",
     source_ref: { source: "windows_print", kind: "job", id: "501", unit_id: "0001" },
     observed_at: "2026-09-24T18:00:06.000Z",
@@ -47,8 +44,7 @@ export const EDGE_SHADOW_FIXTURES: EdgeSourceObservation[] = [
     ],
     payload: { printer: "COZINHA_A" },
   },
-  {
-    observation_id: "obs-trip-901",
+  {\n    source_mode: "synthetic",\n    observation_id: "obs-trip-901",
     kind: "delivery_trip",
     source_ref: { source: "deliveryos", kind: "trip", id: "901", unit_id: "0001" },
     observed_at: "2026-09-24T18:27:00.000Z",
@@ -76,8 +72,7 @@ export const EDGE_SHADOW_FIXTURES: EdgeSourceObservation[] = [
     ],
     payload: { driver_id: "PSEUDONYM-01" },
   },
-  {
-    observation_id: "obs-review-301",
+  {\n    source_mode: "synthetic",\n    observation_id: "obs-review-301",
     kind: "review",
     source_ref: { source: "review", kind: "review", id: "301", unit_id: "0001" },
     observed_at: "2026-09-25T12:00:00.000Z",
@@ -95,8 +90,7 @@ export const EDGE_SHADOW_FIXTURES: EdgeSourceObservation[] = [
     ],
     payload: { score: 2 },
   },
-  {
-    observation_id: "obs-time-only",
+  {\n    source_mode: "synthetic",\n    observation_id: "obs-time-only",
     kind: "print_job",
     source_ref: { source: "windows_print", kind: "job", id: "999", unit_id: "0001" },
     observed_at: "2026-09-24T18:00:02.000Z",
