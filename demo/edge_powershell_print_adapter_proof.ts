@@ -22,6 +22,7 @@ async function main(): Promise<void> {
       },
     },
     "0001",
+    "synthetic",
     () => new Date("2026-09-25T00:10:01.000Z"),
   );
 
