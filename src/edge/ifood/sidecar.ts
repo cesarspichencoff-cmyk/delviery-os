@@ -6,7 +6,10 @@
  * observations. No click, write, reply, pause or account mutation exists.
  */
 
-import type { EdgeSourceObservation } from "../simulator";
+import type {
+  EdgeSourceObservation,
+  ObservationSourceMode,
+} from "../simulator";
 
 export type PortalSurface =
   | "reviews"
@@ -18,6 +21,7 @@ export type PortalSurface =
 
 export interface PortalStructuredRecord {
   capture_id: string;
+  source_mode: ObservationSourceMode;
   surface: PortalSurface;
   unit_id: string;
   observed_at: string;
@@ -78,6 +82,7 @@ export function portalRecordToObservation(
 
   return {
     observation_id: `ifood-portal:${record.capture_id}`,
+    source_mode: record.source_mode,
     kind: surfaceToKind(record.surface),
     source_ref: {
       source: record.surface === "reviews" ? "review" : "ifood",
