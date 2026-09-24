@@ -21,6 +21,14 @@
  *   D. A LEITURA: a porta somente-leitura devolve o que a cadeia sustenta, e a
  *      superfície Entregas mostra realidade separada da demonstração — com
  *      ausência declarada onde não há fonte, nunca zero, nunca "saudável".
+ *   P. PAPÉIS MÍNIMOS: a cadeia inteira roda com os papéis de
+ *      `deploy/sql/papeis_minimos.sql` (sem superusuário), e a sabotagem que
+ *      o dono consegue — apagar fato, desligar trava, revogar, cadastrar — é
+ *      recusada por PRIVILÉGIO, antes de qualquer trigger.
+ *   K. A FRONTEIRA NO KOTLIN: sessão e GPS vão só para a plataforma; termo e
+ *      comandos só para o piloto; o token da plataforma nunca viaja para o
+ *      piloto. Textual, porque o Kotlin não executa aqui — e é o único
+ *      lugar onde as duas autoridades poderiam se misturar.
  *
  * Cada asserção compara VALOR — nunca "não deu erro".
  */
@@ -32,7 +40,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createHash } from "node:crypto";
 
-import { bancoIsolado as bancoIsoladoDe, type BancoIsolado } from "./banco-isolado";
+import { bancoIsolado as bancoIsoladoDe, urlCom, type BancoIsolado } from "./banco-isolado";
+import { createPgClient } from "./persistence/sql-client";
+import { readFileSync } from "node:fs";
 import { AparelhoLogico, DeviceSession, KEY_SESSION_TOKEN, KEY_TOKEN_EXPIRA_EM, KEY_DEVICE_SECRET } from "./aparelho-logico";
 import { emitirSessaoDeAparelho, hashDoSegredo, type RegistroDeSessao, type DispositivoComVinculo } from "./auth/device-session";
 import { emitirToken, verificarToken } from "./auth/device-token";
@@ -342,6 +352,29 @@ async function main(): Promise<void> {
   });
 
   /* ---------------------------------------------------------------- *
+   * K. A fronteira no Kotlin (textual)
+   * ---------------------------------------------------------------- */
+  console.log("\nK. A FRONTEIRA NO KOTLIN — duas autoridades, nunca misturadas");
+
+  await teste("K1 no SyncWorker, sessão e GPS usam só a PLATAFORMA com o token; termo, comandos e políticas usam só o PILOTO, sem token", () => {
+    const { readFileSync } = require("node:fs") as typeof import("node:fs");
+    const w = readFileSync(join(raiz, "android/app/src/main/java/br/com/tata/entregas/sync/SyncWorker.kt"), "utf8")
+      .replace(/\/\/[^\n]*/g, "");
+    assert.match(w, /val semCredencial = EntregasApi\(BuildConfig\.ENTREGAS_PLATFORM_URL, \{ null \}\)/);
+    assert.match(w, /val api = EntregasApi\(BuildConfig\.ENTREGAS_PLATFORM_URL, \{ tokenAtual \}\)/);
+    assert.match(w, /val piloto = EntregasApi\(BuildConfig\.ENTREGAS_BASE_URL, \{ null \}\)/);
+    assert.match(w, /api\.sendPoints\(/, "GPS não vai pela plataforma");
+    assert.doesNotMatch(w, /piloto\.sendPoints\(/, "GPS indo para o piloto");
+    for (const chamada of ["sendEvents", "sendTermAcknowledgement", "policies"]) {
+      assert.match(w, new RegExp(`piloto\\.${chamada}\\(`), `${chamada} não vai pelo piloto`);
+      assert.doesNotMatch(w, new RegExp(`api\\.${chamada}\\(`), `${chamada} indo pela plataforma com o token — autoridade misturada`);
+    }
+    // A recusa do piloto nunca apaga a credencial da plataforma.
+    const blocoPiloto = w.slice(w.indexOf("piloto.sendTermAcknowledgement"), w.indexOf("api.sendPoints"));
+    assert.doesNotMatch(blocoPiloto, /credencialRecusada = true/, "401 do piloto derruba a credencial da plataforma");
+  });
+
+  /* ---------------------------------------------------------------- *
    * C. A cadeia, com os binários reais
    * ---------------------------------------------------------------- */
   console.log("\nC. A CADEIA — binários de dist/, PostgreSQL real, aparelho lógico");
@@ -360,6 +393,7 @@ async function main(): Promise<void> {
   const MOTOBOY = `m-${UNIDADE.toLowerCase()}`;
   const VIAGEM = `t-${UNIDADE.toLowerCase()}`;
   const MODO = "simulated" as const;
+  const papeis: string[] = [];
 
   try {
     critico = subirCritico(b, MODO);
@@ -756,11 +790,121 @@ async function main(): Promise<void> {
       assert.equal(fora.realidade.lida_em.observado === false && fora.realidade.lida_em.motivo, "indisponivel");
       assert.equal(JSON.stringify(fora.realidade).includes('"valor":0'), false, "ausência virou zero");
     });
+    /* -------------------------------------------------------------- *
+     * P. Papéis mínimos
+     * -------------------------------------------------------------- */
+    console.log("\nP. PAPÉIS MÍNIMOS — a cadeia sem superusuário; sabotagem recusada por privilégio");
+
+    const CRIT = `cadeia_crit_${UNIDADE.toLowerCase()}`;
+    const ASY = `cadeia_async_${UNIDADE.toLowerCase()}`;
+    const comPapel = (papel: string): string => {
+      const u = new URL(b.url);
+      u.username = papel;
+      u.password = "";
+      return u.toString();
+    };
+    const dirP = mkdtempSync(join(tmpdir(), "cadeia-aparelho-p-"));
+    let criticoP = null as Processo | null;
+    let assincronoP = null as Processo | null;
+    try {
+      await teste("P1 o script de papéis aplica no banco isolado, com nomes desta execução, e nenhum dos dois é superusuário", async () => {
+        const sql = readFileSync(join(raiz, "deploy/sql/papeis_minimos.sql"), "utf8")
+          .replaceAll("deliveryos_critical", CRIT)
+          .replaceAll("deliveryos_async", ASY);
+        await b.cliente.query(sql);
+        papeis.push(CRIT, ASY);
+        const r = await b.cliente.query(`SELECT rolname, rolsuper, rolcreaterole FROM pg_roles WHERE rolname IN ($1, $2) ORDER BY 1`, [ASY, CRIT]);
+        assert.deepEqual(r.map((x) => [x.rolname, x.rolsuper, x.rolcreaterole]), [[ASY, false, false], [CRIT, false, false]]);
+        const dono = await b.cliente.query(`SELECT tableowner FROM pg_tables WHERE schemaname = 'platform' AND tablename = 'event_log'`);
+        assert.notEqual(dono[0].tableowner, CRIT, "o papel do crítico é dono do event log");
+      });
+
+      const VIAGEM_P = `${VIAGEM}-p`;
+      await teste("P2 o crítico sobe como papel mínimo: /ready 200, bootstrap vincula, lote vira fato, sessão auditada", async () => {
+        criticoP = subir(BIN_CRITICO, comPapel(CRIT), { DELIVERYOS_SOURCE_MODE: MODO });
+        assert.ok(await ate(criticoP, /\[critico\] ouvindo/), `o crítico não subiu com o papel mínimo:\n${criticoP.saida().slice(-800)}`);
+        const ready = await fetch(`http://127.0.0.1:${criticoP.porta}/ready`);
+        assert.equal(ready.status, 200, "a sonda de escrita do /ready reprova com o papel mínimo");
+        const apP = new AparelhoLogico({ diretorio: dirP, plataformaUrl: `http://127.0.0.1:${criticoP.porta}` });
+        await autorizarAparelho(b, apP.deviceId, UNIDADE, `${MOTOBOY}-p`);
+        apP.capturar(VIAGEM_P, -23.56, -46.64, "2026-09-24T10:09:00.000Z");
+        assert.equal(await apP.sincronizar(), "success", `sincronização falhou:\n${criticoP.saida().slice(-500)}`);
+        assert.equal((await fatosDoAparelho(b, apP.deviceId)).length, 1);
+        assert.ok((await linhaDoAparelho(b, apP.deviceId))?.secret_hash, "o vínculo não foi gravado com o papel mínimo");
+        const aud = await b.cliente.query(`SELECT count(*)::int AS n FROM platform.audit WHERE object_id = $1`, [apP.deviceId]);
+        assert.equal(aud[0].n, 1);
+      });
+
+      await teste("P3 o assíncrono sobe como papel mínimo: o replay lê o log e a outbox é drenada", async () => {
+        assincronoP = subir(BIN_ASSINCRONO, comPapel(ASY));
+        assert.ok(await ate(assincronoP, /\[assincrono\] replay \{/), `o assíncrono não subiu com o papel mínimo:\n${assincronoP.saida().slice(-800)}`);
+        const r = ultimaLinha<Replay>(assincronoP, "[assincrono] replay ")!;
+        assert.equal(r.estado, "completo");
+        assert.ok(r.aplicados >= 6, `replay aplicou ${r.aplicados}`);
+        const fim = Date.now() + 20000;
+        let pend = -1;
+        while (Date.now() < fim) {
+          pend = (await b.cliente.query(`SELECT count(*)::int AS n FROM platform.outbox WHERE state <> 'done'`))[0].n as number;
+          if (pend === 0) break;
+          await esperar(200);
+        }
+        assert.equal(pend, 0, `outbox não drenada com o papel mínimo:\n${assincronoP.saida().slice(-600)}`);
+      });
+
+      await teste("P4 com o papel do CRÍTICO, a sabotagem é recusada por PRIVILÉGIO: apagar, truncar, alterar fato, desligar trava, revogar, cadastrar, replica", async () => {
+        const c = await createPgClient({ url: comPapel(CRIT), max: 1 });
+        try {
+          const tentar = (sql: string) => c.query(sql).then(() => "", (e: Error) => e.message);
+          assert.match(await tentar(`DELETE FROM platform.event_log`), /permission denied/);
+          assert.match(await tentar(`TRUNCATE platform.event_log`), /permission denied/);
+          assert.match(await tentar(`UPDATE platform.event_log SET event_type = 'x'`), /permission denied/);
+          assert.match(await tentar(`ALTER TABLE platform.event_log DISABLE TRIGGER ALL`), /must be owner/);
+          assert.match(await tentar(`DROP TRIGGER event_log_sem_update ON platform.event_log`), /must be owner/);
+          assert.match(await tentar(`UPDATE identity.device SET revoked_at = now()`), /permission denied/);
+          assert.match(await tentar(`UPDATE identity.device SET unit_id = 'OUTRA'`), /permission denied/);
+          assert.match(await tentar(`INSERT INTO identity.device(device_id, unit_id, label) VALUES ('dev-intruso', '${UNIDADE}', 'x')`), /permission denied/);
+          assert.match(await tentar(`SET session_replication_role = replica`), /permission denied/);
+          // Controle positivo: o que ele precisa, ele consegue.
+          assert.equal(await tentar(`SELECT count(*) FROM platform.event_log`), "");
+          assert.equal(await tentar(`UPDATE identity.device SET last_seen_at = now() WHERE device_id = 'nenhum'`), "");
+        } finally {
+          await c.close();
+        }
+      });
+
+      await teste("P5 com o papel do ASSÍNCRONO: não grava fato, não enfileira, não lê nem toca aparelho", async () => {
+        const c = await createPgClient({ url: comPapel(ASY), max: 1 });
+        try {
+          const tentar = (sql: string) => c.query(sql).then(() => "", (e: Error) => e.message);
+          assert.match(await tentar(`INSERT INTO platform.event_log(event_id) VALUES ('x')`), /permission denied/);
+          assert.match(await tentar(`INSERT INTO platform.outbox(outbox_id) VALUES ('x')`), /permission denied/);
+          assert.match(await tentar(`SELECT * FROM identity.device`), /permission denied/);
+          assert.match(await tentar(`DELETE FROM platform.outbox`), /permission denied/);
+          assert.equal(await tentar(`SELECT count(*) FROM platform.event_log`), "");
+        } finally {
+          await c.close();
+        }
+      });
+    } finally {
+      if (assincronoP) await assincronoP.fim();
+      if (criticoP) await criticoP.fim();
+      rmSync(dirP, { recursive: true, force: true });
+    }
   } finally {
     if (assincrono) await assincrono.fim();
     if (critico) await critico.fim();
     await b.descartar();
     rmSync(dir, { recursive: true, force: true });
+    // Papéis são do CLUSTER, não do banco: caem depois do banco, quando não
+    // resta objeto que dependa deles. Só os que ESTA execução criou.
+    if (papeis.length) {
+      const admin = await createPgClient({ url: urlCom(URL_PG, "postgres"), max: 1 });
+      try {
+        for (const p of papeis) await admin.query(`DROP ROLE IF EXISTS ${p}`);
+      } finally {
+        await admin.close();
+      }
+    }
   }
 
   resumo();

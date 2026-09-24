@@ -58,6 +58,130 @@ function viagem(v) {
   </article>`;
 }
 
+/**
+ * Um campo como celula de tabela: valor quando observado, ausencia com o seu
+ * motivo quando nao. A ausencia usa o MESMO selo do resto da tela — a
+ * tabela nao ganha o direito de mostrar um traco onde a tela mostraria
+ * "nao observado".
+ */
+function celula(c, opcoes = {}) {
+  if (!c || c.observado !== true) {
+    return selo({ estado: c ? motivoParaEstadoLocal(c.motivo) : "indisponivel", detalhe: c ? c.explicacao : "" });
+  }
+  const tecnico = opcoes.tecnico ? "campo__valor--tecnico" : "campo__valor";
+  return `<span class="${tecnico}">${esc(c.valor)}</span>`;
+}
+
+function motivoParaEstadoLocal(motivo) {
+  return motivo === "evidencia_insuficiente" ? "evidencia_insuficiente" : "indisponivel";
+}
+
+/**
+ * O bloco de REALIDADE — o que a cadeia canonica sustenta.
+ *
+ * Separado da demonstracao por construcao e por forma: nao e uma pilha de
+ * cartoes, e um territorio de leitura — duas tabelas, aparelhos e viagens,
+ * cada linha com a procedencia do PROPRIO fato. Um aparelho autorizado que
+ * nunca falou aparece com o que se sabe dele (o cadastro) e com ausencia
+ * declarada no resto. Nada aqui anima: evidencia nao anima.
+ */
+function blocoRealidade(r) {
+  if (!r.fonte || r.fonte.observado !== true) {
+    const motivo = r.fonte ? r.fonte.motivo : "indisponivel";
+    const explicacao = r.fonte ? r.fonte.explicacao : "Nenhuma leitura.";
+    return estadoTela(
+      "vazio",
+      [{ estado: motivoParaEstadoLocal(motivo) }],
+      motivo === "integracao_pendente" ? "Nenhum banco da plataforma nesta build" : "A plataforma nao respondeu",
+      explicacao,
+    );
+  }
+
+  // Hierarquia: quem tem fato vem primeiro, o mais recente no topo. Quem foi
+  // autorizado e nunca falou nao some — fica em um inspetor, contado, para a
+  // lista nao virar uma parede de "aguardando primeiro contato".
+  const instante = (a) => (a.ultima_posicao_em.observado ? Date.parse(a.ultima_posicao_em.valor) : -1);
+  const comFato = r.aparelhos.filter((a) => a.ultima_posicao_em.observado).sort((x, y) => instante(y) - instante(x));
+  const semFato = r.aparelhos.filter((a) => !a.ultima_posicao_em.observado);
+  const linhaAparelho = (a) => [
+    `<span class="campo__valor">${esc(a.rotulo)}</span><br><span class="campo__valor--tecnico">${esc(a.device_id)}</span>`,
+    celula(a.credencial),
+    celula(a.ultima_posicao_em, { tecnico: true }),
+    celula(a.gps),
+    celula(a.ultima_sincronizacao, { tecnico: true }),
+    celula(a.modo_dos_fatos),
+    `<span class="linha-selos">${selos(a.selos)}</span>`,
+  ];
+  const COLUNAS = ["Aparelho", "Credencial", "Ultima posicao", "GPS", "Recebido em", "Modo dos fatos", "Situacao"];
+  const aparelhos =
+    r.aparelhos.length === 0
+      ? estadoTela(
+          "vazio",
+          [{ estado: "indisponivel" }],
+          "Nenhum aparelho autorizado",
+          "O cadastro de aparelhos esta vazio. Isto nao diz que nao ha motoboy na rua — diz que nenhum aparelho foi autorizado a falar com a plataforma.",
+        )
+      : `${
+          comFato.length === 0
+            ? estadoTela(
+                "vazio",
+                [{ estado: "indisponivel" }],
+                "Nenhum aparelho mandou lote",
+                `Ha ${r.aparelhos.length} aparelho(s) autorizado(s) e nenhum lote chegou. Nao afirma que a rua esta parada — afirma que nada foi observado por este caminho.`,
+              )
+            : tabela(COLUNAS, comFato.map(linhaAparelho))
+        }${
+          semFato.length === 0
+            ? ""
+            : inspetor(
+                "aparelhos-sem-fato",
+                `${semFato.length} aparelho(s) autorizado(s) sem nenhum lote`,
+                tabela(COLUNAS, semFato.map(linhaAparelho)),
+              )
+        }`;
+
+  const viagens =
+    r.viagens.length === 0
+      ? estadoTela(
+          "vazio",
+          [{ estado: "indisponivel" }],
+          "Nenhuma viagem com fato no log",
+          "Nenhum lote de GPS chegou a plataforma. Nao afirma que a rua esta parada — afirma que nada foi observado por este caminho.",
+        )
+      : tabela(
+          ["Viagem", "Unidade", "Aparelho", "Ultima posicao", "Frescor", "Estado", "Fatos", "Procedencia"],
+          [...r.viagens]
+            .sort((x, y) => (y.ultima_posicao_em.observado ? Date.parse(y.ultima_posicao_em.valor) : -1) - (x.ultima_posicao_em.observado ? Date.parse(x.ultima_posicao_em.valor) : -1))
+            .map((v) => [
+            `<span class="campo__rotulo">Viagem</span> <span class="campo__valor--tecnico">${esc(v.viagem_id)}</span>`,
+            esc(v.unidade),
+            celula(v.device_id, { tecnico: true }),
+            celula(v.ultima_posicao_em, { tecnico: true }),
+            esc(v.frescor),
+            `<span class="linha-selos"><span class="campo__valor">${esc(v.estado)}</span>${selos(
+              v.selos.filter((s) => s.estado === "evidencia_insuficiente"),
+            )}</span>`,
+            esc(String(v.fatos)),
+            selo({ estado: v.procedencia }),
+          ]),
+        );
+
+  return `
+    <div class="grade" data-colunas="2">
+      ${campo("Fonte", r.fonte, { tecnico: true })}
+      ${campo("Lida em", r.lida_em, { tecnico: true })}
+    </div>
+    <h3 class="secao__titulo" style="margin-top:var(--space-4)">Aparelhos autorizados</h3>
+    ${aparelhos}
+    <h3 class="secao__titulo" style="margin-top:var(--space-4)">Viagens com fato no log</h3>
+    ${viagens}
+    <div class="grade" data-colunas="2" style="margin-top:var(--space-4)">
+      ${campo("Historico sem modo (UNKNOWN)", r.historico_sem_modo)}
+    </div>
+    ${blocoLimitacoes(r.limitacoes)}
+  `;
+}
+
 export function telaEntregas(vm) {
   const corpoViagens =
     vm.viagens.length === 0
@@ -118,8 +242,14 @@ export function telaEntregas(vm) {
     )}
 
     ${secao(
-      "O aparelho em campo",
-      "Credencial, GPS, ultima sincronizacao e fila chegam do Android pela rota de ingestao. Nao existe rota de LEITURA que devolva esse estado.",
+      "Realidade — o que a cadeia canonica sustenta",
+      "Lido do banco da plataforma: quem esta autorizado, se ja falou, o ultimo lote que chegou e as viagens que existem pelo GPS. Cada linha carrega a procedencia do proprio fato; o que nao tem fonte aparece como ausencia, nunca como zero.",
+      blocoRealidade(vm.realidade || {}),
+    )}
+
+    ${secao(
+      "O aparelho em campo (demonstracao)",
+      "Credencial, GPS, ultima sincronizacao e fila chegam do Android pela rota de ingestao. A leitura real esta no bloco acima; este continua declarando o que a demonstracao nao sabe.",
       `<div class="grade" data-colunas="2">
         ${campo("Integridade da credencial", d.credencial)}
         ${campo("GPS", d.gps)}
