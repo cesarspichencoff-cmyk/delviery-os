@@ -657,9 +657,10 @@ export class PgDeviceRegistry {
     unit_id: string;
     actor_id?: string;
     revoked_at?: string | null;
+    secret_hash?: string | null;
   } | null> {
     const r = await this.sql.query<SqlRow>(
-      `SELECT device_id, unit_id, actor_id, revoked_at
+      `SELECT device_id, unit_id, actor_id, revoked_at, secret_hash
          FROM identity.device WHERE device_id = $1`,
       [device_id],
     );
@@ -670,6 +671,44 @@ export class PgDeviceRegistry {
       unit_id: String(l.unit_id),
       actor_id: l.actor_id === null ? undefined : String(l.actor_id),
       revoked_at: l.revoked_at === null ? null : isoObrigatorio(l.revoked_at),
+      secret_hash: l.secret_hash === null || l.secret_hash === undefined ? null : String(l.secret_hash),
     };
+  }
+
+  /**
+   * Vínculo por primeiro uso (0005). O `WHERE secret_hash IS NULL` é a
+   * atomicidade inteira: dois primeiros contatos concorrentes disputam a
+   * mesma linha, e só um deles atualiza. Um aparelho revogado não vincula —
+   * a revogação é decidida antes, mas o banco não confia nessa ordem.
+   */
+  async vincularSegredo(device_id: string, secret_hash: string, agora: Date): Promise<boolean> {
+    const r = await this.sql.query<SqlRow>(
+      `UPDATE identity.device
+          SET secret_hash = $2, secret_bound_at = $3
+        WHERE device_id = $1 AND secret_hash IS NULL AND revoked_at IS NULL
+        RETURNING device_id`,
+      [device_id, secret_hash, agora.toISOString()],
+    );
+    return r.length === 1;
+  }
+
+  /**
+   * A emissão fica registrada duas vezes, de propósito: no aparelho (última
+   * sessão, versão do app) e na auditoria (QUAL emissão, pelo `jti`). O
+   * token não é gravado em lugar nenhum.
+   */
+  async registrarSessao(device_id: string, dados: { app_version?: string; jti: string; agora: Date }): Promise<void> {
+    const at = dados.agora.toISOString();
+    await this.sql.query(
+      `UPDATE identity.device
+          SET last_session_at = $2, last_seen_at = $2, app_version = COALESCE($3, app_version)
+        WHERE device_id = $1`,
+      [device_id, at, dados.app_version ?? null],
+    );
+    await this.sql.query(
+      `INSERT INTO platform.audit (actor_id, role, action, object_type, object_id, granted, detail, at)
+       VALUES ($1, 'device', 'device_session_issued', 'device', $1, true, $2::jsonb, $3)`,
+      [device_id, JSON.stringify({ jti: dados.jti, app_version: dados.app_version ?? null }), at],
+    );
   }
 }

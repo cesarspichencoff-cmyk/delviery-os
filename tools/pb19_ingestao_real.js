@@ -30,8 +30,16 @@ const UNIDADE = `PB19${SUFIXO}`.toUpperCase();
 const APARELHO = `dev-${SUFIXO}`;
 const VIAGEM = `t-${SUFIXO}`;
 
+// Banco PRÓPRIO desta execução (contrato de patrimônio de `banco-isolado`):
+// criado com todas as migrations pelo runner real, apagado no fim. Antes, o
+// controle positivo gravava GPS sintético no banco compartilhado da URL e
+// dependia de outra suíte tê-lo migrado — a 0005 mostrou a dependência:
+// sem ela no banco compartilhado, o crítico respondia 503 e este controle
+// caía por um fato do ambiente, não do produto.
+const { bancoIsolado } = require(join(process.cwd(), "dist/src/platform/banco-isolado.js"));
+let URL_BANCO = "";
 function sql(comando) {
-  return execFileSync("psql", [URL_PG, "-At", "-c", comando], { encoding: "utf8" }).trim();
+  return execFileSync("psql", [URL_BANCO, "-At", "-c", comando], { encoding: "utf8" }).trim();
 }
 
 function esperar(ms) {
@@ -39,6 +47,16 @@ function esperar(ms) {
 }
 
 async function main() {
+  const banco = await bancoIsolado(URL_PG, undefined, "pb19");
+  URL_BANCO = banco.url;
+  try {
+    await ingestao();
+  } finally {
+    await banco.descartar();
+  }
+}
+
+async function ingestao() {
   // Identidade própria por execução: duas rodadas em paralelo não disputam a
   // mesma linha, e nenhuma depende de semente deixada por outra suíte.
   sql(
@@ -62,7 +80,7 @@ async function main() {
     env: {
       ...process.env,
       DELIVERYOS_ENV: "local",
-      DELIVERYOS_DATABASE_URL: URL_PG,
+      DELIVERYOS_DATABASE_URL: URL_BANCO,
       DELIVERYOS_MIGRATE_ON_BOOT: "false",
       DELIVERYOS_DEVICE_TOKEN_SECRET: SEGREDO,
       DELIVERYOS_PORT: String(PORTA),

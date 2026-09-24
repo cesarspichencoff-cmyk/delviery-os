@@ -33,6 +33,7 @@ import { lerSegredo, SegredoAusente } from "../auth/device-token";
 import { carregarCatalogo, ContratoIndisponivel } from "../contracts/event-schema";
 import type { SourceMode } from "../contracts/event-catalog";
 import { tratarLoteGps, ROTA_INGESTAO } from "../runtime/rota-ingestao";
+import { tratarSessaoDeAparelho, ROTA_SESSAO } from "../runtime/rota-sessao";
 import { CriticalRuntime } from "../runtime/critical";
 import type { FactSink } from "../persistence/platform-uow";
 
@@ -188,14 +189,14 @@ async function main(): Promise<void> {
       return;
     }
 
-    if (rota === ROTA_INGESTAO && req.method === "POST") {
-      // O corpo é lido aqui e a decisão mora em `rota-ingestao.ts`. O servidor
-      // fica com socket e resposta; a cadeia inteira é testável sem HTTP.
+    // O corpo é lido aqui e a decisão mora em `rota-*.ts`. O servidor fica
+    // com socket e resposta; a cadeia inteira é testável sem HTTP.
+    const lerCorpo = (limite: number, depois: (corpo: unknown) => void): void => {
       let bruto = "";
       req.on("data", (c: Buffer) => {
         bruto += c.toString("utf8");
         // Corpo sem limite é como uma requisição vira incidente de memória.
-        if (bruto.length > 2_000_000) req.destroy();
+        if (bruto.length > limite) req.destroy();
       });
       req.on("end", () => {
         let corpo: unknown;
@@ -205,6 +206,28 @@ async function main(): Promise<void> {
           responder(res, 400, { classe: "contrato_invalido", detalhe: "corpo não é JSON" });
           return;
         }
+        depois(corpo);
+      });
+    };
+
+    if (rota === ROTA_SESSAO && req.method === "POST") {
+      // Bootstrap e renovação da credencial do aparelho. O segredo do
+      // aparelho entra aqui e não sai em log nem em resposta; o token sai só
+      // no corpo do 200.
+      lerCorpo(16_000, (corpo) => {
+        void tratarSessaoDeAparelho(corpo, {
+          segredo: segredoDeDispositivo,
+          registro,
+          agora: () => new Date(),
+        })
+          .then((r) => responder(res, r.status, r.corpo))
+          .catch(() => responder(res, 503, { classe: "falha_de_persistencia", retentavel: true }));
+      });
+      return;
+    }
+
+    if (rota === ROTA_INGESTAO && req.method === "POST") {
+      lerCorpo(2_000_000, (corpo) => {
         void tratarLoteGps(
           req.headers as Record<string, string | undefined>,
           corpo,
