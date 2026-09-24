@@ -14,14 +14,18 @@ const file = join(dir, "state.json");
 try {
   const pipeline1 = new EdgeAdmissionPipeline(new FileEdgeStore(file));
 
-  const ifood = portalRecordToObservation({\n    source_mode: "synthetic",\n    capture_id: "order-cap-1",
+  const ifood = portalRecordToObservation({
+    source_mode: "synthetic",
+    capture_id: "order-cap-1",
     surface: "orders",
     unit_id: "0001",
     observed_at: "2026-09-24T23:00:00.000Z",
     entity_id: "IFOOD-777",
     payload: { amount: 88.5 },
   });
-  const teknisa = teknisaRecordToObservation({\n    source_mode: "synthetic",\n    record_id: "sale-777",
+  const teknisa = teknisaRecordToObservation({
+    source_mode: "synthetic",
+    record_id: "sale-777",
     record_type: "sale",
     unit_id: "0001",
     observed_at: "2026-09-24T23:00:05.000Z",
@@ -30,7 +34,9 @@ try {
     payment_mapping: "ONLINE_IFOOD",
     amount: 88.5,
   });
-  const print = printSnapshotToObservation({\n    source_mode: "synthetic",\n    queue_name: "TEKNISA-KITCHEN",
+  const print = printSnapshotToObservation({
+    source_mode: "synthetic",
+    queue_name: "TEKNISA-KITCHEN",
     printer_name: "Kitchen Printer",
     job_id: "501",
     document_name: "SALE-777",
@@ -38,7 +44,9 @@ try {
     state: "QUEUED",
     unit_id: "0001",
   }).observation;
-  const tata = tataOsReceiptToObservation({\n    source_mode: "synthetic",\n    receipt_id: "receipt-1",
+  const tata = tataOsReceiptToObservation({
+    source_mode: "synthetic",
+    receipt_id: "receipt-1",
     type: "software_print_status",
     unit_id: "0001",
     observed_at: "2026-09-24T23:00:08.000Z",
