@@ -9,14 +9,18 @@ import {
 
 const transport: IfoodBrowserReadOnlyTransport = {
   async sessionHealth() {
-    return {\n      source_mode: "synthetic",\n      health: "HEALTHY",
+    return {
+      source_mode: "synthetic",
+      health: "HEALTHY",
       observed_at: "2026-09-24T23:30:00.000Z",
       profile_id: "ifood-partner-dedicated",
       reason: "session_valid",
     };
   },
   async collectStructured() {
-    return [{\n      source_mode: "synthetic",\n      capture_id: "net-1",
+    return [{
+      source_mode: "synthetic",
+      capture_id: "net-1",
       surface: "reviews",
       unit_id: "0001",
       observed_at: "2026-09-24T23:30:01.000Z",
@@ -28,7 +32,9 @@ const transport: IfoodBrowserReadOnlyTransport = {
     }];
   },
   async collectDownloadMetadata() {
-    return [{\n      source_mode: "synthetic",\n      download_id: "download-1",
+    return [{
+      source_mode: "synthetic",
+      download_id: "download-1",
       surface: "financial",
       unit_id: "0001",
       observed_at: "2026-09-24T23:30:02.000Z",
