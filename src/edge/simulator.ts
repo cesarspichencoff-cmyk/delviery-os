@@ -13,6 +13,7 @@ import {
 
 export type ObservationKind =
   | "ifood_order"
+  | "ifood_portal"
   | "teknisa_sale"
   | "print_job"
   | "delivery_trip"
