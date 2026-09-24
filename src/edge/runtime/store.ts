@@ -42,6 +42,10 @@ export interface IngestReceipt {
 
 const FORBIDDEN_PERSISTED_KEYS = new Set([
   "otp",
+  "otp_code",
+  "auth_code",
+  "verification_code",
+  "login_code",
   "password",
   "senha",
   "token",
@@ -50,7 +54,23 @@ const FORBIDDEN_PERSISTED_KEYS = new Set([
   "jwt",
   "access_token",
   "refresh_token",
+  "secret",
 ]);
+
+function isForbiddenPersistedKey(key: string): boolean {
+  const normalized = key.toLowerCase();
+  if (FORBIDDEN_PERSISTED_KEYS.has(normalized)) return true;
+  return [
+    "otp",
+    "password",
+    "senha",
+    "token",
+    "authorization",
+    "cookie",
+    "jwt",
+    "secret",
+  ].some((suffix) => normalized.endsWith(`_${suffix}`));
+}
 
 function emptyState(): EdgeStoreState {
   return { observations: [], outbox: [] };
@@ -177,8 +197,7 @@ function assertPersistable(value: unknown, depth = 0): void {
   }
 
   for (const [key, nested] of Object.entries(value as Record<string, unknown>)) {
-    const normalized = key.toLowerCase();
-    if (FORBIDDEN_PERSISTED_KEYS.has(normalized)) {
+    if (isForbiddenPersistedKey(key)) {
       throw new Error(`forbidden persisted secret field: ${key}`);
     }
     assertPersistable(nested, depth + 1);
