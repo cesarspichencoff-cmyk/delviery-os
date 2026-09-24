@@ -38,11 +38,38 @@ const FORBIDDEN_KEYS = new Set([
   "access_token",
   "refresh_token",
   "jwt",
+  "secret",
   "customer_name",
   "customer_phone",
+  "customer_email",
+  "customer_address",
   "email",
   "address",
 ]);
+
+function isForbiddenPortalKey(key: string): boolean {
+  const normalized = key.toLowerCase();
+  if (FORBIDDEN_KEYS.has(normalized)) return true;
+
+  const suffixes = [
+    "authorization",
+    "cookie",
+    "password",
+    "senha",
+    "otp",
+    "token",
+    "jwt",
+    "secret",
+    "email",
+    "address",
+  ];
+  if (suffixes.some((suffix) => normalized.endsWith(`_${suffix}`))) return true;
+
+  return (
+    normalized.startsWith("customer_") &&
+    /(name|phone|email|address)$/.test(normalized)
+  );
+}
 
 export function portalRecordToObservation(
   record: PortalStructuredRecord,
@@ -75,8 +102,7 @@ export function assertPortalPayloadSafe(value: unknown, depth = 0): void {
     return;
   }
   for (const [key, nested] of Object.entries(value as Record<string, unknown>)) {
-    const normalized = key.toLowerCase();
-    if (FORBIDDEN_KEYS.has(normalized)) {
+    if (isForbiddenPortalKey(key)) {
       throw new Error(`forbidden portal field: ${key}`);
     }
     assertPortalPayloadSafe(nested, depth + 1);
@@ -87,7 +113,8 @@ function surfaceToKind(
   surface: PortalSurface,
 ): EdgeSourceObservation["kind"] {
   if (surface === "reviews") return "review";
-  return "ifood_order";
+  if (surface === "orders") return "ifood_order";
+  return "ifood_portal";
 }
 
 /**
