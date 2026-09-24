@@ -131,6 +131,7 @@ async function main(): Promise<void> {
       browser: brokenSessionBrowser,
       printSource,
       unit_id: "0001",
+      source_mode: "synthetic",
       now: () => new Date("2026-09-25T00:02:00.000Z"),
     });
     assert.equal(browserFailure.session_health, "UNKNOWN");
