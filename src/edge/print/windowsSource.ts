@@ -4,9 +4,11 @@
  * The concrete Windows binding may use PowerShell/CIM/Win32 later, but this
  * contract exposes observation only. No submit/cancel/pause/resume/delete API.
  */
+import type { ObservationSourceMode } from "../simulator";
 import type { PrintJobSnapshot, PrintSnapshotSource } from "./observer";
 
 export interface WindowsPrintJobRow {
+  source_mode: ObservationSourceMode;
   printer_name: string;
   queue_name?: string;
   job_id: string | number;
@@ -50,6 +52,7 @@ export function normalizeWindowsPrintRow(
   row: WindowsPrintJobRow,
 ): PrintJobSnapshot {
   return {
+    source_mode: row.source_mode,
     queue_name: row.queue_name ?? row.printer_name,
     printer_name: row.printer_name,
     job_id: String(row.job_id),
@@ -95,6 +98,7 @@ export class PowerShellWindowsPrintSource implements PrintSnapshotSource {
   constructor(
     private readonly runner: ReadOnlyCommandRunner,
     private readonly unitId: string,
+    private readonly sourceMode: ObservationSourceMode,
     private readonly now: () => Date = () => new Date(),
   ) {}
 
@@ -110,6 +114,7 @@ export class PowerShellWindowsPrintSource implements PrintSnapshotSource {
     return rows
       .filter((row) => row.PrinterName && row.ID !== undefined)
       .map((row) => normalizeWindowsPrintRow({
+        source_mode: this.sourceMode,
         printer_name: row.PrinterName as string,
         queue_name: row.PrinterName as string,
         job_id: row.ID as string | number,
