@@ -36,6 +36,7 @@ async function main(): Promise<void> {
   const pipeline = new EdgeAdmissionPipeline(journal);
 
   pipeline.admit({
+    source_mode: "synthetic",
     observation_id: "auth-human",
     kind: "auth_state",
     source_ref: {
@@ -65,6 +66,7 @@ async function main(): Promise<void> {
       adapter_id: "healthy",
       collect() {
         return [{
+          source_mode: "synthetic",
           observation_id: "print-ok",
           kind: "print_job" as const,
           source_ref: {
