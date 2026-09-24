@@ -61,6 +61,10 @@ const FORBIDDEN_PERSISTED_KEYS = new Set([
   "access_token",
   "refresh_token",
   "secret",
+  "customer_name",
+  "customer_phone",
+  "customer_email",
+  "customer_address",
 ]);
 
 const ALLOWED_FAILURE_CODES = new Set<EdgeOutboxFailureCode>([
@@ -74,6 +78,14 @@ const ALLOWED_FAILURE_CODES = new Set<EdgeOutboxFailureCode>([
 function isForbiddenPersistedKey(key: string): boolean {
   const normalized = key.toLowerCase();
   if (FORBIDDEN_PERSISTED_KEYS.has(normalized)) return true;
+  if (
+    ["email", "address", "phone"].some((suffix) =>
+      normalized.endsWith(`_${suffix}`),
+    )
+  ) {
+    return true;
+  }
+
   return [
     "otp",
     "password",
@@ -103,7 +115,13 @@ export class FileEdgeStore {
   ingest(observation: EdgeSourceObservation): IngestReceipt {
     assertPersistable(observation);
 
-    if (this.state.observations.some((item) => item.observation_id === observation.observation_id)) {
+    const existing = this.state.observations.find(
+      (item) => item.observation_id === observation.observation_id,
+    );
+    if (existing) {
+      if (stableStringify(existing) !== stableStringify(observation)) {
+        throw new Error("observation_id_conflict");
+      }
       return {
         accepted: true,
         duplicate: true,
@@ -205,6 +223,7 @@ function readState(
     if (!Array.isArray(parsed.observations) || !Array.isArray(parsed.outbox)) {
       return { ok: false, exists: true };
     }
+    assertPersistable(parsed);
     return { ok: true, exists: true, state: parsed };
   } catch {
     return { ok: false, exists: true };
@@ -239,4 +258,21 @@ function assertPersistable(value: unknown, depth = 0): void {
     }
     assertPersistable(nested, depth + 1);
   }
+}
+
+
+function stableStringify(value: unknown): string {
+  return JSON.stringify(sortForStableJson(value));
+}
+
+function sortForStableJson(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(sortForStableJson);
+  if (value === null || typeof value !== "object") return value;
+
+  const input = value as Record<string, unknown>;
+  const output: Record<string, unknown> = {};
+  for (const key of Object.keys(input).sort()) {
+    output[key] = sortForStableJson(input[key]);
+  }
+  return output;
 }

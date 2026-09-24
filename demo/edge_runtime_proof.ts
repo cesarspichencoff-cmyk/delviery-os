@@ -26,6 +26,15 @@ async function main(): Promise<void> {
     assert.equal(duplicate.duplicate, true);
     assert.equal(store2.observations().length, EDGE_SHADOW_FIXTURES.length);
 
+    assert.throws(
+      () =>
+        store2.ingest({
+          ...EDGE_SHADOW_FIXTURES[0],
+          payload: { changed_meaning: true },
+        }),
+      /observation_id_conflict/,
+    );
+
     store2.markFailed(EDGE_SHADOW_FIXTURES[0].observation_id, "network_unavailable");
     const store3 = new FileEdgeStore(file, () => new Date("2026-09-24T18:32:00.000Z"));
     const failed = store3.pending().find(
@@ -98,6 +107,7 @@ async function main(): Promise<void> {
           safe_failure_code_persisted: true,
           raw_adapter_error_not_exposed: true,
           adapter_failure_isolated: true,
+      observation_id_conflict_blocked: true,
         },
         null,
         2,

@@ -38,6 +38,15 @@ assert.equal(
   "CANDIDATE",
 );
 
+assert.throws(
+  () =>
+    replay([
+      EDGE_SHADOW_FIXTURES[0],
+      { ...EDGE_SHADOW_FIXTURES[1], source_mode: "live_observed" },
+    ]),
+  /mixed_observation_source_modes/,
+);
+
 const graph = new OrderIdentityGraph();
 
 assert.throws(
@@ -77,4 +86,5 @@ console.log(JSON.stringify({
   timestamp_only_proven: false,
   cross_unit_link_blocked: true,
   evidence_id_conflict_blocked: true,
+  mixed_source_modes_blocked: true,
 }, null, 2));

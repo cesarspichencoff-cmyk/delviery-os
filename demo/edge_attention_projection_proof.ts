@@ -69,10 +69,11 @@ assert.deepEqual(
   ["IFOOD_AUTH_HUMAN_REQUIRED", "PRINT_SOFTWARE_ERROR"],
 );
 assert.equal(projected.every((item) => item.delivery_hint === "SHOW"), true);
-assert.equal(projected.every((item) => item.fact_class === "FACT"), true);
+assert.equal(projected.every((item) => item.fact_class === "SIMULATION"), true);
 assert.equal(projected.every((item) => item.unit_id === "0001"), true);
 
 const adapterFailure = projectAdapterFailureAttention({
+  source_mode: "synthetic",
   result: {
     adapter_id: "ifood-sidecar",
     collected: 0,
@@ -86,6 +87,15 @@ const adapterFailure = projectAdapterFailureAttention({
 assert.ok(adapterFailure);
 assert.equal(adapterFailure.kind, "SOURCE_ADAPTER_FAILED");
 assert.equal(adapterFailure.delivery_hint, "SHOW");
+assert.equal(adapterFailure.fact_class, "SIMULATION");
+
+const liveFact = projectObservationAttention({
+  ...failedPrint,
+  source_mode: "live_observed",
+  observation_id: "print-error-live",
+});
+assert.ok(liveFact);
+assert.equal(liveFact.fact_class, "FACT");
 
 const serialized = JSON.stringify([...projected, adapterFailure]);
 assert.equal(serialized.includes("must-not-cross"), false);
@@ -101,4 +111,6 @@ console.log(JSON.stringify({
   adapter_failure_surfaces: true,
   raw_payload_not_forwarded: true,
   interrupt_not_decided_at_edge: true,
+  synthetic_not_labeled_fact: true,
+  live_observed_can_be_fact: true,
 }, null, 2));
