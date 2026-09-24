@@ -87,6 +87,30 @@ async function main(): Promise<void> {
   assert.equal(pipeline.journalSize(), 2);
   assert.equal(pipeline.currentAttentionCandidates().length, 1);
 
+  const modeMismatch = await supervisor.runOnce([
+    {
+      adapter_id: "live-into-synthetic",
+      collect() {
+        return [{
+          source_mode: "live_observed",
+          observation_id: "live-print",
+          kind: "print_job" as const,
+          source_ref: {
+            source: "windows_print" as const,
+            kind: "spool_job",
+            id: "live-1",
+            unit_id: "0001",
+          },
+          observed_at: "2026-09-24T21:02:00.000Z",
+          payload: { state: "QUEUED" },
+        }];
+      },
+    },
+  ]);
+  assert.equal(modeMismatch[0].status, "failed");
+  assert.equal(modeMismatch[0].error_code, "adapter_failed");
+  assert.equal(pipeline.journalSize(), 2);
+
   console.log(JSON.stringify({
     status: "PASS",
     admission_uses_storage_port: true,
@@ -94,6 +118,7 @@ async function main(): Promise<void> {
     in_memory_backend_works: true,
     attention_rebuilds_from_journal: true,
     file_store_not_required_by_core: true,
+    adapter_cannot_bypass_source_mode_gate: true,
   }, null, 2));
 }
 

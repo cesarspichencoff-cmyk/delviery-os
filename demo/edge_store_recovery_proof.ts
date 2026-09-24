@@ -30,10 +30,29 @@ try {
     /edge_store_corrupt/,
   );
 
+  writeFileSync(
+    file,
+    JSON.stringify({
+      observations: [{
+        source_mode: "synthetic",
+        observation_id: "unsafe-loaded-row",
+        kind: "ifood_order",
+        source_ref: { source: "ifood", kind: "order", id: "1", unit_id: "0001" },
+        observed_at: "2026-09-24T20:00:00.000Z",
+        payload: { customer_email: "should-not-load@example.invalid" },
+      }],
+      outbox: [],
+    }),
+    "utf8",
+  );
+  rmSync(file + ".bak", { force: true });
+  assert.throws(() => new FileEdgeStore(file), /edge_store_corrupt/);
+
   console.log(JSON.stringify({
     status: "PASS",
     corrupt_primary_recovers_from_backup: true,
     corrupt_primary_and_backup_fail_closed: true,
+    unsafe_loaded_pii_fails_closed: true,
   }, null, 2));
 } finally {
   rmSync(dir, { recursive: true, force: true });

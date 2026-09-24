@@ -3,6 +3,7 @@ import { portalRecordToObservation } from "../src/edge/ifood/sidecar";
 import {
   IFOOD_BROWSER_TRANSPORT_CAPABILITIES,
   networkCaptureToPortalRecord,
+  safeBrowserProfileId,
   safeSessionMetadata,
   type IfoodBrowserReadOnlyTransport,
 } from "../src/edge/ifood/browserTransport";
@@ -52,6 +53,8 @@ async function main(): Promise<void> {
   assert.equal(metadata.health, "HEALTHY");
   assert.equal(Object.prototype.hasOwnProperty.call(metadata, "cookie"), false);
   assert.equal(Object.prototype.hasOwnProperty.call(metadata, "token"), false);
+  assert.equal(safeBrowserProfileId("ifood-partner-dedicated"), "ifood-partner-dedicated");
+  assert.equal(safeBrowserProfileId("profile?token=secret"), "redacted-profile");
 
   const captures = await transport.collectStructured();
   const observation = portalRecordToObservation(networkCaptureToPortalRecord(captures[0]));
@@ -73,6 +76,7 @@ async function main(): Promise<void> {
     status: "PASS",
     generic_browser_control_exposed: false,
     session_secrets_cross_boundary: false,
+    unsafe_profile_id_redacted: true,
     structured_capture_to_observation: true,
     endpoint_query_removed: true,
     download_metadata_only: true,

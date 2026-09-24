@@ -103,6 +103,35 @@ const analytics = portalRecordToObservation({
 assert.equal(analytics.kind, "ifood_portal");
 assert.notEqual(analytics.kind, "ifood_order");
 
+const collision = portalRecordToObservation({
+  source_mode: "synthetic",
+  capture_id: "cap-collision-1",
+  surface: "analytics",
+  unit_id: "0001",
+  observed_at: "2026-09-24T20:01:30.000Z",
+  endpoint_fingerprint: "GET /analytics",
+  payload: {
+    surface: "orders",
+    endpoint_fingerprint: "unsafe-source-value",
+    gross_sales: 5,
+  },
+});
+assert.equal(collision.payload.surface, "analytics");
+assert.equal(collision.payload.endpoint_fingerprint, "GET /analytics");
+
+assert.throws(
+  () =>
+    portalRecordToObservation({
+      source_mode: "synthetic",
+      capture_id: "bad capture id",
+      surface: "analytics",
+      unit_id: "0001",
+      observed_at: "2026-09-24T20:01:40.000Z",
+      payload: {},
+    }),
+  /invalid_portal_capture_id/,
+);
+
 assert.throws(
   () =>
     portalRecordToObservation({
@@ -142,5 +171,7 @@ console.log(JSON.stringify({
   derived_secret_keys_blocked: true,
   analytics_not_misclassified_as_order: true,
   direct_customer_pii_blocked: true,
+  payload_cannot_override_safe_metadata: true,
+  unsafe_source_identifier_blocked: true,
   sidecar_observation_only: true,
 }, null, 2));

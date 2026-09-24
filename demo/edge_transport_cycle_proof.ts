@@ -140,6 +140,51 @@ async function main(): Promise<void> {
     assert.equal(browserFailure.print_status, "ok");
     assert.equal(browserFailure.print_observations, 1);
 
+    const mismatchBrowser: IfoodBrowserReadOnlyTransport = {
+      async sessionHealth() {
+        return {
+          source_mode: "synthetic",
+          health: "HEALTHY",
+          observed_at: "2026-09-25T00:02:30.000Z",
+          profile_id: "profile-1",
+        };
+      },
+      async collectStructured() {
+        return [{
+          source_mode: "live_observed",
+          capture_id: "cap-mismatch",
+          surface: "reviews",
+          unit_id: "0001",
+          observed_at: "2026-09-25T00:02:31.000Z",
+          method: "GET",
+          resource_fingerprint: "/reviews",
+          payload: { score: 1 },
+        }];
+      },
+      async collectDownloadMetadata() {
+        return [{
+          source_mode: "live_observed",
+          download_id: "download-mismatch",
+          surface: "financial",
+          unit_id: "0001",
+          observed_at: "2026-09-25T00:02:32.000Z",
+        }];
+      },
+    };
+
+    const mismatch = await runReadOnlyTransportCycle({
+      pipeline,
+      browser: mismatchBrowser,
+      printSource,
+      unit_id: "0001",
+      source_mode: "synthetic",
+    });
+    assert.equal(mismatch.structured_status, "failed");
+    assert.equal(mismatch.download_status, "failed");
+    assert.equal(mismatch.portal_observations, 0);
+    assert.equal(mismatch.download_metadata_observed, 0);
+    assert.equal(mismatch.print_status, "ok");
+
     const brokenPrintSource: PrintSnapshotSource = {
       async listJobs() {
         throw new Error("synthetic print source failure");
@@ -163,6 +208,7 @@ async function main(): Promise<void> {
       expired_session_skips_portal_collection: true,
       browser_failure_does_not_block_print: true,
       print_failure_does_not_block_browser: true,
+      source_mode_mismatch_fails_closed: true,
     }, null, 2));
   } finally {
     rmSync(dir, { recursive: true, force: true });
