@@ -5,16 +5,14 @@ import { tataOsReceiptToObservation, TATA_OS_BRIDGE_CAPABILITIES } from "../src/
 
 const graph = new OrderIdentityGraph();
 
-const mappedOnly = teknisaRecordToObservation({
-  record_id: "sale-1", record_type: "sale", unit_id: "0001",
+const mappedOnly = teknisaRecordToObservation({\n  source_mode: "synthetic",\n  record_id: "sale-1", record_type: "sale", unit_id: "0001",
   observed_at: "2026-09-24T21:00:00.000Z", route: "structured_export",
   payment_mapping: "ONLINE_IFOOD", amount: 100,
 });
 assert.equal(mappedOnly.correlation_proposals?.length ?? 0, 0);
 assert.equal(mappedOnly.payload.payment_mapping, "ONLINE_IFOOD");
 
-const exact = teknisaRecordToObservation({
-  record_id: "sale-2", record_type: "sale", unit_id: "0001",
+const exact = teknisaRecordToObservation({\n  source_mode: "synthetic",\n  record_id: "sale-2", record_type: "sale", unit_id: "0001",
   observed_at: "2026-09-24T21:01:00.000Z", route: "local_structured_observation",
   external_order_id: "IFOOD-ABC", payment_mapping: "ONLINE_IFOOD",
 });
@@ -25,8 +23,7 @@ assert.equal(exactLink.confidence, "PROVEN");
 assert.equal(TEKNISA_KNOWN_RETAIL_FACTS.integration_code, "002");
 assert.equal(TEKNISA_KNOWN_RETAIL_FACTS.units.length, 2);
 
-const tataReceipt = tataOsReceiptToObservation({
-  receipt_id: "r-1", type: "software_print_status", unit_id: "0001",
+const tataReceipt = tataOsReceiptToObservation({\n  source_mode: "synthetic",\n  receipt_id: "r-1", type: "software_print_status", unit_id: "0001",
   observed_at: "2026-09-24T21:05:00.000Z", job_id: "job-1",
   operation_id: "op-1", software_state: "provider_completed",
 });
