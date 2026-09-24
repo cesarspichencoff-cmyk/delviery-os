@@ -9,7 +9,8 @@
     "typecheck": "tsc --noEmit",
     "demo": "tsc && node dist/demo/camada0_demo.js",
     "ingest": "tsc && node dist/demo/ingest_real.js",
-    "verificar:cardapio": "node tools/verificar_integridade_cardapio.js"
+    "verificar:cardapio": "node tools/verificar_integridade_cardapio.js",
+    "test:edge:shadow": "tsc && node dist/demo/edge_shadow_proof.js"
   },
   "devDependencies": {
     "@types/node": "20.14.10",
