@@ -1,0 +1,101 @@
+/**
+ * iFood Portal Sidecar shadow contracts.
+ *
+ * Browser/network collection is intentionally absent here. This layer only
+ * accepts already-observed structured records and turns them into safe Edge
+ * observations. No click, write, reply, pause or account mutation exists.
+ */
+
+import type { EdgeSourceObservation } from "../simulator";
+
+export type PortalSurface =
+  | "reviews"
+  | "analytics"
+  | "financial"
+  | "store_status"
+  | "orders"
+  | "unknown";
+
+export interface PortalStructuredRecord {
+  capture_id: string;
+  surface: PortalSurface;
+  unit_id: string;
+  observed_at: string;
+  occurred_at?: string;
+  entity_id?: string;
+  endpoint_fingerprint?: string;
+  payload: Record<string, unknown>;
+}
+
+const FORBIDDEN_KEYS = new Set([
+  "authorization",
+  "cookie",
+  "set-cookie",
+  "password",
+  "senha",
+  "otp",
+  "token",
+  "access_token",
+  "refresh_token",
+  "jwt",
+  "customer_name",
+  "customer_phone",
+  "email",
+  "address",
+]);
+
+export function portalRecordToObservation(
+  record: PortalStructuredRecord,
+): EdgeSourceObservation {
+  assertPortalPayloadSafe(record.payload);
+
+  return {
+    observation_id: `ifood-portal:${record.capture_id}`,
+    kind: surfaceToKind(record.surface),
+    source_ref: {
+      source: record.surface === "reviews" ? "review" : "ifood",
+      kind: record.surface,
+      id: record.entity_id ?? record.capture_id,
+      unit_id: record.unit_id,
+    },
+    observed_at: record.observed_at,
+    occurred_at: record.occurred_at,
+    payload: {
+      surface: record.surface,
+      endpoint_fingerprint: record.endpoint_fingerprint,
+      ...record.payload,
+    },
+  };
+}
+
+export function assertPortalPayloadSafe(value: unknown, depth = 0): void {
+  if (depth > 12 || value === null || typeof value !== "object") return;
+  if (Array.isArray(value)) {
+    for (const item of value) assertPortalPayloadSafe(item, depth + 1);
+    return;
+  }
+  for (const [key, nested] of Object.entries(value as Record<string, unknown>)) {
+    const normalized = key.toLowerCase();
+    if (FORBIDDEN_KEYS.has(normalized)) {
+      throw new Error(`forbidden portal field: ${key}`);
+    }
+    assertPortalPayloadSafe(nested, depth + 1);
+  }
+}
+
+function surfaceToKind(
+  surface: PortalSurface,
+): EdgeSourceObservation["kind"] {
+  if (surface === "reviews") return "review";
+  return "ifood_order";
+}
+
+/**
+ * Capability list is deliberately observation-only.
+ * Any future mutating capability requires a separate contract + human gate.
+ */
+export const IFOOD_SIDECAR_CAPABILITIES = Object.freeze([
+  "observe_structured_response",
+  "observe_download_metadata",
+  "observe_session_health",
+] as const);
