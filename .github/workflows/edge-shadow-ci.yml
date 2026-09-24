@@ -30,6 +30,16 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Dependency security inventory
+        shell: bash
+        run: |
+          echo "::group::xlsx source references"
+          git grep -nEi '(^|[^A-Za-z0-9_])(xlsx|XLSX|sheetjs)([^A-Za-z0-9_]|$)' -- '*.ts' '*.tsx' '*.js' '*.mjs' '*.cjs' || true
+          echo "::endgroup::"
+          echo "::group::npm audit"
+          npm audit --json || true
+          echo "::endgroup::"
+
       - name: Typecheck
         run: npm run typecheck
 
