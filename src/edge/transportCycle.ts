@@ -47,6 +47,7 @@ export async function runReadOnlyTransportCycle(args: {
   } catch {
     sessionStatus = "failed";
     session = {
+      source_mode: "live_observed",
       health: "UNKNOWN",
       observed_at: now().toISOString(),
       profile_id: "unknown-session",
@@ -55,6 +56,7 @@ export async function runReadOnlyTransportCycle(args: {
   }
 
   const authObservation: EdgeSourceObservation = {
+    source_mode: session.source_mode,
     observation_id: [
       "ifood-auth",
       session.profile_id,
