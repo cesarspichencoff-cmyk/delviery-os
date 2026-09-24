@@ -17,12 +17,19 @@ export type BrowserSessionHealth =
   | "HUMAN_REQUIRED"
   | "UNKNOWN";
 
+export type BrowserSessionReason =
+  | "session_valid"
+  | "session_expired"
+  | "human_challenge"
+  | "session_probe_failed"
+  | "unknown";
+
 export interface BrowserSessionSnapshot {
   health: BrowserSessionHealth;
   observed_at: string;
   profile_id: string;
-  /** Safe reason only. Never raw cookies/tokens/URLs with secrets. */
-  reason?: string;
+  /** Safe semantic code only. Never raw URLs, cookies or exception text. */
+  reason?: BrowserSessionReason;
 }
 
 export interface StructuredNetworkCapture {
@@ -33,6 +40,7 @@ export interface StructuredNetworkCapture {
   occurred_at?: string;
   entity_id?: string;
   method: "GET" | "POST";
+  /** Path/fingerprint only; query strings and fragments are removed at boundary. */
   resource_fingerprint: string;
   content_type?: string;
   payload: Record<string, unknown>;
@@ -65,7 +73,10 @@ export function networkCaptureToPortalRecord(
     observed_at: capture.observed_at,
     occurred_at: capture.occurred_at,
     entity_id: capture.entity_id,
-    endpoint_fingerprint: [capture.method, capture.resource_fingerprint].join(" "),
+    endpoint_fingerprint: [
+      capture.method,
+      safeResourceFingerprint(capture.resource_fingerprint),
+    ].join(" "),
     payload: capture.payload,
   };
 }
@@ -83,6 +94,12 @@ export function safeSessionMetadata(
     profile_id: snapshot.profile_id,
     reason: snapshot.reason,
   };
+}
+
+function safeResourceFingerprint(input: string): string {
+  const stripped = input.trim().split(/[?#]/, 1)[0];
+  if (/^\/?[a-z0-9._~:/-]{1,160}$/i.test(stripped)) return stripped;
+  return "redacted-resource";
 }
 
 export const IFOOD_BROWSER_TRANSPORT_CAPABILITIES = Object.freeze([
