@@ -32,36 +32,23 @@ No production deploy, cashier-PC installation, browser automation, Teknisa write
 - `demo/edge_runtime_proof.ts`
   - restart/recovery proof runner.
 
-## Isolated proof
+## Proof runner implemented; current execution evidence pending
 
-The runtime logic was compiled/exercised in an isolated local harness.
-
-Runtime result:
-
-```json
-{
-  "status": "PASS",
-  "restart_survival": true,
-  "duplicate_after_restart": true,
-  "failed_outbox_survives_restart": true,
-  "secret_persistence_blocked": true,
-  "adapter_failure_isolated": true
-}
-```
-
-The isolated container did not have the repository's `@types/node` package installed, so its direct TypeScript invocation reported missing declarations for `node:fs`, `node:path` and `node:crypto`. The repository itself declares `@types/node` as a dev dependency. Therefore:
-
-`RUNTIME_BEHAVIOR_PROOF_PASS != FULL_REPOSITORY_TYPECHECK_PROVEN`
-
-The full repository command remains:
+The branch contains `demo/edge_runtime_proof.ts` and the command:
 
 ```text
 npm run test:edge:runtime
 ```
 
-and must be run in a normal checkout with dependencies installed before R3 can be promoted beyond experimental foundation.
+No successful execution receipt is observable in the current session. The available remote workstation is offline, and this tool surface does not execute the private repository directly.
 
-## What this proves
+Therefore:
+
+`IMPLEMENTED_ASSERTIONS != EXECUTED_PROOF`
+
+A normal checkout with dependencies installed must run the command before R3 can be promoted beyond implemented synthetic foundation.
+
+## What the implemented proof is designed to prove
 
 - Edge observations can survive a process restart in the single-PC local model;
 - replay after restart does not create duplicate accepted meaning;
@@ -80,6 +67,6 @@ and must be run in a normal checkout with dependencies installed before R3 can b
 
 ## Classification
 
-- R3 foundation: **PROVEN_SYNTHETIC_BEHAVIOR / FULL_REPO_TYPECHECK_PENDING**
+- R3 foundation: **IMPLEMENTED_SYNTHETIC / EXECUTION_PENDING**
 - production use: **NOT_AUTHORIZED**
 - cashier-PC binding: **DEFERRED**
