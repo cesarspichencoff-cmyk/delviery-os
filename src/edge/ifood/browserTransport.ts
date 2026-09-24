@@ -9,6 +9,7 @@
  * responses/download metadata. Any future mutating browser workflow requires
  * a separate capability contract and human gate.
  */
+import type { ObservationSourceMode } from "../simulator";
 import type { PortalStructuredRecord, PortalSurface } from "./sidecar";
 
 export type BrowserSessionHealth =
@@ -25,6 +26,7 @@ export type BrowserSessionReason =
   | "unknown";
 
 export interface BrowserSessionSnapshot {
+  source_mode: ObservationSourceMode;
   health: BrowserSessionHealth;
   observed_at: string;
   profile_id: string;
@@ -34,6 +36,7 @@ export interface BrowserSessionSnapshot {
 
 export interface StructuredNetworkCapture {
   capture_id: string;
+  source_mode: ObservationSourceMode;
   surface: PortalSurface;
   unit_id: string;
   observed_at: string;
@@ -48,6 +51,7 @@ export interface StructuredNetworkCapture {
 
 export interface DownloadMetadata {
   download_id: string;
+  source_mode: ObservationSourceMode;
   surface: PortalSurface;
   unit_id: string;
   observed_at: string;
@@ -68,6 +72,7 @@ export function networkCaptureToPortalRecord(
 ): PortalStructuredRecord {
   return {
     capture_id: capture.capture_id,
+    source_mode: capture.source_mode,
     surface: capture.surface,
     unit_id: capture.unit_id,
     observed_at: capture.observed_at,
@@ -89,6 +94,7 @@ export function safeSessionMetadata(
   snapshot: BrowserSessionSnapshot,
 ): Record<string, unknown> {
   return {
+    source_mode: snapshot.source_mode,
     health: snapshot.health,
     observed_at: snapshot.observed_at,
     profile_id: snapshot.profile_id,
