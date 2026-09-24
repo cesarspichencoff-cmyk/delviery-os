@@ -10,11 +10,8 @@ const mappedOnly = teknisaRecordToObservation({
   observed_at: "2026-09-24T21:00:00.000Z", route: "structured_export",
   payment_mapping: "ONLINE_IFOOD", amount: 100,
 });
-const mappedProposal = mappedOnly.correlation_proposals?.[0];
-if (!mappedProposal) throw new Error("expected payment mapping proposal");
-const mappedLink = graph.upsert(mappedOnly.source_ref, mappedProposal.target, mappedProposal.evidence, mappedOnly.observed_at);
-assert.equal(mappedLink.confidence, "CANDIDATE");
-assert.notEqual(mappedLink.confidence, "PROVEN");
+assert.equal(mappedOnly.correlation_proposals?.length ?? 0, 0);
+assert.equal(mappedOnly.payload.payment_mapping, "ONLINE_IFOOD");
 
 const exact = teknisaRecordToObservation({
   record_id: "sale-2", record_type: "sale", unit_id: "0001",
