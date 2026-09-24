@@ -50,7 +50,42 @@ export interface EphemeralOtp {
   readonly received_at: string;
 }
 
-const SECRET_KEY_PATTERN = /otp|password|senha|token|cookie|authorization|jwt|secret|code/i;
+const SECRET_KEYS = new Set([
+  "otp",
+  "otp_code",
+  "auth_code",
+  "verification_code",
+  "login_code",
+  "password",
+  "senha",
+  "token",
+  "access_token",
+  "refresh_token",
+  "cookie",
+  "authorization",
+  "jwt",
+  "secret",
+]);
+
+function isAuthSecretKey(key: string): boolean {
+  const normalized = key.toLowerCase();
+  if (SECRET_KEYS.has(normalized)) return true;
+  return [
+    "otp",
+    "password",
+    "senha",
+    "token",
+    "cookie",
+    "authorization",
+    "jwt",
+    "secret",
+  ].some((suffix) => normalized.endsWith(`_${suffix}`));
+}
+
+function testRegex(regex: RegExp, value: string): boolean {
+  regex.lastIndex = 0;
+  return regex.test(value);
+}
 
 export function findEphemeralOtp(
   messages: readonly AuthMessageCandidate[],
@@ -59,7 +94,7 @@ export function findEphemeralOtp(
 ): EphemeralOtp | null {
   const candidates = messages
     .filter((message) => senderAllowed(message.sender, policy.allowed_sender_suffixes))
-    .filter((message) => policy.subject_pattern.test(message.subject))
+    .filter((message) => testRegex(policy.subject_pattern, message.subject))
     .filter((message) => {
       const age = (now.getTime() - Date.parse(message.received_at)) / 1000;
       return Number.isFinite(age) && age >= 0 && age <= policy.max_age_seconds;
@@ -116,7 +151,7 @@ export function assertMetadataSafe(value: unknown, depth = 0): void {
     return;
   }
   for (const [key, nested] of Object.entries(value as Record<string, unknown>)) {
-    if (SECRET_KEY_PATTERN.test(key)) {
+    if (isAuthSecretKey(key)) {
       throw new Error(`auth secret-like field forbidden in metadata: ${key}`);
     }
     assertMetadataSafe(nested, depth + 1);
