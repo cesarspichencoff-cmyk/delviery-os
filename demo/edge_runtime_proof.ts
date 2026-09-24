@@ -47,6 +47,7 @@ async function main(): Promise<void> {
     assert.throws(
       () =>
         store4.ingest({
+          source_mode: "synthetic",
           observation_id: "secret-must-not-persist",
           kind: "auth_state",
           source_ref: { source: "ifood", kind: "auth", id: "session" },
