@@ -82,6 +82,8 @@ test("runOnce performs SELECT-only source read and sends minimized FACT handoff"
 
     assert.equal(result.status, "sent");
     assert.equal(result.source_business_date, "2026-09-24");
+    assert.equal(result.source_watermark_at, "2026-09-25T02:57:22.000Z");
+    assert.equal(result.source_ingested_at, "2026-09-25T03:00:39.554Z");
     assert.equal(result.watch.truth_class, "FACT");
     assert.equal(result.watch.validity_status, "DEGRADED");
     assert.equal(result.watch.global_all_clear_authorized, false);
@@ -89,6 +91,7 @@ test("runOnce performs SELECT-only source read and sends minimized FACT handoff"
 
     assert.equal(dbCalls.length, 1);
     assert.match(dbCalls[0], /^\s*SELECT\b/i);
+    assert.match(dbCalls[0], /ORDER BY business_date DESC, message_sent_at DESC/i);
     assert.equal(/\b(INSERT|UPDATE|DELETE|REPLACE|CREATE|DROP|ALTER)\b/i.test(dbCalls[0]), false);
 
     assert.equal(requests.length, 2);
@@ -123,7 +126,7 @@ test("same source watermark is skipped without POST", async () => {
       snapshot: {
         coverage: [{
           source: "tata_daily_closing",
-          last_observed_at: "2026-09-25T03:00:39.554Z",
+          last_observed_at: "2026-09-25T02:57:22.000Z",
         }],
       },
     });
