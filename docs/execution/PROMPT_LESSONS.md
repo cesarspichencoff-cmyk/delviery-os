@@ -4,7 +4,7 @@ lifecycle:
   status: ACTIVE
   authority_scope: lessons
   superseded_by: null
-  atualizado_em: "2026-09-23"
+  atualizado_em: "2026-09-25"
   state_basis: 953a3fb
 ---
 
@@ -978,3 +978,35 @@ proteção é testada contra TODAS as operações com o mesmo efeito (aqui
 que a declaração dela nomeia. E teste que precisa de estado vazio cria o
 próprio estado: limpar o de outro é destruir patrimônio para fabricar
 fixture.
+
+## L48 — Duas camadas iguais deixam a mutação de uma delas cega
+
+**O que quase passou.** A revogação na ingestão é decidida em dois lugares —
+`autenticarDispositivo` e `traduzirLoteGps` — e cada um sozinho segura o lote.
+A mutação que derrubava só o primeiro deixou o gate verde: parecia cega, e
+teria sido registrada como tal. Não era o gate que não protegia; era a
+redundância que escondia a mutação.
+
+**A regra.** Uma mutação devolve um DEFEITO, não remove uma linha. Onde há
+defesa em profundidade, a mutação derruba a classe inteira — e a redundância
+vira propriedade medida ("uma camada só não basta para passar"), não
+surpresa. E um build que cai (`false && x` faz o tsc perder a narrativa de
+nulo) não é mutação acusada: o harness precisa distinguir gate vermelho de
+binário que não compilou.
+
+## L49 — Vermelho que ninguém gravou vira verde no relato
+
+**O que quase passou.** A construção da Cadeia Real rodou uma regressão
+dirigida cujo log mostrava o `m1-bridge` VERMELHO: dois caminhos protegidos
+tinham mudado sem autorização registrada. O resultado ficou num arquivo
+temporário, sem classificação, e o relato chegou à certificação como se a
+cadeia estivesse fechada. Só a certificação, rodando de novo e guardando, viu
+o `FAIL_NOVO`. Da mesma família: o `android/gate-verification` estava quebrado
+havia dois meses, e ninguém viu porque nenhum ambiente tinha o JDK que ele
+pede — uma verificação que nunca roda não verifica nada.
+
+**A regra.** Resultado de gate só existe gravado e classificado (PASS,
+FAIL_PREEXISTENTE, FAIL_NOVO, BLOCKED) ANTES do relato. Um vermelho não
+classificado é `FAIL_NOVO` até ser medido contra a base. E verificação que
+não pode rodar no ambiente é declarada BLOCKED, com o motivo — nunca
+contada como coberta.

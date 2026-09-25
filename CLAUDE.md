@@ -4,7 +4,7 @@ lifecycle:
   status: ACTIVE
   authority_scope: session_routing
   superseded_by: null
-  atualizado_em: "2026-09-23"
+  atualizado_em: "2026-09-25"
   state_basis: 953a3fb
 ---
 
@@ -219,3 +219,27 @@ com `DELETE`. **Primeiro a classe**: as três suítes passaram a criar o própri
 recusa as três). **Limite declarado:** dono e superusuário ainda desligam a trava, e no compose
 oficial o runtime é superusuário. Separar papéis é IAM, fora do escopo. Regressão
 **48/52**, zero `FAIL_NOVO`.
+
+**Cadeia canônica de realidade — fechada e certificada** (`docs/etapa-4-8/CADEIA-REAL.md`): por onde um
+fato real entra. **Reproduzido antes:** o Android pedia `POST /api/device/session` esperando
+`device_token`; o crítico respondia 404 e o piloto 200 sem token — nenhum ponto de campo subia, nunca.
+**Fechado no caminho canônico:** o humano autoriza (`identity.device`), o aparelho prova quem é com um
+segredo próprio (nunca o segredo de assinatura, nunca credencial humana no APK), o crítico vincula o
+hash no primeiro contato (migration **0005**) e emite o token. O Android ganhou `device_secret` e duas
+URLs com fronteira explícita (plataforma: sessão e GPS; piloto: WebView, termo, comandos). A cadeia —
+aparelho lógico, queda de rede, crítico, `platform.event_log`, outbox, Operação Viva, restart/replay —
+está provada com os binários de `dist/` (`test:platform:cadeia`, **35/35**); **não é prova física do
+Android**. `/entregas` lê realidade do banco, separada da demonstração.
+**Certificação (2026-09-25)**, tudo reproduzido antes de mexer (mutações **14/14: 1 controle + 13, zero
+cegas** — o commit dizia 3 controles). Um `FAIL_NOVO`, achado e fechado: os dois arquivos da superfície
+são caminhos protegidos e a autorização do César não estava registrada — exceção estreita no envelope
+M1, fora de M1B, **reversível, pede confirmação**. Os **papéis mínimos estão na composição oficial**
+(job `deliveryos-papeis`): crítico e assíncrono sem superusuário, donos de nada, sem a senha
+administrativa; provado em containers (`tools/papeis_compose_real.sh` **44/44**, e **RED com 20
+acusações** no controle que devolve a URL do dono), travado por `test:platform:papeis:compose` (10). O
+limite da Append-Only Closure sobre o runtime está fechado. **Android BLOCKED por motivo externo:** a
+rede nega `dl.google.com` (AGP e SDK); JDK 17 instalado; `android/gate-verification` quebrado desde
+`4456f2e` (pré-existente). **Relógio:** `occurred_at` adiantado entra carimbado `clock_trust='trusted'`
+pelo default da coluna e prende o frescor — reproduzido, registrado em `docs/execution/BLOCKERS.md`,
+**não corrigido**.
+Regressão integral final **58/62**, zero `FAIL_NOVO`.

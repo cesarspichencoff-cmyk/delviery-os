@@ -4,7 +4,7 @@ lifecycle:
   status: ACTIVE
   authority_scope: infra_blockers
   superseded_by: null
-  atualizado_em: "2026-09-23"
+  atualizado_em: "2026-09-25"
   state_basis: 953a3fb
   question_refs: ["Q-001","Q-002","Q-003","Q-004","Q-005","Q-006","Q-007","Q-008","Q-009","Q-010","Q-011"]
 ---
@@ -822,3 +822,63 @@ tabela ou superusuário ainda consegue desligá-la (`DISABLE TRIGGER`, `session_
 Na composição oficial, o runtime conecta como `POSTGRES_USER`, que a imagem do PostgreSQL cria
 como superusuário. Separar o papel do runtime do dono do schema é IAM: hoje não bloqueia nada, e
 não foi aberto como pergunta.
+
+**Limite fechado na certificação da Cadeia Real (2026-09-25).** A composição oficial deixou de
+conectar os runtimes como `POSTGRES_USER`. O job `deliveryos-papeis` aplica
+`deploy/sql/papeis_minimos.sql` como dono depois da migration, e o crítico e o assíncrono conectam
+como `deliveryos_critical` e `deliveryos_async`: não superusuário, donos de nada, sem a senha
+administrativa no ambiente. Medido em containers reais (`tools/papeis_compose_real.sh`, 44/44), com
+a credencial do PRÓPRIO runtime: `DISABLE TRIGGER` e `DROP TRIGGER` dão `must be owner`;
+`session_replication_role`, `DELETE` e `TRUNCATE` dão 42501. Dono e superusuário continuam capazes
+de desligar a trava — agora só o lado administrativo.
+
+### Cadeia real — o aparelho não conseguia o primeiro token · **FECHADO em 2026-09-24**
+
+O Android chamava `POST /api/device/session` esperando `device_token`. O runtime crítico respondia
+404 (medido com o binário de `0b8803c`); o servidor do piloto respondia 200 sem token
+(`handleDeviceSession` só devolve `device_id`/`rider_id`). O `SyncWorker` classificava os dois como
+"falhou temporariamente" e ficava em laço: nenhum ponto de campo subia, nunca. Fechado no runtime
+crítico por vínculo de segredo do aparelho (migration 0005, `auth/device-session.ts`,
+`runtime/rota-sessao.ts`). Ver `docs/etapa-4-8/CADEIA-REAL.md`.
+
+**Limites que ficam, declarados:** janela entre autorizar e o primeiro contato (quem souber o
+`device_id` e chegar antes vincula o próprio segredo — mitigação: revogar e reautorizar); `jti`
+derivado de (`device_id`, segundo).
+
+### Android — o app não compila neste ambiente · **BLOCKED (externo), medido em 2026-09-25**
+
+JDK 17 instalado (OpenJDK 17.0.20.1, repositório Ubuntu), e o wrapper Gradle 8.9 funciona. O build
+do app para no primeiro passo: o AGP 8.5.2 vem de `dl.google.com/dl/android/maven2` (é o atalho
+`google()`; `maven.google.com` responde 301 para lá), e a política de rede deste ambiente nega
+`dl.google.com:443` — o gateway responde 403 ao CONNECT. O Android SDK 34 e os build-tools vêm de
+`dl.google.com/android/repository`, também negado; `dl-ssl.google.com` e `redirector.gvt1.com` também
+caem. `testDebugUnitTest`, `assembleDebug` e instrumentados: BLOCKED. Desbloqueio: liberar
+`dl.google.com` na rede do ambiente, ou uma máquina com SDK — a missão do aparelho físico.
+
+**Pré-existente, achado no caminho:** `android/gate-verification` não compila desde `4456f2e`
+(2026-07-27): `EntregasApi.kt` usa `DeviceSession.semSegredo`, e `DeviceSession.kt` importa o Room,
+fora do build JVM. Falha idêntica em `0b8803c`. Ninguém viu porque ele nunca rodou: pedia JDK 17,
+que não existia aqui. Conserto (levar `semSegredo` a um arquivo Kotlin puro) fica para onde o app
+compila. Com um stub fora do repositório, o `EntregasApi.kt` atual compila e o `CaptureGateTest`
+passa 12/12 — o diff do Fable nesse arquivo não tem erro de tipo.
+
+### Relógio do aparelho — `occurred_at` adiantado entra carimbado `trusted` · **ABERTO, registrado em 2026-09-25**
+
+Reproduzido com o binário crítico de `dist/` e PostgreSQL real, dois aparelhos na mesma unidade: A
+com t−30 s, **t+24 h**, t−5 s; B (controle) com t−30 s, t−5 s. O que se mediu:
+
+- o crítico aceita o ponto adiantado: 200 `aceito`;
+- **todo** fato fica `clock_trust='trusted'`, inclusive o de +86400 s: é o default da coluna (0001), e
+  o writer da plataforma nunca a preenche. O event log é append-only: o carimbo não se corrige depois;
+- a projeção e a porta de leitura tomam o MAIOR `occurred_at` como última posição. A fica preso no
+  ponto adiantado: `unknown` agora, com os pontos reais mais novos escondidos; B, `fresh`;
+- daqui a 24 h, sem nenhum ponto novo, A leria `fresh` — frescor falso de aparelho parado — e B,
+  `stale`. É o "saudável por ausência" com atraso;
+- o replay dá o mesmo estado em qualquer ordem: a distorção sobrevive a reinício.
+
+**Não corrigido**, por instrução do César: não bloqueia o teste de campo (telefone com data e hora
+automáticas não gera ponto mais de 60 s à frente) e a correção toca o carimbo do event log.
+Direção provável, a do piloto, que já calcula `clockTrust()` com tolerância: o crítico avalia o
+relógio e grava `clock_trust` explícito, e ponto não confiável não vira `ultima_posicao_em`. Decidir
+antes: recusar o ponto ou aceitá-lo marcado; e se o default `'trusted'` da coluna deve deixar de
+existir. **O teste de campo confere data e hora automáticas no aparelho.**

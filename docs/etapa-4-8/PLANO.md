@@ -4,7 +4,7 @@ lifecycle:
   status: ACTIVE
   authority_scope: etapa_4_8_plano
   superseded_by: null
-  atualizado_em: "2026-09-23"
+  atualizado_em: "2026-09-25"
   state_basis: 9e738b1
 ---
 
@@ -166,6 +166,17 @@ diferentes inteligências. Política de acesso desse repositório é `Q-012`, ai
   O gate de backup passou a ter patrimônio próprio, medido de fora com a referência trancada. 11
   mutações, zero cegas. A fronteira de privilégio foi medida e declarada: dono e superusuário
   ainda sabotam, e no compose oficial o runtime é superusuário (IAM, fora do escopo).
+
+- **Cadeia canônica de realidade · CONCLUÍDA e CERTIFICADA** (`docs/etapa-4-8/CADEIA-REAL.md`): UM
+  fato de campo acompanhado de ponta a ponta — aparelho, Room, credencial, sincronização, crítico,
+  PostgreSQL, `platform.event_log`, Operação Viva, restart/replay, `/entregas`. O elo que faltava era o
+  primeiro token: reproduzido (404 no crítico, 200 sem token no piloto) e fechado por vínculo de
+  segredo do aparelho (0005), sem sistema novo. Difference Check: ingestão de GPS e autenticação do
+  aparelho SUPERSEDE para a plataforma; `identity.device` e `platform.event_log` PRESERVE; viagem,
+  termo, comandos e rider-mobile KEEP_PARALLEL no piloto; `/entregas` ADAPT. Certificada em
+  2026-09-25: papéis mínimos ligados à composição oficial e provados em containers; o runtime deixou
+  de ser superusuário. Android BLOCKED (a rede nega `dl.google.com`); relógio do aparelho registrado,
+  não corrigido.
 
 A redução de superfície de `apps/deliveryos-ai-node` (reescrever os 6 root-requires para subpath)
 **não é C2** — é tarefa futura fora do escopo de ambos, registrada em `C1-PORT.md`.
