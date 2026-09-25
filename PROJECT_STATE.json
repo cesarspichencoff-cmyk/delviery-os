@@ -5,7 +5,7 @@
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "design/tata-edge-runtime-foundation-v1",
   "checkpoint_type": "WORK_BRANCH_SHADOW_RUNTIME_WORLD_PROVEN",
-  "state_basis_head": "4e657187811ed58d6b2aea3ef3eab2e2bef57f65",
+  "state_basis_head": "b3d62b7b8c8b6b86bbcc1a251cad4c31e9624bbf",
   "verified_state_refs": [
     "src/edge/managerSnapshot.ts",
     "src/edge/gerencialWatchHandoff.ts",
@@ -13,7 +13,8 @@
     "deploy/cloudflare/gerencial-watch-shadow/",
     "docs/architecture/EDGE_TO_CONTEXT_KERNEL_CONTRACT_V0_1.md",
     "docs/architecture/EVIDENCE_GERENCIAL_WATCH_SHADOW_WORLD_PROOF_2026-09-25.md",
-    "docs/architecture/EVIDENCE_FOXXY_LIVE_AUDIT_2026-09-25.md"
+    "docs/architecture/EVIDENCE_FOXXY_LIVE_AUDIT_2026-09-25.md",
+    "docs/architecture/EVIDENCE_GERENCIAL_WATCH_SHADOW_SMOKE_2026-09-25.md"
   ],
   "verified_state": [
     "The TATÁ Edge branch has a minimized, versioned Edge -> Gerencial Watch handoff and a transport-only request projection.",
@@ -24,27 +25,35 @@
     "The existing cesar-gerencial-mail-bridge remained on version 172d3937-1198-493a-ae33-d19e944ef3c8 with 54 closing rows and zero iFood-review rows after the Watch deployment.",
     "The TypeScript src/contextKernel tree is a non-canonical compatibility harness; the higher Gerencial Watch / César Context Kernel remains a separate product layer.",
     "César Context Kernel v0.6 exists as a tested portable artifact in the user Library with strict TATÁ Edge admission; it is not itself deployed by this repository.",
-    "The post-proof bearer secret was rotated with host-generated randomness and authenticated access was reverified without emitting or committing the replacement token."
+    "The post-proof bearer secret was rotated with host-generated randomness and authenticated access was reverified without emitting or committing the replacement token.",
+    "The exact branch commit b3d62b7b8c8b6b86bbcc1a251cad4c31e9624bbf passed the complete GitHub Actions verification pipeline and the same executable code path passed the complete Windows/Foxxy suite.",
+    "The real repository Edge producer path completed a synthetic producer -> HTTPS -> deployed Worker -> D1 -> Snapshot Engine smoke test and reset the current snapshot to EMPTY/INSUFFICIENT afterward.",
+    "After the latest producer-level smoke, the dedicated Watch D1 contained 8 handoff-history rows and 13 snapshot-history rows; a read-only verification query confirmed current truth EMPTY and validity INSUFFICIENT with no source watermark."
   ],
   "proof": {
-    "github_actions_run": "36112878448",
-    "executable_commit": "b7109e1fb5d7406ace4e0b6b78da02c67a93ba66",
+    "github_actions_run": "36142956953",
+    "executable_commit": "b3d62b7b8c8b6b86bbcc1a251cad4c31e9624bbf",
     "ci_conclusion": "success",
-    "cloud_worker_current_version": "99ef1ee7-e1c5-4cd1-92a9-384cb540c72a",
+    "cloud_worker_current_version": "ad0b71f9-ea79-4c12-90b8-7bda8a7602e5",
     "cloud_d1_id": "75516adf-6196-460a-82d4-9aa6925dbed4",
     "shadow_current_truth": "EMPTY",
     "shadow_current_validity": "INSUFFICIENT",
     "shadow_global_all_clear": false,
-    "shadow_external_effects": false
+    "shadow_external_effects": false,
+    "shadow_handoff_history_rows": 8,
+    "shadow_snapshot_history_rows": 13,
+    "windows_host_commit": "3be0526ab71de2e9b2592482d4f41fb43033db9d",
+    "windows_host_full_suite_exit_code": 0
   },
-  "next_action": "Continue cloud/shadow hardening and source-freshness proof without creating restaurant operational effects. When the cashier PC is available, bind one real read-only Edge source and prove its source watermark end-to-end before any promotion beyond shadow.",
+  "next_action": "Continue cloud/shadow hardening and prove source freshness/idempotency while current Watch state remains EMPTY/INSUFFICIENT. Do not enable restaurant operational writes. Bind one live read-only restaurant source only when trustworthy source provenance is available; cashier-PC physical binding remains a separate final gate.",
   "unknowns": [
+    "The shadow Worker is deployed and receiving only synthetic/replay proof traffic; no live restaurant Edge fact has been admitted.",
     "No live restaurant cashier-PC Edge fact has reached the cloud runtime yet.",
     "Live iFood portal, Teknisa and restaurant Windows spooler acquisition remain unproven.",
-    "The configured hourly cron exists, but a production cron execution receipt has not yet been observed.",
     "Global critical-source freshness coverage is not complete; global all-clear must remain disabled.",
     "The iFood review email route in the separate mail bridge still has zero admitted rows.",
-    "Legacy DeliveryOS raw-source backup/parser/event-log/8-praca convergence gaps from main remain unresolved unless newer evidence supersedes them."
+    "Legacy DeliveryOS raw-source backup/parser/event-log/8-praca convergence gaps from main remain unresolved unless newer evidence supersedes them.",
+    "A source-specific freshness policy has not yet been proven; global all-clear must remain disabled."
   ],
   "authority": {
     "continuity_update": "AUTHORIZED_METADATA_WRITE_WITHIN_PROJECT_SCOPE",
