@@ -222,3 +222,90 @@ Therefore this exact commit has independent proof on both:
 The known `xlsx` HIGH advisory remains dependency debt in legacy spreadsheet
 tooling; it is not imported by the Edge runtime boundary and was not silently
 removed during this proof.
+
+
+## Replay/idempotency hardening
+
+The shadow ingress was hardened before any live restaurant source was enabled.
+
+New admission behavior:
+
+- exact retry of the same handoff -> idempotent duplicate, no second current-state transition;
+- older producer generation -> HTTP 409;
+- same producer generation with different content -> HTTP 409;
+- source-watermark regression -> HTTP 409;
+- EMPTY scheduled state -> hourly recompute is a no-op.
+
+Exact hardened code commit:
+
+`11488e33c25e2ad140772f316144fead130a9fc1`
+
+Proof on Foxxy:
+
+```text
+TypeScript typecheck                  PASS
+shadow worker unit tests              12/12 PASS
+complete Edge/context/shadow suite    exit code 0
+```
+
+GitHub Actions:
+
+```text
+run       36143746442
+commit    11488e33c25e2ad140772f316144fead130a9fc1
+result    success
+```
+
+The hardened Worker was then deployed.
+
+Code deployment version:
+
+`4df09c81-7ae3-4277-a29e-9927f221658b`
+
+The bearer secret was rotated again after deployment; current secret-change
+version:
+
+`434bf889-2bb6-4201-b775-1c19537f53ee`
+
+The secret value was not emitted or committed.
+
+Repository producer smoke against the hardened deployed runtime:
+
+```json
+{
+  "status": "PASS",
+  "producer_code_used": true,
+  "network_boundary_reached": true,
+  "exact_retry_idempotent": true,
+  "synthetic_truth_preserved": true,
+  "synthetic_requires_cesar": true,
+  "final_state_reset_to_empty": true,
+  "final_all_clear_authorized": false,
+  "external_effects_authorized": false
+}
+```
+
+Read-only D1 state after the hardened smoke:
+
+```text
+edge_handoff_history             10
+watch_runtime_snapshot_history   15
+current truth                    EMPTY
+current validity                 INSUFFICIENT
+current source watermark         null
+rows_written by verification     0
+```
+
+The two unique smoke envelopes increased history by two rows; the exact retry
+did not create a third handoff/snapshot transition.
+
+Classification:
+
+`RETRY_IDEMPOTENCY = WORLD_PROVEN_SHADOW`
+
+`STALE_REPLAY_GUARD = TEST_PASS + DEPLOYED`
+
+`EMPTY_CRON_NOOP = TEST_PASS + DEPLOYED`
+
+A real scheduled-trigger receipt is still separate evidence and remains
+unproven.
