@@ -444,6 +444,50 @@ function caminhosAutorizados(): readonly string[] {
     .filter((p) => p.includes("/"));
 }
 
+/**
+ * EXCECAO ESTREITA — Cesar, 2026-09-24 (Cadeia Real). FORA de M1B.
+ *
+ * DOIS arquivos, UMA classe: o bloco de REALIDADE somente-leitura da superficie
+ * Entregas. Registrada no envelope porque ele e o UNICO lugar que C6 le — e
+ * nao em `AUTHORIZED_PATHS`, porque M1B continua proibido de tocar Entregas.
+ * Vale so com a linha EXATA `caminho  CLASSE` no envelope, e so para os dois
+ * caminhos nomeados AQUI: a mesma linha com outro caminho nao autoriza nada.
+ */
+const CLASSE_REALIDADE = "READ_ONLY_REALITY_BLOCK_ONLY";
+const EXCECAO_REALIDADE: readonly string[] = [
+  "src/product/viewmodels/entregas-vm.ts",
+  "src/product/ui/surfaces/entregas.js",
+];
+
+function linhaExata(texto: string, caminho: string, classe: string): boolean {
+  const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`^\\s*${esc(caminho)}\\s+${esc(classe)}\\s*$`, "m").test(texto);
+}
+
+/** Os caminhos de `mudou` que nenhuma autorizacao registrada no envelope cobre. */
+function foraDoEnvelope(
+  mudou: readonly string[],
+  env: string,
+  autorizados: readonly string[],
+): string[] {
+  // EXCECAO ESTREITA — Cesar, 2026-08-11 (M1B-R1). UM arquivo, UMA classe de
+  // mudanca: a frase do sinal S5 dizia "N pedidos" para `carga_por_praca`, e
+  // D-M1A1-08 provou isso falso. A excecao e nomeada aqui porque um caminho
+  // proibido nao pode entrar em `AUTHORIZED_PATHS` — se entrasse, ele deixaria
+  // de ser proibido para todo o resto. Ela nao se estende a nenhum outro
+  // arquivo e nao vale para nenhuma outra classe de mudanca.
+  const EXCECAO_ESTREITA = "src/product/viewmodels/sinais.ts";
+  const excecaoRegistrada =
+    env.includes(EXCECAO_ESTREITA) &&
+    env.includes("TEXTUAL_SEMANTIC_TRUTH_CORRECTION_ONLY");
+  return mudou.filter(
+    (p) =>
+      !autorizados.some((a) => (a.endsWith("/") ? p.startsWith(a) : p === a)) &&
+      !(p === EXCECAO_ESTREITA && excecaoRegistrada) &&
+      !(EXCECAO_REALIDADE.includes(p) && linhaExata(env, p, CLASSE_REALIDADE)),
+  );
+}
+
 teste("C6 a metade do FUTURO: mudanca pos-baseline so passa dentro do envelope", () => {
   // A afirmacao que os gates deixaram de fazer, agora feita UMA vez e no lugar
   // certo. Uniao de todos os caminhos protegidos, comparada com HEAD.
@@ -453,22 +497,7 @@ teste("C6 a metade do FUTURO: mudanca pos-baseline so passa dentro do envelope",
   const mudou = git("diff", "--name-only", M1_BASELINE, "--", ...todos)
     .split("\n")
     .filter((l) => l !== "");
-  // EXCECAO ESTREITA — Cesar, 2026-08-11 (M1B-R1). UM arquivo, UMA classe de
-  // mudanca: a frase do sinal S5 dizia "N pedidos" para `carga_por_praca`, e
-  // D-M1A1-08 provou isso falso. A excecao e nomeada aqui porque um caminho
-  // proibido nao pode entrar em `AUTHORIZED_PATHS` — se entrasse, ele deixaria
-  // de ser proibido para todo o resto. Ela nao se estende a nenhum outro
-  // arquivo e nao vale para nenhuma outra classe de mudanca.
-  const EXCECAO_ESTREITA = "src/product/viewmodels/sinais.ts";
-  const env = ler(ENVELOPE);
-  const excecaoRegistrada =
-    env.includes(EXCECAO_ESTREITA) &&
-    env.includes("TEXTUAL_SEMANTIC_TRUTH_CORRECTION_ONLY");
-  const fora = mudou.filter(
-    (p) =>
-      !autorizados.some((a) => (a.endsWith("/") ? p.startsWith(a) : p === a)) &&
-      !(p === EXCECAO_ESTREITA && excecaoRegistrada),
-  );
+  const fora = foraDoEnvelope(mudou, ler(ENVELOPE), autorizados);
   assert.deepEqual(
     fora,
     [],
@@ -492,6 +521,36 @@ teste("C6b controle: um caminho proibido nao conta como autorizado", () => {
     assert.ok(
       !autorizados.some((a) => (a.endsWith("/") ? proibido.startsWith(a) : proibido === a)),
       `${proibido} entrou na lista de caminhos AUTORIZADOS`,
+    );
+  }
+});
+
+teste("C6c controle: a excecao da Cadeia Real cobre DOIS arquivos, so pela linha exata, e nao abre Entregas a M1B", () => {
+  const env = ler(ENVELOPE);
+  const autorizados = caminhosAutorizados();
+  assert.deepEqual(foraDoEnvelope(EXCECAO_REALIDADE, env, autorizados), [], "a excecao registrada nao cobre os dois arquivos");
+  // Remova a garantia e exija a falha: sem as linhas de registro, os dois reprovam.
+  const semRegistro = env
+    .split("\n")
+    .filter((l) => !l.includes(CLASSE_REALIDADE))
+    .join("\n");
+  assert.deepEqual(
+    foraDoEnvelope(EXCECAO_REALIDADE, semRegistro, autorizados),
+    [...EXCECAO_REALIDADE],
+    "sem o registro no envelope, os dois arquivos continuaram passando",
+  );
+  // A classe escrita ao lado de OUTRO caminho protegido nao autoriza esse caminho.
+  const outro = "src/product/viewmodels/areas.ts";
+  assert.deepEqual(
+    foraDoEnvelope([outro], `${env}\n${outro}   ${CLASSE_REALIDADE}\n`, autorizados),
+    [outro],
+    "a excecao se estendeu a um caminho que ela nao nomeia",
+  );
+  // M1B continua sem Entregas: nenhum dos dois entrou em AUTHORIZED_PATHS.
+  for (const p of EXCECAO_REALIDADE) {
+    assert.ok(
+      !autorizados.some((a) => (a.endsWith("/") ? p.startsWith(a) : p === a)),
+      `${p} entrou na lista de caminhos AUTORIZADOS — virou licenca de M1B`,
     );
   }
 });

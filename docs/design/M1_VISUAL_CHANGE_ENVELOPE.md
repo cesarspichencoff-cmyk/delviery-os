@@ -4,9 +4,9 @@ lifecycle:
   status: ACTIVE
   authority_scope: m1_visual_change_authorization
   superseded_by: null
-  atualizado_em: "2026-08-13"
-  state_basis: 0d34287
-  missao: M1A.1 — ponte canônica e estrutural · M1B-R1 · M1B-R2
+  atualizado_em: "2026-09-25"
+  state_basis: 5effdbe
+  missao: M1A.1 — ponte canônica e estrutural · M1B-R1 · M1B-R2 · exceção Cadeia Real (fora de M1B)
 ---
 
 # Envelope de mudança visual M1
@@ -249,6 +249,49 @@ propriedade de área nem a lógica de estado do sinal.
 
 **Consequência:** a compensação `fraseDoSinal()` que M1B tinha posto em
 `home-vm.ts` foi **removida**. Uma verdade só, na fonte, em vez de duas.
+
+### Exceção estreita — César, 2026-09-24 (Cadeia Real) — fora de M1B
+
+```
+src/product/viewmodels/entregas-vm.ts   READ_ONLY_REALITY_BLOCK_ONLY
+src/product/ui/surfaces/entregas.js     READ_ONLY_REALITY_BLOCK_ONLY
+```
+
+**Não é autorização de M1B.** M1B continua proibido de tocar `Entregas`
+(`FORBIDDEN_CHANGE_CLASSES`, abaixo), e nenhum dos dois caminhos entrou em
+`AUTHORIZED_PATHS`. O registro mora aqui porque este envelope é o **único**
+lugar que o C6 de `test:platform:m1-bridge` lê para decidir se uma mudança
+pós-baseline em caminho protegido tem dono.
+
+**A autorização é do César, na missão Cadeia Real** (2026-09-24). Item 8:
+*"ENTREGAS PASSA A LER REALIDADE (…) Crie a menor porta READ-ONLY possível para
+a superfície conseguir mostrar alguma realidade sustentada pela vertical
+slice."* Item 12: *"Você tem permissão para fazer uma revisão visual focada nas
+superfícies diretamente tocadas por esta missão: rider mobile; Entregas;
+estados reais/parciais/unknown introduzidos pela integração."*
+
+**O que a classe cobre, e só isso:** o bloco de REALIDADE somente-leitura da
+superfície Entregas. No view model, tipos e funções de apresentação sobre a
+porta `src/platform/leitura/realidade-de-entregas.ts`, e um parâmetro novo em
+`entregasVM()` cujo padrão (`integracao_pendente`, nenhum banco consultado)
+preserva o comportamento anterior. Na superfície, a seção "Realidade" e o
+título da seção de demonstração, que passou a dizer "(demonstracao)".
+
+**Registrado depois, não antes.** Os commits `1de5b28` e `5effdbe` tocaram os
+dois arquivos sem este registro, e o C6 reprovou: FAIL_NOVO, reproduzido na
+certificação de 2026-09-25 (`docs/etapa-4-8/CADEIA-REAL.md`). O registro
+documenta uma decisão que o César já tinha tomado; não toma decisão nova.
+
+**Não mudaram:** Home, `home-vm.ts`, `sinais.ts`, `areas.ts`, `copiloto-vm.ts`,
+o domínio `src/entregas/**`, os selos da demonstração (`somente_demonstracao` e
+`simulado` continuam no cabeçalho) e nenhum gate de congelamento.
+
+**Rollback:** reverter o commit que registrou esta exceção (este bloco, e
+`EXCECAO_REALIDADE` com o C6c em `run-m1-bridge-tests.ts`), e depois:
+
+```bash
+git checkout 0b8803c -- src/product/viewmodels/entregas-vm.ts src/product/ui/surfaces/entregas.js
+```
 
 ### `FORBIDDEN_PATHS`
 
