@@ -15,7 +15,19 @@ function closing(overrides = {}) {
   };
 }
 
-function fakeDb(row, calls) {
+function ifood(overrides = {}) {
+  return {
+    uid_validity: "1641920722",
+    mailbox_uid: 300,
+    message_sent_at: "2026-09-25T15:30:00.000Z",
+    updated_at: "2026-09-25T15:31:00.000Z",
+    readonly_verified: 1,
+    attachment_count: 4,
+    ...overrides,
+  };
+}
+
+function fakeDb(row, calls, ifoodRow = null) {
   return {
     prepare(sql) {
       calls.push(sql);
@@ -24,7 +36,9 @@ function fakeDb(row, calls) {
       }
       return {
         async first() {
-          return row;
+          return /FROM\s+ifood_review_mail/i.test(sql)
+            ? ifoodRow
+            : row;
         },
       };
     },
@@ -89,10 +103,14 @@ test("runOnce performs SELECT-only source read and sends minimized FACT handoff"
     assert.equal(result.watch.global_all_clear_authorized, false);
     assert.equal(result.external_effects_authorized, false);
 
-    assert.equal(dbCalls.length, 1);
-    assert.match(dbCalls[0], /^\s*SELECT\b/i);
+    assert.equal(dbCalls.length, 2);
+    for (const sql of dbCalls) {
+      assert.match(sql, /^\s*SELECT\b/i);
+      assert.equal(/\b(INSERT|UPDATE|DELETE|REPLACE|CREATE|DROP|ALTER)\b/i.test(sql), false);
+    }
     assert.match(dbCalls[0], /ORDER BY business_date DESC, message_sent_at DESC/i);
-    assert.equal(/\b(INSERT|UPDATE|DELETE|REPLACE|CREATE|DROP|ALTER)\b/i.test(dbCalls[0]), false);
+    assert.match(dbCalls[1], /FROM ifood_review_mail/i);
+    assert.match(dbCalls[1], /ORDER BY message_sent_at DESC, mailbox_uid DESC/i);
 
     assert.equal(requests.length, 2);
     assert.equal(requests[0].init.method, "GET");
@@ -110,6 +128,66 @@ test("runOnce performs SELECT-only source read and sends minimized FACT handoff"
     assert.equal(serialized.includes("ifood_value_total"), false);
     assert.equal(serialized.includes("discounts_value_total"), false);
     assert.equal(serialized.includes("mailbox_uid"), false);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("new verified iFood source is added without dropping closing coverage", async () => {
+  const dbCalls = [];
+  const requests = [];
+  const originalFetch = globalThis.fetch;
+
+  try {
+    globalThis.fetch = watchFetch({
+      requests,
+      snapshot: {
+        coverage: [{
+          source: "tata_daily_closing",
+          last_observed_at: "2026-09-25T02:57:22.000Z",
+        }],
+      },
+    });
+
+    const result = await runOnce({
+      SOURCE_DB: fakeDb(closing(), dbCalls, ifood()),
+      WATCH_BASE_URL: "https://watch.example",
+      WATCH_BRIDGE_TOKEN: "secret",
+    }, "2026-09-25T17:00:00.000Z");
+
+    assert.equal(result.status, "sent");
+    assert.equal(result.source_count, 2);
+    assert.equal(result.ifood_source_watermark_at, "2026-09-25T15:30:00.000Z");
+    assert.equal(result.source_watermark_at, "2026-09-25T15:30:00.000Z");
+    assert.equal(requests.length, 2);
+
+    const handoff = JSON.parse(requests[1].init.body);
+    assert.equal(handoff.observation_count, 2);
+    assert.deepEqual(
+      handoff.source_coverage.map((item) => item.source),
+      ["tata_daily_closing", "ifood_review_mail"],
+    );
+    assert.equal(
+      handoff.source_coverage[0].last_observed_at,
+      "2026-09-25T02:57:22.000Z",
+    );
+    assert.equal(
+      handoff.source_coverage[1].last_observed_at,
+      "2026-09-25T15:30:00.000Z",
+    );
+
+    const serialized = requests[1].init.body;
+    for (const forbidden of [
+      "subject",
+      "body_text",
+      "attachment_manifest_json",
+      "content_base64",
+      "mailbox_uid",
+      "uidvalidity",
+      "uid_validity",
+    ]) {
+      assert.equal(serialized.includes(forbidden), false, forbidden);
+    }
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -146,7 +224,7 @@ test("same source watermark is skipped without POST", async () => {
   }
 });
 
-test("missing verified closing fails quiet without Watch write", async () => {
+test("missing verified sources fail quiet without Watch write", async () => {
   const dbCalls = [];
   const requests = [];
   const originalFetch = globalThis.fetch;
@@ -161,7 +239,7 @@ test("missing verified closing fails quiet without Watch write", async () => {
     });
 
     assert.equal(result.status, "skipped");
-    assert.equal(result.reason, "no_verified_closing");
+    assert.equal(result.reason, "no_verified_sources");
     assert.equal(requests.length, 0);
   } finally {
     globalThis.fetch = originalFetch;
@@ -228,7 +306,8 @@ test("health is non-sensitive and public", async () => {
   assert.equal(response.status, 200);
   const body = await response.json();
   assert.equal(body.runtime, "tata-edge-cloud-shadow@0.1.0");
-  assert.equal(body.source_mode, "read_only_closing_source");
+  assert.equal(body.source_mode, "read_only_operational_sources");
+  assert.deepEqual(body.sources, ["tata_daily_closing", "ifood_review_mail"]);
   assert.equal(body.external_effects_authorized, false);
 });
 

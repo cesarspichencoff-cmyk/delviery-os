@@ -2,10 +2,14 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   CLOSING_SOURCE,
+  IFOOD_REVIEW_SOURCE,
   ProducerError,
   closingRowToEdgeHandoff,
   normalizeClosingRow,
+  normalizeIfoodReviewRow,
+  operationalRowsToEdgeHandoff,
   shouldDispatchClosing,
+  shouldDispatchIfoodReview,
 } from "../src/core.mjs";
 
 function closing(overrides = {}) {
@@ -17,6 +21,18 @@ function closing(overrides = {}) {
     readonly_verified: 1,
     totals_match: 1,
     period_label_mismatch: 1,
+    ...overrides,
+  };
+}
+
+function ifoodReview(overrides = {}) {
+  return {
+    uid_validity: "1641920722",
+    mailbox_uid: 300,
+    message_sent_at: "2026-09-25T15:30:00.000Z",
+    updated_at: "2026-09-25T15:31:00.000Z",
+    readonly_verified: 1,
+    attachment_count: 4,
     ...overrides,
   };
 }
@@ -40,6 +56,47 @@ test("verified closing becomes a FACT handoff without financial payload", () => 
   assert.equal(serialized.includes("report_gross_total"), false);
   assert.equal(serialized.includes("ifood_value_total"), false);
   assert.equal(serialized.includes("discounts_value_total"), false);
+});
+
+test("canonical iFood review row keeps source time separate from ingestion time", () => {
+  const normalized = normalizeIfoodReviewRow(ifoodReview());
+  assert.equal(normalized.uid_validity, "1641920722");
+  assert.equal(normalized.source_observed_at, "2026-09-25T15:30:00.000Z");
+  assert.equal(normalized.ingested_at, "2026-09-25T15:31:00.000Z");
+  assert.equal(normalized.attachment_count, 4);
+});
+
+test("closing and iFood review compose one minimized FACT handoff", () => {
+  const handoff = operationalRowsToEdgeHandoff({
+    closingRow: closing(),
+    ifoodReviewRow: ifoodReview(),
+  }, "2026-09-25T17:00:00.000Z");
+
+  assert.equal(handoff.observation_count, 2);
+  assert.deepEqual(
+    handoff.source_coverage.map((item) => item.source),
+    [CLOSING_SOURCE, IFOOD_REVIEW_SOURCE],
+  );
+  assert.equal(handoff.source_watermark_at, "2026-09-25T15:30:00.000Z");
+  assert.equal(handoff.external_effect_authorized, false);
+});
+
+test("unverified iFood review cannot become FACT", () => {
+  assert.throws(
+    () => normalizeIfoodReviewRow(ifoodReview({ readonly_verified: 0 })),
+    /ifood_review_not_readonly_verified/,
+  );
+});
+
+test("iFood review replay is source-specific", () => {
+  const decision = shouldDispatchIfoodReview(ifoodReview(), {
+    coverage: [{
+      source: IFOOD_REVIEW_SOURCE,
+      last_observed_at: "2026-09-25T15:30:00.000Z",
+    }],
+  });
+  assert.equal(decision.dispatch, false);
+  assert.equal(decision.reason, "source_already_observed");
 });
 
 test("unverified source cannot become FACT", () => {

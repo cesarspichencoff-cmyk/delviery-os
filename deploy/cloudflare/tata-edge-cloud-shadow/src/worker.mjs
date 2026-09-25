@@ -1,8 +1,10 @@
 import {
   ProducerError,
-  closingRowToEdgeHandoff,
   normalizeClosingRow,
+  normalizeIfoodReviewRow,
+  operationalRowsToEdgeHandoff,
   shouldDispatchClosing,
+  shouldDispatchIfoodReview,
 } from "./core.mjs";
 
 const JSON_HEADERS = {
@@ -34,6 +36,22 @@ async function latestVerifiedClosing(env) {
     FROM daily_closings
     WHERE readonly_verified = 1
     ORDER BY business_date DESC, message_sent_at DESC, mailbox_uid DESC
+    LIMIT 1`,
+  ).first();
+}
+
+async function latestVerifiedIfoodReview(env) {
+  return env.SOURCE_DB.prepare(
+    `SELECT
+      uid_validity,
+      mailbox_uid,
+      message_sent_at,
+      updated_at,
+      readonly_verified,
+      attachment_count
+    FROM ifood_review_mail
+    WHERE readonly_verified = 1
+    ORDER BY message_sent_at DESC, mailbox_uid DESC
     LIMIT 1`,
   ).first();
 }
@@ -124,40 +142,62 @@ export async function runOnce(env, generatedAt = new Date().toISOString()) {
     throw new ProducerError("watch_target_not_configured");
   }
 
-  const row = await latestVerifiedClosing(env);
-  if (!row) {
+  const [closingRow, ifoodReviewRow] = await Promise.all([
+    latestVerifiedClosing(env),
+    latestVerifiedIfoodReview(env),
+  ]);
+
+  if (!closingRow && !ifoodReviewRow) {
     return {
       status: "skipped",
-      reason: "no_verified_closing",
+      reason: "no_verified_sources",
       external_effects_authorized: false,
     };
   }
 
-  const normalized = normalizeClosingRow(row);
+  const closing = closingRow ? normalizeClosingRow(closingRow) : null;
+  const ifood = ifoodReviewRow ? normalizeIfoodReviewRow(ifoodReviewRow) : null;
+  const handoff = operationalRowsToEdgeHandoff(
+    { closingRow, ifoodReviewRow },
+    generatedAt,
+  );
   const snapshot = await watchSnapshot(env);
-  const decision = shouldDispatchClosing(row, snapshot);
 
-  if (!decision.dispatch) {
+  const closingDecision = closingRow
+    ? shouldDispatchClosing(closingRow, snapshot)
+    : null;
+  const ifoodDecision = ifoodReviewRow
+    ? shouldDispatchIfoodReview(ifoodReviewRow, snapshot)
+    : null;
+  const shouldDispatch =
+    closingDecision?.dispatch === true || ifoodDecision?.dispatch === true;
+
+  if (!shouldDispatch) {
     return {
       status: "skipped",
-      reason: decision.reason,
-      source_business_date: normalized.business_date,
-      source_watermark_at: normalized.source_observed_at,
-      source_ingested_at: normalized.ingested_at,
+      reason: "source_already_observed",
+      source_business_date: closing?.business_date ?? null,
+      source_watermark_at: handoff.source_watermark_at,
+      source_ingested_at: closing?.ingested_at ?? null,
+      ifood_source_watermark_at: ifood?.source_observed_at ?? null,
+      ifood_source_ingested_at: ifood?.ingested_at ?? null,
+      source_count: handoff.source_coverage.length,
       external_effects_authorized: false,
     };
   }
 
-  const handoff = closingRowToEdgeHandoff(row, generatedAt);
   const receipt = await postHandoff(env, handoff);
 
   return {
     status: "sent",
-    source_business_date: normalized.business_date,
-    source_watermark_at: normalized.source_observed_at,
-    source_ingested_at: normalized.ingested_at,
-    source_totals_match: normalized.totals_match,
-    source_period_label_mismatch: normalized.period_label_mismatch,
+    source_business_date: closing?.business_date ?? null,
+    source_watermark_at: handoff.source_watermark_at,
+    source_ingested_at: closing?.ingested_at ?? null,
+    source_totals_match: closing?.totals_match ?? null,
+    source_period_label_mismatch: closing?.period_label_mismatch ?? null,
+    ifood_source_watermark_at: ifood?.source_observed_at ?? null,
+    ifood_source_ingested_at: ifood?.ingested_at ?? null,
+    source_count: handoff.source_coverage.length,
     watch: receipt,
     external_effects_authorized: false,
   };
@@ -171,7 +211,8 @@ export default {
       return json({
         status: "ok",
         runtime: "tata-edge-cloud-shadow@0.1.0",
-        source_mode: "read_only_closing_source",
+        source_mode: "read_only_operational_sources",
+        sources: ["tata_daily_closing", "ifood_review_mail"],
         external_effects_authorized: false,
       });
     }
