@@ -22,6 +22,16 @@
       </div>
     </div>
 
+    <!-- Termo de localização (Q-018): só no aplicativo Android, antes de
+         qualquer pedido de permissão. Textos vêm de consent-screen.js. -->
+    <section id="consent" class="card consent" aria-label="Termo de localização" hidden>
+      <div id="consentText" class="consent-text"></div>
+      <button type="button" class="secondary-link" id="btnConsentFull"></button>
+      <label class="consent-check"><input type="checkbox" id="consentCheck" /> <span id="consentCheckLabel"></span></label>
+      <button type="button" class="primary big" id="btnConsentAccept" disabled></button>
+      <button type="button" class="big" id="btnConsentDecline"></button>
+    </section>
+
     <div id="stageRail" class="stage-rail" aria-label="Etapa da parada"></div>
 
     <section class="m-focus" aria-labelledby="stopTitle">
@@ -32,6 +42,7 @@
       <p class="muted small" id="nextLine"></p>
       <p class="gps-status" id="gpsStatus" role="status" data-running="false" data-freshness="unknown">GPS DESLIGADO — SEM VIAGEM ATIVA</p>
       <p class="muted small loc" id="locLine">O GPS depende deste aplicativo aberto durante a viagem.</p>
+      <button type="button" class="secondary-link" id="btnLocationSettings" hidden>Abrir configurações do aparelho</button>
     </section>
 
     <section class="actions-stack" aria-label="Ação principal">

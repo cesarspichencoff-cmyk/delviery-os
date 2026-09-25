@@ -185,3 +185,24 @@ body.mobile {
 .gps-status[data-freshness="unavailable"] {
   background: #fef3f2; border-color: #fecdca; color: #b42318;
 }
+
+/* Termo de localização (Q-018) — componente que já existia, agora na página.
+   Só o necessário para o texto respirar; sem identidade visual nova. */
+.consent {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  min-width: 0;
+}
+.consent[hidden] {
+  display: none;
+}
+.consent-text {
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+.consent-check {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+}

@@ -6,12 +6,59 @@ import {
   connectionState,
   api,
 } from "../shared/client.js";
+import {
+  createConsentScreen,
+  renderConsentScreen,
+  CONSENT_LABELS,
+  DECLINE_CONSEQUENCE,
+} from "./consent-screen.js";
+import { createGpsStatus, renderGpsStatus } from "./gps-status.js";
+import {
+  detectNativeBridge,
+  listenNative,
+  createNativeGeolocation,
+  permissionFromNative,
+  permissionFromStatus,
+} from "./native-bridge.js";
+import { captureDecision, OFF_REASON_TEXT } from "./capture-rule.js";
 
 const $ = (id) => document.getElementById(id);
 let snap = null;
 let seq = 1;
 const now = () => new Date().toISOString();
 const cid = (p) => `${p}-${seq++}`;
+
+/* ---------------- Captura nativa (Q-018) ----------------
+ * A página decide quando PEDIR a captura (capture-rule.js) e mostra o que o
+ * aparelho respondeu; o Kotlin captura, guarda e sincroniza. A página nunca
+ * manda ponto ao servidor e nunca liga o GPS do navegador. */
+const nativeFound = detectNativeBridge(window);
+const native = nativeFound.bridge;
+const nativeGeo = createNativeGeolocation();
+// `send` fica no padrão (não envia nada): quem sincroniza é o Kotlin.
+const gps = createGpsStatus({
+  geolocation: nativeGeo,
+  onRender: (st) => renderGpsStatus($("gpsStatus"), st),
+});
+const cap = {
+  ready: false,
+  initializing: false,
+  initError: null,
+  me: null,
+  deviceId: null,
+  appVersion: null,
+  policies: null,
+  ack: null,
+  consent: null,
+  permission: "unknown",
+  permissionAsked: false,
+  requestedTrip: null, // pedida ao nativo nesta página
+  runningTrip: null, // confirmada pelo nativo (service_state)
+  blockedTrip: null, // o portão nativo recusou; tenta de novo só com fato novo
+  nativeDetail: null, // a frase do portão nativo, como veio
+};
+const POLL_MS = 15000;
+let pollTimer = null;
 
 function activeTrip() {
   return (snap?.trips || []).find((t) =>
@@ -91,6 +138,7 @@ async function refresh() {
   const t = activeTrip();
   const s = currentStop(t);
   const phase = stopPhase(t, s);
+  syncCapture(t);
 
   // Reset actions
   const primary = $("btnPrimary");
@@ -331,4 +379,223 @@ $("connLine").addEventListener("dblclick", async () => {
   await refresh();
 });
 
+/* ---------------- Captura nativa (Q-018) ---------------- */
+
+/** Liga, desliga e mostra — sempre a partir da regra e do que o nativo disse. */
+function syncCapture(t) {
+  if (!native) {
+    // Navegador comum (ou aplicativo sem a ponte nova): não há GPS nenhum.
+    gps.setOffReason(t ? OFF_REASON_TEXT[nativeFound.present ? "ponte_incompativel" : "sem_ponte"] : null);
+    $("locLine").textContent = nativeFound.present
+      ? "Atualize o aplicativo para a localização funcionar."
+      : "A localização é capturada só pelo aplicativo Android, durante a viagem.";
+    return;
+  }
+  if (!cap.ready) {
+    if (!cap.initializing) void initCapture();
+    return;
+  }
+  const d = captureDecision({
+    native: true,
+    actor: cap.me,
+    policies: cap.policies,
+    ack: cap.ack,
+    deviceId: cap.deviceId,
+    permission: cap.permission,
+    trip: t || null,
+  });
+
+  // Desligar: o que foi pedido ou está rodando não vale mais — a viagem
+  // acabou, trocou, ou a permissão caiu. GPS só durante viagem ativa (L6).
+  const bound = cap.requestedTrip || cap.runningTrip;
+  if (bound && (!d.capture || d.trip_id !== bound)) {
+    cap.requestedTrip = null;
+    cap.runningTrip = null;
+    native.stopTripCapture();
+  }
+  // Ligar: uma vez por viagem nesta página. Recusa do portão nativo só é
+  // tentada de novo com fato novo (permissão relida, volta das configurações).
+  if (d.capture && cap.requestedTrip !== d.trip_id && cap.blockedTrip !== d.trip_id) {
+    cap.requestedTrip = d.trip_id;
+    cap.nativeDetail = null;
+    native.startTripCapture(d.trip_id);
+  }
+  renderCapture(t, d);
+  schedulePoll();
+}
+
+function renderCapture(t, d) {
+  if (cap.runningTrip && d.capture && cap.runningTrip === d.trip_id) {
+    gps.start(d.trip_id); // idempotente para a mesma viagem
+    gps.setOffReason(null);
+  } else {
+    if (gps.isRunning()) gps.stop();
+    let reason = d.reason;
+    if (d.capture) reason = cap.blockedTrip === d.trip_id ? "bloqueado_no_aparelho" : "ligando";
+    gps.setOffReason(t ? OFF_REASON_TEXT[reason] : null);
+  }
+  // A linha de apoio usa as frases que já existem (portão nativo, termo).
+  let line = "";
+  if (cap.initError) line = cap.initError;
+  else if (cap.nativeDetail && !cap.runningTrip) line = cap.nativeDetail;
+  else if (d.reason === "termo_recusado") line = DECLINE_CONSEQUENCE;
+  else if (d.reason === "sem_permissao" && cap.permission === "denied")
+    line = "A permissão de localização está negada nas configurações do aparelho.";
+  else if (d.reason === "gps_desligado") line = "A localização está desligada na configuração do sistema.";
+  else if (d.reason === "termo_indisponivel") line = "O termo de localização ainda não foi liberado pelo responsável.";
+  else if (d.reason === "sem_aceite" || d.reason === "termo_desatualizado")
+    line = "Você precisa ler e aceitar o termo de localização.";
+  $("locLine").textContent = line;
+  $("btnLocationSettings").hidden = !(d.reason === "sem_permissao" && cap.permission === "denied");
+}
+
+/** Enquanto houver captura pedida ou rodando, relê a viagem: é assim que o fim chega. */
+function schedulePoll() {
+  const need = Boolean(cap.requestedTrip || cap.runningTrip);
+  if (need && !pollTimer) {
+    pollTimer = setInterval(() => {
+      refresh().catch(() => {
+        /* sem leitura não há prova de fim: a captura segue até ler de novo */
+      });
+    }, POLL_MS);
+  } else if (!need && pollTimer) {
+    clearInterval(pollTimer);
+    pollTimer = null;
+  }
+}
+
+function onNativeMessage(m) {
+  if (m.type === "service_state") {
+    // Do MainActivity (onResume, resultado do pedido): só a permissão.
+    if (typeof m.permission_state === "string") {
+      cap.permission = permissionFromNative(m.permission_state);
+      cap.blockedTrip = null; // fato novo: vale tentar de novo
+    } else if (m.foreground_service_running === true && m.bound_trip_id) {
+      cap.runningTrip = String(m.bound_trip_id);
+      cap.blockedTrip = null;
+      cap.nativeDetail = null;
+    } else if (m.foreground_service_running === false && "stop_reason" in m) {
+      cap.runningTrip = null; // o serviço parou (encerramento ou portão)
+    }
+  } else if (m.type === "error") {
+    // O portão do Kotlin recusou: a frase é a dele (CaptureGate).
+    cap.nativeDetail = m.detail ? String(m.detail) : null;
+    if (cap.requestedTrip) cap.blockedTrip = cap.requestedTrip;
+    cap.requestedTrip = null;
+  }
+  nativeGeo.feed(m);
+  syncCapture(activeTrip());
+}
+
+async function initCapture() {
+  cap.initializing = true;
+  try {
+    const sess = await api("/api/session");
+    cap.me = sess.actor || null;
+    const caps = native.capabilities() || {};
+    cap.deviceId = typeof caps.device_id === "string" && caps.device_id ? caps.device_id : null;
+    cap.appVersion = typeof caps.app_version === "string" ? caps.app_version : null;
+    const st = native.status();
+    cap.permission = permissionFromStatus(st);
+    cap.runningTrip = st && st.active_trip_id ? String(st.active_trip_id) : null;
+    if (cap.me && cap.me.role === "motoboy_interno") {
+      // Políticas: busca com a sessão do motoboy e repassa ao Kotlin o corpo
+      // EXATO que o servidor deu — a página não reconstrói política.
+      const res = await fetch("/api/policies");
+      const body = await res.text();
+      if (!res.ok) throw new Error("Não foi possível ler a configuração de localização.");
+      native.applyServerPolicies(body);
+      cap.policies = JSON.parse(body);
+      const flagOn = cap.policies.flags && cap.policies.flags.gps_capture_enabled === true;
+      const publishable = cap.policies.term && cap.policies.term.publishable === true;
+      if (flagOn && publishable && cap.deviceId) {
+        const tr = await api(`/api/term?device_id=${encodeURIComponent(cap.deviceId)}`);
+        if (tr.acknowledgement) adoptAck(tr.acknowledgement);
+        else if (tr.term) showConsent(tr.term);
+      }
+    }
+    cap.initError = null;
+    cap.ready = true;
+  } catch (e) {
+    cap.initError = e && e.message ? e.message : "Não foi possível preparar a localização.";
+    $("locLine").textContent = cap.initError;
+  } finally {
+    cap.initializing = false;
+  }
+  if (cap.ready) syncCapture(activeTrip());
+}
+
+/** O registro é do servidor; o Kotlin guarda a cópia e confere o aparelho. */
+function adoptAck(record) {
+  const r = native.recordTermAcknowledgement(record);
+  if (!r || r.ok !== true) throw new Error("O aparelho não aceitou o registro do termo.");
+  cap.ack = record;
+  $("consent").hidden = true;
+  // Permissão só DEPOIS do termo registrado (ordem do primeiro acesso).
+  if (record.status === "accepted" && cap.permission !== "granted" && !cap.permissionAsked) {
+    cap.permissionAsked = true;
+    native.requestLocationPermission();
+  }
+}
+
+function showConsent(term) {
+  cap.consent = createConsentScreen({
+    term,
+    summary: term.summary || "",
+    onAccept: () => answerTerm("accepted"),
+    onDecline: () => answerTerm("declined"),
+    onRender: renderConsent,
+  });
+  $("consent").hidden = false;
+  renderConsent(cap.consent.state());
+}
+
+function renderConsent(st) {
+  renderConsentScreen($("consentText"), st);
+  $("btnConsentFull").textContent = CONSENT_LABELS.read_full;
+  $("consentCheckLabel").textContent = CONSENT_LABELS.checkbox;
+  $("consentCheck").checked = st.checked;
+  $("btnConsentAccept").textContent = CONSENT_LABELS.accept;
+  $("btnConsentAccept").disabled = !st.can_accept;
+  $("btnConsentDecline").textContent = CONSENT_LABELS.decline;
+  $("btnConsentDecline").disabled = !st.can_decline;
+}
+
+/** A página manda só a escolha e o aparelho; o servidor monta o registro. */
+async function answerTerm(status) {
+  const res = await fetch("/api/term/acknowledge", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status, device_id: cap.deviceId, app_version: cap.appVersion || undefined }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || data.ok !== true || !data.record) {
+    throw new Error(data.human || "Não foi possível registrar a resposta ao termo.");
+  }
+  adoptAck(data.record);
+  syncCapture(activeTrip());
+  return { ok: true };
+}
+
+$("consentCheck").addEventListener("change", (e) => {
+  if (cap.consent) cap.consent.setChecked(e.target.checked === true);
+});
+$("btnConsentFull").addEventListener("click", () => {
+  if (cap.consent) cap.consent.toggleFull();
+});
+$("btnConsentAccept").addEventListener("click", () => {
+  if (cap.consent) void cap.consent.accept({});
+});
+$("btnConsentDecline").addEventListener("click", () => {
+  if (cap.consent) cap.consent.decline({}).catch((e) => renderError($("errorBox"), e.message));
+});
+$("btnLocationSettings").addEventListener("click", () => {
+  if (native) native.openAppSettings();
+});
+document.addEventListener("visibilitychange", () => {
+  // Volta do mapa ou das configurações: relê a viagem na hora.
+  if (native && document.visibilityState === "visible") refresh().catch(() => {});
+});
+
+if (native) listenNative(window, onNativeMessage);
 refresh().catch((e) => renderError($("errorBox"), e.message));

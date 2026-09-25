@@ -37,6 +37,9 @@ export function createGpsStatus(opts = {}) {
   let lastError = null;
   let pending = 0;
   let online = typeof navigator === "undefined" ? true : navigator.onLine !== false;
+  // Há viagem na tela, mas a captura não está ligada (Q-018): o indicador
+  // diz por quê, em vez de "sem viagem ativa".
+  let offReason = null;
 
   function freshness() {
     if (!tripId) return "unknown";
@@ -70,9 +73,11 @@ export function createGpsStatus(opts = {}) {
       // Indicador persistente exigido pelo contrato de tela.
       banner: tripId && watchId !== null
         ? `GPS ATIVO — VIAGEM ${shortTrip(tripId)}`
-        : "GPS DESLIGADO — SEM VIAGEM ATIVA",
+        : offReason
+          ? `GPS DESLIGADO — ${offReason}`
+          : "GPS DESLIGADO — SEM VIAGEM ATIVA",
       freshness: f,
-      freshness_text: FRESHNESS_TEXT[f],
+      freshness_text: !tripId && offReason ? "" : FRESHNESS_TEXT[f],
       last_update_label: ageLabel(),
       accuracy_m: lastAccuracy,
       online,
@@ -157,6 +162,11 @@ export function createGpsStatus(opts = {}) {
       online = !!v;
       render();
     },
+    /** Motivo curto de o GPS estar desligado com viagem na tela; null limpa. */
+    setOffReason(text) {
+      offReason = text || null;
+      render();
+    },
     setPending(n) {
       pending = Number(n) || 0;
       render();
@@ -171,11 +181,11 @@ export function renderGpsStatus(el, s) {
   if (!el) return;
   el.dataset.freshness = s.freshness;
   el.dataset.running = String(s.running);
-  const parts = [s.freshness_text];
+  const parts = s.freshness_text ? [s.freshness_text] : [];
   if (s.running && s.freshness !== "unknown") {
     parts.push(s.last_update_label);
     if (s.accuracy_m != null) parts.push(`precisão ~${Math.round(s.accuracy_m)} m`);
   }
   if (s.pending_sync > 0) parts.push(`${s.pending_sync} aguardando envio`);
-  el.textContent = `${s.banner} · ${parts.join(" · ")}`;
+  el.textContent = parts.length ? `${s.banner} · ${parts.join(" · ")}` : s.banner;
 }
