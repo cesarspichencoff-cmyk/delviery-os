@@ -1,39 +1,63 @@
 {
-  "schema_version": "0.3",
+  "schema_version": "0.4",
   "project_id": "project.deliveryos",
-  "project": "DeliveryOS",
+  "project": "DeliveryOS / TATÁ Edge",
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
-  "active_ref": "main",
-  "checkpoint_type": "BOOTSTRAP_FROM_VERIFIED_REPOSITORY_STATE",
-  "state_basis_head": "a441bc7e9ed209ca965be549dbbd0cd787867bd5",
+  "active_ref": "design/tata-edge-runtime-foundation-v1",
+  "checkpoint_type": "WORK_BRANCH_SHADOW_RUNTIME_WORLD_PROVEN",
+  "state_basis_head": "ecc43e67b2f1cca9df3913854051cab7b7b97fa1",
   "verified_state_refs": [
-    "README.md",
-    "docs/Politica_Dados.md"
+    "src/edge/managerSnapshot.ts",
+    "src/edge/gerencialWatchHandoff.ts",
+    "src/edge/gerencialWatchTransport.ts",
+    "deploy/cloudflare/gerencial-watch-shadow/",
+    "docs/architecture/EDGE_TO_CONTEXT_KERNEL_CONTRACT_V0_1.md",
+    "docs/architecture/EVIDENCE_GERENCIAL_WATCH_SHADOW_WORLD_PROOF_2026-09-25.md",
+    "docs/architecture/EVIDENCE_FOXXY_LIVE_AUDIT_2026-09-25.md"
   ],
   "verified_state": [
-    "Camada 0 canonical ingestion/replay path is documented and data/raw plus data/canonico remain local/gitignored by design.",
-    "The 8-praca backtest path exists, while the authoritative raw-source backup and parser/engine convergence remain unresolved.",
-    "The repository name is literally delviery-os and remains the known project code home."
+    "The TATÁ Edge branch has a minimized, versioned Edge -> Gerencial Watch handoff and a transport-only request projection.",
+    "A standalone Cloudflare Worker named cesar-gerencial-watch-bridge is deployed with a dedicated D1 named cesar-gerencial-watch; it does not reuse the operational mail-bridge D1.",
+    "Bearer protection is configured for non-health routes; an unauthenticated snapshot read returned HTTP 401.",
+    "The repository producer code reached the deployed Worker in a live synthetic smoke test, preserved SIMULATION truth, persisted the shadow snapshot, and reset current state to EMPTY/INSUFFICIENT afterward.",
+    "Current shadow semantics never authorize global all-clear or an external operational effect from insufficient coverage.",
+    "The existing cesar-gerencial-mail-bridge remained on version 172d3937-1198-493a-ae33-d19e944ef3c8 with 54 closing rows and zero iFood-review rows after the Watch deployment.",
+    "The TypeScript src/contextKernel tree is a non-canonical compatibility harness; the higher Gerencial Watch / César Context Kernel remains a separate product layer.",
+    "César Context Kernel v0.6 exists as a tested portable artifact in the user Library with strict TATÁ Edge admission; it is not itself deployed by this repository."
   ],
-  "next_action": "Revalidate main/head and continue from the current source-truth gaps: durable raw-source recovery, parser/event-log/8-praca convergence or behavioral-equivalence proof, and historical WhatsApp-count reconciliation. Do not refactor proven behavior merely for architectural aesthetics.",
+  "proof": {
+    "github_actions_run": "36112447472",
+    "executable_commit": "99392af9960f31de0a418f95f082cf727ec5d059",
+    "ci_conclusion": "success",
+    "cloud_worker_current_version": "b9104f4c-4763-4267-be99-adff1c159ace",
+    "cloud_d1_id": "75516adf-6196-460a-82d4-9aa6925dbed4",
+    "shadow_current_truth": "EMPTY",
+    "shadow_current_validity": "INSUFFICIENT",
+    "shadow_global_all_clear": false,
+    "shadow_external_effects": false
+  },
+  "next_action": "Continue cloud/shadow hardening and source-freshness proof without creating restaurant operational effects. When the cashier PC is available, bind one real read-only Edge source and prove its source watermark end-to-end before any promotion beyond shadow.",
   "unknowns": [
-    "Any work not persisted after state_basis_head is UNKNOWN.",
-    "Durable integrity-checkable backup of original raw iFood/WhatsApp packages is not proven by this checkpoint.",
-    "Parser/engine convergence remains unproven unless newer evidence supersedes this checkpoint."
+    "No live restaurant cashier-PC Edge fact has reached the cloud runtime yet.",
+    "Live iFood portal, Teknisa and restaurant Windows spooler acquisition remain unproven.",
+    "The configured hourly cron exists, but a production cron execution receipt has not yet been observed.",
+    "Global critical-source freshness coverage is not complete; global all-clear must remain disabled.",
+    "The iFood review email route in the separate mail bridge still has zero admitted rows.",
+    "Legacy DeliveryOS raw-source backup/parser/event-log/8-praca convergence gaps from main remain unresolved unless newer evidence supersedes them."
   ],
   "authority": {
     "continuity_update": "AUTHORIZED_METADATA_WRITE_WITHIN_PROJECT_SCOPE",
-    "execution_ceiling": "NO_NEW_PRODUCTION_OR_DATA_AUTHORITY"
+    "current_runtime_scope": "REVERSIBLE_SHADOW_INFRA_AND_SYNTHETIC_TESTS",
+    "execution_ceiling": "NO_RESTAURANT_OPERATIONAL_WRITE_OR_AUTONOMOUS_EXTERNAL_ACTION"
   },
-  "resume_rule": "Reconstruct from repository evidence and local-source availability; never fabricate missing raw data or treat generated derivatives as original source truth.",
+  "resume_rule": "Revalidate this branch HEAD, read this file and the two 2026-09-25 architecture evidence receipts, then resume from the last PROVEN shadow boundary. Never convert synthetic shadow history into restaurant fact.",
   "session_policy": {
-    "default": "KEEP_SAME_SESSION_WHILE_HEALTHY",
-    "compact_when": "Context burden rises but execution remains reliable; rebuild working context from durable project state plus only the current unpersisted delta.",
-    "rollover_when": "The session materially degrades, repeated state repair is needed, or the next long/tool-heavy phase is safer from a fresh session after checkpointing.",
-    "new_session_instruction": "Open a new conversation in the same project and say: Continue DeliveryOS.",
+    "default": "SOFT_COMPACT_FROM_DURABLE_PROJECT_STATE",
+    "rollover_when": "The session stalls again or the next tool-heavy phase would be safer after checkpointing.",
     "limits": [
       "Conversation history is not project state.",
-      "Session rollover never expands authority."
+      "Session rollover never expands authority.",
+      "DEPLOYED_SHADOW != LIVE_RESTAURANT_SOURCE != PRODUCTION_AUTONOMY."
     ]
   }
 }
