@@ -48,7 +48,14 @@ async function watchSnapshot(env) {
   });
 
   if (response.status === 404) return null;
-  if (!response.ok) throw new ProducerError("watch_snapshot_read_failed");
+  if (!response.ok) {
+    console.error(JSON.stringify({
+      event: "tata_edge_watch_snapshot_read_failed",
+      upstream_status: response.status,
+      external_effects_authorized: false,
+    }));
+    throw new ProducerError("watch_snapshot_read_failed");
+  }
   return response.json();
 }
 
@@ -68,6 +75,13 @@ async function postHandoff(env, handoff) {
 
   const body = await response.json().catch(() => ({}));
   if (!response.ok || body?.accepted !== true) {
+    console.error(JSON.stringify({
+      event: "tata_edge_watch_handoff_rejected",
+      upstream_status: response.status,
+      upstream_error:
+        typeof body?.error === "string" ? body.error : "unknown",
+      external_effects_authorized: false,
+    }));
     throw new ProducerError("watch_handoff_rejected");
   }
 
