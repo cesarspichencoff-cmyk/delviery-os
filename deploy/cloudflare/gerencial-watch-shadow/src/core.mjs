@@ -249,3 +249,14 @@ export async function buildRuntimeSnapshot(input, generatedAt = new Date().toISO
     externalEffectsAuthorized: false,
   };
 }
+
+
+/**
+ * The hourly shadow recompute is useful only while a non-empty source state
+ * exists. EMPTY is already an explicit insufficient snapshot; recomputing it
+ * would only create history churn without adding source evidence.
+ */
+export function shouldRecomputeScheduled(input) {
+  validateEdgeHandoff(input);
+  return input.source_mode !== "empty";
+}
