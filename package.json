@@ -14,7 +14,7 @@
     "test:edge:runtime": "tsc && node dist/demo/edge_runtime_proof.js",
     "test:edge:ifood": "tsc && node dist/demo/edge_ifood_shadow_proof.js",
     "test:edge:print": "tsc && node dist/demo/edge_print_shadow_proof.js",
-    "test:edge:shadow:all": "npm run test:edge:shadow && npm run test:edge:runtime && npm run test:edge:ifood && npm run test:edge:print && npm run test:edge:sources && npm run test:edge:projection && npm run test:edge:admission && npm run test:edge:browser && npm run test:edge:windows-print && npm run test:edge:transport && npm run test:edge:powershell-print && npm run test:edge:envelope && npm run test:edge:store-recovery && npm run test:edge:attention && npm run test:edge:store-port && npm run test:edge:promotion && npm run test:edge:manager-snapshot",
+    "test:edge:shadow:all": "npm run test:edge:shadow && npm run test:edge:runtime && npm run test:edge:ifood && npm run test:edge:print && npm run test:edge:sources && npm run test:edge:projection && npm run test:edge:admission && npm run test:edge:browser && npm run test:edge:windows-print && npm run test:edge:transport && npm run test:edge:powershell-print && npm run test:edge:envelope && npm run test:edge:store-recovery && npm run test:edge:attention && npm run test:edge:store-port && npm run test:edge:promotion && npm run test:edge:manager-snapshot && npm run test:context:foundation",
     "test:edge:sources": "tsc && node dist/demo/edge_sources_bridge_proof.js",
     "test:edge:projection": "tsc && node dist/demo/edge_projection_rebuild_proof.js",
     "test:edge:admission": "tsc && node dist/demo/edge_admission_pipeline_proof.js",
@@ -27,7 +27,8 @@
     "test:edge:attention": "tsc && node dist/demo/edge_attention_projection_proof.js",
     "test:edge:store-port": "tsc && node dist/demo/edge_store_port_proof.js",
     "test:edge:promotion": "tsc && node dist/demo/edge_promotion_gate_proof.js",
-    "test:edge:manager-snapshot": "tsc && node dist/demo/edge_manager_snapshot_proof.js"
+    "test:edge:manager-snapshot": "tsc && node dist/demo/edge_manager_snapshot_proof.js",
+    "test:context:foundation": "tsc && node dist/demo/context_kernel_foundation_proof.js"
   },
   "devDependencies": {
     "@types/node": "20.14.10",
