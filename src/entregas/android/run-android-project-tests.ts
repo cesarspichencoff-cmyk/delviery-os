@@ -519,6 +519,47 @@ test("fixtures Kotlin usam coordenada sintética, nunca real", () => {
 });
 
 /* ------------------------------------------------------------------ *
+ * 7. Ponte com a rider-mobile (Q-018)
+ * ------------------------------------------------------------------ */
+
+const BRIDGE_KT = "app/src/main/java/br/com/tata/entregas/bridge/EntregasBridge.kt";
+const MAIN_KT = "app/src/main/java/br/com/tata/entregas/ui/MainActivity.kt";
+
+/** Corpo de uma função Kotlin (do nome até a próxima `override fun`). */
+function funBody(code: string, name: string): string {
+  const i = code.indexOf(`fun ${name}(`);
+  assert.ok(i >= 0, `função ausente: ${name}`);
+  const j = code.indexOf("override fun ", i + 10);
+  return code.slice(i, j > i ? j : undefined);
+}
+
+test("Q018 a ponte repassa as políticas do servidor ao PolicyStore, sem regra própria", () => {
+  const bridge = stripComments(read(BRIDGE_KT));
+  assert.match(bridge, /@JavascriptInterface\s+fun applyServerPolicies\(json: String\?\): String\s*=\s*handler\.applyServerPoliciesJson\(json\.orEmpty\(\)\)/);
+  const body = funBody(stripComments(read(MAIN_KT)), "applyServerPoliciesJson");
+  assert.match(body, /PolicyStore\.applyServerPolicies\(db, JSONObject\(json\)\)/);
+  // Guardar é tudo o que ela faz: nada de ligar serviço ou decidir captura.
+  for (const proibido of ["TripLocationService", "startTripCapture", "CaptureGate"]) {
+    assert.equal(body.includes(proibido), false, `applyServerPoliciesJson não pode usar ${proibido}`);
+  }
+});
+
+test("Q018 capacidades levam o pseudônimo do aparelho — nunca o segredo", () => {
+  const body = funBody(stripComments(read(MAIN_KT)), "capabilitiesJson");
+  assert.match(body, /put\("device_id", runBlocking \{ DeviceId\.ensure\(db\) \}\)/);
+  assert.equal(/secret|segredo|token/i.test(body), false, "capacidades não podem carregar segredo");
+});
+
+test("Q018 aceite com aparelho divergente é recusado ANTES de gravar", () => {
+  const body = funBody(stripComments(read(MAIN_KT)), "recordTermAcknowledgement");
+  const trava = body.indexOf('require(o.getString("device_id") == DeviceId.ensure(db))');
+  const grava = body.indexOf("db.termAcks().insert(");
+  const rider = body.indexOf("KEY_RIDER_ID");
+  assert.ok(trava >= 0, "trava de aparelho ausente");
+  assert.ok(trava < grava && trava < rider, "a trava precisa vir antes de gravar o aceite e o motoboy");
+});
+
+/* ------------------------------------------------------------------ *
  * Execução
  * ------------------------------------------------------------------ */
 

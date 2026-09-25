@@ -110,6 +110,7 @@ class EntregasJsBridge(
         fun recordTermAcknowledgement(json: String): String
         fun receiptJson(acknowledgementId: String): String
         fun requestSyncNow()
+        fun applyServerPoliciesJson(json: String): String
     }
 
     @JavascriptInterface
@@ -147,4 +148,12 @@ class EntregasJsBridge(
 
     @JavascriptInterface
     fun syncNow() = handler.requestSyncNow()
+
+    /**
+     * Políticas de `/api/policies` repassadas pela página (Q-018). Quem busca
+     * é a rider-mobile, com a sessão do motoboy; aqui só se guarda.
+     */
+    @JavascriptInterface
+    fun applyServerPolicies(json: String?): String =
+        handler.applyServerPoliciesJson(json.orEmpty())
 }

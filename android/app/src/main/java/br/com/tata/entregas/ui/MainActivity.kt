@@ -21,6 +21,7 @@ import br.com.tata.entregas.data.TermAckEntity
 import br.com.tata.entregas.location.DeviceId
 import br.com.tata.entregas.location.GateSnapshot
 import br.com.tata.entregas.location.PermissionState
+import br.com.tata.entregas.location.PolicyStore
 import br.com.tata.entregas.location.TripLocationService
 import br.com.tata.entregas.location.locationServicesEnabled
 import br.com.tata.entregas.notify.TripNotification
@@ -38,6 +39,10 @@ import org.json.JSONObject
  * mesmas regras — e é exatamente isso que o adendo proíbe.
  */
 class MainActivity : AppCompatActivity(), EntregasJsBridge.NativeActions {
+
+    private companion object {
+        const val APARELHO_DIVERGENTE = "aparelho_divergente"
+    }
 
     private lateinit var webView: WebView
     private lateinit var db: EntregasDatabase
@@ -146,6 +151,9 @@ class MainActivity : AppCompatActivity(), EntregasJsBridge.NativeActions {
         put("native_geofencing", true)
         put("activity_recognition", false) // atrás de flag; não habilitado no piloto
         put("sdk_int", Build.VERSION.SDK_INT)
+        // O pseudônimo do aparelho (nunca o segredo). A página o leva ao aceite
+        // do termo, que o servidor monta; quem o gera e guarda é este lado.
+        put("device_id", runBlocking { DeviceId.ensure(db) })
     }.toString()
 
     override fun statusJson(): String = runBlocking {
@@ -188,6 +196,9 @@ class MainActivity : AppCompatActivity(), EntregasJsBridge.NativeActions {
     override fun recordTermAcknowledgement(json: String): String = runBlocking {
         val result = runCatching {
             val o = JSONObject(json)
+            // O aceite é DESTE aparelho. Registro com outro device_id não entra —
+            // e não vira o motoboy deste aparelho em KEY_RIDER_ID.
+            require(o.getString("device_id") == DeviceId.ensure(db)) { APARELHO_DIVERGENTE }
             db.termAcks().insert(
                 TermAckEntity(
                     acknowledgementId = o.getString("acknowledgement_id"),
@@ -219,7 +230,10 @@ class MainActivity : AppCompatActivity(), EntregasJsBridge.NativeActions {
         SyncScheduler.requestNow(this@MainActivity)
         result.fold(
             onSuccess = { JSONObject().put("ok", true).put("acknowledgement_id", it).toString() },
-            onFailure = { JSONObject().put("ok", false).put("error", "registro_invalido").toString() },
+            onFailure = {
+                val motivo = if (it.message == APARELHO_DIVERGENTE) APARELHO_DIVERGENTE else "registro_invalido"
+                JSONObject().put("ok", false).put("error", motivo).toString()
+            },
         )
     }
 
@@ -240,6 +254,22 @@ class MainActivity : AppCompatActivity(), EntregasJsBridge.NativeActions {
     }
 
     override fun requestSyncNow() = SyncScheduler.requestNow(this)
+
+    /**
+     * Políticas de `/api/policies`, repassadas pela página (Q-018).
+     *
+     * O piloto só responde políticas com sessão, e a sessão é do motoboy, na
+     * página — o SyncWorker não tem (nem deve ter) credencial humana. A página
+     * repassa o corpo como o servidor deu; aqui se guarda pelo mesmo
+     * `PolicyStore.applyServerPolicies`, com os mesmos defaults seguros.
+     * Corpo ilegível não muda nada.
+     */
+    override fun applyServerPoliciesJson(json: String): String = runBlocking {
+        runCatching { PolicyStore.applyServerPolicies(db, JSONObject(json)) }.fold(
+            onSuccess = { JSONObject().put("ok", true).toString() },
+            onFailure = { JSONObject().put("ok", false).put("error", "politica_invalida").toString() },
+        )
+    }
 
     override fun onDestroy() {
         Bridge.detach()
