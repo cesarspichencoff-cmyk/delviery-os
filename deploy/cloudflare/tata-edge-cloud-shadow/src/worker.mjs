@@ -33,7 +33,7 @@ async function latestVerifiedClosing(env) {
       period_label_mismatch
     FROM daily_closings
     WHERE readonly_verified = 1
-    ORDER BY updated_at DESC, mailbox_uid DESC
+    ORDER BY business_date DESC, message_sent_at DESC, mailbox_uid DESC
     LIMIT 1`,
   ).first();
 }
@@ -142,7 +142,8 @@ export async function runOnce(env, generatedAt = new Date().toISOString()) {
       status: "skipped",
       reason: decision.reason,
       source_business_date: normalized.business_date,
-      source_watermark_at: normalized.observed_at,
+      source_watermark_at: normalized.source_observed_at,
+      source_ingested_at: normalized.ingested_at,
       external_effects_authorized: false,
     };
   }
@@ -153,7 +154,8 @@ export async function runOnce(env, generatedAt = new Date().toISOString()) {
   return {
     status: "sent",
     source_business_date: normalized.business_date,
-    source_watermark_at: normalized.observed_at,
+    source_watermark_at: normalized.source_observed_at,
+    source_ingested_at: normalized.ingested_at,
     source_totals_match: normalized.totals_match,
     source_period_label_mismatch: normalized.period_label_mismatch,
     watch: receipt,
