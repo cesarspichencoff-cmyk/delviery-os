@@ -23,6 +23,7 @@ lifecycle:
 | relógio do aparelho no servidor | **PROVEN**: relógio adiantado vira `suspect`, não fabrica frescor, sobrevive ao replay | `test:platform:relogio`; `docs/etapa-4-8/RELOGIO.md` |
 | papéis mínimos na composição oficial | **PROVEN** em containers | `tools/papeis_compose_real.sh` |
 | comportamento físico do Android | **UNKNOWN** | este roteiro |
+| gatilho da captura nativa no app | **AUSENTE**: nenhuma página chama a ponte `EntregasNative`; o serviço de GPS não tem como ser ligado (`Q-018`) | `docs/etapa-4-8/BANCADA-EMULADOR.md` §4 |
 | build do app (`testDebugUnitTest`, `assembleDebug`, instrumentados) | **PROVEN fora do sandbox**: A1 e A2 em Windows/JDK 17/SDK 34; A3 em emulador Android 14/API 34 | execução local "Foxxy", 2026-09-25; o bloqueio de `dl.google.com` permanece específico ao sandbox de nuvem |
 
 ## 1 — Pré-requisito A: compilar e testar numa máquina com SDK
@@ -81,6 +82,10 @@ Isso é smoke test de emulador, não fecha nenhum item da seção 3.
    `sh gradlew :app:assemblePilot -Pentregas.baseUrl=https://<PILOTO> -Pentregas.platformUrl=https://<PLATAFORMA>`
    gera um APK **sem assinatura** (`signingConfig = null`: nenhuma chave no repositório). Assinar é
    do César, com a chave dele, fora do Git. Sem isso: **BLOCKED**, e o gate roda com o `debug`.
+7. **Gatilho da captura nativa (`Q-018`).** Hoje nenhuma tela liga o `TripLocationService`
+   (`docs/etapa-4-8/BANCADA-EMULADOR.md` §4). Sem a decisão, o passo 5 é **BLOCKED** e nenhum passo
+   que dependa de ponto capturado produz evidência. Para emulador, o HTTPS de laboratório e o
+   bootstrap estão na mesma nota, §2 e §3: o `debug` recusa `http://`.
 
 ## 3 — A bateria principal
 
@@ -93,7 +98,7 @@ Cada linha anota: **quem**, **quando** (UTC), **aparelho** (modelo e Android), *
 | 2 | confirmar data e hora automáticas | print da configuração; diferença para `date -u` do servidor | automáticas ligadas e diferença < 2 min | NOT_RUN |
 | 3 | autorizar o aparelho (§2.5) | `Q1` | uma linha, `revoked_at` nulo, `vinculado` falso | NOT_RUN |
 | 4 | obter sessão (abrir o app com rede) | `Q1`, `Q6` | `vinculado` verdadeiro e `last_session_at` preenchido; 1 linha `device_session_issued` | NOT_RUN |
-| 5 | iniciar viagem | tela do app | viagem ativa; termo aceito antes da permissão | NOT_RUN |
+| 5 | iniciar viagem | tela do app | viagem ativa; termo aceito antes da permissão | **BLOCKED** — nenhuma página chama `EntregasNative.startTripCapture` (`Q-018`) |
 | 6 | verificar captura em primeiro plano | notificação de serviço em primeiro plano; `Q2` | notificação visível; pontos chegando | NOT_RUN |
 | 7 | bloquear a tela | `Q2` depois de 5 min | pontos continuam chegando | NOT_RUN |
 | 8 | deixar o app em segundo plano | `Q2` depois de 5 min | pontos continuam chegando | NOT_RUN |

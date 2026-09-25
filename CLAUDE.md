@@ -259,3 +259,12 @@ o gate físico tem roteiro pronto, todo `NOT_RUN` (`docs/etapa-4-8/FIELD-GATE-AN
 Regressão curta: **55 gates, 53 PASS, zero `FAIL_NOVO`** — 2 `FAIL_PREEXISTENTE` de governança; o
 único achado (âncoras da Q-016 sobre as linhas mudadas) foi fechado. **O hardening de servidor
 parou aqui: a próxima etapa é o aparelho Android físico.**
+
+**Bancada do emulador** (`docs/etapa-4-8/BANCADA-EMULADOR.md`): o `RETRY` do `SyncWorker` no
+emulador vinha do APK de bancada com `http://` — toda variante, `debug` inclusive, recusa cleartext
+dentro do processo, e o pedido nunca chegou ao crítico. Caminho de laboratório **sem código novo**:
+CA local com SAN `10.0.2.2`, `socat` TLS na frente do crítico e o piloto com o HTTPS nativo dele;
+validado com os binários reais (`tools/bancada_tls_real.sh`, verde; vermelho com certificado sem
+`10.0.2.2`). No emulador, bootstrap e superfície seguem `NOT_RUN`. **Achado:** nenhuma tela liga a
+captura nativa — a ponte `EntregasNative` nunca foi chamada por página nenhuma, em toda a história.
+O primeiro fato do app é **BLOCKED** até `Q-018` (`PAUSE`), junto com o termo publicável.

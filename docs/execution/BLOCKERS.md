@@ -939,3 +939,21 @@ Direção provável, a do piloto, que já calcula `clockTrust()` com tolerância
 relógio e grava `clock_trust` explícito, e ponto não confiável não vira `ultima_posicao_em`. Decidir
 antes: recusar o ponto ou aceitá-lo marcado; e se o default `'trusted'` da coluna deve deixar de
 existir. **O teste de campo confere data e hora automáticas no aparelho.**
+
+### Android — nenhuma tela liga a captura nativa · **ABERTO, registrado em 2026-09-25** (`Q-018`)
+
+Achado na bancada do emulador (`docs/etapa-4-8/BANCADA-EMULADOR.md` §4). O app tem a captura nativa
+pronta — `TripLocationService` → Room → `SyncWorker` → `/api/gps/batch` —, mas o serviço é
+`android:exported="false"` e só é ligado por `MainActivity.startTripCapture`, alcançado só pela ponte
+JavaScript `EntregasNative`. Nenhuma página chama essa ponte: o `rider-mobile/index.html` carrega só
+`rider.js`, que manda comandos ao piloto e nunca a toca; `consent-screen.js` e `gps-status.js` têm
+suítes verdes (36 e 79 testes) e nenhuma página os carrega. `git log -S EntregasNative` acha só
+`4a4fefa` (2026-07-25); nenhum JS, HTML ou TS jamais chamou `startTripCapture`.
+
+Consequência: o app não produz ponto de GPS por mecanismo legítimo. A Cadeia Real foi provada com
+aparelho LÓGICO, que grava no Room sem passar por tela — por isso a lacuna não apareceu. Trava o
+passo 5 da bateria física e tudo o que depende de ponto capturado.
+
+**Não corrigido:** as duas saídas são decisão do César — a página do piloto (`src/entregas/**`,
+Preservation Set) ou uma tela nativa nova. Junto vem o termo publicável
+(`docs/entregas/pilot/CHECKLIST_ATIVACAO.md` §A), que também não foi inventado.
