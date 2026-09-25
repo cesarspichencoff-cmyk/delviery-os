@@ -36,7 +36,8 @@
     "test:context:source-runtime": "tsc && node dist/demo/context_kernel_source_runtime_proof.js",
     "test:edge:watch-handoff": "tsc && node dist/demo/edge_gerencial_watch_handoff_proof.js",
     "test:edge:watch-transport": "tsc && node dist/demo/edge_gerencial_watch_transport_proof.js",
-    "test:watch-shadow-worker": "node --test deploy/cloudflare/gerencial-watch-shadow/test/*.test.mjs"
+    "test:watch-shadow-worker": "node --test deploy/cloudflare/gerencial-watch-shadow/test/*.test.mjs",
+    "smoke:edge:watch-shadow-live": "tsc && node dist/demo/edge_watch_shadow_http_smoke.js"
   },
   "devDependencies": {
     "@types/node": "20.14.10",
