@@ -5,7 +5,7 @@ lifecycle:
   authority_scope: bancada_emulador_android
   superseded_by: null
   atualizado_em: "2026-09-25"
-  state_basis: 46921f5
+  state_basis: f122ee3
   question_refs: ["Q-018"]
 ---
 
@@ -22,7 +22,7 @@ lifecycle:
 | causa do `RETRY` | **o próprio app recusa `http://`.** O APK de bancada foi gerado com `http://10.0.2.2:5193` e `http://10.0.2.2:8080`, e **toda** variante — `debug` inclusive — usa uma política de rede com `cleartextTrafficPermitted="false"` e nenhuma exceção. A requisição morre dentro do processo, antes de abrir socket; o `SyncWorker` devolve `RETRY` | §1 |
 | caminho de rede | HTTPS de bancada, **sem código novo**: emulador → `https://10.0.2.2:8080` → loopback do Windows → encaminhamento de localhost do WSL → `socat` TLS → crítico em `127.0.0.1:18080`; piloto com o HTTPS nativo dele em `5193`; CA de laboratório instalada como CA de usuário no emulador — que o `debug` aceita e `pilot`/`release` recusam | §2 |
 | bootstrap | **`NOT_RUN` no emulador.** **PASS na bancada TLS da nuvem**, com os binários reais e o mesmo `HttpsURLConnection` do app | §3.8, §5 |
-| primeiro fato do app até o `event_log` | **`BLOCKED` — o app não tem gatilho legítimo para ligar a captura.** Nenhuma página chama a ponte `EntregasNative`, em toda a história do repositório. `Q-018`. O lado da plataforma — sessão, lote, `event_log` simulated, assíncrono, replay — está PASS na bancada da nuvem | §4, §5 |
+| primeiro fato do app até o `event_log` | **`NOT_RUN` — destravado no código pela `Q-018` (respondida em 2026-09-25)**: a rider-mobile liga a captura pela ponte (`docs/etapa-4-8/Q018-RIDER-CAPTURA.md`). Falta o build novo no Foxxy (o Kotlin mudou e não compilou aqui) e um termo publicável. *Registro de abertura:* `BLOCKED` — nenhuma página chamava a ponte `EntregasNative`, em toda a história do repositório. O lado da plataforma — sessão, lote, `event_log` simulated, assíncrono, replay — está PASS na bancada da nuvem | §4, §5 |
 | Entregas lendo o fato | **`NOT_RUN` no emulador** (depende do fato). Na bancada da nuvem, **PASS**: `/api/entregas` mostra o aparelho — credencial vinculada, GPS `fresh`, modo `simulated` — em bloco separado da demonstração. Depois do bootstrap no Foxxy dá para provar a parte do aparelho, sem fato | §3.10, §5 |
 
 ## 1 — O `RETRY`, lido no código
@@ -222,6 +222,14 @@ Com as mesmas variáveis de banco dos runtimes. PASS: o aparelho aparece em `rea
 assim, nunca como fresco.
 
 ## 4 — O primeiro fato: `BLOCKED`
+
+> **SUCESSÃO — 2026-09-25 · `Q-018` respondida e implementada. O texto abaixo é o registro de
+> abertura, sem edição.** A rider-mobile carrega a tela do termo e o status de GPS e liga a
+> captura pela ponte (`docs/etapa-4-8/Q018-RIDER-CAPTURA.md`). Dos três itens do fim desta seção,
+> o 1 está respondido e o 3 é configuração de laboratório; o **2, o termo publicável, continua
+> sendo do César** — para o emulador ele pode, se quiser, autorizar a mesma fixture sintética que
+> as suítes automáticas usam (texto e razão social marcados "SEM VALOR LEGAL", num arquivo
+> temporário apontado por `ENTREGAS_TERM_CONFIG`, nunca em `config/`). Não foi feito sem ele.
 
 O app tem a captura nativa pronta — `TripLocationService` → Room → `SyncWorker` →
 `/api/gps/batch` — e **nenhuma tela a liga**:

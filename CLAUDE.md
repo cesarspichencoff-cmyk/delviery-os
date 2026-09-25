@@ -267,4 +267,24 @@ CA local com SAN `10.0.2.2`, `socat` TLS na frente do crítico e o piloto com o 
 validado com os binários reais (`tools/bancada_tls_real.sh`, verde; vermelho com certificado sem
 `10.0.2.2`). No emulador, bootstrap e superfície seguem `NOT_RUN`. **Achado:** nenhuma tela liga a
 captura nativa — a ponte `EntregasNative` nunca foi chamada por página nenhuma, em toda a história.
-O primeiro fato do app é **BLOCKED** até `Q-018` (`PAUSE`), junto com o termo publicável.
+O primeiro fato do app é **BLOCKED** até `Q-018` (`PAUSE`), junto com o termo publicável — `Q-018`
+respondida depois, abaixo.
+
+**Q-018 — respondida** (`docs/etapa-4-8/Q018-RIDER-CAPTURA.md`): a rider-mobile liga a captura
+nativa pela ponte `EntregasNative`; o Kotlin segue dono de permissão, GPS, serviço, persistência e
+sincronização; nenhuma UI nativa nova. **Reproduzido antes:** a prova com navegador (piloto real,
+Chromium, ponte falsa com o portão do Kotlin) passou 9/22 no código de antes, quatro deles vazios —
+e antes disso a página nem carregava (a sessão entrava depois do primeiro `fetch`, defeito anterior).
+A regra (`capture-rule.js`, pura) liga só com flag, termo publicável, aceite **do servidor** para
+este motoboy, este aparelho e este hash, permissão, e a viagem dele em `em_rota`/`retornando` — o
+domínio, nunca o clique; o `CaptureGate` segue a última palavra. A página repassa ao Kotlin as
+políticas que o servidor deu (D88); o servidor monta o aceite com o motoboy da sessão (D89). Desliga
+quando a viagem acaba (releitura a cada 15 s enquanto há captura) e reconcilia ao reabrir. **Achados
+fechados:** o aceite legado gravava para qualquer `rider_id`, de qualquer sessão (operador → 200,
+agora 403); caminho absoluto de configuração era ignorado em silêncio. Gates:
+`test:entregas:rider-bridge` (**27/27**), `test:entregas:rider-capture` (**38/38**, na cadeia
+`test:entregas`), device-api **40/40**, android **38/38** e `test:entregas:rider-bridge:mutacoes`
+(**21 mutações, zero cegas**). **Não provado:** o Kotlin alterado não compilou aqui (`dl.google.com`
+negado) e nada rodou em aparelho; com a página fechada, o fim da viagem só chega ao serviço quando
+ela reabre (`BLOCKERS.md`). O primeiro fato do app passa a `NOT_RUN`: build no Foxxy e termo
+publicável, que é do César.

@@ -187,6 +187,14 @@ diferentes inteligências. Política de acesso desse repositório é `Q-012`, ai
   mutações, zero cegas. O Android segue BLOCKED pela rede; o gate físico tem roteiro pronto, todo
   `NOT_RUN` (`docs/etapa-4-8/FIELD-GATE-ANDROID.md`). Próxima etapa: o aparelho físico.
 
+- **Q-018 — a rider-mobile liga a captura · RESPONDIDA e IMPLEMENTADA** (`docs/etapa-4-8/Q018-RIDER-CAPTURA.md`):
+  a bancada do emulador (`BANCADA-EMULADOR.md`) achou que nenhuma página chamava a ponte
+  `EntregasNative`. Decisão do César: a rider-mobile liga pela ponte, o Kotlin segue dono das
+  capacidades nativas, sem UI nativa nova. Entregas mudou por essa decisão explícita, e só na
+  interação (rider-mobile), na API do aparelho no piloto e na ponte — domínio, comandos e
+  máquina de estados intocados. Reproduzido antes (9/22, quatro vazios); 21 mutações, zero cegas.
+  O Kotlin não compilou aqui e nada rodou em aparelho: o primeiro fato do app é `NOT_RUN`.
+
 A redução de superfície de `apps/deliveryos-ai-node` (reescrever os 6 root-requires para subpath)
 **não é C2** — é tarefa futura fora do escopo de ambos, registrada em `C1-PORT.md`.
 

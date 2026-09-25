@@ -940,7 +940,20 @@ relógio e grava `clock_trust` explícito, e ponto não confiável não vira `ul
 antes: recusar o ponto ou aceitá-lo marcado; e se o default `'trusted'` da coluna deve deixar de
 existir. **O teste de campo confere data e hora automáticas no aparelho.**
 
-### Android — nenhuma tela liga a captura nativa · **ABERTO, registrado em 2026-09-25** (`Q-018`)
+### Android — nenhuma tela liga a captura nativa · **FECHADO NO CÓDIGO em 2026-09-25** (`Q-018` respondida) — Kotlin NÃO compilado, aparelho NOT_RUN
+
+> **SUCESSÃO — 2026-09-25 · CORRIGIDO NO CÓDIGO. O texto abaixo é o registro de abertura, sem edição.**
+>
+> Decisão do César (`Q-018`): a rider-mobile liga a captura pela ponte `EntregasNative`; o Kotlin
+> segue dono de permissão, GPS, serviço, persistência e sincronização; nenhuma UI nativa nova. A
+> página carrega agora a tela do termo e o status de GPS que já existiam, e liga a captura só com
+> flag, termo publicável, aceite do servidor para este motoboy e este aparelho, permissão, e a
+> viagem dele em `em_rota`/`retornando` (`docs/etapa-4-8/Q018-RIDER-CAPTURA.md`). Provado com o
+> piloto real, Chromium e uma ponte falsa com o portão do Kotlin (`test:entregas:rider-bridge`).
+> **Não provado:** o Kotlin alterado (políticas pela ponte, `device_id` nas capacidades, aceite de
+> outro aparelho recusado) não compilou aqui — `dl.google.com` negado — e nada rodou em aparelho.
+> Com a página fechada, o fim da viagem só chega ao serviço quando ela reabre (limite registrado
+> abaixo). O termo publicável continua sendo do César (`CHECKLIST_ATIVACAO.md` §A).
 
 Achado na bancada do emulador (`docs/etapa-4-8/BANCADA-EMULADOR.md` §4). O app tem a captura nativa
 pronta — `TripLocationService` → Room → `SyncWorker` → `/api/gps/batch` —, mas o serviço é
@@ -957,3 +970,22 @@ passo 5 da bateria física e tudo o que depende de ponto capturado.
 **Não corrigido:** as duas saídas são decisão do César — a página do piloto (`src/entregas/**`,
 Preservation Set) ou uma tela nativa nova. Junto vem o termo publicável
 (`docs/entregas/pilot/CHECKLIST_ATIVACAO.md` §A), que também não foi inventado.
+
+### Android — com a página fechada, o fim da viagem não chega ao serviço nativo · **ABERTO, registrado em 2026-09-25** (limite da `Q-018`)
+
+Quem desliga a captura é a página: ela relê a viagem a cada 15 s enquanto há captura, e desliga
+quando a viagem deixa `em_rota`/`retornando` (L6). Se o console encerra a viagem com o app em
+segundo plano, o desligamento depende de o WebView seguir rodando timers — o Chromium os espaça em
+página oculta; não medido. Se o sistema matou o processo e recriou o serviço
+(`START_REDELIVER_INTENT` recupera a viagem do Room), nada desliga até o app ser aberto: aí a
+página reconcilia e desliga (cenário E3 de `test:entregas:rider-bridge`). **Não corrigido:** o
+serviço nativo não tem hoje sinal próprio de fim de viagem, e dar-lhe um é desenho novo. Medir no
+Foxxy primeiro (`docs/etapa-4-8/FIELD-GATE-ANDROID.md` §4).
+
+### Piloto — `SyncWorker` fala com o piloto sem credencial · **REGISTRADO, contornado pela D88** (2026-09-25)
+
+`/api/policies` e `/api/term/acknowledge` exigem sessão humana e o `SyncWorker` não tem nenhuma:
+401 nos dois, desde sempre (o comentário do próprio worker diz "integração pendente no piloto").
+Contornado pela página, que repassa as políticas e o aceite (D88). O aceite gravado no Room fica
+`pending` para sempre — inofensivo: o servidor já o tem e o registro é idempotente pelo id.
+

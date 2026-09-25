@@ -1906,3 +1906,50 @@ sem explicação é indistinguível de dado que não carregou.
 
 **Custo aceito:** ocupa espaço numa tela que já é densa. Guarda `G4` exige o texto **e** proíbe
 qualquer `%` no campo.
+
+---
+
+### D88 — A página repassa ao Kotlin as políticas que o servidor deu; o piloto não abre `/api/policies` sem sessão (Q-018)
+
+**Decisão.** A rider-mobile busca `/api/policies` com a sessão do motoboy e entrega ao Kotlin o
+corpo **exato** que recebeu, pela ponte (`EntregasNative.applyServerPolicies`), que o guarda pelo
+mesmo `PolicyStore.applyServerPolicies` de sempre. O aceite do termo é montado pelo servidor e a
+página entrega ao Kotlin o registro que o servidor devolveu.
+
+**Por que.** O `SyncWorker` fala com o piloto sem credencial — o piloto não emite token de aparelho
+— e recebe 401 em `/api/policies` e em `/api/term/acknowledge`. Sem política, o portão nativo nunca
+teria a flag nem o hash do termo: nenhuma captura ligaria, mesmo com tudo certo na tela. A sessão é
+humana e só a página a tem.
+
+**Alternativas recusadas:** (P1) abrir `/api/policies` sem sessão — exporia flag, hash e unidade a
+qualquer um na rede, e o aceite continuaria sem caminho; (P3) entregar ao Kotlin o token do motoboy
+— a Cadeia Real fixou que credencial humana não vive no app.
+
+**Custo aceito:** o nativo só recebe política nova quando a página abre com rede; offline vale a
+última guardada. Flag desligada no servidor no meio de uma viagem só chega ao aparelho na próxima
+abertura da página. O aceite que a página grava no Room fica `pending` para o `SyncWorker`, que
+continua recebendo 401 do piloto — inofensivo, porque o servidor já o tem e o registro é idempotente
+pelo id.
+
+---
+
+### D89 — O registro que liga a captura é do servidor, e só o próprio motoboy o escreve (Q-018)
+
+**Decisão.** A página pergunta ao **servidor** (`GET /api/term?device_id=`) se este motoboy já
+respondeu a este termo neste aparelho, pelo id determinístico do registro. O aparelho não responde
+por ninguém. Os dois caminhos de escrita do aceite só aceitam o motoboy da sessão: o novo monta o
+registro com ele; o legado recusa `rider_id` diferente da sessão (403 `not_rider`).
+
+**Por que.** Num telefone compartilhado, o Room guarda o último motoboy que aceitou (`KEY_RIDER_ID`)
+e o portão nativo diria "termo ok" para o próximo. E o caminho legado gravava para qualquer
+`rider_id`, vindo de qualquer sessão: reproduzido, um operador plantava `accepted` em nome do
+motoboy e recebia 200. Com a página decidindo a partir desse registro, isso ligaria a captura sem o
+consentimento de quem dirige.
+
+**Alternativas recusadas:** confiar em `status().term_ok` do nativo para pular a tela — recusada pelo
+telefone compartilhado; manter o legado aberto para um aceite supervisionado por operador
+(`origin: supervised_device`) — não existe produtor disso hoje, e se o César quiser esse fluxo ele
+entra como caminho próprio, com o ator registrado, não como porta aberta.
+
+**Custo aceito:** registro legado com id não determinístico não é reconhecido pela página; o motoboy
+vê o termo de novo naquele aparelho. Hoje não há produtor desse formato fora dos testes.

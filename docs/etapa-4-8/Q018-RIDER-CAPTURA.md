@@ -1,0 +1,227 @@
+---
+lifecycle:
+  artefato: docs/etapa-4-8/Q018-RIDER-CAPTURA.md
+  status: ACTIVE
+  authority_scope: captura_pela_rider_mobile
+  superseded_by: null
+  atualizado_em: "2026-09-25"
+  state_basis: f122ee3
+  question_refs: ["Q-018"]
+---
+
+# Q-018 — a rider-mobile liga a captura; o Kotlin captura
+
+Decisão do César, 2026-09-25, literal:
+
+> A rider-mobile é dona da interação com o motoboy e deve acionar a captura através da ponte
+> EntregasNative. O Android/Kotlin continua dono das capacidades nativas — permissão, GPS,
+> foreground service, persistência e sincronização. Não criar uma segunda UI nativa para iniciar a
+> viagem. Integrar na rider-mobile as capacidades de consentimento e status GPS já existentes,
+> preservando uma única experiência e uma única verdade de domínio. A captura só inicia após saída
+> validamente confirmada e consentimento/permissão válidos.
+
+> **Laboratório.** Tudo o que está provado aqui rodou na nuvem: piloto real, Chromium real e uma
+> ponte `EntregasNative` **falsa**. O Kotlin alterado **não compilou** — a rede do sandbox nega
+> `dl.google.com` — e nada rodou em aparelho. Isso é a §9 e o Foxxy.
+
+## 0 — Respostas
+
+| pergunta | resposta |
+|---|---|
+| quem liga a captura | a página, pela ponte, depois da regra da §3. O `CaptureGate` do Kotlin continua sendo a última palavra no aparelho |
+| "saída validamente confirmada" | a viagem **deste motoboy** em `em_rota` ou `retornando` no snapshot do servidor — depois de o domínio aceitar `ConfirmTripDeparture`. O clique não conta |
+| "consentimento válido" | o registro que o **servidor** guarda para este motoboy, este termo (hash) e este aparelho, com `status: accepted` |
+| "permissão válida" | o que o Android respondeu, lido pela ponte |
+| UI nativa nova | nenhuma |
+| status de GPS | o indicador que já existia (`gps-status.js`), agora refletindo o serviço nativo |
+| Kotlin | três mudanças pequenas (§2), **não compiladas aqui** |
+| primeiro fato do app | `NOT_RUN` — faltam o build no Foxxy e um termo publicável |
+
+## 1 — A lacuna, reproduzida antes
+
+A prova com navegador (`src/entregas/ui/run-rider-bridge-tests.ts`) foi escrita **antes** do código,
+contra o piloto real e o `rider-mobile` de `a9b7e1b`.
+
+Primeiro ela nem rodava: a página ficava presa em "Carregando…". O trecho que põe o token no
+`fetch` era um módulo no fim do `<body>`, e módulos rodam na ordem do documento — o `rider.js` fazia
+a primeira leitura **sem** `Authorization` e recebia 401. Defeito anterior a esta missão (§5).
+
+Com ele corrigido, **9 de 22** passaram, e quatro dos nove pelo motivo errado — B1, C6, C8 e D1:
+nada ligava nunca, então "nada liga antes da saída" era verdade vazia. Falhavam 13: a ponte nunca
+chamada (B2, B3, C7), nenhuma política entregue ao nativo (C1), nenhuma tela de termo (C2–C5, D2,
+D3), nenhum aceite no servidor (C9), D4 no primeiro passo, e B4 — que naquela execução caiu antes,
+num defeito da própria prova: fechar viagem é de gerente, e ela usava o token do operador
+(corrigido). A saída gravada dessa execução está no registro de evidência `q018-lacuna-reproduzida`.
+
+## 2 — Quem é dono de quê
+
+| parte | faz | não faz |
+|---|---|---|
+| página (`rider-mobile`) | lê sessão, políticas, termo e registro do servidor; mostra o termo e o status; decide quando **pedir** a captura; repassa ao Kotlin as políticas e o registro | liga GPS do navegador; manda ponto ao servidor; calcula hash ou id de aceite |
+| servidor do piloto | serve o termo (`GET /api/term`); monta o aceite com o motoboy da sessão; diz se ele já respondeu neste aparelho | aceita aceite em nome de outro (D89) |
+| Kotlin | guarda as políticas (`applyServerPolicies`); expõe o `device_id`; recusa aceite de outro aparelho; roda o portão; captura, persiste e sincroniza | decide viagem, termo ou saída |
+
+**Preservation Set.** Entregas (`src/entregas/**`) mudou por decisão explícita do César nesta
+pergunta, e só em três lugares: a interação (`ui/rider-mobile/`), a API do aparelho no piloto
+(`pilot/device-api.ts`, `tools/entregas_pilot_server.ts`) e a ponte nativa. Domínio, comandos,
+máquina de estados e `ApplicationService` não foram tocados.
+
+As três mudanças no Kotlin (`EntregasBridge.kt`, `MainActivity.kt`):
+
+- **K1** — `capabilities()` leva o `device_id` (o pseudônimo, nunca o segredo);
+- **K2** — `applyServerPolicies(json)`: a página repassa o corpo de `/api/policies` e o Kotlin guarda
+  pelo mesmo `PolicyStore.applyServerPolicies` de sempre (D88);
+- **K3** — `recordTermAcknowledgement` recusa registro de outro aparelho **antes** de gravar o aceite
+  e o motoboy (`aparelho_divergente`).
+
+## 3 — A regra (`src/entregas/ui/rider-mobile/capture-rule.js`)
+
+Função pura. Na ordem — o primeiro motivo que falha é o que o indicador mostra:
+
+| condição | motivo | o indicador diz |
+|---|---|---|
+| há ponte | `sem_ponte` | GPS DESLIGADO — SÓ PELO APLICATIVO |
+| a sessão é de motoboy | `sem_motoboy` | GPS DESLIGADO — ACESSO NÃO É DE MOTOBOY |
+| `flags.gps_capture_enabled === true` | `gps_desligado` | GPS DESLIGADO — DESLIGADO NA CONFIGURAÇÃO |
+| termo publicável, com hash | `termo_indisponivel` | GPS DESLIGADO — TERMO AINDA NÃO LIBERADO |
+| registro do servidor, deste motoboy e deste aparelho | `sem_aceite` | GPS DESLIGADO — FALTA ACEITAR O TERMO |
+| registro do hash vigente | `termo_desatualizado` | GPS DESLIGADO — TERMO NOVO PARA ACEITAR |
+| registro `accepted` | `termo_recusado` | GPS DESLIGADO — TERMO NÃO ACEITO |
+| permissão concedida | `sem_permissao` | GPS DESLIGADO — FALTA A PERMISSÃO DE LOCALIZAÇÃO |
+| há viagem na tela | `sem_viagem` | GPS DESLIGADO — SEM VIAGEM ATIVA (o texto de sempre) |
+| a viagem é deste motoboy | `viagem_de_outro` | GPS DESLIGADO — VIAGEM DE OUTRO MOTOBOY |
+| `em_rota` ou `retornando` | `saida_nao_confirmada` | GPS DESLIGADO — AGUARDANDO A SAÍDA |
+
+Tudo verdadeiro: a página pede `startTripCapture(viagem)` e o indicador diz "LIGANDO NO APARELHO"
+até o Kotlin confirmar; aí, "GPS ATIVO — VIAGEM …". Se o portão nativo recusar, "BLOQUEADO NO
+APARELHO", com a frase do próprio `CaptureGate` na linha de baixo.
+
+## 4 — O fluxo na página (`rider.js`)
+
+1. **Ao abrir:** sessão (`/api/session`), `device_id` e estado do nativo (`capabilities()`,
+   `status()`), políticas (`/api/policies`, repassadas ao Kotlin como vieram), e — com flag ligada e
+   termo publicável — o termo e o registro deste motoboy neste aparelho (`/api/term?device_id=`).
+2. **Sem registro:** a tela do termo que já existia (`consent-screen.js`): checkbox nasce
+   desmarcado, CONCORDAR desabilitado até o dedo marcar, recusar com o mesmo peso.
+3. **Resposta:** a página manda só a escolha e o aparelho; o servidor monta o registro; o Kotlin o
+   guarda. **Só então** a página pede a permissão do Android — nunca antes do termo.
+4. **Recusa:** fica. Reabrir não oferece o termo de novo (o id não inclui a escolha); a frase
+   neutra que já existia encaminha ao responsável.
+5. **Permissão negada:** a frase do portão e um botão "Abrir configurações do aparelho".
+6. **Saída confirmada pelo domínio:** `startTripCapture` da viagem, **uma vez** por página.
+7. **Fim:** enquanto há captura, a página relê a viagem a cada 15 s (e ao voltar ao primeiro
+   plano); fora de `em_rota`/`retornando`, `stopTripCapture`. GPS só durante viagem ativa (L6).
+8. **Ao reabrir:** reconcilia com o serviço (`status().active_trip_id`) — viagem ainda válida,
+   reafirma uma vez; viagem acabada, desliga.
+9. **Navegador comum:** sem ponte, sem GPS nenhum. O indicador diz "SÓ PELO APLICATIVO".
+
+## 5 — Defeitos anteriores achados no caminho
+
+| defeito | reproduzido | tratamento |
+|---|---|---|
+| trecho de sessão rodava depois do primeiro `fetch` | página presa em "Carregando…" (cenário A) | corrigido: script clássico no começo do `<head>` |
+| `join(cwd, caminho)` ignorava caminho absoluto do ambiente (`ENTREGAS_TERM_CONFIG`, `ENTREGAS_UNIT_CONFIG`) | flags absolutas com `true` → `gps_production=False`; depois, `True` | corrigido (L52) |
+| aceite legado gravava para qualquer `rider_id`, de qualquer sessão | operador plantou `accepted` em nome do motoboy: **200** | corrigido: 403 `not_rider` (D89); formato continua 400 antes |
+| `SyncWorker` fala com o piloto sem credencial: 401 em políticas e aceites | leitura + teste "sem sessão" | contornado pela página (D88); registrado em `BLOCKERS.md` |
+| a ponte falsa desta prova tinha dois nomes errados (`receiptJson`, `requestSyncNow`) | lendo o `.kt`, antes de a página existir | corrigido e travado por S1/S2 de `rider-capture` (L53) |
+| `rider.js` manda `actor: rid-demo` fixo nos comandos | leitura | **não corrigido** — fora do escopo; o domínio aceita |
+| a tela mostra a primeira viagem ativa de qualquer motoboy | leitura | **não corrigido na tela**; a captura exige a viagem do motoboy da sessão (E2) |
+
+## 6 — Provas
+
+| gate | resultado |
+|---|---|
+| `test:entregas:rider-bridge` — piloto real, Chromium, ponte falsa com o portão do Kotlin | **27/27** |
+| `test:entregas:rider-capture` — regra (cada garantia removida uma a uma), adaptador, nomes da ponte iguais no Kotlin, na página e na falsa, status de GPS byte a byte | **38/38** |
+| `test:entregas:device-api` — servidor compilado, 11 novos | **40/40** |
+| `test:entregas:android` — estrutural, 3 novos | **38/38** |
+| `test:entregas:rider-bridge:mutacoes` | §7 |
+
+Cenários da prova com navegador: **A** navegador sem ponte (saída confirma, zero `watchPosition`);
+**B** aparelho já liberado (nada antes da saída, uma chamada depois, indicador ativo, desliga quando
+o console encerra); **C** caminho completo (políticas → termo → aceite do servidor → permissão →
+saída → captura, nessa ordem, e o registro no arquivo do servidor); **D** o que não liga (saída
+recusada, termo recusado, permissão negada, flag desligada); **E** telefone de outro aparelho,
+viagem de outro motoboy, reabrir com o serviço preso a viagem encerrada, reabrir no meio da viagem,
+recusa que fica.
+
+## 7 — Mutações
+
+`npm run test:entregas:rider-bridge:mutacoes` (`src/entregas/ui/run-rider-bridge-mutation-tests.ts`):
+cada mutação devolve ao código UMA garantia removida, roda o gate que deveria acusar e exige a
+reprovação **pelo teste certo**; restauração byte a byte por sha256, também em SIGINT/SIGTERM.
+Controle positivo antes (os quatro gates verdes sem mutação) e fecho depois (`git status` vazio nos
+seis arquivos mutados, `dist/` reconstruído). **26/26, zero cegas**, 13 min 28 s.
+
+| id | garantia removida | gate | acusado por |
+|---|---|---|---|
+| MR1 | saída confirmada antes de ligar | navegador | B1 |
+| MR2 | termo recusado não vale como aceite | navegador | E5 |
+| MR3 | permissão do Android | navegador | D3 |
+| MR4 | a viagem é deste motoboy | navegador | E2 |
+| MR5 | aceite deste motoboy e deste aparelho | regra | R3 "aceite de outro aparelho" |
+| MR6 | flag do servidor (`=== true`) | regra | R3 "flag desligada" |
+| MR7 | desligar quando a viagem acaba (L6) | navegador | B4 |
+| MR8 | nenhum GPS do navegador | navegador | B2 (`watchPosition` chamado) |
+| MR9 | ligar pelo domínio, não pelo clique | navegador | D1 |
+| MR10 | permissão só depois do termo | navegador | C2 |
+| MR11 | políticas repassadas ao nativo | navegador | C1 |
+| MR12 | uma chamada por viagem | navegador | B2 (várias chamadas) |
+| MR13 | reconciliar ao reabrir | navegador | E3 |
+| MS1 | legado só grava para o próprio motoboy | servidor | "caminho legado: operador…" (200 ≠ 403) |
+| MS2 | o motoboy vem da sessão, não do corpo | servidor | "o SERVIDOR monta o registro" (`rid-intruso`) |
+| MS3 | a consulta usa o aparelho | servidor | "/api/term devolve o registro DESTE motoboy…" |
+| MS4 | caminho absoluto respeitado | navegador | a prova aborta: `term_not_publishable` para um termo publicável |
+| MS5 | sessão antes do primeiro `fetch` | navegador | a prova aborta: página presa em "Carregando…" |
+| MA1 | aceite de outro aparelho recusado no Kotlin | android | "aceite com aparelho divergente…" |
+| MA2 | `applyServerPolicies` exposto ao JavaScript | android | "a ponte repassa as políticas…" |
+| MA3 | `device_id` nas capacidades | android | "capacidades levam o pseudônimo…" |
+
+MA1–MA3 provam que a verificação estrutural acusa a falta da trava — não que o Kotlin roda.
+
+## 8 — Textos novos na tela
+
+A tela do termo, o botão de recusa, a frase da recusa e as frases do portão nativo **já existiam**
+(`CONSENT_LABELS`, `DECLINE_CONSEQUENCE`, `CaptureGate`). Novos, para o César revisar: os
+complementos do indicador da §3, "LIGANDO NO APARELHO", "BLOQUEADO NO APARELHO",
+"APLICATIVO DESATUALIZADO", "Abrir configurações do aparelho", "Atualize o aplicativo para a
+localização funcionar." e, no navegador, "A localização é capturada só pelo aplicativo Android,
+durante a viagem.".
+
+A seção do termo usa classes que já existiam (`card`, `primary big`, `big`, `secondary-link`) e um
+bloco curto de CSS para o texto respirar (21 linhas, comentário incluído). **Não houve composição visual nova e a aparência não foi
+aprovada**: o redesign de Entregas continua fora, pela regra de fase.
+
+O botão "BAIXAR OU RECEBER UMA CÓPIA" existe como rótulo em `consent-screen.js`, sem comportamento;
+não entrou. O recibo existe no servidor e no Kotlin (`receipt`).
+
+## 9 — O que NÃO está provado
+
+- **O Kotlin.** K1–K3 não compilaram aqui. A verificação estrutural diz que as travas estão no
+  lugar; quem diz que compilam e rodam é A1–A3 no Foxxy.
+- **O aparelho.** Nenhum passo da bateria física rodou (`docs/etapa-4-8/FIELD-GATE-ANDROID.md`).
+- **A página fechada.** O fim da viagem só chega ao serviço quando a página está viva; com o app
+  em segundo plano depende de timers do WebView; com o processo morto, só quando o app reabre
+  (`BLOCKERS.md`, registrado ABERTO).
+- **Flag desligada no meio da viagem.** Chega ao aparelho na próxima abertura da página (D88).
+- **Confiança na página.** O Kotlin guarda o que a página repassa. Não é fronteira nova: a página
+  já era quem comanda a ponte, e o WebView só carrega a origem do piloto (`OriginLockedClient`).
+
+## 10 — No Foxxy
+
+1. **Build** com este commit: A1–A3 (`FIELD-GATE-ANDROID.md` §1). Anotar o commit.
+2. **Piloto de laboratório** com HTTPS (`BANCADA-EMULADOR.md` §2), `gps_capture_enabled: true` e um
+   **termo publicável** — os campos do César (`CHECKLIST_ATIVACAO.md` §A); para o emulador, a
+   fixture sintética das suítes **só se o César autorizar**.
+3. **Sessão do motoboy** no WebView: `entregasPilotLogin("<TOKEN>")` pelo `chrome://inspect`
+   (só no `debug`).
+4. **Viagem** montada no console para o motoboy dessa sessão.
+5. Aceitar o termo → permitir a localização → confirmar a saída. PASS: o termo antes do pedido de
+   permissão; "AGUARDANDO A SAÍDA" antes; depois, notificação do serviço e "GPS ATIVO — VIAGEM …";
+   e o primeiro ponto no `event_log` (`BANCADA-EMULADOR.md` §3).
+6. Encerrar a viagem no console: com a página aberta, a notificação some em até ~15 s; com o app
+   em segundo plano, **medir** (§9).
+
+## 11 — Regressão
+
+(preenchido com a execução)

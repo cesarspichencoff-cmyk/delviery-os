@@ -5,7 +5,7 @@ lifecycle:
   authority_scope: field_gate_android
   superseded_by: null
   atualizado_em: "2026-09-25"
-  state_basis: c677482
+  state_basis: f122ee3
 ---
 
 # Field gate físico do Android — roteiro
@@ -23,7 +23,7 @@ lifecycle:
 | relógio do aparelho no servidor | **PROVEN**: relógio adiantado vira `suspect`, não fabrica frescor, sobrevive ao replay | `test:platform:relogio`; `docs/etapa-4-8/RELOGIO.md` |
 | papéis mínimos na composição oficial | **PROVEN** em containers | `tools/papeis_compose_real.sh` |
 | comportamento físico do Android | **UNKNOWN** | este roteiro |
-| gatilho da captura nativa no app | **AUSENTE**: nenhuma página chama a ponte `EntregasNative`; o serviço de GPS não tem como ser ligado (`Q-018`) | `docs/etapa-4-8/BANCADA-EMULADOR.md` §4 |
+| gatilho da captura nativa no app | **IMPLEMENTADO, Kotlin NÃO COMPILADO**: a rider-mobile liga pela ponte depois de termo, permissão e saída confirmada (`Q-018` respondida); provado com piloto real, Chromium e ponte falsa (`test:entregas:rider-bridge` 27/27). O lado Kotlin mudou e precisa de A1–A3 de novo | `docs/etapa-4-8/Q018-RIDER-CAPTURA.md` |
 | build do app (`testDebugUnitTest`, `assembleDebug`, instrumentados) | **PROVEN fora do sandbox**: A1 e A2 em Windows/JDK 17/SDK 34; A3 em emulador Android 14/API 34 | execução local "Foxxy", 2026-09-25; o bloqueio de `dl.google.com` permanece específico ao sandbox de nuvem |
 
 ## 1 — Pré-requisito A: compilar e testar numa máquina com SDK
@@ -82,10 +82,21 @@ Isso é smoke test de emulador, não fecha nenhum item da seção 3.
    `sh gradlew :app:assemblePilot -Pentregas.baseUrl=https://<PILOTO> -Pentregas.platformUrl=https://<PLATAFORMA>`
    gera um APK **sem assinatura** (`signingConfig = null`: nenhuma chave no repositório). Assinar é
    do César, com a chave dele, fora do Git. Sem isso: **BLOCKED**, e o gate roda com o `debug`.
-7. **Gatilho da captura nativa (`Q-018`).** Hoje nenhuma tela liga o `TripLocationService`
-   (`docs/etapa-4-8/BANCADA-EMULADOR.md` §4). Sem a decisão, o passo 5 é **BLOCKED** e nenhum passo
-   que dependa de ponto capturado produz evidência. Para emulador, o HTTPS de laboratório e o
-   bootstrap estão na mesma nota, §2 e §3: o `debug` recusa `http://`.
+7. **Gatilho da captura nativa (`Q-018`, respondida em 2026-09-25).** A rider-mobile liga o
+   `TripLocationService` pela ponte (`docs/etapa-4-8/Q018-RIDER-CAPTURA.md`). O passo 5 deixa de
+   ser BLOCKED por decisão e passa a depender de cinco coisas, todas verificáveis antes de ir à rua:
+   - **build novo**: o Kotlin mudou (`applyServerPolicies`, `device_id` nas capacidades, aceite de
+     outro aparelho recusado); refazer A1–A3 e anotar o commit;
+   - **sessão do motoboy no WebView**: o piloto só responde com o token do motoboy
+     (`entregasPilotLogin("<TOKEN>")` no console do WebView — no `debug`, por `chrome://inspect`);
+   - **flag de GPS ligada no piloto** (`gps_capture_enabled: true`; o caminho pode vir de
+     `ENTREGAS_GPS_FLAGS_CONFIG`, absoluto ou relativo);
+   - **termo publicável**: os campos do César (`docs/entregas/pilot/CHECKLIST_ATIVACAO.md` §A);
+   - **viagem montada no console para o motoboy da sessão** — viagem de outro motoboy não liga
+     captura neste aparelho, de propósito.
+
+   Para emulador, o HTTPS de laboratório e o bootstrap estão em `docs/etapa-4-8/BANCADA-EMULADOR.md`
+   §2 e §3: o `debug` recusa `http://`.
 
 ## 3 — A bateria principal
 
@@ -98,7 +109,7 @@ Cada linha anota: **quem**, **quando** (UTC), **aparelho** (modelo e Android), *
 | 2 | confirmar data e hora automáticas | print da configuração; diferença para `date -u` do servidor | automáticas ligadas e diferença < 2 min | NOT_RUN |
 | 3 | autorizar o aparelho (§2.5) | `Q1` | uma linha, `revoked_at` nulo, `vinculado` falso | NOT_RUN |
 | 4 | obter sessão (abrir o app com rede) | `Q1`, `Q6` | `vinculado` verdadeiro e `last_session_at` preenchido; 1 linha `device_session_issued` | NOT_RUN |
-| 5 | iniciar viagem | tela do app | viagem ativa; termo aceito antes da permissão | **BLOCKED** — nenhuma página chama `EntregasNative.startTripCapture` (`Q-018`) |
+| 5 | iniciar viagem: aceitar o termo, permitir a localização, confirmar a saída | tela do app; `Q1`; linha em `term-acks.jsonl` do piloto | o termo aparece ANTES do pedido de permissão; antes da saída o indicador diz "GPS DESLIGADO — AGUARDANDO A SAÍDA"; depois da saída confirmada, notificação do serviço e "GPS ATIVO — VIAGEM …" | NOT_RUN — depende de §2.7 |
 | 6 | verificar captura em primeiro plano | notificação de serviço em primeiro plano; `Q2` | notificação visível; pontos chegando | NOT_RUN |
 | 7 | bloquear a tela | `Q2` depois de 5 min | pontos continuam chegando | NOT_RUN |
 | 8 | deixar o app em segundo plano | `Q2` depois de 5 min | pontos continuam chegando | NOT_RUN |
@@ -127,6 +138,11 @@ Cada linha anota: **quem**, **quando** (UTC), **aparelho** (modelo e Android), *
 | permissão revogada | revogar a permissão de localização nas configurações | a captura para. **Atenção a C2** (§6) | NOT_RUN |
 | app morto pelo sistema | `adb shell am kill br.com.tata.entregas.<variante>` ou pressão de memória | o serviço volta ou o app avisa; a fila sobrevive | NOT_RUN |
 | aparelho reiniciado | reiniciar no meio da viagem, sem rede | depois do boot a fila está lá (item 13) e sincroniza na volta da rede | NOT_RUN |
+| viagem encerrada com a página ABERTA | encerrar a viagem no console com o app na frente | notificação some e o indicador diz "GPS DESLIGADO" em até ~15 s; `Q2` para de crescer | NOT_RUN |
+| viagem encerrada com o app em SEGUNDO PLANO | abrir o mapa (ou a tela inicial) e encerrar a viagem no console | medir quanto tempo a notificação leva para sumir. **Limite conhecido** (`BLOCKERS.md`, "com a página fechada"): pode não sumir até o app voltar à frente — anotar o tempo, não inventar | NOT_RUN |
+| app reaberto depois de a viagem acabar | matar o app com a viagem ativa, encerrar no console, abrir o app | ao abrir, a captura desliga sozinha (a página reconcilia com o serviço) | NOT_RUN |
+| motoboy recusa o termo | tocar em "NÃO CONCORDAR / VOLTAR" | nenhum pedido de permissão; saída confirma normalmente; indicador "TERMO NÃO ACEITO"; reabrir não oferece o termo de novo | NOT_RUN |
+| telefone compartilhado | outro motoboy entra no mesmo aparelho | o termo aparece de novo para ele: o aceite é por motoboy E aparelho | NOT_RUN |
 
 ## 5 — Consultas de evidência
 

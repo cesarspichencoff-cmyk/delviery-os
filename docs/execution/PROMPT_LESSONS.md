@@ -1038,3 +1038,38 @@ apareceria na próxima regressão integral, em outra missão, como falha de ning
 as suítes de mutação: `git diff -U0`, as linhas `-`, e `grep -F` nos `run-*-mutation-tests.ts`. O
 raio de uma mudança inclui o texto que as outras provas copiaram dela. Reancorar é reescrever a
 mesma mutação no texto novo, com o mesmo defeito — nunca afrouxar a âncora até ela casar.
+
+## L52 — Caminho absoluto no ambiente, ignorado em silêncio
+
+**O que quase passou.** O piloto lia a configuração do termo e da unidade (`ENTREGAS_TERM_CONFIG`,
+`ENTREGAS_UNIT_CONFIG`) com `join(process.cwd(), arquivo)`. `path.join` não respeita caminho absoluto: `/etc/termo.json` virava
+`<cwd>/etc/termo.json`, o arquivo "não existia", e o piloto seguia com o padrão. O padrão é seguro —
+termo não publicável, flag desligada —, e por isso ninguém percebeu: falhar fechado escondeu o
+defeito. Apareceu só quando a prova da Q-018 apontou a configuração para um diretório temporário e
+o servidor respondeu `term_not_publishable` para um termo publicável.
+
+**A regra.** Todo caminho que vem do ambiente se prova com valor ABSOLUTO, porque é assim que volume
+de container e diretório temporário chegam. E um padrão seguro não prova que a configuração foi
+lida: meça o efeito da configuração (a flag ligada aparece em `/api/health`), não a ausência de erro.
+
+## L53 — A ponte falsa precisa dos nomes da ponte de verdade
+
+**O que quase passou.** A ponte falsa da prova com navegador tinha `receiptJson` e `requestSyncNow` —
+os nomes do lado Kotlin de dentro (`NativeActions`), não os que o JavaScript enxerga
+(`@JavascriptInterface`: `receipt` e `syncNow`). Uma página escrita contra a falsa passaria em todas
+as provas e chamaria, no aparelho, métodos que não existem.
+
+**A regra.** Dublê de uma interface se confere contra a DECLARAÇÃO da interface, por teste: aqui, a
+lista de métodos `@JavascriptInterface` lida do `.kt`, a lista que a página conhece e as chaves da
+ponte falsa são o mesmo conjunto (`test:entregas:rider-capture`, S1 e S2).
+
+## L54 — Cenário negativo que passa pela razão errada
+
+**O que quase passou.** "Saída recusada pelo domínio não liga a captura" (D1) foi escrito quando o
+aparelho falso já vinha liberado. Depois, a página passou a exigir o aceite guardado no SERVIDOR.
+Sem semear esse aceite, D1 continuava verde — porque faltava consentimento, não porque a saída foi
+recusada. Uma regressão que ligasse a captura pelo clique passaria despercebida.
+
+**A regra.** Num cenário negativo, todas as outras condições precisam estar verdadeiras, e o teste
+espera a precondição acontecer antes de afirmar a ausência (D1 espera o aceite chegar ao nativo).
+Quem prova que o cenário não é vazio é a mutação que remove só aquela garantia (MR9).
