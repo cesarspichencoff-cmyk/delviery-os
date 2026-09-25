@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   ContractError,
   buildRuntimeSnapshot,
+  classifyHandoffProgression,
   inputFingerprint,
   shouldRecomputeScheduled,
   validateEdgeHandoff,
@@ -172,4 +173,81 @@ test("scheduled recompute skips EMPTY source state", () => {
   });
   assert.equal(shouldRecomputeScheduled(empty), false);
   assert.equal(shouldRecomputeScheduled(valid()), true);
+});
+
+
+test("handoff progression is idempotent and monotonic", () => {
+  const latest = valid();
+
+  assert.equal(
+    classifyHandoffProgression(
+      JSON.parse(JSON.stringify(latest)),
+      latest,
+    ),
+    "DUPLICATE",
+  );
+
+  assert.equal(
+    classifyHandoffProgression(
+      valid({
+        generated_at: "2026-09-25T12:00:30.000Z",
+        source_watermark_at: "2026-09-25T12:00:00.000Z",
+      }),
+      latest,
+    ),
+    "STALE_GENERATION",
+  );
+
+  assert.equal(
+    classifyHandoffProgression(
+      valid({
+        observation_count: 1,
+        source_coverage: [{
+          source: "ifood",
+          unit_id: "0001",
+          observation_count: 1,
+          first_observed_at: "2026-09-25T11:59:00.000Z",
+          last_observed_at: "2026-09-25T12:00:00.000Z",
+        }],
+      }),
+      latest,
+    ),
+    "CONFLICT",
+  );
+
+  assert.equal(
+    classifyHandoffProgression(
+      valid({
+        generated_at: "2026-09-25T12:02:00.000Z",
+        source_watermark_at: "2026-09-25T11:59:30.000Z",
+        source_coverage: [{
+          source: "ifood",
+          unit_id: "0001",
+          observation_count: 2,
+          first_observed_at: "2026-09-25T11:58:00.000Z",
+          last_observed_at: "2026-09-25T11:59:30.000Z",
+        }],
+      }),
+      latest,
+    ),
+    "SOURCE_WATERMARK_REGRESSION",
+  );
+
+  assert.equal(
+    classifyHandoffProgression(
+      valid({
+        generated_at: "2026-09-25T12:02:00.000Z",
+        source_watermark_at: "2026-09-25T12:01:00.000Z",
+        source_coverage: [{
+          source: "ifood",
+          unit_id: "0001",
+          observation_count: 2,
+          first_observed_at: "2026-09-25T12:00:01.000Z",
+          last_observed_at: "2026-09-25T12:01:00.000Z",
+        }],
+      }),
+      latest,
+    ),
+    "ACCEPT",
+  );
 });
