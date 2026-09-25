@@ -2,6 +2,7 @@ import {
   ContractError,
   buildRuntimeSnapshot,
   inputFingerprint,
+  shouldRecomputeScheduled,
   validateEdgeHandoff,
 } from "./core.mjs";
 
@@ -178,9 +179,11 @@ export default {
     try {
       const input = await latestHandoff(env);
       if (!input) return;
+      const validated = validateEdgeHandoff(input);
+      if (!shouldRecomputeScheduled(validated)) return;
       await persistSnapshot(
         env,
-        validateEdgeHandoff(input),
+        validated,
         new Date().toISOString(),
       );
     } catch (error) {
