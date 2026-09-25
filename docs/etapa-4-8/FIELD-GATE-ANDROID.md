@@ -5,14 +5,15 @@ lifecycle:
   authority_scope: field_gate_android
   superseded_by: null
   atualizado_em: "2026-09-25"
-  state_basis: c24b4ec
+  state_basis: c677482
 ---
 
 # Field gate físico do Android — roteiro
 
-> **Nada deste roteiro foi executado em aparelho.** Todo resultado nasce `NOT_RUN` e só muda
-> com evidência anexada: `PASS`, `FAIL` ou `BLOCKED`. Nunca inferido, nunca "deve funcionar".
-> Emulador é evidência de emulador; o que vale aqui é o aparelho na rua.
+> **Nada da bateria física deste roteiro foi executado em aparelho real.** Os pré-requisitos A1–A3
+> foram executados em 2026-09-25 numa máquina Windows ("Foxxy"), com A3 em emulador Android 14/API 34.
+> Resultado físico continua `NOT_RUN` até evidência de aparelho real. Emulador é evidência de emulador;
+> o que vale para comportamento de campo continua sendo o aparelho na rua.
 
 ## 0 — Estado de partida (2026-09-25)
 
@@ -22,7 +23,7 @@ lifecycle:
 | relógio do aparelho no servidor | **PROVEN**: relógio adiantado vira `suspect`, não fabrica frescor, sobrevive ao replay | `test:platform:relogio`; `docs/etapa-4-8/RELOGIO.md` |
 | papéis mínimos na composição oficial | **PROVEN** em containers | `tools/papeis_compose_real.sh` |
 | comportamento físico do Android | **UNKNOWN** | este roteiro |
-| build do app (`testDebugUnitTest`, `assembleDebug`, instrumentados) | **BLOCKED no sandbox de nuvem**: a rede nega `dl.google.com`, de onde vêm o plugin Android e o SDK | `docs/execution/BLOCKERS.md`, "Android — o app não compila neste ambiente" |
+| build do app (`testDebugUnitTest`, `assembleDebug`, instrumentados) | **PROVEN fora do sandbox**: A1 e A2 em Windows/JDK 17/SDK 34; A3 em emulador Android 14/API 34 | execução local "Foxxy", 2026-09-25; o bloqueio de `dl.google.com` permanece específico ao sandbox de nuvem |
 
 ## 1 — Pré-requisito A: compilar e testar numa máquina com SDK
 
@@ -41,13 +42,14 @@ sh gradlew :app:connectedDebugAndroidTest  # PersistenceInstrumentedTest — exi
 
 | item | PASS se | resultado |
 |---|---|---|
-| A1 unit tests | `BUILD SUCCESSFUL` e o relatório em `app/build/reports/tests/testDebugUnitTest/` sem falha | NOT_RUN |
-| A2 APK de debug | o arquivo existe e `aapt dump badging` mostra `br.com.tata.entregas.debug` | NOT_RUN |
-| A3 instrumentado | `connectedDebugAndroidTest` sem falha, no aparelho do teste | NOT_RUN |
+| A1 unit tests | `BUILD SUCCESSFUL` e o relatório em `app/build/reports/tests/testDebugUnitTest/` sem falha | **PASS** — `:app:testDebugUnitTest`, JDK 17.0.19 + SDK 34, Windows |
+| A2 APK de debug | o arquivo existe e `aapt dump badging` mostra `br.com.tata.entregas.debug` | **PASS** — `assembleDebug`; pacote `br.com.tata.entregas.debug`, target/compile 34 |
+| A3 instrumentado | `connectedDebugAndroidTest` sem falha, no aparelho do teste | **PASS (EMULADOR)** — 8 testes em `deliveryos_api34(AVD)`, Android 14/API 34 |
 | A4 `android/gate-verification` | **FAIL_PREEXISTENTE conhecido** desde `4456f2e`: `EntregasApi.kt` usa `DeviceSession.semSegredo`, que importa o Room. Não é regressão. Conserto: levar `semSegredo` para um arquivo Kotlin puro — feito ali, onde o app compila | NOT_RUN |
 
-**Compilar não é instalar, e instalar não é testar em campo.** Um `BUILD SUCCESSFUL` fecha A1–A2;
-nada da seção 3.
+**Compilar não é instalar, e instalar não é testar em campo.** Em 2026-09-25 o APK debug também foi
+instalado e abriu no emulador com `MainActivity` em primeiro plano e sem crash `AndroidRuntime`.
+Isso é smoke test de emulador, não fecha nenhum item da seção 3.
 
 ## 2 — Pré-requisito B: servidor, identidade do aparelho e decisões
 
