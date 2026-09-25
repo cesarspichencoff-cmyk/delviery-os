@@ -5,7 +5,7 @@
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "design/tata-edge-runtime-foundation-v1",
   "checkpoint_type": "WORK_BRANCH_SHADOW_RUNTIME_WORLD_PROVEN",
-  "state_basis_head": "ecc43e67b2f1cca9df3913854051cab7b7b97fa1",
+  "state_basis_head": "4e657187811ed58d6b2aea3ef3eab2e2bef57f65",
   "verified_state_refs": [
     "src/edge/managerSnapshot.ts",
     "src/edge/gerencialWatchHandoff.ts",
@@ -23,13 +23,14 @@
     "Current shadow semantics never authorize global all-clear or an external operational effect from insufficient coverage.",
     "The existing cesar-gerencial-mail-bridge remained on version 172d3937-1198-493a-ae33-d19e944ef3c8 with 54 closing rows and zero iFood-review rows after the Watch deployment.",
     "The TypeScript src/contextKernel tree is a non-canonical compatibility harness; the higher Gerencial Watch / César Context Kernel remains a separate product layer.",
-    "César Context Kernel v0.6 exists as a tested portable artifact in the user Library with strict TATÁ Edge admission; it is not itself deployed by this repository."
+    "César Context Kernel v0.6 exists as a tested portable artifact in the user Library with strict TATÁ Edge admission; it is not itself deployed by this repository.",
+    "The post-proof bearer secret was rotated with host-generated randomness and authenticated access was reverified without emitting or committing the replacement token."
   ],
   "proof": {
-    "github_actions_run": "36112447472",
-    "executable_commit": "99392af9960f31de0a418f95f082cf727ec5d059",
+    "github_actions_run": "36112878448",
+    "executable_commit": "b7109e1fb5d7406ace4e0b6b78da02c67a93ba66",
     "ci_conclusion": "success",
-    "cloud_worker_current_version": "b9104f4c-4763-4267-be99-adff1c159ace",
+    "cloud_worker_current_version": "99ef1ee7-e1c5-4cd1-92a9-384cb540c72a",
     "cloud_d1_id": "75516adf-6196-460a-82d4-9aa6925dbed4",
     "shadow_current_truth": "EMPTY",
     "shadow_current_validity": "INSUFFICIENT",
