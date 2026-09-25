@@ -233,7 +233,8 @@ Android**. `/entregas` lê realidade do banco, separada da demonstração.
 **Certificação (2026-09-25)**, tudo reproduzido antes de mexer (mutações **14/14: 1 controle + 13, zero
 cegas** — o commit dizia 3 controles). Um `FAIL_NOVO`, achado e fechado: os dois arquivos da superfície
 são caminhos protegidos e a autorização do César não estava registrada — exceção estreita no envelope
-M1, fora de M1B, **reversível, pede confirmação**. Os **papéis mínimos estão na composição oficial**
+M1, fora de M1B, **confirmada pelo César em 2026-09-25** — só os dois arquivos e a classe executada. Os
+**papéis mínimos estão na composição oficial**
 (job `deliveryos-papeis`): crítico e assíncrono sem superusuário, donos de nada, sem a senha
 administrativa; provado em containers (`tools/papeis_compose_real.sh` **44/44**, e **RED com 20
 acusações** no controle que devolve a URL do dono), travado por `test:platform:papeis:compose` (10). O

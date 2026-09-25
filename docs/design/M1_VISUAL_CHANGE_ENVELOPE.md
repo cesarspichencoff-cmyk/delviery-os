@@ -250,7 +250,7 @@ propriedade de área nem a lógica de estado do sinal.
 **Consequência:** a compensação `fraseDoSinal()` que M1B tinha posto em
 `home-vm.ts` foi **removida**. Uma verdade só, na fonte, em vez de duas.
 
-### Exceção estreita — César, 2026-09-24 (Cadeia Real) — fora de M1B
+### Exceção estreita — César, 2026-09-24 (Cadeia Real) — fora de M1B · confirmada em 2026-09-25
 
 ```
 src/product/viewmodels/entregas-vm.ts   READ_ONLY_REALITY_BLOCK_ONLY
@@ -281,6 +281,26 @@ título da seção de demonstração, que passou a dizer "(demonstracao)".
 dois arquivos sem este registro, e o C6 reprovou: FAIL_NOVO, reproduzido na
 certificação de 2026-09-25 (`docs/etapa-4-8/CADEIA-REAL.md`). O registro
 documenta uma decisão que o César já tinha tomado; não toma decisão nova.
+
+**Confirmada pelo César em 2026-09-25**, explicitamente, e **só** para os dois
+arquivos acima e a classe já executada:
+
+- porta READ-ONLY de realidade de Entregas;
+- separação explícita demo × realidade;
+- apresentação dos estados real/parcial/unknown;
+- refinamento visual diretamente necessário dessa superfície.
+
+A confirmação formaliza o trabalho da Cadeia Real. Ela **não** amplia este
+envelope nem M1B; **não** libera nenhum outro arquivo de `src/product/ui/` ou
+`src/product/viewmodels/`; **não** autoriza redesenho da Home; **não** altera
+Calmo, Ambiente ou Foco; e **não** autoriza mudança futura nesses dois arquivos
+fora dessa classe.
+
+**O limite da guarda, declarado:** o C6 é por CAMINHO. Ele reprova qualquer
+outro arquivo protegido e qualquer registro sem a linha exata (C6c), mas não lê
+a CLASSE de uma mudança dentro destes dois arquivos — igual à exceção de
+`sinais.ts`. Mudança futura aqui, fora da classe, é barrada por revisão e por
+registro novo neste envelope, não pelo gate.
 
 **Não mudaram:** Home, `home-vm.ts`, `sinais.ts`, `areas.ts`, `copiloto-vm.ts`,
 o domínio `src/entregas/**`, os selos da demonstração (`somente_demonstracao` e

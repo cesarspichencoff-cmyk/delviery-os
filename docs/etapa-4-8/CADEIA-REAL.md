@@ -46,7 +46,7 @@ controle positivo e treze mutações. O número de mutações estava certo; o de
 
 | frente | resultado | onde |
 |---|---|---|
-| `FAIL_NOVO` do m1-bridge C6 | `1de5b28`/`5effdbe` tocaram `entregas-vm.ts` e `entregas.js`, caminhos protegidos pelos gates de congelamento, **sem registrar autorização**. Em `0b8803c` o C6 era verde. A autorização existia: o César a deu na própria missão (item 8, porta READ-ONLY; item 12, revisão visual de Entregas). Foi **registrada**, não inventada: exceção estreita no envelope M1, fora de M1B, dois arquivos, uma classe, linha exata; o C6 a nomeia no código, e o C6c prova que sem o registro os dois reprovam. **Reversível** (rollback no envelope). **Pede confirmação do César.** | `3993ab4`; `docs/design/M1_VISUAL_CHANGE_ENVELOPE.md` |
+| `FAIL_NOVO` do m1-bridge C6 | `1de5b28`/`5effdbe` tocaram `entregas-vm.ts` e `entregas.js`, caminhos protegidos pelos gates de congelamento, **sem registrar autorização**. Em `0b8803c` o C6 era verde. A autorização existia: o César a deu na própria missão (item 8, porta READ-ONLY; item 12, revisão visual de Entregas). Foi **registrada**, não inventada: exceção estreita no envelope M1, fora de M1B, dois arquivos, uma classe, linha exata; o C6 a nomeia no código, e o C6c prova que sem o registro os dois reprovam. **Reversível** (rollback no envelope). **Confirmada pelo César em 2026-09-25**, só para os dois arquivos e a classe já executada. | `3993ab4`; `docs/design/M1_VISUAL_CHANGE_ENVELOPE.md` |
 | papéis mínimos na composição oficial | ligados, no desenho provado; ver §6 | `e51c34d` |
 | Android | JDK 17 instalado; build do app, testes de unidade e instrumentados **BLOCKED**: a política de rede nega `dl.google.com`, de onde vêm o AGP e o SDK; ver §4 | — |
 | `occurred_at` no futuro | reproduzido com o binário, impacto medido, **registrado como problema separado e não corrigido**; ver §10 | `docs/execution/BLOCKERS.md` |
@@ -324,8 +324,10 @@ Nenhuma nova pergunta. Q-003, Q-004 e Q-015 continuam `open`/`PAUSE`.
 
 - **Ligar os papéis ao compose** mudou a composição oficial. Foi feito por instrução explícita do
   César na certificação ("Agora falta integrar isso à COMPOSIÇÃO OFICIAL").
-- **Pedem confirmação dele:**
-  - a exceção estreita registrada no envelope M1, para a superfície Entregas (§0). É reversível;
-  - a direção de correção do relógio (§10). Recusar o ponto, ou aceitar marcado e fora do frescor.
+- **Confirmada por ele em 2026-09-25:** a exceção estreita registrada no envelope M1, para a
+  superfície Entregas (§0). Vale só para os dois arquivos e a classe já executada; não amplia o
+  envelope. Ver `docs/design/M1_VISUAL_CHANGE_ENVELOPE.md`.
+- **Pede decisão dele:** a direção de correção do relógio (§10). Recusar o ponto, ou aceitar marcado
+  e fora do frescor.
 - **Segue fora desta missão:** migrar viagem, termo e comandos do piloto para a plataforma
   redefine o domínio de Entregas, que está no Preservation Set.
