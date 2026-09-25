@@ -38,8 +38,29 @@ async function latestVerifiedClosing(env) {
   ).first();
 }
 
+function watchTargetConfigured(env) {
+  return Boolean(
+    env.WATCH_BRIDGE_TOKEN &&
+    (env.WATCH_SERVICE?.fetch || env.WATCH_BASE_URL),
+  );
+}
+
+async function watchFetch(env, path, init) {
+  const request = new Request(`https://watch.internal${path}`, init);
+
+  if (env.WATCH_SERVICE?.fetch) {
+    return env.WATCH_SERVICE.fetch(request);
+  }
+
+  if (!env.WATCH_BASE_URL) {
+    throw new ProducerError("watch_target_not_configured");
+  }
+
+  return fetch(`${env.WATCH_BASE_URL}${path}`, init);
+}
+
 async function watchSnapshot(env) {
-  const response = await fetch(`${env.WATCH_BASE_URL}/snapshot`, {
+  const response = await watchFetch(env, "/snapshot", {
     method: "GET",
     headers: {
       authorization: `Bearer ${env.WATCH_BRIDGE_TOKEN}`,
@@ -60,8 +81,9 @@ async function watchSnapshot(env) {
 }
 
 async function postHandoff(env, handoff) {
-  const response = await fetch(
-    `${env.WATCH_BASE_URL}/sources/tata-edge/handoff`,
+  const response = await watchFetch(
+    env,
+    "/sources/tata-edge/handoff",
     {
       method: "POST",
       headers: {
@@ -98,7 +120,7 @@ async function postHandoff(env, handoff) {
 }
 
 export async function runOnce(env, generatedAt = new Date().toISOString()) {
-  if (!env.WATCH_BASE_URL || !env.WATCH_BRIDGE_TOKEN) {
+  if (!watchTargetConfigured(env)) {
     throw new ProducerError("watch_target_not_configured");
   }
 
