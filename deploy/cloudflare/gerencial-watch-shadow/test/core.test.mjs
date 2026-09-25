@@ -4,6 +4,7 @@ import {
   ContractError,
   buildRuntimeSnapshot,
   classifyHandoffProgression,
+  classifySourceFreshness,
   inputFingerprint,
   shouldRecomputeScheduled,
   validateEdgeHandoff,
@@ -19,7 +20,7 @@ function valid(overrides = {}) {
     source_watermark_at: "2026-09-25T12:00:00.000Z",
     observation_count: 2,
     source_coverage: [{
-      source: "ifood",
+      source: "tata_daily_closing",
       unit_id: "0001",
       observation_count: 2,
       first_observed_at: "2026-09-25T11:59:00.000Z",
@@ -106,7 +107,7 @@ test("input fingerprint is stable across object key order", async () => {
   assert.equal(await inputFingerprint(a), await inputFingerprint(b));
 });
 
-test("snapshot remains degraded until freshness/global coverage exist", async () => {
+test("fresh loaded source still cannot manufacture global all-clear", async () => {
   const input = valid({
     hard_exceptions: [{
       attention_id: "auth-1",
@@ -128,10 +129,42 @@ test("snapshot remains degraded until freshness/global coverage exist", async ()
   );
   assert.equal(snapshot.validity.status, "DEGRADED");
   assert.equal(snapshot.validity.globalAllClearAuthorized, false);
+  assert.equal(snapshot.sourceFreshness.length, 1);
+  assert.equal(snapshot.sourceFreshness[0].status, "FRESH");
   assert.equal(snapshot.needsCesar.length, 1);
   assert.equal(snapshot.needsCesar[0].kind, "IFOOD_AUTH_HUMAN_REQUIRED");
   assert.equal(snapshot.criticalQueue.length, 2);
   assert.equal(snapshot.externalEffectsAuthorized, false);
+});
+
+test("source freshness distinguishes FRESH, AGING and STALE from source time", () => {
+  const coverage = valid().source_coverage[0];
+
+  assert.equal(
+    classifySourceFreshness(coverage, "2026-09-26T11:59:59.000Z").status,
+    "FRESH",
+  );
+  assert.equal(
+    classifySourceFreshness(coverage, "2026-09-26T13:00:01.000Z").status,
+    "AGING",
+  );
+  assert.equal(
+    classifySourceFreshness(coverage, "2026-09-27T01:00:01.000Z").status,
+    "STALE",
+  );
+});
+
+test("unregistered source freshness is UNKNOWN, never guessed", () => {
+  const freshness = classifySourceFreshness({
+    source: "ifood_review_mail",
+    observation_count: 1,
+    first_observed_at: "2026-09-25T12:00:00.000Z",
+    last_observed_at: "2026-09-25T12:00:00.000Z",
+  }, "2026-09-25T12:02:00.000Z");
+
+  assert.equal(freshness.status, "UNKNOWN");
+  assert.equal(freshness.policyId, null);
+  assert.equal(freshness.reason, "SOURCE_FRESHNESS_POLICY_NOT_PROVIDED");
 });
 
 test("empty envelope produces INSUFFICIENT, never all-clear", async () => {

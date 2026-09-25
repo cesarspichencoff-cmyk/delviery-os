@@ -11,6 +11,8 @@ It is intentionally **not** a second Context Kernel.
 - persist append-only handoff history in an isolated D1;
 - maintain current + historical runtime snapshots;
 - recompute hourly without turning compute time into source freshness;
+- classify registered source freshness as `FRESH`, `AGING`, `STALE` or `UNKNOWN` from source observation time;
+- keep unregistered source cadence as `UNKNOWN` and never infer global all-clear from one fresh source;
 - expose the current snapshot behind a bearer secret.
 
 ## Explicitly disabled

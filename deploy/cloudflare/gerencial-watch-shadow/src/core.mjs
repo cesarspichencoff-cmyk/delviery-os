@@ -1,5 +1,13 @@
 export const EDGE_CONTRACT_VERSION = "edge-watch-handoff@0.1.0";
 
+export const SOURCE_FRESHNESS_POLICIES = Object.freeze({
+  tata_daily_closing: Object.freeze({
+    policy_id: "tata_daily_closing@daily-v1",
+    fresh_for_ms: 24 * 60 * 60 * 1000,
+    stale_after_ms: 36 * 60 * 60 * 1000,
+  }),
+});
+
 export class ContractError extends Error {
   constructor(code) {
     super(code);
@@ -207,6 +215,103 @@ export async function inputFingerprint(input) {
   return sha256Hex(stableJson(input));
 }
 
+export function classifySourceFreshness(
+  coverage,
+  evaluatedAt,
+  policies = SOURCE_FRESHNESS_POLICIES,
+) {
+  assertIso(evaluatedAt, "watch_source_freshness_evaluated_at_invalid");
+  const observedAt = coverage?.last_observed_at;
+  const source = coverage?.source;
+
+  if (
+    typeof source !== "string" ||
+    !source ||
+    typeof observedAt !== "string" ||
+    !Number.isFinite(Date.parse(observedAt))
+  ) {
+    return {
+      source: typeof source === "string" && source ? source : "UNKNOWN_SOURCE",
+      unitId: coverage?.unit_id ?? null,
+      lastObservedAt: typeof observedAt === "string" ? observedAt : null,
+      status: "UNKNOWN",
+      ageMs: null,
+      policyId: null,
+      freshForMs: null,
+      staleAfterMs: null,
+      reason: "SOURCE_FRESHNESS_INPUT_INVALID",
+    };
+  }
+
+  const policy = policies?.[source];
+  const ageMs = Date.parse(evaluatedAt) - Date.parse(observedAt);
+
+  if (!policy) {
+    return {
+      source,
+      unitId: coverage?.unit_id ?? null,
+      lastObservedAt: observedAt,
+      status: "UNKNOWN",
+      ageMs: Number.isFinite(ageMs) && ageMs >= 0 ? ageMs : null,
+      policyId: null,
+      freshForMs: null,
+      staleAfterMs: null,
+      reason: "SOURCE_FRESHNESS_POLICY_NOT_PROVIDED",
+    };
+  }
+
+  const freshForMs = Number(policy.fresh_for_ms);
+  const staleAfterMs = Number(policy.stale_after_ms);
+  if (
+    !Number.isFinite(freshForMs) ||
+    !Number.isFinite(staleAfterMs) ||
+    freshForMs < 0 ||
+    staleAfterMs <= freshForMs
+  ) {
+    return {
+      source,
+      unitId: coverage?.unit_id ?? null,
+      lastObservedAt: observedAt,
+      status: "UNKNOWN",
+      ageMs: Number.isFinite(ageMs) && ageMs >= 0 ? ageMs : null,
+      policyId: policy.policy_id ?? null,
+      freshForMs: null,
+      staleAfterMs: null,
+      reason: "SOURCE_FRESHNESS_POLICY_INVALID",
+    };
+  }
+
+  if (!Number.isFinite(ageMs) || ageMs < 0) {
+    return {
+      source,
+      unitId: coverage?.unit_id ?? null,
+      lastObservedAt: observedAt,
+      status: "UNKNOWN",
+      ageMs: null,
+      policyId: policy.policy_id ?? null,
+      freshForMs,
+      staleAfterMs,
+      reason: "SOURCE_OBSERVED_AFTER_EVALUATION",
+    };
+  }
+
+  let status = "FRESH";
+  if (ageMs > staleAfterMs) status = "STALE";
+  else if (ageMs > freshForMs) status = "AGING";
+
+  return {
+    source,
+    unitId: coverage?.unit_id ?? null,
+    lastObservedAt: observedAt,
+    status,
+    ageMs,
+    policyId: policy.policy_id ?? null,
+    freshForMs,
+    staleAfterMs,
+    reason: null,
+  };
+}
+
 export async function buildRuntimeSnapshot(input, generatedAt = new Date().toISOString()) {
   validateEdgeHandoff(input);
   assertIso(generatedAt, "watch_snapshot_generated_at_invalid");
@@ -215,12 +320,23 @@ export async function buildRuntimeSnapshot(input, generatedAt = new Date().toISO
     (item) => item.kind === "IFOOD_AUTH_HUMAN_REQUIRED",
   );
   const unknowns = [];
+  const sourceFreshness = input.source_coverage.map((coverage) =>
+    classifySourceFreshness(coverage, generatedAt),
+  );
   let validity = "DEGRADED";
   if (input.source_mode === "empty") {
     validity = "INSUFFICIENT";
     unknowns.push("no TATA Edge observations loaded");
   } else {
-    unknowns.push("TATA Edge freshness policy not provided");
+    for (const freshness of sourceFreshness) {
+      if (freshness.status === "UNKNOWN") {
+        unknowns.push(`source freshness unknown: ${freshness.source}`);
+      } else if (freshness.status === "AGING") {
+        unknowns.push(`source freshness aging: ${freshness.source}`);
+      } else if (freshness.status === "STALE") {
+        unknowns.push(`source stale: ${freshness.source}`);
+      }
+    }
     unknowns.push("global source coverage not provided by Edge");
     if (input.source_mode === "synthetic") {
       unknowns.push("current Edge input is simulation, not fact");
@@ -242,6 +358,7 @@ export async function buildRuntimeSnapshot(input, generatedAt = new Date().toISO
       globalAllClearAuthorized: false,
     },
     coverage: input.source_coverage,
+    sourceFreshness,
     blindSources: ["GLOBAL_CRITICAL_SOURCE_REGISTRY"],
     needsCesar,
     criticalQueue: input.hard_exceptions,
