@@ -1,3 +1,8 @@
+> **Freshness correction:** this receipt originally used the mail-bridge
+> `updated_at` ingestion timestamp as the source watermark. The live-chain
+> proof remains valid, but canonical freshness now uses `message_sent_at`.
+> See `CORRECTION_CLOSING_SOURCE_TIME_2026-09-25.md`.
+
 # WORLD PROOF — Continuous Closing Source → Gerencial Watch — 2026-09-25
 
 ## Scope
