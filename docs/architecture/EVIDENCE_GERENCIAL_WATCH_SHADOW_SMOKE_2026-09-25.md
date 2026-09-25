@@ -119,3 +119,106 @@ Still not proven:
 Connect the already-proven Edge handoff producer to this shadow worker using synthetic/replay input first, then live-observed read-only input only after source provenance is available.
 
 No production action should be enabled from shadow evidence alone.
+
+
+## Producer-to-cloud proof
+
+The repository's real Edge producer path was then executed against the deployed
+shadow worker, not a hand-written HTTP envelope.
+
+Command:
+
+```text
+npm run smoke:edge:watch-shadow-live
+```
+
+The smoke path used:
+
+```text
+EdgeSourceObservation
+  -> projectManagerSnapshot()
+  -> managerSnapshotToWatchHandoff()
+  -> buildGerencialWatchHandoffRequest()
+  -> HTTPS POST /sources/tata-edge/handoff
+  -> deployed Worker
+  -> D1
+  -> Snapshot Engine
+```
+
+Observed result:
+
+```json
+{
+  "status": "PASS",
+  "producer_code_used": true,
+  "network_boundary_reached": true,
+  "synthetic_truth_preserved": true,
+  "synthetic_requires_cesar": true,
+  "final_state_reset_to_empty": true,
+  "final_all_clear_authorized": false,
+  "external_effects_authorized": false
+}
+```
+
+After this producer-level proof, a read-only D1 query observed:
+
+```text
+edge_handoff_history rows = 8
+watch_runtime_snapshot_history rows = 13
+current truth = EMPTY
+current validity = INSUFFICIENT
+current source watermark = null
+changes = 0
+rows_written = 0
+changed_db = false
+```
+
+This upgrades the earlier hand-written admission smoke to:
+
+`EDGE_PRODUCER -> NETWORK -> WORKER -> D1 -> SNAPSHOT = PROVEN_SYNTHETIC_WORLD_PATH`
+
+It still does not prove live operational source capture.
+
+## Exact commit execution proof
+
+Commit:
+
+`3be0526ab71de2e9b2592482d4f41fb43033db9d`
+
+Foxxy clean-clone execution:
+
+```text
+npm ci
+npm run typecheck
+npm run test:edge:shadow:all
+```
+
+Result:
+
+```text
+exit code 0
+all Edge suites PASS
+all compatibility-harness suites PASS
+Gerencial Watch handoff/transport PASS
+shadow-worker tests: 10/10 PASS
+```
+
+GitHub Actions run:
+
+`36141981626`
+
+Conclusion:
+
+`success`
+
+Successful gates included dependency inventory, Edge dependency boundary,
+TypeScript typecheck and the complete synthetic suite.
+
+Therefore this exact commit has independent proof on both:
+
+- GitHub Actions Linux runner;
+- Foxxy Windows host.
+
+The known `xlsx` HIGH advisory remains dependency debt in legacy spreadsheet
+tooling; it is not imported by the Edge runtime boundary and was not silently
+removed during this proof.
