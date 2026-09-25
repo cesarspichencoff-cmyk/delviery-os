@@ -989,3 +989,14 @@ Foxxy primeiro (`docs/etapa-4-8/FIELD-GATE-ANDROID.md` §4).
 Contornado pela página, que repassa as políticas e o aceite (D88). O aceite gravado no Room fica
 `pending` para sempre — inofensivo: o servidor já o tem e o registro é idempotente pelo id.
 
+### Entregas — `run-persistence-recreate-tests` com data fixa vencida · **REGISTRADO, não corrigido** (2026-09-25)
+
+A suíte posta pontos com `occurred_at` fixo em `2026-07-26T10:00:00Z` (`AT1`, `AT2`), e
+`validateSample` recusa ponto mais velho que 30 dias (`impossible_timestamp`). Desde ~2026-08-25 os
+testes 4 e 10 falham, e a cadeia `test:entregas` para ali: o `deploy-audit`, último da cadeia, deixa
+de rodar por ela. Reproduzido idêntico em `a9b7e1b`, antes da Q-018. Não é defeito do produto — a
+regra dos 30 dias está certa; a prova é que envelheceu. **Correção proposta, não aplicada** (fora do
+escopo da Q-018): carimbos relativos ao relógio do teste (`agora − N s`), como
+`run-device-api-tests.ts` já faz. Enquanto isso, o `deploy-audit` roda à parte (36/36 na regressão da
+Q-018).
+

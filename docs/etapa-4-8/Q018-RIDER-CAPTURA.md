@@ -224,4 +224,15 @@ não entrou. O recibo existe no servidor e no Kotlin (`receipt`).
 
 ## 11 — Regressão
 
-(preenchido com a execução)
+Cada gate isolado, sobre o código final e PostgreSQL real (`127.0.0.1:5433`), agregados abertos em
+partes para nada rodar duas vezes: **70 gates, 65 verdes na primeira passada** (2 023 s de gate).
+
+| classe | gates |
+|---|---|
+| PASS | 65 — entre eles `test:entregas:rider-bridge`, `test:entregas:pilot-gate`, `test:lab`, `test:platform:product`, `test:platform:m1-bridge` e todas as suítes de mutação da plataforma (`pb19`, `spine`, `q016`, `q017`, `append-only`, `cadeia`, `relogio`, `lab:v4:evidencias`, `m1b`) |
+| `FAIL_NOVO` — achado e fechado | `test:platform:governanca`: **G2** (o parágrafo novo do `CLAUDE.md` citava o arquivo de bloqueios sem o caminho, e a rota da §11 o lia como artefato sem lifecycle) e **G6c** (`DECISIONS.md` alterado sem atualizar `atualizado_em`). Os dois vieram do registro desta missão. Corrigidos: a saída voltou a ser idêntica à de `a9b7e1b`, fora o cabeçalho (+1 artefato e +1 caminho de rota: este documento) |
+| ambiente do roteiro | `test:platform:pb19`, D3a-2 "dist VELHO": o roteiro compilou com `tsc`, não com `build:platform`, e o carimbo ficou para trás — é o que o gate manda fazer. Depois de `build:platform`: **27/27** |
+| `FAIL_PREEXISTENTE` | `test:entregas` — a cadeia para em `persistence-recreate`: data fixa vencida (registrado em `docs/execution/BLOCKERS.md`), idêntico em `a9b7e1b`; o `deploy-audit`, último da cadeia, rodado à parte: **36/36**. `test:platform:governanca` G6b e G9, e `governanca:mutacoes`, que aborta pelo mesmo motivo — idênticos em `a9b7e1b`. `test:platform:m1b-perceptual` — `ECONNREFUSED 127.0.0.1:5292`, servidor ausente, idêntico em `a9b7e1b` |
+
+**Zero `FAIL_NOVO` em aberto.** Antes de escolher a regressão, as linhas que o diff removeu foram
+cruzadas com as âncoras das 33 suítes de mutação: nenhuma ancorava nelas (L51).

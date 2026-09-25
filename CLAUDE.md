@@ -286,5 +286,8 @@ agora 403); caminho absoluto de configuração era ignorado em silêncio. Gates:
 `test:entregas`), device-api **40/40**, android **38/38** e `test:entregas:rider-bridge:mutacoes`
 (**21 mutações, zero cegas**). **Não provado:** o Kotlin alterado não compilou aqui (`dl.google.com`
 negado) e nada rodou em aparelho; com a página fechada, o fim da viagem só chega ao serviço quando
-ela reabre (`BLOCKERS.md`). O primeiro fato do app passa a `NOT_RUN`: build no Foxxy e termo
-publicável, que é do César.
+ela reabre (`docs/execution/BLOCKERS.md`). O primeiro fato do app passa a `NOT_RUN`: build no Foxxy e termo
+publicável, que é do César. Regressão: **70 gates, 66 verdes, zero `FAIL_NOVO`** — o único achado
+(G2 e G6c da governança, vindos do próprio registro desta missão) foi fechado; 4
+`FAIL_PREEXISTENTE` idênticos em `a9b7e1b`, entre eles a cadeia `test:entregas`, que para numa data
+fixa vencida da suíte de recriação de persistência.

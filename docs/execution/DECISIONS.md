@@ -4,7 +4,7 @@ lifecycle:
   status: ACTIVE
   authority_scope: decisions
   superseded_by: null
-  atualizado_em: "2026-09-23"
+  atualizado_em: "2026-09-25"
   state_basis: 953a3fb
 ---
 
