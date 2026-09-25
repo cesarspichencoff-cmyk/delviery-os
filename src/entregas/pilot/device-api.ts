@@ -22,6 +22,8 @@ import {
   AcknowledgementStore,
   type AcknowledgementRecord,
   ACK_FORBIDDEN_KEYS,
+  buildAcknowledgement,
+  acknowledgementId,
 } from "../consent/acknowledgement";
 import type { UnitConfigLoad } from "../gps/unit-config";
 
@@ -273,6 +275,8 @@ const REQUIRED_ACK_FIELDS = [
  */
 export function handleTermAcknowledge(args: {
   input: Record<string, unknown>;
+  /** Quem está logado. Só o próprio motoboy grava o próprio aceite. */
+  actor: { actor_id: string; role: string } | null;
   term: LocationTerm;
   store: AcknowledgementStore;
   now: Date;
@@ -291,6 +295,17 @@ export function handleTermAcknowledge(args: {
     if (typeof args.input[f] !== "string" || !(args.input[f] as string).trim()) {
       return bad(400, "Registro de aceite incompleto.", "incomplete_ack");
     }
+  }
+
+  // A rider-mobile liga a captura a partir deste registro (Q-018). Sem esta
+  // trava, qualquer sessão — um operador — gravava um "accepted" em nome do
+  // motoboy, e a captura ligaria sem o consentimento dele (reproduzido).
+  if (
+    !args.actor ||
+    args.actor.role !== "motoboy_interno" ||
+    args.input.rider_id !== args.actor.actor_id
+  ) {
+    return bad(403, "Só o próprio motoboy registra o aceite do termo.", "not_rider");
   }
 
   const expected = hashTerm(args.term);
@@ -335,6 +350,142 @@ function record_correlation(input: Record<string, unknown>): string {
     .update(`${String(input.rider_id)}|${String(input.accepted_at)}`)
     .digest("hex")
     .slice(0, 16);
+}
+
+/* ------------------------------------------------------------------ *
+ * Termo e aceite pela rider-mobile (Q-018)
+ * ------------------------------------------------------------------ */
+
+/**
+ * O termo como a tela de consentimento da rider-mobile o apresenta.
+ *
+ * Só sai quando é publicável: sem isso não há o que apresentar, e a frase é a
+ * mesma do portão de captura. O hash é o mesmo de `/api/policies`, calculado
+ * aqui — a página nunca calcula hash de termo.
+ *
+ * Com o motoboy da sessão e o aparelho, devolve também o registro que JÁ
+ * existe para este termo (aceite ou recusa), procurado pelo mesmo id
+ * determinístico do registro. É o servidor quem diz se este motoboy já
+ * respondeu neste aparelho — nunca o aparelho: num telefone compartilhado, o
+ * aceite de um motoboy não vale para o outro.
+ */
+export function buildTermPresentation(args: {
+  term: LocationTerm;
+  summary: string;
+  store?: AcknowledgementStore;
+  rider_id?: string | null;
+  device_id?: string | null;
+}): DeviceApiResponse {
+  if (!isPublishable(args.term)) {
+    return ok({
+      api_version: DEVICE_API_VERSION,
+      publishable: false,
+      term: null,
+      acknowledgement: null,
+      human: "O termo de localização ainda não foi liberado pelo responsável.",
+    });
+  }
+  const t = args.term;
+  const hash = hashTerm(t);
+  const rider = args.rider_id?.trim() || "";
+  const device = args.device_id?.trim() || "";
+  let acknowledgement: AcknowledgementRecord | null = null;
+  if (args.store && rider && device) {
+    const id = acknowledgementId({
+      rider_id: rider,
+      unit_id: t.unit_id,
+      term_material_version: t.material_version,
+      term_hash: hash,
+      device_id: device,
+    });
+    acknowledgement = args.store.forRider(rider).find((r) => r.acknowledgement_id === id) ?? null;
+  }
+  return ok({
+    api_version: DEVICE_API_VERSION,
+    publishable: true,
+    acknowledgement,
+    term: {
+      version: t.version,
+      material_version: t.material_version,
+      unit_id: t.unit_id,
+      language: t.language,
+      hash,
+      title: t.title,
+      summary: args.summary,
+      body: t.body,
+      retention: {
+        operational_event_days: t.retention.operational_event_days,
+        detailed_point_days: t.retention.detailed_point_days,
+        after_expiry: t.retention.after_expiry,
+      },
+      controller: { contact_channel: t.controller.contact_channel },
+    },
+  });
+}
+
+/**
+ * Aceite (ou recusa) registrado pela rider-mobile, com a sessão do motoboy.
+ *
+ * Quem constrói o registro é o SERVIDOR (`buildAcknowledgement`): o id
+ * determinístico, o hash do termo vigente e o motoboy vêm daqui. A página só
+ * diz o que o motoboy escolheu e qual é o aparelho — que ela leu do nativo, o
+ * dono da identidade do aparelho. Refazer o id ou o hash no navegador seria uma
+ * segunda verdade.
+ *
+ * Só o próprio motoboy registra o próprio aceite. O registro é idempotente
+ * pelo id, que não inclui o status: a primeira escolha para aquele termo,
+ * motoboy e aparelho é a que vale — recusa não se desfaz pelo aplicativo
+ * (runbook do aparelho, §2: "é conversa de gente").
+ */
+export function handleTermAcknowledgeFromSession(args: {
+  input: Record<string, unknown>;
+  actor: { actor_id: string; role: string } | null;
+  term: LocationTerm;
+  store: AcknowledgementStore;
+  now: Date;
+}): DeviceApiResponse {
+  if (!args.actor || args.actor.role !== "motoboy_interno") {
+    return bad(403, "Só o próprio motoboy registra o aceite do termo.", "not_rider");
+  }
+  const lowerKeys = Object.keys(args.input).map((k) => k.toLowerCase());
+  if (ACK_FORBIDDEN_KEYS.some((k) => lowerKeys.includes(k))) {
+    return bad(400, "O registro de aceite não pode conter esses dados.", "forbidden_field");
+  }
+  const status = args.input.status === "accepted" || args.input.status === "declined" ? args.input.status : null;
+  if (!status) return bad(400, "Registro de aceite incompleto.", "incomplete_ack");
+  const device_id = typeof args.input.device_id === "string" ? args.input.device_id.trim() : "";
+  if (!device_id) return bad(400, "Registro de aceite incompleto.", "incomplete_ack");
+  if (!isPublishable(args.term)) {
+    return bad(409, "O termo ainda não foi liberado pelo responsável.", "term_not_publishable");
+  }
+
+  const accepted_at = args.now.toISOString();
+  const built = buildAcknowledgement(
+    {
+      rider_id: args.actor.actor_id,
+      term: args.term,
+      status,
+      accepted_at,
+      device_id,
+      app_version: typeof args.input.app_version === "string" && args.input.app_version.trim()
+        ? args.input.app_version.trim()
+        : "desconhecido",
+      origin: "rider_app",
+      correlation_id: record_correlation({ rider_id: args.actor.actor_id, accepted_at }),
+    },
+    args.now,
+  );
+  if (!built.ok) return bad(400, "Registro de aceite incompleto.", "incomplete_ack");
+
+  const stored = args.store.append(built.record);
+  return ok({
+    acknowledgement_id: stored.record.acknowledgement_id,
+    // `stored: false` devolve o registro que já existia — inclusive uma recusa
+    // anterior. A página mostra o que vale, não o que pediu.
+    stored: stored.stored,
+    record: stored.record,
+    receipt: args.store.receipt(stored.record.acknowledgement_id),
+  });
 }
 
 /* ------------------------------------------------------------------ *

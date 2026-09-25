@@ -31,13 +31,15 @@ import {
   buildPolicies,
   ingestGpsBatch,
   handleTermAcknowledge,
+  handleTermAcknowledgeFromSession,
+  buildTermPresentation,
   authorizeRouteAccess,
   buildRouteAudit,
   DEVICE_API_VERSION,
   type AuthorizedDevice,
 } from "../src/entregas/pilot/device-api";
 import { loadFlags } from "../src/entregas/gps/flags";
-import { TERM_ITAIM_V1, type LocationTerm } from "../src/entregas/consent/term";
+import { TERM_ITAIM_V1, TERM_SUMMARY_ITAIM, type LocationTerm } from "../src/entregas/consent/term";
 import {
   AcknowledgementStore,
   type AckStorage,
@@ -108,9 +110,12 @@ if (bindResolution.fatal) {
 }
 const BIND = bindResolution.host;
 
-/* Configuração externa da unidade e do termo — ambas fora do Git. */
+/* Configuração externa da unidade e do termo — ambas fora do Git.
+   Caminho absoluto é usado como está, igual ao diretório de dados: `join`
+   com o cwd transformava `/etc/x.json` em `<cwd>/etc/x.json`, e o arquivo
+   apontado pelo ambiente era ignorado em silêncio (Q-018, reproduzido). */
 function readJsonIfPresent<T>(file: string): T | null {
-  const p = join(process.cwd(), file);
+  const p = isAbsolute(file) ? file : join(process.cwd(), file);
   if (!existsSync(p)) return null;
   try {
     return JSON.parse(readFileSync(p, "utf8")) as T;
@@ -130,7 +135,11 @@ const termOverride = readJsonIfPresent<Partial<LocationTerm>>(
 /* Sem o arquivo do responsável, o termo continua o modelo — não publicável. */
 const activeTerm: LocationTerm = { ...TERM_ITAIM_V1, ...(termOverride ?? {}) };
 
-const gpsFlags = loadFlags(readJsonIfPresent("config/entregas-gps-flags.json") ?? undefined);
+// Mesmo padrão do termo e da unidade: o caminho pode vir do ambiente (teste e
+// laboratório), e o padrão continua o arquivo fora do Git.
+const gpsFlags = loadFlags(
+  readJsonIfPresent(process.env.ENTREGAS_GPS_FLAGS_CONFIG || "config/entregas-gps-flags.json") ?? undefined,
+);
 
 const authorizedDevices: AuthorizedDevice[] =
   readJsonIfPresent<AuthorizedDevice[]>("config/entregas-devices.json") ?? [];
@@ -257,8 +266,15 @@ function transformHtml(html: string, pathname: string): string {
     out = out.replace(/·\s*<a href="\/map-poc\/">[^<]*<\/a>/g, "");
   }
   // snippet de login se não houver sessão (UI legada ainda usa role select — piloto usa token via localStorage)
+  //
+  // Script CLÁSSICO no começo do <head>, de propósito. Ele ia como módulo antes
+  // de </body>: módulos rodam na ordem do documento, então o módulo da página
+  // (rider.js, console.js) fazia o primeiro fetch ANTES de o fetch ganhar o
+  // Authorization — e a primeira leitura voltava 401, deixando a tela presa em
+  // "Carregando…". Clássico e no <head>, ele roda durante o parse, antes de
+  // qualquer módulo (test:entregas:rider-bridge, cenário A, prova com Chromium).
   if (!out.includes("pilot-session-boot")) {
-    const boot = `<script type="module">
+    const boot = `<script>
 /* pilot-session-boot */
 const TOKEN_KEY = "entregas_pilot_token";
 const origFetch = window.fetch.bind(window);
@@ -281,7 +297,7 @@ window.entregasPilotLogin = async (token) => {
 };
 // banner já substituído no HTML
 </script>`;
-    out = out.replace("</body>", boot + "\n</body>");
+    out = out.replace("<head>", "<head>\n" + boot);
   }
   return out;
 }
@@ -395,15 +411,44 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
       return reply(r.status, r.body);
     }
 
+    /* O texto do termo, para a tela de consentimento da rider-mobile (Q-018).
+       Não publicável = sem texto: nada de apresentar modelo com [[PENDENTE]]. */
+    if (url.pathname === "/api/term" && req.method === "GET") {
+      if (!actor) return reply(401, { ok: false, human: NO_SESSION });
+      const r = buildTermPresentation({
+        term: activeTerm,
+        summary: TERM_SUMMARY_ITAIM,
+        store: ackStore,
+        // Só o próprio motoboy consulta o próprio registro.
+        rider_id: actor.role === "motoboy_interno" ? actor.actor_id : null,
+        device_id: url.searchParams.get("device_id"),
+      });
+      return reply(r.status, r.body);
+    }
+
     if (url.pathname === "/api/term/acknowledge" && req.method === "POST") {
       if (!actor) return reply(401, { ok: false, human: NO_SESSION });
       const body = JSON.parse(await readBody(req)) as Record<string, unknown>;
-      const r = handleTermAcknowledge({
-        input: body,
-        term: activeTerm,
-        store: ackStore,
-        now: new Date(),
-      });
+      // Sem `acknowledgement_id`: a rider-mobile manda só a decisão, e o
+      // registro é montado aqui, com o motoboy da SESSÃO (Q-018). Com ele, o
+      // caminho antigo do registro completo segue exatamente como era.
+      const fromSession =
+        typeof body.acknowledgement_id !== "string" || !body.acknowledgement_id.trim();
+      const r = fromSession
+        ? handleTermAcknowledgeFromSession({
+            input: body,
+            actor,
+            term: activeTerm,
+            store: ackStore,
+            now: new Date(),
+          })
+        : handleTermAcknowledge({
+            input: body,
+            actor,
+            term: activeTerm,
+            store: ackStore,
+            now: new Date(),
+          });
       return reply(r.status, r.body);
     }
 

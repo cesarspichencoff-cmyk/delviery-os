@@ -16,6 +16,7 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync, existsSync, readFileSync
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { hashTerm, TERM_ITAIM_V1, type LocationTerm } from "../consent/term";
+import { acknowledgementId } from "../consent/acknowledgement";
 
 let passed = 0;
 const failures: string[] = [];
@@ -660,6 +661,175 @@ async function suiteHttps(): Promise<void> {
 }
 
 /* ------------------------------------------------------------------ *
+ * Suíte D — Q-018: termo e resposta pela rider-mobile
+ *
+ * A página decide ligar a captura a partir do registro que o SERVIDOR guarda.
+ * Então importa, e é o que se prova aqui, quem pode escrever esse registro e
+ * o que o servidor devolve a quem pergunta.
+ * ------------------------------------------------------------------ */
+
+async function suiteRiderMobile(): Promise<void> {
+  const term = syntheticTerm();
+  await startServer({ captureEnabled: true, term });
+  const OUTRO_APARELHO = "dev-sintetico-2";
+  const ackFile = join(workdir, "dados", "term-acks.jsonl");
+  const linhas = () =>
+    existsSync(ackFile) ? readFileSync(ackFile, "utf8").split("\n").filter(Boolean).length : 0;
+  const responder = (token: string, body: Record<string, unknown>) =>
+    api("/api/term/acknowledge", { method: "POST", token, body });
+
+  await test("Q018 sem sessão, /api/term não responde", async () => {
+    const r = await api("/api/term", { token: null });
+    assert.equal(r.status, 401);
+  });
+
+  await test("Q018 /api/term entrega o texto vigente com o MESMO hash de /api/policies, sem coordenada", async () => {
+    const pol = await api("/api/policies", { token: RIDER_TOKEN });
+    const r = await api(`/api/term?device_id=${DEVICE_ID}`, { token: RIDER_TOKEN });
+    assert.equal(r.status, 200);
+    assert.equal(r.json.publishable, true);
+    const t = r.json.term as Record<string, unknown>;
+    assert.equal(t.hash, (pol.json.term as Record<string, unknown>).hash);
+    assert.equal(t.hash, hashTerm(term));
+    assert.equal(t.title, term.title);
+    assert.ok(String(t.summary).length > 0, "resumo da etapa 1 ausente");
+    assert.equal(r.json.acknowledgement, null);
+    assert.equal(/latitude|longitude/.test(JSON.stringify(r.json)), false);
+  });
+
+  await test("Q018 operador NÃO responde ao termo pela rider-mobile (403 not_rider)", async () => {
+    const antes = linhas();
+    const r = await responder(OPS_TOKEN, { status: "accepted", device_id: DEVICE_ID });
+    assert.equal(r.status, 403);
+    assert.equal(r.json.code, "not_rider");
+    assert.equal(linhas(), antes);
+  });
+
+  await test("Q018 resposta incompleta ou com campo proibido é recusada, sem gravar", async () => {
+    const antes = linhas();
+    const casos: [Record<string, unknown>, string][] = [
+      [{ status: "accepted" }, "incomplete_ack"],
+      [{ device_id: DEVICE_ID }, "incomplete_ack"],
+      [{ status: "talvez", device_id: DEVICE_ID }, "incomplete_ack"],
+      [{ status: "accepted", device_id: "   " }, "incomplete_ack"],
+      [{ status: "accepted", device_id: DEVICE_ID, latitude: SYNTH.latitude }, "forbidden_field"],
+    ];
+    for (const [body, code] of casos) {
+      const r = await responder(RIDER_TOKEN, body);
+      assert.equal(r.status, 400, JSON.stringify(body));
+      assert.equal(r.json.code, code, JSON.stringify(body));
+    }
+    assert.equal(linhas(), antes);
+  });
+
+  const idDoAparelho = (device_id: string) =>
+    acknowledgementId({
+      rider_id: "rid-1",
+      unit_id: term.unit_id,
+      term_material_version: term.material_version,
+      term_hash: hashTerm(term),
+      device_id,
+    });
+
+  await test("Q018 o SERVIDOR monta o registro: motoboy da sessão, hash vigente, id determinístico", async () => {
+    // O corpo tenta trocar o dono e o hash — o servidor ignora os dois.
+    const r = await responder(RIDER_TOKEN, {
+      status: "accepted",
+      device_id: DEVICE_ID,
+      rider_id: "rid-intruso",
+      term_hash: "hash-de-outro-texto",
+      acknowledgement_id: "",
+    });
+    assert.equal(r.status, 200);
+    assert.equal(r.json.stored, true);
+    const rec = r.json.record as Record<string, string>;
+    assert.equal(rec.rider_id, "rid-1");
+    assert.equal(rec.term_hash, hashTerm(term));
+    assert.equal(rec.device_id, DEVICE_ID);
+    assert.equal(rec.status, "accepted");
+    assert.equal(rec.origin, "rider_app");
+    assert.equal(rec.acknowledgement_id, idDoAparelho(DEVICE_ID));
+  });
+
+  await test("Q018 /api/term devolve o registro DESTE motoboy NESTE aparelho — e só", async () => {
+    const meu = await api(`/api/term?device_id=${DEVICE_ID}`, { token: RIDER_TOKEN });
+    const rec = meu.json.acknowledgement as Record<string, string> | null;
+    assert.equal(rec?.acknowledgement_id, idDoAparelho(DEVICE_ID));
+    assert.equal(rec?.status, "accepted");
+    const outroAparelho = await api(`/api/term?device_id=${OUTRO_APARELHO}`, { token: RIDER_TOKEN });
+    assert.equal(outroAparelho.json.acknowledgement, null, "aceite de um aparelho não vale para outro");
+    const semAparelho = await api("/api/term", { token: RIDER_TOKEN });
+    assert.equal(semAparelho.json.acknowledgement, null);
+    const operador = await api(`/api/term?device_id=${DEVICE_ID}`, { token: OPS_TOKEN });
+    assert.equal(operador.json.acknowledgement, null, "operador não lê o registro do motoboy");
+  });
+
+  await test("Q018 repetir é idempotente, e recusar depois de aceitar NÃO troca o registro", async () => {
+    const antes = linhas();
+    const outra = await responder(RIDER_TOKEN, { status: "accepted", device_id: DEVICE_ID });
+    assert.equal(outra.json.stored, false);
+    const recusa = await responder(RIDER_TOKEN, { status: "declined", device_id: DEVICE_ID });
+    assert.equal(recusa.json.stored, false);
+    assert.equal((recusa.json.record as Record<string, string>).status, "accepted");
+    assert.equal(linhas(), antes);
+  });
+
+  await test("Q018 a recusa que veio primeiro também fica: aceitar depois devolve a recusa", async () => {
+    const recusa = await responder(RIDER_TOKEN, { status: "declined", device_id: OUTRO_APARELHO });
+    assert.equal(recusa.json.stored, true);
+    const aceite = await responder(RIDER_TOKEN, { status: "accepted", device_id: OUTRO_APARELHO });
+    assert.equal(aceite.json.stored, false);
+    assert.equal((aceite.json.record as Record<string, string>).status, "declined");
+    const lido = await api(`/api/term?device_id=${OUTRO_APARELHO}`, { token: RIDER_TOKEN });
+    assert.equal((lido.json.acknowledgement as Record<string, string>).status, "declined");
+  });
+
+  const legado = (rider_id: string, device_id: string) => ({
+    acknowledgement_id: acknowledgementId({
+      rider_id,
+      unit_id: term.unit_id,
+      term_material_version: term.material_version,
+      term_hash: hashTerm(term),
+      device_id,
+    }),
+    rider_id,
+    unit_id: term.unit_id,
+    term_version: term.version,
+    term_material_version: term.material_version,
+    term_hash: hashTerm(term),
+    status: "accepted",
+    accepted_at: "2026-09-25T12:00:00.000Z",
+    device_id,
+  });
+
+  await test("Q018 caminho legado: operador NÃO grava aceite em nome do motoboy", async () => {
+    const antes = linhas();
+    const r = await responder(OPS_TOKEN, legado("rid-1", "dev-plantado-1"));
+    assert.equal(r.status, 403);
+    assert.equal(r.json.code, "not_rider");
+    assert.equal(linhas(), antes);
+    const lido = await api("/api/term?device_id=dev-plantado-1", { token: RIDER_TOKEN });
+    assert.equal(lido.json.acknowledgement, null, "aceite plantado liberaria a captura");
+  });
+
+  await test("Q018 caminho legado: motoboy NÃO grava aceite em nome de outro motoboy", async () => {
+    const antes = linhas();
+    const r = await responder(RIDER_TOKEN, legado("rid-2", "dev-plantado-2"));
+    assert.equal(r.status, 403);
+    assert.equal(r.json.code, "not_rider");
+    assert.equal(linhas(), antes);
+  });
+
+  await test("Q018 caminho legado do próprio motoboy segue aceito", async () => {
+    const r = await responder(RIDER_TOKEN, legado("rid-1", "dev-legado-1"));
+    assert.equal(r.status, 200);
+    assert.equal(r.json.stored, true);
+  });
+
+  await stopServer();
+}
+
+/* ------------------------------------------------------------------ *
  * Execução
  * ------------------------------------------------------------------ */
 
@@ -669,6 +839,7 @@ async function main(): Promise<void> {
     await suiteTermoPendente();
     await suiteTermoLiberado();
     await suiteViagemReal();
+    await suiteRiderMobile();
     await suiteHttps();
   } finally {
     await stopServer();
