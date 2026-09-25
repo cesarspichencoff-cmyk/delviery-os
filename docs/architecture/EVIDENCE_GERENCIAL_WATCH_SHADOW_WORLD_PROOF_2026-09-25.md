@@ -25,9 +25,9 @@ Code upload version:
 
 `f74aee32-cf04-47da-851e-12adefd79dae`
 
-Current version after secret configuration:
+Current version after post-proof secret rotation:
 
-`b9104f4c-4763-4267-be99-adff1c159ace`
+`99ef1ee7-e1c5-4cd1-92a9-384cb540c72a`
 
 Configured schedule:
 
@@ -205,3 +205,32 @@ Not proven yet:
 Connect one real read-only Edge source while preserving this same handoff
 contract and keep the runtime in shadow until source freshness and physical
 cashier-PC binding are separately proven.
+
+## Post-proof secret hardening
+
+After the producer-to-cloud smoke completed, the ingress bearer secret was
+rotated again on Foxxy.
+
+The replacement token was generated inside the host process from 48 random
+bytes, sent directly to Cloudflare, used once to authenticate a snapshot read,
+and then cleared from process memory.
+
+The replacement token value was not emitted to the console and is not stored
+in this repository.
+
+Observed after rotation:
+
+```text
+secret upload       success
+authenticated read  success
+truth               EMPTY
+validity            INSUFFICIENT
+global all-clear    false
+external effects    false
+```
+
+Cloudflare secret-change version:
+
+`99ef1ee7-e1c5-4cd1-92a9-384cb540c72a`
+
+This rotation does not change the code payload or the shadow truth boundary.
