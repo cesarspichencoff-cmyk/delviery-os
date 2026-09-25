@@ -228,3 +228,77 @@ test("health is non-sensitive and public", async () => {
   assert.equal(body.source_mode, "read_only_closing_source");
   assert.equal(body.external_effects_authorized, false);
 });
+
+
+test("service binding is preferred over public workers.dev fetch", async () => {
+  const dbCalls = [];
+  const serviceRequests = [];
+  const originalFetch = globalThis.fetch;
+
+  try {
+    globalThis.fetch = async () => {
+      throw new Error("PUBLIC_FETCH_MUST_NOT_BE_USED");
+    };
+
+    const watchService = {
+      async fetch(request) {
+        const body = request.method === "POST"
+          ? await request.text()
+          : null;
+        serviceRequests.push({
+          url: request.url,
+          method: request.method,
+          body,
+        });
+
+        if (request.method === "GET") {
+          return new Response(JSON.stringify({ coverage: [] }), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          });
+        }
+
+        if (request.method === "POST") {
+          return new Response(JSON.stringify({
+            accepted: true,
+            duplicate: false,
+            snapshot: {
+              truthClass: "FACT",
+              validity: {
+                status: "DEGRADED",
+                globalAllClearAuthorized: false,
+              },
+              externalEffectsAuthorized: false,
+            },
+          }), {
+            status: 202,
+            headers: { "content-type": "application/json" },
+          });
+        }
+
+        throw new Error("UNEXPECTED_SERVICE_METHOD");
+      },
+    };
+
+    const result = await runOnce({
+      SOURCE_DB: fakeDb(closing(), dbCalls),
+      WATCH_SERVICE: watchService,
+      WATCH_BASE_URL: "https://public-fallback-must-not-run.example",
+      WATCH_BRIDGE_TOKEN: "secret",
+    }, "2026-09-25T17:00:00.000Z");
+
+    assert.equal(result.status, "sent");
+    assert.equal(serviceRequests.length, 2);
+    assert.equal(serviceRequests[0].url, "https://watch.internal/snapshot");
+    assert.equal(
+      serviceRequests[1].url,
+      "https://watch.internal/sources/tata-edge/handoff",
+    );
+
+    const handoff = JSON.parse(serviceRequests[1].body);
+    assert.equal(handoff.fact_class, "FACT");
+    assert.equal(handoff.external_effect_authorized, false);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
