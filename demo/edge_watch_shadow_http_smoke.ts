@@ -114,6 +114,22 @@ async function main(): Promise<void> {
   assert.equal(acceptedBody.snapshot?.needsCesar?.length, 1);
   assert.equal(acceptedBody.snapshot?.externalEffectsAuthorized, false);
 
+  const duplicate = await postJson({
+    baseUrl,
+    path: syntheticRequest.path,
+    token,
+    body: syntheticRequest.body,
+  });
+  assert.equal(duplicate.status, 200);
+  const duplicateBody = duplicate.body as {
+    accepted?: boolean;
+    duplicate?: boolean;
+    snapshot?: { truthClass?: string };
+  };
+  assert.equal(duplicateBody.accepted, true);
+  assert.equal(duplicateBody.duplicate, true);
+  assert.equal(duplicateBody.snapshot?.truthClass, "SIMULATION");
+
   const emptyManager = projectManagerSnapshot([], new Date().toISOString());
   const emptyEnvelope = managerSnapshotToWatchHandoff(emptyManager);
   const emptyRequest = buildGerencialWatchHandoffRequest(emptyEnvelope);
@@ -150,6 +166,7 @@ async function main(): Promise<void> {
     status: "PASS",
     producer_code_used: true,
     network_boundary_reached: true,
+    exact_retry_idempotent: true,
     synthetic_truth_preserved: true,
     synthetic_requires_cesar: true,
     final_state_reset_to_empty: true,
