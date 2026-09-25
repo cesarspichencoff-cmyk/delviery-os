@@ -81,8 +81,6 @@ export function routeCapture(
       return decision(capture, "CHATGPT_QUERY", false);
     case "OCCURRENCE":
       return decision(capture, "INCIDENT_INBOX", false);
-    case "UNKNOWN":
-      return decision(capture, "REVIEW_REQUIRED", true);
   }
 }
 
