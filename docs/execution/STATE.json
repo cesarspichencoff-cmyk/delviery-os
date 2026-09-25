@@ -5,7 +5,7 @@
     "status": "ACTIVE",
     "authority_scope": "technical_state",
     "superseded_by": null,
-    "atualizado_em": "2026-08-20",
+    "atualizado_em": "2026-09-25",
     "state_basis": "274141e",
     "observa": [
       "src/product/",
@@ -261,6 +261,7 @@
     },
     "bloqueado": {
       "P0_android_autenticacao": {
+        "_SUCESSAO_EM_2026_09_25": "HISTORICO, nao e bloqueador atual. BOOTSTRAP/SYNC CONTRACT = PROVEN (aparelho logico + binarios reais + PostgreSQL, test:platform:cadeia 35/35). ANDROID PHYSICAL FIELD BEHAVIOR = UNKNOWN/BLOCKED UNTIL DEVICE TEST. A Unidade 1 (a5fe45d, 4456f2e) fez o Kotlin pedir o token, mas nenhum servidor o emitia; resolvido pela Cadeia Real (b5b7f0c, be73e1c, 1de5b28, 5effdbe), certificada em 3993ab4..d2fca5e. Ver docs/etapa-4-8/CADEIA-REAL.md e o marcador de sucessao do C1 em docs/execution/BLOCKERS.md. Os valores abaixo sao o registro original, sem edicao.",
         "estado": "REPRODUZIDO, nao corrigido",
         "evidencia": "KEY_SESSION_TOKEN declarada (EntregasDatabase.kt:207) e lida (SyncWorker.kt:47), nunca escrita; authenticateDevice (EntregasApi.kt:85) nunca chamada",
         "impacto": "todo envio termina em 401; 401 vira Rejected que NAO retenta; o aparelho parece funcionar e nada chega",

@@ -236,6 +236,10 @@ Nenhum deles impede o trabalho local continuar. Todos estão preparados até um
 - **Alternativa gratuita:** os testes unitários Kotlin **rodam nesta máquina**
   (JDK Temurin 17 + SDK presentes, comprovado no Macro-Prompt 1). Eles cobrem
   lógica, não comportamento de campo.
+  > **Leitura em 2026-09-25:** "nesta máquina" é a máquina do Macro-Prompt 1, não o sandbox de
+  > nuvem. Aqui o SDK não instala (a rede nega `dl.google.com`; ver "Android — o app não compila
+  > neste ambiente"). O A1 continua ABERTO: o comportamento físico do Android é UNKNOWN até o teste
+  > no aparelho.
 - **Preciso de:** o aparelho, e a chave de assinatura se for instalar o piloto.
 
 ### A2 — PostgreSQL hospedado
@@ -333,7 +337,31 @@ pedido; nada foi escrito no repositório.
 
 ## C. Defeitos REPRODUZIDOS e ainda não corrigidos
 
+> **Leitura em 2026-09-25:** o título desta seção é de 2026-07-27. O **C1 está SUPERADO** — ver o
+> marcador de sucessão logo abaixo. C2, C3, C4 e C5 **não** foram reavaliados por essa sucessão.
+
 ### C1 — P0 · O Android não consegue sincronizar nada
+
+> **SUCESSÃO — 2026-09-25 · este C1 é HISTÓRICO. Não é bloqueador atual.**
+>
+> | dimensão | estado atual |
+> |---|---|
+> | `BOOTSTRAP/SYNC CONTRACT` | **PROVEN** — sessão, token e sincronização provados com aparelho LÓGICO contra os binários reais e PostgreSQL (`test:platform:cadeia`, 35/35) |
+> | `ANDROID PHYSICAL FIELD BEHAVIOR` | **UNKNOWN / BLOCKED UNTIL DEVICE TEST** — nenhum aparelho físico executou a cadeia; o app nem compila neste ambiente (ver "Android — o app não compila neste ambiente", mais abaixo, e A1) |
+>
+> Linha do tempo:
+>
+> 1. **2026-07-27** (`1271f2d`) — registrado aqui: ninguém escrevia o token, nada sincronizava.
+> 2. **2026-07-27** (`bfc3063`) — declarado "CORRIGIDO" pela Unidade 1 (`a5fe45d`, `4456f2e`; ver
+>    "Atualização — Unidade 1", abaixo). O Kotlin passou a PEDIR o token em
+>    `POST /api/device/session`. **Era insuficiente:** nenhum servidor o emitia. Em `0b8803c`, o
+>    runtime crítico respondia 404 e o piloto 200 sem `device_token` — reproduzido pela Cadeia Real.
+> 3. **2026-09-24** — **resolvido pela Cadeia Real**: `b5b7f0c`, `be73e1c`, `1de5b28`, `5effdbe`.
+>    Certificada em 2026-09-25: `3993ab4`, `e51c34d`, `54ebb0a`, `d2fca5e`. Ver
+>    `docs/etapa-4-8/CADEIA-REAL.md` e, neste arquivo, "Cadeia real — o aparelho não conseguia o
+>    primeiro token · FECHADO em 2026-09-24".
+>
+> O texto abaixo é o registro original, mantido sem edição.
 
 **Reproduzido por leitura direta do código, não por suposição:**
 
@@ -395,6 +423,9 @@ Reiniciar o servidor apaga toda a rota recebida e zera a deduplicação.
 
 ## D. Próximo comando exato na retomada
 
+> **Histórico (2026-07-27).** A frente descrita aqui — a rota de ingestão no crítico — foi fechada
+> depois. A retomada atual está no CLAUDE.md, §13.
+
 ```bash
 npm run test:platform:bridge && npm run test:platform:skills && npx tsc --noEmit
 ```
@@ -407,6 +438,9 @@ sobre `identity.device` e o wiring HTTP.
 ---
 
 ## Atualização — Unidade 1 concluída (2026-07-27)
+
+> **Sucessão (2026-09-25):** o "CORRIGIDO" da linha seguinte era insuficiente — o aparelho pedia o
+> token, mas nenhum servidor o emitia. O C1 só fechou com a Cadeia Real; ver o marcador em C1.
 
 **C1 (P0 do Android) está CORRIGIDO.** Ver commits `a5fe45d` e `4456f2e`.
 A reprodução revelou que era pior do que o registrado: com 401, `doWork`
