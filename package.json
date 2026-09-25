@@ -38,7 +38,8 @@
     "test:edge:watch-transport": "tsc && node dist/demo/edge_gerencial_watch_transport_proof.js",
     "test:watch-shadow-worker": "node --test deploy/cloudflare/gerencial-watch-shadow/test/*.test.mjs",
     "smoke:edge:watch-shadow-live": "tsc && node dist/demo/edge_watch_shadow_http_smoke.js",
-    "test:edge:cloud-producer": "node --test deploy/cloudflare/tata-edge-cloud-shadow/test/*.test.mjs"
+    "test:edge:cloud-producer": "node --test deploy/cloudflare/tata-edge-cloud-shadow/test/*.test.mjs",
+    "smoke:edge:cloud-producer-live": "node deploy/cloudflare/tata-edge-cloud-shadow/smoke-live.mjs"
   },
   "devDependencies": {
     "@types/node": "20.14.10",
