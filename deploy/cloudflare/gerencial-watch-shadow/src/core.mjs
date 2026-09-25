@@ -260,3 +260,35 @@ export function shouldRecomputeScheduled(input) {
   validateEdgeHandoff(input);
   return input.source_mode !== "empty";
 }
+
+
+export function classifyHandoffProgression(incoming, latest) {
+  validateEdgeHandoff(incoming);
+  if (!latest) return "ACCEPT";
+  validateEdgeHandoff(latest);
+
+  if (stableJson(incoming) === stableJson(latest)) {
+    return "DUPLICATE";
+  }
+
+  const incomingGenerated = Date.parse(incoming.generated_at);
+  const latestGenerated = Date.parse(latest.generated_at);
+
+  if (incomingGenerated < latestGenerated) {
+    return "STALE_GENERATION";
+  }
+  if (incomingGenerated === latestGenerated) {
+    return "CONFLICT";
+  }
+
+  if (
+    incoming.source_watermark_at &&
+    latest.source_watermark_at &&
+    Date.parse(incoming.source_watermark_at) <
+      Date.parse(latest.source_watermark_at)
+  ) {
+    return "SOURCE_WATERMARK_REGRESSION";
+  }
+
+  return "ACCEPT";
+}
