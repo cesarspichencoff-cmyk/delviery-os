@@ -240,6 +240,8 @@ Nenhum deles impede o trabalho local continuar. Todos estão preparados até um
   > nuvem. Aqui o SDK não instala (a rede nega `dl.google.com`; ver "Android — o app não compila
   > neste ambiente"). O A1 continua ABERTO: o comportamento físico do Android é UNKNOWN até o teste
   > no aparelho.
+  > **Roteiro em 2026-09-25:** `docs/etapa-4-8/FIELD-GATE-ANDROID.md` — pré-requisitos, 22 passos e
+  > 6 cenários, todos `NOT_RUN` até haver aparelho.
 - **Preciso de:** o aparelho, e a chave de assinatura se for instalar o piloto.
 
 ### A2 — PostgreSQL hospedado
@@ -895,6 +897,12 @@ fora do build JVM. Falha idêntica em `0b8803c`. Ninguém viu porque ele nunca r
 que não existia aqui. Conserto (levar `semSegredo` a um arquivo Kotlin puro) fica para onde o app
 compila. Com um stub fora do repositório, o `EntregasApi.kt` atual compila e o `CaptureGateTest`
 passa 12/12 — o diff do Fable nesse arquivo não tem erro de tipo.
+
+**Revalidado em 2026-09-25, 08:09 UTC** (missão do relógio), sem alterar código Android:
+`dl.google.com`, `dl-ssl.google.com` e `redirector.gvt1.com` continuam recusados (o gateway responde
+403 ao CONNECT); `maven.google.com` responde 301 para `dl.google.com`; `services.gradle.org` e
+`repo.maven.apache.org` respondem 200. Continua **BLOCKED (externo)**. O handoff exato — comandos,
+pré-requisitos e a bateria física — está em `docs/etapa-4-8/FIELD-GATE-ANDROID.md`.
 
 ### Relógio do aparelho — `occurred_at` adiantado entra carimbado `trusted` · **FECHADO em 2026-09-25** (aberto no mesmo dia)
 
