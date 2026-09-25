@@ -4,6 +4,7 @@ import {
   ContractError,
   buildRuntimeSnapshot,
   inputFingerprint,
+  shouldRecomputeScheduled,
   validateEdgeHandoff,
 } from "../src/core.mjs";
 
@@ -151,4 +152,24 @@ test("empty envelope produces INSUFFICIENT, never all-clear", async () => {
   assert.equal(snapshot.validity.status, "INSUFFICIENT");
   assert.equal(snapshot.validity.globalAllClearAuthorized, false);
   assert.equal(snapshot.needsCesar.length, 0);
+});
+
+
+test("scheduled recompute skips EMPTY source state", () => {
+  const empty = valid({
+    source_mode: "empty",
+    fact_class: "EMPTY",
+    source_watermark_at: null,
+    observation_count: 0,
+    source_coverage: [],
+    identity_counts: {
+      proven: 0,
+      supported_inference: 0,
+      candidate: 0,
+      unknown: 0,
+    },
+    hard_exceptions: [],
+  });
+  assert.equal(shouldRecomputeScheduled(empty), false);
+  assert.equal(shouldRecomputeScheduled(valid()), true);
 });
