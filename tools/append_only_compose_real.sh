@@ -46,8 +46,8 @@ exige MIGRATIONS_NA_IMAGEM "$(docker run --rm --entrypoint sh "$IMAGEM" -c 'ls d
 tmp=$(mktemp -d)
 criou=0
 aleatorio() { node -e "process.stdout.write(require('node:crypto').randomBytes($1).toString('hex'))"; }
-printf 'POSTGRES_PASSWORD=%s\nDELIVERYOS_COMMIT=%s\nDELIVERYOS_DEVICE_TOKEN_SECRET=%s\nDELIVERYOS_SOURCE_MODE=control\n' \
-  "$(aleatorio 12)" "$(git rev-parse HEAD)" "$(aleatorio 24)" >"$tmp/ao.env"
+printf 'POSTGRES_PASSWORD=%s\nDELIVERYOS_COMMIT=%s\nDELIVERYOS_DEVICE_TOKEN_SECRET=%s\nDELIVERYOS_SOURCE_MODE=control\nDELIVERYOS_CRITICAL_DB_PASSWORD=%s\nDELIVERYOS_ASYNC_DB_PASSWORD=%s\n' \
+  "$(aleatorio 12)" "$(git rev-parse HEAD)" "$(aleatorio 24)" "$(aleatorio 16)" "$(aleatorio 16)" >"$tmp/ao.env"
 # Ambiente SANEADO: variável exportada no shell venceria o --env-file.
 compose() { env -i PATH="$PATH" HOME="$HOME" docker compose -p "$PROJETO" -f deploy/compose.platform.yaml \
   ${AO_OVERRIDE:+-f "$AO_OVERRIDE"} --env-file "$tmp/ao.env" "$@"; }
@@ -80,8 +80,10 @@ exige UPDATE_RECUSADO "$(psql_ "UPDATE platform.event_log SET event_type='x'" | 
 exige DELETE_RECUSADO "$(psql_ "DELETE FROM platform.event_log" | grep -c 'append-only: DELETE nao e permitido' || true)" 1
 exige TRUNCATE_RECUSADO "$(psql_ "TRUNCATE platform.event_log" | grep -c 'append-only: TRUNCATE nao e permitido' || true)" 1
 exige LINHAS_DEPOIS "$(psql_ "SELECT count(*) FROM platform.event_log")" 2
-# O limite declarado: o runtime conecta como o dono do schema, superusuário
-# na imagem oficial do PostgreSQL — ele pode desligar a trava por DDL.
-exige PAPEL_DO_RUNTIME "$(psql_ "SELECT rolname||' super='||rolsuper FROM pg_roles WHERE rolname = current_user")" "deliveryos super=true"
+# O dono do schema — a autoridade da migration — é superusuário na imagem
+# oficial do PostgreSQL, e pode desligar a trava por DDL. Até a certificação da
+# Cadeia Real os runtimes conectavam como ele; desde então conectam com papéis
+# mínimos, medidos em containers por tools/papeis_compose_real.sh.
+exige PAPEL_DO_DONO "$(psql_ "SELECT rolname||' super='||rolsuper FROM pg_roles WHERE rolname = current_user")" "deliveryos super=true"
 
 if [ "$falhas" -eq 0 ]; then echo "AO_COMPOSE_TRAVA_GREEN"; else echo "AO_COMPOSE_TRAVA_RED ($falhas)"; exit 1; fi

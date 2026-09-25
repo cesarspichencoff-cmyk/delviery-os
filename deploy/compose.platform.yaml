@@ -35,7 +35,12 @@ x-logs: &logs
 
 x-ambiente: &ambiente
   DELIVERYOS_ENV: ${DELIVERYOS_ENV:-pilot}
-  DELIVERYOS_DATABASE_URL: postgres://${POSTGRES_USER:-deliveryos}:${POSTGRES_PASSWORD:?senha do banco obrigatoria}@deliveryos-postgres:5432/${POSTGRES_DB:-deliveryos}
+  # `DELIVERYOS_DATABASE_URL` NÃO mora aqui: cada serviço declara a sua,
+  # porque cada um conecta com um PAPEL diferente. A migration usa o dono
+  # (administrativo); o crítico e o assíncrono, os papéis mínimos de
+  # `sql/papeis_minimos.sql`. Uma URL comum levava a senha administrativa a
+  # todo runtime — e com ela a autoridade de desligar a trava do event log.
+  #
   # TLS desligado APENAS aqui dentro: o tráfego não sai da rede privada do
   # Docker e o banco não tem certificado. Para um PostgreSQL hospedado, a URL
   # aponta para fora e este valor vira true — o código recusa remoto sem TLS.
@@ -108,6 +113,8 @@ services:
     environment:
       <<: *ambiente
       DELIVERYOS_MIGRATE_ON_BOOT: "true"
+      # A autoridade SEPARADA: só a migration conecta como dono do schema.
+      DELIVERYOS_DATABASE_URL: postgres://${POSTGRES_USER:-deliveryos}:${POSTGRES_PASSWORD:?senha do banco obrigatoria}@deliveryos-postgres:5432/${POSTGRES_DB:-deliveryos}
     command: ["node", "dist/src/platform/bin/migrate.js"]
     networks: [interna]
     security_opt:
@@ -115,6 +122,44 @@ services:
     read_only: true
     tmpfs:
       - /tmp:size=32m
+    logging: *logs
+
+  # -------------------------------------------------------------- papéis
+  # Os papéis MÍNIMOS dos runtimes (`sql/papeis_minimos.sql`, provado em
+  # `test:platform:cadeia` P1-P5), aplicados pelo DONO depois da migration, a
+  # cada subida: uma migration nova que cria tabela recebe os GRANTs na mesma
+  # subida. Idempotente: CREATE guardado, GRANT repetido é no-op, a senha
+  # reaplicada é a mesma.
+  #
+  # Este job, a migration e o backup são os únicos que recebem a senha
+  # ADMINISTRATIVA. O crítico e o assíncrono conectam com o próprio papel: não
+  # são superusuário, não são donos de tabela, não desligam trigger.
+  #
+  # As senhas dos papéis chegam por AMBIENTE e o psql as lê com `\getenv`
+  # (`sql/senhas_dos_papeis.sql`) — nunca por argumento, que aparece em `ps`.
+  deliveryos-papeis:
+    image: postgres:16-bookworm
+    container_name: deliveryos-papeis
+    restart: "no"
+    depends_on:
+      deliveryos-postgres:
+        condition: service_healthy
+      deliveryos-migrate:
+        condition: service_completed_successfully
+    environment:
+      PGUSER: ${POSTGRES_USER:-deliveryos}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?senha do banco obrigatoria}
+      PGHOST: deliveryos-postgres
+      PGDATABASE: ${POSTGRES_DB:-deliveryos}
+      DELIVERYOS_CRITICAL_DB_PASSWORD: ${DELIVERYOS_CRITICAL_DB_PASSWORD:?senha do papel do critico obrigatoria}
+      DELIVERYOS_ASYNC_DB_PASSWORD: ${DELIVERYOS_ASYNC_DB_PASSWORD:?senha do papel do assincrono obrigatoria}
+    volumes:
+      - ./sql:/papeis:ro
+    command: ["psql", "-X", "-q", "-v", "ON_ERROR_STOP=1", "-f", "/papeis/papeis_minimos.sql", "-f", "/papeis/senhas_dos_papeis.sql"]
+    networks: [interna]
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
     logging: *logs
 
   # ------------------------------------------------------------- crítico
@@ -126,12 +171,17 @@ services:
     depends_on:
       deliveryos-postgres:
         condition: service_healthy
+      deliveryos-papeis:
+        condition: service_completed_successfully
       deliveryos-migrate:
         condition: service_completed_successfully
     environment:
       <<: *ambiente
       DELIVERYOS_HOST: 0.0.0.0
       DELIVERYOS_PORT: "8080"
+      # O papel MÍNIMO do crítico, nunca o dono: a senha administrativa não
+      # chega a este container.
+      DELIVERYOS_DATABASE_URL: postgres://deliveryos_critical:${DELIVERYOS_CRITICAL_DB_PASSWORD:?senha do papel do critico obrigatoria}@deliveryos-postgres:5432/${POSTGRES_DB:-deliveryos}
       # Segredo dos tokens de aparelho. Fica SÓ aqui, e não em `x-ambiente`:
       # o worker assíncrono não emite nem verifica token — medido por grafo de
       # imports, `bin/async-runtime.ts` não alcança `auth/device-token.ts`.
@@ -193,12 +243,16 @@ services:
     depends_on:
       deliveryos-postgres:
         condition: service_healthy
+      deliveryos-papeis:
+        condition: service_completed_successfully
       deliveryos-migrate:
         condition: service_completed_successfully
     environment:
       <<: *ambiente
       DELIVERYOS_TICK_MS: "1000"
       DELIVERYOS_BATCH_SIZE: "25"
+      # O papel MÍNIMO do assíncrono: lê o log, drena a outbox, executa jobs.
+      DELIVERYOS_DATABASE_URL: postgres://deliveryos_async:${DELIVERYOS_ASYNC_DB_PASSWORD:?senha do papel do assincrono obrigatoria}@deliveryos-postgres:5432/${POSTGRES_DB:-deliveryos}
     command: ["node", "dist/src/platform/bin/async-runtime.js"]
     networks: [interna]
     # Sem porta e sem healthcheck HTTP: ele não escuta nada. A saúde dele é

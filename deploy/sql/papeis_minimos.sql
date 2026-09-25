@@ -1,25 +1,30 @@
 -- =====================================================================
 -- Papéis MÍNIMOS dos runtimes do DeliveryOS — a matriz, executável.
 --
--- Hoje a composição oficial conecta migrate, crítico e assíncrono como
--- POSTGRES_USER, que a imagem do PostgreSQL cria SUPERUSUÁRIO: o runtime pode
--- desligar a trava do event log, apagar tabela, revogar aparelho. Nada no
--- código faz isso — mas "nada faz" não é "nada pode".
+-- Até a certificação da Cadeia Real, a composição oficial conectava migrate,
+-- crítico e assíncrono como POSTGRES_USER, que a imagem do PostgreSQL cria
+-- SUPERUSUÁRIO: o runtime podia desligar a trava do event log, apagar tabela,
+-- revogar aparelho. Nada no código fazia isso — mas "nada faz" não é "nada
+-- pode".
 --
 -- Este arquivo é o INVENTÁRIO do que cada processo executa de fato (medido
 -- estatement a statement em pg-repositories.ts, critical.ts, async-runtime.ts,
--- rota-sessao.ts e a porta de replay), como GRANT. Ele NÃO é aplicado pela
--- composição — ligar a composição a estes papéis é a próxima fronteira, fora
--- desta missão. É PROVADO por `test:platform:cadeia` (seção P): o crítico e o
--- assíncrono sobem com estes papéis, a cadeia inteira passa, e as sabotagens
--- que o dono consegue (desligar trigger, apagar fato, revogar aparelho) são
--- recusadas por PRIVILÉGIO — antes de qualquer trigger.
+-- rota-sessao.ts e a porta de replay), como GRANT. É PROVADO por
+-- `test:platform:cadeia` (seção P): o crítico e o assíncrono sobem com estes
+-- papéis, a cadeia inteira passa, e as sabotagens que o dono consegue
+-- (desligar trigger, apagar fato, revogar aparelho) são recusadas por
+-- PRIVILÉGIO — antes de qualquer trigger.
+--
+-- A composição oficial APLICA este arquivo (certificação, 2026-09-25): o job
+-- `deliveryos-papeis` roda como dono depois da migration, a cada subida, e em
+-- seguida `senhas_dos_papeis.sql`. O crítico e o assíncrono conectam com
+-- estes papéis; em containers reais, `tools/papeis_compose_real.sh`.
 --
 -- Quem aplica migration (DDL) continua sendo o DONO do schema: o serviço
 -- `deliveryos-migrate`. Runtime nunca é dono.
 --
 -- Idempotente: cada CREATE ROLE é guardado; GRANT repetido é no-op.
--- Senhas ficam FORA daqui (ALTER ROLE ... PASSWORD pelo operador).
+-- Senhas ficam FORA daqui: `senhas_dos_papeis.sql` as lê do ambiente.
 -- =====================================================================
 
 DO $$ BEGIN

@@ -73,7 +73,9 @@ aleatorio() { node -e "process.stdout.write(require('node:crypto').randomBytes($
 SENHA=$(aleatorio 12)
 SEGREDO=$(aleatorio 24)
 COMMIT=$(git rev-parse HEAD)
-base() { printf 'POSTGRES_PASSWORD=%s\nDELIVERYOS_COMMIT=%s\nDELIVERYOS_DEVICE_TOKEN_SECRET=%s\n' "$SENHA" "$COMMIT" "$SEGREDO"; }
+SENHA_CRITICO=$(aleatorio 16)
+SENHA_ASSINCRONO=$(aleatorio 16)
+base() { printf 'POSTGRES_PASSWORD=%s\nDELIVERYOS_COMMIT=%s\nDELIVERYOS_DEVICE_TOKEN_SECRET=%s\nDELIVERYOS_CRITICAL_DB_PASSWORD=%s\nDELIVERYOS_ASYNC_DB_PASSWORD=%s\n' "$SENHA" "$COMMIT" "$SEGREDO" "$SENHA_CRITICO" "$SENHA_ASSINCRONO"; }
 base >"$tmp/sem.env"
 for m in simulated real; do { base; echo "DELIVERYOS_SOURCE_MODE=$m"; } >"$tmp/$m.env"; done
 { base; echo "DELIVERYOS_SOURCE_MODE=REAL"; } >"$tmp/invalido.env"

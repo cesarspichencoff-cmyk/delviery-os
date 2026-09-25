@@ -65,6 +65,7 @@
     "test:platform:q016:mutacoes": "npx tsx src/platform/run-q016-mutation-tests.ts",
     "test:platform:q017": "npx tsx src/platform/run-q017-source-mode-tests.ts",
     "test:platform:q017:compose": "npx tsx src/platform/run-q017-compose-tests.ts",
+    "test:platform:papeis:compose": "npx tsx src/platform/run-papeis-compose-tests.ts",
     "test:platform:q017:mutacoes": "npx tsx src/platform/run-q017-mutation-tests.ts",
     "test:platform:append-only": "npx tsx src/platform/run-append-only-tests.ts",
     "test:platform:cadeia": "npx tsx src/platform/run-cadeia-real-tests.ts",

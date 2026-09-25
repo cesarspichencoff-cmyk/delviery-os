@@ -69,6 +69,8 @@ const BASE: Record<string, string> = {
   POSTGRES_PASSWORD: "fixture-senha-q017",
   DELIVERYOS_COMMIT: "abcdef1234567",
   DELIVERYOS_DEVICE_TOKEN_SECRET: "fixture-q017-".padEnd(48, "x"),
+  DELIVERYOS_CRITICAL_DB_PASSWORD: "fixture-papel-critico-q017",
+  DELIVERYOS_ASYNC_DB_PASSWORD: "fixture-papel-assincrono-q017",
 };
 
 interface Render {
@@ -138,14 +140,16 @@ try {
     }
   });
 
-  teste("K4 ESCOPO: só o crítico recebe a variável — migrate, assíncrono, backup e banco não", () => {
+  teste("K4 ESCOPO: só o crítico recebe a variável — migrate, papéis, assíncrono, backup e banco não", () => {
+    // Revista na certificação da Cadeia Real: entrou `deliveryos-papeis`, o
+    // job que aplica os papéis mínimos. Ele não grava fato — não recebe modo.
     for (const m of MODOS) {
       const r = renderizar(com(m));
       assert.equal(r.codigo, 0);
       const servicos = Object.keys(r.servicos ?? {}).sort();
       assert.deepEqual(
         servicos,
-        ["deliveryos-async", "deliveryos-backup", "deliveryos-critical", "deliveryos-migrate", "deliveryos-postgres"],
+        ["deliveryos-async", "deliveryos-backup", "deliveryos-critical", "deliveryos-migrate", "deliveryos-papeis", "deliveryos-postgres"],
         "a composição mudou de serviços — a régua de escopo precisa ser revista, não ignorada",
       );
       assert.deepEqual(quemRecebe(r), ["deliveryos-critical"], `com ${m}, a variável chegou a: ${quemRecebe(r).join(", ")}`);
