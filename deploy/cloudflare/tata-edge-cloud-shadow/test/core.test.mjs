@@ -32,7 +32,7 @@ test("verified closing becomes a FACT handoff without financial payload", () => 
   assert.equal(handoff.observation_count, 1);
   assert.equal(handoff.source_coverage[0].source, CLOSING_SOURCE);
   assert.equal(handoff.source_coverage[0].unit_id, undefined);
-  assert.equal(handoff.source_watermark_at, "2026-09-25T03:00:39.554Z");
+  assert.equal(handoff.source_watermark_at, "2026-09-25T02:57:22.000Z");
   assert.equal(handoff.global_coverage_claim, "NOT_PROVIDED");
   assert.equal(handoff.external_effect_authorized, false);
 
@@ -61,7 +61,7 @@ test("same source watermark is replay-safe", () => {
   const decision = shouldDispatchClosing(closing(), {
     coverage: [{
       source: CLOSING_SOURCE,
-      last_observed_at: "2026-09-25T03:00:39.554Z",
+      last_observed_at: "2026-09-25T02:57:22.000Z",
     }],
   });
   assert.equal(decision.dispatch, false);
@@ -70,11 +70,14 @@ test("same source watermark is replay-safe", () => {
 
 test("newer source watermark dispatches", () => {
   const decision = shouldDispatchClosing(
-    closing({ updated_at: "2026-09-25T04:00:00.000Z" }),
+    closing({
+      message_sent_at: "2026-09-25T03:30:00.000Z",
+      updated_at: "2026-09-25T04:00:00.000Z",
+    }),
     {
       coverage: [{
         source: CLOSING_SOURCE,
-        last_observed_at: "2026-09-25T03:00:39.554Z",
+        last_observed_at: "2026-09-25T02:57:22.000Z",
       }],
     },
   );
@@ -88,6 +91,36 @@ test("producer generation cannot predate source observation", () => {
       closing(),
       "2026-09-25T02:00:00.000Z",
     ),
-    /closing_observed_after_generation/,
+    /closing_source_observed_after_generation/,
   );
+});
+
+
+test("ingestion time cannot manufacture source freshness", () => {
+  const normalized = normalizeClosingRow(closing({
+    business_date: "2026-09-19",
+    message_sent_at: "2026-09-20T03:02:16.000Z",
+    updated_at: "2026-09-25T10:00:00.000Z",
+  }));
+
+  assert.equal(normalized.source_observed_at, "2026-09-20T03:02:16.000Z");
+  assert.equal(normalized.ingested_at, "2026-09-25T10:00:00.000Z");
+
+  const decision = shouldDispatchClosing(
+    closing({
+      business_date: "2026-09-19",
+      message_sent_at: "2026-09-20T03:02:16.000Z",
+      updated_at: "2026-09-25T10:00:00.000Z",
+    }),
+    {
+      coverage: [{
+        source: CLOSING_SOURCE,
+        last_observed_at: "2026-09-21T02:06:40.000Z",
+      }],
+    },
+  );
+
+  assert.equal(decision.dispatch, false);
+  assert.equal(decision.reason, "source_already_observed");
+  assert.equal(decision.source_watermark_at, "2026-09-20T03:02:16.000Z");
 });
