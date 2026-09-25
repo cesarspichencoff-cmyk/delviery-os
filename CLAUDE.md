@@ -240,7 +240,22 @@ administrativa; provado em containers (`tools/papeis_compose_real.sh` **44/44**,
 acusações** no controle que devolve a URL do dono), travado por `test:platform:papeis:compose` (10). O
 limite da Append-Only Closure sobre o runtime está fechado. **Android BLOCKED por motivo externo:** a
 rede nega `dl.google.com` (AGP e SDK); JDK 17 instalado; `android/gate-verification` quebrado desde
-`4456f2e` (pré-existente). **Relógio:** `occurred_at` adiantado entra carimbado `clock_trust='trusted'`
-pelo default da coluna e prende o frescor — reproduzido, registrado em `docs/execution/BLOCKERS.md`,
-**não corrigido**.
+`4456f2e` (pré-existente). **Relógio:** `occurred_at` adiantado entrava carimbado `clock_trust='trusted'`
+pelo default da coluna e prendia o frescor — reproduzido e registrado pela certificação em
+`docs/execution/BLOCKERS.md`; **corrigido depois**, abaixo.
 Regressão integral final **58/62**, zero `FAIL_NOVO`.
+
+**Relógio do aparelho — corrigido** (`docs/etapa-4-8/RELOGIO.md`): CAPTURADO ≠ HORÁRIO CONFIÁVEL,
+política do César. **Reproduzido antes**, com os binários e PostgreSQL: o ponto de +24 h entrava
+`trusted` pelo padrão da coluna, prendia a última posição e ficaria `fresh` no dia seguinte sem
+ponto novo, também depois do replay. Agora o crítico julga o relógio contra a hora do servidor e
+grava `clock_trust` explícito — vocabulário e tolerância do contrato de Entregas, regra
+assimétrica (atrasado é ponto offline). O ponto suspeito é aceito e preservado (coordenada,
+`occurred_at`, `recorded_at`); o frescor usa a hora do servidor, e ao vivo e replay chegam ao
+mesmo número. Sem migration: o padrão da coluna fica, e o consumidor confere o carimbo contra
+`recorded_at`. Gates: `test:platform:relogio` (**13/13**) e `test:platform:relogio:mutacoes`
+(**12 mutações, zero cegas**). **Android segue BLOCKED** — a rede nega `dl.google.com`, revalidado;
+o gate físico tem roteiro pronto, todo `NOT_RUN` (`docs/etapa-4-8/FIELD-GATE-ANDROID.md`).
+Regressão curta: **55 gates, 53 PASS, zero `FAIL_NOVO`** — 2 `FAIL_PREEXISTENTE` de governança; o
+único achado (âncoras da Q-016 sobre as linhas mudadas) foi fechado. **O hardening de servidor
+parou aqui: a próxima etapa é o aparelho Android físico.**

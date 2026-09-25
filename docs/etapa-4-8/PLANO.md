@@ -176,7 +176,16 @@ diferentes inteligências. Política de acesso desse repositório é `Q-012`, ai
   termo, comandos e rider-mobile KEEP_PARALLEL no piloto; `/entregas` ADAPT. Certificada em
   2026-09-25: papéis mínimos ligados à composição oficial e provados em containers; o runtime deixou
   de ser superusuário. Android BLOCKED (a rede nega `dl.google.com`); relógio do aparelho registrado,
-  não corrigido.
+  não corrigido (corrigido depois: abaixo).
+
+- **Relógio do aparelho · CORRIGIDO** (`docs/etapa-4-8/RELOGIO.md`): CAPTURADO ≠ HORÁRIO
+  CONFIÁVEL, política do César. Reproduzido antes de corrigir, com os binários e PostgreSQL: o ponto
+  de +24 h entrava `trusted` pelo padrão da coluna, prendia a última posição e ficaria `fresh` no dia
+  seguinte, também depois do replay. O crítico julga o relógio contra a hora do servidor, com o
+  vocabulário e a tolerância que Entregas já tinha e regra assimétrica; o ponto suspeito é aceito e
+  preservado, e o frescor usa a hora do servidor. Sem migration e sem sistema temporal novo; 12
+  mutações, zero cegas. O Android segue BLOCKED pela rede; o gate físico tem roteiro pronto, todo
+  `NOT_RUN` (`docs/etapa-4-8/FIELD-GATE-ANDROID.md`). Próxima etapa: o aparelho físico.
 
 A redução de superfície de `apps/deliveryos-ai-node` (reescrever os 6 root-requires para subpath)
 **não é C2** — é tarefa futura fora do escopo de ambos, registrada em `C1-PORT.md`.

@@ -1010,3 +1010,31 @@ FAIL_PREEXISTENTE, FAIL_NOVO, BLOCKED) ANTES do relato. Um vermelho não
 classificado é `FAIL_NOVO` até ser medido contra a base. E verificação que
 não pode rodar no ambiente é declarada BLOCKED, com o motivo — nunca
 contada como coberta.
+
+## L50 — Guarda temporal testada só no "agora"
+
+**O que quase passou.** `classificarFrescor` já tinha uma guarda para relógio adiantado: carimbo
+mais de 60 s no futuro vira `unknown`, "para um aparelho com data adiantada não parecer eternamente
+atualizado". No instante do teste ela passa: o ponto de +24 h lê `unknown`. Só que o tempo anda. No
+dia seguinte o mesmo ponto deixa de estar no futuro e, sem nenhum ponto novo, o aparelho lê
+`fresh`. Nesse meio-tempo a última posição ficou presa nele e escondeu os pontos reais mais novos.
+A guarda não fechou o defeito: adiou o sintoma em um dia, e o escondeu de todo teste que olha só o
+agora.
+
+**A regra.** Propriedade que depende de tempo se prova também no instante futuro em que ela quebra —
+`agora + desvio`, não só `agora`. E guarda no consumidor não substitui julgamento na entrada: quem
+conhece a hora do servidor é a ingestão. O consumidor pode rebaixar um carimbo, nunca promovê-lo.
+
+## L51 — A âncora de mutação de outra missão é parte do raio da mudança
+
+**O que quase passou.** A correção do relógio mudou duas linhas que outra suíte copia como âncora
+textual: o `INSERT` do escritor e o `SELECT` da porta de replay. Três mutações da Q-016 deixaram de
+ser aplicadas. A suíte acusou "não aplicada", e não "cega", e é isso que a salva. Mas só foi vista
+porque a Q-016 estava na regressão curta, e a lista tinha sido escolhida por assunto (relógio,
+cadeia, replay), não pelas âncoras. Se a suíte afetada fosse de outro assunto, a quebra só
+apareceria na próxima regressão integral, em outra missão, como falha de ninguém.
+
+**A regra.** Antes de escolher a regressão, cruze as linhas que o diff removeu com as âncoras de todas
+as suítes de mutação: `git diff -U0`, as linhas `-`, e `grep -F` nos `run-*-mutation-tests.ts`. O
+raio de uma mudança inclui o texto que as outras provas copiaram dela. Reancorar é reescrever a
+mesma mutação no texto novo, com o mesmo defeito — nunca afrouxar a âncora até ela casar.
