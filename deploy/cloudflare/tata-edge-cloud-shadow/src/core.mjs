@@ -39,9 +39,9 @@ export function normalizeClosingRow(row) {
   assertDate(businessDate, "closing_business_date_invalid");
 
   const messageSentAt = String(row.message_sent_at ?? "");
-  const observedAt = String(row.updated_at ?? "");
+  const ingestedAt = String(row.updated_at ?? "");
   assertIso(messageSentAt, "closing_message_sent_at_invalid");
-  assertIso(observedAt, "closing_updated_at_invalid");
+  assertIso(ingestedAt, "closing_updated_at_invalid");
 
   if (!bool01(row.readonly_verified)) {
     throw new ProducerError("closing_not_readonly_verified");
@@ -51,7 +51,8 @@ export function normalizeClosingRow(row) {
     mailbox_uid: mailboxUid,
     business_date: businessDate,
     message_sent_at: messageSentAt,
-    observed_at: observedAt,
+    source_observed_at: messageSentAt,
+    ingested_at: ingestedAt,
     totals_match: bool01(row.totals_match),
     period_label_mismatch: bool01(row.period_label_mismatch),
   };
@@ -61,8 +62,8 @@ export function closingRowToEdgeHandoff(row, generatedAt) {
   const normalized = normalizeClosingRow(row);
   assertIso(generatedAt, "producer_generated_at_invalid");
 
-  if (Date.parse(normalized.observed_at) > Date.parse(generatedAt)) {
-    throw new ProducerError("closing_observed_after_generation");
+  if (Date.parse(normalized.source_observed_at) > Date.parse(generatedAt)) {
+    throw new ProducerError("closing_source_observed_after_generation");
   }
 
   return {
@@ -71,13 +72,13 @@ export function closingRowToEdgeHandoff(row, generatedAt) {
     source_mode: "live_observed",
     fact_class: "FACT",
     generated_at: generatedAt,
-    source_watermark_at: normalized.observed_at,
+    source_watermark_at: normalized.source_observed_at,
     observation_count: 1,
     source_coverage: [{
       source: CLOSING_SOURCE,
       observation_count: 1,
-      first_observed_at: normalized.observed_at,
-      last_observed_at: normalized.observed_at,
+      first_observed_at: normalized.source_observed_at,
+      last_observed_at: normalized.source_observed_at,
     }],
     identity_counts: {
       proven: 0,
@@ -113,21 +114,21 @@ export function shouldDispatchClosing(row, currentSnapshot) {
     return {
       dispatch: true,
       reason: "source_not_present_in_snapshot",
-      source_watermark_at: normalized.observed_at,
+      source_watermark_at: normalized.source_observed_at,
     };
   }
 
-  if (Date.parse(normalized.observed_at) <= Date.parse(current)) {
+  if (Date.parse(normalized.source_observed_at) <= Date.parse(current)) {
     return {
       dispatch: false,
       reason: "source_already_observed",
-      source_watermark_at: normalized.observed_at,
+      source_watermark_at: normalized.source_observed_at,
     };
   }
 
   return {
     dispatch: true,
     reason: "new_source_observation",
-    source_watermark_at: normalized.observed_at,
+    source_watermark_at: normalized.source_observed_at,
   };
 }
