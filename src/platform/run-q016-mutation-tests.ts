@@ -176,8 +176,8 @@ const MEMORIA = "src/platform/projections/consumidor.ts";
 const ESCRITOR_SEM_MODO: Edicao[] = [
   {
     arquivo: ESCRITOR,
-    de: "                sequence_local, contract_version, source_mode)\n             VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)",
-    para: "                sequence_local, contract_version)\n             VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9,$10,$11,$12,$13,$14,$15)",
+    de: "                sequence_local, contract_version, source_mode, clock_trust)\n             VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)",
+    para: "                sequence_local, contract_version, clock_trust)\n             VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)",
   },
   {
     arquivo: ESCRITOR,
@@ -266,7 +266,8 @@ mutacao({
     {
       arquivo: PORTA,
       de: `      \`SELECT event_id, unit_id, object_type, object_id, event_type, occurred_at, origin,
-              device_id, sequence_local, idempotency_key, contract_version, source_mode
+              device_id, sequence_local, idempotency_key, contract_version, source_mode,
+              recorded_at, clock_trust
          FROM platform.event_log
         WHERE event_type = ANY($1)\`,`,
       para: `      \`SELECT payload->>'event_id' AS event_id, payload->>'unit_id' AS unit_id,
@@ -275,7 +276,8 @@ mutacao({
               (payload->>'occurred_at')::timestamptz AS occurred_at, payload->>'origin' AS origin,
               payload->>'device_id' AS device_id, payload->>'sequence' AS sequence_local,
               idempotency_key, payload->>'event_version' AS contract_version,
-              payload->>'source_mode' AS source_mode
+              payload->>'source_mode' AS source_mode,
+              (payload->>'received_at')::timestamptz AS recorded_at, payload->>'clock_trust' AS clock_trust
          FROM platform.outbox
         WHERE kind = ANY($1)\`,`,
     },

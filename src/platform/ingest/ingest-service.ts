@@ -31,6 +31,7 @@ import {
 } from "../contracts/event-catalog";
 import { validarPayload, tiposComContrato } from "../contracts/event-schema";
 import type { OutboxMessage } from "../contracts/messaging";
+import { classificarRelogio, type ConfiancaDoRelogio } from "../contracts/relogio";
 
 export const INGEST_SERVICE_VERSION = "ingest-service@1.0.0";
 
@@ -76,6 +77,12 @@ export interface FatoParaGravar {
    * nenhum escritor chegue ao banco podendo esquecer.
    */
   source_mode: SourceMode;
+  /**
+   * Obrigatório, e sem padrão no tipo. A coluna ainda tem o padrão `trusted`
+   * da 0001 — é assim que todo fato do crítico nascia "confiável" sem ninguém
+   * ter olhado o relógio. O escritor passa o julgamento, sempre.
+   */
+  clock_trust: ConfiancaDoRelogio;
 }
 
 /**
@@ -211,6 +218,11 @@ export async function ingerir(
 
   const recebidoEm = o.recebido_em.toISOString();
 
+  // O relógio do produtor é JULGADO aqui, contra a hora do servidor — o único
+  // lugar que conhece as duas. Nunca aceito do produtor: um aparelho não diz
+  // que o próprio relógio é confiável, como não diz quando o servidor recebeu.
+  const relogioDe = (e: EventEnvelope): ConfiancaDoRelogio => classificarRelogio(e.occurred_at, recebidoEm);
+
   const paraGravar: FatoParaGravar[] = aprovados.map((e) => {
     const obj = objetoDe(e);
     return {
@@ -236,6 +248,7 @@ export async function ingerir(
       // para a outbox, e o log — que é a verdade — guardava o fato real e o
       // simulado como a mesma linha (provado em run-q016-replay-tests.ts).
       source_mode: e.source_mode,
+      clock_trust: relogioDe(e),
     };
   });
 
@@ -251,6 +264,12 @@ export async function ingerir(
       trip_id: e.trip_id,
       device_id: e.device_id,
       occurred_at: e.occurred_at,
+      // A hora do servidor e o julgamento do relógio viajam com a mensagem: são
+      // eles que decidem o frescor. O replay devolve os mesmos dois do event log
+      // (`recorded_at`, `clock_trust`) — sem isso, a projeção ao vivo e a
+      // reconstruída divergiriam.
+      received_at: recebidoEm,
+      clock_trust: relogioDe(e),
       // O modo viaja com a mensagem. Sem ele, o consumidor não teria como
       // manter simulado separado de real, e um número de teste entraria na
       // conta da operação.

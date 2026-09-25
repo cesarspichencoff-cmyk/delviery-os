@@ -15,6 +15,8 @@
  * sem sinal debaixo de um viaduto.
  */
 
+import type { ConfiancaDoRelogio } from "./relogio";
+
 /* ------------------------------------------------------------------ *
  * Tipos de evento
  * ------------------------------------------------------------------ */
@@ -100,6 +102,18 @@ export interface EventEnvelope<T = Record<string, unknown>> {
   occurred_at: string;
   /** Quando o observador viu. Ausente quando observar e acontecer coincidem. */
   observed_at?: string;
+  /**
+   * Quando o SERVIDOR recebeu (`_carimbos.received_at` do contrato). Atribuído
+   * na ingestão, nunca aceito do produtor: vai da ingestão ao consumidor na
+   * mensagem da outbox, e volta do `recorded_at` do event log no replay.
+   */
+  received_at?: string;
+  /**
+   * Se o relógio do produtor tem autoridade sobre `occurred_at` — o vocabulário
+   * de `CLOCK_TRUST`. Atribuído na ingestão, nunca pelo produtor. Ausente =
+   * não avaliado, e não avaliado nunca é confiável (`relogioEfetivo`).
+   */
+  clock_trust?: ConfiancaDoRelogio;
 
   origin: EventOrigin;
   source_mode: SourceMode;

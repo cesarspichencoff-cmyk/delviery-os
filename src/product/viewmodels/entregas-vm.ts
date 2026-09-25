@@ -15,6 +15,7 @@ import type {
 } from "../../platform/leitura/realidade-de-entregas";
 import type { SourceMode } from "../../platform/contracts/event-catalog";
 import { classificarFrescor, type Frescor } from "../../platform/projections/operacao-viva";
+import { instanteConfiavel } from "../../platform/contracts/relogio";
 import {
   ausente,
   observado,
@@ -183,6 +184,22 @@ function modoDoAparelho(a: AparelhoReal): SourceMode | null {
   return a.ultimo_lote?.source_mode ?? null;
 }
 
+/**
+ * GPS RECEBIDO != HORARIO DO APARELHO CONFIAVEL. Quando o relogio do lote nao
+ * tem autoridade, a hora que o aparelho mandou continua na tela como
+ * evidencia, e o selo diz por que ela nao decide o frescor.
+ */
+function seloDoRelogio(lote: NonNullable<AparelhoReal["ultimo_lote"]>): Selo | null {
+  if (lote.relogio === "trusted") return null;
+  const adiantado = Math.round((Date.parse(lote.occurred_at) - Date.parse(lote.recorded_at)) / 1000);
+  return selo(
+    "evidencia_insuficiente",
+    lote.relogio === "suspect"
+      ? `Relogio do aparelho ${adiantado}s a frente do servidor: a hora enviada fica como evidencia, sem autoridade. O frescor usa a hora em que o servidor recebeu.`
+      : "Relogio do aparelho nao avaliado: o frescor usa a hora em que o servidor recebeu.",
+  );
+}
+
 function aparelhoVM(a: AparelhoReal, agora: Date): AparelhoRealVM {
   const lidaEm = agora.toISOString();
   // O cadastro e administrativo: a procedencia declarada e a do ultimo lote
@@ -199,6 +216,13 @@ function aparelhoVM(a: AparelhoReal, agora: Date): AparelhoRealVM {
   else if (!a.credencial_vinculada_em) selos.push(selo("acao_humana_necessaria", "Autorizado, mas o aparelho ainda nao fez o primeiro contato."));
   else if (modo) selos.push(selo(PROCEDENCIA_DO_MODO[modo]));
   else selos.push(selo("evidencia_insuficiente", "Credencial vinculada e nenhum lote recebido."));
+  const relogio = a.ultimo_lote ? seloDoRelogio(a.ultimo_lote) : null;
+  if (relogio) selos.push(relogio);
+  // O frescor so nasce de tempo com autoridade: o `occurred_at` quando o
+  // relogio e confiavel; senao, a hora em que o servidor recebeu.
+  const instanteDoGps = a.ultimo_lote
+    ? instanteConfiavel({ occurred_at: a.ultimo_lote.occurred_at, received_at: a.ultimo_lote.recorded_at, clock_trust: a.ultimo_lote.relogio })
+    : undefined;
 
   return {
     device_id: a.device_id,
@@ -218,7 +242,7 @@ function aparelhoVM(a: AparelhoReal, agora: Date): AparelhoRealVM {
     ultima_posicao_em: a.ultimo_lote && modo ? observado(a.ultimo_lote.occurred_at, PROCEDENCIA_DO_MODO[modo], lidaEm) : (semLote as Campo<string>),
     ultima_sincronizacao: a.ultimo_lote && modo ? observado(a.ultimo_lote.recorded_at, PROCEDENCIA_DO_MODO[modo], lidaEm) : (semLote as Campo<string>),
     gps: a.ultimo_lote && modo
-      ? observado(classificarFrescor(a.ultimo_lote.occurred_at, agora), PROCEDENCIA_DO_MODO[modo], lidaEm)
+      ? observado(classificarFrescor(instanteDoGps, agora), PROCEDENCIA_DO_MODO[modo], lidaEm)
       : (semLote as Campo<Frescor>),
     modo_dos_fatos: modo ? observado(modo, PROCEDENCIA_DO_MODO[modo], lidaEm) : (semLote as Campo<SourceMode>),
     fatos: modo ? observado(a.fatos_por_modo[modo], PROCEDENCIA_DO_MODO[modo], lidaEm) : (semLote as Campo<number>),

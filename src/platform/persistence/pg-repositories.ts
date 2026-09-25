@@ -30,6 +30,7 @@ import type {
 import { decideAfterFailure, nextAvailableAt } from "../contracts/messaging";
 import type { SqlClient, SqlRow } from "./sql-client";
 import type { SourceMode } from "../contracts/event-catalog";
+import type { ConfiancaDoRelogio } from "../contracts/relogio";
 
 /** Converte TIMESTAMPTZ para ISO-8601 UTC, ou undefined. */
 function iso(v: unknown): string | undefined {
@@ -486,6 +487,12 @@ export interface FactRecord {
    * nenhum escritor chegue ao banco podendo esquecer.
    */
   source_mode: SourceMode;
+  /**
+   * Obrigatório, e sem padrão no tipo: o julgamento do relógio feito na
+   * ingestão. A coluna guarda o padrão `trusted` da 0001, que carimbava todo
+   * fato como confiável sem ninguém ter olhado — por isso vai sempre explícito.
+   */
+  clock_trust: ConfiancaDoRelogio;
 }
 
 /**
@@ -513,8 +520,8 @@ export class PgTransactionalWriter {
             `INSERT INTO platform.event_log
                (event_id, unit_id, object_type, object_id, event_type, payload, occurred_at,
                 recorded_at, origin, actor_id, device_id, idempotency_key, correlation_id,
-                sequence_local, contract_version, source_mode)
-             VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+                sequence_local, contract_version, source_mode, clock_trust)
+             VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
              ON CONFLICT (idempotency_key) DO NOTHING
              RETURNING event_id`,
             [
@@ -535,6 +542,8 @@ export class PgTransactionalWriter {
               f.contract_version,
               // Sem `?? "real"`: ausente vai como ausente, e o banco recusa.
               f.source_mode,
+              // Sem `?? "trusted"`: o padrão da coluna era exatamente o defeito.
+              f.clock_trust,
             ],
           );
           gravados += r.length;

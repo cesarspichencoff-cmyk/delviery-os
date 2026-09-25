@@ -356,6 +356,9 @@ async function main(): Promise<void> {
       // Fixture sintética: declarada `simulated`. Desde a 0003 o banco recusa
       // fato sem modo, e o tipo recusa antes.
       source_mode: "simulated",
+      // `occurred_at` é o próprio AGORA do servidor: relógio dentro da
+      // tolerância. Declarado, como o tipo exige — nunca pelo padrão da coluna.
+      clock_trust: "trusted",
     });
 
     await test("fato e mensagem são gravados juntos", async () => {

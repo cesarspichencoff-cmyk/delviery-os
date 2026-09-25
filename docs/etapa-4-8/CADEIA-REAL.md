@@ -49,7 +49,7 @@ controle positivo e treze mutações. O número de mutações estava certo; o de
 | `FAIL_NOVO` do m1-bridge C6 | `1de5b28`/`5effdbe` tocaram `entregas-vm.ts` e `entregas.js`, caminhos protegidos pelos gates de congelamento, **sem registrar autorização**. Em `0b8803c` o C6 era verde. A autorização existia: o César a deu na própria missão (item 8, porta READ-ONLY; item 12, revisão visual de Entregas). Foi **registrada**, não inventada: exceção estreita no envelope M1, fora de M1B, dois arquivos, uma classe, linha exata; o C6 a nomeia no código, e o C6c prova que sem o registro os dois reprovam. **Reversível** (rollback no envelope). **Confirmada pelo César em 2026-09-25**, só para os dois arquivos e a classe já executada. | `3993ab4`; `docs/design/M1_VISUAL_CHANGE_ENVELOPE.md` |
 | papéis mínimos na composição oficial | ligados, no desenho provado; ver §6 | `e51c34d` |
 | Android | JDK 17 instalado; build do app, testes de unidade e instrumentados **BLOCKED**: a política de rede nega `dl.google.com`, de onde vêm o AGP e o SDK; ver §4 | — |
-| `occurred_at` no futuro | reproduzido com o binário, impacto medido, **registrado como problema separado e não corrigido**; ver §10 | `docs/execution/BLOCKERS.md` |
+| `occurred_at` no futuro | reproduzido com o binário, impacto medido, **registrado como problema separado e não corrigido**; ver §10. **Corrigido depois, no mesmo dia**, por decisão do César | `docs/execution/BLOCKERS.md`; `docs/etapa-4-8/RELOGIO.md` |
 | regressão integral final | ver §8 | — |
 
 ## 1 — O mapa: antes e depois
@@ -291,7 +291,8 @@ explícito (D4). **Governança depois do commit** (L45): medida no commit da doc
   telefone.
 - **`jti` por segundo.** O identificador de emissão deriva de (`device_id`, `iat`); duas emissões
   no mesmo segundo compartilham `jti`.
-- **Relógio do aparelho — reproduzido na certificação, NÃO corrigido.**
+- **Relógio do aparelho — reproduzido na certificação, que não o corrigiu. CORRIGIDO depois, no
+  mesmo dia** (`docs/etapa-4-8/RELOGIO.md`). O registro abaixo é o da certificação.
   - **Reprodução:** binário crítico, PostgreSQL real, dois aparelhos.
     - A: t−30 s, **t+24 h**, t−5 s;
     - B, controle: t−30 s, t−5 s.
@@ -327,7 +328,8 @@ Nenhuma nova pergunta. Q-003, Q-004 e Q-015 continuam `open`/`PAUSE`.
 - **Confirmada por ele em 2026-09-25:** a exceção estreita registrada no envelope M1, para a
   superfície Entregas (§0). Vale só para os dois arquivos e a classe já executada; não amplia o
   envelope. Ver `docs/design/M1_VISUAL_CHANGE_ENVELOPE.md`.
-- **Pede decisão dele:** a direção de correção do relógio (§10). Recusar o ponto, ou aceitar marcado
-  e fora do frescor.
+- **Decidida por ele em 2026-09-25**, depois da certificação: a direção do relógio (§10). O ponto é
+  aceito marcado e preservado; o relógio adiantado perde a autoridade sobre o frescor, que passa a
+  usar a hora do servidor. Implementada em `docs/etapa-4-8/RELOGIO.md`.
 - **Segue fora desta missão:** migrar viagem, termo e comandos do piloto para a plataforma
   redefine o domínio de Entregas, que está no Preservation Set.

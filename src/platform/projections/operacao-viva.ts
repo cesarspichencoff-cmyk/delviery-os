@@ -16,6 +16,7 @@
  */
 
 import type { EventEnvelope, EventType, SourceMode } from "../contracts/event-catalog";
+import { instanteConfiavel } from "../contracts/relogio";
 
 export const PROJECTION_VERSION = "operacao-viva@1.0.0";
 
@@ -78,7 +79,12 @@ export interface ViagemAcumulada {
   device_id?: string;
   /** Último instante de QUALQUER fato desta viagem. */
   ultimo_fato_em: string;
-  /** Último instante de posição. Ausente quando nunca houve. */
+  /**
+   * Último instante CONFIÁVEL de posição — a base do frescor. É o `occurred_at`
+   * quando o relógio do aparelho tem autoridade; sem ela, a hora em que o
+   * servidor recebeu (`instanteConfiavel`). O `occurred_at` enviado segue
+   * intacto no event log e em `ultimo_fato_em`. Ausente quando nunca houve.
+   */
   ultima_posicao_em?: string;
   ocorrencias_abertas: number;
   source_mode: SourceMode;
@@ -275,10 +281,13 @@ export function projetar(
     const estado =
       destino && RANK[destino] > RANK[atual.estado] ? destino : atual.estado;
 
-    const ultimaPosicao =
-      ev.event_type === "gps_batch_received"
-        ? maisRecente(atual.ultima_posicao_em, ev.occurred_at)
-        : atual.ultima_posicao_em;
+    // Frescor só nasce de tempo com autoridade. O `occurred_at` de um relógio
+    // adiantado não entra aqui — era ele que deixava um ponto de amanhã
+    // fresco amanhã. Vale a hora em que o servidor recebeu. O ponto continua
+    // contando: GPS recebido e horário confiável são coisas diferentes.
+    const ehPosicao = ev.event_type === "gps_batch_received";
+    const instante = ehPosicao ? instanteConfiavel(ev) : undefined;
+    const ultimaPosicao = instante ? maisRecente(atual.ultima_posicao_em, instante) : atual.ultima_posicao_em;
 
     porViagem.set(tripId, {
       ...atual,

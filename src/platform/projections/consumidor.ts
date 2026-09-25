@@ -17,6 +17,7 @@
  */
 
 import type { EventEnvelope, EventType, SourceMode } from "../contracts/event-catalog";
+import { CONFIANCAS_DO_RELOGIO, type ConfiancaDoRelogio } from "../contracts/relogio";
 import { projetar, type Projecao, type OpcoesProjecao } from "./operacao-viva";
 
 export const CONSUMER_VERSION = "operacao-viva-consumidor@1.0.0";
@@ -148,6 +149,13 @@ export function envelopeDaMensagem(m: MensagemDaPonte): EventEnvelope | null {
     trip_id: p.trip_id ? String(p.trip_id) : undefined,
     device_id: p.device_id ? String(p.device_id) : undefined,
     occurred_at: String(p.occurred_at),
+    // Carimbos do SERVIDOR (ingestão ou event log). Fora do vocabulário ou
+    // ilegível vira ausente — e ausente é julgado de novo, nunca presumido
+    // confiável (`relogioEfetivo`).
+    received_at: typeof p.received_at === "string" && p.received_at.trim() ? p.received_at : undefined,
+    clock_trust: (CONFIANCAS_DO_RELOGIO as readonly unknown[]).includes(p.clock_trust)
+      ? (p.clock_trust as ConfiancaDoRelogio)
+      : undefined,
     origin: (p.origin ?? "system") as EventEnvelope["origin"],
     source_mode: String(p.source_mode) as SourceMode,
     sequence: typeof p.sequence === "number" ? p.sequence : undefined,

@@ -896,7 +896,22 @@ que não existia aqui. Conserto (levar `semSegredo` a um arquivo Kotlin puro) fi
 compila. Com um stub fora do repositório, o `EntregasApi.kt` atual compila e o `CaptureGateTest`
 passa 12/12 — o diff do Fable nesse arquivo não tem erro de tipo.
 
-### Relógio do aparelho — `occurred_at` adiantado entra carimbado `trusted` · **ABERTO, registrado em 2026-09-25**
+### Relógio do aparelho — `occurred_at` adiantado entra carimbado `trusted` · **FECHADO em 2026-09-25** (aberto no mesmo dia)
+
+> **SUCESSÃO — 2026-09-25 · CORRIGIDO. O texto abaixo é o registro de abertura, sem edição.**
+>
+> Política do César: **CAPTURADO ≠ HORÁRIO CONFIÁVEL.** O ponto é aceito e preservado (coordenada,
+> `occurred_at` como veio, `recorded_at` do servidor); o relógio adiantado perde a autoridade
+> temporal. O crítico julga o relógio contra a hora do servidor e grava `clock_trust` explícito:
+> `suspect` além de 120 s adiantado, com o vocabulário e a tolerância que Entregas já tinha, e regra
+> assimétrica — atrasado é ponto capturado sem rede, não relógio errado. O frescor usa a hora do
+> servidor quando o relógio não tem autoridade, e ao vivo e replay chegam ao mesmo frescor. Das duas
+> perguntas do fim: o ponto é **aceito marcado**; o padrão da coluna **fica**, e o consumidor confere
+> o carimbo contra `recorded_at`.
+>
+> Provas: `test:platform:relogio` (13/13, binários de `dist/` e PostgreSQL) e
+> `test:platform:relogio:mutacoes` (13/13: 1 controle e 12 mutações, zero cegas). Limites que ficam:
+> `docs/etapa-4-8/RELOGIO.md`, §6.
 
 Reproduzido com o binário crítico de `dist/` e PostgreSQL real, dois aparelhos na mesma unidade: A
 com t−30 s, **t+24 h**, t−5 s; B (controle) com t−30 s, t−5 s. O que se mediu:

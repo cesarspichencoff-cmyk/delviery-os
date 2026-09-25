@@ -83,7 +83,8 @@ export async function lerFatosParaReplay(
 
     const linhas = await tx.query(
       `SELECT event_id, unit_id, object_type, object_id, event_type, occurred_at, origin,
-              device_id, sequence_local, idempotency_key, contract_version, source_mode
+              device_id, sequence_local, idempotency_key, contract_version, source_mode,
+              recorded_at, clock_trust
          FROM platform.event_log
         WHERE event_type = ANY($1)`,
       [tipos],
@@ -136,6 +137,11 @@ export async function lerFatosParaReplay(
           trip_id: l.object_type === "trip" ? l.object_id : undefined,
           device_id: l.device_id ?? undefined,
           occurred_at: instante.toISOString(),
+          // Os dois carimbos do servidor, como a mensagem da outbox os leva.
+          // `clock_trust` vem cru: o do histórico é o padrão `trusted` da 0001,
+          // e quem decide o que ele vale é `relogioEfetivo`, contra `recorded_at`.
+          received_at: l.recorded_at instanceof Date ? l.recorded_at.toISOString() : l.recorded_at ?? undefined,
+          clock_trust: l.clock_trust ?? undefined,
           origin: l.origin,
           source_mode: modo,
           sequence,

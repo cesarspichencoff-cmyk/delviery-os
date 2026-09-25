@@ -22,6 +22,7 @@
 import type { TransactionalSqlClient } from "../persistence/sql-client";
 import type { SourceMode } from "../contracts/event-catalog";
 import { SOURCE_MODES } from "../contracts/event-catalog";
+import { relogioEfetivo, type ConfiancaDoRelogio } from "../contracts/relogio";
 import { lerFatosParaReplay } from "../projections/replay-do-event-log";
 import { projetar, type ViagemProjetada } from "../projections/operacao-viva";
 import { TIPOS_DA_OPERACAO_VIVA } from "../runtime/handler-operacao-viva";
@@ -33,6 +34,12 @@ export interface UltimoLote {
   occurred_at: string;
   /** Quando o servidor recebeu. A distância entre os dois é a latência de sincronização. */
   recorded_at: string;
+  /**
+   * O relógio EFETIVO deste lote (`relogioEfetivo`): o carimbo da ingestão
+   * conferido contra `recorded_at`. Diferente de `trusted`, o `occurred_at`
+   * acima é o que o aparelho disse — evidência, sem autoridade sobre o tempo.
+   */
+  relogio: ConfiancaDoRelogio;
   trip_id: string | null;
   source_mode: SourceMode | null;
   correlation_id: string | null;
@@ -107,11 +114,14 @@ export async function lerRealidadeDeEntregas(
     // O último lote e as contagens vêm do LOG, por aparelho. Uma consulta,
     // não uma por aparelho.
     const ultimos = await tx.query(
+      // O último lote é o último RECEBIDO, no relógio do servidor. Ordenar pelo
+      // `occurred_at` deixava um relógio adiantado prender o "último lote" num
+      // ponto de amanhã, escondendo os que chegaram depois dele.
       `SELECT DISTINCT ON (device_id) device_id, occurred_at, recorded_at, object_type, object_id,
-              source_mode, correlation_id
+              source_mode, correlation_id, clock_trust
          FROM platform.event_log
         WHERE event_type = 'gps_batch_received' AND device_id IS NOT NULL
-        ORDER BY device_id, occurred_at DESC, sequence_local DESC NULLS LAST`,
+        ORDER BY device_id, recorded_at DESC, sequence_local DESC NULLS LAST`,
     );
     const contagens = await tx.query(
       `SELECT device_id, source_mode, count(*)::int AS n
@@ -125,6 +135,7 @@ export async function lerRealidadeDeEntregas(
       ultimoPor.set(String(u.device_id), {
         occurred_at: iso(u.occurred_at)!,
         recorded_at: iso(u.recorded_at)!,
+        relogio: relogioEfetivo({ occurred_at: u.occurred_at, received_at: u.recorded_at, clock_trust: u.clock_trust }),
         trip_id: u.object_type === "trip" ? String(u.object_id) : null,
         source_mode: modo(u.source_mode),
         correlation_id: u.correlation_id === null ? null : String(u.correlation_id),
