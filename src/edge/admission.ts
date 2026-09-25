@@ -5,6 +5,7 @@
  */
 import type { EdgeSourceObservation } from "./simulator";
 import { rebuildIdentityGraph } from "./projection";
+import { projectManagerSnapshot, type EdgeManagerSnapshot } from "./managerSnapshot";
 import { projectAttention, type AttentionCandidate } from "./attention";
 import {
   assertJournalSourceModeCompatibility,
@@ -32,6 +33,10 @@ export class EdgeAdmissionPipeline {
 
   currentAttentionCandidates(): AttentionCandidate[] {
     return projectAttention(this.store.observations());
+  }
+
+  currentManagerSnapshot(generatedAt: string): EdgeManagerSnapshot {
+    return projectManagerSnapshot(this.store.observations(), generatedAt);
   }
 
   journalSize(): number {
