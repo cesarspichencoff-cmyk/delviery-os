@@ -1,6 +1,7 @@
 import {
   ContractError,
   buildRuntimeSnapshot,
+  classifyHandoffProgression,
   inputFingerprint,
   shouldRecomputeScheduled,
   validateEdgeHandoff,
@@ -133,6 +134,25 @@ export default {
         url.pathname === "/sources/tata-edge/handoff"
       ) {
         const input = validateEdgeHandoff(await readJson(request));
+        const latest = await latestHandoff(env);
+        const progression = classifyHandoffProgression(input, latest);
+
+        if (progression === "DUPLICATE") {
+          const snapshot = await currentSnapshot(env);
+          return json({
+            accepted: true,
+            duplicate: true,
+            snapshot,
+          }, 200);
+        }
+
+        if (progression !== "ACCEPT") {
+          return json({
+            accepted: false,
+            error: `handoff_${progression.toLowerCase()}`,
+          }, 409);
+        }
+
         const snapshot = await persistSnapshot(
           env,
           input,
@@ -140,6 +160,7 @@ export default {
         );
         return json({
           accepted: true,
+          duplicate: false,
           snapshot,
         }, 202);
       }
