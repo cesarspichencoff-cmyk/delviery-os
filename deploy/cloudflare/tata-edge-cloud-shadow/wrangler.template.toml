@@ -16,5 +16,9 @@ binding = "SOURCE_DB"
 database_name = "cesar-gerencial-mail-bridge"
 database_id = "fc0ae418-599d-41da-b849-5fada0cc08e2"
 
+[[services]]
+binding = "WATCH_SERVICE"
+service = "cesar-gerencial-watch-bridge"
+
 [triggers]
 crons = ["10 * * * *"]
