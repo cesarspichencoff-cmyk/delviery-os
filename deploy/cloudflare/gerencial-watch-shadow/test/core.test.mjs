@@ -1,0 +1,154 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {
+  ContractError,
+  buildRuntimeSnapshot,
+  inputFingerprint,
+  validateEdgeHandoff,
+} from "../src/core.mjs";
+
+function valid(overrides = {}) {
+  return {
+    contract_version: "edge-watch-handoff@0.1.0",
+    source_system: "TATA_EDGE",
+    source_mode: "live_observed",
+    fact_class: "FACT",
+    generated_at: "2026-09-25T12:01:00.000Z",
+    source_watermark_at: "2026-09-25T12:00:00.000Z",
+    observation_count: 2,
+    source_coverage: [{
+      source: "ifood",
+      unit_id: "0001",
+      observation_count: 2,
+      first_observed_at: "2026-09-25T11:59:00.000Z",
+      last_observed_at: "2026-09-25T12:00:00.000Z",
+    }],
+    identity_counts: {
+      proven: 1,
+      supported_inference: 0,
+      candidate: 0,
+      unknown: 0,
+    },
+    hard_exceptions: [],
+    global_coverage_claim: "NOT_PROVIDED",
+    external_effect_authorized: false,
+    ...overrides,
+  };
+}
+
+test("accepts a strict live observed envelope", () => {
+  const input = valid();
+  assert.equal(validateEdgeHandoff(input), input);
+});
+
+test("simulation cannot enter as FACT", () => {
+  assert.throws(
+    () => validateEdgeHandoff(valid({
+      source_mode: "synthetic",
+      fact_class: "FACT",
+    })),
+    /edge_handoff_truth_class_mismatch/,
+  );
+});
+
+test("top-level unreviewed fields fail closed", () => {
+  assert.throws(
+    () => validateEdgeHandoff({ ...valid(), raw_payload: { token: "x" } }),
+    /edge_handoff_unreviewed_field/,
+  );
+});
+
+test("nested unreviewed fields fail closed", () => {
+  const input = valid();
+  input.hard_exceptions = [{
+    attention_id: "a1",
+    kind: "SOURCE_ADAPTER_FAILED",
+    observed_at: "2026-09-25T12:00:00.000Z",
+    reason_code: "SOURCE_FAILED",
+    raw_error: "must-not-cross",
+  }];
+  assert.throws(
+    () => validateEdgeHandoff(input),
+    /edge_handoff_exception_unreviewed_field/,
+  );
+});
+
+test("coverage count mismatch fails before admission", () => {
+  assert.throws(
+    () => validateEdgeHandoff(valid({ observation_count: 3 })),
+    /edge_handoff_source_coverage_count_mismatch/,
+  );
+});
+
+test("future source watermark fails closed", () => {
+  assert.throws(
+    () => validateEdgeHandoff(valid({
+      generated_at: "2026-09-25T11:59:00.000Z",
+    })),
+    /edge_handoff_source_watermark_after_generation/,
+  );
+});
+
+test("external effect authority can never cross this contract", () => {
+  assert.throws(
+    () => validateEdgeHandoff(valid({
+      external_effect_authorized: true,
+    })),
+    /edge_handoff_external_effect_authority_forbidden/,
+  );
+});
+
+test("input fingerprint is stable across object key order", async () => {
+  const a = valid();
+  const b = Object.fromEntries(Object.entries(a).reverse());
+  assert.equal(await inputFingerprint(a), await inputFingerprint(b));
+});
+
+test("snapshot remains degraded until freshness/global coverage exist", async () => {
+  const input = valid({
+    hard_exceptions: [{
+      attention_id: "auth-1",
+      kind: "IFOOD_AUTH_HUMAN_REQUIRED",
+      unit_id: "0001",
+      observed_at: "2026-09-25T12:00:00.000Z",
+      reason_code: "AUTH_HUMAN_REQUIRED",
+    }, {
+      attention_id: "print-1",
+      kind: "PRINT_SOFTWARE_ERROR",
+      unit_id: "0001",
+      observed_at: "2026-09-25T12:00:00.000Z",
+      reason_code: "PRINT_ERROR",
+    }],
+  });
+  const snapshot = await buildRuntimeSnapshot(
+    input,
+    "2026-09-25T12:02:00.000Z",
+  );
+  assert.equal(snapshot.validity.status, "DEGRADED");
+  assert.equal(snapshot.validity.globalAllClearAuthorized, false);
+  assert.equal(snapshot.needsCesar.length, 1);
+  assert.equal(snapshot.needsCesar[0].kind, "IFOOD_AUTH_HUMAN_REQUIRED");
+  assert.equal(snapshot.criticalQueue.length, 2);
+  assert.equal(snapshot.externalEffectsAuthorized, false);
+});
+
+test("empty envelope produces INSUFFICIENT, never all-clear", async () => {
+  const input = valid({
+    source_mode: "empty",
+    fact_class: "EMPTY",
+    source_watermark_at: null,
+    observation_count: 0,
+    source_coverage: [],
+    identity_counts: {
+      proven: 0,
+      supported_inference: 0,
+      candidate: 0,
+      unknown: 0,
+    },
+    hard_exceptions: [],
+  });
+  const snapshot = await buildRuntimeSnapshot(input);
+  assert.equal(snapshot.validity.status, "INSUFFICIENT");
+  assert.equal(snapshot.validity.globalAllClearAuthorized, false);
+  assert.equal(snapshot.needsCesar.length, 0);
+});
