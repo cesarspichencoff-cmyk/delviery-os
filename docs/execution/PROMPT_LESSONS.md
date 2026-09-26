@@ -4,7 +4,7 @@ lifecycle:
   status: ACTIVE
   authority_scope: lessons
   superseded_by: null
-  atualizado_em: "2026-09-25"
+  atualizado_em: "2026-09-26"
   state_basis: 953a3fb
 ---
 
@@ -1073,3 +1073,26 @@ recusada. Uma regressão que ligasse a captura pelo clique passaria despercebida
 **A regra.** Num cenário negativo, todas as outras condições precisam estar verdadeiras, e o teste
 espera a precondição acontecer antes de afirmar a ausência (D1 espera o aceite chegar ao nativo).
 Quem prova que o cenário não é vazio é a mutação que remove só aquela garantia (MR9).
+
+## L55 — O CLAUDE.md também tem lifecycle, e a cópia que o agente lê não mostra
+
+**O que quase passou.** Duas vezes em dois dias o G6c da governança reprovou um documento editado
+sem atualizar `atualizado_em`: o `DECISIONS.md` num dia, o próprio `CLAUDE.md` no outro. O segundo
+é traiçoeiro: o texto do `CLAUDE.md` que chega ao agente como instrução começa no título, sem o
+cabeçalho `lifecycle:` — e é exatamente ele que o G6c lê.
+
+**A regra.** Antes de commitar documento num dia novo, liste os `atualizado_em` de TODOS os
+arquivos tocados — `CLAUDE.md` incluído, lido do disco, não da memória — e rode a governança
+DEPOIS do commit: o G6c compara com a data do commit, e antes dele a árvore suja parece verde.
+
+## L56 — O controle de uma mutação roda nas condições que o mutante representa
+
+**O que quase passou.** Para provar que a suíte de persistência não depende da data civil, a data
+fixa antiga foi devolvida como mutante e rodada "no dia dela" — às 12:00Z. Reprovou: o controle novo
+"+25 h no futuro" do mutante caía a 23 h 10 min do relógio e entrava. O mutante representa 10:10Z,
+não o dia inteiro; o controle reprovava por um motivo que não era o testado.
+
+**A regra.** Um controle que deve PASSAR com o mutante roda no instante exato que o mutante
+codifica, e reprovar ali é defeito do controle, não prova. Anote o motivo da reprovação antes de
+corrigir o controle — senão ajustar até passar vira o próprio vício que o controle combate.
+

@@ -4,7 +4,7 @@ lifecycle:
   status: ACTIVE
   authority_scope: etapa_4_8_plano
   superseded_by: null
-  atualizado_em: "2026-09-25"
+  atualizado_em: "2026-09-26"
   state_basis: 9e738b1
 ---
 
@@ -194,6 +194,10 @@ diferentes inteligências. Política de acesso desse repositório é `Q-012`, ai
   interação (rider-mobile), na API do aparelho no piloto e na ponte — domínio, comandos e
   máquina de estados intocados. Reproduzido antes (9/22, quatro vazios); 21 mutações, zero cegas.
   O Kotlin não compilou aqui e nada rodou em aparelho: o primeiro fato do app é `NOT_RUN`.
+  **2026-09-26:** push dos 6 commits autorizado e confirmado; a data fixa vencida fechada como classe
+  (gate de data civil, 12/12); termo sintético de laboratório com trava no boot do piloto (10/10); a
+  cadeia do emulador ensaiada na nuvem com os binários reais até a fronteira do Kotlin (37/37).
+  Build e emulador seguem no Foxxy (`BANCADA-EMULADOR.md` §3.11–3.12).
 
 A redução de superfície de `apps/deliveryos-ai-node` (reescrever os 6 root-requires para subpath)
 **não é C2** — é tarefa futura fora do escopo de ambos, registrada em `C1-PORT.md`.

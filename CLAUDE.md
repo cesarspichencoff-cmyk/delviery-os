@@ -292,3 +292,18 @@ FAIL_PREEXISTENTE/BLOCKED + 0 FAIL_NOVO** (3 pré-existentes e 1 bloqueado por s
 idênticos em `a9b7e1b`; o único `FAIL_NOVO`, G2/G6c da governança vindo do próprio registro, foi
 fechado antes da contagem). Um dos pré-existentes era a cadeia `test:entregas`, parada numa data fixa
 vencida — corrigido depois, abaixo.
+
+**2026-09-26 — push, data civil, termo de laboratório, cadeia do emulador ensaiada.** Os 6 commits da
+Q-018 foram ao remoto por autorização explícita (remoto = local = `a7699f1`). A data fixa vencida
+foi fechada como **classe**: um "agora" lido uma vez, controles de janela, e o gate
+`test:entregas:persistence-recreate:relogio` (**12/12**) roda a suíte com a data civil deslocada nos
+dois processos — reproduzido antes: reprovava hoje e passava em 2026-07-26. **Termo sintético de
+laboratório**, autorizado pelo César só para a bancada: "SEM VALOR LEGAL — APENAS TESTE SIMULADO" em
+todo campo legal, e o piloto **recusa subir** com ele sem `ENTREGAS_LABORATORIO=1` ou em modo remoto
+(`test:entregas:termo-sintetico`, **10/10**, com mutantes). **A cadeia do emulador, ensaiada na
+nuvem com os binários reais até a fronteira do Kotlin** (`tools/bancada_q018_cadeia.sh`, **37/37**):
+termo aceito pela interface, saída pelo domínio, `startTripCapture`, sessão e lote no formato do app,
+`platform.event_log` com a viagem da página em `simulated`, replay e Entregas. **O emulador segue
+`NOT_RUN`:** este container não tem KVM nem SDK, e a política de rede nega `dl.google.com`. O
+procedimento exato, com PASS por item, está em `docs/etapa-4-8/BANCADA-EMULADOR.md`; se passar no
+Foxxy, a bancada acaba e o próximo nível é o aparelho físico.

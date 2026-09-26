@@ -4,7 +4,7 @@ lifecycle:
   status: ACTIVE
   authority_scope: field_gate_android
   superseded_by: null
-  atualizado_em: "2026-09-25"
+  atualizado_em: "2026-09-26"
   state_basis: f122ee3
 ---
 
@@ -23,7 +23,7 @@ lifecycle:
 | relógio do aparelho no servidor | **PROVEN**: relógio adiantado vira `suspect`, não fabrica frescor, sobrevive ao replay | `test:platform:relogio`; `docs/etapa-4-8/RELOGIO.md` |
 | papéis mínimos na composição oficial | **PROVEN** em containers | `tools/papeis_compose_real.sh` |
 | comportamento físico do Android | **UNKNOWN** | este roteiro |
-| gatilho da captura nativa no app | **IMPLEMENTADO, Kotlin NÃO COMPILADO**: a rider-mobile liga pela ponte depois de termo, permissão e saída confirmada (`Q-018` respondida); provado com piloto real, Chromium e ponte falsa (`test:entregas:rider-bridge` 27/27). O lado Kotlin mudou e precisa de A1–A3 de novo | `docs/etapa-4-8/Q018-RIDER-CAPTURA.md` |
+| gatilho da captura nativa no app | **IMPLEMENTADO, Kotlin NÃO COMPILADO**: a rider-mobile liga pela ponte depois de termo, permissão e saída confirmada (`Q-018` respondida); provado com piloto real, Chromium e ponte falsa (`test:entregas:rider-bridge` 27/27), e a cadeia inteira ensaiada na nuvem com os binários reais pelo caminho do emulador (`tools/bancada_q018_cadeia.sh`, 37/37). O lado Kotlin mudou e precisa de A1–A3 de novo | `docs/etapa-4-8/Q018-RIDER-CAPTURA.md`; `BANCADA-EMULADOR.md` §5b |
 | build do app (`testDebugUnitTest`, `assembleDebug`, instrumentados) | **PROVEN fora do sandbox**: A1 e A2 em Windows/JDK 17/SDK 34; A3 em emulador Android 14/API 34 | execução local "Foxxy", 2026-09-25; o bloqueio de `dl.google.com` permanece específico ao sandbox de nuvem |
 
 ## 1 — Pré-requisito A: compilar e testar numa máquina com SDK
@@ -91,7 +91,11 @@ Isso é smoke test de emulador, não fecha nenhum item da seção 3.
      (`entregasPilotLogin("<TOKEN>")` no console do WebView — no `debug`, por `chrome://inspect`);
    - **flag de GPS ligada no piloto** (`gps_capture_enabled: true`; o caminho pode vir de
      `ENTREGAS_GPS_FLAGS_CONFIG`, absoluto ou relativo);
-   - **termo publicável**: os campos do César (`docs/entregas/pilot/CHECKLIST_ATIVACAO.md` §A);
+   - **termo publicável**: no aparelho físico, os campos do César (`docs/entregas/pilot/CHECKLIST_ATIVACAO.md`
+     §A); **no emulador**, a fixture sintética que o César autorizou em 2026-09-26
+     (`tools/bancada_termo_sintetico.json`, "SEM VALOR LEGAL — APENAS TESTE SIMULADO"), com
+     `ENTREGAS_LABORATORIO=1` e o piloto em modo local — fora disso o piloto recusa subir. Ela
+     **nunca** vale para a bateria física: aceite de texto sem valor legal não autoriza ninguém;
    - **viagem montada no console para o motoboy da sessão** — viagem de outro motoboy não liga
      captura neste aparelho, de propósito.
 

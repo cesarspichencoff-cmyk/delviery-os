@@ -218,18 +218,13 @@ não entrou. O recibo existe no servidor e no Kotlin (`receipt`).
 
 ## 10 — No Foxxy
 
-1. **Build** com este commit: A1–A3 (`FIELD-GATE-ANDROID.md` §1). Anotar o commit.
-2. **Piloto de laboratório** com HTTPS (`BANCADA-EMULADOR.md` §2), `gps_capture_enabled: true` e um
-   **termo publicável** — os campos do César (`CHECKLIST_ATIVACAO.md` §A); para o emulador, a
-   fixture sintética das suítes **só se o César autorizar**.
-3. **Sessão do motoboy** no WebView: `entregasPilotLogin("<TOKEN>")` pelo `chrome://inspect`
-   (só no `debug`).
-4. **Viagem** montada no console para o motoboy dessa sessão.
-5. Aceitar o termo → permitir a localização → confirmar a saída. PASS: o termo antes do pedido de
-   permissão; "AGUARDANDO A SAÍDA" antes; depois, notificação do serviço e "GPS ATIVO — VIAGEM …";
-   e o primeiro ponto no `event_log` (`BANCADA-EMULADOR.md` §3).
-6. Encerrar a viagem no console: com a página aberta, a notificação some em até ~15 s; com o app
-   em segundo plano, **medir** (§9).
+O procedimento exato, com PASS por item, está em `docs/etapa-4-8/BANCADA-EMULADOR.md` §3.11–3.12
+(Q1–Q11). Em resumo: build novo (A1–A3), piloto de laboratório com a fixture sintética e
+`ENTREGAS_LABORATORIO=1`, viagem montada para o motoboy da sessão, sessão no WebView por
+`chrome://inspect`, posição do emulador por `adb emu geo fix`, e então **pela tela**: termo →
+CONCORDAR → permissão → Confirmar saída. A prova é o banco, o Room, o arquivo de aceites do piloto,
+o replay e `/api/entregas`. Se Q1–Q11 passarem, a bancada do emulador acabou; o próximo nível é o
+aparelho físico.
 
 ## 11 — Regressão
 
@@ -257,3 +252,37 @@ passou inteira. A equação no HEAD final está na §12.
 
 Antes de escolher a regressão, as linhas que o diff removeu foram cruzadas com as âncoras das 33
 suítes de mutação: nenhuma ancorava nelas (L51).
+
+## 12 — Depois (2026-09-26)
+
+**Push.** Os 6 commits `dc0b005..a7699f1` foram para `origin/feature/deliveryos-test-rc-convergence-v1`
+por autorização explícita do César; remoto = local = `a7699f1`, árvore limpa, sem merge, PR, `main`
+ou deploy. Tudo o que segue está em commits locais, esperando nova autorização.
+
+**A data fixa vencida, fechada como classe** (`8e6be1b`). Reproduzida com o próprio harness antes de
+mexer: a suíte reprovava hoje e passava 15/15 com a data civil em 2026-07-26. Agora um "agora" lido
+uma vez, AT1 = agora − 10 min, AT2 = AT1 + 30 s, e dois controles de janela (mais de 30 dias no
+passado, mais de 24 h no futuro: `impossible_timestamp`) — 17/17. O gate
+`test:entregas:persistence-recreate:relogio` roda a suíte com a data civil deslocada
+(`tools/relogio_deslocado.cjs`, herdado pelo servidor filho) e **12/12**: C0 ×5 (o deslocamento chega
+ao filho), S ×5 (verde em 2025-08-22, 2026-07-26, hoje, 2026-11-10 e 2036-09-23), M1 ×2 (a data fixa
+devolvida reprova hoje por `impossible_timestamp` e passa só na própria data). Um tropeço do próprio
+controle, corrigido e registrado: o mutante rodado às 12:00Z do dia 26 falhava por outro motivo — o
+ponto "+25 h" dele caía a 23 h 10 min do agora —, porque o "agora" que a data fixa representa é
+10:10Z. A cadeia `test:entregas` voltou a rodar inteira, com `deploy-audit`.
+
+**Termo sintético de laboratório** (`ea3745a`). `tools/bancada_termo_sintetico.json`: a marca "SEM
+VALOR LEGAL — APENAS TESTE SIMULADO" no título, no corpo, na vigência e em todo campo legal; nenhum
+dado legal inventado; fora de `config/`; o checklist legal intocado. O piloto recusa subir com um
+termo marcado sem `ENTREGAS_LABORATORIO=1`, ou em modo remoto mesmo com a flag, e declara
+`term_synthetic` na saúde. `test:entregas:termo-sintetico` **10/10**, na cadeia `test:entregas`, com
+dois mutantes do servidor compilado provando que as recusas dependem da trava (T9, T10).
+
+**A cadeia do emulador, até a fronteira do Kotlin** (`d499b1b`): `tools/bancada_q018_cadeia.sh`,
+**37/37** — `docs/etapa-4-8/BANCADA-EMULADOR.md` §5b.
+
+**Android aqui, revalidado hoje:** a política de rede do ambiente nega `dl.google.com` (403 no
+CONNECT); `maven.google.com` responde, mas só redireciona para lá; e o container não tem KVM nem
+SDK. Build e emulador seguem no Foxxy. Liberar `dl.google.com` no ambiente permitiria compilar e
+rodar os testes de unidade aqui; o emulador continuaria precisando do Foxxy.
+

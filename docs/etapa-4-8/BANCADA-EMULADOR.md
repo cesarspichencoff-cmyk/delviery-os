@@ -4,7 +4,7 @@ lifecycle:
   status: ACTIVE
   authority_scope: bancada_emulador_android
   superseded_by: null
-  atualizado_em: "2026-09-25"
+  atualizado_em: "2026-09-26"
   state_basis: f122ee3
   question_refs: ["Q-018"]
 ---
@@ -22,7 +22,7 @@ lifecycle:
 | causa do `RETRY` | **o próprio app recusa `http://`.** O APK de bancada foi gerado com `http://10.0.2.2:5193` e `http://10.0.2.2:8080`, e **toda** variante — `debug` inclusive — usa uma política de rede com `cleartextTrafficPermitted="false"` e nenhuma exceção. A requisição morre dentro do processo, antes de abrir socket; o `SyncWorker` devolve `RETRY` | §1 |
 | caminho de rede | HTTPS de bancada, **sem código novo**: emulador → `https://10.0.2.2:8080` → loopback do Windows → encaminhamento de localhost do WSL → `socat` TLS → crítico em `127.0.0.1:18080`; piloto com o HTTPS nativo dele em `5193`; CA de laboratório instalada como CA de usuário no emulador — que o `debug` aceita e `pilot`/`release` recusam | §2 |
 | bootstrap | **`NOT_RUN` no emulador.** **PASS na bancada TLS da nuvem**, com os binários reais e o mesmo `HttpsURLConnection` do app | §3.8, §5 |
-| primeiro fato do app até o `event_log` | **`NOT_RUN` — destravado no código pela `Q-018` (respondida em 2026-09-25)**: a rider-mobile liga a captura pela ponte (`docs/etapa-4-8/Q018-RIDER-CAPTURA.md`). Falta o build novo no Foxxy (o Kotlin mudou e não compilou aqui) e um termo publicável. *Registro de abertura:* `BLOCKED` — nenhuma página chamava a ponte `EntregasNative`, em toda a história do repositório. O lado da plataforma — sessão, lote, `event_log` simulated, assíncrono, replay — está PASS na bancada da nuvem | §4, §5 |
+| primeiro fato do app até o `event_log` | **`NOT_RUN` no emulador; a cadeia inteira ENSAIADA na nuvem com os binários reais (2026-09-26, §5b, 37/37)** — só o Kotlin fica para o Foxxy (§3.11–3.12). **Registro de 2026-09-25:** `NOT_RUN` — destravado no código pela `Q-018` (respondida em 2026-09-25): a rider-mobile liga a captura pela ponte (`docs/etapa-4-8/Q018-RIDER-CAPTURA.md`). Falta o build novo no Foxxy (o Kotlin mudou e não compilou aqui) e um termo publicável. *Registro de abertura:* `BLOCKED` — nenhuma página chamava a ponte `EntregasNative`, em toda a história do repositório. O lado da plataforma — sessão, lote, `event_log` simulated, assíncrono, replay — está PASS na bancada da nuvem | §4, §5 |
 | Entregas lendo o fato | **`NOT_RUN` no emulador** (depende do fato). Na bancada da nuvem, **PASS**: `/api/entregas` mostra o aparelho — credencial vinculada, GPS `fresh`, modo `simulated` — em bloco separado da demonstração. Depois do bootstrap no Foxxy dá para provar a parte do aparelho, sem fato | §3.10, §5 |
 
 ## 1 — O `RETRY`, lido no código
@@ -221,6 +221,91 @@ Com as mesmas variáveis de banco dos runtimes. PASS: o aparelho aparece em `rea
 `credencial` `vinculada` e `ultima_sessao` preenchida; o GPS fica sem lote — e **tem** de aparecer
 assim, nunca como fresco.
 
+### 3.11 A cadeia da Q-018 — o que muda (2026-09-26)
+
+A rider-mobile passou a ligar a captura (`docs/etapa-4-8/Q018-RIDER-CAPTURA.md`). Esta sequência
+leva o primeiro ponto do emulador até Entregas. **Ensaiada na nuvem com os binários reais e o
+mesmo laboratório** (`tools/bancada_q018_cadeia.sh`, verde, §5b); o que só o Foxxy prova é o Kotlin:
+Room, `TripLocationService`, Fused, `WorkManager` e a ponte de verdade.
+
+Três regras do César para esta bancada: tudo `simulated`; o termo é a fixture sintética
+(`tools/bancada_termo_sintetico.json`, "SEM VALOR LEGAL — APENAS TESTE SIMULADO"), **só aqui**; e o
+**aceite é feito pela interface do motoboy no emulador** — nada de gravar aceite direto no Room ou no
+banco.
+
+1. **Build novo.** Puxar a branch com a Q-018 e refazer A1–A3 (`FIELD-GATE-ANDROID.md` §1) e a §3.7.
+   O Kotlin mudou (`applyServerPolicies`, `device_id` nas capacidades, aceite de outro aparelho
+   recusado) e **nunca compilou fora do Foxxy**: um erro aqui é o primeiro resultado da bancada.
+   Instalar com `-r`, mantendo o Room e o `device_id`.
+2. **Piloto de laboratório** (WSL) — o da §3.3, com três variáveis a mais:
+
+```bash
+cd ~/deliveryos-lab
+printf '{"gps_capture_enabled": true, "offline_queue_enabled": true}\n' > $HOME/deliveryos-lab-tls/flags.json
+ENTREGAS_HTTPS=1 ENTREGAS_TLS_CERT=$HOME/deliveryos-lab-tls/srv.pem ENTREGAS_TLS_KEY=$HOME/deliveryos-lab-tls/srv.key \
+ENTREGAS_PILOT_CONFIG=config/entregas-pilot.example.json \
+ENTREGAS_LABORATORIO=1 ENTREGAS_TERM_CONFIG=$HOME/deliveryos-lab/tools/bancada_termo_sintetico.json \
+ENTREGAS_GPS_FLAGS_CONFIG=$HOME/deliveryos-lab-tls/flags.json \
+node dist/tools/entregas_pilot_server.js
+curl -s --cacert $HOME/deliveryos-lab-tls/ca.pem https://127.0.0.1:5193/api/health \
+  | python3 -c "import json,sys; h=json.load(sys.stdin); print(h['term_synthetic'], h['term_publishable'], h['gps_production'])"
+```
+
+   PASS: `True True True`. Sem `ENTREGAS_LABORATORIO=1` o piloto **recusa subir** com a fixture —
+   é a trava (`test:entregas:termo-sintetico`).
+3. **A viagem**, como o console montaria, para o motoboy da sessão (`rid-1` no arquivo de exemplo):
+
+```bash
+P=https://127.0.0.1:5193; CA=$HOME/deliveryos-lab-tls/ca.pem; V=T-FOXXY-1
+H=(-s --cacert $CA -H "Content-Type: application/json" -H "Authorization: Bearer CHANGE_ME_OPS_TOKEN")
+curl "${H[@]}" -d "{\"order_ref\":\"P-$V\",\"label\":\"Bancada · Rua do Laboratório, 1\"}" $P/api/ready-order
+curl "${H[@]}" -d "{\"type\":\"CreateTrip\",\"command_id\":\"ct-$V\",\"occurred_at\":\"$(date -u +%FT%TZ)\",\"unit_id\":\"demo-unit\",\"trip_id\":\"$V\",\"courier_actor_id\":\"rid-1\",\"deliveries\":[{\"delivery_id\":\"D-$V\",\"order_ref\":\"P-$V\"}],\"actor\":{\"actor_id\":\"ops-console-1\",\"role\":\"operador_expedicao\"}}" $P/api/command
+```
+
+4. **Sessão do motoboy no WebView.** Abrir o app. No Chrome do Windows, `chrome://inspect` →
+   *inspect* no WebView de `br.com.tata.entregas.debug` → Console:
+   `await entregasPilotLogin("CHANGE_ME_RIDER_TOKEN"); location.reload()`. (Só existe no `debug`.)
+5. **Posição do emulador:** `adb emu geo fix -46.6773 -23.5838` (longitude primeiro). Repetir com
+   valores próximos durante a viagem para gerar pontos novos.
+6. **No emulador, pela tela**: o termo aparece com "SEM VALOR LEGAL — APENAS TESTE SIMULADO" →
+   marcar a caixa → **CONCORDAR E CONTINUAR** → o diálogo de permissão do Android → **Permitir** (precisa)
+   → a tela da viagem diz "GPS DESLIGADO — AGUARDANDO A SAÍDA" → **Confirmar saída** → a
+   notificação do serviço aparece e o indicador diz "GPS ATIVO — VIAGEM T-FOXXY-1".
+7. Forçar a sincronização como na §3.8, se não vier sozinha.
+
+### 3.12 A prova, do banco ao Room
+
+```bash
+U='<URL do laboratório>'; D=dev-341c9a37d33d4d88; V=T-FOXXY-1
+psql "$U" -c "SELECT object_id AS viagem, count(*) AS fatos, min(source_mode) AS modo, min(clock_trust) AS relogio FROM platform.event_log WHERE device_id='$D' AND event_type='gps_batch_received' GROUP BY object_id" \
+          -c "SELECT state, count(*) FROM platform.outbox GROUP BY state"
+grep -c . <data_dir do piloto>/term-acks.jsonl; tail -1 <data_dir do piloto>/term-acks.jsonl \
+  | python3 -c "import json,sys; a=json.load(sys.stdin); print(a['status'], a['rider_id'], a['device_id'], a['unit_id'])"
+sqlite3 entregas.db "SELECT tripId, syncState, count(*) FROM gps_point GROUP BY tripId, syncState" \
+                    "SELECT status, deviceId, riderId, syncState FROM term_ack"
+```
+
+Depois: reiniciar o assíncrono (linha `[assincrono] replay` com `lidas` ≥ 1 e `aptos` ≥ 1) e a §3.10
+(`/api/entregas`: o aparelho com GPS `fresh`, modo `simulated`). Por fim, encerrar a viagem no
+console: com o app na frente, a notificação some em até ~15 s.
+
+| item | PASS se | resultado |
+|---|---|---|
+| Q1 build | A1–A3 verdes com o commit da Q-018 | NOT_RUN |
+| Q2 piloto de laboratório | `True True True` na saúde | NOT_RUN |
+| Q3 termo pela tela | a marca na tela; permissão pedida só **depois** do CONCORDAR | NOT_RUN |
+| Q4 aceite | 1 linha `accepted`, `rid-1`, este `device_id`, `LABORATORIO` no piloto; o mesmo no `term_ack` do Room | NOT_RUN |
+| Q5 antes da saída | "AGUARDANDO A SAÍDA", sem notificação, sem `gps_point` | NOT_RUN |
+| Q6 captura | depois de Confirmar saída: notificação e "GPS ATIVO"; `gps_point` da viagem `T-FOXXY-1` no Room | NOT_RUN |
+| Q7 sincronização | os pontos passam a `sent`; fatos em `platform.event_log` com `viagem = T-FOXXY-1`, `simulated`, `trusted` | NOT_RUN |
+| Q8 assíncrono | outbox só `done`; Operação Viva aplicou | NOT_RUN |
+| Q9 replay | depois do reinício, `lidas` = fatos do banco | NOT_RUN |
+| Q10 Entregas | o aparelho com GPS `fresh`, modo `simulated` | NOT_RUN |
+| Q11 fim | viagem encerrada → notificação some, "GPS DESLIGADO" | NOT_RUN |
+
+**Condição de parada (César):** se Q1–Q11 passarem, a bancada do emulador acabou. O próximo nível de
+prova é o aparelho físico (`FIELD-GATE-ANDROID.md`), não mais bancada.
+
 ## 4 — O primeiro fato: `BLOCKED`
 
 > **SUCESSÃO — 2026-09-25 · `Q-018` respondida e implementada. O texto abaixo é o registro de
@@ -286,6 +371,30 @@ na CA de laboratório, sem verificador de nome customizado.
 
 **O que ela não prova:** nada do Android — a política de rede de verdade, a CA de usuário, a
 WebView, o NAT do emulador, o encaminhamento do WSL. Isso é a §3.
+
+## 5b — A cadeia da Q-018 ensaiada na nuvem (`tools/bancada_q018_cadeia.sh`, 2026-09-26)
+
+A mesma topologia da §5, agora com o laboratório da Q-018 — piloto com `ENTREGAS_LABORATORIO=1`, termo
+sintético e flag de GPS ligada — e, no lugar do emulador, `tools/bancada_q018_rider.ts`: o Chromium
+na rider-mobile por `https://10.0.2.2`, confiando **só** no certificado da bancada (pino de SPKI), e o
+lado nativo de rede feito no formato exato de `DeviceSession.autenticar` e do lote do `SyncWorker`.
+**`BANCADA_Q018_GREEN`, 37 verificações, 0 falhas**, duas execuções:
+
+- controles negativos: sem o pino o Chromium recusa (`ERR_CERT_AUTHORITY_INVALID`); sem a CA o Node
+  recusa (`unable to verify the first certificate`);
+- piloto de laboratório declara `term_synthetic` e publica o termo; flag ligada;
+- a tela mostra "SEM VALOR LEGAL — APENAS TESTE SIMULADO"; nada pede permissão antes do termo; o
+  aceite é feito **pela interface** e montado pelo servidor (`rid-1`, este aparelho, hash do termo
+  sintético); só depois vem a permissão;
+- antes da saída nada liga; **Confirmar saída** → `startTripCapture` da viagem, uma vez;
+- sessão 200 com token, lote 200 aceito **com a viagem da página**;
+- `platform.event_log`: 1 fato `gps_batch_received` com `object_id` = a viagem da página,
+  `simulated`, `trusted`; nenhum fato fora de `simulated`; outbox drenada; Operação Viva aplicou;
+  replay depois do reinício; `/api/entregas` com o aparelho vinculado, GPS `fresh`, `simulated`;
+- o console encerra a viagem → a página desliga a captura → "GPS DESLIGADO".
+
+Banco, processos e alias de loopback conferidos depois: nada sobrou. **Não é o Kotlin**: Room,
+`TripLocationService`, Fused e `WorkManager` só o Foxxy prova (§3.11–3.12).
 
 ## 6 — Achados laterais, registrados e não corrigidos
 

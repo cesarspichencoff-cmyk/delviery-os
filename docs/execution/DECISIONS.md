@@ -4,7 +4,7 @@ lifecycle:
   status: ACTIVE
   authority_scope: decisions
   superseded_by: null
-  atualizado_em: "2026-09-25"
+  atualizado_em: "2026-09-26"
   state_basis: 953a3fb
 ---
 
@@ -1953,3 +1953,40 @@ entra como caminho próprio, com o ator registrado, não como porta aberta.
 
 **Custo aceito:** registro legado com id não determinístico não é reconhecido pela página; o motoboy
 vê o termo de novo naquele aparelho. Hoje não há produtor desse formato fora dos testes.
+
+---
+
+### D90 — O termo sintético de laboratório é travado no boot do piloto, não na disciplina de quem configura
+
+**Decisão.** O piloto recusa subir (exit 1) quando o termo carregado traz "SEM VALOR LEGAL — APENAS
+TESTE SIMULADO" e o laboratório não está declarado (`ENTREGAS_LABORATORIO=1`) ou o modo é remoto. A
+fixture mora em `tools/`, fora de `config/`, e a saúde declara `term_synthetic`.
+
+**Por que.** O César autorizou a fixture só para o emulador, com quatro proibições (dado legal
+inventado, default de pilot/release, produção, checklist legal). Uma regra que depende de ninguém
+copiar o arquivo para o lugar errado não é regra; um aceite de texto sem valor legal colhido em
+operação não autorizaria ninguém.
+
+**Alternativas recusadas:** confiar no caminho padrão ignorado pelo Git (uma cópia manual o
+anularia); um binário de "piloto de laboratório" separado (segunda verdade do servidor).
+
+**Custo aceito:** quem sobe a bancada precisa lembrar da flag — e o piloto diz exatamente qual.
+
+---
+
+### D91 — Independência da data civil se prova deslocando o relógio dos dois processos, não injetando relógio no servidor
+
+**Decisão.** `tools/relogio_deslocado.cjs`, carregado por `NODE_OPTIONS`, desloca só a data civil do
+teste e do servidor que ele sobe; o gate `test:entregas:persistence-recreate:relogio` roda a suíte em
+cinco datas e exige que a data fixa antiga (mutante) reprove hoje e passe só na própria data.
+
+**Por que.** O validador do servidor julga com o relógio dele, então o "agora" do teste precisa ser o
+mesmo relógio — lido uma vez. Provar isso em várias datas exige que as duas pontas mudem de data
+juntas.
+
+**Alternativa recusada:** um relógio injetável no piloto para testes — código de produção com um
+caminho que deslocaria o tempo por configuração, exatamente o tipo de porta que não deve existir.
+
+**Custo aceito:** o deslocamento vale para `Date`; datas criadas pelo próprio Node (cabeçalho HTTP,
+`mtime`) continuam reais — declarado no arquivo.
+
