@@ -2673,7 +2673,7 @@
         "Entradas",
         "Sugestões Tatá"
       ],
-      "categoria_operacional": "prato_quente",
+      "categoria_operacional": "entrada",
       "subcategoria_operacional": "tempura",
       "praca_principal": "cozinha_quentes",
       "pracas_dependentes": [],
@@ -2708,7 +2708,9 @@
       ],
       "confianca_classificacao": "alta",
       "revisao_manual": false,
-      "observacoes": [],
+      "observacoes": [
+        "Reclassificado por César em 2026-09-26: entrada da Cozinha; entrada não herda caixa 1.500 de prato."
+      ],
       "descricoes_alternativas": []
     },
     {
@@ -3183,7 +3185,7 @@
         "Entradas",
         "Sugestões Tatá"
       ],
-      "categoria_operacional": "prato_quente",
+      "categoria_operacional": "entrada",
       "subcategoria_operacional": "guioza",
       "praca_principal": "cozinha_quentes",
       "pracas_dependentes": [],
@@ -3220,7 +3222,9 @@
       ],
       "confianca_classificacao": "alta",
       "revisao_manual": false,
-      "observacoes": [],
+      "observacoes": [
+        "Reclassificado por César em 2026-09-26: entrada da Cozinha; entrada não herda caixa 1.500 de prato."
+      ],
       "descricoes_alternativas": []
     },
     {
@@ -8676,7 +8680,7 @@
       "disponivel_em": [
         "Entradas"
       ],
-      "categoria_operacional": "prato_quente",
+      "categoria_operacional": "entrada",
       "subcategoria_operacional": "tempura",
       "praca_principal": "cozinha_quentes",
       "pracas_dependentes": [],
@@ -8711,7 +8715,9 @@
       ],
       "confianca_classificacao": "alta",
       "revisao_manual": false,
-      "observacoes": [],
+      "observacoes": [
+        "Reclassificado por César em 2026-09-26: entrada da Cozinha; entrada não herda caixa 1.500 de prato."
+      ],
       "descricoes_alternativas": []
     },
     {
