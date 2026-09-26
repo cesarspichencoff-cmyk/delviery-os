@@ -1,11 +1,11 @@
 {
-  "schema_version": "0.6",
+  "schema_version": "0.7",
   "project_id": "project.deliveryos",
   "project": "DeliveryOS / TATÁ Edge",
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "design/tata-edge-runtime-foundation-v1",
-  "checkpoint_type": "WORK_BRANCH_CAIXA_PULSE_WORLD_PROVEN_ACTION_FOLLOWUP_PROVEN",
-  "state_basis_head": "fa974cb2dbe654f931458410937586eabb1d8e06",
+  "checkpoint_type": "WORK_BRANCH_CAIXA_PULSE_WORLD_PROVEN_EXPECTED_BARRIERS_PROVEN",
+  "state_basis_head": "e50b891976c4ff61aca4042367ba8ebe5ca4273a",
   "verified_state_refs": [
     "deploy/cloudflare/gerencial-mail-bridge/",
     "deploy/cloudflare/tata-edge-cloud-shadow/",
@@ -24,7 +24,10 @@
     "docs/architecture/EVIDENCE_WORLD_CAIXA_PULSE_SOURCE_2026-09-25.md",
     "docs/context/EVIDENCE_CAIXA_PULSE_ACTION_FOLLOWUP_2026-09-25.md",
     "src/contextKernel/actionFollowup.ts",
-    "src/contextKernel/caixaPulseEpisodeAdapter.ts"
+    "src/contextKernel/caixaPulseEpisodeAdapter.ts",
+    "docs/context/EVIDENCE_ACADEMIA_EXPECTED_BARRIERS_2026-09-25.md",
+    "src/contextKernel/expectedBarrier.ts",
+    "demo/context_kernel_expected_barrier_proof.ts"
   ],
   "verified_state": [
     "The canonical operational mail bridge is cesar-gerencial-mail-bridge reading Atendimento Sent read-only with EXAMINE + BODY.PEEK and D1 cesar-gerencial-mail-bridge.",
@@ -57,11 +60,17 @@
     "Action follow-up memory evaluates later same-family recurrence without treating it as effectiveness: 59 classified episodes have recognized actions, 50 have later same-family recurrence in the loaded window, and median time to next recurrence is 2 days. Action effective proven=0 and action ineffective proven=0.",
     "For OMISSION specifically, 21 classified episodes have recognized actions and 20 have a later omission-family episode; median gap is 1 day. This supports investigation of what changed after prior actions, not a claim that an action failed.",
     "The complete local Edge/Context/Watch regression after action-followup integration passed, including Watch 14/14, cloud producer 19/19 and gerencial-mail-bridge 40/40; direct attention reasons remain 0 and external effects remain unauthorized.",
-    "Commit fa974cb2dbe654f931458410937586eabb1d8e06 passed GitHub Actions Edge Shadow CI run 36212178423 with the verify job and all steps successful."
+    "Commit fa974cb2dbe654f931458410937586eabb1d8e06 passed GitHub Actions Edge Shadow CI run 36212178423 with the verify job and all steps successful.",
+    "The TATA Academia expected-barrier snapshot was refreshed against evolucao/v33-product-pass HEAD 4d656c9eb6b3ab4e5314e6a62973c9f7cdac6779; the operational content blob content-source/worlds_4_6_content.json remained unchanged at c1f408fc3d335eadf12cc85fa9efb89101701cc1 across the 28 intervening commits.",
+    "Expected-barrier knowledge now maps 30/69 canonical Caixa Pulse occurrences: all 22 OMISSION episodes and all 8 WRONG_ITEM episodes. The other 39 occurrences remain deliberately unmapped rather than inferred.",
+    "For all 30 mapped episodes, barrier execution remains UNKNOWN; barrier failure proven=0 and barrier compliance proven=0. Academia defines expected procedure only and is not treated as proof that a barrier was executed on an incident.",
+    "The current expected-barrier set contains seven pinned barriers covering identification, order-volume reunification, post-print physical checks, final divergence conference, exact product/quantity match, customer observation checks and manual-correction physical validation.",
+    "The e50b891 expected-barrier integration passed the complete local Edge/Context/Watch regression with exit code 0, including Watch 14/14, cloud producer 19/19 and gerencial-mail-bridge 40/40.",
+    "Commit e50b891976c4ff61aca4042367ba8ebe5ca4273a passed GitHub Actions Edge Shadow CI run 36215471171 successfully."
   ],
   "proof": {
-    "latest_green_ci_run": "36212178423",
-    "latest_green_ci_commit": "fa974cb2dbe654f931458410937586eabb1d8e06",
+    "latest_green_ci_run": "36215471171",
+    "latest_green_ci_commit": "e50b891976c4ff61aca4042367ba8ebe5ca4273a",
     "mail_bridge_d1_id": "fc0ae418-599d-41da-b849-5fada0cc08e2",
     "watch_d1_id": "75516adf-6196-460a-82d4-9aa6925dbed4",
     "closing_rows": 54,
@@ -84,7 +93,7 @@
     "watch_snapshot_history_rows": 91,
     "watch_current_source_watermark": "2026-09-25T02:57:22.000Z",
     "scheduled_replay_created_new_watch_history": false,
-    "latest_green_ci_head": "fa974cb2dbe654f931458410937586eabb1d8e06",
+    "latest_green_ci_head": "e50b891976c4ff61aca4042367ba8ebe5ca4273a",
     "episode_alignment": "PROVEN_REAL_SOURCE_ALIGNMENT_PLUS_SYNTHETIC_CONTRACT",
     "episode_alignment_d1_dates": 54,
     "episode_alignment_full_day_dates": 39,
@@ -125,9 +134,22 @@
     "action_effective_proven_count": 0,
     "action_ineffective_proven_count": 0,
     "action_followup_attention_authority": "NONE",
-    "action_followup_external_effects": false
+    "action_followup_external_effects": false,
+    "expected_barrier_commit": "e50b891976c4ff61aca4042367ba8ebe5ca4273a",
+    "academia_barrier_head": "4d656c9eb6b3ab4e5314e6a62973c9f7cdac6779",
+    "academia_barrier_content_blob": "c1f408fc3d335eadf12cc85fa9efb89101701cc1",
+    "expected_barrier_count": 7,
+    "expected_barrier_mapped_episodes": 30,
+    "expected_barrier_unmapped_episodes": 39,
+    "expected_barrier_execution_unknown": 30,
+    "expected_barrier_failure_proven": 0,
+    "expected_barrier_compliance_proven": 0,
+    "expected_barrier_omission_mapped": 22,
+    "expected_barrier_wrong_item_mapped": 8,
+    "expected_barrier_attention_authority": "NONE",
+    "expected_barrier_external_effects": false
   },
-  "next_action": "Load current TATA Academia policy/expected-barrier knowledge for the recurrent internal families, especially OMISSION and WRONG_ITEM, then map observed episode -> expected barrier/procedure -> recorded action -> later recurrence as evidence debt for the Manager Investigator. Academia may establish what should happen but must never be treated as proof that a barrier was executed on a specific incident. In parallel, keep iFood review freshness UNKNOWN until the first real team-sent review batch is world-proven.",
+  "next_action": "Convert mapped expected-barrier execution UNKNOWN into explicit evidence debt for the Manager Investigator. Route each debt first to trusted existing evidence or future operational capture/owner evidence; do not infer barrier failure from missing evidence and do not escalate to Cesar unless a separate direct NeedsMe reason is proven. Keep the iFood review source gate independent and freshness UNKNOWN until the first real team-sent batch is world-proven.",
   "unknowns": [
     "No real team-sent iFood review batch has been admitted; extraction quality and attachment shape remain unknown.",
     "No defensible iFood review freshness cadence has been established; its freshness must remain UNKNOWN.",
@@ -136,7 +158,8 @@
     "Cashier-PC Edge binding and physical print/delivery telemetry remain unproven.",
     "Apple Watch attention delivery remains unproven.",
     "Caixa Pulse closing emails are not guaranteed exhaustive ground truth for every operational event; absence claims remain bounded to loaded full-day email evidence.",
-    "Independent post-action outcome evidence is not yet systematically linked; current action follow-up proves later same-family recurrence only, so action effectiveness remains UNKNOWN."
+    "Independent post-action outcome evidence is not yet systematically linked; current action follow-up proves later same-family recurrence only, so action effectiveness remains UNKNOWN.",
+    "Expected-barrier execution is UNKNOWN for all 30 currently mapped OMISSION/WRONG_ITEM episodes; no trusted incident-level evidence yet proves whether each barrier was executed."
   ],
   "authority": {
     "continuity_update": "AUTHORIZED_METADATA_WRITE_WITHIN_PROJECT_SCOPE",
