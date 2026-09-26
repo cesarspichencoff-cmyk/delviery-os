@@ -155,6 +155,39 @@ Only after the shadow webhook intake is PROVEN:
 
 The incident-level webhook and shift-level closing email are two evidence surfaces with different semantics. They must not be silently deduplicated as the same fact without an explicit linking rule.
 
+## Gate E2 — pre-existing latest-five alignment defect
+
+The isolated full-copy cutover simulation discovered a pre-existing panel defect independent of the barrier fields.
+
+`painel!F39:H43` currently derives Data, Operador and Turno with independent `COUNTA` anchors. Because Turno is intentionally optional, a blank historical Turno can shift only that display column and associate another row's Turno with the displayed occurrence.
+
+The isolated copy proved a minimal repair: all three displayed fields use one shared row anchor based on raw Tally Submission ID count in `ocorrencias_respostas!A:A`.
+
+This repair is separate from the required barrier cutover. If applied in the same maintenance window, verify it independently:
+- Data / Operador / Turno resolve from the same raw occurrence row;
+- a genuinely blank Turno remains blank;
+- the latest controlled 20-column row renders its actual Turno;
+- occurrence totals and all other panel blocks remain unchanged except for intentionally restored source data.
+
+Do not treat this pre-existing panel fix as justification to expand the cutover into a wider dashboard redesign.
+
+## Shadow workbook compatibility proof
+
+A native full copy of `Caixa Executivo` was used to simulate the exact 20-column post-cutover raw schema.
+
+Observed proof:
+- all eight legacy occurrence mappings resolve OK after the +9 column shift;
+- expected mapped columns become 4, 5, 6, 7, 17, 18, 19, 20;
+- the exact trailing-newline repair makes `O que aconteceu?` resolve at column 18;
+- `auditoria_sync` reports 8/8 occurrence fields OK;
+- across 742 historical occurrence rows, zero differences occurred in the seven unaffected legacy analysis columns;
+- all 742 observed differences are exclusively restored `O que aconteceu?` text;
+- a controlled new 20-column row propagated correctly through raw responses, `analise_ocorrencias` and the panel;
+- the panel synchronization card changed from 7 OK / 1 missing to 8 OK / 0 missing.
+
+Evidence receipt:
+`docs/context/EVIDENCE_CAIXA_EXECUTIVO_CUTOVER_SHADOW_2026-09-26.md`
+
 ## Production proof
 
 Preferred proof is the first real occurrence after cutover, not an invented operational incident.
