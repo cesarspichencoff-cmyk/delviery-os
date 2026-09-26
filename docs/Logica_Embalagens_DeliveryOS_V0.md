@@ -64,14 +64,14 @@ Categorias operacionais para classificar cada item antes de escolher a caixa:
 | **1.500** | 6+ duplas · 3+ enrolados · 4 a 6 temakis · **8+ sashimis** · combinado sushi + sashimi para 2 pessoas · **pratos da Cozinha**. Se não couber, complementar com caixas menores. |
 | **1.600** | Combinado sushi para 2 pessoas · combinado sushi tradicional para 2 pessoas. Caixa de combinado fechado; não usar para extras soltos. |
 
-**Itens confirmados para caixa 650 selada:** Guioza · Edamame · Missoshiru · Tempurá de milho ·
-Tartar de salmão · Tartar de atum spicy · Tuna Shiso · Ceviche · Sunomono.
+**Regra atual da Cozinha (César, 26/09/2026):**
+- prato grande da Cozinha → **1.500**;
+- qualquer item da Cozinha que não seja prato grande → **650 selada**.
 
-**Pratos da Cozinha em caixa 1.500:** a regra atual é por papel operacional, não por uma lista fechada:
-`cozinha_quentes` + `prato_quente` → 1.500. Entradas da Cozinha não herdam 1.500.
+Exemplos confirmados de 650 selada: **Guioza · Ebi Spicy · Edamame · Tempurá de milho**.
+A lista é exemplificativa: a regra vale para todos os itens da Cozinha que não sejam prato grande.
 
-Exceções explícitas vencem a regra geral: Guioza e Tempurá de milho são entradas e usam 650 selada.
-Ebi Spicy é entrada e permanece sem caixa nova inferida nesta correção.
+Os frios delicados com regra própria (Tartar de salmão, Tartar de atum spicy, Tuna Shiso, Ceviche e Sunomono) continuam seguindo suas regras explícitas de 650 selada.
 
 ## 5. Regras por categoria
 
