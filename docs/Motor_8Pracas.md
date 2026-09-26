@@ -29,6 +29,8 @@ cardápio real (seed, 199 itens)
 
 ## 3. As 8 praças (vocabulário oficial)
 
+> **Correção humana de 26/09/2026:** `enrolados_quentes` é exibida como **Sushi Quentes** e `cozinha_quentes` como **Cozinha**. Os IDs internos permanecem para compatibilidade.
+
 Nome de banco/código → rótulo na interface. **Produção** gera sobrecarga; **Conferência/Montagem** gera esquecimento/fechamento/conferência/sacola.
 
 | # | Código | Interface | Classe | Itens no cardápio |
@@ -50,8 +52,8 @@ Nome de banco/código → rótulo na interface. **Produção** gera sobrecarga; 
 - **combinados**: Combinado Especial/Executivo/Tradicional/Kids/Salmão.
 - **duplas**: Sushi de X, Sashimi de X, Dyo de X, By Luizinho, Ebi Nikkei, Sashimi Tataki.
 - **enrolados**: Uramaki (Califórnia/Vegan/Atum/Salmão), Temaki (Atum/Salmão/Barriga), Hossomaki, Baterá.
-- **enrolados_quentes**: Hot Roll / Hot Roll Tatá / com Shimeji, Uramaki/Temaki Ebiten, Skin, **Ceviche · Tartar de Salmão · Tuna Shisô** (regra operacional — ver §6).
-- **cozinha_quentes**: Katsu, Teppanyaki, Tempurá, Yakissoba, Guioza, Grelhado, entradas quentes (Shimeji/Shitake/Edamame/Nasu).
+- **enrolados_quentes** (**Sushi Quentes**): Hot Roll / Hot Roll Tatá / com Shimeji, Uramaki/Temaki Ebiten, Skin, **Ceviche · Tartar de Salmão · Tuna Shisô** (regra operacional — ver §6).
+- **cozinha_quentes** (**Cozinha**): contém **pratos e entradas**. A praça não decide sozinha a embalagem: prato usa 1.500; entrada não herda 1.500. Guioza e Tempurá de milho são entradas de 650; Ebi Spicy é entrada sem caixa inferida nesta revisão.
 - **sobremesa**: Cookie, Mochi, Sorvete, Choux, Torta.
 - **bar_bebidas**: Refri, Cerveja, Vinho, Sake, Água.
 - **montagem_outros**: Gengibre, Gohan, Tarê, Wasabi, Sunomono.
