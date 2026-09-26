@@ -65,12 +65,12 @@ Categorias operacionais para classificar cada item antes de escolher a caixa:
 | **1.600** | Combinado sushi para 2 pessoas · combinado sushi tradicional para 2 pessoas. Caixa de combinado fechado; não usar para extras soltos. |
 
 **Regra atual da Cozinha (César, 26/09/2026):**
-- item da Cozinha classificado como **prato** → **1.500**;
-- item da Cozinha classificado como **entrada** não herda 1.500 automaticamente;
+- **prato grande da Cozinha → 1.500**;
+- **qualquer outro item da Cozinha → 650 selada**;
+- exceção específica confirmada: **Missoshiro → pote de isopor**, não 650;
 - regra explícita do item vence a regra geral.
 
-Exceções confirmadas: **Guioza** e **Tempurá de milho** são entradas e usam **650 selada**.
-**Ebi Spicy** é entrada, mas esta revisão não definiu uma caixa para ele; portanto permanece sem caixa inferida.
+Exemplos confirmados de 650 selada: **Guioza, Tempurá de milho, Ebi Spicy e Edamame**. A lista é exemplificativa, não exaustiva.
 
 Os frios delicados com regra própria (Tartar de salmão, Tartar de atum spicy, Tuna Shiso, Ceviche e Sunomono) continuam seguindo suas regras explícitas de 650 selada.
 
@@ -161,7 +161,7 @@ Os frios delicados com regra própria (Tartar de salmão, Tartar de atum spicy, 
 - Sobremesas podem ir com frios se houver espaço; **nunca** com quentes.
 - Mochis de sabores diferentes vão em embalagens separadas.
 - Pote pequeno de mochi comporta até **2 mochis do mesmo sabor**.
-- Pote grande (referência: Missoshiru) comporta até **4 mochis do mesmo sabor**.
+- Pote grande (referência: pote de isopor do Missoshiro) comporta até **4 mochis do mesmo sabor**.
 
 | Item | Regra |
 |---|---|
@@ -238,7 +238,7 @@ O seed foi reconciliado em 26/09/2026 para a fronteira prato × entrada. Status 
 | Tirashi | Tirashi | 1.000 | **Confirmado** | Não usar "Tiradito". |
 | Battera | **Baterá** de Salmão, Baterá de Spicy Tuna | 750 | **Possível alias** | Seed grafa "Baterá" (com acento). Doc diz "Battera com um T" — grafia a acertar. |
 | Ceviche | Ceviche | 650 selada | **Confirmado** | Não usar "Cerviche/Cerveithe". |
-| Missoshiru | **Missoshiro** · Nasu no Missô | 650 selada | **Possível alias** | Seed grafa "Missoshiro" (com o final). |
+| Missoshiru | **Missoshiro** | Pote de isopor | **Confirmado** | Seed grafa "Missoshiro"; embalagem confirmada por César em 26/09/2026. |
 | Fish Katsu / Chickenkatsu | Ambos existem como pratos distintos | Prato da Cozinha · 1.500 | **Confirmado** | A regra atual é por papel operacional: prato da Cozinha usa 1.500. |
 | Tempurá de Legumes / Camarão / Misto | Tempurá de Legumes, de Camarão, Misto | Quente 1.500 | **Confirmado** | Corrige a anotação antiga "camarão de legumes". |
 | Tempurá de milho | **Tempurá de milho doce** | 650 selada | **Possível alias** | Seed acrescenta "doce". |
