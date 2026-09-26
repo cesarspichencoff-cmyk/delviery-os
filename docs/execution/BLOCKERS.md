@@ -1010,3 +1010,22 @@ escopo da Q-018): carimbos relativos ao relógio do teste (`agora − N s`), com
 `run-device-api-tests.ts` já faz. Enquanto isso, o `deploy-audit` roda à parte (36/36 na regressão da
 Q-018).
 
+
+### Android — o `confirm()` da saída é cancelado em silêncio pelo WebView · **FECHADO NO CÓDIGO em 2026-09-26** (`9966ab5`) — Kotlin NÃO compilado, aparelho NOT_RUN
+
+A rider-mobile confirma a saída e a entrega por `confirm()` (`rider.js:275` e `:304`, desde
+`7ff4d50`, 2026-07-20). A `MainActivity` nunca registrou `WebChromeClient`, e sem ele o WebView do
+Android cancela o diálogo e a página recebe `false` (Chromium,
+`android_webview/glue/java/src/com/android/webview/chromium/WebViewContentsClientAdapter.java`,
+`handleJsConfirm`: `mWebChromeClient == null` → `receiver.cancel()`). No aparelho, "Confirmar saída"
+não faria nada: a viagem não iria a `em_rota`, a captura nunca ligaria, e a entrega também não
+confirmaria. Achado conferindo o roteiro do Foxxy contra o código. O ensaio da nuvem (37/37) e o
+`rider-bridge` (27/27) aceitavam todo diálogo no Chromium e o mascaravam (L57).
+
+**Reproduzido antes**, no modelo fiel ao WebView (o diálogo tratado como a `MainActivity` o trata):
+`BANCADA_Q018_RED` na saída — "saída NÃO confirmada … nenhuma captura, nenhum fato" — e a trava
+estrutural nova vermelha. **Corrigido** com o `WebChromeClient` padrão (D92): ensaio 39/39,
+`rider-bridge` 27/27, android project 40/40. Sem a linha, ensaio, `rider-bridge` e trava ficam
+vermelhos; com um cliente próprio, o modelo diz "desconhecido" e o ensaio reprova em vez de supor.
+**Não provado:** o Kotlin não compilou aqui (`dl.google.com` negado) e nada rodou em aparelho — o Q6
+do Foxxy é quem prova (`docs/etapa-4-8/BANCADA-EMULADOR.md` §3.12).

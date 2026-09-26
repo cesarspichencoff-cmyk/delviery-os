@@ -22,7 +22,7 @@ lifecycle:
 | causa do `RETRY` | **o próprio app recusa `http://`.** O APK de bancada foi gerado com `http://10.0.2.2:5193` e `http://10.0.2.2:8080`, e **toda** variante — `debug` inclusive — usa uma política de rede com `cleartextTrafficPermitted="false"` e nenhuma exceção. A requisição morre dentro do processo, antes de abrir socket; o `SyncWorker` devolve `RETRY` | §1 |
 | caminho de rede | HTTPS de bancada, **sem código novo**: emulador → `https://10.0.2.2:8080` → loopback do Windows → encaminhamento de localhost do WSL → `socat` TLS → crítico em `127.0.0.1:18080`; piloto com o HTTPS nativo dele em `5193`; CA de laboratório instalada como CA de usuário no emulador — que o `debug` aceita e `pilot`/`release` recusam | §2 |
 | bootstrap | **`NOT_RUN` no emulador.** **PASS na bancada TLS da nuvem**, com os binários reais e o mesmo `HttpsURLConnection` do app | §3.8, §5 |
-| primeiro fato do app até o `event_log` | **`NOT_RUN` no emulador; a cadeia inteira ENSAIADA na nuvem com os binários reais (2026-09-26, §5b, 37/37)** — só o Kotlin fica para o Foxxy (§3.11–3.12). **Registro de 2026-09-25:** `NOT_RUN` — destravado no código pela `Q-018` (respondida em 2026-09-25): a rider-mobile liga a captura pela ponte (`docs/etapa-4-8/Q018-RIDER-CAPTURA.md`). Falta o build novo no Foxxy (o Kotlin mudou e não compilou aqui) e um termo publicável. *Registro de abertura:* `BLOCKED` — nenhuma página chamava a ponte `EntregasNative`, em toda a história do repositório. O lado da plataforma — sessão, lote, `event_log` simulated, assíncrono, replay — está PASS na bancada da nuvem | §4, §5 |
+| primeiro fato do app até o `event_log` | **`NOT_RUN` no emulador; a cadeia inteira ENSAIADA na nuvem com os binários reais (2026-09-26, §5b: 39/39 depois de `9966ab5`)** — só o Kotlin fica para o Foxxy (§3.11–3.12). Os 37/37 anteriores aceitavam todo diálogo no Chromium e escondiam que o WebView do app cancelava o `confirm()` da saída. **Registro de 2026-09-25:** `NOT_RUN` — destravado no código pela `Q-018` (respondida em 2026-09-25): a rider-mobile liga a captura pela ponte (`docs/etapa-4-8/Q018-RIDER-CAPTURA.md`). Falta o build novo no Foxxy (o Kotlin mudou e não compilou aqui) e um termo publicável. *Registro de abertura:* `BLOCKED` — nenhuma página chamava a ponte `EntregasNative`, em toda a história do repositório. O lado da plataforma — sessão, lote, `event_log` simulated, assíncrono, replay — está PASS na bancada da nuvem | §4, §5 |
 | Entregas lendo o fato | **`NOT_RUN` no emulador** (depende do fato). Na bancada da nuvem, **PASS**: `/api/entregas` mostra o aparelho — credencial vinculada, GPS `fresh`, modo `simulated` — em bloco separado da demonstração. Depois do bootstrap no Foxxy dá para provar a parte do aparelho, sem fato | §3.10, §5 |
 
 ## 1 — O `RETRY`, lido no código
@@ -225,8 +225,13 @@ assim, nunca como fresco.
 
 A rider-mobile passou a ligar a captura (`docs/etapa-4-8/Q018-RIDER-CAPTURA.md`). Esta sequência
 leva o primeiro ponto do emulador até Entregas. **Ensaiada na nuvem com os binários reais e o
-mesmo laboratório** (`tools/bancada_q018_cadeia.sh`, verde, §5b); o que só o Foxxy prova é o Kotlin:
-Room, `TripLocationService`, Fused, `WorkManager` e a ponte de verdade.
+mesmo laboratório** (`tools/bancada_q018_cadeia.sh`, 39/39, §5b); o que só o Foxxy prova é o Kotlin:
+Room, `TripLocationService`, Fused, `WorkManager`, a ponte de verdade e o diálogo do WebView.
+
+**Roteiro conferido contra o ensaio (2026-09-26).** Três diferenças foram fechadas aqui: o piloto
+usa uma pasta de dados própria e **nenhuma configuração de unidade**, como no ensaio (retorno
+automático desligado — o ponto do emulador cai em Itaim, e o retorno não é desta cadeia); o
+assíncrono sobe explicitamente (passo 2b); e o Q10 tem comando próprio, que mostra o modo.
 
 Três regras do César para esta bancada: tudo `simulated`; o termo é a fixture sintética
 (`tools/bancada_termo_sintetico.json`, "SEM VALOR LEGAL — APENAS TESTE SIMULADO"), **só aqui**; e o
@@ -235,24 +240,38 @@ banco.
 
 1. **Build novo.** Puxar a branch com a Q-018 e refazer A1–A3 (`FIELD-GATE-ANDROID.md` §1) e a §3.7.
    O Kotlin mudou (`applyServerPolicies`, `device_id` nas capacidades, aceite de outro aparelho
-   recusado) e **nunca compilou fora do Foxxy**: um erro aqui é o primeiro resultado da bancada.
+   recusado e, desde `9966ab5`, o `WebChromeClient` que mostra o `confirm()` da saída) e **nunca
+   compilou fora do Foxxy**: um erro aqui é o primeiro resultado da bancada. O build precisa conter
+   `9966ab5` — sem ele, o toque em **Confirmar saída** não faz nada (§3.12, Q6).
    Instalar com `-r`, mantendo o Room e o `device_id`.
-2. **Piloto de laboratório** (WSL) — o da §3.3, com três variáveis a mais:
+2. **Piloto de laboratório** (WSL) — o da §3.3, com cinco variáveis a mais. A pasta de dados é
+   nova, só desta bancada (o Q4 conta linhas); `sem-unidade.json` **não existe, de propósito**:
 
 ```bash
 cd ~/deliveryos-lab
+mkdir -p $HOME/deliveryos-lab-q018/piloto && test ! -e $HOME/deliveryos-lab-q018/sem-unidade.json
 printf '{"gps_capture_enabled": true, "offline_queue_enabled": true}\n' > $HOME/deliveryos-lab-tls/flags.json
 ENTREGAS_HTTPS=1 ENTREGAS_TLS_CERT=$HOME/deliveryos-lab-tls/srv.pem ENTREGAS_TLS_KEY=$HOME/deliveryos-lab-tls/srv.key \
 ENTREGAS_PILOT_CONFIG=config/entregas-pilot.example.json \
 ENTREGAS_LABORATORIO=1 ENTREGAS_TERM_CONFIG=$HOME/deliveryos-lab/tools/bancada_termo_sintetico.json \
 ENTREGAS_GPS_FLAGS_CONFIG=$HOME/deliveryos-lab-tls/flags.json \
+ENTREGAS_DATA_DIR=$HOME/deliveryos-lab-q018/piloto ENTREGAS_UNIT_CONFIG=$HOME/deliveryos-lab-q018/sem-unidade.json \
 node dist/tools/entregas_pilot_server.js
 curl -s --cacert $HOME/deliveryos-lab-tls/ca.pem https://127.0.0.1:5193/api/health \
-  | python3 -c "import json,sys; h=json.load(sys.stdin); print(h['term_synthetic'], h['term_publishable'], h['gps_production'])"
+  | python3 -c "import json,sys; h=json.load(sys.stdin); print(h['term_synthetic'], h['term_publishable'], h['gps_production'], h['unit_configured'])"
 ```
 
-   PASS: `True True True`. Sem `ENTREGAS_LABORATORIO=1` o piloto **recusa subir** com a fixture —
+   PASS: `True True True False`. Sem `ENTREGAS_LABORATORIO=1` o piloto **recusa subir** com a fixture —
    é a trava (`test:entregas:termo-sintetico`).
+2b. **Assíncrono no ar** (WSL), no mesmo banco do crítico — se já estiver rodando, reiniciar com o
+   log em arquivo:
+
+```bash
+DELIVERYOS_ENV=local DELIVERYOS_DATABASE_URL='<URL do laboratório>' \
+node dist/src/platform/bin/async-runtime.js 2>&1 | tee $HOME/deliveryos-lab-q018/assincrono.log
+```
+
+   PASS: uma linha `[assincrono] replay` com `"estado":"completo"`.
 3. **A viagem**, como o console montaria, para o motoboy da sessão (`rid-1` no arquivo de exemplo):
 
 ```bash
@@ -269,8 +288,8 @@ curl "${H[@]}" -d "{\"type\":\"CreateTrip\",\"command_id\":\"ct-$V\",\"occurred_
    valores próximos durante a viagem para gerar pontos novos.
 6. **No emulador, pela tela**: o termo aparece com "SEM VALOR LEGAL — APENAS TESTE SIMULADO" →
    marcar a caixa → **CONCORDAR E CONTINUAR** → o diálogo de permissão do Android → **Permitir** (precisa)
-   → a tela da viagem diz "GPS DESLIGADO — AGUARDANDO A SAÍDA" → **Confirmar saída** → a
-   notificação do serviço aparece e o indicador diz "GPS ATIVO — VIAGEM T-FOXXY-1".
+   → a tela da viagem diz "GPS DESLIGADO — AGUARDANDO A SAÍDA" → **Confirmar saída** → o Android
+   mostra o diálogo "Confirmar saída da loja?" → **OK** → a notificação do serviço aparece e o indicador diz "GPS ATIVO — VIAGEM T-FOXXY-1".
 7. Forçar a sincronização como na §3.8, se não vier sozinha.
 
 ### 3.12 A prova, do banco ao Room
@@ -279,28 +298,34 @@ curl "${H[@]}" -d "{\"type\":\"CreateTrip\",\"command_id\":\"ct-$V\",\"occurred_
 U='<URL do laboratório>'; D=dev-341c9a37d33d4d88; V=T-FOXXY-1
 psql "$U" -c "SELECT object_id AS viagem, count(*) AS fatos, min(source_mode) AS modo, min(clock_trust) AS relogio FROM platform.event_log WHERE device_id='$D' AND event_type='gps_batch_received' GROUP BY object_id" \
           -c "SELECT state, count(*) FROM platform.outbox GROUP BY state"
-grep -c . <data_dir do piloto>/term-acks.jsonl; tail -1 <data_dir do piloto>/term-acks.jsonl \
+grep -c . $HOME/deliveryos-lab-q018/piloto/term-acks.jsonl; tail -1 $HOME/deliveryos-lab-q018/piloto/term-acks.jsonl \
   | python3 -c "import json,sys; a=json.load(sys.stdin); print(a['status'], a['rider_id'], a['device_id'], a['unit_id'])"
 sqlite3 entregas.db "SELECT tripId, syncState, count(*) FROM gps_point GROUP BY tripId, syncState" \
                     "SELECT status, deviceId, riderId, syncState FROM term_ack"
 ```
 
-Depois: reiniciar o assíncrono (linha `[assincrono] replay` com `lidas` ≥ 1 e `aptos` ≥ 1) e a §3.10
-(`/api/entregas`: o aparelho com GPS `fresh`, modo `simulated`). Por fim, encerrar a viagem no
+Depois: reiniciar o assíncrono do passo 2b (linha `[assincrono] replay` com `lidas` ≥ 1 e `aptos` ≥ 1)
+e subir o Product System da §3.10. O comando da §3.10 não mostra o modo; para o Q10:
+
+```bash
+curl -s http://127.0.0.1:5290/api/entregas | python3 -c "import json,sys; r=json.load(sys.stdin)['realidade']; print([(a['device_id'], a['credencial'].get('valor'), a['gps'].get('valor'), a.get('modo_dos_fatos', {}).get('valor'), a.get('fatos', {}).get('valor')) for a in r['aparelhos']])"
+```
+
+PASS: `('dev-341c9a37d33d4d88', 'vinculada', 'fresh', 'simulated', N)`, com `N` ≥ 1. Por fim, encerrar a viagem no
 console: com o app na frente, a notificação some em até ~15 s.
 
 | item | PASS se | resultado |
 |---|---|---|
 | Q1 build | A1–A3 verdes com o commit da Q-018 | NOT_RUN |
-| Q2 piloto de laboratório | `True True True` na saúde | NOT_RUN |
+| Q2 piloto de laboratório | `True True True False` na saúde | NOT_RUN |
 | Q3 termo pela tela | a marca na tela; permissão pedida só **depois** do CONCORDAR | NOT_RUN |
 | Q4 aceite | 1 linha `accepted`, `rid-1`, este `device_id`, `LABORATORIO` no piloto; o mesmo no `term_ack` do Room | NOT_RUN |
 | Q5 antes da saída | "AGUARDANDO A SAÍDA", sem notificação, sem `gps_point` | NOT_RUN |
-| Q6 captura | depois de Confirmar saída: notificação e "GPS ATIVO"; `gps_point` da viagem `T-FOXXY-1` no Room | NOT_RUN |
+| Q6 captura | o diálogo "Confirmar saída da loja?" aparece; depois do OK: notificação e "GPS ATIVO"; `gps_point` da viagem `T-FOXXY-1` no Room. Toque sem diálogo = build sem `9966ab5` | NOT_RUN |
 | Q7 sincronização | os pontos passam a `sent`; fatos em `platform.event_log` com `viagem = T-FOXXY-1`, `simulated`, `trusted` | NOT_RUN |
 | Q8 assíncrono | outbox só `done`; Operação Viva aplicou | NOT_RUN |
 | Q9 replay | depois do reinício, `lidas` = fatos do banco | NOT_RUN |
-| Q10 Entregas | o aparelho com GPS `fresh`, modo `simulated` | NOT_RUN |
+| Q10 Entregas | `vinculada`, GPS `fresh`, modo `simulated`, ≥ 1 fato — pelo comando acima | NOT_RUN |
 | Q11 fim | viagem encerrada → notificação some, "GPS DESLIGADO" | NOT_RUN |
 
 **Condição de parada (César):** se Q1–Q11 passarem, a bancada do emulador acabou. O próximo nível de
@@ -395,6 +420,21 @@ lado nativo de rede feito no formato exato de `DeviceSession.autenticar` e do lo
 
 Banco, processos e alias de loopback conferidos depois: nada sobrou. **Não é o Kotlin**: Room,
 `TripLocationService`, Fused e `WorkManager` só o Foxxy prova (§3.11–3.12).
+
+**Correção de 2026-09-26 (`9966ab5`) — os 37/37 acima mediam o Chromium, não o app.** O ensaio
+aceitava todo diálogo JS. A rider-mobile confirma a saída por `confirm()`, e o WebView do Android sem
+`WebChromeClient` — o caso da `MainActivity` até `df481bd` — cancela esse diálogo em silêncio. Agora o
+ensaio trata o diálogo como a `MainActivity` o trata (`src/entregas/android/webview-dialog-model.ts`):
+
+| código | modelo | resultado |
+|---|---|---|
+| `df481bd` (sem cliente) | cancela | `BANCADA_Q018_RED` — "saída NÃO confirmada … nenhuma captura, nenhum fato" |
+| `9966ab5` (cliente padrão) | mostra | **`BANCADA_Q018_GREEN`, 39/39** (as 37 + o modelo + a confirmação pedida) |
+| mutação: sem a linha | cancela | RED na saída |
+| mutação: cliente próprio | desconhecido | RED — a bancada não supõe |
+
+O que o Foxxy prova e a nuvem não: que o `WebChromeClient` compila e que o diálogo aparece de fato no
+emulador (§3.12, Q6).
 
 ## 6 — Achados laterais, registrados e não corrigidos
 

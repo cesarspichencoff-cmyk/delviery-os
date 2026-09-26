@@ -310,3 +310,13 @@ Foxxy, a bancada acaba e o próximo nível é o aparelho físico. Regressão em 
 = 70 PASS + 3 FAIL_PREEXISTENTE/BLOCKED + 0 FAIL_NOVO** — a cadeia `test:entregas` voltou a verde; os
 3 restantes (governança G6b/G9, a variante de mutações dela, e `m1b-perceptual` sem servidor) são
 idênticos em `a9b7e1b`.
+
+**2026-09-26 — o `confirm()` da saída que o WebView cancelava** (`docs/etapa-4-8/Q018-RIDER-CAPTURA.md`
+§13). Push autorizado de `8e6be1b..df481bd` (remoto = local = `df481bd`). Conferindo o roteiro do
+Foxxy contra o código: o WebView do app, sem `WebChromeClient`, cancelava em silêncio o `confirm()` da
+saída e da entrega (desde `7ff4d50`) — no aparelho, **Confirmar saída** não faria nada. Os 37/37 do
+ensaio e os 27/27 do `rider-bridge` aceitavam todo diálogo no Chromium (L57). Reproduzido com o
+diálogo modelado pela `MainActivity` (vermelho na saída) e corrigido com o `WebChromeClient` padrão
+(`9966ab5`, D92): ensaio **39/39**, android **40/40**, mutações da linha vermelhas. O roteiro do Foxxy
+ficou igual ao ensaio: pasta de dados própria, unidade neutralizada, assíncrono explícito, Q10 com o
+modo. **Não compilado** — quem prova é o Q6 do Foxxy.

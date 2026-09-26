@@ -126,6 +126,7 @@ APARELHO", com a frase do próprio `CaptureGate` na linha de baixo.
 | a ponte falsa desta prova tinha dois nomes errados (`receiptJson`, `requestSyncNow`) | lendo o `.kt`, antes de a página existir | corrigido e travado por S1/S2 de `rider-capture` (L53) |
 | `rider.js` manda `actor: rid-demo` fixo nos comandos | leitura | **não corrigido** — fora do escopo; o domínio aceita |
 | a tela mostra a primeira viagem ativa de qualquer motoboy | leitura | **não corrigido na tela**; a captura exige a viagem do motoboy da sessão (E2) |
+| o WebView do app cancelava o `confirm()` da saída e da entrega (sem `WebChromeClient`, desde `7ff4d50`) | ensaio com o diálogo modelado pela `MainActivity`: RED na saída (2026-09-26) | corrigido em `9966ab5` (D92, §13); Kotlin não compilado |
 
 ## 6 — Provas
 
@@ -206,7 +207,7 @@ não entrou. O recibo existe no servidor e no Kotlin (`receipt`).
 
 ## 9 — O que NÃO está provado
 
-- **O Kotlin.** K1–K3 não compilaram aqui. A verificação estrutural diz que as travas estão no
+- **O Kotlin.** K1–K3 e o `WebChromeClient` de `9966ab5` não compilaram aqui. A verificação estrutural diz que as travas estão no
   lugar; quem diz que compilam e rodam é A1–A3 no Foxxy.
 - **O aparelho.** Nenhum passo da bateria física rodou (`docs/etapa-4-8/FIELD-GATE-ANDROID.md`).
 - **A página fechada.** O fim da viagem só chega ao serviço quando a página está viva; com o app
@@ -304,3 +305,32 @@ Antes: as três linhas de código que o diff removeu (a cadeia `test:entregas` n
 carimbos fixos) foram cruzadas com as âncoras de todas as suítes de mutação: nenhuma ancorava nelas
 (L51). Os gates que leem documento rodam de novo depois do commit deste registro.
 
+## 13 — O `confirm()` que o WebView cancelava (2026-09-26)
+
+**Achado conferindo o roteiro do Foxxy contra o código.** A saída passa por
+`confirm("Confirmar saída da loja?")` (`rider.js:275`; a entrega, `:304`, desde `7ff4d50`). No WebView
+do Android, sem `WebChromeClient`, esse diálogo é cancelado em silêncio e a página recebe `false`
+(Chromium, `WebViewContentsClientAdapter.handleJsConfirm`: `mWebChromeClient == null` →
+`receiver.cancel()`). A `MainActivity` nunca registrou cliente. No aparelho, **Confirmar saída** não
+faria nada: o Q6 do Foxxy reprovaria, e a entrega também não confirmaria. As duas provas com
+navegador — o ensaio (37/37) e o `rider-bridge` (27/27) — aceitavam todo diálogo no Chromium e o
+escondiam (L57).
+
+| passo | medida |
+|---|---|
+| reproduzido | ensaio com o diálogo tratado como a `MainActivity` de `df481bd` o trata: `BANCADA_Q018_RED` na saída, sem captura nem fato; trava estrutural nova vermelha (38 + 1 falha) |
+| corrigido (`9966ab5`, D92) | `webChromeClient = WebChromeClient()`, o padrão, sem override — permissão negada, arquivo abortado, janela fechada (conferido na fonte) |
+| verificado | ensaio **39/39**; `rider-bridge` **27/27**; android project **40/40** (o cliente e o próprio modelo) |
+| adversarial | sem a linha: ensaio, `rider-bridge` e trava vermelhos; cliente próprio: "desconhecido", vermelho |
+
+O modelo (`src/entregas/android/webview-dialog-model.ts`) lê a `MainActivity` e responde mostra,
+cancela ou desconhecido. As duas provas com navegador passam a usá-lo, e ele é testado nos três casos.
+
+**Segunda passada, o mesmo método, nos outros contratos da ponte:** o que o Kotlin LÊ do que a página
+entrega. Medido com o termo sintético, montado como o piloto monta. O aceite tem as **9** chaves que
+`recordTermAcknowledgement` lê por `getString`, e chave ausente ali vira `registro_invalido`. As
+políticas têm as **5** que `PolicyStore.applyServerPolicies` lê (`flags.gps_capture_enabled`,
+`term.hash`, `term.material_version`, `term.publishable`, `capture_policy`). Nenhum defeito novo.
+
+**Não provado:** o Kotlin não compilou aqui e nada rodou em aparelho. Quem prova é o Q6 do Foxxy: o
+diálogo aparece e, depois do OK, a captura liga.

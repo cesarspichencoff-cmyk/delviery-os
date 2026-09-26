@@ -1990,3 +1990,25 @@ caminho que deslocaria o tempo por configuração, exatamente o tipo de porta qu
 **Custo aceito:** o deslocamento vale para `Date`; datas criadas pelo próprio Node (cabeçalho HTTP,
 `mtime`) continuam reais — declarado no arquivo.
 
+
+---
+
+### D92 — O WebView do app mostra os diálogos da página pelo WebChromeClient padrão
+
+**Decisão.** A `MainActivity` registra `webChromeClient = WebChromeClient()`, sem override. A página
+continua dona da interação: a confirmação da saída e a da entrega são dela, por `confirm()`. O Kotlin
+só hospeda.
+
+**Por que.** Sem cliente, o WebView cancela o `confirm()` em silêncio e a página recebe `false`
+(Chromium, `WebViewContentsClientAdapter.handleJsConfirm`). O motoboy tocaria "Confirmar saída" e nada
+aconteceria: a viagem não iria a `em_rota` e a captura nunca ligaria. O cliente padrão só habilita os
+diálogos. Permissão é negada (`request.deny()`), o seletor de arquivo é abortado (`targetSdk` ≥ 21) e
+janela não abre — conferido na fonte do framework e do adaptador.
+
+**Alternativas recusadas:** trocar o `confirm()` por uma confirmação desenhada na página (muda a
+interação do motoboy em Entregas — decisão de produto, e redesenho visual não autorizado); um cliente
+próprio com `AlertDialog` (mais Kotlin sem compilar e texto novo sem revisão); injetar
+`window.confirm = () => true` (apagaria a confirmação — a saída sairia por toque acidental).
+
+**Custo aceito:** o diálogo é o do sistema, com o título que o Android põe (a origem da página). Texto
+e aparência não foram revisados pelo César.

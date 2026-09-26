@@ -1096,3 +1096,17 @@ não o dia inteiro; o controle reprovava por um motivo que não era o testado.
 codifica, e reprovar ali é defeito do controle, não prova. Anote o motivo da reprovação antes de
 corrigir o controle — senão ajustar até passar vira o próprio vício que o controle combate.
 
+
+## L57 — Prova com navegador que aceita todo diálogo mede o Chromium, não o app
+
+**O que quase passou.** O ensaio da cadeia do emulador deu 37/37 e o `rider-bridge` 27/27 com
+`page.on("dialog", accept)`. No WebView do app, sem `WebChromeClient`, o mesmo
+`confirm("Confirmar saída da loja?")` é cancelado em silêncio: a saída nunca chegaria ao domínio e o
+Foxxy pararia no Q6. O defeito existia desde `7ff4d50` (2026-07-20). Só apareceu conferindo o roteiro
+do Foxxy comando a comando contra o código — os dois verdes o escondiam.
+
+**A regra.** Quando uma prova troca o host (navegador no lugar do WebView, ponte falsa no lugar do
+Kotlin), cada comportamento do host que a página usa vem do CÓDIGO do host, não da conveniência da
+prova. O modelo também é testado nos seus casos: aqui, mostra, cancela e desconhecido
+(`webview-dialog-model.ts`). Diferenças de WebView que já custam caro: diálogos JS, `localStorage`
+(`domStorageEnabled`), geolocalização, janelas.
