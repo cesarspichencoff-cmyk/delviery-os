@@ -4,9 +4,10 @@ Fonte humana: César.
 
 ## Embalagem da Cozinha
 - prato grande da Cozinha → **caixa 1.500**;
-- qualquer item da Cozinha que não seja prato grande → **caixa 650 selada**.
+- qualquer item da Cozinha que não seja prato grande → **caixa 650 selada**;
+- exceção explícita: **Missoshiro → pote de isopor**, não 650.
 
-Exemplos confirmados de 650 selada: Tempurá de milho, Ebi Spicy, Edamame e Guioza. A regra é geral e não se limita a esses exemplos.
+Exemplos confirmados de 650 selada: Tempurá de milho, Ebi Spicy, Edamame e Guioza. A regra é geral e não se limita a esses exemplos; exceções específicas vencem a regra geral.
 
 ## Sashimi
 - 1 → **240**
