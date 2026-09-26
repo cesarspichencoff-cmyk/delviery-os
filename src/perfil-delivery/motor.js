@@ -24,7 +24,7 @@
   // rótulo para a operação (interface)
   const DISPLAY = {
     combinados:"Combinados", duplas:"Duplas", enrolados:"Enrolados",
-    enrolados_quentes:"Enrolados Quentes", cozinha_quentes:"Quentes",
+    enrolados_quentes:"Sushi Quentes", cozinha_quentes:"Cozinha",
     sobremesa:"Sobremesa", bar_bebidas:"Bar", montagem_outros:"Montagem"
   };
 
