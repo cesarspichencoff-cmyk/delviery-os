@@ -1,0 +1,172 @@
+import { readFileSync } from "node:fs";
+import {
+  adaptCaixaPulseOccurrences,
+  type CaixaPulseOccurrenceRow,
+} from "../src/contextKernel/caixaPulseEpisodeAdapter";
+import { buildEpisodeRecurrenceMemory } from
+  "../src/contextKernel/episodeRecurrence";
+import { buildActionFollowupMemory } from
+  "../src/contextKernel/actionFollowup";
+
+type SourceRow = Record<string, unknown>;
+
+function sourceRows(parsed: unknown): SourceRow[] {
+  if (!Array.isArray(parsed) || parsed.length !== 1) {
+    throw new Error("wrangler_json_shape_invalid");
+  }
+  const first = parsed[0] as Record<string, unknown>;
+  if (!Array.isArray(first.results)) {
+    throw new Error("wrangler_json_results_missing");
+  }
+  return first.results as SourceRow[];
+}
+
+function mapRow(row: SourceRow): CaixaPulseOccurrenceRow {
+  return {
+    business_date: String(row.business_date ?? ""),
+    shift: String(row.shift ?? ""),
+    mailbox_key: String(row.mailbox_key ?? ""),
+    occurrence_index: Number(row.occurrence_index),
+    domain: String(row.domain ?? ""),
+    category: String(row.category ?? ""),
+    status: String(row.status ?? ""),
+    happened_text: String(row.happened_text ?? ""),
+    action_text: String(row.action_text ?? ""),
+  };
+}
+
+function distribution(values: readonly number[]) {
+  if (values.length === 0) {
+    return { count: 0, min: null, median: null, max: null };
+  }
+  const sorted = [...values].sort((a, b) => a - b);
+  const midpoint = Math.floor(sorted.length / 2);
+  const median = sorted.length % 2
+    ? sorted[midpoint]
+    : (sorted[midpoint - 1] + sorted[midpoint]) / 2;
+  return {
+    count: sorted.length,
+    min: sorted[0],
+    median,
+    max: sorted[sorted.length - 1],
+  };
+}
+
+const inputPath = process.argv[2];
+if (!inputPath) throw new Error("caixa_pulse_export_path_required");
+
+const raw = readFileSync(inputPath, "utf8").replace(/^\uFEFF/, "");
+const rows = sourceRows(JSON.parse(raw)).map(mapRow);
+const adaptation = adaptCaixaPulseOccurrences(rows);
+const recurrence = buildEpisodeRecurrenceMemory(adaptation.evidence);
+const businessDates = [...new Set(rows.map((row) => row.business_date))].sort();
+const loadedWindowEnd = businessDates.at(-1);
+if (!loadedWindowEnd) throw new Error("caixa_pulse_empty_export");
+
+const followup = buildActionFollowupMemory({
+  evidence: adaptation.evidence,
+  loaded_window_end: loadedWindowEnd,
+  coverage_exhaustive: false,
+});
+
+const recurrenceDays = followup.followups
+  .filter(
+    (item) =>
+      item.followup_status === "LATER_RECURRENCE_OBSERVED" &&
+      item.days_to_next_recurrence !== undefined,
+  )
+  .map((item) => item.days_to_next_recurrence as number);
+
+const actionKinds = new Map<string, number>();
+for (const item of adaptation.evidence) {
+  for (const action of item.action_kinds) {
+    actionKinds.set(action, (actionKinds.get(action) ?? 0) + 1);
+  }
+}
+
+const mechanisms = recurrence.mechanisms.map((item) => ({
+  mechanism_key: item.mechanism_key,
+  episode_count: item.episode_count,
+  distinct_business_dates: item.distinct_business_dates,
+  recurrence_observed: item.recurrence_observed,
+  source_marked_concluded_count: item.source_marked_concluded_count,
+  source_marked_review_needed_count: item.source_marked_review_needed_count,
+  observed_outcome_count: item.observed_outcome_count,
+}));
+
+const followupByMechanism = mechanisms.map((mechanism) => {
+  const items = followup.followups.filter(
+    (item) => item.mechanism_key === mechanism.mechanism_key,
+  );
+  const recurred = items.filter(
+    (item) => item.followup_status === "LATER_RECURRENCE_OBSERVED",
+  );
+  const days = recurred
+    .map((item) => item.days_to_next_recurrence)
+    .filter((value): value is number => value !== undefined);
+  return {
+    mechanism_key: mechanism.mechanism_key,
+    action_episode_count: items.length,
+    later_recurrence_observed_count: recurred.length,
+    no_later_recurrence_in_loaded_window_count:
+      items.length - recurred.length,
+    days_to_next_recurrence: distribution(days),
+  };
+});
+
+console.log(JSON.stringify({
+  status: "PASS",
+  source: "D1:cesar-gerencial-mail-bridge.caixa_pulse_* canonical rows",
+  source_scope: {
+    canonical_occurrence_rows: rows.length,
+    distinct_business_dates: businessDates.length,
+    first_business_date: businessDates[0],
+    last_business_date: loadedWindowEnd,
+    coverage_exhaustive: false,
+  },
+  adaptation: {
+    classified_count: adaptation.classified_count,
+    unclassified_count: adaptation.unclassified_count,
+    ambiguous_multi_signal_count: adaptation.ambiguous_multi_signal_count,
+    mechanism_basis: adaptation.mechanism_basis,
+    causal_status: adaptation.causal_status,
+  },
+  actions: {
+    inferred_action_kind_counts: Object.fromEntries(
+      [...actionKinds.entries()].sort((a, b) => a[0].localeCompare(b[0])),
+    ),
+    action_effectiveness_claim_authorized: false,
+  },
+  recurrence: {
+    recurrence_mechanism_count: recurrence.recurrence_mechanism_count,
+    mechanisms,
+    shared_root_cause_status: "UNPROVEN",
+  },
+  action_followup: {
+    classified_action_episode_count:
+      followup.classified_action_episode_count,
+    unclassified_action_episode_count:
+      followup.unclassified_action_episode_count,
+    later_recurrence_observed_count:
+      followup.later_recurrence_observed_count,
+    no_later_recurrence_in_loaded_window_count:
+      followup.no_later_recurrence_in_loaded_window_count,
+    days_to_next_recurrence: distribution(recurrenceDays),
+    by_mechanism: followupByMechanism,
+    action_effective_proven_count: followup.action_effective_proven_count,
+    action_ineffective_proven_count:
+      followup.action_ineffective_proven_count,
+    source_concluded_is_action_effective:
+      followup.source_concluded_is_action_effective,
+    absence_in_loaded_window_is_resolution:
+      followup.absence_in_loaded_window_is_resolution,
+    later_recurrence_is_action_failure:
+      followup.later_recurrence_is_action_failure,
+  },
+  boundaries: {
+    direct_attention_reasons_created:
+      followup.direct_attention_reasons_created,
+    attention_authority: "NONE",
+    external_effects_authorized: followup.external_effects_authorized,
+  },
+}, null, 2));
