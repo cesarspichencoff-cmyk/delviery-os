@@ -2,6 +2,14 @@ import { connect } from "cloudflare:sockets";
 import PostalMime from "postal-mime";
 import { normalizeClosing } from "./normalize.js";
 import {
+  looksLikeCaixaPulseSubject,
+  parseCaixaPulseMessage,
+} from "./caixa-pulse-intake.js";
+import {
+  findKnownCaixaPulseUidsD1,
+  upsertCaixaPulseMessageD1,
+} from "./caixa-pulse-storage.js";
+import {
   buildIfoodReviewRecord,
   matchesIfoodReviewMail,
 } from "./ifood-intake.js";
@@ -448,6 +456,143 @@ async function runIngestion(env, days = 3, maxMessages = 20, offset = 0) {
   }
 }
 
+async function runCaixaPulseIngestion(env, days = 21, maxMessages = 120) {
+  if (!env.IMAP_PASSWORD) throw new Error("IMAP_PASSWORD is not configured");
+  if (!env.DB) throw new Error("D1 binding is not configured");
+
+  const session = await ImapSession.open(env.IMAP_PASSWORD);
+  const summary = {
+    scanned: 0,
+    candidates: 0,
+    processed: [],
+    skipped: 0,
+    knownSkipped: 0,
+    degraded: 0,
+    errors: [],
+  };
+
+  try {
+    const list = await session.command('LIST "" "*"');
+    if (!list.ok) throw new Error("LIST failed");
+    const sent = findSentFolder(list.raw);
+    if (!sent) throw new Error("Sent folder not found");
+
+    const examined = await session.command(`EXAMINE ${quote(sent)}`);
+    if (!examined.ok) throw new Error("SENT EXAMINE failed");
+    const uidValidity =
+      examined.raw.match(/\[UIDVALIDITY\s+(\d+)\]/i)?.[1] ?? "";
+    if (!/^[1-9]\d*$/.test(uidValidity)) {
+      throw new Error("UIDVALIDITY unavailable");
+    }
+
+    const search = await session.command(
+      `UID SEARCH SINCE ${recentDate(days)}`,
+    );
+    if (!search.ok) throw new Error("CAIXA_PULSE_SEARCH_FAILED");
+
+    const uids = parseSearch(search.raw).slice(-maxMessages).reverse();
+    summary.scanned = uids.length;
+
+    const headers = new Map();
+    const matchingUids = [];
+
+    for (const uid of uids) {
+      const header = await session.command(
+        `UID FETCH ${uid} (BODY.PEEK[HEADER.FIELDS (SUBJECT DATE)] RFC822.SIZE)`,
+      );
+      if (!header.ok) {
+        summary.errors.push({
+          uid: String(uid),
+          error: "HEADER_FETCH_FAILED",
+        });
+        continue;
+      }
+
+      const subject = decodeMimeHeader(headerValue(header.raw, "Subject"));
+      if (!looksLikeCaixaPulseSubject(subject)) {
+        summary.skipped += 1;
+        continue;
+      }
+
+      const rawSize = Number(
+        header.raw.match(/RFC822\.SIZE\s+(\d+)/i)?.[1] ?? 0,
+      );
+      if (rawSize > 5_000_000) {
+        summary.errors.push({
+          uid: String(uid),
+          error: "MESSAGE_TOO_LARGE",
+        });
+        continue;
+      }
+
+      headers.set(String(uid), {
+        subject,
+        date: headerValue(header.raw, "Date"),
+      });
+      matchingUids.push(uid);
+    }
+
+    summary.candidates = matchingUids.length;
+    const known = new Set(
+      await findKnownCaixaPulseUidsD1(
+        env.DB,
+        uidValidity,
+        matchingUids,
+      ),
+    );
+    const unknown = matchingUids.filter(
+      (uid) => !known.has(String(uid)),
+    );
+
+    summary.knownSkipped = known.size;
+    summary.skipped += known.size;
+
+    for (const uid of unknown) {
+      try {
+        const meta = headers.get(String(uid));
+        if (!meta) throw new Error("CAIXA_PULSE_HEADER_METADATA_MISSING");
+
+        const message = await fetchParsedMessage(session, Number(uid));
+        const record = parseCaixaPulseMessage({
+          uid,
+          uidValidity,
+          subject: meta.subject,
+          sentAt: message.parsed.date ?? meta.date,
+          text: message.parsed.text ?? "",
+          readOnlyVerified: message.readOnlyVerified,
+        });
+
+        await upsertCaixaPulseMessageD1(env.DB, record);
+
+        if (record.source_health !== "HEALTHY") {
+          summary.degraded += 1;
+        }
+
+        summary.processed.push({
+          uid: String(uid),
+          uidValidity,
+          businessDate: record.business_date,
+          shift: record.shift,
+          sourceHealth: record.source_health,
+          reportedTotal: record.reported_total,
+          parsedTotal: record.parsed_total,
+          readOnlyVerified: record.readonly_verified,
+          qualityFlags: record.quality_flags,
+        });
+      } catch (error) {
+        summary.errors.push({
+          uid: String(uid),
+          error: safeError(error),
+        });
+      }
+    }
+
+    return summary;
+  } finally {
+    await session.close();
+  }
+}
+
 async function runIfoodReviewIngestion(env, days = 45, maxMessages = 100) {
   if (!env.IMAP_PASSWORD) throw new Error("IMAP_PASSWORD is not configured");
   if (!env.DB) throw new Error("D1 binding is not configured");
@@ -616,6 +761,33 @@ export default {
     } catch (error) {
       console.error(JSON.stringify({
         event: "gerencial_mail_ingestion_error",
+        at: new Date().toISOString(),
+        error: safeError(error),
+      }));
+    }
+
+    try {
+      const result = await runCaixaPulseIngestion(env, 21, 120);
+      console.log(JSON.stringify({
+        event: "gerencial_caixa_pulse_ingestion",
+        at: new Date().toISOString(),
+        scanned: result.scanned,
+        candidates: result.candidates,
+        processed: result.processed,
+        skipped: result.skipped,
+        knownSkipped: result.knownSkipped,
+        degraded: result.degraded,
+        errorCount: result.errors.length,
+      }));
+      if (result.errors.length) {
+        console.warn(JSON.stringify({
+          event: "gerencial_caixa_pulse_ingestion_errors",
+          errors: result.errors,
+        }));
+      }
+    } catch (error) {
+      console.error(JSON.stringify({
+        event: "gerencial_caixa_pulse_ingestion_error",
         at: new Date().toISOString(),
         error: safeError(error),
       }));
