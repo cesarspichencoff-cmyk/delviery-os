@@ -1,4 +1,4 @@
-import {
+﻿import {
   ProducerError,
   normalizeClosingRow,
   normalizeIfoodReviewRow,
@@ -6,6 +6,15 @@ import {
   shouldDispatchClosing,
   shouldDispatchIfoodReview,
 } from "./core.mjs";
+import {
+  TallyWebhookError,
+  parseTallyOccurrenceWebhook,
+  verifyTallySignature,
+} from "./tally-webhook-core.mjs";
+import {
+  sha256Hex,
+  storeTallyObservation,
+} from "./tally-webhook-storage.mjs";
 
 const JSON_HEADERS = {
   "content-type": "application/json; charset=utf-8",
@@ -21,6 +30,80 @@ function adminAuthorized(request, env) {
   if (!env.EDGE_PRODUCER_ADMIN_TOKEN) return false;
   return request.headers.get("authorization") ===
     `Bearer ${env.EDGE_PRODUCER_ADMIN_TOKEN}`;
+}
+
+function tallyCaptureConfigured(env) {
+  return env.TALLY_CAPTURE_ENABLED === "true" &&
+    Boolean(env.TALLY_EXPECTED_FORM_ID) &&
+    Boolean(env.TALLY_SIGNING_SECRET) &&
+    Boolean(env.TALLY_CAPTURE_DB?.prepare);
+}
+
+async function handleTallyOccurrenceWebhook(request, env) {
+  if (env.TALLY_CAPTURE_ENABLED !== "true") {
+    return json({ error: "not_found" }, 404);
+  }
+  if (!tallyCaptureConfigured(env)) {
+    return json({ error: "tally_capture_not_configured" }, 503);
+  }
+
+  const contentType = request.headers.get("content-type") ?? "";
+  if (!contentType.toLowerCase().includes("application/json")) {
+    return json({ error: "unsupported_media_type" }, 415);
+  }
+
+  const declaredLength = Number(request.headers.get("content-length") ?? 0);
+  if (Number.isFinite(declaredLength) && declaredLength > 1_000_000) {
+    return json({ error: "payload_too_large" }, 413);
+  }
+
+  const rawBody = await request.text();
+  if (rawBody.length > 1_000_000) {
+    return json({ error: "payload_too_large" }, 413);
+  }
+
+  const signature = request.headers.get("tally-signature");
+  const verified = await verifyTallySignature(
+    rawBody,
+    signature,
+    env.TALLY_SIGNING_SECRET,
+  );
+  if (!verified) return json({ error: "invalid_signature" }, 401);
+
+  let payload;
+  try {
+    payload = JSON.parse(rawBody);
+  } catch {
+    return json({ error: "invalid_json" }, 400);
+  }
+
+  try {
+    const observation = parseTallyOccurrenceWebhook(
+      payload,
+      env.TALLY_EXPECTED_FORM_ID,
+    );
+    const payloadSha256 = await sha256Hex(rawBody);
+    const receipt = await storeTallyObservation(
+      env.TALLY_CAPTURE_DB,
+      observation,
+      payloadSha256,
+    );
+    return json({
+      accepted: true,
+      duplicate: receipt.duplicate,
+      source: observation.source,
+      truth_class: observation.truth_class,
+      event_id: observation.event_id,
+      submission_id: observation.submission_id,
+      external_effects_authorized: false,
+    }, 202);
+  } catch (error) {
+    if (error instanceof TallyWebhookError) {
+      const status = error.code === "tally_replay_conflict" ? 409 : 422;
+      return json({ error: error.code }, status);
+    }
+    throw error;
+  }
 }
 
 async function latestVerifiedClosing(env) {
@@ -215,6 +298,13 @@ export default {
         sources: ["tata_daily_closing", "ifood_review_mail"],
         external_effects_authorized: false,
       });
+    }
+
+    if (
+      request.method === "POST" &&
+      url.pathname === "/sources/tally/occurrence-barrier"
+    ) {
+      return handleTallyOccurrenceWebhook(request, env);
     }
 
     if (request.method === "POST" && url.pathname === "/run") {

@@ -6,6 +6,8 @@ preview_urls = false
 
 [vars]
 WATCH_BASE_URL = "https://cesar-gerencial-watch-bridge.tata-academia.workers.dev"
+TALLY_CAPTURE_ENABLED = "false"
+TALLY_EXPECTED_FORM_ID = "eq4lae"
 
 [observability]
 enabled = true
@@ -15,6 +17,11 @@ head_sampling_rate = 1
 binding = "SOURCE_DB"
 database_name = "cesar-gerencial-mail-bridge"
 database_id = "fc0ae418-599d-41da-b849-5fada0cc08e2"
+
+[[d1_databases]]
+binding = "TALLY_CAPTURE_DB"
+database_name = "tata-edge-tally-shadow"
+database_id = "13b7d2ef-e119-4a2b-8745-46ee3acedb35"
 
 [[services]]
 binding = "WATCH_SERVICE"
