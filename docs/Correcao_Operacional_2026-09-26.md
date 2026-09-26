@@ -5,11 +5,10 @@ Fonte humana atual para reconciliação DeliveryOS × TATÁ Academia.
 
 ## Embalagens
 - Sashimi: 1 -> 240; 2–4 -> 450; 5–7 -> 750; 8+ -> 1.500.
-- Guioza -> entrada; 650 selada.
-- Tempurá de milho doce -> entrada; 650 selada.
-- Ebi Spicy -> entrada; sem caixa nova inferida por esta correção.
-- Na praça interna `cozinha_quentes`, itens classificados como **prato_quente** usam 1.500.
-- Entradas da Cozinha não herdam 1.500 automaticamente.
+- Na praça interna `cozinha_quentes`, **prato grande** usa caixa 1.500.
+- Todo item da Cozinha que não seja prato grande usa 650 selada.
+- Exemplos confirmados de 650: Guioza, Tempurá de milho doce, Ebi Spicy e Edamame.
+- **Missoshiro usa pote de isopor; não usa caixa 650.**
 - Regra explícita de item vence regra genérica.
 
 ## Vocabulário operacional
@@ -23,4 +22,4 @@ Mantido:
 - menus sazonais removidos do conjunto ativo do Academia permanecem fora do conjunto normal de treinamento.
 
 ## Princípio
-Praça física e tipo de item são dimensões diferentes. Estar na Cozinha não transforma uma entrada em prato.
+Praça física, tipo de item e embalagem específica são dimensões diferentes. Estar na Cozinha não transforma um item em prato grande, e exceção explícita vence a regra geral.
