@@ -23,6 +23,7 @@ import assert from "node:assert/strict";
 import { readFileSync, existsSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { pointId } from "../gps/validate";
+import { modeloDoDialogo } from "./webview-dialog-model";
 
 const ROOT = process.cwd();
 const ANDROID = join(ROOT, "android");
@@ -548,6 +549,46 @@ test("Q018 capacidades levam o pseudônimo do aparelho — nunca o segredo", () 
   const body = funBody(stripComments(read(MAIN_KT)), "capabilitiesJson");
   assert.match(body, /put\("device_id", runBlocking \{ DeviceId\.ensure\(db\) \}\)/);
   assert.equal(/secret|segredo|token/i.test(body), false, "capacidades não podem carregar segredo");
+});
+
+test("Q018 o WebView mostra os diálogos da página — a saída não morre num confirm() cancelado", () => {
+  // Sem WebChromeClient, o WebView cancela o confirm() em silêncio e a página
+  // recebe false (Chromium, WebViewContentsClientAdapter.handleJsConfirm:
+  // `mWebChromeClient == null` -> `receiver.cancel()`). A rider-mobile confirma
+  // a saída e a entrega por confirm(): sem o cliente, a saída nunca chega ao
+  // domínio e a captura nunca liga.
+  const PAGINA = join(ROOT, "src/entregas/ui/rider-mobile");
+  const paginaUsaDialogo = readdirSync(PAGINA)
+    .filter((f) => f.endsWith(".js"))
+    .some((f) => /\b(confirm|alert|prompt)\(/.test(stripComments(readFileSync(join(PAGINA, f), "utf8"))));
+  assert.ok(paginaUsaDialogo, "a rider-mobile deixou de usar diálogo JS — rever esta trava");
+  assert.match(
+    stripComments(read(MAIN_KT)),
+    /\bwebChromeClient = WebChromeClient\(\)/,
+    "sem o WebChromeClient padrão, o confirm() da saída devolve false no aparelho",
+  );
+  // O padrão, sem override, recusa permissão, arquivo e janela. Um cliente
+  // próprio poderia conceder: aí é decisão de segurança, visível no diff.
+  assert.equal(/:\s*WebChromeClient\(\)\s*\{/.test(mainKotlinCode), false, "WebChromeClient próprio exige revisão de segurança");
+  for (const perigo of ["onPermissionRequest", "onShowFileChooser", "onCreateWindow", "onGeolocationPermissionsShowPrompt"]) {
+    assert.equal(mainKotlinCode.includes(perigo), false, `override de ${perigo} exige revisão de segurança`);
+  }
+});
+
+test("Q018 as provas com navegador tratam o diálogo como o app: o modelo lê a MainActivity", () => {
+  // O ensaio e o rider-bridge aceitam ou cancelam confirm() conforme este modelo.
+  // Ele tem de separar os três casos a partir do Kotlin, não de quem escreve a prova.
+  const real = read(MAIN_KT);
+  assert.equal(modeloDoDialogo(real), "mostra", "a MainActivity de hoje registra o cliente padrão");
+  const linha = /^\s*webChromeClient = WebChromeClient\(\)\s*$/m;
+  assert.match(real, linha);
+  assert.equal(modeloDoDialogo(real.replace(linha, "")), "cancela", "sem a linha (o import sobra) o WebView cancela");
+  assert.equal(
+    modeloDoDialogo(real.replace(linha, "            webChromeClient = object : WebChromeClient() {}")),
+    "desconhecido",
+    "cliente próprio não é suposto",
+  );
+  assert.equal(modeloDoDialogo(real.replace(linha, "            // webChromeClient = WebChromeClient()")), "cancela", "comentário não registra nada");
 });
 
 test("Q018 aceite com aparelho divergente é recusado ANTES de gravar", () => {

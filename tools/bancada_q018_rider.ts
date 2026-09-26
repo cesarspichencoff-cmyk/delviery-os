@@ -28,6 +28,7 @@ import { randomBytes } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
 import https from "node:https";
 import { chromium, type Page } from "playwright";
+import { modeloDoApp, TEXTO_DO_MODELO } from "../src/entregas/android/webview-dialog-model";
 
 const [PILOTO, CRITICO, CA_PEM, SPKI, DEVICE, SAIDA] = process.argv.slice(2);
 if (!SAIDA) {
@@ -40,6 +41,13 @@ const TOKEN_CONSOLE = "CHANGE_ME_OPS_TOKEN";
 const TOKEN_GERENTE = "CHANGE_ME_ADMIN_TOKEN";
 const MARCA = "SEM VALOR LEGAL — APENAS TESTE SIMULADO";
 const VIAGEM = `T-Q018-${Date.now().toString(36)}`;
+
+/*
+ * O diálogo JS como o WebView DO APP o trata, lido da MainActivity
+ * (src/entregas/android/webview-dialog-model.ts). Até 2026-09-26 esta bancada
+ * aceitava todo diálogo — e por isso passava onde o app pararia na saída.
+ */
+const DIALOGO = modeloDoApp();
 
 let falhas = 0;
 function checa(ok: boolean, texto: string): void {
@@ -247,7 +255,12 @@ async function main(): Promise<void> {
     const page = await ctx.newPage();
     const erros: string[] = [];
     page.on("pageerror", (e) => erros.push(String(e)));
-    page.on("dialog", (d) => void d.accept());
+    const dialogos: string[] = [];
+    page.on("dialog", (d) => {
+      dialogos.push(d.message());
+      void (DIALOGO === "mostra" ? d.accept() : d.dismiss());
+    });
+    checa(DIALOGO !== "desconhecido", `diálogo JS modelado pelo app: ${TEXTO_DO_MODELO[DIALOGO]}`);
     await page.goto(`${PILOTO}/rider-mobile/`, { waitUntil: "domcontentloaded" });
     await page.waitForFunction(() => { const t = document.getElementById("stopTitle")?.textContent || ""; return t && t !== "Carregando…"; }, null, { timeout: 20000 });
     checa(true, "a página carregou pelo HTTPS de bancada, confiando só no certificado da bancada");
@@ -266,6 +279,7 @@ async function main(): Promise<void> {
     await page.click("#btnConsentAccept");
     await esperarChamada(page, "recordTermAcknowledgement", 10000);
     const ack = (await chamadasDe(page, "recordTermAcknowledgement"))[0] as Record<string, string>;
+    const gravarSaida = (): void => writeFileSync(SAIDA, JSON.stringify({ trip_id: VIAGEM, device_id: DEVICE, acknowledgement_id: ack?.acknowledgement_id ?? null, term_hash: pol?.term?.hash ?? null, capturas }, null, 1));
     checa(ack?.status === "accepted" && ack?.device_id === DEVICE && ack?.rider_id === "rid-1" && ack?.term_hash === pol?.term?.hash,
       "aceite PELA INTERFACE: montado pelo servidor (rid-1, este aparelho, hash do termo sintético) e gravado na ponte");
     await esperarChamada(page, "requestLocationPermission", 10000);
@@ -276,7 +290,13 @@ async function main(): Promise<void> {
 
     await page.waitForFunction(() => { const b = document.getElementById("btnPrimary"); return !!b && !b.hidden && (b.textContent || "").includes("Confirmar saída"); }, null, { timeout: 10000 });
     await page.click("#btnPrimary");
-    await esperarChamada(page, "startTripCapture", 15000);
+    const ligou = await esperarChamada(page, "startTripCapture", 15000).then(() => true, () => false);
+    checa(dialogos.includes("Confirmar saída da loja?"), `a saída pediu confirmação ao motoboy pelo confirm() da página (${dialogos.length} diálogo)`);
+    if (!ligou) {
+      checa(false, `saída NÃO confirmada: o confirm() foi ${DIALOGO === "mostra" ? "aceito, e mesmo assim nada ligou" : "cancelado, como o WebView do app faz"} — nenhuma captura, nenhum fato`);
+      gravarSaida(); // o que aconteceu até aqui — o aceite, por exemplo — segue medido pelo orquestrador
+      throw new Error("a cadeia para na saída");
+    }
     const ligadas = await chamadasDe(page, "startTripCapture");
     checa(JSON.stringify(ligadas) === JSON.stringify([VIAGEM]), `saída confirmada pelo domínio -> startTripCapture("${VIAGEM}"), uma vez`);
 
@@ -298,7 +318,7 @@ async function main(): Promise<void> {
     checa(true, "viagem encerrada -> stopTripCapture e GPS DESLIGADO (só durante viagem ativa)");
     checa(erros.length === 0, `sem erro de script${erros.length ? ": " + erros.join(" | ").slice(0, 200) : ""}`);
 
-    writeFileSync(SAIDA, JSON.stringify({ trip_id: VIAGEM, device_id: DEVICE, acknowledgement_id: ack?.acknowledgement_id ?? null, term_hash: pol?.term?.hash ?? null, capturas }, null, 1));
+    gravarSaida();
     await ctx.close();
   } finally {
     await browser.close();

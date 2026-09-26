@@ -27,6 +27,10 @@ import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { chromium, type Browser, type BrowserContext, type Page } from "playwright";
+import { modeloDoApp } from "../android/webview-dialog-model";
+
+/** O diálogo como o WebView do app o trata: aceitar todo confirm() mediria o Chromium, não o aparelho. */
+const DIALOGO = modeloDoApp();
 
 const RAIZ = process.cwd();
 // Tokens do arquivo de EXEMPLO do piloto — só existem em laboratório.
@@ -284,7 +288,7 @@ async function abrir(browser: Browser, p: Piloto, cfg: ConfigDaPonte | null): Pr
   const page = await ctx.newPage();
   const erros: string[] = [];
   page.on("pageerror", (e) => erros.push(String(e)));
-  page.on("dialog", (d) => void d.accept());
+  page.on("dialog", (d) => void (DIALOGO === "mostra" ? d.accept() : d.dismiss()));
   await page.goto(`${p.base}/rider-mobile/`, { waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => {
     const t = document.getElementById("stopTitle")?.textContent || "";

@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.result.contract.ActivityResultContracts
@@ -90,6 +91,11 @@ class MainActivity : AppCompatActivity(), EntregasJsBridge.NativeActions {
             settings.setSupportMultipleWindows(false)
             settings.saveFormData = false
             webViewClient = OriginLockedClient(BuildConfig.ENTREGAS_BASE_URL)
+            // A página confirma a saída e a entrega por confirm(). Sem um
+            // WebChromeClient, o WebView cancela o diálogo em silêncio e a página
+            // recebe false: a saída nunca chegaria ao domínio. É o cliente
+            // padrão, sem override — ele recusa permissão, arquivo e janela.
+            webChromeClient = WebChromeClient()
             // Sem downloads: nada que a página ofereça deve virar arquivo no
             // aparelho do motoboy. Um PDF de pedido salvo na pasta pública
             // sobreviveria ao encerramento da viagem.
