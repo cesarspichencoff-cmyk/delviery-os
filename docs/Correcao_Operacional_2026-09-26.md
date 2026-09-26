@@ -8,8 +8,7 @@ Fonte humana atual para reconciliação DeliveryOS × TATÁ Academia.
 - Na praça interna `cozinha_quentes`, **prato grande** usa caixa 1.500.
 - Todo item da Cozinha que não seja prato grande usa 650 selada.
 - Exemplos confirmados de 650: Guioza, Tempurá de milho doce, Ebi Spicy e Edamame.
-- **Missoshiro usa pote de isopor; não usa caixa 650.**
-- Regra explícita de item vence regra genérica.
+- Missoshiro e os demais itens da Cozinha que não sejam prato grande seguem a regra de **650 selada**.
 
 ## Vocabulário operacional
 Os códigos internos permanecem por compatibilidade:
