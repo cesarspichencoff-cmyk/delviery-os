@@ -221,7 +221,7 @@ qual pedido e por qual motivo.
 ## 14. Tabela de nomes e aliases
 
 Nomes validados pelo César cruzados com o seed atual (`data/cardapio_knowledge_seed.json`).
-**O seed não foi alterado.** Status: Confirmado · Possível alias · Não encontrado · Precisa validar.
+O seed foi reconciliado em 26/09/2026 para a fronteira prato × entrada. Status abaixo considera a fonte humana vigente.
 
 | Nome validado (César) | Nome no seed | Categoria | Status | Observação |
 |---|---|---|---|---|
@@ -231,14 +231,14 @@ Nomes validados pelo César cruzados com o seed atual (`data/cardapio_knowledge_
 | Uramaki | Uramaki Califórnia… | Enrolados | **Confirmado** | — |
 | Hosomaki | **Hossomaki** de Atum… | Enrolados | **Possível alias** | Seed grafa "Hossomaki" (dois s); César "Hosomaki". |
 | Hot Roll | Hot Roll, Hot Roll Tatá | Enrolados | **Confirmado** | Exceção prática (vai com frios). |
-| Sashimi | *(só dentro de combinados)* | Sashimi | **Precisa validar** | Não achei item "Sashimi de X" avulso no seed; confirmar se existe sashimi avulso. |
+| Sashimi | Sashimi de Salmão, Atum, Bluefin, Buri, Hamachi, Polvo etc. | Sashimi | **Confirmado** | Regra atual: 1→240; 2–4→450; 5–7→750; 8+→1.500. |
 | Sunomono | Sunomono | 650 selada | **Confirmado** | — |
 | Tuna Shiso | **Tuna Shisô Tartar** | 650 selada | **Possível alias** | Seed grafa "Shisô" e acrescenta "Tartar". |
 | Tirashi | Tirashi | 1.000 | **Confirmado** | Não usar "Tiradito". |
 | Battera | **Baterá** de Salmão, Baterá de Spicy Tuna | 750 | **Possível alias** | Seed grafa "Baterá" (com acento). Doc diz "Battera com um T" — grafia a acertar. |
 | Ceviche | Ceviche | 650 selada | **Confirmado** | Não usar "Cerviche/Cerveithe". |
 | Missoshiru | **Missoshiro** · Nasu no Missô | 650 selada | **Possível alias** | Seed grafa "Missoshiro" (com o final). |
-| Fish Katsu | **Fish Katsu** *e* **Chickenkatsu** (ambos existem) | Quente 1.500 | **Precisa validar** | O seed tem os dois como itens distintos (frango × peixe). O doc diz usar "Fish Katsu" no lugar de "Chicken Katsu" — confirmar se são o mesmo prato ou dois pratos diferentes no cardápio. |
+| Fish Katsu / Chickenkatsu | Ambos existem como pratos distintos | Prato da Cozinha · 1.500 | **Confirmado** | A regra atual é por papel operacional: prato da Cozinha usa 1.500. |
 | Tempurá de Legumes / Camarão / Misto | Tempurá de Legumes, de Camarão, Misto | Quente 1.500 | **Confirmado** | Corrige a anotação antiga "camarão de legumes". |
 | Tempurá de milho | **Tempurá de milho doce** | 650 selada | **Possível alias** | Seed acrescenta "doce". |
 | Edamame | Edamame | 650 selada | **Confirmado** | — |
@@ -246,42 +246,31 @@ Nomes validados pelo César cruzados com o seed atual (`data/cardapio_knowledge_
 | Salmão grelhado | Salmão Grelhado | Quente 1.500 | **Confirmado** | — |
 | Frango Teriyaki | Frango Teriyaki | Quente 1.500 | **Confirmado** | — |
 | Katsu Don | **Katsudon** | Quente 1.500 | **Possível alias** | Seed grafa junto "Katsudon". |
-| Carpaccio de salmão | **Carpaccio de Salmão Trufado** (não há "de Salmão" puro) | 750 | **Possível alias** | Seed só tem "Trufado" e "de Polvo Espanhol"; confirmar qual é o "Carpaccio de salmão" da regra. |
+| Carpaccio | Carpaccio de Salmão Trufado · Carpaccio de Polvo Espanhol | 750 fixa | **Confirmado** | César confirmou em 13/09/2026 que os dois carpaccios usam 750 fixa. |
 | Beef com Nirá | Beef com Nirá | Quente 1.500 | **Confirmado** | Doc escreveu "Bife con ira" (fonético); seed = "Beef com Nirá". |
-| Yakisoba | *(não encontrado)* | Quente 1.500 | **Não encontrado** | Nenhum item "Yakisoba" no seed atual. |
+| Yakisoba | Yakissoba Misto, Carne, Frango, Frutos do Mar, Vegetais | Prato da Cozinha · 1.500 | **Confirmado** | Itens atuais existem no seed e seguem a regra de prato da Cozinha. |
 | Shikentatsu | *(não encontrado)* | Quente 1.500 | **Não encontrado** | Grafia garbled; validar qual prato é (§15). |
 | Tatá Chocolate | Tatá chocolate com sorvete de caramelo salgado | Sobremesa | **Possível alias** | Seed tem nome mais longo. |
 | Shoocream | **Choux Cream** | Sobremesa | **Possível alias** | Seed grafa "Choux Cream". |
 | Mochi | Mochi | Sobremesa | **Confirmado** | Separar por sabor. |
 
-## 15. Pendências e perguntas para o César
+## 15. Pendências reais restantes
 
-Pendências reais (não genéricas), respondíveis por áudio:
+As correções de 26/09/2026 fecharam Sashimi, Fish/Chickenkatsu, Yakissoba, Carpaccio e a fronteira
+Cozinha × Sushi Quentes. Permanecem abertas apenas questões que não foram respondidas por essa revisão:
 
-1. **Fish Katsu × Chickenkatsu:** o cardápio tem os dois. São o mesmo prato (só grafia) ou dois
-   pratos diferentes (frango e peixe)? A lógica de embalagem trata os dois igual (quente 1.500)?
-2. **Yakisoba:** não existe no seed atual. É item ativo do cardápio? Se sim, entra como quente 1.500?
-3. **"Shikentatsu":** qual é o prato exatamente? Grafia oficial? (o documento pediu validar).
-4. **Battera / Baterá:** o nome correto tem um T ("Batera"/"Battera") ou é "Baterá" como no seed?
-5. **Sashimi avulso:** existe item "Sashimi de X" vendido sozinho, ou sashimi só aparece dentro de
-   combinado? (a regra de caixa por quantidade de sashimi precisa de item avulso para valer).
-6. **Carpaccio de salmão:** o "Carpaccio de salmão" da regra é o "Carpaccio de Salmão Trufado" do
-   seed, ou existe um carpaccio de salmão simples?
-7. **Grafias de alias** (Hosomaki/Hossomaki, Missoshiru/Missoshiro, Tuna Shiso/Shisô, Katsu
-   Don/Katsudon, Tempurá de milho/milho doce, Shoocream/Choux Cream): manter a grafia do César como
-   nome de exibição e o seed como origem, ou padronizar o seed depois (missão separada)?
-8. **Causa de "duas sacolas":** a operação quer que o sistema explique a causa (quente e frio,
-   bebida grande, ou volume), ou basta sinalizar "duas sacolas"?
+1. **"Shikentatsu":** identificar o prato/grafia original, se ainda for relevante.
+2. **Baterá / Battera:** decidir apenas a grafia de exibição; a caixa 750 fixa já está resolvida.
+3. **Aliases de exibição** (Hosomaki/Hossomaki, Missoshiru/Missoshiro, Tuna Shiso/Shisô,
+   Katsu Don/Katsudon, Choux Cream): padronização visual é separada da regra operacional.
+4. **Sinal de múltiplas sacolas:** a causa deve continuar explícita na futura comanda/checklist.
 
 ## 16. Próxima missão recomendada
 
-1. **César responde as 8 perguntas da §15** (áudio) — destrava as grafias e os itens faltantes.
-2. **Matriz técnica** (missão de documentação): categoria → caixa → sacola → temperatura → exceções,
-   já reconciliada com o seed, como tabela única de referência.
-3. **Só depois** transformar a lógica em função do DeliveryOS (motor de embalagem) — com backtest
-   sobre pedidos reais, exatamente como as outras camadas do projeto. Nunca antes da validação.
-4. A automação de "duas sacolas / só quente" no Calmo só entra depois da matriz técnica **e** do Mapa
-   de Ambientes validado (`docs/Mapa_Ambientes_V1.md`) — nunca inferida.
+1. Usar a matriz reconciliada como base única para a futura Comanda TATÁ.
+2. Ligar categoria → caixa → sacola → temperatura → kit → observação → conferência.
+3. Backtestar a lógica sobre pedidos reais antes de qualquer automação operacional.
+4. Resolver apenas as pendências residuais da §15 quando elas forem materialmente necessárias.
 
 ---
 
