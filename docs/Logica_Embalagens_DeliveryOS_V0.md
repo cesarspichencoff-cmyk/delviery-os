@@ -1,5 +1,8 @@
 # Lógica de Embalagens — DeliveryOS V0
 
+> **Correção humana vigente — 26/09/2026:** ver [Correcao_Operacional_2026-09-26.md](Correcao_Operacional_2026-09-26.md). Quando houver conflito, a correção de 26/09 prevalece.
+
+
 > Documentação técnica oficial da lógica de embalagem do delivery, transcrita fielmente do documento
 > operacional revisado com o César (`Logica_Embalagens_DeliveryOS_V0_Final_Dyo.docx`). **É base de
 > entendimento, não código.** Não deve alterar o sistema sem revisão técnica e validação operacional.
@@ -53,21 +56,22 @@ Categorias operacionais para classificar cada item antes de escolher a caixa:
 
 | Caixa | Uso |
 |---|---|
-| **240** | 1 dupla de sushi **ou** 1 Dyo. Menor caixa de dupla simples. |
-| **450** | 2 a 3 duplas/Dyo · 1 enrolado · 1 temaki · 1 sashimi · sobremesas (Tatá Chocolate, Shoocream) quando aplicável. |
+| **240** | 1 dupla de sushi, 1 Dyo **ou 1 porção de sashimi**. |
+| **450** | 2 a 3 duplas/Dyo · 1 enrolado · 1 temaki · **2 a 4 sashimis** · sobremesas quando aplicável. |
 | **650 selada** | Itens menores/úmidos/delicados da cozinha e frios delicados (ver §5). |
-| **750** | 4 a 5 duplas/Dyo · 2 enrolados · 2 a 3 temakis · 2 a 4 sashimis · **Battera** (sempre) · **Carpaccio de salmão** (sempre) · combinado para 1 pessoa. |
+| **750** | 4 a 5 duplas/Dyo · 2 enrolados · 2 a 3 temakis · **5 a 7 sashimis** · **Battera** (sempre) · **Carpaccio** (sempre) · combinado para 1 pessoa. |
 | **1.000** | **Tirashi** sempre; nunca outra caixa. Normalmente sacola média, salvo composição fria maior. |
-| **1.500** | 6+ duplas · 3+ enrolados · 4 a 6 temakis · 5+ sashimis · combinado sushi + sashimi para 2 pessoas · pratos quentes grandes da cozinha. Se não couber, complementar com caixas menores. |
+| **1.500** | 6+ duplas · 3+ enrolados · 4 a 6 temakis · **8+ sashimis** · combinado sushi + sashimi para 2 pessoas · **pratos da Cozinha**. Se não couber, complementar com caixas menores. |
 | **1.600** | Combinado sushi para 2 pessoas · combinado sushi tradicional para 2 pessoas. Caixa de combinado fechado; não usar para extras soltos. |
 
 **Itens confirmados para caixa 650 selada:** Guioza · Edamame · Missoshiru · Tempurá de milho ·
 Tartar de salmão · Tartar de atum spicy · Tuna Shiso · Ceviche · Sunomono.
 
-**Itens quentes grandes em caixa 1.500** (conforme o documento; grafias a validar na §14/§15): Beef
-com Nirá · Salmão grelhado · Katsu Don · Fish Katsu · Yakisoba (em geral) · Tempurá de Legumes ·
-Tempurá de Camarão · Tempurá Misto · Frango Teriyaki · "Shikentatsu" (grafia a validar) · outros
-pratos quentes grandes equivalentes.
+**Pratos da Cozinha em caixa 1.500:** a regra atual é por papel operacional, não por uma lista fechada:
+`cozinha_quentes` + `prato_quente` → 1.500. Entradas da Cozinha não herdam 1.500.
+
+Exceções explícitas vencem a regra geral: Guioza e Tempurá de milho são entradas e usam 650 selada.
+Ebi Spicy é entrada e permanece sem caixa nova inferida nesta correção.
 
 ## 5. Regras por categoria
 
@@ -101,9 +105,10 @@ pratos quentes grandes equivalentes.
 
 | Quantidade | Caixa |
 |---|---|
-| 1 | 450 |
-| 2 a 4 | 750 |
-| 5 ou mais | 1.500 (pouco comum, mas a regra é 1.500) |
+| 1 | 240 |
+| 2 a 4 | 450 |
+| 5 a 7 | 750 |
+| 8 ou mais | 1.500 |
 
 **Itens de caixa fixa:** Battera → sempre 750 · Carpaccio de salmão → sempre 750 · Tirashi → sempre
 1.000 (nunca outra caixa).
