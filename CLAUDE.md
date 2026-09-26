@@ -306,4 +306,7 @@ termo aceito pela interface, saída pelo domínio, `startTripCapture`, sessão e
 `platform.event_log` com a viagem da página em `simulated`, replay e Entregas. **O emulador segue
 `NOT_RUN`:** este container não tem KVM nem SDK, e a política de rede nega `dl.google.com`. O
 procedimento exato, com PASS por item, está em `docs/etapa-4-8/BANCADA-EMULADOR.md`; se passar no
-Foxxy, a bancada acaba e o próximo nível é o aparelho físico.
+Foxxy, a bancada acaba e o próximo nível é o aparelho físico. Regressão em `12582c7`: **73 executados
+= 70 PASS + 3 FAIL_PREEXISTENTE/BLOCKED + 0 FAIL_NOVO** — a cadeia `test:entregas` voltou a verde; os
+3 restantes (governança G6b/G9, a variante de mutações dela, e `m1b-perceptual` sem servidor) são
+idênticos em `a9b7e1b`.

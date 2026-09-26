@@ -286,3 +286,21 @@ CONNECT); `maven.google.com` responde, mas só redireciona para lá; e o contain
 SDK. Build e emulador seguem no Foxxy. Liberar `dl.google.com` no ambiente permitiria compilar e
 rodar os testes de unidade aqui; o emulador continuaria precisando do Foxxy.
 
+**Regressão no HEAD final** (`12582c7`): os 70 gates de antes mais os 3 novos
+(`test:entregas:persistence-recreate:relogio`, `test:entregas:termo-sintetico` e
+`test:entregas:rider-bridge:mutacoes`, porque o piloto mudou), cada um isolado, PostgreSQL real,
+`build:platform` antes de qualquer gate. Cada gate em uma classe só:
+
+**73 executados = 70 PASS + 3 FAIL_PREEXISTENTE/BLOCKED + 0 FAIL_NOVO**
+
+| classe | n | gates |
+|---|---|---|
+| PASS | **70** | entre eles `test:entregas` inteira (vermelha ontem, pela data fixa; hoje com `persistence-recreate` 17/17, `deploy-audit` 36/36 e `termo-sintetico` 10/10), `test:platform:pb19` 27/27 já na primeira passada, e todas as suítes de mutação, `rider-bridge:mutacoes` incluída (803 s) |
+| `FAIL_PREEXISTENTE` | **2** | `test:platform:governanca` (G6b, G9 — saída idêntica à de `a9b7e1b` fora o cabeçalho) e `test:platform:governanca:mutacoes` (aborta pelo mesmo motivo) |
+| `BLOCKED` | **1** | `test:platform:m1b-perceptual`: `ECONNREFUSED 127.0.0.1:5292`, servidor ausente |
+| `FAIL_NOVO` | **0** | — |
+
+Antes: as três linhas de código que o diff removeu (a cadeia `test:entregas` no manifesto e os dois
+carimbos fixos) foram cruzadas com as âncoras de todas as suítes de mutação: nenhuma ancorava nelas
+(L51). Os gates que leem documento rodam de novo depois do commit deste registro.
+
