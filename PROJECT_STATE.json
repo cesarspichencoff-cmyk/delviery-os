@@ -15,7 +15,8 @@
     "docs/architecture/EVIDENCE_WORLD_SOURCE_FRESHNESS_2026-09-25.md",
     "docs/architecture/IFOOD_REVIEW_SOURCE_BRIDGE_2026-09-25.md",
     "docs/architecture/EVIDENCE_DEPLOYED_IFOOD_REVIEW_SOURCE_2026-09-25.md",
-    "docs/architecture/EVIDENCE_MAIL_BRIDGE_CANONICALIZATION_2026-09-25.md"
+    "docs/architecture/EVIDENCE_MAIL_BRIDGE_CANONICALIZATION_2026-09-25.md",
+    "docs/architecture/EVIDENCE_WORLD_EDGE_PRODUCER_CRON_2026-09-25.md"
   ],
   "verified_state": [
     "The canonical operational mail bridge is cesar-gerencial-mail-bridge reading Atendimento Sent read-only with EXAMINE + BODY.PEEK and D1 cesar-gerencial-mail-bridge.",
@@ -28,7 +29,10 @@
     "The canonical iFood review-mail bridge is deployed in tata-edge-cloud-shadow and reads only verified rows from ifood_review_mail; it exports coverage metadata only.",
     "The production iFood review source still has zero rows and zero attachments, so live iFood review propagation is not yet world-proven.",
     "The mail-bridge source package is canonicalized into this repository and its canonical source matched the verified operational source when recorded.",
-    "No restaurant operational write, printer action, cashier-PC action, email mutation, notification delivery or global all-clear has been authorized by these shadow runtimes."
+    "No restaurant operational write, printer action, cashier-PC action, email mutation, notification delivery or global all-clear has been authorized by these shadow runtimes.",
+    "The deployed tata-edge-cloud-shadow scheduled handler is WORLD_PROVEN_SCHEDULED_TRIGGER_REPLAY_SAFE: a real Cloudflare cron execution evaluated the already-observed closing source, emitted skipped/source_already_observed and authorized no external effect.",
+    "The temporary one-minute cron used only to obtain the scheduled receipt was rolled back immediately to the canonical 10 * * * * schedule; restored Worker version f0d99712-16b8-4726-b37b-0014dbee8088.",
+    "Read-only post-cron verification confirmed Watch D1 remained at 17 handoffs and 91 snapshot-history rows, with current state FACT / DEGRADED and unchanged source watermark 2026-09-25T02:57:22.000Z."
   ],
   "proof": {
     "latest_green_ci_run": "36203671429",
@@ -46,11 +50,18 @@
     "watch_global_all_clear": false,
     "watch_external_effects": false,
     "deployed_edge_replay_result": "skipped/source_already_observed",
-    "live_read_only_verification_at": "2026-09-26T00:30:00Z"
+    "live_read_only_verification_at": "2026-09-26T00:30:00Z",
+    "edge_scheduled_trigger": "WORLD_PROVEN_SCHEDULED_TRIGGER_REPLAY_SAFE",
+    "edge_temp_cron_version": "fe21d62d-3a36-4d65-bdfc-0e68906119f9",
+    "edge_restored_cron_version": "f0d99712-16b8-4726-b37b-0014dbee8088",
+    "edge_restored_cron": "10 * * * *",
+    "watch_handoff_history_rows": 17,
+    "watch_snapshot_history_rows": 91,
+    "watch_current_source_watermark": "2026-09-25T02:57:22.000Z",
+    "scheduled_replay_created_new_watch_history": false
   },
-  "next_action": "World-prove the tata-edge-cloud-shadow scheduled trigger itself without changing source semantics: temporarily use a one-minute shadow cron, observe a scheduled replay-safe no-op receipt, restore canonical 10 * * * * schedule, and record the rollback-complete evidence. Then wait for the first real matching iFood review-mail row or proceed to the next non-PC source.",
+  "next_action": "The closing source chain, freshness policy and scheduled Edge producer are world-proven. Continue with the highest-value non-PC gate: obtain and world-prove the first real matching iFood review-mail row through the canonical Atendimento route; until a real row exists, keep iFood review freshness UNKNOWN and do not fabricate coverage. In parallel, preserve current FACT/DEGRADED closing state and global all-clear=false.",
   "unknowns": [
-    "A real tata-edge-cloud-shadow scheduled-trigger execution receipt has not yet been observed.",
     "No real team-sent iFood review batch has been admitted; extraction quality and attachment shape remain unknown.",
     "No defensible iFood review freshness cadence has been established; its freshness must remain UNKNOWN.",
     "Global critical-source coverage is incomplete; global all-clear must remain disabled.",
