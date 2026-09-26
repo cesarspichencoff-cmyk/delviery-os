@@ -4441,9 +4441,10 @@
         "item pausado",
         "item de montagem fácil de esquecer"
       ],
-      "confianca_classificacao": "media",
-      "revisao_manual": false,
+      "confianca_classificacao": "inferido_com_baixa_confianca",
+      "revisao_manual": true,
       "observacoes": [
+        "Ambíguo: cozinha (se produção quente) x montagem (se só servido). Confirmar fluxo real.",
         "Embalagem confirmada por César em 26/09/2026: pote de isopor; não usar caixa 650."
       ],
       "descricoes_alternativas": [],
