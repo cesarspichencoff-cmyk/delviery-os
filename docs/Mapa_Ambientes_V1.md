@@ -21,12 +21,11 @@
 5. **Conferência** — onde o delivery abre sacolas, confere, junta pedidos e identifica pendências.
 6. **Motoboy** — pedido dado como pronto, separado para retirada e despachado.
 
-**Cozinha é tratada como ambiente separado de Quentes** nesta proposta, como o César pediu. Não
-serão misturados sem regra validada.
+**Cozinha e Sushi Quentes são ambientes separados**, confirmado por César em 26/09/2026.
 
 ## 2. Praças do motor × ambientes (o que parece pertencer a cada)
 
-O motor tem **8 praças internas**, não 6 ambientes. O mapa abaixo é **hipótese a validar**, não fato.
+O motor tem **8 praças internas**, não 6 ambientes. O mapeamento de **Sushi Quentes** e **Cozinha** foi confirmado por César em 26/09/2026; os demais limites permanecem conforme a evidência indicada.
 
 | Ambiente do César | Praça(s) do motor que parecem pertencer | Confiança |
 |---|---|---|
@@ -41,25 +40,27 @@ O motor tem **8 praças internas**, não 6 ambientes. O mapa abaixo é **hipóte
 `enrolados_quentes` como **Sushi Quentes** e `cozinha_quentes` como **Cozinha**.
 Os IDs internos permanecem inalterados para compatibilidade.
 
-## 3. Itens que parecem pertencer a Quentes
+## 3. Sushi Quentes
 
-Candidatos (praça `enrolados_quentes`, 11 itens, todos quentes): **Ceviche, Hot Roll, Hot Roll Tatá**
-e similares. O César cita "hot, ebi tempura, shisô, tartar de salmão" — parte disso (ebi/tempura)
-pode estar na `cozinha_quentes` do seed, e "tartar de salmão" costuma ser **frio** (duplas). **A
-lista exata de Quentes precisa vir do César** — não dá para inferir sem risco.
+A praça interna `enrolados_quentes` é exibida como **Sushi Quentes**. O nome descreve a bancada,
+não a temperatura química de cada item. O roteamento individual continua vindo do seed.
 
-## 4. Itens que parecem pertencer à Cozinha
+## 4. Cozinha
 
-Candidatos (praça `cozinha_quentes`, 31 itens, todos quentes): **Beef com Nirá, Chickenkatsu, Ebi
-Spicy** e similares. É a maior praça de itens quentes (31 de 43 itens quentes do cardápio).
+A praça interna `cozinha_quentes` é exibida como **Cozinha**. Ela contém tanto pratos quanto entradas.
+Essa distinção não muda a praça, mas muda a embalagem:
 
-## 5. Como diferenciar atraso de Quentes, Cozinha e Conferência
+- **prato da Cozinha** → 1.500;
+- **entrada da Cozinha** → não herda 1.500;
+- Guioza e Tempurá de milho → entradas com 650 selada;
+- Ebi Spicy → entrada, sem caixa inferida nesta revisão.
+
+## 5. Como diferenciar atraso de Sushi Quentes, Cozinha e Conferência
 
 Com o dado atual, cada um tem uma origem diferente no motor:
 - **Atraso de Cozinha** (`cozinha_quentes`): `load["cozinha_quentes"] > BASELINE (4)` e `maxmin` alto —
   pedidos em produção esperando essa bancada. Mensurável.
-- **Atraso de Sushi Quentes** (`enrolados_quentes`): `load["enrolados_quentes"] > BASELINE (3)`. Mensurável,
-  **se** o César confirmar que "Quentes" = essa praça.
+- **Atraso de Sushi Quentes** (`enrolados_quentes`): `load["enrolados_quentes"] > BASELINE (3)`. Mensurável.
 - **Atraso de Conferência**: o motor não mede *fila* de conferência; mede *risco por pedido*
   (`conferencia` = 2ª sacola/bebida/kit/observação esperando). É um sinal de pedido, não de estação.
   Diferenciar "conferência lotada" de "pedido arriscado" **não é possível hoje** sem um dado de fila
@@ -112,33 +113,26 @@ Quando a área é a `sess.active.sit` do motor: `sev` ≥ 2, sustentada por `DEB
 `COOLDOWN`. **Este é exatamente o mecanismo que já existe** — o Mapa de Ambientes não decide foco;
 ele só *colore* o que o motor já concluiu. Nenhuma lógica nova de decisão.
 
-## 13. Perguntas objetivas para o César validar (respondíveis por áudio)
+## 13. Validações ainda abertas
 
-1. **Mapa praça→ambiente:** confirma que Sushi = Combinados + Duplas + Enrolados frios?
-2. **Quentes × Cozinha:** "Quentes" para você é hot roll/tempura (a praça de enrolados quentes) ou os
-   pratos da cozinha? E "Cozinha" é o quê exatamente? (o motor hoje chama a cozinha de "Quentes" — o
-   nome precisa ser acertado).
-3. **Itens de Quentes:** me diz 5 itens que você considera "Quentes".
-4. **Itens de Cozinha:** me diz 5 itens que você considera "Cozinha".
-5. **Caixa:** existe algum sinal digital de que a caixa está atolada, ou isso só se vê no olho?
-6. **Conferência:** dá para saber quando a bancada de conferência está lotada, ou só dá para saber
-   que um pedido específico é arriscado?
-7. **Verde/Amarelo/Vermelho:** para você, quando uma área está "amarela" (acompanhar) e quando está
-   "vermelha" (precisa agir agora)? Em pedidos esperando? Em minutos?
-8. **Motoboy:** "motoboy vermelho" é quantos pedidos prontos parados, ou quantos minutos parados?
+A separação **Sushi Quentes × Cozinha** foi resolvida em 26/09/2026. Continuam abertas apenas as
+perguntas de instrumentação que dependem da operação real:
+
+1. **Caixa:** existe sinal digital de fila/atraso ou só observação humana?
+2. **Conferência:** existe dado de fila/throughput ou apenas risco por pedido?
+3. **Verde/Amarelo/Vermelho:** quais limites operacionais devem promover cada estado?
+4. **Motoboy:** qual limiar real deve promover atraso de expedição?
 
 ## 14. Riscos de implementar sem o mapa operacional
 
 1. **Item no ambiente errado** — o risco central: mostrar um quente na Cozinha (ou vice-versa)
    repete exatamente o problema de confiança que a Auditoria de Praça acabou de corrigir.
-2. **Colisão de nome Quentes/Cozinha** — implementar com o `DISPLAY` atual mostraria "Quentes" para a
-   cozinha, contradizendo o vocabulário do César.
-3. **Caixa e Conferência falsamente verdes** — mostrar uma área como saudável quando não há dado para
+2. **Caixa e Conferência falsamente verdes** — mostrar uma área como saudável quando não há dado para
    saber é mentir por omissão (viola Lei 5 e Lei 12).
-4. **Ambiente virar dashboard** — 6 cartões com cor podem escorregar para "painel de status" se
+3. **Ambiente virar dashboard** — 6 cartões com cor podem escorregar para "painel de status" se
    ganharem números, gráficos ou virarem lista rolável. O limite (6 cartões, 3 linhas cada, sem
    número decorativo) precisa ser rígido.
-5. **Piscar de cor** — sem um piso de estabilidade temporal, uma área pode alternar amarelo/verde a
+4. **Piscar de cor** — sem um piso de estabilidade temporal, uma área pode alternar amarelo/verde a
    cada minuto (o Red Team do Modelo de Consciência já apontou isso para o Ambiente). Precisa de
    debounce próprio de cor antes de ir para a tela.
 
@@ -149,7 +143,7 @@ ele só *colore* o que o motor já concluiu. Nenhuma lógica nova de decisão.
 Até 6 cartões, um por ambiente. Cada cartão com **apenas** nome, estado (cor) e motivo curto:
 
 ```
-Caixa            Sushi                      Quentes
+Caixa            Sushi                  Sushi Quentes
 Tudo fluindo     Atenção                    Atenção
 Comandas em      Combinados com pedidos     Hot roll puxando espera
 ritmo normal     acumulando
