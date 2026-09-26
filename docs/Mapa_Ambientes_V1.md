@@ -16,7 +16,7 @@
 
 1. **Caixa** — de onde saem as comandas; separa sacola, cartinhas, embalagens, organização inicial.
 2. **Sushi** — combinados, duplas e itens frios principais.
-3. **Quentes** — hot, ebi tempura, shisô, tartar de salmão e itens quentes dessa praça.
+3. **Sushi Quentes** — bancada quente do sushi (Hot Roll e demais itens roteados a `enrolados_quentes`).
 4. **Cozinha** — itens preparados pela cozinha que impactam o fluxo e geram espera antes da conferência.
 5. **Conferência** — onde o delivery abre sacolas, confere, junta pedidos e identifica pendências.
 6. **Motoboy** — pedido dado como pronto, separado para retirada e despachado.
@@ -32,15 +32,14 @@ O motor tem **8 praças internas**, não 6 ambientes. O mapa abaixo é **hipóte
 |---|---|---|
 | Caixa | *(nenhuma praça do motor modela a caixa/comanda)* | **Não modelado** |
 | Sushi | `combinados` + `duplas` + `enrolados` (frios) | Alta |
-| Quentes | `enrolados_quentes` (Hot Roll, Ceviche) **e/ou** parte de `cozinha_quentes` | **Ambígua** |
-| Cozinha | `cozinha_quentes` (Beef com Nirá, Chickenkatsu, Ebi Spicy) | Média |
+| Sushi Quentes | `enrolados_quentes` | **Alta — confirmado por César em 26/09/2026** |
+| Cozinha | `cozinha_quentes` | **Alta — confirmado por César em 26/09/2026** |
 | Conferência | sinal `conferencia` do motor + praças `montagem_outros`/`bar_bebidas`/`sobremesa` | Parcial |
 | Motoboy | sinal `saida` do motor (prontos parados na expedição) | Alta |
 
-**⚠ Colisão de nome crítica:** o motor **já exibe `cozinha_quentes` com o rótulo "Quentes"**
-(`DISPLAY.cozinha_quentes = "Quentes"`). Mas o César usa "Quentes" para hot rolls/tempura e
-"Cozinha" para os pratos da cozinha. Ou seja, o "Quentes" do motor ≈ a "Cozinha" do César. **Isto
-precisa ser resolvido antes de qualquer implementação**, ou a tela mostrará a área errada.
+**Colisão de nome resolvida em 26/09/2026:** o motor passa a exibir
+`enrolados_quentes` como **Sushi Quentes** e `cozinha_quentes` como **Cozinha**.
+Os IDs internos permanecem inalterados para compatibilidade.
 
 ## 3. Itens que parecem pertencer a Quentes
 
@@ -59,7 +58,7 @@ Spicy** e similares. É a maior praça de itens quentes (31 de 43 itens quentes 
 Com o dado atual, cada um tem uma origem diferente no motor:
 - **Atraso de Cozinha** (`cozinha_quentes`): `load["cozinha_quentes"] > BASELINE (4)` e `maxmin` alto —
   pedidos em produção esperando essa bancada. Mensurável.
-- **Atraso de Quentes** (`enrolados_quentes`): `load["enrolados_quentes"] > BASELINE (3)`. Mensurável,
+- **Atraso de Sushi Quentes** (`enrolados_quentes`): `load["enrolados_quentes"] > BASELINE (3)`. Mensurável,
   **se** o César confirmar que "Quentes" = essa praça.
 - **Atraso de Conferência**: o motor não mede *fila* de conferência; mede *risco por pedido*
   (`conferencia` = 2ª sacola/bebida/kit/observação esperando). É um sinal de pedido, não de estação.
@@ -72,7 +71,7 @@ Com o dado atual, cada um tem uma origem diferente no motor:
 |---|---|---|
 | Caixa | nenhum (comanda não existe na origem; ver Auditoria de Comanda) | **Não** |
 | Sushi | `load`/`maxmin` de combinados+duplas+enrolados, `sits kind:praca` | Sim |
-| Quentes | `load`/`maxmin` de `enrolados_quentes` | Sim (depende do mapa) |
+| Sushi Quentes | `load`/`maxmin` de `enrolados_quentes` | Sim |
 | Cozinha | `load`/`maxmin` de `cozinha_quentes` | Sim |
 | Conferência | sinal `conferencia` (risco por pedido), não fila | Parcial |
 | Motoboy | sinal `saida` (`wE` > `FLOORS.EXPED`) | Sim |
