@@ -135,6 +135,23 @@ const termOverride = readJsonIfPresent<Partial<LocationTerm>>(
 /* Sem o arquivo do responsável, o termo continua o modelo — não publicável. */
 const activeTerm: LocationTerm = { ...TERM_ITAIM_V1, ...(termOverride ?? {}) };
 
+/*
+ * Termo SINTÉTICO de laboratório (autorização do César, 2026-09-26): a fixture
+ * da bancada (`tools/bancada_termo_sintetico.json`) é marcada com esta frase e
+ * só pode tornar o termo publicável num laboratório DECLARADO e local. Fora
+ * disso o piloto não sobe — servir um texto sem valor legal como se fosse o
+ * termo da operação colheria "aceites" que não valem nada.
+ */
+const MARCA_TERMO_SINTETICO = "SEM VALOR LEGAL — APENAS TESTE SIMULADO";
+const termoSintetico = JSON.stringify(activeTerm).includes(MARCA_TERMO_SINTETICO);
+if (termoSintetico && (process.env.ENTREGAS_LABORATORIO !== "1" || cloud.remote)) {
+  console.error(
+    `[piloto] o termo carregado é SINTÉTICO ("${MARCA_TERMO_SINTETICO}") — servidor NÃO subiu. ` +
+      "Ele só vale em laboratório declarado (ENTREGAS_LABORATORIO=1) e local, nunca em modo remoto.",
+  );
+  process.exit(1);
+}
+
 // Mesmo padrão do termo e da unidade: o caminho pode vir do ambiente (teste e
 // laboratório), e o padrão continua o arquivo fora do Git.
 const gpsFlags = loadFlags(
@@ -364,6 +381,7 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
         https: httpsResolution.enabled,
         lan: bindResolution.exposedToLan,
         term_publishable: termPublishable(),
+        term_synthetic: termoSintetico,
         unit_configured: unitConfig.ok,
         devices_authorized: authorizedDevices.length,
       });
