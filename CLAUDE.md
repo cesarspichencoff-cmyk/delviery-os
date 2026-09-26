@@ -4,7 +4,7 @@ lifecycle:
   status: ACTIVE
   authority_scope: session_routing
   superseded_by: null
-  atualizado_em: "2026-09-25"
+  atualizado_em: "2026-09-26"
   state_basis: 953a3fb
 ---
 
@@ -284,10 +284,11 @@ fechados:** o aceite legado gravava para qualquer `rider_id`, de qualquer sessã
 agora 403); caminho absoluto de configuração era ignorado em silêncio. Gates:
 `test:entregas:rider-bridge` (**27/27**), `test:entregas:rider-capture` (**38/38**, na cadeia
 `test:entregas`), device-api **40/40**, android **38/38** e `test:entregas:rider-bridge:mutacoes`
-(**21 mutações, zero cegas**). **Não provado:** o Kotlin alterado não compilou aqui (`dl.google.com`
+(**26 verificações = 4 controles positivos + 21 mutações + 1 fecho; zero cegas**). **Não provado:** o Kotlin alterado não compilou aqui (`dl.google.com`
 negado) e nada rodou em aparelho; com a página fechada, o fim da viagem só chega ao serviço quando
 ela reabre (`docs/execution/BLOCKERS.md`). O primeiro fato do app passa a `NOT_RUN`: build no Foxxy e termo
-publicável, que é do César. Regressão: **70 gates, 66 verdes, zero `FAIL_NOVO`** — o único achado
-(G2 e G6c da governança, vindos do próprio registro desta missão) foi fechado; 4
-`FAIL_PREEXISTENTE` idênticos em `a9b7e1b`, entre eles a cadeia `test:entregas`, que para numa data
-fixa vencida da suíte de recriação de persistência.
+publicável, que é do César. Regressão em `a7699f1`: **70 executados = 66 PASS + 4
+FAIL_PREEXISTENTE/BLOCKED + 0 FAIL_NOVO** (3 pré-existentes e 1 bloqueado por servidor ausente,
+idênticos em `a9b7e1b`; o único `FAIL_NOVO`, G2/G6c da governança vindo do próprio registro, foi
+fechado antes da contagem). Um dos pré-existentes era a cadeia `test:entregas`, parada numa data fixa
+vencida — corrigido depois, abaixo.

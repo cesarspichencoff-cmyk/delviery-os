@@ -4,8 +4,8 @@ lifecycle:
   status: ACTIVE
   authority_scope: captura_pela_rider_mobile
   superseded_by: null
-  atualizado_em: "2026-09-25"
-  state_basis: f122ee3
+  atualizado_em: "2026-09-26"
+  state_basis: ea3745a
   question_refs: ["Q-018"]
 ---
 
@@ -150,8 +150,17 @@ recusa que fica.
 `npm run test:entregas:rider-bridge:mutacoes` (`src/entregas/ui/run-rider-bridge-mutation-tests.ts`):
 cada mutação devolve ao código UMA garantia removida, roda o gate que deveria acusar e exige a
 reprovação **pelo teste certo**; restauração byte a byte por sha256, também em SIGINT/SIGTERM.
-Controle positivo antes (os quatro gates verdes sem mutação) e fecho depois (`git status` vazio nos
-seis arquivos mutados, `dist/` reconstruído). **26/26, zero cegas**, 13 min 28 s.
+Controle positivo antes e fecho depois. **26 verificações, 26 ok, zero cegas**, 13 min 28 s — e os
+26 são exatamente:
+
+| elementos | quantos | quais |
+|---|---|---|
+| controles positivos | **4** | os gates `regra`, `navegador`, `servidor` e `android`, verdes sem mutação |
+| mutações | **21** | MR1–MR13 (página), MS1–MS5 (servidor), MA1–MA3 (Kotlin, estrutural) — tabela abaixo |
+| verificação de fecho | **1** | `git status` vazio nos seis arquivos mutados |
+| **total** | **26** | 4 + 21 + 1; conferido no código da suíte e no registro da execução (26 `ok`, 0 `XX`) |
+
+A reconstrução final de `dist/` é ação, não verificação: só entraria na conta como falha, e não falhou.
 
 | id | garantia removida | gate | acusado por |
 |---|---|---|---|
@@ -224,15 +233,27 @@ não entrou. O recibo existe no servidor e no Kotlin (`receipt`).
 
 ## 11 — Regressão
 
-Cada gate isolado, sobre o código final e PostgreSQL real (`127.0.0.1:5433`), agregados abertos em
-partes para nada rodar duas vezes: **70 gates, 65 verdes na primeira passada** (2 023 s de gate).
+Cada gate isolado, sobre `a7699f1` e PostgreSQL real (`127.0.0.1:5433`), agregados abertos em partes
+para nada rodar duas vezes (2 023 s de gate). Cada gate está em **uma** classe só:
 
-| classe | gates |
-|---|---|
-| PASS | 65 — entre eles `test:entregas:rider-bridge`, `test:entregas:pilot-gate`, `test:lab`, `test:platform:product`, `test:platform:m1-bridge` e todas as suítes de mutação da plataforma (`pb19`, `spine`, `q016`, `q017`, `append-only`, `cadeia`, `relogio`, `lab:v4:evidencias`, `m1b`) |
-| `FAIL_NOVO` — achado e fechado | `test:platform:governanca`: **G2** (o parágrafo novo do `CLAUDE.md` citava o arquivo de bloqueios sem o caminho, e a rota da §11 o lia como artefato sem lifecycle) e **G6c** (`DECISIONS.md` alterado sem atualizar `atualizado_em`). Os dois vieram do registro desta missão. Corrigidos: a saída voltou a ser idêntica à de `a9b7e1b`, fora o cabeçalho (+1 artefato e +1 caminho de rota: este documento) |
-| ambiente do roteiro | `test:platform:pb19`, D3a-2 "dist VELHO": o roteiro compilou com `tsc`, não com `build:platform`, e o carimbo ficou para trás — é o que o gate manda fazer. Depois de `build:platform`: **27/27** |
-| `FAIL_PREEXISTENTE` | `test:entregas` — a cadeia para em `persistence-recreate`: data fixa vencida (registrado em `docs/execution/BLOCKERS.md`), idêntico em `a9b7e1b`; o `deploy-audit`, último da cadeia, rodado à parte: **36/36**. `test:platform:governanca` G6b e G9, e `governanca:mutacoes`, que aborta pelo mesmo motivo — idênticos em `a9b7e1b`. `test:platform:m1b-perceptual` — `ECONNREFUSED 127.0.0.1:5292`, servidor ausente, idêntico em `a9b7e1b` |
+**70 executados = 66 PASS + 4 FAIL_PREEXISTENTE/BLOCKED + 0 FAIL_NOVO**
 
-**Zero `FAIL_NOVO` em aberto.** Antes de escolher a regressão, as linhas que o diff removeu foram
-cruzadas com as âncoras das 33 suítes de mutação: nenhuma ancorava nelas (L51).
+| classe | n | gates |
+|---|---|---|
+| PASS | **66** | 65 verdes na primeira passada — entre eles `test:entregas:rider-bridge`, `test:entregas:pilot-gate`, `test:lab`, `test:platform:product`, `test:platform:m1-bridge` e todas as suítes de mutação da plataforma (`pb19`, `spine`, `q016`, `q017`, `append-only`, `cadeia`, `relogio`, `lab:v4:evidencias`, `m1b`) —, **mais** `test:platform:pb19`: vermelho na primeira passada por ordem de build do roteiro (compilou com `tsc`, não com `build:platform`, e o carimbo D3a ficou para trás, como o próprio gate diz); reexecutado depois de `build:platform`, com PostgreSQL: **27/27** |
+| `FAIL_PREEXISTENTE` | **3** | `test:entregas` (a cadeia parava em `persistence-recreate`: data fixa vencida); `test:platform:governanca` (G6b, G9); `test:platform:governanca:mutacoes` (aborta porque o caso legítimo não é verde) — os três idênticos em `a9b7e1b` |
+| `BLOCKED` | **1** | `test:platform:m1b-perceptual`: `ECONNREFUSED 127.0.0.1:5292`, servidor ausente — idêntico em `a9b7e1b` |
+| `FAIL_NOVO` | **0** | — |
+
+O único `FAIL_NOVO` que apareceu foi fechado **antes** da contagem acima: G2 e G6c da governança,
+vindos do registro desta missão — o parágrafo novo do `CLAUDE.md` citava o arquivo de bloqueios sem
+o caminho, e a rota da §11 o lia como artefato sem lifecycle; `DECISIONS.md` mudou sem atualizar
+`atualizado_em`. Depois da correção (`a7699f1`), a saída da governança ficou idêntica à de
+`a9b7e1b`, fora o cabeçalho (+1 artefato e +1 caminho de rota: este documento). O `deploy-audit`,
+último da cadeia `test:entregas`, que a cadeia quebrada não alcançava, rodou à parte: 36/36.
+
+**Depois desta regressão:** a data fixa vencida foi corrigida (§12) e a cadeia `test:entregas`
+passou inteira. A equação no HEAD final está na §12.
+
+Antes de escolher a regressão, as linhas que o diff removeu foram cruzadas com as âncoras das 33
+suítes de mutação: nenhuma ancorava nelas (L51).

@@ -4,7 +4,7 @@ lifecycle:
   status: ACTIVE
   authority_scope: infra_blockers
   superseded_by: null
-  atualizado_em: "2026-09-25"
+  atualizado_em: "2026-09-26"
   state_basis: 953a3fb
   question_refs: ["Q-001","Q-002","Q-003","Q-004","Q-005","Q-006","Q-007","Q-008","Q-009","Q-010","Q-011"]
 ---
@@ -989,7 +989,17 @@ Foxxy primeiro (`docs/etapa-4-8/FIELD-GATE-ANDROID.md` §4).
 Contornado pela página, que repassa as políticas e o aceite (D88). O aceite gravado no Room fica
 `pending` para sempre — inofensivo: o servidor já o tem e o registro é idempotente pelo id.
 
-### Entregas — `run-persistence-recreate-tests` com data fixa vencida · **REGISTRADO, não corrigido** (2026-09-25)
+### Entregas — `run-persistence-recreate-tests` com data fixa vencida · **FECHADO em 2026-09-26** (registrado em 2026-09-25)
+
+> **SUCESSÃO — 2026-09-26 · CORRIGIDO por decisão do César (`8e6be1b`). O texto abaixo é o registro
+> de abertura, sem edição.** Reproduzido antes com o próprio harness: a suíte reprovava hoje e
+> passava com a data civil deslocada para 2026-07-26. Agora todo carimbo deriva de um "agora" lido uma
+> vez (AT2 continua 30 s depois de AT1); dois controles novos provam que a janela segue valendo (mais
+> de 30 dias no passado e mais de 24 h no futuro: `impossible_timestamp`). O gate
+> `test:entregas:persistence-recreate:relogio` roda a suíte com a data civil deslocada
+> (`tools/relogio_deslocado.cjs`) em 2025-08-22, 2026-07-26, hoje, 2026-11-10 e 2036-09-23, e prova
+> que enxerga a classe: a data fixa devolvida reprova hoje e passa só na própria data (12/12). A
+> cadeia `test:entregas` voltou a rodar inteira, `deploy-audit` incluído.
 
 A suíte posta pontos com `occurred_at` fixo em `2026-07-26T10:00:00Z` (`AT1`, `AT2`), e
 `validateSample` recusa ponto mais velho que 30 dias (`impossible_timestamp`). Desde ~2026-08-25 os
