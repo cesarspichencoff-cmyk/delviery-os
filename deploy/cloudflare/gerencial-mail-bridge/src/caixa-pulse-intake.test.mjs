@@ -1,7 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import {
+  CAIXA_PULSE_RECIPIENT,
+  CAIXA_PULSE_SENDER,
   looksLikeCaixaPulseSubject,
+  matchesCaixaPulseMail,
   parseCaixaPulseMessage,
   parseCaixaPulseSubject,
 } from "./caixa-pulse-intake.js";
@@ -199,4 +203,44 @@ Planilha completa: https://example.invalid`;
   assert.equal(record.reported_total, 1);
   assert.equal(record.occurrences.length, 1);
   assert.match(record.occurrences[0].happened_text, /5566/);
+});
+
+test("mail route matches the observed Cesar Gmail -> Atendimento path", () => {
+  const observed = {
+    subject: "Caixa Pulse | Fechamento | 25/09/2026 | Manhã",
+    from: '"Tatá Sushi | Caixa Pulse" <cesar.spichencoff@gmail.com>',
+    to: "atendimento@tatasushi.com.br, financeiro@tatasushi.com.br",
+  };
+
+  assert.equal(CAIXA_PULSE_SENDER, "cesar.spichencoff@gmail.com");
+  assert.equal(CAIXA_PULSE_RECIPIENT, "atendimento@tatasushi.com.br");
+  assert.equal(matchesCaixaPulseMail(observed), true);
+  assert.equal(
+    matchesCaixaPulseMail({ ...observed, from: "outro@example.com" }),
+    false,
+  );
+  assert.equal(
+    matchesCaixaPulseMail({ ...observed, to: "financeiro@tatasushi.com.br" }),
+    false,
+  );
+  assert.equal(
+    matchesCaixaPulseMail({ ...observed, subject: "Outro fechamento" }),
+    false,
+  );
+});
+
+test("production Caixa Pulse ingestion is pinned to Atendimento INBOX", () => {
+  const source = readFileSync(new URL("./index.js", import.meta.url), "utf8");
+  const start = source.indexOf("async function runCaixaPulseIngestion");
+  const end = source.indexOf("async function runIfoodReviewIngestion", start);
+  const intake = source.slice(start, end);
+
+  assert.ok(start >= 0);
+  assert.match(intake, /const inbox = "INBOX"/);
+  assert.match(intake, /EXAMINE \$\{quote\(inbox\)\}/);
+  assert.match(intake, /FROM "cesar\.spichencoff@gmail\.com"/);
+  assert.match(intake, /TO "atendimento@tatasushi\.com\.br"/);
+  assert.match(intake, /HEADER\.FIELDS \(SUBJECT DATE FROM TO\)/);
+  assert.match(intake, /matchesCaixaPulseMail\(\{/);
+  assert.doesNotMatch(intake, /findSentFolder\(list\.raw\)/);
 });

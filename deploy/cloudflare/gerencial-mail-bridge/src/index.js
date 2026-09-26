@@ -2,7 +2,7 @@ import { connect } from "cloudflare:sockets";
 import PostalMime from "postal-mime";
 import { normalizeClosing } from "./normalize.js";
 import {
-  looksLikeCaixaPulseSubject,
+  matchesCaixaPulseMail,
   parseCaixaPulseMessage,
 } from "./caixa-pulse-intake.js";
 import {
@@ -472,13 +472,9 @@ async function runCaixaPulseIngestion(env, days = 21, maxMessages = 120) {
   };
 
   try {
-    const list = await session.command('LIST "" "*"');
-    if (!list.ok) throw new Error("LIST failed");
-    const sent = findSentFolder(list.raw);
-    if (!sent) throw new Error("Sent folder not found");
-
-    const examined = await session.command(`EXAMINE ${quote(sent)}`);
-    if (!examined.ok) throw new Error("SENT EXAMINE failed");
+    const inbox = "INBOX";
+    const examined = await session.command(`EXAMINE ${quote(inbox)}`);
+    if (!examined.ok) throw new Error("INBOX EXAMINE failed");
     const uidValidity =
       examined.raw.match(/\[UIDVALIDITY\s+(\d+)\]/i)?.[1] ?? "";
     if (!/^[1-9]\d*$/.test(uidValidity)) {
@@ -486,7 +482,7 @@ async function runCaixaPulseIngestion(env, days = 21, maxMessages = 120) {
     }
 
     const search = await session.command(
-      `UID SEARCH SINCE ${recentDate(days)}`,
+      `UID SEARCH SINCE ${recentDate(days)} FROM "cesar.spichencoff@gmail.com" TO "atendimento@tatasushi.com.br"`,
     );
     if (!search.ok) throw new Error("CAIXA_PULSE_SEARCH_FAILED");
 
@@ -498,7 +494,7 @@ async function runCaixaPulseIngestion(env, days = 21, maxMessages = 120) {
 
     for (const uid of uids) {
       const header = await session.command(
-        `UID FETCH ${uid} (BODY.PEEK[HEADER.FIELDS (SUBJECT DATE)] RFC822.SIZE)`,
+        `UID FETCH ${uid} (BODY.PEEK[HEADER.FIELDS (SUBJECT DATE FROM TO)] RFC822.SIZE)`,
       );
       if (!header.ok) {
         summary.errors.push({
@@ -509,7 +505,13 @@ async function runCaixaPulseIngestion(env, days = 21, maxMessages = 120) {
       }
 
       const subject = decodeMimeHeader(headerValue(header.raw, "Subject"));
-      if (!looksLikeCaixaPulseSubject(subject)) {
+      const sender = decodeMimeHeader(headerValue(header.raw, "From"));
+      const recipient = decodeMimeHeader(headerValue(header.raw, "To"));
+      if (!matchesCaixaPulseMail({
+        subject,
+        from: sender,
+        to: recipient,
+      })) {
         summary.skipped += 1;
         continue;
       }

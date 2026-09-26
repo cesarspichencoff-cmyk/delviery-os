@@ -1,3 +1,6 @@
+export const CAIXA_PULSE_SENDER = "cesar.spichencoff@gmail.com";
+export const CAIXA_PULSE_RECIPIENT = "atendimento@tatasushi.com.br";
+
 const CATEGORY_DOMAIN = new Map([
   ["problema no delivery", "DELIVERY"],
   ["reclamação de cliente", "CUSTOMER_VOICE"],
@@ -9,6 +12,18 @@ const CATEGORY_DOMAIN = new Map([
   ["problema no sushi", "SUSHI"],
   ["problema no caixa", "CASHIER"],
 ]);
+
+function emailAddresses(value) {
+  return [...String(value ?? "").toLowerCase().matchAll(
+    /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/g,
+  )].map((match) => match[0]);
+}
+
+export function matchesCaixaPulseMail({ subject, from, to }) {
+  return parseCaixaPulseSubject(subject) !== null &&
+    emailAddresses(from).includes(CAIXA_PULSE_SENDER) &&
+    emailAddresses(to).includes(CAIXA_PULSE_RECIPIENT);
+}
 
 function normalizeText(value) {
   return String(value ?? "")
