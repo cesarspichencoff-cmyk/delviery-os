@@ -67,7 +67,8 @@ Categorias operacionais para classificar cada item antes de escolher a caixa:
 **Regra atual da Cozinha (César, 26/09/2026):**
 - **prato grande da Cozinha → 1.500**;
 - **qualquer outro item da Cozinha → 650 selada**;
-- a regra vale também para Missoshiro e demais itens da Cozinha que não sejam prato grande.
+- exceção específica confirmada: **Missoshiro → pote de isopor**, não 650;
+- regra explícita do item vence a regra geral.
 
 Exemplos confirmados de 650 selada: **Guioza, Tempurá de milho, Ebi Spicy e Edamame**. A lista é exemplificativa, não exaustiva.
 
@@ -237,7 +238,7 @@ O seed foi reconciliado em 26/09/2026 para a fronteira prato × entrada. Status 
 | Tirashi | Tirashi | 1.000 | **Confirmado** | Não usar "Tiradito". |
 | Battera | **Baterá** de Salmão, Baterá de Spicy Tuna | 750 | **Possível alias** | Seed grafa "Baterá" (com acento). Doc diz "Battera com um T" — grafia a acertar. |
 | Ceviche | Ceviche | 650 selada | **Confirmado** | Não usar "Cerviche/Cerveithe". |
-| Missoshiru | **Missoshiro** | 650 selada | **Confirmado** | Seed grafa "Missoshiro"; segue a regra atual dos itens da Cozinha que não são prato grande. |
+| Missoshiru | **Missoshiro** | Pote de isopor | **Confirmado** | Seed grafa "Missoshiro"; embalagem confirmada por César em 26/09/2026. |
 | Fish Katsu / Chickenkatsu | Ambos existem como pratos distintos | Prato da Cozinha · 1.500 | **Confirmado** | A regra atual é por papel operacional: prato da Cozinha usa 1.500. |
 | Tempurá de Legumes / Camarão / Misto | Tempurá de Legumes, de Camarão, Misto | Quente 1.500 | **Confirmado** | Corrige a anotação antiga "camarão de legumes". |
 | Tempurá de milho | **Tempurá de milho doce** | 650 selada | **Possível alias** | Seed acrescenta "doce". |
