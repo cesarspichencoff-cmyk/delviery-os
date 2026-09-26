@@ -57,10 +57,14 @@ export function parseCaixaPulseSubject(subject) {
   };
 }
 
-function isOccurrenceHeader(line) {
+function occurrenceCategoryFromLine(line) {
   const key = String(line ?? "").trim();
-  if (CATEGORY_DOMAIN.has(key.toLowerCase())) return true;
-  return /^(problema|falha|reclama[cç][aã]o|ocorr[eê]ncia)\b/i.test(key);
+  const typed = key.match(/^Tipo:\s*(.+)$/i);
+  const category = (typed?.[1] ?? key).trim();
+  if (CATEGORY_DOMAIN.has(category.toLowerCase())) return category;
+  return /^(problema|falha|reclama[cç][aã]o|ocorr[eê]ncia)\b/i.test(category)
+    ? category
+    : null;
 }
 
 function domainForCategory(category) {
@@ -108,12 +112,13 @@ function parseOccurrences(lines) {
   for (const raw of lines) {
     const line = raw.trim();
     if (!line) continue;
-    if (/^Planilha completa:/i.test(line)) break;
+    if (/^Planilha(?:\s+completa)?:/i.test(line)) break;
 
-    if (isOccurrenceHeader(line)) {
+    const category = occurrenceCategoryFromLine(line);
+    if (category) {
       flush();
       current = {
-        category: line,
+        category,
         operator: "",
         status: "",
         reference: "",
@@ -195,12 +200,12 @@ export function parseCaixaPulseMessage({
 
   const body = normalizeText(text);
   const section = body.match(
-    /Ocorr[eê]ncias em aberto\s*\/\s*registradas([\s\S]*?)(?:Planilha completa:|$)/i,
+    /Ocorr[eê]ncias(?:\s+em aberto\s*\/\s*registradas|\s+do turno)([\s\S]*?)(?:Planilha(?:\s+completa)?:|$)/i,
   );
   if (!section) throw new Error("CAIXA_PULSE_OCCURRENCE_SECTION_MISSING");
 
   const totals = section[1].match(
-    /Total:\s*(\d+)\s*\|\s*Em aberto:\s*(\d+)/i,
+    /Total:\s*(\d+)\s*(?:\|\s*)?Em aberto:\s*(\d+)/i,
   );
   if (!totals) throw new Error("CAIXA_PULSE_TOTALS_MISSING");
 

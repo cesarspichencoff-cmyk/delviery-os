@@ -244,3 +244,50 @@ test("production Caixa Pulse ingestion is pinned to Atendimento INBOX", () => {
   assert.match(intake, /matchesCaixaPulseMail\(\{/);
   assert.doesNotMatch(intake, /findSentFolder\(list\.raw\)/);
 });
+
+test("real text/plain MIME layout from Caixa Pulse is parsed", () => {
+  const body = `Tatá Sushi | Caixa Pulse
+Fechamento do caixa — 25/09/2026 | Manhã
+
+RESUMO DO FECHAMENTO
+Operador: —
+Turno: Manhã
+
+OCORRÊNCIAS DO TURNO
+Total: 2
+Em aberto: 0
+Tipo: Reclamação de cliente
+Operador: Ana Clara | Status: Concluído
+Pedido / Mesa / Referência: 3401
+O que aconteceu: Cozinha assinalou na caixa como guioza e foi um tempura de milho
+Ação tomada: Feito reembolso
+
+Tipo: Reclamação de cliente
+Operador: Ana Clara | Status: Concluído
+Pedido / Mesa / Referência: 6406
+O que aconteceu: Pedido foi sem o mochi.
+Ação tomada: Foi feito reembolso.
+César vai verificar na câmera.
+Planilha:
+https://example.invalid`;
+
+  const record = parseCaixaPulseMessage({
+    uid: 106,
+    uidValidity: "1641920722",
+    subject: "Caixa Pulse | Fechamento | 25/09/2026 | Manhã",
+    sentAt: "2026-09-25T19:01:12Z",
+    text: body,
+    readOnlyVerified: true,
+  });
+
+  assert.equal(record.reported_total, 2);
+  assert.equal(record.parsed_total, 2);
+  assert.equal(record.open_total, 0);
+  assert.equal(record.source_health, "HEALTHY");
+  assert.deepEqual(
+    record.occurrences.map((item) => item.domain),
+    ["CUSTOMER_VOICE", "CUSTOMER_VOICE"],
+  );
+  assert.equal(record.occurrences[0].reference, "3401");
+  assert.match(record.occurrences[1].action_text, /câmera/);
+});
