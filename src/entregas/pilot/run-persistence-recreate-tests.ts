@@ -164,8 +164,29 @@ async function api(
 }
 
 const TRIP = "viagem-persistencia-1";
-const AT1 = "2026-07-26T10:00:00.000Z";
-const AT2 = "2026-07-26T10:00:30.000Z";
+
+/*
+ * O "agora" da suíte: lido UMA vez, e todo carimbo deriva dele.
+ *
+ * Antes eram datas civis escritas à mão (2026-07-26), e o validador recusa
+ * ponto com mais de 30 dias (`impossible_timestamp`): a suíte venceu sozinha
+ * por volta de 2026-08-25, sem nenhuma linha de código mudar. O servidor sob
+ * teste é processo filho, na mesma máquina, e julga a janela com o mesmo
+ * relógio; então a distância entre cada ponto e o "agora" do validador é a
+ * que está escrita aqui, em qualquer data civil.
+ * `test:entregas:persistence-recreate:relogio` roda esta suíte com a data
+ * civil deslocada e prova isso.
+ */
+const AGORA = Date.now();
+const MINUTO = 60_000;
+const DIA = 24 * 60 * MINUTO;
+const carimbo = (ms: number): string => new Date(ms).toISOString();
+const AT1 = carimbo(AGORA - 10 * MINUTO);
+/** 30 s depois de AT1 — a mesma diferença das datas fixas de antes. */
+const AT2 = carimbo(Date.parse(AT1) + 30_000);
+/** Controles fora da janela do validador, um de cada lado. */
+const MAIS_DE_30_DIAS = carimbo(AGORA - 31 * DIA);
+const MAIS_DE_24H_NO_FUTURO = carimbo(AGORA + 25 * 60 * MINUTO);
 
 function gpsPoint(occurredAt: string, latOffset = 0): Record<string, unknown> {
   return {
@@ -257,6 +278,27 @@ async function main(): Promise<void> {
         body: { device_id: DEVICE, points: [gpsPoint(AT1), gpsPoint(AT2, 0.0004)] },
       });
       assert.equal(r.json.accepted, 2, JSON.stringify(r.json));
+    });
+
+    await test("4b. controle: ponto de MAIS de 30 dias continua recusado (impossible_timestamp)", async () => {
+      const r = await api("/api/gps/batch", {
+        method: "POST",
+        token: RIDER,
+        body: { device_id: DEVICE, points: [gpsPoint(MAIS_DE_30_DIAS)] },
+      });
+      assert.equal(r.json.accepted, 0, JSON.stringify(r.json));
+      assert.equal(r.json.rejected, 1, JSON.stringify(r.json));
+      assert.deepEqual(r.json.reasons, { impossible_timestamp: 1 });
+    });
+
+    await test("4c. controle: ponto de mais de 24 h no futuro continua recusado", async () => {
+      const r = await api("/api/gps/batch", {
+        method: "POST",
+        token: RIDER,
+        body: { device_id: DEVICE, points: [gpsPoint(MAIS_DE_24H_NO_FUTURO)] },
+      });
+      assert.equal(r.json.accepted, 0, JSON.stringify(r.json));
+      assert.deepEqual(r.json.reasons, { impossible_timestamp: 1 });
     });
 
     let timelineAntes = 0;
