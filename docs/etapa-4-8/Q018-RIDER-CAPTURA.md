@@ -334,3 +334,9 @@ políticas têm as **5** que `PolicyStore.applyServerPolicies` lê (`flags.gps_c
 
 **Não provado:** o Kotlin não compilou aqui e nada rodou em aparelho. Quem prova é o Q6 do Foxxy: o
 diálogo aparece e, depois do OK, a captura liga.
+
+**Regressão dirigida** (`5e3dfc1`; o diff desde `df481bd` não toca servidor, plataforma, lab, deploy,
+migration nem apps): **13 executados = 12 PASS + 1 FAIL_PREEXISTENTE + 0 FAIL_NOVO**. PASS: typecheck,
+`build:platform`, `test:entregas` inteira, android 40, device-api 40, `rider-bridge` 27/27, platform
+44, skills, visual-order, m1-bridge, ensaio 39/39 e a suíte adversarial 26/26 (4 + 21 + 1, zero
+cegas). FAIL_PREEXISTENTE: governança (G6b, G9), saída idêntica à de `df481bd` fora o cabeçalho.
