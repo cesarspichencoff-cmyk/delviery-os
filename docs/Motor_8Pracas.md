@@ -36,8 +36,8 @@ Nome de banco/código → rótulo na interface. **Produção** gera sobrecarga; 
 | 1 | `combinados` | Combinados | produção | 20 |
 | 2 | `duplas` | Duplas | produção | 64 |
 | 3 | `enrolados` | Enrolados | produção | 16 |
-| 4 | `enrolados_quentes` | Enrolados Quentes | produção | 11 |
-| 5 | `cozinha_quentes` | **Quentes** (Cozinha / Quentes) | produção | 31 |
+| 4 | `enrolados_quentes` | **Sushi Quentes** | produção | 11 |
+| 5 | `cozinha_quentes` | **Cozinha** | produção | 31 |
 | 6 | `sobremesa` | Sobremesa | conferência | 9 |
 | 7 | `bar_bebidas` | Bar | conferência | 36 |
 | 8 | `montagem_outros` | Montagem | conferência | 5 |

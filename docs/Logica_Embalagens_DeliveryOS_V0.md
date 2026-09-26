@@ -1,5 +1,7 @@
 # Lógica de Embalagens — DeliveryOS V0
 
+> **Correção humana vigente — 26/09/2026:** ver `Correcao_Operacional_2026-09-26.md`. Em conflito, prevalece a correção mais recente.
+
 > Documentação técnica oficial da lógica de embalagem do delivery, transcrita fielmente do documento
 > operacional revisado com o César (`Logica_Embalagens_DeliveryOS_V0_Final_Dyo.docx`). **É base de
 > entendimento, não código.** Não deve alterar o sistema sem revisão técnica e validação operacional.
@@ -64,10 +66,12 @@ Categorias operacionais para classificar cada item antes de escolher a caixa:
 **Itens confirmados para caixa 650 selada:** Guioza · Edamame · Missoshiru · Tempurá de milho ·
 Tartar de salmão · Tartar de atum spicy · Tuna Shiso · Ceviche · Sunomono.
 
-**Itens quentes grandes em caixa 1.500** (conforme o documento; grafias a validar na §14/§15): Beef
-com Nirá · Salmão grelhado · Katsu Don · Fish Katsu · Yakisoba (em geral) · Tempurá de Legumes ·
-Tempurá de Camarão · Tempurá Misto · Frango Teriyaki · "Shikentatsu" (grafia a validar) · outros
-pratos quentes grandes equivalentes.
+**Regra atual da Cozinha (César, 26/09/2026):**
+- item classificado como **prato** da Cozinha → **1.500**;
+- item classificado como **entrada** não herda 1.500;
+- regra explícita do item vence a regra geral.
+
+Guioza e Tempurá de milho são entradas com **650 selada**. Ebi Spicy é entrada e permanece **sem caixa inferida** nesta revisão.
 
 ## 5. Regras por categoria
 
@@ -101,9 +105,10 @@ pratos quentes grandes equivalentes.
 
 | Quantidade | Caixa |
 |---|---|
-| 1 | 450 |
-| 2 a 4 | 750 |
-| 5 ou mais | 1.500 (pouco comum, mas a regra é 1.500) |
+| 1 | 240 |
+| 2 a 4 | 450 |
+| 5 a 7 | 750 |
+| 8 ou mais | 1.500 |
 
 **Itens de caixa fixa:** Battera → sempre 750 · Carpaccio de salmão → sempre 750 · Tirashi → sempre
 1.000 (nunca outra caixa).
