@@ -11,6 +11,8 @@ import { buildExpectedBarrierAssessments } from
   "../src/contextKernel/expectedBarrier";
 import { buildBarrierEvidenceDebtPlan } from
   "../src/contextKernel/barrierEvidenceDebt";
+import { buildBarrierCapturePlan } from
+  "../src/contextKernel/barrierCaptureContract";
 
 type SourceRow = Record<string, unknown>;
 
@@ -76,6 +78,25 @@ const expectedBarriers = buildExpectedBarrierAssessments(adaptation.evidence);
 const barrierEvidenceDebt = buildBarrierEvidenceDebtPlan({
   assessments: expectedBarriers,
 });
+const historicalCapturePlans = adaptation.evidence.map((episode) =>
+  buildBarrierCapturePlan(
+    episode.mechanism_key === "OMISSION"
+      ? "ITEM_MISSING"
+      : episode.mechanism_key === "WRONG_ITEM"
+        ? "WRONG_ITEM"
+        : "OTHER",
+  ),
+);
+const historicalMatrixEpisodes = historicalCapturePlans.filter(
+  (plan) => plan.show_matrix,
+).length;
+const historicalMatrixSelections = historicalCapturePlans.reduce(
+  (sum, plan) => sum + plan.prompts.length,
+  0,
+);
+const historicalSubtypeSelections = adaptation.evidence.length;
+const historicalTotalSelections =
+  historicalSubtypeSelections + historicalMatrixSelections;
 
 const recurrenceDays = followup.followups
   .filter(
@@ -178,6 +199,21 @@ console.log(JSON.stringify({
       expectedBarriers.barrier_failure_proven_count,
     barrier_compliance_proven_count:
       expectedBarriers.barrier_compliance_proven_count,
+  },
+  barrier_capture_shadow: {
+    basis: "RULE_INFERRED_HISTORICAL_ESTIMATE",
+    live_form_modified: false,
+    existing_type_taxonomy_preserved: true,
+    subtype_selections_if_one_per_occurrence:
+      historicalSubtypeSelections,
+    matrix_triggered_episode_count: historicalMatrixEpisodes,
+    matrix_row_selections: historicalMatrixSelections,
+    total_incremental_selections: historicalTotalSelections,
+    average_incremental_selections_per_occurrence:
+      historicalTotalSelections / adaptation.evidence.length,
+    capture_evidence_basis: "OPERATOR_SELF_REPORT",
+    independent_execution_proof_claimed: false,
+    external_effects_authorized: false,
   },
   barrier_evidence_debt: {
     debt_count: barrierEvidenceDebt.debt_count,
