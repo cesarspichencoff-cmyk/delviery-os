@@ -1,11 +1,11 @@
 {
-  "schema_version": "0.9",
+  "schema_version": "1.0",
   "project_id": "project.deliveryos",
   "project": "DeliveryOS / TATÁ Edge",
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "design/tata-edge-runtime-foundation-v1",
-  "checkpoint_type": "WORK_BRANCH_CAIXA_PULSE_CAPTURE_SHADOW_PROVEN",
-  "state_basis_head": "85e090a137581643653c24ea93cf882df935aed2",
+  "checkpoint_type": "WORK_BRANCH_TALLY_CAPTURE_IDENTITY_WORLD_PROVEN",
+  "state_basis_head": "96ad9fbfce7161523b7e2bb09039e0b73ae5cbdf",
   "verified_state_refs": [
     "deploy/cloudflare/gerencial-mail-bridge/",
     "deploy/cloudflare/tata-edge-cloud-shadow/",
@@ -33,7 +33,11 @@
     "demo/context_kernel_barrier_evidence_debt_proof.ts",
     "docs/context/EVIDENCE_CAIXA_PULSE_CAPTURE_SURFACE_2026-09-26.md",
     "src/contextKernel/barrierCaptureContract.ts",
-    "demo/context_kernel_barrier_capture_contract_proof.ts"
+    "demo/context_kernel_barrier_capture_contract_proof.ts",
+    "docs/context/EVIDENCE_TALLY_CAPTURE_IDENTITY_2026-09-26.md",
+    "src/contextKernel/tallyCaptureSurface.ts",
+    "demo/context_kernel_tally_capture_surface_proof.ts",
+    "tools/probe_tally_caixa_pulse.mjs"
   ],
   "verified_state": [
     "The canonical operational mail bridge is cesar-gerencial-mail-bridge reading Atendimento Sent read-only with EXAMINE + BODY.PEEK and D1 cesar-gerencial-mail-bridge.",
@@ -88,11 +92,20 @@
     "All proposed barrier answers are OPERATOR_SELF_REPORT evidence only. Reported done does not prove compliance; reported not done does not prove barrier failure; unable to confirm remains UNKNOWN; attention authority remains NONE.",
     "Historical shadow replay over 69 canonical occurrences estimates 30 matrix-triggered episodes, 120 matrix-row selections plus 69 subtype selections: 189 incremental selections total, average 2.739130434782609 per occurrence.",
     "Commit 85e090a137581643653c24ea93cf882df935aed2 passed the complete local Edge/Context/Watch regression with exit code 0, including Watch 14/14, cloud producer 19/19 and gerencial-mail-bridge 40/40.",
-    "Commit 85e090a137581643653c24ea93cf882df935aed2 passed GitHub Actions Edge Shadow CI run 36216491367 successfully."
+    "Commit 85e090a137581643653c24ea93cf882df935aed2 passed GitHub Actions Edge Shadow CI run 36216491367 successfully.",
+    "The user-provided Tally links are now identity-proven: eqAKzJ is 'Caixa Pulse | Registro de Turno' and ZjVv1a is 'Caixa Pulse | OcorrÃªncia de Turno'.",
+    "Both live Tally forms resolve to workspace 3xP0bd. The shift register currently has 76 blocks and the occurrence form 31 blocks.",
+    "Read-only live fingerprinting pinned eqAKzJ at SHA-256 d452aefd1687d8071e8f1776efc6147c07f846ba468a015e49720379e52dee5c and ZjVv1a at SHA-256 51f07f02436057199af4d8a9782c37945b9bc38a3f9d54db8104abff9b73d251.",
+    "The occurrence form's current stable input-group UUIDs are pinned for Operador, Data, Turno, Tipo de OcorrÃªncia, Pedido/Mesa/ReferÃªncia, O que aconteceu?, AÃ§Ã£o Tomada? and Status; the first shadow pilot must preserve them.",
+    "The occurrence form source independently confirms the exact title 'O que aconteceu?\\n', proving the existing trailing-newline mapping debt in the Caixa Executivo workbook.",
+    "The Tally editor routes are https://tally.so/forms/eqAKzJ and https://tally.so/forms/ZjVv1a. Unauthenticated access redirects to Tally login; authenticated editor access has not been claimed.",
+    "A read-only live Tally drift probe now compares form/workspace/block identity and canonical SHA-256 against pinned snapshots. Current result for both forms is PASS.",
+    "Commit 96ad9fbfce7161523b7e2bb09039e0b73ae5cbdf passed the complete local Edge/Context/Watch regression with exit code 0, including the new Tally capture-surface gate, Watch 14/14, cloud producer 19/19 and gerencial-mail-bridge 40/40.",
+    "Commit 96ad9fbfce7161523b7e2bb09039e0b73ae5cbdf passed GitHub Actions Edge Shadow CI run 36217161124 successfully."
   ],
   "proof": {
-    "latest_green_ci_run": "36216491367",
-    "latest_green_ci_commit": "85e090a137581643653c24ea93cf882df935aed2",
+    "latest_green_ci_run": "36217161124",
+    "latest_green_ci_commit": "96ad9fbfce7161523b7e2bb09039e0b73ae5cbdf",
     "mail_bridge_d1_id": "fc0ae418-599d-41da-b849-5fada0cc08e2",
     "watch_d1_id": "75516adf-6196-460a-82d4-9aa6925dbed4",
     "closing_rows": 54,
@@ -115,7 +128,7 @@
     "watch_snapshot_history_rows": 91,
     "watch_current_source_watermark": "2026-09-25T02:57:22.000Z",
     "scheduled_replay_created_new_watch_history": false,
-    "latest_green_ci_head": "85e090a137581643653c24ea93cf882df935aed2",
+    "latest_green_ci_head": "96ad9fbfce7161523b7e2bb09039e0b73ae5cbdf",
     "episode_alignment": "PROVEN_REAL_SOURCE_ALIGNMENT_PLUS_SYNTHETIC_CONTRACT",
     "episode_alignment_d1_dates": 54,
     "episode_alignment_full_day_dates": 39,
@@ -193,9 +206,21 @@
     "capture_shadow_live_form_modified": false,
     "capture_shadow_attention_authority": "NONE",
     "capture_shadow_external_effects": false,
-    "capture_shadow_ci_run": "36216491367"
+    "capture_shadow_ci_run": "36216491367",
+    "tally_capture_identity_commit": "96ad9fbfce7161523b7e2bb09039e0b73ae5cbdf",
+    "tally_workspace_id": "3xP0bd",
+    "tally_shift_register_form_id": "eqAKzJ",
+    "tally_occurrence_form_id": "ZjVv1a",
+    "tally_shift_register_block_count": 76,
+    "tally_occurrence_block_count": 31,
+    "tally_shift_register_sha256": "d452aefd1687d8071e8f1776efc6147c07f846ba468a015e49720379e52dee5c",
+    "tally_occurrence_sha256": "51f07f02436057199af4d8a9782c37945b9bc38a3f9d54db8104abff9b73d251",
+    "tally_live_probe_status": "PASS",
+    "tally_live_probe_read_only": true,
+    "tally_live_form_modified": false,
+    "tally_live_workbook_modified": false
   },
-  "next_action": "Obtain the exact private Tally occurrence-form/editor identity and prove, in a shadow/copy or controlled test submission, how the proposed conditional barrier matrix serializes into Google Sheets and whether the existing panel/mail/source contracts stay compatible. Do not edit the live Tally form or live workbook before that proof. The current environment has no direct Tally connector; connected Gmail/Drive and public search did not reveal the private form ID, and metered browser automation has not been authorized.",
+  "next_action": "Obtain authenticated access to the Tally editor route for occurrence form ZjVv1a, then duplicate/create a shadow form first. In that shadow copy, implement the already-proven one-click subtype plus conditional four-row barrier capture, connect it to an isolated Google Sheet, perform controlled test submissions, observe exact Google Sheets serialization, and run compatibility proof against the pinned live occurrence-form identity before any production cutover.",
   "unknowns": [
     "No real team-sent iFood review batch has been admitted; extraction quality and attachment shape remain unknown.",
     "No defensible iFood review freshness cadence has been established; its freshness must remain UNKNOWN.",
@@ -209,7 +234,10 @@
     "The actual Caixa Pulse capture/generator surface for the seven future barrier-evidence fields has not yet been verified; those fields are not deployed.",
     "The private Tally form/editor ID for 'Caixa Pulse | OcorrÃªncia de Turno' is not currently loaded or discoverable from connected Gmail/Drive/public search.",
     "The exact Google Sheets column serialization of a conditional Tally matrix has not been proven on the Caixa Pulse integration.",
-    "The live workbook mapping debt for 'O que aconteceu?' trailing-newline normalization remains open and has not been changed."
+    "The live workbook mapping debt for 'O que aconteceu?' trailing-newline normalization remains open and has not been changed.",
+    "Authenticated Tally editor access for form ZjVv1a is not currently available through the connected tools/session; unauthenticated editor access redirects to login.",
+    "Exact Google Sheets serialization of the proposed conditional Tally matrix remains UNKNOWN until a shadow/copy submission is observed.",
+    "No live Tally form or Caixa Executivo workbook write has been authorized or performed at this checkpoint."
   ],
   "authority": {
     "continuity_update": "AUTHORIZED_METADATA_WRITE_WITHIN_PROJECT_SCOPE",
