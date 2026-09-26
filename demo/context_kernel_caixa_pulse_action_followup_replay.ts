@@ -9,6 +9,8 @@ import { buildActionFollowupMemory } from
   "../src/contextKernel/actionFollowup";
 import { buildExpectedBarrierAssessments } from
   "../src/contextKernel/expectedBarrier";
+import { buildBarrierEvidenceDebtPlan } from
+  "../src/contextKernel/barrierEvidenceDebt";
 
 type SourceRow = Record<string, unknown>;
 
@@ -71,6 +73,9 @@ const followup = buildActionFollowupMemory({
   coverage_exhaustive: false,
 });
 const expectedBarriers = buildExpectedBarrierAssessments(adaptation.evidence);
+const barrierEvidenceDebt = buildBarrierEvidenceDebtPlan({
+  assessments: expectedBarriers,
+});
 
 const recurrenceDays = followup.followups
   .filter(
@@ -173,6 +178,21 @@ console.log(JSON.stringify({
       expectedBarriers.barrier_failure_proven_count,
     barrier_compliance_proven_count:
       expectedBarriers.barrier_compliance_proven_count,
+  },
+  barrier_evidence_debt: {
+    debt_count: barrierEvidenceDebt.debt_count,
+    unique_capture_requirement_count:
+      barrierEvidenceDebt.unique_capture_requirement_count,
+    route_counts: barrierEvidenceDebt.route_counts,
+    cesar_route_count: barrierEvidenceDebt.cesar_route_count,
+    barrier_failure_proven_count:
+      barrierEvidenceDebt.barrier_failure_proven_count,
+    barrier_compliance_proven_count:
+      barrierEvidenceDebt.barrier_compliance_proven_count,
+    direct_attention_reasons_created:
+      barrierEvidenceDebt.direct_attention_reasons_created,
+    external_effects_authorized:
+      barrierEvidenceDebt.external_effects_authorized,
   },
   action_followup: {
     classified_action_episode_count:
