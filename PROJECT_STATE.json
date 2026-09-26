@@ -1,11 +1,11 @@
 {
-  "schema_version": "0.8",
+  "schema_version": "0.9",
   "project_id": "project.deliveryos",
   "project": "DeliveryOS / TATÁ Edge",
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "design/tata-edge-runtime-foundation-v1",
-  "checkpoint_type": "WORK_BRANCH_CAIXA_PULSE_WORLD_PROVEN_BARRIER_EVIDENCE_DEBT_PROVEN",
-  "state_basis_head": "30d99b4002b1fb1e461eb494029d5bcc80bb601f",
+  "checkpoint_type": "WORK_BRANCH_CAIXA_PULSE_CAPTURE_SHADOW_PROVEN",
+  "state_basis_head": "85e090a137581643653c24ea93cf882df935aed2",
   "verified_state_refs": [
     "deploy/cloudflare/gerencial-mail-bridge/",
     "deploy/cloudflare/tata-edge-cloud-shadow/",
@@ -30,7 +30,10 @@
     "demo/context_kernel_expected_barrier_proof.ts",
     "docs/context/EVIDENCE_BARRIER_EVIDENCE_DEBT_ROUTING_2026-09-26.md",
     "src/contextKernel/barrierEvidenceDebt.ts",
-    "demo/context_kernel_barrier_evidence_debt_proof.ts"
+    "demo/context_kernel_barrier_evidence_debt_proof.ts",
+    "docs/context/EVIDENCE_CAIXA_PULSE_CAPTURE_SURFACE_2026-09-26.md",
+    "src/contextKernel/barrierCaptureContract.ts",
+    "demo/context_kernel_barrier_capture_contract_proof.ts"
   ],
   "verified_state": [
     "The canonical operational mail bridge is cesar-gerencial-mail-bridge reading Atendimento Sent read-only with EXAMINE + BODY.PEEK and D1 cesar-gerencial-mail-bridge.",
@@ -75,11 +78,21 @@
     "The barrier-debt adapter hard-blocks CESAR routing from Academia mapping alone; a separate direct NeedsMe proof is required before CÃ©sar can become the investigation route.",
     "Missing barrier execution evidence remains UNKNOWN and proves neither barrier failure nor compliance, guilt nor cause; direct attention reasons remain 0 and external effects remain unauthorized.",
     "Commit 30d99b4002b1fb1e461eb494029d5bcc80bb601f passed the complete local Edge/Context/Watch regression with exit code 0, including Watch 14/14, cloud producer 19/19 and gerencial-mail-bridge 40/40.",
-    "Commit 30d99b4002b1fb1e461eb494029d5bcc80bb601f passed GitHub Actions Edge Shadow CI run 36215907408 successfully."
+    "Commit 30d99b4002b1fb1e461eb494029d5bcc80bb601f passed GitHub Actions Edge Shadow CI run 36215907408 successfully.",
+    "Read-only Google Sheets inspection identified the live Caixa Pulse workbook as 'Caixa Executivo'; its guide names the capture forms 'Caixa Pulse | Registro de Turno' and 'Caixa Pulse | OcorrÃªncia de Turno', connected to pulse_respostas and ocorrencias_respostas.",
+    "The live occurrence response schema currently contains submission metadata plus Operador, Data, Turno, Tipo de OcorrÃªncia, Pedido/Mesa/ReferÃªncia, O que aconteceu?, AÃ§Ã£o Tomada? and Status; no barrier-execution evidence fields are present.",
+    "The workbook's own mapping audit marks 'O que aconteceu?' as FALTANDO because the observed source header contains a trailing newline. This is mapping debt, not evidence that occurrence text is absent; the live workbook was not modified.",
+    "Official Tally documentation verified conditional show/hide/required logic, matrix questions and Google Sheets integration are available without a paid plan; the exact live matrix-to-Sheet serialization for Caixa Pulse remains unproven.",
+    "Private Tally form IDs were not found in connected Gmail/Drive or public search. No metered browser automation was used.",
+    "The shadow barrier-capture contract preserves the existing Tipo de OcorrÃªncia taxonomy, adds a one-click operational subtype, shows four relevant checks for ITEM_MISSING or WRONG_ITEM and no matrix for OTHER.",
+    "All proposed barrier answers are OPERATOR_SELF_REPORT evidence only. Reported done does not prove compliance; reported not done does not prove barrier failure; unable to confirm remains UNKNOWN; attention authority remains NONE.",
+    "Historical shadow replay over 69 canonical occurrences estimates 30 matrix-triggered episodes, 120 matrix-row selections plus 69 subtype selections: 189 incremental selections total, average 2.739130434782609 per occurrence.",
+    "Commit 85e090a137581643653c24ea93cf882df935aed2 passed the complete local Edge/Context/Watch regression with exit code 0, including Watch 14/14, cloud producer 19/19 and gerencial-mail-bridge 40/40.",
+    "Commit 85e090a137581643653c24ea93cf882df935aed2 passed GitHub Actions Edge Shadow CI run 36216491367 successfully."
   ],
   "proof": {
-    "latest_green_ci_run": "36215907408",
-    "latest_green_ci_commit": "30d99b4002b1fb1e461eb494029d5bcc80bb601f",
+    "latest_green_ci_run": "36216491367",
+    "latest_green_ci_commit": "85e090a137581643653c24ea93cf882df935aed2",
     "mail_bridge_d1_id": "fc0ae418-599d-41da-b849-5fada0cc08e2",
     "watch_d1_id": "75516adf-6196-460a-82d4-9aa6925dbed4",
     "closing_rows": 54,
@@ -102,7 +115,7 @@
     "watch_snapshot_history_rows": 91,
     "watch_current_source_watermark": "2026-09-25T02:57:22.000Z",
     "scheduled_replay_created_new_watch_history": false,
-    "latest_green_ci_head": "30d99b4002b1fb1e461eb494029d5bcc80bb601f",
+    "latest_green_ci_head": "85e090a137581643653c24ea93cf882df935aed2",
     "episode_alignment": "PROVEN_REAL_SOURCE_ALIGNMENT_PLUS_SYNTHETIC_CONTRACT",
     "episode_alignment_d1_dates": 54,
     "episode_alignment_full_day_dates": 39,
@@ -166,9 +179,23 @@
     "barrier_evidence_route_capture_next_time": 120,
     "barrier_evidence_route_keep_unknown": 0,
     "barrier_evidence_direct_attention_reasons": 0,
-    "barrier_evidence_external_effects": false
+    "barrier_evidence_external_effects": false,
+    "barrier_capture_shadow_commit": "85e090a137581643653c24ea93cf882df935aed2",
+    "caixa_pulse_capture_workbook": "Caixa Executivo",
+    "caixa_pulse_occurrence_form_name": "Caixa Pulse | OcorrÃªncia de Turno",
+    "capture_shadow_historical_occurrences": 69,
+    "capture_shadow_matrix_triggered_episodes": 30,
+    "capture_shadow_matrix_row_selections": 120,
+    "capture_shadow_subtype_selections": 69,
+    "capture_shadow_total_incremental_selections": 189,
+    "capture_shadow_average_incremental_selections_per_occurrence": 2.739130434782609,
+    "capture_shadow_evidence_basis": "OPERATOR_SELF_REPORT",
+    "capture_shadow_live_form_modified": false,
+    "capture_shadow_attention_authority": "NONE",
+    "capture_shadow_external_effects": false,
+    "capture_shadow_ci_run": "36216491367"
   },
-  "next_action": "Locate and verify the real Caixa Pulse capture surface behind the operational source, then determine whether the seven reusable structured barrier-evidence requirements can be captured there with low friction. Prefer read-only inspection and a shadow contract first; do not change the live operational sheet/form until the effect boundary is reviewed. CAPTURE_NEXT_TIME remains a design route until that surface is world-proven.",
+  "next_action": "Obtain the exact private Tally occurrence-form/editor identity and prove, in a shadow/copy or controlled test submission, how the proposed conditional barrier matrix serializes into Google Sheets and whether the existing panel/mail/source contracts stay compatible. Do not edit the live Tally form or live workbook before that proof. The current environment has no direct Tally connector; connected Gmail/Drive and public search did not reveal the private form ID, and metered browser automation has not been authorized.",
   "unknowns": [
     "No real team-sent iFood review batch has been admitted; extraction quality and attachment shape remain unknown.",
     "No defensible iFood review freshness cadence has been established; its freshness must remain UNKNOWN.",
@@ -179,7 +206,10 @@
     "Caixa Pulse closing emails are not guaranteed exhaustive ground truth for every operational event; absence claims remain bounded to loaded full-day email evidence.",
     "Independent post-action outcome evidence is not yet systematically linked; current action follow-up proves later same-family recurrence only, so action effectiveness remains UNKNOWN.",
     "Expected-barrier execution is UNKNOWN for all 30 currently mapped OMISSION/WRONG_ITEM episodes; no trusted incident-level evidence yet proves whether each barrier was executed.",
-    "The actual Caixa Pulse capture/generator surface for the seven future barrier-evidence fields has not yet been verified; those fields are not deployed."
+    "The actual Caixa Pulse capture/generator surface for the seven future barrier-evidence fields has not yet been verified; those fields are not deployed.",
+    "The private Tally form/editor ID for 'Caixa Pulse | OcorrÃªncia de Turno' is not currently loaded or discoverable from connected Gmail/Drive/public search.",
+    "The exact Google Sheets column serialization of a conditional Tally matrix has not been proven on the Caixa Pulse integration.",
+    "The live workbook mapping debt for 'O que aconteceu?' trailing-newline normalization remains open and has not been changed."
   ],
   "authority": {
     "continuity_update": "AUTHORIZED_METADATA_WRITE_WITHIN_PROJECT_SCOPE",
