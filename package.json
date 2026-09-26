@@ -14,7 +14,7 @@
     "test:edge:runtime": "tsc && node dist/demo/edge_runtime_proof.js",
     "test:edge:ifood": "tsc && node dist/demo/edge_ifood_shadow_proof.js",
     "test:edge:print": "tsc && node dist/demo/edge_print_shadow_proof.js",
-    "test:edge:shadow:all": "npm run test:edge:shadow && npm run test:edge:runtime && npm run test:edge:ifood && npm run test:edge:print && npm run test:edge:sources && npm run test:edge:projection && npm run test:edge:admission && npm run test:edge:browser && npm run test:edge:windows-print && npm run test:edge:transport && npm run test:edge:powershell-print && npm run test:edge:envelope && npm run test:edge:store-recovery && npm run test:edge:attention && npm run test:edge:store-port && npm run test:edge:promotion && npm run test:edge:manager-snapshot && npm run test:context:foundation && npm run test:context:capture-schedule && npm run test:context:source-adapters && npm run test:context:attention-policy && npm run test:context:cycle && npm run test:context:source-runtime && npm run test:context:temporal-baseline && npm run test:context:temporal-outcome-alignment && npm run test:edge:watch-handoff && npm run test:edge:watch-transport && npm run test:watch-shadow-worker && npm run test:edge:cloud-producer && npm run test:gerencial-mail-bridge",
+    "test:edge:shadow:all": "npm run test:edge:shadow && npm run test:edge:runtime && npm run test:edge:ifood && npm run test:edge:print && npm run test:edge:sources && npm run test:edge:projection && npm run test:edge:admission && npm run test:edge:browser && npm run test:edge:windows-print && npm run test:edge:transport && npm run test:edge:powershell-print && npm run test:edge:envelope && npm run test:edge:store-recovery && npm run test:edge:attention && npm run test:edge:store-port && npm run test:edge:promotion && npm run test:edge:manager-snapshot && npm run test:context:foundation && npm run test:context:capture-schedule && npm run test:context:source-adapters && npm run test:context:attention-policy && npm run test:context:cycle && npm run test:context:source-runtime && npm run test:context:temporal-baseline && npm run test:context:episode-alignment && npm run test:context:temporal-outcome-alignment && npm run test:edge:watch-handoff && npm run test:edge:watch-transport && npm run test:watch-shadow-worker && npm run test:edge:cloud-producer && npm run test:gerencial-mail-bridge",
     "test:edge:sources": "tsc && node dist/demo/edge_sources_bridge_proof.js",
     "test:edge:projection": "tsc && node dist/demo/edge_projection_rebuild_proof.js",
     "test:edge:admission": "tsc && node dist/demo/edge_admission_pipeline_proof.js",
@@ -44,7 +44,8 @@
     "smoke:edge:watch-shadow-live": "tsc && node dist/demo/edge_watch_shadow_http_smoke.js",
     "test:edge:cloud-producer": "node --test deploy/cloudflare/tata-edge-cloud-shadow/test/*.test.mjs",
     "test:gerencial-mail-bridge": "node --test deploy/cloudflare/gerencial-mail-bridge/src/*.test.mjs",
-    "smoke:edge:cloud-producer-live": "node deploy/cloudflare/tata-edge-cloud-shadow/smoke-live.mjs"
+    "smoke:edge:cloud-producer-live": "node deploy/cloudflare/tata-edge-cloud-shadow/smoke-live.mjs",
+    "test:context:episode-alignment": "tsc && node dist/demo/context_kernel_episode_alignment_proof.js"
   },
   "devDependencies": {
     "@types/node": "20.14.10",
