@@ -1,0 +1,17 @@
+name = "cesar-gerencial-watch-bridge"
+main = "src/worker.mjs"
+compatibility_date = "2026-09-25"
+workers_dev = true
+preview_urls = false
+
+[observability]
+enabled = true
+head_sampling_rate = 1
+
+[[d1_databases]]
+binding = "DB"
+database_name = "cesar-gerencial-watch"
+database_id = "__D1_DATABASE_ID__"
+
+[triggers]
+crons = ["0 * * * *"]
