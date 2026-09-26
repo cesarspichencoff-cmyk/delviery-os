@@ -29,6 +29,8 @@ cardápio real (seed, 199 itens)
 
 ## 3. As 8 praças (vocabulário oficial)
 
+> Correção humana de 26/09/2026: os IDs internos foram preservados, mas `enrolados_quentes` é exibido como **Sushi Quentes** e `cozinha_quentes` como **Cozinha**.
+
 Nome de banco/código → rótulo na interface. **Produção** gera sobrecarga; **Conferência/Montagem** gera esquecimento/fechamento/conferência/sacola.
 
 | # | Código | Interface | Classe | Itens no cardápio |
@@ -36,8 +38,8 @@ Nome de banco/código → rótulo na interface. **Produção** gera sobrecarga; 
 | 1 | `combinados` | Combinados | produção | 20 |
 | 2 | `duplas` | Duplas | produção | 64 |
 | 3 | `enrolados` | Enrolados | produção | 16 |
-| 4 | `enrolados_quentes` | Enrolados Quentes | produção | 11 |
-| 5 | `cozinha_quentes` | **Quentes** (Cozinha / Quentes) | produção | 31 |
+| 4 | `enrolados_quentes` | **Sushi Quentes** | produção | 11 |
+| 5 | `cozinha_quentes` | **Cozinha** | produção | 31 |
 | 6 | `sobremesa` | Sobremesa | conferência | 9 |
 | 7 | `bar_bebidas` | Bar | conferência | 36 |
 | 8 | `montagem_outros` | Montagem | conferência | 5 |
@@ -50,8 +52,8 @@ Nome de banco/código → rótulo na interface. **Produção** gera sobrecarga; 
 - **combinados**: Combinado Especial/Executivo/Tradicional/Kids/Salmão.
 - **duplas**: Sushi de X, Sashimi de X, Dyo de X, By Luizinho, Ebi Nikkei, Sashimi Tataki.
 - **enrolados**: Uramaki (Califórnia/Vegan/Atum/Salmão), Temaki (Atum/Salmão/Barriga), Hossomaki, Baterá.
-- **enrolados_quentes**: Hot Roll / Hot Roll Tatá / com Shimeji, Uramaki/Temaki Ebiten, Skin, **Ceviche · Tartar de Salmão · Tuna Shisô** (regra operacional — ver §6).
-- **cozinha_quentes**: Katsu, Teppanyaki, Tempurá, Yakissoba, Guioza, Grelhado, entradas quentes (Shimeji/Shitake/Edamame/Nasu).
+- **enrolados_quentes** (**Sushi Quentes**): Hot Roll / Hot Roll Tatá / com Shimeji, Uramaki/Temaki Ebiten, Skin, **Ceviche · Tartar de Salmão · Tuna Shisô** (regra operacional — ver §6).
+- **cozinha_quentes** (**Cozinha**): pratos (Katsu, Teppanyaki, Tempurás de prato, Yakissoba, Grelhados) e entradas quentes. Guioza, Tempurá de milho e Ebi Spicy são **entradas**, não pratos.
 - **sobremesa**: Cookie, Mochi, Sorvete, Choux, Torta.
 - **bar_bebidas**: Refri, Cerveja, Vinho, Sake, Água.
 - **montagem_outros**: Gengibre, Gohan, Tarê, Wasabi, Sunomono.
