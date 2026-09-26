@@ -4,8 +4,8 @@
   "project": "DeliveryOS / TATÁ Edge",
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "design/tata-edge-runtime-foundation-v1",
-  "checkpoint_type": "WORK_BRANCH_TALLY_CUTOVER_SHADOW_READY",
-  "state_basis_head": "e52ee9b6f48fa64f0bc5d08d1e9cd6341ab3a077",
+  "checkpoint_type": "PRODUCTION_CUTOVER_PARTIAL_CAIXA_VERIFIED_TALLY_PENDING",
+  "state_basis_head": "73b67716f8928e3249941c997994e33004af5b92",
   "verified_state_refs": [
     "deploy/cloudflare/gerencial-mail-bridge/",
     "deploy/cloudflare/tata-edge-cloud-shadow/",
@@ -50,7 +50,8 @@
     "deploy/cloudflare/tata-edge-cloud-shadow/test/tally-webhook-worker.test.mjs",
     "deploy/cloudflare/tata-edge-cloud-shadow/migration-001-tally-barrier-shadow.sql",
     "docs/context/TALLY_BARRIER_CAPTURE_CUTOVER_PLAN_2026-09-26.md",
-    "docs/context/EVIDENCE_CAIXA_EXECUTIVO_CUTOVER_SHADOW_2026-09-26.md"
+    "docs/context/EVIDENCE_CAIXA_EXECUTIVO_CUTOVER_SHADOW_2026-09-26.md",
+    "docs/context/EVIDENCE_PRODUCTION_CUTOVER_PARTIAL_CAIXA_2026-09-26.md"
   ],
   "verified_state": [
     "The canonical operational mail bridge is cesar-gerencial-mail-bridge reading Atendimento Sent read-only with EXAMINE + BODY.PEEK and D1 cesar-gerencial-mail-bridge.",
@@ -134,7 +135,13 @@
     "Across 742 historical occurrence rows, the post-cutover shadow analysis produced zero differences in the seven unaffected legacy columns; all 742 observed differences were exclusively restoration of the previously missing O que aconteceu? narrative column.",
     "A controlled synthetic 20-column occurrence at raw row 744 propagated correctly into analise_ocorrencias and increased the isolated panel occurrence count from 742 to 743.",
     "The shadow simulation exposed a pre-existing latest-five panel defect: independent COUNTA anchors can misalign Turno when Turno is blank. A common raw Submission ID count anchor was proven in the copy; genuine blank Turno stays blank and the latest controlled row renders its own Turno.",
-    "No production Tally form, live Caixa Executivo cell/formula, or live ZjVv1a webhook was modified by the workbook compatibility proof."
+    "No production Tally form, live Caixa Executivo cell/formula, or live ZjVv1a webhook was modified by the workbook compatibility proof.",
+    "César explicitly authorized the production cutover.",
+    "A fresh pre-cutover native backup of live Caixa Executivo was created as spreadsheet 1A1j5AofuDKo66UAOhbhC15ciyhlsuqGBwMPZI36oFNw before any production workbook change.",
+    "Live Configuracao!E9 was repaired to match the exact O que aconteceu? header including CHAR(10); post-write live Configuracao and auditoria_sync both report all 8 occurrence fields OK.",
+    "Live analise_ocorrencias now exposes historical O que aconteceu? narrative text that had previously been blank.",
+    "Live painel!F39:H43 was repaired to use a common raw occurrence row anchor based on ocorrencias_respostas!A:A, preventing optional Turno blanks from shifting that column onto a different occurrence.",
+    "The production workbook changes are DEPLOYED and verified; the live Tally form ZjVv1a and live webhook are still unchanged, so the overall production cutover is PARTIAL."
   ],
   "proof": {
     "latest_green_ci_run": "36237801515",
@@ -302,9 +309,18 @@
     "caixa_exec_cutover_happened_text_restored_rows": 742,
     "caixa_exec_cutover_synthetic_row_projected": true,
     "caixa_exec_cutover_panel_latest_alignment_fix_proven": true,
-    "caixa_exec_cutover_live_workbook_modified": false
+    "caixa_exec_cutover_live_workbook_modified": false,
+    "production_cutover_authorized": true,
+    "production_caixa_backup_id": "1A1j5AofuDKo66UAOhbhC15ciyhlsuqGBwMPZI36oFNw",
+    "production_caixa_mapping_repair_deployed": true,
+    "production_caixa_mapping_ok": 8,
+    "production_caixa_mapping_missing": 0,
+    "production_caixa_latest_alignment_repair_deployed": true,
+    "production_tally_live_form_modified": false,
+    "production_tally_live_webhook_wired": false,
+    "production_cutover_complete": false
   },
-  "next_action": "At the production gate, first rerun a fresh read-only fingerprint/identity preflight for live Tally occurrence form ZjVv1a and re-read the live Caixa Executivo integration/mapping state. If and only if those still match the pinned identities, obtain César's explicit near-action authorization before editing/publishing ZjVv1a, changing the live Caixa Executivo workbook, or wiring the live webhook. Apply only the proven minimal delta with rollback prepared.",
+  "next_action": "Reconnect an authenticated browser/session capable of editing Tally form ZjVv1a, then rerun the fresh live identity preflight, duplicate/capture a recoverable live-form backup, apply only the proven +26 block delta in place, preview all three subtype routes, publish, verify the live Google Sheets 20-column schema and existing mappings, wire the live signed webhook, send one controlled live proof submission, verify one idempotent D1 observation, and rollback immediately on any gate failure.",
   "unknowns": [
     "No real team-sent iFood review batch has been admitted; extraction quality and attachment shape remain unknown.",
     "No defensible iFood review freshness cadence has been established; its freshness must remain UNKNOWN.",
@@ -322,7 +338,10 @@
     "The first real team operational occurrence using the new subtype/barrier fields remains unproven; shadow transport proof must not be promoted to production adoption.",
     "The live Caixa Executivo O que aconteceu? trailing-newline mapping debt remains open in production, although its exact minimal repair is now proven in the isolated full-copy simulation.",
     "The pre-existing live painel latest-five Turno alignment defect remains open in production; the minimal common-anchor repair is proven only in the isolated copy.",
-    "A fresh immediately-before-cutover live Tally fingerprint is still required at the production gate; the previously pinned live identity must not be assumed unchanged."
+    "A fresh immediately-before-cutover live Tally fingerprint is still required at the production gate; the previously pinned live identity must not be assumed unchanged.",
+    "The authorized Foxxy remote computer is currently offline, so authenticated Tally editor operations cannot proceed.",
+    "Opera Browser Connector currently has no connected browser session.",
+    "Production Tally form ZjVv1a remains unchanged until an authenticated editor session is available; full cutover is PARTIAL."
   ],
   "authority": {
     "continuity_update": "AUTHORIZED_METADATA_WRITE_WITHIN_PROJECT_SCOPE",
