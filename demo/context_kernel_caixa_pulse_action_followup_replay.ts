@@ -7,6 +7,8 @@ import { buildEpisodeRecurrenceMemory } from
   "../src/contextKernel/episodeRecurrence";
 import { buildActionFollowupMemory } from
   "../src/contextKernel/actionFollowup";
+import { buildExpectedBarrierAssessments } from
+  "../src/contextKernel/expectedBarrier";
 
 type SourceRow = Record<string, unknown>;
 
@@ -68,6 +70,7 @@ const followup = buildActionFollowupMemory({
   loaded_window_end: loadedWindowEnd,
   coverage_exhaustive: false,
 });
+const expectedBarriers = buildExpectedBarrierAssessments(adaptation.evidence);
 
 const recurrenceDays = followup.followups
   .filter(
@@ -114,6 +117,21 @@ const followupByMechanism = mechanisms.map((mechanism) => {
   };
 });
 
+const barrierUse = new Map<string, number>();
+for (const assessment of expectedBarriers.assessments) {
+  for (const barrierId of assessment.barrier_ids) {
+    barrierUse.set(barrierId, (barrierUse.get(barrierId) ?? 0) + 1);
+  }
+}
+const mappedBarrierByMechanism = mechanisms.map((mechanism) => ({
+  mechanism_key: mechanism.mechanism_key,
+  mapped_episode_count: expectedBarriers.assessments.filter(
+    (item) =>
+      item.mechanism_key === mechanism.mechanism_key &&
+      item.knowledge_status === "MAPPED_EXPECTED_BARRIERS",
+  ).length,
+}));
+
 console.log(JSON.stringify({
   status: "PASS",
   source: "D1:cesar-gerencial-mail-bridge.caixa_pulse_* canonical rows",
@@ -141,6 +159,20 @@ console.log(JSON.stringify({
     recurrence_mechanism_count: recurrence.recurrence_mechanism_count,
     mechanisms,
     shared_root_cause_status: "UNPROVEN",
+  },
+  expected_barriers: {
+    academia_snapshot: expectedBarriers.academia_snapshot,
+    mapped_episode_count: expectedBarriers.mapped_episode_count,
+    unmapped_episode_count: expectedBarriers.unmapped_episode_count,
+    execution_unknown_count: expectedBarriers.execution_unknown_count,
+    mapped_by_mechanism: mappedBarrierByMechanism,
+    barrier_use_counts: Object.fromEntries(
+      [...barrierUse.entries()].sort((a, b) => a[0].localeCompare(b[0])),
+    ),
+    barrier_failure_proven_count:
+      expectedBarriers.barrier_failure_proven_count,
+    barrier_compliance_proven_count:
+      expectedBarriers.barrier_compliance_proven_count,
   },
   action_followup: {
     classified_action_episode_count:
