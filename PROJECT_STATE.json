@@ -1,11 +1,11 @@
 {
-  "schema_version": "0.7",
+  "schema_version": "0.8",
   "project_id": "project.deliveryos",
   "project": "DeliveryOS / TATÁ Edge",
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "design/tata-edge-runtime-foundation-v1",
-  "checkpoint_type": "WORK_BRANCH_CAIXA_PULSE_WORLD_PROVEN_EXPECTED_BARRIERS_PROVEN",
-  "state_basis_head": "e50b891976c4ff61aca4042367ba8ebe5ca4273a",
+  "checkpoint_type": "WORK_BRANCH_CAIXA_PULSE_WORLD_PROVEN_BARRIER_EVIDENCE_DEBT_PROVEN",
+  "state_basis_head": "30d99b4002b1fb1e461eb494029d5bcc80bb601f",
   "verified_state_refs": [
     "deploy/cloudflare/gerencial-mail-bridge/",
     "deploy/cloudflare/tata-edge-cloud-shadow/",
@@ -27,7 +27,10 @@
     "src/contextKernel/caixaPulseEpisodeAdapter.ts",
     "docs/context/EVIDENCE_ACADEMIA_EXPECTED_BARRIERS_2026-09-25.md",
     "src/contextKernel/expectedBarrier.ts",
-    "demo/context_kernel_expected_barrier_proof.ts"
+    "demo/context_kernel_expected_barrier_proof.ts",
+    "docs/context/EVIDENCE_BARRIER_EVIDENCE_DEBT_ROUTING_2026-09-26.md",
+    "src/contextKernel/barrierEvidenceDebt.ts",
+    "demo/context_kernel_barrier_evidence_debt_proof.ts"
   ],
   "verified_state": [
     "The canonical operational mail bridge is cesar-gerencial-mail-bridge reading Atendimento Sent read-only with EXAMINE + BODY.PEEK and D1 cesar-gerencial-mail-bridge.",
@@ -66,11 +69,17 @@
     "For all 30 mapped episodes, barrier execution remains UNKNOWN; barrier failure proven=0 and barrier compliance proven=0. Academia defines expected procedure only and is not treated as proof that a barrier was executed on an incident.",
     "The current expected-barrier set contains seven pinned barriers covering identification, order-volume reunification, post-print physical checks, final divergence conference, exact product/quantity match, customer observation checks and manual-correction physical validation.",
     "The e50b891 expected-barrier integration passed the complete local Edge/Context/Watch regression with exit code 0, including Watch 14/14, cloud producer 19/19 and gerencial-mail-bridge 40/40.",
-    "Commit e50b891976c4ff61aca4042367ba8ebe5ca4273a passed GitHub Actions Edge Shadow CI run 36215471171 successfully."
+    "Commit e50b891976c4ff61aca4042367ba8ebe5ca4273a passed GitHub Actions Edge Shadow CI run 36215471171 successfully.",
+    "Expected-barrier execution debt is now explicit at incident x barrier grain: the current real replay yields 120 internal debt records from 30 mapped episodes, collapsing to seven reusable structured capture requirements.",
+    "The current real barrier-debt replay routes 0 debts to TRUSTED_SOURCE, 0 to OPERATIONAL_OWNER, 0 to CESAR, 120 to CAPTURE_NEXT_TIME and 0 to KEEP_UNKNOWN because no trusted-source/owner route hints are yet proven for those incident-level debts.",
+    "The barrier-debt adapter hard-blocks CESAR routing from Academia mapping alone; a separate direct NeedsMe proof is required before CÃ©sar can become the investigation route.",
+    "Missing barrier execution evidence remains UNKNOWN and proves neither barrier failure nor compliance, guilt nor cause; direct attention reasons remain 0 and external effects remain unauthorized.",
+    "Commit 30d99b4002b1fb1e461eb494029d5bcc80bb601f passed the complete local Edge/Context/Watch regression with exit code 0, including Watch 14/14, cloud producer 19/19 and gerencial-mail-bridge 40/40.",
+    "Commit 30d99b4002b1fb1e461eb494029d5bcc80bb601f passed GitHub Actions Edge Shadow CI run 36215907408 successfully."
   ],
   "proof": {
-    "latest_green_ci_run": "36215471171",
-    "latest_green_ci_commit": "e50b891976c4ff61aca4042367ba8ebe5ca4273a",
+    "latest_green_ci_run": "36215907408",
+    "latest_green_ci_commit": "30d99b4002b1fb1e461eb494029d5bcc80bb601f",
     "mail_bridge_d1_id": "fc0ae418-599d-41da-b849-5fada0cc08e2",
     "watch_d1_id": "75516adf-6196-460a-82d4-9aa6925dbed4",
     "closing_rows": 54,
@@ -93,7 +102,7 @@
     "watch_snapshot_history_rows": 91,
     "watch_current_source_watermark": "2026-09-25T02:57:22.000Z",
     "scheduled_replay_created_new_watch_history": false,
-    "latest_green_ci_head": "e50b891976c4ff61aca4042367ba8ebe5ca4273a",
+    "latest_green_ci_head": "30d99b4002b1fb1e461eb494029d5bcc80bb601f",
     "episode_alignment": "PROVEN_REAL_SOURCE_ALIGNMENT_PLUS_SYNTHETIC_CONTRACT",
     "episode_alignment_d1_dates": 54,
     "episode_alignment_full_day_dates": 39,
@@ -147,9 +156,19 @@
     "expected_barrier_omission_mapped": 22,
     "expected_barrier_wrong_item_mapped": 8,
     "expected_barrier_attention_authority": "NONE",
-    "expected_barrier_external_effects": false
+    "expected_barrier_external_effects": false,
+    "barrier_evidence_debt_commit": "30d99b4002b1fb1e461eb494029d5bcc80bb601f",
+    "barrier_evidence_debt_instances": 120,
+    "barrier_evidence_unique_capture_requirements": 7,
+    "barrier_evidence_route_trusted_source": 0,
+    "barrier_evidence_route_operational_owner": 0,
+    "barrier_evidence_route_cesar": 0,
+    "barrier_evidence_route_capture_next_time": 120,
+    "barrier_evidence_route_keep_unknown": 0,
+    "barrier_evidence_direct_attention_reasons": 0,
+    "barrier_evidence_external_effects": false
   },
-  "next_action": "Convert mapped expected-barrier execution UNKNOWN into explicit evidence debt for the Manager Investigator. Route each debt first to trusted existing evidence or future operational capture/owner evidence; do not infer barrier failure from missing evidence and do not escalate to Cesar unless a separate direct NeedsMe reason is proven. Keep the iFood review source gate independent and freshness UNKNOWN until the first real team-sent batch is world-proven.",
+  "next_action": "Locate and verify the real Caixa Pulse capture surface behind the operational source, then determine whether the seven reusable structured barrier-evidence requirements can be captured there with low friction. Prefer read-only inspection and a shadow contract first; do not change the live operational sheet/form until the effect boundary is reviewed. CAPTURE_NEXT_TIME remains a design route until that surface is world-proven.",
   "unknowns": [
     "No real team-sent iFood review batch has been admitted; extraction quality and attachment shape remain unknown.",
     "No defensible iFood review freshness cadence has been established; its freshness must remain UNKNOWN.",
@@ -159,7 +178,8 @@
     "Apple Watch attention delivery remains unproven.",
     "Caixa Pulse closing emails are not guaranteed exhaustive ground truth for every operational event; absence claims remain bounded to loaded full-day email evidence.",
     "Independent post-action outcome evidence is not yet systematically linked; current action follow-up proves later same-family recurrence only, so action effectiveness remains UNKNOWN.",
-    "Expected-barrier execution is UNKNOWN for all 30 currently mapped OMISSION/WRONG_ITEM episodes; no trusted incident-level evidence yet proves whether each barrier was executed."
+    "Expected-barrier execution is UNKNOWN for all 30 currently mapped OMISSION/WRONG_ITEM episodes; no trusted incident-level evidence yet proves whether each barrier was executed.",
+    "The actual Caixa Pulse capture/generator surface for the seven future barrier-evidence fields has not yet been verified; those fields are not deployed."
   ],
   "authority": {
     "continuity_update": "AUTHORIZED_METADATA_WRITE_WITHIN_PROJECT_SCOPE",
