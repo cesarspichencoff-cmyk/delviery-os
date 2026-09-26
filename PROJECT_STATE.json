@@ -4,8 +4,8 @@
   "project": "DeliveryOS / TATÁ Edge",
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "design/tata-edge-runtime-foundation-v1",
-  "checkpoint_type": "WORK_BRANCH_TALLY_SHADOW_SERIALIZATION_WORLD_PROVEN",
-  "state_basis_head": "8af9f3670663c9364cf5b5dc53927fe7f5b13255",
+  "checkpoint_type": "WORK_BRANCH_TALLY_SHADOW_WEBHOOK_WORLD_PROVEN",
+  "state_basis_head": "6de60d2eb46d6aa08716348a22090bb9e50571ec",
   "verified_state_refs": [
     "deploy/cloudflare/gerencial-mail-bridge/",
     "deploy/cloudflare/tata-edge-cloud-shadow/",
@@ -41,7 +41,15 @@
     "docs/context/EVIDENCE_TALLY_SHADOW_SERIALIZATION_2026-09-26.md",
     "src/contextKernel/tallyShadowPilot.ts",
     "demo/context_kernel_tally_shadow_pilot_proof.ts",
-    "tools/probe_tally_shadow_pilot.mjs"
+    "tools/probe_tally_shadow_pilot.mjs",
+    "docs/context/EVIDENCE_TALLY_SHADOW_WEBHOOK_WORLD_PROOF_2026-09-26.md",
+    "deploy/cloudflare/tata-edge-cloud-shadow/src/tally-webhook-core.mjs",
+    "deploy/cloudflare/tata-edge-cloud-shadow/src/tally-webhook-storage.mjs",
+    "deploy/cloudflare/tata-edge-cloud-shadow/test/tally-webhook-core.test.mjs",
+    "deploy/cloudflare/tata-edge-cloud-shadow/test/tally-webhook-storage.test.mjs",
+    "deploy/cloudflare/tata-edge-cloud-shadow/test/tally-webhook-worker.test.mjs",
+    "deploy/cloudflare/tata-edge-cloud-shadow/migration-001-tally-barrier-shadow.sql",
+    "docs/context/TALLY_BARRIER_CAPTURE_CUTOVER_PLAN_2026-09-26.md"
   ],
   "verified_state": [
     "The canonical operational mail bridge is cesar-gerencial-mail-bridge reading Atendimento Sent read-only with EXAMINE + BODY.PEEK and D1 cesar-gerencial-mail-bridge.",
@@ -113,11 +121,16 @@
     "The shadow serialization preserves the exact legacy header O que aconteceu?\\n; the existing live workbook trailing-newline mapping debt is therefore still explicit rather than silently normalized.",
     "A post-shadow read-only probe of live Tally surfaces returned PASS; ZjVv1a remains 31 blocks at SHA-256 51f07f02436057199af4d8a9782c37945b9bc38a3f9d54db8104abff9b73d251 and eqAKzJ remains unchanged.",
     "Commit 8af9f3670663c9364cf5b5dc53927fe7f5b13255 passed the complete local Edge/Context/Watch regression with exit code 0, including Watch 14/14, cloud producer 19/19 and gerencial-mail-bridge 40/40.",
-    "Commit 8af9f3670663c9364cf5b5dc53927fe7f5b13255 passed GitHub Actions Edge Shadow CI run 36232447119 successfully."
+    "Commit 8af9f3670663c9364cf5b5dc53927fe7f5b13255 passed GitHub Actions Edge Shadow CI run 36232447119 successfully.",
+    "The Tally barrier intake is WORLD_PROVEN_SHADOW: a controlled submission from shadow form eq4lae traversed the configured signed webhook endpoint, passed signature/form/schema gates and persisted in remote D1 tata-edge-tally-shadow.",
+    "The remote shadow D1 proof contained exactly one controlled row with truth_class OPERATOR_SELF_REPORT, subtype Item faltando and the expected four barrier semantics REPORTED_DONE / REPORTED_NOT_DONE / UNABLE_TO_CONFIRM / REPORTED_NOT_APPLICABLE; the inactive wrong-item matrix remained absent.",
+    "The signed webhook path has attention authority NONE and external effects authorized=false; the proof does not establish barrier compliance, failure, cause, guilt, resolution or action effectiveness.",
+    "Commit 2042bcf added the signed Tally barrier shadow intake and commit 6de60d2 made its storage proof CI-portable; GitHub Actions Edge Shadow CI run 36237801515 completed successfully for 6de60d2eb46d6aa08716348a22090bb9e50571ec.",
+    "The production Tally occurrence form ZjVv1a and the live Caixa Executivo workbook were not modified by the shadow webhook proof."
   ],
   "proof": {
-    "latest_green_ci_run": "36232447119",
-    "latest_green_ci_commit": "8af9f3670663c9364cf5b5dc53927fe7f5b13255",
+    "latest_green_ci_run": "36237801515",
+    "latest_green_ci_commit": "6de60d2eb46d6aa08716348a22090bb9e50571ec",
     "mail_bridge_d1_id": "fc0ae418-599d-41da-b849-5fada0cc08e2",
     "watch_d1_id": "75516adf-6196-460a-82d4-9aa6925dbed4",
     "closing_rows": 54,
@@ -140,7 +153,7 @@
     "watch_snapshot_history_rows": 91,
     "watch_current_source_watermark": "2026-09-25T02:57:22.000Z",
     "scheduled_replay_created_new_watch_history": false,
-    "latest_green_ci_head": "8af9f3670663c9364cf5b5dc53927fe7f5b13255",
+    "latest_green_ci_head": "6de60d2eb46d6aa08716348a22090bb9e50571ec",
     "episode_alignment": "PROVEN_REAL_SOURCE_ALIGNMENT_PLUS_SYNTHETIC_CONTRACT",
     "episode_alignment_d1_dates": 54,
     "episode_alignment_full_day_dates": 39,
@@ -247,9 +260,22 @@
     "tally_shadow_ci_status": "SUCCESS",
     "tally_shadow_live_form_modified": false,
     "tally_shadow_live_workbook_modified": false,
-    "tally_shadow_live_cutover_authorized": false
+    "tally_shadow_live_cutover_authorized": false,
+    "tally_shadow_webhook_intake_commit": "2042bcf",
+    "tally_shadow_webhook_ci_portability_commit": "6de60d2eb46d6aa08716348a22090bb9e50571ec",
+    "tally_shadow_webhook_ci_run": "36237801515",
+    "tally_shadow_webhook_form_id": "eq4lae",
+    "tally_shadow_webhook_d1_name": "tata-edge-tally-shadow",
+    "tally_shadow_webhook_d1_id": "13b7d2ef-e119-4a2b-8745-46ee3acedb35",
+    "tally_shadow_webhook_proof_rows": 1,
+    "tally_shadow_webhook_truth_class": "OPERATOR_SELF_REPORT",
+    "tally_shadow_webhook_world_proven": true,
+    "tally_shadow_webhook_attention_authority": "NONE",
+    "tally_shadow_webhook_external_effects": false,
+    "tally_shadow_webhook_live_form_modified": false,
+    "tally_shadow_webhook_live_workbook_modified": false
   },
-  "next_action": "Prepare the exact production cutover plan/diff from shadow form eq4lae to live occurrence form ZjVv1a, including rollback and Caixa Executivo compatibility, but do not modify the live Tally form or live workbook until César gives explicit near-action authorization.",
+  "next_action": "Create an isolated full copy of the live Caixa Executivo workbook and simulate the post-cutover 20-column occurrence schema plus the minimal O que aconteceu? trailing-newline mapping repair. Verify Configuracao, auditoria_sync, analise_ocorrencias and painel compatibility there, then run a fresh read-only live Tally preflight. Do not edit/publish ZjVv1a, change the live Caixa Executivo workbook, wire the live webhook, or submit synthetic data to the live operational form without César's explicit near-action authorization.",
   "unknowns": [
     "No real team-sent iFood review batch has been admitted; extraction quality and attachment shape remain unknown.",
     "No defensible iFood review freshness cadence has been established; its freshness must remain UNKNOWN.",
@@ -263,7 +289,9 @@
     "The live workbook mapping debt for 'O que aconteceu?' trailing-newline normalization remains open and has not been changed.",
     "No live Tally form or Caixa Executivo workbook write has been authorized or performed at this checkpoint.",
     "The production Tally occurrence form has not been modified with the proven shadow subtype/matrix; production cutover remains unauthorized and unperformed.",
-    "Authenticated editor access to the live form ZjVv1a has not yet been explicitly revalidated in the current authenticated browser session; only shadow editor eq4lae is write-proven."
+    "Authenticated editor access to the live form ZjVv1a has not yet been explicitly revalidated in the current authenticated browser session; only shadow editor eq4lae is write-proven.",
+    "No production cutover has been authorized: live ZjVv1a, live Caixa Executivo and a live ZjVv1a webhook remain unchanged.",
+    "The first real team operational occurrence using the new subtype/barrier fields remains unproven; shadow transport proof must not be promoted to production adoption."
   ],
   "authority": {
     "continuity_update": "AUTHORIZED_METADATA_WRITE_WITHIN_PROJECT_SCOPE",
