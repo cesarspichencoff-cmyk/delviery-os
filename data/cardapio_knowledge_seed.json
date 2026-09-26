@@ -2673,7 +2673,7 @@
         "Entradas",
         "Sugestões Tatá"
       ],
-      "categoria_operacional": "prato_quente",
+      "categoria_operacional": "entrada",
       "subcategoria_operacional": "tempura",
       "praca_principal": "cozinha_quentes",
       "pracas_dependentes": [],
@@ -3183,7 +3183,7 @@
         "Entradas",
         "Sugestões Tatá"
       ],
-      "categoria_operacional": "prato_quente",
+      "categoria_operacional": "entrada",
       "subcategoria_operacional": "guioza",
       "praca_principal": "cozinha_quentes",
       "pracas_dependentes": [],
@@ -8676,7 +8676,7 @@
       "disponivel_em": [
         "Entradas"
       ],
-      "categoria_operacional": "prato_quente",
+      "categoria_operacional": "entrada",
       "subcategoria_operacional": "tempura",
       "praca_principal": "cozinha_quentes",
       "pracas_dependentes": [],
