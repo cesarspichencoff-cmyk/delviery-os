@@ -293,7 +293,9 @@
       "confianca_classificacao": "alta",
       "revisao_manual": false,
       "observacoes": [],
-      "descricoes_alternativas": []
+      "descricoes_alternativas": [],
+      "embalagem_operacional": "caixa_1500",
+      "embalagem_truth_class": "PROVEN_CURRENT_HUMAN_RULE"
     },
     {
       "id": "bone_tata_preto_estonado",
@@ -709,7 +711,9 @@
       "confianca_classificacao": "alta",
       "revisao_manual": false,
       "observacoes": [],
-      "descricoes_alternativas": []
+      "descricoes_alternativas": [],
+      "embalagem_operacional": "caixa_1500",
+      "embalagem_truth_class": "PROVEN_CURRENT_HUMAN_RULE"
     },
     {
       "id": "choux_cream",
@@ -2709,7 +2713,9 @@
       "confianca_classificacao": "alta",
       "revisao_manual": false,
       "observacoes": [],
-      "descricoes_alternativas": []
+      "descricoes_alternativas": [],
+      "embalagem_operacional": "caixa_650_selada",
+      "embalagem_truth_class": "PROVEN_CURRENT_HUMAN_RULE"
     },
     {
       "id": "edamame",
@@ -2760,7 +2766,9 @@
       "observacoes": [
         "Assumido preparo pela cozinha (cozido no vapor)."
       ],
-      "descricoes_alternativas": []
+      "descricoes_alternativas": [],
+      "embalagem_operacional": "caixa_650_selada",
+      "embalagem_truth_class": "PROVEN_CURRENT_HUMAN_RULE"
     },
     {
       "id": "estandon_brise_marine_rose",
@@ -2947,7 +2955,9 @@
       "confianca_classificacao": "alta",
       "revisao_manual": false,
       "observacoes": [],
-      "descricoes_alternativas": []
+      "descricoes_alternativas": [],
+      "embalagem_operacional": "caixa_1500",
+      "embalagem_truth_class": "PROVEN_CURRENT_HUMAN_RULE"
     },
     {
       "id": "frango_teriyaki",
@@ -3006,7 +3016,9 @@
       "confianca_classificacao": "alta",
       "revisao_manual": false,
       "observacoes": [],
-      "descricoes_alternativas": []
+      "descricoes_alternativas": [],
+      "embalagem_operacional": "caixa_1500",
+      "embalagem_truth_class": "PROVEN_CURRENT_HUMAN_RULE"
     },
     {
       "id": "gengibre",
@@ -3169,7 +3181,9 @@
       "confianca_classificacao": "alta",
       "revisao_manual": false,
       "observacoes": [],
-      "descricoes_alternativas": []
+      "descricoes_alternativas": [],
+      "embalagem_operacional": "caixa_1500",
+      "embalagem_truth_class": "PROVEN_CURRENT_HUMAN_RULE"
     },
     {
       "id": "guioza",
@@ -3221,7 +3235,9 @@
       "confianca_classificacao": "alta",
       "revisao_manual": false,
       "observacoes": [],
-      "descricoes_alternativas": []
+      "descricoes_alternativas": [],
+      "embalagem_operacional": "caixa_650_selada",
+      "embalagem_truth_class": "PROVEN_CURRENT_HUMAN_RULE"
     },
     {
       "id": "gyukatsu",
@@ -3273,7 +3289,9 @@
       "confianca_classificacao": "alta",
       "revisao_manual": false,
       "observacoes": [],
-      "descricoes_alternativas": []
+      "descricoes_alternativas": [],
+      "embalagem_operacional": "caixa_1500",
+      "embalagem_truth_class": "PROVEN_CURRENT_HUMAN_RULE"
     },
     {
       "id": "hakushika_ginjo_namachozo_300ml",
@@ -4047,7 +4065,9 @@
       "confianca_classificacao": "alta",
       "revisao_manual": false,
       "observacoes": [],
-      "descricoes_alternativas": []
+      "descricoes_alternativas": [],
+      "embalagem_operacional": "caixa_1500",
+      "embalagem_truth_class": "PROVEN_CURRENT_HUMAN_RULE"
     },
     {
       "id": "kizakura_karakuchi_seco_720ml",
@@ -4420,9 +4440,12 @@
       "confianca_classificacao": "inferido_com_baixa_confianca",
       "revisao_manual": true,
       "observacoes": [
-        "Ambíguo: cozinha (se produção quente) x montagem (se só servido). Confirmar fluxo real."
+        "Ambíguo: cozinha (se produção quente) x montagem (se só servido). Confirmar fluxo real.",
+        "Embalagem confirmada por César em 26/09/2026: pote de isopor; não usar caixa 650."
       ],
-      "descricoes_alternativas": []
+      "descricoes_alternativas": [],
+      "embalagem_operacional": "pote_isopor",
+      "embalagem_truth_class": "PROVEN_CURRENT_HUMAN_RULE"
     },
     {
       "id": "mochi",
@@ -4525,7 +4548,9 @@
       "confianca_classificacao": "alta",
       "revisao_manual": false,
       "observacoes": [],
-      "descricoes_alternativas": []
+      "descricoes_alternativas": [],
+      "embalagem_operacional": "caixa_650_selada",
+      "embalagem_truth_class": "PROVEN_CURRENT_HUMAN_RULE"
     },
     {
       "id": "nederburg_sauvignon_blanc",
@@ -4877,7 +4902,9 @@
       "confianca_classificacao": "alta",
       "revisao_manual": false,
       "observacoes": [],
-      "descricoes_alternativas": []
+      "descricoes_alternativas": [],
+      "embalagem_operacional": "caixa_1500",
+      "embalagem_truth_class": "PROVEN_CURRENT_HUMAN_RULE"
     },
     {
       "id": "sapporo",
@@ -5970,7 +5997,9 @@
       "confianca_classificacao": "alta",
       "revisao_manual": false,
       "observacoes": [],
-      "descricoes_alternativas": []
+      "descricoes_alternativas": [],
+      "embalagem_operacional": "caixa_650_selada",
+      "embalagem_truth_class": "PROVEN_CURRENT_HUMAN_RULE"
     },
     {
       "id": "shitake",
@@ -6022,7 +6051,9 @@
       "confianca_classificacao": "alta",
       "revisao_manual": false,
       "observacoes": [],
-      "descricoes_alternativas": []
+      "descricoes_alternativas": [],
+      "embalagem_operacional": "caixa_650_selada",
+      "embalagem_truth_class": "PROVEN_CURRENT_HUMAN_RULE"
     },
     {
       "id": "shitake_e_shimeji",
@@ -6076,7 +6107,9 @@
       "confianca_classificacao": "alta",
       "revisao_manual": false,
       "observacoes": [],
-      "descricoes_alternativas": []
+      "descricoes_alternativas": [],
+      "embalagem_operacional": "caixa_650_selada",
+      "embalagem_truth_class": "PROVEN_CURRENT_HUMAN_RULE"
     },
     {
       "id": "sorvete_de_baunilha",
@@ -8567,7 +8600,9 @@
       "confianca_classificacao": "alta",
       "revisao_manual": false,
       "observacoes": [],
-      "descricoes_alternativas": []
+      "descricoes_alternativas": [],
+      "embalagem_operacional": "caixa_1500",
+      "embalagem_truth_class": "PROVEN_CURRENT_HUMAN_RULE"
     },
     {
       "id": "tempura_de_camarao",
@@ -8618,7 +8653,9 @@
       "confianca_classificacao": "alta",
       "revisao_manual": false,
       "observacoes": [],
-      "descricoes_alternativas": []
+      "descricoes_alternativas": [],
+      "embalagem_operacional": "caixa_1500",
+      "embalagem_truth_class": "PROVEN_CURRENT_HUMAN_RULE"
     },
     {
       "id": "tempura_de_legumes",
@@ -8663,7 +8700,9 @@
       "confianca_classificacao": "alta",
       "revisao_manual": false,
       "observacoes": [],
-      "descricoes_alternativas": []
+      "descricoes_alternativas": [],
+      "embalagem_operacional": "caixa_1500",
+      "embalagem_truth_class": "PROVEN_CURRENT_HUMAN_RULE"
     },
     {
       "id": "tempura_de_milho_doce",
@@ -8712,7 +8751,9 @@
       "confianca_classificacao": "alta",
       "revisao_manual": false,
       "observacoes": [],
-      "descricoes_alternativas": []
+      "descricoes_alternativas": [],
+      "embalagem_operacional": "caixa_650_selada",
+      "embalagem_truth_class": "PROVEN_CURRENT_HUMAN_RULE"
     },
     {
       "id": "teppanyaki_de_anchova",
@@ -8764,7 +8805,9 @@
       "confianca_classificacao": "alta",
       "revisao_manual": false,
       "observacoes": [],
-      "descricoes_alternativas": []
+      "descricoes_alternativas": [],
+      "embalagem_operacional": "caixa_1500",
+      "embalagem_truth_class": "PROVEN_CURRENT_HUMAN_RULE"
     },
     {
       "id": "teppanyaki_de_camarao",
@@ -8816,7 +8859,9 @@
       "confianca_classificacao": "alta",
       "revisao_manual": false,
       "observacoes": [],
-      "descricoes_alternativas": []
+      "descricoes_alternativas": [],
+      "embalagem_operacional": "caixa_1500",
+      "embalagem_truth_class": "PROVEN_CURRENT_HUMAN_RULE"
     },
     {
       "id": "teppanyaki_de_file_mignon",
@@ -8868,7 +8913,9 @@
       "confianca_classificacao": "alta",
       "revisao_manual": false,
       "observacoes": [],
-      "descricoes_alternativas": []
+      "descricoes_alternativas": [],
+      "embalagem_operacional": "caixa_1500",
+      "embalagem_truth_class": "PROVEN_CURRENT_HUMAN_RULE"
     },
     {
       "id": "teppanyaki_de_frango",
@@ -8920,7 +8967,9 @@
       "confianca_classificacao": "alta",
       "revisao_manual": false,
       "observacoes": [],
-      "descricoes_alternativas": []
+      "descricoes_alternativas": [],
+      "embalagem_operacional": "caixa_1500",
+      "embalagem_truth_class": "PROVEN_CURRENT_HUMAN_RULE"
     },
     {
       "id": "teppanyaki_de_lula_e_nira",
@@ -8972,7 +9021,9 @@
       "confianca_classificacao": "alta",
       "revisao_manual": false,
       "observacoes": [],
-      "descricoes_alternativas": []
+      "descricoes_alternativas": [],
+      "embalagem_operacional": "caixa_1500",
+      "embalagem_truth_class": "PROVEN_CURRENT_HUMAN_RULE"
     },
     {
       "id": "tirashi",
@@ -9090,7 +9141,9 @@
       "confianca_classificacao": "alta",
       "revisao_manual": false,
       "observacoes": [],
-      "descricoes_alternativas": []
+      "descricoes_alternativas": [],
+      "embalagem_operacional": "caixa_1500",
+      "embalagem_truth_class": "PROVEN_CURRENT_HUMAN_RULE"
     },
     {
       "id": "tuna_shiso_tartar",
@@ -9893,7 +9946,9 @@
       "confianca_classificacao": "alta",
       "revisao_manual": false,
       "observacoes": [],
-      "descricoes_alternativas": []
+      "descricoes_alternativas": [],
+      "embalagem_operacional": "caixa_1500",
+      "embalagem_truth_class": "PROVEN_CURRENT_HUMAN_RULE"
     },
     {
       "id": "yakissoba_de_carne",
@@ -9942,7 +9997,9 @@
       "confianca_classificacao": "alta",
       "revisao_manual": false,
       "observacoes": [],
-      "descricoes_alternativas": []
+      "descricoes_alternativas": [],
+      "embalagem_operacional": "caixa_1500",
+      "embalagem_truth_class": "PROVEN_CURRENT_HUMAN_RULE"
     },
     {
       "id": "yakissoba_de_frango",
@@ -9991,7 +10048,9 @@
       "confianca_classificacao": "alta",
       "revisao_manual": false,
       "observacoes": [],
-      "descricoes_alternativas": []
+      "descricoes_alternativas": [],
+      "embalagem_operacional": "caixa_1500",
+      "embalagem_truth_class": "PROVEN_CURRENT_HUMAN_RULE"
     },
     {
       "id": "yakissoba_de_frutos_do_mar",
@@ -10050,7 +10109,9 @@
       "confianca_classificacao": "alta",
       "revisao_manual": false,
       "observacoes": [],
-      "descricoes_alternativas": []
+      "descricoes_alternativas": [],
+      "embalagem_operacional": "caixa_1500",
+      "embalagem_truth_class": "PROVEN_CURRENT_HUMAN_RULE"
     },
     {
       "id": "yakissoba_de_vegetais",
@@ -10095,7 +10156,9 @@
       "confianca_classificacao": "alta",
       "revisao_manual": false,
       "observacoes": [],
-      "descricoes_alternativas": []
+      "descricoes_alternativas": [],
+      "embalagem_operacional": "caixa_1500",
+      "embalagem_truth_class": "PROVEN_CURRENT_HUMAN_RULE"
     },
     {
       "id": "yauemon_honjozo_kanzukuri_720ml",
