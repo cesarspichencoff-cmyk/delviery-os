@@ -5,7 +5,7 @@
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "design/tata-edge-runtime-foundation-v1",
   "checkpoint_type": "PRODUCTION_TALLY_DEPLOYED_PORTABLE_KERNEL_V011_SHADOW_REPLAY_READY_GATE_E_PENDING",
-  "state_basis_head": "a8006ee5a2a8f0c4069b367e37f8c1b3427fb430",
+  "state_basis_head": "c9d162e21fb46e78d500cd057118e1a5bb4768dc",
   "verified_state_refs": [
     "deploy/cloudflare/gerencial-mail-bridge/",
     "deploy/cloudflare/tata-edge-cloud-shadow/",
@@ -58,7 +58,8 @@
     "docs/context/EVIDENCE_PORTABLE_CONTEXT_KERNEL_V08_TEMPORAL_INVESTIGATION_2026-09-27.md",
     "docs/context/EVIDENCE_PORTABLE_CONTEXT_KERNEL_V09_HYPOTHESIS_DISCONFIRMATION_2026-09-27.md",
     "docs/context/EVIDENCE_PORTABLE_CONTEXT_KERNEL_V010_INVESTIGATION_PLAN_2026-09-27.md",
-    "docs/context/EVIDENCE_PORTABLE_CONTEXT_KERNEL_V011_SHADOW_REPLAY_2026-09-27.md"
+    "docs/context/EVIDENCE_PORTABLE_CONTEXT_KERNEL_V011_SHADOW_REPLAY_2026-09-27.md",
+    "docs/context/EVIDENCE_IFOOD_VISUAL_REFERENCE_CONTRACT_2026-09-27.md"
   ],
   "verified_state": [
     "The canonical operational mail bridge is cesar-gerencial-mail-bridge reading Atendimento Sent read-only with EXAMINE + BODY.PEEK and D1 cesar-gerencial-mail-bridge.",
@@ -193,7 +194,13 @@
     "Observed shadow rows 4ayaqYo and EqEK24l now replay through the explicitly eq4lae-bound portable chain into 5 TESTABLE_UNPROVEN hypotheses and 8 NOT_EXECUTED probes without connectors, debt mutation, commitments, NEEDS_CESAR, attention or external effects.",
     "Default/live Tally context still rejects eq4lae, so v0.11 shadow replay does not broaden live admission to arbitrary forms.",
     "Exact D1 event/submission identity linkage for the EqEK24l replay remains UNKNOWN because the prior webhook WORLD proof receipt preserved the unique operator marker but not the exact persisted D1 event ID.",
-    "A fresh read-only Gate E check found the live ocorrencias_respostas header still at 11 legacy columns and the latest observed submission still xV1xv4y from 2026-09-26 2:51:46; no post-cutover real occurrence is yet visible."
+    "A fresh read-only Gate E check found the live ocorrencias_respostas header still at 11 legacy columns and the latest observed submission still xV1xv4y from 2026-09-26 2:51:46; no post-cutover real occurrence is yet visible.",
+    "A real seven-screenshot iFood review reference batch from 2026-09-03 has now been visually inspected; it is César -> César reference material and does not satisfy the authorized Atendimento -> César production-source gate.",
+    "The observed iFood screenshot shape is heterogeneous: all 7 expose rating/tags/review text/visibility, 6 expose order id/date, 4 expose a merchant response, and 3 expose completion date; cropped fields are therefore a real source condition.",
+    "A private seven-record ground-truth transcription is stored at /VÉRTICE/DeliveryOS/ifood-review-ground-truth-2026-09-03.json with SHA-256 f298d1afb31cb7f68cd8058ade37df52603e13de1709e5a0963351988e6753ab; raw customer screenshots were not committed to the repository.",
+    "The fail-closed ifood-review-visual-extraction@0.1.0 contract requires non-visible screenshot fields to remain null and forbids injected blame/causal fields or source-fact promotion.",
+    "Edge Shadow CI run 36346533912 completed SUCCESS for visual-extraction contract head fcc7eb5bf8eaf7f6d94e7da99e7be7560efa6adb.",
+    "The existing mail bridge already preserves authorized-route iFood image attachment bytes losslessly in D1 ifood_review_attachment.content_blob; image-only mail remains ATTACHMENT_ONLY and no OCR is falsely claimed."
   ],
   "proof": {
     "latest_green_ci_run": "36302995615",
@@ -515,11 +522,29 @@
     "gate_e_recheck_live_header_count": 11,
     "gate_e_recheck_latest_submission_id": "xV1xv4y",
     "gate_e_recheck_latest_submitted_at": "2026-09-26 2:51:46",
-    "gate_e_post_cutover_real_occurrence_visible": false
+    "gate_e_post_cutover_real_occurrence_visible": false,
+    "ifood_visual_reference_message_id": "1a06865a7679df7b",
+    "ifood_visual_reference_route": "CESAR_SELF_SENT_REFERENCE_BATCH",
+    "ifood_visual_reference_is_authorized_team_route": false,
+    "ifood_visual_reference_screenshot_count": 7,
+    "ifood_visual_reference_order_id_visible_count": 6,
+    "ifood_visual_reference_response_visible_count": 4,
+    "ifood_visual_reference_completion_visible_count": 3,
+    "ifood_visual_ground_truth_library_path": "/VÉRTICE/DeliveryOS/ifood-review-ground-truth-2026-09-03.json",
+    "ifood_visual_ground_truth_sha256": "f298d1afb31cb7f68cd8058ade37df52603e13de1709e5a0963351988e6753ab",
+    "ifood_visual_extraction_contract": "ifood-review-visual-extraction@0.1.0",
+    "ifood_visual_extraction_invisible_fields": "MUST_BE_NULL",
+    "ifood_visual_extraction_source_fact_promotion": false,
+    "ifood_visual_extraction_cause_proven": false,
+    "ifood_visual_extraction_blame_allowed": false,
+    "ifood_visual_extraction_external_effects": false,
+    "ifood_visual_extraction_ci_run": 36346533912,
+    "ifood_visual_extraction_ci_result": "SUCCESS",
+    "ifood_authorized_team_mail_world_proven": false,
+    "ifood_automated_visual_extraction_accuracy": "UNKNOWN"
   },
-  "next_action": "Do not add another speculative abstraction before live evidence. Continue with read-only Gate E observation: when the first real post-cutover ZjVv1a response appears, prove exact 20-column live Google Sheets serialization and legacy workbook health; only then wire the signed observation-only live webhook, feed its minimized envelope into the v0.11 live-default chain, prove idempotent ingest plus context -> TESTABLE_UNPROVEN hypotheses -> NOT_EXECUTED plan, and preserve source independence UNKNOWN / cause UNPROVEN / zero automatic attention or effects.",
+  "next_action": "Continue two independent evidence tracks: (1) keep Gate E read-only until the first real post-cutover ZjVv1a response appears; (2) benchmark the smallest zero-cost iFood screenshot extraction route against the private seven-image ground truth. Require field-level extraction accuracy, keep cropped/invisible fields null, and do not promote review content to cause/blame. The authorized Atendimento -> César review-mail route remains the WORLD_PROVEN live-source gate.",
   "unknowns": [
-    "No real team-sent iFood review batch has been admitted; extraction quality and attachment shape remain unknown.",
     "No defensible iFood review freshness cadence has been established; its freshness must remain UNKNOWN.",
     "Global critical-source coverage is incomplete; global all-clear must remain disabled.",
     "Live iFood portal, Teknisa and restaurant Windows spooler acquisition remain unproven.",
@@ -535,7 +560,9 @@
     "No real v0.9 hypothesis projection has yet run on a live post-cutover Tally observation; its world behavior remains UNKNOWN until Gate E admits the first real minimized envelope.",
     "No real post-cutover ZjVv1a occurrence is yet visible in live Caixa Executivo; Gate E remains pending and live 20-column serialization is not proven.",
     "Exact D1 persisted event/submission identity linkage for the EqEK24l shadow replay remains UNKNOWN; the prior world receipt proves the unique marker path but does not preserve that exact identifier pair.",
-    "No v0.11 live-default investigation chain has yet consumed a real post-cutover production Tally observation."
+    "No v0.11 live-default investigation chain has yet consumed a real post-cutover production Tally observation.",
+    "No real team-sent iFood review batch has yet been admitted through the authorized atendimento@tatasushi.com.br -> cesar@tatasushi.com.br route.",
+    "Automated iFood screenshot extraction quality remains UNKNOWN: the seven-image visual benchmark exists, but no OCR/model extractor is yet wired or benchmarked against it."
   ],
   "authority": {
     "continuity_update": "AUTHORIZED_METADATA_WRITE_WITHIN_PROJECT_SCOPE",
