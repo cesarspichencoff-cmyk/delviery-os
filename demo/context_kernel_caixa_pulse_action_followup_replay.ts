@@ -239,6 +239,12 @@ console.log(JSON.stringify({
       followup.later_recurrence_observed_count,
     no_later_recurrence_in_loaded_window_count:
       followup.no_later_recurrence_in_loaded_window_count,
+    no_post_action_window_count:
+      followup.no_post_action_window_count,
+    nonexhaustive_window_no_recurrence_count:
+      followup.nonexhaustive_window_no_recurrence_count,
+    exhaustive_loaded_window_no_recurrence_count:
+      followup.exhaustive_loaded_window_no_recurrence_count,
     days_to_next_recurrence: distribution(recurrenceDays),
     by_mechanism: followupByMechanism,
     action_effective_proven_count: followup.action_effective_proven_count,
