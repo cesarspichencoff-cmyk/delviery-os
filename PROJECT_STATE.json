@@ -4,8 +4,8 @@
   "project": "DeliveryOS / TATÁ Edge",
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "design/tata-edge-runtime-foundation-v1",
-  "checkpoint_type": "PRODUCTION_TALLY_FORM_DEPLOYED_DONE_UNVERIFIED_SHEET_PENDING",
-  "state_basis_head": "799e106844e944ee5994e0490fa47bb8ee520eaf",
+  "checkpoint_type": "PRODUCTION_TALLY_DEPLOYED_BRIDGE_CONTRACT_PROVEN_GATE_E_PENDING",
+  "state_basis_head": "c437d40c4a157158ecc8428e5f14069f2e8e0c10",
   "verified_state_refs": [
     "deploy/cloudflare/gerencial-mail-bridge/",
     "deploy/cloudflare/tata-edge-cloud-shadow/",
@@ -52,7 +52,8 @@
     "docs/context/TALLY_BARRIER_CAPTURE_CUTOVER_PLAN_2026-09-26.md",
     "docs/context/EVIDENCE_CAIXA_EXECUTIVO_CUTOVER_SHADOW_2026-09-26.md",
     "docs/context/EVIDENCE_PRODUCTION_CUTOVER_PARTIAL_CAIXA_2026-09-26.md",
-    "docs/context/EVIDENCE_PRODUCTION_TALLY_FORM_DEPLOYED_2026-09-27.md"
+    "docs/context/EVIDENCE_PRODUCTION_TALLY_FORM_DEPLOYED_2026-09-27.md",
+    "docs/context/EVIDENCE_TALLY_BARRIER_BRIDGE_CONTRACT_2026-09-27.md"
   ],
   "verified_state": [
     "The canonical operational mail bridge is cesar-gerencial-mail-bridge reading Atendimento Sent read-only with EXAMINE + BODY.PEEK and D1 cesar-gerencial-mail-bridge.",
@@ -150,7 +151,12 @@
     "All eight pinned legacy Tally input-group identities remain present after Publish; new live groups are pinned for subtype 830a6e53-0320-46ee-8a1e-4821cb160e28, item-missing matrix 5d0f78d3-dbb9-4052-a654-ffd99058dc22, and wrong-item matrix 4e72822d-3361-46de-832a-02fb61148aad.",
     "Immediately after Publish, live Caixa Executivo remained healthy with 8/8 legacy occurrence mappings OK and panel synchronization 8 OK / 0 missing; no synthetic production occurrence was submitted.",
     "Immediately after Publish, ocorrencias_respostas still exposed the 11 legacy headers because no post-cutover real response had yet been observed; exact 20-column live serialization remains DONE_UNVERIFIED rather than assumed.",
-    "The live signed Tally webhook remains unwired while Gate E is open; no management interruption or operational action authority was introduced by the form publication."
+    "The live signed Tally webhook remains unwired while Gate E is open; no management interruption or operational action authority was introduced by the form publication.",
+    "While the first real post-cutover Tally occurrence is still pending, a disconnected downstream barrier-evidence bridge contract was added so architectural progress does not depend on synthetic production data.",
+    "The Tally barrier bridge preserves OPERATOR_SELF_REPORT, minimizes raw operator/reference/incident/action content, maps only the seven already-pinned expected barriers, creates no attention authority and authorizes no external effect.",
+    "The first bridge CI run 36320881705 failed because the adversarial test fixture accidentally contaminated both inactive matrices; the bridge correctly failed closed on the first contamination. The fixture was corrected without weakening runtime logic.",
+    "Final bridge commit c437d40c4a157158ecc8428e5f14069f2e8e0c10 passed Edge Shadow CI run 36321051612 successfully.",
+    "The bridge is code-ready but intentionally unwired: gerencial-watch-shadow remains an ingress/snapshot shell, src/contextKernel remains a non-canonical compatibility harness, and no accessible repository path for the more mature portable Gerencial Watch / César Context Kernel runtime was proven in this checkpoint."
   ],
   "proof": {
     "latest_green_ci_run": "36302995615",
@@ -347,9 +353,20 @@
     "production_tally_first_real_occurrence_proven": false,
     "production_tally_surface_ci_run": "36302995615",
     "production_tally_surface_ci_status": "SUCCESS",
-    "production_tally_local_regression": "PASS_EXIT_0"
+    "production_tally_local_regression": "PASS_EXIT_0",
+    "tally_barrier_bridge_commit": "c437d40c4a157158ecc8428e5f14069f2e8e0c10",
+    "tally_barrier_bridge_contract_version": "watch-tally-barrier-evidence@0.1.0",
+    "tally_barrier_bridge_ci_run": "36321051612",
+    "tally_barrier_bridge_ci_status": "SUCCESS",
+    "tally_barrier_bridge_initial_failed_ci_run": "36320881705",
+    "tally_barrier_bridge_failure_class": "TEST_FIXTURE_DOUBLE_INACTIVE_MATRIX_CONTAMINATION",
+    "tally_barrier_bridge_raw_content_minimized": true,
+    "tally_barrier_bridge_attention_authority": "NONE",
+    "tally_barrier_bridge_external_effects": false,
+    "tally_barrier_bridge_wired": false,
+    "canonical_context_kernel_runtime_access": "NOT_PROVEN_IN_ACCESSIBLE_REPOSITORY_SURFACE"
   },
-  "next_action": "Wait for the first real post-cutover occurrence on ZjVv1a. Then immediately verify the public route, exact 20-column live Google Sheets serialization, legacy mapping positions 4/5/6/7/17/18/19/20, analise_ocorrencias and panel health. If Gate E passes, wire the live signed observation-only webhook with a separate secret, then prove a real incident is admitted idempotently. Do not send a synthetic production incident unless C?sar separately authorizes that effect.",
+  "next_action": "Continue on two independent tracks: (1) wait for the first real post-cutover ZjVv1a occurrence, then prove the exact 20-column live Google Sheets schema and legacy workbook health; only if Gate E passes, wire the live signed observation-only webhook and prove one idempotent production observation. (2) recover/materialize the canonical portable Gerencial Watch / César Context Kernel runtime and connect the already-proven Tally barrier evidence bridge to its capture/investigator path without changing truth class, attention authority or effect authority. Do not use src/contextKernel or gerencial-watch-shadow as a replacement brain.",
   "unknowns": [
     "No real team-sent iFood review batch has been admitted; extraction quality and attachment shape remain unknown.",
     "No defensible iFood review freshness cadence has been established; its freshness must remain UNKNOWN.",
@@ -362,7 +379,8 @@
     "Expected-barrier execution is UNKNOWN for all 30 currently mapped OMISSION/WRONG_ITEM episodes; no trusted incident-level evidence yet proves whether each barrier was executed.",
     "The first real team operational occurrence using the published subtype/barrier fields remains unproven; shadow transport proof must not be promoted to production adoption.",
     "The live Google Sheets integration has not yet exposed the expected 20-column post-cutover schema because no post-cutover real occurrence has been observed; immediate post-publish legacy mappings remain healthy.",
-    "The live signed Tally webhook remains unwired until Gate E is proven from real post-cutover serialization."
+    "The live signed Tally webhook remains unwired until Gate E is proven from real post-cutover serialization.",
+    "The more mature portable Gerencial Watch / César Context Kernel runtime is known from prior project continuity but its executable package/path is not currently proven in an accessible repository surface; do not wire the new bridge into the experimental TypeScript harness or shadow ingress shell as a substitute."
   ],
   "authority": {
     "continuity_update": "AUTHORIZED_METADATA_WRITE_WITHIN_PROJECT_SCOPE",
