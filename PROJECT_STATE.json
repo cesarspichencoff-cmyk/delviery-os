@@ -4,8 +4,8 @@
   "project": "DeliveryOS / TATÁ Edge",
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "design/tata-edge-runtime-foundation-v1",
-  "checkpoint_type": "PRODUCTION_TALLY_DEPLOYED_PORTABLE_KERNEL_V09_HYPOTHESIS_READY_GATE_E_PENDING",
-  "state_basis_head": "494024273ba9a41a048c7714def514d490335eb7",
+  "checkpoint_type": "PRODUCTION_TALLY_DEPLOYED_PORTABLE_KERNEL_V010_PLAN_READY_GATE_E_PENDING",
+  "state_basis_head": "035e4558121c44d055f56b2bdb8d2a161e6a0d94",
   "verified_state_refs": [
     "deploy/cloudflare/gerencial-mail-bridge/",
     "deploy/cloudflare/tata-edge-cloud-shadow/",
@@ -56,7 +56,8 @@
     "docs/context/EVIDENCE_TALLY_BARRIER_BRIDGE_CONTRACT_2026-09-27.md",
     "docs/context/EVIDENCE_PORTABLE_CONTEXT_KERNEL_V07_TALLY_ADAPTER_2026-09-27.md",
     "docs/context/EVIDENCE_PORTABLE_CONTEXT_KERNEL_V08_TEMPORAL_INVESTIGATION_2026-09-27.md",
-    "docs/context/EVIDENCE_PORTABLE_CONTEXT_KERNEL_V09_HYPOTHESIS_DISCONFIRMATION_2026-09-27.md"
+    "docs/context/EVIDENCE_PORTABLE_CONTEXT_KERNEL_V09_HYPOTHESIS_DISCONFIRMATION_2026-09-27.md",
+    "docs/context/EVIDENCE_PORTABLE_CONTEXT_KERNEL_V010_INVESTIGATION_PLAN_2026-09-27.md"
   ],
   "verified_state": [
     "The canonical operational mail bridge is cesar-gerencial-mail-bridge reading Atendimento Sent read-only with EXAMINE + BODY.PEEK and D1 cesar-gerencial-mail-bridge.",
@@ -178,7 +179,14 @@
     "Tally context and hypothesis queries now support explicit as_of replay: current investigation may use later-collected explicitly correlated evidence, while an explicit historical cutoff excludes evidence after that instant; as_of before the anchor fails closed.",
     "The first attempted temporal hardening route was rejected because it incorrectly blocked legitimate post-incident evidence; the route was replaced by explicit as_of rather than weakening tests.",
     "The v0.9 hypothesis projection can read matching OPEN Evidence Debt ids but cannot mutate debt, create commitments, create NEEDS_CESAR, invoke attention or authorize external effects.",
-    "Portable kernel v0.9 remains CODE_READY / TEST_PASS only; WORLD_PROVEN live Tally ingestion remains blocked on DeliveryOS Gate E."
+    "Portable kernel v0.9 remains CODE_READY / TEST_PASS only; WORLD_PROVEN live Tally ingestion remains blocked on DeliveryOS Gate E.",
+    "A separate cesar-context-kernel-v0.10 package now adds a deterministic read-only evidence-gap planning projection above the v0.9 TESTABLE_UNPROVEN hypothesis layer while preserving v0.9 as rollback.",
+    "Portable kernel v0.10 passed 98/98 tests, compileall and final ZIP-byte verification; the clean package is stored at /VÉRTICE/CesarContextOS/cesar-context-kernel-v0.10.zip with SHA-256 1b9ee6b04db73ffddb201fef5fe735bc64ac02256edfb9e44d72d1ca1de2cc80.",
+    "The v0.10 planner compiles and deduplicates hypothesis evidence requirements into NOT_EXECUTED probe candidates; it does not call connectors or external systems.",
+    "Planner outputs are disconfirmation-oriented and preserve hypothesis TESTABLE_UNPROVEN, causal UNPROVEN and source independence UNKNOWN; a plan is not evidence and does not authorize execution.",
+    "The v0.10 planner can surface matching OPEN Evidence Debt ids read-only but cannot mutate debt, create commitments, create NEEDS_CESAR, invoke attention, notify or authorize external effects.",
+    "The repeated stale-version-test failure class is now blocked by a runtime __version__ source plus a package-metadata/version regression check, rather than another literal test update.",
+    "Portable kernel v0.10 remains CODE_READY / TEST_PASS only; WORLD_PROVEN live Tally ingestion remains blocked on DeliveryOS Gate E."
   ],
   "proof": {
     "latest_green_ci_run": "36302995615",
@@ -450,9 +458,31 @@
     "portable_context_kernel_v09_live_feed_wired": false,
     "portable_context_kernel_v09_initial_version_fixture_failures": 2,
     "portable_context_kernel_v09_rejected_temporal_route": "ANCHOR_TIMESTAMP_HARD_CUTOFF",
-    "portable_context_kernel_v09_final_temporal_route": "OPTIONAL_EXPLICIT_AS_OF"
+    "portable_context_kernel_v09_final_temporal_route": "OPTIONAL_EXPLICIT_AS_OF",
+    "portable_context_kernel_v010_version": "0.10.0",
+    "portable_context_kernel_v010_tests": "98/98_PASS",
+    "portable_context_kernel_v010_compileall": "PASS",
+    "portable_context_kernel_v010_zip_integrity": "PASS",
+    "portable_context_kernel_v010_package_clean": true,
+    "portable_context_kernel_v010_library_path": "/VÉRTICE/CesarContextOS/cesar-context-kernel-v0.10.zip",
+    "portable_context_kernel_v010_sha256": "1b9ee6b04db73ffddb201fef5fe735bc64ac02256edfb9e44d72d1ca1de2cc80",
+    "portable_context_kernel_v010_zip_bytes": 70389,
+    "portable_context_kernel_v010_plan_endpoint": "/shadow/investigation/tally-plan",
+    "portable_context_kernel_v010_plan_mode": "READ_ONLY_INVESTIGATION_PLAN_SHADOW",
+    "portable_context_kernel_v010_probe_execution_status": "NOT_EXECUTED",
+    "portable_context_kernel_v010_connectors_called": false,
+    "portable_context_kernel_v010_source_independence_status": "UNKNOWN",
+    "portable_context_kernel_v010_causal_status": "UNPROVEN",
+    "portable_context_kernel_v010_evidence_debt_mutation": false,
+    "portable_context_kernel_v010_auto_commitment": false,
+    "portable_context_kernel_v010_auto_needs_cesar": false,
+    "portable_context_kernel_v010_attention_authority": "NONE",
+    "portable_context_kernel_v010_external_actions": false,
+    "portable_context_kernel_v010_live_feed_wired": false,
+    "portable_context_kernel_v010_version_source": "cesar_context_kernel.__version__",
+    "portable_context_kernel_v010_package_version_match_test": true
   },
-  "next_action": "Continue on two tracks with no synthetic production incident: (1) wait for the first real post-cutover ZjVv1a occurrence, prove the exact 20-column live Google Sheets schema plus legacy workbook health, then and only then wire the signed observation-only webhook and prove one idempotent live observation. (2) use cesar-context-kernel-v0.9 as the shadow investigation target: run context + TESTABLE_UNPROVEN hypotheses, use explicit as_of for historical replay, keep source independence UNKNOWN unless separately proven, seek disconfirming evidence before causal interpretation, and never auto-resolve Evidence Debt, create NEEDS_CESAR, invoke attention or authorize external effects.",
+  "next_action": "Continue on two tracks with no synthetic production incident: (1) wait for the first real post-cutover ZjVv1a occurrence, prove the exact 20-column live Google Sheets schema plus legacy workbook health, then and only then wire the signed observation-only webhook and prove one idempotent live observation. (2) use cesar-context-kernel-v0.10 as the shadow investigation chain: context -> TESTABLE_UNPROVEN hypotheses -> NOT_EXECUTED evidence-gap plan. The plan may identify the smallest proof gaps but must not call connectors, mutate Evidence Debt, create NEEDS_CESAR, invoke attention or authorize external effects.",
   "unknowns": [
     "No real team-sent iFood review batch has been admitted; extraction quality and attachment shape remain unknown.",
     "No defensible iFood review freshness cadence has been established; its freshness must remain UNKNOWN.",
@@ -467,7 +497,8 @@
     "The live Google Sheets integration has not yet exposed the expected 20-column post-cutover schema because no post-cutover real occurrence has been observed; immediate post-publish legacy mappings remain healthy.",
     "The live signed Tally webhook remains unwired until Gate E is proven from real post-cutover serialization.",
     "Source independence for cross-source evidence is not yet proven by the portable kernel; v0.8 deliberately reports it as UNKNOWN even when an explicitly correlated different-source event exists.",
-    "No real v0.9 hypothesis projection has yet run on a live post-cutover Tally observation; its world behavior remains UNKNOWN until Gate E admits the first real minimized envelope."
+    "No real v0.9 hypothesis projection has yet run on a live post-cutover Tally observation; its world behavior remains UNKNOWN until Gate E admits the first real minimized envelope.",
+    "No v0.10 investigation plan has yet been generated from a live post-cutover Tally observation; probe usefulness and redundancy on real incidents remain UNKNOWN until Gate E admits real minimized envelopes."
   ],
   "authority": {
     "continuity_update": "AUTHORIZED_METADATA_WRITE_WITHIN_PROJECT_SCOPE",
