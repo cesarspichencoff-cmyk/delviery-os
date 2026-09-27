@@ -46,6 +46,9 @@ assert.equal(memory.classified_action_episode_count, 3);
 assert.equal(memory.unclassified_action_episode_count, 1);
 assert.equal(memory.later_recurrence_observed_count, 1);
 assert.equal(memory.no_later_recurrence_in_loaded_window_count, 2);
+assert.equal(memory.no_post_action_window_count, 0);
+assert.equal(memory.nonexhaustive_window_no_recurrence_count, 2);
+assert.equal(memory.exhaustive_loaded_window_no_recurrence_count, 0);
 assert.equal(memory.action_effective_proven_count, 0);
 assert.equal(memory.action_ineffective_proven_count, 0);
 assert.equal(memory.source_concluded_is_action_effective, false);
@@ -60,6 +63,8 @@ const resend = memory.followups.find(
 );
 assert.ok(resend);
 assert.equal(resend.followup_status, "LATER_RECURRENCE_OBSERVED");
+assert.equal(resend.post_action_observation_status, "RECURRENCE_OBSERVED");
+assert.equal(resend.calendar_days_to_loaded_window_end, 9);
 assert.equal(resend.next_recurrence_episode_id, "o3");
 assert.equal(resend.next_recurrence_business_date, "2026-09-03");
 assert.equal(resend.days_to_next_recurrence, 2);
@@ -74,6 +79,11 @@ assert.equal(
   wrongItem.followup_status,
   "NO_LATER_RECURRENCE_IN_LOADED_WINDOW",
 );
+assert.equal(
+  wrongItem.post_action_observation_status,
+  "NONEXHAUSTIVE_WINDOW_NO_RECURRENCE",
+);
+assert.equal(wrongItem.calendar_days_to_loaded_window_end, 8);
 assert.equal(wrongItem.action_effectiveness_status, "UNKNOWN");
 
 const reviewNeeded = memory.followups.find(
@@ -84,7 +94,44 @@ assert.equal(
   reviewNeeded.followup_status,
   "NO_LATER_RECURRENCE_IN_LOADED_WINDOW",
 );
+assert.equal(
+  reviewNeeded.post_action_observation_status,
+  "NONEXHAUSTIVE_WINDOW_NO_RECURRENCE",
+);
+assert.equal(reviewNeeded.calendar_days_to_loaded_window_end, 5);
 assert.equal(reviewNeeded.action_effectiveness_status, "UNKNOWN");
+
+const zeroWindow = buildActionFollowupMemory({
+  loaded_window_end: "2026-09-10",
+  coverage_exhaustive: true,
+  evidence: [
+    episode("last", "2026-09-10", "PACKAGING_LEAK", ["REFUND"]),
+  ],
+});
+assert.equal(zeroWindow.no_post_action_window_count, 1);
+assert.equal(
+  zeroWindow.followups[0].post_action_observation_status,
+  "NO_POST_ACTION_WINDOW",
+);
+assert.equal(zeroWindow.followups[0].calendar_days_to_loaded_window_end, 0);
+assert.equal(zeroWindow.followups[0].action_effectiveness_status, "UNKNOWN");
+
+const exhaustiveNoRecurrence = buildActionFollowupMemory({
+  loaded_window_end: "2026-09-10",
+  coverage_exhaustive: true,
+  evidence: [
+    episode("covered", "2026-09-01", "PACKAGING_LEAK", ["REFUND"]),
+  ],
+});
+assert.equal(exhaustiveNoRecurrence.exhaustive_loaded_window_no_recurrence_count, 1);
+assert.equal(
+  exhaustiveNoRecurrence.followups[0].post_action_observation_status,
+  "EXHAUSTIVE_LOADED_WINDOW_NO_RECURRENCE",
+);
+assert.equal(
+  exhaustiveNoRecurrence.followups[0].action_effectiveness_status,
+  "UNKNOWN",
+);
 
 assert.throws(
   () =>
@@ -102,6 +149,9 @@ console.log(JSON.stringify({
   status: "PASS",
   later_business_date_recurrence_is_observed_followup: true,
   same_day_repeat_is_not_later_followup: true,
+  no_post_action_window_is_explicit: true,
+  nonexhaustive_window_is_distinct: true,
+  exhaustive_loaded_window_is_distinct: true,
   source_concluded_is_not_action_effective: true,
   no_recurrence_in_window_is_not_resolution: true,
   later_recurrence_is_not_action_failure: true,
