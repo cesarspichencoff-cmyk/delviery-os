@@ -5,7 +5,7 @@
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "design/tata-edge-runtime-foundation-v1",
   "checkpoint_type": "PRODUCTION_TALLY_DEPLOYED_PORTABLE_KERNEL_V011_SHADOW_REPLAY_READY_GATE_E_PENDING",
-  "state_basis_head": "20dc075d740722c09f03e126b7c7fa9f13a49dcf",
+  "state_basis_head": "fa92583c0bc8d8747dcd0f77df17cc6719ba82e1",
   "verified_state_refs": [
     "deploy/cloudflare/gerencial-mail-bridge/",
     "deploy/cloudflare/tata-edge-cloud-shadow/",
@@ -60,7 +60,8 @@
     "docs/context/EVIDENCE_PORTABLE_CONTEXT_KERNEL_V010_INVESTIGATION_PLAN_2026-09-27.md",
     "docs/context/EVIDENCE_PORTABLE_CONTEXT_KERNEL_V011_SHADOW_REPLAY_2026-09-27.md",
     "docs/context/EVIDENCE_IFOOD_VISUAL_REFERENCE_CONTRACT_2026-09-27.md",
-    "docs/context/EVIDENCE_IFOOD_ZERO_COST_OCR_REJECTION_2026-09-27.md"
+    "docs/context/EVIDENCE_IFOOD_ZERO_COST_OCR_REJECTION_2026-09-27.md",
+    "docs/context/EVIDENCE_ACTION_FOLLOWUP_WINDOW_QUALITY_2026-09-27.md"
   ],
   "verified_state": [
     "The canonical operational mail bridge is cesar-gerencial-mail-bridge reading Atendimento Sent read-only with EXAMINE + BODY.PEEK and D1 cesar-gerencial-mail-bridge.",
@@ -204,7 +205,11 @@
     "The existing mail bridge already preserves authorized-route iFood image attachment bytes losslessly in D1 ifood_review_attachment.content_blob; image-only mail remains ATTACHMENT_ONLY and no OCR is falsely claimed.",
     "A zero-cost Tesseract 5.5.0 benchmark against the seven real iFood screenshots was run as one multi-page OCR pass; visible order IDs were 6/6 exact and ratings/review dates were readable, but visible order dates were only 1/6 exact.",
     "The local Tesseract screenshot-OCR route is rejected as the primary iFood extractor; regex/context guessing must not be used to repair critical order-date OCR errors into source facts.",
-    "The private raw OCR output is stored at /VÉRTICE/DeliveryOS/ifood-review-tesseract-eng-2026-09-27.txt with SHA-256 0da4da8b011b3bba5a065215ddf6e40ccc82ca7be28d638ba08b775c3ca151e8, and the benchmark summary at /VÉRTICE/DeliveryOS/ifood-review-ocr-benchmark-2026-09-27.json with SHA-256 c6bb6b22047ad1e6a73fd7c294ef6154bcf9c081106de6d7c09e1ff0015b45d6."
+    "The private raw OCR output is stored at /VÉRTICE/DeliveryOS/ifood-review-tesseract-eng-2026-09-27.txt with SHA-256 0da4da8b011b3bba5a065215ddf6e40ccc82ca7be28d638ba08b775c3ca151e8, and the benchmark summary at /VÉRTICE/DeliveryOS/ifood-review-ocr-benchmark-2026-09-27.json with SHA-256 c6bb6b22047ad1e6a73fd7c294ef6154bcf9c081106de6d7c09e1ff0015b45d6.",
+    "Action follow-up now distinguishes recurrence observed, zero post-action window, non-exhaustive no-recurrence window and exhaustive loaded-window no-recurrence while preserving action effectiveness UNKNOWN.",
+    "Each action follow-up now exposes calendar_days_to_loaded_window_end; this is a bounded calendar span, not a claim of continuous observation.",
+    "The Caixa Pulse action-followup replay output now exposes separate no_post_action_window, nonexhaustive_window_no_recurrence and exhaustive_loaded_window_no_recurrence counters for future fresh source replays.",
+    "Edge Shadow CI run 36347231343 completed SUCCESS for action-followup window-quality head 4d3a89bd03700eb7d67431db458adbe0dfb915e9."
   ],
   "proof": {
     "latest_green_ci_run": "36302995615",
@@ -558,9 +563,22 @@
     "ifood_tesseract_raw_library_path": "/VÉRTICE/DeliveryOS/ifood-review-tesseract-eng-2026-09-27.txt",
     "ifood_tesseract_raw_sha256": "0da4da8b011b3bba5a065215ddf6e40ccc82ca7be28d638ba08b775c3ca151e8",
     "ifood_tesseract_summary_library_path": "/VÉRTICE/DeliveryOS/ifood-review-ocr-benchmark-2026-09-27.json",
-    "ifood_tesseract_summary_sha256": "c6bb6b22047ad1e6a73fd7c294ef6154bcf9c081106de6d7c09e1ff0015b45d6"
+    "ifood_tesseract_summary_sha256": "c6bb6b22047ad1e6a73fd7c294ef6154bcf9c081106de6d7c09e1ff0015b45d6",
+    "action_followup_window_quality_version": "2026-09-27",
+    "action_followup_post_action_statuses": [
+      "RECURRENCE_OBSERVED",
+      "NO_POST_ACTION_WINDOW",
+      "NONEXHAUSTIVE_WINDOW_NO_RECURRENCE",
+      "EXHAUSTIVE_LOADED_WINDOW_NO_RECURRENCE"
+    ],
+    "action_followup_calendar_span_exposed": true,
+    "action_followup_action_effectiveness_status": "UNKNOWN",
+    "action_followup_shared_root_cause_status": "UNPROVEN",
+    "action_followup_window_quality_ci_run": 36347231343,
+    "action_followup_window_quality_ci_result": "SUCCESS",
+    "action_followup_real_69_row_replay_refreshed": false
   },
-  "next_action": "Continue two independent evidence tracks: (1) keep Tally Gate E read-only until the first real post-cutover ZjVv1a response appears; (2) do not retry the rejected local Tesseract+repair route for iFood screenshots. Evaluate a materially different zero-cost extraction path or keep image extraction human/model-assisted until a route beats the seven-image benchmark. The authorized Atendimento -> César review-mail route remains the WORLD_PROVEN live-source gate.",
+  "next_action": "Continue three safe tracks without synthetic production incidents or external effects: (1) observe Tally Gate E read-only until the first real post-cutover ZjVv1a response; (2) keep the rejected Tesseract iFood route locked and evaluate only materially different extraction paths against the private seven-image benchmark; (3) when a fresh canonical Caixa Pulse occurrence export is available, rerun action follow-up and quantify zero-window vs non-exhaustive vs exhaustive no-recurrence buckets before any action-effectiveness interpretation.",
   "unknowns": [
     "No defensible iFood review freshness cadence has been established; its freshness must remain UNKNOWN.",
     "Global critical-source coverage is incomplete; global all-clear must remain disabled.",
@@ -568,7 +586,6 @@
     "Cashier-PC Edge binding and physical print/delivery telemetry remain unproven.",
     "Apple Watch attention delivery remains unproven.",
     "Caixa Pulse closing emails are not guaranteed exhaustive ground truth for every operational event; absence claims remain bounded to loaded full-day email evidence.",
-    "Independent post-action outcome evidence is not yet systematically linked; current action follow-up proves later same-family recurrence only, so action effectiveness remains UNKNOWN.",
     "Expected-barrier execution is UNKNOWN for all 30 currently mapped OMISSION/WRONG_ITEM episodes; no trusted incident-level evidence yet proves whether each barrier was executed.",
     "The first real team operational occurrence using the published subtype/barrier fields remains unproven; shadow transport proof must not be promoted to production adoption.",
     "The live Google Sheets integration has not yet exposed the expected 20-column post-cutover schema because no post-cutover real occurrence has been observed; immediate post-publish legacy mappings remain healthy.",
@@ -579,7 +596,9 @@
     "Exact D1 persisted event/submission identity linkage for the EqEK24l shadow replay remains UNKNOWN; the prior world receipt proves the unique marker path but does not preserve that exact identifier pair.",
     "No v0.11 live-default investigation chain has yet consumed a real post-cutover production Tally observation.",
     "No real team-sent iFood review batch has yet been admitted through the authorized atendimento@tatasushi.com.br -> cesar@tatasushi.com.br route.",
-    "Automated iFood screenshot extraction quality remains UNKNOWN: the seven-image visual benchmark exists, but no OCR/model extractor is yet wired or benchmarked against it."
+    "Automated iFood screenshot extraction quality remains UNKNOWN: the seven-image visual benchmark exists, but no OCR/model extractor is yet wired or benchmarked against it.",
+    "Independent post-action outcome evidence is not yet systematically linked; action follow-up now qualifies the observation window but action effectiveness remains UNKNOWN.",
+    "The historical 69-row Caixa Pulse replay has not yet been freshly rerun with the new action-window-quality counters in this session."
   ],
   "authority": {
     "continuity_update": "AUTHORIZED_METADATA_WRITE_WITHIN_PROJECT_SCOPE",
