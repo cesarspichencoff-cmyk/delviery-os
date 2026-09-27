@@ -3,6 +3,7 @@ import {
   OCCURRENCE_CAPTURE_SHADOW_BOUNDARY,
   OCCURRENCE_FIELD_GROUPS,
   OCCURRENCE_HAPPENED_TITLE,
+  OCCURRENCE_LIVE_BARRIER_GROUPS,
   OCCURRENCE_STATUS_OPTIONS,
   OCCURRENCE_TYPE_OPTIONS,
   TALLY_CAIXA_PULSE_OCCURRENCE,
@@ -18,7 +19,7 @@ assert.equal(
   TALLY_CAIXA_PULSE_OCCURRENCE.workspace_id,
 );
 assert.equal(TALLY_CAIXA_PULSE_OCCURRENCE.workspace_id, "3xP0bd");
-assert.equal(TALLY_CAIXA_PULSE_OCCURRENCE.expected_block_count, 31);
+assert.equal(TALLY_CAIXA_PULSE_OCCURRENCE.expected_block_count, 57);
 assert.equal(TALLY_CAIXA_PULSE_REGISTER.expected_block_count, 76);
 assert.equal(OCCURRENCE_TYPE_OPTIONS.length, 10);
 assert.deepEqual(OCCURRENCE_STATUS_OPTIONS, [
@@ -29,6 +30,12 @@ assert.deepEqual(OCCURRENCE_STATUS_OPTIONS, [
 
 const fieldGroups = Object.values(OCCURRENCE_FIELD_GROUPS);
 assert.equal(new Set(fieldGroups).size, fieldGroups.length);
+const liveBarrierGroups = Object.values(OCCURRENCE_LIVE_BARRIER_GROUPS);
+assert.equal(new Set(liveBarrierGroups).size, liveBarrierGroups.length);
+assert.equal(
+  liveBarrierGroups.some((group) => fieldGroups.includes(group as never)),
+  false,
+);
 assert.equal(
   OCCURRENCE_HAPPENED_TITLE.raw_title,
   "O que aconteceu?\n",
@@ -78,6 +85,8 @@ console.log(JSON.stringify({
   public_form_ids_pinned: true,
   editor_routes_pinned: true,
   occurrence_group_uuids_unique: true,
+  live_barrier_group_uuids_unique: true,
+  live_occurrence_surface_pinned_after_cutover: true,
   existing_type_taxonomy_preserved: true,
   existing_status_taxonomy_preserved: true,
   happened_title_newline_debt_explicit: true,

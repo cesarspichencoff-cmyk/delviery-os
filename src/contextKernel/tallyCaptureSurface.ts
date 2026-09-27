@@ -1,5 +1,5 @@
 export const TALLY_CAPTURE_SURFACE_VERSION =
-  "tally-capture-surface@0.1.0";
+  "tally-capture-surface@0.2.0";
 
 export interface TallyCaptureSurfaceDescriptor {
   role: "SHIFT_REGISTER" | "OCCURRENCE";
@@ -29,9 +29,9 @@ export const TALLY_CAIXA_PULSE_OCCURRENCE:
   workspace_id: "3xP0bd",
   public_url: "https://tally.so/r/ZjVv1a",
   editor_url: "https://tally.so/forms/ZjVv1a",
-  expected_block_count: 31,
+  expected_block_count: 57,
   expected_sha256:
-    "51f07f02436057199af4d8a9782c37945b9bc38a3f9d54db8104abff9b73d251",
+    "d9303b9892434195ef4d3b93ca90ce96019a03dc2dd8e857deffa788bd2301b0",
 };
 
 export const TALLY_CAIXA_PULSE_SURFACES = [
@@ -48,6 +48,12 @@ export const OCCURRENCE_FIELD_GROUPS = {
   happened_text: "d51ce650-20de-46d5-9e7b-d0375e34e4bc",
   action_text: "397d4271-7cd9-410f-97cc-ab994daa0b0f",
   status: "fa40a224-0a6e-4bc5-b0bb-0342292f2642",
+} as const;
+
+export const OCCURRENCE_LIVE_BARRIER_GROUPS = {
+  subtype: "830a6e53-0320-46ee-8a1e-4821cb160e28",
+  item_missing_matrix: "5d0f78d3-dbb9-4052-a654-ffd99058dc22",
+  wrong_item_matrix: "4e72822d-3361-46de-832a-02fb61148aad",
 } as const;
 
 export const OCCURRENCE_HAPPENED_TITLE = {
