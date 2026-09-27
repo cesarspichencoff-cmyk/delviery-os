@@ -4,8 +4,8 @@
   "project": "DeliveryOS / TATÁ Edge",
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "design/tata-edge-runtime-foundation-v1",
-  "checkpoint_type": "PRODUCTION_TALLY_DEPLOYED_PORTABLE_KERNEL_V07_READY_GATE_E_PENDING",
-  "state_basis_head": "7662293fe122d92f6e7d28fd9d83718fa820ea07",
+  "checkpoint_type": "PRODUCTION_TALLY_DEPLOYED_PORTABLE_KERNEL_V08_TEMPORAL_CONTEXT_READY_GATE_E_PENDING",
+  "state_basis_head": "e2cdc94628daad0cfda1cf0c640d25a08932ac2b",
   "verified_state_refs": [
     "deploy/cloudflare/gerencial-mail-bridge/",
     "deploy/cloudflare/tata-edge-cloud-shadow/",
@@ -54,7 +54,8 @@
     "docs/context/EVIDENCE_PRODUCTION_CUTOVER_PARTIAL_CAIXA_2026-09-26.md",
     "docs/context/EVIDENCE_PRODUCTION_TALLY_FORM_DEPLOYED_2026-09-27.md",
     "docs/context/EVIDENCE_TALLY_BARRIER_BRIDGE_CONTRACT_2026-09-27.md",
-    "docs/context/EVIDENCE_PORTABLE_CONTEXT_KERNEL_V07_TALLY_ADAPTER_2026-09-27.md"
+    "docs/context/EVIDENCE_PORTABLE_CONTEXT_KERNEL_V07_TALLY_ADAPTER_2026-09-27.md",
+    "docs/context/EVIDENCE_PORTABLE_CONTEXT_KERNEL_V08_TEMPORAL_INVESTIGATION_2026-09-27.md"
   ],
   "verified_state": [
     "The canonical operational mail bridge is cesar-gerencial-mail-bridge reading Atendimento Sent read-only with EXAMINE + BODY.PEEK and D1 cesar-gerencial-mail-bridge.",
@@ -163,7 +164,13 @@
     "The v0.7 Tally adapter creates no commitments, no automatic NEEDS_CESAR, no automatic attention, no external effect, and does not resolve matching Evidence Debt from operator self-report.",
     "v0.7 exact replay is idempotent; changed semantic replay for the same submission fails closed; wrong form/barrier set/blank category fail before persistence and raw extra fields or truth promotion are rejected by API schema.",
     "Portable kernel v0.7 passed 77/77 tests and compileall, was packaged without SQLite/DB or Python caches, and was uploaded to /VÉRTICE/CesarContextOS/cesar-context-kernel-v0.7.zip with SHA-256 5318950cb94bc097e8d3701cc86cb11c0a7e1f6195f1dab5ca869105ed48e497.",
-    "Portable kernel v0.7 is CODE_READY / TEST_PASS only; it is not yet fed by the live production Tally webhook, so WORLD_PROVEN remains blocked on DeliveryOS Gate E."
+    "Portable kernel v0.7 is CODE_READY / TEST_PASS only; it is not yet fed by the live production Tally webhook, so WORLD_PROVEN remains blocked on DeliveryOS Gate E.",
+    "A separate cesar-context-kernel-v0.8 package now adds a read-only Tally temporal/investigation projection while preserving the v0.7 OPERATOR_REPORT admission boundary and v0.7 as an intact rollback artifact.",
+    "Portable kernel v0.8 passed 85/85 tests, compileall and ZIP integrity verification from the packaged bytes; it was packaged without SQLite/DB or Python/pytest caches and uploaded to /VÉRTICE/CesarContextOS/cesar-context-kernel-v0.8.zip with SHA-256 f5f2483248e01aee2d3c460c5ecff046d3ad9a5a079afdfd30168f0ddf2c7a99.",
+    "The v0.8 Tally context projection is backward-looking and descriptive only: it counts recurrence by subtype and category+subtype but never promotes recurrence to cause, barrier failure, barrier compliance, guilt or resolution.",
+    "v0.8 surfaces cross-source evidence only through the same explicit correlation_key; temporal proximity never creates an evidence join, and a different source is not automatically treated as independent. source_independence_status remains UNKNOWN.",
+    "The v0.8 context projection is state-read-only: it does not resolve Evidence Debt, create commitments, create automatic NEEDS_CESAR, invoke attention authority or authorize an external effect.",
+    "Portable kernel v0.8 remains CODE_READY / TEST_PASS only; WORLD_PROVEN live Tally ingestion remains blocked on DeliveryOS Gate E."
   ],
   "proof": {
     "latest_green_ci_run": "36302995615",
@@ -384,9 +391,28 @@
     "portable_context_kernel_v07_auto_commitment": false,
     "portable_context_kernel_v07_auto_needs_cesar": false,
     "portable_context_kernel_v07_external_actions": false,
-    "portable_context_kernel_v07_live_feed_wired": false
+    "portable_context_kernel_v07_live_feed_wired": false,
+    "portable_context_kernel_v08_version": "0.8.0",
+    "portable_context_kernel_v08_tests": "85/85_PASS",
+    "portable_context_kernel_v08_compileall": "PASS",
+    "portable_context_kernel_v08_zip_integrity": "PASS",
+    "portable_context_kernel_v08_package_clean": true,
+    "portable_context_kernel_v08_library_path": "/VÉRTICE/CesarContextOS/cesar-context-kernel-v0.8.zip",
+    "portable_context_kernel_v08_sha256": "f5f2483248e01aee2d3c460c5ecff046d3ad9a5a079afdfd30168f0ddf2c7a99",
+    "portable_context_kernel_v08_investigation_endpoint": "/shadow/investigation/tally-context",
+    "portable_context_kernel_v08_recurrence_semantics": "DESCRIPTIVE_ONLY",
+    "portable_context_kernel_v08_correlation_basis": "EXPLICIT_CORRELATION_KEY_ONLY",
+    "portable_context_kernel_v08_temporal_proximity_join_allowed": false,
+    "portable_context_kernel_v08_source_independence_status": "UNKNOWN",
+    "portable_context_kernel_v08_causal_status": "UNPROVEN",
+    "portable_context_kernel_v08_auto_debt_resolution": false,
+    "portable_context_kernel_v08_auto_commitment": false,
+    "portable_context_kernel_v08_auto_needs_cesar": false,
+    "portable_context_kernel_v08_attention_authority": "NONE",
+    "portable_context_kernel_v08_external_actions": false,
+    "portable_context_kernel_v08_live_feed_wired": false
   },
-  "next_action": "Continue on two tracks with no synthetic production incident: (1) wait for the first real post-cutover ZjVv1a occurrence and immediately prove the exact 20-column live Google Sheets schema plus legacy workbook health; if Gate E passes, wire the signed live observation-only webhook and prove one idempotent production observation. (2) use the now-tested cesar-context-kernel-v0.7 package as the higher-layer shadow target for the minimized Tally barrier envelope after Gate E, proving OPERATOR_REPORT remains non-causal, does not auto-resolve Evidence Debt, and creates no automatic NEEDS_CESAR or external effect.",
+  "next_action": "Continue on two tracks with no synthetic production incident: (1) wait for the first real post-cutover ZjVv1a occurrence, prove the exact 20-column live Google Sheets schema plus legacy workbook health, then and only then wire the signed observation-only webhook and prove one idempotent live observation. (2) use cesar-context-kernel-v0.8 as the shadow investigation target: recurrence is descriptive, cross-source evidence requires explicit correlation, source independence remains UNKNOWN unless separately proven, and the path must not auto-resolve Evidence Debt, create NEEDS_CESAR, invoke attention or authorize external effects.",
   "unknowns": [
     "No real team-sent iFood review batch has been admitted; extraction quality and attachment shape remain unknown.",
     "No defensible iFood review freshness cadence has been established; its freshness must remain UNKNOWN.",
@@ -399,7 +425,8 @@
     "Expected-barrier execution is UNKNOWN for all 30 currently mapped OMISSION/WRONG_ITEM episodes; no trusted incident-level evidence yet proves whether each barrier was executed.",
     "The first real team operational occurrence using the published subtype/barrier fields remains unproven; shadow transport proof must not be promoted to production adoption.",
     "The live Google Sheets integration has not yet exposed the expected 20-column post-cutover schema because no post-cutover real occurrence has been observed; immediate post-publish legacy mappings remain healthy.",
-    "The live signed Tally webhook remains unwired until Gate E is proven from real post-cutover serialization."
+    "The live signed Tally webhook remains unwired until Gate E is proven from real post-cutover serialization.",
+    "Source independence for cross-source evidence is not yet proven by the portable kernel; v0.8 deliberately reports it as UNKNOWN even when an explicitly correlated different-source event exists."
   ],
   "authority": {
     "continuity_update": "AUTHORIZED_METADATA_WRITE_WITHIN_PROJECT_SCOPE",
