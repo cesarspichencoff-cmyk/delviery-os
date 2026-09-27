@@ -174,6 +174,7 @@ test("inactive matrix contamination fails closed", () => {
       projectTallyBarrierEvidence(
         fixture({
           subtype: "Outro",
+          item_missing_barriers: null,
           wrong_item_barriers: {
             "Produto e quantidade conferiam": "REPORTED_DONE",
             "Observações do cliente conferidas": "REPORTED_DONE",
