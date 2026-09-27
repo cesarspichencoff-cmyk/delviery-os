@@ -4,8 +4,8 @@
   "project": "DeliveryOS / TATÁ Edge",
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "design/tata-edge-runtime-foundation-v1",
-  "checkpoint_type": "PRODUCTION_TALLY_DEPLOYED_BRIDGE_CONTRACT_PROVEN_GATE_E_PENDING",
-  "state_basis_head": "c437d40c4a157158ecc8428e5f14069f2e8e0c10",
+  "checkpoint_type": "PRODUCTION_TALLY_DEPLOYED_PORTABLE_KERNEL_V07_READY_GATE_E_PENDING",
+  "state_basis_head": "7662293fe122d92f6e7d28fd9d83718fa820ea07",
   "verified_state_refs": [
     "deploy/cloudflare/gerencial-mail-bridge/",
     "deploy/cloudflare/tata-edge-cloud-shadow/",
@@ -53,7 +53,8 @@
     "docs/context/EVIDENCE_CAIXA_EXECUTIVO_CUTOVER_SHADOW_2026-09-26.md",
     "docs/context/EVIDENCE_PRODUCTION_CUTOVER_PARTIAL_CAIXA_2026-09-26.md",
     "docs/context/EVIDENCE_PRODUCTION_TALLY_FORM_DEPLOYED_2026-09-27.md",
-    "docs/context/EVIDENCE_TALLY_BARRIER_BRIDGE_CONTRACT_2026-09-27.md"
+    "docs/context/EVIDENCE_TALLY_BARRIER_BRIDGE_CONTRACT_2026-09-27.md",
+    "docs/context/EVIDENCE_PORTABLE_CONTEXT_KERNEL_V07_TALLY_ADAPTER_2026-09-27.md"
   ],
   "verified_state": [
     "The canonical operational mail bridge is cesar-gerencial-mail-bridge reading Atendimento Sent read-only with EXAMINE + BODY.PEEK and D1 cesar-gerencial-mail-bridge.",
@@ -156,7 +157,13 @@
     "The Tally barrier bridge preserves OPERATOR_SELF_REPORT, minimizes raw operator/reference/incident/action content, maps only the seven already-pinned expected barriers, creates no attention authority and authorizes no external effect.",
     "The first bridge CI run 36320881705 failed because the adversarial test fixture accidentally contaminated both inactive matrices; the bridge correctly failed closed on the first contamination. The fixture was corrected without weakening runtime logic.",
     "Final bridge commit c437d40c4a157158ecc8428e5f14069f2e8e0c10 passed Edge Shadow CI run 36321051612 successfully.",
-    "The bridge is code-ready but intentionally unwired: gerencial-watch-shadow remains an ingress/snapshot shell, src/contextKernel remains a non-canonical compatibility harness, and no accessible repository path for the more mature portable Gerencial Watch / César Context Kernel runtime was proven in this checkpoint."
+    "The bridge is code-ready but intentionally unwired: gerencial-watch-shadow remains an ingress/snapshot shell, src/contextKernel remains a non-canonical compatibility harness, and no accessible repository path for the more mature portable Gerencial Watch / César Context Kernel runtime was proven in this checkpoint.",
+    "The mature portable César Context Kernel runtime was recovered from personal Library package /VÉRTICE/CesarContextOS/cesar-context-kernel-v0.6.zip; v0.6 was preserved unchanged as rollback and its baseline suite passed 67/67.",
+    "A separate cesar-context-kernel-v0.7 package now admits the minimized Tally barrier bridge envelope into the Event Spine as OPERATOR_REPORT / POINT_IN_TIME / OBSERVATION_ONLY.",
+    "The v0.7 Tally adapter creates no commitments, no automatic NEEDS_CESAR, no automatic attention, no external effect, and does not resolve matching Evidence Debt from operator self-report.",
+    "v0.7 exact replay is idempotent; changed semantic replay for the same submission fails closed; wrong form/barrier set/blank category fail before persistence and raw extra fields or truth promotion are rejected by API schema.",
+    "Portable kernel v0.7 passed 77/77 tests and compileall, was packaged without SQLite/DB or Python caches, and was uploaded to /VÉRTICE/CesarContextOS/cesar-context-kernel-v0.7.zip with SHA-256 5318950cb94bc097e8d3701cc86cb11c0a7e1f6195f1dab5ca869105ed48e497.",
+    "Portable kernel v0.7 is CODE_READY / TEST_PASS only; it is not yet fed by the live production Tally webhook, so WORLD_PROVEN remains blocked on DeliveryOS Gate E."
   ],
   "proof": {
     "latest_green_ci_run": "36302995615",
@@ -364,9 +371,22 @@
     "tally_barrier_bridge_attention_authority": "NONE",
     "tally_barrier_bridge_external_effects": false,
     "tally_barrier_bridge_wired": false,
-    "canonical_context_kernel_runtime_access": "NOT_PROVEN_IN_ACCESSIBLE_REPOSITORY_SURFACE"
+    "canonical_context_kernel_runtime_access": "NOT_PROVEN_IN_ACCESSIBLE_REPOSITORY_SURFACE",
+    "portable_context_kernel_recovered_version": "0.6.0",
+    "portable_context_kernel_v06_baseline_tests": "67/67_PASS",
+    "portable_context_kernel_v07_version": "0.7.0",
+    "portable_context_kernel_v07_tests": "77/77_PASS",
+    "portable_context_kernel_v07_compileall": "PASS",
+    "portable_context_kernel_v07_library_path": "/VÉRTICE/CesarContextOS/cesar-context-kernel-v0.7.zip",
+    "portable_context_kernel_v07_sha256": "5318950cb94bc097e8d3701cc86cb11c0a7e1f6195f1dab5ca869105ed48e497",
+    "portable_context_kernel_v07_event_evidence_class": "OPERATOR_REPORT",
+    "portable_context_kernel_v07_auto_debt_resolution": false,
+    "portable_context_kernel_v07_auto_commitment": false,
+    "portable_context_kernel_v07_auto_needs_cesar": false,
+    "portable_context_kernel_v07_external_actions": false,
+    "portable_context_kernel_v07_live_feed_wired": false
   },
-  "next_action": "Continue on two independent tracks: (1) wait for the first real post-cutover ZjVv1a occurrence, then prove the exact 20-column live Google Sheets schema and legacy workbook health; only if Gate E passes, wire the live signed observation-only webhook and prove one idempotent production observation. (2) recover/materialize the canonical portable Gerencial Watch / César Context Kernel runtime and connect the already-proven Tally barrier evidence bridge to its capture/investigator path without changing truth class, attention authority or effect authority. Do not use src/contextKernel or gerencial-watch-shadow as a replacement brain.",
+  "next_action": "Continue on two tracks with no synthetic production incident: (1) wait for the first real post-cutover ZjVv1a occurrence and immediately prove the exact 20-column live Google Sheets schema plus legacy workbook health; if Gate E passes, wire the signed live observation-only webhook and prove one idempotent production observation. (2) use the now-tested cesar-context-kernel-v0.7 package as the higher-layer shadow target for the minimized Tally barrier envelope after Gate E, proving OPERATOR_REPORT remains non-causal, does not auto-resolve Evidence Debt, and creates no automatic NEEDS_CESAR or external effect.",
   "unknowns": [
     "No real team-sent iFood review batch has been admitted; extraction quality and attachment shape remain unknown.",
     "No defensible iFood review freshness cadence has been established; its freshness must remain UNKNOWN.",
@@ -379,8 +399,7 @@
     "Expected-barrier execution is UNKNOWN for all 30 currently mapped OMISSION/WRONG_ITEM episodes; no trusted incident-level evidence yet proves whether each barrier was executed.",
     "The first real team operational occurrence using the published subtype/barrier fields remains unproven; shadow transport proof must not be promoted to production adoption.",
     "The live Google Sheets integration has not yet exposed the expected 20-column post-cutover schema because no post-cutover real occurrence has been observed; immediate post-publish legacy mappings remain healthy.",
-    "The live signed Tally webhook remains unwired until Gate E is proven from real post-cutover serialization.",
-    "The more mature portable Gerencial Watch / César Context Kernel runtime is known from prior project continuity but its executable package/path is not currently proven in an accessible repository surface; do not wire the new bridge into the experimental TypeScript harness or shadow ingress shell as a substitute."
+    "The live signed Tally webhook remains unwired until Gate E is proven from real post-cutover serialization."
   ],
   "authority": {
     "continuity_update": "AUTHORIZED_METADATA_WRITE_WITHIN_PROJECT_SCOPE",
