@@ -1,6 +1,6 @@
 # Lógica de Embalagens — DeliveryOS V0
 
-> **Correção humana vigente — 26/09/2026:** ver `Correcao_Operacional_2026-09-26.md`. Em conflito, prevalece a correção mais recente.
+> **Correção humana vigente — 27/09/2026:** ver `Correcao_Operacional_2026-09-27.md`. A correção de 26/09 permanece válida fora dos pontos atualizados. Em conflito, prevalece a correção mais recente.
 
 > Documentação técnica oficial da lógica de embalagem do delivery, transcrita fielmente do documento
 > operacional revisado com o César (`Logica_Embalagens_DeliveryOS_V0_Final_Dyo.docx`). **É base de
@@ -15,7 +15,7 @@
 
 Organizar a lógica real de embalagem do delivery (caixas, sacolas, separação de quente e frio,
 categorias e regras de montagem) para servir de base ao DeliveryOS. O sistema deve, no futuro,
-calcular caixas e sacolas por **categoria, volume, temperatura, compatibilidade e estabilidade** —
+calcular caixas e sacolas por **praça, categoria, volume, temperatura, compatibilidade e estabilidade** —
 sempre respeitando que combinado é produto fechado e que quente de cozinha não mistura com frio.
 
 **Regra de ouro para o sistema:** o DeliveryOS só deve sinalizar "duas sacolas", "só quente" ou
@@ -24,17 +24,19 @@ Informação bonita, mas não acionável, não deve aparecer.
 
 ## 2. Princípios gerais
 
-1. **Categoria antes de sabor.** Temaki, uramaki, hosomaki, hot roll, dupla e sashimi seguem regra
+1. **Agrupe a praça antes da caixa.** Itens soltos, fisicamente compatíveis e da mesma praça formam primeiro um grupo físico; categoria mede capacidade, mas não cria caixa separada sozinha.
+2. **Menor caixa suficiente para o grupo.** Para grupo misto elegível, use as capacidades documentadas em conjunto e escolha a menor caixa que comporte o grupo; sem capacidade segura, preserve UNKNOWN.
+3. **Categoria antes de sabor.** Temaki, uramaki, hosomaki, hot roll, dupla e sashimi seguem regra
    por categoria. O sabor não muda a caixa.
-2. **Combinado é produto fechado.** A caixa do combinado é definida pelo próprio combinado. Item
+4. **Combinado é produto fechado.** A caixa do combinado é definida pelo próprio combinado. Item
    extra pedido pelo cliente vai separado pela regra da própria categoria.
-3. **Quente com frio separa.** Itens quentes da cozinha e itens frios vão em sacolas separadas.
+5. **Quente com frio separa.** Itens quentes da cozinha e itens frios vão em sacolas separadas.
 4. **Frio com frio pode juntar** se houver espaço e estabilidade.
 5. **Quente com quente pode juntar** se couberem e forem compatíveis.
-6. **Hot roll é exceção prática.** Pode ir com frios; não obriga sacola quente separada; se houver
+8. **Hot roll é exceção prática.** Pode ir com frios; não obriga sacola quente separada; se houver
    quentes de cozinha e couber, pode ir preferencialmente com os quentes.
-7. **Volume decide sacola extra.** Sem espaço, o pedido vira duas ou mais sacolas.
-8. **Não inventar regra.** Dúvida sobre item, praça, caixa ou sacola → registrar pendência, nunca
+9. **Volume decide sacola extra.** Sem espaço, o pedido vira duas ou mais sacolas.
+10. **Não inventar regra.** Dúvida sobre item, praça, caixa ou sacola → registrar pendência, nunca
    inferir.
 
 ## 3. Categorias de itens
@@ -75,6 +77,23 @@ Guioza e Tempurá de milho são entradas com **650 selada**. Ebi Spicy é entrad
 
 ## 5. Regras por categoria
 
+### Regra de agrupamento da praça — vigente 27/09/2026
+
+As tabelas abaixo são **capacidades por família**, não uma ordem para abrir uma caixa separada por família.
+
+Antes de aplicar as faixas:
+
+1. resolver a praça de cada item;
+2. separar regras explícitas (combinado fechado, caixa fixa, 650 selada sem capacidade compartilhada provada);
+3. agrupar os itens soltos compatíveis da mesma praça;
+4. escolher a menor caixa suficiente para a ocupação combinada.
+
+Exemplo humano confirmado:
+
+- **2 duplas + 1 sashimi**, todos em **Duplas** → **1 caixa 450**, e não uma caixa para duplas + outra para sashimi.
+
+Para grupos mistos, as capacidades documentadas podem ser combinadas proporcionalmente para testar 240/450/750. Se nenhuma menor fechar e todas as famílias tiverem tier 1.500 vigente, usar 1.500, preservando qualquer fronteira de complemento já existente. Não aplicar esta aritmética a caixas fixas, combinados fechados ou 650 selada sem regra de compartilhamento.
+
 **Duplas e Dyo** (a mesma regra vale para toda dupla de sushi e para Dyo):
 
 | Quantidade | Caixa |
@@ -114,6 +133,8 @@ Guioza e Tempurá de milho são entradas com **650 selada**. Ebi Spicy é entrad
 1.000 (nunca outra caixa).
 
 ## 6. Regras de sacola
+
+**Política de tamanho — vigente 27/09/2026:** entre os tamanhos cuja suficiência esteja comprovada, usar sempre a menor sacola possível: **P < M < G**. Sem capacidade comprovada, o tamanho permanece UNKNOWN.
 
 **Sacola grande** — caixas grandes e pedidos volumosos:
 - Comporta até 4 caixas 1.500 e até 4 caixas 1.600, respeitando estabilidade e altura.
@@ -212,7 +233,7 @@ por regra validada — **mas só depois da matriz técnica e da validação (§1
 
 ## 13. Regras que ainda não devem ser automatizadas
 
-Não usar sabor para decidir caixa quando a regra é por categoria. Não colocar extra dentro da caixa
+Não usar sabor para decidir caixa quando a regra é por categoria. Não criar caixa separada apenas porque duas categorias compatíveis compartilham a mesma praça. Não colocar extra dentro da caixa
 de combinado fechado. Não misturar quente de cozinha com frio na mesma sacola. Não tratar hot roll
 como item que obriga sacola quente separada. Não usar caixa 1.600 para extras soltos. **Não inferir
 comanda, sacola ou caixa quando a regra não estiver clara.** Não exibir "duas sacolas" sem indicar
