@@ -5,7 +5,7 @@
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "design/tata-edge-runtime-foundation-v1",
   "checkpoint_type": "PRODUCTION_TALLY_DEPLOYED_PORTABLE_KERNEL_V011_SHADOW_REPLAY_READY_GATE_E_PENDING",
-  "state_basis_head": "c9d162e21fb46e78d500cd057118e1a5bb4768dc",
+  "state_basis_head": "20dc075d740722c09f03e126b7c7fa9f13a49dcf",
   "verified_state_refs": [
     "deploy/cloudflare/gerencial-mail-bridge/",
     "deploy/cloudflare/tata-edge-cloud-shadow/",
@@ -59,7 +59,8 @@
     "docs/context/EVIDENCE_PORTABLE_CONTEXT_KERNEL_V09_HYPOTHESIS_DISCONFIRMATION_2026-09-27.md",
     "docs/context/EVIDENCE_PORTABLE_CONTEXT_KERNEL_V010_INVESTIGATION_PLAN_2026-09-27.md",
     "docs/context/EVIDENCE_PORTABLE_CONTEXT_KERNEL_V011_SHADOW_REPLAY_2026-09-27.md",
-    "docs/context/EVIDENCE_IFOOD_VISUAL_REFERENCE_CONTRACT_2026-09-27.md"
+    "docs/context/EVIDENCE_IFOOD_VISUAL_REFERENCE_CONTRACT_2026-09-27.md",
+    "docs/context/EVIDENCE_IFOOD_ZERO_COST_OCR_REJECTION_2026-09-27.md"
   ],
   "verified_state": [
     "The canonical operational mail bridge is cesar-gerencial-mail-bridge reading Atendimento Sent read-only with EXAMINE + BODY.PEEK and D1 cesar-gerencial-mail-bridge.",
@@ -200,7 +201,10 @@
     "A private seven-record ground-truth transcription is stored at /VÉRTICE/DeliveryOS/ifood-review-ground-truth-2026-09-03.json with SHA-256 f298d1afb31cb7f68cd8058ade37df52603e13de1709e5a0963351988e6753ab; raw customer screenshots were not committed to the repository.",
     "The fail-closed ifood-review-visual-extraction@0.1.0 contract requires non-visible screenshot fields to remain null and forbids injected blame/causal fields or source-fact promotion.",
     "Edge Shadow CI run 36346533912 completed SUCCESS for visual-extraction contract head fcc7eb5bf8eaf7f6d94e7da99e7be7560efa6adb.",
-    "The existing mail bridge already preserves authorized-route iFood image attachment bytes losslessly in D1 ifood_review_attachment.content_blob; image-only mail remains ATTACHMENT_ONLY and no OCR is falsely claimed."
+    "The existing mail bridge already preserves authorized-route iFood image attachment bytes losslessly in D1 ifood_review_attachment.content_blob; image-only mail remains ATTACHMENT_ONLY and no OCR is falsely claimed.",
+    "A zero-cost Tesseract 5.5.0 benchmark against the seven real iFood screenshots was run as one multi-page OCR pass; visible order IDs were 6/6 exact and ratings/review dates were readable, but visible order dates were only 1/6 exact.",
+    "The local Tesseract screenshot-OCR route is rejected as the primary iFood extractor; regex/context guessing must not be used to repair critical order-date OCR errors into source facts.",
+    "The private raw OCR output is stored at /VÉRTICE/DeliveryOS/ifood-review-tesseract-eng-2026-09-27.txt with SHA-256 0da4da8b011b3bba5a065215ddf6e40ccc82ca7be28d638ba08b775c3ca151e8, and the benchmark summary at /VÉRTICE/DeliveryOS/ifood-review-ocr-benchmark-2026-09-27.json with SHA-256 c6bb6b22047ad1e6a73fd7c294ef6154bcf9c081106de6d7c09e1ff0015b45d6."
   ],
   "proof": {
     "latest_green_ci_run": "36302995615",
@@ -541,9 +545,22 @@
     "ifood_visual_extraction_ci_run": 36346533912,
     "ifood_visual_extraction_ci_result": "SUCCESS",
     "ifood_authorized_team_mail_world_proven": false,
-    "ifood_automated_visual_extraction_accuracy": "UNKNOWN"
+    "ifood_automated_visual_extraction_accuracy": "UNKNOWN",
+    "ifood_tesseract_benchmark_engine": "tesseract_5.5.0_eng_oem1_psm6",
+    "ifood_tesseract_benchmark_pages": 7,
+    "ifood_tesseract_order_id_exact": "6/6",
+    "ifood_tesseract_order_date_exact": "1/6",
+    "ifood_tesseract_rating_readable": "7/7",
+    "ifood_tesseract_review_date_exact": "7/7",
+    "ifood_tesseract_cropped_order_fields_absent": "1/1",
+    "ifood_tesseract_primary_extractor_verdict": "REJECT",
+    "ifood_tesseract_regex_repair_allowed": false,
+    "ifood_tesseract_raw_library_path": "/VÉRTICE/DeliveryOS/ifood-review-tesseract-eng-2026-09-27.txt",
+    "ifood_tesseract_raw_sha256": "0da4da8b011b3bba5a065215ddf6e40ccc82ca7be28d638ba08b775c3ca151e8",
+    "ifood_tesseract_summary_library_path": "/VÉRTICE/DeliveryOS/ifood-review-ocr-benchmark-2026-09-27.json",
+    "ifood_tesseract_summary_sha256": "c6bb6b22047ad1e6a73fd7c294ef6154bcf9c081106de6d7c09e1ff0015b45d6"
   },
-  "next_action": "Continue two independent evidence tracks: (1) keep Gate E read-only until the first real post-cutover ZjVv1a response appears; (2) benchmark the smallest zero-cost iFood screenshot extraction route against the private seven-image ground truth. Require field-level extraction accuracy, keep cropped/invisible fields null, and do not promote review content to cause/blame. The authorized Atendimento -> César review-mail route remains the WORLD_PROVEN live-source gate.",
+  "next_action": "Continue two independent evidence tracks: (1) keep Tally Gate E read-only until the first real post-cutover ZjVv1a response appears; (2) do not retry the rejected local Tesseract+repair route for iFood screenshots. Evaluate a materially different zero-cost extraction path or keep image extraction human/model-assisted until a route beats the seven-image benchmark. The authorized Atendimento -> César review-mail route remains the WORLD_PROVEN live-source gate.",
   "unknowns": [
     "No defensible iFood review freshness cadence has been established; its freshness must remain UNKNOWN.",
     "Global critical-source coverage is incomplete; global all-clear must remain disabled.",
