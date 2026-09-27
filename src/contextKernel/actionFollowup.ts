@@ -20,6 +20,12 @@ export type ActionFollowupStatus =
   | "LATER_RECURRENCE_OBSERVED"
   | "NO_LATER_RECURRENCE_IN_LOADED_WINDOW";
 
+export type PostActionObservationStatus =
+  | "RECURRENCE_OBSERVED"
+  | "NO_POST_ACTION_WINDOW"
+  | "NONEXHAUSTIVE_WINDOW_NO_RECURRENCE"
+  | "EXHAUSTIVE_LOADED_WINDOW_NO_RECURRENCE";
+
 export interface ActionFollowupRecord {
   action_episode_id: string;
   mechanism_key: string;
@@ -27,6 +33,8 @@ export interface ActionFollowupRecord {
   action_kinds: string[];
   source_resolution_marker: OperationalEpisodeEvidence["resolution_marker"];
   followup_status: ActionFollowupStatus;
+  calendar_days_to_loaded_window_end: number;
+  post_action_observation_status: PostActionObservationStatus;
   next_recurrence_episode_id?: string;
   next_recurrence_business_date?: string;
   days_to_next_recurrence?: number;
@@ -44,6 +52,9 @@ export interface ActionFollowupMemory {
   unclassified_action_episode_count: number;
   later_recurrence_observed_count: number;
   no_later_recurrence_in_loaded_window_count: number;
+  no_post_action_window_count: number;
+  nonexhaustive_window_no_recurrence_count: number;
+  exhaustive_loaded_window_no_recurrence_count: number;
   action_effective_proven_count: 0;
   action_ineffective_proven_count: 0;
   source_concluded_is_action_effective: false;
@@ -89,6 +100,10 @@ export function buildActionFollowupMemory(args: {
   );
 
   const followups = classifiedAction.map((item): ActionFollowupRecord => {
+    const calendarDaysToWindowEnd = daysBetween(
+      item.business_date,
+      args.loaded_window_end,
+    );
     const next = ordered.find(
       (candidate) =>
         candidate.mechanism_key === item.mechanism_key &&
@@ -104,6 +119,8 @@ export function buildActionFollowupMemory(args: {
         action_kinds: [...item.action_kinds],
         source_resolution_marker: item.resolution_marker,
         followup_status: "LATER_RECURRENCE_OBSERVED",
+        calendar_days_to_loaded_window_end: calendarDaysToWindowEnd,
+        post_action_observation_status: "RECURRENCE_OBSERVED",
         next_recurrence_episode_id: next.episode_id,
         next_recurrence_business_date: next.business_date,
         days_to_next_recurrence: daysBetween(
@@ -124,6 +141,13 @@ export function buildActionFollowupMemory(args: {
       action_kinds: [...item.action_kinds],
       source_resolution_marker: item.resolution_marker,
       followup_status: "NO_LATER_RECURRENCE_IN_LOADED_WINDOW",
+      calendar_days_to_loaded_window_end: calendarDaysToWindowEnd,
+      post_action_observation_status:
+        calendarDaysToWindowEnd === 0
+          ? "NO_POST_ACTION_WINDOW"
+          : args.coverage_exhaustive
+            ? "EXHAUSTIVE_LOADED_WINDOW_NO_RECURRENCE"
+            : "NONEXHAUSTIVE_WINDOW_NO_RECURRENCE",
       action_effectiveness_status: "UNKNOWN",
       shared_root_cause_status: "UNPROVEN",
       attention_authority: "NONE",
@@ -143,6 +167,19 @@ export function buildActionFollowupMemory(args: {
     no_later_recurrence_in_loaded_window_count: followups.filter(
       (item) =>
         item.followup_status === "NO_LATER_RECURRENCE_IN_LOADED_WINDOW",
+    ).length,
+    no_post_action_window_count: followups.filter(
+      (item) => item.post_action_observation_status === "NO_POST_ACTION_WINDOW",
+    ).length,
+    nonexhaustive_window_no_recurrence_count: followups.filter(
+      (item) =>
+        item.post_action_observation_status ===
+        "NONEXHAUSTIVE_WINDOW_NO_RECURRENCE",
+    ).length,
+    exhaustive_loaded_window_no_recurrence_count: followups.filter(
+      (item) =>
+        item.post_action_observation_status ===
+        "EXHAUSTIVE_LOADED_WINDOW_NO_RECURRENCE",
     ).length,
     action_effective_proven_count: 0,
     action_ineffective_proven_count: 0,
