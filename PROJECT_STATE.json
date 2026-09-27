@@ -4,8 +4,8 @@
   "project": "DeliveryOS / TATÁ Edge",
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "design/tata-edge-runtime-foundation-v1",
-  "checkpoint_type": "PRODUCTION_TALLY_DEPLOYED_PORTABLE_KERNEL_V010_PLAN_READY_GATE_E_PENDING",
-  "state_basis_head": "035e4558121c44d055f56b2bdb8d2a161e6a0d94",
+  "checkpoint_type": "PRODUCTION_TALLY_DEPLOYED_PORTABLE_KERNEL_V011_SHADOW_REPLAY_READY_GATE_E_PENDING",
+  "state_basis_head": "a8006ee5a2a8f0c4069b367e37f8c1b3427fb430",
   "verified_state_refs": [
     "deploy/cloudflare/gerencial-mail-bridge/",
     "deploy/cloudflare/tata-edge-cloud-shadow/",
@@ -57,7 +57,8 @@
     "docs/context/EVIDENCE_PORTABLE_CONTEXT_KERNEL_V07_TALLY_ADAPTER_2026-09-27.md",
     "docs/context/EVIDENCE_PORTABLE_CONTEXT_KERNEL_V08_TEMPORAL_INVESTIGATION_2026-09-27.md",
     "docs/context/EVIDENCE_PORTABLE_CONTEXT_KERNEL_V09_HYPOTHESIS_DISCONFIRMATION_2026-09-27.md",
-    "docs/context/EVIDENCE_PORTABLE_CONTEXT_KERNEL_V010_INVESTIGATION_PLAN_2026-09-27.md"
+    "docs/context/EVIDENCE_PORTABLE_CONTEXT_KERNEL_V010_INVESTIGATION_PLAN_2026-09-27.md",
+    "docs/context/EVIDENCE_PORTABLE_CONTEXT_KERNEL_V011_SHADOW_REPLAY_2026-09-27.md"
   ],
   "verified_state": [
     "The canonical operational mail bridge is cesar-gerencial-mail-bridge reading Atendimento Sent read-only with EXAMINE + BODY.PEEK and D1 cesar-gerencial-mail-bridge.",
@@ -186,7 +187,13 @@
     "Planner outputs are disconfirmation-oriented and preserve hypothesis TESTABLE_UNPROVEN, causal UNPROVEN and source independence UNKNOWN; a plan is not evidence and does not authorize execution.",
     "The v0.10 planner can surface matching OPEN Evidence Debt ids read-only but cannot mutate debt, create commitments, create NEEDS_CESAR, invoke attention, notify or authorize external effects.",
     "The repeated stale-version-test failure class is now blocked by a runtime __version__ source plus a package-metadata/version regression check, rather than another literal test update.",
-    "Portable kernel v0.10 remains CODE_READY / TEST_PASS only; WORLD_PROVEN live Tally ingestion remains blocked on DeliveryOS Gate E."
+    "Portable kernel v0.10 remains CODE_READY / TEST_PASS only; WORLD_PROVEN live Tally ingestion remains blocked on DeliveryOS Gate E.",
+    "A separate cesar-context-kernel-v0.11 package now propagates explicit expected Tally form identity through ingest -> context -> hypotheses -> plan while keeping live ZjVv1a as the fail-closed default and preserving v0.10 as rollback.",
+    "Portable kernel v0.11 passed 100/100 tests, compileall and final ZIP-byte verification; the clean package is stored at /VÉRTICE/CesarContextOS/cesar-context-kernel-v0.11.zip with SHA-256 65a7f59a0b736c7081b0cb1ec1b6275410cd5e43920676ea1e67141527422f73.",
+    "Observed shadow rows 4ayaqYo and EqEK24l now replay through the explicitly eq4lae-bound portable chain into 5 TESTABLE_UNPROVEN hypotheses and 8 NOT_EXECUTED probes without connectors, debt mutation, commitments, NEEDS_CESAR, attention or external effects.",
+    "Default/live Tally context still rejects eq4lae, so v0.11 shadow replay does not broaden live admission to arbitrary forms.",
+    "Exact D1 event/submission identity linkage for the EqEK24l replay remains UNKNOWN because the prior webhook WORLD proof receipt preserved the unique operator marker but not the exact persisted D1 event ID.",
+    "A fresh read-only Gate E check found the live ocorrencias_respostas header still at 11 legacy columns and the latest observed submission still xV1xv4y from 2026-09-26 2:51:46; no post-cutover real occurrence is yet visible."
   ],
   "proof": {
     "latest_green_ci_run": "36302995615",
@@ -480,9 +487,37 @@
     "portable_context_kernel_v010_external_actions": false,
     "portable_context_kernel_v010_live_feed_wired": false,
     "portable_context_kernel_v010_version_source": "cesar_context_kernel.__version__",
-    "portable_context_kernel_v010_package_version_match_test": true
+    "portable_context_kernel_v010_package_version_match_test": true,
+    "portable_context_kernel_v011_version": "0.11.0",
+    "portable_context_kernel_v011_tests": "100/100_PASS",
+    "portable_context_kernel_v011_compileall": "PASS",
+    "portable_context_kernel_v011_zip_integrity": "PASS",
+    "portable_context_kernel_v011_package_clean": true,
+    "portable_context_kernel_v011_library_path": "/VÉRTICE/CesarContextOS/cesar-context-kernel-v0.11.zip",
+    "portable_context_kernel_v011_sha256": "65a7f59a0b736c7081b0cb1ec1b6275410cd5e43920676ea1e67141527422f73",
+    "portable_context_kernel_v011_zip_bytes": 73458,
+    "portable_context_kernel_v011_default_form_id": "ZjVv1a",
+    "portable_context_kernel_v011_shadow_form_id": "eq4lae",
+    "portable_context_kernel_v011_explicit_form_identity_required": true,
+    "portable_context_kernel_v011_accept_any_form": false,
+    "portable_context_kernel_v011_shadow_replay_submission_ids": [
+      "4ayaqYo",
+      "EqEK24l"
+    ],
+    "portable_context_kernel_v011_shadow_hypothesis_count": 5,
+    "portable_context_kernel_v011_shadow_probe_count": 8,
+    "portable_context_kernel_v011_shadow_probe_execution_status": "NOT_EXECUTED",
+    "portable_context_kernel_v011_connectors_called": false,
+    "portable_context_kernel_v011_causal_status": "UNPROVEN",
+    "portable_context_kernel_v011_attention_authority": "NONE",
+    "portable_context_kernel_v011_external_actions": false,
+    "portable_context_kernel_v011_exact_d1_identity_linkage": "UNKNOWN",
+    "gate_e_recheck_live_header_count": 11,
+    "gate_e_recheck_latest_submission_id": "xV1xv4y",
+    "gate_e_recheck_latest_submitted_at": "2026-09-26 2:51:46",
+    "gate_e_post_cutover_real_occurrence_visible": false
   },
-  "next_action": "Continue on two tracks with no synthetic production incident: (1) wait for the first real post-cutover ZjVv1a occurrence, prove the exact 20-column live Google Sheets schema plus legacy workbook health, then and only then wire the signed observation-only webhook and prove one idempotent live observation. (2) use cesar-context-kernel-v0.10 as the shadow investigation chain: context -> TESTABLE_UNPROVEN hypotheses -> NOT_EXECUTED evidence-gap plan. The plan may identify the smallest proof gaps but must not call connectors, mutate Evidence Debt, create NEEDS_CESAR, invoke attention or authorize external effects.",
+  "next_action": "Do not add another speculative abstraction before live evidence. Continue with read-only Gate E observation: when the first real post-cutover ZjVv1a response appears, prove exact 20-column live Google Sheets serialization and legacy workbook health; only then wire the signed observation-only live webhook, feed its minimized envelope into the v0.11 live-default chain, prove idempotent ingest plus context -> TESTABLE_UNPROVEN hypotheses -> NOT_EXECUTED plan, and preserve source independence UNKNOWN / cause UNPROVEN / zero automatic attention or effects.",
   "unknowns": [
     "No real team-sent iFood review batch has been admitted; extraction quality and attachment shape remain unknown.",
     "No defensible iFood review freshness cadence has been established; its freshness must remain UNKNOWN.",
@@ -498,7 +533,9 @@
     "The live signed Tally webhook remains unwired until Gate E is proven from real post-cutover serialization.",
     "Source independence for cross-source evidence is not yet proven by the portable kernel; v0.8 deliberately reports it as UNKNOWN even when an explicitly correlated different-source event exists.",
     "No real v0.9 hypothesis projection has yet run on a live post-cutover Tally observation; its world behavior remains UNKNOWN until Gate E admits the first real minimized envelope.",
-    "No v0.10 investigation plan has yet been generated from a live post-cutover Tally observation; probe usefulness and redundancy on real incidents remain UNKNOWN until Gate E admits real minimized envelopes."
+    "No real post-cutover ZjVv1a occurrence is yet visible in live Caixa Executivo; Gate E remains pending and live 20-column serialization is not proven.",
+    "Exact D1 persisted event/submission identity linkage for the EqEK24l shadow replay remains UNKNOWN; the prior world receipt proves the unique marker path but does not preserve that exact identifier pair.",
+    "No v0.11 live-default investigation chain has yet consumed a real post-cutover production Tally observation."
   ],
   "authority": {
     "continuity_update": "AUTHORIZED_METADATA_WRITE_WITHIN_PROJECT_SCOPE",
