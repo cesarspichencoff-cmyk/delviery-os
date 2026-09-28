@@ -2,13 +2,36 @@
  * Camada 0 · Normalização de itens (não é estoque — é entender de que o pedido DEPENDE).
  *
  * Um item da comanda depende de "itens-base" críticos que travam o fluxo.
- * Ex.: "Temaki Salmão" → salmão; "Hot Roll" → hot; "Kit p/1" → hashi/shoyu/gengibre/wasabi.
+ * Ex.: "Temaki Salmão" → salmão; "Hot Roll" → hot; "Kit p/1" → hashi/shoyu/shoyuzara/guardanapo.
  * Padrão da casa fica AQUI, num lugar só, fácil de ajustar — sem mexer no resto.
  */
 export type Categoria = "kit" | "sushi_quente" | "peixe" | "sache" | "bebida" | "embalagem" | "outro";
 
-/** Composição de kit (padrão da casa — ajustável). */
-const COMPONENTES_KIT = ["hashi", "shoyu", "gengibre", "wasabi"];
+/**
+ * Dependências normalizadas dos kits vigentes.
+ * Esta camada rastreia presença de componentes críticos, não quantidade física.
+ * "shoyu" representa a dependência comum; sachê/garrafinha e quantidades pertencem
+ * ao motor canônico de kits, não a este normalizador.
+ */
+const COMPONENTES_KIT: Record<string, string[]> = {
+  simples: ["hashi", "shoyu", "shoyuzara", "guardanapo"],
+  p1: ["hashi", "shoyu", "shoyuzara", "guardanapo"],
+  p2: ["hashi", "shoyu", "shoyuzara", "guardanapo"],
+  quente: ["hashi", "shoyu", "guardanapo"],
+  kids: ["hashi", "shoyu", "shoyuzara", "guardanapo", "adaptador"],
+  sobremesa: ["colher de sobremesa", "guardanapo"]
+};
+
+function componentesKit(nome: string): string[] {
+  const n = nome.toLowerCase();
+  if (/sobremesa/.test(n)) return COMPONENTES_KIT.sobremesa;
+  if (/kids?/.test(n)) return COMPONENTES_KIT.kids;
+  if (/quente/.test(n)) return COMPONENTES_KIT.quente;
+  if (/p\/?\s*2|p2/.test(n)) return COMPONENTES_KIT.p2;
+  if (/p\/?\s*1|p1/.test(n)) return COMPONENTES_KIT.p1;
+  if (/simples/.test(n)) return COMPONENTES_KIT.simples;
+  return [];
+}
 
 export function categoria(nome: string): Categoria {
   const n = nome.toLowerCase();
@@ -30,7 +53,7 @@ export function componentesCriticos(nome: string): string[] {
   const cat = categoria(nome);
   const out = new Set<string>();
 
-  if (cat === "kit") COMPONENTES_KIT.forEach((c) => out.add(c));
+  if (cat === "kit") componentesKit(nome).forEach((c) => out.add(c));
   if (cat === "sushi_quente") out.add("hot");
   if (cat === "peixe") {
     if (/salmão|salmao/.test(n)) out.add("salmão");
