@@ -252,7 +252,7 @@ Nomes validados pelo César cruzados com o seed atual (`data/cardapio_knowledge_
 | Uramaki | Uramaki Califórnia… | Enrolados | **Confirmado** | — |
 | Hosomaki | **Hossomaki** de Atum… | Enrolados | **Possível alias** | Seed grafa "Hossomaki" (dois s); César "Hosomaki". |
 | Hot Roll | Hot Roll, Hot Roll Tatá | Enrolados | **Confirmado** | Exceção prática (vai com frios). |
-| Sashimi | *(só dentro de combinados)* | Sashimi | **Precisa validar** | Não achei item "Sashimi de X" avulso no seed; confirmar se existe sashimi avulso. |
+| Sashimi | Itens avulsos existem no seed atual (ex.: Sashimi de Salmão, Atum, Robalo etc.) | Sashimi | **Confirmado no seed atual** | Praça Duplas; aplicar a matriz vigente de sashimi. |
 | Sunomono | Sunomono | 650 selada | **Confirmado** | — |
 | Tuna Shiso | **Tuna Shisô Tartar** | 650 selada | **Possível alias** | Seed grafa "Shisô" e acrescenta "Tartar". |
 | Tirashi | Tirashi | 1.000 | **Confirmado** | Não usar "Tiradito". |
@@ -284,9 +284,7 @@ Pendências reais (não genéricas), respondíveis por áudio:
 2. **Yakisoba:** não existe no seed atual. É item ativo do cardápio? Se sim, entra como quente 1.500?
 3. **"Shikentatsu":** qual é o prato exatamente? Grafia oficial? (o documento pediu validar).
 4. **Battera / Baterá:** o nome correto tem um T ("Batera"/"Battera") ou é "Baterá" como no seed?
-5. **Sashimi avulso:** existe item "Sashimi de X" vendido sozinho, ou sashimi só aparece dentro de
-   combinado? (a regra de caixa por quantidade de sashimi precisa de item avulso para valer).
-6. **Carpaccio de salmão:** o "Carpaccio de salmão" da regra é o "Carpaccio de Salmão Trufado" do
+5. **Sashimi avulso:** confirmado no seed atual; não é mais pendência de validação.\n6. **Carpaccio de salmão:** o "Carpaccio de salmão" da regra é o "Carpaccio de Salmão Trufado" do
    seed, ou existe um carpaccio de salmão simples?
 7. **Grafias de alias** (Hosomaki/Hossomaki, Missoshiru/Missoshiro, Tuna Shiso/Shisô, Katsu
    Don/Katsudon, Tempurá de milho/milho doce, Shoocream/Choux Cream): manter a grafia do César como
