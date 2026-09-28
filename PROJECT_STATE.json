@@ -5,7 +5,7 @@
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "main",
   "checkpoint_type": "SHADOW_READ_ONLY_PREP",
-  "state_basis_head": "daffed0a624021eb04f450b345474f9a109b4654",
+  "state_basis_head": "fcc1491c1d68aa36be3e458b40086a59cc3b0931",
   "verified_state_refs": [
     "src/shadow/odhenReadonly.ts",
     "src/shadow/compare.ts",
@@ -35,9 +35,13 @@
     "The passive log route requires no SQL Server access and no Odhen/Teknisa code modification for the preferred design.",
     "The delivery report print text is known by code to contain NRCOMANDA, items/quantities, merged item observations from DSOBSDESCIT/DSOBSPEDDIGCMD and order-level DSOBSCOMANDA; NRVENDAREST and TXPRODCOMVEN are absent from this source.",
     "Physical existence/current append activity of the target IMP log file is still unproven because host permissions blocked even listing the Log directory.",
-    "Raw print text may contain customer/address/payment PII; any reader must sanitize in memory and must not persist or transmit raw text."
+    "Raw print text may contain customer/address/payment PII; any reader must sanitize in memory and must not persist or transmit raw text.",
+    "Passive print-log preparation now includes a pure projection parser that is allowlist-only: unrecognized lines, including PII/payment/address text, are never copied into the returned projection.",
+    "Passive print parser profiles are explicitly proof-scoped. SYNTHETIC_ONLY profiles can exercise parsing but cannot become ready_for_live_shadow; live readiness requires REAL_SAMPLE_PROVEN plus proven full-block framing.",
+    "A pure passive-tail planner now baselines at current EOF and refuses to replay historical log content. It distinguishes append, no-change, rotation/replacement, truncation and missing source without touching the filesystem.",
+    "Synthetic verification coverage was added for PII non-leakage, print-source observation contract, SQL-normalizer blocking before real profile proof, append-only cursor behavior, rotation/truncation handling and zero print/source-write effects."
   ],
-  "next_action": "Run a bounded one-order passive print-log proof on CAIXA_MOOCA: prove the IMP log exists/is appended, read only the newly appended block, sanitize PII in memory, project minimum operational fields, verify dedupe and prove zero effect on official printing. This is a new privacy/data-read gate and requires explicit authorization before any real log content is read.",
+  "next_action": "While no natural order is active, keep the passive reader in synthetic/code-prep only. When a natural order is about to occur and the real IMP log path can be identified without opening historical content, establish an EOF baseline only. After that order appends, read only the new byte range for the single authorized order, derive a REAL_SAMPLE_PROVEN parser/framing profile, project allowlisted operational fields in memory, discard raw/PII, verify dedupe and prove zero impact on official printing.",
   "unknowns": [
     "The C3.1 synthetic final preview requested by César has not yet been human-accepted in this phase.",
     "No real order has been read in shadow.",
@@ -46,7 +50,10 @@
     "The target IMP log file existence and live append behavior are not yet WORLD_PROVEN.",
     "The exact record/block framing and encoding of the live IMP log are not yet proven from one bounded real append.",
     "The delivery-report log source cannot recover TXPRODCOMVEN or distinguish DSOBSDESCIT from DSOBSPEDDIGCMD after Odhen merges them.",
-    "No real print-log block has been read or sanitized by DeliveryOS yet."
+    "No real print-log block has been read or sanitized by DeliveryOS yet.",
+    "Synthetic passive-log verification has been added but has not yet been executed in CI/current cashier environment after these new files.",
+    "Live parser regex/profile and exact encoding remain UNKNOWN until one bounded real appended print block is observed.",
+    "A concrete non-exclusive filesystem reader is intentionally not implemented yet because live file path, encoding and record framing are not world-proven."
   ],
   "authority": {
     "continuity_update": "AUTHORIZED_METADATA_WRITE_WITHIN_PROJECT_SCOPE",
@@ -66,13 +73,17 @@
   "pending_work": {
     "branch": "shadow/odhen-v132-readonly-prep",
     "pull_request": 11,
-    "status": "PASSIVE_PRINT_SOURCE_CODE_PROVEN__LIVE_LOG_UNPROVEN__REAL_LOG_READ_NOT_AUTHORIZED",
+    "status": "PASSIVE_READER_SYNTHETIC_PREP_READY__SYNTHETIC_TEST_NOT_YET_EXECUTED__ONE_REAL_ORDER_AUTHORIZED_WHEN_AVAILABLE",
     "canonical_sha256": "D34583F0A743DF9645914BCDFC1010E6D3AEF72AC74D3A4B7B01F81E305B71E4",
     "cashier_pc": "CAIXA_MOOCA",
     "odhen_root": "C:\\TEKNISA\\odhen-perifericos",
     "sql_zero_change_probe": "tools/sql_principal_inventory_metadata_only.ps1",
     "sql_zero_change_probe_static_gate": "tools/verificar_sql_principal_inventory_static.js",
     "preferred_shadow_source": "PASSIVE_ODHEN_IMP_LOG",
-    "passive_log_design": "docs/Passive_Print_Log_Shadow_V132.md"
+    "passive_log_design": "docs/Passive_Print_Log_Shadow_V132.md",
+    "passive_projection": "src/shadow/passivePrintLog.ts",
+    "passive_tail_planner": "src/shadow/passivePrintTail.ts",
+    "passive_synthetic_verifier": "tools/verificar_passive_print_log_v132.js",
+    "passive_synthetic_command": "npm run verificar:passive-log"
   }
 }
