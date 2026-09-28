@@ -293,7 +293,8 @@ Pendências reais (não genéricas), respondíveis por áudio:
 2. **Yakisoba:** não existe no seed atual. É item ativo do cardápio? Se sim, entra como quente 1.500?
 3. **"Shikentatsu":** qual é o prato exatamente? Grafia oficial? (o documento pediu validar).
 4. **Battera / Baterá:** o nome correto tem um T ("Batera"/"Battera") ou é "Baterá" como no seed?
-5. **Sashimi avulso:** confirmado no seed atual; não é mais pendência de validação.\n6. **Carpaccio:** fechado por confirmação humana de 27/09/2026 — os dois itens atuais (Salmão Trufado e Polvo Espanhol) usam caixa 750 fixa e Sacola M.
+5. **Sashimi avulso:** confirmado no seed atual; não é mais pendência de validação.
+6. **Carpaccio:** fechado por confirmação humana de 27/09/2026 — os dois itens atuais (Salmão Trufado e Polvo Espanhol) usam caixa 750 fixa e Sacola M.
 
 7. **Grafias de alias** (Hosomaki/Hossomaki, Missoshiru/Missoshiro, Tuna Shiso/Shisô, Katsu
    Don/Katsudon, Tempurá de milho/milho doce, Shoocream/Choux Cream): manter a grafia do César como
