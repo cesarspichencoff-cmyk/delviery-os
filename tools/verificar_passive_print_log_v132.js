@@ -62,7 +62,20 @@ for (const forbidden of [
 }
 assert.equal(projection.privacy.raw_text_retained, false);
 assert.equal(projection.privacy.pii_fields_copied, false);
-assert.match(projection.privacy.raw_sha256_only, /^[a-f0-9]{64}$/);
+assert.match(projection.privacy.operational_fingerprint, /^[a-f0-9]{64}$/);
+
+const differentPiiSameOperations = syntheticBlock
+  .replace("PESSOA FICTICIA", "OUTRA PESSOA")
+  .replace("11999999999", "11000000000")
+  .replace("RUA FICTICIA 100", "OUTRO ENDERECO")
+  .replace("CARTAO 999,99", "PIX 123,45")
+  .replace("TOTAL: 999,99", "TOTAL: 123,45");
+const projectionDifferentPii = Passive.projectPassivePrintBlock(differentPiiSameOperations, profile);
+assert.equal(
+  projectionDifferentPii.privacy.operational_fingerprint,
+  projection.privacy.operational_fingerprint,
+  "PII-only changes must not change operational dedupe fingerprint",
+);
 
 const raw = Passive.passivePrintProjectionToOdhenRaw(projection);
 assert.equal(raw.NRCOMANDA, "170512");
@@ -85,6 +98,7 @@ const file = {
   path: "C:\\TEKNISA\\odhen-perifericos\\Log\\MES\\2026_09_28_IMP_X.txt",
   size: 1000,
   mtime_ms: 1,
+  birthtime_ms: 100,
   file_id: "A",
 };
 
@@ -120,6 +134,37 @@ const truncated = Tail.planPassiveTail(initial.next_checkpoint, {
 });
 assert.equal(truncated.decision, "TRUNCATED");
 assert.equal(truncated.read_from, null);
+
+const weakIdentityFile = {
+  path: file.path,
+  size: 1250,
+  mtime_ms: 6,
+};
+const weakInitial = Tail.planPassiveTail(null, weakIdentityFile);
+const weakAppend = Tail.planPassiveTail(weakInitial.next_checkpoint, {
+  ...weakIdentityFile,
+  size: 1400,
+  mtime_ms: 7,
+});
+assert.equal(weakAppend.decision, "IDENTITY_UNPROVEN");
+assert.equal(weakAppend.read_from, null);
+assert.ok(weakAppend.blocking_reasons.includes("SOURCE_IDENTITY_NOT_PROVEN_NO_APPEND_READ"));
+
+const birthtimeIdentityFile = {
+  path: file.path,
+  size: 2000,
+  mtime_ms: 8,
+  birthtime_ms: 555,
+};
+const birthInitial = Tail.planPassiveTail(null, birthtimeIdentityFile);
+const birthAppend = Tail.planPassiveTail(birthInitial.next_checkpoint, {
+  ...birthtimeIdentityFile,
+  size: 2100,
+  mtime_ms: 9,
+});
+assert.equal(birthAppend.decision, "APPEND");
+assert.equal(birthAppend.read_from, 2000);
+assert.equal(birthAppend.read_to, 2100);
 
 const missing = Tail.planPassiveTail(initial.next_checkpoint, null);
 assert.equal(missing.decision, "SOURCE_MISSING");
