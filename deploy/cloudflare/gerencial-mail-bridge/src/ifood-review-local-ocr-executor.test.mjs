@@ -36,6 +36,8 @@ function engine() {
       }
       return `
 Detalhes da avaliagao
+Pedido feito em
+4787 50/08/2026
 Sobre o pedido
 1 Aparéncia Temperatura
 Daniel disse Publica
