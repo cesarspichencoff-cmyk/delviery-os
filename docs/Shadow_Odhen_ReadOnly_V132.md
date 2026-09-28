@@ -152,6 +152,23 @@ node tools/verificar_shadow_odhen_v132.js
 
 ## Próximo gate: SOURCE_REVALIDATION
 
+Probe preparado:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\odhen_source_probe_readonly.ps1
+```
+
+O probe:
+- lê somente código/configuração;
+- calcula hashes;
+- informa apenas token + arquivo + número da linha;
+- não imprime o conteúdo da linha;
+- não inicia o Odhen;
+- não faz HTTP;
+- não consulta banco;
+- não lê pedidos;
+- não grava arquivo.
+
 Antes de ler qualquer pedido real:
 
 1. conectar apenas ao PC autorizado da loja;
