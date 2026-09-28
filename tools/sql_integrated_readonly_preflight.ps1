@@ -25,7 +25,7 @@ $ErrorActionPreference = "Stop"
 # No GRANT/DENY/CREATE LOGIN is performed.
 
 $result = [ordered]@{
-  schema = "deliveryos.shadow.sql-integrated-preflight.v2"
+  schema = "deliveryos.shadow.sql-integrated-preflight.v3"
   mode = "WINDOWS_INTEGRATED_AUTH_METADATA_ONLY"
   server = $Server
   database = $Database
@@ -47,6 +47,7 @@ $result = [ordered]@{
     db_ddladmin = $null
   }
   objects = @()
+  executable_procedure_count = $null
   safe_for_order_read = $false
   blocker = $null
 }
@@ -58,9 +59,13 @@ $connectionString =
 
 $conn = New-Object System.Data.SqlClient.SqlConnection $connectionString
 
-function BoolFromReader($reader, [string]$name) {
-  if ($reader[$name] -is [DBNull]) { return $false }
+function PermissionFromReader($reader, [string]$name) {
+  if ($reader[$name] -is [DBNull]) { return $null }
   return ([int]$reader[$name] -eq 1)
+}
+
+function AnyUnknown($values) {
+  return @($values | Where-Object { $_ -eq $null }).Count -gt 0
 }
 
 try {
@@ -94,19 +99,52 @@ SELECT
     throw "PREFLIGHT_NO_DATABASE_ROW"
   }
 
-  $result.database_matches = BoolFromReader $dbReader "database_matches"
-  $result.database_permissions.select = BoolFromReader $dbReader "can_select"
-  $result.database_permissions.insert = BoolFromReader $dbReader "can_insert"
-  $result.database_permissions.update = BoolFromReader $dbReader "can_update"
-  $result.database_permissions.delete = BoolFromReader $dbReader "can_delete"
-  $result.database_permissions.execute = BoolFromReader $dbReader "can_execute"
-  $result.database_permissions.alter = BoolFromReader $dbReader "can_alter"
-  $result.database_permissions.control = BoolFromReader $dbReader "can_control"
-  $result.elevated_roles.sysadmin = BoolFromReader $dbReader "is_sysadmin"
-  $result.elevated_roles.db_owner = BoolFromReader $dbReader "is_db_owner"
-  $result.elevated_roles.db_datawriter = BoolFromReader $dbReader "is_db_datawriter"
-  $result.elevated_roles.db_ddladmin = BoolFromReader $dbReader "is_db_ddladmin"
+  $result.database_matches = PermissionFromReader $dbReader "database_matches"
+  $result.database_permissions.select = PermissionFromReader $dbReader "can_select"
+  $result.database_permissions.insert = PermissionFromReader $dbReader "can_insert"
+  $result.database_permissions.update = PermissionFromReader $dbReader "can_update"
+  $result.database_permissions.delete = PermissionFromReader $dbReader "can_delete"
+  $result.database_permissions.execute = PermissionFromReader $dbReader "can_execute"
+  $result.database_permissions.alter = PermissionFromReader $dbReader "can_alter"
+  $result.database_permissions.control = PermissionFromReader $dbReader "can_control"
+  $result.elevated_roles.sysadmin = PermissionFromReader $dbReader "is_sysadmin"
+  $result.elevated_roles.db_owner = PermissionFromReader $dbReader "is_db_owner"
+  $result.elevated_roles.db_datawriter = PermissionFromReader $dbReader "is_db_datawriter"
+  $result.elevated_roles.db_ddladmin = PermissionFromReader $dbReader "is_db_ddladmin"
   $dbReader.Close()
+
+
+  $dbPermissionValues = @(
+    $result.database_permissions.select,
+    $result.database_permissions.insert,
+    $result.database_permissions.update,
+    $result.database_permissions.delete,
+    $result.database_permissions.execute,
+    $result.database_permissions.alter,
+    $result.database_permissions.control,
+    $result.elevated_roles.sysadmin,
+    $result.elevated_roles.db_owner,
+    $result.elevated_roles.db_datawriter,
+    $result.elevated_roles.db_ddladmin
+  )
+  $databasePermissionUnknown = AnyUnknown $dbPermissionValues
+
+  # Strict read-only proof: any executable stored procedure is treated as an
+  # authority expansion we cannot safely classify as read-only from metadata alone.
+  $procCmd = $conn.CreateCommand()
+  $procCmd.CommandTimeout = 5
+  $procCmd.CommandText = @"
+SET NOCOUNT ON;
+SELECT COUNT_BIG(*) AS executable_procedure_count
+FROM sys.procedures p
+JOIN sys.schemas s ON s.schema_id = p.schema_id
+WHERE HAS_PERMS_BY_NAME(
+        s.name + '.' + p.name,
+        'OBJECT',
+        'EXECUTE'
+      ) = 1;
+"@
+  $executableProcedureCount = [int64]$procCmd.ExecuteScalar()
 
   foreach ($objectName in $ObjectNames) {
     # Resolve the operational object by metadata only.
@@ -141,13 +179,13 @@ ORDER BY s.name;
         schema = [string]$objReader["schema_name"]
         name = [string]$objReader["object_name"]
         type = [string]$objReader["type_desc"]
-        select = BoolFromReader $objReader "can_select"
-        insert = BoolFromReader $objReader "can_insert"
-        update = BoolFromReader $objReader "can_update"
-        delete = BoolFromReader $objReader "can_delete"
-        alter = BoolFromReader $objReader "can_alter"
-        control = BoolFromReader $objReader "can_control"
-        take_ownership = BoolFromReader $objReader "can_take_ownership"
+        select = PermissionFromReader $objReader "can_select"
+        insert = PermissionFromReader $objReader "can_insert"
+        update = PermissionFromReader $objReader "can_update"
+        delete = PermissionFromReader $objReader "can_delete"
+        alter = PermissionFromReader $objReader "can_alter"
+        control = PermissionFromReader $objReader "can_control"
+        take_ownership = PermissionFromReader $objReader "can_take_ownership"
       }
     }
     $objReader.Close()
@@ -188,13 +226,23 @@ WHERE s.name = @schema_name
     $colCmd.Parameters["@object_name"].Value = $obj.name
     $writableColumns = [int64]$colCmd.ExecuteScalar()
 
+    $objectPermissionUnknown = AnyUnknown @(
+      $obj.select,
+      $obj.insert,
+      $obj.update,
+      $obj.delete,
+      $obj.alter,
+      $obj.control,
+      $obj.take_ownership
+    )
+
     $hasObjectWrite =
-      $obj.insert -or
-      $obj.update -or
-      $obj.delete -or
-      $obj.alter -or
-      $obj.control -or
-      $obj.take_ownership -or
+      ($obj.insert -eq $true) -or
+      ($obj.update -eq $true) -or
+      ($obj.delete -eq $true) -or
+      ($obj.alter -eq $true) -or
+      ($obj.control -eq $true) -or
+      ($obj.take_ownership -eq $true) -or
       ($writableColumns -gt 0)
 
     $result.objects += [ordered]@{
@@ -213,7 +261,8 @@ WHERE s.name = @schema_name
         take_ownership = $obj.take_ownership
         writable_column_count = $writableColumns
       }
-      safe_read_only = ($obj.select -and -not $hasObjectWrite)
+      permission_state_unknown = $objectPermissionUnknown
+      safe_read_only = ($obj.select -eq $true) -and -not $objectPermissionUnknown -and -not $hasObjectWrite
     }
   }
 
@@ -231,6 +280,9 @@ WHERE s.name = @schema_name
     $result.elevated_roles.db_datawriter -or
     $result.elevated_roles.db_ddladmin
 
+
+  $result.executable_procedure_count = $executableProcedureCount
+
   $allObjectsResolved =
     $result.objects.Count -eq $ObjectNames.Count -and
     @($result.objects | Where-Object { -not $_.resolved }).Count -eq 0
@@ -241,6 +293,12 @@ WHERE s.name = @schema_name
 
   if (-not $result.database_matches) {
     $result.blocker = "DATABASE_MISMATCH"
+  }
+  elseif ($databasePermissionUnknown) {
+    $result.blocker = "DATABASE_PERMISSION_STATE_UNKNOWN"
+  }
+  elseif ($executableProcedureCount -gt 0) {
+    $result.blocker = "WINDOWS_PRINCIPAL_CAN_EXECUTE_PROCEDURE"
   }
   elseif ($hasElevatedRole) {
     $result.blocker = "WINDOWS_PRINCIPAL_HAS_ELEVATED_ROLE"
