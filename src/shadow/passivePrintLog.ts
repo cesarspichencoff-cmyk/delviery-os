@@ -47,9 +47,10 @@ export interface PassivePrintProjection {
   privacy: {
     projection_only: true;
     raw_text_retained: false;
-    pii_fields_copied: false;
+    known_pii_fields_copied: false;
+    free_text_observations_may_contain_pii: true;
     operational_fingerprint: string;
-    policy: "ALLOWLIST_OPERATIONAL_EXTRACTION_ONLY";
+    policy: "ALLOWLIST_STRUCTURAL_FIELDS__FREE_TEXT_REMAINS_SENSITIVE";
   };
 }
 
@@ -190,9 +191,10 @@ export function projectPassivePrintBlock(
     privacy: {
       projection_only: true,
       raw_text_retained: false,
-      pii_fields_copied: false,
+      known_pii_fields_copied: false,
+      free_text_observations_may_contain_pii: true,
       operational_fingerprint: operationalFingerprint(operationalBasis),
-      policy: "ALLOWLIST_OPERATIONAL_EXTRACTION_ONLY",
+      policy: "ALLOWLIST_STRUCTURAL_FIELDS__FREE_TEXT_REMAINS_SENSITIVE",
     },
   };
 }
