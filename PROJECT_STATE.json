@@ -5,7 +5,7 @@
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "main",
   "checkpoint_type": "SHADOW_READ_ONLY_PREP",
-  "state_basis_head": "76b03cb1ef704b0e3040636caadb09bb5116cf2f",
+  "state_basis_head": "accd73d18ed335c2ecaff4cf75f94050976f43db",
   "verified_state_refs": [
     "src/shadow/odhenReadonly.ts",
     "src/shadow/compare.ts",
@@ -29,15 +29,17 @@
     "The SQL preflight was hardened after Claude identified a real gap: database-level permission checks alone do not prove table-level read-only access. V2 now resolves the exact target objects, requires SELECT on each, blocks object/schema/database write capability, blocks elevated roles, and checks column-level UPDATE.",
     "SQL preflight V3 closes the two review gaps from Claude: permission metadata returning NULL is now UNKNOWN/blocking rather than false, and any executable stored procedure blocks the claim that the Windows principal is strictly read-only.",
     "A zero-change metadata-only principal inventory has been added. It does not impersonate users and does not read operational tables; it hashes principal names and only triages obvious write roles/permissions, broad db_datareader candidates, and candidates needing DBA confirmation.",
-    "A static verifier guards the inventory script against operational-table access, impersonation, permission mutation, data mutation and environment.xml access."
+    "A static verifier guards the inventory script against operational-table access, impersonation, permission mutation, data mutation and environment.xml access.",
+    "The metadata-only principal inventory static gate was independently replayed from the GitHub branch content and PASSed with zero forbidden operational objects, impersonation, security mutation, data mutation or environment.xml references."
   ],
-  "next_action": "On CAIXA_MOOCA, first run the static verifier locally. If Claude Code policy permits, run the metadata-only inventory once. Treat NEEDS_ADMIN_CONFIRMATION as candidate triage only, not proof. If no useful candidate appears or execution remains blocked, request a DBA/Teknisa-created least-privilege read surface (prefer minimal view + dedicated user without login) under a separate explicit change authorization.",
+  "next_action": "Node is no longer required on CAIXA_MOOCA for the static gate; that gate is proven externally. The remaining gate is execution of the metadata-only PowerShell inventory on CAIXA_MOOCA. If Claude Code blocks fetching/executing it, do not bypass the host policy. Either obtain explicit host permission for that exact script or ask the SQL administrator/Teknisa to confirm/create a least-privilege read surface.",
   "unknowns": [
     "The C3.1 synthetic final preview requested by César has not yet been human-accepted in this phase.",
     "No real order has been read in shadow.",
     "DSOBSCOMANDA is proven order-level in the official report path, but the current C3.1 has no proven renderer channel for order-level observations.",
     "Full repository build plus tools/verificar_shadow_odhen_v132.js is still unproven on the cashier PC after the latest probe/test changes.",
-    "Whether an existing suitably restricted database principal already exists remains UNKNOWN until the metadata-only inventory is executed or the SQL administrator confirms it."
+    "Whether an existing suitably restricted database principal already exists remains UNKNOWN until the metadata-only inventory is executed or the SQL administrator confirms it.",
+    "Execution of the metadata-only principal inventory on CAIXA_MOOCA remains UNKNOWN because Claude Code blocks download/execution under its host permission policy."
   ],
   "authority": {
     "continuity_update": "AUTHORIZED_METADATA_WRITE_WITHIN_PROJECT_SCOPE",
