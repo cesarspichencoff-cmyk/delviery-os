@@ -48,7 +48,7 @@ export interface PassivePrintProjection {
     projection_only: true;
     raw_text_retained: false;
     pii_fields_copied: false;
-    raw_sha256_only: string;
+    operational_fingerprint: string;
     policy: "ALLOWLIST_OPERATIONAL_EXTRACTION_ONLY";
   };
 }
@@ -69,8 +69,8 @@ function quantity(value: string | undefined): number | null {
   return parsed;
 }
 
-function stableRawHash(raw: string): string {
-  return createHash("sha256").update(raw, "utf8").digest("hex");
+function operationalFingerprint(value: unknown): string {
+  return createHash("sha256").update(JSON.stringify(value), "utf8").digest("hex");
 }
 
 /**
@@ -155,6 +155,17 @@ export function projectPassivePrintBlock(
 
   if (!items.length) blocking.add("NO_PRINTED_ITEMS");
 
+  const operationalBasis = {
+    ids: {
+      pedido_interno: pedidoInterno,
+      pedido_externo: pedidoExterno,
+      venda: null,
+    },
+    emissao,
+    items,
+    order_observations: orderObservations,
+  };
+
   return {
     schema: "deliveryos.shadow.passive-print-projection.v1",
     source: "odhen_perifericos_imp_log",
@@ -180,7 +191,7 @@ export function projectPassivePrintBlock(
       projection_only: true,
       raw_text_retained: false,
       pii_fields_copied: false,
-      raw_sha256_only: stableRawHash(rawBlock),
+      operational_fingerprint: operationalFingerprint(operationalBasis),
       policy: "ALLOWLIST_OPERATIONAL_EXTRACTION_ONLY",
     },
   };
