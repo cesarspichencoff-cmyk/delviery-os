@@ -19,11 +19,11 @@ Avaliagao concluida
 em 05/09/2026
 `;
 
-test("uses isolated order-header OCR instead of repairing bad full-page date", () => {
+test("combines full-page order id with isolated order-date OCR", () => {
   const row = parseIfoodReviewOcr({
     attachment_index: 0,
     full_text: BASE,
-    order_header_text: "Pedido feito em\n4787 29/08/2026",
+    order_header_text: "29/08/2026",
   });
   assert.equal(row.order_id, "4787");
   assert.equal(row.order_date, "2026-08-29");
@@ -35,6 +35,16 @@ test("uses isolated order-header OCR instead of repairing bad full-page date", (
   assert.equal(row.completion_date, "2026-09-05");
   assert.equal(row.source_fact_promotion_allowed, false);
   assert.equal(row.automatic_promotion_allowed, false);
+});
+
+test("a wrong id inside the date crop cannot override the full-page id", () => {
+  const row = parseIfoodReviewOcr({
+    attachment_index: 1,
+    full_text: BASE.replace("4787", "5948"),
+    order_header_text: "9948 28/08/2026",
+  });
+  assert.equal(row.order_id, "5948");
+  assert.equal(row.order_date, "2026-08-28");
 });
 
 test("cropped order header stays null even when other dates exist", () => {
@@ -61,11 +71,11 @@ em 30/08/2026
   assert.equal(row.completion_date, "2026-08-30");
 });
 
-test("invalid isolated order date remains null and is never repaired from review date", () => {
+test("invalid isolated order date remains null and is never repaired from another date", () => {
   const row = parseIfoodReviewOcr({
     attachment_index: 0,
     full_text: BASE,
-    order_header_text: "4787 50/08/2026",
+    order_header_text: "50/08/2026",
   });
   assert.equal(row.order_id, "4787");
   assert.equal(row.order_date, null);
@@ -76,13 +86,15 @@ test("tag matching is scoped before the customer line", () => {
   const row = parseIfoodReviewOcr({
     attachment_index: 0,
     full_text: `
+Pedido feito em
+4787 29/08/2026
 Sobre o pedido
 1 Aparéncia Temperatura
 Daniel disse Publica
 em 29/08/2026
 A embalagem chegou ruim.
 `,
-    order_header_text: "4787 29/08/2026",
+    order_header_text: "29/08/2026",
   });
   assert.deepEqual(row.improvement_tags, ["Aparência", "Temperatura"]);
   assert.equal(row.improvement_tags.includes("Embalagem"), false);
@@ -92,7 +104,7 @@ test("response text and edit control are separated", () => {
   const row = parseIfoodReviewOcr({
     attachment_index: 0,
     full_text: BASE,
-    order_header_text: "4787 29/08/2026",
+    order_header_text: "29/08/2026",
   });
   assert.equal(row.merchant_response_text, "Obrigado pelo feedback.");
 });
@@ -101,13 +113,15 @@ test("unmapped tags do not get guessed into known taxonomy", () => {
   const row = parseIfoodReviewOcr({
     attachment_index: 0,
     full_text: `
+Pedido feito em
+1234 01/09/2026
 Sobre o pedido
 5 CategoriaNova
 Cliente disse Privada
 em 01/09/2026
 Tudo certo.
 `,
-    order_header_text: "1234 01/09/2026",
+    order_header_text: "01/09/2026",
   });
   assert.equal(row.improvement_tags, null);
   assert.ok(row.quality_flags.includes("TAGS_NOT_MAPPED"));
@@ -118,7 +132,7 @@ test("parser never promotes OCR to cause, blame, source fact or external effect"
   const row = parseIfoodReviewOcr({
     attachment_index: 0,
     full_text: BASE,
-    order_header_text: "4787 29/08/2026",
+    order_header_text: "29/08/2026",
   });
   assert.equal(row.source_fact_promotion_allowed, false);
   assert.equal(row.cause_proven, false);
