@@ -57,12 +57,12 @@ Categorias operacionais para classificar cada item antes de escolher a caixa:
 
 | Caixa | Uso |
 |---|---|
-| **240** | 1 dupla de sushi **ou** 1 Dyo. Menor caixa de dupla simples. |
-| **450** | 2 a 3 duplas/Dyo · 1 enrolado · 1 temaki · 1 sashimi · sobremesas (Tatá Chocolate, Shoocream) quando aplicável. |
+| **240** | 1 dupla de sushi **ou** 1 Dyo **ou 1 sashimi**. |
+| **450** | 2 a 3 duplas/Dyo · 1 enrolado · 1 temaki · 2 a 4 sashimis · sobremesas (Tatá Chocolate, Shoocream) quando aplicável. |
 | **650 selada** | Itens menores/úmidos/delicados da cozinha e frios delicados (ver §5). |
-| **750** | 4 a 5 duplas/Dyo · 2 enrolados · 2 a 3 temakis · 2 a 4 sashimis · **Battera** (sempre) · **Carpaccio de salmão** (sempre) · combinado para 1 pessoa. |
+| **750** | 4 a 5 duplas/Dyo · 2 enrolados · 2 a 3 temakis · 5 a 7 sashimis · **Battera** (sempre) · **Carpaccio de salmão** (sempre) · combinado para 1 pessoa. |
 | **1.000** | **Tirashi** sempre; nunca outra caixa. Normalmente sacola média, salvo composição fria maior. |
-| **1.500** | 6+ duplas · 3+ enrolados · 4 a 6 temakis · 5+ sashimis · combinado sushi + sashimi para 2 pessoas · pratos quentes grandes da cozinha. Se não couber, complementar com caixas menores. |
+| **1.500** | 6+ duplas · 3+ enrolados · 4 a 6 temakis · 8+ sashimis · combinado sushi + sashimi para 2 pessoas · pratos quentes grandes da cozinha. Se não couber, complementar com caixas menores. |
 | **1.600** | Combinado sushi para 2 pessoas · combinado sushi tradicional para 2 pessoas. Caixa de combinado fechado; não usar para extras soltos. |
 
 **Itens confirmados para caixa 650 selada:** Guioza · Edamame · Missoshiru · Tempurá de milho ·
@@ -131,6 +131,24 @@ Para grupos mistos, as capacidades documentadas podem ser combinadas proporciona
 
 **Itens de caixa fixa:** Battera → sempre 750 · Carpaccio de salmão → sempre 750 · Tirashi → sempre
 1.000 (nunca outra caixa).
+
+## 5.1. Agrupamento físico vigente — correção humana 27/09/2026
+
+Antes de escolher a caixa, o sistema deve formar o **grupo físico da mesma praça**.
+
+Ordem correta:
+
+`item → praça → compatibilidade → grupo físico → caixa → sacola`
+
+Categorias diferentes não obrigam caixas diferentes quando os itens são compatíveis e saem fisicamente juntos pela mesma praça.
+
+Caso humano canônico:
+
+- **2 duplas + 1 sashimi**, todos da praça **Duplas** → **1 caixa 450**.
+
+A categoria continua medindo capacidade. Regra específica continua vencendo regra genérica: combinado fechado, caixa fixa, 650 selada sem capacidade compartilhada provada, incompatibilidade física/térmica e praças diferentes não devem ser fundidos por conveniência.
+
+Para sacolas, contar **caixas físicas resultantes**, nunca quantidade de itens dentro da caixa.
 
 ## 6. Regras de sacola
 
