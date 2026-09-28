@@ -54,10 +54,12 @@ Any future reader must:
 1. read locally;
 2. parse in memory;
 3. immediately project to a minimum operational record;
-4. discard raw text and PII;
+4. discard known structural PII fields (customer, phone, address, payment);
 5. never persist raw print text in DeliveryOS;
 6. never transmit raw text off the cashier PC;
-7. persist only minimum operational fields and a deterministic dedupe/fingerprint.
+7. persist only minimum operational fields and a deterministic operational fingerprint.
+
+Free-text observations remain sensitive: they may themselves contain personal data. The code therefore does not claim that all PII is removed merely because structural customer/address/payment lines are dropped.
 
 ## File-safety boundary
 
@@ -86,3 +88,24 @@ Until that proof exists:
 - `EXISTING_PASSIVE_SOURCE` = CODE_PROVEN_CANDIDATE;
 - production integration = NOT PROVEN;
 - physical print/cutover = NOT AUTHORIZED.
+
+
+## Synthetic verification result
+
+The passive preparation modules were compiled and executed outside the cashier PC using:
+
+- Node.js 22.16.0;
+- TypeScript 5.8.3;
+- exact current source for `odhenReadonly.ts`, `passivePrintLog.ts`, `passivePrintTail.ts` and `verificar_passive_print_log_v132.js`.
+
+Result:
+
+`passive-print-log-v132: ok`
+
+This proves the synthetic/unit boundary only. It does **not** prove:
+- the current cashier log file exists;
+- the actual encoding/framing;
+- the real regex/profile;
+- the concrete Windows file-sharing mode;
+- a full repository build with the repository-pinned TypeScript 5.5.3;
+- any real-order read.
