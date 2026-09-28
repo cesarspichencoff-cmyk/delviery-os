@@ -78,6 +78,21 @@ assert.equal(
   "PII-only changes must not change operational dedupe fingerprint",
 );
 
+const multiOrderBlock = syntheticBlock + "\r\nPEDIDO: 170513\r\n1 x Temaki de Salmao";
+const multiOrderProjection = Passive.projectPassivePrintBlock(multiOrderBlock, profile);
+assert.equal(multiOrderProjection.ready_for_live_shadow, false);
+assert.ok(multiOrderProjection.blocking_reasons.includes("MULTIPLE_PRINTED_ORDER_IDS"));
+
+const postFooterItemObsBlock = [
+  "PEDIDO: 170514",
+  "1 x Uramaki de Salmao",
+  "OBS.: PORTARIA",
+  "* NAO PODE VOLTAR PARA O ITEM ANTERIOR",
+].join("\r\n");
+const postFooterProjection = Passive.projectPassivePrintBlock(postFooterItemObsBlock, profile);
+assert.equal(postFooterProjection.ready_for_live_shadow, false);
+assert.ok(postFooterProjection.blocking_reasons.includes("PRINT_ITEM_OBSERVATION_WITHOUT_ITEM"));
+
 const raw = Passive.passivePrintProjectionToOdhenRaw(projection);
 assert.equal(raw.NRCOMANDA, "170512");
 assert.equal(raw.NRCOMANDAEXT, "ABC123");
