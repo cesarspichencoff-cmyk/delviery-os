@@ -4,8 +4,8 @@
   "project": "DeliveryOS / TATÁ Edge",
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "design/tata-edge-runtime-foundation-v1",
-  "checkpoint_type": "PRODUCTION_TALLY_GATE_E_REAL_SERIALIZATION_PROVEN_WEBHOOK_AUTH_PENDING",
-  "state_basis_head": "f6ed2babde8cd6b4e6509a068c4f5946f6352871",
+  "checkpoint_type": "PRODUCTION_TALLY_GATE_F_AUTHORIZED_AUTHENTICATED_ACCESS_PENDING",
+  "state_basis_head": "491adf59590ec5bd15ca307f11a3309229659a64",
   "verified_state_refs": [
     "deploy/cloudflare/gerencial-mail-bridge/",
     "deploy/cloudflare/tata-edge-cloud-shadow/",
@@ -64,7 +64,8 @@
     "docs/context/EVIDENCE_ACTION_FOLLOWUP_WINDOW_QUALITY_2026-09-27.md",
     "docs/context/EVIDENCE_IFOOD_LAYOUT_AWARE_OCR_CANDIDATE_2026-09-27.md",
     "docs/context/EVIDENCE_IFOOD_LOCAL_OCR_EXECUTOR_CONTRACT_2026-09-27.md",
-    "docs/context/EVIDENCE_TALLY_GATE_E_REAL_LIVE_SERIALIZATION_2026-09-28.md"
+    "docs/context/EVIDENCE_TALLY_GATE_E_REAL_LIVE_SERIALIZATION_2026-09-28.md",
+    "docs/context/EVIDENCE_TALLY_WEBHOOK_AUTHORIZED_ACCESS_BOUNDARY_2026-09-28.md"
   ],
   "verified_state": [
     "The canonical operational mail bridge is cesar-gerencial-mail-bridge reading Atendimento Sent read-only with EXAMINE + BODY.PEEK and D1 cesar-gerencial-mail-bridge.",
@@ -230,7 +231,11 @@
     "Live row 7XzDNDR serializes Item errado with M:P empty and Q:T = Sim|Sim|Sim|Sim; real Outro rows leave all eight barrier columns empty.",
     "Legacy Caixa Executivo mapping remains healthy: Configuracao remaps the eight legacy occurrence fields to columns 4,5,6,7,9,10,11,12 and analise_ocorrencias correctly projects the new post-cutover rows.",
     "Read-only scans of analise_ocorrencias, painel, Configuracao and auditoria_sync found zero #REF!, #VALUE!, #N/A or #ERROR! matches after live cutover.",
-    "Gate E being proven does not itself authorize the next production mutation; the live signed ZjVv1a webhook remains unwired pending explicit near-action authorization."
+    "Gate E being proven does not itself authorize the next production mutation; the live signed ZjVv1a webhook remains unwired pending explicit near-action authorization.",
+    "César explicitly authorized Gate F live ZjVv1a signed observation-only webhook wiring; this near-action authorization remains valid across session rollover until executed or revoked.",
+    "Post-authorization public preflight confirmed live ZjVv1a remains reachable with the expected subtype surface and tata-edge-cloud-shadow /health remains status=ok with external_effects_authorized=false.",
+    "Gate F execution is currently blocked only by authenticated control-surface availability: Opera Browser Connector is disconnected and Foxxy is offline; no paid browser automation was used.",
+    "Tally official API is free, but the loaded official documentation did not establish a programmatic webhook-management endpoint; official webhook creation remains documented through Integrations -> Webhooks."
   ],
   "proof": {
     "latest_green_ci_run": "36302995615",
@@ -649,9 +654,19 @@
     "tally_gate_e_legacy_config_mapping_healthy": true,
     "tally_gate_e_formula_error_scan_zero": true,
     "tally_gate_e_webhook_wired": false,
-    "tally_gate_e_webhook_near_action_authorization": "PENDING"
+    "tally_gate_e_webhook_near_action_authorization": "PENDING",
+    "tally_gate_f_authorization": "GRANTED_BY_CESAR_2026-09-28",
+    "tally_gate_f_authorization_reask_required": false,
+    "tally_gate_f_execution_status": "BLOCKED_AUTHENTICATED_CONTROL_SURFACE_UNAVAILABLE",
+    "tally_gate_f_opera_connector": "DISCONNECTED",
+    "tally_gate_f_foxxy": "OFFLINE",
+    "tally_gate_f_paid_browser_automation_used": false,
+    "tally_gate_f_public_form_reachable": true,
+    "tally_gate_f_worker_health_ok": true,
+    "tally_gate_f_webhook_wired": false,
+    "tally_gate_f_production_mutation_performed": false
   },
-  "next_action": "Gate E read-only evidence is proven. Do not alter the live Tally form or workbook. The next production action is now the explicitly gated one: after César gives near-action authorization, wire the existing signed observation-only webhook to live form ZjVv1a, preserve expected_form_id=ZjVv1a and external_effect_authorized=false, then prove one real idempotent live observation in remote D1 and feed its minimized envelope into the v0.11 live-default context -> TESTABLE_UNPROVEN hypotheses -> NOT_EXECUTED plan chain. In parallel, continue resolving the iFood OCR CI regression and keep OCR runtime undeployed.",
+  "next_action": "Gate F is already authorized. Do not ask César for authorization again unless scope changes or authorization is revoked. When Foxxy or an authenticated browser connector becomes available, revalidate ZjVv1a + Worker health and immediately wire the signed observation-only live webhook without modifying the form/workbook or creating synthetic data. Then wait for the next real submission and prove one idempotent D1 observation -> minimized envelope -> Context Kernel v0.11 chain. In parallel, iFood OCR head 26bb7365... has Edge Shadow CI run 36372674552 SUCCESS; keep OCR runtime undeployed until its real-byte local host gate is separately proven.",
   "unknowns": [
     "No defensible iFood review freshness cadence has been established; its freshness must remain UNKNOWN.",
     "Global critical-source coverage is incomplete; global all-clear must remain disabled.",
@@ -675,8 +690,8 @@
     "No target Windows/Node host is yet WORLD_PROVEN for the iFood OCR executor.",
     "No real stored review attachment has yet traversed D1 -> local executor -> segmented OCR -> parser.",
     "No real production Item faltando row has yet been observed after cutover; its live conditional matrix placement remains unproven even though shadow serialization was proven.",
-    "The live signed ZjVv1a webhook remains unwired pending explicit near-action authorization.",
-    "No real production Tally minimized envelope has yet traversed signed webhook -> Edge/D1 -> portable kernel v0.11."
+    "No real production Tally minimized envelope has yet traversed signed webhook -> Edge/D1 -> portable kernel v0.11.",
+    "The live signed ZjVv1a webhook remains unwired despite authorization because no included authenticated Tally/Cloudflare control surface is currently online."
   ],
   "authority": {
     "continuity_update": "AUTHORIZED_METADATA_WRITE_WITHIN_PROJECT_SCOPE",
