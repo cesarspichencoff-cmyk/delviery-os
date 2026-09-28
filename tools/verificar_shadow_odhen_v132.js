@@ -34,6 +34,13 @@ const fixture = {
       join_proven: true,
     },
     {
+      source_field: "DSOBSPEDDIGCMD",
+      value: "MOLHO A PARTE",
+      item_index: 0,
+      scope_hint: "item",
+      join_proven: true,
+    },
+    {
       source_field: "TXPRODCOMVEN",
       value: "MAL PASSADO",
       item_index: 1,
@@ -41,8 +48,8 @@ const fixture = {
       join_proven: true,
     },
     {
-      source_field: "DSOBSPEDDIGCMD",
-      value: "ENTREGAR MOLHO A PARTE",
+      source_field: "DSOBSCOMANDA",
+      value: "OBSERVACAO DE PEDIDO TESTE",
       scope_hint: "order",
       join_proven: true,
     },
@@ -54,9 +61,9 @@ const normalized = Shadow.normalizeOdhenShadow(fixture);
 assert.equal(normalized.ready_for_motor, true);
 assert.equal(normalized.observation_state, "PROVEN_ASSIGNED");
 assert.equal(normalized.items.length, 2);
-assert.deepEqual(normalized.items[0].observacoes.map(x => x.value), ["SEM CEBOLINHA"]);
+assert.deepEqual(normalized.items[0].observacoes.map(x => x.value), ["SEM CEBOLINHA", "MOLHO A PARTE"]);
 assert.deepEqual(normalized.items[1].observacoes.map(x => x.value), ["MAL PASSADO"]);
-assert.deepEqual(normalized.order_observations.map(x => x.value), ["ENTREGAR MOLHO A PARTE"]);
+assert.deepEqual(normalized.order_observations.map(x => x.value), ["OBSERVACAO DE PEDIDO TESTE"]);
 assert.equal(normalized.unassigned_observations.length, 0);
 const previewWithOrderObs = Preview.previewGate(normalized);
 assert.equal(previewWithOrderObs.ready_for_preview, false);
@@ -82,7 +89,7 @@ assert.deepEqual(rows, [
     pedido_id: "0000170512",
     item_nome: "Uramaki de Salmão",
     quantidade: 1,
-    observacao: "SEM CEBOLINHA",
+    observacao: "SEM CEBOLINHA | MOLHO A PARTE",
     horario: "2026-09-27T21:15:00-03:00",
   },
   {
