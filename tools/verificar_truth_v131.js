@@ -20,11 +20,14 @@ const seisLatas = item({ nome:"Coca-Cola Lata 350 ml", praca:"bar_bebidas", temp
 const sake300 = item({ nome:"Saquê 300 ml", praca:"bar_bebidas", temp:"neutro", cat:"bebida" });
 const sake720 = item({ nome:"Saquê 720 ml", praca:"bar_bebidas", temp:"neutro", cat:"bebida" });
 const comboGrande = item({ nome:"Combinado 2 pessoas", praca:"combinados", temp:"frio", cat:"combinado", qtd:8 });
+const sobremesaAmbiente = item({ nome:"Choux Cream", praca:"sobremesa", temp:"ambiente", cat:"sobremesa" });
 
 assert.equal(MOTOR.resolver([hotRoll, frio]).segundaSacola, false,
   "Hot Roll + frio não força segunda sacola");
 assert.equal(MOTOR.resolver([cozinha, frio]).segundaSacola, true,
   "quente da Cozinha + frio exige separação");
+assert.equal(MOTOR.resolver([cozinha, sobremesaAmbiente]).segundaSacola, true,
+  "sobremesa ambiente + quente da Cozinha exige separação");
 assert.equal(MOTOR.resolver([frio, seisLatas]).sacolasMinimas, 2,
   "6+ latas com comida geram um grupo separado");
 assert.equal(MOTOR.resolver([seisLatas]).sacolasMinimas, 1,
