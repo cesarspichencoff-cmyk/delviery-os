@@ -32,6 +32,24 @@ fila de impressão ou escrita em filesystem.
 
 ## Verdade atual sobre a fonte
 
+### Revalidado no PC do caixa — CAIXA_MOOCA
+
+Fonte revalidada somente por leitura de código/configuração em 28/09/2026:
+
+- raiz real: `C:\TEKNISA\odhen-perifericos`;
+- runtime Odhen presente, incluindo `Perifericos.exe`;
+- `GET_ALL_DELIVERY_ORDERS` fornece `NRCOMANDA`, `NRCOMANDAEXT` e `NRVENDAREST`;
+- `GET_PRODUTOS_PEDIDODLV` fornece `CDPRODUTO`, `NMPRODUTO` e `QTPRODCOMVEN`;
+- as rotas `/AllDeliveryRepository` e `/DeliveryRepository` são de leitura;
+- `DSOBSDESCIT` e `DSOBSPEDDIGCMD` aparecem no contexto do item no relatório de entrega;
+- `TXPRODCOMVEN` é um quarto canal item-level relevante e precisa entrar no scan;
+- `DSOBSCOMANDA` é observação do pedido inteiro e o relatório de entrega oficial a imprime como `OBS.:`;
+- nenhuma rota read-only já exposta pelo Odhen entrega todas as observações necessárias;
+- o caminho de impressão consulta informação adicional e NÃO pode ser usado pelo shadow.
+
+O significado operacional exato de `DSOBSCOMANDA` continua independente do fato de ser order-level.
+Conteúdo real ainda não foi lido.
+
 ### Verificado no repositório
 
 - DeliveryOS não possuía integração Odhen executável antes desta branch.
@@ -51,9 +69,9 @@ Evidência anterior de investigação do runtime indicou:
 - identificadores: `NRCOMANDA`, `NRCOMANDAEXT`, `NRVENDAREST`;
 - produtos: `CDPRODUTO`, `NMPRODUTO`, `QTPRODCOMVEN`;
 - produtos do DeliveryRepository não traziam, por si só, todas as observações;
-- outra rota/query observada continha candidatos `DSOBSDESCIT` e
-  `DSOBSPEDDIGCMD`;
-- `DSOBSCOMANDA` seguia como gate aberto.
+- outra rota/query observada continha candidatos `DSOBSDESCIT`,
+  `DSOBSPEDDIGCMD` e `TXPRODCOMVEN`;
+- `DSOBSCOMANDA` é order-level no relatório oficial, mas seu conteúdo real continua não lido.
 
 Isto é **LAST_KNOWN_STATE**, não CURRENT_PROVEN. Nenhum desses pontos autoriza conexão.
 
