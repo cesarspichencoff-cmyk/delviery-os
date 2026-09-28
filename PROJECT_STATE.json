@@ -5,7 +5,7 @@
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "main",
   "checkpoint_type": "SHADOW_READ_ONLY_PREP",
-  "state_basis_head": "3fe8dfa3794d257a50517fb4929c142bbd89bf17",
+  "state_basis_head": "76b03cb1ef704b0e3040636caadb09bb5116cf2f",
   "verified_state_refs": [
     "src/shadow/odhenReadonly.ts",
     "src/shadow/compare.ts",
@@ -27,15 +27,17 @@
     "Observation scope revalidation: DSOBSDESCIT, DSOBSPEDDIGCMD and TXPRODCOMVEN are item-level candidates; DSOBSCOMANDA is order-level in the official delivery report path.",
     "A Windows Integrated Authentication SQL preflight is prepared; it does not read Odhen credentials or order tables and only allows the next gate if the current Windows principal has SELECT and no INSERT/UPDATE/DELETE/EXECUTE/ALTER/CONTROL permission.",
     "The SQL preflight was hardened after Claude identified a real gap: database-level permission checks alone do not prove table-level read-only access. V2 now resolves the exact target objects, requires SELECT on each, blocks object/schema/database write capability, blocks elevated roles, and checks column-level UPDATE.",
-    "SQL preflight V3 closes the two review gaps from Claude: permission metadata returning NULL is now UNKNOWN/blocking rather than false, and any executable stored procedure blocks the claim that the Windows principal is strictly read-only."
+    "SQL preflight V3 closes the two review gaps from Claude: permission metadata returning NULL is now UNKNOWN/blocking rather than false, and any executable stored procedure blocks the claim that the Windows principal is strictly read-only.",
+    "A zero-change metadata-only principal inventory has been added. It does not impersonate users and does not read operational tables; it hashes principal names and only triages obvious write roles/permissions, broad db_datareader candidates, and candidates needing DBA confirmation.",
+    "A static verifier guards the inventory script against operational-table access, impersonation, permission mutation, data mutation and environment.xml access."
   ],
-  "next_action": "The remaining blocker is host permission: Claude Code refuses even the metadata-only preflight without offering approval. Do not bypass it. Run the V3 script manually on CAIXA_MOOCA or change Claude Code permissions explicitly; only after V3 returns safe_for_order_read=true may one-order SELECT proceed.",
+  "next_action": "On CAIXA_MOOCA, first run the static verifier locally. If Claude Code policy permits, run the metadata-only inventory once. Treat NEEDS_ADMIN_CONFIRMATION as candidate triage only, not proof. If no useful candidate appears or execution remains blocked, request a DBA/Teknisa-created least-privilege read surface (prefer minimal view + dedicated user without login) under a separate explicit change authorization.",
   "unknowns": [
     "The C3.1 synthetic final preview requested by César has not yet been human-accepted in this phase.",
     "No real order has been read in shadow.",
     "DSOBSCOMANDA is proven order-level in the official report path, but the current C3.1 has no proven renderer channel for order-level observations.",
     "Full repository build plus tools/verificar_shadow_odhen_v132.js is still unproven on the cashier PC after the latest probe/test changes.",
-    "Effective secretless read-only SQL access on CAIXA_MOOCA remains UNKNOWN because Claude Code has not been allowed to execute the metadata preflight."
+    "Whether an existing suitably restricted database principal already exists remains UNKNOWN until the metadata-only inventory is executed or the SQL administrator confirms it."
   ],
   "authority": {
     "continuity_update": "AUTHORIZED_METADATA_WRITE_WITHIN_PROJECT_SCOPE",
@@ -58,6 +60,8 @@
     "status": "SOURCE_REVALIDATION_PASS__HUMAN_PREVIEW_GATE_PENDING",
     "canonical_sha256": "D34583F0A743DF9645914BCDFC1010E6D3AEF72AC74D3A4B7B01F81E305B71E4",
     "cashier_pc": "CAIXA_MOOCA",
-    "odhen_root": "C:\\TEKNISA\\odhen-perifericos"
+    "odhen_root": "C:\\TEKNISA\\odhen-perifericos",
+    "sql_zero_change_probe": "tools/sql_principal_inventory_metadata_only.ps1",
+    "sql_zero_change_probe_static_gate": "tools/verificar_sql_principal_inventory_static.js"
   }
 }
