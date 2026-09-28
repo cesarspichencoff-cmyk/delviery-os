@@ -5,7 +5,7 @@
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "design/tata-edge-runtime-foundation-v1",
   "checkpoint_type": "PRODUCTION_TALLY_DEPLOYED_PORTABLE_KERNEL_V011_SHADOW_REPLAY_READY_GATE_E_PENDING",
-  "state_basis_head": "a51f07e22ac27ac058404c110e4f98ee79d922cf",
+  "state_basis_head": "e809902093b9a45a87cb9f761c26b27bacf2c5ff",
   "verified_state_refs": [
     "deploy/cloudflare/gerencial-mail-bridge/",
     "deploy/cloudflare/tata-edge-cloud-shadow/",
@@ -62,7 +62,8 @@
     "docs/context/EVIDENCE_IFOOD_VISUAL_REFERENCE_CONTRACT_2026-09-27.md",
     "docs/context/EVIDENCE_IFOOD_ZERO_COST_OCR_REJECTION_2026-09-27.md",
     "docs/context/EVIDENCE_ACTION_FOLLOWUP_WINDOW_QUALITY_2026-09-27.md",
-    "docs/context/EVIDENCE_IFOOD_LAYOUT_AWARE_OCR_CANDIDATE_2026-09-27.md"
+    "docs/context/EVIDENCE_IFOOD_LAYOUT_AWARE_OCR_CANDIDATE_2026-09-27.md",
+    "docs/context/EVIDENCE_IFOOD_LOCAL_OCR_EXECUTOR_CONTRACT_2026-09-27.md"
   ],
   "verified_state": [
     "The canonical operational mail bridge is cesar-gerencial-mail-bridge reading Atendimento Sent read-only with EXAMINE + BODY.PEEK and D1 cesar-gerencial-mail-bridge.",
@@ -217,7 +218,12 @@
     "The private layout-aware benchmark is stored at /VÉRTICE/DeliveryOS/ifood-review-layout-aware-ocr-benchmark-2026-09-27.json with SHA-256 f79552addac37f1cdfdf561d2239d5006c61f8df237e6ec9236fabe940ed305f.",
     "ifood-review-ocr-parse@0.1.0 now parses full-page OCR plus isolated order-header OCR with fail-closed invalid-date behavior, scoped tag matching and zero causal/blame/effect authority.",
     "Edge Shadow CI run 36366425088 completed SUCCESS for the layout-aware OCR parser head 6720591903e4555cbe1a4d9c529fdbeceb2359ba.",
-    "The current Free Cloudflare Worker is not selected as the OCR execution surface; OCR execution remains undeployed and the next zero-cost candidate is a narrow local Node/WebAssembly executor."
+    "The current Free Cloudflare Worker is not selected as the OCR execution surface; OCR execution remains undeployed and the next zero-cost candidate is a narrow local Node/WebAssembly executor.",
+    "ifood-local-ocr-executor@0.1.0 now defines a local read-only OCR execution contract with injected attachment source and OCR engine; no production network/storage binding is embedded.",
+    "The local OCR executor defaults to AUTHORIZED_TEAM_MAIL and rejects CESAR_SELF_SENT_REFERENCE_BATCH unless that source class is explicitly bound for benchmark use.",
+    "The executor pins mailbox-key shape, attachment index, MIME type, image size and SHA-256 before invoking OCR; source/hash admission failures occur before any OCR call.",
+    "An admitted image invokes exactly FULL_PAGE and ORDER_HEADER OCR regions, then passes through ifood-review-ocr-parse@0.1.0 and remains UNVERIFIED with no persistence, notification or external-effect authority.",
+    "Edge Shadow CI run 36366823937 completed SUCCESS for local OCR executor head 95b34ca64cfe6334604d12312118c16a9411ad6c."
   ],
   "proof": {
     "latest_green_ci_run": "36302995615",
@@ -605,9 +611,23 @@
     "ifood_ocr_parser_ci_run": 36366425088,
     "ifood_ocr_parser_ci_result": "SUCCESS",
     "ifood_ocr_execution_surface": "LOCAL_NODE_WASM_CANDIDATE_NOT_DEPLOYED",
-    "ifood_ocr_cloudflare_free_worker_selected": false
+    "ifood_ocr_cloudflare_free_worker_selected": false,
+    "ifood_local_ocr_executor_version": "ifood-local-ocr-executor@0.1.0",
+    "ifood_local_ocr_executor_default_source_class": "AUTHORIZED_TEAM_MAIL",
+    "ifood_local_ocr_executor_reference_source_requires_explicit_binding": true,
+    "ifood_local_ocr_executor_hash_bound": true,
+    "ifood_local_ocr_executor_regions": [
+      "FULL_PAGE",
+      "ORDER_HEADER"
+    ],
+    "ifood_local_ocr_executor_persistence_authorized": false,
+    "ifood_local_ocr_executor_notification_authorized": false,
+    "ifood_local_ocr_executor_external_effects": false,
+    "ifood_local_ocr_executor_ci_run": 36366823937,
+    "ifood_local_ocr_executor_ci_result": "SUCCESS",
+    "ifood_local_ocr_executor_runtime_binding": "NOT_DONE"
   },
-  "next_action": "Continue three safe tracks without synthetic production incidents or external effects: (1) observe Tally Gate E read-only until the first real post-cutover ZjVv1a response; (2) keep whole-page Tesseract locked, and prepare the smallest local Node/WebAssembly executor contract that can read an explicitly authorized stored iFood attachment, run fixed-layout segmented OCR, and return an UNVERIFIED derived candidate through ifood-review-ocr-parse@0.1.0; do not deploy or wire production until the executor path is benchmarked from real bytes and the authorized team-mail source appears; (3) preserve the new action-follow-up window-quality work and rerun it when fresh canonical Caixa Pulse occurrence evidence is available.",
+  "next_action": "Continue three safe tracks without synthetic production incidents or external effects: (1) observe Tally Gate E read-only until the first real post-cutover ZjVv1a response; (2) for iFood OCR, keep full-page Tesseract locked and use the proven layout-aware path. Next prepare a narrow read-only attachment retrieval adapter plus a concrete local Node/Tesseract.js engine adapter behind ifood-local-ocr-executor@0.1.0, benchmark them against the existing seven-image reference corpus, and do not bind production or persist derived output until that byte-level path is proven; (3) preserve the action-follow-up window-quality work and rerun it when fresh canonical Caixa Pulse occurrence evidence is available.",
   "unknowns": [
     "No defensible iFood review freshness cadence has been established; its freshness must remain UNKNOWN.",
     "Global critical-source coverage is incomplete; global all-clear must remain disabled.",
@@ -628,7 +648,11 @@
     "Independent post-action outcome evidence is not yet systematically linked; action follow-up now qualifies the observation window but action effectiveness remains UNKNOWN.",
     "The historical 69-row Caixa Pulse replay has not yet been freshly rerun with the new action-window-quality counters in this session.",
     "Layout-aware iFood OCR accuracy is proven only on the private seven-image reference corpus; generalization to future screenshots/layout changes remains UNKNOWN.",
-    "No local Node/WebAssembly OCR executor is deployed or WORLD_PROVEN against D1 attachment bytes."
+    "No local Node/WebAssembly OCR executor is deployed or WORLD_PROVEN against D1 attachment bytes.",
+    "No concrete local Tesseract.js/OCR engine adapter is yet wired to ifood-local-ocr-executor@0.1.0.",
+    "No narrow D1 review-attachment retrieval adapter is yet wired to the local OCR executor.",
+    "No target Windows/Node host is yet WORLD_PROVEN for the iFood OCR executor.",
+    "No real stored review attachment has yet traversed D1 -> local executor -> segmented OCR -> parser."
   ],
   "authority": {
     "continuity_update": "AUTHORIZED_METADATA_WRITE_WITHIN_PROJECT_SCOPE",
