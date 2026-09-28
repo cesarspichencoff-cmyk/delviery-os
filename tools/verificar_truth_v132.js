@@ -19,6 +19,8 @@ const cozinha = item({ nome:"Yakisoba", praca:"cozinha_quentes", temp:"quente", 
 const seisLatas = item({ nome:"Coca-Cola Lata 350 ml", praca:"bar_bebidas", temp:"neutro", cat:"bebida", qtd:6 });
 const sake300 = item({ nome:"Saquê 300 ml", praca:"bar_bebidas", temp:"neutro", cat:"bebida" });
 const sake720 = item({ nome:"Saquê 720 ml", praca:"bar_bebidas", temp:"neutro", cat:"bebida" });
+const wine720 = item({ nome:"Vinho 720 ml", praca:"bar_bebidas", temp:"neutro", cat:"bebida" });
+const wine750 = item({ nome:"Vinho 750 ml", praca:"bar_bebidas", temp:"neutro", cat:"bebida" });
 const comboGrande = item({ nome:"Combinado 2 pessoas", praca:"combinados", temp:"frio", cat:"combinado", qtd:8 });
 const comboMisto = item({ nome:"Combinado Salmão 1 pessoa", praca:"combinados", temp:"misto", cat:"combinado" });
 const sobremesaAmbiente = item({ nome:"Choux Cream", praca:"sobremesa", temp:"ambiente", cat:"sobremesa" });
@@ -41,6 +43,10 @@ assert.equal(MOTOR.resolver([frio, sake300]).segundaSacola, false,
   "saquê 300 ml não é bebida grande por regex");
 assert.equal(MOTOR.resolver([frio, sake720]).segundaSacola, true,
   "saquê 720 ml com comida exige grupo separado");
+assert.equal(MOTOR.resolver([frio, wine720]).segundaSacola, true,
+  "vinho 720 ml com comida exige grupo separado");
+assert.equal(MOTOR.resolver([frio, wine750]).segundaSacola, false,
+  "vinho 750 ml não herda automaticamente a regra específica de 720 ml");
 assert.equal(MOTOR.resolver([comboGrande]).segundaSacola, false,
   "combo ou quantidade bruta não criam segunda sacola");
 assert.equal(MOTOR.resolver([comboGrande]).contemKit, false,
