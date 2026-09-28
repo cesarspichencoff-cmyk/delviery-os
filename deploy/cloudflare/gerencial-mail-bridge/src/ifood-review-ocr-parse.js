@@ -3,7 +3,7 @@ import {
 } from "./ifood-review-visual-extraction.js";
 
 export const IFOOD_REVIEW_OCR_PARSE_VERSION =
-  "ifood-review-ocr-parse@0.1.0";
+  "ifood-review-ocr-parse@0.2.0";
 
 const KNOWN_TAGS = Object.freeze([
   "Aparência",
@@ -163,13 +163,24 @@ function extractCompletionDate(fullText) {
   return null;
 }
 
-function parseOrderHeader(orderHeaderText) {
+function extractOrderIdFromFullText(fullText) {
+  const lines = String(fullText ?? "").split(/\r?\n/);
+  const markerIndex = lines.findIndex((line) =>
+    fold(line).includes("pedido feito em")
+  );
+  if (markerIndex < 0) return null;
+
+  const bounded = lines
+    .slice(markerIndex, Math.min(lines.length, markerIndex + 4))
+    .join(" ");
+  return bounded.match(/\b(\d{3,30})\b/)?.[1] ?? null;
+}
+
+function parseOrderDateCrop(orderHeaderText) {
   const value = String(orderHeaderText ?? "");
-  const orderId = value.match(/\b(\d{3,30})\b/)?.[1] ?? null;
   const rawDate = value.match(/\b\d{2}\/\d{2}\/\d{4}\b/)?.[0] ?? null;
   const orderDate = isoDateFromBr(rawDate);
   return {
-    order_id: orderId,
     order_date: orderDate,
     invalid_order_date_ocr: Boolean(rawDate && !orderDate),
   };
@@ -185,7 +196,6 @@ function parseRatingAndTags(fullText) {
   return {
     rating,
     improvement_tags: tags.length ? tags : null,
-    tag_scope_text: orderBlock,
   };
 }
 
@@ -194,7 +204,8 @@ export function parseIfoodReviewOcr({
   full_text,
   order_header_text,
 }) {
-  const order = parseOrderHeader(order_header_text);
+  const orderId = extractOrderIdFromFullText(full_text);
+  const orderDate = parseOrderDateCrop(order_header_text);
   const ratingTags = parseRatingAndTags(full_text);
   const review = extractReviewIdentityAndText(full_text);
   const response = extractOptionalSection(
@@ -209,8 +220,8 @@ export function parseIfoodReviewOcr({
     extraction_method: "OCR",
     verification_status: "UNVERIFIED",
     visible_fields: [],
-    order_id: order.order_id,
-    order_date: order.order_date,
+    order_id: orderId,
+    order_date: orderDate.order_date,
     rating: ratingTags.rating,
     improvement_tags: ratingTags.improvement_tags,
     customer_name: review.customer_name,
@@ -243,7 +254,7 @@ export function parseIfoodReviewOcr({
     parser_version: IFOOD_REVIEW_OCR_PARSE_VERSION,
     ...validated,
     quality_flags: [
-      ...(order.invalid_order_date_ocr ? ["INVALID_ORDER_DATE_OCR"] : []),
+      ...(orderDate.invalid_order_date_ocr ? ["INVALID_ORDER_DATE_OCR"] : []),
       ...(ratingTags.improvement_tags === null ? ["TAGS_NOT_MAPPED"] : []),
     ],
     raw_ocr_retained_by_source: true,
