@@ -63,6 +63,18 @@ function capture(pattern: RegExp | undefined, text: string, group: string): stri
   return value?.trim() || null;
 }
 
+function countMatches(pattern: RegExp, text: string): number {
+  const flags = pattern.flags.includes("g") ? pattern.flags : pattern.flags + "g";
+  const clone = new RegExp(pattern.source, flags);
+  let count = 0;
+  let match: RegExpExecArray | null;
+  while ((match = clone.exec(text)) !== null) {
+    count += 1;
+    if (match[0] === "") clone.lastIndex += 1;
+  }
+  return count;
+}
+
 function quantity(value: string | undefined): number | null {
   if (!value) return null;
   const parsed = Number(value.replace(",", "."));
@@ -93,8 +105,10 @@ export function projectPassivePrintBlock(
   const pedidoInterno = capture(profile.order_id, rawBlock, "pedido");
   const pedidoExterno = capture(profile.external_order_id, rawBlock, "externo");
   const emissao = capture(profile.emission, rawBlock, "emissao");
+  const orderIdCount = countMatches(profile.order_id, rawBlock);
 
   if (!pedidoInterno) blocking.add("MISSING_PRINTED_ORDER_ID");
+  if (orderIdCount > 1) blocking.add("MULTIPLE_PRINTED_ORDER_IDS");
   if (profile.proof !== "REAL_SAMPLE_PROVEN") blocking.add("PRINT_PROFILE_NOT_REAL_SAMPLE_PROVEN");
   if (!profile.full_block_framing_proven) blocking.add("PRINT_BLOCK_FRAMING_NOT_PROVEN");
 
@@ -109,6 +123,7 @@ export function projectPassivePrintBlock(
     profile.item_line.lastIndex = 0;
     const itemMatch = profile.item_line.exec(line);
     if (itemMatch?.groups) {
+      if (orderObservationSectionStarted) blocking.add("ITEM_AFTER_ORDER_OBSERVATION");
       const nome = itemMatch.groups.nome?.trim();
       const qty = quantity(itemMatch.groups.quantidade);
       if (!nome || qty === null) {
@@ -145,6 +160,8 @@ export function projectPassivePrintBlock(
       const orderObsMatch = profile.order_observation_line.exec(line);
       const orderObs = orderObsMatch?.groups?.observacao?.trim();
       if (orderObs) {
+        orderObservationSectionStarted = true;
+        currentItem = null;
         orderObservations.push(orderObs);
         continue;
       }
