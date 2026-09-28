@@ -5,13 +5,14 @@
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "main",
   "checkpoint_type": "SHADOW_READ_ONLY_PREP",
-  "state_basis_head": "dd58840fe6f9ab5e8b5b5bf54800e13cec14d61c",
+  "state_basis_head": "cffc87f189aad539ec5bf8d6fb6b11083797c687",
   "verified_state_refs": [
     "src/shadow/odhenReadonly.ts",
     "src/shadow/compare.ts",
     "src/shadow/previewGate.ts",
     "tools/verificar_shadow_odhen_v132.js",
-    "docs/Shadow_Odhen_ReadOnly_V132.md"
+    "docs/Shadow_Odhen_ReadOnly_V132.md",
+    "tools/odhen_source_probe_readonly.ps1"
   ],
   "verified_state": [
     "Canonical V1.3.2 SHA-256 is pinned in the pure shadow normalizer.",
@@ -19,9 +20,10 @@
     "Observation completeness is an explicit gate: unproven or unassigned observation candidates block the motor; order-level observations also block final preview until a proven renderer channel exists.",
     "Only minimum operational fields are copied; raw payload, customer, phone, address, payment and unrelated PII are not retained.",
     "Local isolated proof passed strict TypeScript compilation for the three shadow modules and synthetic normalization/dedupe/privacy/comparison/preview-gate tests.",
-    "PR #11 is draft and not merged. Full repository build and actual store-source revalidation are not yet proven."
+    "PR #11 is draft and not merged. Full repository build and actual store-source revalidation are not yet proven.",
+    "A source-only PowerShell probe is prepared to revalidate the store runtime without starting Odhen, making HTTP calls, querying the database, reading orders or writing files."
   ],
-  "next_action": "When an authorized store PC is online, revalidate the Odhen/Teknisa read contract by read-only inspection only. Prove current order/item identifiers and every observation channel/scope/join, then run the full repository shadow gate. Do not read live orders or render C3.1 until that source gate passes.",
+  "next_action": "When the authorized store PC is online, run tools/odhen_source_probe_readonly.ps1 against the current Odhen root. Review hashes/token locations only, then map current read contracts and observation channels before any live-order read. After that, run the full repository build plus tools/verificar_shadow_odhen_v132.js. Do not print, write, mutate status/order, perform fiscal actions, install a watcher/service or cut over.",
   "unknowns": [
     "Current store-PC Odhen/Teknisa runtime is not fresh because the authorized Remote Desktop device is offline.",
     "LAST_KNOWN_STATE fields NRCOMANDA/NRCOMANDAEXT/NRVENDAREST and product fields CDPRODUTO/NMPRODUTO/QTPRODCOMVEN require fresh read-only revalidation before live use.",
