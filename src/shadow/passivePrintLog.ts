@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import type { OdhenOrderRaw } from "./odhenReadonly";
+import type { OdhenObservationRowRaw, OdhenOrderRaw } from "./odhenReadonly";
 
 export type PrintLogProfileProof = "SYNTHETIC_ONLY" | "REAL_SAMPLE_PROVEN";
 
@@ -189,7 +189,7 @@ export function projectPassivePrintBlock(
 export function passivePrintProjectionToOdhenRaw(
   projection: PassivePrintProjection,
 ): OdhenOrderRaw {
-  const observationRows: NonNullable<OdhenOrderRaw["observation_rows"]> = [];
+  const observationRows: OdhenObservationRowRaw[] = [];
 
   for (const item of projection.items) {
     for (const value of item.observacoes) {
