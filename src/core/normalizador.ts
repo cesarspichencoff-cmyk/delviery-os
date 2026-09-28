@@ -2,7 +2,7 @@
  * Camada 0 · Normalização de itens (não é estoque — é entender de que o pedido DEPENDE).
  *
  * Um item da comanda depende de "itens-base" críticos que travam o fluxo.
- * Ex.: "Temaki Salmão" → salmão; "Hot Roll" → hot; "Kit p/1" → hashi/shoyu/gengibre/wasabi.
+ * Ex.: "Temaki Salmão" → salmão; "Hot Roll" → hot; "Kit p/1" → hashi/shoyu/shoyuzara/guardanapo.
  * Padrão da casa fica AQUI, num lugar só, fácil de ajustar — sem mexer no resto.
  */
 export type Categoria = "kit" | "sushi_quente" | "peixe" | "sache" | "bebida" | "embalagem" | "outro";
