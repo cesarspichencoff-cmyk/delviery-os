@@ -4,7 +4,7 @@ const assert = require("node:assert/strict");
 const path = require("node:path");
 const { readFileSync } = require("node:fs");
 
-const Shadow = require("../dist/src/shadow/odhenReadonly.js");\nconst Compare = require("../dist/src/shadow/compare.js");
+const Shadow = require("../dist/src/shadow/odhenReadonly.js");\nconst Compare = require("../dist/src/shadow/compare.js");\nconst Preview = require("../dist/src/shadow/previewGate.js");
 const MOTOR = require("../src/perfil-delivery/motor.js");
 const seed = JSON.parse(readFileSync(path.join(__dirname, "..", "data", "cardapio_knowledge_seed.json"), "utf8")).itens;
 
@@ -50,6 +50,9 @@ assert.equal(normalized.items.length, 2);
 assert.deepEqual(normalized.items[0].observacoes.map(x => x.value), ["SEM CEBOLINHA"]);
 assert.deepEqual(normalized.order_observations.map(x => x.value), ["ENTREGAR MOLHO A PARTE"]);
 assert.equal(normalized.unassigned_observations.length, 0);
+const previewWithOrderObs = Preview.previewGate(normalized);
+assert.equal(previewWithOrderObs.ready_for_preview, false);
+assert.ok(previewWithOrderObs.blocking_reasons.includes("ORDER_OBSERVATION_CHANNEL_NOT_PROVEN"));
 assert.equal(normalized.effects.print, false);
 assert.equal(normalized.effects.call_print_endpoint, false);
 assert.equal(normalized.effects.database_write, false);
@@ -147,5 +150,6 @@ const provenNone = Shadow.normalizeOdhenShadow({
 });
 assert.equal(provenNone.ready_for_motor, true);
 assert.equal(provenNone.observation_state, "PROVEN_NONE");
+assert.equal(Preview.previewGate(provenNone).ready_for_preview, true);
 
 console.log("shadow-odhen-v132: ok");
