@@ -132,24 +132,6 @@ Para grupos mistos, as capacidades documentadas podem ser combinadas proporciona
 **Itens de caixa fixa:** Battera → sempre 750 · Carpaccio de salmão → sempre 750 · Tirashi → sempre
 1.000 (nunca outra caixa).
 
-## 5.1. Agrupamento físico vigente — correção humana 27/09/2026
-
-Antes de escolher a caixa, o sistema deve formar o **grupo físico da mesma praça**.
-
-Ordem correta:
-
-`item → praça → compatibilidade → grupo físico → caixa → sacola`
-
-Categorias diferentes não obrigam caixas diferentes quando os itens são compatíveis e saem fisicamente juntos pela mesma praça.
-
-Caso humano canônico:
-
-- **2 duplas + 1 sashimi**, todos da praça **Duplas** → **1 caixa 450**.
-
-A categoria continua medindo capacidade. Regra específica continua vencendo regra genérica: combinado fechado, caixa fixa, 650 selada sem capacidade compartilhada provada, incompatibilidade física/térmica e praças diferentes não devem ser fundidos por conveniência.
-
-Para sacolas, contar **caixas físicas resultantes**, nunca quantidade de itens dentro da caixa.
-
 ## 6. Regras de sacola
 
 **Política de tamanho — vigente 27/09/2026:** entre os tamanhos cuja suficiência esteja comprovada, usar sempre a menor sacola possível: **P < M < G**. Sem capacidade comprovada, o tamanho permanece UNKNOWN.
