@@ -5,7 +5,7 @@
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "main",
   "checkpoint_type": "SHADOW_READ_ONLY_PREP",
-  "state_basis_head": "8f2265e78462499837b74792b92b2e04dd2ebc77",
+  "state_basis_head": "99db3b15276223403ff94bb3522dc6a6c5bde401",
   "verified_state_refs": [
     "src/shadow/odhenReadonly.ts",
     "src/shadow/compare.ts",
@@ -24,15 +24,16 @@
     "Observation completeness remains an explicit gate: unproven or unassigned candidates block the motor; order-level observations block final preview until a proven renderer channel exists.",
     "Only minimum operational fields are copied; raw payload, customer, phone, address, payment and unrelated PII are not retained.",
     "PR #11 remains draft and not merged.",
-    "Observation scope revalidation: DSOBSDESCIT, DSOBSPEDDIGCMD and TXPRODCOMVEN are item-level candidates; DSOBSCOMANDA is order-level in the official delivery report path."
+    "Observation scope revalidation: DSOBSDESCIT, DSOBSPEDDIGCMD and TXPRODCOMVEN are item-level candidates; DSOBSCOMANDA is order-level in the official delivery report path.",
+    "A Windows Integrated Authentication SQL preflight is prepared; it does not read Odhen credentials or order tables and only allows the next gate if the current Windows principal has SELECT and no INSERT/UPDATE/DELETE/EXECUTE/ALTER/CONTROL permission."
   ],
-  "next_action": "Return to the human-acceptance gate that was skipped: generate and show the synthetic C3.1 V1.3.2 final preview first. After César approves it, obtain explicit authorization for one direct read-only database query on CAIXA_MOOCA that projects only operational identifiers, items and the four observation channels; do not reuse print, do not use Odhen credentials without explicit authorization, and do not read PII/payment/address.",
+  "next_action": "On CAIXA_MOOCA, run tools/sql_integrated_readonly_preflight.ps1 only if Claude Code permission allows that metadata-only connection. If it returns safe_for_order_read=true, the next authorized step is one minimal SELECT of one order. If it fails or shows any write capability, stop and require a database administrator to provision a dedicated read-only principal; do not extract Odhen credentials.",
   "unknowns": [
     "The C3.1 synthetic final preview requested by César has not yet been human-accepted in this phase.",
     "No real order has been read in shadow.",
-    "Direct read-only database access for one order is not yet authorized.",
     "DSOBSCOMANDA is proven order-level in the official report path, but the current C3.1 has no proven renderer channel for order-level observations.",
-    "Full repository build plus tools/verificar_shadow_odhen_v132.js is still unproven on the cashier PC after the latest probe/test changes."
+    "Full repository build plus tools/verificar_shadow_odhen_v132.js is still unproven on the cashier PC after the latest probe/test changes.",
+    "Whether the CAIXA_MOOCA Windows principal already has a read-only SQL Server mapping is UNKNOWN until the integrated-auth preflight runs."
   ],
   "authority": {
     "continuity_update": "AUTHORIZED_METADATA_WRITE_WITHIN_PROJECT_SCOPE",
