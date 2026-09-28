@@ -34,6 +34,13 @@ const fixture = {
       join_proven: true,
     },
     {
+      source_field: "TXPRODCOMVEN",
+      value: "MAL PASSADO",
+      item_index: 1,
+      scope_hint: "item",
+      join_proven: true,
+    },
+    {
       source_field: "DSOBSPEDDIGCMD",
       value: "ENTREGAR MOLHO A PARTE",
       scope_hint: "order",
@@ -48,6 +55,7 @@ assert.equal(normalized.ready_for_motor, true);
 assert.equal(normalized.observation_state, "PROVEN_ASSIGNED");
 assert.equal(normalized.items.length, 2);
 assert.deepEqual(normalized.items[0].observacoes.map(x => x.value), ["SEM CEBOLINHA"]);
+assert.deepEqual(normalized.items[1].observacoes.map(x => x.value), ["MAL PASSADO"]);
 assert.deepEqual(normalized.order_observations.map(x => x.value), ["ENTREGAR MOLHO A PARTE"]);
 assert.equal(normalized.unassigned_observations.length, 0);
 const previewWithOrderObs = Preview.previewGate(normalized);
@@ -81,7 +89,7 @@ assert.deepEqual(rows, [
     pedido_id: "0000170512",
     item_nome: "Sashimi de Salmão",
     quantidade: 2,
-    observacao: null,
+    observacao: "MAL PASSADO",
     horario: "2026-09-27T21:15:00-03:00",
   },
 ]);
