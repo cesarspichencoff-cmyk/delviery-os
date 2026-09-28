@@ -5,7 +5,7 @@
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "design/tata-edge-runtime-foundation-v1",
   "checkpoint_type": "PRODUCTION_TALLY_DEPLOYED_PORTABLE_KERNEL_V011_SHADOW_REPLAY_READY_GATE_E_PENDING",
-  "state_basis_head": "fa92583c0bc8d8747dcd0f77df17cc6719ba82e1",
+  "state_basis_head": "a51f07e22ac27ac058404c110e4f98ee79d922cf",
   "verified_state_refs": [
     "deploy/cloudflare/gerencial-mail-bridge/",
     "deploy/cloudflare/tata-edge-cloud-shadow/",
@@ -61,7 +61,8 @@
     "docs/context/EVIDENCE_PORTABLE_CONTEXT_KERNEL_V011_SHADOW_REPLAY_2026-09-27.md",
     "docs/context/EVIDENCE_IFOOD_VISUAL_REFERENCE_CONTRACT_2026-09-27.md",
     "docs/context/EVIDENCE_IFOOD_ZERO_COST_OCR_REJECTION_2026-09-27.md",
-    "docs/context/EVIDENCE_ACTION_FOLLOWUP_WINDOW_QUALITY_2026-09-27.md"
+    "docs/context/EVIDENCE_ACTION_FOLLOWUP_WINDOW_QUALITY_2026-09-27.md",
+    "docs/context/EVIDENCE_IFOOD_LAYOUT_AWARE_OCR_CANDIDATE_2026-09-27.md"
   ],
   "verified_state": [
     "The canonical operational mail bridge is cesar-gerencial-mail-bridge reading Atendimento Sent read-only with EXAMINE + BODY.PEEK and D1 cesar-gerencial-mail-bridge.",
@@ -209,7 +210,14 @@
     "Action follow-up now distinguishes recurrence observed, zero post-action window, non-exhaustive no-recurrence window and exhaustive loaded-window no-recurrence while preserving action effectiveness UNKNOWN.",
     "Each action follow-up now exposes calendar_days_to_loaded_window_end; this is a bounded calendar span, not a claim of continuous observation.",
     "The Caixa Pulse action-followup replay output now exposes separate no_post_action_window, nonexhaustive_window_no_recurrence and exhaustive_loaded_window_no_recurrence counters for future fresh source replays.",
-    "Edge Shadow CI run 36347231343 completed SUCCESS for action-followup window-quality head 4d3a89bd03700eb7d67431db458adbe0dfb915e9."
+    "Edge Shadow CI run 36347231343 completed SUCCESS for action-followup window-quality head 4d3a89bd03700eb7d67431db458adbe0dfb915e9.",
+    "The rejected iFood OCR route is now scoped precisely: whole-screenshot/full-page Tesseract remains rejected, while a materially different fixed-layout field-isolation route is separately benchmarked.",
+    "On the private seven-image reference corpus, layout-aware extraction reached 6/6 exact visible order ids, 6/6 exact visible order dates, 7/7 exact ratings, 7/7 exact visible tag sets, 7/7 exact review dates, 4/4 exact response dates and 3/3 exact completion dates; the cropped order header remained absent 1/1.",
+    "Normalized review-text similarity for the layout-aware candidate is mean 0.985 / minimum 0.947; normalized merchant-response similarity is mean 0.989 / minimum 0.980. These are benchmark metrics, not source-fact promotion.",
+    "The private layout-aware benchmark is stored at /VÉRTICE/DeliveryOS/ifood-review-layout-aware-ocr-benchmark-2026-09-27.json with SHA-256 f79552addac37f1cdfdf561d2239d5006c61f8df237e6ec9236fabe940ed305f.",
+    "ifood-review-ocr-parse@0.1.0 now parses full-page OCR plus isolated order-header OCR with fail-closed invalid-date behavior, scoped tag matching and zero causal/blame/effect authority.",
+    "Edge Shadow CI run 36366425088 completed SUCCESS for the layout-aware OCR parser head 6720591903e4555cbe1a4d9c529fdbeceb2359ba.",
+    "The current Free Cloudflare Worker is not selected as the OCR execution surface; OCR execution remains undeployed and the next zero-cost candidate is a narrow local Node/WebAssembly executor."
   ],
   "proof": {
     "latest_green_ci_run": "36302995615",
@@ -576,9 +584,30 @@
     "action_followup_shared_root_cause_status": "UNPROVEN",
     "action_followup_window_quality_ci_run": 36347231343,
     "action_followup_window_quality_ci_result": "SUCCESS",
-    "action_followup_real_69_row_replay_refreshed": false
+    "action_followup_real_69_row_replay_refreshed": false,
+    "ifood_full_page_tesseract_primary_route": "REJECTED_LOCKED",
+    "ifood_layout_aware_candidate_status": "BENCHMARK_PROVEN_PARSER_TEST_PASS_EXECUTOR_NOT_DEPLOYED",
+    "ifood_layout_aware_benchmark_library_path": "/VÉRTICE/DeliveryOS/ifood-review-layout-aware-ocr-benchmark-2026-09-27.json",
+    "ifood_layout_aware_benchmark_sha256": "f79552addac37f1cdfdf561d2239d5006c61f8df237e6ec9236fabe940ed305f",
+    "ifood_layout_aware_order_id_exact": "6/6",
+    "ifood_layout_aware_order_date_exact": "6/6",
+    "ifood_layout_aware_rating_exact": "7/7",
+    "ifood_layout_aware_tag_set_exact": "7/7",
+    "ifood_layout_aware_review_date_exact": "7/7",
+    "ifood_layout_aware_response_date_exact": "4/4",
+    "ifood_layout_aware_completion_date_exact": "3/3",
+    "ifood_layout_aware_cropped_order_absent": "1/1",
+    "ifood_layout_aware_review_text_similarity_mean": 0.985,
+    "ifood_layout_aware_review_text_similarity_min": 0.947,
+    "ifood_layout_aware_response_text_similarity_mean": 0.989,
+    "ifood_layout_aware_response_text_similarity_min": 0.98,
+    "ifood_ocr_parser_version": "ifood-review-ocr-parse@0.1.0",
+    "ifood_ocr_parser_ci_run": 36366425088,
+    "ifood_ocr_parser_ci_result": "SUCCESS",
+    "ifood_ocr_execution_surface": "LOCAL_NODE_WASM_CANDIDATE_NOT_DEPLOYED",
+    "ifood_ocr_cloudflare_free_worker_selected": false
   },
-  "next_action": "Continue three safe tracks without synthetic production incidents or external effects: (1) observe Tally Gate E read-only until the first real post-cutover ZjVv1a response; (2) keep the rejected Tesseract iFood route locked and evaluate only materially different extraction paths against the private seven-image benchmark; (3) when a fresh canonical Caixa Pulse occurrence export is available, rerun action follow-up and quantify zero-window vs non-exhaustive vs exhaustive no-recurrence buckets before any action-effectiveness interpretation.",
+  "next_action": "Continue three safe tracks without synthetic production incidents or external effects: (1) observe Tally Gate E read-only until the first real post-cutover ZjVv1a response; (2) keep whole-page Tesseract locked, and prepare the smallest local Node/WebAssembly executor contract that can read an explicitly authorized stored iFood attachment, run fixed-layout segmented OCR, and return an UNVERIFIED derived candidate through ifood-review-ocr-parse@0.1.0; do not deploy or wire production until the executor path is benchmarked from real bytes and the authorized team-mail source appears; (3) preserve the new action-follow-up window-quality work and rerun it when fresh canonical Caixa Pulse occurrence evidence is available.",
   "unknowns": [
     "No defensible iFood review freshness cadence has been established; its freshness must remain UNKNOWN.",
     "Global critical-source coverage is incomplete; global all-clear must remain disabled.",
@@ -596,9 +625,10 @@
     "Exact D1 persisted event/submission identity linkage for the EqEK24l shadow replay remains UNKNOWN; the prior world receipt proves the unique marker path but does not preserve that exact identifier pair.",
     "No v0.11 live-default investigation chain has yet consumed a real post-cutover production Tally observation.",
     "No real team-sent iFood review batch has yet been admitted through the authorized atendimento@tatasushi.com.br -> cesar@tatasushi.com.br route.",
-    "Automated iFood screenshot extraction quality remains UNKNOWN: the seven-image visual benchmark exists, but no OCR/model extractor is yet wired or benchmarked against it.",
     "Independent post-action outcome evidence is not yet systematically linked; action follow-up now qualifies the observation window but action effectiveness remains UNKNOWN.",
-    "The historical 69-row Caixa Pulse replay has not yet been freshly rerun with the new action-window-quality counters in this session."
+    "The historical 69-row Caixa Pulse replay has not yet been freshly rerun with the new action-window-quality counters in this session.",
+    "Layout-aware iFood OCR accuracy is proven only on the private seven-image reference corpus; generalization to future screenshots/layout changes remains UNKNOWN.",
+    "No local Node/WebAssembly OCR executor is deployed or WORLD_PROVEN against D1 attachment bytes."
   ],
   "authority": {
     "continuity_update": "AUTHORIZED_METADATA_WRITE_WITHIN_PROJECT_SCOPE",
