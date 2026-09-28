@@ -4,7 +4,7 @@ const assert = require("node:assert/strict");
 const path = require("node:path");
 const { readFileSync } = require("node:fs");
 
-const Shadow = require("../dist/src/shadow/odhenReadonly.js");
+const Shadow = require("../dist/src/shadow/odhenReadonly.js");\nconst Compare = require("../dist/src/shadow/compare.js");
 const MOTOR = require("../src/perfil-delivery/motor.js");
 const seed = JSON.parse(readFileSync(path.join(__dirname, "..", "data", "cardapio_knowledge_seed.json"), "utf8")).itens;
 
@@ -82,6 +82,14 @@ assert.deepEqual(rows, [
     horario: "2026-09-27T21:15:00-03:00",
   },
 ]);
+
+const compareRows = Compare.compareNormalizedToMotorRows(normalized, rows);
+assert.equal(compareRows.ready, true);
+assert.equal(compareRows.diffs.find(x => x.field === "pedido_id").status, "MATCH");
+assert.equal(compareRows.diffs.find(x => x.field === "items.nome_quantidade").status, "MATCH");
+assert.equal(compareRows.diffs.find(x => x.field === "items.observacao").status, "MATCH");
+assert.equal(compareRows.diffs.find(x => x.field === "order_observations").status, "UNKNOWN");
+assert.equal(compareRows.overall, "UNKNOWN");
 
 const fonte = MOTOR.makeFonteItensFromRows(rows, seed);
 assert.equal(fonte.stats.pedidos, 1);
