@@ -5,7 +5,7 @@
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "main",
   "checkpoint_type": "SHADOW_READ_ONLY_PREP",
-  "state_basis_head": "ec31c7380fae1e6b6ec892477329b36026e02ce5",
+  "state_basis_head": "3fe8dfa3794d257a50517fb4929c142bbd89bf17",
   "verified_state_refs": [
     "src/shadow/odhenReadonly.ts",
     "src/shadow/compare.ts",
@@ -26,15 +26,16 @@
     "PR #11 remains draft and not merged.",
     "Observation scope revalidation: DSOBSDESCIT, DSOBSPEDDIGCMD and TXPRODCOMVEN are item-level candidates; DSOBSCOMANDA is order-level in the official delivery report path.",
     "A Windows Integrated Authentication SQL preflight is prepared; it does not read Odhen credentials or order tables and only allows the next gate if the current Windows principal has SELECT and no INSERT/UPDATE/DELETE/EXECUTE/ALTER/CONTROL permission.",
-    "The SQL preflight was hardened after Claude identified a real gap: database-level permission checks alone do not prove table-level read-only access. V2 now resolves the exact target objects, requires SELECT on each, blocks object/schema/database write capability, blocks elevated roles, and checks column-level UPDATE."
+    "The SQL preflight was hardened after Claude identified a real gap: database-level permission checks alone do not prove table-level read-only access. V2 now resolves the exact target objects, requires SELECT on each, blocks object/schema/database write capability, blocks elevated roles, and checks column-level UPDATE.",
+    "SQL preflight V3 closes the two review gaps from Claude: permission metadata returning NULL is now UNKNOWN/blocking rather than false, and any executable stored procedure blocks the claim that the Windows principal is strictly read-only."
   ],
-  "next_action": "On CAIXA_MOOCA, run the V2 integrated-auth metadata-only preflight only after Claude Code permission allows it. If safe_for_order_read=true, proceed to one minimal SELECT of one order; otherwise stop without extracting Odhen credentials.",
+  "next_action": "The remaining blocker is host permission: Claude Code refuses even the metadata-only preflight without offering approval. Do not bypass it. Run the V3 script manually on CAIXA_MOOCA or change Claude Code permissions explicitly; only after V3 returns safe_for_order_read=true may one-order SELECT proceed.",
   "unknowns": [
     "The C3.1 synthetic final preview requested by César has not yet been human-accepted in this phase.",
     "No real order has been read in shadow.",
     "DSOBSCOMANDA is proven order-level in the official report path, but the current C3.1 has no proven renderer channel for order-level observations.",
     "Full repository build plus tools/verificar_shadow_odhen_v132.js is still unproven on the cashier PC after the latest probe/test changes.",
-    "Whether the CAIXA_MOOCA Windows principal has effective read-only access to the exact target objects is UNKNOWN until the V2 preflight runs."
+    "Effective secretless read-only SQL access on CAIXA_MOOCA remains UNKNOWN because Claude Code has not been allowed to execute the metadata preflight."
   ],
   "authority": {
     "continuity_update": "AUTHORIZED_METADATA_WRITE_WITHIN_PROJECT_SCOPE",
