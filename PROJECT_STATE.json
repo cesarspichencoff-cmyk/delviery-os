@@ -5,7 +5,7 @@
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "main",
   "checkpoint_type": "SHADOW_READ_ONLY_PREP",
-  "state_basis_head": "cffc87f189aad539ec5bf8d6fb6b11083797c687",
+  "state_basis_head": "d21d6c2c6b18dc0eaaebe0c97c89ec31491bbdc1",
   "verified_state_refs": [
     "src/shadow/odhenReadonly.ts",
     "src/shadow/compare.ts",
@@ -17,23 +17,26 @@
   "verified_state": [
     "Canonical V1.3.2 SHA-256 is pinned in the pure shadow normalizer.",
     "Shadow normalization is pure and contains no live reader, print call, database write, fiscal action, order/status mutation, watcher/service installation or cutover path.",
-    "Observation completeness is an explicit gate: unproven or unassigned observation candidates block the motor; order-level observations also block final preview until a proven renderer channel exists.",
+    "CAIXA_MOOCA was source-revalidated read-only at C:\\TEKNISA\\odhen-perifericos; Perifericos.exe is present and the store runtime paths were inspected without reading orders.",
+    "GET_ALL_DELIVERY_ORDERS provides NRCOMANDA/NRCOMANDAEXT/NRVENDAREST; GET_PRODUTOS_PEDIDODLV provides CDPRODUTO/NMPRODUTO/QTPRODCOMVEN.",
+    "Observation channels now include DSOBSDESCIT, DSOBSPEDDIGCMD, TXPRODCOMVEN (item-level candidates) and DSOBSCOMANDA (order-level in the official delivery print path).",
+    "No exposed Odhen read-only route currently provides the complete observation set; the print path must not be invoked to obtain it.",
+    "The source probe was hardened to scan only code/config roots, include PHP, exclude Log/Temp/cache trees, match /print case-sensitively, and include TXPRODCOMVEN.",
+    "Observation completeness remains an explicit gate: unproven or unassigned candidates block the motor; order-level observations block final preview until a proven renderer channel exists.",
     "Only minimum operational fields are copied; raw payload, customer, phone, address, payment and unrelated PII are not retained.",
-    "Local isolated proof passed strict TypeScript compilation for the three shadow modules and synthetic normalization/dedupe/privacy/comparison/preview-gate tests.",
-    "PR #11 is draft and not merged. Full repository build and actual store-source revalidation are not yet proven.",
-    "A source-only PowerShell probe is prepared to revalidate the store runtime without starting Odhen, making HTTP calls, querying the database, reading orders or writing files."
+    "PR #11 remains draft and not merged."
   ],
-  "next_action": "When the authorized store PC is online, run tools/odhen_source_probe_readonly.ps1 against the current Odhen root. Review hashes/token locations only, then map current read contracts and observation channels before any live-order read. After that, run the full repository build plus tools/verificar_shadow_odhen_v132.js. Do not print, write, mutate status/order, perform fiscal actions, install a watcher/service or cut over.",
+  "next_action": "Return to the human-acceptance gate that was skipped: generate and show the synthetic C3.1 V1.3.2 final preview first. After César approves it, obtain explicit authorization for one direct read-only database query on CAIXA_MOOCA that projects only operational identifiers, items and the four observation channels; do not reuse print, do not use Odhen credentials without explicit authorization, and do not read PII/payment/address.",
   "unknowns": [
-    "Current store-PC Odhen/Teknisa runtime is not fresh because the authorized Remote Desktop device is offline.",
-    "LAST_KNOWN_STATE fields NRCOMANDA/NRCOMANDAEXT/NRVENDAREST and product fields CDPRODUTO/NMPRODUTO/QTPRODCOMVEN require fresh read-only revalidation before live use.",
-    "Observation channels DSOBSDESCIT, DSOBSPEDDIGCMD and DSOBSCOMANDA require fresh scope and join proof; no field-name semantics are assumed by the new normalizer.",
-    "Full repository build plus tools/verificar_shadow_odhen_v132.js is still unproven on an installed clone.",
-    "No live order has been read and no C3.1 preview has been generated in this stage."
+    "The C3.1 synthetic final preview requested by César has not yet been human-accepted in this phase.",
+    "No real order has been read in shadow.",
+    "Direct read-only database access for one order is not yet authorized.",
+    "DSOBSCOMANDA is proven order-level in the official report path, but the current C3.1 has no proven renderer channel for order-level observations.",
+    "Full repository build plus tools/verificar_shadow_odhen_v132.js is still unproven on the cashier PC after the latest probe/test changes."
   ],
   "authority": {
     "continuity_update": "AUTHORIZED_METADATA_WRITE_WITHIN_PROJECT_SCOPE",
-    "execution_ceiling": "READ_ONLY_SOURCE_REVALIDATION_ONLY__NO_LIVE_ORDER_READ_UNTIL_SOURCE_GATE__NO_PRINT_WRITE_FISCAL_STATUS_SERVICE_OR_CUTOVER"
+    "execution_ceiling": "SYNTHETIC_PREVIEW_ONLY_UNTIL_HUMAN_ACCEPTANCE__THEN_EXPLICIT_DB_READ_AUTH_REQUIRED__NO_PRINT_WRITE_FISCAL_STATUS_SERVICE_OR_CUTOVER"
   },
   "resume_rule": "Resume from PR #11. First revalidate the current store runtime read-only; do not substitute LAST_KNOWN_STATE for fresh source truth. If source/observation gates pass, run a minimized shadow snapshot through normalization/dedupe/motor comparison without printing or writing.",
   "session_policy": {
@@ -49,7 +52,9 @@
   "pending_work": {
     "branch": "shadow/odhen-v132-readonly-prep",
     "pull_request": 11,
-    "status": "PREPARED_NOT_CONNECTED",
-    "canonical_sha256": "D34583F0A743DF9645914BCDFC1010E6D3AEF72AC74D3A4B7B01F81E305B71E4"
+    "status": "SOURCE_REVALIDATION_PASS__HUMAN_PREVIEW_GATE_PENDING",
+    "canonical_sha256": "D34583F0A743DF9645914BCDFC1010E6D3AEF72AC74D3A4B7B01F81E305B71E4",
+    "cashier_pc": "CAIXA_MOOCA",
+    "odhen_root": "C:\\TEKNISA\\odhen-perifericos"
   }
 }
