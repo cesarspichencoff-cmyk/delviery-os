@@ -94,10 +94,9 @@
     const temSobremesaTransporte = it.some(x => x.praca === "sobremesa" || x.contemSobremesa);
     const latas = it.filter(x => x.praca === "bar_bebidas" && /\blata\b/i.test(x.nome || ""))
       .reduce((a,x)=>a+(x.qtd||1),0);
-    const bebidaGrande = it.some(x => x.praca === "bar_bebidas" && (
-      /\bvinho\b/i.test(x.nome || "") ||
-      (/saqu[eê]/i.test(x.nome || "") && /720\s*ml/i.test(x.nome || ""))
-    ));
+    const bebidaGrande = it.some(x => x.praca === "bar_bebidas"
+      && /\b(?:vinho|saqu[eê])\b/i.test(x.nome || "")
+      && /720\s*ml/i.test(x.nome || ""));
     const separaTemperatura = temQuenteCozinha && (temFrioComida || temSobremesaTransporte);
     const separaLatas = temComida && latas >= 6;
     const separaBebidaGrande = temComida && bebidaGrande;
