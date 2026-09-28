@@ -60,7 +60,7 @@ Categorias operacionais para classificar cada item antes de escolher a caixa:
 | **240** | 1 dupla de sushi **ou** 1 Dyo **ou 1 sashimi**. |
 | **450** | 2 a 3 duplas/Dyo · 1 enrolado · 1 temaki · 2 a 4 sashimis · sobremesas (Tatá Chocolate, Shoocream) quando aplicável. |
 | **650 selada** | Itens menores/úmidos/delicados da cozinha e frios delicados (ver §5). |
-| **750** | 4 a 5 duplas/Dyo · 2 enrolados · 2 a 3 temakis · 5 a 7 sashimis · **Battera** (sempre) · **Carpaccio de salmão** (sempre) · combinado para 1 pessoa. |
+| **750** | 4 a 5 duplas/Dyo · 2 enrolados · 2 a 3 temakis · 5 a 7 sashimis · **Battera** (sempre) · **Carpaccio de Salmão Trufado / Carpaccio de Polvo Espanhol** (sempre 750) · combinado para 1 pessoa. |
 | **1.000** | **Tirashi** sempre; nunca outra caixa. Normalmente sacola média, salvo composição fria maior. |
 | **1.500** | 6+ duplas · 3+ enrolados · 4 a 6 temakis · 8+ sashimis · combinado sushi + sashimi para 2 pessoas · pratos quentes grandes da cozinha. Se não couber, complementar com caixas menores. |
 | **1.600** | Combinado sushi para 2 pessoas · combinado sushi tradicional para 2 pessoas. Caixa de combinado fechado; não usar para extras soltos. |
@@ -129,8 +129,17 @@ Para grupos mistos, as capacidades documentadas podem ser combinadas proporciona
 | 5 a 7 | 750 |
 | 8 ou mais | 1.500 |
 
-**Itens de caixa fixa:** Battera → sempre 750 · Carpaccio de salmão → sempre 750 · Tirashi → sempre
+**Itens de caixa fixa:** Battera → sempre 750 · Carpaccio de Salmão Trufado → sempre 750 · Carpaccio de Polvo Espanhol → sempre 750 · Tirashi → sempre
 1.000 (nunca outra caixa).
+
+## 5.1. Classe de transporte dos combinados — confirmação humana 27/09/2026
+
+Para **transporte/sacola**, todo combinado fechado conta como **FRIO**, mesmo quando o seed usa `temperatura = "misto"`.
+
+Isso NÃO altera o cadastro de temperatura do item; altera apenas a decisão de separação externa.
+
+Exemplo obrigatório:
+- Combinado fechado + quente da Cozinha → **separar sacolas**.
 
 ## 6. Regras de sacola
 
@@ -147,7 +156,7 @@ Para grupos mistos, as capacidades documentadas podem ser combinadas proporciona
 
 **Sacola média** — volumes médios:
 - Comporta até 4 caixas 650 seladas.
-- Carpaccio de salmão em 750 (quando não em composição fria maior).
+- Carpaccio de Salmão Trufado 750 → Sacola M · Carpaccio de Polvo Espanhol 750 → Sacola M.
 - Tirashi em 1.000 (quando não em composição fria maior).
 - Ajustável ao volume real, sem misturar quente com frio.
 
@@ -267,7 +276,7 @@ Nomes validados pelo César cruzados com o seed atual (`data/cardapio_knowledge_
 | Salmão grelhado | Salmão Grelhado | Quente 1.500 | **Confirmado** | — |
 | Frango Teriyaki | Frango Teriyaki | Quente 1.500 | **Confirmado** | — |
 | Katsu Don | **Katsudon** | Quente 1.500 | **Possível alias** | Seed grafa junto "Katsudon". |
-| Carpaccio de salmão | **Carpaccio de Salmão Trufado** (não há "de Salmão" puro) | 750 | **Possível alias** | Seed só tem "Trufado" e "de Polvo Espanhol"; confirmar qual é o "Carpaccio de salmão" da regra. |
+| Carpaccio | **Carpaccio de Salmão Trufado** e **Carpaccio de Polvo Espanhol** | 750 fixa | **Confirmado por César em 27/09/2026** | Ambos usam Sacola M. |
 | Beef com Nirá | Beef com Nirá | Quente 1.500 | **Confirmado** | Doc escreveu "Bife con ira" (fonético); seed = "Beef com Nirá". |
 | Yakisoba | *(não encontrado)* | Quente 1.500 | **Não encontrado** | Nenhum item "Yakisoba" no seed atual. |
 | Shikentatsu | *(não encontrado)* | Quente 1.500 | **Não encontrado** | Grafia garbled; validar qual prato é (§15). |
@@ -284,8 +293,8 @@ Pendências reais (não genéricas), respondíveis por áudio:
 2. **Yakisoba:** não existe no seed atual. É item ativo do cardápio? Se sim, entra como quente 1.500?
 3. **"Shikentatsu":** qual é o prato exatamente? Grafia oficial? (o documento pediu validar).
 4. **Battera / Baterá:** o nome correto tem um T ("Batera"/"Battera") ou é "Baterá" como no seed?
-5. **Sashimi avulso:** confirmado no seed atual; não é mais pendência de validação.\n6. **Carpaccio de salmão:** o "Carpaccio de salmão" da regra é o "Carpaccio de Salmão Trufado" do
-   seed, ou existe um carpaccio de salmão simples?
+5. **Sashimi avulso:** confirmado no seed atual; não é mais pendência de validação.\n6. **Carpaccio:** fechado por confirmação humana de 27/09/2026 — os dois itens atuais (Salmão Trufado e Polvo Espanhol) usam caixa 750 fixa e Sacola M.
+
 7. **Grafias de alias** (Hosomaki/Hossomaki, Missoshiru/Missoshiro, Tuna Shiso/Shisô, Katsu
    Don/Katsudon, Tempurá de milho/milho doce, Shoocream/Choux Cream): manter a grafia do César como
    nome de exibição e o seed como origem, ou padronizar o seed depois (missão separada)?
