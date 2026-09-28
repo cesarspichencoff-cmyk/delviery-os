@@ -74,14 +74,34 @@
     const temFrio   = it.some(x => x.temp === "frio");
     const nItens = it.reduce((a,x)=>a+(x.qtd||1),0);   // peças totais (respeita quantidade real)
     const ancora = it.some(x => x.cat === "combinado" || x.cat === "menu_composto");
-    const grande = nItens >= 8;
-    // sacola NÃO é soma de itens (5 sushi = 1 sacola). Regra: 1 base; 2 se combo/menu ou pedido grande.
-    const segundaSacola = ancora || grande;
-    const sacolas = segundaSacola ? 2 : 1;
+
+    // TRANSPORTE · verdade operacional vigente.
+    // Não inferir 2ª sacola por combo ou por quantidade bruta de itens.
+    // Separações obrigatórias conhecidas:
+    // - quente da Cozinha + frio;
+    // - 6+ latas quando há outro volume no pedido;
+    // - vinho / saquê 720 ml quando há outro volume no pedido.
+    // Hot Roll (enrolados_quentes) pode acompanhar frios e NÃO conta como quente da Cozinha.
+    const temComida = it.some(x => x.praca !== "bar_bebidas" && x.cat !== "nao_producao");
+    const temQuenteCozinha = it.some(x => x.praca === "cozinha_quentes");
+    const temFrioComida = it.some(x => x.praca !== "cozinha_quentes" && x.praca !== "bar_bebidas" && x.temp === "frio");
+    const latas = it.filter(x => x.praca === "bar_bebidas" && /\blata\b/i.test(x.nome || ""))
+      .reduce((a,x)=>a+(x.qtd||1),0);
+    const bebidaGrande = it.some(x => x.praca === "bar_bebidas" && (
+      /\bvinho\b/i.test(x.nome || "") ||
+      (/saqu[eê]/i.test(x.nome || "") && /720\s*ml/i.test(x.nome || ""))
+    ));
+    const separaTemperatura = temQuenteCozinha && temFrioComida;
+    const separaLatas = temComida && latas >= 6;
+    const separaBebidaGrande = temComida && bebidaGrande;
+    const sacolasMinimas = 1 + (separaTemperatura ? 1 : 0) + (separaLatas ? 1 : 0) + (separaBebidaGrande ? 1 : 0);
+    const segundaSacola = sacolasMinimas >= 2;
+    // Compatibilidade retroativa: "sacolas" passa a significar mínimo provado, não total exato.
+    const sacolas = sacolasMinimas;
     const contemBebida = it.some(x => x.praca === "bar_bebidas" || x.contemBebida);
     const contemSobremesa = it.some(x => x.praca === "sobremesa" || x.contemSobremesa);
-    // kit não é SKU de cardápio → proxy/regra-de-negócio (talher/hashi obrigatório em combo/pedido grande)
-    const contemKit = it.some(x => x.contemKit) || ancora || grande;
+    // DeliveryOS não decide kit. Só reconhece um sinal explícito vindo da fonte.
+    const contemKit = it.some(x => x.contemKit);
     const temObservacao = it.some(x => x.obs && String(x.obs).trim().length > 0);   // só existe com item REAL
     const observacoes = it.filter(x => x.obs && String(x.obs).trim()).map(x => String(x.obs).trim());
     const riscoConfAlto = it.some(x => x.risco === "alto") || segundaSacola || temObservacao || (contemBebida && contemKit);
@@ -92,7 +112,9 @@
       nItens, benches, prodPr, depPr, confPr, nBenches: benches.length,
       pracaUnica: benches.length === 1 ? benches[0] : null,
       temQuente, temFrio, soQuentes: temQuente && !temFrio,
-      sacolas, segundaSacola, trava: it.some(x => x.trava),
+      sacolas, sacolasMinimas, sacolasStatus:"MINIMUM_PROVEN", segundaSacola,
+      separacoesSacola:{ temperatura:separaTemperatura, latas6mais:separaLatas, bebidaGrande:separaBebidaGrande },
+      trava: it.some(x => x.trava),
       contemBebida, contemSobremesa, contemKit, temObservacao, observacoes, riscoConfAlto, facilEsquecer, ancora,
       itemPorPraca,
       itens: it.map(x => ({ id:x.id, nome:x.nome, praca:x.praca, qtd:x.qtd||1, obs:x.obs||null }))
@@ -315,11 +337,12 @@
     if (s.kind === "conferencia") {
       const I = s.I, extras = [];
       if (I.contemBebida) extras.push("bebida"); if (I.contemKit) extras.push("kit"); if (I.contemSobremesa) extras.push("sobremesa");
-      const imp = [ "<b>"+I.sacolas+"</b> sacolas · <b>"+I.nItens+"</b> itens", extras.length?("obrigatório: "+extras.join(" + ")):"conferir item a item" ];
+      const minimoSacolas = I.sacolasMinimas || I.sacolas || 1;
+      const imp = [ "<b>mín. "+minimoSacolas+"</b> sacolas · <b>"+I.nItens+"</b> itens", extras.length?("obrigatório: "+extras.join(" + ")):"conferir item a item" ];
       if (I.temObservacao) imp.push("⚠ observação: “"+String(I.observacoes[0]).slice(0,48)+"”");
       return { sev:s.sev, dir:"top", head:"CONFERÊNCIA · #"+s.id, impactos: imp,
-        conseq: I.temObservacao ? "observação especial pode passar batido" : "risco de faltar item / 2ª sacola esquecida",
-        cmd: "separar 2ª sacola e conferir item a item" };
+        conseq: I.temObservacao ? "observação especial pode passar batido" : "risco de faltar item / separação de sacola esquecida",
+        cmd: "separar sacolas e conferir item a item" };
     }
     if (s.kind === "saida") {
       return { sev:s.sev, dir:"bottom", head: s.sev>=3?"SAÍDA TRAVADA":"SAÍDA LENTA",
