@@ -4,8 +4,8 @@
   "project": "DeliveryOS / TATÁ Edge",
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "design/tata-edge-runtime-foundation-v1",
-  "checkpoint_type": "PRODUCTION_TALLY_DEPLOYED_PORTABLE_KERNEL_V011_SHADOW_REPLAY_READY_GATE_E_PENDING",
-  "state_basis_head": "e809902093b9a45a87cb9f761c26b27bacf2c5ff",
+  "checkpoint_type": "PRODUCTION_TALLY_GATE_E_REAL_SERIALIZATION_PROVEN_WEBHOOK_AUTH_PENDING",
+  "state_basis_head": "f6ed2babde8cd6b4e6509a068c4f5946f6352871",
   "verified_state_refs": [
     "deploy/cloudflare/gerencial-mail-bridge/",
     "deploy/cloudflare/tata-edge-cloud-shadow/",
@@ -63,7 +63,8 @@
     "docs/context/EVIDENCE_IFOOD_ZERO_COST_OCR_REJECTION_2026-09-27.md",
     "docs/context/EVIDENCE_ACTION_FOLLOWUP_WINDOW_QUALITY_2026-09-27.md",
     "docs/context/EVIDENCE_IFOOD_LAYOUT_AWARE_OCR_CANDIDATE_2026-09-27.md",
-    "docs/context/EVIDENCE_IFOOD_LOCAL_OCR_EXECUTOR_CONTRACT_2026-09-27.md"
+    "docs/context/EVIDENCE_IFOOD_LOCAL_OCR_EXECUTOR_CONTRACT_2026-09-27.md",
+    "docs/context/EVIDENCE_TALLY_GATE_E_REAL_LIVE_SERIALIZATION_2026-09-28.md"
   ],
   "verified_state": [
     "The canonical operational mail bridge is cesar-gerencial-mail-bridge reading Atendimento Sent read-only with EXAMINE + BODY.PEEK and D1 cesar-gerencial-mail-bridge.",
@@ -223,7 +224,13 @@
     "The local OCR executor defaults to AUTHORIZED_TEAM_MAIL and rejects CESAR_SELF_SENT_REFERENCE_BATCH unless that source class is explicitly bound for benchmark use.",
     "The executor pins mailbox-key shape, attachment index, MIME type, image size and SHA-256 before invoking OCR; source/hash admission failures occur before any OCR call.",
     "An admitted image invokes exactly FULL_PAGE and ORDER_HEADER OCR regions, then passes through ifood-review-ocr-parse@0.1.0 and remains UNVERIFIED with no persistence, notification or external-effect authority.",
-    "Edge Shadow CI run 36366823937 completed SUCCESS for local OCR executor head 95b34ca64cfe6334604d12312118c16a9411ad6c."
+    "Edge Shadow CI run 36366823937 completed SUCCESS for local OCR executor head 95b34ca64cfe6334604d12312118c16a9411ad6c.",
+    "Tally Gate E read-only evidence is now PROVEN from real production rows: WJBAekL is a real Ana Clara post-cutover row and 7XzDNDR is a real Item errado row with four live barrier answers.",
+    "The actual live ocorrencias_respostas schema is 20 columns with Subtipo operacional at H, the four legacy occurrence fields at I:L, Item faltando barriers at M:P and Item errado barriers at Q:T; this live order differs from the isolated shadow-sheet pilot order and is preserved as a real environment fact.",
+    "Live row 7XzDNDR serializes Item errado with M:P empty and Q:T = Sim|Sim|Sim|Sim; real Outro rows leave all eight barrier columns empty.",
+    "Legacy Caixa Executivo mapping remains healthy: Configuracao remaps the eight legacy occurrence fields to columns 4,5,6,7,9,10,11,12 and analise_ocorrencias correctly projects the new post-cutover rows.",
+    "Read-only scans of analise_ocorrencias, painel, Configuracao and auditoria_sync found zero #REF!, #VALUE!, #N/A or #ERROR! matches after live cutover.",
+    "Gate E being proven does not itself authorize the next production mutation; the live signed ZjVv1a webhook remains unwired pending explicit near-action authorization."
   ],
   "proof": {
     "latest_green_ci_run": "36302995615",
@@ -625,9 +632,26 @@
     "ifood_local_ocr_executor_external_effects": false,
     "ifood_local_ocr_executor_ci_run": 36366823937,
     "ifood_local_ocr_executor_ci_result": "SUCCESS",
-    "ifood_local_ocr_executor_runtime_binding": "NOT_DONE"
+    "ifood_local_ocr_executor_runtime_binding": "NOT_DONE",
+    "tally_gate_e_status": "PROVEN_READ_ONLY",
+    "tally_gate_e_first_real_team_submission_id": "WJBAekL",
+    "tally_gate_e_first_real_team_submitted_at": "2026-09-27 20:33:32",
+    "tally_gate_e_real_wrong_item_submission_id": "7XzDNDR",
+    "tally_gate_e_live_header_count": 20,
+    "tally_gate_e_live_subtype_column": 8,
+    "tally_gate_e_live_legacy_reference_column": 9,
+    "tally_gate_e_live_legacy_status_column": 12,
+    "tally_gate_e_live_item_missing_columns": "M:P",
+    "tally_gate_e_live_wrong_item_columns": "Q:T",
+    "tally_gate_e_wrong_item_conditional_exclusivity": true,
+    "tally_gate_e_other_conditional_exclusivity": true,
+    "tally_gate_e_real_item_missing_observed": false,
+    "tally_gate_e_legacy_config_mapping_healthy": true,
+    "tally_gate_e_formula_error_scan_zero": true,
+    "tally_gate_e_webhook_wired": false,
+    "tally_gate_e_webhook_near_action_authorization": "PENDING"
   },
-  "next_action": "Continue three safe tracks without synthetic production incidents or external effects: (1) observe Tally Gate E read-only until the first real post-cutover ZjVv1a response; (2) for iFood OCR, keep full-page Tesseract locked and use the proven layout-aware path. Next prepare a narrow read-only attachment retrieval adapter plus a concrete local Node/Tesseract.js engine adapter behind ifood-local-ocr-executor@0.1.0, benchmark them against the existing seven-image reference corpus, and do not bind production or persist derived output until that byte-level path is proven; (3) preserve the action-follow-up window-quality work and rerun it when fresh canonical Caixa Pulse occurrence evidence is available.",
+  "next_action": "Gate E read-only evidence is proven. Do not alter the live Tally form or workbook. The next production action is now the explicitly gated one: after César gives near-action authorization, wire the existing signed observation-only webhook to live form ZjVv1a, preserve expected_form_id=ZjVv1a and external_effect_authorized=false, then prove one real idempotent live observation in remote D1 and feed its minimized envelope into the v0.11 live-default context -> TESTABLE_UNPROVEN hypotheses -> NOT_EXECUTED plan chain. In parallel, continue resolving the iFood OCR CI regression and keep OCR runtime undeployed.",
   "unknowns": [
     "No defensible iFood review freshness cadence has been established; its freshness must remain UNKNOWN.",
     "Global critical-source coverage is incomplete; global all-clear must remain disabled.",
@@ -636,12 +660,9 @@
     "Apple Watch attention delivery remains unproven.",
     "Caixa Pulse closing emails are not guaranteed exhaustive ground truth for every operational event; absence claims remain bounded to loaded full-day email evidence.",
     "Expected-barrier execution is UNKNOWN for all 30 currently mapped OMISSION/WRONG_ITEM episodes; no trusted incident-level evidence yet proves whether each barrier was executed.",
-    "The first real team operational occurrence using the published subtype/barrier fields remains unproven; shadow transport proof must not be promoted to production adoption.",
-    "The live Google Sheets integration has not yet exposed the expected 20-column post-cutover schema because no post-cutover real occurrence has been observed; immediate post-publish legacy mappings remain healthy.",
     "The live signed Tally webhook remains unwired until Gate E is proven from real post-cutover serialization.",
     "Source independence for cross-source evidence is not yet proven by the portable kernel; v0.8 deliberately reports it as UNKNOWN even when an explicitly correlated different-source event exists.",
     "No real v0.9 hypothesis projection has yet run on a live post-cutover Tally observation; its world behavior remains UNKNOWN until Gate E admits the first real minimized envelope.",
-    "No real post-cutover ZjVv1a occurrence is yet visible in live Caixa Executivo; Gate E remains pending and live 20-column serialization is not proven.",
     "Exact D1 persisted event/submission identity linkage for the EqEK24l shadow replay remains UNKNOWN; the prior world receipt proves the unique marker path but does not preserve that exact identifier pair.",
     "No v0.11 live-default investigation chain has yet consumed a real post-cutover production Tally observation.",
     "No real team-sent iFood review batch has yet been admitted through the authorized atendimento@tatasushi.com.br -> cesar@tatasushi.com.br route.",
@@ -652,7 +673,10 @@
     "No concrete local Tesseract.js/OCR engine adapter is yet wired to ifood-local-ocr-executor@0.1.0.",
     "No narrow D1 review-attachment retrieval adapter is yet wired to the local OCR executor.",
     "No target Windows/Node host is yet WORLD_PROVEN for the iFood OCR executor.",
-    "No real stored review attachment has yet traversed D1 -> local executor -> segmented OCR -> parser."
+    "No real stored review attachment has yet traversed D1 -> local executor -> segmented OCR -> parser.",
+    "No real production Item faltando row has yet been observed after cutover; its live conditional matrix placement remains unproven even though shadow serialization was proven.",
+    "The live signed ZjVv1a webhook remains unwired pending explicit near-action authorization.",
+    "No real production Tally minimized envelope has yet traversed signed webhook -> Edge/D1 -> portable kernel v0.11."
   ],
   "authority": {
     "continuity_update": "AUTHORIZED_METADATA_WRITE_WITHIN_PROJECT_SCOPE",
