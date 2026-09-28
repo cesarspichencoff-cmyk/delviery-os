@@ -4,12 +4,14 @@ export type PassiveTailDecision =
   | "APPEND"
   | "ROTATED_OR_REPLACED"
   | "TRUNCATED"
+  | "IDENTITY_UNPROVEN"
   | "SOURCE_MISSING";
 
 export interface PassiveFileIdentity {
   path: string;
   size: number;
   mtime_ms: number;
+  birthtime_ms?: number | null;
   file_id?: string | null;
 }
 
@@ -34,9 +36,15 @@ export interface PassiveTailPlan {
   };
 }
 
-function sameIdentity(a: PassiveFileIdentity, b: PassiveFileIdentity): boolean {
-  if (a.file_id && b.file_id) return a.file_id === b.file_id;
-  return a.path === b.path;
+type IdentityDecision = "SAME" | "DIFFERENT" | "UNKNOWN";
+
+function sameIdentity(a: PassiveFileIdentity, b: PassiveFileIdentity): IdentityDecision {
+  if (a.path !== b.path) return "DIFFERENT";
+  if (a.file_id && b.file_id) return a.file_id === b.file_id ? "SAME" : "DIFFERENT";
+  if (a.birthtime_ms != null && b.birthtime_ms != null) {
+    return a.birthtime_ms === b.birthtime_ms ? "SAME" : "DIFFERENT";
+  }
+  return "UNKNOWN";
 }
 
 /**
@@ -81,7 +89,9 @@ export function planPassiveTail(
     };
   }
 
-  if (!sameIdentity(previous.source, current)) {
+  const identity = sameIdentity(previous.source, current);
+
+  if (identity === "DIFFERENT") {
     return {
       schema: "deliveryos.shadow.passive-tail-plan.v1",
       decision: "ROTATED_OR_REPLACED",
@@ -89,6 +99,18 @@ export function planPassiveTail(
       read_to: null,
       next_checkpoint: { source: current, offset: current.size },
       blocking_reasons: ["SOURCE_ROTATED_BASELINE_RESET"],
+      effects,
+    };
+  }
+
+  if (identity === "UNKNOWN") {
+    return {
+      schema: "deliveryos.shadow.passive-tail-plan.v1",
+      decision: "IDENTITY_UNPROVEN",
+      read_from: null,
+      read_to: null,
+      next_checkpoint: { source: current, offset: current.size },
+      blocking_reasons: ["SOURCE_IDENTITY_NOT_PROVEN_NO_APPEND_READ"],
       effects,
     };
   }
