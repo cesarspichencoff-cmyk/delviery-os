@@ -5,7 +5,7 @@
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "main",
   "checkpoint_type": "SHADOW_READ_ONLY_PREP",
-  "state_basis_head": "fcc1491c1d68aa36be3e458b40086a59cc3b0931",
+  "state_basis_head": "dac145f17c2cd2c66aec065323bc6b5df408f72d",
   "verified_state_refs": [
     "src/shadow/odhenReadonly.ts",
     "src/shadow/compare.ts",
@@ -39,9 +39,13 @@
     "Passive print-log preparation now includes a pure projection parser that is allowlist-only: unrecognized lines, including PII/payment/address text, are never copied into the returned projection.",
     "Passive print parser profiles are explicitly proof-scoped. SYNTHETIC_ONLY profiles can exercise parsing but cannot become ready_for_live_shadow; live readiness requires REAL_SAMPLE_PROVEN plus proven full-block framing.",
     "A pure passive-tail planner now baselines at current EOF and refuses to replay historical log content. It distinguishes append, no-change, rotation/replacement, truncation and missing source without touching the filesystem.",
-    "Synthetic verification coverage was added for PII non-leakage, print-source observation contract, SQL-normalizer blocking before real profile proof, append-only cursor behavior, rotation/truncation handling and zero print/source-write effects."
+    "Synthetic verification coverage was added for PII non-leakage, print-source observation contract, SQL-normalizer blocking before real profile proof, append-only cursor behavior, rotation/truncation handling and zero print/source-write effects.",
+    "Synthetic passive-log modules were compiled with strict TypeScript and executed in an independent Node 22.16.0 / TypeScript 5.8.3 harness; result: passive-print-log-v132: ok.",
+    "The passive projection dedupe fingerprint now hashes only the sanitized operational projection, so changes limited to known structural PII do not change the operational fingerprint.",
+    "The tail planner now refuses append reads when strong file identity is not proven; path equality alone cannot authorize an append read after possible rotation/replacement.",
+    "Privacy wording was hardened: structural customer/phone/address/payment fields are excluded, but free-text observations are explicitly treated as potentially sensitive rather than claimed PII-free."
   ],
-  "next_action": "While no natural order is active, keep the passive reader in synthetic/code-prep only. When a natural order is about to occur and the real IMP log path can be identified without opening historical content, establish an EOF baseline only. After that order appends, read only the new byte range for the single authorized order, derive a REAL_SAMPLE_PROVEN parser/framing profile, project allowlisted operational fields in memory, discard raw/PII, verify dedupe and prove zero impact on official printing.",
+  "next_action": "No natural order is active. Keep real file access idle. Next safe work is to prepare the bounded Windows read adapter contract without touching C:\\TEKNISA: non-exclusive read, strong file identity, EOF baseline, exact byte-range append only, in-memory projection, no raw persistence. The first live execution remains limited to one natural order already authorized by César.",
   "unknowns": [
     "The C3.1 synthetic final preview requested by César has not yet been human-accepted in this phase.",
     "No real order has been read in shadow.",
@@ -51,9 +55,11 @@
     "The exact record/block framing and encoding of the live IMP log are not yet proven from one bounded real append.",
     "The delivery-report log source cannot recover TXPRODCOMVEN or distinguish DSOBSDESCIT from DSOBSPEDDIGCMD after Odhen merges them.",
     "No real print-log block has been read or sanitized by DeliveryOS yet.",
-    "Synthetic passive-log verification has been added but has not yet been executed in CI/current cashier environment after these new files.",
     "Live parser regex/profile and exact encoding remain UNKNOWN until one bounded real appended print block is observed.",
-    "A concrete non-exclusive filesystem reader is intentionally not implemented yet because live file path, encoding and record framing are not world-proven."
+    "A concrete non-exclusive filesystem reader is intentionally not implemented yet because live file path, encoding and record framing are not world-proven.",
+    "Full repository build with repo-pinned TypeScript 5.5.3 remains unproven after passive-log changes.",
+    "Concrete Windows file-opening/share semantics are not yet implemented or world-proven.",
+    "Free-text observations may contain personal data; an observation-specific minimization/redaction policy is not yet proven."
   ],
   "authority": {
     "continuity_update": "AUTHORIZED_METADATA_WRITE_WITHIN_PROJECT_SCOPE",
@@ -73,7 +79,7 @@
   "pending_work": {
     "branch": "shadow/odhen-v132-readonly-prep",
     "pull_request": 11,
-    "status": "PASSIVE_READER_SYNTHETIC_PREP_READY__SYNTHETIC_TEST_NOT_YET_EXECUTED__ONE_REAL_ORDER_AUTHORIZED_WHEN_AVAILABLE",
+    "status": "PASSIVE_READER_SYNTHETIC_TEST_PASS__WINDOWS_ADAPTER_NOT_IMPLEMENTED__ONE_REAL_ORDER_AUTHORIZED_WHEN_AVAILABLE",
     "canonical_sha256": "D34583F0A743DF9645914BCDFC1010E6D3AEF72AC74D3A4B7B01F81E305B71E4",
     "cashier_pc": "CAIXA_MOOCA",
     "odhen_root": "C:\\TEKNISA\\odhen-perifericos",
@@ -84,6 +90,12 @@
     "passive_projection": "src/shadow/passivePrintLog.ts",
     "passive_tail_planner": "src/shadow/passivePrintTail.ts",
     "passive_synthetic_verifier": "tools/verificar_passive_print_log_v132.js",
-    "passive_synthetic_command": "npm run verificar:passive-log"
+    "passive_synthetic_command": "npm run verificar:passive-log",
+    "synthetic_proof": {
+      "environment": "independent harness",
+      "node": "22.16.0",
+      "typescript": "5.8.3",
+      "result": "passive-print-log-v132: ok"
+    }
   }
 }
