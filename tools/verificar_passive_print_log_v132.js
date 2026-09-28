@@ -61,7 +61,8 @@ for (const forbidden of [
   assert.equal(serialized.includes(forbidden), false, "raw/PII leaked: " + forbidden);
 }
 assert.equal(projection.privacy.raw_text_retained, false);
-assert.equal(projection.privacy.pii_fields_copied, false);
+assert.equal(projection.privacy.known_pii_fields_copied, false);
+assert.equal(projection.privacy.free_text_observations_may_contain_pii, true);
 assert.match(projection.privacy.operational_fingerprint, /^[a-f0-9]{64}$/);
 
 const differentPiiSameOperations = syntheticBlock
