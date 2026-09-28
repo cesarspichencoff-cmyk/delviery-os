@@ -5,7 +5,7 @@
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "main",
   "checkpoint_type": "SHADOW_READ_ONLY_PREP",
-  "state_basis_head": "d21d6c2c6b18dc0eaaebe0c97c89ec31491bbdc1",
+  "state_basis_head": "8f2265e78462499837b74792b92b2e04dd2ebc77",
   "verified_state_refs": [
     "src/shadow/odhenReadonly.ts",
     "src/shadow/compare.ts",
@@ -19,12 +19,12 @@
     "Shadow normalization is pure and contains no live reader, print call, database write, fiscal action, order/status mutation, watcher/service installation or cutover path.",
     "CAIXA_MOOCA was source-revalidated read-only at C:\\TEKNISA\\odhen-perifericos; Perifericos.exe is present and the store runtime paths were inspected without reading orders.",
     "GET_ALL_DELIVERY_ORDERS provides NRCOMANDA/NRCOMANDAEXT/NRVENDAREST; GET_PRODUTOS_PEDIDODLV provides CDPRODUTO/NMPRODUTO/QTPRODCOMVEN.",
-    "Observation channels now include DSOBSDESCIT, DSOBSPEDDIGCMD, TXPRODCOMVEN (item-level candidates) and DSOBSCOMANDA (order-level in the official delivery print path).",
     "No exposed Odhen read-only route currently provides the complete observation set; the print path must not be invoked to obtain it.",
     "The source probe was hardened to scan only code/config roots, include PHP, exclude Log/Temp/cache trees, match /print case-sensitively, and include TXPRODCOMVEN.",
     "Observation completeness remains an explicit gate: unproven or unassigned candidates block the motor; order-level observations block final preview until a proven renderer channel exists.",
     "Only minimum operational fields are copied; raw payload, customer, phone, address, payment and unrelated PII are not retained.",
-    "PR #11 remains draft and not merged."
+    "PR #11 remains draft and not merged.",
+    "Observation scope revalidation: DSOBSDESCIT, DSOBSPEDDIGCMD and TXPRODCOMVEN are item-level candidates; DSOBSCOMANDA is order-level in the official delivery report path."
   ],
   "next_action": "Return to the human-acceptance gate that was skipped: generate and show the synthetic C3.1 V1.3.2 final preview first. After César approves it, obtain explicit authorization for one direct read-only database query on CAIXA_MOOCA that projects only operational identifiers, items and the four observation channels; do not reuse print, do not use Odhen credentials without explicit authorization, and do not read PII/payment/address.",
   "unknowns": [
