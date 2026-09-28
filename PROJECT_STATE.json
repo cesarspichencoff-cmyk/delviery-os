@@ -1,31 +1,39 @@
 {
-  "schema_version": "0.3",
+  "schema_version": "0.4",
   "project_id": "project.deliveryos",
   "project": "DeliveryOS",
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "main",
-  "checkpoint_type": "BOOTSTRAP_FROM_VERIFIED_REPOSITORY_STATE",
-  "state_basis_head": "a441bc7e9ed209ca965be549dbbd0cd787867bd5",
+  "checkpoint_type": "SHADOW_READ_ONLY_PREP",
+  "state_basis_head": "dd58840fe6f9ab5e8b5b5bf54800e13cec14d61c",
   "verified_state_refs": [
-    "README.md",
-    "docs/Politica_Dados.md"
+    "src/shadow/odhenReadonly.ts",
+    "src/shadow/compare.ts",
+    "src/shadow/previewGate.ts",
+    "tools/verificar_shadow_odhen_v132.js",
+    "docs/Shadow_Odhen_ReadOnly_V132.md"
   ],
   "verified_state": [
-    "Camada 0 canonical ingestion/replay path is documented and data/raw plus data/canonico remain local/gitignored by design.",
-    "The 8-praca backtest path exists, while the authoritative raw-source backup and parser/engine convergence remain unresolved.",
-    "The repository name is literally delviery-os and remains the known project code home."
+    "Canonical V1.3.2 SHA-256 is pinned in the pure shadow normalizer.",
+    "Shadow normalization is pure and contains no live reader, print call, database write, fiscal action, order/status mutation, watcher/service installation or cutover path.",
+    "Observation completeness is an explicit gate: unproven or unassigned observation candidates block the motor; order-level observations also block final preview until a proven renderer channel exists.",
+    "Only minimum operational fields are copied; raw payload, customer, phone, address, payment and unrelated PII are not retained.",
+    "Local isolated proof passed strict TypeScript compilation for the three shadow modules and synthetic normalization/dedupe/privacy/comparison/preview-gate tests.",
+    "PR #11 is draft and not merged. Full repository build and actual store-source revalidation are not yet proven."
   ],
-  "next_action": "Revalidate main/head and continue from the current source-truth gaps: durable raw-source recovery, parser/event-log/8-praca convergence or behavioral-equivalence proof, and historical WhatsApp-count reconciliation. Do not refactor proven behavior merely for architectural aesthetics.",
+  "next_action": "When an authorized store PC is online, revalidate the Odhen/Teknisa read contract by read-only inspection only. Prove current order/item identifiers and every observation channel/scope/join, then run the full repository shadow gate. Do not read live orders or render C3.1 until that source gate passes.",
   "unknowns": [
-    "Any work not persisted after state_basis_head is UNKNOWN.",
-    "Durable integrity-checkable backup of original raw iFood/WhatsApp packages is not proven by this checkpoint.",
-    "Parser/engine convergence remains unproven unless newer evidence supersedes this checkpoint."
+    "Current store-PC Odhen/Teknisa runtime is not fresh because the authorized Remote Desktop device is offline.",
+    "LAST_KNOWN_STATE fields NRCOMANDA/NRCOMANDAEXT/NRVENDAREST and product fields CDPRODUTO/NMPRODUTO/QTPRODCOMVEN require fresh read-only revalidation before live use.",
+    "Observation channels DSOBSDESCIT, DSOBSPEDDIGCMD and DSOBSCOMANDA require fresh scope and join proof; no field-name semantics are assumed by the new normalizer.",
+    "Full repository build plus tools/verificar_shadow_odhen_v132.js is still unproven on an installed clone.",
+    "No live order has been read and no C3.1 preview has been generated in this stage."
   ],
   "authority": {
     "continuity_update": "AUTHORIZED_METADATA_WRITE_WITHIN_PROJECT_SCOPE",
-    "execution_ceiling": "NO_NEW_PRODUCTION_OR_DATA_AUTHORITY"
+    "execution_ceiling": "READ_ONLY_SOURCE_REVALIDATION_ONLY__NO_LIVE_ORDER_READ_UNTIL_SOURCE_GATE__NO_PRINT_WRITE_FISCAL_STATUS_SERVICE_OR_CUTOVER"
   },
-  "resume_rule": "Reconstruct from repository evidence and local-source availability; never fabricate missing raw data or treat generated derivatives as original source truth.",
+  "resume_rule": "Resume from PR #11. First revalidate the current store runtime read-only; do not substitute LAST_KNOWN_STATE for fresh source truth. If source/observation gates pass, run a minimized shadow snapshot through normalization/dedupe/motor comparison without printing or writing.",
   "session_policy": {
     "default": "KEEP_SAME_SESSION_WHILE_HEALTHY",
     "compact_when": "Context burden rises but execution remains reliable; rebuild working context from durable project state plus only the current unpersisted delta.",
@@ -35,5 +43,11 @@
       "Conversation history is not project state.",
       "Session rollover never expands authority."
     ]
+  },
+  "pending_work": {
+    "branch": "shadow/odhen-v132-readonly-prep",
+    "pull_request": 11,
+    "status": "PREPARED_NOT_CONNECTED",
+    "canonical_sha256": "D34583F0A743DF9645914BCDFC1010E6D3AEF72AC74D3A4B7B01F81E305B71E4"
   }
 }
