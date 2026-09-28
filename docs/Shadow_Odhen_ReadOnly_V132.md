@@ -206,6 +206,37 @@ Se qualquer item 5–9 falhar:
 
 e não gerar C3.1.
 
+## Inventário metadata-only de principais existentes
+
+Antes de qualquer criação de usuário/view, a branch agora possui:
+
+`tools/sql_principal_inventory_metadata_only.ps1`
+
+Objetivo: verificar se já existe no banco `teknisa` algum principal que pareça
+candidato a leitura restrita, sem assumir identidade e sem ler tabelas operacionais.
+
+A sonda:
+- usa somente Windows Integrated Authentication;
+- consulta apenas `sys.database_principals`,
+  `sys.database_role_members` e `sys.database_permissions`;
+- não usa `EXECUTE AS`;
+- não lê COMANDAVEN/VENDAREST/ITCOMANDAVEN/PRODUTO;
+- não lê observações/pedidos/clientes;
+- não altera usuários/roles/permissões;
+- não expõe principal_name: gera `candidate_id` por hash;
+- classifica somente:
+  - `REJECT` (role/permissão explícita de escrita/execução);
+  - `READONLY_BUT_BROAD_CANDIDATE` (db_datareader);
+  - `NEEDS_ADMIN_CONFIRMATION`.
+
+IMPORTANTE: `NEEDS_ADMIN_CONFIRMATION` NÃO prova read-only efetivo.
+É apenas uma triagem de metadados para reduzir o trabalho do administrador SQL.
+Permissões implícitas/ownership/escopos não totalmente visíveis nesta triagem continuam UNKNOWN.
+
+A integridade estática do script é guardada por:
+
+`node tools/verificar_sql_principal_inventory_static.js`
+
 ## SQL preflight sem segredo
 
 Antes de qualquer leitura de pedido real, a branch agora inclui:
