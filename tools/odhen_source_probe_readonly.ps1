@@ -5,29 +5,43 @@ param(
 $ErrorActionPreference = "Stop"
 
 # SOURCE-ONLY PROBE.
-# It never starts Perifericos.exe, never calls HTTP, never reads orders and never writes files.
+# It never starts Perifericos.exe, never calls HTTP, never queries the database,
+# never reads orders and never writes files.
+#
+# IMPORTANT: intentionally scans only code/config roots and excludes Log/Temp/cache
+# trees so the probe does not touch large operational logs that may contain orders.
 
-$tokens = @(
-  "DeliveryRepository",
-  "getAllDeliveryOrders",
-  "NRCOMANDA",
-  "NRCOMANDAEXT",
-  "NRVENDAREST",
-  "CDPRODUTO",
-  "NMPRODUTO",
-  "QTPRODCOMVEN",
-  "BUSCA_ITPEDIDO_ENTREGA",
-  "DSOBSDESCIT",
-  "DSOBSPEDDIGCMD",
-  "DSOBSCOMANDA",
-  "/print"
+$codeRoots = @(
+  (Join-Path $OdhenRoot "perifericos\src"),
+  (Join-Path $OdhenRoot "perifericos\routes"),
+  (Join-Path $OdhenRoot "odhenPOS\mobile"),
+  (Join-Path $OdhenRoot "odhenPOS\backend_74000")
+)
+
+$tokenSpecs = @(
+  @{ token = "DeliveryRepository"; caseSensitive = $false },
+  @{ token = "getAllDeliveryOrders"; caseSensitive = $false },
+  @{ token = "NRCOMANDA"; caseSensitive = $false },
+  @{ token = "NRCOMANDAEXT"; caseSensitive = $false },
+  @{ token = "NRVENDAREST"; caseSensitive = $false },
+  @{ token = "CDPRODUTO"; caseSensitive = $false },
+  @{ token = "NMPRODUTO"; caseSensitive = $false },
+  @{ token = "QTPRODCOMVEN"; caseSensitive = $false },
+  @{ token = "BUSCA_ITPEDIDO_ENTREGA"; caseSensitive = $false },
+  @{ token = "DSOBSDESCIT"; caseSensitive = $false },
+  @{ token = "DSOBSPEDDIGCMD"; caseSensitive = $false },
+  @{ token = "DSOBSCOMANDA"; caseSensitive = $false },
+  @{ token = "TXPRODCOMVEN"; caseSensitive = $false },
+  @{ token = "/print"; caseSensitive = $true }
 )
 
 $result = [ordered]@{
-  schema = "deliveryos.shadow.odhen.source-probe.v132"
+  schema = "deliveryos.shadow.odhen.source-probe.v132.1"
   mode = "READ_ONLY_SOURCE_CODE_ONLY"
   root = $OdhenRoot
   root_exists = $false
+  scanned_roots = @()
+  skipped_roots = @()
   effects = [ordered]@{
     process_start = $false
     http = $false
@@ -51,11 +65,32 @@ if (-not (Test-Path -LiteralPath $OdhenRoot -PathType Container)) {
 
 $result.root_exists = $true
 
-$extensions = @(".js", ".ts", ".json", ".config", ".txt", ".sql", ".xml", ".yml", ".yaml")
-$files = Get-ChildItem -LiteralPath $OdhenRoot -Recurse -File -ErrorAction SilentlyContinue |
-  Where-Object { $extensions -contains $_.Extension.ToLowerInvariant() }
+$extensions = @(
+  ".js", ".ts", ".json", ".config", ".txt", ".sql", ".xml",
+  ".yml", ".yaml", ".php", ".ini", ".env", ".properties"
+)
 
-$result.files_scanned = @($files).Count
+$files = @()
+foreach ($root in $codeRoots) {
+  if (Test-Path -LiteralPath $root -PathType Container) {
+    $result.scanned_roots += $root
+    $files += Get-ChildItem -LiteralPath $root -Recurse -File -ErrorAction SilentlyContinue |
+      Where-Object {
+        $extensions -contains $_.Extension.ToLowerInvariant() -and
+        $_.FullName -notmatch "\\Log(\\|$)" -and
+        $_.FullName -notmatch "\\Logs(\\|$)" -and
+        $_.FullName -notmatch "\\Temp(\\|$)" -and
+        $_.FullName -notmatch "\\cache(\\|$)" -and
+        $_.FullName -notmatch "\\node_modules(\\|$)"
+      }
+  }
+  else {
+    $result.skipped_roots += $root
+  }
+}
+
+$files = @($files | Sort-Object FullName -Unique)
+$result.files_scanned = $files.Count
 
 foreach ($file in $files) {
   try {
@@ -67,11 +102,21 @@ foreach ($file in $files) {
       last_write_utc = $file.LastWriteTimeUtc.ToString("o")
     }
 
-    foreach ($token in $tokens) {
-      $hits = Select-String -LiteralPath $file.FullName -SimpleMatch -Pattern $token -ErrorAction SilentlyContinue
+    foreach ($spec in $tokenSpecs) {
+      $args = @{
+        LiteralPath = $file.FullName
+        SimpleMatch = $true
+        Pattern = $spec.token
+        ErrorAction = "SilentlyContinue"
+      }
+      if ($spec.caseSensitive) {
+        $args.CaseSensitive = $true
+      }
+
+      $hits = Select-String @args
       foreach ($hit in $hits) {
         $result.token_hits += [ordered]@{
-          token = $token
+          token = $spec.token
           path = $file.FullName
           line = $hit.LineNumber
         }
