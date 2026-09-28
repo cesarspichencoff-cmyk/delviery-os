@@ -206,6 +206,31 @@ Se qualquer item 5–9 falhar:
 
 e não gerar C3.1.
 
+## SQL preflight sem segredo
+
+Antes de qualquer leitura de pedido real, a branch agora inclui:
+
+`tools/sql_integrated_readonly_preflight.ps1`
+
+Ele usa somente **Windows Integrated Authentication (SSPI)** e não lê
+`environment.xml`, usuário, senha ou connection string do Odhen.
+
+O preflight executa somente um SELECT de metadados/permissões e exige:
+
+- conexão válida ao servidor/banco esperados;
+- permissão SELECT;
+- nenhuma permissão INSERT/UPDATE/DELETE/EXECUTE/ALTER/CONTROL no principal Windows atual.
+
+Somente nesse caso retorna:
+
+`safe_for_order_read = true`
+
+Se qualquer permissão de escrita aparecer, o script bloqueia a leitura real com:
+
+`WINDOWS_PRINCIPAL_NOT_READ_ONLY`
+
+Esse gate não cria login, não concede/revoga permissão e não lê nenhuma tabela de pedido.
+
 ## Gate posterior: LIVE_SHADOW
 
 Mesmo após SOURCE_REVALIDATION, um live shadow deve continuar sem efeito:
