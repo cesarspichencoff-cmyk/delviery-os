@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { loadAuthorizedIfoodReviewAttachmentD1 } from "./ifood-storage.js";
+import { loadAuthorizedIfoodReviewAttachmentD1 } from "./ifood-attachment-source.js";
 
 function fakeDb(row) {
   const calls = [];
