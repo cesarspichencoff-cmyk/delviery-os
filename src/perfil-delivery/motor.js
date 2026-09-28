@@ -85,13 +85,16 @@
     const temComida = it.some(x => x.praca !== "bar_bebidas" && x.cat !== "nao_producao");
     const temQuenteCozinha = it.some(x => x.praca === "cozinha_quentes");
     const temFrioComida = it.some(x => x.praca !== "cozinha_quentes" && x.praca !== "bar_bebidas" && x.temp === "frio");
+    // Sobremesa possui regra própria de transporte: nunca acompanha quente da Cozinha,
+    // mesmo quando o seed usa temperatura "ambiente".
+    const temSobremesaTransporte = it.some(x => x.praca === "sobremesa" || x.contemSobremesa);
     const latas = it.filter(x => x.praca === "bar_bebidas" && /\blata\b/i.test(x.nome || ""))
       .reduce((a,x)=>a+(x.qtd||1),0);
     const bebidaGrande = it.some(x => x.praca === "bar_bebidas" && (
       /\bvinho\b/i.test(x.nome || "") ||
       (/saqu[eê]/i.test(x.nome || "") && /720\s*ml/i.test(x.nome || ""))
     ));
-    const separaTemperatura = temQuenteCozinha && temFrioComida;
+    const separaTemperatura = temQuenteCozinha && (temFrioComida || temSobremesaTransporte);
     const separaLatas = temComida && latas >= 6;
     const separaBebidaGrande = temComida && bebidaGrande;
     const sacolasMinimas = 1 + (separaTemperatura ? 1 : 0) + (separaLatas ? 1 : 0) + (separaBebidaGrande ? 1 : 0);
