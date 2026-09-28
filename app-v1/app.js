@@ -294,16 +294,10 @@
     if (praca === "cozinha_quentes") return "Prato quente";
     return null;
   }
-  // "Duas sacolas" V0: só critérios fortes e inequívocos da lógica de embalagens (§11 do documento).
-  // Quente+frio usa I.temQuente/I.temFrio — dado REAL já computado pelo motor, não invenção.
-  // Bebida grande / muitas latas usam correspondência de nome forte; incerto = não classifica.
+  // "Duas sacolas" V0 lê a decisão já produzida pelo motor.
+  // Não replica regra operacional na camada visual.
   function detectarDuasSacolasV0(I) {
-    if (!I || !I.itens.length) return false;
-    if (I.temQuente && I.temFrio) return true;
-    const bebidaGrande = I.itens.some(x => x.praca === "bar_bebidas" && /720\s*ml|vinho|saqu[eê]/i.test(x.nome));
-    if (bebidaGrande) return true;
-    const latas = I.itens.filter(x => x.praca === "bar_bebidas" && /lata/i.test(x.nome)).reduce((a, x) => a + (x.qtd || 1), 0);
-    return latas >= 6;
+    return Boolean(I && I.itens && I.itens.length && I.segundaSacola);
   }
   // "Só quente" V0: I.soQuentes é dado REAL do motor (temQuente && !temFrio) — só leitura, sem inferência nova.
   function detectarSoQuenteV0(I) { return !!(I && I.itens.length && I.soQuentes); }
