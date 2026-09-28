@@ -84,9 +84,13 @@
     // Hot Roll (enrolados_quentes) pode acompanhar frios e NÃO conta como quente da Cozinha.
     const temComida = it.some(x => x.praca !== "bar_bebidas" && x.cat !== "nao_producao");
     const temQuenteCozinha = it.some(x => x.praca === "cozinha_quentes");
-    const temFrioComida = it.some(x => x.praca !== "cozinha_quentes" && x.praca !== "bar_bebidas" && x.temp === "frio");
-    // Sobremesa possui regra própria de transporte: nunca acompanha quente da Cozinha,
-    // mesmo quando o seed usa temperatura "ambiente".
+    const temFrioComida = it.some(x =>
+      x.praca !== "cozinha_quentes" &&
+      x.praca !== "bar_bebidas" &&
+      (x.temp === "frio" || x.praca === "combinados")
+    );
+    // Para transporte, todo combinado fechado conta como FRIO mesmo quando o seed usa "misto".
+    // Sobremesa possui regra própria: nunca acompanha quente da Cozinha, mesmo com temperatura "ambiente".
     const temSobremesaTransporte = it.some(x => x.praca === "sobremesa" || x.contemSobremesa);
     const latas = it.filter(x => x.praca === "bar_bebidas" && /\blata\b/i.test(x.nome || ""))
       .reduce((a,x)=>a+(x.qtd||1),0);
