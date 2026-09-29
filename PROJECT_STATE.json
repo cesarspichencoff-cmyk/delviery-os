@@ -5,7 +5,7 @@
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "main",
   "checkpoint_type": "SHADOW_READ_ONLY_PREP",
-  "state_basis_head": "987c2a35de63a32a36ec4724b0dd4d36f488266d",
+  "state_basis_head": "3832a0cd88564e5dd3ed851cc494a7a576e1f074",
   "verified_state_refs": [
     "src/shadow/odhenReadonly.ts",
     "src/shadow/compare.ts",
@@ -46,9 +46,12 @@
     "Privacy wording was hardened: structural customer/phone/address/payment fields are excluded, but free-text observations are explicitly treated as potentially sensitive rather than claimed PII-free.",
     "Adversarial passive-parser hardening now blocks a framed block containing multiple printed order IDs, preventing accidental cross-order contamination.",
     "Once an order-level OBS. footer is recognized, current item association is cleared so later item-style observation lines cannot silently attach back to the previous item.",
-    "The hardened passive suite was recompiled and rerun after privacy, file-identity and framing changes; result remained passive-print-log-v132: ok."
+    "The hardened passive suite was recompiled and rerun after privacy, file-identity and framing changes; result remained passive-print-log-v132: ok.",
+    "CAIXA_MOOCA real IMP log source was manually metadata-proven on 2026-09-29: C:\\TEKNISA\\odhen-perifericos\\Log\\092026\\2026_09_29_IMP.txt exists.",
+    "Baseline EOF for the one-order passive proof is 352273 bytes; LastWriteTime was 2026-09-29 13:49:19 local and CreationTime was 2026-09-29 12:03:07 local.",
+    "No log content was read to establish this baseline; only file metadata was read manually outside Claude Code."
   ],
-  "next_action": "Wait for one natural order. At that moment establish a fresh EOF baseline immediately before the expected append, with no historical replay; after the official Odhen print/log append, read only the new range under the one-order authorization, derive the real framing/profile, project minimum operational fields, and stop. No SQL/Teknisa change is on the preferred path.",
+  "next_action": "Wait for the next natural delivery order to print. Immediately after that print completes, re-read only the same file metadata. If Length > 352273 and the file identity/path is unchanged, the authorized next step is to read exactly the byte range [352273,new_length) for the single-order proof; do not read from byte 0 or historical content.",
   "unknowns": [
     "The C3.1 synthetic final preview requested by César has not yet been human-accepted in this phase.",
     "No real order has been read in shadow.",
@@ -82,7 +85,7 @@
   "pending_work": {
     "branch": "shadow/odhen-v132-readonly-prep",
     "pull_request": 11,
-    "status": "PASSIVE_SYNTHETIC_HARDENED_AND_TEST_PASS__WAITING_FOR_ONE_NATURAL_ORDER",
+    "status": "REAL_LOG_SOURCE_PASS__BASELINE_READY__WAITING_FOR_NEXT_NATURAL_ORDER",
     "canonical_sha256": "D34583F0A743DF9645914BCDFC1010E6D3AEF72AC74D3A4B7B01F81E305B71E4",
     "cashier_pc": "CAIXA_MOOCA",
     "odhen_root": "C:\\TEKNISA\\odhen-perifericos",
@@ -101,6 +104,14 @@
       "result": "passive-print-log-v132: ok",
       "latest_result": "passive-print-log-v132: ok",
       "latest_head": "987c2a35de63a32a36ec4724b0dd4d36f488266d"
+    },
+    "real_log_source": {
+      "status": "PASS_METADATA_ONLY",
+      "path": "C:\\TEKNISA\\odhen-perifericos\\Log\\092026\\2026_09_29_IMP.txt",
+      "baseline_eof": 352273,
+      "last_write_time_local": "2026-09-29 13:49:19",
+      "creation_time_local": "2026-09-29 12:03:07",
+      "content_read": false
     }
   }
 }
