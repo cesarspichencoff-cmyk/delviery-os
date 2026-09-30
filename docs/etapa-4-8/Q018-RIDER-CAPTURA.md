@@ -4,7 +4,7 @@ lifecycle:
   status: ACTIVE
   authority_scope: captura_pela_rider_mobile
   superseded_by: null
-  atualizado_em: "2026-09-26"
+  atualizado_em: "2026-09-30"
   state_basis: ea3745a
   question_refs: ["Q-018"]
 ---
@@ -20,9 +20,10 @@ Decisão do César, 2026-09-25, literal:
 > preservando uma única experiência e uma única verdade de domínio. A captura só inicia após saída
 > validamente confirmada e consentimento/permissão válidos.
 
-> **Laboratório.** Tudo o que está provado aqui rodou na nuvem: piloto real, Chromium real e uma
-> ponte `EntregasNative` **falsa**. O Kotlin alterado **não compilou** — a rede do sandbox nega
-> `dl.google.com` — e nada rodou em aparelho. Isso é a §9 e o Foxxy.
+> **Laboratório — estado histórico de 26/09.** Naquela data, piloto/Chromium estavam provados,
+> mas o Kotlin ainda não tinha compilado nem rodado em Android. **Esse limite foi superado em
+> 30/09/2026 no Foxxy; a evidência atual está na §14.** O texto histórico das §§9–13 foi preservado
+> para não reescrever a força da prova antiga.
 
 ## 0 — Respostas
 
@@ -34,8 +35,8 @@ Decisão do César, 2026-09-25, literal:
 | "permissão válida" | o que o Android respondeu, lido pela ponte |
 | UI nativa nova | nenhuma |
 | status de GPS | o indicador que já existia (`gps-status.js`), agora refletindo o serviço nativo |
-| Kotlin | três mudanças pequenas (§2), **não compiladas aqui** |
-| primeiro fato do app | `NOT_RUN` — faltam o build no Foxxy e um termo publicável |
+| Kotlin | três mudanças pequenas (§2); **compiladas e exercitadas no Foxxy/AVD em 30/09/2026** |
+| primeiro fato do app | **PROVEN no emulador** — captura/persistência, sequência durável, restart, retry/sync e encerramento; aparelho físico segue `NOT_RUN` |
 
 ## 1 — A lacuna, reproduzida antes
 
@@ -207,9 +208,8 @@ não entrou. O recibo existe no servidor e no Kotlin (`receipt`).
 
 ## 9 — O que NÃO está provado
 
-- **O Kotlin.** K1–K3 e o `WebChromeClient` de `9966ab5` não compilaram aqui. A verificação estrutural diz que as travas estão no
-  lugar; quem diz que compilam e rodam é A1–A3 no Foxxy.
-- **O aparelho.** Nenhum passo da bateria física rodou (`docs/etapa-4-8/FIELD-GATE-ANDROID.md`).
+- **O Kotlin no emulador não é mais lacuna.** K1–K3, `WebChromeClient`, captura/persistência, sequência durável, restart, retry/sync e encerramento foram exercitados no Foxxy/AVD; o fecho final está na §15.
+- **O aparelho físico.** Nenhum passo da bateria física rodou (`docs/etapa-4-8/FIELD-GATE-ANDROID.md`).
 - **A página fechada.** O fim da viagem só chega ao serviço quando a página está viva; com o app
   em segundo plano depende de timers do WebView; com o processo morto, só quando o app reabre
   (`BLOCKERS.md`, registrado ABERTO).
@@ -340,3 +340,148 @@ migration nem apps): **13 executados = 12 PASS + 1 FAIL_PREEXISTENTE + 0 FAIL_NO
 `build:platform`, `test:entregas` inteira, android 40, device-api 40, `rider-bridge` 27/27, platform
 44, skills, visual-order, m1-bridge, ensaio 39/39 e a suíte adversarial 26/26 (4 + 21 + 1, zero
 cegas). FAIL_PREEXISTENTE: governança (G6b, G9), saída idêntica à de `df481bd` fora o cabeçalho.
+
+## 14 — Foxxy: Kotlin, Room e recuperação de sync provados (2026-09-30)
+
+A bancada Android finalmente atravessou a fronteira que as §§9–13 mantinham aberta.
+
+**Ambiente observado:** emulador Android `sdk_gphone64_x86_64` no Foxxy, pacote
+`br.com.tata.entregas.debug`. Isto prova Android real da bancada; **não** é ainda aparelho físico
+de motoboy nem promoção de produção.
+
+### 14.1 Captura nativa → Room
+
+O helper debug de localização recebeu permissão de mock do Android e o Google Play Services confirmou:
+
+- `setMockMode success`;
+- `setMockLocation success`;
+- `TripLocationService.onLocationResult count=1`.
+
+A checagem antiga que aparentava Room parado em 1–3 estava lendo uma cópia estática em
+`Temp/q018-room-summary/entregas.db`. A leitura correta passou a copiar **DB + WAL + SHM vivos**
+via `run-as`. Nela, os pontos 4 e 5 já existiam e o contador persistente já estava em 5.
+
+A sequência avançou depois até **10**, sem reciclagem. Os pontos 4–7 atravessaram
+`Fused → callback → CanonicalPoint → Room → SyncWorker → runtime crítico`. O PostgreSQL registrou
+nova `device_session_issued` para `dev-59e44fa2df6d4ffa` em **2026-09-30 05:59:30 -03**, e o
+token local foi renovado. Os pontos mock foram recusados pelo servidor com o motivo esperado:
+`localização simulada em lote real`.
+
+Portanto:
+
+`CAPTURA NATIVA → PERSISTÊNCIA LOCAL → AUTENTICAÇÃO → HTTPS → INGESTÃO` = **PROVEN na bancada**.
+
+### 14.2 Defeito encontrado: starvation por backoff
+
+A falha restante não era captura. O `entregas-sync-now` antigo combinava:
+
+- `ExistingWorkPolicy.KEEP`;
+- `Result.retry()`;
+- backoff **exponencial**.
+
+Depois de falhas transitórias, o WorkManager chegou a `runAttemptCount=10` no imediato
+(~40 min de espera observada) e 11 no periódico (~4 h 27 min observadas). Um ponto novo chamava
+`requestNow()`, mas `KEEP` preservava o job antigo em backoff: dado seguro, recuperação atrasada.
+
+### 14.3 Correção
+
+`SyncWorker` passou a:
+
+1. usar nomes `entregas-sync-*-v2`, cancelando os jobs legados para não herdar backoff antigo;
+2. manter `KEEP` no imediato, evitando cancelar uma sincronização já em curso;
+3. usar backoff **linear** (15 s imediato; 30 s periódico);
+4. limitar a janela transitória a **3 execuções rápidas**. Na terceira falha o WorkManager recebe
+   `success`, mas o item **continua `failed` no Room**. O próximo ponto ou o periódico de 15 min
+   abre uma janela nova.
+
+O teste `SyncRetryPolicyTest` trava os limites e os nomes v2. A suíte local Android ficou
+**41 testes, 0 falhas, 0 erros, 0 ignorados**, e `assembleDebug` ficou verde.
+
+### 14.4 Prova adversarial do scheduler
+
+Com o TLS crítico da bancada deliberadamente fora do ar:
+
+- ponto **8**: três `ConnectException`; permaneceu `failed`, `attempts=3`;
+- o job v2 terminou `SUCCEEDED` após a terceira execução — não ficou em backoff crescente;
+- o job periódico legado apareceu `CANCELLED`.
+
+A primeira tentativa de restaurar o TLS estava incompleta; por isso o ponto 9 também fechou uma
+janela de três falhas. Isso foi mantido como evidência, não contado como recuperação.
+
+Depois de validar `GET /health = 200` no host e TCP `10.0.2.2:8080` no Android, o ponto **10**
+foi inserido. Ele criou **um novo `entregas-sync-now-v2` imediatamente** e a mesma execução drenou:
+
+- ponto 8 → `rejected`, `attempts=7`;
+- ponto 9 → `rejected`, `attempts=4`;
+- ponto 10 → `rejected`, `attempts=1`.
+
+Os três receberam somente a recusa esperada para mock. O contador persistente ficou em **10** e o
+novo WorkSpec `97c538ac-1335-41d3-828b-3cb5a919a7c5` terminou `SUCCEEDED`.
+
+**Conclusão desta subprova:** uma indisponibilidade passada não bloqueia mais um fato novo por dezenas
+de minutos. A fila continua durável e a recuperação abre uma janela fresca quando surge novo trabalho.
+
+### 14.5 Limites atuais
+
+- O Foxxy é emulador, não aparelho físico de motoboy.
+- Nenhum GPS de produção foi ativado e nenhum deploy/promoção foi feito.
+- A sonda temporária `DEBUG_SEED_PENDING_GPS` usada só para a prova foi removida; o APK debug limpo
+  foi recompilado e reinstalado. O helper `DEBUG_MOCK_LOCATION` também foi removido da fonte e do APK instalado; o pacote instalado não expõe `MockLocationReceiver`.
+- A hipótese de que a UI pudesse iniciar `TripLocationService` sem `trip_id` na reconciliação foi
+  reavaliada e **não se sustentou**: não existe ocorrência observada de `intent sem trip_id` no histórico
+  da bancada; `captureDecision` só autoriza captura com viagem válida e devolve seu `trip_id`; a ponte
+  Kotlin ignora `null`/vazio; e `test:entregas:rider-capture` passou **38/38** na árvore atual. Portanto,
+  não há defeito aberto comprovado nessa rota.
+
+## 15 — Fecho final do Android em emulador (2026-09-30)
+
+Depois da remoção completa de `DEBUG_MOCK_LOCATION` / `MockLocationReceiver`, a suíte instrumentada foi executada novamente sobre o APK final de debug no AVD Android 14 do Foxxy.
+
+Resultado observado:
+
+- `connectedDebugAndroidTest`: **10/10 testes instrumentados PASS**;
+- `BUILD SUCCESSFUL`;
+- APK exercitado sem o helper temporário de mock;
+- captura/persistência, sequência durável, restart, retry/sync e encerramento permanecem verdes.
+
+**Fecho:** o checkpoint Android em emulador está tecnicamente encerrado. A bateria em **aparelho físico real** permanece separada e `NOT_RUN`; não há promoção de produção implícita neste resultado.
+
+## 16 — Encerramento remoto sem WebView/processo da UI (2026-09-30)
+
+### Gap medido
+
+A reconciliação anterior dependia da rider-mobile viva ou reaberta. Com a página/processo mortos, o `TripLocationService` podia ser recriado por `START_REDELIVER_INTENT` e recuperar `active_trip_id` do Room, mas não tinha canal autoritativo para saber que a viagem havia sido encerrada no servidor.
+
+### Solução implementada
+
+- o piloto continua sendo a autoridade da viagem; não foi criada segunda máquina de estados;
+- o Android continua usando somente sua credencial própria de aparelho; nenhuma credencial humana foi adicionada ao Room;
+- a plataforma expõe `GET /api/device/identity`, que apenas atesta Bearer, expiração, cadastro e revogação;
+- o piloto expõe `GET /api/device/capture-state?trip_id=...`; ele encaminha o Bearer à plataforma e, após identidade válida, lê a viagem no mesmo `TripRepository` usado pelos comandos;
+- estados que mantêm captura: `em_rota`, `retornando`, `sem_atualizacao`;
+- `encerrada`, `preparando_saida`, viagem ausente ou reatribuída produzem decisão de parar;
+- identidade sem `actor_id`, timeout, 5xx ou indisponibilidade produzem UNKNOWN/KEEP, nunca falso encerramento.
+### Android
+
+`TripLocationService` inicia um loop próprio a cada 15 s enquanto há viagem ativa. Esse loop independe de callback de GPS e da WebView:
+
+- 200 com `capture=false` → `stopBecause("viagem_encerrada_remotamente")`;
+- 401 → limpa somente token de sessão, agenda renovação e mantém captura;
+- 403 terminal → encerra captura;
+- 4xx não terminal, 5xx, timeout, rede offline ou 200 incompleto → mantém captura.
+
+`stopBecause()` cancela o loop, remove updates do Fused, limpa `active_trip_id`, remove foreground notification e encerra o serviço.
+
+### Provas
+
+- rota de identidade da plataforma: **4/4 PASS**;
+- política pura piloto/identidade: **11/11 PASS**;
+- piloto real + plataforma de identidade sintética via HTTP: **2/2 PASS** — viagem `em_rota` respondeu `capture:true`; depois de `CloseTripManually`, a mesma rota respondeu `capture:false`;
+- política Android `RemoteCaptureControlTest`: **6/6 PASS**, 0 falhas;
+- `:app:testDebugUnitTest :app:compileDebugKotlin`: **BUILD SUCCESSFUL**;
+- `connectedDebugAndroidTest`: **10/10 PASS + BUILD SUCCESSFUL** no AVD Android 14;
+- TypeScript `npm run build`: **PASS**.
+
+### Fronteira
+
+**CODE_READY + TEST_PASS local.** O APK contém o novo loop e a regressão instrumentada está verde. Ainda não foi observado em bancada o `TripLocationService` realmente cair sozinho por uma resposta remota desta nova rota com a WebView/processo mortos. Essa observação continua `NOT_RUN`; não é substituída pelos testes de política/HTTP acima. A bateria em aparelho físico real também continua separada.

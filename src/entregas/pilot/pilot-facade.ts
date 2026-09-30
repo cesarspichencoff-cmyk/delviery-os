@@ -186,6 +186,26 @@ export class PilotApplicationFacade {
     return this.actor;
   }
 
+  /**
+   * Leitura mínima para o controle nativo de captura.
+   * A autoridade é o mesmo TripRepository que os comandos gravam.
+   */
+  async readTripCaptureState(trip_id: string): Promise<{
+    trip_id: string;
+    unit_id: string;
+    courier_actor_id: string;
+    state: string;
+  } | null> {
+    const rec = await this.uow.trips.get(trip_id);
+    if (!rec) return null;
+    return {
+      trip_id: rec.trip.trip_id,
+      unit_id: rec.trip.unit_id,
+      courier_actor_id: String(rec.trip.courier_actor_id),
+      state: rec.trip.state,
+    };
+  }
+
   private loadReady(): ReadyStore {
     try {
       return JSON.parse(readFileSync(this.readyFile, "utf8")) as ReadyStore;

@@ -173,6 +173,7 @@ class MainActivity : AppCompatActivity(), EntregasJsBridge.NativeActions {
             put("approximate_only", gate.approximateOnly)
             put("term_ok", gate.termOk)
             put("pending_points", db.gpsPoints().pendingCount())
+            put("rejected_points", db.gpsPoints().rejectedCount())
             put("pending_events", db.outbox().pendingCount())
         }.toString()
     }

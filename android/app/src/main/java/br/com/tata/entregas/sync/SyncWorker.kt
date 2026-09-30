@@ -16,6 +16,9 @@ import br.com.tata.entregas.data.EntregasDatabase
 import org.json.JSONObject
 import java.util.concurrent.TimeUnit
 
+internal fun shouldRetryFast(runAttemptCount: Int): Boolean =
+    runAttemptCount < SyncWorker.FAST_RETRY_RUNS - 1
+
 /**
  * Sincronização em lote.
  *
@@ -37,10 +40,20 @@ class SyncWorker(
 ) : CoroutineWorker(context, params) {
 
     companion object {
-        const val UNIQUE_PERIODIC = "entregas-sync-periodic"
-        const val UNIQUE_NOW = "entregas-sync-now"
+        const val UNIQUE_PERIODIC = "entregas-sync-periodic-v2"
+        const val UNIQUE_NOW = "entregas-sync-now-v2"
         private const val BATCH_SIZE = 100
+        internal const val FAST_RETRY_RUNS = 3
     }
+
+    /**
+     * No máximo três execuções rápidas para uma falha transitória.
+     * Depois disso o item continua em `failed` no Room e o worker termina:
+     * o periódico de 15 min ou um novo fato abre uma janela fresca, sem herdar
+     * horas de backoff de uma indisponibilidade antiga.
+     */
+    private fun retryOrYield(): Result =
+        if (shouldRetryFast(runAttemptCount)) Result.retry() else Result.success()
 
     override suspend fun doWork(): Result {
         val db = EntregasDatabase.get(applicationContext)
@@ -71,10 +84,10 @@ class SyncWorker(
                 is DeviceSession.ResultadoAutenticacao.FalhouTemporariamente -> {
                     // Sem rede nao ha o que fazer agora, e nada se perde:
                     // a fila local continua intacta esperando a proxima janela.
-                    if (sessao == null) return Result.retry()
+                    if (sessao == null) return retryOrYield()
                 }
                 is DeviceSession.ResultadoAutenticacao.PrecisaDeHumano -> {
-                    if (sessao == null) return Result.retry()
+                    if (sessao == null) return retryOrYield()
                 }
             }
         }
@@ -160,7 +173,51 @@ class SyncWorker(
                 }
             }
             when (val r = api.sendPoints(payloads, correlationId)) {
-                is ApiResult.Ok -> db.gpsPoints().markSent(ids)
+                is ApiResult.Ok -> {
+                    val body = r.value
+                    val array = body.optJSONArray("rejections")
+                    val rejections = buildList {
+                        if (array != null) {
+                            for (i in 0 until array.length()) {
+                                val item = array.optJSONObject(i) ?: continue
+                                add(
+                                    GpsReceiptRejection(
+                                        idempotencyKey = item.optString("idempotency_key"),
+                                        reason = item.optString("motivo"),
+                                    ),
+                                )
+                            }
+                        }
+                    }
+                    val decision = decideGpsReceipt(
+                        items = points.map { GpsReceiptItem(it.pointId, it.idempotencyKey) },
+                        accepted = body.optInt("accepted", -1),
+                        duplicate = if (body.has("duplicate")) {
+                            body.optInt("duplicate", -1)
+                        } else {
+                            body.optInt("duplicados", -1)
+                        },
+                        rejected = body.optInt("rejected", -1),
+                        rejections = rejections,
+                    )
+                    when (decision) {
+                        is GpsReceiptDecision.Apply -> {
+                            if (decision.sentIds.isNotEmpty()) {
+                                db.gpsPoints().markSent(decision.sentIds)
+                            }
+                            decision.rejected.groupBy { it.reason }.forEach { (reason, rejectedPoints) ->
+                                db.gpsPoints().markRejected(
+                                    rejectedPoints.map { it.pointId },
+                                    "servidor_rejeitou: $reason",
+                                )
+                            }
+                        }
+                        is GpsReceiptDecision.Invalid -> {
+                            db.gpsPoints().markFailed(ids, "recibo_invalido:${decision.reason}")
+                            retryable = true
+                        }
+                    }
+                }
                 is ApiResult.Retryable -> {
                     db.gpsPoints().markFailed(ids, r.reason)
                     retryable = true
@@ -169,7 +226,7 @@ class SyncWorker(
                     db.gpsPoints().markFailed(ids, r.reason)
                     credencialRecusada = true
                 }
-                is ApiResult.Rejected -> db.gpsPoints().markFailed(ids, r.reason)
+                is ApiResult.Rejected -> db.gpsPoints().markRejected(ids, "servidor_rejeitou: ${r.reason}")
             }
         }
 
@@ -185,9 +242,9 @@ class SyncWorker(
         // ficavam `failed` para sempre, sem nada sinalizar.
         if (credencialRecusada) {
             DeviceSession.limparCredencial(db)
-            return Result.retry()
+            return retryOrYield()
         }
-        return if (retryable) Result.retry() else Result.success()
+        return if (retryable) retryOrYield() else Result.success()
     }
 
     private fun ackJson(ack: br.com.tata.entregas.data.TermAckEntity) = JSONObject().apply {
@@ -210,6 +267,9 @@ class SyncWorker(
 
 object SyncScheduler {
 
+    private const val LEGACY_UNIQUE_PERIODIC = "entregas-sync-periodic"
+    private const val LEGACY_UNIQUE_NOW = "entregas-sync-now"
+
     private val constraints = Constraints.Builder()
         .setRequiredNetworkType(NetworkType.CONNECTED)
         .build()
@@ -220,11 +280,16 @@ object SyncScheduler {
      * Este aqui existe para o caso do app ficar fechado com fila pendente.
      */
     fun ensurePeriodic(context: Context) {
+        val manager = WorkManager.getInstance(context)
+        // A v1 podia acumular backoff exponencial por horas. Os nomes v2
+        // impedem herdar esse atraso; cancelar o legado nao toca na fila Room.
+        manager.cancelUniqueWork(LEGACY_UNIQUE_PERIODIC)
+        manager.cancelUniqueWork(LEGACY_UNIQUE_NOW)
         val request = PeriodicWorkRequestBuilder<SyncWorker>(15, TimeUnit.MINUTES)
             .setConstraints(constraints)
-            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
+            .setBackoffCriteria(BackoffPolicy.LINEAR, 30, TimeUnit.SECONDS)
             .build()
-        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+        manager.enqueueUniquePeriodicWork(
             SyncWorker.UNIQUE_PERIODIC,
             ExistingPeriodicWorkPolicy.KEEP,
             request,
@@ -236,11 +301,13 @@ object SyncScheduler {
      * trabalho por ponto capturado — um lote pendente já cobre todos.
      */
     fun requestNow(context: Context) {
+        val manager = WorkManager.getInstance(context)
+        manager.cancelUniqueWork(LEGACY_UNIQUE_NOW)
         val request = OneTimeWorkRequestBuilder<SyncWorker>()
             .setConstraints(constraints)
-            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 15, TimeUnit.SECONDS)
+            .setBackoffCriteria(BackoffPolicy.LINEAR, 15, TimeUnit.SECONDS)
             .build()
-        WorkManager.getInstance(context).enqueueUniqueWork(
+        manager.enqueueUniqueWork(
             SyncWorker.UNIQUE_NOW,
             ExistingWorkPolicy.KEEP,
             request,

@@ -644,14 +644,16 @@ async function main(): Promise<void> {
       const r1 = await ap.sincronizar();
       assert.equal((await fatosDoAparelho(b, ap.deviceId)).length, antes, "aparelho revogado gravou fato");
       const ponto = ap.db.todos().find((p) => p.occurredAt === "2026-09-24T10:07:00.000Z")!;
-      assert.equal(ponto.syncState, "failed");
+      assert.equal(ponto.syncState, "rejected");
       assert.match(ponto.lastError ?? "", /revogado/);
+      assert.equal(ap.db.pendingCount(), 0, "recusa definitiva voltou para a fila automática");
+      assert.equal(ap.db.rejectedCount(), 1, "a revogação deixou de ficar observável no aparelho");
       // Forçar renovação: o bootstrap com o segredo certo também é recusado, e o cliente se marca revogado.
       DeviceSession.limparCredencial(ap.db);
       const r2 = await ap.sincronizar();
       assert.equal(DeviceSession.estaRevogado(ap.db), true, `o cliente não registrou a revogação (${r1}, ${r2})`);
       assert.equal(await ap.sincronizar(), "success", "revogado precisa parar, não insistir");
-      assert.equal(ap.db.pendingCount(), 1, "a revogação apagou o ponto");
+      assert.equal(ap.db.todos().some((p) => p.pointId === ponto.pointId), true, "a revogação apagou o ponto");
       assert.equal((await fatosDoAparelho(b, ap.deviceId)).length, antes);
     });
 
@@ -663,6 +665,13 @@ async function main(): Promise<void> {
         apC.capturar(VIAGEM, -23.55, -46.63, "2026-09-24T10:08:00.000Z", { mock: true });
         assert.equal(await apC.sincronizar(), "success");
         assert.equal((await fatosDoAparelho(b, apC.deviceId)).length, 0, "ponto simulado virou fato");
+        const pontosLocais = apC.db.todos();
+        assert.equal(pontosLocais.length, 1);
+        const ponto = pontosLocais[0];
+        assert.equal(ponto.syncState, "rejected", "o cliente apagou logicamente a recusa do servidor");
+        assert.match(ponto.lastError ?? "", /localização simulada/);
+        assert.equal(apC.db.pendingCount(), 0, "recusa definitiva voltou para o retry automático");
+        assert.equal(apC.db.rejectedCount(), 1, "a recusa não ficou observável no aparelho");
       } finally {
         rmSync(dirC, { recursive: true, force: true });
       }

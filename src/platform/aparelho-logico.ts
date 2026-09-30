@@ -31,7 +31,7 @@ export const CLIENT_SCHEMA_VERSION = "android-client@1.0.0";
  * Room de arquivo
  * ------------------------------------------------------------------ */
 
-export type EstadoDeSync = "pending" | "failed" | "sent";
+export type EstadoDeSync = "pending" | "failed" | "sent" | "rejected";
 
 export interface PontoLocal {
   pointId: string;
@@ -120,8 +120,20 @@ export class RoomDeArquivo {
     }
     this.persistir();
   }
+  markRejected(ids: readonly string[], erro: string): void {
+    for (const p of this.disco.gps_point) {
+      if (!ids.includes(p.pointId)) continue;
+      p.syncState = "rejected";
+      p.attempts += 1;
+      p.lastError = erro;
+    }
+    this.persistir();
+  }
   pendingCount(): number {
-    return this.disco.gps_point.filter((p) => p.syncState !== "sent").length;
+    return this.disco.gps_point.filter((p) => p.syncState === "pending" || p.syncState === "failed").length;
+  }
+  rejectedCount(): number {
+    return this.disco.gps_point.filter((p) => p.syncState === "rejected").length;
   }
   maxSequence(): number {
     return this.disco.gps_point.reduce((m, p) => Math.max(m, p.sequenceLocal), 0);
@@ -305,6 +317,43 @@ export interface OpcoesDoAparelho {
 
 export type ResultadoDeSync = "success" | "retry";
 
+function inteiroNaoNegativo(v: unknown): number | null {
+  return typeof v === "number" && Number.isInteger(v) && v >= 0 ? v : null;
+}
+
+function aplicarReciboGps(db: RoomDeArquivo, pontos: readonly PontoLocal[], value: Record<string, unknown>): boolean {
+  const accepted = inteiroNaoNegativo(value.accepted);
+  const duplicate = inteiroNaoNegativo(value.duplicate ?? value.duplicados);
+  const rejected = inteiroNaoNegativo(value.rejected);
+  const raw = Array.isArray(value.rejections) ? value.rejections : [];
+
+  if (accepted === null || duplicate === null || rejected === null) return false;
+  if (accepted + duplicate + rejected !== pontos.length) return false;
+  if (rejected !== raw.length) return false;
+
+  const byKey = new Map(pontos.map((p) => [p.idempotencyKey, p]));
+  if (byKey.size !== pontos.length) return false;
+
+  const rejectedKeys = new Set<string>();
+  for (const item of raw) {
+    if (!item || typeof item !== "object") return false;
+    const o = item as Record<string, unknown>;
+    const key = typeof o.idempotency_key === "string" ? o.idempotency_key : "";
+    if (!key || rejectedKeys.has(key) || !byKey.has(key)) return false;
+    rejectedKeys.add(key);
+  }
+
+  db.markSent(pontos.filter((p) => !rejectedKeys.has(p.idempotencyKey)).map((p) => p.pointId));
+  for (const item of raw as Record<string, unknown>[]) {
+    const key = String(item.idempotency_key);
+    const motivo = typeof item.motivo === "string" && item.motivo.trim()
+      ? item.motivo.slice(0, 240)
+      : "recusa_sem_motivo";
+    db.markRejected([byKey.get(key)!.pointId], `servidor_rejeitou: ${motivo}`);
+  }
+  return true;
+}
+
 export class AparelhoLogico {
   readonly db: RoomDeArquivo;
   readonly deviceId: string;
@@ -394,7 +443,10 @@ export class AparelhoLogico {
       const r = await api.sendPoints(payloads, correlationId);
       switch (r.tipo) {
         case "ok":
-          db.markSent(ids);
+          if (!aplicarReciboGps(db, points, r.value)) {
+            db.markFailed(ids, "recibo_invalido");
+            retryable = true;
+          }
           break;
         case "retryable":
           db.markFailed(ids, r.reason);
@@ -406,7 +458,7 @@ export class AparelhoLogico {
           credencialRecusada = true;
           break;
         case "rejected":
-          db.markFailed(ids, r.reason);
+          db.markRejected(ids, `servidor_rejeitou: ${r.reason}`);
           break;
       }
     }

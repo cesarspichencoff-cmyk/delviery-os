@@ -6,6 +6,10 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import br.com.tata.entregas.data.EntregasDatabase
 import br.com.tata.entregas.data.GpsPointEntity
 import br.com.tata.entregas.data.TermAckEntity
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -173,6 +177,45 @@ class PersistenceInstrumentedTest {
         assertNotNull("aceite continua válido depois do reinício", found)
         assertEquals("accepted", found!!.status)
         assertEquals(1, db.termAcks().history("rid-1").size)
+    }
+
+    @Test
+    fun rejeitado_fica_no_room_mas_nao_volta_para_envio() = runBlocking {
+        val rejeitado = point(1, "2026-04-01T12:00:00.000Z")
+        db.gpsPoints().insert(rejeitado)
+        db.gpsPoints().markRejected(listOf(rejeitado.pointId), "servidor_rejeitou: teste")
+
+        assertEquals(0, db.gpsPoints().pendingCount())
+        assertEquals(1, db.gpsPoints().rejectedCount())
+        assertEquals(0, db.gpsPoints().nextBatch(100).size)
+        assertEquals(1, db.gpsPoints().countForTrip("trip-1"))
+    }
+
+    @Test
+    fun sequencia_e_unica_e_nao_recicla_depois_de_expurgo_e_reinicio() = runBlocking {
+        coroutineScope {
+            (0 until 32).map { i ->
+                async(Dispatchers.IO) {
+                    val at = "2026-04-01T12:00:${i.toString().padStart(2, '0')}.000Z"
+                    db.insertGpsSequenced(point(0, at), 1_000L + i)
+                }
+            }.awaitAll()
+        }
+
+        val before = db.gpsPoints().nextBatch(100)
+        assertEquals(32, before.size)
+        assertEquals((1L..32L).toList(), before.map { it.sequenceLocal }.sorted())
+
+        db.gpsPoints().markSent(before.map { it.pointId })
+        assertEquals(32, db.gpsPoints().purgeSyncedBefore(Long.MAX_VALUE))
+
+        db.close()
+        db = open()
+        db.insertGpsSequenced(point(0, "2026-04-01T12:01:00.000Z"), 9_000L)
+
+        val after = db.gpsPoints().nextBatch(100)
+        assertEquals(1, after.size)
+        assertEquals(33L, after.single().sequenceLocal)
     }
 
     @Test

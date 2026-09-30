@@ -305,6 +305,18 @@ test("o portão é consultado antes de pedir posição ao Fused", () => {
   assert.match(svc, /if \(!gate\.allowed\)[\s\S]{0,200}stopBecause/, "portão bloqueado derruba o serviço");
 });
 
+test("primeira inscrição no Fused não corre contra remove assíncrono", () => {
+  const svc = stripComments(
+    read("app/src/main/java/br/com/tata/entregas/location/TripLocationService.kt"),
+  );
+  assert.match(svc, /if \(previous == null\) \{\s*register\(\)/,
+    "primeira inscrição precisa registrar sem remove prévio");
+  assert.match(svc, /removeLocationUpdates\(callback\)\.addOnCompleteListener[\s\S]{0,120}register\(\)/,
+    "troca de cadência precisa esperar remove terminar antes de registrar de novo");
+  assert.match(svc, /requestLocationUpdates[\s\S]{0,400}addOnFailureListener[\s\S]{0,160}stopBecause/,
+    "falha assíncrona de inscrição não pode deixar serviço ativo sem GPS");
+});
+
 test("stop remove o callback do Fused e limpa a viagem ativa", () => {
   const svc = read("app/src/main/java/br/com/tata/entregas/location/TripLocationService.kt");
   const stopBody = svc.slice(svc.indexOf("private fun stopBecause"));
@@ -466,10 +478,13 @@ test("o domínio não é duplicado no Kotlin", () => {
  * 6. Sincronização
  * ------------------------------------------------------------------ */
 
-test("worker só marca enviado quando o servidor confirmou", () => {
+test("worker aplica o recibo por ponto e nunca apaga rejeição parcial", () => {
   const w = read("app/src/main/java/br/com/tata/entregas/sync/SyncWorker.kt");
-  assert.match(w, /is ApiResult\.Ok -> db\.gpsPoints\(\)\.markSent\(ids\)/);
+  assert.match(w, /decideGpsReceipt\(/);
+  assert.match(w, /markSent\(decision\.sentIds\)/);
+  assert.match(w, /markRejected\(/);
   assert.match(w, /is ApiResult\.Retryable -> \{[\s\S]{0,120}markFailed/);
+  assert.match(w, /is ApiResult\.Rejected -> db\.gpsPoints\(\)\.markRejected/);
   assert.match(w, /Result\.retry\(\)/);
 });
 
@@ -479,16 +494,27 @@ test("erro do servidor distingue retentável de recusa definitiva", () => {
   assert.match(api, /else -> ApiResult\.Retryable/);
 });
 
-test("sincronização exige rede e tem backoff exponencial", () => {
+test("sincronização exige rede e não deixa backoff antigo bloquear fato novo", () => {
   const w = read("app/src/main/java/br/com/tata/entregas/sync/SyncWorker.kt");
   assert.match(w, /setRequiredNetworkType\(NetworkType\.CONNECTED\)/);
-  assert.match(w, /BackoffPolicy\.EXPONENTIAL/);
-  assert.match(w, /ExistingWorkPolicy\.KEEP/, "não empilha um trabalho por ponto");
+  assert.match(w, /BackoffPolicy\.LINEAR/);
+  assert.match(w, /FAST_RETRY_RUNS = 3/);
+  assert.match(w, /entregas-sync-now-v2/);
+  assert.match(w, /entregas-sync-periodic-v2/);
+  assert.match(w, /cancelUniqueWork\(LEGACY_UNIQUE_NOW\)/);
+  assert.match(w, /ExistingWorkPolicy\.KEEP/, "não cancela sync em curso nem empilha um trabalho por ponto");
+  assert.doesNotMatch(w, /BackoffPolicy\.EXPONENTIAL/);
 });
 
-test("lote sai ordenado por sequence_local", () => {
+test("lote sai ordenado e a sequência sobrevive a concorrência, restart e expurgo", () => {
   const db = read("app/src/main/java/br/com/tata/entregas/data/EntregasDatabase.kt");
+  const svc = read("app/src/main/java/br/com/tata/entregas/location/TripLocationService.kt");
   assert.match(db, /ORDER BY sequenceLocal ASC/);
+  assert.match(db, /KEY_GPS_SEQUENCE = "gps_sequence_local"/);
+  assert.match(db, /withTransaction/);
+  assert.match(db, /maxOf\(persisted, gpsPoints\(\)\.maxSequence\(\)\)/);
+  assert.match(svc, /Mutex\(\)/);
+  assert.match(svc, /insertGpsSequenced\(/);
 });
 
 test("expurgo de retenção só remove o que já subiu", () => {

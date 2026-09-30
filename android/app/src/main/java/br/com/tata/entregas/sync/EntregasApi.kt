@@ -5,6 +5,7 @@ import org.json.JSONObject
 import java.io.BufferedReader
 import java.net.HttpURLConnection
 import java.net.URL
+import java.net.URLEncoder
 import javax.net.ssl.HttpsURLConnection
 
 /**
@@ -132,6 +133,16 @@ class EntregasApi(
     fun policies(): ApiResult<JSONObject> = request("/api/policies", "GET", null)
 
     fun health(): ApiResult<JSONObject> = request("/api/health", "GET", null)
+
+    /**
+     * Controle nativo de captura. O piloto continua dono da viagem; esta leitura
+     * só pergunta se a viagem a que o foreground service está preso ainda deve
+     * manter GPS ativo.
+     */
+    fun captureState(tripId: String): ApiResult<JSONObject> {
+        val encoded = URLEncoder.encode(tripId, Charsets.UTF_8.name())
+        return request("/api/device/capture-state?trip_id=$encoded", "GET", null)
+    }
 
     /**
      * Envia um lote de pontos. O servidor deduplica por `idempotency_key`;

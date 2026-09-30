@@ -12,7 +12,7 @@
 
 import { autenticarDispositivo, corpoDeRecusa } from "../auth/device-auth";
 import type { RegistroDeDispositivos } from "../ingest/device-ingest";
-import { traduzirLoteGps, montarRecibo, type LoteGpsAndroid } from "../ingest/device-ingest";
+import { traduzirLoteGps, montarRecibo, type LoteGpsAndroid, type PontoAndroid } from "../ingest/device-ingest";
 import { ingerir, type EscritorTransacional } from "../ingest/ingest-service";
 import { limparSegredos } from "../auth/device-token";
 import type { SourceMode } from "../contracts/event-catalog";
@@ -88,8 +88,9 @@ export async function tratarLoteGps(
 
   // Traduz o formato que o Android já fala. Mudar o Kotlin significaria
   // reinstalar em cada aparelho em campo; o servidor é a peça barata.
+  const corpo = (corpoBruto ?? {}) as LoteGpsAndroid;
   const lote = await traduzirLoteGps({
-    corpo: (corpoBruto ?? {}) as LoteGpsAndroid,
+    corpo,
     device_id_autenticado: auth.claims.device_id,
     registro: deps.registro,
     recebido_em: agora,
@@ -124,6 +125,7 @@ export async function tratarLoteGps(
     resultado: { ...lote, rejeitados: [...lote.rejeitados, ...r.recusados.map((x) => ({ idempotency_key: x.idempotency_key, motivo: x.motivo }))] },
     gravados: r.gravados,
     recebido_em: agora,
+    pontos: corpo.points as PontoAndroid[],
   });
 
   // Duplicata é sucesso: o fato já está gravado e o aparelho pode limpar a

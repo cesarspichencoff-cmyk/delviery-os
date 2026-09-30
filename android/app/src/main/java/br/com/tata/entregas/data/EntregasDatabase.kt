@@ -10,6 +10,7 @@ import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.withTransaction
 
 /**
  * Persistência local. O aparelho é a primeira fonte durável: o ponto é
@@ -42,7 +43,7 @@ data class GpsPointEntity(
     val isMock: Boolean,
     val capturedOffline: Boolean,
     val sequenceLocal: Long,
-    /** pending · sending · sent · failed */
+    /** pending · sending · sent · failed · rejected */
     val syncState: String,
     val attempts: Int,
     val lastError: String?,
@@ -116,8 +117,14 @@ interface GpsPointDao {
     @Query("UPDATE gps_point SET syncState = 'failed', attempts = attempts + 1, lastError = :error WHERE pointId IN (:ids)")
     suspend fun markFailed(ids: List<String>, error: String)
 
+    @Query("UPDATE gps_point SET syncState = 'rejected', attempts = attempts + 1, lastError = :error WHERE pointId IN (:ids)")
+    suspend fun markRejected(ids: List<String>, error: String)
+
     @Query("SELECT COUNT(*) FROM gps_point WHERE syncState IN ('pending','failed')")
     suspend fun pendingCount(): Int
+
+    @Query("SELECT COUNT(*) FROM gps_point WHERE syncState = 'rejected'")
+    suspend fun rejectedCount(): Int
 
     @Query("SELECT COUNT(*) FROM gps_point WHERE tripId = :tripId")
     suspend fun countForTrip(tripId: String): Int
@@ -200,11 +207,36 @@ abstract class EntregasDatabase : RoomDatabase() {
     abstract fun termAcks(): TermAckDao
     abstract fun deviceState(): DeviceStateDao
 
+    /**
+     * Reserva a sequência e grava o ponto na MESMA transação.
+     *
+     * O contador persistente impede reciclar número depois de restart ou
+     * expurgo. O MAX protege a adoção em bancos criados antes deste contador.
+     * Inserção IGNORE não consome sequência.
+     */
+    suspend fun insertGpsSequenced(point: GpsPointEntity, nowMs: Long): Long = withTransaction {
+        val persisted = deviceState().get(KEY_GPS_SEQUENCE)?.toLongOrNull() ?: 0L
+        val baseline = maxOf(persisted, gpsPoints().maxSequence())
+        val next = baseline + 1L
+        val inserted = gpsPoints().insert(point.copy(sequenceLocal = next))
+        if (inserted != -1L) {
+            deviceState().put(
+                DeviceStateEntity(
+                    key = KEY_GPS_SEQUENCE,
+                    value = next.toString(),
+                    updatedAtMs = nowMs,
+                ),
+            )
+        }
+        inserted
+    }
+
     companion object {
         const val KEY_ACTIVE_TRIP = "active_trip_id"
         const val KEY_DEVICE_ID = "device_id"
         const val KEY_RIDER_ID = "rider_id"
         const val KEY_SESSION_TOKEN = "session_token"
+        const val KEY_GPS_SEQUENCE = "gps_sequence_local"
 
         @Volatile
         private var instance: EntregasDatabase? = null

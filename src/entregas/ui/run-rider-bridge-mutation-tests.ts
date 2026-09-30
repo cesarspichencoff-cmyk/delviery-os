@@ -50,6 +50,21 @@ function teste(nome: string, fn: () => void): void {
 /** Piloto que sobrou de um gate interrompido não pode contaminar o próximo. */
 function limparPilotos(): void {
   try {
+    if (process.platform === "win32") {
+      // Mata somente Node cujo command line contém o servidor de piloto deste
+      // harness. Nunca usa taskkill por nome, que poderia derrubar outro Node.
+      execFileSync(
+        "powershell.exe",
+        [
+          "-NoProfile",
+          "-Command",
+          "$me=$PID; Get-CimInstance Win32_Process | Where-Object { $_.ProcessId -ne $me -and $_.CommandLine -like '*tools/entregas_pilot_server.ts*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }",
+        ],
+        { stdio: "ignore" },
+      );
+      return;
+    }
+
     const linhas = execSync("ps -eo pgid,args", { encoding: "utf8" }).split("\n");
     const grupos = new Set(
       linhas
@@ -65,31 +80,42 @@ function limparPilotos(): void {
       }
     }
   } catch {
-    /* ps ausente: nada a limpar */
+    /* limpeza é melhor esforço; o gate ainda precisa produzir sua própria prova */
   }
 }
 
 type Gate = "regra" | "navegador" | "servidor" | "android";
 
+function comandoNpx(args: string[]): [string, string[]] {
+  return process.platform === "win32"
+    ? ["cmd.exe", ["/d", "/s", "/c", "npx.cmd", ...args]]
+    : ["npx", args];
+}
+
 function rodar(gate: Gate): { ok: boolean; saida: string } {
   const comando: Record<Gate, [string, string[]]> = {
-    regra: ["npx", ["tsx", "src/entregas/ui/run-rider-capture-tests.ts"]],
-    navegador: ["npx", ["tsx", "src/entregas/ui/run-rider-bridge-tests.ts"]],
+    regra: comandoNpx(["tsx", "src/entregas/ui/run-rider-capture-tests.ts"]),
+    navegador: comandoNpx(["tsx", "src/entregas/ui/run-rider-bridge-tests.ts"]),
     servidor: ["node", ["dist/src/entregas/android/run-device-api-tests.js"]],
-    android: ["npx", ["tsx", "src/entregas/android/run-android-project-tests.ts"]],
+    android: comandoNpx(["tsx", "src/entregas/android/run-android-project-tests.ts"]),
   };
   if (gate === "servidor") {
     // O gate sobe o servidor COMPILADO: sem rebuild, a mutação ficaria cega.
     try {
-      execFileSync("npx", ["tsc"], { cwd: raiz, encoding: "utf8", timeout: 600_000 });
+      const [bin, args] = comandoNpx(["tsc"]);
+      execFileSync(bin, args, { cwd: raiz, encoding: "utf8", timeout: 600_000 });
     } catch (e) {
       const err = e as { stdout?: string; stderr?: string };
       return { ok: false, saida: `__BUILD__${err.stdout ?? ""}${err.stderr ?? ""}` };
     }
   }
   const [bin, args] = comando[gate];
+  const env =
+    gate === "navegador"
+      ? { ...process.env, RIDER_BRIDGE_FAIL_FAST: "1" }
+      : { ...process.env };
   try {
-    const saida = execFileSync(bin, args, { cwd: raiz, encoding: "utf8", timeout: 1_200_000, env: { ...process.env } });
+    const saida = execFileSync(bin, args, { cwd: raiz, encoding: "utf8", timeout: 1_200_000, env });
     return { ok: true, saida };
   } catch (e) {
     const err = e as { stdout?: string; stderr?: string; code?: string };
@@ -138,9 +164,14 @@ function aplicar(edicoes: readonly Edicao[]): Aplicada[] {
         feitas.push({ arquivo: e.arquivo, original: atual, hash: sha(atual) });
         emCurso = feitas;
       }
-      const vezes = atual.split(e.de).length - 1;
+      // Anchors são escritos com LF no fonte do harness; o working tree
+      // pode estar em CRLF no Windows. A mutação deve medir código, não EOL.
+      const eol = atual.includes("\r\n") ? "\r\n" : "\n";
+      const de = e.de.replace(/\r?\n/g, eol);
+      const para = e.para.replace(/\r?\n/g, eol);
+      const vezes = atual.split(de).length - 1;
       assert.equal(vezes, 1, `MUTACAO NAO APLICADA: ancora aparece ${vezes}x em ${e.arquivo}: ${e.de.slice(0, 70)}`);
-      const novo = atual.replace(e.de, () => e.para);
+      const novo = atual.replace(de, () => para);
       assert.notEqual(novo, atual, `MUTACAO NAO APLICADA: a troca nao mudou ${e.arquivo}`);
       writeFileSync(caminho, novo);
       assert.equal(readFileSync(caminho, "utf8"), novo, `MUTACAO NAO APLICADA: o disco nao confirmou ${e.arquivo}`);
@@ -181,6 +212,10 @@ const API = "src/entregas/pilot/device-api.ts";
 const PILOTO = "tools/entregas_pilot_server.ts";
 const MAIN = "android/app/src/main/java/br/com/tata/entregas/ui/MainActivity.kt";
 const PONTE = "android/app/src/main/java/br/com/tata/entregas/bridge/EntregasBridge.kt";
+const ALVOS_MUTAVEIS = [REGRA, RIDER, API, PILOTO, MAIN, PONTE] as const;
+const HASH_INICIAL = new Map(
+  ALVOS_MUTAVEIS.map((arquivo) => [arquivo, sha(readFileSync(join(raiz, arquivo), "utf8"))]),
+);
 
 /* ---- controle positivo ---- */
 console.log("0. CONTROLE POSITIVO — todo gate verde ANTES de mutar");
@@ -415,17 +450,17 @@ mutacao({
 
 /* ---- fecho ---- */
 try {
-  // O último gate de servidor compilou código mutado: dist volta ao limpo.
-  execFileSync("npx", ["tsc"], { cwd: raiz, encoding: "utf8", timeout: 600_000 });
+  // O último gate de servidor compilou código mutado: dist volta ao estado atual.
+  const [bin, args] = comandoNpx(["tsc"]);
+  execFileSync(bin, args, { cwd: raiz, encoding: "utf8", timeout: 600_000 });
 } catch {
   falhas.push("rebuild final de dist falhou");
 }
-teste("nenhum arquivo mutado ficou diferente do commit", () => {
-  const sujos = execFileSync("git", ["status", "--porcelain", "--", REGRA, RIDER, API, PILOTO, MAIN, PONTE], {
-    cwd: raiz,
-    encoding: "utf8",
-  }).trim();
-  assert.equal(sujos, "", `arquivos alterados depois da suíte:\n${sujos}`);
+teste("nenhum arquivo mutado ficou diferente do estado inicial da suíte", () => {
+  for (const arquivo of ALVOS_MUTAVEIS) {
+    const atual = sha(readFileSync(join(raiz, arquivo), "utf8"));
+    assert.equal(atual, HASH_INICIAL.get(arquivo), `arquivo não restaurado byte a byte: ${arquivo}`);
+  }
 });
 
 const total = passaram + falhas.length;

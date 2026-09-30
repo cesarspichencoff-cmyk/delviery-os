@@ -158,6 +158,21 @@ teste("contrato inválido não grava, e o motivo é específico", async () => {
   assert.equal(r.corpo.rejected, 1);
 });
 
+teste("recusa tardia não vira duplicata e trava o ack antes do buraco", async () => {
+  const p = new Plataforma();
+  const r = await chamarRota(p, [
+    ponto(1),
+    ponto(2, { accuracy_m: -1 }),
+    ponto(3),
+  ]);
+  assert.equal(r.status, 200);
+  assert.equal(r.corpo.accepted, 2);
+  assert.equal(r.corpo.duplicate, 0);
+  assert.equal(r.corpo.rejected, 1);
+  assert.equal(r.corpo.ack_through_sequence, 1);
+  assert.equal(p.fatos.length, 2);
+});
+
 teste("falha de persistência é 503 retentável, nunca 200", async () => {
   const p = new Plataforma();
   p.falhar = true;

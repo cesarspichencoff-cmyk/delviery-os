@@ -91,9 +91,14 @@ function aplicar(edicoes: readonly Edicao[]): Aplicada[] {
         feitas.push({ arquivo: e.arquivo, original, hash: sha(original) });
       }
       const atual = readFileSync(caminho, "utf8");
-      const n = atual.split(e.de).length - 1;
+      // A árvore pode estar materializada com LF (Linux/CI) ou CRLF
+      // (checkout Windows). A mutação prova semântica, não estilo de EOL.
+      const eol = atual.includes("\r\n") ? "\r\n" : "\n";
+      const de = e.de.replace(/\r?\n/g, eol);
+      const para = e.para.replace(/\r?\n/g, eol);
+      const n = atual.split(de).length - 1;
       assert.equal(n, 1, `MUTACAO NAO APLICADA: âncora com ${n} ocorrência(s) em ${e.arquivo}: ${e.de.slice(0, 70)}`);
-      const novo = atual.replace(e.de, () => e.para);
+      const novo = atual.replace(de, () => para);
       assert.notEqual(novo, atual, `MUTACAO NAO APLICADA: a troca não mudou ${e.arquivo}`);
       writeFileSync(caminho, novo);
       assert.equal(readFileSync(caminho, "utf8"), novo, `MUTACAO NAO APLICADA: o disco não confirmou ${e.arquivo}`);
@@ -245,6 +250,26 @@ mutacao({
   propriedade: "lote repetido duplica fato — o cliente troca a chave a cada envio",
   edicoes: [{ arquivo: CLIENTE, de: `        idempotency_key: p.idempotencyKey,\n`, para: `        idempotency_key: \`\${p.idempotencyKey}:\${correlationId}\`,\n` }],
   assinatura: /XX {2}C14 /,
+});
+
+mutacao({
+  id: "M7b",
+  propriedade: "recibo 200 parcial APAGA o ponto recusado — cliente marca o lote inteiro como sent",
+  edicoes: [{
+    arquivo: CLIENTE,
+    de:
+      `        case "ok":\n` +
+      `          if (!aplicarReciboGps(db, points, r.value)) {\n` +
+      `            db.markFailed(ids, "recibo_invalido");\n` +
+      `            retryable = true;\n` +
+      `          }\n` +
+      `          break;\n`,
+    para:
+      `        case "ok":\n` +
+      `          db.markSent(ids);\n` +
+      `          break;\n`,
+  }],
+  assinatura: /XX {2}N1 /,
 });
 
 /* ================================================================== */

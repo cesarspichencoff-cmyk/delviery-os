@@ -193,7 +193,7 @@ diferentes inteligências. Política de acesso desse repositório é `Q-012`, ai
   capacidades nativas, sem UI nativa nova. Entregas mudou por essa decisão explícita, e só na
   interação (rider-mobile), na API do aparelho no piloto e na ponte — domínio, comandos e
   máquina de estados intocados. Reproduzido antes (9/22, quatro vazios); 21 mutações, zero cegas.
-  O Kotlin não compilou aqui e nada rodou em aparelho: o primeiro fato do app é `NOT_RUN`.
+  O limite histórico do Kotlin foi fechado em **2026-09-30 no Foxxy/AVD Android 14**: o APK final sem helper de mock passou `connectedDebugAndroidTest` **10/10**, além das provas de captura/persistência, sequência durável, restart, retry/sync e encerramento. **Aparelho físico real segue `NOT_RUN`.**
   **2026-09-26:** push dos 6 commits autorizado e confirmado; a data fixa vencida fechada como classe
   (gate de data civil, 12/12); termo sintético de laboratório com trava no boot do piloto (10/10); a
   cadeia do emulador ensaiada na nuvem com os binários reais até a fronteira do Kotlin (37/37).

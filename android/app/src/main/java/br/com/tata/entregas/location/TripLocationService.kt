@@ -13,10 +13,14 @@ import android.os.IBinder
 import android.os.PowerManager
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
+import br.com.tata.entregas.BuildConfig
 import br.com.tata.entregas.bridge.Bridge
 import br.com.tata.entregas.data.EntregasDatabase
 import br.com.tata.entregas.data.GpsPointEntity
 import br.com.tata.entregas.notify.TripNotification
+import br.com.tata.entregas.sync.ApiResult
+import br.com.tata.entregas.sync.DeviceSession
+import br.com.tata.entregas.sync.EntregasApi
 import br.com.tata.entregas.sync.SyncScheduler
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationAvailability
@@ -24,11 +28,17 @@ import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /**
  * Serviço de localização da viagem.
@@ -47,6 +57,8 @@ class TripLocationService : Service() {
         const val ACTION_START = "br.com.tata.entregas.START_TRIP_CAPTURE"
         const val ACTION_STOP = "br.com.tata.entregas.STOP_TRIP_CAPTURE"
         const val EXTRA_TRIP_ID = "trip_id"
+        private const val CAPTURE_CONTROL_INTERVAL_MS = 15_000L
+        private const val CAPTURE_CONTROL_TIMEOUT_MS = 5_000
 
         /** Só existe um caminho para ligar, e ele exige trip_id. */
         fun start(context: Context, tripId: String) {
@@ -68,6 +80,7 @@ class TripLocationService : Service() {
     private lateinit var fused: FusedLocationProviderClient
     private lateinit var db: EntregasDatabase
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val persistMutex = Mutex()
 
     private var tripId: String? = null
     private var deviceId: String = ""
@@ -77,6 +90,7 @@ class TripLocationService : Service() {
     private var freshness: String = "unknown"
     private var pendingSync: Int = 0
     private var recoveredAfterRestart: Boolean = false
+    private var captureControlJob: Job? = null
 
     private val callback = object : LocationCallback() {
         override fun onLocationResult(result: LocationResult) {
@@ -166,8 +180,65 @@ class TripLocationService : Service() {
             policy = PolicyStore.load(db)
             requestUpdates(decideNow())
             Bridge.publishServiceState(serviceStateJson())
+            startCaptureControlLoop(trip)
         }
         SyncScheduler.ensurePeriodic(this)
+    }
+
+    /**
+     * Continua funcionando com WebView e processo da UI ausentes.
+     *
+     * A rede nunca decide que a viagem acabou: timeout/5xx/credencial renovável
+     * preservam a captura. Só uma resposta autoritativa do piloto ou uma
+     * revogação terminal encerram o foreground service.
+     */
+    private fun startCaptureControlLoop(boundTrip: String) {
+        captureControlJob?.cancel()
+        captureControlJob = scope.launch {
+            while (isActive && tripId == boundTrip) {
+                verifyCaptureState(boundTrip)
+                if (tripId != boundTrip) break
+                delay(CAPTURE_CONTROL_INTERVAL_MS)
+            }
+        }
+    }
+
+    private suspend fun verifyCaptureState(boundTrip: String) {
+        if (!NetworkState.isOnline(this@TripLocationService)) return
+
+        val session = DeviceSession.sessaoAtual(db)
+        if (session == null) {
+            SyncScheduler.requestNow(this@TripLocationService)
+            return
+        }
+
+        val pilot = EntregasApi(
+            BuildConfig.ENTREGAS_BASE_URL,
+            { session.token },
+            CAPTURE_CONTROL_TIMEOUT_MS,
+        )
+        val action = when (val result = pilot.captureState(boundTrip)) {
+            is ApiResult.Ok -> RemoteCaptureControl.success(
+                hasCapture = result.value.has("capture"),
+                capture = result.value.optBoolean("capture", true),
+            )
+            is ApiResult.Unauthorized -> RemoteCaptureControl.unauthorized()
+            is ApiResult.Rejected -> RemoteCaptureControl.rejected(result.status)
+            is ApiResult.Retryable -> RemoteCaptureControl.retryable()
+        }
+
+        when (action) {
+            is RemoteCaptureAction.Keep -> {
+                // Rede/5xx/4xx não terminal/200 incompleto: UNKNOWN nunca vira fim.
+            }
+            is RemoteCaptureAction.RenewCredential -> {
+                DeviceSession.limparCredencial(db)
+                SyncScheduler.requestNow(this@TripLocationService)
+            }
+            is RemoteCaptureAction.Stop -> {
+                if (tripId == boundTrip) stopBecause(action.reason)
+            }
+        }
     }
 
     private fun startInForeground() {
@@ -198,26 +269,44 @@ class TripLocationService : Service() {
             stopBecause("permissao_revogada")
             return
         }
+
+        val previous = currentDecision
         currentDecision = decision
-        fused.removeLocationUpdates(callback)
-        try {
-            // hasLocationPermission() já confirmou a permissão acima, mas o
-            // Android pode revogá-la NA JANELA entre essa checagem e esta
-            // chamada — o usuário pode desligar nas configurações do sistema
-            // a qualquer momento, inclusive com o app em primeiro plano. O
-            // try/catch cobre esse caso real, e não só a análise estática do
-            // lint: se a permissão sumir aqui, o serviço para do mesmo jeito
-            // que pararia se hasLocationPermission() já tivesse detectado.
-            fused.requestLocationUpdates(
-                CapturePolicy.buildRequest(decision),
-                callback,
-                mainLooper,
-            )
-        } catch (e: SecurityException) {
-            stopBecause("permissao_revogada")
-            return
+
+        fun register() {
+            if (tripId == null) return
+            try {
+                // A Task é assíncrona. Só tratamos a inscrição como válida
+                // depois do sucesso; falha não pode deixar um FGS "ativo"
+                // sem callback registrado no Fused Location Provider.
+                fused.requestLocationUpdates(
+                    CapturePolicy.buildRequest(decision),
+                    callback,
+                    mainLooper,
+                ).addOnSuccessListener {
+                    if (tripId != null) {
+                        Bridge.publishServiceState(serviceStateJson())
+                        updateNotification()
+                    }
+                }.addOnFailureListener {
+                    if (tripId != null) stopBecause("falha_inscricao_localizacao")
+                }
+            } catch (e: SecurityException) {
+                stopBecause("permissao_revogada")
+            }
         }
-        updateNotification()
+
+        if (previous == null) {
+            // Primeira inscrição: remover antes cria uma corrida assíncrona em
+            // que o remove pode concluir DEPOIS do request e apagar a inscrição.
+            register()
+        } else {
+            // Mudança de cadência: só registra a nova política depois que a
+            // remoção anterior terminou de verdade.
+            fused.removeLocationUpdates(callback).addOnCompleteListener {
+                register()
+            }
+        }
     }
 
     private fun decideNow(): CaptureDecision {
@@ -245,36 +334,46 @@ class TripLocationService : Service() {
     }
 
     private fun persist(point: CanonicalGpsPoint) {
-        scope.launch {
-            val seq = db.gpsPoints().maxSequence() + 1
-            db.gpsPoints().insert(
-                GpsPointEntity(
-                    pointId = point.pointId,
-                    idempotencyKey = point.idempotencyKey,
-                    tripId = point.tripId,
-                    deviceId = point.deviceId,
-                    latitude = point.latitude,
-                    longitude = point.longitude,
-                    accuracyM = point.accuracyM,
-                    speedMps = point.speedMps,
-                    headingDeg = point.headingDeg,
-                    altitudeM = point.altitudeM,
-                    occurredAt = point.occurredAt,
-                    elapsedRealtimeNanos = point.elapsedRealtimeNanos,
-                    provider = point.provider,
-                    isMock = point.isMock,
-                    capturedOffline = point.capturedOffline,
-                    sequenceLocal = seq,
-                    syncState = "pending",
-                    attempts = 0,
-                    lastError = null,
-                    createdAtMs = System.currentTimeMillis(),
-                ),
-            )
-            lastAccuracyM = point.accuracyM
-            pendingSync = db.gpsPoints().pendingCount()
-            updateNotification()
-            SyncScheduler.requestNow(this@TripLocationService)
+        // O callback chega no mainLooper em ordem. UNDISPATCHED entra na fila
+        // do mutex nessa mesma ordem antes de devolver o controle ao callback.
+        // O mutex preserva a ordem observada; o Room, por sua vez, reserva a
+        // sequência e grava o ponto na mesma transação, sobrevivendo a restart
+        // e a futuro expurgo de linhas antigas.
+        scope.launch(start = CoroutineStart.UNDISPATCHED) {
+            persistMutex.withLock {
+                val nowMs = System.currentTimeMillis()
+                val inserted = db.insertGpsSequenced(
+                    GpsPointEntity(
+                        pointId = point.pointId,
+                        idempotencyKey = point.idempotencyKey,
+                        tripId = point.tripId,
+                        deviceId = point.deviceId,
+                        latitude = point.latitude,
+                        longitude = point.longitude,
+                        accuracyM = point.accuracyM,
+                        speedMps = point.speedMps,
+                        headingDeg = point.headingDeg,
+                        altitudeM = point.altitudeM,
+                        occurredAt = point.occurredAt,
+                        elapsedRealtimeNanos = point.elapsedRealtimeNanos,
+                        provider = point.provider,
+                        isMock = point.isMock,
+                        capturedOffline = point.capturedOffline,
+                        sequenceLocal = 0L,
+                        syncState = "pending",
+                        attempts = 0,
+                        lastError = null,
+                        createdAtMs = nowMs,
+                    ),
+                    nowMs,
+                )
+                // IGNORE de pointId repetido não consome número da sequência.
+                if (inserted == -1L) return@withLock
+                lastAccuracyM = point.accuracyM
+                pendingSync = db.gpsPoints().pendingCount()
+                updateNotification()
+                SyncScheduler.requestNow(this@TripLocationService)
+            }
         }
     }
 
@@ -308,6 +407,8 @@ class TripLocationService : Service() {
      * Room e derruba o serviço. Depois disto nenhum ponto novo é possível.
      */
     private fun stopBecause(reason: String) {
+        captureControlJob?.cancel()
+        captureControlJob = null
         fused.removeLocationUpdates(callback)
         tripId = null
         currentDecision = null

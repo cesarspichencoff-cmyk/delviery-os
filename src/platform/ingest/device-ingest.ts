@@ -315,14 +315,24 @@ export function montarRecibo(args: {
   resultado: ResultadoIngest;
   gravados: number;
   recebido_em: Date;
+  /** Lote original: permite recalcular o ack depois de recusas tardias. */
+  pontos?: readonly PontoAndroid[];
 }): Recibo {
-  const aceitos = args.resultado.fatos.length;
+  const aceitosNaTraducao = args.resultado.fatos.length;
+  const chavesTraduzidas = new Set(args.resultado.fatos.map((f) => f.idempotency_key));
+  const recusasAposTraducao = args.resultado.rejeitados
+    .filter((r) => chavesTraduzidas.has(r.idempotency_key))
+    .length;
+  const ack = args.pontos
+    ? calcularAck(args.pontos, args.resultado.rejeitados)
+    : args.resultado.ack_through_sequence;
+
   return {
     received_at: args.recebido_em.toISOString(),
     accepted: args.gravados,
-    duplicate: Math.max(0, aceitos - args.gravados),
+    duplicate: Math.max(0, aceitosNaTraducao - args.gravados - recusasAposTraducao),
     rejected: args.resultado.rejeitados.length,
-    ack_through_sequence: args.resultado.ack_through_sequence,
+    ack_through_sequence: ack,
     rejections: args.resultado.rejeitados,
     ingest_version: INGEST_VERSION,
   };

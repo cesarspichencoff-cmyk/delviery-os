@@ -21,8 +21,8 @@
  */
 
 import assert from "node:assert/strict";
-import { spawn, type ChildProcess } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { execFileSync, spawn, type ChildProcess } from "node:child_process";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -42,6 +42,7 @@ const DEVICE_FALSO = "dev-ponte-falsa-01";
 
 let passou = 0;
 const falhas: string[] = [];
+const FAIL_FAST = process.env.RIDER_BRIDGE_FAIL_FAST === "1";
 async function teste(nome: string, corpo: () => Promise<void>): Promise<void> {
   try {
     await corpo();
@@ -51,6 +52,7 @@ async function teste(nome: string, corpo: () => Promise<void>): Promise<void> {
     const m = e instanceof Error ? e.message.split("\n")[0] : String(e);
     falhas.push(`${nome}: ${m}`);
     console.log(`  XX  ${nome}: ${m}`);
+    if (FAIL_FAST) throw e;
   }
 }
 
@@ -108,7 +110,13 @@ async function subirPiloto(opcoes: { flagGps: boolean; termoPublicavel: boolean 
   };
   delete (env as Record<string, string | undefined>).ENTREGAS_BIND;
   delete (env as Record<string, string | undefined>).ENTREGAS_HTTPS;
-  const processo = spawn("npx", ["tsx", "tools/entregas_pilot_server.ts"], {
+  const separador = process.platform === "win32" ? ";" : ":";
+  const tsxCli = (process.env.PATH ?? "")
+    .split(separador)
+    .map((bin) => join(bin, "..", "tsx", "dist", "cli.mjs"))
+    .find((candidato) => existsSync(candidato));
+  if (!tsxCli) throw new Error("tsx_cli_nao_localizado_no_path");
+  const processo = spawn(process.execPath, [tsxCli, "tools/entregas_pilot_server.ts"], {
     cwd: RAIZ,
     env,
     stdio: ["ignore", "pipe", "pipe"],
@@ -133,7 +141,13 @@ async function subirPiloto(opcoes: { flagGps: boolean; termoPublicavel: boolean 
 
 function derrubar(p: Piloto): void {
   try {
-    if (p.processo.pid) process.kill(-p.processo.pid, "SIGTERM");
+    if (p.processo.pid) {
+      if (process.platform === "win32") {
+        execFileSync("taskkill", ["/PID", String(p.processo.pid), "/T", "/F"], { stdio: "ignore" });
+      } else {
+        process.kill(-p.processo.pid, "SIGTERM");
+      }
+    }
   } catch {
     /* já saiu */
   }

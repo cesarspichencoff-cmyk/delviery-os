@@ -52,6 +52,8 @@ import {
   timelineIsClean,
 } from "../src/entregas/pilot/trip-timeline";
 import { freshnessOf } from "../src/entregas/pilot/dispatch-projection";
+import { consultarIdentidadeDoAparelho } from "../src/entregas/pilot/device-identity-client";
+import { decidirControleDeCaptura } from "../src/entregas/pilot/capture-control";
 import type { GPSPoint } from "../src/entregas/gps/types";
 
 const configPath = process.env.ENTREGAS_PILOT_CONFIG;
@@ -92,6 +94,11 @@ if (!cloudResult.ok) {
 const cloud = cloudResult.config;
 
 const PORT = Number(process.env.ENTREGAS_UI_PORT || cfg.port || 5193);
+/**
+ * Plataforma que atesta o Bearer nativo. Vazio não derruba o piloto: somente
+ * a rota de controle de captura responde UNKNOWN/503 até ser configurada.
+ */
+const PLATFORM_URL = (process.env.ENTREGAS_PLATFORM_URL || "").trim().replace(/\/$/, "");
 
 /*
  * TLS e bind. Falha fechada: pedir HTTPS e não ter certificado derruba o
@@ -421,6 +428,58 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
         String(r.body.code ?? ""),
       );
       return reply(r.status, { ...r.body, unit_id: cfg.unit_id });
+    }
+
+    if (url.pathname === "/api/device/capture-state" && req.method === "GET") {
+      const tripId = (url.searchParams.get("trip_id") || "").trim();
+      if (!tripId) return reply(400, { ok: false, human: "trip_id obrigatório" });
+
+      const authorization =
+        typeof req.headers.authorization === "string" ? req.headers.authorization : undefined;
+      const identidade = await consultarIdentidadeDoAparelho({
+        platformBaseUrl: PLATFORM_URL,
+        authorization,
+        timeoutMs: 2_000,
+      });
+
+      if (!identidade.ok) {
+        if (identidade.kind === "renew") {
+          return reply(401, {
+            ok: false,
+            unknown: true,
+            instrucao: "renovar_e_repetir",
+            human: identidade.human,
+          });
+        }
+        if (identidade.kind === "terminal") {
+          // 410 diferencia revogação terminal atestada pela plataforma de um
+          // 403 que possa ter sido produzido por proxy/WAF antes de chegar aqui.
+          return reply(410, {
+            ok: false,
+            terminal: true,
+            instrucao: "parar_e_avisar",
+            human: identidade.human,
+          });
+        }
+        return reply(503, {
+          ok: false,
+          unknown: true,
+          human: "Não foi possível confirmar a viagem agora.",
+        });
+      }
+
+      const trip = await facade.readTripCaptureState(tripId);
+      const decisao = decidirControleDeCaptura(identidade.identity, tripId, trip);
+      if (decisao.decision === "unknown") {
+        return reply(503, { ok: false, unknown: true, reason: decisao.reason });
+      }
+      return reply(200, {
+        ok: true,
+        capture: decisao.decision === "continue",
+        trip_id: tripId,
+        reason: decisao.reason,
+        checked_at: new Date().toISOString(),
+      });
     }
 
     if (url.pathname === "/api/policies" && req.method === "GET") {

@@ -34,6 +34,10 @@ import { carregarCatalogo, ContratoIndisponivel } from "../contracts/event-schem
 import type { SourceMode } from "../contracts/event-catalog";
 import { tratarLoteGps, ROTA_INGESTAO } from "../runtime/rota-ingestao";
 import { tratarSessaoDeAparelho, ROTA_SESSAO } from "../runtime/rota-sessao";
+import {
+  tratarIdentidadeDoDispositivo,
+  ROTA_IDENTIDADE_DISPOSITIVO,
+} from "../runtime/rota-identidade-dispositivo";
 import { CriticalRuntime } from "../runtime/critical";
 import type { FactSink } from "../persistence/platform-uow";
 
@@ -209,6 +213,22 @@ async function main(): Promise<void> {
         depois(corpo);
       });
     };
+
+    if (rota === ROTA_IDENTIDADE_DISPOSITIVO && req.method === "GET") {
+      // Leitura mínima para outro serviço verificar a identidade/revogação
+      // deste Bearer. Não emite token e não toca no domínio operacional.
+      void tratarIdentidadeDoDispositivo(
+        req.headers as Record<string, string | string[] | undefined>,
+        {
+          segredo: segredoDeDispositivo,
+          registro,
+          agora: () => new Date(),
+        },
+      )
+        .then((r) => responder(res, r.status, r.corpo))
+        .catch(() => responder(res, 503, { classe: "falha_de_persistencia", retentavel: true }));
+      return;
+    }
 
     if (rota === ROTA_SESSAO && req.method === "POST") {
       // Bootstrap e renovação da credencial do aparelho. O segredo do
