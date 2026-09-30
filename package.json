@@ -97,6 +97,7 @@
     "test:platform:entregas-live-consumer:pg": "npx tsx src/platform/run-entregas-live-consumer-pg-tests.ts",
     "test:platform:source-ingest": "npx tsc && node dist/src/platform/run-entregas-source-ingest-tests.js",
     "test:platform:source-ingest:pg": "npx tsc && node dist/src/platform/run-source-ingest-role-pg-tests.js",
+    "test:platform:source-ingest:wiring": "npx tsc && node dist/src/platform/run-source-ingest-pilot-wiring-pg-tests.js",
     "test:platform:product": "npx tsx src/platform/run-product-system-tests.ts",
     "test:platform:r1": "npx tsx src/platform/run-recovery-r1-tests.ts",
     "test:platform:home": "npx tsx src/platform/run-home-signals-tests.ts",
