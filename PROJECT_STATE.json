@@ -5,7 +5,7 @@
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "main",
   "checkpoint_type": "SHADOW_READ_ONLY_PREP",
-  "state_basis_head": "bcde55887b24fe7bcde0391d4d5e2f5e38923d5b",
+  "state_basis_head": "14118ab086969a7e0f4f5877f92319c8c5e2e1c5",
   "verified_state_refs": [
     "src/shadow/odhenReadonly.ts",
     "src/shadow/compare.ts",
@@ -92,7 +92,7 @@
   "pending_work": {
     "branch": "shadow/odhen-v132-readonly-prep",
     "pull_request": 11,
-    "status": "REAL_LOG_SHARED_TRAFFIC_PROVEN__ISOLATED_DELIVERY_APPEND_PENDING__PARALLEL_PRINT_TOPOLOGY_SOURCE_MAPPING",
+    "status": "REAL_LOG_SHARED_TRAFFIC_PROVEN__ISOLATED_DELIVERY_APPEND_PENDING__PRINT_TOPOLOGY_SOURCE_MAP_READY",
     "canonical_sha256": "D34583F0A743DF9645914BCDFC1010E6D3AEF72AC74D3A4B7B01F81E305B71E4",
     "cashier_pc": "CAIXA_MOOCA",
     "odhen_root": "C:\\TEKNISA\\odhen-perifericos",
@@ -131,6 +131,7 @@
         "last_write_time_local": "2026-09-29 14:14:53",
         "isolated_one_order": false
       }
-    }
+    },
+    "print_topology_source_map": "docs/Print_Topology_Production_Ticket_Source_Map_V132.md"
   }
 }
