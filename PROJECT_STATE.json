@@ -5,7 +5,7 @@
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "main",
   "checkpoint_type": "SHADOW_READ_ONLY_PREP",
-  "state_basis_head": "90f9f558ad8486805cd4fcc8f54bb2a1a6b82d91",
+  "state_basis_head": "dd2710d0be8c533d231226005d37688bd8eb8566",
   "verified_state_refs": [
     "src/shadow/odhenReadonly.ts",
     "src/shadow/compare.ts",
@@ -15,7 +15,14 @@
     "tools/odhen_source_probe_readonly.ps1",
     "docs/Production_Ticket_Operational_Spec_V1.md",
     "src/production/productionTicket.ts",
-    "tools/verificar_production_ticket_v1.js"
+    "tools/verificar_production_ticket_v1.js",
+    "docs/Production_Parallel_Core_V1.md",
+    "src/production/tataSequence.ts",
+    "src/production/kitchenDependencies.ts",
+    "src/production/deliveryProductionJoin.ts",
+    "tools/verificar_production_parallel_v1.js",
+    "tools/verificar_production_parallel_static.js",
+    "data/kitchen_dependency_rules_v1.json"
   ],
   "verified_state": [
     "Canonical V1.3.2 SHA-256 is pinned in the pure shadow normalizer.",
@@ -70,9 +77,19 @@
     "Odhen printer payload/log identity carries model + port, not the TATA physical praça name; praça requires an explicit mapping layer.",
     "The broad topology probe was corrected after the real PC audit: v2 uses the actual C:\\TEKNISA\\odhen-perifericos and C:\\TEKNISA\\odhenPOS structure through an explicit file allowlist and no recursive/generic-token scan.",
     "The corrected targeted topology probe static gate was independently replayed against current branch content and PASSed.",
-    "A per-printer IMP metadata-only monitor was added to observe only filename/length/timestamps for *_IMP_<modelo>_<porta>.txt; its static gate was independently replayed and PASSed with no file-content read or write capability."
+    "A per-printer IMP metadata-only monitor was added to observe only filename/length/timestamps for *_IMP_<modelo>_<porta>.txt; its static gate was independently replayed and PASSed with no file-content read or write capability.",
+    "A pure TATA sequence planner was added. It enforces one TATA sequence per TEKNISA order inside an explicit caller-provided scope, reuses the same sequence on replay/reprint, blocks sequence collisions, and does not define or persist the operational reset policy.",
+    "The TATA sequence planner deliberately leaves scope meaning, reset timing, width/range and persistence UNKNOWN until human-confirmed instead of hard-coding an invented daily policy.",
+    "A pure HOT/EBITEN/SHISO dependency engine was added. It accepts only exact normalized human-confirmed item rules and blocks any claim of a complete total unless both ruleset coverage and coverage proof are explicitly complete/human-confirmed.",
+    "The canonical kitchen dependency baseline is intentionally PARTIAL + UNPROVEN with zero rules, so no HOT/EBITEN/SHISO total can become operational by accident.",
+    "A pure Delivery+Production join was added. It requires a proven DLV_<NRCOMANDA> production join key, matching NRCOMANDA, exact accent/case/punctuation-normalized item name + quantity, and blocks ambiguous/missing matches rather than guessing.",
+    "The delivery-production join deduplicates identical TXPRODCOMVEN text across production/production2/puxa copies while preserving distinct printer keys.",
+    "A behavioral verifier was prepared for TATA sequence reuse/collision, kitchen dependency gates/arithmetic, duplicate-order aggregation, and conservative delivery-production joining.",
+    "A static production-parallel safety/truth gate was independently replayed against the current branch content and PASSed: the new pure modules contain no filesystem/network/print/SQL capability; the dependency baseline remains PARTIAL/UNPROVEN/empty.",
+    "A pre-existing TypeScript build blocker in passivePrintLog.ts was corrected by declaring orderObservationSectionStarted, and a pre-existing escaped-newline syntax error in tools/verificar_shadow_odhen_v132.js was corrected.",
+    "The kitchen dependency yield validator was hardened for strict TypeScript typing."
   ],
-  "next_action": "Replace the generic IMP-length monitor with the per-printer metadata-only monitor. Correlate one natural production print with the specific *_IMP_<modelo>_<porta>.txt file(s) that grow, while César observes the physical printer and whether the paper shows COMANDA.: DLV_<N>. Do not read log content. This single bounded observation can prove bridge usage, printer mapping and the production join key before any live parser work.",
+  "next_action": "Parallel code preparation is now at a safe ceiling. When a repo runtime is available, execute npm run verificar:production-ticket, npm run verificar:production-parallel, npm run verificar:production-parallel-static, npm run verificar:passive-log and npm run verificar:shadow (or the existing shadow verifier command if named differently). Operationally, the next world proof remains a short per-printer metadata-only observation of one natural delivery production event, including visual confirmation of COMANDA.: DLV_<N>. Do not read live log content or print from DeliveryOS yet.",
   "unknowns": [
     "The C3.1 synthetic final preview requested by César has not yet been human-accepted in this phase.",
     "No real order has been read in shadow.",
@@ -89,7 +106,6 @@
     "Which non-delivery print types share the generic *_IMP.txt log remains UNKNOWN.",
     "Whether production/kitchen print jobs use the same generic IMP log or a distinguishable route/target remains UNKNOWN.",
     "The exact mapping from Odhen print type to printer/model/port/queue is not yet source-mapped.",
-    "Whether TXPRODCOMVEN can be recovered from a local production print path without SQL/Teknisa remains UNKNOWN.",
     "Production routing for Duplas is not yet human-confirmed and remains blocked.",
     "The exact item-to-HOT/EBITEN/SHISO quantity mapping is not yet proven and is not automated.",
     "The TATA sequence generation/reset/dedupe contract is not yet implemented in the production-ticket module; the renderer currently receives the sequence as input.",
@@ -98,7 +114,13 @@
     "World proof is still missing that the live delivery production ticket traverses this CAIXA_MOOCA Perifericos instance.",
     "World proof is still missing that the live production ticket renders COMANDA.: DLV_<NRCOMANDA> for TATA iFood delivery.",
     "The runtime model+port -> TATA physical praça mapping is not yet proven.",
-    "No REAL_SAMPLE_PROVEN production-ticket parser profile exists yet; code-level formatting is proven, live framing/encoding remains unproven."
+    "No REAL_SAMPLE_PROVEN production-ticket parser profile exists yet; code-level formatting is proven, live framing/encoding remains unproven.",
+    "Behavioral production verifiers have been prepared but have not yet been executed with repo-pinned TypeScript 5.5.3; static gate PASS is not TEST_PASS.",
+    "The operational TATA sequence scope/reset/width/range/persistence policy remains human-unconfirmed and is not active.",
+    "The HOT/EBITEN/SHISO item-to-yield table remains intentionally empty and unproven; no complete kitchen total is active.",
+    "Combo/component production tickets may require a richer item join than normalized name+quantity; the current conservative join will block such unmatched/ambiguous shapes until a bounded real sample proves the needed relation.",
+    "Production routing for Duplas remains human-unconfirmed and blocked.",
+    "A trustworthy produced/low-off signal still does not exist, so PENDENTE must not be displayed as operational truth."
   ],
   "authority": {
     "continuity_update": "AUTHORIZED_METADATA_WRITE_WITHIN_PROJECT_SCOPE",
@@ -118,7 +140,7 @@
   "pending_work": {
     "branch": "shadow/odhen-v132-readonly-prep",
     "pull_request": 11,
-    "status": "LOCAL_PRINT_COMPLEMENTARY_CODE_PROVEN__PER_PRINTER_METADATA_WORLD_PROOF_NEXT__NO_LIVE_CONTENT_READ",
+    "status": "PARALLEL_PRODUCTION_CORE_CODE_READY__STATIC_GATE_PASS__BEHAVIOR_TEST_PENDING__WORLD_PROOF_PENDING",
     "canonical_sha256": "D34583F0A743DF9645914BCDFC1010E6D3AEF72AC74D3A4B7B01F81E305B71E4",
     "cashier_pc": "CAIXA_MOOCA",
     "odhen_root": "C:\\TEKNISA\\odhen-perifericos",
@@ -172,6 +194,17 @@
     "per_printer_metadata_monitor": "tools/monitor_imp_printer_metadata_only.ps1",
     "per_printer_metadata_monitor_static_gate": "tools/verificar_imp_printer_metadata_monitor_static.js",
     "per_printer_metadata_monitor_static_status": "PASS_EXTERNALLY_REPLAYED",
-    "local_print_source_decision": "LOCAL_PRINT_SOURCES_COMPLEMENTARY_CODE_LEVEL"
+    "local_print_source_decision": "LOCAL_PRINT_SOURCES_COMPLEMENTARY_CODE_LEVEL",
+    "production_parallel": {
+      "doc": "docs/Production_Parallel_Core_V1.md",
+      "tata_sequence": "src/production/tataSequence.ts",
+      "kitchen_dependencies": "src/production/kitchenDependencies.ts",
+      "dependency_rules": "data/kitchen_dependency_rules_v1.json",
+      "delivery_production_join": "src/production/deliveryProductionJoin.ts",
+      "behavioral_verifier": "tools/verificar_production_parallel_v1.js",
+      "static_verifier": "tools/verificar_production_parallel_static.js",
+      "static_status": "PASS_EXTERNALLY_REPLAYED",
+      "behavioral_status": "NOT_EXECUTED"
+    }
   }
 }
