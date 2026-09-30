@@ -112,24 +112,28 @@ async function main(): Promise<void> {
     );
 
     await testCase(
-      "SR2 grants são somente USAGE + INSERT nos dois destinos",
+      "SR2 grants são USAGE + INSERT e SELECT só nas chaves de conflito",
       async () => {
         const r = await banco!.cliente.query<{
           schema_usage: boolean;
           event_insert: boolean;
           event_select: boolean;
+          event_key_select: boolean;
           event_update: boolean;
           outbox_insert: boolean;
           outbox_select: boolean;
+          outbox_id_select: boolean;
           job_insert: boolean;
         }>(
           "SELECT " +
             "has_schema_privilege($1,'platform','USAGE') AS schema_usage," +
             "has_table_privilege($1,'platform.event_log','INSERT') AS event_insert," +
             "has_table_privilege($1,'platform.event_log','SELECT') AS event_select," +
+            "has_column_privilege($1,'platform.event_log','idempotency_key','SELECT') AS event_key_select," +
             "has_table_privilege($1,'platform.event_log','UPDATE') AS event_update," +
             "has_table_privilege($1,'platform.outbox','INSERT') AS outbox_insert," +
             "has_table_privilege($1,'platform.outbox','SELECT') AS outbox_select," +
+            "has_column_privilege($1,'platform.outbox','outbox_id','SELECT') AS outbox_id_select," +
             "has_table_privilege($1,'platform.job','INSERT') AS job_insert",
           [SRC],
         );
@@ -137,9 +141,11 @@ async function main(): Promise<void> {
           schema_usage: true,
           event_insert: true,
           event_select: false,
+          event_key_select: true,
           event_update: false,
           outbox_insert: true,
           outbox_select: false,
+          outbox_id_select: true,
           job_insert: false,
         });
       },
@@ -219,7 +225,7 @@ async function main(): Promise<void> {
       async () => {
         for (const sql of [
           "SELECT event_id FROM platform.event_log LIMIT 1",
-          "SELECT outbox_id FROM platform.outbox LIMIT 1",
+          "SELECT kind FROM platform.outbox LIMIT 1",
           "UPDATE platform.event_log SET event_type='x'",
           "DELETE FROM platform.event_log",
           "TRUNCATE platform.event_log",

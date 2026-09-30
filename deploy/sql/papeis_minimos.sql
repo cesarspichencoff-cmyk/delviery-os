@@ -81,4 +81,8 @@ GRANT SELECT ON platform.schema_migration TO deliveryos_async;
 -- Autoridade mínima: só a escrita transacional necessária.
 GRANT USAGE ON SCHEMA platform TO deliveryos_source_ingest;
 GRANT INSERT ON platform.event_log TO deliveryos_source_ingest;
+-- ON CONFLICT (idempotency_key) exige SELECT na coluna árbitra.
+GRANT SELECT (idempotency_key) ON platform.event_log TO deliveryos_source_ingest;
 GRANT INSERT ON platform.outbox TO deliveryos_source_ingest;
+-- ON CONFLICT (outbox_id) exige SELECT na coluna árbitra.
+GRANT SELECT (outbox_id) ON platform.outbox TO deliveryos_source_ingest;
