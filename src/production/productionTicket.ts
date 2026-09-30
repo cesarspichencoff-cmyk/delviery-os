@@ -105,6 +105,15 @@ function positiveQuantity(value: number): boolean {
   return Number.isFinite(value) && value > 0;
 }
 
+function requiresBoxLabel(square: ProductionSquare): boolean {
+  return (
+    square === "enrolados" ||
+    square === "combinados" ||
+    square === "enrolados_quentes" ||
+    square === "duplas"
+  );
+}
+
 export function routeProductionSquare(
   square: ProductionSquare,
   service: ProductionService,
@@ -147,7 +156,9 @@ export function buildProductionTicketPreview(
   }
 
   input.mount_groups.forEach((group, groupIndex) => {
-    if (!clean(group.box_label)) blocking.add(`MISSING_BOX_LABEL_${groupIndex}`);
+    if (requiresBoxLabel(input.square) && !clean(group.box_label)) {
+      blocking.add(`MISSING_BOX_LABEL_${groupIndex}`);
+    }
     if (!Array.isArray(group.items) || group.items.length === 0) {
       blocking.add(`NO_ITEMS_IN_GROUP_${groupIndex}`);
       return;
@@ -174,8 +185,10 @@ export function buildProductionTicketPreview(
   lines.push("");
 
   for (const group of input.mount_groups) {
-    lines.push(`>>> MONTAR NA ${clean(group.box_label).toUpperCase()} <<<`);
-    lines.push("");
+    if (clean(group.box_label)) {
+      lines.push(`>>> MONTAR NA ${clean(group.box_label).toUpperCase()} <<<`);
+      lines.push("");
+    }
     for (const item of group.items) {
       lines.push(...renderItem(item));
       lines.push("");
