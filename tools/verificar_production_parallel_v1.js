@@ -55,6 +55,7 @@ const partialRules = Kitchen.projectKitchenNeeds(
   {
     schema: "deliveryos.kitchen-dependency-rules.v1",
     coverage: "PARTIAL",
+    coverage_proof: "HUMAN_CONFIRMED",
     rules: [
       {
         canonical_item_name: "Uramaki Ebiten Especial",
@@ -72,9 +73,32 @@ assert.ok(
 );
 assert.deepEqual(partialRules.totals, { hot: 0, ebiten: 2, shiso: 0 });
 
+const unprovenCoverage = Kitchen.projectKitchenNeeds(
+  [{ nome: "Hot Roll", quantidade: 1 }],
+  {
+    schema: "deliveryos.kitchen-dependency-rules.v1",
+    coverage: "COMPLETE",
+    coverage_proof: "UNPROVEN",
+    rules: [
+      {
+        canonical_item_name: "Hot Roll",
+        proof: "HUMAN_CONFIRMED",
+        yields: { HOT: 1 },
+      },
+    ],
+  },
+);
+assert.equal(unprovenCoverage.ready_for_complete_total, false);
+assert.ok(
+  unprovenCoverage.blocking_reasons.includes(
+    "DEPENDENCY_RULESET_COVERAGE_NOT_PROVEN",
+  ),
+);
+
 const completeRuleset = {
   schema: "deliveryos.kitchen-dependency-rules.v1",
   coverage: "COMPLETE",
+  coverage_proof: "HUMAN_CONFIRMED",
   rules: [
     {
       canonical_item_name: "Hot Roll",
