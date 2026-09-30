@@ -6,7 +6,7 @@ $ErrorActionPreference = "Stop"
 
 # SOURCE-ONLY PRINT-TOPOLOGY PROBE.
 # Reads code files only. It does not touch Log/Logs, order data, SQL, HTTP,
-# printer devices, processes, environment.xml, .env or operational payloads.
+# printer devices, processes, credential files or operational payloads.
 
 $codeRoots = @(
   (Join-Path $OdhenRoot "perifericos\src"),
