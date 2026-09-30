@@ -139,5 +139,11 @@ test("SI8 processo OFF sobe sem URL de banco e encerra por sinal", async () => {
   assert.equal(code, 0);
 });
 
-await Promise.all(tests);
-console.log("\nSOURCE_INGEST_CONFIG: " + passed + "/8 PASS");
+void Promise.all(tests)
+  .then(() => {
+    console.log("\nSOURCE_INGEST_CONFIG: " + passed + "/8 PASS");
+  })
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  });
