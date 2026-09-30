@@ -3,13 +3,14 @@ import assert from "node:assert/strict";
 import { asInternalRiderActorId } from "../entregas/foundation/brands";
 import { InMemoryEventLog } from "../entregas/foundation/event-log";
 import { createPilotPolicy } from "../entregas/foundation/policy";
-import { createTrip } from "../entregas/foundation/trip-machine";
+import { createTrip, startTrip } from "../entregas/foundation/trip-machine";
 import type { EntregasPublicEvent, EntregasSourceMode } from "../entregas/contracts/events/types";
 import { domainEventToPublic } from "../entregas/integration/public-event-builder";
 import type { EventEnvelope, SourceMode } from "./contracts/event-catalog";
 import { projetar } from "./projections/operacao-viva";
 import { recomendar } from "./copiloto/shadow";
 import { construirIndiceIdentidadeCausal } from "./copiloto/causal-identity-bridge";
+import { adaptarLotePublicoEntregas } from "./ingest/entregas-shadow-adapter";
 import { reconciliarRecomendacoesCausais } from "./copiloto/causal-attention-orchestrator";
 import type { FocoCanonico } from "./copiloto/attention-authority";
 
@@ -122,6 +123,44 @@ function publicEventsForTrip(
       domainEventToPublic(e, {
         unit_id: UNIT,
         ...(source_mode ? { source_mode } : {}),
+      }),
+    )
+    .filter((e): e is EntregasPublicEvent => e !== null);
+}
+
+
+function publicLifecycleForTrip(
+  trip_id: string,
+  order_ref: string,
+): EntregasPublicEvent[] {
+  const log = new InMemoryEventLog();
+  const rider = asInternalRiderActorId("rider-" + trip_id);
+  const created = createTrip(log, {
+    trip_id,
+    unit_id: UNIT,
+    courier_actor_id: rider,
+    created_by: "ops",
+    occurred_at: "2026-09-30T17:00:00.000Z",
+    policy: createPilotPolicy(),
+    initial_deliveries: [{ delivery_id: "D-" + trip_id, order_ref }],
+  });
+  assert.equal(created.ok, true);
+  if (!created.ok) return [];
+
+  const started = startTrip(
+    log,
+    created.state,
+    "2026-09-30T17:20:00.000Z",
+    rider,
+  );
+  assert.equal(started.ok, true);
+
+  return log
+    .all()
+    .map((e) =>
+      domainEventToPublic(e, {
+        unit_id: UNIT,
+        source_mode: "simulated",
       }),
     )
     .filter((e): e is EntregasPublicEvent => e !== null);
@@ -331,4 +370,43 @@ test("E2E8 order_ref duplicado ativo em duas Trips nunca vira Foco", () => {
   assert.equal(r.retidas[0].etapa, "identidade");
 });
 
-console.log("\nQ003_CAUSAL_E2E: " + passed + "/8 PASS");
+
+test("E2E9 um único feed público sustenta projeção, identidade e Foco", () => {
+  const publicos = publicLifecycleForTrip("T1", "P100");
+  const adaptado = adaptarLotePublicoEntregas(publicos);
+
+  assert.deepEqual(
+    adaptado.eventos.map((e) => e.event_type),
+    ["trip_created", "trip_started"],
+  );
+  assert.ok(
+    adaptado.recusados.some(
+      (r) =>
+        r.source_event_type === "delivery_added" &&
+        r.motivo === "tipo_sem_equivalencia_segura",
+    ),
+  );
+
+  const projecao = projetar(adaptado.eventos, {
+    agora: NOW,
+    unit_id: UNIT,
+    source_mode: "simulated",
+  });
+  const recs = recomendacoesDaRua(projecao);
+  const indice = construirIndiceIdentidadeCausal(publicos);
+
+  const r = reconciliarRecomendacoesCausais(
+    recs,
+    projecao,
+    indice,
+    focoRealDePedido("P100"),
+  );
+
+  assert.equal(r.elegiveis.length, 1);
+  assert.equal(r.retidas.length, 0);
+  assert.deepEqual(r.elegiveis[0].input_event_ids, [
+    publicos.find((e) => e.event_type === "trip_started")!.event_id,
+  ]);
+});
+
+console.log("\nQ003_CAUSAL_E2E: " + passed + "/9 PASS");

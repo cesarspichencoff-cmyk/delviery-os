@@ -307,3 +307,16 @@ Inclui:
 ---
 
 *Gate integração futura encerrado · pre_integration · 2026-07-20*
+
+## 17. Adapter shadow de lifecycle — 2026-09-30
+
+`src/platform/ingest/entregas-shadow-adapter.ts` é uma fronteira pura e sem I/O entre o contrato público de Entregas e os eventos de lifecycle que a Operação Viva já entende.
+
+- não habilita `consumer_live`;
+- não publica em UI;
+- não escreve banco/outbox;
+- exige `source_mode` e `trip_id` explícitos;
+- preserva `event_id`, correlação e procedência;
+- recusa tipos cuja granularidade não é semanticamente equivalente à Trip.
+
+O objetivo é permitir validação causal em shadow sem transformar fato de uma parada em fato da viagem inteira.

@@ -59,3 +59,15 @@ Controles negativos provados: Foco de outro pedido, ausência de Foco, Trip mult
 `elegivel` neste contrato significa apenas **compatível com o Foco já escolhido**. Não significa exibido, aceito, enviado ao gerente ou executado. `consumer_live` e UI continuam desligados.
 
 Gate: `test:platform:q003:e2e` = 8/8 PASS.
+
+## Adapter Entregas → Operação Viva em shadow — 2026-09-30
+
+A última costura sintética do E2E foi removida. `src/platform/ingest/entregas-shadow-adapter.ts` traduz o contrato público de Entregas para `EventEnvelope` da plataforma apenas quando existe equivalência semântica segura.
+
+Mapeamentos permitidos: `trip_created`, `trip_started`, `trip_return_started` e `trip_closed_manual|automatic → trip_closed`.
+
+Recusas deliberadas: `arrival_detected`, `delivery_confirmed` e `delivery_unconfirmed` são fatos de uma Delivery/stop e não podem mudar o estado da Trip inteira; `return_detected` não é inventado como `trip_returned`; eventos de handoff/ocorrência/sinais auxiliares também não ganham equivalência por aproximação.
+
+O E2E agora prova que **um único feed público de Entregas** sustenta simultaneamente o lifecycle da Operação Viva e a identidade `Trip → Delivery → order_ref`, chegando ao mesmo Foco do MOTOR apenas no caso unívoco.
+
+Gates: `test:platform:entregas-shadow-adapter` = 9/9 PASS; `test:platform:q003:e2e` = 9/9 PASS. Consumer live e UI continuam desligados.

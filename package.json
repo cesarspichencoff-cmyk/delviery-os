@@ -88,6 +88,7 @@
     "test:platform:q003": "npx tsx src/platform/run-q003-attention-tests.ts",
     "test:platform:q003:identidade": "npx tsx src/platform/run-q003-causal-identity-tests.ts",
     "test:platform:q003:e2e": "npx tsx src/platform/run-q003-causal-e2e-tests.ts",
+    "test:platform:entregas-shadow-adapter": "npx tsx src/platform/run-entregas-shadow-adapter-tests.ts",
     "test:platform:product": "npx tsx src/platform/run-product-system-tests.ts",
     "test:platform:r1": "npx tsx src/platform/run-recovery-r1-tests.ts",
     "test:platform:home": "npx tsx src/platform/run-home-signals-tests.ts",
