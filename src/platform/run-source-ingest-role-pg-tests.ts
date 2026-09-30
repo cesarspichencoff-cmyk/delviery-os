@@ -183,7 +183,7 @@ async function main(): Promise<void> {
           },
         );
 
-        assert.equal(r.aceito, true);
+        assert.equal(r.aceito, true, JSON.stringify(r));
         assert.equal(r.gravados, 1);
         assert.equal(r.mensagens, 1);
 
