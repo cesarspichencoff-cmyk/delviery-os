@@ -5,7 +5,7 @@
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "design/tata-edge-runtime-foundation-v1",
   "checkpoint_type": "PRODUCTION_TALLY_GATE_F_ARMED_WAITING_REAL_EVENT",
-  "state_basis_head": "ecccfbfb2543621b68ea250b550d06de94fda0a1",
+  "state_basis_head": "bdd3dd94448af9e54a9a7fb14ad556053c084879",
   "verified_state_refs": [
     "deploy/cloudflare/gerencial-mail-bridge/",
     "deploy/cloudflare/tata-edge-cloud-shadow/",
@@ -68,7 +68,8 @@
     "docs/context/EVIDENCE_TALLY_WEBHOOK_AUTHORIZED_ACCESS_BOUNDARY_2026-09-28.md",
     "docs/context/EVIDENCE_TALLY_GATE_F_ARMED_REAL_ITEM_MISSING_2026-09-30.md",
     "docs/context/EVIDENCE_CAIXA_PULSE_FRESH_ACTION_WINDOW_REPLAY_2026-09-30.md",
-    "docs/context/EVIDENCE_IFOOD_LOCAL_OCR_FOXXY_HOST_GATE_2026-09-30.md"
+    "docs/context/EVIDENCE_IFOOD_LOCAL_OCR_FOXXY_HOST_GATE_2026-09-30.md",
+    "docs/context/EVIDENCE_REVIEW_NEEDED_ATTENTION_GUARD_2026-09-30.md"
   ],
   "verified_state": [
     "The canonical operational mail bridge is cesar-gerencial-mail-bridge reading Atendimento Sent read-only with EXAMINE + BODY.PEEK and D1 cesar-gerencial-mail-bridge.",
@@ -252,7 +253,9 @@
     "Foxxy is now PROVEN as a zero-cost local Windows/Node OCR host: win32 x64, Node v24.18.0, WebAssembly and worker_threads available, with the real pinned tesseract.js 7.0.0 + sharp 0.35.4 layout engine executing successfully.",
     "The existing local Tesseract.js layout engine adapter is real and repository-present; its local engine suite passed 4/4 and a real synthetic smoke read 4787 29/08/2026 through both FULL_PAGE and ORDER_HEADER paths.",
     "At the 2026-09-30 OCR host proof, production D1 had 0 ifood_review_mail rows, 0 ifood_review_attachment rows and 0 verified review-mail rows, so no real D1 attachment-byte world proof is possible yet.",
-    "The private seven-image layout-aware OCR benchmark was not found on Foxxy and was not re-run there; host viability is proven, future screenshot accuracy/generalization is not."
+    "The private seven-image layout-aware OCR benchmark was not found on Foxxy and was not re-run there; host viability is proven, future screenshot accuracy/generalization is not.",
+    "A dedicated regression guard now PROVES that SOURCE_MARKED_REVIEW_NEEDED is not a César need: the status alone creates no Evidence Debt, no direct Attention reason, no external effect, and no action-effectiveness claim.",
+    "The review-needed attention guard is included in the aggregate regression suite as test:context:review-needed-attention-guard and passed on Foxxy together with typecheck, Caixa Pulse adapter, recurrence, action-followup and attention-policy proofs."
   ],
   "proof": {
     "latest_green_ci_run": "36302995615",
