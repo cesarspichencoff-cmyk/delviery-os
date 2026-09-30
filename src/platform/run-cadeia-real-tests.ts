@@ -42,6 +42,8 @@ import { createHash } from "node:crypto";
 
 import { bancoIsolado as bancoIsoladoDe, urlCom, type BancoIsolado } from "./banco-isolado";
 import { createPgClient } from "./persistence/sql-client";
+import { PgTransactionalWriter } from "./persistence/pg-repositories";
+import { ingerir } from "./ingest/ingest-service";
 import { readFileSync } from "node:fs";
 import { AparelhoLogico, DeviceSession, KEY_SESSION_TOKEN, KEY_TOKEN_EXPIRA_EM, KEY_DEVICE_SECRET } from "./aparelho-logico";
 import { emitirSessaoDeAparelho, hashDoSegredo, type RegistroDeSessao, type DispositivoComVinculo } from "./auth/device-session";
@@ -806,6 +808,7 @@ async function main(): Promise<void> {
 
     const CRIT = `cadeia_crit_${UNIDADE.toLowerCase()}`;
     const ASY = `cadeia_async_${UNIDADE.toLowerCase()}`;
+    const SRC = `cadeia_source_${UNIDADE.toLowerCase()}`;
     const comPapel = (papel: string): string => {
       const u = new URL(b.url);
       u.username = papel;
@@ -819,11 +822,12 @@ async function main(): Promise<void> {
       await teste("P1 o script de papéis aplica no banco isolado, com nomes desta execução, e nenhum dos dois é superusuário", async () => {
         const sql = readFileSync(join(raiz, "deploy/sql/papeis_minimos.sql"), "utf8")
           .replaceAll("deliveryos_critical", CRIT)
-          .replaceAll("deliveryos_async", ASY);
+          .replaceAll("deliveryos_async", ASY)
+          .replaceAll("deliveryos_source_ingest", SRC);
         await b.cliente.query(sql);
-        papeis.push(CRIT, ASY);
-        const r = await b.cliente.query(`SELECT rolname, rolsuper, rolcreaterole FROM pg_roles WHERE rolname IN ($1, $2) ORDER BY 1`, [ASY, CRIT]);
-        assert.deepEqual(r.map((x) => [x.rolname, x.rolsuper, x.rolcreaterole]), [[ASY, false, false], [CRIT, false, false]]);
+        papeis.push(CRIT, ASY, SRC);
+        const r = await b.cliente.query(`SELECT rolname, rolsuper, rolcreaterole FROM pg_roles WHERE rolname IN ($1, $2, $3) ORDER BY 1`, [ASY, CRIT, SRC]);
+        assert.deepEqual(r.map((x) => [x.rolname, x.rolsuper, x.rolcreaterole]), [[ASY, false, false], [CRIT, false, false], [SRC, false, false]]);
         const dono = await b.cliente.query(`SELECT tableowner FROM pg_tables WHERE schemaname = 'platform' AND tablename = 'event_log'`);
         assert.notEqual(dono[0].tableowner, CRIT, "o papel do crítico é dono do event log");
       });
@@ -890,6 +894,67 @@ async function main(): Promise<void> {
           assert.match(await tentar(`SELECT * FROM identity.device`), /permission denied/);
           assert.match(await tentar(`DELETE FROM platform.outbox`), /permission denied/);
           assert.equal(await tentar(`SELECT count(*) FROM platform.event_log`), "");
+        } finally {
+          await c.close();
+        }
+      });
+
+      await teste("P6 SOURCE INGEST consegue somente a escrita transacional necessária", async () => {
+        const c = await createPgClient({ url: comPapel(SRC), max: 1 });
+        try {
+          const chave = "source-role:" + UNIDADE;
+          const r = await ingerir(
+            [{
+              event_id: "source-role-event-" + UNIDADE,
+              event_type: "trip_started",
+              event_version: "trip_started@1.0.0",
+              unit_id: UNIDADE,
+              trip_id: "source-role-trip-" + UNIDADE,
+              occurred_at: "2026-09-24T10:10:00.000Z",
+              origin: "source",
+              source_mode: "simulated",
+              idempotency_key: chave,
+              correlation_id: "source-role-trip-" + UNIDADE,
+              payload: {},
+            }],
+            {
+              escritor: new PgTransactionalWriter(c),
+              recebido_em: new Date("2026-09-24T10:10:01.000Z"),
+            },
+          );
+          assert.equal(r.aceito, true);
+          assert.equal(r.gravados, 1);
+          assert.equal(r.mensagens, 1);
+
+          const fato = await b.cliente.query(
+            `SELECT count(*)::int AS n FROM platform.event_log WHERE idempotency_key=$1`,
+            [chave],
+          );
+          const msg = await b.cliente.query(
+            `SELECT count(*)::int AS n FROM platform.outbox WHERE idempotency_key=$1`,
+            [chave],
+          );
+          assert.equal(Number(fato[0].n), 1);
+          assert.equal(Number(msg[0].n), 1);
+        } finally {
+          await c.close();
+        }
+      });
+
+      await teste("P7 SOURCE INGEST não lê, altera, apaga, administra ou executa jobs", async () => {
+        const c = await createPgClient({ url: comPapel(SRC), max: 1 });
+        try {
+          const tentar = (sql: string) =>
+            c.query(sql).then(() => "", (e: Error) => e.message);
+          assert.match(await tentar(`SELECT event_id FROM platform.event_log LIMIT 1`), /permission denied/);
+          assert.match(await tentar(`UPDATE platform.event_log SET event_type='x'`), /permission denied/);
+          assert.match(await tentar(`DELETE FROM platform.event_log`), /permission denied/);
+          assert.match(await tentar(`TRUNCATE platform.event_log`), /permission denied/);
+          assert.match(await tentar(`ALTER TABLE platform.event_log DISABLE TRIGGER ALL`), /must be owner|permission denied/);
+          assert.match(await tentar(`SELECT * FROM identity.device`), /permission denied/);
+          assert.match(await tentar(`INSERT INTO platform.job(job_id) VALUES ('source-intruso')`), /permission denied/);
+          assert.match(await tentar(`INSERT INTO platform.audit(actor_id, action, object_type, object_id, granted, at) VALUES ('x','x','x','x',true,now())`), /permission denied/);
+          assert.match(await tentar(`SELECT * FROM platform.schema_migration`), /permission denied/);
         } finally {
           await c.close();
         }
