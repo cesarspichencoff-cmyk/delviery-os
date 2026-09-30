@@ -5,7 +5,7 @@
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "main",
   "checkpoint_type": "SHADOW_READ_ONLY_PREP",
-  "state_basis_head": "3832a0cd88564e5dd3ed851cc494a7a576e1f074",
+  "state_basis_head": "bcde55887b24fe7bcde0391d4d5e2f5e38923d5b",
   "verified_state_refs": [
     "src/shadow/odhenReadonly.ts",
     "src/shadow/compare.ts",
@@ -49,9 +49,12 @@
     "The hardened passive suite was recompiled and rerun after privacy, file-identity and framing changes; result remained passive-print-log-v132: ok.",
     "CAIXA_MOOCA real IMP log source was manually metadata-proven on 2026-09-29: C:\\TEKNISA\\odhen-perifericos\\Log\\092026\\2026_09_29_IMP.txt exists.",
     "Baseline EOF for the one-order passive proof is 352273 bytes; LastWriteTime was 2026-09-29 13:49:19 local and CreationTime was 2026-09-29 12:03:07 local.",
-    "No log content was read to establish this baseline; only file metadata was read manually outside Claude Code."
+    "No log content was read to establish this baseline; only file metadata was read manually outside Claude Code.",
+    "The generic 2026_09_29_IMP.txt grew from 352273 to 369760 bytes while César confirmed no delivery order had printed, proving that file growth alone is not a delivery-order signal.",
+    "After a later non-isolated delivery batch, metadata was re-read at Length 386151 and LastWriteTime 2026-09-29 14:14:53 local; this is a post-batch reference point, not a one-order proof.",
+    "Because the generic IMP log contains other print traffic, any real one-order proof must correlate a bounded append interval with an isolated natural delivery print; raw size growth by itself is insufficient."
   ],
-  "next_action": "Wait for the next natural delivery order to print. Immediately after that print completes, re-read only the same file metadata. If Length > 352273 and the file identity/path is unchanged, the authorized next step is to read exactly the byte range [352273,new_length) for the single-order proof; do not read from byte 0 or historical content.",
+  "next_action": "Parallel work while waiting for an isolated natural delivery print: perform source/config-only mapping of the Perifericos/Odhen print topology and production/kitchen ticket path, especially TXPRODCOMVEN, route types, queue/target selection and what data reaches each print type. Do not read logs/orders, query SQL, print, restart services or alter C:\\TEKNISA. For the real delivery-log proof, use metadata timing/size correlation only; do not treat generic IMP growth as a delivery signal.",
   "unknowns": [
     "The C3.1 synthetic final preview requested by César has not yet been human-accepted in this phase.",
     "No real order has been read in shadow.",
@@ -65,7 +68,11 @@
     "A concrete non-exclusive filesystem reader is intentionally not implemented yet because live file path, encoding and record framing are not world-proven.",
     "Full repository build with repo-pinned TypeScript 5.5.3 remains unproven after passive-log changes.",
     "Concrete Windows file-opening/share semantics are not yet implemented or world-proven.",
-    "Free-text observations may contain personal data; an observation-specific minimization/redaction policy is not yet proven."
+    "Free-text observations may contain personal data; an observation-specific minimization/redaction policy is not yet proven.",
+    "Which non-delivery print types share the generic *_IMP.txt log remains UNKNOWN.",
+    "Whether production/kitchen print jobs use the same generic IMP log or a distinguishable route/target remains UNKNOWN.",
+    "The exact mapping from Odhen print type to printer/model/port/queue is not yet source-mapped.",
+    "Whether TXPRODCOMVEN can be recovered from a local production print path without SQL/Teknisa remains UNKNOWN."
   ],
   "authority": {
     "continuity_update": "AUTHORIZED_METADATA_WRITE_WITHIN_PROJECT_SCOPE",
@@ -85,7 +92,7 @@
   "pending_work": {
     "branch": "shadow/odhen-v132-readonly-prep",
     "pull_request": 11,
-    "status": "REAL_LOG_SOURCE_PASS__BASELINE_READY__WAITING_FOR_NEXT_NATURAL_ORDER",
+    "status": "REAL_LOG_SHARED_TRAFFIC_PROVEN__ISOLATED_DELIVERY_APPEND_PENDING__PARALLEL_PRINT_TOPOLOGY_SOURCE_MAPPING",
     "canonical_sha256": "D34583F0A743DF9645914BCDFC1010E6D3AEF72AC74D3A4B7B01F81E305B71E4",
     "cashier_pc": "CAIXA_MOOCA",
     "odhen_root": "C:\\TEKNISA\\odhen-perifericos",
@@ -111,7 +118,19 @@
       "baseline_eof": 352273,
       "last_write_time_local": "2026-09-29 13:49:19",
       "creation_time_local": "2026-09-29 12:03:07",
-      "content_read": false
+      "content_read": false,
+      "initial_baseline_eof": 352273,
+      "initial_baseline_invalid_for_delivery_isolation": true,
+      "non_delivery_growth_observed": {
+        "from": 352273,
+        "to": 369760,
+        "delivery_printed": false
+      },
+      "post_batch_reference": {
+        "length": 386151,
+        "last_write_time_local": "2026-09-29 14:14:53",
+        "isolated_one_order": false
+      }
     }
   }
 }
