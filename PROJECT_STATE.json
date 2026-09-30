@@ -5,7 +5,7 @@
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "main",
   "checkpoint_type": "SHADOW_READ_ONLY_PREP",
-  "state_basis_head": "dd2710d0be8c533d231226005d37688bd8eb8566",
+  "state_basis_head": "a16f9bf8b9515f551e87cc060cea2a40a8683947",
   "verified_state_refs": [
     "src/shadow/odhenReadonly.ts",
     "src/shadow/compare.ts",
@@ -89,7 +89,7 @@
     "A pre-existing TypeScript build blocker in passivePrintLog.ts was corrected by declaring orderObservationSectionStarted, and a pre-existing escaped-newline syntax error in tools/verificar_shadow_odhen_v132.js was corrected.",
     "The kitchen dependency yield validator was hardened for strict TypeScript typing."
   ],
-  "next_action": "Parallel code preparation is now at a safe ceiling. When a repo runtime is available, execute npm run verificar:production-ticket, npm run verificar:production-parallel, npm run verificar:production-parallel-static, npm run verificar:passive-log and npm run verificar:shadow (or the existing shadow verifier command if named differently). Operationally, the next world proof remains a short per-printer metadata-only observation of one natural delivery production event, including visual confirmation of COMANDA.: DLV_<N>. Do not read live log content or print from DeliveryOS yet.",
+  "next_action": "When a repo runtime is available, execute npm run verificar:production-ticket, npm run verificar:production-parallel, npm run verificar:production-parallel-static, npm run verificar:passive-log and npm run verificar:shadow. Operationally, the next world proof remains a short per-printer metadata-only observation of one natural delivery production event, including visual confirmation of COMANDA.: DLV_<N>. Do not read live log content or print from DeliveryOS yet.",
   "unknowns": [
     "The C3.1 synthetic final preview requested by César has not yet been human-accepted in this phase.",
     "No real order has been read in shadow.",
