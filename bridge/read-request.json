@@ -1,0 +1,15 @@
+{
+  "schema": "cesar-os-read-request-v1",
+  "request_id": "read_zAfI2n2TmDOvK535hWTgK_xK",
+  "mode": "COCKPIT",
+  "alg": "RSA-OAEP-256",
+  "created_at": "2026-09-30T18:41:05.868373+00:00",
+  "public_jwk": {
+    "kty": "RSA",
+    "alg": "RSA-OAEP-256",
+    "key_ops": ["encrypt"],
+    "ext": true,
+    "n": "o2vTb54llRsJVWQyDz6ytsA1fp87OFuhPFU5dIGSg9Z2e22j3eYmIgrjPUwR2yD8GDML0eHxxx-zux2QWn3BFs62cU4Lp8es1chj_qjn-Bj2VHUC4hLOWVOiYkEo7YgxVZDjMnRDVvP3BoLeuqtWKgjfEgfTFLG4nejoVloWFw56s5Vhoow-MjmKCZAykId3KFKIW2ZNfBnGnKnPywf3ANLSEc5c2-EH6Oy-SlkiL4eBH4qg5vJRqh-ha-bYt3YMPesvCbWpr3QoV_rS3pS_IioNwBRwCNDTxEoFnV9bDveEJkJ4z8E7cCM3GQgKhj3EkXFJQJcxzNCX3IdD5DSsBW8x-Q3rrMWgqaB3e4gK7lqbUJfA3KP_Ob-C3V9PYPZNmXLuyDvGeV8nGIM2Aex5gnqW8yHcttGEx84BCVG19qOQI29pypesLRvawX_1RtyVSEnYYTvqruVpgbeT6EFZuO9MgUxKtRiUJijlmzZaksmBQ4BZI2mWnwfUx8HWaq0bv7IgK6KaPzOarg2myfgUg6jOKypuDNcn90v-pXN6c31drW85P8iQ4taENsWYdyfqBYWQvlvm3vkdV9s8qBdFWDGCUgY_N45HZmeh1-ikZWSZBIayWUPK74fWyMBPpVeFHR3RDL8ByYNbnGKfwHeY2bXZMsHfyvN0nGlXCJAHxls",
+    "e": "AQAB"
+  }
+}
