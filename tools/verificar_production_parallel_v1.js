@@ -32,6 +32,47 @@ assert.equal(replayed.assignment.tata_sequence, "037");
 assert.equal(replayed.reused_existing, true);
 assert.equal(replayed.next_state.next_value, 38);
 
+const existingCollision = Tata.planTataSequence(
+  {
+    schema: "deliveryos.tata-sequence-state.v1",
+    policy: { width: 3, min_value: 1, max_value: 999 },
+    next_value: 40,
+    bindings: [
+      {
+        scope_id: "SCOPE-EXPLICITO",
+        teknisa_order_id: "18452",
+        tata_sequence: "037",
+      },
+      {
+        scope_id: "SCOPE-EXPLICITO",
+        teknisa_order_id: "18453",
+        tata_sequence: "037",
+      },
+    ],
+  },
+  "SCOPE-EXPLICITO",
+  "18454",
+);
+assert.equal(existingCollision.ready, false);
+assert.ok(
+  existingCollision.blocking_reasons.includes(
+    "EXISTING_TATA_SEQUENCE_COLLISION:037",
+  ),
+);
+
+const invalidPolicy = Tata.planTataSequence(
+  {
+    schema: "deliveryos.tata-sequence-state.v1",
+    policy: { width: 3, min_value: 1, max_value: 9999 },
+    next_value: 37,
+    bindings: [],
+  },
+  "SCOPE-EXPLICITO",
+  "18452",
+);
+assert.equal(invalidPolicy.ready, false);
+assert.ok(invalidPolicy.blocking_reasons.includes("INVALID_SEQUENCE_POLICY"));
+
 const stationCheck = Tata.validateSharedTataSequence(assigned.assignment, [
   { station: "COZINHA", tata_sequence: "037" },
   { station: "DELIVERY SUSHI 1", tata_sequence: "037" },
