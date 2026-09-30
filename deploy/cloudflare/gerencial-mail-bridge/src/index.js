@@ -1,5 +1,6 @@
 import { connect } from "cloudflare:sockets";
 import PostalMime from "postal-mime";
+import { recordBridgeSourceHealthD1 } from "./bridge-state.js";
 import { normalizeClosing } from "./normalize.js";
 import {
   matchesCaixaPulseMail,
@@ -729,6 +730,32 @@ async function runIfoodReviewIngestion(env, days = 45, maxMessages = 100) {
   }
 }
 
+async function persistSourceHealth(env, source, result, error = null) {
+  const at = new Date().toISOString();
+  try {
+    await recordBridgeSourceHealthD1(env.DB, {
+      source,
+      at,
+      status: error
+        ? "ERROR"
+        : (result?.errors?.length ?? 0) > 0
+          ? "DEGRADED"
+          : "OK",
+      scanned: result?.scanned ?? 0,
+      candidates: result?.candidates ?? 0,
+      processed_count: result?.processed?.length ?? 0,
+      error_count: error ? 1 : (result?.errors?.length ?? 0),
+    });
+  } catch (stateError) {
+    console.warn(JSON.stringify({
+      event: "gerencial_bridge_state_error",
+      source,
+      at,
+      error: safeError(stateError),
+    }));
+  }
+}
+
 export default {
   async fetch() {
     return new Response("Not available", {
@@ -760,12 +787,14 @@ export default {
           errors: result.errors,
         }));
       }
+      await persistSourceHealth(env, "daily_closing", result);
     } catch (error) {
       console.error(JSON.stringify({
         event: "gerencial_mail_ingestion_error",
         at: new Date().toISOString(),
         error: safeError(error),
       }));
+      await persistSourceHealth(env, "daily_closing", null, error);
     }
 
     try {
@@ -787,12 +816,14 @@ export default {
           errors: result.errors,
         }));
       }
+      await persistSourceHealth(env, "caixa_pulse", result);
     } catch (error) {
       console.error(JSON.stringify({
         event: "gerencial_caixa_pulse_ingestion_error",
         at: new Date().toISOString(),
         error: safeError(error),
       }));
+      await persistSourceHealth(env, "caixa_pulse", null, error);
     }
 
     try {
@@ -814,12 +845,14 @@ export default {
           errors: result.errors,
         }));
       }
+      await persistSourceHealth(env, "ifood_review", result);
     } catch (error) {
       console.error(JSON.stringify({
         event: "gerencial_ifood_review_ingestion_error",
         at: new Date().toISOString(),
         error: safeError(error),
       }));
+      await persistSourceHealth(env, "ifood_review", null, error);
     }
   },
 };
