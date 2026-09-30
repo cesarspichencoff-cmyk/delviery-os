@@ -5,7 +5,7 @@
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "design/tata-edge-runtime-foundation-v1",
   "checkpoint_type": "PRODUCTION_TALLY_GATE_F_ARMED_WAITING_REAL_EVENT",
-  "state_basis_head": "f768d6516bf3f8ae59efc44dfe463226baf7d464",
+  "state_basis_head": "ecccfbfb2543621b68ea250b550d06de94fda0a1",
   "verified_state_refs": [
     "deploy/cloudflare/gerencial-mail-bridge/",
     "deploy/cloudflare/tata-edge-cloud-shadow/",
@@ -67,7 +67,8 @@
     "docs/context/EVIDENCE_TALLY_GATE_E_REAL_LIVE_SERIALIZATION_2026-09-28.md",
     "docs/context/EVIDENCE_TALLY_WEBHOOK_AUTHORIZED_ACCESS_BOUNDARY_2026-09-28.md",
     "docs/context/EVIDENCE_TALLY_GATE_F_ARMED_REAL_ITEM_MISSING_2026-09-30.md",
-    "docs/context/EVIDENCE_CAIXA_PULSE_FRESH_ACTION_WINDOW_REPLAY_2026-09-30.md"
+    "docs/context/EVIDENCE_CAIXA_PULSE_FRESH_ACTION_WINDOW_REPLAY_2026-09-30.md",
+    "docs/context/EVIDENCE_IFOOD_LOCAL_OCR_FOXXY_HOST_GATE_2026-09-30.md"
   ],
   "verified_state": [
     "The canonical operational mail bridge is cesar-gerencial-mail-bridge reading Atendimento Sent read-only with EXAMINE + BODY.PEEK and D1 cesar-gerencial-mail-bridge.",
@@ -247,7 +248,11 @@
     "Current action-window replay has 66 classified episodes with recognized actions: 57 later same-family recurrences, 9 no-later-recurrence cases, 1 no-post-action-window case, 8 nonexhaustive-window no-recurrence cases and 0 exhaustive-window no-recurrence cases. Action effective proven=0 and ineffective proven=0.",
     "OMISSION remains the strongest internal recurrence signal in the current loaded window: 26 classified episodes across 16 dates; 25 recognized-action episodes, 24 later omission-family recurrences, median gap 1 day. This supports investigation only and does not prove action failure or shared root cause.",
     "The current D1 population for the historical business-date window through 2026-09-25 is now 73 rows versus the older proven snapshot of 69; the +4 source-population difference is FACT but its provenance/cause is UNKNOWN.",
-    "A false classification collapse in the first 2026-09-30 replay was caused by PowerShell UTF-8 transcoding of Wrangler JSON (for example não -> n├úo). That replay is rejected; D1 JSON evidence exports must use a byte-preserving route."
+    "A false classification collapse in the first 2026-09-30 replay was caused by PowerShell UTF-8 transcoding of Wrangler JSON (for example não -> n├úo). That replay is rejected; D1 JSON evidence exports must use a byte-preserving route.",
+    "Foxxy is now PROVEN as a zero-cost local Windows/Node OCR host: win32 x64, Node v24.18.0, WebAssembly and worker_threads available, with the real pinned tesseract.js 7.0.0 + sharp 0.35.4 layout engine executing successfully.",
+    "The existing local Tesseract.js layout engine adapter is real and repository-present; its local engine suite passed 4/4 and a real synthetic smoke read 4787 29/08/2026 through both FULL_PAGE and ORDER_HEADER paths.",
+    "At the 2026-09-30 OCR host proof, production D1 had 0 ifood_review_mail rows, 0 ifood_review_attachment rows and 0 verified review-mail rows, so no real D1 attachment-byte world proof is possible yet.",
+    "The private seven-image layout-aware OCR benchmark was not found on Foxxy and was not re-run there; host viability is proven, future screenshot accuracy/generalization is not."
   ],
   "proof": {
     "latest_green_ci_run": "36302995615",
@@ -678,7 +683,7 @@
     "tally_gate_f_webhook_wired": false,
     "tally_gate_f_production_mutation_performed": false
   },
-  "next_action": "Primary gate: keep Tally Gate F ARMED and wait for the next real ZjVv1a submission, then prove signed webhook -> one idempotent live D1 observation -> minimized envelope -> Context Kernel v0.11. Parallel safe track: prove the prepared local iFood OCR execution path on a zero-cost Windows/Node host with read-only attachment bytes and segmented OCR/parser, without deploying production OCR or creating unsupported accuracy claims.",
+  "next_action": "Primary gate: keep Tally Gate F ARMED and wait for the next real ZjVv1a submission, then prove signed webhook -> one idempotent live D1 observation -> minimized envelope -> Context Kernel v0.11. Parallel OCR gate: Foxxy host and concrete layout engine are now PROVEN; do not deploy OCR. Wait for the first authorized team iFood review mail to create a verified D1 attachment, then prove one read-only D1 attachment -> hash-pinned local executor -> FULL_PAGE + ORDER_HEADER OCR -> fail-closed parser -> UNVERIFIED candidate, with no persistence, notification or external effect.",
   "unknowns": [
     "No defensible iFood review freshness cadence has been established; its freshness must remain UNKNOWN.",
     "Global critical-source coverage is incomplete; global all-clear must remain disabled.",
@@ -696,15 +701,15 @@
     "Independent post-action outcome evidence is not yet systematically linked; action follow-up now qualifies the observation window but action effectiveness remains UNKNOWN.",
     "Layout-aware iFood OCR accuracy is proven only on the private seven-image reference corpus; generalization to future screenshots/layout changes remains UNKNOWN.",
     "No local Node/WebAssembly OCR executor is deployed or WORLD_PROVEN against D1 attachment bytes.",
-    "No concrete local Tesseract.js/OCR engine adapter is yet wired to ifood-local-ocr-executor@0.1.0.",
     "No narrow D1 review-attachment retrieval adapter is yet wired to the local OCR executor.",
-    "No target Windows/Node host is yet WORLD_PROVEN for the iFood OCR executor.",
     "No real stored review attachment has yet traversed D1 -> local executor -> segmented OCR -> parser.",
     "No real production Tally minimized envelope has yet traversed signed webhook -> Edge/D1 -> portable kernel v0.11.",
     "No real post-connect ZjVv1a submission has yet crossed the signed live webhook into D1.",
     "The human-confirmed Tally Connect action is not yet independently WORLD_PROVEN by a live webhook delivery receipt.",
     "No real post-connect Tally minimized envelope has yet traversed Edge/D1 -> portable Context Kernel v0.11.",
-    "The +4 current-source population difference for the <=2026-09-25 Caixa Pulse window versus the older 69-row snapshot has unknown provenance/cause and must not be interpreted as incident growth without further source-lineage analysis."
+    "The +4 current-source population difference for the <=2026-09-25 Caixa Pulse window versus the older 69-row snapshot has unknown provenance/cause and must not be interpreted as incident growth without further source-lineage analysis.",
+    "No real stored review attachment exists yet in production D1 for a D1 -> local executor -> segmented OCR -> parser world proof.",
+    "The Foxxy host proof does not establish OCR generalization beyond the private seven-image benchmark."
   ],
   "authority": {
     "continuity_update": "AUTHORIZED_METADATA_WRITE_WITHIN_PROJECT_SCOPE",
