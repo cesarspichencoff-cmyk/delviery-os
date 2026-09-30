@@ -11,10 +11,10 @@ function fail(msg) {
 }
 
 for (const required of [
-  'perifericos\\src',
-  'perifericos\\routes',
-  'odhenPOS\\mobile',
-  'odhenPOS\\backend_74000',
+  'odhen-perifericos\\src\\IMP\\index.js',
+  'odhen-perifericos\\routes\\imp.js',
+  'odhenPOS\\backend_74000\\vendor\\odhen\\api\\src\\Service\\ImpressaoDelivery.php',
+  'odhenPOS\\backend_74000\\vendor\\odhen\\api\\src\\Service\\ImpressaoPedido.php',
   'TXPRODCOMVEN',
   'ImpressaoDelivery',
   'printCommands',
@@ -25,20 +25,24 @@ for (const required of [
   'database_query = $false',
   'http = $false',
   'print = $false',
+  'credential_read = $false',
   'file_write = $false',
+  'READ_ONLY_TARGETED_SOURCE_CODE_ONLY'
 ]) {
   if (!text.includes(required)) fail("required guard/token missing: " + required);
 }
 
 for (const forbidden of [
+  /Get-ChildItem/i,
+  /-Recurse/i,
   /Invoke-WebRequest/i,
   /Invoke-RestMethod/i,
   /Start-Process/i,
   /Invoke-Sqlcmd/i,
   /\bsqlcmd\b/i,
   /environment\.xml/i,
-  /Get-Content\s+.*\\Log(\\|["'])/i,
-  /Get-ChildItem\s+.*\\Log(\\|["'])/i,
+  /\\Log(\\|["'])/i,
+  /\\Logs(\\|["'])/i,
   /Set-Content/i,
   /Add-Content/i,
   /Out-File/i,
@@ -50,11 +54,22 @@ for (const forbidden of [
   if (forbidden.test(text)) fail("forbidden capability/pattern present: " + forbidden);
 }
 
-if (!/\.FullName\s+-notmatch\s+"\\\\Log/.test(text)) {
-  fail("Log exclusion missing");
+for (const broadToken of [
+  '"porta"',
+  '"fila"',
+  '"printer"',
+  '"modelo"',
+  '"impressora"',
+  '"setor"',
+  '"praca"',
+  '"cozinha"',
+  '"producao"'
+]) {
+  if (text.includes(broadToken)) fail("broad scan token reintroduced: " + broadToken);
 }
-if (!/\.FullName\s+-notmatch\s+"\\\\Logs/.test(text)) {
-  fail("Logs exclusion missing");
+
+if (!text.includes('[System.Collections.Generic.List[object]]::new()')) {
+  fail("bounded List-based accumulator missing");
 }
 
 console.log("odhen-print-topology-probe-static: ok");
