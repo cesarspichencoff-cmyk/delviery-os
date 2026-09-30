@@ -5,7 +5,7 @@
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "design/tata-edge-runtime-foundation-v1",
   "checkpoint_type": "PRODUCTION_TALLY_GATE_F_ARMED_WAITING_REAL_EVENT",
-  "state_basis_head": "1730d967a31cd61c60ca1b2a56e8d10899c8b006",
+  "state_basis_head": "f768d6516bf3f8ae59efc44dfe463226baf7d464",
   "verified_state_refs": [
     "deploy/cloudflare/gerencial-mail-bridge/",
     "deploy/cloudflare/tata-edge-cloud-shadow/",
@@ -66,7 +66,8 @@
     "docs/context/EVIDENCE_IFOOD_LOCAL_OCR_EXECUTOR_CONTRACT_2026-09-27.md",
     "docs/context/EVIDENCE_TALLY_GATE_E_REAL_LIVE_SERIALIZATION_2026-09-28.md",
     "docs/context/EVIDENCE_TALLY_WEBHOOK_AUTHORIZED_ACCESS_BOUNDARY_2026-09-28.md",
-    "docs/context/EVIDENCE_TALLY_GATE_F_ARMED_REAL_ITEM_MISSING_2026-09-30.md"
+    "docs/context/EVIDENCE_TALLY_GATE_F_ARMED_REAL_ITEM_MISSING_2026-09-30.md",
+    "docs/context/EVIDENCE_CAIXA_PULSE_FRESH_ACTION_WINDOW_REPLAY_2026-09-30.md"
   ],
   "verified_state": [
     "The canonical operational mail bridge is cesar-gerencial-mail-bridge reading Atendimento Sent read-only with EXAMINE + BODY.PEEK and D1 cesar-gerencial-mail-bridge.",
@@ -241,7 +242,12 @@
     "César confirmed completion of the manual Tally Connect step for the live ZjVv1a webhook. This is HUMAN_CONFIRMED_ACTION; signed world delivery remains UNPROVEN until the next real post-connect submission.",
     "The temporary local signing-secret transfer artifact was zeroized after the manual Connect confirmation.",
     "Fresh read-only Caixa Executivo evidence now PROVES real production Item faltando conditional serialization: rows kb1OKyo, o91lKJx, rD1qDER and 9NyrN0X populate only M:P with the four item-missing barrier answers while Q:T remains empty.",
-    "The latest live ocorrencias_respostas row observed in the 2026-09-30 read was 9NyrN0X submitted 2026-09-29 19:01:13, before Gate F connection; no real post-connect submission is yet available for webhook/D1/kernel world proof."
+    "The latest live ocorrencias_respostas row observed in the 2026-09-30 read was 9NyrN0X submitted 2026-09-29 19:01:13, before Gate F connection; no real post-connect submission is yet available for webhook/D1/kernel world proof.",
+    "Fresh byte-preserving Caixa Pulse replay over current canonical D1 now covers 87 occurrence rows across 24 business dates through 2026-09-29; 67 are rule-classified and 20 remain unclassified, with 3 explicit multi-signal ambiguities.",
+    "Current action-window replay has 66 classified episodes with recognized actions: 57 later same-family recurrences, 9 no-later-recurrence cases, 1 no-post-action-window case, 8 nonexhaustive-window no-recurrence cases and 0 exhaustive-window no-recurrence cases. Action effective proven=0 and ineffective proven=0.",
+    "OMISSION remains the strongest internal recurrence signal in the current loaded window: 26 classified episodes across 16 dates; 25 recognized-action episodes, 24 later omission-family recurrences, median gap 1 day. This supports investigation only and does not prove action failure or shared root cause.",
+    "The current D1 population for the historical business-date window through 2026-09-25 is now 73 rows versus the older proven snapshot of 69; the +4 source-population difference is FACT but its provenance/cause is UNKNOWN.",
+    "A false classification collapse in the first 2026-09-30 replay was caused by PowerShell UTF-8 transcoding of Wrangler JSON (for example não -> n├úo). That replay is rejected; D1 JSON evidence exports must use a byte-preserving route."
   ],
   "proof": {
     "latest_green_ci_run": "36302995615",
@@ -672,7 +678,7 @@
     "tally_gate_f_webhook_wired": false,
     "tally_gate_f_production_mutation_performed": false
   },
-  "next_action": "Gate F is ARMED. Do not create synthetic production incidents. Wait for the next real ZjVv1a submission, then prove signed Tally delivery -> exactly one idempotent live D1 observation -> minimized envelope -> Context Kernel v0.11, preserving OPERATOR_SELF_REPORT, causal_status UNPROVEN, attention authority NONE and external_effects_authorized=false. The previously open real Item faltando serialization gate is now PROVEN.",
+  "next_action": "Primary gate: keep Tally Gate F ARMED and wait for the next real ZjVv1a submission, then prove signed webhook -> one idempotent live D1 observation -> minimized envelope -> Context Kernel v0.11. Parallel safe track: prove the prepared local iFood OCR execution path on a zero-cost Windows/Node host with read-only attachment bytes and segmented OCR/parser, without deploying production OCR or creating unsupported accuracy claims.",
   "unknowns": [
     "No defensible iFood review freshness cadence has been established; its freshness must remain UNKNOWN.",
     "Global critical-source coverage is incomplete; global all-clear must remain disabled.",
@@ -688,7 +694,6 @@
     "No v0.11 live-default investigation chain has yet consumed a real post-cutover production Tally observation.",
     "No real team-sent iFood review batch has yet been admitted through the authorized atendimento@tatasushi.com.br -> cesar@tatasushi.com.br route.",
     "Independent post-action outcome evidence is not yet systematically linked; action follow-up now qualifies the observation window but action effectiveness remains UNKNOWN.",
-    "The historical 69-row Caixa Pulse replay has not yet been freshly rerun with the new action-window-quality counters in this session.",
     "Layout-aware iFood OCR accuracy is proven only on the private seven-image reference corpus; generalization to future screenshots/layout changes remains UNKNOWN.",
     "No local Node/WebAssembly OCR executor is deployed or WORLD_PROVEN against D1 attachment bytes.",
     "No concrete local Tesseract.js/OCR engine adapter is yet wired to ifood-local-ocr-executor@0.1.0.",
@@ -698,7 +703,8 @@
     "No real production Tally minimized envelope has yet traversed signed webhook -> Edge/D1 -> portable kernel v0.11.",
     "No real post-connect ZjVv1a submission has yet crossed the signed live webhook into D1.",
     "The human-confirmed Tally Connect action is not yet independently WORLD_PROVEN by a live webhook delivery receipt.",
-    "No real post-connect Tally minimized envelope has yet traversed Edge/D1 -> portable Context Kernel v0.11."
+    "No real post-connect Tally minimized envelope has yet traversed Edge/D1 -> portable Context Kernel v0.11.",
+    "The +4 current-source population difference for the <=2026-09-25 Caixa Pulse window versus the older 69-row snapshot has unknown provenance/cause and must not be interpreted as incident growth without further source-lineage analysis."
   ],
   "authority": {
     "continuity_update": "AUTHORIZED_METADATA_WRITE_WITHIN_PROJECT_SCOPE",
