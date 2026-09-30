@@ -109,3 +109,40 @@ Conclude one of:
 - `LOCAL_PRINT_SOURCE_INSUFFICIENT`: source-level print paths cannot provide the required truth safely.
 
 No implementation or production change is authorized by this investigation.
+
+
+## Source-audit result — 2026-09-30
+
+Decision at code level: `LOCAL_PRINT_SOURCES_COMPLEMENTARY`.
+
+The manual CAIXA_MOOCA audit proved the following source contracts without reading logs, orders, SQL or credentials:
+
+- Delivery report: `NRCOMANDA`, conditional `NRCOMANDAEXT`, product code/name/quantity, merged `DSOBSDESCIT + DSOBSPEDDIGCMD`, and order-level `DSOBSCOMANDA`.
+- Production ticket: item quantity/name, item-scoped `TXPRODCOMVEN`, and printer destination in `printerInfo`; `NRCOMANDA` is represented as `COMANDA.: DLV_<N>` when the runtime path uses `tipoVenda='C'`.
+- A product may print to production, production 2 and puxa; any future join must deduplicate repeated production lines.
+- Delivery and production can therefore be joined by `NRCOMANDA` when `DLV_<N>` is present; production lacks `NRCOMANDAEXT` and `CDPRODUTO`.
+- The Periféricos path preserves only model + port in the payload/log identity; human TATÁ praça names are not an Odhen concept and require an explicit mapping layer.
+- The canonical packaging box is not sourced from Odhen print data; it remains a DeliveryOS V1.3.2 motor result.
+
+### Runtime gates still open
+
+Code-level complementarity is not yet world proof. Before any live reader/cutover:
+
+1. prove that delivery production tickets on this store actually traverse this CAIXA_MOOCA Periféricos instance;
+2. prove whether the live production ticket contains `COMANDA.: DLV_<NRCOMANDA>`;
+3. prove the live bridge path for the relevant production print;
+4. map runtime `<modelo>_<porta>` to TATÁ physical praça;
+5. prove one bounded live production block before creating a REAL_SAMPLE_PROVEN production parser profile.
+
+### Preferred zero-content proof
+
+Use only metadata from the already-existing per-printer files:
+
+`<AAAA_MM_DD>_IMP_<modelo>_<porta>.txt`
+
+Correlate which file grows with an observed physical production print. This can simultaneously prove the active bridge path and provide the model/port ↔ physical-printer mapping without opening log contents.
+
+Tool prepared:
+`tools/monitor_imp_printer_metadata_only.ps1`
+
+It reads filename/length/timestamps only and has no content-read or write capability.
