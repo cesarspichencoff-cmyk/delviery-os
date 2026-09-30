@@ -1,26 +1,48 @@
 param(
-  [string]$OdhenRoot = "C:\TEKNISA\odhen-perifericos"
+  [string]$TeknisaRoot = "C:\TEKNISA"
 )
 
 $ErrorActionPreference = "Stop"
 
-# SOURCE-ONLY PRINT-TOPOLOGY PROBE.
-# Reads code files only. It does not touch Log/Logs, order data, SQL, HTTP,
-# printer devices, processes, credential files or operational payloads.
+# TARGETED SOURCE-ONLY PRINT-TOPOLOGY PROBE.
+# Designed after the 2026-09-30 CAIXA_MOOCA source audit.
+# Reads only a small allowlist of known code files.
+# It never opens Log/Logs, reads orders, queries SQL, calls HTTP/print,
+# starts processes, reads credential files, or writes files.
 
-$codeRoots = @(
-  (Join-Path $OdhenRoot "perifericos\src"),
-  (Join-Path $OdhenRoot "perifericos\routes"),
-  (Join-Path $OdhenRoot "odhenPOS\mobile"),
-  (Join-Path $OdhenRoot "odhenPOS\backend_74000")
+$relativeCandidates = @(
+  "odhenPOS\backend_74000\vendor\odhen\api\src\Service\ImpressaoDelivery.php",
+  "odhenPOS\backend_74000\vendor\odhen\api\src\Service\ImpressaoPedido.php",
+  "odhenPOS\backend_74000\vendor\odhen\api\src\Service\Pedido.php",
+  "odhenPOS\backend_74000\vendor\odhen\api\src\Controller\Delivery.php",
+  "odhenPOS\backend_74000\vendor\odhen\api\src\Controller\Account.php",
+  "odhenPOS\backend_74000\vendor\odhen\api\src\Controller\Payment.php",
+  "odhenPOS\backend_74000\vendor\odhen\api\src\Lib\ImpressaoUtil.php",
+  "odhenPOS\backend_74000\vendor\odhen\api\src\Remote\Printer\Command.php",
+  "odhenPOS\backend_74000\vendor\odhen\api\src\Remote\Printer\Printing.php",
+  "odhenPOS\mobile\js\services\PerifericosService.js",
+  "odhen-perifericos\routes\imp.js",
+  "odhen-perifericos\src\IMP\index.js",
+  "odhen-perifericos\src\IMP\PrinterLibraryHandler.js",
+  "odhen-perifericos\src\util\dbModelCache.js",
+  "odhen-perifericos\src\util\Log.js"
 )
 
 $tokens = @(
   "ImpressaoDelivery",
   "montaImpressaoDelivery",
-  "ImpressaoUtil",
+  "imprimePedido",
+  "montaPedido",
+  "TXPRODCOMVEN",
+  "QTPRODCOMVEN",
+  "NRCOMANDA",
+  "NRCOMANDAEXT",
+  "DSCOMANDA",
+  "DSOBSDESCIT",
+  "DSOBSPEDDIGCMD",
+  "DSOBSCOMANDA",
+  "configuracaoPonte",
   "impressaoPedidos",
-  "Printing",
   "sendPrint",
   "/print",
   "saveItemRequest",
@@ -29,40 +51,19 @@ $tokens = @(
   "printCommands",
   "LogIMP",
   "formatTX",
-  "PrinterLibraryHandler",
   "salvaLogDetalhadoIMP",
-  "salvaimpressao",
-  "salvarequisicoes",
-  "TXPRODCOMVEN",
-  "DSOBSDESCIT",
-  "DSOBSPEDDIGCMD",
-  "DSOBSCOMANDA",
-  "NRCOMANDA",
-  "NRCOMANDAEXT",
-  "NRVENDAREST",
-  "QTPRODCOMVEN",
-  "NMPRODUTO",
-  "CDPRODUTO",
-  "modelo",
-  "porta",
-  "printer",
-  "impressora",
-  "fila",
-  "setor",
-  "praca",
-  "cozinha",
-  "producao"
+  "IDUTILIMPFRONT",
+  "UTILIZA_IMPRESSAO_PONTE"
 )
 
 $result = [ordered]@{
-  schema = "deliveryos.shadow.odhen.print-topology.source-probe.v1"
-  mode = "READ_ONLY_SOURCE_CODE_ONLY"
-  root = $OdhenRoot
-  root_exists = $false
-  scanned_roots = @()
-  skipped_roots = @()
-  files_scanned = 0
-  hits = @()
+  schema = "deliveryos.shadow.odhen.print-topology.targeted-probe.v2"
+  mode = "READ_ONLY_TARGETED_SOURCE_CODE_ONLY"
+  root = $TeknisaRoot
+  files_considered = 0
+  files_read = 0
+  skipped = @()
+  hits = [System.Collections.Generic.List[object]]::new()
   effects = [ordered]@{
     log_read = $false
     order_read = $false
@@ -70,46 +71,25 @@ $result = [ordered]@{
     http = $false
     print = $false
     process_start = $false
+    credential_read = $false
     file_write = $false
     odhen_change = $false
   }
   errors = @()
 }
 
-if (-not (Test-Path -LiteralPath $OdhenRoot -PathType Container)) {
-  $result.errors += "ODHEN_ROOT_NOT_FOUND"
-  $result | ConvertTo-Json -Depth 8
-  exit 2
-}
+foreach ($relative in $relativeCandidates) {
+  $result.files_considered++
+  $full = Join-Path $TeknisaRoot $relative
 
-$result.root_exists = $true
-
-$extensions = @(".js", ".ts", ".php")
-$files = @()
-
-foreach ($root in $codeRoots) {
-  if (Test-Path -LiteralPath $root -PathType Container) {
-    $result.scanned_roots += $root
-    $files += Get-ChildItem -LiteralPath $root -Recurse -File -ErrorAction SilentlyContinue |
-      Where-Object {
-        $extensions -contains $_.Extension.ToLowerInvariant() -and
-        $_.FullName -notmatch "\\Log(\\|$)" -and
-        $_.FullName -notmatch "\\Logs(\\|$)" -and
-        $_.FullName -notmatch "\\Temp(\\|$)" -and
-        $_.FullName -notmatch "\\cache(\\|$)" -and
-        $_.FullName -notmatch "\\node_modules(\\|$)"
-      }
-  } else {
-    $result.skipped_roots += $root
+  if (-not (Test-Path -LiteralPath $full -PathType Leaf)) {
+    $result.skipped += $relative
+    continue
   }
-}
 
-$files = @($files | Sort-Object FullName -Unique)
-$result.files_scanned = $files.Count
-
-foreach ($file in $files) {
   try {
-    $lines = Get-Content -LiteralPath $file.FullName -ErrorAction Stop
+    $result.files_read++
+    $lines = Get-Content -LiteralPath $full -ErrorAction Stop
     for ($i = 0; $i -lt $lines.Count; $i++) {
       $line = [string]$lines[$i]
       foreach ($token in $tokens) {
@@ -118,17 +98,17 @@ foreach ($file in $files) {
           if ($clean.Length -gt 240) {
             $clean = $clean.Substring(0, 240) + "..."
           }
-          $result.hits += [ordered]@{
+          $result.hits.Add([pscustomobject]@{
             token = $token
-            path = $file.FullName
+            path = $relative
             line = $i + 1
             code = $clean
-          }
+          })
         }
       }
     }
   } catch {
-    $result.errors += ("READ_ERROR:" + $file.FullName)
+    $result.errors += ("READ_ERROR:" + $relative)
   }
 }
 
