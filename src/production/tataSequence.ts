@@ -43,7 +43,8 @@ function validPolicy(policy: TataSequencePolicy): boolean {
     Number.isInteger(policy.min_value) &&
     Number.isInteger(policy.max_value) &&
     policy.min_value >= 0 &&
-    policy.max_value >= policy.min_value
+    policy.max_value >= policy.min_value &&
+    policy.max_value <= Math.pow(10, policy.width) - 1
   );
 }
 
@@ -81,6 +82,36 @@ export function planTataSequence(
   if (!validPolicy(state.policy)) blocking.add("INVALID_SEQUENCE_POLICY");
   if (!Number.isInteger(state.next_value)) blocking.add("INVALID_NEXT_SEQUENCE_VALUE");
 
+  const bindingBySequence = new Map<string, string>();
+  const bindingByOrder = new Map<string, string>();
+
+  for (const binding of state.bindings) {
+    const bindingScope = clean(binding.scope_id);
+    const bindingOrder = clean(binding.teknisa_order_id);
+    const bindingSequence = clean(binding.tata_sequence);
+
+    if (!bindingScope || !bindingOrder || !bindingSequence) {
+      blocking.add("INVALID_EXISTING_SEQUENCE_BINDING");
+      continue;
+    }
+
+    if (bindingScope !== scopeId) continue;
+
+    const priorOrder = bindingBySequence.get(bindingSequence);
+    if (priorOrder && priorOrder !== bindingOrder) {
+      blocking.add(`EXISTING_TATA_SEQUENCE_COLLISION:${bindingSequence}`);
+    } else {
+      bindingBySequence.set(bindingSequence, bindingOrder);
+    }
+
+    const priorSequence = bindingByOrder.get(bindingOrder);
+    if (priorSequence && priorSequence !== bindingSequence) {
+      blocking.add(`ORDER_BOUND_TO_MULTIPLE_TATA_SEQUENCES:${bindingOrder}`);
+    } else {
+      bindingByOrder.set(bindingOrder, bindingSequence);
+    }
+  }
+
   const scopedBindings = state.bindings.filter((binding) => binding.scope_id === scopeId);
   const duplicateOrderBindings = scopedBindings.filter(
     (binding) => binding.teknisa_order_id === teknisaOrderId,
@@ -88,7 +119,9 @@ export function planTataSequence(
 
   if (duplicateOrderBindings.length > 1) {
     const unique = new Set(duplicateOrderBindings.map((binding) => binding.tata_sequence));
-    if (unique.size > 1) blocking.add("ORDER_BOUND_TO_MULTIPLE_TATA_SEQUENCES");
+    if (unique.size > 1) {
+      blocking.add(`ORDER_BOUND_TO_MULTIPLE_TATA_SEQUENCES:${teknisaOrderId}`);
+    }
   }
 
   const existing = duplicateOrderBindings[0] ?? null;
