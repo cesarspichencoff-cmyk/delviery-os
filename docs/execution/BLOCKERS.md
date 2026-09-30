@@ -1031,17 +1031,25 @@ vermelhos; com um cliente próprio, o modelo diz "desconhecido" e o ensaio repro
 do Foxxy é quem prova (`docs/etapa-4-8/BANCADA-EMULADOR.md` §3.12).
 ---
 
-## Entregas × Copiloto — feed durável do consumer live ausente · ABERTO em 2026-09-30
+## Entregas × Copiloto — live multi-instância / produção ainda bloqueado · ABERTO em 2026-09-30
 
-O consumer live-capable já possui flag OFF, kill switch fail-closed, checkpoint atômico, replay idempotente e prova com PostgreSQL real. **Isso não autoriza ligação live.**
+O feed durável **single-instance** deixou de ser UNKNOWN: `CommittedOutboxEntregasEventFeed` + `FileUnitOfWork` provaram commit, restart, cursor e leitura da outbox pública persistida (**9/9 PASS**).
 
-Bloqueio restante: a implementação concreta do `EntregasEventFeed` continua sendo **em memória**. O consumer não foi conectado ao `async-runtime.ts`, a flag `entregas.copiloto_live_connection` continua `false` e não houve deploy.
+O consumer live-capable continua com flag OFF, kill switch fail-closed, checkpoint atômico, replay idempotente e prova com PostgreSQL real. **Nada disso autoriza ligação live.**
 
-Para remover este bloqueio, é necessário:
+Bloqueios restantes:
 
-- implementar um feed durável/substituível usando somente o contrato público versionado;
-- provar restart/replay do produtor e do consumidor sem perda nem duplicação;
-- provar que desligar o kill switch não interfere no domínio Entregas nem no crítico;
-- somente depois solicitar autorização humana separada para ativação live.
+- o produtor piloto ainda não declara `source_mode` por configuração operacional; ausência continua UNKNOWN e é isolada;
+- `FileUnitOfWork` é single-instance e não é banco/lock multi-instância;
+- o consumer não está conectado ao `async-runtime.ts`;
+- a flag `entregas.copiloto_live_connection` continua `false`;
+- não existe autorização humana para ativação live nem deploy.
 
-Estado atual: **CODE_READY + TEST_PASS do consumer de pré-ativação; transporte live durável = UNKNOWN/NOT_IMPLEMENTED; ativação = NÃO AUTORIZADA.**
+Para remover este bloqueio por etapas:
+
+1. tornar `source_mode` configuração explícita na borda do produtor;
+2. provar wiring local/piloto com feed de arquivo + kill switch ainda OFF por padrão;
+3. para produção multi-instância, substituir a persistência local por adapter transacional/cluster-safe;
+4. somente depois solicitar autorização humana separada para ativação live.
+
+Estado atual: **feed durável single-instance = CODE_READY + TEST_PASS; produção multi-instância = NOT_IMPLEMENTED; ativação = NÃO AUTORIZADA.**

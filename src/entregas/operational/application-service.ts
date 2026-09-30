@@ -44,6 +44,7 @@ import {
   type RiderOperationalState,
 } from "./rider-state";
 import type { OutboxRecord } from "../integration/outbox";
+import type { EntregasSourceMode } from "../contracts/events/types";
 
 export interface AppResult {
   ok: boolean;
@@ -59,6 +60,10 @@ export class EntregasApplicationService {
   constructor(
     private readonly uow: UnitOfWork,
     private readonly policy: PilotPolicy = createPilotPolicy(),
+    /**
+     * Carimbo publico explicito. Ausente permanece ausente; nunca cai em real.
+     */
+    private readonly publicSourceMode?: EntregasSourceMode,
   ) {}
 
   async execute(cmd: Command): Promise<AppResult> {
@@ -148,6 +153,7 @@ export class EntregasApplicationService {
       const pub = domainEventToPublic(de, {
         unit_id: agg.trip.unit_id,
         correlation_id: agg.trip.trip_id,
+        source_mode: this.publicSourceMode,
       });
       if (!pub) continue;
       const rec: OutboxRecord = {
@@ -523,6 +529,7 @@ export class EntregasApplicationService {
       const pub = domainEventToPublic(de, {
         unit_id: cmd.unit_id,
         correlation_id: cmd.handoff_id,
+        source_mode: this.publicSourceMode,
       });
       if (!pub) continue;
       await this.uow.outbox.enqueue({
@@ -574,6 +581,7 @@ export class EntregasApplicationService {
       const pub = domainEventToPublic(de, {
         unit_id: cmd.unit_id,
         correlation_id: cmd.handoff_id,
+        source_mode: this.publicSourceMode,
       });
       if (!pub) continue;
       await this.uow.outbox.enqueue({

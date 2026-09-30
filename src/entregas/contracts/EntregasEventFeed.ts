@@ -8,7 +8,12 @@ import type { EntregasPublicEvent } from "./events/types";
  * NÃO conectar ao Copiloto congelado.
  */
 export interface EntregasEventFeed {
-  /** Lê eventos publicados (ordem de publicação) */
+  /**
+   * Lê eventos disponibilizados pelo transporte em ordem estável.
+   *
+   * Em transporte push/simulado, isso pode significar status published.
+   * Em transporte pull durável, o commit da outbox pública já disponibiliza o evento.
+   */
   list(options?: {
     after_event_id?: string;
     limit?: number;

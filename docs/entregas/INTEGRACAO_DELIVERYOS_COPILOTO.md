@@ -350,3 +350,23 @@ Provas de pré-ativação:
 A implementação concreta atual de `EntregasEventFeed` é `InMemoryEntregasEventFeed`. Portanto **não existe ainda transporte/feed durável real de Entregas para conectar ao consumer live**.
 
 Ativar o consumer contra esse feed em memória faria restart do produtor perder a fonte antes que o checkpoint/replay pudesse cumprir a promessa. Por isso a ativação permanece proibida até existir um adapter de feed durável provado e uma autorização humana específica de ativação.
+## 19. Feed durável do piloto single-instance — 2026-09-30
+
+Foi criado `CommittedOutboxEntregasEventFeed`, dependente somente da porta `OutboxRepository`, e `createFileEntregasEventFeed(dataFile)`, que abre uma `FileUnitOfWork` nova a cada leitura.
+
+Propriedades provadas:
+
+- evento staged e **não commitado** é invisível;
+- depois do commit atômico domínio + eventos + outbox, reader novo enxerga o evento;
+- restart do reader preserva ordem e cursor;
+- cursor inexistente **falha alto** — nunca pula histórico em silêncio;
+- status do transporte push (`pending/failed/published`) não altera o histórico do transporte pull;
+- o feed devolve cópias, não referências mutáveis ao backing store;
+- `source_mode` é carimbado pelo `EntregasApplicationService` apenas quando fornecido explicitamente;
+- ausência de `source_mode` permanece UNKNOWN e nunca cai para `real`.
+
+Gate: `test:entregas:durable-feed` = **9/9 PASS**.
+
+### Fronteira
+
+Isto resolve durabilidade do feed para o piloto **single-instance sobre FileUnitOfWork**. Não transforma o arquivo local em banco multi-instância, não conecta o consumer ao `async-runtime.ts`, não altera a flag live e não autoriza produção.
