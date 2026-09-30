@@ -45,3 +45,17 @@ A identidade intermediária agora tem contrato explícito, sem live wiring:
 - Trip multi-pedido, order_ref duplicado ativo, evidência multi-Trip, modo ausente/divergente ou falta de vínculo continuam Shadow.
 
 A integração live de Entregas permanece desabilitada; esta etapa cria a ponte executável e testável, não a liga à UI nem ao runtime de produção.
+
+## Prova ponta a ponta em shadow — 2026-09-30
+
+O encadeamento completo foi exercitado sem live wiring:
+
+`Entregas public events → índice Trip/Delivery/order_ref → Operação Viva → recomendar() Shadow → âncora causal → Foco real do MOTOR → gate de atenção`
+
+O caso positivo usa `MOTOR.step()` com o debounce real e uma recomendação produzida por `recomendar()`, não uma recomendação montada manualmente. A recomendação só fica `elegivel` quando o `order_ref` preservado por Entregas é literalmente o mesmo `sit.id` do Foco ativo.
+
+Controles negativos provados: Foco de outro pedido, ausência de Foco, Trip multi-pedido, evidência multi-Trip, source_mode ausente, vínculo real contra projeção simulada e order_ref ativo duplicado entre Trips. Todos terminam com zero recomendações elegíveis.
+
+`elegivel` neste contrato significa apenas **compatível com o Foco já escolhido**. Não significa exibido, aceito, enviado ao gerente ou executado. `consumer_live` e UI continuam desligados.
+
+Gate: `test:platform:q003:e2e` = 8/8 PASS.
