@@ -5,7 +5,7 @@
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "design/tata-edge-runtime-foundation-v1",
   "checkpoint_type": "PRODUCTION_TALLY_GATE_F_ARMED_WAITING_REAL_EVENT",
-  "state_basis_head": "36b905eaf8a32382a9105d96ecaafcb656527e4f",
+  "state_basis_head": "4ab3106effc2284f2726770b59083a6dcdfb8c5c",
   "verified_state_refs": [
     "deploy/cloudflare/gerencial-mail-bridge/",
     "deploy/cloudflare/tata-edge-cloud-shadow/",
@@ -71,7 +71,8 @@
     "docs/context/EVIDENCE_IFOOD_LOCAL_OCR_FOXXY_HOST_GATE_2026-09-30.md",
     "docs/context/EVIDENCE_REVIEW_NEEDED_ATTENTION_GUARD_2026-09-30.md",
     "docs/context/EVIDENCE_MAIL_BRIDGE_SOURCE_HEALTH_HEARTBEAT_CODE_READY_2026-09-30.md",
-    "docs/context/EVIDENCE_MAIL_BRIDGE_SOURCE_HEALTH_HEARTBEAT_DEPLOYED_2026-09-30.md"
+    "docs/context/EVIDENCE_MAIL_BRIDGE_SOURCE_HEALTH_HEARTBEAT_DEPLOYED_2026-09-30.md",
+    "docs/context/EVIDENCE_MAIL_BRIDGE_SOURCE_HEALTH_HEARTBEAT_WORLD_PROVEN_2026-09-30.md"
   ],
   "verified_state": [
     "The canonical operational mail bridge is cesar-gerencial-mail-bridge reading Atendimento Sent read-only with EXAMINE + BODY.PEEK and D1 cesar-gerencial-mail-bridge.",
@@ -264,7 +265,11 @@
     "César explicitly authorized production deployment of the minimized read-only mail-bridge source-health heartbeat.",
     "Mail bridge heartbeat is DEPLOYED in production as Cloudflare Worker version 2275edb2-2357-46d7-a0b0-168b87f008e7 from canonical source head 29356391c37a6a552cfa1831d3693951087cd74d.",
     "The heartbeat deployment occurred at 2026-09-30T10:07:44.691Z, after the 07:00 America/Sao_Paulo cron slot; immediate production bridge_state remained empty, which is expected before the first post-deploy scheduled cycle.",
-    "The heartbeat is DEPLOYED but not yet WORLD_PROVEN; first real cron persistence for all three source_health keys remains pending."
+    "The heartbeat is DEPLOYED but not yet WORLD_PROVEN; first real cron persistence for all three source_health keys remains pending.",
+    "The minimized mail-bridge source-health heartbeat is WORLD_PROVEN by a real 2026-09-30 09:00 America/Sao_Paulo scheduled production cycle.",
+    "The real heartbeat cycle persisted all three expected bridge_state keys: daily_closing OK at 2026-09-30T12:00:37.700Z, caixa_pulse OK at 2026-09-30T12:00:44.099Z, and ifood_review OK at 2026-09-30T12:00:45.192Z.",
+    "The iFood heartbeat now proves the cron ran and found zero matches in that cycle (scanned=0, candidates=0, processed=0, errors=0); canonical iFood review mail and attachment tables independently remain at zero rows.",
+    "The heartbeat stores minimized health/counter metadata only and no email subject/body/attachment/customer payload; no external effect was authorized."
   ],
   "proof": {
     "latest_green_ci_run": "36302995615",
@@ -695,7 +700,7 @@
     "tally_gate_f_webhook_wired": false,
     "tally_gate_f_production_mutation_performed": false
   },
-  "next_action": "Primary gate: keep Tally Gate F ARMED and wait for the next real ZjVv1a submission. Mail-bridge heartbeat is DEPLOYED and awaiting its first post-deploy real cron; after the 08:00 America/Sao_Paulo cycle, verify all three source_health keys and promote to WORLD_PROVEN only if counters/timestamps are consistent and ingestion semantics remain unchanged. iFood still waits for the first real Atendimento -> cesar@tatasushi.com.br mail with iFood in subject; OCR remains undeployed until a real verified D1 attachment exists.",
+  "next_action": "Primary gate: keep Tally Gate F ARMED and wait for the next real ZjVv1a submission, then prove signed webhook -> exactly one idempotent live D1 observation -> minimized envelope -> canonical higher-layer Context Kernel. Mail-bridge source-health heartbeat is WORLD_PROVEN. iFood still waits for the first real Atendimento -> cesar@tatasushi.com.br mail with iFood in subject; current heartbeat proves the scheduled cycle ran and found zero matches. OCR remains undeployed until a real verified D1 attachment exists.",
   "unknowns": [
     "No defensible iFood review freshness cadence has been established; its freshness must remain UNKNOWN.",
     "Global critical-source coverage is incomplete; global all-clear must remain disabled.",
@@ -722,9 +727,7 @@
     "The +4 current-source population difference for the <=2026-09-25 Caixa Pulse window versus the older 69-row snapshot has unknown provenance/cause and must not be interpreted as incident growth without further source-lineage analysis.",
     "No real stored review attachment exists yet in production D1 for a D1 -> local executor -> segmented OCR -> parser world proof.",
     "The Foxxy host proof does not establish OCR generalization beyond the private seven-image benchmark.",
-    "Until that heartbeat is deployed, zero iFood rows alone cannot distinguish 'cron ran and found zero candidates' from other ingestion-health states without log/control-surface evidence.",
-    "The production mail-bridge heartbeat has not yet been WORLD_PROVEN by a real post-deploy cron cycle.",
-    "Until the first post-deploy cron runs, source_health rows for daily_closing, caixa_pulse and ifood_review are expected to remain absent."
+    "Until that heartbeat is deployed, zero iFood rows alone cannot distinguish 'cron ran and found zero candidates' from other ingestion-health states without log/control-surface evidence."
   ],
   "authority": {
     "continuity_update": "AUTHORIZED_METADATA_WRITE_WITHIN_PROJECT_SCOPE",
