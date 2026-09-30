@@ -23,7 +23,7 @@ lifecycle:
 |---|---|---|
 | PB9/C1 | **Q-001** | aberta |
 | PB9/C2 | **Q-002** | aberta |
-| PB9/C3 | **Q-003** | aberta |
+| PB9/C3 | **Q-003** | **respondida em 2026-09-30** |
 | PB9/C7 | **Q-004** | aberta |
 | PB9/C8 | **Q-005** | aberta |
 | PB11 | **Q-006** | aberta · `PROCEED_REVERSIBLY` autorizado por D59 |

@@ -85,6 +85,7 @@
     "test:platform:cb4b4": "npx tsx src/platform/run-conference-4b4-tests.ts",
     "test:platform:cb4b5": "npx tsx src/platform/run-conference-4b5-tests.ts",
     "test:platform:copiloto": "npx tsx src/platform/run-copiloto-shadow-tests.ts",
+    "test:platform:q003": "npx tsx src/platform/run-q003-attention-tests.ts",
     "test:platform:product": "npx tsx src/platform/run-product-system-tests.ts",
     "test:platform:r1": "npx tsx src/platform/run-recovery-r1-tests.ts",
     "test:platform:home": "npx tsx src/platform/run-home-signals-tests.ts",

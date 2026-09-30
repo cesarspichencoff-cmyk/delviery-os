@@ -367,13 +367,13 @@ Nenhuma destas pode ser tomada por modelo, por conveniência técnica ou por in�
 
 ---
 
-## 7. Conflitos conhecidos, ainda abertos
+## 7. Conflitos conhecidos
 
 | # | Conflito | Fontes em choque | Quem resolve |
 |---|---|---|---|
 | C1 | Ambiente pode carregar orientação de ação? | César quer "dicas práticas" nos secundários × `Modelo` §3 e `Mapa_Ambientes` §11 proíbem bloco de ação em Ambiente | César |
 | C2 | Quem é "Operação Viva": núcleo cognitivo ou projeção de viagens? | `Mapa_Mestre` §2.1 × `operacao-viva.ts` | César |
-| C3 | Qual motor é dono da atenção? | `decisao.js` × `shadow.ts` — ligar sem decidir recria o defeito corrigido em `37ca1c9` | César |
+| C3 | **FECHADO 2026-09-30 — autoridade da atenção = MOTOR (`sess.active.sit`)** | `decisao.js` escolhe ação só dentro da mesma causa-raiz; `shadow.ts` permanece subordinado e não abre/troca Foco; promoção futura exige âncora causal explícita pelo gate Q-003 | César · `Q-003` |
 | C4 | "Quentes" = hot roll ou cozinha? | César × `DISPLAY.cozinha_quentes = "Quentes"` | César (P1) |
 | C5 | Caixa e Conferência sem dado podem aparecer? | César quer ver × `Mapa_Ambientes` §7 proíbe verde inventado | César (P5, P6) |
 | C6 | "Duas sacolas": heurística ou regra? | motor × `Logica_Embalagens` §11 | César (P3) |

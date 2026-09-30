@@ -5,8 +5,8 @@
     "status": "ACTIVE",
     "authority_scope": "technical_state",
     "superseded_by": null,
-    "atualizado_em": "2026-09-25",
-    "state_basis": "274141e",
+    "atualizado_em": "2026-09-30",
+    "state_basis": "a3505bd",
     "observa": [
       "src/product/",
       "src/perfil-delivery/",

@@ -39,6 +39,18 @@
            (fonteReal ? "itens reais por pedido" : "composição sintética");
   }
 
+  /* Q-003: normaliza a autoridade de atenção já escolhida pelo MOTOR.
+     Não escolhe foco, não recalcula severidade e não inventa identidade. */
+  function focoCanonico(active) {
+    if (!active || !active.sit || typeof active.sit.kind !== "string") return null;
+    const s = active.sit, key = active.key || s.key;
+    if (!key) return null;
+    const foco = { key: String(key), kind: s.kind };
+    if (s.praca != null) foco.praca = String(s.praca);
+    if (s.id != null) foco.id = String(s.id);
+    return foco;
+  }
+
   /* RESTRIÇÃO DE ESCOPO (docs/Contrato_Motor_Decisao.md §10, docs/Decisao_Correcao_Motor_Decisao.md):
      sess.active.sit é a fonte da verdade da atenção. Quando existe foco ativo (opts.active),
      um candidato só pode vencer se for causalmente ligado à MESMA causa raiz do foco — nunca
@@ -181,5 +193,5 @@
     return top;
   }
 
-  return { decidir, ancoraDaPraca };
+  return { decidir, ancoraDaPraca, focoCanonico };
 });

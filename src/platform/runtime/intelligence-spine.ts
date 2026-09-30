@@ -39,9 +39,12 @@
  * uma segunda opinião — por isso ela não inventa `external_id`, não fabrica
  * ordem e não preenche ausência. Ausência continua ausência.
  *
- * Q-003 continua aberta: nada aqui liga `perfil-delivery/decisao.js` ao
- * Copiloto, escolhe dono da atenção ou dá Foco canônico a esta cadeia. O que
- * sai daqui é sombra — proposta registrada, nunca ação.
+ * Q-003 foi fechada em 2026-09-30: a autoridade da atenção continua no
+ * MOTOR (`sess.active.sit`), `decisao.js` só escolhe ação dentro da mesma
+ * causa-raiz e o Shadow nunca abre/troca Foco. Esta cadeia não possui hoje
+ * identidade causal legítima até o Perfil Delivery; portanto o que sai daqui
+ * continua sombra. Qualquer promoção futura passa pelo gate
+ * `copiloto/attention-authority.ts`, sem inferir identidade.
  */
 
 import { createHash } from "node:crypto";

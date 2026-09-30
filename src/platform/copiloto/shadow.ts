@@ -4,6 +4,11 @@
  * Toda recomendação daqui é uma proposta com prazo de validade, evidência
  * rastreável e versão de política. Nenhuma delas age.
  *
+ * Q-003: este motor também NÃO é autoridade da atenção. O Foco pertence ao
+ * MOTOR (`sess.active.sit`). Uma recomendação daqui só pode chegar à atenção
+ * humana por uma fronteira externa que prove a mesma causa-raiz; sem âncora
+ * causal explícita, permanece sombra.
+ *
  * O estado `executed` NÃO EXISTE neste arquivo, e a ausência é deliberada: se o
  * tipo permitisse representá-lo, alguém eventualmente o escreveria — e a
  * primeira automação real do DeliveryOS teria nascido de um campo que ninguém
