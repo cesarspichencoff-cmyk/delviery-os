@@ -1,5 +1,7 @@
 # Parser de Comanda (Tecnisa/Odhen) — V1
 
+> **SUPERSESSÃO OPERACIONAL (2026-09-30):** a afirmação histórica abaixo de que "não existe comanda de produção separada por praça" não deve mais ser usada como verdade atual da operação. César confirmou roteamento físico de produção por serviço (almoço/jantar) para Caixa, Cozinha, Combinados, Enrolados e Enrolados Quentes. O Relatório de Entrega continua sendo uma fonte única de delivery, mas é distinto das vias de produção. Ver `docs/Production_Ticket_Operational_Spec_V1.md`. A topologia técnica dessas vias ainda está em prova por código.
+
 > Estratégia de parsing. **Nenhum código foi implementado nesta missão.** Depende da
 > `docs/Auditoria_Fonte_Viva_Loja_V1.md` (fonte real ainda não confirmada) e da
 > `docs/Arquitetura_Sincronizacao_Local_V1.md` (onde este parser se encaixa). Os campos e o exemplo
