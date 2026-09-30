@@ -61,7 +61,7 @@ function normalizedName(value: unknown): string {
 }
 
 function validYield(value: unknown): value is number {
-  return Number.isFinite(value) && Number(value) >= 0;
+  return typeof value === "number" && Number.isFinite(value) && value >= 0;
 }
 
 function uniqueRuleMap(ruleset: KitchenDependencyRuleset): {
