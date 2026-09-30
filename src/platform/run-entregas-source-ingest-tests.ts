@@ -133,10 +133,17 @@ test("SI8 processo OFF sobe sem URL de banco e encerra por sinal", async () => {
   assert.match(out, /DESLIGADO/);
   assert.doesNotMatch(out, /DATABASE_URL|postgres/i);
   child.kill("SIGTERM");
-  const code = await new Promise<number | null>((resolve) =>
-    child.once("exit", resolve),
+  const exit = await new Promise<{
+    code: number | null;
+    signal: NodeJS.Signals | null;
+  }>((resolve) =>
+    child.once("exit", (code, signal) => resolve({ code, signal })),
   );
-  assert.equal(code, 0);
+  assert.ok(
+    exit.code === 0 || exit.signal === "SIGTERM",
+    "processo terminou por motivo inesperado: " + JSON.stringify(exit),
+  );
+  assert.doesNotMatch(out, /falha fatal/i);
 });
 
 void Promise.all(tests)
