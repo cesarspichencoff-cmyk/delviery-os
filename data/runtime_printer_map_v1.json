@@ -1,96 +1,119 @@
 {
   "schema": "deliveryos.runtime-printer-map.v1",
-  "status": "PARTIAL",
-  "captured_at_local": "2026-09-30T14:00:25.332-03:00",
-  "store_pc": "CAIXA_MOOCA",
-  "source": "PER_PRINTER_IMP_METADATA_CORRELATED_WITH_HUMAN_PHYSICAL_OBSERVATION",
+  "status": "CURRENT_CONFIG_PROVEN",
+  "captured_at_local": "2026-09-30T20:18:00-03:00",
+  "store": "0001 - TATA ITAIM",
+  "source": "TEKNISA_RETAIL__CADASTRO_DE_LOJA__IMPRESSORAS_POR_LOJA",
   "mappings": [
     {
-      "printer_model": "16",
-      "printer_port": "192.168.0.153",
-      "tata_target": "BALCAO_SUSHI_1",
-      "proof": "WORLD_PROVEN",
-      "evidence": {
-        "local_observation": "César directly observed production on Balcão Sushi 1 during the bounded interval; an Executivo Salmão was associated with the initial .153 activity, and subsequent sushi/combinado activity occurred while .153 continued to append. The mapping model 16 / 192.168.0.153 -> BALCAO_SUSHI_1 remains WORLD_PROVEN, but individual 300-byte appends are not equated one-to-one with tickets.",
-        "metadata_events": [
-          {
-            "from": 26926,
-            "to": 27358,
-            "at_local": "2026-09-30T13:56:49.537-03:00"
-          },
-          {
-            "from": 27358,
-            "to": 27658,
-            "at_local": "2026-09-30T13:57:32.911-03:00"
-          },
-          {
-            "from": 27658,
-            "to": 27958,
-            "at_local": "2026-09-30T13:58:15.591-03:00"
-          },
-          {
-            "from": 27958,
-            "to": 28258,
-            "at_local": "2026-09-30T13:58:58.820-03:00"
-          },
-          {
-            "from": 28258,
-            "to": 28558,
-            "at_local": "2026-09-30T13:59:42.020-03:00"
-          }
-        ],
-        "log_content_read": false,
-        "print_triggered_by_deliveryos": false
-      }
-    }
-  ],
-  "unknown_ports": [
-    "192.168.0.116",
-    "192.168.0.110",
-    "192.168.0.142"
-  ],
-  "notes": [
-    "This map records only physical printer identity proven by correlated metadata and human observation.",
-    "It does not by itself prove the order was delivery/iFood, that COMANDA.: DLV_<N> was present, or that all production paths traverse this Perifericos instance.",
-    "Per-printer IMP file growth is not assumed to be one physical ticket per MUDOU event; repeated fixed-size appends may be command/status logging within the same printer process.",
-    "192.168.0.110 remains ambiguous because bar beverage activity and fiscal-note issuance occurred in the same short interval.",
-    "192.168.0.142 has a strong fiscal correlation from a deliberate note-issuance moment, but remains candidate until the physical action/timing is explicitly confirmed."
-  ],
-  "candidates": [
-    {
-      "printer_model": "16",
-      "printer_port": "192.168.0.110",
-      "candidate_targets": [
-        "BAR_BEBIDAS",
-        "FISCAL_CAIXA_OR_OTHER"
-      ],
-      "proof": "AMBIGUOUS",
-      "evidence": {
-        "metadata_event": {
-          "from": 136099,
-          "to": 137402,
-          "at_local": "2026-09-30T13:58:14.588-03:00"
-        },
-        "context": "A Coca Zero was in the same order and the bar printer was active; César also issued the fiscal note immediately afterward, so the metadata event cannot yet be attributed uniquely to bar versus fiscal/other print.",
-        "log_content_read": false
-      }
+      "printer_code": "00001",
+      "printer_name": "CAIXA",
+      "printer_model": "Epson TM-T20",
+      "printer_port": "USB",
+      "printer_ip": null,
+      "peripherals_server": "192.168.0.24:3000",
+      "used_by_products": false,
+      "proof": "CURRENT_CONFIG_PROVEN"
     },
     {
-      "printer_model": "16",
-      "printer_port": "192.168.0.142",
-      "candidate_targets": [
-        "FISCAL_CAIXA"
-      ],
-      "proof": "CORRELATED_CANDIDATE_NOT_YET_WORLD_PROVEN",
-      "evidence": {
-        "metadata_event": {
-          "from": 110802,
-          "to": 112932,
-          "at_local": "2026-09-30T14:00:16.268-03:00"
-        },
-        "context": "César announced he would issue the fiscal note immediately before this event. Treat as a strong fiscal-printer candidate until he confirms the note was the isolated physical action at that moment.",
-        "log_content_read": false
-      }
+      "printer_code": "00002",
+      "printer_name": "COZINHA",
+      "printer_model": "Epson TM-T20",
+      "printer_port": "LPT3",
+      "printer_ip": "192.168.0.116",
+      "peripherals_server": "192.168.0.24:3000",
+      "used_by_products": true,
+      "proof": "CURRENT_CONFIG_PROVEN"
+    },
+    {
+      "printer_code": "00003",
+      "printer_name": "DELIVERY SUSHI 1",
+      "printer_model": "Epson TM-T20",
+      "printer_port": null,
+      "printer_ip": "192.168.0.153",
+      "peripherals_server": "192.168.0.24:3000",
+      "used_by_products": true,
+      "proof": "CURRENT_CONFIG_PROVEN"
+    },
+    {
+      "printer_code": "00004",
+      "printer_name": "DELIVERY SUSHI 2",
+      "printer_model": "Epson TM-T20",
+      "printer_port": null,
+      "printer_ip": "192.168.0.4",
+      "peripherals_server": "192.168.0.24:3000",
+      "used_by_products": true,
+      "proof": "CURRENT_CONFIG_PROVEN"
+    },
+    {
+      "printer_code": "00005",
+      "printer_name": "BALCAOSUSHI0",
+      "printer_model": "Elgin I8/I9",
+      "printer_port": "LPT2",
+      "printer_ip": "192.168.0.161",
+      "peripherals_server": "192.168.0.24:3000",
+      "used_by_products": false,
+      "proof": "CURRENT_CONFIG_PROVEN"
+    },
+    {
+      "printer_code": "00006",
+      "printer_name": "BALCAOSUSHI2",
+      "printer_model": "Epson TM-T20",
+      "printer_port": "LPT5",
+      "printer_ip": "192.168.0.110",
+      "peripherals_server": "192.168.0.24:3000",
+      "used_by_products": true,
+      "proof": "CURRENT_CONFIG_PROVEN"
+    },
+    {
+      "printer_code": "00007",
+      "printer_name": "BAR",
+      "printer_model": "Epson TM-T20",
+      "printer_port": "LPT6",
+      "printer_ip": "192.168.0.232",
+      "peripherals_server": "192.168.0.24:3000",
+      "used_by_products": true,
+      "proof": "CURRENT_CONFIG_PROVEN"
+    },
+    {
+      "printer_code": "00008",
+      "printer_name": "POS",
+      "printer_model": "Positivo L400",
+      "printer_port": "USB",
+      "printer_ip": null,
+      "peripherals_server": null,
+      "used_by_products": false,
+      "proof": "CURRENT_CONFIG_PROVEN"
+    },
+    {
+      "printer_code": "00009",
+      "printer_name": "BALCAOSUSHI1",
+      "printer_model": "Epson TM-T20",
+      "printer_port": "LPT4",
+      "printer_ip": "192.168.0.142",
+      "peripherals_server": "192.168.0.24:3000",
+      "used_by_products": true,
+      "proof": "CURRENT_CONFIG_PROVEN"
+    },
+    {
+      "printer_code": "00010",
+      "printer_name": "CAIXA2",
+      "printer_model": "Epson TM-T20",
+      "printer_port": null,
+      "printer_ip": "192.168.0.232",
+      "peripherals_server": null,
+      "used_by_products": false,
+      "proof": "CURRENT_CONFIG_PROVEN"
     }
+  ],
+  "supersedes": {
+    "previous_branch_head": "52103ee3c8fb39c98c8830562b5fb29c15773d3b",
+    "reason": "Official current Teknisa printer registry disproved the earlier metadata-only identity inference for .153 and the fiscal-candidate interpretation for .142."
+  },
+  "notes": [
+    "Printer identity here is proven from the current Teknisa store registry export, not inferred from IMP file-size deltas.",
+    "192.168.0.153 is DELIVERY SUSHI 1 (code 00003), not BALCAO_SUSHI_1.",
+    "192.168.0.142 is BALCAOSUSHI1 (code 00009), not a fiscal printer.",
+    "Static configuration proof does not by itself prove a specific runtime print event or physical paper output."
   ]
 }
