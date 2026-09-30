@@ -48,6 +48,8 @@ export interface PlatformConfig {
    * ela gasta passada e acumula histórico sem ninguém olhando.
    */
   spine_enabled: boolean;
+  /** Diretório durável da inteligência; obrigatório quando a Spine liga. */
+  intelligence_dir: string;
 }
 
 export class ConfigError extends Error {
@@ -138,6 +140,21 @@ export function loadPlatformConfig(env: NodeJS.ProcessEnv = process.env): Platfo
   // schema no boot faz N réplicas correrem a mesma migration ao mesmo tempo,
   // e transforma um deploy em uma corrida.
   const migrate_on_boot = booleano(env, "DELIVERYOS_MIGRATE_ON_BOOT", ambiente === "local");
+  const spine_enabled = booleano(env, "DELIVERYOS_INTELLIGENCE_SPINE", false);
+  const intelligence_dir = texto(env, "DELIVERYOS_INTELLIGENCE_DIR", "");
+
+  if (spine_enabled && ambiente !== "local") {
+    throw new ConfigError(
+      "DELIVERYOS_INTELLIGENCE_SPINE só pode ser ligada em local nesta etapa",
+      "DELIVERYOS_INTELLIGENCE_SPINE",
+    );
+  }
+  if (spine_enabled && !intelligence_dir) {
+    throw new ConfigError(
+      "DELIVERYOS_INTELLIGENCE_DIR obrigatório quando a Spine está ligada",
+      "DELIVERYOS_INTELLIGENCE_DIR",
+    );
+  }
 
   return {
     ambiente,
@@ -153,7 +170,8 @@ export function loadPlatformConfig(env: NodeJS.ProcessEnv = process.env): Platfo
     batch_size: numero(env, "DELIVERYOS_BATCH_SIZE", 25),
     shutdown_timeout_ms: numero(env, "DELIVERYOS_SHUTDOWN_TIMEOUT_MS", 25_000),
     migrate_on_boot,
-    spine_enabled: booleano(env, "DELIVERYOS_INTELLIGENCE_SPINE", false),
+    spine_enabled,
+    intelligence_dir,
   };
 }
 
@@ -189,5 +207,6 @@ export function describe(cfg: PlatformConfig): Record<string, string | number | 
     lote: cfg.batch_size,
     migra_no_boot: cfg.migrate_on_boot,
     espinha: cfg.spine_enabled,
+    inteligencia_duravel: cfg.intelligence_dir ? "configurada" : "nao_configurada",
   };
 }

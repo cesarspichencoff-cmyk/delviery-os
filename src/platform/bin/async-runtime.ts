@@ -22,6 +22,7 @@ import { PgJobRepository, PgOutboxRepository } from "../persistence/pg-repositor
 import { AsyncRuntime, type JobHandler, type OutboxHandler } from "../runtime/async-worker";
 import { montarPonteDaOperacaoViva } from "../runtime/handler-operacao-viva";
 import { montarEspinhaDeInteligencia } from "../runtime/intelligence-spine";
+import { INTELLIGENCE_SPINE_INTERVAL_MS } from "../runtime/intelligence-retention";
 import { reconstruirNoBoot, resumoDaMemoria } from "../runtime/replay-no-boot";
 
 /**
@@ -116,8 +117,19 @@ async function main(): Promise<void> {
    * da inteligência não faça um fato operacional já processado voltar para
    * retry ou dead-letter.
    */
-  const espinha = cfg.spine_enabled ? montarEspinhaDeInteligencia({ ponte: ponteOperacaoViva }) : null;
-  if (espinha) console.log("[assincrono] espinha de inteligência LIGADA (não crítica)");
+  const espinha = cfg.spine_enabled
+    ? montarEspinhaDeInteligencia({
+        ponte: ponteOperacaoViva,
+        store_dir: cfg.intelligence_dir,
+      })
+    : null;
+  let proximaEspinhaEm = 0;
+  if (espinha) {
+    console.log(
+      "[assincrono] espinha de inteligência LIGADA (não crítica)",
+      JSON.stringify({ intervalo_ms: INTELLIGENCE_SPINE_INTERVAL_MS, duravel: true }),
+    );
+  }
 
   const laco = async (): Promise<void> => {
     while (rodando) {
@@ -149,7 +161,9 @@ async function main(): Promise<void> {
       // Fora do `try` do tick, de propósito: o resultado operacional acima já
       // está decidido e nada daqui pode revisá-lo. `executar()` não lança —
       // devolve o próprio estado, e é nele que a falha da inteligência mora.
-      if (espinha) {
+      const agoraEspinha = Date.now();
+      if (espinha && agoraEspinha >= proximaEspinhaEm) {
+        proximaEspinhaEm = agoraEspinha + INTELLIGENCE_SPINE_INTERVAL_MS;
         const s = await espinha.executar();
         if (s.ultimo_erro && s.ultima_em === s.ultimo_erro.em) {
           console.error(

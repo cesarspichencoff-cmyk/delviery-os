@@ -63,6 +63,7 @@
     "test:platform:pb19": "npx tsx src/platform/run-pb19-deploy-tests.ts",
     "test:platform:pb19:mutacoes": "npx tsx src/platform/run-pb19-mutation-tests.ts",
     "test:platform:spine": "npx tsx src/platform/run-intelligence-spine-tests.ts",
+    "test:platform:q015": "npx tsx src/platform/run-q015-retention-tests.ts",
     "test:platform:spine:mutacoes": "npx tsx src/platform/run-spine-mutation-tests.ts",
     "test:platform:spine:processos": "npx tsx src/platform/run-spine-process-tests.ts",
     "test:platform:q016": "npx tsx src/platform/run-q016-replay-tests.ts",

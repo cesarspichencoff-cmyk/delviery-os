@@ -82,6 +82,11 @@ COPY --from=build --chown=node:node /build/node_modules ./node_modules
 COPY --from=build --chown=node:node /build/dist ./dist
 COPY --from=build --chown=node:node /build/package.json ./package.json
 
+# Volumes da Q-015. Pré-criados como `node` para que um volume nomeado novo
+# herde ownership gravável sem o runtime precisar subir como root.
+RUN mkdir -p /var/lib/deliveryos/intelligence /var/lib/deliveryos/intelligence-backups \
+    && chown -R node:node /var/lib/deliveryos
+
 USER node
 
 # Documenta a porta do crítico. O worker assíncrono não escuta nada.

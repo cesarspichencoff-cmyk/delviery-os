@@ -63,8 +63,8 @@ function flagsDeCarregamento(): string[] {
 /**
  * Onde o store do Conference Brain pode escrever durante as mutações.
  *
- * MS21 troca `memoryOnly: true` por `false` de propósito — é essa a mutação.
- * Sem isolar o diretório, o store real passa a gravar em
+ * A Q-015 agora AUTORIZA store durável. O diretório continua isolado porque
+ * as mutações exercitam o store real e nunca podem deixar resíduo em
  * `data/conference-brain/*.runtime.jsonl`, que é patrimônio versionado: a
  * suíte adversarial deixava resíduo no repositório. Só apareceu porque
  * CLAUDE.md §9 obriga `git status` depois de todo script que escreve.
@@ -211,8 +211,8 @@ mutacao({
   // rejeição — ou seja, a propriedade virou estrutural e a mutação virou
   // inócua. Foi trocada por esta, que apaga o REGISTRO: o anteparo que contém
   // sem registrar é falha silenciosa com outro nome.
-  de: "        estado.falhas++;\n        estado.ultima_em = em;\n        estado.ultimo_erro = { classe: classeDe(e), escopo: \"passada\", em };",
-  para: "        estado.ultima_em = em;",
+  de: "        estado.ultimo_erro = { classe: classeDe(e), escopo: \"passada\", em };",
+  para: "        void e;",
   guarda: GUARDA_ESPINHA,
   assinatura: /C3\.3-12/,
 });
@@ -221,8 +221,8 @@ mutacao({
   id: "MS3",
   propriedade: "a falha fica observável — contada como falha, não como passada boa",
   arquivo: "src/platform/runtime/intelligence-spine.ts",
-  de: "        if (quebrou) estado.falhas++;\n        else estado.passadas++;",
-  para: "        estado.passadas++;\n        void quebrou;",
+  de: "        if (quebrou) estado.falhas++;",
+  para: "        if (quebrou) estado.passadas++;",
   guarda: GUARDA_ESPINHA,
   assinatura: /C3\.3-5/,
 });
@@ -245,8 +245,8 @@ mutacao({
   // `try` e deixava um `catch` órfão, e o guarda morria de erro de sintaxe.
   // Guarda que não compila não é guarda acusando — é o mesmo falso verde que
   // `__SPAWN_FALHOU__` existe para pegar, com outra roupa.
-  de: "            quebrou = true;\n            estado.ultimo_erro = {",
-  para: "            quebrou = true;\n            break;\n            estado.ultimo_erro = {",
+  de: "            quebrou = true;",
+  para: "            quebrou = true; break;",
   guarda: GUARDA_ESPINHA,
   assinatura: /C3\.3-7/,
 });
@@ -270,8 +270,8 @@ mutacao({
   id: "MS7",
   propriedade: "a espinha só é montada sob a flag",
   arquivo: "src/platform/bin/async-runtime.ts",
-  de: "cfg.spine_enabled ? montarEspinhaDeInteligencia({ ponte: ponteOperacaoViva }) : null",
-  para: "montarEspinhaDeInteligencia({ ponte: ponteOperacaoViva })",
+  de: "  const espinha = cfg.spine_enabled",
+  para: "  const espinha = true",
   guarda: GUARDA_ESPINHA,
   assinatura: /C3\.3-11/,
 });
@@ -311,8 +311,8 @@ mutacao({
   id: "MS10",
   propriedade: "cada escopo recebe o SEU modo, nunca um fixo",
   arquivo: "src/platform/runtime/intelligence-spine.ts",
-  de: "        lerProjecao: () => o.ponte.projecao({ agora, unit_id, source_mode }),\n        source_mode,",
-  para: "        lerProjecao: () => o.ponte.projecao({ agora, unit_id, source_mode }),\n        source_mode: \"real\" as SourceMode,",
+  de: "        source_mode,",
+  para: "        source_mode: \"real\" as SourceMode,",
   guarda: GUARDA_ESPINHA,
   assinatura: /C3\.4-3/,
 });
@@ -448,10 +448,10 @@ mutacao({
 
 mutacao({
   id: "MS21",
-  propriedade: "a espinha não cria artefato durável por conta própria",
+  propriedade: "durabilidade só pelo store do Brain — sem fs paralelo",
   arquivo: "src/platform/runtime/intelligence-spine.ts",
-  de: "      const store = M.store.createStore({ memoryOnly: true });",
-  para: "      const store = M.store.createStore({ memoryOnly: false });",
+  de: "import { createRequire } from \"node:module\";",
+  para: "import { createRequire } from \"node:module\";\nimport { writeFileSync } from \"node:fs\";\nvoid writeFileSync;",
   guarda: GUARDA_ESPINHA,
   assinatura: /C3\.5-G4/,
 });
@@ -520,8 +520,8 @@ mutacao({
   id: "MS27",
   propriedade: "a guarda de sobreposição impede empilhar passada abandonada",
   arquivo: "src/platform/runtime/intelligence-spine.ts",
-  de: "      if (emVoo) {\n        estado.sobreposicoes++;",
-  para: "      if (false && emVoo) {\n        estado.sobreposicoes++;",
+  de: "      if (emVoo) {",
+  para: "      if (false && emVoo) {",
   guarda: GUARDA_ESPINHA,
   assinatura: /C3\.3-14/,
 });

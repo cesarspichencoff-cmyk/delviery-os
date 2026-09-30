@@ -112,6 +112,8 @@ export interface RecomendacaoShadow extends Recomendacao {
   /** Literal. Não é configuração — é o que este subsistema é. */
   shadow: true;
   motivo_de_saida: string | null;
+  /** Quando deixou de ser proposta. Legado sem carimbo é preservado. */
+  terminal_at?: string | null;
 }
 
 export interface Recusa {
@@ -411,6 +413,7 @@ export function recomendarDeConclusoes(
         expires_at: new Date(agora.getTime() + proposta.validade_s * 1000).toISOString(),
         status: "proposed",
         motivo_de_saida: null,
+        terminal_at: null,
       });
     }
   }
@@ -428,7 +431,7 @@ export function recomendarDeConclusoes(
   ) as RecomendacaoShadow[];
 
   const porId = new Map<string, RecomendacaoShadow>();
-  for (const r of reconciliadas) porId.set(r.recommendation_id, comMotivoDeSaida(r));
+  for (const r of reconciliadas) porId.set(r.recommendation_id, comMotivoDeSaida(r, agora));
   for (const r of novas) if (!porId.has(r.recommendation_id)) porId.set(r.recommendation_id, r);
 
   const finais = [...porId.values()].sort((a, b) =>
@@ -449,8 +452,9 @@ export function recomendarDeConclusoes(
 }
 
 /** O painel precisa dizer POR QUE algo saiu, não só que saiu. */
-function comMotivoDeSaida(r: RecomendacaoShadow): RecomendacaoShadow {
-  if (r.status === "proposed" || r.motivo_de_saida) return r;
+function comMotivoDeSaida(r: RecomendacaoShadow, agora: Date): RecomendacaoShadow {
+  if (r.status === "proposed") return { ...r, terminal_at: null };
+  if (r.motivo_de_saida && r.terminal_at) return r;
   const motivo =
     r.status === "expired"
       ? "validade_vencida"
@@ -459,7 +463,7 @@ function comMotivoDeSaida(r: RecomendacaoShadow): RecomendacaoShadow {
         : r.status === "dismissed"
           ? "retirada_por_decisao_humana"
           : "aceita_para_o_futuro_sem_execucao";
-  return { ...r, motivo_de_saida: motivo };
+  return { ...r, motivo_de_saida: r.motivo_de_saida || motivo, terminal_at: r.terminal_at || agora.toISOString() };
 }
 
 /** Só o que está de pé agora. Nada de expirado ou retirado aparece como ativo. */
@@ -471,8 +475,13 @@ export function ativas(r: ResultadoShadow): readonly RecomendacaoShadow[] {
  * Retirada por decisão humana. É registro, não execução: nenhuma ação acontece
  * no mundo, e o `dismissed` volta na próxima avaliação como decisão terminal.
  */
-export function retirar(r: RecomendacaoShadow, motivo: string): RecomendacaoShadow {
-  return { ...r, status: "dismissed", motivo_de_saida: motivo || "retirada_por_decisao_humana" };
+export function retirar(r: RecomendacaoShadow, motivo: string, agora: Date): RecomendacaoShadow {
+  return {
+    ...r,
+    status: "dismissed",
+    motivo_de_saida: motivo || "retirada_por_decisao_humana",
+    terminal_at: agora.toISOString(),
+  };
 }
 
 /** Registro persistível — a forma que o store do Conference Brain aceita. */
@@ -505,6 +514,7 @@ export function paraRegistro(r: RecomendacaoShadow): Record<string, unknown> {
     expires_at: r.expires_at,
     status: r.status,
     motivo_de_saida: r.motivo_de_saida,
+    terminal_at: r.terminal_at ?? null,
   };
 }
 

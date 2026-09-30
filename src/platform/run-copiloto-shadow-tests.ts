@@ -508,7 +508,7 @@ teste("11 · retirada elimina a recomendação ativa e é registro, não execuç
     const { conclusoes } = await cadeiaLegitima(dir, () => [{ external_id: "PED-1", raw_status: "Pronto" }]);
     const r1 = recomendarDeConclusoes(conclusoes, OPC);
     const alvo = r1.recomendacoes.find((x) => x.escopo === "pedido") as RecomendacaoShadow;
-    const retirada = retirar(alvo, "operador_conferiu_pessoalmente");
+    const retirada = retirar(alvo, "operador_conferiu_pessoalmente", AGORA);
     assert.equal(retirada.status, "dismissed");
     assert.equal(retirada.motivo_de_saida, "operador_conferiu_pessoalmente");
     assert.equal(retirada.shadow, true);
@@ -638,7 +638,7 @@ teste("15b · o registro sobrevive à ida e volta do store sem mudar de estado",
     const rec = recomendarDeConclusoes(conclusoes, OPC).recomendacoes.find(
       (x) => x.escopo === "pedido",
     ) as RecomendacaoShadow;
-    const retirada = retirar(rec, "operador_conferiu");
+    const retirada = retirar(rec, "operador_conferiu", AGORA);
     store.put("copilot_recommendations", paraRegistro(retirada));
 
     const novo = createStore({ dir });

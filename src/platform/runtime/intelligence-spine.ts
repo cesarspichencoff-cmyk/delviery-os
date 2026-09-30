@@ -44,16 +44,24 @@
  * sai daqui é sombra — proposta registrada, nunca ação.
  */
 
+import { createHash } from "node:crypto";
 import { createRequire } from "node:module";
 import { join } from "node:path";
 
 import type { SourceMode } from "../contracts/event-catalog";
 import type { PonteDaOperacaoViva } from "./handler-operacao-viva";
 import {
+  deRegistro,
+  paraRegistro,
   recomendarDeConclusoes,
   type Conclusao,
   type RecomendacaoShadow,
 } from "../copiloto/conference-bridge";
+import {
+  aplicarRetencaoDaInteligencia,
+  INTELLIGENCE_COMPACTION_INTERVAL_MS,
+  type IntelligenceStore,
+} from "./intelligence-retention";
 
 export const SPINE_VERSION = "intelligence-spine@1.0.0";
 
@@ -138,6 +146,11 @@ export interface OpcoesDaEspinha {
    * exceção não é contenção de travamento, e a invariante fala das duas.
    */
   prazo_ms?: number;
+  /**
+   * Diretório durável da inteligência. Ausente mantém o modo memoryOnly dos
+   * testes; o runtime real só liga a Spine quando este diretório é explícito.
+   */
+  store_dir?: string;
   /** Trocável no teste para provar isolamento de falha sem forjar dado ruim. */
   modulos?: {
     adapter?: ModuloAdapter;
@@ -154,13 +167,14 @@ export interface EspinhaDeInteligencia {
 }
 
 interface CadeiaDoEscopo {
-  store: unknown;
+  store: IntelligenceStore;
   observer: { runCycle(): Promise<unknown> };
   /**
    * Recomendações da passada anterior. Governam ressurreição: uma decisão
    * terminal não volta porque a mesma conclusão foi lida de novo.
    */
   anteriores: readonly RecomendacaoShadow[];
+  ultima_compactacao_ms: number | null;
 }
 
 export function montarEspinhaDeInteligencia(o: OpcoesDaEspinha): EspinhaDeInteligencia {
@@ -258,6 +272,20 @@ export function montarEspinhaDeInteligencia(o: OpcoesDaEspinha): EspinhaDeInteli
     return [...vigente, ...resto];
   }
 
+  const ENTIDADES_DURAVEIS = [
+    "live_cycle_runs",
+    "live_observations",
+    "conference_clock_events",
+    "copilot_recommendations",
+  ] as const;
+
+  function diretorioDoEscopo(base: string, unitId: string, sourceMode: SourceMode): string {
+    const chave = `${unitId}|${sourceMode}`;
+    const slug = unitId.replace(/[^A-Za-z0-9._-]+/g, "_").slice(0, 32) || "unidade";
+    const hash = createHash("sha256").update(chave).digest("hex").slice(0, 12);
+    return join(base, `${sourceMode}-${slug}-${hash}`);
+  }
+
   async function passarNoEscopo(
     unit_id: string,
     source_mode: SourceMode,
@@ -275,10 +303,16 @@ export function montarEspinhaDeInteligencia(o: OpcoesDaEspinha): EspinhaDeInteli
 
     let cadeia = porEscopo.get(chave);
     if (!cadeia) {
-      // `memoryOnly` é deliberado: a espinha não cria artefato durável novo.
-      // O que ela acumula é recalculável a partir do event log, que continua
-      // sendo a verdade. Retenção é Q-015, não uma decisão tomada aqui.
-      const store = M.store.createStore({ memoryOnly: true });
+      const store = M.store.createStore(
+        o.store_dir
+          ? { dir: diretorioDoEscopo(o.store_dir, unit_id, source_mode), memoryOnly: false }
+          : { memoryOnly: true },
+      ) as IntelligenceStore;
+
+      if (o.store_dir) {
+        for (const entidade of ENTIDADES_DURAVEIS) store.load(entidade);
+      }
+
       const fetchOrders = M.adapter.criarFetchOrders({
         // A projeção é lida NO INSTANTE da passada, do escopo certo. Nunca de
         // um escopo vizinho: `source_mode` entra aqui e é conferido lá.
@@ -293,7 +327,10 @@ export function montarEspinhaDeInteligencia(o: OpcoesDaEspinha): EspinhaDeInteli
         collectorVersion: SPINE_VERSION,
         now: () => agora.toISOString(),
       });
-      cadeia = { store, observer, anteriores: [] };
+      const anteriores = o.store_dir
+        ? store.all("copilot_recommendations").map((r) => deRegistro(r))
+        : [];
+      cadeia = { store, observer, anteriores, ultima_compactacao_ms: null };
       porEscopo.set(chave, cadeia);
     }
 
@@ -316,7 +353,27 @@ export function montarEspinhaDeInteligencia(o: OpcoesDaEspinha): EspinhaDeInteli
       anteriores: cadeia.anteriores,
     });
 
+    for (const rec of resultado.recomendacoes) {
+      const gravada = cadeia.store.put("copilot_recommendations", paraRegistro(rec));
+      if (!gravada.ok) {
+        throw new Error("intelligence_recommendation_persistence_rejected");
+      }
+    }
     cadeia.anteriores = resultado.recomendacoes;
+
+    if (
+      o.store_dir &&
+      (
+        cadeia.ultima_compactacao_ms === null ||
+        agora.getTime() - cadeia.ultima_compactacao_ms >= INTELLIGENCE_COMPACTION_INTERVAL_MS
+      )
+    ) {
+      aplicarRetencaoDaInteligencia(cadeia.store, agora);
+      cadeia.anteriores = cadeia.store
+        .all("copilot_recommendations")
+        .map((r) => deRegistro(r));
+      cadeia.ultima_compactacao_ms = agora.getTime();
+    }
 
     return {
       conclusoes: extraido.conclusoes.length,

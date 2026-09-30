@@ -18,7 +18,8 @@
 
 import assert from "node:assert/strict";
 import { execFileSync, spawn, type ChildProcess } from "node:child_process";
-import { existsSync, renameSync } from "node:fs";
+import { existsSync, mkdtempSync, renameSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { bancoIsolado } from "./banco-isolado";
@@ -32,6 +33,7 @@ const raiz = process.cwd();
  * um fato alheio 6/7.
  */
 const URL_SERVIDOR = (process.env.DELIVERYOS_PG_URL ?? "").trim();
+const DIR_INTELIGENCIA = mkdtempSync(join(tmpdir(), "spine-process-"));
 /** O banco ISOLADO desta execução. Atribuído antes de qualquer `sql()`. */
 let URL_PG = "";
 
@@ -40,6 +42,7 @@ console.log("=== C3.6 — espinha nos processos reais (PostgreSQL real) ===\n");
 if (!URL_SERVIDOR) {
   console.log("PULADO: DELIVERYOS_PG_URL não definida — nenhum processo real foi exercitado.");
   console.log("Para rodar:  DELIVERYOS_PG_URL=postgres://user@host:porta/base");
+  rmSync(DIR_INTELIGENCIA, { recursive: true, force: true });
   process.exit(0);
 }
 
@@ -79,6 +82,7 @@ const ambienteBase = {
   DELIVERYOS_MIGRATE_ON_BOOT: "false",
   DELIVERYOS_TICK_MS: "200",
   DELIVERYOS_DEVICE_TOKEN_SECRET: "s".repeat(48),
+  DELIVERYOS_INTELLIGENCE_DIR: DIR_INTELIGENCIA,
 };
 
 interface Processo {
@@ -301,10 +305,12 @@ async function provas(): Promise<void> {
       DELIVERYOS_SOURCE_MODE: "simulated",
     });
     try {
-      assert.ok(await ate(c, /escutando|iniciando/i), `o crítico não subiu:\n${c.saida().slice(-600)}`);
-      await esperar(700);
+      assert.ok(
+        await ate(c, /\[critico\] ouvindo em /, 15000),
+        `o crítico não chegou ao listener:\n${c.saida().slice(-800)}`,
+      );
       const r = await fetch(`http://127.0.0.1:${porta}/ready`).catch((e: Error) => e);
-      assert.ok(r instanceof Response, `/ready não respondeu: ${String(r)}`);
+      assert.ok(r instanceof Response, `/ready não respondeu: ${String(r)}\n${c.saida().slice(-800)}`);
       assert.equal(r.status, 200, `/ready não é 200 com a espinha quebrada: ${r.status}`);
     } finally {
       await c.fim();
@@ -372,6 +378,7 @@ void (async () => {
     // vai embora. A limpeza por `correlation_id` que existia aqui era o
     // remendo de quem dividia o banco com outras suítes.
     await banco.descartar();
+    rmSync(DIR_INTELIGENCIA, { recursive: true, force: true });
   }
 
   console.log(`\n${passaram}/${passaram + falhas.length} provas com processo real`);

@@ -150,6 +150,71 @@ function createStore(opts) {
     return { ok: true, action: existed ? "updated" : "inserted", key };
   }
 
+  /**
+   * Reescreve UMA entidade de forma atômica.
+   *
+   * É a única exceção deliberada ao append-only normal do store e existe para
+   * retenção/compactação. Todos os registros são validados ANTES da troca e o
+   * arquivo temporário é relido/validado antes do rename.
+   */
+  function rewrite(entity, records) {
+    // Compactar depois de detectar corrupção/linha inválida apagaria a própria
+    // evidência do defeito. Enquanto houver quarentena desta entidade, recusa.
+    if (
+      corrupted.some((x) => x.entity === entity) ||
+      invalid.some((x) => x.entity === entity)
+    ) {
+      return { ok: false, action: "quarantine_present" };
+    }
+
+    const lista = Array.isArray(records) ? records : [];
+    const nova = new Map();
+    for (const record of lista) {
+      const v = validate(entity, record);
+      if (!v.ok) return { ok: false, action: "rejected", errors: v.errors };
+      nova.set(naturalKey(entity, record), record);
+    }
+
+    if (memoryOnly) {
+      mem.set(entity, nova);
+      return { ok: true, action: "rewritten", records: nova.size };
+    }
+    if (!ensureDir()) return { ok: false, action: "io_error" };
+
+    const f = fileFor(entity);
+    const tmp = f + ".rewrite-" + process.pid + "-" + Date.now() + ".tmp";
+    try {
+      const corpo = Array.from(nova.values()).map((r) => JSON.stringify(r)).join("\n");
+      const fd = fs.openSync(tmp, "w", 0o600);
+      try {
+        fs.writeFileSync(fd, corpo ? corpo + "\n" : "", "utf8");
+        fs.fsyncSync(fd);
+      } finally {
+        fs.closeSync(fd);
+      }
+
+      // Não confiar nem na escrita que acabamos de fazer: reler e validar com
+      // o MESMO contrato do put/load antes de substituir o arquivo vigente.
+      const linhas = fs.readFileSync(tmp, "utf8").split("\n").filter((s) => s.trim());
+      const conferida = new Map();
+      for (const s of linhas) {
+        const r = JSON.parse(s);
+        const v = validate(entity, r);
+        if (!v.ok) throw new Error("rewrite_validation_failed");
+        conferida.set(naturalKey(entity, r), r);
+      }
+      if (conferida.size !== nova.size) throw new Error("rewrite_count_mismatch");
+
+      fs.renameSync(tmp, f);
+      mem.set(entity, nova);
+      return { ok: true, action: "rewritten", records: nova.size };
+    } catch (e) {
+      try { if (fs.existsSync(tmp)) fs.unlinkSync(tmp); } catch (_) { /* melhor esforço */ }
+      failures.push({ op: "rewrite:" + entity, error: String((e && e.name) || "Error") });
+      return { ok: false, action: "io_error" };
+    }
+  }
+
   function get(entity, key) { return table(entity).get(key) || null; }
   function has(entity, key) { return table(entity).has(key); }
   function all(entity) { return Array.from(table(entity).values()); }
@@ -171,7 +236,7 @@ function createStore(opts) {
     };
   }
 
-  return { put, get, has, all, count, clear, load, health, sha256, dir, fileFor };
+  return { put, rewrite, get, has, all, count, clear, load, health, sha256, dir, fileFor };
 }
 
 module.exports = { createStore, sha256, DEFAULT_DIR };

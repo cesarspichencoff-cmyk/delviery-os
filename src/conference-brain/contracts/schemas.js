@@ -115,7 +115,7 @@ const SCHEMAS = Object.freeze({
     // discriminada. Uma recomendacao `nao_estimada` simplesmente nao tem numero,
     // e exigi-lo aqui era o que a matava na hora de gravar. Ver D74.
     optional: ["policy_version", "external_id", "limitacoes", "motivo_de_saida",
-               "confidence"]
+               "terminal_at", "confidence"]
   }
 });
 

@@ -89,7 +89,14 @@ const EXPLODE = {
     },
     runIdDe: (u: string, m: string) => `x:${u}:${m}`,
   },
-  store: { createStore: () => ({}) },
+  store: {
+    createStore: () => ({
+      all: () => [],
+      load: () => 0,
+      put: () => ({ ok: true, action: "inserted" }),
+      rewrite: () => ({ ok: true, action: "rewritten", records: 0 }),
+    }),
+  },
   observer: { createLiveObserver: () => ({ runCycle: async () => ({}) }) },
   conclusoes: { extrairConclusoes: () => ({ conclusoes: [], recusadas: [] }) },
 };
@@ -250,6 +257,7 @@ teste("C3.3-10 a flag liga, e só ela", () => {
     DELIVERYOS_ENV: "local",
     DELIVERYOS_DATABASE_URL: "postgres://localhost:5432/x",
     DELIVERYOS_INTELLIGENCE_SPINE: "true",
+    DELIVERYOS_INTELLIGENCE_DIR: "data/test-intelligence",
   } as NodeJS.ProcessEnv);
   assert.equal(cfg.spine_enabled, true);
 });
@@ -605,12 +613,13 @@ teste("C3.5-G3 shadow não executa efeito externo: a espinha não tem como agir"
   }
 });
 
-teste("C3.5-G4 a espinha não escreve em disco nem cria tabela", () => {
+teste("C3.5-G4 persistência da espinha usa SOMENTE o store do Brain", () => {
   const espinha = readFileSync("src/platform/runtime/intelligence-spine.ts", "utf8")
     .replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g, "");
-  assert.ok(/memoryOnly:\s*true/.test(espinha), "o store da espinha deixou de ser memoryOnly");
+  assert.match(espinha, /store\.put\("copilot_recommendations"/);
+  assert.match(espinha, /M\.store\.createStore/);
   for (const proibido of ["writeFileSync", "appendFileSync", "CREATE TABLE", "INSERT INTO"]) {
-    assert.ok(!espinha.includes(proibido), `a espinha passou a persistir por conta própria: ${proibido}`);
+    assert.ok(!espinha.includes(proibido), `a espinha criou persistência paralela: ${proibido}`);
   }
 });
 

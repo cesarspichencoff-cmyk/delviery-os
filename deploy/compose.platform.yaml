@@ -251,6 +251,10 @@ services:
       <<: *ambiente
       DELIVERYOS_TICK_MS: "1000"
       DELIVERYOS_BATCH_SIZE: "25"
+      # Q-015: desligada por padrão. Pode ser ligada só em `local`;
+      # o próprio runtime recusa `true` em pilot/production.
+      DELIVERYOS_INTELLIGENCE_SPINE: ${DELIVERYOS_INTELLIGENCE_SPINE:-false}
+      DELIVERYOS_INTELLIGENCE_DIR: /var/lib/deliveryos/intelligence
       # O papel MÍNIMO do assíncrono: lê o log, drena a outbox, executa jobs.
       DELIVERYOS_DATABASE_URL: postgres://deliveryos_async:${DELIVERYOS_ASYNC_DB_PASSWORD:?senha do papel do assincrono obrigatoria}@deliveryos-postgres:5432/${POSTGRES_DB:-deliveryos}
     command: ["node", "dist/src/platform/bin/async-runtime.js"]
@@ -265,6 +269,8 @@ services:
     security_opt:
       - no-new-privileges:true
     read_only: true
+    volumes:
+      - intelligence-data:/var/lib/deliveryos/intelligence
     tmpfs:
       - /tmp:size=64m
     deploy:
@@ -274,6 +280,53 @@ services:
           memory: 512M
         reservations:
           memory: 128M
+    logging: *logs
+
+  # ----------------------------------------------- backup da inteligência
+  # Processo separado e sem rede. Falhar aqui não derruba o worker.
+  deliveryos-intelligence-backup:
+    <<: *imagem
+    profiles: ["intelligence"]
+    container_name: deliveryos-intelligence-backup
+    restart: unless-stopped
+    environment:
+      DELIVERYOS_INTELLIGENCE_SOURCE_DIR: /var/lib/deliveryos/intelligence
+      DELIVERYOS_INTELLIGENCE_BACKUP_DIR: /var/lib/deliveryos/intelligence-backups
+      DELIVERYOS_INTELLIGENCE_BACKUP_KEEP: "14"
+      DELIVERYOS_INTELLIGENCE_BACKUP_INTERVAL_MS: "86400000"
+    command: ["node", "dist/src/platform/bin/intelligence-backup.js", "loop"]
+    network_mode: "none"
+    volumes:
+      - intelligence-data:/var/lib/deliveryos/intelligence:ro
+      - intelligence-backups:/var/lib/deliveryos/intelligence-backups
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m
+    logging: *logs
+
+  # Restore nunca sobe junto. Exige profile e snapshot explícitos, e o binário
+  # ainda recusa destino não vazio e snapshot cujo manifest/hash não confere.
+  deliveryos-intelligence-restore:
+    <<: *imagem
+    profiles: ["maintenance"]
+    container_name: deliveryos-intelligence-restore
+    restart: "no"
+    environment:
+      DELIVERYOS_INTELLIGENCE_SOURCE_DIR: /var/lib/deliveryos/intelligence
+      DELIVERYOS_INTELLIGENCE_BACKUP_DIR: /var/lib/deliveryos/intelligence-backups
+      DELIVERYOS_INTELLIGENCE_RESTORE_SNAPSHOT: ${DELIVERYOS_INTELLIGENCE_RESTORE_SNAPSHOT:-}
+    command: ["node", "dist/src/platform/bin/intelligence-backup.js", "restore"]
+    network_mode: "none"
+    volumes:
+      - intelligence-data:/var/lib/deliveryos/intelligence
+      - intelligence-backups:/var/lib/deliveryos/intelligence-backups:ro
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m
     logging: *logs
 
   # -------------------------------------------------------------- backup
@@ -317,3 +370,7 @@ volumes:
     name: deliveryos-platform-pgdados
   pgbackups:
     name: deliveryos-platform-pgbackups
+  intelligence-data:
+    name: deliveryos-platform-intelligence-data
+  intelligence-backups:
+    name: deliveryos-platform-intelligence-backups
