@@ -1,7 +1,7 @@
 {
   "schema": "deliveryos.runtime-printer-map.v1",
   "status": "PARTIAL",
-  "captured_at_local": "2026-09-30T13:59:42.020-03:00",
+  "captured_at_local": "2026-09-30T14:00:25.332-03:00",
   "store_pc": "CAIXA_MOOCA",
   "source": "PER_PRINTER_IMP_METADATA_CORRELATED_WITH_HUMAN_PHYSICAL_OBSERVATION",
   "mappings": [
@@ -46,13 +46,15 @@
   ],
   "unknown_ports": [
     "192.168.0.116",
-    "192.168.0.110"
+    "192.168.0.110",
+    "192.168.0.142"
   ],
   "notes": [
     "This map records only physical printer identity proven by correlated metadata and human observation.",
     "It does not by itself prove the order was delivery/iFood, that COMANDA.: DLV_<N> was present, or that all production paths traverse this Perifericos instance.",
     "Per-printer IMP file growth is not assumed to be one physical ticket per MUDOU event; repeated fixed-size appends may be command/status logging within the same printer process.",
-    "192.168.0.110 remains ambiguous because bar beverage activity and fiscal-note issuance occurred in the same short interval."
+    "192.168.0.110 remains ambiguous because bar beverage activity and fiscal-note issuance occurred in the same short interval.",
+    "192.168.0.142 has a strong fiscal correlation from a deliberate note-issuance moment, but remains candidate until the physical action/timing is explicitly confirmed."
   ],
   "candidates": [
     {
@@ -70,6 +72,23 @@
           "at_local": "2026-09-30T13:58:14.588-03:00"
         },
         "context": "A Coca Zero was in the same order and the bar printer was active; César also issued the fiscal note immediately afterward, so the metadata event cannot yet be attributed uniquely to bar versus fiscal/other print.",
+        "log_content_read": false
+      }
+    },
+    {
+      "printer_model": "16",
+      "printer_port": "192.168.0.142",
+      "candidate_targets": [
+        "FISCAL_CAIXA"
+      ],
+      "proof": "CORRELATED_CANDIDATE_NOT_YET_WORLD_PROVEN",
+      "evidence": {
+        "metadata_event": {
+          "from": 110802,
+          "to": 112932,
+          "at_local": "2026-09-30T14:00:16.268-03:00"
+        },
+        "context": "César announced he would issue the fiscal note immediately before this event. Treat as a strong fiscal-printer candidate until he confirms the note was the isolated physical action at that moment.",
         "log_content_read": false
       }
     }
