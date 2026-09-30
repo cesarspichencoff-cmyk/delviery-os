@@ -12,7 +12,8 @@
     "verificar:cardapio": "node tools/verificar_integridade_cardapio.js",
     "verificar:v132": "node tools/verificar_truth_v132.js",
     "verificar:passive-log": "tsc && node tools/verificar_passive_print_log_v132.js",
-    "verificar:production-ticket": "tsc && node tools/verificar_production_ticket_v1.js"
+    "verificar:production-ticket": "tsc && node tools/verificar_production_ticket_v1.js",
+    "verificar:print-topology-probe-static": "node tools/verificar_odhen_print_topology_probe_static.js"
   },
   "devDependencies": {
     "@types/node": "20.14.10",
