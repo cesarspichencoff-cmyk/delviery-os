@@ -1,0 +1,39 @@
+{
+  "schema": "deliveryos.runtime-printer-map.v1",
+  "status": "PARTIAL",
+  "captured_at_local": "2026-09-30T13:57:33-03:00",
+  "store_pc": "CAIXA_MOOCA",
+  "source": "PER_PRINTER_IMP_METADATA_CORRELATED_WITH_HUMAN_PHYSICAL_OBSERVATION",
+  "mappings": [
+    {
+      "printer_model": "16",
+      "printer_port": "192.168.0.153",
+      "tata_target": "BALCAO_SUSHI_1",
+      "proof": "WORLD_PROVEN",
+      "evidence": {
+        "local_observation": "Executivo Salmão printed on Balcão Sushi 1 while only 2026_09_30_IMP_16_192.168.0.153.txt changed in the observed interval.",
+        "metadata_events": [
+          {
+            "from": 26926,
+            "to": 27358,
+            "at_local": "2026-09-30T13:56:49.537-03:00"
+          },
+          {
+            "from": 27358,
+            "to": 27658,
+            "at_local": "2026-09-30T13:57:32.911-03:00"
+          }
+        ],
+        "log_content_read": false,
+        "print_triggered_by_deliveryos": false
+      }
+    }
+  ],
+  "unknown_ports": [
+    "192.168.0.116"
+  ],
+  "notes": [
+    "This map records only physical printer identity proven by correlated metadata and human observation.",
+    "It does not by itself prove the order was delivery/iFood, that COMANDA.: DLV_<N> was present, or that all production paths traverse this Perifericos instance."
+  ]
+}
