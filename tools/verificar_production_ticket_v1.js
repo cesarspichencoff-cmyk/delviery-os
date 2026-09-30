@@ -81,6 +81,25 @@ assert.equal(preview.privacy.address_fields_supported, false);
 assert.equal(preview.privacy.payment_fields_supported, false);
 assert.equal(preview.privacy.free_text_observations_sensitive, true);
 
+const kitchenPreview = Production.buildProductionTicketPreview({
+  service: "jantar",
+  square: "cozinha",
+  identifiers: { tata: "038", teknisa: "18453", ifood: "D4E5F6" },
+  horario: "19:43",
+  mount_groups: [
+    {
+      box_label: "",
+      items: [
+        { nome: "Guioza", quantidade: 2, observacoes: ["sem cebolinha"] },
+      ],
+    },
+  ],
+});
+assert.equal(kitchenPreview.ready, true);
+assert.equal(kitchenPreview.route.target, "COZINHA");
+assert.equal(kitchenPreview.content.includes("MONTAR NA"), false);
+assert.match(kitchenPreview.content, /\[ \] PRODUZIDO/);
+
 const missingBox = Production.buildProductionTicketPreview({
   service: "almoco",
   square: "combinados",
