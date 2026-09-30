@@ -38,7 +38,7 @@ Campos opcionais aditivos, se ignoráveis por consumidores antigos, podem perman
 `event_id`, `event_type`, `schema_version`, `occurred_at`, `recorded_at`, `idempotency_key`, `source` (=`entregas`), `source_health`, `confidence`, `unit_id`, `payload`, `correlation_id`
 
 ### Opcionais
-`synced_at`, `trip_id`, `delivery_id`, `handoff_id`, `occurrence_id`, `rider_actor_id` (opaco), `causation_id`, `contract_version`
+`synced_at`, `source_mode` (`real` / `simulated` / `control`; **sem default**, ausência = UNKNOWN), `trip_id`, `delivery_id`, `handoff_id`, `occurrence_id`, `rider_actor_id` (opaco), `causation_id`, `contract_version`
 
 ### Proibidos no payload
 Nome completo, telefone, ranking, produtividade, WhatsApp bruto, CPF/documento, score, endereço completo, histórico de coordenadas, senhas — ver `FORBIDDEN_PAYLOAD_KEYS`.

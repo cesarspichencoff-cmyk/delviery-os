@@ -104,6 +104,14 @@ export function validatePublicEvent(
   if (conf !== "observed" && conf !== "inferred" && conf !== "unknown") {
     issues.push({ path: "confidence", message: "confidence inválido" });
   }
+  if (
+    e.source_mode !== undefined &&
+    e.source_mode !== "real" &&
+    e.source_mode !== "simulated" &&
+    e.source_mode !== "control"
+  ) {
+    issues.push({ path: "source_mode", message: "source_mode inválido" });
+  }
   if (e.payload === undefined || typeof e.payload !== "object" || e.payload === null) {
     issues.push({ path: "payload", message: "payload objeto obrigatório" });
   } else {

@@ -92,16 +92,20 @@ export function createTrip(
     },
   });
 
-  for (const id of delivery_ids) {
+  for (const d of input.initial_deliveries) {
     logEvent(log, {
       object_type: "delivery",
-      object_id: id,
+      object_id: d.delivery_id,
       event_type: "delivery_added",
       occurred_at: input.occurred_at,
       origin: "ops_console",
       actor_id: input.created_by,
-      idempotency_key: `delivery_added:${input.trip_id}:${id}`,
-      payload: { trip_id: input.trip_id },
+      idempotency_key: `delivery_added:${input.trip_id}:${d.delivery_id}`,
+      payload: {
+        trip_id: input.trip_id,
+        order_ref: d.order_ref,
+        active: true,
+      },
     });
   }
 
@@ -458,7 +462,13 @@ export function removeDeliveryFromTrip(
     origin: "ops_console",
     actor_id: removed_by,
     idempotency_key: `delivery_removed:${delivery_id}:${occurred_at}`,
-    payload: { reason, removed_by, active: false },
+    payload: {
+      trip_id: agg.trip.trip_id,
+      order_ref: d.order_ref,
+      reason,
+      removed_by,
+      active: false,
+    },
   });
 
   // se ainda em preparando e zero ativos — ok, mas startTrip falhará
@@ -522,7 +532,12 @@ export function addDeliveryToTrip(
     origin: "ops_console",
     actor_id,
     idempotency_key: `delivery_added:${agg.trip.trip_id}:${full.delivery_id}`,
-    payload: { state },
+    payload: {
+      trip_id: agg.trip.trip_id,
+      order_ref: full.order_ref,
+      state,
+      active: true,
+    },
   });
 
   return {

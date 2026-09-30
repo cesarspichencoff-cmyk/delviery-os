@@ -91,6 +91,7 @@ Envelope mínimo (schema_version 1.0.0):
 | `source_health` | sim | ok \| degraded \| unknown |
 | `confidence` | sim | observed \| inferred \| unknown |
 | `unit_id` | sim | |
+| `source_mode` | opcional pre_integration | `real` / `simulated` / `control`; sem default; ausência = UNKNOWN e não autoriza promoção causal |
 | `trip_id` | se aplicável | |
 | `delivery_id` | se aplicável | |
 | `handoff_id` | se aplicável | |

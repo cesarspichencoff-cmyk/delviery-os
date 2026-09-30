@@ -4,7 +4,7 @@ lifecycle:
   status: ACTIVE
   authority_scope: product_authority_index
   superseded_by: null
-  atualizado_em: "2026-08-11"
+  atualizado_em: "2026-09-30"
   state_basis: 953a3fb
 ---
 

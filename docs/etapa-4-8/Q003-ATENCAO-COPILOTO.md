@@ -32,3 +32,16 @@ Na cadeia real atual, a Intelligence Spine não possui uma ponte legítima de id
 Este fechamento é de governança + contrato executável. Não há ativação de recomendação Shadow na interface porque a identidade causal necessária ainda não existe na cadeia atual.
 
 Promover uma recomendação sem essa identidade recriaria a troca silenciosa de causa-raiz que a correção Motor × Decisão eliminou.
+
+## Ponte causal implementada — 2026-09-30
+
+A identidade intermediária agora tem contrato explícito, sem live wiring:
+
+- `Delivery.order_ref` é preservado nos eventos públicos `delivery_added` e `delivery_removed`;
+- uma Trip continua podendo carregar vários `order_ref` — nunca é colapsada em um único pedido;
+- `source_mode` entrou como campo público **opcional e sem default**; ausência = UNKNOWN e bloqueia promoção;
+- `causal-identity-bridge.ts` reduz somente contratos públicos de Entregas e produz âncora de pedido apenas quando uma recomendação aponta para uma única Trip, com um único order_ref ativo, sem conflito e no mesmo source_mode;
+- igualdade com o Foco é literal: `order_ref === String(sit.id)`. Não há normalização heurística, parsing de texto ou aproximação;
+- Trip multi-pedido, order_ref duplicado ativo, evidência multi-Trip, modo ausente/divergente ou falta de vínculo continuam Shadow.
+
+A integração live de Entregas permanece desabilitada; esta etapa cria a ponte executável e testável, não a liga à UI nem ao runtime de produção.

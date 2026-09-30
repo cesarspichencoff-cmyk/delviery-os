@@ -8,6 +8,15 @@ export type SourceHealth = "ok" | "degraded" | "unknown";
 export type EventConfidence = "observed" | "inferred" | "unknown";
 
 /**
+ * Mesma taxonomia semântica da plataforma, mas declarada no contrato público
+ * de Entregas para não criar dependência de implementação.
+ *
+ * Opcional por compatibilidade com eventos pre_integration já congelados.
+ * AUSÊNCIA = modo desconhecido; consumidor nenhum pode presumir "real".
+ */
+export type EntregasSourceMode = "real" | "simulated" | "control";
+
+/**
  * Envelope público — consumo pelo DELIVERYOS Copiloto (futuro).
  * Sem PII desnecessária; rider apenas opaco/anonimizado.
  */
@@ -23,6 +32,8 @@ export interface EntregasPublicEvent {
   source_health: SourceHealth;
   confidence: EventConfidence;
   unit_id: string;
+  /** Sem default. Ausente = UNKNOWN e nunca pode promover leitura real. */
+  source_mode?: EntregasSourceMode;
   trip_id?: string;
   delivery_id?: string;
   handoff_id?: string;

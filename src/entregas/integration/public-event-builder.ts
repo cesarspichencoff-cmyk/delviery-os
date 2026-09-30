@@ -6,6 +6,7 @@ import { isPublicEventType } from "../contracts/events/catalog";
 import {
   PUBLIC_EVENTS_SCHEMA_VERSION,
   type EntregasPublicEvent,
+  type EntregasSourceMode,
   type EventConfidence,
   type SourceHealth,
 } from "../contracts/events/types";
@@ -77,6 +78,8 @@ export interface BuildPublicOptions {
   correlation_id?: string;
   source_health?: SourceHealth;
   confidence?: EventConfidence;
+  /** Sem default: quem publica precisa atestar o modo ou deixá-lo UNKNOWN. */
+  source_mode?: EntregasSourceMode;
   /** occurred_at offline preservado do domínio */
   preserve_occurred_at?: boolean;
 }
@@ -141,6 +144,7 @@ export function domainEventToPublic(
     source_health: opts.source_health ?? "ok",
     confidence: opts.confidence ?? "observed",
     unit_id: opts.unit_id,
+    source_mode: opts.source_mode,
     trip_id,
     delivery_id,
     handoff_id,
@@ -176,6 +180,8 @@ export function buildSignalEvent(input: {
   correlation_id?: string;
   confidence?: EventConfidence;
   source_health?: SourceHealth;
+  /** Sem default: ausência continua UNKNOWN para consumidores causais. */
+  source_mode?: EntregasSourceMode;
   /** null explícito em campos de tempo ausentes — nunca 0 fabricado */
   absence_fields?: Record<string, null>;
 }): EntregasPublicEvent {
@@ -194,6 +200,7 @@ export function buildSignalEvent(input: {
     source_health: input.source_health ?? "ok",
     confidence: input.confidence ?? "observed",
     unit_id: input.unit_id,
+    source_mode: input.source_mode,
     trip_id: input.trip_id,
     delivery_id: input.delivery_id,
     handoff_id: input.handoff_id,

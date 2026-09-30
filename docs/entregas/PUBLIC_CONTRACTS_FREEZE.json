@@ -46,7 +46,7 @@
     "occurrence_resolved": "occurrence_closed",
     "occurrence_updated": "occurrence_updated"
   },
-  "schemas_hash": "6cf720e9e6f9972d0796460819d202d82946f6094493788dff3e2eb9f90c710c",
+  "schemas_hash": "a55548ce22406b9cb23b361c5dd9f1a4c470da258947cc927e69c121f515f9a5",
   "compatibility": {
     "policy": "Campos opcionais novos permitidos na mesma major se ignoráveis por consumidores antigos",
     "breaking_change_requires": "nova schema_version (e preferencialmente catalog_version)",

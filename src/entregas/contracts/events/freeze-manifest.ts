@@ -32,6 +32,7 @@ export const ENVELOPE_REQUIRED_FIELDS = [
 
 export const ENVELOPE_OPTIONAL_FIELDS = [
   "synced_at",
+  "source_mode",
   "trip_id",
   "delivery_id",
   "handoff_id",
