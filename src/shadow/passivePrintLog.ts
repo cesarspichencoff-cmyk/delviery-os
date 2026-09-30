@@ -115,6 +115,7 @@ export function projectPassivePrintBlock(
   const items: PassivePrintItem[] = [];
   const orderObservations: string[] = [];
   let currentItem: PassivePrintItem | null = null;
+  let orderObservationSectionStarted = false;
 
   for (const rawLine of rawBlock.split(/\r?\n/)) {
     const line = rawLine.trimEnd();
