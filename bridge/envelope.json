@@ -1,0 +1,10 @@
+{
+  "schema": "cesar-os-chat-cipher-envelope-v1",
+  "kid": "cesar-os-chat-d8bd51d7-d423-4f40-a668-1ddb968f1e34",
+  "alg": "RSA-OAEP-256",
+  "envelope_id": "env_bd1e0ae40e9a462e943284859c80ff70",
+  "created_at": "2026-09-30T18:35:00Z",
+  "chunks": [
+    "n-sup-kd0Cw9ImoNoGrIXvmaPKC0L6RnyZgRAljp29ydv6JgO6habuFRy0oLh2oluUFGnAp2Q5TSPxfzJH8muSJTmlP9HWcTyB_jBvpPsWS4lzxlNW510o_dNXLDmrP0X6166MzpqYY4RiDWBOaYX7JJLxaqfRr3eX8cSj2TwF6twmfCZfKlwZF7XASJNgW63USvUNCoG5uktEzVcoa6P-49pqj0GzxXY0hInWMNudevB9lo3ux9jmDuQOkLWOwnXr38qUiq721B19JupqBjwyjfzX5LjJI6Aw8KD1Cmt1AiXSFRHpE6lhPsiezv5EVakgvgHYv4frM8XNlrXXpPYhrJCQKdRIsEaaYnaAqxZGlFL2z4iGKUVS-5TcQqwK6Cj-fV0dMIT4ES_HP0Ut85GGZ41p6-mWQKd8o8Sd9GRN8wRgD7XR-D-sSEWi2yuLDan_QFlQFv_3-GvyQ7CqAgE42NYzadTb3Scl6rTn3tUpmJKcl3gC_iwfX3cxPx0KpyuLQ8--L0n-od7l9FrECWa7slaBiu1ck9mVFwDMiOT7QfHuIeUYxLrCSkRuhrt244RHh5y2NCzD2nNqfaxc50zAu762g77U7zwheND_FLBfkZFEyxgnVCpvI2sfQCuVaBtaffXv9i79mk_38hc41jKaJv2jKKHoAUYKJ06v3Xy0Y"
+  ]
+}
