@@ -523,7 +523,7 @@ export class PgTransactionalWriter {
                 sequence_local, contract_version, source_mode, clock_trust)
              VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
              ON CONFLICT (idempotency_key) DO NOTHING
-             RETURNING event_id`,
+             RETURNING 1 AS inserted`,
             [
               f.event_id,
               f.unit_id,
