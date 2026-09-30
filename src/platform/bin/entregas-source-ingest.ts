@@ -18,11 +18,12 @@ const sleep = (ms: number) =>
   new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 async function waitDisabled(): Promise<void> {
-  console.log("[source-ingest] DESLIGADO — nenhuma fonte ou banco foi aberto");
   let running = true;
   const stop = () => { running = false; };
   process.once("SIGTERM", stop);
   process.once("SIGINT", stop);
+  // Só anuncia "DESLIGADO" depois de estar pronto para encerrar graciosamente.
+  console.log("[source-ingest] DESLIGADO — nenhuma fonte ou banco foi aberto");
   while (running) await sleep(250);
 }
 
