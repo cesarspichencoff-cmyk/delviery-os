@@ -259,17 +259,15 @@
     "The private seven-image layout-aware OCR benchmark was not found on Foxxy and was not re-run there; host viability is proven, future screenshot accuracy/generalization is not.",
     "A dedicated regression guard now PROVES that SOURCE_MARKED_REVIEW_NEEDED is not a César need: the status alone creates no Evidence Debt, no direct Attention reason, no external effect, and no action-effectiveness claim.",
     "The review-needed attention guard is included in the aggregate regression suite as test:context:review-needed-attention-guard and passed on Foxxy together with typecheck, Caixa Pulse adapter, recurrence, action-followup and attention-policy proofs.",
-    "A minimized per-source mail-bridge heartbeat is CODE_READY on the active branch, reusing existing bridge_state for daily_closing, caixa_pulse and ifood_review without storing message payload or PII.",
     "Mail-bridge heartbeat candidate passed 69/69 package tests and a Wrangler production bundle dry-run on Foxxy at candidate head d26ab37983998cb032f6dc768f797f3da43627e1.",
-    "The heartbeat observability delta is NOT DEPLOYED; production D1 bridge_state remains unchanged until a separate deployment gate is authorized.",
     "César explicitly authorized production deployment of the minimized read-only mail-bridge source-health heartbeat.",
     "Mail bridge heartbeat is DEPLOYED in production as Cloudflare Worker version 2275edb2-2357-46d7-a0b0-168b87f008e7 from canonical source head 29356391c37a6a552cfa1831d3693951087cd74d.",
     "The heartbeat deployment occurred at 2026-09-30T10:07:44.691Z, after the 07:00 America/Sao_Paulo cron slot; immediate production bridge_state remained empty, which is expected before the first post-deploy scheduled cycle.",
-    "The heartbeat is DEPLOYED but not yet WORLD_PROVEN; first real cron persistence for all three source_health keys remains pending.",
     "The minimized mail-bridge source-health heartbeat is WORLD_PROVEN by a real 2026-09-30 09:00 America/Sao_Paulo scheduled production cycle.",
     "The real heartbeat cycle persisted all three expected bridge_state keys: daily_closing OK at 2026-09-30T12:00:37.700Z, caixa_pulse OK at 2026-09-30T12:00:44.099Z, and ifood_review OK at 2026-09-30T12:00:45.192Z.",
     "The iFood heartbeat now proves the cron ran and found zero matches in that cycle (scanned=0, candidates=0, processed=0, errors=0); canonical iFood review mail and attachment tables independently remain at zero rows.",
-    "The heartbeat stores minimized health/counter metadata only and no email subject/body/attachment/customer payload; no external effect was authorized."
+    "The heartbeat stores minimized health/counter metadata only and no email subject/body/attachment/customer payload; no external effect was authorized.",
+    "Current-state reconciliation removed superseded heartbeat pre-deploy/pending statements; historical receipts remain preserved in evidence documents."
   ],
   "proof": {
     "latest_green_ci_run": "36302995615",
@@ -726,8 +724,7 @@
     "No real post-connect Tally minimized envelope has yet traversed Edge/D1 -> portable Context Kernel v0.11.",
     "The +4 current-source population difference for the <=2026-09-25 Caixa Pulse window versus the older 69-row snapshot has unknown provenance/cause and must not be interpreted as incident growth without further source-lineage analysis.",
     "No real stored review attachment exists yet in production D1 for a D1 -> local executor -> segmented OCR -> parser world proof.",
-    "The Foxxy host proof does not establish OCR generalization beyond the private seven-image benchmark.",
-    "Until that heartbeat is deployed, zero iFood rows alone cannot distinguish 'cron ran and found zero candidates' from other ingestion-health states without log/control-surface evidence."
+    "The Foxxy host proof does not establish OCR generalization beyond the private seven-image benchmark."
   ],
   "authority": {
     "continuity_update": "AUTHORIZED_METADATA_WRITE_WITHIN_PROJECT_SCOPE",
