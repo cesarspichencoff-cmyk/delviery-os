@@ -5,7 +5,7 @@
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "main",
   "checkpoint_type": "SHADOW_READ_ONLY_PREP",
-  "state_basis_head": "722348476447ea7881a460a62069bf19ec40ee58",
+  "state_basis_head": "90f9f558ad8486805cd4fcc8f54bb2a1a6b82d91",
   "verified_state_refs": [
     "src/shadow/odhenReadonly.ts",
     "src/shadow/compare.ts",
@@ -64,9 +64,15 @@
     "Historical parser documentation was marked superseded where it claimed there was no production ticket split by station.",
     "A dedicated source-only print-topology probe was added for CAIXA_MOOCA. It scans only known Odhen/Periféricos code roots, excludes Log/Logs/Temp/cache/node_modules, and targets ImpressaoDelivery, TXPRODCOMVEN, /print, arrFila, printCommands, LogIMP, formatTX and printer-routing tokens.",
     "The print-topology probe static safety gate was independently replayed against the current branch content and PASSed: no HTTP, SQL, process start, credential-file reference, file mutation or Log-directory read capability was detected.",
-    "The stale claim that the real IMP log file existence was unproven was removed from durable state because metadata proof already established the file and later growth."
+    "The stale claim that the real IMP log file existence was unproven was removed from durable state because metadata proof already established the file and later growth.",
+    "CAIXA_MOOCA directed source audit concluded LOCAL_PRINT_SOURCES_COMPLEMENTARY at code level: delivery print provides NRCOMANDA/NRCOMANDAEXT and delivery/item observations, while production print provides item-scoped TXPRODCOMVEN and printer destination; the common join is NRCOMANDA when production renders COMANDA.: DLV_<N>.",
+    "Production source path is proven capable of multiple copies per item (production, production 2, puxa); any join must deduplicate repeated production lines.",
+    "Odhen printer payload/log identity carries model + port, not the TATA physical praça name; praça requires an explicit mapping layer.",
+    "The broad topology probe was corrected after the real PC audit: v2 uses the actual C:\\TEKNISA\\odhen-perifericos and C:\\TEKNISA\\odhenPOS structure through an explicit file allowlist and no recursive/generic-token scan.",
+    "The corrected targeted topology probe static gate was independently replayed against current branch content and PASSed.",
+    "A per-printer IMP metadata-only monitor was added to observe only filename/length/timestamps for *_IMP_<modelo>_<porta>.txt; its static gate was independently replayed and PASSed with no file-content read or write capability."
   ],
-  "next_action": "Run the dedicated source-only print-topology probe on CAIXA_MOOCA through Claude Code if host policy permits. Use the returned source file/line evidence to map delivery vs production/kitchen vs other print paths, prove where TXPRODCOMVEN is rendered, and determine whether local print sources can jointly cover the operational truth without SQL. Do not read Log files or order data and do not print.",
+  "next_action": "Replace the generic IMP-length monitor with the per-printer metadata-only monitor. Correlate one natural production print with the specific *_IMP_<modelo>_<porta>.txt file(s) that grow, while César observes the physical printer and whether the paper shows COMANDA.: DLV_<N>. Do not read log content. This single bounded observation can prove bridge usage, printer mapping and the production join key before any live parser work.",
   "unknowns": [
     "The C3.1 synthetic final preview requested by César has not yet been human-accepted in this phase.",
     "No real order has been read in shadow.",
@@ -88,7 +94,11 @@
     "The exact item-to-HOT/EBITEN/SHISO quantity mapping is not yet proven and is not automated.",
     "The TATA sequence generation/reset/dedupe contract is not yet implemented in the production-ticket module; the renderer currently receives the sequence as input.",
     "Physical ESC/POS font sizing/bold/inverse rendering remains unproven until the printer topology/model capabilities are source-mapped.",
-    "tools/verificar_production_ticket_v1.js has been added but has not yet been executed against the repo-pinned TypeScript/runtime after the latest production-ticket changes."
+    "tools/verificar_production_ticket_v1.js has been added but has not yet been executed against the repo-pinned TypeScript/runtime after the latest production-ticket changes.",
+    "World proof is still missing that the live delivery production ticket traverses this CAIXA_MOOCA Perifericos instance.",
+    "World proof is still missing that the live production ticket renders COMANDA.: DLV_<NRCOMANDA> for TATA iFood delivery.",
+    "The runtime model+port -> TATA physical praça mapping is not yet proven.",
+    "No REAL_SAMPLE_PROVEN production-ticket parser profile exists yet; code-level formatting is proven, live framing/encoding remains unproven."
   ],
   "authority": {
     "continuity_update": "AUTHORIZED_METADATA_WRITE_WITHIN_PROJECT_SCOPE",
@@ -108,7 +118,7 @@
   "pending_work": {
     "branch": "shadow/odhen-v132-readonly-prep",
     "pull_request": 11,
-    "status": "PRINT_TOPOLOGY_PROBE_READY__CAIXA_SOURCE_RUN_PENDING__PASSIVE_DELIVERY_PROOF_PENDING__PRODUCTION_TICKET_CODE_READY",
+    "status": "LOCAL_PRINT_COMPLEMENTARY_CODE_PROVEN__PER_PRINTER_METADATA_WORLD_PROOF_NEXT__NO_LIVE_CONTENT_READ",
     "canonical_sha256": "D34583F0A743DF9645914BCDFC1010E6D3AEF72AC74D3A4B7B01F81E305B71E4",
     "cashier_pc": "CAIXA_MOOCA",
     "odhen_root": "C:\\TEKNISA\\odhen-perifericos",
@@ -157,6 +167,11 @@
     },
     "print_topology_probe": "tools/odhen_print_topology_probe_readonly.ps1",
     "print_topology_probe_static_gate": "tools/verificar_odhen_print_topology_probe_static.js",
-    "print_topology_probe_static_status": "PASS_EXTERNALLY_REPLAYED"
+    "print_topology_probe_static_status": "PASS_EXTERNALLY_REPLAYED",
+    "print_topology_probe_version": "v2_targeted",
+    "per_printer_metadata_monitor": "tools/monitor_imp_printer_metadata_only.ps1",
+    "per_printer_metadata_monitor_static_gate": "tools/verificar_imp_printer_metadata_monitor_static.js",
+    "per_printer_metadata_monitor_static_status": "PASS_EXTERNALLY_REPLAYED",
+    "local_print_source_decision": "LOCAL_PRINT_SOURCES_COMPLEMENTARY_CODE_LEVEL"
   }
 }
