@@ -5,7 +5,7 @@
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "main",
   "checkpoint_type": "SHADOW_READ_ONLY_PREP",
-  "state_basis_head": "a16f9bf8b9515f551e87cc060cea2a40a8683947",
+  "state_basis_head": "944f6e9918e0039b408ecbe65cb2b636bd868075",
   "verified_state_refs": [
     "src/shadow/odhenReadonly.ts",
     "src/shadow/compare.ts",
@@ -22,7 +22,8 @@
     "src/production/deliveryProductionJoin.ts",
     "tools/verificar_production_parallel_v1.js",
     "tools/verificar_production_parallel_static.js",
-    "data/kitchen_dependency_rules_v1.json"
+    "data/kitchen_dependency_rules_v1.json",
+    "data/runtime_printer_map_v1.json"
   ],
   "verified_state": [
     "Canonical V1.3.2 SHA-256 is pinned in the pure shadow normalizer.",
@@ -87,9 +88,12 @@
     "A behavioral verifier was prepared for TATA sequence reuse/collision, kitchen dependency gates/arithmetic, duplicate-order aggregation, and conservative delivery-production joining.",
     "A static production-parallel safety/truth gate was independently replayed against the current branch content and PASSed: the new pure modules contain no filesystem/network/print/SQL capability; the dependency baseline remains PARTIAL/UNPROVEN/empty.",
     "A pre-existing TypeScript build blocker in passivePrintLog.ts was corrected by declaring orderObservationSectionStarted, and a pre-existing escaped-newline syntax error in tools/verificar_shadow_odhen_v132.js was corrected.",
-    "The kitchen dependency yield validator was hardened for strict TypeScript typing."
+    "The kitchen dependency yield validator was hardened for strict TypeScript typing.",
+    "First physical printer mapping is WORLD_PROVEN by metadata-only correlation plus human observation: model 16 + port 192.168.0.153 maps to BALCAO_SUSHI_1.",
+    "The proof used only per-printer IMP filename/length/timestamp changes and direct human observation of the physical printer; no log content was read.",
+    "The observed .153 file changed twice in the bounded interval (26926->27358 at 13:56:49.537 and 27358->27658 at 13:57:32.911 local), consistent with multiple print-command appends for one physical printer."
   ],
-  "next_action": "When a repo runtime is available, execute npm run verificar:production-ticket, npm run verificar:production-parallel, npm run verificar:production-parallel-static, npm run verificar:passive-log and npm run verificar:shadow. Operationally, the next world proof remains a short per-printer metadata-only observation of one natural delivery production event, including visual confirmation of COMANDA.: DLV_<N>. Do not read live log content or print from DeliveryOS yet.",
+  "next_action": "Continue the same metadata-only monitor only long enough to correlate another isolated physical printer event, prioritizing an unmapped production target. For the next isolated delivery/iFood production ticket, also visually confirm whether the paper contains COMANDA.: DLV_<N>. Do not read log content.",
   "unknowns": [
     "The C3.1 synthetic final preview requested by César has not yet been human-accepted in this phase.",
     "No real order has been read in shadow.",
@@ -113,14 +117,15 @@
     "tools/verificar_production_ticket_v1.js has been added but has not yet been executed against the repo-pinned TypeScript/runtime after the latest production-ticket changes.",
     "World proof is still missing that the live delivery production ticket traverses this CAIXA_MOOCA Perifericos instance.",
     "World proof is still missing that the live production ticket renders COMANDA.: DLV_<NRCOMANDA> for TATA iFood delivery.",
-    "The runtime model+port -> TATA physical praça mapping is not yet proven.",
     "No REAL_SAMPLE_PROVEN production-ticket parser profile exists yet; code-level formatting is proven, live framing/encoding remains unproven.",
     "Behavioral production verifiers have been prepared but have not yet been executed with repo-pinned TypeScript 5.5.3; static gate PASS is not TEST_PASS.",
     "The operational TATA sequence scope/reset/width/range/persistence policy remains human-unconfirmed and is not active.",
     "The HOT/EBITEN/SHISO item-to-yield table remains intentionally empty and unproven; no complete kitchen total is active.",
     "Combo/component production tickets may require a richer item join than normalized name+quantity; the current conservative join will block such unmatched/ambiguous shapes until a bounded real sample proves the needed relation.",
     "Production routing for Duplas remains human-unconfirmed and blocked.",
-    "A trustworthy produced/low-off signal still does not exist, so PENDENTE must not be displayed as operational truth."
+    "A trustworthy produced/low-off signal still does not exist, so PENDENTE must not be displayed as operational truth.",
+    "Runtime printer mapping is only partial: 192.168.0.153 is proven as BALCAO_SUSHI_1; 192.168.0.116 and remaining production printers are still unmapped.",
+    "The 13:56-13:57 physical mapping observation does not by itself prove the order was delivery/iFood or that COMANDA.: DLV_<NRCOMANDA> was printed."
   ],
   "authority": {
     "continuity_update": "AUTHORIZED_METADATA_WRITE_WITHIN_PROJECT_SCOPE",
@@ -140,7 +145,7 @@
   "pending_work": {
     "branch": "shadow/odhen-v132-readonly-prep",
     "pull_request": 11,
-    "status": "PARALLEL_PRODUCTION_CORE_CODE_READY__STATIC_GATE_PASS__BEHAVIOR_TEST_PENDING__WORLD_PROOF_PENDING",
+    "status": "FIRST_PRINTER_MAPPING_WORLD_PROVEN__DLV_JOIN_KEY_AND_REMAINING_PRINTERS_PENDING",
     "canonical_sha256": "D34583F0A743DF9645914BCDFC1010E6D3AEF72AC74D3A4B7B01F81E305B71E4",
     "cashier_pc": "CAIXA_MOOCA",
     "odhen_root": "C:\\TEKNISA\\odhen-perifericos",
@@ -205,6 +210,8 @@
       "static_verifier": "tools/verificar_production_parallel_static.js",
       "static_status": "PASS_EXTERNALLY_REPLAYED",
       "behavioral_status": "NOT_EXECUTED"
-    }
+    },
+    "runtime_printer_map": "data/runtime_printer_map_v1.json",
+    "runtime_printer_map_status": "PARTIAL__BALCAO_SUSHI_1_WORLD_PROVEN"
   }
 }
