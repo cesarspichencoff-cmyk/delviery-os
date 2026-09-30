@@ -5,7 +5,7 @@
   "canonical_repository": "cesarspichencoff-cmyk/delviery-os",
   "active_ref": "main",
   "checkpoint_type": "SHADOW_READ_ONLY_PREP",
-  "state_basis_head": "7d9b7df9d60e8f1a1a517f10167b86dca4b9beff",
+  "state_basis_head": "722348476447ea7881a460a62069bf19ec40ee58",
   "verified_state_refs": [
     "src/shadow/odhenReadonly.ts",
     "src/shadow/compare.ts",
@@ -37,7 +37,6 @@
     "CAIXA_MOOCA code/config inspection identified a passive print-log route: with salvaLogDetalhadoIMP enabled, printCommands writes the complete print command text immediately before the official printer path.",
     "The passive log route requires no SQL Server access and no Odhen/Teknisa code modification for the preferred design.",
     "The delivery report print text is known by code to contain NRCOMANDA, items/quantities, merged item observations from DSOBSDESCIT/DSOBSPEDDIGCMD and order-level DSOBSCOMANDA; NRVENDAREST and TXPRODCOMVEN are absent from this source.",
-    "Physical existence/current append activity of the target IMP log file is still unproven because host permissions blocked even listing the Log directory.",
     "Raw print text may contain customer/address/payment PII; any reader must sanitize in memory and must not persist or transmit raw text.",
     "Passive print-log preparation now includes a pure projection parser that is allowlist-only: unrecognized lines, including PII/payment/address text, are never copied into the returned projection.",
     "Passive print parser profiles are explicitly proof-scoped. SYNTHETIC_ONLY profiles can exercise parsing but cannot become ready_for_live_shadow; live readiness requires REAL_SAMPLE_PROVEN plus proven full-block framing.",
@@ -62,15 +61,17 @@
     "Production-ticket visual contract prioritizes destination, TATA sequence, mounting box, quantity/item, observation, source identifiers and final check; structural customer/address/payment fields are not part of the ticket model.",
     "A pure production-ticket preview/routing module was added with zero print/Odhen/service/cutover effects. Unproven routes block instead of falling back.",
     "HOT/EBITEN/SHISO kitchen-demand summary was modeled with a truth boundary: before a production/low-off signal is proven, it may show SOLICITADO DESDE CORTE but must not claim PENDENTE.",
-    "Historical parser documentation was marked superseded where it claimed there was no production ticket split by station."
+    "Historical parser documentation was marked superseded where it claimed there was no production ticket split by station.",
+    "A dedicated source-only print-topology probe was added for CAIXA_MOOCA. It scans only known Odhen/Periféricos code roots, excludes Log/Logs/Temp/cache/node_modules, and targets ImpressaoDelivery, TXPRODCOMVEN, /print, arrFila, printCommands, LogIMP, formatTX and printer-routing tokens.",
+    "The print-topology probe static safety gate was independently replayed against the current branch content and PASSed: no HTTP, SQL, process start, credential-file reference, file mutation or Log-directory read capability was detected.",
+    "The stale claim that the real IMP log file existence was unproven was removed from durable state because metadata proof already established the file and later growth."
   ],
-  "next_action": "Continue the source/config-only print-topology investigation on CAIXA_MOOCA, focusing on production/kitchen ticket generation and TXPRODCOMVEN. In parallel, execute the pure production-ticket verifier when a safe repo runtime is available. Do not print or alter Odhen. Human input still needed later for Duplas routing and exact HOT/EBITEN/SHISO dependency quantities.",
+  "next_action": "Run the dedicated source-only print-topology probe on CAIXA_MOOCA through Claude Code if host policy permits. Use the returned source file/line evidence to map delivery vs production/kitchen vs other print paths, prove where TXPRODCOMVEN is rendered, and determine whether local print sources can jointly cover the operational truth without SQL. Do not read Log files or order data and do not print.",
   "unknowns": [
     "The C3.1 synthetic final preview requested by César has not yet been human-accepted in this phase.",
     "No real order has been read in shadow.",
     "DSOBSCOMANDA is proven order-level in the official report path, but the current C3.1 has no proven renderer channel for order-level observations.",
     "Full repository build plus tools/verificar_shadow_odhen_v132.js is still unproven on the cashier PC after the latest probe/test changes.",
-    "The target IMP log file existence and live append behavior are not yet WORLD_PROVEN.",
     "The exact record/block framing and encoding of the live IMP log are not yet proven from one bounded real append.",
     "The delivery-report log source cannot recover TXPRODCOMVEN or distinguish DSOBSDESCIT from DSOBSPEDDIGCMD after Odhen merges them.",
     "No real print-log block has been read or sanitized by DeliveryOS yet.",
@@ -107,7 +108,7 @@
   "pending_work": {
     "branch": "shadow/odhen-v132-readonly-prep",
     "pull_request": 11,
-    "status": "PASSIVE_DELIVERY_PROOF_PENDING__PRODUCTION_TICKET_CODE_READY__PRINT_TOPOLOGY_SOURCE_MAPPING_PENDING",
+    "status": "PRINT_TOPOLOGY_PROBE_READY__CAIXA_SOURCE_RUN_PENDING__PASSIVE_DELIVERY_PROOF_PENDING__PRODUCTION_TICKET_CODE_READY",
     "canonical_sha256": "D34583F0A743DF9645914BCDFC1010E6D3AEF72AC74D3A4B7B01F81E305B71E4",
     "cashier_pc": "CAIXA_MOOCA",
     "odhen_root": "C:\\TEKNISA\\odhen-perifericos",
@@ -153,6 +154,9 @@
       "module": "src/production/productionTicket.ts",
       "verifier": "tools/verificar_production_ticket_v1.js",
       "status": "CODE_READY_SYNTHETIC_PREVIEW__TEST_NOT_YET_EXECUTED__NO_PHYSICAL_PRINT"
-    }
+    },
+    "print_topology_probe": "tools/odhen_print_topology_probe_readonly.ps1",
+    "print_topology_probe_static_gate": "tools/verificar_odhen_print_topology_probe_static.js",
+    "print_topology_probe_static_status": "PASS_EXTERNALLY_REPLAYED"
   }
 }
