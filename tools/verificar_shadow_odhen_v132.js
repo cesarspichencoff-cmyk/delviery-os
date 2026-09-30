@@ -4,7 +4,9 @@ const assert = require("node:assert/strict");
 const path = require("node:path");
 const { readFileSync } = require("node:fs");
 
-const Shadow = require("../dist/src/shadow/odhenReadonly.js");\nconst Compare = require("../dist/src/shadow/compare.js");\nconst Preview = require("../dist/src/shadow/previewGate.js");
+const Shadow = require("../dist/src/shadow/odhenReadonly.js");
+const Compare = require("../dist/src/shadow/compare.js");
+const Preview = require("../dist/src/shadow/previewGate.js");
 const MOTOR = require("../src/perfil-delivery/motor.js");
 const seed = JSON.parse(readFileSync(path.join(__dirname, "..", "data", "cardapio_knowledge_seed.json"), "utf8")).itens;
 
