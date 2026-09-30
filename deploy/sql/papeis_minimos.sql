@@ -34,6 +34,11 @@ DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'deliveryos_async') THEN
     CREATE ROLE deliveryos_async LOGIN;
   END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'deliveryos_source_ingest') THEN
+    -- A identidade nasce sem senha nesta etapa. Nenhum serviço a usa ainda;
+    -- credencial/wiring são outro gate, com autorização própria.
+    CREATE ROLE deliveryos_source_ingest LOGIN;
+  END IF;
 END $$;
 
 -- ------------------------------------------------------------- CRÍTICO
@@ -69,3 +74,11 @@ GRANT SELECT, INSERT, UPDATE ON platform.job TO deliveryos_async;
 GRANT INSERT ON platform.audit TO deliveryos_async;
 GRANT USAGE ON ALL SEQUENCES IN SCHEMA platform TO deliveryos_async;
 GRANT SELECT ON platform.schema_migration TO deliveryos_async;
+
+
+-- ------------------------------------------------------ SOURCE INGEST
+-- Entregas public feed -> platform event_log/outbox.
+-- Autoridade mínima: só a escrita transacional necessária.
+GRANT USAGE ON SCHEMA platform TO deliveryos_source_ingest;
+GRANT INSERT ON platform.event_log TO deliveryos_source_ingest;
+GRANT INSERT ON platform.outbox TO deliveryos_source_ingest;

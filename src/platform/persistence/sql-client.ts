@@ -148,8 +148,31 @@ export function dispensadoDeTls(url: string, hostPrivado?: string): boolean {
 
 export function isLocalUrl(url: string): boolean {
   try {
-    const h = new URL(url).hostname;
-    return h === "localhost" || h === "127.0.0.1" || h === "::1";
+    const u = new URL(url);
+    const h = u.hostname;
+    if (h === "localhost" || h === "127.0.0.1" || h === "::1") {
+      return true;
+    }
+
+    /**
+     * libpq/pg aceita socket Unix pelo parâmetro `host=/caminho` quando a
+     * autoridade da URL não tem hostname:
+     *
+     *   postgresql:///postgres?host=/var/run/postgresql
+     *
+     * É transporte LOCAL pelo filesystem, não rede remota. Forçar TLS aqui
+     * produz "server does not support SSL connections" antes de qualquer
+     * consulta. A regra é estreita de propósito: protocolo PostgreSQL,
+     * hostname vazio e caminho ABSOLUTO. Um host remoto com parâmetro parecido
+     * não ganha dispensa.
+     */
+    const socket = u.searchParams.get("host");
+    return (
+      (u.protocol === "postgres:" || u.protocol === "postgresql:") &&
+      h === "" &&
+      typeof socket === "string" &&
+      socket.startsWith("/")
+    );
   } catch {
     return false;
   }
