@@ -146,3 +146,20 @@ Tool prepared:
 `tools/monitor_imp_printer_metadata_only.ps1`
 
 It reads filename/length/timestamps only and has no content-read or write capability.
+
+
+## First world-proven physical printer mapping — 2026-09-30
+
+A short metadata-only observation on CAIXA_MOOCA was correlated with César's direct physical observation:
+
+- `2026_09_30_IMP_16_192.168.0.153.txt` changed `26926 -> 27358` at 13:56:49.537 and `27358 -> 27658` at 13:57:32.911 local;
+- the observed physical print was an Executivo Salmão on **BALCAO SUSHI 1**;
+- no log content was opened or read.
+
+Therefore:
+
+`model 16 + port 192.168.0.153 -> BALCAO_SUSHI_1` = **WORLD_PROVEN** for physical-printer identity.
+
+This proof is intentionally narrow. It does NOT yet prove that the observed order was delivery/iFood, that the production ticket contained `COMANDA.: DLV_<N>`, or that every delivery production path traverses this Periféricos instance.
+
+The other observed port `192.168.0.116` remains unmapped.
