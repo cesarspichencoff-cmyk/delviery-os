@@ -148,18 +148,43 @@ Tool prepared:
 It reads filename/length/timestamps only and has no content-read or write capability.
 
 
-## First world-proven physical printer mapping — 2026-09-30
+## Runtime correction from current Teknisa registry — 2026-09-30
 
-A short metadata-only observation on CAIXA_MOOCA was correlated with César's direct physical observation:
+The earlier metadata-only identity inference is **superseded** by the current Teknisa store registry and product-routing exports.
 
-- `2026_09_30_IMP_16_192.168.0.153.txt` changed `26926 -> 27358` at 13:56:49.537 and `27358 -> 27658` at 13:57:32.911 local;
-- the observed physical print was an Executivo Salmão on **BALCAO SUSHI 1**;
-- no log content was opened or read.
+Current configured identities:
 
-Therefore:
+- `00003 DELIVERY SUSHI 1 → 192.168.0.153 → 192.168.0.24:3000`
+- `00009 BALCAOSUSHI1 → 192.168.0.142 / LPT4 → 192.168.0.24:3000`
+- `00002 COZINHA → 192.168.0.116 / LPT3 → 192.168.0.24:3000`
+- `00004 DELIVERY SUSHI 2 → 192.168.0.4 → 192.168.0.24:3000`
+- `00006 BALCAOSUSHI2 → 192.168.0.110 / LPT5 → 192.168.0.24:3000`
+- `00007 BAR → 192.168.0.232 / LPT6 → 192.168.0.24:3000`
 
-`model 16 + port 192.168.0.153 -> BALCAO_SUSHI_1` = **WORLD_PROVEN** for physical-printer identity.
+Therefore the old conclusions `.153 = BALCAO_SUSHI_1` and `.142 = fiscal candidate` are not current truth.
 
-This proof is intentionally narrow. It does NOT yet prove that the observed order was delivery/iFood, that the production ticket contained `COMANDA.: DLV_<N>`, or that every delivery production path traverses this Periféricos instance.
+The product registry also proves that one product may intentionally target two printers. Example:
 
-The other observed port `192.168.0.116` remains unmapped.
+- `9.15.00.075.00 — COMBINADO SALMAO 1 PESSOA`
+- `9.15.00.076.00 — COMBINADO SALMAO 2 PESSOAS`
+
+both route to:
+
+- production 1: `BALCAOSUSHI1 → 192.168.0.142`
+- production 2: `DELIVERY SUSHI 1 → 192.168.0.153`
+
+This explains why nearby appends can occur on both files without representing two different orders.
+
+### Consequence for DeliveryOS
+
+For **expected production routing**, the preferred deterministic join is now:
+
+`delivery item CDPRODUTO → product routing config → printer code/name → IP`
+
+This removes the need to identify a station by IMP file-size deltas or by requiring `DLV_<NRCOMANDA>` / `SENHA` on the physical production ticket.
+
+The observed physical ticket checked during this investigation contained neither `DLV_<NRCOMANDA>` nor `SENHA`; therefore the previous paper-level join assumption must not be used as a live invariant.
+
+A runtime print reader remains useful only for a distinct question: **did a specific configured print actually occur?** That proof must remain separate from expected routing.
+
+See `docs/Teknisa_Product_Printer_Routing_Proof_2026-09-30.md` and `data/runtime_printer_map_v1.json`.
