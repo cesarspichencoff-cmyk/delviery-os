@@ -1,7 +1,7 @@
 {
   "schema": "deliveryos.runtime-printer-map.v1",
   "status": "PARTIAL",
-  "captured_at_local": "2026-09-30T13:57:33-03:00",
+  "captured_at_local": "2026-09-30T13:59:42.020-03:00",
   "store_pc": "CAIXA_MOOCA",
   "source": "PER_PRINTER_IMP_METADATA_CORRELATED_WITH_HUMAN_PHYSICAL_OBSERVATION",
   "mappings": [
@@ -11,7 +11,7 @@
       "tata_target": "BALCAO_SUSHI_1",
       "proof": "WORLD_PROVEN",
       "evidence": {
-        "local_observation": "Executivo Salmão printed on Balcão Sushi 1 while only 2026_09_30_IMP_16_192.168.0.153.txt changed in the observed interval.",
+        "local_observation": "César directly observed production on Balcão Sushi 1 during the bounded interval; an Executivo Salmão was associated with the initial .153 activity, and subsequent sushi/combinado activity occurred while .153 continued to append. The mapping model 16 / 192.168.0.153 -> BALCAO_SUSHI_1 remains WORLD_PROVEN, but individual 300-byte appends are not equated one-to-one with tickets.",
         "metadata_events": [
           {
             "from": 26926,
@@ -22,6 +22,21 @@
             "from": 27358,
             "to": 27658,
             "at_local": "2026-09-30T13:57:32.911-03:00"
+          },
+          {
+            "from": 27658,
+            "to": 27958,
+            "at_local": "2026-09-30T13:58:15.591-03:00"
+          },
+          {
+            "from": 27958,
+            "to": 28258,
+            "at_local": "2026-09-30T13:58:58.820-03:00"
+          },
+          {
+            "from": 28258,
+            "to": 28558,
+            "at_local": "2026-09-30T13:59:42.020-03:00"
           }
         ],
         "log_content_read": false,
@@ -30,10 +45,33 @@
     }
   ],
   "unknown_ports": [
-    "192.168.0.116"
+    "192.168.0.116",
+    "192.168.0.110"
   ],
   "notes": [
     "This map records only physical printer identity proven by correlated metadata and human observation.",
-    "It does not by itself prove the order was delivery/iFood, that COMANDA.: DLV_<N> was present, or that all production paths traverse this Perifericos instance."
+    "It does not by itself prove the order was delivery/iFood, that COMANDA.: DLV_<N> was present, or that all production paths traverse this Perifericos instance.",
+    "Per-printer IMP file growth is not assumed to be one physical ticket per MUDOU event; repeated fixed-size appends may be command/status logging within the same printer process.",
+    "192.168.0.110 remains ambiguous because bar beverage activity and fiscal-note issuance occurred in the same short interval."
+  ],
+  "candidates": [
+    {
+      "printer_model": "16",
+      "printer_port": "192.168.0.110",
+      "candidate_targets": [
+        "BAR_BEBIDAS",
+        "FISCAL_CAIXA_OR_OTHER"
+      ],
+      "proof": "AMBIGUOUS",
+      "evidence": {
+        "metadata_event": {
+          "from": 136099,
+          "to": 137402,
+          "at_local": "2026-09-30T13:58:14.588-03:00"
+        },
+        "context": "A Coca Zero was in the same order and the bar printer was active; César also issued the fiscal note immediately afterward, so the metadata event cannot yet be attributed uniquely to bar versus fiscal/other print.",
+        "log_content_read": false
+      }
+    }
   ]
 }
