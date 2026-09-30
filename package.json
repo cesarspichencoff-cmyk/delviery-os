@@ -13,7 +13,8 @@
     "verificar:v132": "node tools/verificar_truth_v132.js",
     "verificar:passive-log": "tsc && node tools/verificar_passive_print_log_v132.js",
     "verificar:production-ticket": "tsc && node tools/verificar_production_ticket_v1.js",
-    "verificar:print-topology-probe-static": "node tools/verificar_odhen_print_topology_probe_static.js"
+    "verificar:print-topology-probe-static": "node tools/verificar_odhen_print_topology_probe_static.js",
+    "verificar:imp-printer-metadata-static": "node tools/verificar_imp_printer_metadata_monitor_static.js"
   },
   "devDependencies": {
     "@types/node": "20.14.10",
