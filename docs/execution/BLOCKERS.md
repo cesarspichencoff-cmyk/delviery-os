@@ -1039,15 +1039,16 @@ O consumer live-capable continua com flag OFF, kill switch fail-closed, checkpoi
 
 Bloqueios restantes:
 
-- o produtor piloto ainda não declara `source_mode` por configuração operacional; ausência continua UNKNOWN e é isolada;
 - `FileUnitOfWork` é single-instance e não é banco/lock multi-instância;
+- o papel `deliveryos_async` tem apenas `SELECT` no `platform.event_log`; ligar o bridge nele exigiria ampliar autoridade já certificada e está **proibido** sem redesenho;
+- o wiring live precisa de um processo/identidade mínima própria (ou fronteira autenticada equivalente) que possa inserir somente `event_log` + `outbox` sem ganhar poderes de aparelho, migration ou domínio;
 - o consumer não está conectado ao `async-runtime.ts`;
 - a flag `entregas.copiloto_live_connection` continua `false`;
 - não existe autorização humana para ativação live nem deploy.
 
 Para remover este bloqueio por etapas:
 
-1. tornar `source_mode` configuração explícita na borda do produtor;
+1. definir e provar a identidade mínima do processo de source-ingest, sem ampliar `deliveryos_async`;
 2. provar wiring local/piloto com feed de arquivo + kill switch ainda OFF por padrão;
 3. para produção multi-instância, substituir a persistência local por adapter transacional/cluster-safe;
 4. somente depois solicitar autorização humana separada para ativação live.

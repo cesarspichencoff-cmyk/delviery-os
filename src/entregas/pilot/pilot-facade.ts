@@ -102,7 +102,7 @@ export class PilotApplicationFacade {
     }
     const policy = createPilotPolicy({ max_stops: cfg.max_stops });
     this.uow = openFileUnitOfWork(this.dataFile);
-    this.svc = new EntregasApplicationService(this.uow, policy);
+    this.svc = new EntregasApplicationService(this.uow, policy, cfg.source_mode);
     this.hydrateFromDisk();
   }
 
@@ -132,6 +132,7 @@ export class PilotApplicationFacade {
     this.svc = new EntregasApplicationService(
       this.uow,
       createPilotPolicy({ max_stops: this.cfg.max_stops }),
+      this.cfg.source_mode,
     );
     this.tripCache.clear();
     this.handoffCache.clear();

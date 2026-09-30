@@ -1,6 +1,7 @@
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import type { OperationalRole } from "../operational/auth";
+import type { EntregasSourceMode } from "../contracts/events/types";
 
 export interface PilotUser {
   actor_id: string;
@@ -17,6 +18,11 @@ export interface PilotConfig {
   port: number;
   bind: string;
   data_dir: string;
+  /**
+   * Natureza dos eventos públicos deste produtor.
+   * Opcional para compatibilidade; ausência = UNKNOWN, nunca "real".
+   */
+  source_mode?: EntregasSourceMode;
   max_stops: number;
   banner: string;
   users: PilotUser[];
@@ -47,6 +53,16 @@ export function loadPilotConfig(path?: string): PilotConfig {
     );
   }
   const raw = JSON.parse(readFileSync(p, "utf8")) as PilotConfig;
+  if (
+    raw.source_mode !== undefined &&
+    raw.source_mode !== "real" &&
+    raw.source_mode !== "simulated" &&
+    raw.source_mode !== "control"
+  ) {
+    throw new Error(
+      "Config piloto: source_mode deve ser real, simulated ou control; ausência permanece UNKNOWN",
+    );
+  }
   if (!raw.users?.length) throw new Error("Config piloto: users obrigatório");
   if (raw.users.some((u) => !u.token || u.token.startsWith("CHANGE_ME"))) {
     console.warn(

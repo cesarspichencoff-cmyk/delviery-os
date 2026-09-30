@@ -370,3 +370,18 @@ Gate: `test:entregas:durable-feed` = **9/9 PASS**.
 ### Fronteira
 
 Isto resolve durabilidade do feed para o piloto **single-instance sobre FileUnitOfWork**. Não transforma o arquivo local em banco multi-instância, não conecta o consumer ao `async-runtime.ts`, não altera a flag live e não autoriza produção.
+## 20. `source_mode` explícito no produtor piloto — 2026-09-30
+
+`PilotConfig` agora aceita opcionalmente `source_mode: real | simulated | control` e o `PilotApplicationFacade` o propaga ao `EntregasApplicationService`.
+
+Regras:
+
+- não existe default;
+- ausência permanece UNKNOWN e os eventos públicos saem sem `source_mode`;
+- valor fora do enum falha no carregamento da configuração;
+- `reloadStore()` reconstrói o ApplicationService com o mesmo modo configurado;
+- feed durável preserva exatamente o modo fornecido.
+
+Gate: `test:entregas:source-mode` = **5/5 PASS**.
+
+Para um piloto que vá alimentar a ponte causal, a configuração operacional precisa declarar o modo conscientemente. Copiar configuração antiga sem o campo continua seguro: o consumer isola os eventos, não os chama de reais.
