@@ -10,6 +10,7 @@ export interface KitchenDependencyRule {
 export interface KitchenDependencyRuleset {
   schema: "deliveryos.kitchen-dependency-rules.v1";
   coverage: "PARTIAL" | "COMPLETE";
+  coverage_proof: "HUMAN_CONFIRMED" | "UNPROVEN";
   rules: KitchenDependencyRule[];
 }
 
@@ -104,8 +105,9 @@ function uniqueRuleMap(ruleset: KitchenDependencyRuleset): {
  * No fuzzy classification is allowed. A menu item contributes HOT/EBITEN/SHISO
  * only when an exact normalized canonical-name rule exists and is human-confirmed.
  *
- * A PARTIAL ruleset may calculate known contributions, but must never call the
- * result a complete requested/remaining total.
+ * A PARTIAL or unproven-coverage ruleset may calculate known contributions, but
+ * must never call the result a complete requested/remaining total. COMPLETE is
+ * meaningful only when coverage_proof is HUMAN_CONFIRMED.
  */
 export function projectKitchenNeeds(
   items: KitchenSourceItem[],
@@ -117,6 +119,9 @@ export function projectKitchenNeeds(
 
   if (ruleset.coverage !== "COMPLETE") {
     blocking.add("DEPENDENCY_RULESET_COVERAGE_NOT_COMPLETE");
+  }
+  if (ruleset.coverage_proof !== "HUMAN_CONFIRMED") {
+    blocking.add("DEPENDENCY_RULESET_COVERAGE_NOT_PROVEN");
   }
 
   const totals = { hot: 0, ebiten: 0, shiso: 0 };
