@@ -1029,3 +1029,19 @@ estrutural nova vermelha. **Corrigido** com o `WebChromeClient` padrão (D92): e
 vermelhos; com um cliente próprio, o modelo diz "desconhecido" e o ensaio reprova em vez de supor.
 **Não provado:** o Kotlin não compilou aqui (`dl.google.com` negado) e nada rodou em aparelho — o Q6
 do Foxxy é quem prova (`docs/etapa-4-8/BANCADA-EMULADOR.md` §3.12).
+---
+
+## Entregas × Copiloto — feed durável do consumer live ausente · ABERTO em 2026-09-30
+
+O consumer live-capable já possui flag OFF, kill switch fail-closed, checkpoint atômico, replay idempotente e prova com PostgreSQL real. **Isso não autoriza ligação live.**
+
+Bloqueio restante: a implementação concreta do `EntregasEventFeed` continua sendo **em memória**. O consumer não foi conectado ao `async-runtime.ts`, a flag `entregas.copiloto_live_connection` continua `false` e não houve deploy.
+
+Para remover este bloqueio, é necessário:
+
+- implementar um feed durável/substituível usando somente o contrato público versionado;
+- provar restart/replay do produtor e do consumidor sem perda nem duplicação;
+- provar que desligar o kill switch não interfere no domínio Entregas nem no crítico;
+- somente depois solicitar autorização humana separada para ativação live.
+
+Estado atual: **CODE_READY + TEST_PASS do consumer de pré-ativação; transporte live durável = UNKNOWN/NOT_IMPLEMENTED; ativação = NÃO AUTORIZADA.**

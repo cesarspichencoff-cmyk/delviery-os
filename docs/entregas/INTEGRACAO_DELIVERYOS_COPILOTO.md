@@ -320,3 +320,33 @@ Inclui:
 - recusa tipos cuja granularidade não é semanticamente equivalente à Trip.
 
 O objetivo é permitir validação causal em shadow sem transformar fato de uma parada em fato da viagem inteira.
+## 18. Consumer live — pré-ativação comprovada, conexão ainda desligada — 2026-09-30
+
+Foi preparado `src/platform/runtime/entregas-live-consumer.ts`, mas ele **não está ligado ao `async-runtime.ts`** e a flag canônica `entregas.copiloto_live_connection` continua `false`.
+
+Barreiras de ativação:
+
+1. feature flag explícita;
+2. kill switch dinâmico em arquivo — somente conteúdo exato `RUN` libera; arquivo ausente, ilegível, vazio, `STOP` ou qualquer outro valor = parado;
+3. cada evento adaptado passa pela mesma `ingerir()` + `EscritorTransacional` da plataforma antes de o checkpoint avançar;
+4. checkpoint em arquivo é escrito por temp + rename e serve apenas como cursor de leitura;
+5. `platform.event_log` continua sendo a verdade durável que governa reconstrução/replay;
+6. tipo público sem equivalência segura ou sem `source_mode` é isolado com metadado mínimo e não vira fato da Operação Viva.
+
+Provas de pré-ativação:
+
+- consumer: **12/12 PASS**;
+- PostgreSQL real isolado: **3/3 PASS**;
+- crash após commit do fato/outbox e antes do checkpoint: restart relê o evento, o banco reconhece duplicata e preserva exatamente **1 fato + 1 outbox**;
+- `source_mode=simulated` permanece igual no event log e na mensagem da outbox;
+- ingestão transacional: **17/17 PASS**;
+- adapter shadow: **9/9 PASS**;
+- Q-003 E2E: **9/9 PASS**;
+- runtime wiring: **21/21 PASS**;
+- governança: **GREEN** antes desta documentação.
+
+### Gate que continua fechado
+
+A implementação concreta atual de `EntregasEventFeed` é `InMemoryEntregasEventFeed`. Portanto **não existe ainda transporte/feed durável real de Entregas para conectar ao consumer live**.
+
+Ativar o consumer contra esse feed em memória faria restart do produtor perder a fonte antes que o checkpoint/replay pudesse cumprir a promessa. Por isso a ativação permanece proibida até existir um adapter de feed durável provado e uma autorização humana específica de ativação.
