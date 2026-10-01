@@ -77,16 +77,29 @@ assert.equal(station.destination.printer_name, "DELIVERY SUSHI 1");
 assert.equal(station.mount_groups.length, 1);
 assert.equal(station.mount_groups[0].box_label, "CX 750");
 assert.equal(station.mount_groups[0].items.length, 2);
-assert.deepEqual(station.prep_components, [
+assert.deepEqual(station.mount_groups[0].items[0].prep_ingredients, [
   {
     component_key: "EBITEN",
     label: "Ebiten",
-    quantity: 3,
+    quantity: 2,
     unit: "EA",
     proof: "HUMAN_CONFIRMED",
   },
 ]);
-assert.deepEqual(station.prep_unknowns, ["UNPROVEN_PREP_COMPONENT:SALMAO_GR"]);
+assert.deepEqual(station.mount_groups[0].items[0].prep_unknowns, []);
+assert.deepEqual(station.mount_groups[0].items[1].prep_ingredients, [
+  {
+    component_key: "EBITEN",
+    label: "Ebiten",
+    quantity: 1,
+    unit: "EA",
+    proof: "HUMAN_CONFIRMED",
+  },
+]);
+assert.deepEqual(
+  station.mount_groups[0].items[1].prep_unknowns,
+  ["UNPROVEN_PREP_COMPONENT:SALMAO_GR"],
+);
 assert.equal(station.effects.print, false);
 
 const resourceProjection = {
