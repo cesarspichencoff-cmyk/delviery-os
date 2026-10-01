@@ -84,6 +84,7 @@ function costableOperationalUsage(usage: ResourceUsage): boolean {
       "KIT_COMPONENT",
       "COMPLEMENT",
       "RECIPE_INGREDIENT",
+      "DIRECT_STOCK_ITEM",
     ].includes(usage.kind)
   );
 }
@@ -169,7 +170,7 @@ export function costResourceAggregate(
     "BAG",
     "KIT_COMPONENT",
   ];
-  const recipeKinds: ResourceUsage["kind"][] = ["RECIPE_INGREDIENT"];
+  const recipeKinds: ResourceUsage["kind"][] = ["RECIPE_INGREDIENT", "DIRECT_STOCK_ITEM"];
   const complementKinds: ResourceUsage["kind"][] = ["COMPLEMENT"];
 
   const packagingUncosted = uncosted.filter((item) =>
@@ -181,7 +182,9 @@ export function costResourceAggregate(
   );
 
   const readyPackaging =
-    blocking.size === 0 && packagingUncosted.length === 0;
+    blocking.size === 0 &&
+    aggregate.packaging_and_kit_complete_orders === aggregate.order_count &&
+    packagingUncosted.length === 0;
   const hasRecipeUsage = aggregate.usages.some(
     (item) => item.kind === "RECIPE_INGREDIENT",
   );
@@ -192,7 +195,7 @@ export function costResourceAggregate(
     recipeUncosted.length === 0 &&
     packagingUncosted.length === 0 &&
     complementUncosted.length === 0 &&
-    aggregate.recipe_cmv_ready_orders === aggregate.order_count;
+    aggregate.theoretical_cmv_basis_ready_orders === aggregate.order_count;
 
   const packaging = sum(packagingAndKitKinds);
   const recipe = sum(recipeKinds);
