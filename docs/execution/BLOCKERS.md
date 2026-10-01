@@ -877,6 +877,11 @@ O Android chamava `POST /api/device/session` esperando `device_token`. O runtime
 crítico por vínculo de segredo do aparelho (migration 0005, `auth/device-session.ts`,
 `runtime/rota-sessao.ts`). Ver `docs/etapa-4-8/CADEIA-REAL.md`.
 
+**Sucessão — 2026-10-01.** A segunda porta de sessão no piloto foi retirada. `handleDeviceSession`
+não existe mais; `/api/device/session` no piloto é somente uma tombstone `503 retryable`
+(`device_session_moved_to_platform`) para que APK antigo preserve a fila local. Ela não autentica,
+não devolve `rider_id` e não emite token. A única autoridade de sessão do aparelho é a plataforma.
+
 **Limites que ficam, declarados:** janela entre autorizar e o primeiro contato (quem souber o
 `device_id` e chegar antes vincula o próprio segredo — mitigação: revogar e reautorizar); `jti`
 derivado de (`device_id`, segundo).

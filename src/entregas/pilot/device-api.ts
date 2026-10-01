@@ -50,62 +50,6 @@ function bad(status: number, human: string, code: string): DeviceApiResponse {
 }
 
 /* ------------------------------------------------------------------ *
- * Sessão do aparelho
- * ------------------------------------------------------------------ */
-
-export interface DeviceSessionInput {
-  device_id: string;
-  app_version: string;
-  client: string;
-}
-
-export interface AuthorizedDevice {
-  device_id: string;
-  rider_id: string;
-  label: string;
-}
-
-/**
- * Autentica o aparelho.
- *
- * Duas condições, e as duas importam: o token de sessão precisa ser válido
- * (é o mesmo mecanismo do console) E o `device_id` precisa estar na lista de
- * aparelhos autorizados. Token sozinho não basta — se ele vazar, um aparelho
- * qualquer não entra.
- *
- * A lista de aparelhos é configuração do responsável. Vazia significa
- * "nenhum aparelho autorizado ainda", e é o default seguro.
- */
-export function handleDeviceSession(args: {
-  input: Partial<DeviceSessionInput>;
-  actorRole?: string;
-  actorId?: string;
-  authorizedDevices: readonly AuthorizedDevice[];
-}): DeviceApiResponse {
-  if (!args.actorRole) {
-    return bad(401, "Acesso não autorizado. Use o token fornecido pelo responsável.", "no_session");
-  }
-  const deviceId = (args.input.device_id ?? "").trim();
-  if (!deviceId) {
-    return bad(400, "Aparelho sem identificação.", "no_device_id");
-  }
-  const known = args.authorizedDevices.find((d) => d.device_id === deviceId);
-  if (!known) {
-    return bad(
-      403,
-      "Este aparelho não está autorizado. Peça ao responsável para cadastrá-lo.",
-      "device_not_authorized",
-    );
-  }
-  return ok({
-    device_id: known.device_id,
-    rider_id: known.rider_id,
-    unit_id: undefined,
-    api_version: DEVICE_API_VERSION,
-  });
-}
-
-/* ------------------------------------------------------------------ *
  * Políticas, flags e termo vigente
  * ------------------------------------------------------------------ */
 

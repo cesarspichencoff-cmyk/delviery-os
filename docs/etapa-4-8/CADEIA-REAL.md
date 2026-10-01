@@ -77,7 +77,7 @@ controle positivo e treze mutações. O número de mutações estava certo; o de
 | rider-mobile (WebView do piloto) | **KEEP_PARALLEL** | é a interface do motoboy; `src/entregas/**` está no Preservation Set |
 | Product System `/entregas` | **ADAPT** | demo preservado, com selo; bloco real ao lado |
 | `test:platform:pb19` controle positivo | **ADAPT** | criava fato no banco compartilhado e dependia de outra suíte tê-lo migrado; agora tem banco próprio |
-| `/api/device/session` no piloto (`handleDeviceSession`) | **UNKNOWN** | fica sem uso pelo app; retirá-lo é edição em `src/entregas` (preservado) |
+| `/api/device/session` no piloto | **RETIRED / TOMBSTONE** | `handleDeviceSession` foi removido em 2026-10-01; o piloto não lê mais `entregas-devices.json` nem emite identidade. A rota antiga responde 503 retentável `device_session_moved_to_platform` para preservar fila de APK antigo; a única autoridade é a plataforma |
 
 ## 3 — A cadeia, provada (`test:platform:cadeia`)
 
@@ -276,11 +276,11 @@ explícito (D4). **Governança depois do commit** (L45): medida no commit da doc
    foi extraído para Kotlin puro, o gate passou **12/12** e a regressão Android ficou verde.
    Ver `field-gate/2026-10-01-a4-gate-verification.md`.
 4. ~~**Ferramenta humana de autorização** sobre `identity.device`~~ — **implementada em 2026-10-01** como `tools/entregas_device_admin.ts`: `status`, `authorize` e `revoke`, sempre read-only no plano; qualquer escrita exige `--apply=YES` + fingerprint do estado revisado. Autorizar valida unidade/ator ativos, mesma unidade e papel `motoboy_interno`; aparelho revogado não é reativado silenciosamente.
-5. **Retirar `handleDeviceSession` do piloto**, quando `src/entregas` puder ser tocado.
+5. ~~**Retirar `handleDeviceSession` do piloto**~~ — **feito em 2026-10-01**. A rota ficou apenas como tombstone 503 retentável para APK legado; não autentica, não devolve `rider_id` e não emite token.
 6. **Cadeia dos comandos** (`/api/events/batch` → `trip_created` etc.). É a próxima coluna de
    realidade, não esta.
-7. **Relógio do aparelho** (§10): decidir e corrigir o carimbo `clock_trust` e o frescor.
-   Registrado em `docs/execution/BLOCKERS.md`.
+7. ~~**Relógio do aparelho**~~ — **corrigido e provado** em `docs/etapa-4-8/RELOGIO.md`:
+   o servidor julga o carimbo, grava `clock_trust` explícito e `suspect` não fabrica frescor.
 
 ## 10 — UNKNOWNs e limites declarados
 

@@ -15,7 +15,7 @@ curl -s http://127.0.0.1:5193/api/health
 O boot também imprime o essencial:
 
 ```
-aparelhos autorizados: 0
+sessão de aparelho: autoridade na plataforma
 unidade configurada: NAO (retorno automatico desligado)
 termo publicavel: NAO (GPS bloqueado)
 ```
@@ -61,13 +61,18 @@ quadra urbana é maior que o raio da cerca.
 
 ## C. Aparelhos autorizados
 
-`config/entregas-devices.json` (fora do Git). Lista vazia = nenhum aparelho
-entra, mesmo com token válido.
+A autoridade é **exclusivamente a plataforma**, em `identity.device`.
+`config/entregas-devices.json` é legado e não é mais lido pelo piloto.
+
+Use `npm run admin:entregas:device`: primeiro gere o plano sem escrita;
+a aplicação exige `--apply=YES --expect <fingerprint>`.
 
 | Item | Estado |
 |---|---|
 | `device_id` de cada celular (o app gera na 1ª execução) | ⬜ |
-| `rider_id` vinculado a cada aparelho | ⬜ |
+| unidade e ator ativos; ator com papel `motoboy_interno` | ⬜ |
+| plano revisado sem `conflicts` | ⬜ |
+| autorização aplicada e conferida por `status` | ⬜ |
 
 ## D. Usuários e papéis
 

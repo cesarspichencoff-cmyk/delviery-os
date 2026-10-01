@@ -105,10 +105,6 @@ function writeConfigs(opts: { captureEnabled: boolean; term: LocationTerm | null
       persistent_outbox_enabled: true,
     }),
   );
-  writeFileSync(
-    join(cfgDir, "entregas-devices.json"),
-    JSON.stringify([{ device_id: DEVICE_ID, rider_id: "rid-1", label: "Aparelho de teste" }]),
-  );
   if (opts.term) {
     writeFileSync(join(cfgDir, "entregas-term.json"), JSON.stringify(opts.term));
   } else if (existsSync(join(cfgDir, "entregas-term.json"))) {
@@ -254,25 +250,17 @@ async function suiteTermoPendente(): Promise<void> {
     assert.equal(batch.status, 401);
   });
 
-  await test("aparelho não cadastrado é recusado mesmo com token válido", async () => {
-    const r = await api("/api/device/session", {
-      method: "POST",
-      token: OPS_TOKEN,
-      body: { device_id: "dev-intruso", app_version: "1.0.0", client: "android" },
-    });
-    assert.equal(r.status, 403);
-    assert.equal(r.json.code, "device_not_authorized");
-  });
-
-  await test("aparelho cadastrado autentica e recebe o rider vinculado", async () => {
+  await test("sessao de aparelho no piloto e tombstone retentavel, nunca segunda autoridade", async () => {
     const r = await api("/api/device/session", {
       method: "POST",
       token: OPS_TOKEN,
       body: { device_id: DEVICE_ID, app_version: "1.0.0", client: "android" },
     });
-    assert.equal(r.status, 200);
-    assert.equal(r.json.rider_id, "rid-1");
-    assert.equal(r.json.unit_id, "ITAIM");
+    assert.equal(r.status, 503);
+    assert.equal(r.json.code, "device_session_moved_to_platform");
+    assert.equal(r.json.retryable, true);
+    assert.equal(r.json.device_token, undefined);
+    assert.equal(r.json.rider_id, undefined);
   });
 
   await test("ponto de viagem que não existe é recusado, com motivo", async () => {

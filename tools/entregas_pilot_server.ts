@@ -31,7 +31,6 @@ import {
   resolveCorsOrigin,
 } from "../src/entregas/pilot/cloud-config";
 import {
-  handleDeviceSession,
   buildPolicies,
   ingestGpsBatch,
   handleTermAcknowledge,
@@ -40,7 +39,6 @@ import {
   authorizeRouteAccess,
   buildRouteAudit,
   DEVICE_API_VERSION,
-  type AuthorizedDevice,
 } from "../src/entregas/pilot/device-api";
 import { loadFlags } from "../src/entregas/gps/flags";
 import { TERM_ITAIM_V1, TERM_SUMMARY_ITAIM, type LocationTerm } from "../src/entregas/consent/term";
@@ -169,9 +167,6 @@ if (termoSintetico && (process.env.ENTREGAS_LABORATORIO !== "1" || cloud.remote)
 const gpsFlags = loadFlags(
   readJsonIfPresent(process.env.ENTREGAS_GPS_FLAGS_CONFIG || "config/entregas-gps-flags.json") ?? undefined,
 );
-
-const authorizedDevices: AuthorizedDevice[] =
-  readJsonIfPresent<AuthorizedDevice[]>("config/entregas-devices.json") ?? [];
 
 /* Aceites do termo: arquivo append-only, ao lado dos dados do piloto. */
 const ackFile = join(dataDir, "term-acks.jsonl");
@@ -396,7 +391,7 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
         term_publishable: termPublishable(),
         term_synthetic: termoSintetico,
         unit_configured: unitConfig.ok,
-        devices_authorized: authorizedDevices.length,
+        device_session_authority: "platform",
       });
     }
 
@@ -421,19 +416,21 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
     /* ---------------- API do aparelho Android ---------------- */
 
     if (url.pathname === "/api/device/session" && req.method === "POST") {
-      const body = JSON.parse(await readBody(req)) as Record<string, unknown>;
-      const r = handleDeviceSession({
-        input: body as never,
-        actorRole: actor?.role,
-        actorId: actor?.actor_id,
-        authorizedDevices,
-      });
-      log.info(
-        "device_session",
-        r.body.ok ? "Aparelho autenticado." : "Aparelho recusado.",
-        String(r.body.code ?? ""),
+      // Tombstone de migração: a sessão de aparelho pertence exclusivamente à
+      // plataforma. Responder 5xx é intencional para que APK antigo preserve
+      // fila local e trate como retentável, em vez de marcar dados como
+      // rejeitados por um 4xx permanente.
+      log.warn(
+        "route_access",
+        "Sessão de aparelho no piloto foi retirada; use a plataforma.",
+        "device_session_moved_to_platform",
       );
-      return reply(r.status, { ...r.body, unit_id: cfg.unit_id });
+      return reply(503, {
+        ok: false,
+        code: "device_session_moved_to_platform",
+        human: "Atualize o aplicativo. A autenticação do aparelho agora pertence à plataforma.",
+        retryable: true,
+      });
     }
 
     if (url.pathname === "/api/device/capture-state" && req.method === "GET") {
@@ -839,7 +836,7 @@ async function startServer(): Promise<void> {
     console.log(`  mobile: ${shown}/rider-mobile/`);
     console.log(`  ifood:  ${shown}/ifood-handoff/`);
     console.log(`  config: ${JSON.stringify(describeCloudConfig(cloud))}`);
-    console.log(`  aparelhos autorizados: ${authorizedDevices.length}`);
+    console.log("  sessão de aparelho: autoridade na plataforma");
     console.log(
       `  unidade configurada: ${unitConfig.ok ? "SIM" : "NAO (retorno automatico desligado)"}`,
     );

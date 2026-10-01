@@ -102,10 +102,6 @@ function newContainer(): string {
     join(dir, "config", "entregas-gps-flags.json"),
     JSON.stringify({ gps_capture_enabled: true, offline_queue_enabled: true }),
   );
-  writeFileSync(
-    join(dir, "config", "entregas-devices.json"),
-    JSON.stringify([{ device_id: DEVICE, rider_id: "rid-1", label: "Aparelho" }]),
-  );
   containers.push(dir);
   return dir;
 }
