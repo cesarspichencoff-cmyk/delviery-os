@@ -66,15 +66,15 @@ A cobertura parcial impede qualquer conclusão do tipo "todo item de uma praça 
 | `bar_bebidas` | 6 | 6 × BAR (`00007`) |
 | `combinados` | 7 | 6 × BALCAOSUSHI1 + DELIVERY SUSHI1; 1 × BALCAOSUSHI1 |
 | `cozinha_quentes` | 20 | 20 × COZINHA (`00002`) |
-| `duplas` | 37 | 36 × BALCAOSUSHI1 + DELIVERY SUSHI1; 1 × BALCAOSUSHI2 |
+| `duplas` | 36 | 36 × BALCAOSUSHI1 + DELIVERY SUSHI1 |
 | `enrolados` | 13 | 13 × BALCAOSUSHI2 + DELIVERY SUSHI2 |
-| `enrolados_quentes` | 8 | 5 × BALCAOSUSHI2; 3 × BALCAOSUSHI2 + COZINHA |
+| `enrolados_quentes` | 9 | 6 × BALCAOSUSHI2; 3 × BALCAOSUSHI2 + COZINHA |
 | `montagem_outros` | 2 | 2 × COZINHA |
 | `sobremesa` | 1 | 1 × COZINHA |
 
 Os números acima descrevem somente a parte do seed que teve correspondência determinística.
 
-## Achado material — Tartar de Atum Spicy
+## Achado material — Tartar de Atum Spicy — RESOLVIDO
 
 O único outlier material dentro do conjunto `duplas` é:
 
@@ -89,9 +89,9 @@ Entre as 37 correspondências únicas da praça `duplas`, 36 usam `00009 + 00003
 
 Além disso, outros itens já classificados como `enrolados_quentes` e marcados historicamente para revisão operacional — Ceviche, Tartar de Salmão e Tuna Shisô Tartar — também usam `00006`.
 
-**Disposição correta:** `REVIEW_CANDIDATE_NOT_AUTO_CORRECTION`.
+**Disposição final:** `RESOLVED_BY_OPERATIONAL_CONFIRMATION`.
 
-Isso é evidência forte de que a classificação histórica merece revisão, mas **não prova sozinho** que a praça humana correta seja `enrolados_quentes`. Nenhuma alteração foi feita no seed ou no motor.
+César confirmou operacionalmente que o item é produzido em **Sushi Quentes**. A fonte regenerável foi corrigida e o seed passou de `duplas` para `enrolados_quentes`. A confirmação humana, e não a impressora isoladamente, foi o critério de promoção.
 
 ## Exceções e ambiguidades que não são erro
 
@@ -137,12 +137,13 @@ Logo, segunda impressora não representa necessariamente uma segunda praça lóg
 - seed alterado: **não**;
 - motor alterado: **não**;
 - configuração Teknisa alterada: **não**;
-- candidato material de revisão encontrado: **1 — Tartar de Atum Spicy**;
+- candidatos materiais de revisão em aberto: **0**;
 - arquitetura das 8 praças: **preservada**;
-- roteamento físico: passa a ser uma camada independente de evidência, não substituto do modelo operacional.
+- roteamento físico: permanece camada independente de evidência, não substituto do modelo operacional.
+- `Tartar de Atum Spicy`: confirmado em `enrolados_quentes` / Sushi Quentes.
 
-## Próximo gate
+## Fechamento do gate
 
-Antes de alterar `Tartar de Atum Spicy` no seed, a classificação operacional precisa ser confirmada na realidade correta: **qual bancada/praça humana efetivamente produz esse item**.
+A classificação operacional foi confirmada na realidade correta: `Tartar de Atum Spicy` pertence a **Sushi Quentes**.
 
-Se confirmado que ele pertence a Sushi Quentes, a correção deve ocorrer na fonte regenerável (`tools/build_cardapio_knowledge.js`) e depois regenerar o seed e passar pelo verificador de integridade. Não corrigir apenas o JSON gerado.
+A correção foi feita em `tools/build_cardapio_knowledge.js`, o seed foi atualizado e o builder foi executado em memória contra `data/cardapio_fonte.txt`: **199/199 itens regeneraram sem drift** após a correção.
