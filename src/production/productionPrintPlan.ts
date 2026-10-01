@@ -66,8 +66,8 @@ export interface ProductionTicketItemMetadata {
 
 export interface ProductionPrintContext {
   tata_sequence: string | null;
-  teknisa_order_id: string | null;
-  ifood_order_id: string | null;
+  teknisa_sequence: string | null;
+  ifood_sequence: string | null;
   order_time: string | null;
   template_version: string;
   ticket_items?: ProductionTicketItemMetadata[];
@@ -89,9 +89,9 @@ export interface ProductionPrintIntent {
   template_version: string;
   semantic_key_material: string;
   identifiers: {
+    ifood_sequence: string;
+    teknisa_sequence: string;
     tata_sequence: string;
-    teknisa_order_id: string;
-    ifood_order_id: string | null;
     order_time: string | null;
   };
   lines: PlannedProductionLine[];
@@ -168,6 +168,9 @@ function stableSemanticKeyMaterial(input: {
   orderId: string;
   printerCode: string;
   templateVersion: string;
+  ifoodSequence: string;
+  teknisaSequence: string;
+  tataSequence: string;
   lines: PlannedProductionLine[];
 }): string {
   const lines = input.lines
@@ -187,6 +190,9 @@ function stableSemanticKeyMaterial(input: {
     input.orderId,
     input.printerCode,
     input.templateVersion,
+    input.ifoodSequence,
+    input.teknisaSequence,
+    input.tataSequence,
     lines,
   ].join("::");
 }
@@ -214,12 +220,14 @@ export function planProductionPrintIntents(
     }
   }
 
-  const orderId = clean(projection.order_id || context.teknisa_order_id);
+  const orderId = clean(projection.order_id || context.teknisa_sequence);
   if (!orderId) blocking.add("ORDER_ID_REQUIRED");
   const tataSequence = clean(context.tata_sequence);
   if (!tataSequence) blocking.add("TATA_SEQUENCE_REQUIRED");
-  const teknisaOrderId = clean(context.teknisa_order_id);
-  if (!teknisaOrderId) blocking.add("TEKNISA_ORDER_ID_REQUIRED");
+  const teknisaSequence = clean(context.teknisa_sequence);
+  if (!teknisaSequence) blocking.add("TEKNISA_SEQUENCE_REQUIRED");
+  const ifoodSequence = clean(context.ifood_sequence);
+  if (!ifoodSequence) blocking.add("IFOOD_SEQUENCE_REQUIRED");
   if (!clean(context.template_version)) blocking.add("TEMPLATE_VERSION_REQUIRED");
 
   const metaByIndex = new Map<number, ProductionTicketItemMetadata>();
@@ -319,12 +327,15 @@ export function planProductionPrintIntents(
         orderId,
         printerCode,
         templateVersion: context.template_version,
+        ifoodSequence,
+        teknisaSequence,
+        tataSequence,
         lines,
       }),
       identifiers: {
+        ifood_sequence: ifoodSequence,
+        teknisa_sequence: teknisaSequence,
         tata_sequence: tataSequence,
-        teknisa_order_id: teknisaOrderId,
-        ifood_order_id: clean(context.ifood_order_id) || null,
         order_time: clean(context.order_time) || null,
       },
       lines,
