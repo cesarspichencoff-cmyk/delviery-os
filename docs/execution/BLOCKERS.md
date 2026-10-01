@@ -1151,3 +1151,25 @@ Estado atual: **feed durável single-instance = CODE_READY + TEST_PASS; produç�
 > arquivo. Em modo PostgreSQL ele seria um falso sinal de segurança e não pode ser considerado backup da verdade
 > operacional. Antes de qualquer cutover real, precisamos de backup PostgreSQL com restore realmente provado.
 
+> **SUCESSÃO — 2026-10-01 · BACKUP/RESTORE POSTGRESQL LOCAL PROVADO.**
+>
+> O falso backup de `/dados` quando o backend é PostgreSQL foi removido. O sidecar
+> `deliveryos-backup` agora acompanha a verdade escolhida: `file` arquiva o volume; `postgres`
+> executa `pg_dump --format=custom`. Backend inválido ou URL PostgreSQL ausente falham alto.
+>
+> Restore PostgreSQL fica fora do fluxo normal, atrás do profile `maintenance`. Exige confirmação
+> literal, snapshot explícito, URL alvo diferente da operacional e banco alvo vazio; restaura com
+> `pg_restore --no-owner --no-privileges --exit-on-error`.
+>
+> Prova no GitHub Actions run **36815229348**, PostgreSQL 16: backup/restore específico do piloto
+> **6/6 PASS**, backup geral **19/19**, cutover **7/7**, cluster **6/6**, deploy-audit **39/39**,
+> render do Compose GREEN, expansão real dentro do container GREEN, governança GREEN e
+> `git diff --check` PASS. O restore preservou fingerprint, versões e triggers; PgUOW continuou
+> normalmente de version 2 para 3 após o restore.
+>
+> **Ainda não é proteção contra perda da máquina.** O volume `entregas_backups` continua local ao
+> mesmo host. Antes de cutover operacional, falta definir/provar cópia off-host (ou mecanismo de
+> backup externo equivalente), além dos efeitos já separados: migrations 0006–0008 no banco
+> operacional, credencial real do papel, cutover e troca de ambiente. Nenhum desses efeitos foi
+> executado; consumer/UI live continuam desligados.
+
