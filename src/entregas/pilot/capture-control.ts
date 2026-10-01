@@ -23,6 +23,35 @@ export type CaptureControlDecision =
   | { decision: "stop"; trip_id: string; reason: string }
   | { decision: "unknown"; trip_id: string; reason: string };
 
+/**
+ * Pré-condições de privacidade que o piloto conhece sem depender da WebView.
+ *
+ * Só devolve "continue" quando a captura está ligada E o termo vigente é
+ * publicável E há aceite para este motoboy neste aparelho. São fatos
+ * autoritativos do próprio piloto; indisponibilidade de identidade continua
+ * tratada antes, como UNKNOWN, para não confundir falha de infraestrutura com
+ * uma decisão de privacidade.
+ */
+export function decidirPrerequisitosDeCaptura(
+  tripId: string,
+  input: {
+    capture_enabled: boolean;
+    term_publishable: boolean;
+    term_accepted_for_device: boolean;
+  },
+): CaptureControlDecision {
+  if (!input.capture_enabled) {
+    return { decision: "stop", trip_id: tripId, reason: "capture_disabled" };
+  }
+  if (!input.term_publishable) {
+    return { decision: "stop", trip_id: tripId, reason: "term_not_publishable" };
+  }
+  if (!input.term_accepted_for_device) {
+    return { decision: "stop", trip_id: tripId, reason: "term_not_acknowledged" };
+  }
+  return { decision: "continue", trip_id: tripId, reason: null };
+}
+
 export function decidirControleDeCaptura(
   identity: DeviceIdentity,
   tripId: string,

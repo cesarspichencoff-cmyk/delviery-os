@@ -55,7 +55,10 @@ import {
 } from "../src/entregas/pilot/trip-timeline";
 import { freshnessOf } from "../src/entregas/pilot/dispatch-projection";
 import { consultarIdentidadeDoAparelho } from "../src/entregas/pilot/device-identity-client";
-import { decidirControleDeCaptura } from "../src/entregas/pilot/capture-control";
+import {
+  decidirControleDeCaptura,
+  decidirPrerequisitosDeCaptura,
+} from "../src/entregas/pilot/capture-control";
 import type { GPSPoint } from "../src/entregas/gps/types";
 
 const configPath = process.env.ENTREGAS_PILOT_CONFIG;
@@ -472,15 +475,44 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
       }
 
       const trip = await facade.readTripCaptureState(tripId);
-      const decisao = decidirControleDeCaptura(identidade.identity, tripId, trip);
-      if (decisao.decision === "unknown") {
-        return reply(503, { ok: false, unknown: true, reason: decisao.reason });
+      const decisaoTrip = decidirControleDeCaptura(identidade.identity, tripId, trip);
+      if (decisaoTrip.decision === "unknown") {
+        return reply(503, { ok: false, unknown: true, reason: decisaoTrip.reason });
       }
+      if (decisaoTrip.decision === "stop") {
+        return reply(200, {
+          ok: true,
+          capture: false,
+          trip_id: tripId,
+          reason: decisaoTrip.reason,
+          checked_at: new Date().toISOString(),
+        });
+      }
+
+      const actorId = identidade.identity.actor_id;
+      if (!actorId) {
+        // Mantém a semântica histórica: identidade incompleta é UNKNOWN, não
+        // prova de término nem de revogação.
+        return reply(503, { ok: false, unknown: true, reason: "device_without_actor" });
+      }
+      const termoPublicavelAgora = termPublishable();
+      const termAccepted = termoPublicavelAgora
+        ? ackStore.findAcceptedForDevice(
+            actorId,
+            identidade.identity.device_id,
+            activeTerm,
+          ) !== undefined
+        : false;
+      const decisaoPrivacidade = decidirPrerequisitosDeCaptura(tripId, {
+        capture_enabled: gpsFlags.gps_capture_enabled,
+        term_publishable: termoPublicavelAgora,
+        term_accepted_for_device: termAccepted,
+      });
       return reply(200, {
         ok: true,
-        capture: decisao.decision === "continue",
+        capture: decisaoPrivacidade.decision === "continue",
         trip_id: tripId,
-        reason: decisao.reason,
+        reason: decisaoPrivacidade.reason,
         checked_at: new Date().toISOString(),
       });
     }

@@ -512,3 +512,33 @@ Evidência detalhada:
 fechada no AVD. A bateria em aparelho físico real continua `NOT_RUN`; esta
 prova não promove produção nem substitui tela bloqueada prolongada, reboot,
 troca de rede, bateria e estabilidade de campo.
+
+## 18 — Reavaliação contínua do portão durante a viagem (2026-10-01)
+
+**Status: CODE_READY + TEST_PASS no AVD.**
+
+O bloqueio histórico C2 foi corrigido sem transferir autoridade para a UI.
+`TripLocationService` agora reavalia `GateSnapshot` em cada ciclo do controle
+nativo de 15 s, antes de verificar rede. Assim, permissão revogada, localização
+do sistema desligada, flag local desativada ou termo/aceite local inválido
+derrubam a captura sem depender de WebView ou callback novo do Fused.
+
+Com rede, `/api/device/capture-state` passou a exigir também os fatos atuais
+do piloto: `gps_capture_enabled=true`, termo publicável e aceite do termo
+vigente pelo mesmo motoboy no mesmo aparelho. Viagem ativa sem aceite devolve
+`capture=false / term_not_acknowledged`; aceite em outro aparelho não libera.
+
+Provas no Foxxy:
+
+- política de controle: **17/17 PASS**;
+- HTTP real piloto + identidade sintética: **6/6 PASS**;
+- Android estrutural: **41/41 PASS**;
+- consentimento nativo: **79/79 PASS**;
+- `connectedDebugAndroidTest`: **10/10 PASS + BUILD SUCCESSFUL**.
+
+Falha de identidade/rede segue `UNKNOWN/KEEP`, não vira falso desligamento.
+A prova física de revogar permissão ou desligar localização no celular real
+durante uma viagem continua `NOT_RUN` e pertence ao field gate físico.
+
+Evidência detalhada:
+`docs/etapa-4-8/field-gate/2026-10-01-q018-gate-reevaluation.md`.

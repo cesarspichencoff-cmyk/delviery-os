@@ -303,6 +303,13 @@ test("o portão é consultado antes de pedir posição ao Fused", () => {
   assert.ok(requestAt > 0, "serviço não pede posição");
   assert.ok(gateAt < requestAt, "portão precisa vir antes de requestLocationUpdates");
   assert.match(svc, /if \(!gate\.allowed\)[\s\S]{0,200}stopBecause/, "portão bloqueado derruba o serviço");
+  const gateCalls = svc.match(/GateSnapshot\.evaluate/g) ?? [];
+  assert.ok(gateCalls.length >= 2, "portão precisa ser reavaliado durante a viagem, não só no beginTrip");
+  const verifyAt = svc.indexOf("private suspend fun verifyCaptureState");
+  const localGateAt = svc.indexOf("GateSnapshot.evaluate", verifyAt);
+  const networkAt = svc.indexOf("NetworkState.isOnline", verifyAt);
+  assert.ok(verifyAt > 0 && localGateAt > verifyAt, "loop de controle precisa reavaliar o portão local");
+  assert.ok(networkAt > localGateAt, "permissão/localização local devem ser avaliadas mesmo offline");
 });
 
 test("primeira inscrição no Fused não corre contra remove assíncrono", () => {

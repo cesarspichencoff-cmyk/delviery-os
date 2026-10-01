@@ -396,12 +396,29 @@ e **nunca reavalia**. Se o termo for revogado, a flag desligada pelo servidor ou
 o serviço de localização desativado **durante** a viagem, a captura continua.
 Só a permissão do SO é rechecada, e apenas quando a cadência muda.
 
+> **SUCESSÃO — FECHADO NO CÓDIGO/AVD em 2026-10-01.** O loop nativo de 15 s
+> reavalia `GateSnapshot` antes de depender de rede e derruba o serviço se
+> permissão, localização, flag local ou termo/aceite deixarem de autorizar.
+> Quando há rede, `/api/device/capture-state` também exige flag vigente,
+> termo publicável e aceite do mesmo motoboy no mesmo aparelho. Provas:
+> capture-control **17/17**, HTTP real **6/6**, Android **41/41**,
+> native+consent **79/79**, instrumentados AVD **10/10**. O cenário físico de
+> revogar permissão/desligar localização no celular real continua `NOT_RUN`.
+> Ver `field-gate/2026-10-01-q018-gate-reevaluation.md`.
+
 ### C3 — P1 · Corrida na `sequenceLocal`
 
 `TripLocationService.kt:247-279` lança **um coroutine por ponto** em
 `Dispatchers.IO`; `maxSequence()+1` (`EntregasDatabase.kt:125`) não é atômico.
 Um `LocationResult` em lote pode dar a mesma `sequence_local` a dois pontos —
 corrompendo exatamente a ordenação que o servidor usa.
+
+> **SUCESSÃO — FECHADO em 2026-09-30.** A persistência foi serializada por
+> `persistMutex` e a reserva da sequência + insert passaram a ocorrer na mesma
+> transação Room (`insertGpsSequenced`). A bancada do Foxxy provou sequência
+> contínua, restart e o APK final fechou com `connectedDebugAndroidTest`
+> **10/10 PASS**. Ver `Q018-RIDER-CAPTURA.md` §§14–15 e
+> `field-gate/2026-09-30-foxxy-emulador.md`.
 
 ### C4 — P1 · GPS do piloto mora na RAM
 

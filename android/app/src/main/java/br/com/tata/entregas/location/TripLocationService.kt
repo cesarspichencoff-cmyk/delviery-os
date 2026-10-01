@@ -204,6 +204,16 @@ class TripLocationService : Service() {
     }
 
     private suspend fun verifyCaptureState(boundTrip: String) {
+        // O portão local não vale só no início. Permissão revogada, localização
+        // desligada, flag atualizada ou termo local invalidado durante a viagem
+        // precisam derrubar a captura mesmo sem callback do Fused ou WebView.
+        val localGate = GateSnapshot.evaluate(this@TripLocationService, db, boundTrip)
+        if (!localGate.allowed) {
+            Bridge.publishGateBlocked(localGate)
+            stopBecause(localGate.primaryBlock?.code ?: "portao_bloqueado")
+            return
+        }
+
         if (!NetworkState.isOnline(this@TripLocationService)) return
 
         val session = DeviceSession.sessaoAtual(db)

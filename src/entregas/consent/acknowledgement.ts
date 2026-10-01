@@ -232,6 +232,26 @@ export class AcknowledgementStore {
     );
   }
 
+  /**
+   * Variante estrita para captura nativa: o aceite é do motoboy E do aparelho.
+   * Um aceite feito em outro telefone nunca autoriza este foreground service.
+   */
+  findAcceptedForDevice(
+    rider_id: string,
+    device_id: string,
+    term: LocationTerm,
+  ): AcknowledgementRecord | undefined {
+    const hash = hashTerm(term);
+    return this.records.find(
+      (r) =>
+        r.rider_id === rider_id &&
+        r.device_id === device_id &&
+        r.status === "accepted" &&
+        r.unit_id === term.unit_id &&
+        r.term_hash === hash,
+    );
+  }
+
   /** Recibo do motoboy — o que ele aceitou, sem jargão. */
   receipt(acknowledgement_id: string): Record<string, unknown> | undefined {
     const r = this.records.find((x) => x.acknowledgement_id === acknowledgement_id);

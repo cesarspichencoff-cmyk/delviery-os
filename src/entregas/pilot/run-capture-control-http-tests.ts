@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync, spawn, type ChildProcess } from "node:child_process";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { createServer as createHttpServer, type Server } from "node:http";
 import { createServer as createNetServer } from "node:net";
 import { tmpdir } from "node:os";
@@ -61,12 +61,45 @@ interface Pilot { base: string; proc: ChildProcess; dir: string; log: string[] }
 async function startPilot(platformBase: string): Promise<Pilot> {
   const port = await freePort();
   const dir = mkdtempSync(join(tmpdir(), "capture-http-"));
+  const marca = "SEM VALOR LEGAL — APENAS TESTE SIMULADO";
+  const termPath = join(dir, "term.json");
+  const flagsPath = join(dir, "gps-flags.json");
+  writeFileSync(termPath, JSON.stringify({
+    version: "0.0.0-q019",
+    material_version: "q019-1",
+    unit_id: "demo-unit",
+    title: marca,
+    body: marca,
+    effective_date: marca,
+    controller: {
+      legal_name: marca,
+      cnpj: marca,
+      contact_channel: marca,
+      contact_owner: marca,
+    },
+    retention: {
+      operational_event_days: 1,
+      detailed_point_days: 1,
+      after_expiry: "delete",
+    },
+    access_roles: ["despacho_autorizado"],
+    language: "pt-BR",
+    approved: true,
+  }), "utf8");
+  writeFileSync(flagsPath, JSON.stringify({
+    gps_capture_enabled: true,
+    offline_queue_enabled: true,
+    persistent_outbox_enabled: true,
+  }), "utf8");
   const env = {
     ...process.env,
     ENTREGAS_UI_PORT: String(port),
     ENTREGAS_PILOT_CONFIG: "config/entregas-pilot.example.json",
     ENTREGAS_DATA_DIR: join(dir, "data"),
     ENTREGAS_PLATFORM_URL: platformBase,
+    ENTREGAS_TERM_CONFIG: termPath,
+    ENTREGAS_GPS_FLAGS_CONFIG: flagsPath,
+    ENTREGAS_LABORATORIO: "1",
   };
   delete (env as Record<string, string | undefined>).ENTREGAS_BIND;
   delete (env as Record<string, string | undefined>).ENTREGAS_HTTPS;
@@ -132,6 +165,26 @@ async function main() {
     });
     assert.equal((departed.body.result as { ok?: boolean })?.ok, true);
 
+    const semAceite = await capture(pilot.base, trip);
+    assert.equal(semAceite.status, 200);
+    assert.equal(semAceite.body.capture, false);
+    assert.equal(semAceite.body.reason, "term_not_acknowledged");
+
+    const ackOutroAparelho = await post(pilot.base, RIDER, "/api/term/acknowledge", {
+      status: "accepted",
+      device_id: "dev-q019-outro",
+    });
+    assert.equal(ackOutroAparelho.status, 200);
+    const aindaSemAceite = await capture(pilot.base, trip);
+    assert.equal(aindaSemAceite.body.capture, false);
+    assert.equal(aindaSemAceite.body.reason, "term_not_acknowledged");
+
+    const ack = await post(pilot.base, RIDER, "/api/term/acknowledge", {
+      status: "accepted",
+      device_id: "dev-q019",
+    });
+    assert.equal(ack.status, 200);
+
     const on = await capture(pilot.base, trip);
     assert.equal(on.status, 200);
     assert.equal(on.body.capture, true);
@@ -157,7 +210,7 @@ async function main() {
     assert.equal(off.body.capture, false);
     assert.equal(off.body.reason, "trip_not_active");
 
-    console.log("CAPTURE_CONTROL_HTTP: 4/4 PASS");
+    console.log("CAPTURE_CONTROL_HTTP: 6/6 PASS");
   } finally {
     try {
       if (pilot.proc.pid) {

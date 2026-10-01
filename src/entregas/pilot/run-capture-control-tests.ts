@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
-import { decidirControleDeCaptura } from "./capture-control";
+import {
+  decidirControleDeCaptura,
+  decidirPrerequisitosDeCaptura,
+} from "./capture-control";
 import { consultarIdentidadeDoAparelho } from "./device-identity-client";
 
 let passed = 0;
@@ -47,6 +50,45 @@ async function main() {
     );
   });
 
+  await test("flag desligada para captura mesmo com viagem ativa", () => {
+    const r = decidirPrerequisitosDeCaptura("T-1", {
+      capture_enabled: false,
+      term_publishable: true,
+      term_accepted_for_device: true,
+    });
+    assert.equal(r.decision, "stop");
+    assert.equal(r.reason, "capture_disabled");
+  });
+
+  await test("termo não publicável para captura", () => {
+    const r = decidirPrerequisitosDeCaptura("T-1", {
+      capture_enabled: true,
+      term_publishable: false,
+      term_accepted_for_device: true,
+    });
+    assert.equal(r.decision, "stop");
+    assert.equal(r.reason, "term_not_publishable");
+  });
+
+  await test("termo sem aceite neste aparelho para captura", () => {
+    const r = decidirPrerequisitosDeCaptura("T-1", {
+      capture_enabled: true,
+      term_publishable: true,
+      term_accepted_for_device: false,
+    });
+    assert.equal(r.decision, "stop");
+    assert.equal(r.reason, "term_not_acknowledged");
+  });
+
+  await test("pré-condições completas mantêm captura", () => {
+    const r = decidirPrerequisitosDeCaptura("T-1", {
+      capture_enabled: true,
+      term_publishable: true,
+      term_accepted_for_device: true,
+    });
+    assert.equal(r.decision, "continue");
+  });
+
   const fake = (status: number, body: Record<string, unknown>) =>
     (async () => new Response(JSON.stringify(body), {
       status, headers: { "content-type": "application/json" },
@@ -90,7 +132,7 @@ async function main() {
     if (!r.ok) assert.equal(r.kind, "unavailable");
   });
 
-  console.log(`CAPTURE_CONTROL: ${passed}/13 PASS`);
+  console.log(`CAPTURE_CONTROL: ${passed}/17 PASS`);
 }
 
 void main().catch((e) => {
