@@ -30,6 +30,20 @@ export interface RuntimePrinterMap {
   mappings: RuntimePrinterEntry[];
 }
 
+export interface NonProductionItemEntry {
+  product_name: string;
+  logical_plaza: string | null;
+  reason: string;
+  proof: "HUMAN_CONFIRMED" | "UNKNOWN";
+}
+
+export interface NonProductionItemsRegistry {
+  schema: "deliveryos.non-production-items.v1";
+  store?: string;
+  semantics: "NO_OWN_PRODUCTION_TICKET";
+  items: Record<string, NonProductionItemEntry>;
+}
+
 export interface ExpectedRoutingTarget {
   printer_code: string;
   printer_name: string;
@@ -44,6 +58,8 @@ export interface ExpectedRoutingItem {
   product_code: string | null;
   product_name: string;
   quantity: number;
+  routing_status: "ROUTED" | "NO_OWN_PRODUCTION_TICKET" | "UNRESOLVED";
+  non_production_reason: string | null;
   targets: ExpectedRoutingTarget[];
 }
 
@@ -86,6 +102,7 @@ export function projectExpectedRouting(
   order: RoutingOrderInput,
   routing: ProductRoutingTable,
   printerMap: RuntimePrinterMap,
+  nonProductionRegistry?: NonProductionItemsRegistry,
 ): ExpectedRoutingProjection {
   const blocking = new Set<string>();
 
@@ -97,6 +114,25 @@ export function projectExpectedRouting(
   }
   if (routing.store && printerMap.store && routing.store !== printerMap.store) {
     blocking.add("STORE_MISMATCH");
+  }
+  if (
+    nonProductionRegistry &&
+    nonProductionRegistry.schema !== "deliveryos.non-production-items.v1"
+  ) {
+    blocking.add("NON_PRODUCTION_REGISTRY_SCHEMA_MISMATCH");
+  }
+  if (
+    nonProductionRegistry &&
+    nonProductionRegistry.semantics !== "NO_OWN_PRODUCTION_TICKET"
+  ) {
+    blocking.add("NON_PRODUCTION_REGISTRY_SEMANTICS_MISMATCH");
+  }
+  if (
+    nonProductionRegistry?.store &&
+    routing.store &&
+    nonProductionRegistry.store !== routing.store
+  ) {
+    blocking.add("NON_PRODUCTION_REGISTRY_STORE_MISMATCH");
   }
   if (!Array.isArray(order.items) || order.items.length === 0) {
     blocking.add("NO_ITEMS");
@@ -121,6 +157,8 @@ export function projectExpectedRouting(
 
   for (const item of order.items) {
     const targets: ExpectedRoutingTarget[] = [];
+    let routingStatus: ExpectedRoutingItem["routing_status"] = "UNRESOLVED";
+    let nonProductionReason: string | null = null;
 
     if (seenItemIndexes.has(item.item_index)) {
       blocking.add(`DUPLICATE_ITEM_INDEX_${item.item_index}`);
@@ -138,10 +176,14 @@ export function projectExpectedRouting(
       blocking.add(`MISSING_PRODUCT_CODE_${item.item_index}`);
     } else {
       const printerCodes = routing.products[canonicalCode];
+      const nonProduction = nonProductionRegistry?.items?.[canonicalCode];
 
-      if (!printerCodes?.length) {
-        blocking.add(`PRODUCT_ROUTE_NOT_FOUND_${canonicalCode}`);
-      } else {
+      if (printerCodes?.length && nonProduction) {
+        blocking.add(`ROUTED_AND_NON_PRODUCTION_CONFLICT_${canonicalCode}`);
+      }
+
+      if (printerCodes?.length) {
+        routingStatus = "ROUTED";
         const seenRouteTargets = new Set<string>();
         for (const printerCode of printerCodes) {
           if (seenRouteTargets.has(printerCode)) {
@@ -172,6 +214,15 @@ export function projectExpectedRouting(
           targets.push(target);
           orderTargets.set(printer.printer_code, target);
         }
+      } else if (nonProduction) {
+        if (nonProduction.proof !== "HUMAN_CONFIRMED") {
+          blocking.add(`UNPROVEN_NON_PRODUCTION_ITEM_${canonicalCode}`);
+        } else {
+          routingStatus = "NO_OWN_PRODUCTION_TICKET";
+          nonProductionReason = nonProduction.reason;
+        }
+      } else {
+        blocking.add(`PRODUCT_ROUTE_NOT_FOUND_${canonicalCode}`);
       }
     }
 
@@ -181,6 +232,8 @@ export function projectExpectedRouting(
       product_code: canonicalizeRoutingProductCode(item.codigo),
       product_name: item.nome,
       quantity: item.quantidade,
+      routing_status: routingStatus,
+      non_production_reason: nonProductionReason,
       targets,
     });
   }
