@@ -232,3 +232,28 @@ Ainda NÃO existe export real da unidade que prove o shape de ingestão. Não cr
 5. uma amostra real de `Receita Utilizada` para promover o importador de BOM.
 6. custos reais/provados para promover custo teórico.
 7. estoque/baixa real permanece fora de autorização.
+
+
+## CORREÇÃO SETORIAL E NÚCLEO ÚNICO — 2026-10-01
+
+Feedback humano incorporado:
+
+- não haverá motores autônomos de Academia / DeliveryOS / TATÁ OS;
+- o destino canônico é um único núcleo compartilhado no TATÁ OS, branch reversível `feature/unified-tata-core-20261001`;
+- a cópia do motor de embalagem do Academia neste branch foi rebaixada para `MIGRATION_SNAPSHOT_ONLY_NOT_RUNTIME_AUTHORITY`;
+- produção recebe apenas sua informação útil:
+  - destino;
+  - caixa de montagem;
+  - item;
+  - ingrediente/componente ligado ao item;
+  - observação ligada ao item;
+  - check da própria praça;
+- ingredientes estimados por internet/cardápio NÃO podem virar instrução de produção;
+- DeliveryOS faz conferência de caixas/sacolas/kits/complementos em tela;
+- não criar segunda comanda física para montagem/conferência;
+- estimativa de consumo por descrição + baseline externo + venda mensal é permitida como hipótese operacional;
+- relato “quanto vocês usam?” calibra a hipótese, mas não valida sozinho a receita.
+
+Código de `productionTicketV2.ts` foi ajustado para carregar `prep_ingredients` por item, não como bloco agregado da comanda.
+
+Nenhum efeito físico, impressão, baixa de estoque ou cutover foi habilitado.
