@@ -1,0 +1,26 @@
+name: final-docs-governance-proof
+
+on:
+  push:
+    branches:
+      - tmp/final-docs-governance-20261001
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm run test:entregas:deploy-audit
+      - run: npm run test:platform:governanca
+      - run: git diff --check
