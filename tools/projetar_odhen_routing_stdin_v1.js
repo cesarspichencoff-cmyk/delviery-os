@@ -51,7 +51,8 @@ async function main() {
 
   const routing = loadJson("data/odhen_product_routing_compact_v1.json");
   const printers = loadJson("data/runtime_printer_map_v1.json");
-  const projection = projectExpectedRouting(normalized, routing, printers);
+  const nonProduction = loadJson("data/non_production_delivery_items_v1.json");
+  const projection = projectExpectedRouting(normalized, routing, printers, nonProduction);
 
   process.stdout.write(
     JSON.stringify(
@@ -69,6 +70,7 @@ async function main() {
           routing_source_sha256: routing.source_sha256 ?? null,
           printer_captured_at_local: printers.captured_at_local ?? null,
           printer_status: printers.status ?? null,
+          non_production_confirmed_date: nonProduction.confirmed_date ?? null,
         },
         privacy: normalized.privacy,
         effects: projection.effects,
