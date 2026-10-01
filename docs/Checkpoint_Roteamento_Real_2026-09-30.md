@@ -24,6 +24,13 @@ Nenhuma mudança foi promovida para produção. Nenhum print, write no Odhen/Tek
 - Harness preparado: `tools/projetar_odhen_routing_stdin_v1.js` recebe snapshot JSON por stdin e devolve apenas a projeção minimizada, sem persistir o bruto.
 - O export real de Produtos por Loja traz os códigos em formato compacto de 10 caracteres. A normalização determinística `1-2-2-3-2` foi conferida contra os 463 produtos: **463/463 códigos casaram**, com 0 faltantes e 0 extras; 19 códigos alfanuméricos também casaram. O resolver foi então executado contra os **463 códigos crus do export**: `ready=true` em 463/463 e 0 bloqueios. Ele aceita tanto `9150007500` quanto `9.15.00.075.00`. Evidência: `data/retail_product_code_format_proof_20260930.json`.
 
+## APRIMORAMENTOS OFFLINE PREPARADOS
+
+- `tools/gerar_retail_routing_config_v1.js`: regenera deterministicamente os mapas de produto/impressora a partir dos dois XLS oficiais do Retail, valida cabeçalhos, duplicidades, IPs e falha fechado se aparecer Puxa ou Backup ativo que a V1 não modele.
+- `tools/verificar_routing_config_drift_v1.js`: compara um snapshot novo com a baseline atual e marca qualquer mudança material de produto, rota, impressora, IP, porta, servidor ou unidade; a política é bloquear roteamento live até revisão quando houver drift.
+- `tools/verificar_retail_routing_config_tooling_v1.js`: cobre geração, rota dupla, detecção de drift e bloqueio de Puxa.
+- Todos os novos scripts JS passaram por validação sintática nesta sessão. A execução integrada com `xlsx` ainda depende de um checkout com as dependências do projeto instaladas; não é declarada como TEST_PASS completo.
+
 ## NÃO PROVADO
 
 - O XLS de Itens não expõe a identidade/número/hora da segunda venda; portanto a amostra comprova item real + roteamento configurado, não correlação temporal com um append físico específico de log.
