@@ -6,6 +6,9 @@ const path = require("node:path");
 
 const { projectExpectedRouting } = require("../dist/src/shadow/expectedRouting.js");
 const { planProductionPrintIntents } = require("../dist/src/production/productionPrintPlan.js");
+const {
+  decideProductionPrintSubmission,
+} = require("../dist/src/production/productionPrintIdempotency.js");
 
 const routing = JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "data", "odhen_product_routing_compact_v1.json"), "utf8"),
@@ -452,6 +455,52 @@ assert.equal(
     (x) => x.printer.printer_code === "00003",
   ).calibration_status,
   "CALIBRATION_REQUIRED",
+);
+
+const intentFingerprint = plan.print_intents[0].intent_fingerprint;
+assert.equal(
+  decideProductionPrintSubmission(intentFingerprint, []).decision,
+  "ALLOW_FIRST_SUBMISSION",
+);
+assert.equal(
+  decideProductionPrintSubmission(intentFingerprint, [
+    {
+      intent_fingerprint: intentFingerprint,
+      attempt_id: "A1",
+      state: "SUBMISSION_RETURNED_UNOBSERVED",
+    },
+  ]).decision,
+  "BLOCK_RECONCILIATION_REQUIRED",
+);
+assert.equal(
+  decideProductionPrintSubmission(intentFingerprint, [
+    {
+      intent_fingerprint: intentFingerprint,
+      attempt_id: "A2",
+      state: "SPOOLER_OBSERVED",
+    },
+  ]).decision,
+  "BLOCK_RECONCILIATION_REQUIRED",
+);
+assert.equal(
+  decideProductionPrintSubmission(intentFingerprint, [
+    {
+      intent_fingerprint: intentFingerprint,
+      attempt_id: "A3",
+      state: "PHYSICALLY_CONFIRMED",
+    },
+  ]).decision,
+  "BLOCK_ALREADY_PHYSICALLY_CONFIRMED",
+);
+assert.equal(
+  decideProductionPrintSubmission("different-fingerprint", [
+    {
+      intent_fingerprint: intentFingerprint,
+      attempt_id: "A4",
+      state: "PHYSICALLY_CONFIRMED",
+    },
+  ]).decision,
+  "ALLOW_FIRST_SUBMISSION",
 );
 
 assert.deepEqual(plan.effects, {
