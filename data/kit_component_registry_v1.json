@@ -1,6 +1,6 @@
 {
   "schema": "deliveryos.kit-component-registry.v1",
-  "status": "HUMAN_CURRENT_IMPORTED_FROM_TATA_ACADEMIA",
+  "status": "TRANSITIONAL_SNAPSHOT_SUPERSEDED_AS_AUTHORITY_BY_TATA_UNIFIED_CORE",
   "source": {
     "repository": "cesarspichencoff-cmyk/tata-academia",
     "branch": "evolucao/v33-product-pass",
@@ -184,5 +184,11 @@
     "kit_assignment_engine_source": "TATA_ACADEMIA_PACKAGING_CURRENT",
     "composition_can_be_counted_when_kit_assignment_is_FACT": true,
     "unknown_kit_assignment_must_not_generate_consumption": true
-  }
+  },
+  "canonical_authority": {
+    "repository": "cesarspichencoff-cmyk/tata-os",
+    "branch": "feature/unified-tata-core-20261001",
+    "path": "packages/unified-restaurant-core/src/kits.ts"
+  },
+  "runtime_cutover_authorized": false
 }
