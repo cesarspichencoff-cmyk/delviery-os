@@ -83,6 +83,8 @@
     "test:platform:append-only": "npx tsx src/platform/run-append-only-tests.ts",
     "test:platform:cadeia": "npx tsx src/platform/run-cadeia-real-tests.ts",
     "test:platform:location-read": "npx tsx src/platform/run-localizacao-viagem-tests.ts",
+    "test:platform:dispatch-read": "npx tsx src/platform/run-dispatch-location-read-tests.ts",
+    "test:entregas:canonical-dispatch": "npx tsc && node dist/src/entregas/pilot/run-canonical-dispatch-http-tests.js",
     "test:platform:cadeia:mutacoes": "npx tsx src/platform/run-cadeia-mutation-tests.ts",
     "test:platform:relogio": "npx tsx src/platform/run-relogio-tests.ts",
     "test:platform:relogio:mutacoes": "npx tsx src/platform/run-relogio-mutation-tests.ts",

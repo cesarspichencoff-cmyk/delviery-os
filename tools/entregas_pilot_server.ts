@@ -55,11 +55,13 @@ import {
 } from "../src/entregas/pilot/trip-timeline";
 import { freshnessOf } from "../src/entregas/pilot/dispatch-projection";
 import { consultarIdentidadeDoAparelho } from "../src/entregas/pilot/device-identity-client";
+import { fetchCanonicalTripGps } from "../src/entregas/pilot/platform-location-client";
 import {
   decidirControleDeCaptura,
   decidirPrerequisitosDeCaptura,
 } from "../src/entregas/pilot/capture-control";
-import type { GPSPoint } from "../src/entregas/gps/types";
+import { DEFAULT_GPS_POLICY, type GPSPoint } from "../src/entregas/gps/types";
+import { classifyQuality } from "../src/entregas/gps/validate";
 
 const configPath = process.env.ENTREGAS_PILOT_CONFIG;
 const cfg = loadPilotConfig(configPath);
@@ -105,6 +107,10 @@ const PORT = Number(process.env.ENTREGAS_UI_PORT || cfg.port || 5193);
  * a rota de controle de captura responde UNKNOWN/503 até ser configurada.
  */
 const PLATFORM_URL = (process.env.ENTREGAS_PLATFORM_URL || "").trim().replace(/\/$/, "");
+const PLATFORM_READ_SECRET = (process.env.ENTREGAS_PLATFORM_READ_SECRET || "").trim();
+// Plataforma configurada = GPS canônico ativo. Nesse modo nunca caímos de
+// volta silenciosamente para a memória do piloto.
+const CANONICAL_GPS_ACTIVE = PLATFORM_URL.length > 0;
 
 /*
  * TLS e bind. Falha fechada: pedir HTTPS e não ter certificado derruba o
@@ -213,10 +219,76 @@ function termPublishable(): boolean {
   return (body.term as { publishable: boolean }).publishable;
 }
 
-/* Pontos aceitos, por viagem. Memória de sessão para a projeção do console;
-   a verdade durável do lote é a fila do aparelho + o outbox. */
+/* Memória legada: só existe quando a plataforma NÃO está configurada.
+   Com ENTREGAS_PLATFORM_URL, leitura e ingestão antigas não são fallback. */
 const pointsByTrip = new Map<string, GPSPoint[]>();
 const knownPointIds = new Set<string>();
+
+function canonicalObservationAsPoint(
+  tripId: string,
+  raw: Record<string, unknown> | null,
+): GPSPoint | undefined {
+  if (!raw) return undefined;
+  const occurredAt = typeof raw.occurred_at === "string" ? raw.occurred_at : "";
+  const recordedAt = typeof raw.recorded_at === "string" ? raw.recorded_at : occurredAt;
+  const accuracy = typeof raw.accuracy_m === "number" ? raw.accuracy_m : NaN;
+  if (!occurredAt || !Number.isFinite(accuracy) || accuracy < 0) return undefined;
+  const latitude = typeof raw.latitude === "number" ? raw.latitude : 0;
+  const longitude = typeof raw.longitude === "number" ? raw.longitude : 0;
+  return {
+    point_id: `canonical:last:${tripId}`,
+    idempotency_key: `canonical:last:${tripId}`,
+    trip_id: tripId,
+    device_id: "canonical-read",
+    latitude,
+    longitude,
+    accuracy_m: accuracy,
+    occurred_at: occurredAt,
+    recorded_at: recordedAt,
+    source: "device",
+    quality: classifyQuality(accuracy, DEFAULT_GPS_POLICY),
+    captured_offline: false,
+    clock_trust: "unknown",
+    schema_version: "gps@1.0.0",
+  };
+}
+
+function canonicalRoutePoints(raw: unknown): GPSPoint[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.flatMap((item): GPSPoint[] => {
+    if (!item || typeof item !== "object") return [];
+    const p = item as Record<string, unknown>;
+    const accuracy = typeof p.accuracy_m === "number" ? p.accuracy_m : NaN;
+    if (
+      typeof p.trip_id !== "string" ||
+      typeof p.device_id !== "string" ||
+      typeof p.latitude !== "number" ||
+      typeof p.longitude !== "number" ||
+      typeof p.occurred_at !== "string" ||
+      !Number.isFinite(accuracy)
+    ) return [];
+    return [{
+      point_id: String(p.point_id ?? p.idempotency_key ?? ""),
+      idempotency_key: String(p.idempotency_key ?? p.point_id ?? ""),
+      trip_id: p.trip_id,
+      device_id: p.device_id,
+      latitude: p.latitude,
+      longitude: p.longitude,
+      accuracy_m: accuracy,
+      speed_mps: typeof p.speed_mps === "number" ? p.speed_mps : undefined,
+      heading_deg: typeof p.heading_deg === "number" ? p.heading_deg : undefined,
+      altitude_m: typeof p.altitude_m === "number" ? p.altitude_m : undefined,
+      occurred_at: p.occurred_at,
+      recorded_at: typeof p.recorded_at === "string" ? p.recorded_at : p.occurred_at,
+      source: "device",
+      quality: classifyQuality(accuracy, DEFAULT_GPS_POLICY),
+      captured_offline: p.captured_offline === true,
+      clock_trust: String(p.clock_trust ?? "unknown") as GPSPoint["clock_trust"],
+      schema_version: "gps@1.0.0",
+    }];
+  });
+}
+
 const routeAuditFile = join(dataDir, "route-access.jsonl");
 const ROOT = join(process.cwd(), "src", "entregas", "ui");
 const banner = resolveBanner(cfg);
@@ -395,6 +467,8 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
         term_synthetic: termoSintetico,
         unit_configured: unitConfig.ok,
         device_session_authority: "platform",
+        dispatch_location_source: CANONICAL_GPS_ACTIVE ? "platform_event_log" : "legacy_memory_lab",
+        dispatch_location_read_configured: CANONICAL_GPS_ACTIVE && PLATFORM_READ_SECRET.length >= 32,
       });
     }
 
@@ -565,6 +639,16 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
     }
 
     if (url.pathname === "/api/gps/batch" && req.method === "POST") {
+      if (CANONICAL_GPS_ACTIVE) {
+        // Tombstone só quando a plataforma já é a autoridade ativa. APK legado
+        // recebe 5xx e preserva a fila local, em vez de gravar segunda verdade.
+        return reply(503, {
+          ok: false,
+          code: "gps_ingest_moved_to_platform",
+          human: "Atualize o aplicativo. O GPS agora é recebido pela plataforma.",
+          retryable: true,
+        });
+      }
       if (!actor) return reply(401, { ok: false, human: NO_SESSION });
       if (!gpsFlags.gps_capture_enabled) {
         return reply(409, {
@@ -658,14 +742,58 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
     if (url.pathname === "/api/trip/location" && req.method === "GET") {
       if (!actor) return reply(401, { ok: false, human: NO_SESSION });
       const tripId = (url.searchParams.get("trip_id") || "").trim();
+      const auth = authorizeRouteAccess(actor.role);
+
+      if (CANONICAL_GPS_ACTIVE) {
+        const canonical = await fetchCanonicalTripGps({
+          platformBaseUrl: PLATFORM_URL,
+          unitId: cfg.unit_id,
+          actor,
+          tripId,
+          secret: PLATFORM_READ_SECRET,
+          scope: "location",
+        });
+        if (!canonical.ok) {
+          return reply(canonical.status, {
+            ok: false,
+            code: "canonical_location_unavailable",
+            human: canonical.human,
+          });
+        }
+        const count =
+          typeof canonical.body.point_count === "number" ? canonical.body.point_count : 0;
+        const rawObservation =
+          canonical.body.last_observation &&
+          typeof canonical.body.last_observation === "object"
+            ? (canonical.body.last_observation as Record<string, unknown>)
+            : null;
+        const last = canonicalObservationAsPoint(tripId, rawObservation);
+        return reply(200, {
+          ok: true,
+          trip_id: tripId,
+          source: "platform.event_log",
+          ...freshnessOf(last, count, new Date()),
+          coordinates_visible: auth.allowed && canonical.body.coordinates_visible === true,
+          last_point:
+            auth.allowed &&
+            rawObservation &&
+            typeof rawObservation.latitude === "number" &&
+            typeof rawObservation.longitude === "number"
+              ? {
+                  latitude: rawObservation.latitude,
+                  longitude: rawObservation.longitude,
+                  accuracy_m: rawObservation.accuracy_m,
+                }
+              : undefined,
+        });
+      }
+
       const points = pointsByTrip.get(tripId) ?? [];
       const last = points[points.length - 1];
-      const auth = authorizeRouteAccess(actor.role);
-      // Freshness e' honesto para todo mundo; coordenada, so' para papel
-      // autorizado. Saber "esta' sem sinal ha' 10 minutos" nao expoe ninguem.
       return reply(200, {
         ok: true,
         trip_id: tripId,
+        source: "legacy_memory_lab",
         ...freshnessOf(last, points.length, new Date()),
         coordinates_visible: auth.allowed,
         last_point:
@@ -678,28 +806,78 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
     if (url.pathname === "/api/trip/route" && req.method === "GET") {
       const tripId = (url.searchParams.get("trip_id") || "").trim();
       const auth = authorizeRouteAccess(actor?.role);
-      const points = pointsByTrip.get(tripId) ?? [];
-      // Toda consulta de rota e auditavel, inclusive as negadas.
-      const audit = buildRouteAudit({
-        actor_id: actor?.actor_id ?? "anonimo",
-        role: actor?.role ?? "nenhum",
-        trip_id: tripId,
-        granted: auth.allowed,
-        point_count: points.length,
-        now: new Date(),
-      });
-      appendFileSync(routeAuditFile, JSON.stringify(audit) + "\n", "utf8");
+
       if (!auth.allowed) {
-        // Sem sessao e' 401 (quem e' voce?); com sessao e papel insuficiente
-        // e' 403 (sei quem voce e', e nao pode). A tentativa sem sessao ja'
-        // foi auditada acima -- e' justamente a que mais interessa registrar.
+        const audit = buildRouteAudit({
+          actor_id: actor?.actor_id ?? "anonimo",
+          role: actor?.role ?? "nenhum",
+          trip_id: tripId,
+          granted: false,
+          point_count: 0,
+          now: new Date(),
+        });
+        appendFileSync(routeAuditFile, JSON.stringify(audit) + "\n", "utf8");
         return actor
           ? reply(403, { ok: false, human: auth.human })
           : reply(401, { ok: false, human: NO_SESSION });
       }
+
+      let points: GPSPoint[];
+      let source: "platform.event_log" | "legacy_memory_lab";
+      if (CANONICAL_GPS_ACTIVE) {
+        const canonical = await fetchCanonicalTripGps({
+          platformBaseUrl: PLATFORM_URL,
+          unitId: cfg.unit_id,
+          actor: actor!,
+          tripId,
+          secret: PLATFORM_READ_SECRET,
+          scope: "route",
+        });
+        if (!canonical.ok) {
+          const audit = buildRouteAudit({
+            actor_id: actor!.actor_id,
+            role: actor!.role,
+            trip_id: tripId,
+            granted: true,
+            point_count: 0,
+            now: new Date(),
+          });
+          appendFileSync(routeAuditFile, JSON.stringify(audit) + "\n", "utf8");
+          return reply(canonical.status, {
+            ok: false,
+            code: "canonical_route_unavailable",
+            human: canonical.human,
+          });
+        }
+        points = canonicalRoutePoints(canonical.body.points);
+        const declaredCount =
+          typeof canonical.body.point_count === "number" ? canonical.body.point_count : -1;
+        if (declaredCount !== points.length) {
+          return reply(503, {
+            ok: false,
+            code: "canonical_route_invalid",
+            human: "A rota canônica retornou dados inconsistentes.",
+          });
+        }
+        source = "platform.event_log";
+      } else {
+        points = pointsByTrip.get(tripId) ?? [];
+        source = "legacy_memory_lab";
+      }
+
+      const audit = buildRouteAudit({
+        actor_id: actor!.actor_id,
+        role: actor!.role,
+        trip_id: tripId,
+        granted: true,
+        point_count: points.length,
+        now: new Date(),
+      });
+      appendFileSync(routeAuditFile, JSON.stringify(audit) + "\n", "utf8");
       return reply(200, {
         ok: true,
         trip_id: tripId,
+        source,
         bruto: buildRawTrack(tripId, points),
         operacional: buildOperationalTrack(tripId, points),
       });

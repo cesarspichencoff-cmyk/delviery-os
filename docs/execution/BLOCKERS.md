@@ -420,21 +420,27 @@ corrompendo exatamente a ordenação que o servidor usa.
 > **10/10 PASS**. Ver `Q018-RIDER-CAPTURA.md` §§14–15 e
 > `field-gate/2026-09-30-foxxy-emulador.md`.
 
-### C4 — P1 · leitura de GPS do despacho ainda aponta para a memória legada do piloto
+### C4 — P1 · GPS canônico do despacho — código fechado; ativação real pendente
 
-> **SUCESSÃO — reclassificado em 2026-10-01.** Persistir `pointsByTrip` seria
-> a correção errada: criaria uma segunda fonte durável de coordenadas. O Android
-> já envia GPS para a plataforma canônica, e `platform.event_log` é a verdade
-> durável do lote. A porta `leitura/localizacao-de-viagem.ts` agora lê essa
-> verdade em transação `READ ONLY`, com filtro obrigatório por
-> unidade + viagem + `source_mode`.
+> **SUCESSÃO — CODE_READY + TEST_PASS em 2026-10-01.** Não foi criado segundo
+> armazenamento. O crítico expõe leitura de localização/rota sobre
+> `platform.event_log` usando a porta `READ ONLY`; o piloto acessa por uma
+> assertion HMAC curta, vinculada à unidade, ator, papel, viagem e escopo.
+> Cada unidade tem segredo próprio e o segredo dos aparelhos NÃO é reutilizado.
 >
-> O bloqueio que resta é de **wiring/autorização de leitura**: a central de
-> despacho ainda consulta `/api/trip/location` e `/api/trip/route` do piloto,
-> que continuam usando `pointsByTrip` em RAM. Falta uma ponte autenticada e
-> mínima até a leitura canônica e, só depois, retirar/tombstonar o caminho GPS
-> legado do piloto. **Não** conceder `SELECT` amplo de `platform.event_log`
-> ao papel operacional do piloto só para fechar este item.
+> Quando `ENTREGAS_PLATFORM_URL` está configurada, o piloto usa
+> `platform.event_log` para `/api/trip/location` e `/api/trip/route`;
+> **não existe fallback silencioso para `pointsByTrip`**. Nesse modo,
+> `/api/gps/batch` legado vira tombstone 503 retentável para preservar a fila
+> de APK antigo. Sem segredo de leitura, a tela recebe 503 explícito.
+>
+> Provas: assertion/rota **6/6**, integração HTTP piloto↔plataforma **5/5**,
+> capture-control HTTP **6/6**, deploy-audit piloto **39/39**, platform-deploy
+> **30/30**, governança **14/14**. O que continua aberto é o gate operacional:
+> gerar/configurar segredos reais, provar a leitura contra PostgreSQL real nesta
+> sessão, renderizar/subir Compose com Docker e executar deploy. Docker e
+> `DELIVERYOS_PG_URL` estão ausentes no Foxxy; portanto esses pontos são
+> **NOT_RUN**, não PROVEN.
 
 ### C5 — P2 · Resíduos conhecidos
 

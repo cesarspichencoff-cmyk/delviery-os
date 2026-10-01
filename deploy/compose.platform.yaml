@@ -193,6 +193,9 @@ services:
       # deploy, não depois. Rotação é trocar o valor em `deploy/.env`; nenhuma
       # linha de código muda.
       DELIVERYOS_DEVICE_TOKEN_SECRET: ${DELIVERYOS_DEVICE_TOKEN_SECRET:?segredo dos tokens de aparelho obrigatorio}
+      # Opcional até o despacho canônico ser ativado. JSON unit_id->segredo;
+      # cada piloto recebe só o segredo da própria unidade.
+      DELIVERYOS_PILOT_READ_SECRETS: ${DELIVERYOS_PILOT_READ_SECRETS:-}
       # Natureza dos fatos que ESTA instância grava: real, simulated ou control
       # (Q-017). Só aqui, e não em `x-ambiente`: só o crítico carimba fato. O
       # assíncrono consome e reconstrói com o modo que cada fato já traz.

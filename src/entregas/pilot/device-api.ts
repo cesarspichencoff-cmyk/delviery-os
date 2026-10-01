@@ -26,16 +26,11 @@ import {
   acknowledgementId,
 } from "../consent/acknowledgement";
 import type { UnitConfigLoad } from "../gps/unit-config";
+import { canSeeRoute } from "../foundation/route-access";
+export { ROUTE_VIEWER_ROLES, canSeeRoute } from "../foundation/route-access";
+export type { RouteViewerRole } from "../foundation/route-access";
 
 export const DEVICE_API_VERSION = "device-api@1.0.0";
-
-/** Papéis que podem consultar rota e coordenada (COR §21.1). */
-export const ROUTE_VIEWER_ROLES = ["gerente", "lider_delivery", "operador_expedicao"] as const;
-export type RouteViewerRole = (typeof ROUTE_VIEWER_ROLES)[number];
-
-export function canSeeRoute(role: string | undefined): boolean {
-  return (ROUTE_VIEWER_ROLES as readonly string[]).includes(role ?? "");
-}
 
 export interface DeviceApiResponse {
   status: number;

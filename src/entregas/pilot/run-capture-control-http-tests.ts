@@ -13,6 +13,7 @@ const ADMIN = "CHANGE_ME_ADMIN_TOKEN";
 const DEVICE_BEARER = "device-token-q019";
 const DEVICE_TERMINAL_BEARER = "device-token-q019-terminal";
 const DEVICE_GENERIC_403_BEARER = "device-token-q019-generic-403";
+const PILOT_UNIT = "unit-piloto-1";
 
 function freePort(): Promise<number> {
   return new Promise((resolve, reject) => {
@@ -46,7 +47,7 @@ async function startIdentity(): Promise<{ base: string; server: Server }> {
       }
       res.writeHead(200, { "content-type": "application/json" });
       res.end(JSON.stringify({
-        ok: true, device_id: "dev-q019", unit_id: "demo-unit", actor_id: "rid-1",
+        ok: true, device_id: "dev-q019", unit_id: PILOT_UNIT, actor_id: "rid-1",
       }));
       return;
     }
@@ -67,7 +68,7 @@ async function startPilot(platformBase: string): Promise<Pilot> {
   writeFileSync(termPath, JSON.stringify({
     version: "0.0.0-q019",
     material_version: "q019-1",
-    unit_id: "demo-unit",
+    unit_id: PILOT_UNIT,
     title: marca,
     body: marca,
     effective_date: marca,
@@ -153,14 +154,14 @@ async function main() {
 
     const created = await command(pilot.base, OPS, {
       type: "CreateTrip", command_id: `create-${trip}`, occurred_at: now,
-      unit_id: "demo-unit", trip_id: trip, courier_actor_id: "rid-1",
+      unit_id: PILOT_UNIT, trip_id: trip, courier_actor_id: "rid-1",
       deliveries: [{ delivery_id: `D-${trip}`, order_ref: `P-${trip}` }],
       actor: { actor_id: "ops-console-1", role: "operador_expedicao" },
     });
     assert.equal((created.body.result as { ok?: boolean })?.ok, true);
 
     const departed = await command(pilot.base, RIDER, {
-      type: "ConfirmTripDeparture", command_id: `depart-${trip}`,      occurred_at: new Date().toISOString(), unit_id: "demo-unit", trip_id: trip,
+      type: "ConfirmTripDeparture", command_id: `depart-${trip}`,      occurred_at: new Date().toISOString(), unit_id: PILOT_UNIT, trip_id: trip,
       actor: { actor_id: "rid-1", role: "motoboy_interno" },
     });
     assert.equal((departed.body.result as { ok?: boolean })?.ok, true);
@@ -199,7 +200,7 @@ async function main() {
 
     const closed = await command(pilot.base, ADMIN, {
       type: "CloseTripManually", command_id: `close-${trip}`,
-      occurred_at: new Date().toISOString(), unit_id: "demo-unit", trip_id: trip,
+      occurred_at: new Date().toISOString(), unit_id: PILOT_UNIT, trip_id: trip,
       reason: "Q019 prova HTTP",
       actor: { actor_id: "admin-1", role: "gerente" },
     });

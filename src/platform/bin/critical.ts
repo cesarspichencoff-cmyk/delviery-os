@@ -38,6 +38,13 @@ import {
   tratarIdentidadeDoDispositivo,
   ROTA_IDENTIDADE_DISPOSITIVO,
 } from "../runtime/rota-identidade-dispositivo";
+import {
+  handleDispatchLocation,
+  handleDispatchRoute,
+  loadPilotReadSecrets,
+  ROTA_DESPACHO_LOCALIZACAO,
+  ROTA_DESPACHO_ROTA,
+} from "../runtime/rota-localizacao-despacho";
 import { CriticalRuntime } from "../runtime/critical";
 import type { FactSink } from "../persistence/platform-uow";
 
@@ -137,6 +144,22 @@ async function main(): Promise<void> {
     throw e;
   }
 
+  let pilotReadSecrets: ReadonlyMap<string, string>;
+  try {
+    pilotReadSecrets = loadPilotReadSecrets();
+  } catch (e) {
+    console.error(
+      `[critico] configuração de leitura do despacho recusada: ${e instanceof Error ? e.message : String(e)}`,
+    );
+    await cliente.close();
+    process.exit(78);
+    return;
+  }
+  console.log(
+    "[critico] leitura canônica do despacho",
+    JSON.stringify({ enabled_units: [...pilotReadSecrets.keys()] }),
+  );
+
   const runtime = new CriticalRuntime({
     identity: { version: cfg.version, commit: cfg.commit, instance_id: cfg.instance_id },
     facts,
@@ -213,6 +236,36 @@ async function main(): Promise<void> {
         depois(corpo);
       });
     };
+
+    if (
+      (rota === ROTA_DESPACHO_LOCALIZACAO || rota === ROTA_DESPACHO_ROTA) &&
+      req.method === "GET"
+    ) {
+      const url = new URL(req.url ?? "/", "http://127.0.0.1");
+      const tripId = (url.searchParams.get("trip_id") ?? "").trim();
+      const authorization =
+        typeof req.headers.authorization === "string" ? req.headers.authorization : undefined;
+      const deps = {
+        cliente,
+        source_mode: modoDaInstancia,
+        secretsByUnit: pilotReadSecrets,
+        now: () => new Date(),
+      };
+      const promise =
+        rota === ROTA_DESPACHO_LOCALIZACAO
+          ? handleDispatchLocation(authorization, tripId, deps)
+          : handleDispatchRoute(authorization, tripId, deps);
+      void promise
+        .then((r) => responder(res, r.status, r.body))
+        .catch(() =>
+          responder(res, 503, {
+            ok: false,
+            code: "dispatch_read_unavailable",
+            retentavel: true,
+          }),
+        );
+      return;
+    }
 
     if (rota === ROTA_IDENTIDADE_DISPOSITIVO && req.method === "GET") {
       // Leitura mínima para outro serviço verificar a identidade/revogação
