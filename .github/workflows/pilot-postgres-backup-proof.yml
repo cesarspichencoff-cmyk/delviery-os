@@ -51,10 +51,33 @@ jobs:
       - name: Docker Compose render
         run: |
           cp deploy/.env.pilot.example deploy/.env
-          docker compose --profile maintenance -f deploy/compose.yaml config > /tmp/deliveryos-pilot-compose.yml
-          grep -F 'case "$ENTREGAS_STORAGE_BACKEND" in' /tmp/deliveryos-pilot-compose.yml
-          grep -F 'pg_dump' /tmp/deliveryos-pilot-compose.yml
-          grep -F 'pg_restore' /tmp/deliveryos-pilot-compose.yml
-          grep -F 'test "$ENTREGAS_RESTORE_DATABASE_URL" != "$DELIVERYOS_DATABASE_URL"' /tmp/deliveryos-pilot-compose.yml
+          docker compose --profile maintenance -f deploy/compose.yaml config --format json > /tmp/deliveryos-pilot-compose.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          cfg = json.loads(Path("/tmp/deliveryos-pilot-compose.json").read_text())
+          services = cfg["services"]
+          backup = services["deliveryos-backup"]
+          restore = services["deliveryos-postgres-restore"]
+
+          backup_cmd = " ".join(backup["command"]) if isinstance(backup["command"], list) else str(backup["command"])
+          restore_cmd = " ".join(restore["command"]) if isinstance(restore["command"], list) else str(restore["command"])
+
+          assert 'case "$ENTREGAS_STORAGE_BACKEND" in' in backup_cmd, backup_cmd
+          assert "pg_dump" in backup_cmd, backup_cmd
+          assert "$DELIVERYOS_DATABASE_URL" in backup_cmd, backup_cmd
+          assert "$ENTREGAS_STORAGE_BACKEND" not in backup_cmd, backup_cmd
+
+          assert "pg_restore" in restore_cmd, restore_cmd
+          assert 'test "$ENTREGAS_RESTORE_CONFIRM" = "YES"' in restore_cmd, restore_cmd
+          assert 'test "$ENTREGAS_RESTORE_DATABASE_URL" != "$DELIVERYOS_DATABASE_URL"' in restore_cmd, restore_cmd
+          assert "$ENTREGAS_RESTORE_DATABASE_URL" not in restore_cmd, restore_cmd
+
+          assert backup["environment"]["ENTREGAS_STORAGE_BACKEND"] == "file"
+          assert restore["profiles"] == ["maintenance"]
+          assert "ports" not in restore
+          print("COMPOSE_RENDER_PROOF_GREEN")
+          PY
       - run: npm run test:platform:governanca
       - run: git diff --check
