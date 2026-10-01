@@ -8,12 +8,14 @@ export interface TataOsPrintRequestCandidate {
   template_version_id: string;
   template_hash: string;
   printer_profile_id: string;
+  semantic_payload_hash: string;
   variables_snapshot: {
     schema: "deliveryos.production-ticket-variables.v1";
     ticket: StationProductionTicketV2;
     printer_code: string;
     printer_name: string;
     semantic_key_material: string;
+    intent_fingerprint: string;
   };
   requested_by: string;
   requested_at: string;
@@ -43,6 +45,15 @@ function clean(value: unknown): string {
 function positiveInteger(value: unknown): number | null {
   const number = Number(value);
   return Number.isInteger(number) && number > 0 ? number : null;
+}
+
+function sameStringArray(a: readonly string[], b: readonly string[]): boolean {
+  if (a.length !== b.length) return false;
+  return a.every((value, index) => value === b[index]);
+}
+
+function validIntentFingerprint(value: unknown): value is string {
+  return /^[a-f0-9]{64}$/.test(clean(value));
 }
 
 /**
@@ -88,6 +99,22 @@ export function buildTataOsPrintHandoff(input: {
   if (input.intent.identifiers.tata_sequence !== input.ticket.identifiers.tata_sequence) {
     blocking.add("INTENT_TICKET_TATA_SEQUENCE_MISMATCH");
   }
+  if (!validIntentFingerprint(input.intent.intent_fingerprint)) {
+    blocking.add("INTENT_FINGERPRINT_INVALID");
+  }
+  if (input.intent.intent_fingerprint !== input.ticket.intent_fingerprint) {
+    blocking.add("INTENT_TICKET_FINGERPRINT_MISMATCH");
+  }
+  if (
+    input.intent.service_resolution.service !== input.ticket.service_resolution.service ||
+    input.intent.service_resolution.evidence !== input.ticket.service_resolution.evidence ||
+    input.intent.service_resolution.source_ref !== input.ticket.service_resolution.source_ref
+  ) {
+    blocking.add("INTENT_TICKET_SERVICE_RESOLUTION_MISMATCH");
+  }
+  if (!sameStringArray(input.intent.order_observations, input.ticket.order_observations)) {
+    blocking.add("INTENT_TICKET_ORDER_OBSERVATIONS_MISMATCH");
+  }
 
   for (const [field, value] of Object.entries({
     operation_id: input.operation_id,
@@ -122,12 +149,14 @@ export function buildTataOsPrintHandoff(input: {
           template_version_id: input.template_version_id,
           template_hash: input.template_hash,
           printer_profile_id: input.printer_profile_id,
+          semantic_payload_hash: `sha256:${input.intent.intent_fingerprint}`,
           variables_snapshot: {
             schema: "deliveryos.production-ticket-variables.v1",
             ticket: input.ticket,
             printer_code: input.intent.printer.printer_code,
             printer_name: input.intent.printer.printer_name,
             semantic_key_material: input.intent.semantic_key_material,
+            intent_fingerprint: input.intent.intent_fingerprint,
           },
           requested_by: input.requested_by,
           requested_at: input.requested_at,
