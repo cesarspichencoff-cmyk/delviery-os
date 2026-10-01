@@ -846,7 +846,9 @@ server.listen(PORT, BIND, () => {
 
 process.on("SIGINT", () => {
   if (autoBackupTimer) clearInterval(autoBackupTimer);
-  createBackup(facade.dataPath, backupDir, cfg.backup.retain_count, log);
+  if (facade.supportsFileBackup) {
+    createBackup(facade.dataPath, backupDir, cfg.backup.retain_count, log);
+  }
   log.info("server_stopped", "Servidor do piloto encerrado.");
   process.exit(0);
 });
