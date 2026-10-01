@@ -11,6 +11,7 @@ export interface ProductionPrintSubmissionDecision {
   intent_fingerprint: string;
   decision:
     | "ALLOW_FIRST_SUBMISSION"
+    | "ALLOW_RETRY_PROVEN_NO_EFFECT"
     | "BLOCK_RECONCILIATION_REQUIRED"
     | "BLOCK_ALREADY_PHYSICALLY_CONFIRMED";
   blocking_reasons: string[];
@@ -71,6 +72,21 @@ export function decideProductionPrintSubmission(
       decision: "BLOCK_RECONCILIATION_REQUIRED",
       blocking_reasons: ["PRIOR_EFFECT_NOT_PROVEN_ABSENT"],
       automatic_retry_allowed: false,
+      effects: { print: false, spooler_write: false },
+    };
+  }
+
+  const onlyProvenNoEffect =
+    relevant.length > 0 &&
+    relevant.every((entry) => entry.state === "PROVEN_NO_EFFECT_FAILURE");
+
+  if (onlyProvenNoEffect) {
+    return {
+      schema: "deliveryos.production-print-submission-decision.v1",
+      intent_fingerprint: fingerprint,
+      decision: "ALLOW_RETRY_PROVEN_NO_EFFECT",
+      blocking_reasons: [],
+      automatic_retry_allowed: true,
       effects: { print: false, spooler_write: false },
     };
   }
