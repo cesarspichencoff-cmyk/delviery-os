@@ -16,7 +16,11 @@
     "demo/**/*.ts",
     "tools/entregas_ui_server.ts",
     "tools/entregas_pilot_server.ts",
+    "tools/entregas_storage_cutover.ts",
     "tools/product_system_server.ts"
   ],
-  "exclude": ["node_modules", "dist"]
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
 }
