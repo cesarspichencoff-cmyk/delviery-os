@@ -89,7 +89,7 @@
     },
     {
       "plaza": "duplas",
-      "unique_matches": 37,
+      "unique_matches": 36,
       "routes": [
         {
           "printer_codes": [
@@ -97,27 +97,9 @@
             "00003"
           ],
           "count": 36
-        },
-        {
-          "printer_codes": [
-            "00006"
-          ],
-          "count": 1
         }
       ],
-      "outlier": {
-        "seed_name": "Tartar de Atum Spicy",
-        "seed_id": "tartar_de_atum_spicy",
-        "current_plaza": "duplas",
-        "seed_confidence": "inferido_com_baixa_confianca",
-        "manual_review": true,
-        "product_code": "9.10.05.040.00",
-        "retail_name": "TARTAR DE ATUM SPICY",
-        "printer_codes": [
-          "00006"
-        ],
-        "disposition": "REVIEW_CANDIDATE_NOT_AUTO_CORRECTION"
-      }
+      "observation": "All deterministic matches now align with BALCAOSUSHI1 + DELIVERY SUSHI1 after operational confirmation moved Tartar de Atum Spicy to Sushi Quentes."
     },
     {
       "plaza": "enrolados",
@@ -135,13 +117,13 @@
     },
     {
       "plaza": "enrolados_quentes",
-      "unique_matches": 8,
+      "unique_matches": 9,
       "routes": [
         {
           "printer_codes": [
             "00006"
           ],
-          "count": 5
+          "count": 6
         },
         {
           "printer_codes": [
@@ -151,7 +133,7 @@
           "count": 3
         }
       ],
-      "observation": "Both current physical patterns are internally recurrent; route alone does not collapse this logical plaza."
+      "observation": "Both current physical patterns are internally recurrent; Tartar de Atum Spicy is operationally confirmed in Sushi Quentes and uses 00006."
     },
     {
       "plaza": "montagem_outros",
@@ -197,7 +179,7 @@
       "printer_codes": [
         "00006"
       ],
-      "disposition": "PHYSICAL_TOPOLOGY_SUPPORTS_CURRENT_PLAZA_NO_CHANGE"
+      "disposition": "OPERATIONALLY_CONFIRMED_CURRENT_CLASSIFICATION"
     },
     {
       "seed_name": "Tuna Shisô Tartar",
@@ -207,7 +189,7 @@
       "printer_codes": [
         "00006"
       ],
-      "disposition": "PHYSICAL_TOPOLOGY_SUPPORTS_CURRENT_PLAZA_NO_CHANGE"
+      "disposition": "OPERATIONALLY_CONFIRMED_CURRENT_CLASSIFICATION"
     },
     {
       "seed_name": "Missoshiro",
@@ -226,38 +208,44 @@
           ]
         }
       ],
-      "disposition": "PRODUCT_ID_AMBIGUOUS_BUT_ROUTE_SUPPORTS_CURRENT_PLAZA"
+      "disposition": "OPERATIONALLY_CONFIRMED_CURRENT_CLASSIFICATION"
     },
     {
       "seed_name": "Tartar de Atum Spicy",
-      "current_plaza": "duplas",
+      "current_plaza": "enrolados_quentes",
       "product_code": "9.10.05.040.00",
       "printer_codes": [
         "00006"
       ],
-      "disposition": "REVIEW_CANDIDATE_NOT_AUTO_CORRECTION"
+      "disposition": "OPERATIONALLY_CONFIRMED_SUSHI_QUENTES"
     },
     {
       "seed_name": "Carpaccio de Polvo Espanhol",
       "current_plaza": "duplas",
-      "disposition": "UNMATCHED_BY_CONSERVATIVE_JOIN_NO_AUTO_CONCLUSION"
+      "disposition": "OPERATIONALLY_CONFIRMED_CURRENT_CLASSIFICATION"
     },
     {
       "seed_name": "Carpaccio de Salmão Trufado",
       "current_plaza": "duplas",
-      "disposition": "UNMATCHED_BY_CONSERVATIVE_JOIN_NO_AUTO_CONCLUSION"
+      "disposition": "OPERATIONALLY_CONFIRMED_CURRENT_CLASSIFICATION"
     },
     {
       "seed_name": "Tatá Especial - Club Vip Gourmet",
       "current_plaza": null,
-      "disposition": "UNMATCHED_BY_CONSERVATIVE_JOIN_KEEP_UNKNOWN"
+      "disposition": "OPERATIONALLY_CONFIRMED_CURRENT_CLASSIFICATION"
     }
   ],
   "conclusion": {
     "architecture": "KEEP_8_LOGICAL_PLAZAS_SEPARATE_FROM_6_ACTIVE_PHYSICAL_PRINTER_DESTINATIONS",
-    "material_review_candidate_count": 1,
-    "material_review_candidate": "Tartar de Atum Spicy",
-    "automatic_seed_changes": 0
+    "material_review_candidate_count": 0,
+    "resolved_candidate": {
+      "seed_name": "Tartar de Atum Spicy",
+      "previous_plaza": "duplas",
+      "confirmed_plaza": "enrolados_quentes",
+      "operational_label": "Sushi Quentes"
+    },
+    "automatic_seed_changes": 0,
+    "human_confirmed_seed_changes": 1
   },
   "effects": {
     "seed_write": false,
