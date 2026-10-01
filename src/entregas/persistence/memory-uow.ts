@@ -6,6 +6,7 @@ import type {
   EventStore,
   OutboxRepository,
   TripRecord,
+  ReadyOrderRecord,
   UnitOfWork,
 } from "./ports";
 import { ConcurrencyError } from "./ports";
@@ -20,6 +21,7 @@ export class MemoryUnitOfWork implements UnitOfWork {
   private _handoffs = new Map<string, { handoff: Handoff; version: number }>();
   private _occurrences = new Map<string, Occurrence>();
   private _riders = new Map<string, RiderOperationalState>();
+  private _readyOrders = new Map<string, ReadyOrderRecord>();
   private _events: DomainEvent[] = [];
   private _outbox: OutboxRecord[] = [];
   private staged!: {
@@ -27,6 +29,7 @@ export class MemoryUnitOfWork implements UnitOfWork {
     handoffs: Map<string, { handoff: Handoff; version: number }>;
     occurrences: Map<string, Occurrence>;
     riders: Map<string, RiderOperationalState>;
+    readyOrders: Map<string, ReadyOrderRecord>;
     events: DomainEvent[];
     outbox: OutboxRecord[];
   };
@@ -36,6 +39,7 @@ export class MemoryUnitOfWork implements UnitOfWork {
   readonly handoffs: HandoffRepository;
   readonly occurrences: OccurrenceRepository;
   readonly riders: RiderStateRepository;
+  readonly readyOrders: import("./ports").ReadyOrderRepository;
   readonly events: EventStore;
   readonly outbox: OutboxRepository;
 
@@ -106,6 +110,19 @@ export class MemoryUnitOfWork implements UnitOfWork {
         self.staged.riders.set(state.rider_id, state);
       },
     };
+    this.readyOrders = {
+      async list() {
+        return [...self.staged.readyOrders.values()].map((x) => structuredClone(x));
+      },
+      async add(record) {
+        if (self.staged.readyOrders.has(record.order_ref)) return { duplicate: true };
+        self.staged.readyOrders.set(record.order_ref, structuredClone(record));
+        return { duplicate: false };
+      },
+      async remove(orderRefs) {
+        for (const orderRef of orderRefs) self.staged.readyOrders.delete(orderRef);
+      },
+    };
     this.events = {
       async append(ev) {
         self.staged.events.push(...ev);
@@ -168,6 +185,7 @@ export class MemoryUnitOfWork implements UnitOfWork {
       handoffs: new Map(this._handoffs),
       occurrences: new Map(this._occurrences),
       riders: new Map(this._riders),
+      readyOrders: new Map(this._readyOrders),
       events: [...this._events],
       outbox: this._outbox.map((r) => ({
         ...r,
@@ -183,6 +201,7 @@ export class MemoryUnitOfWork implements UnitOfWork {
     this._handoffs = this.staged.handoffs;
     this._occurrences = this.staged.occurrences;
     this._riders = this.staged.riders;
+    this._readyOrders = this.staged.readyOrders;
     this._events = this.staged.events;
     this._outbox = this.staged.outbox;
     // permite sequência de commands na mesma sessão de app
@@ -200,6 +219,7 @@ export class MemoryUnitOfWork implements UnitOfWork {
     u._handoffs = new Map(this._handoffs);
     u._occurrences = new Map(this._occurrences);
     u._riders = new Map(this._riders);
+    u._readyOrders = new Map(this._readyOrders);
     u._events = [...this._events];
     u._outbox = this._outbox.map((r) => ({
       ...r,
