@@ -40,6 +40,7 @@
     "verificar:native-nfce-orchestration": "tsc && node tools/verificar_native_nfce_orchestration_v1.js",
     "verificar:production-printer-preflight-static": "node tools/verificar_production_printer_preflight_static_v1.js",
     "verificar:mooca-commandas-preflight-static": "node tools/verificar_mooca_commandas_preflight_static_v1.js",
+    "verificar:odhen-fiscal-surface-probe-static": "node tools/verificar_odhen_fiscal_surface_probe_static_v1.js",
     "verificar:resource-costing": "tsc && node tools/verificar_resource_costing_v1.js"
   },
   "devDependencies": {
