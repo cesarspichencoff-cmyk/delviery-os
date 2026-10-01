@@ -91,6 +91,62 @@ function classify(r){
 
   const hot = HOT_TERMS.some(t => H.includes(t));
 
+  // Confirmações operacionais de César — 30/09/2026.
+  // São overrides nomeados e estreitos: não generalizam por semelhança textual.
+  const CONFIRMACOES_OPERACIONAIS = {
+    "ceviche": {
+      praca_principal:"enrolados_quentes", categoria_operacional:"enrolado_quente",
+      subcategoria_operacional:"entrada_quente", temperatura:"quente", pracas_dependentes:[],
+      confianca:"alta", revisao:false,
+      observacoes:["Praça operacional confirmada: Sushi Quentes."]
+    },
+    "tartar de salmao": {
+      praca_principal:"enrolados_quentes", categoria_operacional:"enrolado_quente",
+      subcategoria_operacional:"entrada_quente", temperatura:"quente", pracas_dependentes:[],
+      confianca:"alta", revisao:false,
+      observacoes:["Praça operacional confirmada: Sushi Quentes."]
+    },
+    "tuna shiso tartar": {
+      praca_principal:"enrolados_quentes", categoria_operacional:"enrolado_quente",
+      subcategoria_operacional:"entrada_quente", temperatura:"quente", pracas_dependentes:[],
+      confianca:"alta", revisao:false,
+      observacoes:["Praça operacional confirmada: Sushi Quentes."]
+    },
+    "tartar de atum spicy": {
+      praca_principal:"enrolados_quentes", categoria_operacional:"enrolado_quente",
+      subcategoria_operacional:"entrada_quente", temperatura:"quente", pracas_dependentes:[],
+      confianca:"alta", revisao:false,
+      observacoes:["Praça operacional confirmada: Sushi Quentes."]
+    },
+    "carpaccio de polvo espanhol": {
+      praca_principal:"duplas", categoria_operacional:"entrada",
+      subcategoria_operacional:"entrada_fria", temperatura:"frio", pracas_dependentes:[],
+      confianca:"alta", revisao:false,
+      observacoes:["Praça operacional confirmada: Duplas."]
+    },
+    "carpaccio de salmao trufado": {
+      praca_principal:"duplas", categoria_operacional:"entrada",
+      subcategoria_operacional:"entrada_fria", temperatura:"frio", pracas_dependentes:[],
+      confianca:"alta", revisao:false,
+      observacoes:["Praça operacional confirmada: Duplas."]
+    },
+    "missoshiro": {
+      praca_principal:"cozinha", categoria_operacional:"acompanhamento",
+      subcategoria_operacional:"sopa", temperatura:"quente", pracas_dependentes:[],
+      confianca:"alta", revisao:false,
+      observacoes:["Praça operacional confirmada: Cozinha."]
+    },
+    "tata especial - club vip gourmet": {
+      praca_principal:null, categoria_operacional:"outros",
+      subcategoria_operacional:"programa", temperatura:"desconhecido", pracas_dependentes:[],
+      confianca:"alta", revisao:false,
+      observacoes:["Confirmado como programa/rótulo sem praça de produção."]
+    }
+  };
+  if (CONFIRMACOES_OPERACIONAIS[nomeN]) {
+    return CONFIRMACOES_OPERACIONAIS[nomeN];
+  }
+
   // helper p/ dependências internas dos combinados/menus
   function depsFrom(text){
     const d=[];
@@ -165,18 +221,7 @@ function classify(r){
   // 4) ENROLADOS QUENTES (vence enrolados)
   if(hot){
     let motivo = HOT_TERMS.filter(t=>H.includes(t));
-    // EXCEÇÃO NOMEADA (histórica, ver docs/Auditoria_Builder_Cardapio_PreCorrecao.md): Ceviche,
-    // Tartar de Salmão e Tuna Shisô Tartar foram revisados manualmente no seed (media/revisão
-    // manual=true, com nota sobre a regra operacional do César) — o gerador nunca refletia isso.
-    // Restrita aos 3 nomes exatos; NÃO se aplica a nenhum outro item que contenha os mesmos termos.
-    const EXCECAO_REVISAO_MANUAL = {
-      "ceviche": "Item frio (marinado/cru) enviado para enrolados_quentes pela REGRA OPERACIONAL atual do César. A regra vence — NÃO cai em duplas/sushi. Revalidar com a equipe de qual bancada realmente sai; corrigível no cadastro sem quebrar a arquitetura.",
-      "tartar de salmao": "Item frio (marinado/cru) enviado para enrolados_quentes pela REGRA OPERACIONAL atual do César. A regra vence — NÃO cai em duplas/sushi. Revalidar com a equipe de qual bancada realmente sai; corrigível no cadastro sem quebrar a arquitetura.",
-      "tuna shiso tartar": "Item frio (marinado/cru) enviado para enrolados_quentes pela REGRA OPERACIONAL atual do César. A regra vence — NÃO cai em duplas/sushi. Revalidar com a equipe de qual bancada realmente sai; corrigível no cadastro sem quebrar a arquitetura.",
-    };
-    if (EXCECAO_REVISAO_MANUAL[nomeN]) {
-      conf = "media"; revisao = true; obs.push(EXCECAO_REVISAO_MANUAL[nomeN]);
-    } else if(motivo.some(m=>["ceviche","tartar de salmao","tuna shiso"].includes(m))) {
+    if(motivo.some(m=>["ceviche","tartar de salmao","tuna shiso"].includes(m))) {
       conf="alta"; obs.push("Entrada classificada como enrolados_quentes por regra explícita de termo ("+motivo.join(", ")+").");
     }
     return { praca_principal:"enrolados_quentes", categoria_operacional:"enrolado_quente",
@@ -501,18 +546,18 @@ ${dupInfo.length?dupInfo.map(d=>`- **${d.nome}** — ${d.fontes}× · disponíve
 2. **Menus compostos** — nome começa com "Menu" → \`menu_composto\`, praça \`combinados\`, com \`pracas_dependentes\`.
 3. **Sobremesas** — categoria "Sobremesa*" ou item-sobremesa → \`sobremesa\` (os "Sabores" Baunilha/Melão/Pistache ficam como **complemento**, não sobremesa).
 4. **Bebidas/Bar** — Bebidas/Cervejas/Vinhos/Sakes/Água → \`bar\`.
-5. **Enrolados quentes** — ebiten, hot roll, skin, tartar de salmão, tuna shisô, ceviche → \`enrolados_quentes\` (vence enrolados).
+5. **Enrolados quentes** — ebiten, hot roll, skin e confirmações operacionais nomeadas (Ceviche, Tartar de Salmão, Tuna Shisô Tartar, Tartar de Atum Spicy) → \`enrolados_quentes\`.
 6. **Enrolados** — uramaki, baterá, hossomaki, temaki (sem termo quente) → \`enrolados\`.
-7. **Duplas** — dupla/sushi/nigiri/dyo/sashimi ou categoria de sushi/sashimi/dyo → \`duplas\`. Peixe cru em "Entradas" (carpaccio/tartar não-salmão) foi **inferido** como bancada fria (duplas) com baixa confiança.
+7. **Duplas** — dupla/sushi/nigiri/dyo/sashimi ou categoria de sushi/sashimi/dyo → \`duplas\`. Carpaccio de Polvo Espanhol e Carpaccio de Salmão Trufado têm confirmação operacional explícita em Duplas.
 8. **Cozinha/Quentes** — katsu, teriyaki, teppanyaki, tempurá, yakissoba, guioza, grelhado, entradas quentes → \`cozinha\` (temperatura quente).
-9. **Montagem/Outros** — gengibre, gohan, tarê, wasabi, sunomono → \`montagem\`; boné/nº de pessoas → não-produção; Missoshiro/Club Vip → revisão manual.
+9. **Montagem/Outros** — gengibre, gohan, tarê, wasabi, sunomono → \`montagem\`; boné/nº de pessoas → não-produção. Missoshiro foi confirmado em Cozinha; Club Vip foi confirmado como programa/rótulo sem praça.
 
 ## 10. Observações honestas (limites desta base)
 - **Ingredientes** vêm da descrição por dicionário — itens sem descrição ficam com listas vazias (não inventei).
 - **Popularidade / peso de venda NÃO existe aqui** — deve vir de dados reais de venda (relatório iFood/PDV), não de chute. Sem isso, "quantos pedidos tocam cada praça" continua dependendo da fonte real de itens por pedido.
 - **quantidade_pecas** dos combinados fica \`null\` (são compostos); a contagem detalhada está na descrição.
 - **cozinha_quentes** aqui = a bancada de quentes (rótulo de interface "Quentes" no motor). Vocabulário já unificado com \`motor.js\` (ver \`normalizarPracaOficial\` — corrigido em jul/2026, ver \`docs/Auditoria_Builder_Cardapio_PreCorrecao.md\`).
-- Peixe cru em Entradas (carpaccio/tartar de atum) e Missoshiro estão marcados para **revisão manual** — não force antes de confirmar o fluxo real.
+- As exceções nomeadas confirmadas operacionalmente são tratadas antes das heurísticas genéricas; semelhança de nome não promove outras exceções.
 `;
 // ---------- Seção 11: sinais destravados pelo cardápio (entregável #3) ----------
 const sigAgg = {};
