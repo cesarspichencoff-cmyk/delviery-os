@@ -219,9 +219,9 @@ Componente sem prova fica fora da comanda e aparece como UNKNOWN no diagnóstico
 
 Assim a comanda continua rápida, enquanto o consumo completo fica no ledger.
 
-## 6. Checklist de montagem separado
+## 6. Conferência do DeliveryOS — tela, sem nova comanda
 
-A montagem precisa de informação diferente da bancada.
+O Delivery precisa de informação diferente da bancada, mas isso fica na interface do DeliveryOS. **Não gera uma segunda comanda física.**
 
 Exemplo:
 
@@ -251,7 +251,7 @@ COMPLEMENTOS
 [ ] FECHADO
 ```
 
-Isso evita poluir cada comanda de produção com hashi, guardanapo, sacola etc.
+Isso evita poluir cada comanda de produção com hashi, guardanapo, sacola etc. e evita acumular papel. A projeção tem `effects.print=false`.
 
 ## 7. Ledger de consumo teórico
 
@@ -578,3 +578,15 @@ VENDA
 ≠ BAIXA REAL
 ≠ CMV CONTABIL
 ```
+
+
+## Correção de arquitetura — núcleo único
+
+A autoridade futura das regras deixa de ser local ao DeliveryOS/Academia.
+
+Casa canônica em preparação:
+`cesarspichencoff-cmyk/tata-os` → branch `feature/unified-tata-core-20261001` → `packages/unified-restaurant-core/`.
+
+DeliveryOS será consumidor/projeção operacional desse núcleo.
+TATÁ Academia será consumidor/projeção de treinamento.
+Arquivos locais de regra existentes neste branch são transitórios de migração e não devem ser promovidos como segunda autoridade.
