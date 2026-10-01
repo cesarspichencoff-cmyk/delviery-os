@@ -257,3 +257,20 @@ Feedback humano incorporado:
 Código de `productionTicketV2.ts` foi ajustado para carregar `prep_ingredients` por item, não como bloco agregado da comanda.
 
 Nenhum efeito físico, impressão, baixa de estoque ou cutover foi habilitado.
+
+
+## TRÊS SEQUÊNCIAS OBRIGATÓRIAS — 2026-10-01
+
+Toda comanda de produção deve carregar e exibir:
+
+- sequência iFood;
+- sequência Teknisa;
+- sequência TATÁ.
+
+`src/production/productionPrintPlan.ts` bloqueia payload incompleto.
+`src/production/productionTicketV2.ts` bloqueia documento incompleto.
+`src/production/tataOsPrintHandoff.ts` bloqueia divergência entre intenção e documento.
+
+As três sequências também entram no material semântico/idempotente da intenção de impressão.
+
+Nenhum efeito físico foi habilitado.
