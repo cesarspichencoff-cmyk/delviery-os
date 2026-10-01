@@ -46,6 +46,9 @@ const aggregate = {
   ],
   blocked_orders: [],
   recipe_cmv_ready_orders: 1,
+  theoretical_cmv_basis_ready_orders: 1,
+  packaging_and_kit_complete_orders: 1,
+  orders_with_unknown_resources: [],
   semantics: {
     aggregate_is_theoretical: true,
     no_stock_write: true,
