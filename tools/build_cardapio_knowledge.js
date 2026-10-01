@@ -280,13 +280,7 @@ function classify(r){
       confianca:"alta", revisao:false, observacoes:obs };
   }
 
-  // 8) MONTAGEM / OUTROS  (+ casos ambíguos explícitos)
-  // Missoshiro: ambíguo (cozinha se produção quente / montagem se acompanhamento) -> revisao_manual
-  if(nomeN==="missoshiro"){
-    return { praca_principal:"cozinha", categoria_operacional:"acompanhamento", subcategoria_operacional:"sopa",
-      temperatura:"quente", pracas_dependentes:[], confianca:"inferido_com_baixa_confianca", revisao:true,
-      observacoes:["Ambíguo: cozinha (se produção quente) x montagem (se só servido). Confirmar fluxo real."] };
-  }
+  // 8) MONTAGEM / OUTROS
   // Sabores (Baunilha/Melão/Pistache) -> complemento/sabor, NÃO produção
   if(ehSabor){
     return { praca_principal:null, categoria_operacional:"complemento", subcategoria_operacional:"sabor",
@@ -298,11 +292,6 @@ function classify(r){
     return { praca_principal:null, categoria_operacional:"nao_producao", subcategoria_operacional: nomeN.includes("bone")?"merchandise":"meta",
       temperatura:"desconhecido", pracas_dependentes:[], confianca:"alta", revisao:false,
       observacoes:["Item não-produtivo (não gera sinal operacional de praça)."] };
-  }
-  if(nomeN.includes("club vip")){
-    return { praca_principal:null, categoria_operacional:"outros", subcategoria_operacional:"programa",
-      temperatura:"desconhecido", pracas_dependentes:[], confianca:"inferido_com_baixa_confianca", revisao:true,
-      observacoes:["Sem descrição; parece rótulo/programa (Club Vip Gourmet), não item de produção. Confirmar."] };
   }
   // Acompanhamentos de montagem (gengibre/gari, gohan, tarê, wasabi, sunomono)
   const montagemConhecidos = /gengibre|gari|gohan|tare|wasabi|sunomono/;
