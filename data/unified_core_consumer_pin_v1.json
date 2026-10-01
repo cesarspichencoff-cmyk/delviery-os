@@ -1,0 +1,36 @@
+{
+  "schema": "tata.unified-core-consumer-pin.v1",
+  "surface": "DELIVERY_OS",
+  "consumer_repository": "cesarspichencoff-cmyk/delviery-os",
+  "consumer_branch": "fix/odhen-routing-config-proof-20260930",
+  "core": {
+    "repository": "cesarspichencoff-cmyk/tata-os",
+    "branch": "feature/unified-tata-core-20261001",
+    "package": "packages/unified-restaurant-core",
+    "entrypoint": "src/index.ts",
+    "status": "REVERSIBLE_PREBUILD_NOT_CUTOVER"
+  },
+  "local_state": {
+    "namespace": "deliveryos",
+    "owns": [
+      "order_operational_state",
+      "station_status",
+      "delivery_check_state",
+      "sla_state",
+      "closure_state"
+    ],
+    "write_policy": "APPEND_VERSIONED_SURFACE_LOCAL_STATE_ONLY"
+  },
+  "forbidden": [
+    "WRITE_TATA_OS_INVENTORY_STATE",
+    "WRITE_TATA_ACADEMIA_PROGRESS_STATE",
+    "OVERWRITE_CORE_RULES_FROM_SURFACE",
+    "SUPERSEDE_OTHER_SURFACE_PROJECTION"
+  ],
+  "integration_status": "PREPARED_NO_RUNTIME_CUTOVER",
+  "effects": {
+    "production": false,
+    "print": false,
+    "stock_write": false
+  }
+}
