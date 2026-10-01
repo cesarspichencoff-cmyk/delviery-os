@@ -37,6 +37,17 @@ export interface TataSequenceScopeResolution {
   source_ref: string | null;
 }
 
+export interface DailyStoreTataSequenceContext {
+  store_id: string;
+  operational_date: string;
+}
+
+export const DAILY_STORE_TATA_SEQUENCE_RULE = {
+  policy: "RESET_EACH_STORE_LOCAL_CALENDAR_DAY",
+  evidence: "HUMAN_CONFIRMED_RULE" as const,
+  source_ref: "human:cesar:2026-10-01:daily-store-tata-sequence",
+} as const;
+
 function clean(value: unknown): string {
   return String(value ?? "").trim();
 }
@@ -244,6 +255,94 @@ export function planTataSequenceWithResolvedScope(
   }
 
   return planTataSequence(state, scopeId, teknisaOrderIdRaw);
+}
+
+
+function validIsoLocalDate(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const [year, month, day] = value.split("-").map(Number);
+  const d = new Date(Date.UTC(year, month - 1, day));
+  return (
+    d.getUTCFullYear() === year &&
+    d.getUTCMonth() === month - 1 &&
+    d.getUTCDate() === day
+  );
+}
+
+export function buildDailyStoreTataSequenceScope(
+  context: DailyStoreTataSequenceContext,
+): TataSequenceScopeResolution {
+  const storeId = clean(context.store_id);
+  const date = clean(context.operational_date);
+
+  if (!storeId || !validIsoLocalDate(date)) {
+    return {
+      scope_id: null,
+      evidence: "UNKNOWN",
+      source_ref: null,
+    };
+  }
+
+  return {
+    scope_id: `STORE:${storeId}|DATE:${date}`,
+    evidence: DAILY_STORE_TATA_SEQUENCE_RULE.evidence,
+    source_ref: DAILY_STORE_TATA_SEQUENCE_RULE.source_ref,
+  };
+}
+
+/**
+ * Human-confirmed operational policy:
+ * - numbering is scoped by store + store-local calendar date;
+ * - every new local calendar date starts again at policy.min_value;
+ * - the same Teknisa order reuses its original number inside that day;
+ * - reprints therefore keep the same TATA sequence;
+ * - no cross-day carry-over of the numeric counter.
+ *
+ * The caller supplies the already-resolved store-local YYYY-MM-DD. This pure
+ * function does not infer timezone from the machine clock.
+ */
+export function planDailyStoreTataSequence(
+  state: TataSequenceState,
+  context: DailyStoreTataSequenceContext,
+  teknisaOrderIdRaw: string,
+): TataSequencePlan {
+  const scope = buildDailyStoreTataSequenceScope(context);
+  const scopeId = clean(scope.scope_id);
+
+  if (!scopeId) {
+    return planTataSequenceWithResolvedScope(
+      state,
+      scope,
+      teknisaOrderIdRaw,
+    );
+  }
+
+  const scopedBindings = state.bindings.filter(
+    (binding) => clean(binding.scope_id) === scopeId,
+  );
+
+  let scopedNextValue = state.policy.min_value;
+  if (scopedBindings.length > 0) {
+    const numericValues = scopedBindings
+      .map((binding) => Number(binding.tata_sequence))
+      .filter((value) => Number.isInteger(value));
+    if (numericValues.length > 0) {
+      scopedNextValue = Math.max(...numericValues) + 1;
+    }
+  }
+
+  const scopedState: TataSequenceState = {
+    schema: state.schema,
+    policy: { ...state.policy },
+    next_value: scopedNextValue,
+    bindings: state.bindings.map((binding) => ({ ...binding })),
+  };
+
+  return planTataSequenceWithResolvedScope(
+    scopedState,
+    scope,
+    teknisaOrderIdRaw,
+  );
 }
 
 export function validateSharedTataSequence(
