@@ -27,7 +27,9 @@
     "verificar:retail-routing-tooling": "node tools/verificar_retail_routing_config_tooling_v1.js",
     "verificar:routing-drift": "node tools/verificar_routing_config_drift_v1.js",
     "verificar:pracas-vs-retail": "node tools/verificar_pracas_vs_retail_v1.js",
-    "auditar:pracas-vs-retail": "node tools/auditar_pracas_vs_retail_v1.js"
+    "auditar:pracas-vs-retail": "node tools/auditar_pracas_vs_retail_v1.js",
+    "auditar:delivery-active-routing": "node tools/auditar_delivery_active_routing_coverage_v1.js",
+    "verificar:delivery-active-routing": "node tools/verificar_delivery_active_routing_coverage_v1.js"
   },
   "devDependencies": {
     "@types/node": "20.14.10",
