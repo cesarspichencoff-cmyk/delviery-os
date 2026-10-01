@@ -71,23 +71,14 @@ export interface ProductionTicketPreview {
   };
 }
 
-const ROUTES: Record<ProductionService, Partial<Record<ProductionSquare, ProductionTarget>>> = {
-  almoco: {
-    caixa: "CAIXA",
-    cozinha: "COZINHA",
-    enrolados: "BALCAO_SUSHI_2",
-    combinados: "BALCAO_SUSHI_1",
-    enrolados_quentes: "BALCAO_SUSHI_2",
-  },
-  jantar: {
-    caixa: "CAIXA",
-    cozinha: "COZINHA",
-    enrolados: "DELIVERY_SUSHI_2",
-    combinados: "DELIVERY_SUSHI_1",
-    enrolados_quentes: "BALCAO_SUSHI_2",
-  },
-};
-
+/**
+ * LEGACY V1 NOTE
+ *
+ * The old service/square -> printer table is intentionally no longer route
+ * authority. Current truth is product-code routing from Teknisa Retail
+ * (CDPRODUTO -> production printer(s)). Keeping a static table here would allow
+ * a regression back to the pre-2026-09-30 model.
+ */
 const TARGET_LABELS: Record<ProductionTarget, string> = {
   CAIXA: "CAIXA",
   COZINHA: "COZINHA",
@@ -118,15 +109,11 @@ export function routeProductionSquare(
   square: ProductionSquare,
   service: ProductionService,
 ): ProductionRouteResult {
-  const target = ROUTES[service][square] ?? null;
-  if (!target) {
-    return {
-      status: "UNKNOWN",
-      target: null,
-      reason: `UNPROVEN_ROUTE:${service}:${square}`,
-    };
-  }
-  return { status: "PROVEN", target, reason: null };
+  return {
+    status: "UNKNOWN",
+    target: null,
+    reason: `LEGACY_STATIC_ROUTE_SUPERSEDED_BY_PRODUCT_ROUTING_CONFIG:${service}:${square}`,
+  };
 }
 
 function renderIdentifierLine(label: string, value: string | null): string {
