@@ -9,15 +9,15 @@
 - **Itens canônicos (após dedup):** 199
 - **Duplicados colapsados:** 18 (em 18 itens canônicos)
 - **Itens sem descrição:** 24
-- **Itens de baixa confiança / revisão manual:** 8
+- **Itens de baixa confiança / revisão manual:** 0
 
 ## 2. Quantidade por praça (praça principal)
 | Praça | Itens |
 |---|---|
 | combinados | 20 |
-| duplas | 64 |
+| duplas | 63 |
 | enrolados | 16 |
-| enrolados_quentes | 11 |
+| enrolados_quentes | 12 |
 | cozinha_quentes | 31 |
 | sobremesa | 9 |
 | bar_bebidas | 36 |
@@ -26,9 +26,9 @@
 
 ### Critério de sucesso (praças obrigatórias separadas e não-zeradas)
 - ✅ **combinados**: 20
-- ✅ **duplas**: 64
+- ✅ **duplas**: 63
 - ✅ **enrolados**: 16
-- ✅ **enrolados_quentes**: 11
+- ✅ **enrolados_quentes**: 12
 - ✅ **cozinha_quentes**: 31
 - ✅ **sobremesa**: 9
 - ✅ **bar_bebidas**: 36
@@ -39,12 +39,12 @@
 |---|---|
 | dupla | 61 |
 | bebida | 36 |
-| prato_quente | 25 |
+| prato_quente | 22 |
 | combinado | 18 |
 | enrolado | 16 |
-| enrolado_quente | 11 |
+| enrolado_quente | 12 |
+| entrada | 10 |
 | sobremesa | 9 |
-| entrada | 8 |
 | acompanhamento | 6 |
 | complemento | 3 |
 | nao_producao | 3 |
@@ -64,10 +64,10 @@
   - **Combinado Kids** — _kids_, misto · proteínas: salmao
   - **Combinado Salmão 1 pessoa** — _salmao_, misto · proteínas: salmao
 
-### duplas (64)
+### duplas (63)
   - **By Luizinho Especial** — _dupla_, frio · proteínas: salmao, ikura, codorna
-  - **Carpaccio de Polvo Espanhol** — _entrada_fria_, frio · proteínas: polvo · ⚠️ inferido_com_baixa_confianca
-  - **Carpaccio de Salmão Trufado** — _entrada_fria_, frio · proteínas: salmao · ⚠️ inferido_com_baixa_confianca
+  - **Carpaccio de Polvo Espanhol** — _entrada_fria_, frio · proteínas: polvo
+  - **Carpaccio de Salmão Trufado** — _entrada_fria_, frio · proteínas: salmao
   - **Dyo de Atum** — _dyo_, frio · proteínas: atum
   - **Dyo de Atum com Foie Gras** — _dyo_, frio · proteínas: atum, foie gras
   - **Dyo de Codorna Trufado** — _dyo_, frio · proteínas: salmao, codorna
@@ -88,17 +88,17 @@
   - **Temaki de Ikurá** — _temaki_, frio · proteínas: salmao, ikura, ovas
   - **Temaki de Salmão** — _temaki_, frio · proteínas: salmao
 
-### enrolados_quentes (11)
-  - **Ceviche** — _entrada_quente_, quente · proteínas: camarao, polvo, peixe branco · ⚠️ media
+### enrolados_quentes (12)
+  - **Ceviche** — _entrada_quente_, quente · proteínas: camarao, polvo, peixe branco
   - **Hot Roll** — _uramaki_, quente
   - **Hot Roll Tatá** — _uramaki_, quente · proteínas: salmao, camarao, kani
   - **Hot Roll com Shimeji** — _uramaki_, quente · proteínas: salmao
-  - **Tartar de Salmão** — _entrada_quente_, quente · proteínas: salmao, massago · ⚠️ media
+  - **Tartar de Atum Spicy** — _entrada_quente_, quente · proteínas: atum, ovas
+  - **Tartar de Salmão** — _entrada_quente_, quente · proteínas: salmao, massago
   - **Temaki Ebiten** — _temaki_, quente · proteínas: camarao
   - **Temaki de Salmão Skin** — _temaki_, quente · proteínas: salmao
-  - **Tuna Shisô Tartar** — _entrada_quente_, quente · proteínas: atum, ovas · ⚠️ media
+  - **Tuna Shisô Tartar** — _entrada_quente_, quente · proteínas: atum, ovas
   - **Uramaki Ebiten** — _uramaki_, quente · proteínas: camarao, tobiko, ovas
-  - **Uramaki Ebiten Especial** — _uramaki_, quente · proteínas: salmao, camarao
 
 ### cozinha_quentes (31)
   - **Beef com Nirá** — _prato_quente_, quente · proteínas: carne
@@ -149,27 +149,13 @@
   - **Melão** — _sabor_, desconhecido
   - **Número de pessoas** — _meta_, desconhecido
   - **Pistache** — _sabor_, desconhecido
-  - **Tatá Especial - Club Vip Gourmet** — _programa_, desconhecido · ⚠️ inferido_com_baixa_confianca
+  - **Tatá Especial - Club Vip Gourmet** — _programa_, desconhecido
 
-## 5. Itens ambíguos / baixa confiança (8)
-- **Carpaccio de Polvo Espanhol** → praça `duplas` · Peixe cru em Entradas; não citado nas regras. Inferido como bancada fria (duplas/sashimi). Confirmar se sai da bancada de duplas ou de montagem.
-- **Carpaccio de Salmão Trufado** → praça `duplas` · Peixe cru em Entradas; não citado nas regras. Inferido como bancada fria (duplas/sashimi). Confirmar se sai da bancada de duplas ou de montagem.
-- **Ceviche** → praça `enrolados_quentes` · Item frio (marinado/cru) enviado para enrolados_quentes pela REGRA OPERACIONAL atual do César. A regra vence — NÃO cai em duplas/sushi. Revalidar com a equipe de qual bancada realmente sai; corrigível no cadastro sem quebrar a arquitetura. Termo quente: ceviche.
-- **Missoshiro** → praça `cozinha_quentes` · Ambíguo: cozinha (se produção quente) x montagem (se só servido). Confirmar fluxo real.
-- **Tartar de Atum Spicy** → praça `duplas` · Peixe cru em Entradas; não citado nas regras. Inferido como bancada fria (duplas/sashimi). Confirmar se sai da bancada de duplas ou de montagem.
-- **Tartar de Salmão** → praça `enrolados_quentes` · Item frio (marinado/cru) enviado para enrolados_quentes pela REGRA OPERACIONAL atual do César. A regra vence — NÃO cai em duplas/sushi. Revalidar com a equipe de qual bancada realmente sai; corrigível no cadastro sem quebrar a arquitetura. Termo quente: tartar de salmao.
-- **Tatá Especial - Club Vip Gourmet** → praça `null` · Sem descrição; parece rótulo/programa (Club Vip Gourmet), não item de produção. Confirmar.
-- **Tuna Shisô Tartar** → praça `enrolados_quentes` · Item frio (marinado/cru) enviado para enrolados_quentes pela REGRA OPERACIONAL atual do César. A regra vence — NÃO cai em duplas/sushi. Revalidar com a equipe de qual bancada realmente sai; corrigível no cadastro sem quebrar a arquitetura. Termo quente: tuna shiso.
+## 5. Itens ambíguos / baixa confiança (0)
+_nenhum_
 
-## 6. Itens que precisam de revisão manual (8)
-- **Carpaccio de Polvo Espanhol** (Entradas) → `duplas` · Peixe cru em Entradas; não citado nas regras. Inferido como bancada fria (duplas/sashimi). Confirmar se sai da bancada de duplas ou de montagem.
-- **Carpaccio de Salmão Trufado** (Entradas, Tatá Especial - Club Vip Gourmet) → `duplas` · Peixe cru em Entradas; não citado nas regras. Inferido como bancada fria (duplas/sashimi). Confirmar se sai da bancada de duplas ou de montagem.
-- **Ceviche** (Entradas) → `enrolados_quentes` · Item frio (marinado/cru) enviado para enrolados_quentes pela REGRA OPERACIONAL atual do César. A regra vence — NÃO cai em duplas/sushi. Revalidar com a equipe de qual bancada realmente sai; corrigível no cadastro sem quebrar a arquitetura. Termo quente: ceviche.
-- **Missoshiro** (Outros) → `cozinha_quentes` · Ambíguo: cozinha (se produção quente) x montagem (se só servido). Confirmar fluxo real.
-- **Tartar de Atum Spicy** (Entradas) → `duplas` · Peixe cru em Entradas; não citado nas regras. Inferido como bancada fria (duplas/sashimi). Confirmar se sai da bancada de duplas ou de montagem.
-- **Tartar de Salmão** (Entradas) → `enrolados_quentes` · Item frio (marinado/cru) enviado para enrolados_quentes pela REGRA OPERACIONAL atual do César. A regra vence — NÃO cai em duplas/sushi. Revalidar com a equipe de qual bancada realmente sai; corrigível no cadastro sem quebrar a arquitetura. Termo quente: tartar de salmao.
-- **Tatá Especial - Club Vip Gourmet** (Sugestões Tatá) → `null` · Sem descrição; parece rótulo/programa (Club Vip Gourmet), não item de produção. Confirmar.
-- **Tuna Shisô Tartar** (Entradas) → `enrolados_quentes` · Item frio (marinado/cru) enviado para enrolados_quentes pela REGRA OPERACIONAL atual do César. A regra vence — NÃO cai em duplas/sushi. Revalidar com a equipe de qual bancada realmente sai; corrigível no cadastro sem quebrar a arquitetura. Termo quente: tuna shiso.
+## 6. Itens que precisam de revisão manual (0)
+_nenhum_
 
 ## 7. Itens sem descrição (24)
 - Baunilha (Sabores) → `—`
@@ -222,18 +208,18 @@
 2. **Menus compostos** — nome começa com "Menu" → `menu_composto`, praça `combinados`, com `pracas_dependentes`.
 3. **Sobremesas** — categoria "Sobremesa*" ou item-sobremesa → `sobremesa` (os "Sabores" Baunilha/Melão/Pistache ficam como **complemento**, não sobremesa).
 4. **Bebidas/Bar** — Bebidas/Cervejas/Vinhos/Sakes/Água → `bar`.
-5. **Enrolados quentes** — ebiten, hot roll, skin, tartar de salmão, tuna shisô, ceviche → `enrolados_quentes` (vence enrolados).
+5. **Enrolados quentes** — ebiten, hot roll, skin e confirmações operacionais nomeadas (Ceviche, Tartar de Salmão, Tuna Shisô Tartar, Tartar de Atum Spicy) → `enrolados_quentes`.
 6. **Enrolados** — uramaki, baterá, hossomaki, temaki (sem termo quente) → `enrolados`.
-7. **Duplas** — dupla/sushi/nigiri/dyo/sashimi ou categoria de sushi/sashimi/dyo → `duplas`. Peixe cru em "Entradas" (carpaccio/tartar não-salmão) foi **inferido** como bancada fria (duplas) com baixa confiança.
+7. **Duplas** — dupla/sushi/nigiri/dyo/sashimi ou categoria de sushi/sashimi/dyo → `duplas`. Carpaccio de Polvo Espanhol e Carpaccio de Salmão Trufado têm confirmação operacional explícita em Duplas.
 8. **Cozinha/Quentes** — katsu, teriyaki, teppanyaki, tempurá, yakissoba, guioza, grelhado, entradas quentes → `cozinha` (temperatura quente).
-9. **Montagem/Outros** — gengibre, gohan, tarê, wasabi, sunomono → `montagem`; boné/nº de pessoas → não-produção; Missoshiro/Club Vip → revisão manual.
+9. **Montagem/Outros** — gengibre, gohan, tarê, wasabi, sunomono → `montagem`; boné/nº de pessoas → não-produção. Missoshiro foi confirmado em Cozinha; Club Vip foi confirmado como programa/rótulo sem praça.
 
 ## 10. Observações honestas (limites desta base)
 - **Ingredientes** vêm da descrição por dicionário — itens sem descrição ficam com listas vazias (não inventei).
 - **Popularidade / peso de venda NÃO existe aqui** — deve vir de dados reais de venda (relatório iFood/PDV), não de chute. Sem isso, "quantos pedidos tocam cada praça" continua dependendo da fonte real de itens por pedido.
 - **quantidade_pecas** dos combinados fica `null` (são compostos); a contagem detalhada está na descrição.
 - **cozinha_quentes** aqui = a bancada de quentes (rótulo de interface "Quentes" no motor). Vocabulário já unificado com `motor.js` (ver `normalizarPracaOficial` — corrigido em jul/2026, ver `docs/Auditoria_Builder_Cardapio_PreCorrecao.md`).
-- Peixe cru em Entradas (carpaccio/tartar de atum) e Missoshiro estão marcados para **revisão manual** — não force antes de confirmar o fluxo real.
+- As exceções nomeadas confirmadas operacionalmente são tratadas antes das heurísticas genéricas; semelhança de nome não promove outras exceções.
 
 
 ## 11. Sinais destravados pelo cardápio (entregável #3)
@@ -242,14 +228,14 @@
 | Sinal | Itens que emitem | Praças |
 |---|---|---|
 | item pausado | 192 | bar_bebidas, enrolados, cozinha_quentes, duplas, enrolados_quentes, sobremesa, combinados, montagem_outros |
-| pedido só de frio | 101 | enrolados, duplas, bar_bebidas, montagem_outros, sobremesa |
+| pedido só de frio | 100 | enrolados, duplas, bar_bebidas, montagem_outros, sobremesa |
 | risco de conferência | 91 | enrolados, duplas, sobremesa, combinados, cozinha_quentes, enrolados_quentes |
 | risco de ruptura | 82 | enrolados, duplas, sobremesa, combinados, cozinha_quentes, enrolados_quentes |
-| duplas sobrecarregada | 64 | duplas |
-| trava fechamento | 63 | cozinha_quentes, enrolados_quentes, combinados, montagem_outros |
-| alto tempo de produção | 63 | cozinha_quentes, enrolados_quentes, combinados, montagem_outros |
-| pedido só de quente | 43 | cozinha_quentes, enrolados_quentes, montagem_outros |
-| pode ser adiantado | 41 | bar_bebidas, duplas, montagem_outros, sobremesa, enrolados |
+| trava fechamento | 64 | cozinha_quentes, enrolados_quentes, combinados, montagem_outros |
+| alto tempo de produção | 64 | cozinha_quentes, enrolados_quentes, combinados, montagem_outros |
+| duplas sobrecarregada | 63 | duplas |
+| pedido só de quente | 44 | cozinha_quentes, enrolados_quentes, montagem_outros |
+| pode ser adiantado | 40 | bar_bebidas, duplas, montagem_outros, sobremesa, enrolados |
 | pedido com bebida | 37 | bar_bebidas, combinados |
 | bar_bebidas sobrecarregada | 36 | bar_bebidas |
 | cozinha_quentes sobrecarregada | 31 | cozinha_quentes |
@@ -257,7 +243,7 @@
 | depende de outra praça | 20 | combinados |
 | risco de segunda sacola | 20 | combinados |
 | enrolados sobrecarregada | 16 | enrolados |
-| enrolados_quentes sobrecarregada | 11 | enrolados_quentes |
+| enrolados_quentes sobrecarregada | 12 | enrolados_quentes |
 | pedido com sobremesa | 11 | sobremesa, combinados |
 | sobremesa sobrecarregada | 9 | sobremesa |
 | item de montagem fácil de esquecer | 6 | montagem_outros, cozinha_quentes |
@@ -265,19 +251,19 @@
 
 ### 11.2 Checklist da sua lista de sinais
 - ✅ **destravado** — **praça dos combinados sobrecarregada** — 20 itens em `combinados`
-- ✅ **destravado** — **praça das duplas sobrecarregada** — 64 itens em `duplas`
+- ✅ **destravado** — **praça das duplas sobrecarregada** — 63 itens em `duplas`
 - ✅ **destravado** — **enrolados sobrecarregados** — 16 itens em `enrolados`
-- ✅ **destravado** — **enrolados quentes sobrecarregados** — 11 itens em `enrolados_quentes`
+- ✅ **destravado** — **enrolados quentes sobrecarregados** — 12 itens em `enrolados_quentes`
 - ✅ **destravado** — **cozinha/quentes sobrecarregada** — 31 itens em `cozinha_quentes`
 - ✅ **destravado** — **sobremesa pendente** — 9 itens em `sobremesa` (praça separada)
 - ✅ **destravado** — **bebida pendente** — 36 itens em `bar_bebidas`
-- ✅ **destravado** — **pedido só de quente / só de frio** — 43 itens quentes, 101 frios marcados por temperatura
-- 🟡 **destravável no pedido** (o cardápio dá os ingredientes; o resolver combina no pedido) — **pedido fechável** — 136 itens NÃO travam fechamento; o resolver marca o pedido fechável quando nenhum item pendente trava
+- ✅ **destravado** — **pedido só de quente / só de frio** — 44 itens quentes, 100 frios marcados por temperatura
+- 🟡 **destravável no pedido** (o cardápio dá os ingredientes; o resolver combina no pedido) — **pedido fechável** — 135 itens NÃO travam fechamento; o resolver marca o pedido fechável quando nenhum item pendente trava
 - 🟡 **destravável no pedido** (o cardápio dá os ingredientes; o resolver combina no pedido) — **pedido com mais de uma sacola** — sacolas_esperadas por item + soma no pedido (combos/menus já marcam risco de 2ª sacola)
 - ✅ **destravado** — **item pausado** — 192 itens pausáveis (base para a camada de pausa/futuro)
 - ⚠️ **falta dado real** — **item com pico de saída** — precisa de **popularidade real de venda** (não está no cardápio; vem do histórico iFood/PDV)
 - 🟡 **destravável no pedido** (o cardápio dá os ingredientes; o resolver combina no pedido) — **pedido que depende de uma única praça** — 172 itens produzem sozinhos numa praça; o resolver detecta pedido de praça única
-- ✅ **destravado** — **pedido que pode ser adiantado** — 41 itens frios estáveis marcados `pode ser adiantado`
+- ✅ **destravado** — **pedido que pode ser adiantado** — 40 itens frios estáveis marcados `pode ser adiantado`
 - ✅ **destravado** — **risco maior de erro de conferência** — 91 itens de risco alto + 82 com risco de ruptura
 
 > 🟡 = o cardápio fornece os campos (praça, trava_fechamento, sacolas, produz_sozinho); o **sinal final é do pedido**, calculado pelo resolver ao cruzar cardápio × pedido × estado. Nenhuma regra de decisão muda ao trocar a fonte de itens.
