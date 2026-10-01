@@ -57,8 +57,8 @@ export interface StationProductionTicketV2 {
   };
 }
 
-export interface AssemblyChecklistV1 {
-  schema: "deliveryos.assembly-checklist.v1";
+export interface DeliveryCheckProjectionV1 {
+  schema: "deliveryos.delivery-check-projection.v1";
   order_id: string;
   boxes: ResourceUsage[];
   bags: ResourceUsage[];
@@ -68,6 +68,7 @@ export interface AssemblyChecklistV1 {
   unknowns: string[];
   semantics: {
     expected_usage_not_physical_consumption: true;
+    delivery_ui_projection_not_additional_ticket: true;
     checklist_not_stock_write: true;
   };
   effects: {
@@ -218,11 +219,11 @@ function byKind(
  * The assembly/conference document is separate from station production.
  * It is where boxes, bags, kits and no-ticket complements belong.
  */
-export function buildAssemblyChecklistV1(
+export function buildDeliveryCheckProjectionV1(
   projection: OrderResourceProjection,
-): AssemblyChecklistV1 {
+): DeliveryCheckProjectionV1 {
   return {
-    schema: "deliveryos.assembly-checklist.v1",
+    schema: "deliveryos.delivery-check-projection.v1",
     order_id: projection.order_id,
     boxes: byKind(projection, "PACKAGING_BOX"),
     bags: byKind(projection, "BAG"),
@@ -232,6 +233,7 @@ export function buildAssemblyChecklistV1(
     unknowns: [...projection.unknowns],
     semantics: {
       expected_usage_not_physical_consumption: true,
+      delivery_ui_projection_not_additional_ticket: true,
       checklist_not_stock_write: true,
     },
     effects: {
