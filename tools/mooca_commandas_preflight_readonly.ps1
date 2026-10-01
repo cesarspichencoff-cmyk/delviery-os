@@ -25,6 +25,7 @@ function Invoke-JsonScript([string]$ScriptPath, [string[]]$Arguments) {
 }
 
 $sourceProbe = Invoke-JsonScript (Join-Path $PSScriptRoot "odhen_source_probe_readonly.ps1") @("-OdhenRoot", $OdhenRoot)
+$fiscalSurfaceProbe = Invoke-JsonScript (Join-Path $PSScriptRoot "odhen_fiscal_surface_probe_readonly.ps1") @("-OdhenRoot", $OdhenRoot)
 $sqlProbe = Invoke-JsonScript (Join-Path $PSScriptRoot "sql_integrated_readonly_preflight.ps1") @("-Server", $Server, "-Database", $Database)
 
 $tempPrinterPath = Join-Path $env:TEMP ("deliveryos-printer-preflight-" + [guid]::NewGuid().ToString("N") + ".json")
@@ -80,6 +81,16 @@ $result = [ordered]@{
   printers = [ordered]@{
     metadata_collected = (($printerProbe.exit_code -eq 0) -and ($null -ne $printerProbe.parsed))
     probe = $printerProbe
+  }
+  fiscal_surface = [ordered]@{
+    metadata_collected = (($fiscalSurfaceProbe.exit_code -eq 0) -and ($null -ne $fiscalSurfaceProbe.parsed))
+    native_nfce_candidate_detected = (
+      $null -ne $fiscalSurfaceProbe.parsed -and
+      @($fiscalSurfaceProbe.parsed.token_hits | Where-Object {
+        $_.token -in @("NFCe", "NFC-e", "DANFE", "SEFAZ")
+      }).Count -gt 0
+    )
+    probe = $fiscalSurfaceProbe
   }
   gate = [ordered]@{
     ready_for_one_minimized_order_read_candidate = ($sourceContractCandidate -and $sqlReadOnlyProven)
