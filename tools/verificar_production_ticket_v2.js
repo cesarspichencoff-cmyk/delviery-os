@@ -5,6 +5,9 @@ const {
   buildStationProductionTicketV2,
   buildDeliveryCheckProjectionV1,
 } = require("../dist/src/production/productionTicketV2.js");
+const {
+  renderProductionTicketPreview,
+} = require("../dist/src/production/productionTicketPreview.js");
 
 const intent = {
   printer: {
@@ -119,6 +122,38 @@ assert.deepEqual(
   ["UNPROVEN_PREP_COMPONENT:SALMAO_GR"],
 );
 assert.equal(station.effects.print, false);
+
+for (const profile of [
+  "EPSON_TM_T20_80MM_FONT_A",
+  "EPSON_TM_T20_58MM_FONT_A",
+]) {
+  const preview = renderProductionTicketPreview(station, profile);
+  assert.equal(preview.physical_effect, false);
+  assert.ok(preview.text.includes("DELIVERY SUSHI 1"));
+  assert.ok(preview.text.includes("IFOOD   A1B2C3"));
+  assert.ok(preview.text.includes("TEKNISA 18452"));
+  assert.ok(preview.text.includes("TATA    037"));
+  assert.ok(preview.text.includes("MONTAR NA CX 750"));
+  assert.ok(preview.text.includes("PREPARO: 2x Ebiten"));
+  assert.ok(preview.text.includes("OBS PEDIDO"));
+  assert.ok(preview.max_line_length <= preview.columns);
+}
+
+const missingBoxTicket = {
+  ...station,
+  mount_groups: station.mount_groups.map((group) => ({
+    ...group,
+    box_label: null,
+  })),
+};
+assert.throws(
+  () =>
+    renderProductionTicketPreview(
+      missingBoxTicket,
+      "EPSON_TM_T20_80MM_FONT_A",
+    ),
+  /SUSHI_MOUNT_BOX_REQUIRED/,
+);
 
 assert.throws(
   () =>
