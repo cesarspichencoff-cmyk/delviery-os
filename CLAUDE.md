@@ -4,8 +4,8 @@ lifecycle:
   status: ACTIVE
   authority_scope: session_routing
   superseded_by: null
-  atualizado_em: "2026-09-26"
-  state_basis: 953a3fb
+  atualizado_em: "2026-10-01"
+  state_basis: 378d634
 ---
 
 # CLAUDE.md — porta de entrada do DeliveryOS
@@ -320,3 +320,18 @@ diálogo modelado pela `MainActivity` (vermelho na saída) e corrigido com o `We
 (`9966ab5`, D92): ensaio **39/39**, android **40/40**, mutações da linha vermelhas. O roteiro do Foxxy
 ficou igual ao ensaio: pasta de dados própria, unidade neutralizada, assíncrono explícito, Q10 com o
 modo. **Não compilado** — quem prova é o Q6 do Foxxy.
+
+
+**SUCESSÃO 2026-10-01 — checkpoint atual da Etapa 4/8.** O histórico acima permanece como
+evidência do caminho percorrido, mas não descreve mais a fronteira atual. No Foxxy/AVD Android 14
+o app compilou e foi exercitado; a regressão instrumentada atual fechou **19/19**. O fim remoto da
+viagem sem WebView foi observado em runtime, a leitura de localização do despacho usa a verdade
+canônica da plataforma, retenção local é fail-preserve e token/segredo ficam cifrados por Android
+Keystore. A autorização do aparelho agora é **pré-vinculada pelo humano**: a rider-mobile mostra
+`device_id + device_proof_sha256`; a ferramenta administrativa exige a prova; o bootstrap apenas
+compara o hash e nunca vincula por “quem chega primeiro”. HEAD publicado da branch em 2026-10-01:
+`378d634`. **Continuam separados e não provados por esta sucessão:** aparelho físico, execução
+PostgreSQL/Compose específica do pré-vínculo, credenciais/segredos operacionais, migrations/cutover
+no banco operacional e qualquer deploy/ativação. A fonte detalhada é
+`docs/etapa-4-8/CADEIA-REAL.md`, `docs/etapa-4-8/FIELD-GATE-ANDROID.md` e
+`docs/etapa-4-8/field-gate/2026-10-01-device-prebinding.md`.

@@ -1,3 +1,14 @@
+---
+lifecycle:
+  artefato: docs/etapa-4-8/field-gate/2026-10-01-device-prebinding.md
+  status: ACTIVE
+  authority_scope: field_gate_device_prebinding_evidence
+  superseded_by: null
+  atualizado_em: "2026-10-01"
+  state_basis: 378d634
+  question_refs: ["Q-018"]
+---
+
 # Pré-vínculo do aparelho antes do bootstrap
 
 Data: 2026-10-01
