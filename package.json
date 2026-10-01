@@ -25,7 +25,9 @@
     "verificar:odhen-routing-readonly": "tsc && node tools/verificar_odhen_routing_readonly_v1.js",
     "projetar:odhen-routing-stdin": "tsc && node tools/projetar_odhen_routing_stdin_v1.js",
     "verificar:retail-routing-tooling": "node tools/verificar_retail_routing_config_tooling_v1.js",
-    "verificar:routing-drift": "node tools/verificar_routing_config_drift_v1.js"
+    "verificar:routing-drift": "node tools/verificar_routing_config_drift_v1.js",
+    "verificar:pracas-vs-retail": "node tools/verificar_pracas_vs_retail_v1.js",
+    "auditar:pracas-vs-retail": "node tools/auditar_pracas_vs_retail_v1.js"
   },
   "devDependencies": {
     "@types/node": "20.14.10",
