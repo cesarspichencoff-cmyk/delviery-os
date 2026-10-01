@@ -80,6 +80,72 @@ const unknownCode = projectExpectedRouting(
 assert.equal(unknownCode.ready, false);
 assert.ok(unknownCode.blocking_reasons.includes("PRODUCT_ROUTE_NOT_FOUND_NOPE"));
 
+
+const emptyOrder = projectExpectedRouting(
+  { ids: { pedido_interno: "TEST-EMPTY" }, items: [] },
+  routing,
+  printers,
+);
+assert.equal(emptyOrder.ready, false);
+assert.ok(emptyOrder.blocking_reasons.includes("NO_ITEMS"));
+
+const invalidQty = projectExpectedRouting(
+  {
+    ids: { pedido_interno: "TEST-QTY" },
+    items: [{ item_index: 0, codigo: "9.15.00.075.00", nome: "X", quantidade: 0 }],
+  },
+  routing,
+  printers,
+);
+assert.equal(invalidQty.ready, false);
+assert.ok(invalidQty.blocking_reasons.includes("INVALID_ITEM_QTY_0"));
+
+const duplicateIndex = projectExpectedRouting(
+  {
+    ids: { pedido_interno: "TEST-IDX" },
+    items: [
+      { item_index: 0, codigo: "9.15.00.075.00", nome: "A", quantidade: 1 },
+      { item_index: 0, codigo: "8.00.05.010.00", nome: "B", quantidade: 1 },
+    ],
+  },
+  routing,
+  printers,
+);
+assert.equal(duplicateIndex.ready, false);
+assert.ok(duplicateIndex.blocking_reasons.includes("DUPLICATE_ITEM_INDEX_0"));
+
+const duplicatePrinterMap = {
+  ...printers,
+  mappings: [...printers.mappings, { ...printers.mappings[0] }],
+};
+const ambiguousPrinter = projectExpectedRouting(order, routing, duplicatePrinterMap);
+assert.equal(ambiguousPrinter.ready, false);
+assert.ok(ambiguousPrinter.blocking_reasons.includes("DUPLICATE_PRINTER_CODE_00001"));
+
+const duplicateRoute = JSON.parse(JSON.stringify(routing));
+duplicateRoute.products["9.15.00.075.00"] = ["00009", "00003", "00003"];
+const ambiguousRoute = projectExpectedRouting(
+  {
+    ids: { pedido_interno: "TEST-ROUTE" },
+    items: [
+      {
+        item_index: 0,
+        codigo: "9.15.00.075.00",
+        nome: "COMBINADO SALMAO 1 PESSOA",
+        quantidade: 1,
+      },
+    ],
+  },
+  duplicateRoute,
+  printers,
+);
+assert.equal(ambiguousRoute.ready, false);
+assert.ok(
+  ambiguousRoute.blocking_reasons.includes(
+    "DUPLICATE_ROUTE_TARGET_9.15.00.075.00_00003",
+  ),
+);
+
 const realSample = JSON.parse(
   fs.readFileSync(
     path.join(__dirname, "..", "data", "real_sale_item_routing_sample_20260930_comb_salmao1.json"),
