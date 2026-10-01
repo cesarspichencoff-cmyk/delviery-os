@@ -13,7 +13,9 @@
     "canonicalization_pattern": "1-2-2-3-2",
     "canonicalized_match_against_routing_map": 463,
     "missing_from_routing_map": 0,
-    "extra_in_routing_map": 0
+    "extra_in_routing_map": 0,
+    "resolver_ready_with_raw_export_codes": 463,
+    "resolver_blocked_with_raw_export_codes": 0
   },
   "examples": [
     {
@@ -25,7 +27,7 @@
       "canonical": "2.00.12.01A.00"
     }
   ],
-  "conclusion": "RAW_OR_DOTTED_PRODUCT_CODE_CAN_BE_DETERMINISTICALLY_NORMALIZED_FOR_CURRENT_RETAIL_EXPORT",
+  "conclusion": "RAW_OR_DOTTED_PRODUCT_CODE_CAN_BE_DETERMINISTICALLY_NORMALIZED_AND_ROUTED_FOR_ALL_463_CURRENT_RETAIL_PRODUCTS",
   "limits": [
     "This proves equivalence for the 463-row Retail export, not the exact runtime serialization returned by a future live Odhen read.",
     "The resolver accepts both forms so that runtime formatting does not need to be assumed."
