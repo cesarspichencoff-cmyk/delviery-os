@@ -547,3 +547,37 @@ Isto prova **CODE_READY + TEST_PASS multi-instância**, não implantação. O am
 0006–0008 não foram aplicadas ao banco operacional por esta etapa e nenhum deploy foi executado.
 Consumer live e UI live permanecem desligados e exigem autorização própria.
 
+## 26. Cutover transacional do backend arquivo para PostgreSQL — 2026-10-01
+
+A mudança de backend deixou de depender de começar com um banco vazio. Foi criado um importador one-shot
+que lê `store.json` e `ready_orders.json`, produz um `plan` sem escrita e só aplica sobre uma unidade
+PostgreSQL vazia e com migrations 0006–0008 presentes.
+
+Propriedades do cutover:
+
+- preserva versões de Trip/Handoff/Occurrence/Rider em vez de recriar tudo em version=1;
+- preserva ordem de domain events e public outbox;
+- preserva status/attempts/timestamps da outbox;
+- detecta IDs/idempotency keys globais já existentes;
+- recusa fonte em que um `ready_order` já aparece como Delivery — sinal de possível parada entre dois commits do backend antigo;
+- insere ready-orders por último para a trigger 0008 não esconder essa inconsistência;
+- verifica contagens, versões, ordem e fingerprint antes do COMMIT;
+- uma falha em qualquer escrita aborta a transação inteira.
+
+Prova em PostgreSQL 17: `PILOT_STORAGE_CUTOVER 7/7 PASS`. A prova incluiu falha tardia por trigger na
+outbox depois das inserções anteriores; após o erro, Trip/Delivery/Handoff/Occurrence/Rider/Event/Outbox/
+ReadyOrder da unidade continuaram em zero. Uma Trip importada em version=2 foi em seguida atualizada pelo
+PgUOW normal e passou a version=3, provando continuidade pós-cutover.
+
+A CLI `tools/entregas_storage_cutover.ts` entra no build e separa os efeitos:
+
+- `cutover:entregas:plan`: somente leitura, devolve contagens, conflitos e fingerprint;
+- `cutover:entregas:apply`: exige confirmação literal `--source-stopped=YES` e `--expect <fingerprint>` do plan;
+- antes do apply, a fonte é relida e o fingerprint precisa continuar idêntico.
+
+### Fronteira ainda fechada
+
+O cutover **não foi executado no banco operacional**. Além disso, o backup atual do piloto continua baseado em
+arquivo/volume; ele não protege um backend PostgreSQL. Portanto o próximo gate de implantação é provar backup +
+restore da verdade PostgreSQL antes de qualquer troca real de backend.
+
