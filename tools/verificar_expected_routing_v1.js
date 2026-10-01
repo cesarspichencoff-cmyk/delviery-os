@@ -80,4 +80,36 @@ const unknownCode = projectExpectedRouting(
 assert.equal(unknownCode.ready, false);
 assert.ok(unknownCode.blocking_reasons.includes("PRODUCT_ROUTE_NOT_FOUND_NOPE"));
 
+const realSample = JSON.parse(
+  fs.readFileSync(
+    path.join(__dirname, "..", "data", "real_sale_item_routing_sample_20260930_comb_salmao1.json"),
+    "utf8",
+  ),
+);
+const realProjection = projectExpectedRouting(
+  {
+    ids: { pedido_interno: null },
+    items: [
+      {
+        item_index: 0,
+        codigo: realSample.registry_resolution.product_code,
+        nome: realSample.exported_item.name,
+        quantidade: realSample.exported_item.quantity,
+      },
+    ],
+  },
+  routing,
+  printers,
+);
+assert.equal(realProjection.ready, true);
+assert.deepEqual(realProjection.blocking_reasons, []);
+assert.deepEqual(
+  realProjection.order_targets.map((x) => [x.printer_code, x.printer_ip]),
+  [
+    ["00009", "192.168.0.142"],
+    ["00003", "192.168.0.153"],
+  ],
+);
+assert.equal(realProjection.effects.print, false);
+
 console.log("expected-routing-v1: ok");
