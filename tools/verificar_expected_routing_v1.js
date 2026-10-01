@@ -186,6 +186,47 @@ assert.deepEqual(
   ],
 );
 
+
+const partialKnownPlusGap = projectExpectedRouting(
+  {
+    ids: { pedido_interno: "PARTIAL-KNOWN-PLUS-GAP" },
+    items: [
+      {
+        item_index: 0,
+        codigo: "9150007500",
+        nome: "COMBINADO SALMAO 1 PESSOA",
+        quantidade: 1,
+      },
+      {
+        item_index: 1,
+        codigo: "9750003000",
+        nome: "WASABI",
+        quantidade: 1,
+      },
+    ],
+  },
+  routing,
+  printers,
+);
+assert.equal(partialKnownPlusGap.ready, false);
+assert.ok(
+  partialKnownPlusGap.blocking_reasons.includes(
+    "PRODUCT_ROUTE_NOT_FOUND_9.75.00.030.00",
+  ),
+);
+assert.deepEqual(
+  partialKnownPlusGap.order_targets.map((x) => [x.printer_code, x.printer_ip]),
+  [
+    ["00009", "192.168.0.142"],
+    ["00003", "192.168.0.153"],
+  ],
+);
+assert.deepEqual(
+  partialKnownPlusGap.items[0].targets.map((x) => x.printer_code),
+  ["00009", "00003"],
+);
+assert.deepEqual(partialKnownPlusGap.items[1].targets, []);
+
 const realSample = JSON.parse(
   fs.readFileSync(
     path.join(__dirname, "..", "data", "real_sale_item_routing_sample_20260930_comb_salmao1.json"),
