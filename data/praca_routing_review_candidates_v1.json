@@ -1,0 +1,51 @@
+{
+  "schema": "deliveryos.plaza-routing-review-candidates.v1",
+  "store": "0001 - TATA ITAIM",
+  "captured_date": "2026-09-30",
+  "policy": {
+    "route_is_supporting_evidence_not_plaza_authority": true,
+    "automatic_reclassification": false,
+    "promotion_requires_operational_confirmation": true
+  },
+  "candidates": [
+    {
+      "id": "tartar_de_atum_spicy__plaza_review",
+      "seed_id": "tartar_de_atum_spicy",
+      "seed_name": "Tartar de Atum Spicy",
+      "current_plaza": "duplas",
+      "current_confidence": "inferido_com_baixa_confianca",
+      "current_manual_review": true,
+      "retail_product": {
+        "product_code": "9.10.05.040.00",
+        "product_name": "TARTAR DE ATUM SPICY",
+        "printer_codes": [
+          "00006"
+        ],
+        "printer_name": "BALCAOSUSHI2",
+        "printer_ip": "192.168.0.110"
+      },
+      "comparison": {
+        "unique_duplas_matches": 37,
+        "dominant_duplas_route": [
+          "00009",
+          "00003"
+        ],
+        "dominant_duplas_count": 36,
+        "candidate_route": [
+          "00006"
+        ],
+        "same_physical_route_seen_in_current_enrolados_quentes": true
+      },
+      "hypothesis": "POSSIBLE_ENROLADOS_QUENTES",
+      "status": "REVIEW_CANDIDATE_NOT_AUTO_CORRECTION",
+      "disconfirming_test": "Confirm the actual human production bench/plaza for this item. If it is produced at Duplas, keep current classification despite printer topology.",
+      "if_confirmed": "Change the regenerating rule in tools/build_cardapio_knowledge.js, regenerate seed, and pass integrity regression; do not patch generated JSON only."
+    }
+  ],
+  "effects": {
+    "seed_write": false,
+    "motor_write": false,
+    "teknisa_write": false,
+    "print": false
+  }
+}
