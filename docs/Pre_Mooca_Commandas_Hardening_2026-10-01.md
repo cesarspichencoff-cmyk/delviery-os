@@ -31,8 +31,9 @@ efeito fiscal ou cutover.
   derivado do mesmo fingerprint e bloqueia divergência entre intent/ticket;
 - serviço e observações order-level também são comparados no handoff, evitando
   que o payload mude entre planejamento e criação do PrintRequest;
-- o escopo da sequência TATÁ não é inventado: sem scope_id + evidência +
-  source_ref o planner bloqueia; a política real de reset continua UNKNOWN;
+- a sequência TATÁ agora possui política humana confirmada: escopo por loja +
+  data operacional local, reinício em 001 a cada nova data e reuso do mesmo
+  número em reprint/replay do mesmo pedido;
 - replay do mesmo conteúdo preserva fingerprint;
 - mudança material de conteúdo muda fingerprint;
 - tentativa anterior ambígua ou observada no spooler bloqueia retry automático;
@@ -59,6 +60,12 @@ operação TATÁ:
 No HEAD deste pacote, em worktree limpo:
 
 - TypeScript typecheck: PASS
+- native-nfce-orchestration-v1: PASS
+  - zero efeito fiscal;
+  - Teknisa/Odhen nativo como caminho preferido;
+  - canal, caixa, Interface, QR Code v3, protocolo SP 17 posições e timing
+    continuam gates até prova real.
+- odhen-fiscal-surface-probe-static-v1: PASS
 - production-service-matrix-v1: PASS
   - 463/463 produtos da configuração de roteamento exercitados em LUNCH e DINNER;
   - 106 produtos possuem par alternativo de serviço;
@@ -117,3 +124,13 @@ O verificador estático do orquestrador também passa.
 PREVIEW_READY != CALIBRATION_READY != SUBMITTED != SPOOLER_OBSERVED != PRINTED
 
 Nenhum item acima muda o fluxo produtivo atual.
+
+
+## Trilha fiscal adicionada
+
+Estudo detalhado:
+`docs/NFCE_After_Production_Study_2026-10-01.md`
+
+A sonda fiscal read-only foi também testada dinamicamente no Foxxy com uma raiz
+inexistente: retornou `root_exists=false`, todos os efeitos false e **exit code 2**.
+Isto prova o comportamento fail-closed da descoberta, não readiness fiscal real.
