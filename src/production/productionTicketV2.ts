@@ -34,16 +34,16 @@ export interface StationProductionTicketV2 {
     printer_name: string;
   };
   identifiers: {
+    ifood_sequence: string;
+    teknisa_sequence: string;
     tata_sequence: string;
-    teknisa_order_id: string;
-    ifood_order_id: string | null;
     order_time: string | null;
   };
   mount_groups: StationTicketMountGroup[];
   final_check_label: "PRODUZIDO" | "FINALIZADO";
   content_priority: [
     "DESTINATION",
-    "TATA_SEQUENCE",
+    "ORDER_SEQUENCES",
     "MOUNT_BOX",
     "ITEM_QTY_NAME",
     "ITEM_PREP_INGREDIENTS",
@@ -182,6 +182,16 @@ function itemPrepComponents(line: PlannedProductionLine): {
 export function buildStationProductionTicketV2(
   intent: ProductionPrintIntent,
 ): StationProductionTicketV2 {
+  if (!clean(intent.identifiers.ifood_sequence)) {
+    throw new Error("IFOOD_SEQUENCE_REQUIRED");
+  }
+  if (!clean(intent.identifiers.teknisa_sequence)) {
+    throw new Error("TEKNISA_SEQUENCE_REQUIRED");
+  }
+  if (!clean(intent.identifiers.tata_sequence)) {
+    throw new Error("TATA_SEQUENCE_REQUIRED");
+  }
+
   return {
     schema: "deliveryos.station-production-ticket.v2",
     destination: {
@@ -194,7 +204,7 @@ export function buildStationProductionTicketV2(
       intent.printer.printer_name === "COZINHA" ? "PRODUZIDO" : "FINALIZADO",
     content_priority: [
       "DESTINATION",
-      "TATA_SEQUENCE",
+      "ORDER_SEQUENCES",
       "MOUNT_BOX",
       "ITEM_QTY_NAME",
       "ITEM_PREP_INGREDIENTS",
