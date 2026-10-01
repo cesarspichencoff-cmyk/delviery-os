@@ -20,11 +20,13 @@ const order1 = projectOrderResources({
       product_code: "9.15.00.075.00",
       product_name: "COMBINADO SALMAO 1 PESSOA",
       quantity: 1,
+      cmv_basis: "RECIPE_BOM",
     },
     {
       product_code: "9.75.00.030.00",
       product_name: "WASABI",
       quantity: 1,
+      cmv_basis: "UNKNOWN",
     },
   ],
   complements: [
@@ -67,7 +69,10 @@ const order1 = projectOrderResources({
 
 assert.equal(order1.ready_for_operational_resource_report, true);
 assert.equal(order1.ready_for_recipe_cmv, false);
-assert.ok(order1.unknowns.includes("RECIPE_BOM_COVERAGE_INCOMPLETE"));
+assert.ok(order1.unknowns.includes("RECIPE_BOM_COVERAGE_INCOMPLETE:9.15.00.075.00"));
+assert.ok(order1.unknowns.includes("CMV_BASIS_UNKNOWN:9.75.00.030.00"));
+assert.equal(order1.complete_for_packaging_and_kit_usage, true);
+assert.equal(order1.ready_for_theoretical_cmv_basis, false);
 
 const usage = (kind, key) =>
   order1.usages.find((x) => x.kind === kind && x.resource_key === key);
@@ -88,6 +93,7 @@ const order2 = projectOrderResources({
       product_code: "9.50.00.000.00",
       product_name: "URAMAKI DE SALMAO",
       quantity: 2,
+      cmv_basis: "RECIPE_BOM",
     },
   ],
   packaging: {
@@ -112,6 +118,13 @@ const order2 = projectOrderResources({
     kits: [{ kit: "Kit p/1", quantidade: 1 }],
   },
   kit_registry: kits,
+  recipe_bom_coverage: [
+    {
+      product_code: "9.50.00.000.00",
+      bom_version: 1,
+      complete: true,
+    },
+  ],
   recipe_ingredients: [
     {
       resource_key: "ING:SALMAO",
@@ -136,10 +149,14 @@ const order2 = projectOrderResources({
 
 assert.equal(order2.ready_for_operational_resource_report, true);
 assert.equal(order2.ready_for_recipe_cmv, true);
+assert.equal(order2.ready_for_theoretical_cmv_basis, true);
+assert.equal(order2.complete_for_packaging_and_kit_usage, true);
 
 const aggregate = aggregateOrderResources([order1, order2]);
 assert.equal(aggregate.order_count, 2);
 assert.equal(aggregate.recipe_cmv_ready_orders, 1);
+assert.equal(aggregate.theoretical_cmv_basis_ready_orders, 1);
+assert.equal(aggregate.packaging_and_kit_complete_orders, 2);
 assert.deepEqual(aggregate.blocked_orders, []);
 assert.equal(
   aggregate.usages.find((x) => x.kind === "PACKAGING_BOX" && x.resource_key === "BOX_750").quantity,
