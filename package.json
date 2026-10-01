@@ -17,7 +17,7 @@
     "test:entregas:map": "npx tsc && node dist/src/entregas/ui/map/run-map-tests.js",
     "test:entregas:foundation": "npx tsc && node dist/src/entregas/foundation/run-tests.js",
     "test:entregas:integration": "npx tsc && node dist/src/entregas/integration/run-integration-tests.js",
-    "test:entregas:durable-feed": "npx tsx src/entregas/integration/run-durable-event-feed-tests.ts",
+    "test:entregas:durable-feed": "npx tsx src/entregas/integration/run-durable-event-feed-tests.ts",\n    "test:entregas:pg-uow": "npx tsx src/entregas/run-pg-uow-cluster-tests.ts",
     "test:entregas:gate-close": "npx tsc && node dist/src/entregas/integration/run-gate-close-tests.js",
     "test:entregas:acceptance": "npx tsc && node dist/src/entregas/acceptance/run-acceptance-a01-a39.js",
     "test:entregas:ui": "npx tsc && node dist/src/entregas/ui/run-ui-tests.js",
