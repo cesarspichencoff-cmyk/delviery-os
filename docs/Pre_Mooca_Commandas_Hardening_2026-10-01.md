@@ -59,6 +59,11 @@ operação TATÁ:
 No HEAD deste pacote, em worktree limpo:
 
 - TypeScript typecheck: PASS
+- production-service-matrix-v1: PASS
+  - 463/463 produtos da configuração de roteamento exercitados em LUNCH e DINNER;
+  - 106 produtos possuem par alternativo de serviço;
+  - zero caso manteve simultaneamente as duas impressoras alternativas;
+  - destino esperado após seleção de serviço coincidiu em todos os casos.
 - production-parallel-v1: PASS, incluindo gate do escopo da sequência TATÁ
 - tata-os-print-handoff-v1: PASS, incluindo semantic hash/fingerprint e mismatches
 - production-ticket-e2e-shadow-v1: PASS
