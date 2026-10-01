@@ -275,7 +275,7 @@ function classify(r){
     else if(/shimeji|shitake|edamame|nasu|milho doce/.test(H)) sub="entrada_quente";
     // Edamame: user pediu marcar dependência da cozinha; Missoshiro tratado abaixo (não cai aqui)
     if(nomeN.includes("edamame")) obs.push("Assumido preparo pela cozinha (cozido no vapor).");
-    return { praca_principal:"cozinha", categoria_operacional: sub==="entrada_quente"?"entrada":"prato_quente",
+    return { praca_principal:"cozinha", categoria_operacional: (avN.includes("entradas")||sub==="entrada_quente")?"entrada":"prato_quente",
       subcategoria_operacional:sub, temperatura:"quente", pracas_dependentes:[],
       confianca:"alta", revisao:false, observacoes:obs };
   }
