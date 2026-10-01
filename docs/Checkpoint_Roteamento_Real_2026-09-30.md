@@ -49,3 +49,29 @@ A prova deve continuar separando:
 - ocorrência física real de impressão.
 
 Até esse gate existir, nenhuma inferência por tamanho de arquivo IMP deve ser promovida a verdade de pedido.
+
+
+## AUDITORIA DE PRAÇAS x ROTEAMENTO REAL
+
+A auditoria offline das 8 praças lógicas contra o cadastro atual do Retail foi concluída sem alterar seed ou motor.
+
+- 199 itens no seed.
+- 463 produtos no Retail.
+- 94 correspondências únicas determinísticas.
+- 1 correspondência ambígua.
+- 104 itens sem correspondência conservadora; nenhuma correspondência fuzzy foi promovida a fato.
+- Invariante preservado: `LOGICAL_PLAZA != PHYSICAL_PRINTER_ROUTE`.
+- Um candidato material de revisão foi encontrado: `Tartar de Atum Spicy`, atualmente `duplas`, `revisao_manual=true`, mas com rota real `00006 BALCAOSUSHI2`; 36/37 matches únicos de `duplas` usam `00009 + 00003`.
+- Esse achado NÃO promove reclassificação. O próximo gate do candidato é confirmar a bancada humana real.
+- `Combinado Executivo Sushi Salmão` permanece exceção operacional conhecida e não deve ser normalizado pelo perfil dominante.
+- `Missoshiro` possui dois códigos Retail, ambos em `00002 COZINHA`; identidade é ambígua, topologia sustenta a praça atual.
+
+Evidências:
+- `data/praca_routing_audit_snapshot_20260930.json`
+- `data/praca_routing_review_candidates_v1.json`
+- `docs/Auditoria_Pracas_vs_Roteamento_Real_2026-09-30.md`
+
+Automação:
+- o gerador Retail pode emitir catálogo de produtos com `--catalog-out`;
+- `tools/auditar_pracas_vs_retail_v1.js` refaz a auditoria de forma determinística;
+- `tools/verificar_pracas_vs_retail_v1.js` trava o comportamento esperado.
