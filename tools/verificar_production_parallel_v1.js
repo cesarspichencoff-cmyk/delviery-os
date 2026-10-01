@@ -22,6 +22,42 @@ assert.equal(assigned.effects.persistence_write, false);
 assert.equal(assigned.effects.print, false);
 assert.equal(assigned.effects.odhen_write, false);
 
+const unresolvedScope = Tata.planTataSequenceWithResolvedScope(
+  initialSequenceState,
+  {
+    scope_id: null,
+    evidence: "UNKNOWN",
+    source_ref: null,
+  },
+  "18452",
+);
+assert.equal(unresolvedScope.ready, false);
+assert.ok(
+  unresolvedScope.blocking_reasons.includes("TATA_SEQUENCE_SCOPE_REQUIRED"),
+);
+assert.ok(
+  unresolvedScope.blocking_reasons.includes(
+    "TATA_SEQUENCE_SCOPE_EVIDENCE_REQUIRED",
+  ),
+);
+assert.ok(
+  unresolvedScope.blocking_reasons.includes(
+    "TATA_SEQUENCE_SCOPE_SOURCE_REF_REQUIRED",
+  ),
+);
+
+const resolvedScope = Tata.planTataSequenceWithResolvedScope(
+  initialSequenceState,
+  {
+    scope_id: "SCOPE-EXPLICITO",
+    evidence: "HUMAN_CONFIRMED_RULE",
+    source_ref: "synthetic:sequence-scope-rule",
+  },
+  "18452",
+);
+assert.equal(resolvedScope.ready, true);
+assert.equal(resolvedScope.assignment.tata_sequence, "037");
+
 const replayed = Tata.planTataSequence(
   assigned.next_state,
   "SCOPE-EXPLICITO",
