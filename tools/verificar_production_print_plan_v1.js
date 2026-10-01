@@ -54,7 +54,11 @@ const plan = planProductionPrintIntents(
     teknisa_sequence: "18452",
     ifood_sequence: "A1B2C3",
     order_time: "19:42",
-    service: "DINNER",
+    service_resolution: {
+      service: "DINNER",
+      evidence: "HUMAN_CONFIRMED_RULE",
+      source_ref: "human:cesar:service-rule-2026-09-30",
+    },
     template_version: "production-ticket-v2-shadow",
     ticket_items: [
       {
@@ -100,7 +104,11 @@ const lunchPlan = planProductionPrintIntents(
     teknisa_sequence: "18452",
     ifood_sequence: "A1B2C3",
     order_time: "13:42",
-    service: "LUNCH",
+    service_resolution: {
+      service: "LUNCH",
+      evidence: "HUMAN_CONFIRMED_RULE",
+      source_ref: "human:cesar:service-rule-2026-09-30",
+    },
     template_version: "production-ticket-v2-shadow",
     ticket_items: [],
   },
@@ -119,7 +127,10 @@ for (const intent of plan.print_intents) {
   assert.equal(intent.evidence, "PLANNED");
   assert.equal(intent.calibration_status, "CALIBRATION_REQUIRED");
   assert.equal(intent.physical_effect_authorized, false);
-  assert.match(intent.semantic_key_material, /production-ticket-v1::18452::/);
+  assert.equal(intent.service_resolution.service, "DINNER");
+  assert.equal(intent.intent_fingerprint.length, 64);
+  assert.match(intent.intent_fingerprint, /^[a-f0-9]{64}$/);
+  assert.match(intent.semantic_key_material, /production-ticket-v2::18452::/);
 }
 
 assert.deepEqual(plan.no_own_production_ticket_items, [
@@ -139,7 +150,11 @@ const missingSequencePlan = planProductionPrintIntents(
     teknisa_sequence: "18452",
     ifood_sequence: null,
     order_time: "19:42",
-    service: "DINNER",
+    service_resolution: {
+      service: "DINNER",
+      evidence: "HUMAN_CONFIRMED_RULE",
+      source_ref: "human:cesar:service-rule-2026-09-30",
+    },
     template_version: "production-ticket-v2-shadow",
     ticket_items: [],
   },
@@ -155,7 +170,11 @@ const missingServicePlan = planProductionPrintIntents(
     teknisa_sequence: "18452",
     ifood_sequence: "A1B2C3",
     order_time: "19:42",
-    service: null,
+    service_resolution: {
+      service: null,
+      evidence: "UNKNOWN",
+      source_ref: null,
+    },
     template_version: "production-ticket-v2-shadow",
     ticket_items: [],
   },
@@ -173,6 +192,131 @@ assert.ok(
   ),
 );
 assert.equal(missingServicePlan.print_intents.length, 0);
+
+const unprovenServicePlan = planProductionPrintIntents(
+  projection,
+  {
+    tata_sequence: "037",
+    teknisa_sequence: "18452",
+    ifood_sequence: "A1B2C3",
+    order_time: "19:42",
+    service_resolution: {
+      service: "DINNER",
+      evidence: "UNKNOWN",
+      source_ref: null,
+    },
+    template_version: "production-ticket-v2-shadow",
+    ticket_items: [],
+  },
+  calibration,
+);
+assert.equal(unprovenServicePlan.ready_for_shadow_payload, false);
+assert.ok(
+  unprovenServicePlan.blocking_reasons.includes(
+    "PRODUCTION_SERVICE_EVIDENCE_REQUIRED",
+  ),
+);
+assert.ok(
+  unprovenServicePlan.blocking_reasons.includes(
+    "PRODUCTION_SERVICE_SOURCE_REF_REQUIRED",
+  ),
+);
+
+const fingerprintBase = planProductionPrintIntents(
+  projection,
+  {
+    tata_sequence: "037",
+    teknisa_sequence: "18452",
+    ifood_sequence: "A1B2C3",
+    order_time: "19:42",
+    service_resolution: {
+      service: "DINNER",
+      evidence: "REAL_OBSERVED",
+      source_ref: "odhen:explicit-service-context",
+    },
+    order_observations: ["SEM MOLHO NO PEDIDO"],
+    template_version: "production-ticket-v2-shadow",
+    ticket_items: [
+      {
+        item_index: 0,
+        mount_group_id: "G1",
+        box_label: "CX 750",
+        item_observations: ["SEM CEBOLINHA"],
+        prep_components: [
+          {
+            component_key: "EBITEN",
+            label: "Ebiten",
+            quantity: 2,
+            unit: "EA",
+            proof: "HUMAN_CONFIRMED_RULE",
+          },
+        ],
+      },
+    ],
+  },
+  calibration,
+);
+const fingerprintReplay = planProductionPrintIntents(
+  projection,
+  {
+    tata_sequence: "037",
+    teknisa_sequence: "18452",
+    ifood_sequence: "A1B2C3",
+    order_time: "19:42",
+    service_resolution: {
+      service: "DINNER",
+      evidence: "REAL_OBSERVED",
+      source_ref: "odhen:explicit-service-context",
+    },
+    order_observations: ["SEM MOLHO NO PEDIDO"],
+    template_version: "production-ticket-v2-shadow",
+    ticket_items: [
+      {
+        item_index: 0,
+        mount_group_id: "G1",
+        box_label: "CX 750",
+        item_observations: ["SEM CEBOLINHA"],
+        prep_components: [
+          {
+            component_key: "EBITEN",
+            label: "Ebiten",
+            quantity: 2,
+            unit: "EA",
+            proof: "HUMAN_CONFIRMED_RULE",
+          },
+        ],
+      },
+    ],
+  },
+  calibration,
+);
+assert.deepEqual(
+  fingerprintReplay.print_intents.map((x) => x.intent_fingerprint),
+  fingerprintBase.print_intents.map((x) => x.intent_fingerprint),
+);
+
+const fingerprintChangedObservation = planProductionPrintIntents(
+  projection,
+  {
+    tata_sequence: "037",
+    teknisa_sequence: "18452",
+    ifood_sequence: "A1B2C3",
+    order_time: "19:42",
+    service_resolution: {
+      service: "DINNER",
+      evidence: "REAL_OBSERVED",
+      source_ref: "odhen:explicit-service-context",
+    },
+    order_observations: ["COM MOLHO SEPARADO"],
+    template_version: "production-ticket-v2-shadow",
+    ticket_items: [],
+  },
+  calibration,
+);
+assert.notEqual(
+  fingerprintChangedObservation.print_intents[0].intent_fingerprint,
+  fingerprintBase.print_intents[0].intent_fingerprint,
+);
 
 function targetFromRuntimeMap(printerCode) {
   const printer = printers.mappings.find((x) => x.printer_code === printerCode);
@@ -215,7 +359,11 @@ const dinnerWithIndependentKitchen = planProductionPrintIntents(
     teknisa_sequence: "18453",
     ifood_sequence: "A1B2C4",
     order_time: "19:43",
-    service: "DINNER",
+    service_resolution: {
+      service: "DINNER",
+      evidence: "HUMAN_CONFIRMED_RULE",
+      source_ref: "human:cesar:service-rule-2026-09-30",
+    },
     template_version: "production-ticket-v2-shadow",
     ticket_items: [],
   },
