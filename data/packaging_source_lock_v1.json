@@ -41,6 +41,18 @@
   "policy": {
     "do_not_duplicate_without_parity_tests": true,
     "academy_source_is_reference_not_runtime_dependency": true,
-    "future_port_requires_same_fixture_results": true
+    "future_port_requires_same_fixture_results": true,
+    "runtime_import_forbidden": true,
+    "parity_reference_only": true,
+    "delete_or_archive_after_unified_core_migration": true
+  },
+  "status": "MIGRATION_SNAPSHOT_ONLY_NOT_RUNTIME_AUTHORITY",
+  "runtime_authority": false,
+  "canonical_target": {
+    "repository": "cesarspichencoff-cmyk/tata-os",
+    "branch": "feature/unified-tata-core-20261001",
+    "package": "packages/unified-restaurant-core",
+    "entrypoint": "src/index.ts",
+    "status": "REVERSIBLE_PREBUILD_NOT_CUTOVER"
   }
 }
