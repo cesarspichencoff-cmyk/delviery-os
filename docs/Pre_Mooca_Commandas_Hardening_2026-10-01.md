@@ -14,6 +14,9 @@ efeito fiscal ou cutover.
 - serviço usado para selecionar uma alternativa exige evidência + source_ref;
 - IFOOD + TEKNISA + TATA continuam obrigatórios no ticket de produção;
 - observação de pedido permanece separada de observação de item;
+- observação de pedido só entra na comanda quando sua relevância para produção,
+  prova e source_ref estiverem explicitamente resolvidos; UNKNOWN bloqueia em vez
+  de vazar ou ser descartado silenciosamente;
 - ingredientes de produção aceitam somente:
   - HUMAN_CONFIRMED_RULE;
   - LOCAL_RECIPE_VALIDATED;
