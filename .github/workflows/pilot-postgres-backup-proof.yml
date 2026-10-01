@@ -47,5 +47,14 @@ jobs:
       - run: npm run test:platform:backup
       - run: npm run test:entregas:storage-cutover
       - run: npm run test:entregas:pilot-postgres-cluster
+      - run: npm run test:entregas:deploy-audit
+      - name: Docker Compose render
+        run: |
+          cp deploy/.env.pilot.example deploy/.env
+          docker compose --profile maintenance -f deploy/compose.yaml config > /tmp/deliveryos-pilot-compose.yml
+          grep -F 'case "$ENTREGAS_STORAGE_BACKEND" in' /tmp/deliveryos-pilot-compose.yml
+          grep -F 'pg_dump' /tmp/deliveryos-pilot-compose.yml
+          grep -F 'pg_restore' /tmp/deliveryos-pilot-compose.yml
+          grep -F 'test "$ENTREGAS_RESTORE_DATABASE_URL" != "$DELIVERYOS_DATABASE_URL"' /tmp/deliveryos-pilot-compose.yml
       - run: npm run test:platform:governanca
       - run: git diff --check
