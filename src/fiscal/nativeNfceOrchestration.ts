@@ -16,12 +16,15 @@ export interface ProductionDispatchEvidence {
 
 export interface NativeNfceReadiness {
   native_teknisa_nfce_path: ProvenBoolean;
+  sales_channel_eligible_for_native_nfce: ProvenBoolean;
   fiscal_trigger_ready: ProvenBoolean;
   fiscal_timing_compatible_with_after_production_dispatch: ProvenBoolean;
   nfce_cash_register_configured: ProvenBoolean;
   nfce_cash_register_open: ProvenBoolean;
   interface_api_ready: ProvenBoolean;
   fiscal_printer_mapping_observed: ProvenBoolean;
+  nfce_qrcode_v3_compatible: ProvenBoolean;
+  sp_authorization_protocol_17_compatible: ProvenBoolean;
 }
 
 export interface NativeNfcePlan {
@@ -146,6 +149,11 @@ export function planNativeNfceAfterProduction(input: {
     blocking,
   );
   provenTrue(
+    input.readiness.sales_channel_eligible_for_native_nfce,
+    "SALES_CHANNEL_NATIVE_NFCE_ELIGIBILITY_NOT_PROVEN",
+    blocking,
+  );
+  provenTrue(
     input.readiness.fiscal_trigger_ready,
     "FISCAL_TRIGGER_NOT_READY",
     blocking,
@@ -173,6 +181,16 @@ export function planNativeNfceAfterProduction(input: {
   provenTrue(
     input.readiness.fiscal_printer_mapping_observed,
     "FISCAL_PRINTER_MAPPING_NOT_PROVEN",
+    blocking,
+  );
+  provenTrue(
+    input.readiness.nfce_qrcode_v3_compatible,
+    "NFCE_QRCODE_V3_COMPATIBILITY_NOT_PROVEN",
+    blocking,
+  );
+  provenTrue(
+    input.readiness.sp_authorization_protocol_17_compatible,
+    "SP_AUTHORIZATION_PROTOCOL_17_COMPATIBILITY_NOT_PROVEN",
     blocking,
   );
 
