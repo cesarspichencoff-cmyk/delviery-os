@@ -15,7 +15,14 @@ const intent = {
     peripherals_server: "192.168.0.24:3000",
   },
   template_version: "production-ticket-v2-shadow",
+  service_resolution: {
+    service: "DINNER",
+    evidence: "HUMAN_CONFIRMED_RULE",
+    source_ref: "human:cesar:service-rule-2026-09-30",
+  },
+  order_observations: ["ENTREGAR MOLHO SEPARADO"],
   semantic_key_material: "x",
+  intent_fingerprint: "a".repeat(64),
   identifiers: {
     tata_sequence: "037",
     teknisa_sequence: "18452",
@@ -37,7 +44,7 @@ const intent = {
           label: "Ebiten",
           quantity: 2,
           unit: "EA",
-          proof: "HUMAN_CONFIRMED",
+          proof: "HUMAN_CONFIRMED_RULE",
         },
       ],
     },
@@ -55,7 +62,7 @@ const intent = {
           label: "Ebiten",
           quantity: 1,
           unit: "EA",
-          proof: "HUMAN_CONFIRMED",
+          proof: "HUMAN_CONFIRMED_RULE",
         },
         {
           component_key: "SALMAO_GR",
@@ -77,6 +84,14 @@ assert.equal(station.destination.printer_name, "DELIVERY SUSHI 1");
 assert.equal(station.identifiers.ifood_sequence, "A1B2C3");
 assert.equal(station.identifiers.teknisa_sequence, "18452");
 assert.equal(station.identifiers.tata_sequence, "037");
+assert.equal(station.service_resolution.service, "DINNER");
+assert.equal(station.intent_fingerprint, "a".repeat(64));
+assert.deepEqual(station.order_observations, ["ENTREGAR MOLHO SEPARADO"]);
+assert.equal(
+  station.render_policy.keep_order_observations_separate_from_item_observations,
+  true,
+);
+assert.equal(station.render_policy.render_prep_unknowns, false);
 assert.equal(station.mount_groups.length, 1);
 assert.equal(station.mount_groups[0].box_label, "CX 750");
 assert.equal(station.mount_groups[0].items.length, 2);
@@ -86,7 +101,7 @@ assert.deepEqual(station.mount_groups[0].items[0].prep_ingredients, [
     label: "Ebiten",
     quantity: 2,
     unit: "EA",
-    proof: "HUMAN_CONFIRMED",
+    proof: "HUMAN_CONFIRMED_RULE",
   },
 ]);
 assert.deepEqual(station.mount_groups[0].items[0].prep_unknowns, []);
@@ -96,7 +111,7 @@ assert.deepEqual(station.mount_groups[0].items[1].prep_ingredients, [
     label: "Ebiten",
     quantity: 1,
     unit: "EA",
-    proof: "HUMAN_CONFIRMED",
+    proof: "HUMAN_CONFIRMED_RULE",
   },
 ]);
 assert.deepEqual(
@@ -104,6 +119,15 @@ assert.deepEqual(
   ["UNPROVEN_PREP_COMPONENT:SALMAO_GR"],
 );
 assert.equal(station.effects.print, false);
+
+assert.throws(
+  () =>
+    buildStationProductionTicketV2({
+      ...intent,
+      intent_fingerprint: "",
+    }),
+  /INTENT_FINGERPRINT_REQUIRED/,
+);
 
 assert.throws(
   () =>
@@ -163,7 +187,7 @@ const resourceProjection = {
       kind: "COMPLEMENT",
       quantity: 1,
       uom: "EA",
-      proof: "HUMAN_CONFIRMED",
+      proof: "HUMAN_CONFIRMED_RULE",
       stock_semantics: "THEORETICAL_EXPECTED_CONSUMPTION",
     },
   ],
