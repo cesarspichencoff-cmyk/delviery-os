@@ -682,7 +682,7 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
         label: string;
         channel?: string;
       };
-      return reply(200, facade.registerReadyOrder(body.order_ref, body.label, body.channel));
+      return reply(200, await facade.registerReadyOrder(body.order_ref, body.label, body.channel));
     }
 
     if (url.pathname === "/api/command" && req.method === "POST") {
