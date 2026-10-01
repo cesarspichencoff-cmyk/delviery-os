@@ -94,11 +94,8 @@ function resolveSsl(url: string): boolean | undefined {
 
 async function main(): Promise<void> {
   const args = parse(process.argv.slice(2));
-  const url = (process.env.DELIVERYOS_DATABASE_URL || "").trim();
-  if (!/^postgres(ql)?:\/\//.test(url)) {
-    throw new Error("DELIVERYOS_DATABASE_URL postgres:// é obrigatória");
-  }
 
+  // Gates humanos vêm antes de qualquer tentativa de rede.
   if (args.mode === "apply") {
     if (!args.sourceStopped) {
       throw new Error(
@@ -110,6 +107,11 @@ async function main(): Promise<void> {
         "apply recusado: informe --expect <source_fingerprint> produzido pelo plan",
       );
     }
+  }
+
+  const url = (process.env.DELIVERYOS_DATABASE_URL || "").trim();
+  if (!/^postgres(ql)?:\/\//.test(url)) {
+    throw new Error("DELIVERYOS_DATABASE_URL postgres:// é obrigatória");
   }
 
   const client = await createPgClient({
