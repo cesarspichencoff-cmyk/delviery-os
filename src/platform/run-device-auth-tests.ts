@@ -193,6 +193,34 @@ test("renovação acontece ANTES de expirar", () => {
   assert.equal(precisaRenovar(claims, quaseLa), true, "não avisou com folga");
 });
 
+test("duas emissões no mesmo segundo têm jti diferentes", () => {
+  const base = {
+    device_id: "dev-1",
+    unit_id: "ITAIM",
+    issued_by: "g",
+    agora: AGORA,
+    segredo: SEGREDO,
+  };
+  const a = emitirToken(base);
+  const b = emitirToken(base);
+  assert.notEqual(a.claims.jti, b.claims.jti, "duas emissões ficaram indistinguíveis");
+  assert.notEqual(a.token, b.token, "token repetiu porque o jti repetiu");
+  assert.match(a.claims.jti, /^[A-Za-z0-9_-]{16}$/);
+  assert.match(b.claims.jti, /^[A-Za-z0-9_-]{16}$/);
+});
+
+test("jti injetado continua determinístico para fixtures", () => {
+  const r = emitirToken({
+    device_id: "dev-1",
+    unit_id: "ITAIM",
+    issued_by: "g",
+    agora: AGORA,
+    segredo: SEGREDO,
+    jti: "fixture-jti",
+  });
+  assert.equal(r.claims.jti, "fixture-jti");
+});
+
 /* ------------------------------------------------------------------ *
  * Decisão: token + registro
  * ------------------------------------------------------------------ */

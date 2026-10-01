@@ -299,11 +299,11 @@ async function main(): Promise<void> {
     assert.equal(primeiro.ok, true);
     assert.equal(primeiro.ok && primeiro.vinculou_agora, true);
     assert.equal(reg.vinculos, 1);
-    // Um segundo depois: o `jti` deriva de (device_id, iat), então duas emissões
-    // no MESMO segundo compartilham o identificador — limite declarado em §UNKNOWN.
+    // Mesmo segundo de propósito: cada emissão precisa continuar distinguível
+    // na auditoria, sem depender da resolução de segundos do iat.
     const renovado = await emitirSessaoDeAparelho({
       pedido: { device_id: "dev-livre", device_secret: segredoA }, registro: reg, segredo_de_assinatura: SEGREDO,
-      agora: new Date(AGORA.getTime() + 1000),
+      agora: AGORA,
     });
     assert.equal(renovado.ok && renovado.vinculou_agora, false);
     assert.equal(reg.vinculos, 1, "renovar vinculou de novo");

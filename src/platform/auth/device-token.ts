@@ -20,7 +20,7 @@
  * `agora` é sempre injetado — senão não há como testar expiração sem esperar.
  */
 
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 
 export const DEVICE_TOKEN_VERSION = "device-token@1.0.0";
 
@@ -142,7 +142,9 @@ export function emitirToken(o: OpcoesEmissao): { token: string; claims: ClaimsDo
     actor_id: o.actor_id,
     iat,
     exp: iat + (o.validade_s ?? VALIDADE_PADRAO_S),
-    jti: o.jti ?? base64url(createHmac("sha256", o.segredo).update(`${o.device_id}|${iat}`).digest()).slice(0, 16),
+    // 96 bits por emissão: duas renovações no mesmo segundo continuam
+    // auditavelmente distintas. `jti` identifica a emissão; não é segredo.
+    jti: o.jti ?? base64url(randomBytes(12)),
     v: DEVICE_TOKEN_VERSION,
   };
 

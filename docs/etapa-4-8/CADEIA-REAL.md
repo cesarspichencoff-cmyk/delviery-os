@@ -291,8 +291,12 @@ explícito (D4). **Governança depois do commit** (L45): medida no commit da doc
   o `device_id` e chegar antes vincula o próprio segredo. E2 mede o "depois"; o "antes" é o limite.
   Mitigação: revogar e reautorizar. Um código de enrolamento fecharia a janela, mas exige UI no
   telefone.
-- **`jti` por segundo.** O identificador de emissão deriva de (`device_id`, `iat`); duas emissões
-  no mesmo segundo compartilham `jti`.
+- ~~**`jti` por segundo**~~ — **FECHADO em 2026-10-01**: cada emissão usa
+  96 bits aleatórios para o `jti`, mantendo a injeção determinística apenas
+  para fixtures. Duas emissões do mesmo aparelho no mesmo segundo foram
+  exercitadas e ficaram auditavelmente distintas. Provas: device-auth 26/26 e
+  cadeia lógica 9/9; PostgreSQL real da cadeia permaneceu PULADO por
+  `DELIVERYOS_PG_URL` ausente.
 - **Relógio do aparelho — reproduzido na certificação, que não o corrigiu. CORRIGIDO depois, no
   mesmo dia** (`docs/etapa-4-8/RELOGIO.md`). O registro abaixo é o da certificação.
   - **Reprodução:** binário crítico, PostgreSQL real, dois aparelhos.
