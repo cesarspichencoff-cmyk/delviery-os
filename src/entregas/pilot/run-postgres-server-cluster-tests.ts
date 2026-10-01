@@ -36,6 +36,119 @@ function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+
+function splitSql(sql: string): string[] {
+  const out: string[] = [];
+  let cur = "";
+  let i = 0;
+  let single = false;
+  let doubleQuoted = false;
+  let lineComment = false;
+  let blockComment = false;
+  let dollar: string | null = null;
+
+  while (i < sql.length) {
+    const ch = sql[i];
+    const next = sql[i + 1];
+
+    if (lineComment) {
+      cur += ch;
+      if (ch === "\n") lineComment = false;
+      i += 1;
+      continue;
+    }
+    if (blockComment) {
+      cur += ch;
+      if (ch === "*" && next === "/") {
+        cur += next;
+        i += 2;
+        blockComment = false;
+      } else {
+        i += 1;
+      }
+      continue;
+    }
+    if (dollar) {
+      if (sql.startsWith(dollar, i)) {
+        cur += dollar;
+        i += dollar.length;
+        dollar = null;
+      } else {
+        cur += ch;
+        i += 1;
+      }
+      continue;
+    }
+    if (single) {
+      cur += ch;
+      if (ch === "'" && next === "'") {
+        cur += next;
+        i += 2;
+        continue;
+      }
+      if (ch === "'") single = false;
+      i += 1;
+      continue;
+    }
+    if (doubleQuoted) {
+      cur += ch;
+      if (ch === '"' && next === '"') {
+        cur += next;
+        i += 2;
+        continue;
+      }
+      if (ch === '"') doubleQuoted = false;
+      i += 1;
+      continue;
+    }
+    if (ch === "-" && next === "-") {
+      cur += ch + next;
+      i += 2;
+      lineComment = true;
+      continue;
+    }
+    if (ch === "/" && next === "*") {
+      cur += ch + next;
+      i += 2;
+      blockComment = true;
+      continue;
+    }
+    if (ch === "'") {
+      cur += ch;
+      single = true;
+      i += 1;
+      continue;
+    }
+    if (ch === '"') {
+      cur += ch;
+      doubleQuoted = true;
+      i += 1;
+      continue;
+    }
+    if (ch === "$") {
+      const match = sql.slice(i).match(/^\$[A-Za-z0-9_]*\$/);
+      if (match) {
+        dollar = match[0];
+        cur += dollar;
+        i += dollar.length;
+        continue;
+      }
+    }
+    if (ch === ";") {
+      const stmt = cur.trim();
+      if (stmt) out.push(stmt);
+      cur = "";
+      i += 1;
+      continue;
+    }
+    cur += ch;
+    i += 1;
+  }
+
+  if (cur.trim()) out.push(cur.trim());
+  return out;
+}
+
 async function waitForHealth(
   port: number,
   children: Map<number, { out: string; err: string }>,
@@ -190,7 +303,9 @@ async function main(): Promise<void> {
     assert.equal(migrations.mismatch, undefined);
 
     const roleSql = readFileSync("deploy/sql/papeis_minimos.sql", "utf8");
-    await admin.query(roleSql);
+    for (const stmt of splitSql(roleSql)) {
+      await admin.query(stmt);
+    }
     await admin.query(
       `ALTER ROLE ${ROLE} PASSWORD '${ROLE_PASSWORD}'`,
     );
