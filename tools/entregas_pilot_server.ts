@@ -739,6 +739,13 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
           human: "Só o administrador do piloto pode restaurar.",
         });
       }
+      if (!facade.supportsFileBackup) {
+        return reply(409, {
+          ok: false,
+          code: "restore_backend_managed",
+          human: "A restauração deste backend é gerenciada pelo banco de dados.",
+        });
+      }
       const body = JSON.parse(await readBody(req)) as { file: string };
       const full = join(backupDir, body.file);
       if (!full.startsWith(backupDir)) {
