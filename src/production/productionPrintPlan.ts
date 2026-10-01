@@ -25,6 +25,13 @@ export interface ProductionServiceResolution {
   source_ref: string | null;
 }
 
+export interface ProductionOrderObservationInput {
+  value: string;
+  source_ref: string | null;
+  relevance: "PRODUCTION_RELEVANT" | "UNKNOWN";
+  proof: "HUMAN_CONFIRMED_RULE" | "REAL_OBSERVED" | "UNKNOWN";
+}
+
 export interface ProductionPrinterCalibration {
   actual_device_variant: string;
   actual_media_width_mm: number | "UNKNOWN";
@@ -85,7 +92,7 @@ export interface ProductionPrintContext {
   ifood_sequence: string | null;
   order_time: string | null;
   service_resolution?: ProductionServiceResolution | null;
-  order_observations?: string[];
+  order_observations?: ProductionOrderObservationInput[];
   template_version: string;
   ticket_items?: ProductionTicketItemMetadata[];
 }
@@ -168,6 +175,42 @@ function normalizedObservations(values: string[] | undefined): string[] {
     out.push(value);
   }
   return out;
+}
+
+function validatedOrderObservations(
+  values: ProductionOrderObservationInput[] | undefined,
+  blocking: Set<string>,
+): string[] {
+  const accepted: string[] = [];
+  const seen = new Set<string>();
+
+  for (const [index, observation] of (values ?? []).entries()) {
+    const value = clean(observation.value);
+    if (!value) continue;
+
+    if (observation.relevance !== "PRODUCTION_RELEVANT") {
+      blocking.add(`ORDER_OBSERVATION_RELEVANCE_UNPROVEN_${index}`);
+      continue;
+    }
+    if (
+      observation.proof !== "HUMAN_CONFIRMED_RULE" &&
+      observation.proof !== "REAL_OBSERVED"
+    ) {
+      blocking.add(`ORDER_OBSERVATION_PROOF_REQUIRED_${index}`);
+      continue;
+    }
+    if (!clean(observation.source_ref)) {
+      blocking.add(`ORDER_OBSERVATION_SOURCE_REF_REQUIRED_${index}`);
+      continue;
+    }
+
+    const key = value.toLocaleUpperCase("pt-BR");
+    if (seen.has(key)) continue;
+    seen.add(key);
+    accepted.push(value);
+  }
+
+  return accepted;
 }
 
 function calibrationReady(entry: ProductionPrinterCalibrationEntry): boolean {
@@ -354,7 +397,10 @@ export function planProductionPrintIntents(
     blocking.add("PRODUCTION_SERVICE_SOURCE_REF_REQUIRED");
   }
 
-  const orderObservations = normalizedObservations(context.order_observations);
+  const orderObservations = validatedOrderObservations(
+    context.order_observations,
+    blocking,
+  );
 
   const metaByIndex = new Map<number, ProductionTicketItemMetadata>();
   for (const meta of context.ticket_items ?? []) {
