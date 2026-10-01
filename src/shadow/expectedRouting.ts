@@ -40,6 +40,7 @@ export interface ExpectedRoutingTarget {
 
 export interface ExpectedRoutingItem {
   item_index: number;
+  source_product_code: string | null;
   product_code: string | null;
   product_name: string;
   quantity: number;
@@ -60,6 +61,25 @@ export interface ExpectedRoutingProjection {
     odhen_change: false;
     fiscal_action: false;
   };
+}
+
+export function canonicalizeRoutingProductCode(value: string | null): string | null {
+  if (value === null || value === undefined) return null;
+  const source = String(value).trim().toUpperCase();
+  if (!source) return null;
+
+  const compact = source.replace(/\./g, "");
+  if (/^[A-Z0-9]{10}$/.test(compact)) {
+    return [
+      compact.slice(0, 1),
+      compact.slice(1, 3),
+      compact.slice(3, 5),
+      compact.slice(5, 8),
+      compact.slice(8, 10),
+    ].join(".");
+  }
+
+  return source;
 }
 
 export function projectExpectedRouting(
@@ -112,18 +132,20 @@ export function projectExpectedRouting(
       blocking.add(`INVALID_ITEM_QTY_${item.item_index}`);
     }
 
-    if (!item.codigo) {
+    const canonicalCode = canonicalizeRoutingProductCode(item.codigo);
+
+    if (!canonicalCode) {
       blocking.add(`MISSING_PRODUCT_CODE_${item.item_index}`);
     } else {
-      const printerCodes = routing.products[item.codigo];
+      const printerCodes = routing.products[canonicalCode];
 
       if (!printerCodes?.length) {
-        blocking.add(`PRODUCT_ROUTE_NOT_FOUND_${item.codigo}`);
+        blocking.add(`PRODUCT_ROUTE_NOT_FOUND_${canonicalCode}`);
       } else {
         const seenRouteTargets = new Set<string>();
         for (const printerCode of printerCodes) {
           if (seenRouteTargets.has(printerCode)) {
-            blocking.add(`DUPLICATE_ROUTE_TARGET_${item.codigo}_${printerCode}`);
+            blocking.add(`DUPLICATE_ROUTE_TARGET_${canonicalCode}_${printerCode}`);
             continue;
           }
           seenRouteTargets.add(printerCode);
@@ -155,7 +177,8 @@ export function projectExpectedRouting(
 
     items.push({
       item_index: item.item_index,
-      product_code: item.codigo,
+      source_product_code: item.codigo,
+      product_code: canonicalizeRoutingProductCode(item.codigo),
       product_name: item.nome,
       quantity: item.quantidade,
       targets,
