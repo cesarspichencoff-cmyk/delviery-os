@@ -131,3 +131,104 @@ O que ainda falta provar no ambiente real:
 `pedido Odhen real → NRCOMANDA + CDPRODUTO/NMPRODUTO/QTPRODCOMVEN → normalização → comportamento de produção esperado`.
 
 Nenhum cutover, impressão, write ou ação fiscal está autorizado.
+
+
+## EXPANSÃO — IMPRESSÃO ROBUSTA + RECURSOS/CMV — 2026-10-01
+
+A missão foi ampliada sem ativar efeitos físicos.
+
+### Impressão
+
+Preparado:
+
+- `data/production_printer_calibration_registry_v1.json`
+- `src/production/productionPrintPlan.ts`
+- `src/production/productionTicketV2.ts`
+- `src/production/tataOsPrintHandoff.ts`
+- `tools/production_printer_preflight_readonly.ps1`
+
+Decisões:
+
+- produto→impressora atual continua sendo autoridade de roteamento;
+- tabela fixa almoço/jantar do Ticket V1 foi circuit-broken;
+- DeliveryOS decide conteúdo/destino;
+- execução confiável deve reutilizar o contrato provider-neutral do TATÁ OS;
+- largura real 58/80, fila, driver, transporte, acentos, corte e observabilidade continuam gate por impressora;
+- nenhuma submissão física foi autorizada.
+
+### Embalagem e kits
+
+O motor atual do TATÁ Academia foi copiado byte a byte para:
+
+`vendor/tata_academia_packaging_current.js`
+
+Source blob travado:
+`d44e25e96e8e640a50cb087b0eea6fdbea1d8706`.
+
+Fonte/proveniência:
+`data/packaging_source_lock_v1.json`.
+
+Prova executada em memória:
+- 2 duplas → 1 caixa 450 → 1 sacola P;
+- 4 temakis → 1 Kit p/2;
+- funções `packComanda/kitVerdict/bagVerdict/bagSizeVerdict` carregadas.
+
+Composição dos seis kits:
+`data/kit_component_registry_v1.json`.
+
+CLI preparado:
+`tools/projetar_packaging_order_v1.js`.
+
+### Consumo e relatórios
+
+Preparado:
+
+- `src/production/resourceConsumption.ts`
+- `src/production/resourceCosting.ts`
+- `src/production/operationalResourceReport.ts`
+- `data/resource_cost_registry_v1.json`
+
+O ledger distingue:
+- item vendido;
+- caixa;
+- sacola;
+- kit;
+- componente de kit;
+- complemento;
+- dependência de cozinha;
+- ingrediente de receita;
+- item de estoque direto.
+
+Semântica:
+`THEORETICAL_EXPECTED_CONSUMPTION != STOCK_WRITE`.
+
+CMV exige base explícita por produto:
+- `RECIPE_BOM`;
+- `DIRECT_STOCK_ITEM`;
+- `NON_STOCK`;
+- caso contrário permanece bloqueado.
+
+### Receita/BOM
+
+Registro:
+`data/recipe_bom_registry_v1.json`.
+
+A documentação pública da Teknisa prova a existência de `Receita Utilizada` com ingrediente, per capita, unidade, custo unitário e custo total, além de receita Padrão/Local/por Serviço.
+
+Isso virou a fonte candidata preferencial para BOM.
+
+Ainda NÃO existe export real da unidade que prove o shape de ingestão. Não criar parser final até uma amostra real.
+
+### Documento arquitetural
+
+`docs/Impressao_Producao_Robusta_Consumo_CMV_V1.md`.
+
+### Gates abertos
+
+1. `LIVE_READ_ONLY_ORDER_TO_EXPECTED_ROUTE`.
+2. preflight real das seis Epson.
+3. calibração física individual de papel/render/corte/status.
+4. uma amostra física controlada por impressora antes de qualquer cutover.
+5. uma amostra real de `Receita Utilizada` para promover o importador de BOM.
+6. custos reais/provados para promover custo teórico.
+7. estoque/baixa real permanece fora de autorização.
