@@ -50,6 +50,15 @@ operação TATÁ:
 No HEAD deste pacote, em worktree limpo:
 
 - TypeScript typecheck: PASS
+- production-ticket-e2e-shadow-v1: PASS
+  - snapshot Odhen sintético minimizado;
+  - zero vazamento do marcador privado;
+  - roteamento por CDPRODUTO;
+  - exclusão de item sem comanda própria;
+  - seleção de serviço;
+  - ticket semântico;
+  - preview 80/58;
+  - retry ambíguo bloqueado.
 - production-print-plan-v1: PASS
 - production-ticket-v2: PASS
 - expected-routing-v1: PASS
