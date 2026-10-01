@@ -604,7 +604,126 @@ async function suiteViagemReal(): Promise<void> {
 }
 
 /* ------------------------------------------------------------------ *
- * Suíte D — HTTPS: falha fechada
+ * Suíte D — lote de comandos: sessão é autoridade, payload não eleva papel
+ * ------------------------------------------------------------------ */
+
+async function suiteCommandBatchAuthority(): Promise<void> {
+  await startServer({ captureEnabled: true, term: syntheticTerm() });
+  const tripId = "trip-batch-authority-1";
+  const deliveryId = "delivery-batch-authority-1";
+
+  await test("/api/events/batch atravessa ApplicationService e persiste trip_created", async () => {
+    const r = await api("/api/events/batch", {
+      method: "POST",
+      token: OPS_TOKEN,
+      body: {
+        events: [{
+          event_id: "evt-batch-create-1",
+          command: {
+            type: "CreateTrip",
+            command_id: "cmd-batch-create-1",
+            occurred_at: new Date().toISOString(),
+            unit_id: "PINHEIROS",
+            trip_id: tripId,
+            courier_actor_id: "rid-1",
+            deliveries: [{ delivery_id: deliveryId, order_ref: "P-BATCH-AUTH-1" }],
+            actor: { actor_id: "admin-falso", role: "gerente" },
+          },
+        }],
+      },
+    });
+    assert.equal(r.status, 200);
+    const results = r.json.results as Array<{ ok: boolean }>;
+    assert.equal(results[0]?.ok, true);
+
+    const snap = await api("/api/snapshot", { token: OPS_TOKEN });
+    const trip = (snap.json.trips as Array<Record<string, unknown>>)
+      .find((x) => x.trip_id === tripId);
+    assert.equal(snap.json.unit_id, "ITAIM", "unidade do payload não pode atravessar a sessão/configuração");
+    assert.equal(trip?.state, "preparando_saida");
+
+    const timeline = await api("/api/trip/timeline?trip_id=" + encodeURIComponent(tripId), { token: OPS_TOKEN });
+    const entries = timeline.json.timeline as Array<Record<string, unknown>>;
+    assert.ok(entries.some((x) => x.event_type === "trip_created"), "trip_created não chegou ao event log");
+  });
+
+  await test("/api/events/batch não permite operador se declarar gerente", async () => {
+    const r = await api("/api/events/batch", {
+      method: "POST",
+      token: OPS_TOKEN,
+      body: {
+        events: [{
+          event_id: "evt-batch-escalation-1",
+          command: {
+            type: "CloseTripManually",
+            command_id: "cmd-batch-escalation-1",
+            occurred_at: new Date().toISOString(),
+            unit_id: "ITAIM",
+            trip_id: tripId,
+            reason: "tentativa sintética",
+            actor: { actor_id: "admin-falso", role: "gerente" },
+          },
+        }],
+      },
+    });
+    const results = r.json.results as Array<{ ok: boolean; error?: string }>;
+    assert.equal(results[0]?.ok, false, JSON.stringify(results));
+    const snap = await api("/api/snapshot", { token: OPS_TOKEN });
+    const trip = (snap.json.trips as Array<Record<string, unknown>>)
+      .find((x) => x.trip_id === tripId);
+    assert.equal(trip?.state, "preparando_saida");
+  });
+
+  await test("/api/command também não permite elevar papel pelo actor do corpo", async () => {
+    const r = await api("/api/command", {
+      method: "POST",
+      token: OPS_TOKEN,
+      body: {
+        type: "CloseTripManually",
+        command_id: "cmd-direct-escalation-1",
+        occurred_at: new Date().toISOString(),
+        unit_id: "ITAIM",
+        trip_id: tripId,
+        reason: "tentativa sintética direta",
+        actor: { actor_id: "admin-falso", role: "gerente" },
+      },
+    });
+    const result = r.json.result as { ok?: boolean };
+    assert.equal(result.ok, false);
+  });
+
+  await test("lote com sessão de motoboy usa o motoboy real mesmo se payload disser gerente", async () => {
+    const r = await api("/api/events/batch", {
+      method: "POST",
+      token: RIDER_TOKEN,
+      body: {
+        events: [{
+          event_id: "evt-batch-depart-1",
+          command: {
+            type: "ConfirmTripDeparture",
+            command_id: "cmd-batch-depart-1",
+            occurred_at: new Date().toISOString(),
+            unit_id: "PINHEIROS",
+            trip_id: tripId,
+            actor: { actor_id: "admin-falso", role: "gerente" },
+          },
+        }],
+      },
+    });
+    const results = r.json.results as Array<{ ok: boolean }>;
+    assert.equal(results[0]?.ok, true, JSON.stringify(results));
+    const snap = await api("/api/snapshot", { token: RIDER_TOKEN });
+    const trip = (snap.json.trips as Array<Record<string, unknown>>)
+      .find((x) => x.trip_id === tripId);
+    assert.equal(trip?.state, "em_rota");
+    assert.equal(snap.json.unit_id, "ITAIM");
+  });
+
+  await stopServer();
+}
+
+/* ------------------------------------------------------------------ *
+ * Suíte E — HTTPS: falha fechada
  * ------------------------------------------------------------------ */
 
 async function suiteHttps(): Promise<void> {
@@ -827,6 +946,7 @@ async function main(): Promise<void> {
     await suiteTermoPendente();
     await suiteTermoLiberado();
     await suiteViagemReal();
+    await suiteCommandBatchAuthority();
     await suiteRiderMobile();
     await suiteHttps();
   } finally {

@@ -244,8 +244,10 @@ export class PilotApplicationFacade {
 
     const full = {
       ...cmd,
-      actor: (cmd as { actor?: ActorContext }).actor ?? this.actor,
-      unit_id: (cmd as { unit_id?: string }).unit_id ?? this.cfg.unit_id,
+      // A sessão é a autoridade. Actor e unidade vindos do corpo são dados
+      // não confiáveis e nunca podem elevar papel nem atravessar unidade.
+      actor: this.actor,
+      unit_id: this.cfg.unit_id,
     } as Command;
 
     try {

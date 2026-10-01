@@ -277,8 +277,7 @@ explícito (D4). **Governança depois do commit** (L45): medida no commit da doc
    Ver `field-gate/2026-10-01-a4-gate-verification.md`.
 4. ~~**Ferramenta humana de autorização** sobre `identity.device`~~ — **implementada em 2026-10-01** como `tools/entregas_device_admin.ts`: `status`, `authorize` e `revoke`, sempre read-only no plano; qualquer escrita exige `--apply=YES` + fingerprint do estado revisado. Autorizar valida unidade/ator ativos, mesma unidade e papel `motoboy_interno`; aparelho revogado não é reativado silenciosamente.
 5. ~~**Retirar `handleDeviceSession` do piloto**~~ — **feito em 2026-10-01**. A rota ficou apenas como tombstone 503 retentável para APK legado; não autentica, não devolve `rider_id` e não emite token.
-6. **Cadeia dos comandos** (`/api/events/batch` → `trip_created` etc.). É a próxima coluna de
-   realidade, não esta.
+6. **Cadeia dos comandos** — **caminho servidor provado em 2026-10-01**: `/api/events/batch` atravessa a aplicação e chega ao domínio/event log; `actor` e `unit_id` do payload não têm autoridade, pois sessão autenticada e unidade configurada prevalecem. O produtor Android continua **NOT_IMPLEMENTED/dormant** porque nenhum código de produção grava `OutboxEventEntity`; não foi criada feature artificial para mascarar essa ausência. Ver `field-gate/2026-10-01-command-batch-authority.md`.
 7. ~~**Relógio do aparelho**~~ — **corrigido e provado** em `docs/etapa-4-8/RELOGIO.md`:
    o servidor julga o carimbo, grava `clock_trust` explícito e `suspect` não fabrica frescor.
 
