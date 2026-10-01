@@ -1,0 +1,23 @@
+{
+  "schema": "deliveryos.resource-cost-registry.v1",
+  "store": "0001 - TATA ITAIM",
+  "status": "EMPTY_AWAITING_PROVEN_PURCHASE_OR_INVENTORY_COSTS",
+  "entries": [],
+  "governance": {
+    "effective_dating_required": true,
+    "currency": "BRL",
+    "implicit_uom_conversion_forbidden": true,
+    "purchase_or_inventory_source_required": true,
+    "packaging_cost_can_be_completed_before_recipe_cmv": true,
+    "theoretical_cost_is_not_accounting_cmv": true
+  },
+  "next_sources": [
+    "current supplier purchase cost for boxes/bags/kit components",
+    "canonical inventory item cost for ingredients",
+    "effective-date history for cost changes"
+  ],
+  "effects": {
+    "stock_write": false,
+    "cmv_write": false
+  }
+}
