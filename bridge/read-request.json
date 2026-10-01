@@ -4,6 +4,7 @@
   "mode": "COCKPIT",
   "alg": "RSA-OAEP-256",
   "created_at": "2026-10-01T02:25:30.853Z",
+  "disabled": true,
   "public_jwk": {
     "kty": "RSA",
     "n": "i4idaGv6ai2J977VyPm-mXggBoQXXMIal1vTpbAJzsvCyxJuoVWKkMc5iWLWImRon9Vq5-LGbFVhHPIvxSae4df_VttnJDgm6x3X242NhZjkR4Wstdg4miaZp1Sm2cUUw_WDL_nR1dPqdPRV8TlriZGhBDFM2ZdrCaW8gyS6gEH-4lm-FEZ6BlVmEjs3yJslOXPrTroHBl8Lf3aX8Ex7eItMHBlc5tEHA7s0y5ZOITaWQVDkumhol-CDt_72fZee2qDN9hDVW7vHNdkmkySTdN9N7-gubyHM5V6sbAVhuhlr5mYdmjpQQFOrRd-ozLjGpQ2VCxpRROieaWGHU9V-_oDkIWp1mo0mPxyKtPHvgaWCFvSPmTj5sRjvz92J9ECeJhYrzV4lQDaGzCtHRfeaDuSwnGtSlURDZ5OierAyLTZRkPT1ZSD4TUKiGIy7oJAXKWI7vsxAtaQj1h2YEqJaboVfQ0LUadbZax18ST92dJ-PPqI9Nw1mdke8zzRMHvN8ORTuXdJialhfpJr7kp5nqnHADOFWWvcjnLB-EwkjhwggUH_mC9x0oS2X2fj6I-yIzKkelIzliZqJ_Ll-q-VUeAixMKCx8VP8Y5vEwj9zvc-NVF_zrmlpbAuuNvi2yRIKrEPOxK2G7Cc0Q1qU2BA4YQzXLwYiv3916MXf8FtJA_s",
