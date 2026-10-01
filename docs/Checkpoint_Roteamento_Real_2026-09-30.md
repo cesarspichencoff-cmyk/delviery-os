@@ -100,7 +100,13 @@ Quatro itens vendidos no delivery não aparecem no snapshot atual de Produtos po
 
 Total: 4 SKUs / 37 unidades.
 
-A ausência não é interpretada como "não imprime". Continua `UNKNOWN` até prova.
+César confirmou operacionalmente que os quatro são **itens complementares/montados sem comanda própria de produção**. Estado promovido para `NO_OWN_PRODUCTION_TICKET`, registrado em `data/non_production_delivery_items_v1.json`.
+
+Cobertura final do delivery observado:
+- rota física direta: 116/120 SKUs = 96,67%;
+- comportamento de produção resolvido: **120/120 SKUs = 100%**;
+- unidades com comportamento de produção resolvido: **1.476/1.476 = 100%**;
+- gaps físicos abertos: **0**.
 
 Gate preparado:
 
@@ -109,4 +115,19 @@ Gate preparado:
 - `data/active_delivery_routing_coverage_20260930.json`
 - `docs/Auditoria_Cobertura_Delivery_Ativo_2026-09-30.md`
 
-Comportamento fail-closed travado: em pedido misto com item conhecido + item sem rota, o motor preserva as rotas conhecidas, mas mantém `ready=false` para o pedido completo.
+Comportamento travado: em pedido misto com item roteado + item humano-confirmado como `NO_OWN_PRODUCTION_TICKET`, o motor preserva as rotas conhecidas, atribui zero destinos ao complemento e mantém `ready=true`. Código ausente sem confirmação explícita continua `ready=false`.
+
+
+## ÚNICO GATE MATERIAL RESTANTE
+
+`LIVE_READ_ONLY_ORDER_TO_EXPECTED_ROUTE`
+
+Comportamento esperado já coberto para os produtos observados:
+- produto com rota → impressora(s) configurada(s);
+- complemento sem comanda própria → zero impressoras, estado explícito `NO_OWN_PRODUCTION_TICKET`;
+- código desconhecido sem prova → bloqueio fail-closed.
+
+O que ainda falta provar no ambiente real:
+`pedido Odhen real → NRCOMANDA + CDPRODUTO/NMPRODUTO/QTPRODCOMVEN → normalização → comportamento de produção esperado`.
+
+Nenhum cutover, impressão, write ou ação fiscal está autorizado.
