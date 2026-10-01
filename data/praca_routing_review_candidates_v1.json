@@ -5,9 +5,17 @@
   "policy": {
     "route_is_supporting_evidence_not_plaza_authority": true,
     "automatic_reclassification": false,
-    "promotion_requires_operational_confirmation": true
+    "promotion_requires_operational_confirmation": true,
+    "open_candidate_count": 0
   },
-  "candidates": [
+  "candidates": [],
+  "effects": {
+    "seed_write": false,
+    "motor_write": false,
+    "teknisa_write": false,
+    "print": false
+  },
+  "resolved_candidates": [
     {
       "id": "tartar_de_atum_spicy__plaza_review",
       "seed_id": "tartar_de_atum_spicy",
@@ -37,15 +45,12 @@
         "same_physical_route_seen_in_current_enrolados_quentes": true
       },
       "hypothesis": "POSSIBLE_ENROLADOS_QUENTES",
-      "status": "REVIEW_CANDIDATE_NOT_AUTO_CORRECTION",
+      "status": "RESOLVED_BY_OPERATIONAL_CONFIRMATION",
       "disconfirming_test": "Confirm the actual human production bench/plaza for this item. If it is produced at Duplas, keep current classification despite printer topology.",
-      "if_confirmed": "Change the regenerating rule in tools/build_cardapio_knowledge.js, regenerate seed, and pass integrity regression; do not patch generated JSON only."
+      "if_confirmed": "Change the regenerating rule in tools/build_cardapio_knowledge.js, regenerate seed, and pass integrity regression; do not patch generated JSON only.",
+      "confirmed_plaza": "enrolados_quentes",
+      "confirmed_operational_label": "Sushi Quentes",
+      "source": "CESAR_OPERATIONAL_CONFIRMATION_2026-09-30"
     }
-  ],
-  "effects": {
-    "seed_write": false,
-    "motor_write": false,
-    "teknisa_write": false,
-    "print": false
-  }
+  ]
 }
