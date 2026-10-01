@@ -135,7 +135,9 @@
     "test:entregas:pilot-storage": "npx tsx src/entregas/pilot/run-storage-abstraction-tests.ts",
     "test:entregas:ready-orders": "npx tsx src/entregas/run-ready-order-cluster-tests.ts",
     "test:entregas:pilot-postgres-cluster": "npx tsx src/entregas/pilot/run-postgres-server-cluster-tests.ts",
-    "test:entregas:storage-cutover": "npx tsx src/entregas/pilot/run-storage-cutover-tests.ts"
+    "test:entregas:storage-cutover": "npx tsx src/entregas/pilot/run-storage-cutover-tests.ts",
+    "cutover:entregas:plan": "npx tsx tools/entregas_storage_cutover.ts plan",
+    "cutover:entregas:apply": "npx tsx tools/entregas_storage_cutover.ts apply"
   },
   "devDependencies": {
     "@types/node": "20.14.10",
