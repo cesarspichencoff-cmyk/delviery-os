@@ -51,8 +51,8 @@ const plan = planProductionPrintIntents(
   projection,
   {
     tata_sequence: "037",
-    teknisa_order_id: "18452",
-    ifood_order_id: "A1B2C3",
+    teknisa_sequence: "18452",
+    ifood_sequence: "A1B2C3",
     order_time: "19:42",
     template_version: "production-ticket-v2-shadow",
     ticket_items: [
@@ -101,6 +101,9 @@ assert.deepEqual(
 );
 
 for (const intent of plan.print_intents) {
+  assert.equal(intent.identifiers.ifood_sequence, "A1B2C3");
+  assert.equal(intent.identifiers.teknisa_sequence, "18452");
+  assert.equal(intent.identifiers.tata_sequence, "037");
   assert.equal(intent.evidence, "PLANNED");
   assert.equal(intent.calibration_status, "CALIBRATION_REQUIRED");
   assert.equal(intent.physical_effect_authorized, false);
@@ -116,6 +119,21 @@ assert.deepEqual(plan.no_own_production_ticket_items, [
     reason: nonProduction.items["9.75.00.030.00"].reason,
   },
 ]);
+
+const missingSequencePlan = planProductionPrintIntents(
+  projection,
+  {
+    tata_sequence: "037",
+    teknisa_sequence: "18452",
+    ifood_sequence: null,
+    order_time: "19:42",
+    template_version: "production-ticket-v2-shadow",
+    ticket_items: [],
+  },
+  calibration,
+);
+assert.equal(missingSequencePlan.ready_for_shadow_payload, false);
+assert.ok(missingSequencePlan.blocking_reasons.includes("IFOOD_SEQUENCE_REQUIRED"));
 
 assert.deepEqual(plan.effects, {
   print: false,
