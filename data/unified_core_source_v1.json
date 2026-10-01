@@ -4,7 +4,7 @@
   "canonical_repository": "cesarspichencoff-cmyk/tata-os",
   "canonical_branch": "feature/unified-tata-core-20261001",
   "canonical_package": "packages/unified-restaurant-core",
-  "current_known_head": "8ebe128124423881fbee02fe38f32f5ea8cb242f",
+  "current_known_head": "fafe8e42c1898474dd3e67b261549e27cd26ef7d",
   "local_role": "DELIVERY_OPERATION_PROJECTION",
   "rules_must_not_be_owned_locally": true,
   "runtime_cutover_authorized": false,
