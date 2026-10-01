@@ -54,6 +54,7 @@ const plan = planProductionPrintIntents(
     teknisa_sequence: "18452",
     ifood_sequence: "A1B2C3",
     order_time: "19:42",
+    service: "DINNER",
     template_version: "production-ticket-v2-shadow",
     ticket_items: [
       {
@@ -74,30 +75,41 @@ const plan = planProductionPrintIntents(
 
 assert.equal(plan.ready_for_shadow_payload, true);
 assert.equal(plan.ready_for_physical_print, false);
-assert.equal(plan.print_intents.length, 4);
+assert.equal(plan.print_intents.length, 2);
 
 const byPrinter = new Map(plan.print_intents.map((x) => [x.printer.printer_code, x]));
 
 assert.deepEqual(
   [...byPrinter.keys()].sort(),
-  ["00003", "00004", "00006", "00009"],
+  ["00003", "00004"],
 );
 
-assert.deepEqual(
-  byPrinter.get("00009").lines.map((x) => [x.product_name, x.quantity]),
-  [["COMBINADO SALMAO 1 PESSOA", 1]],
-);
 assert.deepEqual(
   byPrinter.get("00003").lines.map((x) => [x.product_name, x.quantity]),
   [["COMBINADO SALMAO 1 PESSOA", 1]],
 );
 assert.deepEqual(
-  byPrinter.get("00006").lines.map((x) => [x.product_name, x.quantity]),
-  [["URAMAKI DE SALMAO", 2]],
-);
-assert.deepEqual(
   byPrinter.get("00004").lines.map((x) => [x.product_name, x.quantity]),
   [["URAMAKI DE SALMAO", 2]],
+);
+
+const lunchPlan = planProductionPrintIntents(
+  projection,
+  {
+    tata_sequence: "037",
+    teknisa_sequence: "18452",
+    ifood_sequence: "A1B2C3",
+    order_time: "13:42",
+    service: "LUNCH",
+    template_version: "production-ticket-v2-shadow",
+    ticket_items: [],
+  },
+  calibration,
+);
+assert.equal(lunchPlan.ready_for_shadow_payload, true);
+assert.deepEqual(
+  lunchPlan.print_intents.map((x) => x.printer.printer_code).sort(),
+  ["00006", "00009"],
 );
 
 for (const intent of plan.print_intents) {
@@ -127,6 +139,7 @@ const missingSequencePlan = planProductionPrintIntents(
     teknisa_sequence: "18452",
     ifood_sequence: null,
     order_time: "19:42",
+    service: "DINNER",
     template_version: "production-ticket-v2-shadow",
     ticket_items: [],
   },
@@ -134,6 +147,87 @@ const missingSequencePlan = planProductionPrintIntents(
 );
 assert.equal(missingSequencePlan.ready_for_shadow_payload, false);
 assert.ok(missingSequencePlan.blocking_reasons.includes("IFOOD_SEQUENCE_REQUIRED"));
+
+const missingServicePlan = planProductionPrintIntents(
+  projection,
+  {
+    tata_sequence: "037",
+    teknisa_sequence: "18452",
+    ifood_sequence: "A1B2C3",
+    order_time: "19:42",
+    service: null,
+    template_version: "production-ticket-v2-shadow",
+    ticket_items: [],
+  },
+  calibration,
+);
+assert.equal(missingServicePlan.ready_for_shadow_payload, false);
+assert.ok(
+  missingServicePlan.blocking_reasons.includes(
+    "SERVICE_REQUIRED_FOR_ALTERNATE_ROUTE_ITEM_0_SUSHI_1",
+  ),
+);
+assert.ok(
+  missingServicePlan.blocking_reasons.includes(
+    "SERVICE_REQUIRED_FOR_ALTERNATE_ROUTE_ITEM_1_SUSHI_2",
+  ),
+);
+assert.equal(missingServicePlan.print_intents.length, 0);
+
+function targetFromRuntimeMap(printerCode) {
+  const printer = printers.mappings.find((x) => x.printer_code === printerCode);
+  assert.ok(printer, `missing runtime printer ${printerCode}`);
+  assert.ok(printer.printer_ip, `missing runtime printer ip ${printerCode}`);
+  return {
+    printer_code: printer.printer_code,
+    printer_name: printer.printer_name,
+    printer_ip: printer.printer_ip,
+    printer_port: printer.printer_port,
+    peripherals_server: printer.peripherals_server,
+  };
+}
+
+const independentKitchenProjection = {
+  ...projection,
+  order_id: "18453",
+  items: [
+    {
+      item_index: 0,
+      source_product_code: "SYNTHETIC",
+      product_code: "SYNTHETIC",
+      product_name: "SYNTHETIC SUSHI 2 + KITCHEN",
+      quantity: 1,
+      routing_status: "ROUTED",
+      non_production_reason: null,
+      targets: [
+        targetFromRuntimeMap("00006"),
+        targetFromRuntimeMap("00004"),
+        targetFromRuntimeMap("00002"),
+      ],
+    },
+  ],
+};
+
+const dinnerWithIndependentKitchen = planProductionPrintIntents(
+  independentKitchenProjection,
+  {
+    tata_sequence: "038",
+    teknisa_sequence: "18453",
+    ifood_sequence: "A1B2C4",
+    order_time: "19:43",
+    service: "DINNER",
+    template_version: "production-ticket-v2-shadow",
+    ticket_items: [],
+  },
+  calibration,
+);
+assert.equal(dinnerWithIndependentKitchen.ready_for_shadow_payload, true);
+assert.deepEqual(
+  dinnerWithIndependentKitchen.print_intents
+    .map((x) => x.printer.printer_code)
+    .sort(),
+  ["00002", "00004"],
+);
 
 assert.deepEqual(plan.effects, {
   print: false,
