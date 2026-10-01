@@ -6,6 +6,7 @@ import type {
   EventStore,
   OutboxRepository,
   TripRecord,
+  ReadyOrderRecord,
   UnitOfWork,
 } from "./ports";
 import { ConcurrencyError } from "./ports";
@@ -226,6 +227,8 @@ export class PgEntregasUnitOfWork implements UnitOfWork {
   private readonly handoffWrites = new Map<string, HandoffWrite>();
   private readonly occurrenceWrites = new Map<string, OccWrite>();
   private readonly riderWrites = new Map<string, RiderWrite>();
+  private readonly readyOrderAdds = new Map<string, ReadyOrderRecord>();
+  private readonly readyOrderRemoves = new Set<string>();
   private eventWrites: DomainEvent[] = [];
   private outboxWrites: OutboxRecord[] = [];
   private outboxStatus = new Map<
@@ -237,6 +240,7 @@ export class PgEntregasUnitOfWork implements UnitOfWork {
   readonly handoffs: HandoffRepository;
   readonly occurrences: OccurrenceRepository;
   readonly riders: RiderStateRepository;
+  readonly readyOrders: import("./ports").ReadyOrderRepository;
   readonly events: EventStore;
   readonly outbox: OutboxRepository;
 
@@ -400,6 +404,51 @@ export class PgEntregasUnitOfWork implements UnitOfWork {
       },
     };
 
+    this.readyOrders = {
+      async list() {
+        const rows = await self.client.query<SqlRow>(
+          `SELECT order_ref,label,channel,created_at
+             FROM entregas.ready_order
+            WHERE unit_id=$1 ORDER BY created_at,order_ref`,
+          [self.unitId],
+        );
+        const byId = new Map(
+          rows.map((row) => [
+            String(row.order_ref),
+            {
+              order_ref: String(row.order_ref),
+              label: String(row.label),
+              channel: optText(row.channel),
+              created_at: requiredIso(row.created_at),
+            } satisfies ReadyOrderRecord,
+          ] as const),
+        );
+        for (const id of self.readyOrderRemoves) byId.delete(id);
+        for (const [id, record] of self.readyOrderAdds) byId.set(id, clone(record));
+        return [...byId.values()];
+      },
+      async add(record) {
+        if (self.readyOrderRemoves.has(record.order_ref)) {
+          self.readyOrderRemoves.delete(record.order_ref);
+        }
+        if (self.readyOrderAdds.has(record.order_ref)) return { duplicate: true };
+        const rows = await self.client.query<SqlRow>(
+          `SELECT 1 AS exists
+             FROM entregas.ready_order
+            WHERE unit_id=$1 AND order_ref=$2 LIMIT 1`,
+          [self.unitId, record.order_ref],
+        );
+        if (rows.length) return { duplicate: true };
+        self.readyOrderAdds.set(record.order_ref, clone(record));
+        return { duplicate: false };
+      },
+      async remove(orderRefs) {
+        for (const orderRef of orderRefs) {
+          self.readyOrderAdds.delete(orderRef);
+          self.readyOrderRemoves.add(orderRef);
+        }
+      },
+    };
     this.events = {
       async append(events) {
         self.eventWrites.push(...events.map(clone));
@@ -500,6 +549,8 @@ export class PgEntregasUnitOfWork implements UnitOfWork {
     this.handoffWrites.clear();
     this.occurrenceWrites.clear();
     this.riderWrites.clear();
+    this.readyOrderAdds.clear();
+    this.readyOrderRemoves.clear();
     this.eventWrites = [];
     this.outboxWrites = [];
     this.outboxStatus.clear();
@@ -676,6 +727,28 @@ export class PgEntregasUnitOfWork implements UnitOfWork {
               [...params, expected],
             );
         if (!r.length) throw new ConcurrencyError("Rider version conflict");
+      }
+
+      for (const orderRef of this.readyOrderRemoves) {
+        await tx.query(
+          `DELETE FROM entregas.ready_order WHERE unit_id=$1 AND order_ref=$2`,
+          [this.unitId, orderRef],
+        );
+      }
+
+      for (const record of this.readyOrderAdds.values()) {
+        await tx.query(
+          `INSERT INTO entregas.ready_order(unit_id,order_ref,label,channel,created_at)
+           VALUES ($1,$2,$3,$4,$5)
+           ON CONFLICT (unit_id,order_ref) DO NOTHING`,
+          [
+            this.unitId,
+            record.order_ref,
+            record.label,
+            record.channel ?? null,
+            record.created_at,
+          ],
+        );
       }
 
       for (const e of this.eventWrites) {
