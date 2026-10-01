@@ -35,7 +35,9 @@
     "verificar:resource-consumption": "tsc && node tools/verificar_resource_consumption_v1.js",
     "verificar:production-ticket-v2": "tsc && node tools/verificar_production_ticket_v2.js",
     "verificar:production-printer-preflight-static": "node tools/verificar_production_printer_preflight_static_v1.js",
-    "verificar:resource-costing": "tsc && node tools/verificar_resource_costing_v1.js"
+    "verificar:resource-costing": "tsc && node tools/verificar_resource_costing_v1.js",
+    "verificar:packaging-vendor": "node tools/verificar_packaging_vendor_lock_v1.js",
+    "projetar:packaging-order": "node tools/projetar_packaging_order_v1.js"
   },
   "devDependencies": {
     "@types/node": "20.14.10",
