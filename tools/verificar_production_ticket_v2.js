@@ -18,8 +18,8 @@ const intent = {
   semantic_key_material: "x",
   identifiers: {
     tata_sequence: "037",
-    teknisa_order_id: "18452",
-    ifood_order_id: "A1B2C3",
+    teknisa_sequence: "18452",
+    ifood_sequence: "A1B2C3",
     order_time: "19:42",
   },
   lines: [
@@ -74,6 +74,9 @@ const intent = {
 
 const station = buildStationProductionTicketV2(intent);
 assert.equal(station.destination.printer_name, "DELIVERY SUSHI 1");
+assert.equal(station.identifiers.ifood_sequence, "A1B2C3");
+assert.equal(station.identifiers.teknisa_sequence, "18452");
+assert.equal(station.identifiers.tata_sequence, "037");
 assert.equal(station.mount_groups.length, 1);
 assert.equal(station.mount_groups[0].box_label, "CX 750");
 assert.equal(station.mount_groups[0].items.length, 2);
@@ -101,6 +104,15 @@ assert.deepEqual(
   ["UNPROVEN_PREP_COMPONENT:SALMAO_GR"],
 );
 assert.equal(station.effects.print, false);
+
+assert.throws(
+  () =>
+    buildStationProductionTicketV2({
+      ...intent,
+      identifiers: { ...intent.identifiers, ifood_sequence: "" },
+    }),
+  /IFOOD_SEQUENCE_REQUIRED/,
+);
 
 const resourceProjection = {
   schema: "deliveryos.order-resource-projection.v1",
