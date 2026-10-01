@@ -32,6 +32,7 @@
     "verificar:delivery-active-routing": "node tools/verificar_delivery_active_routing_coverage_v1.js",
     "verificar:non-production-items": "node tools/verificar_non_production_delivery_items_v1.js",
     "verificar:production-print-plan": "tsc && node tools/verificar_production_print_plan_v1.js",
+    "verificar:production-service-matrix": "tsc && node tools/verificar_production_service_matrix_v1.js",
     "verificar:resource-consumption": "tsc && node tools/verificar_resource_consumption_v1.js",
     "verificar:production-ticket-v2": "tsc && node tools/verificar_production_ticket_v2.js",
     "verificar:production-ticket-e2e": "tsc && node tools/verificar_production_ticket_e2e_shadow_v1.js",
