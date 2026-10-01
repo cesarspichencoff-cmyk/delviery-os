@@ -133,12 +133,30 @@ async function preflightPostgres(
   }>(
     `SELECT
       has_table_privilege(current_user,'entregas.trip','SELECT') AS trip_read,
-      has_table_privilege(current_user,'entregas.trip','INSERT,UPDATE') AS trip_write,
-      has_table_privilege(current_user,'entregas.delivery','INSERT,DELETE') AS delivery_write,
-      has_table_privilege(current_user,'entregas.ready_order','SELECT,INSERT,DELETE') AS ready_write,
+      (
+        has_table_privilege(current_user,'entregas.trip','INSERT')
+        AND has_table_privilege(current_user,'entregas.trip','UPDATE')
+      ) AS trip_write,
+      (
+        has_table_privilege(current_user,'entregas.delivery','INSERT')
+        AND has_table_privilege(current_user,'entregas.delivery','DELETE')
+      ) AS delivery_write,
+      (
+        has_table_privilege(current_user,'entregas.ready_order','SELECT')
+        AND has_table_privilege(current_user,'entregas.ready_order','INSERT')
+        AND has_table_privilege(current_user,'entregas.ready_order','DELETE')
+      ) AS ready_write,
       has_table_privilege(current_user,'entregas.domain_event','INSERT') AS event_insert,
-      has_table_privilege(current_user,'entregas.public_outbox','SELECT,INSERT,UPDATE') AS outbox_write,
-      has_table_privilege(current_user,'platform.schema_migration','INSERT,UPDATE,DELETE') AS migration_write`,
+      (
+        has_table_privilege(current_user,'entregas.public_outbox','SELECT')
+        AND has_table_privilege(current_user,'entregas.public_outbox','INSERT')
+        AND has_table_privilege(current_user,'entregas.public_outbox','UPDATE')
+      ) AS outbox_write,
+      (
+        has_table_privilege(current_user,'platform.schema_migration','INSERT')
+        OR has_table_privilege(current_user,'platform.schema_migration','UPDATE')
+        OR has_table_privilege(current_user,'platform.schema_migration','DELETE')
+      ) AS migration_write`,
   );
   const p = privileges[0];
   if (
