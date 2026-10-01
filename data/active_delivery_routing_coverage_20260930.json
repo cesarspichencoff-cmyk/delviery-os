@@ -1,0 +1,134 @@
+{
+  "schema": "deliveryos.active-delivery-routing-coverage.v1",
+  "captured_date": "2026-09-30",
+  "store": "0001 - TATA ITAIM",
+  "source": {
+    "sales_report": "Vendas-de-Produto-no-Perodo-Analtico-por-Unidade.xlsx",
+    "sales_report_sha256": "a17581df113cbe2ce640345ede7f889790b4f82f70f8ab42f9072eb733b9fa22",
+    "routing_products_sha256": "f4cb1569a4c8752b831db97c2d5444bfea8c0d6fb06c0c79d83ada3bb0722737",
+    "routing_printers_sha256": "c998375c36ee3060836ba7ad46af0a9f807f5a307e55dee40cf67881b7a40ba1",
+    "modalities": [
+      "Delivery",
+      "Delivery IFood",
+      "Delivery Loja"
+    ]
+  },
+  "summary": {
+    "delivery_skus": 120,
+    "delivery_units": 1476,
+    "direct_route_skus": 116,
+    "direct_route_units": 1439,
+    "direct_route_sku_coverage": 0.9666666666666667,
+    "direct_route_unit_coverage": 0.9749322493224932,
+    "logical_plaza_resolved_skus": 120,
+    "logical_plaza_resolved_units": 1476,
+    "seed_exact_logical_skus": 68,
+    "seed_exact_logical_units": 977,
+    "inferred_rule_logical_skus": 52,
+    "inferred_rule_logical_units": 499,
+    "physical_route_gap_skus": 4,
+    "physical_route_gap_units": 37,
+    "logical_plaza_gap_skus": 0,
+    "logical_plaza_gap_units": 0
+  },
+  "logical_plaza_distribution": [
+    {
+      "plaza": "enrolados",
+      "skus": 15,
+      "units": 354
+    },
+    {
+      "plaza": "duplas",
+      "skus": 43,
+      "units": 327
+    },
+    {
+      "plaza": "combinados",
+      "skus": 15,
+      "units": 312
+    },
+    {
+      "plaza": "cozinha_quentes",
+      "skus": 18,
+      "units": 208
+    },
+    {
+      "plaza": "enrolados_quentes",
+      "skus": 12,
+      "units": 142
+    },
+    {
+      "plaza": "bar_bebidas",
+      "skus": 9,
+      "units": 60
+    },
+    {
+      "plaza": "montagem_outros",
+      "skus": 5,
+      "units": 45
+    },
+    {
+      "plaza": "sobremesa",
+      "skus": 3,
+      "units": 28
+    }
+  ],
+  "physical_route_gaps": [
+    {
+      "source_product_code": "8201100100",
+      "canonical_product_code": "8.20.11.001.00",
+      "product": "COOKIE NUTELLA",
+      "group": "COOCKIE",
+      "delivery_units": 13,
+      "logical_plaza": "sobremesa",
+      "logical_plaza_source": "INFERRED_GROUP_AND_ROUTE_RULE",
+      "direct_route_status": "NOT_PRESENT_IN_CURRENT_PRODUCTS_BY_STORE_EXPORT"
+    },
+    {
+      "source_product_code": "9750003100",
+      "canonical_product_code": "9.75.00.031.00",
+      "product": "GENGIBRE PORÇÃO",
+      "group": "ACOMPANHAMENTOS",
+      "delivery_units": 17,
+      "logical_plaza": "montagem_outros",
+      "logical_plaza_source": "INFERRED_GROUP_AND_ROUTE_RULE",
+      "direct_route_status": "NOT_PRESENT_IN_CURRENT_PRODUCTS_BY_STORE_EXPORT"
+    },
+    {
+      "source_product_code": "9750003000",
+      "canonical_product_code": "9.75.00.030.00",
+      "product": "WASABI",
+      "group": "ACOMPANHAMENTOS",
+      "delivery_units": 6,
+      "logical_plaza": "montagem_outros",
+      "logical_plaza_source": "SEED_EXACT_NAME",
+      "direct_route_status": "NOT_PRESENT_IN_CURRENT_PRODUCTS_BY_STORE_EXPORT"
+    },
+    {
+      "source_product_code": "9750003200",
+      "canonical_product_code": "9.75.00.032.00",
+      "product": "TARE",
+      "group": "ACOMPANHAMENTOS",
+      "delivery_units": 1,
+      "logical_plaza": "montagem_outros",
+      "logical_plaza_source": "SEED_EXACT_NAME",
+      "direct_route_status": "NOT_PRESENT_IN_CURRENT_PRODUCTS_BY_STORE_EXPORT"
+    }
+  ],
+  "observations": [
+    "The four physical-route gaps are real sold Delivery items in the sales export but are absent from the current Products-by-Store routing export.",
+    "Absence from Products-by-Store does not prove that an item should be ignored; the physical print behavior remains UNKNOWN until source/runtime or operational evidence proves it.",
+    "Logical plaza and physical printer route remain separate dimensions."
+  ],
+  "gate": {
+    "live_expected_routing": "BLOCK_ONLY_WHEN_A_REAL_ORDER_CONTAINS_AN_UNRESOLVED_PHYSICAL_ROUTE_ITEM",
+    "cutover": "NOT_AUTHORIZED"
+  },
+  "effects": {
+    "teknisa_write": false,
+    "print": false,
+    "seed_write": false,
+    "motor_write": false,
+    "cutover": false
+  }
+}
