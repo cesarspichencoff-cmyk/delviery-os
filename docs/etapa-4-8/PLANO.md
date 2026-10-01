@@ -73,8 +73,8 @@ diferentes inteligências. Política de acesso desse repositório é `Q-012`, ai
   Conference Brain — mesma classe do D3 —, resolvido com `tools/copiar_conference_brain.js`;
   (b) a montagem ingênua gerava **N recomendações ativas na passada N** sobre a mesma fonte,
   resolvido honrando a regra que `conclusoes.js` já declara (saúde vigente = ciclo mais recente),
-  com o corte contável em `conclusoes_vigentes`. `Q-003` e `Q-004` continuam abertas, travadas por
-  guarda executável. Abertas por esta etapa: **`Q-015`** (retenção do histórico da espinha, medido
+  com o corte contável em `conclusoes_vigentes`. Naquele checkpoint, `Q-003` e `Q-004` estavam abertas;
+  `Q-003` foi respondida em 2026-09-30 e `Q-004` continua aberta. Abertas por esta etapa naquele checkpoint (fechadas posteriormente): **`Q-015`** (retenção do histórico da espinha, medido
   em ~0,34 KB por passada por escopo) e **`Q-016`** (replay da projeção após restart —
   `reconstruirPorReplay` só aparece em comentário no worker). **D1, D2 e D3 do PB19 foram
   REPRODUZIDOS** e deixados como bloco independente, sem correção — endereçados em
@@ -142,7 +142,7 @@ diferentes inteligências. Política de acesso desse repositório é `Q-012`, ai
   Um ponto cego do grafo de imports (`import()` dinâmico) foi fechado com impacto zero medido
   pelo carimbo. O `spine:processos` caiu na regressão porque presumia log vazio: reproduzido com
   um fato alheio plantado, e corrigido na classe — a suíte passou a criar banco próprio.
-  **Q-015 continua aberta.**
+  **Sucessão: Q-015 foi respondida e tecnicamente fechada em 2026-09-30; ver `Q015-RETENCAO.md` e `Q015-PROVA-2026-09-30.md`.**
 
 - **Q-017 — modo da instância · RESPONDIDA** (`docs/etapa-4-8/Q017-SOURCE-MODE.md`): o defeito
   foi provado antes de corrigir, e era mais estreito que a premissa — só a AUSÊNCIA virava `real`
@@ -204,8 +204,8 @@ A redução de superfície de `apps/deliveryos-ai-node` (reescrever os 6 root-re
 
 ## 4. Preservation Set — nada disso pode ser alterado ou respondido implicitamente pelo código
 
-- **Copiloto M1** — motor de atenção do Copiloto. `Q-003` (qual motor é dono da atenção,
-  `decisao.js` ou `shadow.ts`) segue aberta; D43 mantém os dois desligados até I1-I10 verdes.
+- **Copiloto M1** — motor de atenção do Copiloto. `Q-003` foi respondida em 2026-09-30:
+  a autoridade da atenção é o MOTOR por `sess.active.sit`; `shadow.ts` não abre, troca nem encerra Foco. Ver `PERGUNTAS.jsonl`.
 - **Entregas** — domínio operacional de entregas (`src/entregas/**`), incluindo seu próprio
   Event Log de fundação (`src/entregas/foundation/event-log.ts`).
 - **Home M1** — superfície visual da home, sob a ordem de autoridade visual de
@@ -224,14 +224,14 @@ A redução de superfície de `apps/deliveryos-ai-node` (reescrever os 6 root-re
   resposta nunca é consentimento.
 - **Q-001** — Ambiente pode carregar orientação de ação? (aberta, PAUSE)
 - **Q-002** — Quem é Operação Viva: o núcleo cognitivo ou a projeção de viagens? (aberta, PAUSE)
-- **Q-003** — Qual motor é dono da atenção do Copiloto: `decisao.js` ou `shadow.ts`? (aberta, PAUSE)
 - **Q-004** — CRM, Evolução, Treinamento, RH e Gestão são módulos do DeliveryOS? (aberta, PAUSE —
   ver `BLOQUEIO-Q-004.md`, diretamente relevante ao C1/C2 deste trabalho)
 - **Q-005** — Notificação fora da tela é permitida? (aberta, PAUSE)
+- **Q-006** — Paridade documental/nativa com o Figma (aberta, `PROCEED_REVERSIBLY`; o fechamento no Figma está bloqueado por Q-007)
 - **Q-007** — A cota do plano Figma cortou leitura/escrita no meio da sincronização: como
   prosseguir? (aberta, PAUSE, segura Q-006)
 - **Q-008** — Sushi Quentes é ambiente canônico ou subárea? (aberta, PAUSE)
 - **Q-009** — Existirá fonte que meça a capacidade da Caixa? (aberta, PAUSE)
 
-(Q-006, Q-010, Q-011, Q-013 e Q-014 têm resposta ou `PROCEED_REVERSIBLY` e não fazem parte do
-conjunto travado explicitamente listado para esta etapa.)
+(Q-003, Q-010, Q-011, Q-013 e Q-014 têm resposta e não fazem parte do
+conjunto aberto explicitamente listado para esta etapa.)
