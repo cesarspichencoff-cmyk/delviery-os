@@ -46,7 +46,8 @@
     ],
     "direct_target_192_168_0_153": false,
     "direct_target_192_168_0_110": false,
-    "status": "REAL_SALE_TO_CURRENT_CONFIG_PROVEN"
+    "interpretation_of_1358_imp_activity": ".153 and .110 activity must not be attributed to sale 0000297010 from current evidence.",
+    "status": "REAL_SALE_TO_CURRENT_CONFIG_PROVEN__153_HYPOTHESIS_REJECTED"
   },
   "caveats": [
     "The items export does not expose CDPRODUTO; product codes were joined by unique exact product name against the current 463-product registry.",
@@ -68,5 +69,13 @@
     "sold_quantity": 15,
     "composition_rows": 0,
     "conclusion": "NO_PRODUCT_COMPOSITION_EXPOSED_FOR_THIS_PARENT_IN_REPORT"
+  },
+  "operational_confirmation": {
+    "product_code": "9.05.05.080.00",
+    "product_name": "COMB EXEC SUSHI SALMAO",
+    "current_operational_context": "Executivo is a lunch-only product and is expected to print only on BALCAOSUSHI1 in this operation.",
+    "promotional_group_lookup": "NOT_FOUND_IN_RETAIL_GROUP_DE_PRODUTO_PROMOCIONAL",
+    "product_composition_lookup": "EMPTY_IN_RETAIL_COMPOSICAO_PADRAO_AND_LOCAL",
+    "consequence": "NO_CURRENT_RETAIL_EVIDENCE_SUPPORTS_ROUTING_THIS_EXECUTIVO_TO_DELIVERY_SUSHI_1"
   }
 }
