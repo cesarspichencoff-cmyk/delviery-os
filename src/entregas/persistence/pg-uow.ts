@@ -578,24 +578,6 @@ export class PgEntregasUnitOfWork implements UnitOfWork {
             ],
           );
         }
-
-        // A fila "pronto" e estado operacional compartilhado. Ao entrar numa
-        // Trip, o pedido deixa a fila NO MESMO COMMIT do dominio; se qualquer
-        // escrita posterior falhar, o rollback devolve ambos juntos.
-        const usedOrderRefs = [
-          ...new Set(
-            record.deliveries
-              .map((d) => d.order_ref)
-              .filter((x) => Boolean(x?.trim())),
-          ),
-        ];
-        if (usedOrderRefs.length) {
-          await tx.query(
-            `DELETE FROM entregas.ready_order
-              WHERE unit_id=$1 AND order_ref = ANY($2::text[])`,
-            [this.unitId, usedOrderRefs],
-          );
-        }
       }
 
       for (const { handoff, version, expected } of this.handoffWrites.values()) {
