@@ -13,6 +13,10 @@ const proven = (value, source) => ({
 
 const baseReadiness = {
   native_teknisa_nfce_path: proven(true, "synthetic:teknisa-native"),
+  sales_channel_eligible_for_native_nfce: proven(
+    true,
+    "synthetic:channel-eligibility",
+  ),
   fiscal_trigger_ready: proven(true, "synthetic:paid-order-trigger"),
   fiscal_timing_compatible_with_after_production_dispatch: proven(
     true,
@@ -22,6 +26,11 @@ const baseReadiness = {
   nfce_cash_register_open: proven(true, "synthetic:cash-open"),
   interface_api_ready: proven(true, "synthetic:interface-api"),
   fiscal_printer_mapping_observed: proven(true, "synthetic:fiscal-printer"),
+  nfce_qrcode_v3_compatible: proven(true, "synthetic:qrcode-v3"),
+  sp_authorization_protocol_17_compatible: proven(
+    true,
+    "synthetic:protocol-17",
+  ),
 };
 
 const ready = planNativeNfceAfterProduction({
@@ -102,6 +111,48 @@ assert.equal(
 assert.ok(
   timingUnknown.blocking_reasons.includes(
     "FISCAL_TIMING_COMPATIBILITY_NOT_PROVEN",
+  ),
+);
+
+const channelUnknown = planNativeNfceAfterProduction({
+  teknisa_sequence: "18452",
+  ifood_sequence: "A1B2C3",
+  tata_sequence: "037",
+  production: [],
+  readiness: {
+    ...baseReadiness,
+    sales_channel_eligible_for_native_nfce: {
+      value: false,
+      evidence: "UNKNOWN",
+      source_ref: null,
+    },
+  },
+});
+assert.equal(channelUnknown.ready_for_native_nfce_request_candidate, false);
+assert.ok(
+  channelUnknown.blocking_reasons.includes(
+    "SALES_CHANNEL_NATIVE_NFCE_ELIGIBILITY_NOT_PROVEN",
+  ),
+);
+
+const protocolUnknown = planNativeNfceAfterProduction({
+  teknisa_sequence: "18452",
+  ifood_sequence: "A1B2C3",
+  tata_sequence: "037",
+  production: [],
+  readiness: {
+    ...baseReadiness,
+    sp_authorization_protocol_17_compatible: {
+      value: false,
+      evidence: "UNKNOWN",
+      source_ref: null,
+    },
+  },
+});
+assert.equal(protocolUnknown.ready_for_native_nfce_request_candidate, false);
+assert.ok(
+  protocolUnknown.blocking_reasons.includes(
+    "SP_AUTHORIZATION_PROTOCOL_17_COMPATIBILITY_NOT_PROVEN",
   ),
 );
 
