@@ -12,7 +12,7 @@
  *      timestamp de execução, não dado de cardápio);
  *   3. valida que toda praça gerada está no vocabulário oficial de motor.js;
  *   4. valida que nenhum item que tinha praça no seed commitado ficou sem praça;
- *   5. valida que as 3 exceções históricas de revisão manual continuam exatas.
+ *   5. valida que as confirmações operacionais nomeadas continuam exatas.
  *
  * Não altera seed, motor, baseline, camada de decisão ou classificação de item.
  * Saída: "OK: seed reproduzível sem drift" (exit 0) ou lista objetiva de
@@ -29,10 +29,15 @@ const SEED_COMMITADO = path.join(REPO, "data", "cardapio_knowledge_seed.json");
 const BUILDER = path.join(REPO, "tools", "build_cardapio_knowledge.js");
 
 const PRACAS_OFICIAIS = ["combinados", "duplas", "enrolados", "enrolados_quentes", "cozinha_quentes", "sobremesa", "bar_bebidas", "montagem_outros"];
-const EXCECOES_REVISAO_MANUAL = {
-  "Ceviche": { confianca: "media", revisao: true },
-  "Tartar de Salmão": { confianca: "media", revisao: true },
-  "Tuna Shisô Tartar": { confianca: "media", revisao: true },
+const CONFIRMACOES_OPERACIONAIS = {
+  "Ceviche": { praca: "enrolados_quentes", confianca: "alta", revisao: false },
+  "Tartar de Salmão": { praca: "enrolados_quentes", confianca: "alta", revisao: false },
+  "Tuna Shisô Tartar": { praca: "enrolados_quentes", confianca: "alta", revisao: false },
+  "Tartar de Atum Spicy": { praca: "enrolados_quentes", confianca: "alta", revisao: false },
+  "Carpaccio de Polvo Espanhol": { praca: "duplas", confianca: "alta", revisao: false },
+  "Carpaccio de Salmão Trufado": { praca: "duplas", confianca: "alta", revisao: false },
+  "Missoshiro": { praca: "cozinha_quentes", confianca: "alta", revisao: false },
+  "Tatá Especial - Club Vip Gourmet": { praca: null, confianca: "alta", revisao: false },
 };
 
 const problemas = [];
@@ -97,10 +102,11 @@ if (gerado) {
     problemas.push(`Total de itens divergiu: commitado ${commitado.itens.length}, regenerado ${gerado.itens.length}.`);
   }
 
-  // ---------- 5) exceções históricas de revisão manual continuam exatas ----------
-  for (const [nome, esperado] of Object.entries(EXCECOES_REVISAO_MANUAL)) {
+  // ---------- 5) confirmações operacionais nomeadas continuam exatas ----------
+  for (const [nome, esperado] of Object.entries(CONFIRMACOES_OPERACIONAIS)) {
     const it = gerado.itens.find(i => i.nome === nome);
-    if (!it) { problemas.push(`Item de exceção histórica "${nome}" não encontrado na regeneração.`); continue; }
+    if (!it) { problemas.push(`Item confirmado "${nome}" não encontrado na regeneração.`); continue; }
+    if (it.praca_principal !== esperado.praca) problemas.push(`"${nome}" deveria regenerar em praca_principal="${esperado.praca}", veio "${it.praca_principal}".`);
     if (it.confianca_classificacao !== esperado.confianca) problemas.push(`"${nome}" deveria regenerar com confianca_classificacao="${esperado.confianca}", veio "${it.confianca_classificacao}".`);
     if (it.revisao_manual !== esperado.revisao) problemas.push(`"${nome}" deveria regenerar com revisao_manual=${esperado.revisao}, veio ${it.revisao_manual}.`);
   }
@@ -109,7 +115,7 @@ if (gerado) {
 // ---------- resultado ----------
 if (problemas.length === 0) {
   p("OK: seed reproduzível sem drift");
-  p(`  vocabulário oficial respeitado (${PRACAS_OFICIAIS.length} praças) · ${commitado.itens.length} itens conferidos · 3 exceções históricas de revisão manual intactas.`);
+  p(`  vocabulário oficial respeitado (${PRACAS_OFICIAIS.length} praças) · ${commitado.itens.length} itens conferidos · ${Object.keys(CONFIRMACOES_OPERACIONAIS).length} confirmações operacionais intactas.`);
   process.exit(0);
 } else {
   p(`FALHOU: ${problemas.length} problema(s) encontrado(s)`);
