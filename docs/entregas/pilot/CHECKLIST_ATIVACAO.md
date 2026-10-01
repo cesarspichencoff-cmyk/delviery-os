@@ -127,3 +127,28 @@ gps_capture_enabled: false
 
 Captura para na hora. A operação segue com encerramento manual. Nenhum dado de
 viagem é perdido.
+
+## I. Cutover para PostgreSQL — trava o modo multi-instância
+
+O backend `file` continua sendo o default. Não mude para `postgres` enquanto
+qualquer item abaixo estiver em branco.
+
+| Item | Estado |
+|---|---|
+| Destino PostgreSQL operacional escolhido explicitamente | ⬜ |
+| Migrations 0006–0008 aplicadas pelo papel administrativo | ⬜ |
+| Papel `deliveryos_entregas_pilot` criado com credencial própria, fora do Git | ⬜ |
+| `ENTREGAS_STORAGE_BACKEND=postgres` + URL/TLS configurados no ambiente | ⬜ |
+| `cutover:entregas:plan` rodado com origem parada e fingerprint conferido | ⬜ |
+| Dump PostgreSQL pré-cutover gerado | ⬜ |
+| Restore desse dump em banco separado/vazio conferido | ⬜ |
+| Cópia do backup fora do host produzida e restore off-host ensaiado | ⬜ |
+| `cutover:entregas:apply` autorizado explicitamente por César | ⬜ |
+| Pós-cutover: duas instâncias/snapshot/ready-order conferidos no ambiente implantado | ⬜ |
+| Rollback documentado e executável antes de liberar operação | ⬜ |
+
+O código já provou em ambiente isolado: PostgreSQL multi-instância, cutover
+transacional, backup/restore, preservação de versões e triggers. Isso não
+substitui os itens acima no ambiente real. Em especial, o volume local de
+backups não protege contra perda da máquina.
+
