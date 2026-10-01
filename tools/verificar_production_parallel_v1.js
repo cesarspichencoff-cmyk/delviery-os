@@ -58,6 +58,63 @@ const resolvedScope = Tata.planTataSequenceWithResolvedScope(
 assert.equal(resolvedScope.ready, true);
 assert.equal(resolvedScope.assignment.tata_sequence, "037");
 
+const dailyInitial = {
+  schema: "deliveryos.tata-sequence-state.v1",
+  policy: { width: 3, min_value: 1, max_value: 999 },
+  next_value: 777,
+  bindings: [],
+};
+const day1First = Tata.planDailyStoreTataSequence(
+  dailyInitial,
+  { store_id: "ITAIM", operational_date: "2026-10-01" },
+  "18452",
+);
+assert.equal(day1First.ready, true);
+assert.equal(day1First.assignment.tata_sequence, "001");
+
+const day1Second = Tata.planDailyStoreTataSequence(
+  day1First.next_state,
+  { store_id: "ITAIM", operational_date: "2026-10-01" },
+  "18453",
+);
+assert.equal(day1Second.ready, true);
+assert.equal(day1Second.assignment.tata_sequence, "002");
+
+const day1Reprint = Tata.planDailyStoreTataSequence(
+  day1Second.next_state,
+  { store_id: "ITAIM", operational_date: "2026-10-01" },
+  "18452",
+);
+assert.equal(day1Reprint.ready, true);
+assert.equal(day1Reprint.assignment.tata_sequence, "001");
+assert.equal(day1Reprint.reused_existing, true);
+
+const day2First = Tata.planDailyStoreTataSequence(
+  day1Second.next_state,
+  { store_id: "ITAIM", operational_date: "2026-10-02" },
+  "19001",
+);
+assert.equal(day2First.ready, true);
+assert.equal(day2First.assignment.tata_sequence, "001");
+
+const otherStoreSameDay = Tata.planDailyStoreTataSequence(
+  day1Second.next_state,
+  { store_id: "HOUSE", operational_date: "2026-10-01" },
+  "50001",
+);
+assert.equal(otherStoreSameDay.ready, true);
+assert.equal(otherStoreSameDay.assignment.tata_sequence, "001");
+
+const invalidDailyDate = Tata.planDailyStoreTataSequence(
+  dailyInitial,
+  { store_id: "ITAIM", operational_date: "2026-02-30" },
+  "18452",
+);
+assert.equal(invalidDailyDate.ready, false);
+assert.ok(
+  invalidDailyDate.blocking_reasons.includes("TATA_SEQUENCE_SCOPE_REQUIRED"),
+);
+
 const replayed = Tata.planTataSequence(
   assigned.next_state,
   "SCOPE-EXPLICITO",
