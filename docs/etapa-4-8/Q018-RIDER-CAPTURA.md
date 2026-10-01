@@ -485,3 +485,30 @@ A reconciliação anterior dependia da rider-mobile viva ou reaberta. Com a pág
 ### Fronteira
 
 **CODE_READY + TEST_PASS local.** O APK contém o novo loop e a regressão instrumentada está verde. Ainda não foi observado em bancada o `TripLocationService` realmente cair sozinho por uma resposta remota desta nova rota com a WebView/processo mortos. Essa observação continua `NOT_RUN`; não é substituída pelos testes de política/HTTP acima. A bateria em aparelho físico real também continua separada.
+
+
+## 17 — Prova runtime do encerramento remoto sem WebView (2026-10-01)
+
+**Status: PROVEN no AVD/Foxxy.** A observação runtime que permanecia `NOT_RUN`
+na seção 16 foi executada contra o piloto real do HEAD
+`b954bac9f3722eba83fa44f92014a261533aa001`, em bancada isolada.
+
+A viagem `Q018-RUNTIME-20261001` foi colocada em `em_rota`; o Android
+manteve `TripLocationService` em foreground com `startRequested=true` e
+notificação `foregroundId=4201`, sem Activity do TATÁ resumida. O console
+então executou `CloseTripManually`; o piloto passou a devolver
+`capture=false / trip_not_active`.
+
+O Android registrou `active_trip=null` 13,286 s depois do recibo remoto.
+Na verificação posterior, `TripLocationService` não existia mais em
+`dumpsys`, `pidof br.com.tata.entregas.debug` estava vazio e
+`cmd notification list` não tinha notificação ativa do app/ID 4201.
+Instrumentation: **OK (1 test), 48,369 s**.
+
+Evidência detalhada:
+`docs/etapa-4-8/field-gate/2026-10-01-q018-remote-stop-runtime.md`.
+
+**Fronteira atual:** a dependência da WebView para receber o fim remoto está
+fechada no AVD. A bateria em aparelho físico real continua `NOT_RUN`; esta
+prova não promove produção nem substitui tela bloqueada prolongada, reboot,
+troca de rede, bateria e estabilidade de campo.

@@ -1173,3 +1173,18 @@ Estado atual: **feed durável single-instance = CODE_READY + TEST_PASS; produç�
 > operacional, credencial real do papel, cutover e troca de ambiente. Nenhum desses efeitos foi
 > executado; consumer/UI live continuam desligados.
 
+
+
+### SUCESSÃO — Android / fim remoto sem WebView — **FECHADO NO AVD em 2026-10-01**
+
+Supersede o blocker histórico “com a página fechada, o fim da viagem não chega
+ao serviço nativo”. O novo loop de controle do `TripLocationService` foi
+observado em runtime no Foxxy/AVD Android 14: viagem inicialmente `em_rota`,
+serviço em foreground e sem Activity do TATÁ resumida; após
+`CloseTripManually`, o piloto devolveu `capture=false` e o Android limpou
+`active_trip_id` em 13,286 s. Em seguida não havia
+`TripLocationService`, processo do app nem notificação ativa do ID 4201.
+
+Prova: `docs/etapa-4-8/field-gate/2026-10-01-q018-remote-stop-runtime.md`.
+A bateria em aparelho físico real permanece `NOT_RUN` e continua sendo um
+blocker separado de certificação de campo.

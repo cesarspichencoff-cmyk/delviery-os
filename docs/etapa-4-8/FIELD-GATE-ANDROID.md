@@ -143,8 +143,8 @@ Cada linha anota: **quem**, **quando** (UTC), **aparelho** (modelo e Android), *
 | app morto pelo sistema | `adb shell am kill br.com.tata.entregas.<variante>` ou pressão de memória | o serviço volta ou o app avisa; a fila sobrevive | NOT_RUN |
 | aparelho reiniciado | reiniciar no meio da viagem, sem rede | depois do boot a fila está lá (item 13) e sincroniza na volta da rede | NOT_RUN |
 | viagem encerrada com a página ABERTA | encerrar a viagem no console com o app na frente | notificação some e o indicador diz "GPS DESLIGADO" em até ~15 s; `Q2` para de crescer | NOT_RUN |
-| viagem encerrada com o app em SEGUNDO PLANO | abrir o mapa (ou a tela inicial) e encerrar a viagem no console | medir quanto tempo a notificação leva para sumir. **Limite conhecido** (`BLOCKERS.md`, "com a página fechada"): pode não sumir até o app voltar à frente — anotar o tempo, não inventar | NOT_RUN |
-| app reaberto depois de a viagem acabar | matar o app com a viagem ativa, encerrar no console, abrir o app | ao abrir, a captura desliga sozinha (a página reconcilia com o serviço) | NOT_RUN |
+| viagem encerrada com o app em SEGUNDO PLANO | abrir o mapa (ou a tela inicial) e encerrar a viagem no console | o serviço nativo consulta o estado remoto e a notificação deve sumir em até ~15 s; **AVD PROVEN em 2026-10-01, aparelho físico ainda NOT_RUN** | NOT_RUN |
+| app reaberto depois de a viagem acabar | matar a UI/app com a viagem ativa, encerrar no console e depois abrir o app | o serviço deve ter encerrado pela rota nativa antes da reabertura; ao abrir, a UI apenas reflete o estado já encerrado. **AVD PROVEN em 2026-10-01, aparelho físico ainda NOT_RUN** | NOT_RUN |
 | motoboy recusa o termo | tocar em "NÃO CONCORDAR / VOLTAR" | nenhum pedido de permissão; saída confirma normalmente; indicador "TERMO NÃO ACEITO"; reabrir não oferece o termo de novo | NOT_RUN |
 | telefone compartilhado | outro motoboy entra no mesmo aparelho | o termo aparece de novo para ele: o aceite é por motoboy E aparelho | NOT_RUN |
 
