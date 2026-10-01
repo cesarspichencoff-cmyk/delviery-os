@@ -34,6 +34,19 @@ export interface RiderStateRepository {
   save(state: RiderOperationalState, expectedVersion: number | null): Promise<void>;
 }
 
+export interface ReadyOrderRecord {
+  order_ref: string;
+  label: string;
+  channel?: string;
+  created_at: string;
+}
+
+export interface ReadyOrderRepository {
+  list(): Promise<ReadyOrderRecord[]>;
+  add(record: ReadyOrderRecord): Promise<{ duplicate: boolean }>;
+  remove(order_refs: readonly string[]): Promise<void>;
+}
+
 export interface EventStore {
   append(events: readonly DomainEvent[]): Promise<void>;
   listByObject(object_type: string, object_id: string): Promise<DomainEvent[]>;
@@ -53,6 +66,7 @@ export interface UnitOfWork {
   handoffs: HandoffRepository;
   occurrences: OccurrenceRepository;
   riders: RiderStateRepository;
+  readyOrders: ReadyOrderRepository;
   events: EventStore;
   outbox: OutboxRepository;
   /** Commit atômico da unidade (domínio + eventos + outbox) */
