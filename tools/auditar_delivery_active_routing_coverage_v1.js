@@ -64,9 +64,18 @@ function inferPlaza(row, printerCodes) {
   return null;
 }
 
-function auditCoverage(rows, routing, seed) {
+function auditCoverage(rows, routing, seed, nonProductionRegistry) {
   if (routing.schema !== "deliveryos.odhen.product-routing.compact.v1") fail("routing schema mismatch");
   if (!Array.isArray(seed.itens)) fail("seed invalid");
+  if (
+    nonProductionRegistry &&
+    nonProductionRegistry.schema !== "deliveryos.non-production-items.v1"
+  ) fail("non-production registry schema mismatch");
+  if (
+    nonProductionRegistry?.store &&
+    routing.store &&
+    nonProductionRegistry.store !== routing.store
+  ) fail("non-production registry store mismatch");
 
   const bySeedName = new Map();
   for (const item of seed.itens) {
@@ -114,10 +123,17 @@ function auditCoverage(rows, routing, seed) {
   let seedExactUnits = 0;
   let inferredRuleSkus = 0;
   let inferredRuleUnits = 0;
+  let noTicketSkus = 0;
+  let noTicketUnits = 0;
 
   for (const item of aggregated.values()) {
     const printerCodes = routing.products[item.product_code] || [];
     const directRoute = printerCodes.length > 0;
+    const noTicketEntry = nonProductionRegistry?.items?.[item.product_code] || null;
+    const noOwnProductionTicket =
+      !directRoute &&
+      noTicketEntry?.proof === "HUMAN_CONFIRMED" &&
+      nonProductionRegistry?.semantics === "NO_OWN_PRODUCTION_TICKET";
 
     const exact = bySeedName.get(normalizeName(item.product)) || [];
     let plaza = null;
@@ -143,6 +159,10 @@ function auditCoverage(rows, routing, seed) {
       directRouteSkus += 1;
       directRouteUnits += item.quantity;
     }
+    if (noOwnProductionTicket) {
+      noTicketSkus += 1;
+      noTicketUnits += item.quantity;
+    }
     if (plazaSource !== "UNRESOLVED" && plazaSource !== "SEED_NAME_AMBIGUOUS") {
       logicalResolvedSkus += 1;
       logicalResolvedUnits += item.quantity;
@@ -156,6 +176,13 @@ function auditCoverage(rows, routing, seed) {
       quantity: item.quantity,
       modalities: [...item.modalities].sort(),
       direct_route: directRoute,
+      no_own_production_ticket: noOwnProductionTicket,
+      production_behavior:
+        directRoute
+          ? "ROUTED"
+          : noOwnProductionTicket
+            ? "NO_OWN_PRODUCTION_TICKET"
+            : "UNRESOLVED",
       printer_codes: printerCodes,
       logical_plaza: plaza,
       logical_plaza_source: plazaSource,
@@ -166,7 +193,8 @@ function auditCoverage(rows, routing, seed) {
 
   const totalSkus = products.length;
   const totalUnits = products.reduce((sum, x) => sum + x.quantity, 0);
-  const physicalGaps = products.filter((x) => !x.direct_route);
+  const physicalGaps = products.filter((x) => x.production_behavior === "UNRESOLVED");
+  const noTicketItems = products.filter((x) => x.production_behavior === "NO_OWN_PRODUCTION_TICKET");
   const logicalGaps = products.filter(
     (x) => x.logical_plaza_source === "UNRESOLVED" || x.logical_plaza_source === "SEED_NAME_AMBIGUOUS",
   );
@@ -180,6 +208,12 @@ function auditCoverage(rows, routing, seed) {
       direct_route_units: directRouteUnits,
       direct_route_sku_coverage: totalSkus ? directRouteSkus / totalSkus : 0,
       direct_route_unit_coverage: totalUnits ? directRouteUnits / totalUnits : 0,
+      no_own_production_ticket_skus: noTicketSkus,
+      no_own_production_ticket_units: noTicketUnits,
+      production_behavior_resolved_skus: directRouteSkus + noTicketSkus,
+      production_behavior_resolved_units: directRouteUnits + noTicketUnits,
+      production_behavior_sku_coverage: totalSkus ? (directRouteSkus + noTicketSkus) / totalSkus : 0,
+      production_behavior_unit_coverage: totalUnits ? (directRouteUnits + noTicketUnits) / totalUnits : 0,
       logical_plaza_resolved_skus: logicalResolvedSkus,
       logical_plaza_resolved_units: logicalResolvedUnits,
       seed_exact_logical_skus: seedExactSkus,
@@ -192,10 +226,12 @@ function auditCoverage(rows, routing, seed) {
       logical_plaza_gap_units: logicalGaps.reduce((sum, x) => sum + x.quantity, 0),
     },
     physical_route_gaps: physicalGaps,
+    no_own_production_ticket_items: noTicketItems,
     logical_plaza_gaps: logicalGaps,
     products,
     policy: {
-      missing_direct_route: "BLOCK_PHYSICAL_ROUTE_PROOF_FOR_THAT_ITEM",
+      missing_direct_route: "BLOCK_ONLY_IF_NEITHER_ROUTED_NOR_HUMAN_CONFIRMED_NO_TICKET",
+      confirmed_no_own_production_ticket: "RESOLVED_PRODUCTION_BEHAVIOR_WITH_ZERO_PRINTER_TARGETS",
       inferred_logical_plaza: "INFERENCE_NOT_OPERATIONAL_FACT",
       physical_route_does_not_reclassify_logical_plaza: true,
     },
@@ -225,12 +261,13 @@ function parseArgs(argv) {
 
 function main() {
   const args = parseArgs(process.argv);
-  for (const req of ["sales", "routing", "seed"]) if (!args[req]) fail("missing --" + req);
+  for (const req of ["sales", "routing", "seed", "non-production"]) if (!args[req]) fail("missing --" + req);
 
   const report = auditCoverage(
     readRows(path.resolve(args.sales)),
     loadJson(args.routing),
     loadJson(args.seed),
+    loadJson(args["non-production"]),
   );
 
   const output = JSON.stringify(report, null, 2) + "\n";
