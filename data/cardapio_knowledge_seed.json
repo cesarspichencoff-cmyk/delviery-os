@@ -485,10 +485,10 @@
         "risco de ruptura",
         "item pausado"
       ],
-      "confianca_classificacao": "inferido_com_baixa_confianca",
-      "revisao_manual": true,
+      "confianca_classificacao": "alta",
+      "revisao_manual": false,
       "observacoes": [
-        "Peixe cru em Entradas; não citado nas regras. Inferido como bancada fria (duplas/sashimi). Confirmar se sai da bancada de duplas ou de montagem."
+        "Praça operacional confirmada: Duplas."
       ],
       "descricoes_alternativas": []
     },
@@ -545,10 +545,10 @@
         "risco de ruptura",
         "item pausado"
       ],
-      "confianca_classificacao": "inferido_com_baixa_confianca",
-      "revisao_manual": true,
+      "confianca_classificacao": "alta",
+      "revisao_manual": false,
       "observacoes": [
-        "Peixe cru em Entradas; não citado nas regras. Inferido como bancada fria (duplas/sashimi). Confirmar se sai da bancada de duplas ou de montagem."
+        "Praça operacional confirmada: Duplas."
       ],
       "descricoes_alternativas": []
     },
@@ -651,11 +651,10 @@
         "alto tempo de produção",
         "item pausado"
       ],
-      "confianca_classificacao": "media",
-      "revisao_manual": true,
+      "confianca_classificacao": "alta",
+      "revisao_manual": false,
       "observacoes": [
-        "Item frio (marinado/cru) enviado para enrolados_quentes pela REGRA OPERACIONAL atual do César. A regra vence — NÃO cai em duplas/sushi. Revalidar com a equipe de qual bancada realmente sai; corrigível no cadastro sem quebrar a arquitetura.",
-        "Termo quente: ceviche."
+        "Praça operacional confirmada: Sushi Quentes."
       ],
       "descricoes_alternativas": []
     },
@@ -4417,10 +4416,10 @@
         "item pausado",
         "item de montagem fácil de esquecer"
       ],
-      "confianca_classificacao": "inferido_com_baixa_confianca",
-      "revisao_manual": true,
+      "confianca_classificacao": "alta",
+      "revisao_manual": false,
       "observacoes": [
-        "Ambíguo: cozinha (se produção quente) x montagem (se só servido). Confirmar fluxo real."
+        "Praça operacional confirmada: Cozinha."
       ],
       "descricoes_alternativas": []
     },
@@ -7897,11 +7896,11 @@
       "disponivel_em": [
         "Entradas"
       ],
-      "categoria_operacional": "entrada",
-      "subcategoria_operacional": "entrada_fria",
-      "praca_principal": "duplas",
+      "categoria_operacional": "enrolado_quente",
+      "subcategoria_operacional": "entrada_quente",
+      "praca_principal": "enrolados_quentes",
       "pracas_dependentes": [],
-      "temperatura": "frio",
+      "temperatura": "quente",
       "ingredientes_extraidos": [
         "atum",
         "ovas",
@@ -7929,20 +7928,21 @@
       "sacolas_esperadas": 1,
       "produz_sozinho": true,
       "depende_de_outra_praca": false,
-      "trava_fechamento": false,
+      "trava_fechamento": true,
       "pausavel": true,
       "substituivel": true,
       "risco_de_erro": "medio",
       "sinais_que_pode_gerar": [
-        "duplas sobrecarregada",
-        "pedido só de frio",
-        "pode ser adiantado",
+        "enrolados_quentes sobrecarregada",
+        "trava fechamento",
+        "pedido só de quente",
+        "alto tempo de produção",
         "item pausado"
       ],
-      "confianca_classificacao": "inferido_com_baixa_confianca",
-      "revisao_manual": true,
+      "confianca_classificacao": "alta",
+      "revisao_manual": false,
       "observacoes": [
-        "Peixe cru em Entradas; não citado nas regras. Inferido como bancada fria (duplas/sashimi). Confirmar se sai da bancada de duplas ou de montagem."
+        "Praça operacional confirmada: Sushi Quentes."
       ],
       "descricoes_alternativas": []
     },
@@ -7999,11 +7999,10 @@
         "alto tempo de produção",
         "item pausado"
       ],
-      "confianca_classificacao": "media",
-      "revisao_manual": true,
+      "confianca_classificacao": "alta",
+      "revisao_manual": false,
       "observacoes": [
-        "Item frio (marinado/cru) enviado para enrolados_quentes pela REGRA OPERACIONAL atual do César. A regra vence — NÃO cai em duplas/sushi. Revalidar com a equipe de qual bancada realmente sai; corrigível no cadastro sem quebrar a arquitetura.",
-        "Termo quente: tartar de salmao."
+        "Praça operacional confirmada: Sushi Quentes."
       ],
       "descricoes_alternativas": []
     },
@@ -8092,10 +8091,10 @@
       "substituivel": null,
       "risco_de_erro": "medio",
       "sinais_que_pode_gerar": [],
-      "confianca_classificacao": "inferido_com_baixa_confianca",
-      "revisao_manual": true,
+      "confianca_classificacao": "alta",
+      "revisao_manual": false,
       "observacoes": [
-        "Sem descrição; parece rótulo/programa (Club Vip Gourmet), não item de produção. Confirmar."
+        "Confirmado como programa/rótulo sem praça de produção."
       ],
       "descricoes_alternativas": []
     },
@@ -9138,11 +9137,10 @@
         "alto tempo de produção",
         "item pausado"
       ],
-      "confianca_classificacao": "media",
-      "revisao_manual": true,
+      "confianca_classificacao": "alta",
+      "revisao_manual": false,
       "observacoes": [
-        "Item frio (marinado/cru) enviado para enrolados_quentes pela REGRA OPERACIONAL atual do César. A regra vence — NÃO cai em duplas/sushi. Revalidar com a equipe de qual bancada realmente sai; corrigível no cadastro sem quebrar a arquitetura.",
-        "Termo quente: tuna shiso."
+        "Praça operacional confirmada: Sushi Quentes."
       ],
       "descricoes_alternativas": []
     },
