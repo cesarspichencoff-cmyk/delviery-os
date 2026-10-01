@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import type {
   ExpectedRoutingProjection,
   ExpectedRoutingTarget,
@@ -11,6 +12,18 @@ export type ProductionPrintEvidenceState =
   | "PHYSICALLY_CONFIRMED";
 
 export type ProductionService = "LUNCH" | "DINNER";
+
+export type ProductionInstructionEvidence =
+  | "HUMAN_CONFIRMED_RULE"
+  | "LOCAL_RECIPE_VALIDATED"
+  | "REAL_OBSERVED"
+  | "UNKNOWN";
+
+export interface ProductionServiceResolution {
+  service: ProductionService | null;
+  evidence: "HUMAN_CONFIRMED_RULE" | "REAL_OBSERVED" | "UNKNOWN";
+  source_ref: string | null;
+}
 
 export interface ProductionPrinterCalibration {
   actual_device_variant: string;
@@ -62,7 +75,7 @@ export interface ProductionTicketItemMetadata {
     label: string;
     quantity: number;
     unit: string;
-    proof: "HUMAN_CONFIRMED" | "RECIPE_BOM" | "UNKNOWN";
+    proof: ProductionInstructionEvidence;
   }>;
 }
 
@@ -71,7 +84,8 @@ export interface ProductionPrintContext {
   teknisa_sequence: string | null;
   ifood_sequence: string | null;
   order_time: string | null;
-  service?: ProductionService | null;
+  service_resolution?: ProductionServiceResolution | null;
+  order_observations?: string[];
   template_version: string;
   ticket_items?: ProductionTicketItemMetadata[];
 }
@@ -90,8 +104,10 @@ export interface PlannedProductionLine {
 export interface ProductionPrintIntent {
   printer: ExpectedRoutingTarget;
   template_version: string;
-  service: ProductionService | null;
+  service_resolution: ProductionServiceResolution;
+  order_observations: string[];
   semantic_key_material: string;
+  intent_fingerprint: string;
   identifiers: {
     ifood_sequence: string;
     teknisa_sequence: string;
@@ -124,6 +140,9 @@ export interface ProductionPrintPlan {
     ambiguous_effect_forbids_automatic_retry: true;
     service_is_explicit_not_inferred_from_clock: true;
     dual_service_routes_are_mutually_exclusive: true;
+    same_semantic_intent_same_fingerprint: true;
+    retry_must_reuse_intent_fingerprint: true;
+    fingerprint_is_not_print_proof: true;
   };
   effects: {
     print: false;
@@ -208,14 +227,31 @@ function selectTargetsForService(
   return selected;
 }
 
+function normalizedPrepComponents(
+  components: ProductionTicketItemMetadata["prep_components"],
+): string {
+  return [...(components ?? [])]
+    .map((component) => [
+      clean(component.component_key),
+      clean(component.label),
+      Number(component.quantity),
+      clean(component.unit),
+      component.proof,
+    ].join("~"))
+    .sort()
+    .join("|");
+}
+
 function stableSemanticKeyMaterial(input: {
   orderId: string;
-  printerCode: string;
+  target: ExpectedRoutingTarget;
   templateVersion: string;
-  service: ProductionService | null;
+  serviceResolution: ProductionServiceResolution;
   ifoodSequence: string;
   teknisaSequence: string;
   tataSequence: string;
+  orderTime: string | null;
+  orderObservations: string[];
   lines: PlannedProductionLine[];
 }): string {
   const lines = input.lines
@@ -227,20 +263,31 @@ function stableSemanticKeyMaterial(input: {
       line.mount_group_id ?? "",
       line.box_label ?? "",
       line.item_observations.join(" | "),
+      normalizedPrepComponents(line.prep_components),
     ].join("~"))
     .join("||");
 
   return [
-    "production-ticket-v1",
+    "production-ticket-v2",
     input.orderId,
-    input.printerCode,
+    input.target.printer_code,
+    input.target.printer_name,
+    input.target.printer_ip,
     input.templateVersion,
-    input.service ?? "UNRESOLVED",
+    input.serviceResolution.service ?? "UNRESOLVED",
+    input.serviceResolution.evidence,
+    input.serviceResolution.source_ref ?? "",
     input.ifoodSequence,
     input.teknisaSequence,
     input.tataSequence,
+    input.orderTime ?? "",
+    input.orderObservations.join(" | "),
     lines,
   ].join("::");
+}
+
+function fingerprintSemanticIntent(material: string): string {
+  return createHash("sha256").update(material).digest("hex");
 }
 
 /**
@@ -280,13 +327,32 @@ export function planProductionPrintIntents(
   if (!ifoodSequence) blocking.add("IFOOD_SEQUENCE_REQUIRED");
   if (!clean(context.template_version)) blocking.add("TEMPLATE_VERSION_REQUIRED");
 
-  const service: ProductionService | null =
-    context.service === "LUNCH" || context.service === "DINNER"
-      ? context.service
-      : null;
-  if (context.service && !service) {
+  const rawServiceResolution = context.service_resolution ?? null;
+  const serviceResolution: ProductionServiceResolution = {
+    service:
+      rawServiceResolution?.service === "LUNCH" ||
+      rawServiceResolution?.service === "DINNER"
+        ? rawServiceResolution.service
+        : null,
+    evidence:
+      rawServiceResolution?.evidence === "HUMAN_CONFIRMED_RULE" ||
+      rawServiceResolution?.evidence === "REAL_OBSERVED"
+        ? rawServiceResolution.evidence
+        : "UNKNOWN",
+    source_ref: clean(rawServiceResolution?.source_ref) || null,
+  };
+
+  if (rawServiceResolution?.service && !serviceResolution.service) {
     blocking.add("INVALID_PRODUCTION_SERVICE");
   }
+  if (serviceResolution.service && serviceResolution.evidence === "UNKNOWN") {
+    blocking.add("PRODUCTION_SERVICE_EVIDENCE_REQUIRED");
+  }
+  if (serviceResolution.service && !serviceResolution.source_ref) {
+    blocking.add("PRODUCTION_SERVICE_SOURCE_REF_REQUIRED");
+  }
+
+  const orderObservations = normalizedObservations(context.order_observations);
 
   const metaByIndex = new Map<number, ProductionTicketItemMetadata>();
   for (const meta of context.ticket_items ?? []) {
@@ -344,7 +410,7 @@ export function planProductionPrintIntents(
 
     const activeTargets = selectTargetsForService(
       item.targets,
-      service,
+      serviceResolution.service,
       item.item_index,
       blocking,
     );
@@ -385,20 +451,25 @@ export function planProductionPrintIntents(
     }
 
     const lines = grouped.lines.sort((a, b) => a.item_index - b.item_index);
+    const semanticKeyMaterial = stableSemanticKeyMaterial({
+      orderId,
+      target: grouped.target,
+      templateVersion: context.template_version,
+      serviceResolution,
+      ifoodSequence,
+      teknisaSequence,
+      tataSequence,
+      orderTime: clean(context.order_time) || null,
+      orderObservations,
+      lines,
+    });
     printIntents.push({
       printer: grouped.target,
       template_version: context.template_version,
-      service,
-      semantic_key_material: stableSemanticKeyMaterial({
-        orderId,
-        printerCode,
-        templateVersion: context.template_version,
-        service,
-        ifoodSequence,
-        teknisaSequence,
-        tataSequence,
-        lines,
-      }),
+      service_resolution: { ...serviceResolution },
+      order_observations: [...orderObservations],
+      semantic_key_material: semanticKeyMaterial,
+      intent_fingerprint: fingerprintSemanticIntent(semanticKeyMaterial),
       identifiers: {
         ifood_sequence: ifoodSequence,
         teknisa_sequence: teknisaSequence,
@@ -428,6 +499,9 @@ export function planProductionPrintIntents(
       ambiguous_effect_forbids_automatic_retry: true,
       service_is_explicit_not_inferred_from_clock: true,
       dual_service_routes_are_mutually_exclusive: true,
+      same_semantic_intent_same_fingerprint: true,
+      retry_must_reuse_intent_fingerprint: true,
+      fingerprint_is_not_print_proof: true,
     },
     effects: {
       print: false,
