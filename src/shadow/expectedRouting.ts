@@ -115,7 +115,14 @@ export function projectExpectedRouting(
       if (!printerCodes?.length) {
         blocking.add(`PRODUCT_ROUTE_NOT_FOUND_${item.codigo}`);
       } else {
+        const seenRouteTargets = new Set<string>();
         for (const printerCode of printerCodes) {
+          if (seenRouteTargets.has(printerCode)) {
+            blocking.add(`DUPLICATE_ROUTE_TARGET_${item.codigo}_${printerCode}`);
+            continue;
+          }
+          seenRouteTargets.add(printerCode);
+
           const printer = printers.get(printerCode);
 
           if (!printer) {
