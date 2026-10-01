@@ -1,21 +1,30 @@
 param(
-  [string]$OdhenRoot = "C:\TEKNISA\odhen-perifericos"
+  [string]$OdhenRoot = "C:\TEKNISA\odhen-perifericos",
+  [string]$OdhenPosRoot = ""
 )
 
 $ErrorActionPreference = "Stop"
 
 # SOURCE-ONLY PROBE.
-# It never starts Perifericos.exe, never calls HTTP, never queries the database,
-# never reads orders and never writes files.
+# It never starts Odhen/Perifericos, never calls HTTP, never queries the database,
+# never reads order rows and never writes files.
 #
-# IMPORTANT: intentionally scans only code/config roots and excludes Log/Temp/cache
-# trees so the probe does not touch large operational logs that may contain orders.
+# Topology is based on real CAIXA_MOOCA evidence from 2026-10-01:
+# - Perifericos code lives under C:\TEKNISA\odhen-perifericos\{src,routes}
+# - Delivery/POS code lives in sibling C:\TEKNISA\odhenPOS\{mobile,backend_74000}
+#
+# IMPORTANT: scans only code/config roots and excludes Log/Temp/cache/node_modules.
+
+if ([string]::IsNullOrWhiteSpace($OdhenPosRoot)) {
+  $TeknisaRoot = Split-Path -Parent $OdhenRoot
+  $OdhenPosRoot = Join-Path $TeknisaRoot "odhenPOS"
+}
 
 $codeRoots = @(
-  (Join-Path $OdhenRoot "perifericos\src"),
-  (Join-Path $OdhenRoot "perifericos\routes"),
-  (Join-Path $OdhenRoot "odhenPOS\mobile"),
-  (Join-Path $OdhenRoot "odhenPOS\backend_74000")
+  (Join-Path $OdhenRoot "src"),
+  (Join-Path $OdhenRoot "routes"),
+  (Join-Path $OdhenPosRoot "mobile"),
+  (Join-Path $OdhenPosRoot "backend_74000")
 )
 
 $tokenSpecs = @(
@@ -36,10 +45,13 @@ $tokenSpecs = @(
 )
 
 $result = [ordered]@{
-  schema = "deliveryos.shadow.odhen.source-probe.v132.1"
+  schema = "deliveryos.shadow.odhen.source-probe.v133.0"
   mode = "READ_ONLY_SOURCE_CODE_ONLY"
-  root = $OdhenRoot
-  root_exists = $false
+  topology_basis = "REAL_CAIXA_MOOCA_2026-10-01"
+  perifericos_root = $OdhenRoot
+  perifericos_root_exists = $false
+  odhen_pos_root = $OdhenPosRoot
+  odhen_pos_root_exists = $false
   scanned_roots = @()
   skipped_roots = @()
   effects = [ordered]@{
@@ -48,7 +60,13 @@ $result = [ordered]@{
     database_query = $false
     database_write = $false
     order_read = $false
+    fiscal_action = $false
+    sefaz_call = $false
     print = $false
+    spooler_write = $false
+    printer_configuration_change = $false
+    network_payload_sent_to_printer = $false
+    cutover = $false
     file_write = $false
   }
   files_scanned = 0
@@ -57,13 +75,19 @@ $result = [ordered]@{
   errors = @()
 }
 
-if (-not (Test-Path -LiteralPath $OdhenRoot -PathType Container)) {
-  $result.errors += "ODHEN_ROOT_NOT_FOUND"
+$result.perifericos_root_exists = Test-Path -LiteralPath $OdhenRoot -PathType Container
+$result.odhen_pos_root_exists = Test-Path -LiteralPath $OdhenPosRoot -PathType Container
+
+if (-not $result.perifericos_root_exists) {
+  $result.errors += "PERIFERICOS_ROOT_NOT_FOUND"
+}
+if (-not $result.odhen_pos_root_exists) {
+  $result.errors += "ODHEN_POS_ROOT_NOT_FOUND"
+}
+if ($result.errors.Count -gt 0) {
   $result | ConvertTo-Json -Depth 8
   exit 2
 }
-
-$result.root_exists = $true
 
 $extensions = @(
   ".js", ".ts", ".json", ".config", ".txt", ".sql", ".xml",
@@ -129,3 +153,6 @@ foreach ($file in $files) {
 }
 
 $result | ConvertTo-Json -Depth 8
+
+if ($result.errors.Count -gt 0) { exit 3 }
+exit 0
