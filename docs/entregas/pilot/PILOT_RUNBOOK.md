@@ -78,16 +78,39 @@ Sem GPS de produção: estados sem inventar posição.
 
 ## Backup
 
-- Automático a cada N minutos (config).  
-- Manual: admin com token gerente → `POST /api/backup`.  
-- Arquivos em `data/entregas-pilot/backups/`.
+O procedimento depende do backend:
+
+**Backend `file` (default atual):**
+
+- o backup de arquivo continua disponível;
+- admin/gerente pode usar `POST /api/backup`;
+- a API `GET /api/backups` lista os backups de arquivo.
+
+**Backend `postgres` (opt-in):**
+
+- a API de backup de arquivo responde que o backup é gerenciado pelo backend;
+- o sidecar `deliveryos-backup` usa `pg_dump --format=custom`;
+- o dump fica no volume `entregas_backups`;
+- esse volume é local ao host: ainda é obrigatória uma cópia off-host antes
+  de cutover operacional.
 
 ## Restaurar
+
+**Se o backend for `file`:**
 
 1. Só admin (`gerente`).  
 2. Listar: `GET /api/backups`.  
 3. `POST /api/restore` `{ "file": "store-....json" }`.  
-4. **Reiniciar o servidor.**
+4. Reiniciar o servidor.
+
+**Se o backend for `postgres`:**
+
+1. Não use `POST /api/restore`;
+2. escolha um banco alvo **separado e vazio**;
+3. use o profile `maintenance` com snapshot explícito e
+   `ENTREGAS_RESTORE_CONFIRM=YES`;
+4. compare a verdade restaurada antes de qualquer troca de URL;
+5. nunca restaure diretamente sobre o banco operacional como teste.
 
 ## Relatar erro
 
