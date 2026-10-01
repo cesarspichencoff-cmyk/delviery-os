@@ -13,6 +13,11 @@ function fail(msg) {
 
 if (routing.schema !== "deliveryos.odhen.product-routing.compact.v1") fail("bad routing schema");
 if (printers.schema !== "deliveryos.runtime-printer-map.v1") fail("bad printer schema");
+if (!routing.store || routing.store !== printers.store) fail("store mismatch");
+
+for (const value of Object.values(routing.source_sha256 || {})) {
+  if (!/^[a-f0-9]{64}$/i.test(String(value))) fail("bad source sha256");
+}
 
 const entries = Object.entries(routing.products || {});
 if (entries.length !== 463 || routing.counts.products !== 463) fail("expected 463 products");
