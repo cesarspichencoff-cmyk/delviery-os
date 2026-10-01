@@ -3,29 +3,23 @@
 const assert = require("node:assert/strict");
 const Production = require("../dist/src/production/productionTicket.js");
 
-const routes = [
-  ["almoco", "caixa", "CAIXA"],
-  ["almoco", "cozinha", "COZINHA"],
-  ["almoco", "enrolados", "BALCAO_SUSHI_2"],
-  ["almoco", "combinados", "BALCAO_SUSHI_1"],
-  ["almoco", "enrolados_quentes", "BALCAO_SUSHI_2"],
-  ["jantar", "caixa", "CAIXA"],
-  ["jantar", "cozinha", "COZINHA"],
-  ["jantar", "enrolados", "DELIVERY_SUSHI_2"],
-  ["jantar", "combinados", "DELIVERY_SUSHI_1"],
-  ["jantar", "enrolados_quentes", "BALCAO_SUSHI_2"],
-];
-
-for (const [service, square, target] of routes) {
-  const routed = Production.routeProductionSquare(square, service);
-  assert.equal(routed.status, "PROVEN");
-  assert.equal(routed.target, target);
-}
-
 for (const service of ["almoco", "jantar"]) {
-  const unknown = Production.routeProductionSquare("duplas", service);
-  assert.equal(unknown.status, "UNKNOWN");
-  assert.equal(unknown.target, null);
+  for (const square of [
+    "caixa",
+    "cozinha",
+    "enrolados",
+    "combinados",
+    "enrolados_quentes",
+    "duplas",
+  ]) {
+    const routed = Production.routeProductionSquare(square, service);
+    assert.equal(routed.status, "UNKNOWN");
+    assert.equal(routed.target, null);
+    assert.match(
+      routed.reason,
+      /LEGACY_STATIC_ROUTE_SUPERSEDED_BY_PRODUCT_ROUTING_CONFIG/,
+    );
+  }
 }
 
 const preview = Production.buildProductionTicketPreview({
@@ -65,8 +59,9 @@ const preview = Production.buildProductionTicketPreview({
   ],
 });
 
-assert.equal(preview.ready, true);
-assert.equal(preview.route.target, "DELIVERY_SUSHI_2");
+assert.equal(preview.ready, false);
+assert.equal(preview.route.target, null);
+assert.ok(preview.blocking_reasons.includes("ROUTE_NOT_PROVEN"));
 assert.match(preview.content, /TATA 037/);
 assert.match(preview.content, /TEKNISA 18452/);
 assert.match(preview.content, /IFOOD A1B2C3/);
@@ -95,8 +90,9 @@ const kitchenPreview = Production.buildProductionTicketPreview({
     },
   ],
 });
-assert.equal(kitchenPreview.ready, true);
-assert.equal(kitchenPreview.route.target, "COZINHA");
+assert.equal(kitchenPreview.ready, false);
+assert.equal(kitchenPreview.route.target, null);
+assert.ok(kitchenPreview.blocking_reasons.includes("ROUTE_NOT_PROVEN"));
 assert.equal(kitchenPreview.content.includes("MONTAR NA"), false);
 assert.match(kitchenPreview.content, /\[ \] PRODUZIDO/);
 
