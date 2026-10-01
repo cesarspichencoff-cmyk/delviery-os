@@ -1261,6 +1261,20 @@ Estado atual: **feed durável single-instance = CODE_READY + TEST_PASS; produç�
 > recusou o adulterado. **Isso não é off-host:** Docker/Compose e PostgreSQL real desta sucessão não
 > rodaram, nenhum destino externo foi escolhido e SHA-256 não autentica contra alguém que substitua
 > snapshot e sidecar juntos.
+>
+> **SUCESSÃO — 2026-10-01 · TRANSPORTE NEUTRO PREPARADO, OFF-HOST AINDA ABERTO.**
+>
+> `export:entregas:backup` copia o pacote já verificado para um diretório
+> existente/montado, relê o destino, grava manifesto, não sobrescreve bundle e
+> não contém rotina de delete. A saída força `off_host_proven=false` e mede
+> `same_filesystem_device` apenas como diagnóstico. Provas locais:
+> backup-export **7/7** e CLI real exit 0 no mesmo filesystem com
+> `off_host_proven=false`; sem destino, exit 2.
+>
+> Isso reduz a dependência do fornecedor, mas **não preenche o checklist**:
+> ainda falta César escolher/autorizar o destino externo, configurar a
+> credencial mínima, produzir uma cópia realmente fora do host e restaurá-la
+> em ensaio.
 
 
 

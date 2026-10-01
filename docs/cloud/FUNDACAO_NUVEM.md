@@ -139,8 +139,20 @@ A restauração já é testada em código contra PostgreSQL real
 sumir e só dá sinal meses depois: a trigger de append-only, as constraints, os
 índices parciais e o fuso dos carimbos.
 
-**Este passo depende de credencial e é o único item do capítulo 4 que não pôde
-ser executado aqui.**
+Desde 2026-10-01 existe também um transporte neutro para um destino **já
+montado**:
+
+```bash
+npm run export:entregas:backup -- <snapshot> --dest <diretorio-montado>
+```
+
+Ele verifica origem e destino, não sobrescreve bundles, não apaga no destino e
+grava manifesto. Por construção devolve `off_host_proven=false`: a ferramenta
+não sabe se o mount está em outra máquina. Portanto ela prepara o transporte,
+mas **não fecha este passo**.
+
+**Este passo depende de destino/credencial externos e continua sem execução
+real até César autorizar o provedor.**
 
 ---
 

@@ -92,7 +92,11 @@ O procedimento depende do backend:
 - o sidecar `deliveryos-backup` usa `pg_dump --format=custom`;
 - o dump fica no volume `entregas_backups`;
 - esse volume é local ao host: ainda é obrigatória uma cópia off-host antes
-  de cutover operacional.
+  de cutover operacional;
+- para um destino externo **já montado**, use
+  `npm run export:entregas:backup -- <snapshot> --dest <diretorio>`.
+  A saída `off_host_proven=false` é intencional: copiar para um mount não
+  prova sozinho que ele está em outra máquina.
 
 ## Restaurar
 
