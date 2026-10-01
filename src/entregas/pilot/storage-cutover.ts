@@ -6,13 +6,14 @@ import type { OutboxRecord } from "../integration/outbox";
 import type { Occurrence } from "../operational/occurrence";
 import type { RiderOperationalState } from "../operational/rider-state";
 import { openFileUnitOfWork } from "../persistence/file-store";
+import { PgEntregasUnitOfWork } from "../persistence/pg-uow";
 import type { TripRecord } from "../persistence/ports";
 import type {
   SqlRow,
   TransactionalSqlClient,
 } from "../../platform/persistence/sql-client";
 import {
-  FilePilotReadyOrderStore,
+  PgPilotReadyOrderStore,
   type PilotReadyOrder,
 } from "./ready-orders";
 
@@ -309,24 +310,25 @@ export async function readFilePilotStorageSnapshot(args: {
   const beforeReady = fileHash(args.ready_file);
 
   const uow = openFileUnitOfWork(args.data_file);
-  const ready = new FilePilotReadyOrderStore(args.ready_file);
-  const [
-    trips,
-    handoffs,
-    occurrences,
-    riders,
-    events,
-    outbox,
-    readyOrders,
-  ] = await Promise.all([
-    uow.trips.list(),
-    uow.handoffs.list(),
-    uow.occurrences.list(),
-    uow.riders.list(),
-    uow.events.listAll(),
-    uow.outbox.all(),
-    ready.list(),
-  ]);
+  const readyOrders: PilotReadyOrder[] = existsSync(args.ready_file)
+    ? (() => {
+        const raw = JSON.parse(readFileSync(args.ready_file, "utf8")) as {
+          orders?: PilotReadyOrder[];
+        };
+        return Array.isArray(raw.orders)
+          ? raw.orders.map((x) => structuredClone(x))
+          : [];
+      })()
+    : [];
+  const [trips, handoffs, occurrences, riders, events, outbox] =
+    await Promise.all([
+      uow.trips.list(),
+      uow.handoffs.list(),
+      uow.occurrences.list(),
+      uow.riders.list(),
+      uow.events.listAll(),
+      uow.outbox.all(),
+    ]);
 
   const afterData = fileHash(args.data_file);
   const afterReady = fileHash(args.ready_file);
@@ -393,6 +395,34 @@ async function assertTargetReady(
       `unidade ausente ou inativa no destino: ${unitId}`,
     );
   }
+}
+
+export async function readPostgresPilotStorageSnapshot(
+  sql: TransactionalSqlClient,
+  unitId: string,
+): Promise<PilotStorageSnapshot> {
+  const uow = new PgEntregasUnitOfWork(sql, unitId);
+  const ready = new PgPilotReadyOrderStore(sql, unitId);
+  const [trips, handoffs, occurrences, riders, events, outbox, readyOrders] =
+    await Promise.all([
+      uow.trips.list(),
+      uow.handoffs.list(),
+      uow.occurrences.list(),
+      uow.riders.list(),
+      uow.events.listAll(),
+      uow.outbox.all(),
+      ready.list(),
+    ]);
+  return sortSnapshot({
+    unit_id: unitId,
+    trips,
+    handoffs,
+    occurrences,
+    riders,
+    events,
+    outbox,
+    ready_orders: readyOrders,
+  });
 }
 
 export async function targetCounts(
@@ -928,20 +958,30 @@ export async function applyFileToPostgresCutover(args: {
     await verifyInsideTransaction(tx, args.snapshot);
   });
 
-  const after = await targetCounts(args.sql, args.snapshot.unit_id);
+  const afterSnapshot = await readPostgresPilotStorageSnapshot(
+    args.sql,
+    args.snapshot.unit_id,
+  );
+  const after = snapshotCounts(afterSnapshot);
   if (JSON.stringify(after) !== JSON.stringify(snapshotCounts(args.snapshot))) {
     throw new PilotStorageCutoverError(
       "VERIFY_FAILED",
       "contagem mudou imediatamente após o COMMIT",
     );
   }
+  const sourceFingerprint = snapshotFingerprint(args.snapshot);
+  const targetFingerprint = snapshotFingerprint(afterSnapshot);
+  if (sourceFingerprint !== targetFingerprint) {
+    throw new PilotStorageCutoverError(
+      "VERIFY_FAILED",
+      "fingerprint semântico do destino divergiu da fonte após o COMMIT",
+    );
+  }
 
   return {
     unit_id: args.snapshot.unit_id,
-    source_fingerprint: snapshotFingerprint(args.snapshot),
+    source_fingerprint: sourceFingerprint,
     imported_counts: after,
-    // Fingerprint pós-commit é um selo da fonte importada; a equivalência
-    // estrutural detalhada já foi verificada dentro da transação.
-    target_fingerprint: snapshotFingerprint(args.snapshot),
+    target_fingerprint: targetFingerprint,
   };
 }
