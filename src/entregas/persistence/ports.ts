@@ -12,21 +12,25 @@ export interface TripRecord {
 
 export interface TripRepository {
   get(trip_id: string): Promise<TripRecord | null>;
+  list(): Promise<TripRecord[]>;
   save(record: TripRecord, expectedVersion: number | null): Promise<void>;
 }
 
 export interface HandoffRepository {
   get(handoff_id: string): Promise<{ handoff: Handoff; version: number } | null>;
+  list(): Promise<Array<{ handoff: Handoff; version: number }>>;
   save(handoff: Handoff, version: number, expectedVersion: number | null): Promise<void>;
 }
 
 export interface OccurrenceRepository {
   get(id: string): Promise<Occurrence | null>;
+  list(): Promise<Occurrence[]>;
   save(occ: Occurrence, expectedVersion: number | null): Promise<void>;
 }
 
 export interface RiderStateRepository {
   get(rider_id: string): Promise<RiderOperationalState | null>;
+  list(): Promise<RiderOperationalState[]>;
   save(state: RiderOperationalState, expectedVersion: number | null): Promise<void>;
 }
 

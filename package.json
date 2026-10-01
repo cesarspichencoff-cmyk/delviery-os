@@ -131,7 +131,8 @@
     "evidence:lab:v4:refresh": "npx tsx labs/operacao-viva-v4/testes/refrescar-evidencias.ts",
     "test:lab": "npm run typecheck:lab:v4 && npm run test:lab:v4 && npm run test:lab:v4:browser && npm run test:lab:v4:evidencias",
     "test:platform:m1b-mutations": "npx tsx src/platform/run-m1b-mutation-tests.ts",
-    "test:platform:m1b-perceptual": "npx tsx src/platform/run-m1b-perceptual-tests.ts"
+    "test:platform:m1b-perceptual": "npx tsx src/platform/run-m1b-perceptual-tests.ts",
+    "test:entregas:pilot-storage": "npx tsx src/entregas/pilot/run-storage-abstraction-tests.ts"
   },
   "devDependencies": {
     "@types/node": "20.14.10",

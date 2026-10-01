@@ -98,6 +98,9 @@ export class FileUnitOfWork implements UnitOfWork {
       async get(id) {
         return self.dirty.trips[id] ?? null;
       },
+      async list() {
+        return Object.values(self.dirty.trips).map((x) => structuredClone(x));
+      },
       async save(record, expected) {
         const cur = self.dirty.trips[record.trip.trip_id];
         if (expected !== null && expected !== undefined) {
@@ -118,6 +121,9 @@ export class FileUnitOfWork implements UnitOfWork {
       async get(id) {
         return self.dirty.handoffs[id] ?? null;
       },
+      async list() {
+        return Object.values(self.dirty.handoffs).map((x) => structuredClone(x));
+      },
       async save(handoff, version, expected) {
         const cur = self.dirty.handoffs[handoff.handoff_id];
         if (expected !== null && expected !== undefined) {
@@ -136,6 +142,9 @@ export class FileUnitOfWork implements UnitOfWork {
       async get(id) {
         return self.dirty.occurrences[id] ?? null;
       },
+      async list() {
+        return Object.values(self.dirty.occurrences).map((x) => structuredClone(x));
+      },
       async save(occ, expected) {
         const cur = self.dirty.occurrences[occ.occurrence_id];
         if (expected !== null && cur && cur.version !== expected) {
@@ -147,6 +156,9 @@ export class FileUnitOfWork implements UnitOfWork {
     this.riders = {
       async get(id) {
         return self.dirty.riders[id] ?? null;
+      },
+      async list() {
+        return Object.values(self.dirty.riders).map((x) => structuredClone(x));
       },
       async save(state, expected) {
         const cur = self.dirty.riders[state.rider_id];

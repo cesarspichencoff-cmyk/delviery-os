@@ -263,6 +263,21 @@ export class PgEntregasUnitOfWork implements UnitOfWork {
         );
         return rowToTrip(rows[0], ds.map(rowToDelivery));
       },
+      async list() {
+        const rows = await self.client.query<SqlRow>(
+          `SELECT trip_id FROM entregas.trip WHERE unit_id=$1
+             ORDER BY created_at, trip_id`,
+          [self.unitId],
+        );
+        const committed: TripRecord[] = [];
+        for (const row of rows) {
+          const rec = await self.trips.get(String(row.trip_id));
+          if (rec) committed.push(rec);
+        }
+        const byId = new Map(committed.map((x) => [x.trip.trip_id, x] as const));
+        for (const [id, staged] of self.tripWrites) byId.set(id, clone(staged.record));
+        return [...byId.values()];
+      },
       async save(record, expected) {
         if (record.trip.unit_id !== self.unitId) {
           throw new Error("trip de outra unidade recusada");
@@ -281,10 +296,27 @@ export class PgEntregasUnitOfWork implements UnitOfWork {
           return { handoff: clone(staged.handoff), version: staged.version };
         }
         const rows = await self.client.query<SqlRow>(
-          `SELECT * FROM entregas.handoff WHERE handoff_id=$1 AND unit_id=$2`,
+          `SELECT * FROM entregas.handoff WHERE handoff_id=$1 AND unit_id=$2
+             ORDER BY handoff_id`,
           [id, self.unitId],
         );
         return rows.length ? rowToHandoff(rows[0]) : null;
+      },
+      async list() {
+        const rows = await self.client.query<SqlRow>(
+          `SELECT * FROM entregas.handoff WHERE unit_id=$1 ORDER BY handoff_id`,
+          [self.unitId],
+        );
+        const byId = new Map(
+          rows.map((x) => {
+            const rec = rowToHandoff(x);
+            return [rec.handoff.handoff_id, rec] as const;
+          }),
+        );
+        for (const [id, staged] of self.handoffWrites) {
+          byId.set(id, { handoff: clone(staged.handoff), version: staged.version });
+        }
+        return [...byId.values()];
       },
       async save(handoff, version, expected) {
         if (handoff.unit_id !== self.unitId) {
@@ -308,6 +340,20 @@ export class PgEntregasUnitOfWork implements UnitOfWork {
         );
         return rows.length ? rowToOccurrence(rows[0]) : null;
       },
+      async list() {
+        const rows = await self.client.query<SqlRow>(
+          `SELECT * FROM entregas.occurrence WHERE unit_id=$1 ORDER BY occurrence_id`,
+          [self.unitId],
+        );
+        const byId = new Map(
+          rows.map((x) => {
+            const rec = rowToOccurrence(x);
+            return [rec.occurrence_id, rec] as const;
+          }),
+        );
+        for (const [id, staged] of self.occurrenceWrites) byId.set(id, clone(staged.occ));
+        return [...byId.values()];
+      },
       async save(occ, expected) {
         if (occ.unit_id !== self.unitId) {
           throw new Error("occurrence de outra unidade recusada");
@@ -328,6 +374,20 @@ export class PgEntregasUnitOfWork implements UnitOfWork {
           [id, self.unitId],
         );
         return rows.length ? rowToRider(rows[0]) : null;
+      },
+      async list() {
+        const rows = await self.client.query<SqlRow>(
+          `SELECT * FROM entregas.rider_state WHERE unit_id=$1 ORDER BY rider_id`,
+          [self.unitId],
+        );
+        const byId = new Map(
+          rows.map((x) => {
+            const rec = rowToRider(x);
+            return [String(rec.rider_id), rec] as const;
+          }),
+        );
+        for (const [id, staged] of self.riderWrites) byId.set(id, clone(staged.state));
+        return [...byId.values()];
       },
       async save(state, expected) {
         if (state.unit_id !== self.unitId) {

@@ -46,6 +46,9 @@ export class MemoryUnitOfWork implements UnitOfWork {
       async get(id) {
         return self.staged.trips.get(id) ?? null;
       },
+      async list() {
+        return [...self.staged.trips.values()].map((x) => structuredClone(x));
+      },
       async save(record, expected) {
         const cur = self.staged.trips.get(record.trip.trip_id);
         if (expected !== null && (cur?.version ?? 0) !== expected) {
@@ -62,6 +65,9 @@ export class MemoryUnitOfWork implements UnitOfWork {
       async get(id) {
         return self.staged.handoffs.get(id) ?? null;
       },
+      async list() {
+        return [...self.staged.handoffs.values()].map((x) => structuredClone(x));
+      },
       async save(handoff, version, expected) {
         const cur = self.staged.handoffs.get(handoff.handoff_id);
         if (expected !== null && (cur?.version ?? 0) !== expected) {
@@ -74,6 +80,9 @@ export class MemoryUnitOfWork implements UnitOfWork {
       async get(id) {
         return self.staged.occurrences.get(id) ?? null;
       },
+      async list() {
+        return [...self.staged.occurrences.values()].map((x) => structuredClone(x));
+      },
       async save(occ, expected) {
         const cur = self.staged.occurrences.get(occ.occurrence_id);
         if (expected !== null && cur && cur.version !== expected) {
@@ -85,6 +94,9 @@ export class MemoryUnitOfWork implements UnitOfWork {
     this.riders = {
       async get(id) {
         return self.staged.riders.get(id) ?? null;
+      },
+      async list() {
+        return [...self.staged.riders.values()].map((x) => structuredClone(x));
       },
       async save(state, expected) {
         const cur = self.staged.riders.get(state.rider_id);

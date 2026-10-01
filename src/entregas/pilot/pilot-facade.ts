@@ -1,11 +1,15 @@
 /**
- * Facade do piloto: ApplicationService + FileUnitOfWork + sessão por token.
- * Sem seed de demo. Persistência single-instance local.
+ * Facade do piloto: ApplicationService + UnitOfWork injetável + sessão por token.
+ * O backend arquivo continua default; a facade não conhece mais o formato do store.
  */
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { createPilotPolicy } from "../foundation/policy";
-import { openFileUnitOfWork, FileUnitOfWork } from "../persistence/file-store";
+import type { UnitOfWork } from "../persistence/ports";
+import {
+  createFilePilotUnitOfWorkSource,
+  type PilotUnitOfWorkSource,
+} from "./pilot-storage";
 import { EntregasApplicationService, type AppResult } from "../operational/application-service";
 import type { ActorContext, OperationalRole } from "../operational/auth";
 import type { Command } from "../operational/commands";
@@ -73,7 +77,8 @@ interface ReadyStore {
 }
 
 export class PilotApplicationFacade {
-  private uow: FileUnitOfWork;
+  private uow: UnitOfWork;
+  private readonly storage: PilotUnitOfWorkSource;
   private svc: EntregasApplicationService;
   private actor: ActorContext | null = null;
   private last_error: string | null = null;
@@ -83,15 +88,17 @@ export class PilotApplicationFacade {
   private occCache = new Map<string, Occurrence>();
   private riderCache = new Map<string, RiderOperationalState>();
   private commandIds = new Set<string>();
-  private dataFile: string;
   private readyFile: string;
 
   constructor(
     private readonly cfg: PilotConfig,
     private readonly log: PilotLogger,
+    storage?: PilotUnitOfWorkSource,
   ) {
     mkdirSync(cfg.data_dir, { recursive: true });
-    this.dataFile = join(cfg.data_dir, "store.json");
+    const defaultDataFile = join(cfg.data_dir, "store.json");
+    this.storage =
+      storage ?? createFilePilotUnitOfWorkSource(defaultDataFile);
     this.readyFile = join(cfg.data_dir, "ready_orders.json");
     if (!existsSync(this.readyFile)) {
       writeFileSync(
@@ -101,34 +108,13 @@ export class PilotApplicationFacade {
       );
     }
     const policy = createPilotPolicy({ max_stops: cfg.max_stops });
-    this.uow = openFileUnitOfWork(this.dataFile);
+    this.uow = this.storage.open();
     this.svc = new EntregasApplicationService(this.uow, policy, cfg.source_mode);
-    this.hydrateFromDisk();
   }
 
-  private hydrateFromDisk(): void {
-    try {
-      if (!existsSync(this.dataFile)) return;
-      const data = JSON.parse(readFileSync(this.dataFile, "utf8")) as {
-        trips?: Record<string, { trip: { trip_id: string }; deliveries: Record<string, unknown> }>;
-        handoffs?: Record<string, { handoff: Handoff }>;
-        occurrences?: Record<string, Occurrence>;
-        riders?: Record<string, RiderOperationalState>;
-      };
-      // caches parciais: recarregados ao executar; snapshot usa uow após load
-      void data;
-    } catch (e) {
-      this.log.error(
-        "persistence_error",
-        "Falha ao ler dados salvos.",
-        e instanceof Error ? e.message : String(e),
-      );
-    }
-  }
-
-  /** Reinicia UoW a partir do arquivo (após restore) */
+  /** Reabre o backend configurado (arquivo após restore; backend externo após reconnect). */
   reloadStore(): void {
-    this.uow = openFileUnitOfWork(this.dataFile);
+    this.uow = this.storage.open();
     this.svc = new EntregasApplicationService(
       this.uow,
       createPilotPolicy({ max_stops: this.cfg.max_stops }),
@@ -138,11 +124,19 @@ export class PilotApplicationFacade {
     this.handoffCache.clear();
     this.occCache.clear();
     this.riderCache.clear();
-    this.hydrateFromDisk();
   }
 
   get dataPath(): string {
-    return this.dataFile;
+    if (!this.storage.dataPath) {
+      throw new Error(
+        "backup/restore de arquivo indisponível para este backend de persistência",
+      );
+    }
+    return this.storage.dataPath;
+  }
+
+  get supportsFileBackup(): boolean {
+    return Boolean(this.storage.dataPath);
   }
 
   login(token: string): { ok: boolean; human: string; actor?: ActorContext } {
@@ -344,60 +338,28 @@ export class PilotApplicationFacade {
   }
 
   async snapshot(): Promise<PilotSnapshot> {
-    // reconstruir trips do cache + uow conhecidos
-    const tripIds = new Set(this.tripCache.keys());
-    try {
-      if (existsSync(this.dataFile)) {
-        const data = JSON.parse(readFileSync(this.dataFile, "utf8")) as {
-          trips?: Record<string, unknown>;
-          handoffs?: Record<string, { handoff: Handoff }>;
-          occurrences?: Record<string, Occurrence>;
-          riders?: Record<string, RiderOperationalState>;
-        };
-        Object.keys(data.trips || {}).forEach((id) => tripIds.add(id));
-        for (const [id, h] of Object.entries(data.handoffs || {})) {
-          this.handoffCache.set(id, h.handoff);
-        }
-        for (const [id, o] of Object.entries(data.occurrences || {})) {
-          this.occCache.set(id, o);
-        }
-        for (const [id, r] of Object.entries(data.riders || {})) {
-          this.riderCache.set(id, r);
-        }
-      }
-    } catch {
-      /* */
-    }
+    const [tripRecords, handoffRecords, occurrenceRecords, riderRecords] =
+      await Promise.all([
+        this.uow.trips.list(),
+        this.uow.handoffs.list(),
+        this.uow.occurrences.list(),
+        this.uow.riders.list(),
+      ]);
 
-    const trips = [];
-    for (const id of tripIds) {
-      let agg = this.tripCache.get(id);
-      if (!agg) {
-        const rec = await this.uow.trips.get(id);
-        if (rec) {
-          const map = new Map(
-            (rec.deliveries || []).map((d) => [d.delivery_id, d] as const),
-          );
-          agg = { trip: rec.trip, deliveries: map };
-          this.tripCache.set(id, agg);
-        }
-      }
-      if (!agg) continue;
-      trips.push({
-        trip_id: agg.trip.trip_id,
-        state: agg.trip.state,
-        courier_actor_id: String(agg.trip.courier_actor_id),
-        deliveries: [...agg.deliveries.values()]
-          .sort((a, b) => a.planned_stop_order - b.planned_stop_order)
-          .map((d) => ({
-            delivery_id: d.delivery_id,
-            order_ref: d.order_ref,
-            state: d.state,
-            active: d.active,
-            planned_stop_order: d.planned_stop_order,
-          })),
-      });
-    }
+    const trips = tripRecords.map((rec) => ({
+      trip_id: rec.trip.trip_id,
+      state: rec.trip.state,
+      courier_actor_id: String(rec.trip.courier_actor_id),
+      deliveries: [...rec.deliveries]
+        .sort((a, b) => a.planned_stop_order - b.planned_stop_order)
+        .map((d) => ({
+          delivery_id: d.delivery_id,
+          order_ref: d.order_ref,
+          state: d.state,
+          active: d.active,
+          planned_stop_order: d.planned_stop_order,
+        })),
+    }));
 
     const banner = resolveBanner(this.cfg);
     const ready = this.loadReady();
@@ -418,20 +380,20 @@ export class PilotApplicationFacade {
       actor: this.actor,
       session_required: true,
       trips,
-      handoffs: [...this.handoffCache.values()].map((h) => ({
+      handoffs: handoffRecords.map(({ handoff: h }) => ({
         handoff_id: h.handoff_id,
         external_order_ref: h.external_order_ref,
         state: h.state,
         confirmed: h.confirmed,
         courier_verified: h.courier_verified,
       })),
-      occurrences: [...this.occCache.values()].map((o) => ({
+      occurrences: occurrenceRecords.map((o) => ({
         occurrence_id: o.occurrence_id,
         state: o.state,
         report: o.report,
         blocks_availability: o.blocks_availability,
       })),
-      riders: [...this.riderCache.values()].map((r) => ({
+      riders: riderRecords.map((r) => ({
         rider_id: String(r.rider_id),
         availability: r.availability,
         occurrence_blocking_availability: r.occurrence_blocking_availability,
