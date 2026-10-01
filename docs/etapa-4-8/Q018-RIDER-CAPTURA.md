@@ -4,7 +4,7 @@ lifecycle:
   status: ACTIVE
   authority_scope: captura_pela_rider_mobile
   superseded_by: null
-  atualizado_em: "2026-09-30"
+  atualizado_em: "2026-10-01"
   state_basis: ea3745a
   question_refs: ["Q-018"]
 ---

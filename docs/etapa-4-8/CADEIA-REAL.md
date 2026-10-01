@@ -4,7 +4,7 @@ lifecycle:
   status: ACTIVE
   authority_scope: cadeia_canonica_de_realidade
   superseded_by: null
-  atualizado_em: "2026-09-25"
+  atualizado_em: "2026-10-01"
   state_basis: e51c34d
   question_refs: ["Q-003", "Q-004", "Q-015"]
 ---
@@ -275,8 +275,7 @@ explícito (D4). **Governança depois do commit** (L45): medida no commit da doc
 3. ~~**Consertar o `gate-verification`**~~ — **feito e provado no Foxxy em 2026-10-01**: `semSegredo`
    foi extraído para Kotlin puro, o gate passou **12/12** e a regressão Android ficou verde.
    Ver `field-gate/2026-10-01-a4-gate-verification.md`.
-4. **Ferramenta humana de autorização** (`tools/aparelho.ts autorizar|revogar`) sobre
-   `identity.device`. Hoje é SQL.
+4. ~~**Ferramenta humana de autorização** sobre `identity.device`~~ — **implementada em 2026-10-01** como `tools/entregas_device_admin.ts`: `status`, `authorize` e `revoke`, sempre read-only no plano; qualquer escrita exige `--apply=YES` + fingerprint do estado revisado. Autorizar valida unidade/ator ativos, mesma unidade e papel `motoboy_interno`; aparelho revogado não é reativado silenciosamente.
 5. **Retirar `handleDeviceSession` do piloto**, quando `src/entregas` puder ser tocado.
 6. **Cadeia dos comandos** (`/api/events/batch` → `trip_created` etc.). É a próxima coluna de
    realidade, não esta.

@@ -71,13 +71,24 @@ Isso é smoke test de emulador, não fecha nenhum item da seção 3.
    - Build `pilot`: **não há caminho hoje** — a variante não é depurável, o app não mostra o ID na
      tela e o crítico não registra o ID de sessão recusada. **BLOCKED** até existir um dos dois;
      o primeiro gate físico pode ser feito com o `debug`.
-5. **Autorizar o aparelho** — ato humano, no banco da composição:
+5. **Autorizar o aparelho** — ato humano, fail-closed. A unidade e o ator já precisam existir,
+   estar ativos, pertencer à mesma unidade e o ator precisa ser `motoboy_interno`. A ferramenta
+   **não cria unidade/ator e não reativa aparelho revogado**.
 
-   ```sql
-   INSERT INTO identity.unit (unit_id, display_name) VALUES ('<UNIDADE>', '<nome>') ON CONFLICT DO NOTHING;
-   INSERT INTO identity.actor (actor_id, unit_id, role, label) VALUES ('<ENTREGADOR>', '<UNIDADE>', 'motoboy_interno', '<rótulo>') ON CONFLICT DO NOTHING;
-   INSERT INTO identity.device (device_id, unit_id, actor_id, label) VALUES ('<DEVICE_ID>', '<UNIDADE>', '<ENTREGADOR>', 'field gate');
+   Primeiro, gerar o plano sem escrita:
+
+   ```bash
+   npm run admin:entregas:device -- authorize --device <DEVICE_ID> --unit <UNIDADE> --actor <ENTREGADOR> --label "field gate"
    ```
+
+   Conferir `current`, `target`, `conflicts` e o `fingerprint`. Só depois executar, com o
+   mesmo estado do banco:
+
+   ```bash
+   npm run admin:entregas:device -- authorize --device <DEVICE_ID> --unit <UNIDADE> --actor <ENTREGADOR> --label "field gate" --apply=YES --expect <FINGERPRINT>
+   ```
+
+   Se o estado mudar entre plano e aplicação, o fingerprint diverge e a escrita é recusada.
 6. **APK de piloto** (item 1 da bateria): exige os domínios reais e uma assinatura.
    `sh gradlew :app:assemblePilot -Pentregas.baseUrl=https://<PILOTO> -Pentregas.platformUrl=https://<PLATAFORMA>`
    gera um APK **sem assinatura** (`signingConfig = null`: nenhuma chave no repositório). Assinar é
@@ -111,7 +122,7 @@ Cada linha anota: **quem**, **quando** (UTC), **aparelho** (modelo e Android), *
 |---|---|---|---|---|
 | 1 | instalar o APK de piloto (ou o de debug — anotar qual) | `adb install` e versão na tela | instala e abre | NOT_RUN |
 | 2 | confirmar data e hora automáticas | print da configuração; diferença para `date -u` do servidor | automáticas ligadas e diferença < 2 min | NOT_RUN |
-| 3 | autorizar o aparelho (§2.5) | `Q1` | uma linha, `revoked_at` nulo, `vinculado` falso | NOT_RUN |
+| 3 | autorizar o aparelho (§2.5) | saída do `admin:entregas:device` + `Q1` | `applied=true`; uma linha, `revoked_at` nulo, `vinculado` falso | NOT_RUN |
 | 4 | obter sessão (abrir o app com rede) | `Q1`, `Q6` | `vinculado` verdadeiro e `last_session_at` preenchido; 1 linha `device_session_issued` | NOT_RUN |
 | 5 | iniciar viagem: aceitar o termo, permitir a localização, confirmar a saída | tela do app; `Q1`; linha em `term-acks.jsonl` do piloto | o termo aparece ANTES do pedido de permissão; antes da saída o indicador diz "GPS DESLIGADO — AGUARDANDO A SAÍDA"; depois da saída confirmada, notificação do serviço e "GPS ATIVO — VIAGEM …" | NOT_RUN — depende de §2.7 |
 | 6 | verificar captura em primeiro plano | notificação de serviço em primeiro plano; `Q2` | notificação visível; pontos chegando | NOT_RUN |
@@ -128,7 +139,7 @@ Cada linha anota: **quem**, **quando** (UTC), **aparelho** (modelo e Android), *
 | 17 | confirmar Entregas | `/entregas` do Product System com `DELIVERYOS_DATABASE_URL`; print | o aparelho no bloco Realidade, procedência do modo, sem selo de relógio | NOT_RUN |
 | 18 | reiniciar o assíncrono | `docker restart deliveryos-async` | — | NOT_RUN |
 | 19 | confirmar o replay | `docker logs deliveryos-async` (linha `[assincrono] replay`); `Q7` | `"estado":"completo"`; no escopo da unidade e do modo, `fatos` = `Q7` | NOT_RUN |
-| 20 | revogar o aparelho | `UPDATE identity.device SET revoked_at = now(), revoked_by = '<quem>' WHERE device_id = '<DEVICE_ID>'` | — | NOT_RUN |
+| 20 | revogar o aparelho | `npm run admin:entregas:device -- revoke --device <DEVICE_ID> --by <quem>` para gerar o plano; depois repetir com `--apply=YES --expect <FINGERPRINT>` | `revoked_at` e `revoked_by` preenchidos; histórico preservado | NOT_RUN |
 | 21 | confirmar que os pontos locais não somem | capturar mais pontos; `Q2` não cresce; `gps_point` no aparelho (build `debug`) | nada novo chega; o app para de insistir e avisa; os pontos locais continuam lá | NOT_RUN |
 | 22 | bateria e estabilidade para piloto | `adb shell dumpsys batterystats` antes/depois de ≥ 2 h de viagem; travamentos | consumo medido e anotado; nenhum travamento. O limite aceitável é decisão do César | NOT_RUN |
 

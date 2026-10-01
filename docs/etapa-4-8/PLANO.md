@@ -4,7 +4,7 @@ lifecycle:
   status: ACTIVE
   authority_scope: etapa_4_8_plano
   superseded_by: null
-  atualizado_em: "2026-09-30"
+  atualizado_em: "2026-10-01"
   state_basis: 9e738b1
 ---
 

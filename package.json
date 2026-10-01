@@ -52,6 +52,8 @@
     "test:platform:repos": "npx tsx src/platform/run-pg-repository-tests.ts",
     "test:platform:envelope": "npx tsx src/platform/run-envelope-tests.ts",
     "migrate": "npx tsx src/platform/bin/migrate.ts",
+    "admin:entregas:device": "npx tsc && node dist/tools/entregas_device_admin.js",
+    "test:platform:device-admin": "npx tsx src/platform/run-device-admin-tests.ts",
     "test:platform:deploy": "npx tsx src/platform/run-platform-deploy-audit-tests.ts",
     "test:platform:backup": "npx tsx src/platform/run-backup-restore-tests.ts",
     "test:platform:backup:patrimonio": "npx tsx src/platform/run-backup-patrimonio-tests.ts",
