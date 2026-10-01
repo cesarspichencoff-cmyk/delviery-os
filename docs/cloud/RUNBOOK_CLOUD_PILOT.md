@@ -1,7 +1,7 @@
 # Runbook — DeliveryOS Cloud Pilot V1
 
 > Composição: **Core + TATÁ Entregas**. Não é o DeliveryOS completo.
-> Nada aqui foi executado com Docker: não há Docker nesta máquina.
+> O Docker não está disponível no Foxxy. A composição, porém, já foi renderizada e o sidecar de backup foi executado em container real no CI; isso não equivale a deploy do piloto.
 
 ## O que falta antes de qualquer coisa
 
@@ -91,19 +91,51 @@ npm run test:entregas:persistence-recreate
 
 ## 5. Backup e restore
 
-Backups automáticos a cada 30 min no volume, mais um `.tar.gz` diário no
-volume de backups.
+O backup precisa acompanhar o backend operacional declarado:
+
+- `ENTREGAS_STORAGE_BACKEND=file`: o sidecar arquiva `/dados` em
+  `entregas-file-*.tar.gz`;
+- `ENTREGAS_STORAGE_BACKEND=postgres`: o sidecar exige
+  `DELIVERYOS_DATABASE_URL` e gera `entregas-pg-*.dump` com
+  `pg_dump --format=custom`;
+- backend inválido ou URL ausente faz o sidecar falhar alto — nunca produz
+  um arquivo que pareça backup do banco sem ser.
 
 ```bash
 docker compose exec deliveryos-backup ls -la /backups
 ```
 
-**Um backup que nunca foi restaurado não é um backup.** Teste o restore antes
-de precisar dele: suba uma composição separada com volume vazio, copie um
-`.tar.gz` e restaure pelo console com o token de gerente.
+### Restore no backend arquivo
 
-Levar cópia **para fora da máquina** é responsabilidade do César — o volume
-morre junto com o servidor.
+Continua sendo o fluxo do console/API sobre o arquivo de backup do piloto.
+
+### Restore no backend PostgreSQL
+
+Não use a API de restore de arquivo. O restore PostgreSQL fica no profile
+`maintenance` e exige um **banco alvo diferente e vazio**:
+
+```bash
+ENTREGAS_RESTORE_DATABASE_URL='postgres://.../deliveryos_restore' \
+ENTREGAS_RESTORE_SNAPSHOT='entregas-pg-AAAAMMDDTHHMMSSZ.dump' \
+ENTREGAS_RESTORE_CONFIRM=YES \
+docker compose --profile maintenance run --rm deliveryos-postgres-restore
+```
+
+O serviço recusa alvo igual ao operacional, banco alvo com relações existentes,
+snapshot ausente ou confirmação diferente de `YES`.
+
+**Um backup que nunca foi restaurado não é um backup.** O caminho PostgreSQL
+já foi provado em banco isolado: dump custom → banco vazio → restore → mesmo
+fingerprint operacional → continuidade de versão.
+
+### Perda da máquina
+
+O volume `entregas_backups` continua no mesmo host. Ele protege contra perda
+lógica do banco/container, **não contra perda do servidor físico**. Antes de
+qualquer cutover operacional para PostgreSQL, é obrigatório definir uma cópia
+off-host (ou mecanismo externo equivalente), produzir uma cópia e restaurá-la
+em ensaio. O provedor/destino ainda não foi escolhido; não presuma Neon,
+Google Drive ou qualquer outro.
 
 ## 6. Rollback
 
