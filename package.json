@@ -137,7 +137,8 @@
     "test:entregas:pilot-postgres-cluster": "npx tsx src/entregas/pilot/run-postgres-server-cluster-tests.ts",
     "test:entregas:storage-cutover": "npx tsx src/entregas/pilot/run-storage-cutover-tests.ts",
     "cutover:entregas:plan": "npx tsx tools/entregas_storage_cutover.ts plan",
-    "cutover:entregas:apply": "npx tsx tools/entregas_storage_cutover.ts apply"
+    "cutover:entregas:apply": "npx tsx tools/entregas_storage_cutover.ts apply",
+    "test:entregas:pilot-postgres-backup": "npx tsx src/entregas/pilot/run-postgres-backup-restore-tests.ts"
   },
   "devDependencies": {
     "@types/node": "20.14.10",
