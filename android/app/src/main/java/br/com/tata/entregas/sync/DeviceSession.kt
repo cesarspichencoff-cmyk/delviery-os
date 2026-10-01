@@ -198,13 +198,7 @@ object DeviceSession {
      * dentro do corpo de uma resposta de erro repassada inteira.
      */
     fun semSegredo(texto: String): String =
-        texto
-            .replace(Regex("""[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}"""), "[token removido]")
-            .replace(Regex("""(?i)(bearer\s+)\S+"""), "$1[removido]")
-            .replace(
-                Regex("""(?i)("?(?:token|authorization|secret|senha|password)"?\s*[:=]\s*"?)[^",;\s}]+"""),
-                "$1[removido]",
-            )
+        br.com.tata.entregas.sync.semSegredo(texto)
 
     /** Só para o teste montar uma resposta de servidor sem depender de rede. */
     fun respostaDeTeste(token: String, validadeS: Long): JSONObject =

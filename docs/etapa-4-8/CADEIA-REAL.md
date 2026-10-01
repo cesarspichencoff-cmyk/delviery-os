@@ -117,12 +117,13 @@ Só o necessário (`android/`):
 | Gradle wrapper do repositório | **8.9**, baixado e funcionando. `android/gradlew` está versionado sem bit de execução (100644); roda com `sh gradlew`, e o modo não foi alterado |
 | `:app:testDebugUnitTest`, `:app:assembleDebug` | **BLOCKED — motivo externo.** O AGP 8.5.2 não resolve. O atalho `google()` do Gradle aponta para `dl.google.com/dl/android/maven2`, e `maven.google.com` responde 301 para o mesmo host. A política de rede deste ambiente nega `dl.google.com:443` (o gateway responde 403 ao CONNECT, medido às 06:51Z). O Android SDK 34 e os build-tools vêm de `dl.google.com/android/repository`, também negado. `dl-ssl.google.com` e `redirector.gvt1.com` também caem |
 | testes instrumentados | **BLOCKED** — mesmo motivo, e não há emulador nem aparelho |
-| `android/gate-verification` (build JVM do próprio repositório) | **FAIL_PREEXISTENTE desde `4456f2e` (2026-07-27)**: `EntregasApi.kt` chama `DeviceSession.semSegredo`, e `DeviceSession.kt` importa o Room, que este build não alcança. `Unresolved reference 'DeviceSession'` idêntico em `0b8803c` (linhas 86/92) e em `HEAD` (92/98 — só as seis linhas de comentário do Fable no meio). O build nunca rodou desde então: pedia JDK 17, que não existia aqui |
+| `android/gate-verification` (build JVM do próprio repositório) | **FAIL_PREEXISTENTE na certificação de 2026-09-25; FECHADO em 2026-10-01.** A falha `Unresolved reference 'DeviceSession'` foi reproduzida no Foxxy e corrigida extraindo `semSegredo` para Kotlin puro. Pós-correção: `CaptureGateTest` **12/12 PASS**, `BUILD SUCCESSFUL`; regressão do app `:app:testDebugUnitTest :app:compileDebugKotlin` também **PASS**. Evidência: `field-gate/2026-10-01-a4-gate-verification.md` |
 | o diff do Fable em `EntregasApi.kt`, isolado | com um *stub* de `DeviceSession` **fora do repositório**, o arquivo real compila em JDK 17 / Kotlin 2.0.20, e o `CaptureGateTest` passa **12/12**. Isto não é a compilação do app |
 | `test:entregas:android` (estrutural) e K1 (textual) | verdes na regressão final |
 
-Nenhuma linha do app foi alterada. `DeviceSession.kt` e `SyncWorker.kt` dependem do Android e só
-compilam com o SDK.
+Na certificação de 2026-09-25 nenhuma linha do app foi alterada. Sucessão em 2026-10-01:
+`semSegredo` foi extraído para `sync/SecretRedaction.kt`, Kotlin puro, sem mudar regra de sessão;
+`DeviceSession.semSegredo` virou delegação compatível. O app completo e o gate JVM ficaram verdes.
 
 ## 5 — A superfície Entregas
 
@@ -268,13 +269,12 @@ explícito (D4). **Governança depois do commit** (L45): medida no commit da doc
 ## 9 — O que fica para depois
 
 1. ~~Ligar `papeis_minimos.sql` ao compose~~ — **feito na certificação** (§6).
-2. **Compilar e testar o Android com SDK.** Precisa de `dl.google.com` liberado na rede do
-   ambiente, ou de uma máquina com SDK: `./gradlew testDebugUnitTest assembleDebug`,
-   `assemblePilot` com as duas URLs, e os instrumentados num aparelho. É a próxima missão
-   (aparelho físico).
-3. **Consertar o `gate-verification`** (FAIL_PREEXISTENTE desde `4456f2e`): levar `semSegredo`
-   para um arquivo Kotlin puro que o build JVM inclua. Tem de ser feito onde o app compila, porque
-   toca `DeviceSession.kt`.
+2. ~~**Compilar e testar o Android com SDK**~~ — **feito no Foxxy/AVD**: unit/build e
+   instrumentados passaram; o APK final sem helper de mock ficou 10/10 nos instrumentados.
+   A parte que continua para depois é somente a bateria em **aparelho físico real**.
+3. ~~**Consertar o `gate-verification`**~~ — **feito e provado no Foxxy em 2026-10-01**: `semSegredo`
+   foi extraído para Kotlin puro, o gate passou **12/12** e a regressão Android ficou verde.
+   Ver `field-gate/2026-10-01-a4-gate-verification.md`.
 4. **Ferramenta humana de autorização** (`tools/aparelho.ts autorizar|revogar`) sobre
    `identity.device`. Hoje é SQL.
 5. **Retirar `handleDeviceSession` do piloto**, quando `src/entregas` puder ser tocado.

@@ -46,7 +46,7 @@ sh gradlew :app:connectedDebugAndroidTest  # PersistenceInstrumentedTest — exi
 | A1 unit tests | `BUILD SUCCESSFUL` e o relatório em `app/build/reports/tests/testDebugUnitTest/` sem falha | **PASS** — `:app:testDebugUnitTest`, JDK 17.0.19 + SDK 34, Windows |
 | A2 APK de debug | o arquivo existe e `aapt dump badging` mostra `br.com.tata.entregas.debug` | **PASS** — `assembleDebug`; pacote `br.com.tata.entregas.debug`, target/compile 34 |
 | A3 instrumentado | `connectedDebugAndroidTest` sem falha, no aparelho do teste | **PASS (EMULADOR)** — 10/10 testes no AVD Android 14/API 34 em 2026-09-30; **FÍSICO `NOT_RUN`** |
-| A4 `android/gate-verification` | **FAIL_PREEXISTENTE conhecido** desde `4456f2e`: `EntregasApi.kt` usa `DeviceSession.semSegredo`, que importa o Room. Não é regressão. Conserto: levar `semSegredo` para um arquivo Kotlin puro — feito ali, onde o app compila | NOT_RUN |
+| A4 `android/gate-verification` | build JVM independente compila o cliente HTTP real + portão de captura sem puxar Room; `semSegredo` foi extraído para Kotlin puro e a API de `DeviceSession` foi preservada | **PASS (Foxxy, 2026-10-01)** — falha `Unresolved reference DeviceSession` reproduzida antes; depois 12/12 `CaptureGateTest` PASS + `BUILD SUCCESSFUL`; regressão `:app:testDebugUnitTest :app:compileDebugKotlin` PASS. Ver `field-gate/2026-10-01-a4-gate-verification.md` |
 
 **Compilar não é instalar, e instalar não é testar em campo.** Em 2026-09-25 o APK debug também foi
 instalado e abriu no emulador com `MainActivity` em primeiro plano e sem crash `AndroidRuntime`.

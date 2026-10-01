@@ -26,6 +26,7 @@ sourceSets {
         kotlin.setSrcDirs(listOf("../app/src/main/java"))
         kotlin.include("**/location/CaptureGate.kt")
         kotlin.include("**/sync/EntregasApi.kt")
+        kotlin.include("**/sync/SecretRedaction.kt")
     }
     test {
         kotlin.setSrcDirs(listOf("../app/src/test/java"))

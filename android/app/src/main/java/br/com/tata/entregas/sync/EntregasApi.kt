@@ -90,13 +90,13 @@ class EntregasApi(
                 )
                 // 401 e sempre credencial. Nunca e o lote.
                 status == 401 -> ApiResult.Unauthorized(
-                    br.com.tata.entregas.sync.DeviceSession.semSegredo(
+                    semSegredo(
                         runCatching { JSONObject(text).optString("human", text) }.getOrDefault(text),
                     ),
                     status,
                 )
                 status in 400..499 -> ApiResult.Rejected(
-                    br.com.tata.entregas.sync.DeviceSession.semSegredo(
+                    semSegredo(
                         runCatching { JSONObject(text).optString("human", text) }.getOrDefault(text),
                     ),
                     status,
