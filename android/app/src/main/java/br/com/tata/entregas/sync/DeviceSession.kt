@@ -46,6 +46,8 @@ object DeviceSession {
      * DESTE aparelho — que o responsável revoga com uma linha.
      */
     const val KEY_DEVICE_SECRET = "device_secret"
+    private const val PURPOSE_DEVICE_SECRET = "device_secret"
+    private const val PURPOSE_SESSION_TOKEN = "session_token"
 
     /** 128 bits do gerador criptográfico, em hexadecimal: 32 caracteres. */
     fun gerarSegredo(): String {
@@ -55,10 +57,25 @@ object DeviceSession {
     }
 
     suspend fun segredoDoAparelho(db: EntregasDatabase, agoraMs: Long): String {
-        db.deviceState().get(KEY_DEVICE_SECRET)?.takeIf { it.length >= 32 }?.let { return it }
-        val s = gerarSegredo()
-        db.deviceState().put(DeviceStateEntity(KEY_DEVICE_SECRET, s, agoraMs))
-        return s
+        val stored = db.deviceState().get(KEY_DEVICE_SECRET)
+        if (stored != null) {
+            if (LocalSecretCipher.isSealed(stored)) {
+                return LocalSecretCipher.open(PURPOSE_DEVICE_SECRET, stored)
+            }
+            if (stored.length < 32) {
+                // Valor existente mas inválido não é substituído em silêncio:
+                // trocar o segredo criaria outra identidade diante do servidor.
+                throw SecureCredentialStorageException("segredo existente inválido")
+            }
+            val sealed = LocalSecretCipher.seal(PURPOSE_DEVICE_SECRET, stored)
+            db.deviceState().put(DeviceStateEntity(KEY_DEVICE_SECRET, sealed, agoraMs))
+            return stored
+        }
+
+        val clear = gerarSegredo()
+        val sealed = LocalSecretCipher.seal(PURPOSE_DEVICE_SECRET, clear)
+        db.deviceState().put(DeviceStateEntity(KEY_DEVICE_SECRET, sealed, agoraMs))
+        return clear
     }
 
     data class Sessao(val token: String, val expiraEmMs: Long)
@@ -66,7 +83,30 @@ object DeviceSession {
     /* -------------------------------------------------------------- */
 
     suspend fun sessaoAtual(db: EntregasDatabase): Sessao? {
-        val token = db.deviceState().get(EntregasDatabase.KEY_SESSION_TOKEN) ?: return null
+        val stored = db.deviceState().get(EntregasDatabase.KEY_SESSION_TOKEN) ?: return null
+        if (stored.isBlank()) return null
+        val token = try {
+            if (LocalSecretCipher.isSealed(stored)) {
+                LocalSecretCipher.open(PURPOSE_SESSION_TOKEN, stored)
+            } else {
+                // Migração automática: o próximo acesso tira o token legado do
+                // SQLite em claro antes de usá-lo.
+                val sealed = LocalSecretCipher.seal(PURPOSE_SESSION_TOKEN, stored)
+                db.deviceState().put(
+                    DeviceStateEntity(
+                        EntregasDatabase.KEY_SESSION_TOKEN,
+                        sealed,
+                        System.currentTimeMillis(),
+                    ),
+                )
+                stored
+            }
+        } catch (_: SecureCredentialStorageException) {
+            // Token é substituível; se a chave local se perdeu, remove só a
+            // credencial e força bootstrap. Filas e segredo do aparelho ficam.
+            limparCredencial(db)
+            return null
+        }
         if (token.isBlank()) return null
         val expira = db.deviceState().get(KEY_TOKEN_EXPIRA_EM)?.toLongOrNull() ?: 0L
         return Sessao(token, expira)
@@ -103,7 +143,13 @@ object DeviceSession {
         appVersion: String,
         agoraMs: Long,
     ): ResultadoAutenticacao {
-        val segredo = segredoDoAparelho(db, agoraMs)
+        val segredo = try {
+            segredoDoAparelho(db, agoraMs)
+        } catch (_: SecureCredentialStorageException) {
+            return ResultadoAutenticacao.FalhouTemporariamente(
+                "armazenamento seguro do aparelho indisponível",
+            )
+        }
         return when (val r = api.authenticateDevice(deviceId, segredo, appVersion)) {
             is ApiResult.Ok -> {
                 val token = r.value.optString("device_token", "")
@@ -124,8 +170,14 @@ object DeviceSession {
                     val actorId = r.value.optString("actor_id", "")
                         .trim()
                         .takeIf { it.isNotBlank() }
-                    gravar(db, token, expiraEm, actorId, agoraMs)
-                    ResultadoAutenticacao.Autenticado
+                    try {
+                        gravar(db, token, expiraEm, actorId, agoraMs)
+                        ResultadoAutenticacao.Autenticado
+                    } catch (_: SecureCredentialStorageException) {
+                        ResultadoAutenticacao.FalhouTemporariamente(
+                            "armazenamento seguro do aparelho indisponível",
+                        )
+                    }
                 }
             }
 
@@ -169,7 +221,16 @@ object DeviceSession {
         actorId: String?,
         agoraMs: Long,
     ) {
-        db.deviceState().put(DeviceStateEntity(EntregasDatabase.KEY_SESSION_TOKEN, token, agoraMs))
+        // Cifra ANTES de qualquer escrita: falha do Keystore não deixa uma
+        // credencial nova parcialmente persistida em texto puro.
+        val sealedToken = LocalSecretCipher.seal(PURPOSE_SESSION_TOKEN, token)
+        db.deviceState().put(
+            DeviceStateEntity(
+                EntregasDatabase.KEY_SESSION_TOKEN,
+                sealedToken,
+                agoraMs,
+            ),
+        )
         db.deviceState().put(DeviceStateEntity(KEY_TOKEN_EXPIRA_EM, expiraEmMs.toString(), agoraMs))
         if (actorId.isNullOrBlank()) {
             db.deviceState().clear(EntregasDatabase.KEY_RIDER_ID)

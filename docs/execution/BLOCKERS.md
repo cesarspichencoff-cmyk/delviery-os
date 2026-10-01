@@ -488,20 +488,34 @@ retornava `Result.success()` — o WorkManager dava a sincronização por conclu
 
 ### Bloqueador novo, menor
 
-**B3 — token sem cifragem por Keystore.** O token fica em Room, no diretório
-privado do app. Isso protege contra outro aplicativo; **não** protege contra
-extração de backup nem contra aparelho comprometido.
+**B3 — token sem cifragem por Keystore.**
 
-- **O que falta:** `androidx.security-crypto` com `EncryptedSharedPreferences`,
-  ou cifrar a coluna antes de gravar.
-- **Por que não foi feito agora:** é dependência nova e só é verificável em
-  aparelho — não cabia na Unidade 1 sem inflar o escopo.
-- **Mitigação atual:** confirmar `android:allowBackup="false"` no manifesto.
+> **SUCESSÃO — FECHADO NO CÓDIGO/AVD em 2026-10-01.** Token de sessão e
+> segredo próprio do aparelho agora são cifrados em repouso com
+> `AndroidKeyStore` + `AES/GCM/NoPadding`, chave não exportável e AAD distinto
+> por finalidade. O SQLite guarda `enc:v1:...`, não o valor em claro.
+>
+> Credenciais legadas em claro são migradas no primeiro uso sem trocar a
+> identidade do aparelho. Se a chave local sumir, o token substituível é
+> descartado para forçar bootstrap; o segredo do aparelho **não é regenerado
+> silenciosamente** e as filas GPS permanecem intactas. A criação da chave é
+> sincronizada para o primeiro uso concorrente não rotacionar o alias.
+>
+> Provas no AVD Android 14: Android estrutural **43/43**, unitários
+> `BUILD SUCCESSFUL`, instrumentados **18/18** com SQLite + Keystore reais;
+> gate JVM independente também `BUILD SUCCESSFUL`. `android:allowBackup=false`
+> e exclusão de banco nas regras de extração continuam ativos.
+>
+> Limite: isto protege **credenciais em repouso** contra extração do SQLite.
+> Não protege um aparelho já comprometido enquanto o processo está executando
+> e não substitui o gate em aparelho físico, que continua `NOT_RUN`.
 
-### C2, C3, C4, C5 seguem abertos
+### Registro histórico — C2, C3, C4, C5 eram abertos
 
-Reavaliação do portão durante a viagem · corrida na `sequenceLocal` · GPS do
-piloto em RAM · resíduos de bind `0.0.0.0` e extrator de dimensões.
+Estado atual por sucessão: **C2** e **C3** estão fechados no código/AVD;
+**C4** está CODE_READY + TEST_PASS, com ativação/PostgreSQL real ainda pendentes;
+**C5** foi parcialmente reduzido (retenção e receipt corrigidos), mas continuam
+abertos os resíduos que ainda aparecem na seção C5 atual.
 
 ## Atualização — Unidade 2 (2026-07-27)
 

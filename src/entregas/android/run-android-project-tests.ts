@@ -463,6 +463,25 @@ test("nenhum segredo, token ou URL de produção embutido no Kotlin", () => {
   );
 });
 
+test("token e segredo do aparelho ficam cifrados com Android Keystore", () => {
+  const session = read("app/src/main/java/br/com/tata/entregas/sync/DeviceSession.kt");
+  const cipher = read("app/src/main/java/br/com/tata/entregas/sync/LocalSecretCipher.kt");
+  assert.match(cipher, /KeyStore\.getInstance\("AndroidKeyStore"\)/);
+  assert.match(cipher, /AES\/GCM\/NoPadding/);
+  assert.match(cipher, /updateAAD\(purpose\.toByteArray/);
+  assert.match(cipher, /setRandomizedEncryptionRequired\(true\)/);
+  assert.match(cipher, /@Synchronized\s+private fun key\(\)/, "primeiro uso concorrente não pode rotacionar a chave");
+  assert.match(session, /LocalSecretCipher\.seal\(PURPOSE_DEVICE_SECRET, clear\)/);
+  assert.match(session, /LocalSecretCipher\.seal\(PURPOSE_SESSION_TOKEN, token\)/);
+  assert.match(session, /LocalSecretCipher\.open\(PURPOSE_SESSION_TOKEN, stored\)/);
+  assert.match(session, /LocalSecretCipher\.open\(PURPOSE_DEVICE_SECRET, stored\)/);
+  assert.doesNotMatch(
+    session,
+    /DeviceStateEntity\(EntregasDatabase\.KEY_SESSION_TOKEN,\s*token\s*,/,
+    "token novo não pode ser gravado em claro",
+  );
+});
+
 test("o domínio não é duplicado no Kotlin", () => {
   // Máquina de estados, validação de transição e confirmação de entrega são
   // do servidor. O Kotlin captura, guarda e envia — mais nada.

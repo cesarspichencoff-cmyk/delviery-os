@@ -24,7 +24,7 @@ lifecycle:
 | papéis mínimos na composição oficial | **PROVEN** em containers | `tools/papeis_compose_real.sh` |
 | comportamento físico do Android | **UNKNOWN** | este roteiro |
 | gatilho da captura nativa no app | **PROVEN NO AVD; FÍSICO `NOT_RUN`**: a rider-mobile liga pela ponte depois de termo, permissão e saída confirmada (`Q-018`); o Kotlin foi compilado e exercitado no Foxxy. A cadeia Fused → Room → sync e o encerramento remoto sem WebView foram observados em runtime; o stop remoto ocorreu em 13,286 s | `docs/etapa-4-8/Q018-RIDER-CAPTURA.md`; `field-gate/2026-10-01-q018-remote-stop-runtime.md` |
-| build do app (`testDebugUnitTest`, `assembleDebug`, instrumentados) | **PROVEN no Foxxy/AVD**: build Android 14/API 34 e `connectedDebugAndroidTest` **10/10 PASS** no APK final sem helper de mock; aparelho físico continua `NOT_RUN` | execução Foxxy, 2026-09-30/2026-10-01; `Q018-RIDER-CAPTURA.md` §§15–17 |
+| build do app (`testDebugUnitTest`, `assembleDebug`, instrumentados) | **PROVEN no Foxxy/AVD**: build Android 14/API 34; o APK final sem helper de mock fechou 10/10 e a regressão atual, já com retenção + Keystore, fechou **18/18 PASS**; aparelho físico continua `NOT_RUN` | execução Foxxy, 2026-09-30/2026-10-01; `Q018-RIDER-CAPTURA.md` §§15–17; `field-gate/2026-10-01-android-keystore-credentials.md` |
 
 ## 1 — Pré-requisito A: compilar e testar numa máquina com SDK
 
@@ -45,7 +45,7 @@ sh gradlew :app:connectedDebugAndroidTest  # PersistenceInstrumentedTest — exi
 |---|---|---|
 | A1 unit tests | `BUILD SUCCESSFUL` e o relatório em `app/build/reports/tests/testDebugUnitTest/` sem falha | **PASS** — `:app:testDebugUnitTest`, JDK 17.0.19 + SDK 34, Windows |
 | A2 APK de debug | o arquivo existe e `aapt dump badging` mostra `br.com.tata.entregas.debug` | **PASS** — `assembleDebug`; pacote `br.com.tata.entregas.debug`, target/compile 34 |
-| A3 instrumentado | `connectedDebugAndroidTest` sem falha, no aparelho do teste | **PASS (EMULADOR)** — 10/10 testes no AVD Android 14/API 34 em 2026-09-30; **FÍSICO `NOT_RUN`** |
+| A3 instrumentado | `connectedDebugAndroidTest` sem falha, no aparelho do teste | **PASS (EMULADOR)** — regressão atual **18/18** no AVD Android 14/API 34 em 2026-10-01; o marco anterior do APK final era 10/10. **FÍSICO `NOT_RUN`** |
 | A4 `android/gate-verification` | build JVM independente compila o cliente HTTP real + portão de captura sem puxar Room; `semSegredo` foi extraído para Kotlin puro e a API de `DeviceSession` foi preservada | **PASS (Foxxy, 2026-10-01)** — falha `Unresolved reference DeviceSession` reproduzida antes; depois 12/12 `CaptureGateTest` PASS + `BUILD SUCCESSFUL`; regressão `:app:testDebugUnitTest :app:compileDebugKotlin` PASS. Ver `field-gate/2026-10-01-a4-gate-verification.md` |
 
 **Compilar não é instalar, e instalar não é testar em campo.** Em 2026-09-25 o APK debug também foi
@@ -206,21 +206,22 @@ SELECT count(*) AS fatos FROM platform.event_log
  WHERE unit_id = '<UNIDADE>' AND source_mode = '<MODO>';
 ```
 
-## 6 — O que o campo pode revelar (não re-verificado aqui)
+## 6 — O que o campo ainda precisa revelar
 
-Defeitos do Android registrados em `docs/execution/BLOCKERS.md` e **não reavaliados** desde
-2026-08-01. O campo é onde eles aparecem:
+Os defeitos antigos foram reavaliados no código/AVD; o roteiro físico continua necessário para
+provar o comportamento no aparelho real:
 
-- **C2** — o portão de captura é avaliado uma vez só: revogar permissão, termo ou localização
-  durante a viagem pode não parar a captura (§4);
-- **C3** — corrida na `sequenceLocal`: `Q5` pega repetição;
-- **recusa por conteúdo some do aparelho, por desenho.** Qualquer 2xx marca o lote inteiro como
-  `sent` (`SyncWorker.kt`); o app não lê `rejeitados` nem `ack_through_sequence`. É o contrato da
-  ingestão — reenviar o que foi recusado por conteúdo não mudaria nada —, mas o motivo da recusa só
-  existe na resposta HTTP, e no servidor o ponto aparece apenas como **buraco** na `sequence_local`
-  (`Q5`). Localização simulada (`is_mock`) é recusada assim (`device-ingest.ts`). Buraco é para
-  investigar, nunca para somar como perda de rede;
-- **B3** — token sem cifragem por Keystore: não aparece em campo, mas pesa na decisão de piloto;
+- **C2 — fechado no código/AVD:** o portão é reavaliado durante a viagem e o controle remoto
+  também exige flag/termo/aceite vigentes. Revogar permissão ou desligar localização em telefone
+  físico continua `NOT_RUN`;
+- **C3 — fechado no código/AVD:** a sequência local é reservada dentro de transação Room e a
+  persistência é serializada. `Q5` continua como controle de campo contra regressão;
+- **receipt GPS — corrigido:** o Android interpreta aceitos/rejeitados por ponto; receipt
+  inconsistente vira falha/retry, e rejeitado não volta ao lote. `Q5` ainda serve para investigar
+  buracos reais/recusas, nunca para somar automaticamente como perda de rede;
+- **B3 — fechado no código/AVD:** token e segredo do aparelho ficam cifrados com Android Keystore
+  + AES-GCM; a regressão atual passou 18/18 instrumentados. O campo ainda precisa provar a
+  experiência do aparelho físico; a cifra não protege um telefone comprometido enquanto o app roda;
 - **relógio atrasado** passa como `trusted`: é indistinguível de ponto capturado sem rede e só faz o
   dado parecer mais velho — limite declarado em `docs/etapa-4-8/RELOGIO.md`.
 
