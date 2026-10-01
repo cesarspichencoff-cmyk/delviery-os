@@ -77,3 +77,36 @@ Automação:
 - `tools/verificar_pracas_vs_retail_v1.js` trava o comportamento esperado.
 
 - Após as confirmações operacionais, o builder foi executado em memória contra `data/cardapio_fonte.txt` e regenerou **199/199 itens sem drift** em relação ao seed commitado.
+
+
+## COBERTURA DO DELIVERY ATIVO — 30/09/2026
+
+Cruzamento do relatório real de vendas do dia com o cadastro atual de roteamento:
+
+- 120 SKUs distintos de delivery;
+- 1.476 unidades;
+- 116/120 SKUs possuem rota física direta = 96,67%;
+- 1.439/1.476 unidades possuem rota física direta = 97,49%;
+- 120/120 SKUs possuem praça lógica resolvida:
+  - 68 SKUs / 977 unidades por correspondência exata com o seed;
+  - 52 SKUs / 499 unidades por regra determinística marcada como inferência.
+
+Quatro itens vendidos no delivery não aparecem no snapshot atual de Produtos por Loja:
+
+- `8201100100 COOKIE NUTELLA` — 13 un;
+- `9750003100 GENGIBRE PORÇÃO` — 17 un;
+- `9750003000 WASABI` — 6 un;
+- `9750003200 TARE` — 1 un.
+
+Total: 4 SKUs / 37 unidades.
+
+A ausência não é interpretada como "não imprime". Continua `UNKNOWN` até prova.
+
+Gate preparado:
+
+- `tools/auditar_delivery_active_routing_coverage_v1.js`
+- `tools/verificar_delivery_active_routing_coverage_v1.js`
+- `data/active_delivery_routing_coverage_20260930.json`
+- `docs/Auditoria_Cobertura_Delivery_Ativo_2026-09-30.md`
+
+Comportamento fail-closed travado: em pedido misto com item conhecido + item sem rota, o motor preserva as rotas conhecidas, mas mantém `ready=false` para o pedido completo.
