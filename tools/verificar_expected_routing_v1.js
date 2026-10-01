@@ -146,6 +146,15 @@ assert.ok(
   ),
 );
 
+
+const storeMismatch = projectExpectedRouting(
+  order,
+  { ...routing, store: "STORE-A" },
+  { ...printers, store: "STORE-B" },
+);
+assert.equal(storeMismatch.ready, false);
+assert.ok(storeMismatch.blocking_reasons.includes("STORE_MISMATCH"));
+
 const realSample = JSON.parse(
   fs.readFileSync(
     path.join(__dirname, "..", "data", "real_sale_item_routing_sample_20260930_comb_salmao1.json"),
