@@ -585,7 +585,7 @@ export async function planFileToPostgresCutover(args: {
 }
 
 async function insertSnapshot(
-  tx: TransactionalSqlClient,
+  tx: SqlClient,
   s: PilotStorageSnapshot,
 ): Promise<void> {
   for (const rec of s.trips) {
@@ -795,7 +795,7 @@ async function insertSnapshot(
 }
 
 async function verifyInsideTransaction(
-  tx: TransactionalSqlClient,
+  tx: SqlClient,
   s: PilotStorageSnapshot,
 ): Promise<void> {
   const counts = await targetCounts(tx, s.unit_id);
