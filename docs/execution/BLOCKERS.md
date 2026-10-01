@@ -1094,3 +1094,23 @@ Estado atual: **feed durável single-instance = CODE_READY + TEST_PASS; produç�
 > facade. Antes de wiring PostgreSQL real no servidor, essa fila precisa virar repositório
 > compartilhado/cluster-safe; depois disso ainda falta adaptar backup/restore do servidor ao
 > tipo de backend.
+
+> **SUCESSÃO — 2026-09-30 · FILA DE PRONTOS CLUSTER-SAFE FECHADA.**
+>
+> A dependência obrigatória em `ready_orders.json` deixou de existir. `PilotApplicationFacade`
+> usa agora a porta `PilotReadyOrderStore`; File, Memory e PostgreSQL implementam a mesma
+> fronteira. A migration 0007 cria `entregas.ready_order` com unicidade por
+> `(unit_id, order_ref)`.
+>
+> O consumo da fila ao entrar numa viagem foi movido para uma invariante do próprio PostgreSQL:
+> migration 0008, trigger `AFTER INSERT` em `entregas.delivery`. Prova autorizada em branch
+> Neon São Paulo efêmera e não operacional: commit deixou `trip=1 / delivery=1 / ready=0`;
+> erro deliberado após a inserção forçou rollback com `trip=0 / delivery=0 / ready=1`;
+> o mesmo `order_ref` em duas unidades removeu somente a unidade da Trip.
+>
+> **Isto NÃO fecha a ativação multi-instância do produto.** O servidor continua default em
+> backend arquivo e declara `multi_instance=false`; ainda falta o wiring opt-in do servidor
+> para `PgEntregasUnitOfWork` + `PgPilotReadyOrderStore`, incluindo configuração e identidade
+> SQL adequadas. `consumer_live`, UI live e produção continuam desligados; nenhum deploy nem
+> migration operacional ocorreu.
+
