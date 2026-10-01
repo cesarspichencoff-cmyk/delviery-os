@@ -1,0 +1,39 @@
+{
+  "schema": "deliveryos.non-production-items.v1",
+  "store": "0001 - TATA ITAIM",
+  "confirmed_date": "2026-09-30",
+  "authority": "Cesar",
+  "semantics": "NO_OWN_PRODUCTION_TICKET",
+  "items": {
+    "8.20.11.001.00": {
+      "product_name": "COOKIE NUTELLA",
+      "logical_plaza": "sobremesa",
+      "reason": "Complementary/mounted item; no own production command/ticket.",
+      "proof": "HUMAN_CONFIRMED"
+    },
+    "9.75.00.031.00": {
+      "product_name": "GENGIBRE PORÇÃO",
+      "logical_plaza": "montagem_outros",
+      "reason": "Complementary/mounted item; no own production command/ticket.",
+      "proof": "HUMAN_CONFIRMED"
+    },
+    "9.75.00.030.00": {
+      "product_name": "WASABI",
+      "logical_plaza": "montagem_outros",
+      "reason": "Complementary/mounted item; no own production command/ticket.",
+      "proof": "HUMAN_CONFIRMED"
+    },
+    "9.75.00.032.00": {
+      "product_name": "TARE",
+      "logical_plaza": "montagem_outros",
+      "reason": "Complementary/mounted item; no own production command/ticket.",
+      "proof": "HUMAN_CONFIRMED"
+    }
+  },
+  "effects": {
+    "teknisa_write": false,
+    "print": false,
+    "seed_write": false,
+    "cutover": false
+  }
+}
