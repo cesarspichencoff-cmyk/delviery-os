@@ -78,9 +78,9 @@ async function cleanup(client: Awaited<ReturnType<typeof createPgClient>>) {
 }
 
 async function main() {
-  const admin = await createPgClient({ url: URL!, ssl: true, max: 4 });
-  const a = await createPgClient({ url: URL!, ssl: true, max: 2 });
-  const b = await createPgClient({ url: URL!, ssl: true, max: 2 });
+  const admin = await createPgClient({ url: URL!, max: 4 });
+  const a = await createPgClient({ url: URL!, max: 2 });
+  const b = await createPgClient({ url: URL!, max: 2 });
   try {
     const mig = await runMigrations(admin, diretorioDeMigrations());
     console.log("  migrations", JSON.stringify(mig));
