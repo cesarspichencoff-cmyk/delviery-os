@@ -11,6 +11,7 @@ const script = fs.readFileSync(
 
 for (const required of [
   "odhen_source_probe_readonly.ps1",
+  "odhen_fiscal_surface_probe_readonly.ps1",
   "sql_integrated_readonly_preflight.ps1",
   "production_printer_preflight_readonly.ps1",
   "ready_for_one_minimized_order_read_candidate",
