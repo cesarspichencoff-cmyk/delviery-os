@@ -39,7 +39,12 @@ DO $$ BEGIN
     -- credencial/wiring são outro gate, com autorização própria.
     CREATE ROLE deliveryos_source_ingest LOGIN;
   END IF;
-END $$;
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'deliveryos_entregas_pilot') THEN
+    -- Backend operacional do piloto. Nasce sem senha no repositório; a
+    -- credencial de runtime é efeito de implantação e continua fora deste gate.
+    CREATE ROLE deliveryos_entregas_pilot LOGIN;
+  END IF;
+END $;
 
 -- ------------------------------------------------------------- CRÍTICO
 -- Lê configuração, sobe HTTP, autentica aparelho, grava fato + mensagem.
@@ -86,3 +91,31 @@ GRANT SELECT (idempotency_key) ON platform.event_log TO deliveryos_source_ingest
 GRANT INSERT ON platform.outbox TO deliveryos_source_ingest;
 -- ON CONFLICT (outbox_id) exige SELECT na coluna árbitra.
 GRANT SELECT (outbox_id) ON platform.outbox TO deliveryos_source_ingest;
+
+-- ----------------------------------------------------- ENTREGAS PILOT
+-- Estado operacional do piloto multi-instância. Pode ler e alterar somente
+-- as tabelas de domínio que o PgEntregasUnitOfWork/ready-order realmente usam.
+-- Nunca recebe DDL, ownership, aparelho, audit, jobs ou event_log da plataforma.
+GRANT USAGE ON SCHEMA entregas, identity, platform TO deliveryos_entregas_pilot;
+GRANT SELECT (unit_id, active) ON identity.unit TO deliveryos_entregas_pilot;
+GRANT SELECT ON platform.schema_migration TO deliveryos_entregas_pilot;
+
+GRANT SELECT, INSERT, UPDATE ON entregas.trip TO deliveryos_entregas_pilot;
+GRANT SELECT, INSERT, DELETE ON entregas.delivery TO deliveryos_entregas_pilot;
+GRANT SELECT, INSERT, UPDATE ON entregas.handoff TO deliveryos_entregas_pilot;
+GRANT SELECT, INSERT, UPDATE ON entregas.occurrence TO deliveryos_entregas_pilot;
+GRANT SELECT, INSERT, UPDATE ON entregas.rider_state TO deliveryos_entregas_pilot;
+
+-- Event store operacional é append-only também por privilégio: sem UPDATE,
+-- DELETE ou TRUNCATE. A trigger continua como segunda barreira.
+GRANT SELECT, INSERT ON entregas.domain_event TO deliveryos_entregas_pilot;
+
+-- A outbox operacional muda status de entrega; por isso UPDATE é necessário.
+GRANT SELECT, INSERT, UPDATE ON entregas.public_outbox TO deliveryos_entregas_pilot;
+
+-- Fila de prontos: INSERT/SELECT e remoção quando vira Delivery.
+GRANT SELECT, INSERT, DELETE ON entregas.ready_order TO deliveryos_entregas_pilot;
+
+-- seq de domain_event/public_outbox são IDENTITY.
+GRANT USAGE ON ALL SEQUENCES IN SCHEMA entregas TO deliveryos_entregas_pilot;
+
