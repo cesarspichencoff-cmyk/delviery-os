@@ -41,14 +41,14 @@ for (const required of [
   assert.ok(script.includes(required), "missing standalone safety marker: " + required);
 }
 
-for (const excluded of [
-  '\\Log(\\|$)',
-  '\\Logs(\\|$)',
-  '\\Temp(\\|$)',
-  '\\cache(\\|$)',
-  '\\node_modules(\\|$)',
-]) {
-  assert.ok(script.includes(excluded), "missing excluded path guard: " + excluded);
+const excludeGuardLines = script
+  .split(/\\r?\\n/)
+  .filter((line) => line.includes("-notmatch"));
+for (const folder of ["Log(", "Logs(", "Temp(", "cache(", "node_modules("]) {
+  assert.ok(
+    excludeGuardLines.some((line) => line.includes(folder)),
+    "missing excluded path guard: " + folder,
+  );
 }
 
 for (const forbidden of [
