@@ -227,14 +227,14 @@ interface ConfigDaPonte {
   viagemNativa?: string;
 }
 
-function scriptDaPonte(cfg: ConfigDaPonte | null): string {
+function scriptDaPonte(cfg: ConfigDaPonte | null, comSessao = true): string {
   const espiaoGeo = `
     window.__geoWatch = 0;
     if (navigator.geolocation) {
       const orig = navigator.geolocation.watchPosition.bind(navigator.geolocation);
       navigator.geolocation.watchPosition = (...a) => { window.__geoWatch += 1; return orig(...a); };
     }`;
-  const sessao = `localStorage.setItem("entregas_pilot_token", ${JSON.stringify(TOKEN_MOTOBOY)});`;
+  const sessao = comSessao ? `localStorage.setItem("entregas_pilot_token", ${JSON.stringify(TOKEN_MOTOBOY)});` : `localStorage.removeItem("entregas_pilot_token");`;
   if (!cfg) return `${sessao}${espiaoGeo}`;
   return `${sessao}${espiaoGeo}
   (() => {
@@ -364,8 +364,41 @@ async function main(): Promise<void> {
         await teste("A3 sem erro de script", async () => {
           assert.deepEqual(erros, []);
         });
+        await teste("A4 navegador comum não inventa ID de aparelho", async () => {
+          assert.equal(await page.isHidden("#deviceIdLine"), true);
+          assert.equal(await page.textContent("#deviceIdValue"), "");
+        });
         await ctx.close();
       } finally {
+        derrubar(p);
+      }
+    }
+
+    /* ------------------------------------------------------------ */
+    console.log("\nA2. CADASTRO DO APARELHO ANTES DO LOGIN HUMANO");
+    {
+      const p = await subirPiloto({ flagGps: true, termoPublicavel: true });
+      const ctx = await browser.newContext();
+      try {
+        await ctx.addInitScript({
+          content: scriptDaPonte(
+            { portaoAberto: false, permissao: "ausente", concedeAoPedir: false },
+            false,
+          ),
+        });
+        const page = await ctx.newPage();
+        await page.goto(`${p.base}/rider-mobile/`, { waitUntil: "domcontentloaded" });
+        await teste("A5 sem token humano, o ID nativo continua visível para autorização", async () => {
+          await page.waitForSelector("#deviceIdLine:not([hidden])", { timeout: 5000 });
+          assert.equal((await page.textContent("#deviceIdValue"))?.trim(), DEVICE_FALSO);
+          assert.equal(
+            await page.evaluate(() => localStorage.getItem("entregas_pilot_token")),
+            null,
+            "o teste deixou sessão humana pré-carregada",
+          );
+        });
+      } finally {
+        await ctx.close();
         derrubar(p);
       }
     }
@@ -378,26 +411,33 @@ async function main(): Promise<void> {
         await montarViagem(p, "T-PONTE-1");
         await respostaNoServidor(p, "accepted");
         const { ctx, page, erros } = await abrir(browser, p, { portaoAberto: true, permissao: "concedida", concedeAoPedir: true });
-        await teste("B1 antes da saída, nada liga a captura", async () => {
+        await teste("B1 o ID pseudônimo do aparelho fica visível para cadastro, sem segredo", async () => {
+          await page.waitForSelector("#deviceIdLine:not([hidden])", { timeout: 5000 });
+          assert.equal((await page.textContent("#deviceIdValue"))?.trim(), DEVICE_FALSO);
+          const linha = (await page.textContent("#deviceIdLine")) || "";
+          assert.match(linha, /ID deste aparelho/);
+          assert.equal(/token|secret|segredo|bearer/i.test(linha), false);
+        });
+        await teste("B2 antes da saída, nada liga a captura", async () => {
           await pausa(800);
           assert.deepEqual(await chamadasDe(page, "startTripCapture"), []);
         });
-        await teste("B2 saída confirmada pelo domínio -> startTripCapture da MESMA viagem, uma vez", async () => {
+        await teste("B3 saída confirmada pelo domínio -> startTripCapture da MESMA viagem, uma vez", async () => {
           await confirmarSaida(page);
           await esperarChamada(page, "startTripCapture");
           assert.equal(await estadoDaViagem(p, "T-PONTE-1"), "em_rota");
           assert.deepEqual(await chamadasDe(page, "startTripCapture"), ["T-PONTE-1"]);
           assert.equal(await page.evaluate(() => (window as unknown as { __geoWatch: number }).__geoWatch), 0);
         });
-        await teste("B3 o status de GPS existente reflete o serviço nativo", async () => {
+        await teste("B4 o status de GPS existente reflete o serviço nativo", async () => {
           await page.waitForFunction(() => (document.getElementById("gpsStatus")?.textContent || "").includes("GPS ATIVO"), null, { timeout: 5000 });
         });
-        await teste("B4 viagem encerrada pelo console -> stopTripCapture (GPS só durante viagem ativa)", async () => {
+        await teste("B5 viagem encerrada pelo console -> stopTripCapture (GPS só durante viagem ativa)", async () => {
           await encerrarViagem(p, "T-PONTE-1");
           await esperarChamada(page, "stopTripCapture", 25000);
           await page.waitForFunction(() => (document.getElementById("gpsStatus")?.textContent || "").includes("GPS DESLIGADO"), null, { timeout: 5000 });
         });
-        await teste("B5 sem erro de script", async () => {
+        await teste("B6 sem erro de script", async () => {
           assert.deepEqual(erros, []);
         });
         await ctx.close();

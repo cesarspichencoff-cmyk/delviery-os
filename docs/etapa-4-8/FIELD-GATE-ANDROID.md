@@ -64,13 +64,15 @@ Isso é smoke test de emulador, não fecha nenhum item da seção 3.
    novo no item 2 da bateria. Relógio adiantado não quebra o servidor — vira `suspect` e perde a
    autoridade sobre o frescor —, mas um gate de campo com relógio errado mede a coisa errada.
 4. **Descobrir o `device_id`.** O app o gera e o guarda no Room (`entregas.db`, tabela
-   `device_state`, chave `device_id`).
-   - Build `debug`: `adb exec-out run-as br.com.tata.entregas.debug cat databases/entregas.db > entregas.db`
-     (copie também `-wal` e `-shm`, se existirem) e
-     `sqlite3 entregas.db "SELECT value FROM device_state WHERE key = 'device_id'"`.
-   - Build `pilot`: **não há caminho hoje** — a variante não é depurável, o app não mostra o ID na
-     tela e o crítico não registra o ID de sessão recusada. **BLOCKED** até existir um dos dois;
-     o primeiro gate físico pode ser feito com o `debug`.
+   `device_state`, chave `device_id`). Desde 2026-10-01, a rider-mobile Android mostra
+   **“ID deste aparelho · dev-…”** diretamente a partir de `capabilities()`, inclusive **antes
+   do login humano do piloto**. É pseudônimo local; a tela não recebe token, segredo, IMEI,
+   telefone ou coordenada para exibi-lo. Este é o caminho normal também no build `pilot`.
+   - Controle de laboratório/debug continua disponível por `adb run-as`, mas deixou de ser
+     requisito operacional.
+   - Prova automatizada: rider-bridge **30/30**, incluindo navegador comum sem ID inventado,
+     app nativo com ID visível e app nativo **sem token humano** com o mesmo ID visível.
+     Ver `field-gate/2026-10-01-device-id-visible.md`.
 5. **Autorizar o aparelho** — ato humano, fail-closed. A unidade e o ator já precisam existir,
    estar ativos, pertencer à mesma unidade e o ator precisa ser `motoboy_interno`. A ferramenta
    **não cria unidade/ator e não reativa aparelho revogado**.

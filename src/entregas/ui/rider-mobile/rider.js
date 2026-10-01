@@ -487,14 +487,32 @@ function onNativeMessage(m) {
   syncCapture(activeTrip());
 }
 
+function renderDeviceIdentity() {
+  const line = $("deviceIdLine");
+  const value = $("deviceIdValue");
+  if (!line || !value) return;
+  if (!cap.deviceId) {
+    line.hidden = true;
+    value.textContent = "";
+    return;
+  }
+  // Pseudônimo local, explicitamente não secreto. Nunca mostrar token/segredo.
+  value.textContent = cap.deviceId;
+  line.hidden = false;
+}
+
 async function initCapture() {
   cap.initializing = true;
   try {
-    const sess = await api("/api/session");
-    cap.me = sess.actor || null;
+    // A identidade do aparelho vem do nativo e precisa ser visível até antes
+    // do login/autorização: é justamente o valor que o responsável cadastra.
     const caps = native.capabilities() || {};
     cap.deviceId = typeof caps.device_id === "string" && caps.device_id ? caps.device_id : null;
     cap.appVersion = typeof caps.app_version === "string" ? caps.app_version : null;
+    renderDeviceIdentity();
+
+    const sess = await api("/api/session");
+    cap.me = sess.actor || null;
     const st = native.status();
     cap.permission = permissionFromStatus(st);
     cap.runningTrip = st && st.active_trip_id ? String(st.active_trip_id) : null;
@@ -597,5 +615,10 @@ document.addEventListener("visibilitychange", () => {
   if (native && document.visibilityState === "visible") refresh().catch(() => {});
 });
 
-if (native) listenNative(window, onNativeMessage);
+if (native) {
+  listenNative(window, onNativeMessage);
+  // Começa pelo nativo para expor o device_id pseudônimo mesmo antes de o
+  // login do piloto existir. A autorização do aparelho depende desse valor.
+  void initCapture();
+}
 refresh().catch((e) => renderError($("errorBox"), e.message));

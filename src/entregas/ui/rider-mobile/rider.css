@@ -102,6 +102,20 @@ body.mobile {
 .loc {
   margin-top: 0.5rem;
 }
+.device-id-line {
+  margin: 0.45rem 0 0;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+.device-id-line code {
+  user-select: all;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+}
+.device-id-line[hidden] {
+  display: none;
+}
 .sync-title {
   font-weight: 500;
 }
