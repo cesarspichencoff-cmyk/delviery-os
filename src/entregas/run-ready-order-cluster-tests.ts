@@ -184,10 +184,26 @@ async function main(): Promise<void> {
     await testCase("RO3 servidor aguarda ready store e protege backup externo", () => {
       const server = readFileSync("tools/entregas_pilot_server.ts", "utf8");
       assert.match(server, /await facade\.registerReadyOrder/);
-      const guards = server.match(/facade\.supportsFileBackup/g) ?? [];
-      assert.ok(guards.length >= 5);
-      assert.match(server, /backup_backend_managed/);
-      assert.match(server, /restore_backend_managed/);
+      assert.equal(
+        (server.match(/backup_backend_managed/g) ?? []).length,
+        2,
+        "POST backup e GET backups precisam recusar backend externo",
+      );
+      assert.equal(
+        (server.match(/restore_backend_managed/g) ?? []).length,
+        1,
+        "restore precisa recusar backend externo",
+      );
+      assert.match(
+        server,
+        /if \(facade\.supportsFileBackup\)/,
+        "timer inicial só pode existir no backend arquivo",
+      );
+      assert.match(
+        server,
+        /facade\?\.supportsFileBackup/,
+        "shutdown precisa respeitar backend externo",
+      );
     });
 
     if (!URL) {
