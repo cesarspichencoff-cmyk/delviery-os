@@ -23,6 +23,7 @@ import type {
   EventStore,
   OutboxRepository,
   TripRecord,
+  ReadyOrderRecord,
   UnitOfWork,
 } from "./ports";
 import { ConcurrencyError } from "./ports";
@@ -37,6 +38,7 @@ interface StoreData {
   handoffs: Record<string, { handoff: Handoff; version: number }>;
   occurrences: Record<string, Occurrence>;
   riders: Record<string, RiderOperationalState>;
+  readyOrders: Record<string, ReadyOrderRecord>;
   events: DomainEvent[];
   outbox: OutboxRecord[];
 }
@@ -47,14 +49,46 @@ function emptyData(): StoreData {
     handoffs: {},
     occurrences: {},
     riders: {},
+    readyOrders: {},
     events: [],
     outbox: [],
   };
 }
 
 function loadData(path: string): StoreData {
-  if (!existsSync(path)) return emptyData();
-  return JSON.parse(readFileSync(path, "utf8")) as StoreData;
+  const raw = existsSync(path)
+    ? (JSON.parse(readFileSync(path, "utf8")) as Partial<StoreData>)
+    : {};
+  const hadReadyOrders = Object.prototype.hasOwnProperty.call(raw, "readyOrders");
+  const data: StoreData = {
+    ...emptyData(),
+    ...raw,
+    trips: raw.trips ?? {},
+    handoffs: raw.handoffs ?? {},
+    occurrences: raw.occurrences ?? {},
+    riders: raw.riders ?? {},
+    readyOrders: raw.readyOrders ?? {},
+    events: raw.events ?? [],
+    outbox: raw.outbox ?? [],
+  };
+
+  if (!hadReadyOrders) {
+    const legacy = join(path, "..", "ready_orders.json");
+    if (existsSync(legacy)) {
+      try {
+        const parsed = JSON.parse(readFileSync(legacy, "utf8")) as {
+          orders?: ReadyOrderRecord[];
+        };
+        for (const order of parsed.orders ?? []) {
+          if (!order?.order_ref) continue;
+          data.readyOrders[order.order_ref] = structuredClone(order);
+        }
+      } catch {
+        // Legado corrompido nao substitui a verdade principal.
+      }
+    }
+  }
+  return data;
 }
 
 function saveData(path: string, data: StoreData): void {
@@ -85,6 +119,7 @@ export class FileUnitOfWork implements UnitOfWork {
   readonly handoffs: HandoffRepository;
   readonly occurrences: OccurrenceRepository;
   readonly riders: RiderStateRepository;
+  readonly readyOrders: import("./ports").ReadyOrderRepository;
   readonly events: EventStore;
   readonly outbox: OutboxRepository;
 
@@ -166,6 +201,19 @@ export class FileUnitOfWork implements UnitOfWork {
           throw new ConcurrencyError(`Rider version conflict`);
         }
         self.dirty.riders[state.rider_id] = state;
+      },
+    };
+    this.readyOrders = {
+      async list() {
+        return Object.values(self.dirty.readyOrders).map((x) => structuredClone(x));
+      },
+      async add(record) {
+        if (self.dirty.readyOrders[record.order_ref]) return { duplicate: true };
+        self.dirty.readyOrders[record.order_ref] = structuredClone(record);
+        return { duplicate: false };
+      },
+      async remove(orderRefs) {
+        for (const orderRef of orderRefs) delete self.dirty.readyOrders[orderRef];
       },
     };
     this.events = {
