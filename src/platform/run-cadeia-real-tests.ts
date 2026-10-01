@@ -50,6 +50,7 @@ import { lerFatosParaReplay } from "./projections/replay-do-event-log";
 import { projetar, mesmoEstadoLogico } from "./projections/operacao-viva";
 import { TIPOS_DA_OPERACAO_VIVA } from "./runtime/handler-operacao-viva";
 import { lerRealidadeDeEntregas } from "./leitura/realidade-de-entregas";
+import { lerLocalizacaoCanonicaDaViagem } from "./leitura/localizacao-de-viagem";
 import { entregasVM } from "../product/viewmodels/entregas-vm";
 import { montarEntregasDemo, AGORA_DEMO } from "../product/demo/seed-demonstracao";
 
@@ -719,6 +720,27 @@ async function main(): Promise<void> {
       assert.equal(v?.ultima_posicao_em, "2026-09-24T10:05:00.000Z");
       assert.equal(v?.eventos.length, 5);
       assert.equal(realidade.projecoes.some((p) => p.source_mode === "real"), false, "apareceu projeção real sem fato real");
+    });
+
+    await teste("D1b a localização da viagem vem do event_log canônico, sem somar modos", async () => {
+      const loc = await lerLocalizacaoCanonicaDaViagem(b.cliente, {
+        unit_id: UNIDADE,
+        trip_id: VIAGEM,
+        source_mode: MODO,
+      });
+      assert.equal(loc.fonte, "platform.event_log");
+      assert.equal(loc.point_count, 5);
+      assert.equal(loc.points.every((p) => p.unit_id === UNIDADE), true);
+      assert.equal(loc.points.every((p) => p.trip_id === VIAGEM), true);
+      assert.equal(loc.points.every((p) => p.source_mode === MODO), true);
+      assert.equal(loc.last_point?.occurred_at, "2026-09-24T10:05:00.000Z");
+
+      const real = await lerLocalizacaoCanonicaDaViagem(b.cliente, {
+        unit_id: UNIDADE,
+        trip_id: VIAGEM,
+        source_mode: "real",
+      });
+      assert.equal(real.point_count, 0, "fato simulated vazou para leitura real");
     });
 
     await teste("D2 a porta é somente-leitura por construção: nenhuma escrita entra na conexão dela", async () => {

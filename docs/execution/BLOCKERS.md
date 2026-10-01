@@ -420,10 +420,21 @@ corrompendo exatamente a ordenação que o servidor usa.
 > **10/10 PASS**. Ver `Q018-RIDER-CAPTURA.md` §§14–15 e
 > `field-gate/2026-09-30-foxxy-emulador.md`.
 
-### C4 — P1 · GPS do piloto mora na RAM
+### C4 — P1 · leitura de GPS do despacho ainda aponta para a memória legada do piloto
 
-`tools/entregas_pilot_server.ts:182` — `const pointsByTrip = new Map(...)`.
-Reiniciar o servidor apaga toda a rota recebida e zera a deduplicação.
+> **SUCESSÃO — reclassificado em 2026-10-01.** Persistir `pointsByTrip` seria
+> a correção errada: criaria uma segunda fonte durável de coordenadas. O Android
+> já envia GPS para a plataforma canônica, e `platform.event_log` é a verdade
+> durável do lote. A porta `leitura/localizacao-de-viagem.ts` agora lê essa
+> verdade em transação `READ ONLY`, com filtro obrigatório por
+> unidade + viagem + `source_mode`.
+>
+> O bloqueio que resta é de **wiring/autorização de leitura**: a central de
+> despacho ainda consulta `/api/trip/location` e `/api/trip/route` do piloto,
+> que continuam usando `pointsByTrip` em RAM. Falta uma ponte autenticada e
+> mínima até a leitura canônica e, só depois, retirar/tombstonar o caminho GPS
+> legado do piloto. **Não** conceder `SELECT` amplo de `platform.event_log`
+> ao papel operacional do piloto só para fechar este item.
 
 ### C5 — P2 · Resíduos conhecidos
 
@@ -435,8 +446,12 @@ Reiniciar o servidor apaga toda a rota recebida e zera a deduplicação.
   completo e testado; **o extrator que o alimenta é que não extrai**;
 - tabela `outbox_event` do Room nunca recebe escrita (código morto);
 - `purgeSyncedBefore` nunca é agendada — retenção local não é aplicada;
-- sem receipt durável: o `DeviceReceipt` está desenhado
-  (`device-envelope.ts:60`) e o Kotlin descarta o corpo da resposta.
+- **SUCESSÃO 2026-10-01:** o Kotlin **não descarta mais** o receipt do GPS.
+  `SyncWorker` interpreta contagens/rejeições com `decideGpsReceipt`, marca
+  aceitos como `sent`, rejeitados como `rejected` e falha/retry em receipt
+  inconsistente. O que continua não existindo é uma **entidade separada de
+  receipt durável**; isso só deve virar requisito se houver uma necessidade de
+  auditoria que o estado Room + event log idempotente não cubram.
 
 ---
 

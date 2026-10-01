@@ -82,6 +82,7 @@
     "test:platform:q017:mutacoes": "npx tsx src/platform/run-q017-mutation-tests.ts",
     "test:platform:append-only": "npx tsx src/platform/run-append-only-tests.ts",
     "test:platform:cadeia": "npx tsx src/platform/run-cadeia-real-tests.ts",
+    "test:platform:location-read": "npx tsx src/platform/run-localizacao-viagem-tests.ts",
     "test:platform:cadeia:mutacoes": "npx tsx src/platform/run-cadeia-mutation-tests.ts",
     "test:platform:relogio": "npx tsx src/platform/run-relogio-tests.ts",
     "test:platform:relogio:mutacoes": "npx tsx src/platform/run-relogio-mutation-tests.ts",

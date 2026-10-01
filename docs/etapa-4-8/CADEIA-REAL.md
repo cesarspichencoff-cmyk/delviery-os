@@ -76,6 +76,7 @@ controle positivo e treze mutações. O número de mutações estava certo; o de
 | `FileUnitOfWork` / `entregas.*` do piloto | **KEEP_PARALLEL** | viagem, parada, ocorrência, termo e comandos (`/api/events/batch`, `/api/term/acknowledge`, `/api/policies`) continuam no piloto. Migrar é outra fronteira. Hoje **nenhuma viagem nasce na cadeia canônica**: a viagem que existe pelo GPS aparece com estado `desconhecido`, e o selo diz por quê |
 | rider-mobile (WebView do piloto) | **KEEP_PARALLEL** | é a interface do motoboy; `src/entregas/**` está no Preservation Set |
 | Product System `/entregas` | **ADAPT** | demo preservado, com selo; bloco real ao lado |
+| localização/rota no despacho | **ADAPT EM CURSO** | a verdade canônica agora tem porta `READ ONLY` sobre `platform.event_log`, filtrada por unidade + viagem + `source_mode`; o console ainda lê a memória legada do piloto, e o wiring autenticado mínimo continua aberto |
 | `test:platform:pb19` controle positivo | **ADAPT** | criava fato no banco compartilhado e dependia de outra suíte tê-lo migrado; agora tem banco próprio |
 | `/api/device/session` no piloto | **RETIRED / TOMBSTONE** | `handleDeviceSession` foi removido em 2026-10-01; o piloto não lê mais `entregas-devices.json` nem emite identidade. A rota antiga responde 503 retentável `device_session_moved_to_platform` para preservar fila de APK antigo; a única autoridade é a plataforma |
 
@@ -280,6 +281,7 @@ explícito (D4). **Governança depois do commit** (L45): medida no commit da doc
 6. **Cadeia dos comandos** — **caminho servidor provado em 2026-10-01**: `/api/events/batch` atravessa a aplicação e chega ao domínio/event log; `actor` e `unit_id` do payload não têm autoridade, pois sessão autenticada e unidade configurada prevalecem. O produtor Android continua **NOT_IMPLEMENTED/dormant** porque nenhum código de produção grava `OutboxEventEntity`; não foi criada feature artificial para mascarar essa ausência. Ver `field-gate/2026-10-01-command-batch-authority.md`.
 7. ~~**Relógio do aparelho**~~ — **corrigido e provado** em `docs/etapa-4-8/RELOGIO.md`:
    o servidor julga o carimbo, grava `clock_trust` explícito e `suspect` não fabrica frescor.
+8. **Leitura canônica de localização da viagem** — **CODE_READY + TEST_PASS local em 2026-10-01**: `lerLocalizacaoCanonicaDaViagem` lê somente `platform.event_log`, dentro de `SET TRANSACTION READ ONLY`, exigindo unidade + viagem + `source_mode`; suíte focada 3/3 e governança 14/14. A subprova PostgreSQL real foi adicionada à cadeia, mas segue **NOT_RUN nesta sessão** porque `DELIVERYOS_PG_URL` está ausente. A central de despacho ainda não foi ligada a essa porta.
 
 ## 10 — UNKNOWNs e limites declarados
 
