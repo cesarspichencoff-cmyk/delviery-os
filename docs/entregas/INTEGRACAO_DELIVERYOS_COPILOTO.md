@@ -465,3 +465,42 @@ O backup/restore de arquivo continua disponível no backend default; um backend 
 ### Dependência local restante
 
 `ready_orders.json` ainda é lido e escrito diretamente pela facade. Portanto o estado principal de viagens já pode vir de backend externo, mas a fila de pedidos prontos ainda impede um piloto verdadeiramente multi-instância.
+
+## 24. Fila de pedidos prontos cluster-safe — 2026-09-30
+
+A fila operacional de pedidos prontos deixou de ser um detalhe local obrigatório da facade. A
+`PilotApplicationFacade` passou a depender de `PilotReadyOrderStore`, com implementações File,
+Memory e PostgreSQL. O modo arquivo continua sendo o default do piloto; backend externo não lê
+`ready_orders.json`.
+
+A migration `0007_entregas_ready_order` cria `entregas.ready_order` com chave primária
+`(unit_id, order_ref)`, impedindo duplicação concorrente do mesmo pedido na mesma unidade.
+
+A remoção do pedido da fila ao entrar numa viagem não ficou delegada ao adapter. A migration
+`0008_ready_order_consumido_por_delivery` impõe a regra no banco: um trigger `AFTER INSERT` em
+`entregas.delivery` remove o `ready_order` da unidade da Trip e do mesmo `order_ref` dentro da
+mesma transação.
+
+Prova PostgreSQL real:
+
+- GitHub Actions/PostgreSQL 17: `READY_ORDER_CLUSTER` **7/7 PASS** na versão anterior do desenho,
+  incluindo duas instâncias, unicidade, isolamento por unidade e rollback;
+- depois de mover o consumo para a invariante de banco, prova direta autorizada em branch Neon
+  São Paulo efêmera e não operacional:
+  - commit: `trip=1`, `delivery=1`, `ready_order=0`;
+  - erro deliberado após a delivery: rollback com `trip=0`, `delivery=0`, `ready_order=1`;
+  - mesmo `order_ref` em duas unidades: somente a unidade da Trip saiu da fila;
+  - trigger `delivery_consumir_ready_order` confirmado no catálogo do PostgreSQL.
+
+No HEAD principal após a integração: build PASS; RO1–RO3 PASS no Windows/Foxxy com PostgreSQL
+explicitamente PULADO; `PILOT_STORAGE_ABSTRACTION` 3/3; persistence-recreate 17/17; session 18/18;
+deploy-audit 36/36; governança GREEN.
+
+### Fronteira que permanece fechada
+
+O servidor ainda instancia o backend arquivo por default e declara `multi_instance=false`. O
+wiring opt-in para `PgEntregasUnitOfWork` + `PgPilotReadyOrderStore`, a configuração da conexão e
+a identidade SQL do processo ainda não foram ativados no servidor. Nenhum deploy ocorreu, nenhuma
+migration foi aplicada à branch operacional do Neon e `entregas.copiloto_live_connection` continua
+`false`.
+
