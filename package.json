@@ -31,7 +31,8 @@
     "auditar:delivery-active-routing": "node tools/auditar_delivery_active_routing_coverage_v1.js",
     "verificar:delivery-active-routing": "node tools/verificar_delivery_active_routing_coverage_v1.js",
     "verificar:non-production-items": "node tools/verificar_non_production_delivery_items_v1.js",
-    "verificar:production-print-plan": "tsc && node tools/verificar_production_print_plan_v1.js"
+    "verificar:production-print-plan": "tsc && node tools/verificar_production_print_plan_v1.js",
+    "verificar:resource-consumption": "tsc && node tools/verificar_resource_consumption_v1.js"
   },
   "devDependencies": {
     "@types/node": "20.14.10",
