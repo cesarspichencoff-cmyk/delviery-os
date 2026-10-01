@@ -442,3 +442,26 @@ Prova em GitHub Actions, repositório público, PostgreSQL 17 de serviço:
 O `PilotApplicationFacade` continua tipado e construído diretamente com `FileUnitOfWork`, e `snapshot()`/`reloadStore()` ainda consultam `store.json`. Portanto o adapter PostgreSQL está **CODE_READY + POSTGRES_PROVEN**, mas o piloto ainda não foi migrado para ele. `ready_orders.json` também continua local.
 
 Nenhum deploy foi feito, nenhuma migration foi aplicada à branch operacional do Neon e `entregas.copiloto_live_connection` continua `false`.
+
+## 23. PilotApplicationFacade desacoplada do `store.json` — 2026-09-30
+
+A facade passou a depender da porta `UnitOfWork`, por `PilotUnitOfWorkSource`. O modo arquivo continua sendo o default, mas o formato do `store.json` não é mais conhecido pela facade.
+
+Os repositórios de Trip, Handoff, Occurrence e Rider agora expõem `list()`, implementado de forma equivalente em Memory, File e PostgreSQL. `snapshot()` usa somente essas portas; um arquivo `store.json` com estado fantasma não contamina um backend externo.
+
+Prova temporária em PostgreSQL 17 + regressão:
+
+- `PILOT_STORAGE_ABSTRACTION`: **3/3 PASS**;
+- `ENTREGAS_PG_UOW`: **8/8 PASS**;
+- `source-mode`: PASS;
+- persistence/recreate: PASS;
+- session isolation: PASS;
+- deploy-audit: PASS;
+- foundation/integration/durable-feed/gate-close: PASS;
+- governança e `git diff --check`: PASS.
+
+O backup/restore de arquivo continua disponível no backend default; um backend externo declara `supportsFileBackup=false` e `dataPath` falha alto em vez de fingir backup de arquivo.
+
+### Dependência local restante
+
+`ready_orders.json` ainda é lido e escrito diretamente pela facade. Portanto o estado principal de viagens já pode vir de backend externo, mas a fila de pedidos prontos ainda impede um piloto verdadeiramente multi-instância.

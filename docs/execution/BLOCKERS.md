@@ -1083,3 +1083,14 @@ Estado atual: **feed durável single-instance = CODE_READY + TEST_PASS; produç�
 > continua hardcoded em `FileUnitOfWork/store.json` e o snapshot lê o arquivo diretamente.
 > O próximo passo é remover esse acoplamento e injetar a porta `UnitOfWork`/factory; depois tratar
 > `ready_orders.json`. Só então o piloto pode ser provado multi-instância ponta a ponta.
+
+> **SUCESSÃO — 2026-09-30 · FACADE DESACOPLADA DO STORE.**
+>
+> `PilotApplicationFacade` agora aceita `UnitOfWork` externo; snapshot lê exclusivamente as
+> portas `list()` e ignora `store.json` quando o backend não é arquivo. Modo arquivo/recreate/
+> backup/sessão continuaram verdes e PgUOW 8/8 permaneceu verde.
+>
+> **Dependência local restante:** `ready_orders.json` ainda é estado operacional escrito pela
+> facade. Antes de wiring PostgreSQL real no servidor, essa fila precisa virar repositório
+> compartilhado/cluster-safe; depois disso ainda falta adaptar backup/restore do servidor ao
+> tipo de backend.
