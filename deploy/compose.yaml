@@ -121,21 +121,21 @@ services:
     command: >
       sh -ceu '
         while true; do
-          ts=$(date -u +%Y%m%dT%H%M%SZ);
-          case "$ENTREGAS_STORAGE_BACKEND" in
+          ts=$$(date -u +%Y%m%dT%H%M%SZ);
+          case "$$ENTREGAS_STORAGE_BACKEND" in
             file)
-              tar -czf "/backups/entregas-file-$ts.tar.gz" -C /dados .;
+              tar -czf "/backups/entregas-file-$$ts.tar.gz" -C /dados .;
               ls -1t /backups/entregas-file-*.tar.gz 2>/dev/null | tail -n +15 | xargs -r rm -f
               ;;
             postgres)
-              test -n "$DELIVERYOS_DATABASE_URL" || {
+              test -n "$$DELIVERYOS_DATABASE_URL" || {
                 echo "backup postgres recusado: DELIVERYOS_DATABASE_URL ausente" >&2;
                 exit 78;
               };
               pg_dump
-                --dbname="$DELIVERYOS_DATABASE_URL"
+                --dbname="$$DELIVERYOS_DATABASE_URL"
                 --format=custom
-                --file="/backups/entregas-pg-$ts.dump";
+                --file="/backups/entregas-pg-$$ts.dump";
               ls -1t /backups/entregas-pg-*.dump 2>/dev/null | tail -n +15 | xargs -r rm -f
               ;;
             *)
@@ -167,49 +167,49 @@ services:
       - entregas_backups:/backups:ro
     command: >
       sh -ceu '
-        test "$ENTREGAS_RESTORE_CONFIRM" = "YES" || {
+        test "$$ENTREGAS_RESTORE_CONFIRM" = "YES" || {
           echo "restore recusado: ENTREGAS_RESTORE_CONFIRM precisa ser YES" >&2;
           exit 78;
         };
-        test -n "$DELIVERYOS_DATABASE_URL" || {
+        test -n "$$DELIVERYOS_DATABASE_URL" || {
           echo "restore recusado: URL operacional ausente" >&2;
           exit 78;
         };
-        test -n "$ENTREGAS_RESTORE_DATABASE_URL" || {
+        test -n "$$ENTREGAS_RESTORE_DATABASE_URL" || {
           echo "restore recusado: URL alvo ausente" >&2;
           exit 78;
         };
-        test "$ENTREGAS_RESTORE_DATABASE_URL" != "$DELIVERYOS_DATABASE_URL" || {
+        test "$$ENTREGAS_RESTORE_DATABASE_URL" != "$$DELIVERYOS_DATABASE_URL" || {
           echo "restore recusado: alvo não pode ser o banco operacional" >&2;
           exit 78;
         };
-        case "$ENTREGAS_RESTORE_SNAPSHOT" in
+        case "$$ENTREGAS_RESTORE_SNAPSHOT" in
           ""|*"/"*|*".."*)
             echo "restore recusado: snapshot inválido" >&2;
             exit 78
             ;;
         esac;
-        test -f "/backups/$ENTREGAS_RESTORE_SNAPSHOT" || {
+        test -f "/backups/$$ENTREGAS_RESTORE_SNAPSHOT" || {
           echo "restore recusado: snapshot não encontrado" >&2;
           exit 78;
         };
-        count=$(psql "$ENTREGAS_RESTORE_DATABASE_URL" -Atqc "
+        count=$$(psql "$$ENTREGAS_RESTORE_DATABASE_URL" -Atqc "
           SELECT count(*)
             FROM pg_class c
             JOIN pg_namespace n ON n.oid=c.relnamespace
            WHERE n.nspname NOT IN ('"'"'pg_catalog'"'"','"'"'information_schema'"'"')
              AND n.nspname NOT LIKE '"'"'pg_toast%'"'"'
         ");
-        test "$count" = "0" || {
+        test "$$count" = "0" || {
           echo "restore recusado: banco alvo não está vazio" >&2;
           exit 78;
         };
         pg_restore
-          --dbname="$ENTREGAS_RESTORE_DATABASE_URL"
+          --dbname="$$ENTREGAS_RESTORE_DATABASE_URL"
           --no-owner
           --no-privileges
           --exit-on-error
-          "/backups/$ENTREGAS_RESTORE_SNAPSHOT"
+          "/backups/$$ENTREGAS_RESTORE_SNAPSHOT"
       '
     networks: [interna]
     security_opt:
