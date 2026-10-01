@@ -442,15 +442,23 @@ corrompendo exatamente a ordenação que o servidor usa.
 > `DELIVERYOS_PG_URL` estão ausentes no Foxxy; portanto esses pontos são
 > **NOT_RUN**, não PROVEN.
 
-### C5 — P2 · Resíduos conhecidos
+### C5 — P2 · Resíduos conhecidos — reavaliado em 2026-10-01
 
-- `tools/live/interface/servir_d4a.js:120` e `servir_investigacao_volume.js:57`
-  fazem `listen(PORT, "0.0.0.0")` incondicional. **Fora do worktree da
-  plataforma** — não foram trazidos pelo port;
-- `browser-adapter.js:140` extrai só `external_id` + `raw_status`, então 7 das
-  9 dimensões chegam `unknown` em produção. O modelo multidimensional está
-  completo e testado; **o extrator que o alimenta é que não extrai**;
-- tabela `outbox_event` do Room nunca recebe escrita (código morto);
+- **SUCESSÃO:** `tools/live/interface/servir_d4a.js`,
+  `servir_investigacao_volume.js` e `browser-adapter.js` **não estão no Git
+  atual**. A qualificação canônica dos produtores registra que pertenciam ao
+  port histórico do Conference Brain que não foi aceito; Playwright/scraping
+  não é a entrada viva do DeliveryOS atual. Portanto bind `0.0.0.0` e
+  “7/9 dimensões unknown” são **legado não portado, não bloqueador atual**.
+  `test:platform:r5d2-producer-qualification` passou **38/38** nesta
+  reavaliação;
+- `outbox_event` do Room continua **RESERVADO/DORMANT**: não existe produtor
+  Android em código de produção. Isso significa que **comandos offline nativos
+  não estão implementados** e não devem ser declarados prontos. Remover a
+  tabela agora exigiria migração do schema Room sem ganho para o fluxo atual;
+  criar um produtor artificial só para “fechar” o item também seria incorreto.
+  A rider-mobile atual envia comandos diretamente ao piloto e o readiness já
+  declara comandos offline como capacidade limitada;
 - **SUCESSÃO 2026-10-01:** a retenção local foi ligada de forma **fail-preserve**. O aparelho só calcula corte quando `/api/policies` traz retenção do termo publicável, o hash é o termo vigente e existe aceite desse mesmo hash pelo mesmo motoboy no mesmo aparelho. Só pontos `sent` vencidos são removíveis e a viagem ativa é sempre preservada. Sem política/aceite válido, nada é apagado. O prazo real continua **DECISÃO HUMANA ABERTA** no checklist; nenhum default 30 foi promovido;
 - **SUCESSÃO 2026-10-01:** o Kotlin **não descarta mais** o receipt do GPS.
   `SyncWorker` interpreta contagens/rejeições com `decideGpsReceipt`, marca
@@ -458,6 +466,11 @@ corrompendo exatamente a ordenação que o servidor usa.
   inconsistente. O que continua não existindo é uma **entidade separada de
   receipt durável**; isso só deve virar requisito se houver uma necessidade de
   auditoria que o estado Room + event log idempotente não cubram.
+
+**Fronteira atual de C5:** não há defeito ativo do caminho GPS identificado
+nesta lista. A única superfície restante é uma capacidade futura explícita:
+**comandos offline nativos = NOT_IMPLEMENTED**, sem impacto no GPS offline já
+provado.
 
 ---
 
