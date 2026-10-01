@@ -1,0 +1,63 @@
+{
+  "schema": "deliveryos.real-sale-routing-sample.v1",
+  "captured_date": "2026-09-30",
+  "source": {
+    "sales_screen": "Retail > Manutenção de Venda",
+    "sale_number": "0000297010",
+    "receipt_number": "000154782",
+    "sale_time": "13:58:42",
+    "origin": "Delivery iFood",
+    "total": 84.01,
+    "items_export_sha256": "491a76e78172b55e89aa72e49fd0b33fbf2e2dcc42c7b2417d90cab46a3ed9af",
+    "routing_matrix_sha256": "d8f3c7e2fa0acae4ca0506315e973c3bb75f3bbd602b9441eb8894454cedea50"
+  },
+  "items": [
+    {
+      "exported_name": "COMB EXEC SUSHI SALMAO",
+      "quantity": 1,
+      "registry_match": "UNIQUE_EXACT_NAME",
+      "product_code": "9.05.05.080.00",
+      "expected_targets": [
+        {
+          "printer_code": "00009",
+          "printer_name": "BALCAOSUSHI1",
+          "printer_ip": "192.168.0.142"
+        }
+      ]
+    },
+    {
+      "exported_name": "COCA COLA ZERO 350ML - UN",
+      "quantity": 1,
+      "registry_match": "UNIQUE_EXACT_NAME",
+      "product_code": "8.00.05.010.00",
+      "expected_targets": [
+        {
+          "printer_code": "00007",
+          "printer_name": "BAR",
+          "printer_ip": "192.168.0.232"
+        }
+      ]
+    }
+  ],
+  "conclusion": {
+    "expected_configured_ips": [
+      "192.168.0.142",
+      "192.168.0.232"
+    ],
+    "direct_target_192_168_0_153": false,
+    "direct_target_192_168_0_110": false,
+    "status": "REAL_SALE_TO_CURRENT_CONFIG_PROVEN"
+  },
+  "caveats": [
+    "The items export does not expose CDPRODUTO; product codes were joined by unique exact product name against the current 463-product registry.",
+    "Configured parent-product routing is not proof of physical paper output.",
+    "Composite/combo child-item routing may add destinations not represented by the parent sale line and remains a separate question.",
+    "Retail sale time may represent sale/receipt completion rather than the exact earlier production-print trigger time."
+  ],
+  "effects": {
+    "teknisa_write": false,
+    "print": false,
+    "fiscal_action": false,
+    "database_write": false
+  }
+}
