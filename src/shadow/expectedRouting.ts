@@ -66,6 +66,11 @@ export function projectExpectedRouting(
   printerMap: RuntimePrinterMap,
 ): ExpectedRoutingProjection {
   const blocking = new Set<string>();
+
+  if (!Array.isArray(order.items) || order.items.length === 0) {
+    blocking.add("NO_ITEMS");
+  }
+
   const printers = new Map(printerMap.mappings.map((x) => [x.printer_code, x]));
   const items: ExpectedRoutingItem[] = [];
   const orderTargets = new Map<string, ExpectedRoutingTarget>();
