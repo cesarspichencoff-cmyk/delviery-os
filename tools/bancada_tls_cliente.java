@@ -25,7 +25,7 @@ import java.util.regex.Pattern;
  * de laboratorio, sem hostname verifier customizado (o padrao confere o IP
  * contra o SAN) e sem trust-all. Nunca imprime token nem segredo.
  *
- * Uso: java tools/bancada_tls_cliente.java <ca.pem> <plataforma> <piloto> <device_id> <host_fora_do_san>
+ * Uso: java tools/bancada_tls_cliente.java <ca.pem> <plataforma> <piloto> <device_id> <host_fora_do_san> [secret_file]
  * Termina com CLIENTE_GREEN, ou CLIENTE_RED e exit 1.
  */
 public class BancadaTlsCliente {
@@ -89,6 +89,7 @@ public class BancadaTlsCliente {
 
     public static void main(String[] a) throws Exception {
         String ca = a[0], plataforma = a[1], piloto = a[2], deviceId = a[3], foraDoSan = a[4];
+        String secretFile = a.length > 5 ? a[5] : null;
         SSLSocketFactory lab = soLab(ca);
 
         // N1 — sem a CA de laboratorio o handshake falha: a confianca vem DELA.
@@ -114,10 +115,17 @@ public class BancadaTlsCliente {
         checa(p[0].equals("200"), "T2", "piloto /rider-mobile/ com HTTPS nativo -> " + p[0]);
 
         // T3 — o corpo exato de DeviceSession.autenticar; segredo de 32 hex, como o app gera.
-        byte[] b = new byte[16];
-        new SecureRandom().nextBytes(b);
-        StringBuilder seg = new StringBuilder();
-        for (byte x : b) seg.append(String.format("%02x", x));
+        String seg;
+        if (secretFile != null) {
+            seg = java.nio.file.Files.readString(java.nio.file.Path.of(secretFile), StandardCharsets.UTF_8).trim();
+        } else {
+            byte[] b = new byte[16];
+            new SecureRandom().nextBytes(b);
+            StringBuilder sb = new StringBuilder();
+            for (byte x : b) sb.append(String.format("%02x", x));
+            seg = sb.toString();
+        }
+        if (!seg.matches("[0-9a-fA-F]{32,}")) throw new IllegalArgumentException("segredo de bancada invalido");
         String corpoSessao = "{\"device_id\":\"" + deviceId + "\",\"device_secret\":\"" + seg
             + "\",\"app_version\":\"1.0.0-debug\",\"client\":\"android-client@1.0.0\"}";
         String[] s = req(plataforma + "/api/device/session", "POST", corpoSessao, null, lab);

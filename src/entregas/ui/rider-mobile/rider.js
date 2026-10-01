@@ -46,6 +46,7 @@ const cap = {
   initError: null,
   me: null,
   deviceId: null,
+  deviceProof: null,
   appVersion: null,
   policies: null,
   ack: null,
@@ -488,17 +489,20 @@ function onNativeMessage(m) {
 }
 
 function renderDeviceIdentity() {
-  const line = $("deviceIdLine");
-  const value = $("deviceIdValue");
-  if (!line || !value) return;
-  if (!cap.deviceId) {
-    line.hidden = true;
-    value.textContent = "";
+  const box = $("deviceEnrollment");
+  const idValue = $("deviceIdValue");
+  const proofValue = $("deviceProofValue");
+  if (!box || !idValue || !proofValue) return;
+  if (!cap.deviceId || !cap.deviceProof) {
+    box.hidden = true;
+    idValue.textContent = "";
+    proofValue.textContent = "";
     return;
   }
-  // Pseudônimo local, explicitamente não secreto. Nunca mostrar token/segredo.
-  value.textContent = cap.deviceId;
-  line.hidden = false;
+  // Pseudônimo + SHA-256 do segredo. O segredo bruto nunca entra na WebView.
+  idValue.textContent = cap.deviceId;
+  proofValue.textContent = cap.deviceProof;
+  box.hidden = false;
 }
 
 async function initCapture() {
@@ -508,6 +512,9 @@ async function initCapture() {
     // do login/autorização: é justamente o valor que o responsável cadastra.
     const caps = native.capabilities() || {};
     cap.deviceId = typeof caps.device_id === "string" && caps.device_id ? caps.device_id : null;
+    cap.deviceProof = typeof caps.device_proof_sha256 === "string" && /^[0-9a-f]{64}$/.test(caps.device_proof_sha256)
+      ? caps.device_proof_sha256
+      : null;
     cap.appVersion = typeof caps.app_version === "string" ? caps.app_version : null;
     renderDeviceIdentity();
 

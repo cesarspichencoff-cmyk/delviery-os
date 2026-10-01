@@ -18,6 +18,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
 import java.security.KeyStore
+import java.security.MessageDigest
 
 @RunWith(AndroidJUnit4::class)
 class SecureCredentialInstrumentedTest {
@@ -119,6 +120,24 @@ class SecureCredentialInstrumentedTest {
         val stored = db.deviceState().get(EntregasDatabase.KEY_SESSION_TOKEN)
         assertTrue(stored?.startsWith("enc:v1:") == true)
         assertFalse(stored == "token-legado-em-claro")
+    }
+
+    @Test
+    fun codigo_de_vinculo_e_sha256_estavel_do_segredo_sem_expor_o_segredo() = runBlocking {
+        val secret = DeviceSession.segredoDoAparelho(db, 1_000L)
+        val expected = MessageDigest.getInstance("SHA-256")
+            .digest(secret.toByteArray(Charsets.UTF_8))
+            .joinToString("") { "%02x".format(it) }
+
+        val proof = DeviceSession.provaDeVinculo(db, 2_000L)
+        assertEquals(expected, proof)
+        assertTrue(proof.matches(Regex("^[0-9a-f]{64}$")))
+        assertFalse(proof.contains(secret))
+
+        db.close()
+        db = open()
+        assertEquals(proof, DeviceSession.provaDeVinculo(db, 3_000L))
+        assertTrue(db.deviceState().get(DeviceSession.KEY_DEVICE_SECRET)?.startsWith("enc:v1:") == true)
     }
 
     @Test

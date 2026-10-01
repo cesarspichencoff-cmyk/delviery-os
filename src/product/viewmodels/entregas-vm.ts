@@ -213,7 +213,7 @@ function aparelhoVM(a: AparelhoReal, agora: Date): AparelhoRealVM {
   );
   const selos: Selo[] = [];
   if (a.revogado_em) selos.push(selo("retirado", "Revogado pelo responsavel. Um token vigente e recusado."));
-  else if (!a.credencial_vinculada_em) selos.push(selo("acao_humana_necessaria", "Autorizado, mas o aparelho ainda nao fez o primeiro contato."));
+  else if (!a.credencial_vinculada_em) selos.push(selo("acao_humana_necessaria", "Cadastro incompleto: falta pre-vincular o codigo do aparelho."));
   else if (modo) selos.push(selo(PROCEDENCIA_DO_MODO[modo]));
   else selos.push(selo("evidencia_insuficiente", "Credencial vinculada e nenhum lote recebido."));
   const relogio = a.ultimo_lote ? seloDoRelogio(a.ultimo_lote) : null;

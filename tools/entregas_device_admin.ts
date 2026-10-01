@@ -18,6 +18,7 @@ interface Args {
   unit?: string;
   actor?: string;
   label?: string;
+  proof?: string;
   by?: string;
   apply: boolean;
   expect?: string;
@@ -27,7 +28,7 @@ function usage(): never {
   console.error([
     "Uso:",
     "  npm run admin:entregas:device -- status --device <id>",
-    "  npm run admin:entregas:device -- authorize --device <id> --unit ITAIM --actor <motoboy> --label <rotulo>",
+    "  npm run admin:entregas:device -- authorize --device <id> --unit ITAIM --actor <motoboy> --label <rotulo> --proof <codigo-sha256>",
     "  npm run admin:entregas:device -- authorize ... --apply=YES --expect <fingerprint-do-plan>",
     "  npm run admin:entregas:device -- revoke --device <id> --by <responsavel>",
     "  npm run admin:entregas:device -- revoke ... --apply=YES --expect <fingerprint-do-plan>",
@@ -70,11 +71,12 @@ function parse(argv: string[]): Args {
     unit: v.get("unit")?.trim(),
     actor: v.get("actor")?.trim(),
     label: v.get("label")?.trim(),
+    proof: v.get("proof")?.trim(),
     by: v.get("by")?.trim(),
     apply: v.get("apply") === "YES",
     expect: v.get("expect")?.trim(),
   };
-  if (mode === "authorize" && (!args.unit || !args.actor || !args.label)) usage();
+  if (mode === "authorize" && (!args.unit || !args.actor || !args.label || !args.proof)) usage();
   if (mode === "revoke" && !args.by) usage();
   if (args.apply && !args.expect) {
     throw new Error("apply recusado: informe --expect <fingerprint-do-plan>");
@@ -105,6 +107,7 @@ async function makePlan(store: PgDeviceAdminStore, args: Args) {
       unit_id: args.unit!,
       actor_id: args.actor!,
       label: args.label!,
+      device_proof_sha256: args.proof!,
     });
   }
   if (args.mode === "revoke") {
@@ -176,6 +179,7 @@ async function main(): Promise<void> {
             unit_id: args.unit!,
             actor_id: args.actor!,
             label: args.label!,
+            device_proof_sha256: args.proof!,
           })
         : await store.revoke({
             device_id: args.device,

@@ -6,7 +6,7 @@
 #     papéis não são superusuário, não são donos, não herdam de ninguém;
 #   - o crítico e o assíncrono CONECTAM DE FATO com os próprios papéis
 #     (pg_stat_activity, pelo endereço de cada container);
-#   - a cadeia de campo passa por eles: sessão do aparelho (vínculo +
+#   - a cadeia de campo passa por eles: sessão do aparelho (pré-vínculo humano +
 #     auditoria), lote de GPS, outbox drenada, replay depois de reinício;
 #   - a sabotagem é recusada com a credencial DO PRÓPRIO RUNTIME, de dentro do
 #     container dele: desligar trigger, apagar/truncar fato, revogar ou
@@ -55,6 +55,12 @@ echo "imagem $IMAGEM · fontes ${hash_local:0:12} · commit $(git rev-parse --sh
 tmp=$(mktemp -d)
 criou=0
 aleatorio() { node -e "process.stdout.write(require('node:crypto').randomBytes($1).toString('hex'))"; }
+DEVICE_SECRET_FILE="$tmp/device-secret"
+DEVICE_SECRET=$(aleatorio 16)
+printf '%s' "$DEVICE_SECRET" >"$DEVICE_SECRET_FILE"
+unset DEVICE_SECRET
+chmod 600 "$DEVICE_SECRET_FILE"
+DEVICE_PROOF=$(node -e "const c=require('node:crypto'),fs=require('node:fs');process.stdout.write(c.createHash('sha256').update(fs.readFileSync(process.argv[1])).digest('hex'))" "$DEVICE_SECRET_FILE")
 SENHA_ADMIN=$(aleatorio 16)
 SENHA_CRITICO=$(aleatorio 16)
 SENHA_ASSINCRONO=$(aleatorio 16)
@@ -103,9 +109,9 @@ como() { # como <container> <sql> — imprime a linha do resultado
 # A cadeia de campo pelo caminho HTTP real, DE DENTRO do crítico: sessão por
 # vínculo de segredo, e o lote com o token que a sessão devolveu.
 cat >"$tmp/sessao.js" <<'JS'
-const [aparelho] = process.argv.slice(2);
+const [aparelho, secretFile] = process.argv.slice(2);
 const base = "http://127.0.0.1:8080";
-const segredo = require("node:crypto").randomBytes(16).toString("hex");
+const segredo = require("node:fs").readFileSync(secretFile, "utf8").trim();
 (async () => {
   const s = await fetch(`${base}/api/device/session`, {
     method: "POST",
@@ -175,11 +181,13 @@ exige C_ASSINCRONO_CONECTA_COMO "$(quem deliveryos-async)" deliveryos_async
 
 # ------------------------------------------- F. a cadeia com os papéis
 echo "F. A CADEIA DE CAMPO PASSA PELOS PAPEIS"
+docker cp "$DEVICE_SECRET_FILE" deliveryos-critical:/tmp/device-secret >/dev/null
+docker exec -u 0 deliveryos-critical sh -c 'chown node:node /tmp/device-secret && chmod 600 /tmp/device-secret'
 psql_ "INSERT INTO identity.unit(unit_id,display_name) VALUES('PAP','Papeis');
        INSERT INTO identity.actor(actor_id,unit_id,role,label) VALUES('a-papeis','PAP','motoboy_interno','Papeis');
-       INSERT INTO identity.device(device_id,unit_id,actor_id,label) VALUES('dev-papeis','PAP','a-papeis','Papeis');" >/dev/null
-exige F_SESSAO_E_LOTE "$(docker exec -i deliveryos-critical node - dev-papeis <"$tmp/sessao.js")" "SESSAO=200 vinculado=true GPS=200 classe=aceito"
-exige F_VINCULO_GRAVADO "$(psql_ "SELECT (secret_hash IS NOT NULL AND last_session_at IS NOT NULL)::text FROM identity.device WHERE device_id = 'dev-papeis'")" true
+       INSERT INTO identity.device(device_id,unit_id,actor_id,label,secret_hash,secret_bound_at) VALUES('dev-papeis','PAP','a-papeis','Papeis','$DEVICE_PROOF',now());" >/dev/null
+exige F_SESSAO_E_LOTE "$(docker exec -i deliveryos-critical node - dev-papeis /tmp/device-secret <"$tmp/sessao.js")" "SESSAO=200 vinculado=false GPS=200 classe=aceito"
+exige F_PRE_VINCULO_PRESERVADO "$(psql_ "SELECT (secret_hash = '$DEVICE_PROOF' AND secret_bound_at IS NOT NULL AND last_session_at IS NOT NULL)::text FROM identity.device WHERE device_id = 'dev-papeis'")" true
 exige F_AUDITORIA "$(psql_ "SELECT count(*) FROM platform.audit WHERE object_id = 'dev-papeis' AND action = 'device_session_issued'")" 1
 exige F_FATO "$(psql_ "SELECT count(*)||' '||string_agg(source_mode, ',') FROM platform.event_log WHERE device_id = 'dev-papeis'")" "1 control"
 pend=-1
@@ -208,6 +216,7 @@ exige X_CRITICO_MODO_REPLICA "$(como deliveryos-critical "SET session_replicatio
 exige X_CRITICO_APAGA_FATO "$(como deliveryos-critical "DELETE FROM platform.event_log")" "RECUSADO 42501 permission denied for"
 exige X_CRITICO_TRUNCA "$(como deliveryos-critical "TRUNCATE platform.event_log")" "RECUSADO 42501 permission denied for"
 exige X_CRITICO_REVOGA "$(como deliveryos-critical "UPDATE identity.device SET revoked_at = now()")" "RECUSADO 42501 permission denied for"
+exige X_CRITICO_REGRAVA_VINCULO "$(como deliveryos-critical "UPDATE identity.device SET secret_bound_at = secret_bound_at")" "RECUSADO 42501 permission denied for"
 exige X_CRITICO_CADASTRA "$(como deliveryos-critical "INSERT INTO identity.device(device_id, unit_id, label) VALUES ('dev-intruso', 'PAP', 'x')")" "RECUSADO 42501 permission denied for"
 exige X_CRITICO_CRIA_TABELA "$(como deliveryos-critical "CREATE TABLE platform.intrusa (x int)")" "RECUSADO 42501 permission denied for"
 exige X_CRITICO_VIRA_SUPERUSUARIO "$(como deliveryos-critical "ALTER ROLE deliveryos_critical SUPERUSER")" "RECUSADO 42501 permission denied to"

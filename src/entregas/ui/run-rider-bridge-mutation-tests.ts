@@ -239,7 +239,8 @@ mutacao({
   propriedade: "captura antes da saída confirmada pelo domínio",
   gate: "navegador",
   edicoes: [{ arquivo: REGRA, de: '  if (!CAPTURE_TRIP_STATES.includes(trip.state)) return off("saida_nao_confirmada");\n', para: "" }],
-  assinatura: /XX {2}B1 /,
+  // Fail-fast devolve diretamente a chamada indevida registrada pela ponte.
+  assinatura: /T-PONTE-1/,
 });
 mutacao({
   id: "MR2",
@@ -296,14 +297,16 @@ mutacao({
   propriedade: "viagem encerrada e a captura segue ligada (L6)",
   gate: "navegador",
   edicoes: [{ arquivo: RIDER, de: "    native.stopTripCapture();\n", para: "" }],
-  assinatura: /XX {2}B4 /,
+  // Sem stop, o teste espera a chamada nativa até estourar o prazo longo.
+  assinatura: /Timeout 25000ms exceeded/,
 });
 mutacao({
   id: "MR8",
   propriedade: "GPS do navegador em paralelo ao nativo",
   gate: "navegador",
   edicoes: [{ arquivo: RIDER, de: "  geolocation: nativeGeo,\n", para: "  geolocation: navigator.geolocation,\n" }],
-  assinatura: /XX {2}(B2|C8) /,
+  // A mutação faz exatamente uma chamada de geolocalização web onde o gate espera zero.
+  assinatura: /1 !== 0/,
 });
 mutacao({
   id: "MR9",
@@ -316,7 +319,8 @@ mutacao({
       para: '    if (!confirm("Confirmar saída da loja?")) return;\n    if (native) native.startTripCapture(t.trip_id);\n',
     },
   ],
-  assinatura: /XX {2}D1 /,
+  // Clique prematuro duplica a chamada da viagem depois que o domínio também confirma.
+  assinatura: /T-PONTE-1[\s\S]*T-PONTE-1/,
 });
 mutacao({
   id: "MR10",
@@ -349,7 +353,8 @@ mutacao({
       para: "  if (d.capture && cap.blockedTrip !== d.trip_id) {\n",
     },
   ],
-  assinatura: /XX {2}B2 /,
+  // Remover o dedupe produz múltiplas chamadas para a mesma viagem.
+  assinatura: /T-PONTE-1[\s\S]*T-PONTE-1/,
 });
 mutacao({
   id: "MR13",

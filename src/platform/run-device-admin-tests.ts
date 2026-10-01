@@ -1,8 +1,11 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
 import {
   type ActorRow,
   type DeviceAdminStore,
+  type DeviceAuthorizeInput,
   type DeviceRow,
   PgDeviceAdminStore,
   type UnitRow,
@@ -11,6 +14,17 @@ import {
   planRevoke,
 } from "./admin/device-admin";
 import type { SqlClient, SqlRow } from "./persistence/sql-client";
+
+const PROOF = "3ba3f5f43b92602683c19aee62a20342b084dd5971ddd33808d81a328879a547";
+
+const authInput = (over: Partial<DeviceAuthorizeInput> = {}): DeviceAuthorizeInput => ({
+  device_id: "dev-1",
+  unit_id: "ITAIM",
+  actor_id: "rid-1",
+  label: "Moto 1",
+  device_proof_sha256: PROOF,
+  ...over,
+});
 
 class FakeStore implements DeviceAdminStore {
   databaseUser = "admin_test";
@@ -22,10 +36,18 @@ class FakeStore implements DeviceAdminStore {
   unit = async (id: string) => this.units.get(id) ?? null;
   actor = async (id: string) => this.actors.get(id) ?? null;
   device = async (id: string) => this.devices.get(id) ?? null;
-  authorize = async (x: { device_id: string; unit_id: string; actor_id: string; label: string }) => {
-    if (this.devices.has(x.device_id)) return false;
+  authorize = async (x: DeviceAuthorizeInput) => {
+    const current = this.devices.get(x.device_id);
+    if (current) {
+      if (current.revoked_at || current.linked || current.unit_id !== x.unit_id || current.actor_id !== x.actor_id) {
+        return false;
+      }
+      current.label = x.label;
+      current.linked = true;
+      return true;
+    }
     this.devices.set(x.device_id, {
-      device_id: x.device_id, unit_id: x.unit_id, actor_id: x.actor_id, label: x.label, linked: false,
+      device_id: x.device_id, unit_id: x.unit_id, actor_id: x.actor_id, label: x.label, linked: true,
     });
     return true;
   };
@@ -58,37 +80,66 @@ async function ok(name: string, fn: () => Promise<void> | void) {
 
 async function main() {
   await ok("autoriza aparelho novo para motoboy ativo da unidade", async () => {
-    const p = await planAuthorize(base(), { device_id: "dev-1", unit_id: "ITAIM", actor_id: "rid-1", label: "Moto 1" });
+    const p = await planAuthorize(base(), authInput());
     assert.equal(p.can_apply, true);
     assert.equal(p.no_op, false);
     assert.deepEqual(p.conflicts, []);
   });
 
+  await ok("prova de vinculo invalida e recusada antes de consultar banco", async () => {
+    await assert.rejects(
+      () => planAuthorize(base(), authInput({ device_proof_sha256: "abc" })),
+      /device_proof_sha256 inválido/,
+    );
+  });
+
+  await ok("registro antigo sem segredo pode ser pre-vinculado sem trocar identidade", async () => {
+    const s = base();
+    s.devices.set("dev-1", {
+      device_id: "dev-1", unit_id: "ITAIM", actor_id: "rid-1", label: "Antigo", linked: false,
+    });
+    const p = await planAuthorize(s, authInput({ label: "Novo" }));
+    assert.equal(p.can_apply, true);
+    assert.equal(p.no_op, false);
+    assert.deepEqual(p.target.device_proof_sha256, PROOF);
+    assert.equal(await s.authorize(authInput({ label: "Novo" })), true);
+    assert.equal((await s.device("dev-1"))?.linked, true);
+  });
+
+  await ok("fingerprint inclui a prova revisada do aparelho", async () => {
+    const a = await planAuthorize(base(), authInput());
+    const b = await planAuthorize(
+      base(),
+      authInput({ device_proof_sha256: "4ba3f5f43b92602683c19aee62a20342b084dd5971ddd33808d81a328879a547" }),
+    );
+    assert.notEqual(planFingerprint(a), planFingerprint(b));
+  });
+
   await ok("unidade inativa bloqueia", async () => {
     const s = base();
-    const p = await planAuthorize(s, { device_id: "dev-1", unit_id: "OFF", actor_id: "rid-off", label: "Moto" });
+    const p = await planAuthorize(s, authInput({ unit_id: "OFF", actor_id: "rid-off", label: "Moto" }));
     assert.deepEqual(p.conflicts, ["unit_inactive"]);
   });
 
   await ok("papel que nao e motoboy bloqueia", async () => {
-    const p = await planAuthorize(base(), { device_id: "dev-1", unit_id: "ITAIM", actor_id: "ops-1", label: "Moto" });
+    const p = await planAuthorize(base(), authInput({ actor_id: "ops-1", label: "Moto" }));
     assert.ok(p.conflicts.includes("actor_role_not_rider"));
   });
 
   await ok("ator de outra unidade bloqueia", async () => {
-    const p = await planAuthorize(base(), { device_id: "dev-1", unit_id: "ITAIM", actor_id: "rid-off", label: "Moto" });
+    const p = await planAuthorize(base(), authInput({ actor_id: "rid-off", label: "Moto" }));
     assert.ok(p.conflicts.includes("actor_unit_mismatch"));
   });
 
   await ok("ator inativo bloqueia", async () => {
-    const p = await planAuthorize(base(), { device_id: "dev-1", unit_id: "ITAIM", actor_id: "rid-inactive", label: "Moto" });
+    const p = await planAuthorize(base(), authInput({ actor_id: "rid-inactive", label: "Moto" }));
     assert.ok(p.conflicts.includes("actor_inactive"));
   });
 
   await ok("mesmo vinculo ativo vira no-op idempotente", async () => {
     const s = base();
     s.devices.set("dev-1", { device_id: "dev-1", unit_id: "ITAIM", actor_id: "rid-1", label: "Antigo", linked: true });
-    const p = await planAuthorize(s, { device_id: "dev-1", unit_id: "ITAIM", actor_id: "rid-1", label: "Novo" });
+    const p = await planAuthorize(s, authInput({ label: "Novo" }));
     assert.equal(p.can_apply, true);
     assert.equal(p.no_op, true);
   });
@@ -96,7 +147,7 @@ async function main() {
   await ok("aparelho ligado a outra identidade bloqueia", async () => {
     const s = base();
     s.devices.set("dev-1", { device_id: "dev-1", unit_id: "ITAIM", actor_id: "outro", label: "X", linked: true });
-    const p = await planAuthorize(s, { device_id: "dev-1", unit_id: "ITAIM", actor_id: "rid-1", label: "Moto" });
+    const p = await planAuthorize(s, authInput({ label: "Moto" }));
     assert.ok(p.conflicts.includes("device_already_authorized_to_other_identity"));
   });
 
@@ -106,13 +157,13 @@ async function main() {
       device_id: "dev-1", unit_id: "ITAIM", actor_id: "rid-1", label: "X", linked: true,
       revoked_at: "2026-09-30T00:00:00Z", revoked_by: "Cesar",
     });
-    const p = await planAuthorize(s, { device_id: "dev-1", unit_id: "ITAIM", actor_id: "rid-1", label: "Moto" });
+    const p = await planAuthorize(s, authInput({ label: "Moto" }));
     assert.ok(p.conflicts.includes("device_revoked_requires_explicit_recovery"));
   });
 
   await ok("entrada placeholder e recusada", async () => {
     await assert.rejects(
-      () => planAuthorize(base(), { device_id: "CHANGE_ME", unit_id: "ITAIM", actor_id: "rid-1", label: "Moto" }),
+      () => planAuthorize(base(), authInput({ device_id: "CHANGE_ME", label: "Moto" })),
       /device_id inválido/,
     );
   });
@@ -143,9 +194,9 @@ async function main() {
 
   await ok("fingerprint muda se o estado revisado muda", async () => {
     const s = base();
-    const a = await planAuthorize(s, { device_id: "dev-1", unit_id: "ITAIM", actor_id: "rid-1", label: "Moto" });
+    const a = await planAuthorize(s, authInput({ label: "Moto" }));
     s.devices.set("dev-1", { device_id: "dev-1", unit_id: "ITAIM", actor_id: "rid-1", label: "Moto", linked: false });
-    const b = await planAuthorize(s, { device_id: "dev-1", unit_id: "ITAIM", actor_id: "rid-1", label: "Moto" });
+    const b = await planAuthorize(s, authInput({ label: "Moto" }));
     assert.notEqual(planFingerprint(a), planFingerprint(b));
   });
 
@@ -158,9 +209,22 @@ async function main() {
       },
     };
     const store = new PgDeviceAdminStore(sql);
-    assert.equal(await store.authorize({ device_id: "dev-1", unit_id: "ITAIM", actor_id: "rid-1", label: "Moto" }), true);
-    assert.deepEqual(calls[0].params, ["dev-1", "ITAIM", "rid-1", "Moto"]);
-    assert.match(calls[0].sql, /ON CONFLICT \(device_id\) DO NOTHING/);
+    assert.equal(await store.authorize(authInput({ label: "Moto" })), true);
+    assert.deepEqual(calls[0].params, ["dev-1", "ITAIM", "rid-1", "Moto", PROOF]);
+    assert.match(calls[0].sql, /ON CONFLICT \(device_id\) DO UPDATE/);
+    assert.match(calls[0].sql, /d\.secret_hash IS NULL/);
+  });
+
+  await ok("papel critico revoga privilegio legado de regravar o vinculo", () => {
+    const sql = readFileSync(join(process.cwd(), "deploy/sql/papeis_minimos.sql"), "utf8");
+    assert.match(
+      sql,
+      /REVOKE UPDATE \(secret_hash, secret_bound_at\)[\s\S]*FROM deliveryos_critical;/,
+    );
+    assert.match(
+      sql,
+      /GRANT UPDATE \(last_session_at, last_seen_at, app_version\)[\s\S]*TO deliveryos_critical;/,
+    );
   });
 
   await ok("status do adaptador devolve apenas linked, nunca secret_hash", async () => {

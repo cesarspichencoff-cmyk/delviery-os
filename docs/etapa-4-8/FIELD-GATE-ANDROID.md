@@ -24,7 +24,7 @@ lifecycle:
 | papéis mínimos na composição oficial | **PROVEN** em containers | `tools/papeis_compose_real.sh` |
 | comportamento físico do Android | **UNKNOWN** | este roteiro |
 | gatilho da captura nativa no app | **PROVEN NO AVD; FÍSICO `NOT_RUN`**: a rider-mobile liga pela ponte depois de termo, permissão e saída confirmada (`Q-018`); o Kotlin foi compilado e exercitado no Foxxy. A cadeia Fused → Room → sync e o encerramento remoto sem WebView foram observados em runtime; o stop remoto ocorreu em 13,286 s | `docs/etapa-4-8/Q018-RIDER-CAPTURA.md`; `field-gate/2026-10-01-q018-remote-stop-runtime.md` |
-| build do app (`testDebugUnitTest`, `assembleDebug`, instrumentados) | **PROVEN no Foxxy/AVD**: build Android 14/API 34; o APK final sem helper de mock fechou 10/10 e a regressão atual, já com retenção + Keystore, fechou **18/18 PASS**; aparelho físico continua `NOT_RUN` | execução Foxxy, 2026-09-30/2026-10-01; `Q018-RIDER-CAPTURA.md` §§15–17; `field-gate/2026-10-01-android-keystore-credentials.md` |
+| build do app (`testDebugUnitTest`, `assembleDebug`, instrumentados) | **PROVEN no Foxxy/AVD**: build Android 14/API 34; o APK final sem helper de mock fechou 10/10 e a regressão atual, já com retenção + Keystore, fechou **19/19 PASS**; aparelho físico continua `NOT_RUN` | execução Foxxy, 2026-09-30/2026-10-01; `Q018-RIDER-CAPTURA.md` §§15–17; `field-gate/2026-10-01-android-keystore-credentials.md`; `field-gate/2026-10-01-device-prebinding.md` |
 
 ## 1 — Pré-requisito A: compilar e testar numa máquina com SDK
 
@@ -45,7 +45,7 @@ sh gradlew :app:connectedDebugAndroidTest  # PersistenceInstrumentedTest — exi
 |---|---|---|
 | A1 unit tests | `BUILD SUCCESSFUL` e o relatório em `app/build/reports/tests/testDebugUnitTest/` sem falha | **PASS** — `:app:testDebugUnitTest`, JDK 17.0.19 + SDK 34, Windows |
 | A2 APK de debug | o arquivo existe e `aapt dump badging` mostra `br.com.tata.entregas.debug` | **PASS** — `assembleDebug`; pacote `br.com.tata.entregas.debug`, target/compile 34 |
-| A3 instrumentado | `connectedDebugAndroidTest` sem falha, no aparelho do teste | **PASS (EMULADOR)** — regressão atual **18/18** no AVD Android 14/API 34 em 2026-10-01; o marco anterior do APK final era 10/10. **FÍSICO `NOT_RUN`** |
+| A3 instrumentado | `connectedDebugAndroidTest` sem falha, no aparelho do teste | **PASS (EMULADOR)** — regressão atual **19/19** no AVD Android 14/API 34 em 2026-10-01; o marco anterior do APK final era 10/10. **FÍSICO `NOT_RUN`** |
 | A4 `android/gate-verification` | build JVM independente compila o cliente HTTP real + portão de captura sem puxar Room; `semSegredo` foi extraído para Kotlin puro e a API de `DeviceSession` foi preservada | **PASS (Foxxy, 2026-10-01)** — falha `Unresolved reference DeviceSession` reproduzida antes; depois 12/12 `CaptureGateTest` PASS + `BUILD SUCCESSFUL`; regressão `:app:testDebugUnitTest :app:compileDebugKotlin` PASS. Ver `field-gate/2026-10-01-a4-gate-verification.md` |
 
 **Compilar não é instalar, e instalar não é testar em campo.** Em 2026-09-25 o APK debug também foi
@@ -63,11 +63,13 @@ Isso é smoke test de emulador, não fecha nenhum item da seção 3.
 3. **Data e hora automáticas no aparelho** (Configurações → Sistema → Data e hora). Conferido de
    novo no item 2 da bateria. Relógio adiantado não quebra o servidor — vira `suspect` e perde a
    autoridade sobre o frescor —, mas um gate de campo com relógio errado mede a coisa errada.
-4. **Descobrir o `device_id`.** O app o gera e o guarda no Room (`entregas.db`, tabela
-   `device_state`, chave `device_id`). Desde 2026-10-01, a rider-mobile Android mostra
-   **“ID deste aparelho · dev-…”** diretamente a partir de `capabilities()`, inclusive **antes
-   do login humano do piloto**. É pseudônimo local; a tela não recebe token, segredo, IMEI,
-   telefone ou coordenada para exibi-lo. Este é o caminho normal também no build `pilot`.
+4. **Descobrir o `device_id` e o código de vínculo.** O app gera o pseudônimo do aparelho e
+   um segredo local de 128 bits cifrado no Android Keystore. A rider-mobile mostra, inclusive
+   **antes do login humano do piloto**, apenas:
+   - **“ID deste aparelho · dev-…”**;
+   - **“Código de vínculo”** = SHA-256 do segredo local.
+   O segredo bruto, token, IMEI, telefone e coordenadas nunca entram nessa superfície. O código
+   de vínculo é o valor que o responsável pré-vincula em `identity.device.secret_hash`.
    - Controle de laboratório/debug continua disponível por `adb run-as`, mas deixou de ser
      requisito operacional.
    - Prova automatizada: rider-bridge **30/30**, incluindo navegador comum sem ID inventado,
@@ -77,17 +79,17 @@ Isso é smoke test de emulador, não fecha nenhum item da seção 3.
    estar ativos, pertencer à mesma unidade e o ator precisa ser `motoboy_interno`. A ferramenta
    **não cria unidade/ator e não reativa aparelho revogado**.
 
-   Primeiro, gerar o plano sem escrita:
+   Primeiro, gerar o plano sem escrita, usando o **mesmo código de vínculo** mostrado no aparelho:
 
    ```bash
-   npm run admin:entregas:device -- authorize --device <DEVICE_ID> --unit <UNIDADE> --actor <ENTREGADOR> --label "field gate"
+   npm run admin:entregas:device -- authorize --device <DEVICE_ID> --unit <UNIDADE> --actor <ENTREGADOR> --label "field gate" --proof <CODIGO_DE_VINCULO>
    ```
 
    Conferir `current`, `target`, `conflicts` e o `fingerprint`. Só depois executar, com o
    mesmo estado do banco:
 
    ```bash
-   npm run admin:entregas:device -- authorize --device <DEVICE_ID> --unit <UNIDADE> --actor <ENTREGADOR> --label "field gate" --apply=YES --expect <FINGERPRINT>
+   npm run admin:entregas:device -- authorize --device <DEVICE_ID> --unit <UNIDADE> --actor <ENTREGADOR> --label "field gate" --proof <CODIGO_DE_VINCULO> --apply=YES --expect <FINGERPRINT>
    ```
 
    Se o estado mudar entre plano e aplicação, o fingerprint diverge e a escrita é recusada.
@@ -124,8 +126,8 @@ Cada linha anota: **quem**, **quando** (UTC), **aparelho** (modelo e Android), *
 |---|---|---|---|---|
 | 1 | instalar o APK de piloto (ou o de debug — anotar qual) | `adb install` e versão na tela | instala e abre | NOT_RUN |
 | 2 | confirmar data e hora automáticas | print da configuração; diferença para `date -u` do servidor | automáticas ligadas e diferença < 2 min | NOT_RUN |
-| 3 | autorizar o aparelho (§2.5) | saída do `admin:entregas:device` + `Q1` | `applied=true`; uma linha, `revoked_at` nulo, `vinculado` falso | NOT_RUN |
-| 4 | obter sessão (abrir o app com rede) | `Q1`, `Q6` | `vinculado` verdadeiro e `last_session_at` preenchido; 1 linha `device_session_issued` | NOT_RUN |
+| 3 | autorizar o aparelho (§2.5) | ID + código exibidos no app; saída do `admin:entregas:device` + `Q1` | `applied=true`; uma linha, `revoked_at` nulo, `vinculado` **verdadeiro antes do bootstrap** e `secret_bound_at` preenchido | NOT_RUN |
+| 4 | obter sessão (abrir o app com rede) | `Q1`, `Q6` | o mesmo vínculo permanece; `last_session_at` preenchido; 1 linha `device_session_issued`; o runtime não altera `secret_hash/secret_bound_at` | NOT_RUN |
 | 5 | iniciar viagem: aceitar o termo, permitir a localização, confirmar a saída | tela do app; `Q1`; linha em `term-acks.jsonl` do piloto | o termo aparece ANTES do pedido de permissão; antes da saída o indicador diz "GPS DESLIGADO — AGUARDANDO A SAÍDA"; depois da saída confirmada, notificação do serviço e "GPS ATIVO — VIAGEM …" | NOT_RUN — depende de §2.7 |
 | 6 | verificar captura em primeiro plano | notificação de serviço em primeiro plano; `Q2` | notificação visível; pontos chegando | NOT_RUN |
 | 7 | bloquear a tela | `Q2` depois de 5 min | pontos continuam chegando | NOT_RUN |

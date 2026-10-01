@@ -26,6 +26,7 @@ import br.com.tata.entregas.location.PolicyStore
 import br.com.tata.entregas.location.TripLocationService
 import br.com.tata.entregas.location.locationServicesEnabled
 import br.com.tata.entregas.notify.TripNotification
+import br.com.tata.entregas.sync.DeviceSession
 import br.com.tata.entregas.sync.SyncScheduler
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -160,6 +161,8 @@ class MainActivity : AppCompatActivity(), EntregasJsBridge.NativeActions {
         // O pseudônimo do aparelho (nunca o segredo). A página o leva ao aceite
         // do termo, que o servidor monta; quem o gera e guarda é este lado.
         put("device_id", runBlocking { DeviceId.ensure(db) })
+        // Hash público para o vínculo humano. O segredo bruto nunca cruza a ponte.
+        put("device_proof_sha256", runBlocking { DeviceSession.provaDeVinculo(db, System.currentTimeMillis()) })
     }.toString()
 
     override fun statusJson(): String = runBlocking {

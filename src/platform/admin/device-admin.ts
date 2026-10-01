@@ -15,12 +15,20 @@ export interface DeviceRow {
   linked: boolean;
 }
 
+export interface DeviceAuthorizeInput {
+  device_id: string;
+  unit_id: string;
+  actor_id: string;
+  label: string;
+  device_proof_sha256: string;
+}
+
 export interface DeviceAdminStore {
   currentUser(): Promise<string>;
   unit(unitId: string): Promise<UnitRow | null>;
   actor(actorId: string): Promise<ActorRow | null>;
   device(deviceId: string): Promise<DeviceRow | null>;
-  authorize(input: { device_id: string; unit_id: string; actor_id: string; label: string }): Promise<boolean>;
+  authorize(input: DeviceAuthorizeInput): Promise<boolean>;
   revoke(input: { device_id: string; revoked_by: string }): Promise<boolean>;
 }
 
@@ -82,13 +90,28 @@ export class PgDeviceAdminStore implements DeviceAdminStore {
     };
   }
 
-  async authorize(input: { device_id: string; unit_id: string; actor_id: string; label: string }): Promise<boolean> {
+  async authorize(input: DeviceAuthorizeInput): Promise<boolean> {
     const rows = await this.sql.query(
-      `INSERT INTO identity.device(device_id, unit_id, actor_id, label)
-       VALUES ($1, $2, $3, $4)
-       ON CONFLICT (device_id) DO NOTHING
+      `INSERT INTO identity.device AS d(
+           device_id, unit_id, actor_id, label, secret_hash, secret_bound_at
+         )
+       VALUES ($1, $2, $3, $4, $5, now())
+       ON CONFLICT (device_id) DO UPDATE
+          SET secret_hash = EXCLUDED.secret_hash,
+              secret_bound_at = now(),
+              label = EXCLUDED.label
+        WHERE d.revoked_at IS NULL
+          AND d.secret_hash IS NULL
+          AND d.unit_id = EXCLUDED.unit_id
+          AND d.actor_id = EXCLUDED.actor_id
        RETURNING device_id`,
-      [input.device_id, input.unit_id, input.actor_id, input.label],
+      [
+        input.device_id,
+        input.unit_id,
+        input.actor_id,
+        input.label,
+        input.device_proof_sha256,
+      ],
     );
     return rows.length === 1;
   }
@@ -135,14 +158,23 @@ function requiredText(name: string, value: string, max = 160): string {
   return v;
 }
 
+function requiredDeviceProof(value: string): string {
+  const v = value.trim().toLowerCase();
+  if (!/^[0-9a-f]{64}$/.test(v)) {
+    throw new Error("device_proof_sha256 inválido");
+  }
+  return v;
+}
+
 export async function planAuthorize(
   store: DeviceAdminStore,
-  raw: { device_id: string; unit_id: string; actor_id: string; label: string },
+  raw: DeviceAuthorizeInput,
 ): Promise<DeviceAdminPlan> {
   const device_id = requiredId("device_id", raw.device_id);
   const unit_id = requiredId("unit_id", raw.unit_id);
   const actor_id = requiredId("actor_id", raw.actor_id);
   const label = requiredText("label", raw.label);
+  const device_proof_sha256 = requiredDeviceProof(raw.device_proof_sha256);
   const [database_user, unit, actor, current] = await Promise.all([
     store.currentUser(), store.unit(unit_id), store.actor(actor_id), store.device(device_id),
   ]);
@@ -162,7 +194,9 @@ export async function planAuthorize(
     if (current.revoked_at) {
       conflicts.push("device_revoked_requires_explicit_recovery");
     } else if (current.unit_id === unit_id && current.actor_id === actor_id) {
-      no_op = true;
+      // Registro antigo sem secret_hash ainda pode ser pré-vinculado pela
+      // ferramenta humana. Já ligado é no-op: nunca rotaciona segredo aqui.
+      no_op = current.linked;
     } else {
       conflicts.push("device_already_authorized_to_other_identity");
     }
@@ -174,7 +208,7 @@ export async function planAuthorize(
     database_user,
     device_id,
     current,
-    target: { unit_id, actor_id, label },
+    target: { unit_id, actor_id, label, device_proof_sha256 },
     can_apply: conflicts.length === 0,
     no_op,
     conflicts,

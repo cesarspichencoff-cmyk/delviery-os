@@ -24,7 +24,7 @@
  * Termina com RIDER_Q018_GREEN, ou RIDER_Q018_RED e exit 1.
  */
 
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
 import https from "node:https";
 import { chromium, type Page } from "playwright";
@@ -97,7 +97,11 @@ function pedir(url: string, metodo: string, corpo?: unknown, token?: string): Pr
 }
 
 /* ---------- o lado nativo de rede, no formato do app ---------- */
-const segredo = randomBytes(16).toString("hex"); // como DeviceSession gera; nunca impresso
+const segredo = process.env.BANCADA_DEVICE_SECRET_FILE
+  ? readFileSync(process.env.BANCADA_DEVICE_SECRET_FILE, "utf8").trim()
+  : randomBytes(16).toString("hex"); // como DeviceSession gera; nunca impresso
+if (!/^[0-9a-f]{32,}$/i.test(segredo)) throw new Error("segredo de bancada inválido");
+const deviceProof = createHash("sha256").update(segredo, "utf8").digest("hex");
 let sequencia = 0;
 const capturas: Record<string, unknown>[] = [];
 
@@ -172,7 +176,8 @@ function scriptDaPonte(): string {
     window.EntregasNative = {
       version: () => "android-bridge@1.0.0",
       capabilities: () => JSON.stringify({ runtime: "android", app_version: "1.0.0-debug", foreground_service: true,
-        native_geofencing: true, activity_recognition: false, sdk_int: 34, device_id: estado.deviceId }),
+        native_geofencing: true, activity_recognition: false, sdk_int: 34, device_id: estado.deviceId,
+        device_proof_sha256: ${JSON.stringify(deviceProof)} }),
       status: () => { const b = bloqueios(); return JSON.stringify({ active_trip_id: estado.viagem, allowed: b.length === 0,
         message: b[0] || "", blocks: b.join(","), approximate_only: false, term_ok: !b.some((x) => x.startsWith("term_")), pending_points: 0, pending_events: 0 }); },
       applyServerPolicies: (json) => { chamar("applyServerPolicies", JSON.parse(json)); estado.politicas = JSON.parse(json); return JSON.stringify({ ok: true }); },

@@ -78,6 +78,15 @@ object DeviceSession {
         return clear
     }
 
+    /**
+     * Prova pública de vínculo para a autorização humana.
+     *
+     * É o mesmo SHA-256 que a plataforma guarda em identity.device.secret_hash.
+     * O segredo bruto continua cifrado no Keystore/Room e nunca vai à WebView.
+     */
+    suspend fun provaDeVinculo(db: EntregasDatabase, agoraMs: Long): String =
+        enrollmentProofSha256(segredoDoAparelho(db, agoraMs))
+
     data class Sessao(val token: String, val expiraEmMs: Long)
 
     /* -------------------------------------------------------------- */

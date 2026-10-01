@@ -10,10 +10,10 @@
  * A resposta é um segredo PRÓPRIO do aparelho, gerado nele, que só viaja no
  * bootstrap:
  *
- *   o humano AUTORIZA o device_id (linha em identity.device);
- *   o aparelho PROVA que é ele com o segredo;
- *   no primeiro contato de um aparelho autorizado, o servidor VINCULA o hash
- *   do segredo; depois disso, só o mesmo segredo recebe token.
+ *   o aparelho mostra device_id + SHA-256 ao responsável;
+ *   o humano AUTORIZA e PRÉ-VINCULA esse hash na identity.device;
+ *   o aparelho PROVA que é ele apresentando o segredo pelo canal HTTPS;
+ *   o servidor apenas COMPARA hashes — nunca cria vínculo por primeiro contato.
  *
  * Renovar é o mesmo ato: o segredo vale sempre, o token vale um turno. Um
  * token vencido nunca vira problema de campo — o aparelho pede outro com o
@@ -40,16 +40,15 @@ export const TAMANHO_MINIMO_SEGREDO_DO_APARELHO = 32;
  * ------------------------------------------------------------------ */
 
 export interface DispositivoComVinculo extends DispositivoConhecido {
-  /** NULL até o primeiro contato. */
+  /** NULL significa cadastro legado ainda não pré-vinculado pelo responsável. */
   secret_hash?: string | null;
 }
 
 export interface RegistroDeSessao {
   buscar(device_id: string): Promise<DispositivoComVinculo | null>;
   /**
-   * Vincula o hash SE ainda não há vínculo. Devolve `false` quando alguém
-   * vinculou antes — e então quem chama compara com o que ficou gravado.
-   * Precisa ser atômico no banco: `WHERE secret_hash IS NULL`.
+   * Legado de compatibilidade do repositório. O runtime de sessão NÃO usa mais
+   * primeiro-contato para vincular segredo; vínculo sem hash exige humano.
    */
   vincularSegredo(device_id: string, secret_hash: string, agora: Date): Promise<boolean>;
   /** Marca a emissão: `last_session_at`, `app_version`, e a linha de auditoria. */
@@ -73,6 +72,7 @@ export type MotivoDeSessao =
   | "segredo_fraco"
   | "dispositivo_desconhecido"
   | "dispositivo_revogado"
+  | "segredo_nao_vinculado"
   | "segredo_divergente";
 
 export type InstrucaoDeSessao = "corrigir_cliente" | "aguardar_humano" | "parar_e_avisar";
@@ -83,7 +83,10 @@ export type ResultadoDeSessao =
       token: string;
       claims: ClaimsDoDispositivo;
       expires_in_s: number;
-      /** Verdadeiro só na PRIMEIRA emissão, quando o hash foi vinculado agora. */
+      /**
+       * Campo preservado por compatibilidade. Desde o pré-vínculo humano,
+       * o runtime nunca vincula segredo durante bootstrap: sempre false.
+       */
       vinculou_agora: boolean;
       dispositivo: DispositivoConhecido;
     }
@@ -109,6 +112,7 @@ const HUMANO: Record<MotivoDeSessao, string> = {
   segredo_fraco: "A credencial do aparelho é curta demais. Atualize o aplicativo.",
   dispositivo_desconhecido: "Este aparelho ainda não foi autorizado. Fale com o responsável.",
   dispositivo_revogado: "Este aparelho foi revogado. Fale com o responsável.",
+  segredo_nao_vinculado: "Este aparelho foi cadastrado sem código de vínculo. Fale com o responsável.",
   segredo_divergente: "Este aparelho não é o que foi vinculado a esta identidade. Fale com o responsável.",
 };
 
@@ -118,6 +122,7 @@ const INSTRUCAO: Record<MotivoDeSessao, InstrucaoDeSessao> = {
   segredo_fraco: "corrigir_cliente",
   dispositivo_desconhecido: "aguardar_humano",
   dispositivo_revogado: "parar_e_avisar",
+  segredo_nao_vinculado: "aguardar_humano",
   segredo_divergente: "parar_e_avisar",
 };
 
@@ -127,6 +132,7 @@ const STATUS: Record<MotivoDeSessao, 400 | 401 | 403> = {
   segredo_fraco: 401,
   dispositivo_desconhecido: 401,
   dispositivo_revogado: 403,
+  segredo_nao_vinculado: 401,
   segredo_divergente: 403,
 };
 
@@ -187,19 +193,16 @@ export async function emitirSessaoDeAparelho(o: OpcoesDeSessao): Promise<Resulta
   if (!dispositivo) return recusar("dispositivo_desconhecido");
   if (dispositivo.revoked_at) return recusar("dispositivo_revogado");
 
+  // O responsável pré-vincula o SHA-256 exibido pelo próprio aparelho.
+  // Registro sem hash é estado legado/incompleto: nunca "quem chega primeiro".
+  if (!dispositivo.secret_hash) return recusar("segredo_nao_vinculado");
+
   const hash = hashDoSegredo(segredo);
-  let vinculou_agora = false;
-  if (!dispositivo.secret_hash) {
-    // Primeiro contato. O UPDATE condicional é a única proteção contra dois
-    // primeiros contatos simultâneos: quem perde relê e compara.
-    vinculou_agora = await o.registro.vincularSegredo(device_id, hash, o.agora);
-    if (!vinculou_agora) {
-      const relido = await o.registro.buscar(device_id);
-      if (!relido?.secret_hash || !mesmoHash(relido.secret_hash, hash)) return recusar("segredo_divergente");
-    }
-  } else if (!mesmoHash(dispositivo.secret_hash, hash)) {
+  if (!mesmoHash(dispositivo.secret_hash, hash)) {
     return recusar("segredo_divergente");
   }
+
+  const vinculou_agora = false;
 
   const { token, claims } = emitirToken({
     device_id: dispositivo.device_id,

@@ -102,19 +102,24 @@ body.mobile {
 .loc {
   margin-top: 0.5rem;
 }
+.device-enrollment {
+  margin-top: 0.45rem;
+}
+.device-enrollment[hidden] {
+  display: none;
+}
 .device-id-line {
-  margin: 0.45rem 0 0;
+  margin: 0.18rem 0 0;
   font-size: 0.75rem;
   color: var(--text-muted);
   overflow-wrap: anywhere;
 }
 .device-id-line code {
+  display: block;
   user-select: all;
   font-family: var(--font-mono);
+  font-size: 0.7rem;
   color: var(--text-primary);
-}
-.device-id-line[hidden] {
-  display: none;
 }
 .sync-title {
   font-weight: 500;

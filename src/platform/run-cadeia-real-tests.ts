@@ -14,7 +14,7 @@
  *      200 sem `device_token`, e o cliente fica em laço "falhou
  *      temporariamente" para sempre.
  *   B. A DECISÃO de sessão, sem banco: desconhecido, autorizado, revogado,
- *      segredo divergente, vínculo por primeiro uso, corrida do vínculo,
+ *      segredo divergente, pre-vinculo humano e ausencia de corrida no bootstrap,
  *      unidade vinda do cadastro.
  *   C. A CADEIA, passos 1–20 do desenho, mais revogação, expiração e "A não
  *      fala como B".
@@ -151,16 +151,24 @@ const subirAssincrono = (b: BancoIsolado) => {
  * Atos HUMANOS — o que o gerente faz fora do aparelho
  * ------------------------------------------------------------------ */
 
-/** Autorizar: a linha em identity.device. É o único INSERT humano da cadeia. */
-async function autorizarAparelho(b: BancoIsolado, device_id: string, unit_id: string, actor_id: string): Promise<void> {
+/** Autorizar: a linha em identity.device, já pré-vinculada à prova exibida pelo aparelho. */
+async function autorizarAparelho(
+  b: BancoIsolado,
+  device_id: string,
+  unit_id: string,
+  actor_id: string,
+  device_proof_sha256: string,
+): Promise<void> {
   await b.cliente.query(`INSERT INTO identity.unit(unit_id, display_name) VALUES ($1, 'Cadeia') ON CONFLICT DO NOTHING`, [unit_id]);
   await b.cliente.query(
     `INSERT INTO identity.actor(actor_id, unit_id, role, label) VALUES ($1, $2, 'motoboy_interno', 'Cadeia') ON CONFLICT DO NOTHING`,
     [actor_id, unit_id],
   );
   await b.cliente.query(
-    `INSERT INTO identity.device(device_id, unit_id, actor_id, label) VALUES ($1, $2, $3, 'aparelho da cadeia')`,
-    [device_id, unit_id, actor_id],
+    `INSERT INTO identity.device(
+       device_id, unit_id, actor_id, label, secret_hash, secret_bound_at
+     ) VALUES ($1, $2, $3, 'aparelho da cadeia', $4, now())`,
+    [device_id, unit_id, actor_id, device_proof_sha256],
   );
 }
 
@@ -293,39 +301,27 @@ async function main(): Promise<void> {
     assert.equal(r2.ok === false && r2.motivo, "dispositivo_revogado", "revogado com segredo errado vazou pista sobre o segredo");
   });
 
-  await teste("B4 PRIMEIRO CONTATO vincula; o mesmo segredo renova; outro segredo é 403 segredo_divergente", async () => {
+  await teste("B4 cadastro sem prova não vincula no primeiro contato: exige humano e preserva o estado", async () => {
     const reg = registroFalso(linhas());
-    const primeiro = await decidir({ device_id: "dev-livre", device_secret: segredoA, app_version: "1.0.0" }, reg);
-    assert.equal(primeiro.ok, true);
-    assert.equal(primeiro.ok && primeiro.vinculou_agora, true);
-    assert.equal(reg.vinculos, 1);
-    // Mesmo segundo de propósito: cada emissão precisa continuar distinguível
-    // na auditoria, sem depender da resolução de segundos do iat.
-    const renovado = await emitirSessaoDeAparelho({
-      pedido: { device_id: "dev-livre", device_secret: segredoA }, registro: reg, segredo_de_assinatura: SEGREDO,
-      agora: AGORA,
-    });
-    assert.equal(renovado.ok && renovado.vinculou_agora, false);
-    assert.equal(reg.vinculos, 1, "renovar vinculou de novo");
-    const outro = await decidir({ device_id: "dev-livre", device_secret: segredoB }, reg);
-    assert.equal(outro.ok === false && outro.status, 403);
-    assert.equal(outro.ok === false && outro.motivo, "segredo_divergente");
-    assert.equal(reg.auditoria.length, 2, "emissões auditadas");
-    assert.notEqual(reg.auditoria[0].jti, reg.auditoria[1].jti);
+    const r = await decidir({ device_id: "dev-livre", device_secret: segredoA, app_version: "1.0.0" }, reg);
+    assert.equal(r.ok, false);
+    assert.equal(r.ok === false && r.status, 401);
+    assert.equal(r.ok === false && r.motivo, "segredo_nao_vinculado");
+    assert.equal(r.ok === false && r.instrucao, "aguardar_humano");
+    assert.equal(reg.vinculos, 0, "runtime não pode pré-vincular segredo");
+    assert.equal(reg.auditoria.length, 0, "recusa não pode parecer emissão");
   });
 
-  await teste("B5 corrida do primeiro contato: quem perde o UPDATE relê e só passa se o hash vinculado for o dele", async () => {
-    const base = linhas();
-    const reg = registroFalso(base);
-    // O vínculo "perde" a corrida: outro contato gravou ANTES, com o segredo B.
-    reg.vincularSegredo = async (id) => {
-      base[id].secret_hash = hashDoSegredo(segredoB);
-      return false;
-    };
-    const perdeu = await decidir({ device_id: "dev-livre", device_secret: segredoA }, reg);
-    assert.equal(perdeu.ok === false && perdeu.motivo, "segredo_divergente");
-    const ganhou = await decidir({ device_id: "dev-livre", device_secret: segredoB }, reg);
-    assert.equal(ganhou.ok, true);
+  await teste("B5 pré-vínculo humano elimina a corrida: segredo correto entra, qualquer outro é recusado", async () => {
+    const reg = registroFalso(linhas());
+    const certo = await decidir({ device_id: "dev-vinculado", device_secret: segredoA }, reg);
+    assert.equal(certo.ok, true);
+    assert.equal(certo.ok && certo.vinculou_agora, false);
+    const errado = await decidir({ device_id: "dev-vinculado", device_secret: segredoB }, reg);
+    assert.equal(errado.ok === false && errado.status, 403);
+    assert.equal(errado.ok === false && errado.motivo, "segredo_divergente");
+    assert.equal(reg.vinculos, 0, "bootstrap alterou vínculo pré-aprovado");
+    assert.equal(reg.auditoria.length, 1);
   });
 
   await teste("B6 as claims vêm do CADASTRO: unidade e ator do registro, nunca do pedido; validade de um turno", async () => {
@@ -423,10 +419,12 @@ async function main(): Promise<void> {
       assert.equal(await linhaDoAparelho(b, ap.deviceId), null, "o runtime cadastrou o aparelho sozinho");
     });
 
-    await teste("C3 AUTORIZADO pelo humano: o bootstrap emite token, vincula o segredo e audita a emissão", async () => {
-      await autorizarAparelho(b, ap.deviceId, UNIDADE, MOTOBOY);
+    await teste("C3 AUTORIZADO pelo humano: prova já vinculada antes do bootstrap; sessão só confirma", async () => {
+      const prova = hashDoSegredo(ap.db.get(KEY_DEVICE_SECRET)!);
+      await autorizarAparelho(b, ap.deviceId, UNIDADE, MOTOBOY, prova);
       const antes = await linhaDoAparelho(b, ap.deviceId);
-      assert.equal(antes?.secret_hash, null, "autorizar já vinculou segredo — não podia");
+      assert.equal(antes?.secret_hash, prova, "autorização humana não pré-vinculou a prova");
+      assert.ok(antes?.secret_bound_at, "autorização humana não registrou instante do vínculo");
       const r = await ap.sincronizar();
       assert.equal(r, "success");
       const sessao = DeviceSession.sessaoAtual(ap.db);
@@ -436,8 +434,8 @@ async function main(): Promise<void> {
       assert.equal(v.ok && v.claims.device_id, ap.deviceId);
       assert.equal(v.ok && v.claims.unit_id, UNIDADE);
       const depois = await linhaDoAparelho(b, ap.deviceId);
-      assert.equal(depois?.secret_hash, hashDoSegredo(ap.db.get(KEY_DEVICE_SECRET)!));
-      assert.ok(depois?.secret_bound_at, "sem instante do vínculo");
+      assert.equal(depois?.secret_hash, prova, "runtime alterou o vínculo humano");
+      assert.equal(depois?.secret_bound_at, antes?.secret_bound_at, "runtime regravou o instante do vínculo");
       assert.ok(depois?.last_session_at, "sem última sessão");
       assert.equal(depois?.app_version, "1.0.0-logico");
       const aud = await b.cliente.query(`SELECT action, detail FROM platform.audit WHERE object_id = $1`, [ap.deviceId]);
@@ -602,7 +600,7 @@ async function main(): Promise<void> {
       const dirB = mkdtempSync(join(tmpdir(), "cadeia-aparelho-b-"));
       try {
         const apB = new AparelhoLogico({ diretorio: dirB, plataformaUrl: urlCritico });
-        await autorizarAparelho(b, apB.deviceId, UNIDADE, `${MOTOBOY}-b`);
+        await autorizarAparelho(b, apB.deviceId, UNIDADE, `${MOTOBOY}-b`, hashDoSegredo(apB.db.get(KEY_DEVICE_SECRET)!));
         // A tenta empurrar um ponto em nome de B, com o token de A.
         const tokenA = DeviceSession.sessaoAtual(ap.db)!.token;
         const r = await fetch(`${urlCritico}/api/gps/batch`, {
@@ -623,7 +621,7 @@ async function main(): Promise<void> {
         assert.equal(corpo.rejected, 1);
         assert.match(corpo.rejections?.[0]?.motivo ?? "", /diverge do aparelho autenticado/);
         assert.equal((await fatosDoAparelho(b, apB.deviceId)).length, 0, "um fato de B nasceu do token de A");
-        // A tenta obter o token de B com o SEGREDO DE A, antes de B fazer o primeiro contato.
+        // A tenta obter o token de B com o SEGREDO DE A, antes de B autenticar pela primeira vez.
         // (limite declarado: até B se apresentar, o vínculo é de quem chega primeiro)
         assert.equal(await apB.sincronizar(), "success", "B não conseguiu se apresentar");
         const pedidoDeA = await fetch(`${urlCritico}/api/device/session`, {
@@ -662,7 +660,7 @@ async function main(): Promise<void> {
       const dirC = mkdtempSync(join(tmpdir(), "cadeia-aparelho-c-"));
       try {
         const apC = new AparelhoLogico({ diretorio: dirC, plataformaUrl: urlCritico });
-        await autorizarAparelho(b, apC.deviceId, UNIDADE, `${MOTOBOY}-c`);
+        await autorizarAparelho(b, apC.deviceId, UNIDADE, `${MOTOBOY}-c`, hashDoSegredo(apC.db.get(KEY_DEVICE_SECRET)!));
         apC.capturar(VIAGEM, -23.55, -46.63, "2026-09-24T10:08:00.000Z", { mock: true });
         assert.equal(await apC.sincronizar(), "success");
         assert.equal((await fatosDoAparelho(b, apC.deviceId)).length, 0, "ponto simulado virou fato");
@@ -791,7 +789,7 @@ async function main(): Promise<void> {
       const dirD = mkdtempSync(join(tmpdir(), "cadeia-aparelho-d-"));
       try {
         const apD = new AparelhoLogico({ diretorio: dirD, plataformaUrl: urlCritico });
-        await autorizarAparelho(b, apD.deviceId, UNIDADE, `${MOTOBOY}-d`);
+        await autorizarAparelho(b, apD.deviceId, UNIDADE, `${MOTOBOY}-d`, hashDoSegredo(apD.db.get(KEY_DEVICE_SECRET)!));
         const r = await lerRealidadeDeEntregas(b.cliente, { agora: AGORA_LEITURA, unit_id: UNIDADE });
         const f = await montarEntregasDemo();
         const vm = entregasVM(await f.snapshot(), AGORA_LEITURA.toISOString(), f.getPolicyMaxStops(), { disponivel: true, realidade: r });
@@ -851,17 +849,17 @@ async function main(): Promise<void> {
       });
 
       const VIAGEM_P = `${VIAGEM}-p`;
-      await teste("P2 o crítico sobe como papel mínimo: /ready 200, bootstrap vincula, lote vira fato, sessão auditada", async () => {
+      await teste("P2 o crítico sobe como papel mínimo: /ready 200, bootstrap respeita pré-vínculo, lote vira fato, sessão auditada", async () => {
         criticoP = subir(BIN_CRITICO, comPapel(CRIT), { DELIVERYOS_SOURCE_MODE: MODO });
         assert.ok(await ate(criticoP, /\[critico\] ouvindo/), `o crítico não subiu com o papel mínimo:\n${criticoP.saida().slice(-800)}`);
         const ready = await fetch(`http://127.0.0.1:${criticoP.porta}/ready`);
         assert.equal(ready.status, 200, "a sonda de escrita do /ready reprova com o papel mínimo");
         const apP = new AparelhoLogico({ diretorio: dirP, plataformaUrl: `http://127.0.0.1:${criticoP.porta}` });
-        await autorizarAparelho(b, apP.deviceId, UNIDADE, `${MOTOBOY}-p`);
+        await autorizarAparelho(b, apP.deviceId, UNIDADE, `${MOTOBOY}-p`, hashDoSegredo(apP.db.get(KEY_DEVICE_SECRET)!));
         apP.capturar(VIAGEM_P, -23.56, -46.64, "2026-09-24T10:09:00.000Z");
         assert.equal(await apP.sincronizar(), "success", `sincronização falhou:\n${criticoP.saida().slice(-500)}`);
         assert.equal((await fatosDoAparelho(b, apP.deviceId)).length, 1);
-        assert.ok((await linhaDoAparelho(b, apP.deviceId))?.secret_hash, "o vínculo não foi gravado com o papel mínimo");
+        assert.equal((await linhaDoAparelho(b, apP.deviceId))?.secret_hash, hashDoSegredo(apP.db.get(KEY_DEVICE_SECRET)!), "o pré-vínculo humano mudou durante o bootstrap");
         const aud = await b.cliente.query(`SELECT count(*)::int AS n FROM platform.audit WHERE object_id = $1`, [apP.deviceId]);
         assert.equal(aud[0].n, 1);
       });
@@ -893,6 +891,7 @@ async function main(): Promise<void> {
           assert.match(await tentar(`DROP TRIGGER event_log_sem_update ON platform.event_log`), /must be owner/);
           assert.match(await tentar(`UPDATE identity.device SET revoked_at = now()`), /permission denied/);
           assert.match(await tentar(`UPDATE identity.device SET unit_id = 'OUTRA'`), /permission denied/);
+          assert.match(await tentar(`UPDATE identity.device SET secret_hash = repeat('0', 64)`), /permission denied/);
           assert.match(await tentar(`INSERT INTO identity.device(device_id, unit_id, label) VALUES ('dev-intruso', '${UNIDADE}', 'x')`), /permission denied/);
           assert.match(await tentar(`SET session_replication_role = replica`), /permission denied/);
           // Controle positivo: o que ele precisa, ele consegue.

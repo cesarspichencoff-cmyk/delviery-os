@@ -39,6 +39,7 @@ const TOKEN_CONSOLE = "CHANGE_ME_OPS_TOKEN";
 // Encerrar viagem é de gerente/líder, não de operador de console.
 const TOKEN_GERENTE = "CHANGE_ME_ADMIN_TOKEN";
 const DEVICE_FALSO = "dev-ponte-falsa-01";
+const PROOF_FALSO = "3ba3f5f43b92602683c19aee62a20342b084dd5971ddd33808d81a328879a547";
 
 let passou = 0;
 const falhas: string[] = [];
@@ -264,7 +265,8 @@ function scriptDaPonte(cfg: ConfigDaPonte | null, comSessao = true): string {
     window.EntregasNative = {
       version: () => "android-bridge@1.0.0",
       capabilities: () => JSON.stringify({ runtime: "android", app_version: "1.0.0-debug", foreground_service: true,
-        native_geofencing: true, activity_recognition: false, sdk_int: 34, device_id: estado.deviceId }),
+        native_geofencing: true, activity_recognition: false, sdk_int: 34, device_id: estado.deviceId,
+        device_proof_sha256: ${JSON.stringify(PROOF_FALSO)} }),
       status: () => {
         const b = bloqueios();
         return JSON.stringify({ active_trip_id: estado.viagem, allowed: b.length === 0, message: b.length ? "bloqueado: " + b[0] : "",
@@ -365,7 +367,7 @@ async function main(): Promise<void> {
           assert.deepEqual(erros, []);
         });
         await teste("A4 navegador comum não inventa ID de aparelho", async () => {
-          assert.equal(await page.isHidden("#deviceIdLine"), true);
+          assert.equal(await page.isHidden("#deviceEnrollment"), true);
           assert.equal(await page.textContent("#deviceIdValue"), "");
         });
         await ctx.close();
@@ -388,9 +390,10 @@ async function main(): Promise<void> {
         });
         const page = await ctx.newPage();
         await page.goto(`${p.base}/rider-mobile/`, { waitUntil: "domcontentloaded" });
-        await teste("A5 sem token humano, o ID nativo continua visível para autorização", async () => {
-          await page.waitForSelector("#deviceIdLine:not([hidden])", { timeout: 5000 });
+        await teste("A5 sem token humano, ID e código de vínculo continuam visíveis", async () => {
+          await page.waitForSelector("#deviceEnrollment:not([hidden])", { timeout: 5000 });
           assert.equal((await page.textContent("#deviceIdValue"))?.trim(), DEVICE_FALSO);
+          assert.equal((await page.textContent("#deviceProofValue"))?.trim(), PROOF_FALSO);
           assert.equal(
             await page.evaluate(() => localStorage.getItem("entregas_pilot_token")),
             null,
@@ -411,11 +414,13 @@ async function main(): Promise<void> {
         await montarViagem(p, "T-PONTE-1");
         await respostaNoServidor(p, "accepted");
         const { ctx, page, erros } = await abrir(browser, p, { portaoAberto: true, permissao: "concedida", concedeAoPedir: true });
-        await teste("B1 o ID pseudônimo do aparelho fica visível para cadastro, sem segredo", async () => {
-          await page.waitForSelector("#deviceIdLine:not([hidden])", { timeout: 5000 });
+        await teste("B1 ID e código de vínculo ficam visíveis, sem segredo bruto", async () => {
+          await page.waitForSelector("#deviceEnrollment:not([hidden])", { timeout: 5000 });
           assert.equal((await page.textContent("#deviceIdValue"))?.trim(), DEVICE_FALSO);
-          const linha = (await page.textContent("#deviceIdLine")) || "";
+          assert.equal((await page.textContent("#deviceProofValue"))?.trim(), PROOF_FALSO);
+          const linha = (await page.textContent("#deviceEnrollment")) || "";
           assert.match(linha, /ID deste aparelho/);
+          assert.match(linha, /Código de vínculo/);
           assert.equal(/token|secret|segredo|bearer/i.test(linha), false);
         });
         await teste("B2 antes da saída, nada liga a captura", async () => {

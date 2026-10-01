@@ -51,7 +51,7 @@ export interface AparelhoReal {
   actor_id: string | null;
   label: string;
   autorizado_em: string;
-  /** NULL = autorizado, mas nunca fez o primeiro contato. */
+  /** NULL = cadastro incompleto: autorizado sem prova pre-vinculada. */
   credencial_vinculada_em: string | null;
   ultima_sessao_em: string | null;
   app_version: string | null;

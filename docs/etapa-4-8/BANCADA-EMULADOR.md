@@ -4,7 +4,7 @@ lifecycle:
   status: ACTIVE
   authority_scope: bancada_emulador_android
   superseded_by: null
-  atualizado_em: "2026-09-26"
+  atualizado_em: "2026-10-01"
   state_basis: f122ee3
   question_refs: ["Q-018"]
 ---
@@ -45,11 +45,12 @@ security policy"), que é um `IOException`. `EntregasApi.request` transforma tod
 `ApiResult.Retryable(e.javaClass.simpleName)`; `DeviceSession.autenticar` o devolve como
 `FalhouTemporariamente`; o `SyncWorker`, sem sessão, faz `return Result.retry()`.
 
-**O banco confirma que o pedido não chegou.** Para um aparelho autorizado e não revogado, com
-`device_id` e segredo de 32 hex — o que o app manda —, o crítico faz primeiro
-`UPDATE identity.device SET secret_hash … WHERE secret_hash IS NULL` (`auth/device-session.ts`,
-`PgDeviceRegistry.vincularSegredo`). Nenhuma recusa anterior se aplica a esse aparelho. Depois do
-worker, o Foxxy relatou `vinculado = false` e `last_session_at` nulo: o pedido não chegou ao crítico.
+**Registro histórico do diagnóstico original.** Naquela versão, um aparelho autorizado e
+não revogado ainda vinculava `secret_hash` no primeiro bootstrap. Esse comportamento foi
+**retirado em 2026-10-01**: hoje a autorização humana pré-vincula o SHA-256 exibido pelo aparelho;
+cadastro sem hash recebe 401 `segredo_nao_vinculado` e o runtime crítico não pode gravar
+`secret_hash/secret_bound_at`. Portanto, para reproduzir a bancada atual, use o fluxo de
+`FIELD-GATE-ANDROID.md §2.4–2.5`, com ID + Código de vínculo antes de abrir a sessão.
 
 **O que o código NÃO permite afirmar.** O app não registra nem loga o motivo da falha (o `motivo` de
 `FalhouTemporariamente` é descartado; não há `Log` em `sync/`). Então `RETRY` sozinho não separa
@@ -198,16 +199,17 @@ sqlite3 entregas.db "SELECT key, length(value) AS tamanho FROM device_state WHER
 
 | item | PASS se | resultado |
 |---|---|---|
-| B1 vínculo | `vinculado = t`, `secret_bound_at` preenchido | NOT_RUN |
-| B2 sessão | `last_session_at` preenchido e ≥ 1 `device_session_issued` | NOT_RUN |
-| B3 token no Room | `session_token` com `tamanho > 0` — o valor nunca é impresso | NOT_RUN |
+| B1 pré-vínculo | **antes do bootstrap**, `vinculado = t` e `secret_bound_at` preenchido pelo ato humano com ID + Código de vínculo | NOT_RUN |
+| B2 sessão | o mesmo vínculo permanece; `last_session_at` preenchido e ≥ 1 `device_session_issued` | NOT_RUN |
+| B3 token no Room | `session_token` com `tamanho > 0` — o valor nunca é impresso; no app atual ele está cifrado em `enc:v1:...` | NOT_RUN |
 | B4 validade no Room | `session_token_expires_at` ≈ agora + 12 h, em ms desde a época | NOT_RUN |
 
 ### 3.9 O experimento que separa C de A
 
-Mesmo emulador, mesmo caminho de rede, mesmo aparelho: o APK `http://` não vinculou (relatado); se
-o APK `https://` vincular (B1), a causa era o cleartext. Se a §3.5 der 200 e mesmo assim B1 falhar,
-o problema é TLS — quase sempre a CA não instalada na aba **Usuário**.
+Mesmo emulador, mesmo caminho de rede, mesmo aparelho: o APK `http://` não concluiu a sessão
+(relatado); se o APK `https://` preencher `last_session_at` e a auditoria mantendo o **mesmo**
+pré-vínculo B1, a causa era o cleartext. Se a §3.5 der 200 e B2 ainda falhar, o problema é TLS —
+quase sempre a CA não instalada na aba **Usuário**.
 
 ### 3.10 Entregas, a parte do aparelho (sem fato)
 

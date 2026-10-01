@@ -947,9 +947,13 @@ não existe mais; `/api/device/session` no piloto é somente uma tombstone `503 
 (`device_session_moved_to_platform`) para que APK antigo preserve a fila local. Ela não autentica,
 não devolve `rider_id` e não emite token. A única autoridade de sessão do aparelho é a plataforma.
 
-**Limites que ficam, declarados:** janela entre autorizar e o primeiro contato (quem souber o
-`device_id` e chegar antes vincula o próprio segredo — mitigação: revogar e reautorizar); `jti`
-derivado de (`device_id`, segundo).
+**Sucessão — 2026-10-01:** os dois limites acima foram fechados no código.
+A janela de primeiro contato deixou de existir no runtime: a autorização humana exige
+`device_id + device_proof_sha256`, pré-vincula `secret_hash` e o bootstrap recusa cadastro
+sem hash com 401 `segredo_nao_vinculado`. O papel crítico perdeu UPDATE sobre
+`secret_hash/secret_bound_at`. O `jti` também deixou de derivar só de aparelho+segundo e usa
+entropia aleatória por emissão. PostgreSQL real desta sucessão e aparelho físico permanecem
+NOT_RUN.
 
 ### Android — o app não compila neste ambiente · **BLOCKED (externo), medido em 2026-09-25**
 

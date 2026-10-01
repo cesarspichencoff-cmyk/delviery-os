@@ -48,7 +48,7 @@ controle positivo e treze mutações. O número de mutações estava certo; o de
 |---|---|---|
 | `FAIL_NOVO` do m1-bridge C6 | `1de5b28`/`5effdbe` tocaram `entregas-vm.ts` e `entregas.js`, caminhos protegidos pelos gates de congelamento, **sem registrar autorização**. Em `0b8803c` o C6 era verde. A autorização existia: o César a deu na própria missão (item 8, porta READ-ONLY; item 12, revisão visual de Entregas). Foi **registrada**, não inventada: exceção estreita no envelope M1, fora de M1B, dois arquivos, uma classe, linha exata; o C6 a nomeia no código, e o C6c prova que sem o registro os dois reprovam. **Reversível** (rollback no envelope). **Confirmada pelo César em 2026-09-25**, só para os dois arquivos e a classe já executada. | `3993ab4`; `docs/design/M1_VISUAL_CHANGE_ENVELOPE.md` |
 | papéis mínimos na composição oficial | ligados, no desenho provado; ver §6 | `e51c34d` |
-| Android | JDK 17 instalado; build do app, testes de unidade e instrumentados **BLOCKED**: a política de rede nega `dl.google.com`, de onde vêm o AGP e o SDK; ver §4 | — |
+| Android | **SUCESSÃO 2026-10-01:** no Foxxy com SDK 34, build/unitários e instrumentados estão verdes; a regressão atual chegou a **19/19** no AVD Android 14. Aparelho físico permanece NOT_RUN; ver §4 e field-gate | — |
 | `occurred_at` no futuro | reproduzido com o binário, impacto medido, **registrado como problema separado e não corrigido**; ver §10. **Corrigido depois, no mesmo dia**, por decisão do César | `docs/execution/BLOCKERS.md`; `docs/etapa-4-8/RELOGIO.md` |
 | regressão integral final | ver §8 | — |
 
@@ -57,10 +57,10 @@ controle positivo e treze mutações. O número de mutações estava certo; o de
 | elo | antes (`0b8803c`) | depois |
 |---|---|---|
 | Android → `POST /api/device/session` | crítico: **404**; piloto: 200 **sem `device_token`**; o `SyncWorker` fica em laço "falhou temporariamente" e nenhum ponto sobe, nunca | crítico emite token por **vínculo de segredo** (`rota-sessao.ts`, `device-session.ts`, migration 0005) |
-| credencial do aparelho | só existia dentro de teste, com o segredo de assinatura na mão | o aparelho gera um segredo próprio (128 bits), guardado no Room; sai dele só no bootstrap; o servidor vincula o hash no primeiro contato de um aparelho **autorizado por humano** |
+| credencial do aparelho | só existia dentro de teste, com o segredo de assinatura na mão | o aparelho gera um segredo próprio (128 bits), cifrado em repouso no Android Keystore; a UI mostra apenas `device_id` + SHA-256 de vínculo; o responsável pré-vincula esse hash na autorização humana; o bootstrap **nunca** cria vínculo por primeiro contato |
 | Android → `POST /api/gps/batch` | crítico já autenticava token assinado e gravava fato + outbox na mesma transação | igual; agora o token existe |
 | URLs no Android | uma só (`ENTREGAS_BASE_URL`, o piloto) | duas, com fronteira explícita: `ENTREGAS_PLATFORM_URL` (sessão, GPS) e `ENTREGAS_BASE_URL` (WebView, termo, comandos, políticas); o token da plataforma nunca viaja para o piloto |
-| `identity.device` | cadastro | + `secret_hash`, `secret_bound_at`, `last_session_at` (0005); revogar e cadastrar continuam humanos |
+| `identity.device` | cadastro | + `secret_hash`, `secret_bound_at`, `last_session_at` (0005); cadastrar, pré-vincular e revogar continuam atos humanos |
 | Operação Viva ← restart | Q-016 | igual; provado de novo dentro da cadeia (C17–C20) |
 | `/entregas` (Product System) | só o facade de demonstração; aparelho = integração pendente | + bloco **Realidade** lido de `identity.device` + `platform.event_log`, separado do demo, procedência por item (`leitura/realidade-de-entregas.ts`) |
 | privilégio do runtime | superusuário (compose oficial) | papéis mínimos (`deploy/sql/papeis_minimos.sql`), provados em P1–P5 e **ligados à composição oficial na certificação**, provados em containers (§6) |
@@ -76,7 +76,7 @@ controle positivo e treze mutações. O número de mutações estava certo; o de
 | `FileUnitOfWork` / `entregas.*` do piloto | **KEEP_PARALLEL** | viagem, parada, ocorrência, termo e comandos (`/api/events/batch`, `/api/term/acknowledge`, `/api/policies`) continuam no piloto. Migrar é outra fronteira. Hoje **nenhuma viagem nasce na cadeia canônica**: a viagem que existe pelo GPS aparece com estado `desconhecido`, e o selo diz por quê |
 | rider-mobile (WebView do piloto) | **KEEP_PARALLEL** | é a interface do motoboy; `src/entregas/**` está no Preservation Set |
 | Product System `/entregas` | **ADAPT** | demo preservado, com selo; bloco real ao lado |
-| localização/rota no despacho | **ADAPT EM CURSO** | a verdade canônica agora tem porta `READ ONLY` sobre `platform.event_log`, filtrada por unidade + viagem + `source_mode`; o console ainda lê a memória legada do piloto, e o wiring autenticado mínimo continua aberto |
+| localização/rota no despacho | **ADAPT · CODE_READY + TEST_PASS** | o piloto consulta a leitura canônica no runtime crítico por assertion HMAC curta e escopada; quando a plataforma está configurada não há fallback para `pointsByTrip`, e o ingest GPS legado no piloto vira tombstone 503 retentável. Deploy/PostgreSQL real continuam pendentes |
 | `test:platform:pb19` controle positivo | **ADAPT** | criava fato no banco compartilhado e dependia de outra suíte tê-lo migrado; agora tem banco próprio |
 | `/api/device/session` no piloto | **RETIRED / TOMBSTONE** | `handleDeviceSession` foi removido em 2026-10-01; o piloto não lê mais `entregas-devices.json` nem emite identidade. A rota antiga responde 503 retentável `device_session_moved_to_platform` para preservar fila de APK antigo; a única autoridade é a plataforma |
 
@@ -85,8 +85,8 @@ controle positivo e treze mutações. O número de mutações estava certo; o de
 | passo | prova | medido |
 |---|---|---|
 | A. o buraco | A1 | resposta do piloto replicada byte a byte → o cliente retorna `retry` três vezes, 0 token, 1 ponto pendente. O 404 do crítico foi medido com o binário de `0b8803c` |
-| B. decisão de sessão | B1–B7 | desconhecido 401 `aguardar_humano` (nunca 403: o Kotlin marca 403 como revogação local e para); sem segredo/fraco 401 `corrigir_cliente`; revogado 403 antes de olhar o segredo; primeiro contato vincula, mesmo segredo renova, outro segredo 403 `segredo_divergente`; corrida do vínculo; claims do cadastro, nunca do pedido; validade 12 h; nada de segredo no corpo |
-| 1–4 aparelho, autorização, token, sessão | C1–C4 | identidade e segredo persistidos; antes da autorização 401 e o ponto fica; autorizado: token verificável, `secret_hash` = sha256 do segredo, `last_session_at`, `app_version`, 1 linha em `platform.audit` com o `jti`; reabrir o Room não custa bootstrap |
+| B. decisão de sessão | B1–B7 | desconhecido 401 `aguardar_humano`; sem segredo/fraco 401 `corrigir_cliente`; revogado 403 antes de olhar o segredo; cadastro sem prova 401 `segredo_nao_vinculado` e **não vincula**; pré-vínculo correto autentica; segredo diferente 403 `segredo_divergente`; claims do cadastro, nunca do pedido; validade 12 h; nada de segredo no corpo |
+| 1–4 aparelho, autorização, token, sessão | C1–C4 | identidade e segredo persistidos; antes da autorização 401 e o ponto fica; autorização humana grava previamente `secret_hash` = SHA-256 exibido pelo aparelho; bootstrap apenas confere o vínculo e emite token, sem reescrever `secret_hash/secret_bound_at`; `last_session_at`, `app_version` e auditoria são atualizados; reabrir o Room não custa bootstrap |
 | 5–7 queda de rede | C5–C7 | 3 pontos `failed`, `attempts` 1, nenhum apagado, credencial intacta, nenhum fato chegou |
 | 8–13 reconexão, autenticação, banco, fato, modo | C8–C13 | 4 fatos `gps_batch_received`, `object_id` = viagem, chave gerada NO aparelho, `origin device`, coordenada, `captured_offline`, `recorded_at`; `source_mode` = o da instância em log e outbox, zero `real` |
 | 14 duplicata | C14 | recibo perdido → reenvio: `duplicado`, 4 fatos, 4 mensagens, fila limpa |
@@ -136,7 +136,7 @@ fato. Lote `simulated` vira `simulado`, nunca real. A demonstração não perde 
 
 **Ausência declarada, nunca zero, nunca saudável:**
 - aparelho autorizado sem lote fica sem GPS, sem sincronização e sem modo, com selo de ação humana
-  (aguardando o primeiro contato);
+  (cadastro incompleto: falta pre-vincular o codigo do aparelho);
 - fila offline, permissão e serviço de captura moram no telefone e seguem `integracao_pendente`;
 - viagem que só existe pelo GPS aparece `desconhecido`, com o selo que explica;
 - sem banco: `integracao_pendente`;
@@ -159,7 +159,7 @@ registrada no envelope M1 como exceção estreita, fora de M1B (§0).
 
 | processo | precisa | e SÓ isso |
 |---|---|---|
-| crítico | `platform.event_log` SELECT+INSERT · `platform.outbox` SELECT+INSERT · `platform.inbox` SELECT+INSERT · `platform.audit` INSERT · sequências · `identity.device` SELECT + UPDATE **só** de `secret_hash, secret_bound_at, last_session_at, last_seen_at, app_version` · `platform.schema_migration` SELECT+INSERT+UPDATE (a sonda de escrita do `/ready`) | não pode revogar, cadastrar, apagar, truncar, alterar fato, desligar trava, `session_replication_role` |
+| crítico | `platform.event_log` SELECT+INSERT · `platform.outbox` SELECT+INSERT · `platform.inbox` SELECT+INSERT · `platform.audit` INSERT · sequências · `identity.device` SELECT + UPDATE **só** de `last_session_at, last_seen_at, app_version` · `platform.schema_migration` SELECT+INSERT+UPDATE (a sonda de escrita do `/ready`) | não pode cadastrar, pré-vincular/rotacionar segredo, revogar, apagar, truncar, alterar fato, desligar trava, `session_replication_role` |
 | assíncrono | `platform.event_log` SELECT · `platform.outbox` SELECT+UPDATE · `platform.job` SELECT+INSERT+UPDATE · `platform.audit` INSERT · sequências · `platform.schema_migration` SELECT | não grava fato, não enfileira, não lê aparelho |
 | migrate | dono do schema | DDL é dele |
 
@@ -276,7 +276,7 @@ explícito (D4). **Governança depois do commit** (L45): medida no commit da doc
 3. ~~**Consertar o `gate-verification`**~~ — **feito e provado no Foxxy em 2026-10-01**: `semSegredo`
    foi extraído para Kotlin puro, o gate passou **12/12** e a regressão Android ficou verde.
    Ver `field-gate/2026-10-01-a4-gate-verification.md`.
-4. ~~**Ferramenta humana de autorização** sobre `identity.device`~~ — **implementada em 2026-10-01** como `tools/entregas_device_admin.ts`: `status`, `authorize` e `revoke`, sempre read-only no plano; qualquer escrita exige `--apply=YES` + fingerprint do estado revisado. Autorizar valida unidade/ator ativos, mesma unidade e papel `motoboy_interno`; aparelho revogado não é reativado silenciosamente.
+4. ~~**Ferramenta humana de autorização** sobre `identity.device`~~ — **implementada em 2026-10-01** como `tools/entregas_device_admin.ts`: `status`, `authorize` e `revoke`, sempre read-only no plano; qualquer escrita exige `--apply=YES` + fingerprint do estado revisado. Autorizar valida unidade/ator ativos, mesma unidade e papel `motoboy_interno`, exige o `--proof` SHA-256 mostrado pelo aparelho e pré-vincula `secret_hash`; aparelho revogado não é reativado e aparelho já ligado não tem segredo rotacionado silenciosamente.
 5. ~~**Retirar `handleDeviceSession` do piloto**~~ — **feito em 2026-10-01**. A rota ficou apenas como tombstone 503 retentável para APK legado; não autentica, não devolve `rider_id` e não emite token.
 6. **Cadeia dos comandos** — **caminho servidor provado em 2026-10-01**: `/api/events/batch` atravessa a aplicação e chega ao domínio/event log; `actor` e `unit_id` do payload não têm autoridade, pois sessão autenticada e unidade configurada prevalecem. O produtor Android continua **NOT_IMPLEMENTED/dormant** porque nenhum código de produção grava `OutboxEventEntity`; não foi criada feature artificial para mascarar essa ausência. Ver `field-gate/2026-10-01-command-batch-authority.md`.
 7. ~~**Relógio do aparelho**~~ — **corrigido e provado** em `docs/etapa-4-8/RELOGIO.md`:
@@ -284,14 +284,11 @@ explícito (D4). **Governança depois do commit** (L45): medida no commit da doc
 8. **Leitura canônica de localização da viagem** — **CODE_READY + TEST_PASS em 2026-10-01**: `lerLocalizacaoCanonicaDaViagem` lê somente `platform.event_log`, dentro de `SET TRANSACTION READ ONLY`, exigindo unidade + viagem + `source_mode`. O crítico expõe duas rotas internas de despacho; o piloto assina uma assertion curta por unidade/ator/papel/viagem/escopo e passa a usar essa fonte quando `ENTREGAS_PLATFORM_URL` está configurada. Nesse modo não há fallback para RAM e o `/api/gps/batch` legado responde 503 retentável. Provas: leitura 3/3, assertion/rota 6/6, HTTP piloto↔plataforma 5/5, capture-control HTTP 6/6 e governança 14/14. PostgreSQL real, segredos operacionais, Compose Docker e deploy continuam **NOT_RUN**.
 9. **Retenção local do GPS no Android** — **CODE_READY + TEST_PASS no AVD em 2026-10-01**: `/api/policies` só autoriza retenção quando o termo é publicável; o Android vincula o prazo ao hash do termo e exige aceite do mesmo hash pelo mesmo motoboy no mesmo aparelho. `SyncWorker` remove somente `sent` vencido e preserva a viagem ativa. A identidade do motoboy agora é persistida a partir de `actor_id` da sessão canônica da plataforma, nunca da tela. Provas: device-api 43/43 e regressão Android atual coberta junto ao item 10. O prazo real permanece **NÃO DECIDIDO** no checklist; nenhum expurgo operacional foi executado.
 10. ~~**Credenciais Android em claro no Room (B3)**~~ — **fechado no código/AVD em 2026-10-01**: token de sessão e segredo próprio do aparelho usam `AndroidKeyStore` + AES-GCM com AAD por finalidade; legado em claro migra no primeiro uso; perda da chave descarta apenas o token substituível, não recria silenciosamente o segredo e não apaga fila GPS. Provas: estrutural **43/43**, unitários `BUILD SUCCESSFUL`, instrumentados **18/18** no AVD Android 14 e gate JVM independente `BUILD SUCCESSFUL`. Aparelho físico continua **NOT_RUN**.
-11. ~~**Descoberta do `device_id` no build pilot**~~ — **fechada na UI em 2026-10-01**: a rider-mobile mostra o pseudônimo `dev-…` vindo de `EntregasNative.capabilities()` antes mesmo de existir login humano do piloto. Navegador comum não mostra/inventa ID e nenhum token/segredo entra nessa linha. Provas: rider-bridge **30/30**, rider-capture **38/38**, Android estrutural **43/43**. O gate físico continua `NOT_RUN`; a assinatura do APK pilot continua ato humano separado.
+11. ~~**Descoberta do aparelho no build pilot**~~ — **fechada na UI em 2026-10-01**: a rider-mobile mostra o pseudônimo `dev-…` e o `device_proof_sha256` vindo de `EntregasNative.capabilities()` antes mesmo de existir login humano do piloto. O proof é SHA-256 do segredo cifrado, nunca o segredo. Navegador comum não inventa esses valores. Provas: rider-bridge **30/30**, Android estrutural **43/43** e instrumentados **19/19** no AVD. O gate físico continua `NOT_RUN`; a assinatura do APK pilot continua ato humano separado.
 
 ## 10 — UNKNOWNs e limites declarados
 
-- **Janela do primeiro contato.** Entre o humano autorizar e o aparelho se apresentar, quem souber
-  o `device_id` e chegar antes vincula o próprio segredo. E2 mede o "depois"; o "antes" é o limite.
-  Mitigação: revogar e reautorizar. Um código de enrolamento fecharia a janela, mas exige UI no
-  telefone.
+- ~~**Janela do primeiro contato**~~ — **FECHADA NO CÓDIGO/AVD em 2026-10-01**: a rider-mobile mostra `device_id` + `device_proof_sha256` (SHA-256 do segredo local, nunca o segredo); a ferramenta humana exige essa prova e a inclui no fingerprint do plano; `identity.device.secret_hash` é pré-vinculado antes do bootstrap. Registro sem hash recebe 401 `segredo_nao_vinculado` e o runtime crítico não possui mais privilégio para gravar `secret_hash/secret_bound_at`. Provas: device-admin 19/19, cadeia lógica 9/9, rider-bridge 30/30, Android estrutural 43/43 e instrumentados 19/19 no AVD. PostgreSQL real e aparelho físico continuam NOT_RUN.
 - ~~**`jti` por segundo**~~ — **FECHADO em 2026-10-01**: cada emissão usa
   96 bits aleatórios para o `jti`, mantendo a injeção determinística apenas
   para fixtures. Duas emissões do mesmo aparelho no mesmo segundo foram

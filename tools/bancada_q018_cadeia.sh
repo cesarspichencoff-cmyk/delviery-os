@@ -68,6 +68,12 @@ ip addr add 10.0.2.2/32 dev lo || { echo "sem permissão para alias de loopback"
 echo "== banco isolado, crítico (simulated) e assíncrono"
 psql "$URL_ADMIN" -qAtc "CREATE DATABASE $DB" || exit 1
 SEG=$(openssl rand -hex 32)
+DEVICE_SECRET_FILE="$T/device-secret"
+DEVICE_SECRET=$(openssl rand -hex 16)
+printf '%s' "$DEVICE_SECRET" > "$DEVICE_SECRET_FILE"
+unset DEVICE_SECRET
+chmod 600 "$DEVICE_SECRET_FILE"
+PROOF=$(openssl dgst -sha256 "$DEVICE_SECRET_FILE" | awk '{print $2}')
 DELIVERYOS_ENV=local DELIVERYOS_DATABASE_URL="$BASE/$DB" DELIVERYOS_DEVICE_TOKEN_SECRET="$SEG" \
 DELIVERYOS_PORT=18080 DELIVERYOS_HOST=127.0.0.1 DELIVERYOS_SOURCE_MODE=simulated \
   sobe node dist/src/platform/bin/critical.js > "$T/critico.log" 2>&1
@@ -77,10 +83,11 @@ grep -q "simulated" "$T/critico.log"; checa $? "o boot do crítico declara o mod
 psql "$BASE/$DB" -qAt >/dev/null <<SQL
 INSERT INTO identity.unit (unit_id, display_name) VALUES ('unit-emulator-lab','Bancada Q-018');
 INSERT INTO identity.actor (actor_id, unit_id, role, label) VALUES ('rider-emulator-lab','unit-emulator-lab','motoboy_interno','bancada');
-INSERT INTO identity.device (device_id, unit_id, actor_id, label) VALUES ('$DEV','unit-emulator-lab','rider-emulator-lab','bancada Q-018');
+INSERT INTO identity.device (device_id, unit_id, actor_id, label, secret_hash, secret_bound_at)
+VALUES ('$DEV','unit-emulator-lab','rider-emulator-lab','bancada Q-018','$PROOF',now());
 SQL
-[ "$(q "SELECT (secret_hash IS NULL AND last_session_at IS NULL) FROM identity.device WHERE device_id='$DEV'")" = t ]
-checa $? "antes: aparelho autorizado, não vinculado, sem sessão"
+[ "$(q "SELECT (secret_hash = '$PROOF' AND secret_bound_at IS NOT NULL AND last_session_at IS NULL) FROM identity.device WHERE device_id='$DEV'")" = t ]
+checa $? "antes: aparelho autorizado e pre-vinculado pelo humano, sem sessão"
 DELIVERYOS_ENV=local DELIVERYOS_DATABASE_URL="$BASE/$DB" DELIVERYOS_TICK_MS=200 \
   sobe node dist/src/platform/bin/async-runtime.js > "$T/assincrono.log" 2>&1
 ASSINCRONO=${PIDS[-1]}
@@ -102,7 +109,7 @@ esperar https://127.0.0.1:8080/health 40; checa $? "socat TLS na frente do crít
 esperar https://127.0.0.1:5193/rider-mobile/ 60; checa $? "piloto de laboratório com HTTPS nativo, modo local"
 
 echo
-NO_PROXY="*" npx tsx tools/bancada_q018_rider.ts https://10.0.2.2:5193 https://10.0.2.2:8080 "$T/ca.pem" "$SPKI" "$DEV" "$T/rider.json" 2>&1 \
+NO_PROXY="*" BANCADA_DEVICE_SECRET_FILE="$DEVICE_SECRET_FILE" npx tsx tools/bancada_q018_rider.ts https://10.0.2.2:5193 https://10.0.2.2:8080 "$T/ca.pem" "$SPKI" "$DEV" "$T/rider.json" 2>&1 \
   | tee "$T/rider.log"
 grep -q "RIDER_Q018_GREEN" "$T/rider.log"; checa $? "a rider-mobile, pelo caminho do emulador"
 TRIP=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["trip_id"])' "$T/rider.json" 2>/dev/null)
@@ -122,8 +129,8 @@ PY
 [ $? = 0 ] || FALHAS=$((FALHAS + 1))
 
 echo "== o banco depois (nada de token nem segredo)"
-[ "$(q "SELECT (secret_hash IS NOT NULL AND secret_bound_at IS NOT NULL AND last_session_at IS NOT NULL) FROM identity.device WHERE device_id='$DEV'")" = t ]
-checa $? "identity.device: vinculado no primeiro contato"
+[ "$(q "SELECT (secret_hash = '$PROOF' AND secret_bound_at IS NOT NULL AND last_session_at IS NOT NULL) FROM identity.device WHERE device_id='$DEV'")" = t ]
+checa $? "identity.device: pre-vinculo humano preservado e sessão emitida"
 [ "$(q "SELECT count(*) FROM platform.audit WHERE object_id='$DEV' AND action='device_session_issued'")" -ge 1 ]
 checa $? "platform.audit: device_session_issued"
 N=$(q "SELECT count(*) FROM platform.event_log WHERE device_id='$DEV' AND event_type='gps_batch_received' AND object_type='trip' AND object_id='$TRIP' AND source_mode='simulated' AND clock_trust='trusted'")
