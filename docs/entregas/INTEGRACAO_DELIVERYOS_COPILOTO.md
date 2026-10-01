@@ -581,3 +581,52 @@ O cutover **não foi executado no banco operacional**. Além disso, o backup atu
 arquivo/volume; ele não protege um backend PostgreSQL. Portanto o próximo gate de implantação é provar backup +
 restore da verdade PostgreSQL antes de qualquer troca real de backend.
 
+## 27. Backup e restore do backend PostgreSQL — 2026-10-01
+
+O gate de cutover deixou de depender de um backup que protegia apenas o antigo volume de arquivos.
+O sidecar de implantação passou a ser consciente do backend:
+
+- `ENTREGAS_STORAGE_BACKEND=file`: arquiva `/dados` em `tar.gz`;
+- `ENTREGAS_STORAGE_BACKEND=postgres`: exige `DELIVERYOS_DATABASE_URL` e executa
+  `pg_dump --format=custom`;
+- backend desconhecido ou URL ausente falham com exit 78 em vez de produzir falso sucesso.
+
+O restore PostgreSQL não participa do boot normal. O serviço `deliveryos-postgres-restore` existe
+somente no profile `maintenance` e exige simultaneamente:
+
+- `ENTREGAS_RESTORE_CONFIRM=YES`;
+- snapshot explícito do volume de backups;
+- URL alvo diferente da URL operacional;
+- banco alvo sem relações de aplicação;
+- `pg_restore --no-owner --no-privileges --exit-on-error`.
+
+### Prova de realidade
+
+GitHub Actions run `36815229348`, PostgreSQL 16:
+
+- `PILOT_POSTGRES_BACKUP_RESTORE`: **6/6 PASS**;
+- backup/restore geral da plataforma: **19/19**;
+- `PILOT_STORAGE_CUTOVER`: **7/7**;
+- `PILOT_POSTGRES_SERVER_CLUSTER`: **6/6**;
+- deploy-audit: **39/39**;
+- `docker compose config`: modelo renderizado validado;
+- execução real do sidecar file dentro de container: `COMPOSE_RUNTIME_EXPANSION_GREEN`;
+- governança: GREEN;
+- `git diff --check`: PASS.
+
+O teste específico cria verdade operacional com Trip, Delivery, Handoff, Occurrence, Rider,
+domain events, public outbox e ready-order; gera dump custom; restaura em banco realmente vazio;
+exige fingerprint e contagens idênticos; confirma que os triggers continuam ativos; e atualiza uma
+Trip restaurada da version 2 para 3 pelo PgUOW normal.
+
+### Fronteira ainda aberta
+
+O volume `entregas_backups` continua no mesmo host. Portanto esta etapa prova recuperação lógica e
+proteção contra perda/corrupção do banco/container dentro da máquina, mas **não prova recuperação
+após perda do host**. Uma cópia off-host ou mecanismo externo equivalente ainda precisa ser definido
+e restaurado em ensaio antes de chamar o plano de cutover operacional de completo.
+
+Também continuam sem execução: migrations 0006–0008 no banco operacional, emissão/configuração da
+credencial real de `deliveryos_entregas_pilot`, apply do cutover e troca de
+`ENTREGAS_STORAGE_BACKEND`. Nenhum deploy ou ativação live ocorreu.
+
