@@ -1,0 +1,86 @@
+{
+  "schema": "deliveryos.cardapio.operational-confirmations.v1",
+  "confirmed_at_local": "2026-09-30T23:51:00-03:00",
+  "authority": "Cesar",
+  "confirmations": [
+    {
+      "item": "Tartar de Atum Spicy",
+      "previous_plaza": "duplas",
+      "confirmed_plaza": "enrolados_quentes",
+      "label": "Sushi Quentes",
+      "changed": true
+    },
+    {
+      "item": "Carpaccio de Polvo Espanhol",
+      "confirmed_plaza": "duplas",
+      "label": "Duplas",
+      "changed": false
+    },
+    {
+      "item": "Carpaccio de Salmão Trufado",
+      "confirmed_plaza": "duplas",
+      "label": "Duplas",
+      "changed": false
+    },
+    {
+      "item": "Tartar de Salmão",
+      "confirmed_plaza": "enrolados_quentes",
+      "label": "Sushi Quentes",
+      "changed": false
+    },
+    {
+      "item": "Tuna Shisô Tartar",
+      "confirmed_plaza": "enrolados_quentes",
+      "label": "Sushi Quentes",
+      "changed": false
+    },
+    {
+      "item": "Missoshiro",
+      "confirmed_plaza": "cozinha_quentes",
+      "label": "Cozinha",
+      "changed": false
+    },
+    {
+      "item": "Tatá Especial - Club Vip Gourmet",
+      "confirmed_plaza": null,
+      "label": "Sem praça / programa",
+      "changed": false
+    },
+    {
+      "item": "Ceviche",
+      "confirmed_plaza": "enrolados_quentes",
+      "label": "Sushi Quentes",
+      "changed": false,
+      "source": "prior_operational_confirmation"
+    }
+  ],
+  "implementation": {
+    "source_of_truth_updated": "tools/build_cardapio_knowledge.js",
+    "seed_updated": "data/cardapio_knowledge_seed.json",
+    "integrity_verifier_updated": "tools/verificar_integridade_cardapio.js",
+    "generated_audit_updated": "docs/Auditoria_Cardapio_Conhecimento.md"
+  },
+  "verification": {
+    "builder_executed_in_memory_against_real_cardapio_fonte": true,
+    "regenerated_items": 199,
+    "seed_match_ignoring_only_generated_date": true,
+    "status": "PASS"
+  },
+  "incidental_drift_fixed": [
+    {
+      "items": [
+        "Ebi Spicy",
+        "Guioza",
+        "Tempurá de milho doce"
+      ],
+      "issue": "builder regenerated categoria_operacional=prato_quente while committed seed correctly retained Entrada classification from source category",
+      "fix": "builder now preserves categoria_operacional=entrada when disponivel_em includes Entradas",
+      "seed_changed": false
+    }
+  ],
+  "effects": {
+    "teknisa_write": false,
+    "printer_action": false,
+    "production_cutover": false
+  }
+}
