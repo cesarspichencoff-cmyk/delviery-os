@@ -111,6 +111,7 @@ function buildConfig(productRows, printerRows, meta) {
   let puxa = 0;
   let backup = 0;
   const seenProductNames = new Map();
+  const catalogProducts = [];
 
   for (const row of productRows) {
     const productCode = canonicalizeProductCode(row["Código"]);
@@ -149,6 +150,11 @@ function buildConfig(productRows, printerRows, meta) {
 
     products[productCode] = routeCodes;
     seenProductNames.set(productCode, productName);
+    catalogProducts.push({
+      product_code: productCode,
+      product_name: productName,
+      printer_codes: routeCodes,
+    });
   }
 
   // Compact V1 deliberately models configured production 1 + production 2 only.
@@ -177,6 +183,14 @@ function buildConfig(productRows, printerRows, meta) {
     products,
   };
 
+  const catalog = {
+    schema: "deliveryos.retail.product-catalog.v1",
+    store: meta.store,
+    captured_date: meta.capturedDate,
+    source_sha256: meta.productsSha256,
+    products: catalogProducts,
+  };
+
   const printerMap = {
     schema: "deliveryos.runtime-printer-map.v1",
     status: "CURRENT_CONFIG_PROVEN",
@@ -190,7 +204,7 @@ function buildConfig(productRows, printerRows, meta) {
     ],
   };
 
-  return { routing, printerMap, productNames: Object.fromEntries(seenProductNames) };
+  return { routing, printerMap, catalog, productNames: Object.fromEntries(seenProductNames) };
 }
 
 function parseArgs(argv) {
@@ -228,6 +242,9 @@ function main() {
 
   fs.writeFileSync(path.resolve(args["routing-out"]), JSON.stringify(built.routing, null, 2) + "\n");
   fs.writeFileSync(path.resolve(args["printer-out"]), JSON.stringify(built.printerMap, null, 2) + "\n");
+  if (args["catalog-out"]) {
+    fs.writeFileSync(path.resolve(args["catalog-out"]), JSON.stringify(built.catalog, null, 2) + "\n");
+  }
 
   process.stdout.write(
     JSON.stringify(
@@ -239,6 +256,7 @@ function main() {
           .filter((x) => x.used_by_products)
           .map((x) => [x.printer_code, x.printer_name, x.printer_ip]),
         source_sha256: built.routing.source_sha256,
+        catalog_written: Boolean(args["catalog-out"]),
       },
       null,
       2,
