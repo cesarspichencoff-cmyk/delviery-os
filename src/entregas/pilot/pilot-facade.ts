@@ -2,7 +2,7 @@
  * Facade do piloto: ApplicationService + UnitOfWork injetável + sessão por token.
  * O backend arquivo continua default; a facade não conhece mais o formato do store.
  */
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
+import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { createPilotPolicy } from "../foundation/policy";
 import type { UnitOfWork } from "../persistence/ports";
@@ -10,6 +10,10 @@ import {
   createFilePilotUnitOfWorkSource,
   type PilotUnitOfWorkSource,
 } from "./pilot-storage";
+import {
+  createFilePilotReadyOrderStore,
+  type PilotReadyOrderStore,
+} from "./ready-orders";
 import { EntregasApplicationService, type AppResult } from "../operational/application-service";
 import type { ActorContext, OperationalRole } from "../operational/auth";
 import type { Command } from "../operational/commands";
@@ -72,10 +76,6 @@ export interface PilotSnapshot {
   features: PilotConfig["features"];
 }
 
-interface ReadyStore {
-  orders: Array<{ order_ref: string; label: string; channel?: string; created_at: string }>;
-}
-
 export class PilotApplicationFacade {
   private uow: UnitOfWork;
   private readonly storage: PilotUnitOfWorkSource;
@@ -88,25 +88,21 @@ export class PilotApplicationFacade {
   private occCache = new Map<string, Occurrence>();
   private riderCache = new Map<string, RiderOperationalState>();
   private commandIds = new Set<string>();
-  private readyFile: string;
+  private readonly readyOrders: PilotReadyOrderStore;
 
   constructor(
     private readonly cfg: PilotConfig,
     private readonly log: PilotLogger,
     storage?: PilotUnitOfWorkSource,
+    readyOrders?: PilotReadyOrderStore,
   ) {
     mkdirSync(cfg.data_dir, { recursive: true });
     const defaultDataFile = join(cfg.data_dir, "store.json");
     this.storage =
       storage ?? createFilePilotUnitOfWorkSource(defaultDataFile);
-    this.readyFile = join(cfg.data_dir, "ready_orders.json");
-    if (!existsSync(this.readyFile)) {
-      writeFileSync(
-        this.readyFile,
-        JSON.stringify({ orders: [] } satisfies ReadyStore),
-        "utf8",
-      );
-    }
+    this.readyOrders =
+      readyOrders ??
+      createFilePilotReadyOrderStore(join(cfg.data_dir, "ready_orders.json"));
     const policy = createPilotPolicy({ max_stops: cfg.max_stops });
     this.uow = this.storage.open();
     this.svc = new EntregasApplicationService(this.uow, policy, cfg.source_mode);
@@ -201,19 +197,11 @@ export class PilotApplicationFacade {
     };
   }
 
-  private loadReady(): ReadyStore {
-    try {
-      return JSON.parse(readFileSync(this.readyFile, "utf8")) as ReadyStore;
-    } catch {
-      return { orders: [] };
-    }
-  }
-
-  private saveReady(s: ReadyStore): void {
-    writeFileSync(this.readyFile, JSON.stringify(s, null, 2), "utf8");
-  }
-
-  registerReadyOrder(order_ref: string, label: string, channel?: string): { ok: boolean; human: string } {
+  async registerReadyOrder(
+    order_ref: string,
+    label: string,
+    channel?: string,
+  ): Promise<{ ok: boolean; human: string }> {
     if (!this.actor) {
       return { ok: false, human: "É preciso entrar com seu acesso antes." };
     }
@@ -223,18 +211,16 @@ export class PilotApplicationFacade {
       });
       return { ok: false, human: "Seu perfil não pode registrar pedidos prontos." };
     }
-    const store = this.loadReady();
-    if (store.orders.some((o) => o.order_ref === order_ref)) {
-      this.log.warn("duplicate_order", "Pedido já estava na fila de prontos.", order_ref);
-      return { ok: false, human: "Este pedido já está na lista de prontos." };
-    }
-    store.orders.push({
+    const added = await this.readyOrders.add({
       order_ref,
       label,
       channel,
       created_at: new Date().toISOString(),
     });
-    this.saveReady(store);
+    if (added.duplicate) {
+      this.log.warn("duplicate_order", "Pedido já estava na fila de prontos.", order_ref);
+      return { ok: false, human: "Este pedido já está na lista de prontos." };
+    }
     return { ok: true, human: `Pedido ${order_ref} na fila de prontos.` };
   }
 
@@ -291,9 +277,7 @@ export class PilotApplicationFacade {
         const used = new Set(
           [...result.trip.deliveries.values()].map((d) => d.order_ref),
         );
-        const ready = this.loadReady();
-        ready.orders = ready.orders.filter((o) => !used.has(o.order_ref));
-        this.saveReady(ready);
+        await this.readyOrders.removeByOrderRefs([...used]);
       }
       if (result.handoff) this.handoffCache.set(result.handoff.handoff_id, result.handoff);
       if (result.occurrence)
@@ -338,13 +322,19 @@ export class PilotApplicationFacade {
   }
 
   async snapshot(): Promise<PilotSnapshot> {
-    const [tripRecords, handoffRecords, occurrenceRecords, riderRecords] =
-      await Promise.all([
-        this.uow.trips.list(),
-        this.uow.handoffs.list(),
-        this.uow.occurrences.list(),
-        this.uow.riders.list(),
-      ]);
+    const [
+      tripRecords,
+      handoffRecords,
+      occurrenceRecords,
+      riderRecords,
+      readyOrders,
+    ] = await Promise.all([
+      this.uow.trips.list(),
+      this.uow.handoffs.list(),
+      this.uow.occurrences.list(),
+      this.uow.riders.list(),
+      this.readyOrders.list(),
+    ]);
 
     const trips = tripRecords.map((rec) => ({
       trip_id: rec.trip.trip_id,
@@ -362,7 +352,6 @@ export class PilotApplicationFacade {
     }));
 
     const banner = resolveBanner(this.cfg);
-    const ready = this.loadReady();
 
     return {
       mode: "pilot",
@@ -399,7 +388,7 @@ export class PilotApplicationFacade {
         occurrence_blocking_availability: r.occurrence_blocking_availability,
         active_trip_id: r.active_trip_id,
       })),
-      ready_orders: ready.orders.map((o) => ({
+      ready_orders: readyOrders.map((o) => ({
         order_ref: o.order_ref,
         label: o.label,
         channel: o.channel,
