@@ -303,7 +303,17 @@ async function main(): Promise<void> {
     assert.equal(migrations.mismatch, undefined);
 
     const roleSql = readFileSync("deploy/sql/papeis_minimos.sql", "utf8");
-    for (const stmt of splitSql(roleSql)) {
+    const roleStatements = splitSql(roleSql);
+    assert.ok(
+      roleStatements.length > 10,
+      "papeis_minimos.sql não foi separado em statements; verifique blocos $",
+    );
+    assert.match(
+      roleStatements[0],
+      /DO\s+\$\$/,
+      "primeiro statement precisa preservar o bloco DO $",
+    );
+    for (const stmt of roleStatements) {
       await admin.query(stmt);
     }
     await admin.query(
