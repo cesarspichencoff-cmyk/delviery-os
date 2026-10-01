@@ -722,6 +722,13 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
 
     if (url.pathname === "/api/backups" && req.method === "GET") {
       if (!actor) return reply(401, { ok: false, human: NO_SESSION });
+      if (!facade.supportsFileBackup) {
+        return reply(409, {
+          ok: false,
+          code: "backup_backend_managed",
+          human: "O histórico de backup deste backend é gerenciado pelo banco de dados.",
+        });
+      }
       return reply(200, { backups: listBackups(backupDir) });
     }
 
