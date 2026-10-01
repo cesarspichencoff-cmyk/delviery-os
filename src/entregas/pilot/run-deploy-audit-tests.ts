@@ -97,7 +97,7 @@ test("a composição usa o nome deliveryos-pilot", () => {
 test("SOMENTE o proxy publica portas", () => {
   // Um `ports:` esquecido na API publicaria o serviço sem proxy, sem TLS e
   // sem rate limit. É o erro mais fácil de cometer e o mais caro.
-  const comPortas = ["deliveryos-proxy", "deliveryos-api", "deliveryos-backup"].filter((s) =>
+  const comPortas = ["deliveryos-proxy", "deliveryos-api", "deliveryos-backup", "deliveryos-postgres-restore"].filter((s) =>
     /^\s+ports:/m.test(serviceBlock(s)),
   );
   assert.deepEqual(comPortas, ["deliveryos-proxy"], `serviços publicando porta: ${comPortas}`);
@@ -124,7 +124,7 @@ test("nenhuma porta sensível é publicada", () => {
 });
 
 test("todos os serviços estão na rede privada", () => {
-  for (const s of ["deliveryos-proxy", "deliveryos-api", "deliveryos-backup"]) {
+  for (const s of ["deliveryos-proxy", "deliveryos-api", "deliveryos-backup", "deliveryos-postgres-restore"]) {
     assert.match(serviceBlock(s), /networks:\s*\[interna\]/, `${s} fora da rede interna`);
   }
 });
@@ -149,6 +149,37 @@ test("o backup lê o volume somente-leitura", () => {
   // Backup com escrita no volume de dados poderia corromper o que deveria
   // proteger.
   assert.match(serviceBlock("deliveryos-backup"), /entregas_dados:\/dados:ro/);
+});
+
+test("backup acompanha o backend: file usa tar e postgres usa pg_dump", () => {
+  const backup = serviceBlock("deliveryos-backup");
+  assert.match(backup, /image:\s*postgres:16-bookworm/);
+  assert.match(backup, /ENTREGAS_STORAGE_BACKEND:/);
+  assert.match(backup, /DELIVERYOS_DATABASE_URL:/);
+  assert.match(backup, /case "\$\$ENTREGAS_STORAGE_BACKEND"/);
+  assert.match(backup, /tar -czf "\/backups\/entregas-file-/);
+  assert.match(backup, /pg_dump/);
+  assert.match(backup, /--format=custom/);
+  assert.match(backup, /entregas-pg-\$\$ts\.dump/);
+  assert.match(backup, /exit 78/);
+});
+
+test("restore PostgreSQL é manutenção fail-closed e nunca mira o operacional", () => {
+  const restore = serviceBlock("deliveryos-postgres-restore");
+  assert.match(restore, /profiles:\s*\["maintenance"\]/);
+  assert.match(restore, /restart:\s*"no"/);
+  assert.match(restore, /ENTREGAS_RESTORE_CONFIRM/);
+  assert.match(restore, /ENTREGAS_RESTORE_DATABASE_URL/);
+  assert.match(restore, /ENTREGAS_RESTORE_SNAPSHOT/);
+  assert.match(restore, /ENTREGAS_RESTORE_CONFIRM" = "YES"/);
+  assert.match(restore, /!= "\$\$DELIVERYOS_DATABASE_URL"/);
+  assert.match(restore, /banco alvo não está vazio/);
+  assert.match(restore, /pg_restore/);
+  assert.match(restore, /--no-owner/);
+  assert.match(restore, /--no-privileges/);
+  assert.match(restore, /--exit-on-error/);
+  assert.match(restore, /entregas_backups:\/backups:ro/);
+  assert.equal(/^\s+ports:/m.test(restore), false);
 });
 
 test("configurações externas são montadas somente-leitura", () => {
@@ -318,6 +349,14 @@ test("nenhum segredo real nos arquivos de implantação", () => {
 test("o exemplo de ambiente não traz domínio nem coordenada real", () => {
   assert.match(envExample, /exemplo\.com\.br/, "o domínio precisa ser claramente de exemplo");
   assert.equal(/-?\d{1,3}\.\d{4,}/.test(envExample), false, "coordenada no exemplo");
+});
+
+test("o contrato de ambiente mantém file default e documenta postgres/restore sem segredo", () => {
+  assert.match(envExample, /^ENTREGAS_STORAGE_BACKEND=file$/m);
+  assert.match(envExample, /# DELIVERYOS_DATABASE_URL=postgres:\/\/deliveryos_entregas_pilot:SENHA@/);
+  assert.match(envExample, /# ENTREGAS_RESTORE_DATABASE_URL=/);
+  assert.match(envExample, /# ENTREGAS_RESTORE_SNAPSHOT=/);
+  assert.match(envExample, /# ENTREGAS_RESTORE_CONFIRM=YES/);
 });
 
 test("o compose lê segredo de arquivo não versionado", () => {
