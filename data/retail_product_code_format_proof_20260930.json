@@ -1,0 +1,39 @@
+{
+  "schema": "deliveryos.retail-product-code-format-proof.v1",
+  "captured_date": "2026-09-30",
+  "store": "0001 - TATA ITAIM",
+  "sources": {
+    "products_xlsx_sha256": "f4cb1569a4c8752b831db97c2d5444bfea8c0d6fb06c0c79d83ada3bb0722737",
+    "printers_xlsx_sha256": "c998375c36ee3060836ba7ad46af0a9f807f5a307e55dee40cf67881b7a40ba1"
+  },
+  "products": {
+    "rows": 463,
+    "raw_code_length_10": 463,
+    "raw_code_alphanumeric": 19,
+    "canonicalization_pattern": "1-2-2-3-2",
+    "canonicalized_match_against_routing_map": 463,
+    "missing_from_routing_map": 0,
+    "extra_in_routing_map": 0
+  },
+  "examples": [
+    {
+      "raw": "9150007500",
+      "canonical": "9.15.00.075.00"
+    },
+    {
+      "raw": "2001201A00",
+      "canonical": "2.00.12.01A.00"
+    }
+  ],
+  "conclusion": "RAW_OR_DOTTED_PRODUCT_CODE_CAN_BE_DETERMINISTICALLY_NORMALIZED_FOR_CURRENT_RETAIL_EXPORT",
+  "limits": [
+    "This proves equivalence for the 463-row Retail export, not the exact runtime serialization returned by a future live Odhen read.",
+    "The resolver accepts both forms so that runtime formatting does not need to be assumed."
+  ],
+  "effects": {
+    "teknisa_write": false,
+    "print": false,
+    "fiscal_action": false,
+    "database_write": false
+  }
+}
