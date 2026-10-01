@@ -829,15 +829,19 @@ server.listen(PORT, BIND, () => {
   console.log(`  dados:  ${dataDir}`);
   console.log("  multi-instância: NÃO · GPS prod: NÃO · Copiloto: NÃO");
 
-  const mins = cfg.backup.auto_interval_minutes || 30;
-  autoBackupTimer = setInterval(
-    () => {
-      createBackup(facade.dataPath, backupDir, cfg.backup.retain_count, log);
-    },
-    mins * 60 * 1000,
-  );
-  // backup inicial
-  createBackup(facade.dataPath, backupDir, cfg.backup.retain_count, log);
+  if (facade.supportsFileBackup) {
+    const mins = cfg.backup.auto_interval_minutes || 30;
+    autoBackupTimer = setInterval(
+      () => {
+        createBackup(facade.dataPath, backupDir, cfg.backup.retain_count, log);
+      },
+      mins * 60 * 1000,
+    );
+    // backup inicial do backend arquivo.
+    createBackup(facade.dataPath, backupDir, cfg.backup.retain_count, log);
+  } else {
+    console.log("  backup: gerenciado pelo backend externo");
+  }
 });
 
 process.on("SIGINT", () => {
