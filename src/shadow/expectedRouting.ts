@@ -67,11 +67,29 @@ export function projectExpectedRouting(
 ): ExpectedRoutingProjection {
   const blocking = new Set<string>();
 
+  if (routing.schema !== "deliveryos.odhen.product-routing.compact.v1") {
+    blocking.add("ROUTING_SCHEMA_MISMATCH");
+  }
+  if (printerMap.schema !== "deliveryos.runtime-printer-map.v1") {
+    blocking.add("PRINTER_MAP_SCHEMA_MISMATCH");
+  }
   if (!Array.isArray(order.items) || order.items.length === 0) {
     blocking.add("NO_ITEMS");
   }
 
-  const printers = new Map(printerMap.mappings.map((x) => [x.printer_code, x]));
+  const printers = new Map<string, RuntimePrinterEntry>();
+  for (const printer of printerMap.mappings) {
+    const code = String(printer.printer_code ?? "").trim();
+    if (!code) {
+      blocking.add("INVALID_PRINTER_CODE");
+      continue;
+    }
+    if (printers.has(code)) {
+      blocking.add(`DUPLICATE_PRINTER_CODE_${code}`);
+      continue;
+    }
+    printers.set(code, printer);
+  }
   const items: ExpectedRoutingItem[] = [];
   const orderTargets = new Map<string, ExpectedRoutingTarget>();
   const seenItemIndexes = new Set<number>();
