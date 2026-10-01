@@ -13,6 +13,10 @@ import { join, extname, isAbsolute } from "node:path";
 import { loadPilotConfig, resolveBanner, findUserByToken } from "../src/entregas/pilot/pilot-config";
 import { createPilotLogger } from "../src/entregas/pilot/pilot-log";
 import { PilotApplicationFacade } from "../src/entregas/pilot/pilot-facade";
+import {
+  createPilotPersistenceBackend,
+  type PilotPersistenceBackend,
+} from "../src/entregas/pilot/pilot-persistence-backend";
 import type { ActorContext } from "../src/entregas/operational/auth";
 import {
   createBackup,
@@ -75,7 +79,8 @@ const log = createPilotLogger(dataDir);
  * Por isso a config entregue à facade carrega o diretório JÁ RESOLVIDO.
  */
 const cfgResolved = { ...cfg, data_dir: dataDir };
-const facade = new PilotApplicationFacade(cfgResolved, log);
+let persistenceBackend: PilotPersistenceBackend | null = null;
+let facade: PilotApplicationFacade;
 const backupDir = join(dataDir, cfg.backup.dir || "backups");
 /*
  * Contrato de ambiente. Em modo remoto ele EXIGE credencial por variável,
@@ -383,7 +388,8 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
         shell: false,
         copiloto: false,
         gps_production: gpsFlags.gps_capture_enabled,
-        multi_instance: false,
+        multi_instance: persistenceBackend?.multi_instance ?? false,
+        storage_backend: persistenceBackend?.kind ?? "booting",
         api_version: DEVICE_API_VERSION,
         https: httpsResolution.enabled,
         lan: bindResolution.exposedToLan,
@@ -805,50 +811,94 @@ const server = httpsResolution.enabled
     )
   : http.createServer(handler);
 
-server.listen(PORT, BIND, () => {
-  log.info(
-    "server_started",
-    `Piloto iniciado na unidade ${cfg.unit_name}.`,
-    `http://${BIND}:${PORT}/console/`,
+async function startServer(): Promise<void> {
+  persistenceBackend = await createPilotPersistenceBackend({
+    env: process.env,
+    data_dir: dataDir,
+    unit_id: cfg.unit_id,
+  });
+  facade = new PilotApplicationFacade(
+    cfgResolved,
+    log,
+    persistenceBackend.storage,
+    persistenceBackend.ready_orders,
   );
-  const scheme = httpsResolution.enabled ? "https" : "http";
-  console.log(startupSummary(httpsResolution, bindResolution, PORT));
-  // Em nuvem o banner não pode dizer 127.0.0.1: quem lê o log precisa saber
-  // o endereço real pelo qual o serviço responde.
-  const shown = cloud.publicUrl || `${scheme}://${cloud.remote ? BIND : "127.0.0.1"}:${PORT}`;
-  console.log(`ENTREGAS PILOTO ${shown}/console/`);
-  console.log(`  mobile: ${shown}/rider-mobile/`);
-  console.log(`  ifood:  ${shown}/ifood-handoff/`);
-  console.log(`  config: ${JSON.stringify(describeCloudConfig(cloud))}`);
-  console.log(`  aparelhos autorizados: ${authorizedDevices.length}`);
-  console.log(
-    `  unidade configurada: ${unitConfig.ok ? "SIM" : "NAO (retorno automatico desligado)"}`,
-  );
-  console.log(`  termo publicavel: ${termPublishable() ? "SIM" : "NAO (GPS bloqueado)"}`);
-  console.log(`  ${banner}`);
-  console.log(`  dados:  ${dataDir}`);
-  console.log("  multi-instância: NÃO · GPS prod: NÃO · Copiloto: NÃO");
 
-  if (facade.supportsFileBackup) {
-    const mins = cfg.backup.auto_interval_minutes || 30;
-    autoBackupTimer = setInterval(
-      () => {
-        createBackup(facade.dataPath, backupDir, cfg.backup.retain_count, log);
-      },
-      mins * 60 * 1000,
+  server.listen(PORT, BIND, () => {
+    log.info(
+      "server_started",
+      `Piloto iniciado na unidade ${cfg.unit_name}.`,
+      `http://${BIND}:${PORT}/console/`,
     );
-    // backup inicial do backend arquivo.
-    createBackup(facade.dataPath, backupDir, cfg.backup.retain_count, log);
-  } else {
-    console.log("  backup: gerenciado pelo backend externo");
-  }
-});
+    const scheme = httpsResolution.enabled ? "https" : "http";
+    console.log(startupSummary(httpsResolution, bindResolution, PORT));
+    // Em nuvem o banner não pode dizer 127.0.0.1: quem lê o log precisa saber
+    // o endereço real pelo qual o serviço responde.
+    const shown = cloud.publicUrl || `${scheme}://${cloud.remote ? BIND : "127.0.0.1"}:${PORT}`;
+    console.log(`ENTREGAS PILOTO ${shown}/console/`);
+    console.log(`  mobile: ${shown}/rider-mobile/`);
+    console.log(`  ifood:  ${shown}/ifood-handoff/`);
+    console.log(`  config: ${JSON.stringify(describeCloudConfig(cloud))}`);
+    console.log(`  aparelhos autorizados: ${authorizedDevices.length}`);
+    console.log(
+      `  unidade configurada: ${unitConfig.ok ? "SIM" : "NAO (retorno automatico desligado)"}`,
+    );
+    console.log(`  termo publicavel: ${termPublishable() ? "SIM" : "NAO (GPS bloqueado)"}`);
+    console.log(`  ${banner}`);
+    console.log(`  dados:  ${dataDir}`);
+    console.log(
+      `  storage: ${persistenceBackend?.kind ?? "UNKNOWN"} · multi-instância: ${persistenceBackend?.multi_instance ? "SIM" : "NAO"} · GPS prod: NÃO · Copiloto: NÃO`,
+    );
+    if (persistenceBackend?.database_role) {
+      console.log(`  papel do banco: ${persistenceBackend.database_role}`);
+    }
 
-process.on("SIGINT", () => {
+    if (facade.supportsFileBackup) {
+      const mins = cfg.backup.auto_interval_minutes || 30;
+      autoBackupTimer = setInterval(
+        () => {
+          createBackup(facade.dataPath, backupDir, cfg.backup.retain_count, log);
+        },
+        mins * 60 * 1000,
+      );
+      // backup inicial do backend arquivo.
+      createBackup(facade.dataPath, backupDir, cfg.backup.retain_count, log);
+    } else {
+      console.log("  backup: gerenciado pelo backend externo");
+    }
+  });
+}
+
+let shuttingDown = false;
+async function shutdown(signal: string): Promise<void> {
+  if (shuttingDown) return;
+  shuttingDown = true;
   if (autoBackupTimer) clearInterval(autoBackupTimer);
-  if (facade.supportsFileBackup) {
+  if (facade?.supportsFileBackup) {
     createBackup(facade.dataPath, backupDir, cfg.backup.retain_count, log);
   }
-  log.info("server_stopped", "Servidor do piloto encerrado.");
+  log.info("server_stopped", `Servidor do piloto encerrando por ${signal}.`);
+  await new Promise<void>((resolve) => {
+    if (!server.listening) return resolve();
+    server.close(() => resolve());
+  });
+  await persistenceBackend?.close().catch((e) => {
+    console.error(
+      "[piloto] erro ao fechar backend:",
+      e instanceof Error ? e.message : String(e),
+    );
+  });
   process.exit(0);
+}
+
+process.on("SIGINT", () => void shutdown("SIGINT"));
+process.on("SIGTERM", () => void shutdown("SIGTERM"));
+
+void startServer().catch(async (e) => {
+  console.error(
+    "[piloto] falha fatal no boot de persistência:",
+    e instanceof Error ? e.message : String(e),
+  );
+  await persistenceBackend?.close().catch(() => undefined);
+  process.exit(78);
 });
