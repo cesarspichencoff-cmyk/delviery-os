@@ -12,6 +12,7 @@ export interface RoutingOrderInput {
 
 export interface ProductRoutingTable {
   schema: "deliveryos.odhen.product-routing.compact.v1";
+  store?: string;
   products: Record<string, string[]>;
 }
 
@@ -25,6 +26,7 @@ export interface RuntimePrinterEntry {
 
 export interface RuntimePrinterMap {
   schema: "deliveryos.runtime-printer-map.v1";
+  store?: string;
   mappings: RuntimePrinterEntry[];
 }
 
@@ -72,6 +74,9 @@ export function projectExpectedRouting(
   }
   if (printerMap.schema !== "deliveryos.runtime-printer-map.v1") {
     blocking.add("PRINTER_MAP_SCHEMA_MISMATCH");
+  }
+  if (routing.store && printerMap.store && routing.store !== printerMap.store) {
+    blocking.add("STORE_MISMATCH");
   }
   if (!Array.isArray(order.items) || order.items.length === 0) {
     blocking.add("NO_ITEMS");
