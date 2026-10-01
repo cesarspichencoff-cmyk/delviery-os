@@ -1132,3 +1132,22 @@ Estado atual: **feed durável single-instance = CODE_READY + TEST_PASS; produç�
 > banco operacional, selecionar `ENTREGAS_STORAGE_BACKEND=postgres` no ambiente de implantação e provar
 > o comportamento no ambiente implantado. `consumer_live`/UI live continuam desligados e não houve deploy.
 
+> **SUCESSÃO — 2026-10-01 · CUTOVER FILE → POSTGRESQL PROVADO.**
+>
+> O risco de ligar o backend PostgreSQL e aparecer um piloto vazio deixou de ser uma lacuna de código.
+> Existe importador one-shot transacional de `store.json + ready_orders.json`, com `plan` read-only,
+> destino obrigatoriamente vazio, preservação explícita de versões e ordem, detecção de colisões globais,
+> recusa de ready-order já materializado como delivery e verificação dentro da própria transação antes do COMMIT.
+>
+> PostgreSQL 17 real: `PILOT_STORAGE_CUTOVER 7/7 PASS`. Uma falha deliberada tardia na outbox ocorreu
+> depois de várias inserções e deixou o destino **inteiramente zerado**, provando rollback do conjunto.
+> A continuidade foi provada: Trip importada em version=2 foi atualizada normalmente pelo PgUOW para version=3.
+>
+> A CLI operacional também é fail-closed: `plan` não escreve; `apply` exige `--source-stopped=YES` e o
+> fingerprint exato produzido pelo plan, relendo a fonte imediatamente antes da escrita. O utilitário entra no
+> `dist`; nenhum apply foi executado em banco operacional.
+>
+> **Próximo bloqueio de implantação:** backup/restore. O sidecar atual que arquiva `/dados` só protege o backend
+> arquivo. Em modo PostgreSQL ele seria um falso sinal de segurança e não pode ser considerado backup da verdade
+> operacional. Antes de qualquer cutover real, precisamos de backup PostgreSQL com restore realmente provado.
+
