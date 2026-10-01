@@ -225,6 +225,41 @@ assert.ok(
   ),
 );
 
+const unclassifiedOrderObservationPlan = planProductionPrintIntents(
+  projection,
+  {
+    tata_sequence: "037",
+    teknisa_sequence: "18452",
+    ifood_sequence: "A1B2C3",
+    order_time: "19:42",
+    service_resolution: {
+      service: "DINNER",
+      evidence: "REAL_OBSERVED",
+      source_ref: "odhen:explicit-service-context",
+    },
+    order_observations: [{
+      value: "TEXTO ORDER-LEVEL AINDA NAO CLASSIFICADO",
+      source_ref: "odhen:DSOBSCOMANDA",
+      relevance: "UNKNOWN",
+      proof: "REAL_OBSERVED",
+    }],
+    template_version: "production-ticket-v2-shadow",
+    ticket_items: [],
+  },
+  calibration,
+);
+assert.equal(unclassifiedOrderObservationPlan.ready_for_shadow_payload, false);
+assert.ok(
+  unclassifiedOrderObservationPlan.blocking_reasons.includes(
+    "ORDER_OBSERVATION_RELEVANCE_UNPROVEN_0",
+  ),
+);
+assert.ok(
+  unclassifiedOrderObservationPlan.print_intents.every(
+    (x) => x.order_observations.length === 0,
+  ),
+);
+
 const fingerprintBase = planProductionPrintIntents(
   projection,
   {
