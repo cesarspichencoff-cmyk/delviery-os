@@ -504,3 +504,46 @@ a identidade SQL do processo ainda não foram ativados no servidor. Nenhum deplo
 migration foi aplicada à branch operacional do Neon e `entregas.copiloto_live_connection` continua
 `false`.
 
+## 25. Servidor do piloto com PostgreSQL opt-in e duas instâncias — 2026-10-01
+
+O servidor deixou de estar estruturalmente preso ao backend de arquivo. A fábrica
+`createPilotPersistenceBackend` mantém `file` como default e oferece `postgres` somente por opt-in
+explícito. O servidor não começa a escutar antes de o backend terminar o preflight.
+
+No modo PostgreSQL, o boot exige:
+
+- `DELIVERYOS_DATABASE_URL` explícita e política de TLS válida;
+- usuário do banco exatamente `deliveryos_entregas_pilot`;
+- papel não administrativo;
+- migrations `0006`, `0007` e `0008` registradas;
+- unidade configurada e ativa;
+- privilégios operacionais mínimos, sem poder de mutar `platform.schema_migration`.
+
+O papel `deliveryos_entregas_pilot` foi adicionado à matriz de privilégios, sem senha versionada.
+Ele opera somente o estado `entregas.*` necessário e lê apenas o mínimo de `identity.unit` e
+`platform.schema_migration` para preflight. Não recebe autoridade sobre `platform.event_log`,
+`identity.device`, jobs ou auditoria.
+
+### Prova ponta a ponta
+
+GitHub Actions, PostgreSQL 17, dois processos reais de `entregas_pilot_server` em portas diferentes,
+diretórios locais diferentes e a mesma base:
+
+- `PILOT_POSTGRES_SERVER_CLUSTER`: **6/6 PASS**;
+- o próprio papel mínimo recusou leitura de `platform.event_log`, mutação de migrations e cadastro de aparelho;
+- ambos reportaram `storage_backend=postgres` e `multi_instance=true`;
+- registro concorrente do mesmo ready-order teve exatamente um vencedor;
+- viagem criada na instância A apareceu imediatamente no snapshot da B;
+- duas alterações concorrentes da mesma Trip não produziram lost update; eventual perdedor repetiu sobre a versão nova e convergiu;
+- A, B e PostgreSQL terminaram em `version=3`, três deliveries e fila vazia.
+
+No mesmo commit: PgUOW **8/8**, ready-orders **7/7**, storage abstraction **3/3**, persistence-recreate
+**17/17**, session isolation **18/18**, deploy-audit **36/36**, governança GREEN e `git diff --check` PASS.
+
+### Fronteira de efeito
+
+Isto prova **CODE_READY + TEST_PASS multi-instância**, não implantação. O ambiente oficial continua sem
+`ENTREGAS_STORAGE_BACKEND=postgres`, não existe senha real configurada para o novo papel, migrations
+0006–0008 não foram aplicadas ao banco operacional por esta etapa e nenhum deploy foi executado.
+Consumer live e UI live permanecem desligados e exigem autorização própria.
+
