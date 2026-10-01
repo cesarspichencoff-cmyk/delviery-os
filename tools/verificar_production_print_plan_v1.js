@@ -377,6 +377,83 @@ assert.deepEqual(
   ["00002", "00004"],
 );
 
+const calibratedRegistry = structuredClone(calibration);
+for (const entry of calibratedRegistry.printers) {
+  entry.calibration = {
+    actual_device_variant: "TM-T20_STORE_PROVEN",
+    actual_media_width_mm: 80,
+    printable_width_dots: 576,
+    windows_queue_name: "STORE_QUEUE_PROVEN",
+    windows_driver_name: "STORE_DRIVER_PROVEN",
+    windows_port_name: "STORE_PORT_PROVEN",
+    direct_network_print_port: 9100,
+    transport_selected: "STORE_TRANSPORT_PROVEN",
+    character_mode: "STORE_CHARACTER_MODE_PROVEN",
+    accent_test: "PASS",
+    cutter_test: "PASS",
+    feed_after_cut_test: "PASS",
+    bold_double_size_legibility: "PASS",
+    density_legibility: "PASS",
+    paperout_observation: "PASS",
+    cover_open_observation: "PASS",
+    offline_observation: "PASS",
+    spooler_job_observation: "PASS",
+    one_physical_ticket_proof: "PASS",
+  };
+}
+
+const calibratedPlan = planProductionPrintIntents(
+  projection,
+  {
+    tata_sequence: "037",
+    teknisa_sequence: "18452",
+    ifood_sequence: "A1B2C3",
+    order_time: "19:42",
+    service_resolution: {
+      service: "DINNER",
+      evidence: "HUMAN_CONFIRMED_RULE",
+      source_ref: "human:cesar:service-rule-2026-09-30",
+    },
+    template_version: "production-ticket-v2-shadow",
+    ticket_items: [],
+  },
+  calibratedRegistry,
+);
+assert.ok(
+  calibratedPlan.print_intents.every(
+    (x) => x.calibration_status === "READY_FOR_RENDER_CALIBRATION_PROVEN",
+  ),
+);
+assert.equal(calibratedPlan.ready_for_physical_print, false);
+
+const coverOpenUnknownRegistry = structuredClone(calibratedRegistry);
+coverOpenUnknownRegistry.printers.find(
+  (x) => x.printer_code === "00003",
+).calibration.cover_open_observation = "UNKNOWN";
+const coverOpenUnknownPlan = planProductionPrintIntents(
+  projection,
+  {
+    tata_sequence: "037",
+    teknisa_sequence: "18452",
+    ifood_sequence: "A1B2C3",
+    order_time: "19:42",
+    service_resolution: {
+      service: "DINNER",
+      evidence: "HUMAN_CONFIRMED_RULE",
+      source_ref: "human:cesar:service-rule-2026-09-30",
+    },
+    template_version: "production-ticket-v2-shadow",
+    ticket_items: [],
+  },
+  coverOpenUnknownRegistry,
+);
+assert.equal(
+  coverOpenUnknownPlan.print_intents.find(
+    (x) => x.printer.printer_code === "00003",
+  ).calibration_status,
+  "CALIBRATION_REQUIRED",
+);
+
 assert.deepEqual(plan.effects, {
   print: false,
   spooler_write: false,
