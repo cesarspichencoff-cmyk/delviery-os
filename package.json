@@ -21,7 +21,8 @@
     "verificar:routing-config": "node tools/verificar_odhen_product_routing_config_v1.js",
     "verificar:expected-routing": "tsc && node tools/verificar_expected_routing_v1.js",
     "verificar:real-routing-sample": "node tools/verificar_real_sale_routing_sample_v1.js",
-    "verificar:shadow-routing-chain": "tsc && node tools/verificar_shadow_odhen_routing_chain_v1.js"
+    "verificar:shadow-routing-chain": "tsc && node tools/verificar_shadow_odhen_routing_chain_v1.js",
+    "verificar:odhen-routing-readonly": "tsc && node tools/verificar_odhen_routing_readonly_v1.js"
   },
   "devDependencies": {
     "@types/node": "20.14.10",
