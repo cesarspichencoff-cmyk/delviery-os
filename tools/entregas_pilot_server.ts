@@ -682,7 +682,7 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
         label: string;
         channel?: string;
       };
-      return reply(200, facade.registerReadyOrder(body.order_ref, body.label, body.channel));
+      return reply(200, await facade.registerReadyOrder(body.order_ref, body.label, body.channel));
     }
 
     if (url.pathname === "/api/command" && req.method === "POST") {
@@ -709,12 +709,26 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
           human: "Só o responsável pelo piloto pode gerar backup.",
         });
       }
+      if (!facade.supportsFileBackup) {
+        return reply(409, {
+          ok: false,
+          code: "backup_backend_managed",
+          human: "O backup deste backend é gerenciado pelo banco de dados.",
+        });
+      }
       const r = createBackup(facade.dataPath, backupDir, cfg.backup.retain_count, log);
       return reply(r.ok ? 200 : 500, r);
     }
 
     if (url.pathname === "/api/backups" && req.method === "GET") {
       if (!actor) return reply(401, { ok: false, human: NO_SESSION });
+      if (!facade.supportsFileBackup) {
+        return reply(409, {
+          ok: false,
+          code: "backup_backend_managed",
+          human: "O histórico de backup deste backend é gerenciado pelo banco de dados.",
+        });
+      }
       return reply(200, { backups: listBackups(backupDir) });
     }
 
@@ -723,6 +737,13 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
         return reply(403, {
           ok: false,
           human: "Só o administrador do piloto pode restaurar.",
+        });
+      }
+      if (!facade.supportsFileBackup) {
+        return reply(409, {
+          ok: false,
+          code: "restore_backend_managed",
+          human: "A restauração deste backend é gerenciada pelo banco de dados.",
         });
       }
       const body = JSON.parse(await readBody(req)) as { file: string };
@@ -808,20 +829,26 @@ server.listen(PORT, BIND, () => {
   console.log(`  dados:  ${dataDir}`);
   console.log("  multi-instância: NÃO · GPS prod: NÃO · Copiloto: NÃO");
 
-  const mins = cfg.backup.auto_interval_minutes || 30;
-  autoBackupTimer = setInterval(
-    () => {
-      createBackup(facade.dataPath, backupDir, cfg.backup.retain_count, log);
-    },
-    mins * 60 * 1000,
-  );
-  // backup inicial
-  createBackup(facade.dataPath, backupDir, cfg.backup.retain_count, log);
+  if (facade.supportsFileBackup) {
+    const mins = cfg.backup.auto_interval_minutes || 30;
+    autoBackupTimer = setInterval(
+      () => {
+        createBackup(facade.dataPath, backupDir, cfg.backup.retain_count, log);
+      },
+      mins * 60 * 1000,
+    );
+    // backup inicial do backend arquivo.
+    createBackup(facade.dataPath, backupDir, cfg.backup.retain_count, log);
+  } else {
+    console.log("  backup: gerenciado pelo backend externo");
+  }
 });
 
 process.on("SIGINT", () => {
   if (autoBackupTimer) clearInterval(autoBackupTimer);
-  createBackup(facade.dataPath, backupDir, cfg.backup.retain_count, log);
+  if (facade.supportsFileBackup) {
+    createBackup(facade.dataPath, backupDir, cfg.backup.retain_count, log);
+  }
   log.info("server_stopped", "Servidor do piloto encerrado.");
   process.exit(0);
 });
