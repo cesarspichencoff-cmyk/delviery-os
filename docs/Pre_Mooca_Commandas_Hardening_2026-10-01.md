@@ -27,6 +27,12 @@ efeito fiscal ou cutover.
   58 mm / Font A (35 colunas), sem bytes ESC/POS e sem efeito físico;
 - destino Sushi sem caixa de montagem bloqueia o preview;
 - cada intenção semântica possui fingerprint SHA-256 determinístico;
+- o handoff DeliveryOS -> TATÁ OS carrega explicitamente `semantic_payload_hash`
+  derivado do mesmo fingerprint e bloqueia divergência entre intent/ticket;
+- serviço e observações order-level também são comparados no handoff, evitando
+  que o payload mude entre planejamento e criação do PrintRequest;
+- o escopo da sequência TATÁ não é inventado: sem scope_id + evidência +
+  source_ref o planner bloqueia; a política real de reset continua UNKNOWN;
 - replay do mesmo conteúdo preserva fingerprint;
 - mudança material de conteúdo muda fingerprint;
 - tentativa anterior ambígua ou observada no spooler bloqueia retry automático;
@@ -53,6 +59,8 @@ operação TATÁ:
 No HEAD deste pacote, em worktree limpo:
 
 - TypeScript typecheck: PASS
+- production-parallel-v1: PASS, incluindo gate do escopo da sequência TATÁ
+- tata-os-print-handoff-v1: PASS, incluindo semantic hash/fingerprint e mismatches
 - production-ticket-e2e-shadow-v1: PASS
   - snapshot Odhen sintético minimizado;
   - zero vazamento do marcador privado;
@@ -81,6 +89,23 @@ No HEAD deste pacote, em worktree limpo:
 9. Persistir/correlacionar o ledger de tentativas no runtime correto antes de
    permitir retries automáticos.
 10. Fazer uma única prova física controlada somente após autorização explícita.
+
+## Preflight único preparado para o CAIXA_MOOCA
+
+`tools/mooca_commandas_preflight_readonly.ps1` compõe, sem ler pedido real:
+
+1. revalidação de fonte/código Odhen e tokens necessários;
+2. prova de permissão SQL integrada estritamente read-only;
+3. inventário read-only de filas/driver/porta das impressoras.
+
+O gate só marca `ready_for_one_minimized_order_read_candidate=true` quando
+fonte e SQL passam. Ele mantém explicitamente como false:
+`observation_semantics_proven`, `live_order_read_performed` e
+`physical_print_authorized`.
+
+Prova adversarial no Foxxy com raiz Odhen e SQL propositalmente inválidos:
+relatório gerado com gate=false e processo **exit code 4**, comprovando fail-closed.
+O verificador estático do orquestrador também passa.
 
 ## Fronteira
 
