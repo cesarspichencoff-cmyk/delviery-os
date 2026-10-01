@@ -79,6 +79,15 @@ export function buildTataOsPrintHandoff(input: {
   if (input.intent.printer.printer_name !== input.ticket.destination.printer_name) {
     blocking.add("INTENT_TICKET_PRINTER_NAME_MISMATCH");
   }
+  if (input.intent.identifiers.ifood_sequence !== input.ticket.identifiers.ifood_sequence) {
+    blocking.add("INTENT_TICKET_IFOOD_SEQUENCE_MISMATCH");
+  }
+  if (input.intent.identifiers.teknisa_sequence !== input.ticket.identifiers.teknisa_sequence) {
+    blocking.add("INTENT_TICKET_TEKNISA_SEQUENCE_MISMATCH");
+  }
+  if (input.intent.identifiers.tata_sequence !== input.ticket.identifiers.tata_sequence) {
+    blocking.add("INTENT_TICKET_TATA_SEQUENCE_MISMATCH");
+  }
 
   for (const [field, value] of Object.entries({
     operation_id: input.operation_id,
