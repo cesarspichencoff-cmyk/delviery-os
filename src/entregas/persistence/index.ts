@@ -1,4 +1,4 @@
 export * from "./ports";
 export * from "./memory-uow";
 export * from "./file-store";
-export * from "./pg-uow";\n
+export * from "./pg-uow";
