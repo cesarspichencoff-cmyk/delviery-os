@@ -42,9 +42,9 @@ for (const required of [
 }
 
 const excludeGuardLines = script
-  .split(/\\r?\\n/)
+  .split(/\r?\n/)
   .filter((line) => line.includes("-notmatch"));
-for (const folder of ["Log(", "Logs(", "Temp(", "cache(", "node_modules("]) {
+for (const folder of ["Log", "Logs", "Temp", "cache", "node_modules"]) {
   assert.ok(
     excludeGuardLines.some((line) => line.includes(folder)),
     "missing excluded path guard: " + folder,
