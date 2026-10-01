@@ -1,0 +1,50 @@
+name: pilot-postgres-cluster-proof
+
+on:
+  push:
+    branches:
+      - tmp/pilot-postgres-wiring-20261001
+
+permissions:
+  contents: read
+
+jobs:
+  pilot-cluster:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    env:
+      DELIVERYOS_PG_URL: postgresql://postgres:postgres@127.0.0.1:5432/postgres
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm run test:entregas:pilot-postgres-cluster
+      - run: npm run test:entregas:pg-uow
+      - run: npm run test:entregas:ready-orders
+      - run: npm run test:entregas:pilot-storage
+      - run: npm run test:entregas:persistence-recreate
+      - run: npm run test:entregas:session
+      - run: npm run test:entregas:deploy-audit
+      - run: npm run test:platform:governanca
+      - run: git diff --check
