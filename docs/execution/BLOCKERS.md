@@ -1054,3 +1054,19 @@ Para remover este bloqueio por etapas:
 4. somente depois solicitar autorização humana separada para ativação live.
 
 Estado atual: **feed durável single-instance = CODE_READY + TEST_PASS; produção multi-instância = NOT_IMPLEMENTED; ativação = NÃO AUTORIZADA.**
+
+> **SUCESSÃO — 2026-09-30 · ETAPAS 1 E 2 FECHADAS.**
+>
+> A identidade mínima própria foi implementada e provada sem ampliar `deliveryos_async`:
+> `deliveryos_source_ingest` consegue somente a escrita transacional necessária em
+> `platform.event_log` + `platform.outbox`; leitura geral, mutação, DDL, aparelho, job,
+> auditoria e migration são recusados por privilégio. PostgreSQL real: **4/4 PASS**.
+>
+> O wiring local/piloto com feed durável de arquivo e kill switch também foi provado em
+> PostgreSQL real: **6/6 PASS**. Kill switch ausente/STOP = zero escrita; RUN consome o
+> `store.json`; restart não duplica; eventos acumulados durante STOP entram somente após RUN.
+> Crash/replay do consumer no banco: **3/3 PASS**.
+>
+> **Restam somente:** (a) substituir a persistência/feed single-instance por uma fronteira
+> transacional/cluster-safe para produção multi-instância; (b) autorização humana separada
+> para qualquer ativação live/deploy. `consumer_live`/UI/produção continuam desligados.

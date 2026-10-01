@@ -385,3 +385,36 @@ Regras:
 Gate: `test:entregas:source-mode` = **5/5 PASS**.
 
 Para um piloto que vá alimentar a ponte causal, a configuração operacional precisa declarar o modo conscientemente. Copiar configuração antiga sem o campo continua seguro: o consumer isola os eventos, não os chama de reais.
+
+## 21. Source-ingest com identidade mínima e wiring piloto provados — 2026-09-30
+
+A ponte live-capable deixou de depender de ampliar `deliveryos_async`. Existe agora um processo separado, `entregas-source-ingest`, com configuração própria, OFF por padrão e sem import pelo `async-runtime`.
+
+Autoridade SQL do papel `deliveryos_source_ingest`:
+
+- `USAGE` no schema `platform`;
+- `INSERT` em `platform.event_log` e `platform.outbox`;
+- `SELECT` apenas nas colunas mínimas necessárias ao conflito/idempotência do writer;
+- sem leitura geral do event log/outbox;
+- sem `UPDATE`, `DELETE`, `TRUNCATE` ou DDL;
+- sem acesso a `identity.device`, `platform.job`, `platform.audit` ou `platform.schema_migration`;
+- não é superuser, owner, createrole nem createdb.
+
+Prova PostgreSQL real em branch efêmera Neon São Paulo, isolada da branch operacional:
+
+- `SOURCE_INGEST_ROLE_PG`: **4/4 PASS**;
+- `SOURCE_INGEST_PILOT_WIRING_PG`: **6/6 PASS**;
+- `ENTREGAS_LIVE_CONSUMER_PG`: **3/3 PASS**;
+- `SOURCE_INGEST_CONFIG`: **9/9 PASS**;
+- ingest-service: **17/17**;
+- live consumer: **12/12**;
+- durable feed: **9/9**;
+- governança: **GREEN**.
+
+O wiring provado é: `ApplicationService -> store.json commitado -> durable feed -> kill switch -> consumer -> PgTransactionalWriter sob papel mínimo -> platform.event_log/outbox`.
+
+Com kill switch ausente ou `STOP`, zero fatos são escritos e o checkpoint não avança. Com `RUN`, somente lifecycle semanticamente seguro entra; eventos por Delivery ficam isolados. Restart no mesmo checkpoint fica idle e não duplica. Evento novo acumulado durante STOP entra somente após RUN.
+
+### Fronteira que permanece fechada
+
+`FileUnitOfWork` e `store.json` continuam single-instance. Isso é suficiente para o piloto local provado, mas **não é transporte de produção multi-instância/cluster-safe**. A flag `entregas.copiloto_live_connection` continua `false`; não houve wiring no `async-runtime`, deploy ou ativação live.
