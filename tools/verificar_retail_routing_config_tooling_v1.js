@@ -50,6 +50,13 @@ const built = buildConfig(productRows, printerRows, {
 });
 
 assert.deepEqual(built.routing.products["9.15.00.075.00"], ["00009", "00003"]);
+assert.equal(built.catalog.schema, "deliveryos.retail.product-catalog.v1");
+assert.equal(built.catalog.products.length, 1);
+assert.deepEqual(built.catalog.products[0], {
+  product_code: "9.15.00.075.00",
+  product_name: "COMBINADO SALMAO 1 PESSOA",
+  printer_codes: ["00009", "00003"],
+});
 assert.deepEqual(built.routing.counts, {
   products: 1,
   one_target: 0,
