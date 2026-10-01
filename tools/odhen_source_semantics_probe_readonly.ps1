@@ -100,7 +100,7 @@ foreach ($root in $roots) {
       $_.FullName -notmatch "\\Logs(\\|$)" -and
       $_.FullName -notmatch "\\Temp(\\|$)" -and
       $_.FullName -notmatch "\\cache(\\|$)" -and
-      $_.FullName -notmatch "\\node_modules(\\|$)"
+      $_.FullName -notmatch "\\node_modules(\\|$)" -and\n      $_.FullName -notmatch "\\bower_components(\\|$)"
     }
 }
 
