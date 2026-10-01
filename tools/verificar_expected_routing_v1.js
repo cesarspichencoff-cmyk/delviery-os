@@ -4,7 +4,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 
-const { projectExpectedRouting } = require("../dist/src/shadow/expectedRouting.js");
+const { projectExpectedRouting, canonicalizeRoutingProductCode } = require("../dist/src/shadow/expectedRouting.js");
 const routing = JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "data", "odhen_product_routing_compact_v1.json"), "utf8"),
 );
@@ -154,6 +154,37 @@ const storeMismatch = projectExpectedRouting(
 );
 assert.equal(storeMismatch.ready, false);
 assert.ok(storeMismatch.blocking_reasons.includes("STORE_MISMATCH"));
+
+
+assert.equal(canonicalizeRoutingProductCode("9150007500"), "9.15.00.075.00");
+assert.equal(canonicalizeRoutingProductCode("9.15.00.075.00"), "9.15.00.075.00");
+assert.equal(canonicalizeRoutingProductCode("2001201A00"), "2.00.12.01A.00");
+
+const rawCodeProjection = projectExpectedRouting(
+  {
+    ids: { pedido_interno: "RAW-CODE" },
+    items: [
+      {
+        item_index: 0,
+        codigo: "9150007500",
+        nome: "COMBINADO SALMAO 1 PESSOA",
+        quantidade: 1,
+      },
+    ],
+  },
+  routing,
+  printers,
+);
+assert.equal(rawCodeProjection.ready, true);
+assert.equal(rawCodeProjection.items[0].source_product_code, "9150007500");
+assert.equal(rawCodeProjection.items[0].product_code, "9.15.00.075.00");
+assert.deepEqual(
+  rawCodeProjection.order_targets.map((x) => [x.printer_code, x.printer_ip]),
+  [
+    ["00009", "192.168.0.142"],
+    ["00003", "192.168.0.153"],
+  ],
+);
 
 const realSample = JSON.parse(
   fs.readFileSync(
