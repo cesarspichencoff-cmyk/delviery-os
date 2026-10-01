@@ -11,6 +11,9 @@ const routing = JSON.parse(
 const printers = JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "data", "runtime_printer_map_v1.json"), "utf8"),
 );
+const nonProduction = JSON.parse(
+  fs.readFileSync(path.join(__dirname, "..", "data", "non_production_delivery_items_v1.json"), "utf8"),
+);
 
 const order = {
   ids: { pedido_interno: "TEST-1" },
@@ -187,9 +190,9 @@ assert.deepEqual(
 );
 
 
-const partialKnownPlusGap = projectExpectedRouting(
+const knownPlusNoTicket = projectExpectedRouting(
   {
-    ids: { pedido_interno: "PARTIAL-KNOWN-PLUS-GAP" },
+    ids: { pedido_interno: "KNOWN-PLUS-NO-TICKET" },
     items: [
       {
         item_index: 0,
@@ -207,25 +210,50 @@ const partialKnownPlusGap = projectExpectedRouting(
   },
   routing,
   printers,
+  nonProduction,
 );
-assert.equal(partialKnownPlusGap.ready, false);
-assert.ok(
-  partialKnownPlusGap.blocking_reasons.includes(
-    "PRODUCT_ROUTE_NOT_FOUND_9.75.00.030.00",
-  ),
-);
+assert.equal(knownPlusNoTicket.ready, true);
+assert.deepEqual(knownPlusNoTicket.blocking_reasons, []);
 assert.deepEqual(
-  partialKnownPlusGap.order_targets.map((x) => [x.printer_code, x.printer_ip]),
+  knownPlusNoTicket.order_targets.map((x) => [x.printer_code, x.printer_ip]),
   [
     ["00009", "192.168.0.142"],
     ["00003", "192.168.0.153"],
   ],
 );
+assert.equal(knownPlusNoTicket.items[0].routing_status, "ROUTED");
 assert.deepEqual(
-  partialKnownPlusGap.items[0].targets.map((x) => x.printer_code),
+  knownPlusNoTicket.items[0].targets.map((x) => x.printer_code),
   ["00009", "00003"],
 );
-assert.deepEqual(partialKnownPlusGap.items[1].targets, []);
+assert.equal(
+  knownPlusNoTicket.items[1].routing_status,
+  "NO_OWN_PRODUCTION_TICKET",
+);
+assert.deepEqual(knownPlusNoTicket.items[1].targets, []);
+assert.ok(knownPlusNoTicket.items[1].non_production_reason);
+
+const noTicketWithoutRegistry = projectExpectedRouting(
+  {
+    ids: { pedido_interno: "NO-TICKET-WITHOUT-REGISTRY" },
+    items: [
+      {
+        item_index: 0,
+        codigo: "9750003000",
+        nome: "WASABI",
+        quantidade: 1,
+      },
+    ],
+  },
+  routing,
+  printers,
+);
+assert.equal(noTicketWithoutRegistry.ready, false);
+assert.ok(
+  noTicketWithoutRegistry.blocking_reasons.includes(
+    "PRODUCT_ROUTE_NOT_FOUND_9.75.00.030.00",
+  ),
+);
 
 const realSample = JSON.parse(
   fs.readFileSync(
