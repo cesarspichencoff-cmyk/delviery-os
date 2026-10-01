@@ -54,7 +54,7 @@ As 52 inferências **não são promovidas a fato operacional** apenas por terem 
 | montagem_outros | 5 | 45 |
 | sobremesa | 3 | 28 |
 
-## Gap material — 4 itens vendidos sem rota direta no cadastro
+## 4 itens sem rota direta — RESOLVIDOS COMO COMPLEMENTARES SEM COMANDA PRÓPRIA
 
 ### 1. COOKIE NUTELLA
 - código da venda: `8201100100`
@@ -84,25 +84,33 @@ As 52 inferências **não são promovidas a fato operacional** apenas por terem 
 - praça lógica: `montagem_outros` — correspondência exata com o seed
 - não aparece no snapshot atual de Produtos por Loja.
 
-Total dos gaps físicos: **4 SKUs / 37 unidades**.
+Total: **4 SKUs / 37 unidades**.
 
-## O que a ausência NÃO prova
+César confirmou operacionalmente que os quatro itens são **complementares, apenas montados/separados e não geram comanda própria de produção**.
 
-O fato de esses quatro itens não aparecerem em Produtos por Loja não prova que:
+Portanto o estado correto não é mais `UNKNOWN`. Eles passam a:
 
-- devem ser ignorados;
-- nunca imprimem;
-- herdam a impressora do item pai;
-- são sempre separados manualmente;
-- existe um fallback de impressora.
+`NO_OWN_PRODUCTION_TICKET`
 
-Essas possibilidades permanecem `UNKNOWN`.
+Registro canônico desta confirmação:
+`data/non_production_delivery_items_v1.json`.
 
-Por isso o comportamento seguro do live continua:
+## Consequência da confirmação
 
-**pedido real contendo um desses códigos → rota física desse item permanece bloqueada até prova adicional.**
+A ausência desses quatro códigos no cadastro de rota é agora coerente com a operação observada:
 
-Os demais itens do mesmo pedido podem ser projetados, mas a projeção do pedido inteiro não deve ser apresentada como completa.
+- eles continuam existindo como itens do pedido;
+- continuam contribuindo para a praça lógica de montagem/sobremesa;
+- possuem **zero destinos de impressora por desenho operacional**;
+- não bloqueiam mais a projeção completa do pedido;
+- qualquer futura rota física configurada para um desses códigos deve ser tratada como **drift/conflito** até revisão.
+
+Cobertura após a confirmação:
+
+- rota física direta: **116/120 SKUs = 96,67%**;
+- comportamento de produção resolvido: **120/120 SKUs = 100%**;
+- unidades com comportamento de produção resolvido: **1.476/1.476 = 100%**;
+- gaps físicos em aberto: **0**.
 
 ## Verificação cruzada
 
@@ -122,7 +130,7 @@ Esses dois são classificados no próprio relatório como `TAXA DE SERVICO` e n�
   - cruza com a rota física;
   - cruza a praça com o seed quando o nome é exato;
   - usa inferência explícita, separada de fato, para grupos conhecidos;
-  - retorna código de erro quando há qualquer SKU vendido sem rota física.
+  - retorna código de erro somente quando há SKU sem rota física **e** sem confirmação explícita de `NO_OWN_PRODUCTION_TICKET`.
 
 - `tools/verificar_delivery_active_routing_coverage_v1.js`
   - cobre item com rota;
@@ -133,12 +141,8 @@ Esses dois são classificados no próprio relatório como `TAXA DE SERVICO` e n�
 
 ## Consequência para o teste live
 
-O próximo live test não deve mais assumir que qualquer `CDPRODUTO` vendido está necessariamente nos 463 produtos roteados.
+O gate agora está fechado para os produtos observados no delivery de hoje:
 
-O gate correto é:
+`pedido Odhen → itens → para cada código: ROTA_CONFIGURADA ou NO_OWN_PRODUCTION_TICKET`
 
-`pedido Odhen → itens → para cada código: rota configurada OU gap explícito`
-
-Nunca:
-
-`código ausente → ignorar silenciosamente`.
+O motor nunca deve transformar código ausente em silêncio genérico. Só aceita zero impressoras quando o código estiver no registro humano-confirmado de itens sem comanda própria.
