@@ -51,7 +51,8 @@
   "caveats": [
     "The items export does not expose CDPRODUTO; product codes were joined by unique exact product name against the current 463-product registry.",
     "Configured parent-product routing is not proof of physical paper output.",
-    "Composite/combo child-item routing may add destinations not represented by the parent sale line and remains a separate question.",
+    "The Retail product-composition report returned zero composition rows for 9.05.05.080.00; hidden routing through Product Composition is therefore not supported by this Retail evidence.",
+    "The Odhen production source map still allows promotion/combo child lines independent of Product Composition; that is a separate remaining hypothesis.",
     "Retail sale time may represent sale/receipt completion rather than the exact earlier production-print trigger time."
   ],
   "effects": {
@@ -59,5 +60,13 @@
     "print": false,
     "fiscal_action": false,
     "database_write": false
+  },
+  "composition_report": {
+    "report": "Venda de Produtos (Composição Consolidada)",
+    "source_sha256": "bdd25bd026a04a539f140d4c21b9d6c0c986b2bfbe6047656ab932cebf73bd0c",
+    "product_code": "9.05.05.080.00",
+    "sold_quantity": 15,
+    "composition_rows": 0,
+    "conclusion": "NO_PRODUCT_COMPOSITION_EXPOSED_FOR_THIS_PARENT_IN_REPORT"
   }
 }
