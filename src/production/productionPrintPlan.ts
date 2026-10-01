@@ -6,6 +6,7 @@ import type {
 
 export type ProductionPrintEvidenceState =
   | "PLANNED"
+  | "PROVEN_NO_EFFECT_FAILURE"
   | "SUBMISSION_RETURNED_UNOBSERVED"
   | "SPOOLER_OBSERVED"
   | "EFFECT_UNKNOWN_REQUIRES_RECONCILIATION"
