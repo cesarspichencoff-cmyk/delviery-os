@@ -124,19 +124,27 @@ services:
           ts=$$(date -u +%Y%m%dT%H%M%SZ);
           case "$$ENTREGAS_STORAGE_BACKEND" in
             file)
-              tar -czf "/backups/entregas-file-$$ts.tar.gz" -C /dados .;
-              ls -1t /backups/entregas-file-*.tar.gz 2>/dev/null | tail -n +15 | xargs -r rm -f
+              snapshot="/backups/entregas-file-$$ts.tar.gz";
+              tar -czf "$$snapshot" -C /dados .;
+              name=$$(basename "$$snapshot");
+              (cd /backups && sha256sum "$$name" > "$$name.sha256");
+              ls -1t /backups/entregas-file-*.tar.gz 2>/dev/null | tail -n +15 |
+                while IFS= read -r old; do rm -f "$$old" "$$old.sha256"; done
               ;;
             postgres)
               test -n "$$DELIVERYOS_DATABASE_URL" || {
                 echo "backup postgres recusado: DELIVERYOS_DATABASE_URL ausente" >&2;
                 exit 78;
               };
+              snapshot="/backups/entregas-pg-$$ts.dump";
               pg_dump
                 --dbname="$$DELIVERYOS_DATABASE_URL"
                 --format=custom
-                --file="/backups/entregas-pg-$$ts.dump";
-              ls -1t /backups/entregas-pg-*.dump 2>/dev/null | tail -n +15 | xargs -r rm -f
+                --file="$$snapshot";
+              name=$$(basename "$$snapshot");
+              (cd /backups && sha256sum "$$name" > "$$name.sha256");
+              ls -1t /backups/entregas-pg-*.dump 2>/dev/null | tail -n +15 |
+                while IFS= read -r old; do rm -f "$$old" "$$old.sha256"; done
               ;;
             *)
               echo "backup recusado: ENTREGAS_STORAGE_BACKEND inválido" >&2;
@@ -191,6 +199,28 @@ services:
         esac;
         test -f "/backups/$$ENTREGAS_RESTORE_SNAPSHOT" || {
           echo "restore recusado: snapshot não encontrado" >&2;
+          exit 78;
+        };
+        test -f "/backups/$$ENTREGAS_RESTORE_SNAPSHOT.sha256" || {
+          echo "restore recusado: checksum do snapshot ausente" >&2;
+          exit 78;
+        };
+        awk -v f="$$ENTREGAS_RESTORE_SNAPSHOT" '"'"'
+          NR == 1 {
+            n=$$2;
+            sub(/^\*/, "", n);
+            ok=(length($$1) == 64 && $$1 ~ /^[0-9a-fA-F]+$$/ && n == f && NF == 2)
+          }
+          END { exit (NR == 1 && ok ? 0 : 1) }
+        '"'"' "/backups/$$ENTREGAS_RESTORE_SNAPSHOT.sha256" || {
+          echo "restore recusado: checksum aponta outro snapshot ou sidecar inválido" >&2;
+          exit 78;
+        };
+        (
+          cd /backups;
+          sha256sum -c -- "$$ENTREGAS_RESTORE_SNAPSHOT.sha256"
+        ) >/dev/null || {
+          echo "restore recusado: checksum do snapshot divergente" >&2;
           exit 78;
         };
         count=$$(psql "$$ENTREGAS_RESTORE_DATABASE_URL" -Atqc "

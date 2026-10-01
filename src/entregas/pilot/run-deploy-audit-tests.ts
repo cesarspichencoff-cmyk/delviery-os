@@ -157,10 +157,15 @@ test("backup acompanha o backend: file usa tar e postgres usa pg_dump", () => {
   assert.match(backup, /ENTREGAS_STORAGE_BACKEND:/);
   assert.match(backup, /DELIVERYOS_DATABASE_URL:/);
   assert.match(backup, /case "\$\$ENTREGAS_STORAGE_BACKEND"/);
-  assert.match(backup, /tar -czf "\/backups\/entregas-file-/);
+  assert.match(backup, /snapshot="\/backups\/entregas-file-\$\$ts\.tar\.gz"/);
+  assert.match(backup, /tar -czf "\$\$snapshot" -C \/dados \./);
   assert.match(backup, /pg_dump/);
   assert.match(backup, /--format=custom/);
   assert.match(backup, /entregas-pg-\$\$ts\.dump/);
+  assert.match(backup, /sha256sum/);
+  assert.match(backup, /cd \/backups/);
+  assert.match(backup, /\$\$name\.sha256/);
+  assert.match(backup, /rm -f "\$\$old" "\$\$old\.sha256"/);
   assert.match(backup, /exit 78/);
 });
 
@@ -173,6 +178,12 @@ test("restore PostgreSQL é manutenção fail-closed e nunca mira o operacional"
   assert.match(restore, /ENTREGAS_RESTORE_SNAPSHOT/);
   assert.match(restore, /ENTREGAS_RESTORE_CONFIRM" = "YES"/);
   assert.match(restore, /!= "\$\$DELIVERYOS_DATABASE_URL"/);
+  assert.match(restore, /checksum do snapshot ausente/);
+  assert.match(restore, /awk -v f=/);
+  assert.match(restore, /n == f/);
+  assert.match(restore, /checksum aponta outro snapshot ou sidecar inválido/);
+  assert.match(restore, /sha256sum -c --/);
+  assert.match(restore, /checksum do snapshot divergente/);
   assert.match(restore, /banco alvo não está vazio/);
   assert.match(restore, /pg_restore/);
   assert.match(restore, /--no-owner/);

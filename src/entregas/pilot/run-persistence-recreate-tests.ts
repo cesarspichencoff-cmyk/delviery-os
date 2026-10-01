@@ -396,13 +396,17 @@ async function main(): Promise<void> {
       const arquivos = readdirSync(backupsDir).filter((f) => f.endsWith(".json")).sort();
       assert.ok(arquivos.length > 0, "nenhum arquivo de backup");
       const escolhido = arquivos[arquivos.length - 1];
+      const sidecar = escolhido + ".sha256";
+      assert.ok(existsSync(join(backupsDir, sidecar)), "sidecar do backup ausente");
 
       // Volume NOVO e vazio — como uma máquina que nunca rodou o sistema.
-      // Só o backup é levado, exatamente como numa recuperação real.
+      // O pacote transportável é o PAR snapshot + sidecar, nunca um arquivo
+      // isolado: sem a prova de integridade o restore deve falhar fechado.
       const volumeLimpo = mkdtempSync(join(tmpdir(), "deliveryos-restore-"));
       containers.push(volumeLimpo);
       mkdirSync(join(volumeLimpo, "backups"), { recursive: true });
       cpSync(join(backupsDir, escolhido), join(volumeLimpo, "backups", escolhido));
+      cpSync(join(backupsDir, sidecar), join(volumeLimpo, "backups", sidecar));
 
       const arquivosAntes = readdirSync(volumeLimpo).filter((f) => f.endsWith(".json"));
       assert.deepEqual(arquivosAntes, [], "o volume de restore deveria começar sem dados");

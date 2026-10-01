@@ -1246,6 +1246,21 @@ Estado atual: **feed durável single-instance = CODE_READY + TEST_PASS; produç�
 > backup externo equivalente), além dos efeitos já separados: migrations 0006–0008 no banco
 > operacional, credencial real do papel, cutover e troca de ambiente. Nenhum desses efeitos foi
 > executado; consumer/UI live continuam desligados.
+>
+> **SUCESSÃO — 2026-10-01 · INTEGRIDADE DO PACOTE TRANSPORTÁVEL FECHADA LOCALMENTE.**
+>
+> A escolha do destino off-host continua aberta, mas a integridade deixou de depender do fornecedor.
+> Backups novos dos dois backends saem em par `snapshot + .sha256`, com basename portátil; retenção
+> remove o par junto. Restore PostgreSQL recusa sidecar ausente/divergente antes de tocar o alvo,
+> inclusive sidecar válido que aponte **outro snapshot**; o restore file passou a verificar seu
+> sidecar, preservando leitura dos sidecars legados de 64 hex. A CLI
+> `verify:entregas:backup` verifica qualquer cópia do par em stream.
+>
+> Provas locais: backup-integrity **7/7**, pilot-gate **10/10**, deploy-audit **39/39**; CLI real
+> válido=exit 0, adulterado=exit 1, sem argumento=exit 2; GNU `sha256sum` no WSL aceitou o intacto e
+> recusou o adulterado. **Isso não é off-host:** Docker/Compose e PostgreSQL real desta sucessão não
+> rodaram, nenhum destino externo foi escolhido e SHA-256 não autentica contra alguém que substitua
+> snapshot e sidecar juntos.
 
 
 

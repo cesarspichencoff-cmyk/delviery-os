@@ -9,7 +9,7 @@ import {
   writeFileSync,
   readFileSync,
 } from "node:fs";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { tmpdir } from "node:os";
 import { createPilotLogger } from "./pilot-log";
 import { createBackup, restoreBackup, listBackups } from "./pilot-backup";
@@ -211,6 +211,12 @@ console.log("\n=== Pilot gate tests ===\n");
     const b = createBackup(store, bdir, 5, log);
     assert.equal(b.ok, true, b.error);
     assert.ok(b.path && existsSync(b.path));
+    assert.ok(b.path && existsSync(b.path + ".sha256"));
+    if (b.path) {
+      const sidecar = readFileSync(b.path + ".sha256", "utf8");
+      assert.match(sidecar, /^[0-9a-f]{64}  .+\n$/);
+      assert.equal(sidecar.endsWith(`  ${basename(b.path)}\n`), true);
+    }
     // corromper store e restaurar
     writeFileSync(store, "{broken", "utf8");
     const list = listBackups(bdir);
@@ -219,6 +225,60 @@ console.log("\n=== Pilot gate tests ===\n");
     assert.equal(r.ok, true, r.error);
     const data = JSON.parse(readFileSync(store, "utf8"));
     assert.ok(data.trips);
+  });
+
+  await test("restore file recusa sidecar ausente/divergente e aceita sidecar legado válido", async () => {
+    const dir = join(root, "f-integrity");
+    mkdirSync(dir, { recursive: true });
+    const store = join(dir, "store.json");
+    const initial = JSON.stringify({
+      trips: {},
+      handoffs: {},
+      occurrences: {},
+      riders: {},
+      events: [],
+      outbox: [],
+    });
+    writeFileSync(store, initial, "utf8");
+    const bdir = join(dir, "backups");
+    const log = createPilotLogger(dir);
+    const b = createBackup(store, bdir, 5, log);
+    assert.equal(b.ok, true, b.error);
+    assert.ok(b.path && b.sha256);
+    if (!b.path || !b.sha256) return;
+
+    const snapshot = readFileSync(b.path, "utf8");
+    const sidecar = b.path + ".sha256";
+
+    rmSync(sidecar, { force: true });
+    let r = restoreBackup(b.path, store, bdir, log);
+    assert.equal(r.ok, false);
+    assert.equal(r.error, "checksum ausente");
+
+    writeFileSync(sidecar, `${b.sha256}  ${basename(b.path)}\n`, "utf8");
+    writeFileSync(
+      b.path,
+      JSON.stringify({
+        trips: { adulterado: true },
+        handoffs: {},
+        occurrences: {},
+        riders: {},
+        events: [],
+        outbox: [],
+      }),
+      "utf8",
+    );
+    r = restoreBackup(b.path, store, bdir, log);
+    assert.equal(r.ok, false);
+    assert.equal(r.error, "checksum divergente");
+
+    // Compatibilidade explícita com o sidecar legado de 64 hex puro.
+    writeFileSync(b.path, snapshot, "utf8");
+    writeFileSync(sidecar, b.sha256, "utf8");
+    writeFileSync(store, "{broken", "utf8");
+    r = restoreBackup(b.path, store, bdir, log);
+    assert.equal(r.ok, true, r.error);
+    assert.ok(JSON.parse(readFileSync(store, "utf8")).trips);
   });
 
   await test("handoff iFood completo sem trip", async () => {

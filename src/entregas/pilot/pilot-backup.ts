@@ -12,9 +12,10 @@ import {
   rmSync,
   statSync,
 } from "node:fs";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { createHash } from "node:crypto";
 import type { PilotLogger } from "./pilot-log";
+import { parseSha256Sidecar } from "./backup-integrity";
 
 export interface BackupResult {
   ok: boolean;
@@ -27,6 +28,29 @@ export interface BackupResult {
 function sha256File(path: string): string {
   const buf = readFileSync(path);
   return createHash("sha256").update(buf).digest("hex");
+}
+
+function expectedHashFromSidecar(
+  backupPath: string,
+): { ok: true; sha256: string } | { ok: false; error: string } {
+  const sidecarPath = backupPath + ".sha256";
+  if (!existsSync(sidecarPath)) {
+    return { ok: false, error: "checksum ausente" };
+  }
+
+  const raw = readFileSync(sidecarPath, "utf8").trim();
+  // Compatibilidade com snapshots legados do FileUnitOfWork: antes de
+  // 2026-10-01 o sidecar guardava apenas os 64 hex, sem basename.
+  if (/^[0-9a-fA-F]{64}$/.test(raw)) {
+    return { ok: true, sha256: raw.toLowerCase() };
+  }
+
+  const parsed = parseSha256Sidecar(readFileSync(sidecarPath, "utf8"));
+  if (!parsed) return { ok: false, error: "checksum inválido" };
+  if (parsed.filename !== basename(backupPath)) {
+    return { ok: false, error: "checksum aponta outro arquivo" };
+  }
+  return { ok: true, sha256: parsed.sha256 };
 }
 
 function validateStoreJson(path: string): { ok: boolean; error?: string } {
@@ -81,7 +105,7 @@ export function createBackup(
     const dest = join(backupDir, `store-${stamp}.json`);
     copyFileSync(dataFile, dest);
     const hash = sha256File(dest);
-    writeFileSync(dest + ".sha256", hash, "utf8");
+    writeFileSync(dest + ".sha256", `${hash}  ${basename(dest)}\n`, "utf8");
 
     // retenção
     const all = listBackups(backupDir);
@@ -115,6 +139,20 @@ export function restoreBackup(
     if (!existsSync(backupPath)) {
       return { ok: false, error: "arquivo ausente", human: "Backup não encontrado." };
     }
+
+    const expected = expectedHashFromSidecar(backupPath);
+    if (!expected.ok) {
+      const human = "Restauração cancelada: integridade do backup não comprovada.";
+      log?.error("restore_failed", human, expected.error);
+      return { ok: false, error: expected.error, human };
+    }
+    const actualHash = sha256File(backupPath);
+    if (actualHash !== expected.sha256) {
+      const human = "Restauração cancelada: checksum do backup divergente.";
+      log?.error("restore_failed", human, "checksum divergente");
+      return { ok: false, error: "checksum divergente", human };
+    }
+
     const v = validateStoreJson(backupPath);
     if (!v.ok) {
       const human = "Restauração cancelada: backup inválido.";
