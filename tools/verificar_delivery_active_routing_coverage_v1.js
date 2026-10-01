@@ -40,6 +40,20 @@ const routing = {
   },
 };
 
+const nonProduction = {
+  schema: "deliveryos.non-production-items.v1",
+  store: "0001 - TATA ITAIM",
+  semantics: "NO_OWN_PRODUCTION_TICKET",
+  items: {
+    "9.75.00.030.00": {
+      product_name: "WASABI",
+      logical_plaza: "montagem_outros",
+      reason: "Complementary/mounted item; no own production command/ticket.",
+      proof: "HUMAN_CONFIRMED",
+    },
+  },
+};
+
 const seed = {
   itens: [
     { nome: "Uramaki de Salmão", praca_principal: "enrolados" },
@@ -47,16 +61,26 @@ const seed = {
   ],
 };
 
-const report = auditCoverage(rows, routing, seed);
+const report = auditCoverage(rows, routing, seed, nonProduction);
 assert.equal(report.summary.delivery_skus, 2);
 assert.equal(report.summary.delivery_units, 5);
 assert.equal(report.summary.direct_route_skus, 1);
 assert.equal(report.summary.direct_route_units, 3);
-assert.equal(report.summary.physical_route_gap_skus, 1);
-assert.equal(report.summary.physical_route_gap_units, 2);
+assert.equal(report.summary.physical_route_gap_skus, 0);
+assert.equal(report.summary.physical_route_gap_units, 0);
 assert.equal(report.summary.logical_plaza_resolved_skus, 2);
-assert.equal(report.physical_route_gaps[0].product, "WASABI");
-assert.equal(report.physical_route_gaps[0].logical_plaza, "montagem_outros");
+assert.equal(report.summary.no_own_production_ticket_skus, 1);
+assert.equal(report.summary.no_own_production_ticket_units, 2);
+assert.equal(report.summary.production_behavior_resolved_skus, 2);
+assert.equal(report.summary.production_behavior_resolved_units, 5);
+assert.equal(report.summary.production_behavior_sku_coverage, 1);
+assert.equal(report.summary.production_behavior_unit_coverage, 1);
+assert.equal(report.no_own_production_ticket_items[0].product, "WASABI");
+assert.equal(report.no_own_production_ticket_items[0].logical_plaza, "montagem_outros");
+assert.equal(
+  report.no_own_production_ticket_items[0].production_behavior,
+  "NO_OWN_PRODUCTION_TICKET",
+);
 assert.equal(report.effects.print, false);
 
 console.log("active-delivery-routing-coverage-v1: ok");
