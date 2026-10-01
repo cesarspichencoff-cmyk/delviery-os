@@ -31,6 +31,12 @@ export interface TataSequencePlan {
   };
 }
 
+export interface TataSequenceScopeResolution {
+  scope_id: string | null;
+  evidence: "HUMAN_CONFIRMED_RULE" | "REAL_OBSERVED" | "UNKNOWN";
+  source_ref: string | null;
+}
+
 function clean(value: unknown): string {
   return String(value ?? "").trim();
 }
@@ -195,6 +201,49 @@ export function planTataSequence(
       odhen_write: false,
     },
   };
+}
+
+/**
+ * Gate above the low-level sequence planner.
+ *
+ * It does not decide whether a sequence resets by day, service or another
+ * operational boundary. That policy must be externally resolved and evidenced.
+ */
+export function planTataSequenceWithResolvedScope(
+  state: TataSequenceState,
+  scope: TataSequenceScopeResolution,
+  teknisaOrderIdRaw: string,
+): TataSequencePlan {
+  const blocking = new Set<string>();
+  const scopeId = clean(scope.scope_id);
+  const sourceRef = clean(scope.source_ref);
+
+  if (!scopeId) blocking.add("TATA_SEQUENCE_SCOPE_REQUIRED");
+  if (
+    scope.evidence !== "HUMAN_CONFIRMED_RULE" &&
+    scope.evidence !== "REAL_OBSERVED"
+  ) {
+    blocking.add("TATA_SEQUENCE_SCOPE_EVIDENCE_REQUIRED");
+  }
+  if (!sourceRef) blocking.add("TATA_SEQUENCE_SCOPE_SOURCE_REF_REQUIRED");
+
+  if (blocking.size > 0) {
+    return {
+      schema: "deliveryos.tata-sequence-plan.v1",
+      ready: false,
+      blocking_reasons: [...blocking].sort(),
+      assignment: null,
+      next_state: null,
+      reused_existing: false,
+      effects: {
+        persistence_write: false,
+        print: false,
+        odhen_write: false,
+      },
+    };
+  }
+
+  return planTataSequence(state, scopeId, teknisaOrderIdRaw);
 }
 
 export function validateSharedTataSequence(
