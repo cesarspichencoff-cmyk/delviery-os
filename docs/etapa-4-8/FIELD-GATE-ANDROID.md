@@ -4,8 +4,8 @@ lifecycle:
   status: ACTIVE
   authority_scope: field_gate_android
   superseded_by: null
-  atualizado_em: "2026-09-26"
-  state_basis: f122ee3
+  atualizado_em: "2026-10-01"
+  state_basis: 375521b
 ---
 
 # Field gate físico do Android — roteiro
@@ -23,8 +23,8 @@ lifecycle:
 | relógio do aparelho no servidor | **PROVEN**: relógio adiantado vira `suspect`, não fabrica frescor, sobrevive ao replay | `test:platform:relogio`; `docs/etapa-4-8/RELOGIO.md` |
 | papéis mínimos na composição oficial | **PROVEN** em containers | `tools/papeis_compose_real.sh` |
 | comportamento físico do Android | **UNKNOWN** | este roteiro |
-| gatilho da captura nativa no app | **IMPLEMENTADO, Kotlin NÃO COMPILADO**: a rider-mobile liga pela ponte depois de termo, permissão e saída confirmada (`Q-018` respondida); provado com piloto real, Chromium e ponte falsa (`test:entregas:rider-bridge` 27/27), e a cadeia inteira ensaiada na nuvem com os binários reais pelo caminho do emulador (`tools/bancada_q018_cadeia.sh`, 37/37). O lado Kotlin mudou e precisa de A1–A3 de novo | `docs/etapa-4-8/Q018-RIDER-CAPTURA.md`; `BANCADA-EMULADOR.md` §5b |
-| build do app (`testDebugUnitTest`, `assembleDebug`, instrumentados) | **PROVEN fora do sandbox**: A1 e A2 em Windows/JDK 17/SDK 34; A3 em emulador Android 14/API 34 | execução local "Foxxy", 2026-09-25; o bloqueio de `dl.google.com` permanece específico ao sandbox de nuvem |
+| gatilho da captura nativa no app | **PROVEN NO AVD; FÍSICO `NOT_RUN`**: a rider-mobile liga pela ponte depois de termo, permissão e saída confirmada (`Q-018`); o Kotlin foi compilado e exercitado no Foxxy. A cadeia Fused → Room → sync e o encerramento remoto sem WebView foram observados em runtime; o stop remoto ocorreu em 13,286 s | `docs/etapa-4-8/Q018-RIDER-CAPTURA.md`; `field-gate/2026-10-01-q018-remote-stop-runtime.md` |
+| build do app (`testDebugUnitTest`, `assembleDebug`, instrumentados) | **PROVEN no Foxxy/AVD**: build Android 14/API 34 e `connectedDebugAndroidTest` **10/10 PASS** no APK final sem helper de mock; aparelho físico continua `NOT_RUN` | execução Foxxy, 2026-09-30/2026-10-01; `Q018-RIDER-CAPTURA.md` §§15–17 |
 
 ## 1 — Pré-requisito A: compilar e testar numa máquina com SDK
 
@@ -45,7 +45,7 @@ sh gradlew :app:connectedDebugAndroidTest  # PersistenceInstrumentedTest — exi
 |---|---|---|
 | A1 unit tests | `BUILD SUCCESSFUL` e o relatório em `app/build/reports/tests/testDebugUnitTest/` sem falha | **PASS** — `:app:testDebugUnitTest`, JDK 17.0.19 + SDK 34, Windows |
 | A2 APK de debug | o arquivo existe e `aapt dump badging` mostra `br.com.tata.entregas.debug` | **PASS** — `assembleDebug`; pacote `br.com.tata.entregas.debug`, target/compile 34 |
-| A3 instrumentado | `connectedDebugAndroidTest` sem falha, no aparelho do teste | **PASS (EMULADOR)** — 8 testes em `deliveryos_api34(AVD)`, Android 14/API 34 |
+| A3 instrumentado | `connectedDebugAndroidTest` sem falha, no aparelho do teste | **PASS (EMULADOR)** — 10/10 testes no AVD Android 14/API 34 em 2026-09-30; **FÍSICO `NOT_RUN`** |
 | A4 `android/gate-verification` | **FAIL_PREEXISTENTE conhecido** desde `4456f2e`: `EntregasApi.kt` usa `DeviceSession.semSegredo`, que importa o Room. Não é regressão. Conserto: levar `semSegredo` para um arquivo Kotlin puro — feito ali, onde o app compila | NOT_RUN |
 
 **Compilar não é instalar, e instalar não é testar em campo.** Em 2026-09-25 o APK debug também foi
@@ -85,8 +85,8 @@ Isso é smoke test de emulador, não fecha nenhum item da seção 3.
 7. **Gatilho da captura nativa (`Q-018`, respondida em 2026-09-25).** A rider-mobile liga o
    `TripLocationService` pela ponte (`docs/etapa-4-8/Q018-RIDER-CAPTURA.md`). O passo 5 deixa de
    ser BLOCKED por decisão e passa a depender de cinco coisas, todas verificáveis antes de ir à rua:
-   - **build novo**: o Kotlin mudou (`applyServerPolicies`, `device_id` nas capacidades, aceite de
-     outro aparelho recusado); refazer A1–A3 e anotar o commit;
+   - **build identificado**: A1–A3 já foram refeitos no AVD após as mudanças do Kotlin. No aparelho físico,
+     anotar o commit/hash do APK realmente instalado; repetir o build apenas se o código Android tiver mudado;
    - **sessão do motoboy no WebView**: o piloto só responde com o token do motoboy
      (`entregasPilotLogin("<TOKEN>")` no console do WebView — no `debug`, por `chrome://inspect`);
    - **flag de GPS ligada no piloto** (`gps_capture_enabled: true`; o caminho pode vir de
