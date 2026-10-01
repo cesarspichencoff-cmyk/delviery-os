@@ -8,7 +8,8 @@ export type ResourceUsageKind =
   | "KIT_COMPONENT"
   | "COMPLEMENT"
   | "KITCHEN_DEPENDENCY"
-  | "RECIPE_INGREDIENT";
+  | "RECIPE_INGREDIENT"
+  | "DIRECT_STOCK_ITEM";
 
 export type ResourceUsageProof =
   | "ORDER_SOURCE_PROVEN"
@@ -16,6 +17,7 @@ export type ResourceUsageProof =
   | "KIT_RULE_FACT"
   | "HUMAN_CONFIRMED"
   | "RECIPE_BOM"
+  | "DIRECT_STOCK_MAPPING"
   | "INFERENCE"
   | "UNKNOWN";
 
@@ -95,6 +97,7 @@ export interface OrderResourceProjectionInput {
     product_code: string | null;
     product_name: string;
     quantity: number;
+    cmv_basis?: "RECIPE_BOM" | "DIRECT_STOCK_ITEM" | "NON_STOCK" | "UNKNOWN";
   }>;
   complements?: Array<{
     product_code: string | null;
@@ -112,13 +115,29 @@ export interface OrderResourceProjectionInput {
     proof: "HUMAN_CONFIRMED";
   }>;
   recipe_ingredients?: RecipeIngredientInput[];
+  recipe_bom_coverage?: Array<{
+    product_code: string;
+    bom_version: number;
+    complete: true;
+  }>;
+  direct_stock_items?: Array<{
+    source_product_code: string;
+    source_product_name: string;
+    resource_key: string;
+    label: string;
+    quantity: number;
+    uom: ResourceUom;
+    proof: "DIRECT_STOCK_MAPPING";
+  }>;
 }
 
 export interface OrderResourceProjection {
   schema: "deliveryos.order-resource-projection.v1";
   order_id: string;
   ready_for_operational_resource_report: boolean;
+  complete_for_packaging_and_kit_usage: boolean;
   ready_for_recipe_cmv: boolean;
+  ready_for_theoretical_cmv_basis: boolean;
   blocking_reasons: string[];
   usages: ResourceUsage[];
   unknowns: string[];
@@ -177,6 +196,7 @@ export function projectOrderResources(
   const unknowns = new Set<string>();
   const usages = new Map<string, ResourceUsage>();
   const orderId = clean(input.order_id);
+  const cmvBasisByProduct = new Map<string, "RECIPE_BOM" | "DIRECT_STOCK_ITEM" | "NON_STOCK" | "UNKNOWN">();
 
   if (!orderId) blocking.add("ORDER_ID_REQUIRED");
   if (!Array.isArray(input.sold_items) || input.sold_items.length === 0) {
@@ -189,6 +209,17 @@ export function projectOrderResources(
       blocking.add("INVALID_SOLD_ITEM");
       continue;
     }
+    const productCode = clean(item.product_code);
+    if (productCode) {
+      const basis = item.cmv_basis ?? "UNKNOWN";
+      const priorBasis = cmvBasisByProduct.get(productCode);
+      if (priorBasis && priorBasis !== basis) {
+        blocking.add(`CMV_BASIS_CONFLICT:${productCode}`);
+      } else {
+        cmvBasisByProduct.set(productCode, basis);
+      }
+    }
+
     addUsage(usages, {
       resource_key: item.product_code
         ? `MENU:${item.product_code}`
@@ -372,6 +403,31 @@ export function projectOrderResources(
     });
   }
 
+  for (const direct of input.direct_stock_items ?? []) {
+    const quantity = positiveNumber(direct.quantity);
+    if (
+      !clean(direct.source_product_code) ||
+      !clean(direct.resource_key) ||
+      !clean(direct.label) ||
+      quantity === null ||
+      direct.proof !== "DIRECT_STOCK_MAPPING"
+    ) {
+      blocking.add("INVALID_DIRECT_STOCK_ITEM");
+      continue;
+    }
+    addUsage(usages, {
+      resource_key: direct.resource_key,
+      label: direct.label,
+      kind: "DIRECT_STOCK_ITEM",
+      quantity,
+      uom: direct.uom,
+      proof: "DIRECT_STOCK_MAPPING",
+      stock_semantics: "THEORETICAL_EXPECTED_CONSUMPTION",
+      source_item_code: direct.source_product_code,
+      source_item_name: direct.source_product_name,
+    });
+  }
+
   for (const ingredient of input.recipe_ingredients ?? []) {
     const quantity = positiveNumber(ingredient.quantity);
     if (
@@ -396,29 +452,59 @@ export function projectOrderResources(
     });
   }
 
-  const soldCodes = new Set(
-    (input.sold_items ?? [])
-      .map((item) => clean(item.product_code))
+  const recipeCompleteCodes = new Set(
+    (input.recipe_bom_coverage ?? [])
+      .filter((entry) => entry.complete === true && Number.isInteger(entry.bom_version) && entry.bom_version > 0)
+      .map((entry) => clean(entry.product_code))
       .filter(Boolean),
   );
-  const recipeCoveredCodes = new Set(
+  const recipeIngredientCodes = new Set(
     (input.recipe_ingredients ?? [])
       .map((ingredient) => clean(ingredient.source_item_code))
       .filter(Boolean),
   );
-  const readyForRecipeCmv =
-    soldCodes.size > 0 &&
-    [...soldCodes].every((code) => recipeCoveredCodes.has(code));
+  const directStockCodes = new Set(
+    (input.direct_stock_items ?? [])
+      .map((item) => clean(item.source_product_code))
+      .filter(Boolean),
+  );
 
-  if (!readyForRecipeCmv) {
-    unknowns.add("RECIPE_BOM_COVERAGE_INCOMPLETE");
+  let readyForTheoreticalCmvBasis = cmvBasisByProduct.size > 0;
+  for (const [code, basis] of cmvBasisByProduct) {
+    if (basis === "RECIPE_BOM") {
+      if (!recipeCompleteCodes.has(code) || !recipeIngredientCodes.has(code)) {
+        unknowns.add(`RECIPE_BOM_COVERAGE_INCOMPLETE:${code}`);
+        readyForTheoreticalCmvBasis = false;
+      }
+    } else if (basis === "DIRECT_STOCK_ITEM") {
+      if (!directStockCodes.has(code)) {
+        unknowns.add(`DIRECT_STOCK_MAPPING_MISSING:${code}`);
+        readyForTheoreticalCmvBasis = false;
+      }
+    } else if (basis === "NON_STOCK") {
+      continue;
+    } else {
+      unknowns.add(`CMV_BASIS_UNKNOWN:${code}`);
+      readyForTheoreticalCmvBasis = false;
+    }
   }
+
+  const packagingKitUnknown = [...unknowns].some((reason) =>
+    reason.startsWith("PACKAGING_") ||
+    reason.startsWith("BAG_") ||
+    reason.startsWith("EXACT_BAG_") ||
+    reason.startsWith("KIT_"),
+  );
+  const completeForPackagingAndKit =
+    blocking.size === 0 && !packagingKitUnknown;
 
   return {
     schema: "deliveryos.order-resource-projection.v1",
     order_id: orderId,
     ready_for_operational_resource_report: blocking.size === 0,
-    ready_for_recipe_cmv: blocking.size === 0 && readyForRecipeCmv,
+    complete_for_packaging_and_kit_usage: completeForPackagingAndKit,
+    ready_for_recipe_cmv: blocking.size === 0 && readyForTheoreticalCmvBasis,
+    ready_for_theoretical_cmv_basis: blocking.size === 0 && readyForTheoreticalCmvBasis,
     blocking_reasons: [...blocking].sort(),
     usages: [...usages.values()].sort((a, b) =>
       [a.kind, a.resource_key].join("|").localeCompare([b.kind, b.resource_key].join("|")),
@@ -444,6 +530,9 @@ export interface ResourceAggregate {
   usages: ResourceUsage[];
   blocked_orders: string[];
   recipe_cmv_ready_orders: number;
+  theoretical_cmv_basis_ready_orders: number;
+  packaging_and_kit_complete_orders: number;
+  orders_with_unknown_resources: string[];
   semantics: {
     aggregate_is_theoretical: true;
     no_stock_write: true;
@@ -456,12 +545,18 @@ export function aggregateOrderResources(
   const usages = new Map<string, ResourceUsage>();
   const blockedOrders: string[] = [];
   let recipeCmvReadyOrders = 0;
+  let theoreticalCmvBasisReadyOrders = 0;
+  let packagingAndKitCompleteOrders = 0;
+  const ordersWithUnknownResources: string[] = [];
 
   for (const order of orders) {
     if (!order.ready_for_operational_resource_report) {
       blockedOrders.push(order.order_id);
     }
     if (order.ready_for_recipe_cmv) recipeCmvReadyOrders += 1;
+    if (order.ready_for_theoretical_cmv_basis) theoreticalCmvBasisReadyOrders += 1;
+    if (order.complete_for_packaging_and_kit_usage) packagingAndKitCompleteOrders += 1;
+    if (order.unknowns.length > 0) ordersWithUnknownResources.push(order.order_id);
 
     for (const usage of order.usages) {
       addUsage(usages, usage);
@@ -476,6 +571,9 @@ export function aggregateOrderResources(
     ),
     blocked_orders: blockedOrders.sort(),
     recipe_cmv_ready_orders: recipeCmvReadyOrders,
+    theoretical_cmv_basis_ready_orders: theoreticalCmvBasisReadyOrders,
+    packaging_and_kit_complete_orders: packagingAndKitCompleteOrders,
+    orders_with_unknown_resources: ordersWithUnknownResources.sort(),
     semantics: {
       aggregate_is_theoretical: true,
       no_stock_write: true,
