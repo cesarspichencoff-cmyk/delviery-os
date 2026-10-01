@@ -37,6 +37,7 @@
     "verificar:production-ticket-e2e": "tsc && node tools/verificar_production_ticket_e2e_shadow_v1.js",
     "verificar:tata-os-print-handoff": "tsc && node tools/verificar_tata_os_print_handoff_v1.js",
     "verificar:production-printer-preflight-static": "node tools/verificar_production_printer_preflight_static_v1.js",
+    "verificar:mooca-commandas-preflight-static": "node tools/verificar_mooca_commandas_preflight_static_v1.js",
     "verificar:resource-costing": "tsc && node tools/verificar_resource_costing_v1.js"
   },
   "devDependencies": {
