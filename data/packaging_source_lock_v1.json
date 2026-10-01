@@ -1,0 +1,46 @@
+{
+  "schema": "deliveryos.packaging-source-lock.v1",
+  "source_repo": "cesarspichencoff-cmyk/tata-academia",
+  "source_branch": "evolucao/v33-product-pass",
+  "captured_date": "2026-10-01",
+  "files": [
+    {
+      "path": "lib/packaging-current.js",
+      "git_blob_sha": "d44e25e96e8e640a50cb087b0eea6fdbea1d8706"
+    },
+    {
+      "path": "data/app-data.json",
+      "git_blob_sha": "1d2c0fd66d09531f3e41e5994878e0f5a389fca0"
+    },
+    {
+      "path": "content-source/human-current/kits_2026-09-22_cesar.md",
+      "git_blob_sha": "23ea475d33266dd7b57ca0a1102a4100031f7ce1"
+    },
+    {
+      "path": "content-source/human-current/packaging_truth_2026-09-27_cesar.md",
+      "git_blob_sha": "d2ada7809c26bc56af1efbc19ccf5415824f9441"
+    },
+    {
+      "path": "tests/kits_logic_v2.mjs",
+      "git_blob_sha": "2c1c498ec6f6aa998ea516dda2d7d38beb6f75ab"
+    },
+    {
+      "path": "tests/embalagem.mjs",
+      "git_blob_sha": "9aaab0a1dbd307c14310a83d85fe37a33e522aad"
+    }
+  ],
+  "rules_imported_now": [
+    "KIT_COMPONENT_COMPOSITION",
+    "SHOYU_CAPACITY_50ML_8ML"
+  ],
+  "rules_not_yet_ported_into_deliveryos_runtime": [
+    "PACK_COMANDA_FULL_BOX_GROUPING",
+    "BAG_SIZE_AND_SEPARATION_FULL_ENGINE",
+    "KIT_ASSIGNMENT_FULL_ENGINE"
+  ],
+  "policy": {
+    "do_not_duplicate_without_parity_tests": true,
+    "academy_source_is_reference_not_runtime_dependency": true,
+    "future_port_requires_same_fixture_results": true
+  }
+}
