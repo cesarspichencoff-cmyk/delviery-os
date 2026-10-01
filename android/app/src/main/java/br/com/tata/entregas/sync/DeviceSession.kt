@@ -119,7 +119,12 @@ object DeviceSession {
                         else r.value.optString("expires_at").let { iso ->
                             runCatching { java.time.Instant.parse(iso).toEpochMilli() }.getOrDefault(0L)
                         }
-                    gravar(db, token, expiraEm, agoraMs)
+                    // A identidade humana também vem do cadastro da
+                    // plataforma. Nunca aceitar rider_id da tela/payload.
+                    val actorId = r.value.optString("actor_id", "")
+                        .trim()
+                        .takeIf { it.isNotBlank() }
+                    gravar(db, token, expiraEm, actorId, agoraMs)
                     ResultadoAutenticacao.Autenticado
                 }
             }
@@ -157,9 +162,20 @@ object DeviceSession {
 
     /* -------------------------------------------------------------- */
 
-    private suspend fun gravar(db: EntregasDatabase, token: String, expiraEmMs: Long, agoraMs: Long) {
+    internal suspend fun gravar(
+        db: EntregasDatabase,
+        token: String,
+        expiraEmMs: Long,
+        actorId: String?,
+        agoraMs: Long,
+    ) {
         db.deviceState().put(DeviceStateEntity(EntregasDatabase.KEY_SESSION_TOKEN, token, agoraMs))
         db.deviceState().put(DeviceStateEntity(KEY_TOKEN_EXPIRA_EM, expiraEmMs.toString(), agoraMs))
+        if (actorId.isNullOrBlank()) {
+            db.deviceState().clear(EntregasDatabase.KEY_RIDER_ID)
+        } else {
+            db.deviceState().put(DeviceStateEntity(EntregasDatabase.KEY_RIDER_ID, actorId, agoraMs))
+        }
         db.deviceState().clear(KEY_REVOGADO_EM)
     }
 

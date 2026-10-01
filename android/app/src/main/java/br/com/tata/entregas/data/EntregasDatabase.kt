@@ -135,6 +135,10 @@ interface GpsPointDao {
     /** Expurgo por retenção. Só remove o que já subiu. */
     @Query("DELETE FROM gps_point WHERE syncState = 'sent' AND createdAtMs < :beforeMs")
     suspend fun purgeSyncedBefore(beforeMs: Long): Int
+
+    /** Mesma retenção, preservando a viagem ainda ativa no aparelho. */
+    @Query("DELETE FROM gps_point WHERE syncState = 'sent' AND createdAtMs < :beforeMs AND tripId != :activeTripId")
+    suspend fun purgeSyncedBeforeExcludingTrip(beforeMs: Long, activeTripId: String): Int
 }
 
 @Dao
@@ -165,6 +169,9 @@ interface TermAckDao {
 
     @Query("SELECT * FROM term_ack WHERE riderId = :riderId AND termHash = :termHash AND status = 'accepted' LIMIT 1")
     suspend fun findAccepted(riderId: String, termHash: String): TermAckEntity?
+
+    @Query("SELECT * FROM term_ack WHERE riderId = :riderId AND termHash = :termHash AND deviceId = :deviceId AND status = 'accepted' LIMIT 1")
+    suspend fun findAcceptedOnDevice(riderId: String, termHash: String, deviceId: String): TermAckEntity?
 
     @Query("SELECT * FROM term_ack WHERE riderId = :riderId ORDER BY acceptedAt DESC")
     suspend fun history(riderId: String): List<TermAckEntity>

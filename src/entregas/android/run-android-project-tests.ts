@@ -529,6 +529,19 @@ test("expurgo de retenção só remove o que já subiu", () => {
   assert.match(db, /DELETE FROM gps_point WHERE syncState = 'sent' AND createdAtMs < :beforeMs/);
 });
 
+test("retenção local depende do termo aceito e da identidade vinda da plataforma", () => {
+  const policy = read("app/src/main/java/br/com/tata/entregas/location/GateSnapshot.kt");
+  const worker = read("app/src/main/java/br/com/tata/entregas/sync/SyncWorker.kt");
+  const session = read("app/src/main/java/br/com/tata/entregas/sync/DeviceSession.kt");
+  assert.match(policy, /findAcceptedOnDevice\(riderId, hash, deviceId\)/);
+  assert.match(policy, /KEY_LOCAL_RETENTION_TERM_HASH/);
+  assert.match(worker, /LocalRetentionPolicy\.cutoffMs\(agoraMs, policyStore\.localRetentionDays\(db\)\)/);
+  assert.match(worker, /purgeSyncedBeforeExcludingTrip\(cutoff, activeTrip\)/);
+  assert.match(worker, /!riderConhecido \|\| DeviceSession\.precisaAutenticar/);
+  assert.match(session, /optString\("actor_id", ""\)/);
+  assert.match(session, /KEY_RIDER_ID, actorId/);
+});
+
 /* ------------------------------------------------------------------ *
  * 7. Testes do lado Kotlin existem
  * ------------------------------------------------------------------ */

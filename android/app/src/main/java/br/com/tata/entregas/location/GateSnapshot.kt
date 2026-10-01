@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
 import br.com.tata.entregas.data.DeviceStateEntity
 import br.com.tata.entregas.data.EntregasDatabase
+import br.com.tata.entregas.sync.LocalRetentionPolicy
 import java.util.UUID
 
 /**
@@ -107,6 +108,8 @@ object PolicyStore {
     private const val KEY_TERM_MATERIAL_VERSION = "term_material_version"
     private const val KEY_TERM_PUBLISHABLE = "term_publishable"
     private const val KEY_ADAPTIVE_POLICY = "adaptive_policy"
+    private const val KEY_LOCAL_RETENTION_DAYS = "local_gps_retention_days"
+    private const val KEY_LOCAL_RETENTION_TERM_HASH = "local_gps_retention_term_hash"
 
     /** Default seguro: sem confirmação do servidor, não captura. */
     suspend fun captureEnabled(db: EntregasDatabase): Boolean =
@@ -119,6 +122,25 @@ object PolicyStore {
 
     suspend fun currentTermMaterialVersion(db: EntregasDatabase): String? =
         db.deviceState().get(KEY_TERM_MATERIAL_VERSION)
+
+    /**
+     * Só devolve prazo quando ele veio do MESMO termo que está publicável.
+     * Um valor antigo, um default ou uma resposta parcial preservam os dados.
+     */
+    suspend fun localRetentionDays(db: EntregasDatabase): Int? {
+        if (!termPublishable(db)) return null
+        val hash = currentTermHash(db)?.takeIf { it.isNotBlank() } ?: return null
+        if (db.deviceState().get(KEY_LOCAL_RETENTION_TERM_HASH) != hash) return null
+
+        // Publicar não substitui ciência: a exclusão local só é autorizada
+        // depois que o termo vigente foi aceito neste mesmo aparelho.
+        val riderId = db.deviceState().get(EntregasDatabase.KEY_RIDER_ID) ?: return null
+        val deviceId = db.deviceState().get(EntregasDatabase.KEY_DEVICE_ID) ?: return null
+        db.termAcks().findAcceptedOnDevice(riderId, hash, deviceId) ?: return null
+
+        val days = db.deviceState().get(KEY_LOCAL_RETENTION_DAYS)?.toIntOrNull() ?: return null
+        return days.takeIf { it in 1..LocalRetentionPolicy.MAX_DAYS }
+    }
 
     suspend fun load(db: EntregasDatabase): AdaptivePolicy {
         val raw = db.deviceState().get(KEY_ADAPTIVE_POLICY) ?: return AdaptivePolicy.FALLBACK
@@ -136,11 +158,30 @@ object PolicyStore {
         json.optJSONObject("flags")?.let {
             store(db, KEY_CAPTURE_ENABLED, it.optBoolean("gps_capture_enabled", false).toString())
         }
-        json.optJSONObject("term")?.let {
-            store(db, KEY_TERM_HASH, it.optString("hash", ""))
-            store(db, KEY_TERM_MATERIAL_VERSION, it.optString("material_version", ""))
-            store(db, KEY_TERM_PUBLISHABLE, it.optBoolean("publishable", false).toString())
+
+        val term = json.optJSONObject("term")
+        if (term != null) {
+            val hash = term.optString("hash", "")
+            val publishable = term.optBoolean("publishable", false)
+            store(db, KEY_TERM_HASH, hash)
+            store(db, KEY_TERM_MATERIAL_VERSION, term.optString("material_version", ""))
+            store(db, KEY_TERM_PUBLISHABLE, publishable.toString())
+
+            val retention = term.optJSONObject("retention")
+            val days = retention?.optInt("detailed_point_days", -1) ?: -1
+            if (publishable && hash.isNotBlank() && days in 1..LocalRetentionPolicy.MAX_DAYS) {
+                store(db, KEY_LOCAL_RETENTION_DAYS, days.toString())
+                store(db, KEY_LOCAL_RETENTION_TERM_HASH, hash)
+            } else {
+                db.deviceState().clear(KEY_LOCAL_RETENTION_DAYS)
+                db.deviceState().clear(KEY_LOCAL_RETENTION_TERM_HASH)
+            }
+        } else {
+            // Resposta parcial nunca mantém autorização antiga de exclusão.
+            db.deviceState().clear(KEY_LOCAL_RETENTION_DAYS)
+            db.deviceState().clear(KEY_LOCAL_RETENTION_TERM_HASH)
         }
+
         json.optJSONObject("capture_policy")?.let { store(db, KEY_ADAPTIVE_POLICY, it.toString()) }
     }
 

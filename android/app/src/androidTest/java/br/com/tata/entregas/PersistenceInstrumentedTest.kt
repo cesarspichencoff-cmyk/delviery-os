@@ -3,9 +3,12 @@ package br.com.tata.entregas
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import br.com.tata.entregas.data.DeviceStateEntity
 import br.com.tata.entregas.data.EntregasDatabase
 import br.com.tata.entregas.data.GpsPointEntity
 import br.com.tata.entregas.data.TermAckEntity
+import br.com.tata.entregas.location.PolicyStore
+import br.com.tata.entregas.sync.DeviceSession
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -18,6 +21,7 @@ import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.json.JSONObject
 import java.io.File
 
 /**
@@ -229,5 +233,87 @@ class PersistenceInstrumentedTest {
 
         assertEquals("só o já sincronizado é expurgado", 1, removed)
         assertEquals(1, db.gpsPoints().pendingCount())
+    }
+
+    @Test
+    fun sessao_da_plataforma_persiste_actor_como_identidade_do_motoboy() = runBlocking {
+        DeviceSession.gravar(
+            db = db,
+            token = "token-fixture",
+            expiraEmMs = 20_000L,
+            actorId = "rid-da-plataforma",
+            agoraMs = 10_000L,
+        )
+        assertEquals(
+            "rid-da-plataforma",
+            db.deviceState().get(EntregasDatabase.KEY_RIDER_ID),
+        )
+
+        DeviceSession.gravar(
+            db = db,
+            token = "token-sem-ator",
+            expiraEmMs = 30_000L,
+            actorId = null,
+            agoraMs = 11_000L,
+        )
+        assertNull("resposta sem actor_id deve falhar fechando", db.deviceState().get(EntregasDatabase.KEY_RIDER_ID))
+    }
+
+    @Test
+    fun retencao_local_exige_termo_publicavel_e_aceito_no_mesmo_aparelho() = runBlocking {
+        val now = 10_000L
+        db.deviceState().put(DeviceStateEntity(EntregasDatabase.KEY_RIDER_ID, "rid-1", now))
+        db.deviceState().put(DeviceStateEntity(EntregasDatabase.KEY_DEVICE_ID, "dev-1", now))
+
+        val published = JSONObject(
+            """{"term":{"hash":"hash-17","material_version":"2","publishable":true,"retention":{"detailed_point_days":17,"after_expiry":"reduce_granularity"}}}""",
+        )
+        PolicyStore.applyServerPolicies(db, published)
+        assertNull("publicação sem ciência não autoriza exclusão", PolicyStore.localRetentionDays(db))
+
+        db.termAcks().insert(
+            TermAckEntity(
+                acknowledgementId = "ack-17",
+                riderId = "rid-1",
+                unitId = "ITAIM",
+                termVersion = "2.0.0",
+                termMaterialVersion = "2",
+                termHash = "hash-17",
+                status = "accepted",
+                acceptedAt = "2026-10-01T09:00:00.000Z",
+                deviceId = "dev-1",
+                appVersion = "teste",
+                language = "pt-BR",
+                origin = "native",
+                correlationId = "corr-17",
+                schemaVersion = "consent@1.0.0",
+                syncState = "sent",
+            ),
+        )
+        assertEquals(17, PolicyStore.localRetentionDays(db))
+
+        val pending = JSONObject(
+            """{"term":{"hash":null,"material_version":"3","publishable":false,"retention":null}}""",
+        )
+        PolicyStore.applyServerPolicies(db, pending)
+        assertNull("termo não publicável revoga a autorização local", PolicyStore.localRetentionDays(db))
+    }
+
+    @Test
+    fun expurgo_preserva_viagem_ativa_mesmo_quando_pontos_ja_subiram() = runBlocking {
+        val ativo = point(1, "2026-01-01T12:00:00.000Z", "trip-ativa").copy(createdAtMs = 1_000L)
+        val fechada = point(2, "2026-01-01T12:01:00.000Z", "trip-fechada").copy(createdAtMs = 1_000L)
+        val pendente = point(3, "2026-01-01T12:02:00.000Z", "trip-fechada-pendente").copy(createdAtMs = 1_000L)
+        db.gpsPoints().insert(ativo)
+        db.gpsPoints().insert(fechada)
+        db.gpsPoints().insert(pendente)
+        db.gpsPoints().markSent(listOf(ativo.pointId, fechada.pointId))
+
+        val removed = db.gpsPoints().purgeSyncedBeforeExcludingTrip(2_000L, "trip-ativa")
+
+        assertEquals(1, removed)
+        assertEquals(1, db.gpsPoints().countForTrip("trip-ativa"))
+        assertEquals(0, db.gpsPoints().countForTrip("trip-fechada"))
+        assertEquals(1, db.gpsPoints().countForTrip("trip-fechada-pendente"))
     }
 }

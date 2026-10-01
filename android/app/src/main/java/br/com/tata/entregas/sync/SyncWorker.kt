@@ -72,7 +72,10 @@ class SyncWorker(
         // campo entra. O piloto nunca emitiu token de aparelho — respondia 200
         // sem `device_token`, e este worker ficava em laco para sempre.
         var sessao = DeviceSession.sessaoAtual(db)
-        if (DeviceSession.precisaAutenticar(sessao, agoraMs)) {
+        val riderConhecido = !db.deviceState()
+            .get(EntregasDatabase.KEY_RIDER_ID)
+            .isNullOrBlank()
+        if (!riderConhecido || DeviceSession.precisaAutenticar(sessao, agoraMs)) {
             val deviceId = br.com.tata.entregas.location.DeviceId.ensure(db)
             val semCredencial = EntregasApi(BuildConfig.ENTREGAS_PLATFORM_URL, { null })
             when (val a = DeviceSession.autenticar(
@@ -232,8 +235,25 @@ class SyncWorker(
 
         // 4. Políticas e flags — aproveita a janela de rede aberta.
         when (val r = piloto.policies()) {
-            is ApiResult.Ok -> br.com.tata.entregas.location.PolicyStore
-                .applyServerPolicies(db, r.value)
+            is ApiResult.Ok -> {
+                val policyStore = br.com.tata.entregas.location.PolicyStore
+                policyStore.applyServerPolicies(db, r.value)
+
+                // Retenção local é fail-preserve: só existe corte quando o
+                // servidor publicou um termo, o mesmo hash foi aceito neste
+                // aparelho e o prazo é válido. Nunca usa o default de código.
+                val cutoff = LocalRetentionPolicy.cutoffMs(agoraMs, policyStore.localRetentionDays(db))
+                if (cutoff != null) {
+                    val activeTrip = db.deviceState()
+                        .get(EntregasDatabase.KEY_ACTIVE_TRIP)
+                        ?.takeIf { it.isNotBlank() }
+                    if (activeTrip == null) {
+                        db.gpsPoints().purgeSyncedBefore(cutoff)
+                    } else {
+                        db.gpsPoints().purgeSyncedBeforeExcludingTrip(cutoff, activeTrip)
+                    }
+                }
+            }
             else -> Unit
         }
 

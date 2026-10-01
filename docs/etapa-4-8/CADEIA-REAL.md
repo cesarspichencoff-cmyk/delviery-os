@@ -282,6 +282,7 @@ explícito (D4). **Governança depois do commit** (L45): medida no commit da doc
 7. ~~**Relógio do aparelho**~~ — **corrigido e provado** em `docs/etapa-4-8/RELOGIO.md`:
    o servidor julga o carimbo, grava `clock_trust` explícito e `suspect` não fabrica frescor.
 8. **Leitura canônica de localização da viagem** — **CODE_READY + TEST_PASS local em 2026-10-01**: `lerLocalizacaoCanonicaDaViagem` lê somente `platform.event_log`, dentro de `SET TRANSACTION READ ONLY`, exigindo unidade + viagem + `source_mode`; suíte focada 3/3 e governança 14/14. A subprova PostgreSQL real foi adicionada à cadeia, mas segue **NOT_RUN nesta sessão** porque `DELIVERYOS_PG_URL` está ausente. A central de despacho ainda não foi ligada a essa porta.
+9. **Retenção local do GPS no Android** — **CODE_READY + TEST_PASS no AVD em 2026-10-01**: `/api/policies` só autoriza retenção quando o termo é publicável; o Android vincula o prazo ao hash do termo e exige aceite do mesmo hash pelo mesmo motoboy no mesmo aparelho. `SyncWorker` remove somente `sent` vencido e preserva a viagem ativa. A identidade do motoboy agora é persistida a partir de `actor_id` da sessão canônica da plataforma, nunca da tela. Provas: Android estrutural 42/42, device-api 43/43, unitários `BUILD SUCCESSFUL`, instrumentados **13/13** no AVD Android 14. O prazo real permanece **NÃO DECIDIDO** no checklist; nenhum expurgo operacional foi executado.
 
 ## 10 — UNKNOWNs e limites declarados
 

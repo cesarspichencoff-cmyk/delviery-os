@@ -78,10 +78,17 @@ export function buildPolicies(args: {
       version: args.term.version,
       material_version: args.term.material_version,
       unit_id: args.term.unit_id,
-      // Hash só faz sentido quando o termo é apresentável.
+      // Hash e retenção só ganham autoridade quando o termo inteiro foi
+      // aprovado/publicável. Os números do modelo não viram política por omissão.
       hash: publishable ? hashTerm(args.term) : null,
       publishable,
       language: args.term.language,
+      retention: publishable
+        ? {
+            detailed_point_days: args.term.retention.detailed_point_days,
+            after_expiry: args.term.retention.after_expiry,
+          }
+        : null,
     },
     capture_policy: {
       version: DEFAULT_ADAPTIVE_POLICY.version,
@@ -92,7 +99,9 @@ export function buildPolicies(args: {
     gps_policy: {
       max_accuracy_usable_m: (args.policy ?? DEFAULT_GPS_POLICY).max_accuracy_usable_m,
       freshness_window_s: (args.policy ?? DEFAULT_GPS_POLICY).freshness_window_s,
-      retention_days: (args.policy ?? DEFAULT_GPS_POLICY).retention_days,
+      // Compatibilidade de shape, sem transformar DEFAULT_GPS_POLICY em
+      // autorização de exclusão. Só o termo publicável autoriza retenção.
+      retention_days: publishable ? args.term.retention.detailed_point_days : null,
     },
     unit: {
       unit_id: args.unit.ok ? args.unit.config.unit_id : null,

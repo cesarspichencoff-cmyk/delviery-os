@@ -209,12 +209,15 @@ async function suiteTermoPendente(): Promise<void> {
     assert.equal(r.json.unit_configured, false, "sem coordenada calibrada");
   });
 
-  await test("política entregue ao aparelho reflete termo pendente", async () => {
+  await test("política entregue ao aparelho reflete termo pendente sem autorizar retenção", async () => {
     const r = await api("/api/policies", { token: OPS_TOKEN });
     assert.equal(r.status, 200);
     const term = r.json.term as Record<string, unknown>;
+    const gps = r.json.gps_policy as Record<string, unknown>;
     assert.equal(term.publishable, false);
     assert.equal(term.hash, null, "sem hash quando o termo não pode ser apresentado");
+    assert.equal(term.retention, null, "número do modelo não pode virar retenção autorizada");
+    assert.equal(gps.retention_days, null, "gps_policy também deve falhar preservando");
   });
 
   await test("aceite é recusado enquanto o termo não estiver liberado", async () => {
@@ -306,7 +309,13 @@ async function suiteTermoPendente(): Promise<void> {
  * ------------------------------------------------------------------ */
 
 async function suiteTermoLiberado(): Promise<void> {
-  const term = syntheticTerm();
+  const term = syntheticTerm({
+    retention: {
+      operational_event_days: 365,
+      detailed_point_days: 17,
+      after_expiry: "reduce_granularity",
+    },
+  });
   await startServer({ captureEnabled: true, term });
 
   await test("com o termo preenchido, o health muda para publicável", async () => {
@@ -314,12 +323,17 @@ async function suiteTermoLiberado(): Promise<void> {
     assert.equal(r.json.term_publishable, true);
   });
 
-  await test("política entrega hash do termo para o aparelho conferir", async () => {
+  await test("política entrega hash e retenção exata do termo aprovado", async () => {
     const r = await api("/api/policies", { token: RIDER_TOKEN });
     const t = r.json.term as Record<string, unknown>;
+    const retention = t.retention as Record<string, unknown>;
+    const gps = r.json.gps_policy as Record<string, unknown>;
     assert.equal(t.publishable, true);
     assert.equal(t.hash, hashTerm(term), "hash tem de bater com o texto vigente");
     assert.equal(t.unit_id, "ITAIM");
+    assert.equal(retention.detailed_point_days, 17, "não pode cair no default 30");
+    assert.equal(retention.after_expiry, "reduce_granularity");
+    assert.equal(gps.retention_days, 17, "shape legado precisa refletir o termo, não o default");
   });
 
   await test("política não vaza a coordenada da unidade para o aparelho", async () => {

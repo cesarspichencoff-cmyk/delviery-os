@@ -41,7 +41,9 @@ e o portão de captura bloqueia com `term_not_publishable`.
 Sobre os dois prazos de retenção: não inventei número. Os valores no modelo
 existem só para dar forma ao objeto, e `approved: false` impede que virem
 política por omissão. Eles precisam de uma decisão sua — inclusive porque o
-motoboy vai ler esses prazos na tela.
+motoboy vai ler esses prazos na tela. Desde 2026-10-01, o Android também falha
+preservando: sem termo publicável + hash vigente + aceite no mesmo aparelho,
+nenhum expurgo local é autorizado. Isso **não preenche** os campos acima.
 
 ## B. Unidade ITAIM — trava o retorno automático
 

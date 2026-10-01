@@ -445,7 +445,7 @@ corrompendo exatamente a ordenação que o servidor usa.
   9 dimensões chegam `unknown` em produção. O modelo multidimensional está
   completo e testado; **o extrator que o alimenta é que não extrai**;
 - tabela `outbox_event` do Room nunca recebe escrita (código morto);
-- `purgeSyncedBefore` nunca é agendada — retenção local não é aplicada;
+- **SUCESSÃO 2026-10-01:** a retenção local foi ligada de forma **fail-preserve**. O aparelho só calcula corte quando `/api/policies` traz retenção do termo publicável, o hash é o termo vigente e existe aceite desse mesmo hash pelo mesmo motoboy no mesmo aparelho. Só pontos `sent` vencidos são removíveis e a viagem ativa é sempre preservada. Sem política/aceite válido, nada é apagado. O prazo real continua **DECISÃO HUMANA ABERTA** no checklist; nenhum default 30 foi promovido;
 - **SUCESSÃO 2026-10-01:** o Kotlin **não descarta mais** o receipt do GPS.
   `SyncWorker` interpreta contagens/rejeições com `decideGpsReceipt`, marca
   aceitos como `sent`, rejeitados como `rejected` e falha/retry em receipt
