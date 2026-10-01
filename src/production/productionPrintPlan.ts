@@ -173,6 +173,7 @@ function normalizedObservations(values: string[] | undefined): string[] {
 function calibrationReady(entry: ProductionPrinterCalibrationEntry): boolean {
   const c = entry.calibration;
   return (
+    clean(c.actual_device_variant) !== "UNKNOWN" &&
     typeof c.actual_media_width_mm === "number" &&
     typeof c.printable_width_dots === "number" &&
     clean(c.transport_selected) !== "UNKNOWN" &&
@@ -183,6 +184,7 @@ function calibrationReady(entry: ProductionPrinterCalibrationEntry): boolean {
     clean(c.bold_double_size_legibility) !== "UNKNOWN" &&
     clean(c.density_legibility) !== "UNKNOWN" &&
     clean(c.paperout_observation) !== "UNKNOWN" &&
+    clean(c.cover_open_observation) !== "UNKNOWN" &&
     clean(c.offline_observation) !== "UNKNOWN" &&
     clean(c.spooler_job_observation) !== "UNKNOWN" &&
     clean(c.one_physical_ticket_proof) !== "UNKNOWN"
