@@ -1,0 +1,269 @@
+{
+  "schema": "deliveryos.plaza-routing-audit-snapshot.v1",
+  "captured_date": "2026-09-30",
+  "store": "0001 - TATA ITAIM",
+  "sources": {
+    "cardapio_seed": {
+      "path": "data/cardapio_knowledge_seed.json",
+      "git_blob_sha": "6949f728ad1e11fe58f791a29cef2c68675b393d",
+      "items": 199
+    },
+    "retail_products": {
+      "source": "Cadastro-de-Loja---Produtos-por-Loja.xlsx",
+      "sha256": "f4cb1569a4c8752b831db97c2d5444bfea8c0d6fb06c0c79d83ada3bb0722737",
+      "products": 463
+    },
+    "retail_printers": {
+      "source": "Cadastro-de-Loja---Impressoras-por-Loja.xlsx",
+      "sha256": "c998375c36ee3060836ba7ad46af0a9f807f5a307e55dee40cf67881b7a40ba1"
+    },
+    "routing_map_git_blob_sha": "d7d4d25bcb882370a37cf748d2d79139b07159a0",
+    "printer_map_git_blob_sha": "24a3b068598798209f7d9f8492c9cbb3aa973dab"
+  },
+  "method": {
+    "matching": "CONSERVATIVE_DETERMINISTIC_NAME_NORMALIZATION",
+    "fuzzy_matching_promoted": false,
+    "auto_reclassification": false,
+    "principle": "LOGICAL_PLAZA_NE_PHYSICAL_PRINTER_ROUTE"
+  },
+  "coverage": {
+    "seed_items": 199,
+    "unique_deterministic_matches": 94,
+    "ambiguous_same_name_matches": 1,
+    "unmatched_seed_items": 104,
+    "unique_match_share": 0.4723618090452261
+  },
+  "plaza_profiles": [
+    {
+      "plaza": "bar_bebidas",
+      "unique_matches": 6,
+      "routes": [
+        {
+          "printer_codes": [
+            "00007"
+          ],
+          "count": 6
+        }
+      ],
+      "observation": "All deterministic matches route BAR-only."
+    },
+    {
+      "plaza": "combinados",
+      "unique_matches": 7,
+      "routes": [
+        {
+          "printer_codes": [
+            "00009",
+            "00003"
+          ],
+          "count": 6
+        },
+        {
+          "printer_codes": [
+            "00009"
+          ],
+          "count": 1
+        }
+      ],
+      "known_exception": {
+        "seed_name": "Combinado Executivo Sushi Salmão",
+        "product_code": "9.05.05.080.00",
+        "printer_codes": [
+          "00009"
+        ],
+        "disposition": "KEEP_KNOWN_LUNCH_ONLY_EXCEPTION"
+      }
+    },
+    {
+      "plaza": "cozinha_quentes",
+      "unique_matches": 20,
+      "routes": [
+        {
+          "printer_codes": [
+            "00002"
+          ],
+          "count": 20
+        }
+      ],
+      "observation": "All deterministic matches route COZINHA-only."
+    },
+    {
+      "plaza": "duplas",
+      "unique_matches": 37,
+      "routes": [
+        {
+          "printer_codes": [
+            "00009",
+            "00003"
+          ],
+          "count": 36
+        },
+        {
+          "printer_codes": [
+            "00006"
+          ],
+          "count": 1
+        }
+      ],
+      "outlier": {
+        "seed_name": "Tartar de Atum Spicy",
+        "seed_id": "tartar_de_atum_spicy",
+        "current_plaza": "duplas",
+        "seed_confidence": "inferido_com_baixa_confianca",
+        "manual_review": true,
+        "product_code": "9.10.05.040.00",
+        "retail_name": "TARTAR DE ATUM SPICY",
+        "printer_codes": [
+          "00006"
+        ],
+        "disposition": "REVIEW_CANDIDATE_NOT_AUTO_CORRECTION"
+      }
+    },
+    {
+      "plaza": "enrolados",
+      "unique_matches": 13,
+      "routes": [
+        {
+          "printer_codes": [
+            "00006",
+            "00004"
+          ],
+          "count": 13
+        }
+      ],
+      "observation": "All deterministic matches route BALCAOSUSHI2 + DELIVERY SUSHI2."
+    },
+    {
+      "plaza": "enrolados_quentes",
+      "unique_matches": 8,
+      "routes": [
+        {
+          "printer_codes": [
+            "00006"
+          ],
+          "count": 5
+        },
+        {
+          "printer_codes": [
+            "00006",
+            "00002"
+          ],
+          "count": 3
+        }
+      ],
+      "observation": "Both current physical patterns are internally recurrent; route alone does not collapse this logical plaza."
+    },
+    {
+      "plaza": "montagem_outros",
+      "unique_matches": 2,
+      "routes": [
+        {
+          "printer_codes": [
+            "00002"
+          ],
+          "count": 2
+        }
+      ],
+      "observation": "Coverage is too small to infer a one-to-one physical mapping."
+    },
+    {
+      "plaza": "sobremesa",
+      "unique_matches": 1,
+      "routes": [
+        {
+          "printer_codes": [
+            "00002"
+          ],
+          "count": 1
+        }
+      ],
+      "observation": "Coverage is too small to infer a one-to-one physical mapping."
+    }
+  ],
+  "manual_review_checks": [
+    {
+      "seed_name": "Ceviche",
+      "current_plaza": "enrolados_quentes",
+      "product_code": "9.10.05.070.00",
+      "printer_codes": [
+        "00006"
+      ],
+      "disposition": "PHYSICAL_TOPOLOGY_SUPPORTS_CURRENT_PLAZA_NO_CHANGE"
+    },
+    {
+      "seed_name": "Tartar de Salmão",
+      "current_plaza": "enrolados_quentes",
+      "product_code": "9.10.05.050.00",
+      "printer_codes": [
+        "00006"
+      ],
+      "disposition": "PHYSICAL_TOPOLOGY_SUPPORTS_CURRENT_PLAZA_NO_CHANGE"
+    },
+    {
+      "seed_name": "Tuna Shisô Tartar",
+      "current_plaza": "enrolados_quentes",
+      "retail_name": "TUNA SHISSO TARTAR",
+      "product_code": "9.10.05.060.00",
+      "printer_codes": [
+        "00006"
+      ],
+      "disposition": "PHYSICAL_TOPOLOGY_SUPPORTS_CURRENT_PLAZA_NO_CHANGE"
+    },
+    {
+      "seed_name": "Missoshiro",
+      "current_plaza": "cozinha_quentes",
+      "candidates": [
+        {
+          "product_code": "9.00.00.020.00",
+          "printer_codes": [
+            "00002"
+          ]
+        },
+        {
+          "product_code": "9.75.00.020.00",
+          "printer_codes": [
+            "00002"
+          ]
+        }
+      ],
+      "disposition": "PRODUCT_ID_AMBIGUOUS_BUT_ROUTE_SUPPORTS_CURRENT_PLAZA"
+    },
+    {
+      "seed_name": "Tartar de Atum Spicy",
+      "current_plaza": "duplas",
+      "product_code": "9.10.05.040.00",
+      "printer_codes": [
+        "00006"
+      ],
+      "disposition": "REVIEW_CANDIDATE_NOT_AUTO_CORRECTION"
+    },
+    {
+      "seed_name": "Carpaccio de Polvo Espanhol",
+      "current_plaza": "duplas",
+      "disposition": "UNMATCHED_BY_CONSERVATIVE_JOIN_NO_AUTO_CONCLUSION"
+    },
+    {
+      "seed_name": "Carpaccio de Salmão Trufado",
+      "current_plaza": "duplas",
+      "disposition": "UNMATCHED_BY_CONSERVATIVE_JOIN_NO_AUTO_CONCLUSION"
+    },
+    {
+      "seed_name": "Tatá Especial - Club Vip Gourmet",
+      "current_plaza": null,
+      "disposition": "UNMATCHED_BY_CONSERVATIVE_JOIN_KEEP_UNKNOWN"
+    }
+  ],
+  "conclusion": {
+    "architecture": "KEEP_8_LOGICAL_PLAZAS_SEPARATE_FROM_6_ACTIVE_PHYSICAL_PRINTER_DESTINATIONS",
+    "material_review_candidate_count": 1,
+    "material_review_candidate": "Tartar de Atum Spicy",
+    "automatic_seed_changes": 0
+  },
+  "effects": {
+    "seed_write": false,
+    "motor_write": false,
+    "teknisa_write": false,
+    "print": false,
+    "cutover": false
+  }
+}
