@@ -1,6 +1,8 @@
 import type {
   PlannedProductionLine,
+  ProductionInstructionEvidence,
   ProductionPrintIntent,
+  ProductionServiceResolution,
 } from "./productionPrintPlan";
 import type {
   OrderResourceProjection,
@@ -24,7 +26,7 @@ export interface StationPrepComponent {
   label: string;
   quantity: number;
   unit: string;
-  proof: "HUMAN_CONFIRMED" | "RECIPE_BOM";
+  proof: Exclude<ProductionInstructionEvidence, "UNKNOWN">;
 }
 
 export interface StationProductionTicketV2 {
@@ -39,6 +41,9 @@ export interface StationProductionTicketV2 {
     tata_sequence: string;
     order_time: string | null;
   };
+  service_resolution: ProductionServiceResolution;
+  intent_fingerprint: string;
+  order_observations: string[];
   mount_groups: StationTicketMountGroup[];
   final_check_label: "PRODUZIDO" | "FINALIZADO";
   content_priority: [
@@ -48,9 +53,15 @@ export interface StationProductionTicketV2 {
     "ITEM_QTY_NAME",
     "ITEM_PREP_INGREDIENTS",
     "ITEM_OBSERVATION",
+    "ORDER_OBSERVATION",
     "SOURCE_IDS",
     "FINAL_CHECK",
   ];
+  render_policy: {
+    render_prep_unknowns: false;
+    render_only_proven_prep_components: true;
+    keep_order_observations_separate_from_item_observations: true;
+  };
   physical_render_status: "SEMANTIC_DOCUMENT_ONLY_REQUIRES_CALIBRATED_RENDERER";
   effects: {
     print: false;
@@ -150,6 +161,14 @@ function itemPrepComponents(line: PlannedProductionLine): {
       unknowns.add(`UNPROVEN_PREP_COMPONENT:${key}`);
       continue;
     }
+    if (
+      component.proof !== "HUMAN_CONFIRMED_RULE" &&
+      component.proof !== "LOCAL_RECIPE_VALIDATED" &&
+      component.proof !== "REAL_OBSERVED"
+    ) {
+      unknowns.add(`INVALID_PREP_COMPONENT_EVIDENCE:${key}`);
+      continue;
+    }
 
     const mapKey = `${key}|${unit}|${component.proof}`;
     const prior = known.get(mapKey);
@@ -191,6 +210,9 @@ export function buildStationProductionTicketV2(
   if (!clean(intent.identifiers.tata_sequence)) {
     throw new Error("TATA_SEQUENCE_REQUIRED");
   }
+  if (!clean(intent.intent_fingerprint)) {
+    throw new Error("INTENT_FINGERPRINT_REQUIRED");
+  }
 
   return {
     schema: "deliveryos.station-production-ticket.v2",
@@ -199,6 +221,9 @@ export function buildStationProductionTicketV2(
       printer_name: intent.printer.printer_name,
     },
     identifiers: { ...intent.identifiers },
+    service_resolution: { ...intent.service_resolution },
+    intent_fingerprint: intent.intent_fingerprint,
+    order_observations: [...intent.order_observations],
     mount_groups: buildMountGroups(intent.lines),
     final_check_label:
       intent.printer.printer_name === "COZINHA" ? "PRODUZIDO" : "FINALIZADO",
@@ -209,9 +234,15 @@ export function buildStationProductionTicketV2(
       "ITEM_QTY_NAME",
       "ITEM_PREP_INGREDIENTS",
       "ITEM_OBSERVATION",
+      "ORDER_OBSERVATION",
       "SOURCE_IDS",
       "FINAL_CHECK",
     ],
+    render_policy: {
+      render_prep_unknowns: false,
+      render_only_proven_prep_components: true,
+      keep_order_observations_separate_from_item_observations: true,
+    },
     physical_render_status: "SEMANTIC_DOCUMENT_ONLY_REQUIRES_CALIBRATED_RENDERER",
     effects: {
       print: false,
