@@ -44,7 +44,7 @@ DO $$ BEGIN
     -- credencial de runtime é efeito de implantação e continua fora deste gate.
     CREATE ROLE deliveryos_entregas_pilot LOGIN;
   END IF;
-END $;
+END $$;
 
 -- ------------------------------------------------------------- CRÍTICO
 -- Lê configuração, sobe HTTP, autentica aparelho, grava fato + mensagem.
