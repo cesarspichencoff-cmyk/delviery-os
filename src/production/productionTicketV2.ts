@@ -13,6 +13,8 @@ export interface StationTicketMountGroup {
   items: Array<{
     product_name: string;
     quantity: number;
+    prep_ingredients: StationPrepComponent[];
+    prep_unknowns: string[];
     observations: string[];
   }>;
 }
@@ -38,16 +40,14 @@ export interface StationProductionTicketV2 {
     order_time: string | null;
   };
   mount_groups: StationTicketMountGroup[];
-  prep_components: StationPrepComponent[];
-  prep_unknowns: string[];
   final_check_label: "PRODUZIDO" | "FINALIZADO";
   content_priority: [
     "DESTINATION",
     "TATA_SEQUENCE",
     "MOUNT_BOX",
     "ITEM_QTY_NAME",
+    "ITEM_PREP_INGREDIENTS",
     "ITEM_OBSERVATION",
-    "PREP_COMPONENTS",
     "SOURCE_IDS",
     "FINAL_CHECK",
   ];
@@ -97,9 +97,12 @@ function buildMountGroups(lines: PlannedProductionLine[]): StationTicketMountGro
       if (existing.box_label !== box) {
         throw new Error(`MOUNT_GROUP_BOX_CONFLICT:${id}`);
       }
+      const prep = itemPrepComponents(line);
       existing.items.push({
         product_name: line.product_name,
         quantity: line.quantity,
+        prep_ingredients: prep.components,
+        prep_unknowns: prep.unknowns,
         observations: line.item_observations,
       });
     } else {
@@ -107,11 +110,16 @@ function buildMountGroups(lines: PlannedProductionLine[]): StationTicketMountGro
         group_id: id,
         box_label: box,
         items: [
-          {
-            product_name: line.product_name,
-            quantity: line.quantity,
-            observations: line.item_observations,
-          },
+          (() => {
+            const prep = itemPrepComponents(line);
+            return {
+              product_name: line.product_name,
+              quantity: line.quantity,
+              prep_ingredients: prep.components,
+              prep_unknowns: prep.unknowns,
+              observations: line.item_observations,
+            };
+          })(),
         ],
       });
     }
@@ -120,42 +128,41 @@ function buildMountGroups(lines: PlannedProductionLine[]): StationTicketMountGro
   return [...groups.values()];
 }
 
-function aggregatePrepComponents(lines: PlannedProductionLine[]): {
+function itemPrepComponents(line: PlannedProductionLine): {
   components: StationPrepComponent[];
   unknowns: string[];
 } {
   const known = new Map<string, StationPrepComponent>();
   const unknowns = new Set<string>();
 
-  for (const line of lines) {
-    for (const component of line.prep_components ?? []) {
-      const key = clean(component.component_key);
-      const label = clean(component.label);
-      const unit = clean(component.unit);
-      const quantity = Number(component.quantity);
+  for (const component of line.prep_components ?? []) {
+    const key = clean(component.component_key);
+    const label = clean(component.label);
+    const unit = clean(component.unit);
+    const quantity = Number(component.quantity);
 
-      if (!key || !label || !unit || !Number.isFinite(quantity) || quantity <= 0) {
-        unknowns.add(`INVALID_PREP_COMPONENT:item_${line.item_index}`);
-        continue;
-      }
+    if (!key || !label || !unit || !Number.isFinite(quantity) || quantity <= 0) {
+      unknowns.add(`INVALID_PREP_COMPONENT:item_${line.item_index}`);
+      continue;
+    }
 
-      if (component.proof === "UNKNOWN") {
-        unknowns.add(`UNPROVEN_PREP_COMPONENT:${key}`);
-        continue;
-      }
+    if (component.proof === "UNKNOWN") {
+      unknowns.add(`UNPROVEN_PREP_COMPONENT:${key}`);
+      continue;
+    }
 
-      const prior = known.get(`${key}|${unit}|${component.proof}`);
-      if (prior) {
-        prior.quantity += quantity;
-      } else {
-        known.set(`${key}|${unit}|${component.proof}`, {
-          component_key: key,
-          label,
-          quantity,
-          unit,
-          proof: component.proof,
-        });
-      }
+    const mapKey = `${key}|${unit}|${component.proof}`;
+    const prior = known.get(mapKey);
+    if (prior) {
+      prior.quantity += quantity;
+    } else {
+      known.set(mapKey, {
+        component_key: key,
+        label,
+        quantity,
+        unit,
+        proof: component.proof,
+      });
     }
   }
 
@@ -175,8 +182,6 @@ function aggregatePrepComponents(lines: PlannedProductionLine[]): {
 export function buildStationProductionTicketV2(
   intent: ProductionPrintIntent,
 ): StationProductionTicketV2 {
-  const prep = aggregatePrepComponents(intent.lines);
-
   return {
     schema: "deliveryos.station-production-ticket.v2",
     destination: {
@@ -185,8 +190,6 @@ export function buildStationProductionTicketV2(
     },
     identifiers: { ...intent.identifiers },
     mount_groups: buildMountGroups(intent.lines),
-    prep_components: prep.components,
-    prep_unknowns: prep.unknowns,
     final_check_label:
       intent.printer.printer_name === "COZINHA" ? "PRODUZIDO" : "FINALIZADO",
     content_priority: [
@@ -194,8 +197,8 @@ export function buildStationProductionTicketV2(
       "TATA_SEQUENCE",
       "MOUNT_BOX",
       "ITEM_QTY_NAME",
+      "ITEM_PREP_INGREDIENTS",
       "ITEM_OBSERVATION",
-      "PREP_COMPONENTS",
       "SOURCE_IDS",
       "FINAL_CHECK",
     ],
