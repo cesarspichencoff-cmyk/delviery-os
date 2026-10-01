@@ -1,0 +1,51 @@
+name: pilot-postgres-backup-proof
+
+on:
+  push:
+    branches:
+      - tmp/pilot-postgres-backup-restore-20261001
+
+permissions:
+  contents: read
+
+jobs:
+  backup-restore:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      DELIVERYOS_PG_URL: postgresql://postgres:postgres@127.0.0.1:5432/postgres
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+          pg_dump --version
+          pg_restore --version
+      - run: npm ci
+      - run: npm run build
+      - run: npm run test:entregas:pilot-postgres-backup
+      - run: npm run test:platform:backup
+      - run: npm run test:entregas:storage-cutover
+      - run: npm run test:entregas:pilot-postgres-cluster
+      - run: npm run test:platform:governanca
+      - run: git diff --check
