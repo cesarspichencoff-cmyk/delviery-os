@@ -26,10 +26,16 @@
     "seed_exact_logical_units": 977,
     "inferred_rule_logical_skus": 52,
     "inferred_rule_logical_units": 499,
-    "physical_route_gap_skus": 4,
-    "physical_route_gap_units": 37,
+    "physical_route_gap_skus": 0,
+    "physical_route_gap_units": 0,
     "logical_plaza_gap_skus": 0,
-    "logical_plaza_gap_units": 0
+    "logical_plaza_gap_units": 0,
+    "no_own_production_ticket_skus": 4,
+    "no_own_production_ticket_units": 37,
+    "production_behavior_resolved_skus": 120,
+    "production_behavior_resolved_units": 1476,
+    "production_behavior_sku_coverage": 1,
+    "production_behavior_unit_coverage": 1
   },
   "logical_plaza_distribution": [
     {
@@ -73,7 +79,24 @@
       "units": 28
     }
   ],
-  "physical_route_gaps": [
+  "physical_route_gaps": [],
+  "observations": [
+    "Four sold Delivery items are intentionally absent from the production-routing export because they are complementary/mounted items without their own production command/ticket.",
+    "Those four items are resolved as NO_OWN_PRODUCTION_TICKET by human operational confirmation; zero printer targets is expected behavior, not a routing gap.",
+    "Logical plaza and physical printer route remain separate dimensions."
+  ],
+  "gate": {
+    "live_expected_routing": "READY_FOR_LIVE_READ_ONLY_ORDER_TO_EXPECTED_ROUTE_WITH_CONFIRMED_NO_TICKET_REGISTRY",
+    "cutover": "NOT_AUTHORIZED"
+  },
+  "effects": {
+    "teknisa_write": false,
+    "print": false,
+    "seed_write": false,
+    "motor_write": false,
+    "cutover": false
+  },
+  "no_own_production_ticket_items": [
     {
       "source_product_code": "8201100100",
       "canonical_product_code": "8.20.11.001.00",
@@ -82,7 +105,9 @@
       "delivery_units": 13,
       "logical_plaza": "sobremesa",
       "logical_plaza_source": "INFERRED_GROUP_AND_ROUTE_RULE",
-      "direct_route_status": "NOT_PRESENT_IN_CURRENT_PRODUCTS_BY_STORE_EXPORT"
+      "production_behavior": "NO_OWN_PRODUCTION_TICKET",
+      "proof": "HUMAN_CONFIRMED",
+      "confirmation": "Complementary/mounted item; no own production command/ticket."
     },
     {
       "source_product_code": "9750003100",
@@ -92,7 +117,9 @@
       "delivery_units": 17,
       "logical_plaza": "montagem_outros",
       "logical_plaza_source": "INFERRED_GROUP_AND_ROUTE_RULE",
-      "direct_route_status": "NOT_PRESENT_IN_CURRENT_PRODUCTS_BY_STORE_EXPORT"
+      "production_behavior": "NO_OWN_PRODUCTION_TICKET",
+      "proof": "HUMAN_CONFIRMED",
+      "confirmation": "Complementary/mounted item; no own production command/ticket."
     },
     {
       "source_product_code": "9750003000",
@@ -102,7 +129,9 @@
       "delivery_units": 6,
       "logical_plaza": "montagem_outros",
       "logical_plaza_source": "SEED_EXACT_NAME",
-      "direct_route_status": "NOT_PRESENT_IN_CURRENT_PRODUCTS_BY_STORE_EXPORT"
+      "production_behavior": "NO_OWN_PRODUCTION_TICKET",
+      "proof": "HUMAN_CONFIRMED",
+      "confirmation": "Complementary/mounted item; no own production command/ticket."
     },
     {
       "source_product_code": "9750003200",
@@ -112,23 +141,9 @@
       "delivery_units": 1,
       "logical_plaza": "montagem_outros",
       "logical_plaza_source": "SEED_EXACT_NAME",
-      "direct_route_status": "NOT_PRESENT_IN_CURRENT_PRODUCTS_BY_STORE_EXPORT"
+      "production_behavior": "NO_OWN_PRODUCTION_TICKET",
+      "proof": "HUMAN_CONFIRMED",
+      "confirmation": "Complementary/mounted item; no own production command/ticket."
     }
-  ],
-  "observations": [
-    "The four physical-route gaps are real sold Delivery items in the sales export but are absent from the current Products-by-Store routing export.",
-    "Absence from Products-by-Store does not prove that an item should be ignored; the physical print behavior remains UNKNOWN until source/runtime or operational evidence proves it.",
-    "Logical plaza and physical printer route remain separate dimensions."
-  ],
-  "gate": {
-    "live_expected_routing": "BLOCK_ONLY_WHEN_A_REAL_ORDER_CONTAINS_AN_UNRESOLVED_PHYSICAL_ROUTE_ITEM",
-    "cutover": "NOT_AUTHORIZED"
-  },
-  "effects": {
-    "teknisa_write": false,
-    "print": false,
-    "seed_write": false,
-    "motor_write": false,
-    "cutover": false
-  }
+  ]
 }
