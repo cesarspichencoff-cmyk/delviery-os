@@ -1,0 +1,48 @@
+{
+  "schema": "deliveryos.real-sale-item-routing-sample.v1",
+  "captured_date": "2026-09-30",
+  "source": {
+    "system": "Teknisa Retail",
+    "report": "Manutenção de Venda - Itens",
+    "file_name": "Manuteno-de-Venda---Itens 2.xlsx",
+    "sha256": "f10d2e85689861ce5e61f5f86151dd8b5dfc43f74ed98afe30dee2d4c629cfa0",
+    "sale_identity_status": "NOT_EXPOSED_IN_ITEMS_EXPORT"
+  },
+  "exported_item": {
+    "name": "COMBINADO SALMAO 1 PESSOA",
+    "unit": "UN",
+    "quantity": 1,
+    "unit_value": 114,
+    "discount": 5,
+    "total_value": 109,
+    "fee": 4,
+    "tax": 4.36
+  },
+  "registry_resolution": {
+    "method": "KNOWN_CURRENT_PRODUCT_REGISTRY_MATCH",
+    "product_code": "9.15.00.075.00",
+    "configured_printer_codes": [
+      "00009",
+      "00003"
+    ]
+  },
+  "expected_configured_targets": [
+    {
+      "printer_code": "00009",
+      "printer_name": "BALCAOSUSHI1",
+      "printer_ip": "192.168.0.142"
+    },
+    {
+      "printer_code": "00003",
+      "printer_name": "DELIVERY SUSHI 1",
+      "printer_ip": "192.168.0.153"
+    }
+  ],
+  "semantics": "EXPECTED_CONFIGURED_ROUTE_NOT_PHYSICAL_PRINT_PROOF",
+  "effects": {
+    "print": false,
+    "database_write": false,
+    "odhen_change": false,
+    "fiscal_action": false
+  }
+}
