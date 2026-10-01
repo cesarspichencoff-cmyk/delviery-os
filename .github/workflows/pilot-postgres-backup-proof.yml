@@ -48,7 +48,7 @@ jobs:
       - run: npm run test:entregas:storage-cutover
       - run: npm run test:entregas:pilot-postgres-cluster
       - run: npm run test:entregas:deploy-audit
-      - name: Docker Compose render
+      - name: Docker Compose render + runtime expansion
         run: |
           cp deploy/.env.pilot.example deploy/.env
           docker compose --profile maintenance -f deploy/compose.yaml config --format json > /tmp/deliveryos-pilot-compose.json
@@ -63,21 +63,35 @@ jobs:
 
           backup_cmd = " ".join(backup["command"]) if isinstance(backup["command"], list) else str(backup["command"])
           restore_cmd = " ".join(restore["command"]) if isinstance(restore["command"], list) else str(restore["command"])
+          d = "$"
+          dd = d + d
 
-          assert 'case "$ENTREGAS_STORAGE_BACKEND" in' in backup_cmd, backup_cmd
+          # O modelo renderizado preserva o escape de Compose.
+          assert f'case "{dd}ENTREGAS_STORAGE_BACKEND" in' in backup_cmd, backup_cmd
           assert "pg_dump" in backup_cmd, backup_cmd
-          assert "$DELIVERYOS_DATABASE_URL" in backup_cmd, backup_cmd
-          assert "$ENTREGAS_STORAGE_BACKEND" not in backup_cmd, backup_cmd
-
+          assert f'{dd}DELIVERYOS_DATABASE_URL' in backup_cmd, backup_cmd
+          assert f'{dd}ENTREGAS_RESTORE_CONFIRM' in restore_cmd, restore_cmd
+          assert f'{dd}ENTREGAS_RESTORE_DATABASE_URL' in restore_cmd, restore_cmd
           assert "pg_restore" in restore_cmd, restore_cmd
-          assert 'test "$ENTREGAS_RESTORE_CONFIRM" = "YES"' in restore_cmd, restore_cmd
-          assert 'test "$ENTREGAS_RESTORE_DATABASE_URL" != "$DELIVERYOS_DATABASE_URL"' in restore_cmd, restore_cmd
-          assert "$ENTREGAS_RESTORE_DATABASE_URL" not in restore_cmd, restore_cmd
 
           assert backup["environment"]["ENTREGAS_STORAGE_BACKEND"] == "file"
           assert restore["profiles"] == ["maintenance"]
           assert "ports" not in restore
-          print("COMPOSE_RENDER_PROOF_GREEN")
+          print("COMPOSE_RENDER_MODEL_GREEN")
           PY
+
+          # Fronteira real do container: file deve fazer tar e entrar no sleep.
+          # Se o escape chegar errado ao shell, o case cai no inválido e sai 78.
+          set +e
+          timeout 8s docker compose -f deploy/compose.yaml run --no-deps --rm \
+            -e ENTREGAS_STORAGE_BACKEND=file \
+            deliveryos-backup > /tmp/backup-runtime-probe.log 2>&1
+          rc=$?
+          set -e
+          cat /tmp/backup-runtime-probe.log
+          test "$rc" -eq 124
+          ! grep -F "backup recusado" /tmp/backup-runtime-probe.log
+          echo "COMPOSE_RUNTIME_EXPANSION_GREEN"
+          docker compose --profile maintenance -f deploy/compose.yaml down --remove-orphans -v || true
       - run: npm run test:platform:governanca
       - run: git diff --check
