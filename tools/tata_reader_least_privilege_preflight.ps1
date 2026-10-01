@@ -1,5 +1,5 @@
 param(
-  [string]$Server = "192.168.0.24\SQLEXPRESS",
+  [string]$Server = "(local)\SQLEXPRESS",
   [string]$Database = "teknisa",
   [string]$ExpectedPrincipal = "NT SERVICE\TataComandaReader",
   [switch]$AllowDsComanda
@@ -8,34 +8,58 @@ param(
 $ErrorActionPreference = "Stop"
 
 # Metadata/permission checks only.
-# No order rows, no writes, no EXECUTE, no HTTP.
-# Designed for column-level SELECT grants.
+# No operational table rows, no writes, no EXECUTE, no HTTP.
+# Designed specifically for exact column-level SELECT grants.
+
+$AllowedSchema = "TEKNISA"
 
 $allowed = [ordered]@{
-  COMANDAVEN = @("CDFILIAL","CDLOJA","NRVENDAREST","NRCOMANDA","NRCOMANDAEXT","IDORGCMDVENDA","IDSTCOMANDA","DSOBSCOMANDA")
-  ITCOMANDAVEN = @("CDFILIAL","NRVENDAREST","NRCOMANDA","NRPRODCOMVEN","CDPRODUTO","QTPRODCOMVEN","IDSTPRCOMVEN","DSOBSDESCIT","DSOBSPEDDIGCMD","TXPRODCOMVEN")
+  COMANDAVEN = @(
+    "CDFILIAL","CDLOJA","NRVENDAREST","NRCOMANDA","NRCOMANDAEXT",
+    "IDORGCMDVENDA","IDSTCOMANDA","DSOBSCOMANDA"
+  )
+  ITCOMANDAVEN = @(
+    "CDFILIAL","NRVENDAREST","NRCOMANDA","NRPRODCOMVEN","CDPRODUTO",
+    "QTPRODCOMVEN","IDSTPRCOMVEN","DSOBSDESCIT","DSOBSPEDDIGCMD",
+    "TXPRODCOMVEN"
+  )
   PRODUTO = @("CDPRODUTO","NMPRODUTO")
   VENDAREST = @("CDFILIAL","NRVENDAREST","DTHRABERMESA")
 }
-if ($AllowDsComanda) { $allowed.COMANDAVEN += "DSCOMANDA" }
+
+if ($AllowDsComanda) {
+  $allowed.COMANDAVEN += "DSCOMANDA"
+}
 
 $result = [ordered]@{
-  schema = "deliveryos.tata-reader-least-privilege-preflight.v1"
-  mode = "WINDOWS_INTEGRATED_AUTH_COLUMN_LEVEL_METADATA_ONLY"
+  schema = "deliveryos.tata-reader-least-privilege-preflight.v2"
+  mode = "WINDOWS_INTEGRATED_AUTH_EXACT_COLUMN_SURFACE_METADATA_ONLY"
   server = $Server
   database = $Database
   expected_principal = $ExpectedPrincipal
+  expected_schema = $AllowedSchema
+  allow_dscomanda = [bool]$AllowDsComanda
+
   current_login = $null
   original_login = $null
   current_user = $null
   database_matches = $false
+
   server_roles = [ordered]@{}
+  server_permissions = [ordered]@{}
   database_roles = [ordered]@{}
   database_permissions = [ordered]@{}
+
   executable_procedure_count = $null
   objects = @()
+
+  extra_readable_surface = @()
+  extra_readable_surface_count = $null
+  sensitive_extra_readable_columns = @()
+
   safe_for_minimized_order_read = $false
   blocker = $null
+
   effects = [ordered]@{
     order_row_read = $false
     database_write = $false
@@ -47,218 +71,437 @@ $result = [ordered]@{
   }
 }
 
-$cs = "Server=$Server;Database=$Database;Integrated Security=SSPI;Application Name=TataReaderLeastPrivilegePreflight;Connect Timeout=5;Encrypt=False;TrustServerCertificate=True"
-$conn = New-Object System.Data.SqlClient.SqlConnection $cs
+$connectionString =
+  "Server=$Server;Database=$Database;Integrated Security=SSPI;" +
+  "Application Name=TataReaderLeastPrivilegePreflight;Connect Timeout=5;" +
+  "Encrypt=False;TrustServerCertificate=True"
 
-function BoolFromReader($r,[string]$name) {
-  if ($r[$name] -is [DBNull]) { return $null }
-  return ([int]$r[$name] -eq 1)
+$conn = New-Object System.Data.SqlClient.SqlConnection $connectionString
+
+function BoolFromReader($reader, [string]$name) {
+  if ($reader[$name] -is [DBNull]) {
+    return $null
+  }
+  return ([int]$reader[$name] -eq 1)
 }
 
 try {
   $conn.Open()
 
-  $idCmd=$conn.CreateCommand()
-  $idCmd.CommandText = @"
+  $identityCmd = $conn.CreateCommand()
+  $identityCmd.CommandTimeout = 5
+  $identityCmd.CommandText = @"
 SET NOCOUNT ON;
 SELECT
   SUSER_SNAME() AS current_login,
   ORIGINAL_LOGIN() AS original_login,
   USER_NAME() AS current_user,
-  CASE WHEN DB_NAME()=@expected_db THEN 1 ELSE 0 END AS database_matches;
+  CASE WHEN DB_NAME() = @expected_db THEN 1 ELSE 0 END AS database_matches;
 "@
-  $null=$idCmd.Parameters.Add("@expected_db",[System.Data.SqlDbType]::NVarChar,128)
-  $idCmd.Parameters["@expected_db"].Value=$Database
-  $r=$idCmd.ExecuteReader()
-  $null=$r.Read()
-  $result.current_login=[string]$r["current_login"]
-  $result.original_login=[string]$r["original_login"]
-  $result.current_user=[string]$r["current_user"]
-  $result.database_matches=BoolFromReader $r "database_matches"
-  $r.Close()
+  $null = $identityCmd.Parameters.Add("@expected_db", [System.Data.SqlDbType]::NVarChar, 128)
+  $identityCmd.Parameters["@expected_db"].Value = $Database
 
-  foreach($role in @("sysadmin","securityadmin","serveradmin","setupadmin","processadmin","diskadmin","dbcreator","bulkadmin")) {
-    $c=$conn.CreateCommand()
-    $c.CommandText="SELECT IS_SRVROLEMEMBER(@role)"
-    $null=$c.Parameters.Add("@role",[System.Data.SqlDbType]::NVarChar,128)
-    $c.Parameters["@role"].Value=$role
-    $v=$c.ExecuteScalar()
-    $result.server_roles[$role]=if($v -is [DBNull]){$null}else{([int]$v -eq 1)}
+  $identityReader = $identityCmd.ExecuteReader()
+  if (-not $identityReader.Read()) {
+    throw "PREFLIGHT_NO_IDENTITY_ROW"
   }
 
-  foreach($role in @("db_owner","db_datareader","db_datawriter","db_ddladmin","db_securityadmin","db_accessadmin","db_backupoperator")) {
-    $c=$conn.CreateCommand()
-    $c.CommandText="SELECT IS_MEMBER(@role)"
-    $null=$c.Parameters.Add("@role",[System.Data.SqlDbType]::NVarChar,128)
-    $c.Parameters["@role"].Value=$role
-    $v=$c.ExecuteScalar()
-    $result.database_roles[$role]=if($v -is [DBNull]){$null}else{([int]$v -eq 1)}
+  $result.current_login = [string]$identityReader["current_login"]
+  $result.original_login = [string]$identityReader["original_login"]
+  $result.current_user = [string]$identityReader["current_user"]
+  $result.database_matches = BoolFromReader $identityReader "database_matches"
+  $identityReader.Close()
+
+  foreach ($role in @(
+    "sysadmin",
+    "securityadmin",
+    "serveradmin",
+    "setupadmin",
+    "processadmin",
+    "diskadmin",
+    "dbcreator",
+    "bulkadmin"
+  )) {
+    $cmd = $conn.CreateCommand()
+    $cmd.CommandTimeout = 5
+    $cmd.CommandText = "SELECT IS_SRVROLEMEMBER(@role)"
+    $null = $cmd.Parameters.Add("@role", [System.Data.SqlDbType]::NVarChar, 128)
+    $cmd.Parameters["@role"].Value = $role
+    $value = $cmd.ExecuteScalar()
+    $result.server_roles[$role] =
+      if ($value -is [DBNull]) { $null } else { ([int]$value -eq 1) }
   }
 
-  foreach($perm in @("SELECT","INSERT","UPDATE","DELETE","EXECUTE","ALTER","CONTROL","VIEW DEFINITION","VIEW DATABASE STATE")) {
-    $c=$conn.CreateCommand()
-    $c.CommandText="SELECT HAS_PERMS_BY_NAME(DB_NAME(),'DATABASE',@perm)"
-    $null=$c.Parameters.Add("@perm",[System.Data.SqlDbType]::NVarChar,128)
-    $c.Parameters["@perm"].Value=$perm
-    $v=$c.ExecuteScalar()
-    $result.database_permissions[$perm]=if($v -is [DBNull]){$null}else{([int]$v -eq 1)}
+  foreach ($permission in @(
+    "CONTROL SERVER",
+    "ALTER ANY LOGIN",
+    "ALTER ANY SERVER ROLE",
+    "ALTER ANY DATABASE",
+    "IMPERSONATE ANY LOGIN",
+    "VIEW SERVER STATE"
+  )) {
+    $cmd = $conn.CreateCommand()
+    $cmd.CommandTimeout = 5
+    $cmd.CommandText = "SELECT HAS_PERMS_BY_NAME(NULL,'SERVER',@permission)"
+    $null = $cmd.Parameters.Add("@permission", [System.Data.SqlDbType]::NVarChar, 128)
+    $cmd.Parameters["@permission"].Value = $permission
+    $value = $cmd.ExecuteScalar()
+    $result.server_permissions[$permission] =
+      if ($value -is [DBNull]) { $null } else { ([int]$value -eq 1) }
   }
 
-  $pc=$conn.CreateCommand()
-  $pc.CommandText = @"
+  foreach ($role in @(
+    "db_owner",
+    "db_datareader",
+    "db_datawriter",
+    "db_ddladmin",
+    "db_securityadmin",
+    "db_accessadmin",
+    "db_backupoperator"
+  )) {
+    $cmd = $conn.CreateCommand()
+    $cmd.CommandTimeout = 5
+    $cmd.CommandText = "SELECT IS_MEMBER(@role)"
+    $null = $cmd.Parameters.Add("@role", [System.Data.SqlDbType]::NVarChar, 128)
+    $cmd.Parameters["@role"].Value = $role
+    $value = $cmd.ExecuteScalar()
+    $result.database_roles[$role] =
+      if ($value -is [DBNull]) { $null } else { ([int]$value -eq 1) }
+  }
+
+  foreach ($permission in @(
+    "SELECT",
+    "INSERT",
+    "UPDATE",
+    "DELETE",
+    "EXECUTE",
+    "ALTER",
+    "CONTROL",
+    "VIEW DEFINITION",
+    "VIEW DATABASE STATE"
+  )) {
+    $cmd = $conn.CreateCommand()
+    $cmd.CommandTimeout = 5
+    $cmd.CommandText = "SELECT HAS_PERMS_BY_NAME(DB_NAME(),'DATABASE',@permission)"
+    $null = $cmd.Parameters.Add("@permission", [System.Data.SqlDbType]::NVarChar, 128)
+    $cmd.Parameters["@permission"].Value = $permission
+    $value = $cmd.ExecuteScalar()
+    $result.database_permissions[$permission] =
+      if ($value -is [DBNull]) { $null } else { ([int]$value -eq 1) }
+  }
+
+  $procedureCmd = $conn.CreateCommand()
+  $procedureCmd.CommandTimeout = 5
+  $procedureCmd.CommandText = @"
+SET NOCOUNT ON;
 SELECT COUNT_BIG(*)
 FROM sys.procedures p
-JOIN sys.schemas s ON s.schema_id=p.schema_id
-WHERE HAS_PERMS_BY_NAME(s.name+'.'+p.name,'OBJECT','EXECUTE')=1;
+JOIN sys.schemas s ON s.schema_id = p.schema_id
+WHERE HAS_PERMS_BY_NAME(
+        s.name + '.' + p.name,
+        'OBJECT',
+        'EXECUTE'
+      ) = 1;
 "@
-  $result.executable_procedure_count=[int64]$pc.ExecuteScalar()
+  $result.executable_procedure_count = [int64]$procedureCmd.ExecuteScalar()
 
-  foreach($objectName in $allowed.Keys) {
-    $oc=$conn.CreateCommand()
-    $oc.CommandText = @"
-SELECT s.name AS schema_name,o.name AS object_name,o.type_desc,
-  HAS_PERMS_BY_NAME(s.name+'.'+o.name,'OBJECT','SELECT') AS object_select,
-  HAS_PERMS_BY_NAME(s.name+'.'+o.name,'OBJECT','INSERT') AS object_insert,
-  HAS_PERMS_BY_NAME(s.name+'.'+o.name,'OBJECT','UPDATE') AS object_update,
-  HAS_PERMS_BY_NAME(s.name+'.'+o.name,'OBJECT','DELETE') AS object_delete,
-  HAS_PERMS_BY_NAME(s.name+'.'+o.name,'OBJECT','ALTER') AS object_alter,
-  HAS_PERMS_BY_NAME(s.name+'.'+o.name,'OBJECT','CONTROL') AS object_control,
-  HAS_PERMS_BY_NAME(s.name+'.'+o.name,'OBJECT','TAKE OWNERSHIP') AS object_take_ownership
+  foreach ($objectName in $allowed.Keys) {
+    $objectCmd = $conn.CreateCommand()
+    $objectCmd.CommandTimeout = 5
+    $objectCmd.CommandText = @"
+SET NOCOUNT ON;
+SELECT
+  s.name AS schema_name,
+  o.name AS object_name,
+  o.type_desc,
+  HAS_PERMS_BY_NAME(s.name + '.' + o.name, 'OBJECT', 'SELECT') AS object_select,
+  HAS_PERMS_BY_NAME(s.name + '.' + o.name, 'OBJECT', 'INSERT') AS object_insert,
+  HAS_PERMS_BY_NAME(s.name + '.' + o.name, 'OBJECT', 'UPDATE') AS object_update,
+  HAS_PERMS_BY_NAME(s.name + '.' + o.name, 'OBJECT', 'DELETE') AS object_delete,
+  HAS_PERMS_BY_NAME(s.name + '.' + o.name, 'OBJECT', 'ALTER') AS object_alter,
+  HAS_PERMS_BY_NAME(s.name + '.' + o.name, 'OBJECT', 'CONTROL') AS object_control,
+  HAS_PERMS_BY_NAME(s.name + '.' + o.name, 'OBJECT', 'TAKE OWNERSHIP') AS object_take_ownership
 FROM sys.objects o
-JOIN sys.schemas s ON s.schema_id=o.schema_id
-WHERE o.name=@object_name AND o.type IN ('U','V')
-ORDER BY s.name;
+JOIN sys.schemas s ON s.schema_id = o.schema_id
+WHERE s.name = @schema_name
+  AND o.name = @object_name
+  AND o.type IN ('U','V');
 "@
-    $null=$oc.Parameters.Add("@object_name",[System.Data.SqlDbType]::NVarChar,128)
-    $oc.Parameters["@object_name"].Value=$objectName
+    $null = $objectCmd.Parameters.Add("@schema_name", [System.Data.SqlDbType]::NVarChar, 128)
+    $objectCmd.Parameters["@schema_name"].Value = $AllowedSchema
+    $null = $objectCmd.Parameters.Add("@object_name", [System.Data.SqlDbType]::NVarChar, 128)
+    $objectCmd.Parameters["@object_name"].Value = $objectName
 
-    $rows=@()
-    $rr=$oc.ExecuteReader()
-    while($rr.Read()){
+    $rows = @()
+    $reader = $objectCmd.ExecuteReader()
+    while ($reader.Read()) {
       $rows += [ordered]@{
-        schema=[string]$rr["schema_name"]
-        name=[string]$rr["object_name"]
-        type=[string]$rr["type_desc"]
-        object_select=BoolFromReader $rr "object_select"
-        object_insert=BoolFromReader $rr "object_insert"
-        object_update=BoolFromReader $rr "object_update"
-        object_delete=BoolFromReader $rr "object_delete"
-        object_alter=BoolFromReader $rr "object_alter"
-        object_control=BoolFromReader $rr "object_control"
-        object_take_ownership=BoolFromReader $rr "object_take_ownership"
+        schema = [string]$reader["schema_name"]
+        name = [string]$reader["object_name"]
+        type = [string]$reader["type_desc"]
+        object_select = BoolFromReader $reader "object_select"
+        object_insert = BoolFromReader $reader "object_insert"
+        object_update = BoolFromReader $reader "object_update"
+        object_delete = BoolFromReader $reader "object_delete"
+        object_alter = BoolFromReader $reader "object_alter"
+        object_control = BoolFromReader $reader "object_control"
+        object_take_ownership = BoolFromReader $reader "object_take_ownership"
       }
     }
-    $rr.Close()
+    $reader.Close()
 
-    if($rows.Count -ne 1){
+    if ($rows.Count -ne 1) {
       $result.objects += [ordered]@{
-        requested_name=$objectName
-        resolved=$false
-        match_count=$rows.Count
-        safe=$false
+        requested_schema = $AllowedSchema
+        requested_name = $objectName
+        resolved = $false
+        match_count = $rows.Count
+        safe = $false
       }
       continue
     }
 
-    $obj=$rows[0]
-    $cc=$conn.CreateCommand()
-    $cc.CommandText = @"
-SELECT c.name AS column_name,
-  HAS_PERMS_BY_NAME(s.name+'.'+o.name,'OBJECT','SELECT',c.name,'COLUMN') AS can_select,
-  HAS_PERMS_BY_NAME(s.name+'.'+o.name,'OBJECT','UPDATE',c.name,'COLUMN') AS can_update
+    $object = $rows[0]
+
+    $columnCmd = $conn.CreateCommand()
+    $columnCmd.CommandTimeout = 5
+    $columnCmd.CommandText = @"
+SET NOCOUNT ON;
+SELECT
+  c.name AS column_name,
+  HAS_PERMS_BY_NAME(
+    s.name + '.' + o.name,
+    'OBJECT',
+    'SELECT',
+    c.name,
+    'COLUMN'
+  ) AS can_select,
+  HAS_PERMS_BY_NAME(
+    s.name + '.' + o.name,
+    'OBJECT',
+    'UPDATE',
+    c.name,
+    'COLUMN'
+  ) AS can_update
 FROM sys.columns c
-JOIN sys.objects o ON o.object_id=c.object_id
-JOIN sys.schemas s ON s.schema_id=o.schema_id
-WHERE s.name=@schema_name AND o.name=@object_name
+JOIN sys.objects o ON o.object_id = c.object_id
+JOIN sys.schemas s ON s.schema_id = o.schema_id
+WHERE s.name = @schema_name
+  AND o.name = @object_name
 ORDER BY c.column_id;
 "@
-    $null=$cc.Parameters.Add("@schema_name",[System.Data.SqlDbType]::NVarChar,128)
-    $cc.Parameters["@schema_name"].Value=$obj.schema
-    $null=$cc.Parameters.Add("@object_name",[System.Data.SqlDbType]::NVarChar,128)
-    $cc.Parameters["@object_name"].Value=$obj.name
+    $null = $columnCmd.Parameters.Add("@schema_name", [System.Data.SqlDbType]::NVarChar, 128)
+    $columnCmd.Parameters["@schema_name"].Value = $AllowedSchema
+    $null = $columnCmd.Parameters.Add("@object_name", [System.Data.SqlDbType]::NVarChar, 128)
+    $columnCmd.Parameters["@object_name"].Value = $objectName
 
-    $cr=$cc.ExecuteReader()
-    $columns=@()
-    while($cr.Read()){
+    $columnReader = $columnCmd.ExecuteReader()
+    $columns = @()
+    while ($columnReader.Read()) {
       $columns += [ordered]@{
-        name=[string]$cr["column_name"]
-        select=BoolFromReader $cr "can_select"
-        update=BoolFromReader $cr "can_update"
+        name = [string]$columnReader["column_name"]
+        select = BoolFromReader $columnReader "can_select"
+        update = BoolFromReader $columnReader "can_update"
       }
     }
-    $cr.Close()
+    $columnReader.Close()
 
-    $required=@($allowed[$objectName])
-    $allNames=@($columns | ForEach-Object {$_.name})
-    $missingRequired=@($required | Where-Object { $_ -notin $allNames })
-    $requiredWithoutSelect=@($columns | Where-Object { $_.name -in $required -and $_.select -ne $true } | ForEach-Object {$_.name})
-    $extraReadable=@($columns | Where-Object { $_.name -notin $required -and $_.select -eq $true } | ForEach-Object {$_.name})
-    $writableColumns=@($columns | Where-Object { $_.update -eq $true } | ForEach-Object {$_.name})
+    $required = @($allowed[$objectName])
+    $allColumnNames = @($columns | ForEach-Object { $_.name })
+
+    $missingRequired = @(
+      $required |
+        Where-Object { $_ -notin $allColumnNames }
+    )
+
+    $requiredWithoutSelect = @(
+      $columns |
+        Where-Object {
+          $_.name -in $required -and
+          $_.select -ne $true
+        } |
+        ForEach-Object { $_.name }
+    )
+
+    $extraReadable = @(
+      $columns |
+        Where-Object {
+          $_.name -notin $required -and
+          $_.select -eq $true
+        } |
+        ForEach-Object { $_.name }
+    )
+
+    $writableColumns = @(
+      $columns |
+        Where-Object { $_.update -eq $true } |
+        ForEach-Object { $_.name }
+    )
 
     $objectWrite =
-      $obj.object_insert -or
-      $obj.object_update -or
-      $obj.object_delete -or
-      $obj.object_alter -or
-      $obj.object_control -or
-      $obj.object_take_ownership
+      ($object.object_insert -eq $true) -or
+      ($object.object_update -eq $true) -or
+      ($object.object_delete -eq $true) -or
+      ($object.object_alter -eq $true) -or
+      ($object.object_control -eq $true) -or
+      ($object.object_take_ownership -eq $true)
 
     $safe =
-      (-not $obj.object_select) -and
+      ($object.object_select -ne $true) -and
       (-not $objectWrite) -and
-      $missingRequired.Count -eq 0 -and
-      $requiredWithoutSelect.Count -eq 0 -and
-      $extraReadable.Count -eq 0 -and
-      $writableColumns.Count -eq 0
+      ($missingRequired.Count -eq 0) -and
+      ($requiredWithoutSelect.Count -eq 0) -and
+      ($extraReadable.Count -eq 0) -and
+      ($writableColumns.Count -eq 0)
 
     $result.objects += [ordered]@{
-      requested_name=$objectName
-      resolved=$true
-      schema=$obj.schema
-      name=$obj.name
-      type=$obj.type
-      object_permissions=[ordered]@{
-        select=$obj.object_select
-        insert=$obj.object_insert
-        update=$obj.object_update
-        delete=$obj.object_delete
-        alter=$obj.object_alter
-        control=$obj.object_control
-        take_ownership=$obj.object_take_ownership
+      requested_schema = $AllowedSchema
+      requested_name = $objectName
+      resolved = $true
+      schema = $object.schema
+      name = $object.name
+      type = $object.type
+      object_permissions = [ordered]@{
+        select = $object.object_select
+        insert = $object.object_insert
+        update = $object.object_update
+        delete = $object.object_delete
+        alter = $object.object_alter
+        control = $object.object_control
+        take_ownership = $object.object_take_ownership
       }
-      required_columns=$required
-      missing_required_columns=$missingRequired
-      required_without_select=$requiredWithoutSelect
-      extra_readable_columns=$extraReadable
-      writable_columns=$writableColumns
-      safe=$safe
+      required_columns = $required
+      missing_required_columns = $missingRequired
+      required_without_select = $requiredWithoutSelect
+      extra_readable_columns = $extraReadable
+      writable_columns = $writableColumns
+      safe = $safe
     }
   }
 
-  $anyServerRole=@($result.server_roles.Values | Where-Object { $_ -eq $true }).Count -gt 0
-  $anyDbRole=@($result.database_roles.Values | Where-Object { $_ -eq $true }).Count -gt 0
-  $broadDbPerm=@($result.database_permissions.GetEnumerator() | Where-Object { $_.Value -eq $true }).Count -gt 0
-  $allObjectsSafe=
-    $result.objects.Count -eq $allowed.Keys.Count -and
-    @($result.objects | Where-Object { -not $_.safe }).Count -eq 0
+  # Audit every user-table column outside the exact approved surface.
+  # This catches unexpected access to CONSUMIDOR or any other operational table,
+  # and also catches personal/financial columns added by future Teknisa updates.
+  $surfaceCmd = $conn.CreateCommand()
+  $surfaceCmd.CommandTimeout = 10
+  $surfaceCmd.CommandText = @"
+SET NOCOUNT ON;
+SELECT
+  s.name AS schema_name,
+  t.name AS table_name,
+  c.name AS column_name
+FROM sys.tables t
+JOIN sys.schemas s ON s.schema_id = t.schema_id
+JOIN sys.columns c ON c.object_id = t.object_id
+WHERE HAS_PERMS_BY_NAME(
+        s.name + '.' + t.name,
+        'OBJECT',
+        'SELECT',
+        c.name,
+        'COLUMN'
+      ) = 1
+ORDER BY s.name, t.name, c.column_id;
+"@
 
-  if(-not $result.database_matches){$result.blocker="DATABASE_MISMATCH"}
-  elseif($result.current_login -ne $ExpectedPrincipal){$result.blocker="UNEXPECTED_WINDOWS_PRINCIPAL"}
-  elseif($anyServerRole){$result.blocker="SERVER_ROLE_PRESENT"}
-  elseif($anyDbRole){$result.blocker="DATABASE_ROLE_PRESENT"}
-  elseif($broadDbPerm){$result.blocker="BROAD_DATABASE_PERMISSION_PRESENT"}
-  elseif($result.executable_procedure_count -gt 0){$result.blocker="EXECUTABLE_PROCEDURE_PRESENT"}
-  elseif(-not $allObjectsSafe){$result.blocker="COLUMN_SURFACE_NOT_EXACT"}
-  else{$result.safe_for_minimized_order_read=$true}
+  $surfaceReader = $surfaceCmd.ExecuteReader()
+  $readableSurface = @()
+  while ($surfaceReader.Read()) {
+    $readableSurface += [ordered]@{
+      schema = [string]$surfaceReader["schema_name"]
+      table = [string]$surfaceReader["table_name"]
+      column = [string]$surfaceReader["column_name"]
+    }
+  }
+  $surfaceReader.Close()
+
+  $approvedKeys = New-Object System.Collections.Generic.HashSet[string]
+  foreach ($objectName in $allowed.Keys) {
+    foreach ($columnName in $allowed[$objectName]) {
+      $null = $approvedKeys.Add(
+        ("{0}|{1}|{2}" -f $AllowedSchema, $objectName, $columnName).ToUpperInvariant()
+      )
+    }
+  }
+
+  foreach ($entry in $readableSurface) {
+    $key =
+      ("{0}|{1}|{2}" -f $entry.schema, $entry.table, $entry.column).ToUpperInvariant()
+
+    if (-not $approvedKeys.Contains($key)) {
+      $result.extra_readable_surface += $entry
+
+      if ($entry.column -match "(?i)(CPF|CNPJ|TEL|EMAIL|E.?MAIL|END|CEP|BAIRRO|MUNIC|CONSUM|LAT|LONG|INSCR|NOME|NMCONS|ESTRANGEIRA)") {
+        $result.sensitive_extra_readable_columns += $entry
+      }
+    }
+  }
+
+  $result.extra_readable_surface_count = $result.extra_readable_surface.Count
+
+  $anyServerRole =
+    @($result.server_roles.Values | Where-Object { $_ -eq $true }).Count -gt 0
+
+  $anyServerPermission =
+    @($result.server_permissions.Values | Where-Object { $_ -eq $true }).Count -gt 0
+
+  $anyDatabaseRole =
+    @($result.database_roles.Values | Where-Object { $_ -eq $true }).Count -gt 0
+
+  $anyBroadDatabasePermission =
+    @(
+      $result.database_permissions.GetEnumerator() |
+        Where-Object { $_.Value -eq $true }
+    ).Count -gt 0
+
+  $allObjectsSafe =
+    ($result.objects.Count -eq $allowed.Keys.Count) -and
+    (@($result.objects | Where-Object { -not $_.safe }).Count -eq 0)
+
+  if (-not $result.database_matches) {
+    $result.blocker = "DATABASE_MISMATCH"
+  }
+  elseif ($result.current_login -ne $ExpectedPrincipal) {
+    $result.blocker = "UNEXPECTED_WINDOWS_PRINCIPAL"
+  }
+  elseif ($anyServerRole) {
+    $result.blocker = "SERVER_ROLE_PRESENT"
+  }
+  elseif ($anyServerPermission) {
+    $result.blocker = "DANGEROUS_SERVER_PERMISSION_PRESENT"
+  }
+  elseif ($anyDatabaseRole) {
+    $result.blocker = "DATABASE_ROLE_PRESENT"
+  }
+  elseif ($anyBroadDatabasePermission) {
+    $result.blocker = "BROAD_DATABASE_PERMISSION_PRESENT"
+  }
+  elseif ($result.executable_procedure_count -gt 0) {
+    $result.blocker = "EXECUTABLE_PROCEDURE_PRESENT"
+  }
+  elseif (-not $allObjectsSafe) {
+    $result.blocker = "COLUMN_SURFACE_NOT_EXACT"
+  }
+  elseif ($result.extra_readable_surface_count -gt 0) {
+    $result.blocker = "READABLE_SURFACE_OUTSIDE_ALLOWLIST"
+  }
+  else {
+    $result.safe_for_minimized_order_read = $true
+  }
 }
 catch {
-  $result.blocker="CONNECTION_OR_METADATA_FAILED"
-  $result.error=$_.Exception.Message
+  $result.blocker = "CONNECTION_OR_METADATA_FAILED"
+  $result.error = $_.Exception.Message
 }
 finally {
-  if($conn.State -ne [System.Data.ConnectionState]::Closed){$conn.Close()}
+  if ($conn.State -ne [System.Data.ConnectionState]::Closed) {
+    $conn.Close()
+  }
 }
 
 $result | ConvertTo-Json -Depth 12
-if(-not $result.safe_for_minimized_order_read){exit 3}
+
+if (-not $result.safe_for_minimized_order_read) {
+  exit 3
+}
+
 exit 0
