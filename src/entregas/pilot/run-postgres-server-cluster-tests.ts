@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
+import { spawn, type ChildProcess } from "node:child_process";
 import {
   mkdtempSync,
   mkdirSync,
@@ -85,7 +85,7 @@ function spawnServer(
   configPath: string,
   databaseUrl: string,
   logs: Map<number, { out: string; err: string }>,
-): ChildProcessWithoutNullStreams {
+): ChildProcess {
   const state = { out: "", err: "" };
   logs.set(port, state);
   const child = spawn(
@@ -110,16 +110,16 @@ function spawnServer(
       stdio: ["ignore", "pipe", "pipe"],
     },
   );
-  child.stdout.on("data", (b: Buffer) => {
+  child.stdout?.on("data", (b: Buffer) => {
     state.out += b.toString("utf8");
   });
-  child.stderr.on("data", (b: Buffer) => {
+  child.stderr?.on("data", (b: Buffer) => {
     state.err += b.toString("utf8");
   });
   return child;
 }
 
-async function stop(child: ChildProcessWithoutNullStreams): Promise<void> {
+async function stop(child: ChildProcess): Promise<void> {
   if (child.exitCode !== null) return;
   child.kill("SIGTERM");
   await Promise.race([
@@ -182,7 +182,7 @@ async function main(): Promise<void> {
 
   const admin = await createPgClient({ url: ADMIN_URL!, max: 4 });
   let roleClient: Awaited<ReturnType<typeof createPgClient>> | null = null;
-  const children: ChildProcessWithoutNullStreams[] = [];
+  const children: ChildProcess[] = [];
   const logs = new Map<number, { out: string; err: string }>();
 
   try {
