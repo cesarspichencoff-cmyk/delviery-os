@@ -65,6 +65,28 @@ A produção de sushi fica concentrada no salão.
 
 Praças não listadas, inclusive Duplas, permanecem UNKNOWN neste contrato e devem bloquear roteamento automático em vez de serem inferidas.
 
+### 3.1 Regra de serviço e via única por praça
+
+A configuração atual do Retail pode listar simultaneamente impressoras de salão e de delivery para o mesmo produto. Isso prova os destinos configurados, mas **não autoriza duas comandas simultâneas** quando os destinos representam a mesma praça em serviços diferentes.
+
+Pares alternativos confirmados para a seleção de serviço:
+
+| Grupo físico | Almoço | Jantar |
+|---|---|---|
+| Sushi 1 | `00009 BALCAOSUSHI1` | `00003 DELIVERY SUSHI 1` |
+| Sushi 2 | `00006 BALCAOSUSHI2` | `00004 DELIVERY SUSHI 2` |
+
+Regra obrigatória:
+
+`ONE_SECTOR_TICKET_ONLY + SERVICE_EXPLICIT_NO_CLOCK_INFERENCE`
+
+- se um item tiver os dois destinos do mesmo grupo alternativo, o planner deve receber explicitamente `LUNCH` ou `DINNER`;
+- o horário do pedido, sozinho, não pode decidir o serviço sem uma regra operacional separadamente provada;
+- sem serviço resolvido, a intenção daquele grupo é bloqueada em vez de gerar as duas comandas;
+- destinos independentes continuam independentes: por exemplo, uma dependência real de `COZINHA` pode coexistir com a via ativa de Sushi 2 quando estiver configurada/provada;
+- depois da resolução do serviço, existe no máximo uma comanda lógica por estação física ativa do pedido;
+- configuração de rota continua sendo evidência de destino esperado, não prova de papel impresso.
+
 ## 4. Caixa de montagem
 
 Tickets de sushi precisam dizer claramente em qual caixa montar.
