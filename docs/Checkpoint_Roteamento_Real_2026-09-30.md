@@ -22,7 +22,7 @@ Nenhuma mudança foi promovida para produção. Nenhum print, write no Odhen/Tek
 - O resolver agora falha fechado para pedido vazio, quantidade inválida, índice de item duplicado, código de impressora duplicado, alvo de rota duplicado e mistura de configurações de lojas diferentes.
 - A auditoria do cadastro confirma coerência entre uso real e flags: somente `00002/00003/00004/00006/00007/00009` aparecem nas 463 rotas e são exatamente as impressoras marcadas `used_by_products=true`.
 - Harness preparado: `tools/projetar_odhen_routing_stdin_v1.js` recebe snapshot JSON por stdin e devolve apenas a projeção minimizada, sem persistir o bruto.
-- O export real de Produtos por Loja traz os códigos em formato compacto de 10 caracteres. A normalização determinística `1-2-2-3-2` foi conferida contra os 463 produtos: **463/463 códigos casaram**, com 0 faltantes e 0 extras; 19 códigos alfanuméricos também casaram. O resolver aceita tanto `9150007500` quanto `9.15.00.075.00`. Evidência: `data/retail_product_code_format_proof_20260930.json`.
+- O export real de Produtos por Loja traz os códigos em formato compacto de 10 caracteres. A normalização determinística `1-2-2-3-2` foi conferida contra os 463 produtos: **463/463 códigos casaram**, com 0 faltantes e 0 extras; 19 códigos alfanuméricos também casaram. O resolver foi então executado contra os **463 códigos crus do export**: `ready=true` em 463/463 e 0 bloqueios. Ele aceita tanto `9150007500` quanto `9.15.00.075.00`. Evidência: `data/retail_product_code_format_proof_20260930.json`.
 
 ## NÃO PROVADO
 
