@@ -97,7 +97,12 @@ const plan = planProductionPrintIntents(
       evidence: "HUMAN_CONFIRMED_RULE",
       source_ref: "synthetic:validated-service-rule",
     },
-    order_observations: shadow.order_observations.map((x) => x.value),
+    order_observations: shadow.order_observations.map((x) => ({
+      value: x.value,
+      source_ref: `odhen:${x.source_field}`,
+      relevance: "PRODUCTION_RELEVANT",
+      proof: "REAL_OBSERVED",
+    })),
     template_version: "production-ticket-v2-shadow",
     ticket_items: shadow.items.map((item) => ({
       item_index: item.item_index,
