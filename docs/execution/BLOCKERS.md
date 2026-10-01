@@ -1114,3 +1114,21 @@ Estado atual: **feed durável single-instance = CODE_READY + TEST_PASS; produç�
 > SQL adequadas. `consumer_live`, UI live e produção continuam desligados; nenhum deploy nem
 > migration operacional ocorreu.
 
+> **SUCESSÃO — 2026-10-01 · WIRING POSTGRESQL MULTI-INSTÂNCIA DO PILOTO PROVADO.**
+>
+> O servidor do piloto ganhou backend de persistência opt-in: `ENTREGAS_STORAGE_BACKEND=file`
+> permanece o default; `postgres` só abre a porta depois de validar URL, TLS, migrations 0006/0007/0008,
+> unidade ativa e o papel exato `deliveryos_entregas_pilot`. O papel não é superuser/owner/createrole/
+> createdb e não recebe event_log da plataforma, aparelho, jobs, auditoria ou mutação de migrations.
+>
+> Prova com **dois processos HTTP reais** e PostgreSQL 17: `PILOT_POSTGRES_SERVER_CLUSTER 6/6 PASS`.
+> As duas instâncias compartilharam fila e viagens; duplicata concorrente teve um vencedor; estado criado
+> em A apareceu em B; concorrência na mesma Trip não perdeu update e retry convergiu para version=3,
+> 3 deliveries e fila vazia. PgUOW 8/8, ready-orders 7/7, storage 3/3, recreate 17/17, session 18/18,
+> deploy-audit 36/36 e governança GREEN no mesmo commit provado.
+>
+> **O bloqueio técnico de código multi-instância está fechado. O efeito em produção NÃO está autorizado.**
+> Permanecem separados: emitir/configurar a credencial real do papel, aplicar migrations 0006–0008 no
+> banco operacional, selecionar `ENTREGAS_STORAGE_BACKEND=postgres` no ambiente de implantação e provar
+> o comportamento no ambiente implantado. `consumer_live`/UI live continuam desligados e não houve deploy.
+
