@@ -418,3 +418,27 @@ Com kill switch ausente ou `STOP`, zero fatos são escritos e o checkpoint não 
 ### Fronteira que permanece fechada
 
 `FileUnitOfWork` e `store.json` continuam single-instance. Isso é suficiente para o piloto local provado, mas **não é transporte de produção multi-instância/cluster-safe**. A flag `entregas.copiloto_live_connection` continua `false`; não houve wiring no `async-runtime`, deploy ou ativação live.
+
+## 22. Persistência PostgreSQL cluster-safe — adapter provado, wiring do piloto ainda fechado — 2026-09-30
+
+Foi adicionado `PgEntregasUnitOfWork`, implementando a mesma porta `UnitOfWork` do domínio sobre o schema PostgreSQL normalizado de `entregas.*`. A solução **não cria `state_store` JSONB paralelo**: completa e reutiliza `entregas.trip`, `entregas.delivery` e `entregas.occurrence`, adicionando apenas `handoff`, `rider_state`, `domain_event` e `public_outbox` que ainda não tinham armazenamento operacional equivalente.
+
+Concorrência entre instâncias usa optimistic concurrency no próprio commit: `UPDATE ... WHERE version = expected`. Duas instâncias podem ler a mesma versão; exatamente uma confirma, a outra recebe `ConcurrencyError`, recarrega e pode repetir sobre a versão nova. Domínio + domain events + public outbox confirmam na mesma transação SQL.
+
+Prova em GitHub Actions, repositório público, PostgreSQL 17 de serviço:
+
+- migration `0006_entregas_cluster_persistence` aplicada junto das migrations 0001–0005;
+- `ENTREGAS_PG_UOW`: **8/8 PASS**;
+- duas instâncias concorrentes: exatamente uma vence;
+- loser recarrega/retry e as duas mudanças legítimas permanecem;
+- falha tardia na outbox desfaz a atualização de domínio inteira;
+- feed commitado preserva ordem, cursor e restart;
+- isolamento por unidade provado;
+- `entregas.domain_event` é append-only por trigger no banco;
+- foundation, integration, durable-feed, gate-close, governança e `git diff --check`: PASS/GREEN.
+
+### Fronteira ainda fechada
+
+O `PilotApplicationFacade` continua tipado e construído diretamente com `FileUnitOfWork`, e `snapshot()`/`reloadStore()` ainda consultam `store.json`. Portanto o adapter PostgreSQL está **CODE_READY + POSTGRES_PROVEN**, mas o piloto ainda não foi migrado para ele. `ready_orders.json` também continua local.
+
+Nenhum deploy foi feito, nenhuma migration foi aplicada à branch operacional do Neon e `entregas.copiloto_live_connection` continua `false`.

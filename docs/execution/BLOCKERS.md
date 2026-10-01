@@ -1070,3 +1070,16 @@ Estado atual: **feed durável single-instance = CODE_READY + TEST_PASS; produç�
 > **Restam somente:** (a) substituir a persistência/feed single-instance por uma fronteira
 > transacional/cluster-safe para produção multi-instância; (b) autorização humana separada
 > para qualquer ativação live/deploy. `consumer_live`/UI/produção continuam desligados.
+
+> **SUCESSÃO — 2026-09-30 · FRONTEIRA CLUSTER-SAFE DE PERSISTÊNCIA PROVADA.**
+>
+> `PgEntregasUnitOfWork` + migration 0006 reutilizam o schema normalizado `entregas.*`, sem
+> criar `state_store` paralelo. PostgreSQL 17 real em GitHub Actions: **8/8 PASS** — commit
+> atômico domínio/eventos/outbox, concorrência entre duas instâncias com um único vencedor,
+> retry do perdedor, rollback tardio, cursor/restart, isolamento de unidade e append-only.
+> Regressões foundation/integration/durable-feed/gate-close/governança também verdes.
+>
+> **O bloqueio multi-instância AINDA NÃO está fechado no produto**, porque `PilotApplicationFacade`
+> continua hardcoded em `FileUnitOfWork/store.json` e o snapshot lê o arquivo diretamente.
+> O próximo passo é remover esse acoplamento e injetar a porta `UnitOfWork`/factory; depois tratar
+> `ready_orders.json`. Só então o piloto pode ser provado multi-instância ponta a ponta.
