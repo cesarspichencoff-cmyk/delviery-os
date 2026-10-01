@@ -3,7 +3,7 @@
 const assert = require("node:assert/strict");
 const {
   buildStationProductionTicketV2,
-  buildAssemblyChecklistV1,
+  buildDeliveryCheckProjectionV1,
 } = require("../dist/src/production/productionTicketV2.js");
 
 const intent = {
@@ -156,13 +156,15 @@ const resourceProjection = {
   },
 };
 
-const assembly = buildAssemblyChecklistV1(resourceProjection);
-assert.equal(assembly.boxes.length, 1);
-assert.equal(assembly.bags.length, 1);
-assert.equal(assembly.kits.length, 1);
-assert.equal(assembly.kit_components.length, 1);
-assert.equal(assembly.complements.length, 1);
-assert.deepEqual(assembly.unknowns, ["RECIPE_BOM_COVERAGE_INCOMPLETE"]);
-assert.equal(assembly.effects.stock_write, false);
+const deliveryCheck = buildDeliveryCheckProjectionV1(resourceProjection);
+assert.equal(deliveryCheck.boxes.length, 1);
+assert.equal(deliveryCheck.bags.length, 1);
+assert.equal(deliveryCheck.kits.length, 1);
+assert.equal(deliveryCheck.kit_components.length, 1);
+assert.equal(deliveryCheck.complements.length, 1);
+assert.deepEqual(deliveryCheck.unknowns, ["RECIPE_BOM_COVERAGE_INCOMPLETE"]);
+assert.equal(deliveryCheck.effects.stock_write, false);
+assert.equal(deliveryCheck.effects.print, false);
+assert.equal(deliveryCheck.semantics.delivery_ui_projection_not_additional_ticket, true);
 
 console.log("production-ticket-v2: ok");
