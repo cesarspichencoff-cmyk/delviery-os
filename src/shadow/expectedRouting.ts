@@ -74,9 +74,20 @@ export function projectExpectedRouting(
   const printers = new Map(printerMap.mappings.map((x) => [x.printer_code, x]));
   const items: ExpectedRoutingItem[] = [];
   const orderTargets = new Map<string, ExpectedRoutingTarget>();
+  const seenItemIndexes = new Set<number>();
 
   for (const item of order.items) {
     const targets: ExpectedRoutingTarget[] = [];
+
+    if (seenItemIndexes.has(item.item_index)) {
+      blocking.add(`DUPLICATE_ITEM_INDEX_${item.item_index}`);
+    } else {
+      seenItemIndexes.add(item.item_index);
+    }
+
+    if (!Number.isFinite(item.quantidade) || item.quantidade <= 0) {
+      blocking.add(`INVALID_ITEM_QTY_${item.item_index}`);
+    }
 
     if (!item.codigo) {
       blocking.add(`MISSING_PRODUCT_CODE_${item.item_index}`);
