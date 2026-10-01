@@ -311,7 +311,12 @@ const fingerprintReplay = planProductionPrintIntents(
       evidence: "REAL_OBSERVED",
       source_ref: "odhen:explicit-service-context",
     },
-    order_observations: ["SEM MOLHO NO PEDIDO"],
+    order_observations: [{
+      value: "SEM MOLHO NO PEDIDO",
+      source_ref: "synthetic:order-observation",
+      relevance: "PRODUCTION_RELEVANT",
+      proof: "REAL_OBSERVED",
+    }],
     template_version: "production-ticket-v2-shadow",
     ticket_items: [
       {
