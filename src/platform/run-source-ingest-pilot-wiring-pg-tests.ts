@@ -175,6 +175,10 @@ async function main(): Promise<void> {
       .replaceAll("deliveryos_source_ingest", SRC);
 
     await banco.cliente.query(rolesSql);
+    // O administrador de um PostgreSQL hospedado pode ter CREATEROLE sem ser
+    // SUPERUSER. Membership aqui é só do HARNESS para permitir SET LOCAL ROLE;
+    // não concede nada novo ao papel SRC e não existe no deploy real.
+    await banco.cliente.query("GRANT " + SRC + " TO CURRENT_USER");
 
     const roleWriter = new PgTransactionalWriter({
       transaction: async <T>(
