@@ -16,8 +16,12 @@ Nenhuma mudança foi promovida para produção. Nenhum print, write no Odhen/Tek
   - `00003 DELIVERY SUSHI 1 → 192.168.0.153`
 - Export real `Manuteno-de-Venda---Itens 2.xlsx` contém `COMBINADO SALMAO 1 PESSOA ×1`, total R$ 109,00. SHA-256: `f10d2e85689861ce5e61f5f86151dd8b5dfc43f74ed98afe30dee2d4c629cfa0`.
 - O resolver puro `projectExpectedRouting` foi executado fora da loja contra essa amostra/configuração relevante e retornou `.142 + .153`, `ready=true`, sem efeitos.
-- A cadeia de código preparada é:
-  `Odhen raw → normalizeOdhenShadow → product CDPRODUTO → projectExpectedRouting → printer code/name/IP`.
+- A cadeia de código preparada foi simplificada para o menor contrato necessário:
+  `Odhen raw → normalizeOdhenRouting → product CDPRODUTO → projectExpectedRouting → printer code/name/IP`.
+- `normalizeOdhenRouting` não exige observações de cliente/pedido; para roteamento, lê somente `NRCOMANDA + CDPRODUTO + NMPRODUTO + QTPRODCOMVEN` e não retém payload bruto/PII.
+- O resolver agora falha fechado para pedido vazio, quantidade inválida, índice de item duplicado, código de impressora duplicado, alvo de rota duplicado e mistura de configurações de lojas diferentes.
+- A auditoria do cadastro confirma coerência entre uso real e flags: somente `00002/00003/00004/00006/00007/00009` aparecem nas 463 rotas e são exatamente as impressoras marcadas `used_by_products=true`.
+- Harness preparado: `tools/projetar_odhen_routing_stdin_v1.js` recebe snapshot JSON por stdin e devolve apenas a projeção minimizada, sem persistir o bruto.
 
 ## NÃO PROVADO
 
@@ -30,7 +34,7 @@ Nenhuma mudança foi promovida para produção. Nenhum print, write no Odhen/Tek
 
 `LIVE_READ_ONLY_ORDER_TO_EXPECTED_ROUTE`
 
-Objetivo: em ambiente autorizado da loja, ler um snapshot minimizado e estritamente read-only de um pedido Odhen real contendo `NRCOMANDA + CDPRODUTO + NMPRODUTO + QTPRODCOMVEN`; passar pelo normalizador e pelo resolver; comparar a projeção com o cadastro atual.
+Objetivo: em ambiente autorizado da loja, ler um snapshot minimizado e estritamente read-only de um pedido Odhen real contendo `NRCOMANDA + CDPRODUTO + NMPRODUTO + QTPRODCOMVEN`; passar diretamente por `normalizeOdhenRouting` e `projectExpectedRouting`; comparar a projeção com o cadastro atual. Observações de cliente não fazem parte deste gate.
 
 A prova deve continuar separando:
 - rota configurada esperada;
