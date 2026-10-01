@@ -709,6 +709,13 @@ const handler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
           human: "Só o responsável pelo piloto pode gerar backup.",
         });
       }
+      if (!facade.supportsFileBackup) {
+        return reply(409, {
+          ok: false,
+          code: "backup_backend_managed",
+          human: "O backup deste backend é gerenciado pelo banco de dados.",
+        });
+      }
       const r = createBackup(facade.dataPath, backupDir, cfg.backup.retain_count, log);
       return reply(r.ok ? 200 : 500, r);
     }
