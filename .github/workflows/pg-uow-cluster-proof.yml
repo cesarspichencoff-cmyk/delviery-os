@@ -38,3 +38,9 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: npm run test:entregas:pg-uow
+      - run: npm run test:entregas:foundation
+      - run: npm run test:entregas:integration
+      - run: npm run test:entregas:durable-feed
+      - run: npm run test:entregas:gate-close
+      - run: npm run test:platform:governanca
+      - run: git diff --check
