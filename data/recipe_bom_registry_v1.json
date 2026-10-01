@@ -35,5 +35,25 @@
     "stock_write": false,
     "cmv_write": false,
     "production_write": false
+  },
+  "preferred_candidate_source": {
+    "system": "Teknisa",
+    "surfaces": [
+      "Planejamento Web > Elaboração do Cardápio > Receita Utilizada",
+      "Rotina da Unidade Web > Ajustes do Cardápio > Receita Utilizada / Revisar Receita"
+    ],
+    "publicly_documented_fields": [
+      "parent dish code/name",
+      "recipe type (Padrão/Local/por Serviço)",
+      "ingredient product code",
+      "ingredient product name",
+      "per-capita quantity",
+      "unit of measure",
+      "unit cost",
+      "total cost",
+      "recipe updated timestamp"
+    ],
+    "evidence_status": "PUBLIC_DOCUMENTATION_PROVES_SCREEN_FIELDS_NOT_OUR_STORE_EXPORT_FORMAT",
+    "importer_status": "WAIT_FOR_ONE_REAL_EXPORT_OR_READ_ONLY_SOURCE_SHAPE_BEFORE_IMPLEMENTING_PARSER"
   }
 }
