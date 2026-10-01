@@ -9,6 +9,7 @@ import { openFileUnitOfWork } from "../persistence/file-store";
 import { PgEntregasUnitOfWork } from "../persistence/pg-uow";
 import type { TripRecord } from "../persistence/ports";
 import type {
+  SqlClient,
   SqlRow,
   TransactionalSqlClient,
 } from "../../platform/persistence/sql-client";
@@ -360,7 +361,7 @@ export async function readFilePilotStorageSnapshot(args: {
 }
 
 async function assertTargetReady(
-  sql: TransactionalSqlClient,
+  sql: SqlClient,
   unitId: string,
 ): Promise<void> {
   const migrations = await sql.query<{ version: string }>(
@@ -426,7 +427,7 @@ export async function readPostgresPilotStorageSnapshot(
 }
 
 export async function targetCounts(
-  sql: TransactionalSqlClient,
+  sql: SqlClient,
   unitId: string,
 ): Promise<PilotStorageCounts> {
   const rows = await sql.query<SqlRow>(
@@ -460,7 +461,7 @@ function countTotal(c: PilotStorageCounts): number {
 }
 
 async function globalCollisions(
-  sql: TransactionalSqlClient,
+  sql: SqlClient,
   snapshot: PilotStorageSnapshot,
 ): Promise<string[]> {
   const conflicts: string[] = [];
