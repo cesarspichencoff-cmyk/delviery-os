@@ -10,6 +10,8 @@ export type ProductionPrintEvidenceState =
   | "EFFECT_UNKNOWN_REQUIRES_RECONCILIATION"
   | "PHYSICALLY_CONFIRMED";
 
+export type ProductionService = "LUNCH" | "DINNER";
+
 export interface ProductionPrinterCalibration {
   actual_device_variant: string;
   actual_media_width_mm: number | "UNKNOWN";
@@ -69,6 +71,7 @@ export interface ProductionPrintContext {
   teknisa_sequence: string | null;
   ifood_sequence: string | null;
   order_time: string | null;
+  service?: ProductionService | null;
   template_version: string;
   ticket_items?: ProductionTicketItemMetadata[];
 }
@@ -87,6 +90,7 @@ export interface PlannedProductionLine {
 export interface ProductionPrintIntent {
   printer: ExpectedRoutingTarget;
   template_version: string;
+  service: ProductionService | null;
   semantic_key_material: string;
   identifiers: {
     ifood_sequence: string;
@@ -118,6 +122,8 @@ export interface ProductionPrintPlan {
     planned_is_not_submitted: true;
     spooler_observed_is_not_physical_confirmation: true;
     ambiguous_effect_forbids_automatic_retry: true;
+    service_is_explicit_not_inferred_from_clock: true;
+    dual_service_routes_are_mutually_exclusive: true;
   };
   effects: {
     print: false;
@@ -164,10 +170,49 @@ function calibrationReady(entry: ProductionPrinterCalibrationEntry): boolean {
   );
 }
 
+const SERVICE_ALTERNATIVE_GROUPS = [
+  { key: "SUSHI_1", lunch: "00009", dinner: "00003" },
+  { key: "SUSHI_2", lunch: "00006", dinner: "00004" },
+] as const;
+
+function selectTargetsForService(
+  targets: ExpectedRoutingTarget[],
+  service: ProductionService | null,
+  itemIndex: number,
+  blocking: Set<string>,
+): ExpectedRoutingTarget[] {
+  let selected = [...targets];
+
+  for (const group of SERVICE_ALTERNATIVE_GROUPS) {
+    const codes = new Set<string>([group.lunch, group.dinner]);
+    const present = selected.filter((target) => codes.has(target.printer_code));
+    if (present.length < 2) continue;
+
+    if (!service) {
+      blocking.add(
+        `SERVICE_REQUIRED_FOR_ALTERNATE_ROUTE_ITEM_${itemIndex}_${group.key}`,
+      );
+      selected = selected.filter((target) => !codes.has(target.printer_code));
+      continue;
+    }
+
+    const activePrinterCode =
+      service === "LUNCH" ? group.lunch : group.dinner;
+    selected = selected.filter(
+      (target) =>
+        !codes.has(target.printer_code) ||
+        target.printer_code === activePrinterCode,
+    );
+  }
+
+  return selected;
+}
+
 function stableSemanticKeyMaterial(input: {
   orderId: string;
   printerCode: string;
   templateVersion: string;
+  service: ProductionService | null;
   ifoodSequence: string;
   teknisaSequence: string;
   tataSequence: string;
@@ -190,6 +235,7 @@ function stableSemanticKeyMaterial(input: {
     input.orderId,
     input.printerCode,
     input.templateVersion,
+    input.service ?? "UNRESOLVED",
     input.ifoodSequence,
     input.teknisaSequence,
     input.tataSequence,
@@ -198,7 +244,11 @@ function stableSemanticKeyMaterial(input: {
 }
 
 /**
- * Builds one logical ticket intent per configured physical printer.
+ * Builds one logical ticket intent per resolved active production station.
+ *
+ * Configured lunch/dinner alternatives are mutually exclusive. If both
+ * alternatives exist for one item, service must be supplied explicitly; this
+ * planner never infers service from the clock.
  *
  * It deliberately does NOT render bytes and never authorizes a physical effect.
  * Product routing authority comes from ExpectedRoutingProjection. Printer
@@ -229,6 +279,14 @@ export function planProductionPrintIntents(
   const ifoodSequence = clean(context.ifood_sequence);
   if (!ifoodSequence) blocking.add("IFOOD_SEQUENCE_REQUIRED");
   if (!clean(context.template_version)) blocking.add("TEMPLATE_VERSION_REQUIRED");
+
+  const service: ProductionService | null =
+    context.service === "LUNCH" || context.service === "DINNER"
+      ? context.service
+      : null;
+  if (context.service && !service) {
+    blocking.add("INVALID_PRODUCTION_SERVICE");
+  }
 
   const metaByIndex = new Map<number, ProductionTicketItemMetadata>();
   for (const meta of context.ticket_items ?? []) {
@@ -284,7 +342,14 @@ export function planProductionPrintIntents(
       prep_components: meta?.prep_components ?? [],
     };
 
-    for (const target of item.targets) {
+    const activeTargets = selectTargetsForService(
+      item.targets,
+      service,
+      item.item_index,
+      blocking,
+    );
+
+    for (const target of activeTargets) {
       const current = linesByPrinter.get(target.printer_code);
       if (current) {
         const sameIdentity =
@@ -323,10 +388,12 @@ export function planProductionPrintIntents(
     printIntents.push({
       printer: grouped.target,
       template_version: context.template_version,
+      service,
       semantic_key_material: stableSemanticKeyMaterial({
         orderId,
         printerCode,
         templateVersion: context.template_version,
+        service,
         ifoodSequence,
         teknisaSequence,
         tataSequence,
@@ -359,6 +426,8 @@ export function planProductionPrintIntents(
       planned_is_not_submitted: true,
       spooler_observed_is_not_physical_confirmation: true,
       ambiguous_effect_forbids_automatic_retry: true,
+      service_is_explicit_not_inferred_from_clock: true,
+      dual_service_routes_are_mutually_exclusive: true,
     },
     effects: {
       print: false,
