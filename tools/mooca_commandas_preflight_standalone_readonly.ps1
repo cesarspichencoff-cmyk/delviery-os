@@ -11,7 +11,6 @@ $ErrorActionPreference = "Stop"
 # No helper scripts, no HTTP, no order-row reads, no print, no fiscal action.
 # Intentional write: the single evidence JSON at $OutputPath.
 
-function Clean([object]$Value) { return [string]($Value ?? "") }
 function PermissionFromReader($reader, [string]$name) {
   if ($reader[$name] -is [DBNull]) { return $null }
   return ([int]$reader[$name] -eq 1)
@@ -42,6 +41,7 @@ $result = [ordered]@{
     sha256 = if (Test-Path -LiteralPath $PSCommandPath) { (Get-FileHash -LiteralPath $PSCommandPath -Algorithm SHA256).Hash } else { $null }
   }
   source = [ordered]@{
+    mode = "READ_ONLY_SOURCE_CODE_ONLY"
     root = $OdhenRoot
     root_exists = $false
     scanned_roots = @()
@@ -58,6 +58,7 @@ $result = [ordered]@{
     errors = @()
   }
   fiscal_surface = [ordered]@{
+    mode = "READ_ONLY_SOURCE_CONFIG_METADATA_ONLY"
     token_hits = @()
     native_nfce_candidate_detected = $false
   }
