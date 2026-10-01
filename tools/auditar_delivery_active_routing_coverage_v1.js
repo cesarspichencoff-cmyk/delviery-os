@@ -110,6 +110,10 @@ function auditCoverage(rows, routing, seed) {
   let directRouteUnits = 0;
   let logicalResolvedSkus = 0;
   let logicalResolvedUnits = 0;
+  let seedExactSkus = 0;
+  let seedExactUnits = 0;
+  let inferredRuleSkus = 0;
+  let inferredRuleUnits = 0;
 
   for (const item of aggregated.values()) {
     const printerCodes = routing.products[item.product_code] || [];
@@ -122,11 +126,17 @@ function auditCoverage(rows, routing, seed) {
     if (exact.length === 1) {
       plaza = exact[0].praca_principal ?? null;
       plazaSource = "SEED_EXACT_NAME";
+      seedExactSkus += 1;
+      seedExactUnits += item.quantity;
     } else if (exact.length > 1) {
       plazaSource = "SEED_NAME_AMBIGUOUS";
     } else {
       plaza = inferPlaza(item, printerCodes);
       plazaSource = plaza ? "INFERRED_GROUP_AND_ROUTE_RULE" : "UNRESOLVED";
+      if (plaza) {
+        inferredRuleSkus += 1;
+        inferredRuleUnits += item.quantity;
+      }
     }
 
     if (directRoute) {
@@ -172,6 +182,10 @@ function auditCoverage(rows, routing, seed) {
       direct_route_unit_coverage: totalUnits ? directRouteUnits / totalUnits : 0,
       logical_plaza_resolved_skus: logicalResolvedSkus,
       logical_plaza_resolved_units: logicalResolvedUnits,
+      seed_exact_logical_skus: seedExactSkus,
+      seed_exact_logical_units: seedExactUnits,
+      inferred_rule_logical_skus: inferredRuleSkus,
+      inferred_rule_logical_units: inferredRuleUnits,
       physical_route_gap_skus: physicalGaps.length,
       physical_route_gap_units: physicalGaps.reduce((sum, x) => sum + x.quantity, 0),
       logical_plaza_gap_skus: logicalGaps.length,
