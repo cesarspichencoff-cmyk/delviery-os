@@ -173,7 +173,13 @@ Não converter `SPOOLER_OBSERVED` em papel impresso.
 
 `src/production/productionTicketV2.ts`
 
-A comanda da praça deve responder em 1–2 segundos:
+A comanda da praça deve responder em 1–2 segundos.
+
+As três sequências são obrigatórias em **todas** as comandas:
+`iFood + Teknisa + TATÁ`.
+A falta de qualquer uma bloqueia a intenção de impressão.
+
+
 
 1. destino;
 2. TATÁ;
@@ -190,9 +196,9 @@ Exemplo semântico:
 ==============================
 DELIVERY SUSHI 1
 ==============================
-TATÁ 037               19:42
+IFOOD   A1B2C3
 TEKNISA 18452
-IFOOD A1B2C3
+TATÁ    037             19:42
 
 >>> CX 750 <<<
 
