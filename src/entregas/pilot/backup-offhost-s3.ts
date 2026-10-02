@@ -155,6 +155,107 @@ export function validateS3OffhostConfig(config: S3OffhostConfig): string | null 
   return null;
 }
 
+export interface SigV4VectorInput {
+  method: "GET" | "PUT";
+  canonical_uri: string;
+  canonical_query?: string;
+  headers: Record<string, string>;
+  payload_sha256: string;
+  access_key_id: string;
+  secret_access_key: string;
+  amz_date: string;
+  region: string;
+  service?: string;
+}
+
+export interface SigV4VectorResult {
+  canonical_request: string;
+  string_to_sign: string;
+  signed_headers: string;
+  scope: string;
+  signature: string;
+  authorization: string;
+}
+
+/**
+ * Nucleo puro SigV4. Separado do transporte/path-style para ser verificavel
+ * contra os vetores oficiais publicados pela AWS.
+ */
+export function computeSigV4(input: SigV4VectorInput): SigV4VectorResult {
+  if (!/^\\d{8}T\\d{6}Z$/.test(input.amz_date)) {
+    throw new Error("amz_date_invalid");
+  }
+  if (!/^[0-9a-f]{64}$/.test(input.payload_sha256)) {
+    throw new Error("payload_sha256_invalid");
+  }
+  if (!input.canonical_uri.startsWith("/")) {
+    throw new Error("canonical_uri_invalid");
+  }
+
+  const normalizedHeaders = new Map<string, string>();
+  for (const [rawName, rawValue] of Object.entries(input.headers)) {
+    const name = rawName.trim().toLowerCase();
+    if (!name) throw new Error("header_name_invalid");
+    const value = rawValue.trim().replace(/\\s+/g, " ");
+    if (normalizedHeaders.has(name)) {
+      throw new Error("duplicate_header_after_normalization");
+    }
+    normalizedHeaders.set(name, value);
+  }
+  if (!normalizedHeaders.has("host")) {
+    throw new Error("host_header_required");
+  }
+
+  const signedHeaderNames = [...normalizedHeaders.keys()].sort();
+  const canonicalHeaders = signedHeaderNames
+    .map((name) => name + ":" + normalizedHeaders.get(name) + "\\n")
+    .join("");
+  const signedHeaders = signedHeaderNames.join(";");
+  const canonicalRequest = [
+    input.method,
+    input.canonical_uri,
+    input.canonical_query ?? "",
+    canonicalHeaders,
+    signedHeaders,
+    input.payload_sha256,
+  ].join("\\n");
+
+  const date = input.amz_date.slice(0, 8);
+  const service = input.service ?? "s3";
+  const scope = date + "/" + input.region + "/" + service + "/aws4_request";
+  const stringToSign = [
+    "AWS4-HMAC-SHA256",
+    input.amz_date,
+    scope,
+    sha256Hex(canonicalRequest),
+  ].join("\\n");
+
+  const kDate = hmac("AWS4" + input.secret_access_key, date);
+  const kRegion = hmac(kDate, input.region);
+  const kService = hmac(kRegion, service);
+  const kSigning = hmac(kService, "aws4_request");
+  const signature = createHmac("sha256", kSigning)
+    .update(stringToSign)
+    .digest("hex");
+
+  return {
+    canonical_request: canonicalRequest,
+    string_to_sign: stringToSign,
+    signed_headers: signedHeaders,
+    scope,
+    signature,
+    authorization:
+      "AWS4-HMAC-SHA256 Credential=" +
+      input.access_key_id +
+      "/" +
+      scope +
+      ", SignedHeaders=" +
+      signedHeaders +
+      ", Signature=" +
+      signature,
+  };
+}
+
 /**
  * SigV4 minimo para o contrato off-host.
  *
@@ -191,50 +292,21 @@ export function signS3Request(args: {
     headersToSign["x-amz-security-token"] = args.config.session_token;
   }
 
-  const signedHeaderNames = Object.keys(headersToSign).sort();
-  const canonicalHeaders =
-    signedHeaderNames
-      .map((name) => name + ":" + headersToSign[name].trim() + "\n")
-      .join("");
-  const signedHeaders = signedHeaderNames.join(";");
-
-  const canonicalRequest = [
-    args.method,
-    canonicalUri,
-    "",
-    canonicalHeaders,
-    signedHeaders,
-    payloadHash,
-  ].join("\n");
-
-  const scope = date + "/" + args.config.region + "/s3/aws4_request";
-  const stringToSign = [
-    "AWS4-HMAC-SHA256",
-    amz,
-    scope,
-    sha256Hex(canonicalRequest),
-  ].join("\n");
-
-  const kDate = hmac("AWS4" + args.config.secret_access_key, date);
-  const kRegion = hmac(kDate, args.config.region);
-  const kService = hmac(kRegion, "s3");
-  const kSigning = hmac(kService, "aws4_request");
-  const signature = createHmac("sha256", kSigning)
-    .update(stringToSign)
-    .digest("hex");
+  const vector = computeSigV4({
+    method: args.method,
+    canonical_uri: canonicalUri,
+    headers: headersToSign,
+    payload_sha256: payloadHash,
+    access_key_id: args.config.access_key_id,
+    secret_access_key: args.config.secret_access_key,
+    amz_date: amz,
+    region: args.config.region,
+  });
 
   return {
     url: endpoint.toString(),
     headers: {
-      authorization:
-        "AWS4-HMAC-SHA256 Credential=" +
-        args.config.access_key_id +
-        "/" +
-        scope +
-        ", SignedHeaders=" +
-        signedHeaders +
-        ", Signature=" +
-        signature,
+      authorization: vector.authorization,
       "x-amz-content-sha256": payloadHash,
       "x-amz-date": amz,
       ...(args.config.session_token
