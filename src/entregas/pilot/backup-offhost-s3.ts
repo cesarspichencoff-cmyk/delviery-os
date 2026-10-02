@@ -182,7 +182,7 @@ export interface SigV4VectorResult {
  * contra os vetores oficiais publicados pela AWS.
  */
 export function computeSigV4(input: SigV4VectorInput): SigV4VectorResult {
-  if (!/^\\d{8}T\\d{6}Z$/.test(input.amz_date)) {
+  if (!/^\d{8}T\d{6}Z$/.test(input.amz_date)) {
     throw new Error("amz_date_invalid");
   }
   if (!/^[0-9a-f]{64}$/.test(input.payload_sha256)) {
@@ -196,7 +196,7 @@ export function computeSigV4(input: SigV4VectorInput): SigV4VectorResult {
   for (const [rawName, rawValue] of Object.entries(input.headers)) {
     const name = rawName.trim().toLowerCase();
     if (!name) throw new Error("header_name_invalid");
-    const value = rawValue.trim().replace(/\\s+/g, " ");
+    const value = rawValue.trim().replace(/\s+/g, " ");
     if (normalizedHeaders.has(name)) {
       throw new Error("duplicate_header_after_normalization");
     }
@@ -208,7 +208,7 @@ export function computeSigV4(input: SigV4VectorInput): SigV4VectorResult {
 
   const signedHeaderNames = [...normalizedHeaders.keys()].sort();
   const canonicalHeaders = signedHeaderNames
-    .map((name) => name + ":" + normalizedHeaders.get(name) + "\\n")
+    .map((name) => name + ":" + normalizedHeaders.get(name) + "\n")
     .join("");
   const signedHeaders = signedHeaderNames.join(";");
   const canonicalRequest = [
@@ -218,7 +218,7 @@ export function computeSigV4(input: SigV4VectorInput): SigV4VectorResult {
     canonicalHeaders,
     signedHeaders,
     input.payload_sha256,
-  ].join("\\n");
+  ].join("\n");
 
   const date = input.amz_date.slice(0, 8);
   const service = input.service ?? "s3";
@@ -228,7 +228,7 @@ export function computeSigV4(input: SigV4VectorInput): SigV4VectorResult {
     input.amz_date,
     scope,
     sha256Hex(canonicalRequest),
-  ].join("\\n");
+  ].join("\n");
 
   const kDate = hmac("AWS4" + input.secret_access_key, date);
   const kRegion = hmac(kDate, input.region);
