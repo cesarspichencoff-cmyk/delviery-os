@@ -5,7 +5,7 @@ lifecycle:
   authority_scope: infra_blockers
   superseded_by: null
   atualizado_em: "2026-10-02"
-  state_basis: 66d46a0
+  state_basis: 813bc44
   question_refs: ["Q-001","Q-002","Q-003","Q-004","Q-005","Q-006","Q-007","Q-008","Q-009","Q-010","Q-011"]
 ---
 
@@ -856,9 +856,20 @@ respeito a empacotamento, não ao comportamento que o PB19 fecha.
 > do `dumb-init` foi encaminhado ao filho e o launcher encerrou com exit 0
 > (`DUMB_INIT_PID1_SIGTERM_PASS`). Controle negativo com SHA alterado foi recusado com exit 4.
 >
-> Portanto **Linux -> dumb-init PID1 -> Node handler** está PROVEN fora de Docker. Continua
-> NOT_RUN somente a montagem da **imagem final**: provar que o runtime construído contém o mesmo
-> binário, roda como `USER node`, executa `npm prune --omit=dev` e medir seu tamanho final.
+> Portanto **Linux -> dumb-init PID1 -> Node handler** está PROVEN fora de Docker.
+>
+> **SUCESSÃO — 2026-10-02 · PRUNE E EXECUÇÃO NÃO-ROOT PROVADOS FORA DA IMAGEM.**
+> Em cópia temporária do `node_modules`, `npm prune --omit=dev` real reduziu
+> 56.193.119 -> 436.961 bytes, removeu TypeScript/Playwright e preservou
+> `pg@8.13.1` funcional. O `dist/` do build oficial rodou como UID 65534
+> (`nobody`) e encerrou com SIGTERM exit 0; app copiado mediu 3.971.689 bytes.
+> A tentativa de `npm ci --offline` em diretório vazio falhou por pacote ausente
+> no cache, portanto não foi promovida como prova de build limpo.
+>
+> Continua **NOT_RUN** a montagem da **imagem final**: `docker build`, base
+> exata `node:22-bookworm-slim`, `USER node` dentro da imagem,
+> `COPY --chown`, dumb-init dentro da camada final, tamanho das camadas OCI e
+> `docker compose up`.
 
 ### D4 — **FECHADO em 2026-09-22** (`docs/etapa-4-8/D4-EVIDENCIA.md`)
 
