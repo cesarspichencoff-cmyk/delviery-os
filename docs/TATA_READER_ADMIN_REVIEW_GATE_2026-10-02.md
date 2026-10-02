@@ -64,7 +64,7 @@ Initial scope is intentionally minimal:
 - `CDPRODPROMOCAO`, `NRSEQPRODCOM`, `NRSEQPRODPAI`: deferred until shadow evidence proves combo structure is needed.
 - `IDORIGEMVENDA`: deferred until shadow evidence proves it is needed.
 
-## Preflight v3 requirements
+## Preflight v4 requirements
 
 The final service identity must fail closed unless:
 - exact Windows principal matches;
@@ -82,11 +82,11 @@ The final service identity must fail closed unless:
 
 ## Rollback boundary
 
-Rollback may remove only artifacts created for the TATÁ reader:
-- Windows service `TataComandaReader`;
-- SQL database user `NT SERVICE\TataComandaReader`;
-- SQL login `NT SERVICE\TataComandaReader`;
-- future local runtime files/ACLs created exclusively for that service.
+Rollback must occur in this order:
+1. stop and delete Windows service `TataComandaReader`;
+2. drop SQL database user `NT SERVICE\TataComandaReader`;
+3. drop SQL login `NT SERVICE\TataComandaReader`;
+4. remove future local runtime files/ACLs created exclusively for that service.
 
 Rollback must not alter:
 - Teknisa tables or rows;
@@ -108,9 +108,9 @@ Claude on CAIXA_MOOCA should only:
 A fresh executable bundle must be generated from the reviewed artifacts.
 Do not remove REVIEW_ONLY guards in place.
 Then the order of operations must be:
-1. create service identity/service but do not start;
+1. install the reviewed reader/preflight binary and create service `TataComandaReader` as `NT SERVICE\TataComandaReader` with `start=demand`; do not start;
 2. create SQL login/user and exact column grants;
-3. run least-privilege preflight as the final service identity;
+3. start the service once in preflight-only mode so the preflight runs under the final virtual service account;
 4. if preflight is not green, rollback immediately;
 5. only under a later gate perform one minimized real order read;
 6. no printing/fiscal/cutover in that same gate.
