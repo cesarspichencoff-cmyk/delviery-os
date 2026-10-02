@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.ServiceProcess;
+using System.Security.Principal;
 using System.Text;
 using System.Threading;
 
@@ -26,6 +27,7 @@ namespace TataComandaReader.PreflightHost
     internal sealed class TataComandaReaderPreflightService : ServiceBase
     {
         private const string ServiceNameValue = "TataComandaReader";
+        private const string ExpectedIdentityName = @"NT SERVICE\TataComandaReader";
         private const int TimeoutMs = 60000;
 
         private readonly string _scriptPath;
@@ -57,6 +59,28 @@ namespace TataComandaReader.PreflightHost
 
             try
             {
+                WindowsIdentity identity = WindowsIdentity.GetCurrent();
+                string identityName = identity == null ? "" : identity.Name;
+                string identitySid =
+                    identity == null || identity.User == null ? "" : identity.User.Value;
+
+                if (!string.Equals(
+                    identityName,
+                    ExpectedIdentityName,
+                    StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new InvalidOperationException(
+                        "UNEXPECTED_SERVICE_IDENTITY:" + identityName + ":" + identitySid);
+                }
+
+                Directory.CreateDirectory(_evidenceDirectory);
+                File.WriteAllText(
+                    Path.Combine(_evidenceDirectory, "preflight.identity.txt"),
+                    "name=" + identityName + Environment.NewLine +
+                    "sid=" + identitySid + Environment.NewLine +
+                    "user_interactive=" + Environment.UserInteractive.ToString(CultureInfo.InvariantCulture) + Environment.NewLine,
+                    new UTF8Encoding(false));
+
                 if (!File.Exists(_scriptPath))
                 {
                     throw new FileNotFoundException("PREFLIGHT_SCRIPT_NOT_FOUND", _scriptPath);
