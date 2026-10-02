@@ -5,7 +5,8 @@ SAFETY: SET NOEXEC ON intentionally prevents every statement below from executin
 Do not remove this guard. If César authorizes rollback later, generate a fresh
 executable rollback from this reviewed template.
 
-Rollback removes only the TATÁ reader principal created for this integration.
+Rollback removes only the TATÁ reader SQL principal created for this integration.
+The Windows service must be stopped and deleted first using the reviewed service rollback.
 It does not alter Teknisa tables, rows, schema, Odhen services or printers.
 */
 
