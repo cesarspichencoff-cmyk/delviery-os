@@ -1,1 +1,29 @@
-param(\n  [string]$OutputPath = ".\\TataComandaReader.PreflightService.exe"\n)\n\n$ErrorActionPreference = "Stop"\n\n$source = Join-Path $PSScriptRoot "TataComandaReader.PreflightService.cs"\n$csc = "C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\csc.exe"\n\nif (-not (Test-Path -LiteralPath $csc -PathType Leaf)) {\n  throw "CSC64_NOT_FOUND"\n}\nif (-not (Test-Path -LiteralPath $source -PathType Leaf)) {\n  throw "PREFLIGHT_SERVICE_SOURCE_NOT_FOUND"\n}\n\n& $csc /nologo /target:exe /platform:anycpu /optimize+ /out:$OutputPath /reference:System.ServiceProcess.dll $source\nif ($LASTEXITCODE -ne 0) {\n  throw "PREFLIGHT_SERVICE_BUILD_FAILED"\n}\n\n$hash = Get-FileHash -LiteralPath $OutputPath -Algorithm SHA256\n[ordered]@{\n  schema = "deliveryos.tata-reader-preflight-service-build.v1"\n  output = (Resolve-Path -LiteralPath $OutputPath).Path\n  sha256 = $hash.Hash\n  nuget_used = $false\n  administrative_effect = $false\n} | ConvertTo-Json -Depth 4
+param(
+  [string]$OutputPath = ".\\TataComandaReader.PreflightService.exe"
+)
+
+$ErrorActionPreference = "Stop"
+
+$source = Join-Path $PSScriptRoot "TataComandaReader.PreflightService.cs"
+$csc = "C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\csc.exe"
+
+if (-not (Test-Path -LiteralPath $csc -PathType Leaf)) {
+  throw "CSC64_NOT_FOUND"
+}
+if (-not (Test-Path -LiteralPath $source -PathType Leaf)) {
+  throw "PREFLIGHT_SERVICE_SOURCE_NOT_FOUND"
+}
+
+& $csc /nologo /target:exe /platform:anycpu /optimize+ /out:$OutputPath /reference:System.ServiceProcess.dll $source
+if ($LASTEXITCODE -ne 0) {
+  throw "PREFLIGHT_SERVICE_BUILD_FAILED"
+}
+
+$hash = Get-FileHash -LiteralPath $OutputPath -Algorithm SHA256
+[ordered]@{
+  schema = "deliveryos.tata-reader-preflight-service-build.v1"
+  output = (Resolve-Path -LiteralPath $OutputPath).Path
+  sha256 = $hash.Hash
+  nuget_used = $false
+  administrative_effect = $false
+} | ConvertTo-Json -Depth 4
