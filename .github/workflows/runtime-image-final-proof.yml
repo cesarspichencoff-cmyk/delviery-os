@@ -62,42 +62,35 @@ jobs:
               echo "FINAL_IMAGE_FILESYSTEM_GREEN"
             '
 
-      - name: Execute real runtime binary in final image
+      - name: Execute real runtime and prove PID1 SIGTERM
         run: |
           set -euxo pipefail
-          docker run --rm --read-only --tmpfs /tmp \
-            -e DELIVERYOS_SOURCE_INGEST_ENABLED=false \
+          docker run -d --name deliveryos-source-proof \
+            --read-only --tmpfs /tmp \
+            -e DELIVERYOS_ENTREGAS_SOURCE_INGEST_ENABLED=false \
             deliveryos-platform:proof \
             node dist/src/platform/bin/entregas-source-ingest.js
-          echo "FINAL_IMAGE_REAL_BINARY_GREEN"
-
-      - name: Prove PID1 signal forwarding in final image
-        run: |
-          set -euxo pipefail
-          docker run -d --name deliveryos-signal-proof \
-            --read-only --tmpfs /tmp \
-            deliveryos-platform:proof \
-            node -e 'process.on("SIGTERM",()=>{console.log("FINAL_IMAGE_SIGTERM_CHILD");process.exit(0)});console.log("FINAL_IMAGE_CHILD_READY");setInterval(()=>{},1000)'
 
           for i in $(seq 1 50); do
-            if docker logs deliveryos-signal-proof 2>&1 | grep -q FINAL_IMAGE_CHILD_READY; then
+            if docker logs deliveryos-source-proof 2>&1 | grep -q 'DESLIGADO'; then
               break
             fi
             sleep 0.2
           done
 
-          docker logs deliveryos-signal-proof
-          docker logs deliveryos-signal-proof 2>&1 | grep -q FINAL_IMAGE_CHILD_READY
-          docker exec deliveryos-signal-proof sh -lc 'tr "\000" " " < /proc/1/cmdline' | tee /tmp/pid1.txt
+          docker logs deliveryos-source-proof
+          docker logs deliveryos-source-proof 2>&1 | grep -q 'DESLIGADO — nenhuma fonte ou banco foi aberto'
+
+          docker exec deliveryos-source-proof sh -lc 'tr "\000" " " < /proc/1/cmdline' | tee /tmp/pid1.txt
           grep -q 'dumb-init' /tmp/pid1.txt
+          docker top deliveryos-source-proof
 
-          docker stop -t 5 deliveryos-signal-proof
-          test "$(docker inspect -f '{{.State.ExitCode}}' deliveryos-signal-proof)" = "0"
-          docker logs deliveryos-signal-proof
-          docker logs deliveryos-signal-proof 2>&1 | grep -q FINAL_IMAGE_SIGTERM_CHILD
-          docker rm deliveryos-signal-proof
+          docker stop -t 5 deliveryos-source-proof
+          test "$(docker inspect -f '{{.State.ExitCode}}' deliveryos-source-proof)" = "0"
+          docker logs deliveryos-source-proof
+          docker rm deliveryos-source-proof
 
-          echo "FINAL_IMAGE_PID1_SIGTERM_GREEN"
+          echo "FINAL_IMAGE_REAL_BINARY_PID1_SIGTERM_GREEN"
 
       - name: Measure runtime filesystem
         run: |
