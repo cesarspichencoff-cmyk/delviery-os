@@ -41,10 +41,12 @@ function Parse-PreflightColumns([string]$Table) {
 }
 
 function Parse-SqlColumns([string]$Table) {
-  $pattern = '(?ms)GRANT\s+SELECT\s*\((.*?)\)\s*ON\s+OBJECT::\[TEKNISA\]\.\[' + [regex]::Escape($Table) + '\]'
-  $m = [regex]::Match($sql, $pattern)
-  Assert-True $m.Success ('SQL grant missing ' + $Table)
-  @([regex]::Matches($m.Groups[1].Value, '\[([A-Z0-9_]+)\]', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase) | ForEach-Object { $_.Groups[1].Value })
+  $blocks = @($sql -split '(?i)GRANT\s+SELECT' | Select-Object -Skip 1)
+  $targetPattern = 'ON\s+OBJECT::\[TEKNISA\]\.\[' + [regex]::Escape($Table) + '\]'
+  $block = @($blocks | Where-Object { [regex]::IsMatch($_, $targetPattern, 'IgnoreCase') })[0]
+  Assert-True (-not [string]::IsNullOrWhiteSpace($block)) ('SQL grant missing ' + $Table)
+  $columnsPart = @($block -split '(?i)ON\s+OBJECT::')[0]
+  @([regex]::Matches($columnsPart, '\[([A-Z0-9_]+)\]', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase) | ForEach-Object { $_.Groups[1].Value })
 }
 
 function Parse-DocColumns([string]$Table) {
