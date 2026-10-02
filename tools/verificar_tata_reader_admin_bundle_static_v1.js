@@ -31,7 +31,7 @@ function parseSql(table) {
   const re = new RegExp("GRANT\\s+SELECT\\s*\\(([\\s\\S]*?)\\)\\s*ON\\s+OBJECT::\\[TEKNISA\\]\\.\\[" + table + "\\]", "mi");
   const match = sql.match(re);
   assert.ok(match, "SQL grant missing " + table);
-  return [...match[1].matchAll(/\\[([A-Z0-9_]+)\\]/gi)].map((m) => m[1]);
+  return [...match[1].matchAll(/\[([A-Z0-9_]+)\]/gi)].map((m) => m[1]);
 }
 
 function parseDoc(table) {
