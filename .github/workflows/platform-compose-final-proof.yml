@@ -1,0 +1,51 @@
+name: platform-compose-final-proof
+
+on:
+  push:
+    branches:
+      - tmp/platform-compose-final-proof-20261002
+
+permissions:
+  contents: read
+
+jobs:
+  compose-proof:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Docker environment
+        run: |
+          set -euxo pipefail
+          docker version
+          docker compose version
+          test -z "$(docker ps -a --format '{{.Names}}' | grep -E '^deliveryos-' || true)"
+          test -z "$(docker volume ls -q | grep -E '^deliveryos-platform-' || true)"
+
+      - name: Build final platform image
+        run: |
+          set -euxo pipefail
+          docker build --progress=plain \
+            -f deploy/Dockerfile.platform \
+            --build-arg DELIVERYOS_COMMIT="$GITHUB_SHA" \
+            -t deliveryos-platform:v1 \
+            .
+          docker image inspect deliveryos-platform:v1 >/dev/null
+          docker pull postgres:16-bookworm
+
+      - name: Full official Compose certification
+        run: |
+          set -euxo pipefail
+          bash tools/papeis_compose_real.sh
+
+      - name: Prove cleanup and repository integrity
+        run: |
+          set -euxo pipefail
+          test -z "$(docker ps -a --format '{{.Names}}' | grep -E '^deliveryos-' || true)"
+          test -z "$(docker volume ls -q | grep -E '^deliveryos-platform-' || true)"
+          npm run test:platform:deploy
+          npm run test:platform:governanca
+          git diff --check
+          echo "PLATFORM_COMPOSE_FINAL_PROOF_GREEN"
