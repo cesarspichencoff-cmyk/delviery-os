@@ -25,25 +25,55 @@ jobs:
           npx tsc --noEmit
           npm run test:entregas:backup-offhost-s3
 
-      - name: Start ephemeral MinIO
+      - name: Fetch pinned MinIO binaries with official checksums
         run: |
           set -euxo pipefail
-          docker network create deliveryos-s3-proof
-          docker run -d --name deliveryos-minio \
-            --network deliveryos-s3-proof \
-            -p 9000:9000 \
-            -e MINIO_ROOT_USER=rootadmin \
-            -e MINIO_ROOT_PASSWORD=rootadmin-secret-20261002 \
-            minio/minio:latest \
-            server /data
+          MINIO_REL='minio.RELEASE.2025-09-07T16-13-09Z'
+          MC_REL='mc.RELEASE.2025-08-13T08-35-41Z'
+
+          curl --fail --location --retry 3 \
+            "https://dl.min.io/server/minio/release/linux-amd64/archive/$MINIO_REL" \
+            -o /tmp/minio
+          curl --fail --location --retry 3 \
+            "https://dl.min.io/server/minio/release/linux-amd64/archive/$MINIO_REL.sha256sum" \
+            -o /tmp/minio.sha256sum
+
+          curl --fail --location --retry 3 \
+            "https://dl.min.io/client/mc/release/linux-amd64/archive/$MC_REL" \
+            -o /tmp/mc
+          curl --fail --location --retry 3 \
+            "https://dl.min.io/client/mc/release/linux-amd64/archive/$MC_REL.sha256sum" \
+            -o /tmp/mc.sha256sum
+
+          (
+            cd /tmp
+            sed "s#  $MINIO_REL#  minio#" minio.sha256sum | sha256sum -c -
+            sed "s#  $MC_REL#  mc#" mc.sha256sum | sha256sum -c -
+          )
+
+          chmod 700 /tmp/minio /tmp/mc
+          /tmp/minio --version
+          /tmp/mc --version
+          echo "MINIO_BINARIES_CHECKSUM_GREEN"
+
+      - name: Start ephemeral MinIO binary
+        run: |
+          set -euxo pipefail
+          mkdir -p /tmp/minio-data
+          MINIO_ROOT_USER=rootadmin \
+          MINIO_ROOT_PASSWORD=rootadmin-secret-20261002 \
+            /tmp/minio server /tmp/minio-data --address 127.0.0.1:9000 \
+            >/tmp/minio.log 2>&1 &
+          echo $! >/tmp/minio.pid
 
           for i in $(seq 1 80); do
             if curl -fsS http://127.0.0.1:9000/minio/health/ready >/dev/null; then
+              cat /tmp/minio.log
               exit 0
             fi
             sleep 0.25
           done
-          docker logs deliveryos-minio
+          cat /tmp/minio.log
           exit 1
 
       - name: Create bucket and least-privilege users
@@ -72,23 +102,15 @@ jobs:
           }
           JSON
 
-          docker run --rm \
-            --network deliveryos-s3-proof \
-            -v /tmp/write-policy.json:/write-policy.json:ro \
-            -v /tmp/read-policy.json:/read-policy.json:ro \
-            --entrypoint /bin/sh \
-            minio/mc:latest \
-            -c '
-              set -eu
-              mc alias set local http://deliveryos-minio:9000 rootadmin rootadmin-secret-20261002
-              mc mb local/deliveryos-minio
-              mc admin policy create local deliveryos-write /write-policy.json
-              mc admin policy create local deliveryos-read /read-policy.json
-              mc admin user add local deliveryos-writer writer-secret-20261002
-              mc admin user add local deliveryos-reader reader-secret-20261002
-              mc admin policy attach local deliveryos-write --user deliveryos-writer
-              mc admin policy attach local deliveryos-read --user deliveryos-reader
-            '
+          /tmp/mc alias set local http://127.0.0.1:9000 \
+            rootadmin rootadmin-secret-20261002
+          /tmp/mc mb local/deliveryos-minio
+          /tmp/mc admin policy create local deliveryos-write /tmp/write-policy.json
+          /tmp/mc admin policy create local deliveryos-read /tmp/read-policy.json
+          /tmp/mc admin user add local deliveryos-writer writer-secret-20261002
+          /tmp/mc admin user add local deliveryos-reader reader-secret-20261002
+          /tmp/mc admin policy attach local deliveryos-write --user deliveryos-writer
+          /tmp/mc admin policy attach local deliveryos-read --user deliveryos-reader
 
       - name: Prove separated write/read credentials over real S3 API
         env:
@@ -104,21 +126,13 @@ jobs:
           set -euxo pipefail
           npm run test:entregas:backup-offhost-s3:live
 
-      - name: Inspect objects and prove no extra authority was needed
+      - name: Inspect exactly three uploaded objects
         run: |
           set -euxo pipefail
-          docker run --rm \
-            --network deliveryos-s3-proof \
-            --entrypoint /bin/sh \
-            minio/mc:latest \
-            -c '
-              set -eu
-              mc alias set local http://deliveryos-minio:9000 rootadmin rootadmin-secret-20261002
-              count=$(mc find local/deliveryos-minio/deliveryos-backups --type f | wc -l)
-              test "$count" = "3"
-              echo "S3_OBJECT_COUNT=3"
-              mc find local/deliveryos-minio/deliveryos-backups --type f
-            '
+          count=$(/tmp/mc find local/deliveryos-minio/deliveryos-backups --type f | wc -l)
+          test "$count" = "3"
+          echo "S3_OBJECT_COUNT=3"
+          /tmp/mc find local/deliveryos-minio/deliveryos-backups --type f
 
       - name: Regression and repository cleanliness
         run: |
@@ -132,5 +146,9 @@ jobs:
       - name: Cleanup
         if: always()
         run: |
-          docker rm -f deliveryos-minio >/dev/null 2>&1 || true
-          docker network rm deliveryos-s3-proof >/dev/null 2>&1 || true
+          if test -f /tmp/minio.pid; then
+            kill "$(cat /tmp/minio.pid)" >/dev/null 2>&1 || true
+          fi
+          rm -rf /tmp/minio-data /tmp/minio /tmp/mc \
+            /tmp/minio.sha256sum /tmp/mc.sha256sum \
+            /tmp/write-policy.json /tmp/read-policy.json /tmp/minio.log /tmp/minio.pid
