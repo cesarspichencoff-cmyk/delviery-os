@@ -4,8 +4,8 @@ lifecycle:
   status: ACTIVE
   authority_scope: session_routing
   superseded_by: null
-  atualizado_em: "2026-10-01"
-  state_basis: 378d634
+  atualizado_em: "2026-10-02"
+  state_basis: c78f863
 ---
 
 # CLAUDE.md — porta de entrada do DeliveryOS
@@ -335,3 +335,16 @@ PostgreSQL/Compose específica do pré-vínculo, credenciais/segredos operaciona
 no banco operacional e qualquer deploy/ativação. A fonte detalhada é
 `docs/etapa-4-8/CADEIA-REAL.md`, `docs/etapa-4-8/FIELD-GATE-ANDROID.md` e
 `docs/etapa-4-8/field-gate/2026-10-01-device-prebinding.md`.
+
+
+**SUCESSÃO 2026-10-02 — fronteira local da Etapa 4/8 fechada.** O checkpoint de 01/10 acima
+permanece histórico. Desde então, a cadeia real foi refeita em PostgreSQL 18 (**36/36** +
+mutações **15/15**), o despacho piloto→plataforma→`platform.event_log` foi provado em HTTP real
+(**6/6**), a imagem runtime final foi construída e inspecionada em Docker real, e a composição
+oficial `deploy/compose.platform.yaml` passou a certificação final no GitHub Actions run
+**36969232567**: **45 medidas verdes**, crítico healthy, migrations/papéis exit 0, sessão+GPS,
+outbox/replay após restart, sabotagens recusadas por privilégio e zero senha administrativa nos
+runtimes/logs. Deploy-audit **30/30** e governança GREEN no mesmo run. HEAD publicado atual:
+`c78f863`. **A execução autônoma local para aqui por fronteira real, não por falha técnica**:
+continuam não provados/autorizados aparelho físico, credenciais/migrations/cutover/deploy
+operacionais e backup off-host. Não promover default, provedor ou efeito operacional sem gate humano.
