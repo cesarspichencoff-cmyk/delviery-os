@@ -1,1 +1,142 @@
-using System;\nusing System.Diagnostics;\nusing System.Globalization;\nusing System.IO;\nusing System.ServiceProcess;\nusing System.Text;\nusing System.Threading;\n\nnamespace TataComandaReader.PreflightHost\n{\n    internal static class Program\n    {\n        private static void Main()\n        {\n            if (Environment.UserInteractive)\n            {\n                Console.Error.WriteLine("SERVICE_ONLY");\n                Environment.ExitCode = 2;\n                return;\n            }\n\n            ServiceBase.Run(new TataComandaReaderPreflightService());\n        }\n    }\n\n    internal sealed class TataComandaReaderPreflightService : ServiceBase\n    {\n        private const string ServiceNameValue = "TataComandaReader";\n        private const int TimeoutMs = 60000;\n\n        private readonly string _scriptPath;\n        private readonly string _evidenceDirectory;\n\n        internal TataComandaReaderPreflightService()\n        {\n            ServiceName = ServiceNameValue;\n            CanStop = true;\n            CanShutdown = true;\n            AutoLog = true;\n\n            string binDirectory = AppDomain.CurrentDomain.BaseDirectory;\n            string rootDirectory = Directory.GetParent(binDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)).FullName;\n            _scriptPath = Path.Combine(binDirectory, "tata_reader_least_privilege_preflight.ps1");\n            _evidenceDirectory = Path.Combine(rootDirectory, "evidence");\n        }\n\n        protected override void OnStart(string[] args)\n        {\n            ThreadPool.QueueUserWorkItem(delegate { RunOnce(); });\n        }\n\n        private void RunOnce()\n        {\n            int exitCode = 125;\n            StringBuilder stdout = new StringBuilder();\n            StringBuilder stderr = new StringBuilder();\n\n            try\n            {\n                if (!File.Exists(_scriptPath))\n                {\n                    throw new FileNotFoundException("PREFLIGHT_SCRIPT_NOT_FOUND", _scriptPath);\n                }\n\n                string systemDirectory = Environment.GetFolderPath(Environment.SpecialFolder.System);\n                string powershell = Path.Combine(systemDirectory, @"WindowsPowerShell\v1.0\powershell.exe");\n\n                ProcessStartInfo psi = new ProcessStartInfo();\n                psi.FileName = powershell;\n                psi.Arguments = "-NoProfile -NonInteractive -ExecutionPolicy Bypass -File " + Quote(_scriptPath);\n                psi.UseShellExecute = false;\n                psi.RedirectStandardOutput = true;\n                psi.RedirectStandardError = true;\n                psi.CreateNoWindow = true;\n\n                using (Process process = new Process())\n                {\n                    process.StartInfo = psi;\n                    process.OutputDataReceived += delegate(object sender, DataReceivedEventArgs e)\n                    {\n                        if (e.Data != null) stdout.AppendLine(e.Data);\n                    };\n                    process.ErrorDataReceived += delegate(object sender, DataReceivedEventArgs e)\n                    {\n                        if (e.Data != null) stderr.AppendLine(e.Data);\n                    };\n\n                    if (!process.Start())\n                    {\n                        throw new InvalidOperationException("PREFLIGHT_PROCESS_START_FAILED");\n                    }\n\n                    process.BeginOutputReadLine();\n                    process.BeginErrorReadLine();\n\n                    if (!process.WaitForExit(TimeoutMs))\n                    {\n                        try { process.Kill(); } catch { }\n                        exitCode = 124;\n                        stderr.AppendLine("PREFLIGHT_TIMEOUT");\n                    }\n                    else\n                    {\n                        process.WaitForExit();\n                        exitCode = process.ExitCode;\n                    }\n                }\n            }\n            catch (Exception ex)\n            {\n                stderr.AppendLine(ex.ToString());\n                exitCode = 125;\n            }\n\n            try\n            {\n                Directory.CreateDirectory(_evidenceDirectory);\n                File.WriteAllText(Path.Combine(_evidenceDirectory, "preflight.json"), stdout.ToString(), new UTF8Encoding(false));\n                File.WriteAllText(Path.Combine(_evidenceDirectory, "preflight.stderr.txt"), stderr.ToString(), new UTF8Encoding(false));\n                File.WriteAllText(Path.Combine(_evidenceDirectory, "preflight.exitcode.txt"), exitCode.ToString(CultureInfo.InvariantCulture), Encoding.ASCII);\n            }\n            catch\n            {\n                // If evidence cannot be persisted, do not attempt any alternate operational action.\n            }\n\n            try\n            {\n                Stop();\n            }\n            catch\n            {\n                Environment.Exit(exitCode == 0 ? 0 : exitCode);\n            }\n        }\n\n        private static string Quote(string value)\n        {\n            return "\"" + value.Replace("\"", "\\\"") + "\"";\n        }\n    }\n}
+using System;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.ServiceProcess;
+using System.Text;
+using System.Threading;
+
+namespace TataComandaReader.PreflightHost
+{
+    internal static class Program
+    {
+        private static void Main()
+        {
+            if (Environment.UserInteractive)
+            {
+                Console.Error.WriteLine("SERVICE_ONLY");
+                Environment.ExitCode = 2;
+                return;
+            }
+
+            ServiceBase.Run(new TataComandaReaderPreflightService());
+        }
+    }
+
+    internal sealed class TataComandaReaderPreflightService : ServiceBase
+    {
+        private const string ServiceNameValue = "TataComandaReader";
+        private const int TimeoutMs = 60000;
+
+        private readonly string _scriptPath;
+        private readonly string _evidenceDirectory;
+
+        internal TataComandaReaderPreflightService()
+        {
+            ServiceName = ServiceNameValue;
+            CanStop = true;
+            CanShutdown = true;
+            AutoLog = true;
+
+            string binDirectory = AppDomain.CurrentDomain.BaseDirectory;
+            string rootDirectory = Directory.GetParent(binDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)).FullName;
+            _scriptPath = Path.Combine(binDirectory, "tata_reader_least_privilege_preflight.ps1");
+            _evidenceDirectory = Path.Combine(rootDirectory, "evidence");
+        }
+
+        protected override void OnStart(string[] args)
+        {
+            ThreadPool.QueueUserWorkItem(delegate { RunOnce(); });
+        }
+
+        private void RunOnce()
+        {
+            int exitCode = 125;
+            StringBuilder stdout = new StringBuilder();
+            StringBuilder stderr = new StringBuilder();
+
+            try
+            {
+                if (!File.Exists(_scriptPath))
+                {
+                    throw new FileNotFoundException("PREFLIGHT_SCRIPT_NOT_FOUND", _scriptPath);
+                }
+
+                string systemDirectory = Environment.GetFolderPath(Environment.SpecialFolder.System);
+                string powershell = Path.Combine(systemDirectory, @"WindowsPowerShell\v1.0\powershell.exe");
+
+                ProcessStartInfo psi = new ProcessStartInfo();
+                psi.FileName = powershell;
+                psi.Arguments = "-NoProfile -NonInteractive -ExecutionPolicy Bypass -File " + Quote(_scriptPath);
+                psi.UseShellExecute = false;
+                psi.RedirectStandardOutput = true;
+                psi.RedirectStandardError = true;
+                psi.CreateNoWindow = true;
+
+                using (Process process = new Process())
+                {
+                    process.StartInfo = psi;
+                    process.OutputDataReceived += delegate(object sender, DataReceivedEventArgs e)
+                    {
+                        if (e.Data != null) stdout.AppendLine(e.Data);
+                    };
+                    process.ErrorDataReceived += delegate(object sender, DataReceivedEventArgs e)
+                    {
+                        if (e.Data != null) stderr.AppendLine(e.Data);
+                    };
+
+                    if (!process.Start())
+                    {
+                        throw new InvalidOperationException("PREFLIGHT_PROCESS_START_FAILED");
+                    }
+
+                    process.BeginOutputReadLine();
+                    process.BeginErrorReadLine();
+
+                    if (!process.WaitForExit(TimeoutMs))
+                    {
+                        try { process.Kill(); } catch { }
+                        exitCode = 124;
+                        stderr.AppendLine("PREFLIGHT_TIMEOUT");
+                    }
+                    else
+                    {
+                        process.WaitForExit();
+                        exitCode = process.ExitCode;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                stderr.AppendLine(ex.ToString());
+                exitCode = 125;
+            }
+
+            try
+            {
+                Directory.CreateDirectory(_evidenceDirectory);
+                File.WriteAllText(Path.Combine(_evidenceDirectory, "preflight.json"), stdout.ToString(), new UTF8Encoding(false));
+                File.WriteAllText(Path.Combine(_evidenceDirectory, "preflight.stderr.txt"), stderr.ToString(), new UTF8Encoding(false));
+                File.WriteAllText(Path.Combine(_evidenceDirectory, "preflight.exitcode.txt"), exitCode.ToString(CultureInfo.InvariantCulture), Encoding.ASCII);
+            }
+            catch
+            {
+                // If evidence cannot be persisted, do not attempt any alternate operational action.
+            }
+
+            try
+            {
+                Stop();
+            }
+            catch
+            {
+                Environment.Exit(exitCode == 0 ? 0 : exitCode);
+            }
+        }
+
+        private static string Quote(string value)
+        {
+            return "\"" + value.Replace("\"", "\\\"") + "\"";
+        }
+    }
+}
