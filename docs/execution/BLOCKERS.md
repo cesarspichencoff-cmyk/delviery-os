@@ -4,8 +4,8 @@ lifecycle:
   status: ACTIVE
   authority_scope: infra_blockers
   superseded_by: null
-  atualizado_em: "2026-10-01"
-  state_basis: 953a3fb
+  atualizado_em: "2026-10-02"
+  state_basis: 66d46a0
   question_refs: ["Q-001","Q-002","Q-003","Q-004","Q-005","Q-006","Q-007","Q-008","Q-009","Q-010","Q-011"]
 ---
 
@@ -436,11 +436,19 @@ corrompendo exatamente a ordenação que o servidor usa.
 >
 > Provas: assertion/rota **6/6**, integração HTTP piloto↔plataforma **5/5**,
 > capture-control HTTP **6/6**, deploy-audit piloto **39/39**, platform-deploy
-> **30/30**, governança **14/14**. O que continua aberto é o gate operacional:
-> gerar/configurar segredos reais, provar a leitura contra PostgreSQL real nesta
-> sessão, renderizar/subir Compose com Docker e executar deploy. Docker e
-> `DELIVERYOS_PG_URL` estão ausentes no Foxxy; portanto esses pontos são
-> **NOT_RUN**, não PROVEN.
+> **30/30**, governança **14/14**.
+>
+> **SUCESSÃO — 2026-10-02 · POSTGRESQL REAL DO CAMINHO HTTP FECHADO.**
+> A nova prova subiu runtime crítico real + piloto real sobre PostgreSQL 18,
+> ingeriu dois pontos via aparelho lógico e leu os mesmos fatos por
+> `/api/trip/location` e `/api/trip/route`: **6/6 PASS**. Motoboy recebeu
+> metadata sem coordenadas; ingest legado continuou tombstone 503; segredo
+> interno divergente foi recusado sem fallback para RAM. O banco efêmero foi
+> removido ao final.
+>
+> O que continua aberto agora é estritamente operacional: gerar/configurar
+> segredos reais de leitura por unidade, renderizar/subir Compose com Docker e
+> executar deploy. Esses efeitos continuam **NOT_RUN / NÃO AUTORIZADOS**.
 
 ### C5 — P2 · Resíduos conhecidos — reavaliado em 2026-10-01
 
