@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import {
+  computeSigV4,
   signS3Request,
   validateS3OffhostConfig,
   type S3OffhostConfig,
@@ -87,6 +88,40 @@ async function main(): Promise<void> {
       /^AWS4-HMAC-SHA256 Credential=fixture-key-id\/20261002\/us-west-004\/s3\/aws4_request,/,
     );
     assert.equal(signed.headers["x-amz-date"], "20261002T123456Z");
+  });
+
+  await test("S35 nucleo SigV4 confere com vetor oficial AWS GET Object", () => {
+    const emptyHash =
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
+    const vector = computeSigV4({
+      method: "GET",
+      canonical_uri: "/test.txt",
+      headers: {
+        Host: "examplebucket.s3.amazonaws.com",
+        Range: "bytes=0-9",
+        "x-amz-content-sha256": emptyHash,
+        "x-amz-date": "20130524T000000Z",
+      },
+      payload_sha256: emptyHash,
+      access_key_id: "AKIAIOSFODNN7EXAMPLE",
+      secret_access_key:
+        "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+      amz_date: "20130524T000000Z",
+      region: "us-east-1",
+    });
+
+    assert.equal(
+      createHash("sha256").update(vector.canonical_request).digest("hex"),
+      "7344ae5b7ee6c3e7e6b0fe0640412a37625d1fbfff95c48bbb2dc43964946972",
+    );
+    assert.equal(
+      vector.signature,
+      "f0e8bdb87c964420e857bd35b5d6ed310bd44f0170aba48dd91039c6036bdb41",
+    );
+    assert.equal(
+      vector.authorization,
+      "AWS4-HMAC-SHA256 Credential=AKIAIOSFODNN7EXAMPLE/20130524/us-east-1/s3/aws4_request, SignedHeaders=host;range;x-amz-content-sha256;x-amz-date, Signature=f0e8bdb87c964420e857bd35b5d6ed310bd44f0170aba48dd91039c6036bdb41",
+    );
   });
 
   await test("S35 superficie S3 nao implementa DELETE, LIST nem HEAD", () => {
