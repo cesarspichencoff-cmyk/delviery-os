@@ -5,8 +5,16 @@ Data da pesquisa: 2026-10-02
 ## Estado
 
 **Nenhum provedor foi selecionado.**
-Nenhuma conta, bucket, credencial, assinatura ou upload foi criado por esta
+Nenhuma conta, bucket, credencial, assinatura ou upload externo foi criado por esta
 pesquisa.
+
+### Estado técnico do transporte — 2026-10-02
+
+A camada S3-compatible foi provada separadamente em MinIO real e isolado no
+GitHub Actions run `37031435078`: writer somente `PutObject`, reader somente
+`GetObject`, round-trip íntegro, exatamente três objetos e assinatura derivada
+de secret incorreto recusada. Isso reduz o risco de integração com um provedor
+S3-compatible, mas **não seleciona nem prova B2/R2 como off-host real**.
 
 Objetivo: reduzir o gate humano do backup externo sem violar os requisitos já
 canônicos do DeliveryOS:

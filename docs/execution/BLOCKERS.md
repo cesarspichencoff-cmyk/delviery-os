@@ -1355,6 +1355,20 @@ Estado atual: **feed durável single-instance = CODE_READY + TEST_PASS; produç�
 > ainda falta César escolher/autorizar o destino externo, configurar a
 > credencial mínima, produzir uma cópia realmente fora do host e restaurá-la
 > em ensaio.
+>
+> **SUCESSÃO — 2026-10-02 · CONTRATO S3/AUTENTICAÇÃO PROVADO EM MINIO ISOLADO.**
+>
+> O transporte S3-compatible deixou de ser UNKNOWN técnico: GitHub Actions run
+> `37031435078` compilou MinIO/mc de tags pinadas, subiu servidor real isolado,
+> criou writer `PutObject` e reader `GetObject` separados e fechou o round-trip
+> `snapshot + sidecar + manifesto`. O live gate passou **7/7**, inclusive
+> `BAD_SIGNATURE_REJECTED=true`; a auditoria encontrou exatamente **3 objetos**,
+> e integridade/export/governança ficaram verdes.
+>
+> **Isso ainda não é backup off-host PROVEN.** O MinIO viveu no runner efêmero
+> da própria prova. Nenhum provedor externo, conta, bucket, credencial, retenção
+> de 14 dias ou upload operacional foi autorizado/criado. O checklist continua
+> aberto até cópia realmente fora do host + restore ensaiado no destino escolhido.
 
 
 

@@ -146,7 +146,10 @@ em ensaio.
 A pesquisa zero-custo de 2026-10-02 está em
 `OFF_HOST_ZERO_COST_CANDIDATES_2026-10-02.md`. Ela identifica candidatos,
 mas **não seleciona provedor** e não autoriza conta, bucket, credencial ou
-upload.
+upload. O transporte S3-compatible e a separação writer/reader já foram
+provados em MinIO isolado (run `37031435078`), inclusive rejeição de secret
+incorreto; isso não substitui a cópia fisicamente externa nem o restore no
+provedor que vier a ser autorizado.
 
 ## 6. Rollback
 
