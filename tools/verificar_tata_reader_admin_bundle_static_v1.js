@@ -28,10 +28,12 @@ function parsePreflight(table) {
 }
 
 function parseSql(table) {
-  const re = new RegExp("GRANT\\s+SELECT\\s*\\(([\\s\\S]*?)\\)\\s*ON\\s+OBJECT::\\[TEKNISA\\]\\.\\[" + table + "\\]", "mi");
-  const match = sql.match(re);
-  assert.ok(match, "SQL grant missing " + table);
-  return [...match[1].matchAll(/\[([A-Z0-9_]+)\]/gi)].map((m) => m[1]);
+  const blocks = sql.split(/GRANT\s+SELECT/gi).slice(1);
+  const targetRe = new RegExp("ON\\s+OBJECT::\\[TEKNISA\\]\\.\\[" + table + "\\]", "i");
+  const block = blocks.find((x) => targetRe.test(x));
+  assert.ok(block, "SQL grant missing " + table);
+  const columnsPart = block.split(/ON\s+OBJECT::/i)[0];
+  return [...columnsPart.matchAll(/\[([A-Z0-9_]+)\]/gi)].map((m) => m[1]);
 }
 
 function parseDoc(table) {
