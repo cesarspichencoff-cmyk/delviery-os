@@ -140,7 +140,9 @@ async function main(): Promise<void> {
       "utf8",
     );
     const start = source.indexOf("export async function exportBackupBundleS3");
-    const end = source.indexOf("/**\n * Verificador/restaurador", start);
+    const end = source.indexOf("export async function downloadBackupBundleS3", start);
+    assert.notEqual(start, -1);
+    assert.notEqual(end, -1);
     const uploader = source.slice(start, end);
     assert.equal(/downloadToFile|getText|method:\s*"GET"/.test(uploader), false);
     assert.match(uploader, /putFile/);
