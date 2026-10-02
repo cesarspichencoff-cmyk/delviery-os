@@ -15,7 +15,7 @@ throw "REVIEW_ONLY_NOT_AUTHORIZED:TataComandaReader service creation"
 
 $ServiceName = "TataComandaReader"
 $ServicePrincipal = "NT SERVICE\$ServiceName"
-$SqlDependency = "MSSQL$SQLEXPRESS"
+$SqlDependency = 'MSSQL$SQLEXPRESS'
 
 if (-not (Test-Path -LiteralPath $BinaryPath -PathType Leaf)) {
   throw "READER_BINARY_NOT_FOUND"
@@ -28,7 +28,7 @@ if ($existing) {
 
 $quotedBinary = [char]34 + $BinaryPath + [char]34
 
-& sc.exe create $ServiceName binPath= $quotedBinary start= auto obj= $ServicePrincipal password= ""
+& sc.exe create $ServiceName binPath= $quotedBinary start= demand obj= $ServicePrincipal password= ""
 if ($LASTEXITCODE -ne 0) { throw "SERVICE_CREATE_FAILED" }
 
 & sc.exe sidtype $ServiceName unrestricted
@@ -37,6 +37,6 @@ if ($LASTEXITCODE -ne 0) { throw "SERVICE_SIDTYPE_FAILED" }
 & sc.exe config $ServiceName depend= $SqlDependency
 if ($LASTEXITCODE -ne 0) { throw "SERVICE_SQL_DEPENDENCY_FAILED" }
 
-# Intentionally not started here.
-# Starting the service is a later gate after SQL grants and the least-privilege
-# preflight have both been reviewed and authorized.
+# Intentionally configured as DEMAND and not started here.
+# Automatic start is a later production decision only after the final reader
+# binary, SQL grants and least-privilege preflight are proven.
