@@ -8,6 +8,28 @@ Data da pesquisa: 2026-10-02
 Nenhuma conta, bucket, credencial, assinatura ou upload externo foi criado por esta
 pesquisa.
 
+### Revalidação oficial posterior — 2026-10-02
+
+A checagem final nas páginas oficiais manteve a ordem técnica, sem promover
+provedor:
+
+- **Backblaze B2:** primeiros 10 GB continuam gratuitos e o onboarding oficial
+  informa que é possível começar **sem cartão de crédito**. Application Keys
+  continuam separando `writeFiles` de `deleteFiles`, e Object Lock suporta
+  retenção entre 1 e 3.000 dias. Para o requisito atual, isso permite manter o
+  uploader sem poder de apagar e deixar retenção como política do bucket.
+- **Cloudflare R2:** o free tier Standard continua em 10 GB-month/mês, 1 milhão
+  de operações Class A e 10 milhões Class B, com egress gratuito. Porém a
+  documentação atual diz que é necessário **purchase R2** antes de gerar token
+  S3. O token persistente simples continua oferecendo `Object Read & Write` ou
+  `Object Read only`; escopo estrito por ação, como somente `PutObject`, exige
+  credencial temporária assinada/localmente ou mecanismo equivalente.
+
+Consequência: **B2 continua sendo a menor rota zero-custo aparente**, mas ainda
+não está selecionado. Criar conta/bucket, habilitar Object Lock, criar chaves e
+realizar o primeiro upload permanecem efeitos externos dependentes de
+autorização explícita de César.
+
 ### Estado técnico do transporte — 2026-10-02
 
 A camada S3-compatible foi provada separadamente em MinIO real e isolado no
@@ -158,6 +180,8 @@ Só após esse ciclo o item do checklist pode ser marcado.
 
 Backblaze:
 
+- Start Free / no credit card:
+  https://www.backblaze.com/sign-up/cloud-storage
 - Pricing: https://www.backblaze.com/cloud-storage/pricing
 - S3-compatible app key capabilities:
   https://www.backblaze.com/docs/cloud-storage-s3-compatible-app-keys
