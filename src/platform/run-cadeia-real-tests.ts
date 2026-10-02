@@ -435,7 +435,11 @@ async function main(): Promise<void> {
       assert.equal(v.ok && v.claims.unit_id, UNIDADE);
       const depois = await linhaDoAparelho(b, ap.deviceId);
       assert.equal(depois?.secret_hash, prova, "runtime alterou o vínculo humano");
-      assert.equal(depois?.secret_bound_at, antes?.secret_bound_at, "runtime regravou o instante do vínculo");
+      assert.equal(
+        new Date(String(depois?.secret_bound_at)).toISOString(),
+        new Date(String(antes?.secret_bound_at)).toISOString(),
+        "runtime regravou o instante do vínculo",
+      );
       assert.ok(depois?.last_session_at, "sem última sessão");
       assert.equal(depois?.app_version, "1.0.0-logico");
       const aud = await b.cliente.query(`SELECT action, detail FROM platform.audit WHERE object_id = $1`, [ap.deviceId]);
@@ -785,7 +789,7 @@ async function main(): Promise<void> {
       for (const c of Object.values(vm.dispositivo)) assert.equal(c.observado, false);
     });
 
-    await teste("D4 AUSÊNCIA nunca vira saúde: aparelho autorizado sem lote fica sem GPS, sem sincronização e sem modo", async () => {
+    await teste("D4 AUSÊNCIA nunca vira saúde: aparelho pre-vinculado sem lote fica sem GPS, sem sincronização e sem modo", async () => {
       const dirD = mkdtempSync(join(tmpdir(), "cadeia-aparelho-d-"));
       try {
         const apD = new AparelhoLogico({ diretorio: dirD, plataformaUrl: urlCritico });
@@ -794,10 +798,11 @@ async function main(): Promise<void> {
         const f = await montarEntregasDemo();
         const vm = entregasVM(await f.snapshot(), AGORA_LEITURA.toISOString(), f.getPolicyMaxStops(), { disponivel: true, realidade: r });
         const ad = vm.realidade.aparelhos.find((a) => a.device_id === apD.deviceId)!;
-        assert.ok(ad, "aparelho autorizado sem contato não apareceu");
-        assert.equal(ad.credencial.observado && ad.credencial.valor, "aguardando_primeiro_contato");
-        assert.ok(ad.selos.some((s) => s.estado === "acao_humana_necessaria"));
-        for (const [nome, c] of Object.entries({ gps: ad.gps, ultima_sincronizacao: ad.ultima_sincronizacao, ultima_posicao_em: ad.ultima_posicao_em, modo_dos_fatos: ad.modo_dos_fatos, fatos: ad.fatos })) {
+        assert.ok(ad, "aparelho pre-vinculado sem contato não apareceu");
+        assert.equal(ad.credencial.observado && ad.credencial.valor, "vinculada");
+        assert.ok(ad.selos.some((s) => s.estado === "evidencia_insuficiente"));
+        assert.equal(ad.selos.some((s) => s.estado === "acao_humana_necessaria"), false);
+        for (const [nome, c] of Object.entries({ gps: ad.gps, ultima_sincronizacao: ad.ultima_sincronizacao, ultima_posicao_em: ad.ultima_posicao_em, modo_dos_fatos: ad.modo_dos_fatos, fatos: ad.fatos, ultima_sessao: ad.ultima_sessao })) {
           assert.equal(c.observado, false, `${nome} afirmou valor sem lote`);
           assert.equal(c.observado === false && c.motivo, "nao_observado", `${nome} usou o motivo errado`);
         }
@@ -846,6 +851,31 @@ async function main(): Promise<void> {
         assert.deepEqual(r.map((x) => [x.rolname, x.rolsuper, x.rolcreaterole]), [[ASY, false, false], [CRIT, false, false]]);
         const dono = await b.cliente.query(`SELECT tableowner FROM pg_tables WHERE schemaname = 'platform' AND tablename = 'event_log'`);
         assert.notEqual(dono[0].tableowner, CRIT, "o papel do crítico é dono do event log");
+
+        const acl = (await b.cliente.query(
+          `SELECT
+             has_table_privilege($1, 'platform.event_log', 'DELETE') AS crit_delete,
+             has_table_privilege($1, 'platform.event_log', 'INSERT') AS crit_insert,
+             has_table_privilege($2, 'platform.event_log', 'INSERT') AS async_insert,
+             has_table_privilege($2, 'platform.event_log', 'SELECT') AS async_select`,
+          [CRIT, ASY],
+        ))[0];
+        assert.deepEqual(
+          [acl.crit_delete, acl.crit_insert, acl.async_insert, acl.async_select],
+          [false, true, false, true],
+          "matriz de privilégios do event_log divergiu",
+        );
+
+        for (const papel of [CRIT, ASY]) {
+          const c = await createPgClient({ url: comPapel(papel), max: 1 });
+          try {
+            const identidade = (await c.query(`SELECT current_user, session_user`))[0];
+            assert.equal(identidade.current_user, papel, "current_user não é o papel mínimo pedido");
+            assert.equal(identidade.session_user, papel, "session_user não é o papel mínimo pedido");
+          } finally {
+            await c.close();
+          }
+        }
       });
 
       const VIAGEM_P = `${VIAGEM}-p`;

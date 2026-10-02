@@ -976,8 +976,14 @@ A janela de primeiro contato deixou de existir no runtime: a autorização human
 `device_id + device_proof_sha256`, pré-vincula `secret_hash` e o bootstrap recusa cadastro
 sem hash com 401 `segredo_nao_vinculado`. O papel crítico perdeu UPDATE sobre
 `secret_hash/secret_bound_at`. O `jti` também deixou de derivar só de aparelho+segundo e usa
-entropia aleatória por emissão. PostgreSQL real desta sucessão e aparelho físico permanecem
-NOT_RUN.
+entropia aleatória por emissão.
+
+**Sucessão de prova — 2026-10-01:** PostgreSQL real desta mudança agora está **PROVADO** em cluster
+PostgreSQL 18 efêmero, isolado e destruído ao final: Cadeia Real **36/36 GREEN**. C2/C3 provaram
+pré-vínculo antes do bootstrap e preservação de `secret_bound_at`; D1b provou a leitura canônica
+por viagem/modo; P1 exigiu `current_user=session_user` dos papéis mínimos e P4/P5 provaram
+negação real das sabotagens. A execução terminou sem banco ou role `cadeia_*` remanescente.
+**Aparelho físico permanece NOT_RUN** e esta prova não autoriza deploy nem troca de ambiente.
 
 ### Android — o app não compila neste ambiente · **BLOCKED (externo), medido em 2026-09-25**
 
