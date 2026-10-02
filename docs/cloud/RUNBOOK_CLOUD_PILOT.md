@@ -1,20 +1,27 @@
 # Runbook — DeliveryOS Cloud Pilot V1
 
 > Composição: **Core + TATÁ Entregas**. Não é o DeliveryOS completo.
-> O Docker não está disponível no Foxxy. A composição, porém, já foi renderizada e o sidecar de backup foi executado em container real no CI; isso não equivale a deploy do piloto.
+> O Docker continua indisponível no Foxxy, mas a lacuna de realidade do
+> empacotamento/composição foi fechada em CI real em 2026-10-02:
+> `deploy/Dockerfile.platform` construiu e executou no run **36968177991**;
+> `deploy/compose.platform.yaml` subiu e passou **45 medidas** no run
+> **36969232567**. Isso prova a composição, **não** equivale a deploy do piloto
+> nem autoriza credenciais/migrations/cutover operacionais.
 
 ## O que falta antes de qualquer coisa
 
 | Trava | Quem resolve |
 |---|---|
-| Docker Desktop ou Docker Engine instalado | César (licença comercial) |
+| Engine Docker no ambiente em que este runbook for executado | operador da infraestrutura |
 | Termo preenchido e aprovado | César |
 | Coordenada do ITAIM calibrada | operador, no local |
 | Domínio + DNS | César |
 | Tokens gerados | César |
 
-Sem Docker, nada abaixo roda. Com Docker e sem os outros itens, o serviço
-**sobe mas recusa operar** — que é o comportamento correto.
+Para rodar **este roteiro localmente no Foxxy**, ainda é necessária uma engine
+Docker. Isso não é mais requisito de prova da composição: o CI já a exerceu.
+Sem os outros itens humanos/operacionais, o serviço pode subir em ambiente de
+ensaio, mas deve recusar operar de verdade — que é o comportamento correto.
 
 ## 1. Subir localmente
 
@@ -134,8 +141,12 @@ O volume `entregas_backups` continua no mesmo host. Ele protege contra perda
 lógica do banco/container, **não contra perda do servidor físico**. Antes de
 qualquer cutover operacional para PostgreSQL, é obrigatório definir uma cópia
 off-host (ou mecanismo externo equivalente), produzir uma cópia e restaurá-la
-em ensaio. O provedor/destino ainda não foi escolhido; não presuma Neon,
-Google Drive ou qualquer outro.
+em ensaio.
+
+A pesquisa zero-custo de 2026-10-02 está em
+`OFF_HOST_ZERO_COST_CANDIDATES_2026-10-02.md`. Ela identifica candidatos,
+mas **não seleciona provedor** e não autoriza conta, bucket, credencial ou
+upload.
 
 ## 6. Rollback
 

@@ -107,9 +107,16 @@ turno de sexta.
   também recebeu SIGTERM e saiu 0. Depois, o `dumb-init 1.2.5-2` exato do
   Debian Bookworm foi baixado sem instalação, validado pelo SHA-256 oficial e
   executado como **PID 1** em namespace Linux; SIGTERM foi encaminhado ao
-  `source-ingest` e o conjunto saiu 0. O que **continua NOT_RUN** é a
-  montagem da imagem Docker final: confirmar nela o mesmo binário, `USER node`,
-  `npm prune --omit=dev` e o tamanho final.
+  `source-ingest` e o conjunto saiu 0.
+
+  **Sucessão 2026-10-02:** a imagem Docker final deixou de ser UNKNOWN.
+  GitHub Actions run **36968177991** construiu `deploy/Dockerfile.platform`
+  sem override e verificou dentro da imagem `USER node`, `dumb-init` como
+  PID 1, `npm prune --omit=dev`, `pg@8.13.1`, ownership, build-stamp,
+  tamanho final e encerramento por SIGTERM com exit 0. Em seguida, a composição
+  oficial inteira foi exercitada no run **36969232567**: **45 medidas verdes**,
+  crítico healthy, migrations/papéis exit 0, assíncrono running, sessão+GPS,
+  outbox/replay, papéis mínimos e cleanup.
 
 ### Migrations são passo separado
 
@@ -208,14 +215,14 @@ HTTPS ou que aponte para máquina local.
 Registrado com precisão em `docs/execution/STATE.json`, campo `nao_comprovado`.
 Em resumo:
 
-- **Docker** não existe nesta máquina. A composição foi auditada por 30 testes
-  que leem os arquivos, e 4 defeitos injetados foram detectados — mas
-  `docker build` e `docker compose up` **não** rodaram;
-- **banco hospedado** não foi criado. O verificador do §2 existe e foi provado
-  contra PostgreSQL real, inclusive reprovando um banco sem permissão de criar
-  schema;
-- **destino externo de backup** não foi configurado: depende de credencial;
-- **`SIGTERM`** não é observável no Windows — o sinal encerra o processo
-  incondicionalmente e o handler não roda. Em container Linux isso funciona
-  naturalmente, e o caminho de encerramento já é exercitado em processo pelos
-  44 testes da plataforma.
+- **Docker no Foxxy** continua ausente, mas isso deixou de ser lacuna de prova:
+  a imagem final e `docker compose up` da composição oficial foram executados
+  em Docker real no GitHub Actions em 2026-10-02;
+- **banco operacional hospedado** não foi escolhido nem criado. PostgreSQL real
+  isolado já foi exercitado; credencial, migrations, cutover e deploy no
+  ambiente operacional continuam sem autorização;
+- **destino externo de backup** não foi configurado. Há transporte neutro e
+  pesquisa de candidatos, mas nenhum provedor foi selecionado, nenhuma conta/
+  bucket/credencial foi criada e nenhuma cópia saiu do host;
+- **aparelho físico** continua não provado. AVD e cadeia Android foram
+  exercitados, mas não substituem o campo real.

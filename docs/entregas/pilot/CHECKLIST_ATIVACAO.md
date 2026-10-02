@@ -159,3 +159,9 @@ transacional, backup/restore, preservação de versões e triggers. Isso não
 substitui os itens acima no ambiente real. Em especial, o volume local de
 backups não protege contra perda da máquina.
 
+**Pesquisa de 2026-10-02:** `docs/cloud/OFF_HOST_ZERO_COST_CANDIDATES_2026-10-02.md`
+identificou Backblaze B2 como candidato de menor complexidade para o contrato
+atual porque `writeFiles` e `deleteFiles` são capacidades separadas e há
+Object Lock. Isso **não marca** o item off-host: nenhum provedor foi escolhido,
+nenhum bucket/credencial foi criado e nenhum dado saiu do host.
+
