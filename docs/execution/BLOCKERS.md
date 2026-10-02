@@ -874,13 +874,20 @@ Restaurado por `git checkout --`, conferido byte a byte. A correção não foi c
 caso: todo exercício do refresh passou a rodar numa raiz espelho, onde o patrimônio nunca é o
 alvo.
 
-### Bloqueio de precondição
+### Bloqueio de precondição — **FECHADO em 2026-10-01**
 
-`test:platform:m1b-perceptual` exige um servidor M1 na porta `5292` — declarado na linha 17 do
-próprio arquivo. Nenhum script deste repositório serve essa porta; a única ocorrência de `5292`
-em `tools/` é a de quem consome. Morre em `ECONNREFUSED`, com stack trace cru em vez de se
-declarar pulado em voz alta (CLAUDE.md §10). Vermelho por precondição ausente não é perigoso como
-um verde silencioso, mas também não é legível.
+`test:platform:m1b-perceptual` dependia de um servidor M1 na porta `5292` e, quando ele não
+existia, morria em `ECONNREFUSED` com stack trace cru. A precondição agora é sondada antes de
+abrir o Chromium: indisponibilidade de rede/timeout é declarada **PULADA em voz alta** e termina
+com `M1B_PERCEPTUAL_GATE_SKIPPED`; servidor presente com HTTP inválido continua vermelho.
+
+A distinção ganhou gate próprio: `test:platform:m1b-precondition` **3/3 PASS** (conexão recusada,
+HTTP 404 e endpoint válido). E a medição perceptiva deixou de ficar só no papel: o Product System
+foi servido localmente em `127.0.0.1:5292` via `PRODUCT_UI_PORT=5292`, a procedência
+`home.css servido == worktree` fechou e as cinco mutações perceptivas passaram **5/5**, restaurando
+os arquivos ao hash de origem após cada ataque. Com o listener removido, o mesmo comando declarou
+PULADO e saiu 0 sem stack trace. Isso corrige a legibilidade da precondição sem transformar
+`NOT_RUN` em verde silencioso.
 
 **D5 — FECHADO pela Q-016 em 2026-09-23.** `platform.event_log` não tinha coluna `source_mode`, e o
 modo só viajava no envelope e na outbox. A migration 0003 o tornou durável, sem default e

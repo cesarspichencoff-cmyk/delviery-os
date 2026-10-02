@@ -24,6 +24,7 @@ import { createHash } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { chromium, type Browser } from "playwright";
+import { loadM1bHomeCss } from "./m1b-precondition";
 
 const raiz = process.cwd();
 const BASE = process.env["M1B_URL"] ?? "http://localhost:5292";
@@ -196,14 +197,25 @@ const CSS_HOME = "src/product/ui/surfaces/home.css";
 const CSS_SHELL = "src/product/ui/shell/shell.css";
 
 async function main(): Promise<void> {
-  navegador = await chromium.launch();
   console.log("\n=== M1B — MUTACOES PERCEPTIVAS (geometria real) ===\n");
 
+  // PRECONDICAO antes de abrir navegador: ausência do servidor externo é
+  // NOT_RUN explícito, nunca stack trace nem verde silencioso.
+  const precondicao = await loadM1bHomeCss(BASE);
+  if (precondicao.kind === "unavailable") {
+    console.log(
+      `PULADO: servidor M1 indisponivel em ${BASE} — nenhuma medicao perceptiva foi executada.`,
+    );
+    console.log("M1B_PERCEPTUAL_GATE_SKIPPED");
+    return;
+  }
+
+  navegador = await chromium.launch();
+
   // PROCEDÊNCIA antes de qualquer medição.
-  const servidoCss = await fetch(`${BASE}/surfaces/home.css`).then((r) => r.text());
   const discoCss = readFileSync(join(raiz, CSS_HOME), "utf8");
   assert.equal(
-    sha(servidoCss),
+    sha(precondicao.css),
     sha(discoCss),
     "PROCEDENCIA FALHOU: o servidor nao esta servindo este worktree",
   );
