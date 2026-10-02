@@ -103,6 +103,15 @@ assert.ok(serviceApply.includes("Copy-Item -LiteralPath $BinarySource"));
 assert.ok(serviceApply.includes("Copy-Item -LiteralPath $PreflightSource"));
 assert.ok(serviceApply.includes("icacls.exe $BinDirectory"));
 assert.ok(serviceApply.includes("icacls.exe $EvidenceDirectory"));
+assert.ok(serviceApply.includes("/inheritance:r"));
+assert.ok(serviceApply.includes("S-1-5-18"));
+assert.ok(serviceApply.includes("S-1-5-32-544"));
+assert.ok(serviceApply.includes("Assert-PinnedHash"));
+assert.ok(serviceApply.includes("__PIN_AFTER_CAIXA_BUILD__"));
+assert.ok(serviceApply.includes("Get-CimInstance -ClassName Win32_Service"));
+assert.ok(serviceApply.includes("SERVICE_ACCOUNT_MISMATCH"));
+assert.ok(serviceApply.includes("SERVICE_START_MODE_MISMATCH"));
+assert.ok(serviceApply.includes("SERVICE_SQL_DEPENDENCY_MISMATCH"));
 
 const rollbackThrow = serviceRollback.indexOf('throw "REVIEW_ONLY_NOT_AUTHORIZED');
 const rollbackStop = serviceRollback.indexOf("& sc.exe stop");
@@ -117,6 +126,10 @@ assert.ok(hostSource.includes('ServiceNameValue = "TataComandaReader"'));
 assert.ok(hostSource.includes('"tata_reader_least_privilege_preflight.ps1"'));
 assert.ok(hostSource.includes('"preflight.json"'));
 assert.ok(hostSource.includes('"preflight.exitcode.txt"'));
+assert.ok(hostSource.includes('ExpectedIdentityName = @"NT SERVICE\\TataComandaReader"'));
+assert.ok(hostSource.includes("WindowsIdentity.GetCurrent()"));
+assert.ok(hostSource.includes('"preflight.identity.txt"'));
+assert.ok(hostSource.includes("AutoLog = false;"));
 assert.ok(hostSource.includes("WindowsPowerShell"));
 for (const forbidden of ["HttpClient", "WebRequest", "TcpClient", "Socket", "SqlConnection", "Out-Printer"]) {
   assert.ok(!hostSource.includes(forbidden), "forbidden host surface: " + forbidden);
@@ -132,5 +145,7 @@ assert.ok(doc.includes("tata_reader_runtime_cleanup_REVIEW_ONLY.ps1"));
 assert.ok(doc.includes("TataComandaReader.PreflightService.cs"));
 assert.ok(doc.includes("build.ps1"));
 assert.ok(doc.includes("verificar_tata_reader_admin_bundle_static_v1.js"));
+assert.ok(doc.includes("verificar_tata_reader_admin_bundle_static_v1.ps1"));
+assert.ok(doc.includes("final binary must be built on CAIXA_MOOCA"));
 
 console.log("tata-reader-admin-bundle-static-v1: ok");
