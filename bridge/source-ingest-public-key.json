@@ -1,0 +1,14 @@
+{
+  "schema": "cesar-os-chat-public-key-v1",
+  "kid": "cesar-os-chat-d8bd51d7-d423-4f40-a668-1ddb968f1e34",
+  "alg": "RSA-OAEP-256",
+  "chunk_bytes": 400,
+  "public_jwk": {
+    "kty": "RSA",
+    "key_ops": ["encrypt"],
+    "alg": "RSA-OAEP-256",
+    "ext": true,
+    "n": "xxSzV47tmCYkQlEQ1NfQK2AyuK0K1eBR6G-bI9YsE8SZpU9Ya5qXNEKayXX35F32fVP7hfNW56HY4et4UzfWp0T-ocbBrmVioGeVte9FAndlAx7Uurk0Q1luibBkjvOWTf7d6sEWiB-aBjlWH1OoDYkM75KiVHFShn7eqHX6tTSGZkgQmOQfjIeCqISbSHIDWMJrDyNKfuS86Wbko2rEdu1OalA68wvHKSATM6_fs2fGP-TiaTuvIZUq9shfuAqGmIqb0usik0RUTwCBndcRVNRSGVZcakKEnR9dm6H4gTFjVvK1uWLF-i20GwjpQHjbdmgMI9mOkIakHQ7hDZ8xIDZqaGwTeUQUZ4W2qnPB1oBoUCe3BOTYewgPAdJSCbM1gd5jIFN34yFgsId4cOxv9rW6_hhuQd0n_dPBIkXY5fZBeNVgU0PV0DMZet919TWhKJm9IqRoPxYCSESlsH9ARuxM8UiwpKCBTyARPrPJl_kirwlHmDnrg_gs7YY4R9UhM1TBdSqUiIk4tbSPw8Kq0DyuMA5gNS4VW_iq-HG8REgK-1vjspq3IntJFrgPLYi5WFiLYCOrrGeCZhI6tX5OOSWh0_ZTa9X7W1Xs3FWxM9ekIoKIdUg_uuO7QHj6aLtoa2IPwZYlWYpKnEntGZBRHatZhdONukVcMiqYFYNwCd8",
+    "e": "AQAB"
+  }
+}
