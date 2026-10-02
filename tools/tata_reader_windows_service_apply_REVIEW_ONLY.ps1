@@ -28,11 +28,9 @@ if ($existing) {
 
 $quotedBinary = [char]34 + $BinaryPath + [char]34
 
-& sc.exe create $ServiceName binPath= $quotedBinary start= demand obj= $ServicePrincipal password= ""
+& sc.exe create $ServiceName binPath= $quotedBinary start= demand obj= $ServicePrincipal
 if ($LASTEXITCODE -ne 0) { throw "SERVICE_CREATE_FAILED" }
 
-& sc.exe sidtype $ServiceName unrestricted
-if ($LASTEXITCODE -ne 0) { throw "SERVICE_SIDTYPE_FAILED" }
 
 & sc.exe config $ServiceName depend= $SqlDependency
 if ($LASTEXITCODE -ne 0) { throw "SERVICE_SQL_DEPENDENCY_FAILED" }
