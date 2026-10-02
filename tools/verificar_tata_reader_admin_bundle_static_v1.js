@@ -39,7 +39,7 @@ function parseDoc(table) {
   const start = doc.indexOf(marker);
   assert.ok(start >= 0, "doc section missing " + table);
   const rest = doc.slice(start + marker.length);
-  const line = rest.split(/\\r?\\n/).find((x) => x.trim().startsWith("`"));
+  const line = rest.split(/\r?\n/).find((x) => x.trim().startsWith("`"));
   assert.ok(line, "doc column line missing " + table);
   return line.replace(/`/g, "").split(",").map((x) => x.trim());
 }
@@ -78,11 +78,11 @@ assert.ok(preflight.includes("NON_TABLE_OBJECT_PERMISSION_PRESENT"));
 assert.ok(preflight.includes("READABLE_SURFACE_OUTSIDE_ALLOWLIST"));
 assert.ok(preflight.includes("'SO','AF'"));
 
-assert.ok(/SET\\s+NOEXEC\\s+ON\\s*;/i.test(sql), "review SQL must be inert");
-assert.ok(!/\\bGRANT\\s+CONNECT\\b/i.test(sql), "explicit CONNECT grant not allowed");
-assert.ok(!/\\bGRANT\\s+(INSERT|UPDATE|DELETE|EXECUTE|ALTER|CONTROL|IMPERSONATE)\\b/i.test(sql));
-assert.ok(!/\\bALTER\\s+ROLE\\b/i.test(sql));
-assert.ok(!/\\bsp_addrolemember\\b/i.test(sql));
+assert.ok(/SET\s+NOEXEC\s+ON\s*;/i.test(sql), "review SQL must be inert");
+assert.ok(!/\bGRANT\s+CONNECT\b/i.test(sql), "explicit CONNECT grant not allowed");
+assert.ok(!/\bGRANT\s+(INSERT|UPDATE|DELETE|EXECUTE|ALTER|CONTROL|IMPERSONATE)\b/i.test(sql));
+assert.ok(!/\bALTER\s+ROLE\b/i.test(sql));
+assert.ok(!/\bsp_addrolemember\b/i.test(sql));
 
 const applyThrow = serviceApply.indexOf('throw "REVIEW_ONLY_NOT_AUTHORIZED');
 const applyCreate = serviceApply.indexOf("& sc.exe create");
@@ -92,7 +92,7 @@ assert.ok(serviceApply.includes("start= demand"));
 assert.ok(!serviceApply.includes("start= auto"));
 assert.ok(!serviceApply.includes("sidtype"));
 assert.ok(!serviceApply.includes("password="));
-assert.ok(!/&\\s+sc\\.exe\\s+start/i.test(serviceApply));
+assert.ok(!/&\s+sc\.exe\s+start/i.test(serviceApply));
 
 const rollbackThrow = serviceRollback.indexOf('throw "REVIEW_ONLY_NOT_AUTHORIZED');
 const rollbackStop = serviceRollback.indexOf("& sc.exe stop");
