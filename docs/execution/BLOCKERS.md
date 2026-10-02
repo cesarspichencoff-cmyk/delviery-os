@@ -5,7 +5,7 @@ lifecycle:
   authority_scope: infra_blockers
   superseded_by: null
   atualizado_em: "2026-10-02"
-  state_basis: 813bc44
+  state_basis: 9a2b99c
   question_refs: ["Q-001","Q-002","Q-003","Q-004","Q-005","Q-006","Q-007","Q-008","Q-009","Q-010","Q-011"]
 ---
 
@@ -866,10 +866,23 @@ respeito a empacotamento, não ao comportamento que o PB19 fecha.
 > A tentativa de `npm ci --offline` em diretório vazio falhou por pacote ausente
 > no cache, portanto não foi promovida como prova de build limpo.
 >
-> Continua **NOT_RUN** a montagem da **imagem final**: `docker build`, base
-> exata `node:22-bookworm-slim`, `USER node` dentro da imagem,
-> `COPY --chown`, dumb-init dentro da camada final, tamanho das camadas OCI e
-> `docker compose up`.
+> **SUCESSÃO — 2026-10-02 · IMAGEM RUNTIME FINAL PROVADA EM DOCKER REAL.**
+> GitHub Actions run **36968177991** construiu `deploy/Dockerfile.platform`
+> sem override, em `ubuntu-latest`, sobre o produto `9a2b99c` (a branch de
+> prova diferia apenas pelo workflow). O gate verificou `USER node`,
+> `ENTRYPOINT ["dumb-init","--"]`, ownership `node:node`, `pg@8.13.1`
+> presente, TypeScript/Playwright ausentes, build-stamp exato, imagem de
+> **231.158.743 bytes** e `/app` de **4.294.489 bytes**.
+>
+> O binário real `entregas-source-ingest.js` foi executado dentro da imagem;
+> `/proc/1/cmdline` mostrou `dumb-init -- node ...` e `docker stop -t 5`
+> encerrou com exit **0**. A execução verde terminou com todos os passos
+> SUCCESS. O primeiro run `36967981792` foi descartado como prova porque o
+> gate esperava incorretamente que um serviço persistente terminasse sozinho.
+>
+> Portanto a **imagem final deixa de ser NOT_RUN**. Permanece aberto somente o
+> `docker compose up` da composição completa `deploy/compose.platform.yaml`
+> e qualquer deploy operacional.
 
 ### D4 — **FECHADO em 2026-09-22** (`docs/etapa-4-8/D4-EVIDENCIA.md`)
 

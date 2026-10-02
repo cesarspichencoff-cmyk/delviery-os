@@ -13,7 +13,9 @@ lifecycle:
 Data: 2026-10-02
 Host: Foxxy / WSL2
 Base Git: `813bc44a17c7f66379219dd7809c952852b6465e`
-Resultado: **REHEARSAL PASS; imagem Docker final NOT_RUN**
+Resultado original: **REHEARSAL PASS**.
+
+**Sucessão no mesmo dia:** a imagem Docker final foi depois construída e provada em GitHub Actions run `36968177991`. Ver `2026-10-02-runtime-image-final-ci.md`. Este documento permanece como evidência do ensaio anterior, não como estado atual da imagem.
 
 ## Objetivo
 
@@ -89,6 +91,8 @@ Isto NÃO prova:
 - tamanho final das camadas OCI;
 - `docker compose up`.
 
-Esses itens continuam NOT_RUN até existir uma engine OCI ou CI que construa a
-imagem final. A prova apenas remove dois desconhecidos comportamentais:
-`npm prune --omit=dev` e execução Linux não-root do runtime.
+Naquele ponto, esses itens ainda eram NOT_RUN. A sucessão
+`2026-10-02-runtime-image-final-ci.md` fechou posteriormente `docker build`,
+`USER node`, ownership, dumb-init na imagem final, tamanho e PID1/SIGTERM.
+Permanece fora desta prova apenas o que depende da composição completa e de
+efeitos externos, como `docker compose up` da plataforma e deploy.

@@ -5,8 +5,8 @@
     "status": "ACTIVE",
     "authority_scope": "technical_state",
     "superseded_by": null,
-    "atualizado_em": "2026-10-01",
-    "state_basis": "6d496f1",
+    "atualizado_em": "2026-10-02",
+    "state_basis": "9a2b99c",
     "observa": [
       "src/product/",
       "src/perfil-delivery/",
@@ -144,16 +144,10 @@
   },
   "nao_comprovado": [
     {
-      "item": "docker build / docker compose up da plataforma",
-      "motivo": "Docker não existe nesta máquina e o Docker Desktop é licença comercial — não instalado sem decisão do César.",
-      "substituto": "30 testes leem os arquivos e afirmam os invariantes da composição; 4 defeitos injetados foram detectados.",
-      "o_que_falta": "que a imagem construa e os containers subam"
-    },
-    {
-      "item": "empacotamento final da imagem runtime",
-      "motivo": "Linux -> Node e o dumb-init 1.2.5-2 exato do Debian Bookworm como PID1 já foram provados fora de Docker; a imagem final ainda não foi construída nesta máquina.",
-      "substituto": "LINUX_SIGTERM 3/3 + dumb-init Bookworm com SHA-256 oficial, NSpid=1, encaminhamento de SIGTERM para source-ingest real e exit 0",
-      "o_que_falta": "construir/subir a imagem final e conferir que ela contém o mesmo dumb-init, USER node, npm prune --omit=dev e o tamanho final esperado"
+      "item": "docker compose up da plataforma",
+      "motivo": "A imagem runtime final já foi construída e provada em Docker real no GitHub Actions run 36968177991; o Foxxy continua sem engine Docker e a composição completa deploy/compose.platform.yaml ainda não foi subida ponta a ponta com essa imagem.",
+      "substituto": "docker build final PROVEN: USER node, dumb-init PID1, pg@8.13.1, prune, ownership, build-stamp e SIGTERM do binário real; auditoria estrutural da composição permanece verde.",
+      "o_que_falta": "subir deploy/compose.platform.yaml completo em Docker real e validar dependências, migrations, health/ready, papéis e encerramento conjunto sem deploy operacional"
     },
     {
       "item": "PostgreSQL hospedado (Supabase ou equivalente)",
