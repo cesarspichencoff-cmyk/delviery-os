@@ -447,8 +447,9 @@ corrompendo exatamente a ordenação que o servidor usa.
 > removido ao final.
 >
 > O que continua aberto agora é estritamente operacional: gerar/configurar
-> segredos reais de leitura por unidade, renderizar/subir Compose com Docker e
-> executar deploy. Esses efeitos continuam **NOT_RUN / NÃO AUTORIZADOS**.
+> segredos reais de leitura por unidade e executar deploy no ambiente alvo.
+> A imagem final e a composição Docker completa já foram provadas separadamente;
+> credenciais/deploy continuam **NOT_RUN / NÃO AUTORIZADOS**.
 
 ### C5 — P2 · Resíduos conhecidos — reavaliado em 2026-10-01
 
