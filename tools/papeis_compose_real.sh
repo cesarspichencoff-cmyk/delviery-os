@@ -109,9 +109,12 @@ como() { # como <container> <sql> — imprime a linha do resultado
 # A cadeia de campo pelo caminho HTTP real, DE DENTRO do crítico: sessão por
 # vínculo de segredo, e o lote com o token que a sessão devolveu.
 cat >"$tmp/sessao.js" <<'JS'
-const [aparelho, secretFile] = process.argv.slice(2);
+const aparelho = process.argv[1];
 const base = "http://127.0.0.1:8080";
-const segredo = require("node:fs").readFileSync(secretFile, "utf8").trim();
+// O segredo entra SOMENTE por stdin do docker exec. O container e read_only:
+// copiar um arquivo para /tmp por docker cp falha antes mesmo de exercitar a
+// cadeia, e passar o segredo por argumento/env o exporia em ps/inspect.
+const segredo = require("node:fs").readFileSync(0, "utf8").trim();
 (async () => {
   const s = await fetch(`${base}/api/device/session`, {
     method: "POST",
@@ -181,12 +184,10 @@ exige C_ASSINCRONO_CONECTA_COMO "$(quem deliveryos-async)" deliveryos_async
 
 # ------------------------------------------- F. a cadeia com os papéis
 echo "F. A CADEIA DE CAMPO PASSA PELOS PAPEIS"
-docker cp "$DEVICE_SECRET_FILE" deliveryos-critical:/tmp/device-secret >/dev/null
-docker exec -u 0 deliveryos-critical sh -c 'chown node:node /tmp/device-secret && chmod 600 /tmp/device-secret'
 psql_ "INSERT INTO identity.unit(unit_id,display_name) VALUES('PAP','Papeis');
        INSERT INTO identity.actor(actor_id,unit_id,role,label) VALUES('a-papeis','PAP','motoboy_interno','Papeis');
        INSERT INTO identity.device(device_id,unit_id,actor_id,label,secret_hash,secret_bound_at) VALUES('dev-papeis','PAP','a-papeis','Papeis','$DEVICE_PROOF',now());" >/dev/null
-exige F_SESSAO_E_LOTE "$(docker exec -i deliveryos-critical node - dev-papeis /tmp/device-secret <"$tmp/sessao.js")" "SESSAO=200 vinculado=false GPS=200 classe=aceito"
+exige F_SESSAO_E_LOTE "$(docker exec -i deliveryos-critical node -e "$(cat "$tmp/sessao.js")" dev-papeis <"$DEVICE_SECRET_FILE")" "SESSAO=200 vinculado=false GPS=200 classe=aceito"
 exige F_PRE_VINCULO_PRESERVADO "$(psql_ "SELECT (secret_hash = '$DEVICE_PROOF' AND secret_bound_at IS NOT NULL AND last_session_at IS NOT NULL)::text FROM identity.device WHERE device_id = 'dev-papeis'")" true
 exige F_AUDITORIA "$(psql_ "SELECT count(*) FROM platform.audit WHERE object_id = 'dev-papeis' AND action = 'device_session_issued'")" 1
 exige F_FATO "$(psql_ "SELECT count(*)||' '||string_agg(source_mode, ',') FROM platform.event_log WHERE device_id = 'dev-papeis'")" "1 control"
