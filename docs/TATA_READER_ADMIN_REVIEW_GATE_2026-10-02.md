@@ -30,6 +30,7 @@ Initial scope is intentionally minimal:
 8. `tools/tata_reader_preflight_service/TataComandaReader.PreflightService.cs`
 9. `tools/tata_reader_preflight_service/build.ps1`
 10. `tools/verificar_tata_reader_admin_bundle_static_v1.js`
+11. `tools/verificar_tata_reader_admin_bundle_static_v1.ps1`
 
 ## Review invariants
 
@@ -48,8 +49,12 @@ Initial scope is intentionally minimal:
 - Service uses the passwordless virtual account `NT SERVICE\TataComandaReader` directly.
 - No `sidtype` dependency is required by this design.
 - Service is created with `start=demand` and is never started by the installation template.
-- Runtime is staged under `C:\ProgramData\TataComandaReader` with RX only for `bin` and Modify only for `evidence` to the service account.
+- Runtime is staged under `C:\ProgramData\TataComandaReader` with ACL inheritance removed.
+- Only SYSTEM, BUILTIN\Administrators and the resolved service SID may remain on runtime ACLs; the service gets RX on root/bin and Modify only on `evidence`.
+- Binary and preflight hashes must be literal reviewed SHA-256 pins before an executable installer can exist.
+- Service configuration is checked after creation: virtual account, manual start, exact binary path and SQL dependency.
 - Preflight service host builds with Windows/.NET Framework `csc.exe`; no NuGet dependency.
+- Host has `AutoLog=false`, proves its effective Windows identity/SID, and refuses to execute under any identity other than `NT SERVICE\TataComandaReader`.
 - Review artifacts remain intentionally non-executable.
 
 ## SQL grant surface
@@ -97,7 +102,8 @@ The one-shot host:
 - stops after one run;
 - has no HTTP client, no direct SQL client and no printing path;
 - was compiled on Foxxy with the built-in .NET Framework compiler without NuGet as a portability proof;
-- CAIXA_MOOCA compiler availability remains to be checked by metadata before any local build.
+- CAIXA_MOOCA already proved `Framework64\v4.0.30319\csc.exe` exists (reported file version 4.8.9221.0);
+- the final binary must be built on CAIXA_MOOCA in a non-administrative scratch path and its SHA-256 pinned before human authorization.
 
 ## Rollback boundary
 
@@ -117,16 +123,21 @@ Rollback must not alter:
 
 Claude on CAIXA_MOOCA should only:
 1. audit syntax and inert guards;
-2. run `node tools/verificar_tata_reader_admin_bundle_static_v1.js`;
+2. run `powershell -NoProfile -ExecutionPolicy Bypass -File tools\verificar_tata_reader_admin_bundle_static_v1.ps1`;
 3. compare the manifest with every review artifact;
-4. verify by metadata whether `C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe` exists;
-5. report any divergence;
-6. confirm that no administrative artifact is executable in its current state;
-7. STOP.
+4. compile the preflight host only into a scratch path under `C:\TATA`, using `tools\tata_reader_preflight_service\build.ps1`;
+5. return binary/source/preflight SHA-256 and compiler version;
+6. do not create any service/login/user/grant/runtime folder;
+7. report any divergence;
+8. STOP.
+
+The Node verifier is a cross-check for environments where Node exists; it is not required on CAIXA_MOOCA.
 
 ## After human authorization (not yet authorized)
 
-A fresh executable bundle must be generated from the reviewed artifacts.
+Before this gate can be reached, the CAIXA_MOOCA build hashes must be inserted as literal pins in the REVIEW_ONLY installer and both static verifiers must pass again.
+
+A fresh executable bundle must then be generated from the reviewed artifacts.
 Do not remove REVIEW_ONLY guards in place.
 Then the order of operations must be:
 1. install the reviewed reader/preflight binary and create service `TataComandaReader` as `NT SERVICE\TataComandaReader` with `start=demand`; do not start;
