@@ -45,8 +45,8 @@ function parseDoc(table) {
 }
 
 assert.equal(manifest.status, "REVIEW_ONLY_NOT_AUTHORIZED");
-assert.equal(manifest.principal, "NT SERVICE\\\\TataComandaReader");
-assert.equal(manifest.server, "(local)\\\\SQLEXPRESS");
+assert.equal(manifest.principal, "NT SERVICE\\TataComandaReader");
+assert.equal(manifest.server, "(local)\\SQLEXPRESS");
 assert.equal(manifest.database, "teknisa");
 assert.equal(manifest.object_schema, "TEKNISA");
 assert.equal(manifest.scope_policy.integrated_delivery_channels_only, true);
