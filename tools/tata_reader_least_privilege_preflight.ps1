@@ -1,8 +1,7 @@
 param(
   [string]$Server = "(local)\SQLEXPRESS",
   [string]$Database = "teknisa",
-  [string]$ExpectedPrincipal = "NT SERVICE\TataComandaReader",
-  [switch]$AllowDsComanda
+  [string]$ExpectedPrincipal = "NT SERVICE\TataComandaReader"
 )
 
 $ErrorActionPreference = "Stop"
@@ -27,18 +26,15 @@ $allowed = [ordered]@{
   VENDAREST = @("CDFILIAL","NRVENDAREST","DTHRABERMESA")
 }
 
-if ($AllowDsComanda) {
-  $allowed.COMANDAVEN += "DSCOMANDA"
-}
 
 $result = [ordered]@{
-  schema = "deliveryos.tata-reader-least-privilege-preflight.v3"
+  schema = "deliveryos.tata-reader-least-privilege-preflight.v4"
   mode = "WINDOWS_INTEGRATED_AUTH_EXACT_COLUMN_SURFACE_METADATA_ONLY"
   server = $Server
   database = $Database
   expected_principal = $ExpectedPrincipal
   expected_schema = $AllowedSchema
-  allow_dscomanda = [bool]$AllowDsComanda
+  scope = "INTEGRATED_DELIVERY_CHANNELS_ONLY"
 
   current_login = $null
   original_login = $null
@@ -184,8 +180,7 @@ SELECT
     "VIEW DEFINITION",
     "VIEW DATABASE STATE",
     "ALTER ANY USER",
-    "ALTER ANY ROLE",
-    "IMPERSONATE ANY USER"
+    "ALTER ANY ROLE"
   )) {
     $cmd = $conn.CreateCommand()
     $cmd.CommandTimeout = 5
@@ -479,8 +474,8 @@ ORDER BY s.name, o.name, c.column_id;
   $result.extra_readable_surface_count = $result.extra_readable_surface.Count
 
   # Any effective permission on a non-table application object is outside the
-  # intended contract. This covers views, scalar/table-valued functions,
-  # CLR functions, procedures and synonyms even when they expose no columns.
+  # intended contract. This covers views, scalar/table-valued/CLR functions,
+  # procedures, synonyms, sequences and aggregates even when they expose no columns.
   $nonTableCmd = $conn.CreateCommand()
   $nonTableCmd.CommandTimeout = 10
   $nonTableCmd.CommandText = @"
@@ -497,7 +492,7 @@ SELECT
 FROM sys.objects o
 JOIN sys.schemas s ON s.schema_id = o.schema_id
 WHERE o.is_ms_shipped = 0
-  AND o.type IN ('V','P','PC','FN','IF','TF','FS','FT','SN')
+  AND o.type IN ('V','P','PC','FN','IF','TF','FS','FT','SN','SO','AF')
 ORDER BY s.name, o.name;
 "@
 
