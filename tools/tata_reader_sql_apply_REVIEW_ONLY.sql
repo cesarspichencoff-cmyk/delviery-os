@@ -33,7 +33,6 @@ END;
 CREATE USER [NT SERVICE\TataComandaReader]
     FOR LOGIN [NT SERVICE\TataComandaReader];
 
-GRANT CONNECT TO [NT SERVICE\TataComandaReader];
 
 GRANT SELECT (
     [CDFILIAL],
@@ -83,6 +82,8 @@ No DENY statements are used.
 No database role membership is granted.
 No EXECUTE, VIEW DEFINITION, VIEW SERVER STATE, ALTER, CONTROL,
 IMPERSONATE, INSERT, UPDATE or DELETE is granted.
+
+CONNECT is intentionally not granted explicitly. If the database baseline does not permit connection, the preflight fails closed and the change must be revisited.
 
 After a future authorized execution, the next mandatory action is:
 run tools\tata_reader_least_privilege_preflight.ps1 as the final service identity.
