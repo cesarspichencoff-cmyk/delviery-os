@@ -32,7 +32,7 @@ if ($AllowDsComanda) {
 }
 
 $result = [ordered]@{
-  schema = "deliveryos.tata-reader-least-privilege-preflight.v2"
+  schema = "deliveryos.tata-reader-least-privilege-preflight.v3"
   mode = "WINDOWS_INTEGRATED_AUTH_EXACT_COLUMN_SURFACE_METADATA_ONLY"
   server = $Server
   database = $Database
@@ -51,6 +51,10 @@ $result = [ordered]@{
   database_permissions = [ordered]@{}
 
   executable_procedure_count = $null
+  specific_login_impersonation_count = $null
+  specific_user_impersonation_count = $null
+  non_table_object_permissions = @()
+  non_table_object_permission_count = $null
   objects = @()
 
   extra_readable_surface = @()
@@ -178,7 +182,10 @@ SELECT
     "ALTER",
     "CONTROL",
     "VIEW DEFINITION",
-    "VIEW DATABASE STATE"
+    "VIEW DATABASE STATE",
+    "ALTER ANY USER",
+    "ALTER ANY ROLE",
+    "IMPERSONATE ANY USER"
   )) {
     $cmd = $conn.CreateCommand()
     $cmd.CommandTimeout = 5
@@ -204,6 +211,32 @@ WHERE HAS_PERMS_BY_NAME(
       ) = 1;
 "@
   $result.executable_procedure_count = [int64]$procedureCmd.ExecuteScalar()
+
+  $loginImpersonationCmd = $conn.CreateCommand()
+  $loginImpersonationCmd.CommandTimeout = 5
+  $loginImpersonationCmd.CommandText = @"
+SET NOCOUNT ON;
+SELECT COUNT_BIG(*)
+FROM sys.server_principals sp
+WHERE sp.name <> SUSER_SNAME()
+  AND sp.type IN ('S','U','G')
+  AND HAS_PERMS_BY_NAME(sp.name, 'LOGIN', 'IMPERSONATE') = 1;
+"@
+  $result.specific_login_impersonation_count =
+    [int64]$loginImpersonationCmd.ExecuteScalar()
+
+  $userImpersonationCmd = $conn.CreateCommand()
+  $userImpersonationCmd.CommandTimeout = 5
+  $userImpersonationCmd.CommandText = @"
+SET NOCOUNT ON;
+SELECT COUNT_BIG(*)
+FROM sys.database_principals dp
+WHERE dp.name <> USER_NAME()
+  AND dp.type IN ('S','U','G')
+  AND HAS_PERMS_BY_NAME(dp.name, 'USER', 'IMPERSONATE') = 1;
+"@
+  $result.specific_user_impersonation_count =
+    [int64]$userImpersonationCmd.ExecuteScalar()
 
   foreach ($objectName in $allowed.Keys) {
     $objectCmd = $conn.CreateCommand()
@@ -346,8 +379,11 @@ ORDER BY c.column_id;
       ($object.object_control -eq $true) -or
       ($object.object_take_ownership -eq $true)
 
+    # Do not require object-level SELECT=false here. SQL Server can report
+    # effective SELECT differently when column grants exist. Exact safety is
+    # proven below from the per-column readable surface: all required columns
+    # must be readable and every non-allowlisted column must remain unreadable.
     $safe =
-      ($object.object_select -ne $true) -and
       (-not $objectWrite) -and
       ($missingRequired.Count -eq 0) -and
       ($requiredWithoutSelect.Count -eq 0) -and
@@ -388,19 +424,22 @@ ORDER BY c.column_id;
 SET NOCOUNT ON;
 SELECT
   s.name AS schema_name,
-  t.name AS table_name,
+  o.name AS object_name,
+  o.type_desc AS object_type,
   c.name AS column_name
-FROM sys.tables t
-JOIN sys.schemas s ON s.schema_id = t.schema_id
-JOIN sys.columns c ON c.object_id = t.object_id
-WHERE HAS_PERMS_BY_NAME(
-        s.name + '.' + t.name,
+FROM sys.objects o
+JOIN sys.schemas s ON s.schema_id = o.schema_id
+JOIN sys.columns c ON c.object_id = o.object_id
+WHERE o.is_ms_shipped = 0
+  AND o.type IN ('U','V','IF','TF')
+  AND HAS_PERMS_BY_NAME(
+        s.name + '.' + o.name,
         'OBJECT',
         'SELECT',
         c.name,
         'COLUMN'
       ) = 1
-ORDER BY s.name, t.name, c.column_id;
+ORDER BY s.name, o.name, c.column_id;
 "@
 
   $surfaceReader = $surfaceCmd.ExecuteReader()
@@ -408,7 +447,8 @@ ORDER BY s.name, t.name, c.column_id;
   while ($surfaceReader.Read()) {
     $readableSurface += [ordered]@{
       schema = [string]$surfaceReader["schema_name"]
-      table = [string]$surfaceReader["table_name"]
+      object = [string]$surfaceReader["object_name"]
+      object_type = [string]$surfaceReader["object_type"]
       column = [string]$surfaceReader["column_name"]
     }
   }
@@ -425,7 +465,7 @@ ORDER BY s.name, t.name, c.column_id;
 
   foreach ($entry in $readableSurface) {
     $key =
-      ("{0}|{1}|{2}" -f $entry.schema, $entry.table, $entry.column).ToUpperInvariant()
+      ("{0}|{1}|{2}" -f $entry.schema, $entry.object, $entry.column).ToUpperInvariant()
 
     if (-not $approvedKeys.Contains($key)) {
       $result.extra_readable_surface += $entry
@@ -437,6 +477,60 @@ ORDER BY s.name, t.name, c.column_id;
   }
 
   $result.extra_readable_surface_count = $result.extra_readable_surface.Count
+
+  # Any effective permission on a non-table application object is outside the
+  # intended contract. This covers views, scalar/table-valued functions,
+  # CLR functions, procedures and synonyms even when they expose no columns.
+  $nonTableCmd = $conn.CreateCommand()
+  $nonTableCmd.CommandTimeout = 10
+  $nonTableCmd.CommandText = @"
+SET NOCOUNT ON;
+SELECT
+  s.name AS schema_name,
+  o.name AS object_name,
+  o.type_desc,
+  HAS_PERMS_BY_NAME(s.name + '.' + o.name, 'OBJECT', 'SELECT') AS can_select,
+  HAS_PERMS_BY_NAME(s.name + '.' + o.name, 'OBJECT', 'EXECUTE') AS can_execute,
+  HAS_PERMS_BY_NAME(s.name + '.' + o.name, 'OBJECT', 'ALTER') AS can_alter,
+  HAS_PERMS_BY_NAME(s.name + '.' + o.name, 'OBJECT', 'CONTROL') AS can_control,
+  HAS_PERMS_BY_NAME(s.name + '.' + o.name, 'OBJECT', 'TAKE OWNERSHIP') AS can_take_ownership
+FROM sys.objects o
+JOIN sys.schemas s ON s.schema_id = o.schema_id
+WHERE o.is_ms_shipped = 0
+  AND o.type IN ('V','P','PC','FN','IF','TF','FS','FT','SN')
+ORDER BY s.name, o.name;
+"@
+
+  $nonTableReader = $nonTableCmd.ExecuteReader()
+  while ($nonTableReader.Read()) {
+    $canSelect = BoolFromReader $nonTableReader "can_select"
+    $canExecute = BoolFromReader $nonTableReader "can_execute"
+    $canAlter = BoolFromReader $nonTableReader "can_alter"
+    $canControl = BoolFromReader $nonTableReader "can_control"
+    $canTakeOwnership = BoolFromReader $nonTableReader "can_take_ownership"
+
+    if (
+      ($canSelect -eq $true) -or
+      ($canExecute -eq $true) -or
+      ($canAlter -eq $true) -or
+      ($canControl -eq $true) -or
+      ($canTakeOwnership -eq $true)
+    ) {
+      $result.non_table_object_permissions += [ordered]@{
+        schema = [string]$nonTableReader["schema_name"]
+        object = [string]$nonTableReader["object_name"]
+        type = [string]$nonTableReader["type_desc"]
+        select = $canSelect
+        execute = $canExecute
+        alter = $canAlter
+        control = $canControl
+        take_ownership = $canTakeOwnership
+      }
+    }
+  }
+  $nonTableReader.Close()
+  $result.non_table_object_permission_count =
+    $result.non_table_object_permissions.Count
 
   $anyServerRole =
     @($result.server_roles.Values | Where-Object { $_ -eq $true }).Count -gt 0
@@ -475,8 +569,17 @@ ORDER BY s.name, t.name, c.column_id;
   elseif ($anyBroadDatabasePermission) {
     $result.blocker = "BROAD_DATABASE_PERMISSION_PRESENT"
   }
+  elseif ($result.specific_login_impersonation_count -gt 0) {
+    $result.blocker = "SPECIFIC_LOGIN_IMPERSONATION_PRESENT"
+  }
+  elseif ($result.specific_user_impersonation_count -gt 0) {
+    $result.blocker = "SPECIFIC_USER_IMPERSONATION_PRESENT"
+  }
   elseif ($result.executable_procedure_count -gt 0) {
     $result.blocker = "EXECUTABLE_PROCEDURE_PRESENT"
+  }
+  elseif ($result.non_table_object_permission_count -gt 0) {
+    $result.blocker = "NON_TABLE_OBJECT_PERMISSION_PRESENT"
   }
   elseif (-not $allObjectsSafe) {
     $result.blocker = "COLUMN_SURFACE_NOT_EXACT"
