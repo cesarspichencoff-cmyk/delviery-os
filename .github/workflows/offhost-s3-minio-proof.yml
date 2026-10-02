@@ -125,10 +125,11 @@ jobs:
       - name: Inspect exactly three uploaded objects
         run: |
           set -euxo pipefail
-          count=$(/tmp/mc find local/deliveryos-minio/deliveryos-backups --type f | wc -l)
+          /tmp/mc ls --recursive --json local/deliveryos-minio/deliveryos-backups \
+            | tee /tmp/s3-object-list.jsonl
+          count=$(wc -l < /tmp/s3-object-list.jsonl)
           test "$count" = "3"
           echo "S3_OBJECT_COUNT=3"
-          /tmp/mc find local/deliveryos-minio/deliveryos-backups --type f
 
       - name: Regression and repository cleanliness
         run: |

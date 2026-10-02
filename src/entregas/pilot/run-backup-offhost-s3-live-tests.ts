@@ -144,7 +144,28 @@ async function main(): Promise<void> {
       "remote_request_failed",
     );
 
-    console.log("BACKUP_OFFHOST_S3_LIVE_GREEN 6/6");
+    // Regressao adversarial: S3rver aceitou este caso e por isso nao serve
+    // como prova de autenticacao. MinIO real precisa rejeitar o mesmo access
+    // key quando a assinatura foi derivada de um secret incorreto.
+    const wrongSecretDir = join(root, "wrong-secret-existing");
+    mkdirSync(wrongSecretDir);
+    const wrongSecretCfg = baseConfig(
+      need("ENTREGAS_BACKUP_S3_READ_ACCESS_KEY_ID"),
+      need("ENTREGAS_BACKUP_S3_READ_SECRET_ACCESS_KEY") + "-WRONG",
+    );
+    const wrongSignatureAttempt = await downloadBackupBundleS3({
+      config: wrongSecretCfg,
+      manifest_key: uploaded.manifest_key,
+      destination_root: wrongSecretDir,
+    });
+    assert.equal(wrongSignatureAttempt.ok, false);
+    assert.equal(
+      !wrongSignatureAttempt.ok && wrongSignatureAttempt.reason,
+      "remote_request_failed",
+    );
+
+    console.log("BACKUP_OFFHOST_S3_LIVE_GREEN 7/7");
+    console.log("BAD_SIGNATURE_REJECTED=true");
     console.log("MANIFEST_KEY=" + uploaded.manifest_key);
   } finally {
     rmSync(root, { recursive: true, force: true });
