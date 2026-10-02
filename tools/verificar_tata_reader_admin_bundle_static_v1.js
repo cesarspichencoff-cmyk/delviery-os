@@ -10,6 +10,9 @@ const preflight = fs.readFileSync(path.join(ROOT, "tools", "tata_reader_least_pr
 const sql = fs.readFileSync(path.join(ROOT, "tools", "tata_reader_sql_apply_REVIEW_ONLY.sql"), "utf8");
 const serviceApply = fs.readFileSync(path.join(ROOT, "tools", "tata_reader_windows_service_apply_REVIEW_ONLY.ps1"), "utf8");
 const serviceRollback = fs.readFileSync(path.join(ROOT, "tools", "tata_reader_windows_service_rollback_REVIEW_ONLY.ps1"), "utf8");
+const runtimeCleanup = fs.readFileSync(path.join(ROOT, "tools", "tata_reader_runtime_cleanup_REVIEW_ONLY.ps1"), "utf8");
+const hostSource = fs.readFileSync(path.join(ROOT, "tools", "tata_reader_preflight_service", "TataComandaReader.PreflightService.cs"), "utf8");
+const hostBuild = fs.readFileSync(path.join(ROOT, "tools", "tata_reader_preflight_service", "build.ps1"), "utf8");
 const doc = fs.readFileSync(path.join(ROOT, "docs", "TATA_READER_ADMIN_REVIEW_GATE_2026-10-02.md"), "utf8");
 
 function normalize(values) {
@@ -95,14 +98,39 @@ assert.ok(!serviceApply.includes("start= auto"));
 assert.ok(!serviceApply.includes("sidtype"));
 assert.ok(!serviceApply.includes("password="));
 assert.ok(!/&\s+sc\.exe\s+start/i.test(serviceApply));
+assert.ok(serviceApply.includes("C:\\ProgramData\\TataComandaReader"));
+assert.ok(serviceApply.includes("Copy-Item -LiteralPath $BinarySource"));
+assert.ok(serviceApply.includes("Copy-Item -LiteralPath $PreflightSource"));
+assert.ok(serviceApply.includes("icacls.exe $BinDirectory"));
+assert.ok(serviceApply.includes("icacls.exe $EvidenceDirectory"));
 
 const rollbackThrow = serviceRollback.indexOf('throw "REVIEW_ONLY_NOT_AUTHORIZED');
 const rollbackStop = serviceRollback.indexOf("& sc.exe stop");
 assert.ok(rollbackThrow >= 0 && rollbackStop > rollbackThrow, "service rollback guard must precede stop");
 
+const cleanupThrow = runtimeCleanup.indexOf('throw "REVIEW_ONLY_NOT_AUTHORIZED');
+const cleanupRemove = runtimeCleanup.indexOf("Remove-Item");
+assert.ok(cleanupThrow >= 0 && cleanupRemove > cleanupThrow, "runtime cleanup guard must precede removal");
+assert.ok(runtimeCleanup.includes("C:\\ProgramData\\TataComandaReader"));
+
+assert.ok(hostSource.includes('ServiceNameValue = "TataComandaReader"'));
+assert.ok(hostSource.includes('"tata_reader_least_privilege_preflight.ps1"'));
+assert.ok(hostSource.includes('"preflight.json"'));
+assert.ok(hostSource.includes('"preflight.exitcode.txt"'));
+assert.ok(hostSource.includes("WindowsPowerShell"));
+for (const forbidden of ["HttpClient", "WebRequest", "TcpClient", "Socket", "SqlConnection", "Out-Printer"]) {
+  assert.ok(!hostSource.includes(forbidden), "forbidden host surface: " + forbidden);
+}
+assert.ok(hostBuild.includes("Framework64\\\\v4.0.30319\\\\csc.exe"));
+assert.ok(hostBuild.includes('nuget_used = $false'));
+
 assert.ok(doc.includes("## Preflight v4 requirements"));
 assert.ok(doc.includes("1. stop and delete Windows service `TataComandaReader`;"));
 assert.ok(doc.indexOf("stop and delete Windows service") < doc.indexOf("drop SQL database user"));
 assert.ok(doc.includes("start=demand"));
+assert.ok(doc.includes("tata_reader_runtime_cleanup_REVIEW_ONLY.ps1"));
+assert.ok(doc.includes("TataComandaReader.PreflightService.cs"));
+assert.ok(doc.includes("build.ps1"));
+assert.ok(doc.includes("verificar_tata_reader_admin_bundle_static_v1.js"));
 
 console.log("tata-reader-admin-bundle-static-v1: ok");
