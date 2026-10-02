@@ -103,7 +103,8 @@ The one-shot host:
 - has no HTTP client, no direct SQL client and no printing path;
 - was compiled on Foxxy with the built-in .NET Framework compiler without NuGet as a portability proof;
 - CAIXA_MOOCA already proved `Framework64\v4.0.30319\csc.exe` exists (reported file version 4.8.9221.0);
-- the final binary must be built on CAIXA_MOOCA in a non-administrative scratch path and its SHA-256 pinned before human authorization.
+- CAIXA_MOOCA build completed in scratch with no administrative effect.
+- Final reviewed pins: binary `241073DA0AE678933E2EF88AF2DA2091F1DF4A578E1D78AD2B48839D4465BA6C`, source `9910E35C38449E8C2CB081E6FD6B48931A852E9710A71DBF3B6EE2913A1FE21B`, preflight `FFCFB49577280A596EA951C839C881528D187A33F0B5D19DE08D2A86D1FEFFC6`.
 
 ## Rollback boundary
 
@@ -135,9 +136,9 @@ The Node verifier is a cross-check for environments where Node exists; it is not
 
 ## After human authorization (not yet authorized)
 
-Before this gate can be reached, the CAIXA_MOOCA build hashes must be inserted as literal pins in the REVIEW_ONLY installer and both static verifiers must pass again.
+CAIXA_MOOCA build hashes are now pinned literally in the REVIEW_ONLY installer. Before any executable bundle is generated, both static verifiers must pass again on the pinned bundle.
 
-A fresh executable bundle must then be generated from the reviewed artifacts.
+A fresh executable bundle must then be generated from the reviewed artifacts only after explicit human authorization.
 Do not remove REVIEW_ONLY guards in place.
 Then the order of operations must be:
 1. install the reviewed reader/preflight binary and create service `TataComandaReader` as `NT SERVICE\TataComandaReader` with `start=demand`; do not start;
