@@ -659,20 +659,54 @@ async function fronteiras(): Promise<void> {
     }
   });
 
-  await test("a plataforma não importa Entregas — a dependência é ao contrário", () => {
-    // `platform` é a fundação; se ela conhecer o domínio, deixa de ser
-    // fundação e vira mais um módulo acoplado.
+  await test("platform só conhece Entregas pelas fronteiras de integração autorizadas", () => {
+    // A fundação continua sem depender do domínio. As exceções são adapters
+    // explícitos, já decididos/provados, e cada par arquivo->import é fechado.
+    const permitidos = new Map<string, ReadonlySet<string>>([
+      ["/src/platform/bin/entregas-source-ingest.ts", new Set([
+        "../../entregas/integration/durable-event-feed",
+      ])],
+      ["/src/platform/copiloto/causal-identity-bridge.ts", new Set([
+        "../../entregas/contracts/events/types",
+      ])],
+      ["/src/platform/ingest/entregas-shadow-adapter.ts", new Set([
+        "../../entregas/contracts/events/types",
+      ])],
+      ["/src/platform/runtime/entregas-live-consumer.ts", new Set([
+        "../../entregas/contracts/EntregasEventFeed",
+      ])],
+      ["/src/platform/runtime/rota-localizacao-despacho.ts", new Set([
+        "../../entregas/foundation/platform-read-assertion",
+        "../../entregas/foundation/route-access",
+      ])],
+    ]);
+    const autorizado = (rel: string, imp: string) => permitidos.get(rel)?.has(imp) === true;
+
+    // Controles negativos: contrato público não vira licença geral para acoplar.
+    assert.equal(autorizado("/src/platform/bin/critical.ts", "../../entregas/contracts/events/types"), false);
+    assert.equal(autorizado("/src/platform/bin/entregas-source-ingest.ts", "../../entregas/foundation/trip-machine"), false);
+
+    const vistos = new Set<string>();
     for (const f of arquivosTs(join(ROOT, "src", "platform"))) {
+      const rel = f.replace(ROOT, "").replace(/\\/g, "/");
+      if (/\/run-.*-tests\.ts$/.test(rel)) continue;
       const src = readFileSync(f, "utf8");
       const imports = [...src.matchAll(/^\s*import[^;]*from\s+["']([^"']+)["']/gm)].map((m) => m[1]);
       for (const imp of imports) {
+        if (!(/\/entregas\/|\.\.\/entregas/.test(imp))) continue;
         assert.equal(
-          /\/entregas\/|\.\.\/entregas/.test(imp),
-          false,
-          `${f.replace(ROOT, "")} importa Entregas: ${imp}`,
+          autorizado(rel, imp),
+          true,
+          `${rel} importa Entregas fora da fronteira autorizada: ${imp}`,
         );
+        vistos.add(`${rel} -> ${imp}`);
       }
     }
+
+    const esperados = [...permitidos.entries()]
+      .flatMap(([rel, imports]) => [...imports].map((imp) => `${rel} -> ${imp}`))
+      .sort();
+    assert.deepEqual([...vistos].sort(), esperados, "a allowlist arquitetural precisa bater exatamente");
   });
 
   await test("runtime crítico não importa o runtime assíncrono", () => {

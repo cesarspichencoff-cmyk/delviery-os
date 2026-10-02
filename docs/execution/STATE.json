@@ -150,10 +150,10 @@
       "o_que_falta": "que a imagem construa e os containers subam"
     },
     {
-      "item": "encerramento gracioso por SIGTERM",
-      "motivo": "No Windows, SIGTERM enviado de fora encerra o processo incondicionalmente; o handler não roda.",
-      "substituto": "o caminho de shutdown é exercitado em processo pelos 44 testes da plataforma",
-      "o_que_falta": "observar SIGTERM real, o que acontece naturalmente em container Linux"
+      "item": "encaminhamento SIGTERM pelo PID1 da imagem final",
+      "motivo": "SIGTERM Linux -> Node e o shutdown do DeliveryOS foram provados no WSL2 em 2026-10-01; o que continua sem prova é o dumb-init como PID1 da imagem final encaminhando o sinal aos runtimes.",
+      "substituto": "gate Linux 3/3: shutdown gracioso, timeout não-gracioso e binário real source-ingest desligado recebendo SIGTERM; no Windows o gate se declara PULADO",
+      "o_que_falta": "construir/subir a imagem final e observar dumb-init/PID1 encaminhar SIGTERM ao crítico/assíncrono"
     },
     {
       "item": "PostgreSQL hospedado (Supabase ou equivalente)",

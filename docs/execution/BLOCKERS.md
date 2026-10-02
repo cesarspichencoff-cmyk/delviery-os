@@ -835,6 +835,15 @@ produzida. Ficam por provar, e **não estão escondidos**: `dumb-init` como PID 
 SIGTERM), `USER node`, `npm prune --omit=dev` e o tamanho final da imagem. Os quatro dizem
 respeito a empacotamento, não ao comportamento que o PB19 fecha.
 
+> **SUCESSÃO — 2026-10-01 · CAMADA LINUX DO SIGTERM PROVADA.**
+> O desconhecido foi reduzido sem fingir Docker: em WSL2/Node Linux, SIGTERM real chegou ao
+> processo, o helper canônico de shutdown drenou e fechou antes de sair 0; o controle com timeout
+> saiu 1 e não executou `close`. Um binário real, `entregas-source-ingest`, em modo desligado
+> (sem abrir banco), também recebeu SIGTERM e saiu 0. Gate: `LINUX_SIGTERM 3/3 PASS`.
+> Portanto **Linux -> Node -> handler** está PROVEN. Continua NOT_RUN somente a camada de
+> empacotamento: `dumb-init` como PID1 encaminhando o sinal na imagem final, além de `USER node`,
+> prune de devDependencies e tamanho final.
+
 ### D4 — **FECHADO em 2026-09-22** (`docs/etapa-4-8/D4-EVIDENCIA.md`)
 
 `labs/operacao-viva-v4/testes/run-lab-v4-browser.ts` apaga o diretório de evidências na linha

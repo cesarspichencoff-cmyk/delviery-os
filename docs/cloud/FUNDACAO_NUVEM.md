@@ -101,6 +101,12 @@ turno de sexta.
 - **encerramento gracioso**: o orquestrador precisa mandar `SIGTERM` e esperar.
   30 s para o crítico, 45 s para o assíncrono. Matar o assíncrono no meio
   devolve o job pelo lease, mas retrabalho sobre efeito externo pode duplicar.
+  Em 2026-10-01, o caminho Linux -> Node foi provado no WSL2: drain + close
+  terminaram antes da saída 0, e o controle de timeout saiu 1 sem fingir
+  fechamento. O binário real `source-ingest`, desligado e sem abrir banco,
+  também recebeu SIGTERM e saiu 0. O que **continua NOT_RUN** é o
+  encaminhamento pelo `dumb-init`/PID1 da imagem final; isso só fecha com a
+  imagem Docker realmente construída e executada.
 
 ### Migrations são passo separado
 
