@@ -26,6 +26,10 @@ Initial scope is intentionally minimal:
 4. `tools/tata_reader_sql_rollback_REVIEW_ONLY.sql`
 5. `tools/tata_reader_windows_service_apply_REVIEW_ONLY.ps1`
 6. `tools/tata_reader_windows_service_rollback_REVIEW_ONLY.ps1`
+7. `tools/tata_reader_runtime_cleanup_REVIEW_ONLY.ps1`
+8. `tools/tata_reader_preflight_service/TataComandaReader.PreflightService.cs`
+9. `tools/tata_reader_preflight_service/build.ps1`
+10. `tools/verificar_tata_reader_admin_bundle_static_v1.js`
 
 ## Review invariants
 
@@ -41,7 +45,11 @@ Initial scope is intentionally minimal:
 - No INSERT/UPDATE/DELETE.
 - No access to views, functions, synonyms or procedures.
 - No readable user-table column outside the manifest.
-- No service start in the creation template.
+- Service uses the passwordless virtual account `NT SERVICE\TataComandaReader` directly.
+- No `sidtype` dependency is required by this design.
+- Service is created with `start=demand` and is never started by the installation template.
+- Runtime is staged under `C:\ProgramData\TataComandaReader` with RX only for `bin` and Modify only for `evidence` to the service account.
+- Preflight service host builds with Windows/.NET Framework `csc.exe`; no NuGet dependency.
 - Review artifacts remain intentionally non-executable.
 
 ## SQL grant surface
@@ -80,13 +88,24 @@ The final service identity must fail closed unless:
 - zero writable columns;
 - zero object-level write/alter/control/take-ownership authority.
 
+## Preflight service host
+
+The one-shot host:
+- service name: `TataComandaReader`;
+- executes only `tata_reader_least_privilege_preflight.ps1` from its own `bin` directory;
+- captures stdout/stderr/exit code under `evidence`;
+- stops after one run;
+- has no HTTP client, no direct SQL client and no printing path;
+- was compiled on Foxxy with the built-in .NET Framework compiler without NuGet as a portability proof;
+- CAIXA_MOOCA compiler availability remains to be checked by metadata before any local build.
+
 ## Rollback boundary
 
 Rollback must occur in this order:
 1. stop and delete Windows service `TataComandaReader`;
 2. drop SQL database user `NT SERVICE\TataComandaReader`;
 3. drop SQL login `NT SERVICE\TataComandaReader`;
-4. remove future local runtime files/ACLs created exclusively for that service.
+4. run `tools/tata_reader_runtime_cleanup_REVIEW_ONLY.ps1` in an authorized executable form to remove `C:\ProgramData\TataComandaReader` and its ACLs.
 
 Rollback must not alter:
 - Teknisa tables or rows;
@@ -98,10 +117,12 @@ Rollback must not alter:
 
 Claude on CAIXA_MOOCA should only:
 1. audit syntax and inert guards;
-2. compare the manifest with every review artifact;
-3. report any divergence;
-4. confirm that no artifact is executable in its current state;
-5. STOP.
+2. run `node tools/verificar_tata_reader_admin_bundle_static_v1.js`;
+3. compare the manifest with every review artifact;
+4. verify by metadata whether `C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe` exists;
+5. report any divergence;
+6. confirm that no administrative artifact is executable in its current state;
+7. STOP.
 
 ## After human authorization (not yet authorized)
 
