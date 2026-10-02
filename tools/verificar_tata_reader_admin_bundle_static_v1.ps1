@@ -111,6 +111,11 @@ Assert-True ($serviceApply.Contains('S-1-5-18')) 'SYSTEM SID grant missing'
 Assert-True ($serviceApply.Contains('S-1-5-32-544')) 'Administrators SID grant missing'
 Assert-True ($serviceApply.Contains('Assert-PinnedHash')) 'hash pin guard missing'
 Assert-True ($serviceApply.Contains('__PIN_AFTER_CAIXA_BUILD__')) 'hash pin placeholder missing before build proof'
+Assert-True ($serviceApply.Contains('Get-CimInstance -ClassName Win32_Service')) 'service metadata verification missing'
+Assert-True ($serviceApply.Contains('SERVICE_ACCOUNT_MISMATCH')) 'service account verification missing'
+Assert-True ($serviceApply.Contains('SERVICE_START_MODE_MISMATCH')) 'service start-mode verification missing'
+Assert-True ($serviceApply.Contains('SERVICE_SQL_DEPENDENCY_MISMATCH')) 'service dependency verification missing'
+Assert-True ($serviceApply.Contains('Assert-ClosedAcl')) 'closed ACL verification missing'
 
 $rollbackThrow = $serviceRollback.IndexOf('throw "REVIEW_ONLY_NOT_AUTHORIZED')
 $rollbackStop = $serviceRollback.IndexOf('& sc.exe stop')
@@ -124,6 +129,7 @@ Assert-True ($cleanupThrow -ge 0 -and $cleanupRemove -gt $cleanupThrow) 'runtime
 Assert-True ($hostSource.Contains('ExpectedIdentityName = @"NT SERVICE\TataComandaReader"')) 'host identity pin missing'
 Assert-True ($hostSource.Contains('WindowsIdentity.GetCurrent()')) 'host identity proof missing'
 Assert-True ($hostSource.Contains('preflight.identity.txt')) 'host identity evidence missing'
+Assert-True ($hostSource.Contains('AutoLog = false;')) 'host AutoLog must be disabled'
 Assert-True ($hostSource.Contains('tata_reader_least_privilege_preflight.ps1')) 'host preflight target missing'
 foreach ($forbidden in @('HttpClient','WebRequest','TcpClient','Socket','SqlConnection','Out-Printer')) {
   Assert-True (-not $hostSource.Contains($forbidden)) ('forbidden host surface: ' + $forbidden)
@@ -133,6 +139,8 @@ Assert-True ($hostBuild.Contains('nuget_used = $false')) 'no-NuGet marker missin
 
 Assert-True ($doc.Contains('## Preflight v4 requirements')) 'doc preflight version mismatch'
 Assert-True ($doc.Contains('start=demand')) 'doc demand-start marker missing'
+Assert-True ($doc.Contains('verificar_tata_reader_admin_bundle_static_v1.ps1')) 'PowerShell verifier missing from doc'
+Assert-True ($doc.Contains('final binary must be built on CAIXA_MOOCA')) 'Caixa build-pin gate missing from doc'
 
 [ordered]@{
   schema = 'deliveryos.tata-reader-admin-bundle-static.v1'
