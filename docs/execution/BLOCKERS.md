@@ -5,7 +5,7 @@ lifecycle:
   authority_scope: infra_blockers
   superseded_by: null
   atualizado_em: "2026-10-02"
-  state_basis: 9a2b99c
+  state_basis: 5e5e0f7
   question_refs: ["Q-001","Q-002","Q-003","Q-004","Q-005","Q-006","Q-007","Q-008","Q-009","Q-010","Q-011"]
 ---
 
@@ -880,9 +880,26 @@ respeito a empacotamento, não ao comportamento que o PB19 fecha.
 > SUCCESS. O primeiro run `36967981792` foi descartado como prova porque o
 > gate esperava incorretamente que um serviço persistente terminasse sozinho.
 >
-> Portanto a **imagem final deixa de ser NOT_RUN**. Permanece aberto somente o
-> `docker compose up` da composição completa `deploy/compose.platform.yaml`
-> e qualquer deploy operacional.
+> Portanto a **imagem final deixa de ser NOT_RUN**.
+>
+> **SUCESSÃO — 2026-10-02 · COMPOSIÇÃO OFICIAL FINAL PROVADA EM DOCKER REAL.**
+> GitHub Actions run **36969232567** executou a composição oficial sobre o
+> produto equivalente ao HEAD principal: a diferença entre o commit testado
+> `b317a8a` e `5e5e0f7` era somente o workflow temporário.
+> `tools/papeis_compose_real.sh` terminou **45 medidas verdes**:
+> crítico healthy, migration/papéis exit 0, assíncrono running; conexões reais
+> como `deliveryos_critical`/`deliveryos_async`; sessão+GPS aceitos;
+> pré-vínculo preservado; outbox drenada; replay completo após restart;
+> sabotagens recusadas por privilégio; senha administrativa ausente dos
+> runtimes/processo/logs; reaplicação idempotente dos papéis.
+>
+> Depois do cleanup, `test:platform:deploy` passou **30/30**, governança ficou
+> GREEN e `git diff --check` passou. O marcador final foi
+> `PLATFORM_COMPOSE_FINAL_PROOF_GREEN`.
+>
+> Assim, **`docker compose up` também deixa de ser NOT_RUN**. O que continua
+> aberto é efeito operacional: deploy, credenciais reais, migrations/cutover
+> no banco operacional, aparelho físico e backup off-host.
 
 ### D4 — **FECHADO em 2026-09-22** (`docs/etapa-4-8/D4-EVIDENCIA.md`)
 

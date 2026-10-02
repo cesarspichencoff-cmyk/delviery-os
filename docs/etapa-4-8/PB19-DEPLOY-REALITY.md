@@ -4,8 +4,8 @@ lifecycle:
   status: ACTIVE
   authority_scope: pb19_deploy_reality
   superseded_by: null
-  atualizado_em: "2026-09-22"
-  state_basis: d83d414
+  atualizado_em: "2026-10-02"
+  state_basis: 5e5e0f7
   question_refs: ["Q-003", "Q-004", "Q-015", "Q-016"]
 ---
 
@@ -24,6 +24,22 @@ lifecycle:
 > **Preservado:** C3 fechado, arquitetura da espinha intocada, espinha
 > desligada, `decisao.js` desconectado, `conversation-crm` sem fio, `Q-003`,
 > `Q-004`, `Q-015` e `Q-016` **não respondidas**. Sem deploy, sem merge.
+>
+> **SUCESSÃO — 2026-10-02 · COMPOSIÇÃO FINAL CERTIFICADA EM DOCKER REAL.**
+> A lacuna histórica de empacotamento/composição deixou de ser UNKNOWN.
+> GitHub Actions run **36969232567** executou a imagem final e
+> `deploy/compose.platform.yaml` em Docker Compose real. O certificador
+> `tools/papeis_compose_real.sh` terminou **45 medidas verdes**:
+> crítico healthy; migration/papéis exit 0; assíncrono running; papéis mínimos
+> efetivamente usados; sessão+GPS aceitos; outbox drenada; replay completo após
+> restart; sabotagens recusadas por privilégio; zero senha administrativa nos
+> runtimes/processo/logs; reaplicação idempotente. Depois: deploy-audit **30/30**,
+> governança GREEN, `git diff --check` PASS e cleanup sem resíduos.
+>
+> O commit executado `b317a8a` e o produto principal `5e5e0f7` diferiam
+> somente pelo workflow temporário. Não houve deploy operacional nem promoção
+> de credenciais reais. Evidência completa:
+> `field-gate/2026-10-02-platform-compose-final-ci.md`.
 
 ---
 

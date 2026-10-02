@@ -6,7 +6,7 @@
     "authority_scope": "technical_state",
     "superseded_by": null,
     "atualizado_em": "2026-10-02",
-    "state_basis": "9a2b99c",
+    "state_basis": "5e5e0f7",
     "observa": [
       "src/product/",
       "src/perfil-delivery/",
@@ -143,12 +143,6 @@
     "sdk": "não vive neste worktree; exige ANDROID_HOME apontando para o SDK já instalado"
   },
   "nao_comprovado": [
-    {
-      "item": "docker compose up da plataforma",
-      "motivo": "A imagem runtime final já foi construída e provada em Docker real no GitHub Actions run 36968177991; o Foxxy continua sem engine Docker e a composição completa deploy/compose.platform.yaml ainda não foi subida ponta a ponta com essa imagem.",
-      "substituto": "docker build final PROVEN: USER node, dumb-init PID1, pg@8.13.1, prune, ownership, build-stamp e SIGTERM do binário real; auditoria estrutural da composição permanece verde.",
-      "o_que_falta": "subir deploy/compose.platform.yaml completo em Docker real e validar dependências, migrations, health/ready, papéis e encerramento conjunto sem deploy operacional"
-    },
     {
       "item": "PostgreSQL hospedado (Supabase ou equivalente)",
       "motivo": "Criar conta ou instância é ato com potencial de cobrança — depende de autorização expressa do César.",
