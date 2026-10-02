@@ -93,6 +93,24 @@ try {
   & sc.exe config $ServiceName depend= $SqlDependency
   if ($LASTEXITCODE -ne 0) { throw "SERVICE_SQL_DEPENDENCY_FAILED" }
 
+  $serviceMetadata = Get-CimInstance -ClassName Win32_Service -Filter ("Name='" + $ServiceName.Replace("'", "''") + "'")
+  if (-not $serviceMetadata) { throw "SERVICE_METADATA_NOT_FOUND" }
+  if (-not [string]::Equals($serviceMetadata.StartName, $ServicePrincipal, [System.StringComparison]::OrdinalIgnoreCase)) {
+    throw ("SERVICE_ACCOUNT_MISMATCH:" + $serviceMetadata.StartName)
+  }
+  if (-not [string]::Equals($serviceMetadata.StartMode, "Manual", [System.StringComparison]::OrdinalIgnoreCase)) {
+    throw ("SERVICE_START_MODE_MISMATCH:" + $serviceMetadata.StartMode)
+  }
+  if (-not [string]::Equals($serviceMetadata.PathName.Trim('"'), $InstalledBinary, [System.StringComparison]::OrdinalIgnoreCase)) {
+    throw ("SERVICE_BINARY_PATH_MISMATCH:" + $serviceMetadata.PathName)
+  }
+
+  $serviceObject = Get-Service -Name $ServiceName
+  $dependencyNames = @($serviceObject.ServicesDependedOn | ForEach-Object { $_.Name })
+  if ($dependencyNames -notcontains $SqlDependency) {
+    throw ("SERVICE_SQL_DEPENDENCY_MISMATCH:" + ($dependencyNames -join ","))
+  }
+
   $serviceSid = (New-Object System.Security.Principal.NTAccount($ServicePrincipal)).Translate([System.Security.Principal.SecurityIdentifier]).Value
   if ([string]::IsNullOrWhiteSpace($serviceSid)) { throw "SERVICE_SID_RESOLUTION_FAILED" }
 
