@@ -35,6 +35,12 @@ jobs:
           docker image inspect deliveryos-platform:v1 >/dev/null
           docker pull postgres:16-bookworm
 
+      - name: Prepare local build for image/source identity check
+        run: |
+          set -euxo pipefail
+          npm ci --no-audit --no-fund
+          DELIVERYOS_COMMIT="$GITHUB_SHA" npm run build:platform
+
       - name: Full official Compose certification
         run: |
           set -euxo pipefail
