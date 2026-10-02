@@ -110,7 +110,9 @@ Assert-True ($serviceApply.Contains('/inheritance:r')) 'ACL inheritance removal 
 Assert-True ($serviceApply.Contains('S-1-5-18')) 'SYSTEM SID grant missing'
 Assert-True ($serviceApply.Contains('S-1-5-32-544')) 'Administrators SID grant missing'
 Assert-True ($serviceApply.Contains('Assert-PinnedHash')) 'hash pin guard missing'
-Assert-True ($serviceApply.Contains('__PIN_AFTER_CAIXA_BUILD__')) 'hash pin placeholder missing before build proof'
+Assert-True (-not $serviceApply.Contains('__PIN_AFTER_CAIXA_BUILD__')) 'hash pin placeholder must be absent after CAIXA build proof'
+Assert-True ($serviceApply.Contains('241073DA0AE678933E2EF88AF2DA2091F1DF4A578E1D78AD2B48839D4465BA6C')) 'CAIXA binary hash pin missing'
+Assert-True ($serviceApply.Contains('FFCFB49577280A596EA951C839C881528D187A33F0B5D19DE08D2A86D1FEFFC6')) 'CAIXA preflight hash pin missing'
 Assert-True ($serviceApply.Contains('Get-CimInstance -ClassName Win32_Service')) 'service metadata verification missing'
 Assert-True ($serviceApply.Contains('SERVICE_ACCOUNT_MISMATCH')) 'service account verification missing'
 Assert-True ($serviceApply.Contains('SERVICE_START_MODE_MISMATCH')) 'service start-mode verification missing'
@@ -140,7 +142,9 @@ Assert-True ($hostBuild.Contains('nuget_used = $false')) 'no-NuGet marker missin
 Assert-True ($doc.Contains('## Preflight v4 requirements')) 'doc preflight version mismatch'
 Assert-True ($doc.Contains('start=demand')) 'doc demand-start marker missing'
 Assert-True ($doc.Contains('verificar_tata_reader_admin_bundle_static_v1.ps1')) 'PowerShell verifier missing from doc'
-Assert-True ($doc.Contains('final binary must be built on CAIXA_MOOCA')) 'Caixa build-pin gate missing from doc'
+Assert-True ($doc.Contains('241073DA0AE678933E2EF88AF2DA2091F1DF4A578E1D78AD2B48839D4465BA6C')) 'CAIXA binary hash missing from doc'
+Assert-True ($doc.Contains('9910E35C38449E8C2CB081E6FD6B48931A852E9710A71DBF3B6EE2913A1FE21B')) 'CAIXA source hash missing from doc'
+Assert-True ($doc.Contains('FFCFB49577280A596EA951C839C881528D187A33F0B5D19DE08D2A86D1FEFFC6')) 'CAIXA preflight hash missing from doc'
 
 [ordered]@{
   schema = 'deliveryos.tata-reader-admin-bundle-static.v1'
