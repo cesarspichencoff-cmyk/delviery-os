@@ -134,7 +134,7 @@ assert.ok(hostSource.includes("WindowsPowerShell"));
 for (const forbidden of ["HttpClient", "WebRequest", "TcpClient", "Socket", "SqlConnection", "Out-Printer"]) {
   assert.ok(!hostSource.includes(forbidden), "forbidden host surface: " + forbidden);
 }
-assert.ok(hostBuild.includes("Framework64\\\\v4.0.30319\\\\csc.exe"));
+assert.ok(hostBuild.includes("Framework64\\v4.0.30319\\csc.exe"));
 assert.ok(hostBuild.includes('nuget_used = $false'));
 
 assert.ok(doc.includes("## Preflight v4 requirements"));
