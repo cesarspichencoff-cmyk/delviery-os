@@ -100,7 +100,8 @@ Assert-True (-not [regex]::IsMatch($sql, '\bGRANT\s+(INSERT|UPDATE|DELETE|EXECUT
 $applyThrow = $serviceApply.IndexOf('throw "REVIEW_ONLY_NOT_AUTHORIZED')
 $applyCreate = $serviceApply.IndexOf('& sc.exe create')
 Assert-True ($applyThrow -ge 0 -and $applyCreate -gt $applyThrow) 'service apply guard order invalid'
-Assert-True ($serviceApply.Contains("$SqlDependency = 'MSSQL$SQLEXPRESS'")) 'SQL dependency quoting invalid'
+$dependencyLiteral = '$SqlDependency = ''MSSQL$SQLEXPRESS'''
+Assert-True ($serviceApply.Contains($dependencyLiteral)) 'SQL dependency quoting invalid'
 Assert-True ($serviceApply.Contains('start= demand')) 'service must be demand start'
 Assert-True (-not $serviceApply.Contains('start= auto')) 'auto start present'
 Assert-True (-not $serviceApply.Contains('sidtype')) 'sidtype dependency present'
