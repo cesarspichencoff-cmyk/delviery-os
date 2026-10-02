@@ -1,0 +1,60 @@
+{
+  "schema": "deliveryos.tata-reader-permission-manifest.v1",
+  "status": "REVIEW_ONLY_NOT_AUTHORIZED",
+  "principal": "NT SERVICE\\TataComandaReader",
+  "server": "(local)\\SQLEXPRESS",
+  "database": "teknisa",
+  "object_schema": "TEKNISA",
+  "scope_policy": {
+    "integrated_delivery_channels_only": true,
+    "manual_pos_delivery": false,
+    "dscomanda": false,
+    "combo_structure_columns": false,
+    "takeaway_origin_column": false
+  },
+  "allowed_columns": {
+    "COMANDAVEN": [
+      "CDFILIAL",
+      "CDLOJA",
+      "NRVENDAREST",
+      "NRCOMANDA",
+      "NRCOMANDAEXT",
+      "IDORGCMDVENDA",
+      "IDSTCOMANDA",
+      "DSOBSCOMANDA"
+    ],
+    "ITCOMANDAVEN": [
+      "CDFILIAL",
+      "NRVENDAREST",
+      "NRCOMANDA",
+      "NRPRODCOMVEN",
+      "CDPRODUTO",
+      "QTPRODCOMVEN",
+      "IDSTPRCOMVEN",
+      "DSOBSDESCIT",
+      "DSOBSPEDDIGCMD",
+      "TXPRODCOMVEN"
+    ],
+    "PRODUTO": [
+      "CDPRODUTO",
+      "NMPRODUTO"
+    ],
+    "VENDAREST": [
+      "CDFILIAL",
+      "NRVENDAREST",
+      "DTHRABERMESA"
+    ]
+  },
+  "explicitly_excluded_columns": [
+    "DSCOMANDA",
+    "CDPRODPROMOCAO",
+    "NRSEQPRODCOM",
+    "NRSEQPRODPAI",
+    "IDORIGEMVENDA"
+  ],
+  "rationale": [
+    "MVP minimizes SQL surface to fields already consumed by current shadow/production pipeline.",
+    "Manual POS delivery detection requires DSCOMANDA and is deferred until integrated-channel shadow is proven.",
+    "Combo/takeaway fields are deferred because current normalization and production-ticket pipeline do not consume them."
+  ]
+}
