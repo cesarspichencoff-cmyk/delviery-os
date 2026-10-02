@@ -38,7 +38,7 @@ namespace TataComandaReader.PreflightHost
             ServiceName = ServiceNameValue;
             CanStop = true;
             CanShutdown = true;
-            AutoLog = true;
+            AutoLog = false;
 
             string binDirectory = AppDomain.CurrentDomain.BaseDirectory;
             string rootDirectory = Directory.GetParent(binDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)).FullName;
