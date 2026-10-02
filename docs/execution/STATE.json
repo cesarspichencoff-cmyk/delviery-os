@@ -150,10 +150,10 @@
       "o_que_falta": "que a imagem construa e os containers subam"
     },
     {
-      "item": "encaminhamento SIGTERM pelo PID1 da imagem final",
-      "motivo": "SIGTERM Linux -> Node e o shutdown do DeliveryOS foram provados no WSL2 em 2026-10-01; o que continua sem prova é o dumb-init como PID1 da imagem final encaminhando o sinal aos runtimes.",
-      "substituto": "gate Linux 3/3: shutdown gracioso, timeout não-gracioso e binário real source-ingest desligado recebendo SIGTERM; no Windows o gate se declara PULADO",
-      "o_que_falta": "construir/subir a imagem final e observar dumb-init/PID1 encaminhar SIGTERM ao crítico/assíncrono"
+      "item": "empacotamento final da imagem runtime",
+      "motivo": "Linux -> Node e o dumb-init 1.2.5-2 exato do Debian Bookworm como PID1 já foram provados fora de Docker; a imagem final ainda não foi construída nesta máquina.",
+      "substituto": "LINUX_SIGTERM 3/3 + dumb-init Bookworm com SHA-256 oficial, NSpid=1, encaminhamento de SIGTERM para source-ingest real e exit 0",
+      "o_que_falta": "construir/subir a imagem final e conferir que ela contém o mesmo dumb-init, USER node, npm prune --omit=dev e o tamanho final esperado"
     },
     {
       "item": "PostgreSQL hospedado (Supabase ou equivalente)",

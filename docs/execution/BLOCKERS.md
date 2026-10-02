@@ -840,9 +840,17 @@ respeito a empacotamento, não ao comportamento que o PB19 fecha.
 > processo, o helper canônico de shutdown drenou e fechou antes de sair 0; o controle com timeout
 > saiu 1 e não executou `close`. Um binário real, `entregas-source-ingest`, em modo desligado
 > (sem abrir banco), também recebeu SIGTERM e saiu 0. Gate: `LINUX_SIGTERM 3/3 PASS`.
-> Portanto **Linux -> Node -> handler** está PROVEN. Continua NOT_RUN somente a camada de
-> empacotamento: `dumb-init` como PID1 encaminhando o sinal na imagem final, além de `USER node`,
-> prune de devDependencies e tamanho final.
+>
+> **SUCESSÃO — 2026-10-01 · DUMB-INIT BOOKWORM COMO PID1 PROVADO FORA DA IMAGEM.**
+> O pacote Debian Bookworm `dumb-init 1.2.5-2` foi baixado sem instalação, conferido contra o
+> SHA-256 oficial `a8eae71e…60afd` e executado em namespace Linux com `NSpid=1`.
+> Ele supervisionou o `entregas-source-ingest` real desligado; SIGTERM enviado ao PID externo
+> do `dumb-init` foi encaminhado ao filho e o launcher encerrou com exit 0
+> (`DUMB_INIT_PID1_SIGTERM_PASS`). Controle negativo com SHA alterado foi recusado com exit 4.
+>
+> Portanto **Linux -> dumb-init PID1 -> Node handler** está PROVEN fora de Docker. Continua
+> NOT_RUN somente a montagem da **imagem final**: provar que o runtime construído contém o mesmo
+> binário, roda como `USER node`, executa `npm prune --omit=dev` e medir seu tamanho final.
 
 ### D4 — **FECHADO em 2026-09-22** (`docs/etapa-4-8/D4-EVIDENCIA.md`)
 

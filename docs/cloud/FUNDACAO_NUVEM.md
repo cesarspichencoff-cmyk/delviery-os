@@ -104,9 +104,12 @@ turno de sexta.
   Em 2026-10-01, o caminho Linux -> Node foi provado no WSL2: drain + close
   terminaram antes da saída 0, e o controle de timeout saiu 1 sem fingir
   fechamento. O binário real `source-ingest`, desligado e sem abrir banco,
-  também recebeu SIGTERM e saiu 0. O que **continua NOT_RUN** é o
-  encaminhamento pelo `dumb-init`/PID1 da imagem final; isso só fecha com a
-  imagem Docker realmente construída e executada.
+  também recebeu SIGTERM e saiu 0. Depois, o `dumb-init 1.2.5-2` exato do
+  Debian Bookworm foi baixado sem instalação, validado pelo SHA-256 oficial e
+  executado como **PID 1** em namespace Linux; SIGTERM foi encaminhado ao
+  `source-ingest` e o conjunto saiu 0. O que **continua NOT_RUN** é a
+  montagem da imagem Docker final: confirmar nela o mesmo binário, `USER node`,
+  `npm prune --omit=dev` e o tamanho final.
 
 ### Migrations são passo separado
 
