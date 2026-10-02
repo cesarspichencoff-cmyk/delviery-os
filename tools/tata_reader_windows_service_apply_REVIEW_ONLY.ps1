@@ -24,11 +24,10 @@ $EvidenceDirectory = Join-Path $InstallRoot "evidence"
 $InstalledBinary = Join-Path $BinDirectory "TataComandaReader.PreflightService.exe"
 $InstalledPreflight = Join-Path $BinDirectory "tata_reader_least_privilege_preflight.ps1"
 
-# These values must be replaced by literal reviewed SHA-256 pins after the
-# no-effect CAIXA_MOOCA build. A production-ready installer must never accept
-# the expected hashes as caller-supplied parameters.
-$ExpectedBinarySha256 = "__PIN_AFTER_CAIXA_BUILD__"
-$ExpectedPreflightSha256 = "__PIN_AFTER_CAIXA_BUILD__"
+# Literal SHA-256 pins from the no-effect CAIXA_MOOCA build on 2026-10-02.
+# A production-ready installer must never accept these expected hashes as caller-supplied parameters.
+$ExpectedBinarySha256 = "241073DA0AE678933E2EF88AF2DA2091F1DF4A578E1D78AD2B48839D4465BA6C"
+$ExpectedPreflightSha256 = "FFCFB49577280A596EA951C839C881528D187A33F0B5D19DE08D2A86D1FEFFC6"
 
 function Assert-PinnedHash {
   param(
