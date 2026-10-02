@@ -1,0 +1,136 @@
+name: offhost-s3-minio-proof
+
+on:
+  push:
+    branches:
+      - tmp/offhost-s3-minio-proof-20261002
+
+permissions:
+  contents: read
+
+jobs:
+  s3-proof:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install project dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Unit and type gates
+        run: |
+          set -euxo pipefail
+          npx tsc --noEmit
+          npm run test:entregas:backup-offhost-s3
+
+      - name: Start ephemeral MinIO
+        run: |
+          set -euxo pipefail
+          docker network create deliveryos-s3-proof
+          docker run -d --name deliveryos-minio \
+            --network deliveryos-s3-proof \
+            -p 9000:9000 \
+            -e MINIO_ROOT_USER=rootadmin \
+            -e MINIO_ROOT_PASSWORD=rootadmin-secret-20261002 \
+            quay.io/minio/minio:latest \
+            server /data
+
+          for i in $(seq 1 80); do
+            if curl -fsS http://127.0.0.1:9000/minio/health/ready >/dev/null; then
+              exit 0
+            fi
+            sleep 0.25
+          done
+          docker logs deliveryos-minio
+          exit 1
+
+      - name: Create bucket and least-privilege users
+        run: |
+          set -euxo pipefail
+
+          cat >/tmp/write-policy.json <<'JSON'
+          {
+            "Version": "2012-10-17",
+            "Statement": [{
+              "Effect": "Allow",
+              "Action": ["s3:PutObject"],
+              "Resource": ["arn:aws:s3:::deliveryos-minio/deliveryos-backups/*"]
+            }]
+          }
+          JSON
+
+          cat >/tmp/read-policy.json <<'JSON'
+          {
+            "Version": "2012-10-17",
+            "Statement": [{
+              "Effect": "Allow",
+              "Action": ["s3:GetObject"],
+              "Resource": ["arn:aws:s3:::deliveryos-minio/deliveryos-backups/*"]
+            }]
+          }
+          JSON
+
+          docker run --rm \
+            --network deliveryos-s3-proof \
+            -v /tmp/write-policy.json:/write-policy.json:ro \
+            -v /tmp/read-policy.json:/read-policy.json:ro \
+            --entrypoint /bin/sh \
+            quay.io/minio/mc:latest \
+            -c '
+              set -eu
+              mc alias set local http://deliveryos-minio:9000 rootadmin rootadmin-secret-20261002
+              mc mb local/deliveryos-minio
+              mc admin policy create local deliveryos-write /write-policy.json
+              mc admin policy create local deliveryos-read /read-policy.json
+              mc admin user add local deliveryos-writer writer-secret-20261002
+              mc admin user add local deliveryos-reader reader-secret-20261002
+              mc admin policy attach local deliveryos-write --user deliveryos-writer
+              mc admin policy attach local deliveryos-read --user deliveryos-reader
+            '
+
+      - name: Prove separated write/read credentials over real S3 API
+        env:
+          ENTREGAS_BACKUP_S3_ENDPOINT: http://127.0.0.1:9000
+          ENTREGAS_BACKUP_S3_REGION: us-east-1
+          ENTREGAS_BACKUP_S3_BUCKET: deliveryos-minio
+          ENTREGAS_BACKUP_S3_PREFIX: deliveryos-backups
+          ENTREGAS_BACKUP_S3_WRITE_ACCESS_KEY_ID: deliveryos-writer
+          ENTREGAS_BACKUP_S3_WRITE_SECRET_ACCESS_KEY: writer-secret-20261002
+          ENTREGAS_BACKUP_S3_READ_ACCESS_KEY_ID: deliveryos-reader
+          ENTREGAS_BACKUP_S3_READ_SECRET_ACCESS_KEY: reader-secret-20261002
+        run: |
+          set -euxo pipefail
+          npm run test:entregas:backup-offhost-s3:live
+
+      - name: Inspect objects and prove no extra authority was needed
+        run: |
+          set -euxo pipefail
+          docker run --rm \
+            --network deliveryos-s3-proof \
+            --entrypoint /bin/sh \
+            quay.io/minio/mc:latest \
+            -c '
+              set -eu
+              mc alias set local http://deliveryos-minio:9000 rootadmin rootadmin-secret-20261002
+              count=$(mc find local/deliveryos-minio/deliveryos-backups --type f | wc -l)
+              test "$count" = "3"
+              echo "S3_OBJECT_COUNT=3"
+              mc find local/deliveryos-minio/deliveryos-backups --type f
+            '
+
+      - name: Regression and repository cleanliness
+        run: |
+          set -euxo pipefail
+          npm run test:entregas:backup-integrity
+          npm run test:entregas:backup-export
+          npm run test:platform:governanca
+          git diff --check
+          echo "OFFHOST_S3_MINIO_PROOF_GREEN"
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker rm -f deliveryos-minio >/dev/null 2>&1 || true
+          docker network rm deliveryos-s3-proof >/dev/null 2>&1 || true
