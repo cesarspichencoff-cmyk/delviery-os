@@ -3,8 +3,8 @@
     "authorization_id":  "CESAR-2026-10-03-TATA-NFCE-F7-TRACE-V1",
     "authorized_by":  "Cesar",
     "human_authorized":  true,
-    "authorized_source_head":  "c0105f6bc6f7442229ba8064f3b460fe8c0698c4",
-    "trace_script_sha256":  "515597674F2A453623D2B22197E9B5B01387BBEF0E6374034EA1D7BA35186A8D",
+    "authorized_source_head":  "d096b0f4b720512df0894707ff8b1402d877a6db",
+    "trace_script_sha256":  "6100DFAC8D5CC0C81116146D9484097F9D99D1D1CA43063CF65320A28C52FFDE",
     "scope":  {
                   "f7_source_trace":  true,
                   "sanitized_context_only":  true,
