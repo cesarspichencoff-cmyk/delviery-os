@@ -1,0 +1,34 @@
+{
+  "schema": "deliveryos.tata-reader-admin-retry-authorization.v3",
+  "authorization_id": "CESAR-2026-10-02-TATA-READER-ADMIN-V1",
+  "incident_head": "1a5cc22224c4e27226d7b3ea364aeeb2067da84a",
+  "retry_source_head": "595b4524ff47dfa35d68b4812aaaa2447252b2c4",
+  "human_retry_authorized": true,
+  "authorized_by": "Cesar",
+  "purpose": "repeat limited administrative phase only to capture complete preflight diagnostics",
+  "authorized_scope": {
+    "stage_runtime": true,
+    "create_manual_windows_service": true,
+    "create_sql_login_user": true,
+    "grant_exact_reviewed_column_select": true,
+    "start_one_shot_preflight": true,
+    "preserve_preflight_diagnostics_before_rollback": true,
+    "automatic_rollback_on_failure": true
+  },
+  "exclusions": {
+    "real_order_row_read": false,
+    "production_print": false,
+    "spooler_production_effect": false,
+    "odhen_teknisa_operational_write": false,
+    "nfce": false,
+    "sefaz": false,
+    "fiscal_action": false,
+    "cutover": false,
+    "automatic_service_start": false,
+    "manual_pos_delivery_scope": false,
+    "dscomanda": false,
+    "combo_structure_columns": false,
+    "idorigemvenda": false
+  },
+  "human_statement": "Autorizo uma nova tentativa limitada do TATÁ Reader no HEAD 595b4524ff47dfa35d68b4812aaaa2447252b2c4, apenas para repetir a fase administrativa e capturar o diagnóstico completo do preflight, mantendo os mesmos limites anteriores e rollback automático em qualquer falha."
+}
