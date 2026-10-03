@@ -1,0 +1,38 @@
+{
+  "schema": "deliveryos.tata-reader-admin-retry4-incident.v1",
+  "authorization_id": "CESAR-2026-10-02-TATA-READER-ADMIN-V1",
+  "source_head": "00368010f28528add90736664bbcdf750626688f",
+  "cycle_id": "20261003T065816094Z",
+  "status": "FAILED_ROLLED_BACK_PROVEN_CLEAN",
+  "blocker": "SPECIFIC_LOGIN_IMPERSONATION_PRESENT",
+  "apply_failure": "ConvertTo-Json:System.OutOfMemoryException",
+  "verifier_passed": true,
+  "preflight_sha256": "592A7B0A7D7123018C934E8C54EF7C5DC1E44D699BD17BD8D99F3020BD0DDD3B",
+  "runner_sha256": "9F29F9C39147EFFC0D3C73547DFE9948E85DEB008A359829689F64E615F1CB3F",
+  "rollback_complete": true,
+  "recovery_verification": {
+    "service_present": false,
+    "runtime_present": false,
+    "sql_login_present": false,
+    "sql_user_present": false,
+    "check_error": null,
+    "status": "PROVEN_CLEAN"
+  },
+  "proven_effect_boundaries": {
+    "order_row_read": false,
+    "print": false,
+    "fiscal_action": false,
+    "cutover": false
+  },
+  "interpretation": "Effective IMPERSONATE permission exists for at least one other server principal under the TataComandaReader service security context. Exact target/provenance was not recorded by v5 preflight.",
+  "failure_classes": [
+    "EFFECTIVE_LOGIN_IMPERSONATION_UNEXPLAINED",
+    "FAILURE_RESULT_JSON_SERIALIZATION_OOM"
+  ],
+  "route_lock": [
+    "DO_NOT_RELAX_SPECIFIC_LOGIN_IMPERSONATION_GUARD_WITHOUT_TARGET_AND_PROVENANCE",
+    "DO_NOT_SERIALIZE_RICH_DIAGNOSTIC_OBJECT_GRAPH_IN_APPLY_FAILURE_RESULT"
+  ],
+  "retry_authorized": false,
+  "next_action": "ENRICH_METADATA_ONLY_PREFLIGHT_WITH_TARGET_AND_GRANT_TOKEN_PROVENANCE; EMIT_PRIMITIVE_FAILURE_RESULT; REQUIRE_FRESH_HASH_BOUND_AUTHORIZATION"
+}
