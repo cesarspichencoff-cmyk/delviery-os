@@ -203,5 +203,5 @@ Assert-True ($rollback.Contains("RUNTIME_ACL_RECOVERY_FAILED")) "ROLLBACK_ACL_RE
   admin_phase_already_proven = $adminPhaseAlreadyProven
   retry_authorized = $retryAuthorized
   ready_for_authorized_admin_execution = $retryAuthorized
-  ready_for_human_retry_authorization = (-not $retryAuthorized)
+  ready_for_human_retry_authorization = ((-not $retryAuthorized) -and (-not $adminPhaseAlreadyProven))
 } | ConvertTo-Json -Depth 4
