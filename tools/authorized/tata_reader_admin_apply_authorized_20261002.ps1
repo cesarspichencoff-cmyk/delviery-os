@@ -29,7 +29,7 @@ $ResultPath = Join-Path $ResultDirectory "TATA_READER_ADMIN_PHASE_RESULT.json"
 $RepoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $PreflightSource = Join-Path $RepoRoot "tools\tata_reader_least_privilege_preflight.ps1"
 $AuthorizationFile = Join-Path $RepoRoot "data\tata_reader_admin_authorization_v1.json"
-$RetryAuthorizationFile = Join-Path $RepoRoot "data\tata_reader_admin_retry_authorization_v2.json"
+$RetryAuthorizationFile = Join-Path $RepoRoot "data\tata_reader_admin_retry_authorization_v3.json"
 $BundleVerifier = Join-Path $RepoRoot "tools\verificar_tata_reader_admin_bundle_static_v1.ps1"
 
 $allowed = [ordered]@{
@@ -363,6 +363,60 @@ function Invoke-Rollback {
   return @($errors)
 }
 
+function Capture-PreflightDiagnostics {
+  $diagnostic = [ordered]@{
+    captured = $false
+    exit_code = $null
+    blocker = $null
+    error = $null
+    current_login = $null
+    current_user = $null
+    safe_for_minimized_order_read = $null
+    identity = $null
+    stderr = $null
+  }
+
+  try {
+    $exitPath = Join-Path $EvidenceDirectory "preflight.exitcode.txt"
+    $jsonPath = Join-Path $EvidenceDirectory "preflight.json"
+    $identityPath = Join-Path $EvidenceDirectory "preflight.identity.txt"
+    $stderrPath = Join-Path $EvidenceDirectory "preflight.stderr.txt"
+
+    if (Test-Path -LiteralPath $exitPath) {
+      $diagnostic.exit_code = [int](Get-Content -LiteralPath $exitPath -Raw)
+      Copy-Item -LiteralPath $exitPath -Destination (Join-Path $ResultDirectory "TATA_READER_PREFLIGHT_EXITCODE.txt") -Force
+    }
+
+    if (Test-Path -LiteralPath $jsonPath) {
+      $rawJson = Get-Content -LiteralPath $jsonPath -Raw
+      $parsed = $rawJson | ConvertFrom-Json
+      $diagnostic.blocker = [string]$parsed.blocker
+      $diagnostic.error = [string]$parsed.error
+      $diagnostic.current_login = [string]$parsed.current_login
+      $diagnostic.current_user = [string]$parsed.current_user
+      $diagnostic.safe_for_minimized_order_read = [bool]$parsed.safe_for_minimized_order_read
+      Copy-Item -LiteralPath $jsonPath -Destination (Join-Path $ResultDirectory "TATA_READER_PREFLIGHT_DIAGNOSTIC.json") -Force
+    }
+
+    if (Test-Path -LiteralPath $identityPath) {
+      $diagnostic.identity = (Get-Content -LiteralPath $identityPath -Raw)
+      Copy-Item -LiteralPath $identityPath -Destination (Join-Path $ResultDirectory "TATA_READER_PREFLIGHT_IDENTITY.txt") -Force
+    }
+
+    if (Test-Path -LiteralPath $stderrPath) {
+      $diagnostic.stderr = (Get-Content -LiteralPath $stderrPath -Raw)
+      Copy-Item -LiteralPath $stderrPath -Destination (Join-Path $ResultDirectory "TATA_READER_PREFLIGHT_STDERR.txt") -Force
+    }
+
+    $diagnostic.captured = $true
+  }
+  catch {
+    $diagnostic.error = "DIAGNOSTIC_CAPTURE_FAILED:" + $_.Exception.Message
+  }
+
+  return $diagnostic
+}
+
 function Wait-ForPreflightEvidence {
   $exitPath = Join-Path $EvidenceDirectory "preflight.exitcode.txt"
   $jsonPath = Join-Path $EvidenceDirectory "preflight.json"
@@ -383,7 +437,7 @@ function Wait-ForPreflightEvidence {
   $preflight = Get-Content -LiteralPath $jsonPath -Raw | ConvertFrom-Json
   $identityText = Get-Content -LiteralPath $identityPath -Raw
 
-  if ($exitCode -ne 0) { throw ("PREFLIGHT_EXIT_CODE:" + $exitCode) }
+  if ($exitCode -ne 0) { throw ("PREFLIGHT_EXIT_CODE:" + $exitCode + ":BLOCKER=" + [string]$preflight.blocker + ":ERROR=" + [string]$preflight.error) }
   if (-not [bool]$preflight.safe_for_minimized_order_read) { throw ("PREFLIGHT_NOT_SAFE:" + [string]$preflight.blocker) }
   if ($preflight.current_login -ne $ServicePrincipal) { throw ("PREFLIGHT_LOGIN_MISMATCH:" + [string]$preflight.current_login) }
   if (-not $identityText.Contains("name=" + $ServicePrincipal)) { throw "PREFLIGHT_WINDOWS_IDENTITY_MISMATCH" }
@@ -404,15 +458,15 @@ $authorization = Get-Content -LiteralPath $AuthorizationFile -Raw | ConvertFrom-
 if (-not [bool]$authorization.human_authorized) { throw "HUMAN_AUTHORIZATION_NOT_PRESENT" }
 if ($authorization.authorization_id -ne $ExpectedAuthorizationId) { throw "AUTHORIZATION_FILE_ID_MISMATCH" }
 
-# The first authorized attempt failed with FAILED_ROLLBACK_INCOMPLETE on 2026-10-03.
-# A fresh, explicit human retry authorization is required before any new admin effect.
+# Previous authorized attempts failed on 2026-10-03; the latest retry reached preflight and rolled back cleanly.
+# A fresh, explicit human retry authorization is required after each failed authorized execution.
 if (-not (Test-Path -LiteralPath $RetryAuthorizationFile -PathType Leaf)) {
   throw "RETRY_NOT_AUTHORIZED_AFTER_INCIDENT"
 }
 $retryAuthorization = Get-Content -LiteralPath $RetryAuthorizationFile -Raw | ConvertFrom-Json
 if (-not [bool]$retryAuthorization.human_retry_authorized) { throw "HUMAN_RETRY_AUTHORIZATION_NOT_PRESENT" }
 if ($retryAuthorization.authorization_id -ne $ExpectedAuthorizationId) { throw "RETRY_AUTHORIZATION_ID_MISMATCH" }
-if ($retryAuthorization.incident_head -ne "9e3f8f4248ba054161dad564931b30c02d73851a") { throw "RETRY_AUTHORIZATION_INCIDENT_MISMATCH" }
+if ($retryAuthorization.incident_head -ne "1a5cc22224c4e27226d7b3ea364aeeb2067da84a") { throw "RETRY_AUTHORIZATION_INCIDENT_MISMATCH" }
 
 Assert-Administrator
 Assert-Hash $BinarySource $ExpectedBinarySha256 "BINARY_SOURCE"
@@ -460,6 +514,7 @@ try {
 }
 catch {
   $failure = $_.Exception.Message
+  $preflightDiagnostics = Capture-PreflightDiagnostics
   $rollbackErrors = @(Invoke-Rollback)
 
   $result = [ordered]@{
@@ -472,6 +527,7 @@ catch {
     rollback_performed = $true
     rollback_complete = ($rollbackErrors.Count -eq 0)
     rollback_errors = $rollbackErrors
+    preflight_diagnostics = $preflightDiagnostics
     order_row_read = $false
     print = $false
     fiscal_action = $false
