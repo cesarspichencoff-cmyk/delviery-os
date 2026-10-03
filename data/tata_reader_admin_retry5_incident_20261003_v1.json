@@ -1,0 +1,32 @@
+{
+  "schema": "deliveryos.tata-reader-admin-retry5-incident.v1",
+  "authorization_id": "CESAR-2026-10-02-TATA-READER-ADMIN-V1",
+  "source_head": "47873a070a6da192db1956a3b39fa2bbfd9fdf7a",
+  "cycle_id": "20261003T072904349Z",
+  "status": "FAILED_ROLLED_BACK_PROVEN_CLEAN",
+  "blocker": "SPECIFIC_LOGIN_IMPERSONATION_PRESENT",
+  "observed_target": {
+    "name": "BUILTIN\\Usuários",
+    "type": "WINDOWS_GROUP"
+  },
+  "explicit_grant_correlation": [],
+  "rollback_complete": true,
+  "recovery_verification": {
+    "service_present": false,
+    "runtime_present": false,
+    "sql_login_present": false,
+    "sql_user_present": false,
+    "check_error": null,
+    "status": "PROVEN_CLEAN"
+  },
+  "proven_effect_boundaries": {
+    "order_row_read": false,
+    "print": false,
+    "fiscal_action": false,
+    "cutover": false
+  },
+  "root_cause": "FALSE_POSITIVE_NON_SINGLETON_WINDOWS_GROUP_TARGET_IN_IMPERSONATION_GUARD",
+  "evidence_note": "HAS_PERMS_BY_NAME returns effective permission including Windows-group membership; EXECUTE AS requires a singleton principal and cannot target a Windows group.",
+  "retry_authorized": false,
+  "next_action": "REFINE_BLOCKER_TO_SINGLETON_LOGIN_AND_USER_TARGETS_ONLY; KEEP_GROUPS_VISIBLE_AS_DIAGNOSTIC_METADATA; STATICALLY_VERIFY; REQUIRE_FRESH_HASH_BOUND_AUTHORIZATION"
+}
