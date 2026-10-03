@@ -18,12 +18,13 @@ $apply = Read-Text "tools\authorized\tata_reader_admin_apply_authorized_20261002
 $rollback = Read-Text "tools\authorized\tata_reader_admin_rollback_authorized_20261002.ps1"
 $runner = Read-Text "tools\authorized\tata_reader_admin_cycle_runner_v1.ps1"
 $preflight = Read-Text "tools\tata_reader_least_privilege_preflight.ps1"
-$preflightCandidate = Read-Text "data\tata_reader_preflight_candidate_v5.json" | ConvertFrom-Json
-$retryAuthorizationPath = Join-Path $RepoRoot "data\tata_reader_admin_retry_authorization_v4.json"
+$preflightCandidate = Read-Text "data\tata_reader_preflight_candidate_v6.json" | ConvertFrom-Json
+$retryAuthorizationPath = Join-Path $RepoRoot "data\tata_reader_admin_retry_authorization_v5.json"
+$retryAuthorization = $null
 $retryAuthorized = $false
 if (Test-Path -LiteralPath $retryAuthorizationPath -PathType Leaf) {
   $retryAuthorization = Get-Content -LiteralPath $retryAuthorizationPath -Raw -Encoding UTF8 | ConvertFrom-Json
-  $retryAuthorized = ([bool]$retryAuthorization.human_retry_authorized) -and ($retryAuthorization.authorization_id -eq "CESAR-2026-10-02-TATA-READER-ADMIN-V1") -and ($retryAuthorization.incident_head -eq "45eb3e7770c281e660644e01cc5c856fb95640b5") -and ($retryAuthorization.preflight_sha256 -eq "592A7B0A7D7123018C934E8C54EF7C5DC1E44D699BD17BD8D99F3020BD0DDD3B") -and ($retryAuthorization.runner_sha256 -eq "9F29F9C39147EFFC0D3C73547DFE9948E85DEB008A359829689F64E615F1CB3F")
+  $retryAuthorized = ([bool]$retryAuthorization.human_retry_authorized) -and ($retryAuthorization.authorization_id -eq "CESAR-2026-10-02-TATA-READER-ADMIN-V1") -and ($retryAuthorization.incident_head -eq "00368010f28528add90736664bbcdf750626688f") -and ($retryAuthorization.preflight_sha256 -eq "6CCA333F206D8DD508029C35F6B43B41793707AA09357E250208BBCCB8B968AE") -and ($retryAuthorization.runner_sha256 -eq "15F7FF02B70F5C3435967F1EB304004798877032AC5C21E920F12D1828F33BEB") -and ($retryAuthorization.runner_path -eq "tools/authorized/tata_reader_admin_cycle_runner_v1.ps1")
 }
 
 $applyTokens = $null
@@ -58,8 +59,8 @@ Assert-True ($runnerErrors.Count -eq 0) ("RUNNER_SYNTAX_ERROR:" + ($runnerErrors
 $authId = "CESAR-2026-10-02-TATA-READER-ADMIN-V1"
 $binaryHash = "241073DA0AE678933E2EF88AF2DA2091F1DF4A578E1D78AD2B48839D4465BA6C"
 $historicalPreflightHash = "FFCFB49577280A596EA951C839C881528D187A33F0B5D19DE08D2A86D1FEFFC6"
-$candidatePreflightHash = "592A7B0A7D7123018C934E8C54EF7C5DC1E44D699BD17BD8D99F3020BD0DDD3B"
-$runnerHash = "9F29F9C39147EFFC0D3C73547DFE9948E85DEB008A359829689F64E615F1CB3F"
+$candidatePreflightHash = "6CCA333F206D8DD508029C35F6B43B41793707AA09357E250208BBCCB8B968AE"
+$runnerHash = "15F7FF02B70F5C3435967F1EB304004798877032AC5C21E920F12D1828F33BEB"
 
 Assert-True ([bool]$authorization.human_authorized) "HUMAN_AUTHORIZATION_FALSE"
 Assert-True ($authorization.authorization_id -eq $authId) "AUTHORIZATION_ID_FILE_MISMATCH"
@@ -71,16 +72,24 @@ Assert-True ($buildEvidence.preflight_sha256 -eq $historicalPreflightHash) "HIST
 Assert-True (-not [bool]$buildEvidence.administrative_effect) "BUILD_EVIDENCE_HAS_ADMIN_EFFECT"
 
 Assert-True ($preflightCandidate.status -eq "CANDIDATE_NOT_AUTHORIZED") "PREFLIGHT_CANDIDATE_STATUS_MISMATCH"
-Assert-True ($preflightCandidate.predecessor_sha256 -eq $historicalPreflightHash) "PREFLIGHT_CANDIDATE_PREDECESSOR_MISMATCH"
+Assert-True ($preflightCandidate.predecessor_sha256 -eq "592A7B0A7D7123018C934E8C54EF7C5DC1E44D699BD17BD8D99F3020BD0DDD3B") "PREFLIGHT_CANDIDATE_PREDECESSOR_MISMATCH"
 Assert-True ($preflightCandidate.candidate_sha256 -eq $candidatePreflightHash) "PREFLIGHT_CANDIDATE_HASH_MISMATCH"
 Assert-True (-not [bool]$preflightCandidate.semantic_scope_changed) "PREFLIGHT_CANDIDATE_SCOPE_CHANGED"
 $actualPreflightHash = (Get-FileHash -LiteralPath (Join-Path $RepoRoot "tools\tata_reader_least_privilege_preflight.ps1") -Algorithm SHA256).Hash
 Assert-True ([string]::Equals($actualPreflightHash,$candidatePreflightHash,[System.StringComparison]::OrdinalIgnoreCase)) "PREFLIGHT_FILE_HASH_MISMATCH"
 Assert-True ($preflight.Contains("USER_NAME() AS [current_user]")) "PREFLIGHT_RESERVED_ALIAS_FIX_MISSING"
+Assert-True ($preflight.Contains("specific_login_impersonation_targets")) "PREFLIGHT_IMPERSONATION_TARGETS_MISSING"
+Assert-True ($preflight.Contains("server_impersonation_grants")) "PREFLIGHT_IMPERSONATION_GRANTS_MISSING"
+Assert-True ($preflight.Contains("effective_login_impersonation_evidence")) "PREFLIGHT_IMPERSONATION_EVIDENCE_MISSING"
+Assert-True ($preflight.Contains("sys.login_token")) "PREFLIGHT_LOGIN_TOKEN_METADATA_MISSING"
 $actualRunnerHash = (Get-FileHash -LiteralPath (Join-Path $RepoRoot "tools\authorized\tata_reader_admin_cycle_runner_v1.ps1") -Algorithm SHA256).Hash
 Assert-True ([string]::Equals($actualRunnerHash,$runnerHash,[System.StringComparison]::OrdinalIgnoreCase)) "RUNNER_FILE_HASH_MISMATCH"
-Assert-True ($retryAuthorization.runner_sha256 -eq $runnerHash) "RETRY_AUTHORIZATION_RUNNER_HASH_MISMATCH"
-Assert-True ($retryAuthorization.runner_path -eq "tools/authorized/tata_reader_admin_cycle_runner_v1.ps1") "RETRY_AUTHORIZATION_RUNNER_PATH_MISMATCH"
+if ($null -ne $retryAuthorization) {
+  Assert-True ($retryAuthorization.runner_sha256 -eq $runnerHash) "RETRY_AUTHORIZATION_RUNNER_HASH_MISMATCH"
+  Assert-True ($retryAuthorization.runner_path -eq "tools/authorized/tata_reader_admin_cycle_runner_v1.ps1") "RETRY_AUTHORIZATION_RUNNER_PATH_MISMATCH"
+  Assert-True ($retryAuthorization.preflight_sha256 -eq $candidatePreflightHash) "RETRY_AUTHORIZATION_PREFLIGHT_HASH_MISMATCH"
+  Assert-True ($retryAuthorization.incident_head -eq "00368010f28528add90736664bbcdf750626688f") "RETRY_AUTHORIZATION_INCIDENT_MISMATCH"
+}
 
 Assert-True ($runner.Contains("verificar_tata_reader_admin_authorized_v1.ps1")) "RUNNER_VERIFIER_MISSING"
 Assert-True ($runner.Contains("tata_reader_admin_apply_authorized_20261002.ps1")) "RUNNER_APPLY_MISSING"
@@ -91,6 +100,8 @@ Assert-True ($runner.Contains('order_row_read = $false')) "RUNNER_ORDER_BOUNDARY
 Assert-True ($runner.Contains('print = $false')) "RUNNER_PRINT_BOUNDARY_MISSING"
 Assert-True ($runner.Contains('fiscal_action = $false')) "RUNNER_FISCAL_BOUNDARY_MISSING"
 Assert-True ($runner.Contains('cutover = $false')) "RUNNER_CUTOVER_BOUNDARY_MISSING"
+Assert-True ($runner.Contains("specific_login_impersonation_targets")) "RUNNER_IMPERSONATION_TARGET_OUTPUT_MISSING"
+Assert-True ($runner.Contains("effective_login_impersonation_evidence")) "RUNNER_IMPERSONATION_EVIDENCE_OUTPUT_MISSING"
 
 foreach ($runnerForbidden in @(
   "sc.exe create",
@@ -140,9 +151,9 @@ Assert-True ($apply.Contains('TATA_READER_PREFLIGHT_EXITCODE.txt") -Force | Out-
 Assert-True ($apply.Contains('TATA_READER_PREFLIGHT_DIAGNOSTIC.json") -Force | Out-Null')) "APPLY_JSON_COPY_OUTPUT_NOT_SUPPRESSED"
 Assert-True ($apply.Contains('TATA_READER_PREFLIGHT_IDENTITY.txt") -Force | Out-Null')) "APPLY_IDENTITY_COPY_OUTPUT_NOT_SUPPRESSED"
 Assert-True ($apply.Contains('TATA_READER_PREFLIGHT_STDERR.txt") -Force | Out-Null')) "APPLY_STDERR_COPY_OUTPUT_NOT_SUPPRESSED"
-Assert-True ($apply.Contains("preflight_diagnostics = $preflightDiagnostics")) "APPLY_RESULT_DIAGNOSTICS_MISSING"
-Assert-True ($apply.Contains("tata_reader_admin_retry_authorization_v4.json")) "APPLY_RETRY_V4_GATE_MISSING"
-Assert-True ($apply.Contains("45eb3e7770c281e660644e01cc5c856fb95640b5")) "APPLY_RETRY_V4_INCIDENT_MISMATCH"
+Assert-True ($apply.Contains("FAILURE_RESULT_PRIMITIVE_V2")) "APPLY_PRIMITIVE_FAILURE_RESULT_MISSING"
+Assert-True ($apply.Contains("tata_reader_admin_retry_authorization_v5.json")) "APPLY_RETRY_V5_GATE_MISSING"
+Assert-True ($apply.Contains("00368010f28528add90736664bbcdf750626688f")) "APPLY_RETRY_V4_INCIDENT_MISMATCH"
 
 Assert-True (-not $apply.Contains("DSCOMANDA")) "APPLY_DSCOMANDA_SCOPE_LEAK"
 Assert-True (-not $apply.Contains("CDPRODPROMOCAO")) "APPLY_COMBO_SCOPE_LEAK"
@@ -173,7 +184,7 @@ Assert-True ($rollback.Contains("takeown.exe")) "ROLLBACK_TAKEOWN_RECOVERY_MISSI
 Assert-True ($rollback.Contains("RUNTIME_ACL_RECOVERY_FAILED")) "ROLLBACK_ACL_RECOVERY_MISSING"
 
 [ordered]@{
-  schema = "deliveryos.tata-reader-authorized-bundle-static.v6"
+  schema = "deliveryos.tata-reader-authorized-bundle-static.v7"
   passed = $true
   authorization_id = $authId
   administrative_effect = $false
