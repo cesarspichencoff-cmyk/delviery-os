@@ -1,0 +1,27 @@
+{
+  "schema": "deliveryos.tata-nfce-targeted-source-readonly-empty-result-incident.v1",
+  "source_commit": "0090d14e95880e2be22f77f256c4c60027a88f18",
+  "captured_at": "2026-10-03T06:12:13.2417627-03:00",
+  "observed_status": "PROVEN_TARGETED_SANITIZED_SOURCE_READ",
+  "observed_files_count": 0,
+  "observed_error": null,
+  "classification": "DONE_UNVERIFIED_NOT_PROVEN",
+  "root_cause": "ORDEREDDICTIONARY_WAS_BOUND_TO_HASHTABLE_PARAMETER_AND_MUTATED_COPY_NOT_ORIGINAL_RESULT",
+  "effects": {
+    "order_read": false,
+    "database_query": false,
+    "database_write": false,
+    "odhen_write": false,
+    "config_write": false,
+    "process_start": false,
+    "service_change": false,
+    "printer_change": false,
+    "print": false,
+    "http": false,
+    "sefaz_call": false,
+    "fiscal_action": false,
+    "danfe_print": false,
+    "cutover": false
+  },
+  "route_lock": "TARGETED_SOURCE_READ_CANNOT_REPORT_PROVEN_UNLESS_ALL_EXPECTED_TARGET_FILES_ARE_PRESENT_AND_AT_LEAST_ONE_SANITIZED_FINDING_IS_CAPTURED"
+}
