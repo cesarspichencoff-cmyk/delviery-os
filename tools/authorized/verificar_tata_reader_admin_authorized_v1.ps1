@@ -159,7 +159,7 @@ Assert-True ($apply.Contains('TATA_READER_PREFLIGHT_DIAGNOSTIC.json") -Force | O
 Assert-True ($apply.Contains('TATA_READER_PREFLIGHT_IDENTITY.txt") -Force | Out-Null')) "APPLY_IDENTITY_COPY_OUTPUT_NOT_SUPPRESSED"
 Assert-True ($apply.Contains('TATA_READER_PREFLIGHT_STDERR.txt") -Force | Out-Null')) "APPLY_STDERR_COPY_OUTPUT_NOT_SUPPRESSED"
 Assert-True ($apply.Contains("FAILURE_RESULT_PRIMITIVE_V2")) "APPLY_PRIMITIVE_FAILURE_RESULT_MISSING"
-Assert-True ($apply.Contains("tata_reader_admin_retry_authorization_v6.json")) "APPLY_RETRY_V7_GATE_MISSING"
+Assert-True ($apply.Contains("tata_reader_admin_retry_authorization_v7.json")) "APPLY_RETRY_V7_GATE_MISSING"
 Assert-True ($apply.Contains("e473036fb2c5ab98e003a2254485f8697d798df3")) "APPLY_RETRY_V7_INCIDENT_MISMATCH"
 
 Assert-True (-not $apply.Contains("DSCOMANDA")) "APPLY_DSCOMANDA_SCOPE_LEAK"
