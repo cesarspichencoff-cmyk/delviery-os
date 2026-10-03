@@ -11,6 +11,7 @@ $ExpectedPreflightSha256 = "3BBE4C37FEDC8EC45A25FE08497B999453B181EBA3033861CFF3
 
 $RepoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $AuthorizationFile = Join-Path $RepoRoot "data\tata_reader_real_read_authorization_v1.json"
+$SuccessMarkerFile = Join-Path $RepoRoot "data\tata_reader_real_read_success_20261003_v1.json"
 $ReadScriptSource = Join-Path $RepoRoot "tools\authorized\tata_reader_real_order_read_v1.ps1"
 $BundleVerifier = Join-Path $RepoRoot "tools\authorized\verificar_tata_reader_real_read_bundle_v1.ps1"
 
@@ -41,6 +42,7 @@ function Wait-ServiceStopped {
 }
 
 if($AuthorizationId -ne $ExpectedAuthorizationId){ throw "AUTHORIZATION_ID_MISMATCH" }
+if(Test-Path -LiteralPath $SuccessMarkerFile -PathType Leaf){ throw "REAL_READ_ALREADY_PROVEN_NO_RERUN" }
 Assert-Administrator
 
 if(-not (Test-Path -LiteralPath $AuthorizationFile -PathType Leaf)){ throw "REAL_READ_AUTHORIZATION_FILE_MISSING" }
