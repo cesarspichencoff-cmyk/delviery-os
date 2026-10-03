@@ -1,0 +1,31 @@
+{
+  "schema": "deliveryos.tata-nfce-readonly-authorization.v1",
+  "authorization_id": "CESAR-2026-10-03-TATA-NFCE-READONLY-V1",
+  "authorized_by": "Cesar",
+  "human_authorized": true,
+  "authorized_source_head": "039d27ad372f8102d9e408b6983748c6ad71d8fd",
+  "discovery_script_sha256": "DAA6C32434831793220833BF2CFB21E9439629C7B681E94C6131DA91F55B74A3",
+  "scope": {
+    "source_config_metadata": true,
+    "windows_service_metadata": true,
+    "process_metadata": true,
+    "local_listener_metadata": true,
+    "printer_metadata": true,
+    "certificate_readiness_metadata": true,
+    "secret_values": false,
+    "order_read": false,
+    "database_query": false,
+    "database_write": false,
+    "odhen_write": false,
+    "config_write": false,
+    "service_change": false,
+    "printer_change": false,
+    "print": false,
+    "http": false,
+    "sefaz_call": false,
+    "fiscal_action": false,
+    "danfe_print": false,
+    "cutover": false
+  },
+  "human_statement": "pode seguir com a análise fiscal read-onl"
+}
