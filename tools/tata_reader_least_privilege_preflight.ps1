@@ -48,6 +48,9 @@ $result = [ordered]@{
 
   executable_procedure_count = $null
   specific_login_impersonation_count = $null
+  specific_login_impersonation_targets = @()
+  server_impersonation_grants = @()
+  login_token = @()
   specific_user_impersonation_count = $null
   non_table_object_permissions = @()
   non_table_object_permission_count = $null
@@ -211,14 +214,66 @@ WHERE HAS_PERMS_BY_NAME(
   $loginImpersonationCmd.CommandTimeout = 5
   $loginImpersonationCmd.CommandText = @"
 SET NOCOUNT ON;
-SELECT COUNT_BIG(*)
+SELECT sp.name, sp.type_desc
 FROM sys.server_principals sp
 WHERE sp.name <> SUSER_SNAME()
   AND sp.type IN ('S','U','G')
-  AND HAS_PERMS_BY_NAME(sp.name, 'LOGIN', 'IMPERSONATE') = 1;
+  AND HAS_PERMS_BY_NAME(sp.name, 'LOGIN', 'IMPERSONATE') = 1
+ORDER BY sp.name;
 "@
-  $result.specific_login_impersonation_count =
-    [int64]$loginImpersonationCmd.ExecuteScalar()
+  $loginImpersonationReader = $loginImpersonationCmd.ExecuteReader()
+  while ($loginImpersonationReader.Read()) {
+    $result.specific_login_impersonation_targets += [ordered]@{
+      name = [string]$loginImpersonationReader["name"]
+      type = [string]$loginImpersonationReader["type_desc"]
+    }
+  }
+  $loginImpersonationReader.Close()
+  $result.specific_login_impersonation_count = $result.specific_login_impersonation_targets.Count
+
+  $loginTokenCmd = $conn.CreateCommand()
+  $loginTokenCmd.CommandTimeout = 5
+  $loginTokenCmd.CommandText = @"
+SET NOCOUNT ON;
+SELECT name, type, usage
+FROM sys.login_token
+ORDER BY name;
+"@
+  $loginTokenReader = $loginTokenCmd.ExecuteReader()
+  while ($loginTokenReader.Read()) {
+    $result.login_token += [ordered]@{
+      name = [string]$loginTokenReader["name"]
+      type = [string]$loginTokenReader["type"]
+      usage = [string]$loginTokenReader["usage"]
+    }
+  }
+  $loginTokenReader.Close()
+
+  $serverImpersonationGrantCmd = $conn.CreateCommand()
+  $serverImpersonationGrantCmd.CommandTimeout = 5
+  $serverImpersonationGrantCmd.CommandText = @"
+SET NOCOUNT ON;
+SELECT
+  grantee.name AS grantee_name,
+  target.name AS target_name,
+  p.permission_name,
+  p.state_desc
+FROM sys.server_permissions p
+JOIN sys.server_principals grantee ON grantee.principal_id = p.grantee_principal_id
+JOIN sys.server_principals target ON p.class_desc = 'SERVER_PRINCIPAL' AND target.principal_id = p.major_id
+WHERE p.permission_name IN ('IMPERSONATE','CONTROL')
+ORDER BY grantee.name, target.name, p.permission_name;
+"@
+  $serverImpersonationGrantReader = $serverImpersonationGrantCmd.ExecuteReader()
+  while ($serverImpersonationGrantReader.Read()) {
+    $result.server_impersonation_grants += [ordered]@{
+      grantee = [string]$serverImpersonationGrantReader["grantee_name"]
+      target = [string]$serverImpersonationGrantReader["target_name"]
+      permission = [string]$serverImpersonationGrantReader["permission_name"]
+      state = [string]$serverImpersonationGrantReader["state_desc"]
+    }
+  }
+  $serverImpersonationGrantReader.Close()
 
   $userImpersonationCmd = $conn.CreateCommand()
   $userImpersonationCmd.CommandTimeout = 5
