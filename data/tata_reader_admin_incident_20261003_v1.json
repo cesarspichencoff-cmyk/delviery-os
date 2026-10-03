@@ -1,0 +1,25 @@
+{
+  "schema": "deliveryos.tata-reader-admin-incident.v1",
+  "observed_at": "2026-10-03T01:51:45-03:00",
+  "source_head": "9e3f8f4248ba054161dad564931b30c02d73851a",
+  "authorization_id": "CESAR-2026-10-02-TATA-READER-ADMIN-V1",
+  "status": "FAILED_ROLLBACK_INCOMPLETE",
+  "failure": "ACL_INHERITANCE_DISABLE_FAILED:C:\\ProgramData\\TataComandaReader\\bin",
+  "rollback_errors": [
+    "RUNTIME:O acesso ao caminho 'C:\\ProgramData\\TataComandaReader' foi negado."
+  ],
+  "proven_effect_boundaries": {
+    "order_row_read": false,
+    "print": false,
+    "fiscal_action": false,
+    "cutover": false
+  },
+  "diagnosis": {
+    "failure_class": "ACL_STAGING_ORDER_LOCKOUT",
+    "explanation": "The installer removed inherited ACLs from the runtime root before establishing explicit SYSTEM/Administrators permissions on all descendants, creating a transient access lockout before the grant phase.",
+    "sql_apply_reached": false,
+    "preflight_reached": false
+  },
+  "next_action": "RECOVER_FAILED_RUNTIME_THEN_REVERIFY_FIXED_BUNDLE",
+  "retry_authorized": false
+}
