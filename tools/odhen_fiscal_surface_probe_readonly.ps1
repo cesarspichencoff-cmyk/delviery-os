@@ -8,11 +8,14 @@ $ErrorActionPreference = "Stop"
 # Finds candidate native fiscal surfaces without reading order rows, starting
 # processes, calling HTTP/SEFAZ, printing, or mutating configuration.
 
+$TeknisaRoot = Split-Path -Parent $OdhenRoot
+$OdhenPosRoot = Join-Path $TeknisaRoot "odhenPOS"
+
 $roots = @(
-  (Join-Path $OdhenRoot "perifericos\src"),
-  (Join-Path $OdhenRoot "perifericos\routes"),
-  (Join-Path $OdhenRoot "odhenPOS\mobile"),
-  (Join-Path $OdhenRoot "odhenPOS\backend_74000")
+  (Join-Path $OdhenRoot "src"),
+  (Join-Path $OdhenRoot "routes"),
+  (Join-Path $OdhenPosRoot "mobile"),
+  (Join-Path $OdhenPosRoot "backend_74000")
 )
 
 $tokens = @(
@@ -39,6 +42,8 @@ $result = [ordered]@{
   scanned_roots = @()
   files_scanned = 0
   token_hits = @()
+  token_hits_truncated = $false
+  max_token_hits = 500
   effects = [ordered]@{
     process_start = $false
     http = $false
@@ -82,13 +87,19 @@ foreach ($file in $files) {
   foreach ($token in $tokens) {
     $hits = Select-String -LiteralPath $file.FullName -SimpleMatch -Pattern $token -ErrorAction SilentlyContinue
     foreach ($hit in $hits) {
+      if ($result.token_hits.Count -ge $result.max_token_hits) {
+        $result.token_hits_truncated = $true
+        break
+      }
       $result.token_hits += [ordered]@{
         token = $token
         path = $file.FullName
         line = $hit.LineNumber
       }
     }
+    if ($result.token_hits_truncated) { break }
   }
+  if ($result.token_hits_truncated) { break }
 }
 
 $result | ConvertTo-Json -Depth 8
