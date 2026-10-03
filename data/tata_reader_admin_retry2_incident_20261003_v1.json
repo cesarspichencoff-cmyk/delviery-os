@@ -15,6 +15,14 @@
     "fiscal_action": false,
     "cutover": false
   },
+  "recovery_verification": {
+    "source": "human-executed independent read-only verification on CAIXA_MOOCA",
+    "service_present": false,
+    "runtime_present": false,
+    "sql_login_present": false,
+    "sql_user_present": false,
+    "status": "PROVEN_CLEAN"
+  },
   "diagnosis_state": "BLOCKER_UNKNOWN_BECAUSE_PREFLIGHT_EVIDENCE_WAS_REMOVED_BY_ROLLBACK",
   "retry_authorized": false,
   "next_action": "PRESERVE_PREFLIGHT_DIAGNOSTICS_BEFORE_ROLLBACK_THEN_REQUIRE_FRESH_HUMAN_RETRY_AUTHORIZATION"
