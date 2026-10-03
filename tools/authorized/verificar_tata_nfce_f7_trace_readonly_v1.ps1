@@ -19,7 +19,7 @@ foreach($required in @(
   "NO_F7_CANDIDATE_FILES_CAPTURED",
   "primary_match_count",
   "candidate_files",
-  "case\\s+118",
+  'case\s+118',
   "REDACTED_SENSITIVE_ASSIGNMENT",
   'database_query=$false',
   'database_write=$false',
