@@ -1,0 +1,42 @@
+{
+  "schema": "deliveryos.tata-reader-real-read-authorization.v1",
+  "authorization_id": "CESAR-2026-10-03-TATA-READER-REAL-READ-V1",
+  "authorized_by": "Cesar",
+  "human_authorized": true,
+  "authorized_source_head": "22f2c6a73ee9509a4382ed5d3512c902f833f205",
+  "read_script_sha256": "379198D43ACD843F9AEE5ADD52C3945C8E86365BF0232CAABEE62C46D4610CBE",
+  "runner_sha256": "34C3B4080FA7A1CD7B077ED145BFA44365FEFB7791CCEEFACC9B73BFEFAF562C",
+  "scope": {
+    "integrated_orders_only": true,
+    "max_orders": 1,
+    "max_items_per_order": 20,
+    "fields": [
+      "COMANDAVEN.CDFILIAL",
+      "COMANDAVEN.CDLOJA",
+      "COMANDAVEN.NRVENDAREST",
+      "COMANDAVEN.NRCOMANDA",
+      "COMANDAVEN.NRCOMANDAEXT",
+      "COMANDAVEN.IDORGCMDVENDA",
+      "COMANDAVEN.IDSTCOMANDA",
+      "VENDAREST.DTHRABERMESA",
+      "ITCOMANDAVEN.NRPRODCOMVEN",
+      "ITCOMANDAVEN.CDPRODUTO",
+      "ITCOMANDAVEN.QTPRODCOMVEN",
+      "ITCOMANDAVEN.IDSTPRCOMVEN",
+      "PRODUTO.NMPRODUTO"
+    ],
+    "customer_pii": false,
+    "observations": false
+  },
+  "prohibited_effects": {
+    "database_write": false,
+    "odhen_write": false,
+    "print": false,
+    "spooler_write": false,
+    "fiscal_action": false,
+    "sefaz_call": false,
+    "danfe_print": false,
+    "cutover": false
+  },
+  "human_statement": "Autorizo uma prova limitada de leitura real do TATÁ Reader, somente leitura, para um conjunto mínimo de pedidos integrados e apenas nos campos já aprovados, sem impressão, sem escrita no Odhen/Teknisa, sem fiscal e sem cutover."
+}
