@@ -29,7 +29,7 @@ $ResultPath = Join-Path $ResultDirectory "TATA_READER_ADMIN_PHASE_RESULT.json"
 $RepoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $PreflightSource = Join-Path $RepoRoot "tools\tata_reader_least_privilege_preflight.ps1"
 $AuthorizationFile = Join-Path $RepoRoot "data\tata_reader_admin_authorization_v1.json"
-$RetryAuthorizationFile = Join-Path $RepoRoot "data\tata_reader_admin_retry_authorization_v3.json"
+$RetryAuthorizationFile = Join-Path $RepoRoot "data\tata_reader_admin_retry_authorization_v4.json"
 $BundleVerifier = Join-Path $RepoRoot "tools\verificar_tata_reader_admin_bundle_static_v1.ps1"
 
 $allowed = [ordered]@{
@@ -364,6 +364,7 @@ function Invoke-Rollback {
 }
 
 function Capture-PreflightDiagnostics {
+  # DIAGNOSTIC_COPY_OUTPUT_SUPPRESSED_V2: copy operations must never emit FileInfo objects into the function pipeline.
   $diagnostic = [ordered]@{
     captured = $false
     exit_code = $null
@@ -384,7 +385,7 @@ function Capture-PreflightDiagnostics {
 
     if (Test-Path -LiteralPath $exitPath) {
       $diagnostic.exit_code = [int](Get-Content -LiteralPath $exitPath -Raw)
-      Copy-Item -LiteralPath $exitPath -Destination (Join-Path $ResultDirectory "TATA_READER_PREFLIGHT_EXITCODE.txt") -Force
+      Copy-Item -LiteralPath $exitPath -Destination (Join-Path $ResultDirectory "TATA_READER_PREFLIGHT_EXITCODE.txt") -Force | Out-Null
     }
 
     if (Test-Path -LiteralPath $jsonPath) {
@@ -395,17 +396,19 @@ function Capture-PreflightDiagnostics {
       $diagnostic.current_login = [string]$parsed.current_login
       $diagnostic.current_user = [string]$parsed.current_user
       $diagnostic.safe_for_minimized_order_read = [bool]$parsed.safe_for_minimized_order_read
-      Copy-Item -LiteralPath $jsonPath -Destination (Join-Path $ResultDirectory "TATA_READER_PREFLIGHT_DIAGNOSTIC.json") -Force
+      Copy-Item -LiteralPath $jsonPath -Destination (Join-Path $ResultDirectory "TATA_READER_PREFLIGHT_DIAGNOSTIC.json") -Force | Out-Null
     }
 
     if (Test-Path -LiteralPath $identityPath) {
-      $diagnostic.identity = (Get-Content -LiteralPath $identityPath -Raw)
-      Copy-Item -LiteralPath $identityPath -Destination (Join-Path $ResultDirectory "TATA_READER_PREFLIGHT_IDENTITY.txt") -Force
+      $identityRaw = (Get-Content -LiteralPath $identityPath -Raw)
+      $diagnostic.identity = if ($identityRaw.Length -gt 4096) { $identityRaw.Substring(0,4096) } else { $identityRaw }
+      Copy-Item -LiteralPath $identityPath -Destination (Join-Path $ResultDirectory "TATA_READER_PREFLIGHT_IDENTITY.txt") -Force | Out-Null
     }
 
     if (Test-Path -LiteralPath $stderrPath) {
-      $diagnostic.stderr = (Get-Content -LiteralPath $stderrPath -Raw)
-      Copy-Item -LiteralPath $stderrPath -Destination (Join-Path $ResultDirectory "TATA_READER_PREFLIGHT_STDERR.txt") -Force
+      $stderrRaw = (Get-Content -LiteralPath $stderrPath -Raw)
+      $diagnostic.stderr = if ($stderrRaw.Length -gt 8192) { $stderrRaw.Substring(0,8192) } else { $stderrRaw }
+      Copy-Item -LiteralPath $stderrPath -Destination (Join-Path $ResultDirectory "TATA_READER_PREFLIGHT_STDERR.txt") -Force | Out-Null
     }
 
     $diagnostic.captured = $true
@@ -466,7 +469,7 @@ if (-not (Test-Path -LiteralPath $RetryAuthorizationFile -PathType Leaf)) {
 $retryAuthorization = Get-Content -LiteralPath $RetryAuthorizationFile -Raw | ConvertFrom-Json
 if (-not [bool]$retryAuthorization.human_retry_authorized) { throw "HUMAN_RETRY_AUTHORIZATION_NOT_PRESENT" }
 if ($retryAuthorization.authorization_id -ne $ExpectedAuthorizationId) { throw "RETRY_AUTHORIZATION_ID_MISMATCH" }
-if ($retryAuthorization.incident_head -ne "1a5cc22224c4e27226d7b3ea364aeeb2067da84a") { throw "RETRY_AUTHORIZATION_INCIDENT_MISMATCH" }
+if ($retryAuthorization.incident_head -ne "45eb3e7770c281e660644e01cc5c856fb95640b5") { throw "RETRY_AUTHORIZATION_INCIDENT_MISMATCH" }
 
 Assert-Administrator
 Assert-Hash $BinarySource $ExpectedBinarySha256 "BINARY_SOURCE"
