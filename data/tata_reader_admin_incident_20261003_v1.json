@@ -21,5 +21,13 @@
     "preflight_reached": false
   },
   "next_action": "RECOVER_FAILED_RUNTIME_THEN_REVERIFY_FIXED_BUNDLE",
-  "retry_authorized": false
+  "retry_authorized": false,
+  "recovery": {
+    "status": "PROVEN_RECOVERY_CLEAN",
+    "service_present": false,
+    "runtime_present": false,
+    "processed_objects": 5,
+    "failed_objects": 0,
+    "retry_authorized": false
+  }
 }
