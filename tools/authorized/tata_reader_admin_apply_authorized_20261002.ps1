@@ -345,7 +345,9 @@ function Wait-ForPreflightEvidence {
   $jsonPath = Join-Path $EvidenceDirectory "preflight.json"
   $identityPath = Join-Path $EvidenceDirectory "preflight.identity.txt"
 
-  for ($i=0; $i -lt 120; $i++) {
+  # The host gives the inner preflight up to 60s. Allow 180s here so service
+  # startup, file flush and shutdown cannot race the outer rollback timer.
+  for ($i=0; $i -lt 360; $i++) {
     if ((Test-Path -LiteralPath $exitPath) -and (Test-Path -LiteralPath $jsonPath) -and (Test-Path -LiteralPath $identityPath)) { break }
     Start-Sleep -Milliseconds 500
   }
