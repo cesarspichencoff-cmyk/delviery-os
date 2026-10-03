@@ -19,12 +19,12 @@ $rollback = Read-Text "tools\authorized\tata_reader_admin_rollback_authorized_20
 $runner = Read-Text "tools\authorized\tata_reader_admin_cycle_runner_v1.ps1"
 $preflight = Read-Text "tools\tata_reader_least_privilege_preflight.ps1"
 $preflightCandidate = Read-Text "data\tata_reader_preflight_candidate_v7.json" | ConvertFrom-Json
-$retryAuthorizationPath = Join-Path $RepoRoot "data\tata_reader_admin_retry_authorization_v6.json"
+$retryAuthorizationPath = Join-Path $RepoRoot "data\tata_reader_admin_retry_authorization_v7.json"
 $retryAuthorization = $null
 $retryAuthorized = $false
 if (Test-Path -LiteralPath $retryAuthorizationPath -PathType Leaf) {
   $retryAuthorization = Get-Content -LiteralPath $retryAuthorizationPath -Raw -Encoding UTF8 | ConvertFrom-Json
-  $retryAuthorized = ([bool]$retryAuthorization.human_retry_authorized) -and ($retryAuthorization.authorization_id -eq "CESAR-2026-10-02-TATA-READER-ADMIN-V1") -and ($retryAuthorization.incident_head -eq "47873a070a6da192db1956a3b39fa2bbfd9fdf7a") -and ($retryAuthorization.preflight_sha256 -eq "3BBE4C37FEDC8EC45A25FE08497B999453B181EBA3033861CFF37F701B4A0035") -and ($retryAuthorization.runner_sha256 -eq "CE41F422823C459030293C5CD05E0AC7562A9B0A063E23773D0A02C19F3FDB49") -and ($retryAuthorization.runner_path -eq "tools/authorized/tata_reader_admin_cycle_runner_v1.ps1")
+  $retryAuthorized = ([bool]$retryAuthorization.human_retry_authorized) -and ($retryAuthorization.authorization_id -eq "CESAR-2026-10-02-TATA-READER-ADMIN-V1") -and ($retryAuthorization.incident_head -eq "e473036fb2c5ab98e003a2254485f8697d798df3") -and ($retryAuthorization.preflight_sha256 -eq "3BBE4C37FEDC8EC45A25FE08497B999453B181EBA3033861CFF37F701B4A0035") -and ($retryAuthorization.runner_sha256 -eq "CE41F422823C459030293C5CD05E0AC7562A9B0A063E23773D0A02C19F3FDB49") -and ($retryAuthorization.runner_path -eq "tools/authorized/tata_reader_admin_cycle_runner_v1.ps1")
 }
 
 $applyTokens = $null
@@ -92,7 +92,7 @@ if ($null -ne $retryAuthorization) {
   Assert-True ($retryAuthorization.runner_sha256 -eq $runnerHash) "RETRY_AUTHORIZATION_RUNNER_HASH_MISMATCH"
   Assert-True ($retryAuthorization.runner_path -eq "tools/authorized/tata_reader_admin_cycle_runner_v1.ps1") "RETRY_AUTHORIZATION_RUNNER_PATH_MISMATCH"
   Assert-True ($retryAuthorization.preflight_sha256 -eq $candidatePreflightHash) "RETRY_AUTHORIZATION_PREFLIGHT_HASH_MISMATCH"
-  Assert-True ($retryAuthorization.incident_head -eq "47873a070a6da192db1956a3b39fa2bbfd9fdf7a") "RETRY_AUTHORIZATION_INCIDENT_MISMATCH"
+  Assert-True ($retryAuthorization.incident_head -eq "e473036fb2c5ab98e003a2254485f8697d798df3") "RETRY_AUTHORIZATION_INCIDENT_MISMATCH"
 }
 
 Assert-True ($runner.Contains("verificar_tata_reader_admin_authorized_v1.ps1")) "RUNNER_VERIFIER_MISSING"
@@ -159,8 +159,8 @@ Assert-True ($apply.Contains('TATA_READER_PREFLIGHT_DIAGNOSTIC.json") -Force | O
 Assert-True ($apply.Contains('TATA_READER_PREFLIGHT_IDENTITY.txt") -Force | Out-Null')) "APPLY_IDENTITY_COPY_OUTPUT_NOT_SUPPRESSED"
 Assert-True ($apply.Contains('TATA_READER_PREFLIGHT_STDERR.txt") -Force | Out-Null')) "APPLY_STDERR_COPY_OUTPUT_NOT_SUPPRESSED"
 Assert-True ($apply.Contains("FAILURE_RESULT_PRIMITIVE_V2")) "APPLY_PRIMITIVE_FAILURE_RESULT_MISSING"
-Assert-True ($apply.Contains("tata_reader_admin_retry_authorization_v6.json")) "APPLY_RETRY_V6_GATE_MISSING"
-Assert-True ($apply.Contains("47873a070a6da192db1956a3b39fa2bbfd9fdf7a")) "APPLY_RETRY_V6_INCIDENT_MISMATCH"
+Assert-True ($apply.Contains("tata_reader_admin_retry_authorization_v6.json")) "APPLY_RETRY_V7_GATE_MISSING"
+Assert-True ($apply.Contains("e473036fb2c5ab98e003a2254485f8697d798df3")) "APPLY_RETRY_V7_INCIDENT_MISMATCH"
 
 Assert-True (-not $apply.Contains("DSCOMANDA")) "APPLY_DSCOMANDA_SCOPE_LEAK"
 Assert-True (-not $apply.Contains("CDPRODPROMOCAO")) "APPLY_COMBO_SCOPE_LEAK"
@@ -191,7 +191,7 @@ Assert-True ($rollback.Contains("takeown.exe")) "ROLLBACK_TAKEOWN_RECOVERY_MISSI
 Assert-True ($rollback.Contains("RUNTIME_ACL_RECOVERY_FAILED")) "ROLLBACK_ACL_RECOVERY_MISSING"
 
 [ordered]@{
-  schema = "deliveryos.tata-reader-authorized-bundle-static.v8"
+  schema = "deliveryos.tata-reader-authorized-bundle-static.v9"
   passed = $true
   authorization_id = $authId
   administrative_effect = $false
