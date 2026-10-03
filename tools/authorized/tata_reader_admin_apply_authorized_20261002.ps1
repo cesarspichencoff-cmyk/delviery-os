@@ -29,7 +29,7 @@ $ResultPath = Join-Path $ResultDirectory "TATA_READER_ADMIN_PHASE_RESULT.json"
 $RepoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $PreflightSource = Join-Path $RepoRoot "tools\tata_reader_least_privilege_preflight.ps1"
 $AuthorizationFile = Join-Path $RepoRoot "data\tata_reader_admin_authorization_v1.json"
-$RetryAuthorizationFile = Join-Path $RepoRoot "data\tata_reader_admin_retry_authorization_v6.json"
+$RetryAuthorizationFile = Join-Path $RepoRoot "data\tata_reader_admin_retry_authorization_v7.json"
 $PreflightCandidateFile = Join-Path $RepoRoot "data\tata_reader_preflight_candidate_v7.json"
 $BundleVerifier = Join-Path $RepoRoot "tools\verificar_tata_reader_admin_bundle_static_v1.ps1"
 
@@ -475,7 +475,7 @@ if (-not (Test-Path -LiteralPath $RetryAuthorizationFile -PathType Leaf)) {
 $retryAuthorization = Get-Content -LiteralPath $RetryAuthorizationFile -Raw | ConvertFrom-Json
 if (-not [bool]$retryAuthorization.human_retry_authorized) { throw "HUMAN_RETRY_AUTHORIZATION_NOT_PRESENT" }
 if ($retryAuthorization.authorization_id -ne $ExpectedAuthorizationId) { throw "RETRY_AUTHORIZATION_ID_MISMATCH" }
-if ($retryAuthorization.incident_head -ne "47873a070a6da192db1956a3b39fa2bbfd9fdf7a") { throw "RETRY_AUTHORIZATION_INCIDENT_MISMATCH" }
+if ($retryAuthorization.incident_head -ne "e473036fb2c5ab98e003a2254485f8697d798df3") { throw "RETRY_AUTHORIZATION_INCIDENT_MISMATCH" }
 if ($retryAuthorization.preflight_sha256 -ne $ExpectedPreflightSha256) { throw "RETRY_AUTHORIZATION_PREFLIGHT_HASH_MISMATCH" }
 
 Assert-Administrator
