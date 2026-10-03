@@ -20,11 +20,13 @@ $runner = Read-Text "tools\authorized\tata_reader_admin_cycle_runner_v1.ps1"
 $preflight = Read-Text "tools\tata_reader_least_privilege_preflight.ps1"
 $preflightCandidate = Read-Text "data\tata_reader_preflight_candidate_v7.json" | ConvertFrom-Json
 $retryAuthorizationPath = Join-Path $RepoRoot "data\tata_reader_admin_retry_authorization_v7.json"
+$successMarkerPath = Join-Path $RepoRoot "data\tata_reader_admin_phase_success_20261003_v1.json"
+$adminPhaseAlreadyProven = Test-Path -LiteralPath $successMarkerPath -PathType Leaf
 $retryAuthorization = $null
 $retryAuthorized = $false
 if (Test-Path -LiteralPath $retryAuthorizationPath -PathType Leaf) {
   $retryAuthorization = Get-Content -LiteralPath $retryAuthorizationPath -Raw -Encoding UTF8 | ConvertFrom-Json
-  $retryAuthorized = ([bool]$retryAuthorization.human_retry_authorized) -and ($retryAuthorization.authorization_id -eq "CESAR-2026-10-02-TATA-READER-ADMIN-V1") -and ($retryAuthorization.incident_head -eq "e473036fb2c5ab98e003a2254485f8697d798df3") -and ($retryAuthorization.preflight_sha256 -eq "3BBE4C37FEDC8EC45A25FE08497B999453B181EBA3033861CFF37F701B4A0035") -and ($retryAuthorization.runner_sha256 -eq "CE41F422823C459030293C5CD05E0AC7562A9B0A063E23773D0A02C19F3FDB49") -and ($retryAuthorization.runner_path -eq "tools/authorized/tata_reader_admin_cycle_runner_v1.ps1")
+  $retryAuthorized = (-not $adminPhaseAlreadyProven) -and ([bool]$retryAuthorization.human_retry_authorized) -and ($retryAuthorization.authorization_id -eq "CESAR-2026-10-02-TATA-READER-ADMIN-V1") -and ($retryAuthorization.incident_head -eq "e473036fb2c5ab98e003a2254485f8697d798df3") -and ($retryAuthorization.preflight_sha256 -eq "3BBE4C37FEDC8EC45A25FE08497B999453B181EBA3033861CFF37F701B4A0035") -and ($retryAuthorization.runner_sha256 -eq "CE41F422823C459030293C5CD05E0AC7562A9B0A063E23773D0A02C19F3FDB49") -and ($retryAuthorization.runner_path -eq "tools/authorized/tata_reader_admin_cycle_runner_v1.ps1")
 }
 
 $applyTokens = $null
@@ -161,6 +163,7 @@ Assert-True ($apply.Contains('TATA_READER_PREFLIGHT_STDERR.txt") -Force | Out-Nu
 Assert-True ($apply.Contains("FAILURE_RESULT_PRIMITIVE_V2")) "APPLY_PRIMITIVE_FAILURE_RESULT_MISSING"
 Assert-True ($apply.Contains("tata_reader_admin_retry_authorization_v7.json")) "APPLY_RETRY_V7_GATE_MISSING"
 Assert-True ($apply.Contains("e473036fb2c5ab98e003a2254485f8697d798df3")) "APPLY_RETRY_V7_INCIDENT_MISMATCH"
+Assert-True ($apply.Contains("ADMIN_PHASE_ALREADY_PROVEN_NO_RERUN")) "APPLY_SUCCESS_RERUN_GUARD_MISSING"
 
 Assert-True (-not $apply.Contains("DSCOMANDA")) "APPLY_DSCOMANDA_SCOPE_LEAK"
 Assert-True (-not $apply.Contains("CDPRODPROMOCAO")) "APPLY_COMBO_SCOPE_LEAK"
@@ -197,6 +200,7 @@ Assert-True ($rollback.Contains("RUNTIME_ACL_RECOVERY_FAILED")) "ROLLBACK_ACL_RE
   administrative_effect = $false
   candidate_preflight_sha256 = $candidatePreflightHash
   runner_sha256 = $runnerHash
+  admin_phase_already_proven = $adminPhaseAlreadyProven
   retry_authorized = $retryAuthorized
   ready_for_authorized_admin_execution = $retryAuthorized
   ready_for_human_retry_authorization = (-not $retryAuthorized)
