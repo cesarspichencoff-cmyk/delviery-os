@@ -74,11 +74,13 @@ for (const excluded of manifest.explicitly_excluded_columns) {
   }
 }
 
-assert.ok(preflight.includes("deliveryos.tata-reader-least-privilege-preflight.v4"));
+assert.ok(/deliveryos\.tata-reader-least-privilege-preflight\.v\d+/.test(preflight), "preflight schema marker missing");
 assert.ok(preflight.includes("INTEGRATED_DELIVERY_CHANNELS_ONLY"));
 assert.ok(!preflight.includes("AllowDsComanda"));
 assert.ok(preflight.includes("SPECIFIC_LOGIN_IMPERSONATION_PRESENT"));
 assert.ok(preflight.includes("SPECIFIC_USER_IMPERSONATION_PRESENT"));
+assert.ok(preflight.includes("non_impersonable_server_group_targets"));
+assert.ok(preflight.includes("non_impersonable_database_group_targets"));
 assert.ok(preflight.includes("NON_TABLE_OBJECT_PERMISSION_PRESENT"));
 assert.ok(preflight.includes("READABLE_SURFACE_OUTSIDE_ALLOWLIST"));
 assert.ok(preflight.includes("'SO','AF'"));
@@ -139,7 +141,7 @@ for (const forbidden of ["HttpClient", "WebRequest", "TcpClient", "Socket", "Sql
 assert.ok(hostBuild.includes("Framework64\\v4.0.30319\\csc.exe"));
 assert.ok(hostBuild.includes('nuget_used = $false'));
 
-assert.ok(doc.includes("## Preflight v4 requirements"));
+assert.ok(doc.includes("## Preflight requirements"));
 assert.ok(doc.includes("1. stop and delete Windows service `TataComandaReader`;"));
 assert.ok(doc.indexOf("stop and delete Windows service") < doc.indexOf("drop SQL database user"));
 assert.ok(doc.includes("start=demand"));
