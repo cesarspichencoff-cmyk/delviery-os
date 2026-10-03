@@ -7,7 +7,7 @@ $ErrorActionPreference = "Stop"
 
 $ExpectedAuthorizationId = "CESAR-2026-10-02-TATA-READER-ADMIN-V1"
 $ExpectedBinarySha256 = "241073DA0AE678933E2EF88AF2DA2091F1DF4A578E1D78AD2B48839D4465BA6C"
-$ExpectedPreflightSha256 = "FFCFB49577280A596EA951C839C881528D187A33F0B5D19DE08D2A86D1FEFFC6"
+$ExpectedPreflightSha256 = "592A7B0A7D7123018C934E8C54EF7C5DC1E44D699BD17BD8D99F3020BD0DDD3B"
 
 $ServiceName = "TataComandaReader"
 $ServicePrincipal = "NT SERVICE\TataComandaReader"
@@ -30,6 +30,7 @@ $RepoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $PreflightSource = Join-Path $RepoRoot "tools\tata_reader_least_privilege_preflight.ps1"
 $AuthorizationFile = Join-Path $RepoRoot "data\tata_reader_admin_authorization_v1.json"
 $RetryAuthorizationFile = Join-Path $RepoRoot "data\tata_reader_admin_retry_authorization_v4.json"
+$PreflightCandidateFile = Join-Path $RepoRoot "data\tata_reader_preflight_candidate_v5.json"
 $BundleVerifier = Join-Path $RepoRoot "tools\verificar_tata_reader_admin_bundle_static_v1.ps1"
 
 $allowed = [ordered]@{
@@ -461,6 +462,11 @@ $authorization = Get-Content -LiteralPath $AuthorizationFile -Raw | ConvertFrom-
 if (-not [bool]$authorization.human_authorized) { throw "HUMAN_AUTHORIZATION_NOT_PRESENT" }
 if ($authorization.authorization_id -ne $ExpectedAuthorizationId) { throw "AUTHORIZATION_FILE_ID_MISMATCH" }
 
+if (-not (Test-Path -LiteralPath $PreflightCandidateFile -PathType Leaf)) { throw "PREFLIGHT_CANDIDATE_FILE_MISSING" }
+$preflightCandidate = Get-Content -LiteralPath $PreflightCandidateFile -Raw | ConvertFrom-Json
+if ($preflightCandidate.candidate_sha256 -ne $ExpectedPreflightSha256) { throw "PREFLIGHT_CANDIDATE_HASH_MISMATCH" }
+if ([bool]$preflightCandidate.semantic_scope_changed) { throw "PREFLIGHT_CANDIDATE_SCOPE_CHANGED" }
+
 # Previous authorized attempts failed on 2026-10-03; the latest retry reached preflight and rolled back cleanly.
 # A fresh, explicit human retry authorization is required after each failed authorized execution.
 if (-not (Test-Path -LiteralPath $RetryAuthorizationFile -PathType Leaf)) {
@@ -470,6 +476,7 @@ $retryAuthorization = Get-Content -LiteralPath $RetryAuthorizationFile -Raw | Co
 if (-not [bool]$retryAuthorization.human_retry_authorized) { throw "HUMAN_RETRY_AUTHORIZATION_NOT_PRESENT" }
 if ($retryAuthorization.authorization_id -ne $ExpectedAuthorizationId) { throw "RETRY_AUTHORIZATION_ID_MISMATCH" }
 if ($retryAuthorization.incident_head -ne "45eb3e7770c281e660644e01cc5c856fb95640b5") { throw "RETRY_AUTHORIZATION_INCIDENT_MISMATCH" }
+if ($retryAuthorization.preflight_sha256 -ne $ExpectedPreflightSha256) { throw "RETRY_AUTHORIZATION_PREFLIGHT_HASH_MISMATCH" }
 
 Assert-Administrator
 Assert-Hash $BinarySource $ExpectedBinarySha256 "BINARY_SOURCE"
