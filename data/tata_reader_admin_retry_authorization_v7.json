@@ -1,0 +1,11 @@
+{
+  "schema": "deliveryos.tata-reader-admin-retry-authorization.v7",
+  "authorization_id": "CESAR-2026-10-02-TATA-READER-ADMIN-V1",
+  "incident_head": "e473036fb2c5ab98e003a2254485f8697d798df3",
+  "authorized_source_head": "cac02a770a7e2e5e54b5d4a2d867812b5c7abb98",
+  "human_retry_authorized": true,
+  "authorized_by": "Cesar",
+  "preflight_sha256": "3BBE4C37FEDC8EC45A25FE08497B999453B181EBA3033861CFF37F701B4A0035",
+  "runner_sha256": "CE41F422823C459030293C5CD05E0AC7562A9B0A063E23773D0A02C19F3FDB49",
+  "runner_path": "tools/authorized/tata_reader_admin_cycle_runner_v1.ps1"
+}
