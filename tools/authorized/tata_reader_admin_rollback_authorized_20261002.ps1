@@ -83,7 +83,23 @@ catch {
 
 try {
   if (Test-Path -LiteralPath $InstallRoot) {
-    Remove-Item -LiteralPath $InstallRoot -Recurse -Force
+    try {
+      Remove-Item -LiteralPath $InstallRoot -Recurse -Force -ErrorAction Stop
+    }
+    catch {
+      $systemSid = "S-1-5-18"
+      $administratorsSid = "S-1-5-32-544"
+
+      & takeown.exe /F $InstallRoot /A /R /D Y | Out-Null
+      if ($LASTEXITCODE -ne 0) { throw "RUNTIME_TAKEOWN_FAILED" }
+
+      & icacls.exe $InstallRoot /grant:r ("*" + $administratorsSid + ":(OI)(CI)F") ("*" + $systemSid + ":(OI)(CI)F") /T /C | Out-Null
+      if ($LASTEXITCODE -ne 0) { throw "RUNTIME_ACL_RECOVERY_FAILED" }
+
+      Remove-Item -LiteralPath $InstallRoot -Recurse -Force -ErrorAction Stop
+    }
+
+    if (Test-Path -LiteralPath $InstallRoot) { throw "RUNTIME_DELETE_NOT_CONFIRMED" }
   }
 }
 catch {
