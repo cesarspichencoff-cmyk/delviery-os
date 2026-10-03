@@ -18,7 +18,7 @@ foreach($required in @(
   "NFC-e",
   "SEFAZ",
   "DANFE",
-  "Transmissão Automática",
+  "Transmissao Automatica",
   "Get-CimInstance Win32_Service",
   "Get-CimInstance Win32_Process",
   "Get-CimInstance Win32_Printer",
