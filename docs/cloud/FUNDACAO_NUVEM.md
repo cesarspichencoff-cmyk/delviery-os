@@ -41,19 +41,24 @@ DELIVERYOS_DATABASE_URL=postgres://usuario:senha@host:5432/base npm run verifica
 ```
 
 O comando responde em segundos, **sem migrar nada e sem gravar dado de
-operação**. Sai com `0` se serve, `1` se não serve, e diz exatamente o que
-faltou. É o que torna "trocar de provedor" uma decisão, e não uma aventura.
+operação**. Sai com `0` se o alvo é compatível, `1` quando um requisito
+bloqueante falha e `2` para uso/configuração inválidos. Além da compatibilidade
+do provedor, ele recusa credencial de runtime usada como migrator e acusa
+migration futura ou checksum divergente entre banco e checkout. É o que torna
+"trocar de provedor" uma decisão verificável, e não uma aventura.
 
 ### Requisitos que reprovam
 
 | Requisito | Por que reprova |
 |---|---|
 | PostgreSQL **14+** | abaixo disso faltam garantias que o schema usa |
-| **TLS** na conexão (fora de localhost) | credencial e dado de operação em claro na internet é defeito, não configuração |
+| **TLS** na conexão (fora de localhost ou rede privada explicitamente declarada) | credencial e dado de operação em claro na internet é defeito, não configuração |
 | Permissão de **criar schema** | sem ela as migrations não rodam — e o erro só apareceria no meio da primeira |
 | **PL/pgSQL** | a trigger de append-only é escrita nela. Sem a linguagem, a migration falha **no meio**, deixando metade do schema aplicado |
 | **JSONB** | todo payload de evento é JSONB |
 | **`FOR UPDATE SKIP LOCKED`** | é o que faz a fila funcionar com mais de um worker. Alguns bancos gerenciados em modo de compatibilidade não suportam, e a descoberta sem este teste seria no primeiro pico |
+| Credencial de migration **não pode ser papel de runtime** | impede reutilizar `deliveryos_critical`, `deliveryos_async`, `deliveryos_source_ingest` ou `deliveryos_entregas_pilot` como autoridade de DDL |
+| Sem **migration futura/checksum divergente** | um banco mais novo que o checkout ou com migration alterada é drift; continuar seria operar duas verdades de schema |
 
 ### Requisitos que avisam
 
@@ -197,19 +202,21 @@ Duas regras:
 2. rodar `npm run verificar:banco` — **antes** de qualquer migration. Se
    reprovar, o problema aparece em segundos, e não no meio do primeiro deploy;
 3. `npm run migrate`;
-4. rodar as três suítes que dependem de banco, agora apontando para ele:
+4. rodar `npm run verificar:banco` **de novo**. Agora o checkout precisa aparecer
+   sem migration pendente/futura e sem checksum divergente;
+5. rodar as três suítes que dependem de banco, agora apontando para ele:
    ```bash
    npm run test:platform:pg && npm run test:platform:repos && npm run test:platform:backup
    ```
    Elas são a diferença entre "o banco existe" e "o banco serve";
-5. subir os dois runtimes;
-6. configurar o backup externo (§4) e **restaurar uma cópia** para provar;
-7. só então apontar o Android para o domínio real:
+6. subir os dois runtimes;
+7. configurar o backup externo (§4) e **restaurar uma cópia** para provar;
+8. só então apontar o Android para o domínio real:
    ```bash
    ./gradlew assemblePilot -Pentregas.baseUrl=https://SEU_DOMINIO
    ```
 
-O passo 7 é travado por gate: `assemblePilot` **recusa** endereço que não seja
+O passo 8 é travado por gate: `assemblePilot` **recusa** endereço que não seja
 HTTPS ou que aponte para máquina local.
 
 ---

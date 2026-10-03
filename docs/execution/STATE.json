@@ -5,7 +5,7 @@
     "status": "ACTIVE",
     "authority_scope": "technical_state",
     "superseded_by": null,
-    "atualizado_em": "2026-10-02",
+    "atualizado_em": "2026-10-03",
     "state_basis": "5e5e0f7",
     "observa": [
       "src/product/",
@@ -62,7 +62,13 @@
     "fallback_local": "FileUnitOfWork — PRESERVADO e intocado",
     "migrations": [
       "0001_platform_foundation",
-      "0002_event_log_contexto_dispositivo"
+      "0002_event_log_contexto_dispositivo",
+      "0003_event_log_source_mode",
+      "0004_event_log_sem_truncate",
+      "0005_device_vinculo_de_segredo",
+      "0006_entregas_cluster_persistence",
+      "0007_entregas_ready_order",
+      "0008_ready_order_consumido_por_delivery"
     ],
     "executor": "src/platform/migrations/runner.ts",
     "comando": "npm run migrate",
@@ -77,17 +83,17 @@
       "copiloto"
     ],
     "verificado_contra_servidor_real": true,
-    "_como": "Cluster PostgreSQL 16.4 portátil e efêmero (binários EnterpriseDB, sem instalador e sem serviço do Windows), porta 55432.",
+    "_como": "PostgreSQL real isolado; preflight mais recente em PostgreSQL 17.11 local descartável: compatibilidade antes da migration, 0001-0008 aplicadas, recheck sem drift; produção não ativada.",
     "verificador_de_compatibilidade": {
       "comando": "npm run verificar:banco",
       "arquivo": "src/platform/bin/verificar-banco.ts",
-      "o_que_faz": "pergunta a QUALQUER PostgreSQL se ele serve, sem migrar nada e sem gravar dado de operacao",
+      "o_que_faz": "read-only: valida PostgreSQL 14+, TLS/rede privada declarada, CREATE, PL/pgSQL, JSONB, SKIP LOCKED, conexões, identidade do migrator e drift/checksum de migrations",
       "codigos_de_saida": {
-        "0": "serve",
-        "1": "nao serve",
-        "2": "URL ausente ou invalida"
+        "0": "alvo compatível",
+        "1": "requisito bloqueante falhou",
+        "2": "URL ausente ou inválida"
       },
-      "provado": "banco compativel -> 0; banco sem permissao de criar schema -> 1 apontando o requisito; sem URL -> 2"
+      "provado": "PostgreSQL 17.11: banco vazio -> 0 com 8 migrations pendentes; após migrate -> 0 com schema completo; papel deliveryos_entregas_pilot como migrator -> 1; fingerprint de catálogo inalterado no preflight"
     }
   },
   "testes": {
@@ -146,8 +152,8 @@
     {
       "item": "PostgreSQL hospedado (Supabase ou equivalente)",
       "motivo": "Criar conta ou instância é ato com potencial de cobrança — depende de autorização expressa do César.",
-      "substituto": "o código recusa conexão remota sem TLS, e isso é testado",
-      "o_que_falta": "apontar DELIVERYOS_DATABASE_URL para o banco real e rodar as três suítes de banco"
+      "substituto": "npm run verificar:banco agora é executável e read-only: prova PostgreSQL 14+, TLS, CREATE, PL/pgSQL, JSONB, SKIP LOCKED, identidade do migrator e ausência de drift; em PostgreSQL 17.11 descartável passou antes e depois das migrations 0001-0008",
+      "o_que_falta": "escolher/criar o banco operacional autorizado, emitir credenciais próprias e repetir o preflight/migrations no alvo real"
     },
     {
       "item": "APK em aparelho real",
@@ -193,10 +199,30 @@
       "regiao": "us-east-005",
       "bucket_privado": true,
       "object_lock": "COMPLIANCE / 14 days",
-      "writer_capabilities": ["writeFiles"],
-      "reader_capabilities": ["listAllBucketNames", "readFiles"],
+      "writer_capabilities": [
+        "writeFiles"
+      ],
+      "reader_capabilities": [
+        "listAllBucketNames",
+        "readFiles"
+      ],
       "s3_live": "7/7 PASS",
       "postgres_restore": "7/7 PASS",
+      "producao_ativada": false
+    },
+    "postgres_preflight_prova": {
+      "alvo": "PostgreSQL 17.11 local descartável",
+      "comando": "npm run verificar:banco",
+      "efeito": "READ_ONLY",
+      "antes_da_migration": "PASS com 8 migrations pendentes",
+      "depois_da_migration": "PASS com schema completo e sem drift",
+      "catalog_fingerprint_unchanged": true,
+      "runtime_role_as_migrator": "REJECTED",
+      "database_preflight_tests": "8/8 PASS",
+      "pilot_postgres_cluster": "6/6 PASS",
+      "storage_cutover": "7/7 PASS",
+      "pb19": "27/27 GREEN",
+      "provedor_operacional_selecionado": false,
       "producao_ativada": false
     }
   },

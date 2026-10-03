@@ -1407,3 +1407,26 @@ blocker separado de certificação de campo.
 > do uploader, readback, integridade e restore PostgreSQL = **PROVEN** para o ensaio isolado.
 > Produção, deploy, migrations operacionais, cutover e `consumer_live`/UI live continuam
 > separados e não foram executados.
+
+> **SUCESSÃO — 2026-10-03 · PRE-CUTOVER POSTGRESQL VIROU GATE EXECUTÁVEL E PROVADO.**
+>
+> O comando documentado `npm run verificar:banco` passou a existir no `package.json` e usa a
+> implementação canônica `src/platform/bin/verificar-banco.ts`. O gate é read-only e verifica
+> PostgreSQL 14+, TLS real fora de rede dispensada, `CREATE`, PL/pgSQL, JSONB,
+> `FOR UPDATE SKIP LOCKED`, capacidade de conexões, identidade da credencial de migration e
+> drift de schema (migration futura + checksum divergente).
+>
+> PostgreSQL 17.11 descartável no Foxxy: preflight **PASS antes da migration** com 8 migrations
+> pendentes; `npm run migrate` aplicou 0001–0008; novo preflight **PASS** com schema completo.
+> O fingerprint do catálogo permaneceu idêntico antes/depois do preflight, provando o efeito
+> read-only. A credencial `deliveryos_entregas_pilot` foi deliberadamente usada como migrator e
+> recusada por falta de `CREATE` e por ser papel de runtime.
+>
+> Provas complementares no mesmo banco isolado: `DATABASE_PREFLIGHT 8/8 PASS`,
+> `PILOT_POSTGRES_SERVER_CLUSTER 6/6 PASS`, `PILOT_STORAGE_CUTOVER 7/7 PASS`,
+> deploy-audit **30/30** e PB19 **27/27 GREEN**. O teste PB19 também foi tornado portátil no
+> Windows usando junction para `node_modules`, sem alterar runtime/produção.
+>
+> **Fronteira:** isso prepara e prova o caminho até o cutover, mas não seleciona/cria o banco
+> operacional, não emite credenciais reais, não aplica migration em produção, não executa cutover
+> operacional e não liga `consumer_live`/UI live.

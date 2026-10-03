@@ -70,7 +70,11 @@ function raizDaImagem(): string {
   const dir = mkdtempSync(join(tmpdir(), "pb19-"));
   cpSync(join(raiz, "dist"), join(dir, "dist"), { recursive: true });
   cpSync(join(raiz, "package.json"), join(dir, "package.json"));
-  symlinkSync(join(raiz, "node_modules"), join(dir, "node_modules"));
+  symlinkSync(
+    join(raiz, "node_modules"),
+    join(dir, "node_modules"),
+    process.platform === "win32" ? "junction" : "dir",
+  );
   return dir;
 }
 

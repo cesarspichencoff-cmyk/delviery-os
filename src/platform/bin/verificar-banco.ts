@@ -14,7 +14,10 @@
  * Sai com 0 quando serve, 1 quando não serve, e diz exatamente o que faltou.
  */
 
-import { createPgClient, isLocalUrl, type SqlRow } from "../persistence/sql-client";
+import { createPgClient, dispensadoDeTls, isLocalUrl, type SqlRow } from "../persistence/sql-client";
+import { diretorioDeMigrations } from "../migrations/localizar";
+import { loadMigrations } from "../migrations/runner";
+import { evaluateDatabasePreflight, readDatabasePreflightFacts } from "../database-preflight";
 
 interface Achado {
   nome: string;
@@ -35,6 +38,8 @@ async function main(): Promise<void> {
   }
 
   const local = isLocalUrl(url);
+  const privateHost = (process.env.DELIVERYOS_DATABASE_PRIVATE_HOST || "").trim();
+  const tlsRequired = !dispensadoDeTls(url, privateHost);
   const ssl = process.env.DELIVERYOS_DATABASE_SSL
     ? process.env.DELIVERYOS_DATABASE_SSL === "true"
     : !local;
@@ -51,7 +56,13 @@ async function main(): Promise<void> {
   }
 
   const achados: Achado[] = [];
-  const cliente = await createPgClient({ url, ssl, max: 2, statementTimeoutMs: 20_000 });
+  const cliente = await createPgClient({
+    url,
+    ssl,
+    host_privado: privateHost,
+    max: 2,
+    statementTimeoutMs: 20_000,
+  });
 
   try {
     /* ---------------------------------------------------------------- */
@@ -74,11 +85,17 @@ async function main(): Promise<void> {
     const temTls = criptografado[0]?.ssl === true;
     achados.push({
       nome: "conexão criptografada",
-      // Em localhost não é exigência: o tráfego não sai da máquina, e cobrar
-      // TLS ali empurra alguém a desligar a checagem por completo.
-      ok: temTls || local,
-      detalhe: temTls ? "TLS ativo" : local ? "local, dispensado" : "SEM TLS",
-      bloqueante: !local,
+      // Localhost e o host privado EXPLICITAMENTE declarado podem dispensar
+      // TLS. Fora dessas duas fronteiras, transporte em claro é bloqueante.
+      ok: temTls || !tlsRequired,
+      detalhe: temTls
+        ? "TLS ativo"
+        : local
+          ? "local, dispensado"
+          : !tlsRequired
+            ? "rede privada declarada, dispensado"
+            : "SEM TLS",
+      bloqueante: tlsRequired,
     });
 
     /* ---------------------------------------------------------------- */
@@ -177,20 +194,42 @@ async function main(): Promise<void> {
 
     /* ---------------------------------------------------------------- */
 
-    const migrations = await cliente.query<SqlRow>(
-      `SELECT count(*)::int AS n FROM information_schema.tables
-        WHERE table_schema='platform' AND table_name='schema_migration'`,
-    );
-    const jaTemSchema = Number(migrations[0]?.n) > 0;
-    if (jaTemSchema) {
-      const aplicadas = await cliente.query<SqlRow>(
-        `SELECT version FROM platform.schema_migration WHERE version LIKE '0%' ORDER BY version`,
-      );
+    const facts = await readDatabasePreflightFacts(cliente);
+    const schema = evaluateDatabasePreflight({
+      facts,
+      local_migrations: loadMigrations(diretorioDeMigrations()),
+      tls_required: tlsRequired,
+    });
+
+    achados.push({
+      nome: "credencial de migration",
+      ok: !schema.issues.some((x) => /papel de runtime/.test(x)),
+      detalhe: schema.issues.find((x) => /papel de runtime/.test(x)) ??
+        `${facts.current_user} não é papel de runtime`,
+      bloqueante: true,
+    });
+    achados.push({
+      nome: "drift de migrations",
+      ok: schema.unknown_migrations.length === 0 && schema.checksum_mismatches.length === 0,
+      detalhe: schema.unknown_migrations.length
+        ? `migration desconhecida no banco: ${schema.unknown_migrations.join(", ")}`
+        : schema.checksum_mismatches.length
+          ? `checksum divergente: ${schema.checksum_mismatches.map((x) => x.version).join(", ")}`
+          : "sem versão futura nem checksum divergente",
+      bloqueante: true,
+    });
+
+    if (facts.applied_migrations.length) {
       console.log(
-        `\nmigrations já aplicadas: ${aplicadas.map((l) => l.version).join(", ") || "(nenhuma)"}`,
+        `\nmigrations já aplicadas: ${facts.applied_migrations.map((x) => x.version).join(", ")}`,
       );
     } else {
       console.log("\nbanco ainda sem schema do DeliveryOS — rode `npm run migrate`");
+    }
+    if (schema.pending_migrations.length) {
+      console.log(`migrations pendentes: ${schema.pending_migrations.join(", ")}`);
+    } else {
+      console.log("schema do checkout atual: completo");
     }
   } finally {
     await cliente.close();
