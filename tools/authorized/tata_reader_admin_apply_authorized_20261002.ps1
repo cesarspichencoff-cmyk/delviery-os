@@ -29,6 +29,7 @@ $ResultPath = Join-Path $ResultDirectory "TATA_READER_ADMIN_PHASE_RESULT.json"
 $RepoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $PreflightSource = Join-Path $RepoRoot "tools\tata_reader_least_privilege_preflight.ps1"
 $AuthorizationFile = Join-Path $RepoRoot "data\tata_reader_admin_authorization_v1.json"
+$RetryAuthorizationFile = Join-Path $RepoRoot "data\tata_reader_admin_retry_authorization_v2.json"
 $BundleVerifier = Join-Path $RepoRoot "tools\verificar_tata_reader_admin_bundle_static_v1.ps1"
 
 $allowed = [ordered]@{
@@ -208,19 +209,22 @@ function Install-ReaderService {
   $administratorsSid = "S-1-5-32-544"
   $allowedSids = @($systemSid,$administratorsSid,$serviceSid)
 
-  foreach ($directory in @($InstallRoot,$BinDirectory,$EvidenceDirectory)) {
-    & icacls.exe $directory /inheritance:r | Out-Null
-    if ($LASTEXITCODE -ne 0) { throw ("ACL_INHERITANCE_DISABLE_FAILED:" + $directory) }
-  }
-
+  # ACL_ORDER_V2: establish explicit recovery-safe access on each directory
+  # before removing inheritance. This prevents the 2026-10-03 lockout class.
   & icacls.exe $InstallRoot /grant:r ("*" + $systemSid + ":(OI)(CI)F") ("*" + $administratorsSid + ":(OI)(CI)F") ("*" + $serviceSid + ":(RX)") | Out-Null
-  if ($LASTEXITCODE -ne 0) { throw "ROOT_ACL_FAILED" }
+  if ($LASTEXITCODE -ne 0) { throw "ROOT_ACL_GRANT_FAILED" }
+  & icacls.exe $InstallRoot /inheritance:r | Out-Null
+  if ($LASTEXITCODE -ne 0) { throw "ROOT_ACL_INHERITANCE_DISABLE_FAILED" }
 
   & icacls.exe $BinDirectory /grant:r ("*" + $systemSid + ":(OI)(CI)F") ("*" + $administratorsSid + ":(OI)(CI)F") ("*" + $serviceSid + ":(OI)(CI)RX") | Out-Null
-  if ($LASTEXITCODE -ne 0) { throw "BIN_ACL_FAILED" }
+  if ($LASTEXITCODE -ne 0) { throw "BIN_ACL_GRANT_FAILED" }
+  & icacls.exe $BinDirectory /inheritance:r | Out-Null
+  if ($LASTEXITCODE -ne 0) { throw "BIN_ACL_INHERITANCE_DISABLE_FAILED" }
 
   & icacls.exe $EvidenceDirectory /grant:r ("*" + $systemSid + ":(OI)(CI)F") ("*" + $administratorsSid + ":(OI)(CI)F") ("*" + $serviceSid + ":(OI)(CI)M") | Out-Null
-  if ($LASTEXITCODE -ne 0) { throw "EVIDENCE_ACL_FAILED" }
+  if ($LASTEXITCODE -ne 0) { throw "EVIDENCE_ACL_GRANT_FAILED" }
+  & icacls.exe $EvidenceDirectory /inheritance:r | Out-Null
+  if ($LASTEXITCODE -ne 0) { throw "EVIDENCE_ACL_INHERITANCE_DISABLE_FAILED" }
 
   Assert-ClosedAcl $InstallRoot $allowedSids
   Assert-ClosedAcl $BinDirectory $allowedSids
@@ -322,6 +326,29 @@ function Rollback-SqlIfPresent {
   return @($errors)
 }
 
+function Remove-RuntimeIfPresent {
+  if (-not (Test-Path -LiteralPath $InstallRoot)) { return }
+
+  try {
+    Remove-Item -LiteralPath $InstallRoot -Recurse -Force -ErrorAction Stop
+    return
+  }
+  catch {
+  }
+
+  $systemSid = "S-1-5-18"
+  $administratorsSid = "S-1-5-32-544"
+
+  & takeown.exe /F $InstallRoot /A /R /D Y | Out-Null
+  if ($LASTEXITCODE -ne 0) { throw "RUNTIME_TAKEOWN_FAILED" }
+
+  & icacls.exe $InstallRoot /grant:r ("*" + $administratorsSid + ":(OI)(CI)F") ("*" + $systemSid + ":(OI)(CI)F") /T /C | Out-Null
+  if ($LASTEXITCODE -ne 0) { throw "RUNTIME_ACL_RECOVERY_FAILED" }
+
+  Remove-Item -LiteralPath $InstallRoot -Recurse -Force -ErrorAction Stop
+  if (Test-Path -LiteralPath $InstallRoot) { throw "RUNTIME_DELETE_NOT_CONFIRMED" }
+}
+
 function Invoke-Rollback {
   $errors = @()
 
@@ -330,11 +357,7 @@ function Invoke-Rollback {
 
   $errors += @(Rollback-SqlIfPresent)
 
-  try {
-    if (Test-Path -LiteralPath $InstallRoot) {
-      Remove-Item -LiteralPath $InstallRoot -Recurse -Force
-    }
-  }
+  try { Remove-RuntimeIfPresent }
   catch { $errors += ("RUNTIME:" + $_.Exception.Message) }
 
   return @($errors)
@@ -380,6 +403,16 @@ if (-not (Test-Path -LiteralPath $AuthorizationFile -PathType Leaf)) { throw "AU
 $authorization = Get-Content -LiteralPath $AuthorizationFile -Raw | ConvertFrom-Json
 if (-not [bool]$authorization.human_authorized) { throw "HUMAN_AUTHORIZATION_NOT_PRESENT" }
 if ($authorization.authorization_id -ne $ExpectedAuthorizationId) { throw "AUTHORIZATION_FILE_ID_MISMATCH" }
+
+# The first authorized attempt failed with FAILED_ROLLBACK_INCOMPLETE on 2026-10-03.
+# A fresh, explicit human retry authorization is required before any new admin effect.
+if (-not (Test-Path -LiteralPath $RetryAuthorizationFile -PathType Leaf)) {
+  throw "RETRY_NOT_AUTHORIZED_AFTER_INCIDENT"
+}
+$retryAuthorization = Get-Content -LiteralPath $RetryAuthorizationFile -Raw | ConvertFrom-Json
+if (-not [bool]$retryAuthorization.human_retry_authorized) { throw "HUMAN_RETRY_AUTHORIZATION_NOT_PRESENT" }
+if ($retryAuthorization.authorization_id -ne $ExpectedAuthorizationId) { throw "RETRY_AUTHORIZATION_ID_MISMATCH" }
+if ($retryAuthorization.incident_head -ne "9e3f8f4248ba054161dad564931b30c02d73851a") { throw "RETRY_AUTHORIZATION_INCIDENT_MISMATCH" }
 
 Assert-Administrator
 Assert-Hash $BinarySource $ExpectedBinarySha256 "BINARY_SOURCE"
