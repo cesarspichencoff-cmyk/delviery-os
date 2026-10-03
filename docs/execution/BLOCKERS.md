@@ -635,6 +635,30 @@ destravaria:** decidir o modelo de sessao humana desta superficie.
 **B8 — multi-unidade e de apresentacao.** O seletor funciona e preserva contexto, mas so ha uma
 unidade de demonstracao. Trocar de unidade nao muda fonte de dados porque nao ha segunda fonte.
 
+### Sucessão 2026-10-03 — rechecagem B5–B8 no código atual
+
+A formulação histórica de **B5** ficou ampla demais. Hoje existe caminho real de leitura:
+`GET /api/entregas` lê `identity.device` + `platform.event_log` a cada requisição e o bloco
+`realidade` da view model expõe, sem misturar com a demonstração: credencial vinculada, última
+sessão, versão do app, revogação, última posição, última sincronização, frescor do GPS, modo e
+contagem de fatos. O Product System passou **44/44** nesta rechecagem.
+
+Portanto B5 deixa de ser “não existe rota de leitura do estado do aparelho”. O blocker atual é
+estritamente **fila offline do telefone**: ela vive localmente no aparelho e nenhuma rota devolve
+sua profundidade; o campo continua corretamente `integracao_pendente` em `AparelhoRealVM`.
+
+**B6–B8 foram revalidados e permanecem abertos:**
+
+- **B6 histórico:** `operacao-viva-vm.ts` e `copiloto-vm.ts` continuam declarando
+  `historico*_de_mudanca(s)` como `integracao_pendente`; não existe rota de série histórica;
+- **B7 ação/autenticação:** a superfície Product System continua read-only, sem identidade humana
+  para dismiss/aceite operacional; oferecer botão ainda fingiria autoridade inexistente;
+- **B8 multi-unidade:** o seletor continua preservando contexto, mas `UNIDADES` contém somente
+  `demo-unit`; não há segunda fonte real ligada ao seletor.
+
+Esta sucessão corrige apenas o **estado dos blockers**; nenhuma rota nova, telemetria do telefone,
+autenticação humana ou segunda unidade foi criada.
+
 ### Divergencias Figma ↔ codigo ainda abertas
 
 `wash/*`, grid, foco e motion existem no codigo e nao como variavel no Figma (alfa e breakpoint nao
