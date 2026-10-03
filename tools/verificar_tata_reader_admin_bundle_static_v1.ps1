@@ -85,11 +85,13 @@ foreach ($excluded in @($manifest.explicitly_excluded_columns)) {
   }
 }
 
-Assert-True ($preflight.Contains('deliveryos.tata-reader-least-privilege-preflight.v4')) 'preflight v4 marker missing'
+Assert-True ([regex]::IsMatch($preflight, 'deliveryos\.tata-reader-least-privilege-preflight\.v[0-9]+')) 'preflight schema marker missing'
 Assert-True ($preflight.Contains('INTEGRATED_DELIVERY_CHANNELS_ONLY')) 'scope marker missing'
 Assert-True (-not $preflight.Contains('AllowDsComanda')) 'latent DSCOMANDA switch present'
 Assert-True ($preflight.Contains('SPECIFIC_LOGIN_IMPERSONATION_PRESENT')) 'login impersonation guard missing'
 Assert-True ($preflight.Contains('SPECIFIC_USER_IMPERSONATION_PRESENT')) 'user impersonation guard missing'
+Assert-True ($preflight.Contains('non_impersonable_server_group_targets')) 'server group diagnostic split missing'
+Assert-True ($preflight.Contains('non_impersonable_database_group_targets')) 'database group diagnostic split missing'
 Assert-True ($preflight.Contains('NON_TABLE_OBJECT_PERMISSION_PRESENT')) 'non-table guard missing'
 Assert-True ($preflight.Contains('READABLE_SURFACE_OUTSIDE_ALLOWLIST')) 'outside surface guard missing'
 
@@ -139,7 +141,7 @@ foreach ($forbidden in @('HttpClient','WebRequest','TcpClient','Socket','SqlConn
 Assert-True ($hostBuild.Contains('Framework64\v4.0.30319\csc.exe')) 'csc64 build path missing'
 Assert-True ($hostBuild.Contains('nuget_used = $false')) 'no-NuGet marker missing'
 
-Assert-True ($doc.Contains('## Preflight v4 requirements')) 'doc preflight version mismatch'
+Assert-True ($doc.Contains('## Preflight requirements')) 'doc preflight requirements section missing'
 Assert-True ($doc.Contains('start=demand')) 'doc demand-start marker missing'
 Assert-True ($doc.Contains('verificar_tata_reader_admin_bundle_static_v1.ps1')) 'PowerShell verifier missing from doc'
 Assert-True ($doc.Contains('241073DA0AE678933E2EF88AF2DA2091F1DF4A578E1D78AD2B48839D4465BA6C')) 'CAIXA binary hash missing from doc'
