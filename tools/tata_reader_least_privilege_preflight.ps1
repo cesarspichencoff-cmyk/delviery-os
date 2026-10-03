@@ -28,7 +28,7 @@ $allowed = [ordered]@{
 
 
 $result = [ordered]@{
-  schema = "deliveryos.tata-reader-least-privilege-preflight.v4"
+  schema = "deliveryos.tata-reader-least-privilege-preflight.v5"
   mode = "WINDOWS_INTEGRATED_AUTH_EXACT_COLUMN_SURFACE_METADATA_ONLY"
   server = $Server
   database = $Database
@@ -49,10 +49,13 @@ $result = [ordered]@{
   executable_procedure_count = $null
   specific_login_impersonation_count = $null
   specific_login_impersonation_targets = @()
+  non_impersonable_server_group_targets = @()
   server_impersonation_grants = @()
   login_token = @()
   effective_login_impersonation_evidence = @()
   specific_user_impersonation_count = $null
+  specific_user_impersonation_targets = @()
+  non_impersonable_database_group_targets = @()
   non_table_object_permissions = @()
   non_table_object_permission_count = $null
   objects = @()
@@ -211,11 +214,16 @@ WHERE HAS_PERMS_BY_NAME(
 "@
   $result.executable_procedure_count = [int64]$procedureCmd.ExecuteScalar()
 
+  # HAS_PERMS_BY_NAME reports effective permission, including Windows-group
+  # membership. EXECUTE AS LOGIN requires a singleton principal and cannot
+  # target a Windows group. Therefore S/U are blocking impersonation targets;
+  # G is preserved as diagnostic metadata but is not itself an executable
+  # impersonation target.
   $loginImpersonationCmd = $conn.CreateCommand()
   $loginImpersonationCmd.CommandTimeout = 5
   $loginImpersonationCmd.CommandText = @"
 SET NOCOUNT ON;
-SELECT sp.name, sp.type_desc
+SELECT sp.name, sp.type, sp.type_desc
 FROM sys.server_principals sp
 WHERE sp.name <> SUSER_SNAME()
   AND sp.type IN ('S','U','G')
@@ -224,9 +232,16 @@ ORDER BY sp.name;
 "@
   $loginImpersonationReader = $loginImpersonationCmd.ExecuteReader()
   while ($loginImpersonationReader.Read()) {
-    $result.specific_login_impersonation_targets += [ordered]@{
+    $entry = [ordered]@{
       name = [string]$loginImpersonationReader["name"]
       type = [string]$loginImpersonationReader["type_desc"]
+    }
+
+    if ([string]$loginImpersonationReader["type"] -eq "G") {
+      $result.non_impersonable_server_group_targets += $entry
+    }
+    else {
+      $result.specific_login_impersonation_targets += $entry
     }
   }
   $loginImpersonationReader.Close()
@@ -292,18 +307,36 @@ ORDER BY grantee.name, target.name, p.permission_name;
     }
   }
 
+  # EXECUTE AS USER also requires a singleton principal. Preserve group
+  # membership-derived HAS_PERMS results for diagnostics without treating the
+  # group itself as an impersonable user target.
   $userImpersonationCmd = $conn.CreateCommand()
   $userImpersonationCmd.CommandTimeout = 5
   $userImpersonationCmd.CommandText = @"
 SET NOCOUNT ON;
-SELECT COUNT_BIG(*)
+SELECT dp.name, dp.type, dp.type_desc
 FROM sys.database_principals dp
 WHERE dp.name <> USER_NAME()
   AND dp.type IN ('S','U','G')
-  AND HAS_PERMS_BY_NAME(dp.name, 'USER', 'IMPERSONATE') = 1;
+  AND HAS_PERMS_BY_NAME(dp.name, 'USER', 'IMPERSONATE') = 1
+ORDER BY dp.name;
 "@
-  $result.specific_user_impersonation_count =
-    [int64]$userImpersonationCmd.ExecuteScalar()
+  $userImpersonationReader = $userImpersonationCmd.ExecuteReader()
+  while ($userImpersonationReader.Read()) {
+    $entry = [ordered]@{
+      name = [string]$userImpersonationReader["name"]
+      type = [string]$userImpersonationReader["type_desc"]
+    }
+
+    if ([string]$userImpersonationReader["type"] -eq "G") {
+      $result.non_impersonable_database_group_targets += $entry
+    }
+    else {
+      $result.specific_user_impersonation_targets += $entry
+    }
+  }
+  $userImpersonationReader.Close()
+  $result.specific_user_impersonation_count = $result.specific_user_impersonation_targets.Count
 
   foreach ($objectName in $allowed.Keys) {
     $objectCmd = $conn.CreateCommand()
