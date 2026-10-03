@@ -1,0 +1,27 @@
+{
+  "schema": "deliveryos.tata-reader-preflight-candidate.v7",
+  "status": "CANDIDATE_NOT_AUTHORIZED",
+  "predecessor_sha256": "6CCA333F206D8DD508029C35F6B43B41793707AA09357E250208BBCCB8B968AE",
+  "candidate_sha256": "3BBE4C37FEDC8EC45A25FE08497B999453B181EBA3033861CFF37F701B4A0035",
+  "binary_sha256": "241073DA0AE678933E2EF88AF2DA2091F1DF4A578E1D78AD2B48839D4465BA6C",
+  "change_scope": [
+    "server impersonation blocker counts only singleton SQL_LOGIN/WINDOWS_LOGIN targets",
+    "database impersonation blocker counts only singleton SQL_USER/WINDOWS_USER targets",
+    "Windows-group effective-permission results remain visible as diagnostic metadata"
+  ],
+  "semantic_scope_changed": false,
+  "blocker_policy_refined": true,
+  "blocker_policy_relaxed_for_non_executable_group_targets_only": true,
+  "allowed_columns_changed": false,
+  "operational_row_read_added": false,
+  "metadata_only": true,
+  "print_added": false,
+  "fiscal_added": false,
+  "cutover_added": false,
+  "evidence_basis": {
+    "prior_target": "BUILTIN\\Usuários",
+    "prior_target_type": "WINDOWS_GROUP",
+    "prior_explicit_grant_correlation_count": 0,
+    "rollback_state": "PROVEN_CLEAN"
+  }
+}
