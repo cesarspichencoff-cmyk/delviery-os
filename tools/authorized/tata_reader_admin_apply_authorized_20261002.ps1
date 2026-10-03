@@ -7,7 +7,7 @@ $ErrorActionPreference = "Stop"
 
 $ExpectedAuthorizationId = "CESAR-2026-10-02-TATA-READER-ADMIN-V1"
 $ExpectedBinarySha256 = "241073DA0AE678933E2EF88AF2DA2091F1DF4A578E1D78AD2B48839D4465BA6C"
-$ExpectedPreflightSha256 = "592A7B0A7D7123018C934E8C54EF7C5DC1E44D699BD17BD8D99F3020BD0DDD3B"
+$ExpectedPreflightSha256 = "6CCA333F206D8DD508029C35F6B43B41793707AA09357E250208BBCCB8B968AE"
 
 $ServiceName = "TataComandaReader"
 $ServicePrincipal = "NT SERVICE\TataComandaReader"
@@ -29,8 +29,8 @@ $ResultPath = Join-Path $ResultDirectory "TATA_READER_ADMIN_PHASE_RESULT.json"
 $RepoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $PreflightSource = Join-Path $RepoRoot "tools\tata_reader_least_privilege_preflight.ps1"
 $AuthorizationFile = Join-Path $RepoRoot "data\tata_reader_admin_authorization_v1.json"
-$RetryAuthorizationFile = Join-Path $RepoRoot "data\tata_reader_admin_retry_authorization_v4.json"
-$PreflightCandidateFile = Join-Path $RepoRoot "data\tata_reader_preflight_candidate_v5.json"
+$RetryAuthorizationFile = Join-Path $RepoRoot "data\tata_reader_admin_retry_authorization_v5.json"
+$PreflightCandidateFile = Join-Path $RepoRoot "data\tata_reader_preflight_candidate_v6.json"
 $BundleVerifier = Join-Path $RepoRoot "tools\verificar_tata_reader_admin_bundle_static_v1.ps1"
 
 $allowed = [ordered]@{
@@ -475,7 +475,7 @@ if (-not (Test-Path -LiteralPath $RetryAuthorizationFile -PathType Leaf)) {
 $retryAuthorization = Get-Content -LiteralPath $RetryAuthorizationFile -Raw | ConvertFrom-Json
 if (-not [bool]$retryAuthorization.human_retry_authorized) { throw "HUMAN_RETRY_AUTHORIZATION_NOT_PRESENT" }
 if ($retryAuthorization.authorization_id -ne $ExpectedAuthorizationId) { throw "RETRY_AUTHORIZATION_ID_MISMATCH" }
-if ($retryAuthorization.incident_head -ne "45eb3e7770c281e660644e01cc5c856fb95640b5") { throw "RETRY_AUTHORIZATION_INCIDENT_MISMATCH" }
+if ($retryAuthorization.incident_head -ne "00368010f28528add90736664bbcdf750626688f") { throw "RETRY_AUTHORIZATION_INCIDENT_MISMATCH" }
 if ($retryAuthorization.preflight_sha256 -ne $ExpectedPreflightSha256) { throw "RETRY_AUTHORIZATION_PREFLIGHT_HASH_MISMATCH" }
 
 Assert-Administrator
@@ -523,12 +523,50 @@ try {
   exit 0
 }
 catch {
-  $failure = $_.Exception.Message
-  $preflightDiagnostics = Capture-PreflightDiagnostics
-  $rollbackErrors = @(Invoke-Rollback)
+  # FAILURE_RESULT_PRIMITIVE_V2: rich diagnostic object graphs are preserved in files,
+  # never embedded directly into the apply result JSON.
+  $failure = [string]$_.Exception.Message
+  $diagnosticCaptureError = $null
+  try {
+    Capture-PreflightDiagnostics | Out-Null
+  }
+  catch {
+    $diagnosticCaptureError = [string]$_.Exception.Message
+  }
+
+  $rollbackErrors = @(
+    (Invoke-Rollback) |
+      ForEach-Object { [string]$_ } |
+      Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+  )
+
+  $preservedDiagnosticPath = Join-Path $ResultDirectory "TATA_READER_PREFLIGHT_DIAGNOSTIC.json"
+  $preservedExitCodePath = Join-Path $ResultDirectory "TATA_READER_PREFLIGHT_EXITCODE.txt"
+
+  $preflightDiagnosticPreserved = Test-Path -LiteralPath $preservedDiagnosticPath -PathType Leaf
+  $preflightExitCode = $null
+  $preflightBlocker = $null
+  $preflightError = $null
+
+  if (Test-Path -LiteralPath $preservedExitCodePath -PathType Leaf) {
+    try { $preflightExitCode = [int](Get-Content -LiteralPath $preservedExitCodePath -Raw) } catch { }
+  }
+
+  if ($preflightDiagnosticPreserved) {
+    try {
+      $pd = Get-Content -LiteralPath $preservedDiagnosticPath -Raw -Encoding UTF8 | ConvertFrom-Json
+      $preflightBlocker = [string]$pd.blocker
+      $preflightError = [string]$pd.error
+    }
+    catch {
+      if ([string]::IsNullOrWhiteSpace($diagnosticCaptureError)) {
+        $diagnosticCaptureError = [string]$_.Exception.Message
+      }
+    }
+  }
 
   $result = [ordered]@{
-    schema = "deliveryos.tata-reader-admin-phase-result.v1"
+    schema = "deliveryos.tata-reader-admin-phase-result.v2"
     authorization_id = $ExpectedAuthorizationId
     started_at = $startedAt
     completed_at = (Get-Date).ToString("o")
@@ -536,15 +574,20 @@ catch {
     failure = $failure
     rollback_performed = $true
     rollback_complete = ($rollbackErrors.Count -eq 0)
-    rollback_errors = $rollbackErrors
-    preflight_diagnostics = $preflightDiagnostics
+    rollback_errors = @($rollbackErrors)
+    preflight_diagnostic_preserved = [bool]$preflightDiagnosticPreserved
+    preflight_exit_code = $preflightExitCode
+    preflight_blocker = $preflightBlocker
+    preflight_error = $preflightError
+    diagnostic_capture_error = $diagnosticCaptureError
     order_row_read = $false
     print = $false
     fiscal_action = $false
     cutover = $false
   }
 
-  try { $result | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $ResultPath -Encoding UTF8 } catch { }
-  $result | ConvertTo-Json -Depth 8
+  $json = $result | ConvertTo-Json -Depth 4
+  try { [System.IO.File]::WriteAllText($ResultPath, $json, (New-Object System.Text.UTF8Encoding($false))) } catch { }
+  $json
   exit 4
 }
