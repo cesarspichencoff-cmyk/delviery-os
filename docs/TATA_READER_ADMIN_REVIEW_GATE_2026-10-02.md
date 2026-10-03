@@ -77,15 +77,15 @@ Initial scope is intentionally minimal:
 - `CDPRODPROMOCAO`, `NRSEQPRODCOM`, `NRSEQPRODPAI`: deferred until shadow evidence proves combo structure is needed.
 - `IDORIGEMVENDA`: deferred until shadow evidence proves it is needed.
 
-## Preflight v4 requirements
+## Preflight requirements
 
 The final service identity must fail closed unless:
 - exact Windows principal matches;
 - zero elevated server roles;
 - zero dangerous server permissions;
-- zero specific login impersonation;
+- zero impersonable singleton login targets; Windows groups detected only through effective membership remain diagnostic metadata, not direct `EXECUTE AS LOGIN` targets;
 - zero broad database roles/permissions;
-- zero specific user impersonation;
+- zero impersonable singleton database-user targets; Windows groups remain diagnostic metadata rather than direct `EXECUTE AS USER` targets;
 - zero executable procedures;
 - zero effective permissions on non-table application objects;
 - every required column is readable;
