@@ -46,7 +46,7 @@ $roots=@(
   (Join-Path $odhenPos "backend_74000")
 )
 $extensions=@(".js",".ts",".php",".json",".html",".htm",".xml",".txt")
-$primaryRegex='(?i)(\bF7\b|case\s+118\b|(?:keyCode|which|key|code)[^\r\n]{0,50}\b118\b|\b118\b[^\r\n]{0,50}(?:keyCode|which|key|code))'
+$primaryRegex='(?i)(case\s+(?:118\b|["'']F7["''])|["'']?(?:keyCode|which)["'']?\s*(?:===?|==?|:)\s*118\b|["'']?(?:key|code)["'']?\s*(?:===?|==?|:)\s*["'']F7["'']|(?:keyCode|which)[^\r\n]{0,40}\b118\b|\b118\b[^\r\n]{0,40}(?:keyCode|which))'
 $fiscalRegex='(?i)(NFCe|NFC-e|DANFE|fiscal|Fiscal|impress|Impress|Delivery|delivery|Payment|pagamento)'
 
 $result=[ordered]@{
@@ -105,6 +105,8 @@ try {
     $filePrimary=@()
     for($i=0;$i -lt $lines.Count;$i++){
       $line=[string]$lines[$i]
+      $trimmed=$line.TrimStart()
+      if($trimmed -match '^(//|#|/\*|\*|<!--)'){ continue }
       if($line -match $primaryRegex){
         $filePrimary += ($i+1)
       }

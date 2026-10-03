@@ -19,7 +19,9 @@ foreach($required in @(
   "NO_F7_CANDIDATE_FILES_CAPTURED",
   "primary_match_count",
   "candidate_files",
-  'case\s+118',
+  'case\s+(?:118',
+  '(?:keyCode|which)',
+  '$trimmed=$line.TrimStart()',
   "REDACTED_SENSITIVE_ASSIGNMENT",
   'database_query=$false',
   'database_write=$false',
@@ -35,6 +37,8 @@ foreach($required in @(
 )){
   Assert ($script.Contains($required)) ("F7_TRACE_REQUIRED_MARKER_MISSING:"+$required)
 }
+
+Assert (-not $script.Contains('\bF7\b|')) "F7_TRACE_BROAD_F7_TOKEN_FORBIDDEN"
 
 foreach($forbidden in @(
   "Invoke-WebRequest","Invoke-RestMethod","Start-Service","Stop-Service","Restart-Service","Set-Service",
