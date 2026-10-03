@@ -1,0 +1,21 @@
+{
+  "schema": "deliveryos.tata-reader-admin-retry3-incident.v1",
+  "authorization_id": "CESAR-2026-10-02-TATA-READER-ADMIN-V1",
+  "source_head": "45eb3e7770c281e660644e01cc5c856fb95640b5",
+  "status": "FAILED_RESULT_SERIALIZATION",
+  "failure": "ConvertTo-Json:System.OutOfMemoryException",
+  "phase": "after preflight failure path entered and after Invoke-Rollback was called; final result serialization failed",
+  "rollback_performed": "ATTEMPTED_NOT_YET_PROVEN",
+  "rollback_complete": "UNKNOWN_UNTIL_INDEPENDENT_CAIXA_STATE_CHECK",
+  "evidence_preservation_expected": true,
+  "diagnostic_paths": [
+    "C:\\TATA\\comanda-v1\\saida\\fase3\\TATA_READER_PREFLIGHT_EXITCODE.txt",
+    "C:\\TATA\\comanda-v1\\saida\\fase3\\TATA_READER_PREFLIGHT_DIAGNOSTIC.json",
+    "C:\\TATA\\comanda-v1\\saida\\fase3\\TATA_READER_PREFLIGHT_IDENTITY.txt",
+    "C:\\TATA\\comanda-v1\\saida\\fase3\\TATA_READER_PREFLIGHT_STDERR.txt"
+  ],
+  "failure_class": "POWERSHELL_PIPELINE_OUTPUT_CONTAMINATION_CAUSING_JSON_SERIALIZATION_OOM",
+  "correction": "suppress Copy-Item output with Out-Null, bound identity/stderr strings, consume retry-v3 gate",
+  "retry_authorized": false,
+  "next_action": "READ_PRESERVED_DIAGNOSTIC_AND_VERIFY_SERVICE_RUNTIME_SQL_CLEAN_BEFORE_ANY_NEW_RETRY"
+}
