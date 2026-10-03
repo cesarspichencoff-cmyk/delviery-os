@@ -1,0 +1,28 @@
+﻿{
+    "schema":  "deliveryos.tata-nfce-f7-trace-authorization.v1",
+    "authorization_id":  "CESAR-2026-10-03-TATA-NFCE-F7-TRACE-V1",
+    "authorized_by":  "Cesar",
+    "human_authorized":  true,
+    "authorized_source_head":  "8c604b04c96d140a055b672b95ee7e1f6f606411",
+    "trace_script_sha256":  "AB6A68B00FA053AF70722CF8838FAD650FB3D71AAE0DB87528313E77182F5C1E",
+    "scope":  {
+                  "f7_source_trace":  true,
+                  "sanitized_context_only":  true,
+                  "secret_values":  false,
+                  "order_read":  false,
+                  "database_query":  false,
+                  "database_write":  false,
+                  "odhen_write":  false,
+                  "config_write":  false,
+                  "process_start":  false,
+                  "service_change":  false,
+                  "printer_change":  false,
+                  "print":  false,
+                  "http":  false,
+                  "sefaz_call":  false,
+                  "fiscal_action":  false,
+                  "danfe_print":  false,
+                  "cutover":  false
+              },
+    "human_statement":  "pode seguir com a análise fiscal read-onl"
+}
