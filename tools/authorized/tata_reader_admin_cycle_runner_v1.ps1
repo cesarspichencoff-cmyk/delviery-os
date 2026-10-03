@@ -163,7 +163,7 @@ if (
 ) {
   $state = Read-AdministrativeState
   $summary = [ordered]@{
-    schema = "deliveryos.tata-reader-admin-cycle-runner.v1"
+    schema = "deliveryos.tata-reader-admin-cycle-runner.v2"
     cycle_id = $cycleId
     status = "BLOCKED_BEFORE_EFFECT"
     verifier_exit_code = $verifierRun.exit_code
@@ -188,6 +188,31 @@ $applyRun = Invoke-PowerShellFile -ScriptPath $Apply -ScriptArgs @("-Authorizati
 $applyResult = Read-FreshJson -Path $ApplyResultPath -StartedUtc $startedUtc
 $diagnostic = Read-FreshJson -Path $DiagnosticPath -StartedUtc $startedUtc
 $state = Read-AdministrativeState
+
+$impersonationTargets = @()
+$impersonationEvidence = @()
+if ($null -ne $diagnostic) {
+  $impersonationTargets = @(
+    $diagnostic.specific_login_impersonation_targets |
+      ForEach-Object {
+        [ordered]@{
+          name = [string]$_.name
+          type = [string]$_.type
+        }
+      }
+  )
+  $impersonationEvidence = @(
+    $diagnostic.effective_login_impersonation_evidence |
+      ForEach-Object {
+        [ordered]@{
+          grantee = [string]$_.grantee
+          target = [string]$_.target
+          permission = [string]$_.permission
+          state = [string]$_.state
+        }
+      }
+  )
+}
 
 $allClean =
   ($state.check_error -eq $null) -and
@@ -233,6 +258,8 @@ $summary = [ordered]@{
   failure = if ($null -eq $applyResult) { $stderrTail } else { [string]$applyResult.failure }
   blocker = if ($null -eq $diagnostic) { $null } else { [string]$diagnostic.blocker }
   diagnostic_error = if ($null -eq $diagnostic) { $null } else { [string]$diagnostic.error }
+  specific_login_impersonation_targets = @($impersonationTargets)
+  effective_login_impersonation_evidence = @($impersonationEvidence)
   administrative_state = $state
   evidence_directory = $cycleDirectory
   order_row_read = $false
