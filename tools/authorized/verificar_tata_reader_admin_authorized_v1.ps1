@@ -16,6 +16,12 @@ $manifest = Read-Text "data\tata_reader_permission_manifest_v1.json" | ConvertFr
 $buildEvidence = Read-Text "data\tata_reader_caixa_build_evidence_v1.json" | ConvertFrom-Json
 $apply = Read-Text "tools\authorized\tata_reader_admin_apply_authorized_20261002.ps1"
 $rollback = Read-Text "tools\authorized\tata_reader_admin_rollback_authorized_20261002.ps1"
+$retryAuthorizationPath = Join-Path $RepoRoot "data\tata_reader_admin_retry_authorization_v2.json"
+$retryAuthorized = $false
+if (Test-Path -LiteralPath $retryAuthorizationPath -PathType Leaf) {
+  $retryAuthorization = Get-Content -LiteralPath $retryAuthorizationPath -Raw -Encoding UTF8 | ConvertFrom-Json
+  $retryAuthorized = ([bool]$retryAuthorization.human_retry_authorized) -and ($retryAuthorization.authorization_id -eq "CESAR-2026-10-02-TATA-READER-ADMIN-V1") -and ($retryAuthorization.incident_head -eq "9e3f8f4248ba054161dad564931b30c02d73851a")
+}
 
 $applyTokens = $null
 $applyErrors = $null
@@ -69,6 +75,10 @@ Assert-True ($apply.Contains('order_row_read = $false')) "APPLY_ORDER_EFFECT_BOU
 Assert-True ($apply.Contains('print = $false')) "APPLY_PRINT_EFFECT_BOUNDARY_MISSING"
 Assert-True ($apply.Contains('fiscal_action = $false')) "APPLY_FISCAL_EFFECT_BOUNDARY_MISSING"
 Assert-True ($apply.Contains('cutover = $false')) "APPLY_CUTOVER_BOUNDARY_MISSING"
+Assert-True ($apply.Contains("ACL_ORDER_V2")) "APPLY_ACL_ORDER_V2_MISSING"
+Assert-True ($apply.Contains("RetryAuthorizationFile")) "APPLY_RETRY_AUTH_GATE_MISSING"
+Assert-True ($apply.Contains("RETRY_NOT_AUTHORIZED_AFTER_INCIDENT")) "APPLY_RETRY_FAIL_CLOSED_MISSING"
+Assert-True ($apply.Contains("RUNTIME_TAKEOWN_FAILED")) "APPLY_RUNTIME_ACL_RECOVERY_MISSING"
 
 Assert-True (-not $apply.Contains("DSCOMANDA")) "APPLY_DSCOMANDA_SCOPE_LEAK"
 Assert-True (-not $apply.Contains("CDPRODPROMOCAO")) "APPLY_COMBO_SCOPE_LEAK"
@@ -95,11 +105,15 @@ Assert-True ($rollback.Contains("DROP USER [NT SERVICE\TataComandaReader]")) "RO
 Assert-True ($rollback.Contains("DROP LOGIN [NT SERVICE\TataComandaReader]")) "ROLLBACK_DROP_LOGIN_MISSING"
 Assert-True ($rollback.Contains("sc.exe delete")) "ROLLBACK_SERVICE_DELETE_MISSING"
 Assert-True ($rollback.Contains("C:\ProgramData\TataComandaReader")) "ROLLBACK_RUNTIME_PATH_MISSING"
+Assert-True ($rollback.Contains("takeown.exe")) "ROLLBACK_TAKEOWN_RECOVERY_MISSING"
+Assert-True ($rollback.Contains("RUNTIME_ACL_RECOVERY_FAILED")) "ROLLBACK_ACL_RECOVERY_MISSING"
 
 [ordered]@{
-  schema = "deliveryos.tata-reader-authorized-bundle-static.v1"
+  schema = "deliveryos.tata-reader-authorized-bundle-static.v2"
   passed = $true
   authorization_id = $authId
   administrative_effect = $false
-  ready_for_authorized_admin_execution = $true
+  retry_authorized = $retryAuthorized
+  ready_for_authorized_admin_execution = $retryAuthorized
+  ready_for_human_retry_authorization = (-not $retryAuthorized)
 } | ConvertTo-Json -Depth 4
