@@ -16,11 +16,13 @@ $manifest = Read-Text "data\tata_reader_permission_manifest_v1.json" | ConvertFr
 $buildEvidence = Read-Text "data\tata_reader_caixa_build_evidence_v1.json" | ConvertFrom-Json
 $apply = Read-Text "tools\authorized\tata_reader_admin_apply_authorized_20261002.ps1"
 $rollback = Read-Text "tools\authorized\tata_reader_admin_rollback_authorized_20261002.ps1"
+$preflight = Read-Text "tools\tata_reader_least_privilege_preflight.ps1"
+$preflightCandidate = Read-Text "data\tata_reader_preflight_candidate_v5.json" | ConvertFrom-Json
 $retryAuthorizationPath = Join-Path $RepoRoot "data\tata_reader_admin_retry_authorization_v4.json"
 $retryAuthorized = $false
 if (Test-Path -LiteralPath $retryAuthorizationPath -PathType Leaf) {
   $retryAuthorization = Get-Content -LiteralPath $retryAuthorizationPath -Raw -Encoding UTF8 | ConvertFrom-Json
-  $retryAuthorized = ([bool]$retryAuthorization.human_retry_authorized) -and ($retryAuthorization.authorization_id -eq "CESAR-2026-10-02-TATA-READER-ADMIN-V1") -and ($retryAuthorization.incident_head -eq "45eb3e7770c281e660644e01cc5c856fb95640b5")
+  $retryAuthorized = ([bool]$retryAuthorization.human_retry_authorized) -and ($retryAuthorization.authorization_id -eq "CESAR-2026-10-02-TATA-READER-ADMIN-V1") -and ($retryAuthorization.incident_head -eq "45eb3e7770c281e660644e01cc5c856fb95640b5") -and ($retryAuthorization.preflight_sha256 -eq "592A7B0A7D7123018C934E8C54EF7C5DC1E44D699BD17BD8D99F3020BD0DDD3B")
 }
 
 $applyTokens = $null
@@ -45,16 +47,25 @@ Assert-True ($rollbackErrors.Count -eq 0) ("ROLLBACK_SYNTAX_ERROR:" + ($rollback
 
 $authId = "CESAR-2026-10-02-TATA-READER-ADMIN-V1"
 $binaryHash = "241073DA0AE678933E2EF88AF2DA2091F1DF4A578E1D78AD2B48839D4465BA6C"
-$preflightHash = "FFCFB49577280A596EA951C839C881528D187A33F0B5D19DE08D2A86D1FEFFC6"
+$historicalPreflightHash = "FFCFB49577280A596EA951C839C881528D187A33F0B5D19DE08D2A86D1FEFFC6"
+$candidatePreflightHash = "592A7B0A7D7123018C934E8C54EF7C5DC1E44D699BD17BD8D99F3020BD0DDD3B"
 
 Assert-True ([bool]$authorization.human_authorized) "HUMAN_AUTHORIZATION_FALSE"
 Assert-True ($authorization.authorization_id -eq $authId) "AUTHORIZATION_ID_FILE_MISMATCH"
 Assert-True ($authorization.binary_sha256 -eq $binaryHash) "AUTHORIZATION_BINARY_HASH_MISMATCH"
-Assert-True ($authorization.preflight_sha256 -eq $preflightHash) "AUTHORIZATION_PREFLIGHT_HASH_MISMATCH"
+Assert-True ($authorization.preflight_sha256 -eq $historicalPreflightHash) "HISTORICAL_AUTHORIZATION_PREFLIGHT_HASH_MISMATCH"
 
 Assert-True ($buildEvidence.binary_sha256 -eq $binaryHash) "BUILD_BINARY_HASH_MISMATCH"
-Assert-True ($buildEvidence.preflight_sha256 -eq $preflightHash) "BUILD_PREFLIGHT_HASH_MISMATCH"
+Assert-True ($buildEvidence.preflight_sha256 -eq $historicalPreflightHash) "HISTORICAL_BUILD_PREFLIGHT_HASH_MISMATCH"
 Assert-True (-not [bool]$buildEvidence.administrative_effect) "BUILD_EVIDENCE_HAS_ADMIN_EFFECT"
+
+Assert-True ($preflightCandidate.status -eq "CANDIDATE_NOT_AUTHORIZED") "PREFLIGHT_CANDIDATE_STATUS_MISMATCH"
+Assert-True ($preflightCandidate.predecessor_sha256 -eq $historicalPreflightHash) "PREFLIGHT_CANDIDATE_PREDECESSOR_MISMATCH"
+Assert-True ($preflightCandidate.candidate_sha256 -eq $candidatePreflightHash) "PREFLIGHT_CANDIDATE_HASH_MISMATCH"
+Assert-True (-not [bool]$preflightCandidate.semantic_scope_changed) "PREFLIGHT_CANDIDATE_SCOPE_CHANGED"
+$actualPreflightHash = (Get-FileHash -LiteralPath (Join-Path $RepoRoot "tools\tata_reader_least_privilege_preflight.ps1") -Algorithm SHA256).Hash
+Assert-True ([string]::Equals($actualPreflightHash,$candidatePreflightHash,[System.StringComparison]::OrdinalIgnoreCase)) "PREFLIGHT_FILE_HASH_MISMATCH"
+Assert-True ($preflight.Contains("USER_NAME() AS [current_user]")) "PREFLIGHT_RESERVED_ALIAS_FIX_MISSING"
 
 Assert-True ($manifest.status -eq "REVIEW_ONLY_NOT_AUTHORIZED") "MANIFEST_STATUS_CHANGED"
 Assert-True ($manifest.principal -eq "NT SERVICE\TataComandaReader") "MANIFEST_PRINCIPAL_MISMATCH"
@@ -66,7 +77,7 @@ Assert-True (-not [bool]$manifest.scope_policy.takeaway_origin_column) "TAKEAWAY
 
 Assert-True ($apply.Contains($authId)) "APPLY_AUTH_ID_MISSING"
 Assert-True ($apply.Contains($binaryHash)) "APPLY_BINARY_HASH_MISSING"
-Assert-True ($apply.Contains($preflightHash)) "APPLY_PREFLIGHT_HASH_MISSING"
+Assert-True ($apply.Contains($candidatePreflightHash)) "APPLY_CANDIDATE_PREFLIGHT_HASH_MISSING"
 Assert-True ($apply.Contains('Start-Service -Name $ServiceName')) "APPLY_PREFLIGHT_START_MISSING"
 Assert-True ($apply.Contains("Invoke-Rollback")) "APPLY_ROLLBACK_MISSING"
 Assert-True ($apply.Contains("FAILED_ROLLED_BACK")) "APPLY_ROLLBACK_RESULT_MISSING"
@@ -119,10 +130,11 @@ Assert-True ($rollback.Contains("takeown.exe")) "ROLLBACK_TAKEOWN_RECOVERY_MISSI
 Assert-True ($rollback.Contains("RUNTIME_ACL_RECOVERY_FAILED")) "ROLLBACK_ACL_RECOVERY_MISSING"
 
 [ordered]@{
-  schema = "deliveryos.tata-reader-authorized-bundle-static.v4"
+  schema = "deliveryos.tata-reader-authorized-bundle-static.v5"
   passed = $true
   authorization_id = $authId
   administrative_effect = $false
+  candidate_preflight_sha256 = $candidatePreflightHash
   retry_authorized = $retryAuthorized
   ready_for_authorized_admin_execution = $retryAuthorized
   ready_for_human_retry_authorization = (-not $retryAuthorized)
