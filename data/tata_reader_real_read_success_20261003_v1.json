@@ -1,0 +1,66 @@
+{
+  "schema": "deliveryos.tata-reader-real-read-success.v1",
+  "authorization_id": "CESAR-2026-10-03-TATA-READER-REAL-READ-V1",
+  "source_commit": "8fcd140bb5dbcbce4d3f38f3574c1db9ab38cf5e",
+  "cycle_id": "20261003T084831616Z",
+  "status": "PROVEN_MINIMIZED_REAL_ORDER_READ",
+  "service_identity": "NT SERVICE\\TataComandaReader",
+  "sql_identity": {
+    "current_login": "NT SERVICE\\TataComandaReader",
+    "current_user": "NT SERVICE\\TataComandaReader",
+    "database": "teknisa"
+  },
+  "observed_order": {
+    "CDFILIAL": "0001",
+    "CDLOJA": "01",
+    "NRVENDAREST": "0000346965",
+    "NRCOMANDA": "0000346537",
+    "NRCOMANDAEXT": "9092",
+    "IDORGCMDVENDA": "DLV_IFO",
+    "IDSTCOMANDA": "X",
+    "DTHRABERMESA": "2026-10-02T23:02:07.0000000"
+  },
+  "observed_items": [
+    {
+      "NRPRODCOMVEN": "000001",
+      "CDPRODUTO": "0000001459",
+      "NMPRODUTO": "COMB SUSHI + SASHIMI ESPECIAL 2 P",
+      "QTPRODCOMVEN": "1.000",
+      "IDSTPRCOMVEN": "4"
+    },
+    {
+      "NRPRODCOMVEN": "000002",
+      "CDPRODUTO": "0000001641",
+      "NMPRODUTO": "TEMAKI DE BARRIGA DE SALMAO ",
+      "QTPRODCOMVEN": "3.000",
+      "IDSTPRCOMVEN": "4"
+    }
+  ],
+  "rows_read": 3,
+  "minimization": {
+    "customer_pii_fields_read": false,
+    "observations_read": false,
+    "max_orders": 1,
+    "max_items": 20
+  },
+  "restoration": {
+    "runtime_restored": true,
+    "preflight_script_restored": true,
+    "evidence_restored": true,
+    "service_stopped": true,
+    "installed_preflight_sha256": "3BBE4C37FEDC8EC45A25FE08497B999453B181EBA3033861CFF37F701B4A0035"
+  },
+  "proven_effect_boundaries": {
+    "order_row_read": true,
+    "database_write": false,
+    "odhen_write": false,
+    "print": false,
+    "spooler_write": false,
+    "fiscal_action": false,
+    "sefaz_call": false,
+    "danfe_print": false,
+    "cutover": false
+  },
+  "evidence_directory": "C:\\TATA\\comanda-v1\\saida\\fase4-real-read\\cycle-20261003T084831616Z",
+  "next_effect_boundary": "CONTINUOUS_READER_OR_PRODUCTION_PRINT_REQUIRES_SEPARATE_AUTHORIZATION"
+}
