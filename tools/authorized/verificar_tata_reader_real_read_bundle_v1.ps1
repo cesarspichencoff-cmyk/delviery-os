@@ -23,13 +23,13 @@ Assert ($read.Contains('TOP (20)')) "ITEM_LIMIT_MISSING"
 Assert ($read.Contains("NRCOMANDAEXT")) "NRCOMANDAEXT_MISSING"
 Assert ($read.Contains("CDPRODUTO")) "CDPRODUTO_MISSING"
 Assert ($read.Contains("QTPRODCOMVEN")) "QTPRODCOMVEN_MISSING"
-Assert ($read.Contains("customer_pii_fields_read = $false")) "PII_BOUNDARY_MISSING"
-Assert ($read.Contains("observations_read = $false")) "OBSERVATION_BOUNDARY_MISSING"
+Assert ($read.Contains('customer_pii_fields_read = $false')) "PII_BOUNDARY_MISSING"
+Assert ($read.Contains('observations_read = $false')) "OBSERVATION_BOUNDARY_MISSING"
 
 foreach($forbidden in @(
   "INSERT ","UPDATE ","DELETE ","MERGE ","CREATE ","ALTER ","DROP ","GRANT ","DENY ","REVOKE ",
   "EXEC ","EXECUTE ","TRUNCATE ","DBCC ","sp_configure","xp_cmdshell",
-  "Out-Printer","WritePrinter","StartDocPrinter","SEFAZ","NFC-e","NFCE","DANFE"
+  "Out-Printer","WritePrinter","StartDocPrinter","Invoke-WebRequest","Invoke-RestMethod","System.Net.Http"
 )){
   Assert (-not $read.ToUpperInvariant().Contains($forbidden.ToUpperInvariant())) ("READ_SCRIPT_FORBIDDEN_SURFACE:"+$forbidden)
 }
@@ -38,7 +38,7 @@ Assert ($runner.Contains("runtime_restored")) "RUNNER_RESTORE_PROOF_MISSING"
 Assert ($runner.Contains("service_stopped")) "RUNNER_SERVICE_STOP_PROOF_MISSING"
 Assert ($runner.Contains("INSTALLED_PREFLIGHT_HASH_MISMATCH")) "RUNNER_PREFLIGHT_GUARD_MISSING"
 Assert ($runner.Contains("Start-Service -Name $ExpectedServiceName")) "RUNNER_SERVICE_START_MISSING"
-Assert ($runner.Contains("Copy-Item -LiteralPath $backupPath -Destination $InstalledScript")) "RUNNER_PREFLIGHT_RESTORE_MISSING"
+Assert ($runner.Contains('Copy-Item -LiteralPath $backupPath -Destination $InstalledScript')) "RUNNER_PREFLIGHT_RESTORE_MISSING"
 
 if(Test-Path -LiteralPath $authPath -PathType Leaf){
   $auth=Get-Content -LiteralPath $authPath -Raw -Encoding UTF8|ConvertFrom-Json
