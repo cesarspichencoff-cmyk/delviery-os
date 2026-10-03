@@ -268,6 +268,7 @@ export function signS3Request(args: {
   method: "GET" | "PUT";
   key: string;
   payload_sha256?: string;
+  content_md5?: string;
   now?: Date;
 }): { url: string; headers: Record<string, string> } {
   const cfgError = validateS3OffhostConfig(args.config);
@@ -288,6 +289,9 @@ export function signS3Request(args: {
     "x-amz-content-sha256": payloadHash,
     "x-amz-date": amz,
   };
+  if (args.content_md5) {
+    headersToSign["content-md5"] = args.content_md5;
+  }
   if (args.config.session_token) {
     headersToSign["x-amz-security-token"] = args.config.session_token;
   }
@@ -309,6 +313,7 @@ export function signS3Request(args: {
       authorization: vector.authorization,
       "x-amz-content-sha256": payloadHash,
       "x-amz-date": amz,
+      ...(args.content_md5 ? { "content-md5": args.content_md5 } : {}),
       ...(args.config.session_token
         ? { "x-amz-security-token": args.config.session_token }
         : {}),
@@ -321,6 +326,7 @@ async function request(args: {
   method: "GET" | "PUT";
   key: string;
   payload_sha256?: string;
+  content_md5?: string;
   body?: NodeJS.ReadableStream | Buffer | string;
   content_length?: number;
 }): Promise<Response> {
@@ -329,6 +335,7 @@ async function request(args: {
     method: args.method,
     key: args.key,
     payload_sha256: args.payload_sha256,
+    content_md5: args.content_md5,
   });
 
   const init: RequestInit & { duplex?: "half" } = {
@@ -349,6 +356,17 @@ async function request(args: {
   return fetch(signed.url, init);
 }
 
+async function md5FileBase64(path: string): Promise<string> {
+  const hash = createHash("md5");
+  await new Promise<void>((resolve, reject) => {
+    const stream = createReadStream(path);
+    stream.on("data", (chunk) => hash.update(chunk));
+    stream.on("error", reject);
+    stream.on("end", resolve);
+  });
+  return hash.digest("base64");
+}
+
 async function putFile(
   config: S3OffhostConfig,
   key: string,
@@ -356,11 +374,13 @@ async function putFile(
   sha256: string,
 ): Promise<void> {
   const bytes = statSync(path).size;
+  const contentMd5 = await md5FileBase64(path);
   const response = await request({
     config,
     method: "PUT",
     key,
     payload_sha256: sha256,
+    content_md5: contentMd5,
     body: createReadStream(path),
     content_length: bytes,
   });
@@ -383,6 +403,7 @@ async function putText(
     method: "PUT",
     key,
     payload_sha256: sha256Hex(body),
+    content_md5: createHash("md5").update(body).digest("base64"),
     body,
     content_length: body.length,
   });

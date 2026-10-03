@@ -90,6 +90,22 @@ async function main(): Promise<void> {
     assert.equal(signed.headers["x-amz-date"], "20261002T123456Z");
   });
 
+  await test("S34b PUT com Object Lock inclui Content-MD5 assinado", () => {
+    const signed = signS3Request({
+      config: cfg(),
+      method: "PUT",
+      key: "deliveryos-backups/object-lock.dump",
+      payload_sha256: createHash("sha256").update("abc").digest("hex"),
+      content_md5: createHash("md5").update("abc").digest("base64"),
+      now: new Date("2026-10-02T12:34:56.000Z"),
+    });
+    assert.equal(signed.headers["content-md5"], "kAFQmDzST7DWlj99KOF/cg==");
+    assert.match(
+      signed.headers.authorization,
+      /SignedHeaders=content-md5;host;x-amz-content-sha256;x-amz-date/,
+    );
+  });
+
   await test("S35 nucleo SigV4 confere com vetor oficial AWS GET Object", () => {
     const emptyHash =
       "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";

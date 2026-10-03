@@ -1,6 +1,14 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { spawn, type ChildProcess } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, statSync } from "node:fs";
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
@@ -14,6 +22,11 @@ import type { RiderOperationalState } from "../operational/rider-state";
 import { PgEntregasUnitOfWork } from "../persistence/pg-uow";
 import { PgPilotReadyOrderStore } from "./ready-orders";
 import {
+  downloadBackupBundleS3,
+  exportBackupBundleS3,
+  type S3OffhostConfig,
+} from "./backup-offhost-s3";
+import {
   readPostgresPilotStorageSnapshot,
   snapshotCounts,
   snapshotFingerprint,
@@ -23,6 +36,34 @@ const URL_SERVIDOR = (process.env.DELIVERYOS_PG_URL ?? "").trim();
 const PG_BIN = process.env.DELIVERYOS_PG_BIN ?? "";
 const ferramenta = (nome: string): string => (PG_BIN ? join(PG_BIN, nome) : nome);
 const UNIT = "PILOT_BACKUP";
+
+const S3_REQUIRED = [
+  "ENTREGAS_BACKUP_S3_ENDPOINT",
+  "ENTREGAS_BACKUP_S3_REGION",
+  "ENTREGAS_BACKUP_S3_BUCKET",
+  "ENTREGAS_BACKUP_S3_PREFIX",
+  "ENTREGAS_BACKUP_S3_WRITE_ACCESS_KEY_ID",
+  "ENTREGAS_BACKUP_S3_WRITE_SECRET_ACCESS_KEY",
+  "ENTREGAS_BACKUP_S3_READ_ACCESS_KEY_ID",
+  "ENTREGAS_BACKUP_S3_READ_SECRET_ACCESS_KEY",
+];
+const S3_ENABLED = S3_REQUIRED.every((name) => (process.env[name] ?? "").trim());
+
+function s3Config(role: "WRITE" | "READ"): S3OffhostConfig {
+  const need = (name: string): string => {
+    const value = (process.env[name] ?? "").trim();
+    if (!value) throw new Error("ENV AUSENTE " + name);
+    return value;
+  };
+  return {
+    endpoint: need("ENTREGAS_BACKUP_S3_ENDPOINT"),
+    region: need("ENTREGAS_BACKUP_S3_REGION"),
+    bucket: need("ENTREGAS_BACKUP_S3_BUCKET"),
+    prefix: need("ENTREGAS_BACKUP_S3_PREFIX"),
+    access_key_id: need("ENTREGAS_BACKUP_S3_" + role + "_ACCESS_KEY_ID"),
+    secret_access_key: need("ENTREGAS_BACKUP_S3_" + role + "_SECRET_ACCESS_KEY"),
+  };
+}
 
 if (!URL_SERVIDOR) {
   console.log("PILOT_POSTGRES_BACKUP_RESTORE: PULADO (DELIVERYOS_PG_URL ausente)");
@@ -264,6 +305,7 @@ async function populate(source: BancoIsolado): Promise<void> {
 
 void (async () => {
   const dump = join(root, "pilot.dump");
+  let restoreDump = dump;
   try {
     const source = await bancoIsolado(URL_SERVIDOR, undefined, "pilotbkp_src");
     created.push(source);
@@ -304,6 +346,37 @@ void (async () => {
       );
     });
 
+    if (S3_ENABLED) {
+      const offhostDir = join(root, "offhost");
+      mkdirSync(offhostDir);
+      await tc("PBK2B dump real faz roundtrip off-host antes do restore", async () => {
+        const hash = createHash("sha256").update(readFileSync(dump)).digest("hex");
+        writeFileSync(dump + ".sha256", hash + "  pilot.dump\n", "utf8");
+        const uploaded = await exportBackupBundleS3({
+          snapshot_path: dump,
+          config: s3Config("WRITE"),
+        });
+        if (!uploaded.ok) {
+          throw new Error("offhost upload: " + uploaded.reason + " " + (uploaded.detail ?? ""));
+        }
+        const downloaded = await downloadBackupBundleS3({
+          config: s3Config("READ"),
+          manifest_key: uploaded.manifest_key,
+          destination_root: offhostDir,
+        });
+        if (!downloaded.ok) {
+          throw new Error("offhost download: " + downloaded.reason + " " + (downloaded.detail ?? ""));
+        }
+        assert.equal(downloaded.sha256, hash);
+        assert.equal(downloaded.downloaded_integrity_verified, true);
+        restoreDump = downloaded.snapshot_path;
+        console.log("PILOT_OFFHOST_MANIFEST_KEY=" + uploaded.manifest_key);
+      });
+      if (restoreDump === dump) {
+        throw new Error("offhost roundtrip falhou antes do restore");
+      }
+    }
+
     const restored = await bancoVazio(URL_SERVIDOR, "pilotbkp_dst");
     created.push(restored);
 
@@ -321,7 +394,7 @@ void (async () => {
         "--no-owner",
         "--no-privileges",
         "--exit-on-error",
-        dump,
+        restoreDump,
       ]);
     });
 
