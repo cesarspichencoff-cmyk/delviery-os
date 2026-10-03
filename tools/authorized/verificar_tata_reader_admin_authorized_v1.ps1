@@ -16,19 +16,22 @@ $manifest = Read-Text "data\tata_reader_permission_manifest_v1.json" | ConvertFr
 $buildEvidence = Read-Text "data\tata_reader_caixa_build_evidence_v1.json" | ConvertFrom-Json
 $apply = Read-Text "tools\authorized\tata_reader_admin_apply_authorized_20261002.ps1"
 $rollback = Read-Text "tools\authorized\tata_reader_admin_rollback_authorized_20261002.ps1"
+$runner = Read-Text "tools\authorized\tata_reader_admin_cycle_runner_v1.ps1"
 $preflight = Read-Text "tools\tata_reader_least_privilege_preflight.ps1"
 $preflightCandidate = Read-Text "data\tata_reader_preflight_candidate_v5.json" | ConvertFrom-Json
 $retryAuthorizationPath = Join-Path $RepoRoot "data\tata_reader_admin_retry_authorization_v4.json"
 $retryAuthorized = $false
 if (Test-Path -LiteralPath $retryAuthorizationPath -PathType Leaf) {
   $retryAuthorization = Get-Content -LiteralPath $retryAuthorizationPath -Raw -Encoding UTF8 | ConvertFrom-Json
-  $retryAuthorized = ([bool]$retryAuthorization.human_retry_authorized) -and ($retryAuthorization.authorization_id -eq "CESAR-2026-10-02-TATA-READER-ADMIN-V1") -and ($retryAuthorization.incident_head -eq "45eb3e7770c281e660644e01cc5c856fb95640b5") -and ($retryAuthorization.preflight_sha256 -eq "592A7B0A7D7123018C934E8C54EF7C5DC1E44D699BD17BD8D99F3020BD0DDD3B")
+  $retryAuthorized = ([bool]$retryAuthorization.human_retry_authorized) -and ($retryAuthorization.authorization_id -eq "CESAR-2026-10-02-TATA-READER-ADMIN-V1") -and ($retryAuthorization.incident_head -eq "45eb3e7770c281e660644e01cc5c856fb95640b5") -and ($retryAuthorization.preflight_sha256 -eq "592A7B0A7D7123018C934E8C54EF7C5DC1E44D699BD17BD8D99F3020BD0DDD3B") -and ($retryAuthorization.runner_sha256 -eq "9F29F9C39147EFFC0D3C73547DFE9948E85DEB008A359829689F64E615F1CB3F")
 }
 
 $applyTokens = $null
 $applyErrors = $null
 $rollbackTokens = $null
 $rollbackErrors = $null
+$runnerTokens = $null
+$runnerErrors = $null
 
 [System.Management.Automation.Language.Parser]::ParseInput(
   $apply,
@@ -42,13 +45,21 @@ $rollbackErrors = $null
   [ref]$rollbackErrors
 ) | Out-Null
 
+[System.Management.Automation.Language.Parser]::ParseInput(
+  $runner,
+  [ref]$runnerTokens,
+  [ref]$runnerErrors
+) | Out-Null
+
 Assert-True ($applyErrors.Count -eq 0) ("APPLY_SYNTAX_ERROR:" + ($applyErrors -join " | "))
 Assert-True ($rollbackErrors.Count -eq 0) ("ROLLBACK_SYNTAX_ERROR:" + ($rollbackErrors -join " | "))
+Assert-True ($runnerErrors.Count -eq 0) ("RUNNER_SYNTAX_ERROR:" + ($runnerErrors -join " | "))
 
 $authId = "CESAR-2026-10-02-TATA-READER-ADMIN-V1"
 $binaryHash = "241073DA0AE678933E2EF88AF2DA2091F1DF4A578E1D78AD2B48839D4465BA6C"
 $historicalPreflightHash = "FFCFB49577280A596EA951C839C881528D187A33F0B5D19DE08D2A86D1FEFFC6"
 $candidatePreflightHash = "592A7B0A7D7123018C934E8C54EF7C5DC1E44D699BD17BD8D99F3020BD0DDD3B"
+$runnerHash = "9F29F9C39147EFFC0D3C73547DFE9948E85DEB008A359829689F64E615F1CB3F"
 
 Assert-True ([bool]$authorization.human_authorized) "HUMAN_AUTHORIZATION_FALSE"
 Assert-True ($authorization.authorization_id -eq $authId) "AUTHORIZATION_ID_FILE_MISMATCH"
@@ -66,6 +77,38 @@ Assert-True (-not [bool]$preflightCandidate.semantic_scope_changed) "PREFLIGHT_C
 $actualPreflightHash = (Get-FileHash -LiteralPath (Join-Path $RepoRoot "tools\tata_reader_least_privilege_preflight.ps1") -Algorithm SHA256).Hash
 Assert-True ([string]::Equals($actualPreflightHash,$candidatePreflightHash,[System.StringComparison]::OrdinalIgnoreCase)) "PREFLIGHT_FILE_HASH_MISMATCH"
 Assert-True ($preflight.Contains("USER_NAME() AS [current_user]")) "PREFLIGHT_RESERVED_ALIAS_FIX_MISSING"
+$actualRunnerHash = (Get-FileHash -LiteralPath (Join-Path $RepoRoot "tools\authorized\tata_reader_admin_cycle_runner_v1.ps1") -Algorithm SHA256).Hash
+Assert-True ([string]::Equals($actualRunnerHash,$runnerHash,[System.StringComparison]::OrdinalIgnoreCase)) "RUNNER_FILE_HASH_MISMATCH"
+Assert-True ($retryAuthorization.runner_sha256 -eq $runnerHash) "RETRY_AUTHORIZATION_RUNNER_HASH_MISMATCH"
+Assert-True ($retryAuthorization.runner_path -eq "tools/authorized/tata_reader_admin_cycle_runner_v1.ps1") "RETRY_AUTHORIZATION_RUNNER_PATH_MISMATCH"
+
+Assert-True ($runner.Contains("verificar_tata_reader_admin_authorized_v1.ps1")) "RUNNER_VERIFIER_MISSING"
+Assert-True ($runner.Contains("tata_reader_admin_apply_authorized_20261002.ps1")) "RUNNER_APPLY_MISSING"
+Assert-True ($runner.Contains("Read-AdministrativeState")) "RUNNER_FINAL_STATE_CHECK_MISSING"
+Assert-True ($runner.Contains("FAILED_ROLLED_BACK_PROVEN_CLEAN")) "RUNNER_CLEAN_ROLLBACK_CLASSIFICATION_MISSING"
+Assert-True ($runner.Contains("BLOCKED_BEFORE_EFFECT")) "RUNNER_FAIL_CLOSED_CLASSIFICATION_MISSING"
+Assert-True ($runner.Contains('order_row_read = $false')) "RUNNER_ORDER_BOUNDARY_MISSING"
+Assert-True ($runner.Contains('print = $false')) "RUNNER_PRINT_BOUNDARY_MISSING"
+Assert-True ($runner.Contains('fiscal_action = $false')) "RUNNER_FISCAL_BOUNDARY_MISSING"
+Assert-True ($runner.Contains('cutover = $false')) "RUNNER_CUTOVER_BOUNDARY_MISSING"
+
+foreach ($runnerForbidden in @(
+  "sc.exe create",
+  "CREATE LOGIN",
+  "CREATE USER",
+  "GRANT SELECT",
+  "Start-Service",
+  "DROP USER",
+  "DROP LOGIN",
+  "Out-Printer",
+  "StartDocPrinter",
+  "WritePrinter",
+  "SEFAZ",
+  "NFC-e",
+  "NFCE"
+)) {
+  Assert-True (-not $runner.Contains($runnerForbidden)) ("RUNNER_DIRECT_EFFECT_SURFACE:" + $runnerForbidden)
+}
 
 Assert-True ($manifest.status -eq "REVIEW_ONLY_NOT_AUTHORIZED") "MANIFEST_STATUS_CHANGED"
 Assert-True ($manifest.principal -eq "NT SERVICE\TataComandaReader") "MANIFEST_PRINCIPAL_MISMATCH"
@@ -130,11 +173,12 @@ Assert-True ($rollback.Contains("takeown.exe")) "ROLLBACK_TAKEOWN_RECOVERY_MISSI
 Assert-True ($rollback.Contains("RUNTIME_ACL_RECOVERY_FAILED")) "ROLLBACK_ACL_RECOVERY_MISSING"
 
 [ordered]@{
-  schema = "deliveryos.tata-reader-authorized-bundle-static.v5"
+  schema = "deliveryos.tata-reader-authorized-bundle-static.v6"
   passed = $true
   authorization_id = $authId
   administrative_effect = $false
   candidate_preflight_sha256 = $candidatePreflightHash
+  runner_sha256 = $runnerHash
   retry_authorized = $retryAuthorized
   ready_for_authorized_admin_execution = $retryAuthorized
   ready_for_human_retry_authorization = (-not $retryAuthorized)
