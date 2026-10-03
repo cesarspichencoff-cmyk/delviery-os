@@ -1,0 +1,21 @@
+{
+  "schema": "deliveryos.tata-reader-admin-retry2-incident.v1",
+  "authorization_id": "CESAR-2026-10-02-TATA-READER-ADMIN-V1",
+  "source_head": "1a5cc22224c4e27226d7b3ea364aeeb2067da84a",
+  "started_at": "2026-10-03T02:32:46.2221492-03:00",
+  "completed_at": "2026-10-03T02:32:50.4389099-03:00",
+  "status": "FAILED_ROLLED_BACK",
+  "failure": "PREFLIGHT_EXIT_CODE:3",
+  "rollback_performed": true,
+  "rollback_complete": true,
+  "rollback_errors": [],
+  "proven_effect_boundaries": {
+    "order_row_read": false,
+    "print": false,
+    "fiscal_action": false,
+    "cutover": false
+  },
+  "diagnosis_state": "BLOCKER_UNKNOWN_BECAUSE_PREFLIGHT_EVIDENCE_WAS_REMOVED_BY_ROLLBACK",
+  "retry_authorized": false,
+  "next_action": "PRESERVE_PREFLIGHT_DIAGNOSTICS_BEFORE_ROLLBACK_THEN_REQUIRE_FRESH_HUMAN_RETRY_AUTHORIZATION"
+}
