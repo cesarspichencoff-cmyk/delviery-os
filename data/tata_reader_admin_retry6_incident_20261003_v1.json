@@ -1,0 +1,34 @@
+{
+  "schema": "deliveryos.tata-reader-admin-retry6-incident.v1",
+  "authorization_id": "CESAR-2026-10-02-TATA-READER-ADMIN-V1",
+  "source_head": "e473036fb2c5ab98e003a2254485f8697d798df3",
+  "cycle_id": "20261003T080909295Z",
+  "status": "BLOCKED_BEFORE_EFFECT_PROVEN_CLEAN",
+  "failure": "STATIC_BUNDLE_VERIFIER_FAILED:1",
+  "root_cause": "INTERNAL_STATIC_VERIFIER_HARDCODED_PREFLIGHT_V4_MARKER_WHILE_CURRENT_PREFLIGHT_SCHEMA_IS_V5",
+  "verifier_passed": true,
+  "preflight_sha256": "3BBE4C37FEDC8EC45A25FE08497B999453B181EBA3033861CFF37F701B4A0035",
+  "runner_sha256": "CE41F422823C459030293C5CD05E0AC7562A9B0A063E23773D0A02C19F3FDB49",
+  "administrative_state": {
+    "service_present": false,
+    "runtime_present": false,
+    "sql_login_present": false,
+    "sql_user_present": false,
+    "check_error": null,
+    "status": "PROVEN_CLEAN"
+  },
+  "proven_effect_boundaries": {
+    "order_row_read": false,
+    "print": false,
+    "fiscal_action": false,
+    "cutover": false
+  },
+  "correction": [
+    "remove hardcoded preflight version coupling from PowerShell static verifier",
+    "remove hardcoded preflight version coupling from Node static verifier",
+    "make runbook preflight requirements heading version-agnostic",
+    "preserve feature-level safety assertions instead of version-number assertions"
+  ],
+  "retry_authorized": false,
+  "next_action": "STATICALLY_VERIFY_COMPLETE_BUNDLE_AND_CODELOAD_ZIP_THEN_REQUIRE_FRESH_HUMAN_RETRY_AUTHORIZATION"
+}
