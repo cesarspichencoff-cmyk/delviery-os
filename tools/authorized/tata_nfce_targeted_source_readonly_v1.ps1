@@ -39,7 +39,7 @@ function Sanitize-Line([string]$Line) {
 
 function Add-Range {
   param(
-    [hashtable]$Result,
+    [System.Collections.IDictionary]$Result,
     [string]$Path,
     [int]$Start,
     [int]$End,
