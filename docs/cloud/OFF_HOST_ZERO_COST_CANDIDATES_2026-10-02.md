@@ -2,9 +2,27 @@
 
 Data da pesquisa: 2026-10-02
 
+## Sucessão — 2026-10-03
+
+A pesquisa abaixo permanece como fotografia de 2026-10-02, mas o estado vigente mudou:
+
+- **Backblaze B2 foi selecionado e provado em ensaio isolado autorizado**;
+- bucket privado em `us-east-005`, Object Lock e retenção padrão `COMPLIANCE / 14 days`;
+- writer final restrita a **`writeFiles` somente**, sem `readFiles` e sem `deleteFiles`;
+- reader final restrita a **`listAllBucketNames,readFiles`**;
+- S3 real: `BACKUP_OFFHOST_S3_LIVE_GREEN 7/7` e segredo inválido rejeitado;
+- PostgreSQL real: `pg_dump` → B2 → download → banco vazio → `pg_restore`, **7/7 PASS**;
+- cinco chaves temporárias anteriores foram revogadas; o par final tem TTL de 24 h;
+- cache administrativo e segredos locais foram removidos após a prova.
+
+Isso fecha a **escolha/prova técnica do mecanismo off-host** para o piloto. Não configura
+automaticamente o ambiente operacional: credenciais frescas de implantação, banco operacional,
+migrations, cutover e deploy continuam efeitos separados.
+
+
 ## Estado
 
-**Nenhum provedor foi selecionado.**
+**Estado histórico em 2026-10-02: nenhum provedor havia sido selecionado.**
 Nenhuma conta, bucket, credencial, assinatura ou upload externo foi criado por esta
 pesquisa.
 
@@ -36,7 +54,7 @@ dele ou falhar/alertar antes de criar custo.
 
 ## Candidato A — Backblaze B2
 
-**Estado: melhor encaixe técnico encontrado; NÃO SELECIONADO.**
+**Estado histórico em 2026-10-02: melhor encaixe técnico encontrado; posteriormente SELECIONADO E PROVADO em 2026-10-03.**
 
 ### O que atende
 
@@ -137,7 +155,7 @@ Para este backup específico:
 A recomendação técnica de menor complexidade é **avaliar B2 primeiro**, sem
 transformar isso em seleção automática.
 
-## Gate humano que ainda resta
+## Gate humano da pesquisa — concluído para o ensaio de 2026-10-03
 
 Para sair de pesquisa e entrar em execução, César precisa autorizar
 explicitamente:

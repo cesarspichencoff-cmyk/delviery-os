@@ -167,8 +167,12 @@ grava manifesto. Por construção devolve `off_host_proven=false`: a ferramenta
 não sabe se o mount está em outra máquina. Portanto ela prepara o transporte,
 mas **não fecha este passo**.
 
-**Este passo depende de destino/credencial externos e continua sem execução
-real até César autorizar o provedor.**
+**Sucessão 2026-10-03:** César autorizou um ensaio externo isolado no Backblaze B2.
+O mecanismo foi provado com bucket privado, Object Lock `COMPLIANCE / 14 days`,
+writer `writeFiles`-only, reader separada e restore PostgreSQL real vindo do
+provedor. Portanto a lacuna técnica off-host está fechada para o ensaio. O que
+continua separado é a **configuração operacional de implantação**: credenciais
+frescas, banco operacional, migrations, cutover e deploy.
 
 ---
 
@@ -221,8 +225,8 @@ Em resumo:
 - **banco operacional hospedado** não foi escolhido nem criado. PostgreSQL real
   isolado já foi exercitado; credencial, migrations, cutover e deploy no
   ambiente operacional continuam sem autorização;
-- **destino externo de backup** não foi configurado. Há transporte neutro e
-  pesquisa de candidatos, mas nenhum provedor foi selecionado, nenhuma conta/
-  bucket/credencial foi criada e nenhuma cópia saiu do host;
+- **backup externo:** o mecanismo foi provado no Backblaze B2 em ensaio isolado
+  (cópia fora do host + retenção 14 dias + least-privilege + restore PostgreSQL).
+  O ambiente operacional ainda não recebeu credenciais próprias nem foi ativado;
 - **aparelho físico** continua não provado. AVD e cadeia Android foram
   exercitados, mas não substituem o campo real.

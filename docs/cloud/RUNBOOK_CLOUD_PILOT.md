@@ -137,19 +137,21 @@ fingerprint operacional → continuidade de versão.
 
 ### Perda da máquina
 
-O volume `entregas_backups` continua no mesmo host. Ele protege contra perda
-lógica do banco/container, **não contra perda do servidor físico**. Antes de
-qualquer cutover operacional para PostgreSQL, é obrigatório definir uma cópia
-off-host (ou mecanismo externo equivalente), produzir uma cópia e restaurá-la
-em ensaio.
+O volume `entregas_backups` local continua protegendo apenas contra perda
+lógica do banco/container. A proteção contra perda do host, porém, **já foi
+provada em ensaio isolado** no Backblaze B2 em 2026-10-03:
 
-A pesquisa zero-custo de 2026-10-02 está em
-`OFF_HOST_ZERO_COST_CANDIDATES_2026-10-02.md`. Ela identifica candidatos,
-mas **não seleciona provedor** e não autoriza conta, bucket, credencial ou
-upload. O transporte S3-compatible e a separação writer/reader já foram
-provados em MinIO isolado (run `37031435078`), inclusive rejeição de secret
-incorreto; isso não substitui a cópia fisicamente externa nem o restore no
-provedor que vier a ser autorizado.
+- bucket privado em `us-east-005`;
+- Object Lock com retenção padrão `COMPLIANCE / 14 days`;
+- uploader com capability **somente `writeFiles`**, sem leitura/delete;
+- reader separada com `listAllBucketNames,readFiles`;
+- S3 real `7/7 PASS`, incluindo assinatura inválida rejeitada;
+- `pg_dump` real → B2 → download → `pg_restore` em banco vazio, **7/7 PASS**.
+
+Isso prova o **mecanismo** e a recuperação. Antes de cutover operacional, ainda
+é necessário emitir credenciais novas para o ambiente implantado e conectá-las
+ao runtime/rotina de backup autorizada. A prova isolada não é autorização de
+produção e suas chaves temporárias não devem ser reutilizadas.
 
 ## 6. Rollback
 

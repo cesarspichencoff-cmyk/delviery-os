@@ -4,7 +4,7 @@ lifecycle:
   status: ACTIVE
   authority_scope: infra_blockers
   superseded_by: null
-  atualizado_em: "2026-10-02"
+  atualizado_em: "2026-10-03"
   state_basis: 5e5e0f7
   question_refs: ["Q-001","Q-002","Q-003","Q-004","Q-005","Q-006","Q-007","Q-008","Q-009","Q-010","Q-011"]
 ---
@@ -1386,29 +1386,24 @@ Prova: `docs/etapa-4-8/field-gate/2026-10-01-q018-remote-stop-runtime.md`.
 A bateria em aparelho físico real permanece `NOT_RUN` e continua sendo um
 blocker separado de certificação de campo.
 
-> **SUCESSÃO — 2026-10-03 · BACKUP OFF-HOST REAL NO BACKBLAZE B2 PROVADO, LEAST-PRIVILEGE DO WRITER AINDA ABERTO.**
+> **SUCESSÃO — 2026-10-03 · BACKUP OFF-HOST B2 FECHADO COM CREDENCIAIS MÍNIMAS.**
 >
-> O destino externo deixou de ser NOT_RUN. Ensaio isolado no Backblaze B2, região `us-east-005`,
-> bucket privado `deliveryos-offhost-proof-20261003-84c7`, prefixo `deliveryos-backups/`, Object Lock
-> ativo e retenção padrão `COMPLIANCE / 14 days`. O live gate S3 passou **7/7** com upload/readback
-> reais, writer incapaz de ler, reader incapaz de escrever e assinatura derivada de segredo incorreto recusada.
+> A prova externa foi repetida com credenciais finais de privilégio mínimo no Backblaze B2:
+> writer restrita a **`writeFiles` somente** e reader restrita a
+> **`listAllBucketNames,readFiles`**. A writer final não possui `readFiles` nem `deleteFiles`.
 >
-> A prova foi além do round-trip sintético: um PostgreSQL 18.4 descartável gerou `pg_dump --format=custom`;
-> o dump foi enviado ao B2, baixado novamente e restaurado com `pg_restore` em banco realmente vazio.
-> `PILOT_POSTGRES_BACKUP_RESTORE: 7/7 PASS`: fingerprint, contagens, eventos, outbox, triggers e versões
-> foram preservados; a PgUOW continuou de version 2 para 3 após o restore.
+> Com esse par mínimo, o live gate S3 passou novamente **7/7** e rejeitou assinatura derivada
+> de segredo incorreto (`BAD_SIGNATURE_REJECTED=true`). Em seguida, PostgreSQL 17.11 real e
+> isolado executou `pg_dump --format=custom` → B2 → download → `pg_restore` em banco vazio:
+> **PILOT_POSTGRES_BACKUP_RESTORE 7/7 PASS**, preservando fingerprint, conteúdo, triggers,
+> outbox e continuidade de versão.
 >
-> **Fronteira que permanece aberta:** a chave temporária criada pelo preset `Write Only` da UI do B2
-> possui `writeFiles`, não possui `readFiles`, mas também recebeu `deleteFiles`. Object Lock em Compliance
-> impede apagar os objetos retidos e a chave expira em 24 h, porém isso é mitigação do ensaio, não prova
-> do requisito canônico de uploader sem delete. Portanto cópia off-host + restore = **PROVEN**, enquanto
-> `writer writeFiles-only / sem deleteFiles` = **NOT_PROVEN**. Produção, cutover, migrations operacionais
-> e deploy permaneceram intocados.
-
-> **SUCESSÃO — 2026-10-03 · BACKUP OFF-HOST REAL NO BACKBLAZE B2 PROVADO, LEAST-PRIVILEGE DO WRITER AINDA ABERTO.**
+> O bucket permanece privado, em `us-east-005`, com Object Lock e retenção padrão
+> **COMPLIANCE / 14 days**. Cinco credenciais temporárias anteriores foram revogadas; só o par
+> mínimo final ficou ativo, ambos com TTL de 24 h. O cache administrativo local e os segredos
+> de prova foram removidos do Foxxy após os gates.
 >
-> O destino externo deixou de ser NOT_RUN. Ensaio isolado no Backblaze B2, região `us-east-005`, bucket privado `deliveryos-offhost-proof-20261003-84c7`, prefixo `deliveryos-backups/`, Object Lock ativo e retenção padrão `COMPLIANCE / 14 days`. O live gate S3 passou **7/7** com upload/readback reais, writer incapaz de ler, reader incapaz de escrever e assinatura derivada de segredo incorreto recusada.
->
-> A prova foi além do round-trip sintético: PostgreSQL descartável gerou `pg_dump --format=custom`; o dump foi enviado ao B2, baixado novamente e restaurado com `pg_restore` em banco realmente vazio. `PILOT_POSTGRES_BACKUP_RESTORE: 7/7 PASS`: fingerprint, contagens, eventos, outbox, triggers e versões foram preservados; a PgUOW continuou de version 2 para 3 após o restore.
->
-> **Fronteira aberta:** a chave temporária criada pelo preset `Write Only` da UI do B2 possui `writeFiles`, não possui `readFiles`, mas também recebeu `deleteFiles`. Object Lock em Compliance impede apagar os objetos retidos e a chave expira em 24 h; isso é mitigação do ensaio, não prova do requisito canônico de uploader sem delete. Cópia off-host + restore = **PROVEN**; `writer writeFiles-only / sem deleteFiles` = **NOT_PROVEN**. Produção, cutover, migrations operacionais e deploy permaneceram intocados.
+> **Resultado:** cópia fisicamente off-host, retenção, separação de identidades, least-privilege
+> do uploader, readback, integridade e restore PostgreSQL = **PROVEN** para o ensaio isolado.
+> Produção, deploy, migrations operacionais, cutover e `consumer_live`/UI live continuam
+> separados e não foram executados.

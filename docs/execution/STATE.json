@@ -156,10 +156,10 @@
       "o_que_falta": "chave de assinatura e instalação autorizada"
     },
     {
-      "item": "destino externo de backup (S3/R2 ou equivalente)",
-      "motivo": "Depende de credencial e de conta em provedor — decisao do Cesar, com potencial de cobranca.",
-      "substituto": "o ciclo dump -> destruicao -> restore e provado em 15 testes contra PostgreSQL real, e a composicao ja grava copia diaria em volume separado",
-      "o_que_falta": "credencial com permissao de ESCRITA e sem permissao de apagar, e uma restauracao a partir do destino externo"
+      "item": "wiring operacional do backup externo no ambiente implantado",
+      "motivo": "O mecanismo B2 já foi provado em ensaio isolado; ativar credenciais e rotina no ambiente operacional é efeito separado.",
+      "substituto": "Backblaze B2 real: writer writeFiles-only, reader separada, Object Lock Compliance 14 dias, S3 7/7 e restore PostgreSQL 7/7",
+      "o_que_falta": "emitir credenciais frescas do ambiente de implantação e conectá-las ao backup operacional somente junto ao cutover autorizado"
     }
   ],
   "protegido_nao_tocar": {
@@ -176,7 +176,7 @@
   },
   "nuvem": {
     "documento": "docs/cloud/FUNDACAO_NUVEM.md",
-    "principio": "descreve REQUISITOS, nao fornecedores — a escolha de provedor continua aberta",
+    "principio": "requisitos continuam provider-neutral; Backblaze B2 foi selecionado e provado para o ensaio off-host isolado em 2026-10-03",
     "pecas": [
       "banco (obrigatoria)",
       "runtimes (obrigatoria)",
@@ -187,7 +187,18 @@
       "plano gratuito que PAUSA o banco por inatividade e inaceitavel: a primeira entrega do dia esperaria o banco acordar",
       "regiao distante custa latencia invisivel em teste e sensivel numa sexta"
     ],
-    "executado_contra_provedor": false
+    "executado_contra_provedor": true,
+    "backup_offhost_prova": {
+      "provedor": "Backblaze B2",
+      "regiao": "us-east-005",
+      "bucket_privado": true,
+      "object_lock": "COMPLIANCE / 14 days",
+      "writer_capabilities": ["writeFiles"],
+      "reader_capabilities": ["listAllBucketNames", "readFiles"],
+      "s3_live": "7/7 PASS",
+      "postgres_restore": "7/7 PASS",
+      "producao_ativada": false
+    }
   },
   "macro_prompt_2": {
     "estado": "RECUPERACAO OPERACIONAL BLOCO 1 em CHECKPOINT — R1 e R4 concluidos, R2 concluido em COMPORTAMENTO e INCORRETO em EXPRESSAO VISUAL (PB9); Figma nao iniciado",

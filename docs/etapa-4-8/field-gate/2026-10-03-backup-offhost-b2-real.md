@@ -1,36 +1,51 @@
-﻿# Prova externa de backup â€” Backblaze B2
+# Prova externa de backup — Backblaze B2
 
 Data: 2026-10-03
-Escopo: **ensaio isolado, nÃ£o operacional**
+Escopo: **ensaio isolado, não operacional**
 Branch: `tmp/offhost-s3-minio-proof-20261002`
-Base antes desta sucessÃ£o: `99b1ba6db4b8ddf808fe9ae81d2426d9fa7960e3`
+Checkpoint anterior: `f0daa895a00c0dee7a5f171ca59c6dfd4d4653e4`
 
-## Estado final desta prova
+## Estado final
 
-- **CÃ³pia fisicamente off-host:** PROVEN.
+- **Cópia fisicamente off-host:** PROVEN.
 - **Round-trip S3 com identidades separadas:** PROVEN.
+- **Uploader sem leitura e sem delete:** PROVEN.
+- **Reader sem escrita:** PROVEN.
 - **Restore de dump PostgreSQL vindo do provedor externo:** PROVEN.
-- **RetenÃ§Ã£o real de 14 dias em Compliance:** PROVEN.
-- **Uploader com capability IAM estrita sem deleteFiles:** **NOT_PROVEN / GAP ABERTO**.
-- **ProduÃ§Ã£o, cutover, migrations operacionais ou deploy:** NÃƒO AUTORIZADOS / NÃƒO EXECUTADOS.
+- **Retenção real de 14 dias em Compliance:** PROVEN.
+- **Produção, cutover, migrations operacionais ou deploy:** NÃO EXECUTADOS.
 
-## Infraestrutura de ensaio
+## Infraestrutura do ensaio
 
 - provedor: Backblaze B2;
-- regiÃ£o S3: `us-east-005`;
+- região S3: `us-east-005`;
 - bucket: `deliveryos-offhost-proof-20261003-84c7`;
 - bucket privado;
 - Object Lock habilitado;
 - Default Retention: `COMPLIANCE / 14 days`;
 - prefixo: `deliveryos-backups/`.
 
-## Provas executadas
+## Credenciais finais de prova
 
-- `BACKUP_OFFHOST_S3_LIVE_GREEN 7/7` e `BAD_SIGNATURE_REJECTED=true` no B2 real.
-- `PILOT_POSTGRES_BACKUP_RESTORE: 7/7 PASS` usando o dump baixado do B2 como entrada do restore.
-- O restore ocorreu em banco vazio e preservou fingerprint, contagens, eventos, outbox, triggers e versÃµes.
-- RegressÃ£o do candidato: S3 unitÃ¡rio `10/10`, integridade `7/7`, export `7/7`, typecheck e governanÃ§a verdes.
+- writer: capability **exatamente `writeFiles`**;
+- reader: capabilities **exatamente `listAllBucketNames,readFiles`**;
+- ambas restritas ao bucket, ao prefixo e com TTL de 24 h;
+- cinco chaves temporárias anteriores foram revogadas;
+- cache administrativo local e segredos locais foram removidos após os testes.
 
-## Fronteira aberta
+## Provas finais
 
-A credencial temporÃ¡ria de upload criada pelo preset `Write Only` do painel B2 nÃ£o possui `readFiles`, mas inclui `deleteFiles`. Object Lock em `COMPLIANCE / 14 days` impede apagar os objetos retidos e a chave expira em 24 h; isso reduz o risco do ensaio, porÃ©m **nÃ£o substitui** a prova de uma credencial definitiva limitada a `writeFiles` sem `deleteFiles`. Esse requisito permanece aberto antes de ativaÃ§Ã£o operacional.
+1. `BACKUP_OFFHOST_S3_LIVE_GREEN 7/7`.
+2. `BAD_SIGNATURE_REJECTED=true`.
+3. PostgreSQL 17.11 real e isolado produziu `pg_dump --format=custom`.
+4. O dump fez round-trip pelo B2 antes do restore.
+5. O restore ocorreu sobre banco realmente vazio.
+6. `PILOT_POSTGRES_BACKUP_RESTORE: 7/7 PASS`.
+7. Fingerprint, conteúdo, eventos, outbox, triggers e continuidade de versão foram preservados.
+
+## Fronteira
+
+Esta prova fecha a frente técnica de **backup off-host do piloto** no escopo isolado. Ela não
+constitui autorização de produção. Permanecem separados os efeitos operacionais: credencial SQL
+real, migrations 0006–0008 no banco operacional, seleção de
+`ENTREGAS_STORAGE_BACKEND=postgres`, cutover, deploy e ativação de `consumer_live`/UI live.
