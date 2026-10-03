@@ -187,6 +187,49 @@ teste("conflito é um estado explícito, não um palpite silencioso", () => {
 });
 
 /* ------------------------------------------------------------------ *
+ * 6b. Ações — retirada explícita vs área não observada
+ * ------------------------------------------------------------------ */
+
+teste("ação que sumiu de leitura completa é RETIRADA, não congelada", () => {
+  const r = R.reconcileAvailableActions([
+    {
+      observed_at: AGORA,
+      readiness: {
+        actions_observed: true,
+        available_actions: [{ code: "DISPATCH", available: true, disabled: false }],
+      },
+    },
+    {
+      observed_at: DEPOIS,
+      readiness: { actions_observed: true, available_actions: [] },
+    },
+  ]) as { current?: unknown[]; versions?: Array<{ removed_at?: string | null }> };
+
+  assert.deepEqual(r.current ?? [], [], "a ação antiga continuou atual");
+  assert.equal(
+    r.versions?.at(-1)?.removed_at,
+    DEPOIS,
+    "a retirada não ficou registrada no instante observado",
+  );
+});
+
+teste("não observar a área de ações NÃO apaga a última leitura válida", () => {
+  const r = R.reconcileAvailableActions([
+    {
+      observed_at: AGORA,
+      readiness: {
+        actions_observed: true,
+        available_actions: [{ code: "DISPATCH", available: true, disabled: false }],
+      },
+    },
+    { observed_at: DEPOIS, readiness: { available_actions: [] } },
+  ]) as { current?: Array<{ code?: string }> };
+
+  assert.equal((r.current ?? []).length, 1, "leitura que não observou ações apagou estado anterior");
+  assert.equal(r.current?.[0]?.code, "DISPATCH");
+});
+
+/* ------------------------------------------------------------------ *
  * 7. Confiança com evidência rastreável
  * ------------------------------------------------------------------ */
 

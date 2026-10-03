@@ -589,6 +589,26 @@ corrupcao. Classificados como PARECE CORRIGIDO, NAO PROVADO.
 
 Os 21 documentos de `docs/conference-brain/` nao foram auditados linha a linha.
 
+### Sucessão 2026-10-03 — os três itens funcionais acima agora estão PROVADOS
+
+A classificação histórica `PARECE CORRIGIDO, NAO PROVADO` continua preservada como
+fotografia da análise de 2026-07-27, mas foi supersedida por gates independentes no HEAD atual:
+
+- **agendamento desativado:** `run-conference-4b3-tests.ts` prova `is_scheduled:true -> false`
+  sem ressuscitar o estado anterior;
+- **ações antigas:** dois casos adversariais novos em `run-conference-4b2-tests.ts` provam que
+  `actions_observed:true + available_actions:[]` encerra a ação anterior e que uma leitura que
+  **não observou** a área não apaga a última leitura válida;
+- **indicadores antigos:** 4B2 e 4B3 provam retirada explícita, registro em `ended` e que
+  leitura sem `indicatorsObserved` não apaga o último estado conhecido;
+- **recuperação/corrupção:** 4B3 prova reinício/replay e contabilização de linha corrompida sem
+  vazamento; 4B5 prova quarentena de JSONL ilegível/registro proibido e preservação do válido.
+
+Prova 2026-10-03: typecheck verde; Conference Brain **4B2 25/25**, **4B3 26/26**,
+**4B5 37/37**. Nenhuma lógica de produção precisou ser alterada; só foram adicionados os dois
+casos independentes que faltavam para ações. A auditoria linha a linha dos 21 documentos continua
+separada e **não** foi promovida por esta prova.
+
 ## Atualizacao — Unidade 6 (2026-08-01)
 
 **B2 (Figma) RESOLVIDO.** `docs/figma/` existe com 13 documentos, e as tres paginas do arquivo

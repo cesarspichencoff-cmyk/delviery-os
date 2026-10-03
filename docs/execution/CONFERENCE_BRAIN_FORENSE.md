@@ -170,6 +170,22 @@ espera, e `expires_at`. Ambos acrescentáveis no adapter de saída.
 | Recuperação | **PARECE CORRIGIDO, NÃO PROVADO** — `store.health()` expõe linhas corrompidas; sem exercício adversarial independente |
 | Documentação divergente | **INDETERMINADO** — 21 arquivos não auditados linha a linha |
 
+### Sucessão — 2026-10-03
+
+Os três itens funcionais que a tabela acima marcou como `PARECE CORRIGIDO, NÃO PROVADO`
+foram rechecados por gates independentes no código atual:
+
+| Item | Prova atual | Veredito atual |
+|---|---|---|
+| Agendamento desativado preserva estado | 4B3: leitura `true` seguida de `false` termina com `is_scheduled=false` | **CORRIGIDO E PROVADO** |
+| Ações antigas permanecem | 4B2: leitura completa vazia retira ação; leitura sem `actions_observed` não apaga estado | **CORRIGIDO E PROVADO** |
+| Indicadores antigos permanecem | 4B2 + 4B3: lista vazia observada encerra indicador; área não observada não apaga | **CORRIGIDO E PROVADO** |
+| Recuperação após corrupção | 4B3 + 4B5: reinício/replay preserva válido; corrupção é contabilizada/quarentenada sem PII | **CORRIGIDO E PROVADO** |
+
+Execução: typecheck verde; `conference-4b2 25/25`, `conference-4b3 26/26`,
+`conference-4b5 37/37`. A linha “Documentação divergente” continua **INDETERMINADA**; esta
+sucessão não afirma auditoria dos 21 documentos.
+
 ## 7. Estratégias
 
 | | Código | Regressão | Aderência | Testes reaproveitáveis | Veredito |
