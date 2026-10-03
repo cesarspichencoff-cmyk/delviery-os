@@ -75,9 +75,13 @@ Copy-Item -LiteralPath $InstalledScript -Destination $backupPath -Force | Out-Nu
 if((Hash $backupPath) -ne $ExpectedPreflightSha256){ throw "PREFLIGHT_BACKUP_HASH_MISMATCH" }
 
 $evidenceNames=@("preflight.json","preflight.stderr.txt","preflight.exitcode.txt","preflight.identity.txt")
+$previousEvidenceNames=@()
+$previousEvidenceHashes=@{}
 foreach($name in $evidenceNames){
   $p=Join-Path $EvidenceDirectory $name
   if(Test-Path -LiteralPath $p){
+    $previousEvidenceNames += $name
+    $previousEvidenceHashes[$name] = Hash $p
     Copy-Item -LiteralPath $p -Destination (Join-Path $cycleDir ("previous-"+$name)) -Force | Out-Null
     Remove-Item -LiteralPath $p -Force
   }
@@ -85,6 +89,7 @@ foreach($name in $evidenceNames){
 
 $startedUtc=(Get-Date).ToUniversalTime()
 $restoreOk=$false
+$evidenceRestored=$false
 $serviceStopped=$false
 $readResult=$null
 $childExitCode=$null
@@ -138,10 +143,35 @@ finally {
     Copy-Item -LiteralPath $backupPath -Destination $InstalledScript -Force | Out-Null
     $restoreOk=((Hash $InstalledScript) -eq $ExpectedPreflightSha256)
   } catch { $restoreOk=$false }
+
+  try {
+    foreach($name in $evidenceNames){
+      $live=Join-Path $EvidenceDirectory $name
+      if(Test-Path -LiteralPath $live){ Remove-Item -LiteralPath $live -Force }
+    }
+
+    foreach($name in $previousEvidenceNames){
+      $saved=Join-Path $cycleDir ("previous-"+$name)
+      $live=Join-Path $EvidenceDirectory $name
+      Copy-Item -LiteralPath $saved -Destination $live -Force | Out-Null
+    }
+
+    $evidenceRestored=$true
+    foreach($name in $evidenceNames){
+      $live=Join-Path $EvidenceDirectory $name
+      $shouldExist=($previousEvidenceNames -contains $name)
+      $exists=Test-Path -LiteralPath $live
+      if($exists -ne $shouldExist){ $evidenceRestored=$false; break }
+      if($shouldExist -and (Hash $live) -ne [string]$previousEvidenceHashes[$name]){
+        $evidenceRestored=$false
+        break
+      }
+    }
+  } catch { $evidenceRestored=$false }
 }
 
 $status="READ_PROOF_FAILED_RESTORE_UNKNOWN"
-if($restoreOk -and $serviceStopped){
+if($restoreOk -and $evidenceRestored -and $serviceStopped){
   if($null -ne $readResult -and $childExitCode -eq 0 -and [string]$readResult.status -eq "PROVEN_MINIMIZED_REAL_ORDER_READ"){
     $status="PROVEN_MINIMIZED_REAL_ORDER_READ"
   } else {
@@ -158,7 +188,9 @@ $summary=[ordered]@{
   child_exit_code=$childExitCode
   read_status=if($null -eq $readResult){$null}else{[string]$readResult.status}
   failure=$failure
-  runtime_restored=[bool]$restoreOk
+  runtime_restored=[bool]($restoreOk -and $evidenceRestored)
+  preflight_script_restored=[bool]$restoreOk
+  evidence_restored=[bool]$evidenceRestored
   service_stopped=[bool]$serviceStopped
   installed_preflight_sha256=if(Test-Path -LiteralPath $InstalledScript){Hash $InstalledScript}else{$null}
   read_result=$readResult
