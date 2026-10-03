@@ -36,6 +36,8 @@ foreach($forbidden in @(
 
 Assert ($runner.Contains("runtime_restored")) "RUNNER_RESTORE_PROOF_MISSING"
 Assert ($runner.Contains("service_stopped")) "RUNNER_SERVICE_STOP_PROOF_MISSING"
+Assert ($runner.Contains("evidence_restored")) "RUNNER_EVIDENCE_RESTORE_PROOF_MISSING"
+Assert ($runner.Contains("previousEvidenceHashes")) "RUNNER_EVIDENCE_HASH_RESTORE_MISSING"
 Assert ($runner.Contains("INSTALLED_PREFLIGHT_HASH_MISMATCH")) "RUNNER_PREFLIGHT_GUARD_MISSING"
 Assert ($runner.Contains("Start-Service -Name $ExpectedServiceName")) "RUNNER_SERVICE_START_MISSING"
 Assert ($runner.Contains('Copy-Item -LiteralPath $backupPath -Destination $InstalledScript')) "RUNNER_PREFLIGHT_RESTORE_MISSING"
