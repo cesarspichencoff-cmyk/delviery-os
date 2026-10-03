@@ -16,11 +16,11 @@ $manifest = Read-Text "data\tata_reader_permission_manifest_v1.json" | ConvertFr
 $buildEvidence = Read-Text "data\tata_reader_caixa_build_evidence_v1.json" | ConvertFrom-Json
 $apply = Read-Text "tools\authorized\tata_reader_admin_apply_authorized_20261002.ps1"
 $rollback = Read-Text "tools\authorized\tata_reader_admin_rollback_authorized_20261002.ps1"
-$retryAuthorizationPath = Join-Path $RepoRoot "data\tata_reader_admin_retry_authorization_v2.json"
+$retryAuthorizationPath = Join-Path $RepoRoot "data\tata_reader_admin_retry_authorization_v3.json"
 $retryAuthorized = $false
 if (Test-Path -LiteralPath $retryAuthorizationPath -PathType Leaf) {
   $retryAuthorization = Get-Content -LiteralPath $retryAuthorizationPath -Raw -Encoding UTF8 | ConvertFrom-Json
-  $retryAuthorized = ([bool]$retryAuthorization.human_retry_authorized) -and ($retryAuthorization.authorization_id -eq "CESAR-2026-10-02-TATA-READER-ADMIN-V1") -and ($retryAuthorization.incident_head -eq "9e3f8f4248ba054161dad564931b30c02d73851a")
+  $retryAuthorized = ([bool]$retryAuthorization.human_retry_authorized) -and ($retryAuthorization.authorization_id -eq "CESAR-2026-10-02-TATA-READER-ADMIN-V1") -and ($retryAuthorization.incident_head -eq "1a5cc22224c4e27226d7b3ea364aeeb2067da84a")
 }
 
 $applyTokens = $null
@@ -79,6 +79,11 @@ Assert-True ($apply.Contains("ACL_ORDER_V2")) "APPLY_ACL_ORDER_V2_MISSING"
 Assert-True ($apply.Contains("RetryAuthorizationFile")) "APPLY_RETRY_AUTH_GATE_MISSING"
 Assert-True ($apply.Contains("RETRY_NOT_AUTHORIZED_AFTER_INCIDENT")) "APPLY_RETRY_FAIL_CLOSED_MISSING"
 Assert-True ($apply.Contains("RUNTIME_TAKEOWN_FAILED")) "APPLY_RUNTIME_ACL_RECOVERY_MISSING"
+Assert-True ($apply.Contains("Capture-PreflightDiagnostics")) "APPLY_PREFLIGHT_DIAGNOSTIC_CAPTURE_MISSING"
+Assert-True ($apply.Contains("TATA_READER_PREFLIGHT_DIAGNOSTIC.json")) "APPLY_PREFLIGHT_DIAGNOSTIC_PERSISTENCE_MISSING"
+Assert-True ($apply.Contains("preflight_diagnostics = $preflightDiagnostics")) "APPLY_RESULT_DIAGNOSTICS_MISSING"
+Assert-True ($apply.Contains("tata_reader_admin_retry_authorization_v3.json")) "APPLY_RETRY_V3_GATE_MISSING"
+Assert-True ($apply.Contains("1a5cc22224c4e27226d7b3ea364aeeb2067da84a")) "APPLY_RETRY_V3_INCIDENT_MISMATCH"
 
 Assert-True (-not $apply.Contains("DSCOMANDA")) "APPLY_DSCOMANDA_SCOPE_LEAK"
 Assert-True (-not $apply.Contains("CDPRODPROMOCAO")) "APPLY_COMBO_SCOPE_LEAK"
@@ -109,7 +114,7 @@ Assert-True ($rollback.Contains("takeown.exe")) "ROLLBACK_TAKEOWN_RECOVERY_MISSI
 Assert-True ($rollback.Contains("RUNTIME_ACL_RECOVERY_FAILED")) "ROLLBACK_ACL_RECOVERY_MISSING"
 
 [ordered]@{
-  schema = "deliveryos.tata-reader-authorized-bundle-static.v2"
+  schema = "deliveryos.tata-reader-authorized-bundle-static.v3"
   passed = $true
   authorization_id = $authId
   administrative_effect = $false
