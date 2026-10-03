@@ -146,3 +146,40 @@ Even after PROVEN_ADMIN_PHASE_PASS:
 - do not cut over.
 
 The next gate is a separate authorization for one minimized real order read in shadow mode.
+
+
+## Incident 2026-10-03 and retry gate
+
+The first authorized administrative attempt failed before SQL permission application, while closing runtime ACL inheritance. The runtime was later recovered under elevated PowerShell and the clean state was proven with:
+
+- service_present=False
+- runtime_present=False
+- five runtime objects processed successfully
+- zero ACL-recovery failures
+
+Failure class: ACL_STAGING_ORDER_LOCKOUT.
+
+The fixed installer now follows this invariant:
+
+1. grant explicit SYSTEM/Administrators/service access on a directory;
+2. only then remove ACL inheritance for that directory;
+3. verify the closed ACL;
+4. rollback can recover ownership/ACLs with takeown + icacls before runtime deletion if ordinary deletion fails.
+
+The original authorization does not automatically authorize a retry after this incident.
+
+Before any new administrative execution, a fresh file must exist:
+
+data/tata_reader_admin_retry_authorization_v2.json
+
+and must explicitly contain human_retry_authorized=true for the same authorization ID and incident head.
+
+Until that exists, the authorized verifier must report:
+
+- passed=true
+- administrative_effect=false
+- retry_authorized=false
+- ready_for_authorized_admin_execution=false
+- ready_for_human_retry_authorization=true
+
+Do not run the apply script while ready_for_authorized_admin_execution=false.
