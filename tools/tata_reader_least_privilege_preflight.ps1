@@ -93,10 +93,10 @@ try {
   $identityCmd.CommandText = @"
 SET NOCOUNT ON;
 SELECT
-  SUSER_SNAME() AS current_login,
-  ORIGINAL_LOGIN() AS original_login,
-  USER_NAME() AS current_user,
-  CASE WHEN DB_NAME() = @expected_db THEN 1 ELSE 0 END AS database_matches;
+  SUSER_SNAME() AS [current_login],
+  ORIGINAL_LOGIN() AS [original_login],
+  USER_NAME() AS [current_user],
+  CASE WHEN DB_NAME() = @expected_db THEN 1 ELSE 0 END AS [database_matches];
 "@
   $null = $identityCmd.Parameters.Add("@expected_db", [System.Data.SqlDbType]::NVarChar, 128)
   $identityCmd.Parameters["@expected_db"].Value = $Database
