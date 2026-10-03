@@ -50,6 +50,7 @@ if($auth.authorization_id -ne $ExpectedAuthorizationId){ throw "REAL_READ_AUTHOR
 
 if(-not (Test-Path -LiteralPath $ReadScriptSource -PathType Leaf)){ throw "REAL_READ_SCRIPT_SOURCE_MISSING" }
 if((Hash $ReadScriptSource) -ne [string]$auth.read_script_sha256){ throw "REAL_READ_SCRIPT_HASH_MISMATCH" }
+if((Hash $PSCommandPath) -ne [string]$auth.runner_sha256){ throw "REAL_READ_RUNNER_HASH_MISMATCH" }
 
 & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $BundleVerifier
 if($LASTEXITCODE -ne 0){ throw ("REAL_READ_STATIC_VERIFIER_FAILED:"+$LASTEXITCODE) }
