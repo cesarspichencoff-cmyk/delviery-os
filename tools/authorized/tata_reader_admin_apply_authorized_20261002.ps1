@@ -32,6 +32,7 @@ $AuthorizationFile = Join-Path $RepoRoot "data\tata_reader_admin_authorization_v
 $RetryAuthorizationFile = Join-Path $RepoRoot "data\tata_reader_admin_retry_authorization_v7.json"
 $PreflightCandidateFile = Join-Path $RepoRoot "data\tata_reader_preflight_candidate_v7.json"
 $BundleVerifier = Join-Path $RepoRoot "tools\verificar_tata_reader_admin_bundle_static_v1.ps1"
+$SuccessMarkerFile = Join-Path $RepoRoot "data\tata_reader_admin_phase_success_20261003_v1.json"
 
 $allowed = [ordered]@{
   COMANDAVEN = @(
@@ -456,6 +457,7 @@ function Wait-ForPreflightEvidence {
 }
 
 if ($AuthorizationId -ne $ExpectedAuthorizationId) { throw "AUTHORIZATION_ID_MISMATCH" }
+if (Test-Path -LiteralPath $SuccessMarkerFile -PathType Leaf) { throw "ADMIN_PHASE_ALREADY_PROVEN_NO_RERUN" }
 if (-not (Test-Path -LiteralPath $AuthorizationFile -PathType Leaf)) { throw "AUTHORIZATION_FILE_MISSING" }
 
 $authorization = Get-Content -LiteralPath $AuthorizationFile -Raw | ConvertFrom-Json
