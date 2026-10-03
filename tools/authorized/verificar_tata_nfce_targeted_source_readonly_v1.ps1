@@ -16,6 +16,11 @@ Assert ($e.Count -eq 0) ("TARGETED_SOURCE_SYNTAX_ERROR:"+($e -join " | "))
 foreach($required in @(
   "TARGETED_SANITIZED_SOURCE_READ_ONLY",
   "REDACTED_SENSITIVE_ASSIGNMENT",
+  "[System.Collections.IDictionary]$Result",
+  "NO_TARGET_FILE_ENTRIES_CAPTURED",
+  "TARGET_FILE_SET_INCOMPLETE",
+  "NO_SANITIZED_FINDINGS_CAPTURED",
+  "expected_unique_target_files = 9",
   "environment.xml",
   "services.xml",
   "routes.json",
