@@ -1,0 +1,92 @@
+{
+  "schema": "deliveryos.tata-nfce-readonly-discovery-success.v1",
+  "source_commit": "2ef281105d22c9b903d33f01ecd443f49dd580d3",
+  "captured_at": "2026-10-03T06:02:31.2313750-03:00",
+  "status": "PROVEN_READONLY_NFCE_DISCOVERY",
+  "teknisa_root": "C:\\TEKNISA",
+  "source_config": {
+    "files_scanned": 4351,
+    "roots": [
+      "C:\\TEKNISA\\odhen-perifericos\\src",
+      "C:\\TEKNISA\\odhen-perifericos\\routes",
+      "C:\\TEKNISA\\odhenPOS\\mobile",
+      "C:\\TEKNISA\\odhenPOS\\backend_74000"
+    ],
+    "notable_hits": [
+      "odhenPOS\\backend_74000\\environment.xml:NFCe",
+      "odhenPOS\\backend_74000\\src\\Controller\\Delivery.php:fiscal",
+      "odhenPOS\\backend_74000\\src\\Controller\\Payment.php:NFCe",
+      "odhenPOS\\backend_74000\\src\\Service\\GeneralFunctions.php:NFCe/DANFE",
+      "odhenPOS\\backend_74000\\src\\Service\\FiscalFunctions.php:fiscal",
+      "odhenPOS\\backend_74000\\src\\Service\\Operator.php:NFCe/certificado",
+      "odhenPOS\\backend_74000\\services.xml:fiscal/NFCe/QRCode"
+    ],
+    "token_hits_truncated": true
+  },
+  "runtime": {
+    "apache_service": {
+      "name": "ApacheTeknisa9091x64",
+      "state": "Running",
+      "start_mode": "Auto",
+      "start_name": "LocalSystem",
+      "port": 9091
+    },
+    "peripherals_service": {
+      "name": "Perifericos",
+      "state": "Running",
+      "start_mode": "Auto",
+      "start_name": "LocalSystem",
+      "process": "Perifericos.exe",
+      "port": 3000
+    }
+  },
+  "printers": {
+    "default": "CAIXA",
+    "default_driver": "EPSON TM-T20 ReceiptE4",
+    "default_port": "ESDPRT001",
+    "candidate_receipt_printers": [
+      "CAIXA",
+      "EPSON TM-T(203dpi) Receipt6",
+      "EPSON TM-T20X Receipt6"
+    ]
+  },
+  "certificates": {
+    "stores_checked": [
+      "LocalMachine\\My",
+      "CurrentUser\\My"
+    ],
+    "total": 5,
+    "with_private_key": 5,
+    "currently_valid_with_private_key": 3,
+    "expiring_within_60_days": 0,
+    "fiscal_certificate_identity": "UNKNOWN",
+    "service_account_access": "UNKNOWN"
+  },
+  "proven_effect_boundaries": {
+    "order_read": false,
+    "database_query": false,
+    "database_write": false,
+    "odhen_write": false,
+    "config_write": false,
+    "process_start": false,
+    "service_change": false,
+    "printer_change": false,
+    "print": false,
+    "http": false,
+    "sefaz_call": false,
+    "fiscal_action": false,
+    "danfe_print": false,
+    "cutover": false
+  },
+  "interpretation": {
+    "native_nfce_surface_present": true,
+    "delivery_fiscal_code_present": true,
+    "payment_nfce_code_present": true,
+    "danfe_code_present": true,
+    "exact_automatic_trigger": "UNKNOWN",
+    "exact_nfce_cash_register_configuration": "UNKNOWN",
+    "exact_danfe_printer_binding": "UNKNOWN",
+    "certificate_readiness_for_emitting_context": "UNKNOWN"
+  },
+  "next_action": "TARGETED_SANITIZED_SOURCE_READ_ONLY_ANALYSIS_OF_ENVIRONMENT_XML_DELIVERY_PHP_PAYMENT_PHP_GENERALFUNCTIONS_PHP_FISCALFUNCTIONS_PHP_OPERATOR_PHP_SERVICES_XML_WITHOUT_SECRET_VALUES_OR_FISCAL_EFFECT"
+}
