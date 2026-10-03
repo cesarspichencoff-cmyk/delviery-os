@@ -1,0 +1,32 @@
+{
+  "schema": "deliveryos.tata-reader-admin-retry-authorization.v2",
+  "authorization_id": "CESAR-2026-10-02-TATA-READER-ADMIN-V1",
+  "incident_head": "9e3f8f4248ba054161dad564931b30c02d73851a",
+  "retry_source_head": "c3c6f28f4c0f2451160625bbc9548994560bfe44",
+  "human_retry_authorized": true,
+  "authorized_by": "Cesar",
+  "authorized_scope": {
+    "stage_runtime": true,
+    "create_manual_windows_service": true,
+    "create_sql_login_user": true,
+    "grant_exact_reviewed_column_select": true,
+    "start_one_shot_preflight": true,
+    "automatic_rollback_on_failure": true
+  },
+  "exclusions": {
+    "real_order_row_read": false,
+    "production_print": false,
+    "spooler_production_effect": false,
+    "odhen_teknisa_operational_write": false,
+    "nfce": false,
+    "sefaz": false,
+    "fiscal_action": false,
+    "cutover": false,
+    "automatic_service_start": false,
+    "manual_pos_delivery_scope": false,
+    "dscomanda": false,
+    "combo_structure_columns": false,
+    "idorigemvenda": false
+  },
+  "human_statement": "Autorizo uma nova tentativa da fase administrativa limitada do TATÁ Reader após a correção de ACL, mantendo os mesmos limites anteriores e rollback automático."
+}
