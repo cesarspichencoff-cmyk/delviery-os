@@ -1,0 +1,27 @@
+{
+  "schema": "deliveryos.tata-reader-preflight-candidate.v6",
+  "status": "CANDIDATE_NOT_AUTHORIZED",
+  "source_basis_head": "f0fd80c31d0522d06daefa9746fd0b763e07486e",
+  "predecessor_sha256": "592A7B0A7D7123018C934E8C54EF7C5DC1E44D699BD17BD8D99F3020BD0DDD3B",
+  "candidate_sha256": "6CCA333F206D8DD508029C35F6B43B41793707AA09357E250208BBCCB8B968AE",
+  "binary_sha256": "241073DA0AE678933E2EF88AF2DA2091F1DF4A578E1D78AD2B48839D4465BA6C",
+  "change_scope": [
+    "record effective server-principal IMPERSONATE targets",
+    "record SQL login token metadata",
+    "record explicit IMPERSONATE/CONTROL grants on server principals",
+    "correlate token grantees with effective impersonation targets"
+  ],
+  "semantic_scope_changed": false,
+  "allowed_columns_changed": false,
+  "operational_row_read_added": false,
+  "metadata_only": true,
+  "print_added": false,
+  "fiscal_added": false,
+  "cutover_added": false,
+  "blocker_policy_changed": false,
+  "evidence_basis": {
+    "observed_blocker": "SPECIFIC_LOGIN_IMPERSONATION_PRESENT",
+    "previous_target_provenance": "UNKNOWN",
+    "rollback_state": "PROVEN_CLEAN"
+  }
+}
