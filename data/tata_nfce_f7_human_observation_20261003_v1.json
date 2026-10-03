@@ -1,0 +1,18 @@
+{
+  "schema": "deliveryos.tata-nfce-human-observation-f7.v1",
+  "observed_by": "Cesar",
+  "observed_at_context": "2026-10-03",
+  "classification": "HUMAN_OBSERVED_OPERATIONAL_FACT",
+  "facts": [
+    "Na tela Delivery da Teknisa, a nota fiscal permanece pendente/retida até o operador pressionar F7.",
+    "Após F7, o documento sai na impressora CAIXA.",
+    "O impresso contém QR Code, sequência da Teknisa, valor do pedido e outros dados fiscais."
+  ],
+  "unknowns": [
+    "F7 inicia autorização NFC-e ou apenas imprime uma NFC-e já autorizada.",
+    "Qual função/rota é chamada pelo handler F7.",
+    "Qual configuração vincula o fluxo fiscal à impressora CAIXA.",
+    "Qual estado fiscal existe imediatamente antes do F7."
+  ],
+  "design_impact": "NEXT_READONLY_DISCOVERY_MUST_TRACE_F7_HANDLER_TO_FISCAL_AND_PRINT_CALL_CHAIN"
+}
