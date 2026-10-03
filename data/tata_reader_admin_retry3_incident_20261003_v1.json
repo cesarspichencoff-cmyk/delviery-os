@@ -2,20 +2,39 @@
   "schema": "deliveryos.tata-reader-admin-retry3-incident.v1",
   "authorization_id": "CESAR-2026-10-02-TATA-READER-ADMIN-V1",
   "source_head": "45eb3e7770c281e660644e01cc5c856fb95640b5",
-  "status": "FAILED_RESULT_SERIALIZATION",
+  "status": "FAILED_RESULT_SERIALIZATION_AFTER_PREFLIGHT_FAILURE",
   "failure": "ConvertTo-Json:System.OutOfMemoryException",
-  "phase": "after preflight failure path entered and after Invoke-Rollback was called; final result serialization failed",
-  "rollback_performed": "ATTEMPTED_NOT_YET_PROVEN",
-  "rollback_complete": "UNKNOWN_UNTIL_INDEPENDENT_CAIXA_STATE_CHECK",
-  "evidence_preservation_expected": true,
-  "diagnostic_paths": [
-    "C:\\TATA\\comanda-v1\\saida\\fase3\\TATA_READER_PREFLIGHT_EXITCODE.txt",
-    "C:\\TATA\\comanda-v1\\saida\\fase3\\TATA_READER_PREFLIGHT_DIAGNOSTIC.json",
-    "C:\\TATA\\comanda-v1\\saida\\fase3\\TATA_READER_PREFLIGHT_IDENTITY.txt",
-    "C:\\TATA\\comanda-v1\\saida\\fase3\\TATA_READER_PREFLIGHT_STDERR.txt"
+  "preflight": {
+    "blocker": "CONNECTION_OR_METADATA_FAILED",
+    "error": "ExecuteReader failed: incorrect syntax near keyword 'current_user'",
+    "root_cause": "UNESCAPED_RESERVED_ALIAS_CURRENT_USER",
+    "reached_permission_audit": false
+  },
+  "rollback_performed": true,
+  "rollback_complete": true,
+  "recovery_verification": {
+    "service_present": false,
+    "runtime_present": false,
+    "sql_login_present": false,
+    "sql_user_present": false,
+    "status": "PROVEN_CLEAN"
+  },
+  "proven_effect_boundaries": {
+    "order_row_read": false,
+    "print": false,
+    "fiscal_action": false,
+    "cutover": false
+  },
+  "failure_classes": [
+    "SQL_IDENTITY_QUERY_RESERVED_ALIAS",
+    "POWERSHELL_PIPELINE_OUTPUT_CONTAMINATION_CAUSING_JSON_SERIALIZATION_OOM"
   ],
-  "failure_class": "POWERSHELL_PIPELINE_OUTPUT_CONTAMINATION_CAUSING_JSON_SERIALIZATION_OOM",
-  "correction": "suppress Copy-Item output with Out-Null, bound identity/stderr strings, consume retry-v3 gate",
+  "corrections": [
+    "escape identity query aliases with brackets",
+    "suppress Copy-Item pipeline output",
+    "bound diagnostic strings",
+    "replace manual multi-step cycle with one-shot runner"
+  ],
   "retry_authorized": false,
-  "next_action": "READ_PRESERVED_DIAGNOSTIC_AND_VERIFY_SERVICE_RUNTIME_SQL_CLEAN_BEFORE_ANY_NEW_RETRY"
+  "next_action": "STATICALLY_PROVE_CORRECTED_PREFLIGHT_AND_ONE_SHOT_RUNNER_THEN_REQUEST_ONE_FRESH_HUMAN_AUTHORIZATION"
 }
