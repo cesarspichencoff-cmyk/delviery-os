@@ -163,7 +163,7 @@ if (
 ) {
   $state = Read-AdministrativeState
   $summary = [ordered]@{
-    schema = "deliveryos.tata-reader-admin-cycle-runner.v2"
+    schema = "deliveryos.tata-reader-admin-cycle-runner.v3"
     cycle_id = $cycleId
     status = "BLOCKED_BEFORE_EFFECT"
     verifier_exit_code = $verifierRun.exit_code
@@ -191,6 +191,9 @@ $state = Read-AdministrativeState
 
 $impersonationTargets = @()
 $impersonationEvidence = @()
+$nonImpersonableServerGroupTargets = @()
+$nonImpersonableDatabaseGroupTargets = @()
+$specificUserImpersonationTargets = @()
 if ($null -ne $diagnostic) {
   $impersonationTargets = @(
     $diagnostic.specific_login_impersonation_targets |
@@ -209,6 +212,33 @@ if ($null -ne $diagnostic) {
           target = [string]$_.target
           permission = [string]$_.permission
           state = [string]$_.state
+        }
+      }
+  )
+  $nonImpersonableServerGroupTargets = @(
+    $diagnostic.non_impersonable_server_group_targets |
+      ForEach-Object {
+        [ordered]@{
+          name = [string]$_.name
+          type = [string]$_.type
+        }
+      }
+  )
+  $nonImpersonableDatabaseGroupTargets = @(
+    $diagnostic.non_impersonable_database_group_targets |
+      ForEach-Object {
+        [ordered]@{
+          name = [string]$_.name
+          type = [string]$_.type
+        }
+      }
+  )
+  $specificUserImpersonationTargets = @(
+    $diagnostic.specific_user_impersonation_targets |
+      ForEach-Object {
+        [ordered]@{
+          name = [string]$_.name
+          type = [string]$_.type
         }
       }
   )
@@ -248,7 +278,7 @@ $stderrTail = [string]$applyRun.stderr
 if ($stderrTail.Length -gt 4000) { $stderrTail = $stderrTail.Substring($stderrTail.Length - 4000) }
 
 $summary = [ordered]@{
-  schema = "deliveryos.tata-reader-admin-cycle-runner.v1"
+  schema = "deliveryos.tata-reader-admin-cycle-runner.v3"
   cycle_id = $cycleId
   status = $status
   verifier_passed = [bool]$verifier.passed
@@ -260,6 +290,9 @@ $summary = [ordered]@{
   diagnostic_error = if ($null -eq $diagnostic) { $null } else { [string]$diagnostic.error }
   specific_login_impersonation_targets = @($impersonationTargets)
   effective_login_impersonation_evidence = @($impersonationEvidence)
+  non_impersonable_server_group_targets = @($nonImpersonableServerGroupTargets)
+  specific_user_impersonation_targets = @($specificUserImpersonationTargets)
+  non_impersonable_database_group_targets = @($nonImpersonableDatabaseGroupTargets)
   administrative_state = $state
   evidence_directory = $cycleDirectory
   order_row_read = $false
