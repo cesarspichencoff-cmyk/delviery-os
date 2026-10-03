@@ -7,7 +7,7 @@ $ErrorActionPreference = "Stop"
 
 $ExpectedAuthorizationId = "CESAR-2026-10-02-TATA-READER-ADMIN-V1"
 $ExpectedBinarySha256 = "241073DA0AE678933E2EF88AF2DA2091F1DF4A578E1D78AD2B48839D4465BA6C"
-$ExpectedPreflightSha256 = "6CCA333F206D8DD508029C35F6B43B41793707AA09357E250208BBCCB8B968AE"
+$ExpectedPreflightSha256 = "3BBE4C37FEDC8EC45A25FE08497B999453B181EBA3033861CFF37F701B4A0035"
 
 $ServiceName = "TataComandaReader"
 $ServicePrincipal = "NT SERVICE\TataComandaReader"
@@ -29,8 +29,8 @@ $ResultPath = Join-Path $ResultDirectory "TATA_READER_ADMIN_PHASE_RESULT.json"
 $RepoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $PreflightSource = Join-Path $RepoRoot "tools\tata_reader_least_privilege_preflight.ps1"
 $AuthorizationFile = Join-Path $RepoRoot "data\tata_reader_admin_authorization_v1.json"
-$RetryAuthorizationFile = Join-Path $RepoRoot "data\tata_reader_admin_retry_authorization_v5.json"
-$PreflightCandidateFile = Join-Path $RepoRoot "data\tata_reader_preflight_candidate_v6.json"
+$RetryAuthorizationFile = Join-Path $RepoRoot "data\tata_reader_admin_retry_authorization_v6.json"
+$PreflightCandidateFile = Join-Path $RepoRoot "data\tata_reader_preflight_candidate_v7.json"
 $BundleVerifier = Join-Path $RepoRoot "tools\verificar_tata_reader_admin_bundle_static_v1.ps1"
 
 $allowed = [ordered]@{
@@ -475,7 +475,7 @@ if (-not (Test-Path -LiteralPath $RetryAuthorizationFile -PathType Leaf)) {
 $retryAuthorization = Get-Content -LiteralPath $RetryAuthorizationFile -Raw | ConvertFrom-Json
 if (-not [bool]$retryAuthorization.human_retry_authorized) { throw "HUMAN_RETRY_AUTHORIZATION_NOT_PRESENT" }
 if ($retryAuthorization.authorization_id -ne $ExpectedAuthorizationId) { throw "RETRY_AUTHORIZATION_ID_MISMATCH" }
-if ($retryAuthorization.incident_head -ne "00368010f28528add90736664bbcdf750626688f") { throw "RETRY_AUTHORIZATION_INCIDENT_MISMATCH" }
+if ($retryAuthorization.incident_head -ne "47873a070a6da192db1956a3b39fa2bbfd9fdf7a") { throw "RETRY_AUTHORIZATION_INCIDENT_MISMATCH" }
 if ($retryAuthorization.preflight_sha256 -ne $ExpectedPreflightSha256) { throw "RETRY_AUTHORIZATION_PREFLIGHT_HASH_MISMATCH" }
 
 Assert-Administrator
