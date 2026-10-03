@@ -51,6 +51,7 @@ $result = [ordered]@{
   specific_login_impersonation_targets = @()
   server_impersonation_grants = @()
   login_token = @()
+  effective_login_impersonation_evidence = @()
   specific_user_impersonation_count = $null
   non_table_object_permissions = @()
   non_table_object_permission_count = $null
@@ -274,6 +275,22 @@ ORDER BY grantee.name, target.name, p.permission_name;
     }
   }
   $serverImpersonationGrantReader.Close()
+
+  $tokenNames = New-Object System.Collections.Generic.HashSet[string] ([System.StringComparer]::OrdinalIgnoreCase)
+  foreach ($tokenEntry in $result.login_token) {
+    $null = $tokenNames.Add([string]$tokenEntry.name)
+  }
+
+  $targetNames = New-Object System.Collections.Generic.HashSet[string] ([System.StringComparer]::OrdinalIgnoreCase)
+  foreach ($targetEntry in $result.specific_login_impersonation_targets) {
+    $null = $targetNames.Add([string]$targetEntry.name)
+  }
+
+  foreach ($grantEntry in $result.server_impersonation_grants) {
+    if ($tokenNames.Contains([string]$grantEntry.grantee) -and $targetNames.Contains([string]$grantEntry.target)) {
+      $result.effective_login_impersonation_evidence += $grantEntry
+    }
+  }
 
   $userImpersonationCmd = $conn.CreateCommand()
   $userImpersonationCmd.CommandTimeout = 5
