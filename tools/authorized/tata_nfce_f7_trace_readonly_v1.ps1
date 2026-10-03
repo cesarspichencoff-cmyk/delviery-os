@@ -41,13 +41,21 @@ if ($auth.authorization_id -ne $ExpectedAuthorizationId) { throw "F7_TRACE_AUTHO
 if ((Hash $PSCommandPath) -ne [string]$auth.trace_script_sha256) { throw "F7_TRACE_SCRIPT_HASH_MISMATCH" }
 
 $odhenPos=Join-Path $TeknisaRoot "odhenPOS"
+$odhenPerif=Join-Path $TeknisaRoot "odhen-perifericos"
 $roots=@(
   (Join-Path $odhenPos "mobile"),
-  (Join-Path $odhenPos "backend_74000")
+  (Join-Path $odhenPos "backend_74000"),
+  (Join-Path $odhenPerif "src"),
+  (Join-Path $odhenPerif "routes")
 )
 $extensions=@(".js",".ts",".php",".json",".html",".htm",".xml",".txt")
 $primaryRegex='(?i)(case\s+(?:118\b|["'']F7["''])|["'']?(?:keyCode|which)["'']?\s*(?:===?|==?|:)\s*118\b|["'']?(?:key|code)["'']?\s*(?:===?|==?|:)\s*["'']F7["'']|(?:keyCode|which)[^\r\n]{0,40}\b118\b|\b118\b[^\r\n]{0,40}(?:keyCode|which))'
 $fiscalRegex='(?i)(NFCe|NFC-e|DANFE|fiscal|Fiscal|impress|Impress|Delivery|delivery|Payment|pagamento)'
+$highSignalFiscalRegex='(?i)(NFCe|NFC-e|DANFE|SEFAZ|QRCode|QR\s*Code|fiscal|certificado|impress(?:ao|ão|ora|or)?)'
+$targetPathRegex='(?i)(environment\.xml$|services\.xml$|routes\.json$|\\src\\Controller\\Delivery\.php$|\\src\\Controller\\Payment\.php$|\\src\\Controller\\FiscalFunctions\.php$|\\src\\Service\\FiscalFunctions\.php$|\\src\\Service\\GeneralFunctions\.php$|\\src\\Service\\Operator\.php$)'
+$callRegex='(?<call>[A-Za-z_$][A-Za-z0-9_$]*(?:\.[A-Za-z_$][A-Za-z0-9_$]*){0,3})\s*\('
+$stringRegex='["''](?<str>[^"'']{3,120})["'']'
+$ignoredTerms=@("if","for","foreach","while","switch","function","return","isset","empty","array","count","log","console.log","preventdefault","stoppropagation","parseint","parsefloat","json.stringify","json.parse","math.max","math.min","addeventlistener","document.addeventlistener","getelementbyid","queryselector","settimeout","setinterval","then","catch","ajax")
 
 $result=[ordered]@{
   schema="deliveryos.tata-nfce-f7-trace-readonly.v1"
@@ -59,6 +67,12 @@ $result=[ordered]@{
   primary_matches=@()
   primary_match_count=0
   candidate_files=@()
+  handler_terms=@()
+  related_matches=@()
+  related_match_count=0
+  targeted_fiscal_matches=@()
+  targeted_fiscal_match_count=0
+  chain_context_status="NOT_EVALUATED"
   effects=[ordered]@{
     order_read=$false
     database_query=$false
@@ -130,13 +144,34 @@ try {
 
       foreach($lineNumber in $filePrimary){
         if($result.primary_matches.Count -ge 80){ break }
-        $lo=[Math]::Max(1,$lineNumber-5)
-        $hi=[Math]::Min($lines.Count,$lineNumber+5)
+        $lo=[Math]::Max(1,$lineNumber-6)
+        $hi=[Math]::Min($lines.Count,$lineNumber+6)
         $context=@()
+        $rawContext=@()
         for($j=$lo;$j -le $hi;$j++){
+          $rawLine=[string]$lines[$j-1]
+          $rawContext += $rawLine
           $context += [ordered]@{
             line=$j
-            text=Sanitize ([string]$lines[$j-1])
+            text=Sanitize $rawLine
+          }
+        }
+        foreach($rawLine in $rawContext){
+          foreach($m in [regex]::Matches($rawLine,$callRegex)){
+            $call=[string]$m.Groups["call"].Value
+            $leaf=[string](($call -split "\.")[-1])
+            foreach($term in @($call,$leaf)){
+              $lower=$term.ToLowerInvariant()
+              if($term.Length -ge 4 -and $ignoredTerms -notcontains $lower){
+                $result.handler_terms += $term
+              }
+            }
+          }
+          foreach($m in [regex]::Matches($rawLine,$stringRegex)){
+            $str=[string]$m.Groups["str"].Value
+            if($str.StartsWith("/") -or $str -match '(?i)(nfce|danfe|fiscal|payment|delivery|print|impress|nota|cupom|api|route)'){
+              $result.handler_terms += $str
+            }
           }
         }
         $result.primary_matches += [ordered]@{
@@ -154,6 +189,70 @@ try {
   if($result.files_scanned -lt 1){ throw "NO_SOURCE_FILES_SCANNED" }
   if($result.primary_match_count -lt 1){ throw "NO_F7_OR_KEY118_HANDLER_FOUND" }
   if($result.candidate_files.Count -lt 1){ throw "NO_F7_CANDIDATE_FILES_CAPTURED" }
+
+  $result.handler_terms=@($result.handler_terms | Where-Object { $_ -and $_.Length -ge 4 } | Sort-Object -Unique | Select-Object -First 30)
+
+  foreach($file in $files){
+    if($result.related_matches.Count -ge 40 -and $result.targeted_fiscal_matches.Count -ge 45){ break }
+    $lines=Get-Content -LiteralPath $file.FullName -ErrorAction SilentlyContinue
+    if($null -eq $lines){ continue }
+    $isTarget=($file.FullName -match $targetPathRegex)
+    $targetFileMatches=0
+
+    for($i=0;$i -lt $lines.Count;$i++){
+      $line=[string]$lines[$i]
+
+      if($isTarget -and $targetFileMatches -lt 5 -and $result.targeted_fiscal_matches.Count -lt 45 -and $line -match $highSignalFiscalRegex){
+        $lo=[Math]::Max(1,($i+1)-2)
+        $hi=[Math]::Min($lines.Count,($i+1)+2)
+        $context=@()
+        for($j=$lo;$j -le $hi;$j++){
+          $context += [ordered]@{ line=$j; text=Sanitize ([string]$lines[$j-1]) }
+        }
+        $result.targeted_fiscal_matches += [ordered]@{
+          path=$file.FullName
+          matched_line=($i+1)
+          context=$context
+        }
+        $targetFileMatches++
+      }
+
+      if($result.related_matches.Count -lt 40 -and $result.handler_terms.Count -gt 0){
+        $trimmed=$line.TrimStart()
+        if($trimmed -notmatch '^(//|#|/\*|\*|<!--)'){
+          foreach($term in $result.handler_terms){
+            if($line.IndexOf([string]$term,[System.StringComparison]::OrdinalIgnoreCase) -ge 0){
+              $lo=[Math]::Max(1,($i+1)-3)
+              $hi=[Math]::Min($lines.Count,($i+1)+3)
+              $context=@()
+              for($j=$lo;$j -le $hi;$j++){
+                $context += [ordered]@{ line=$j; text=Sanitize ([string]$lines[$j-1]) }
+              }
+              $result.related_matches += [ordered]@{
+                path=$file.FullName
+                matched_line=($i+1)
+                matched_term=[string]$term
+                context=$context
+              }
+              break
+            }
+          }
+        }
+      }
+    }
+  }
+
+  $result.related_match_count=$result.related_matches.Count
+  $result.targeted_fiscal_match_count=$result.targeted_fiscal_matches.Count
+  if($result.related_match_count -gt 0 -and $result.targeted_fiscal_match_count -gt 0){
+    $result.chain_context_status="HANDLER_RELATED_AND_TARGETED_FISCAL_CONTEXT"
+  } elseif($result.related_match_count -gt 0){
+    $result.chain_context_status="HANDLER_RELATED_CONTEXT_ONLY"
+  } elseif($result.targeted_fiscal_match_count -gt 0){
+    $result.chain_context_status="HANDLER_PLUS_TARGETED_FISCAL_CONTEXT"
+  } else {
+    $result.chain_context_status="HANDLER_ONLY"
+  }
 
   $result.status="PROVEN_F7_HANDLER_DISCOVERY"
 }
