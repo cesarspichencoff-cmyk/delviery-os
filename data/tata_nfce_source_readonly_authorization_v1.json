@@ -1,0 +1,39 @@
+{
+  "schema": "deliveryos.tata-nfce-source-readonly-authorization.v1",
+  "authorization_id": "CESAR-2026-10-03-TATA-NFCE-SOURCE-READONLY-V1",
+  "authorized_by": "Cesar",
+  "human_authorized": true,
+  "authorized_source_head": "f9449dcc5f64a23a83d61510b9460ef5236e1179",
+  "discovery_script_sha256": "E2FDD184B9B9D58BD045F6A93B58D4CB766020439672DEBCA61BBCC82897BC38",
+  "scope": {
+    "targeted_local_source_read": true,
+    "sanitized_context_only": true,
+    "secret_values": false,
+    "order_read": false,
+    "database_query": false,
+    "database_write": false,
+    "odhen_write": false,
+    "config_write": false,
+    "process_start": false,
+    "service_change": false,
+    "printer_change": false,
+    "print": false,
+    "http": false,
+    "sefaz_call": false,
+    "fiscal_action": false,
+    "danfe_print": false,
+    "cutover": false
+  },
+  "files": [
+    "environment.xml",
+    "services.xml",
+    "routes.json",
+    "Controller/Delivery.php",
+    "Controller/Payment.php",
+    "Controller/FiscalFunctions.php",
+    "Service/FiscalFunctions.php",
+    "Service/GeneralFunctions.php",
+    "Service/Operator.php"
+  ],
+  "human_statement": "pode seguir com a análise fiscal read-onl"
+}
