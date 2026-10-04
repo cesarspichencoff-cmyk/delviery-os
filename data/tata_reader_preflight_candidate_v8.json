@@ -17,5 +17,12 @@
   "print_added": false,
   "fiscal_added": false,
   "cutover_added": false,
-  "authorization_required": true
+  "authorization_required": true,
+  "candidate_sha256": "6710321BA8BD986C16FF1B2C38284F6EB02EC83CFFF9C6225F3D7FB41ABE0E3E",
+  "permission_migration_sha256": "7CD6764E58C7B370D28967FEA1502FDD1CFE99BB4162F69123664C544DFA1DD8",
+  "permission_rollback_sha256": "3AF1B8AFA64C43633ADE6020F4B55E8E17B99C11B68687054BAC5FDA4DC94D72",
+  "static_guard_sha256": "978B8BCC851491F7165B53A37BB4FE0497D7ED167424A0CB4C7D0C3F7F3731FD",
+  "static_guard_safe_exit_code": 0,
+  "static_guard_tampered_exit_code": 7,
+  "prepared_not_authorized": true
 }
