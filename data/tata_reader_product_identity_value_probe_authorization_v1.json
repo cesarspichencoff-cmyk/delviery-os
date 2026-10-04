@@ -1,0 +1,50 @@
+{
+  "schema": "deliveryos.tata-reader-product-identity-value-probe-authorization.v1",
+  "authorization_id": "CESAR-2026-10-04-TATA-READER-PRODUCT-IDENTITY-VALUE-PROBE-V1",
+  "authorized_on": "2026-10-04",
+  "authorized_by": "Cesar",
+  "human_authorized": true,
+  "human_statement": "Autorizo a leitura limitada das duas linhas de produto e somente dos quatro campos preparados no gate.",
+  "authorized_source_head": "1387c39cd5ae306be4b093c67e52da4241221d2f",
+  "probe": {
+    "path": "tools/tata_reader_product_identity_value_probe_REVIEW_ONLY.ps1",
+    "sha256": "6FC66839348C3839C9E441A89999F033E79F44112E162B326A565B39787F7BA8"
+  },
+  "guard": {
+    "path": "tools/verificar_tata_reader_product_identity_value_probe_review_static_v1.ps1",
+    "sha256": "2CC17B1EB9E7EF9663A3C3238EF21089C35610A0A8027B0F26B08C32EEEEED7C"
+  },
+  "scope": {
+    "product_ids": [
+      "0000001459",
+      "0000001641"
+    ],
+    "columns": [
+      "CDPRODUTO",
+      "CDPRODINTE",
+      "CDARVPROD",
+      "CDPRODESTO"
+    ],
+    "max_target_rows": 2,
+    "joins": false,
+    "product_name": false,
+    "order_tables": false,
+    "customer_data": false,
+    "observations": false
+  },
+  "prohibited_effects": {
+    "database_write": false,
+    "permission_change": false,
+    "service_change": false,
+    "odhen_write": false,
+    "print": false,
+    "spooler_write": false,
+    "f7": false,
+    "fiscal_action": false,
+    "sefaz_call": false,
+    "nfce": false,
+    "cutover": false
+  },
+  "stop_after_raw_values": true,
+  "canonical_identity_promotion_authorized": false
+}
