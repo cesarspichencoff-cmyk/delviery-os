@@ -40,7 +40,7 @@ Transactional permission migration:
 
 SHA-256:
 
-`7CD6764E58C7B370D28967FEA1502FDD1CFE99BB4162F69123664C544DFA1DD8`
+`D6E3FBBA229B1079493B3F8CDE180547A84E8B67907FC3D957E5AF8E39BB60BD`
 
 Prepared rollback:
 
@@ -56,7 +56,7 @@ Static guard:
 
 SHA-256:
 
-`978B8BCC851491F7165B53A37BB4FE0497D7ED167424A0CB4C7D0C3F7F3731FD`
+`F74F26C2000EB3F52C938FEAFCBD9A2FFD471D696D6129A5CE7802808EA66F1E`
 
 Candidate receipt:
 
@@ -74,16 +74,13 @@ and only on:
 
 proposed migration:
 
-1. require current `SELECT(CDPRODUTO)=true`;
-2. require current `SELECT(NMPRODUTO)=true`;
-3. require current `SELECT(CDARVPROD)=false`;
+1. inspect the target principal's explicit column-level SELECT grants from `sys.database_permissions`;
+2. require the exact current explicit grant surface to be `CDPRODUTO + NMPRODUTO`;
+3. reject any unexpected explicit DENY or additional explicit SELECT column grant;
 4. inside one SQL transaction:
    - REVOKE `SELECT(NMPRODUTO)`;
    - GRANT `SELECT(CDARVPROD)`;
-5. before commit require:
-   - `SELECT(CDPRODUTO)=true`;
-   - `SELECT(NMPRODUTO)=false`;
-   - `SELECT(CDARVPROD)=true`;
+5. before commit require the exact explicit target-principal grant surface to be `CDPRODUTO + CDARVPROD`;
 6. rollback automatically if any check fails.
 
 No service start/stop is part of this migration.
@@ -131,3 +128,8 @@ Therefore future runtime must remain fail-closed:
 This document is preparation only.
 
 Do not run migration, rollback, administrative apply, service changes, order read, print, F7 or fiscal action without a later explicit authorization/handoff.
+
+
+## Correction before authorization
+
+The first prepared migration candidate incorrectly used `HAS_PERMS_BY_NAME` under the administrative executor identity for its before/after checks. That could not prove the target principal's exact grant surface. Before human authorization was persisted, the candidate was corrected to inspect explicit column-level grants for `NT SERVICE\TataComandaReader` through `sys.database_permissions` + `sys.database_principals`. The static guard now forbids `HAS_PERMS_BY_NAME` in this migration.
