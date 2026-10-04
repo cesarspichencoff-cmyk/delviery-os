@@ -6,7 +6,7 @@
     "authority_scope": "technical_state",
     "superseded_by": null,
     "atualizado_em": "2026-10-04",
-    "state_basis": "a117c43",
+    "state_basis": "8b82fe3",
     "observa": [
       "src/product/",
       "src/perfil-delivery/",
@@ -2068,5 +2068,40 @@
     "known_harness_boundary": "test:platform:cadeia 36/37 e Q016 processos falham no Windows no assert de exit code 0 após child.kill(SIGTERM); código desse gate não foi alterado por B5; Q016 lógica/restore 27/27 GREEN",
     "physical_device": "NOT_PROVEN",
     "production": "NOT_ACTIVATED"
+  },
+  "multi_unit_read_b8": {
+    "status": "RESOLVED_TECHNICAL_LOCAL_RUNTIME_PROVEN",
+    "source": "identity.unit",
+    "reader": "src/platform/leitura/unidades-operacionais.ts",
+    "invariants": [
+      "active units only",
+      "READ ONLY transaction",
+      "demo-unit only without configured PostgreSQL",
+      "real database failure never falls back to demo",
+      "unit_id propagates to Entregas, Operacao Viva and Copiloto",
+      "Entregas reality is filtered by selected unit"
+    ],
+    "gates": {
+      "multi_unit_read": "6/6 PASS",
+      "product_system": "54/54 PASS",
+      "multi_unit_read_pg": "14/14 PASS"
+    },
+    "postgres_isolated": {
+      "active_units": [
+        "ITAIM",
+        "PINHEIROS"
+      ],
+      "inactive_unit_excluded": "HOUSE",
+      "itaim": {
+        "device": "dev-it",
+        "offline_queue": 4
+      },
+      "pinheiros": {
+        "device": "dev-pin",
+        "offline_queue": 13
+      }
+    },
+    "figma_node": "23:2",
+    "boundary": "prova local/isolada; não afirma cadastro multi-unidade ou ativação em produção"
   }
 }

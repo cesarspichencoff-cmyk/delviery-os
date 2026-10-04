@@ -22,7 +22,12 @@ import { entregasVM } from "../src/product/viewmodels/entregas-vm";
 import { operacaoVivaVM } from "../src/product/viewmodels/operacao-viva-vm";
 import { conferenceBrainVM } from "../src/product/viewmodels/conference-vm";
 import { copilotoVM } from "../src/product/viewmodels/copiloto-vm";
-import { GRUPOS, MODULOS, UNIDADES } from "../src/product/viewmodels/modulos";
+import {
+  GRUPOS,
+  MODULOS,
+  UNIDADES,
+  type Unidade,
+} from "../src/product/viewmodels/modulos";
 import {
   montarCadeiaDemo,
   montarEntregasDemo,
@@ -39,6 +44,7 @@ import {
 } from "../src/product/viewmodels/historico-vm";
 import { createPgClient, type PgSqlClient } from "../src/platform/persistence/sql-client";
 import { lerRealidadeDeEntregas } from "../src/platform/leitura/realidade-de-entregas";
+import { lerUnidadesOperacionais } from "../src/platform/leitura/unidades-operacionais";
 import { lerHistoricoOperacional } from "../src/platform/leitura/historico-operacional";
 import { TIPOS_DA_OPERACAO_VIVA } from "../src/platform/runtime/handler-operacao-viva";
 import type { LeituraDeRealidade } from "../src/product/viewmodels/entregas-vm";
@@ -182,7 +188,10 @@ function servirEstatico(res: http.ServerResponse, caminho: string): void {
  * Servidor
  * ------------------------------------------------------------------ */
 
-async function lerRealidade(cliente: PgSqlClient | null): Promise<LeituraDeRealidade> {
+async function lerRealidade(
+  cliente: PgSqlClient | null,
+  unit_id: string | null,
+): Promise<LeituraDeRealidade> {
   if (!cliente) {
     return {
       disponivel: false,
@@ -191,13 +200,68 @@ async function lerRealidade(cliente: PgSqlClient | null): Promise<LeituraDeReali
         "Nenhum banco da plataforma foi configurado nesta build (DELIVERYOS_DATABASE_URL). O bloco de realidade nao foi lido.",
     };
   }
+  if (!unit_id || !unit_id.trim()) {
+    return {
+      disponivel: false,
+      motivo: "integracao_pendente",
+      explicacao:
+        "Selecione uma unidade para ler a realidade sem varrer aparelhos de outras unidades.",
+    };
+  }
   try {
-    return { disponivel: true, realidade: await lerRealidadeDeEntregas(cliente, { agora: new Date() }) };
+    return {
+      disponivel: true,
+      realidade: await lerRealidadeDeEntregas(cliente, {
+        agora: new Date(),
+        unit_id: unit_id.trim(),
+      }),
+    };
   } catch (e) {
     return {
       disponivel: false,
       motivo: "indisponivel",
       explicacao: `O banco da plataforma nao respondeu a esta leitura: ${e instanceof Error ? e.message : String(e)}`,
+    };
+  }
+}
+
+type FonteUnidades = "demonstracao" | "identity.unit" | "indisponivel";
+
+interface LeituraDeUnidades {
+  readonly unidades: readonly Unidade[];
+  readonly fonte_unidades: FonteUnidades;
+  readonly unidades_disponiveis: boolean;
+}
+
+export async function lerUnidadesParaNavegacao(
+  cliente: PgSqlClient | null,
+): Promise<LeituraDeUnidades> {
+  if (!cliente) {
+    return {
+      unidades: UNIDADES,
+      fonte_unidades: "demonstracao",
+      unidades_disponiveis: true,
+    };
+  }
+  try {
+    const lidas = await lerUnidadesOperacionais(cliente);
+    return {
+      unidades: lidas.map((u) => ({
+        unit_id: u.unit_id,
+        nome: u.display_name,
+        origem: "identity.unit" as const,
+        timezone: u.timezone,
+      })),
+      fonte_unidades: "identity.unit",
+      unidades_disponiveis: true,
+    };
+  } catch {
+    // Banco configurado e indisponível NÃO cai para demo-unit: isso misturaria
+    // fonte real falhando com fixture como se fosse a mesma realidade.
+    return {
+      unidades: [],
+      fonte_unidades: "indisponivel",
+      unidades_disponiveis: false,
     };
   }
 }
@@ -267,7 +331,7 @@ export async function criarServidor(): Promise<http.Server> {
   const facade = await montarEntregasDemo();
   const clientePlataforma = URL_PLATAFORMA ? await createPgClient({ url: URL_PLATAFORMA, max: 2 }) : null;
 
-  return http.createServer((req, res) => {
+  const servidor = http.createServer((req, res) => {
     // A trava: metodo de escrita e recusado antes de qualquer roteamento.
     if (req.method !== "GET" && req.method !== "HEAD") {
       return json(res, 405, {
@@ -294,11 +358,24 @@ export async function criarServidor(): Promise<http.Server> {
       }
       if (p === "/api/estados") return json(res, 200, pronto.estados);
       if (p === "/api/navegacao") {
-        return json(res, 200, {
-          grupos: GRUPOS,
-          modulos: MODULOS,
-          unidades: UNIDADES,
-        });
+        void lerUnidadesParaNavegacao(clientePlataforma)
+          .then((u) =>
+            json(res, 200, {
+              grupos: GRUPOS,
+              modulos: MODULOS,
+              ...u,
+            }),
+          )
+          .catch(() =>
+            json(res, 200, {
+              grupos: GRUPOS,
+              modulos: MODULOS,
+              unidades: [],
+              fonte_unidades: "indisponivel",
+              unidades_disponiveis: false,
+            }),
+          );
+        return;
       }
       if (p === "/api/home") {
         // `cena` so existe porque esta build e de DEMONSTRACAO. Numa build com
@@ -318,8 +395,20 @@ export async function criarServidor(): Promise<http.Server> {
         // servidor subiu, e "agora" e o que quem olha esta perguntando.
         void (async () => {
           const snap = await facade.snapshot();
-          const leitura = await lerRealidade(clientePlataforma);
-          json(res, 200, entregasVM(snap, new Date().toISOString(), facade.getPolicyMaxStops(), leitura));
+          const leitura = await lerRealidade(
+            clientePlataforma,
+            url.searchParams.get("unit_id"),
+          );
+          json(
+            res,
+            200,
+            entregasVM(
+              snap,
+              new Date().toISOString(),
+              facade.getPolicyMaxStops(),
+              leitura,
+            ),
+          );
         })().catch((e: unknown) => json(res, 500, { erro: e instanceof Error ? e.message : String(e) }));
         return;
       }
@@ -350,6 +439,13 @@ export async function criarServidor(): Promise<http.Server> {
       });
     }
   });
+
+  if (clientePlataforma) {
+    servidor.once("close", () => {
+      void clientePlataforma.close();
+    });
+  }
+  return servidor;
 }
 
 if (require.main === module) {

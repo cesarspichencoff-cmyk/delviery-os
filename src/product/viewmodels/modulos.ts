@@ -208,15 +208,23 @@ export function moduloPorRota(rota: string): Modulo | undefined {
 }
 
 /**
- * As unidades que o seletor oferece. Vem de configuracao de apresentacao, nao de
- * banco: esta unidade nao consulta `identity`/`entregas` no PostgreSQL.
+ * Unidade oferecida pelo seletor.
+ *
+ * `UNIDADES` abaixo é SOMENTE o fallback explícito da demonstração. Quando o
+ * Product System recebe PostgreSQL, a lista vem de `identity.unit` e este
+ * fallback não é misturado com ela.
  */
 export interface Unidade {
   readonly unit_id: string;
   readonly nome: string;
-  readonly praca: string;
+  readonly origem: "demonstracao" | "identity.unit";
+  readonly timezone?: string;
 }
 
 export const UNIDADES: readonly Unidade[] = [
-  { unit_id: "demo-unit", nome: "TATA — unidade de demonstracao", praca: "demonstracao" },
+  {
+    unit_id: "demo-unit",
+    nome: "TATA — unidade de demonstracao",
+    origem: "demonstracao",
+  },
 ];

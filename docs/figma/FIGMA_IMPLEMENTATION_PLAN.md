@@ -126,3 +126,19 @@ O frame representa os três estados provados pela implementação:
 A fronteira de privacidade está no próprio frame: o endpoint aceita só três contadores; identidade
 vem do Bearer; localização, payload e `device_id` extra são recusados. O frame está marcado como
 prova de contrato/runtime local, não como prova de piloto físico ou produção.
+
+## Extensão 2026-10-04 — B8 Multi-unit Read
+
+A página `02 — Product Flows & Screens` recebeu
+`STATE-B8 · Multi-unit Read` (`23:2`).
+
+O frame representa o comportamento provado pelo runtime local:
+
+- `identity.unit` como fonte do seletor real;
+- ITAIM e PINHEIROS como duas fontes independentes da prova isolada;
+- leitura por `unit_id` sem vazamento de aparelho/fila entre unidades;
+- `demo-unit` somente quando não existe PostgreSQL configurado;
+- falha do banco real deixa o seletor indisponível, sem fallback enganoso para demo.
+
+O rodapé do frame diz explicitamente que a prova é PostgreSQL local/isolado e não ativação de
+produção.

@@ -85,13 +85,29 @@ function desenharNavegacao(rota) {
 
 function desenharUnidades() {
   const sel = $("#seletorUnidade");
-  sel.innerHTML = estado.navegacao.unidades
-    .map((u) => `<option value="${esc(u.unit_id)}">${esc(u.nome)}</option>`)
-    .join("");
-  sel.value = estado.unidade;
+  const unidades = estado.navegacao.unidades || [];
+  const indisponivel = estado.navegacao.unidades_disponiveis === false;
+
+  if (unidades.length === 0) {
+    sel.innerHTML = `<option value="">${esc(
+      indisponivel ? "Unidades indisponiveis" : "Nenhuma unidade ativa",
+    )}</option>`;
+    sel.disabled = true;
+    estado.unidade = null;
+  } else {
+    sel.disabled = false;
+    sel.innerHTML = unidades
+      .map((u) => `<option value="${esc(u.unit_id)}">${esc(u.nome)}</option>`)
+      .join("");
+    if (!unidades.some((u) => u.unit_id === estado.unidade)) {
+      estado.unidade = unidades[0].unit_id;
+    }
+    sel.value = estado.unidade;
+  }
+
   atualizarUnidadeVisivel();
   sel.addEventListener("change", () => {
-    estado.unidade = sel.value;
+    estado.unidade = sel.value || null;
     atualizarUnidadeVisivel();
     // A troca de unidade PRESERVA o contexto: a mesma rota e redesenhada.
     desenhar(estado.rotaAtual, { preservandoContexto: true });
@@ -100,9 +116,17 @@ function desenharUnidades() {
 
 function atualizarUnidadeVisivel() {
   const u = estado.navegacao.unidades.find((x) => x.unit_id === estado.unidade);
-  $("#unidadeAtiva").textContent = u
-    ? `Unidade ativa · ${u.unit_id} · ${u.praca}`
-    : "Unidade ativa · nao selecionada";
+  if (u) {
+    const fonte =
+      u.origem === "identity.unit" ? "cadastro operacional" : "demonstracao";
+    $("#unidadeAtiva").textContent =
+      `Unidade ativa · ${u.unit_id} · ${u.nome} · ${fonte}`;
+    return;
+  }
+  $("#unidadeAtiva").textContent =
+    estado.navegacao.unidades_disponiveis === false
+      ? "Unidades · leitura indisponivel"
+      : "Unidade ativa · nao selecionada";
 }
 
 function desenharContexto(modulo, preservandoContexto) {
@@ -181,7 +205,10 @@ async function desenhar(rota, opcoes = {}) {
   const cena = new URLSearchParams(window.location.search).get("cena");
   let api =
     rota === "/" && cena ? `${s.api}?cena=${encodeURIComponent(cena)}` : s.api;
-  if ((rota === "/operacao-viva" || rota === "/copiloto") && estado.unidade) {
+  if (
+    (rota === "/entregas" || rota === "/operacao-viva" || rota === "/copiloto") &&
+    estado.unidade
+  ) {
     api += `${api.includes("?") ? "&" : "?"}unit_id=${encodeURIComponent(estado.unidade)}`;
   }
   alvo.setAttribute("aria-busy", "true");

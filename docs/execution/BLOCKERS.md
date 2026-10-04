@@ -5,7 +5,7 @@ lifecycle:
   authority_scope: infra_blockers
   superseded_by: null
   atualizado_em: "2026-10-04"
-  state_basis: a117c43
+  state_basis: 8b82fe3
   question_refs: ["Q-001","Q-002","Q-003","Q-004","Q-005","Q-006","Q-007","Q-008","Q-009","Q-010","Q-011"]
 ---
 
@@ -1607,3 +1607,31 @@ Provas:
 
 **B5 = RESOLVIDO no escopo técnico/local.** Continua **NÃO PROVADO em aparelho físico e
 produção**; isso pertence ao gate de campo/cutover, não a B5.
+
+
+### Sucessão 2026-10-04 — B8 multi-unidade resolvido no escopo técnico/local
+
+A fotografia histórica acima dizia que o seletor só tinha `demo-unit`. Isso deixou de ser verdade.
+
+O Product System agora usa `identity.unit` como fonte quando existe PostgreSQL configurado:
+
+- só unidades `active=TRUE` entram;
+- a leitura roda em transação `READ ONLY`;
+- `demo-unit` existe apenas no modo explicitamente sem PostgreSQL;
+- se o banco real falha, o seletor fica indisponível/lista vazia — **não** cai para demo;
+- a troca preserva contexto e envia `unit_id` para Entregas, Operação Viva e Copiloto;
+- a realidade de Entregas filtra aparelhos/projeções por unidade.
+
+Provas 2026-10-04:
+- `test:platform:multi-unit-read`: **6/6 PASS**;
+- Product System: **54/54 PASS**;
+- PostgreSQL descartável + HTTP real do Product System:
+  `test:platform:multi-unit-read:pg`: **14/14 PASS**;
+- fixture PostgreSQL: ITAIM + PINHEIROS ativas, HOUSE inativa;
+- `/api/navegacao`: ITAIM/PINHEIROS, fonte `identity.unit`, nenhum `demo-unit`;
+- `/api/entregas?unit_id=ITAIM`: somente `dev-it`, fila offline 4;
+- `/api/entregas?unit_id=PINHEIROS`: somente `dev-pin`, fila offline 13;
+- Figma Full: `STATE-B8 · Multi-unit Read` — node `23:2`, incluindo estado fail-closed.
+
+**B8 = RESOLVIDO no escopo de implementação/runtime local.**
+Isso não prova que produção já tenha duas unidades cadastradas nem ativa qualquer deploy/cutover.
