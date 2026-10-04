@@ -1,0 +1,58 @@
+{
+  "schema": "deliveryos.tata-reader-cdarvprod-permission-swap-authorization.v1",
+  "authorization_id": "CESAR-2026-10-04-TATA-READER-CDARVPROD-PERMISSION-SWAP-V1",
+  "authorized_on": "2026-10-04",
+  "authorized_by": "Cesar",
+  "human_authorized": true,
+  "human_statement": "Autorizo substituir, para o usuário NT SERVICE\\TataComandaReader, somente a permissão de leitura de PRODUTO.NMPRODUTO por PRODUTO.CDARVPROD, mantendo CDPRODUTO e sem qualquer outra alteração.",
+  "authorized_source_head": "14102d5ea8880f944e29271fe3e418e98b77c0e0",
+  "target_principal": "NT SERVICE\\TataComandaReader",
+  "target_object": "TEKNISA.PRODUTO",
+  "before_exact_explicit_select_columns": [
+    "CDPRODUTO",
+    "NMPRODUTO"
+  ],
+  "after_exact_explicit_select_columns": [
+    "CDPRODUTO",
+    "CDARVPROD"
+  ],
+  "migration": {
+    "path": "tools/tata_reader_cdarvprod_permission_migration_REVIEW_ONLY.ps1",
+    "sha256": "D6E3FBBA229B1079493B3F8CDE180547A84E8B67907FC3D957E5AF8E39BB60BD",
+    "schema": "deliveryos.tata-reader-cdarvprod-permission-migration.review.v2"
+  },
+  "static_guard": {
+    "path": "tools/verificar_tata_reader_cdarvprod_permission_migration_review_static_v1.ps1",
+    "sha256": "F74F26C2000EB3F52C938FEAFCBD9A2FFD471D696D6129A5CE7802808EA66F1E",
+    "expected_output": "TATA_READER_CDARVPROD_PERMISSION_MIGRATION_REVIEW_V2_STATIC_PASS"
+  },
+  "future_preflight_candidate": {
+    "path": "tools/tata_reader_least_privilege_preflight_candidate_v8_REVIEW_ONLY.ps1",
+    "sha256": "6710321BA8BD986C16FF1B2C38284F6EB02EC83CFFF9C6225F3D7FB41ABE0E3E",
+    "execution_authorized_in_this_gate": false
+  },
+  "separate_rollback_script": {
+    "path": "tools/tata_reader_cdarvprod_permission_rollback_REVIEW_ONLY.ps1",
+    "sha256": "3AF1B8AFA64C43633ADE6020F4B55E8E17B99C11B68687054BAC5FDA4DC94D72",
+    "execution_authorized_in_this_gate": false,
+    "note": "The migration's internal pre-commit transaction rollback is authorized. A separate post-commit rollback is not authorized by this artifact."
+  },
+  "allowed_effects": {
+    "permission_change": true
+  },
+  "prohibited_effects": {
+    "database_row_read": false,
+    "database_write": false,
+    "service_change": false,
+    "odhen_write": false,
+    "print": false,
+    "spooler_write": false,
+    "f7": false,
+    "nfce": false,
+    "fiscal_action": false,
+    "sefaz_call": false,
+    "cutover": false
+  },
+  "no_other_permission_change": true,
+  "stop_after_migration_evidence": true
+}
