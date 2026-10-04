@@ -6,7 +6,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 $result = [ordered]@{
-  schema = "deliveryos.tata-reader-product-identity-metadata-probe.v2"
+  schema = "deliveryos.tata-reader-product-identity-metadata-probe.v3"
   mode = "METADATA_ONLY_NO_OPERATIONAL_ROWS"
   captured_at = (Get-Date).ToString("o")
   status = "STARTED"
@@ -35,7 +35,7 @@ $conn = $null
 try {
   $conn = New-Object System.Data.SqlClient.SqlConnection (
     "Server=$SqlServer;Database=$Database;Integrated Security=SSPI;" +
-    "Application Name=TataReaderProductIdentityMetadataProbeV2;Connect Timeout=5;" +
+    "Application Name=TataReaderProductIdentityMetadataProbeV3;Connect Timeout=5;" +
     "Encrypt=False;TrustServerCertificate=True"
   )
   $conn.Open()
@@ -46,7 +46,7 @@ try {
 SET NOCOUNT ON;
 SELECT
   SUSER_SNAME() AS current_login,
-  USER_NAME() AS current_user,
+  USER_NAME() AS [current_user],
   DB_NAME() AS database_name;
 "@
   $rd = $identity.ExecuteReader()
