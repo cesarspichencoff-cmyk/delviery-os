@@ -6,7 +6,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 $result = [ordered]@{
-  schema = "deliveryos.tata-reader-product-identity-metadata-probe.v1"
+  schema = "deliveryos.tata-reader-product-identity-metadata-probe.v2"
   mode = "METADATA_ONLY_NO_OPERATIONAL_ROWS"
   captured_at = (Get-Date).ToString("o")
   status = "STARTED"
@@ -16,7 +16,7 @@ $result = [ordered]@{
   product_object = $null
   product_candidate_columns = @()
   candidate_objects = @()
-  official_candidate_field_names = @("CDPROINTE","CDARVPROD","CDPRODESTO")
+  official_candidate_field_names = @("CDPROINTE","CDPRODINTE","CDARVPROD","CDPRODESTO")
   operational_rows_read = 0
   effects = [ordered]@{
     database_write = $false
@@ -35,7 +35,7 @@ $conn = $null
 try {
   $conn = New-Object System.Data.SqlClient.SqlConnection (
     "Server=$SqlServer;Database=$Database;Integrated Security=SSPI;" +
-    "Application Name=TataReaderProductIdentityMetadataProbeV1;Connect Timeout=5;" +
+    "Application Name=TataReaderProductIdentityMetadataProbeV2;Connect Timeout=5;" +
     "Encrypt=False;TrustServerCertificate=True"
   )
   $conn.Open()
@@ -88,6 +88,7 @@ SELECT
   o.type_desc,
   SUM(CASE WHEN c.name = N'CDPRODUTO' THEN 1 ELSE 0 END) AS has_cdproduto,
   SUM(CASE WHEN c.name = N'CDPROINTE' THEN 1 ELSE 0 END) AS has_cdprointe,
+  SUM(CASE WHEN c.name = N'CDPRODINTE' THEN 1 ELSE 0 END) AS has_cdprodinte,
   SUM(CASE WHEN c.name = N'CDARVPROD' THEN 1 ELSE 0 END) AS has_cdarvprod,
   SUM(CASE WHEN c.name = N'CDPRODESTO' THEN 1 ELSE 0 END) AS has_cdprodesto
 FROM sys.objects o
@@ -95,11 +96,12 @@ JOIN sys.schemas s ON s.schema_id = o.schema_id
 JOIN sys.columns c ON c.object_id = o.object_id
 WHERE s.name = N'TEKNISA'
   AND o.type IN ('U','V')
-  AND c.name IN (N'CDPRODUTO',N'CDPROINTE',N'CDARVPROD',N'CDPRODESTO')
+  AND c.name IN (N'CDPRODUTO',N'CDPROINTE',N'CDPRODINTE',N'CDARVPROD',N'CDPRODESTO')
 GROUP BY s.name,o.name,o.type_desc
 HAVING SUM(CASE WHEN c.name = N'CDPRODUTO' THEN 1 ELSE 0 END) > 0
    AND (
         SUM(CASE WHEN c.name = N'CDPROINTE' THEN 1 ELSE 0 END) > 0
+     OR SUM(CASE WHEN c.name = N'CDPRODINTE' THEN 1 ELSE 0 END) > 0
      OR SUM(CASE WHEN c.name = N'CDARVPROD' THEN 1 ELSE 0 END) > 0
      OR SUM(CASE WHEN c.name = N'CDPRODESTO' THEN 1 ELSE 0 END) > 0
    )
@@ -125,7 +127,7 @@ ORDER BY o.name;
   } else { $null }
   $result.product_candidate_columns = @(
     $productCols |
-      Where-Object { $_.column_name -in @("CDPRODUTO","NMPRODUTO","CDPROINTE","CDARVPROD","CDPRODESTO") }
+      Where-Object { $_.column_name -in @("CDPRODUTO","NMPRODUTO","CDPROINTE","CDPRODINTE","CDARVPROD","CDPRODESTO") }
   )
 
   if ($reader.NextResult()) {
@@ -136,6 +138,7 @@ ORDER BY o.name;
         type_desc = [string]$reader["type_desc"]
         has_cdproduto = ([int]$reader["has_cdproduto"] -gt 0)
         has_cdprointe = ([int]$reader["has_cdprointe"] -gt 0)
+        has_cdprodinte = ([int]$reader["has_cdprodinte"] -gt 0)
         has_cdarvprod = ([int]$reader["has_cdarvprod"] -gt 0)
         has_cdprodesto = ([int]$reader["has_cdprodesto"] -gt 0)
       }
