@@ -1,0 +1,49 @@
+{
+  "schema": "deliveryos.tata-reader-product-identity-value-probe-review-receipt.v1",
+  "captured_date": "2026-10-04",
+  "status": "PREPARED_NOT_AUTHORIZED",
+  "prepared_head": "0d4641475c1124558702b4aad9aa8812c43d2e1e",
+  "probe": {
+    "path": "tools/tata_reader_product_identity_value_probe_REVIEW_ONLY.ps1",
+    "sha256": "6FC66839348C3839C9E441A89999F033E79F44112E162B326A565B39787F7BA8",
+    "powershell_parse_errors": 0
+  },
+  "guard": {
+    "path": "tools/verificar_tata_reader_product_identity_value_probe_review_static_v1.ps1",
+    "sha256": "2CC17B1EB9E7EF9663A3C3238EF21089C35610A0A8027B0F26B08C32EEEEED7C",
+    "powershell_parse_errors": 0,
+    "safe_probe_output": "TATA_READER_PRODUCT_IDENTITY_VALUE_PROBE_REVIEW_STATIC_PASS",
+    "safe_probe_exit_code": 0,
+    "altered_scope_probe_exit_code": 7,
+    "altered_scope_test": "second fixed product id changed; guard rejected fixed-scope token"
+  },
+  "planned_scope": {
+    "product_ids": [
+      "0000001459",
+      "0000001641"
+    ],
+    "columns": [
+      "CDPRODUTO",
+      "CDPRODINTE",
+      "CDARVPROD",
+      "CDPRODESTO"
+    ],
+    "max_target_rows": 2,
+    "joins": false,
+    "order_rows": false,
+    "product_name": false
+  },
+  "executed_on_caixa": false,
+  "product_rows_read": 0,
+  "effects": {
+    "database_write": false,
+    "permission_change": false,
+    "odhen_write": false,
+    "print": false,
+    "spooler_write": false,
+    "fiscal_action": false,
+    "sefaz_call": false,
+    "cutover": false
+  },
+  "authorization_required": true
+}
