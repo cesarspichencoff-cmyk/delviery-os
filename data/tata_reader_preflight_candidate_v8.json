@@ -1,0 +1,21 @@
+{
+  "schema": "deliveryos.tata-reader-preflight-candidate.v8",
+  "status": "CANDIDATE_NOT_AUTHORIZED",
+  "predecessor_sha256": "3BBE4C37FEDC8EC45A25FE08497B999453B181EBA3033861CFF37F701B4A0035",
+  "change_scope": [
+    "replace PRODUTO.NMPRODUTO read permission with PRODUTO.CDARVPROD",
+    "keep PRODUTO.CDPRODUTO read permission",
+    "preserve exact two-column PRODUTO surface",
+    "remove product-name dependency from future runtime identity resolution"
+  ],
+  "semantic_scope_changed": true,
+  "permission_column_count_increased": false,
+  "product_name_read_removed": true,
+  "cdarvprod_read_added": true,
+  "operational_order_columns_changed": false,
+  "database_write_added": false,
+  "print_added": false,
+  "fiscal_added": false,
+  "cutover_added": false,
+  "authorization_required": true
+}
