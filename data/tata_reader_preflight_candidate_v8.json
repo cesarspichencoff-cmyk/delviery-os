@@ -1,6 +1,6 @@
 {
   "schema": "deliveryos.tata-reader-preflight-candidate.v8",
-  "status": "CANDIDATE_NOT_AUTHORIZED",
+  "status": "HUMAN_AUTHORIZED_NOT_EXECUTED",
   "predecessor_sha256": "3BBE4C37FEDC8EC45A25FE08497B999453B181EBA3033861CFF37F701B4A0035",
   "change_scope": [
     "replace PRODUTO.NMPRODUTO read permission with PRODUTO.CDARVPROD",
@@ -24,8 +24,11 @@
   "static_guard_sha256": "F74F26C2000EB3F52C938FEAFCBD9A2FFD471D696D6129A5CE7802808EA66F1E",
   "static_guard_safe_exit_code": 0,
   "static_guard_tampered_exit_code": 7,
-  "prepared_not_authorized": true,
+  "prepared_not_authorized": false,
   "target_principal_grant_check": "EXPLICIT_SYS_DATABASE_PERMISSIONS_COLUMN_GRANTS",
   "has_perms_by_name_for_target_check": false,
-  "corrected_before_authorization": true
+  "corrected_before_authorization": true,
+  "authorization_id": "CESAR-2026-10-04-TATA-READER-CDARVPROD-PERMISSION-SWAP-V1",
+  "authorization_commit": "fac512c7106cb1b1e6b863433c55b66f545ddc61",
+  "execution_completed": false
 }
