@@ -6,14 +6,17 @@ try {
   if(-not(Test-Path -LiteralPath $MigrationPath -PathType Leaf)){throw "migration-not-found"}
   $s=Get-Content -LiteralPath $MigrationPath -Raw
   $required=@(
+    "deliveryos.tata-reader-cdarvprod-permission-migration.review.v2",
     "PERMISSION_SWAP_NMPRODUTO_TO_CDARVPROD_REVIEW_ONLY",
-    "BEFORE_CDPRODUTO_SELECT_NOT_TRUE",
-    "BEFORE_NMPRODUTO_SELECT_NOT_TRUE",
-    "BEFORE_CDARVPROD_SELECT_NOT_FALSE",
+    "sys.database_permissions",
+    "sys.database_principals",
+    "dp.name = @principal",
+    "p.permission_name = N'SELECT'",
+    "p.minor_id > 0",
+    'Assert-ExactProdutoGrantSurface $result.before_explicit_grants @("CDPRODUTO","NMPRODUTO") "BEFORE"',
     "REVOKE SELECT ([NMPRODUTO])",
     "GRANT SELECT ([CDARVPROD])",
-    "AFTER_NMPRODUTO_SELECT_NOT_FALSE",
-    "AFTER_CDARVPROD_SELECT_NOT_TRUE",
+    'Assert-ExactProdutoGrantSurface $result.after_explicit_grants @("CDPRODUTO","CDARVPROD") "AFTER"',
     "BeginTransaction",
     "Rollback()",
     "PERMISSION_SWAP_COMMITTED",
@@ -26,6 +29,7 @@ try {
   )
   foreach($token in $required){if(-not $s.Contains($token)){throw("missing guard/token "+$token)}}
   $forbidden=@(
+    'HAS_PERMS_BY_NAME',
     'FROM\s+TEKNISA\.',
     'JOIN\s+TEKNISA\.',
     '\bINSERT\b',
@@ -41,10 +45,10 @@ try {
     '/print'
   )
   foreach($pattern in $forbidden){if($s-match$pattern){throw("forbidden capability/pattern "+$pattern)}}
-  Write-Output "TATA_READER_CDARVPROD_PERMISSION_MIGRATION_REVIEW_STATIC_PASS"
+  Write-Output "TATA_READER_CDARVPROD_PERMISSION_MIGRATION_REVIEW_V2_STATIC_PASS"
   exit 0
 }
 catch{
-  [Console]::Error.WriteLine("cdarvprod-permission-migration-review-static: "+$_.Exception.Message)
+  [Console]::Error.WriteLine("cdarvprod-permission-migration-review-v2-static: "+$_.Exception.Message)
   exit 7
 }
