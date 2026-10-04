@@ -4,6 +4,32 @@
 > Acesso verificado nesta sessão: `whoami` = Cesar Spichencoff, seat **View**, plano Starter.
 > **Escrita permitida e exercida** — 6 scripts de escrita executados com sucesso.
 
+## Sucessão — 2026-10-04 · migração para conexão Full
+
+O plano abaixo registra a implementação histórica do arquivo Starter. A superfície vigente passou a
+ser **`DeliveryOS Product System — Recovery` / `dGyF0eRDd4YG8uqyWqU1P4`** na conexão Full.
+
+A recuperação não foi feita “de memória”: cinco superfícies foram capturadas diretamente do
+DeliveryOS rodando e importadas como camadas editáveis. Em seguida, o Design System foi
+reconstruído a partir dos tokens/contratos do repositório.
+
+### Estado vigente
+
+- páginas: Overview `9:2` · Design System `9:3` · Product `9:4` · Recovery `0:1`;
+- 132 variáveis em 3 coleções canônicas (71 foundation + 50 organismo + 11 motion);
+- 9 estilos de texto e 3 efeitos;
+- 6 famílias de componentes base em `01`;
+- 10 frames desktop + 8 frames mobile do organismo com IDs reais;
+- 5 superfícies runtime recuperadas na página `02`;
+- screenshots de Overview, Design System, Aproximação desktop e Aproximação mobile renderizados
+  com sucesso pelo Figma MCP.
+
+PB11/PB13 deixam de bloquear o fechamento documental. O arquivo antigo permanece patrimônio
+histórico e não precisa ser alterado.
+
+---
+
+
 ## 1. O que foi encontrado antes de editar
 
 A memória executável (`STATE.json.figma_fatos_verificados_nao_reinvestigar`) afirmava páginas

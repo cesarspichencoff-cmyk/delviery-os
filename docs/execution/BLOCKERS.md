@@ -4,8 +4,8 @@ lifecycle:
   status: ACTIVE
   authority_scope: infra_blockers
   superseded_by: null
-  atualizado_em: "2026-10-03"
-  state_basis: 5e5e0f7
+  atualizado_em: "2026-10-04"
+  state_basis: f24ff62
   question_refs: ["Q-001","Q-002","Q-003","Q-004","Q-005","Q-006","Q-007","Q-008","Q-009","Q-010","Q-011"]
 ---
 
@@ -26,8 +26,8 @@ lifecycle:
 | PB9/C3 | **Q-003** | **respondida em 2026-09-30** |
 | PB9/C7 | **Q-004** | aberta |
 | PB9/C8 | **Q-005** | aberta |
-| PB11 | **Q-006** | aberta · `PROCEED_REVERSIBLY` autorizado por D59 |
-| PB13 | **Q-007** | aberta |
+| PB11 | **Q-006** | **RESOLVIDO 2026-10-04** — paridade nativa do organismo no arquivo Full |
+| PB13 | **Q-007** | **RESOLVIDO 2026-10-04** — quota Starter antiga contornada por arquivo Full autorizado |
 | PB14 | **Q-008** | aberta |
 | PB15 | **Q-009** | aberta |
 | PB16 | **Q-010** | aberta |
@@ -1504,3 +1504,21 @@ blocker separado de certificação de campo.
 > **Fronteira:** isso prepara e prova o caminho até o cutover, mas não seleciona/cria o banco
 > operacional, não emite credenciais reais, não aplica migration em produção, não executa cutover
 > operacional e não liga `consumer_live`/UI live.
+
+
+### Sucessão 2026-10-04 — PB11 e PB13 resolvidos
+
+O arquivo Starter antigo `IMWH8ZKMF5ra3QJYiR6vGa` continua bloqueado pela cota MCP e esse fato
+histórico não foi apagado. A missão deixou de depender dele.
+
+Novo arquivo Full: **`dGyF0eRDd4YG8uqyWqU1P4`**.
+
+- César abriu e confirmou acesso ao novo arquivo;
+- 5 superfícies atuais foram capturadas diretamente do DeliveryOS rodando;
+- páginas canônicas `00/01/02` foram recriadas;
+- Design System: 132 variáveis, 9 estilos de texto, 3 efeitos, 6 famílias de componentes;
+- organismo: 10 desktop + 8 mobile, todos com node IDs reais;
+- Recuperação e Retorno continuam marcados como demonstração/contrato, sem promoção falsa.
+
+**PB11 = RESOLVIDO** para paridade Figma do organismo.
+**PB13 = RESOLVIDO** como blocker. O limite Starter do arquivo antigo permanece histórico.

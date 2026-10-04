@@ -14,6 +14,27 @@
 > Legenda de dado: **R** real observado · **S** simulado · **C** controle positivo sintético ·
 > **A** ausente por decisão · **∅** inexistente.
 
+## Sucessão — 2026-10-04 · referências runtime no arquivo Full
+
+Arquivo vigente: `dGyF0eRDd4YG8uqyWqU1P4`.
+
+As superfícies atuais do produto foram capturadas diretamente do runtime e duplicadas para
+`02 — Product Flows & Screens` como referência editável:
+
+| Superfície | Node ID atual |
+|---|---:|
+| Home | `20:11` |
+| Entregas | `20:808` |
+| Operação Viva | `20:1528` |
+| Conference Brain | `20:2185` |
+| Copiloto | `20:2991` |
+
+Essas capturas são referência de paridade com o runtime. O Design System canônico do arquivo Full
+vive em `01 — Design System`; uma captura não substitui token, componente ou contrato.
+
+---
+
+
 ## 1. Telas
 
 | Tela | Figma | Código | Rota | Dado | Contrato | A11y | Responsivo | Motion | Teste |

@@ -17,6 +17,45 @@
 
 ---
 
+
+## Sucessão — 2026-10-04 · arquivo Full recuperado e PB11/PB13 fechados
+
+O bloqueio histórico de cota Starter continua verdadeiro para o arquivo antigo
+`IMWH8ZKMF5ra3QJYiR6vGa`, mas **não é mais a rota vigente**.
+
+Arquivo Figma vigente: `dGyF0eRDd4YG8uqyWqU1P4` — **DeliveryOS Product System — Recovery**,
+criado na conexão Full e acessível pelo César.
+
+Páginas vigentes:
+
+| Página | ID | Estado |
+|---|---:|---|
+| `00 — Overview & Architecture` | `9:2` | reconstruída; raiz `17:2` |
+| `01 — Design System` | `9:3` | reconstruída; raiz `14:2` |
+| `02 — Product Flows & Screens` | `9:4` | 10 desktop + 8 mobile + 5 capturas runtime |
+| `90 — Capture Reference · Recovery` | `0:1` | captura bruta recuperada do runtime |
+
+Fundações criadas no arquivo Full:
+
+- `DeliveryOS Foundation` — `VariableCollectionId:11:2`, **71** variáveis;
+- `Organismo Operacional` — `VariableCollectionId:11:3`, **50** variáveis;
+- `DeliveryOS Motion` — `VariableCollectionId:11:4`, **11** variáveis;
+- **9** estilos de texto + **3** estilos de efeito;
+- componentes: `ds-state` `16:33` · `campo` `16:40` · `metric` `16:47` ·
+  `bloco-evidencia` `16:48` · `bloco-limitacao` `16:51` · `estado-tela` `16:66`.
+
+As cinco superfícies reais recuperadas foram preservadas como referência editável em `02`:
+Home `20:11`, Entregas `20:808`, Operação Viva `20:1528`,
+Conference Brain `20:2185`, Copiloto `20:2991`.
+
+**PB11:** RESOLVIDO no escopo de paridade nativa do organismo.
+**PB13:** RESOLVIDO como blocker: a rota atual usa o arquivo Full; a cota Starter antiga ficou histórica.
+
+Recuperação e Retorno continuam marcados como demonstração/contrato porque o runtime ainda não
+implementa os movimentos correspondentes. Resolver o Figma **não promove** esses comportamentos.
+
+---
+
 ## 0. A condição que decide a coluna Node ID — leia antes de usar esta matriz
 
 **O acesso de escrita e de leitura ao Figma foi cortado por cota do plano no meio desta missão.**
@@ -61,29 +100,29 @@ acontecer.
 
 | Cenário | Página | Node ID | Rota/estado | Arquivo/componente | Origem | Real/demonstração | Movimento | Token | Reduced motion | Teste | Divergência |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| Calmo | 02 | `PENDENTE-PB13` | `/?cena=calmo#/` | `surfaces/home.js` · `.org-organismo` | V3.3 prancha 13 · `home-vm.ts` | real | pulso de vida (1 ambiente) | `--org-pulso` ← `motion-ambient` | medido: 1 → **0** animando | O1, O3, O10, O22 | Figma ausente |
-| Ambiente | 02 | `PENDENTE-PB13` | `/?cena=ambiente#/` | idem · `.org-area[data-degrau]` | V3.3 · `sinais.ts` | real | pulso de vida | `--org-pulso` | 1 → **0** | O4, O4b, O5, O10 | Figma ausente |
-| Ambiente com duas pressões | 02 | `PENDENTE-PB13` | `/?cena=ambiente#/` (Sushi, Cozinha e Motoboy em degrau 2) | idem | D42 · V3.3 | real | nenhum próprio | — | 1 → **0** | O10 | Figma ausente |
-| Foco | 02 | `PENDENTE-PB13` | `/?cena=foco#/` | idem · `.org-foco` | V3.3 painel que emerge | real | entrada do Foco (`reveal`) + fluxo nas ligações carregadas | `--org-chegada` ← `motion-base`+`motion-rise`; `--org-fluxo` | 4 → **0** | O11, O22 | Figma ausente |
-| Aproximação de Sushi | 02 | `PENDENTE-PB13` | `/?cena=ambiente&area=sushi#/` | `.org-aprox` · `minimapa()` | V3.3 mobile geral→área | real | chegada do painel de área | `--org-chegada` | 3 → **0** | O12 | Figma ausente |
-| Aproximação de Cozinha | 02 | `PENDENTE-PB13` | `/?cena=ambiente&area=cozinha#/` | idem | idem | real | idem | `--org-chegada` | 3 → **0** | O12 | Figma ausente |
-| Informação parcial | 02 | `PENDENTE-PB13` | Caixa e Conferência em qualquer cena | `areas.ts` `sem_medicao_automatica` | PB5, PB6 · D42 | sem fonte | nenhum — ausência não anima | — | inalterada | O7, O9 | Figma ausente |
-| Sem integração | 02 | `PENDENTE-PB13` | fonte `comanda_odhen` `indisponivel` | `seed-home-demonstracao.ts` · `.org-fonte` | PB8 (fonte externa) | sem integração | nenhum | — | inalterada | O9 | Figma ausente |
-| Falha persistente | 02 | `PENDENTE-PB13` | `/?cena=degradado#/` | `.org-degradado` · ardósia | Contrato Visual dos Estados Técnicos | real | **nenhum, por regra** | — | 0 → **0** | O8, O21 | Figma ausente |
-| Recuperação | 02 | `PENDENTE-PB13` | — | — | V3.3 · `connection_recovery` | **contrato preparado** | não implementado | `--org-troca` declarado | n/a | O26 | **Divergência D-O1** |
+| Calmo | 02 | `18:2` | `/?cena=calmo#/` | `surfaces/home.js` · `.org-organismo` | V3.3 prancha 13 · `home-vm.ts` | real | pulso de vida (1 ambiente) | `--org-pulso` ← `motion-ambient` | medido: 1 → **0** animando | O1, O3, O10, O22 | — |
+| Ambiente | 02 | `18:48` | `/?cena=ambiente#/` | idem · `.org-area[data-degrau]` | V3.3 · `sinais.ts` | real | pulso de vida | `--org-pulso` | 1 → **0** | O4, O4b, O5, O10 | — |
+| Ambiente com duas pressões | 02 | `18:94` | `/?cena=ambiente#/` (Sushi, Cozinha e Motoboy em degrau 2) | idem | D42 · V3.3 | real | nenhum próprio | — | 1 → **0** | O10 | — |
+| Foco | 02 | `18:140` | `/?cena=foco#/` | idem · `.org-foco` | V3.3 painel que emerge | real | entrada do Foco (`reveal`) + fluxo nas ligações carregadas | `--org-chegada` ← `motion-base`+`motion-rise`; `--org-fluxo` | 4 → **0** | O11, O22 | — |
+| Aproximação de Sushi | 02 | `18:186` | `/?cena=ambiente&area=sushi#/` | `.org-aprox` · `minimapa()` | V3.3 mobile geral→área | real | chegada do painel de área | `--org-chegada` | 3 → **0** | O12 | — |
+| Aproximação de Cozinha | 02 | `18:235` | `/?cena=ambiente&area=cozinha#/` | idem | idem | real | idem | `--org-chegada` | 3 → **0** | O12 | — |
+| Informação parcial | 02 | `18:284` | Caixa e Conferência em qualquer cena | `areas.ts` `sem_medicao_automatica` | PB5, PB6 · D42 | sem fonte | nenhum — ausência não anima | — | inalterada | O7, O9 | — |
+| Sem integração | 02 | `18:330` | fonte `comanda_odhen` `indisponivel` | `seed-home-demonstracao.ts` · `.org-fonte` | PB8 (fonte externa) | sem integração | nenhum | — | inalterada | O9 | — |
+| Falha persistente | 02 | `18:378` | `/?cena=degradado#/` | `.org-degradado` · ardósia | Contrato Visual dos Estados Técnicos | real | **nenhum, por regra** | — | 0 → **0** | O8, O21 | — |
+| Recuperação | 02 | `18:426` | — | — | V3.3 · `connection_recovery` | **contrato preparado** | não implementado | `--org-troca` declarado | n/a | O26 | **Divergência D-O1** |
 
 ## 3. Cenários obrigatórios — mobile
 
 | Cenário | Página | Node ID | Rota/estado | Arquivo/componente | Origem | Real/demonstração | Movimento | Token | Reduced motion | Teste | Divergência |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| Visão geral | 02 | `PENDENTE-PB13` | 375×812 · `/?cena=ambiente#/` | `home.css` `@media (max-width: 900px)` | V3.3 fluxo mobile | real | pulso de vida | `--org-pulso` | 1 → **0** | O13 | Figma ausente |
-| Calmo | 02 | `PENDENTE-PB13` | 375×812 · `?cena=calmo` | idem | idem | real | pulso de vida | `--org-pulso` | 1 → **0** | O13 | Figma ausente |
-| Ambiente | 02 | `PENDENTE-PB13` | 375×812 · `?cena=ambiente` | idem | idem | real | pulso de vida | `--org-pulso` | 1 → **0** | O13 | Figma ausente |
-| Foco | 02 | `PENDENTE-PB13` | 375×812 · `?cena=foco` | `.org-foco` mobile | idem | real | entrada do Foco | `--org-chegada` | 4 → **0** | O11, O13 | Figma ausente |
-| Aproximação | 02 | `PENDENTE-PB13` | 375×812 · `?area=sushi` | `.org-aprox` | idem | real | chegada | `--org-chegada` | 3 → **0** | O12 | Figma ausente |
-| Retorno | 02 | `PENDENTE-PB13` | `← Visão geral` (`home.js:466`) | `.org-aprox__voltar` | V3.3 "recuar nunca é sumir" | real (estado) · movimento **futuro** | não animado — recarrega a página | — | n/a | O12 | **Divergência D-O2** |
-| Sem medição | 02 | `PENDENTE-PB13` | Caixa em 375×812 | `areas.ts` | PB5 | sem fonte | nenhum | — | inalterada | O7, O13 | Figma ausente |
-| Falha técnica | 02 | `PENDENTE-PB13` | 375×812 · `?cena=degradado` | `.org-degradado` | Contrato dos Estados Técnicos | real | **nenhum, por regra** | — | 0 → **0** | O8, O13 | Figma ausente |
+| Visão geral | 02 | `19:2` | 375×812 · `/?cena=ambiente#/` | `home.css` `@media (max-width: 900px)` | V3.3 fluxo mobile | real | pulso de vida | `--org-pulso` | 1 → **0** | O13 | — |
+| Calmo | 02 | `19:34` | 375×812 · `?cena=calmo` | idem | idem | real | pulso de vida | `--org-pulso` | 1 → **0** | O13 | — |
+| Ambiente | 02 | `19:66` | 375×812 · `?cena=ambiente` | idem | idem | real | pulso de vida | `--org-pulso` | 1 → **0** | O13 | — |
+| Foco | 02 | `19:98` | 375×812 · `?cena=foco` | `.org-foco` mobile | idem | real | entrada do Foco | `--org-chegada` | 4 → **0** | O11, O13 | — |
+| Aproximação | 02 | `19:130` | 375×812 · `?area=sushi` | `.org-aprox` | idem | real | chegada | `--org-chegada` | 3 → **0** | O12 | — |
+| Retorno | 02 | `19:158` | `← Visão geral` (`home.js:466`) | `.org-aprox__voltar` | V3.3 "recuar nunca é sumir" | real (estado) · movimento **futuro** | não animado — recarrega a página | — | n/a | O12 | **Divergência D-O2** |
+| Sem medição | 02 | `19:193` | Caixa em 375×812 | `areas.ts` | PB5 | sem fonte | nenhum | — | inalterada | O7, O13 | — |
+| Falha técnica | 02 | `19:227` | 375×812 · `?cena=degradado` | `.org-degradado` | Contrato dos Estados Técnicos | real | **nenhum, por regra** | — | 0 → **0** | O8, O13 | — |
 
 ## 4. Estrutura das áreas — taxonomia que os dois lados precisam falar igual
 
@@ -179,16 +218,18 @@ nenhum significado depende só de movimento.
 |---|---|---|
 | **D-O1** | Recuperação e perda/retorno de fonte não existem como movimento | **aberta, com motivo estrutural.** A home recarrega a cada leitura e nenhum texto evolui no lugar. Implementar hoje seria encenação (MOTION_SYSTEM §1). No Figma, só como demonstração marcada. |
 | **D-O2** | Retorno da aproximação é link com recarga, não transição | **aberta.** Mesma causa de D-O1. |
-| **D-O3** | Nenhum frame do organismo existe no Figma | **aberta — PB11.** Bloqueada por **PB13** (cota do plano Figma). Nenhum node ID foi inventado. |
-| **D-O4** | A paleta do organismo não existe como variável no Figma | **aberta.** Depende do mesmo acesso de escrita. |
+| **D-O3** | Nenhum frame do organismo existe no Figma | **RESOLVIDA em 2026-10-04.** 18 frames canônicos no arquivo Full, página `9:4`; IDs reais nas §2/§3. |
+| **D-O4** | A paleta do organismo não existe como variável no Figma | **RESOLVIDA em 2026-10-04.** Coleção `Organismo Operacional` `VariableCollectionId:11:3` com 50 variáveis. |
 | **D-O5** | O shell (nav lateral, topo, seletor de unidade) segue no Design System da Unidade 6 | **aberta — PB9 para superfícies não migradas.** O organismo dentro dele está no Nível 1/2; a moldura, não. |
 
 ## 9. O que esta matriz proíbe afirmar
 
-- Que o Figma representa a expressão canônica do organismo. **Não representa** — D-O3.
-- Que qualquer node ID desta matriz existe. Os `PENDENTE-PB13` **não existem**.
-- Que recuperação, retorno, Text Morph, confirmação, progresso, fechamento de turno, previsão, voz
-  ou resolução automatizada estão implementados. **Nenhum está.**
-- Que o OriginKit foi analisado. **Não foi** — PB12, revisão externa adiada, não bloqueante.
-- Que a home mostra dado real de operação. Ela mostra **fixture declarada**; as regras, o cardápio e
-  os limiares é que são reais.
+- Que os frames de Recuperação/Retorno provam comportamento de runtime. **Não provam**: ambos estão
+  explicitamente marcados como demonstração/contrato preparado.
+- Que o arquivo Figma prova dado real de produção. Ele prova **paridade visual/estrutural**; a
+  verdade operacional continua pertencendo às fontes e gates de runtime.
+- Que o OriginKit foi analisado. **Não foi** — **PB12**, revisão externa segue não bloqueante.
+- Que Text Morph, confirmação/progresso de ação, fechamento de turno, previsão, voz ou resolução
+  automatizada estão implementados. **Nenhum está.**
+- Que a captura runtime substitui o Design System: `90 — Capture Reference · Recovery` é
+  referência; tokens/componentes vigentes vivem em `01 — Design System`.

@@ -10,15 +10,12 @@
  *   rastreabilidade — arquivo citado existe no disco; node ID e real ou declarado pendente
  *   classificacao — demonstracao, futuro e contrato preparado nunca viram producao
  *
- * A COLUNA NODE ID, E POR QUE ELA NAO E SO "PREENCHIDA OU NAO". A cota do plano
- * Figma cortou leitura e escrita no meio da missao (PB13). Inventar ID faria a
- * matriz mentir sobre qual e a expressao vigente. Entao o gate aceita DOIS
- * valores e so dois: um ID real no formato `123:456`, ou o token exato
- * `PENDENTE-PB13`. Qualquer outra coisa — vazio, tracinho, "TBD", ID malformado
- * — reprova. E uma linha pendente nao pode se declarar sincronizada.
- *
- * Quando os frames existirem, trocar o token pelo ID real deixa o gate verde
- * sozinho, sem afrouxar nenhuma asercao.
+ * A COLUNA NODE ID, E POR QUE ELA NAO E SO "PREENCHIDA OU NAO". Historicamente
+ * PB13 permitia o token exato `PENDENTE-PB13` enquanto o Figma estava inacessivel.
+ * O gate continua aceitando esse token APENAS para um blocker realmente aberto;
+ * quando a matriz declara PB13 RESOLVIDO, todos os cenarios obrigatorios passam
+ * a exigir IDs reais no formato `123:456`. Assim o fechamento do blocker torna
+ * o gate mais estrito, nao mais frouxo.
  */
 
 import assert from "node:assert/strict";
@@ -409,6 +406,17 @@ teste("R2 linha com node ID pendente nao pode se declarar sincronizada", () => {
   }
 });
 
+teste("R2b PB13 resolvido exige node ID real em todos os cenarios", () => {
+  if (!/PB13[^\n]*RESOLVIDO/i.test(md)) return;
+  for (const l of todas) {
+    assert.match(
+      l.celulas[2]!,
+      NODE_ID_REAL,
+      `PB13 resolvido mas "${l.celulas[0]}" ainda nao tem node ID real: ${l.celulas[2]}`,
+    );
+  }
+});
+
 teste("R3 todo arquivo citado pela matriz existe no disco", () => {
   const alvos = new Set<string>();
   for (const bloco of [md]) {
@@ -489,8 +497,21 @@ teste("C2 demonstracao, futuro e contrato preparado NUNCA aparecem como producao
 teste("C3 a matriz declara em letra propria o que nao pode afirmar", () => {
   const secao = md.split("## 9. O que esta matriz proíbe afirmar")[1];
   assert.ok(secao, "a matriz perdeu a secao das proibicoes");
-  assert.match(secao, /Não representa/i, "a matriz parou de declarar que o Figma nao representa");
-  assert.match(secao, /não existem/i, "a matriz parou de declarar que os node ID pendentes nao existem");
+  assert.match(
+    secao,
+    /arquivo Figma prova dado real de produção/i,
+    "a matriz parou de proibir que paridade Figma seja chamada de prova de producao",
+  );
+  assert.match(
+    secao,
+    /verdade operacional continua pertencendo às fontes/i,
+    "a matriz parou de separar a verdade operacional do artefato Figma",
+  );
+  assert.match(
+    secao,
+    /Recuperação\/Retorno|Recuperação.*Retorno/i,
+    "a matriz parou de declarar que Recuperacao/Retorno nao provam runtime",
+  );
   assert.match(secao, /PB12/, "a matriz parou de declarar que o OriginKit nao foi analisado");
 });
 

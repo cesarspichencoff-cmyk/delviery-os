@@ -5,8 +5,8 @@
     "status": "ACTIVE",
     "authority_scope": "technical_state",
     "superseded_by": null,
-    "atualizado_em": "2026-10-03",
-    "state_basis": "5e5e0f7",
+    "atualizado_em": "2026-10-04",
+    "state_basis": "f24ff62",
     "observa": [
       "src/product/",
       "src/perfil-delivery/",
@@ -1937,5 +1937,73 @@
       "browser": "B6_UI_RUNTIME_GREEN"
     },
     "boundary": "produção/deploy não ativados; B7 ação/autenticação e B8 segunda unidade real continuam abertos"
+  },
+  "figma_full_recovery": {
+    "status": "PROVEN_EDITABLE_FULL",
+    "file_key": "dGyF0eRDd4YG8uqyWqU1P4",
+    "pages": {
+      "overview": "9:2",
+      "design_system": "9:3",
+      "product": "9:4",
+      "capture_reference": "0:1"
+    },
+    "overview_root": "17:2",
+    "design_system_root": "14:2",
+    "variables": {
+      "foundation": {
+        "id": "VariableCollectionId:11:2",
+        "count": 71
+      },
+      "organism": {
+        "id": "VariableCollectionId:11:3",
+        "count": 50
+      },
+      "motion": {
+        "id": "VariableCollectionId:11:4",
+        "count": 11
+      }
+    },
+    "components": {
+      "ds_state": "16:33",
+      "campo": "16:40",
+      "metric": "16:47",
+      "bloco_evidencia": "16:48",
+      "bloco_limitacao": "16:51",
+      "estado_tela": "16:66"
+    },
+    "organism": {
+      "desktop": {
+        "Calmo": "18:2",
+        "Ambiente": "18:48",
+        "Ambiente com duas pressões": "18:94",
+        "Foco": "18:140",
+        "Aproximação de Sushi": "18:186",
+        "Aproximação de Cozinha": "18:235",
+        "Informação parcial": "18:284",
+        "Sem integração": "18:330",
+        "Falha persistente": "18:378",
+        "Recuperação": "18:426"
+      },
+      "mobile": {
+        "Visão geral": "19:2",
+        "Calmo": "19:34",
+        "Ambiente": "19:66",
+        "Foco": "19:98",
+        "Aproximação": "19:130",
+        "Retorno": "19:158",
+        "Sem medição": "19:193",
+        "Falha técnica": "19:227"
+      }
+    },
+    "runtime_reference": {
+      "home": "20:11",
+      "entregas": "20:808",
+      "operacao_viva": "20:1528",
+      "conference_brain": "20:2185",
+      "copiloto": "20:2991"
+    },
+    "pb11": "RESOLVIDO",
+    "pb13": "RESOLVIDO",
+    "boundary": "retorno e recuperação são demonstração/contrato; nenhuma promoção de produção"
   }
 }
