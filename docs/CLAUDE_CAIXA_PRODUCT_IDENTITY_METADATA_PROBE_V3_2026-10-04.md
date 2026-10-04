@@ -57,7 +57,7 @@ Probe:
 `tools/tata_reader_product_identity_metadata_probe_readonly.ps1`
 
 Expected SHA-256:
-`603C3D6DA4EB85BFEB2AAB6CCB1A66B0902F46BB304C083F482175C75C1F1ABD`
+`31A7590DFB9121351A3E45CFCA0218B80940155F8749A52C9B52741A1E1BD5F5`
 
 PowerShell static guard:
 `tools/verificar_tata_reader_product_identity_metadata_probe_static_v3.ps1`
