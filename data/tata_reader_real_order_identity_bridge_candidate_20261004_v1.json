@@ -1,0 +1,99 @@
+{
+  "schema": "deliveryos.tata-reader-real-order-identity-bridge-candidate.v1",
+  "captured_date": "2026-10-04",
+  "status": "PASS_CANDIDATE_BRIDGE_ONLY",
+  "source_heads": {
+    "deliveryos": "76fbfdd8622c0236c7fdac9cadea03c86e02adb6",
+    "tata_os_unified_core": "9e6f46c8e19cc9485bc4bd028b845c7e52cdf95c"
+  },
+  "source_sha256": {
+    "real_order_read": "B594A3E04BA35A07107C25D7FA14B4D4EF70FB127373CE41AF18E1D1BECE3D4F",
+    "routing_snapshot": "EBC4A8632C8AA21ACF0B99FB711DC5A2714B25EA34B2ED3D113F535DDAC4AC8C",
+    "printer_map": "E004AD74C63788C082D81751760670523FC3D97CA1E38EF6778ABA4DFC231509",
+    "tata_os_historical_sales_backfill": "E3D48B3ABBE8DF9EB1E873CFE75C2E9C3FD8B032C5B17037F063AF6FFDE903A1"
+  },
+  "sources": {
+    "real_order": "data/tata_reader_real_read_success_20261003_v1.json",
+    "routing": "data/odhen_product_routing_compact_v1.json",
+    "printers": "data/runtime_printer_map_v1.json",
+    "historical_catalog_repository": "cesarspichencoff-cmyk/tata-os",
+    "historical_catalog_branch": "feature/unified-tata-core-20261001",
+    "historical_catalog_file": "packages/unified-restaurant-core/data/historical_sales_backfill_jan_aug_2026.json"
+  },
+  "real_order": {
+    "NRCOMANDA": "0000346537",
+    "NRVENDAREST": "0000346965",
+    "NRCOMANDAEXT": "9092",
+    "origin": "DLV_IFO"
+  },
+  "bridge_method": {
+    "type": "TRIMMED_EXACT_PRODUCT_NAME",
+    "purpose": "bounded zero-effect replay only",
+    "allowed_for_runtime": false,
+    "allowed_as_canonical_identity": false,
+    "normalization": "TRIM_ONLY",
+    "reason": "The SQL internal product identifier and the Retail routing code are different namespaces. Exact trimmed name gives a deterministic candidate for these two observed items but does not prove canonical identity."
+  },
+  "items": [
+    {
+      "sql_cdproduto": "0000001459",
+      "sql_product_name_raw": "COMB SUSHI + SASHIMI ESPECIAL 2 P",
+      "normalized_name": "COMB SUSHI + SASHIMI ESPECIAL 2 P",
+      "quantity": "1.000",
+      "historical_snapshot_exact_trimmed_name_matches": 1,
+      "candidate_retail_compact_code": "9150003000",
+      "candidate_retail_canonical_code": "9.15.00.030.00",
+      "configured_targets": [
+        {
+          "printer_code": "00009",
+          "printer_name": "BALCAOSUSHI1",
+          "printer_ip": "192.168.0.142"
+        },
+        {
+          "printer_code": "00003",
+          "printer_name": "DELIVERY SUSHI 1",
+          "printer_ip": "192.168.0.153"
+        }
+      ]
+    },
+    {
+      "sql_cdproduto": "0000001641",
+      "sql_product_name_raw": "TEMAKI DE BARRIGA DE SALMAO ",
+      "normalized_name": "TEMAKI DE BARRIGA DE SALMAO",
+      "quantity": "3.000",
+      "historical_snapshot_exact_trimmed_name_matches": 1,
+      "candidate_retail_compact_code": "9600001000",
+      "candidate_retail_canonical_code": "9.60.00.010.00",
+      "configured_targets": [
+        {
+          "printer_code": "00006",
+          "printer_name": "BALCAOSUSHI2",
+          "printer_ip": "192.168.0.110"
+        },
+        {
+          "printer_code": "00004",
+          "printer_name": "DELIVERY SUSHI 2",
+          "printer_ip": "192.168.0.4"
+        }
+      ]
+    }
+  ],
+  "proof": {
+    "real_sql_order_and_items": "PROVEN_MINIMIZED_REAL_ORDER_READ",
+    "historical_product_code_candidate_by_trimmed_exact_name": "PROVEN_WITHIN_210_PRODUCT_HISTORICAL_SNAPSHOT",
+    "candidate_code_current_configured_route": "PROVEN_CURRENT_CONFIG",
+    "sql_internal_product_id_to_retail_product_code": "UNKNOWN",
+    "full_463_retail_catalog_name_uniqueness": "UNKNOWN",
+    "real_order_to_current_expected_route": "CANDIDATE_ONLY_NOT_CANONICAL_IDENTITY_PROOF"
+  },
+  "effects": {
+    "database_write": false,
+    "odhen_write": false,
+    "print": false,
+    "spooler_write": false,
+    "fiscal_action": false,
+    "sefaz_call": false,
+    "cutover": false
+  },
+  "next_gate": "PROVE_CANONICAL_SQL_INTERNAL_PRODUCT_ID_TO_RETAIL_PRODUCT_CODE_CROSSWALK"
+}
