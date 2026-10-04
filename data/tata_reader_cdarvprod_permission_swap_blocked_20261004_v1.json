@@ -1,0 +1,52 @@
+{
+  "schema": "deliveryos.tata-reader-cdarvprod-permission-swap-execution-attempt.v1",
+  "captured_date": "2026-10-04",
+  "status": "BLOCKED_BEFORE_GUARD_NO_EFFECT",
+  "project_head_reported_by_claude": "df37b21b0134919ace76cc7bb1320b3af1b23c7f",
+  "project_head_current_at_record_time": "df37b21b0134919ace76cc7bb1320b3af1b23c7f",
+  "authorization_id": "CESAR-2026-10-04-TATA-READER-CDARVPROD-PERMISSION-SWAP-V1",
+  "authorization_confirmed_by_claude": true,
+  "executor": "Claude Code on CAIXA",
+  "blocker": {
+    "class": "EXECUTOR_POLICY_PERMISSION_GRANT",
+    "detail": "Auto mode blocked download of migration and guard because the task involved a permission grant/revoke. Claude stopped and did not attempt a bypass."
+  },
+  "completed_checks": {
+    "remote_head": true,
+    "authorization_ancestry": true,
+    "authorization_id": true,
+    "human_authorized": true,
+    "target_principal": true,
+    "target_object": true,
+    "before_surface": true,
+    "after_surface": true
+  },
+  "not_completed": {
+    "migration_hash": false,
+    "guard_hash": false,
+    "guard_execution": false,
+    "migration_execution": false,
+    "post_migration_surface_proof": false
+  },
+  "effects": {
+    "permission_change": false,
+    "database_row_read": false,
+    "database_write": false,
+    "service_change": false,
+    "odhen_write": false,
+    "print": false,
+    "spooler_write": false,
+    "fiscal_action": false,
+    "sefaz_call": false,
+    "cutover": false
+  },
+  "assistant_remote_control_observation": {
+    "checked_at_record_time": true,
+    "available_devices": [
+      "Foxxy"
+    ],
+    "caixa_available": false
+  },
+  "next_required_capability": "AUTHORIZED_EXECUTION_CONTROL_ON_CAIXA",
+  "authorization_remains_valid_for_exact_pinned_scope": true
+}
