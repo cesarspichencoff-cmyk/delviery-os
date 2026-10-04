@@ -1,0 +1,2251 @@
+{
+  "schema": "deliveryos.tata-reader-cdarvprod-catalog-audit-result.v1",
+  "captured_at": "2026-10-04T09:27:30.8201339-03:00",
+  "provenance": "USER_RETURNED_AUTHORIZED_CAIXA_PROBE_OUTPUT",
+  "original_output_sha256": "1A4A4DD8A409DA043B9DA08BD7D3057A1B3C046C2F73C6A4C19E59F93D882522",
+  "executed_head": "be04c0a2d1bc662f46346f5a2d88a730f2bdd4e8",
+  "status": "CDARVPROD_CATALOG_AGGREGATE_READ",
+  "summary": {
+    "total_product_rows": 554,
+    "null_or_blank_cdarvprod_rows": 0,
+    "nonblank_cdarvprod_rows": 554,
+    "distinct_nonblank_cdarvprod": 554
+  },
+  "distinct_values_returned": 554,
+  "values": [
+    {
+      "CDARVPROD": "1000000000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1000002000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1001000000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1001500100",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1001500300",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1001503000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1001504000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1002003000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1002007001",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1002501000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1002502000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1002504000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1002512000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1002513000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1002516000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1002517000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1003000000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1003501000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1050003000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1100000000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1100500000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1101000000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1101001100",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1101005000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1101502000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1101503000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1102000100",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1102500000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1102501000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1102503000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1102504000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1102506000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1102522000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1102522001",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1102523000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1102524000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1103000000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1103001000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1103002000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1150001000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1150006001",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1150009000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1150009001",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1150010000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1150500000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1150502000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1150504000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1150508000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1150512000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1150514000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1150515000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1150520000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1150521000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1150522000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1150522001",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1150524000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1150525000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1150532000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1150533000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1150535000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1150536000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1150538000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1150539000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1150544000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "1151502000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2000000000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2000001000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2000004000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2000005001",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2000012000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2000013000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2000015000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2000016000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2000020001",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2000020002",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2000022000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2000024000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2000025000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2000026000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2000026200",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2000500000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2000501000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2000501001",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2000501002",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2000502000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2000503000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2000503001",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2000504000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2000504001",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2000505100",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2001011000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2001012000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2001013000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2001013001",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2001015000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2001019100",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2001019200",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2001019400",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2001019500",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2001019600",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2001019700",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2001019800",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "200105DD00",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2001100000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2001100100",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2001100200",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2001100300",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2001100400",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2001200000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2001200100",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2001200200",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2001200300",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2001200400",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2001200500",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2001200600",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2001200700",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2001200800",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2001200900",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2001201A00",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2001202B00",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2001203C00",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2001204D00",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2001205E00",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2001206F00",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2001300000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2001300100",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2001300200",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2001300300",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2001300400",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2001300500",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2001300600",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2001300700",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2001300800",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2001300900",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2001301A00",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2001302B00",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2001303C00",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2001400000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2001400100",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "2001400200",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "4000000000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "4000001000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8000000000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8000000001",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8000001000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8000001001",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8000002000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8000500000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8000500001",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8000501000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8000501001",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8000502000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8000502001",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8000503000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8000503001",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8000504000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8000504001",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8000505000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8000505001",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8000506000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8000506001",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8000507000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8000507001",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8000508000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8000509000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8000509001",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8000510000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8000510001",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8000510100",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8000511100",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8000512000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8001000000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8001500000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8001501000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8001502000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8002000000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8002001000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8002001100",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8050000000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8050000002",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8050001000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8050002000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8050003000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8050004000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8050005000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8050005100",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8050005101",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8050005200",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8100000000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8100001000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8100002000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8100002100",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8100500000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8100501000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8100502000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8100503000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8100504000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8100505000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8100506000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8100507000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8101000000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8101001000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8101002000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8101003000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8101500000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8101501000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8101502000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8101503000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8101504000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8150000000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8150001000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8150002000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8150003000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8150004000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8150005000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8150005001",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8150006000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8150007000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8150008000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8150009000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8150010000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8150012000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8150012300",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8150200000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8150500000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8150500100",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8150501000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8150501100",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8150501101",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8150502000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8150502100",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8150502200",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8150503000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8150503002",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8150505001",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8150506001",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8151000000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8151000100",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8151500000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8152500000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8200000000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8200001000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8200002000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8200003000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8200006100",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8201100000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8201100100",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8201100200",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8201100300",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8210000000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8210000001",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8210000100",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8210100000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8210200000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8210300100",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8210400000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8210500000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8210700000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8210800000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8220000000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "8220000100",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9000000000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9000000001",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9000001000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9000002000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9000002001",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9000002100",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9000002200",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9000002300",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9000002400",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9000002500",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9000002600",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9000002700",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9000002800",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9000002900",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9000003000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9000003100",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9000003200",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9000003300",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9000003400",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9000003500",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9000003600",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9000003700",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9000003800",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9000003900",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9000004000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9000004100",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9000004200",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9000004300",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9000004400",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9000004500",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9000004600",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9000004700",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9000004800",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9000004900",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9000005000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9000005100",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9000005200",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9000005300",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9000005400",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9000005500",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9000005600",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9000005700",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9000005800",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9000005900",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9000006000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9000006100",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9000006200",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9050000000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9050000100",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9050000200",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9050000300",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9050000400",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9050000500",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9050000600",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9050000700",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9050000800",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9050000900",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9050001A00",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9050002B00",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9050003C00",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9050004D00",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9050500000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9050500001",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9050501000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9050501001",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9050501500",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9050502000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9050503000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9050504000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9050505000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9050506000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9050507000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9050508000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9051000000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9100000000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9100001000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9100002000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9100003000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9100004000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9100005000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9100008000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9100009000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9100010000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9100500000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9100500500",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9100500600",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9100501000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9100502000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9100502500",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9100503000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9100504000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9100505000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9100506000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9100507000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9100507100",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9100507200",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9100507300",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9100508000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9100509000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9100509100",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9150000000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9150001000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9150002000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9150003000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9150004000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9150005000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9150006000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9150006001",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9150007000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9150007001",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9150007500",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9150007600",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9150008000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9150008100",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9200000000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9200001000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9200002000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9200003000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9200004000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9200005000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9200006000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9200007000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9200008000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9200009000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9200010000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9200011000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9200012000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9200013000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9200014000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9200014100",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9200014200",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9200015000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9250000000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9250001000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9250002000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9250003000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9250004000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9250005000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9250006000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9250006100",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9250006200",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9300000000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9300001000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9300002000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9300003000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9300004000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9300005000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9300006000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9300007000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9300008000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9300009000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9300010000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9300011000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9300012000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9300012200",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9300012300",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9300012400",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9300012500",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9350000000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9350001000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9350002000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9350100000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9350200000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9350300000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9350400000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9400000000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9400001000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9400002000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9400003000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9400004000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9400005000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9400006000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9400007000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9400008000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9450000000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9450001000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9450002000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9450003000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9450004000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9450005000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9450006000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9450007000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9450008000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9450009000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9450010000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9450011000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9450012000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9450013000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9450013100",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9500000000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9500001000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9500002000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9500003000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9500004000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9500005000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9500006000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9500007000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9500008000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9500008500",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9500009000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9500010000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9500011000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9500012000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9500013000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9500014000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9500014100",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9500014200",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9550000000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9550001000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9550002000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9550003000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9550003100",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9600000000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9600001000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9600002000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9600003000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9600004000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9600005000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9600006000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9600007000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9600015000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9600016000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9600016100",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9650000000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9650001000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9650002000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9650003000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9650004000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9650005000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9650006000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9650007000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9650008000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9650009000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9650010000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9650011000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "96500120",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9650012000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9650013000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9650014000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9650015000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9650015100",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9650016000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9650016500",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9650017000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9650017100",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9650018000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9650018100",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9650019000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9650019100",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9650019200",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9700000000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9700000100",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9700000200",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9700000300",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9700000400",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9700000500",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9700500000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9700500500",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9750000000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9750001000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9750002000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9750003000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9750003100",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9750003200",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9800000000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9800001000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9850000000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9850001000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9850002000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9850003000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9850004000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9850005000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9850006000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9850500000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9851000000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9851001000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9900000000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9900000100",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9900000200",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9900000300",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9900000400",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9900000500",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9980000000",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9980000100",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9990000700",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9990000800",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9990000900",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9990001A00",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9990002B00",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9990003C00",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9990004D00",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9990005E00",
+      "product_rows": 1
+    },
+    {
+      "CDARVPROD": "9990006F00",
+      "product_rows": 1
+    }
+  ],
+  "notes": [
+    "Set persisted from the complete 554-value evidence returned by the authorized CAIXA probe.",
+    "Ordering is normalized lexicographically for deterministic verification; source SQL order is not semantically used.",
+    "Every returned product_rows value was 1 in the authorized probe."
+  ],
+  "effects": {
+    "product_catalog_aggregate_read": true,
+    "product_identity_row_read": false,
+    "order_row_read": false,
+    "database_write": false,
+    "permission_change": false,
+    "odhen_write": false,
+    "print": false,
+    "spooler_write": false,
+    "fiscal_action": false,
+    "sefaz_call": false,
+    "cutover": false
+  }
+}
