@@ -96,3 +96,17 @@ Elas foram criadas **no Figma e no CSS ao mesmo tempo**, com o mesmo valor, e o 
   navegação real foi verificada no navegador.
 - Não há Code Connect configurado.
 - Os frames desktop mostram o conteúdo cortado em 900px de altura, como uma tela real cortaria.
+
+
+## Extensão 2026-10-04 — B7 Human Action Gate
+
+A página `02 — Product Flows & Screens` recebeu o frame
+`CONTRACT-B7 · Human Action Gate` (`21:2`).
+
+O frame é deliberadamente **não interativo** e marcado
+`CONTRACT PREPARED · NÃO EXECUTÁVEL`. Ele documenta sete portas:
+identidade, escopo, permissão, procedência REAL, estado ativo/válido,
+executor e auditoria.
+
+Ele não contém botão operacional e não afirma que identidade, executor ou auditoria estão
+conectados. A função do frame é impedir que o futuro controle humano nasça sem essas fronteiras.

@@ -5,7 +5,7 @@ lifecycle:
   authority_scope: infra_blockers
   superseded_by: null
   atualizado_em: "2026-10-04"
-  state_basis: f24ff62
+  state_basis: cd8ed14
   question_refs: ["Q-001","Q-002","Q-003","Q-004","Q-005","Q-006","Q-007","Q-008","Q-009","Q-010","Q-011"]
 ---
 
@@ -1522,3 +1522,43 @@ Novo arquivo Full: **`dGyF0eRDd4YG8uqyWqU1P4`**.
 
 **PB11 = RESOLVIDO** para paridade Figma do organismo.
 **PB13 = RESOLVIDO** como blocker. O limite Starter do arquivo antigo permanece histórico.
+
+
+### Sucessão 2026-10-04 — B7 reduzido a integrações reais de identidade/executor/auditoria
+
+B7 **não está resolvido para ação real**. A parte que antes era UNKNOWN sem forma agora tem contrato
+fail-closed verificável em `src/product/actions/human-action-gate.ts`.
+
+O gate exige, cumulativamente:
+
+- identidade humana válida e sessão vigente;
+- unidade dentro do escopo do humano;
+- permissão específica por ação;
+- recomendação `source_mode=real`;
+- recomendação `proposed`, ainda válida e marcada `requires_human=true`;
+- executor conectado;
+- sink de auditoria durável conectado.
+
+`eligible_to_request` e `execution_ready` são estados distintos. Mesmo um humano elegível não
+ganha execução se executor/auditoria estiverem ausentes.
+
+**Estado real do Product System em 2026-10-04:**
+- identity provider: **desconectado**;
+- executor: **desconectado**;
+- audit sink: **desconectado**;
+- actions exposed: **false**;
+- `POST /api/copiloto`: **405**;
+- nenhuma rota de escrita foi criada.
+
+Provas:
+- `test:platform:human-action-gate`: **13/13 PASS**;
+- Product System: **51/51 PASS**;
+- Copiloto: **41/41 PASS**;
+- navegador local: `B7_UI_RUNTIME_GREEN`, contrato renderizado, **0 action buttons**,
+  HTTP errors 0, page errors 0;
+- Figma Full: frame `21:2` **CONTRACT-B7 · Human Action Gate**, explicitamente
+  `CONTRACT PREPARED · NÃO EXECUTÁVEL`.
+
+**Fronteira atual:** B7 passa de “sem contrato de identidade/autorização” para
+**CONTRACT_PREPARED / NOT_EXECUTABLE**. O blocker restante é conectar identidade humana real,
+executor de decisão e auditoria durável, e só então provar uma ação controlada fora de produção.

@@ -518,10 +518,23 @@ teste("Copiloto: nada executa, e o estado `executed` nao existe", async () => {
     const vazou = valores.filter((s) => s === proibido);
     assert.deepEqual(vazou, [], `um valor do vocabulario de execucao vazou: ${proibido}`);
   }
+  assert.deepEqual(vm.fronteira_acao_humana, {
+    estado: "contrato_preparado",
+    identity_provider_connected: false,
+    executor_connected: false,
+    audit_sink_connected: false,
+    actions_exposed: false,
+    acoes_previstas: ["dismiss_recommendation", "accept_for_future"],
+  });
   for (const r of vm.ativas) {
     assert.equal(r.selo_shadow.estado, "shadow");
     assert.equal(r.selo_decisao_humana.estado, "acao_humana_necessaria");
     assert.ok(r.porque_nao_executada.includes("sombra"));
+    assert.equal(r.gate_acao_humana.identity_proven, false);
+    assert.equal(r.gate_acao_humana.execution_ready, false);
+    assert.ok(r.gate_acao_humana.reasons.includes("identity_missing"));
+    assert.ok(r.gate_acao_humana.reasons.includes("executor_not_connected"));
+    assert.ok(r.gate_acao_humana.reasons.includes("audit_sink_not_connected"));
   }
 });
 
@@ -537,6 +550,17 @@ teste("Copiloto: a cadeia real so produz recomendacao de FONTE", async () => {
       "recomendacao de fonte nao pode ter identidade de pedido",
     );
   }
+});
+
+teste("Copiloto: contrato humano e visivel sem expor acao", async () => {
+  const c = await montarCadeiaDemo();
+  const vm = copilotoVM(c.resultadoCopiloto);
+  assert.equal(vm.fronteira_acao_humana.estado, "contrato_preparado");
+  assert.equal(vm.fronteira_acao_humana.actions_exposed, false);
+  assert.ok(vm.ativas.every((r) => r.gate_acao_humana.execution_ready === false));
+  const js = ler("src/product/ui/surfaces/copiloto.js");
+  assert.ok(js.includes("Acao humana · contrato preparado"));
+  assert.ok(js.includes("CONTRACT PREPARED"));
 });
 
 teste("Copiloto: a superficie nao oferece execucao", () => {

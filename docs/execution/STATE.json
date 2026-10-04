@@ -6,7 +6,7 @@
     "authority_scope": "technical_state",
     "superseded_by": null,
     "atualizado_em": "2026-10-04",
-    "state_basis": "f24ff62",
+    "state_basis": "cd8ed14",
     "observa": [
       "src/product/",
       "src/perfil-delivery/",
@@ -2005,5 +2005,33 @@
     "pb11": "RESOLVIDO",
     "pb13": "RESOLVIDO",
     "boundary": "retorno e recuperação são demonstração/contrato; nenhuma promoção de produção"
+  },
+  "human_action_gate_b7": {
+    "status": "CONTRACT_PREPARED_NOT_EXECUTABLE",
+    "contract": "src/product/actions/human-action-gate.ts",
+    "tests": {
+      "human_action_gate": "13/13 PASS",
+      "product_system": "51/51 PASS",
+      "copiloto": "41/41 PASS",
+      "browser": "B7_UI_RUNTIME_GREEN"
+    },
+    "current_boundary": {
+      "identity_provider_connected": false,
+      "executor_connected": false,
+      "audit_sink_connected": false,
+      "actions_exposed": false,
+      "post_api_copiloto": "405"
+    },
+    "required_invariants": [
+      "authenticated human identity and valid session",
+      "unit scope",
+      "action-specific permission",
+      "source_mode real",
+      "active unexpired human-required recommendation",
+      "connected executor",
+      "durable audit sink"
+    ],
+    "figma_contract_node": "21:2",
+    "boundary": "não é prova de ação real; nenhuma rota de escrita existe"
   }
 }

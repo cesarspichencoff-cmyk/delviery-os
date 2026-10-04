@@ -79,6 +79,9 @@ function recomendacao(r) {
         <div class="campo"><span class="campo__rotulo">Volta ate a origem</span><span class="campo__valor campo__valor--tecnico">${esc(
           r.volta_ate_a_origem,
         )}</span></div>
+        <div class="campo"><span class="campo__rotulo">Gate de acao humana</span><span class="campo__valor campo__valor--tecnico">${esc(
+          r.gate_acao_humana.reasons.join(" · ") || "elegivel_para_solicitacao",
+        )}</span></div>
       </div>`,
     )}
     <p class="rec-card__sombra">${esc(r.porque_nao_executada)}</p>
@@ -200,6 +203,17 @@ export function telaCopiloto(vm) {
       <div class="linha-selos">${selos(vm.selos_de_cabecalho)}</div>
       <p class="rec-card__sombra" style="border:none;padding-left:0">Nenhuma acao foi executada. Nenhuma acao sera executada a partir desta superficie.</p>
     </section>
+
+    ${secao(
+      "Acao humana · contrato preparado",
+      "O contrato de identidade, escopo, permissao e auditoria existe, mas esta superficie continua sem autoridade para agir.",
+      `<div class="grade" data-colunas="2">
+        ${campo("Identidade humana", { observado: true, valor: vm.fronteira_acao_humana.identity_provider_connected ? "conectada" : "nao conectada" }, { tecnico: true })}
+        ${campo("Executor de decisao", { observado: true, valor: vm.fronteira_acao_humana.executor_connected ? "conectado" : "nao conectado" }, { tecnico: true })}
+        ${campo("Auditoria duravel", { observado: true, valor: vm.fronteira_acao_humana.audit_sink_connected ? "conectada" : "nao conectada" }, { tecnico: true })}
+        ${campo("Controles de acao", { observado: true, valor: vm.fronteira_acao_humana.actions_exposed ? "expostos" : "nao expostos" }, { tecnico: true })}
+      </div><p class="rec-card__sombra">CONTRACT PREPARED · nenhuma solicitacao de acao pode sair desta tela enquanto identidade + permissao + escopo + executor + auditoria nao estiverem provados.</p>`,
+    )}
 
     ${secao(
       "Propostas ativas",

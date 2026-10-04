@@ -20,6 +20,10 @@ import type {
   ResultadoShadow,
 } from "../../platform/copiloto/conference-bridge";
 import {
+  productSystemHumanActionBoundary,
+  type HumanActionGateResult,
+} from "../actions/human-action-gate";
+import {
   ausente,
   confiancaApresentavel,
   observado,
@@ -61,6 +65,8 @@ export interface RecomendacaoVM {
    * e o modo normal de ler sob pressao.
    */
   readonly porque_nao_executada: string;
+  /** Gate fail-closed. Informa por que a proposta NÃO pode virar ação aqui. */
+  readonly gate_acao_humana: HumanActionGateResult;
 }
 
 export interface RecusaVM {
@@ -81,6 +87,14 @@ export interface CopilotoVM {
   readonly recusas: readonly RecusaVM[];
   readonly sem_recomendacao_sustentada: boolean;
   readonly nenhuma_acao_executada: true;
+  readonly fronteira_acao_humana: {
+    readonly estado: "contrato_preparado";
+    readonly identity_provider_connected: false;
+    readonly executor_connected: false;
+    readonly audit_sink_connected: false;
+    readonly actions_exposed: false;
+    readonly acoes_previstas: readonly ["dismiss_recommendation", "accept_for_future"];
+  };
   readonly limitacoes: readonly Limitacao[];
 }
 
@@ -142,6 +156,7 @@ function recusaParaSelo(e: Recusa["estado"]): Selo {
 function recomendacaoVM(
   r: RecomendacaoShadow,
   procedencia: Procedencia,
+  avaliadoEm: string,
 ): RecomendacaoVM {
   const evidencias: readonly Evidencia[] = r.evidencias.map((e) => ({
     tipo: String((e as { tipo?: unknown }).tipo ?? "evidencia"),
@@ -201,6 +216,18 @@ function recomendacaoVM(
     /** O caminho de volta ate o fato que a produziu. */
     volta_ate_a_origem: `${r.conclusion_kind} · ${r.conclusion_ref} · ${r.conclusion_version}`,
     porque_nao_executada: FRASE_SOMBRA,
+    gate_acao_humana: productSystemHumanActionBoundary(
+      "dismiss_recommendation",
+      {
+        recommendation_id: r.recommendation_id,
+        unit_id: r.unit_id,
+        source_mode: r.source_mode,
+        status: r.status,
+        requires_human: r.requires_human,
+        expires_at: r.expires_at,
+      },
+      new Date(avaliadoEm),
+    ),
   };
 }
 
@@ -208,7 +235,9 @@ export function copilotoVM(res: ResultadoShadow): CopilotoVM {
   const procedencia: Procedencia =
     res.escopo?.source_mode === "real" ? "real" : "simulado";
 
-  const todas = res.recomendacoes.map((r) => recomendacaoVM(r, procedencia));
+  const todas = res.recomendacoes.map((r) =>
+    recomendacaoVM(r, procedencia, res.avaliado_em),
+  );
   const ativas = todas.filter((r) => r.ativa);
   const fora = todas.filter((r) => !r.ativa);
 
@@ -247,6 +276,14 @@ export function copilotoVM(res: ResultadoShadow): CopilotoVM {
     })),
     sem_recomendacao_sustentada: ativas.length === 0,
     nenhuma_acao_executada: true,
+    fronteira_acao_humana: {
+      estado: "contrato_preparado",
+      identity_provider_connected: false,
+      executor_connected: false,
+      audit_sink_connected: false,
+      actions_exposed: false,
+      acoes_previstas: ["dismiss_recommendation", "accept_for_future"],
+    },
     limitacoes: [
       {
         titulo: "Nenhuma recomendacao de PEDIDO nasce da cadeia real",

@@ -106,6 +106,7 @@
     "test:platform:cb4b4": "npx tsx src/platform/run-conference-4b4-tests.ts",
     "test:platform:cb4b5": "npx tsx src/platform/run-conference-4b5-tests.ts",
     "test:platform:copiloto": "npx tsx src/platform/run-copiloto-shadow-tests.ts",
+    "test:platform:human-action-gate": "npx tsx src/platform/run-human-action-gate-tests.ts",
     "test:platform:q003": "npx tsx src/platform/run-q003-attention-tests.ts",
     "test:platform:q003:identidade": "npx tsx src/platform/run-q003-causal-identity-tests.ts",
     "test:platform:q003:e2e": "npx tsx src/platform/run-q003-causal-e2e-tests.ts",
