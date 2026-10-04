@@ -257,6 +257,17 @@ class SyncWorker(
             else -> Unit
         }
 
+        // 5. Estado efêmero da fila local. É telemetria best-effort:
+        // falha de status nunca marca ponto/evento como failed e nunca impede
+        // o envio canônico. Só 401 importa, porque revela credencial vencida.
+        val pendingPoints = db.gpsPoints().pendingCount()
+        val pendingEvents = db.outbox().pendingCount()
+        val rejectedPoints = db.gpsPoints().rejectedCount()
+        when (api.reportDeviceStatus(pendingPoints, pendingEvents, rejectedPoints)) {
+            is ApiResult.Unauthorized -> credencialRecusada = true
+            else -> Unit
+        }
+
         // Credencial recusada e RETENTAVEL. Retornar sucesso aqui foi o coracao
         // do P0: o WorkManager dava a sincronizacao por concluida e os pontos
         // ficavam `failed` para sempre, sem nada sinalizar.

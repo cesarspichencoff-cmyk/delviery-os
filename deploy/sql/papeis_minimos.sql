@@ -70,6 +70,8 @@ REVOKE UPDATE (secret_hash, secret_bound_at)
   ON identity.device FROM deliveryos_critical;
 GRANT UPDATE (last_session_at, last_seen_at, app_version)
   ON identity.device TO deliveryos_critical;
+-- telemetria efêmera da fila local: uma linha por aparelho, sem coordenadas.
+GRANT SELECT, INSERT, UPDATE ON identity.device_runtime_status TO deliveryos_critical;
 -- sonda de escrita do /ready (`probe:escrita`) e `migrate_on_boot` em local.
 -- Em produção migrate_on_boot é falso: a sonda ainda escreve aqui.
 GRANT SELECT, INSERT, UPDATE ON platform.schema_migration TO deliveryos_critical;

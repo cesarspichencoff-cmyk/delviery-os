@@ -11,9 +11,10 @@
  *  - `platform.event_log`: o último lote de cada aparelho e a projeção da
  *    Operação Viva por unidade e por modo, com a MESMA função do assíncrono.
  *
- * O que ela NÃO inventa: fila offline do aparelho, estado do GPS no telefone,
- * permissão de localização, viagem que não deixou fato. Quem não tem fonte
- * sai como ausência declarada, nunca como zero, nunca como "saudável".
+ * O que ela NÃO inventa: estado do GPS no telefone, permissão de localização
+ * e viagem que não deixou fato. A fila local só existe quando o aparelho
+ * autenticado reportou contadores pela rota de status; silêncio ou status
+ * antigo nunca vira zero nem "saudável".
  *
  * Somente leitura por CONSTRUÇÃO: a transação é `READ ONLY`, como na porta de
  * replay — qualquer escrita nesta conexão é recusada pelo PostgreSQL.
@@ -27,7 +28,7 @@ import { lerFatosParaReplay } from "../projections/replay-do-event-log";
 import { projetar, type ViagemProjetada } from "../projections/operacao-viva";
 import { TIPOS_DA_OPERACAO_VIVA } from "../runtime/handler-operacao-viva";
 
-export const PORTA_DE_REALIDADE_VERSION = "realidade-de-entregas@1.0.0";
+export const PORTA_DE_REALIDADE_VERSION = "realidade-de-entregas@1.1.0";
 
 export interface UltimoLote {
   /** Quando o aparelho disse que aconteceu. */
@@ -56,6 +57,13 @@ export interface AparelhoReal {
   ultima_sessao_em: string | null;
   app_version: string | null;
   revogado_em: string | null;
+  fila_local: null | {
+    reportada_em: string;
+    source_mode: SourceMode;
+    pending_points: number;
+    pending_events: number;
+    rejected_points: number;
+  };
   /** Fatos `gps_batch_received` deste aparelho, por modo. Zero é zero medido. */
   fatos_por_modo: Record<SourceMode, number>;
   ultimo_lote: UltimoLote | null;
@@ -105,8 +113,12 @@ export async function lerRealidadeDeEntregas(
     const params = opcoes.unit_id ? [opcoes.unit_id] : [];
     const linhas = await tx.query(
       `SELECT d.device_id, d.unit_id, d.actor_id, d.label, d.registered_at, d.secret_bound_at,
-              d.last_session_at, d.app_version, d.revoked_at
-         FROM identity.device d ${filtro}
+              d.last_session_at, d.app_version, d.revoked_at,
+              s.reported_at AS queue_reported_at, s.source_mode AS queue_source_mode,
+              s.pending_points, s.pending_events, s.rejected_points
+         FROM identity.device d
+         LEFT JOIN identity.device_runtime_status s ON s.device_id = d.device_id
+         ${filtro}
         ORDER BY d.unit_id, d.device_id`,
       params,
     );
@@ -160,6 +172,16 @@ export async function lerRealidadeDeEntregas(
       ultima_sessao_em: iso(l.last_session_at),
       app_version: l.app_version === null ? null : String(l.app_version),
       revogado_em: iso(l.revoked_at),
+      fila_local:
+        l.queue_reported_at === null || l.queue_reported_at === undefined
+          ? null
+          : {
+              reportada_em: iso(l.queue_reported_at)!,
+              source_mode: modo(l.queue_source_mode)!,
+              pending_points: Number(l.pending_points),
+              pending_events: Number(l.pending_events),
+              rejected_points: Number(l.rejected_points),
+            },
       fatos_por_modo: contagemPor.get(String(l.device_id)) ?? { real: 0, simulated: 0, control: 0 },
       ultimo_lote: ultimoPor.get(String(l.device_id)) ?? null,
     }));

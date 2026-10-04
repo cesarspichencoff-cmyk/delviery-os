@@ -782,11 +782,89 @@ async function main(): Promise<void> {
       assert.equal(ar.ultima_posicao_em.observado && ar.ultima_posicao_em.origem, "simulado");
       assert.equal(ar.gps.observado && ar.gps.valor, "aging", "10:05 lido às 10:08:30 (210 s) não é aging?");
       assert.equal(ar.fatos.observado && ar.fatos.valor, 5);
-      // O que o telefone guarda continua sem fonte.
+      // A rota existe, mas este aparelho nunca reportou a fila: não observado.
       assert.equal(ar.fila_offline.observado, false);
-      assert.equal(ar.fila_offline.observado === false && ar.fila_offline.motivo, "integracao_pendente");
+      assert.equal(ar.fila_offline.observado === false && ar.fila_offline.motivo, "nao_observado");
       // E o bloco antigo do demo continua declarando integração pendente.
       for (const c of Object.values(vm.dispositivo)) assert.equal(c.observado, false);
+    });
+
+    await teste("D3b B5: aparelho autenticado reporta fila minima e o Product System a le com o modo da instancia", async () => {
+      const dirQ = mkdtempSync(join(tmpdir(), "cadeia-aparelho-fila-"));
+      try {
+        const apQ = new AparelhoLogico({ diretorio: dirQ, plataformaUrl: urlCritico });
+        await autorizarAparelho(
+          b,
+          apQ.deviceId,
+          UNIDADE,
+          `${MOTOBOY}-fila`,
+          hashDoSegredo(apQ.db.get(KEY_DEVICE_SECRET)!),
+        );
+        assert.equal(await apQ.sincronizar(), "success");
+        const sessao = DeviceSession.sessaoAtual(apQ.db);
+        assert.ok(sessao, "aparelho de fila não obteve sessão");
+
+        const spoof = await fetch(`${urlCritico}/api/device/status`, {
+          method: "POST",
+          headers: {
+            authorization: `Bearer ${sessao!.token}`,
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({
+            pending_points: 7,
+            pending_events: 2,
+            rejected_points: 1,
+            device_id: "dev-spoof",
+          }),
+        });
+        assert.equal(spoof.status, 400, "status aceitou device_id fora do Bearer");
+
+        const resposta = await fetch(`${urlCritico}/api/device/status`, {
+          method: "POST",
+          headers: {
+            authorization: `Bearer ${sessao!.token}`,
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({
+            pending_points: 7,
+            pending_events: 2,
+            rejected_points: 1,
+          }),
+        });
+        assert.equal(resposta.status, 200);
+        const corpo = (await resposta.json()) as {
+          device_id: string;
+          received_at: string;
+        };
+        assert.equal(corpo.device_id, apQ.deviceId, "identidade autenticada divergente");
+
+        const leituraFila = await lerRealidadeDeEntregas(b.cliente, {
+          agora: new Date(corpo.received_at),
+          unit_id: UNIDADE,
+        });
+        const real = leituraFila.aparelhos.find((x) => x.device_id === apQ.deviceId);
+        assert.deepEqual(real?.fila_local, {
+          reportada_em: corpo.received_at,
+          source_mode: MODO,
+          pending_points: 7,
+          pending_events: 2,
+          rejected_points: 1,
+        });
+
+        const f = await montarEntregasDemo();
+        const vm = entregasVM(
+          await f.snapshot(),
+          corpo.received_at,
+          f.getPolicyMaxStops(),
+          { disponivel: true, realidade: leituraFila },
+        );
+        const ar = vm.realidade.aparelhos.find((x) => x.device_id === apQ.deviceId)!;
+        assert.equal(ar.fila_offline.observado, true);
+        assert.equal(ar.fila_offline.observado && ar.fila_offline.valor, 9);
+        assert.equal(ar.fila_offline.observado && ar.fila_offline.origem, "simulado");
+      } finally {
+        rmSync(dirQ, { recursive: true, force: true });
+      }
     });
 
     await teste("D4 AUSÊNCIA nunca vira saúde: aparelho pre-vinculado sem lote fica sem GPS, sem sincronização e sem modo", async () => {
@@ -888,6 +966,38 @@ async function main(): Promise<void> {
         await autorizarAparelho(b, apP.deviceId, UNIDADE, `${MOTOBOY}-p`, hashDoSegredo(apP.db.get(KEY_DEVICE_SECRET)!));
         apP.capturar(VIAGEM_P, -23.56, -46.64, "2026-09-24T10:09:00.000Z");
         assert.equal(await apP.sincronizar(), "success", `sincronização falhou:\n${criticoP.saida().slice(-500)}`);
+
+        const sessaoP = DeviceSession.sessaoAtual(apP.db);
+        assert.ok(sessaoP, "papel mínimo emitiu sessão mas ela não ficou disponível");
+        const statusP = await fetch(`http://127.0.0.1:${criticoP.porta}/api/device/status`, {
+          method: "POST",
+          headers: {
+            authorization: `Bearer ${sessaoP!.token}`,
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({
+            pending_points: 4,
+            pending_events: 1,
+            rejected_points: 0,
+          }),
+        });
+        assert.equal(statusP.status, 200, "status da fila falhou com papel mínimo");
+        const filaP = await b.cliente.query(
+          `SELECT source_mode, pending_points, pending_events, rejected_points
+             FROM identity.device_runtime_status WHERE device_id = $1`,
+          [apP.deviceId],
+        );
+        assert.deepEqual(
+          filaP.map((x) => [
+            x.source_mode,
+            Number(x.pending_points),
+            Number(x.pending_events),
+            Number(x.rejected_points),
+          ]),
+          [[MODO, 4, 1, 0]],
+          "telemetria da fila não persistiu com papel mínimo",
+        );
+
         assert.equal((await fatosDoAparelho(b, apP.deviceId)).length, 1);
         assert.equal((await linhaDoAparelho(b, apP.deviceId))?.secret_hash, hashDoSegredo(apP.db.get(KEY_DEVICE_SECRET)!), "o pré-vínculo humano mudou durante o bootstrap");
         const aud = await b.cliente.query(`SELECT count(*)::int AS n FROM platform.audit WHERE object_id = $1`, [apP.deviceId]);

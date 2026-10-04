@@ -6,7 +6,7 @@
     "authority_scope": "technical_state",
     "superseded_by": null,
     "atualizado_em": "2026-10-04",
-    "state_basis": "cd8ed14",
+    "state_basis": "a117c43",
     "observa": [
       "src/product/",
       "src/perfil-delivery/",
@@ -2033,5 +2033,40 @@
     ],
     "figma_contract_node": "21:2",
     "boundary": "não é prova de ação real; nenhuma rota de escrita existe"
+  },
+  "device_queue_telemetry_b5": {
+    "status": "TEST_PASS_RUNTIME_LOCAL_PROVEN",
+    "blocker_status": "RESOLVIDO_LOCAL",
+    "migration": "0009_device_runtime_status",
+    "route": "POST /api/device/status",
+    "route_version": "device-status@1.0.0",
+    "reality_version": "realidade-de-entregas@1.1.0",
+    "payload_allowed": [
+      "pending_points",
+      "pending_events",
+      "rejected_points"
+    ],
+    "privacy_boundary": "device_id vem do Bearer; latitude/longitude/payload/chaves extras são recusados com 400 e não persistidos",
+    "source_mode_authority": "runtime crítico",
+    "freshness": {
+      "stale_after_minutes": 20,
+      "absence_is_zero": false
+    },
+    "android": "SyncWorker best-effort; status não bloqueia envio canônico; 401 força renovação",
+    "least_privilege": "deliveryos_critical: SELECT, INSERT, UPDATE em identity.device_runtime_status; sem DELETE/TRUNCATE/ALL",
+    "proofs": {
+      "device_status": "10/10 PASS",
+      "device_status_postgres": "8/8 PASS PostgreSQL 17.11 descartável",
+      "product_system": "54/54 PASS",
+      "android_compile": "BUILD SUCCESSFUL",
+      "android_unit": "BUILD SUCCESSFUL",
+      "android_project": "43/43 PASS",
+      "device_api": "43/43 PASS",
+      "browser": "B5_UI_RUNTIME_GREEN",
+      "figma": "22:2 screenshot renderizado"
+    },
+    "known_harness_boundary": "test:platform:cadeia 36/37 e Q016 processos falham no Windows no assert de exit code 0 após child.kill(SIGTERM); código desse gate não foi alterado por B5; Q016 lógica/restore 27/27 GREEN",
+    "physical_device": "NOT_PROVEN",
+    "production": "NOT_ACTIVATED"
   }
 }

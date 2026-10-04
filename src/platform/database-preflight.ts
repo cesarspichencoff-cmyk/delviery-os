@@ -5,6 +5,7 @@ export const PILOT_REQUIRED_MIGRATIONS = [
   "0006_entregas_cluster_persistence",
   "0007_entregas_ready_order",
   "0008_ready_order_consumido_por_delivery",
+  "0009_device_runtime_status",
 ] as const;
 
 export const DELIVERYOS_RUNTIME_ROLES = [

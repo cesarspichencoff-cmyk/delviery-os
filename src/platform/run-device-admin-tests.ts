@@ -225,6 +225,14 @@ async function main() {
       sql,
       /GRANT UPDATE \(last_session_at, last_seen_at, app_version\)[\s\S]*TO deliveryos_critical;/,
     );
+    assert.match(
+      sql,
+      /GRANT SELECT, INSERT, UPDATE ON identity\.device_runtime_status TO deliveryos_critical;/,
+    );
+    assert.doesNotMatch(
+      sql,
+      /GRANT (?:ALL|DELETE|TRUNCATE)[^;]*identity\.device_runtime_status/i,
+    );
   });
 
   await ok("status do adaptador devolve apenas linked, nunca secret_hash", async () => {

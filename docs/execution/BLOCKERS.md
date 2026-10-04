@@ -5,7 +5,7 @@ lifecycle:
   authority_scope: infra_blockers
   superseded_by: null
   atualizado_em: "2026-10-04"
-  state_basis: cd8ed14
+  state_basis: a117c43
   question_refs: ["Q-001","Q-002","Q-003","Q-004","Q-005","Q-006","Q-007","Q-008","Q-009","Q-010","Q-011"]
 ---
 
@@ -1562,3 +1562,48 @@ Provas:
 **Fronteira atual:** B7 passa de “sem contrato de identidade/autorização” para
 **CONTRACT_PREPARED / NOT_EXECUTABLE**. O blocker restante é conectar identidade humana real,
 executor de decisão e auditoria durável, e só então provar uma ação controlada fora de produção.
+
+
+### Sucessão 2026-10-04 — B5 fechado no escopo técnico/local
+
+A rechecagem de 2026-10-03 havia reduzido B5 a uma única lacuna: **a profundidade da fila offline
+do telefone não chegava ao Product System**. Essa lacuna agora está fechada localmente.
+
+Implementação:
+
+- migration `0009_device_runtime_status`: uma linha efêmera por `device_id`, sem histórico
+  infinito e sem coordenadas/payload;
+- `POST /api/device/status`: usa o mesmo Bearer/revogação do aparelho; o `device_id` vem da
+  credencial, nunca do corpo;
+- corpo permitido é estrito: somente `pending_points`, `pending_events` e
+  `rejected_points`, inteiros de 0 a 1.000.000;
+- qualquer chave extra — inclusive `device_id`, `latitude`, `longitude` ou `payload` —
+  recebe **400** e não altera o último estado válido;
+- `source_mode` é carimbado pela instância do runtime crítico, não pelo telefone;
+- o `SyncWorker` reporta a telemetria como **best-effort**: falha de status não marca pontos
+  como failed nem interrompe o envio canônico; 401 apenas força renovação da credencial;
+- a porta de realidade passa a `realidade-de-entregas@1.1.0`;
+- fila fresca é exibida; status >20 min vira **stale**; nunca reportado permanece
+  **não observado**, nunca zero.
+
+Privilégio mínimo: `deliveryos_critical` recebe apenas `SELECT, INSERT, UPDATE` na tabela de
+status; nenhum `DELETE/TRUNCATE/ALL`.
+
+Provas:
+- `test:platform:device-status`: **10/10 PASS**;
+- PostgreSQL 17.11 descartável: `test:platform:device-status:pg` **8/8 PASS**;
+- Product System: **54/54 PASS**;
+- device-admin **19/19**, database-preflight **8/8**, auth **26/26**, runtime-wiring **21/21**,
+  deploy-audit **30/30**;
+- Android: `:app:compileDebugKotlin` e `:app:testDebugUnitTest` **BUILD SUCCESSFUL**;
+  projeto Android **43/43**, device-api **43/43**;
+- cadeia PostgreSQL real: os casos B5 `D3b` e papel mínimo `P2` passaram; a suíte total ficou
+  **36/37** exclusivamente no gate antigo de encerramento gracioso `C17-C20` no Windows
+  (`child.kill(SIGTERM)` devolve exit code `null`). O mesmo limite foi reproduzido no gate
+  Q-016 de processos; Q-016 lógica/restore ficou **27/27 GREEN**;
+- navegador local com base descartável: `B5_UI_RUNTIME_GREEN`; fila fresca = **9**,
+  stale declarada, nunca reportado declarado, HTTP errors 0, page errors 0;
+- Figma Full: `22:2` — `CONTRACT-B5 · Device Queue Telemetry`, screenshot renderizado.
+
+**B5 = RESOLVIDO no escopo técnico/local.** Continua **NÃO PROVADO em aparelho físico e
+produção**; isso pertence ao gate de campo/cutover, não a B5.

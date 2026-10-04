@@ -94,8 +94,10 @@ export interface AparelhoRealVM {
   readonly gps: Campo<Frescor>;
   readonly modo_dos_fatos: Campo<SourceMode>;
   readonly fatos: Campo<number>;
-  /** Sem fonte: a fila mora no telefone e nenhuma rota a devolve. */
+  /** Total pendente = pontos GPS + eventos locais; só aparece se o reporte está fresco. */
   readonly fila_offline: Campo<number>;
+  /** Horário do servidor em que os contadores foram recebidos. */
+  readonly fila_reportada_em: Campo<string>;
   readonly selos: readonly Selo[];
 }
 
@@ -129,8 +131,8 @@ export interface EntregasVM {
   readonly conexao: Selo;
   /**
    * Fila desta SESSAO de interface — medida, e diferente da fila do APARELHO em
-   * campo, que nao tem rota de leitura. Fundir as duas faria a tela afirmar
-   * sobre o aparelho uma coisa que ela sabe apenas sobre o navegador.
+   * campo. A fila do aparelho vem de telemetria autenticada própria e nunca
+   * pode ser inferida a partir da fila do navegador.
    */
   readonly fila_da_sessao: Campo<number>;
   readonly viagens: readonly ViagemVM[];
@@ -158,6 +160,13 @@ const PROCEDENCIA_DO_MODO: Record<SourceMode, Procedencia> = {
   simulated: "simulado",
   control: "controle",
 };
+
+/**
+ * O WorkManager periódico roda a cada 15 min. Cinco minutos de margem evitam
+ * declarar stale por jitter normal; depois disso, o último contador continua
+ * evidência histórica, mas não responde "qual é a fila AGORA".
+ */
+export const FILA_LOCAL_STALE_AFTER_MS = 20 * 60_000;
 
 function realidadeAusente(motivo: "integracao_pendente" | "indisponivel", explicacao: string): RealidadeVM {
   const aus = <T,>() => ausente<T>(motivo, explicacao);
@@ -218,6 +227,25 @@ function aparelhoVM(a: AparelhoReal, agora: Date): AparelhoRealVM {
   else selos.push(selo("evidencia_insuficiente", "Credencial vinculada e nenhum lote recebido."));
   const relogio = a.ultimo_lote ? seloDoRelogio(a.ultimo_lote) : null;
   if (relogio) selos.push(relogio);
+
+  const filaModo = a.fila_local?.source_mode ?? null;
+  const filaProcedencia = filaModo ? PROCEDENCIA_DO_MODO[filaModo] : null;
+  const filaIdadeMs = a.fila_local
+    ? agora.getTime() - Date.parse(a.fila_local.reportada_em)
+    : Number.POSITIVE_INFINITY;
+  const filaAtual =
+    a.fila_local !== null &&
+    filaProcedencia !== null &&
+    filaIdadeMs >= -60_000 &&
+    filaIdadeMs <= FILA_LOCAL_STALE_AFTER_MS;
+  if (a.fila_local && !filaAtual) {
+    selos.push(
+      selo(
+        "stale",
+        "O aparelho reportou a fila anteriormente, mas o status passou da janela de 20 min e não representa a fila atual.",
+      ),
+    );
+  }
   // O frescor so nasce de tempo com autoridade: o `occurred_at` quando o
   // relogio e confiavel; senao, a hora em que o servidor recebeu.
   const instanteDoGps = a.ultimo_lote
@@ -246,10 +274,21 @@ function aparelhoVM(a: AparelhoReal, agora: Date): AparelhoRealVM {
       : (semLote as Campo<Frescor>),
     modo_dos_fatos: modo ? observado(modo, PROCEDENCIA_DO_MODO[modo], lidaEm) : (semLote as Campo<SourceMode>),
     fatos: modo ? observado(a.fatos_por_modo[modo], PROCEDENCIA_DO_MODO[modo], lidaEm) : (semLote as Campo<number>),
-    fila_offline: ausente<number>(
-      "integracao_pendente",
-      "A fila offline mora no telefone. Nenhuma rota a devolve; o que se sabe e o que chegou.",
-    ),
+    fila_offline: filaAtual
+      ? observado(
+          a.fila_local!.pending_points + a.fila_local!.pending_events,
+          filaProcedencia!,
+          a.fila_local!.reportada_em,
+        )
+      : ausente<number>(
+          a.fila_local ? "evidencia_insuficiente" : "nao_observado",
+          a.fila_local
+            ? "Existe um último reporte de fila, mas ele está desatualizado. Não afirmar a fila atual."
+            : "Este aparelho ainda não reportou a profundidade da fila local.",
+        ),
+    fila_reportada_em: a.fila_local && filaProcedencia
+      ? observado(a.fila_local.reportada_em, filaProcedencia, a.fila_local.reportada_em)
+      : ausente<string>("nao_observado", "Este aparelho ainda não reportou contadores da fila local."),
     selos,
   };
 }
@@ -281,7 +320,11 @@ function realidadeVM(r: RealidadeDeEntregas, agora: Date): RealidadeVM {
     }),
   );
   return {
-    fonte: observado("platform.event_log + identity.device", "real", lidaEm),
+    fonte: observado(
+      "platform.event_log + identity.device + identity.device_runtime_status",
+      "real",
+      lidaEm,
+    ),
     lida_em: observado(r.lida_em, "real", lidaEm),
     aparelhos: r.aparelhos.map((a) => aparelhoVM(a, agora)),
     viagens,
@@ -298,24 +341,25 @@ function realidadeVM(r: RealidadeDeEntregas, agora: Date): RealidadeVM {
           "A cadeia canonica traz o GPS. Criar, iniciar e encerrar viagem ainda passam pelo servidor do piloto, entao toda viagem daqui aparece com estado desconhecido ate esse caminho migrar.",
       },
       {
-        titulo: "O que o telefone guarda nao chega",
+        titulo: "Estado nativo remoto e parcial",
         texto:
-          "Fila offline, permissao de localizacao e estado do servico de captura moram no aparelho e nao tem rota de leitura. Aparecem como integracao pendente, nunca como zero.",
+          "A profundidade da fila local chega por telemetria autenticada, só como contadores e com frescor explícito. Permissão de localização e estado do serviço de captura continuam no aparelho e não são inferidos pela fila.",
       },
     ],
   };
 }
 
 /**
- * O aparelho em campo publica saude por `POST /api/gps/batch`; NAO existe rota
- * de LEITURA que devolva credencial, GPS ou fila do aparelho. Em vez de desenhar
- * uma caixa vazia que parece saudavel, cada campo declara por que esta vazio.
+ * Este bloco pertence à DEMONSTRAÇÃO da superfície e não recebe a porta de
+ * realidade. A fila real do aparelho pode aparecer no bloco REALIDADE via
+ * `/api/device/status`; isso não autoriza copiar o valor para o demo nem
+ * inferir permissão de localização, GPS ou serviço nativo.
  */
 function dispositivoSemIntegracaoDeLeitura(): DispositivoVM {
   const pendente = (o: string) =>
     ausente<never>(
       "integracao_pendente",
-      `${o} chega do aparelho pela rota de ingestao, e nao existe rota de leitura que devolva este estado. Nada aqui representa o aparelho agora.`,
+      `${o} pertence ao estado nativo do aparelho, mas este bloco demonstrativo nao recebeu uma leitura canonica desse estado. Nada aqui representa o aparelho agora.`,
     );
   return {
     credencial: pendente("A integridade da credencial") as Campo<string>,

@@ -720,4 +720,44 @@ export class PgDeviceRegistry {
       [device_id, JSON.stringify({ jti: dados.jti, app_version: dados.app_version ?? null }), at],
     );
   }
+
+  /**
+   * Último estado efêmero da fila local do aparelho.
+   *
+   * Não entra no event log e não carrega coordenadas/payload. Uma nova batida
+   * substitui a anterior: esta tabela responde "como está agora", não "como
+   * esteve ao longo do turno".
+   */
+  async registrarStatus(
+    device_id: string,
+    dados: {
+      pending_points: number;
+      pending_events: number;
+      rejected_points: number;
+      source_mode: SourceMode;
+      agora: Date;
+    },
+  ): Promise<void> {
+    const at = dados.agora.toISOString();
+    await this.sql.query(
+      `INSERT INTO identity.device_runtime_status(
+          device_id, reported_at, source_mode, pending_points, pending_events, rejected_points
+        )
+        VALUES ($1, $2, $3, $4, $5, $6)
+        ON CONFLICT (device_id) DO UPDATE SET
+          reported_at = EXCLUDED.reported_at,
+          source_mode = EXCLUDED.source_mode,
+          pending_points = EXCLUDED.pending_points,
+          pending_events = EXCLUDED.pending_events,
+          rejected_points = EXCLUDED.rejected_points`,
+      [
+        device_id,
+        at,
+        dados.source_mode,
+        dados.pending_points,
+        dados.pending_events,
+        dados.rejected_points,
+      ],
+    );
+  }
 }

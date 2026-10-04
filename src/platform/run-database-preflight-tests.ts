@@ -26,6 +26,12 @@ const LOCAL: MigrationFile[] = [
     sql: "",
     checksum: "8888888888888888",
   },
+  {
+    version: "0009_device_runtime_status",
+    path: "0009.sql",
+    sql: "",
+    checksum: "9999999999999999",
+  },
 ];
 
 function facts(

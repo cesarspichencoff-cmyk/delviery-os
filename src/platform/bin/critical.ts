@@ -39,6 +39,10 @@ import {
   ROTA_IDENTIDADE_DISPOSITIVO,
 } from "../runtime/rota-identidade-dispositivo";
 import {
+  tratarStatusDoDispositivo,
+  ROTA_STATUS_DISPOSITIVO,
+} from "../runtime/rota-status-dispositivo";
+import {
   handleDispatchLocation,
   handleDispatchRoute,
   loadPilotReadSecrets,
@@ -293,6 +297,27 @@ async function main(): Promise<void> {
           registro,
           agora: () => new Date(),
         })
+          .then((r) => responder(res, r.status, r.corpo))
+          .catch(() => responder(res, 503, { classe: "falha_de_persistencia", retentavel: true }));
+      });
+      return;
+    }
+
+    if (rota === ROTA_STATUS_DISPOSITIVO && req.method === "POST") {
+      // Telemetria efêmera: só contadores da fila local. O device_id vem do
+      // Bearer autenticado; coordenadas/payload nunca entram nesta rota.
+      lerCorpo(8_000, (corpo) => {
+        void tratarStatusDoDispositivo(
+          req.headers as Record<string, string | string[] | undefined>,
+          corpo,
+          {
+            segredo: segredoDeDispositivo,
+            registro,
+            status: registro,
+            source_mode: modoDaInstancia,
+            agora: () => new Date(),
+          },
+        )
           .then((r) => responder(res, r.status, r.corpo))
           .catch(() => responder(res, 503, { classe: "falha_de_persistencia", retentavel: true }));
       });

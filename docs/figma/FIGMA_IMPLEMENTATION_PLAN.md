@@ -110,3 +110,19 @@ executor e auditoria.
 
 Ele não contém botão operacional e não afirma que identidade, executor ou auditoria estão
 conectados. A função do frame é impedir que o futuro controle humano nasça sem essas fronteiras.
+
+
+## Extensão 2026-10-04 — B5 Device Queue Telemetry
+
+A página `02 — Product Flows & Screens` recebeu
+`CONTRACT-B5 · Device Queue Telemetry` (`22:2`).
+
+O frame representa os três estados provados pela implementação:
+
+- **fresca** — soma pendente observada, com procedência do `source_mode` do runtime;
+- **stale** — último reporte existe, mas não responde o estado atual;
+- **nunca reportada** — ausência declarada, nunca zero.
+
+A fronteira de privacidade está no próprio frame: o endpoint aceita só três contadores; identidade
+vem do Bearer; localização, payload e `device_id` extra são recusados. O frame está marcado como
+prova de contrato/runtime local, não como prova de piloto físico ou produção.

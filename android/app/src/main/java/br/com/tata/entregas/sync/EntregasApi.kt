@@ -129,6 +129,25 @@ class EntregasApi(
             },
         )
 
+    /**
+     * Telemetria mínima da fila local. Só contadores; nenhum ponto, coordenada
+     * ou payload de evento entra nesta rota.
+     */
+    fun reportDeviceStatus(
+        pendingPoints: Int,
+        pendingEvents: Int,
+        rejectedPoints: Int,
+    ): ApiResult<JSONObject> =
+        request(
+            "/api/device/status",
+            "POST",
+            JSONObject().apply {
+                put("pending_points", pendingPoints)
+                put("pending_events", pendingEvents)
+                put("rejected_points", rejectedPoints)
+            },
+        )
+
     /** Flags, política de captura, termo vigente e unidade. */
     fun policies(): ApiResult<JSONObject> = request("/api/policies", "GET", null)
 

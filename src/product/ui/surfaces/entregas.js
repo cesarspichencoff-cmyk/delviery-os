@@ -109,10 +109,12 @@ function blocoRealidade(r) {
     celula(a.ultima_posicao_em, { tecnico: true }),
     celula(a.gps),
     celula(a.ultima_sincronizacao, { tecnico: true }),
+    celula(a.fila_offline),
+    celula(a.fila_reportada_em, { tecnico: true }),
     celula(a.modo_dos_fatos),
     `<span class="linha-selos">${selos(a.selos)}</span>`,
   ];
-  const COLUNAS = ["Aparelho", "Credencial", "Ultima posicao", "GPS", "Recebido em", "Modo dos fatos", "Situacao"];
+  const COLUNAS = ["Aparelho", "Credencial", "Ultima posicao", "GPS", "Recebido em", "Fila offline", "Fila reportada em", "Modo dos fatos", "Situacao"];
   const aparelhos =
     r.aparelhos.length === 0
       ? estadoTela(
@@ -226,7 +228,7 @@ export function telaEntregas(vm) {
         ${metric("Ocorrencias", { observado: true, valor: vm.ocorrencias.length })}
         ${metric("Fila desta sessao", vm.fila_da_sessao)}
       </div>
-      <p class="secao__sub" style="margin-top:var(--space-2)">A fila desta sessao e do navegador. A fila do APARELHO em campo e outra coisa, e aparece abaixo como integracao pendente — porque nao ha rota que a devolva.</p>
+      <p class="secao__sub" style="margin-top:var(--space-2)">A fila desta sessao e do navegador. A fila do APARELHO em campo e outra coisa: quando o telefone a reporta com credencial valida, ela aparece no bloco de realidade; status antigo nunca vira zero.</p>
     </section>
 
     <section class="secao">

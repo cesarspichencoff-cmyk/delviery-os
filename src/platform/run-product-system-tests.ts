@@ -30,6 +30,7 @@ import { entregasVM } from "../product/viewmodels/entregas-vm";
 import { eventosHistoricosDeEnvelopes, historicoVM } from "../product/viewmodels/historico-vm";
 import type { EventEnvelope } from "./contracts/event-catalog";
 import { lerHistoricoOperacional } from "./leitura/historico-operacional";
+import type { RealidadeDeEntregas } from "./leitura/realidade-de-entregas";
 import {
   montarCadeiaDemo,
   montarEntregasDemo,
@@ -405,6 +406,136 @@ teste("Entregas: o aparelho declara integracao pendente em vez de zero", async (
   }
   // Controle positivo: a fila DESTA SESSAO e medida e aparece.
   assert.equal(vm.fila_da_sessao.observado, true);
+});
+
+teste("Entregas B5: fila local fresca e medida sem inferir do navegador", async () => {
+  const f = await montarEntregasDemo();
+  const agora = "2026-10-04T12:00:00.000Z";
+  const realidade: RealidadeDeEntregas = {
+    versao: "realidade-de-entregas@1.1.0",
+    fonte: "postgresql",
+    lida_em: agora,
+    aparelhos: [{
+      device_id: "dev-fila",
+      unit_id: "ITAIM",
+      actor_id: "motoboy-1",
+      label: "Moto fila",
+      autorizado_em: "2026-10-04T09:00:00.000Z",
+      credencial_vinculada_em: "2026-10-04T09:01:00.000Z",
+      ultima_sessao_em: "2026-10-04T11:50:00.000Z",
+      app_version: "1.0.0",
+      revogado_em: null,
+      fila_local: {
+        reportada_em: "2026-10-04T11:55:00.000Z",
+        source_mode: "real",
+        pending_points: 7,
+        pending_events: 2,
+        rejected_points: 1,
+      },
+      fatos_por_modo: { real: 0, simulated: 0, control: 0 },
+      ultimo_lote: null,
+    }],
+    projecoes: [],
+    historico_sem_modo: 0,
+  };
+  const vm = entregasVM(await f.snapshot(), agora, f.getPolicyMaxStops(), {
+    disponivel: true,
+    realidade,
+  });
+  const ap = vm.realidade.aparelhos[0]!;
+  assert.equal(ap.fila_offline.observado, true);
+  assert.equal(ap.fila_offline.observado && ap.fila_offline.valor, 9);
+  assert.equal(ap.fila_offline.observado && ap.fila_offline.origem, "real");
+  assert.equal(ap.fila_reportada_em.observado, true);
+  assert.equal(
+    ap.fila_reportada_em.observado && ap.fila_reportada_em.valor,
+    "2026-10-04T11:55:00.000Z",
+  );
+  assert.equal(vm.fila_da_sessao.observado, true);
+});
+
+teste("Entregas B5: fila stale nunca vira zero atual", async () => {
+  const f = await montarEntregasDemo();
+  const agora = "2026-10-04T12:30:01.000Z";
+  const realidade: RealidadeDeEntregas = {
+    versao: "realidade-de-entregas@1.1.0",
+    fonte: "postgresql",
+    lida_em: agora,
+    aparelhos: [{
+      device_id: "dev-stale",
+      unit_id: "ITAIM",
+      actor_id: null,
+      label: "Moto stale",
+      autorizado_em: "2026-10-04T09:00:00.000Z",
+      credencial_vinculada_em: "2026-10-04T09:01:00.000Z",
+      ultima_sessao_em: "2026-10-04T11:00:00.000Z",
+      app_version: "1.0.0",
+      revogado_em: null,
+      fila_local: {
+        reportada_em: "2026-10-04T12:00:00.000Z",
+        source_mode: "real",
+        pending_points: 0,
+        pending_events: 0,
+        rejected_points: 0,
+      },
+      fatos_por_modo: { real: 0, simulated: 0, control: 0 },
+      ultimo_lote: null,
+    }],
+    projecoes: [],
+    historico_sem_modo: 0,
+  };
+  const vm = entregasVM(await f.snapshot(), agora, 5, { disponivel: true, realidade });
+  const ap = vm.realidade.aparelhos[0]!;
+  assert.equal(ap.fila_offline.observado, false);
+  assert.equal(ap.fila_offline.observado ? "" : ap.fila_offline.motivo, "evidencia_insuficiente");
+  assert.ok(ap.selos.some((x) => x.estado === "stale"));
+  assert.equal(ap.fila_reportada_em.observado, true);
+});
+
+teste("Entregas B5: nunca reportado e simulated permanecem distinguiveis", async () => {
+  const f = await montarEntregasDemo();
+  const agora = "2026-10-04T12:00:00.000Z";
+  const base = {
+    unit_id: "ITAIM",
+    actor_id: null,
+    autorizado_em: "2026-10-04T09:00:00.000Z",
+    credencial_vinculada_em: "2026-10-04T09:01:00.000Z",
+    ultima_sessao_em: "2026-10-04T11:50:00.000Z",
+    app_version: "1.0.0",
+    revogado_em: null,
+    fatos_por_modo: { real: 0, simulated: 0, control: 0 },
+    ultimo_lote: null,
+  } as const;
+  const realidade: RealidadeDeEntregas = {
+    versao: "realidade-de-entregas@1.1.0",
+    fonte: "postgresql",
+    lida_em: agora,
+    aparelhos: [
+      { ...base, device_id: "dev-never", label: "Nunca reportou", fila_local: null },
+      {
+        ...base,
+        device_id: "dev-sim",
+        label: "Simulado",
+        fila_local: {
+          reportada_em: "2026-10-04T11:59:00.000Z",
+          source_mode: "simulated",
+          pending_points: 3,
+          pending_events: 0,
+          rejected_points: 0,
+        },
+      },
+    ],
+    projecoes: [],
+    historico_sem_modo: 0,
+  };
+  const vm = entregasVM(await f.snapshot(), agora, 5, { disponivel: true, realidade });
+  const never = vm.realidade.aparelhos.find((x) => x.device_id === "dev-never")!;
+  const sim = vm.realidade.aparelhos.find((x) => x.device_id === "dev-sim")!;
+  assert.equal(never.fila_offline.observado, false);
+  assert.equal(never.fila_offline.observado ? "" : never.fila_offline.motivo, "nao_observado");
+  assert.equal(sim.fila_offline.observado, true);
+  assert.equal(sim.fila_offline.observado && sim.fila_offline.valor, 3);
+  assert.equal(sim.fila_offline.observado && sim.fila_offline.origem, "simulado");
 });
 
 teste("Entregas: offline e sincronizando sao estados distintos", async () => {
