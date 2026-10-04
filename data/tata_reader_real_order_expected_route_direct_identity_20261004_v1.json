@@ -1,0 +1,119 @@
+{
+  "schema": "deliveryos.tata-reader-real-order-expected-route-direct-identity.v1",
+  "captured_date": "2026-10-04",
+  "status": "PROVEN_EXPECTED_ROUTE_FOR_OBSERVED_REAL_ORDER_NO_PRINT",
+  "order": {
+    "CDFILIAL": "0001",
+    "CDLOJA": "01",
+    "NRVENDAREST": "0000346965",
+    "NRCOMANDA": "0000346537",
+    "NRCOMANDAEXT": "9092",
+    "origin": "DLV_IFO"
+  },
+  "identity_method": {
+    "source": "TEKNISA.PRODUTO.CDARVPROD",
+    "semantics": "DIRECT_LOCAL_SQL_VALUE_THEN_RETAIL_MEMBERSHIP_GUARD",
+    "global_catalog_equivalence_required": false,
+    "fail_closed_if_invalid_format": true,
+    "fail_closed_if_route_missing": true
+  },
+  "items": [
+    {
+      "NRPRODCOMVEN": "000001",
+      "sql_cdproduto": "0000001459",
+      "quantity": "1.000",
+      "cdarvprod_raw": "9150003000",
+      "retail_product_code": "9.15.00.030.00",
+      "routing_status": "ROUTED",
+      "targets": [
+        {
+          "printer_code": "00009",
+          "printer_name": "BALCAOSUSHI1",
+          "printer_ip": "192.168.0.142",
+          "printer_port": "LPT4",
+          "peripherals_server": "192.168.0.24:3000"
+        },
+        {
+          "printer_code": "00003",
+          "printer_name": "DELIVERY SUSHI 1",
+          "printer_ip": "192.168.0.153",
+          "printer_port": null,
+          "peripherals_server": "192.168.0.24:3000"
+        }
+      ]
+    },
+    {
+      "NRPRODCOMVEN": "000002",
+      "sql_cdproduto": "0000001641",
+      "quantity": "3.000",
+      "cdarvprod_raw": "9600001000",
+      "retail_product_code": "9.60.00.010.00",
+      "routing_status": "ROUTED",
+      "targets": [
+        {
+          "printer_code": "00006",
+          "printer_name": "BALCAOSUSHI2",
+          "printer_ip": "192.168.0.110",
+          "printer_port": "LPT5",
+          "peripherals_server": "192.168.0.24:3000"
+        },
+        {
+          "printer_code": "00004",
+          "printer_name": "DELIVERY SUSHI 2",
+          "printer_ip": "192.168.0.4",
+          "printer_port": null,
+          "peripherals_server": "192.168.0.24:3000"
+        }
+      ]
+    }
+  ],
+  "order_targets": [
+    {
+      "printer_code": "00009",
+      "printer_name": "BALCAOSUSHI1",
+      "printer_ip": "192.168.0.142",
+      "printer_port": "LPT4",
+      "peripherals_server": "192.168.0.24:3000"
+    },
+    {
+      "printer_code": "00003",
+      "printer_name": "DELIVERY SUSHI 1",
+      "printer_ip": "192.168.0.153",
+      "printer_port": null,
+      "peripherals_server": "192.168.0.24:3000"
+    },
+    {
+      "printer_code": "00006",
+      "printer_name": "BALCAOSUSHI2",
+      "printer_ip": "192.168.0.110",
+      "printer_port": "LPT5",
+      "peripherals_server": "192.168.0.24:3000"
+    },
+    {
+      "printer_code": "00004",
+      "printer_name": "DELIVERY SUSHI 2",
+      "printer_ip": "192.168.0.4",
+      "printer_port": null,
+      "peripherals_server": "192.168.0.24:3000"
+    }
+  ],
+  "proof": {
+    "real_order_read": "PROVEN_MINIMIZED_REAL_ORDER_READ",
+    "product_identity_for_observed_items": "PROVEN_EXACT_FOR_TWO_OBSERVED_PRODUCTS",
+    "current_routing_config": "PROVEN_CURRENT_CONFIG",
+    "current_printer_map": "PROVEN_CURRENT_CONFIG",
+    "observed_real_order_expected_route": "PROVEN",
+    "physical_print": "NOT_EXECUTED_NOT_PROVEN",
+    "global_cdarvprod_routing_set_equivalence": "DISPROVEN_AS_SET_EQUIVALENCE",
+    "unrestricted_global_runtime_authority": false
+  },
+  "effects": {
+    "database_write": false,
+    "odhen_write": false,
+    "print": false,
+    "spooler_write": false,
+    "fiscal_action": false,
+    "sefaz_call": false,
+    "cutover": false
+  }
+}
