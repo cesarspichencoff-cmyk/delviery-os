@@ -1,0 +1,59 @@
+{
+  "schema": "deliveryos.tata-reader-product-identity-observed-crosswalk.v1",
+  "captured_date": "2026-10-04",
+  "status": "PROVEN_EXACT_FOR_TWO_OBSERVED_PRODUCTS",
+  "evidence_source": {
+    "type": "AUTHORIZED_CAIXA_READ_RETURNED_BY_CESAR",
+    "authorization_id": "CESAR-2026-10-04-TATA-READER-PRODUCT-IDENTITY-VALUE-PROBE-V1",
+    "executed_head": "38e3019027b74a3f2a46ecc6426a68f64cc0e696",
+    "guard_sha256": "2CC17B1EB9E7EF9663A3C3238EF21089C35610A0A8027B0F26B08C32EEEEED7C",
+    "probe_sha256": "6FC66839348C3839C9E441A89999F033E79F44112E162B326A565B39787F7BA8",
+    "guard_exit_code": 0,
+    "probe_exit_code": 0,
+    "probe_status": "TWO_PRODUCT_IDENTITY_VALUES_READ",
+    "rows_read": 2
+  },
+  "rows": [
+    {
+      "CDPRODUTO": "0000001459",
+      "CDPRODINTE": null,
+      "CDARVPROD": "9150003000",
+      "CDPRODESTO": null,
+      "prior_candidate_retail_compact_code": "9150003000",
+      "prior_candidate_retail_canonical_code": "9.15.00.030.00",
+      "exact_compact_match": true
+    },
+    {
+      "CDPRODUTO": "0000001641",
+      "CDPRODINTE": null,
+      "CDARVPROD": "9600001000",
+      "CDPRODESTO": null,
+      "prior_candidate_retail_compact_code": "9600001000",
+      "prior_candidate_retail_canonical_code": "9.60.00.010.00",
+      "exact_compact_match": true
+    }
+  ],
+  "proof": {
+    "observed_internal_cdproduto_to_cdarvprod_exact_values": "PROVEN_FOR_TWO_OBSERVED_PRODUCTS",
+    "cdarvprod_equals_prior_retail_compact_candidate": "PROVEN_EXACT_FOR_TWO_OBSERVED_PRODUCTS",
+    "cdarvprod_codes_exist_in_current_routing_snapshot": "PROVEN_FOR_TWO_OBSERVED_PRODUCTS",
+    "prior_name_bridge_needed_for_these_two_products": false,
+    "cdarvprod_global_semantics_for_all_products": "UNKNOWN",
+    "cdarvprod_global_uniqueness": "UNKNOWN",
+    "cdarvprod_coverage_of_463_routing_products": "UNKNOWN",
+    "runtime_global_authority": false
+  },
+  "effect_boundary": {
+    "product_row_read": true,
+    "order_row_read": false,
+    "database_write": false,
+    "permission_change": false,
+    "odhen_write": false,
+    "print": false,
+    "spooler_write": false,
+    "fiscal_action": false,
+    "sefaz_call": false,
+    "cutover": false
+  },
+  "next_gate": "PROVE_CDARVPROD_GENERALIZATION_BOUNDARY"
+}
