@@ -1,0 +1,55 @@
+{
+  "schema": "deliveryos.tata-reader-cdarvprod-catalog-audit-authorization.v1",
+  "authorization_id": "CESAR-2026-10-04-TATA-READER-CDARVPROD-CATALOG-AUDIT-V1",
+  "authorized_on": "2026-10-04",
+  "authorized_by": "Cesar",
+  "human_authorized": true,
+  "human_statement": "Autorizo a auditoria somente leitura dos valores agregados e distintos de CDARVPROD, sem CDPRODUTO, nomes, pedidos ou qualquer escrita.",
+  "authorized_source_head": "84e066eaa1b33a442a6221de0257f9f3bad12a18",
+  "probe": {
+    "path": "tools/tata_reader_cdarvprod_catalog_audit_REVIEW_ONLY.ps1",
+    "sha256": "2B7E7ED42DBEF3A02FCE0E45088246FA60656B7F43A6CC5743406FE10D2F2543"
+  },
+  "guard": {
+    "path": "tools/verificar_tata_reader_cdarvprod_catalog_audit_review_static_v1.ps1",
+    "sha256": "80A2476FBB2417AA5EC748B96E3F9EEF3E93B1B52F21D53EC7994F4D0835FB73"
+  },
+  "scope": {
+    "table": "TEKNISA.PRODUTO",
+    "allowed_source_column": [
+      "CDARVPROD"
+    ],
+    "returned_summary_fields": [
+      "total_product_rows",
+      "null_or_blank_cdarvprod_rows",
+      "nonblank_cdarvprod_rows",
+      "distinct_nonblank_cdarvprod"
+    ],
+    "returned_value_fields": [
+      "CDARVPROD",
+      "product_rows"
+    ],
+    "max_distinct_values": 2000,
+    "cdproduto": false,
+    "nmproduto": false,
+    "order_tables": false,
+    "joins": false,
+    "customer_data": false,
+    "observations": false
+  },
+  "prohibited_effects": {
+    "database_write": false,
+    "permission_change": false,
+    "service_change": false,
+    "odhen_write": false,
+    "print": false,
+    "spooler_write": false,
+    "f7": false,
+    "nfce": false,
+    "fiscal_action": false,
+    "sefaz_call": false,
+    "cutover": false
+  },
+  "stop_after_raw_aggregate_evidence": true,
+  "global_runtime_identity_promotion_authorized": false
+}
