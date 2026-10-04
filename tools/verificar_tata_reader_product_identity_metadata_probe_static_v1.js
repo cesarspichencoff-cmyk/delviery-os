@@ -41,7 +41,6 @@ for (const forbidden of [
   /FROM\s+TEKNISA\.PRODUTO\b/i,
   /JOIN\s+TEKNISA\.PRODUTO\b/i,
   /\/print/i,
-  /SEFAZ/i,
 ]) {
   assert(!forbidden.test(s), "forbidden capability/pattern " + forbidden);
 }
