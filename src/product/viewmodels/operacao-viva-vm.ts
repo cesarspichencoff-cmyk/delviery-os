@@ -78,7 +78,6 @@ export interface OperacaoVivaVM {
   readonly integridade_do_sinal: Selo;
   readonly quarentena: readonly { event_id: string; motivo: string }[];
   readonly cursor: Campo<string>;
-  readonly historico_de_mudanca: Campo<never>;
   readonly sem_dados_suficientes: boolean;
   readonly limitacoes: readonly Limitacao[];
 }
@@ -264,10 +263,6 @@ export function operacaoVivaVM(p: Projecao): OperacaoVivaVM {
             "Nenhum evento foi aplicado ainda nesta janela.",
           )
         : observado(p.cursor.event_id, origem, p.cursor.occurred_at),
-    historico_de_mudanca: ausente<never>(
-      "integracao_pendente",
-      "A projecao devolve o estado atual, nao a serie de mudancas. Reconstruir historico exige varrer o event log, e nao ha rota de leitura para isso.",
-    ),
     sem_dados_suficientes: p.viagens.length === 0,
     limitacoes: [
       {
@@ -281,9 +276,9 @@ export function operacaoVivaVM(p: Projecao): OperacaoVivaVM {
           "Os mesmos eventos produzem `recente` agora e `desatualizado` daqui a dez minutos, sem nada ter mudado na rua. Por isso o frescor nunca e persistido junto do fato.",
       },
       {
-        titulo: "Nao ha historico",
+        titulo: "Historico nao e causa",
         texto:
-          "A tela mostra o estado calculado agora. Nao existe, nesta unidade, superficie que mostre como cada dimensao chegou ate aqui.",
+          "A linha do tempo mostra fatos registrados e a ordem em que aconteceram. Ela nao prova, sozinha, por que uma dimensao mudou.",
       },
     ],
   };

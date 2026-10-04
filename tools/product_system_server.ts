@@ -16,6 +16,7 @@
 import http from "node:http";
 import { readFileSync, existsSync, statSync } from "node:fs";
 import { join, extname, normalize } from "node:path";
+import { createRequire } from "node:module";
 
 import { entregasVM } from "../src/product/viewmodels/entregas-vm";
 import { operacaoVivaVM } from "../src/product/viewmodels/operacao-viva-vm";
@@ -28,8 +29,18 @@ import {
   AGORA_DEMO,
 } from "../src/product/demo/seed-demonstracao";
 import { homeVM } from "../src/product/viewmodels/home-vm";
+import {
+  eventosHistoricosDeEnvelopes,
+  historicoVM,
+  type FonteHistoricoCopiloto,
+  type FonteHistoricoOperacao,
+  type HistoricoVM,
+  type LeituraHistoricaDoStore,
+} from "../src/product/viewmodels/historico-vm";
 import { createPgClient, type PgSqlClient } from "../src/platform/persistence/sql-client";
 import { lerRealidadeDeEntregas } from "../src/platform/leitura/realidade-de-entregas";
+import { lerHistoricoOperacional } from "../src/platform/leitura/historico-operacional";
+import { TIPOS_DA_OPERACAO_VIVA } from "../src/platform/runtime/handler-operacao-viva";
 import type { LeituraDeRealidade } from "../src/product/viewmodels/entregas-vm";
 import { CENAS, cena, type CenaHome } from "../src/product/demo/seed-home-demonstracao";
 
@@ -43,6 +54,14 @@ const PORT = Number(process.env.PRODUCT_UI_PORT || 5290);
  * ausencia.
  */
 const URL_PLATAFORMA = (process.env.DELIVERYOS_DATABASE_URL || process.env.DELIVERYOS_PG_URL || "").trim();
+const DIR_CONFERENCE = (process.env.CONFERENCE_BRAIN_DATA_DIR || "").trim();
+const reqLocal = createRequire(join(process.cwd(), "package.json"));
+interface StoreHistorico {
+  history: (entity: string, opts?: { limit?: number }) => LeituraHistoricaDoStore;
+}
+const { createStore: criarStoreConference } = reqLocal(
+  join(process.cwd(), "src", "conference-brain", "storage", "store"),
+) as { createStore: (o: { dir: string }) => StoreHistorico };
 const RAIZ_UI = join(process.cwd(), "src", "product", "ui");
 /** O MESMO arquivo de tokens que ENTREGAS usa. Nao ha copia. */
 const RAIZ_SHARED = join(process.cwd(), "src", "entregas", "ui", "shared");
@@ -74,6 +93,7 @@ interface Pronto {
   operacaoViva: unknown;
   conference: unknown;
   copiloto: unknown;
+  historico: HistoricoVM;
   estados: unknown;
 }
 
@@ -98,6 +118,21 @@ async function calcular(): Promise<Pronto> {
     (Object.keys(CENAS) as CenaHome[]).map((c) => [c, homeVM(cena(c))]),
   ) as Record<CenaHome, unknown>;
 
+  const historico = historicoVM(
+    {
+      disponivel: true,
+      fonte: "fixture",
+      eventos: eventosHistoricosDeEnvelopes(cadeia.eventosOperacao),
+      sem_modo: 0,
+      corrompidas: [],
+    },
+    {
+      disponivel: true,
+      fonte: "fixture",
+      leitura: cadeia.historicoCopiloto,
+    },
+  );
+
   return {
     home,
     entregas: entregasVM(snap, AGORA_DEMO, facade.getPolicyMaxStops()),
@@ -107,6 +142,7 @@ async function calcular(): Promise<Pronto> {
       controle_positivo: conferenceBrainVM(cadeia.leituraControlePositivo),
     },
     copiloto: copilotoVM(cadeia.resultadoCopiloto),
+    historico,
     estados: { estados, eixos: _eixos },
   };
 }
@@ -164,6 +200,66 @@ async function lerRealidade(cliente: PgSqlClient | null): Promise<LeituraDeReali
       explicacao: `O banco da plataforma nao respondeu a esta leitura: ${e instanceof Error ? e.message : String(e)}`,
     };
   }
+}
+
+async function lerHistorico(
+  cliente: PgSqlClient | null,
+  demo: HistoricoVM,
+  unit_id: string | null,
+): Promise<HistoricoVM> {
+  // Sem nenhuma fonte real configurada, a superficie continua a demonstracao
+  // explicitamente marcada. Se UMA fonte real foi configurada, a outra ausente
+  // nao e preenchida com demo: fica ausente, para nunca misturar verdades.
+  if (!cliente && !DIR_CONFERENCE) return demo;
+
+  let operacao: FonteHistoricoOperacao;
+  if (!cliente) {
+    operacao = { disponivel: false, motivo: "PostgreSQL da plataforma nao configurado para historico." };
+  } else if (!unit_id || !unit_id.trim()) {
+    operacao = {
+      disponivel: false,
+      motivo: "Selecione uma unidade para ler historico real sem varrer o event log inteiro.",
+    };
+  } else {
+    try {
+      const leitura = await lerHistoricoOperacional(cliente, {
+        unit_id,
+        tipos: TIPOS_DA_OPERACAO_VIVA,
+      });
+      operacao = {
+        disponivel: true,
+        fonte: "platform.event_log",
+        eventos: leitura.eventos,
+        sem_modo: leitura.sem_modo,
+        corrompidas: leitura.corrompidas,
+      };
+    } catch (e) {
+      operacao = {
+        disponivel: false,
+        motivo: `Falha ao ler event log (${e instanceof Error ? e.name : "Error"}).`,
+      };
+    }
+  }
+
+  let copiloto: FonteHistoricoCopiloto;
+  if (!DIR_CONFERENCE) {
+    copiloto = { disponivel: false, motivo: "Store do Conference Brain nao configurado para historico." };
+  } else {
+    try {
+      copiloto = {
+        disponivel: true,
+        fonte: "conference-brain-store",
+        leitura: criarStoreConference({ dir: DIR_CONFERENCE }).history("copilot_recommendations", { limit: 200 }),
+      };
+    } catch (e) {
+      copiloto = {
+        disponivel: false,
+        motivo: `Falha ao ler store do Copiloto (${e instanceof Error ? e.name : "Error"}).`,
+      };
+    }
+  }
+
+  return historicoVM(operacao, copiloto);
 }
 
 export async function criarServidor(): Promise<http.Server> {
@@ -227,9 +323,25 @@ export async function criarServidor(): Promise<http.Server> {
         })().catch((e: unknown) => json(res, 500, { erro: e instanceof Error ? e.message : String(e) }));
         return;
       }
-      if (p === "/api/operacao-viva") return json(res, 200, pronto.operacaoViva);
+      if (p === "/api/operacao-viva") {
+        void lerHistorico(clientePlataforma, pronto.historico, url.searchParams.get("unit_id"))
+          .then((h) => json(res, 200, { ...(pronto.operacaoViva as object), historico: h.operacao_viva }))
+          .catch((e: unknown) => json(res, 500, { erro: e instanceof Error ? e.name : "Error" }));
+        return;
+      }
       if (p === "/api/conference-brain") return json(res, 200, pronto.conference);
-      if (p === "/api/copiloto") return json(res, 200, pronto.copiloto);
+      if (p === "/api/copiloto") {
+        void lerHistorico(clientePlataforma, pronto.historico, url.searchParams.get("unit_id"))
+          .then((h) => json(res, 200, { ...(pronto.copiloto as object), historico: h.copiloto }))
+          .catch((e: unknown) => json(res, 500, { erro: e instanceof Error ? e.name : "Error" }));
+        return;
+      }
+      if (p === "/api/historico") {
+        void lerHistorico(clientePlataforma, pronto.historico, url.searchParams.get("unit_id"))
+          .then((h) => json(res, 200, h))
+          .catch((e: unknown) => json(res, 500, { erro: e instanceof Error ? e.name : "Error" }));
+        return;
+      }
 
       return servirEstatico(res, p);
     } catch (e) {

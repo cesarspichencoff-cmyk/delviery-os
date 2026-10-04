@@ -47,6 +47,57 @@ function dimensao(d) {
   </article>`;
 }
 
+const ESTADO_DO_MODO = {
+  real: "real",
+  simulated: "simulado",
+  control: "controle",
+};
+
+function historicoOperacional(h) {
+  if (!h || h.disponivel !== true) {
+    return secao(
+      "Historico registrado",
+      "Linha do tempo dos fatos que sustentam esta leitura.",
+      estadoTela(
+        "vazio",
+        [{ estado: "indisponivel" }],
+        "Historico indisponivel",
+        h && h.motivo ? h.motivo : "Nenhuma fonte historica foi devolvida.",
+      ),
+    );
+  }
+
+  const recentes = [...h.eventos].slice(-20).reverse();
+  const corpo =
+    recentes.length === 0
+      ? estadoTela(
+          "vazio",
+          [{ estado: "indisponivel" }],
+          "Nenhum fato nesta janela",
+          "A fonte historica foi lida e nao devolveu evento apto nesta janela. Zero aqui e medido.",
+        )
+      : tabela(
+          ["Quando", "Evento", "Viagem / aparelho", "Modo", "Origem"],
+          recentes.map((e) => [
+            `<span class="campo__valor--tecnico">${esc(e.ocorreu_em)}</span>`,
+            `<span class="campo__valor--tecnico">${esc(e.event_type)}</span>`,
+            `<span class="campo__valor--tecnico">${esc(e.trip_id || e.device_id || "sem identidade tecnica")}</span>`,
+            selo({ estado: ESTADO_DO_MODO[e.source_mode] || "indisponivel" }),
+            esc(e.origin),
+          ]),
+        );
+
+  return secao(
+    "Historico registrado",
+    `Fonte ${h.fonte}. A tela mostra no maximo os 20 fatos mais recentes da janela retornada; payload bruto nunca atravessa esta superficie.`,
+    `<div class="metric-strip">
+      ${metric("Fatos na janela", { observado: true, valor: h.eventos.length })}
+      ${metric("Sem modo legado", { observado: true, valor: h.sem_modo })}
+      ${metric("Linhas recusadas", { observado: true, valor: h.corrompidas })}
+    </div>${corpo}`,
+  );
+}
+
 export function telaOperacaoViva(vm) {
   const porClasse = (c) => vm.dimensoes.filter((d) => d.classificacao === c);
 
@@ -145,6 +196,8 @@ export function telaOperacaoViva(vm) {
       corpoViagens,
     )}
 
+    ${historicoOperacional(vm.historico)}
+
     ${secao("Eventos recusados", "Evento incompativel e recusado com motivo, nunca descartado em silencio.", corpoQuarentena)}
 
     ${secao(
@@ -154,7 +207,6 @@ export function telaOperacaoViva(vm) {
         ${campo("Versao da projecao", { observado: true, valor: vm.versao_da_projecao }, { tecnico: true })}
         ${campo("Calculada em", { observado: true, valor: vm.calculada_em }, { tecnico: true })}
         ${campo("Ultimo evento aplicado", vm.cursor, { tecnico: true })}
-        ${campo("Historico de mudanca", vm.historico_de_mudanca)}
       </div>`,
     )}
 

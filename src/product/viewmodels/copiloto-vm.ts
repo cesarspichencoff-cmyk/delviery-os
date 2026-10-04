@@ -80,7 +80,6 @@ export interface CopilotoVM {
   readonly fora_de_atividade: readonly RecomendacaoVM[];
   readonly recusas: readonly RecusaVM[];
   readonly sem_recomendacao_sustentada: boolean;
-  readonly historico_de_mudancas: Campo<never>;
   readonly nenhuma_acao_executada: true;
   readonly limitacoes: readonly Limitacao[];
 }
@@ -247,10 +246,6 @@ export function copilotoVM(res: ResultadoShadow): CopilotoVM {
       motivo: r.motivo,
     })),
     sem_recomendacao_sustentada: ativas.length === 0,
-    historico_de_mudancas: ausente<never>(
-      "integracao_pendente",
-      "A ponte devolve o resultado da avaliacao atual. Nao ha superficie que leia o historico de status ja gravado no store.",
-    ),
     nenhuma_acao_executada: true,
     limitacoes: [
       {

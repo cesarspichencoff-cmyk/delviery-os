@@ -14,7 +14,7 @@
     ],
     "_nota_observa": "Os tres troncos cujo estado este arquivo realmente afirma: produto, perfil e o Lab V4. src/platform/ fica de fora porque o que STATE.json diz dele sao contagens de teste, que esta guarda nao verifica — declarar escopo que a guarda nao cobre seria comprar confianca que ela nao entrega. Escolhido antes de rodar, e nao para acomodar caso que falhava (L44)."
   },
-  "atualizado_em": "2026-08-07",
+  "atualizado_em": "2026-10-04",
   "_nota_atualizado_em": "Ate 2026-08-07 este campo declarava 2026-08-03 enquanto o arquivo continha o bloco revolution_0a datado de 2026-08-05 e havia sido gravado no commit 953a3fb, de 2026-08-07. Foi o primeiro defeito que a guarda G6c acusou.",
   "missao": "MACRO-PROMPT 1/3 — Hybrid Platform + PostgreSQL + Cloud Foundation",
   "veredito": "READY_FOR_MACRO_PROMPT_2_FIELD_AND_COPILOT_BRIDGE",
@@ -1914,5 +1914,28 @@
       "prova": "contagens identicas nos dois commits (22 testes de navegador, 48 guardas, 9 mutacoes, 43 assert.) e sha256 identico do harness excluindo a linha de log: 9dd62c74b6a3d8f8",
       "_nota": "como 9845e15 contem alteracao executavel, ainda que so de log, a reverificacao considerou 9845e15. O avaliador refez a inspecao e registrou que nao aceitou a afirmacao sem checar"
     }
+  },
+  "product_history_b6": {
+    "status": "TEST_PASS_RUNTIME_LOCAL_PROVEN",
+    "rota": "GET /api/historico?unit_id=<unit>",
+    "operacao_viva": {
+      "fonte": "platform.event_log",
+      "leitura": "READ ONLY + unit_id obrigatório + LIMIT duro",
+      "payload_exposto": false,
+      "prova_local": "3 eventos ITAIM; modos controle/real/simulado"
+    },
+    "copiloto": {
+      "fonte": "conference-brain JSONL append-only",
+      "history": "todas as versões válidas",
+      "current_state": "all() continua uma linha atual por recommendation_id"
+    },
+    "gates": {
+      "typecheck": "PASS",
+      "product_system": "50/50 PASS",
+      "copiloto": "41/41 PASS",
+      "conference_store_4b5": "37/37 PASS",
+      "browser": "B6_UI_RUNTIME_GREEN"
+    },
+    "boundary": "produção/deploy não ativados; B7 ação/autenticação e B8 segunda unidade real continuam abertos"
   }
 }

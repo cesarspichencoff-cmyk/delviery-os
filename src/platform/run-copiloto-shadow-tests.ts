@@ -72,6 +72,14 @@ interface Store {
   all: (t: string) => Registro[];
   count: (t: string) => number;
   load: (t: string) => number;
+  history: (t: string, opts?: { limit?: number }) => {
+    records: Registro[];
+    complete: boolean;
+    source: string;
+    corrupted_lines: unknown[];
+    invalid_lines: unknown[];
+    io_failures: unknown[];
+  };
   health: () => { invalid_lines: { errors: string[] }[] };
   fileFor: (t: string) => string;
 }
@@ -648,6 +656,40 @@ teste("15b · o registro sobrevive à ida e volta do store sem mudar de estado",
     assert.equal(volta.motivo_de_saida, "operador_conferiu");
     assert.equal(volta.shadow, true);
     assert.deepEqual(volta.evidencias, rec.evidencias);
+  });
+});
+
+teste("15c · history preserva todas as versoes append-only sem mudar o estado atual", async () => {
+  await comDirAsync(async (dir) => {
+    const { store, conclusoes } = await cadeiaLegitima(dir, () => [
+      { external_id: "PED-1", raw_status: "Pronto" },
+    ]);
+    const rec = recomendarDeConclusoes(conclusoes, OPC).recomendacoes.find(
+      (x) => x.escopo === "pedido",
+    ) as RecomendacaoShadow;
+    assert.equal(store.put("copilot_recommendations", paraRegistro(rec)).ok, true);
+
+    const retirada = retirar(rec, "operador_conferiu", new Date("2026-07-31T12:02:00.000Z"));
+    assert.equal(store.put("copilot_recommendations", paraRegistro(retirada)).ok, true);
+
+    const atual = store.all("copilot_recommendations");
+    assert.equal(atual.length, 1, "o estado atual deveria manter uma linha por recommendation_id");
+    assert.equal(deRegistro(atual[0]).status, "dismissed");
+
+    const historico = store.history("copilot_recommendations");
+    assert.equal(historico.complete, true);
+    assert.equal(historico.source, "disk");
+    assert.equal(historico.records.length, 2, "o append-only perdeu uma versao");
+    assert.deepEqual(
+      historico.records.map((x) => deRegistro(x).status),
+      ["proposed", "dismissed"],
+    );
+    assert.equal(historico.corrupted_lines.length, 0);
+    assert.equal(historico.invalid_lines.length, 0);
+
+    const limitado = store.history("copilot_recommendations", { limit: 1 });
+    assert.equal(limitado.records.length, 1, "o limite da janela historica nao foi aplicado");
+    assert.equal(deRegistro(limitado.records[0]).status, "dismissed");
   });
 });
 

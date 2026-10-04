@@ -20,6 +20,7 @@ import {
   selo,
   selos,
   secao,
+  tabela,
 } from "../components/ui.js";
 
 function recomendacao(r) {
@@ -82,6 +83,70 @@ function recomendacao(r) {
     )}
     <p class="rec-card__sombra">${esc(r.porque_nao_executada)}</p>
   </article>`;
+}
+
+const ESTADO_DO_STATUS = {
+  proposed: "shadow",
+  expired: "expirado",
+  dismissed: "retirado",
+  invalidated: "invalidado",
+  accepted_for_future: "acao_humana_necessaria",
+};
+
+const ESTADO_DO_MODO = {
+  real: "real",
+  simulated: "simulado",
+  control: "controle",
+};
+
+function historicoCopiloto(h) {
+  if (!h || h.disponivel !== true) {
+    return secao(
+      "Historico de propostas",
+      "Versoes registradas no store append-only do Copiloto.",
+      estadoTela(
+        "vazio",
+        [{ estado: "indisponivel" }],
+        "Historico indisponivel",
+        h && h.motivo ? h.motivo : "Nenhuma fonte historica foi devolvida.",
+      ),
+    );
+  }
+
+  const recentes = [...h.versoes].slice(-20).reverse();
+  const corpo =
+    recentes.length === 0
+      ? estadoTela(
+          "vazio",
+          [{ estado: "indisponivel" }],
+          "Nenhuma proposta registrada",
+          "O store foi lido e a janela historica tem zero propostas validas.",
+        )
+      : tabela(
+          ["Quando", "Proposta", "Estado", "Escopo", "Modo"],
+          recentes.map((r) => [
+            `<span class="campo__valor--tecnico">${esc(r.terminal_em || r.criada_em)}</span>`,
+            `<span class="campo__valor">${esc(r.titulo)}</span><br><span class="campo__valor--tecnico">${esc(r.recommendation_id)}</span>`,
+            selo({ estado: ESTADO_DO_STATUS[r.status] || "indisponivel" }),
+            esc(r.escopo),
+            selo({ estado: ESTADO_DO_MODO[r.source_mode] || "indisponivel" }),
+          ]),
+        );
+
+  const integridade =
+    h.completo && h.linhas_corrompidas === 0 && h.linhas_invalidas === 0 && h.falhas_de_io === 0
+      ? selo({ estado: "saudavel", detalhe: "Historico lido sem linha recusada." })
+      : selo({ estado: "degradado", detalhe: "Historico parcial; ha diagnostico de armazenamento." });
+
+  return secao(
+    "Historico de propostas",
+    `Fonte ${h.fonte}. A tela mostra no maximo as 20 versoes mais recentes; proposta terminal permanece visivel e nao ressuscita.`,
+    `<div class="metric-strip">
+      ${metric("Versoes na janela", { observado: true, valor: h.versoes.length })}
+      ${metric("Linhas corrompidas", { observado: true, valor: h.linhas_corrompidas })}
+      ${metric("Linhas invalidas", { observado: true, valor: h.linhas_invalidas })}
+    </div><div class="linha-selos">${integridade}</div>${corpo}`,
+  );
 }
 
 export function telaCopiloto(vm) {
@@ -148,6 +213,8 @@ export function telaCopiloto(vm) {
       corpoFora,
     )}
 
+    ${historicoCopiloto(vm.historico)}
+
     ${secao(
       "Conclusoes recusadas",
       "Evidencia insuficiente nao e um atributo de proposta que existe — e o motivo de ela nao existir, e viaja aqui.",
@@ -161,7 +228,6 @@ export function telaCopiloto(vm) {
         ${campo("Unidade avaliada", vm.unidade, { tecnico: true })}
         ${campo("Versao da ponte", { observado: true, valor: vm.versao_da_ponte }, { tecnico: true })}
         ${campo("Avaliado em", { observado: true, valor: vm.avaliado_em }, { tecnico: true })}
-        ${campo("Historico de mudancas", vm.historico_de_mudancas)}
       </div>`,
     )}
 

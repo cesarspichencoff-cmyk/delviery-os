@@ -656,6 +656,36 @@ sua profundidade; o campo continua corretamente `integracao_pendente` em `Aparel
 - **B8 multi-unidade:** o seletor continua preservando contexto, mas `UNIDADES` contém somente
   `demo-unit`; não há segunda fonte real ligada ao seletor.
 
+
+### Sucessão 2026-10-04 — B6 histórico fechado no código/prova local
+
+B6 deixou de ser “não existe histórico em superfície nenhuma”.
+
+- **Operação Viva:** `GET /api/historico?unit_id=...` lê uma janela limitada do
+  `platform.event_log` em transação **READ ONLY**, exige unidade, aplica limite duro e não
+  seleciona `payload`. A UI mostra “Histórico registrado” na própria superfície;
+- **Copiloto:** o store JSONL já era append-only. A nova leitura `history()` preserva todas as
+  versões válidas por `recommendation_id`, enquanto `all()` continua representando apenas o
+  estado atual. A UI mostra “Histórico de propostas” sem ressuscitar estado terminal;
+- **proveniência:** `real`, `simulated` e `control` continuam separados; uma mesma linha do
+  tempo pode conter modos diferentes sem promover tudo a REAL;
+- **privacidade/segurança:** histórico nunca devolve `payload` bruto nem conteúdo de linha
+  corrompida. Métodos de escrita continuam recusados pela trava global GET/HEAD.
+
+Provas em 2026-10-04:
+- typecheck: PASS;
+- Product System: **50/50 PASS**;
+- Copiloto: **41/41 PASS**;
+- Conference/Store 4B5: **37/37 PASS**;
+- navegador local: `B6_UI_RUNTIME_GREEN`, Operação Viva + Copiloto renderizados, zero erro HTTP
+  e zero `pageerror`;
+- PostgreSQL isolado local: `/api/historico?unit_id=ITAIM` devolveu **3 eventos**, todos ITAIM,
+  modos `controle,real,simulado`, `payload` ausente e POST recusado com **405**.
+
+**Fronteira:** B6 está **TEST_PASS + runtime local PROVEN**. Isso não prova deploy/produção nem
+substitui observação futura no ambiente operacional. B7 (ação/autenticação humana) e B8
+(multi-unidade com segunda fonte real) continuam abertos.
+
 Esta sucessão corrige apenas o **estado dos blockers**; nenhuma rota nova, telemetria do telefone,
 autenticação humana ou segunda unidade foi criada.
 

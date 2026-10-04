@@ -32,6 +32,7 @@ import type {
   SourceMode,
 } from "../../platform/contracts/event-catalog";
 import {
+  paraRegistro,
   recomendarDeConclusoes,
   type Conclusao,
   type ResultadoShadow,
@@ -53,6 +54,14 @@ interface Store {
   put: (t: string, r: Registro) => { ok: boolean; errors?: string[] };
   all: (t: string) => Registro[];
   count: (t: string) => number;
+  history: (t: string) => {
+    records: Registro[];
+    complete: boolean;
+    source: string;
+    corrupted_lines: unknown[];
+    invalid_lines: unknown[];
+    io_failures: unknown[];
+  };
   health: () => {
     memory_only: boolean;
     entities: { entity: string; records: number }[];
@@ -287,9 +296,11 @@ function conclusoesLidas(cs: readonly Conclusao[]): readonly ConclusaoLida[] {
 
 export interface CadeiaDemo {
   readonly projecao: Projecao;
+  readonly eventosOperacao: readonly EventEnvelope[];
   readonly leituraBrain: LeituraConferenceBrain;
   readonly leituraControlePositivo: LeituraConferenceBrain;
   readonly resultadoCopiloto: ResultadoShadow;
+  readonly historicoCopiloto: ReturnType<Store["history"]>;
 }
 
 /**
@@ -305,6 +316,7 @@ export interface CadeiaDemo {
  * consegue distinguir de defeito (D32, L26).
  */
 export async function montarCadeiaDemo(): Promise<CadeiaDemo> {
+  const eventosOperacao = eventosDemo();
   const projecao = projecaoDemo();
 
   // --- 1. cadeia real -------------------------------------------------
@@ -441,11 +453,17 @@ export async function montarCadeiaDemo(): Promise<CadeiaDemo> {
     unit_id: UNIDADE_DEMO,
     source_mode: "simulated",
   });
+  for (const rec of resultadoCopiloto.recomendacoes) {
+    storeReal.put("copilot_recommendations", paraRegistro(rec));
+  }
+  const historicoCopiloto = storeReal.history("copilot_recommendations");
 
   return {
     projecao,
+    eventosOperacao,
     leituraBrain,
     leituraControlePositivo,
     resultadoCopiloto,
+    historicoCopiloto,
   };
 }

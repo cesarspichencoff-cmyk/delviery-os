@@ -27,6 +27,9 @@ import { operacaoVivaVM } from "../product/viewmodels/operacao-viva-vm";
 import { conferenceBrainVM } from "../product/viewmodels/conference-vm";
 import { copilotoVM } from "../product/viewmodels/copiloto-vm";
 import { entregasVM } from "../product/viewmodels/entregas-vm";
+import { eventosHistoricosDeEnvelopes, historicoVM } from "../product/viewmodels/historico-vm";
+import type { EventEnvelope } from "./contracts/event-catalog";
+import { lerHistoricoOperacional } from "./leitura/historico-operacional";
 import {
   montarCadeiaDemo,
   montarEntregasDemo,
@@ -650,6 +653,125 @@ teste("navegacao: modulo futuro nao tem tela de dado", () => {
 });
 
 /* ------------------------------------------------------------------ *
+ * 8b. Histórico — leitura, procedência e privacidade
+ * ------------------------------------------------------------------ */
+
+teste("historico: payload bruto nunca atravessa e modos nao se misturam", () => {
+  const base = {
+    event_version: "1.0.0",
+    unit_id: "ITAIM",
+    occurred_at: "2026-10-03T12:00:00.000Z",
+    origin: "device" as const,
+    idempotency_key: "k",
+  };
+  const eventos: EventEnvelope[] = [
+    {
+      ...base,
+      event_id: "ev-real",
+      event_type: "trip_started",
+      trip_id: "T-1",
+      source_mode: "real",
+      payload: { segredo_interno: "NAO_PODE_VAZAR" },
+    },
+    {
+      ...base,
+      event_id: "ev-sim",
+      event_type: "gps_batch_received",
+      device_id: "D-1",
+      source_mode: "simulated",
+      idempotency_key: "k2",
+      occurred_at: "2026-10-03T12:01:00.000Z",
+      payload: { segredo_interno: "OUTRO_SEGREDO" },
+    },
+    {
+      ...base,
+      event_id: "ev-control",
+      event_type: "trip_closed",
+      trip_id: "T-1",
+      source_mode: "control",
+      idempotency_key: "k3",
+      occurred_at: "2026-10-03T12:02:00.000Z",
+      payload: { qualquer: "CONTEUDO_BRUTO" },
+    },
+  ];
+  const vm = historicoVM(
+    { disponivel: true, fonte: "platform.event_log", eventos: eventosHistoricosDeEnvelopes(eventos), sem_modo: 2, corrompidas: [] },
+    { disponivel: false, motivo: "sem store" },
+  );
+  assert.equal(vm.operacao_viva.disponivel, true);
+  if (!vm.operacao_viva.disponivel) throw new Error("historico operacional ausente");
+  assert.deepEqual(new Set(vm.operacao_viva.modos), new Set(["real", "simulado", "controle"]));
+  assert.equal(vm.operacao_viva.sem_modo, 2);
+  const bruto = JSON.stringify(vm);
+  for (const proibido of ["NAO_PODE_VAZAR", "OUTRO_SEGREDO", "CONTEUDO_BRUTO", '"payload"']) {
+    assert.equal(bruto.includes(proibido), false, `historico vazou ${proibido}`);
+  }
+});
+
+teste("historico: SQL real e read-only, filtrado por unidade e limitado", async () => {
+  const chamadas: { sql: string; params?: readonly unknown[] }[] = [];
+  const fake = {
+    transaction: async (fn: (tx: { query: (sql: string, params?: readonly unknown[]) => Promise<Record<string, unknown>[]> }) => Promise<unknown>) =>
+      fn({
+        query: async (sql: string, params?: readonly unknown[]) => {
+          chamadas.push({ sql, params });
+          if (/SET TRANSACTION READ ONLY/.test(sql)) return [];
+          return [
+            {
+              event_id: "ev-1", unit_id: "ITAIM", object_type: "trip", object_id: "T-1",
+              event_type: "trip_started", occurred_at: new Date("2026-10-03T12:00:00Z"),
+              origin: "device", device_id: "D-1", sequence_local: "7", source_mode: "real",
+            },
+            {
+              event_id: "ev-legado", unit_id: "ITAIM", object_type: "trip", object_id: "T-2",
+              event_type: "trip_started", occurred_at: new Date("2026-10-03T11:59:00Z"),
+              origin: "device", device_id: "D-2", sequence_local: "6", source_mode: null,
+            },
+            {
+              event_id: "ev-ruim", unit_id: "ITAIM", object_type: "trip", object_id: "T-3",
+              event_type: "trip_started", occurred_at: new Date("2026-10-03T11:58:00Z"),
+              origin: "device", device_id: "D-3", sequence_local: "5", source_mode: "modo-invalido",
+            },
+          ];
+        },
+      }),
+  } as unknown as Parameters<typeof lerHistoricoOperacional>[0];
+
+  const r = await lerHistoricoOperacional(fake, {
+    unit_id: "ITAIM",
+    tipos: ["trip_started"],
+    limite: 20,
+  });
+
+  assert.equal(chamadas.length, 2);
+  assert.match(chamadas[0].sql, /SET TRANSACTION READ ONLY/);
+  assert.match(chamadas[1].sql, /WHERE unit_id = \$1/);
+  assert.match(chamadas[1].sql, /LIMIT \$3/);
+  assert.equal(chamadas[1].sql.includes("payload"), false, "consulta historica seleciona payload");
+  assert.deepEqual(chamadas[1].params, ["ITAIM", ["trip_started"], 20]);
+  assert.equal(r.eventos.length, 1);
+  assert.equal(r.eventos[0].trip_id, "T-1");
+  assert.equal(r.sem_modo, 1);
+  assert.equal(r.corrompidas.length, 1);
+});
+
+teste("historico: fixture explicita traz eventos e versoes do Copiloto", async () => {
+  const c = await montarCadeiaDemo();
+  const vm = historicoVM(
+    { disponivel: true, fonte: "fixture", eventos: eventosHistoricosDeEnvelopes(c.eventosOperacao), sem_modo: 0, corrompidas: [] },
+    { disponivel: true, fonte: "fixture", leitura: c.historicoCopiloto },
+  );
+  assert.equal(vm.operacao_viva.disponivel, true);
+  assert.equal(vm.copiloto.disponivel, true);
+  if (!vm.operacao_viva.disponivel || !vm.copiloto.disponivel) throw new Error("fixture historica ausente");
+  assert.ok(vm.operacao_viva.eventos.length > 0, "fixture sem eventos historicos");
+  assert.ok(vm.copiloto.versoes.length > 0, "fixture sem historico do Copiloto");
+  assert.ok(vm.operacao_viva.modos.includes("simulado"));
+  assert.ok(vm.copiloto.modos.includes("simulado"));
+  assert.equal(vm.copiloto.completo, true);
+});
+
+/* ------------------------------------------------------------------ *
  * 9. Acessibilidade e responsividade
  * ------------------------------------------------------------------ */
 
@@ -768,6 +890,7 @@ teste("servidor: as rotas prioritarias respondem e nenhuma escrita e aceita", as
       "/api/operacao-viva",
       "/api/conference-brain",
       "/api/copiloto",
+      "/api/historico",
       "/",
       "/app.js",
       "/tokens/product-tokens.css",
@@ -781,6 +904,54 @@ teste("servidor: as rotas prioritarias respondem e nenhuma escrita e aceita", as
       const r = await pedir(s, "/api/copiloto", metodo);
       assert.equal(r.status, 405, `${metodo} nao foi recusado`);
       assert.ok(r.corpo.includes("metodo_nao_permitido"));
+    }
+  } finally {
+    await new Promise<void>((r) => s.close(() => r()));
+  }
+});
+
+teste("superficies: Operacao Viva e Copiloto exibem o historico que recebem", () => {
+  const op = ler("src/product/ui/surfaces/operacao-viva.js");
+  const cop = ler("src/product/ui/surfaces/copiloto.js");
+  const opVM = ler("src/product/viewmodels/operacao-viva-vm.ts");
+  const copVM = ler("src/product/viewmodels/copiloto-vm.ts");
+  assert.ok(op.includes("historicoOperacional(vm.historico)"), "Operacao Viva nao renderiza historico");
+  assert.ok(cop.includes("historicoCopiloto(vm.historico)"), "Copiloto nao renderiza historico");
+  assert.equal(op.includes('campo("Historico de mudanca"'), false, "placeholder historico antigo sobreviveu");
+  assert.equal(cop.includes('campo("Historico de mudancas"'), false, "placeholder historico antigo sobreviveu");
+  assert.equal(opVM.includes("historico_de_mudanca"), false, "viewmodel da Operacao Viva voltou ao placeholder antigo");
+  assert.equal(copVM.includes("historico_de_mudancas"), false, "viewmodel do Copiloto voltou ao placeholder antigo");
+});
+
+teste("servidor: historico viaja dentro de Operacao Viva e Copiloto", async () => {
+  const s = await criarServidor();
+  await new Promise<void>((r) => s.listen(0, "127.0.0.1", r));
+  try {
+    for (const rota of ["/api/operacao-viva?unit_id=demo-unit", "/api/copiloto?unit_id=demo-unit"]) {
+      const r = await pedir(s, rota);
+      assert.equal(r.status, 200, `${rota} respondeu ${r.status}`);
+      const vm = JSON.parse(r.corpo) as { historico?: { disponivel?: boolean } };
+      assert.equal(vm.historico?.disponivel, true, `${rota} nao recebeu historico`);
+      assert.equal(r.corpo.includes('"payload"'), false, `${rota} expos payload`);
+    }
+  } finally {
+    await new Promise<void>((r) => s.close(() => r()));
+  }
+});
+
+teste("servidor: historico responde sem payload bruto e sem verbo de acao", async () => {
+  const s = await criarServidor();
+  await new Promise<void>((r) => s.listen(0, "127.0.0.1", r));
+  try {
+    const r = await pedir(s, "/api/historico");
+    assert.equal(r.status, 200);
+    const vm = JSON.parse(r.corpo) as { modulo?: string; operacao_viva?: unknown; copiloto?: unknown };
+    assert.equal(vm.modulo, "historico");
+    assert.ok(vm.operacao_viva, "sem historico da Operacao Viva");
+    assert.ok(vm.copiloto, "sem historico do Copiloto");
+    assert.equal(r.corpo.includes('"payload"'), false, "a rota historica expos payload bruto");
+    for (const verbo of ['"executar"', '"aplicar"', '"despachar"']) {
+      assert.equal(r.corpo.includes(verbo), false, `historico carregou verbo operacional ${verbo}`);
     }
   } finally {
     await new Promise<void>((r) => s.close(() => r()));

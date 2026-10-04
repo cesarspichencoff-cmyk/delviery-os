@@ -179,8 +179,11 @@ async function desenhar(rota, opcoes = {}) {
   const s = SUPERFICIES[rota];
   // A cena so viaja para a HOME, e so porque esta build e de demonstracao.
   const cena = new URLSearchParams(window.location.search).get("cena");
-  const api =
+  let api =
     rota === "/" && cena ? `${s.api}?cena=${encodeURIComponent(cena)}` : s.api;
+  if ((rota === "/operacao-viva" || rota === "/copiloto") && estado.unidade) {
+    api += `${api.includes("?") ? "&" : "?"}unit_id=${encodeURIComponent(estado.unidade)}`;
+  }
   alvo.setAttribute("aria-busy", "true");
   alvo.innerHTML = skeleton(4);
   try {

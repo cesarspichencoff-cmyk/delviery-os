@@ -215,6 +215,67 @@ function createStore(opts) {
     }
   }
 
+  /**
+   * Le o historico append-only de uma entidade sem alterar o estado em memoria.
+   * Diferente de `all()`, preserva as versoes validas na ordem do arquivo.
+   * `opts.limit` limita a janela devolvida, sem deixar de validar o arquivo inteiro.
+   * Linha invalida/corrompida vira diagnostico sanitizado; nunca some em silencio.
+   */
+  function history(entity, opts) {
+    const solicitado = opts && Number.isInteger(opts.limit) ? Number(opts.limit) : null;
+    const limit = solicitado === null ? null : Math.max(1, Math.min(solicitado, 1000));
+    if (memoryOnly) {
+      const atuais = Array.from(table(entity).values());
+      return {
+        records: limit === null ? atuais : atuais.slice(-limit), complete: false, source: "memory_only",
+        corrupted_lines: [], invalid_lines: [], io_failures: []
+      };
+    }
+    const f = fileFor(entity);
+    if (!fs.existsSync(f)) {
+      return { records: [], complete: true, source: "disk", corrupted_lines: [], invalid_lines: [], io_failures: [] };
+    }
+    const records = [];
+    const corruptedLines = [];
+    const invalidLines = [];
+    const ioFailures = [];
+    try {
+      const lines = fs.readFileSync(f, "utf8").split("\n");
+      for (let i = 0; i < lines.length; i++) {
+        const s = lines[i].trim();
+        if (!s) continue;
+        try {
+          const record = JSON.parse(s);
+          const v = validate(entity, record);
+          if (!v.ok) {
+            invalidLines.push({
+              entity, line_number: i + 1, errors: v.errors.map(erroSeguro),
+              excerpt_length: s.length, excerpt_hash: sha256(s)
+            });
+            continue;
+          }
+          records.push(record);
+          if (limit !== null && records.length > limit) records.shift();
+        } catch (e) {
+          corruptedLines.push({
+            entity, line_number: i + 1, error: (e && e.name) || "Error",
+            excerpt_length: s.length, excerpt_hash: sha256(s)
+          });
+        }
+      }
+    } catch (e) {
+      ioFailures.push({ op: "history:" + entity, error: String((e && e.name) || "Error") });
+    }
+    return {
+      records,
+      complete: corruptedLines.length === 0 && invalidLines.length === 0 && ioFailures.length === 0,
+      source: "disk",
+      corrupted_lines: corruptedLines,
+      invalid_lines: invalidLines,
+      io_failures: ioFailures
+    };
+  }
+
   function get(entity, key) { return table(entity).get(key) || null; }
   function has(entity, key) { return table(entity).has(key); }
   function all(entity) { return Array.from(table(entity).values()); }
@@ -236,7 +297,7 @@ function createStore(opts) {
     };
   }
 
-  return { put, rewrite, get, has, all, count, clear, load, health, sha256, dir, fileFor };
+  return { put, rewrite, get, has, all, count, clear, load, history, health, sha256, dir, fileFor };
 }
 
 module.exports = { createStore, sha256, DEFAULT_DIR };
