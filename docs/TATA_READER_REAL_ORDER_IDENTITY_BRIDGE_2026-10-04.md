@@ -68,6 +68,23 @@ Evidência persistida:
 
 `data/tata_reader_real_order_identity_bridge_candidate_20261004_v1.json`.
 
+## Investigação preparada para o próximo gate
+
+Documentação pública da própria Teknisa diferencia três campos relevantes:
+
+- `CDPRODUTO`: código interno do produto;
+- `CDPROINTE`: código externo do produto;
+- `CDARVPROD`: código do produto no sistema Teknisa.
+
+Isso é apenas uma pista de nomenclatura externa; ainda não prova que o schema local do POS possui esses campos nem que algum deles corresponde ao código Retail usado pelo TATÁ.
+
+Foi preparado `tools/tata_reader_product_identity_metadata_probe_readonly.ps1`.
+
+O probe lê somente metadados `sys.objects/sys.schemas/sys.columns`, procura superfícies visíveis contendo `CDPRODUTO` junto de `CDPROINTE`, `CDARVPROD` ou `CDPRODESTO`, e não lê nenhuma linha operacional.
+
+Gate estático:
+`tools/verificar_tata_reader_product_identity_metadata_probe_static_v1.js`.
+
 ## Próximo gate
 
 `PROVE_CANONICAL_SQL_INTERNAL_PRODUCT_ID_TO_RETAIL_PRODUCT_CODE_CROSSWALK`
