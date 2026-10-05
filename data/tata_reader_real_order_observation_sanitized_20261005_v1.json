@@ -1,0 +1,88 @@
+{
+  "schema": "deliveryos.tata-reader-real-order-observation-sanitized-result.v1",
+  "captured_at": "2026-10-05T09:31:15.7023138-03:00",
+  "status": "PROVEN_EXACT_ORDER_OBSERVATION_SURFACE_SANITIZED",
+  "authorization_id": "CESAR-2026-10-05-TATA-READER-OBSERVATION-PROBE-V1",
+  "service_identity": "NT SERVICE\\TataComandaReader",
+  "database": "teknisa",
+  "exact_order": {
+    "CDFILIAL": "0001",
+    "CDLOJA": "01",
+    "NRVENDAREST": "0000349281",
+    "NRCOMANDA": "0000348850"
+  },
+  "rows_read": 5,
+  "order_observation": {
+    "present": true,
+    "raw_sha256": "A0827151E4DF4B6BB81664A8D308C2A318BF29223C464C5098F06E0B31950C81",
+    "raw_length": 69,
+    "classification": "NON_PRODUCTION_SENSITIVE_PAYMENT_CANCEL_METADATA",
+    "render_to_production_ticket": false,
+    "raw_repo_persisted": false,
+    "raw_local_capture_deleted": true
+  },
+  "item_observations": [
+    {
+      "NRPRODCOMVEN": "000001",
+      "CDPRODUTO": "0000001705",
+      "DSOBSDESCIT_present": false,
+      "DSOBSPEDDIGCMD_present": false,
+      "TXPRODCOMVEN_present": false
+    },
+    {
+      "NRPRODCOMVEN": "000002",
+      "CDPRODUTO": "0000001430",
+      "DSOBSDESCIT_present": false,
+      "DSOBSPEDDIGCMD_present": false,
+      "TXPRODCOMVEN_present": false
+    },
+    {
+      "NRPRODCOMVEN": "000003",
+      "CDPRODUTO": "0000001418",
+      "DSOBSDESCIT_present": false,
+      "DSOBSPEDDIGCMD_present": false,
+      "TXPRODCOMVEN_present": false
+    },
+    {
+      "NRPRODCOMVEN": "000004",
+      "CDPRODUTO": "0000001535",
+      "DSOBSDESCIT_present": false,
+      "DSOBSPEDDIGCMD_present": false,
+      "TXPRODCOMVEN_present": false
+    }
+  ],
+  "production_relevance": {
+    "item_observation_state": "PROVEN_NONE_FOR_THIS_ORDER",
+    "order_observation_policy": "DO_NOT_AUTO_RENDER_DSOBSCOMANDA_WITHOUT_PROVEN_OPERATIONAL_SEMANTICS",
+    "order_observation_state_for_this_order": "PRESENT_BUT_EXCLUDED_AS_NON_PRODUCTION_SENSITIVE_METADATA"
+  },
+  "execution": {
+    "probe_sha256": "BEAA1DB7B6C9B99A882792E4F20847B81310EB604218830233D5EEE75A380988",
+    "guard_sha256": "87EB3F75086CEDBC67ACFAC6845579691B437B145FC776D62EA582A8765BC635",
+    "exit_code": 0,
+    "prior_attempt": {
+      "status": "OBSERVATION_READ_FAILED",
+      "rows_read": 0,
+      "effect_observation_row_read": false,
+      "failure_class": "SQL_IDENTITY_ALIAS_KEYWORD_SYNTAX",
+      "corrected_before_success": true
+    }
+  },
+  "restoration": {
+    "service_stopped": true,
+    "installed_preflight_restored": true,
+    "prior_evidence_restored": true
+  },
+  "effects": {
+    "observation_row_read": true,
+    "database_write": false,
+    "permission_change": false,
+    "odhen_write": false,
+    "network_call": false,
+    "print": false,
+    "spooler_write": false,
+    "fiscal_action": false,
+    "sefaz_call": false,
+    "cutover": false
+  }
+}
