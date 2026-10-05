@@ -1,0 +1,51 @@
+{
+  "schema": "deliveryos.production-printer-calibration-test-payload.v1",
+  "created_on": "2026-10-05",
+  "purpose": "PHYSICAL_WIDTH_ACCENTS_FEED_CUT_LEGIBILITY_CALIBRATION_ONLY",
+  "target": {
+    "printer_code": "00002",
+    "printer_name": "COZINHA",
+    "queue_name": "COZINHA",
+    "configured_ip": "192.168.0.116",
+    "driver": "EPSON TM-T20 ReceiptE4",
+    "tcp_9100_reachable": true
+  },
+  "copies": 1,
+  "safety": {
+    "real_order": false,
+    "production_instruction": false,
+    "fiscal_document": false,
+    "contains_order_ids": false,
+    "banner": "TESTE - NAO PRODUZIR / NAO PREPARAR"
+  },
+  "text_lines": [
+    "===================================",
+    "*** TESTE DELIVERYOS ***",
+    "NAO PRODUZIR / NAO PREPARAR",
+    "IMPRESSORA: COZINHA 00002",
+    "TESTE: LARGURA / ACENTOS / CORTE",
+    "ACENTOS: AÇÚCAR MISSÔ PORÇÃO SÃO",
+    "35>1234567890123456789012345678901",
+    "48>12345678901234567890123456789012345678901234",
+    "[ ] TEXTO LEGIVEL",
+    "[ ] ACENTOS OK",
+    "[ ] AVANCO/CORTE OK",
+    "==================================="
+  ],
+  "observations_required": [
+    "physical printer that produced the ticket",
+    "paper width approximately 58mm or 80mm",
+    "whether the 48-column ruler wraps/clips",
+    "whether accented characters render correctly",
+    "whether feed/cut behavior is acceptable",
+    "whether text is legible"
+  ],
+  "submission_authorized": false,
+  "effects": {
+    "print": false,
+    "spooler_write": false,
+    "fiscal_action": false,
+    "odhen_write": false,
+    "cutover": false
+  }
+}
