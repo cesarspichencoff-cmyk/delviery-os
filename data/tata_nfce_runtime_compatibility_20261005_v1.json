@@ -1,0 +1,54 @@
+{
+  "schema": "deliveryos.nfce-runtime-compatibility-readonly.2026-10-05.v1",
+  "captured_on": "2026-10-05",
+  "status": "SP_PROTOCOL17_RUNTIME_PROVEN_CURRENT_QR_V2_ACCEPTED_IN_REAL_AUTHORIZATIONS",
+  "store": "0001",
+  "official_context": {
+    "sao_paulo_protocol17_production_date": "2026-10-05",
+    "qr_code_v3_defined_by": "NT2025.001",
+    "qr_code_v3_exclusive_adoption_date": "NOT_DEFINED_BY_OFFICIAL_NOTE_REVIEWED"
+  },
+  "database_schema": {
+    "main_protocol_column": "TEKNISA.VENDA.NRPROTOCOLONFCE",
+    "max_length": 50,
+    "qr_column": "TEKNISA.VENDA.DSQRCODENFCE",
+    "qr_max_length": 500
+  },
+  "real_runtime_observation": {
+    "authorized_nfce_today": 61,
+    "protocol_length_min": 17,
+    "protocol_length_max": 17,
+    "protocol_length_17": 61,
+    "protocol_length_other": 0,
+    "first_nfce_today": "2026-10-05T11:25:10",
+    "last_nfce_observed": "2026-10-05T13:43:36",
+    "qr_present": 61,
+    "qr_missing": 0,
+    "qr_length_min": 135,
+    "qr_length_max": 135,
+    "qr_content_read": false
+  },
+  "current_config": {
+    "environment": "1",
+    "automatic_transmission": "S",
+    "xml_version": "4.00",
+    "qr_code_version": "2",
+    "one_way_nfce": "S"
+  },
+  "conclusions": {
+    "sp_protocol17_storage_and_authorization": "PROVEN",
+    "current_nfce_authorization_path_operational": "PROVEN",
+    "qr_data_generation_current_path": "PROVEN",
+    "qr_v3_required_for_current_operation": "NOT_PROVEN_AND_NOT_ASSUMED",
+    "qr_v2_current_real_authorizations": "PROVEN_ACCEPTED_TODAY",
+    "customer_pii_read": false
+  },
+  "effects": {
+    "database_read": true,
+    "database_write": false,
+    "print": false,
+    "fiscal_action": false,
+    "sefaz_call": false,
+    "cutover": false
+  }
+}
