@@ -6,10 +6,10 @@
   "human_authorized": true,
   "human_statement": "Autorizo tudo que precisar",
   "interpreted_scope": "One bounded read under NT SERVICE\\TataComandaReader of the already-permitted observation fields for exact real order NRCOMANDA=0000348850 / NRVENDAREST=0000349281, with raw free text kept local and no print/write/cutover.",
-  "source_head": "e7b8778f3687603218d4134e0988185c7604a4c0",
+  "source_head": "2b066fdf6f6f55301f0aeb183f9681ca804f22ba",
   "probe": {
     "path": "tools/authorized/tata_reader_real_order_observation_probe_v1.ps1",
-    "sha256": "9C74CC3626B46576079FFA5E7124D716813A331F142983D10AEAC97734E706F6"
+    "sha256": "BEAA1DB7B6C9B99A882792E4F20847B81310EB604218830233D5EEE75A380988"
   },
   "guard": {
     "path": "tools/authorized/verificar_tata_reader_real_order_observation_probe_v1.ps1",
@@ -60,5 +60,15 @@
     "fiscal_action": false,
     "sefaz_call": false,
     "cutover": false
+  },
+  "correction_before_success": {
+    "prior_attempt_status": "OBSERVATION_READ_FAILED",
+    "prior_attempt_effects": {
+      "observation_row_read": false,
+      "database_write": false,
+      "print": false
+    },
+    "failure_class": "SQL_IDENTITY_ALIAS_KEYWORD_SYNTAX",
+    "correction": "Bracketed current_login/current_user/database_name aliases before rerun"
   }
 }
