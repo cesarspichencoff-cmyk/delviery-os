@@ -1,0 +1,142 @@
+{
+  "schema": "deliveryos.tata-reader-real-order-packaging-reference.v1",
+  "captured_on": "2026-10-05",
+  "status": "PARTIAL_CANONICAL_PACKAGING_RESULT_BLOCKED_BY_PROVEN_UNKNOWNS",
+  "order": {
+    "NRCOMANDA": "0000348850",
+    "NRCOMANDAEXT": "9627"
+  },
+  "source": {
+    "repository": "cesarspichencoff-cmyk/tata-academia",
+    "branch": "evolucao/v33-product-pass",
+    "head": "face764d54c7df6df754523bf9c13c7cb6979892",
+    "engine": {
+      "path": "lib/packaging-current.js",
+      "blob_sha": "d44e25e96e8e640a50cb087b0eea6fdbea1d8706"
+    },
+    "catalog": {
+      "path": "data/app-data.json",
+      "blob_sha": "1d2c0fd66d09531f3e41e5994878e0f5a389fca0"
+    },
+    "packaging_human": {
+      "path": "content-source/human-current/packaging_truth_2026-09-27_cesar.md",
+      "blob_sha": "d2ada7809c26bc56af1efbc19ccf5415824f9441"
+    },
+    "kits_human": {
+      "path": "content-source/human-current/kits_2026-09-22_cesar.md",
+      "blob_sha": "23ea475d33266dd7b57ca0a1102a4100031f7ce1"
+    }
+  },
+  "input": [
+    {
+      "CDPRODUTO": "0000001705",
+      "CDARVPROD": "9800001000",
+      "product_id": "combinado_kids",
+      "product_name": "Combinado Kids",
+      "quantity": 3
+    },
+    {
+      "CDPRODUTO": "0000001430",
+      "CDARVPROD": "9100008000",
+      "product_id": "edamame",
+      "product_name": "Edamame",
+      "quantity": 1
+    },
+    {
+      "CDPRODUTO": "0000001418",
+      "CDARVPROD": "9100002000",
+      "product_id": "nasu_no_misso",
+      "product_name": "Nasu no Missô",
+      "quantity": 1
+    },
+    {
+      "CDPRODUTO": "0000001535",
+      "CDARVPROD": "9300009000",
+      "product_id": "sushi_de_unagui",
+      "product_name": "Sushi de Unagui",
+      "quantity": 1
+    }
+  ],
+  "packaging": {
+    "groups": [
+      {
+        "product": "Combinado Kids",
+        "quantity": 3,
+        "category": "combinado",
+        "box": null,
+        "boxes": null,
+        "temp": "frio",
+        "status": "UNKNOWN",
+        "reason": "Canonical source does not declare the box for this closed combination."
+      },
+      {
+        "product": "Edamame",
+        "quantity": 1,
+        "category": "selada_650",
+        "box": "650",
+        "boxes": 1,
+        "temp": "quente",
+        "status": "PROVEN_OPERATIONAL_DOCUMENT"
+      },
+      {
+        "product": "Nasu no Missô",
+        "quantity": 1,
+        "category": "entrada_cozinha",
+        "box": null,
+        "boxes": null,
+        "temp": "quente",
+        "status": "UNKNOWN",
+        "reason": "Kitchen starter does not inherit 1.500 and has no explicit box rule."
+      },
+      {
+        "product": "Sushi de Unagui",
+        "quantity": 1,
+        "category": "dupla_dyo",
+        "box": "240",
+        "boxes": 1,
+        "temp": "frio",
+        "status": "PROVEN_CURRENT_HUMAN_RULE"
+      }
+    ],
+    "total_items": 6,
+    "total_proven_boxes": 2,
+    "has_unknown": true,
+    "bags": {
+      "minimum": 2,
+      "status": "PROVEN_OPERATIONAL_DOCUMENT",
+      "exact_bag_count": 2,
+      "exact_bag_count_status": "FACT",
+      "size": "P",
+      "size_status": "FACT",
+      "caveat": "Size verdict is based only on proven physical boxes; unresolved boxes prevent full packaging completeness.",
+      "separation_cause": "quente de cozinha + frio"
+    }
+  },
+  "kits": {
+    "engine_output": [
+      {
+        "kit": "Kit Kids",
+        "quantity": 3
+      }
+    ],
+    "status": "UNKNOWN",
+    "reason": "Current human source does not cover the full mixed combination of 3 Kids + 2 hot starters + 1 sushi double; canonical engine refuses to guess."
+  },
+  "conclusions": {
+    "edamame_box": "PROVEN_650",
+    "sushi_unagui_box": "PROVEN_240",
+    "combinado_kids_box": "UNKNOWN",
+    "nasu_no_misso_box": "UNKNOWN",
+    "full_box_grouping": "NOT_PROVEN",
+    "full_kit_assignment": "NOT_PROVEN",
+    "delivery_check_ready": false,
+    "production_mount_groups_ready": false
+  },
+  "effects": {
+    "database_read": false,
+    "database_write": false,
+    "print": false,
+    "stock_write": false,
+    "cutover": false
+  }
+}
