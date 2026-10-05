@@ -5,10 +5,10 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$ExpectedIdentity = "NT SERVICE\\TataComandaReader"
-$Reader = "C:\\ProgramData\\TataComandaReader\\bin\\tata_reader_continuous_watch_candidate_v1.ps1"
-$Checkpoint = "C:\\ProgramData\\TataComandaReader\\state\\reader-watch-checkpoint-v1.json"
-$Events = "C:\\ProgramData\\TataComandaReader\\state\\reader-events-v1"
+$ExpectedIdentity = "NT SERVICE\TataComandaReader"
+$Reader = "C:\ProgramData\TataComandaReader\bin\tata_reader_continuous_watch_candidate_v1.ps1"
+$Checkpoint = "C:\ProgramData\TataComandaReader\state\reader-watch-checkpoint-v1.json"
+$Events = "C:\ProgramData\TataComandaReader\state\reader-events-v1"
 
 $identity = [Security.Principal.WindowsIdentity]::GetCurrent().Name
 if (-not [string]::Equals($identity,$ExpectedIdentity,[StringComparison]::OrdinalIgnoreCase)) {
