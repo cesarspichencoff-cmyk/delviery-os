@@ -1,0 +1,68 @@
+{
+  "schema": "deliveryos.routing-drift-readonly-audit.2026-10-05.v1",
+  "status": "RECENT_DLV_PRODUCTION_RELEVANT_COVERAGE_PASS",
+  "routing_source": {
+    "path": "data/odhen_product_routing_compact_v1.json",
+    "blob": "d7d4d25bcb882370a37cf748d2d79139b07159a0",
+    "products": 463
+  },
+  "live_catalog": {
+    "canonical_codes": 554,
+    "routing_overlap": 372,
+    "catalog_not_in_routing": 182,
+    "routing_not_in_catalog": 91
+  },
+  "recent_dlv": {
+    "sample_orders": 500,
+    "distinct_codes": 120,
+    "not_in_routing": 5,
+    "production_relevant_uncovered": 0
+  },
+  "not_in_routing_classification": [
+    {
+      "code": "8.20.11.001.00",
+      "name": "COOKIE NUTELLA",
+      "class": "NO_OWN_PRODUCTION_TICKET",
+      "proof": "HUMAN_CONFIRMED"
+    },
+    {
+      "code": "9.75.00.030.00",
+      "name": "WASABI",
+      "class": "NO_OWN_PRODUCTION_TICKET",
+      "proof": "HUMAN_CONFIRMED"
+    },
+    {
+      "code": "9.75.00.031.00",
+      "name": "GENGIBRE PORÇÃO",
+      "class": "NO_OWN_PRODUCTION_TICKET",
+      "proof": "HUMAN_CONFIRMED"
+    },
+    {
+      "code": "9.75.00.032.00",
+      "name": "TARE",
+      "class": "NO_OWN_PRODUCTION_TICKET",
+      "proof": "HUMAN_CONFIRMED"
+    },
+    {
+      "code": "9.98.00.001.00",
+      "name": "TAXA DE ENTREGA",
+      "class": "NO_OWN_PRODUCTION_TICKET",
+      "proof": "REAL_OBSERVED_2026-10-05"
+    }
+  ],
+  "observed_flags": {
+    "all_five_product_IDPRODPROD": "N",
+    "all_five_product_IDIMPRODUVEZ": "N",
+    "recent_order_rows_IDPRODPRODUZ": "NULL"
+  },
+  "normalization_rule": "Raw 10-digit CDARVPROD canonicalized to X.XX.XX.XXX.XX before routing membership test.",
+  "conclusion": "No recent DLV code in the 500-order audit requires a production route that is absent from the current routing matrix after canonicalization and non-production classification.",
+  "effects": {
+    "database_read": true,
+    "database_write": false,
+    "print": false,
+    "odhen_write": false,
+    "fiscal_action": false,
+    "cutover": false
+  }
+}
