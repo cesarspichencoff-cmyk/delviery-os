@@ -1,0 +1,135 @@
+{
+  "schema": "deliveryos.tata-reader-unified-core-readiness.2026-10-05.v4",
+  "captured_on": "2026-10-05",
+  "status": "CORE_REAL_ORDER_PATH_PROVEN_GLOBAL_CUTOVER_BLOCKED_BY_PHYSICAL_AND_FISCAL_GATES",
+  "proven": [
+    "LIVE_DLV_IFO_READ_UNDER_RESTRICTED_SERVICE_IDENTITY",
+    "RAW_PRODUCT_CODE_TO_CANONICAL_ROUTING_NORMALIZATION",
+    "REAL_ORDER_ROUTING_SHADOW",
+    "DEDUPE_REPLAY",
+    "IFOOD_SHORT_SEQUENCE_MAPPING",
+    "CURRENT_PRODUCT_NAMES_AND_MINIMIZED_OBSERVATIONS",
+    "TATA_SEQUENCE_001_999_DAILY_STORE_POLICY",
+    "LIVE_ATOMIC_TATA_SEQUENCE_STATE_READY_001_ZERO_BINDINGS",
+    "REAL_ORDER_BOXES_3X750_2X650_SEALED_1X240",
+    "REAL_ORDER_KITS_3_KIDS_1_QUENTE",
+    "REAL_ORDER_ONE_EXTERNAL_BAG_G",
+    "HOT_COLD_INTERNAL_SEGREGATION_NOT_EXTERNAL_BAG_COUNT",
+    "UNIFIED_NO_PRINT_REPLAY_WITH_DETERMINISTIC_PRODUCTION_FINGERPRINTS",
+    "NATIVE_ODHEN_FISCAL_PATH_PRESENT_AND_REAL_DLV_IFO_NFCE_AUTHORIZATIONS_OBSERVED",
+    "FISCAL_CUPOM_ACTION_DISTINCT_FROM_REPRINT_ACTION",
+    "NO_CUSTOM_SEFAZ_EMITTER_SELECTED"
+  ],
+  "current_runtime_boundaries": {
+    "reader_service_cutover": false,
+    "reader_service_currently_intended_state": "STOPPED_OUTSIDE_CONTROLLED_PROOFS",
+    "first_live_tata_sequence": "001",
+    "live_tata_bindings": 0,
+    "current_opening_service": "LUNCH_HUMAN_CONFIRMED_2026-10-05",
+    "clock_inference_for_service": false,
+    "physical_production_print": false,
+    "deliveryos_fiscal_action": false
+  },
+  "blockers": [
+    {
+      "code": "ACADEMIA_FULL_SUITE_REVALIDATION_PENDING",
+      "blocks": [
+        "GLOBAL_PACKAGING_PROMOTION"
+      ],
+      "does_not_block": [
+        "EXACT_REAL_ORDER_REPLAY"
+      ],
+      "reason": "Isolated regression proof passed; full suite staging on Foxxy was blocked by connector policy before execution."
+    },
+    {
+      "code": "CONTINUOUS_READER_SERVICE_NOT_CUTOVER",
+      "blocks": [
+        "UNATTENDED_LIVE_OPERATION"
+      ],
+      "reason": "Current live watchers are bounded proofs, not the final always-on service loop."
+    },
+    {
+      "code": "DURABLE_SERVICE_LUNCH_DINNER_RESOLUTION_NOT_IMPLEMENTED",
+      "blocks": [
+        "UNATTENDED_PRODUCTION_ROUTING"
+      ],
+      "reason": "Production planner correctly forbids clock inference; current LUNCH is human-confirmed but not yet a durable shift-state mechanism."
+    },
+    {
+      "code": "PRODUCTION_PRINTER_CALIBRATION_REQUIRED",
+      "blocks": [
+        "CONTROLLED_PHYSICAL_PRODUCTION_PRINT",
+        "GLOBAL_PRINT_CUTOVER"
+      ],
+      "reason": "Actual media width, transport/queue, text/accents, cutter/feed and physical output remain unproven for production printers."
+    },
+    {
+      "code": "ROUTING_DRIFT_REVALIDATION_REQUIRED_BEFORE_GLOBAL_CUTOVER",
+      "blocks": [
+        "GLOBAL_PRINT_CUTOVER"
+      ],
+      "reason": "Configured matrix is proven, and a live raw-code false-negative was corrected by canonicalization, but global cutover should re-run coverage/drift on current Teknisa config."
+    },
+    {
+      "code": "LEGACY_NFCE_PLANNER_AFTER_PRODUCTION_POLICY_SUPERSEDED",
+      "blocks": [
+        "ANY_DELIVERYOS_FISCAL_REQUEST"
+      ],
+      "reason": "Current source document forbids arbitrary PRODUCTION_DISPATCH fiscal triggering while legacy planner code still models it."
+    },
+    {
+      "code": "F7_KEY_BINDING_AND_HANDSFREE_NATIVE_TRIGGER_NOT_PROVEN",
+      "blocks": [
+        "FISCAL_AUTOMATION"
+      ],
+      "reason": "Cupom Fiscal generation and reprint routes are proven distinct, but exact F7 binding and hands-free behavior are not."
+    },
+    {
+      "code": "NFCE_RUNTIME_QRCODE_V3_AND_SP_PROTOCOL17_COMPATIBILITY_UNPROVEN",
+      "blocks": [
+        "FISCAL_AUTOMATION"
+      ],
+      "reason": "SP production adopted 17-position authorization protocol on 2026-10-05; installed runtime compatibility still needs proof."
+    },
+    {
+      "code": "PHYSICAL_PRINT_NOT_WORLD_PROVEN",
+      "blocks": [
+        "GLOBAL_PRINT_CUTOVER"
+      ],
+      "reason": "No controlled production ticket has been physically printed and inspected in this phase."
+    }
+  ],
+  "anti_stall_policy": [
+    "DeliveryOS must be sidecar/fail-open relative to native order intake and native fiscal operation.",
+    "Unknown routing/packaging blocks only the corresponding automated effect, never the native order.",
+    "Ambiguous print/fiscal effects receive reconciliation, not blind retry.",
+    "Stable identity + dedupe precedes every effect.",
+    "Native fiscal state is observed before any retry or reprint decision."
+  ],
+  "next_execution_order": [
+    "Re-run current packaging regression/full suite in an allowed environment.",
+    "Implement durable human-set service state LUNCH/DINNER with no clock inference.",
+    "Build always-on read-only watcher with restart checkpoint and persistent dedupe; keep printing disabled.",
+    "Re-run current Teknisa routing drift/coverage with canonicalization.",
+    "Perform read-only printer metadata calibration, then one controlled physical production print gate.",
+    "Retire/block legacy after-production NFC-e planner and implement observation-first native fiscal reconciler.",
+    "Prove current QR Code v3 + SP protocol 17 compatibility and supported native trigger contract.",
+    "Only after separate explicit fiscal effect gate, test native fiscal automation; never keyboard-F7 emulation."
+  ],
+  "evidence": {
+    "packaging_source_lock": "data/packaging_source_lock_v3.json",
+    "packaging_reference": "data/tata_reader_real_order_packaging_reference_20261005_v3.json",
+    "replay": "data/tata_reader_real_order_unified_replay_success_20261005_v2.json",
+    "fiscal_audit": "data/tata_nfce_readonly_audit_20261005_v1.json",
+    "general_audit": "docs/DeliveryOS_General_Audit_2026-10-05.md"
+  },
+  "effects": {
+    "print": false,
+    "spooler_write": false,
+    "database_write": false,
+    "odhen_write": false,
+    "fiscal_action": false,
+    "sefaz_call": false,
+    "cutover": false
+  }
+}
