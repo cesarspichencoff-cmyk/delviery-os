@@ -1,0 +1,54 @@
+{
+  "schema": "deliveryos.tata-reader-passive-log-candidate-orders-authorization.v1",
+  "authorization_id": "CESAR-2026-10-05-TATA-READER-PASSIVE-LOG-CANDIDATES-V1",
+  "authorized_on": "2026-10-05",
+  "authorized_by": "Cesar",
+  "human_authorized": true,
+  "human_statement": "Autorizo tudo que precisar",
+  "interpreted_scope": "Read at most 5 integrated-order operational identifiers from store 0001/01 between 20:00 and 22:00 on 2026-10-04 solely to validate the already-existing passive Odhen print log source.",
+  "source_head": "6c60ec713e1c039085a58cda8beac0898f79d8fb",
+  "script": {
+    "path": "tools/authorized/tata_reader_passive_log_candidate_orders_v1.ps1",
+    "sha256": "0CD5C925135651C19DEB5F98D26F40FA59E888882CD77F6EE39998428AC0BAC2"
+  },
+  "scope": {
+    "CDFILIAL": "0001",
+    "CDLOJA": "01",
+    "start": "2026-10-04T20:00:00",
+    "end_exclusive": "2026-10-04T22:00:00",
+    "max_orders": 5,
+    "fields": [
+      "CDFILIAL",
+      "CDLOJA",
+      "NRVENDAREST",
+      "NRCOMANDA",
+      "NRCOMANDAEXT",
+      "IDORGCMDVENDA",
+      "DTHRABERMESA"
+    ],
+    "customer_pii": false,
+    "items": false,
+    "observations": false
+  },
+  "allowed_effects": {
+    "order_metadata_read": true,
+    "temporary_service_start": true,
+    "temporary_preflight_script_swap": true
+  },
+  "prohibited_effects": {
+    "database_write": false,
+    "permission_change": false,
+    "odhen_write": false,
+    "network_call": false,
+    "print": false,
+    "spooler_write": false,
+    "fiscal_action": false,
+    "sefaz_call": false,
+    "cutover": false
+  },
+  "restoration_required": {
+    "service_stopped": true,
+    "installed_preflight_restored": true,
+    "evidence_restored": true
+  }
+}
