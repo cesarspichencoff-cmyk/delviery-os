@@ -1,0 +1,45 @@
+{
+  "schema": "deliveryos.dinner-printer-network-revalidation.2026-10-05.v1",
+  "captured_at": "2026-10-05T20:19:45.0874141-03:00",
+  "status": "DINNER_PRINTER_NETWORK_LAYER_PROVEN",
+  "source": "CAIXA_MOOCA",
+  "targets": [
+    {
+      "code": "00003",
+      "name": "DELIVERY SUSHI 1",
+      "ip": "192.168.0.153",
+      "port": 9100,
+      "ping": true,
+      "tcp": true
+    },
+    {
+      "code": "00004",
+      "name": "DELIVERY SUSHI 2",
+      "ip": "192.168.0.4",
+      "port": 9100,
+      "ping": true,
+      "tcp": true
+    },
+    {
+      "code": "PERIPHERALS",
+      "name": "SERVIDOR PERIFERICOS",
+      "ip": "192.168.0.24",
+      "port": 3000,
+      "ping": true,
+      "tcp": true
+    }
+  ],
+  "conclusion": {
+    "network_layer": "PROVEN",
+    "physical_print": "NOT_PROVEN",
+    "printer_media_calibration": "NOT_PROVEN_BY_THIS_TEST",
+    "dinner_operation_window": "OPEN_AT_TEST_TIME"
+  },
+  "effects": {
+    "print": false,
+    "bytes_sent_to_printer": false,
+    "db_write": false,
+    "fiscal": false,
+    "sequence_write": false
+  }
+}
