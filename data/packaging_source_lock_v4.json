@@ -1,0 +1,39 @@
+{
+  "schema": "deliveryos.packaging-source-lock.v4",
+  "source_repo": "cesarspichencoff-cmyk/tata-academia",
+  "source_branch": "evolucao/v33-product-pass",
+  "source_head": "338ea689a309e5e94edc59fcf1a8aa5e02243713",
+  "captured_date": "2026-10-05",
+  "files": [
+    {
+      "path": "lib/packaging-current.js",
+      "git_blob_sha": "6875c432ff0b2e7c0ac4f164dcf558f5183696ff"
+    },
+    {
+      "path": "content-source/human-current/operational_truth_2026-10-05_cesar.md",
+      "git_blob_sha": "2954255c87d6c6187894f61e0379535ae4af9197"
+    },
+    {
+      "path": "tests/embalagem.mjs",
+      "git_blob_sha": "b9e1f1d1e4ef02e7708036a524e41a705de52f2b"
+    },
+    {
+      "path": "tests/kits_logic_v2.mjs",
+      "git_blob_sha": "5f2087008731e26d2af34ebe5efdc7ae44581c77"
+    }
+  ],
+  "newly_proven_rules": [
+    "ALL_EXECUTIVE_COMBOS_BOX_750",
+    "EACH_EXECUTIVE_COMBO_ONE_KIT_P1",
+    "LIVE_IFOOD_8332_ONE_BAG_M"
+  ],
+  "verification": {
+    "packaging_assertions": "95/95 PASS",
+    "kits_logic_v2": "PASS"
+  },
+  "policy": {
+    "live_8332_bag_M_is_exact_case": true,
+    "do_not_generalize_bag_M_capacity": true
+  },
+  "status": "CURRENT_EXECUTIVE_COMBO_RULES_PINNED"
+}
