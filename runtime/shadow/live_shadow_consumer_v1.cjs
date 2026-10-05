@@ -8,6 +8,9 @@ require(path.join(here, "packaging-current.js"));
 const P = globalThis.TATAPackaging;
 if (!P) throw new Error("PACKAGING_ENGINE_MISSING");
 
+function sha256File(p) {
+  return crypto.createHash("sha256").update(fs.readFileSync(p)).digest("hex");
+}
 function readJson(p) {
   let buf = fs.readFileSync(p);
   let text;
@@ -57,6 +60,19 @@ const academy = readJson(path.join(here, "app-data.json"));
 const routing = readJson(path.join(here, "routing.json"));
 const printerMap = readJson(path.join(here, "printer-map.json"));
 const nonProduction = readJson(path.join(here, "non-production.json"));
+
+const ruleLineage = Object.freeze({
+  academy_rule_refs: Object.freeze([
+    "tata-academia:installed/packaging-current.js#sha256=" + sha256File(path.join(here, "packaging-current.js")),
+    "tata-academia:installed/app-data.json#sha256=" + sha256File(path.join(here, "app-data.json"))
+  ]),
+  delivery_rule_refs: Object.freeze([
+    "deliveryos:installed/routing.json#sha256=" + sha256File(path.join(here, "routing.json")),
+    "deliveryos:installed/printer-map.json#sha256=" + sha256File(path.join(here, "printer-map.json")),
+    "deliveryos:installed/non-production.json#sha256=" + sha256File(path.join(here, "non-production.json")),
+    "deliveryos:installed/product-identity-cache-v1.json#sha256=" + sha256File(path.join(here, "product-identity-cache-v1.json"))
+  ])
+});
 
 if (cache.schema !== "deliveryos.product-identity-cache.v1") throw new Error("IDENTITY_CACHE_SCHEMA_MISMATCH");
 if (routing.schema !== "deliveryos.odhen.product-routing.compact.v1") throw new Error("ROUTING_SCHEMA_MISMATCH");
@@ -232,6 +248,7 @@ const result = {
   blocking_reasons: [...new Set(blockers)].sort(),
   fingerprint,
   ...core,
+  rule_lineage: ruleLineage,
   effects: {
     database_read: false,
     database_write: false,
