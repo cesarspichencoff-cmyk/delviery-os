@@ -17,7 +17,7 @@ for(const required of [
   assert.ok(text.includes(required),"missing required marker: "+required);
 }
 const copyIndex=text.indexOf('Copy-Item -LiteralPath ([string]$stage.reporting)');
-const startIndex=text.indexOf("Start-Service -Name $ServiceName");
+const startIndex=text.indexOf("Start-Service -Name $ServiceName",copyIndex);
 assert.ok(copyIndex>=0,"reporting copy missing");
 assert.ok(startIndex>=0,"service start missing");
 assert.ok(copyIndex<startIndex,"reporting dependency must be installed before service start");
