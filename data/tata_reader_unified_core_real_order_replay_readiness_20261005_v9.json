@@ -1,0 +1,30 @@
+{
+  "schema": "deliveryos.tata-reader-unified-core-readiness.2026-10-05.v9",
+  "captured_on": "2026-10-05",
+  "status": "CONTINUOUS_READONLY_READER_RUNNING_PHYSICAL_AND_FISCAL_EFFECTS_STILL_BLOCKED",
+  "newly_proven": [
+    "CONTINUOUS_READER_HOSTSLOT_CUTOVER_SUCCESS",
+    "SERVICE_RUNNING_UNDER_NT_SERVICE_TATACOMANDAREADER",
+    "CHECKPOINT_ADVANCES_WHILE_SERVICE_RUNNING",
+    "SILENT_BASELINE_PRESERVED",
+    "NO_DATABASE_WRITE_PRINT_ODHEN_WRITE_OR_FISCAL_EFFECTS"
+  ],
+  "retained_boundaries": [
+    "PHYSICAL_PRINT_DEFERRED_TO_2026-10-06_BY_CESAR",
+    "FISCAL_AUTOMATION_DISABLED",
+    "SERVICE_START_MODE_MANUAL_REBOOT_PERSISTENCE_NOT_ENABLED",
+    "DINNER_PRINTER_00003_00004_REVALIDATION_PENDING",
+    "FULL_REPO_BUILD_PENDING"
+  ],
+  "blocked_route": "Direct powershell.exe service-binPath replacement is forbidden by failure circuit breaker.",
+  "active_route": "Existing TataComandaReader.PreflightService.exe host runs the continuous entrypoint through the proven script slot.",
+  "effects": {
+    "database_read": true,
+    "database_write": false,
+    "print": false,
+    "spooler_write": false,
+    "odhen_write": false,
+    "fiscal_action": false,
+    "sefaz_call": false
+  }
+}
