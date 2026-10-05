@@ -1,0 +1,23 @@
+{
+  "schema": "deliveryos.tata-reader-continuous-watch-authorization.v1",
+  "authorization_id": "CESAR-2026-10-05-CONTINUOUS-WATCH-READONLY-PROOF-V1",
+  "authorized_by": "Cesar",
+  "human_authorized": true,
+  "scope": {
+    "build_candidate": true,
+    "bounded_service_identity_proof": true,
+    "persistent_checkpoint_proof": true,
+    "database_read": true,
+    "database_write": false,
+    "local_state_write": true,
+    "network_call": false,
+    "odhen_write": false,
+    "print": false,
+    "spooler_write": false,
+    "fiscal_action": false,
+    "sefaz_call": false,
+    "cutover": false
+  },
+  "human_statement": "Ok então vamos seguir",
+  "boundary": "Authorization covers zero-effect read-only candidate/proof, not unattended cutover or physical/fiscal effects."
+}
