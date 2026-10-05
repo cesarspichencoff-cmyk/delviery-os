@@ -1,0 +1,62 @@
+{
+  "schema": "deliveryos.tata-reader-preflight-v8-verification.v1",
+  "verified_at": "2026-10-05",
+  "status": "PROVEN_EFFECTIVE_LEAST_PRIVILEGE_SURFACE",
+  "source_result": "data/tata_reader_preflight_v8_result_20261005_v1.json",
+  "source_result_head": "90834221a98fccc5d2b5872701eafc636747bcb0",
+  "caixa_device": {
+    "name": "CAIXA_MOOCA",
+    "id": "8c2544d4-38f1-451f-9bc4-f0912200fbe3"
+  },
+  "on_disk_evidence": {
+    "root": "C:\\TATA\\comanda-v1\\fontes\\delviery-os@de0a5b6-preflightv8\\capture\\after",
+    "preflight_exit_code": 0,
+    "stderr_empty": true,
+    "identity": {
+      "name": "NT SERVICE\\TataComandaReader",
+      "user_interactive": false
+    },
+    "current_login": "NT SERVICE\\TataComandaReader",
+    "original_login": "NT SERVICE\\TataComandaReader",
+    "current_user": "NT SERVICE\\TataComandaReader",
+    "database": "teknisa",
+    "database_matches": true,
+    "safe_for_minimized_order_read": true,
+    "blocker": null,
+    "executable_procedure_count": 0,
+    "specific_login_impersonation_count": 0,
+    "specific_user_impersonation_count": 0,
+    "non_table_object_permission_count": 0,
+    "extra_readable_surface_count": 0,
+    "produto_required_columns": [
+      "CDPRODUTO",
+      "CDARVPROD"
+    ],
+    "produto_extra_readable_columns": []
+  },
+  "current_service_observation": {
+    "state": "Stopped",
+    "start_mode": "Manual",
+    "start_name": "NT SERVICE\\TataComandaReader",
+    "path_name": "C:\\ProgramData\\TataComandaReader\\bin\\TataComandaReader.PreflightService.exe"
+  },
+  "restoration": {
+    "helper_reported_original_preflight_restored": true,
+    "helper_reported_restored_preflight_sha256": "3BBE4C37FEDC8EC45A25FE08497B999453B181EBA3033861CFF37F701B4A0035",
+    "direct_current_installed_preflight_hash": "UNKNOWN_ACCESS_DENIED",
+    "note": "Direct post-hoc hash read from the current remote session was denied by filesystem ACL. The elevated helper captured and verified restoration during the run; service is currently stopped."
+  },
+  "effects": {
+    "order_row_read": false,
+    "database_write": false,
+    "ddl": false,
+    "execute": false,
+    "http": false,
+    "print": false,
+    "spooler_write": false,
+    "fiscal_action": false,
+    "sefaz_call": false,
+    "cutover": false
+  },
+  "next_gate": "PROVE_MINIMIZED_REAL_ORDER_READ_WITH_CDARVPROD_UNDER_SERVICE_IDENTITY"
+}
