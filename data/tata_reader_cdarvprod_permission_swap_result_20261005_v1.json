@@ -1,0 +1,70 @@
+{
+  "schema": "deliveryos.tata-reader-cdarvprod-permission-swap-result.v1",
+  "executed_at": "2026-10-05T08:41:10.2999686-03:00",
+  "status": "PERMISSION_SWAP_COMMITTED_PROVEN",
+  "authorization_id": "CESAR-2026-10-04-TATA-READER-CDARVPROD-PERMISSION-SWAP-V1",
+  "executed_project_head": "f9f4018bb89c966b9609b4603fe9bbeb5c1108cf",
+  "executor_device": {
+    "name": "CAIXA_MOOCA",
+    "id": "8c2544d4-38f1-451f-9bc4-f0912200fbe3"
+  },
+  "static_validation": {
+    "migration_sha256": "D6E3FBBA229B1079493B3F8CDE180547A84E8B67907FC3D957E5AF8E39BB60BD",
+    "guard_sha256": "F74F26C2000EB3F52C938FEAFCBD9A2FFD471D696D6129A5CE7802808EA66F1E",
+    "migration_parse_errors": 0,
+    "guard_parse_errors": 0,
+    "guard_output": "TATA_READER_CDARVPROD_PERMISSION_MIGRATION_REVIEW_V2_STATIC_PASS",
+    "guard_exit_code": 0
+  },
+  "migration": {
+    "schema": "deliveryos.tata-reader-cdarvprod-permission-migration.review.v2",
+    "mode": "PERMISSION_SWAP_NMPRODUTO_TO_CDARVPROD_REVIEW_ONLY",
+    "status": "PERMISSION_SWAP_COMMITTED",
+    "exit_code": 0,
+    "current_login": "CAIXA_MOOCA\\Tata",
+    "database": "teknisa",
+    "before_explicit_grants": [
+      {
+        "column_name": "CDPRODUTO",
+        "state_desc": "GRANT"
+      },
+      {
+        "column_name": "NMPRODUTO",
+        "state_desc": "GRANT"
+      }
+    ],
+    "after_explicit_grants": [
+      {
+        "column_name": "CDPRODUTO",
+        "state_desc": "GRANT"
+      },
+      {
+        "column_name": "CDARVPROD",
+        "state_desc": "GRANT"
+      }
+    ],
+    "transaction_committed": true,
+    "rollback_completed": false,
+    "error": null
+  },
+  "effects": {
+    "permission_change": true,
+    "database_row_read": false,
+    "database_write": false,
+    "service_change": false,
+    "odhen_write": false,
+    "print": false,
+    "spooler_write": false,
+    "fiscal_action": false,
+    "sefaz_call": false,
+    "cutover": false
+  },
+  "proof_boundary": {
+    "permission_swap": "PROVEN",
+    "service_identity_effective_surface_after_swap": "NOT_YET_PROVEN_BY_V8_PREFLIGHT",
+    "continuous_reader": "NOT_AUTHORIZED_NOT_EXECUTED",
+    "physical_print": "NOT_AUTHORIZED_NOT_EXECUTED",
+    "fiscal": "NOT_AUTHORIZED_NOT_EXECUTED"
+  },
+  "next_gate": "PROVE_EFFECTIVE_LEAST_PRIVILEGE_SURFACE_UNDER_SERVICE_IDENTITY_WITH_PREFLIGHT_V8"
+}
