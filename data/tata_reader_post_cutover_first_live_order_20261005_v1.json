@@ -1,0 +1,77 @@
+{
+  "schema": "deliveryos.post-cutover-first-live-order.2026-10-05.v1",
+  "status": "PROVEN_STABLE_LIVE_EVENT_READY_FOR_SHADOW_DECISION",
+  "observed_at": "2026-10-05T14:50:35.4383122-03:00",
+  "order": {
+    "CDFILIAL": "0001",
+    "CDLOJA": "01",
+    "NRVENDAREST": "0000349363",
+    "NRCOMANDA": "0000348932",
+    "NRCOMANDAEXT": "8332",
+    "IDORGCMDVENDA": "DLV_IFO",
+    "DTHRABERMESA": "2026-10-05T14:39:57-03:00",
+    "items": [
+      {
+        "quantity": 2,
+        "CDPRODUTO": "9050508000",
+        "CDARVPROD_RAW": "9050508000",
+        "canonical": "9.05.05.080.00",
+        "name": "COMB EXEC SUSHI SALMAO",
+        "route": [
+          "00009"
+        ],
+        "printer": "BALCAOSUSHI1"
+      },
+      {
+        "quantity": 2,
+        "CDPRODUTO": "0000001191",
+        "CDARVPROD_RAW": "8000501000",
+        "canonical": "8.00.05.010.00",
+        "name": "COCA COLA ZERO 350ML - UN",
+        "route": [
+          "00007"
+        ],
+        "printer": "BAR"
+      },
+      {
+        "quantity": 2,
+        "CDPRODUTO": "0000001611",
+        "CDARVPROD_RAW": "9500005000",
+        "canonical": "9.50.00.050.00",
+        "name": "URAMAKI EBITEN",
+        "route": [
+          "00006"
+        ],
+        "printer": "BALCAOSUSHI2"
+      }
+    ]
+  },
+  "service_resolution": {
+    "service": "LUNCH",
+    "evidence": "HUMAN_CONFIRMED_RULE",
+    "blockers": []
+  },
+  "routing": {
+    "status": "PASS",
+    "production_relevant_uncovered": 0
+  },
+  "packaging": {
+    "status": "BLOCKED_BY_ONE_HUMAN_RULE",
+    "known": [
+      "Combinados are closed products; extras follow their own category.",
+      "Uramaki Ebiten is recognized as enrolado by the current packaging engine."
+    ],
+    "unknown": [
+      "Exact internal box for COMB EXEC SUSHI SALMAO"
+    ]
+  },
+  "effects": {
+    "database_read": true,
+    "database_write": false,
+    "print": false,
+    "spooler_write": false,
+    "odhen_write": false,
+    "fiscal_action": false,
+    "sefaz_call": false
+  }
+}
