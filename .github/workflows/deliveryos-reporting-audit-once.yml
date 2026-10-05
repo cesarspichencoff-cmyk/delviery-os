@@ -6,6 +6,10 @@ on:
       - fix/odhen-routing-config-proof-20260930
     paths:
       - .github/workflows/deliveryos-reporting-audit-once.yml
+      - src/production/serviceShiftState.ts
+      - tools/set_production_service_state_v1.ps1
+      - tools/tata_reader_continuous_watch_candidate_v1.ps1
+      - tools/verificar_production_service_matrix_v1.js
 
 permissions:
   contents: read
