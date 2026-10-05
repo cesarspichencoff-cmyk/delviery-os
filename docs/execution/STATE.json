@@ -6,7 +6,7 @@
     "authority_scope": "technical_state",
     "superseded_by": null,
     "atualizado_em": "2026-10-05",
-    "state_basis": "ba77962",
+    "state_basis": "20b4782",
     "observa": [
       "src/product/",
       "src/perfil-delivery/",
@@ -2313,5 +2313,29 @@
       "observational_external": 5,
       "action_external": 6
     }
+  },
+  "pilot_activation_preflight_20261005": {
+    "status": "NO_EFFECT_PREFLIGHT_PROVEN",
+    "command": "npm run preflight:pilot:activation",
+    "tests": "9/9 PASS",
+    "effect_attempted": false,
+    "snapshot": {
+      "adb_available": true,
+      "physical_devices": 0,
+      "emulator_devices": 0,
+      "docker_available": false,
+      "operational_db_url_present": false,
+      "product_reader_password_present": false,
+      "source_ingest_requested": false
+    },
+    "external_gates": {
+      "E1_PHYSICAL_ANDROID": "BLOCKED",
+      "E2_OPERATIONAL_DB_AND_DEPLOY": "BLOCKED",
+      "E3_SOURCE_INGEST_ACTIVATION": "SAFE_OFF",
+      "E4_CONSUMER_LIVE": "SAFE_OFF",
+      "E6_PRODUCT_READER_CREDENTIAL": "BLOCKED"
+    },
+    "figma_node": "28:2",
+    "boundary": "diagnóstico local/presença apenas; nenhum efeito externo executado ou autorizado"
   }
 }
