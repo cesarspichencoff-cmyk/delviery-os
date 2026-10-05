@@ -1,0 +1,55 @@
+{
+  "schema": "deliveryos.tata-reader-continuous-hostslot-cutover-success.2026-10-05.v1",
+  "status": "WORLD_PROVEN_READONLY_CONTINUOUS_READER_RUNNING",
+  "started_at": "2026-10-05T14:36:06.6988254-03:00",
+  "device": "CAIXA_MOOCA",
+  "service": {
+    "name": "TataComandaReader",
+    "state": "Running",
+    "start_name": "NT SERVICE\\TataComandaReader",
+    "path_name": "C:\\ProgramData\\TataComandaReader\\bin\\TataComandaReader.PreflightService.exe",
+    "start_mode": "Manual"
+  },
+  "candidate": {
+    "reader_sha256": "4507304C7A8AA7B19EC303A5692094CB738A561DFDE769ABD234D900447CAA9A",
+    "entrypoint_sha256": "762E1CD58D6BE3A53198300F95C3E8C36DFDD6AD6E2E3039A03BC3D69873A28E"
+  },
+  "rollback": {
+    "original_preflight_sha256": "3BBE4C37FEDC8EC45A25FE08497B999453B181EBA3033861CFF37F701B4A0035",
+    "backup_path": "C:\\ProgramData\\TataComandaReader\\state\\hostslot-cutover-v1\\original_preflight.ps1",
+    "dedicated_rollback_tool": "tools/tata_reader_continuous_hostslot_rollback_v1.ps1"
+  },
+  "initial_checkpoint": {
+    "bootstrap_complete": true,
+    "entries": 50,
+    "initial_sha256": "5EDC0DBACB55A993C99B60E74B890A0DD646E09F1A3D6C2736D92EC00F358DFA"
+  },
+  "live_health_observation": {
+    "before": "2026-10-05T14:36:52.9496564-03:00",
+    "after": "2026-10-05T14:37:01.0573532-03:00",
+    "checkpoint_advanced": true,
+    "before_sha256": "7D5C3008BBAD54561684110869E2FF19AF6FEEE16E11D72542ABDD076BB10C50",
+    "after_sha256": "BF716D4ADC54A3FC8C8BBC2B41E9856D3FDE7ACD9BB896DAF6349F79DD7F613B",
+    "stable_count_latest_orders_before": 15,
+    "stable_count_latest_orders_after": 18,
+    "new_events_during_observation": 0,
+    "latest_baseline_order_opened_at": "2026-10-05T14:21:57-03:00",
+    "interpretation": "Service is actively polling and rereading stable DLV orders. No post-cutover order arrived during the 8-second observation, so zero new event files is expected."
+  },
+  "effects": {
+    "database_read": true,
+    "database_write": false,
+    "print": false,
+    "spooler_write": false,
+    "odhen_write": false,
+    "fiscal_action": false,
+    "sefaz_call": false
+  },
+  "boundary": {
+    "physical_print_enabled": false,
+    "fiscal_automation_enabled": false,
+    "downstream_effects_enabled": false,
+    "reboot_persistence": false,
+    "note": "Service remains Manual while running; reboot persistence is a separate later gate."
+  }
+}
