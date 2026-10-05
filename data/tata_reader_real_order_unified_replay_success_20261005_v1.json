@@ -1,0 +1,145 @@
+{
+  "schema": "deliveryos.tata-reader-real-order-unified-replay-success.v1",
+  "captured_on": "2026-10-05",
+  "status": "PROVEN_REAL_ORDER_REPLAY_NO_PRINT",
+  "repositories": {
+    "deliveryos": {
+      "branch": "fix/odhen-routing-config-proof-20260930",
+      "head": "c4439c6313d2fe9c2c554f88d2ed16b9569030b8"
+    },
+    "tata_os": {
+      "branch": "feature/unified-tata-core-20261001",
+      "head": "aa9e9dd9bc7dc0a6569652aacd43965fc0763601"
+    },
+    "tata_academia": {
+      "branch": "evolucao/v33-product-pass",
+      "head": "2fd46b107082a34c36a9b12f1da4953b37259eab"
+    }
+  },
+  "execution_environment": {
+    "device": "Foxxy",
+    "device_id": "dede2b64-9bbd-45e4-9d93-6611a2f9aeb4",
+    "role": "CODE_VALIDATION_ONLY_NOT_CAIXA"
+  },
+  "order": {
+    "NRCOMANDA": "0000348850",
+    "NRCOMANDAEXT": "9627",
+    "NRVENDAREST": "0000349281",
+    "CDFILIAL": "0001",
+    "CDLOJA": "01"
+  },
+  "sequences": {
+    "ifood": "9627",
+    "teknisa": "0000348850",
+    "tata": "001",
+    "tata_policy": {
+      "width": 3,
+      "min_value": 1,
+      "max_value": 999,
+      "scope": "STORE+LOCAL_DATE",
+      "reprint_reuses_binding": true
+    },
+    "boundary": "001 is proven for isolated replay state; live CAIXA persisted state is not yet proven"
+  },
+  "replay_service": {
+    "value": "LUNCH",
+    "evidence": "HUMAN_CONFIRMED_RULE",
+    "boundary": "current 2026-10-05 opening shift replay scenario; not a claim about the original 2026-10-04 service"
+  },
+  "production": [
+    {
+      "printer_code": "00002",
+      "printer_name": "COZINHA",
+      "fingerprint": "100e753953edb129407ae3ff8863074fa098168361b250c20814752d66718651",
+      "lines": [
+        {
+          "product_code": "9.10.00.080.00",
+          "product_name": "EDAMAME",
+          "quantity": 1,
+          "box": "650 selada"
+        },
+        {
+          "product_code": "9.10.00.020.00",
+          "product_name": "NASU NO MISSO",
+          "quantity": 1,
+          "box": "650 selada"
+        }
+      ]
+    },
+    {
+      "printer_code": "00009",
+      "printer_name": "BALCAOSUSHI1",
+      "fingerprint": "4217f961e6fe8de94e703e0172603855d1ff851834f16013949c4adb49322602",
+      "lines": [
+        {
+          "product_code": "9.80.00.010.00",
+          "product_name": "COMBINADO KIDS",
+          "quantity": 3,
+          "box": "750"
+        },
+        {
+          "product_code": "9.30.00.090.00",
+          "product_name": "SUSHI DE UNAGUI",
+          "quantity": 1,
+          "box": "240"
+        }
+      ]
+    }
+  ],
+  "delivery_check": {
+    "boxes": [
+      {
+        "label": "750",
+        "quantity": 3
+      },
+      {
+        "label": "650 selada",
+        "quantity": 2
+      },
+      {
+        "label": "240",
+        "quantity": 1
+      }
+    ],
+    "kits": [
+      {
+        "label": "Kit Kids",
+        "quantity": 3
+      },
+      {
+        "label": "Kit Quente",
+        "quantity": 1
+      }
+    ],
+    "bags": [
+      {
+        "label": "Quente P",
+        "quantity": 1,
+        "status": "PROVEN"
+      },
+      {
+        "label": "Fria",
+        "quantity": 1,
+        "size": null,
+        "status": "UNKNOWN_GENERIC_750_BAG_SIZE"
+      }
+    ],
+    "minimum_bags": 2
+  },
+  "validations": [
+    "TATA Academia kits-logic-v2: ok",
+    "TATA Academia embalagem-current: 88/88 assertions",
+    "DeliveryOS TATA_REAL_ORDER_UNIFIED_REPLAY_PASS",
+    "TATA OS unified-core: ok",
+    "production fingerprints deterministic across repeated planner invocation"
+  ],
+  "effects": {
+    "print": false,
+    "spooler_write": false,
+    "database_write": false,
+    "odhen_write": false,
+    "fiscal_action": false,
+    "sefaz_call": false,
+    "cutover": false
+  }
+}
