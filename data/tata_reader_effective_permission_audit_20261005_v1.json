@@ -1,0 +1,48 @@
+{
+  "schema": "deliveryos.tata-reader-effective-permission-audit.2026-10-05.v1",
+  "captured_at_local": "2026-10-05T16:13:03.8766561-03:00",
+  "principal": "NT SERVICE\\TataComandaReader",
+  "fiscal_read_surface_present": false,
+  "venda_permissions": [],
+  "effective_columns": {
+    "COMANDAVEN": [
+      "CDFILIAL",
+      "NRVENDAREST",
+      "NRCOMANDA",
+      "IDSTCOMANDA",
+      "CDLOJA",
+      "IDORGCMDVENDA",
+      "NRCOMANDAEXT",
+      "DSOBSCOMANDA"
+    ],
+    "ITCOMANDAVEN": [
+      "CDFILIAL",
+      "NRVENDAREST",
+      "NRCOMANDA",
+      "NRPRODCOMVEN",
+      "CDPRODUTO",
+      "QTPRODCOMVEN",
+      "TXPRODCOMVEN",
+      "IDSTPRCOMVEN",
+      "DSOBSPEDDIGCMD",
+      "DSOBSDESCIT"
+    ],
+    "PRODUTO": [
+      "CDPRODUTO",
+      "CDARVPROD"
+    ],
+    "VENDAREST": [
+      "CDFILIAL",
+      "NRVENDAREST",
+      "DTHRABERMESA"
+    ],
+    "VENDA": []
+  },
+  "effects": {
+    "metadata_read": true,
+    "permission_change": false,
+    "database_write": false,
+    "print": false,
+    "fiscal_action": false
+  }
+}
