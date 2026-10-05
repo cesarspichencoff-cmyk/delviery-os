@@ -1,0 +1,28 @@
+{
+  "schema": "deliveryos.tata-reader-continuous-transactional-cutover-package.2026-10-05.v1",
+  "status": "CODE_READY_NOT_EXECUTED",
+  "files": [
+    "tools/tata_reader_continuous_transactional_cutover_v1.ps1",
+    "tools/tata_reader_continuous_transactional_rollback_v1.ps1",
+    "tools/verificar_continuous_transactional_cutover_static_v1.js"
+  ],
+  "properties": [
+    "Requires explicit authorization id.",
+    "Requires pinned SHA256 for reader and entrypoint before deployment.",
+    "Captures original service PathName, StartMode, StartName and original preflight SHA before changing anything.",
+    "Changes only candidate files, service binPath and service start mode; does not alter SQL permissions.",
+    "After start, requires service identity to remain NT SERVICE\\TataComandaReader and checkpoint to appear.",
+    "Any failed post-start invariant triggers narrow rollback to the captured original service configuration.",
+    "Narrow rollback does not delete SQL login/user or the whole runtime.",
+    "No print, spooler, Odhen write, fiscal or SEFAZ surface exists in the package."
+  ],
+  "executed": false,
+  "reason_not_executed": "Continuous production service cutover remains a distinct reversible production effect; package is prepared while physical printing is deferred.",
+  "effects": {
+    "service_change": false,
+    "database_write": false,
+    "print": false,
+    "fiscal_action": false,
+    "cutover": false
+  }
+}
