@@ -1,0 +1,85 @@
+{
+  "schema": "deliveryos.tata-reader-real-order-packaging-reference.v3",
+  "captured_on": "2026-10-05",
+  "status": "EXACT_REAL_ORDER_BOXES_KITS_AND_EXTERNAL_BAG_PROVEN",
+  "order": {
+    "NRCOMANDA": "0000348850",
+    "NRCOMANDAEXT": "9627",
+    "NRVENDAREST": "0000349281"
+  },
+  "source_lock": "data/packaging_source_lock_v3.json",
+  "boxes": [
+    {
+      "product": "COMBINADO KIDS",
+      "quantity": 3,
+      "box": "750",
+      "physical_boxes": 3,
+      "status": "PROVEN"
+    },
+    {
+      "product": "EDAMAME",
+      "quantity": 1,
+      "box": "650 selada",
+      "physical_boxes": 1,
+      "status": "PROVEN"
+    },
+    {
+      "product": "NASU NO MISSO",
+      "quantity": 1,
+      "box": "650 selada",
+      "physical_boxes": 1,
+      "status": "PROVEN"
+    },
+    {
+      "product": "SUSHI DE UNAGUI",
+      "quantity": 1,
+      "box": "240",
+      "physical_boxes": 1,
+      "status": "PROVEN"
+    }
+  ],
+  "total_items": 6,
+  "total_boxes": 6,
+  "kits": [
+    {
+      "label": "Kit Kids",
+      "quantity": 3,
+      "status": "FACT"
+    },
+    {
+      "label": "Kit Quente",
+      "quantity": 1,
+      "status": "FACT"
+    }
+  ],
+  "external_transport": {
+    "bags": [
+      {
+        "label": "Sacola G",
+        "quantity": 1,
+        "status": "FACT_HUMAN_CONFIRMED_MEASURED_FIT"
+      }
+    ],
+    "internal_separation": {
+      "hot_cold": true,
+      "status": "FACT",
+      "principle": "separado por dentro pode viajar junto por fora"
+    },
+    "exact_bag_count": 1,
+    "measurement_basis": true,
+    "generalization_boundary": "Other hot+cold compositions require physical fit/capacity evidence; temperature alone never creates a second external bag."
+  },
+  "isolated_regression_proof": {
+    "status": "PASS",
+    "engine_blob": "c43710075c5e0bc539b6691d0ac85458aa2c4bf0",
+    "generic_hot_cold_fail_closed": true
+  },
+  "effects": {
+    "database_write": false,
+    "print": false,
+    "spooler_write": false,
+    "odhen_write": false,
+    "fiscal_action": false,
+    "cutover": false
+  }
+}
