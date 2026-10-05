@@ -51,8 +51,8 @@ if(-not [bool]$auth.human_authorized){ throw "REAL_READ_HUMAN_AUTHORIZATION_FALS
 if($auth.authorization_id -ne $ExpectedAuthorizationId){ throw "REAL_READ_AUTHORIZATION_ID_FILE_MISMATCH" }
 
 if(-not (Test-Path -LiteralPath $ReadScriptSource -PathType Leaf)){ throw "REAL_READ_SCRIPT_SOURCE_MISSING" }
-if((Hash $ReadScriptSource) -ne [string]$auth.read_script_sha256){ throw "REAL_READ_SCRIPT_HASH_MISMATCH" }
-if((Hash $PSCommandPath) -ne [string]$auth.runner_sha256){ throw "REAL_READ_RUNNER_HASH_MISMATCH" }
+if((Hash $ReadScriptSource) -ne [string]$auth.read_script.sha256){ throw "REAL_READ_SCRIPT_HASH_MISMATCH" }
+if((Hash $PSCommandPath) -ne [string]$auth.runner.sha256){ throw "REAL_READ_RUNNER_HASH_MISMATCH" }
 
 & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $BundleVerifier
 if($LASTEXITCODE -ne 0){ throw ("REAL_READ_STATIC_VERIFIER_FAILED:"+$LASTEXITCODE) }
@@ -99,7 +99,7 @@ $failure=$null
 
 try {
   Copy-Item -LiteralPath $ReadScriptSource -Destination $InstalledScript -Force | Out-Null
-  if((Hash $InstalledScript) -ne [string]$auth.read_script_sha256){ throw "INSTALLED_REAL_READ_SCRIPT_HASH_MISMATCH" }
+  if((Hash $InstalledScript) -ne [string]$auth.read_script.sha256){ throw "INSTALLED_REAL_READ_SCRIPT_HASH_MISMATCH" }
 
   Start-Service -Name $ExpectedServiceName
 
