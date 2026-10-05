@@ -136,7 +136,7 @@ function Build-Plan($State,[string]$Scope,[string]$OrderId) {
   })
 
   if ($existing.Count -gt 1) {
-    $unique = @($existing | ForEach-Object { Clean ([string]$_.tata_sequence } | Select-Object -Unique)
+    $unique = @($existing | ForEach-Object { Clean ([string]$_.tata_sequence) } | Select-Object -Unique)
     if ($unique.Count -gt 1) {
       $blocking.Add("ORDER_BOUND_TO_MULTIPLE_TATA_SEQUENCES:" + $OrderId)
     }
