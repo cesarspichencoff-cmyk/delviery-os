@@ -1,0 +1,52 @@
+{
+  "schema": "deliveryos.service-recovery-fault-injection-proof.2026-10-05.v1",
+  "status": "PROVEN_DELAYED_AUTO_AND_SCM_RECOVERY_NO_DUPLICATE",
+  "original": {
+    "Start": 3,
+    "DelayedAutoStart": null,
+    "FailureActionsPresent": false,
+    "FailureActionsOnNonCrashFailures": null
+  },
+  "configured": {
+    "Start": 2,
+    "DelayedAutoStart": 1,
+    "FailureActionsPresent": true,
+    "FailureActionsOnNonCrashFailures": 1
+  },
+  "recovery_policy": {
+    "reset_seconds": 86400,
+    "actions": [
+      "restart_after_5000ms",
+      "restart_after_15000ms",
+      "none"
+    ]
+  },
+  "fault": {
+    "target": "shadow_consumer_child",
+    "old_pid": 32312,
+    "injected": true
+  },
+  "recovered": {
+    "watcher_pid": 1392,
+    "shadow_pid": 24812,
+    "event_count_unchanged": true,
+    "decision_count_unchanged": true,
+    "checkpoint_advanced": true
+  },
+  "boundary": {
+    "automatic_delayed_start_configured": true,
+    "actual_machine_reboot_tested": false
+  },
+  "effects": {
+    "service_config_change": true,
+    "controlled_child_termination": true,
+    "database_read": true,
+    "database_write": false,
+    "sequence_binding_write": false,
+    "print": false,
+    "spooler_write": false,
+    "odhen_write": false,
+    "fiscal_action": false,
+    "sefaz_call": false
+  }
+}
