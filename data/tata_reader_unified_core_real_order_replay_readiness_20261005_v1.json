@@ -1,7 +1,7 @@
 {
   "schema": "deliveryos.tata-reader-unified-core-real-order-replay-readiness.v1",
   "captured_date": "2026-10-05",
-  "status": "BLOCKED_BEFORE_UNIFIED_DECISION_NO_FAKE_INPUTS",
+  "status": "BLOCKED_BEFORE_UNIFIED_DECISION_REDUCED_TO_HUMAN_OPERATIONAL_UNKNOWNS",
   "unified_core": {
     "repository": "cesarspichencoff-cmyk/tata-os",
     "branch": "feature/unified-tata-core-20261001",
@@ -120,6 +120,75 @@
     "print": false,
     "stockWrite": false,
     "cmvWrite": false,
+    "cutover": false
+  },
+  "last_updated": "2026-10-05",
+  "resolved_since_initial_gate": [
+    "IFOOD_SEQUENCE_CANONICAL_MAPPING_PROVEN: NRCOMANDAEXT=9627 for observed DLV_IFO order",
+    "CURRENT_PRODUCT_NAMES_PROVEN_FOR_ALL_FOUR_OBSERVED_PRODUCTS",
+    "PRODUCTION_OBSERVATION_SURFACE_PROVEN_FOR_EXACT_ORDER: item observations none; sensitive DSOBSCOMANDA excluded",
+    "PRODUCT_IDENTITY_AND_ROUTING_PROVEN",
+    "REPLAY_DEDUPLICATION_PROVEN"
+  ],
+  "blocking_reasons": [
+    "TATA_SEQUENCE_NUMERIC_POLICY_AND_PERSISTED_STATE_UNPROVEN",
+    "PRODUCTION_SERVICE_UNRESOLVED_NO_CLOCK_INFERENCE",
+    "PACKAGING_BOX_UNKNOWN_COMBINADO_KIDS",
+    "PACKAGING_BOX_UNKNOWN_NASU_NO_MISSO",
+    "KIT_ASSIGNMENT_FULL_MIXED_ORDER_UNKNOWN",
+    "DELIVERY_CHECK_BLOCKED_BY_INCOMPLETE_PACKAGING_AND_KIT",
+    "PRODUCTION_MOUNT_GROUPS_BLOCKED_BY_INCOMPLETE_BOX_ASSIGNMENT"
+  ],
+  "new_evidence": {
+    "ifood_sequence": "data/tata_reader_ifood_sequence_mapping_proof_20261005_v1.json",
+    "current_product_names": "data/tata_reader_current_product_name_proof_20261005_v1.json",
+    "observations": "data/tata_reader_real_order_observation_sanitized_20261005_v1.json",
+    "packaging_reference": "data/tata_reader_real_order_packaging_reference_20261005_v1.json",
+    "shadow_route": "data/tata_reader_shadow_route_success_20261005_v1.json",
+    "dedupe": "data/tata_reader_shadow_dedupe_success_20261005_v1.json"
+  },
+  "real_order_replay_inputs": {
+    "order_id": "0000348850",
+    "ifood_sequence": "9627",
+    "teknisa_sequence": "0000348850",
+    "tata_sequence": null,
+    "service": null,
+    "products": [
+      {
+        "product_code": "9800001000",
+        "product_name": "COMBINADO KIDS",
+        "quantity": 3,
+        "observations": []
+      },
+      {
+        "product_code": "9100008000",
+        "product_name": "EDAMAME",
+        "quantity": 1,
+        "observations": []
+      },
+      {
+        "product_code": "9100002000",
+        "product_name": "NASU NO MISSO",
+        "quantity": 1,
+        "observations": []
+      },
+      {
+        "product_code": "9300009000",
+        "product_name": "SUSHI DE UNAGUI",
+        "quantity": 1,
+        "observations": []
+      }
+    ],
+    "order_observations": [],
+    "decision_ready": false
+  },
+  "effect_boundary": {
+    "unified_decision_built": false,
+    "print": false,
+    "database_write": false,
+    "odhen_write": false,
+    "stock_write": false,
+    "fiscal_action": false,
     "cutover": false
   }
 }
