@@ -1,0 +1,81 @@
+{
+  "schema": "deliveryos.tata-reader-preflight-v8-result.v1",
+  "executed_at": "2026-10-05T08:45:00-03:00",
+  "status": "PROVEN_EFFECTIVE_LEAST_PRIVILEGE_SURFACE",
+  "executed_project_head": "de0a5b6ac2c77df75fb336fd7575af4bca1ab471",
+  "executor_device": {
+    "name": "CAIXA_MOOCA",
+    "id": "8c2544d4-38f1-451f-9bc4-f0912200fbe3"
+  },
+  "service": {
+    "name": "TataComandaReader",
+    "start_mode": "Manual",
+    "start_name": "NT SERVICE\\TataComandaReader",
+    "state_before": "Stopped",
+    "state_after": "Stopped",
+    "installed_binary_sha256": "241073DA0AE678933E2EF88AF2DA2091F1DF4A578E1D78AD2B48839D4465BA6C"
+  },
+  "preflight": {
+    "candidate_sha256": "6710321BA8BD986C16FF1B2C38284F6EB02EC83CFFF9C6225F3D7FB41ABE0E3E",
+    "schema": "deliveryos.tata-reader-least-privilege-preflight.v6",
+    "mode": "WINDOWS_INTEGRATED_AUTH_EXACT_COLUMN_SURFACE_METADATA_ONLY",
+    "exit_code": 0,
+    "stderr_empty": true,
+    "current_login": "NT SERVICE\\TataComandaReader",
+    "original_login": "NT SERVICE\\TataComandaReader",
+    "current_user": "NT SERVICE\\TataComandaReader",
+    "database": "teknisa",
+    "database_matches": true,
+    "safe_for_minimized_order_read": true,
+    "blocker": null,
+    "executable_procedure_count": 0,
+    "specific_login_impersonation_count": 0,
+    "specific_user_impersonation_count": 0,
+    "non_table_object_permission_count": 0,
+    "extra_readable_surface_count": 0,
+    "sensitive_extra_readable_columns_count": 0,
+    "objects": {
+      "COMANDAVEN": {
+        "safe": true
+      },
+      "ITCOMANDAVEN": {
+        "safe": true
+      },
+      "PRODUTO": {
+        "safe": true,
+        "required_columns": [
+          "CDPRODUTO",
+          "CDARVPROD"
+        ],
+        "extra_readable_columns": []
+      },
+      "VENDAREST": {
+        "safe": true
+      }
+    }
+  },
+  "helper": {
+    "status": "PREFLIGHT_V8_RUN_CAPTURED",
+    "elevated": true,
+    "candidate_installed_temporarily": true,
+    "service_started_once": true,
+    "service_stopped_after_run": true,
+    "evidence_copied": true,
+    "original_preflight_sha256": "3BBE4C37FEDC8EC45A25FE08497B999453B181EBA3033861CFF37F701B4A0035",
+    "original_preflight_restored": true,
+    "restored_preflight_sha256": "3BBE4C37FEDC8EC45A25FE08497B999453B181EBA3033861CFF37F701B4A0035"
+  },
+  "effects": {
+    "order_row_read": false,
+    "database_write": false,
+    "ddl": false,
+    "execute": false,
+    "http": false,
+    "print": false,
+    "spooler_write": false,
+    "fiscal_action": false,
+    "sefaz_call": false,
+    "cutover": false
+  },
+  "next_gate": "PROVE_MINIMIZED_REAL_ORDER_READ_WITH_CDARVPROD_UNDER_SERVICE_IDENTITY"
+}
