@@ -1,0 +1,175 @@
+{
+  "schema": "deliveryos.tata-reader-shadow-route-success.v1",
+  "captured_at": "2026-10-05T08:57:33.0828366-03:00",
+  "cycle_id": "20261005T115732477Z",
+  "status": "PROVEN_REAL_ORDER_SHADOW_ROUTE",
+  "authorization_id": "CESAR-2026-10-05-TATA-READER-SHADOW-ROUTE-V1",
+  "source_bundle_head": "f4ad53bd0f5bba48b59d8ff3d367d4c2b4ce30d3",
+  "service_identity": "NT SERVICE\\TataComandaReader",
+  "sql_identity": {
+    "current_login": "NT SERVICE\\TataComandaReader",
+    "current_user": "NT SERVICE\\TataComandaReader",
+    "database": "teknisa"
+  },
+  "config": {
+    "routing_sha256": "7084771026CA54F10069F02E0BABCAA00F9C7666484CBAF80EC1ECDCDCAA165D",
+    "printer_map_sha256": "F37DAE40779C5A205A26CEB289CD748D1C7747C1947C278F534A2DCC2F296F4C",
+    "store": "0001 - TATA ITAIM"
+  },
+  "order": {
+    "CDFILIAL": "0001",
+    "CDLOJA": "01",
+    "NRVENDAREST": "0000349281",
+    "NRCOMANDA": "0000348850",
+    "NRCOMANDAEXT": "9627",
+    "IDORGCMDVENDA": "DLV_IFO",
+    "IDSTCOMANDA": "X",
+    "DTHRABERMESA": "2026-10-04T22:58:50.0000000"
+  },
+  "items": [
+    {
+      "NRPRODCOMVEN": "000001",
+      "CDPRODUTO": "0000001705",
+      "CDARVPROD": "9800001000",
+      "retail_product_code": "9.80.00.010.00",
+      "QTPRODCOMVEN": "3.000",
+      "IDSTPRCOMVEN": "4",
+      "route_status": "ROUTED",
+      "blockers": [],
+      "targets": [
+        {
+          "printer_code": "00009",
+          "printer_name": "BALCAOSUSHI1",
+          "printer_ip": "192.168.0.142",
+          "printer_port": "LPT4",
+          "peripherals_server": "192.168.0.24:3000"
+        },
+        {
+          "printer_code": "00003",
+          "printer_name": "DELIVERY SUSHI 1",
+          "printer_ip": "192.168.0.153",
+          "printer_port": null,
+          "peripherals_server": "192.168.0.24:3000"
+        }
+      ]
+    },
+    {
+      "NRPRODCOMVEN": "000002",
+      "CDPRODUTO": "0000001430",
+      "CDARVPROD": "9100008000",
+      "retail_product_code": "9.10.00.080.00",
+      "QTPRODCOMVEN": "1.000",
+      "IDSTPRCOMVEN": "4",
+      "route_status": "ROUTED",
+      "blockers": [],
+      "targets": [
+        {
+          "printer_code": "00002",
+          "printer_name": "COZINHA",
+          "printer_ip": "192.168.0.116",
+          "printer_port": "LPT3",
+          "peripherals_server": "192.168.0.24:3000"
+        }
+      ]
+    },
+    {
+      "NRPRODCOMVEN": "000003",
+      "CDPRODUTO": "0000001418",
+      "CDARVPROD": "9100002000",
+      "retail_product_code": "9.10.00.020.00",
+      "QTPRODCOMVEN": "1.000",
+      "IDSTPRCOMVEN": "4",
+      "route_status": "ROUTED",
+      "blockers": [],
+      "targets": [
+        {
+          "printer_code": "00002",
+          "printer_name": "COZINHA",
+          "printer_ip": "192.168.0.116",
+          "printer_port": "LPT3",
+          "peripherals_server": "192.168.0.24:3000"
+        }
+      ]
+    },
+    {
+      "NRPRODCOMVEN": "000004",
+      "CDPRODUTO": "0000001535",
+      "CDARVPROD": "9300009000",
+      "retail_product_code": "9.30.00.090.00",
+      "QTPRODCOMVEN": "1.000",
+      "IDSTPRCOMVEN": "4",
+      "route_status": "ROUTED",
+      "blockers": [],
+      "targets": [
+        {
+          "printer_code": "00009",
+          "printer_name": "BALCAOSUSHI1",
+          "printer_ip": "192.168.0.142",
+          "printer_port": "LPT4",
+          "peripherals_server": "192.168.0.24:3000"
+        },
+        {
+          "printer_code": "00003",
+          "printer_name": "DELIVERY SUSHI 1",
+          "printer_ip": "192.168.0.153",
+          "printer_port": null,
+          "peripherals_server": "192.168.0.24:3000"
+        }
+      ]
+    }
+  ],
+  "order_targets": [
+    {
+      "printer_code": "00009",
+      "printer_name": "BALCAOSUSHI1",
+      "printer_ip": "192.168.0.142",
+      "printer_port": "LPT4",
+      "peripherals_server": "192.168.0.24:3000"
+    },
+    {
+      "printer_code": "00002",
+      "printer_name": "COZINHA",
+      "printer_ip": "192.168.0.116",
+      "printer_port": "LPT3",
+      "peripherals_server": "192.168.0.24:3000"
+    },
+    {
+      "printer_code": "00003",
+      "printer_name": "DELIVERY SUSHI 1",
+      "printer_ip": "192.168.0.153",
+      "printer_port": null,
+      "peripherals_server": "192.168.0.24:3000"
+    }
+  ],
+  "blockers": [],
+  "ready": true,
+  "rows_read": 5,
+  "privacy": {
+    "customer_pii_fields_read": false,
+    "observations_read": false,
+    "product_name_read": false
+  },
+  "restoration": {
+    "runtime_restored": true,
+    "preflight_script_restored": true,
+    "evidence_restored": true,
+    "config_restored": true,
+    "service_stopped": true,
+    "installed_preflight_sha256": "3BBE4C37FEDC8EC45A25FE08497B999453B181EBA3033861CFF37F701B4A0035"
+  },
+  "effects": {
+    "order_row_read": true,
+    "local_config_read": true,
+    "database_write": false,
+    "permission_change": false,
+    "odhen_write": false,
+    "print": false,
+    "spooler_write": false,
+    "fiscal_action": false,
+    "sefaz_call": false,
+    "danfe_print": false,
+    "cutover": false
+  },
+  "evidence_directory": "C:\\TATA\\comanda-v1\\saida\\fase6-shadow-route\\cycle-20261005T115732477Z",
+  "next_gate": "PROVE_REPLAY_DEDUPLICATION_WITHOUT_PRINT"
+}
