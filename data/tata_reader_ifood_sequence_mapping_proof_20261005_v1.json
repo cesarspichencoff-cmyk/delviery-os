@@ -1,0 +1,40 @@
+{
+  "schema": "deliveryos.tata-reader-ifood-sequence-mapping-proof.v1",
+  "captured_on": "2026-10-05",
+  "status": "PROVEN_NRCOMANDAEXT_IS_IFOOD_SHORT_SEQUENCE_FOR_DLV_IFO",
+  "observed_order": {
+    "NRCOMANDA": "0000348850",
+    "NRCOMANDAEXT": "9627",
+    "NRVENDAREST": "0000349281",
+    "IDORGCMDVENDA": "DLV_IFO"
+  },
+  "evidence_chain": [
+    {
+      "source": "docs/Auditoria_Fonte_Viva_Loja_V1.md",
+      "fact": "The real printed delivery report IFOOD field is the short iFood code used operationally."
+    },
+    {
+      "source": "docs/Print_Topology_Production_Ticket_Source_Map_V132.md",
+      "fact": "Source audit proves the delivery report carries conditional NRCOMANDAEXT in that identifier surface."
+    },
+    {
+      "source": "data/tata_reader_real_read_cdarvprod_success_20261005_v1.json",
+      "fact": "The observed real DLV_IFO order has NRCOMANDAEXT=9627."
+    }
+  ],
+  "conclusion": {
+    "canonical_ifood_sequence_for_observed_order": "9627",
+    "transformation": "NONE",
+    "confidence": "PROVEN_FOR_OBSERVED_DLV_IFO_ORDER_AND_SOURCE_CONTRACT"
+  },
+  "proof_boundary": {
+    "all_possible_non_ifood_origins": "NOT_CLAIMED",
+    "future_schema_drift": "MUST_FAIL_CLOSED_IF_SOURCE_CONTRACT_CHANGES"
+  },
+  "effects": {
+    "database_read": false,
+    "database_write": false,
+    "print": false,
+    "cutover": false
+  }
+}
