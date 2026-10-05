@@ -1,0 +1,47 @@
+{
+  "schema": "deliveryos.closed-delivery-proof.2026-10-05.v1",
+  "captured_at_local": "2026-10-05T15:57:24.6750868-03:00",
+  "fail_closed": {
+    "status": "PROVEN_FAIL_CLOSED_NO_EFFECT",
+    "synthetic_product_code": "9999999999",
+    "exit_code": 5,
+    "ready": false,
+    "blockers": [
+      "IDENTITY_NOT_FOUND_9999999999",
+      "KITS_NOT_FACT",
+      "PACKAGING_NOT_RUN"
+    ],
+    "effects_all_false": true,
+    "fingerprint": "807beaa61a1fdf6055441db9fb6d8a9caca6b0ac4ccc9f6e552333981c0414fe"
+  },
+  "fiscal_8332": {
+    "status": "NATIVE_NFCE_AUTHORIZED_OBSERVED",
+    "order": {
+      "NRVENDAREST": "0000349363",
+      "NRCOMANDA": "0000348932",
+      "NRCOMANDAEXT": "8332",
+      "IDORGCMDVENDA": "DLV_IFO",
+      "opened_at": "2026-10-05T14:39:57-03:00"
+    },
+    "sale": {
+      "NRSEQVENDA": "0000157024",
+      "NRNOTAFISCALCE": "000156369",
+      "IDSITUVENDA": "O",
+      "DTEMISSAONFCE": "2026-10-05T14:43:39-03:00",
+      "IDSTATUSNFCE": "A",
+      "CDCAIXA": "001",
+      "qr_present": true
+    },
+    "interpretation": "Native Teknisa/Retail fiscal authorization was observed after the live iFood order. DeliveryOS performed no fiscal action."
+  },
+  "effects": {
+    "database_read": true,
+    "database_write": false,
+    "sequence_binding_write": false,
+    "print": false,
+    "spooler_write": false,
+    "odhen_write": false,
+    "fiscal_action": false,
+    "sefaz_call": false
+  }
+}
