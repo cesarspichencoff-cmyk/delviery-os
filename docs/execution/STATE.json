@@ -6,7 +6,7 @@
     "authority_scope": "technical_state",
     "superseded_by": null,
     "atualizado_em": "2026-10-05",
-    "state_basis": "735d4ab",
+    "state_basis": "ba77962",
     "observa": [
       "src/product/",
       "src/perfil-delivery/",

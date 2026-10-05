@@ -29,6 +29,8 @@
     "ui:entregas:pilot": "npx tsc && node dist/tools/entregas_pilot_server.js",
     "test:entregas:pilot-gate": "npx tsc && node dist/src/entregas/pilot/run-pilot-gate-tests.js",
     "test:platform:pilot-readiness": "npx tsx src/platform/run-pilot-readiness-tests.ts",
+    "test:platform:pilot-activation-preflight": "npx tsx src/platform/run-pilot-activation-preflight-tests.ts",
+    "preflight:pilot:activation": "npx tsx tools/pilot_activation_preflight.ts",
     "test:entregas:field": "npx tsc && node dist/src/entregas/gps/run-field-tests.js",
     "test:entregas:native": "npx tsc && node dist/src/entregas/gps/run-native-consent-tests.js",
     "test:entregas:android": "npx tsc && node dist/src/entregas/android/run-android-project-tests.js",
