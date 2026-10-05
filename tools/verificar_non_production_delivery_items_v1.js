@@ -21,19 +21,21 @@ assert.equal(registry.schema, "deliveryos.non-production-items.v1");
 assert.equal(registry.semantics, "NO_OWN_PRODUCTION_TICKET");
 assert.equal(registry.store, routing.store);
 
-const expected = [
-  "8.20.11.001.00",
-  "9.75.00.030.00",
-  "9.75.00.031.00",
-  "9.75.00.032.00",
-];
+const expectedProofByCode = {
+  "8.20.11.001.00": "HUMAN_CONFIRMED",
+  "9.75.00.030.00": "HUMAN_CONFIRMED",
+  "9.75.00.031.00": "HUMAN_CONFIRMED",
+  "9.75.00.032.00": "HUMAN_CONFIRMED",
+  "9.98.00.001.00": "REAL_OBSERVED_2026-10-05",
+};
+const expected = Object.keys(expectedProofByCode).sort();
 
 assert.deepEqual(Object.keys(registry.items).sort(), expected);
 
 for (const code of expected) {
   const item = registry.items[code];
   assert.ok(item, code);
-  assert.equal(item.proof, "HUMAN_CONFIRMED");
+  assert.equal(item.proof, expectedProofByCode[code]);
   assert.ok(item.product_name);
   assert.ok(item.reason);
   assert.equal(
