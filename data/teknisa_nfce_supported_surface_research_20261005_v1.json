@@ -1,0 +1,43 @@
+{
+  "schema": "deliveryos.teknisa-supported-nfce-surface-research.2026-10-05.v1",
+  "captured_on": "2026-10-05",
+  "status": "SUPPORTED_AUTOMATIC_NFCE_SURFACE_EXISTS_IFOOD_APPLICABILITY_UNPROVEN",
+  "official_findings": [
+    {
+      "source": "Teknisa Ajuda — NFC-e Automático",
+      "url": "https://ajuda.teknisa.com/eattake/eattake-pedidos/nfc-e-automatico",
+      "facts": [
+        "Teknisa documents automatic NFC-e through the Interface API.",
+        "A dedicated cash register configured for NFC-e is required.",
+        "The Interface API must be operational.",
+        "The cash register must be open and active.",
+        "Automatic issuance applies only to eligible paid-order/payment flows described by the product."
+      ]
+    },
+    {
+      "source": "Teknisa Ajuda — Integração Order API",
+      "url": "https://ajuda.teknisa.com/eattake/integracao-pdv-teknisa/integracao-order-api",
+      "facts": [
+        "Partner order integration is intended to operate autonomously through Odhen Retail.",
+        "Teknisa warns against partner tools that interfere with the configured integration.",
+        "Delivery cash-register configuration is part of the supported integration model."
+      ]
+    }
+  ],
+  "conclusions": {
+    "official_programmatic_native_surface_exists": true,
+    "direct_deliveryos_use_for_current_ifood_flow": "UNPROVEN",
+    "undocumented_internal_odhen_endpoint_use": "REJECTED",
+    "recommended_path": "Confirm supported Interface/API contract and applicability to the current iFood/Odhen flow before any fiscal effect.",
+    "current_observation_first_reconciler_remains_correct": true
+  },
+  "effects": {
+    "web_research": true,
+    "database_write": false,
+    "odhen_write": false,
+    "print": false,
+    "fiscal_action": false,
+    "sefaz_call": false,
+    "cutover": false
+  }
+}
