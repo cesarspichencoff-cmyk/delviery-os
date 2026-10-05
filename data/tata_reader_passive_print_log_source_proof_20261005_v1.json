@@ -1,0 +1,93 @@
+{
+  "schema": "deliveryos.tata-reader-passive-print-log-source-proof.v1",
+  "captured_date": "2026-10-05",
+  "status": "PASSIVE_SOURCE_EXISTS_IDENTITY_BRIDGE_UNPROVEN",
+  "source_root": "C:\\TEKNISA\\odhen-perifericos\\Log",
+  "source_exists": true,
+  "current_month_directory": "102026",
+  "observed_day": "2026-10-04",
+  "observed_files": [
+    {
+      "file": "2026_10_04_IMP.txt",
+      "size_bytes": 1055322,
+      "last_write_local": "2026-10-04T22:31:42.3582674-03:00"
+    },
+    {
+      "file": "2026_10_04_IMP_16_192.168.0.110.txt",
+      "size_bytes": 203980,
+      "last_write_local": "2026-10-04T22:31:08.6702072-03:00"
+    },
+    {
+      "file": "2026_10_04_IMP_16_192.168.0.116.txt",
+      "size_bytes": 206335,
+      "last_write_local": "2026-10-04T22:31:42.3582674-03:00"
+    },
+    {
+      "file": "2026_10_04_IMP_16_192.168.0.142.txt",
+      "size_bytes": 190681,
+      "last_write_local": "2026-10-04T22:27:21.6717832-03:00"
+    },
+    {
+      "file": "2026_10_04_IMP_16_192.168.0.153.txt",
+      "size_bytes": 156082,
+      "last_write_local": "2026-10-04T22:27:21.9890389-03:00"
+    },
+    {
+      "file": "2026_10_04_IMP_16_192.168.0.232.txt",
+      "size_bytes": 195502,
+      "last_write_local": "2026-10-04T22:14:49.3966487-03:00"
+    },
+    {
+      "file": "2026_10_04_IMP_16_192.168.0.4.txt",
+      "size_bytes": 102742,
+      "last_write_local": "2026-10-04T22:05:34.5348960-03:00"
+    }
+  ],
+  "known_shadow_order": {
+    "NRCOMANDA": "0000348850",
+    "NRCOMANDAEXT": "9627",
+    "NRVENDAREST": "0000349281",
+    "opened_at": "2026-10-04T22:58:50.0000000",
+    "temporal_coverage": false,
+    "reason": "All observed IMP files stopped appending before this order opened."
+  },
+  "bounded_candidate_probe": {
+    "candidate_orders": 5,
+    "candidate_window": "2026-10-04T20:00:00/22:00:00",
+    "literal_identifier_matches": 0,
+    "label_window_identifier_matches": 0,
+    "digit_only_normalization": "REJECTED_AS_UNRELIABLE_FALSE_POSITIVE_PRONE"
+  },
+  "source_structure": {
+    "token_counts_prove_textual_blocks": true,
+    "labels_observed": [
+      "Pedido",
+      "Mesa"
+    ],
+    "raw_lines_persisted": false,
+    "raw_ticket_text_exported": false
+  },
+  "proof": {
+    "passive_log_directory_physical_existence": "PROVEN",
+    "per_printer_log_files_for_current_printer_ips": "PROVEN",
+    "active_append_for_known_shadow_order": "NOT_PROVEN",
+    "sql_or_ifood_identifier_to_print_log_block_bridge": "NOT_PROVEN",
+    "official_print_path_for_specific_shadow_order": "NOT_PROVEN",
+    "physical_paper_output": "NOT_PROVEN"
+  },
+  "privacy": {
+    "raw_log_text_read_locally_for_bounded_counting": true,
+    "raw_log_text_returned_or_persisted": false,
+    "only_counts_and_metadata_persisted": true
+  },
+  "effects": {
+    "source_write": false,
+    "source_rename": false,
+    "source_truncate": false,
+    "network_call": false,
+    "print": false,
+    "database_write": false,
+    "cutover": false
+  },
+  "decision": "DO_NOT_USE_PASSIVE_LOG_AS_RUNTIME_AUTHORITY_UNTIL_IDENTITY_BRIDGE_IS_PROVEN"
+}
