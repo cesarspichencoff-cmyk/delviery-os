@@ -1,0 +1,44 @@
+{
+  "schema": "deliveryos.dinner-printer-network-reachability.2026-10-05.v2",
+  "status": "PROVEN_DINNER_NETWORK_REACHABILITY_NO_PRINT",
+  "captured_at": "2026-10-05T18:01:11.5742038-03:00",
+  "operation_window": "DINNER_OPENING_18H",
+  "device": "CAIXA_MOOCA",
+  "targets": [
+    {
+      "printer_code": "00003",
+      "printer_name": "DELIVERY SUSHI 1",
+      "ip": "192.168.0.153",
+      "ping": true,
+      "tcp_9100": true,
+      "tcp_515": true
+    },
+    {
+      "printer_code": "00004",
+      "printer_name": "DELIVERY SUSHI 2",
+      "ip": "192.168.0.4",
+      "ping": true,
+      "tcp_9100": true,
+      "tcp_515": true
+    }
+  ],
+  "peripherals_server": {
+    "endpoint": "192.168.0.24:3000",
+    "tcp_3000": true
+  },
+  "comparison": {
+    "closed_delivery_probe": "Both printer IPs were unreachable while delivery was closed.",
+    "open_dinner_probe": "Both printer IPs became reachable at dinner opening.",
+    "conclusion": "Reachability is operation-window dependent. The current configured dinner endpoints are alive when dinner opens."
+  },
+  "boundary": "Network reachability only. No application print bytes, spooler submission, physical paper proof, cutter/feed/encoding proof or production print acceptance.",
+  "effects": {
+    "network_probe": true,
+    "print": false,
+    "spooler_write": false,
+    "database_write": false,
+    "odhen_write": false,
+    "fiscal_action": false,
+    "sefaz_call": false
+  }
+}
