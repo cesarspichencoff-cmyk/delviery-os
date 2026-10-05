@@ -49,8 +49,8 @@ if(Test-Path -LiteralPath $authPath -PathType Leaf){
   $auth=Get-Content -LiteralPath $authPath -Raw -Encoding UTF8|ConvertFrom-Json
   $actualRead=(Get-FileHash -LiteralPath (Join-Path $RepoRoot "tools\authorized\tata_reader_real_order_read_cdarvprod_v2.ps1") -Algorithm SHA256).Hash
   $actualRunner=(Get-FileHash -LiteralPath (Join-Path $RepoRoot "tools\authorized\tata_reader_real_read_cdarvprod_cycle_runner_v2.ps1") -Algorithm SHA256).Hash
-  Assert ([string]::Equals($actualRead,[string]$auth.read_script_sha256,[System.StringComparison]::OrdinalIgnoreCase)) "AUTH_READ_SCRIPT_HASH_MISMATCH"
-  Assert ([string]::Equals($actualRunner,[string]$auth.runner_sha256,[System.StringComparison]::OrdinalIgnoreCase)) "AUTH_RUNNER_HASH_MISMATCH"
+  Assert ([string]::Equals($actualRead,[string]$auth.read_script.sha256,[System.StringComparison]::OrdinalIgnoreCase)) "AUTH_READ_SCRIPT_HASH_MISMATCH"
+  Assert ([string]::Equals($actualRunner,[string]$auth.runner.sha256,[System.StringComparison]::OrdinalIgnoreCase)) "AUTH_RUNNER_HASH_MISMATCH"
 }
 
 [ordered]@{
