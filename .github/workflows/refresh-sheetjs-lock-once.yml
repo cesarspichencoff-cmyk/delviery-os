@@ -1,0 +1,45 @@
+name: Refresh SheetJS Lock Once
+
+on:
+  push:
+    branches:
+      - fix/odhen-routing-config-proof-20260930
+    paths:
+      - .github/workflows/refresh-sheetjs-lock-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  refresh-lock:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/odhen-routing-config-proof-20260930
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Refresh lockfile from pinned package.json
+        run: npm install --package-lock-only --ignore-scripts
+      - name: Verify clean install and audit
+        run: |
+          npm ci --ignore-scripts
+          npm audit --audit-level=high
+          npm run typecheck
+      - name: Commit lockfile only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --exit-code -- package.json
+          if git diff --quiet -- package-lock.json; then
+            echo "Lockfile already synchronized."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          git commit -m "build: refresh lockfile for SheetJS 0.20.3"
+          git push origin HEAD:fix/odhen-routing-config-proof-20260930
