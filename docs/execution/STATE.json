@@ -6,7 +6,7 @@
     "authority_scope": "technical_state",
     "superseded_by": null,
     "atualizado_em": "2026-10-04",
-    "state_basis": "8b82fe3",
+    "state_basis": "8b57f00",
     "observa": [
       "src/product/",
       "src/perfil-delivery/",
@@ -2103,5 +2103,58 @@
     },
     "figma_node": "23:2",
     "boundary": "prova local/isolada; não afirma cadastro multi-unidade ou ativação em produção"
+  },
+  "source_ingest_pg_feed": {
+    "status": "LOCAL_PROCESS_PROVEN_NOT_DEPLOYED",
+    "default": "OFF",
+    "backend_selection": "explicit file|postgres when enabled",
+    "adapter": "src/platform/runtime/pg-entregas-event-feed.ts",
+    "source_reader": {
+      "artifact": "deploy/sql/entregas_feed_reader.sql",
+      "schema_usage": "entregas",
+      "select_columns": [
+        "seq",
+        "event_id",
+        "event"
+      ],
+      "table_select": false,
+      "write": false
+    },
+    "target_writer": "deliveryos_source_ingest unchanged: minimal transactional INSERT authority",
+    "invariants": [
+      "source and target database URLs are distinct configuration fields",
+      "source and target credentials are separate",
+      "source read transaction is REPEATABLE READ READ ONLY",
+      "global public_outbox seq defines durable order across units",
+      "event_id remains the external checkpoint cursor",
+      "public event schema is validated before crossing the feed",
+      "relational event_id must equal JSON event_id",
+      "invalid cursor fails closed",
+      "OFF opens no source or target database"
+    ],
+    "proofs": {
+      "typecheck": "PASS",
+      "platform_architecture": "44/44 PASS",
+      "source_ingest_config": "14/14 PASS",
+      "pg_feed": "8/8 PASS",
+      "pg_to_pg": "6/6 PASS",
+      "target_writer_role": "4/4 PASS",
+      "legacy_file_wiring": "6/6 PASS",
+      "compiled_process_pg_to_pg": "5/5 PASS"
+    },
+    "process_proof": {
+      "source_events": 3,
+      "units": [
+        "ITAIM",
+        "PINHEIROS"
+      ],
+      "target_ingested": 2,
+      "isolated": 1,
+      "checkpoint": "last source event",
+      "source_unchanged": true,
+      "sentinel_secrets_logged": false
+    },
+    "production": "NOT_ACTIVATED",
+    "consumer_live": "OFF / NOT_AUTHORIZED"
   }
 }

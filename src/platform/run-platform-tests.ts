@@ -664,6 +664,13 @@ async function fronteiras(): Promise<void> {
     // explícitos, já decididos/provados, e cada par arquivo->import é fechado.
     const permitidos = new Map<string, ReadonlySet<string>>([
       ["/src/platform/bin/entregas-source-ingest.ts", new Set([
+        "../../entregas/contracts/EntregasEventFeed",
+        "../../entregas/integration/durable-event-feed",
+      ])],
+      ["/src/platform/runtime/pg-entregas-event-feed.ts", new Set([
+        "../../entregas/contracts/EntregasEventFeed",
+        "../../entregas/contracts/events/types",
+        "../../entregas/contracts/events/validate",
         "../../entregas/integration/durable-event-feed",
       ])],
       ["/src/platform/copiloto/causal-identity-bridge.ts", new Set([

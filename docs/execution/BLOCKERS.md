@@ -5,7 +5,7 @@ lifecycle:
   authority_scope: infra_blockers
   superseded_by: null
   atualizado_em: "2026-10-04"
-  state_basis: 8b82fe3
+  state_basis: 8b57f00
   question_refs: ["Q-001","Q-002","Q-003","Q-004","Q-005","Q-006","Q-007","Q-008","Q-009","Q-010","Q-011"]
 ---
 
@@ -1445,6 +1445,35 @@ Estado atual: **feed durável single-instance = CODE_READY + TEST_PASS; produç�
 > aberto até cópia realmente fora do host + restore ensaiado no destino escolhido.
 
 
+
+> **SUCESSÃO — 2026-10-04 · SOURCE-INGEST POSTGRESQL FONTE → DESTINO PROVADO LOCALMENTE.**
+>
+> O último acoplamento obrigatório do source-ingest ao feed `store.json` foi removido do processo:
+> `DELIVERYOS_ENTREGAS_SOURCE_BACKEND` agora é obrigatório quando o source-ingest liga e aceita
+> somente `file` ou `postgres`. OFF continua sendo o default absoluto e não abre fonte nem banco.
+>
+> No backend PostgreSQL, `PgCommittedOutboxEntregasEventFeed` lê somente a outbox pública commitada
+> em transação `REPEATABLE READ READ ONLY`, usa o `seq` global como ordem durável, mantém
+> `event_id` como cursor, valida cada envelope público e recusa divergência entre o `event_id`
+> relacional e o JSON.
+>
+> A origem e o destino usam **credenciais distintas**. O artefato
+> `deploy/sql/entregas_feed_reader.sql` cria um leitor da fonte com apenas `USAGE` no schema
+> `entregas` e `SELECT(seq,event_id,event)` em `entregas.public_outbox`; ele não lê `unit_id`,
+> não lê tabelas de domínio e não pode INSERT/UPDATE/DELETE. O papel
+> `deliveryos_source_ingest` do destino continua apenas com a escrita transacional mínima em
+> `platform.event_log + platform.outbox` e continua sem leitura geral da verdade.
+>
+> PostgreSQL 17 descartável/local:
+> **feed PG 8/8**, **PG fonte→destino 6/6**, papel de escrita **4/4**, wiring file legado **6/6**.
+> O **binário compilado real** também passou **5/5** com dois bancos e dois logins: 3 eventos na
+> fonte (ITAIM + PINHEIROS) produziram 2 fatos equivalentes no destino e 1 isolamento seguro,
+> checkpoint avançou ao último evento, a fonte permaneceu intacta e duas senhas-sentinela presentes
+> nas URLs **não apareceram nos logs**.
+>
+> **Resultado:** feed PostgreSQL do source-ingest = **LOCAL_PROCESS_PROVEN / NOT_DEPLOYED**.
+> Isso não liga `consumer_live`, não cria credenciais operacionais, não altera ambiente implantado e
+> não autoriza deploy. Ativação live continua um efeito humano separado.
 
 ### SUCESSÃO — Android / fim remoto sem WebView — **FECHADO NO AVD em 2026-10-01**
 

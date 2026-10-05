@@ -123,6 +123,14 @@ turno de sexta.
   crítico healthy, migrations/papéis exit 0, assíncrono running, sessão+GPS,
   outbox/replay, papéis mínimos e cleanup.
 
+  **Sucessão 2026-10-04 — source-ingest PostgreSQL.** O processo separado passou a aceitar
+  backend de fonte explícito `file|postgres`, mantendo OFF como default. No modo PostgreSQL,
+  a fonte e o destino usam URLs/credenciais separadas: o leitor da fonte possui apenas
+  `SELECT(seq,event_id,event)` na outbox pública; o escritor do destino preserva o papel mínimo
+  `deliveryos_source_ingest`. Processo compilado PG→PG foi provado em dois bancos isolados,
+  sem vazar credenciais no log. **Isto não adiciona o serviço à composição oficial nem autoriza
+  ativação live/deploy.**
+
 ### Migrations são passo separado
 
 Nunca ligue `DELIVERYOS_MIGRATE_ON_BOOT` fora de `local`. N réplicas subindo
