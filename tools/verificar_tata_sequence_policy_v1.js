@@ -6,7 +6,7 @@ const {
   planDailyStoreTataSequence,
   planTataSequence,
   validateSharedTataSequence,
-} = require("../dist/production/tataSequence.js");
+} = require("../dist/src/production/tataSequence.js");
 
 function baseState() {
   return {
