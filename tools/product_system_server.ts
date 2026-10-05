@@ -50,7 +50,35 @@ import { TIPOS_DA_OPERACAO_VIVA } from "../src/platform/runtime/handler-operacao
 import type { LeituraDeRealidade } from "../src/product/viewmodels/entregas-vm";
 import { CENAS, cena, type CenaHome } from "../src/product/demo/seed-home-demonstracao";
 
+export function productListenHost(env: NodeJS.ProcessEnv = process.env): string {
+  return (env.PRODUCT_UI_HOST || "127.0.0.1").trim() || "127.0.0.1";
+}
+
+export function productPgOptions(
+  env: NodeJS.ProcessEnv = process.env,
+): { url: string; max: number; ssl?: boolean; host_privado?: string } | null {
+  const url = (env.DELIVERYOS_DATABASE_URL || env.DELIVERYOS_PG_URL || "").trim();
+  if (!url) return null;
+
+  const rawSsl = (env.DELIVERYOS_DATABASE_SSL || "").trim().toLowerCase();
+  let ssl: boolean | undefined;
+  if (rawSsl === "") ssl = undefined;
+  else if (rawSsl === "true") ssl = true;
+  else if (rawSsl === "false") ssl = false;
+  else throw new Error("DELIVERYOS_DATABASE_SSL precisa ser true ou false");
+
+  const privado = (env.DELIVERYOS_DATABASE_PRIVATE_HOST || "").trim();
+  return {
+    url,
+    max: 2,
+    ...(ssl === undefined ? {} : { ssl }),
+    ...(privado ? { host_privado: privado } : {}),
+  };
+}
+
 const PORT = Number(process.env.PRODUCT_UI_PORT || 5290);
+const HOST = productListenHost();
+const OPCOES_PG_PRODUTO = productPgOptions();
 /**
  * A porta de REALIDADE de Entregas. Com a URL do banco da plataforma, a
  * superficie /entregas ganha um bloco lido de identity.device e de
@@ -59,19 +87,37 @@ const PORT = Number(process.env.PRODUCT_UI_PORT || 5290);
  * o banco fora do ar, declara indisponivel. Nunca zero, nunca saudavel por
  * ausencia.
  */
-const URL_PLATAFORMA = (process.env.DELIVERYOS_DATABASE_URL || process.env.DELIVERYOS_PG_URL || "").trim();
+const URL_PLATAFORMA = OPCOES_PG_PRODUTO?.url ?? "";
 const DIR_CONFERENCE = (process.env.CONFERENCE_BRAIN_DATA_DIR || "").trim();
 const reqLocal = createRequire(join(process.cwd(), "package.json"));
+
+function artefatoRuntime(origem: string, compilado: string): string {
+  return existsSync(origem) ? origem : compilado;
+}
+
 interface StoreHistorico {
   history: (entity: string, opts?: { limit?: number }) => LeituraHistoricaDoStore;
 }
-const { createStore: criarStoreConference } = reqLocal(
-  join(process.cwd(), "src", "conference-brain", "storage", "store"),
-) as { createStore: (o: { dir: string }) => StoreHistorico };
-const RAIZ_UI = join(process.cwd(), "src", "product", "ui");
-/** O MESMO arquivo de tokens que ENTREGAS usa. Nao ha copia. */
-const RAIZ_SHARED = join(process.cwd(), "src", "entregas", "ui", "shared");
-const TOKENS_JSON = join(process.cwd(), "docs", "figma", "DESIGN_TOKENS.json");
+const STORE_CONFERENCE = artefatoRuntime(
+  join(process.cwd(), "src", "conference-brain", "storage", "store.js"),
+  join(process.cwd(), "dist", "src", "conference-brain", "storage", "store.js"),
+);
+const { createStore: criarStoreConference } = reqLocal(STORE_CONFERENCE) as {
+  createStore: (o: { dir: string }) => StoreHistorico;
+};
+const RAIZ_UI = artefatoRuntime(
+  join(process.cwd(), "src", "product", "ui"),
+  join(process.cwd(), "dist", "src", "product", "ui"),
+);
+/** O MESMO arquivo de tokens que ENTREGAS usa. Nao ha copia semantica. */
+const RAIZ_SHARED = artefatoRuntime(
+  join(process.cwd(), "src", "entregas", "ui", "shared"),
+  join(process.cwd(), "dist", "src", "entregas", "ui", "shared"),
+);
+const TOKENS_JSON = artefatoRuntime(
+  join(process.cwd(), "docs", "figma", "DESIGN_TOKENS.json"),
+  join(process.cwd(), "dist", "docs", "figma", "DESIGN_TOKENS.json"),
+);
 
 const mime: Record<string, string> = {
   ".html": "text/html; charset=utf-8",
@@ -329,7 +375,9 @@ async function lerHistorico(
 export async function criarServidor(): Promise<http.Server> {
   const pronto = await calcular();
   const facade = await montarEntregasDemo();
-  const clientePlataforma = URL_PLATAFORMA ? await createPgClient({ url: URL_PLATAFORMA, max: 2 }) : null;
+  const clientePlataforma = OPCOES_PG_PRODUTO
+    ? await createPgClient(OPCOES_PG_PRODUTO)
+    : null;
 
   const servidor = http.createServer((req, res) => {
     // A trava: metodo de escrita e recusado antes de qualquer roteamento.
@@ -451,9 +499,13 @@ export async function criarServidor(): Promise<http.Server> {
 if (require.main === module) {
   criarServidor()
     .then((s) => {
-      s.listen(PORT, "127.0.0.1", () => {
-        console.log(`DeliveryOS Product System  http://127.0.0.1:${PORT}/`);
-        console.log("AMBIENTE DE DEMONSTRACAO — somente leitura, sem acao operacional");
+      s.listen(PORT, HOST, () => {
+        console.log(`DeliveryOS Product System  http://${HOST}:${PORT}/`);
+        console.log(
+          URL_PLATAFORMA
+            ? "MODO READ-ONLY — banco configurado; nenhuma rota de escrita"
+            : "AMBIENTE DE DEMONSTRACAO — somente leitura, sem acao operacional",
+        );
       });
     })
     .catch((e: unknown) => {

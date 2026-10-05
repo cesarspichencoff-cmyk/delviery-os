@@ -94,6 +94,16 @@ pass(
     state.human_action_gate_b7?.current_boundary?.actions_exposed === false,
   "ações humanas continuam fail-closed e não expostas",
 );
+pass(
+  "L8_PRODUCT_READER_WIRING",
+  state.source_to_product_e2e_20261005?.product_reader?.official_compose ===
+    "WIRED" &&
+    state.source_to_product_e2e_20261005?.product_reader?.wiring_gate ===
+      "14/14 PASS" &&
+    state.source_to_product_e2e_20261005?.product_reader?.credential ===
+      "NOT_CREATED",
+  "Product System reader está wired no artefato oficial, sem credencial real ou deploy",
+);
 
 const c2 = state.c2_c5_recheck_20261004?.c2;
 if (c2?.physical_device !== "PROVEN") {

@@ -5,7 +5,7 @@ lifecycle:
   authority_scope: infra_blockers
   superseded_by: null
   atualizado_em: "2026-10-05"
-  state_basis: 957f6ce
+  state_basis: 735d4ab
   question_refs: ["Q-001","Q-002","Q-003","Q-004","Q-005","Q-006","Q-007","Q-008","Q-009","Q-010","Q-011"]
 ---
 
@@ -1735,3 +1735,33 @@ Regressões frescas:
 integrado à composição oficial e não recebeu credencial real. `consumer_live` continua
 **OFF / NOT_AUTHORIZED**. Operação Viva/Copiloto atuais ainda não são promovidos a leitura live
 por esta prova.
+
+### Sucessão 2026-10-05 — Product System reader wired no artefato oficial
+
+O blocker de **wiring oficial** deixou de existir no código/configuração.
+
+A composição oficial agora contém `deliveryos-product-system`:
+
+- imagem comum da plataforma, processo separado e read-only;
+- rede interna, `expose: 5290` e **nenhum `ports:`**;
+- papel próprio `deliveryos_product_reader`, nunca owner/critical/async;
+- senha própria obrigatória e vazia no exemplo versionado;
+- `product_system_reader.sql` aplicado pelo job de papéis antes da senha;
+- healthcheck em `/api/navegacao`;
+- assets não-TypeScript, Design Tokens, cardápio de referência, perfil-delivery e Conference Brain
+  presentes em `dist/`;
+- servidor compilado suporta source-tree local e imagem sem `src/` fonte;
+- TLS privado/remoto preserva a mesma política de `createPgClient`.
+
+Provas frescas:
+
+- `test:platform:product-reader-wiring`: **14/14 PASS**;
+- `build:platform`: PASS;
+- boot do binário em diretório **image-like sem src fonte**: PASS;
+- Product System: **54/54 PASS**;
+- platform deploy audit: **30/30 PASS**.
+
+**Fronteira:** Docker não existe nesta máquina; `docker compose config/up` ficou **NOT_RUN**.
+A credencial real do reader continua **NOT_CREATED** e nenhum deploy/cutover foi executado.
+
+Impacto no readiness observacional: blockers externos caem de **6 para 5**.

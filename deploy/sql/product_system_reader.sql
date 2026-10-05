@@ -1,7 +1,8 @@
 -- =====================================================================
 -- Leitor mínimo do DeliveryOS Product System.
 --
--- Este papel é OPCIONAL e não é aplicado pela composição oficial nesta etapa.
+-- Este papel é aplicado pelo job opt-in `deliveryos-product-reader-setup`
+-- do profile `product`; o runtime crítico não depende deste papel.
 -- Ele existe para a superfície read-only do Product System consultar somente
 -- a realidade necessária, sem usar owner/superuser nem enxergar secret_hash.
 --

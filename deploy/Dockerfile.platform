@@ -40,11 +40,13 @@ COPY tsconfig.json ./
 COPY src ./src
 COPY tools ./tools
 COPY demo ./demo
+COPY data/cardapio_knowledge_seed.json ./data/cardapio_knowledge_seed.json
 # SÓ os contratos, não `docs/` inteiro: `contracts/eventos.schema.json` é lido
 # em RUNTIME pela rota de ingestão, e sem ele a imagem sobe com /ready 200 e
 # recusa todo GPS com 503 (PB19-D3b). `copiar_contratos.js` os leva a
 # `dist/docs/contracts/`, que é o que o estágio de runtime copia.
 COPY docs/contracts ./docs/contracts
+COPY docs/figma/DESIGN_TOKENS.json ./docs/figma/DESIGN_TOKENS.json
 
 # Compila e copia para dist/ o que o `tsc` ignora — ele só entende TypeScript.
 # Cada passo fecha um defeito já medido nesta base:
@@ -59,7 +61,8 @@ ARG DELIVERYOS_COMMIT=""
 ENV DELIVERYOS_COMMIT=$DELIVERYOS_COMMIT
 
 RUN npx tsc && node tools/copiar_migrations.js && node tools/copiar_conference_brain.js \
-    && node tools/copiar_contratos.js && node tools/carimbar_build.js
+    && node tools/copiar_contratos.js && node tools/copiar_product_system_assets.js \
+    && node tools/carimbar_build.js
 
 # `pg` é dependência de RUNTIME e precisa sobreviver ao prune.
 RUN npm prune --omit=dev
@@ -89,8 +92,8 @@ RUN mkdir -p /var/lib/deliveryos/intelligence /var/lib/deliveryos/intelligence-b
 
 USER node
 
-# Documenta a porta do crítico. O worker assíncrono não escuta nada.
-EXPOSE 8080
+# Documenta as portas internas. Nenhuma é publicada no host pelo compose.
+EXPOSE 8080 5290
 
 # Sem CMD: cada serviço da composição declara o seu. Um CMD padrão aqui faria
 # um erro de configuração subir silenciosamente o processo errado.

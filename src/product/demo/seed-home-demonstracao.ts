@@ -16,7 +16,7 @@
  * Este modulo NAO e importado por `critical.ts` nem por `async-runtime.ts`.
  */
 
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { createRequire } from "node:module";
 
@@ -40,16 +40,18 @@ interface ItemSeed {
   categoria_operacional: string | null;
 }
 
-const SEED = JSON.parse(
-  readFileSync(
-    join(process.cwd(), "data", "cardapio_knowledge_seed.json"),
-    "utf8",
-  ),
-) as { itens: ItemSeed[] };
+const SEED_PATH = existsSync(join(process.cwd(), "data", "cardapio_knowledge_seed.json"))
+  ? join(process.cwd(), "data", "cardapio_knowledge_seed.json")
+  : join(process.cwd(), "dist", "data", "cardapio_knowledge_seed.json");
+const MOTOR_PATH = existsSync(join(process.cwd(), "src", "perfil-delivery", "motor.js"))
+  ? join(process.cwd(), "src", "perfil-delivery", "motor.js")
+  : join(process.cwd(), "dist", "src", "perfil-delivery", "motor.js");
 
-const MOTOR = requireCJS(
-  join(process.cwd(), "src", "perfil-delivery", "motor.js"),
-) as { BASELINE: Partial<Record<PracaId, number>> };
+const SEED = JSON.parse(readFileSync(SEED_PATH, "utf8")) as { itens: ItemSeed[] };
+
+const MOTOR = requireCJS(MOTOR_PATH) as {
+  BASELINE: Partial<Record<PracaId, number>>;
+};
 
 /** Os baselines REAIS do motor calibrado. Nao sao reescritos aqui. */
 export const BASELINE_REAL: Partial<Record<PracaId, number>> = {

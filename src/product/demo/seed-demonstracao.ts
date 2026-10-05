@@ -17,7 +17,7 @@
  * de `real` em todo cabecalho.
  * ==========================================================================*/
 
-import { mkdtempSync } from "node:fs";
+import { existsSync, mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createRequire } from "node:module";
@@ -44,8 +44,11 @@ import type {
 } from "../viewmodels/conference-vm";
 
 const req = createRequire(join(process.cwd(), "package.json"));
+const CB_ROOT = existsSync(join(process.cwd(), "src", "conference-brain"))
+  ? join(process.cwd(), "src", "conference-brain")
+  : join(process.cwd(), "dist", "src", "conference-brain");
 const CB = (m: string): Record<string, unknown> =>
-  req(join(process.cwd(), "src", "conference-brain", m)) as Record<string, unknown>;
+  req(join(CB_ROOT, m)) as Record<string, unknown>;
 
 interface Registro {
   [k: string]: unknown;

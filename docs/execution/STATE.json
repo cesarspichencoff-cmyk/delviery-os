@@ -6,7 +6,7 @@
     "authority_scope": "technical_state",
     "superseded_by": null,
     "atualizado_em": "2026-10-05",
-    "state_basis": "d3c2110",
+    "state_basis": "735d4ab",
     "observa": [
       "src/product/",
       "src/perfil-delivery/",
@@ -2202,7 +2202,7 @@
     ],
     "product_reader": {
       "artifact": "deploy/sql/product_system_reader.sql",
-      "official_compose": "NOT_WIRED",
+      "official_compose": "WIRED",
       "credential": "NOT_CREATED",
       "least_privilege": "PROVEN_LOCAL",
       "forbidden": [
@@ -2210,7 +2210,13 @@
         "UPDATE",
         "DELETE",
         "identity.device.secret_hash"
-      ]
+      ],
+      "wiring_gate": "14/14 PASS",
+      "compiled_image_like_boot": "PASS",
+      "docker_compose_runtime": "NOT_RUN_DOCKER_UNAVAILABLE",
+      "deploy": "NOT_DEPLOYED",
+      "boundary": "artefato oficial CODE_READY; nenhuma credencial real criada; docker compose config/up não executados",
+      "figma_readiness_card": "26:2"
     },
     "proofs": {
       "typecheck": "PASS",
@@ -2247,21 +2253,22 @@
     "profiles": {
       "observational_read_only": {
         "status": "BLOCKED_EXTERNAL",
-        "local_proofs": 7,
-        "external_gates": 6,
+        "local_proofs": 8,
+        "external_gates": 5,
         "action_stack_required": false
       },
       "action_enabled": {
         "status": "BLOCKED_EXTERNAL",
-        "local_proofs": 7,
-        "external_gates": 7,
+        "local_proofs": 8,
+        "external_gates": 6,
         "action_stack_required": true
       }
     },
     "fresh_core": {
       "pilot_gate": "10/10 PASS",
       "human_action_gate": "13/13 PASS",
-      "product_system": "54/54 PASS"
+      "product_system": "54/54 PASS",
+      "product_reader_wiring": "14/14 PASS"
     },
     "local_proofs": [
       "source->product E2E",
@@ -2270,14 +2277,14 @@
       "Figma Full PB11/PB13",
       "backup off-host + restore",
       "source-ingest process",
-      "human actions fail-closed"
+      "human actions fail-closed",
+      "Product System reader official wiring"
     ],
     "observational_external_gates": [
       "physical Android/battery",
       "real per-unit credentials + authorized DB/deploy/cutover",
       "source-ingest production activation",
       "consumer_live activation",
-      "Product System reader official wiring",
       "Product System reader real credential"
     ],
     "action_enabled_extra_gate": "real human identity + executor + durable audit",
@@ -2290,6 +2297,21 @@
       "Q-009"
     ],
     "figma_node": "25:47",
-    "boundary": "gate de prontidão não autoriza nem executa efeito; muda para GO somente quando os estados externos comprovados entrarem no STATE"
+    "boundary": "gate não autoriza efeito; Product reader está wired no artefato oficial, mas credencial real/deploy/compose runtime continuam não executados",
+    "product_reader_wiring": {
+      "status": "WIRED_CODE_READY_NOT_DEPLOYED",
+      "gate": "14/14 PASS",
+      "image_like_boot": "PASS",
+      "platform_deploy_audit": "30/30 PASS",
+      "docker": "UNAVAILABLE",
+      "compose_runtime": "NOT_RUN",
+      "credential": "NOT_CREATED"
+    },
+    "figma_product_reader_card": "26:2",
+    "figma_counts": {
+      "local_proofs": 8,
+      "observational_external": 5,
+      "action_external": 6
+    }
   }
 }
