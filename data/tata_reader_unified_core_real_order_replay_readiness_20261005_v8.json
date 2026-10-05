@@ -1,0 +1,78 @@
+{
+  "schema": "deliveryos.tata-reader-unified-core-readiness.2026-10-05.v8",
+  "captured_on": "2026-10-05",
+  "status": "NONPHYSICAL_PATH_HARDENED_PHYSICAL_GATE_DEFERRED",
+  "head_before_write": "e499fbe89ef6537ef0e1cc5c29e5dbfeb67b6290",
+  "newly_proven": [
+    "CONTINUOUS_READER_DEFAULT_BOOTSTRAP_SUPPRESSES_HISTORICAL_BASELINE",
+    "CONTINUOUS_READER_EXPLICIT_BACKFILL_REMAINS_OPT_IN",
+    "CONTINUOUS_READER_RESTART_DEDUPE_REMAINS_PROVEN_AFTER_BOOTSTRAP_FIX",
+    "NEW_SERVICE_SHIFT_MODULE_STRICT_TYPECHECK_PASS",
+    "NEW_NATIVE_FISCAL_RECONCILER_STRICT_TYPECHECK_PASS",
+    "TRANSACTIONAL_CONTINUOUS_READER_CUTOVER_PACKAGE_CODE_READY_NOT_EXECUTED",
+    "NARROW_ROLLBACK_PACKAGE_CODE_READY_NOT_EXECUTED",
+    "TEKNISA_OFFICIAL_AUTOMATIC_NFCE_SURFACE_EXISTS_VIA_INTERFACE_API"
+  ],
+  "retained_proven": [
+    "PACKAGING_91_91_AND_KITS_V2_PASS",
+    "EXACT_ONE_G_BAG_WITH_INTERNAL_HOT_COLD_SEGREGATION",
+    "TATA_SEQUENCE_ATOMIC_READY_001_ZERO_BINDINGS",
+    "DURABLE_EXPLICIT_SHIFT_STATE",
+    "RECENT_500_DLV_ZERO_PRODUCTION_ROUTING_GAPS",
+    "CURRENT_LUNCH_PRINTERS_00002_00009_REACHABLE",
+    "SP_PROTOCOL17_61_OF_61_PROVEN",
+    "QR_DATA_61_OF_61_PRESENT",
+    "CURRENT_QR_V2_REAL_AUTHORIZATION_PATH_PROVEN",
+    "CUPOM_FISCAL_TO_GERANOTAFISCAL_PATH_PROVEN",
+    "REPRINT_DISTINCT",
+    "LEGACY_AFTER_PRODUCTION_FISCAL_ROUTE_BLOCKED",
+    "NO_CUSTOM_SEFAZ_EMITTER"
+  ],
+  "boundaries": {
+    "physical_print": "DEFERRED_TO_2026-10-06_BY_CESAR",
+    "continuous_reader_cutover": "PREPARED_NOT_EXECUTED",
+    "fiscal_effect": "NOT_ATTEMPTED",
+    "full_repo_build": "PENDING_ENVIRONMENT_WITH_PRIVATE_CHECKOUT",
+    "desktop_commander_usage": "86_PERCENT_USED_AVOID_NONESSENTIAL_CAIXA_CALLS"
+  },
+  "remaining_blockers": [
+    {
+      "code": "FULL_REPO_BUILD_AFTER_LATEST_CHANGES",
+      "reason": "Current environment can typecheck the new dependency-free modules, but cannot checkout the private repository without consuming scarce CAIXA remote capacity.",
+      "classification": "TECHNICAL_NOT_HUMAN_GATE"
+    },
+    {
+      "code": "PHYSICAL_PRINTER_CALIBRATION",
+      "timing": "DEFERRED_TO_2026-10-06_BY_HUMAN"
+    },
+    {
+      "code": "DINNER_PRINTER_00003_00004_REVALIDATION",
+      "classification": "OPERATIONAL_TIMING_GATE"
+    },
+    {
+      "code": "TEKNISA_SUPPORTED_IFOOD_FISCAL_TRIGGER_CONTRACT",
+      "reason": "Official documentation proves automatic NFC-e via Interface API, but does not prove that the same public contract applies to the current iFood/Odhen flow.",
+      "classification": "VENDOR_CONTRACT_GATE"
+    },
+    {
+      "code": "CONTINUOUS_READER_PRODUCTION_CUTOVER",
+      "reason": "Transactional package is prepared and rollback-capable, but production service replacement has not been executed.",
+      "classification": "REVERSIBLE_PRODUCTION_EFFECT_GATE"
+    }
+  ],
+  "evidence": {
+    "bootstrap": "data/tata_reader_bootstrap_suppression_proof_20261005_v1.json",
+    "typecheck": "data/nonphysical_module_typecheck_20261005_v1.json",
+    "cutover_package": "data/tata_reader_continuous_transactional_cutover_package_20261005_v1.json",
+    "fiscal_questions": "docs/Teknisa_Fiscal_Supported_Contract_Questions_2026-10-05.md"
+  },
+  "effects": {
+    "print": false,
+    "spooler_write": false,
+    "database_write": false,
+    "odhen_write": false,
+    "fiscal_action": false,
+    "sefaz_call": false,
+    "service_cutover": false
+  }
+}
