@@ -4,15 +4,23 @@
   "canonical_repository": "cesarspichencoff-cmyk/tata-os",
   "canonical_branch": "feature/unified-tata-core-20261001",
   "canonical_package": "packages/unified-restaurant-core",
-  "current_known_head": "9e6f46c8e19cc9485bc4bd028b845c7e52cdf95c",
+  "current_known_head": "2621e0c4c56eda5910030ef6b032ebdc46ca6122",
   "local_role": "DELIVERY_OPERATION_PROJECTION",
   "rules_must_not_be_owned_locally": true,
   "runtime_cutover_authorized": false,
   "notes": [
     "DeliveryOS consumes operational projections from the unified core.",
-    "Unified-core head revalidated on 2026-10-04 before the real-order identity bridge investigation.",
+    "Unified-core pointer revalidated on 2026-10-05 after reporting audit.",
+    "DeliveryOS remains order observation/decision authority; TATA OS owns report projections.",
+    "TATA Academia remains rule/teaching authority and is referenced by lineage.",
     "Production ticket: box + production items/prep ingredients + item observations only.",
     "Delivery conference remains UI state with print=false.",
     "Local rule snapshots are transitional migration artifacts only."
-  ]
+  ],
+  "reporting_contract": {
+    "id": "tata.cross-system-reporting-contract.v2",
+    "source_lock": "packages/unified-restaurant-core/data/cross_system_source_lock_2026_10_05_v2.json",
+    "report_facts_schema": "tata.deliveryos-report-facts.v2",
+    "calendar_report_schema": "tata.deliveryos-calendar-report-set.v1"
+  }
 }
