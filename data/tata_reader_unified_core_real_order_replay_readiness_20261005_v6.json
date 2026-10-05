@@ -1,0 +1,82 @@
+{
+  "schema": "deliveryos.tata-reader-unified-core-readiness.2026-10-05.v6",
+  "captured_on": "2026-10-05",
+  "status": "NONPHYSICAL_GATES_ADVANCED_PHYSICAL_PRINT_DEFERRED_BY_HUMAN",
+  "proven": [
+    "PACKAGING_AFFECTED_REGRESSION_91_OF_91_PASS",
+    "KITS_LOGIC_V2_PASS",
+    "EXACT_REAL_ORDER_ONE_SACOLA_G_WITH_INTERNAL_HOT_COLD_SEGREGATION",
+    "TATA_SEQUENCE_LIVE_ATOMIC_STATE_READY_001_ZERO_BINDINGS",
+    "DURABLE_EXPLICIT_LUNCH_STATE_NO_CLOCK_INFERENCE",
+    "CONTINUOUS_READER_CANDIDATE_RESTART_CHECKPOINT_DEDUPE_PROVEN",
+    "RECENT_500_DLV_ROUTING_AUDIT_120_CODES_ZERO_PRODUCTION_RELEVANT_GAPS",
+    "ALL_SIX_PRINTER_QUEUES_AND_TCP_PORTS_RESOLVED",
+    "CURRENT_LUNCH_TARGETS_00002_AND_00009_TCP_REACHABLE",
+    "NATIVE_ODHEN_CUPOM_FISCAL_ACTION_TO_GERANOTAFISCAL_PATH_PROVEN",
+    "REPRINT_PATH_DISTINCT_FROM_ISSUANCE_PATH",
+    "SP_PROTOCOL17_LIVE_RUNTIME_PROVEN_61_OF_61",
+    "QR_DATA_PRESENT_61_OF_61_CURRENT_AUTHORIZATIONS",
+    "CURRENT_QR_V2_REAL_AUTHORIZATION_PATH_PROVEN",
+    "FISCAL_LEGACY_AFTER_PRODUCTION_PLANNER_HARD_BLOCKED",
+    "NO_CUSTOM_SEFAZ_EMITTER"
+  ],
+  "human_deferrals": {
+    "physical_print": "DEFERRED_TO_2026-10-06_BY_CESAR",
+    "fiscal_effect": "NOT_AUTHORIZED_TECHNICALLY_AND_NOT_ATTEMPTED"
+  },
+  "remaining_blockers": [
+    {
+      "code": "PHYSICAL_PRINTER_CALIBRATION_NOT_WORLD_PROVEN",
+      "blocks": [
+        "FIRST_CONTROLLED_PRODUCTION_PRINT",
+        "GLOBAL_PRINT_CUTOVER"
+      ],
+      "timing": "DEFERRED_TO_2026-10-06_BY_HUMAN"
+    },
+    {
+      "code": "DINNER_PRINTERS_00003_00004_CURRENTLY_UNREACHABLE",
+      "blocks": [
+        "DINNER_CUTOVER",
+        "GLOBAL_PRINT_CUTOVER"
+      ],
+      "does_not_block": [
+        "CURRENT_LUNCH_READONLY_OPERATION",
+        "LUNCH_PHYSICAL_CALIBRATION_TOMORROW"
+      ]
+    },
+    {
+      "code": "CONTINUOUS_READER_CUTOVER_NOT_ENABLED",
+      "blocks": [
+        "UNATTENDED_LIVE_OPERATION"
+      ],
+      "reason": "Restart-safe candidate proven; production service replacement remains intentionally disabled."
+    },
+    {
+      "code": "NATIVE_FISCAL_PROGRAMMATIC_TRIGGER_CONTRACT_UNPROVEN",
+      "blocks": [
+        "FISCAL_AUTOMATION"
+      ],
+      "sub_blockers": [
+        "F7 keyboard binding not proven from current metadata",
+        "vendor-supported non-UI trigger contract not proven",
+        "operator-triggered versus other native-trigger path not fully distinguished"
+      ]
+    }
+  ],
+  "retired_blockers": [
+    "ACADEMIA_PACKAGING_AFFECTED_GATE_PENDING",
+    "DURABLE_SERVICE_LUNCH_DINNER_RESOLUTION_NOT_IMPLEMENTED",
+    "ROUTING_DRIFT_REVALIDATION_REQUIRED_BEFORE_GLOBAL_CUTOVER",
+    "NFCE_RUNTIME_SP_PROTOCOL17_COMPATIBILITY_UNPROVEN",
+    "NFCE_RUNTIME_QRCODE_V3_MANDATORY_ASSUMPTION"
+  ],
+  "effects": {
+    "print": false,
+    "spooler_write": false,
+    "database_write": false,
+    "odhen_write": false,
+    "fiscal_action": false,
+    "sefaz_call": false,
+    "cutover": false
+  }
+}
