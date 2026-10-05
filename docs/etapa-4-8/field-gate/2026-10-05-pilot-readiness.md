@@ -58,3 +58,14 @@ A representação deve acompanhar esta sucessão: **8 provas locais / 5 gates ob
 Este artefato não cria credencial, não conecta aparelho, não executa migration/cutover, não liga
 source-ingest/consumer e não autoriza piloto. Ele impede que provas locais sejam chamadas de GO
 antes da prova no mundo correto.
+
+## Preflight de ativação sem efeito
+
+`npm run preflight:pilot:activation` inspeciona o ambiente sem conexão de banco nem escrita.
+
+Snapshot Foxxy: E1/E2/E6 `BLOCKED`; E3/E4 `SAFE_OFF`; `EFFECT_ATTEMPTED=false`.
+O comando só informa presença/contagens. Uma URL ou senha presente vira no máximo
+`PRESENT_UNVERIFIED`; nunca vira deploy/ativação por inferência.
+
+Figma Full: `Activation preflight · Foxxy` — node `28:2`.
+
