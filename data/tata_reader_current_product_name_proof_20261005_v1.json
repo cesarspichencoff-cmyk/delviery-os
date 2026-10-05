@@ -1,0 +1,43 @@
+{
+  "schema": "deliveryos.tata-reader-current-product-name-proof.v1",
+  "captured_on": "2026-10-05",
+  "status": "PROVEN_CURRENT_NAMES_FOR_OBSERVED_REAL_ORDER_PRODUCTS",
+  "database": "teknisa",
+  "executor_identity": "CAIXA_MOOCA\\Tata",
+  "method": "EXACT_FOUR_ROW_ADMIN_READ_CDPRODUTO_NMPRODUTO_CDARVPROD",
+  "rows": [
+    {
+      "CDPRODUTO": "0000001418",
+      "NMPRODUTO": "NASU NO MISSO",
+      "CDARVPROD": "9100002000"
+    },
+    {
+      "CDPRODUTO": "0000001430",
+      "NMPRODUTO": "EDAMAME",
+      "CDARVPROD": "9100008000"
+    },
+    {
+      "CDPRODUTO": "0000001535",
+      "NMPRODUTO": "SUSHI DE UNAGUI",
+      "CDARVPROD": "9300009000"
+    },
+    {
+      "CDPRODUTO": "0000001705",
+      "NMPRODUTO": "COMBINADO KIDS",
+      "CDARVPROD": "9800001000"
+    }
+  ],
+  "row_count": 4,
+  "proof_boundary": {
+    "current_names_for_these_four_products": "PROVEN",
+    "NMPRODUTO_global_runtime_authority": "NOT_YET_GRANTED_TO_SERVICE",
+    "global_catalog_name_freshness": "NOT_PROVEN_BY_THIS_READ"
+  },
+  "effects": {
+    "product_row_read": true,
+    "database_write": false,
+    "permission_change": false,
+    "print": false,
+    "cutover": false
+  }
+}
