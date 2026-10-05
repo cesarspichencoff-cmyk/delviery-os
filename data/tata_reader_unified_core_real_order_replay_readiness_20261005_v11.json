@@ -1,0 +1,44 @@
+{
+  "schema": "deliveryos.tata-reader-unified-core-readiness.2026-10-05.v11",
+  "captured_on": "2026-10-05",
+  "status": "CONTINUOUS_READER_AND_FIRST_POST_CUTOVER_FULL_SHADOW_DECISION_PROVEN",
+  "newly_proven": [
+    "DEDICATED_WINDOWS_SERVICE_HOST_RUNNING_BEYOND_60_SECONDS",
+    "FIRST_POST_CUTOVER_LIVE_ORDER_8332_CAPTURED_STABLE",
+    "FIRST_POST_CUTOVER_ORDER_ROUTING_COMPLETE",
+    "EXECUTIVE_COMBO_BOX_750_RULE_PROMOTED",
+    "EXECUTIVE_COMBO_KIT_P1_RULE_PROMOTED",
+    "LIVE_ORDER_8332_BAG_M_EXACT_RULE_PROMOTED",
+    "PACKAGING_REGRESSION_95_95_PASS",
+    "KITS_LOGIC_V2_PASS",
+    "FIRST_POST_CUTOVER_FULL_SHADOW_DECISION_COMPLETE"
+  ],
+  "current_live_runtime": {
+    "continuous_reader": "RUNNING",
+    "database_mode": "READ_ONLY",
+    "downstream_physical_effects": false
+  },
+  "remaining_boundaries": [
+    "PHYSICAL_PRINT_DEFERRED_TO_2026-10-06_BY_CESAR",
+    "FISCAL_AUTOMATION_DISABLED",
+    "TATA_SEQUENCE_PRODUCTION_BINDING_NOT_CONSUMED",
+    "DINNER_PRINTER_00003_00004_REVALIDATION_PENDING",
+    "FULL_REPO_BUILD_PENDING",
+    "SERVICE_REBOOT_PERSISTENCE_NOT_ENABLED"
+  ],
+  "next_nonphysical_work": [
+    "Observe additional live orders for drift and unknowns",
+    "Integrate shadow decision consumer with continuous event stream without effects",
+    "Prepare production-sequence binding gate without consuming sequence",
+    "Continue vendor-supported fiscal contract research"
+  ],
+  "effects": {
+    "database_read": true,
+    "database_write": false,
+    "print": false,
+    "spooler_write": false,
+    "odhen_write": false,
+    "fiscal_action": false,
+    "sefaz_call": false
+  }
+}
