@@ -1,0 +1,125 @@
+{
+  "schema": "deliveryos.tata-reader-unified-core-real-order-replay-readiness.v1",
+  "captured_date": "2026-10-05",
+  "status": "BLOCKED_BEFORE_UNIFIED_DECISION_NO_FAKE_INPUTS",
+  "unified_core": {
+    "repository": "cesarspichencoff-cmyk/tata-os",
+    "branch": "feature/unified-tata-core-20261001",
+    "head": "9e6f46c8e19cc9485bc4bd028b845c7e52cdf95c",
+    "package": "packages/unified-restaurant-core",
+    "contract": "tata.unified-order-decision.v1",
+    "effects": {
+      "print": false,
+      "stockWrite": false,
+      "cmvWrite": false
+    }
+  },
+  "real_order": {
+    "source": "data/tata_reader_real_read_cdarvprod_success_20261005_v1.json",
+    "NRCOMANDA": "0000348850",
+    "NRCOMANDAEXT": "9627",
+    "NRVENDAREST": "0000349281",
+    "CDFILIAL": "0001",
+    "CDLOJA": "01",
+    "origin": "DLV_IFO",
+    "opened_at": "2026-10-04T22:58:50.0000000"
+  },
+  "products": [
+    {
+      "CDARVPROD": "9800001000",
+      "retail_code": "9.80.00.010.00",
+      "historical_fact_name": "COMBINADO KIDS",
+      "historical_name_evidence": "FACT_SOURCE",
+      "quantity": 3
+    },
+    {
+      "CDARVPROD": "9100008000",
+      "retail_code": "9.10.00.080.00",
+      "historical_fact_name": "EDAMAME",
+      "historical_name_evidence": "FACT_SOURCE",
+      "quantity": 1
+    },
+    {
+      "CDARVPROD": "9100002000",
+      "retail_code": "9.10.00.020.00",
+      "historical_fact_name": "NASU NO MISSO",
+      "historical_name_evidence": "FACT_SOURCE",
+      "quantity": 1
+    },
+    {
+      "CDARVPROD": "9300009000",
+      "retail_code": "9.30.00.090.00",
+      "historical_fact_name": "SUSHI DE UNAGUI",
+      "historical_name_evidence": "FACT_SOURCE",
+      "quantity": 1
+    }
+  ],
+  "proven_inputs": {
+    "real_order_identity": true,
+    "direct_product_identity_via_cdarvprod": true,
+    "expected_routing_for_all_observed_items": true,
+    "replay_deduplication": true,
+    "current_unified_core_head": true,
+    "product_names_available_from_historical_fact_source": true
+  },
+  "blockers": [
+    {
+      "code": "IFOOD_SEQUENCE_CANONICAL_MAPPING_UNPROVEN",
+      "fact": "NRCOMANDAEXT=9627 is observed on an order with origin DLV_IFO.",
+      "missing_proof": "NRCOMANDAEXT has not been proven to equal the canonical iFood short sequence required by the production contract."
+    },
+    {
+      "code": "TATA_SEQUENCE_STATE_NOT_PERSISTED",
+      "fact": "The source contains a human-confirmed daily store+date sequence policy.",
+      "missing_proof": "No live tata-sequence-state/bindings exists for the operational date, so assigning a numeric TATA sequence would be invented."
+    },
+    {
+      "code": "PRODUCTION_SERVICE_UNRESOLVED",
+      "fact": "Configured Sushi 1 routes include lunch/dinner alternatives and the planner explicitly forbids clock inference.",
+      "missing_proof": "No REAL_OBSERVED or HUMAN_CONFIRMED service resolution was supplied for this order."
+    },
+    {
+      "code": "CURRENT_PRODUCT_NAME_SOURCE_NOT_PROVEN",
+      "fact": "All four names are present as FACT_SOURCE in Jan-Aug historical sales backfill.",
+      "missing_proof": "Historical factual name is not the same as a current live product-name source for production rendering."
+    },
+    {
+      "code": "PRODUCTION_OBSERVATION_SURFACE_NOT_READ",
+      "fact": "The minimized CDARVPROD reader deliberately set observations_read=false.",
+      "missing_proof": "A production ticket cannot prove that there are no item/order observations when the observation surface was not read."
+    },
+    {
+      "code": "PACKAGING_FULL_ENGINE_NOT_MIGRATED_TO_UNIFIED_CORE",
+      "fact": "DeliveryOS packaging_source_lock explicitly says PACK_COMANDA_FULL_BOX_GROUPING remains not ported and runtime authority=false.",
+      "missing_proof": "No current core-authoritative mount group/box projection exists for this real order."
+    },
+    {
+      "code": "DELIVERY_CHECK_PROJECTION_NOT_BUILT_FOR_REAL_ORDER",
+      "fact": "Unified Core contract separates delivery boxes/bags/kits/complements from production.",
+      "missing_proof": "No current real-order delivery projection has been generated from canonical packaging/kit authority."
+    }
+  ],
+  "forbidden_shortcuts": [
+    "Do not treat 9627 as canonical iFood sequence without proof.",
+    "Do not invent a TATA sequence.",
+    "Do not infer LUNCH/DINNER from order clock alone.",
+    "Do not use historical product names as current production authority without an explicit source policy.",
+    "Do not interpret observations_read=false as proof that observations are absent.",
+    "Do not invent box/mount group."
+  ],
+  "next_safe_work": [
+    "Prove or source the current product display names without making them identity authority.",
+    "Read the already-authorized observation columns locally for production relevance with privacy minimization.",
+    "Establish the persisted daily TATA sequence state/cutover rule.",
+    "Prove NRCOMANDAEXT mapping to the required iFood sequence or source the canonical iFood identifier separately.",
+    "Migrate/consume packaging authority in Unified Core with parity evidence.",
+    "Only then build a real tata.unified-order-decision.v1 and production print intent."
+  ],
+  "effects": {
+    "database_write": false,
+    "print": false,
+    "stockWrite": false,
+    "cmvWrite": false,
+    "cutover": false
+  }
+}
