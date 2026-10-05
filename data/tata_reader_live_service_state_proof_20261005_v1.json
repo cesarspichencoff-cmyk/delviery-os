@@ -1,0 +1,33 @@
+{
+  "schema": "deliveryos.production-service-shift-state-proof.2026-10-05.v1",
+  "status": "PROVEN_DURABLE_EXPLICIT_SERVICE_STATE",
+  "device": "CAIXA_MOOCA",
+  "state_path": "C:\\ProgramData\\TataComandaReader\\state\\production-service-state.json",
+  "state": {
+    "schema": "deliveryos.production-service-shift-state.v1",
+    "store_id": "0001",
+    "operational_date": "2026-10-05",
+    "service": "LUNCH",
+    "evidence": "HUMAN_CONFIRMED_RULE",
+    "source_ref": "human:cesar:2026-10-05:delivery-opening-lunch",
+    "clock_inference_used": false
+  },
+  "state_sha256": "CDFE87E0A324397BF0FC564006C43654287104C4E5D9414AF4F64C0C401EA899",
+  "validation": {
+    "atomic_write": true,
+    "readback": true,
+    "resolver_compile_and_contract_test": "PASS",
+    "stale_date_fails_closed": true,
+    "clock_inference_true_fails_closed": true
+  },
+  "note": "The CAIXA Windows clock differed from conversation-local time during proof. Operational date and service are therefore explicit human state, never clock-derived.",
+  "effects": {
+    "local_state_write": true,
+    "database_write": false,
+    "print": false,
+    "spooler_write": false,
+    "odhen_write": false,
+    "fiscal_action": false,
+    "cutover": false
+  }
+}
