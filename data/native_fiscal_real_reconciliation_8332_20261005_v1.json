@@ -1,0 +1,36 @@
+{
+  "schema": "deliveryos.native-fiscal-real-reconciliation.2026-10-05.v1",
+  "status": "PROVEN_AUTHORIZED_RECONCILED_NO_FISCAL_ACTION",
+  "order": {
+    "NRCOMANDA": "0000348932",
+    "NRCOMANDAEXT": "8332",
+    "NRVENDAREST": "0000349363",
+    "NRSEQVENDA": "0000157024",
+    "NRNOTAFISCALCE": "000156369"
+  },
+  "observation": {
+    "nfce_status": "A",
+    "protocol": "13526006803390848",
+    "protocol_length": 17,
+    "qr_present": true,
+    "emitted_at": "2026-10-05T14:43:39-03:00"
+  },
+  "reconciler": {
+    "state": "AUTHORIZED_RECONCILED",
+    "blocking_reasons": [],
+    "next_action": "NO_FISCAL_ACTION",
+    "blind_retry_forbidden": true,
+    "authorized_is_not_danfe_printed": true,
+    "reprint_requires_separate_effect_gate": true,
+    "custom_sefaz_emitter_forbidden": true
+  },
+  "effects": {
+    "database_read": true,
+    "database_write": false,
+    "fiscal_action": false,
+    "sefaz_call": false,
+    "danfe_print": false,
+    "reprint": false,
+    "print": false
+  }
+}
