@@ -1,0 +1,75 @@
+{
+  "schema": "deliveryos.tata-reader-passive-log-candidate-orders-result.v1",
+  "captured_at": "2026-10-05T09:09:19.3448792-03:00",
+  "status": "CANDIDATE_ORDERS_READ_PROVEN",
+  "authorization_id": "CESAR-2026-10-05-TATA-READER-PASSIVE-LOG-CANDIDATES-V1",
+  "executed_head": "0effbf52590cb4683c0fff311ccee598ccecad8e",
+  "service_identity": "NT SERVICE\\TataComandaReader",
+  "sql_identity": {
+    "current_login": "NT SERVICE\\TataComandaReader",
+    "current_user": "NT SERVICE\\TataComandaReader",
+    "database": "teknisa"
+  },
+  "orders": [
+    {
+      "CDFILIAL": "0001",
+      "CDLOJA": "01",
+      "NRVENDAREST": "0000349258",
+      "NRCOMANDA": "0000348827",
+      "NRCOMANDAEXT": "6086",
+      "IDORGCMDVENDA": "DLV_IFO",
+      "DTHRABERMESA": "2026-10-04T21:58:34.0000000"
+    },
+    {
+      "CDFILIAL": "0001",
+      "CDLOJA": "01",
+      "NRVENDAREST": "0000349257",
+      "NRCOMANDA": "0000348826",
+      "NRCOMANDAEXT": "7810",
+      "IDORGCMDVENDA": "DLV_IFO",
+      "DTHRABERMESA": "2026-10-04T21:57:50.0000000"
+    },
+    {
+      "CDFILIAL": "0001",
+      "CDLOJA": "01",
+      "NRVENDAREST": "0000349255",
+      "NRCOMANDA": "0000348824",
+      "NRCOMANDAEXT": "8342",
+      "IDORGCMDVENDA": "DLV_IFO",
+      "DTHRABERMESA": "2026-10-04T21:55:13.0000000"
+    },
+    {
+      "CDFILIAL": "0001",
+      "CDLOJA": "01",
+      "NRVENDAREST": "0000349254",
+      "NRCOMANDA": "0000348823",
+      "NRCOMANDAEXT": "3245",
+      "IDORGCMDVENDA": "DLV_IFO",
+      "DTHRABERMESA": "2026-10-04T21:54:29.0000000"
+    },
+    {
+      "CDFILIAL": "0001",
+      "CDLOJA": "01",
+      "NRVENDAREST": "0000349253",
+      "NRCOMANDA": "0000348822",
+      "NRCOMANDAEXT": "7253",
+      "IDORGCMDVENDA": "DLV_IFO",
+      "DTHRABERMESA": "2026-10-04T21:54:06.0000000"
+    }
+  ],
+  "rows_read": 5,
+  "effects": {
+    "order_metadata_read": true,
+    "database_write": false,
+    "permission_change": false,
+    "print": false,
+    "spooler_write": false,
+    "fiscal_action": false,
+    "sefaz_call": false,
+    "cutover": false
+  },
+  "restoration": {
+    "service_stopped": true,
+    "installed_preflight_sha256": "3BBE4C37FEDC8EC45A25FE08497B999453B181EBA3033861CFF37F701B4A0035"
+  }
+}
