@@ -33,6 +33,8 @@ assert.equal(a.specversion,"1.0");
 assert.equal(a.source,"deliveryos://caixa-mooca/0001/01");
 assert.equal(a.id,b.id);
 assert.equal(a.identity.nr_comanda_ext,"8332");
+assert.equal(a.identity.opened_at_semantics,"STORE_LOCAL_WALL_TIME");
+assert.equal(a.identity.tz_name,"America/Sao_Paulo");
 assert.equal(a.privacy.customer_pii_persisted,false);
 assert.equal(a.effects.print,false);
 assert.equal(a.effects.fiscal_action,false);
