@@ -6,6 +6,7 @@ const path = require("node:path");
 
 const { projectExpectedRouting } = require("../dist/src/shadow/expectedRouting.js");
 const { planProductionPrintIntents } = require("../dist/src/production/productionPrintPlan.js");
+const { resolveProductionServiceShiftState } = require("../dist/src/production/serviceShiftState.js");
 
 function load(relativePath) {
   return JSON.parse(fs.readFileSync(path.join(__dirname, "..", relativePath), "utf8"));
@@ -142,3 +143,45 @@ assert.ok(checked > 0);
 console.log(
   `production-service-matrix-v1: ok products=${checked} dual_alternatives=${dualAlternativeProducts}`,
 );
+
+
+const validState={
+  schema:"deliveryos.production-service-shift-state.v2",
+  store_id:"0001",
+  operational_date:"2026-10-05",
+  service:"LUNCH",
+  evidence:"HUMAN_CONFIRMED_RULE",
+  source_ref:"human:test:lunch",
+  clock_inference_used:false,
+  valid_until_local:"2026-10-05T18:00:00",
+  updated_at:"2026-10-05T13:10:00-03:00"
+};
+const validResolution=resolveProductionServiceShiftState(validState,{
+  store_id:"0001",
+  operational_date:"2026-10-05",
+  order_opened_at:"2026-10-05T17:59:59.0000000"
+});
+assert.equal(validResolution.ready,true);
+assert.equal(validResolution.service_resolution.service,"LUNCH");
+
+const expiredResolution=resolveProductionServiceShiftState(validState,{
+  store_id:"0001",
+  operational_date:"2026-10-05",
+  order_opened_at:"2026-10-05T18:00:01.0000000"
+});
+assert.equal(expiredResolution.ready,false);
+assert.ok(expiredResolution.blocking_reasons.includes("SERVICE_STATE_EXPIRED_FOR_ORDER"));
+assert.equal(expiredResolution.service_resolution.service,null);
+
+const legacyResolution=resolveProductionServiceShiftState(
+  {...validState,schema:"deliveryos.production-service-shift-state.v1"},
+  {
+    store_id:"0001",
+    operational_date:"2026-10-05",
+    order_opened_at:"2026-10-05T17:00:00.0000000"
+  }
+);
+assert.equal(legacyResolution.ready,false);
+assert.ok(legacyResolution.blocking_reasons.includes("SERVICE_STATE_SCHEMA_MISMATCH"));
+
+console.log("service-state-validity-v2: ok valid/expired/legacy");
