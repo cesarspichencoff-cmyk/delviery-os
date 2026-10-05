@@ -118,6 +118,7 @@ $result = [ordered]@{
   events_emitted = 0
   duplicates_suppressed = 0
   changed_snapshots = 0
+  baseline_suppressed = 0
   checkpoint_path = $CheckpointPath
   event_dir = $EventDir
   bootstrap_was_complete = [bool]$checkpoint.bootstrap_complete
@@ -226,12 +227,15 @@ ORDER BY r.DTHRABERMESA DESC,r.NRVENDAREST DESC,i.NRPRODCOMVEN;
         $hash=Hash-Text ($basis|ConvertTo-Json -Depth 12 -Compress)
         $result.snapshots_observed++
         $entry=$checkpoint.seen[$key]
-        if($null -eq $entry){
+        $isNewEntry = ($null -eq $entry)
+        if($isNewEntry){
+          $baselineHash = if((-not [bool]$checkpoint.bootstrap_complete) -and (-not $EmitExistingOnBootstrap.IsPresent)){$hash}else{$null}
           $entry=[pscustomobject]@{
-            order_key=$key;snapshot_hash=$hash;stable_count=1;emitted_hash=$null
+            order_key=$key;snapshot_hash=$hash;stable_count=1;emitted_hash=$baselineHash
             last_seen_order_time=$order.DTHRABERMESA
           }
           $checkpoint.seen[$key]=$entry
+          if($null -ne $baselineHash){$result.baseline_suppressed++}
         } elseif([string]$entry.snapshot_hash -eq $hash){
           $entry.stable_count=[int]$entry.stable_count+1
           $entry.last_seen_order_time=$order.DTHRABERMESA
