@@ -1,0 +1,41 @@
+{
+  "schema": "deliveryos.tata-reader-unified-core-readiness.2026-10-05.v13",
+  "captured_on": "2026-10-05",
+  "status": "LIVE_SHADOW_RESILIENT_NATIVE_FISCAL_OBSERVED_PHYSICAL_EFFECTS_BLOCKED",
+  "newly_proven": [
+    "CONTROLLED_SERVICE_RESTART_NO_DUPLICATE",
+    "SYNTHETIC_UNKNOWN_FAILS_CLOSED_WITH_ZERO_EFFECTS",
+    "LIVE_IFOOD_8332_NATIVE_NFCE_AUTHORIZED_WITH_QR",
+    "SCM_FAILURE_RECOVERY_RESTARTS_WATCHER_AND_SHADOW_WITHOUT_DUPLICATE",
+    "AUTOMATIC_DELAYED_START_CONFIGURED",
+    "DINNER_PRINTERS_UNREACHABLE_WHILE_DELIVERY_CLOSED_PERIPHERALS_SERVER_REACHABLE"
+  ],
+  "current_runtime": {
+    "watcher": "RUNNING",
+    "shadow_consumer": "RUNNING",
+    "service_start": "AUTOMATIC_DELAYED",
+    "scm_recovery": "PROVEN_BY_FAULT_INJECTION",
+    "automatic_shadow_decisions": true,
+    "production_sequence_binding": false,
+    "physical_print": false,
+    "fiscal_automation": false
+  },
+  "boundaries": [
+    "ACTUAL_MACHINE_REBOOT_NOT_TESTED",
+    "DINNER_PRINTER_00003_00004_REVALIDATION_WHEN_OPERATION_OPEN",
+    "PHYSICAL_PRINT_DEFERRED_TO_2026-10-06_BY_CESAR",
+    "FISCAL_EMISSION_REMAINS_NATIVE_TEK...NO_EXTERNAL_TRIGGER",
+    "FULL_CURRENT_REPO_BUILD_NOT_YET_PROVEN"
+  ],
+  "fiscal_policy": "OBSERVE_RECONCILE_DO_NOT_EMIT",
+  "effects": {
+    "database_read": true,
+    "database_write": false,
+    "sequence_binding_write": false,
+    "print": false,
+    "spooler_write": false,
+    "odhen_write": false,
+    "fiscal_action": false,
+    "sefaz_call": false
+  }
+}
