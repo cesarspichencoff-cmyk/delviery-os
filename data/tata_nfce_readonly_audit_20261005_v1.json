@@ -1,0 +1,57 @@
+{
+  "schema": "deliveryos.tata-nfce-readonly-audit.2026-10-05.v1",
+  "captured_on": "2026-10-05",
+  "status": "NATIVE_FISCAL_PATH_ACTIVE_TRIGGER_SEMANTICS_PARTIALLY_PROVEN_NO_DELIVERYOS_FISCAL_ACTION",
+  "public_current_constraints": {
+    "sao_paulo_nfce_mandatory_since": "2026-01-01",
+    "sao_paulo_protocol_17_production_date": "2026-10-05",
+    "source_class": "OFFICIAL_SEFAZ_SP_AND_NFE_PORTAL_RESEARCH"
+  },
+  "installed_odhen_source_facts": [
+    "OrderDelivery action Cupom Fiscal calls OrderDeliveryController.geraNotaFiscal.",
+    "geraNotaFiscal calls DeliveryService.generatePayment after payment completeness checks.",
+    "The response handles IDSTATUSNFCE, mensagemNfce and mensagemImpressao and reports Venda realizada.",
+    "Reimpressao is a separate action and calls reprintDeliveryCupomFiscal.",
+    "Reprint path retrieves existing NRNOTAFISCALCE and imprimeDanfeNFCE; it is not the issuance path.",
+    "Payment sale code contains deadlock retry semantics that do not retransmit the fiscal note after transmission."
+  ],
+  "recent_real_order_readonly_observation": {
+    "captured_at": "2026-10-05T12:36:37-03:00",
+    "sample_size": 12,
+    "in_progress_status_3_without_sale_or_nfce": 2,
+    "concluded_status_X_with_sale_and_nfce_authorized_A": 10,
+    "fiscal_cash_register_observed": "001",
+    "customer_pii_read": false,
+    "note_numbers_persisted_in_this_artifact": false,
+    "interpretation": "Native fiscal sales are being created and authorized for real DLV_IFO orders in the current environment. This does not by itself prove whether an operator F7/Cupom Fiscal action was required for each transition."
+  },
+  "proven_separation": {
+    "production_dispatch_not_equal_nfce_authorized": true,
+    "nfce_authorized_not_equal_danfe_printed": true,
+    "cupom_fiscal_action_not_equal_reprint_action": true
+  },
+  "unknowns": [
+    "Exact keyboard binding between F7 and the Cupom Fiscal action.",
+    "Whether the current iFood/Odhen flow is hands-free automatic or operator-triggered through Cupom Fiscal/F7.",
+    "Runtime compatibility proof for QR Code v3.",
+    "Runtime compatibility proof for Sao Paulo 17-position authorization protocol adopted in production on 2026-10-05.",
+    "Supported vendor-level service/API contract, if any, for programmatic fiscal triggering without UI emulation."
+  ],
+  "decisions": [
+    "Do not build a parallel SEFAZ emitter.",
+    "Do not automate the F7 keystroke.",
+    "Do not use production dispatch as an arbitrary fiscal trigger.",
+    "Observe/reconcile the native Teknisa/Odhen fiscal state and preserve its idempotency semantics.",
+    "Do not retry an ambiguous fiscal effect; reconcile VENDA/NFC-e state first."
+  ],
+  "effects": {
+    "database_read": true,
+    "database_write": false,
+    "customer_pii_read": false,
+    "fiscal_action": false,
+    "sefaz_call": false,
+    "danfe_print": false,
+    "odhen_write": false,
+    "cutover": false
+  }
+}
