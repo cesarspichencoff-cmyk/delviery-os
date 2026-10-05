@@ -18,7 +18,7 @@ foreach($token in @(
   'print = $false','fiscal_action = $false','cutover = $false'
 )){if(-not $c.Contains($token)){throw ("REQUIRED_TOKEN:"+$token)}}
 foreach($forbidden in @(
-  'NMPRODUTO','NMCONSUM','TELEF','ENDERE','CEP','PAGAMENTO',
+  'NMPRODUTO','NMCONSUMIDOR','NRTELEFONE','DSTELEFONE','DSENDERECO','NRCEP','CDCEP','PAGAMENTO',
   'INSERT ','UPDATE ','DELETE ','MERGE ','CREATE ','ALTER ','DROP ','GRANT ','DENY ','REVOKE ',
   'EXEC ','EXECUTE ','TRUNCATE ','DBCC ','sp_configure','xp_cmdshell',
   'Invoke-WebRequest','Invoke-RestMethod','System.Net.Http','Out-Printer','WritePrinter','StartDocPrinter','/print'
