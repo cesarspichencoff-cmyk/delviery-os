@@ -6,7 +6,7 @@
   "human_authorized": true,
   "human_statement": "Autorizo tudo que precisar",
   "interpreted_scope": "Necessary bounded steps to prove the TATA Reader runtime path, using the minimum effect required.",
-  "authorized_source_head": "90834221a98fccc5d2b5872701eafc636747bcb0",
+  "authorized_source_head": "b8374b81ba8e63cc50bf6817fffc1c5505a3d2a8",
   "precondition_proof": "data/tata_reader_preflight_v8_result_20261005_v1.json",
   "read_script": {
     "path": "tools/authorized/tata_reader_real_order_read_cdarvprod_v2.ps1",
@@ -14,11 +14,11 @@
   },
   "runner": {
     "path": "tools/authorized/tata_reader_real_read_cdarvprod_cycle_runner_v2.ps1",
-    "sha256": "BDF30076231F2C753C1D5D43F9B3665634FB0287748B3A12D944B67F9E4F72AC"
+    "sha256": "5A917577E2D238D2BC87C9805115E98279EE0DA9E18376FA5E67B757EFBCAA31"
   },
   "verifier": {
     "path": "tools/authorized/verificar_tata_reader_real_read_cdarvprod_bundle_v2.ps1",
-    "sha256": "07E3DD69B5F1BE87CF3E1F7EDB68D4EBBBA71B0B545AC2B82920E4486A2D1452"
+    "sha256": "01C1FC491FD6106FE617A1CE1EDB4E0E52EB11AC2F0B26F6DC6155EC2505E3C3"
   },
   "installed_preflight_expected_sha256": "3BBE4C37FEDC8EC45A25FE08497B999453B181EBA3033861CFF37F701B4A0035",
   "scope": {
@@ -67,5 +67,10 @@
     "danfe_print": false,
     "cutover": false
   },
-  "stop_after_raw_read_evidence": true
+  "stop_after_raw_read_evidence": true,
+  "correction_before_execution": {
+    "read_script_newline_fixed": true,
+    "nested_authorization_pin_contract_fixed": true,
+    "prior_real_order_read_effect": false
+  }
 }
