@@ -28,6 +28,7 @@
     "ui:entregas": "npx tsc && node dist/tools/entregas_ui_server.js",
     "ui:entregas:pilot": "npx tsc && node dist/tools/entregas_pilot_server.js",
     "test:entregas:pilot-gate": "npx tsc && node dist/src/entregas/pilot/run-pilot-gate-tests.js",
+    "test:platform:pilot-readiness": "npx tsx src/platform/run-pilot-readiness-tests.ts",
     "test:entregas:field": "npx tsc && node dist/src/entregas/gps/run-field-tests.js",
     "test:entregas:native": "npx tsc && node dist/src/entregas/gps/run-native-consent-tests.js",
     "test:entregas:android": "npx tsc && node dist/src/entregas/android/run-android-project-tests.js",

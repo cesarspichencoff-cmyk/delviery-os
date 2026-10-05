@@ -6,7 +6,7 @@
     "authority_scope": "technical_state",
     "superseded_by": null,
     "atualizado_em": "2026-10-05",
-    "state_basis": "957f6ce",
+    "state_basis": "d3c2110",
     "observa": [
       "src/product/",
       "src/perfil-delivery/",
@@ -2240,5 +2240,56 @@
       "status": "RENDERED",
       "message": "SOURCE -> PRODUCT LOCAL PROVEN; DEPLOY OFF; CONSUMER LIVE OFF"
     }
+  },
+  "pilot_readiness_20261005": {
+    "status": "LOCAL_CORE_GREEN_ACTIVATION_BLOCKED_EXTERNAL",
+    "gate": "test:platform:pilot-readiness",
+    "profiles": {
+      "observational_read_only": {
+        "status": "BLOCKED_EXTERNAL",
+        "local_proofs": 7,
+        "external_gates": 6,
+        "action_stack_required": false
+      },
+      "action_enabled": {
+        "status": "BLOCKED_EXTERNAL",
+        "local_proofs": 7,
+        "external_gates": 7,
+        "action_stack_required": true
+      }
+    },
+    "fresh_core": {
+      "pilot_gate": "10/10 PASS",
+      "human_action_gate": "13/13 PASS",
+      "product_system": "54/54 PASS"
+    },
+    "local_proofs": [
+      "source->product E2E",
+      "device queue telemetry B5",
+      "multi-unit B8",
+      "Figma Full PB11/PB13",
+      "backup off-host + restore",
+      "source-ingest process",
+      "human actions fail-closed"
+    ],
+    "observational_external_gates": [
+      "physical Android/battery",
+      "real per-unit credentials + authorized DB/deploy/cutover",
+      "source-ingest production activation",
+      "consumer_live activation",
+      "Product System reader official wiring",
+      "Product System reader real credential"
+    ],
+    "action_enabled_extra_gate": "real human identity + executor + durable audit",
+    "open_human_product_questions": [
+      "Q-001",
+      "Q-002",
+      "Q-004",
+      "Q-005",
+      "Q-008",
+      "Q-009"
+    ],
+    "figma_node": "25:47",
+    "boundary": "gate de prontidão não autoriza nem executa efeito; muda para GO somente quando os estados externos comprovados entrarem no STATE"
   }
 }
