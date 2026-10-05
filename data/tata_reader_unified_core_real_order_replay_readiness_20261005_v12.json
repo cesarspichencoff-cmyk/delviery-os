@@ -1,0 +1,45 @@
+{
+  "schema": "deliveryos.tata-reader-unified-core-readiness.2026-10-05.v12",
+  "captured_on": "2026-10-05",
+  "status": "LIVE_READ_AND_AUTOMATIC_SHADOW_DECISION_WORLD_PROVEN_EFFECTS_BLOCKED",
+  "newly_proven": [
+    "LIVE_SHADOW_CONSUMER_RUNNING_UNDER_SUPERVISED_HOST_V2",
+    "FIRST_LIVE_EVENT_AUTOMATICALLY_CONVERTED_TO_READY_SHADOW_DECISION",
+    "PRODUCT_IDENTITY_CACHE_554_ROWS_WITHOUT_SERVICE_SQL_PERMISSION_EXPANSION",
+    "KNOWN_BEVERAGES_NO_LONGER_FALSELY_BLOCK_PACKAGING",
+    "PACKAGING_96_OF_96_PASS",
+    "KITS_LOGIC_V2_PASS"
+  ],
+  "current_runtime": {
+    "watcher": "RUNNING",
+    "shadow_consumer": "RUNNING",
+    "automatic_shadow_decisions": true,
+    "production_sequence_binding": false,
+    "physical_print": false,
+    "fiscal_automation": false
+  },
+  "remaining_boundaries": [
+    "PHYSICAL_PRINT_DEFERRED_TO_2026-10-06_BY_CESAR",
+    "FISCAL_AUTOMATION_DISABLED",
+    "DINNER_PRINTER_00003_00004_REVALIDATION_PENDING",
+    "FULL_REPO_BUILD_PENDING",
+    "REBOOT_PERSISTENCE_NOT_ENABLED",
+    "MORE_LIVE_ORDERS_NEEDED_TO_EXERCISE_UNKNOWN_AND_DRIFT_PATHS"
+  ],
+  "next_actions": [
+    "Observe subsequent live orders and verify automatic ready/blocked decisions.",
+    "Promote only evidence-backed aliases/classifications when unknowns appear.",
+    "Prepare but do not consume TATA sequence binding until physical effect gate.",
+    "Keep fiscal reconciliation observation-only."
+  ],
+  "effects": {
+    "database_read": true,
+    "database_write": false,
+    "sequence_binding_write": false,
+    "print": false,
+    "spooler_write": false,
+    "odhen_write": false,
+    "fiscal_action": false,
+    "sefaz_call": false
+  }
+}
