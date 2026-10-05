@@ -1,0 +1,71 @@
+{
+  "schema": "deliveryos.tata-reader-real-read-cdarvprod-authorization.v2",
+  "authorization_id": "CESAR-2026-10-05-TATA-READER-REAL-READ-CDARVPROD-V2",
+  "authorized_on": "2026-10-05",
+  "authorized_by": "Cesar",
+  "human_authorized": true,
+  "human_statement": "Autorizo tudo que precisar",
+  "interpreted_scope": "Necessary bounded steps to prove the TATA Reader runtime path, using the minimum effect required.",
+  "authorized_source_head": "90834221a98fccc5d2b5872701eafc636747bcb0",
+  "precondition_proof": "data/tata_reader_preflight_v8_result_20261005_v1.json",
+  "read_script": {
+    "path": "tools/authorized/tata_reader_real_order_read_cdarvprod_v2.ps1",
+    "sha256": "4D5F328FF22C80E721F14DA86401B0C11B07FF4C307D6984EFE0B5082C2E84F0"
+  },
+  "runner": {
+    "path": "tools/authorized/tata_reader_real_read_cdarvprod_cycle_runner_v2.ps1",
+    "sha256": "BDF30076231F2C753C1D5D43F9B3665634FB0287748B3A12D944B67F9E4F72AC"
+  },
+  "verifier": {
+    "path": "tools/authorized/verificar_tata_reader_real_read_cdarvprod_bundle_v2.ps1",
+    "sha256": "07E3DD69B5F1BE87CF3E1F7EDB68D4EBBBA71B0B545AC2B82920E4486A2D1452"
+  },
+  "installed_preflight_expected_sha256": "3BBE4C37FEDC8EC45A25FE08497B999453B181EBA3033861CFF37F701B4A0035",
+  "scope": {
+    "integrated_orders_only": true,
+    "max_orders": 1,
+    "max_items_per_order": 20,
+    "fields": [
+      "COMANDAVEN.CDFILIAL",
+      "COMANDAVEN.CDLOJA",
+      "COMANDAVEN.NRVENDAREST",
+      "COMANDAVEN.NRCOMANDA",
+      "COMANDAVEN.NRCOMANDAEXT",
+      "COMANDAVEN.IDORGCMDVENDA",
+      "COMANDAVEN.IDSTCOMANDA",
+      "VENDAREST.DTHRABERMESA",
+      "ITCOMANDAVEN.NRPRODCOMVEN",
+      "ITCOMANDAVEN.CDPRODUTO",
+      "ITCOMANDAVEN.QTPRODCOMVEN",
+      "ITCOMANDAVEN.IDSTPRCOMVEN",
+      "PRODUTO.CDARVPROD"
+    ],
+    "product_name": false,
+    "customer_pii": false,
+    "observations": false
+  },
+  "allowed_effects": {
+    "order_row_read": true,
+    "temporary_service_start": true,
+    "temporary_preflight_script_swap": true
+  },
+  "restoration_required": {
+    "service_stopped": true,
+    "installed_preflight_restored": true,
+    "evidence_restored": true
+  },
+  "prohibited_effects": {
+    "database_write": false,
+    "permission_change": false,
+    "odhen_write": false,
+    "print": false,
+    "spooler_write": false,
+    "f7": false,
+    "nfce": false,
+    "fiscal_action": false,
+    "sefaz_call": false,
+    "danfe_print": false,
+    "cutover": false
+  },
+  "stop_after_raw_read_evidence": true
+}
