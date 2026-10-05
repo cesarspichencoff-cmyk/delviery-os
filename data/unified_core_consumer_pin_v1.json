@@ -8,7 +8,10 @@
     "branch": "feature/unified-tata-core-20261001",
     "package": "packages/unified-restaurant-core",
     "entrypoint": "src/index.ts",
-    "status": "REVERSIBLE_PREBUILD_NOT_CUTOVER"
+    "status": "REVERSIBLE_PREBUILD_NOT_CUTOVER",
+    "current_known_head": "2621e0c4c56eda5910030ef6b032ebdc46ca6122",
+    "reporting_contract_id": "tata.cross-system-reporting-contract.v2",
+    "source_lock": "packages/unified-restaurant-core/data/cross_system_source_lock_2026_10_05_v2.json"
   },
   "local_state": {
     "namespace": "deliveryos",
