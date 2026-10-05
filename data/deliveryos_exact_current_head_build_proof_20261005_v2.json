@@ -1,0 +1,44 @@
+{
+  "schema": "deliveryos.exact-current-head-build-proof.2026-10-05.v2",
+  "source_head": "15083793625af53b5fb75070d726ed41d0a42565",
+  "captured_at_local": "2026-10-05T16:15:57.1803527-03:00",
+  "environment": {
+    "node": "v24.21.0",
+    "npm": "11.19.0"
+  },
+  "total": 18,
+  "passed": 18,
+  "failed": 0,
+  "status": "CURRENT_HEAD_18_OF_18_PASS",
+  "steps": [
+    "npm_ci",
+    "typecheck",
+    "build",
+    "routing_config",
+    "non_production",
+    "production_print_plan",
+    "production_service_matrix",
+    "production_ticket_v2",
+    "production_ticket_e2e",
+    "native_nfce_orchestration",
+    "native_fiscal_reconciler",
+    "resource_consumption",
+    "resource_costing",
+    "tata_os_print_handoff",
+    "windows_spooler_evidence",
+    "tata_sequence",
+    "shadow_consumer_syntax",
+    "shadow_loop_syntax"
+  ],
+  "effects": {
+    "isolated_workspace_write": true,
+    "production_service_change": false,
+    "database_read": false,
+    "database_write": false,
+    "print": false,
+    "spooler_write": false,
+    "odhen_write": false,
+    "fiscal_action": false,
+    "sefaz_call": false
+  }
+}
