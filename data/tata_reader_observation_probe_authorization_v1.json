@@ -1,0 +1,64 @@
+{
+  "schema": "deliveryos.tata-reader-observation-probe-authorization.v1",
+  "authorization_id": "CESAR-2026-10-05-TATA-READER-OBSERVATION-PROBE-V1",
+  "authorized_on": "2026-10-05",
+  "authorized_by": "Cesar",
+  "human_authorized": true,
+  "human_statement": "Autorizo tudo que precisar",
+  "interpreted_scope": "One bounded read under NT SERVICE\\TataComandaReader of the already-permitted observation fields for exact real order NRCOMANDA=0000348850 / NRVENDAREST=0000349281, with raw free text kept local and no print/write/cutover.",
+  "source_head": "e7b8778f3687603218d4134e0988185c7604a4c0",
+  "probe": {
+    "path": "tools/authorized/tata_reader_real_order_observation_probe_v1.ps1",
+    "sha256": "9C74CC3626B46576079FFA5E7124D716813A331F142983D10AEAC97734E706F6"
+  },
+  "guard": {
+    "path": "tools/authorized/verificar_tata_reader_real_order_observation_probe_v1.ps1",
+    "sha256": "87EB3F75086CEDBC67ACFAC6845579691B437B145FC776D62EA582A8765BC635",
+    "expected_output": "TATA_READER_OBSERVATION_PROBE_STATIC_PASS"
+  },
+  "exact_order": {
+    "CDFILIAL": "0001",
+    "CDLOJA": "01",
+    "NRVENDAREST": "0000349281",
+    "NRCOMANDA": "0000348850"
+  },
+  "allowed_fields": {
+    "order": [
+      "DSOBSCOMANDA"
+    ],
+    "item": [
+      "NRPRODCOMVEN",
+      "CDPRODUTO",
+      "DSOBSDESCIT",
+      "DSOBSPEDDIGCMD",
+      "TXPRODCOMVEN"
+    ]
+  },
+  "privacy": {
+    "free_text_read": true,
+    "raw_text_repo_persistence": false,
+    "raw_text_local_only": true,
+    "sanitized_summary_repo_persistence": true
+  },
+  "allowed_effects": {
+    "observation_row_read": true,
+    "temporary_service_start": true,
+    "temporary_preflight_script_swap": true
+  },
+  "restoration_required": {
+    "service_stopped": true,
+    "installed_preflight_restored": true,
+    "prior_evidence_restored": true
+  },
+  "prohibited_effects": {
+    "database_write": false,
+    "permission_change": false,
+    "odhen_write": false,
+    "network_call": false,
+    "print": false,
+    "spooler_write": false,
+    "fiscal_action": false,
+    "sefaz_call": false,
+    "cutover": false
+  }
+}
