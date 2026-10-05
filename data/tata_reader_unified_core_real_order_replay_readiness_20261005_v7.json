@@ -1,0 +1,50 @@
+{
+  "schema": "deliveryos.tata-reader-unified-core-readiness.2026-10-05.v7",
+  "captured_on": "2026-10-05",
+  "status": "NONPHYSICAL_WORK_CONTINUING_PHYSICAL_GATE_DEFERRED",
+  "head_before_write": "20fd1e8a6e891c37381707fb2014e42e523421b5",
+  "proven": [
+    "PACKAGING_91_91_AND_KITS_V2_PASS",
+    "EXACT_ONE_G_BAG_WITH_INTERNAL_HOT_COLD_SEGREGATION",
+    "TATA_SEQUENCE_ATOMIC_READY_001_ZERO_BINDINGS",
+    "DURABLE_EXPLICIT_SHIFT_STATE",
+    "CONTINUOUS_READER_RESTART_DEDUPE_PROOF",
+    "RECENT_500_DLV_ZERO_PRODUCTION_ROUTING_GAPS",
+    "CURRENT_LUNCH_PRINTERS_REACHABLE",
+    "SP_PROTOCOL17_61_OF_61_PROVEN",
+    "QR_DATA_61_OF_61_PRESENT",
+    "CURRENT_QR_V2_REAL_AUTHORIZATION_PATH_PROVEN",
+    "CUPOM_FISCAL_TO_GERANOTAFISCAL_PATH_PROVEN",
+    "REPRINT_DISTINCT",
+    "LEGACY_AFTER_PRODUCTION_FISCAL_ROUTE_BLOCKED",
+    "NATIVE_FISCAL_RECONCILER_CODE_READY_ISOLATED_TEST_PASS",
+    "SERVICE_STATE_SETTER_PREPARED",
+    "CONTINUOUS_SERVICE_ENTRYPOINT_PREPARED_NOT_ACTIVATED"
+  ],
+  "physical_gate": {
+    "status": "DEFERRED_BY_CESAR_TO_2026-10-06",
+    "print_attempted": false
+  },
+  "remaining": [
+    "PHYSICAL_PRINTER_CALIBRATION",
+    "DINNER_PRINTER_00003_00004_REVALIDATION",
+    "FULL_REPO_BUILD_AFTER_LATEST_CHANGES",
+    "VENDOR_SUPPORTED_NATIVE_FISCAL_PROGRAMMATIC_TRIGGER_CONTRACT",
+    "CONTINUOUS_READER_TRANSACTIONAL_CUTOVER_AND_ROLLBACK_EXECUTION"
+  ],
+  "evidence": {
+    "general_audit": "docs/DeliveryOS_General_Audit_2026-10-05_v2.md",
+    "fiscal_runtime": "data/tata_nfce_runtime_compatibility_20261005_v1.json",
+    "fiscal_audit": "data/tata_nfce_readonly_audit_20261005_v2.json",
+    "continuous_candidate": "data/tata_reader_continuous_cutover_candidate_v1.json"
+  },
+  "effects": {
+    "print": false,
+    "spooler_write": false,
+    "database_write": false,
+    "odhen_write": false,
+    "fiscal_action": false,
+    "sefaz_call": false,
+    "service_cutover": false
+  }
+}
