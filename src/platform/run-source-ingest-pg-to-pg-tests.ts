@@ -368,7 +368,7 @@ async function main(): Promise<void> {
     await testCase(
       "PP6 writer de destino continua sem leitura da verdade",
       async () => {
-        const msg = await targetDb!.cliente
+        const code = await targetDb!.cliente
           .transaction(async (tx) => {
             await tx.query("SET LOCAL ROLE " + WRITER);
             await tx.query(
@@ -376,10 +376,13 @@ async function main(): Promise<void> {
             );
           })
           .then(
-            () => "",
-            (e: Error) => e.message,
+            () => null,
+            (e: unknown) => {
+              const c = (e as { code?: unknown } | null)?.code;
+              return typeof c === "string" ? c : "erro_sem_sqlstate";
+            },
           );
-        assert.match(msg, /permission denied/);
+        assert.equal(code, "42501");
       },
     );
   } finally {

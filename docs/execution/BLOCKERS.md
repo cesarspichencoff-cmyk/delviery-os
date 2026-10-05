@@ -4,8 +4,8 @@ lifecycle:
   status: ACTIVE
   authority_scope: infra_blockers
   superseded_by: null
-  atualizado_em: "2026-10-04"
-  state_basis: 47b8852
+  atualizado_em: "2026-10-05"
+  state_basis: 957f6ce
   question_refs: ["Q-001","Q-002","Q-003","Q-004","Q-005","Q-006","Q-007","Q-008","Q-009","Q-010","Q-011"]
 ---
 
@@ -1690,3 +1690,48 @@ Provas 2026-10-04:
 
 **B8 = RESOLVIDO no escopo de implementação/runtime local.**
 Isso não prova que produção já tenha duas unidades cadastradas nem ativa qualquer deploy/cutover.
+
+
+### Sucessão 2026-10-05 — fonte PostgreSQL → Product System provado localmente
+
+O caminho operacional de leitura ganhou um ensaio único com **dois PostgreSQL descartáveis**
+(fonte e destino) e os **binários compilados reais**:
+
+`entregas.public_outbox (fonte)` → `entregas-source-ingest` →
+`platform.event_log (destino)` → Product System read-only.
+
+Resultado do gate `test:platform:source-ingest:product-e2e`: **10/10 PASS**.
+
+O ensaio provou:
+
+- 3/3 fatos atravessam preservando `unit_id` e `source_mode=simulated`;
+- checkpoint avança até o último evento e a fonte permanece intacta;
+- navegação lê ITAIM/PINHEIROS de `identity.unit` e exclui HOUSE inativa;
+- `/api/entregas?unit_id=ITAIM` projeta a viagem ITAIM `em_rota` sem misturar PINHEIROS;
+- trocar para PINHEIROS troca a fonte real sem cross-unit bleed;
+- `/api/historico?unit_id=ITAIM` e `/api/entregas` não devolvem `payload` bruto;
+- sem `unit_id`, a superfície não varre todas as unidades: declara integração pendente;
+- POST continua 405;
+- logs não vazam credenciais-sentinela nem nomes dos papéis de ensaio.
+
+Foi criado `deploy/sql/product_system_reader.sql`, **opcional nesta etapa**, com acesso read-only:
+`identity.unit` por colunas, `identity.device` sem `secret_hash`,
+`identity.device_runtime_status` por colunas e SELECT em `platform.event_log`.
+INSERT/UPDATE/DELETE e leitura de `secret_hash` foram recusados por SQLSTATE `42501`.
+
+Durante a regressão, dois gates antigos de least privilege foram corrigidos porque verificavam a
+mensagem inglesa `permission denied`. PostgreSQL em locale pt-BR devolve `permissão negada`;
+os gates agora verificam o SQLSTATE estável `42501`. O privilégio em si já estava correto.
+
+Regressões frescas:
+- typecheck: PASS;
+- feed PostgreSQL: **8/8 PASS**;
+- PG fonte → PG destino: **6/6 PASS**;
+- processo compilado PG→PG: **5/5 PASS**;
+- Product System: **54/54 PASS**;
+- source → Product System: **10/10 PASS**.
+
+**Fronteira:** esta prova é local/isolada e não ativa produção. O reader opcional não foi
+integrado à composição oficial e não recebeu credencial real. `consumer_live` continua
+**OFF / NOT_AUTHORIZED**. Operação Viva/Copiloto atuais ainda não são promovidos a leitura live
+por esta prova.

@@ -120,6 +120,7 @@
     "test:platform:source-ingest:feed-pg": "npx tsx src/platform/run-pg-entregas-event-feed-tests.ts",
     "test:platform:source-ingest:pg-to-pg": "npx tsx src/platform/run-source-ingest-pg-to-pg-tests.ts",
     "test:platform:source-ingest:process-pg": "npx tsc && node dist/src/platform/run-source-ingest-pg-process-tests.js",
+    "test:platform:source-ingest:product-e2e": "npx tsc && node dist/src/platform/run-source-to-product-e2e-tests.js",
     "test:platform:source-ingest:wiring": "npx tsc && node dist/src/platform/run-source-ingest-pilot-wiring-pg-tests.js",
     "test:platform:product": "npx tsx src/platform/run-product-system-tests.ts",
     "test:platform:multi-unit-read": "npx tsx src/platform/run-multi-unit-read-tests.ts",

@@ -271,15 +271,16 @@ async function main(): Promise<void> {
     await testCase(
       "PF6 leitor não consegue ler coluna alheia nem mutar outbox",
       async () => {
-        async function denied(sql: string): Promise<string> {
+        async function denied(sql: string): Promise<string | null> {
           try {
             await banco!.cliente.transaction(async (tx) => {
               await tx.query("SET LOCAL ROLE " + READER);
               await tx.query(sql);
             });
-            return "";
+            return null;
           } catch (e) {
-            return e instanceof Error ? e.message : String(e);
+            const code = (e as { code?: unknown } | null)?.code;
+            return typeof code === "string" ? code : "erro_sem_sqlstate";
           }
         }
         for (const sql of [
@@ -289,10 +290,10 @@ async function main(): Promise<void> {
           "DELETE FROM entregas.public_outbox",
           "INSERT INTO entregas.public_outbox(outbox_id,unit_id,event_id,idempotency_key,event,status,created_at) VALUES ('x','x','x','x','{}','pending',now())",
         ]) {
-          assert.match(
+          assert.equal(
             await denied(sql),
-            /permission denied/,
-            "comando indevidamente permitido: " + sql,
+            "42501",
+            "comando deveria ser recusado por privilégio insuficiente: " + sql,
           );
         }
       },
