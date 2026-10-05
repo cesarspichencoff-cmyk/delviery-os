@@ -11,6 +11,10 @@ param(
   [ValidateNotNullOrEmpty()]
   [string]$SourceRef,
 
+  [Parameter(Mandatory=$true)]
+  [ValidatePattern("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$")]
+  [string]$ValidUntilLocal,
+
   [string]$StoreId = "0001",
   [string]$StatePath = "C:\\ProgramData\\TataComandaReader\\state\\production-service-state.json",
   [string]$HistoryPath = "C:\\ProgramData\\TataComandaReader\\state\\production-service-history.jsonl"
@@ -51,19 +55,20 @@ try {
   $previous = $null
   if (Test-Path -LiteralPath $StatePath -PathType Leaf) {
     $previous = Get-Content -LiteralPath $StatePath -Raw -Encoding UTF8 | ConvertFrom-Json
-    if ($previous.schema -ne "deliveryos.production-service-shift-state.v1") {
+    if ($previous.schema -ne "deliveryos.production-service-shift-state.v2") {
       throw "SERVICE_STATE_SCHEMA_MISMATCH"
     }
   }
 
   $state = [ordered]@{
-    schema = "deliveryos.production-service-shift-state.v1"
+    schema = "deliveryos.production-service-shift-state.v2"
     store_id = $StoreId.Trim()
     operational_date = $OperationalDate
     service = $Service
     evidence = "HUMAN_CONFIRMED_RULE"
     source_ref = $SourceRef.Trim()
     clock_inference_used = $false
+    valid_until_local = $ValidUntilLocal
     updated_at = (Get-Date).ToString("o")
   }
 
@@ -78,6 +83,7 @@ try {
     $readback.operational_date -ne $state.operational_date -or
     $readback.service -ne $state.service -or
     $readback.evidence -ne "HUMAN_CONFIRMED_RULE" -or
+    [string]$readback.valid_until_local -ne $state.valid_until_local -or
     [bool]$readback.clock_inference_used
   ) {
     throw "SERVICE_STATE_READBACK_FAILED"
@@ -93,6 +99,7 @@ try {
     evidence = $state.evidence
     source_ref = $state.source_ref
     clock_inference_used = $false
+    valid_until_local = $state.valid_until_local
   } | ConvertTo-Json -Compress
 
   $historyBytes = (New-Object Text.UTF8Encoding($false)).GetBytes($historyRecord + [Environment]::NewLine)
@@ -112,6 +119,7 @@ try {
     previous_service = if ($null -eq $previous) { $null } else { [string]$previous.service }
     current_service = $state.service
     operational_date = $state.operational_date
+    valid_until_local = $state.valid_until_local
     state_sha256 = (Get-FileHash -LiteralPath $StatePath -Algorithm SHA256).Hash.ToUpperInvariant()
     effects = [ordered]@{
       local_state_write = $true
