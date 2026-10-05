@@ -1,0 +1,115 @@
+{
+  "schema": "deliveryos.tata-reader-unified-core-real-order-replay-readiness.v2",
+  "captured_at": "2026-10-05T10:50:00-03:00",
+  "status": "REPLAY_PROVEN_PHYSICAL_GATE_NOT_READY",
+  "proven": [
+    "TATA_SEQUENCE_POLICY_001_999_HUMAN_CONFIRMED",
+    "CURRENT_OPENING_SHIFT_SERVICE_LUNCH_HUMAN_CONFIRMED",
+    "PACKAGING_BOX_COMBINADO_KIDS_750_HUMAN_CONFIRMED_AND_ENGINE_TESTED",
+    "PACKAGING_BOX_NASU_NO_MISSO_650_SELADA_HUMAN_CONFIRMED_AND_ENGINE_TESTED",
+    "KIT_ASSIGNMENT_3_KIDS_PLUS_2_HOT_STARTERS_PLUS_1_DUPLA_EQUALS_3_KIT_KIDS_PLUS_1_KIT_QUENTE",
+    "TATA_ACADEMIA_KITS_LOGIC_PASS",
+    "TATA_ACADEMIA_PACKAGING_88_OF_88_PASS",
+    "DELIVERYOS_REAL_ORDER_REPLAY_PASS",
+    "UNIFIED_CORE_REAL_ORDER_TEST_PASS",
+    "PRODUCTION_TARGETS_00002_AND_00009_FOR_CURRENT_LUNCH_REPLAY_SCENARIO",
+    "PRODUCTION_FINGERPRINTS_DETERMINISTIC",
+    "NO_PRINT_NO_SPOOLER_NO_FISCAL_EFFECT"
+  ],
+  "remaining_blockers": [
+    {
+      "code": "LIVE_CAIXA_TATA_SEQUENCE_STATE_NOT_PERSISTED",
+      "reason": "CAIXA_MOOCA became offline after the passive watcher; live atomic counter/binding file for 2026-10-05 could not be initialized and read back.",
+      "blocks": [
+        "PHYSICAL_PRINT_GATE",
+        "LIVE_SEQUENCE_ASSIGNMENT"
+      ]
+    },
+    {
+      "code": "CAIXA_MOOCA_REMOTE_OFFLINE",
+      "reason": "Remote Desktop Commander reported CAIXA_MOOCA offline, last seen about 20 minutes earlier.",
+      "blocks": [
+        "LIVE_DELIVERY_WATCH_CONTINUATION",
+        "LIVE_STATE_WRITE_VERIFY"
+      ]
+    },
+    {
+      "code": "COLD_BAG_SIZE_UNKNOWN_GENERIC_750",
+      "reason": "Current packaging authority does not prove P/M/G for a cold group containing generic 750 boxes; 3x750 + 1x240 therefore keeps cold bag size UNKNOWN.",
+      "blocks": [
+        "FULLY_SPECIFIED_COLD_BAG_SIZE"
+      ],
+      "does_not_block": [
+        "NO_PRINT_UNIFIED_REPLAY",
+        "PRODUCTION_ROUTING",
+        "KIT_ASSIGNMENT"
+      ]
+    },
+    {
+      "code": "PHYSICAL_PRINT_NOT_PROVEN",
+      "reason": "No physical print was attempted in this phase.",
+      "blocks": [
+        "WORLD_PROVEN_PHYSICAL_OUTPUT"
+      ]
+    }
+  ],
+  "current_delivery_check": {
+    "boxes": [
+      {
+        "label": "750",
+        "quantity": 3
+      },
+      {
+        "label": "650 selada",
+        "quantity": 2
+      },
+      {
+        "label": "240",
+        "quantity": 1
+      }
+    ],
+    "bags": [
+      {
+        "label": "Quente P",
+        "quantity": 1,
+        "status": "PROVEN"
+      },
+      {
+        "label": "Fria",
+        "quantity": 1,
+        "size": null,
+        "status": "UNKNOWN"
+      }
+    ],
+    "kits": [
+      {
+        "label": "Kit Kids",
+        "quantity": 3
+      },
+      {
+        "label": "Kit Quente",
+        "quantity": 1
+      }
+    ],
+    "minimum_bags": 2
+  },
+  "evidence": {
+    "human_rules": "data/tata_reader_human_operational_rules_20261005_v1.json",
+    "replay_proof": "data/tata_reader_real_order_unified_replay_success_20261005_v1.json",
+    "academy_human_source": "tata-academia:content-source/human-current/operational_truth_2026-10-05_cesar.md"
+  },
+  "next_safe_step": [
+    "When CAIXA_MOOCA returns online, run list_devices first.",
+    "Initialize and atomically persist live STORE:0001|DATE:2026-10-05 TATA sequence state with policy 001..999, then read back and verify binding semantics.",
+    "Resume passive DLV watch under NT SERVICE\\\\TataComandaReader.",
+    "Do not physically print until live state readback and remaining physical gate checks pass."
+  ],
+  "effects": {
+    "print": false,
+    "spooler_write": false,
+    "database_write": false,
+    "odhen_write": false,
+    "fiscal_action": false,
+    "cutover": false
+  }
+}
