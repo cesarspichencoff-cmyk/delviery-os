@@ -1,0 +1,54 @@
+{
+  "schema": "deliveryos.packaging-source-lock.v2",
+  "source_repo": "cesarspichencoff-cmyk/tata-academia",
+  "source_branch": "evolucao/v33-product-pass",
+  "source_head": "2fd46b107082a34c36a9b12f1da4953b37259eab",
+  "captured_date": "2026-10-05",
+  "files": [
+    {
+      "path": "lib/packaging-current.js",
+      "git_blob_sha": "e56eb6e1cd66fdb504c9e80e0050aa77f5d19735"
+    },
+    {
+      "path": "data/app-data.json",
+      "git_blob_sha": "1d2c0fd66d09531f3e41e5994878e0f5a389fca0"
+    },
+    {
+      "path": "content-source/human-current/kits_2026-09-22_cesar.md",
+      "git_blob_sha": "23ea475d33266dd7b57ca0a1102a4100031f7ce1"
+    },
+    {
+      "path": "content-source/human-current/packaging_truth_2026-09-27_cesar.md",
+      "git_blob_sha": "d2ada7809c26bc56af1efbc19ccf5415824f9441"
+    },
+    {
+      "path": "content-source/human-current/operational_truth_2026-10-05_cesar.md",
+      "git_blob_sha": "1658fc7734e542074548f28840c3ceef80bc0e12"
+    },
+    {
+      "path": "tests/kits_logic_v2.mjs",
+      "git_blob_sha": "36b77010f7dcf22e0ac0390e82168575ac7821f7"
+    },
+    {
+      "path": "tests/embalagem.mjs",
+      "git_blob_sha": "9aaab0a1dbd307c14310a83d85fe37a33e522aad"
+    }
+  ],
+  "proven_current_rules": [
+    "COMBINADO_KIDS_BOX_750",
+    "NASU_NO_MISSO_BOX_650_SEALED",
+    "EXACT_MIXED_ORDER_3_KIT_KIDS_PLUS_1_KIT_QUENTE",
+    "HOT_PLUS_COLD_REQUIRES_SEPARATE_BAGS"
+  ],
+  "known_unknowns": [
+    "GENERIC_750_COLD_BAG_P_M_G_CAPACITY"
+  ],
+  "policy": {
+    "runtime_import_forbidden": true,
+    "academy_source_is_reference_not_runtime_dependency": true,
+    "parity_required_before_port": true,
+    "do_not_generalize_exact_human_case": true
+  },
+  "runtime_authority": false,
+  "status": "CURRENT_REPLAY_REFERENCE_PINNED"
+}
