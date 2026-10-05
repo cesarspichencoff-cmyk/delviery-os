@@ -1,0 +1,68 @@
+{
+  "schema": "deliveryos.tata-reader-unified-core-readiness.2026-10-05.v14",
+  "captured_on": "2026-10-05",
+  "status": "NONPHYSICAL_STACK_PROVEN_NEXT_GATES_REQUIRE_OPERATION_OR_EXPLICIT_EFFECT",
+  "proven_now": [
+    "FULL_TYPESCRIPT_BUILD_AND_SELECTED_VERIFIERS_PASS_17_OF_17",
+    "TATA_SEQUENCE_001_TO_999_BOUNDARIES_PROVEN",
+    "TATA_SEQUENCE_LIVE_STATE_DRY_RUN_001_NO_WRITE",
+    "TATA_SEQUENCE_ATOMIC_TEMP_COMMIT_REPLAY_AND_OPTIMISTIC_LOCK_PROVEN",
+    "REAL_IFOOD_8332_NATIVE_FISCAL_AUTHORIZED_RECONCILED_NO_ACTION",
+    "SERVICE_CONTROLLED_RESTART_NO_DUPLICATE",
+    "SCM_FAILURE_RECOVERY_NO_DUPLICATE",
+    "AUTOMATIC_DELAYED_START_CONFIGURED",
+    "UNKNOWN_PRODUCT_FAILS_CLOSED_NO_EFFECT"
+  ],
+  "current_runtime": {
+    "service": "Running",
+    "service_identity": "NT SERVICE\\TataComandaReader",
+    "service_start_mode": "Automatic/Delayed configured",
+    "watcher": "RUNNING",
+    "shadow_consumer": "RUNNING",
+    "production_sequence_state": {
+      "next_value": 1,
+      "binding_count": 0,
+      "first_available": "001"
+    },
+    "physical_print": false,
+    "fiscal_automation": false
+  },
+  "next_real_gates": [
+    {
+      "gate": "CONTROLLED_PHYSICAL_PRINT",
+      "when": "2026-10-06 / when Cesar chooses to resume printing tests",
+      "reason": "Physical paper/spooler effect was explicitly deferred."
+    },
+    {
+      "gate": "DINNER_PRINTER_00003_00004_REVALIDATION",
+      "when": "When dinner delivery/printers are powered and operation is open",
+      "reason": "Both printer IPs were unreachable while delivery was closed; peripherals server remained reachable."
+    },
+    {
+      "gate": "ACTUAL_MACHINE_REBOOT_PROOF",
+      "when": "Only with explicit effect approval",
+      "reason": "Delayed auto-start and SCM recovery are configured/proven, but an actual CAIXA reboot is a separate operational effect."
+    },
+    {
+      "gate": "FIRST_PRODUCTION_SEQUENCE_BIND",
+      "when": "At first controlled physical production test",
+      "reason": "Binder is ready, but production state remains intentionally unconsumed at 001."
+    }
+  ],
+  "fiscal_policy": "OBSERVE_RECONCILE_DO_NOT_EMIT",
+  "non_gates": [
+    "No external NFC-e emission path should be activated.",
+    "No custom SEFAZ emitter should be introduced.",
+    "No blind fiscal retry should be performed."
+  ],
+  "effects": {
+    "database_read": true,
+    "database_write": false,
+    "production_sequence_binding_write": false,
+    "print": false,
+    "spooler_write": false,
+    "odhen_write": false,
+    "fiscal_action": false,
+    "sefaz_call": false
+  }
+}
