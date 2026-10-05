@@ -1,0 +1,37 @@
+{
+  "schema": "deliveryos.tata-sequence-policy-boundary-proof.2026-10-05.v1",
+  "status": "PROVEN_DAILY_STORE_SEQUENCE_BOUNDARIES_NO_PRODUCTION_CONSUMPTION",
+  "policy": {
+    "width": 3,
+    "min_value": 1,
+    "max_value": 999,
+    "scope": "STORE_LOCAL_CALENDAR_DAY",
+    "reprint_reuses_binding": true,
+    "cross_day_carry_over": false
+  },
+  "tests": {
+    "assignments_same_day": 999,
+    "assigned_range": "001..999",
+    "unique": true,
+    "replay_999": "reused 999",
+    "distinct_order_1000": "blocked TATA_SEQUENCE_OUT_OF_RANGE",
+    "next_day_first": "001",
+    "other_store_first": "001",
+    "existing_collision": "fail closed",
+    "shared_station_sequence": "validated"
+  },
+  "production_state_after_test": {
+    "next_value": 1,
+    "binding_count": 0,
+    "first_available": "001"
+  },
+  "verifier": "tools/verificar_tata_sequence_policy_v1.js",
+  "effects": {
+    "production_state_write": false,
+    "sequence_binding_write": false,
+    "print": false,
+    "database_write": false,
+    "odhen_write": false,
+    "fiscal_action": false
+  }
+}
