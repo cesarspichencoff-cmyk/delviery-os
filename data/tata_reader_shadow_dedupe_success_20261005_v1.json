@@ -1,0 +1,51 @@
+{
+  "schema": "deliveryos.tata-reader-shadow-dedupe-success.v1",
+  "captured_at": "2026-10-05T09:03:49.2992350-03:00",
+  "cycle_id": "20261005T120347882Z",
+  "status": "PROVEN_REPLAY_DEDUPLICATION",
+  "authorization_id": "CESAR-2026-10-05-TATA-READER-SHADOW-DEDUPE-V1",
+  "service_identity": "NT SERVICE\\TataComandaReader",
+  "input_sha256": "956110A442164E380A7097CF3078B8C855C79EE79C8AEED97CB22099C86F6AC6",
+  "order_id": "0000348850",
+  "dedupe_key": "7606EAAA23B6A80A2FDACE6E1825AA3EFD1E41589006B51437B7B414B58D92BE",
+  "run1": {
+    "status": "NEW_SHADOW_ORDER_RECORDED",
+    "state_existed_before": false,
+    "same_as_previous": false,
+    "dedupe_state_write": true,
+    "exit_code": 0
+  },
+  "run2": {
+    "status": "DUPLICATE_SHADOW_ORDER_NO_ACTION",
+    "state_existed_before": true,
+    "same_as_previous": true,
+    "dedupe_state_write": false,
+    "exit_code": 0
+  },
+  "same_dedupe_key": true,
+  "restoration": {
+    "runtime_restored": true,
+    "preflight_script_restored": true,
+    "input_restored": true,
+    "state_restored": true,
+    "evidence_restored": true,
+    "service_stopped": true,
+    "installed_preflight_sha256": "3BBE4C37FEDC8EC45A25FE08497B999453B181EBA3033861CFF37F701B4A0035"
+  },
+  "effects": {
+    "local_input_read": true,
+    "temporary_dedupe_state_write": true,
+    "database_read": false,
+    "database_write": false,
+    "permission_change": false,
+    "odhen_write": false,
+    "network_call": false,
+    "print": false,
+    "spooler_write": false,
+    "fiscal_action": false,
+    "sefaz_call": false,
+    "cutover": false
+  },
+  "evidence_directory": "C:\\TATA\\comanda-v1\\saida\\fase7-shadow-dedupe\\cycle-20261005T120347882Z",
+  "next_gate": "PASSIVE_PHYSICAL_PRINT_OBSERVATION_IF_AVAILABLE_BEFORE_ANY_ACTIVE_PRINT"
+}
