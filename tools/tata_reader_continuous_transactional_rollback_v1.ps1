@@ -2,7 +2,7 @@ param(
   [Parameter(Mandatory=$true)]
   [string]$AuthorizationId,
 
-  [string]$InstallRoot = "C:\\ProgramData\\TataComandaReader",
+  [string]$InstallRoot = "C:\ProgramData\TataComandaReader",
   [string]$ServiceName = "TataComandaReader"
 )
 
