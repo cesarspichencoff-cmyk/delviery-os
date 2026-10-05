@@ -1,6 +1,6 @@
 {
   "schema": "deliveryos.tata-reader-preflight-candidate.v8",
-  "status": "HUMAN_AUTHORIZED_EXECUTION_BLOCKED_NO_EFFECT",
+  "status": "PERMISSION_SWAP_COMMITTED_PROVEN_PREFLIGHT_V8_NOT_EXECUTED",
   "predecessor_sha256": "3BBE4C37FEDC8EC45A25FE08497B999453B181EBA3033861CFF37F701B4A0035",
   "change_scope": [
     "replace PRODUTO.NMPRODUTO read permission with PRODUTO.CDARVPROD",
@@ -30,8 +30,11 @@
   "corrected_before_authorization": true,
   "authorization_id": "CESAR-2026-10-04-TATA-READER-CDARVPROD-PERMISSION-SWAP-V1",
   "authorization_commit": "fac512c7106cb1b1e6b863433c55b66f545ddc61",
-  "execution_completed": false,
-  "execution_blocker": "CLAUDE_AUTO_MODE_PERMISSION_GRANT_AND_NO_CAIXA_REMOTE_CONTROL_AVAILABLE",
+  "execution_completed": true,
+  "execution_blocker": null,
   "blocked_attempt_evidence": "data/tata_reader_cdarvprod_permission_swap_blocked_20261004_v1.json",
-  "authorization_still_valid_for_exact_pinned_scope": true
+  "authorization_still_valid_for_exact_pinned_scope": true,
+  "execution_result": "data/tata_reader_cdarvprod_permission_swap_result_20261005_v1.json",
+  "permission_swap_proven": true,
+  "next_gate": "PROVE_EFFECTIVE_LEAST_PRIVILEGE_SURFACE_UNDER_SERVICE_IDENTITY_WITH_PREFLIGHT_V8"
 }
