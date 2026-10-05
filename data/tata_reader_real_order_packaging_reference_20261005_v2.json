@@ -1,0 +1,99 @@
+{
+  "schema": "deliveryos.tata-reader-real-order-packaging-reference.v2",
+  "captured_on": "2026-10-05",
+  "status": "BOXES_AND_KITS_PROVEN_BAG_COUNT_PROVEN_COLD_BAG_SIZE_UNKNOWN",
+  "order": {
+    "NRCOMANDA": "0000348850",
+    "NRCOMANDAEXT": "9627"
+  },
+  "source_lock": "data/packaging_source_lock_v2.json",
+  "isolated_engine_execution": {
+    "device": "CAIXA_MOOCA",
+    "engine_blob": "e56eb6e1cd66fdb504c9e80e0050aa77f5d19735",
+    "database_read": false,
+    "print": false,
+    "result": "PASS"
+  },
+  "boxes": [
+    {
+      "product": "COMBINADO KIDS",
+      "quantity": 3,
+      "box": "750",
+      "physical_boxes": 3,
+      "status": "PROVEN"
+    },
+    {
+      "product": "EDAMAME",
+      "quantity": 1,
+      "box": "650 selada",
+      "physical_boxes": 1,
+      "status": "PROVEN"
+    },
+    {
+      "product": "NASU NO MISSO",
+      "quantity": 1,
+      "box": "650 selada",
+      "physical_boxes": 1,
+      "status": "PROVEN"
+    },
+    {
+      "product": "SUSHI DE UNAGUI",
+      "quantity": 1,
+      "box": "240",
+      "physical_boxes": 1,
+      "status": "PROVEN"
+    }
+  ],
+  "total_items": 6,
+  "total_boxes": 6,
+  "kits": [
+    {
+      "label": "Kit Kids",
+      "quantity": 3,
+      "status": "FACT"
+    },
+    {
+      "label": "Kit Quente",
+      "quantity": 1,
+      "status": "FACT"
+    }
+  ],
+  "bags": {
+    "minimum": 2,
+    "exact_bag_count": 2,
+    "exact_bag_count_status": "FACT",
+    "separation_cause": "quente de cozinha + frio",
+    "hot_group": {
+      "contents": [
+        "1x650 Edamame",
+        "1x650 Nasu no Misso"
+      ],
+      "size": "P",
+      "status": "PROVEN_FROM_P_CAPACITY_UP_TO_3_X_650_SEALED"
+    },
+    "cold_group": {
+      "contents": [
+        "3x750 Combinado Kids",
+        "1x240 Sushi de Unagui"
+      ],
+      "size": null,
+      "status": "UNKNOWN_GENERIC_750_BAG_SIZE"
+    }
+  },
+  "conclusions": {
+    "full_box_grouping": "PROVEN",
+    "full_kit_assignment": "PROVEN",
+    "exact_bag_count": "PROVEN_2",
+    "hot_bag_size": "PROVEN_P",
+    "cold_bag_size": "UNKNOWN",
+    "delivery_check_fully_specified": false,
+    "production_mount_groups_ready": true
+  },
+  "effects": {
+    "database_write": false,
+    "print": false,
+    "stock_write": false,
+    "fiscal_action": false,
+    "cutover": false
+  }
+}
