@@ -1,0 +1,135 @@
+{
+  "schema": "deliveryos.tata-reader-real-order-unified-replay-success.v2",
+  "captured_on": "2026-10-05",
+  "status": "PROVEN_REAL_ORDER_REPLAY_NO_PRINT_WITH_LIVE_SEQUENCE_AND_MEASURED_BAG_RULE",
+  "order": {
+    "NRCOMANDA": "0000348850",
+    "NRCOMANDAEXT": "9627",
+    "NRVENDAREST": "0000349281",
+    "CDFILIAL": "0001",
+    "CDLOJA": "01"
+  },
+  "sequences": {
+    "ifood": "9627",
+    "teknisa": "0000348850",
+    "tata": "001",
+    "tata_policy": {
+      "width": 3,
+      "min_value": 1,
+      "max_value": 999,
+      "scope": "STORE+LOCAL_DATE",
+      "reprint_reuses_binding": true
+    },
+    "live_caixa_state": {
+      "status": "PROVEN_READY",
+      "next_value": "001",
+      "binding_count": 0,
+      "source": "data/tata_reader_live_sequence_state_proof_20261005_v1.json"
+    },
+    "replay_boundary": "Historical replay uses isolated 2026-10-04 binding; production live state remains unconsumed at 001."
+  },
+  "replay_service": {
+    "value": "LUNCH",
+    "evidence": "HUMAN_CONFIRMED_RULE",
+    "boundary": "Current 2026-10-05 opening-shift scenario only; not a claim about the historical 2026-10-04 service."
+  },
+  "production": [
+    {
+      "printer_code": "00002",
+      "printer_name": "COZINHA",
+      "fingerprint": "100e753953edb129407ae3ff8863074fa098168361b250c20814752d66718651",
+      "lines": [
+        {
+          "product_code": "9.10.00.080.00",
+          "product_name": "EDAMAME",
+          "quantity": 1,
+          "box": "650 selada"
+        },
+        {
+          "product_code": "9.10.00.020.00",
+          "product_name": "NASU NO MISSO",
+          "quantity": 1,
+          "box": "650 selada"
+        }
+      ]
+    },
+    {
+      "printer_code": "00009",
+      "printer_name": "BALCAOSUSHI1",
+      "fingerprint": "4217f961e6fe8de94e703e0172603855d1ff851834f16013949c4adb49322602",
+      "lines": [
+        {
+          "product_code": "9.80.00.010.00",
+          "product_name": "COMBINADO KIDS",
+          "quantity": 3,
+          "box": "750"
+        },
+        {
+          "product_code": "9.30.00.090.00",
+          "product_name": "SUSHI DE UNAGUI",
+          "quantity": 1,
+          "box": "240"
+        }
+      ]
+    }
+  ],
+  "delivery_check": {
+    "boxes": [
+      {
+        "label": "750",
+        "quantity": 3
+      },
+      {
+        "label": "650 selada",
+        "quantity": 2
+      },
+      {
+        "label": "240",
+        "quantity": 1
+      }
+    ],
+    "kits": [
+      {
+        "label": "Kit Kids",
+        "quantity": 3
+      },
+      {
+        "label": "Kit Quente",
+        "quantity": 1
+      }
+    ],
+    "bags": [
+      {
+        "label": "Sacola G",
+        "quantity": 1,
+        "status": "FACT_HUMAN_CONFIRMED_MEASURED_FIT"
+      }
+    ],
+    "internal_hot_cold_segregation": {
+      "required": true,
+      "status": "FACT"
+    },
+    "exact_bag_count": 1
+  },
+  "validations": [
+    "Original production fingerprints remain deterministic and unchanged by delivery-bag correction.",
+    "Current packaging engine isolated regression proof PASS on CAIXA_MOOCA.",
+    "Exact order returns 1 Sacola G and 6 physical internal boxes.",
+    "Generic hot+cold no longer returns an exact external bag count without measured-fit evidence.",
+    "Live CAIXA TATA sequence state is atomically persisted at 001 with zero bindings."
+  ],
+  "validation_boundary": {
+    "academy_full_suite_after_bag_revision": "NOT_RERUN_CONNECTOR_SECURITY_BLOCKED_BEFORE_EXECUTION",
+    "physical_print": "NOT_ATTEMPTED",
+    "historical_service": "UNKNOWN_NOT_CLAIMED"
+  },
+  "effects": {
+    "print": false,
+    "spooler_write": false,
+    "database_write": false,
+    "odhen_write": false,
+    "fiscal_action": false,
+    "sefaz_call": false,
+    "cutover": false
+  }
+}
