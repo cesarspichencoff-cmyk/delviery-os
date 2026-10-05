@@ -1,0 +1,76 @@
+{
+  "schema": "deliveryos.tata-reader-passive-print-metadata-observation.v1",
+  "captured_on": "2026-10-05",
+  "status": "PASSIVE_SOURCE_EXISTS_SPECIFIC_ORDER_PRINT_NOT_PROVEN",
+  "device": "CAIXA_MOOCA",
+  "source": {
+    "root": "C:\\TEKNISA\\odhen-perifericos\\Log\\102026",
+    "content_read": false,
+    "metadata_only": true,
+    "monitor_sha256": "2CB46BAF5790929E0FAF22C61E1419F3A08040D19ABFEF5B06B525DF3AE588CC",
+    "monitor_static_validation": "PASS"
+  },
+  "today_observation": {
+    "observed_time_local": "09:13:23",
+    "matching_files_count": 0,
+    "natural_append_observed": false
+  },
+  "reference_order": {
+    "NRCOMANDA": "0000348850",
+    "NRCOMANDAEXT": "9627",
+    "opened_at_local": "2026-10-04T22:58:50-03:00",
+    "expected_printer_ips": [
+      "192.168.0.142",
+      "192.168.0.153",
+      "192.168.0.116"
+    ]
+  },
+  "prior_day_files": [
+    {
+      "name": "2026_10_04_IMP_16_192.168.0.4.txt",
+      "last_write_local": "2026-10-04T22:05:34.5348960-03:00"
+    },
+    {
+      "name": "2026_10_04_IMP_16_192.168.0.232.txt",
+      "last_write_local": "2026-10-04T22:14:49.3966487-03:00"
+    },
+    {
+      "name": "2026_10_04_IMP_16_192.168.0.142.txt",
+      "last_write_local": "2026-10-04T22:27:21.6717832-03:00"
+    },
+    {
+      "name": "2026_10_04_IMP_16_192.168.0.153.txt",
+      "last_write_local": "2026-10-04T22:27:21.9890389-03:00"
+    },
+    {
+      "name": "2026_10_04_IMP_16_192.168.0.110.txt",
+      "last_write_local": "2026-10-04T22:31:08.6702072-03:00"
+    },
+    {
+      "name": "2026_10_04_IMP.txt",
+      "last_write_local": "2026-10-04T22:31:42.3582674-03:00"
+    },
+    {
+      "name": "2026_10_04_IMP_16_192.168.0.116.txt",
+      "last_write_local": "2026-10-04T22:31:42.3582674-03:00"
+    }
+  ],
+  "finding": {
+    "source_historically_active": true,
+    "all_imp_logs_stopped_before_reference_order_opened": true,
+    "reference_order_physical_print_through_imp_logs": "NOT_PROVEN",
+    "reason": "All observed IMP files had last-write timestamps before 22:58:50 local, when the reference order opened."
+  },
+  "effects": {
+    "log_content_read": false,
+    "pii_read": false,
+    "database_read": false,
+    "database_write": false,
+    "print": false,
+    "spooler_write": false,
+    "odhen_write": false,
+    "fiscal_action": false,
+    "cutover": false
+  },
+  "next_condition": "Observe a natural official print append after establishing a same-day baseline, then correlate only the new append with current expected routing."
+}
