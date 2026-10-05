@@ -8,16 +8,16 @@ param(
   [Parameter(Mandatory=$true)]
   [string]$ExpectedEntrypointSha256,
 
-  [string]$ReaderSource = "C:\\TATA\\comanda-v1\\cutover\\tata_reader_continuous_watch_candidate_v1.ps1",
-  [string]$EntrypointSource = "C:\\TATA\\comanda-v1\\cutover\\tata_reader_continuous_service_entrypoint_v1.ps1",
-  [string]$InstallRoot = "C:\\ProgramData\\TataComandaReader",
+  [string]$ReaderSource = "C:\TATA\comanda-v1\cutover\tata_reader_continuous_watch_candidate_v1.ps1",
+  [string]$EntrypointSource = "C:\TATA\comanda-v1\cutover\tata_reader_continuous_service_entrypoint_v1.ps1",
+  [string]$InstallRoot = "C:\ProgramData\TataComandaReader",
   [string]$ServiceName = "TataComandaReader"
 )
 
 $ErrorActionPreference = "Stop"
 
 $ExpectedAuthorizationId = "CESAR-2026-10-05-CONTINUOUS-READER-CUTOVER-V1"
-$ExpectedPrincipal = "NT SERVICE\\TataComandaReader"
+$ExpectedPrincipal = "NT SERVICE\TataComandaReader"
 $BinDir = Join-Path $InstallRoot "bin"
 $StateDir = Join-Path $InstallRoot "state"
 $EvidenceDir = Join-Path $InstallRoot "evidence"
