@@ -5,7 +5,7 @@ lifecycle:
   authority_scope: infra_blockers
   superseded_by: null
   atualizado_em: "2026-10-05"
-  state_basis: 735d4ab
+  state_basis: 20b4782
   question_refs: ["Q-001","Q-002","Q-003","Q-004","Q-005","Q-006","Q-007","Q-008","Q-009","Q-010","Q-011"]
 ---
 
@@ -1765,3 +1765,26 @@ Provas frescas:
 A credencial real do reader continua **NOT_CREATED** e nenhum deploy/cutover foi executado.
 
 Impacto no readiness observacional: blockers externos caem de **6 para 5**.
+
+### Sucessão 2026-10-05 — preflight de ativação sem efeito
+
+Os cinco blockers externos do perfil observacional agora podem ser inspecionados por um único
+comando **sem efeito**: `npm run preflight:pilot:activation`.
+
+O preflight lê somente presença/contagens e o `STATE`; ele não imprime valores de segredo, não
+abre conexão de banco, não cria credencial e não ativa ingest/consumer.
+
+Snapshot Foxxy em 2026-10-05:
+- **E1_PHYSICAL_ANDROID = BLOCKED** — `adb` disponível, 0 aparelhos físicos conectados;
+- **E2_OPERATIONAL_DB_AND_DEPLOY = BLOCKED** — URL operacional ausente;
+- **E3_SOURCE_INGEST_ACTIVATION = SAFE_OFF** — ingest não solicitado neste ambiente;
+- **E4_CONSUMER_LIVE = SAFE_OFF** — continua `OFF / NOT_AUTHORIZED`; não existe toggle local inventado;
+- **E6_PRODUCT_READER_CREDENTIAL = BLOCKED** — credencial/senha real ausente;
+- `EFFECT_ATTEMPTED=false`.
+
+Figma Full: card Pilot Readiness recebeu o snapshot `Activation preflight · Foxxy`, node `28:2`.
+
+**Fronteira:** nenhum blocker foi fechado por esse snapshot. O ganho é operacional: o próximo
+turno não precisa redescobrir o ambiente e um valor apenas presente nunca vira prova de deploy ou
+ativação.
+
