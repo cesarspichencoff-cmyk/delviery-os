@@ -1,4 +1,4 @@
-name: DeliveryOS Reporting Audit Once
+name: DeliveryOS Reporting Audit Once v2
 
 on:
   push:
