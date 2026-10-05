@@ -1,0 +1,56 @@
+{
+  "schema": "deliveryos.tata-reader-bootstrap-suppression-proof.2026-10-05.v1",
+  "status": "PROVEN_BASELINE_SUPPRESSED_OPTIN_EMITS_DEDUPE_RESTART_SAFE",
+  "device": "CAIXA_MOOCA",
+  "service_identity": "NT SERVICE\\TataComandaReader",
+  "candidate_blob": "fdaecf0472951bc2dd202d826b1fdb3e1c71f0fb",
+  "normal_bootstrap": {
+    "run1": {
+      "events": 0,
+      "baseline_suppressed": 5,
+      "duplicates": 10,
+      "errors": 0
+    },
+    "run2": {
+      "events": 0,
+      "baseline_suppressed": 0,
+      "duplicates": 15,
+      "errors": 0
+    },
+    "event_files_after_run1": 0,
+    "event_files_after_run2": 0
+  },
+  "explicit_emit_existing": {
+    "run1": {
+      "events": 5,
+      "baseline_suppressed": 0,
+      "duplicates": 5,
+      "errors": 0
+    },
+    "run2": {
+      "events": 0,
+      "baseline_suppressed": 0,
+      "duplicates": 15,
+      "errors": 0
+    },
+    "event_files_after_run1": 5,
+    "event_files_after_run2": 5
+  },
+  "restoration": {
+    "service_state": "Stopped",
+    "child_exit_code": 0,
+    "preflight_restored": true
+  },
+  "conclusion": "Default bootstrap creates a silent baseline and does not emit historical orders. Existing orders are emitted only when explicitly requested for proof/backfill. Restart dedupe remains stable.",
+  "effects": {
+    "database_read": true,
+    "database_write": false,
+    "local_proof_write": true,
+    "print": false,
+    "spooler_write": false,
+    "odhen_write": false,
+    "fiscal_action": false,
+    "sefaz_call": false,
+    "cutover": false
+  }
+}
