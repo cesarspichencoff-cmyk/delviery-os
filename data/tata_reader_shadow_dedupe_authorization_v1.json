@@ -1,0 +1,59 @@
+{
+  "schema": "deliveryos.tata-reader-shadow-dedupe-authorization.v1",
+  "authorization_id": "CESAR-2026-10-05-TATA-READER-SHADOW-DEDUPE-V1",
+  "authorized_on": "2026-10-05",
+  "authorized_by": "Cesar",
+  "human_authorized": true,
+  "human_statement": "Autorizo tudo que precisar",
+  "interpreted_scope": "Two bounded service-identity replay passes over one already-proven sanitized shadow snapshot to prove persistent deduplication with no SQL, network or print effect.",
+  "authorized_source_head": "f69f6d8b196a18083760b82ea9943410f7883fb6",
+  "dedupe_script": {
+    "path": "tools/authorized/tata_reader_shadow_dedupe_v1.ps1",
+    "sha256": "82CB5EBA82779359DB9EEE7F48A7E4E2070E7911AE32C542FA0CD9A28A1B6E82"
+  },
+  "runner": {
+    "path": "tools/authorized/tata_reader_shadow_dedupe_cycle_runner_v1.ps1",
+    "sha256": "75145A5B8923700843F80A29A7559DB4A8F3D8F605BAB085139D52A97EA927C4"
+  },
+  "verifier": {
+    "path": "tools/authorized/verificar_tata_reader_shadow_dedupe_bundle_v1.ps1",
+    "sha256": "C00F5FFDB543F575105CE66A9067930140AF70E16187D4F7BC9CE6A08C91FBDF"
+  },
+  "input": {
+    "path": "data/tata_reader_shadow_route_success_20261005_v1.json",
+    "sha256": "956110A442164E380A7097CF3078B8C855C79EE79C8AEED97CB22099C86F6AC6",
+    "pii": false
+  },
+  "installed_preflight_expected_sha256": "3BBE4C37FEDC8EC45A25FE08497B999453B181EBA3033861CFF37F701B4A0035",
+  "expected_run1_status": "NEW_SHADOW_ORDER_RECORDED",
+  "expected_run2_status": "DUPLICATE_SHADOW_ORDER_NO_ACTION",
+  "same_dedupe_key_required": true,
+  "allowed_effects": {
+    "local_input_read": true,
+    "temporary_dedupe_state_write": true,
+    "temporary_service_start": true,
+    "temporary_preflight_script_swap": true,
+    "temporary_input_copy_to_service_bin": true
+  },
+  "restoration_required": {
+    "service_stopped": true,
+    "installed_preflight_restored": true,
+    "prior_input_restored": true,
+    "prior_state_restored": true,
+    "prior_evidence_restored": true
+  },
+  "prohibited_effects": {
+    "database_read": false,
+    "database_write": false,
+    "permission_change": false,
+    "odhen_write": false,
+    "network_call": false,
+    "print": false,
+    "spooler_write": false,
+    "f7": false,
+    "nfce": false,
+    "fiscal_action": false,
+    "sefaz_call": false,
+    "cutover": false
+  }
+}
