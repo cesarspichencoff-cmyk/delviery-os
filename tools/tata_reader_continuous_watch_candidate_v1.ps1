@@ -74,7 +74,7 @@ function Read-ServiceState([datetime]$OrderOpenedAt) {
   }
   try {
     $state = Get-Content -LiteralPath $ServiceStatePath -Raw -Encoding UTF8 | ConvertFrom-Json
-    if ($state.schema -ne "deliveryos.production-service-shift-state.v1") { $blockers += "SERVICE_STATE_SCHEMA_MISMATCH" }
+    if ($state.schema -ne "deliveryos.production-service-shift-state.v2") { $blockers += "SERVICE_STATE_SCHEMA_MISMATCH" }
     if ([bool]$state.clock_inference_used) { $blockers += "SERVICE_STATE_CLOCK_INFERENCE_FORBIDDEN" }
     $orderDate = $OrderOpenedAt.ToString("yyyy-MM-dd")
     if ([string]$state.operational_date -ne $orderDate) { $blockers += "SERVICE_STATE_DATE_MISMATCH_ORDER_DATE" }
@@ -82,6 +82,22 @@ function Read-ServiceState([datetime]$OrderOpenedAt) {
     if ([string]$state.service -notin @("LUNCH","DINNER")) { $blockers += "SERVICE_STATE_SERVICE_INVALID" }
     if ([string]$state.evidence -notin @("HUMAN_CONFIRMED_RULE","REAL_OBSERVED")) { $blockers += "SERVICE_STATE_EVIDENCE_REQUIRED" }
     if ([string]::IsNullOrWhiteSpace([string]$state.source_ref)) { $blockers += "SERVICE_STATE_SOURCE_REF_REQUIRED" }
+    $validUntilRaw = [string]$state.valid_until_local
+    $validUntil = [datetime]::MinValue
+    if (
+      [string]::IsNullOrWhiteSpace($validUntilRaw) -or
+      -not [datetime]::TryParseExact(
+        $validUntilRaw,
+        "yyyy-MM-ddTHH:mm:ss",
+        [Globalization.CultureInfo]::InvariantCulture,
+        [Globalization.DateTimeStyles]::None,
+        [ref]$validUntil
+      )
+    ) {
+      $blockers += "SERVICE_STATE_VALID_UNTIL_REQUIRED"
+    } elseif ($OrderOpenedAt -gt $validUntil) {
+      $blockers += "SERVICE_STATE_EXPIRED_FOR_ORDER"
+    }
     if ($blockers.Count -gt 0) {
       return [ordered]@{ service=$null; evidence="UNKNOWN"; source_ref=$null; blockers=$blockers }
     }
