@@ -62,7 +62,7 @@ try {
   $identityCmd.CommandTimeout = 5
   $identityCmd.CommandText = @"
 SET NOCOUNT ON;
-SELECT SUSER_SNAME() AS current_login, USER_NAME() AS current_user, DB_NAME() AS database_name;
+SELECT SUSER_SNAME() AS [current_login], USER_NAME() AS [current_user], DB_NAME() AS [database_name];
 "@
   $ir = $identityCmd.ExecuteReader()
   if (-not $ir.Read()) { throw "IDENTITY_ROW_NOT_RETURNED" }
