@@ -1,0 +1,31 @@
+{
+  "schema": "deliveryos.live-shadow-controlled-restart-proof.2026-10-05.v1",
+  "status": "PROVEN_RESTART_NO_DUPLICATE",
+  "before": {
+    "service_state": "Running",
+    "event_count": 1,
+    "decision_count": 1,
+    "watcher_pid": 33120,
+    "shadow_pid": 31324
+  },
+  "after": {
+    "service_state": "Running",
+    "event_count": 1,
+    "decision_count": 1,
+    "watcher_pid": 26308,
+    "shadow_pid": 32312
+  },
+  "checkpoint_advanced": true,
+  "post_restart_processed": 0,
+  "effects": {
+    "service_restart": true,
+    "database_read": true,
+    "database_write": false,
+    "sequence_binding_write": false,
+    "print": false,
+    "spooler_write": false,
+    "odhen_write": false,
+    "fiscal_action": false,
+    "sefaz_call": false
+  }
+}
