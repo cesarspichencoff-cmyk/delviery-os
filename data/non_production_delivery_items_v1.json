@@ -28,6 +28,12 @@
       "logical_plaza": "montagem_outros",
       "reason": "Complementary/mounted item; no own production command/ticket.",
       "proof": "HUMAN_CONFIRMED"
+    },
+    "9.98.00.001.00": {
+      "product_name": "TAXA DE ENTREGA",
+      "logical_plaza": "delivery_fee",
+      "reason": "Charge/fee line with no own production ticket. Recent real DLV rows show IDPRODPRODUZ=null; product flags IDPRODPROD=N and IDIMPRODUVEZ=N.",
+      "proof": "REAL_OBSERVED_2026-10-05"
     }
   },
   "effects": {
@@ -35,5 +41,6 @@
     "print": false,
     "seed_write": false,
     "cutover": false
-  }
+  },
+  "last_audited_date": "2026-10-05"
 }
