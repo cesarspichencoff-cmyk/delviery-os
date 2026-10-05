@@ -1,0 +1,38 @@
+{
+  "schema": "deliveryos.tata-nfce-readonly-audit.2026-10-05.v2",
+  "captured_on": "2026-10-05",
+  "status": "NATIVE_FISCAL_PATH_AND_PROTOCOL17_PROVEN_TRIGGER_KEY_BINDING_REMAINS_UNKNOWN",
+  "proven": [
+    "OrderDelivery Cupom Fiscal action invokes OrderDeliveryController.geraNotaFiscal.",
+    "geraNotaFiscal checks order status and payment completeness, then calls DeliveryService.generatePayment.",
+    "Reprint is a separate action and separate backend route DeliveryReprintCupomFiscal.",
+    "The reprint backend retrieves an existing NRNOTAFISCALCE and calls native reprint logic.",
+    "Payment/native sale path contains deadlock handling that does not blindly retransmit an already-transmitted fiscal note.",
+    "61 real store-0001 NFC-e authorizations on 2026-10-05 persisted 17-position protocols.",
+    "All 61 observed authorized NFC-e rows had QR data present.",
+    "PARAVEND currently reports IDTRANSAUTONFCE=S, XML 4.00 and QR configuration version 2.",
+    "Legacy DeliveryOS after-production fiscal planner is hard-blocked in code."
+  ],
+  "unknowns": [
+    "Exact keyboard binding between F7 and the Cupom Fiscal action; orderDelivery.json declares the action but no F7 shortcut metadata was found.",
+    "Supported vendor contract for invoking the native Cupom Fiscal action programmatically without UI/keyboard emulation.",
+    "Whether every current DLV_IFO transition is operator-triggered or some are triggered by another native workflow."
+  ],
+  "decisions": [
+    "Do not emulate the F7 keystroke.",
+    "Do not build a parallel SEFAZ emitter.",
+    "Do not use production-dispatch completion as a fiscal trigger.",
+    "Use observation-first reconciliation of native VENDA/NFC-e state before any retry/reprint decision.",
+    "Treat current QR version 2 as empirically operational today; do not force QR v3 without a vendor/official requirement."
+  ],
+  "effects": {
+    "database_read": true,
+    "database_write": false,
+    "customer_pii_read": false,
+    "print": false,
+    "danfe_print": false,
+    "fiscal_action": false,
+    "sefaz_call": false,
+    "cutover": false
+  }
+}
