@@ -1,0 +1,41 @@
+{
+  "schema": "deliveryos.tata-reader-continuous-cutover-candidate.v1",
+  "status": "PREPARED_NOT_DEPLOYED_NOT_ENABLED",
+  "service_name": "TataComandaReader",
+  "expected_identity": "NT SERVICE\\TataComandaReader",
+  "entrypoint": "tools/tata_reader_continuous_service_entrypoint_v1.ps1",
+  "reader": "tools/tata_reader_continuous_watch_candidate_v1.ps1",
+  "state": {
+    "checkpoint": "C:\\ProgramData\\TataComandaReader\\state\\reader-watch-checkpoint-v1.json",
+    "events": "C:\\ProgramData\\TataComandaReader\\state\\reader-events-v1",
+    "service_shift": "C:\\ProgramData\\TataComandaReader\\state\\production-service-state.json",
+    "tata_sequence": "C:\\ProgramData\\TataComandaReader\\state\\tata-sequence-state.json"
+  },
+  "defaults": {
+    "poll_seconds": 3,
+    "stable_polls": 2,
+    "top_orders": 50
+  },
+  "fail_open_boundary": [
+    "Native Teknisa/iFood order intake is never stopped by DeliveryOS.",
+    "Unknown service/routing/packaging blocks only downstream automated effect.",
+    "Reader has no database-write, print, Odhen-write or fiscal surface.",
+    "Bootstrap does not emit historical orders by default.",
+    "Checkpoint and event files are local and restart-safe."
+  ],
+  "activation_requirements": [
+    "Physical calibration gate completed or printing remains disabled.",
+    "Current service state explicitly set for operational date.",
+    "Current candidate hashes revalidated immediately before deployment.",
+    "Service replacement performed transactionally with rollback to original preflight.",
+    "Post-start identity/read-only/restart proof passes."
+  ],
+  "effects": {
+    "deployed": false,
+    "service_changed": false,
+    "database_write": false,
+    "print": false,
+    "fiscal_action": false,
+    "cutover": false
+  }
+}
