@@ -1,0 +1,32 @@
+{
+  "schema": "deliveryos.tata-reader-unified-core-readiness.2026-10-05.v10",
+  "captured_on": "2026-10-05",
+  "status": "CONTINUOUS_READER_WORLD_PROVEN_FIRST_POST_CUTOVER_ORDER_CAPTURED_ONE_PACKAGING_HUMAN_GATE",
+  "newly_proven": [
+    "DEDICATED_WINDOWS_SERVICE_HOST_RUNNING_OVER_60_SECONDS",
+    "CHECKPOINT_CONTINUES_ADVANCING",
+    "FIRST_POST_CUTOVER_LIVE_DLV_IFO_EVENT_CAPTURED",
+    "FIRST_POST_CUTOVER_LIVE_EVENT_ROUTING_PASS"
+  ],
+  "first_live_order": "data/tata_reader_post_cutover_first_live_order_20261005_v1.json",
+  "next_human_gate": {
+    "subject": "COMB_EXEC_SUSHI_SALMAO_INTERNAL_BOX",
+    "question": "Which internal box does Combinado Executivo Sushi Salmao use?",
+    "reason": "No prior explicit human rule was found in current project sources or prior context; current engine intentionally returns UNKNOWN rather than infer."
+  },
+  "retained_boundaries": [
+    "PHYSICAL_PRINT_DEFERRED_TO_2026-10-06_BY_CESAR",
+    "FISCAL_AUTOMATION_DISABLED",
+    "DINNER_PRINTER_00003_00004_REVALIDATION_PENDING",
+    "FULL_REPO_BUILD_PENDING"
+  ],
+  "effects": {
+    "database_read": true,
+    "database_write": false,
+    "print": false,
+    "spooler_write": false,
+    "odhen_write": false,
+    "fiscal_action": false,
+    "sefaz_call": false
+  }
+}
