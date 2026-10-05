@@ -1,0 +1,47 @@
+{
+  "schema": "deliveryos.tata-reader-dedicated-host-success.2026-10-05.v1",
+  "status": "WORLD_PROVEN_CONTINUOUS_READONLY_HOST_OVER_60_SECONDS",
+  "device": "CAIXA_MOOCA",
+  "service": {
+    "name": "TataComandaReader",
+    "state": "Running",
+    "start_name": "NT SERVICE\\TataComandaReader",
+    "path_name": "C:\\ProgramData\\TataComandaReader\\bin\\TataComandaReader.ContinuousService.exe"
+  },
+  "host": {
+    "source": "runtime/windows/TataComandaReader.ContinuousService.cs",
+    "executable_sha256": "7EBC3C5F2B368962D576885371C3A3CDBD7F99C220A8995F347D06A7A2D961CB",
+    "bytes": 10240,
+    "built_with": "C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\csc.exe",
+    "child_pid": 30444
+  },
+  "liveness": {
+    "started_at": "2026-10-05T14:50:31.7114964-03:00",
+    "checked_at": "2026-10-05T14:53:09.9118670-03:00",
+    "elapsed_seconds_greater_than_60": true,
+    "checkpoint_last_write": "2026-10-05T14:53:07.6224236-03:00",
+    "checkpoint_entries": 51,
+    "latest_entry_stable_count": 52
+  },
+  "retired_route": {
+    "host": "TataComandaReader.PreflightService.exe",
+    "failure": "PREFLIGHT_TIMEOUT",
+    "timeout_ms": 60000,
+    "exit_code": 124,
+    "circuit_breaker": "Do not use PreflightService.exe for long-running continuous scripts."
+  },
+  "rollback": {
+    "tool": "tools/tata_reader_dedicated_host_rollback_v1.ps1",
+    "original_service_path": "C:\\ProgramData\\TataComandaReader\\bin\\TataComandaReader.PreflightService.exe",
+    "original_preflight_sha256": "3BBE4C37FEDC8EC45A25FE08497B999453B181EBA3033861CFF37F701B4A0035"
+  },
+  "effects": {
+    "database_read": true,
+    "database_write": false,
+    "print": false,
+    "spooler_write": false,
+    "odhen_write": false,
+    "fiscal_action": false,
+    "sefaz_call": false
+  }
+}
