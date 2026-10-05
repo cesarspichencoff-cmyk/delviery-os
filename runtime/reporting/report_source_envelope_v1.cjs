@@ -101,6 +101,7 @@ function buildReportSourceEnvelope(event, decision, options = {}) {
     }),
     source_event: sourceEvent,
     shadow_decision: shadowDecision,
+    rule_lineage: shadowDecision.rule_lineage ?? null,
     privacy: Object.freeze({
       customer_pii_required: false,
       customer_pii_persisted: false,
