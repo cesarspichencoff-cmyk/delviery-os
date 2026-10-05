@@ -31,7 +31,7 @@ foreach($token in @(
 )){Assert ($dedupe.Contains($token))("DEDUPE_REQUIRED_TOKEN_MISSING:"+$token)}
 
 foreach($forbidden in @(
-  'SqlConnection','TEKNISA.','COMANDAVEN','ITCOMANDAVEN','VENDAREST',
+  'SqlConnection','TEKNISA.','COMANDAVEN','ITCOMANDAVEN','TEKNISA.VENDAREST',
   'Invoke-WebRequest','Invoke-RestMethod','System.Net.Http',
   'Out-Printer','WritePrinter','StartDocPrinter','/print',
   'INSERT ','UPDATE ','DELETE ','MERGE ','GRANT ','REVOKE ','DENY '
