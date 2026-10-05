@@ -52,7 +52,10 @@ const ready = planNativeNfceAfterProduction({
   readiness: baseReadiness,
 });
 
-assert.equal(ready.ready_for_native_nfce_request_candidate, true);
+assert.equal(ready.ready_for_native_nfce_request_candidate, false);
+assert.ok(
+  ready.blocking_reasons.includes("LEGACY_AFTER_PRODUCTION_POLICY_SUPERSEDED"),
+);
 assert.equal(
   ready.ordering.production_dispatch_barrier,
   "PRODUCTION_DISPATCH_OBSERVED",
