@@ -68,6 +68,7 @@ function buildReportSourceEnvelope(event, decision, options = {}) {
   if (!unitId || !storeId) throw new Error("REPORT_ENVELOPE_STORE_IDENTITY_REQUIRED");
 
   const contractId = clean(options.contractId || "tata.cross-system-reporting-contract.v2");
+  const tzName = clean(options.tzName || "America/Sao_Paulo");
   const generatedAt = clean(options.generatedAt || new Date().toISOString());
   if (!contractId) throw new Error("REPORTING_CONTRACT_ID_REQUIRED");
   if (!generatedAt || Number.isNaN(Date.parse(generatedAt))) {
@@ -95,6 +96,8 @@ function buildReportSourceEnvelope(event, decision, options = {}) {
       nr_comanda_ext: sourceEvent.order.NRCOMANDAEXT,
       origin: sourceEvent.order.IDORGCMDVENDA,
       opened_at: sourceEvent.order.DTHRABERMESA,
+      opened_at_semantics: "STORE_LOCAL_WALL_TIME",
+      tz_name: tzName,
     }),
     source_event: sourceEvent,
     shadow_decision: shadowDecision,
