@@ -1,0 +1,51 @@
+{
+  "schema": "deliveryos.exact-head-build-proof.2026-10-05.v1",
+  "status": "FULL_BUILD_AND_SELECTED_VERIFIERS_PASS",
+  "tested_head": "4a4be1738f0c5468d82709171cb7bb79aa1134d9",
+  "environment": {
+    "device": "CAIXA_MOOCA",
+    "workspace_isolated": true,
+    "node": "v24.21.0",
+    "npm": "11.19.0"
+  },
+  "steps": [
+    "npm ci --no-audit --no-fund",
+    "npm run typecheck",
+    "npm run build",
+    "npm run verificar:routing-config",
+    "npm run verificar:non-production-items",
+    "npm run verificar:production-print-plan",
+    "npm run verificar:production-service-matrix",
+    "npm run verificar:production-ticket-v2",
+    "npm run verificar:production-ticket-e2e",
+    "npm run verificar:native-nfce-orchestration",
+    "npm run verificar:native-fiscal-reconciler",
+    "npm run verificar:resource-consumption",
+    "npm run verificar:resource-costing",
+    "npm run verificar:tata-os-print-handoff",
+    "npm run verificar:windows-spooler-evidence",
+    "node --check runtime/shadow/live_shadow_consumer_v1.cjs",
+    "node --check runtime/shadow/live_shadow_consumer_loop_v1.cjs"
+  ],
+  "totals": {
+    "passed": 17,
+    "failed": 0
+  },
+  "correction": {
+    "failure_class": "STALE_VERIFIER_EXPECTATION",
+    "discovered": "non-production verifier omitted observed delivery fee code 9.98.00.001.00",
+    "correction_commit": "52f47a7c55665f76cde84920ed713b2e421112b7",
+    "retest": "PASS"
+  },
+  "effects": {
+    "isolated_workspace_write": true,
+    "production_service_change": false,
+    "database_read": false,
+    "database_write": false,
+    "print": false,
+    "spooler_write": false,
+    "odhen_write": false,
+    "fiscal_action": false,
+    "sefaz_call": false
+  }
+}
