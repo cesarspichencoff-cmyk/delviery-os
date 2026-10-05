@@ -1,0 +1,79 @@
+{
+  "schema": "deliveryos.tata-reader-unified-core-real-order-replay-readiness.v3",
+  "captured_at": "2026-10-05T12:10:00-03:00",
+  "status": "TECHNICAL_REPLAY_AND_LIVE_SEQUENCE_PROVEN_ONE_HUMAN_PACKAGING_RULE_REMAINS",
+  "proven": [
+    "REAL_DLV_CAPTURE_ON_CAIXA",
+    "PRODUCT_IDENTITY_AND_ROUTING_PROVEN",
+    "RAW_TO_CANONICAL_PRODUCT_CODE_NORMALIZATION_PROVEN",
+    "IFOOD_SEQUENCE_MAPPING_PROVEN",
+    "CURRENT_PRODUCT_NAMES_PROVEN",
+    "OBSERVATION_SURFACE_SANITIZED_AND_PROVEN",
+    "REPLAY_DEDUPLICATION_PROVEN",
+    "TATA_SEQUENCE_POLICY_001_999_HUMAN_CONFIRMED",
+    "LIVE_CAIXA_ATOMIC_TATA_SEQUENCE_STATE_READY_001_ZERO_BINDINGS",
+    "LIVE_SEQUENCE_REUSE_AND_NEXT_BINDING_SHADOW_PROVEN",
+    "CURRENT_OPENING_SHIFT_LUNCH_HUMAN_CONFIRMED",
+    "COMBINADO_KIDS_750_PROVEN",
+    "NASU_NO_MISSO_650_SEALED_PROVEN",
+    "EXACT_KITS_3_KIT_KIDS_PLUS_1_KIT_QUENTE_PROVEN",
+    "BOX_GROUPING_PROVEN_6_PHYSICAL_BOXES",
+    "EXACT_BAG_COUNT_PROVEN_2_BY_HOT_COLD_SEPARATION",
+    "HOT_BAG_SIZE_P_PROVEN",
+    "UNIFIED_REPLAY_PASS_NO_PRINT",
+    "PRODUCTION_FINGERPRINTS_DETERMINISTIC",
+    "NO_PRINT_NO_SPOOLER_NO_ODHEN_WRITE_NO_FISCAL_EFFECT",
+    "PREFLIGHT_RESTORED_AND_SERVICE_STOPPED"
+  ],
+  "remaining_blockers": [
+    {
+      "code": "COLD_BAG_SIZE_UNKNOWN_GENERIC_750",
+      "reason": "No current human or canonical source defines P/M/G capacity for the cold group 3x750 Kids + 1x240.",
+      "blocks": [
+        "FULLY_SPECIFIED_DELIVERY_CHECK",
+        "FULL_OPERATIONAL_CUTOVER"
+      ],
+      "does_not_block": [
+        "PRODUCTION_ROUTING",
+        "PRODUCTION_MOUNT_GROUPS",
+        "KIT_ASSIGNMENT",
+        "NO_PRINT_UNIFIED_REPLAY"
+      ]
+    },
+    {
+      "code": "PHYSICAL_PRINT_NOT_PROVEN",
+      "reason": "No controlled physical production print has been attempted.",
+      "blocks": [
+        "WORLD_PROVEN_PHYSICAL_OUTPUT"
+      ],
+      "gate_policy": "DO_NOT_ATTEMPT_BEFORE_REMAINING_OPERATIONAL_RULES_AND_EFFECT_GATE"
+    }
+  ],
+  "boundaries": {
+    "historical_2026_10_04_service": "UNKNOWN_NOT_CLAIMED",
+    "current_2026_10_05_opening_service": "LUNCH_HUMAN_CONFIRMED",
+    "historical_replay_service_usage": "CURRENT_LUNCH_SCENARIO_ONLY_NOT_HISTORICAL_FACT",
+    "production_state_binding_count": 0,
+    "first_live_post_cutover_tata_sequence": "001"
+  },
+  "evidence": {
+    "human_rules": "data/tata_reader_human_operational_rules_20261005_v1.json",
+    "replay_proof": "data/tata_reader_real_order_unified_replay_success_20261005_v1.json",
+    "live_sequence": "data/tata_reader_live_sequence_state_proof_20261005_v1.json",
+    "packaging_lock": "data/packaging_source_lock_v2.json",
+    "packaging_reference": "data/tata_reader_real_order_packaging_reference_20261005_v2.json"
+  },
+  "next_human_gate": {
+    "subject": "COLD_BAG_SIZE_FOR_3X750_KIDS_PLUS_1X240",
+    "question_required": true,
+    "why": "No prior explicit rule exists; inference is forbidden by current packaging authority."
+  },
+  "effects": {
+    "print": false,
+    "spooler_write": false,
+    "database_write": false,
+    "odhen_write": false,
+    "fiscal_action": false,
+    "cutover": false
+  }
+}
