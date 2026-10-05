@@ -1,0 +1,18 @@
+/* REVIEW ONLY — DO NOT APPLY WITHOUT EXPLICIT HUMAN GATE
+Purpose: minimal observation-only fiscal reconciliation for DeliveryOS.
+No INSERT/UPDATE/DELETE/EXECUTE. No fiscal emission or SEFAZ call.
+*/
+USE [teknisa];
+GO
+GRANT SELECT (
+  [CDFILIAL],
+  [NRVENDAREST],
+  [NRSEQVENDA],
+  [NRNOTAFISCALCE],
+  [IDSTATUSNFCE],
+  [DTEMISSAONFCE],
+  [NRPROTOCOLONFCE],
+  [DSQRCODENFCE]
+) ON OBJECT::[TEKNISA].[VENDA]
+TO [NT SERVICE\TataComandaReader];
+GO
