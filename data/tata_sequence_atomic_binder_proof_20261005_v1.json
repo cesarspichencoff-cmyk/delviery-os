@@ -1,0 +1,65 @@
+{
+  "schema": "deliveryos.tata-sequence-atomic-binder-proof.2026-10-05.v1",
+  "status": "PROVEN_DRY_RUN_LIVE_AND_ATOMIC_TEMP_COMMIT_NO_PRODUCTION_CONSUMPTION",
+  "binder": {
+    "path": "tools/tata_sequence_atomic_bind_v1.ps1",
+    "parser_errors": 0,
+    "local_sha256": "2CDEACFA095FFB9147AE6194D71C46610E6C2791B34CB35FBDFD91FA25F7BACC"
+  },
+  "live_state_dry_run": {
+    "operational_date": "2026-10-06",
+    "store_id": "0001",
+    "order_id": "DRYRUN-TOMORROW-FIRST",
+    "assignment": "001",
+    "status": "DRY_RUN_NEW_BINDING_READY_NO_WRITE",
+    "state_sha_before": "11004FBB4AECA6D9E37607D82E30D5ADC28D2C8835DE3DEC3FAACC0B4453C329",
+    "state_sha_after": "11004FBB4AECA6D9E37607D82E30D5ADC28D2C8835DE3DEC3FAACC0B4453C329",
+    "production_binding_write": false
+  },
+  "temp_copy_commit_proof": {
+    "first": {
+      "order_id": "TEMP-ORDER-A",
+      "sequence": "001",
+      "status": "COMMIT_NEW_BINDING_PROVEN",
+      "hash_before": "11004FBB4AECA6D9E37607D82E30D5ADC28D2C8835DE3DEC3FAACC0B4453C329",
+      "hash_after": "8986E6A732F181EBD18E105E9F126A8E1188611C1E67814433C45BDEF1C8FD31"
+    },
+    "replay": {
+      "order_id": "TEMP-ORDER-A",
+      "sequence": "001",
+      "status": "COMMIT_IDEMPOTENT_REUSE_NO_WRITE",
+      "hash_before": "8986E6A732F181EBD18E105E9F126A8E1188611C1E67814433C45BDEF1C8FD31",
+      "hash_after": "8986E6A732F181EBD18E105E9F126A8E1188611C1E67814433C45BDEF1C8FD31"
+    },
+    "second": {
+      "order_id": "TEMP-ORDER-B",
+      "sequence": "002",
+      "status": "COMMIT_NEW_BINDING_PROVEN",
+      "hash_before": "8986E6A732F181EBD18E105E9F126A8E1188611C1E67814433C45BDEF1C8FD31",
+      "hash_after": "D92ACF6A0620125FD501E709C848CF6355C28FECC7D55636F119B760CEFBCEC7"
+    },
+    "stale_hash_attempt": {
+      "order_id": "TEMP-ORDER-C",
+      "status": "FAILED",
+      "error": "STATE_SHA256_CHANGED:D92ACF6A0620125FD501E709C848CF6355C28FECC7D55636F119B760CEFBCEC7",
+      "write_performed": false
+    }
+  },
+  "production_state_after_all_tests": {
+    "sha256": "11004FBB4AECA6D9E37607D82E30D5ADC28D2C8835DE3DEC3FAACC0B4453C329",
+    "next_value": 1,
+    "binding_count": 0,
+    "first_available": "001"
+  },
+  "effects": {
+    "production_state_write": false,
+    "production_binding_write": false,
+    "temp_copy_write": true,
+    "database_write": false,
+    "print": false,
+    "spooler_write": false,
+    "odhen_write": false,
+    "fiscal_action": false,
+    "sefaz_call": false
+  }
+}
