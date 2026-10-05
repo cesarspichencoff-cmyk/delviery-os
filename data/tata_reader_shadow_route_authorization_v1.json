@@ -1,0 +1,71 @@
+{
+  "schema": "deliveryos.tata-reader-shadow-route-authorization.v1",
+  "authorization_id": "CESAR-2026-10-05-TATA-READER-SHADOW-ROUTE-V1",
+  "authorized_on": "2026-10-05",
+  "authorized_by": "Cesar",
+  "human_authorized": true,
+  "human_statement": "Autorizo tudo que precisar",
+  "interpreted_scope": "One bounded real-order shadow cycle needed to prove read -> CDARVPROD -> current routing -> current printer targets, with no print or operational write.",
+  "authorized_source_head": "eb540827bb7ffb6983fb96e069bc817ff099a0e8",
+  "shadow_script": {
+    "path": "tools/authorized/tata_reader_real_order_shadow_route_v1.ps1",
+    "sha256": "36F4DB7EC32FD93180ECA661316C22667561C1C1717B6F16649671683FF53FD0"
+  },
+  "runner": {
+    "path": "tools/authorized/tata_reader_shadow_route_cycle_runner_v1.ps1",
+    "sha256": "CB0A51F149FCA0B6975A828D45E4ECE43F618ECC805E51400257A7496214E265"
+  },
+  "verifier": {
+    "path": "tools/authorized/verificar_tata_reader_shadow_route_bundle_v1.ps1",
+    "sha256": "73688F5EE30B7D0EC0EF3C8CABE64944C7548BDEF7CB5C01274C7C3B75709CA3"
+  },
+  "routing": {
+    "path": "data/odhen_product_routing_compact_v1.json",
+    "sha256": "7084771026CA54F10069F02E0BABCAA00F9C7666484CBAF80EC1ECDCDCAA165D",
+    "store": "0001 - TATA ITAIM"
+  },
+  "printer_map": {
+    "path": "data/runtime_printer_map_v1.json",
+    "sha256": "F37DAE40779C5A205A26CEB289CD748D1C7747C1947C278F534A2DCC2F296F4C",
+    "store": "0001 - TATA ITAIM"
+  },
+  "installed_preflight_expected_sha256": "3BBE4C37FEDC8EC45A25FE08497B999453B181EBA3033861CFF37F701B4A0035",
+  "scope": {
+    "CDFILIAL": "0001",
+    "CDLOJA": "01",
+    "integrated_orders_only": true,
+    "max_orders": 1,
+    "max_items": 20,
+    "product_name": false,
+    "observations": false,
+    "customer_pii": false,
+    "local_routing_config_read": true,
+    "local_printer_map_read": true
+  },
+  "allowed_effects": {
+    "order_row_read": true,
+    "local_config_read": true,
+    "temporary_service_start": true,
+    "temporary_preflight_script_swap": true,
+    "temporary_local_config_copy_to_service_bin": true
+  },
+  "restoration_required": {
+    "service_stopped": true,
+    "installed_preflight_restored": true,
+    "prior_evidence_restored": true,
+    "injected_config_removed_or_prior_state_restored": true
+  },
+  "prohibited_effects": {
+    "database_write": false,
+    "permission_change": false,
+    "odhen_write": false,
+    "print": false,
+    "spooler_write": false,
+    "f7": false,
+    "nfce": false,
+    "fiscal_action": false,
+    "sefaz_call": false,
+    "danfe_print": false,
+    "cutover": false
+  }
+}
