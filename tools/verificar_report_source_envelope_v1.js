@@ -23,6 +23,10 @@ const decision={
   ready:true,blocking_reasons:[],fingerprint:"FP1",snapshot_hash:"ABC123",
   order_key:"0001|01|0000349363|0000348932",ifood_sequence:"8332",teknisa_sequence:"0000348932",
   service:event.service_resolution,items:[],packaging:null,kits:null,sequence:{shadow_candidate:"001",binding_written:false},
+  rule_lineage:{
+    academy_rule_refs:["tata-academia:installed/packaging-current.js#sha256=AAA"],
+    delivery_rule_refs:["deliveryos:installed/routing.json#sha256=BBB"]
+  },
   effects:{database_write:false,print:false,fiscal_action:false}
 };
 
@@ -36,6 +40,7 @@ assert.equal(a.identity.nr_comanda_ext,"8332");
 assert.equal(a.identity.opened_at_semantics,"STORE_LOCAL_WALL_TIME");
 assert.equal(a.identity.tz_name,"America/Sao_Paulo");
 assert.equal(a.privacy.customer_pii_persisted,false);
+assert.deepEqual(a.rule_lineage.academy_rule_refs,["tata-academia:installed/packaging-current.js#sha256=AAA"]);
 assert.equal(a.effects.print,false);
 assert.equal(a.effects.fiscal_action,false);
 assert.equal(Object.hasOwn(a.source_event.order,"customer_name"),false);
