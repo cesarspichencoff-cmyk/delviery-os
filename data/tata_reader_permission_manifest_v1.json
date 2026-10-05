@@ -1,26 +1,19 @@
 {
   "schema": "deliveryos.tata-reader-permission-manifest.v1",
-  "status": "REVIEW_ONLY_NOT_AUTHORIZED",
+  "status": "CURRENT_EFFECTIVE_PROVEN_2026-10-05",
   "principal": "NT SERVICE\\TataComandaReader",
   "server": "(local)\\SQLEXPRESS",
   "database": "teknisa",
   "object_schema": "TEKNISA",
-  "scope_policy": {
-    "integrated_delivery_channels_only": true,
-    "manual_pos_delivery": false,
-    "dscomanda": false,
-    "combo_structure_columns": false,
-    "takeaway_origin_column": false
-  },
-  "allowed_columns": {
+  "effective_columns": {
     "COMANDAVEN": [
       "CDFILIAL",
-      "CDLOJA",
       "NRVENDAREST",
       "NRCOMANDA",
-      "NRCOMANDAEXT",
-      "IDORGCMDVENDA",
       "IDSTCOMANDA",
+      "CDLOJA",
+      "IDORGCMDVENDA",
+      "NRCOMANDAEXT",
       "DSOBSCOMANDA"
     ],
     "ITCOMANDAVEN": [
@@ -30,31 +23,34 @@
       "NRPRODCOMVEN",
       "CDPRODUTO",
       "QTPRODCOMVEN",
+      "TXPRODCOMVEN",
       "IDSTPRCOMVEN",
-      "DSOBSDESCIT",
       "DSOBSPEDDIGCMD",
-      "TXPRODCOMVEN"
+      "DSOBSDESCIT"
     ],
     "PRODUTO": [
       "CDPRODUTO",
-      "NMPRODUTO"
+      "CDARVPROD"
     ],
     "VENDAREST": [
       "CDFILIAL",
       "NRVENDAREST",
       "DTHRABERMESA"
-    ]
+    ],
+    "VENDA": []
   },
-  "explicitly_excluded_columns": [
-    "DSCOMANDA",
-    "CDPRODPROMOCAO",
-    "NRSEQPRODCOM",
-    "NRSEQPRODPAI",
-    "IDORIGEMVENDA"
+  "fiscal_read_surface_present": false,
+  "corrections": [
+    "NMPRODUTO is not currently granted to the service.",
+    "CDARVPROD is the current product-routing identity column.",
+    "No SELECT permission on TEKNISA.VENDA is currently granted."
   ],
-  "rationale": [
-    "MVP minimizes SQL surface to fields already consumed by current shadow/production pipeline.",
-    "Manual POS delivery detection requires DSCOMANDA and is deferred until integrated-channel shadow is proven.",
-    "Combo/takeaway fields are deferred because current normalization and production-ticket pipeline do not consume them."
-  ]
+  "evidence": "read-only sys.database_permissions audit on CAIXA_MOOCA 2026-10-05T16:13:03-03:00",
+  "scope_policy": {
+    "read_only": true,
+    "integrated_delivery_channels_only": true,
+    "customer_pii_minimized": true,
+    "database_write": false,
+    "fiscal_action": false
+  }
 }
