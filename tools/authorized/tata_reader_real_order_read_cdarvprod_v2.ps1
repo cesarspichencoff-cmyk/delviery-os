@@ -16,7 +16,8 @@ $result = [ordered]@{
   items = @()
   rows_read = 0
   customer_pii_fields_read = $false
-  observations_read = $false\r\n  product_name_read = $false
+  observations_read = $false
+  product_name_read = $false
   effects = [ordered]@{
     order_row_read = $false
     database_write = $false
