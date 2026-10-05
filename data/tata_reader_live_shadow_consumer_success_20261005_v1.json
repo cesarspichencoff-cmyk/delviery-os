@@ -1,0 +1,55 @@
+{
+  "schema": "deliveryos.live-shadow-consumer-success.2026-10-05.v1",
+  "status": "WORLD_PROVEN_LIVE_SHADOW_RUNNING",
+  "device": "CAIXA_MOOCA",
+  "started_at_local": "2026-10-05T15:42:23.9045855-03:00",
+  "service": {
+    "name": "TataComandaReader",
+    "host_schema": "deliveryos.tata-reader-continuous-host-status.v2",
+    "state": "RUNNING",
+    "watcher_pid": 33120,
+    "shadow_pid": 31324
+  },
+  "shadow_consumer": {
+    "schema": "deliveryos.live-shadow-consumer-status.v1",
+    "state": "RUNNING",
+    "processed": 1,
+    "ready_count": 1,
+    "blocked_count": 0,
+    "last_error": null
+  },
+  "first_automatic_decision": {
+    "event_file": "0000348932_009AED84852AFB3688CEDE09F6170D040F1EEBF63D3790247AEDC2E3F2A3E1DC.json",
+    "decision_file": "0000348932_009AED84852AFB3688CEDE09F6170D040F1EEBF63D3790247AEDC2E3F2A3E1DC.decision.json",
+    "ifood_sequence": "8332",
+    "ready": true,
+    "fingerprint": "a4d61e91a6ab2e2d9b9c1efc2e4eb5821a05f145b27945bd47769df166871d25",
+    "blockers": []
+  },
+  "product_identity_cache": {
+    "rows": 554,
+    "sha256": "37E92FC87EA1D141CBACA32216564AC22EE469E6C3DDE478F10D8E0351DAF4F3",
+    "service_sql_permission_expansion": false
+  },
+  "packaging": {
+    "assertions": "96/96 PASS",
+    "kits_logic_v2": "PASS",
+    "engine_sha256": "477E968A9B02099BC5E66A031F6A1E1F503AD39D864FD68415F6712AC31983D6"
+  },
+  "effects": {
+    "database_read_by_watcher": true,
+    "database_write": false,
+    "sequence_binding_write": false,
+    "print": false,
+    "spooler_write": false,
+    "odhen_write": false,
+    "fiscal_action": false,
+    "sefaz_call": false
+  },
+  "fail_closed_policy": [
+    "Unknown product identity/classification writes a blocked shadow decision.",
+    "Blocked shadow decision does not stop or alter native Teknisa/iFood flow.",
+    "No shadow decision consumes TATA sequence.",
+    "No physical or fiscal effect is exposed by the shadow consumer."
+  ]
+}
