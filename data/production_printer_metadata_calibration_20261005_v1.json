@@ -1,0 +1,96 @@
+{
+  "schema": "deliveryos.production-printer-metadata-calibration.2026-10-05.v1",
+  "status": "METADATA_PARTIAL_PHYSICAL_CALIBRATION_PENDING",
+  "targets": [
+    {
+      "printer_code": "00002",
+      "printer_name": "COZINHA",
+      "ip": "192.168.0.116",
+      "queue": "COZINHA",
+      "driver": "EPSON TM-T20 ReceiptE4",
+      "port": "192.168.0.116",
+      "raw9100": true,
+      "tcp9100_reachable": true
+    },
+    {
+      "printer_code": "00003",
+      "printer_name": "DELIVERY SUSHI 1",
+      "ip": "192.168.0.153",
+      "queue": "DELIVERY SUSHI 1",
+      "driver": "Generic / Text Only",
+      "port": "DELIVERYSUSHI1",
+      "raw9100": true,
+      "tcp9100_reachable": false
+    },
+    {
+      "printer_code": "00004",
+      "printer_name": "DELIVERY SUSHI 2",
+      "ip": "192.168.0.4",
+      "queue": "DELIVERY SUSHI 2",
+      "driver": "EPSON TM-T20 ReceiptE4",
+      "port": "192.168.0.4",
+      "raw9100": true,
+      "tcp9100_reachable": false
+    },
+    {
+      "printer_code": "00006",
+      "printer_name": "BALCAOSUSHI2",
+      "ip": "192.168.0.110",
+      "queue": "BALCAOSUSHI2",
+      "driver": "EPSON TM-T20 ReceiptE4",
+      "port": "192.168.0.110",
+      "raw9100": true,
+      "tcp9100_reachable": true
+    },
+    {
+      "printer_code": "00007",
+      "printer_name": "BAR",
+      "ip": "192.168.0.232",
+      "queue": "BAR",
+      "driver": "EPSON TM-T(203dpi) Receipt6",
+      "port": "192.168.0.232",
+      "raw9100": true,
+      "tcp9100_reachable": true
+    },
+    {
+      "printer_code": "00009",
+      "printer_name": "BALCAOSUSHI1",
+      "ip": "192.168.0.142",
+      "queue": "BALCAOSUSHI1",
+      "driver": "Generic / Text Only",
+      "port": "192.168.0.142",
+      "raw9100": true,
+      "tcp9100_reachable": true
+    }
+  ],
+  "unknowns": [
+    "actual media width",
+    "actual physical device variant",
+    "character/accent rendering",
+    "cutter/feed behavior",
+    "paper-out behavior",
+    "cover-open behavior",
+    "physical ticket output"
+  ],
+  "boundaries": {
+    "current_service": "LUNCH",
+    "current_lunch_targets_for_real_replay": [
+      "00002",
+      "00009"
+    ],
+    "current_lunch_targets_reachable": true,
+    "dinner_pair_00003_00004_reachable": false,
+    "global_cutover_blocked": true
+  },
+  "effects": {
+    "metadata_read": true,
+    "tcp_handshake_only": true,
+    "bytes_sent": 0,
+    "print": false,
+    "printer_write": false,
+    "service_change": false,
+    "odhen_write": false,
+    "fiscal_action": false,
+    "cutover": false
+  }
+}
