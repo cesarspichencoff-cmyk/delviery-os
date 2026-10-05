@@ -1,0 +1,49 @@
+{
+  "schema": "deliveryos.tata-reader-continuous-watch-restart-proof.2026-10-05.v1",
+  "status": "PROVEN_RESTART_CHECKPOINT_AND_DEDUPE",
+  "device": "CAIXA_MOOCA",
+  "service_identity": "NT SERVICE\\TataComandaReader",
+  "run1": {
+    "polls": 3,
+    "events_emitted": 5,
+    "duplicates_suppressed": 5,
+    "poll_errors": 0
+  },
+  "run2": {
+    "polls": 3,
+    "events_emitted": 0,
+    "duplicates_suppressed": 15,
+    "poll_errors": 0
+  },
+  "baseline_event_files": 5,
+  "final_event_files": 5,
+  "baseline_files_changed": 0,
+  "checkpoint_sha256": "D6AAE012B59A0EC8C74E17674D15C2190B8BD1B0B825F1AC00ACB4649E06F0B7",
+  "static_scan": {
+    "parse_errors": 0,
+    "deployed_candidate_sha256": "AF954B11932F1D98EC236F3B2557423210FE5281D697BFF17D4FCDA8AD842D92",
+    "sql_write_surface": false,
+    "print_api_surface": false,
+    "web_surface": false
+  },
+  "restoration": {
+    "service_state": "Stopped",
+    "service_identity": "NT SERVICE\\TataComandaReader",
+    "preflight_restored": true,
+    "installed_preflight_sha256": "3BBE4C37FEDC8EC45A25FE08497B999453B181EBA3033861CFF37F701B4A0035"
+  },
+  "boundary": "Candidate proven in bounded zero-effect runs. Always-on cutover remains disabled.",
+  "effects": {
+    "database_read": true,
+    "database_write": false,
+    "local_checkpoint_write": true,
+    "local_event_write": true,
+    "network_call": false,
+    "odhen_write": false,
+    "print": false,
+    "spooler_write": false,
+    "fiscal_action": false,
+    "sefaz_call": false,
+    "cutover": false
+  }
+}
