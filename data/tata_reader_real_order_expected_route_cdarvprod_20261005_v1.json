@@ -1,0 +1,142 @@
+{
+  "schema": "deliveryos.tata-reader-real-order-expected-route-cdarvprod.v1",
+  "captured_date": "2026-10-05",
+  "status": "PROVEN_EXPECTED_ROUTE_FOR_REAL_ORDER_WITH_CDARVPROD_NO_PRINT",
+  "source_read": "data/tata_reader_real_read_cdarvprod_success_20261005_v1.json",
+  "routing_source": "data/odhen_product_routing_compact_v1.json",
+  "printer_source": "data/runtime_printer_map_v1.json",
+  "order": {
+    "CDFILIAL": "0001",
+    "CDLOJA": "01",
+    "NRVENDAREST": "0000349281",
+    "NRCOMANDA": "0000348850",
+    "NRCOMANDAEXT": "9627",
+    "IDORGCMDVENDA": "DLV_IFO",
+    "IDSTCOMANDA": "X",
+    "DTHRABERMESA": "2026-10-04T22:58:50.0000000"
+  },
+  "items": [
+    {
+      "NRPRODCOMVEN": "000001",
+      "CDPRODUTO": "0000001705",
+      "CDARVPROD": "9800001000",
+      "retail_product_code": "9.80.00.010.00",
+      "quantity": "3.000",
+      "route_status": "ROUTED",
+      "targets": [
+        {
+          "printer_code": "00009",
+          "printer_name": "BALCAOSUSHI1",
+          "printer_ip": "192.168.0.142",
+          "printer_port": "LPT4",
+          "peripherals_server": "192.168.0.24:3000"
+        },
+        {
+          "printer_code": "00003",
+          "printer_name": "DELIVERY SUSHI 1",
+          "printer_ip": "192.168.0.153",
+          "printer_port": null,
+          "peripherals_server": "192.168.0.24:3000"
+        }
+      ]
+    },
+    {
+      "NRPRODCOMVEN": "000002",
+      "CDPRODUTO": "0000001430",
+      "CDARVPROD": "9100008000",
+      "retail_product_code": "9.10.00.080.00",
+      "quantity": "1.000",
+      "route_status": "ROUTED",
+      "targets": [
+        {
+          "printer_code": "00002",
+          "printer_name": "COZINHA",
+          "printer_ip": "192.168.0.116",
+          "printer_port": "LPT3",
+          "peripherals_server": "192.168.0.24:3000"
+        }
+      ]
+    },
+    {
+      "NRPRODCOMVEN": "000003",
+      "CDPRODUTO": "0000001418",
+      "CDARVPROD": "9100002000",
+      "retail_product_code": "9.10.00.020.00",
+      "quantity": "1.000",
+      "route_status": "ROUTED",
+      "targets": [
+        {
+          "printer_code": "00002",
+          "printer_name": "COZINHA",
+          "printer_ip": "192.168.0.116",
+          "printer_port": "LPT3",
+          "peripherals_server": "192.168.0.24:3000"
+        }
+      ]
+    },
+    {
+      "NRPRODCOMVEN": "000004",
+      "CDPRODUTO": "0000001535",
+      "CDARVPROD": "9300009000",
+      "retail_product_code": "9.30.00.090.00",
+      "quantity": "1.000",
+      "route_status": "ROUTED",
+      "targets": [
+        {
+          "printer_code": "00009",
+          "printer_name": "BALCAOSUSHI1",
+          "printer_ip": "192.168.0.142",
+          "printer_port": "LPT4",
+          "peripherals_server": "192.168.0.24:3000"
+        },
+        {
+          "printer_code": "00003",
+          "printer_name": "DELIVERY SUSHI 1",
+          "printer_ip": "192.168.0.153",
+          "printer_port": null,
+          "peripherals_server": "192.168.0.24:3000"
+        }
+      ]
+    }
+  ],
+  "order_targets": [
+    {
+      "printer_code": "00009",
+      "printer_name": "BALCAOSUSHI1",
+      "printer_ip": "192.168.0.142",
+      "printer_port": "LPT4",
+      "peripherals_server": "192.168.0.24:3000"
+    },
+    {
+      "printer_code": "00003",
+      "printer_name": "DELIVERY SUSHI 1",
+      "printer_ip": "192.168.0.153",
+      "printer_port": null,
+      "peripherals_server": "192.168.0.24:3000"
+    },
+    {
+      "printer_code": "00002",
+      "printer_name": "COZINHA",
+      "printer_ip": "192.168.0.116",
+      "printer_port": "LPT3",
+      "peripherals_server": "192.168.0.24:3000"
+    }
+  ],
+  "proof": {
+    "real_order_read": "PROVEN",
+    "direct_product_identity_via_cdarvprod": "PROVEN_FOR_ALL_OBSERVED_ITEMS",
+    "route_membership": "PROVEN_FOR_ALL_OBSERVED_ITEMS",
+    "printer_resolution": "PROVEN_FOR_ALL_OBSERVED_TARGETS",
+    "expected_route": "PROVEN",
+    "physical_print": "NOT_EXECUTED_NOT_PROVEN"
+  },
+  "effects": {
+    "database_write": false,
+    "odhen_write": false,
+    "print": false,
+    "spooler_write": false,
+    "fiscal_action": false,
+    "sefaz_call": false,
+    "cutover": false
+  }
+}
