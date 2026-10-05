@@ -1,0 +1,82 @@
+{
+  "schema": "deliveryos.tata-reader-real-read-cdarvprod-success.v1",
+  "captured_at": "2026-10-05T08:52:05.1434145-03:00",
+  "cycle_id": "20261005T115204607Z",
+  "status": "PROVEN_MINIMIZED_REAL_ORDER_READ_WITH_CDARVPROD",
+  "authorization_id": "CESAR-2026-10-05-TATA-READER-REAL-READ-CDARVPROD-V2",
+  "source_bundle_head": "57295b37a95e08aa064e11a0cd5128d82f2eda90",
+  "service_identity": "NT SERVICE\\TataComandaReader",
+  "sql_identity": {
+    "current_login": "NT SERVICE\\TataComandaReader",
+    "current_user": "NT SERVICE\\TataComandaReader",
+    "database": "teknisa"
+  },
+  "observed_order": {
+    "CDFILIAL": "0001",
+    "CDLOJA": "01",
+    "NRVENDAREST": "0000349281",
+    "NRCOMANDA": "0000348850",
+    "NRCOMANDAEXT": "9627",
+    "IDORGCMDVENDA": "DLV_IFO",
+    "IDSTCOMANDA": "X",
+    "DTHRABERMESA": "2026-10-04T22:58:50.0000000"
+  },
+  "observed_items": [
+    {
+      "NRPRODCOMVEN": "000001",
+      "CDPRODUTO": "0000001705",
+      "CDARVPROD": "9800001000",
+      "QTPRODCOMVEN": "3.000",
+      "IDSTPRCOMVEN": "4"
+    },
+    {
+      "NRPRODCOMVEN": "000002",
+      "CDPRODUTO": "0000001430",
+      "CDARVPROD": "9100008000",
+      "QTPRODCOMVEN": "1.000",
+      "IDSTPRCOMVEN": "4"
+    },
+    {
+      "NRPRODCOMVEN": "000003",
+      "CDPRODUTO": "0000001418",
+      "CDARVPROD": "9100002000",
+      "QTPRODCOMVEN": "1.000",
+      "IDSTPRCOMVEN": "4"
+    },
+    {
+      "NRPRODCOMVEN": "000004",
+      "CDPRODUTO": "0000001535",
+      "CDARVPROD": "9300009000",
+      "QTPRODCOMVEN": "1.000",
+      "IDSTPRCOMVEN": "4"
+    }
+  ],
+  "rows_read": 5,
+  "minimization": {
+    "max_orders": 1,
+    "max_items": 20,
+    "product_name_read": false,
+    "customer_pii_fields_read": false,
+    "observations_read": false
+  },
+  "restoration": {
+    "runtime_restored": true,
+    "preflight_script_restored": true,
+    "evidence_restored": true,
+    "service_stopped": true,
+    "installed_preflight_sha256": "3BBE4C37FEDC8EC45A25FE08497B999453B181EBA3033861CFF37F701B4A0035"
+  },
+  "effects": {
+    "order_row_read": true,
+    "database_write": false,
+    "permission_change": false,
+    "odhen_write": false,
+    "print": false,
+    "spooler_write": false,
+    "fiscal_action": false,
+    "sefaz_call": false,
+    "danfe_print": false,
+    "cutover": false
+  },
+  "evidence_directory": "C:\\TATA\\comanda-v1\\saida\\fase5-real-read-cdarvprod\\cycle-20261005T115204607Z"
+}
