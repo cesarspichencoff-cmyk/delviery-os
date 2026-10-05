@@ -1,0 +1,44 @@
+name: DeliveryOS Reporting Audit Once
+
+on:
+  push:
+    branches:
+      - fix/odhen-routing-config-proof-20260930
+    paths:
+      - .github/workflows/deliveryos-reporting-audit-once.yml
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Syntax check reporting runtime
+        run: |
+          node --check runtime/shadow/live_shadow_consumer_v1.cjs
+          node --check runtime/shadow/live_shadow_consumer_loop_v1.cjs
+          node --check runtime/reporting/report_source_envelope_v1.cjs
+      - name: Reporting envelope proof
+        run: node tools/verificar_report_source_envelope_v1.js
+      - name: Reporting cutover dependency proof
+        run: node tools/verificar_tata_reader_live_shadow_cutover_reporting_static_v1.js
+      - name: Fiscal reconciler proof
+        run: npm run verificar:native-fiscal-reconciler
+      - name: TATA sequence proof
+        run: npm run verificar:tata-sequence
+      - name: TATA sequence boundary proof
+        run: npm run verificar:tata-sequence-policy
+      - name: Production service matrix proof
+        run: npm run verificar:production-service-matrix
+      - name: Production ticket proof
+        run: npm run verificar:production-ticket-v2
