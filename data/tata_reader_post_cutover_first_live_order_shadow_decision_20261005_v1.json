@@ -1,0 +1,99 @@
+{
+  "schema": "deliveryos.post-cutover-first-live-order-shadow-decision.2026-10-05.v1",
+  "status": "FULL_SHADOW_DECISION_PROVEN_NO_PHYSICAL_EFFECTS",
+  "order": {
+    "CDFILIAL": "0001",
+    "CDLOJA": "01",
+    "NRVENDAREST": "0000349363",
+    "NRCOMANDA": "0000348932",
+    "NRCOMANDAEXT": "8332",
+    "origin": "DLV_IFO",
+    "opened_at": "2026-10-05T14:39:57-03:00"
+  },
+  "service": {
+    "service": "LUNCH",
+    "evidence": "HUMAN_CONFIRMED_RULE"
+  },
+  "routing": [
+    {
+      "quantity": 2,
+      "name": "COMB EXEC SUSHI SALMAO",
+      "canonical_code": "9.05.05.080.00",
+      "printer_code": "00009",
+      "printer_name": "BALCAOSUSHI1"
+    },
+    {
+      "quantity": 2,
+      "name": "COCA COLA ZERO 350ML - UN",
+      "canonical_code": "8.00.05.010.00",
+      "printer_code": "00007",
+      "printer_name": "BAR"
+    },
+    {
+      "quantity": 2,
+      "name": "URAMAKI EBITEN",
+      "canonical_code": "9.50.00.050.00",
+      "printer_code": "00006",
+      "printer_name": "BALCAOSUSHI2"
+    }
+  ],
+  "packaging": {
+    "boxes": [
+      {
+        "quantity": 2,
+        "item": "COMB EXEC SUSHI SALMAO",
+        "box": "750",
+        "status": "FACT_HUMAN_2026_10_05"
+      },
+      {
+        "quantity": 2,
+        "item": "URAMAKI EBITEN",
+        "physical_boxes": 1,
+        "box": "750",
+        "status": "PROVEN_ENGINE_RULE"
+      },
+      {
+        "quantity": 2,
+        "item": "COCA COLA ZERO 350ML - UN",
+        "box": null,
+        "status": "BEVERAGE_NO_SUSHI_BOX"
+      }
+    ],
+    "total_physical_boxes": 3,
+    "bag": {
+      "count": 1,
+      "size": "M",
+      "status": "FACT_HUMAN_EXACT_LIVE_ORDER_8332"
+    }
+  },
+  "kits": [
+    {
+      "kit": "Kit p/1",
+      "quantity": 2,
+      "status": "FACT_HUMAN_EXECUTIVE_COMBO_RULE"
+    }
+  ],
+  "tata_sequence": {
+    "production_binding_written": false,
+    "shadow_next_candidate": "001",
+    "note": "Sequence state remains unconsumed until a later authorized effect gate."
+  },
+  "sources": {
+    "packaging_lock": "data/packaging_source_lock_v4.json",
+    "live_event": "data/tata_reader_post_cutover_first_live_order_20261005_v1.json"
+  },
+  "verification": {
+    "packaging": "95/95 assertions PASS",
+    "kits": "kits-logic-v2 PASS"
+  },
+  "effects": {
+    "database_read": true,
+    "database_write": false,
+    "sequence_binding_write": false,
+    "print": false,
+    "spooler_write": false,
+    "odhen_write": false,
+    "fiscal_action": false,
+    "sefaz_call": false
+  }
+}
