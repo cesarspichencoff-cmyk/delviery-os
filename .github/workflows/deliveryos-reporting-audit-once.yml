@@ -1,4 +1,4 @@
-name: DeliveryOS Reporting Audit Once v2
+name: DeliveryOS Reporting Audit Once v3
 
 on:
   push:
@@ -21,6 +21,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Dependency security audit
+        run: npm audit --audit-level=high
       - name: Typecheck
         run: npm run typecheck
       - name: Syntax check reporting runtime
