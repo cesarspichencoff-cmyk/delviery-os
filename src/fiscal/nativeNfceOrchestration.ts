@@ -132,6 +132,10 @@ export function planNativeNfceAfterProduction(input: {
   readiness: NativeNfceReadiness;
 }): NativeNfcePlan {
   const blocking = new Set<string>();
+  // Circuit breaker: the old "production dispatch then request NFC-e" policy was
+  // superseded by observation-first reconciliation of the native Teknisa/Odhen
+  // fiscal state. Keep this planner callable for compatibility, but never ready.
+  blocking.add("LEGACY_AFTER_PRODUCTION_POLICY_SUPERSEDED");
 
   const teknisa = clean(input.teknisa_sequence);
   const ifood = clean(input.ifood_sequence);
