@@ -46,10 +46,10 @@
         "actual_device_variant": "UNKNOWN",
         "actual_media_width_mm": "UNKNOWN",
         "printable_width_dots": "UNKNOWN",
-        "windows_queue_name": "UNKNOWN",
-        "windows_driver_name": "UNKNOWN",
-        "windows_port_name": "UNKNOWN",
-        "direct_network_print_port": "UNKNOWN",
+        "windows_queue_name": "COZINHA",
+        "windows_driver_name": "EPSON TM-T20 ReceiptE4",
+        "windows_port_name": "192.168.0.116",
+        "direct_network_print_port": 9100,
         "transport_selected": "UNKNOWN",
         "character_mode": "UNKNOWN",
         "accent_test": "UNKNOWN",
@@ -63,7 +63,14 @@
         "spooler_job_observation": "UNKNOWN",
         "one_physical_ticket_proof": "UNKNOWN"
       },
-      "activation_status": "CALIBRATION_REQUIRED_NO_PHYSICAL_EFFECT_AUTHORIZED"
+      "activation_status": "METADATA_CALIBRATION_PARTIAL_PHYSICAL_PROOF_REQUIRED",
+      "metadata_observation_2026_10_05": {
+        "queue_resolved": true,
+        "raw_9100_configured": true,
+        "tcp_9100_reachable": true,
+        "actual_media_width_mm": "UNKNOWN",
+        "note": "No bytes were sent during reachability probe."
+      }
     },
     {
       "printer_code": "00003",
@@ -77,10 +84,10 @@
         "actual_device_variant": "UNKNOWN",
         "actual_media_width_mm": "UNKNOWN",
         "printable_width_dots": "UNKNOWN",
-        "windows_queue_name": "UNKNOWN",
-        "windows_driver_name": "UNKNOWN",
-        "windows_port_name": "UNKNOWN",
-        "direct_network_print_port": "UNKNOWN",
+        "windows_queue_name": "DELIVERY SUSHI 1",
+        "windows_driver_name": "Generic / Text Only",
+        "windows_port_name": "DELIVERYSUSHI1",
+        "direct_network_print_port": 9100,
         "transport_selected": "UNKNOWN",
         "character_mode": "UNKNOWN",
         "accent_test": "UNKNOWN",
@@ -94,7 +101,14 @@
         "spooler_job_observation": "UNKNOWN",
         "one_physical_ticket_proof": "UNKNOWN"
       },
-      "activation_status": "CALIBRATION_REQUIRED_NO_PHYSICAL_EFFECT_AUTHORIZED"
+      "activation_status": "CURRENT_TCP_9100_UNREACHABLE_REVALIDATION_REQUIRED",
+      "metadata_observation_2026_10_05": {
+        "queue_resolved": true,
+        "raw_9100_configured": true,
+        "tcp_9100_reachable": false,
+        "actual_media_width_mm": "UNKNOWN",
+        "note": "No bytes were sent during reachability probe."
+      }
     },
     {
       "printer_code": "00004",
@@ -108,10 +122,10 @@
         "actual_device_variant": "UNKNOWN",
         "actual_media_width_mm": "UNKNOWN",
         "printable_width_dots": "UNKNOWN",
-        "windows_queue_name": "UNKNOWN",
-        "windows_driver_name": "UNKNOWN",
-        "windows_port_name": "UNKNOWN",
-        "direct_network_print_port": "UNKNOWN",
+        "windows_queue_name": "DELIVERY SUSHI 2",
+        "windows_driver_name": "EPSON TM-T20 ReceiptE4",
+        "windows_port_name": "192.168.0.4",
+        "direct_network_print_port": 9100,
         "transport_selected": "UNKNOWN",
         "character_mode": "UNKNOWN",
         "accent_test": "UNKNOWN",
@@ -125,7 +139,14 @@
         "spooler_job_observation": "UNKNOWN",
         "one_physical_ticket_proof": "UNKNOWN"
       },
-      "activation_status": "CALIBRATION_REQUIRED_NO_PHYSICAL_EFFECT_AUTHORIZED"
+      "activation_status": "CURRENT_TCP_9100_UNREACHABLE_REVALIDATION_REQUIRED",
+      "metadata_observation_2026_10_05": {
+        "queue_resolved": true,
+        "raw_9100_configured": true,
+        "tcp_9100_reachable": false,
+        "actual_media_width_mm": "UNKNOWN",
+        "note": "No bytes were sent during reachability probe."
+      }
     },
     {
       "printer_code": "00006",
@@ -139,10 +160,10 @@
         "actual_device_variant": "UNKNOWN",
         "actual_media_width_mm": "UNKNOWN",
         "printable_width_dots": "UNKNOWN",
-        "windows_queue_name": "UNKNOWN",
-        "windows_driver_name": "UNKNOWN",
-        "windows_port_name": "UNKNOWN",
-        "direct_network_print_port": "UNKNOWN",
+        "windows_queue_name": "BALCAOSUSHI2",
+        "windows_driver_name": "EPSON TM-T20 ReceiptE4",
+        "windows_port_name": "192.168.0.110",
+        "direct_network_print_port": 9100,
         "transport_selected": "UNKNOWN",
         "character_mode": "UNKNOWN",
         "accent_test": "UNKNOWN",
@@ -156,7 +177,14 @@
         "spooler_job_observation": "UNKNOWN",
         "one_physical_ticket_proof": "UNKNOWN"
       },
-      "activation_status": "CALIBRATION_REQUIRED_NO_PHYSICAL_EFFECT_AUTHORIZED"
+      "activation_status": "METADATA_CALIBRATION_PARTIAL_PHYSICAL_PROOF_REQUIRED",
+      "metadata_observation_2026_10_05": {
+        "queue_resolved": true,
+        "raw_9100_configured": true,
+        "tcp_9100_reachable": true,
+        "actual_media_width_mm": "UNKNOWN",
+        "note": "No bytes were sent during reachability probe."
+      }
     },
     {
       "printer_code": "00007",
@@ -170,10 +198,10 @@
         "actual_device_variant": "UNKNOWN",
         "actual_media_width_mm": "UNKNOWN",
         "printable_width_dots": "UNKNOWN",
-        "windows_queue_name": "UNKNOWN",
-        "windows_driver_name": "UNKNOWN",
-        "windows_port_name": "UNKNOWN",
-        "direct_network_print_port": "UNKNOWN",
+        "windows_queue_name": "BAR",
+        "windows_driver_name": "EPSON TM-T(203dpi) Receipt6",
+        "windows_port_name": "192.168.0.232",
+        "direct_network_print_port": 9100,
         "transport_selected": "UNKNOWN",
         "character_mode": "UNKNOWN",
         "accent_test": "UNKNOWN",
@@ -187,7 +215,14 @@
         "spooler_job_observation": "UNKNOWN",
         "one_physical_ticket_proof": "UNKNOWN"
       },
-      "activation_status": "CALIBRATION_REQUIRED_NO_PHYSICAL_EFFECT_AUTHORIZED"
+      "activation_status": "METADATA_CALIBRATION_PARTIAL_PHYSICAL_PROOF_REQUIRED",
+      "metadata_observation_2026_10_05": {
+        "queue_resolved": true,
+        "raw_9100_configured": true,
+        "tcp_9100_reachable": true,
+        "actual_media_width_mm": "UNKNOWN",
+        "note": "No bytes were sent during reachability probe."
+      }
     },
     {
       "printer_code": "00009",
@@ -201,10 +236,10 @@
         "actual_device_variant": "UNKNOWN",
         "actual_media_width_mm": "UNKNOWN",
         "printable_width_dots": "UNKNOWN",
-        "windows_queue_name": "UNKNOWN",
-        "windows_driver_name": "UNKNOWN",
-        "windows_port_name": "UNKNOWN",
-        "direct_network_print_port": "UNKNOWN",
+        "windows_queue_name": "BALCAOSUSHI1",
+        "windows_driver_name": "Generic / Text Only",
+        "windows_port_name": "192.168.0.142",
+        "direct_network_print_port": 9100,
         "transport_selected": "UNKNOWN",
         "character_mode": "UNKNOWN",
         "accent_test": "UNKNOWN",
@@ -218,7 +253,15 @@
         "spooler_job_observation": "UNKNOWN",
         "one_physical_ticket_proof": "UNKNOWN"
       },
-      "activation_status": "CALIBRATION_REQUIRED_NO_PHYSICAL_EFFECT_AUTHORIZED"
+      "activation_status": "METADATA_CALIBRATION_PARTIAL_PHYSICAL_PROOF_REQUIRED",
+      "metadata_observation_2026_10_05": {
+        "queue_resolved": true,
+        "raw_9100_configured": true,
+        "tcp_9100_reachable": true,
+        "actual_media_width_mm": "UNKNOWN",
+        "note": "No bytes were sent during reachability probe."
+      }
     }
-  ]
+  ],
+  "last_metadata_audit_date": "2026-10-05"
 }
