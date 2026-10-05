@@ -4,7 +4,7 @@ param(
   [string]$Service,
 
   [Parameter(Mandatory=$true)]
-  [ValidatePattern("^\\d{4}-\\d{2}-\\d{2}$")]
+  [ValidatePattern("^\d{4}-\d{2}-\d{2}$")]
   [string]$OperationalDate,
 
   [Parameter(Mandatory=$true)]
@@ -12,7 +12,7 @@ param(
   [string]$SourceRef,
 
   [Parameter(Mandatory=$true)]
-  [ValidatePattern("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$")]
+  [ValidatePattern("^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$")]
   [string]$ValidUntilLocal,
 
   [string]$StoreId = "0001",
