@@ -1,0 +1,29 @@
+{
+  "schema": "deliveryos.tata-reader-product-key-metadata-proof.v1",
+  "captured_on": "2026-10-05",
+  "status": "PROVEN_CDPRODUTO_SINGLE_COLUMN_UNIQUE_PRIMARY_KEY",
+  "database": "teknisa",
+  "object": "TEKNISA.PRODUTO",
+  "key": {
+    "index_name": "PK_PRODUTO",
+    "is_unique": true,
+    "is_primary_key": true,
+    "is_disabled": false,
+    "key_columns": [
+      {
+        "key_ordinal": 1,
+        "column_name": "CDPRODUTO",
+        "is_included_column": false
+      }
+    ],
+    "composite": false
+  },
+  "consequence": "CDPRODUTO deterministically identifies one PRODUTO row for the CDARVPROD lookup.",
+  "effects": {
+    "metadata_read": true,
+    "product_row_read": false,
+    "database_write": false,
+    "permission_change": false,
+    "print": false
+  }
+}
