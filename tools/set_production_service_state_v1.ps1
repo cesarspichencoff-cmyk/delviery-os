@@ -55,7 +55,10 @@ try {
   $previous = $null
   if (Test-Path -LiteralPath $StatePath -PathType Leaf) {
     $previous = Get-Content -LiteralPath $StatePath -Raw -Encoding UTF8 | ConvertFrom-Json
-    if ($previous.schema -ne "deliveryos.production-service-shift-state.v2") {
+    if ($previous.schema -notin @(
+      "deliveryos.production-service-shift-state.v1",
+      "deliveryos.production-service-shift-state.v2"
+    )) {
       throw "SERVICE_STATE_SCHEMA_MISMATCH"
     }
   }
