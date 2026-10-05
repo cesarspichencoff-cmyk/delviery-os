@@ -198,7 +198,7 @@ namespace TataComandaReader.ContinuousHostV2
 
         private static string Quote(string value)
         {
-            return """ + value.Replace(""", "\"") + """;
+            return "\"" + value.Replace("\"", "\\\"") + "\"";
         }
 
         private static void AppendLine(string path, string line)
