@@ -1,0 +1,48 @@
+{
+  "schema": "deliveryos.tata-reader-fiscal-read-permission-candidate.v1",
+  "status": "REVIEW_ONLY_NOT_APPLIED",
+  "principal": "NT SERVICE\\TataComandaReader",
+  "object": "TEKNISA.VENDA",
+  "permission": "SELECT_COLUMNS_ONLY",
+  "columns": [
+    "CDFILIAL",
+    "NRVENDAREST",
+    "NRSEQVENDA",
+    "NRNOTAFISCALCE",
+    "IDSTATUSNFCE",
+    "DTEMISSAONFCE",
+    "NRPROTOCOLONFCE",
+    "DSQRCODENFCE"
+  ],
+  "purpose": [
+    "Correlate native sale by store and NRVENDAREST.",
+    "Observe native NFC-e status and emission timestamp.",
+    "Validate 17-position native authorization protocol.",
+    "Derive QR-present boolean without persisting QR content."
+  ],
+  "prohibited": [
+    "INSERT",
+    "UPDATE",
+    "DELETE",
+    "EXECUTE",
+    "SEFAZ_CALL",
+    "FISCAL_EMISSION",
+    "DANFE_PRINT",
+    "REPRINT",
+    "PERSIST_RAW_QR",
+    "CUSTOM_FISCAL_EMITTER"
+  ],
+  "query_policy": {
+    "raw_qr_selected_to_application": false,
+    "qr_expression": "CASE WHEN DSQRCODENFCE IS NOT NULL AND LEN(LTRIM(RTRIM(DSQRCODENFCE))) > 0 THEN 1 ELSE 0 END",
+    "customer_pii_columns": false
+  },
+  "apply_requires_new_human_gate": true,
+  "rollback": "REVOKE the same column-level SELECT grants",
+  "effects": {
+    "permission_change": false,
+    "database_write": false,
+    "print": false,
+    "fiscal_action": false
+  }
+}
