@@ -5,7 +5,7 @@ lifecycle:
   authority_scope: infra_blockers
   superseded_by: null
   atualizado_em: "2026-10-04"
-  state_basis: 8b57f00
+  state_basis: 47b8852
   question_refs: ["Q-001","Q-002","Q-003","Q-004","Q-005","Q-006","Q-007","Q-008","Q-009","Q-010","Q-011"]
 ---
 
@@ -700,6 +700,32 @@ Connect. `inspetor`, `tabela` e `skeleton` existem no codigo e nao no Figma. Ver
 
 Reavaliacao do portao durante a viagem · corrida na `sequenceLocal` · GPS do piloto em RAM ·
 residuos de bind `0.0.0.0` e extrator de dimensoes. A Unidade 6 nao os tocou.
+
+
+### Sucessão 2026-10-04 — C2–C5 reclassificados contra o código atual
+
+O bloco acima é **histórico** e não descreve mais o estado atual.
+
+- **C2 — FECHADO NO CÓDIGO/AVD.** O gate de captura é reavaliado em loop nativo e pelo
+  `/api/device/capture-state`. Rechecagem 2026-10-04: native+consent **79/79 PASS** e Android
+  estrutural **43/43 PASS**. Aparelho físico continua um field gate separado;
+- **C3 — FECHADO.** A reserva de `sequenceLocal` está serializada/transacional no Room. A
+  rechecagem Android **43/43 PASS** preserva as guardas estruturais; a prova AVD 10/10 de
+  2026-09-30 continua a evidência runtime;
+- **C4 — FECHADO TECNICAMENTE / EFEITO OPERACIONAL PENDENTE.** O GPS canônico não depende de
+  `pointsByTrip` quando a plataforma está configurada. Rechecagem 2026-10-04 em PostgreSQL
+  descartável: `CANONICAL_DISPATCH_POSTGRES_GREEN 6/6`,
+  `DISPATCH_CANONICAL_READ_GREEN 6/6` e `LOCALIZACAO_CANONICA_GREEN 3/3`. O que falta é
+  somente gerar/configurar segredos reais por unidade e executar deploy autorizado;
+- **C5 — SEM DEFEITO ATIVO NESTA LISTA.** Os produtores históricos com bind `0.0.0.0` não
+  existem no Git atual; `R5D2_PRODUCER_QUALIFICATION_GATE_GREEN` passou **38/38** em
+  2026-10-04. Retenção/receipt GPS já estão tratados. `outbox_event` continua reservado/dormant
+  porque **comandos offline nativos = NOT_IMPLEMENTED**; isso é capacidade futura explícita,
+  não defeito do GPS offline atual.
+
+Portanto C2/C3 não são blockers ativos; C4 é blocker apenas de **efeito operacional autorizado**;
+C5 não bloqueia o piloto atual por esta lista. Nenhuma dessas reclassificações prova aparelho físico
+nem autoriza deploy.
 
 ---
 

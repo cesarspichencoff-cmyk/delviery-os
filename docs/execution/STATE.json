@@ -6,7 +6,7 @@
     "authority_scope": "technical_state",
     "superseded_by": null,
     "atualizado_em": "2026-10-04",
-    "state_basis": "8b57f00",
+    "state_basis": "47b8852",
     "observa": [
       "src/product/",
       "src/perfil-delivery/",
@@ -2156,5 +2156,38 @@
     },
     "production": "NOT_ACTIVATED",
     "consumer_live": "OFF / NOT_AUTHORIZED"
+  },
+  "c2_c5_recheck_20261004": {
+    "status": "RECLASSIFIED_WITH_FRESH_GATES",
+    "c2": {
+      "status": "CLOSED_CODE_AVD",
+      "fresh": "native+consent 79/79; android structural 43/43",
+      "physical_device": "NOT_PROVEN"
+    },
+    "c3": {
+      "status": "CLOSED",
+      "fresh": "android structural 43/43",
+      "runtime_reference": "AVD 10/10 on 2026-09-30"
+    },
+    "c4": {
+      "status": "TECHNICALLY_CLOSED_OPERATIONAL_EFFECT_PENDING",
+      "fresh": [
+        "canonical dispatch HTTP 5/5",
+        "canonical dispatch PostgreSQL 6/6",
+        "dispatch read 6/6",
+        "location read 3/3"
+      ],
+      "remaining": [
+        "real per-unit read secrets",
+        "authorized deploy"
+      ]
+    },
+    "c5": {
+      "status": "NO_ACTIVE_DEFECT_IN_CURRENT_LIST",
+      "fresh": "producer qualification 38/38",
+      "offline_native_commands": "NOT_IMPLEMENTED",
+      "offline_gps": "not blocked by this future capability"
+    },
+    "boundary": "no physical-device proof and no deployment effect"
   }
 }
