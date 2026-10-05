@@ -1,0 +1,81 @@
+{
+  "schema": "deliveryos.packaging-source-lock.v3",
+  "source_repo": "cesarspichencoff-cmyk/tata-academia",
+  "source_branch": "evolucao/v33-product-pass",
+  "source_head": "1d430d5fe4cea63846545bc662aa20421b367b12",
+  "captured_date": "2026-10-05",
+  "files": [
+    {
+      "path": "lib/packaging-current.js",
+      "git_blob_sha": "c43710075c5e0bc539b6691d0ac85458aa2c4bf0"
+    },
+    {
+      "path": "data/app-data.json",
+      "git_blob_sha": "d4cc9ba91c850314ffa9bd45fb9dfd1dea3d3c22"
+    },
+    {
+      "path": "PACKAGING_RULES_CURRENT_2026-09-10.md",
+      "git_blob_sha": "f7194fe1d79ca7197f753f7979573f9e2c058423"
+    },
+    {
+      "path": "content-source/human-current/packaging_truth_2026-09-27_cesar.md",
+      "git_blob_sha": "3fd9f310a1e7ef04b50e048c5add9380fb1222b2"
+    },
+    {
+      "path": "content-source/human-current/operational_truth_2026-10-05_cesar.md",
+      "git_blob_sha": "af57977cfb0cbe60039074cbd5396324d401ed29"
+    },
+    {
+      "path": "tests/kits_logic_v2.mjs",
+      "git_blob_sha": "36b77010f7dcf22e0ac0390e82168575ac7821f7"
+    },
+    {
+      "path": "tests/embalagem.mjs",
+      "git_blob_sha": "0398b343805f0081d71f56ef0685bc18c640969f"
+    }
+  ],
+  "corrected_failure_class": {
+    "failure": "TEMPERATURE_SEGREGATION_COLLAPSED_INTO_EXTERNAL_BAG_COUNT",
+    "blocked_route": "HOT_PLUS_COLD_EQUALS_TWO_EXTERNAL_BAGS",
+    "replacement_rule": "INTERNAL_SEGREGATION_THEN_MEASURE_EXTERNAL_FIT",
+    "future_test": "Generic hot+cold must not produce exact external count without fit evidence; exact 2026-10-05 composition must return 1 Sacola G."
+  },
+  "exact_real_order_rule": {
+    "boxes": [
+      {
+        "label": "750",
+        "quantity": 3
+      },
+      {
+        "label": "650 sealed",
+        "quantity": 2
+      },
+      {
+        "label": "240",
+        "quantity": 1
+      }
+    ],
+    "external_bag": {
+      "label": "G",
+      "quantity": 1
+    },
+    "internal_hot_cold_segregation": true,
+    "status": "HUMAN_CONFIRMED_AND_ISOLATED_ENGINE_PROVEN"
+  },
+  "validation": {
+    "isolated_regression": {
+      "device": "CAIXA_MOOCA",
+      "engine_blob": "c43710075c5e0bc539b6691d0ac85458aa2c4bf0",
+      "status": "PASS",
+      "exact_case": "1_G",
+      "generic_hot_cold": "EXACT_EXTERNAL_COUNT_UNKNOWN_UNTIL_MEASURED"
+    },
+    "full_suite": {
+      "status": "NOT_RERUN",
+      "reason": "Foxxy test staging was blocked by connector security policy before execution.",
+      "claim_boundary": "Do not claim the complete Academy suite passed after this revision."
+    }
+  },
+  "runtime_authority": false,
+  "status": "CURRENT_REPLAY_REFERENCE_PINNED_WITH_REGRESSION_PROOF"
+}
