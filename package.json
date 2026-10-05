@@ -45,7 +45,8 @@
     "verificar:odhen-fiscal-surface-probe-static": "node tools/verificar_odhen_fiscal_surface_probe_static_v1.js",
     "verificar:resource-costing": "tsc && node tools/verificar_resource_costing_v1.js",
     "verificar:native-fiscal-reconciler": "tsc && node tools/verificar_native_fiscal_reconciler_v1.js",
-    "verificar:tata-sequence": "tsc && node tools/verificar_tata_sequence_v1.js"
+    "verificar:tata-sequence": "tsc && node tools/verificar_tata_sequence_v1.js",
+    "verificar:tata-sequence-policy": "tsc && node tools/verificar_tata_sequence_policy_v1.js"
   },
   "devDependencies": {
     "@types/node": "20.14.10",
