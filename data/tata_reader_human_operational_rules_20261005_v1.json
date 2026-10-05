@@ -56,5 +56,34 @@
     "database_write": false,
     "fiscal_action": false,
     "cutover": false
+  },
+  "external_bag_rule": {
+    "principle": "INTERNAL_THERMAL_SEGREGATION_EXTERNAL_BAG_BY_MEASURED_FIT",
+    "rule": "Hot and cold production packages must remain physically segregated inside transport, but temperature alone does not require separate external bags.",
+    "operational_phrase": "separado por dentro pode viajar junto por fora",
+    "size_and_count_basis": [
+      "measured_fit",
+      "physical_capacity",
+      "stability"
+    ],
+    "exact_real_order": {
+      "composition": [
+        "3 x Combinado Kids / box 750",
+        "1 x Edamame / box 650 sealed",
+        "1 x Nasu no Misso / box 650 sealed",
+        "1 x Sushi de Unagui / box 240"
+      ],
+      "external_bags": [
+        {
+          "label": "Sacola G",
+          "quantity": 1
+        }
+      ],
+      "internal_hot_cold_segregation": true,
+      "evidence": "HUMAN_CONFIRMED_RULE"
+    },
+    "generalization_boundary": "Exact G fit is proven for the confirmed composition; other mixed compositions require measurement/capacity evidence rather than temperature-based bag counting.",
+    "evidence": "HUMAN_CONFIRMED_RULE",
+    "confirmed_on": "2026-10-05"
   }
 }
