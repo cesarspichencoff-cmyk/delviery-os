@@ -1,0 +1,60 @@
+{
+  "schema": "deliveryos.human-operational-rules.2026-10-05.v1",
+  "confirmed_on": "2026-10-05",
+  "authority": "Cesar",
+  "tata_sequence": {
+    "scope_policy": "RESET_EACH_STORE_LOCAL_CALENDAR_DAY",
+    "width": 3,
+    "min_value": 1,
+    "max_value": 999,
+    "first_formatted_value": "001",
+    "last_formatted_value": "999",
+    "reprint_reuses_binding": true,
+    "cross_day_carry_over": false,
+    "persistence": "LOCAL_CAIXA_ATOMIC_STATE_AND_BINDINGS",
+    "evidence": "HUMAN_CONFIRMED_RULE"
+  },
+  "current_service": {
+    "service": "LUNCH",
+    "scope": "DELIVERY_SHIFT_OPENING_2026-10-05",
+    "evidence": "HUMAN_CONFIRMED_RULE",
+    "historical_order_service_claim": false
+  },
+  "packaging": {
+    "combined_kids": {
+      "box": "750",
+      "evidence": "HUMAN_CONFIRMED_RULE"
+    },
+    "nasu_no_misso": {
+      "box": "650",
+      "sealed": true,
+      "evidence": "HUMAN_CONFIRMED_RULE"
+    }
+  },
+  "exact_order_kit_rule": {
+    "composition": [
+      "3 x Combinado Kids",
+      "1 x Edamame",
+      "1 x Nasu no Misso",
+      "1 x Sushi de Unagui"
+    ],
+    "kits": [
+      {
+        "label": "Kit Kids",
+        "quantity": 3
+      },
+      {
+        "label": "Kit Quente",
+        "quantity": 1
+      }
+    ],
+    "extra_kit_for_dupla": false,
+    "evidence": "HUMAN_CONFIRMED_RULE"
+  },
+  "effects": {
+    "print": false,
+    "database_write": false,
+    "fiscal_action": false,
+    "cutover": false
+  }
+}
