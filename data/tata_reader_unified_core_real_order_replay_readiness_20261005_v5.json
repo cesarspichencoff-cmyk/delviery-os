@@ -1,0 +1,91 @@
+{
+  "schema": "deliveryos.tata-reader-unified-core-readiness.2026-10-05.v5",
+  "captured_on": "2026-10-05",
+  "status": "PREPRINT_READONLY_GATES_PROVEN_PHYSICAL_HUMAN_GATE_REACHED",
+  "proven": [
+    "PACKAGING_AFFECTED_REGRESSION_91_OF_91_PASS",
+    "KITS_LOGIC_V2_PASS",
+    "EXACT_REAL_ORDER_ONE_SACOLA_G_WITH_INTERNAL_HOT_COLD_SEGREGATION",
+    "TATA_SEQUENCE_LIVE_ATOMIC_STATE_READY_001_ZERO_BINDINGS",
+    "DURABLE_EXPLICIT_LUNCH_STATE_NO_CLOCK_INFERENCE",
+    "CONTINUOUS_READER_CANDIDATE_RESTART_CHECKPOINT_DEDUPE_PROVEN",
+    "RECENT_500_DLV_ROUTING_AUDIT_120_CODES_ZERO_PRODUCTION_RELEVANT_GAPS",
+    "ALL_SIX_PRINTER_QUEUES_AND_TCP_PORTS_RESOLVED",
+    "CURRENT_LUNCH_TARGETS_00002_AND_00009_TCP_REACHABLE",
+    "FISCAL_LEGACY_AFTER_PRODUCTION_PLANNER_HARD_BLOCKED_IN_CODE",
+    "NATIVE_ODHEN_FISCAL_PATH_PRESENT",
+    "NO_CUSTOM_SEFAZ_EMITTER"
+  ],
+  "boundaries": {
+    "academy_entire_repository_suite": "NOT_RERUN_AND_NOT_CLAIMED; delivery packaging/kits affected gates passed",
+    "continuous_reader_always_on_cutover": false,
+    "physical_print": false,
+    "fiscal_action": false,
+    "current_service": "LUNCH",
+    "dinner_targets_currently_unreachable": [
+      "00003",
+      "00004"
+    ]
+  },
+  "blockers": [
+    {
+      "code": "PHYSICAL_PRINTER_CALIBRATION_NOT_WORLD_PROVEN",
+      "blocks": [
+        "FIRST_CONTROLLED_PRODUCTION_PRINT",
+        "GLOBAL_PRINT_CUTOVER"
+      ],
+      "next_gate": "One clearly marked calibration ticket to a reachable current-shift printer with human observation."
+    },
+    {
+      "code": "DINNER_PRINTERS_00003_00004_CURRENTLY_UNREACHABLE",
+      "blocks": [
+        "DINNER_CUTOVER",
+        "GLOBAL_PRINT_CUTOVER"
+      ],
+      "does_not_block": [
+        "CURRENT_LUNCH_CALIBRATION_ON_00002_OR_00009"
+      ]
+    },
+    {
+      "code": "CONTINUOUS_READER_CUTOVER_NOT_ENABLED",
+      "blocks": [
+        "UNATTENDED_LIVE_OPERATION"
+      ],
+      "reason": "Restart-safe candidate is proven but persistent service cutover remains intentionally disabled."
+    },
+    {
+      "code": "FISCAL_NATIVE_TRIGGER_AND_RUNTIME_COMPATIBILITY_NOT_FULLY_PROVEN",
+      "blocks": [
+        "FISCAL_AUTOMATION"
+      ],
+      "sub_blockers": [
+        "F7/native action exact trigger contract",
+        "QR Code v3 installed-runtime compatibility",
+        "SP 17-position protocol installed-runtime compatibility"
+      ]
+    }
+  ],
+  "evidence": {
+    "packaging": "data/tata_reader_real_order_packaging_reference_20261005_v3.json",
+    "service_state": "data/tata_reader_live_service_state_proof_20261005_v1.json",
+    "continuous_reader": "data/tata_reader_continuous_watch_restart_proof_20261005_v1.json",
+    "routing_drift": "data/tata_reader_routing_drift_audit_20261005_v1.json",
+    "printer_metadata": "data/production_printer_metadata_calibration_20261005_v1.json",
+    "calibration_payload": "data/production_printer_calibration_test_payload_20261005_v1.json",
+    "fiscal_audit": "data/tata_nfce_readonly_audit_20261005_v1.json"
+  },
+  "next_human_gate": {
+    "action": "CONTROLLED_CALIBRATION_PRINT_TO_00002_COZINHA",
+    "why_human_needed": "Physical paper width, accents, feed/cut and actual destination cannot be proven from metadata.",
+    "requested_observation": "Be near the COZINHA printer and confirm the clearly marked TESTE ticket."
+  },
+  "effects": {
+    "print": false,
+    "spooler_write": false,
+    "database_write": false,
+    "odhen_write": false,
+    "fiscal_action": false,
+    "sefaz_call": false,
+    "cutover": false
+  }
+}
