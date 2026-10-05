@@ -1,6 +1,6 @@
 {
   "schema": "deliveryos.tata-reader-preflight-candidate.v8",
-  "status": "PERMISSION_SWAP_COMMITTED_PROVEN_PREFLIGHT_V8_NOT_EXECUTED",
+  "status": "PROVEN_EFFECTIVE_LEAST_PRIVILEGE_SURFACE",
   "predecessor_sha256": "3BBE4C37FEDC8EC45A25FE08497B999453B181EBA3033861CFF37F701B4A0035",
   "change_scope": [
     "replace PRODUTO.NMPRODUTO read permission with PRODUTO.CDARVPROD",
@@ -36,5 +36,9 @@
   "authorization_still_valid_for_exact_pinned_scope": true,
   "execution_result": "data/tata_reader_cdarvprod_permission_swap_result_20261005_v1.json",
   "permission_swap_proven": true,
-  "next_gate": "PROVE_EFFECTIVE_LEAST_PRIVILEGE_SURFACE_UNDER_SERVICE_IDENTITY_WITH_PREFLIGHT_V8"
+  "next_gate": "PROVE_MINIMIZED_REAL_ORDER_READ_WITH_CDARVPROD_UNDER_SERVICE_IDENTITY",
+  "preflight_v8_proven": true,
+  "preflight_v8_result": "data/tata_reader_preflight_v8_result_20261005_v1.json",
+  "preflight_v8_verification": "data/tata_reader_preflight_v8_verification_20261005_v1.json",
+  "safe_for_minimized_order_read": true
 }
