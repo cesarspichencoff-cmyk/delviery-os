@@ -1,0 +1,21 @@
+{
+  "schema": "deliveryos.caixa-remote-access-environment.v1",
+  "captured_date": "2026-10-05",
+  "status": "REMOTE_CONTROL_PROVEN",
+  "device": {
+    "name": "CAIXA_MOOCA",
+    "id": "8c2544d4-38f1-451f-9bc4-f0912200fbe3",
+    "desktop_commander_version": "0.2.52"
+  },
+  "node": {
+    "installed": true,
+    "version": "24.21.0",
+    "path": "C:\\Program Files\\nodejs\\node.exe",
+    "portable": false
+  },
+  "python": {
+    "available": false
+  },
+  "note": "This supersedes the earlier assumption that CAIXA had no Node. Node is currently required by the connected Remote Desktop Commander agent; do not remove it while relying on this access path.",
+  "reader_runtime_dependency_on_node": false
+}
