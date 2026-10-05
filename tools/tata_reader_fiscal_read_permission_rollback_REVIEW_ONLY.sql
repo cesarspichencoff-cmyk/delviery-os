@@ -1,0 +1,15 @@
+/* REVIEW ONLY — rollback for the minimal fiscal read candidate. */
+USE [teknisa];
+GO
+REVOKE SELECT (
+  [CDFILIAL],
+  [NRVENDAREST],
+  [NRSEQVENDA],
+  [NRNOTAFISCALCE],
+  [IDSTATUSNFCE],
+  [DTEMISSAONFCE],
+  [NRPROTOCOLONFCE],
+  [DSQRCODENFCE]
+) ON OBJECT::[TEKNISA].[VENDA]
+FROM [NT SERVICE\TataComandaReader];
+GO
