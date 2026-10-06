@@ -40,6 +40,54 @@ function sameSet(a, b) {
   const bb = [...b].sort();
   return aa.every((x, i) => x === bb[i]);
 }
+
+function logicalStationForRoutes(routes) {
+  const stationByPrinter = new Map([
+    ["00002", "cozinha_quentes"],
+    ["00003", "duplas"],
+    ["00009", "duplas"],
+    ["00004", "enrolados"],
+    ["00006", "enrolados"],
+    ["00007", "bar_bebidas"]
+  ]);
+  const stations = [...new Set(
+    routes.map(code => stationByPrinter.get(String(code))).filter(Boolean)
+  )];
+  return stations.length === 1 ? stations[0] : null;
+}
+function classificationFromPackagingFact(name, routes) {
+  const cat = P.categoryOf({ nome: name });
+  if (!cat || cat.status !== P.FACT || !cat.category) return null;
+
+  const category = String(cat.category);
+  const routeStation = logicalStationForRoutes(routes);
+  const station = category === "combinado" ? "combinados" : routeStation;
+  const stationRequired = !["combinado", "caixa_fixa", "nao_producao"].includes(category);
+  if (stationRequired && !station) return null;
+
+  const familyByCategory = {
+    dupla_dyo: "dupla",
+    enrolado: "enrolado",
+    temaki: "temaki",
+    sashimi: "sashimi",
+    combinado: "combinado",
+    selada_650: "entrada",
+    prato_quente: "prato_quente",
+    caixa_fixa: "caixa_fixa",
+    bebida: "bebida",
+    nao_producao: "nao_producao"
+  };
+  const family = familyByCategory[category];
+  if (!family) return null;
+
+  return {
+    family,
+    subfamily: category,
+    station,
+    truth_class: "PROVEN_ACADEMIA_PACKAGING_RULE",
+    review_required: false
+  };
+}
 function writeAtomicJson(outPath, value) {
   const tmp = outPath + ".tmp." + process.pid + "." + Date.now();
   fs.writeFileSync(tmp, JSON.stringify(value, null, 2) + "\n", {encoding:"utf8"});
@@ -147,27 +195,34 @@ for (const [index, raw] of (event.order.items || []).entries()) {
       classification = exact.classification;
       classificationSource = "ACADEMIA_EXACT_NAME";
     } else if (
-      n === "coca cola zero 350ml - un" &&
-      code === "8.00.05.010.00" &&
+      /^(?:coca cola|sprite)\b/.test(n) &&
       sameSet(routes, ["00007"])
     ) {
       classification = {
         family: "bebida",
         subfamily: "refrigerante",
         station: "bar_bebidas",
+        truth_class: "PROVEN_LIVE_BAR_ROUTE_ALIAS",
         review_required: false
       };
-      classificationSource = "LIVE_EXACT_ALIAS_2026_10_05";
+      classificationSource = "LIVE_EXACT_BAR_ALIAS_2026_10_05";
     } else if (routingStatus === "NO_OWN_PRODUCTION_TICKET") {
       classification = {
         family: "nao_producao",
         subfamily: np.logical_plaza || "nao_producao",
         station: null,
+        truth_class: "PROVEN_NON_PRODUCTION_AUTHORITY",
         review_required: false
       };
       classificationSource = "NON_PRODUCTION_AUTHORITY";
     } else {
-      blockers.push("CLASSIFICATION_UNKNOWN_" + code);
+      const packagingFact = classificationFromPackagingFact(name, routes);
+      if (packagingFact) {
+        classification = packagingFact;
+        classificationSource = "ACADEMIA_PACKAGING_FACT_FALLBACK";
+      } else {
+        blockers.push("CLASSIFICATION_UNKNOWN_" + code);
+      }
     }
   }
 
