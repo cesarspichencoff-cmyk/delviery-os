@@ -10,6 +10,7 @@
     "demo": "tsc && node dist/demo/camada0_demo.js",
     "ingest": "tsc && node dist/demo/ingest_real.js",
     "verificar:cardapio": "node tools/verificar_integridade_cardapio.js",
+    "verificar:tata-comanda-truth": "node tools/verificar_tata_comanda_order_truth_v1.js",
     "verificar:v132": "node tools/verificar_truth_v132.js",
     "verificar:passive-log": "tsc && node tools/verificar_passive_print_log_v132.js",
     "verificar:production-ticket": "tsc && node tools/verificar_production_ticket_v1.js",

@@ -1,0 +1,103 @@
+{
+  "schema": "deliveryos.tata-comanda-day-truth.2026-10-05.v1",
+  "status": "PROVEN_AGGREGATE_READONLY_AUDIT",
+  "scope": {
+    "unit_id": "0001",
+    "store_id": "01",
+    "business_date": "2026-10-05",
+    "customer_pii": false
+  },
+  "orders": {
+    "total": 195,
+    "with_items": 195,
+    "item_rows": 551,
+    "units": 638,
+    "channels": {
+      "DLV_IFO": 190,
+      "DLV_NMO": 3,
+      "DLV_FOS": 2
+    }
+  },
+  "lifecycle_coverage": {
+    "cmdlog_op1": 195,
+    "item_ingress": 195,
+    "kds_p": 195,
+    "kds_f": 195,
+    "money_movement": 195,
+    "sale_close": 195
+  },
+  "lifecycle_semantics": {
+    "kds_p_to_f_average_minutes": 4.9931548717948715,
+    "production_time": "UNKNOWN",
+    "delivery_time": "UNKNOWN",
+    "warning": "KDS and financial timestamps are partially concurrent; do not force them into a customer journey sequence."
+  },
+  "financial": {
+    "item_unit_price_total_brl": 39364,
+    "item_discounts_brl": 435.63,
+    "item_surcharges_brl": 0,
+    "item_net_candidate_brl": 38928.37,
+    "movement_total_brl": 38989.37,
+    "direct_exact_orders": 191,
+    "service_fee_residual_orders": 4,
+    "service_fee_residual_total_brl": 61,
+    "native_total_exact_orders": 195,
+    "receipt_channels": {
+      "DLV_IFO": {
+        "receipt": "IFOOD",
+        "orders": 190,
+        "amount_brl": 37353.37
+      },
+      "DLV_NMO": {
+        "receipt": "PIX",
+        "orders": 3,
+        "amount_brl": 1064
+      },
+      "DLV_FOS": {
+        "receipts": [
+          "MASTER CREDITO",
+          "AMEX"
+        ],
+        "orders": 2,
+        "amount_brl": 572
+      }
+    }
+  },
+  "revision_clock": {
+    "source_envelopes": 304,
+    "selected_orders": 195,
+    "semantic_order_changes_when_fixing_clock": 2,
+    "recovered_units": 10,
+    "affected_orders_anonymized": "2 DLV_FOS orders",
+    "rule": "select by source_event.observed_at; envelope recorded_at is audit-only"
+  },
+  "source_lineage": [
+    "TEKNISA.COMANDAVEN",
+    "TEKNISA.VENDAREST",
+    "TEKNISA.ITCOMANDAVEN",
+    "TEKNISA.ITCMD_LOG",
+    "TEKNISA.HISTPEDCONS",
+    "TEKNISA.MOVCAIXADLV",
+    "TEKNISA.VENDA",
+    "TEKNISA.TIPORECE"
+  ],
+  "unknowns": [
+    "PRODUCTION_TIME_MISSING",
+    "DELIVERY_TIME_MISSING",
+    "INVENTORY_RECONCILIATION_MISSING",
+    "PURCHASE_FLOW_MISSING",
+    "TRANSFER_FLOW_MISSING",
+    "WASTE_DATA_MISSING",
+    "CMV_PERIOD_DATA_MISSING"
+  ],
+  "effects": {
+    "database_read": true,
+    "database_write": false,
+    "permission_change": false,
+    "print": false,
+    "spooler_write": false,
+    "odhen_write": false,
+    "fiscal_action": false,
+    "sefaz_call": false
+  }
+}
