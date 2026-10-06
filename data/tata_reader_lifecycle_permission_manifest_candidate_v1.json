@@ -1,0 +1,84 @@
+{
+  "schema": "deliveryos.tata-reader-lifecycle-permission-candidate.v1",
+  "status": "CANDIDATE_NOT_AUTHORIZED_NOT_APPLIED",
+  "basis": "CAIXA_MOOCA read-only audit 2026-10-06; minimizes the extra surface needed for lifecycle/financial truth",
+  "principal": "NT SERVICE\\TataComandaReader",
+  "server": "(local)\\SQLEXPRESS",
+  "database": "teknisa",
+  "object_schema": "TEKNISA",
+  "candidate_columns": {
+    "HISTPEDCONS": [
+      "CDFILIAL",
+      "NRVENDAREST",
+      "NRCOMANDA",
+      "IDHISTPEDCONS",
+      "DTHRHISTPEDCONS"
+    ],
+    "ITCMD_LOG": [
+      "CDFILIAL",
+      "NRVENDAREST",
+      "NRCOMANDA",
+      "NRPRODCOMVEN",
+      "CDPRODUTO",
+      "QTPRODCOMVEN",
+      "VRPRECCOMVEN",
+      "VRDESCCOMVEN",
+      "VRACRCOMVEN",
+      "DTHRINCOMVEN"
+    ],
+    "MOVCAIXADLV": [
+      "CDFILIAL",
+      "NRVENDAREST",
+      "CDTIPORECE",
+      "VRMOVIVENDDLV",
+      "DTINCLUSAO"
+    ],
+    "VENDA": [
+      "CDFILIAL",
+      "NRVENDAREST",
+      "DTFECHAVENDA",
+      "VRTOTVENDA",
+      "VRTXSEVENDA",
+      "VRDESCVENDA",
+      "VRACREVENDA"
+    ],
+    "TIPORECE": [
+      "CDTIPORECE",
+      "NMTIPORECE"
+    ]
+  },
+  "explicitly_not_requested": [
+    "customer_name",
+    "customer_phone",
+    "customer_address",
+    "delivery_address",
+    "raw_customer_payload",
+    "coordinates",
+    "DSOBSCOMANDA",
+    "DSOBSDESCIT",
+    "DSOBSPEDDIGCMD",
+    "INSERT",
+    "UPDATE",
+    "DELETE",
+    "EXECUTE",
+    "VIEW DEFINITION"
+  ],
+  "semantics": {
+    "HISTPEDCONS_P_F": "LOCAL_KDS_CYCLE_NOT_CUSTOMER_PRODUCTION_OR_DELIVERY_TIME",
+    "ITCMD_LOG": "ITEM_REVISION_HISTORY_RECONCILIATION",
+    "MOVCAIXADLV": "FINANCIAL_MOVEMENT",
+    "VENDA": "SALE_FINANCIAL_CLOSE",
+    "TIPORECE": "RECEIPT_CODE_DICTIONARY"
+  },
+  "authorization_required_before_apply": true,
+  "applied": false,
+  "effects": {
+    "permission_change": false,
+    "database_write": false,
+    "print": false,
+    "spooler_write": false,
+    "odhen_write": false,
+    "fiscal_action": false,
+    "sefaz_call": false
+  }
+}
