@@ -34,6 +34,7 @@ import { carregarCatalogo, ContratoIndisponivel } from "../contracts/event-schem
 import type { SourceMode } from "../contracts/event-catalog";
 import { tratarLoteGps, ROTA_INGESTAO } from "../runtime/rota-ingestao";
 import { tratarSessaoDeAparelho, ROTA_SESSAO } from "../runtime/rota-sessao";
+import { tratarFilaOffline, ROTA_FILA_OFFLINE } from "../runtime/rota-fila-offline";
 import {
   tratarIdentidadeDoDispositivo,
   ROTA_IDENTIDADE_DISPOSITIVO,
@@ -293,6 +294,21 @@ async function main(): Promise<void> {
           registro,
           agora: () => new Date(),
         })
+          .then((r) => responder(res, r.status, r.corpo))
+          .catch(() => responder(res, 503, { classe: "falha_de_persistencia", retentavel: true }));
+      });
+      return;
+    }
+
+    if (rota === ROTA_FILA_OFFLINE && req.method === "POST") {
+      // Dois inteiros cabem folgadamente em 512 bytes. Um corpo grande aqui e
+      // suspeito por definicao: esta rota nunca recebe coordenadas nem payload.
+      lerCorpo(512, (corpo) => {
+        void tratarFilaOffline(
+          req.headers as Record<string, string | undefined>,
+          corpo,
+          { segredo: segredoDeDispositivo, registro, agora: () => new Date() },
+        )
           .then((r) => responder(res, r.status, r.corpo))
           .catch(() => responder(res, 503, { classe: "falha_de_persistencia", retentavel: true }));
       });

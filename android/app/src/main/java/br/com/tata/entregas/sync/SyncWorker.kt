@@ -233,7 +233,18 @@ class SyncWorker(
             }
         }
 
-        // 4. Políticas e flags — aproveita a janela de rede aberta.
+        // 4. B5 — somente contagens agregadas; sem coordenada, payload ou PII.
+        when (val r = api.sendQueueDepth(
+            db.gpsPoints().pendingCount(),
+            db.outbox().pendingCount(),
+        )) {
+            is ApiResult.Ok -> Unit
+            is ApiResult.Retryable -> retryable = true
+            is ApiResult.Unauthorized -> credencialRecusada = true
+            is ApiResult.Rejected -> Unit
+        }
+
+        // 5. Políticas e flags — aproveita a janela de rede aberta.
         when (val r = piloto.policies()) {
             is ApiResult.Ok -> {
                 val policyStore = br.com.tata.entregas.location.PolicyStore

@@ -171,6 +171,16 @@ class EntregasApi(
             },
         )
 
+    fun sendQueueDepth(pendingPoints: Int, pendingEvents: Int): ApiResult<JSONObject> =
+        request(
+            "/api/device/queue-depth",
+            "POST",
+            JSONObject().apply {
+                put("pending_points", pendingPoints)
+                put("pending_events", pendingEvents)
+            },
+        )
+
     fun sendTermAcknowledgement(ack: JSONObject): ApiResult<JSONObject> =
         request("/api/term/acknowledge", "POST", ack)
 }

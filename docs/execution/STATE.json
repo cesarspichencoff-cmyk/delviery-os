@@ -2033,5 +2033,39 @@
     ],
     "figma_contract_node": "21:2",
     "boundary": "não é prova de ação real; nenhuma rota de escrita existe"
+  },
+  "offline_queue_b5": {
+    "status": "TEST_PASS_LOCAL_RUNTIME_PROVEN_FIELD_PROOF_PENDING",
+    "route": "POST /api/device/queue-depth",
+    "migration": "0009_device_offline_queue_depth",
+    "request_contract": [
+      "pending_points",
+      "pending_events"
+    ],
+    "privacy_boundary": {
+      "device_id_from_authenticated_bearer": true,
+      "coordinates_in_request": false,
+      "location_payload_in_request": false,
+      "trip_id_in_request": false,
+      "customer_pii_in_request": false,
+      "server_timestamp_only": true
+    },
+    "tests": {
+      "typescript": "PASS",
+      "queue_depth_contract_privacy_vm": "10/10 PASS",
+      "queue_depth_postgresql_least_privilege": "12/12 PASS",
+      "queue_depth_critical_http_postgresql": "8/8 PASS",
+      "android_testDebugUnitTest": "BUILD SUCCESSFUL",
+      "product_system": "51/51 PASS",
+      "device_auth": "26/26 PASS",
+      "human_action_gate_b7": "13/13 PASS"
+    },
+    "current_boundary": {
+      "production_deployed": false,
+      "cutover": false,
+      "physical_phone_world_proven": false,
+      "b7_changed": false
+    },
+    "next_proof": "telefone físico autorizado reportar fila real em teste controlado e a leitura do Product System refletir os mesmos contadores"
   }
 }

@@ -56,6 +56,11 @@ export interface AparelhoReal {
   ultima_sessao_em: string | null;
   app_version: string | null;
   revogado_em: string | null;
+  fila_offline: {
+    pending_points: number;
+    pending_events: number;
+    reportada_em: string;
+  } | null;
   /** Fatos `gps_batch_received` deste aparelho, por modo. Zero é zero medido. */
   fatos_por_modo: Record<SourceMode, number>;
   ultimo_lote: UltimoLote | null;
@@ -105,7 +110,8 @@ export async function lerRealidadeDeEntregas(
     const params = opcoes.unit_id ? [opcoes.unit_id] : [];
     const linhas = await tx.query(
       `SELECT d.device_id, d.unit_id, d.actor_id, d.label, d.registered_at, d.secret_bound_at,
-              d.last_session_at, d.app_version, d.revoked_at
+              d.last_session_at, d.app_version, d.revoked_at,
+              d.queue_pending_points, d.queue_pending_events, d.queue_depth_reported_at
          FROM identity.device d ${filtro}
         ORDER BY d.unit_id, d.device_id`,
       params,
@@ -160,6 +166,19 @@ export async function lerRealidadeDeEntregas(
       ultima_sessao_em: iso(l.last_session_at),
       app_version: l.app_version === null ? null : String(l.app_version),
       revogado_em: iso(l.revoked_at),
+      fila_offline:
+        l.queue_depth_reported_at !== null &&
+        l.queue_depth_reported_at !== undefined &&
+        l.queue_pending_points !== null &&
+        l.queue_pending_points !== undefined &&
+        l.queue_pending_events !== null &&
+        l.queue_pending_events !== undefined
+          ? {
+              pending_points: Number(l.queue_pending_points),
+              pending_events: Number(l.queue_pending_events),
+              reportada_em: iso(l.queue_depth_reported_at)!,
+            }
+          : null,
       fatos_por_modo: contagemPor.get(String(l.device_id)) ?? { real: 0, simulated: 0, control: 0 },
       ultimo_lote: ultimoPor.get(String(l.device_id)) ?? null,
     }));

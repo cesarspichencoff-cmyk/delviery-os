@@ -782,10 +782,11 @@ async function main(): Promise<void> {
       assert.equal(ar.ultima_posicao_em.observado && ar.ultima_posicao_em.origem, "simulado");
       assert.equal(ar.gps.observado && ar.gps.valor, "aging", "10:05 lido às 10:08:30 (210 s) não é aging?");
       assert.equal(ar.fatos.observado && ar.fatos.valor, 5);
-      // O que o telefone guarda continua sem fonte.
+      // A rota B5 existe, mas este aparelho lógico não reportou fila: ausência
+      // observada é diferente de integração inexistente e, principalmente, de zero.
       assert.equal(ar.fila_offline.observado, false);
-      assert.equal(ar.fila_offline.observado === false && ar.fila_offline.motivo, "integracao_pendente");
-      // E o bloco antigo do demo continua declarando integração pendente.
+      assert.equal(ar.fila_offline.observado === false && ar.fila_offline.motivo, "nao_observado");
+      // O bloco antigo do demo continua sem ganhar fatos da cadeia real.
       for (const c of Object.values(vm.dispositivo)) assert.equal(c.observado, false);
     });
 

@@ -76,6 +76,20 @@ function motivoParaEstadoLocal(motivo) {
   return motivo === "evidencia_insuficiente" ? "evidencia_insuficiente" : "indisponivel";
 }
 
+function celulaFilaOffline(a) {
+  if (!a.fila_offline || a.fila_offline.observado !== true) {
+    return celula(a.fila_offline);
+  }
+  const pontos = a.fila_offline_pontos?.observado === true ? a.fila_offline_pontos.valor : "?";
+  const eventos = a.fila_offline_eventos?.observado === true ? a.fila_offline_eventos.valor : "?";
+  const em = a.fila_offline_reportada_em?.observado === true
+    ? a.fila_offline_reportada_em.valor
+    : "instante nao observado";
+  return `<span class="campo__valor"><strong>${esc(a.fila_offline.valor)}</strong> pendente(s)</span>
+    <br><span class="campo__valor--tecnico">${esc(pontos)} pontos · ${esc(eventos)} eventos</span>
+    <br><span class="campo__rotulo">${esc(em)}</span>`;
+}
+
 /**
  * O bloco de REALIDADE — o que a cadeia canonica sustenta.
  *
@@ -110,9 +124,10 @@ function blocoRealidade(r) {
     celula(a.gps),
     celula(a.ultima_sincronizacao, { tecnico: true }),
     celula(a.modo_dos_fatos),
+    celulaFilaOffline(a),
     `<span class="linha-selos">${selos(a.selos)}</span>`,
   ];
-  const COLUNAS = ["Aparelho", "Credencial", "Ultima posicao", "GPS", "Recebido em", "Modo dos fatos", "Situacao"];
+  const COLUNAS = ["Aparelho", "Credencial", "Ultima posicao", "GPS", "Recebido em", "Modo dos fatos", "Fila offline", "Situacao"];
   const aparelhos =
     r.aparelhos.length === 0
       ? estadoTela(
@@ -243,13 +258,13 @@ export function telaEntregas(vm) {
 
     ${secao(
       "Realidade — o que a cadeia canonica sustenta",
-      "Lido do banco da plataforma: quem esta autorizado, se ja falou, o ultimo lote que chegou e as viagens que existem pelo GPS. Cada linha carrega a procedencia do proprio fato; o que nao tem fonte aparece como ausencia, nunca como zero.",
+      "Lido do banco da plataforma: quem esta autorizado, ultimo lote, fila offline agregada reportada pelo telefone e viagens que existem pelo GPS. Cada linha carrega o que foi observado; ausencia nunca vira zero.",
       blocoRealidade(vm.realidade || {}),
     )}
 
     ${secao(
       "O aparelho em campo (demonstracao)",
-      "Credencial, GPS, ultima sincronizacao e fila chegam do Android pela rota de ingestao. A leitura real esta no bloco acima; este continua declarando o que a demonstracao nao sabe.",
+      "Este bloco continua sendo a demonstracao em memoria. A fila REAL do telefone, quando reportada, aparece no bloco de realidade acima; aqui nada e promovido por inferencia.",
       `<div class="grade" data-colunas="2">
         ${campo("Integridade da credencial", d.credencial)}
         ${campo("GPS", d.gps)}

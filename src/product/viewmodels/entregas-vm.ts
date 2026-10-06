@@ -94,8 +94,11 @@ export interface AparelhoRealVM {
   readonly gps: Campo<Frescor>;
   readonly modo_dos_fatos: Campo<SourceMode>;
   readonly fatos: Campo<number>;
-  /** Sem fonte: a fila mora no telefone e nenhuma rota a devolve. */
+  /** Total pending_points + pending_events, medido no telefone. */
   readonly fila_offline: Campo<number>;
+  readonly fila_offline_pontos: Campo<number>;
+  readonly fila_offline_eventos: Campo<number>;
+  readonly fila_offline_reportada_em: Campo<string>;
   readonly selos: readonly Selo[];
 }
 
@@ -246,10 +249,22 @@ function aparelhoVM(a: AparelhoReal, agora: Date): AparelhoRealVM {
       : (semLote as Campo<Frescor>),
     modo_dos_fatos: modo ? observado(modo, PROCEDENCIA_DO_MODO[modo], lidaEm) : (semLote as Campo<SourceMode>),
     fatos: modo ? observado(a.fatos_por_modo[modo], PROCEDENCIA_DO_MODO[modo], lidaEm) : (semLote as Campo<number>),
-    fila_offline: ausente<number>(
-      "integracao_pendente",
-      "A fila offline mora no telefone. Nenhuma rota a devolve; o que se sabe e o que chegou.",
-    ),
+    fila_offline: a.fila_offline
+      ? observado(
+          a.fila_offline.pending_points + a.fila_offline.pending_events,
+          "real",
+          a.fila_offline.reportada_em,
+        )
+      : ausente<number>("nao_observado", "O telefone ainda nao reportou a profundidade da fila offline."),
+    fila_offline_pontos: a.fila_offline
+      ? observado(a.fila_offline.pending_points, "real", a.fila_offline.reportada_em)
+      : ausente<number>("nao_observado", "O telefone ainda nao reportou pending_points."),
+    fila_offline_eventos: a.fila_offline
+      ? observado(a.fila_offline.pending_events, "real", a.fila_offline.reportada_em)
+      : ausente<number>("nao_observado", "O telefone ainda nao reportou pending_events."),
+    fila_offline_reportada_em: a.fila_offline
+      ? observado(a.fila_offline.reportada_em, "real", a.fila_offline.reportada_em)
+      : ausente<string>("nao_observado", "O telefone ainda nao reportou a profundidade da fila offline."),
     selos,
   };
 }
@@ -298,9 +313,9 @@ function realidadeVM(r: RealidadeDeEntregas, agora: Date): RealidadeVM {
           "A cadeia canonica traz o GPS. Criar, iniciar e encerrar viagem ainda passam pelo servidor do piloto, entao toda viagem daqui aparece com estado desconhecido ate esse caminho migrar.",
       },
       {
-        titulo: "O que o telefone guarda nao chega",
+        titulo: "Telemetria do telefone e deliberadamente minima",
         texto:
-          "Fila offline, permissao de localizacao e estado do servico de captura moram no aparelho e nao tem rota de leitura. Aparecem como integracao pendente, nunca como zero.",
+          "A fila offline chega apenas como pending_points e pending_events agregados. Permissao de localizacao e estado do servico de captura continuam sem rota e nao sao inferidos.",
       },
     ],
   };

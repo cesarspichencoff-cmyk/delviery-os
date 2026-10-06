@@ -706,6 +706,22 @@ export class PgDeviceRegistry {
    * sessão, versão do app) e na auditoria (QUAL emissão, pelo `jti`). O
    * token não é gravado em lugar nenhum.
    */
+  async registrarFilaOffline(
+    device_id: string,
+    dados: { pending_points: number; pending_events: number; agora: Date },
+  ): Promise<boolean> {
+    const r = await this.sql.query<SqlRow>(
+      `UPDATE identity.device
+          SET queue_pending_points = $2,
+              queue_pending_events = $3,
+              queue_depth_reported_at = $4
+        WHERE device_id = $1 AND revoked_at IS NULL
+        RETURNING device_id`,
+      [device_id, dados.pending_points, dados.pending_events, dados.agora.toISOString()],
+    );
+    return r.length === 1;
+  }
+
   async registrarSessao(device_id: string, dados: { app_version?: string; jti: string; agora: Date }): Promise<void> {
     const at = dados.agora.toISOString();
     await this.sql.query(

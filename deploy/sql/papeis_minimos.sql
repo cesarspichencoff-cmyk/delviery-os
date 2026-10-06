@@ -60,15 +60,20 @@ GRANT SELECT, INSERT ON platform.inbox TO deliveryos_critical;
 -- auditoria: só escreve (emissão de sessão). audit_id é IDENTITY → sequência.
 GRANT INSERT ON platform.audit TO deliveryos_critical;
 GRANT USAGE ON ALL SEQUENCES IN SCHEMA platform TO deliveryos_critical;
--- aparelhos: lê o cadastro e atualiza SÓ a sessão observada.
--- Cadastrar, pré-vincular segredo e revogar são atos humanos: o runtime
--- crítico não recebe privilégio para secret_hash/secret_bound_at.
+-- aparelhos: lê o cadastro e atualiza SÓ sessão observada + telemetria B5.
+-- Cadastrar, pré-vincular segredo, trocar unidade/ator e revogar são atos
+-- humanos: o runtime crítico não recebe privilégio para essas colunas.
 GRANT SELECT ON identity.device TO deliveryos_critical;
 -- Sucessão do vínculo por primeiro uso: GRANT antigo é cumulativo. Portanto
 -- retirar colunas do GRANT novo não basta para instalações já existentes.
 REVOKE UPDATE (secret_hash, secret_bound_at)
   ON identity.device FROM deliveryos_critical;
 GRANT UPDATE (last_session_at, last_seen_at, app_version)
+  ON identity.device TO deliveryos_critical;
+-- B5: telemetria tecnica minima. O critico pode atualizar SOMENTE os dois
+-- contadores agregados e o instante recebido; nenhuma coluna de identidade,
+-- revogacao, segredo, ator ou unidade ganha autoridade nova.
+GRANT UPDATE (queue_pending_points, queue_pending_events, queue_depth_reported_at)
   ON identity.device TO deliveryos_critical;
 -- sonda de escrita do /ready (`probe:escrita`) e `migrate_on_boot` em local.
 -- Em produção migrate_on_boot é falso: a sonda ainda escreve aqui.
