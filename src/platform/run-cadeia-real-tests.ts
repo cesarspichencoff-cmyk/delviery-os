@@ -88,7 +88,12 @@ interface Processo {
   fim(sinal?: NodeJS.Signals): Promise<number | null>;
 }
 
-function subir(bin: string, url: string, extra: NodeJS.ProcessEnv = {}): Processo {
+function subir(
+  bin: string,
+  url: string,
+  extra: NodeJS.ProcessEnv = {},
+  opcoes: { ipcShutdown?: boolean } = {},
+): Processo {
   const porta = 8900 + Math.floor(Math.random() * 300);
   const env: NodeJS.ProcessEnv = {
     ...process.env,
@@ -100,7 +105,13 @@ function subir(bin: string, url: string, extra: NodeJS.ProcessEnv = {}): Process
     DELIVERYOS_TICK_MS: "200",
     ...extra,
   };
-  const filho = spawn(process.execPath, [bin], { cwd: raiz, env, stdio: ["ignore", "pipe", "pipe"] });
+  const filho = spawn(process.execPath, [bin], {
+    cwd: raiz,
+    env,
+    stdio: opcoes.ipcShutdown
+      ? ["ignore", "pipe", "pipe", "ipc"]
+      : ["ignore", "pipe", "pipe"],
+  });
   let buffer = "";
   filho.stdout?.on("data", (d: Buffer) => (buffer += d.toString()));
   filho.stderr?.on("data", (d: Buffer) => (buffer += d.toString()));
@@ -111,8 +122,19 @@ function subir(bin: string, url: string, extra: NodeJS.ProcessEnv = {}): Process
     saida: () => buffer,
     fim(sinal: NodeJS.Signals = "SIGTERM") {
       if (filho.exitCode === null && filho.signalCode === null) {
-        filho.kill(sinal);
-        setTimeout(() => filho.kill("SIGKILL"), 8000).unref();
+        let pediuEncerramento = false;
+        if (opcoes.ipcShutdown && filho.connected && typeof filho.send === "function") {
+          try {
+            filho.send({ type: "deliveryos:shutdown" });
+            pediuEncerramento = true;
+          } catch {
+            pediuEncerramento = false;
+          }
+        }
+        if (!pediuEncerramento) filho.kill(sinal);
+        setTimeout(() => {
+          if (filho.exitCode === null && filho.signalCode === null) filho.kill("SIGKILL");
+        }, 8000).unref();
       }
       return saiu;
     },
@@ -142,7 +164,9 @@ interface Replay { estado: string; aplicados: number; duplicados: number; escopo
 const subirCritico = (b: BancoIsolado, modo: string) =>
   subir(BIN_CRITICO, b.url, { DELIVERYOS_SOURCE_MODE: modo });
 const subirAssincrono = (b: BancoIsolado) => {
-  const p = subir(BIN_ASSINCRONO, b.url);
+  // No Windows, child.kill(SIGTERM) encerra sem entregar o sinal ao handler.
+  // O canal IPC só existe no teste e aciona o MESMO encerrar() do binário.
+  const p = subir(BIN_ASSINCRONO, b.url, {}, { ipcShutdown: process.platform === "win32" });
   delete process.env.DELIVERYOS_SOURCE_MODE;
   return p;
 };
@@ -557,6 +581,11 @@ async function main(): Promise<void> {
     await teste("C17–C20 worker ENCERRADO, processo novo sobe, a Q-016 reconstrói e o estado continua equivalente", async () => {
       const codigo = await assincrono!.fim();
       assert.equal(codigo, 0, `o assíncrono não encerrou graciosamente:\n${assincrono!.saida().slice(-400)}`);
+      assert.match(
+        assincrono!.saida(),
+        /\[assincrono\] encerrado graciosamente/,
+        "o processo terminou sem provar o drain gracioso",
+      );
       assincrono = subirAssincrono(b);
       assert.ok(await ate(assincrono, /\[assincrono\] replay \{/), `o novo assíncrono não subiu:\n${assincrono.saida()}`);
       const r = ultimaLinha<Replay>(assincrono, "[assincrono] replay ")!;

@@ -190,7 +190,10 @@ async function main(): Promise<void> {
 
   const loop = laco();
 
+  let encerrando = false;
   const encerrar = (sinal: string) => {
+    if (encerrando) return;
+    encerrando = true;
     console.log(`[assincrono] ${sinal} recebido, encerrando`);
     rodando = false;
     void runtime.stop(cfg.shutdown_timeout_ms).then(async (r) => {
@@ -205,6 +208,22 @@ async function main(): Promise<void> {
 
   process.on("SIGTERM", () => encerrar("SIGTERM"));
   process.on("SIGINT", () => encerrar("SIGINT"));
+
+  // Windows não entrega SIGTERM de child.kill() ao handler Node de forma
+  // observável. Quando o processo foi explicitamente criado com canal IPC,
+  // o pai pode pedir o MESMO encerramento gracioso sem inventar um caminho
+  // operacional novo. Em produção comum process.connected é false.
+  if (process.connected) {
+    process.on("message", (msg: unknown) => {
+      if (
+        msg &&
+        typeof msg === "object" &&
+        (msg as { type?: unknown }).type === "deliveryos:shutdown"
+      ) {
+        encerrar("IPC");
+      }
+    });
+  }
 
   await loop;
 }

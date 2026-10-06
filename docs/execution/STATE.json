@@ -2058,7 +2058,12 @@
       "android_testDebugUnitTest": "BUILD SUCCESSFUL",
       "product_system": "51/51 PASS",
       "device_auth": "26/26 PASS",
-      "human_action_gate_b7": "13/13 PASS"
+      "human_action_gate_b7": "13/13 PASS",
+      "chain_real": "36/36 PASS",
+      "q016_replay": "27/27 PASS",
+      "q016_processes": "14/14 PASS",
+      "platform_foundation": "44/44 PASS",
+      "linux_external_sigterm_on_current_host": "NOT_PROVEN_HOST_IS_WINDOWS"
     },
     "figma_parity": {
       "contract_node": "29:2",
@@ -2076,6 +2081,8 @@
       "production_deployed": false,
       "cutover": false,
       "physical_phone_world_proven": false,
+      "physical_phone_blocker": "nenhum dispositivo Android visível por ADB nos hosts Foxxy ou CAIXA_MOOCA durante a prova",
+      "linux_external_sigterm_world_proven": false,
       "b7_changed": false
     },
     "next_proof": "telefone físico autorizado reportar fila real em teste controlado e a leitura do Product System refletir os mesmos contadores"

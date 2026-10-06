@@ -66,6 +66,7 @@ interface Processo {
 }
 
 function subir(url: string, extra: NodeJS.ProcessEnv = {}): Processo {
+  const usarIpcDeTeste = process.platform === "win32";
   const filho = spawn(process.execPath, [BIN_ASSINCRONO], {
     cwd: raiz,
     env: {
@@ -76,7 +77,9 @@ function subir(url: string, extra: NodeJS.ProcessEnv = {}): Processo {
       DELIVERYOS_TICK_MS: "200",
       ...extra,
     },
-    stdio: ["ignore", "pipe", "pipe"],
+    stdio: usarIpcDeTeste
+      ? ["ignore", "pipe", "pipe", "ipc"]
+      : ["ignore", "pipe", "pipe"],
   });
   let buffer = "";
   filho.stdout?.on("data", (d: Buffer) => (buffer += d.toString()));
@@ -88,8 +91,19 @@ function subir(url: string, extra: NodeJS.ProcessEnv = {}): Processo {
     codigo: () => saiu,
     fim: (sinal = "SIGTERM") => {
       if (filho.exitCode === null && filho.signalCode === null) {
-        filho.kill(sinal);
-        setTimeout(() => filho.kill("SIGKILL"), 5000).unref();
+        let pediuEncerramento = false;
+        if (usarIpcDeTeste && filho.connected && typeof filho.send === "function") {
+          try {
+            filho.send({ type: "deliveryos:shutdown" });
+            pediuEncerramento = true;
+          } catch {
+            pediuEncerramento = false;
+          }
+        }
+        if (!pediuEncerramento) filho.kill(sinal);
+        setTimeout(() => {
+          if (filho.exitCode === null && filho.signalCode === null) filho.kill("SIGKILL");
+        }, 5000).unref();
       }
       return saiu;
     },
@@ -465,6 +479,11 @@ void (async () => {
       });
       const antesDoDesligamento = ultimaLinha<Vivo>(w1, "[assincrono] operacao-viva")!;
       assert.equal(await w1.fim(), 0, "w1 não encerrou graciosamente");
+      assert.match(
+        w1.saida(),
+        /\[assincrono\] encerrado graciosamente/,
+        "w1 terminou sem provar o drain gracioso",
+      );
       w1 = null;
 
       // Deixa o GPS cruzar a janela de 120 s enquanto NINGUÉM está rodando.
