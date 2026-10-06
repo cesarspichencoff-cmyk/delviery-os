@@ -75,6 +75,7 @@ function subir(url: string, extra: NodeJS.ProcessEnv = {}): Processo {
       DELIVERYOS_DATABASE_URL: url,
       DELIVERYOS_MIGRATE_ON_BOOT: "false",
       DELIVERYOS_TICK_MS: "200",
+      ...(usarIpcDeTeste ? { DELIVERYOS_TEST_IPC_SHUTDOWN: "true" } : {}),
       ...extra,
     },
     stdio: usarIpcDeTeste

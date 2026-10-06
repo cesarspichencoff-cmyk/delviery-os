@@ -166,7 +166,13 @@ const subirCritico = (b: BancoIsolado, modo: string) =>
 const subirAssincrono = (b: BancoIsolado) => {
   // No Windows, child.kill(SIGTERM) encerra sem entregar o sinal ao handler.
   // O canal IPC só existe no teste e aciona o MESMO encerrar() do binário.
-  const p = subir(BIN_ASSINCRONO, b.url, {}, { ipcShutdown: process.platform === "win32" });
+  const usarIpcDeTeste = process.platform === "win32";
+  const p = subir(
+    BIN_ASSINCRONO,
+    b.url,
+    usarIpcDeTeste ? { DELIVERYOS_TEST_IPC_SHUTDOWN: "true" } : {},
+    { ipcShutdown: usarIpcDeTeste },
+  );
   delete process.env.DELIVERYOS_SOURCE_MODE;
   return p;
 };

@@ -2035,7 +2035,7 @@
     "boundary": "não é prova de ação real; nenhuma rota de escrita existe"
   },
   "offline_queue_b5": {
-    "status": "TEST_PASS_LOCAL_RUNTIME_PROVEN_FIELD_PROOF_PENDING",
+    "status": "TEST_PASS_LOCAL_RUNTIME_PROVEN_LINUX_SIGNAL_PROVEN_FIELD_PROOF_PENDING",
     "route": "POST /api/device/queue-depth",
     "migration": "0009_device_offline_queue_depth",
     "request_contract": [
@@ -2063,7 +2063,7 @@
       "q016_replay": "27/27 PASS",
       "q016_processes": "14/14 PASS",
       "platform_foundation": "44/44 PASS",
-      "linux_external_sigterm_on_current_host": "NOT_PROVEN_HOST_IS_WINDOWS"
+      "linux_external_sigterm_wsl2_ubuntu": "3/3 PASS"
     },
     "figma_parity": {
       "contract_node": "29:2",
@@ -2082,7 +2082,8 @@
       "cutover": false,
       "physical_phone_world_proven": false,
       "physical_phone_blocker": "nenhum dispositivo Android visível por ADB nos hosts Foxxy ou CAIXA_MOOCA durante a prova",
-      "linux_external_sigterm_world_proven": false,
+      "linux_external_sigterm_world_proven": true,
+      "linux_external_sigterm_proof": "WSL2 Ubuntu no Foxxy, run-linux-sigterm-tests.js, 3/3 PASS",
       "b7_changed": false
     },
     "next_proof": "telefone físico autorizado reportar fila real em teste controlado e a leitura do Product System refletir os mesmos contadores"

@@ -210,10 +210,13 @@ async function main(): Promise<void> {
   process.on("SIGINT", () => encerrar("SIGINT"));
 
   // Windows não entrega SIGTERM de child.kill() ao handler Node de forma
-  // observável. Quando o processo foi explicitamente criado com canal IPC,
-  // o pai pode pedir o MESMO encerramento gracioso sem inventar um caminho
-  // operacional novo. Em produção comum process.connected é false.
-  if (process.connected) {
+  // observável. O fallback IPC existe SOMENTE no ambiente local e com opt-in
+  // explícito do harness. Ter um canal IPC por acidente nunca cria autoridade
+  // de shutdown em pilot/production.
+  const ipcShutdownDeTeste =
+    cfg.ambiente === "local" &&
+    process.env["DELIVERYOS_TEST_IPC_SHUTDOWN"] === "true";
+  if (ipcShutdownDeTeste && process.connected) {
     process.on("message", (msg: unknown) => {
       if (
         msg &&

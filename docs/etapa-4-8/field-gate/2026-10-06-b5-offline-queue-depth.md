@@ -6,7 +6,7 @@ Escopo: código + runtime local isolado; sem produção e sem cutover.
 
 ## Estado
 
-**B5 = TEST_PASS / LOCAL_RUNTIME_PROVEN / FIELD_PROOF_PENDING.**
+**B5 = TEST_PASS / LOCAL_RUNTIME_PROVEN / LINUX_SIGNAL_PROVEN / FIELD_PROOF_PENDING.**
 
 O gap técnico “fila offline = integração pendente” foi fechado. A prova física em
 telefone real de campo ainda não aconteceu e não é inferida a partir dos testes.
@@ -42,7 +42,7 @@ telefone real de campo ainda não aconteceu e não é inferida a partir dos test
 - Q-016 replay: **27/27 PASS · Q016_GREEN**.
 - Q-016 processos reais: **14/14 PASS · Q016_PROCESSOS_GREEN**.
 - Fundação da plataforma: **44/44 PASS**.
-- Gate externo SIGTERM/Linux: **NÃO PROVADO NESTE HOST**; o gate específico foi corretamente pulado porque o kernel atual é Windows. Linux continua com o caminho SIGTERM nativo preservado.
+- Gate externo SIGTERM/Linux: **3/3 PASS** em Ubuntu real via WSL2 no Foxxy. O teste confirmou entrega de SIGTERM, drain antes de close, timeout fail-closed e encerramento limpo do source-ingest desligado.
 
 ## Fronteiras
 
