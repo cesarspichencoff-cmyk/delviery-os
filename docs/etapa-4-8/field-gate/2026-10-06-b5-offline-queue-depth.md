@@ -36,6 +36,7 @@ telefone real de campo ainda não aconteceu e não é inferida a partir dos test
 - Product System: **51/51 PASS**.
 - Device auth: **26/26 PASS**.
 - B7 Human Action Gate: **13/13 PASS**.
+- Figma Full: **node `29:2` — `CONTRACT-B5 · Offline Queue Depth`**, com `TEST PASS · FIELD PROOF PENDING`; textos obsoletos da referência Entregas atualizados nos nodes `20:1408`, `20:1410`, `20:1415`, `20:1520`, `20:1522`.
 - `build:platform`: 9 migrations copiadas; contrato e build stamp gerados.
 - Cadeia real: D3 atualizado para a nova semântica B5 e P1–P5 de privilégios passaram.
   A suíte ficou 35/36 por C17–C20 (encerramento não gracioso do worker assíncrono), fora do caminho B5; a falha foi preservada como aberta, não mascarada.

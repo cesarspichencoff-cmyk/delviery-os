@@ -2060,6 +2060,18 @@
       "device_auth": "26/26 PASS",
       "human_action_gate_b7": "13/13 PASS"
     },
+    "figma_parity": {
+      "contract_node": "29:2",
+      "contract_name": "CONTRACT-B5 · Offline Queue Depth",
+      "runtime_copy_updated_nodes": [
+        "20:1408",
+        "20:1410",
+        "20:1415",
+        "20:1520",
+        "20:1522"
+      ],
+      "status": "STRUCTURAL_PARITY_PROVEN"
+    },
     "current_boundary": {
       "production_deployed": false,
       "cutover": false,
