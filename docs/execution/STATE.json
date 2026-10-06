@@ -2087,5 +2087,58 @@
       "b7_changed": false
     },
     "next_proof": "telefone físico autorizado reportar fila real em teste controlado e a leitura do Product System refletir os mesmos contadores"
+  },
+  "tata_comanda_bridge": {
+    "status": "HISTORICAL_READONLY_PRODUCT_ADAPTER_PROVEN_LIVE_READER_PERMISSION_PENDING",
+    "source_contract": {
+      "operational_branch": "tmp/tata-comanda-source-contract-20261006",
+      "product_lineage_branch": "tmp/tata-comanda-source-audit-20261006",
+      "schema": "deliveryos.tata-comanda-order-truth.v1",
+      "aggregate_evidence_schema": "deliveryos.tata-comanda-day-truth.2026-10-05.v1"
+    },
+    "proven_day": {
+      "business_date": "2026-10-05",
+      "orders": 195,
+      "item_rows": 551,
+      "units": 638,
+      "native_revenue_brl": 38989.37,
+      "direct_financial_matches": 191,
+      "service_fee_residual_orders": 4,
+      "service_fee_residual_brl": 61,
+      "revision_clock_semantic_corrections": 2,
+      "revision_clock_recovered_units": 10
+    },
+    "semantic_boundaries": {
+      "kds_is_local_cycle_only": true,
+      "production_time": "UNKNOWN",
+      "delivery_time": "UNKNOWN",
+      "historical_snapshot_is_live_state": false,
+      "customer_pii_required": false,
+      "raw_payload_required": false
+    },
+    "product_adapter": {
+      "surface": "/api/historico",
+      "live": false,
+      "source_label": "tata_comanda_readonly_audit",
+      "home_live_state_changed": false,
+      "new_visual_surface_created": false
+    },
+    "tests": {
+      "typescript": "PASS",
+      "tata_comanda_product_adapter": "9/9 PASS",
+      "product_system": "51/51 PASS",
+      "human_action_gate_b7": "13/13 PASS",
+      "offline_queue_b5": "10/10 PASS",
+      "http_api_historico": "PASS",
+      "secret_scan_changed_files": "0 hits"
+    },
+    "authorization_boundary": {
+      "reader_permission_manifest": "CANDIDATE_NOT_AUTHORIZED_NOT_APPLIED",
+      "permission_change_applied": false,
+      "database_write": false,
+      "production_deployed": false,
+      "cutover": false
+    },
+    "next_step": "somente com autorizacao humana explicita, avaliar/aplicar a extensao read-only minima do TataComandaReader; ate la o Product System usa apenas a auditoria historica provada"
   }
 }
