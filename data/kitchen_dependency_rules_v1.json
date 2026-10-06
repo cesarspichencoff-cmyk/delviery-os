@@ -1,7 +1,15 @@
 {
   "schema": "deliveryos.kitchen-dependency-rules.v1",
   "coverage": "PARTIAL",
-  "coverage_proof": "UNPROVEN",
-  "rules": [],
-  "note": "Intentional safe baseline. Do not mark COMPLETE or add yields until Cesar confirms the operational item-to-HOT/EBITEN/SHISO mapping."
+  "coverage_proof": "HUMAN_CONFIRMED",
+  "rules": [
+    {
+      "canonical_item_name": "Uramaki Ebiten Especial",
+      "proof": "HUMAN_CONFIRMED",
+      "yields": {
+        "EBITEN": 1
+      }
+    }
+  ],
+  "note": "Human-confirmed 2026-10-06 by Cesar during physical V3.3 calibration: Uramaki Ebiten Especial requires 1 EBITEN from COZINHA per sold unit. Shrimp contained in combinados does not contribute to this kitchen dependency. Coverage remains PARTIAL; do not infer other HOT/EBITEN/SHISO mappings."
 }
