@@ -43,6 +43,11 @@ import { lerHistoricoOperacional } from "../src/platform/leitura/historico-opera
 import { TIPOS_DA_OPERACAO_VIVA } from "../src/platform/runtime/handler-operacao-viva";
 import type { LeituraDeRealidade } from "../src/product/viewmodels/entregas-vm";
 import { CENAS, cena, type CenaHome } from "../src/product/demo/seed-home-demonstracao";
+import {
+  adaptarAuditoriaTataComanda,
+  tataComandaHistoricoIndisponivel,
+  type TataComandaHistoricoVM,
+} from "../src/product/viewmodels/tata-comanda-vm";
 
 const PORT = Number(process.env.PRODUCT_UI_PORT || 5290);
 /**
@@ -66,6 +71,11 @@ const RAIZ_UI = join(process.cwd(), "src", "product", "ui");
 /** O MESMO arquivo de tokens que ENTREGAS usa. Nao ha copia. */
 const RAIZ_SHARED = join(process.cwd(), "src", "entregas", "ui", "shared");
 const TOKENS_JSON = join(process.cwd(), "docs", "figma", "DESIGN_TOKENS.json");
+const TATA_COMANDA_AUDIT_JSON = join(
+  process.cwd(),
+  "data",
+  "tata_comanda_day_truth_2026-10-05_v1.json",
+);
 
 const mime: Record<string, string> = {
   ".html": "text/html; charset=utf-8",
@@ -81,6 +91,19 @@ function json(res: http.ServerResponse, code: number, body: unknown): void {
     "Cache-Control": "no-store",
   });
   res.end(JSON.stringify(body));
+}
+
+function lerAuditoriaTataComanda(): TataComandaHistoricoVM {
+  try {
+    return adaptarAuditoriaTataComanda(
+      JSON.parse(readFileSync(TATA_COMANDA_AUDIT_JSON, "utf8")) as unknown,
+    );
+  } catch (e) {
+    return tataComandaHistoricoIndisponivel(
+      "Auditoria TATA Comanda indisponivel: " +
+        (e instanceof Error ? e.message : "Error"),
+    );
+  }
 }
 
 /* ------------------------------------------------------------------ *
@@ -131,6 +154,7 @@ async function calcular(): Promise<Pronto> {
       fonte: "fixture",
       leitura: cadeia.historicoCopiloto,
     },
+    lerAuditoriaTataComanda(),
   );
 
   return {
@@ -259,7 +283,7 @@ async function lerHistorico(
     }
   }
 
-  return historicoVM(operacao, copiloto);
+  return historicoVM(operacao, copiloto, demo.tata_comanda);
 }
 
 export async function criarServidor(): Promise<http.Server> {

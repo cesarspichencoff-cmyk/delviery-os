@@ -7,6 +7,10 @@
 import type { EventEnvelope } from "../../platform/contracts/event-catalog";
 import { deRegistro } from "../../platform/copiloto/conference-bridge";
 import { selo, type Procedencia, type Selo } from "./estados";
+import {
+  tataComandaHistoricoIndisponivel,
+  type TataComandaHistoricoVM,
+} from "./tata-comanda-vm";
 
 const PROCEDENCIA_DO_MODO: Readonly<Record<string, Procedencia>> = {
   real: "real",
@@ -117,6 +121,8 @@ export interface HistoricoVM {
         readonly falhas_de_io: number;
       }
     | { readonly disponivel: false; readonly motivo: string };
+  /** Auditoria historica TATA Comanda; quando disponivel, ao_vivo e sempre false. */
+  readonly tata_comanda: TataComandaHistoricoVM;
   readonly limitacoes: readonly { titulo: string; texto: string }[];
 }
 
@@ -143,6 +149,9 @@ function modosDe(valores: readonly string[]): Procedencia[] {
 export function historicoVM(
   operacao: FonteHistoricoOperacao,
   copiloto: FonteHistoricoCopiloto,
+  tataComanda: TataComandaHistoricoVM = tataComandaHistoricoIndisponivel(
+    "Auditoria TATA Comanda nao fornecida a esta leitura.",
+  ),
 ): HistoricoVM {
   const op = operacao.disponivel
     ? {
@@ -216,6 +225,7 @@ export function historicoVM(
     selos_de_cabecalho: selos,
     operacao_viva: op,
     copiloto: cp,
+    tata_comanda: tataComanda,
     limitacoes: [
       {
         titulo: "Historico nao reinterpreta fatos",
@@ -224,6 +234,10 @@ export function historicoVM(
       {
         titulo: "Payload bruto nao atravessa",
         texto: "A superficie historica nunca devolve payload de evento nem conteudo de linha invalida/corrompida.",
+      },
+      {
+        titulo: "TATA Comanda historico nao e ao vivo",
+        texto: "O bloco TATA Comanda carrega a data operacional e nunca transforma auditoria passada em estado atual.",
       },
     ],
   };
