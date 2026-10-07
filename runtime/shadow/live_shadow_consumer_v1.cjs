@@ -130,6 +130,14 @@ const cacheByProduct = new Map(cache.rows.map(r => [String(r.CDPRODUTO), r]));
 const academyByName = new Map((academy.products || []).map(p => [norm(p.nome), p]));
 const printerByCode = new Map((printerMap.mappings || []).map(p => [String(p.printer_code), p]));
 const blockers = [];
+if (event.ready_for_downstream_shadow !== true) {
+  const eventBlockers = Array.isArray(event.blockers) ? event.blockers : [];
+  if (eventBlockers.length) {
+    for (const blocker of eventBlockers) blockers.push("UPSTREAM_" + String(blocker));
+  } else {
+    blockers.push("UPSTREAM_EVENT_NOT_READY");
+  }
+}
 const items = [];
 const packEntries = [];
 
