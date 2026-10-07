@@ -1,0 +1,35 @@
+{
+  "schema": "deliveryos.strict-comanda-danfe-pairing-policy.v1",
+  "status": "CONFIGURED_SHADOW_ONLY",
+  "policy": "COMANDA_THEN_DANFE_STRICT_FIFO",
+  "human_rule": "Comanda A -> Nota A -> Comanda B -> Nota B",
+  "queue": {
+    "same_physical_queue_proven": true,
+    "printer": "CAIXA",
+    "imprloja_sequence": "00001",
+    "proof": [
+      "Installed Teknisa MSDEQuery BUSCA_IMPRESSORA_DELIVERY resolves ISNULL(NRSEQIMPRLOJA7, NRSEQIMPRLOJA3).",
+      "Installed Teknisa MSDEQuery BUSCA_DADOS_IMPRESSORA_NFCE resolves NRSEQIMPRLOJA3.",
+      "Store 0001 / caixa 001 currently has NRSEQIMPRLOJA7=00001 and NRSEQIMPRLOJA3=00001.",
+      "IMPRLOJA 00001 is CAIXA."
+    ]
+  },
+  "ordering": {
+    "strict_fifo": true,
+    "next_comanda_waits_for_prior_danfe_print_observation": true,
+    "fiscal_authorization_remains_native": true,
+    "fiscal_error_or_ambiguous_print_fails_closed": true,
+    "automatic_skip_on_timeout": false
+  },
+  "activation": {
+    "physical_print_effect_enabled": false,
+    "native_danfe_submission_contract_proven": false,
+    "reason": "Use shadow planning until a supported, non-emitting native DANFE print submission path is proven."
+  },
+  "forbidden": [
+    "custom SEFAZ emitter",
+    "F7 keyboard emulation",
+    "blind fiscal retry",
+    "treating NFCE authorization as DANFE printed"
+  ]
+}
