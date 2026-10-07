@@ -138,7 +138,28 @@ if (event.ready_for_downstream_shadow !== true) {
     blockers.push("UPSTREAM_EVENT_NOT_READY");
   }
 }
-const items = [];
+/*
+ * Gate observacional fail-closed, 07/10/2026.
+ * Esta fonte de repositÃ³rio NÃƒO Ã© byte-identica ao consumidor ativo do CAIXA_MOOCA:
+ * preservar demais diferenÃ§as atÃ© reconciliaÃ§Ã£o com provas equivalentes.
+ */
+const observationRows = Array.isArray(event.order?.observation_rows)
+  ? event.order.observation_rows : [];
+if (event.order?.observation_scan_complete !== true) {
+  blockers.push("OBSERVATION_SOURCE_NOT_PROVEN_COMPLETE");
+}
+for (const row of observationRows) {
+  if (!row || typeof row !== "object") continue;
+  const note = String(row.value ?? "").trim();
+  if (!note) continue;
+  if (row.join_proven !== true) {
+    blockers.push("OBSERVATION_JOIN_NOT_PROVEN");
+    continue;
+  }
+  if (/\balerg(?:ia|ico|ica|icos|icas)\b|\banafilaxia\b/.test(norm(note))) {
+    blockers.push("ALLERGEN_NOTE_REQUIRES_HUMAN_REVIEW");
+  }
+}const items = [];
 const packEntries = [];
 
 for (const [index, raw] of (event.order.items || []).entries()) {
