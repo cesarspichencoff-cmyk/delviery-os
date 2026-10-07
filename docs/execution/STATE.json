@@ -2089,7 +2089,7 @@
     "next_proof": "telefone físico autorizado reportar fila real em teste controlado e a leitura do Product System refletir os mesmos contadores"
   },
   "tata_comanda_bridge": {
-    "status": "HISTORICAL_READONLY_PRODUCT_ADAPTER_PROVEN_LIVE_READER_PERMISSION_PENDING",
+    "status": "HISTORICAL_READONLY_PRODUCT_ADAPTER_PROVEN_READER_PERMISSION_WORLD_PROVEN_LIVE_READER_CODE_PENDING",
     "source_contract": {
       "operational_branch": "tmp/tata-comanda-source-contract-20261006",
       "product_lineage_branch": "tmp/tata-comanda-source-audit-20261006",
@@ -2133,12 +2133,50 @@
       "secret_scan_changed_files": "0 hits"
     },
     "authorization_boundary": {
-      "reader_permission_manifest": "CANDIDATE_NOT_AUTHORIZED_NOT_APPLIED",
-      "permission_change_applied": false,
+      "reader_permission_manifest": "WORLD_PROVEN_DATABASE_PERMISSION_APPLIED",
+      "permission_change_applied": true,
       "database_write": false,
       "production_deployed": false,
       "cutover": false
     },
-    "next_step": "somente com autorizacao humana explicita, avaliar/aplicar a extensao read-only minima do TataComandaReader; ate la o Product System usa apenas a auditoria historica provada"
+    "next_step": "implementar e provar o reader live das novas fontes sem ampliar permissoes; qualquer restart/cutover de servico continua fora desta prova",
+    "reader_permission_proof": {
+      "applied_at_local": "2026-10-06T21:14:00-03:00",
+      "principal": "NT SERVICE\\TataComandaReader",
+      "target_column_grants": 29,
+      "target_tables": [
+        "HISTPEDCONS",
+        "ITCMD_LOG",
+        "MOVCAIXADLV",
+        "VENDA",
+        "TIPORECE"
+      ],
+      "preexisting_target_grants": 0,
+      "database_roles": 0,
+      "forbidden_venda_dtsaida_blocked": true,
+      "venda_write_permissions": {
+        "insert": false,
+        "update": false,
+        "delete": false,
+        "control": false
+      },
+      "service_state_after": "RUNNING",
+      "service_restart_performed": false,
+      "evidence_file": "data/tata_reader_lifecycle_permission_apply_2026-10-06_v1.json"
+    },
+    "preexisting_privacy_debt": {
+      "introduced_by_this_change": false,
+      "columns": [
+        "COMANDAVEN.DSOBSCOMANDA",
+        "ITCOMANDAVEN.DSOBSDESCIT",
+        "ITCOMANDAVEN.DSOBSPEDDIGCMD"
+      ],
+      "status": "REVIEW_SEPARATELY_BEFORE_REVOKE"
+    },
+    "installed_preflight": {
+      "used_by_service_boot": false,
+      "status": "STALE_FOR_CURRENT_PERMISSION_SURFACE",
+      "next_action": "update allowlist and revalidate before using this preflight as evidence"
+    }
   }
 }

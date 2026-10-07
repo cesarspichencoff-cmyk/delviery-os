@@ -1,0 +1,77 @@
+{
+  "schema": "deliveryos.tata-reader-lifecycle-permission-apply.2026-10-06.v1",
+  "status": "WORLD_PROVEN_DATABASE_PERMISSION_APPLIED",
+  "authorized_by": "Cesar",
+  "authorization_id": "CESAR-2026-10-06-TATA-READER-LIFECYCLE-READ-V1",
+  "applied_at_local": "2026-10-06T21:14:00-03:00",
+  "server": "CAIXA_MOOCA\\SQLEXPRESS",
+  "database": "teknisa",
+  "principal": "NT SERVICE\\TataComandaReader",
+  "applied_by_login": "CAIXA_MOOCA\\Tata",
+  "target_columns": {
+    "HISTPEDCONS": ["CDFILIAL", "NRVENDAREST", "NRCOMANDA", "IDHISTPEDCONS", "DTHRHISTPEDCONS"],
+    "ITCMD_LOG": ["CDFILIAL", "NRVENDAREST", "NRCOMANDA", "NRPRODCOMVEN", "CDPRODUTO", "QTPRODCOMVEN", "VRPRECCOMVEN", "VRDESCCOMVEN", "VRACRCOMVEN", "DTHRINCOMVEN"],
+    "MOVCAIXADLV": ["CDFILIAL", "NRVENDAREST", "CDTIPORECE", "VRMOVIVENDDLV", "DTINCLUSAO"],
+    "VENDA": ["CDFILIAL", "NRVENDAREST", "DTFECHAVENDA", "VRTOTVENDA", "VRTXSEVENDA", "VRDESCVENDA", "VRACREVENDA"],
+    "TIPORECE": ["CDTIPORECE", "NMTIPORECE"]
+  },
+  "preflight": {
+    "target_columns_found": 29,
+    "preexisting_target_select_grants": 0,
+    "unexpected_nonselect_permissions": 0,
+    "database_role_memberships": 0
+  },
+  "transaction": {
+    "committed": true,
+    "target_grants": 29,
+    "automatic_rollback_on_failure": true
+  },
+  "effective_permission_proof": {
+    "database_user": "NT SERVICE\\TataComandaReader",
+    "HISTPEDCONS": true,
+    "ITCMD_LOG": true,
+    "MOVCAIXADLV": true,
+    "VENDA": true,
+    "TIPORECE": true,
+    "forbidden_VENDA_DTSAIDAVENDA_blocked": true,
+    "VENDA_INSERT": false,
+    "VENDA_UPDATE": false,
+    "VENDA_DELETE": false,
+    "VENDA_CONTROL": false
+  },
+  "service_after_apply": {
+    "state": "RUNNING",
+    "start_name": "NT SERVICE\\TataComandaReader",
+    "restart_performed": false
+  },
+  "baseline_evidence": "C:\\TATA\\comanda-v1\\cutover\\shadow-v1\\TATA_READER_PERMISSION_BASELINE_20261006_2112.json",
+  "post_evidence": "C:\\TATA\\comanda-v1\\cutover\\shadow-v1\\TATA_READER_PERMISSION_POST_20261006_2115.json",
+  "rollback": {
+    "scope": "remove only the 29 SELECT column grants added by this authorization",
+    "baseline_preserved": true,
+    "preexisting_permissions_must_remain_untouched": true,
+    "automatic_rollback_exercised": false
+  },
+  "known_preexisting_privacy_debt": {
+    "introduced_by_this_change": false,
+    "columns": ["COMANDAVEN.DSOBSCOMANDA", "ITCOMANDAVEN.DSOBSDESCIT", "ITCOMANDAVEN.DSOBSPEDDIGCMD"],
+    "note": "These grants existed before this authorization and were intentionally not revoked without a separate compatibility proof."
+  },
+  "installed_preflight_note": {
+    "current_file": "C:\\ProgramData\\TataComandaReader\\bin\\tata_reader_least_privilege_preflight.ps1",
+    "used_by_service_boot": false,
+    "status": "STALE_FOR_CURRENT_PERMISSION_SURFACE",
+    "action": "do not use as proof until its allowlist is updated and revalidated"
+  },
+  "effects": {
+    "permission_change": true,
+    "database_row_write": false,
+    "service_restart": false,
+    "print": false,
+    "spooler_write": false,
+    "odhen_write": false,
+    "fiscal_action": false,
+    "sefaz_call": false,
+    "cutover": false
+  }
+}
