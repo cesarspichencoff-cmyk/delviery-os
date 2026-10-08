@@ -88,3 +88,21 @@ Em 07/10/2026 (horário de Brasília), a branch isolada da TATÁ Academia `ci/sh
 - [Execução privada 37712181543](https://github.com/cesarspichencoff-cmyk/tata-academia/actions/runs/37712181543): `success`, incluindo as duas comparações de versões ativas e os cenários sintéticos de integração.
 - Se os arquivos canônicos relevantes mudarem, **a próxima execução** desse teste falhará até atualização do pin e revalidação. **Não** é monitoramento contínuo nem gatilho automático disparado por mudanças em outros branches; a comparação ocorre quando o workflow privado executa.
 - Nada foi publicado a partir do código privado. O CI público do DeliveryOS segue pendente na [issue #13](https://github.com/cesarspichencoff-cmyk/delviery-os/issues/13); não houve mudança no runtime de CAIXA_MOOCA.
+
+### KIT_CANARIES_16_OF_16_20261007 — bloqueios reais versus fatos humanos
+
+A auditoria de fontes e motor confirma que **não há divergência** nos 12 julgamentos de kits reavaliados. O motor vigente devolve `FACT` e as quantidades específicas aprovadas no documento `content-source/human-current/kits_2026-09-22_cesar.md`.
+
+Há também quatro misturas **não julgadas** que o motor corretamente conserva em `UNKNOWN`, sem inventar kits:
+- 2 Sashimis + 1 Enrolado;
+- Combinado 2P + 1 Dupla;
+- 1 Sashimi + 1 Temaki;
+- Yakisoba + 4 Sashimis.
+
+O teste permanente `tests/shadow_kits_source_facts_20261007.cjs` foi adicionado somente à branch privada isolada da TATÁ Academia `ci/shadow-private-contract-20261007` e executado no CI **com o motor oficial fixado**, sem alteração do motor ativo e sem consumir dados de clientes.
+
+**Prova:** [run privado 37712651819](https://github.com/cesarspichencoff-cmyk/tata-academia/actions/runs/37712651819), `success`; logs: **16/16 canários (12 FACT, 4 UNKNOWN)**, **10/10** casos de integração DeliveryOS + Academia e verificação de igualdade entre versões fixadas e ativas.
+
+**Consequência operacional:** não há justificativa para liberar automaticamente, por heurística de contagem de peças, os pedidos que dependam somente dessas composições ainda não julgadas. A classificação técnica correta de um produto **não** prova o kit, o tamanho de sacola ou a prontidão da comanda.
+
+**Continuam abertos:** CI público do DeliveryOS com erro de permissão cross-repo [issue #13](https://github.com/cesarspichencoff-cmyk/delviery-os/issues/13); candidate não instalado; first-pass e impressão física não provados; fluxo fiscal nativo separado.
