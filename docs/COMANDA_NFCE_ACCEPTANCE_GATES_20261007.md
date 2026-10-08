@@ -55,3 +55,14 @@ Próxima ação técnica sem necessidade de pergunta: manter o candidate preserv
 - Motor verdadeiro da Academia, obtido por acesso privado autorizado, foi combinado em memória com o candidato do consumer; **10 cenários sintéticos passaram em V8** (com fingerprint simulado). A evidência **não** substitui Node nativo ou GitHub Actions cross-repo.
 - Desbloqueio rastreado na [issue #13](https://github.com/cesarspichencoff-cmyk/delviery-os/issues/13): retirar do CI público somente os dois passos de checkout/execução do motor privado, sem copiar fonte privada, sem usar segredo novo e sem contornar o bloqueio anterior de escrita no workflow. O teste privado permanece opcional em ambiente devidamente autorizado.
 - Última verificação do CAIXA_MOOCA às 22:10:19 BRT: serviço e shadow Running, `print=false`, `fiscal_action=false`, sem erro; consumer e engine com hashes estáveis.
+
+### PRIVATE_ACADEMY_CONTRACT_CI_PASS — 07/10/2026
+
+A verificação de integração que o CI público não tinha permissão de executar foi **concluída com sucesso no ambiente privado da TATÁ Academia**, em branch isolada `ci/shadow-private-contract-20261007`, sem alterar sua branch operacional.
+
+- Primeiro run privado `37711877595`: `success`.
+- Run privado otimizado `37711917717`: `success`, com checkout esparso `filter: blob:none`, apenas motor de embalagens, teste sintético e consumidor candidato.
+- Revisões fixadas: Academia `6396427220b5eb2e2d1a570ef58437a4d302ff49`; DeliveryOS público `ac745683597d59146b3c105364bb8d59b2e80150`.
+- Teste `tests/shadow-academy-engine-contract.test.cjs` concluiu com sucesso no GitHub Actions privado. Não foram necessários novos segredos, deploy, impressão, NFC-e, acesso produtivo ou publicação do motor privado.
+- **Permanece aberto:** o CI **público** do DeliveryOS ainda falha no checkout da Academia (`37711188966`); corrigir pelo canal autorizado a partir da [issue #13](https://github.com/cesarspichencoff-cmyk/delviery-os/issues/13), sem contornar bloqueio anterior de escrita. Uma prova privada verde não apaga uma prova pública vermelha.
+- Este avanço é `CI_PASS` **para integração no ambiente privado**, não `DEPLOYED`, `FIRST_PASS_PROVEN`, `WORLD_PROVEN` nem autorização para impressão ou emissão fiscal.
