@@ -1,0 +1,3 @@
+# Bytes exatos: fixtures cujo SHA-256 e comparado com evidencia de producao.
+# Sem isto, checkout no Windows troca LF por CRLF e o hash deixa de bater.
+tests/tata-reader/fixtures/*.ps1 -text

@@ -160,7 +160,14 @@
     "test:entregas:storage-cutover": "npx tsx src/entregas/pilot/run-storage-cutover-tests.ts",
     "cutover:entregas:plan": "npx tsx tools/entregas_storage_cutover.ts plan",
     "cutover:entregas:apply": "npx tsx tools/entregas_storage_cutover.ts apply",
-    "test:entregas:pilot-postgres-backup": "npx tsx src/entregas/pilot/run-postgres-backup-restore-tests.ts"
+    "test:entregas:pilot-postgres-backup": "npx tsx src/entregas/pilot/run-postgres-backup-restore-tests.ts",
+    "test:tata-reader:health": "node tests/tata-reader/run-health-tests.cjs",
+    "test:tata-reader:static": "node tests/tata-reader/run-static-audit-tests.cjs",
+    "test:tata-reader:supervisor": "node tests/tata-reader/run-supervisor-tests.cjs",
+    "test:tata-reader:sqlserver": "node tests/tata-reader/run-sqlserver-harness.cjs",
+    "test:tata-reader": "npm run test:tata-reader:health && npm run test:tata-reader:static && npm run test:tata-reader:supervisor && npm run test:tata-reader:sqlserver",
+    "audit:tata-reader:watcher": "node runtime/tata-reader/tata_reader_watch_static_audit_v1.cjs",
+    "health:tata-reader": "node runtime/tata-reader/tata_reader_health_v1.cjs"
   },
   "devDependencies": {
     "@types/node": "20.14.10",

@@ -1,0 +1,34 @@
+{
+  "schema": "deliveryos.test-fixture-provenance.v1",
+  "purpose": "Watcher v1 do TATA Comanda Reader, copiado BYTE A BYTE do historico deste mesmo repositorio, para que o supervisor e o harness SQL Server sejam testados contra o codigo auditado — nunca contra uma reescrita.",
+  "fixtures": [
+    {
+      "file": "watcher_v1_installed_256dc42.ps1",
+      "source_repository": "cesarspichencoff-cmyk/delviery-os",
+      "source_commit": "256dc428394ae6fc944b747a67a2f9e1085362f1",
+      "source_commit_message": "fix: suppress historical baseline on continuous reader bootstrap",
+      "source_path": "tools/tata_reader_continuous_watch_candidate_v1.ps1",
+      "reachable_from_branch_at_copy": "tmp/paired-comanda-nfce-20261007 @ b9e2585cb87d9a6807df8792a9607caa015f6ce4",
+      "sha256": "4507304C7A8AA7B19EC303A5692094CB738A561DFDE769ABD234D900447CAA9A",
+      "matches_world_evidence": "data/tata_reader_continuous_hostslot_cutover_success_20261005_v1.json (outra linhagem) candidate.reader_sha256 — mesmo SHA-256: e o watcher que entrou em producao na CAIXA_MOOCA em 2026-10-05 14:36",
+      "role": "codigo instalado no momento do stall de 2026-10-05 21:55:51 (revisao posterior a1808d8 so muda Read-ServiceState)"
+    },
+    {
+      "file": "watcher_v1_head_a1808d8.ps1",
+      "source_repository": "cesarspichencoff-cmyk/delviery-os",
+      "source_commit": "a1808d85e3664a696ba0e43855851b62733a1ed3",
+      "source_commit_message": "fix: fail closed when human service state expires",
+      "source_path": "tools/tata_reader_continuous_watch_candidate_v1.ps1",
+      "sha256": "F5747293980C04B3DC15EB5CE2ABFAD6FA38014CAF45C44B6A534C1033A7D988",
+      "matches_world_evidence": "NAO_VERIFICADO — nao ha prova de que esta revisao chegou a ser instalada",
+      "role": "revisao mais recente do v1 no Git; laco de leitura identico ao instalado"
+    }
+  ],
+  "not_available_here": {
+    "file": "tata_reader_continuous_watch_candidate_v2.ps1",
+    "sha256_declared_by_handoff": "77C16940EFCAF38E380369AD6F17FBC849C67EC191F9617C3C1EF5119DFF31F0",
+    "location_declared_by_handoff": "CAIXA_MOOCA C:\\TATA\\comanda-v1\\cutover\\shadow-v1\\live-truth-v1\\",
+    "status": "UNKNOWN_CONTENT — nunca publicado no GitHub; o supervisor o executa sem alterar um byte, e a auditoria estatica deve ser rodada sobre ele na CAIXA antes da instalacao"
+  },
+  "byte_exactness": "Os .ps1 desta pasta sao marcados -text em .gitattributes: checkout no Windows nao pode trocar LF por CRLF, senao o SHA-256 deixa de bater com a evidencia."
+}
