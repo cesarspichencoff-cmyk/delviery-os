@@ -32,11 +32,11 @@ Este documento distingue a conclusão do **motor em shadow** da conclusão de **
 |---|---|---|
 | P1. Contrato nativo de pedidos e praça | Identidade canônica única, serviço LUNCH/DINNER, sequência e vínculo comprovados no evento real; nunca inventar praça ou associar pedido ao recibo errado | PARCIAL; alguns casos upstream/serviço continuam bloqueados |
 | P2. Impressão física | Teste controlado por impressora/praça; layout, legibilidade, redundância/duplicidade, papel, queda de rede, spooler, idempotência e rollback comprovados no equipamento correto | **NÃO PROVEN**; shadow não imprime |
-| P3. NFC-e / DANFE / SEFAZ | Contrato fiscal nativo, autorização, emissão, contingência, cancelamento, idempotência e vínculo exato ao pedido testados ponta a ponta contra a realidade fiscal autorizada | **NÃO PROVEN** neste checkpoint |
+| P3. Observação fiscal NFC-e/DANFE | NFC-e **nativa já observada** no Retail/Teknisa em produção; falta comprovar de forma read-only o vínculo determinístico pedido/TATÁ ↔ venda/NFC-e/estado/autorização/DANFE e a atualização segura sem retry | **FISCAL NATIVO OBSERVADO; CORRELAÇÃO DELIVERYOS PARCIAL** |
 | P4. Cutover | Aprovação humana explícita quando efeito produtivo se tornar iminente; janela controlada, fallback manual, reversão testada, observabilidade e acompanhamento de primeiros pedidos | **NÃO AUTORIZADO / NÃO EXECUTADO** |
 | P5. Governança do código | Código operacional e código de referência reconciliados; commits e SHA presentes no checkpoint, CI de regressão, monitoramento de divergências e recuperação após reinício | **PARCIAL** |
 
-O estado **NÃO PROVEN** significa que este checkpoint não possui a prova necessária; não implica que uma integração externa inexista.
+O estado **NÃO PROVEN** significa que este checkpoint não possui a prova necessária; não implica que uma integração externa inexista. **A emissão fiscal já existente no Retail/Teknisa não é funcionalidade a reconstruir no DeliveryOS.**
 
 ## Ordem de execução recomendada, sem nova decisão humana desnecessária
 1. **Promover o candidate somente após respeitar o canal de instalação permitido**; não tentar contornar bloqueios anteriores. Testes Node em memória já fecharam o gate de compatibilidade técnica da amostra, mas não o gate de instalação.
@@ -66,3 +66,16 @@ A verificação de integração que o CI público não tinha permissão de execu
 - Teste `tests/shadow-academy-engine-contract.test.cjs` concluiu com sucesso no GitHub Actions privado. Não foram necessários novos segredos, deploy, impressão, NFC-e, acesso produtivo ou publicação do motor privado.
 - **Permanece aberto:** o CI **público** do DeliveryOS ainda falha no checkout da Academia (`37711188966`); corrigir pelo canal autorizado a partir da [issue #13](https://github.com/cesarspichencoff-cmyk/delviery-os/issues/13), sem contornar bloqueio anterior de escrita. Uma prova privada verde não apaga uma prova pública vermelha.
 - Este avanço é `CI_PASS` **para integração no ambiente privado**, não `DEPLOYED`, `FIRST_PASS_PROVEN`, `WORLD_PROVEN` nem autorização para impressão ou emissão fiscal.
+
+### FISCAL_NATIVE_OBSERVED_BUT_TRIGGER_UNKNOWN — correção de escopo
+
+Fontes canônicas consultadas, sem reexecutar nenhuma ação fiscal:
+- `docs/Teknisa_Fiscal_Supported_Contract_Questions_2026-10-05.md`: Retail/Odhen **já autoriza NFC-e em produção**; 61/61 notas observadas tinham protocolo de autorização de 17 posições e QR persistido. Configuração observada: XML 4.00, transmissão automática habilitada e parâmetro QR `CDVERSAOQRCNFCE=2`. Essa última observação **não comprova compatibilidade futura** com QR v3; não alterar configuração.
+- `docs/Fiscal_Observation_Architecture_2026-10-05.md`: um caso real de iFood teve venda e NFC-e autorizada associadas por consulta read-only, sem ação DeliveryOS; é **amostra**, não prova de correlação universal.
+- `docs/NFCE_After_Production_Study_2026-10-01.md`: sequência TATÁ é chave operacional, **não** número/chave/protocolo fiscal; `PRODUCTION_DISPATCH != NFCE_AUTHORIZED != DANFE_PRINTED`.
+
+**Duas entregas diferentes — proibir confusão:**
+1. `FISCAL_OBSERVE_RECONCILE`: acompanhar estado produzido pelo sistema fiscal nativo e correlacioná-lo com a comanda, sem emitir/reimprimir, sem SEFAZ e sem assumir papel impresso só por autorização. Precisa de prova nativa de joins e idempotência read-only antes de considerar o observador concluído.
+2. `AUTOMATIC_NATIVE_FISCAL_TRIGGER`: acionar a rotina oficial depois do despacho, **apenas** se contrato suportado e elegibilidade do canal iFood forem confirmados pela Teknisa e houver aprovação humana específica para o efeito. A documentação encontrada não prova esse contrato para o fluxo TATÁ. Não usar F7, automação de teclado, endpoint interno não documentado, emissor SEFAZ paralelo ou retry cego.
+
+O escopo de `shadow` e impressão de produção pode avançar **independentemente da ativação fiscal**, preservando o fluxo fiscal que já funciona. Isso **não** marca a funcionalidade solicitada de NFC-e automática pós-despacho como concluída.
