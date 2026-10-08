@@ -6,6 +6,11 @@
 #  - pwsh-sqlserver: supervisor (processo real), cutover (logica pura) e o
 #    harness contra SQL Server 2022 real (dados sinteticos), com controle
 #    negativo: o defeito de 05/10 PRECISA reproduzir para a correcao valer.
+#  - windows-real-scm: o que so o Windows mostra. Suites do supervisor e do
+#    cutover sob o Windows PowerShell 5.1 (.NET Framework) no fuso da CAIXA, e
+#    o cutover inteiro contra o SCM REAL, com o host C# v2 real compilado pelo
+#    csc.exe do .NET Framework e a conta virtual NT SERVICE\TataComandaReader.
+#    Runner padrao em repositorio publico: sem custo.
 #
 # Nenhum segredo real: o SQL Server e um container descartavel do proprio job.
 name: TATA reader resilience
@@ -94,6 +99,49 @@ jobs:
       - run: TATA_PWSH=$(which pwsh) node tests/tata-reader/run-cutover-logic-tests.cjs
       - run: TATA_PWSH=$(which pwsh) node tests/tata-reader/run-cutover-e2e-tests.cjs
       - run: TATA_PWSH=$(which pwsh) node tests/tata-reader/run-sqlserver-harness.cjs
+  windows-real-scm:
+    runs-on: windows-2022
+    timeout-minutes: 60
+    env:
+      TATA_PWSH: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Fuso da CAIXA (America/Sao_Paulo) e Windows PowerShell 5.1
+        shell: powershell
+        run: |
+          tzutil /s "E. South America Standard Time"
+          [TimeZoneInfo]::ClearCachedData()
+          "fuso=" + [TimeZoneInfo]::Local.Id
+          "ps=" + $PSVersionTable.PSVersion + " clr=" + $PSVersionTable.CLRVersion
+          "netfx_release=" + (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full").Release
+      - name: Bytes exatos no checkout do Windows (sem CRLF)
+        shell: powershell
+        run: |
+          $h = (Get-FileHash tests\tata-reader\fixtures\watcher_v1_installed_256dc42.ps1 -Algorithm SHA256).Hash
+          $c = (Get-FileHash tests\tata-reader\fixtures\host_v2\TataComandaReader.ContinuousService.v2.cs -Algorithm SHA256).Hash
+          "watcher=$h host_src=$c"
+          if ($h -ne "4507304C7A8AA7B19EC303A5692094CB738A561DFDE769ABD234D900447CAA9A") { throw "watcher instalado com bytes trocados" }
+          if ($c -ne "9345E2FBE5B19F09D14F714163225633401BA966B578F86ECD848EBA726BA0F7") { throw "fonte do host com bytes trocados" }
+      - run: node tests/tata-reader/run-health-tests.cjs
+      - run: node tests/tata-reader/run-static-audit-tests.cjs
+      - name: Supervisor sob Windows PowerShell 5.1
+        run: node tests/tata-reader/run-supervisor-tests.cjs
+      - name: Cutover (decisao e contrato) sob Windows PowerShell 5.1
+        run: node tests/tata-reader/run-cutover-logic-tests.cjs
+      - name: Cutover inteiro contra o SCM REAL (host C# v2 real, conta virtual)
+        shell: powershell
+        run: .\tests\tata-reader\windows\real_scm_cutover_e2e.ps1 -RepoRoot $PWD.Path -OutDir "$env:RUNNER_TEMP\real-scm"
+      - name: Recibos e retratos da prova real
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tata-reader-real-scm-e2e
+          path: ${{ runner.temp }}/real-scm
+          if-no-files-found: warn
+          retention-days: 14
   android-unit:
     runs-on: ubuntu-latest
     timeout-minutes: 30

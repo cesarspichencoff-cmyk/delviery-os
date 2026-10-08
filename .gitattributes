@@ -2,5 +2,6 @@
 # na instalacao. Sem isto, checkout no Windows troca LF por CRLF e o hash
 # instalado deixa de bater com o commit.
 tests/tata-reader/fixtures/*.ps1 -text
+tests/tata-reader/fixtures/host_v2/* -text
 runtime/tata-reader/*.ps1 -text
 runtime/tata-reader/*.cjs -text

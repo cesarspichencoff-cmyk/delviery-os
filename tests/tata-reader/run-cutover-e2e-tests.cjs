@@ -107,6 +107,10 @@ function semCandidatoVivo(ctx) {
 
 (async () => {
   console.log("\n=== TATA COMANDA READER — CUTOVER PONTA A PONTA (SCM SIMULADO) ===\n");
+  if (process.platform === "win32") {
+    pular("Windows: este ensaio usa SCM SIMULADO (sinais POSIX); no Windows a prova e o SCM REAL — tests/tata-reader/windows/real_scm_cutover_e2e.ps1");
+    return fim("TATA_READER_CUTOVER_E2E");
+  }
   if (!pwsh) {
     pular("PowerShell ausente — nada do cutover foi executado");
     return fim("TATA_READER_CUTOVER_E2E");

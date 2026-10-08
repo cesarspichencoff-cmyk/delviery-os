@@ -22,6 +22,17 @@
       "sha256": "F5747293980C04B3DC15EB5CE2ABFAD6FA38014CAF45C44B6A534C1033A7D988",
       "matches_world_evidence": "NAO_VERIFICADO — nao ha prova de que esta revisao chegou a ser instalada",
       "role": "revisao mais recente do v1 no Git; laco de leitura identico ao instalado"
+    },
+    {
+      "file": "host_v2/TataComandaReader.ContinuousService.v2.cs",
+      "source_repository": "cesarspichencoff-cmyk/delviery-os",
+      "source_commit": "93b006b1a18d9c9534cab0c24b60c95095b090db",
+      "source_commit_message": "fix: correct host v2 argument quoting",
+      "source_path": "runtime/windows/TataComandaReader.ContinuousService.v2.cs",
+      "reachable_from_branch_at_copy": "paired @ b9e2585cb87d9a6807df8792a9607caa015f6ce4",
+      "sha256": "9345E2FBE5B19F09D14F714163225633401BA966B578F86ECD848EBA726BA0F7",
+      "matches_world_evidence": "NAO_VERIFICADO — o SHA do executavel instalado na CAIXA nao esta no Git; a revisao anterior (1c3a810) nem compila (aspas triplas), entao esta e a unica fonte v2 compilavel conhecida. O cutover fixa o SHA do binario instalado no Plan e o Apply exige o mesmo valor de volta.",
+      "role": "host C# REAL do servico, compilado com o csc.exe do .NET Framework so na prova em Windows descartavel (tests/tata-reader/windows/real_scm_cutover_e2e.ps1)"
     }
   ],
   "not_available_here": {
@@ -30,5 +41,5 @@
     "location_declared_by_handoff": "CAIXA_MOOCA C:\\TATA\\comanda-v1\\cutover\\shadow-v1\\live-truth-v1\\",
     "status": "UNKNOWN_CONTENT — nunca publicado no GitHub; o supervisor o executa sem alterar um byte, e a auditoria estatica deve ser rodada sobre ele na CAIXA antes da instalacao"
   },
-  "byte_exactness": "Os .ps1 desta pasta sao marcados -text em .gitattributes: checkout no Windows nao pode trocar LF por CRLF, senao o SHA-256 deixa de bater com a evidencia."
+  "byte_exactness": "Os .ps1 desta pasta e tudo em host_v2/ sao marcados -text em .gitattributes: checkout no Windows nao pode trocar LF por CRLF, senao o SHA-256 deixa de bater com a evidencia."
 }
