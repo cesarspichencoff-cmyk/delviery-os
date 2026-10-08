@@ -133,3 +133,16 @@ Exemplos reproduzidos no motor vigente (somente teste sintético):
 **Fronteira:** o PR segue como `DRAFT`, não houve merge, instalação, alteração do engine/consumer do CAIXA_MOOCA, primeiro despacho, impressão real ou ação fiscal. Na checagem de 07/10/2026 às 23:06 BRT, `TataComandaReader` e shadow estavam `Running`, sem erros, com `print=false`, `fiscal_action=false`, engine SHA256 `1E4CF2475EDB586D5DAE88388D2ADC7CF02013B00EC93C0371E3EDB80F81342E` e consumer SHA256 `57586FFDA73904B06D8C2C28AAA47E13A6BAD4B6734C3CECC22ACDB8D16C0503`.
 
 **Próximo gate:** revisão de impacto real, autorização para eventual promoção do motor corrigido e prova de primeira passagem/embalagem antes de `WORLD_PROVEN`. Separadamente, CI público DeliveryOS [issue #13](https://github.com/cesarspichencoff-cmyk/delviery-os/issues/13) continua bloqueado por checkout privado; a verificação privada da Academia não corrige esse workflow público.
+
+### BAG_CAPACITY_BEVERAGE_ADDITIONS_AND_GATE_20261007
+
+A correção conservadora do [PR #46 (DRAFT)](https://github.com/cesarspichencoff-cmyk/tata-academia/pull/46) foi ampliada para **bebidas adicionais**: Carpaccio 750 e Tirashi 1.000 só recebem a justificativa de tamanho **isolado** quando realmente estão isolados; pedido de comida + bebida sem encaixe comprovado não recebe automaticamente contagem externa `FACT=1`. A exceção exata já confirmada do iFood 8332 permanece com tamanho M e 1 sacola.
+
+**CI mais recente na branch candidata:** [run 37716383902](https://github.com/cesarspichencoff-cmyk/tata-academia/actions/runs/37716383902) concluiu `success`:
+- 23/23 testes adversariais e exceções;
+- 231/231 cenários diferenciais sintéticos contra motor anterior fixado; 211 mudanças, 158 `FACT` de tamanho rebaixados a `UNKNOWN`, 20 `FACT` preservados, zero nova aprovação ou troca de tamanho `FACT`;
+- 124/124 asserções preexistentes de embalagem; matriz legada de kits concluída.
+
+**Portões geral permanece `FAIL`:** [run do PR 37716189314](https://github.com/cesarspichencoff-cmyk/tata-academia/actions/runs/37716189314) falha na etapa `01 · npm test` com os mesmos erros observados no [run 37707428220](https://github.com/cesarspichencoff-cmyk/tata-academia/actions/runs/37707428220) da branch operacional antes deste PR: hash de `data/app-data.json` e cadeia AOT/same-origin do front. O PR só toca motor, testes de embalagens e workflow de teste isolado; não modifica esses arquivos. Isso sustenta a classificação `FALHA PREEXISTENTE NO GATE GERAL`, **não uma aprovação do gate**, e não dispensa diagnóstico separado.
+
+**Status:** `CODE_READY + TEST_PASS_ISOLATED`; `PR_DRAFT`; **sem merge, deploy, atualização do reader, prova de encaixe físico ou aprovação humana final**. O fluxo real mantém o motor anterior até decisão e validação apropriadas.
