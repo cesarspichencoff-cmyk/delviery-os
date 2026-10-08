@@ -1,0 +1,52 @@
+name: Shadow consumer regression
+
+on:
+  push:
+    branches:
+      - 'tmp/paired-comanda-nfce-20261007'
+    paths:
+      - '.github/workflows/shadow-consumer-regression.yml'
+      - 'runtime/shadow/live_shadow_consumer_v1.cjs'
+      - 'runtime/shadow/candidates/**'
+      - 'tests/shadow-*.test.cjs'
+  pull_request:
+    paths:
+      - '.github/workflows/shadow-consumer-regression.yml'
+      - 'runtime/shadow/live_shadow_consumer_v1.cjs'
+      - 'runtime/shadow/candidates/**'
+      - 'tests/shadow-*.test.cjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: shadow-consumer-regression-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-shadow-only:
+    name: Syntax and exact-identity gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Show Node runtime
+        run: node --version
+
+      - name: Syntax-check both source and reconciled candidate
+        run: |
+          node --check runtime/shadow/live_shadow_consumer_v1.cjs
+          node --check runtime/shadow/candidates/CAIXA_MOOCA_consumer_bar_exact_20261007.cjs
+
+      - name: Verify exact Bar reference mapping
+        run: node tests/shadow-retail-bar-exact.test.cjs
+
+      - name: Verify live-derived candidate and its safety guards
+        run: node tests/shadow-bar-reconciled-candidate.test.cjs
+
+      - name: Assert no deployment side effects
+        run: |
+          echo "CI only: never install on CAIXA_MOOCA; no print, fiscal, or cutover."
