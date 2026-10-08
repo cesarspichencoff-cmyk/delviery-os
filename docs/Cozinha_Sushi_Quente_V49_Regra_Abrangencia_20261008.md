@@ -1,43 +1,47 @@
-# Cozinha — abrangência Sushi Quente (V4.9, SHADOW)
+# Cozinha Sushi Quente — regra 1 porção vendida = 1 preparação (V4.9)
 
-Data: 08/10/2026. Fonte: instrução operacional humana desta missão.
+Data: 08/10/2026. Confirmação humana: usuário afirmou **"Cada 1 é uma porção mesmo"**, complementando a decisão anterior de incluir TODOS os produtos HOT, EBITEN e SHISO pertencentes à praça Sushi Quente.
 
-## Regra expressa
+## Regra aplicável
 
-**Todos os produtos cuja praça atual comprovada é Sushi Quente e cujo nome contenha o termo HOT, EBITEN ou SHISO (incluindo grafias SHISÔ/SHISSO) entram no escopo da comanda separada COZINHA — HOT / EBITEN / SHISO.**
+Quando o MOTOR ATUAL comprovar que o produto pertence à praça Sushi Quente (`enrolados_quentes`):
 
-A outra via COZINHA — PRATOS permanece independente. As tarefas auxiliares não devem ser impressas na via de pratos. Não duplicar por praça ou por reimpressão.
+- Nome com palavra isolada **HOT** → **1 preparação HOT por porção vendida**.
+- Nome com palavra isolada **EBITEN** → **1 preparação EBITEN por porção vendida**.
+- Nome com **SHISO, SHISÔ ou SHISSO** → **1 preparação SHISO por porção vendida**.
+- Se houver dois tipos correspondentes no mesmo nome, cada tipo recebe **1 porção por unidade vendida**, com a necessidade discriminada na via COZINHA — HOT / EBITEN / SHISO.
 
-Esta confirmação define **quais produtos devem ser considerados**. Não especifica quantos HOT, EBITEN ou SHISO a cozinha prepara por porção de cada produto.
+`3 × URAMAKI EBITEN (8 PEÇAS)` significa **3 porções de EBITEN**, não 24 unidades de EBITEN e não 1 EBITEN para as três porções. A quantidade de peças do produto não é a quantidade de preparações auxiliares.
 
-## Implementação
+## Produtos do catálogo histórico (exemplos, não lista limitativa)
 
-- `data/kitchen_sushi_quente_scope_v49.json`: regra de abrangência confirmada, sem declarar multiplicadores nem alterar o arquivo existente de yields.
-- `src/production/kitchenSushiQuenteScopeV49.ts`: classifica itens POR PEDIDO; exige prova do roteamento atual `enrolados_quentes`, reconhece termos completos e variantes de acento. Se houver categoria comprovada diferente, o item não entra.
-- O catálogo `data/cardapio_knowledge_seed.json` é histórico (01/07/2026): um nome encontrado ali constitui referência de triagem, **nunca prova de praça atual**. Produtos novos da praça atual comprovada também são abrangidos.
-- A interface `projectTwoKitchenTicketsScopedV49` usa o motor existente `projectKitchenNeeds` via `splitTwoKitchenTicketsFromRulesV47`, sem criar somador paralelo de preparações.
-- Nenhuma associação a impressora real, caixa, fiscal, estoque ou Odhen foi criada.
-
-## Produtos do catálogo histórico alcançados
-
-| Produto | Preparação | Regra de quantidade |
+| Produto | Tipo | Quantidade comprovada por porção vendida |
 |---|---|---|
-| Hot Roll | HOT | PENDENTE |
-| Hot Roll Tatá | HOT | PENDENTE |
-| Hot Roll com Shimeji | HOT | PENDENTE |
-| Temaki Ebiten | EBITEN | PENDENTE |
-| Uramaki Ebiten | EBITEN | PENDENTE |
-| Uramaki Ebiten Especial | EBITEN | 1 por porção, regra humana já existente |
-| Tuna Shisô Tartar | SHISO | PENDENTE |
+| Hot Roll | HOT | 1 |
+| Hot Roll Tatá | HOT | 1 |
+| Hot Roll com Shimeji | HOT | 1 |
+| Temaki Ebiten | EBITEN | 1 |
+| Uramaki Ebiten | EBITEN | 1 |
+| Uramaki Ebiten Especial | EBITEN | 1 (regra específica já existente) |
+| Tuna Shisô Tartar | SHISO | 1 |
 
-O arquivo `data/kitchen_dependency_rules_v1.json` permanece **PARCIAL** e não foi modificado. Não inferir 1 HOT/EBITEN/SHISO para os outros seis por causa da presença da palavra no nome. Também não inferir ZERO para produtos cujo nome não contenha essas palavras: se sua composição aprovada envolver preparação auxiliar, acrescentar a regra exata com prova operacional.
+Produtos novos com a praça atual Sushi Quente comprovada também entram na regra pelo termo completo correspondente, sem precisar mudar a tabela de nomes históricos.
 
-## Testes e limites
+## Arquitetura e prova
 
-Comando: `npm run verificar:kitchen-sushi-quente-v49`.
+- `data/kitchen_sushi_quente_scope_v49.json`: **fonte da nova confirmação humana de 1:1 por categoria**, com referência e limites.
+- `src/production/kitchenSushiQuenteScopeV49.ts`: classifica por nome e praça atual PROVEN. Para produtos elegíveis, materializa regras exatas **temporárias do pedido** e as envia ao motor existente `projectKitchenNeeds`; não cria somador paralelo.
+- O arquivo preexistente `data/kitchen_dependency_rules_v1.json` **permanece intocado**, preservando a regra específica anterior para Uramaki Ebiten Especial. Conflitos entre regra específica e nova regra 1:1 são bloqueados e exigem revisão humana.
+- A praça indicada no catálogo histórico de julho **não é prova de roteamento atual**. A estação comprovada do pedido prevalece; praça desconhecida fica em revisão. Itens de outras praças não entram por semelhança de nome.
+- A via COZINHA — PRATOS continua independente, com observações originais preservadas. Nenhum pedido é duplicado entre as vias.
+- `tools/verificar_kitchen_sushi_quente_v49.js`: 18 testes de regra, quantidades, termos, provas, conflitos, integração ao motor e ausência de efeitos físicos.
 
-O teste cobre os sete produtos históricos, proporção já conhecida 1:1 para Uramaki Ebiten Especial, distinção entre Sushi Quente e Cozinha Quente, motor atual prevalecendo sobre catálogo histórico, item novo de Sushi Quente, acentos SHISÔ/SHISSO, limites de palavras, quantidade não inventada, ausência de duplicação de pratos, rastreio e nenhum efeito externo.
+## Limite de aprovação
 
-A regra de escopo pode ser humana e válida enquanto o multiplicador permanece **UNKNOWN**. Sem fator confirmado, não gerar bytes de impressão de preparações. O teste físico só ocorrerá depois de origem real comprovada, calibração Epson e aprovação operacional específica.
+Esta instrução confirma **fator 1 por porção para a classe definida**, mas **NÃO** confirma que todos os outros produtos do cardápio tenham ZERO de dependência da cozinha.
 
-Estado: SHADOW_TEST_PASS, não DEPLOYED, não WORLD_PROVEN. Sem merge/cutover/ativação.
+`coverage=PARTIAL` continua correto até validação de outras possíveis dependências e do roteamento global. Portanto, o gerador mantém `ready_for_automatic_operational_print=false`: código de cálculo preparado para inspeção, **não** impressão operacional autorizada.
+
+Ainda faltam entrada real completa e idempotente do pedido, cobertura de eventuais dependências fora desta classe, calibração física da Epson e aceite no chão de operação. Não fazer merge, deploy, cutover, impressão, spooler nem alteração de estoque/fiscal sem portões posteriores.
+
+Estado: regra humana confirmada / código SHADOW testado; não WORLD_PROVEN.

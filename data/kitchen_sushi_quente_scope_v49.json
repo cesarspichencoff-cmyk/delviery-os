@@ -1,6 +1,6 @@
 {
   "schema": "deliveryos.kitchen-sushi-quente-scope.v49",
-  "status": "HUMAN_CONFIRMED_SCOPE__QUANTITY_COVERAGE_PARTIAL",
+  "status": "HUMAN_CONFIRMED_SCOPE_AND_ONE_PREPARATION_PER_SOLD_PORTION",
   "confirmed_on": "2026-10-08",
   "authority": "HUMAN_OPERATIONAL_DIRECT_INSTRUCTION",
   "station": "enrolados_quentes",
@@ -13,20 +13,30 @@
   },
   "output_channel": "KITCHEN_COMPONENTS",
   "output_ticket": "COZINHA - HOT / EBITEN / SHISO",
-  "scope_rule": "Every item proven to belong to Sushi Quente and whose product name contains a full HOT, EBITEN or SHISO/SHISSO word is in scope for the separate kitchen preparation ticket.",
-  "quantity_rule": "PER_SOLD_PORTION_FACTOR_REQUIRES_PRODUCT_SPECIFIC_HUMAN_CONFIRMATION",
+  "scope_rule": "Every sold item whose CURRENT MOTOR proves Sushi Quente station and whose name contains a whole HOT, EBITEN, SHISO or SHISSO word must contribute the matching preparation on the separate kitchen preparations ticket.",
+  "quantity_rule": "ONE_PREPARATION_PER_SOLD_PORTION_PER_MATCHED_KIND",
+  "factor_per_sold_portion": {
+    "HOT": 1,
+    "EBITEN": 1,
+    "SHISO": 1
+  },
+  "factor_proof": "HUMAN_CONFIRMED_2026-10-08_DIRECT_CHAT",
+  "quantity_semantics": "For sold quantity N, produce N portions of each matched kind; never reinterpret pieces inside item labels as sold product quantity.",
   "confirmed_quantity_rules_file": "data/kitchen_dependency_rules_v1.json",
   "archive_catalogue": "data/cardapio_knowledge_seed.json",
   "archive_is_station_proof_for_current_orders": false,
-  "missing_factor_behavior": "BLOCK_COMPONENT_PRINT_AND_RETAIN_REVIEW",
-  "no_term_match_behavior": "NOT_EVIDENCE_OF_ZERO_FOR_OTHER_ITEMS",
+  "unknown_current_station_behavior": "BLOCK_AUTOMATIC_SCOPING_AND_RETAIN_REVIEW",
+  "new_products_with_proven_current_station": "APPLY_CONFIRMED_CATEGORY_RULE",
+  "nonmatching_product_behavior": "UNKNOWN_NOT_ASSUMED_ZERO",
+  "global_dependency_coverage": "PARTIAL_UNTIL_OTHER_PRODUCTS_AND_ROUTING_ARE_VALIDATED",
+  "conflicting_explicit_product_rule_behavior": "BLOCK_AND_REQUIRE_REVIEW",
   "unchanged": [
     "stock",
     "spooler",
     "printer",
     "fiscal",
     "current_routing",
-    "active_dependency_yields"
+    "active_dependency_rule_file"
   ],
   "effects": {
     "print": false,

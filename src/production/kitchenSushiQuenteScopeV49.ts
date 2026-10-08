@@ -1,15 +1,15 @@
 import {
-  splitTwoKitchenTicketsFromRulesV47,
+  splitTwoKitchenTicketsV47,
   type KitchenSplitV47,
 } from "./twoKitchenTicketsV47";
-import type { KitchenDependencyRuleset } from "./kitchenDependencies";
+import { projectKitchenNeeds, type KitchenDependencyRuleset } from "./kitchenDependencies";
 import type { OperationalTicketsResultV45, SourceOrderItemV45 } from "./operationalTicketsV45";
 import confirmedPolicy from "../../data/kitchen_sushi_quente_scope_v49.json";
 
 /**
- * Human-approved CATEGORY SCOPE, never an implicit numeric yield.
- * Source routing must come from the current motor. The July catalogue is a
- * bounded audit/reference only and cannot prove a live item's current station.
+ * Human-approved CATEGORY SCOPE AND 1 preparation per sold portion.
+ * The 1:1 factor is only applied when the CURRENT motor proves Sushi Quente.
+ * Historical catalogue metadata cannot prove a live item's station.
  */
 export interface ScopedSourceItemV49 extends SourceOrderItemV45 {
   current_praca?: string | null;
@@ -32,7 +32,7 @@ export interface KitchenScopeCandidateV49 {
   scope_status: "HUMAN_SCOPE_APPLIES" | "HISTORICAL_CANDIDATE" | "PENDING_STATION_PROOF";
   yield_per_sold_unit: number | null;
   requested_quantity: number | null;
-  yield_evidence: "EXACT_HUMAN_CONFIRMED_RULE" | "NOT_CONFIRMED";
+  yield_evidence: "EXACT_HUMAN_CONFIRMED_RULE" | "HUMAN_CONFIRMED_CATEGORY_1_PER_PORTION" | "NOT_CONFIRMED";
 }
 export interface KitchenSushiHotScopeV49 {
   schema: "deliveryos.kitchen-sushi-quente-scope-projection.v49";
@@ -64,9 +64,9 @@ function validQuantity(value: unknown): value is number {
   return typeof value==="number" && Number.isInteger(value) && value>=0;
 }
 /**
- * Classifies each sold product without inventing how many HOT/EBITEN/SHISO
- * preparations a portion actually consumes. One product may need >1 unit.
- *
+ * Applies Cesar's 1:1 category rule only to a CURRENT-MOTOR-PROVEN
+ * Sushi Quente item. A sold quantity of N means N preparation portions
+ * per matched kind, NOT the number of sushi pieces inside the product.
  * Live routing wins over historical catalogue category.
  */
 export function classifySushiHotPreparationsV49(
@@ -123,8 +123,15 @@ export function classifySushiHotPreparationsV49(
       const rule=matchedRules.length===1&&VALID_PROOFS.has(matchedRules[0].proof)
         ?matchedRules[0]:null;
       const yieldValue=rule?.yields[kind];
-      const yieldProven=rule!==null && validQuantity(yieldValue);
-      if(!yieldProven)issues.add("PRODUCT_COMPONENT_FACTOR_NOT_CONFIRMED:"+item.item_index+":"+kind);
+      const exactProven=rule!==null && validQuantity(yieldValue);
+      const categoryFactor=currentlySushi &&
+        confirmedPolicy.factor_proof==="HUMAN_CONFIRMED_2026-10-08_DIRECT_CHAT"
+          ?confirmedPolicy.factor_per_sold_portion[kind]:null;
+      const categoryProven=validQuantity(categoryFactor);
+      const conflict=exactProven && categoryProven && yieldValue!==categoryFactor;
+      if(conflict)issues.add("EXACT_RULE_CONFLICTS_WITH_HUMAN_CATEGORY_FACTOR:"+item.item_index+":"+kind);
+      const factor=conflict?null:exactProven?yieldValue:categoryProven?categoryFactor:null;
+      if(factor===null)issues.add("PRODUCT_COMPONENT_FACTOR_NOT_CONFIRMED:"+item.item_index+":"+kind);
       output.push({
         item_index:item.item_index,
         product_code:item.product_code,
@@ -134,9 +141,10 @@ export function classifySushiHotPreparationsV49(
         historical_catalogue_id:historical?.id??null,
         station_evidence:evidence,
         scope_status:status,
-        yield_per_sold_unit:yieldProven?yieldValue:null,
-        requested_quantity:yieldProven?yieldValue*item.quantity:null,
-        yield_evidence:yieldProven?"EXACT_HUMAN_CONFIRMED_RULE":"NOT_CONFIRMED",
+        yield_per_sold_unit:factor,
+        requested_quantity:currentlySushi && factor!==null?factor*item.quantity:null,
+        yield_evidence:factor===null?"NOT_CONFIRMED":
+          exactProven?"EXACT_HUMAN_CONFIRMED_RULE":"HUMAN_CONFIRMED_CATEGORY_1_PER_PORTION",
       });
     }
   }
@@ -173,7 +181,41 @@ export function projectTwoKitchenTicketsScopedV49(
   print_authorized:false;
 }{
   const scope=classifySushiHotPreparationsV49(orderItems,catalogue,existingHumanRules);
-  const original=splitTwoKitchenTicketsFromRulesV47(orderItems,tickets,existingHumanRules);
+  // Adapt confirmed category factors into exact, per-order rule entries for the
+  // EXISTING kitchen calculation engine. Restrict inputs to verified current
+  // Sushi Quente items: never sum historical-only or other-station products.
+  const eligible=orderItems.filter(item=>
+    item.current_praca_proof==="CURRENT_MOTOR_PROVEN" &&
+    norm(item.current_praca)==="ENROLADOS QUENTES" &&
+    kindsFromName(item.product_name).length>0);
+  const effectiveRules=new Map<string,{
+    canonical_item_name:string;
+    proof:"HUMAN_CONFIRMED";
+    yields:Partial<Record<KitchenPrepKindV49,number>>;
+  }>();
+  for(const item of eligible){
+    const key=norm(item.product_name);
+    const entry=effectiveRules.get(key)??{
+      canonical_item_name:item.product_name,
+      proof:"HUMAN_CONFIRMED" as const,
+      yields:{} as Partial<Record<KitchenPrepKindV49,number>>,
+    };
+    for(const c of scope.candidates.filter(c=>c.item_index===item.item_index &&
+                                          c.scope_status==="HUMAN_SCOPE_APPLIES")){
+      if(c.yield_per_sold_unit!==null)entry.yields[c.kitchen_kind]=c.yield_per_sold_unit;
+    }
+    effectiveRules.set(key,entry);
+  }
+  const scopedProjection=projectKitchenNeeds(
+    eligible.map(item=>({nome:item.product_name,quantidade:item.quantity})),
+    {
+      schema:"deliveryos.kitchen-dependency-rules.v1",
+      coverage:"PARTIAL",
+      coverage_proof:"HUMAN_CONFIRMED",
+      rules:[...effectiveRules.values()],
+    },
+  );
+  const original=splitTwoKitchenTicketsV47(orderItems,tickets,scopedProjection);
   const reviews=[...new Set([...original.review_reasons,...scope.required_reviews])].sort();
   const split:KitchenSplitV47={
     ...original,
