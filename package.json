@@ -121,6 +121,7 @@
     "test:platform:source-ingest:pg": "npx tsc && node dist/src/platform/run-source-ingest-role-pg-tests.js",
     "test:platform:source-ingest:wiring": "npx tsc && node dist/src/platform/run-source-ingest-pilot-wiring-pg-tests.js",
     "test:platform:product": "npx tsx src/platform/run-product-system-tests.ts",
+    "test:platform:saude-fontes": "npx tsx src/platform/run-saude-fontes-tests.ts",
     "test:platform:r1": "npx tsx src/platform/run-recovery-r1-tests.ts",
     "test:platform:home": "npx tsx src/platform/run-home-signals-tests.ts",
     "test:platform:visual-order": "npx tsx src/platform/run-visual-order-tests.ts",

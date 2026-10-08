@@ -40,6 +40,7 @@ import {
 import { createPgClient, type PgSqlClient } from "../src/platform/persistence/sql-client";
 import { lerRealidadeDeEntregas } from "../src/platform/leitura/realidade-de-entregas";
 import { lerHistoricoOperacional } from "../src/platform/leitura/historico-operacional";
+import { lerSaudeDaFonteTata, type AvaliadorDeSaude } from "../src/platform/leitura/saude-fonte-tata";
 import { TIPOS_DA_OPERACAO_VIVA } from "../src/platform/runtime/handler-operacao-viva";
 import type { LeituraDeRealidade } from "../src/product/viewmodels/entregas-vm";
 import { CENAS, cena, type CenaHome } from "../src/product/demo/seed-home-demonstracao";
@@ -65,6 +66,12 @@ const PORT = Number(process.env.PRODUCT_UI_PORT || 5290);
  */
 const URL_PLATAFORMA = (process.env.DELIVERYOS_DATABASE_URL || "").trim();
 const DIR_CONFERENCE = (process.env.CONFERENCE_BRAIN_DATA_DIR || "").trim();
+/**
+ * Raiz do leitor TATÁ na CAIXA (ex.: C:\ProgramData\TataComandaReader). Sem
+ * ela, /api/fontes declara a fonte NAO_CONFIGURADA — nunca saudável por
+ * ausência. Só faz sentido na mesma máquina do leitor (relógio).
+ */
+const DIR_LEITOR_TATA = (process.env.TATA_READER_INSTALL_ROOT || "").trim();
 const reqLocal = createRequire(join(process.cwd(), "package.json"));
 interface StoreHistorico {
   history: (entity: string, opts?: { limit?: number }) => LeituraHistoricaDoStore;
@@ -72,6 +79,10 @@ interface StoreHistorico {
 const { createStore: criarStoreConference } = reqLocal(
   join(process.cwd(), "src", "conference-brain", "storage", "store"),
 ) as { createStore: (o: { dir: string }) => StoreHistorico };
+/** O MESMO avaliador que o cutover usa na CAIXA. Não há cópia. */
+const { evaluateTataReaderHealthV1: avaliarSaudeTata } = reqLocal(
+  join(process.cwd(), "runtime", "tata-reader", "tata_reader_health_v1.cjs"),
+) as { evaluateTataReaderHealthV1: AvaliadorDeSaude };
 const RAIZ_UI = join(process.cwd(), "src", "product", "ui");
 /** O MESMO arquivo de tokens que ENTREGAS usa. Nao ha copia. */
 const RAIZ_SHARED = join(process.cwd(), "src", "entregas", "ui", "shared");
@@ -322,6 +333,24 @@ export async function criarServidor(): Promise<http.Server> {
         });
       }
       if (p === "/api/estados") return json(res, 200, pronto.estados);
+      if (p === "/api/fontes") {
+        // Saúde REAL das fontes, lida a cada requisição. Fonte não configurada
+        // aparece como tal; o histórico de 05/10 continua histórico.
+        const tata = lerSaudeDaFonteTata(DIR_LEITOR_TATA || null, Date.now(), avaliarSaudeTata);
+        const h = pronto.historico.tata_comanda;
+        return json(res, 200, {
+          modulo: "fontes",
+          fontes: [tata],
+          historico_tata_comanda: h.disponivel
+            ? { disponivel: true, ao_vivo: false, data_operacional: h.data_operacional, rota: "/api/historico" }
+            : { disponivel: false, ao_vivo: false, motivo: h.motivo },
+          limitacoes: [
+            "Saude por PROGRESSO (heartbeat, ultimo lote OK, checkpoint), nunca por servico RUNNING.",
+            "Idades calculadas no relogio desta maquina: so e honesto na mesma maquina do leitor.",
+            "Historico de 05/10 nao e estado ao vivo e nao entra nesta saude.",
+          ],
+        });
+      }
       if (p === "/api/navegacao") {
         return json(res, 200, {
           grupos: GRUPOS,
