@@ -13,7 +13,7 @@ function kitchenPrepProof(prep: KitchenPrepV47): TicketEscPosProofV46 {
   p.metadata(prep.identifiers);
   p.line("--------------------------------", "SEPARATOR");
   for (const task of prep.tasks) {
-    p.font("B"); p.bold(true); p.heightDouble(true);
+    p.font("A"); p.bold(true); p.heightDouble(true);
     p.line(String(task.quantity) + "  " + task.kind, "COMPONENT");
     p.heightDouble(false); p.bold(false);
   }

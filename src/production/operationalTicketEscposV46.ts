@@ -79,7 +79,9 @@ export class OfflinePrinter {
   }
   heightDouble(value: boolean): void {
     this.currentWidthMultiplier = 1;
-    this.command(GS, 0x21, value ? 0x10 : 0x00);
+    // Epson GS ! bit 0 selects 2x HEIGHT. Bit 4 selects 2x WIDTH.
+    // 0x10 was incorrectly used here in V4.6 / V5.0; it doubled width.
+    this.command(GS, 0x21, value ? 0x01 : 0x00);
   }
   bothDouble(value: boolean): void {
     this.currentWidthMultiplier = value ? 2 : 1;
@@ -111,21 +113,32 @@ export class OfflinePrinter {
   }
   item(item: TicketItemV45): void {
     this.align("LEFT");
-    this.font("B");
+    const headline = quantity(item.quantity) + "  " + uppercase(item.print_name);
+    // Font A is 12x24 dots on the 80-mm Epson family; use it when the
+    // COMPLETE product fits in one line. Font B (9x17 dots) is reserved
+    // for longer names. No truncation or broken multi-line product.
+    this.font([...headline].length <= FONT_A_COLS ? "A" : "B");
     this.bold(true);
     this.heightDouble(true);
-    this.line(quantity(item.quantity) + "  " + uppercase(item.print_name), "ITEM:" + item.source_item_index);
+    this.line(headline, "ITEM:" + item.source_item_index);
     this.heightDouble(false);
     this.bold(false);
-    this.font("B");
+    // Plain instructions prioritize the larger native Font A in low light.
+    // Long instructions fall back to B; >64 columns are blocked, not cut.
     for (const o of item.observations) {
-      this.line("OBS: " + uppercase(o), "OBS:" + item.source_item_index);
+      const s = "OBS: " + uppercase(o);
+      this.font([...s].length <= FONT_A_COLS ? "A" : "B");
+      this.line(s, "OBS:" + item.source_item_index);
     }
     for (const f of item.finishing) {
-      this.line("FINALIZAR: " + uppercase(f), "FINALIZAR:" + item.source_item_index);
+      const s = "FINALIZAR: " + uppercase(f);
+      this.font([...s].length <= FONT_A_COLS ? "A" : "B");
+      this.line(s, "FINALIZAR:" + item.source_item_index);
     }
     for (const d of item.kitchen_dependencies) {
-      this.line("AGUARDAR COZINHA: " + uppercase(d), "DEPENDENCIA:" + item.source_item_index);
+      const s = "AGUARDAR COZINHA: " + uppercase(d);
+      this.font([...s].length <= FONT_A_COLS ? "A" : "B");
+      this.line(s, "DEPENDENCIA:" + item.source_item_index);
     }
   }
   metadata(ids: { ifood: string; teknisa: string; tata: string; hour: string | null } | null): void {
@@ -134,10 +147,11 @@ export class OfflinePrinter {
       this.blockers.add("SOURCE_IDENTIFIERS_UNPROVEN");
       return;
     }
-    this.font("B");
+    const header = "IFOOD " + plain(ids.ifood) + " | TEKNISA " + plain(ids.teknisa) +
+      (ids.hour ? " | " + plain(ids.hour) : "");
+    this.font([...header].length <= FONT_A_COLS ? "A" : "B");
     this.bold(true);
-    this.line("IFOOD " + plain(ids.ifood) + " | TEKNISA " + plain(ids.teknisa) +
-      (ids.hour ? " | " + plain(ids.hour) : ""), "HEADER");
+    this.line(header, "HEADER");
     this.bold(false);
   }
   ending(sequence: string | null): void {
@@ -175,7 +189,7 @@ export class OfflinePrinter {
 }
 
 function addResourceLine(p: OfflinePrinter, text: string, marker: string): void {
-  p.font("B");
+  p.font([...text].length <= FONT_A_COLS ? "A" : "B");
   p.line(text, marker);
 }
 function printResourceGroups(
@@ -211,13 +225,15 @@ export function renderProductionTicketProofV46(ticket: ProductionTicketV45): Tic
   p.font("B");
   p.bold(true);
   p.line("TESTE - NAO PRODUZIR", "BANNER");
-  p.line("PRODUCAO " + uppercase(ticket.station), "STATION");
+  const stationTitle = "PRODUCAO " + uppercase(ticket.station);
+  p.font([...stationTitle].length <= FONT_A_COLS ? "A" : "B");
+  p.line(stationTitle, "STATION");
   p.metadata(ticket.identifiers);
   p.line("--------------------------------", "DIVIDER");
   for (const box of ticket.boxes) {
     const count = box.physical_box_count ?? 1;
     if (!box.model) p.blockers.add("BOX_MODEL_UNPROVEN");
-    p.font("B");
+    p.font("A");
     p.bold(true);
     p.line(count > 1 ? count + "X CAIXA " + box.model : "CAIXA " + box.model, "BOX");
     p.bold(false);
@@ -244,9 +260,10 @@ export function renderConferenceTicketProofV46(ticket: ConferenceTicketV45): Tic
   p.line("--------------------------------", "DIVIDER");
   for (const box of ticket.boxes) {
     if (!box.model) p.blockers.add("BOX_MODEL_UNPROVEN");
-    p.font("B");
+    const boxLabel=box.position + "  CAIXA " + box.model + "  " + box.operator_field;
+    p.font([...boxLabel].length <= FONT_A_COLS ? "A" : "B");
     p.bold(true);
-    p.line(box.position + "  CAIXA " + box.model + "  " + box.operator_field, "BOX_OPERATOR");
+    p.line(boxLabel, "BOX_OPERATOR");
     p.bold(false);
     for (const item of box.items) p.item(item);
   }

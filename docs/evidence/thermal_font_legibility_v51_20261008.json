@@ -1,0 +1,164 @@
+{
+  "schema": "deliveryos.thermal-legibility-audit.v51.history.v1",
+  "historic_catalogue_date": "2026-07-01",
+  "total_historical_products": 199,
+  "analysis": "Offline native Epson Font A/B selection; not installed printer, active menu, nor physical darkness proof",
+  "policy": "Reject, never truncate, a product exceeding native line or code page; human-approved alias needed",
+  "result_counts": {
+    "single": {
+      "A": 193,
+      "B": 6,
+      "BLOCKED": 0
+    },
+    "double_digit": {
+      "A": 193,
+      "B": 6,
+      "BLOCKED": 0
+    }
+  },
+  "watchlist": [
+    {
+      "id": "combinado_tradicional_sashimi_sushi_1_pessoa",
+      "name": "Combinado Tradicional Sashimi + Sushi 1 pessoa",
+      "historical_station": "combinados",
+      "quantity_1": {
+        "quantity": 1,
+        "status": "FONT_B_REVIEW",
+        "font": "B",
+        "printed_name": "1  COMBINADO TRADICIONAL SASHIMI + SUSHI 1 PESSOA",
+        "reason": [],
+        "printed_width_dots": 441,
+        "double_height_dots": 34
+      },
+      "quantity_12": {
+        "quantity": 12,
+        "status": "FONT_B_REVIEW",
+        "font": "B",
+        "printed_name": "12  COMBINADO TRADICIONAL SASHIMI + SUSHI 1 PESSOA",
+        "reason": [],
+        "printed_width_dots": 450,
+        "double_height_dots": 34
+      }
+    },
+    {
+      "id": "combinado_tradicional_sashimi_sushi_2_pessoas",
+      "name": "Combinado Tradicional Sashimi + Sushi 2 pessoas",
+      "historical_station": "combinados",
+      "quantity_1": {
+        "quantity": 1,
+        "status": "FONT_B_REVIEW",
+        "font": "B",
+        "printed_name": "1  COMBINADO TRADICIONAL SASHIMI + SUSHI 2 PESSOAS",
+        "reason": [],
+        "printed_width_dots": 450,
+        "double_height_dots": 34
+      },
+      "quantity_12": {
+        "quantity": 12,
+        "status": "FONT_B_REVIEW",
+        "font": "B",
+        "printed_name": "12  COMBINADO TRADICIONAL SASHIMI + SUSHI 2 PESSOAS",
+        "reason": [],
+        "printed_width_dots": 459,
+        "double_height_dots": 34
+      }
+    },
+    {
+      "id": "sake_para_presentear_hakutsuru_daiginjo_yamadaho",
+      "name": "Sake para presentear - Hakutsuru Daiginjo Yamadaho",
+      "historical_station": "bar_bebidas",
+      "quantity_1": {
+        "quantity": 1,
+        "status": "FONT_B_REVIEW",
+        "font": "B",
+        "printed_name": "1  SAKE PARA PRESENTEAR - HAKUTSURU DAIGINJO YAMADAHO",
+        "reason": [],
+        "printed_width_dots": 477,
+        "double_height_dots": 34
+      },
+      "quantity_12": {
+        "quantity": 12,
+        "status": "FONT_B_REVIEW",
+        "font": "B",
+        "printed_name": "12  SAKE PARA PRESENTEAR - HAKUTSURU DAIGINJO YAMADAHO",
+        "reason": [],
+        "printed_width_dots": 486,
+        "double_height_dots": 34
+      }
+    },
+    {
+      "id": "tata_chocolate_com_sorvete_de_caramelo_salgado",
+      "name": "Tatá chocolate com sorvete de caramelo salgado",
+      "historical_station": "sobremesa",
+      "quantity_1": {
+        "quantity": 1,
+        "status": "FONT_B_REVIEW",
+        "font": "B",
+        "printed_name": "1  TATÁ CHOCOLATE COM SORVETE DE CARAMELO SALGADO",
+        "reason": [],
+        "printed_width_dots": 441,
+        "double_height_dots": 34
+      },
+      "quantity_12": {
+        "quantity": 12,
+        "status": "FONT_B_REVIEW",
+        "font": "B",
+        "printed_name": "12  TATÁ CHOCOLATE COM SORVETE DE CARAMELO SALGADO",
+        "reason": [],
+        "printed_width_dots": 450,
+        "double_height_dots": 34
+      }
+    },
+    {
+      "id": "vinho_argentino_norton_sexy_fish_cabernet_franc_",
+      "name": "Vinho Argentino Norton Sexy Fish Cabernet Franc Seco 750ml",
+      "historical_station": "bar_bebidas",
+      "quantity_1": {
+        "quantity": 1,
+        "status": "FONT_B_REVIEW",
+        "font": "B",
+        "printed_name": "1  VINHO ARGENTINO NORTON SEXY FISH CABERNET FRANC SECO 750ML",
+        "reason": [],
+        "printed_width_dots": 549,
+        "double_height_dots": 34
+      },
+      "quantity_12": {
+        "quantity": 12,
+        "status": "FONT_B_REVIEW",
+        "font": "B",
+        "printed_name": "12  VINHO ARGENTINO NORTON SEXY FISH CABERNET FRANC SECO 750ML",
+        "reason": [],
+        "printed_width_dots": 558,
+        "double_height_dots": 34
+      }
+    },
+    {
+      "id": "vinho_rose_2020_grenache_lulu_le_francais_750ml",
+      "name": "Vinho Rose 2020 Grenache Lulu Le Francais 750ml",
+      "historical_station": "bar_bebidas",
+      "quantity_1": {
+        "quantity": 1,
+        "status": "FONT_B_REVIEW",
+        "font": "B",
+        "printed_name": "1  VINHO ROSE 2020 GRENACHE LULU LE FRANCAIS 750ML",
+        "reason": [],
+        "printed_width_dots": 450,
+        "double_height_dots": 34
+      },
+      "quantity_12": {
+        "quantity": 12,
+        "status": "FONT_B_REVIEW",
+        "font": "B",
+        "printed_name": "12  VINHO ROSE 2020 GRENACHE LULU LE FRANCAIS 750ML",
+        "reason": [],
+        "printed_width_dots": 459,
+        "double_height_dots": 34
+      }
+    }
+  ],
+  "effects": {
+    "print": false,
+    "spooler": false,
+    "stock": false
+  }
+}
