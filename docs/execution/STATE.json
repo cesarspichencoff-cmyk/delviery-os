@@ -166,6 +166,12 @@
       "motivo": "O mecanismo B2 já foi provado em ensaio isolado; ativar credenciais e rotina no ambiente operacional é efeito separado.",
       "substituto": "Backblaze B2 real: writer writeFiles-only, reader separada, Object Lock Compliance 14 dias, S3 7/7 e restore PostgreSQL 7/7",
       "o_que_falta": "emitir credenciais frescas do ambiente de implantação e conectá-las ao backup operacional somente junto ao cutover autorizado"
+    },
+    {
+      "item": "leitor TATA supervisionado instalado e saudavel na CAIXA_MOOCA",
+      "motivo": "A CAIXA nao e acessivel deste ambiente; instalar e reiniciar o servico real so com Desktop Commander e a autorizacao ja registrada.",
+      "substituto": "causa raiz reproduzida em SQL Server 2022 (.NET 8); cutover inteiro executado com SCM simulado (7/7); prova em Windows real com SCM e host C# v2 reais preparada (job windows-real-scm)",
+      "o_que_falta": "push autorizado para a prova Windows; V2 lido por uma pessoa; Plan e Apply na CAIXA com recibo publicado"
     }
   ],
   "protegido_nao_tocar": {
@@ -2180,7 +2186,7 @@
     }
   },
   "tata_reader_resilience_20261007": {
-    "status": "ROOT_CAUSE_REPRODUCED_SANDBOX_FIX_CODE_READY_TEST_PASS_NOT_INSTALLED",
+    "status": "ROOT_CAUSE_REPRODUCED_SANDBOX_FIX_TEST_PASS_E2E_SIMULATED_NOT_INSTALLED",
     "branch": "feat/cloud-solo-reader-resilience-20261007",
     "base": "73626d09cae4ba91b7db2ea4942aa1a882ae7dc0",
     "causa_raiz": {
@@ -2189,7 +2195,7 @@
       "watcher_instalado_sha256": "4507304C7A8AA7B19EC303A5692094CB738A561DFDE769ABD234D900447CAA9A",
       "assinatura": "checkpoint parado, sessao sleeping, ultimo request ~1 poll + 2 s depois, processo vivo, stderr vazio",
       "prova": "tests/tata-reader/run-sqlserver-harness.cjs X1; CI 37720135234",
-      "producao": "INFERENCE: 05/10 21:55:45 -> 21:55:51 tem a mesma assinatura",
+      "producao": "INFERENCE: 05/10 21:55:45 -> 21:55:51 tem a mesma assinatura; o 1222 dentro de Read() so foi visto no SqlClient do .NET 8 (Linux), nao no .NET Framework 4.8 da CAIXA",
       "v2_77C16940": "UNKNOWN: fora do Git; auditar na CAIXA antes de instalar"
     },
     "entregas": {
@@ -2199,22 +2205,28 @@
       "cutover_com_rollback": "runtime/tata-reader/tata_reader_supervisor_cutover_v1.ps1",
       "api_fontes": "GET /api/fontes (tools/product_system_server.ts, src/platform/leitura/saude-fonte-tata.ts)",
       "bench_consumidor": "tools/tata_reader_consumer_io_bench.cjs",
-      "ci": ".github/workflows/tata-reader-resilience.yml"
+      "ci": ".github/workflows/tata-reader-resilience.yml",
+      "cutover_e2e_scm_simulado": "tests/tata-reader/run-cutover-e2e-tests.cjs (Apply e rollback executados)",
+      "prova_windows_real": "tests/tata-reader/windows/real_scm_cutover_e2e.ps1 + job windows-real-scm (WinPS 5.1, SCM real, host C# v2 real de 93b006b) — NAO EXECUTADO: push pendente",
+      "leitura_tolerante_ntfs": "readSignalDoc/readMtimeMs (tata_reader_health_v1.cjs) e lerSaudeDaFonteTata assincrona"
     },
     "tests": {
-      "tata_reader_health": "15/15 PASS",
-      "tata_reader_static": "10/10 PASS",
-      "tata_reader_supervisor": "12/12 PASS",
-      "tata_reader_cutover": "8/8 PASS",
+      "tata_reader_health": "17/17 PASS",
+      "tata_reader_static": "13/13 PASS",
+      "tata_reader_supervisor": "22/22 PASS (d48bd42: 14/22)",
+      "tata_reader_cutover": "13/13 PASS",
+      "tata_reader_e2e_scm_simulado": "7/7 PASS (UTC e America/Sao_Paulo)",
       "tata_reader_sqlserver": "3/3 PASS",
+      "ps51_compat_estatico": "0 achados, controle 3/3",
+      "windows_real_scm": "NOT_RUN (push pendente de autorizacao)",
       "migration_reexec": "5/5 PASS",
       "platform_pg": "17/17 PASS",
       "database_preflight": "9/9 PASS",
       "product_system": "52/52 PASS",
-      "saude_fontes": "6/6 PASS",
+      "saude_fontes": "9/9 PASS",
       "papeis_compose": "10/10 PASS",
       "android_jvm_unit": "52/52 PASS",
-      "ci_run": "37720135234 node-postgres success, pwsh-sqlserver success"
+      "ci_run": "37720135234 (d48bd42 e anteriores) node-postgres success, pwsh-sqlserver success; commits 3215447..HEAD sem CI ate o push"
     },
     "current_boundary": {
       "installed_on_caixa": false,
@@ -2223,13 +2235,29 @@
       "permission_change": false,
       "print": false,
       "protected_m1_paths_touched": false,
-      "world_proven": false
+      "world_proven": false,
+      "pushed_until": "d48bd42",
+      "local_commits_awaiting_push_authorization": true
     },
     "riscos": [
       "Q-021: 8 commits de 04-05/10 fora desta linhagem; duas migrations 0009 (B5 duplicado)",
       "Q-019: C6 vermelho desde 30/09 por mudancas nao registradas no envelope M1",
-      "consumidor sombra da outra linhagem regrava status ~1000/s com 2000 eventos (correcao de 1 linha medida)"
+      "consumidor sombra da outra linhagem regrava status ~1000/s com 2000 eventos (correcao de 1 linha medida)",
+      "V2 77C16940 fora do Git e sem leitura humana; a auditoria estatica e heuristica",
+      "binario do host instalado sem SHA no Git; o Plan mede e o Apply exige o mesmo valor"
     ],
-    "next_step": "Na CAIXA: conferir e publicar o V2 77C16940; auditar; cutover -Mode Plan; -Mode Apply fora do pico com o SHA instalado; publicar o recibo."
+    "next_step": "Autorizar o push -> CI windows-real-scm (WinPS 5.1 + SCM real). Na CAIXA: conferir/publicar e LER o V2 77C16940; auditar; -Mode Plan; -Mode Apply fora do pico com os tres SHA de apply_requires; publicar o recibo.",
+    "sha256": {
+      "supervisor": "F6E17EB9A14D575ED7C572D2C59B551AD9E75809903E6540875AEF49093BF580",
+      "cutover": "0D7D110E8390622F54DDCFF88242E872375AD30C403557D3B8A7239D2DFD1E08",
+      "auditoria": "0586428AEEEED356622E8D7C18140C3F234856AA69D8D3CC3799BB4408DCF65F",
+      "saude": "096D0B5BFF93892576B6A6EC246683ED3C212B060A300965D195115C1A62FA5B"
+    },
+    "revisao_independente": {
+      "alvo": "d48bd42",
+      "achados": "3 MAJOR (cutover sem rollback apos efeito; supervisor caia na janela do File.Replace; auditoria contornavel) + 5 MINOR",
+      "estado": "TODOS_CORRIGIDOS_COM_VERMELHO_ANTES (3215447); alegacoes fortes demais corrigidas no documento de causa raiz §9",
+      "achados_proprios_sessao_2": "fuso UTC-3 no PS 7 (Test-InstantAfter); leitura de saude derrubada pela troca de arquivo do NTFS (0153592)"
+    }
   }
 }
