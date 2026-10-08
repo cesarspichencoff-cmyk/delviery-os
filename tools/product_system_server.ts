@@ -57,8 +57,13 @@ const PORT = Number(process.env.PRODUCT_UI_PORT || 5290);
  * demonstracao. Sem a URL, o bloco declara integracao pendente. Com a URL e
  * o banco fora do ar, declara indisponivel. Nunca zero, nunca saudavel por
  * ausencia.
+ *
+ * So DELIVERYOS_DATABASE_URL. `DELIVERYOS_PG_URL` e a URL ADMINISTRATIVA que
+ * as suites usam para criar bancos isolados; aceita-la aqui fazia a
+ * superficie de leitura conectar como administrador e, nos testes, trocar a
+ * demonstracao por um banco alheio (2026-10-07).
  */
-const URL_PLATAFORMA = (process.env.DELIVERYOS_DATABASE_URL || process.env.DELIVERYOS_PG_URL || "").trim();
+const URL_PLATAFORMA = (process.env.DELIVERYOS_DATABASE_URL || "").trim();
 const DIR_CONFERENCE = (process.env.CONFERENCE_BRAIN_DATA_DIR || "").trim();
 const reqLocal = createRequire(join(process.cwd(), "package.json"));
 interface StoreHistorico {

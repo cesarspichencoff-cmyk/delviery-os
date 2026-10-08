@@ -1,5 +1,5 @@
 import type { SqlClient, SqlRow } from "./persistence/sql-client";
-import type { MigrationFile } from "./migrations/runner";
+import { checksumsEquivalentes, type MigrationFile } from "./migrations/runner";
 
 export const PILOT_REQUIRED_MIGRATIONS = [
   "0006_entregas_cluster_persistence",
@@ -172,6 +172,12 @@ export function evaluateDatabasePreflight(args: {
     const migration = local.get(version);
     if (!migration) continue;
     if (/^[0-9a-f]{16}$/.test(checksum) && checksum !== migration.checksum) {
+      // Mesma regra do runner: so o texto anterior que a propria migration
+      // declara equivalente passa — e passa visivel, como aviso.
+      if (checksumsEquivalentes(migration.sql).includes(checksum)) {
+        warnings.push(`migration ${version} aplicada com texto anterior declarado equivalente (${checksum})`);
+        continue;
+      }
       checksum_mismatches.push({
         version,
         database: checksum,

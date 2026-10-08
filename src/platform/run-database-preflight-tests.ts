@@ -160,4 +160,27 @@ ok("DBP8 checksum legado não comparável não vira falso mismatch", () => {
   assert.equal(r.ready_for_migration, true);
 });
 
-console.log(`DATABASE_PREFLIGHT: ${passed}/8 PASS`);
+ok("DBP9 texto anterior DECLARADO equivalente pela propria migration nao e drift; qualquer outro continua sendo", () => {
+  const comDeclaracao: MigrationFile[] = LOCAL.map((m) =>
+    m.version === "0001_base"
+      ? { ...m, sql: "-- checksum-anterior-equivalente: abcdefabcdefabcd\nSELECT 1;\n" }
+      : m,
+  );
+  const aplicadas = (c0001: string) =>
+    facts({
+      migration_table_present: true,
+      applied_migrations: comDeclaracao.map((m) => ({
+        version: m.version,
+        checksum: m.version === "0001_base" ? c0001 : m.checksum,
+      })),
+    });
+  const eq = evaluateDatabasePreflight({ facts: aplicadas("abcdefabcdefabcd"), local_migrations: comDeclaracao, tls_required: true });
+  assert.deepEqual(eq.checksum_mismatches, []);
+  assert.equal(eq.schema_current, true);
+  assert.ok(eq.warnings.some((w) => w.includes("0001_base") && w.includes("abcdefabcdefabcd")), "equivalencia aceita em silencio");
+  const outro = evaluateDatabasePreflight({ facts: aplicadas("0123456789abcdef"), local_migrations: comDeclaracao, tls_required: true });
+  assert.equal(outro.checksum_mismatches.length, 1);
+  assert.equal(outro.ready_for_migration, false);
+});
+
+console.log(`DATABASE_PREFLIGHT: ${passed}/9 PASS`);

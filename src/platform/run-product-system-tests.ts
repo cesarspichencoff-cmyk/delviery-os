@@ -11,6 +11,7 @@
 
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 import { join } from "node:path";
 import http from "node:http";
 
@@ -1015,6 +1016,36 @@ teste("servidor: travessia de diretorio e recusada", async () => {
   } finally {
     await new Promise<void>((r) => s.close(() => r()));
   }
+});
+
+teste("servidor: a URL ADMINISTRATIVA do harness (DELIVERYOS_PG_URL) nunca vira o banco da superficie", async () => {
+  // DELIVERYOS_PG_URL e a URL de ADMINISTRACAO que as suites usam para criar
+  // bancos isolados. Lida pelo servidor, ela fazia a superficie de leitura
+  // conectar como administrador e, nos testes, trocava a demonstracao por um
+  // banco alheio (o historico de demo-unit sumia). O banco da superficie e
+  // DELIVERYOS_DATABASE_URL, e so ele.
+  const fonte = ler("tools/product_system_server.ts").replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
+  assert.equal(fonte.includes("DELIVERYOS_PG_URL"), false, "o servidor le a URL administrativa do harness");
+  // Processo novo: as constantes de ambiente do servidor sao lidas no import.
+  const codigo = [
+    'const { criarServidor } = require("./tools/product_system_server");',
+    "(async () => {",
+    '  const s = await criarServidor(); await new Promise((r) => s.listen(0, "127.0.0.1", r));',
+    "  const p = s.address().port;",
+    '  const r = await fetch("http://127.0.0.1:" + p + "/api/operacao-viva?unit_id=demo-unit");',
+    "  const j = await r.json(); console.log(JSON.stringify({ disponivel: j.historico && j.historico.disponivel }));",
+    "  s.close(); process.exit(0);",
+    "})();",
+  ].join("\n");
+  const r = spawnSync("npx", ["tsx", "-e", codigo], {
+    cwd: process.cwd(),
+    encoding: "utf8",
+    timeout: 60000,
+    env: { ...process.env, DELIVERYOS_PG_URL: "postgres://administrador:x@127.0.0.1:1/nao_existe", DELIVERYOS_DATABASE_URL: "" },
+  });
+  const linha = (r.stdout || "").trim().split("\n").pop() || "";
+  assert.equal(r.status, 0, r.stderr);
+  assert.deepEqual(JSON.parse(linha), { disponivel: true }, `com a URL administrativa no ambiente o historico mudou: ${linha}`);
 });
 
 /* ------------------------------------------------------------------ *

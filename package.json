@@ -58,6 +58,7 @@
     "test:platform": "npx tsx src/platform/run-platform-tests.ts",
     "test:platform:pg": "npx tsx src/platform/run-postgres-integration-tests.ts",
     "test:platform:database-preflight": "npx tsx src/platform/run-database-preflight-tests.ts",
+    "test:platform:migration-reexec": "npx tsx src/platform/run-migration-reexec-tests.ts",
     "test:platform:repos": "npx tsx src/platform/run-pg-repository-tests.ts",
     "test:platform:envelope": "npx tsx src/platform/run-envelope-tests.ts",
     "migrate": "npx tsx src/platform/bin/migrate.ts",

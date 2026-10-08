@@ -11,6 +11,10 @@
  *  - **checksum**: se um arquivo já aplicado mudou de conteúdo, o executor
  *    PARA. É o sintoma de que duas máquinas têm schemas diferentes achando que
  *    têm o mesmo — e continuar seria escolher qual delas vai quebrar primeiro.
+ *    Exceção única e declarada NA PRÓPRIA migration: uma linha
+ *    `-- checksum-anterior-equivalente: <16 hex>` diz que aquele texto antigo
+ *    produziu exatamente o mesmo schema (padrão `validCheckSum` do Liquibase).
+ *    Só o checksum declarado passa; qualquer outro continua parando.
  *
  * Cada migration roda em sua própria transação: uma falha no meio não deixa
  * meia migration aplicada, e as anteriores continuam válidas.
@@ -31,8 +35,22 @@ export interface MigrationFile {
 export interface MigrationOutcome {
   applied: string[];
   skipped: string[];
+  /**
+   * Migrations aplicadas com um texto ANTERIOR que a própria migration declara
+   * equivalente. Visível de propósito: equivalência aceita não é silêncio.
+   */
+  equivalentes?: { version: string; registrado: string }[];
   /** Preenchido quando o executor parou por divergência. */
   mismatch?: { version: string; esperado: string; encontrado: string };
+}
+
+/**
+ * Checksums de textos anteriores que esta migration declara equivalentes.
+ * Só vale a linha exata, com 16 hex minúsculos — qualquer outra forma é
+ * ignorada, e ignorar aqui significa PARAR no runner.
+ */
+export function checksumsEquivalentes(sql: string): string[] {
+  return [...sql.matchAll(/^-- checksum-anterior-equivalente: ([0-9a-f]{16})\s*$/gm)].map((m) => m[1]!);
 }
 
 export function sha256(texto: string): string {
@@ -87,6 +105,11 @@ export async function runMigrations(
       // A migration 0002 registra a si mesma com um marcador em vez de hash,
       // porque ela escreve a própria linha. Nesses casos não há o que comparar.
       const comparavel = /^[0-9a-f]{16}$/.test(jaAplicada);
+      if (comparavel && jaAplicada !== m.checksum && checksumsEquivalentes(m.sql).includes(jaAplicada)) {
+        resultado.equivalentes = [...(resultado.equivalentes ?? []), { version: m.version, registrado: jaAplicada }];
+        resultado.skipped.push(m.version);
+        continue;
+      }
       if (comparavel && jaAplicada !== m.checksum) {
         resultado.mismatch = {
           version: m.version,

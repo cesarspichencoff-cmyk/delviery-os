@@ -25,6 +25,8 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+import { DELIVERYOS_RUNTIME_ROLES } from "./database-preflight";
+
 const raiz = process.cwd();
 const COMPOSE = join(raiz, "deploy/compose.platform.yaml");
 const PAPEIS_SQL = "deploy/sql/papeis_minimos.sql";
@@ -166,12 +168,16 @@ try {
     for (const u of [m, c, a]) assert.equal(u.hostname, "deliveryos-postgres");
   });
 
-  teste("P3 os papéis das URLs são EXATAMENTE os que o SQL provado cria — e nenhum é o dono", () => {
+  teste("P3 os papéis das URLs são papéis que o SQL provado cria — o SQL cria EXATAMENTE os papéis de runtime declarados — e nenhum é o dono", () => {
     const sql = readFileSync(join(raiz, PAPEIS_SQL), "utf8");
     const criados = [...sql.matchAll(/CREATE ROLE (\w+) LOGIN/g)].map((x) => x[1]!).sort();
-    assert.deepEqual(criados, ["deliveryos_async", "deliveryos_critical"]);
+    // A lista de papéis de runtime tem UMA fonte (database-preflight.ts). O SQL
+    // ganhou o papel do piloto e o do source-ingest em 2026-10-01 — processos
+    // que rodam FORA desta composição — e este teste ficou afirmando dois.
     const usados = [urlDe(oficial, "deliveryos-async").username, urlDe(oficial, "deliveryos-critical").username];
-    assert.deepEqual(usados, criados);
+    for (const u of usados) assert.ok(criados.includes(u), `a composição conecta como ${u}, que o SQL provado não cria`);
+    assert.deepEqual(usados, ["deliveryos_async", "deliveryos_critical"]);
+    assert.deepEqual(criados, [...DELIVERYOS_RUNTIME_ROLES].sort());
     assert.ok(!/SUPERUSER|CREATEROLE|CREATEDB|BYPASSRLS/.test(sql.replace(/^--.*$/gm, "")), "o SQL concede atributo administrativo a um papel");
     // O mesmo arquivo que `test:platform:cadeia` P1-P5 executa: o desenho
     // ligado ao compose é o desenho provado, não uma cópia.
