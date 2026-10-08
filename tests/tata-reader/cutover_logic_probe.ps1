@@ -1,8 +1,8 @@
 <#
-  Sonda das funcoes PURAS do cutover. Carrega o script por dot-source — o que,
-  por construcao, NAO executa nada — e imprime um JSON com o resultado de cada
+  Sonda das funcoes PURAS do cutover. Carrega o script por dot-source - o que,
+  por construcao, NAO executa nada - e imprime um JSON com o resultado de cada
   caso. O teste em Node confere esse JSON. Nada aqui toca servico, banco ou
-  arquivo do sistema.
+  arquivo do sistema (fora a config escrita no diretorio temporario dado).
 #>
 param(
   [Parameter(Mandatory = $true)][string]$CutoverScript,
@@ -16,10 +16,12 @@ $ErrorActionPreference = "Stop"
 function Snap {
   return [ordered]@{
     scm_state = "Running"; host_state = "RUNNING"; host_updated_after_restart = $true; heartbeat_after_restart = $true
+    heartbeat_run_id = "R"; first_run_id = "R"; service_pid = 10; first_service_pid = 10
     heartbeat_supervisor_sha256 = "S"; expected_supervisor_sha256 = "S"
     heartbeat_watcher_expected_sha256 = "W"; heartbeat_watcher_verified = $true; expected_watcher_sha256 = "W"
     heartbeat_ok_batches = 2; min_ok_batches = 2; heartbeat_consecutive_failures = 0; heartbeat_last_batch_outcome = "OK"
-    heartbeat_database_write = $false; checkpoint_advanced = $true; consumer_state = "RUNNING"; health_verdict = "HEALTHY"
+    heartbeat_last_effects_true = @("database_read", "local_checkpoint_write", "local_event_write")
+    checkpoint_advanced = $true; consumer_state = "RUNNING"; health_verdict = "HEALTHY"
     sql_session_after_restart = "UNKNOWN"; new_event_privacy = "UNKNOWN"
   }
 }
@@ -30,14 +32,17 @@ $cases = [ordered]@{
   scm_running = @{ scm_state = "Stopped" }
   host_running_after_restart = @{ host_updated_after_restart = $false }
   heartbeat_after_restart = @{ heartbeat_after_restart = $false }
+  supervisor_run_stable = @{ heartbeat_run_id = "OUTRO" }
+  service_process_stable = @{ service_pid = 11 }
   supervisor_sha_matches = @{ heartbeat_supervisor_sha256 = "X" }
   watcher_sha_pinned_and_verified = @{ heartbeat_watcher_verified = $false }
   ok_batches = @{ heartbeat_ok_batches = 1 }
   no_consecutive_failures = @{ heartbeat_consecutive_failures = 1 }
   last_batch_ok = @{ heartbeat_last_batch_outcome = "WATCHER_FAILED" }
+  watcher_effects_declared_within_policy = @{ heartbeat_last_effects_true = @("database_read", "database_write") }
+  effects_undeclared = @{ heartbeat_last_effects_true = $null }
   checkpoint_advanced = @{ checkpoint_advanced = $false }
   health_verdict_healthy = @{ health_verdict = "DEGRADED" }
-  no_forbidden_effect = @{ heartbeat_database_write = $true }
   consumer_not_failed = @{ consumer_state = "FAILED" }
   sql_session_after_restart = @{ sql_session_after_restart = "FAIL" }
   new_event_privacy = @{ new_event_privacy = "FAIL" }
@@ -51,6 +56,34 @@ foreach ($k in $cases.Keys) {
 }
 $s = Snap; $s.heartbeat_supervisor_sha256 = $null; $s.expected_supervisor_sha256 = $null
 $out.unknown_supervisor_sha_blocks = -not (Test-CutoverGate $s).pass
+$s = Snap; $s.heartbeat_run_id = $null; $s.first_run_id = $null
+$out.unknown_run_id_blocks = -not (Test-CutoverGate $s).pass
+
+$r = Snap
+$out.restart = [ordered]@{
+  same = Test-RestartedDuringGate $r
+  run_changed = Test-RestartedDuringGate ($(Snap) | ForEach-Object { $_.heartbeat_run_id = "OUTRO"; $_ })
+  pid_changed = Test-RestartedDuringGate ($(Snap) | ForEach-Object { $_.service_pid = 99; $_ })
+  not_started_yet = Test-RestartedDuringGate ($(Snap) | ForEach-Object { $_.first_run_id = $null; $_.heartbeat_run_id = "X"; $_ })
+}
+$out.exe = [ordered]@{
+  quoted = Get-ExePathFromServicePathName '"C:\ProgramData\TataComandaReader\bin\TataComandaReader.ContinuousHost.exe" --x'
+  unquoted_space = Get-ExePathFromServicePathName 'C:\Program Files\Tata\Host.exe -a b'
+  plain = Get-ExePathFromServicePathName 'C:\bin\host.exe'
+  empty = Get-ExePathFromServicePathName ''
+}
+$out.exit = [ordered]@{
+  plan_ok = Get-ExitCodeForDecision "PLAN_OK"
+  plan_blocked = Get-ExitCodeForDecision "PLAN_BLOCKED"
+  applied = Get-ExitCodeForDecision "APPLIED_HEALTHY"
+  gate_rb = Get-ExitCodeForDecision "GATE_FAILED_ROLLBACK_PROVEN"
+  error_rb = Get-ExitCodeForDecision "ERROR_IN_START_ROLLBACK_PROVEN"
+  manual_rb = Get-ExitCodeForDecision "MANUAL_ROLLBACK_PROVEN"
+  unproven = Get-ExitCodeForDecision "GATE_FAILED_ROLLBACK_UNPROVEN_HUMAN_REQUIRED"
+  blocked = Get-ExitCodeForDecision "GATE_FAILED_ROLLBACK_BLOCKED_CANDIDATE_ALIVE_HUMAN_REQUIRED"
+  aborted = Get-ExitCodeForDecision "ABORTED_SUPERVISOR_SHA_NOT_CONFIRMED"
+  empty = Get-ExitCodeForDecision ""
+}
 $out.audit = [ordered]@{
   under_supervisor = Test-AuditAllowsSupervisor ([pscustomobject]@{ recommendation = "INSTALL_ONLY_UNDER_SUPERVISOR" })
   safe = Test-AuditAllowsSupervisor ([pscustomobject]@{ recommendation = "SAFE_CONTINUOUS_AND_SUPERVISABLE" })
@@ -65,8 +98,8 @@ $out.checkpoint = [ordered]@{
 }
 $L = Get-Layout "C:\ProgramData\TataComandaReader"
 $out.layout = $L
-$out.config_windows = New-SupervisorConfig $L ("ab" * 32) "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" 60
-# Config gerada para um layout real (temporario) — o teste a entrega ao
+$out.config_windows = New-SupervisorConfig $L ("ab" * 32) "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" 20
+# Config gerada para um layout real (temporario): o teste a entrega ao
 # supervisor verdadeiro para provar que o cutover escreve o que ele aceita.
 $A = Get-Layout $AcceptRoot
 $cfg = New-SupervisorConfig $A $WatcherSha $PsExe 3

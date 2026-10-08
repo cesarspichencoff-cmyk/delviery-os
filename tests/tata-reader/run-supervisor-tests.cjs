@@ -15,7 +15,10 @@ const path = require("node:path");
 const { spawn } = require("node:child_process");
 const L = require("./lib.cjs");
 
-const SUP = path.join(L.ROOT, "runtime", "tata-reader", "tata_reader_supervisor_v1.ps1");
+// TATA_SUPERVISOR_UNDER_TEST permite rodar a MESMA suite contra outra versao
+// do supervisor (ex.: a do commit anterior) — e assim que se prova que um
+// teste novo pegaria o defeito que ele descreve.
+const SUP = process.env.TATA_SUPERVISOR_UNDER_TEST || path.join(L.ROOT, "runtime", "tata-reader", "tata_reader_supervisor_v1.ps1");
 const FAKE = path.join(L.ROOT, "tests", "tata-reader", "fixtures", "fake_watcher.ps1");
 const { teste, pular, fim } = L.runner("TATA_READER_SUPERVISOR");
 const pwsh = L.findPwsh();
@@ -273,6 +276,89 @@ function vivo(pid) {
     assert.equal(r.status, 0, `supervisor caiu por falha de heartbeat: ${r.stderr}`);
     assert.match(r.stderr, /HEARTBEAT_WRITE_FAILED/);
     assert.equal(fs.readFileSync(path.join(m.state, "fake-invocations.txt"), "utf8"), "2", "os lotes pararam");
+  });
+
+  await teste("S15 checkpoint que some e volta sem parar (janela do File.Replace) nao derruba o supervisor", () => {
+    const m = montar("s15", ["flap_checkpoint"]);
+    const plano = L.readJson(path.join(m.state, "fake-behavior.json"));
+    L.writeJson(path.join(m.state, "fake-behavior.json"), { ...plano, flap_seconds: 25 });
+    const r = rodar(m, 1, 120000);
+    assert.equal(r.status, 0, `supervisor saiu ${r.status}: ${r.stderr.slice(-400)}`);
+    assert.equal(m.hb().last_batch.outcome, "OK");
+  });
+
+  await teste("S16 resultado de lote SEM bloco de efeitos para o supervisor: FATAL EFFECTS_UNDECLARED, saida 78", () => {
+    const m = montar("s16", ["ok_no_effects"]);
+    const r = rodar(m, 2);
+    assert.equal(r.status, 78, r.stderr);
+    const hb = m.hb();
+    assert.equal(hb.state, "FATAL");
+    assert.equal(hb.fatal, "EFFECTS_UNDECLARED");
+    assert.equal(hb.totals.ok, 0);
+  });
+
+  await teste("S17 registro do filho que nao pode ser gravado: o filho morre na hora e o lote nao conta", async () => {
+    const m = montar("s17", ["hang"], { progress_stall_seconds: 60, batch_timeout_seconds: 60 });
+    fs.mkdirSync(m.cfg.child_record_path, { recursive: true });
+    const r = rodar(m, 1, 60000);
+    assert.equal(r.status, 0, r.stderr);
+    const hb = m.hb();
+    assert.equal(hb.last_batch.outcome, "CHILD_RECORD_WRITE_FAILED");
+    assert.equal(hb.totals.ok, 0);
+    const ps = require("node:child_process").spawnSync("ps", ["-eo", "args"], { encoding: "utf8" }).stdout;
+    const vivos = ps.split("\n").filter((l) => l.includes(m.state) && l.includes("fake_watcher.ps1"));
+    assert.deepEqual(vivos, [], "um lote sem registro continuou vivo");
+  });
+
+  await teste("S18 registro de filho ILEGIVEL de execucao anterior: quarentena antes do primeiro lote", () => {
+    const m = montar("s18", ["ok"], { orphan_quarantine_seconds: 3 });
+    fs.writeFileSync(m.cfg.child_record_path, "{quebrado");
+    const t0 = Date.now();
+    const r = rodar(m, 1);
+    const ms = Date.now() - t0;
+    assert.equal(r.status, 0, r.stderr);
+    assert.match(r.stderr, /ORPHAN_BATCH RECORD_UNREADABLE/);
+    assert.ok(ms >= 3000, `nao esperou a quarentena (${ms} ms)`);
+    assert.equal(m.hb().last_batch.outcome, "OK");
+    assert.equal(fs.existsSync(m.cfg.child_record_path), false, "registro velho ficou para tras");
+  });
+
+  await teste("S19 watcher ausente e transitorio ate o limite; persistindo vira FATAL WATCHER_MISSING (78)", () => {
+    const dir = L.tmpDir("tata-sup-s19w-");
+    const w = path.join(dir, "watcher.ps1");
+    fs.copyFileSync(FAKE, w);
+    const m = montar("s19", ["ok"], { watcher_path: w, watcher_missing_fatal_after: 2 });
+    fs.renameSync(w, w + ".fora");
+    const r = rodar(m, 5);
+    assert.equal(r.status, 78, r.stderr);
+    const hb = m.hb();
+    assert.equal(hb.fatal, "WATCHER_MISSING");
+    assert.equal(hb.totals.batches, 1, "deveria tolerar 1 ausencia e parar na 2a");
+    assert.equal(hb.last_batch.outcome, "WATCHER_MISSING");
+  });
+
+  await teste("S20 executavel do PowerShell que nao inicia vira lote falho com backoff, nunca queda do supervisor", () => {
+    const m = montar("s20", ["ok"], { powershell_exe: "/caminho/que/nao/existe/pwsh" });
+    const r = rodar(m, 2);
+    assert.equal(r.status, 0, `supervisor caiu: ${r.status} ${r.stderr.slice(-300)}`);
+    const hb = m.hb();
+    assert.match(hb.last_batch.error_class, /^BATCH_START_FAILED:/);
+    assert.equal(hb.totals.failed, 2);
+  });
+
+  await teste("S21 o heartbeat carrega os efeitos que o watcher DECLAROU e a politica permitida (o gate do cutover le isso)", () => {
+    const m = montar("s21", ["ok"]);
+    const r = rodar(m, 1);
+    assert.equal(r.status, 0, r.stderr);
+    const hb = m.hb();
+    assert.deepEqual(hb.last_batch.effects_true, ["database_read", "local_checkpoint_write", "local_event_write"]);
+    assert.deepEqual(hb.watcher.effects_allowed_true, ["database_read", "local_checkpoint_write", "local_event_write"]);
+  });
+
+  await teste("S22 arquivo do supervisor e ASCII puro (Windows PowerShell 5.1 le UTF-8 sem BOM como ANSI)", () => {
+    const b = fs.readFileSync(SUP);
+    const fora = [...b].findIndex((x) => x > 0x7f);
+    assert.equal(fora, -1, `byte nao-ASCII na posicao ${fora}`);
   });
 
   fim("TATA_READER_SUPERVISOR");

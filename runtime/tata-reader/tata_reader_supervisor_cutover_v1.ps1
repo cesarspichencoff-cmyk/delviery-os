@@ -1,30 +1,50 @@
 <#
-  TATA Comanda Reader — cutover do supervisor com rollback automatico (v1)
+  TATA Comanda Reader - cutover do supervisor com rollback automatico (v1)
   ========================================================================
-  Executa, NA CAIXA_MOOCA, a troca autorizada por Cesar: backup -> instalar o
-  watcher candidato (v2) SOB o supervisor -> restart controlado do servico
-  TataComandaReader -> provar saude REAL -> se qualquer gate falhar, restaurar
-  o watcher e o checkpoint anteriores, reiniciar e provar o rollback.
+  Executa, NA CAIXA_MOOCA, a troca autorizada por Cesar: parar o servico
+  TataComandaReader -> backup consistente -> instalar o watcher candidato (v2)
+  SOB o supervisor -> iniciar -> provar saude REAL -> se qualquer gate falhar
+  (ou qualquer erro acontecer depois do primeiro efeito), restaurar o watcher
+  e o checkpoint anteriores, iniciar e provar o rollback.
 
   MODOS
     -Mode Plan      (padrao) so le e confere; nenhuma escrita, nenhum restart.
-    -Mode Apply     backup + instalacao + restart + gates + rollback automatico.
+                    Imprime os tres SHA-256 que o Apply exige de volta.
+    -Mode Apply     exige -ExpectedInstalledWatcherSha256, -ExpectedHostBinarySha256
+                    e -SupervisorSha256 iguais aos lidos agora.
     -Mode Rollback  restaura um backup anterior (-BackupDir) e prova.
+
+  ORDEM DO APPLY (cada fase depois da primeira e protegida por rollback):
+    1 parar o servico e confirmar que nenhum watcher antigo ficou vivo;
+    2 backup com manifesto SHA (nada escreve durante a copia);
+    3 instalar por arquivo temporario + SHA + troca atomica;
+    4 linha de base do checkpoint (estavel: servico parado);
+    5 iniciar e observar: SCM, host, heartbeat da MESMA execucao do supervisor
+      (troca de run_id ou de PID do servico = reinicio = falha), SHAs, lotes
+      OK, efeitos DECLARADOS pelo watcher dentro da politica, checkpoint
+      andando, saude HEALTHY.
+
+  ROLLBACK: para o servico; encerra todo processo cuja linha de comando cite o
+  candidato (o host mata so o supervisor; o lote filho sobrevive) e confirma;
+  se algum nao morrer, NAO restaura (dois escritores no checkpoint) e para
+  pedindo humano; restaura watcher e checkpoint conferindo SHA; tira candidato,
+  configuracao e heartbeat do caminho; inicia; prova checkpoint andando, watcher
+  restaurado e nenhum processo do candidato vivo.
 
   FRONTEIRA (o que este script NUNCA faz): escrita no SQL Server, grant ou
   revogacao de permissao, impressao/spooler, Odhen, fiscal/SEFAZ, rede,
-  qualquer servico alem de TataComandaReader. O unico efeito no SQL Server e,
+  qualquer servico alem de TataComandaReader. O unico acesso ao SQL Server e,
   com -SqlSessionCheck, uma CONSULTA a sys.dm_exec_sessions como o operador.
 
-  RECIBO: todo modo grava um JSON sanitizado (sem PII, sem texto livre, sem
-  identificador de pedido) com SHA-256 de cada arquivo, horarios, gates e
-  veredito — e e esse recibo que vira evidencia no Git depois de revisado.
+  RECIBO: todo Apply/Rollback grava um JSON sanitizado (sem PII, sem texto
+  livre, sem identificador de pedido) com SHA de cada arquivo, horarios, fases,
+  gates e veredito, em state\supervisor-cutover-v1\<carimbo>\.
 
-  Funcoes puras (decisao de gate, plano, configuracao) ficam acima do bloco
-  principal e sao testaveis por dot-source: carregar o script com ". arquivo"
-  NAO executa nada.
+  SAIDA: 0 PLAN_OK ou APPLIED_HEALTHY; 3 rollback provado; 2 qualquer outro
+  desfecho (humano). Nunca 1: erro inesperado vira recibo e 2.
 
-  Compativel com Windows PowerShell 5.1.
+  Funcoes puras e de efeito ficam acima do bloco principal: carregar o script
+  com ". arquivo" NAO executa nada. Windows PowerShell 5.1; ASCII puro.
 #>
 param(
   [ValidateSet("Plan", "Apply", "Rollback")][string]$Mode = "Plan",
@@ -35,20 +55,26 @@ param(
   [string]$SupervisorSourcePath = "",
   [string]$SupervisorSha256 = "",
   [string]$ExpectedInstalledWatcherSha256 = "",
+  [string]$ExpectedHostBinarySha256 = "",
   [string]$RepoRuntimeDir = "",
   [string]$NodeExe = "C:\Program Files\nodejs\node.exe",
   [string]$PowerShellExe = "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe",
   [int]$BatchPolls = 20,
   [int]$HealthWaitSeconds = 480,
   [int]$MinOkBatches = 2,
+  [int]$RollbackProofSeconds = 120,
   [switch]$SqlSessionCheck,
   [string]$SqlServer = "(local)\SQLEXPRESS",
   [string]$BackupDir = ""
 )
 
 $ErrorActionPreference = "Stop"
-$CutoverSchema = "deliveryos.tata-reader-supervisor-cutover-receipt.v1"
-$CheckpointSchemaV1 = "deliveryos.tata-reader-continuous-checkpoint.v1"
+$CutoverSchema = "deliveryos.tata-reader-supervisor-cutover-receipt.v2"
+$ServiceIdentity = "NT SERVICE\TataComandaReader"
+# A mesma politica do supervisor, repetida aqui de proposito: o gate compara
+# o que o watcher DECLAROU contra a politica do cutover, nao contra o que o
+# proprio heartbeat diz que e permitido.
+$AllowedWatcherEffects = @("database_read", "local_checkpoint_write", "local_event_write")
 
 # ======================================================== funcoes puras ====
 
@@ -91,8 +117,25 @@ function New-SupervisorConfig($Layout, [string]$WatcherSha256, [string]$PsExe, [
   }
 }
 
-# Decide se o servico esta saudavel DEPOIS do restart. Recebe um retrato ja
-# coletado; nao toca em nada. Todo gate obrigatorio tem que ser $true — UNKNOWN
+# Executavel do servico a partir do PathName do SCM: entre aspas, ou ate o
+# primeiro ".exe" (caminho sem aspas com espaco), ou ate o primeiro espaco.
+function Get-ExePathFromServicePathName([string]$PathName) {
+  if ([string]::IsNullOrWhiteSpace($PathName)) { return $null }
+  $p = $PathName.Trim()
+  if ($p.StartsWith('"')) {
+    $end = $p.IndexOf('"', 1)
+    if ($end -gt 1) { return $p.Substring(1, $end - 1) }
+    return $null
+  }
+  $m = [regex]::Match($p, "(?i)^.*?\.exe(?=\s|$)")
+  if ($m.Success) { return $m.Value }
+  $sp = $p.IndexOf(" ")
+  if ($sp -gt 0) { return $p.Substring(0, $sp) }
+  return $p
+}
+
+# Decide se o servico esta saudavel DEPOIS do start. Recebe um retrato ja
+# coletado; nao toca em nada. Todo gate obrigatorio tem que ser $true; UNKNOWN
 # nao passa. Os opcionais (sessao SQL, evento novo) so reprovam se FALHAREM;
 # ausencia vira UNKNOWN registrado no recibo.
 function Test-CutoverGate($Snap) {
@@ -100,14 +143,19 @@ function Test-CutoverGate($Snap) {
   $g.scm_running = ($Snap.scm_state -eq "Running")
   $g.host_running_after_restart = ($Snap.host_state -eq "RUNNING" -and $Snap.host_updated_after_restart -eq $true)
   $g.heartbeat_after_restart = ($Snap.heartbeat_after_restart -eq $true)
-  $g.supervisor_sha_matches = ($Snap.heartbeat_supervisor_sha256 -eq $Snap.expected_supervisor_sha256 -and $Snap.expected_supervisor_sha256)
-  $g.watcher_sha_pinned_and_verified = ($Snap.heartbeat_watcher_expected_sha256 -eq $Snap.expected_watcher_sha256 -and $Snap.heartbeat_watcher_verified -eq $true)
+  $g.supervisor_run_stable = (-not [string]::IsNullOrWhiteSpace([string]$Snap.heartbeat_run_id) -and $Snap.heartbeat_run_id -eq $Snap.first_run_id)
+  $g.service_process_stable = ($null -eq $Snap.first_service_pid -or $Snap.service_pid -eq $Snap.first_service_pid)
+  $g.supervisor_sha_matches = (-not [string]::IsNullOrWhiteSpace([string]$Snap.expected_supervisor_sha256) -and $Snap.heartbeat_supervisor_sha256 -eq $Snap.expected_supervisor_sha256)
+  $g.watcher_sha_pinned_and_verified = (-not [string]::IsNullOrWhiteSpace([string]$Snap.expected_watcher_sha256) -and $Snap.heartbeat_watcher_expected_sha256 -eq $Snap.expected_watcher_sha256 -and $Snap.heartbeat_watcher_verified -eq $true)
   $g.ok_batches = ($Snap.heartbeat_ok_batches -ge $Snap.min_ok_batches)
   $g.no_consecutive_failures = ($Snap.heartbeat_consecutive_failures -eq 0)
   $g.last_batch_ok = ($Snap.heartbeat_last_batch_outcome -eq "OK")
+  $declared = $Snap.heartbeat_last_effects_true
+  $effectsOk = ($null -ne $declared)
+  if ($effectsOk) { foreach ($e in @($declared)) { if ($AllowedWatcherEffects -notcontains [string]$e) { $effectsOk = $false } } }
+  $g.watcher_effects_declared_within_policy = $effectsOk
   $g.checkpoint_advanced = ($Snap.checkpoint_advanced -eq $true)
   $g.health_verdict_healthy = ($Snap.health_verdict -eq "HEALTHY")
-  $g.no_forbidden_effect = ($Snap.heartbeat_database_write -eq $false)
   $g.consumer_not_failed = ($Snap.consumer_state -ne "FAILED")
   $optional = [ordered]@{
     sql_session_after_restart = $Snap.sql_session_after_restart
@@ -124,6 +172,15 @@ function Test-CutoverGate($Snap) {
   }
 }
 
+# Reinicio do supervisor ou do servico durante a observacao nao espera o fim
+# do prazo: e falha na hora (um dos dois restarts do SCM ja foi gasto).
+function Test-RestartedDuringGate($Snap) {
+  if ([string]::IsNullOrWhiteSpace([string]$Snap.first_run_id)) { return $false }
+  if (-not [string]::IsNullOrWhiteSpace([string]$Snap.heartbeat_run_id) -and $Snap.heartbeat_run_id -ne $Snap.first_run_id) { return $true }
+  if ($null -ne $Snap.first_service_pid -and $null -ne $Snap.service_pid -and $Snap.service_pid -ne $Snap.first_service_pid) { return $true }
+  return $false
+}
+
 # A auditoria estatica do candidato decide se ele pode rodar sob o supervisor.
 function Test-AuditAllowsSupervisor($Audit) {
   if ($null -eq $Audit) { return $false }
@@ -131,71 +188,98 @@ function Test-AuditAllowsSupervisor($Audit) {
 }
 
 # O candidato precisa ler o checkpoint ATUAL. Se ele declara outro schema de
-# checkpoint, instalar exigiria migracao de estado — decisao humana, nao deste
-# script.
+# checkpoint, instalar exigiria migracao de estado: decisao humana.
 function Test-CheckpointCompatible([string]$CandidateText, [string]$CurrentCheckpointSchema) {
   if ([string]::IsNullOrWhiteSpace($CurrentCheckpointSchema)) { return "NO_CHECKPOINT_YET" }
   if ($CandidateText.Contains('"' + $CurrentCheckpointSchema + '"')) { return "COMPATIBLE" }
   return "INCOMPATIBLE"
 }
 
-# ======================================================= efeitos (Windows) ==
-
-function Get-Sha([string]$Path) {
-  if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { return $null }
-  return (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToUpperInvariant()
+function Get-ExitCodeForDecision([string]$Decision) {
+  if ([string]::IsNullOrWhiteSpace($Decision)) { return 2 }
+  if ($Decision.StartsWith("PLAN_OK")) { return 0 }
+  if ($Decision -eq "APPLIED_HEALTHY") { return 0 }
+  if ($Decision.EndsWith("_ROLLBACK_PROVEN")) { return 3 }
+  return 2
 }
 
-function Read-JsonOrNull([string]$Path) {
-  if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { return $null }
-  try { return (Get-Content -LiteralPath $Path -Raw -Encoding UTF8 | ConvertFrom-Json) } catch { return $null }
+function Get-ExceptionClass($ErrorRecord) {
+  try { return ($ErrorRecord.Exception.GetType().Name -replace "[^A-Za-z0-9_]", "") } catch { return "Unknown" }
 }
 
-function Write-Json([string]$Path, $Object) {
-  $dir = [IO.Path]::GetDirectoryName($Path)
-  if (-not (Test-Path -LiteralPath $dir -PathType Container)) { New-Item -ItemType Directory -Force -Path $dir | Out-Null }
-  $tmp = $Path + ".tmp." + $PID
-  [IO.File]::WriteAllText($tmp, ($Object | ConvertTo-Json -Depth 12), (New-Object Text.UTF8Encoding($false)))
-  if (Test-Path -LiteralPath $Path) { Remove-Item -LiteralPath $Path -Force }
-  [IO.File]::Move($tmp, $Path)
-}
-
-function Copy-Verified([string]$From, [string]$To, [string]$ExpectedSha) {
-  $dir = [IO.Path]::GetDirectoryName($To)
-  if (-not (Test-Path -LiteralPath $dir -PathType Container)) { New-Item -ItemType Directory -Force -Path $dir | Out-Null }
-  Copy-Item -LiteralPath $From -Destination $To -Force
-  $got = Get-Sha $To
-  if ($got -ne $ExpectedSha.ToUpperInvariant()) { throw ("COPY_SHA_MISMATCH:" + [IO.Path]::GetFileName($To)) }
-  return $got
-}
-
-function Invoke-NodeJson([string]$Script, [string[]]$Arguments) {
-  $all = @($Script) + $Arguments
-  $out = & $NodeExe @all 2>$null
-  $code = $LASTEXITCODE
-  $text = ($out -join "`n")
-  $obj = $null
-  try { $obj = $text | ConvertFrom-Json } catch { $obj = $null }
-  return @{ code = $code; json = $obj }
-}
-
-function Get-ScmState {
-  $s = Get-Service -Name $ServiceName -ErrorAction Stop
-  return [string]$s.Status
-}
+# ================================================ efeitos (substituiveis) ==
+# Os testes trocam estas funcoes por um SCM simulado; nada mais muda.
 
 function Get-ServiceInfo {
   $w = Get-CimInstance -ClassName Win32_Service -Filter ("Name='" + $ServiceName + "'")
-  return [ordered]@{ state = [string]$w.State; start_name = [string]$w.StartName; path_name = [string]$w.PathName; start_mode = [string]$w.StartMode }
+  if ($null -eq $w) { throw "SERVICE_NOT_FOUND" }
+  $procId = $null
+  if ([int]$w.ProcessId -gt 0) { $procId = [int]$w.ProcessId }
+  return [ordered]@{ state = [string]$w.State; start_name = [string]$w.StartName; path_name = [string]$w.PathName; start_mode = [string]$w.StartMode; process_id = $procId }
 }
 
-function Wait-Scm([string]$Want, [int]$Seconds) {
-  $deadline = (Get-Date).AddSeconds($Seconds)
-  while ((Get-Date) -lt $deadline) {
-    if ((Get-ScmState) -eq $Want) { return $true }
-    Start-Sleep -Seconds 1
+function Get-ScmState {
+  return [string](Get-Service -Name $ServiceName -ErrorAction Stop).Status
+}
+
+function Invoke-ServiceStop { Stop-Service -Name $ServiceName -Force -ErrorAction Stop }
+
+function Invoke-ServiceStart { Start-Service -Name $ServiceName -ErrorAction Stop }
+
+function Assert-Admin {
+  $p = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
+  if (-not $p.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) { throw "ADMINISTRATOR_REQUIRED" }
+}
+
+# Processos DO POWERSHELL cuja linha de comando cita o caminho (um editor
+# aberto no arquivo nunca entra). No Windows PowerShell 5.1 a linha de comando
+# so vem do CIM; no PowerShell 7 vem do proprio Get-Process (tambem no Linux,
+# o que deixa esta funcao testavel fora do Windows).
+function Find-ProcessesByCommandLine([string]$Needle) {
+  $out = @()
+  # Retorno simples: o chamador usa @(...), que normaliza 0, 1 ou N; com o
+  # operador virgula o @() embrulharia o array e a contagem daria sempre 1.
+  if ([string]::IsNullOrWhiteSpace($Needle)) { return $out }
+  $shell = "^(powershell|pwsh)(\.exe)?$"
+  if ($PSVersionTable.PSVersion.Major -ge 7) {
+    foreach ($p in @(Get-Process -ErrorAction SilentlyContinue)) {
+      if ($p.ProcessName -notmatch $shell -or $p.Id -eq $PID) { continue }
+      $cl = $null
+      try { $cl = $p.CommandLine } catch { $cl = $null }
+      if ($null -ne $cl -and $cl.IndexOf($Needle, [StringComparison]::OrdinalIgnoreCase) -ge 0) { $out += [int]$p.Id }
+    }
+  } else {
+    foreach ($p in @(Get-CimInstance -ClassName Win32_Process -ErrorAction SilentlyContinue)) {
+      if ([string]$p.Name -notmatch $shell -or [int]$p.ProcessId -eq $PID) { continue }
+      $cl = [string]$p.CommandLine
+      if ($cl.IndexOf($Needle, [StringComparison]::OrdinalIgnoreCase) -ge 0) { $out += [int]$p.ProcessId }
+    }
   }
-  return $false
+  return $out
+}
+
+# Mata todo processo que cite o caminho e CONFIRMA. Devolve quantos foram
+# encerrados e quantos continuam vivos.
+function Stop-ProcessesByCommandLine([string]$Needle) {
+  $killed = 0
+  foreach ($procId in @(Find-ProcessesByCommandLine $Needle)) {
+    try {
+      $p = Get-Process -Id $procId -ErrorAction Stop
+      $p.Kill()
+      [void]$p.WaitForExit(15000)
+      $killed++
+    } catch { }
+  }
+  # Confirmacao por nova busca, repetida: um processo morto ainda aparece por
+  # um instante enquanto sai (e WaitForExit de processo que nao e filho nao
+  # e confiavel em toda plataforma).
+  $alive = 0
+  for ($i = 0; $i -lt 34; $i++) {
+    $alive = @(Find-ProcessesByCommandLine $Needle).Count
+    if ($alive -eq 0) { break }
+    Start-Sleep -Milliseconds 300
+  }
+  return [ordered]@{ killed = $killed; alive = $alive }
 }
 
 function Get-SqlSessionAfter([datetime]$Since) {
@@ -215,80 +299,6 @@ function Get-SqlSessionAfter([datetime]$Since) {
   } catch { return "UNKNOWN" }
 }
 
-function Get-NewEventPrivacy($Layout, [datetime]$Since) {
-  if (-not (Test-Path -LiteralPath $Layout.events -PathType Container)) { return "UNKNOWN" }
-  $files = @(Get-ChildItem -LiteralPath $Layout.events -Filter "*.json" | Where-Object { $_.LastWriteTime -gt $Since })
-  if ($files.Count -eq 0) { return "UNKNOWN" }
-  foreach ($f in $files) {
-    $e = Read-JsonOrNull $f.FullName
-    if ($null -eq $e) { return "FAIL" }
-    if ($e.effects.database_write -ne $false) { return "FAIL" }
-    $t = $e.order.truth
-    if ($null -ne $t) {
-      if ($t.privacy.customer_pii_persisted -ne $false) { return "FAIL" }
-      if ($t.privacy.raw_observation_text_persisted -ne $false) { return "FAIL" }
-      if ($t.privacy.coordinates_persisted -ne $false) { return "FAIL" }
-      if ($null -ne $t.lifecycle.production_time_minutes -or $null -ne $t.lifecycle.delivery_time_minutes) { return "FAIL" }
-    }
-  }
-  return "PASS"
-}
-
-function Get-Snapshot($Layout, [datetime]$RestartAt, [long]$CheckpointTicksBefore, [string]$ExpectedSupSha, [string]$ExpectedWatcherSha, [string]$HealthCli, [switch]$Light) {
-  $hb = Read-JsonOrNull $Layout.heartbeat
-  $hs = Read-JsonOrNull $Layout.host_status
-  $cs = Read-JsonOrNull $Layout.consumer_status
-  $ckTicks = [long]0
-  if (Test-Path -LiteralPath $Layout.checkpoint -PathType Leaf) { $ckTicks = (Get-Item -LiteralPath $Layout.checkpoint).LastWriteTimeUtc.Ticks }
-  $health = Invoke-NodeJson $HealthCli @("--heartbeat", $Layout.heartbeat, "--host-status", $Layout.host_status, "--consumer-status", $Layout.consumer_status, "--checkpoint", $Layout.checkpoint)
-  $hostAfter = $false
-  if ($null -ne $hs -and $hs.updated_at) { try { $hostAfter = ([datetime]$hs.updated_at) -gt $RestartAt } catch { $hostAfter = $false } }
-  $hbAfter = $false
-  if ($null -ne $hb -and $hb.supervisor.started_at) { try { $hbAfter = ([datetime]$hb.supervisor.started_at) -gt $RestartAt } catch { $hbAfter = $false } }
-  return [ordered]@{
-    taken_at = (Get-Date).ToString("o")
-    scm_state = Get-ScmState
-    host_state = if ($hs) { [string]$hs.state } else { $null }
-    host_updated_after_restart = $hostAfter
-    heartbeat_after_restart = $hbAfter
-    heartbeat_supervisor_sha256 = if ($hb) { [string]$hb.supervisor.script_sha256 } else { $null }
-    expected_supervisor_sha256 = $ExpectedSupSha
-    heartbeat_watcher_expected_sha256 = if ($hb) { [string]$hb.watcher.expected_sha256 } else { $null }
-    heartbeat_watcher_verified = if ($hb) { [bool]$hb.watcher.sha256_verified } else { $false }
-    expected_watcher_sha256 = $ExpectedWatcherSha
-    heartbeat_ok_batches = if ($hb) { [int]$hb.totals.ok } else { 0 }
-    min_ok_batches = $MinOkBatches
-    heartbeat_consecutive_failures = if ($hb) { [int]$hb.consecutive_failures } else { -1 }
-    heartbeat_last_batch_outcome = if ($hb -and $hb.last_batch) { [string]$hb.last_batch.outcome } else { $null }
-    heartbeat_last_error_class = if ($hb -and $hb.last_batch) { [string]$hb.last_batch.error_class } else { $null }
-    heartbeat_database_write = if ($hb) { [bool]$hb.effects.database_write } else { $null }
-    checkpoint_advanced = ($ckTicks -gt $CheckpointTicksBefore)
-    consumer_state = if ($cs) { [string]$cs.state } else { $null }
-    health_verdict = if ($health.json) { [string]$health.json.verdict } else { "UNKNOWN" }
-    health_reasons = if ($health.json) { @($health.json.reasons) } else { @("HEALTH_CLI_FAILED") }
-    sql_session_after_restart = if ($Light) { "NOT_EVALUATED" } elseif ($SqlSessionCheck) { Get-SqlSessionAfter $RestartAt } else { "NOT_REQUESTED" }
-    new_event_privacy = if ($Light) { "NOT_EVALUATED" } else { Get-NewEventPrivacy $Layout $RestartAt }
-  }
-}
-
-# Depois de Stop-Service, o lote filho do supervisor pode seguir vivo ate o fim
-# do proprio limite de polls (o host mata so o supervisor). Antes de restaurar
-# o watcher antigo, o lote e encerrado — dois watchers nunca escrevem o mesmo
-# checkpoint. So mata se PID e hora de inicio baterem com o registro.
-function Stop-SupervisorOrphan($Layout) {
-  $rec = Read-JsonOrNull $Layout.child_record
-  if ($null -eq $rec) { return "NONE" }
-  $p = $null
-  try { $p = Get-Process -Id ([int]$rec.pid) -ErrorAction Stop } catch { return "NOT_RUNNING" }
-  try {
-    $v = $rec.process_start_utc
-    $recorded = if ($v -is [datetime]) { $v.ToUniversalTime() } else { [datetime]::ParseExact([string]$v, "yyyy-MM-ddTHH:mm:ss.fffZ", [Globalization.CultureInfo]::InvariantCulture, [Globalization.DateTimeStyles]::AdjustToUniversal -bor [Globalization.DateTimeStyles]::AssumeUniversal) }
-    if ([Math]::Abs(($p.StartTime.ToUniversalTime() - $recorded).TotalMilliseconds) -gt 1000) { return "PID_REUSED_NOT_TOUCHED" }
-  } catch { return "RECORD_UNREADABLE_NOT_TOUCHED" }
-  try { $p.Kill(); [void]$p.WaitForExit(10000) } catch { }
-  return "ORPHAN_STOPPED"
-}
-
 # Informativo: BUILTIN\Users com escrita em bin\ deixaria um usuario comum
 # trocar o que o servico executa. Herdado do ProgramData; nao bloqueia, registra.
 function Get-BinWritableByNonAdmin([string]$Bin) {
@@ -303,179 +313,487 @@ function Get-BinWritableByNonAdmin([string]$Bin) {
   } catch { return $null }
 }
 
-function Assert-Admin {
-  $p = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
-  if (-not $p.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) { throw "ADMINISTRATOR_REQUIRED" }
+# ========================================================= infraestrutura ==
+
+function Get-Sha([string]$Path) {
+  if (-not [IO.File]::Exists($Path)) { return $null }
+  return (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToUpperInvariant()
+}
+
+function Read-JsonOrNull([string]$Path) {
+  try {
+    if (-not [IO.File]::Exists($Path)) { return $null }
+    return ([IO.File]::ReadAllText($Path) | ConvertFrom-Json)
+  } catch { return $null }
+}
+
+function Write-Json([string]$Path, $Object) {
+  $dir = [IO.Path]::GetDirectoryName($Path)
+  if (-not [IO.Directory]::Exists($dir)) { [void][IO.Directory]::CreateDirectory($dir) }
+  $tmp = $Path + ".tmp." + $PID + "." + [Guid]::NewGuid().ToString("N")
+  [IO.File]::WriteAllText($tmp, ($Object | ConvertTo-Json -Depth 14), (New-Object Text.UTF8Encoding($false)))
+  if ([IO.File]::Exists($Path)) {
+    $bak = $Path + ".bak." + [Guid]::NewGuid().ToString("N")
+    [IO.File]::Replace($tmp, $Path, $bak, $true)
+    [IO.File]::Delete($bak)
+  } else {
+    [IO.File]::Move($tmp, $Path)
+  }
+}
+
+# Copia para um temporario no MESMO diretorio, confere o SHA e so entao troca
+# o destino de uma vez: o host nunca le um arquivo pela metade.
+function Copy-Atomic([string]$From, [string]$To, [string]$ExpectedSha) {
+  $dir = [IO.Path]::GetDirectoryName($To)
+  if (-not [IO.Directory]::Exists($dir)) { [void][IO.Directory]::CreateDirectory($dir) }
+  $tmp = $To + ".new." + [Guid]::NewGuid().ToString("N")
+  [IO.File]::Copy($From, $tmp, $false)
+  try {
+    $got = Get-Sha $tmp
+    if ($got -ne $ExpectedSha.ToUpperInvariant()) { throw ("COPY_SHA_MISMATCH:" + [IO.Path]::GetFileName($To)) }
+    if ([IO.File]::Exists($To)) {
+      $bak = $To + ".bak." + [Guid]::NewGuid().ToString("N")
+      [IO.File]::Replace($tmp, $To, $bak, $true)
+      [IO.File]::Delete($bak)
+    } else {
+      [IO.File]::Move($tmp, $To)
+    }
+  } finally {
+    if ([IO.File]::Exists($tmp)) { [IO.File]::Delete($tmp) }
+  }
+  $final = Get-Sha $To
+  if ($final -ne $ExpectedSha.ToUpperInvariant()) { throw ("INSTALLED_SHA_MISMATCH:" + [IO.Path]::GetFileName($To)) }
+  return $final
+}
+
+function Move-Aside([string]$Path, [string]$Suffix) {
+  if ([IO.File]::Exists($Path)) {
+    $dst = $Path + $Suffix
+    if ([IO.File]::Exists($dst)) { [IO.File]::Delete($dst) }
+    [IO.File]::Move($Path, $dst)
+    return $dst
+  }
+  return $null
+}
+
+# Node chamado como processo, sem redirecionamento do PowerShell: no Windows
+# PowerShell 5.1, "2>$null" com $ErrorActionPreference=Stop transforma
+# qualquer linha de stderr em erro terminante.
+function Invoke-NodeJson([string]$Script, [string[]]$Arguments) {
+  $psi = New-Object Diagnostics.ProcessStartInfo
+  $psi.FileName = $NodeExe
+  $quoted = @('"' + $Script.Replace('"', '\"') + '"')
+  foreach ($a in $Arguments) { $quoted += ('"' + ([string]$a).Replace('"', '\"') + '"') }
+  $psi.Arguments = ($quoted -join " ")
+  $psi.UseShellExecute = $false
+  $psi.CreateNoWindow = $true
+  $psi.RedirectStandardOutput = $true
+  $psi.RedirectStandardError = $true
+  $p = [Diagnostics.Process]::Start($psi)
+  $outTask = $p.StandardOutput.ReadToEndAsync()
+  $errTask = $p.StandardError.ReadToEndAsync()
+  if (-not $p.WaitForExit(60000)) { try { $p.Kill() } catch { }; return @{ code = -1; json = $null } }
+  [void]$outTask.Wait(5000)
+  [void]$errTask.Wait(5000)
+  $text = ""
+  if ($outTask.IsCompleted) { $text = $outTask.Result }
+  $obj = $null
+  try { $obj = $text | ConvertFrom-Json } catch { $obj = $null }
+  return @{ code = $p.ExitCode; json = $obj }
+}
+
+function Wait-Scm([string]$Want, [int]$Seconds) {
+  $deadline = (Get-Date).AddSeconds($Seconds)
+  while ((Get-Date) -lt $deadline) {
+    try { if ((Get-ScmState) -eq $Want) { return $true } } catch { }
+    Start-Sleep -Seconds 1
+  }
+  return $false
+}
+
+# Instante lido de JSON estritamente DEPOIS de $After. O PowerShell 7 entrega o
+# texto ISO ja convertido em [datetime] Kind=Utc; o 5.1 entrega texto; o
+# Get-Date e Local. Os dois lados vao para UTC antes de comparar: sem isso o 7
+# compara relogios de parede diferentes e, em UTC-3, um arquivo de ate 3 h
+# ANTES do restart passa por novo. Texto sem fuso e tratado como hora local.
+function Test-InstantAfter($Value, [datetime]$After) {
+  if ($null -eq $Value) { return $false }
+  try {
+    if ($Value -is [datetime]) {
+      $v = $Value.ToUniversalTime()
+    } else {
+      $s = [string]$Value
+      if ([string]::IsNullOrWhiteSpace($s)) { return $false }
+      $v = [datetime]::Parse($s, [Globalization.CultureInfo]::InvariantCulture, [Globalization.DateTimeStyles]::AdjustToUniversal -bor [Globalization.DateTimeStyles]::AssumeLocal)
+    }
+    return ($v -gt $After.ToUniversalTime())
+  } catch { return $false }
+}
+
+function Get-CheckpointTicks($Layout) {
+  try {
+    $t = [IO.File]::GetLastWriteTimeUtc($Layout.checkpoint).Ticks
+    if ($t -eq [DateTime]::FromFileTimeUtc(0).Ticks) { return [long]0 }
+    return [long]$t
+  } catch { return [long]0 }
+}
+
+function Get-NewEventPrivacy($Layout, [datetime]$Since) {
+  try {
+    if (-not [IO.Directory]::Exists($Layout.events)) { return "UNKNOWN" }
+    $files = @(Get-ChildItem -LiteralPath $Layout.events -Filter "*.json" | Where-Object { $_.LastWriteTimeUtc -gt $Since.ToUniversalTime() })
+    if ($files.Count -eq 0) { return "UNKNOWN" }
+    foreach ($f in $files) {
+      $e = Read-JsonOrNull $f.FullName
+      if ($null -eq $e) { return "FAIL" }
+      if ($e.effects.database_write -ne $false) { return "FAIL" }
+      $t = $e.order.truth
+      if ($null -ne $t) {
+        if ($t.privacy.customer_pii_persisted -ne $false) { return "FAIL" }
+        if ($t.privacy.raw_observation_text_persisted -ne $false) { return "FAIL" }
+        if ($t.privacy.coordinates_persisted -ne $false) { return "FAIL" }
+        if ($null -ne $t.lifecycle.production_time_minutes -or $null -ne $t.lifecycle.delivery_time_minutes) { return "FAIL" }
+      }
+    }
+    return "PASS"
+  } catch { return "UNKNOWN" }
+}
+
+function Get-Snapshot($Layout, [datetime]$StartAt, [long]$CheckpointTicksBefore, [string]$ExpectedSupSha, [string]$ExpectedWatcherSha, [string]$HealthCli, $First, [switch]$Light) {
+  $hb = Read-JsonOrNull $Layout.heartbeat
+  $hs = Read-JsonOrNull $Layout.host_status
+  $cs = Read-JsonOrNull $Layout.consumer_status
+  $ckTicks = Get-CheckpointTicks $Layout
+  $health = Invoke-NodeJson $HealthCli @("--heartbeat", $Layout.heartbeat, "--host-status", $Layout.host_status, "--consumer-status", $Layout.consumer_status, "--checkpoint", $Layout.checkpoint)
+  $hostAfter = $false
+  if ($null -ne $hs) { $hostAfter = Test-InstantAfter $hs.updated_at $StartAt }
+  $hbAfter = $false
+  if ($null -ne $hb -and $null -ne $hb.supervisor) { $hbAfter = Test-InstantAfter $hb.supervisor.started_at $StartAt }
+  $svcPid = $null
+  try { $svcPid = (Get-ServiceInfo).process_id } catch { $svcPid = $null }
+  $effects = $null
+  if ($null -ne $hb -and $null -ne $hb.last_batch -and $null -ne $hb.last_batch.effects_true) { $effects = @($hb.last_batch.effects_true) }
+  return [ordered]@{
+    taken_at = (Get-Date).ToString("o")
+    scm_state = (Get-ScmState)
+    service_pid = $svcPid
+    first_service_pid = $First.service_pid
+    host_state = if ($hs) { [string]$hs.state } else { $null }
+    host_updated_after_restart = $hostAfter
+    heartbeat_after_restart = $hbAfter
+    heartbeat_run_id = if ($hb) { [string]$hb.supervisor.run_id } else { $null }
+    first_run_id = $First.run_id
+    heartbeat_supervisor_sha256 = if ($hb) { [string]$hb.supervisor.script_sha256 } else { $null }
+    expected_supervisor_sha256 = $ExpectedSupSha
+    heartbeat_watcher_expected_sha256 = if ($hb) { [string]$hb.watcher.expected_sha256 } else { $null }
+    heartbeat_watcher_verified = if ($hb) { [bool]$hb.watcher.sha256_verified } else { $false }
+    expected_watcher_sha256 = $ExpectedWatcherSha
+    heartbeat_ok_batches = if ($hb) { [int]$hb.totals.ok } else { 0 }
+    min_ok_batches = $MinOkBatches
+    heartbeat_consecutive_failures = if ($hb) { [int]$hb.consecutive_failures } else { -1 }
+    heartbeat_last_batch_outcome = if ($hb -and $hb.last_batch) { [string]$hb.last_batch.outcome } else { $null }
+    heartbeat_last_error_class = if ($hb -and $hb.last_batch) { [string]$hb.last_batch.error_class } else { $null }
+    heartbeat_last_effects_true = $effects
+    checkpoint_advanced = ($ckTicks -gt $CheckpointTicksBefore -and $CheckpointTicksBefore -gt 0) -or ($CheckpointTicksBefore -eq 0 -and $ckTicks -gt 0)
+    consumer_state = if ($cs) { [string]$cs.state } else { $null }
+    health_verdict = if ($health.json) { [string]$health.json.verdict } else { "UNKNOWN" }
+    health_reasons = if ($health.json) { @($health.json.reasons) } else { @("HEALTH_CLI_FAILED") }
+    sql_session_after_restart = if ($Light) { "NOT_EVALUATED" } elseif ($SqlSessionCheck) { Get-SqlSessionAfter $StartAt } else { "NOT_REQUESTED" }
+    new_event_privacy = if ($Light) { "NOT_EVALUATED" } else { Get-NewEventPrivacy $Layout $StartAt }
+  }
+}
+
+# =============================================================== rollback ==
+function Invoke-Rollback($L, [string]$Dir, $Receipt) {
+  $rb = [ordered]@{ started_at = (Get-Date).ToString("o"); phase = "STOP" }
+  $Receipt.rollback = $rb
+  $Receipt.effects.rollback = $true
+  try {
+    $man = Read-JsonOrNull ([IO.Path]::Combine($Dir, "manifest.json"))
+    if ($null -eq $man) { $rb.result = "BACKUP_MANIFEST_UNREADABLE"; return "ROLLBACK_MANIFEST_UNREADABLE_HUMAN_REQUIRED" }
+    try { Invoke-ServiceStop } catch { $rb.stop_error = Get-ExceptionClass $_ }
+    if (-not (Wait-Scm "Stopped" 60)) { $rb.result = "STOP_FAILED"; return "ROLLBACK_STOP_FAILED_HUMAN_REQUIRED" }
+
+    # O host mata so o supervisor; o lote filho sobrevive. Todo processo que
+    # cite o candidato ou o caminho fixo e encerrado, e confirmado.
+    $rb.phase = "KILL_CANDIDATE_BATCHES"
+    $k1 = Stop-ProcessesByCommandLine $L.candidate_target
+    $k2 = Stop-ProcessesByCommandLine $L.host_fixed_watcher
+    $rb.candidate_processes_killed = $k1.killed
+    $rb.host_path_processes_killed = $k2.killed
+    if ($k1.alive -gt 0 -or $k2.alive -gt 0) {
+      $rb.result = "CANDIDATE_PROCESS_ALIVE"
+      return "ROLLBACK_BLOCKED_CANDIDATE_ALIVE_HUMAN_REQUIRED"
+    }
+
+    $rb.phase = "RESTORE"
+    $suffix = ".rolled_back." + (Get-Date).ToString("yyyyMMdd-HHmmss")
+    $rb.restored = @()
+    foreach ($it in @($man.items)) {
+      if ([string]$it.backup -eq "host_status.json") { continue }
+      $src = [IO.Path]::Combine($Dir, [string]$it.backup)
+      if ((Get-Sha $src) -ne [string]$it.sha256) { $rb.result = "BACKUP_CORRUPT:" + [string]$it.backup; return "ROLLBACK_BACKUP_CORRUPT_HUMAN_REQUIRED" }
+      [void](Copy-Atomic $src ([string]$it.original) ([string]$it.sha256))
+      $rb.restored += [string]$it.backup
+    }
+    # Fora do caminho: candidato, configuracao do supervisor, heartbeat e
+    # registro de filho. Heartbeat velho faria a saude dizer STALLED/FATAL
+    # sobre um supervisor que nao roda mais.
+    $hadConfig = (@($man.items | Where-Object { [string]$_.backup -eq "supervisor_config.json" }).Count -gt 0)
+    $rb.moved_aside = @()
+    foreach ($p in @($L.candidate_target, $L.heartbeat, $L.child_record)) {
+      $moved = Move-Aside $p $suffix
+      if ($null -ne $moved) { $rb.moved_aside += [IO.Path]::GetFileName($moved) }
+    }
+    if (-not $hadConfig) {
+      $moved = Move-Aside $L.supervisor_config $suffix
+      if ($null -ne $moved) { $rb.moved_aside += [IO.Path]::GetFileName($moved) }
+    }
+
+    $rb.phase = "START"
+    $ckBefore = Get-CheckpointTicks $L
+    try { Invoke-ServiceStart } catch { $rb.start_error = Get-ExceptionClass $_ }
+    $running = Wait-Scm "Running" 60
+    $advanced = $false
+    $deadline = (Get-Date).AddSeconds($RollbackProofSeconds)
+    while ((Get-Date) -lt $deadline) {
+      Start-Sleep -Seconds 2
+      if ((Get-CheckpointTicks $L) -gt $ckBefore) { $advanced = $true; break }
+    }
+    $candidateAlive = @(Find-ProcessesByCommandLine $L.candidate_target).Count
+    $restoredSha = Get-Sha $L.host_fixed_watcher
+    $originalSha = [string](@($man.items | Where-Object { [string]$_.backup -eq "installed_watcher.ps1" })[0].sha256)
+    $rb.scm_running = $running
+    $rb.checkpoint_advanced_after_rollback = $advanced
+    $rb.candidate_processes_alive_after = $candidateAlive
+    $rb.restored_watcher_sha256 = $restoredSha
+    $rb.restored_watcher_matches_backup = ($restoredSha -eq $originalSha)
+    $rb.finished_at = (Get-Date).ToString("o")
+    if ($running -and $advanced -and $candidateAlive -eq 0 -and $rb.restored_watcher_matches_backup) {
+      $rb.result = "PROVEN"
+      return "ROLLBACK_PROVEN"
+    }
+    $rb.result = "UNPROVEN"
+    return "ROLLBACK_UNPROVEN_HUMAN_REQUIRED"
+  } catch {
+    $rb.error_class = Get-ExceptionClass $_
+    $rb.result = "ERROR"
+    return "ROLLBACK_ERROR_HUMAN_REQUIRED"
+  }
 }
 
 # ================================================================ principal ==
-function Invoke-Main {
-  if ([string]::IsNullOrWhiteSpace($RepoRuntimeDir)) { $script:RepoRuntimeDir = $PSScriptRoot }
-  if ([string]::IsNullOrWhiteSpace($SupervisorSourcePath)) { $script:SupervisorSourcePath = Join-Path $RepoRuntimeDir "tata_reader_supervisor_v1.ps1" }
-  $L = Get-Layout $InstallRoot
-  $audit = Join-Path $RepoRuntimeDir "tata_reader_watch_static_audit_v1.cjs"
-  $healthCli = Join-Path $RepoRuntimeDir "tata_reader_health_v1.cjs"
-  $stamp = (Get-Date).ToString("yyyyMMdd-HHmmss")
-  $receipt = [ordered]@{
+function New-Receipt {
+  return [ordered]@{
     schema = $CutoverSchema
     mode = $Mode
     started_at = (Get-Date).ToString("o")
     machine_clock_note = "horarios no relogio local desta maquina; nao comparar com outro relogio"
     service = $ServiceName
+    phase = "PREFLIGHT"
     checks = [ordered]@{}
     files = [ordered]@{}
     decision = $null
-    effects = [ordered]@{ database_write = $false; permission_change = $false; print = $false; spooler_write = $false; odhen_write = $false; fiscal_action = $false; sefaz_call = $false; network_call = $false; service_restart = $false; file_install = $false; rollback = $false }
+    effects = [ordered]@{ database_write = $false; permission_change = $false; print = $false; spooler_write = $false; odhen_write = $false; fiscal_action = $false; sefaz_call = $false; network_call = $false; service_stop = $false; service_start = $false; file_install = $false; rollback = $false }
     privacy = [ordered]@{ customer_pii = $false; order_identifiers = $false; raw_error_text = $false }
   }
+}
 
-  # ---------------------------------------------------------- preflight --
+function Invoke-Preflight($L, $Receipt, [string]$AuditCli, [string]$HealthCli) {
   $info = Get-ServiceInfo
-  $receipt.checks.service = $info
-  $receipt.checks.service_identity_ok = ($info.start_name -eq "NT SERVICE\TataComandaReader")
-  $receipt.files.installed_watcher_sha256 = Get-Sha $L.host_fixed_watcher
-  $receipt.files.candidate_sha256 = Get-Sha $CandidateWatcherPath
-  $receipt.files.candidate_expected_sha256 = $CandidateWatcherSha256.ToUpperInvariant()
-  $receipt.files.supervisor_sha256 = Get-Sha $SupervisorSourcePath
-  $receipt.files.checkpoint_sha256 = Get-Sha $L.checkpoint
+  $Receipt.checks.service = $info
+  $Receipt.checks.service_identity_ok = ($info.start_name -eq $ServiceIdentity)
+  $hostExe = Get-ExePathFromServicePathName $info.path_name
+  $Receipt.files.host_binary = if ($hostExe) { [IO.Path]::GetFileName($hostExe) } else { $null }
+  $Receipt.files.host_binary_sha256 = if ($hostExe) { Get-Sha $hostExe } else { $null }
+  $Receipt.files.installed_watcher_sha256 = Get-Sha $L.host_fixed_watcher
+  $Receipt.files.candidate_sha256 = Get-Sha $CandidateWatcherPath
+  $Receipt.files.candidate_expected_sha256 = $CandidateWatcherSha256.ToUpperInvariant()
+  $Receipt.files.supervisor_sha256 = Get-Sha $SupervisorSourcePath
+  $Receipt.files.checkpoint_sha256 = Get-Sha $L.checkpoint
   $ck = Read-JsonOrNull $L.checkpoint
-  $receipt.checks.checkpoint_schema = if ($ck) { [string]$ck.schema } else { $null }
-  $receipt.checks.node_present = (Test-Path -LiteralPath $NodeExe -PathType Leaf)
-  $receipt.checks.bin_writable_by_non_admin = Get-BinWritableByNonAdmin $L.bin
-  $receipt.checks.candidate_sha_ok = ($receipt.files.candidate_sha256 -eq $receipt.files.candidate_expected_sha256)
-  $receipt.checks.supervisor_sha_ok = ([string]::IsNullOrWhiteSpace($SupervisorSha256) -or $receipt.files.supervisor_sha256 -eq $SupervisorSha256.ToUpperInvariant())
-  $receipt.checks.installed_sha_confirmed = (-not [string]::IsNullOrWhiteSpace($ExpectedInstalledWatcherSha256) -and $receipt.files.installed_watcher_sha256 -eq $ExpectedInstalledWatcherSha256.ToUpperInvariant())
-  if ($receipt.checks.node_present -and $receipt.files.candidate_sha256) {
-    $a = Invoke-NodeJson $audit @($CandidateWatcherPath)
-    $receipt.checks.candidate_audit = if ($a.json) { [ordered]@{ recommendation = [string]$a.json.recommendation; findings = @($a.json.findings | ForEach-Object { [string]$_.code }) } } else { $null }
-    $receipt.checks.candidate_audit_allows_supervisor = Test-AuditAllowsSupervisor $a.json
-    $candText = [IO.File]::ReadAllText($CandidateWatcherPath)
-    $receipt.checks.candidate_checkpoint = Test-CheckpointCompatible $candText $receipt.checks.checkpoint_schema
+  $Receipt.checks.checkpoint_schema = if ($ck) { [string]$ck.schema } else { $null }
+  $Receipt.checks.node_present = [IO.File]::Exists($NodeExe)
+  $Receipt.checks.bin_writable_by_non_admin = Get-BinWritableByNonAdmin $L.bin
+  $Receipt.checks.candidate_sha_ok = ($null -ne $Receipt.files.candidate_sha256 -and $Receipt.files.candidate_sha256 -eq $Receipt.files.candidate_expected_sha256)
+  $Receipt.checks.candidate_audit_allows_supervisor = $false
+  if ($Receipt.checks.node_present -and $Receipt.checks.candidate_sha_ok) {
+    $a = Invoke-NodeJson $AuditCli @($CandidateWatcherPath)
+    $Receipt.checks.candidate_audit = if ($a.json) { [ordered]@{ recommendation = [string]$a.json.recommendation; findings = @($a.json.findings | ForEach-Object { [string]$_.code }) } } else { $null }
+    $Receipt.checks.candidate_audit_allows_supervisor = Test-AuditAllowsSupervisor $a.json
+    $Receipt.checks.candidate_checkpoint = Test-CheckpointCompatible ([IO.File]::ReadAllText($CandidateWatcherPath)) $Receipt.checks.checkpoint_schema
   }
-  $before = Get-Snapshot $L (Get-Date).AddYears(-10) ([long]0) $receipt.files.supervisor_sha256 $receipt.files.candidate_expected_sha256 $healthCli -Light
-  $receipt.checks.health_before = [ordered]@{ verdict = $before.health_verdict; reasons = $before.health_reasons; scm = $before.scm_state; host = $before.host_state }
-
-  $preflightOk = $receipt.checks.service_identity_ok -and $receipt.checks.node_present -and $receipt.checks.candidate_sha_ok -and
-    $receipt.checks.supervisor_sha_ok -and $receipt.checks.candidate_audit_allows_supervisor -and
-    ($receipt.checks.candidate_checkpoint -eq "COMPATIBLE" -or $receipt.checks.candidate_checkpoint -eq "NO_CHECKPOINT_YET")
-  $receipt.checks.preflight_ok = [bool]$preflightOk
-
-  if ($Mode -eq "Plan") {
-    $receipt.decision = if ($preflightOk) { "PLAN_OK_APPLY_REQUIRES_-ExpectedInstalledWatcherSha256 " + $receipt.files.installed_watcher_sha256 } else { "PLAN_BLOCKED" }
-    $receipt.plan = @(
-      "backup: watcher instalado, checkpoint, config, status do host -> " + $L.backups + "\<carimbo>",
-      "instalar: candidato -> " + $L.candidate_target + " (SHA conferido apos copia)",
-      "instalar: config do supervisor -> " + $L.supervisor_config,
-      "instalar: supervisor -> " + $L.host_fixed_watcher + " (caminho fixo do host; SHA conferido)",
-      "Restart-Service " + $ServiceName,
-      "gates ate " + $HealthWaitSeconds + " s: SCM, host, heartbeat novo, SHAs, >= " + $MinOkBatches + " lotes OK, checkpoint andando, saude HEALTHY, sem efeito proibido",
-      "falhou -> parar, restaurar watcher+checkpoint, iniciar, provar checkpoint andando"
-    )
-    return $receipt
+  $Receipt.checks.health_before = $null
+  if ($Receipt.checks.node_present) {
+    $before = Get-Snapshot $L (Get-Date).AddYears(-10) ([long]0) $Receipt.files.supervisor_sha256 $Receipt.files.candidate_expected_sha256 $HealthCli @{ run_id = $null; service_pid = $null } -Light
+    $Receipt.checks.health_before = [ordered]@{ verdict = $before.health_verdict; reasons = $before.health_reasons; scm = $before.scm_state; host = $before.host_state }
   }
+  $Receipt.checks.preflight_ok = [bool](
+    $Receipt.checks.service_identity_ok -and $Receipt.checks.node_present -and $Receipt.checks.candidate_sha_ok -and
+    $null -ne $Receipt.files.supervisor_sha256 -and $null -ne $Receipt.files.installed_watcher_sha256 -and $null -ne $Receipt.files.host_binary_sha256 -and
+    $Receipt.checks.candidate_audit_allows_supervisor -and
+    ($Receipt.checks.candidate_checkpoint -eq "COMPATIBLE" -or $Receipt.checks.candidate_checkpoint -eq "NO_CHECKPOINT_YET"))
+}
 
+function Invoke-Apply($L, $Receipt, [string]$HealthCli, [string]$RunDir) {
+  # Confirmacoes: o operador devolve os tres SHA que o Plan imprimiu. Nada
+  # foi tocado ainda.
+  if (-not $Receipt.checks.preflight_ok) { return "ABORTED_PREFLIGHT" }
+  if ([string]::IsNullOrWhiteSpace($ExpectedInstalledWatcherSha256) -or $Receipt.files.installed_watcher_sha256 -ne $ExpectedInstalledWatcherSha256.ToUpperInvariant()) { return "ABORTED_INSTALLED_SHA_NOT_CONFIRMED" }
+  if ([string]::IsNullOrWhiteSpace($ExpectedHostBinarySha256) -or $Receipt.files.host_binary_sha256 -ne $ExpectedHostBinarySha256.ToUpperInvariant()) { return "ABORTED_HOST_BINARY_SHA_NOT_CONFIRMED" }
+  if ([string]::IsNullOrWhiteSpace($SupervisorSha256) -or $Receipt.files.supervisor_sha256 -ne $SupervisorSha256.ToUpperInvariant()) { return "ABORTED_SUPERVISOR_SHA_NOT_CONFIRMED" }
   Assert-Admin
 
-  if ($Mode -eq "Apply") {
-    if (-not $preflightOk) { $receipt.decision = "ABORTED_PREFLIGHT"; return $receipt }
-    if (-not $receipt.checks.installed_sha_confirmed) { $receipt.decision = "ABORTED_INSTALLED_SHA_NOT_CONFIRMED"; return $receipt }
+  # ------------------------------------------------------------ 1 parar --
+  $Receipt.phase = "STOP"
+  $Receipt.effects.service_stop = $true
+  try { Invoke-ServiceStop } catch { $Receipt.checks.stop_error = Get-ExceptionClass $_ }
+  if (-not (Wait-Scm "Stopped" 60)) {
+    try { Invoke-ServiceStart } catch { }
+    return "ABORTED_STOP_FAILED"
+  }
+  $old = Stop-ProcessesByCommandLine $L.host_fixed_watcher
+  $Receipt.checks.old_watcher_processes_killed = $old.killed
+  if ($old.alive -gt 0) {
+    try { Invoke-ServiceStart } catch { }
+    return "ABORTED_OLD_WATCHER_ALIVE"
+  }
 
-    # ------------------------------------------------------------- backup --
-    $bk = Join-Path $L.backups $stamp
-    New-Item -ItemType Directory -Force -Path $bk | Out-Null
+  # ----------------------------------------------------------- 2 backup --
+  $Receipt.phase = "BACKUP"
+  try {
+    $bk = [IO.Path]::Combine($RunDir, "backup")
+    [void][IO.Directory]::CreateDirectory($bk)
     $manifest = [ordered]@{ created_at = (Get-Date).ToString("o"); items = @() }
     foreach ($pair in @(@($L.host_fixed_watcher, "installed_watcher.ps1"), @($L.checkpoint, "checkpoint.json"), @($L.supervisor_config, "supervisor_config.json"), @($L.host_status, "host_status.json"))) {
-      if (Test-Path -LiteralPath $pair[0] -PathType Leaf) {
-        $dst = Join-Path $bk $pair[1]
-        Copy-Item -LiteralPath $pair[0] -Destination $dst -Force
+      if ([IO.File]::Exists($pair[0])) {
+        $dst = [IO.Path]::Combine($bk, $pair[1])
+        [IO.File]::Copy($pair[0], $dst, $true)
         $manifest.items += [ordered]@{ original = $pair[0]; backup = $pair[1]; sha256 = Get-Sha $dst }
       }
     }
-    if ((Get-Sha (Join-Path $bk "installed_watcher.ps1")) -ne $receipt.files.installed_watcher_sha256) { throw "BACKUP_WATCHER_SHA_MISMATCH" }
-    Write-Json (Join-Path $bk "manifest.json") $manifest
-    $receipt.backup_dir = $bk
+    if ((Get-Sha ([IO.Path]::Combine($bk, "installed_watcher.ps1"))) -ne $Receipt.files.installed_watcher_sha256) { throw "BACKUP_WATCHER_SHA_MISMATCH" }
+    Write-Json ([IO.Path]::Combine($bk, "manifest.json")) $manifest
+    $Receipt.backup_dir = $bk
+  } catch {
+    $Receipt.checks.backup_error = Get-ExceptionClass $_
+    try { Invoke-ServiceStart } catch { }
+    return "ABORTED_BACKUP_FAILED"
+  }
 
-    # ------------------------------------------------------------ instalar --
-    $ckTicksBefore = [long]0
-    if (Test-Path -LiteralPath $L.checkpoint -PathType Leaf) { $ckTicksBefore = (Get-Item -LiteralPath $L.checkpoint).LastWriteTimeUtc.Ticks }
-    [void](Copy-Verified $CandidateWatcherPath $L.candidate_target $receipt.files.candidate_expected_sha256)
-    Write-Json $L.supervisor_config (New-SupervisorConfig $L $receipt.files.candidate_expected_sha256 $PowerShellExe $BatchPolls)
-    [void](Copy-Verified $SupervisorSourcePath $L.host_fixed_watcher $receipt.files.supervisor_sha256)
-    $receipt.effects.file_install = $true
+  # Daqui em diante, qualquer falha e rollback.
+  try {
+    # --------------------------------------------------------- 3 instalar --
+    $Receipt.phase = "INSTALL"
+    $Receipt.effects.file_install = $true
+    [void](Copy-Atomic $CandidateWatcherPath $L.candidate_target $Receipt.files.candidate_expected_sha256)
+    Write-Json $L.supervisor_config (New-SupervisorConfig $L $Receipt.files.candidate_expected_sha256 $PowerShellExe $BatchPolls)
+    [void](Copy-Atomic $SupervisorSourcePath $L.host_fixed_watcher $Receipt.files.supervisor_sha256)
+    foreach ($p in @($L.heartbeat, $L.child_record)) { [void](Move-Aside $p (".before-cutover." + (Get-Date).ToString("yyyyMMdd-HHmmss"))) }
 
-    # ------------------------------------------------- restart controlado --
-    $restartAt = Get-Date
-    Restart-Service -Name $ServiceName -Force
-    $receipt.effects.service_restart = $true
-    $receipt.restart_at = $restartAt.ToString("o")
+    # ------------------------------------------ 4 linha de base estavel --
+    $ckBefore = Get-CheckpointTicks $L
 
-    $deadline = $restartAt.AddSeconds($HealthWaitSeconds)
+    # ------------------------------------------------ 5 iniciar e observar --
+    $Receipt.phase = "START"
+    $startAt = Get-Date
+    Start-Sleep -Milliseconds 1100
+    $Receipt.start_at = $startAt.ToString("o")
+    $Receipt.effects.service_start = $true
+    Invoke-ServiceStart
+
+    $Receipt.phase = "GATES"
+    $first = @{ run_id = $null; service_pid = $null }
+    $deadline = $startAt.AddSeconds($HealthWaitSeconds)
     $last = $null
     $gate = $null
+    $restarted = $false
     while ((Get-Date) -lt $deadline) {
-      Start-Sleep -Seconds 10
-      $last = Get-Snapshot $L $restartAt $ckTicksBefore $receipt.files.supervisor_sha256 $receipt.files.candidate_expected_sha256 $healthCli
+      Start-Sleep -Seconds 5
+      $last = Get-Snapshot $L $startAt $ckBefore $Receipt.files.supervisor_sha256 $Receipt.files.candidate_expected_sha256 $HealthCli $first
+      if ($null -eq $first.run_id -and $last.heartbeat_after_restart -and -not [string]::IsNullOrWhiteSpace([string]$last.heartbeat_run_id)) {
+        $first.run_id = $last.heartbeat_run_id
+        $first.service_pid = $last.service_pid
+        $last.first_run_id = $first.run_id
+        $last.first_service_pid = $first.service_pid
+      }
+      if (Test-RestartedDuringGate $last) { $restarted = $true; break }
       $gate = Test-CutoverGate $last
       if ($gate.pass) { break }
     }
-    $receipt.after = $last
-    $receipt.gate = $gate
-    if ($null -ne $gate -and $gate.pass) {
-      $receipt.decision = "APPLIED_HEALTHY"
-      $receipt.finished_at = (Get-Date).ToString("o")
-      Write-Json (Join-Path $bk "receipt.json") $receipt
+    $Receipt.after = $last
+    $Receipt.gate = $gate
+    if (-not $restarted -and $null -ne $gate -and $gate.pass) { return "APPLIED_HEALTHY" }
+    $Receipt.gate_failure = if ($restarted) { "SUPERVISOR_OR_SERVICE_RESTARTED_DURING_GATE" } else { "GATE_DEADLINE" }
+    $rbd = [string](@(Invoke-Rollback $L $bk $Receipt)[-1])
+    return ("GATE_FAILED_" + $rbd)
+  } catch {
+    $Receipt.error_phase = $Receipt.phase
+    $Receipt.error_class = Get-ExceptionClass $_
+    $rbd = [string](@(Invoke-Rollback $L $bk $Receipt)[-1])
+    return ("ERROR_IN_" + $Receipt.phase + "_" + $rbd)
+  }
+}
+
+function Invoke-Main {
+  if ([string]::IsNullOrWhiteSpace($RepoRuntimeDir)) { $script:RepoRuntimeDir = $PSScriptRoot }
+  if ([string]::IsNullOrWhiteSpace($SupervisorSourcePath)) { $script:SupervisorSourcePath = [IO.Path]::Combine($RepoRuntimeDir, "tata_reader_supervisor_v1.ps1") }
+  $L = Get-Layout $InstallRoot
+  $auditCli = [IO.Path]::Combine($RepoRuntimeDir, "tata_reader_watch_static_audit_v1.cjs")
+  $healthCli = [IO.Path]::Combine($RepoRuntimeDir, "tata_reader_health_v1.cjs")
+  $stamp = (Get-Date).ToString("yyyyMMdd-HHmmss")
+  $receipt = New-Receipt
+  $runDir = $null
+  try {
+    # Saida sem querer de uma funcao vira parte do retorno no PowerShell: o
+    # preflight e silenciado e as decisoes sao sempre o ULTIMO valor emitido.
+    $null = Invoke-Preflight $L $receipt $auditCli $healthCli
+    if ($Mode -eq "Plan") {
+      if ($receipt.checks.preflight_ok) {
+        $receipt.decision = "PLAN_OK"
+        $receipt.apply_requires = [ordered]@{
+          ExpectedInstalledWatcherSha256 = $receipt.files.installed_watcher_sha256
+          ExpectedHostBinarySha256 = $receipt.files.host_binary_sha256
+          SupervisorSha256 = $receipt.files.supervisor_sha256
+        }
+      } else {
+        $receipt.decision = "PLAN_BLOCKED"
+      }
       return $receipt
     }
-    $receipt.decision = "GATE_FAILED_ROLLING_BACK"
-    $script:BackupDir = $bk
+    if ($Mode -eq "Apply") {
+      $runDir = [IO.Path]::Combine($L.backups, $stamp)
+      $receipt.decision = [string](@(Invoke-Apply $L $receipt $healthCli $runDir)[-1])
+    } else {
+      Assert-Admin
+      if ([string]::IsNullOrWhiteSpace($BackupDir) -or -not [IO.File]::Exists([IO.Path]::Combine($BackupDir, "manifest.json"))) {
+        $receipt.decision = "ROLLBACK_BACKUP_DIR_REQUIRED"
+      } else {
+        $runDir = [IO.Path]::GetDirectoryName($BackupDir.TrimEnd("\", "/"))
+        $receipt.decision = "MANUAL_" + [string](@(Invoke-Rollback $L $BackupDir $receipt)[-1])
+      }
+    }
+  } catch {
+    $receipt.error_phase = $receipt.phase
+    $receipt.error_class = Get-ExceptionClass $_
+    if ($null -eq $receipt.decision) { $receipt.decision = "ERROR_IN_" + $receipt.phase }
   }
-
-  # ------------------------------------------------------------- rollback --
-  if ([string]::IsNullOrWhiteSpace($BackupDir) -or -not (Test-Path -LiteralPath (Join-Path $BackupDir "manifest.json"))) { throw "ROLLBACK_BACKUP_DIR_REQUIRED" }
-  $man = Read-JsonOrNull (Join-Path $BackupDir "manifest.json")
-  $receipt.effects.rollback = $true
-  Stop-Service -Name $ServiceName -Force
-  if (-not (Wait-Scm "Stopped" 60)) { $receipt.decision = "ROLLBACK_STOP_FAILED_HUMAN_REQUIRED"; Write-Json (Join-Path $BackupDir "receipt-rollback.json") $receipt; return $receipt }
-  $receipt.rollback_orphan = Stop-SupervisorOrphan $L
-  foreach ($it in @($man.items)) {
-    if ($it.backup -eq "host_status.json") { continue }
-    $src = Join-Path $BackupDir $it.backup
-    if ((Get-Sha $src) -ne [string]$it.sha256) { throw ("ROLLBACK_BACKUP_CORRUPT:" + $it.backup) }
-    [void](Copy-Verified $src ([string]$it.original) ([string]$it.sha256))
-  }
-  if (-not (@($man.items | Where-Object { $_.backup -eq "supervisor_config.json" }).Count)) {
-    if (Test-Path -LiteralPath $L.supervisor_config) { Move-Item -LiteralPath $L.supervisor_config -Destination (Join-Path $BackupDir "supervisor_config.rolled_back.json") -Force }
-  }
-  $rbAt = Get-Date
-  $ckTicksRb = [long]0
-  if (Test-Path -LiteralPath $L.checkpoint -PathType Leaf) { $ckTicksRb = (Get-Item -LiteralPath $L.checkpoint).LastWriteTimeUtc.Ticks }
-  Start-Service -Name $ServiceName
-  $running = Wait-Scm "Running" 60
-  $advanced = $false
-  $rbDeadline = (Get-Date).AddSeconds(120)
-  while ((Get-Date) -lt $rbDeadline) {
-    Start-Sleep -Seconds 5
-    if ((Test-Path -LiteralPath $L.checkpoint) -and (Get-Item -LiteralPath $L.checkpoint).LastWriteTimeUtc.Ticks -gt $ckTicksRb) { $advanced = $true; break }
-  }
-  $receipt.rollback = [ordered]@{
-    at = $rbAt.ToString("o")
-    scm_running = $running
-    checkpoint_advanced_after_rollback = $advanced
-    restored_watcher_sha256 = Get-Sha $L.host_fixed_watcher
-  }
-  $receipt.decision = if ($running -and $advanced) { $receipt.decision + "_ROLLBACK_PROVEN" } else { $receipt.decision + "_ROLLBACK_UNPROVEN_HUMAN_REQUIRED" }
   $receipt.finished_at = (Get-Date).ToString("o")
-  Write-Json (Join-Path $BackupDir "receipt-rollback.json") $receipt
+  if ($null -ne $runDir) {
+    try { Write-Json ([IO.Path]::Combine($runDir, "receipt-" + $Mode.ToLowerInvariant() + ".json")) $receipt } catch { $receipt.receipt_write_error = Get-ExceptionClass $_ }
+  }
   return $receipt
 }
 
 if ($MyInvocation.InvocationName -ne ".") {
-  $r = Invoke-Main
-  $r | ConvertTo-Json -Depth 12
-  switch -Wildcard ($r.decision) {
-    "PLAN_OK*" { exit 0 }
-    "APPLIED_HEALTHY" { exit 0 }
-    "*_ROLLBACK_PROVEN" { exit 3 }
-    default { exit 2 }
+  $code = 2
+  try {
+    $r = Invoke-Main
+    $r | ConvertTo-Json -Depth 14
+    $code = Get-ExitCodeForDecision ([string]$r.decision)
+  } catch {
+    [Console]::Error.WriteLine("CUTOVER_UNHANDLED " + (Get-ExceptionClass $_))
+    $code = 2
   }
+  exit $code
 }

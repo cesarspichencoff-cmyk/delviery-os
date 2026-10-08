@@ -65,5 +65,26 @@ switch ($behavior) {
     "WARNING: linha depois do JSON (aviso do host)"
     exit 0
   }
+  "flap_checkpoint" {
+    # O checkpoint some e volta sem parar, como no File.Replace do watcher real
+    # (duas renomeacoes no NTFS: ha um instante em que o caminho nao existe).
+    $fim = (Get-Date).AddSeconds([int]$plan.flap_seconds)
+    while ((Get-Date) -lt $fim) {
+      if (Test-Path -LiteralPath $CheckpointPath) { [IO.File]::Delete($CheckpointPath) }
+      Start-Sleep -Milliseconds 1
+      [IO.File]::WriteAllText($CheckpointPath, "{}")
+    }
+    Print-Run $MaxPolls 0 $false
+    exit 0
+  }
+  "ok_no_effects" {
+    for ($i = 1; $i -le $MaxPolls; $i++) { Touch-Checkpoint }
+    [ordered]@{
+      schema = "deliveryos.tata-reader-continuous-watch-run.v1"; mode = "BOUNDED_PROOF"
+      polls = $MaxPolls; poll_errors = 0; snapshots_observed = 1; events_emitted = 0
+      duplicates_suppressed = 0; changed_snapshots = 0; baseline_suppressed = 0; status = "COMPLETED"
+    } | ConvertTo-Json -Depth 5
+    exit 0
+  }
   default { throw ("FAKE_BEHAVIOR_UNKNOWN:" + $behavior) }
 }

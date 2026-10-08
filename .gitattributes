@@ -1,3 +1,6 @@
-# Bytes exatos: fixtures cujo SHA-256 e comparado com evidencia de producao.
-# Sem isto, checkout no Windows troca LF por CRLF e o hash deixa de bater.
+# Bytes exatos: arquivos cujo SHA-256 e conferido contra evidencia ou fixado
+# na instalacao. Sem isto, checkout no Windows troca LF por CRLF e o hash
+# instalado deixa de bater com o commit.
 tests/tata-reader/fixtures/*.ps1 -text
+runtime/tata-reader/*.ps1 -text
+runtime/tata-reader/*.cjs -text

@@ -67,7 +67,7 @@ const codigos = (r) => r.findings.map((f) => f.code).sort();
     const t = trocarUmaVez(INSTALADO, "SET LOCK_TIMEOUT 2000;\n", "SET LOCK_TIMEOUT 2000;\nUPDATE TEKNISA.COMANDAVEN SET IDSTCOMANDA='X';\n");
     const r = A.auditWatcherScript(t);
     assert.ok(codigos(r).includes("FORBIDDEN_SQL_VERB"));
-    assert.deepEqual(r.findings.find((f) => f.code === "FORBIDDEN_SQL_VERB").detail, ["UPDATE"]);
+    assert.ok(r.findings.find((f) => f.code === "FORBIDDEN_SQL_VERB").detail.some((d) => /^UPDATE\b/.test(d)));
     assert.equal(r.recommendation, "DO_NOT_INSTALL");
   });
 
@@ -120,6 +120,53 @@ const codigos = (r) => r.findings.map((f) => f.code).sort();
     const r = spawnSync(process.execPath, [CLI, bad], { encoding: "utf8" });
     assert.equal(r.status, 2);
     assert.equal(JSON.parse(r.stdout).recommendation, "DO_NOT_INSTALL");
+  });
+
+  await teste("A11 contornos da revisao independente: SQL entre aspas simples, SQL montado, concatenacao, interpolacao, construtor e codigo dinamico — todos DO_NOT_INSTALL", () => {
+    const ancora = "      $result.effects.database_read=$true\n";
+    const casos = {
+      aspas_simples: ["      $w=$conn.CreateCommand(); $w.CommandText='UPDATE TEKNISA.COMANDAVEN SET IDSTCOMANDA=''X'''; [void]$w.ExecuteNonQuery()\n", ["FORBIDDEN_SQL_VERB", "FORBIDDEN_WRITE_API"]],
+      sql_em_variavel: ["      $q='UPD'+'ATE TEKNISA.VENDA SET X=1'; $w=$conn.CreateCommand(); $w.CommandText=$q; [void]$w.ExecuteReader()\n", ["COMMAND_TEXT_NOT_LITERAL"]],
+      concatenacao: ["      $w=$conn.CreateCommand(); $w.CommandText='SELECT 1;' + ' UPD' + 'ATE TEKNISA.VENDA SET X=1'; [void]$w.ExecuteReader()\n", ["COMMAND_TEXT_NOT_LITERAL"]],
+      interpolacao: ["      $t='x'; $w=$conn.CreateCommand(); $w.CommandText=\"SELECT * FROM $t\"; [void]$w.ExecuteReader()\n", ["COMMAND_TEXT_NOT_LITERAL"]],
+      construtor: ["      $w = New-Object Data.SqlClient.SqlCommand $q, $conn\n", ["COMMAND_TEXT_NOT_LITERAL"]],
+      iex_base64: ["      Invoke-Expression ([Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('V3JpdGUtSG9zdCAx')))\n", ["FORBIDDEN_DYNAMIC_CODE"]],
+      add_type: ["      Add-Type -TypeDefinition 'public class X {}'\n", ["FORBIDDEN_DYNAMIC_CODE"]],
+      transacao: ["      $tx=$conn.BeginTransaction()\n", ["FORBIDDEN_WRITE_API"]],
+    };
+    for (const [nome, [linha, esperados]] of Object.entries(casos)) {
+      const r = A.auditWatcherScript(trocarUmaVez(INSTALADO, ancora, ancora + linha));
+      assert.equal(r.recommendation, "DO_NOT_INSTALL", nome);
+      for (const c of esperados) assert.ok(codigos(r).includes(c), `${nome}: faltou ${c} em ${codigos(r)}`);
+    }
+  });
+
+  await teste("A12 tokenizador: aspas escapadas, crase, here-string com # e '@ dentro, e comentario dentro de texto nao enganam", () => {
+    const t = A.tokenize([
+      "$a = 'it''s # nao e comentario'",
+      '$b = "x`"y # tambem nao"',
+      "$c = @'",
+      "linha com # e '@ no meio",
+      "'@",
+      "# comentario de verdade com 'aspas'",
+      '<# bloco \'com\' "aspas" #>',
+      '$d = "fim"',
+    ].join("\n"));
+    assert.deepEqual(t.strings.map((x) => [x.kind, x.body]), [
+      ["single", "it's # nao e comentario"],
+      ["double", 'x`"y # tambem nao'],
+      ["here-single", "linha com # e '@ no meio"],
+      ["double", "fim"],
+    ]);
+    assert.equal(t.code.includes("comentario de verdade"), false);
+    assert.equal(t.code.includes("bloco"), false);
+  });
+
+  await teste("A13 o watcher instalado continua com EXATAMENTE os dois CommandText literais e nenhum achado proibido (sem falso positivo das regras novas)", () => {
+    const r = A.auditWatcherScript(INSTALADO);
+    assert.equal(r.properties.command_texts_literal, 2);
+    assert.ok(!codigos(r).some((c) => /FORBIDDEN|NOT_LITERAL/.test(c)), codigos(r).join(","));
+    assert.equal(r.human_review_required, true);
   });
 
   fim("TATA_READER_STATIC_AUDIT");
