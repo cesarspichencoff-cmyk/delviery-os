@@ -57,6 +57,7 @@ export class OfflinePrinter {
   trace: string[] = [];
   blockers = new Set<string>();
   currentFont: Font = "A";
+  currentWidthMultiplier: 1 | 2 = 1;
 
   constructor() {
     this.command(ESC, 0x40);
@@ -77,17 +78,22 @@ export class OfflinePrinter {
     this.command(ESC, 0x45, value ? 1 : 0);
   }
   heightDouble(value: boolean): void {
+    this.currentWidthMultiplier = 1;
     this.command(GS, 0x21, value ? 0x10 : 0x00);
   }
   bothDouble(value: boolean): void {
+    this.currentWidthMultiplier = value ? 2 : 1;
     this.command(GS, 0x21, value ? 0x11 : 0x00);
   }
   line(content = "", context = "GENERAL"): void {
     // Preserve intentional item/quantity spacing while preventing line breaks.
     const line = String(content ?? "").replace(/[\r\n\t]+/g, " ").trim();
     const columns = this.currentFont === "A" ? FONT_A_COLS : FONT_B_COLS;
-    if (line.length > columns) {
-      this.blockers.add("LINE_EXCEEDS_" + columns + "_COLUMNS:" + context);
+    const effectiveColumns = Math.floor(columns / this.currentWidthMultiplier);
+    // GS ! double-width uses TWO horizontal character cells. Reject a line
+    // that looks safe at normal width but would overflow in double width.
+    if ([...line].length > effectiveColumns) {
+      this.blockers.add("LINE_EXCEEDS_" + effectiveColumns + "_COLUMNS:" + context);
       return;
     }
     // No loss/transliteration of text: unsupported characters stop the proof.
@@ -98,6 +104,8 @@ export class OfflinePrinter {
       this.blockers.add("CHARACTER_ENCODING_UNVERIFIED:" + context);
       return;
     }
+    // The selected code table is a candidate until each Epson device has
+    // passed a physical accent/encoding test. Avoid declaring print-ready.
     this.bytes.push(...Buffer.from(line, "latin1"), LF);
     this.trace.push(line);
   }
