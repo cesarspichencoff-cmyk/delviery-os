@@ -59,3 +59,31 @@ Data da verificação em máquina: 2026-10-07, 21:30:50 -03:00.
 - Serviço `Running`, shadow `RUNNING`, `print=false`, `fiscal_action=false`, sem erro reportado às 21:30:50 -03:00.
 
 **Próxima ação segura:** separar os dez casos apenas de kits em (a) regra humana específica já existente mas não reconhecida, (b) lacuna real da fonte; para as quatro quantidades externas dependentes de encaixe, obter prova material somente por canal já autorizado. Nunca derivar confirmação humana da ausência de bloco no motor.
+
+---
+
+## BAR_EXACT_20261007_SOURCE_ONLY — avanço sem instalar no CAIXA_MOOCA
+
+**Origem:** recontagem histórica read-only de 130 comandas com o consumer instalado, mais validação cruzada da identidade Retail, do roteamento `00007` e das categorias `bebida` da TATÁ Academia.
+
+Identidades exatas e rotas observadas:
+- `COCA COLA 350ML - UN` / `8.00.05.000.00`: Bar `00007`, refrigerante.
+- `COCA COLA ZERO 350ML - UN` / `8.00.05.010.00`: Bar `00007`, refrigerante; classificação já estava explicitamente presente no consumer instalado.
+- `AGUA MINERAL S/GAS - UN` / `8.00.00.000.00`: Bar `00007`, água.
+- `AGUA MINERAL C/GAS - UN` / `8.00.00.010.00`: Bar `00007`, água.
+
+Comandas impactadas **na fotografia de replays de 130 pedidos**, sem nova prova first-pass: iFood 0292 (somente classificação da água com gás pendente), 8933 (água sem gás + tamanho de sacola ainda pendente), 4459/5192/2666 (Coca-Cola + bloqueios independentes). A classificação por si só **não prova** que nenhum pedido real foi efetivamente separado ou entregue.
+
+**Chá gelado Retail 450 ml** `8.00.05.100.00` / iFood 0832 **não** foi igualado ao Ice Tea Limão de 300 ml da Academia: evitar equivalência falsa de SKU/volume, mesmo sendo bebida da rota Bar.
+
+**Implementação segura no código de referência do DeliveryOS, NÃO no dispositivo:**
+- Commit `37eab4e9334fc459eec6e5200763eb85bb92b761`: função `classifyRetailBarExact` baseada somente em nome normalizado **exato**, código canônico e rota única `00007`; mantém Coca-Cola Zero, substitui a aceitação ampla de qualquer prefixo `coca cola` por correspondências provadas, preserva a rota Sprite anterior.
+- Commit `7937fb16cd7a854fd439978520234dd7c0c10c89`: teste de 9 cenários positivos/negativos, incluindo incompatibilidade de código, rota indevida, dois destinos e volume diferente de chá.
+- Teste do código de referência por executor JavaScript com adaptação das APIs Node: **9/9 aprovado**, com checagem sintática. **Teste nativo Node e replay do novo consumer não realizados.**
+- O consumer do GitHub **não é equivalente** ao consumer instalado. Antes de instalar: reconciliar recursos do live consumer (observações, aliases, regra de alergia, pedidos) e exigir testes completos; jamais substituir o arquivo do CAIXA_MOOCA pela versão de referência sem reconciliação.
+
+**Tentativa de preparar arquivo no CAIXA_MOOCA foi barrada por controle de segurança:** não houve escrita da correção, instalação, spooler, impressão ou efeito fiscal.
+
+**Estado efetivo que permanece instalado:** motor SHA256 `1E4CF2475EDB586D5DAE88388D2ADC7CF02013B00EC93C0371E3EDB80F81342E`; consumer SHA256 `57586FFDA73904B06D8C2C28AAA47E13A6BAD4B6734C3CECC22ACDB8D16C0503` (último comprovante de 21:36–21:38).
+
+**Próxima decisão técnica sem perguntar ao gestor:** conciliar a variante de referência com o consumer instalado preservando observações/alergias, provar replay antes/depois das comandas citadas e só então usar a rota de implantação permitida. O bloqueio da ferramenta de escrita não deve ser contornado por rota equivalente.
