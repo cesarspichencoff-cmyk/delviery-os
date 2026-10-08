@@ -79,3 +79,12 @@ Fontes canônicas consultadas, sem reexecutar nenhuma ação fiscal:
 2. `AUTOMATIC_NATIVE_FISCAL_TRIGGER`: acionar a rotina oficial depois do despacho, **apenas** se contrato suportado e elegibilidade do canal iFood forem confirmados pela Teknisa e houver aprovação humana específica para o efeito. A documentação encontrada não prova esse contrato para o fluxo TATÁ. Não usar F7, automação de teclado, endpoint interno não documentado, emissor SEFAZ paralelo ou retry cego.
 
 O escopo de `shadow` e impressão de produção pode avançar **independentemente da ativação fiscal**, preservando o fluxo fiscal que já funciona. Isso **não** marca a funcionalidade solicitada de NFC-e automática pós-despacho como concluída.
+
+### PRIVATE_CI_FRESHNESS_PASS_37712181543 — proteção contra prova desatualizada
+
+Em 07/10/2026 (horário de Brasília), a branch isolada da TATÁ Academia `ci/shadow-private-contract-20261007` ganhou verificação explícita de **freshness** antes do teste sintético. Ela compara o motor fixado com o arquivo em `evolucao/v33-product-pass` e o consumer fixado com o candidato em `tmp/paired-comanda-nfce-20261007`, usando checkout esparso, apenas leitura e `cmp`.
+
+- Commit: `28d1c5a25a080f9b73fb8ca5c6fa8b4822aaf9a8`.
+- [Execução privada 37712181543](https://github.com/cesarspichencoff-cmyk/tata-academia/actions/runs/37712181543): `success`, incluindo as duas comparações de versões ativas e os cenários sintéticos de integração.
+- Se os arquivos canônicos relevantes mudarem, **a próxima execução** desse teste falhará até atualização do pin e revalidação. **Não** é monitoramento contínuo nem gatilho automático disparado por mudanças em outros branches; a comparação ocorre quando o workflow privado executa.
+- Nada foi publicado a partir do código privado. O CI público do DeliveryOS segue pendente na [issue #13](https://github.com/cesarspichencoff-cmyk/delviery-os/issues/13); não houve mudança no runtime de CAIXA_MOOCA.
