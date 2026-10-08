@@ -1,0 +1,37 @@
+{
+  "schema": "deliveryos.kitchen-sushi-quente-scope.v49",
+  "status": "HUMAN_CONFIRMED_SCOPE__QUANTITY_COVERAGE_PARTIAL",
+  "confirmed_on": "2026-10-08",
+  "authority": "HUMAN_OPERATIONAL_DIRECT_INSTRUCTION",
+  "station": "enrolados_quentes",
+  "station_label": "SUSHI QUENTE",
+  "matched_terms": {
+    "HOT": "HOT",
+    "EBITEN": "EBITEN",
+    "SHISO": "SHISO",
+    "SHISSO": "SHISO"
+  },
+  "output_channel": "KITCHEN_COMPONENTS",
+  "output_ticket": "COZINHA - HOT / EBITEN / SHISO",
+  "scope_rule": "Every item proven to belong to Sushi Quente and whose product name contains a full HOT, EBITEN or SHISO/SHISSO word is in scope for the separate kitchen preparation ticket.",
+  "quantity_rule": "PER_SOLD_PORTION_FACTOR_REQUIRES_PRODUCT_SPECIFIC_HUMAN_CONFIRMATION",
+  "confirmed_quantity_rules_file": "data/kitchen_dependency_rules_v1.json",
+  "archive_catalogue": "data/cardapio_knowledge_seed.json",
+  "archive_is_station_proof_for_current_orders": false,
+  "missing_factor_behavior": "BLOCK_COMPONENT_PRINT_AND_RETAIN_REVIEW",
+  "no_term_match_behavior": "NOT_EVIDENCE_OF_ZERO_FOR_OTHER_ITEMS",
+  "unchanged": [
+    "stock",
+    "spooler",
+    "printer",
+    "fiscal",
+    "current_routing",
+    "active_dependency_yields"
+  ],
+  "effects": {
+    "print": false,
+    "spooler_write": false,
+    "cut": false,
+    "inventory_write": false
+  }
+}

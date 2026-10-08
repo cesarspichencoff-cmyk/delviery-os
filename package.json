@@ -39,6 +39,7 @@
     "verificar:tickets-reais-v46": "tsc && node tools/verificar_real_order_tickets_v46.js && node tools/verificar_operational_escpos_v46.js",
     "verificar:two-kitchen-v47": "tsc && node tools/verificar_two_kitchen_tickets_v47.js",
     "verificar:kitchen-real-v48": "tsc && node tools/verificar_kitchen_real_replay_v48.js",
+    "verificar:kitchen-sushi-quente-v49": "tsc && node tools/verificar_kitchen_sushi_quente_v49.js",
     "auditar:kitchen-rules-v48": "node tools/auditar_candidatos_cozinha_v48.js --write-artifacts",
     "gerar:replay-cozinha-v48:offline": "tsc && node tools/gerar_replay_cozinha_separada_v48.js",
     "gerar:provas-termicas-v46:offline": "tsc && node tools/gerar_provas_termicas_v46.js",
