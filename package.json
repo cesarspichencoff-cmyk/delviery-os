@@ -168,7 +168,8 @@
     "test:tata-reader:supervisor": "node tests/tata-reader/run-supervisor-tests.cjs",
     "test:tata-reader:sqlserver": "node tests/tata-reader/run-sqlserver-harness.cjs",
     "test:tata-reader:cutover": "node tests/tata-reader/run-cutover-logic-tests.cjs",
-    "test:tata-reader": "npm run test:tata-reader:health && npm run test:tata-reader:static && npm run test:tata-reader:supervisor && npm run test:tata-reader:cutover && npm run test:tata-reader:sqlserver",
+    "test:tata-reader:e2e": "node tests/tata-reader/run-cutover-e2e-tests.cjs",
+    "test:tata-reader": "npm run test:tata-reader:health && npm run test:tata-reader:static && npm run test:tata-reader:supervisor && npm run test:tata-reader:cutover && npm run test:tata-reader:e2e && npm run test:tata-reader:sqlserver",
     "audit:tata-reader:watcher": "node runtime/tata-reader/tata_reader_watch_static_audit_v1.cjs",
     "health:tata-reader": "node runtime/tata-reader/tata_reader_health_v1.cjs"
   },

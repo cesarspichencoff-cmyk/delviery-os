@@ -92,6 +92,7 @@ jobs:
           ./tests/tata-reader/ps51_compat_check.ps1 -ModulePath "$env:RUNNER_TEMP/psm/PSScriptAnalyzer/1.23.0/PSScriptAnalyzer.psd1"
       - run: TATA_PWSH=$(which pwsh) node tests/tata-reader/run-supervisor-tests.cjs
       - run: TATA_PWSH=$(which pwsh) node tests/tata-reader/run-cutover-logic-tests.cjs
+      - run: TATA_PWSH=$(which pwsh) node tests/tata-reader/run-cutover-e2e-tests.cjs
       - run: TATA_PWSH=$(which pwsh) node tests/tata-reader/run-sqlserver-harness.cjs
   android-unit:
     runs-on: ubuntu-latest
