@@ -1,0 +1,90 @@
+# Regressao do leitor TATA Comanda e dos gates de plataforma tocados por esta
+# frente. Roda SO nesta branch (e manual): nao muda nada do resto do repo.
+#
+#  - node-postgres: avaliador de saude, auditoria estatica, migrations
+#    reexecutaveis, preflight, B5 em PostgreSQL real, Product System e /api/fontes.
+#  - pwsh-sqlserver: supervisor (processo real), cutover (logica pura) e o
+#    harness contra SQL Server 2022 real (dados sinteticos), com controle
+#    negativo: o defeito de 05/10 PRECISA reproduzir para a correcao valer.
+#
+# Nenhum segredo real: o SQL Server e um container descartavel do proprio job.
+name: TATA reader resilience
+on:
+  workflow_dispatch:
+  push:
+    branches: [feat/cloud-solo-reader-resilience-20261007]
+permissions:
+  contents: read
+concurrency:
+  group: tata-reader-resilience-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  node-postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --no-audit --no-fund
+      - run: npx tsc --noEmit
+      - run: npm run -s build:platform
+      - run: npm run -s test:tata-reader:health
+      - run: npm run -s test:tata-reader:static
+      - run: npm run -s test:platform:migration-reexec
+      - run: npm run -s test:platform:pg
+      - run: npm run -s test:platform:database-preflight
+      - run: npm run -s test:platform:queue-depth:pg
+      - run: npm run -s test:platform:queue-depth:http:pg
+      - run: npm run -s test:platform:product
+      - run: npm run -s test:platform:saude-fontes
+      - run: npm run -s test:platform:papeis:compose
+      - run: npm run -s test:platform
+  pwsh-sqlserver:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      mssql:
+        image: mcr.microsoft.com/mssql/server@sha256:4402d880dd4c34bfa7d8705e56a86cd6c88da80a1f6bbbe741f999e76264a090
+        env:
+          ACCEPT_EULA: "Y"
+          MSSQL_PID: Developer
+          MSSQL_SA_PASSWORD: Ci!Harness-${{ github.run_id }}x
+        ports: ["1433:1433"]
+    env:
+      TATA_HARNESS_SQLSERVER: 127.0.0.1,1433
+      TATA_HARNESS_SA_PASSWORD: Ci!Harness-${{ github.run_id }}x
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: PowerShell presente
+        run: pwsh -NoProfile -Command '$PSVersionTable.PSVersion.ToString()'
+      - name: Espera o SQL Server aceitar conexao
+        shell: pwsh
+        run: |
+          $deadline = (Get-Date).AddMinutes(3)
+          while ($true) {
+            try {
+              $c = New-Object System.Data.SqlClient.SqlConnection("Server=$env:TATA_HARNESS_SQLSERVER;Database=master;User ID=sa;Password=$env:TATA_HARNESS_SA_PASSWORD;Encrypt=False;TrustServerCertificate=True;Connect Timeout=5")
+              $c.Open(); $c.Dispose(); "SQLSERVER_READY"; break
+            } catch {
+              if ((Get-Date) -gt $deadline) { throw }
+              Start-Sleep -Seconds 3
+            }
+          }
+      - run: TATA_PWSH=$(which pwsh) node tests/tata-reader/run-supervisor-tests.cjs
+      - run: TATA_PWSH=$(which pwsh) node tests/tata-reader/run-cutover-logic-tests.cjs
+      - run: TATA_PWSH=$(which pwsh) node tests/tata-reader/run-sqlserver-harness.cjs
