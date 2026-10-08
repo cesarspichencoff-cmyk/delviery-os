@@ -1,0 +1,102 @@
+{
+  "schema": "deliveryos.kitchen-rule-triage.v48.read-only.v1",
+  "catalogue_ref": "data/cardapio_knowledge_seed.json",
+  "catalogue_date": "2026-07-01",
+  "catalogue_is_historical": true,
+  "rules_ref": "data/kitchen_dependency_rules_v1.json",
+  "rules_coverage": "PARTIAL",
+  "confirmed_rules": 1,
+  "confirmed_rules_not_fully_covered": true,
+  "catalogued_products": 199,
+  "catalogue_rule_exact_matches": 1,
+  "candidate_count": 7,
+  "candidates": [
+    {
+      "product_id": "hot_roll",
+      "product_name": "Hot Roll",
+      "station_from_historical_seed": "enrolados_quentes",
+      "matching_name_terms": [
+        "HOT"
+      ],
+      "confirmation": "NEEDS_HUMAN_OPERATIONAL_VALIDATION",
+      "proven_yields": null,
+      "proposed_yields": null
+    },
+    {
+      "product_id": "hot_roll_com_shimeji",
+      "product_name": "Hot Roll com Shimeji",
+      "station_from_historical_seed": "enrolados_quentes",
+      "matching_name_terms": [
+        "HOT"
+      ],
+      "confirmation": "NEEDS_HUMAN_OPERATIONAL_VALIDATION",
+      "proven_yields": null,
+      "proposed_yields": null
+    },
+    {
+      "product_id": "hot_roll_tata",
+      "product_name": "Hot Roll Tatá",
+      "station_from_historical_seed": "enrolados_quentes",
+      "matching_name_terms": [
+        "HOT"
+      ],
+      "confirmation": "NEEDS_HUMAN_OPERATIONAL_VALIDATION",
+      "proven_yields": null,
+      "proposed_yields": null
+    },
+    {
+      "product_id": "temaki_ebiten",
+      "product_name": "Temaki Ebiten",
+      "station_from_historical_seed": "enrolados_quentes",
+      "matching_name_terms": [
+        "EBITEN"
+      ],
+      "confirmation": "NEEDS_HUMAN_OPERATIONAL_VALIDATION",
+      "proven_yields": null,
+      "proposed_yields": null
+    },
+    {
+      "product_id": "tuna_shiso_tartar",
+      "product_name": "Tuna Shisô Tartar",
+      "station_from_historical_seed": "enrolados_quentes",
+      "matching_name_terms": [
+        "SHISO"
+      ],
+      "confirmation": "NEEDS_HUMAN_OPERATIONAL_VALIDATION",
+      "proven_yields": null,
+      "proposed_yields": null
+    },
+    {
+      "product_id": "uramaki_ebiten",
+      "product_name": "Uramaki Ebiten",
+      "station_from_historical_seed": "enrolados_quentes",
+      "matching_name_terms": [
+        "EBITEN"
+      ],
+      "confirmation": "NEEDS_HUMAN_OPERATIONAL_VALIDATION",
+      "proven_yields": null,
+      "proposed_yields": null
+    },
+    {
+      "product_id": "uramaki_ebiten_especial",
+      "product_name": "Uramaki Ebiten Especial",
+      "station_from_historical_seed": "enrolados_quentes",
+      "matching_name_terms": [
+        "EBITEN"
+      ],
+      "confirmation": "HUMAN_CONFIRMED_EXACT_RULE",
+      "proven_yields": {
+        "EBITEN": 1
+      },
+      "proposed_yields": null
+    }
+  ],
+  "duplicate_confirmed_rule_names": [],
+  "policy": {
+    "name_match_is_only_a_candidate": true,
+    "catalogue_ingredient_description_is_not_a_human_rule": true,
+    "absence_from_candidates_means_zero_dependencies": false,
+    "proposed_yields_are_not_authorized": true,
+    "no_rules_changed": true
+  }
+}
