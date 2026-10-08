@@ -35,3 +35,9 @@ Aguardar uma forma de execução autorizada pelo ambiente para **uma única impr
 Consultar PRs **#16, #17, #18, #19, #20, #21** nesta ordem lógica; o trabalho mais recente está no PR #21. Na outra branch, fazer comparação de HEAD/merge-base/diff, incorporar somente o delta ausente e preservar testes. Não tocar em produção ao aplicar estes rascunhos.
 
 **Fronteira:** lógica e qualidade digital com regressões aprovadas; prova física comparativa e qualidade em todos os setores ainda pendentes.
+
+## Continuação V5.5 — estudo conservador de proporção sem impressão
+
+Nova auditoria estática de 199 itens HISTÓRICOS (não representa cardápio vivo), quantidade 1 e 12: **115/107** nomes cabem em Font A largura+altura 2x; com reserva NOMINAL de 48 dots à direita, ficam **98/92** nomes. Outros **78/86** continuam Font A altura 2x sem duplicar largura, e **6/6** exigem Font B compacta. Nenhum dos 199 nomes foi truncado; nenhuma alteração de fonte operacional foi aplicada. A largura real da Epson TM-T20X não foi fisicamente medida por essa análise.
+
+Código e provas: `tools/auditar_cobertura_tipografica_v55.js`, `tools/verificar_cobertura_tipografica_v55.js`, `docs/evidence/thermal_typography_coverage_v55_20261008.json` e `.md`. Estudo V5.5 permanece OFFLINE: não autoriza papel, densidade, driver, impressão de pedido ou mudança produtiva. O bloqueio de segurança no envio da amostra V5.4 permanece; não o contornar.`n
