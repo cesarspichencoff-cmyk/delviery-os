@@ -18,7 +18,7 @@ Este documento distingue a conclusão do **motor em shadow** da conclusão de **
 | Gate | Critério observável | Estado |
 |---|---|---|
 | S1. Fontes operacionais | Reconciliar nomes/códigos, kits, caixa, sacola e exceções com fontes humanas atuais de TATÁ Academia e DeliveryOS; `UNKNOWN` técnico não vira pergunta antes de buscar a fonte | PARCIAL |
-| S2. Candidate Bar no consumer | Checagem de diff contra consumer instalado, testes negativos, **Node nativo 134/134**, replay sem regressão e **CI GitHub Actions aprovado** (run 37710465876) | **TEST_PASS + CI_PASS**, não implantado |
+| S2. Candidate Bar no consumer | Diff contra consumer instalado, testes negativos, **Node nativo 134/134**, replay sem regressão; CI público anterior aprovado (run 37711014906); integração entre repositórios falhou por permissão no run 37711188966 | **TEST_PASS; CI ATUAL FAIL**, não implantado |
 | S3. Instalação controlada | Canal autorizado, guarda de SHA contra drift, backup, substituição atômica, 10+ replays pós-instalação, service Running, `print/fiscal=false` | **PENDENTE**; tentativa anterior de escrita barrada por segurança |
 | S4. Primeira passagem | Novas comandas do fluxo espontâneo com identidade, caixa, kits, sacola, roteamento, observação, bloqueios e hashes registrados desde o início; demonstrar que não são apenas replays de comanda passada | **PENDENTE** para novo candidate |
 | S5. Cobertura confiável | Todas as classes suportadas por fatos existentes passam pela mesma regra; casos realmente sem dados materiais permanecem `UNKNOWN` com motivo correto e não bloqueiam silenciosamente; zero regressão crítica | **PARCIAL** |
@@ -48,3 +48,10 @@ O estado **NÃO PROVEN** significa que este checkpoint não possui a prova neces
 ## Decisão executiva
 **Status geral: PARCIAL / SHADOW FUNCIONAL; NÃO 10/10 / NÃO PRODUÇÃO.**
 Próxima ação técnica sem necessidade de pergunta: manter o candidate preservado, corrigir/validar seu pipeline de instalação pelo caminho autorizado, e exigir evidência de primeira passagem para a nova versão. Desbloqueio de impressão real e fiscal é uma autoridade e prova separadas; não está pressuposto por "pode seguir".
+
+### Atualização 07/10/2026 — limitação real de acesso CI
+- Repositório TATÁ Academia está **privado**. O workflow público do DeliveryOS passou em sintaxe e contrato sintético, mas o run [37711188966](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/37711188966) **falhou** no checkout cross-repo da Academia (`Repository not found`; Git exit 128). Não chamar o CI atual de verde.
+- Revisão anterior que executa apenas os testes públicos: [37711014906](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/37711014906), `success`. Esse resultado não se transfere automaticamente à revisão atual.
+- Motor verdadeiro da Academia, obtido por acesso privado autorizado, foi combinado em memória com o candidato do consumer; **10 cenários sintéticos passaram em V8** (com fingerprint simulado). A evidência **não** substitui Node nativo ou GitHub Actions cross-repo.
+- Desbloqueio rastreado na [issue #13](https://github.com/cesarspichencoff-cmyk/delviery-os/issues/13): retirar do CI público somente os dois passos de checkout/execução do motor privado, sem copiar fonte privada, sem usar segredo novo e sem contornar o bloqueio anterior de escrita no workflow. O teste privado permanece opcional em ambiente devidamente autorizado.
+- Última verificação do CAIXA_MOOCA às 22:10:19 BRT: serviço e shadow Running, `print=false`, `fiscal_action=false`, sem erro; consumer e engine com hashes estáveis.
