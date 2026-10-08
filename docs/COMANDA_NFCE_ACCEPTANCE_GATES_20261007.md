@@ -106,3 +106,30 @@ O teste permanente `tests/shadow_kits_source_facts_20261007.cjs` foi adicionado 
 **Consequência operacional:** não há justificativa para liberar automaticamente, por heurística de contagem de peças, os pedidos que dependam somente dessas composições ainda não julgadas. A classificação técnica correta de um produto **não** prova o kit, o tamanho de sacola ou a prontidão da comanda.
 
 **Continuam abertos:** CI público do DeliveryOS com erro de permissão cross-repo [issue #13](https://github.com/cesarspichencoff-cmyk/delviery-os/issues/13); candidate não instalado; first-pass e impressão física não provados; fluxo fiscal nativo separado.
+
+### BAG_CAPACITY_FALSE_FACT_FC_20261007 — correção candidata, não instalada
+
+**Diferença comprovada**: o motor `lib/packaging-current.js` da Academia pode marcar `size=G, exact_bag_count=1, FACT` para composições não medidas, ou manter `exact_bag_count=1, FACT` quando o próprio `size_status=UNKNOWN`. Isso indevidamente transforma limite de uma família de caixa em prova universal de encaixe externo.
+
+Exemplos reproduzidos no motor vigente (somente teste sintético):
+- 1 caixa 1.500 quente + 10 caixas 650 quentes → `G / 1 / FACT` sem prova de volume conjunto;
+- 5 caixas 1.500 quentes → G e quantidade externa 1 indevidamente confirmadas apesar de limite documentado de até 4 grandes;
+- 5 caixas 650 → tamanho desconhecido, mas 1 sacola `FACT`;
+- 2 Carpaccios 750 ou múltiplos Tirashis 1.000 → herança indevida de capacidade de embalagem isolada.
+
+**Classe de falha:** `CAPACITY_FAMILY_FACT_LEAKS_TO_MIXED_OR_OVERSIZED_ASSEMBLY`.
+
+**Regra preventiva:** somente declarar tamanho/quantidade de sacola `FACT` quando capacidade física daquela montagem estiver demonstrada; capacidade homogênea de `n` caixas não autoriza mistura de tamanhos nem `n+1`. Separação térmica interna, classificação de produto e kit são proposições independentes. Exceções humanas exatas vencem fallback, sem generalização.
+
+**Contra-rota implementada apenas em branch de teste isolada da Academia:** `ci/bag-capacity-conservative-20261007`; [PR #46 (draft, não mesclado)](https://github.com/cesarspichencoff-cmyk/tata-academia/pull/46).
+
+**Provas:**
+- [CI 37716087983](https://github.com/cesarspichencoff-cmyk/tata-academia/actions/runs/37716087983) `success`: 18/18 testes específicos (8 `UNKNOWN` seguros, 7 `FACT` de capacidades aprovadas, 3 exceções humanas exatas); 124/124 testes existentes de embalagem; matriz existente de kits aprovada.
+- Diferencial **231/231 cenários sintéticos** contra baseline fixado: 211 diferenças conservadoras, 158 tamanhos `FACT` agora `UNKNOWN`, 20 tamanhos `FACT` preservados sem alteração; **zero `UNKNOWN` promovido a `FACT`**.
+- Nenhuma amostra física nem distribuição de pedidos reais foi usada para derivar contagens; os números representam somente uma matriz de fixtures sintéticos, não impacto percentual no restaurante.
+
+**Trigger de testes futuros:** sempre que o motor mudar a lógica de capacidade, agrupar tamanhos diferentes, tratar caixas 750/1.000, ou converter `UNKNOWN` em quantidade externa de sacolas, exigir a matriz adversarial e a comparação diferencial. Não é seguro retornar ao fallback antigo sem prova física nova.
+
+**Fronteira:** o PR segue como `DRAFT`, não houve merge, instalação, alteração do engine/consumer do CAIXA_MOOCA, primeiro despacho, impressão real ou ação fiscal. Na checagem de 07/10/2026 às 23:06 BRT, `TataComandaReader` e shadow estavam `Running`, sem erros, com `print=false`, `fiscal_action=false`, engine SHA256 `1E4CF2475EDB586D5DAE88388D2ADC7CF02013B00EC93C0371E3EDB80F81342E` e consumer SHA256 `57586FFDA73904B06D8C2C28AAA47E13A6BAD4B6734C3CECC22ACDB8D16C0503`.
+
+**Próximo gate:** revisão de impacto real, autorização para eventual promoção do motor corrigido e prova de primeira passagem/embalagem antes de `WORLD_PROVEN`. Separadamente, CI público DeliveryOS [issue #13](https://github.com/cesarspichencoff-cmyk/delviery-os/issues/13) continua bloqueado por checkout privado; a verificação privada da Academia não corrige esse workflow público.
