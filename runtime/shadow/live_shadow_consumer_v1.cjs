@@ -46,6 +46,7 @@ function classifyRetailBarExact(normalizedName, code, routes) {
   // beverage volume, bag size, or human-approved product-name equivalence.
   const names = new Map([
     ["8.00.05.000.00", ["coca cola 350ml - un", "refrigerante"]],
+    ["8.00.05.010.00", ["coca cola zero 350ml - un", "refrigerante"]],
     ["8.00.00.000.00", ["agua mineral s/gas - un", "agua"]],
     ["8.00.00.010.00", ["agua mineral c/gas - un", "agua"]]
   ]);
@@ -244,7 +245,7 @@ for (const [index, raw] of (event.order.items || []).entries()) {
       classification = classifyRetailBarExact(n, code, routes);
       classificationSource = "RETAIL_EXACT_NAME_CODE_BAR_ROUTE_2026_10_07";
     } else if (
-      /^(?:coca cola|sprite)\b/.test(n) &&
+      /^sprite\b/.test(n) &&
       sameSet(routes, ["00007"])
     ) {
       classification = {
