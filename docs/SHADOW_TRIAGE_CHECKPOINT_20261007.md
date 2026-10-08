@@ -36,3 +36,26 @@ Na análise histórica de 86 comandas concluídas às aproximadamente 20:18 de 2
 7. Sem autorização específica, não ativar impressão, fiscal, SEFAZ, sequência real ou cutover.
 
 **Estado:** checkpoint documental corrigido, com evidência de replays no CAIXA_MOOCA e teste de fonte-first. O status do serviço depois da última leitura em máquina precisa de nova observação, não de suposição.
+
+
+---
+
+## RECOMPUTED_SNAPSHOT_20261007_2130 — auditoria pós-correções
+
+Data da verificação em máquina: 2026-10-07, 21:30:50 -03:00.
+
+**Recontagem obrigatória sobre os arquivos atuais do CAIXA_MOOCA:** 130 comandas distintas concluídas, cada uma reprocessada pelo motor/consumer atualmente instalados; **16 `ready=true`, 114 bloqueadas**, sem erro de replay. O resultado é um **replay read-only histórico**, não a taxa oficial de sucesso da primeira passagem de pedidos novos.
+
+- **41 decisões históricas diferiram** da execução do motor atual. Portanto, os arquivos originais `reader-shadow-decisions-v1` podem conter bloqueadores antigos e não devem determinar sozinhos as próximas correções. Exemplo: iFood 2937 já está corrigido e pronto no replay atual, embora seu artefato histórico ainda mostre `KITS_NOT_FACT`.
+- Bloqueadores na recontagem: `KITS_NOT_FACT` **64**, `BAG_SIZE_NOT_FACT` **56**, `BAG_COUNT_NOT_FACT` **33**. Há sobreposição entre eles; não somar como pedidos distintos.
+- **10 comandas com exclusivamente `KITS_NOT_FACT`**, entre elas 5576 (2 Sashimis + 1 Uramaki), 7659 (combinado 2P + 1 dupla), 4656 (1 Sashimi + 1 Temaki) e outras misturas fora das assinaturas humanas explicitamente documentadas em `kits_2026-09-22_cesar.md`. Não presumir equivalência de kits nem perguntar imediatamente à autoridade humana.
+- **4 comandas com exclusivamente `BAG_COUNT_NOT_FACT`**: iFood 7851, 8672, 2104 e 1790; todas combinam quente e frio. A fonte vigente permite uma mesma sacola **somente se** houver segregação interna, encaixe e estabilidade comprovados; a fonte **não fixa** uma quantidade externa universal. Não converter essa possibilidade em FACT sem evidência física.
+- `CLASSIFICATION_UNKNOWN_9.10.05.000.00` ainda aparece para o nome Retail `CARPACCIO DE SALMAO`. A matriz de embalagem reconhece a família, mas não há prova independente de cobertura de kit da composição inteira; classificar somente a caixa não autoriza marcar `ready=true`. A proposta de adaptação do consumer **não foi executada** nem instalada nesta etapa. Manter a trava atual e auditar as atribuições de kits de Carpaccio antes de eventual mudança.
+- Evidência no host: `C:\ProgramData\TataComandaReader\evidence\source-first-recomputed-blockers-20261007.json`, SHA256 `44468028CCF612110BA63BA48EF4FDD80ACDF55BBE238CA095F298A32C9DEE9B`.
+
+**Versões finais verificadas em máquina:**
+- Motor `packaging-current.js` SHA256 `1E4CF2475EDB586D5DAE88388D2ADC7CF02013B00EC93C0371E3EDB80F81342E`.
+- Consumer `live_shadow_consumer_v1.cjs` SHA256 `57586FFDA73904B06D8C2C28AAA47E13A6BAD4B6734C3CECC22ACDB8D16C0503`.
+- Serviço `Running`, shadow `RUNNING`, `print=false`, `fiscal_action=false`, sem erro reportado às 21:30:50 -03:00.
+
+**Próxima ação segura:** separar os dez casos apenas de kits em (a) regra humana específica já existente mas não reconhecida, (b) lacuna real da fonte; para as quatro quantidades externas dependentes de encaixe, obter prova material somente por canal já autorizado. Nunca derivar confirmação humana da ausência de bloco no motor.
