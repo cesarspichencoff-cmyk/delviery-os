@@ -125,7 +125,7 @@ function Read-Config {
   }
   if ($cfg.watcher_sha256 -notmatch "^[0-9A-Fa-f]{64}$") { throw "CONFIG_WATCHER_SHA256_INVALID" }
   $cfg.watcher_sha256 = $cfg.watcher_sha256.ToUpperInvariant()
-  $ints = @{ batch_polls = 60; min_backoff_seconds = 3; max_backoff_seconds = 60; progress_stall_seconds = 0; batch_timeout_seconds = 0; heartbeat_every_seconds = 5 }
+  $ints = @{ batch_polls = 20; min_backoff_seconds = 3; max_backoff_seconds = 60; progress_stall_seconds = 0; batch_timeout_seconds = 0; heartbeat_every_seconds = 5 }
   foreach ($k in @($ints.Keys)) {
     $v = $raw.$k
     if ($null -eq $v) { $cfg[$k] = [int]$ints[$k] } else { $cfg[$k] = [int]$v }
@@ -168,7 +168,15 @@ $state = [ordered]@{
   watcher_sha256_verified = $false
 }
 
+# Heartbeat e melhor-esforco: um lock transitorio no arquivo (antivirus,
+# indexador — comum no Windows) nao pode derrubar o supervisor e queimar o
+# orcamento de restart do SCM (5 s, 15 s, depois nada por 24 h). Se o disco
+# inteiro falhar, o heartbeat envelhece e o avaliador de saude acusa STALLED.
 function Write-Heartbeat {
+  try { Write-HeartbeatNow } catch { [Console]::Error.WriteLine((Now-Iso) + " HEARTBEAT_WRITE_FAILED") }
+}
+
+function Write-HeartbeatNow {
   $script:hbSeq++
   $hb = [ordered]@{
     schema = $HeartbeatSchema
@@ -237,9 +245,16 @@ function Stop-Fatal([string]$Code) {
 $lockDir = [IO.Path]::GetDirectoryName($cfg.lock_path)
 if (-not (Test-Path -LiteralPath $lockDir -PathType Container)) { New-Item -ItemType Directory -Force -Path $lockDir | Out-Null }
 $lockStream = $null
-try {
-  $lockStream = [IO.File]::Open($cfg.lock_path, [IO.FileMode]::OpenOrCreate, [IO.FileAccess]::ReadWrite, [IO.FileShare]::None)
-} catch {
+# Ate 15 s de tentativas: a instancia anterior pode estar saindo, ou um
+# antivirus segurando o arquivo. Persistindo, e outra instancia viva.
+for ($try = 1; $try -le 15 -and $null -eq $lockStream; $try++) {
+  try {
+    $lockStream = [IO.File]::Open($cfg.lock_path, [IO.FileMode]::OpenOrCreate, [IO.FileAccess]::ReadWrite, [IO.FileShare]::None)
+  } catch {
+    if ($try -lt 15) { Start-Sleep -Seconds 1 }
+  }
+}
+if ($null -eq $lockStream) {
   [Console]::Error.WriteLine("SUPERVISOR_ALREADY_RUNNING")
   exit $ExitLocked
 }
@@ -385,8 +400,9 @@ function Invoke-Batch([int]$BatchSeq) {
     $run = $null
     try {
       $jsonStart = $stdout.IndexOf("{")
-      if ($jsonStart -lt 0) { throw "NO_JSON" }
-      $run = $stdout.Substring($jsonStart) | ConvertFrom-Json
+      $jsonEnd = $stdout.LastIndexOf("}")
+      if ($jsonStart -lt 0 -or $jsonEnd -le $jsonStart) { throw "NO_JSON" }
+      $run = $stdout.Substring($jsonStart, $jsonEnd - $jsonStart + 1) | ConvertFrom-Json
     } catch { $run = $null }
     if ($null -eq $run) {
       $batch.outcome = "RESULT_UNPARSEABLE"

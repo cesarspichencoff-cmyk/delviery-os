@@ -258,6 +258,23 @@ function vivo(pid) {
     assert.equal(fs.existsSync(path.join(m2.state, "fake-invocations.txt")), false);
   });
 
+  await teste("S13 aviso impresso DEPOIS do JSON do lote nao transforma lote OK em falha", () => {
+    const m = montar("s13", ["ok_trailing_warning"]);
+    const r = rodar(m, 1);
+    assert.equal(r.status, 0, r.stderr);
+    const hb = m.hb();
+    assert.equal(hb.last_batch.outcome, "OK", JSON.stringify(hb.last_batch));
+  });
+
+  await teste("S14 heartbeat que nao consegue ser gravado (lock/disco) nao derruba o supervisor: lotes seguem", () => {
+    const m = montar("s14", ["ok"]);
+    fs.mkdirSync(m.cfg.heartbeat_path, { recursive: true });
+    const r = rodar(m, 2);
+    assert.equal(r.status, 0, `supervisor caiu por falha de heartbeat: ${r.stderr}`);
+    assert.match(r.stderr, /HEARTBEAT_WRITE_FAILED/);
+    assert.equal(fs.readFileSync(path.join(m.state, "fake-invocations.txt"), "utf8"), "2", "os lotes pararam");
+  });
+
   fim("TATA_READER_SUPERVISOR");
 })().catch((e) => {
   console.error(e);

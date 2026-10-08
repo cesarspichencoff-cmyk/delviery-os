@@ -97,5 +97,30 @@ const pwsh = L.findPwsh();
     assert.ok(servicos.length >= 3 && servicos.every((s) => s === "$ServiceName"), `servicos: ${servicos}`);
   });
 
+  await teste("C8 rollback encerra o lote orfao do supervisor (PID + hora de inicio) e nunca mata processo alheio", async () => {
+    const { spawn } = require("node:child_process");
+    const raiz = L.tmpDir("tata-cutover-orfao-");
+    fs.mkdirSync(path.join(raiz, "state"), { recursive: true });
+    const recPath = path.join(raiz, "state", "reader-supervisor-child-v1.json");
+    const orfao = spawn(process.execPath, ["-e", "setTimeout(()=>{}, 120000)"], { stdio: "ignore" });
+    const alheio = spawn(process.execPath, ["-e", "setTimeout(()=>{}, 120000)"], { stdio: "ignore" });
+    const vivo = (pid) => { try { process.kill(pid, 0); return true; } catch { return false; } };
+    try {
+      await L.sleep(300);
+      const inicio = L.runPwsh(pwsh, ["-Command", `(Get-Process -Id ${orfao.pid}).StartTime.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.fffZ", [Globalization.CultureInfo]::InvariantCulture)`]).stdout.trim();
+      const chamar = () => L.runPwsh(pwsh, ["-Command", `. '${CUT}'; Stop-SupervisorOrphan (Get-Layout '${raiz}')`]).stdout.trim();
+      assert.equal(chamar(), "NONE");
+      L.writeJson(recPath, { schema: "deliveryos.tata-reader-supervisor-child.v1", pid: alheio.pid, process_start_utc: "2000-01-01T00:00:00.000Z" });
+      assert.equal(chamar(), "PID_REUSED_NOT_TOUCHED");
+      assert.ok(vivo(alheio.pid), "matou processo alheio");
+      L.writeJson(recPath, { schema: "deliveryos.tata-reader-supervisor-child.v1", pid: orfao.pid, process_start_utc: inicio });
+      assert.equal(chamar(), "ORPHAN_STOPPED");
+      assert.ok(await L.waitFor(() => !vivo(orfao.pid), 10000), "orfao continua vivo");
+    } finally {
+      orfao.kill("SIGKILL");
+      alheio.kill("SIGKILL");
+    }
+  });
+
   fim("TATA_READER_CUTOVER_LOGIC");
 })();

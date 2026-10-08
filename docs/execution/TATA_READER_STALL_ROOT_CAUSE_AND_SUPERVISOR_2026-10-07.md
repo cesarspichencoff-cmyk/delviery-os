@@ -47,7 +47,9 @@ Entre lotes: SHA-256 do watcher conferido a cada lote (código instalado = códi
 
 **Instalação sem recompilar o host:** o host (C# v2) tem o caminho do watcher compilado. O supervisor aceita a mesma linha de comando e é instalado **nesse caminho fixo**; o v2 fica ao lado com nome próprio; a configuração (`tata_reader_supervisor_v1.config.json`, validada fail-closed) diz qual watcher e qual SHA.
 
-**Orçamento do SCM:** a recuperação do serviço é 5 s, 15 s e depois *nenhuma* (reset 24 h). Por isso o supervisor **não** sai por erro de SQL — ele mesmo refaz o lote com backoff e diz a verdade no heartbeat. Ele só sai em erro de configuração/adulteração (78) ou lock tomado (75).
+**Orçamento do SCM:** a recuperação do serviço é 5 s, 15 s e depois *nenhuma* (reset 24 h). Por isso o supervisor **não** sai por erro de SQL — ele mesmo refaz o lote com backoff e diz a verdade no heartbeat. Ele só sai em erro de configuração/adulteração (78) ou lock tomado (75, depois de 15 s de tentativas).
+
+**Revisão adversarial (o que o Windows faz que o Linux não mostra):** antivírus/indexador segurando um arquivo recém-gravado → heartbeat é melhor-esforço e nunca derruba o supervisor (S14); aviso impresso depois do JSON do lote → o parser lê do primeiro `{` ao último `}` (S13); instância anterior ainda saindo → lock com 15 tentativas; `Stop-Service` mata só o supervisor e o lote filho seguiria lendo → lote padrão de **20 polls** (órfão vive ≤ ~1 min) e o rollback encerra o órfão por PID + hora de início antes de restaurar (C8); `bin\` herdando escrita de `BUILTIN\Users` do ProgramData → o Plan registra `bin_writable_by_non_admin` (informativo, pré-existente).
 
 ## 4. Saúde real
 
@@ -67,7 +69,7 @@ Entre lotes: SHA-256 do watcher conferido a cada lote (código instalado = códi
 
 Saída: 0 aplicado saudável · 3 rollback provado · 2 qualquer outro desfecho (humano).
 
-**Não provado aqui:** `Get-Service`/`Restart-Service`, ACL, comportamento do Windows PowerShell 5.1 e do host C# — só existem na CAIXA. As funções puras do cutover e o contrato com o supervisor estão provados (`test:tata-reader:cutover` 8/8).
+**Não provado aqui:** `Get-Service`/`Restart-Service`, ACL, comportamento do Windows PowerShell 5.1 e do host C# — só existem na CAIXA. As funções puras do cutover, o encerramento de órfão e o contrato com o supervisor estão provados (`test:tata-reader:cutover` 9/9).
 
 ## 7. Gates
 
@@ -75,11 +77,14 @@ Saída: 0 aplicado saudável · 3 rollback provado · 2 qualquer outro desfecho 
 |---|---|---|
 | `test:tata-reader:health` | 15/15 | Node puro |
 | `test:tata-reader:static` | 10/10 | Node puro |
-| `test:tata-reader:supervisor` | 12/12 | PowerShell 7.4.6 (Linux), watcher falso |
-| `test:tata-reader:cutover` | 8/8 | PowerShell 7.4.6, dot-source |
+| `test:tata-reader:supervisor` | 14/14 | PowerShell 7.4.6 (Linux), watcher falso |
+| `test:tata-reader:cutover` | 9/9 | PowerShell 7.4.6, dot-source |
+| `tests/tata-reader/ps51_compat_check.ps1` | 0 achados, controle 3/3 | PSScriptAnalyzer 1.23.0, perfil WinPS 5.1 |
 | `test:tata-reader:sqlserver` | 3/3 | PowerShell 7.4.6 + SQL Server 2022 Developer (digest `4402d880…`), dados sintéticos |
 
 Suítes que precisam de ferramenta se declaram **PULADAS em voz alta** quando ela falta. Para o harness: `TATA_HARNESS_SA_PASSWORD=… tools/tata_reader_harness_sqlserver.sh start`, depois `TATA_HARNESS_SQLSERVER=127.0.0.1,14333 TATA_PWSH=$(which pwsh) npm run test:tata-reader:sqlserver`.
+
+**Windows PowerShell 5.1:** `tests/tata-reader/ps51_compat_check.ps1` roda o PSScriptAnalyzer 1.23.0 com o perfil `5.1.17763 / .NET Framework 4.x` (sintaxe 5.1 e 7.0, comandos e parâmetros) sobre supervisor, cutover e o watcher instalado: **0 achados**, com controle positivo embutido (`??`, ternário e `Get-Content -AsByteStream` têm de ser acusados — 3/3). O analisador não enxerga membro .NET chamado em variável; os membros usados (`File.Replace` de 4 argumentos, `FileStream.Flush(bool)`, `StreamReader.ReadToEndAsync`, `Process.Kill()`, `Process.StartTime`, `Stopwatch`, `DateTime.ParseExact`, `Path.Combine`) existem no .NET Framework 4.5, que é o piso do 5.1 — conferido à mão. `Process.Kill($true)` (árvore, só .NET Core) **não** é usado.
 
 **Limites do harness:** PowerShell 7/.NET 8 no Linux, não Windows PowerShell 5.1/.NET Framework; login SQL em vez de `NT SERVICE` + SSPI (as únicas cinco trocas, ancoradas uma a uma em `tests/tata-reader/harness/make_watcher_fixture.ps1`); `ConvertFrom-Json` do PS 7 converte data ISO em `[datetime]` (o supervisor trata os dois casos; o watcher, no PS 7, ordena o checkpoint por texto de data cultural — irrelevante com 60 pedidos sintéticos < 250 entradas).
 

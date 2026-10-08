@@ -38,7 +38,7 @@ param(
   [string]$RepoRuntimeDir = "",
   [string]$NodeExe = "C:\Program Files\nodejs\node.exe",
   [string]$PowerShellExe = "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe",
-  [int]$BatchPolls = 60,
+  [int]$BatchPolls = 20,
   [int]$HealthWaitSeconds = 480,
   [int]$MinOkBatches = 2,
   [switch]$SqlSessionCheck,
@@ -271,6 +271,38 @@ function Get-Snapshot($Layout, [datetime]$RestartAt, [long]$CheckpointTicksBefor
   }
 }
 
+# Depois de Stop-Service, o lote filho do supervisor pode seguir vivo ate o fim
+# do proprio limite de polls (o host mata so o supervisor). Antes de restaurar
+# o watcher antigo, o lote e encerrado — dois watchers nunca escrevem o mesmo
+# checkpoint. So mata se PID e hora de inicio baterem com o registro.
+function Stop-SupervisorOrphan($Layout) {
+  $rec = Read-JsonOrNull $Layout.child_record
+  if ($null -eq $rec) { return "NONE" }
+  $p = $null
+  try { $p = Get-Process -Id ([int]$rec.pid) -ErrorAction Stop } catch { return "NOT_RUNNING" }
+  try {
+    $v = $rec.process_start_utc
+    $recorded = if ($v -is [datetime]) { $v.ToUniversalTime() } else { [datetime]::ParseExact([string]$v, "yyyy-MM-ddTHH:mm:ss.fffZ", [Globalization.CultureInfo]::InvariantCulture, [Globalization.DateTimeStyles]::AdjustToUniversal -bor [Globalization.DateTimeStyles]::AssumeUniversal) }
+    if ([Math]::Abs(($p.StartTime.ToUniversalTime() - $recorded).TotalMilliseconds) -gt 1000) { return "PID_REUSED_NOT_TOUCHED" }
+  } catch { return "RECORD_UNREADABLE_NOT_TOUCHED" }
+  try { $p.Kill(); [void]$p.WaitForExit(10000) } catch { }
+  return "ORPHAN_STOPPED"
+}
+
+# Informativo: BUILTIN\Users com escrita em bin\ deixaria um usuario comum
+# trocar o que o servico executa. Herdado do ProgramData; nao bloqueia, registra.
+function Get-BinWritableByNonAdmin([string]$Bin) {
+  try {
+    $acl = Get-Acl -LiteralPath $Bin
+    $w = @($acl.Access | Where-Object {
+      $_.AccessControlType -eq "Allow" -and
+      ([string]$_.IdentityReference) -match "\\(Users|Everyone|Authenticated Users|Usu.rios|Todos)$" -and
+      ([string]$_.FileSystemRights) -match "Write|Modify|FullControl|CreateFiles|AppendData"
+    })
+    return ($w.Count -gt 0)
+  } catch { return $null }
+}
+
 function Assert-Admin {
   $p = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
   if (-not $p.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) { throw "ADMINISTRATOR_REQUIRED" }
@@ -309,6 +341,7 @@ function Invoke-Main {
   $ck = Read-JsonOrNull $L.checkpoint
   $receipt.checks.checkpoint_schema = if ($ck) { [string]$ck.schema } else { $null }
   $receipt.checks.node_present = (Test-Path -LiteralPath $NodeExe -PathType Leaf)
+  $receipt.checks.bin_writable_by_non_admin = Get-BinWritableByNonAdmin $L.bin
   $receipt.checks.candidate_sha_ok = ($receipt.files.candidate_sha256 -eq $receipt.files.candidate_expected_sha256)
   $receipt.checks.supervisor_sha_ok = ([string]::IsNullOrWhiteSpace($SupervisorSha256) -or $receipt.files.supervisor_sha256 -eq $SupervisorSha256.ToUpperInvariant())
   $receipt.checks.installed_sha_confirmed = (-not [string]::IsNullOrWhiteSpace($ExpectedInstalledWatcherSha256) -and $receipt.files.installed_watcher_sha256 -eq $ExpectedInstalledWatcherSha256.ToUpperInvariant())
@@ -403,6 +436,7 @@ function Invoke-Main {
   $receipt.effects.rollback = $true
   Stop-Service -Name $ServiceName -Force
   if (-not (Wait-Scm "Stopped" 60)) { $receipt.decision = "ROLLBACK_STOP_FAILED_HUMAN_REQUIRED"; Write-Json (Join-Path $BackupDir "receipt-rollback.json") $receipt; return $receipt }
+  $receipt.rollback_orphan = Stop-SupervisorOrphan $L
   foreach ($it in @($man.items)) {
     if ($it.backup -eq "host_status.json") { continue }
     $src = Join-Path $BackupDir $it.backup

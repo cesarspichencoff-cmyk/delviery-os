@@ -59,5 +59,11 @@ switch ($behavior) {
   "garbage" { Touch-Checkpoint; "nao e json"; exit 0 }
   "poll_errors" { Touch-Checkpoint; Print-Run $MaxPolls 1 $false; exit 0 }
   "short" { Touch-Checkpoint; Print-Run ($MaxPolls - 1) 0 $false; exit 0 }
+  "ok_trailing_warning" {
+    for ($i = 1; $i -le $MaxPolls; $i++) { Touch-Checkpoint }
+    Print-Run $MaxPolls 0 $false
+    "WARNING: linha depois do JSON (aviso do host)"
+    exit 0
+  }
   default { throw ("FAKE_BEHAVIOR_UNKNOWN:" + $behavior) }
 }
