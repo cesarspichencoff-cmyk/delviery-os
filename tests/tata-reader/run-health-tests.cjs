@@ -7,12 +7,13 @@
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
-const { spawnSync } = require("node:child_process");
+const { spawn, spawnSync } = require("node:child_process");
 const L = require("./lib.cjs");
 const H = require("../../runtime/tata-reader/tata_reader_health_v1.cjs");
 
 const { teste, fim } = L.runner("TATA_READER_HEALTH");
 const CLI = path.join(L.ROOT, "runtime", "tata-reader", "tata_reader_health_v1.cjs");
+const WRITER = path.join(L.ROOT, "tests", "tata-reader", "fixtures", "replace_two_renames_writer.cjs");
 
 const T0 = Date.parse("2026-10-07T20:00:00-03:00");
 const iso = (ms) => new Date(ms).toISOString();
@@ -187,6 +188,64 @@ function hb(over = {}) {
     const src = fs.readFileSync(path.join(L.ROOT, "src", "product", "viewmodels", "sinais.ts"), "utf8");
     for (const estado of new Set(Object.values(H.SOURCE_STATE))) {
       assert.ok(src.includes(`"${estado}"`), `estado ${estado} nao existe no vocabulario canonico`);
+    }
+  });
+
+  await teste("H16 leitura tolerante a troca (fs injetado): falha passageira vira leitura; ausencia e lixo persistentes viram ausente e invalido; nunca lanca", () => {
+    const erro = (code) => Object.assign(new Error(code), { code });
+    const roteiro = (passos) => {
+      let i = 0;
+      const prox = () => { const p = passos[Math.min(i, passos.length - 1)]; i += 1; if (p instanceof Error) throw p; return p; };
+      return { fs: { readFileSync: prox, statSync: prox }, pauseMs: 0, chamadas: () => i };
+    };
+    let r = roteiro([erro("ENOENT"), erro("ENOENT"), { mtimeMs: 1234 }]);
+    assert.equal(H.readMtimeMs("ck", r), 1234, "stat que volta na terceira tentativa");
+    assert.equal(r.chamadas(), 3);
+    r = roteiro([erro("ENOENT"), '{"schema":"x","v":1}']);
+    assert.deepEqual(H.readSignalDoc("hb", r), { schema: "x", v: 1 }, "leitura que volta na segunda tentativa");
+    r = roteiro([erro("ENOENT")]);
+    assert.equal(H.readSignalDoc("hb", r), null, "ausente de verdade = sinal ausente");
+    assert.equal(r.chamadas(), H.READ_ATTEMPTS);
+    assert.deepEqual(H.readSignalDoc("hb", roteiro(["{quebrado"])), { schema: "UNREADABLE" });
+    assert.deepEqual(H.readSignalDoc("hb", roteiro([erro("EPERM")])), { schema: "UNREADABLE" }, "presente e sem acesso = invalido, nao ausente");
+    assert.deepEqual(H.readSignalDoc("hb", roteiro([erro("ENOENT"), "\uFEFF{\"a\":1}"])), { a: 1 }, "BOM no comeco");
+    assert.equal(H.readMtimeMs("ck", roteiro([erro("EPERM")])), null);
+    assert.equal(H.readMtimeMs(null), null);
+    assert.equal(H.readSignalDoc(""), null);
+  });
+
+  await teste("H17 janela REAL da troca em dois renames (como o NTFS): a leitura antiga cai nela (controle positivo); a nova nunca lanca", async () => {
+    const dir = L.tmpDir("tata-health-troca-");
+    const hbPath = path.join(dir, "reader-heartbeat-v1.json");
+    const ckPath = path.join(dir, "reader-watch-checkpoint-v1.json");
+    fs.writeFileSync(hbPath, "{}");
+    fs.writeFileSync(ckPath, "{}");
+    const w = spawn(process.execPath, [WRITER, "6", "1", ckPath, hbPath], { stdio: "ignore" });
+    const medir = (ms, fn) => {
+      const m = { leituras: 0, lancou: 0, ausente: 0 };
+      const t0 = Date.now();
+      while (Date.now() - t0 < ms) {
+        m.leituras += 1;
+        try { if (fn() === null) m.ausente += 1; } catch { m.lancou += 1; }
+      }
+      return m;
+    };
+    try {
+      await L.sleep(400);
+      const antes = medir(1500, () => (fs.existsSync(ckPath) ? fs.statSync(ckPath).mtimeMs : null));
+      const ck = medir(1500, () => H.readMtimeMs(ckPath));
+      const hbDoc = medir(1500, () => H.readSignalDoc(hbPath));
+      const cli = spawnSync(process.execPath, [CLI, "--heartbeat", hbPath, "--checkpoint", ckPath], { encoding: "utf8" });
+      console.log(`      medido: antes=${JSON.stringify(antes)} novo_ck=${JSON.stringify(ck)} novo_hb=${JSON.stringify(hbDoc)}`);
+      assert.ok(antes.lancou + antes.ausente > 0, "controle cego: a janela da troca nao foi atingida");
+      assert.equal(ck.lancou, 0, "stat do checkpoint lancou");
+      assert.equal(hbDoc.lancou, 0, "leitura do heartbeat lancou");
+      const teto = Math.max(2, Math.floor((antes.lancou + antes.ausente) / 100));
+      assert.ok(ck.ausente + hbDoc.ausente <= teto, `ausencia espuria demais: ${ck.ausente + hbDoc.ausente} > ${teto}`);
+      assert.ok([0, 1, 2, 3].includes(cli.status), `CLI saiu ${cli.status}: ${cli.stderr}`);
+      assert.equal(cli.stderr, "", "CLI escreveu no stderr durante a troca");
+    } finally {
+      w.kill("SIGKILL");
     }
   });
 

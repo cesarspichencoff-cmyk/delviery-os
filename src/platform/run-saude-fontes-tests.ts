@@ -8,13 +8,13 @@
  */
 
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, utimesSync, writeFileSync } from "node:fs";
+import { spawn, spawnSync } from "node:child_process";
+import { existsSync, mkdirSync, mkdtempSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { lerSaudeDaFonteTata, type AvaliadorDeSaude } from "./leitura/saude-fonte-tata";
+import { lerSaudeDaFonteTata, type ArquivosDoLeitor, type AvaliadorDeSaude } from "./leitura/saude-fonte-tata";
 
 const req = createRequire(join(process.cwd(), "package.json"));
 const { evaluateTataReaderHealthV1 } = req(join(process.cwd(), "runtime", "tata-reader", "tata_reader_health_v1.cjs")) as {
@@ -73,8 +73,8 @@ const HOST_RUNNING = { schema: "deliveryos.tata-reader-continuous-host-status.v2
 async function main(): Promise<void> {
   console.log("\n=== /api/fontes — SAUDE REAL DA FONTE TATA COMANDA ===\n");
 
-  await teste("F1 sem raiz configurada: indisponivel, NAO_CONFIGURADA, nunca ao vivo", () => {
-    const s = lerSaudeDaFonteTata(null, Date.now(), evaluateTataReaderHealthV1);
+  await teste("F1 sem raiz configurada: indisponivel, NAO_CONFIGURADA, nunca ao vivo", async () => {
+    const s = await lerSaudeDaFonteTata(null, Date.now(), evaluateTataReaderHealthV1);
     assert.equal(s.configurada, false);
     assert.equal(s.estado, "indisponivel");
     assert.equal(s.veredito, "NAO_CONFIGURADA");
@@ -82,9 +82,9 @@ async function main(): Promise<void> {
     assert.deepEqual([...s.motivos], ["FONTE_NAO_CONFIGURADA"]);
   });
 
-  await teste("F2 supervisor saudavel: saudavel, ao vivo, ultimo lote OK", () => {
+  await teste("F2 supervisor saudavel: saudavel, ao vivo, ultimo lote OK", async () => {
     const r = raizCom({ heartbeat: heartbeatSaudavel(), host: HOST_RUNNING, checkpointIdadeS: 2 });
-    const s = lerSaudeDaFonteTata(r, Date.now(), evaluateTataReaderHealthV1);
+    const s = await lerSaudeDaFonteTata(r, Date.now(), evaluateTataReaderHealthV1);
     assert.equal(s.configurada, true);
     assert.equal(s.estado, "saudavel", JSON.stringify(s.motivos));
     assert.equal(s.veredito, "HEALTHY");
@@ -92,9 +92,9 @@ async function main(): Promise<void> {
     assert.deepEqual(s.ultimo_lote, { desfecho: "OK", classe_de_erro: null });
   });
 
-  await teste("F3 assinatura de 05/10 (host e consumidor RUNNING, checkpoint parado, sem heartbeat): stale, nao ao vivo", () => {
+  await teste("F3 assinatura de 05/10 (host e consumidor RUNNING, checkpoint parado, sem heartbeat): stale, nao ao vivo", async () => {
     const r = raizCom({ host: HOST_RUNNING, consumer: { schema: "deliveryos.live-shadow-consumer-status.v1", state: "RUNNING" }, checkpointIdadeS: 7200 });
-    const s = lerSaudeDaFonteTata(r, Date.now(), evaluateTataReaderHealthV1);
+    const s = await lerSaudeDaFonteTata(r, Date.now(), evaluateTataReaderHealthV1);
     assert.equal(s.estado, "stale");
     assert.equal(s.veredito, "STALLED");
     assert.equal(s.ao_vivo, false);
@@ -102,17 +102,17 @@ async function main(): Promise<void> {
     assert.equal(s.ultimo_lote, null);
   });
 
-  await teste("F4 campo estranho no heartbeat (texto com pedido/nome) nunca atravessa para a resposta", () => {
+  await teste("F4 campo estranho no heartbeat (texto com pedido/nome) nunca atravessa para a resposta", async () => {
     const r = raizCom({ heartbeat: heartbeatSaudavel({ nota: "pedido 0000348932 cliente Fulano", last_batch: { outcome: "OK", error_class: null, bruto: "Fulano 11 9999-0000" } }), checkpointIdadeS: 1 });
-    const s = lerSaudeDaFonteTata(r, Date.now(), evaluateTataReaderHealthV1);
+    const s = await lerSaudeDaFonteTata(r, Date.now(), evaluateTataReaderHealthV1);
     const texto = JSON.stringify(s);
     for (const p of ["0000348932", "Fulano", "9999"]) assert.equal(texto.includes(p), false, `vazou ${p}`);
   });
 
-  await teste("F5 arquivo ilegivel e sinal INVALIDO (UNKNOWN), nao ausencia nem saude", () => {
+  await teste("F5 arquivo ilegivel e sinal INVALIDO (UNKNOWN), nao ausencia nem saude", async () => {
     const r = raizCom({ checkpointIdadeS: 1 });
     writeFileSync(join(r, "state", "reader-heartbeat-v1.json"), "{corrompido");
-    const s = lerSaudeDaFonteTata(r, Date.now(), evaluateTataReaderHealthV1);
+    const s = await lerSaudeDaFonteTata(r, Date.now(), evaluateTataReaderHealthV1);
     assert.equal(s.veredito, "UNKNOWN");
     assert.ok(s.motivos.includes("HEARTBEAT_SCHEMA_INVALID"));
   });
@@ -147,6 +147,94 @@ async function main(): Promise<void> {
     const sem = rodar("");
     assert.equal(sem.f.fontes[0].veredito, "NAO_CONFIGURADA");
     assert.equal(sem.f.fontes[0].estado, "indisponivel");
+  });
+
+  await teste("F7 troca passageira (fs injetado): stat e leitura que voltam viram sinal; ausencia e lixo persistentes viram ausente e invalido; nunca lanca", async () => {
+    const erro = (code: string) => Object.assign(new Error(code), { code });
+    const CK = "reader-watch-checkpoint-v1.json";
+    const HB = "reader-heartbeat-v1.json";
+    const roteiro = (porArquivo: Record<string, unknown[]>): ArquivosDoLeitor => {
+      const k: Record<string, number> = {};
+      const prox = (p: string): unknown => {
+        const nome = p.split(/[\\/]/).pop() as string;
+        const passos = porArquivo[nome] ?? [erro("ENOENT")];
+        const i = k[nome] ?? 0;
+        k[nome] = i + 1;
+        const x = passos[Math.min(i, passos.length - 1)];
+        if (x instanceof Error) throw x;
+        return x;
+      };
+      return { stat: async (p) => prox(p) as { mtimeMs: number }, readFile: async (p) => prox(p) as string };
+    };
+    const visto: { atual: { heartbeat: unknown; checkpointMtimeMs: number | null } | null } = { atual: null };
+    const espiao: AvaliadorDeSaude = (e) => {
+      visto.atual = { heartbeat: e.heartbeat, checkpointMtimeMs: e.checkpointMtimeMs };
+      return evaluateTataReaderHealthV1(e);
+    };
+    const ler = (fsx: ArquivosDoLeitor) => lerSaudeDaFonteTata("/x", Date.now(), espiao, fsx, 0);
+    // Funcao, nao a propriedade: o assert de tipo do node estreitaria visto.atual entre os casos.
+    const atual = (): unknown => visto.atual;
+    await ler(roteiro({ [CK]: [erro("ENOENT"), erro("ENOENT"), { mtimeMs: 42 }], [HB]: [erro("ENOENT"), '{"schema":"s"}'] }));
+    assert.deepEqual(atual(), { heartbeat: { schema: "s" }, checkpointMtimeMs: 42 }, "falha passageira tem que virar leitura");
+    await ler(roteiro({ [CK]: [erro("EPERM")] }));
+    assert.deepEqual(atual(), { heartbeat: null, checkpointMtimeMs: null }, "ausente de verdade");
+    const lixo = await ler(roteiro({ [HB]: ["{lixo"] }));
+    assert.deepEqual((atual() as { heartbeat?: unknown } | null)?.heartbeat, { schema: "ILEGIVEL" });
+    assert.equal(lixo.veredito, "UNKNOWN");
+    await ler(roteiro({ [HB]: [erro("EPERM")] }));
+    assert.deepEqual((atual() as { heartbeat?: unknown } | null)?.heartbeat, { schema: "ILEGIVEL" }, "presente e sem acesso = invalido, nao ausente");
+  });
+
+  await teste("F8 janela REAL da troca em dois renames (como o NTFS): a leitura antiga lanca nela (controle positivo); /api/fontes nunca lanca", async () => {
+    const r = raizCom({ heartbeat: heartbeatSaudavel(), host: HOST_RUNNING, consumer: { state: "RUNNING" }, checkpointIdadeS: 1 });
+    const ck = join(r, "state", "reader-watch-checkpoint-v1.json");
+    const hb = join(r, "state", "reader-heartbeat-v1.json");
+    const escritor = join(process.cwd(), "tests", "tata-reader", "fixtures", "replace_two_renames_writer.cjs");
+    const w = spawn(process.execPath, [escritor, "6", "1", ck, hb], { stdio: "ignore" });
+    try {
+      await new Promise((ok) => setTimeout(ok, 400));
+      const antes = { leituras: 0, lancou: 0 };
+      let t0 = Date.now();
+      while (Date.now() - t0 < 1500) {
+        antes.leituras += 1;
+        try {
+          if (existsSync(ck)) statSync(ck);
+        } catch {
+          antes.lancou += 1;
+        }
+      }
+      const depois = { leituras: 0, lancou: 0, sem_heartbeat: 0 };
+      t0 = Date.now();
+      while (Date.now() - t0 < 1500) {
+        depois.leituras += 1;
+        try {
+          if ((await lerSaudeDaFonteTata(r, Date.now(), evaluateTataReaderHealthV1)).ultimo_lote === null) depois.sem_heartbeat += 1;
+        } catch {
+          depois.lancou += 1;
+        }
+      }
+      console.log(`      medido: antes=${JSON.stringify(antes)} depois=${JSON.stringify(depois)}`);
+      assert.ok(antes.lancou > 0, "controle cego: a janela da troca nao foi atingida");
+      assert.equal(depois.lancou, 0, "a leitura da rota lancou (seria 500)");
+      assert.ok(depois.sem_heartbeat <= Math.max(2, Math.floor(antes.lancou / 100)), `heartbeat ausente espurio: ${depois.sem_heartbeat}`);
+    } finally {
+      w.kill("SIGKILL");
+    }
+  });
+
+  await teste("F9 a pausa entre tentativas nunca bloqueia o laco de eventos do servidor (quatro arquivos ausentes)", async () => {
+    const r = raizCom({});
+    let tiques = 0;
+    const relogio = setInterval(() => {
+      tiques += 1;
+    }, 1);
+    const t0 = Date.now();
+    const s = await lerSaudeDaFonteTata(r, Date.now(), evaluateTataReaderHealthV1);
+    const ms = Date.now() - t0;
+    clearInterval(relogio);
+    assert.ok(ms >= 25, `as tentativas nao esperaram: ${ms} ms`);
+    assert.ok(tiques >= 5, `laco de eventos parado: ${tiques} tiques em ${ms} ms`);
+    assert.equal(s.estado, "indisponivel");
   });
 
   console.log(`\nSAUDE_FONTES: ${passou}/${passou + falhas.length} PASS`);

@@ -336,20 +336,25 @@ export async function criarServidor(): Promise<http.Server> {
       if (p === "/api/fontes") {
         // Saúde REAL das fontes, lida a cada requisição. Fonte não configurada
         // aparece como tal; o histórico de 05/10 continua histórico.
-        const tata = lerSaudeDaFonteTata(DIR_LEITOR_TATA || null, Date.now(), avaliarSaudeTata);
         const h = pronto.historico.tata_comanda;
-        return json(res, 200, {
-          modulo: "fontes",
-          fontes: [tata],
-          historico_tata_comanda: h.disponivel
-            ? { disponivel: true, ao_vivo: false, data_operacional: h.data_operacional, rota: "/api/historico" }
-            : { disponivel: false, ao_vivo: false, motivo: h.motivo },
-          limitacoes: [
-            "Saude por PROGRESSO (heartbeat, ultimo lote OK, checkpoint), nunca por servico RUNNING.",
-            "Idades calculadas no relogio desta maquina: so e honesto na mesma maquina do leitor.",
-            "Historico de 05/10 nao e estado ao vivo e nao entra nesta saude.",
-          ],
-        });
+        void lerSaudeDaFonteTata(DIR_LEITOR_TATA || null, Date.now(), avaliarSaudeTata)
+          .then((tata) =>
+            json(res, 200, {
+              modulo: "fontes",
+              fontes: [tata],
+              historico_tata_comanda: h.disponivel
+                ? { disponivel: true, ao_vivo: false, data_operacional: h.data_operacional, rota: "/api/historico" }
+                : { disponivel: false, ao_vivo: false, motivo: h.motivo },
+              limitacoes: [
+                "Saude por PROGRESSO (heartbeat, ultimo lote OK, checkpoint), nunca por servico RUNNING.",
+                "Idades calculadas no relogio desta maquina: so e honesto na mesma maquina do leitor.",
+                "Historico de 05/10 nao e estado ao vivo e nao entra nesta saude.",
+              ],
+            }),
+          )
+          // Nunca a mensagem crua (traria caminho local): so a classe do erro.
+          .catch((e: unknown) => json(res, 500, { erro: e instanceof Error ? e.name : "Error" }));
+        return;
       }
       if (p === "/api/navegacao") {
         return json(res, 200, {

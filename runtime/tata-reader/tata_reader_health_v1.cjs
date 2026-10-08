@@ -238,14 +238,74 @@ function evaluateTataReaderHealthV1(input) {
   return verdict("HEALTHY", reasons, { ...extra(), thresholds: t });
 }
 
+// ------------------------------------------- leitura dos arquivos (E/S) ----
+// No Windows, File.Replace (ReplaceFile) sao dois renames: alvo -> backup,
+// temporario -> alvo. Entre eles o caminho NAO existe. existsSync seguido de
+// statSync/readFileSync cai nessa janela: o stat lancava (o CLI morria com
+// pilha no stderr, a rota /api/fontes respondia 500 com o caminho local) e o
+// existsSync falso virava "sinal ausente" (DOWN espurio). Agora cada leitura
+// tenta de novo, com pausa curta, e so entao decide: ausente = sinal ausente
+// (null); presente e ilegivel = sinal invalido; nunca lanca.
+const READ_ATTEMPTS = 3;
+const READ_PAUSE_MS = 15;
+
+function sleepSync(ms) {
+  if (ms > 0) Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
+function readSignalDoc(p, opts = {}) {
+  if (!p) return null;
+  const fsImpl = opts.fs || require("node:fs");
+  const attempts = opts.attempts || READ_ATTEMPTS;
+  const pauseMs = opts.pauseMs ?? READ_PAUSE_MS;
+  let last = "ABSENT";
+  for (let i = 0; i < attempts; i++) {
+    if (i > 0) sleepSync(pauseMs);
+    let text;
+    try {
+      text = fsImpl.readFileSync(p, "utf8");
+    } catch (e) {
+      last = e && e.code === "ENOENT" ? "ABSENT" : "UNREADABLE";
+      continue;
+    }
+    try {
+      return JSON.parse(String(text).replace(/^\uFEFF/, ""));
+    } catch {
+      last = "UNREADABLE";
+    }
+  }
+  return last === "ABSENT" ? null : { schema: "UNREADABLE" };
+}
+
+function readMtimeMs(p, opts = {}) {
+  if (!p) return null;
+  const fsImpl = opts.fs || require("node:fs");
+  const attempts = opts.attempts || READ_ATTEMPTS;
+  const pauseMs = opts.pauseMs ?? READ_PAUSE_MS;
+  for (let i = 0; i < attempts; i++) {
+    if (i > 0) sleepSync(pauseMs);
+    try {
+      const m = fsImpl.statSync(p).mtimeMs;
+      if (Number.isFinite(m)) return m;
+    } catch {
+      // janela da troca, ausente ou sem acesso: tenta de novo
+    }
+  }
+  return null;
+}
+
 module.exports = {
   HEALTH_SCHEMA,
   HEARTBEAT_SCHEMA,
   VERDICTS,
   SOURCE_STATE,
   LEGACY_CHECKPOINT_STALE_SECONDS,
+  READ_ATTEMPTS,
+  READ_PAUSE_MS,
   thresholdsFrom,
   evaluateTataReaderHealthV1,
+  readSignalDoc,
+  readMtimeMs,
 };
 
 // ------------------------------------------------------------------ CLI ----
@@ -267,20 +327,13 @@ if (require.main === module) {
     }
     opt[k.slice(2)] = v;
   }
-  const readDoc = (p) => {
-    if (!p || !fs.existsSync(p)) return null;
-    try {
-      return JSON.parse(fs.readFileSync(p, "utf8").replace(/^﻿/, ""));
-    } catch {
-      return { schema: "UNREADABLE" };
-    }
-  };
+  const readDoc = (p) => readSignalDoc(p, { fs });
   const nowMs = opt.now ? Date.parse(opt.now) : Date.now();
   if (!Number.isFinite(nowMs)) {
     console.error("NOW_INVALID");
     process.exit(64);
   }
-  const ck = opt.checkpoint && fs.existsSync(opt.checkpoint) ? fs.statSync(opt.checkpoint).mtimeMs : null;
+  const ck = readMtimeMs(opt.checkpoint, { fs });
   const r = evaluateTataReaderHealthV1({
     nowMs,
     heartbeat: readDoc(opt.heartbeat),
