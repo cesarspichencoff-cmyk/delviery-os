@@ -56,36 +56,36 @@ function logicalStationForRoutes(routes) {
   return stations.length === 1 ? stations[0] : null;
 }
 function classificationFromPackagingFact(name, routes) {
-  const cat = P.categoryOf({ nome: name });
-  if (!cat || cat.status !== P.FACT || !cat.category) return null;
-
-  const category = String(cat.category);
-  const routeStation = logicalStationForRoutes(routes);
-  const station = category === "combinado" ? "combinados" : routeStation;
-  const stationRequired = !["combinado", "caixa_fixa", "nao_producao"].includes(category);
-  if (stationRequired && !station) return null;
-
-  const familyByCategory = {
-    dupla_dyo: "dupla",
-    enrolado: "enrolado",
-    temaki: "temaki",
-    sashimi: "sashimi",
-    combinado: "combinado",
-    selada_650: "entrada",
-    prato_quente: "prato_quente",
-    caixa_fixa: "caixa_fixa",
-    bebida: "bebida",
-    nao_producao: "nao_producao"
+  // Conservative source-first bridge; mirrors the scoped fact families tested
+  // against live shadow events on 2026-10-07. No name alias or route invention.
+  const fact = P.categoryOf({ nome: name });
+  if (!fact || fact.status !== P.FACT || !fact.category || !routes.length) return null;
+  const byRoute = {
+    "00002":"cozinha_quentes", "00003":"duplas", "00009":"duplas",
+    "00004":"enrolados", "00006":"enrolados", "00007":"bar_bebidas"
   };
-  const family = familyByCategory[category];
-  if (!family) return null;
-
+  const stations = routes.map(rc => byRoute[String(rc)] || null);
+  if (stations.some(x => !x) || new Set(stations).size !== 1) return null;
+  const station = stations[0];
+  const allowed = {
+    dupla_dyo:["duplas"],
+    sashimi:["duplas"],
+    enrolado:["enrolados"],
+    temaki:["enrolados"],
+    prato_quente:["cozinha_quentes"]
+  };
+  const category = String(fact.category);
+  if (!(allowed[category] || []).includes(station)) return null;
+  const familyByCategory = {
+    dupla_dyo:"dupla", sashimi:"sashimi", enrolado:"enrolado",
+    temaki:"temaki", prato_quente:"prato_quente"
+  };
   return {
-    family,
+    family: familyByCategory[category],
     subfamily: category,
     station,
-    truth_class: "PROVEN_ACADEMIA_PACKAGING_RULE",
-    review_required: false
+    truth_class:"PROVEN_ACADEMIA_PACKAGING_RULE",
+    review_required:false
   };
 }
 function writeAtomicJson(outPath, value) {
@@ -245,7 +245,8 @@ for (const [index, raw] of (event.order.items || []).entries()) {
       };
       classificationSource = "NON_PRODUCTION_AUTHORITY";
     } else {
-      const packagingFact = classificationFromPackagingFact(name, routes);
+      const packagingFact = (!exact?.classification || exact.classification.review_required !== true)
+        ? classificationFromPackagingFact(name, routes) : null;
       if (packagingFact) {
         classification = packagingFact;
         classificationSource = "ACADEMIA_PACKAGING_FACT_FALLBACK";
