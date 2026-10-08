@@ -49,3 +49,18 @@ O arquivo `runtime/shadow/live_shadow_consumer_v1.cjs` do mesmo branch é uma re
 A etapa de implantação requer canal permitido, teste nativo Node, checagem de hashes/diff, backup atômico e replay de regressão no dispositivo antes da instalação, mantendo `print=false`, `fiscal_action=false` e proteção de alergias. Ainda é necessário comprovar **primeira passagem** em novas comandas, não apenas replay.
 
 Para os pedidos em que a identificação da bebida agora permite reconhecer mais um item, **não inferir** nova sacola ou quantidade: o caso 0292 demonstrou que uma classificação correta pode expor bloqueio real de embalagem que ficava escondido.
+
+---
+
+## NATIVE_NODE_134_REAL_ORDER_PROOF — atualização após validação nativa em 07/10/2026
+
+**Novo estado de prova:** a lacuna referente à execução **nativa em Node no CAIXA_MOOCA** foi parcialmente fechada. A sintaxe do candidate foi verificada com `node --check` recebendo o código por STDIN; resultado `exit=0`. Depois, o próprio Node do dispositivo executou um replay comparativo em memória usando o **consumer instalado**, o **candidate do GitHub**, os **eventos reais locais** e o **motor de embalagens realmente instalado**. O cálculo SHA256/fingerprint utilizou crypto nativo (não simulado). O acesso a arquivos foi de leitura, com tentativas de escrita bloqueadas no executor.
+
+**Resultado nativo:** `NATIVE_NODE_FULL_READONLY_REPLAY_PASS`, **134/134 comandas concluídas**, zero erros de execução, **5 classificações recuperadas**, **0 novos ready**, 17 ready antes e 17 ready depois. Nenhuma regressão detectada nas invariantes instrumentadas: mesmos alvos de impressoras, sem mudanças de efeitos, aprovações anteriores preservadas, travas de alergia e upstream expirado preservadas. O candidato não transformou casos sem medida de sacola ou kit comprovado em `ready`.
+
+SHA256 do candidate calculado nativamente: `8FC7FCE349E6E443A0D1F68DEAEC2EF1932E00F33ECF7FED6FAFE5E386FD6F8B`.
+SHA256 do consumer instalado, verificado no início do teste: `57586FFDA73904B06D8C2C28AAA47E13A6BAD4B6734C3CECC22ACDB8D16C0503`.
+
+**Fronteira importante:** o candidate foi executado **em memória, sem gravação/instalação**. A prova estabelece compatibilidade nativa com essa amostra de eventos e o runtime lido naquele instante, mas ainda não demonstra primeira passagem automática após instalação, ativação de impressão, DANFE/NFC-e ou funcionamento sob carga real.
+
+A observação histórica anterior de 130 comandas/16 ready é uma fotografia anterior, não contradição: a nova bateria coletou 134 comandas/17 ready após chegarem mais eventos. Não combinar os denominadores em uma única taxa.
