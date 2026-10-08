@@ -61,6 +61,9 @@ export interface TicketItemV45 {
 }
 export interface TicketBoxV45 {
   position: string;
+  /** Greater than one is permitted only for a directly-proven one-unit-per-box
+   * closed-combo group in the production projection. */
+  physical_box_count?: number;
   model: string | null;
   status: "PROVEN" | "UNKNOWN";
   items: TicketItemV45[];
@@ -82,6 +85,7 @@ export interface ProductionTicketV45 {
 }
 export interface ConferenceTicketV45 {
   order_id: string;
+  identifiers: ProductionTicketV45["identifiers"] | null;
   revision: number | null;
   boxes: TicketBoxV45[];
   items_without_proven_box: TicketItemV45[];
@@ -119,8 +123,9 @@ function positive(value: unknown): boolean {
   return typeof value === "number" && Number.isFinite(value) && value > 0;
 }
 function boxModel(value: unknown): string | null {
-  const digits = clean(value).replace(/^C(?:AIXA|X)?\s*/i, "").replace(/\./g, "");
-  return NUMERIC_BOXES.has(digits) ? digits : null;
+  const cleaned = clean(value).replace(/\./g, "").toUpperCase();
+  const match = cleaned.match(/^(?:(?:CX|CAIXA)\s*)?(240|450|650|750|1000|1500|1600)(?:\s+(?:SELADA|SEALED))?$/);
+  return match && NUMERIC_BOXES.has(match[1]) ? match[1] : null;
 }
 function allReasons(reasons: Set<string>): string[] {
   return [...reasons].sort();
@@ -335,7 +340,8 @@ export function projectOperationalTicketsV45(input: OperationalTicketsInputV45):
       const stationLines = sourceLinesByGroup.get(groupId) ?? [];
       const wanted = signature(stationLines.map((x) => ({ name: x.product_name, quantity: x.quantity })));
       const candidates = (input.packaging_plan?.groups ?? []).filter(
-        (g) => g.boxes === 1 && PROVEN_BOX_STATUS.has(g.status) &&
+        (g) => Number.isInteger(g.boxes) && (g.boxes ?? 0) >= 1 &&
+               PROVEN_BOX_STATUS.has(g.status) &&
                boxModel(g.box) === box.model && Array.isArray(g.products) &&
                signature(g.products) === wanted,
       );
@@ -346,8 +352,19 @@ export function projectOperationalTicketsV45(input: OperationalTicketsInputV45):
         stationSources.every((s) => s.packaging_role === "CLOSED_COMBO" || s.packaging_role === "OTHER");
       const mixedClosedCombo = stationSources.length > 1 &&
         stationSources.some((s) => s.packaging_role === "CLOSED_COMBO");
-      if (box.model !== null && candidates.length === 1 && rolesProven && !mixedClosedCombo) {
+      const candidate = candidates.length === 1 ? candidates[0] : null;
+      const repeatedClosedCombo =
+        stationSources.length === 1 &&
+        stationSources[0].packaging_role === "CLOSED_COMBO" &&
+        (candidate?.boxes ?? 0) === stationSources[0].quantity &&
+        stationSources[0].quantity > 1;
+      const eligibleOneBox = candidate?.boxes === 1 &&
+        !(stationSources.length === 1 && stationSources[0].packaging_role === "CLOSED_COMBO" &&
+          stationSources[0].quantity > 1);
+      if (box.model !== null && candidate && rolesProven && !mixedClosedCombo &&
+          (eligibleOneBox || repeatedClosedCombo)) {
         box.status = "PROVEN";
+        if (repeatedClosedCombo) box.physical_box_count = candidate.boxes ?? undefined;
       } else {
         box.model = null;
         localReasons.add(mixedClosedCombo
@@ -380,7 +397,8 @@ export function projectOperationalTicketsV45(input: OperationalTicketsInputV45):
   } else {
     for (const [index, group] of input.packaging_plan.groups.entries()) {
       const model = boxModel(group.box);
-      const proved = model !== null && group.boxes === 1 && PROVEN_BOX_STATUS.has(group.status) &&
+      const proved = model !== null && Number.isInteger(group.boxes) && (group.boxes ?? 0) >= 1 &&
+                     PROVEN_BOX_STATUS.has(group.status) &&
                      Array.isArray(group.products) && group.products.length > 0;
       if (!proved) {
         warnings.add("BOX_GROUP_NOT_PROVEN_OR_NOT_ALLOCATED:" + index);
@@ -410,14 +428,30 @@ export function projectOperationalTicketsV45(input: OperationalTicketsInputV45):
         warnings.add("CLOSED_COMBO_CANNOT_SHARE_BOX:" + index);
         continue;
       }
-      const box: TicketBoxV45 = {
-        position: "C" + (conferenceBoxes.length + 1),
-        model,
-        status: "PROVEN",
-        items: matched.map((s) => itemFromSource(s, aliases, reasons)),
-        operator_field: "Op. ________",
-      };
-      conferenceBoxes.push(box);
+      // One verified physical box per unit of a repeated CLOSED_COMBO,
+      // otherwise physical contents cannot be derived from aggregate counts.
+      const repeatsCombo = matched.length === 1 &&
+        matched[0].packaging_role === "CLOSED_COMBO" &&
+        matched[0].quantity === group.boxes;
+      const singleBoxAllowed = group.boxes === 1 &&
+        !matched.some((s) => s.packaging_role === "CLOSED_COMBO" && s.quantity > 1);
+      if (!singleBoxAllowed && !repeatsCombo) {
+        warnings.add("PER_BOX_ITEM_ALLOCATION_UNKNOWN:" + index);
+        continue;
+      }
+      const physicalCount = repeatsCombo ? (group.boxes ?? 1) : 1;
+      for (let offset = 0; offset < physicalCount; offset++) {
+        const items = repeatsCombo
+          ? [{ ...itemFromSource(matched[0], aliases, reasons), quantity: 1 }]
+          : matched.map((s) => itemFromSource(s, aliases, reasons));
+        conferenceBoxes.push({
+          position: "C" + (conferenceBoxes.length + 1),
+          model,
+          status: "PROVEN",
+          items,
+          operator_field: "Op. ________",
+        });
+      }
       for (const source of matched) remaining.delete(source.item_index);
     }
   }
@@ -435,8 +469,18 @@ export function projectOperationalTicketsV45(input: OperationalTicketsInputV45):
   for (const unknown of input.resource_projection.unknowns) warnings.add("RESOURCE_UNKNOWN:" + unknown);
   const unallocated = [...remaining.values()].map((s) => itemFromSource(s, aliases, reasons));
   for (const issue of reasons) warnings.add("DATA_INTEGRITY:" + issue);
+  const distinctIdentifiers = new Map<string, ProductionTicketV45["identifiers"]>();
+  for (const station of production) {
+    const id = station.identifiers;
+    distinctIdentifiers.set([id.ifood, id.teknisa, id.tata, id.hour ?? ""].join("|"), id);
+  }
+  if (distinctIdentifiers.size > 1) reasons.add("PRODUCTION_IDENTIFIER_MISMATCH");
+  const conferenceIdentifiers = distinctIdentifiers.size === 1
+    ? [...distinctIdentifiers.values()][0]
+    : null;
   const conference: ConferenceTicketV45 = {
     order_id: input.order_id,
+    identifiers: conferenceIdentifiers,
     revision: input.revision?.number ?? null,
     boxes: conferenceBoxes,
     items_without_proven_box: unallocated,
@@ -446,6 +490,7 @@ export function projectOperationalTicketsV45(input: OperationalTicketsInputV45):
     warnings: allReasons(warnings),
     ready_for_semantic_preview: reasons.size === 0,
   };
+  if (reasons.size) conference.ready_for_semantic_preview = false;
   const allReady = reasons.size === 0 && production.every((t) => t.ready_for_semantic_preview);
   return {
     schema: "deliveryos.operational-tickets.v45.shadow.v1",
