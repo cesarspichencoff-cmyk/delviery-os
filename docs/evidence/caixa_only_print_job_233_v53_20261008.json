@@ -1,0 +1,55 @@
+{
+  "schema": "deliveryos.tata-itaim-caixa-calibration-one-shot.v53",
+  "source": "WINDOWS_PRINTSERVICE_EVENT_PLUS_MANUAL_USER_CONFIRMED_SITE",
+  "date_local": "2026-10-08",
+  "site": "TATA_ITAIM_HUMAN_CONFIRMED",
+  "computer": "CAIXA_MOOCA",
+  "target_queue": "CAIXA",
+  "port": "ESDPRT001",
+  "driver": "EPSON TM-T20 ReceiptE4",
+  "usb_model_identification": "EPSON TM-T20X",
+  "usb_present": true,
+  "job_id": 233,
+  "source_payload_bytes": 424,
+  "source_sha256": "8f6b02ea56f2daf6261fa6a5ce45d533ea68fa3e83d4344ad4fd860254dc1249",
+  "document_kind": "CALIBRATION_TEST_NOT_CUSTOMER_ORDER",
+  "printservice_event": {
+    "event_id": 307,
+    "record_id": 4641086,
+    "time_utc": "2026-10-08T17:18:46.8594789Z",
+    "level": "Informa��es",
+    "event_says_printed_caixa_usb": true,
+    "event_says_424_bytes": true
+  },
+  "post_job": {
+    "printer_status": "Normal",
+    "queue_jobs_remaining": 0
+  },
+  "effects": {
+    "raw_job_submitted": true,
+    "printed_other_queues": false,
+    "drawer_pulse_sent": false,
+    "cut_command_sent": false,
+    "driver_changed": false,
+    "density_changed": false,
+    "spooler_queues_reconfigured": false
+  },
+  "proof_limits": {
+    "os_reports_job_printed": true,
+    "physical_sheet_seen_by_assistant": false,
+    "photo_review_complete": false,
+    "dark_environment_legibility_proven": false,
+    "accent_raster_verified": false,
+    "other_printers_physically_tested": false,
+    "not_world_proven": true
+  },
+  "policy": {
+    "physical_test_queue_allowlist": [
+      "CAIXA"
+    ],
+    "all_other_queues": "DO_NOT_PRINT_TESTS",
+    "read_only_diagnostics_other_queues_permitted": true,
+    "allow_customer_order_test_prints": false,
+    "one_shot_guard": true
+  }
+}

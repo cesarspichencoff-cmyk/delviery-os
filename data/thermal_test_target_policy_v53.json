@@ -1,0 +1,30 @@
+{
+  "schema": "deliveryos.itaim-thermal-physical-test-policy.v53.v1",
+  "human_confirmation_date": "2026-10-08",
+  "authority": "CESAR_DIRECT_CHAT",
+  "site": "TATA ITAIM",
+  "site_computer_confirmed_physically": "CAIXA_MOOCA",
+  "physical_test_policy": {
+    "strict_printer_queue_allowlist": [
+      "CAIXA"
+    ],
+    "allowed_port_for_current_queue": "ESDPRT001",
+    "driver_currently_observed": "EPSON TM-T20 ReceiptE4",
+    "actual_usb_device_currently_observed": "EPSON TM-T20X",
+    "other_queues": "NO_PHYSICAL_TEST_PRINT",
+    "customer_order_content": "NOT_ALLOWED_FOR_CALIBRATION",
+    "allow_customer_order_test_prints": false,
+    "require_obviously_labeled_test_sheet": true,
+    "forbid_unapproved_driver_or_density_changes": true,
+    "limit_to_one_authorized_test_job_per_execution": true,
+    "no_automatic_repeat_after_attempt": true,
+    "other_printer_readonly_diagnostics_allowed": true,
+    "allow_print_to_other_queues": false,
+    "do_not_deploy_or_route_production_using_this_test": true
+  },
+  "current_one_shot_evidence": "docs/evidence/caixa_only_print_job_233_v53_20261008.json",
+  "physical_acceptance": "PENDING_PAPER_PHOTO_AND_HUMAN_REVIEW",
+  "all_stations_quality_claim": "UNPROVEN",
+  "printers_other_than_caixa_physically_proven_by_this_test": false,
+  "notes": "The Windows PrintService event proves job processing to CAIXA. Physical legibility, contrast and actual paper output require photograph and operator inspection."
+}
