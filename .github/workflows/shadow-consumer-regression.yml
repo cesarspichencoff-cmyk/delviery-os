@@ -50,6 +50,17 @@ jobs:
       - name: Run synthetic full-consumer safety contract
         run: node tests/shadow-synthetic-contract.test.cjs
 
+      - name: Checkout pinned TATA Academia source (public, read-only)
+        uses: actions/checkout@v4
+        with:
+          repository: cesarspichencoff-cmyk/tata-academia
+          ref: 6396427220b5eb2e2d1a570ef58437a4d302ff49
+          path: .ci/academy
+          persist-credentials: false
+
+      - name: Validate full consumer with real Academy packaging engine
+        run: ACADEMIA_ROOT="$GITHUB_WORKSPACE/.ci/academy" node tests/shadow-academy-engine-contract.test.cjs
+
       - name: Assert no deployment side effects
         run: |
           echo "CI only: never install on CAIXA_MOOCA; no print, fiscal, or cutover."
