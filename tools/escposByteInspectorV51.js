@@ -66,7 +66,7 @@ function inspectEscPos(bytes,opts={}){
    commands.push({type:"CHAR_SIZE",n,width,height});
    continue;
   }
-  if(v<32 || (v>=128&&v<160)){
+  if(v<32 || v===0x7f || v===0xad || (v>=128&&v<160)){
    add("UNEXPECTED_CONTROL_BYTE:"+v.toString(16));continue;
   }
   if(font!=="A"&&font!=="B"){add("CHAR_WITHOUT_VALID_FONT");continue;}

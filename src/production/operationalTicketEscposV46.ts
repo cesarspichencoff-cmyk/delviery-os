@@ -101,7 +101,7 @@ export class OfflinePrinter {
     // No loss/transliteration of text: unsupported characters stop the proof.
     if ([...line].some((char) => {
       const cp = char.codePointAt(0) ?? 0;
-      return cp > 0xff || (cp >= 0x80 && cp < 0xa0) || cp < 0x20;
+      return cp > 0xff || (cp >= 0x80 && cp < 0xa0) || cp < 0x20 || cp === 0x7f || cp === 0xad;
     })) {
       this.blockers.add("CHARACTER_ENCODING_UNVERIFIED:" + context);
       return;

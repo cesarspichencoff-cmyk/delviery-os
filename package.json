@@ -48,6 +48,7 @@
     "verificar:comparativo-caixa-v54": "tsc && node tools/verificar_comparativo_caixa_v54.js",
     "verificar:cobertura-tipografica-v55": "tsc && node tools/verificar_cobertura_tipografica_v55.js",
     "verificar:observacoes-legiveis-v56": "tsc && node tools/verificar_observacoes_legiveis_v56.js",
+    "verificar:caracteres-invisiveis-v57": "tsc && node tools/verificar_caracteres_invisiveis_v57.js",
     "gerar:prova-observacoes-v56:offline": "tsc && node tools/gerar_prova_observacoes_v56_offline.js",
     "auditar:cobertura-tipografica-v55": "node tools/auditar_cobertura_tipografica_v55.js --write-evidence",
     "gerar:comparativo-caixa-v54:offline": "tsc && node tools/gerar_comparativo_legibilidade_caixa_v54.js",

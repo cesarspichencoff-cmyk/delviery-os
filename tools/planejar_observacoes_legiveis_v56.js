@@ -24,7 +24,7 @@ function canonical(value){
 function allowed(text){
  return [...text].every(c=>{
    const point=c.codePointAt(0)??0;
-   return point>=32&&point<=255&&!(point>=128&&point<160);
+   return point>=32&&point<=255&&point!==0x7f&&point!==0xad&&!(point>=128&&point<160);
  });
 }
 function createAnnotationPlan(kind,source){
