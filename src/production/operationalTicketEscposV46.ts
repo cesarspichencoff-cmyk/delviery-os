@@ -45,11 +45,17 @@ function plain(value: unknown): string {
 function uppercase(value: unknown): string {
   return plain(value).toLocaleUpperCase("pt-BR");
 }
-function quantity(value: number): string {
-  return Number.isInteger(value) ? String(value) : String(value);
+function quantity(value: unknown, p: OfflinePrinter, context: string): string {
+  // Defense in depth: even a previously projected/shadow ticket can be malformed.
+  // The business maximum is not established; do not invent an upper limit.
+  if (typeof value !== "number" || !Number.isSafeInteger(value) || value <= 0) {
+    p.blockers.add("INVALID_QUANTITY:" + context);
+    return "QUANTIDADE INVALIDA";
+  }
+  return String(value);
 }
-function smallResource(entries: Array<{label: string; quantity: number}>): string[] {
-  return entries.map((entry) => quantity(entry.quantity) + " " + uppercase(entry.label));
+function smallResource(p: OfflinePrinter, entries: Array<{label: string; quantity: number}>, context: string): string[] {
+  return entries.map((entry) => quantity(entry.quantity, p, context) + " " + uppercase(entry.label));
 }
 
 export class OfflinePrinter {
@@ -113,7 +119,7 @@ export class OfflinePrinter {
   }
   item(item: TicketItemV45): void {
     this.align("LEFT");
-    const headline = quantity(item.quantity) + "  " + uppercase(item.print_name);
+    const headline = quantity(item.quantity, this, "ITEM:" + item.source_item_index) + "  " + uppercase(item.print_name);
     // Font A is 12x24 dots on the 80-mm Epson family; use it when the
     // COMPLETE product fits in one line. Font B (9x17 dots) is reserved
     // for longer names. No truncation or broken multi-line product.
@@ -197,7 +203,7 @@ function printResourceGroups(
   resources: Array<{label:string;quantity:number}>,
 ): void {
   if (!resources.length) return;
-  const values = smallResource(resources);
+  const values = smallResource(p, resources, "RESOURCE:" + label);
   const prefix = label + ": ";
   let partial = prefix;
   for (const value of values) {
@@ -231,11 +237,12 @@ export function renderProductionTicketProofV46(ticket: ProductionTicketV45): Tic
   p.metadata(ticket.identifiers);
   p.line("--------------------------------", "DIVIDER");
   for (const box of ticket.boxes) {
-    const count = box.physical_box_count ?? 1;
+    const count = box.physical_box_count === undefined ? 1 : box.physical_box_count;
+    const countText = quantity(count, p, "BOX_COUNT");
     if (!box.model) p.blockers.add("BOX_MODEL_UNPROVEN");
     p.font("A");
     p.bold(true);
-    p.line(count > 1 ? count + "X CAIXA " + box.model : "CAIXA " + box.model, "BOX");
+    p.line(count > 1 ? countText + "X CAIXA " + box.model : "CAIXA " + box.model, "BOX");
     p.bold(false);
     for (const item of box.items) p.item(item);
     p.line("--------------------------------", "DIVIDER");
@@ -274,7 +281,7 @@ export function renderConferenceTicketProofV46(ticket: ConferenceTicketV45): Tic
     for (const item of ticket.items_without_proven_box) p.item(item);
   }
   p.line("--------------------------------", "DIVIDER");
-  const parts = [...smallResource(ticket.bags), ...smallResource(ticket.kits)];
+  const parts = [...smallResource(p, ticket.bags, "BAG"), ...smallResource(p, ticket.kits, "KIT")];
   if (parts.length) {
     p.font("B");
     let current = "";

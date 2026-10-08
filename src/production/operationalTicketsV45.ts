@@ -258,7 +258,9 @@ export function projectOperationalTicketsV45(input: OperationalTicketsInputV45):
       reasons.add("INVALID_OR_DUPLICATE_ITEM_INDEX:" + source.item_index);
     }
     seenIndices.add(source.item_index);
-    if (!clean(source.product_name) || !positive(source.quantity) || !Array.isArray(source.observations)) {
+    // Sold menu items are countable portions, unlike fractional resource usages.
+    if (!clean(source.product_name) || !Number.isSafeInteger(source.quantity) ||
+        source.quantity <= 0 || !Array.isArray(source.observations)) {
       reasons.add("INVALID_SOURCE_ITEM:" + source.item_index);
     }
   }
