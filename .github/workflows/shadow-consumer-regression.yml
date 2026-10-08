@@ -47,6 +47,9 @@ jobs:
       - name: Verify live-derived candidate and its safety guards
         run: node tests/shadow-bar-reconciled-candidate.test.cjs
 
+      - name: Run synthetic full-consumer safety contract
+        run: node tests/shadow-synthetic-contract.test.cjs
+
       - name: Assert no deployment side effects
         run: |
           echo "CI only: never install on CAIXA_MOOCA; no print, fiscal, or cutover."
