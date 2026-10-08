@@ -52,7 +52,7 @@ function smallResource(entries: Array<{label: string; quantity: number}>): strin
   return entries.map((entry) => quantity(entry.quantity) + " " + uppercase(entry.label));
 }
 
-class OfflinePrinter {
+export class OfflinePrinter {
   bytes: number[] = [];
   trace: string[] = [];
   blockers = new Set<string>();
