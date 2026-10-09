@@ -2288,7 +2288,8 @@
       "e594eae": "handback consolidado; cherry-pick provado byte a byte",
       "5862d9d": "contraste AA: faixa de demonstracao e barra do celular da Home (axe-core)",
       "4456e8a": "registros da acessibilidade",
-      "84a2b71": "guarda axe-core em todas as rotas + passo do CI"
+      "84a2b71": "guarda axe-core em todas as rotas + passo do CI",
+      "f3642ef": "registros da guarda de acessibilidade"
     },
     "superficie": "/entregas (Product System); Home, Copiloto, Operacao Viva e Conference Brain intocados",
     "o_que_mudou": [
@@ -2326,7 +2327,7 @@
       "tsc_noEmit": "exit 0",
       "build_platform": "exit 0",
       "governanca": "verde depois de cada registro (L55); G6b acusou 5dfdb4a antes do registro da 3a iteracao — a guarda funciona",
-      "ci_github": "runs 37939179462, 37940776143, 37944988220 e 37946401716: verdes, Chromium 149",
+      "ci_github": "runs 37939179462, 37940776143, 37944988220, 37946401716, 37948684741 e 37948970534: verdes, Chromium 149; o ultimo com a auditoria axe-core (12 auditorias, 0 violacoes, pacote conferido por sha256)",
       "m1b_perceptual": "5/5 (antes BLOQUEADA aqui: rodada com o Chromium do container injetado por pre-carregamento fora do repositorio)",
       "axe_core": "guarda tests/product/run-a11y-axe-tests.ts: 12 auditorias, 0 violacoes (RED em e594eae: 3); no CI com o pacote 4.10.2 conferido por sha256"
     },

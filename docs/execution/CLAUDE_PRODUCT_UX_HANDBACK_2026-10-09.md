@@ -33,7 +33,8 @@
    controle N11b, e a releitura N13/N13b); servidor + PostgreSQL real **6/6**; cadeia real **36/36**;
    mutações da cadeia **0 cegas** (15/15, e M10/M11 de novo depois de cada mudança na view model);
    governança verde; **zero `FAIL_NOVO`** — o C6 do `m1-bridge` segue com os mesmos 12 caminhos da Q-019.
-   **CI da branch verde** em `2c4fc75`, `c4cdb4f`, `6168223` e `8b62ae7` (Chromium 149; local, 141).
+   **CI da branch verde** em `2c4fc75`, `c4cdb4f`, `6168223`, `8b62ae7`, `4456e8a` e `84a2b71` (Chromium 149;
+   local, 141) — o último já com a auditoria axe-core no CI.
    **axe-core 4.10.2: Entregas sem violação**, com e sem banco, a 390 e 1440 px; e um defeito
    pré-existente da rota inicial no celular — a barra inferior da Home a 2,1–2,5:1 — corrigido (§5.2).
 6. **Escala, medida — e o que sobra.** Cada leitura relê e reprojeta o `event_log` inteiro: 1.030.000
@@ -64,8 +65,9 @@
 | `e594eae` | handback consolidado; cherry-pick provado byte a byte |
 | `5862d9d` | **acessibilidade:** contraste AA na faixa de demonstração e na barra do celular da Home (N7b, N7c; axe-core) |
 | `4456e8a` | registros da acessibilidade: §5.2, L61, EVIDENCE, STATE, captura antes/depois |
-| `84a2b71` | **guarda:** a auditoria axe-core em todas as rotas vira teste do repositório e passo do CI (versão fixa, sha256 conferido) |
-| _(este)_ | registros da guarda de acessibilidade |
+| `84a2b71` | **guarda:** a auditoria axe-core em todas as rotas vira teste do repositório e passo do CI (versão fixa, sha256 conferido) — **CI `37948970534` verde** |
+| `f3642ef` | registros da guarda de acessibilidade |
+| _(este)_ | os dois últimos runs de CI anotados |
 
 ## 2. Arquivos
 
@@ -103,6 +105,8 @@
 | **CI da branch** (run `37940776143`, `c4cdb4f`, 2ª iteração) | — | **verde** (mesma lista) |
 | **CI da branch** (run `37944988220`, `6168223`, 3ª iteração: moldura e corte das listas) | — | **verde** (mesma lista) |
 | **CI da branch** (run `37946401716`, `8b62ae7`, com a releitura sem apagar) | — | **verde** (mesma lista) |
+| **CI da branch** (run `37948684741`, `4456e8a`, com o contraste corrigido) | — | **verde** (mesma lista) |
+| **CI da branch** (run `37948970534`, `84a2b71`, com a guarda axe) | — | **verde**, e no log: `axe-core-4.10.2.tgz: OK` (sha256), **12 auditorias, 0 violações**, Chromium 149.0.7827.55 |
 | `test:platform:home` · `organismo` · `visual-order` · `figma-parity` | 44 · 27 · 6 · 24 | **44 · 27 · 6 · 24** |
 | `test:platform:r5` · `skills` · `m1b-mutations` · `platform` · `entregas:ui` · `saude-fontes` · `lab:v4` | verdes | **verdes** (9 gates · 12 · 11/11 · 44 · 23 · 10/10 · 9 mutações 0 cegas); rodados de novo contra `2b8bbf9`: todos verdes |
 | `tsc --noEmit` · `build:platform` | 0 · 0 | **0 · 0** |
