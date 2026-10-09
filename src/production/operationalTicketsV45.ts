@@ -250,6 +250,9 @@ export function projectOperationalTicketsV45(input: OperationalTicketsInputV45):
     warnings.add("PRODUCTION_PLAN_NOT_SHADOW_READY");
   }
   for (const problem of input.production_plan.blocking_reasons) {
+    // The production planner's blocking reasons are authoritative even if
+    // a contradictory ready flag slips through. Never downgrade to warnings.
+    reasons.add("PRODUCTION_MOTOR:" + problem);
     warnings.add("PRODUCTION_MOTOR:" + problem);
   }
   const seenIndices = new Set<number>();
