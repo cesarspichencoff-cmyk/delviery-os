@@ -217,4 +217,29 @@ check("12 incomplete packaging blocks only the conference when stations remain p
   assert.equal(partialBundle.jobs.some(x=>x.channel==="CONFERENCE"),false);
 });
 
+check("13 unrelated kitchen split cannot substitute another order's dishes", () => {
+  const foreign=structuredClone(original);
+  for(const p of foreign.production)p.identifiers={...p.identifiers,tata:"017"};
+  foreign.conference.identifiers={...foreign.conference.identifiers,tata:"017"};
+  const {split:foreignSplit}=bundleFrom(foreign,source);
+  assert.ok(foreignSplit.dishes);
+  const bundle=buildKitchenSeparatedBundleV47(original,foreignSplit);
+  assert.ok(!bundle.jobs.some(x=>x.channel==="KITCHEN_DISHES"),
+    "cross-order kitchen dishes must never enter eligible export jobs");
+  assert.ok(bundle.blocked_proofs.some(x=>x.channel==="KITCHEN_DISHES"));
+  assert.ok(bundle.review_reasons.some(x=>x.includes("KITCHEN_SPLIT_SOURCE_MISMATCH")));
+  assert.ok(bundle.jobs.some(x=>x.channel==="OTHER_PRODUCTION"));
+});
+check("14 detached kitchen fingerprint must not masquerade as this order", () => {
+  const foreign=structuredClone(original);
+  const kitchen=foreign.production.find(p=>p.station==="COZINHA");
+  assert.ok(kitchen);
+  kitchen.fingerprint="f".repeat(64);
+  const {split:foreignSplit}=bundleFrom(foreign,source);
+  const bundle=buildKitchenSeparatedBundleV47(original,foreignSplit);
+  assert.ok(!bundle.jobs.some(x=>x.channel==="KITCHEN_DISHES"));
+  assert.ok(bundle.blocked_proofs.some(x=>x.channel==="KITCHEN_DISHES"));
+  assert.ok(bundle.review_reasons.some(x=>x.includes("KITCHEN_SPLIT_SOURCE_MISMATCH")));
+});
+
 console.log("thermal-semantic-gate-v510: "+checks+"/"+checks+" PASS; SHADOW ONLY");
