@@ -80,7 +80,7 @@ const PRIVACIDADE = Object.freeze({ customer_pii: false, identificador_de_pedido
 /** Só o que esta leitura usa do sistema de arquivos — injetável para teste. */
 export interface ArquivosDoLeitor {
   readonly readFile: (p: string, enc: "utf8") => Promise<string>;
-  readonly stat: (p: string) => Promise<{ readonly mtimeMs: number }>;
+  readonly stat: (p: string) => Promise<{ readonly mtimeMs: number; isFile(): boolean }>;
 }
 const ARQUIVOS_REAIS: ArquivosDoLeitor = { readFile: (p, enc) => readFile(p, enc), stat: (p) => stat(p) };
 
@@ -92,9 +92,15 @@ const ARQUIVOS_REAIS: ArquivosDoLeitor = { readFile: (p, enc) => readFile(p, enc
  * tenta de novo com pausa curta antes de decidir, e nunca lança. Mesma regra do
  * avaliador (`readSignalDoc`/`readMtimeMs` em tata_reader_health_v1.cjs), mas
  * assíncrona: a pausa nunca bloqueia o laço de eventos do servidor.
+ *
+ * Só arquivo REGULAR é aberto (um FIFO no lugar do heartbeat prenderia o open
+ * para sempre e uma das 4 threads de E/S do Node junto); e a leitura inteira tem
+ * prazo (`LIMITE_LEITURA_MS`): disco ou compartilhamento que não responde vira
+ * `indisponivel` declarado, nunca requisição pendurada.
  */
 const TENTATIVAS = 3;
 const PAUSA_MS = 15;
+export const LIMITE_LEITURA_MS = 3000;
 const pausa = (ms: number): Promise<void> => new Promise((ok) => setTimeout(ok, ms));
 
 /** Documento ausente = sinal ausente (null). Presente e ilegível = sinal inválido. */
@@ -102,6 +108,12 @@ async function lerDoc(p: string, fsx: ArquivosDoLeitor, pausaMs: number): Promis
   let ultimo: "AUSENTE" | "ILEGIVEL" = "AUSENTE";
   for (let i = 0; i < TENTATIVAS; i += 1) {
     if (i > 0 && pausaMs > 0) await pausa(pausaMs);
+    try {
+      if (!(await fsx.stat(p)).isFile()) return { schema: "ILEGIVEL" };
+    } catch (e) {
+      ultimo = (e as NodeJS.ErrnoException | null)?.code === "ENOENT" ? "AUSENTE" : "ILEGIVEL";
+      continue;
+    }
     let texto: string;
     try {
       texto = await fsx.readFile(p, "utf8");
@@ -122,8 +134,9 @@ async function lerMtimeMs(p: string, fsx: ArquivosDoLeitor, pausaMs: number): Pr
   for (let i = 0; i < TENTATIVAS; i += 1) {
     if (i > 0 && pausaMs > 0) await pausa(pausaMs);
     try {
-      const m = (await fsx.stat(p)).mtimeMs;
-      if (Number.isFinite(m)) return m;
+      const st = await fsx.stat(p);
+      if (!st.isFile()) return null;
+      if (Number.isFinite(st.mtimeMs)) return st.mtimeMs;
     } catch {
       // janela da troca, ausente ou sem acesso: tenta de novo
     }
@@ -137,6 +150,7 @@ export async function lerSaudeDaFonteTata(
   avaliar: AvaliadorDeSaude,
   fsx: ArquivosDoLeitor = ARQUIVOS_REAIS,
   pausaMs: number = PAUSA_MS,
+  limiteMs: number = LIMITE_LEITURA_MS,
 ): Promise<SaudeDaFonteTata> {
   const avaliado_em = new Date(agoraMs).toISOString();
   if (!raiz || !raiz.trim()) {
@@ -156,12 +170,37 @@ export async function lerSaudeDaFonteTata(
     });
   }
   const c = caminhosDoLeitorTata(raiz.trim());
-  const [ck, hb, hostStatus, consumerStatus] = await Promise.all([
+  const leitura = Promise.all([
     lerMtimeMs(c.checkpoint, fsx, pausaMs),
     lerDoc(c.heartbeat, fsx, pausaMs),
     lerDoc(c.host_status, fsx, pausaMs),
     lerDoc(c.consumer_status, fsx, pausaMs),
   ]);
+  let relogio: ReturnType<typeof setTimeout> | undefined;
+  const prazo = new Promise<"EXPIROU">((ok) => {
+    relogio = setTimeout(() => ok("EXPIROU"), limiteMs);
+  });
+  const lido = await Promise.race([leitura, prazo]);
+  if (relogio !== undefined) clearTimeout(relogio);
+  if (lido === "EXPIROU") {
+    // A leitura que não voltou fica para trás (não lança: cada leitura engole
+    // o próprio erro); a resposta sai agora, declarada.
+    return Object.freeze({
+      id: "tata_comanda_reader",
+      rotulo: ROTULO,
+      configurada: true,
+      estado: "indisponivel",
+      veredito: "UNKNOWN",
+      ao_vivo: false,
+      motivos: Object.freeze(["LEITURA_DOS_ARQUIVOS_EXPIROU"]),
+      idades_s: Object.freeze({}),
+      ultimo_lote: null,
+      avaliado_em,
+      relogio: "mesma_maquina_do_leitor",
+      privacidade: PRIVACIDADE,
+    });
+  }
+  const [ck, hb, hostStatus, consumerStatus] = lido;
   const v = avaliar({ nowMs: agoraMs, heartbeat: hb, hostStatus, consumerStatus, checkpointMtimeMs: ck });
   const ev = v.evidence as { last_batch_outcome?: unknown; last_error_class?: unknown };
   return Object.freeze({

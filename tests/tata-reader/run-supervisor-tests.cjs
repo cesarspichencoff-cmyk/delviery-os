@@ -27,9 +27,14 @@ function montar(nome, invocations, extra = {}) {
   const dir = L.tmpDir(`tata-sup-${nome}-`);
   const state = path.join(dir, "state");
   fs.mkdirSync(state, { recursive: true });
+  // Copia propria do watcher falso (mesmos bytes, mesmo SHA): o supervisor
+  // caca lote sem registro pela linha de comando que cita o watcher, e um
+  // caminho compartilhado faria um teste matar lote de outro.
+  const watcher = path.join(dir, "fake_watcher.ps1");
+  fs.copyFileSync(FAKE, watcher);
   const cfg = {
     schema: "deliveryos.tata-reader-supervisor-config.v1",
-    watcher_path: FAKE,
+    watcher_path: watcher,
     watcher_sha256: L.sha256File(FAKE),
     heartbeat_path: path.join(state, "reader-heartbeat-v1.json"),
     child_record_path: path.join(state, "reader-supervisor-child-v1.json"),
@@ -353,6 +358,30 @@ function vivo(pid) {
     const hb = m.hb();
     assert.deepEqual(hb.last_batch.effects_true, ["database_read", "local_checkpoint_write", "local_event_write"]);
     assert.deepEqual(hb.watcher.effects_allowed_true, ["database_read", "local_checkpoint_write", "local_event_write"]);
+  });
+
+  await teste("S23 lote SEM registro (supervisor morto entre Process.Start e o registro): o proximo supervisor o acha pela linha de comando e encerra antes de qualquer lote", async () => {
+    const m = montar("s23", ["hang", "ok"], { progress_stall_seconds: 120, batch_timeout_seconds: 120 });
+    // O lote "sem registro": a mesma linha de comando de um lote do supervisor,
+    // iniciada a mao e sem gravar o registro do filho.
+    const lote = L.spawnPwsh(pwsh, ["-File", m.cfg.watcher_path, "-MaxPolls", "3", "-PollSeconds", "1", "-StablePolls", "2", "-TopOrders", "50",
+      "-CheckpointPath", path.join(m.state, "checkpoint.json"), "-EventDir", path.join(m.state, "events")]);
+    try {
+      const comecou = await L.waitFor(() => fs.existsSync(path.join(m.state, "fake-invocations.txt")), 20000);
+      assert.ok(comecou, "o lote sem registro nao comecou");
+      assert.equal(fs.existsSync(m.cfg.child_record_path), false, "o cenario exige lote SEM registro");
+      const r = rodar(m, 1);
+      assert.equal(r.status, 0, r.stderr);
+      assert.match(r.stderr, /UNRECORDED_BATCH UNRECORDED_STOPPED/);
+      assert.ok(await L.waitFor(() => !vivo(lote.pid), 10000), `o lote sem registro ${lote.pid} continua vivo`);
+      const hb = m.hb();
+      assert.equal(hb.startup.command_line_hunt, "UNRECORDED_STOPPED");
+      assert.equal(hb.startup.child_record, "NONE");
+      assert.equal(hb.last_batch.outcome, "OK");
+      assert.equal(fs.readFileSync(path.join(m.state, "fake-invocations.txt"), "utf8"), "2", "o lote novo nao rodou depois do orfao");
+    } finally {
+      try { lote.kill("SIGKILL"); } catch { /* ja saiu */ }
+    }
   });
 
   await teste("S22 arquivo do supervisor e ASCII puro (Windows PowerShell 5.1 le UTF-8 sem BOM como ANSI)", () => {

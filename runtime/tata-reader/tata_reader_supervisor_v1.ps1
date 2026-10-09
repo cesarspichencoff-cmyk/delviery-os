@@ -21,11 +21,16 @@
     - aplica backoff exponencial limitado depois de falha;
     - escreve um heartbeat atomico, sem PII e sem texto bruto de erro.
 
-  NUNCA DOIS ESCRITORES. Um lote so comeca quando nao ha outro vivo: o processo
+  DOIS ESCRITORES, NAO. Um lote so comeca quando nao ha outro vivo: o processo
   filho e registrado (PID + hora de inicio) antes de qualquer leitura; se o
   registro falha, o filho e morto na hora; se um filho nao morre, nenhum lote
   novo comeca (BLOCKED_CHILD_ALIVE); registro ilegivel de execucao anterior vira
-  quarentena do tempo maximo de vida de um lote.
+  quarentena do tempo maximo de vida de um lote. Segunda camada, na partida:
+  caca pela linha de comando de lote SEM registro (supervisor morto entre
+  Process.Start e a gravacao do registro). Limite declarado: se a lista de
+  processos nao puder ser lida (WMI negado ou falhando) E o supervisor anterior
+  tiver morrido exatamente nessa janela de milissegundos, um lote pode
+  sobrepor; a partida registra LIST_UNKNOWN no heartbeat em vez de travar.
 
   NUNCA CAI POR ACIDENTE. O host do servico so tem dois restarts do SCM por
   24 h. Erro de SQL, de arquivo (antivirus, indexador, a janela do File.Replace
@@ -202,6 +207,9 @@ $state = [ordered]@{
   blocked = $null
   totals = [ordered]@{ batches = 0; ok = 0; failed = 0; polls = 0; events_emitted = 0; duplicates_suppressed = 0 }
   watcher_sha256_verified = $false
+  # O que a partida achou de lote anterior: pelo registro do filho e pela
+  # linha de comando (lote sem registro).
+  startup = [ordered]@{ child_record = $null; command_line_hunt = $null }
 }
 # O filho vivo deste supervisor (no maximo um). Nenhum lote novo comeca
 # enquanto ele existir.
@@ -252,6 +260,7 @@ function Write-HeartbeatNow {
     next_attempt_at = $state.next_attempt_at
     fatal = $state.fatal
     blocked = $state.blocked
+    startup = $state.startup
     totals = $state.totals
     effects = [ordered]@{
       supervisor_database_read = $false
@@ -333,11 +342,25 @@ function Test-SameProcess($Process, $RecordedStart) {
   } catch { return $false }
 }
 
-# Mata e CONFIRMA. Devolve $true so quando o processo nao existe mais.
+# Linux (testes): processo morto que o pai ainda nao recolheu fica "Z" na
+# tabela. Ja nao executa nada; contar como vivo travaria a confirmacao. No
+# Windows nao ha esse estado: sempre $false.
+function Test-Zombie([int]$ProcessId) {
+  if (-not $IsLinux) { return $false }
+  try { return ([IO.File]::ReadAllText("/proc/" + $ProcessId + "/stat") -match "^\d+ \(.*\) Z ") } catch { return $true }
+}
+
+# Mata e CONFIRMA. Devolve $true so quando o processo nao existe mais (ou
+# virou zumbi, que nao escreve).
 function Stop-AndConfirm($Process) {
   try { if ($Process.HasExited) { return $true } } catch { return $true }
   try { $Process.Kill() } catch { }
-  try { return [bool]$Process.WaitForExit(15000) } catch { return $false }
+  $sw = [Diagnostics.Stopwatch]::StartNew()
+  while ($sw.ElapsedMilliseconds -lt 15000) {
+    try { if ($Process.WaitForExit(200)) { return $true } } catch { return $true }
+    if (Test-Zombie $Process.Id) { return $true }
+  }
+  return $false
 }
 
 # O host mata o supervisor sem sinal; o lote filho pode sobreviver ate terminar
@@ -354,6 +377,44 @@ function Stop-OrphanBatch {
   if (-not (Test-SameProcess $p $rec.process_start_utc)) { return "PID_REUSED_NOT_TOUCHED" }
   if (Stop-AndConfirm $p) { return "ORPHAN_STOPPED" }
   return "ORPHAN_ALIVE"
+}
+
+# Lote SEM registro: o supervisor anterior morreu entre Process.Start e a
+# gravacao do registro (janela de milissegundos), ou o registro foi tirado do
+# caminho. Caca pela linha de comando, como o cutover: processo PowerShell que
+# cita o watcher e nao e este supervisor. O servico so enxerga a linha de
+# comando de processos do proprio usuario, e e com ele que os lotes rodam;
+# linha de comando ilegivel e de outro usuario e fica de fora.
+# Devolve NONE, UNRECORDED_STOPPED, UNRECORDED_ALIVE ou LIST_UNKNOWN.
+function Stop-UnrecordedBatches {
+  $shell = "^(powershell|pwsh)(\.exe)?$"
+  $ids = @()
+  try {
+    if ($PSVersionTable.PSVersion.Major -ge 7) {
+      foreach ($p in @(Get-Process -ErrorAction Stop)) {
+        if ($p.ProcessName -notmatch $shell -or $p.Id -eq $PID) { continue }
+        if (Test-Zombie $p.Id) { continue }
+        $cl = $null
+        try { $cl = $p.CommandLine } catch { $cl = $null }
+        if ($null -ne $cl -and $cl.IndexOf($cfg.watcher_path, [StringComparison]::OrdinalIgnoreCase) -ge 0) { $ids += [int]$p.Id }
+      }
+    } else {
+      foreach ($p in @(Get-CimInstance -ClassName Win32_Process -ErrorAction Stop)) {
+        if ([string]$p.Name -notmatch $shell -or [int]$p.ProcessId -eq $PID) { continue }
+        $cl = [string]$p.CommandLine
+        if ($cl.IndexOf($cfg.watcher_path, [StringComparison]::OrdinalIgnoreCase) -ge 0) { $ids += [int]$p.ProcessId }
+      }
+    }
+  } catch { return "LIST_UNKNOWN" }
+  if ($ids.Count -eq 0) { return "NONE" }
+  $alive = 0
+  foreach ($procId in $ids) {
+    $p = $null
+    try { $p = Get-Process -Id $procId -ErrorAction Stop } catch { continue }
+    if (-not (Stop-AndConfirm $p)) { $alive++ }
+  }
+  if ($alive -gt 0) { return "UNRECORDED_ALIVE" }
+  return "UNRECORDED_STOPPED"
 }
 
 function Remove-ChildRecord {
@@ -596,6 +657,15 @@ try {
   if ($orphan -ne "NONE" -and $orphan -ne "NOT_RUNNING") {
     [Console]::Error.WriteLine((Now-Iso) + " ORPHAN_BATCH " + $orphan)
   }
+  # Segunda camada, independente do registro. Lista desconhecida (WMI negado
+  # ou falhando) NAO trava o leitor: fica declarada no heartbeat e a primeira
+  # camada (registro do filho) continua valendo.
+  $hunt = "LIST_UNKNOWN"
+  try { $hunt = Stop-UnrecordedBatches } catch { $hunt = "LIST_UNKNOWN" }
+  $state.startup.child_record = $orphan
+  $state.startup.command_line_hunt = $hunt
+  if ($hunt -ne "NONE") { [Console]::Error.WriteLine((Now-Iso) + " UNRECORDED_BATCH " + $hunt) }
+  if ($hunt -eq "UNRECORDED_ALIVE" -and $orphan -ne "RECORD_UNREADABLE" -and $orphan -ne "ORPHAN_ALIVE") { $orphan = "ORPHAN_ALIVE" }
   if ($orphan -eq "RECORD_UNREADABLE" -or $orphan -eq "ORPHAN_ALIVE") {
     # Nao da para provar que o lote anterior acabou: espera o tempo maximo
     # de vida de um lote antes de comecar outro.

@@ -24,7 +24,8 @@
        o lote orfao sobrevive e o rollback o encerra pela linha de comando.
 
   So roda em maquina DESCARTAVEL: exige GITHUB_ACTIONS=true e recusa se o
-  servico TataComandaReader ja existir. Nunca rodar numa CAIXA.
+  servico TataComandaReader ou a pasta C:\ProgramData\TataComandaReader ja
+  existirem. Nunca rodar numa CAIXA.
   Saida: um JSON por cenario em -OutDir e exit 0 so se todos passarem.
 #>
 param(
@@ -37,8 +38,12 @@ $ErrorActionPreference = "Stop"
 if ($env:GITHUB_ACTIONS -ne "true") { throw "RECUSADO: so em runner descartavel (GITHUB_ACTIONS=true)" }
 $Svc = "TataComandaReader"
 if ($null -ne (Get-Service -Name $Svc -ErrorAction SilentlyContinue)) { throw "RECUSADO: o servico $Svc ja existe nesta maquina" }
-
 $Root = "C:\ProgramData\TataComandaReader"
+# Servico removido com dados guardados tambem nao e maquina descartavel: nada
+# aqui sobrescreve bin\, checkpoint ou ACL de uma instalacao que ja existiu.
+if ([IO.Directory]::Exists($Root)) { throw "RECUSADO: $Root ja existe nesta maquina" }
+if ([IO.Directory]::Exists("C:\TATA-E2E")) { throw "RECUSADO: C:\TATA-E2E ja existe nesta maquina" }
+
 $Bin = [IO.Path]::Combine($Root, "bin")
 $State = [IO.Path]::Combine($Root, "state")
 $Evidence = [IO.Path]::Combine($Root, "evidence")

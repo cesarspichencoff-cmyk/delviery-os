@@ -193,22 +193,33 @@ function hb(over = {}) {
 
   await teste("H16 leitura tolerante a troca (fs injetado): falha passageira vira leitura; ausencia e lixo persistentes viram ausente e invalido; nunca lanca", () => {
     const erro = (code) => Object.assign(new Error(code), { code });
-    const roteiro = (passos) => {
-      let i = 0;
-      const prox = () => { const p = passos[Math.min(i, passos.length - 1)]; i += 1; if (p instanceof Error) throw p; return p; };
-      return { fs: { readFileSync: prox, statSync: prox }, pauseMs: 0, chamadas: () => i };
+    const REG = (mtimeMs = 1) => ({ mtimeMs, isFile: () => true });
+    const FIFO = { mtimeMs: 1, isFile: () => false };
+    // Roteiros separados para stat e leitura: a leitura so acontece depois de
+    // um stat que diz "arquivo regular".
+    const roteiro = (stat, ler = [erro("ENOENT")]) => {
+      const n = { stat: 0, ler: 0 };
+      const prox = (lista, k) => { const p = lista[Math.min(n[k], lista.length - 1)]; n[k] += 1; if (p instanceof Error) throw p; return p; };
+      return { fs: { statSync: () => prox(stat, "stat"), readFileSync: () => prox(ler, "ler") }, pauseMs: 0, chamadas: n };
     };
-    let r = roteiro([erro("ENOENT"), erro("ENOENT"), { mtimeMs: 1234 }]);
+    let r = roteiro([erro("ENOENT"), erro("ENOENT"), REG(1234)]);
     assert.equal(H.readMtimeMs("ck", r), 1234, "stat que volta na terceira tentativa");
-    assert.equal(r.chamadas(), 3);
-    r = roteiro([erro("ENOENT"), '{"schema":"x","v":1}']);
+    assert.equal(r.chamadas.stat, 3);
+    r = roteiro([erro("ENOENT"), REG()], ['{"schema":"x","v":1}']);
     assert.deepEqual(H.readSignalDoc("hb", r), { schema: "x", v: 1 }, "leitura que volta na segunda tentativa");
+    r = roteiro([REG()], [erro("ENOENT"), '{"schema":"x"}']);
+    assert.deepEqual(H.readSignalDoc("hb", r), { schema: "x" }, "sumiu entre o stat e a leitura e voltou");
     r = roteiro([erro("ENOENT")]);
     assert.equal(H.readSignalDoc("hb", r), null, "ausente de verdade = sinal ausente");
-    assert.equal(r.chamadas(), H.READ_ATTEMPTS);
-    assert.deepEqual(H.readSignalDoc("hb", roteiro(["{quebrado"])), { schema: "UNREADABLE" });
-    assert.deepEqual(H.readSignalDoc("hb", roteiro([erro("EPERM")])), { schema: "UNREADABLE" }, "presente e sem acesso = invalido, nao ausente");
-    assert.deepEqual(H.readSignalDoc("hb", roteiro([erro("ENOENT"), "\uFEFF{\"a\":1}"])), { a: 1 }, "BOM no comeco");
+    assert.equal(r.chamadas.stat, H.READ_ATTEMPTS);
+    assert.deepEqual(H.readSignalDoc("hb", roteiro([REG()], ["{quebrado"])), { schema: "UNREADABLE" });
+    assert.deepEqual(H.readSignalDoc("hb", roteiro([REG()], [erro("EPERM")])), { schema: "UNREADABLE" }, "presente e sem acesso = invalido, nao ausente");
+    assert.deepEqual(H.readSignalDoc("hb", roteiro([erro("EPERM")])), { schema: "UNREADABLE" }, "stat sem acesso = invalido");
+    assert.deepEqual(H.readSignalDoc("hb", roteiro([REG()], [erro("ENOENT"), "\uFEFF{\"a\":1}"])), { a: 1 }, "BOM no comeco");
+    r = roteiro([FIFO], ['{"nunca":"lido"}']);
+    assert.deepEqual(H.readSignalDoc("hb", r), { schema: "UNREADABLE" }, "FIFO/dispositivo no lugar do heartbeat = invalido");
+    assert.equal(r.chamadas.ler, 0, "abriu um arquivo que nao e regular (um FIFO prenderia a leitura)");
+    assert.equal(H.readMtimeMs("ck", roteiro([FIFO])), null, "checkpoint nao regular nao tem idade");
     assert.equal(H.readMtimeMs("ck", roteiro([erro("EPERM")])), null);
     assert.equal(H.readMtimeMs(null), null);
     assert.equal(H.readSignalDoc(""), null);
@@ -247,6 +258,25 @@ function hb(over = {}) {
     } finally {
       w.kill("SIGKILL");
     }
+  });
+
+  await teste("H18 FIFO no lugar do heartbeat: o CLI responde na hora com sinal INVALIDO (antes, ficava preso no open para sempre)", () => {
+    if (process.platform === "win32") {
+      console.log("      (Windows nao tem FIFO no sistema de arquivos: caso coberto pelo H16 com stat injetado)");
+      return;
+    }
+    const dir = L.tmpDir("tata-health-fifo-");
+    const hbPath = path.join(dir, "reader-heartbeat-v1.json");
+    const mk = spawnSync("mkfifo", [hbPath], { encoding: "utf8" });
+    assert.equal(mk.status, 0, `mkfifo: ${mk.stderr}`);
+    const t0 = Date.now();
+    const r = spawnSync(process.execPath, [CLI, "--heartbeat", hbPath], { encoding: "utf8", timeout: 10000 });
+    const ms = Date.now() - t0;
+    assert.notEqual(r.signal, "SIGTERM", `CLI preso no FIFO (${ms} ms)`);
+    assert.equal(r.status, 3, r.stdout + r.stderr);
+    assert.equal(JSON.parse(r.stdout).verdict, "UNKNOWN");
+    assert.ok(JSON.parse(r.stdout).reasons.includes("HEARTBEAT_SCHEMA_INVALID"));
+    assert.ok(ms < 5000, `demorou ${ms} ms`);
   });
 
   fim("TATA_READER_HEALTH");

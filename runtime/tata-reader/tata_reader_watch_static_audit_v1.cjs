@@ -24,13 +24,19 @@
  *     here-string): INSERT INTO, UPDATE ... SET, DELETE, MERGE, TRUNCATE,
  *     ALTER/CREATE/DROP, GRANT/REVOKE/DENY, EXEC, BULK INSERT, SELECT INTO,
  *     xp_/sp_;
- *   - API de escrita: ExecuteNonQuery, SqlBulkCopy, BeginTransaction;
+ *   - API de escrita: ExecuteNonQuery, SqlBulkCopy, BeginTransaction,
+ *     SqlDataAdapter/SqlCommandBuilder, provedores OleDb/Odbc;
  *   - CommandText que nao seja UM literal sem interpolacao (variavel,
  *     concatenacao, -f, "$(...)": SQL montado em tempo de execucao nao se
- *     audita lendo o arquivo); construtor SqlCommand com argumentos;
- *   - codigo dinamico: Invoke-Expression/iex, [ScriptBlock]::Create,
+ *     audita lendo o arquivo); construtor SqlCommand com argumentos, por
+ *     New-Object ou por ::new;
+ *   - membro dinamico ($x.'Nome', $x."Nome", $x.$n, $x.(expr)): o nome do
+ *     que se chama ou atribui nao fica no texto;
+ *   - codigo dinamico: Invoke-Expression/iex, [ScriptBlock]::Create (curto
+ *     ou qualificado), $ExecutionContext.InvokeCommand (NewScriptBlock,
+ *     InvokeScript), [PowerShell]::Create/AddScript, RunspaceFactory,
  *     Add-Type, DllImport, -EncodedCommand, Invoke-Command, Start-Process,
- *     Start-Job, InvokeScript;
+ *     Start-Job, & ou . com variavel/expressao, Import-Module;
  *   - rede e impressao;
  *   - ausencia de conferencia de identidade (servico e login SQL).
  *
@@ -178,8 +184,20 @@ const SQL_WRITE_SHAPE = new RegExp(
 // Mais largo, so para o texto que comprovadamente vai ao SQL Server
 // (here-strings e CommandText literal).
 const SQL_WRITE_WORD = /\b(INSERT|UPDATE|DELETE|MERGE|TRUNCATE|ALTER|CREATE|DROP|GRANT|REVOKE|DENY|EXEC|EXECUTE|BULK|OPENROWSET|OPENQUERY|xp_\w+|sp_\w+)\b/i;
-const WRITE_API = /\b(ExecuteNonQuery|SqlBulkCopy|BeginTransaction)\b/i;
-const DYNAMIC_CODE = /\b(Invoke-Expression|Add-Type|Invoke-Command|Start-Process|Start-Job|InvokeScript|DllImport)\b|\[\s*ScriptBlock\s*\]\s*::\s*Create|-EncodedCommand\b|(?:^|[\s;|(&])iex\b/im;
+const WRITE_API = /\b(ExecuteNonQuery|SqlBulkCopy|BeginTransaction|SqlDataAdapter|SqlCommandBuilder|OleDb\w*|Odbc\w*)\b/i;
+const DYNAMIC_CODE = new RegExp([
+  "\\b(Invoke-Expression|Add-Type|Invoke-Command|Start-Process|Start-Job|InvokeScript|NewScriptBlock|InvokeCommand|AddScript|RunspaceFactory|DllImport|Import-Module|ipmo|icm|saps|sajb)\\b",
+  "\\[\\s*(?:System\\.)?(?:Management\\.Automation\\.)?(?:ScriptBlock|PowerShell)\\s*\\]\\s*::\\s*Create",
+  "\\busing\\s+module\\b",
+  "-EncodedCommand\\b",
+  "(?:^|[\\s;|(&])iex\\b",
+  // & ou . (chamada/dot-source) com variavel, expressao ou texto: o que roda nao fica no arquivo.
+  "(?:^|[;\\n{(|])[ \\t]*[&.][ \\t]+(?:\\$|\\(|" + PH + "|[A-Za-z]:|\\.{1,2}[\\\\/])",
+  "(?:^|[;\\n{(|=])[ \\t]*&[ \\t]*(?:\\$|\\(|" + PH + ")",
+].join("|"), "im");
+// Membro dinamico: ponto colado ao objeto e seguido de texto, variavel ou
+// expressao. Faixa (1..$n) e numero decimal ficam de fora.
+const DYNAMIC_MEMBER = new RegExp("(?<![.\\d\\s])\\.(?!\\.)(?:" + PH + "\\d+" + PH + "|\\$|\\()");
 const NETWORK = /\b(Invoke-WebRequest|Invoke-RestMethod|Net\.WebClient|Net\.Http\.HttpClient|HttpWebRequest|Net\.Sockets\.TcpClient|Net\.Sockets\.UdpClient|Send-MailMessage)\b/i;
 const PRINT = /\b(Out-Printer|Drawing\.Printing|PrintDocument|winspool)\b|-Verb\s+Print/i;
 
@@ -259,6 +277,7 @@ function auditWatcherScript(source) {
   }
   if (/\bset_CommandText\b|CommandText\s*=\s*\$|-Property\s+@\{[^}]*CommandText/i.test(code)) notLiteral.push("atribuicao indireta");
   if (new RegExp(`SqlCommand\\b\\s*(?:\\(|-ArgumentList\\b|\\$|${PH})`, "i").test(code.replace(/SqlCommand\s*\(\s*\)/gi, ""))) notLiteral.push("construtor SqlCommand com argumentos");
+  if (/SqlCommand\s*\]\s*::\s*new\s*\((?!\s*\))/i.test(code)) notLiteral.push("SqlCommand::new com argumentos");
   props.command_texts_literal = cmdTexts.length;
   for (const t of [...cmdTexts, ...tk.strings.filter((s) => s.kind.startsWith("here")).map((s) => s.body)]) {
     const m = t.replace(/--[^\n]*/g, "").match(SQL_WRITE_WORD);
@@ -270,7 +289,9 @@ function auditWatcherScript(source) {
   const w = code.match(WRITE_API);
   if (w) findings.push({ code: "FORBIDDEN_WRITE_API", severity: "FORBIDDEN", detail: w[1] });
   const d = code.match(DYNAMIC_CODE);
-  if (d) findings.push({ code: "FORBIDDEN_DYNAMIC_CODE", severity: "FORBIDDEN", detail: d[0].trim() });
+  if (d) findings.push({ code: "FORBIDDEN_DYNAMIC_CODE", severity: "FORBIDDEN", detail: d[0].trim().replace(new RegExp(PH, "g"), "'") });
+  const dm = code.match(DYNAMIC_MEMBER);
+  if (dm) findings.push({ code: "FORBIDDEN_DYNAMIC_MEMBER", severity: "FORBIDDEN", detail: code.slice(Math.max(0, dm.index - 12), dm.index + 6).replace(new RegExp(PH, "g"), "'").trim() });
   if (NETWORK.test(code)) findings.push({ code: "FORBIDDEN_NETWORK_SURFACE", severity: "FORBIDDEN", detail: code.match(NETWORK)[1] });
   if (PRINT.test(code)) findings.push({ code: "FORBIDDEN_PRINT_SURFACE", severity: "FORBIDDEN", detail: code.match(PRINT)[0] });
   if (!props.identity_checked) findings.push({ code: "IDENTITY_NOT_CHECKED", severity: "FORBIDDEN", detail: "sem conferencia de identidade do servico e do login SQL" });

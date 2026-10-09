@@ -141,6 +141,29 @@ const codigos = (r) => r.findings.map((f) => f.code).sort();
     }
   });
 
+  await teste("A14 contornos da 2a revisao (e vizinhos): ::new com argumentos, membro entre aspas ou dinamico, ScriptBlock qualificado, NewScriptBlock, AddScript, & com expressao — todos DO_NOT_INSTALL", () => {
+    const ancora = "      $result.effects.database_read=$true\n";
+    const casos = {
+      ctor_new_scalar: ["      $s = 'UPD' + 'ATE TEKNISA.COMANDAVEN SET IDSTCOMANDA = IDSTCOMANDA'; $w = [Data.SqlClient.SqlCommand]::new($s, $conn); $null = $w.ExecuteScalar()\n", ["COMMAND_TEXT_NOT_LITERAL"]],
+      ctor_new_qualificado: ["      $w = [System.Data.SqlClient.SqlCommand]::new($q)\n", ["COMMAND_TEXT_NOT_LITERAL"]],
+      membro_entre_aspas: ["      $w = $conn.CreateCommand(); $w.'CommandText' = ('UPD' + 'ATE TEKNISA.COMANDAVEN SET IDSTCOMANDA = IDSTCOMANDA'); $null = $w.ExecuteScalar()\n", ["FORBIDDEN_DYNAMIC_MEMBER"]],
+      membro_em_variavel: ["      $n = 'Command' + 'Text'; $w = $conn.CreateCommand(); $w.$n = $q\n", ["FORBIDDEN_DYNAMIC_MEMBER"]],
+      membro_entre_aspas_duplas: ["      $w = $conn.CreateCommand(); $w.\"CommandText\" = $q\n", ["FORBIDDEN_DYNAMIC_MEMBER"]],
+      scriptblock_qualificado: ["      & ([Management.Automation.ScriptBlock]::Create([Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($env:X))))\n", ["FORBIDDEN_DYNAMIC_CODE"]],
+      scriptblock_system: ["      $b = [System.Management.Automation.ScriptBlock]::Create($env:X)\n", ["FORBIDDEN_DYNAMIC_CODE"]],
+      new_scriptblock: ["      & $ExecutionContext.InvokeCommand.NewScriptBlock($env:X)\n", ["FORBIDDEN_DYNAMIC_CODE"]],
+      powershell_addscript: ["      [PowerShell]::Create().AddScript($env:X).Invoke()\n", ["FORBIDDEN_DYNAMIC_CODE"]],
+      chamada_por_variavel: ["      $c = 'Invoke-' + 'Expression'; & $c $env:X\n", ["FORBIDDEN_DYNAMIC_CODE"]],
+      dot_source_externo: ["      . $env:X\n", ["FORBIDDEN_DYNAMIC_CODE"]],
+      import_module: ["      Import-Module $env:X\n", ["FORBIDDEN_DYNAMIC_CODE"]],
+    };
+    for (const [nome, [linha, esperados]] of Object.entries(casos)) {
+      const r = A.auditWatcherScript(trocarUmaVez(INSTALADO, ancora, ancora + linha));
+      assert.equal(r.recommendation, "DO_NOT_INSTALL", nome);
+      for (const c of esperados) assert.ok(codigos(r).includes(c), `${nome}: faltou ${c} em ${codigos(r)}`);
+    }
+  });
+
   await teste("A12 tokenizador: aspas escapadas, crase, here-string com # e '@ dentro, e comentario dentro de texto nao enganam", () => {
     const t = A.tokenize([
       "$a = 'it''s # nao e comentario'",

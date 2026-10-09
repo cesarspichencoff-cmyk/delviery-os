@@ -153,18 +153,31 @@ async function main(): Promise<void> {
     const erro = (code: string) => Object.assign(new Error(code), { code });
     const CK = "reader-watch-checkpoint-v1.json";
     const HB = "reader-heartbeat-v1.json";
-    const roteiro = (porArquivo: Record<string, unknown[]>): ArquivosDoLeitor => {
+    // Por arquivo, roteiros separados para stat e leitura: a leitura so
+    // acontece depois de um stat que diz "arquivo regular". Arquivo fora do
+    // mapa = ausente; arquivo no mapa sem stat roteirizado = regular.
+    type Stat = { mtimeMs: number; isFile(): boolean };
+    const REG = (mtimeMs = 1): Stat => ({ mtimeMs, isFile: () => true });
+    const roteiro = (porArquivo: Record<string, { stat?: unknown[]; ler?: unknown[] }>): ArquivosDoLeitor => {
       const k: Record<string, number> = {};
-      const prox = (p: string): unknown => {
-        const nome = p.split(/[\\/]/).pop() as string;
-        const passos = porArquivo[nome] ?? [erro("ENOENT")];
-        const i = k[nome] ?? 0;
-        k[nome] = i + 1;
+      const prox = (chave: string, passos: unknown[]): unknown => {
+        const i = k[chave] ?? 0;
+        k[chave] = i + 1;
         const x = passos[Math.min(i, passos.length - 1)];
         if (x instanceof Error) throw x;
         return x;
       };
-      return { stat: async (p) => prox(p) as { mtimeMs: number }, readFile: async (p) => prox(p) as string };
+      const nome = (p: string) => p.split(/[\\/]/).pop() as string;
+      return {
+        stat: async (p) => {
+          const r = porArquivo[nome(p)];
+          return prox(`${nome(p)}:stat`, r ? (r.stat ?? [REG()]) : [erro("ENOENT")]) as Stat;
+        },
+        readFile: async (p) => {
+          const r = porArquivo[nome(p)];
+          return prox(`${nome(p)}:ler`, r?.ler ?? [erro("ENOENT")]) as string;
+        },
+      };
     };
     const visto: { atual: { heartbeat: unknown; checkpointMtimeMs: number | null } | null } = { atual: null };
     const espiao: AvaliadorDeSaude = (e) => {
@@ -174,15 +187,22 @@ async function main(): Promise<void> {
     const ler = (fsx: ArquivosDoLeitor) => lerSaudeDaFonteTata("/x", Date.now(), espiao, fsx, 0);
     // Funcao, nao a propriedade: o assert de tipo do node estreitaria visto.atual entre os casos.
     const atual = (): unknown => visto.atual;
-    await ler(roteiro({ [CK]: [erro("ENOENT"), erro("ENOENT"), { mtimeMs: 42 }], [HB]: [erro("ENOENT"), '{"schema":"s"}'] }));
+    await ler(roteiro({ [CK]: { stat: [erro("ENOENT"), erro("ENOENT"), REG(42)] }, [HB]: { stat: [erro("ENOENT"), REG()], ler: ['{"schema":"s"}'] } }));
     assert.deepEqual(atual(), { heartbeat: { schema: "s" }, checkpointMtimeMs: 42 }, "falha passageira tem que virar leitura");
-    await ler(roteiro({ [CK]: [erro("EPERM")] }));
+    await ler(roteiro({ [HB]: { ler: [erro("ENOENT"), '{"schema":"s2"}'] } }));
+    assert.deepEqual((atual() as { heartbeat?: unknown } | null)?.heartbeat, { schema: "s2" }, "sumiu entre o stat e a leitura e voltou");
+    await ler(roteiro({ [CK]: { stat: [erro("EPERM")] } }));
     assert.deepEqual(atual(), { heartbeat: null, checkpointMtimeMs: null }, "ausente de verdade");
-    const lixo = await ler(roteiro({ [HB]: ["{lixo"] }));
+    const lixo = await ler(roteiro({ [HB]: { ler: ["{lixo"] } }));
     assert.deepEqual((atual() as { heartbeat?: unknown } | null)?.heartbeat, { schema: "ILEGIVEL" });
     assert.equal(lixo.veredito, "UNKNOWN");
-    await ler(roteiro({ [HB]: [erro("EPERM")] }));
+    await ler(roteiro({ [HB]: { ler: [erro("EPERM")] } }));
     assert.deepEqual((atual() as { heartbeat?: unknown } | null)?.heartbeat, { schema: "ILEGIVEL" }, "presente e sem acesso = invalido, nao ausente");
+    let abriu = false;
+    const fifo = roteiro({ [HB]: { stat: [{ mtimeMs: 1, isFile: () => false }] }, [CK]: { stat: [{ mtimeMs: 1, isFile: () => false }] } });
+    await ler({ stat: fifo.stat, readFile: async (p, enc) => { abriu = true; return fifo.readFile(p, enc); } });
+    assert.deepEqual(atual(), { heartbeat: { schema: "ILEGIVEL" }, checkpointMtimeMs: null }, "nao regular = invalido, sem idade");
+    assert.equal(abriu, false, "abriu arquivo que nao e regular (um FIFO prenderia a leitura)");
   });
 
   await teste("F8 janela REAL da troca em dois renames (como o NTFS): a leitura antiga lanca nela (controle positivo); /api/fontes nunca lanca", async () => {
@@ -235,6 +255,32 @@ async function main(): Promise<void> {
     assert.ok(ms >= 25, `as tentativas nao esperaram: ${ms} ms`);
     assert.ok(tiques >= 5, `laco de eventos parado: ${tiques} tiques em ${ms} ms`);
     assert.equal(s.estado, "indisponivel");
+  });
+
+  await teste("F10 leitura que nunca volta (disco ou compartilhamento sem resposta): a rota responde no prazo, indisponivel e declarada; FIFO real nao prende", async () => {
+    // Injetado: o heartbeat nunca termina de ler.
+    const preso: ArquivosDoLeitor = {
+      stat: async () => ({ mtimeMs: Date.now(), isFile: () => true }),
+      readFile: () => new Promise<string>(() => undefined),
+    };
+    const t0 = Date.now();
+    const s = await lerSaudeDaFonteTata("/x", Date.now(), evaluateTataReaderHealthV1, preso, 0, 200);
+    const ms = Date.now() - t0;
+    assert.ok(ms < 1500, `a rota esperou ${ms} ms`);
+    assert.equal(s.estado, "indisponivel");
+    assert.equal(s.veredito, "UNKNOWN");
+    assert.deepEqual([...s.motivos], ["LEITURA_DOS_ARQUIVOS_EXPIROU"]);
+    assert.equal(s.ao_vivo, false);
+    if (process.platform === "win32") return;
+    // Real: um FIFO no lugar do heartbeat (o open de FIFO sem escritor nao volta).
+    const r = raizCom({ host: HOST_RUNNING, checkpointIdadeS: 1 });
+    const mk = spawnSync("mkfifo", [join(r, "state", "reader-heartbeat-v1.json")], { encoding: "utf8" });
+    assert.equal(mk.status, 0, mk.stderr);
+    const t1 = Date.now();
+    const f = await lerSaudeDaFonteTata(r, Date.now(), evaluateTataReaderHealthV1);
+    assert.ok(Date.now() - t1 < 1500, `FIFO prendeu a leitura por ${Date.now() - t1} ms`);
+    assert.equal(f.veredito, "UNKNOWN");
+    assert.ok(f.motivos.includes("HEARTBEAT_SCHEMA_INVALID"), [...f.motivos].join(","));
   });
 
   console.log(`\nSAUDE_FONTES: ${passou}/${passou + falhas.length} PASS`);

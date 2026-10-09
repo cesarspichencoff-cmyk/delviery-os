@@ -8,6 +8,12 @@
 
   -FailStartOnce: a primeira chamada de "iniciar o servico" lanca, para provar
   que erro depois do primeiro efeito vira rollback com recibo, nunca saida 1.
+  -BreakProcessListOnRollback: a partir da parada do rollback, enumerar
+  processos falha (como um WMI que falha por um instante); com
+  -ErrorAction SilentlyContinue a falha some e a lista volta VAZIA.
+  -FailMoveAsideOnRollback: no rollback, tirar o heartbeat do caminho lanca
+  (antivirus segurando o arquivo).
+  -ProbeBatchPolls: tamanho do lote do supervisor (padrao 3).
 #>
 param(
   [Parameter(Mandatory = $true)][string]$CutoverScript,
@@ -25,10 +31,14 @@ param(
   [string]$RollbackDir = "",
   [int]$HealthWait = 45,
   [int]$RollbackProof = 30,
-  [switch]$FailStartOnce
+  [int]$ProbeBatchPolls = 3,
+  [switch]$FailStartOnce,
+  [switch]$BreakProcessListOnRollback,
+  [switch]$FailMoveAsideOnRollback
 )
 $ErrorActionPreference = "Stop"
-$probe = @{ Root = $Root; HostJs = $HostJs; Node = $Node; Pwsh = $Pwsh; PidFile = $PidFile; FailStartOnce = [bool]$FailStartOnce; StartCalls = 0 }
+$probe = @{ Root = $Root; HostJs = $HostJs; Node = $Node; Pwsh = $Pwsh; PidFile = $PidFile; FailStartOnce = [bool]$FailStartOnce; StartCalls = 0
+  StopCalls = 0; BreakProcList = [bool]$BreakProcessListOnRollback; ProcListBroken = $false; FailMoveAside = [bool]$FailMoveAsideOnRollback }
 . $CutoverScript
 
 function Get-FakeHostPid {
@@ -39,13 +49,29 @@ function Get-FakeHostPid {
 }
 function Test-FakeAlive($Id) {
   if ($null -eq $Id) { return $false }
-  try { $p = Get-Process -Id $Id -ErrorAction Stop; return (-not $p.HasExited) } catch { return $false }
+  try { $p = Microsoft.PowerShell.Management\Get-Process -Id $Id -ErrorAction Stop; return (-not $p.HasExited) } catch { return $false }
 }
 # ---- substituicoes do SCM -------------------------------------------------
 function Get-ScmState { if (Test-FakeAlive (Get-FakeHostPid)) { return "Running" } return "Stopped" }
 function Invoke-ServiceStop {
+  $probe.StopCalls++
+  # A segunda parada e a do rollback: dali em diante as falhas injetadas valem.
+  if ($probe.StopCalls -ge 2 -and $probe.BreakProcList) { $probe.ProcListBroken = $true }
   $h = Get-FakeHostPid
   if (Test-FakeAlive $h) { & /bin/kill -TERM $h }
+}
+# Enumeracao de processos que falha (so a enumeracao; -Id continua): com
+# -ErrorAction SilentlyContinue a falha some e a lista volta vazia.
+function Get-Process {
+  [CmdletBinding()] param([int[]]$Id)
+  if ($PSBoundParameters.ContainsKey("Id")) { return Microsoft.PowerShell.Management\Get-Process -Id $Id }
+  if ($probe.ProcListBroken) { Write-Error "SIMULATED_PROCESS_LIST_FAILURE"; return }
+  return Microsoft.PowerShell.Management\Get-Process
+}
+$script:OriginalMoveAside = ${function:Move-Aside}
+function Move-Aside([string]$Path, [string]$Suffix) {
+  if ($probe.FailMoveAside -and $probe.StopCalls -ge 2 -and [IO.Path]::GetFileName($Path) -eq "reader-heartbeat-v1.json") { throw "SIMULATED_MOVE_ASIDE_LOCK" }
+  return (& $script:OriginalMoveAside $Path $Suffix)
 }
 function Invoke-ServiceStart {
   $probe.StartCalls++
@@ -78,7 +104,7 @@ $ExpectedHostBinarySha256 = $ConfirmHost
 $RepoRuntimeDir = $RuntimeDir
 $NodeExe = $Node
 $PowerShellExe = $Pwsh
-$BatchPolls = 3
+$BatchPolls = $ProbeBatchPolls
 $HealthWaitSeconds = $HealthWait
 $MinOkBatches = 2
 $RollbackProofSeconds = $RollbackProof

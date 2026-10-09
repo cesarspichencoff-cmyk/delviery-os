@@ -246,6 +246,9 @@ function evaluateTataReaderHealthV1(input) {
 // existsSync falso virava "sinal ausente" (DOWN espurio). Agora cada leitura
 // tenta de novo, com pausa curta, e so entao decide: ausente = sinal ausente
 // (null); presente e ilegivel = sinal invalido; nunca lanca.
+// So arquivo REGULAR e aberto: um FIFO, dispositivo ou diretorio no lugar do
+// heartbeat prenderia a leitura para sempre (o open de um FIFO sem escritor
+// nao volta). Nao regular = sinal invalido, sem nova tentativa.
 const READ_ATTEMPTS = 3;
 const READ_PAUSE_MS = 15;
 
@@ -261,6 +264,14 @@ function readSignalDoc(p, opts = {}) {
   let last = "ABSENT";
   for (let i = 0; i < attempts; i++) {
     if (i > 0) sleepSync(pauseMs);
+    let st;
+    try {
+      st = fsImpl.statSync(p);
+    } catch (e) {
+      last = e && e.code === "ENOENT" ? "ABSENT" : "UNREADABLE";
+      continue;
+    }
+    if (!st.isFile()) return { schema: "UNREADABLE" };
     let text;
     try {
       text = fsImpl.readFileSync(p, "utf8");
@@ -285,8 +296,9 @@ function readMtimeMs(p, opts = {}) {
   for (let i = 0; i < attempts; i++) {
     if (i > 0) sleepSync(pauseMs);
     try {
-      const m = fsImpl.statSync(p).mtimeMs;
-      if (Number.isFinite(m)) return m;
+      const st = fsImpl.statSync(p);
+      if (!st.isFile()) return null;
+      if (Number.isFinite(st.mtimeMs)) return st.mtimeMs;
     } catch {
       // janela da troca, ausente ou sem acesso: tenta de novo
     }

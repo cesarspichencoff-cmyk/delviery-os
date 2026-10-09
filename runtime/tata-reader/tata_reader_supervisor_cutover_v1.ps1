@@ -15,7 +15,9 @@
     -Mode Rollback  restaura um backup anterior (-BackupDir) e prova.
 
   ORDEM DO APPLY (cada fase depois da primeira e protegida por rollback):
-    1 parar o servico e confirmar que nenhum watcher antigo ficou vivo;
+    1 parar o servico e confirmar que NENHUM escritor do checkpoint ficou
+      vivo: o watcher antigo e, numa reinstalacao, o lote orfao do supervisor
+      anterior; lista de processos desconhecida = aborta e religa o antigo;
     2 backup com manifesto SHA (nada escreve durante a copia);
     3 instalar por arquivo temporario + SHA + troca atomica;
     4 linha de base do checkpoint (estavel: servico parado);
@@ -24,12 +26,15 @@
       OK, efeitos DECLARADOS pelo watcher dentro da politica, checkpoint
       andando, saude HEALTHY.
 
-  ROLLBACK: para o servico; encerra todo processo cuja linha de comando cite o
-  candidato (o host mata so o supervisor; o lote filho sobrevive) e confirma;
-  se algum nao morrer, NAO restaura (dois escritores no checkpoint) e para
-  pedindo humano; restaura watcher e checkpoint conferindo SHA; tira candidato,
-  configuracao e heartbeat do caminho; inicia; prova checkpoint andando, watcher
-  restaurado e nenhum processo do candidato vivo.
+  ROLLBACK: para o servico; encerra todo processo PowerShell cuja linha de
+  comando cite o caminho fixo (primeiro: pode abrir lote) ou o candidato (o
+  host mata so o supervisor; o lote filho sobrevive), em rodadas ate uma
+  limpa, e confirma; se algum nao morrer, ou se a lista de processos nao for
+  conhecida, NAO restaura (dois escritores no checkpoint) e para pedindo
+  humano; restaura watcher e checkpoint conferindo SHA; tira candidato,
+  configuracao e heartbeat do caminho (falha aqui so fica registrada); inicia;
+  prova checkpoint andando, watcher restaurado e nenhum processo do candidato
+  vivo (lista desconhecida nao prova).
 
   FRONTEIRA (o que este script NUNCA faz): escrita no SQL Server, grant ou
   revogacao de permissao, impressao/spooler, Odhen, fiscal/SEFAZ, rede,
@@ -231,43 +236,96 @@ function Assert-Admin {
   if (-not $p.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) { throw "ADMINISTRATOR_REQUIRED" }
 }
 
+# Linux (testes): processo morto que o pai ainda nao recolheu fica "Z" na
+# tabela, sem linha de comando. Ja nao executa nada: nao e escritor. No
+# Windows nao ha esse estado: sempre $false.
+function Test-Zombie([int]$ProcessId) {
+  if (-not $IsLinux) { return $false }
+  try { return ([IO.File]::ReadAllText("/proc/" + $ProcessId + "/stat") -match "^\d+ \(.*\) Z ") } catch { return $true }
+}
+
 # Processos DO POWERSHELL cuja linha de comando cita o caminho (um editor
 # aberto no arquivo nunca entra). No Windows PowerShell 5.1 a linha de comando
 # so vem do CIM; no PowerShell 7 vem do proprio Get-Process (tambem no Linux,
 # o que deixa esta funcao testavel fora do Windows).
+# Linha de comando de UM processo, relida agora: $null = nao existe mais (ou
+# zumbi); "" = vivo e ilegivel neste instante; texto = a linha de comando.
+function Read-ProcessCommandLine([int]$ProcessId) {
+  if ($PSVersionTable.PSVersion.Major -ge 7) {
+    if (Test-Zombie $ProcessId) { return $null }
+    $p = $null
+    try { $p = Get-Process -Id $ProcessId -ErrorAction Stop } catch { return $null }
+    try { if ($p.HasExited) { return $null } } catch { return $null }
+    $cl = $null
+    try { $cl = $p.CommandLine } catch { $cl = $null }
+    if ([string]::IsNullOrEmpty([string]$cl)) { return "" }
+    return [string]$cl
+  }
+  $w = $null
+  try { $w = Get-CimInstance -ClassName Win32_Process -Filter ("ProcessId=" + $ProcessId) -ErrorAction Stop } catch { return "" }
+  if ($null -eq $w) { return $null }
+  if ([string]::IsNullOrEmpty([string]$w.CommandLine)) { return "" }
+  return [string]$w.CommandLine
+}
+
+# FALHA FECHADA: enumeracao que falha, ou PowerShell vivo cuja linha de
+# comando continua ilegivel depois de ~2 s de novas leituras, LANCA
+# "PROCESS_LIST_UNKNOWN". Lista vazia afirmaria "ninguem vivo" sem saber, e e
+# com essa afirmacao que o rollback restaura. Ilegivel por um instante e o
+# normal de quem esta nascendo ou saindo: espera curta e reconsulta.
 function Find-ProcessesByCommandLine([string]$Needle) {
   $out = @()
   # Retorno simples: o chamador usa @(...), que normaliza 0, 1 ou N; com o
   # operador virgula o @() embrulharia o array e a contagem daria sempre 1.
   if ([string]::IsNullOrWhiteSpace($Needle)) { return $out }
   $shell = "^(powershell|pwsh)(\.exe)?$"
-  if ($PSVersionTable.PSVersion.Major -ge 7) {
-    foreach ($p in @(Get-Process -ErrorAction SilentlyContinue)) {
-      if ($p.ProcessName -notmatch $shell -or $p.Id -eq $PID) { continue }
-      $cl = $null
-      try { $cl = $p.CommandLine } catch { $cl = $null }
-      if ($null -ne $cl -and $cl.IndexOf($Needle, [StringComparison]::OrdinalIgnoreCase) -ge 0) { $out += [int]$p.Id }
-    }
-  } else {
-    foreach ($p in @(Get-CimInstance -ClassName Win32_Process -ErrorAction SilentlyContinue)) {
-      if ([string]$p.Name -notmatch $shell -or [int]$p.ProcessId -eq $PID) { continue }
+  $procs = $null
+  try {
+    if ($PSVersionTable.PSVersion.Major -ge 7) { $procs = @(Get-Process -ErrorAction Stop) }
+    else { $procs = @(Get-CimInstance -ClassName Win32_Process -ErrorAction Stop) }
+  } catch { throw "PROCESS_LIST_UNKNOWN" }
+  foreach ($p in $procs) {
+    if ($PSVersionTable.PSVersion.Major -ge 7) {
+      if ($p.ProcessName -notmatch $shell) { continue }
+      $id = [int]$p.Id
+      if ($id -eq $PID) { continue }
+      $cl = Read-ProcessCommandLine $id
+    } else {
+      if ([string]$p.Name -notmatch $shell) { continue }
+      $id = [int]$p.ProcessId
+      if ($id -eq $PID) { continue }
       $cl = [string]$p.CommandLine
-      if ($cl.IndexOf($Needle, [StringComparison]::OrdinalIgnoreCase) -ge 0) { $out += [int]$p.ProcessId }
     }
+    if ($null -ne $cl -and $cl -eq "") {
+      for ($i = 0; $i -lt 10; $i++) {
+        Start-Sleep -Milliseconds 200
+        $cl = Read-ProcessCommandLine $id
+        if ($null -eq $cl -or $cl -ne "") { break }
+      }
+      if ($null -ne $cl -and $cl -eq "") { throw "PROCESS_LIST_UNKNOWN" }
+    }
+    if ($null -eq $cl) { continue }
+    if ($cl.IndexOf($Needle, [StringComparison]::OrdinalIgnoreCase) -ge 0) { $out += $id }
   }
   return $out
 }
 
 # Mata todo processo que cite o caminho e CONFIRMA. Devolve quantos foram
-# encerrados e quantos continuam vivos.
+# encerrados e quantos continuam vivos; alive = -1 quando a lista de processos
+# nao e conhecida (nunca 0 por nao saber).
 function Stop-ProcessesByCommandLine([string]$Needle) {
   $killed = 0
-  foreach ($procId in @(Find-ProcessesByCommandLine $Needle)) {
+  try { $ids = @(Find-ProcessesByCommandLine $Needle) } catch { return [ordered]@{ killed = 0; alive = -1 } }
+  foreach ($procId in $ids) {
     try {
       $p = Get-Process -Id $procId -ErrorAction Stop
       $p.Kill()
-      [void]$p.WaitForExit(15000)
       $killed++
+      $sw = [Diagnostics.Stopwatch]::StartNew()
+      while ($sw.ElapsedMilliseconds -lt 15000) {
+        if ($p.WaitForExit(200)) { break }
+        if (Test-Zombie $procId) { break }
+      }
     } catch { }
   }
   # Confirmacao por nova busca, repetida: um processo morto ainda aparece por
@@ -275,11 +333,34 @@ function Stop-ProcessesByCommandLine([string]$Needle) {
   # e confiavel em toda plataforma).
   $alive = 0
   for ($i = 0; $i -lt 34; $i++) {
-    $alive = @(Find-ProcessesByCommandLine $Needle).Count
+    try { $alive = @(Find-ProcessesByCommandLine $Needle).Count } catch { return [ordered]@{ killed = $killed; alive = -1 } }
     if ($alive -eq 0) { break }
     Start-Sleep -Milliseconds 300
   }
   return [ordered]@{ killed = $killed; alive = $alive }
+}
+
+# Todo escritor possivel do checkpoint: o que roda no caminho fixo do host (o
+# watcher antigo, ou um supervisor que sobreviveu ao host) PRIMEIRO, porque
+# ele pode abrir lote novo; depois os lotes do candidato. Repete ate uma rodada
+# limpa (nada morto): um supervisor vivo entre as duas buscas poderia ter
+# aberto um lote. alive: 0 provado; > 0 vivo; -1 desconhecido ou instavel.
+function Stop-AllWriters($Layout) {
+  $res = [ordered]@{ host_path_killed = 0; candidate_killed = 0; alive = -1; rounds = 0; list_unknown = $false; unstable = $false }
+  for ($r = 1; $r -le 3; $r++) {
+    $res.rounds = $r
+    $a = Stop-ProcessesByCommandLine $Layout.host_fixed_watcher
+    $b = Stop-ProcessesByCommandLine $Layout.candidate_target
+    $res.host_path_killed += $a.killed
+    $res.candidate_killed += $b.killed
+    if ($a.alive -lt 0 -or $b.alive -lt 0) { $res.list_unknown = $true; $res.alive = -1; return $res }
+    $res.alive = $a.alive + $b.alive
+    if ($res.alive -gt 0) { return $res }
+    if ($a.killed -eq 0 -and $b.killed -eq 0) { return $res }
+  }
+  $res.unstable = $true
+  $res.alive = -1
+  return $res
 }
 
 function Get-SqlSessionAfter([datetime]$Since) {
@@ -517,11 +598,13 @@ function Invoke-Rollback($L, [string]$Dir, $Receipt) {
     # O host mata so o supervisor; o lote filho sobrevive. Todo processo que
     # cite o candidato ou o caminho fixo e encerrado, e confirmado.
     $rb.phase = "KILL_CANDIDATE_BATCHES"
-    $k1 = Stop-ProcessesByCommandLine $L.candidate_target
-    $k2 = Stop-ProcessesByCommandLine $L.host_fixed_watcher
-    $rb.candidate_processes_killed = $k1.killed
-    $rb.host_path_processes_killed = $k2.killed
-    if ($k1.alive -gt 0 -or $k2.alive -gt 0) {
+    $w = Stop-AllWriters $L
+    $rb.stop_writers = $w
+    $rb.candidate_processes_killed = $w.candidate_killed
+    $rb.host_path_processes_killed = $w.host_path_killed
+    if ($w.alive -ne 0) {
+      # Nunca restaura sem PROVAR que ninguem mais escreve: desconhecido nao e zero.
+      if ($w.list_unknown) { $rb.result = "PROCESS_LIST_UNKNOWN"; return "ROLLBACK_BLOCKED_PROCESS_LIST_UNKNOWN_HUMAN_REQUIRED" }
       $rb.result = "CANDIDATE_PROCESS_ALIVE"
       return "ROLLBACK_BLOCKED_CANDIDATE_ALIVE_HUMAN_REQUIRED"
     }
@@ -539,15 +622,21 @@ function Invoke-Rollback($L, [string]$Dir, $Receipt) {
     # Fora do caminho: candidato, configuracao do supervisor, heartbeat e
     # registro de filho. Heartbeat velho faria a saude dizer STALLED/FATAL
     # sobre um supervisor que nao roda mais.
+    # Arrumacao, nao restauracao: falhar aqui (antivirus segurando o
+    # heartbeat, por exemplo) fica registrado e NUNCA impede o servico de
+    # voltar com o watcher ja restaurado.
     $hadConfig = (@($man.items | Where-Object { [string]$_.backup -eq "supervisor_config.json" }).Count -gt 0)
     $rb.moved_aside = @()
-    foreach ($p in @($L.candidate_target, $L.heartbeat, $L.child_record)) {
-      $moved = Move-Aside $p $suffix
-      if ($null -ne $moved) { $rb.moved_aside += [IO.Path]::GetFileName($moved) }
-    }
-    if (-not $hadConfig) {
-      $moved = Move-Aside $L.supervisor_config $suffix
-      if ($null -ne $moved) { $rb.moved_aside += [IO.Path]::GetFileName($moved) }
+    $rb.move_aside_errors = @()
+    $aside = @($L.candidate_target, $L.heartbeat, $L.child_record)
+    if (-not $hadConfig) { $aside += $L.supervisor_config }
+    foreach ($p in $aside) {
+      try {
+        $moved = Move-Aside $p $suffix
+        if ($null -ne $moved) { $rb.moved_aside += [IO.Path]::GetFileName($moved) }
+      } catch {
+        $rb.move_aside_errors += ([IO.Path]::GetFileName($p) + ":" + (Get-ExceptionClass $_))
+      }
     }
 
     $rb.phase = "START"
@@ -560,7 +649,8 @@ function Invoke-Rollback($L, [string]$Dir, $Receipt) {
       Start-Sleep -Seconds 2
       if ((Get-CheckpointTicks $L) -gt $ckBefore) { $advanced = $true; break }
     }
-    $candidateAlive = @(Find-ProcessesByCommandLine $L.candidate_target).Count
+    $candidateAlive = -1
+    try { $candidateAlive = @(Find-ProcessesByCommandLine $L.candidate_target).Count } catch { $candidateAlive = -1 }
     $restoredSha = Get-Sha $L.host_fixed_watcher
     $originalSha = [string](@($man.items | Where-Object { [string]$_.backup -eq "installed_watcher.ps1" })[0].sha256)
     $rb.scm_running = $running
@@ -652,11 +742,18 @@ function Invoke-Apply($L, $Receipt, [string]$HealthCli, [string]$RunDir) {
     try { Invoke-ServiceStart } catch { }
     return "ABORTED_STOP_FAILED"
   }
-  $old = Stop-ProcessesByCommandLine $L.host_fixed_watcher
-  $Receipt.checks.old_watcher_processes_killed = $old.killed
-  if ($old.alive -gt 0) {
+  # Todo escritor do checkpoint fica parado E CONFIRMADO antes da copia: o
+  # watcher antigo e, numa segunda instalacao, o lote orfao do supervisor
+  # anterior (o host mata so o supervisor). O registro do filho vai para fora
+  # do caminho na instalacao; e esta caca que torna isso seguro.
+  $w = Stop-AllWriters $L
+  $Receipt.checks.stop_writers = $w
+  $Receipt.checks.old_watcher_processes_killed = $w.host_path_killed
+  $Receipt.checks.candidate_processes_killed_at_stop = $w.candidate_killed
+  if ($w.alive -ne 0) {
     try { Invoke-ServiceStart } catch { }
-    return "ABORTED_OLD_WATCHER_ALIVE"
+    if ($w.list_unknown) { return "ABORTED_PROCESS_LIST_UNKNOWN" }
+    return "ABORTED_OLD_WRITER_ALIVE"
   }
 
   # ----------------------------------------------------------- 2 backup --

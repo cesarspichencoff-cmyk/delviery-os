@@ -19,9 +19,15 @@ const path = require("node:path");
 const { spawnSync } = require("node:child_process");
 const L = require("./lib.cjs");
 
-const { teste, pular, fim } = L.runner("TATA_READER_CUTOVER_E2E");
+const { teste: testeBase, pular, fim } = L.runner("TATA_READER_CUTOVER_E2E");
+// TATA_E2E_ONLY=E8,E9: roda so esses cenarios (para o vermelho de antes, que
+// nao precisa repetir os outros). Vazio = todos.
+const SO = (process.env.TATA_E2E_ONLY || "").split(",").map((x) => x.trim()).filter(Boolean);
+const teste = (nome, fn) => (SO.length && !SO.some((id) => nome.startsWith(`${id} `)) ? Promise.resolve() : testeBase(nome, fn));
 const RUNTIME = path.join(L.ROOT, "runtime", "tata-reader");
-const CUT = path.join(RUNTIME, "tata_reader_supervisor_cutover_v1.ps1");
+// TATA_CUTOVER_UNDER_TEST: roda as mesmas provas contra outra versao do
+// cutover (ex.: a de um commit anterior), para mostrar o vermelho de antes.
+const CUT = process.env.TATA_CUTOVER_UNDER_TEST || path.join(RUNTIME, "tata_reader_supervisor_cutover_v1.ps1");
 const SUP = path.join(RUNTIME, "tata_reader_supervisor_v1.ps1");
 const FIX = path.join(L.ROOT, "tests", "tata-reader", "fixtures");
 const PROBE = path.join(L.ROOT, "tests", "tata-reader", "cutover_e2e_probe.ps1");
@@ -95,10 +101,31 @@ function sonda(ctx, modo, opts = {}) {
   }
   if (opts.rollbackDir) args.push("-RollbackDir", opts.rollbackDir);
   if (opts.failStartOnce) args.push("-FailStartOnce");
+  if (opts.batchPolls) args.push("-ProbeBatchPolls", String(opts.batchPolls));
+  if (opts.breakProcList) args.push("-BreakProcessListOnRollback");
+  if (opts.failMoveAside) args.push("-FailMoveAsideOnRollback");
   const r = L.runPwsh(pwsh, args, { timeout: 300000 });
   let recibo = null;
   try { recibo = JSON.parse(r.stdout.slice(r.stdout.indexOf("{"), r.stdout.lastIndexOf("}") + 1)); } catch { /* */ }
   return { code: r.status, recibo, stderr: r.stderr, stdout: r.stdout };
+}
+
+// Vigia em OUTRO processo (a sonda roda sincrona): conta, a cada 200 ms, os
+// processos PowerShell cuja linha de comando cita o alvo; guarda o maximo.
+function vigiar(alvo, saida) {
+  const { spawn } = require("node:child_process");
+  const codigo = `
+const { execFileSync } = require("node:child_process"); const fs = require("node:fs");
+const [alvo, saida] = process.argv.slice(1); let max = 0, amostras = 0;
+setInterval(() => {
+  try {
+    const ps = execFileSync("ps", ["-eo", "pid=,args="], { encoding: "utf8" });
+    const n = ps.split("\\n").filter((l) => l.includes(alvo) && /pwsh|powershell/.test(l) && !l.includes("ps -eo")).length;
+    amostras += 1; if (n > max) max = n;
+    fs.writeFileSync(saida, JSON.stringify({ max, amostras }));
+  } catch { /* proxima amostra */ }
+}, 200);`;
+  return spawn(process.execPath, ["-e", codigo, alvo, saida], { stdio: "ignore" });
 }
 
 function semCandidatoVivo(ctx) {
@@ -225,6 +252,52 @@ function semCandidatoVivo(ctx) {
       assert.equal(r.recibo.error_phase, "START");
       assert.equal(L.sha256File(path.join(ctx.root, "bin", "tata_reader_continuous_watch_candidate_v1.ps1")), ctx.sha.v1);
       assert.ok(fs.existsSync(path.join(path.dirname(r.recibo.backup_dir), "receipt-apply.json")));
+      limpar(ctx);
+    });
+
+    await teste("E8 reinstalacao (supervisor -> supervisor) com lote em curso: o orfao do supervisor anterior morre na parada e nunca ha dois lotes ao mesmo tempo (0)", async () => {
+      const ctx = await montar("reinstala", "ok");
+      const r1 = sonda(ctx, "Apply", { batchPolls: 25, healthWait: 150 });
+      assert.equal(r1.code, 0, `1o Apply: ${r1.recibo && r1.recibo.decision}\n${r1.stderr}`);
+      const alvo = path.join(ctx.root, "bin", "tata_reader_continuous_watch_candidate_v2.ps1");
+      assert.ok(await L.waitFor(() => processosCom(alvo).length === 1, 40000), "nenhum lote em curso para virar orfao");
+      const saida = path.join(ctx.root, "vigia.json");
+      const vigia = vigiar(alvo, saida);
+      try {
+        await L.sleep(800);
+        const r2 = sonda(ctx, "Apply", { batchPolls: 25, healthWait: 150, installed: ctx.sha.supervisor });
+        await L.sleep(1500);
+        const v = L.readJson(saida);
+        assert.equal(r2.code, 0, `2o Apply: ${r2.recibo && r2.recibo.decision}\n${JSON.stringify(r2.recibo && r2.recibo.checks.stop_writers)}\n${r2.stderr}`);
+        assert.equal(r2.recibo.decision, "APPLIED_HEALTHY");
+        assert.ok(r2.recibo.checks.candidate_processes_killed_at_stop >= 1, `orfao nao foi morto na parada: ${JSON.stringify(r2.recibo.checks.stop_writers)}`);
+        assert.ok(v.amostras > 50, `vigia com poucas amostras: ${v.amostras}`);
+        assert.equal(v.max, 1, `dois lotes do candidato ao mesmo tempo (max=${v.max})`);
+      } finally {
+        vigia.kill("SIGKILL");
+        limpar(ctx);
+      }
+    });
+
+    await teste("E9 lista de processos indisponivel no rollback: NAO restaura (desconhecido nao e zero) e para pedindo humano (2)", async () => {
+      const ctx = await montar("listaruim", "fail");
+      const r = sonda(ctx, "Apply", { healthWait: 25, breakProcList: true });
+      assert.equal(r.code, 2, `${r.recibo && r.recibo.decision}\n${JSON.stringify(r.recibo && r.recibo.rollback, null, 1)}\n${r.stderr}`);
+      assert.equal(r.recibo.decision, "GATE_FAILED_ROLLBACK_BLOCKED_PROCESS_LIST_UNKNOWN_HUMAN_REQUIRED");
+      assert.equal(r.recibo.rollback.result, "PROCESS_LIST_UNKNOWN");
+      assert.equal(r.recibo.rollback.stop_writers.list_unknown, true);
+      assert.equal(L.sha256File(path.join(ctx.root, "bin", "tata_reader_continuous_watch_candidate_v1.ps1")), ctx.sha.supervisor, "restaurou sem saber se havia escritor vivo");
+      limpar(ctx);
+    });
+
+    await teste("E10 falha ao tirar o heartbeat do caminho no rollback (antivirus): fica registrada, o v1 volta a escrever e o rollback e PROVADO (3)", async () => {
+      const ctx = await montar("arrumacao", "fail");
+      const r = sonda(ctx, "Apply", { healthWait: 25, failMoveAside: true });
+      assert.equal(r.code, 3, `${r.recibo && r.recibo.decision}\n${JSON.stringify(r.recibo && r.recibo.rollback, null, 1)}\n${r.stderr}`);
+      assert.equal(r.recibo.decision, "GATE_FAILED_ROLLBACK_PROVEN");
+      assert.ok(r.recibo.rollback.move_aside_errors.some((e) => e.startsWith("reader-heartbeat-v1.json:")), JSON.stringify(r.recibo.rollback.move_aside_errors));
+      assert.equal(L.sha256File(path.join(ctx.root, "bin", "tata_reader_continuous_watch_candidate_v1.ps1")), ctx.sha.v1);
+      assert.equal(L.readJson(path.join(ctx.root, "state", "reader-watch-checkpoint-v1.json")).writer, "v1");
       limpar(ctx);
     });
   } finally {

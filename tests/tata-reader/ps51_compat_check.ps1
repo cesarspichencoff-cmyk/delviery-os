@@ -35,10 +35,19 @@ Remove-Item -LiteralPath $control -Force
 if ($c.Count -lt 3) { "CONTROLE_POSITIVO_FALHOU: analisador acusou $($c.Count)/3 — checagem cega"; "PS51_COMPAT_RED"; exit 1 }
 "  ok  controle positivo: $($c.Count) incompatibilidades acusadas"
 
+# O que roda no Windows PowerShell 5.1: na CAIXA (supervisor, cutover, watcher
+# instalado) e no job windows-real-scm (orquestrador, sonda da logica e as
+# fixtures que fazem papel de watcher). A sonda ponta a ponta com SCM simulado
+# fica de fora: usa sinais POSIX e so roda no Linux.
 $alvos = @(
   "runtime/tata-reader/tata_reader_supervisor_v1.ps1",
   "runtime/tata-reader/tata_reader_supervisor_cutover_v1.ps1",
-  "tests/tata-reader/fixtures/watcher_v1_installed_256dc42.ps1"
+  "tests/tata-reader/fixtures/watcher_v1_installed_256dc42.ps1",
+  "tests/tata-reader/windows/real_scm_cutover_e2e.ps1",
+  "tests/tata-reader/cutover_logic_probe.ps1",
+  "tests/tata-reader/fixtures/fake_watcher.ps1",
+  "tests/tata-reader/fixtures/fake_candidate_v2.ps1",
+  "tests/tata-reader/fixtures/fake_watcher_v1_continuous.ps1"
 )
 $total = 0
 foreach ($rel in $alvos) {
