@@ -298,6 +298,56 @@ async function main(): Promise<void> {
     assert.ok(ui.includes("O aparelho em campo (demonstracao)"));
   });
 
+  await teste("B5.11 Product System declara medicao antiga sem inventar que aparelho parou", async () => {
+    const facade = await montarEntregasDemo();
+    const snap = await facade.snapshot();
+    const registroFila = (reportada_em: string): RealidadeDeEntregas => ({
+      versao: "fixture-b5-freshness",
+      fonte: "postgresql",
+      lida_em: AGORA.toISOString(),
+      aparelhos: [{
+        device_id: DEVICE,
+        unit_id: UNIDADE,
+        actor_id: ATOR,
+        label: "Aparelho B5",
+        autorizado_em: "2026-10-05T12:00:00.000Z",
+        credencial_vinculada_em: "2026-10-05T12:01:00.000Z",
+        ultima_sessao_em: "2026-10-06T08:00:00.000Z",
+        app_version: "1.0.0",
+        revogado_em: null,
+        fila_offline: { pending_points: 7, pending_events: 3, reportada_em },
+        fatos_por_modo: { real: 0, simulated: 0, control: 0 },
+        ultimo_lote: null,
+      }],
+      projecoes: [],
+      historico_sem_modo: 0,
+    });
+    const apresenta = (reportadaEm: string) =>
+      entregasVM(snap, AGORA.toISOString(), facade.getPolicyMaxStops(), {
+        disponivel: true, realidade: registroFila(reportadaEm),
+      }).realidade.aparelhos[0];
+    const recente = apresenta("2026-10-06T08:50:00.000Z");
+    const antiga = apresenta("2026-10-06T07:00:00.000Z");
+    const invalida = apresenta("instante-invalido");
+    const ler = (a: typeof recente) => (a as unknown as {
+      fila_offline_frescor?: { observado: boolean; valor?: string };
+    }).fila_offline_frescor;
+    assert.equal(ler(recente)?.valor, "fresh");
+    assert.equal(ler(antiga)?.valor, "stale");
+    assert.equal(ler(invalida)?.valor, "unknown");
+    assert.equal(antiga.fila_offline.observado, true, "historico real nao desaparece");
+    assert.equal(antiga.fila_offline.observado && antiga.fila_offline.valor, 10);
+    assert.equal(antiga.fila_offline_pontos.observado && antiga.fila_offline_pontos.valor, 7);
+    assert.equal(antiga.fila_offline_eventos.observado && antiga.fila_offline_eventos.valor, 3);
+  });
+
+  await teste("B5.12 UI identifica ultimo relato e destaca medicao desatualizada", () => {
+    const ui = readFileSync(join(process.cwd(), "src/product/ui/surfaces/entregas.js"), "utf8");
+    assert.ok(ui.includes("fila_offline_frescor"));
+    assert.ok(ui.includes("Ultimo relato do aparelho"));
+    assert.ok(ui.includes('estado: "stale"'), "medicao historica exige indicacao visivel");
+  });
+
   if (falhas.length) {
     console.error(`\nB5_QUEUE_DEPTH: ${passaram}/${passaram + falhas.length} PASS`);
     for (const f of falhas) console.error(" -", f);
