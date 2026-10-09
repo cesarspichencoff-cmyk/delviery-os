@@ -74,6 +74,14 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+# Windows PowerShell 5.1 aberto com o PSModulePath do PowerShell 7 (herdado de
+# um pai qualquer) tenta carregar modulos do 7 e quebra o que vem de modulo
+# (Get-CimInstance, Get-FileHash). O pwsh limpa isso quando ele mesmo abre o
+# powershell.exe; aqui a limpeza vale para qualquer pai. Provado no Windows
+# real: CI 37867864216, todo lote WATCHER_UNREADABLE.
+if ($PSVersionTable.PSEdition -eq "Desktop" -and $env:PSModulePath) {
+  $env:PSModulePath = (@($env:PSModulePath -split ";") | Where-Object { $_ -and $_ -notmatch "(^|[\\/])PowerShell([\\/]|$)" }) -join ";"
+}
 $CutoverSchema = "deliveryos.tata-reader-supervisor-cutover-receipt.v2"
 $ServiceIdentity = "NT SERVICE\TataComandaReader"
 # A mesma politica do supervisor, repetida aqui de proposito: o gate compara
@@ -396,9 +404,16 @@ function Get-BinWritableByNonAdmin([string]$Bin) {
 
 # ========================================================= infraestrutura ==
 
+# SHA-256 por .NET puro: no Windows PowerShell 5.1, Get-FileHash e funcao de
+# modulo carregada sob demanda e falha com PSModulePath herdado do PowerShell 7.
 function Get-Sha([string]$Path) {
   if (-not [IO.File]::Exists($Path)) { return $null }
-  return (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToUpperInvariant()
+  $sha = [Security.Cryptography.SHA256]::Create()
+  try {
+    $fs = [IO.File]::Open($Path, [IO.FileMode]::Open, [IO.FileAccess]::Read, ([IO.FileShare]::ReadWrite -bor [IO.FileShare]::Delete))
+    try { $h = $sha.ComputeHash($fs) } finally { $fs.Dispose() }
+  } finally { $sha.Dispose() }
+  return ([BitConverter]::ToString($h)).Replace("-", "")
 }
 
 function Read-JsonOrNull([string]$Path) {

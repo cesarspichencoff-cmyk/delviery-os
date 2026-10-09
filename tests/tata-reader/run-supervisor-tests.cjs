@@ -310,8 +310,7 @@ function vivo(pid) {
     const hb = m.hb();
     assert.equal(hb.last_batch.outcome, "CHILD_RECORD_WRITE_FAILED");
     assert.equal(hb.totals.ok, 0);
-    const ps = require("node:child_process").spawnSync("ps", ["-eo", "args"], { encoding: "utf8" }).stdout;
-    const vivos = ps.split("\n").filter((l) => l.includes(m.state) && l.includes("fake_watcher.ps1"));
+    const vivos = L.linhasDeComando().filter((l) => l.includes(m.state) && l.includes("fake_watcher.ps1") && !/Get-CimInstance/.test(l));
     assert.deepEqual(vivos, [], "um lote sem registro continuou vivo");
   });
 
@@ -383,6 +382,24 @@ function vivo(pid) {
       try { lote.kill("SIGKILL"); } catch { /* ja saiu */ }
     }
   });
+
+  // So no Windows: o defeito nao existe fora dele.
+  if (process.platform === "win32" && /powershell\.exe$/i.test(pwsh)) {
+    await teste("S24 Windows PowerShell 5.1 com o PSModulePath do PowerShell 7 (herdado): lotes OK, SHA conferido (antes: todo lote WATCHER_UNREADABLE)", () => {
+      const m = montar("s24", ["ok"]);
+      const pw7 = "C:\\Program Files\\PowerShell\\7\\Modules";
+      const env = { ...process.env };
+      for (const k of Object.keys(env)) if (k.toLowerCase() === "psmodulepath") delete env[k];
+      env.PSModulePath = `${pw7};${process.env.PSModulePath || process.env.PSMODULEPATH || ""}`;
+      const r = require("node:child_process").spawnSync(pwsh, ["-NoProfile", "-NonInteractive", ...argsSup(m, 1)], { encoding: "utf8", env, timeout: 120000 });
+      assert.equal(r.status, 0, r.stderr);
+      const hb = m.hb();
+      assert.equal(hb.last_batch.outcome, "OK", `lote: ${hb.last_batch.outcome} ${hb.last_batch.error_class}`);
+      assert.equal(hb.watcher.sha256_verified, true);
+    });
+  } else {
+    console.log("  (S24 so roda no Windows PowerShell 5.1: PSModulePath herdado do PowerShell 7)");
+  }
 
   await teste("S22 arquivo do supervisor e ASCII puro (Windows PowerShell 5.1 le UTF-8 sem BOM como ANSI)", () => {
     const b = fs.readFileSync(SUP);

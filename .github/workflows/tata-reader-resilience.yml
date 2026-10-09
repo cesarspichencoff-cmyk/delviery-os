@@ -117,6 +117,7 @@ jobs:
           "fuso=" + [TimeZoneInfo]::Local.Id
           "ps=" + $PSVersionTable.PSVersion + " clr=" + $PSVersionTable.CLRVersion
           "netfx_release=" + (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full").Release
+          "PSModulePath (este passo, powershell direto do runner)=" + $env:PSModulePath
       - name: Bytes exatos no checkout do Windows (sem CRLF)
         shell: powershell
         run: |

@@ -64,6 +64,14 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+# Windows PowerShell 5.1 aberto com o PSModulePath do PowerShell 7 (herdado de
+# um pai qualquer) tenta carregar modulos do 7 e quebra o que vem de modulo
+# (Get-CimInstance, Get-FileHash). O pwsh limpa isso quando ele mesmo abre o
+# powershell.exe; aqui a limpeza vale para qualquer pai. Provado no Windows
+# real: CI 37867864216, todo lote WATCHER_UNREADABLE.
+if ($PSVersionTable.PSEdition -eq "Desktop" -and $env:PSModulePath) {
+  $env:PSModulePath = (@($env:PSModulePath -split ";") | Where-Object { $_ -and $_ -notmatch "(^|[\\/])PowerShell([\\/]|$)" }) -join ";"
+}
 $SupervisorVersion = "tata-reader-supervisor@1"
 $HeartbeatSchema = "deliveryos.tata-reader-heartbeat.v1"
 $ConfigSchema = "deliveryos.tata-reader-supervisor-config.v1"
@@ -81,8 +89,18 @@ $AllowedTrueEffects = @("database_read", "local_checkpoint_write", "local_event_
 # nao existe, em vez de lancar.
 $NoFileTicks = [DateTime]::FromFileTimeUtc(0).Ticks
 
+# SHA-256 por .NET puro. No Windows PowerShell 5.1, Get-FileHash e FUNCAO de
+# modulo carregada sob demanda: com um PSModulePath herdado do PowerShell 7 ela
+# nao carrega e TODO lote virava WATCHER_UNREADABLE (provado no Windows real,
+# CI 37867864216: 4/23). Leitura compartilhada: o arquivo pode estar sendo
+# trocado ou lido por outro processo.
 function Get-Sha256Hex([string]$Path) {
-  return (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToUpperInvariant()
+  $sha = [Security.Cryptography.SHA256]::Create()
+  try {
+    $fs = [IO.File]::Open($Path, [IO.FileMode]::Open, [IO.FileAccess]::Read, ([IO.FileShare]::ReadWrite -bor [IO.FileShare]::Delete))
+    try { $h = $sha.ComputeHash($fs) } finally { $fs.Dispose() }
+  } finally { $sha.Dispose() }
+  return ([BitConverter]::ToString($h)).Replace("-", "")
 }
 
 function Write-AtomicJson([string]$Path, $Object) {
@@ -689,12 +707,16 @@ try {
       # (antivirus, troca de arquivo) e transitorio; diferente e adulteracao.
       $actual = $null
       $unreadable = $false
+      $unreadableClass = $null
       if (-not [IO.File]::Exists($cfg.watcher_path)) {
         $missing++
         if ($missing -ge $cfg.watcher_missing_fatal_after) { Stop-Fatal "WATCHER_MISSING" }
       } else {
         $missing = 0
-        try { $actual = Get-Sha256Hex $cfg.watcher_path } catch { $unreadable = $true }
+        # A CLASSE da excecao vai junto (nunca a mensagem): IOException de
+        # antivirus e CommandNotFoundException de ambiente quebrado sao
+        # problemas diferentes, e o heartbeat tem de dizer qual.
+        try { $actual = Get-Sha256Hex $cfg.watcher_path } catch { $unreadable = $true; $unreadableClass = Get-ExceptionClass $_ }
       }
       if ($null -ne $actual -and $actual -ne $cfg.watcher_sha256) {
         $state.watcher_sha256_verified = $false
@@ -705,7 +727,7 @@ try {
         $b = New-Batch $batchSeq (Now-Iso)
         $b.finished_at = Now-Iso
         $b.outcome = if ($unreadable) { "WATCHER_UNREADABLE" } else { "WATCHER_MISSING" }
-        $b.error_class = $b.outcome
+        $b.error_class = if ($unreadable -and $unreadableClass) { "WATCHER_UNREADABLE:" + $unreadableClass } else { $b.outcome }
         $state.last_batch = $b
         $state.totals.batches++
         [Console]::Error.WriteLine((Now-Iso) + " BATCH_FAILED seq=" + $batchSeq + " outcome=" + $b.outcome)

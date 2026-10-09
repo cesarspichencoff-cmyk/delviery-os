@@ -73,19 +73,51 @@ function runner(title) {
   return { teste, pular, fim };
 }
 
+// Windows PowerShell 5.1 aberto a partir do PowerShell 7 herda o PSModulePath
+// dele e tenta carregar modulos do 7 (no CI: Get-FileHash quebrou e todo lote
+// virou WATCHER_UNREADABLE). O proprio pwsh limpa isso quando abre o
+// powershell.exe direto; com o node no meio, a limpeza e aqui — e e assim que
+// o servico da CAIXA o executa, sem PowerShell 7 na cadeia.
+function envPara(pwsh, extra) {
+  const env = { ...process.env, ...(extra || {}) };
+  if (!/(^|[\\/])powershell\.exe$/i.test(pwsh)) return env;
+  for (const k of Object.keys(env)) {
+    if (k.toLowerCase() !== "psmodulepath") continue;
+    env[k] = String(env[k]).split(";").filter((p) => p && !/(^|[\\/])PowerShell([\\/]|$)/i.test(p)).join(";");
+  }
+  return env;
+}
+
 function runPwsh(pwsh, args, opts = {}) {
   return spawnSync(pwsh, ["-NoProfile", "-NonInteractive", ...args], {
     encoding: "utf8",
     timeout: opts.timeout || 120000,
-    env: { ...process.env, ...(opts.env || {}) },
+    env: envPara(pwsh, opts.env),
   });
 }
 
 function spawnPwsh(pwsh, args, opts = {}) {
   return spawn(pwsh, ["-NoProfile", "-NonInteractive", ...args], {
-    env: { ...process.env, ...(opts.env || {}) },
+    env: envPara(pwsh, opts.env),
     stdio: ["ignore", "pipe", "pipe"],
   });
+}
+
+// Linhas de comando de todos os processos: "ps" no Linux, CIM no Windows.
+function linhasDeComando() {
+  if (process.platform === "win32") {
+    const exe = `${process.env.SystemRoot || "C:\\Windows"}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe`;
+    const r = spawnSync(exe, ["-NoProfile", "-NonInteractive", "-Command", "Get-CimInstance Win32_Process | ForEach-Object { [string]$_.CommandLine }"], {
+      encoding: "utf8",
+      env: envPara(exe),
+      timeout: 60000,
+    });
+    if (r.status !== 0) throw new Error(`lista de processos falhou: ${r.stderr}`);
+    return r.stdout.split(/\r?\n/).filter(Boolean);
+  }
+  const r = spawnSync("ps", ["-eo", "args"], { encoding: "utf8" });
+  if (r.status !== 0) throw new Error(`ps falhou: ${r.stderr}`);
+  return r.stdout.split("\n").filter(Boolean);
 }
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -100,4 +132,4 @@ async function waitFor(pred, timeoutMs, stepMs = 200) {
   }
 }
 
-module.exports = { ROOT, findPwsh, sha256File, tmpDir, readJson, writeJson, runner, runPwsh, spawnPwsh, sleep, waitFor };
+module.exports = { ROOT, findPwsh, sha256File, tmpDir, readJson, writeJson, runner, runPwsh, spawnPwsh, envPara, linhasDeComando, sleep, waitFor };
