@@ -251,7 +251,7 @@ export function telaEntregas(vm) {
         ${metric("Ocorrencias", { observado: true, valor: vm.ocorrencias.length })}
         ${metric("Fila desta sessao", vm.fila_da_sessao)}
       </div>
-      <p class="secao__sub" style="margin-top:var(--space-2)">A fila desta sessao e do navegador. A fila do APARELHO em campo e outra coisa, e aparece abaixo como integracao pendente — porque nao ha rota que a devolva.</p>
+      <p class="secao__sub" style="margin-top:var(--space-2)">A fila desta sessao e do navegador. A fila do APARELHO, quando reportada, aparece na area de realidade com horario e frescor; o ultimo relato nao confirma o estado atual.</p>
     </section>
 
     <section class="secao">
