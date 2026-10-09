@@ -312,7 +312,21 @@ export function projectOperationalTicketsV45(input: OperationalTicketsInputV45):
         observations: line.item_observations,
       };
       const rendered = itemFromSource(chosen, aliases, localReasons);
-      rendered.observations = line.item_observations.map((o) => clean(o).toLocaleUpperCase("pt-BR")).filter(Boolean);
+      // Source notes are the order evidence. Planned station notes may enrich
+      // the routing metadata, but cannot silently replace a customer's
+      // instruction (e.g. SEM vs COM). Detect any difference and fail closed.
+      const sourceObservations = source
+        ? source.observations.map((o) => clean(o).toLocaleUpperCase("pt-BR")).filter(Boolean)
+        : [];
+      const plannedObservations = Array.isArray(line.item_observations)
+        ? line.item_observations.map((o) => clean(o).toLocaleUpperCase("pt-BR")).filter(Boolean)
+        : [];
+      if (source && (!Array.isArray(line.item_observations) ||
+          JSON.stringify(sourceObservations) !== JSON.stringify(plannedObservations))) {
+        localReasons.add("PRODUCTION_OBSERVATIONS_SOURCE_MISMATCH:" + line.item_index);
+      }
+      // Keep source-only diagnostic content, never promote contradicted plan.
+      rendered.observations = source ? sourceObservations : plannedObservations;
       rendered.finishing = finishLines(line, station, rules, localReasons);
       rendered.kitchen_dependencies = dependencies(line, needed, localReasons);
       const group = clean(line.mount_group_id) || "UNASSIGNED:" + line.item_index;
