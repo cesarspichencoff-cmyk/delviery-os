@@ -2082,4 +2082,3 @@ declarar a idade, continua mentindo entre recargas); calcular a idade com `Date.
 contra `lida_em` do servidor.
 
 **Custo aceito:** quem quer o estado atual precisa tocar em "Atualizar leitura".
-
