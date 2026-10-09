@@ -242,4 +242,24 @@ check("14 detached kitchen fingerprint must not masquerade as this order", () =>
   assert.ok(bundle.review_reasons.some(x=>x.includes("KITCHEN_SPLIT_SOURCE_MISMATCH")));
 });
 
+check("15 foreign component ticket identity cannot enter offline export", () => {
+  const {split}=bundleFrom(original,source);
+  split.components={
+    channel:"KITCHEN_COMPONENTS",
+    title:"COZINHA - HOT / EBITEN / SHISO",
+    identifiers:{...original.production[0].identifiers,tata:"017"},
+    tasks:[{kind:"HOT",quantity:1,originating_products:["COMBINADO KIDS"]}],
+    status:"PROVEN_COMPLETE",
+    blocking_reasons:[],
+  };
+  split.ready_for_complete_components=true;
+  const bundle=buildKitchenSeparatedBundleV47(original,split);
+  assert.ok(!bundle.jobs.some(x=>x.channel==="KITCHEN_COMPONENTS"),
+    "components bound to a different order cannot enter export");
+  assert.ok(bundle.blocked_proofs.some(x=>x.channel==="KITCHEN_COMPONENTS"));
+  assert.ok(bundle.review_reasons.some(x=>x.includes("KITCHEN_COMPONENT_IDENTIFIERS_MISMATCH")));
+  assert.ok(bundle.jobs.some(x=>x.channel==="KITCHEN_DISHES"),
+    "valid kitchen dishes must remain eligible");
+});
+
 console.log("thermal-semantic-gate-v510: "+checks+"/"+checks+" PASS; SHADOW ONLY");
