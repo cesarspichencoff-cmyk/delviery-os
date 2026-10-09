@@ -286,6 +286,11 @@
   min-width: 0;
   padding: var(--space-4) var(--space-3) calc(var(--touch-min) + var(--space-5));
   overflow-x: hidden;
+  /* Sem isto o `overflow-x: hidden` nao contem tudo: o texto `.sr-only` dos
+     selos e `position: absolute` e, sem ancestral posicionado, escapava do
+     recorte e esticava o DOCUMENTO — 1034px de largura a 768px, medido em
+     2026-10-09 numa tabela larga de Entregas. */
+  position: relative;
 }
 @media (min-width: 905px) {
   .shell__conteudo {
