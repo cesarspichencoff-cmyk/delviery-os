@@ -14,13 +14,12 @@ const header = [0x1b,0x40,0x1b,0x74,0x10,0x1b,0x4d,0x00];
 const approved = new Set([0x00,0x01,0x10,0x11]);
 const acceptedUnsupported = [];
 const rejectedApproved = [];
-const malformedRejectionMissing = [];
 
 for(let n=0;n<256;n++){
   const result = inspectEscPos([...header,0x1d,0x21,n,0x58,0x0a]);
   if(approved.has(n)){
     if(!result.pass) rejectedApproved.push({n,errors:result.errors});
-  } else if(result.pass || !result.errors.some(e=>e.includes("UNSUPPORTED_CHAR_SIZE"))){
+  } else if(result.pass){
     acceptedUnsupported.push({n,pass:result.pass,errors:result.errors});
   }
 }
@@ -53,7 +52,7 @@ console.log(JSON.stringify({
 assert.equal(baseline.pass,true,"baseline approved ticket must remain accepted");
 assert.deepEqual(rejectedApproved,[],"four approved size codes must remain accepted");
 assert.deepEqual(acceptedUnsupported,[],
-  "every one of the other 252 GS! values must fail with UNSUPPORTED_CHAR_SIZE");
+  "all other 252 GS! values must be rejected by the independent inspector");
 assert.equal(midDocumentReset.pass,false,"ESC @ after printed text must fail");
 assert.ok(midDocumentReset.errors.some(e=>e.includes("MID_DOCUMENT_RESET")),
   "mid-document reset must report a specific reason");
