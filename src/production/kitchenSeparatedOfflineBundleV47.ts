@@ -83,7 +83,22 @@ export function buildKitchenSeparatedBundleV47(
     JSON.stringify(splitDish.boxes)===JSON.stringify(expectedKitchen.boxes) &&
     JSON.stringify(splitDish.items_without_proven_box)===
       JSON.stringify(expectedKitchen.items_without_proven_box);
-  append("KITCHEN_COMPONENTS",kitchen.components);
+  // Component prep has no source fingerprint in V4.7. At minimum its
+  // identifiers must agree with every production intent and the conference
+  // of this order. Absence or conflict fails closed.
+  const componentIds=split.components?.identifiers;
+  const sameIdentifiers=(
+    a: {ifood:string;teknisa:string;tata:string;hour:string|null},
+    b: {ifood:string;teknisa:string;tata:string;hour:string|null},
+  ):boolean => a.ifood===b.ifood && a.teknisa===b.teknisa &&
+    a.tata===b.tata && a.hour===b.hour;
+  const componentMatchesOrder=!!componentIds && tickets.production.length>0 &&
+    tickets.production.every(p=>sameIdentifiers(componentIds,p.identifiers)) &&
+    !!tickets.conference.identifiers &&
+    sameIdentifiers(componentIds,tickets.conference.identifiers);
+  append("KITCHEN_COMPONENTS",kitchen.components,
+    split.components && !componentMatchesOrder
+      ? ["KITCHEN_COMPONENT_IDENTIFIERS_MISMATCH"] : []);
   append("KITCHEN_DISHES",kitchen.dishes, [
     ...(split.dishes && split.dishes.source.ready_for_semantic_preview !== true
       ? ["STATION_SEMANTIC_NOT_READY:" + split.dishes.source.station] : []),
