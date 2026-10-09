@@ -64,3 +64,8 @@ jobs:
       - name: ESC/POS adversarial contract RED until issue 22 is fixed
         # Mandatory hard gate: do not mark continue-on-error or swallow exit code.
         run: node tools/verificar_integridade_termica_v57.js
+      - name: Full ESC/POS size matrix and command-order audit V5.11
+        # Independent RED proof even when the original mandatory V5.7 gate fails.
+        # Both remain hard failures; no continue-on-error, printer or spooler.
+        if: ${{ !cancelled() }}
+        run: node tools/verificar_matriz_escpos_v511.js
