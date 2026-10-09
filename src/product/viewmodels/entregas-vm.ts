@@ -267,6 +267,9 @@ function aparelhoVM(a: AparelhoReal, agora: Date): AparelhoRealVM {
     fila_offline_eventos: a.fila_offline
       ? observado(a.fila_offline.pending_events, "real", a.fila_offline.reportada_em)
       : ausente<number>("nao_observado", "O telefone ainda nao reportou pending_events."),
+    fila_offline_frescor: a.fila_offline
+      ? observado(classificarFrescor(a.fila_offline.reportada_em, agora, JANELAS_FILA_OFFLINE), "real", lidaEm)
+      : ausente<Frescor>("nao_observado", "Ainda nao existe relato de fila do aparelho."),
     fila_offline_reportada_em: a.fila_offline
       ? observado(a.fila_offline.reportada_em, "real", a.fila_offline.reportada_em)
       : ausente<string>("nao_observado", "O telefone ainda nao reportou a profundidade da fila offline."),
