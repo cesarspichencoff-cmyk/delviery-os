@@ -12,47 +12,37 @@
 1. **O atrito, medido** na tela Entregas com banco (1440×900 e 390×844): a primeira dobra inteira era de
    números da **demonstração**; a leitura do servidor começava abaixo de ~1100 px; carimbos ISO em UTC
    em vez de idade; unidades misturadas; viagem **encerrada** marcada `stale` ao lado das que estavam na
-   rua; o texto do aparelho da demonstração dizia "não existe rota de leitura" enquanto a mesma tela
-   mostrava o aparelho lido do banco; e **rolagem lateral em tablet** (documento de 1034 px a 768 px).
+   rua; o aparelho da demonstração dizia "não existe rota de leitura" ao lado do aparelho lido do banco;
+   **rolagem lateral em tablet** (1034 px de documento a 768 px); e a **moldura** — faixa de topo, selo
+   do shell, unidade ativa — dizia "SOMENTE DEMONSTRACAO" e "demo-unit" sobre fatos lidos do banco.
 2. **A direção que sobreviveu: "a rua, lida agora".** Entregas abre pela leitura do servidor, na anatomia
    do Contrato Visual de Estados Técnicos (Nível 1): camada técnica (`Leitura do servidor as 09h43 · lida
-   agora`), **linha de sinal** cuja forma é a confiança (cheia/tracejada/pontilhada/interrompida),
-   **título humano** (`3 viagens na rua em ITAIM; 1 sem posicao recente.`), explicação e restrição. Depois:
-   o que **pede conferência** (sem botão, sem Foco), as viagens **na rua** como células cuja borda é a
-   solidez do sinal, as sem ciclo de vida, as encerradas recolhidas, os **aparelhos** com idade de cada
-   fato e o último relato de fila B5. A demonstração mora numa **faixa própria**, recolhida quando há
-   leitura. Sem banco, o lugar da rua é do **estado técnico** com linha interrompida.
-3. **Nada de fonte nova.** Tudo é função pura da porta de realidade que já existia
+   agora`), **linha de sinal** cuja forma é a confiança, **título humano** (`3 viagens na rua em ITAIM; 1
+   sem posicao recente.`), explicação e restrição; depois o que **pede conferência** (sem botão, sem
+   Foco), as viagens **na rua** como células cuja borda é a solidez do sinal, os **aparelhos** com a idade
+   de cada fato. A demonstração mora numa **faixa própria**; sem banco, o lugar da rua é do **estado
+   técnico**. A moldura diz a origem do que está em primeiro plano (D96).
+3. **A leitura se comporta como leitura.** Envelhece na tela (D95); **reler não a apaga** — a anterior
+   fica com "· relendo…", e uma falha a mantém com o motivo escrito (D98); as listas do histórico
+   (encerradas, sem ciclo) têm **corte declarado e contagem exata** (D97).
+4. **Nada de fonte nova.** Tudo é função pura da porta de realidade que já existia
    (`src/platform/leitura/realidade-de-entregas.ts`, intocada) e da `projetar()` da Operação Viva
    (intocada). Nenhuma janela, regra, sinal, Foco ou ação nova.
-4. **Provado com vermelho antes:** leitura da rua **2/20 → 23/23**, navegador **1/9 → 11/11** (o N10
-   prova a correção de classe em Home, Operação Viva, Conference Brain, Copiloto e Entregas, de 320 a
-   1920 px — vermelho contra a UI da base), servidor + PostgreSQL real **5/5**; cadeia real **36/36**;
-   mutações da cadeia **15/15, zero cegas** (M10 e M11 mutam o `entregas-vm.ts` novo e foram acusadas, e
-   de novo depois da 2ª iteração); **zero `FAIL_NOVO`** — o C6 do `m1-bridge` segue com os **mesmos 12
-   caminhos** da Q-019, conferido depois do commit. **CI da branch no GitHub verde** (run `37939179462`,
-   Chromium 149 — outra versão que a local, 141).
-5. **3ª iteração — a moldura deixou de desmentir a tela.** Com a leitura do banco em primeiro plano, a
-   faixa de topo dizia "AMBIENTE DE DEMONSTRACAO", o selo do shell "SOMENTE DEMONSTRACAO" e a unidade
-   ativa "demo-unit" (visível nas capturas "depois" da 2ª iteração; L60). Agora a faixa diz a composição
-   do servidor ("DEMONSTRACAO + LEITURA DO SERVIDOR"), o selo diz o modo dos fatos lidos e a unidade é a
-   da leitura; o seletor da demonstração, que não age sobre ela, sai da tela (D96). RED antes:
-   navegador **12/14**, PostgreSQL real **4/6** → **14/14** e **6/6**. E a linha de evidência da
-   ocorrência deixou de mostrar o nome interno `occurrence_created` (guarda de classe L14: 23/24 → 24/24).
-6. **Escala, medida.** Cada "Atualizar leitura" relê e reprojeta **todo** o `event_log`: com 1.030.000
-   fatos (banco descartável, `simulated`), **20,5 s** na porta, **23,7 s** no HTTP, **8.253 KiB** e
-   **+1,19 GiB** no servidor por clique. Corrigido na minha faixa (`ba3aa4b`, D97): as listas do
-   histórico na tela têm corte declarado e contagem exata — a parte da leitura fica constante (28 KiB,
-   45 células, com 600 ou 6 encerradas). **Não corrigido** (plataforma e contrato da Cadeia Real): a
-   porta que relê tudo e o bloco legado `realidade.viagens` — `Q-026`, §8.6.
-   E, como reler custa o tempo da porta, **reler não apaga mais a leitura** (`2b8bbf9`, D98): a anterior
-   fica na tela com "· relendo…"; se falhar, fica com o motivo escrito e segue envelhecendo (antes:
-   esqueleto durante a releitura e tela de erro no lugar dela; navegador 14/16 → **16/16**).
+5. **Provado com vermelho antes, números finais:** leitura da rua **2/20 → 25/25**; navegador **1/9 →
+   16/16** (inclui a correção de classe N10 em todas as superfícies de 320 a 1920 px, a moldura N11 com
+   controle N11b, e a releitura N13/N13b); servidor + PostgreSQL real **6/6**; cadeia real **36/36**;
+   mutações da cadeia **0 cegas** (15/15, e M10/M11 de novo depois de cada mudança na view model);
+   governança verde; **zero `FAIL_NOVO`** — o C6 do `m1-bridge` segue com os mesmos 12 caminhos da Q-019.
+   **CI da branch verde** em `2c4fc75`, `c4cdb4f`, `6168223` e `8b62ae7` (Chromium 149; local, 141).
+6. **Escala, medida — e o que sobra.** Cada leitura relê e reprojeta o `event_log` inteiro: 1.030.000
+   fatos (banco descartável, `simulated`) = **20,5 s** na porta, **23,7 s** no HTTP, **8.253 KiB**,
+   **+1,19 GiB** no servidor por clique; o SQL leva 420 ms. O corte das listas reduziu a resposta pela
+   metade (300 mil fatos: 2.506 → 1.306 KiB) e deixou a tela constante (45 células com 600 ou 6
+   encerradas); a **porta** e o bloco legado `realidade.viagens` não são desta faixa — `Q-026`, §8.6.
 7. **Pede decisão do César:** `Q-025` (aprovar a composição visual — a skill do produto exige a sua
    aprovação antes de integrar), `Q-022` (confirmar a exceção estreita no envelope M1), `Q-023` (o relato
-   de fila B5 não declara modo e era rotulado `real`), `Q-024` (o que é um turno — a missão pediu filtro
-   por turno e não há contrato), `Q-026` (janela da leitura da rua — §8.6). A Figma conectada é de
-   **outra pessoa** (`BoAlexandre`) — ver §7.
+   de fila B5 não declara modo), `Q-024` (o que é um turno), `Q-026` (a janela da leitura — o único item
+   que piora sozinho com o tempo). A Figma conectada é de **outra pessoa** (`BoAlexandre`) — ver §7.
 
 ## 1. Commits
 
@@ -99,12 +89,13 @@
 | `test:platform:queue-depth` (B5, frente Android) | 12/12 + smoke | **12/12 + smoke** (nenhum arquivo do B5 tocado) |
 | `test:platform:product` | 52 | **52** |
 | `test:platform:cadeia` (PostgreSQL 16 + `dist/`) | — | **36/36** |
-| `test:platform:cadeia:mutacoes` | — | **15/15, 0 cegas** (M10 → D3, M11 → D4, no `entregas-vm.ts` novo); depois da 2ª iteração, `CADEIA_MUT=M10,M11`: **3/3, 0 cegas** |
+| `test:platform:cadeia:mutacoes` | — | **15/15, 0 cegas** (M10 → D3, M11 → D4, no `entregas-vm.ts` novo); depois da 2ª e da 3ª iteração (`ba3aa4b`), `CADEIA_MUT=M10,M11`: **3/3, 0 cegas** |
 | **CI da branch** (GitHub, run `37939179462`, `2c4fc75`) | — | **verde**: tsc, build, leitura 22/22, navegador 10/10 (Chromium 149), PostgreSQL 5/5, product 52, B5 12/12 + smoke, home 44, organismo 27, visual-order 6, figma-parity 24, skills 12, r5, cadeia 36/36, governança PASS, m1-bridge só o C6 idêntico |
 | **CI da branch** (run `37940776143`, `c4cdb4f`, 2ª iteração) | — | **verde** (mesma lista) |
 | **CI da branch** (run `37944988220`, `6168223`, 3ª iteração: moldura e corte das listas) | — | **verde** (mesma lista) |
+| **CI da branch** (run `37946401716`, `8b62ae7`, com a releitura sem apagar) | — | **verde** (mesma lista) |
 | `test:platform:home` · `organismo` · `visual-order` · `figma-parity` | 44 · 27 · 6 · 24 | **44 · 27 · 6 · 24** |
-| `test:platform:r5` · `skills` · `m1b-mutations` · `platform` · `entregas:ui` · `saude-fontes` · `lab:v4` | verdes | **verdes** (9 gates · 12 · 11/11 · 44 · 23 · 10/10 · 9 mutações 0 cegas) |
+| `test:platform:r5` · `skills` · `m1b-mutations` · `platform` · `entregas:ui` · `saude-fontes` · `lab:v4` | verdes | **verdes** (9 gates · 12 · 11/11 · 44 · 23 · 10/10 · 9 mutações 0 cegas); rodados de novo contra `2b8bbf9`: todos verdes |
 | `tsc --noEmit` · `build:platform` | 0 · 0 | **0 · 0** |
 | `test:platform:m1-bridge` | 34 + **C6 vermelho** (Q-019, 12 caminhos) | **35** (+ C6d) + **C6 com os mesmos 12 caminhos** — `FAIL_PREEXISTENTE` |
 | `test:platform:governanca` | **G6b vermelho** (`STATE.json` desatualizado desde `52b90c2`) | ver §3.1 |
@@ -125,9 +116,9 @@ O G6b estava vermelho na base porque `STATE.json` observa `src/product/` e a bas
 `src/product/`) e acrescenta o bloco verificado. Medido **depois** do commit `2c4fc75` (L55):
 `test:platform:governanca` **14 guardas verdes** e `test:platform:governanca:mutacoes` **13/13 acusadas,
 0 cegas** — o suíte de mutações da governança nem rodava antes (abortava: o caso legítimo estava
-vermelho). Na 2ª iteração o `state_basis` passa a `02b56c3`, e na 3ª a `5dfdb4a`, pelo mesmo motivo
-(medido: logo depois de `5dfdb4a`, antes deste registro, o G6b acusou `observa mudou em 5dfdb4a` — a
-guarda funciona).
+vermelho). Na 2ª iteração o `state_basis` passa a `02b56c3`; na 3ª, a `ba3aa4b` e depois a `2b8bbf9`,
+pelo mesmo motivo (medido: logo depois de `5dfdb4a`, antes do registro, o G6b acusou `observa mudou em
+5dfdb4a` — a guarda funciona). Depois de cada registro: governança verde, mutações 13/13, 0 cegas.
 
 ## 4. Capturas (antes → depois)
 
@@ -202,7 +193,8 @@ por ordem explícita do César de 2026-10-09. Mesmo assim, como manda a skill, a
 ele (`Q-025`): sem resposta, nada sai da branch.
 
 **O que não foi feito, de propósito:** mapa (proibido como Foco e mapa-first); ranking ou "motoboy
-lento" (Lei 4); recarga automática (D95); filtro por turno (sem contrato — `Q-024`); tocar Home,
+lento" (Lei 4); recarga automática (D95); filtro por turno (sem contrato — `Q-024`); janela da leitura
+(`Q-026`); tocar Home,
 Copiloto, Operação Viva, Conference Brain, `estados.ts`, tokens, `sinais.ts`, `areas.ts`.
 
 ## 6. Estados
@@ -210,7 +202,7 @@ Copiloto, Operação Viva, Conference Brain, `estados.ts`, tokens, `sinais.ts`, 
 | estado | o quê |
 |---|---|
 | `CODE_READY` | tudo de §2 |
-| `TEST_PASS` | §3 neste container (Linux, Node 22.22, PostgreSQL 16 local descartável, Chromium 141) e no CI da branch (GitHub, runs `37939179462` e `37940776143`, Chromium 149); a 3ª iteração, neste container — o CI dela roda no push deste registro |
+| `TEST_PASS` | §3 neste container (Linux, Node 22.22, PostgreSQL 16 local descartável, Chromium 141) e no CI da branch (GitHub, runs `37939179462`, `37940776143`, `37944988220` e `37946401716` — este último já com a releitura `2b8bbf9` —, Chromium 149) |
 | `DEPLOYED` | **nada** |
 | `WORLD_PROVEN` | **nada** — nenhuma pessoa da expedição usou a tela; nenhum banco operacional foi lido |
 
@@ -281,7 +273,9 @@ false`), sem cobrança.
 
 ## 10. Integração — cherry-pick ou merge revisado
 
-Os três commits de código são independentes da frente Android e aplicam limpo sobre `2782b31`:
+Os sete commits de código são independentes da frente Android. **Provado:** numa worktree descartável em
+`2782b31`, os sete aplicam limpo, nesta ordem, e a árvore de código resultante (`src`, `tests`, `tools`,
+`.github`) é byte a byte igual à da branch (`git diff --stat` vazio):
 
 ```bash
 git cherry-pick c886f87   # correção de classe do shell/inspetor (só CSS; serve a todas as superfícies)
@@ -294,7 +288,9 @@ git cherry-pick 2b8bbf9   # 3ª iteração: reler não apaga a leitura (N13, N13
 ```
 
 Antes de integrar: responder `Q-025` e `Q-022`; decidir `Q-021` se a outra linhagem entrar; rodar
-`npx tsx tests/product/run-sem-fail-novo.ts` (aceita só o C6 da Q-019, idêntico).
+`npx tsx tests/product/run-sem-fail-novo.ts` (aceita só o C6 da Q-019, idêntico). Só os commits de código
+não trazem o `STATE.json`: quem integra sem os de registro atualiza o `state_basis` depois, ou o G6b da
+governança acusa — é a guarda funcionando.
 
 **Delta opcional para `package.json`** (não aplicado, para não colidir com a frente Android):
 
