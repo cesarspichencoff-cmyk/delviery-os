@@ -45,6 +45,9 @@
    histórico na tela têm corte declarado e contagem exata — a parte da leitura fica constante (28 KiB,
    45 células, com 600 ou 6 encerradas). **Não corrigido** (plataforma e contrato da Cadeia Real): a
    porta que relê tudo e o bloco legado `realidade.viagens` — `Q-026`, §8.6.
+   E, como reler custa o tempo da porta, **reler não apaga mais a leitura** (`2b8bbf9`, D98): a anterior
+   fica na tela com "· relendo…"; se falhar, fica com o motivo escrito e segue envelhecendo (antes:
+   esqueleto durante a releitura e tela de erro no lugar dela; navegador 14/16 → **16/16**).
 7. **Pede decisão do César:** `Q-025` (aprovar a composição visual — a skill do produto exige a sua
    aprovação antes de integrar), `Q-022` (confirmar a exceção estreita no envelope M1), `Q-023` (o relato
    de fila B5 não declara modo e era rotulado `real`), `Q-024` (o que é um turno — a missão pediu filtro
@@ -63,7 +66,9 @@
 | `c4cdb4f` | registros da 2ª iteração: matriz de linhagem (§5.1), `Q-025`, EVIDENCE, STATE — **CI `37940776143` verde** |
 | `5dfdb4a` | **3ª iteração:** a moldura (faixa, selo do shell, unidade ativa) segue a origem do primeiro plano; `/api/health` declara a composição; evidência da ocorrência sem nome interno (L14) |
 | `ba3aa4b` | **3ª iteração:** as listas do histórico (encerradas; sem ciclo e sem posição) com corte declarado e contagem exata (L15, D97) |
-| _(este)_ | registros da 3ª iteração: D96, L60, `Q-026`, custo da leitura medido, capturas da moldura, EVIDENCE, STATE |
+| `6168223` | registros da 3ª iteração: D96, D97, L60, `Q-026`, custo da leitura medido, capturas da moldura — **CI `37944988220` verde** |
+| `2b8bbf9` | **3ª iteração:** reler não apaga a leitura que está na tela (N13, N13b, D98) |
+| _(este)_ | registros da releitura: D98, EVIDENCE, STATE, LEDGER |
 
 ## 2. Arquivos
 
@@ -72,14 +77,14 @@
 | `src/product/viewmodels/entregas-vm.ts` | `leitura: LeituraDaRuaVM` (frase, solidez, idades, grupos por ciclo de vida, conferência, unidades, qualidade); 5º argumento opcional `{ unidade }` — chamadas antigas inalteradas; textos do aparelho da demonstração e das limitações corrigidos. As duas linhas-âncora do suíte de mutações da cadeia ficaram intactas |
 | `src/product/ui/surfaces/entregas.js` | reescrita na ordem leitura → demonstração → limitações; aceita VM antiga sem `leitura` (a prova B5 usa uma) |
 | `src/product/ui/surfaces/entregas.css` | **novo**, só tokens existentes; nenhuma cor literal; nada anima |
-| `src/product/ui/app.js` | `#/entregas?unidade=`, botão de reler, idade da leitura por `performance.now()`, foco devolvido ao filtro. A linha "a rota inicial abre a home" (H30) intacta. 3ª iteração: `desenharMoldura()` — selo do shell e unidade ativa pela origem do primeiro plano |
+| `src/product/ui/app.js` | `#/entregas?unidade=`, botão de reler, idade da leitura por `performance.now()`, foco devolvido ao filtro. A linha "a rota inicial abre a home" (H30) intacta. 3ª iteração: `desenharMoldura()` — selo do shell e unidade ativa pela origem do primeiro plano; `relerSemApagar()` e `apiDaRota()` |
 | `src/product/ui/index.html` | `<link>` de `entregas.css` |
 | `src/product/ui/shell/shell.css` · `components/components.css` | as duas correções de classe de `c886f87` |
 | `tools/product_system_server.ts` | repassa `unidade` (≤ 64 chars, só igualdade; nunca SQL); `/api/health` com `leitura_do_servidor` e a faixa da composição real (e o log de boot igual a ela) |
 | `src/platform/run-m1-bridge-tests.ts` · `docs/design/M1_VISUAL_CHANGE_ENVELOPE.md` | exceção `ENTREGAS_STREET_READING_ONLY` + controle **C6d** |
 | `tests/product/entregas-fixture.ts` | fixture determinística, toda `simulated`, viagens pela `projetar()` real; opção `historico` (semanas de log) |
 | `tests/product/run-entregas-leitura-da-rua-tests.ts` | 25 testes de VM e superfície (L1–L15) |
-| `tests/product/run-entregas-browser-tests.ts` | 14 testes no Chromium (N1–N12, com o controle N11b) |
+| `tests/product/run-entregas-browser-tests.ts` | 16 testes no Chromium (N1–N13b, com o controle N11b) |
 | `tests/product/run-entregas-servidor-pg-tests.ts` | 6 testes com servidor real e PostgreSQL isolado (S1–S6; S5 confere a moldura nas capturas) |
 | `tests/product/run-sem-fail-novo.ts` | classifica `m1-bridge` e governança por igualdade |
 | `.github/workflows/deliveryos-product-ux.yml` | CI desta branch |
@@ -89,7 +94,7 @@
 | gate | antes (base `2782b31`) | depois |
 |---|---|---|
 | `npx tsx tests/product/run-entregas-leitura-da-rua-tests.ts` | **2/20** (só as guardas L8/L9); L13 **22/23** antes da ocorrência; L14 **23/24** e L15 **24/25** antes da 3ª iteração | **25/25** |
-| `PRODUCT_UI_CHROMIUM=/opt/pw-browsers/chromium npx tsx tests/product/run-entregas-browser-tests.ts` | **1/9** (só N6); N9 vermelho antes da correção do inspetor; N10 vermelho contra a UI da base; N11/N12 vermelhos antes da moldura (**12/14**; o controle N11b verde antes e depois) | **14/14** |
+| `PRODUCT_UI_CHROMIUM=/opt/pw-browsers/chromium npx tsx tests/product/run-entregas-browser-tests.ts` | **1/9** (só N6); N9 vermelho antes da correção do inspetor; N10 vermelho contra a UI da base; N11/N12 vermelhos antes da moldura (**12/14**; o controle N11b verde antes e depois); N13/N13b vermelhos antes da releitura sem apagar (**14/16**) | **16/16** |
 | `DELIVERYOS_PG_URL=… npx tsx tests/product/run-entregas-servidor-pg-tests.ts` | — (rota sem `unidade`); S5/S6 vermelhos antes da moldura (**4/6**) | **6/6** (S4: sha256 de `event_log` + `identity.device` idêntico depois de 6 leituras; POST 405; S6: `/api/health` com banco declara a leitura) |
 | `test:platform:queue-depth` (B5, frente Android) | 12/12 + smoke | **12/12 + smoke** (nenhum arquivo do B5 tocado) |
 | `test:platform:product` | 52 | **52** |
@@ -97,6 +102,7 @@
 | `test:platform:cadeia:mutacoes` | — | **15/15, 0 cegas** (M10 → D3, M11 → D4, no `entregas-vm.ts` novo); depois da 2ª iteração, `CADEIA_MUT=M10,M11`: **3/3, 0 cegas** |
 | **CI da branch** (GitHub, run `37939179462`, `2c4fc75`) | — | **verde**: tsc, build, leitura 22/22, navegador 10/10 (Chromium 149), PostgreSQL 5/5, product 52, B5 12/12 + smoke, home 44, organismo 27, visual-order 6, figma-parity 24, skills 12, r5, cadeia 36/36, governança PASS, m1-bridge só o C6 idêntico |
 | **CI da branch** (run `37940776143`, `c4cdb4f`, 2ª iteração) | — | **verde** (mesma lista) |
+| **CI da branch** (run `37944988220`, `6168223`, 3ª iteração: moldura e corte das listas) | — | **verde** (mesma lista) |
 | `test:platform:home` · `organismo` · `visual-order` · `figma-parity` | 44 · 27 · 6 · 24 | **44 · 27 · 6 · 24** |
 | `test:platform:r5` · `skills` · `m1b-mutations` · `platform` · `entregas:ui` · `saude-fontes` · `lab:v4` | verdes | **verdes** (9 gates · 12 · 11/11 · 44 · 23 · 10/10 · 9 mutações 0 cegas) |
 | `tsc --noEmit` · `build:platform` | 0 · 0 | **0 · 0** |
@@ -284,6 +290,7 @@ git cherry-pick 4091d17   # CI desta branch — opcional fora dela (o gatilho é
 git cherry-pick 02b56c3   # 2ª iteração: ocorrência registrada, N10, etiqueta de fontes
 git cherry-pick 5dfdb4a   # 3ª iteração: a moldura segue a origem do primeiro plano; L14
 git cherry-pick ba3aa4b   # 3ª iteração: listas do histórico com corte declarado (L15)
+git cherry-pick 2b8bbf9   # 3ª iteração: reler não apaga a leitura (N13, N13b)
 ```
 
 Antes de integrar: responder `Q-025` e `Q-022`; decidir `Q-021` se a outra linhagem entrar; rodar

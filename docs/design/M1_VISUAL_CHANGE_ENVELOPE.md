@@ -368,6 +368,9 @@ para que a classe fique escrita, não porque o C6 precise):
   modo dos fatos lidos e a unidade da leitura, e o seletor da demonstração, que
   não age sobre ela, sai da tela; nas outras telas, nada muda. Correção de
   verdade (D96), não reorganização de módulo: nenhuma das doze da §6 do índice.
+- `src/product/ui/app.js`, ainda (`2b8bbf9`) — reler mantém a leitura anterior na
+  tela, com o aviso na camada técnica, e a falha a mantém com o motivo escrito
+  (D98). Nenhuma rota, nenhum módulo, nenhuma ação nova.
 
 **Não mudaram:** Home, `home-vm.ts`, `home.css`, `sinais.ts`, `areas.ts`,
 `copiloto-vm.ts`, `estados.ts`, os tokens, `src/platform/**` de domínio e de

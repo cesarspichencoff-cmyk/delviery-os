@@ -2131,3 +2131,22 @@ ação; remover os grupos — perderia o contexto honesto ("podem ter terminado"
 **Limite declarado.** O corte é de APRESENTAÇÃO: a porta da plataforma continua relendo o log inteiro
 (1.030.000 fatos = 20,5 s por leitura), e o bloco legado `realidade.viagens` continua inteiro no HTTP.
 Os dois são da `Q-026`.
+
+### D98 — Reler não apaga a leitura que está na tela
+
+**Decisão.** "Atualizar leitura" mantém a leitura anterior visível enquanto a nova não chega, com o aviso
+"· relendo…" na camada técnica (região viva que existe vazia desde o desenho). Se a releitura falha, a
+anterior continua, com a falha escrita ("Nao foi possivel ler de novo (o servidor respondeu 503). Esta
+continua sendo a leitura das 09h43, e segue envelhecendo.") e o relógio da leitura continua
+envelhecendo-a. Uma resposta que volta depois de outro desenho é descartada.
+
+**Por que.** Medido: reler custa o tempo da porta (2,5 s com 100 mil fatos, 8 s com 300 mil). Esqueleto
+no lugar da leitura é tela morta exatamente quando a pessoa quer saber mais; erro no lugar dela apaga o
+que se sabia. A leitura anterior não mente: ela se declara com hora e idade (D95).
+
+**Alternativas recusadas:** esqueleto (o comportamento anterior); `aria-busy` na região — dentro dela o
+leitor de tela pode calar o próprio aviso de releitura; esmaecer a leitura antiga — mexe no contraste
+medido (AA) e não diz nada que o aviso não diga.
+
+**Limite declarado.** Trocar de unidade continua redesenhando com esqueleto: é outra pergunta, e mostrar
+a leitura de "todas" sob o filtro de ITAIM seria pior.
