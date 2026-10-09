@@ -124,6 +124,13 @@
   color: var(--ink-age);
 }
 
+/* Releitura: "relendo…" e a falha moram na camada tecnica. Vazio, o aviso
+   continua na arvore (regiao viva); a falha ocupa a linha inteira. */
+.rua__releitura[data-estado="falhou"] {
+  flex-basis: 100%;
+  color: var(--ink-age);
+}
+
 /* ---------------------------------------- controles: reler e unidade ----- */
 .rua__controles {
   display: flex;
@@ -349,6 +356,12 @@
   font-size: var(--type-small);
   color: var(--text-muted);
 }
+.celula__ocorrencia {
+  margin: 0 0 var(--space-1) 0;
+  font-size: var(--type-small);
+  font-weight: 600;
+  color: var(--ink-calm);
+}
 
 /* ----------------------------------------------------------- aparelhos --- */
 .aparelhos {
@@ -431,12 +444,14 @@
 /* ------------------------------------------------------- demonstracao ---- */
 /* Faixa propria, neutra e tracejada (o canon: neutro tracejado = incompleto).
    A demonstracao fica para quem avalia; nunca no lugar da rua. */
+/* A faixa e marcada pelo TRACEJADO, nao por preenchimento: sobre um fundo
+   proprio, o selo de ausencia (tinta fraca sobre lavagem fraca) caia para
+   4,38:1 — medido no axe-core 4.10.2 e no N7b. */
 .faixa-demo {
   margin: var(--space-5) 0;
   padding: var(--space-3);
   border: var(--stroke-hairline) dashed var(--line-dashed-unknown);
   border-radius: var(--radius-md);
-  background: var(--surface-muted);
   min-width: 0;
 }
 .faixa-demo__topo {

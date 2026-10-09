@@ -206,10 +206,20 @@ export interface ViagemLidaVM {
   readonly aparelho: string | null;
   readonly procedencia: Procedencia;
   readonly solidez: Solidez;
+  /**
+   * `occurrence_created` desta viagem, contados pela projecao. O catalogo nao
+   * tem fato de RESOLUCAO: o numero diz quantas foram registradas, nunca
+   * quantas continuam abertas.
+   */
+  readonly ocorrencias: number;
   readonly selos: readonly Selo[];
 }
 
-export type TipoConferir = "viagem_sem_posicao_recente" | "fila_sem_relato_recente" | "cadastro_incompleto";
+export type TipoConferir =
+  | "ocorrencia_registrada"
+  | "viagem_sem_posicao_recente"
+  | "fila_sem_relato_recente"
+  | "cadastro_incompleto";
 
 /**
  * Algo que uma PESSOA pode conferir. Nao e alerta, nao e Foco (a Operacao Viva
@@ -279,10 +289,20 @@ export type LeituraDaRuaVM =
         readonly na_rua_sem_posicao_recente: number;
         readonly ciclo_desconhecido_com_posicao: number;
         readonly aguardando_saida: number;
+        /** Contagem EXATA; a lista abaixo traz no maximo `limite_da_lista`. */
         readonly encerradas: number;
+        /** Contagem EXATA; a lista abaixo traz no maximo `limite_da_lista`. */
+        readonly ciclo_desconhecido_sem_posicao: number;
         readonly aparelhos: number;
         readonly conferir: number;
       };
+      /**
+       * As duas listas que crescem com o historico (encerradas; sem ciclo e sem
+       * posicao recente) trazem no maximo este numero de viagens, as de posicao
+       * mais recente. O log e append-only: sem corte, cada semana de operacao
+       * engordava a resposta e a tela com viagens de dias atras.
+       */
+      readonly limite_da_lista: number;
       readonly conferir: readonly ConferirVM[];
       readonly viagens: {
         readonly na_rua: readonly ViagemLidaVM[];
@@ -619,6 +639,7 @@ function viagemLida(
     aparelho: v.device_id ? rotuloPor.get(v.device_id) ?? null : null,
     procedencia,
     solidez: esperaPosicao ? SOLIDEZ_DO_FRESCOR[v.frescor] : "neutra",
+    ocorrencias: v.ocorrencias_abertas,
     selos,
   };
 }
@@ -633,6 +654,21 @@ function porAtencao(a: ViagemLidaVM, b: ViagemLidaVM): number {
   return a.viagem_id.localeCompare(b.viagem_id);
 }
 
+/**
+ * Quantas viagens do HISTORICO a leitura lista. Apresentacao, nao regra: o
+ * mesmo corte do historico da Operacao Viva ("no maximo os 20 fatos mais
+ * recentes"). A contagem continua exata e a tela diz quantas ficaram de fora.
+ */
+const LIMITE_DA_LISTA = 20;
+
+/** A posicao confiavel mais recente primeiro; sem posicao, por ultimo. */
+function maisRecentePrimeiro(a: ViagemLidaVM, b: ViagemLidaVM): number {
+  const ia = a.posicao.observado ? a.posicao.segundos : Number.POSITIVE_INFINITY;
+  const ib = b.posicao.observado ? b.posicao.segundos : Number.POSITIVE_INFINITY;
+  if (ia !== ib) return ia - ib;
+  return b.viagem_id.localeCompare(a.viagem_id);
+}
+
 function filtrarPorUnidade(r: RealidadeDeEntregas, unidade: string | null): RealidadeDeEntregas {
   if (!unidade) return r;
   return {
@@ -642,14 +678,36 @@ function filtrarPorUnidade(r: RealidadeDeEntregas, unidade: string | null): Real
   };
 }
 
+/** A pessoa na rua levantou a mao (ocorrencia) vem antes do sinal que sumiu. */
 const ORDEM_DO_TIPO: Record<TipoConferir, number> = {
-  viagem_sem_posicao_recente: 0,
-  fila_sem_relato_recente: 1,
-  cadastro_incompleto: 2,
+  ocorrencia_registrada: 0,
+  viagem_sem_posicao_recente: 1,
+  fila_sem_relato_recente: 2,
+  cadastro_incompleto: 3,
 };
 
 function conferencias(r: RealidadeDeEntregas, naRua: readonly ViagemLidaVM[], agora: Date): ConferirVM[] {
   const itens: ConferirVM[] = [];
+  for (const v of naRua) {
+    if (v.ocorrencias <= 0) continue;
+    itens.push({
+      chave: `ocorrencia:${v.viagem_id}`,
+      tipo: "ocorrencia_registrada",
+      unidade: v.unidade,
+      titulo: `Viagem ${v.viagem_id}: ${plural(v.ocorrencias, "ocorrencia registrada", "ocorrencias registradas")}`,
+      detalhe: `${v.estado_legivel} pelo ultimo fato · ${v.aparelho ?? v.device_id ?? "nenhum aparelho nomeado"}`,
+      restricao:
+        "Esta leitura nao sabe o tipo, o horario nem se ela ja foi resolvida: o catalogo de eventos nao tem fato de resolucao.",
+      desde: {
+        observado: false,
+        motivo: "nao_observado",
+        explicacao: "A projecao conta a ocorrencia; o horario dela nao chega a esta leitura.",
+      },
+      evidencia: `registrada, sem horario nesta leitura · ${v.device_id ?? "sem aparelho"} · ${v.unidade}`,
+      procedencia: v.procedencia,
+      selo: selo("acao_humana_necessaria", "Ocorrencia registrada na rua: so uma pessoa sabe o que aconteceu."),
+    });
+  }
   for (const v of naRua) {
     if (v.frescor !== "stale" && v.frescor !== "unknown") continue;
     itens.push({
@@ -886,16 +944,18 @@ function leituraDaRua(
       ciclo_desconhecido_com_posicao: comPosicao.length,
       aguardando_saida: doGrupo("aguardando_saida").length,
       encerradas: doGrupo("encerrada").length,
+      ciclo_desconhecido_sem_posicao: semPosicao.length,
       aparelhos: r.aparelhos.length,
       conferir: conferir.length,
     },
+    limite_da_lista: LIMITE_DA_LISTA,
     conferir,
     viagens: {
       na_rua: naRua,
       aguardando_saida: doGrupo("aguardando_saida"),
       ciclo_desconhecido_com_posicao: comPosicao,
-      ciclo_desconhecido_sem_posicao: semPosicao,
-      encerradas: doGrupo("encerrada"),
+      ciclo_desconhecido_sem_posicao: [...semPosicao].sort(maisRecentePrimeiro).slice(0, LIMITE_DA_LISTA),
+      encerradas: doGrupo("encerrada").sort(maisRecentePrimeiro).slice(0, LIMITE_DA_LISTA),
     },
     aparelhos: r.aparelhos.map((a) => aparelhoLido(a, agora)),
     qualidade,

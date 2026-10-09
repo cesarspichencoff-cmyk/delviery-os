@@ -22,6 +22,7 @@ import { chromium, type Browser, type Page } from "playwright";
 import { entregasVM } from "../../src/product/viewmodels/entregas-vm";
 import { montarEntregasDemo } from "../../src/product/demo/seed-demonstracao";
 import { AGORA_FIXTURE, realidadeFixture } from "./entregas-fixture";
+import { fontesEmUso, servirFontesCanonicas } from "./fontes-canonicas";
 
 delete process.env.DELIVERYOS_DATABASE_URL;
 
@@ -64,7 +65,7 @@ async function vmJson(unidade: string | null): Promise<string> {
  * efetivo). Em texto puro de proposito: o tsx injeta `__name` em funcoes
  * nomeadas, e esse helper nao existe dentro do navegador.
  */
-const CONTRASTE_AA = `(() => {
+const contrasteAA = (raizSeletor: string): string => `(() => {
             const rgb = (c) => {
               const m = c.match(/rgba?\\(([^)]+)\\)/);
               if (!m) return null;
@@ -93,8 +94,8 @@ const CONTRASTE_AA = `(() => {
               return cor;
             };
             const fora = [];
-            const raiz = document.querySelector('[data-territorio="rua"]');
-            if (!raiz) return ["sem territorio da rua"];
+            const raiz = document.querySelector(${JSON.stringify(raizSeletor)});
+            if (!raiz) return ["sem raiz " + ${JSON.stringify(raizSeletor)}];
             for (const el of raiz.querySelectorAll("*")) {
               const temTexto = [...el.childNodes].some((n) => n.nodeType === 3 && (n.textContent ?? "").trim() !== "");
               if (!temTexto) continue;
@@ -115,6 +116,7 @@ const CONTRASTE_AA = `(() => {
             }
             return fora;
           })()`;
+const CONTRASTE_AA = contrasteAA('[data-territorio="rua"]');
 
 interface Abertura {
   page: Page;
@@ -129,6 +131,7 @@ async function abrir(
   o: { viewport: { width: number; height: number }; comLeitura: boolean; reduzido?: boolean; relogio?: boolean; hash?: string },
 ): Promise<Abertura> {
   const ctx = await browser.newContext({ viewport: o.viewport, reducedMotion: o.reduzido ? "reduce" : "no-preference" });
+  await servirFontesCanonicas(ctx, process.env.PRODUCT_UI_FONTES);
   const page = await ctx.newPage();
   const pedidos: string[] = [];
   const erros: string[] = [];
@@ -152,12 +155,17 @@ async function abrir(
   }
   if (o.relogio) await page.clock.install({ time: new Date(AGORA_FIXTURE) });
   await page.goto(`${base}/${o.hash ?? "#/entregas"}`);
-  await page.waitForSelector("#superficie[aria-busy='false'] .superficie__cabecalho", { timeout: 15000 });
+  await page.waitForSelector("#superficie[aria-busy='false'] > *", { timeout: 15000 });
   return { page, pedidos, erros, fechar: () => ctx.close() };
 }
 
+let fontesAnunciadas = false;
 async function evidencia(page: Page, nome: string): Promise<void> {
   if (!EVIDENCIAS) return;
+  if (!fontesAnunciadas) {
+    fontesAnunciadas = true;
+    console.log(`      capturas com fontes ${await fontesEmUso(page)}`);
+  }
   await page.screenshot({ path: join(EVIDENCIAS, `${nome}-dobra.png`) });
   await page.screenshot({ path: join(EVIDENCIAS, `${nome}-inteira.png`), fullPage: true });
 }
@@ -307,6 +315,37 @@ void (async () => {
       }
     });
 
+    await teste("N7b contraste AA tambem na faixa de demonstracao aberta (sem banco)", async () => {
+      // Sem leitura, a faixa abre: o aparelho da demonstracao mostra selos de
+      // ausencia. Medido no axe-core 4.10.2: 4,38:1 sobre o fundo da faixa.
+      for (const [nome, viewport] of Object.entries(VIEWPORTS)) {
+        const a = await abrir(browser, base, { viewport, comLeitura: false });
+        try {
+          const reprovados = (await a.page.evaluate(contrasteAA('[data-territorio="demonstracao"]'))) as string[];
+          assert.deepEqual(reprovados, [], `${nome}: contraste abaixo de AA na demonstracao`);
+        } finally {
+          await a.fechar();
+        }
+      }
+    });
+
+    await teste("N7c a barra inferior do celular e legivel (AA) em todas as superficies, inclusive a Home escura", async () => {
+      // Medido no axe-core 4.10.2 contra a base 2782b31: na Home, os rotulos
+      // da barra ficavam 2,1-2,5:1 — tinta clara do Design System sobre o
+      // fundo escuro do organismo. Pre-existente; a rota inicial no celular.
+      const problemas: string[] = [];
+      for (const rota of ["#/", "#/entregas", "#/operacao-viva", "#/conference-brain", "#/copiloto"]) {
+        const a = await abrir(browser, base, { viewport: VIEWPORTS.celular, comLeitura: rota === "#/entregas", hash: rota });
+        try {
+          const reprovados = (await a.page.evaluate(contrasteAA(".shell__nav-mobile"))) as string[];
+          for (const r of reprovados) problemas.push(`${rota}: ${r}`);
+        } finally {
+          await a.fechar();
+        }
+      }
+      assert.deepEqual(problemas, []);
+    });
+
     await teste("N8 hierarquia de titulos sem salto e alvo de toque minimo nos controles da leitura", async () => {
       const a = await abrir(browser, base, { viewport: VIEWPORTS.celular, comLeitura: true });
       try {
@@ -354,6 +393,171 @@ void (async () => {
           await a.fechar();
         }
       }
+    });
+    await teste("N10 a correcao e de CLASSE: nenhuma superficie rola de lado (320 a 1920) e nenhum inspetor recolhido vaza ou recebe foco", async () => {
+      const problemas: string[] = [];
+      for (const rota of ["#/", "#/operacao-viva", "#/conference-brain", "#/copiloto", "#/entregas"]) {
+        for (const largura of [320, 390, 768, 1024, 1440, 1920]) {
+          const a = await abrir(browser, base, { viewport: { width: largura, height: 900 }, comLeitura: rota === "#/entregas", hash: rota });
+          try {
+            const r = await a.page.evaluate(() => ({
+              larg: document.documentElement.scrollWidth,
+              vazando: [...document.querySelectorAll('.inspetor__corpo[data-aberto="nao"]')].filter((el) => el.getBoundingClientRect().height > 1).length,
+              focaveis: [...document.querySelectorAll('.inspetor__corpo[data-aberto="nao"] a, .inspetor__corpo[data-aberto="nao"] button')].filter(
+                (el) => getComputedStyle(el).visibility !== "hidden",
+              ).length,
+            }));
+            if (r.larg > largura) problemas.push(`${rota} ${largura}px: documento com ${r.larg}px`);
+            if (r.vazando) problemas.push(`${rota} ${largura}px: ${r.vazando} inspetor(es) recolhido(s) com altura visivel`);
+            if (r.focaveis) problemas.push(`${rota} ${largura}px: ${r.focaveis} controle(s) visivel(is) dentro de inspetor recolhido`);
+            if (a.erros.length) problemas.push(`${rota} ${largura}px: ${a.erros.join(" | ")}`);
+          } finally {
+            await a.fechar();
+          }
+        }
+      }
+      assert.deepEqual(problemas, []);
+    });
+
+    // A MOLDURA (faixa de topo, selo do shell, unidade ativa) e a primeira coisa
+    // legivel. Sobre uma leitura do servidor ela nao pode dizer "SOMENTE
+    // DEMONSTRACAO" nem "unidade ativa: demo-unit" — seria a moldura desmentindo
+    // a tela. O esperado vem da propria view model, nunca escrito a mao.
+    const PROCEDENCIAS = ["real", "simulado", "controle", "controle_positivo_sintetico"];
+    const moldura = (page: Page) =>
+      page.evaluate(() => {
+        const sel = document.querySelector("#seletorUnidade") as HTMLElement | null;
+        return {
+          selos: [...document.querySelectorAll("#conexaoShell [data-estado]")].map((e) => (e as HTMLElement).dataset.estado ?? ""),
+          unidade: (document.querySelector("#unidadeAtiva")?.textContent ?? "").trim(),
+          seletorVisivel: Boolean(sel && sel.getClientRects().length > 0 && getComputedStyle(sel).visibility !== "hidden"),
+        };
+      });
+
+    await teste("N11 a moldura nao desmente a leitura: selo de procedencia dos fatos, unidade da leitura, sem seletor que nao age", async () => {
+      const esperado = (JSON.parse(await vmJson(null)) as { leitura: { selos: { estado: string }[] } }).leitura.selos
+        .map((s) => s.estado)
+        .filter((e) => PROCEDENCIAS.includes(e));
+      assert.ok(esperado.length > 0, "a fixture perdeu o modo dos fatos");
+      for (const viewport of [{ width: 320, height: 800 }, VIEWPORTS.celular, VIEWPORTS.desktop]) {
+        const a = await abrir(browser, base, { viewport, comLeitura: true });
+        try {
+          const m = await moldura(a.page);
+          assert.deepEqual(m.selos, esperado, `${viewport.width}px: o selo do shell nao e a procedencia da leitura`);
+          assert.doesNotMatch(m.unidade, /demo-unit/i, `${viewport.width}px: a moldura diz a unidade da demonstracao sobre a leitura`);
+          assert.match(m.unidade, /leitura/i);
+          assert.match(m.unidade, /todas/i);
+          assert.equal(m.seletorVisivel, false, `${viewport.width}px: o seletor da demonstracao segue na tela e nao age sobre a leitura`);
+          // Selo e marca nao se pintam um sobre o outro (medido em 320px no M1B-R2).
+          const sobrepostos = await a.page.evaluate(() => {
+            const r1 = document.querySelector(".shell__marca strong")?.getBoundingClientRect();
+            const r2 = document.querySelector("#conexaoShell")?.getBoundingClientRect();
+            if (!r1 || !r2) return "sem marca ou sem selo";
+            return r1.right > r2.left && r2.right > r1.left && r1.bottom > r2.top && r2.bottom > r1.top ? "sobrepostos" : "";
+          });
+          assert.equal(sobrepostos, "", `${viewport.width}px: marca e selo`);
+          if (viewport.width === 390) {
+            await a.page.evaluate(() => {
+              window.location.hash = "#/entregas?unidade=ITAIM";
+            });
+            await a.page.waitForFunction(() => document.querySelector("[data-titulo-da-leitura]")?.textContent?.includes("em ITAIM"), undefined, { timeout: 8000 });
+            assert.match((await moldura(a.page)).unidade, /ITAIM/, "a unidade da moldura nao seguiu o filtro");
+            await a.page.evaluate(() => {
+              window.location.hash = "#/operacao-viva";
+            });
+            await a.page.waitForFunction(() => !document.querySelector('[data-territorio="rua"]') && document.querySelector("#superficie")?.getAttribute("aria-busy") === "false", undefined, { timeout: 8000 });
+            const fora = await moldura(a.page);
+            assert.deepEqual(fora.selos, ["somente_demonstracao"], "fora da leitura a moldura deixou de dizer demonstracao");
+            assert.match(fora.unidade, /demo-unit/i);
+            assert.equal(fora.seletorVisivel, true, "o seletor nao voltou onde ele age");
+          }
+          assert.deepEqual(a.erros, [], `${viewport.width}px: erros no console`);
+        } finally {
+          await a.fechar();
+        }
+      }
+    });
+
+    await teste("N11b controle: sem leitura, a moldura continua dizendo demonstracao", async () => {
+      const a = await abrir(browser, base, { viewport: VIEWPORTS.celular, comLeitura: false });
+      try {
+        const m = await moldura(a.page);
+        assert.deepEqual(m.selos, ["somente_demonstracao"]);
+        assert.match(m.unidade, /demo-unit/i);
+        assert.equal(m.seletorVisivel, true);
+      } finally {
+        await a.fechar();
+      }
+    });
+
+    // Reler leva o tempo da porta: medido, 2,5 s com 100 mil fatos e 8 s com 300
+    // mil. A leitura anterior se declara (hora e idade, D95) e continua sendo
+    // informacao enquanto a nova nao chega — esqueleto no lugar dela e tela
+    // morta; erro no lugar dela apaga o que se sabia.
+    await teste("N13 reler nao apaga a leitura: a anterior fica, declarada 'relendo', ate a nova chegar", async () => {
+      const a = await abrir(browser, base, { viewport: VIEWPORTS.celular, comLeitura: true });
+      try {
+        const titulo = a.page.locator("[data-titulo-da-leitura]");
+        const antes = await titulo.innerText();
+        let liberar: () => void = () => undefined;
+        const segurar = new Promise<void>((r) => {
+          liberar = r;
+        });
+        await a.page.route("**/api/entregas**", async (rota) => {
+          await segurar;
+          await rota.fulfill({ status: 200, contentType: "application/json; charset=utf-8", body: await vmJson(null) });
+        });
+        await a.page.locator("[data-reler]").first().click();
+        await a.page.waitForFunction(() => document.querySelector('[data-territorio="rua"]')?.getAttribute("data-relendo") === "sim", undefined, { timeout: 5000 });
+        // Sem aria-busy na regiao: dentro dela o leitor de tela pode calar o aviso.
+        assert.equal(await a.page.locator('[data-territorio="rua"][aria-busy="true"]').count(), 0);
+        assert.equal(await titulo.innerText(), antes, "a leitura anterior sumiu enquanto relia");
+        assert.equal(await a.page.locator("#superficie .skeleton").count(), 0, "esqueleto no lugar da leitura");
+        assert.match(await a.page.locator("[data-releitura]").innerText(), /relendo/i);
+        liberar();
+        await a.page.waitForFunction(() => document.querySelector('[data-territorio="rua"]')?.getAttribute("data-relendo") !== "sim", undefined, { timeout: 8000 });
+        assert.equal((await a.page.locator("[data-releitura]").innerText()).trim(), "", "o aviso de releitura ficou depois da chegada");
+        assert.equal(await a.page.evaluate(() => document.activeElement?.hasAttribute("data-reler") ?? false), true, "o foco nao voltou ao botao");
+      } finally {
+        await a.fechar();
+      }
+    });
+
+    await teste("N13b reler que falha nao apaga a leitura: a anterior fica, a falha escrita, e ela segue envelhecendo", async () => {
+      const a = await abrir(browser, base, { viewport: VIEWPORTS.desktop, comLeitura: true, relogio: true });
+      try {
+        const titulo = a.page.locator("[data-titulo-da-leitura]");
+        const antes = await titulo.innerText();
+        const eyebrow = await a.page.locator(".rua__eyebrow").first().innerText();
+        const hora = /as (\d{2}h\d{2})/.exec(eyebrow)?.[1];
+        assert.ok(hora, `a camada tecnica nao diz a hora da leitura: ${eyebrow}`);
+        await a.page.route("**/api/entregas**", (rota) =>
+          rota.fulfill({ status: 503, contentType: "application/json; charset=utf-8", body: '{"erro":"indisponivel"}' }),
+        );
+        await a.page.locator("[data-reler]").first().click();
+        await a.page.waitForFunction(() => /nao foi possivel ler de novo/i.test(document.querySelector("[data-releitura]")?.textContent ?? ""), undefined, { timeout: 8000 });
+        assert.equal(await titulo.innerText(), antes, "a releitura que falhou apagou a leitura anterior");
+        const falha = await a.page.locator("[data-releitura]").innerText();
+        assert.ok(falha.includes(hora!), "a falha nao diz de quando e a leitura que ficou");
+        assert.ok(falha.includes("503"), "a falha nao diz o que o servidor respondeu");
+        assert.equal(falha.includes("/api/"), false, "a falha expoe o caminho interno da API");
+        await a.page.clock.fastForward(6 * 60 * 1000);
+        await a.page.waitForFunction(() => document.querySelector('[data-territorio="rua"]')?.getAttribute("data-envelhecida") === "sim", undefined, { timeout: 8000 });
+        // O texto que so aparece na leitura antiga e na falha tambem passa por AA.
+        assert.ok(await a.page.getByText("Esta leitura nao e a mais recente").isVisible());
+        const reprovados = (await a.page.evaluate(CONTRASTE_AA)) as string[];
+        assert.deepEqual(reprovados, [], "contraste abaixo de AA na leitura antiga com falha de releitura");
+      } finally {
+        await a.fechar();
+      }
+    });
+
+    await teste("N12 a saude do servidor declara a composicao: sem banco, so demonstracao", async () => {
+      const r = await fetch(`${base}/api/health`);
+      const s = (await r.json()) as { demo?: unknown; leitura_do_servidor?: unknown; banner?: unknown };
+      assert.equal(s.demo, true);
+      assert.equal(s.leitura_do_servidor, false, "a saude nao declara se ha leitura do servidor");
+      assert.equal(s.banner, "AMBIENTE DE DEMONSTRACAO · DELIVERYOS PRODUCT SYSTEM");
     });
   } finally {
     await browser.close();

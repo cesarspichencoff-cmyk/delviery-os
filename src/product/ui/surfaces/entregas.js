@@ -200,6 +200,7 @@ function celulaViagem(v) {
     <p class="celula__estado">${esc(v.estado_legivel)}</p>
     <p class="celula__posicao">${posicao}</p>
     <p class="celula__aparelho">${esc(v.aparelho || v.device_id || "nenhum aparelho nomeado")} · ${esc(v.unidade)}</p>
+    ${v.ocorrencias > 0 ? `<p class="celula__ocorrencia">${esc(plural(v.ocorrencias, "ocorrencia registrada", "ocorrencias registradas"))}</p>` : ""}
     <span class="linha-selos">${selos(v.selos)}</span>
   </li>`;
 }
@@ -235,18 +236,41 @@ function grupoNaRua(l) {
 }
 
 /** Encerradas e sem ciclo conhecido saem da leitura principal: contadas, recolhidas, nunca apagadas. */
+/**
+ * O corte das listas do historico, declarado: quantas aparecem, de quantas, e
+ * por qual criterio. A contagem e a exata da leitura; a lista, as mais recentes.
+ */
+function corteDoHistorico(mostradas, total) {
+  return total > mostradas
+    ? `<p class="rua__nota">As ${esc(mostradas)} mais recentes de ${esc(total)}, pela ultima posicao recebida. As outras continuam no log; esta tela nao lista todas.</p>`
+    : "";
+}
+
 function grupoForaDaRua(l) {
   const v = l.viagens;
+  const c = l.contagens || {};
+  // VM anterior ao corte nao traz a contagem: a lista inteira e a contagem.
+  const encerradas = c.encerradas ?? v.encerradas.length;
+  const semCiclo = c.ciclo_desconhecido_sem_posicao ?? v.ciclo_desconhecido_sem_posicao.length;
   const partes = [];
-  if (v.encerradas.length) {
-    partes.push(inspetor("encerradas", plural(v.encerradas.length, "viagem encerrada", "viagens encerradas"), celulas(v.encerradas, "celulas--neutras")));
+  if (encerradas) {
+    partes.push(
+      inspetor(
+        "encerradas",
+        plural(encerradas, "viagem encerrada", "viagens encerradas"),
+        `${corteDoHistorico(v.encerradas.length, encerradas)}${celulas(v.encerradas, "celulas--neutras")}`,
+      ),
+    );
   }
-  if (v.ciclo_desconhecido_sem_posicao.length) {
+  if (semCiclo) {
     partes.push(
       inspetor(
         "sem-ciclo-sem-posicao",
-        `${plural(v.ciclo_desconhecido_sem_posicao.length, "viagem", "viagens")} sem posicao recente e sem ciclo conhecido`,
-        `<p class="rua__nota">Podem ter terminado: sem o ciclo de vida, esta leitura nao sabe.</p>${celulas(v.ciclo_desconhecido_sem_posicao, "celulas--vazadas")}`,
+        `${plural(semCiclo, "viagem", "viagens")} sem posicao recente e sem ciclo conhecido`,
+        `<p class="rua__nota">Podem ter terminado: sem o ciclo de vida, esta leitura nao sabe.</p>${corteDoHistorico(
+          v.ciclo_desconhecido_sem_posicao.length,
+          semCiclo,
+        )}${celulas(v.ciclo_desconhecido_sem_posicao, "celulas--vazadas")}`,
       ),
     );
   }
@@ -265,7 +289,7 @@ function itemConferir(c) {
     ? selo({ estado: c.procedencia })
     : `<span class="conferir__modo">modo nao declarado</span>`;
   return `<li class="conferir__item" data-tipo="${esc(c.tipo)}">
-    ${marca(c.tipo === "cadastro_incompleto" ? "cheia" : "pontilhada")}
+    ${marca(c.tipo === "cadastro_incompleto" || c.tipo === "ocorrencia_registrada" ? "cheia" : "pontilhada")}
     <div class="conferir__texto">
       <p class="conferir__titulo">${esc(c.titulo)}</p>
       <p class="conferir__detalhe">${esc(c.detalhe)}</p>
@@ -339,10 +363,12 @@ function territorioLido(vm, l) {
   // Anatomia do canon: camada tecnica, linha de sinal, titulo humano,
   // explicacao, restricao. Os controles (reler, unidade) vem DEPOIS da frase:
   // no celular, a frase chega primeiro.
+  // `data-releitura`: o aviso de "relendo" e de releitura que falhou mora na
+  // camada tecnica, e existe vazio desde o desenho (regiao viva anunciada).
   return `<section class="rua" data-territorio="rua" data-solidez="${esc(l.solidez)}" data-envelhecida="nao"
       data-fresca-ate-s="${esc(l.janelas.fresca_ate_s)}" data-envelhecendo-ate-s="${esc(l.janelas.envelhecendo_ate_s)}"
-      aria-labelledby="rua-titulo">
-    <p class="rua__eyebrow"><span class="rua__ponto" aria-hidden="true"></span>Leitura do servidor as ${esc(l.lida_as)} · <span data-idade-da-leitura aria-live="off">lida agora</span></p>
+      data-lida-as="${esc(l.lida_as)}" aria-labelledby="rua-titulo">
+    <p class="rua__eyebrow"><span class="rua__ponto" aria-hidden="true"></span>Leitura do servidor as ${esc(l.lida_as)} · <span data-idade-da-leitura aria-live="off">lida agora</span><span class="rua__releitura" data-releitura role="status" aria-live="polite"></span></p>
     <div class="rua__sinal" aria-hidden="true"></div>
     <p class="rua__restricao rua__restricao--leitura" data-so-envelhecida>Esta leitura nao e a mais recente. Atualize para ver a rua agora.</p>
     <h2 class="rua__titulo" id="rua-titulo" data-titulo-da-leitura>${esc(l.titulo)}</h2>

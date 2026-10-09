@@ -11,7 +11,7 @@ name: deliveryos-product-ux
 
 on:
   push:
-    branches: [feat/claude-product-ux-autonomous-20261009, integration/deliveryos-product-ux-android-20261009, feat/deliveryos-itaim-db-error-boundary-20261009]
+    branches: [feat/claude-product-ux-autonomous-20261009, integration/deliveryos-product-ux-android-20261009, feat/deliveryos-itaim-db-error-boundary-20261009, integration/deliveryos-q025-review-20261009]
   workflow_dispatch:
 
 permissions:
@@ -23,7 +23,8 @@ jobs:
     timeout-minutes: 40
     services:
       postgres:
-        image: postgres:16
+        # Docker Official Image no ECR Public: evita limite anonimo do Docker Hub no runner (run 37992818657).
+        image: public.ecr.aws/docker/library/postgres:16
         env:
           POSTGRES_HOST_AUTH_METHOD: trust
         ports: ["5432:5432"]
@@ -50,6 +51,16 @@ jobs:
         run: npx tsx tests/product/run-entregas-servidor-pg-tests.ts --evidencias "$RUNNER_TEMP/evidencias/postgresql"
       - name: falha do PostgreSQL nao revela IP, porta ou segredo no painel
         run: npx tsx tests/product/run-entregas-db-error-boundary-tests.ts
+      # axe-core NAO e dependencia do repositorio (package.json intocado): versao
+      # fixa, baixada para fora da arvore e conferida por sha256 antes de rodar.
+      - name: acessibilidade automatica (axe-core, todas as rotas, 390 e 1440)
+        run: |
+          mkdir -p "$RUNNER_TEMP/axe" && cd "$RUNNER_TEMP/axe"
+          npm pack axe-core@4.10.2 --silent
+          echo "9ea2d2d6917da998122bdacfd3b473e31ead53f4b87146c716a12edf89158100  axe-core-4.10.2.tgz" | sha256sum -c -
+          tar -xzf axe-core-4.10.2.tgz
+          cd "$GITHUB_WORKSPACE"
+          PRODUCT_UI_AXE="$RUNNER_TEMP/axe/package/axe.min.js" npx tsx tests/product/run-a11y-axe-tests.ts
       - run: npm run -s test:platform:product
       - run: npm run -s test:platform:queue-depth
       - run: npm run -s test:platform:home

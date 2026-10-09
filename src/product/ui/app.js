@@ -15,6 +15,7 @@ import {
   estadoTela,
   ligarInspetores,
   selo,
+  selos,
   skeleton,
 } from "./components/ui.js";
 import { telaHome } from "./surfaces/home.js";
@@ -33,11 +34,16 @@ const estado = {
   rotaAnterior: null,
   /** O intervalo que envelhece a leitura na tela. Um so, trocado a cada desenho. */
   relogioDaLeitura: null,
+  /** O selo do shell quando a tela nao traz leitura do servidor (de /api/health). */
+  molduraPadrao: [],
+  /** Cada desenho incrementa; uma releitura que volta depois de outro desenho e descartada. */
+  geracao: 0,
+  relendo: false,
 };
 
 async function obter(caminho) {
   const r = await fetch(caminho, { headers: { accept: "application/json" } });
-  if (!r.ok) throw new Error(`${caminho} respondeu ${r.status}`);
+  if (!r.ok) throw Object.assign(new Error(`${caminho} respondeu ${r.status}`), { status: r.status });
   return r.json();
 }
 
@@ -105,6 +111,33 @@ function atualizarUnidadeVisivel() {
   $("#unidadeAtiva").textContent = u
     ? `Unidade ativa · ${u.unit_id} · ${u.praca}`
     : "Unidade ativa · nao selecionada";
+}
+
+/**
+ * A MOLDURA (selo do shell e unidade ativa) diz a origem do que a tela mostra
+ * em PRIMEIRO PLANO. Sobre a leitura do servidor, "SOMENTE DEMONSTRACAO" e
+ * "unidade ativa: demo-unit" eram a moldura desmentindo a tela (2026-10-09).
+ */
+const PROCEDENCIAS = ["real", "simulado", "controle", "controle_positivo_sintetico"];
+
+function desenharMoldura(rota, vm) {
+  const l = rota === "/entregas" && vm && vm.leitura && vm.leitura.disponivel === true ? vm.leitura : null;
+  const sel = $("#seletorUnidade");
+  if (!l) {
+    $("#conexaoShell").innerHTML = selos(estado.molduraPadrao);
+    sel.hidden = false;
+    atualizarUnidadeVisivel();
+    return;
+  }
+  // O modo dos fatos lidos (real, simulado, controle). Leitura sem fato com
+  // modo fica com os selos dela mesma — nunca com a demonstracao por padrao.
+  const modos = l.selos.filter((s) => PROCEDENCIAS.includes(s.estado));
+  $("#conexaoShell").innerHTML = selos(modos.length ? modos : l.selos);
+  // O seletor escolhe a unidade da DEMONSTRACAO; a leitura filtra pelas
+  // unidades que o servidor encontrou. Um controle que nao age sobre a tela sai
+  // dela enquanto a leitura esta em primeiro plano.
+  sel.hidden = true;
+  $("#unidadeAtiva").textContent = `Unidade da leitura · ${l.unidade_selecionada ?? "todas"}`;
 }
 
 function desenharContexto(modulo, preservandoContexto) {
@@ -175,9 +208,7 @@ function rotaDoHash() {
 function ligarLeitura(alvo, opcoes) {
   clearInterval(estado.relogioDaLeitura);
   estado.relogioDaLeitura = null;
-  alvo.querySelectorAll("[data-reler]").forEach((b) =>
-    b.addEventListener("click", () => desenhar(estado.rotaAtual, { focar: "[data-reler]" })),
-  );
+  alvo.querySelectorAll("[data-reler]").forEach((b) => b.addEventListener("click", () => relerSemApagar(alvo)));
   if (opcoes.focar) {
     const el = alvo.querySelector(opcoes.focar);
     if (el) el.focus();
@@ -197,27 +228,51 @@ function ligarLeitura(alvo, opcoes) {
   estado.relogioDaLeitura = setInterval(marcar, 15000);
 }
 
-async function desenhar(rota, opcoes = {}) {
-  const alvo = $("#superficie");
-  const modulo = estado.navegacao.modulos.find((m) => m.rota === rota);
-  desenharNavegacao(rota);
-  desenharContexto(modulo, opcoes.preservandoContexto === true);
-
-  if (!modulo) {
-    alvo.innerHTML = estadoTela(
-      "vazio",
-      [{ estado: "indisponivel" }],
-      "Esta rota nao existe",
-      "O endereco pedido nao corresponde a nenhum modulo do DeliveryOS.",
-    );
+/**
+ * Reler SEM apagar (2026-10-09). A leitura na tela se declara — hora e idade —
+ * e continua sendo o que se sabe enquanto a nova nao chega: medido, reler leva
+ * 2,5 s com 100 mil fatos no log e 8 s com 300 mil. Esqueleto no lugar dela
+ * seria tela morta; erro no lugar dela apagaria o que se sabia. Sem leitura na
+ * tela (estado tecnico), reler e um desenho comum.
+ */
+async function relerSemApagar(alvo) {
+  const rua = alvo.querySelector('[data-territorio="rua"][data-lida-as]');
+  const aviso = rua && rua.querySelector("[data-releitura]");
+  if (!aviso) {
+    desenhar(estado.rotaAtual, { focar: "[data-reler]" });
     return;
   }
-
-  if (modulo.disponibilidade === "futuro") {
-    alvo.innerHTML = telaModuloFuturo(modulo);
-    return;
+  if (estado.relendo) return;
+  estado.relendo = true;
+  const geracao = estado.geracao;
+  const rota = estado.rotaAtual;
+  const botoes = alvo.querySelectorAll("[data-reler]");
+  // `data-relendo`, nao `aria-busy`: dentro de regiao ocupada o leitor de tela
+  // pode calar mudancas — e o aviso "relendo" (regiao viva) mora nela.
+  rua.dataset.relendo = "sim";
+  botoes.forEach((b) => b.setAttribute("aria-disabled", "true"));
+  aviso.dataset.estado = "relendo";
+  aviso.textContent = " · relendo…";
+  try {
+    const vm = await obter(apiDaRota(rota));
+    if (geracao !== estado.geracao) return; // outra tela foi desenhada no meio
+    alvo.innerHTML = SUPERFICIES[rota].tela(vm);
+    desenharMoldura(rota, vm);
+    ligarInspetores(alvo);
+    ligarLeitura(alvo, { focar: "[data-reler]" });
+  } catch (e) {
+    if (geracao !== estado.geracao) return;
+    delete rua.dataset.relendo;
+    botoes.forEach((b) => b.removeAttribute("aria-disabled"));
+    aviso.dataset.estado = "falhou";
+    const motivo = e && e.status ? `o servidor respondeu ${e.status}` : "sem resposta do servidor";
+    aviso.textContent = `Nao foi possivel ler de novo (${motivo}). Esta continua sendo a leitura das ${rua.dataset.lidaAs}, e segue envelhecendo.`;
+  } finally {
+    if (geracao === estado.geracao) estado.relendo = false;
   }
+}
 
+function apiDaRota(rota) {
   const s = SUPERFICIES[rota];
   // A cena so viaja para a HOME, e so porque esta build e de demonstracao.
   const cena = new URLSearchParams(window.location.search).get("cena");
@@ -232,17 +287,49 @@ async function desenhar(rota, opcoes = {}) {
   if (unidadeDaLeitura) {
     api += `${api.includes("?") ? "&" : "?"}unidade=${encodeURIComponent(unidadeDaLeitura)}`;
   }
+  return api;
+}
+
+async function desenhar(rota, opcoes = {}) {
+  estado.geracao += 1;
+  estado.relendo = false;
+  const alvo = $("#superficie");
+  const modulo = estado.navegacao.modulos.find((m) => m.rota === rota);
+  desenharNavegacao(rota);
+  desenharContexto(modulo, opcoes.preservandoContexto === true);
+
+  if (!modulo) {
+    desenharMoldura(rota, null);
+    alvo.innerHTML = estadoTela(
+      "vazio",
+      [{ estado: "indisponivel" }],
+      "Esta rota nao existe",
+      "O endereco pedido nao corresponde a nenhum modulo do DeliveryOS.",
+    );
+    return;
+  }
+
+  if (modulo.disponibilidade === "futuro") {
+    desenharMoldura(rota, null);
+    alvo.innerHTML = telaModuloFuturo(modulo);
+    return;
+  }
+
+  const s = SUPERFICIES[rota];
+  const api = apiDaRota(rota);
   clearInterval(estado.relogioDaLeitura);
   alvo.setAttribute("aria-busy", "true");
   alvo.innerHTML = skeleton(4);
   try {
     const vm = await obter(api);
     alvo.innerHTML = s.tela(vm);
+    desenharMoldura(rota, vm);
     ligarInspetores(alvo);
     ligarLeitura(alvo, opcoes);
   } catch (e) {
     // Falha de leitura NAO vira tela vazia: vazio significaria "nao ha nada",
     // e o que houve foi "nao consegui perguntar".
+    desenharMoldura(rota, null);
     alvo.innerHTML = estadoTela(
       "degradado",
       [{ estado: "erro_recuperavel" }],
@@ -316,9 +403,8 @@ async function iniciar() {
     estado.unidade = navegacao.unidades[0] ? navegacao.unidades[0].unit_id : null;
 
     $("#faixaAmbiente").textContent = saude.banner;
-    $("#conexaoShell").innerHTML = selo({
-      estado: saude.demo ? "somente_demonstracao" : "real",
-    });
+    estado.molduraPadrao = [{ estado: saude.demo ? "somente_demonstracao" : "real" }];
+    $("#conexaoShell").innerHTML = selos(estado.molduraPadrao);
 
     desenharUnidades();
     ligarMenu();

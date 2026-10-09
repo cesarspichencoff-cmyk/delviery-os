@@ -67,6 +67,18 @@ const PORT = Number(process.env.PRODUCT_UI_PORT || 5290);
 const URL_PLATAFORMA = (process.env.DELIVERYOS_DATABASE_URL || "").trim();
 const DIR_CONFERENCE = (process.env.CONFERENCE_BRAIN_DATA_DIR || "").trim();
 /**
+ * A faixa de topo diz a COMPOSICAO deste servidor, nao a de uma build
+ * imaginada. Com o banco da plataforma ou o Conference Brain configurados, ha
+ * tela lida do servidor (Entregas; o historico da Operacao Viva e do Copiloto)
+ * ao lado da demonstracao — "AMBIENTE DE DEMONSTRACAO" passava a ser falso, e a
+ * moldura desmentia a tela (2026-10-09). A faixa nao diz o MODO dos fatos
+ * (real, simulado): isso a tela diz item a item.
+ */
+const LEITURA_DO_SERVIDOR = Boolean(URL_PLATAFORMA || DIR_CONFERENCE);
+const FAIXA_DE_AMBIENTE = LEITURA_DO_SERVIDOR
+  ? "DEMONSTRACAO + LEITURA DO SERVIDOR · DELIVERYOS PRODUCT SYSTEM"
+  : "AMBIENTE DE DEMONSTRACAO · DELIVERYOS PRODUCT SYSTEM";
+/**
  * Raiz do leitor TATÁ na CAIXA (ex.: C:\ProgramData\TataComandaReader). Sem
  * ela, /api/fontes declara a fonte NAO_CONFIGURADA — nunca saudável por
  * ausência. Só faz sentido na mesma máquina do leitor (relógio).
@@ -328,8 +340,9 @@ export async function criarServidor(): Promise<http.Server> {
           ok: true,
           modulo: "PRODUCT_SYSTEM",
           demo: true,
-          modo: "demonstracao",
-          banner: "AMBIENTE DE DEMONSTRACAO · DELIVERYOS PRODUCT SYSTEM",
+          leitura_do_servidor: LEITURA_DO_SERVIDOR,
+          modo: LEITURA_DO_SERVIDOR ? "demonstracao_e_leitura_do_servidor" : "demonstracao",
+          banner: FAIXA_DE_AMBIENTE,
           somente_leitura: true,
           acao_operacional: false,
         });
@@ -426,7 +439,7 @@ if (require.main === module) {
     .then((s) => {
       s.listen(PORT, "127.0.0.1", () => {
         console.log(`DeliveryOS Product System  http://127.0.0.1:${PORT}/`);
-        console.log("AMBIENTE DE DEMONSTRACAO — somente leitura, sem acao operacional");
+        console.log(`${FAIXA_DE_AMBIENTE.split(" · ")[0]} — somente leitura, sem acao operacional`);
       });
     })
     .catch((e: unknown) => {

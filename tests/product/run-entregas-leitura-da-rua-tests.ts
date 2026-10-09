@@ -351,6 +351,72 @@ void (async () => {
     assert.ok(html.includes("Nenhuma viagem com saida registrada esta na rua por esta leitura."));
   });
 
+  await teste("L13 ocorrencia registrada numa viagem na rua pede conferencia — sem inventar tipo, horario ou resolucao", async () => {
+    const base = realidadeFixture({ ocorrencias: true });
+    const l = (await vmDe(base, "ITAIM")).leitura;
+    assert.deepEqual(
+      l.conferir.map((c: Qualquer) => c.chave),
+      ["ocorrencia:T-103", "viagem:T-102", "fila:dev-b", "cadastro:dev-d"],
+    );
+    const o = l.conferir[0];
+    assert.equal(o.tipo, "ocorrencia_registrada");
+    assert.equal(o.titulo, "Viagem T-103: 1 ocorrencia registrada");
+    assert.match(o.restricao, /tipo/);
+    assert.match(o.restricao, /resolvida/);
+    assert.equal(o.desde.observado, false, "a leitura nao tem o horario da ocorrencia e inventou um");
+    // A encerrada com ocorrencia NAO pede conferencia, mas a contagem nao some.
+    assert.equal(l.conferir.some((c: Qualquer) => c.chave === "ocorrencia:T-099"), false);
+    const t099 = l.viagens.encerradas.find((v: Qualquer) => v.viagem_id === "T-099");
+    assert.equal(t099.ocorrencias, 1);
+    const html = telaEntregas(await vmDe(base, "ITAIM"));
+    assert.ok(html.includes("1 ocorrencia registrada"), "a celula nao mostra a ocorrencia");
+    // Sem ocorrencia, nada aparece (zero medido nao vira linha de alarme).
+    const sem = (await vmDe(realidadeFixture(), "ITAIM")).leitura;
+    assert.equal(sem.conferir.some((c: Qualquer) => c.tipo === "ocorrencia_registrada"), false);
+    assert.equal(telaEntregas(await vmDe(realidadeFixture(), "ITAIM")).includes("ocorrencia registrada"), false);
+  });
+
+  await teste("L14 texto que a pessoa le nunca carrega nome interno do catalogo (snake_case)", async () => {
+    // As outras linhas de evidencia ja falam lingua de gente ("ultimo lote",
+    // "relato recebido"); a da ocorrencia dizia `occurrence_created no log`.
+    const l = (await vmDe(realidadeFixture({ ocorrencias: true }), null)).leitura;
+    const textos: string[] = [l.titulo, l.explicacao, l.restricao ?? "", ...l.qualidade];
+    for (const c of l.conferir) textos.push(c.titulo, c.detalhe, c.evidencia, c.restricao);
+    for (const grupo of Object.values(l.viagens) as Qualquer[][]) {
+      for (const v of grupo) textos.push(v.estado_legivel, v.aparelho ?? "");
+    }
+    const internos = textos.filter((t) => /\b[a-z]+_[a-z_]+\b/.test(t));
+    assert.deepEqual(internos, [], "nome interno no texto humano");
+  });
+
+  await teste("L15 historico longo: encerradas e viagens antigas sem ciclo vem limitadas, mais recentes primeiro, e a contagem nao mente", async () => {
+    // O log nunca apaga (append-only): sem limite, cada semana de operacao
+    // engorda a resposta e a arvore da tela com viagens de dias atras.
+    const vm = await vmDe(realidadeFixture({ historico: { encerradas: 60, semCiclo: 45 } }), "ITAIM");
+    const l = vm.leitura;
+    const limite = l.limite_da_lista;
+    assert.equal(typeof limite, "number", "a view model nao declara o limite das listas");
+    assert.ok(limite > 0 && limite < 45, `limite ${limite} nao exercita o corte desta fixture`);
+    // Contagem exata: as 60 do historico + T-099.
+    assert.equal(l.contagens.encerradas, 61);
+    assert.equal(l.viagens.encerradas.length, limite);
+    assert.equal(l.viagens.encerradas[0].viagem_id, "H-060", "a encerrada mais recente nao vem primeiro");
+    // Sem ciclo e sem posicao recente: as 45 do historico + T-302 (ultima posicao ha 2 h).
+    assert.equal(l.contagens.ciclo_desconhecido_sem_posicao, 46);
+    assert.equal(l.viagens.ciclo_desconhecido_sem_posicao.length, limite);
+    assert.equal(l.viagens.ciclo_desconhecido_sem_posicao[0].viagem_id, "T-302");
+    assert.ok(
+      l.qualidade.some((q: string) => q.startsWith("46 viagens sem posicao recente e sem ciclo")),
+      "a ressalva de qualidade perdeu a contagem exata",
+    );
+    // A tela diz que a lista e parcial, e de quanto.
+    const html = telaEntregas(vm);
+    assert.ok(html.includes(`${limite} mais recentes de 61`), "a tela nao declara o corte das encerradas");
+    assert.ok(html.includes(`${limite} mais recentes de 46`), "a tela nao declara o corte das viagens sem ciclo");
+    // Controle: historico curto nao ganha frase de corte.
+    assert.equal(telaEntregas(await vmDe(realidadeFixture(), "ITAIM")).includes("mais recentes de"), false);
+  });
+
   if (falhas.length) {
     console.error(`\nENTREGAS_LEITURA_DA_RUA: ${passaram}/${passaram + falhas.length} PASS`);
     for (const f of falhas) console.error(` - ${f}`);

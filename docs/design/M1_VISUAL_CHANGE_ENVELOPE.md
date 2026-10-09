@@ -361,7 +361,8 @@ para que a classe fique escrita, não porque o C6 precise):
 - `src/product/ui/components/components.css` — inspetor recolhido sem
   vazamento de 24 px e fora da ordem de tabulação (medido).
 
-**Não mudaram:** Home, `home-vm.ts`, `home.css`, `sinais.ts`, `areas.ts`,
+- `src/product/ui/surfaces/home.css` (`6f52755`) — duas regras locais para contraste AA da barra inferior da Home no celular (N7c, axe-core); mesmas cores/tokens da lateral, sem novo Foco ou alteracao de funcionalidade. Q-025 expressamente aprovada em 09/10 para branch de testes.
+**Não mudaram:** Home, `home-vm.ts`, `sinais.ts`, `areas.ts`,
 `copiloto-vm.ts`, `estados.ts`, os tokens, `src/platform/**` de domínio e de
 leitura, `src/entregas/**`, Calmo/Ambiente/Foco, e nenhum gate de congelamento.
 Os doze caminhos da `Q-019` continuam fora do envelope — esta exceção não os
