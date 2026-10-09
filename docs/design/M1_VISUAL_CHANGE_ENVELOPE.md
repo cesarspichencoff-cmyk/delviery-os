@@ -5,7 +5,7 @@ lifecycle:
   authority_scope: m1_visual_change_authorization
   superseded_by: null
   atualizado_em: "2026-10-09"
-  state_basis: 2782b31
+  state_basis: 642fa1e
   missao: M1A.1 — ponte canônica e estrutural · M1B-R1 · M1B-R2 · exceção Cadeia Real (fora de M1B) · exceção leitura da rua (fora de M1B, 2026-10-09)
 ---
 
