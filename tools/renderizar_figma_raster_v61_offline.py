@@ -52,6 +52,17 @@ def bitmap(svg_file, fonts):
             content=e.text or ""
             anchor = "rs" if e.attrib.get("text-anchor")=="end" else "ls"
             bb=dr.textbbox(pos,content,font=font,anchor=anchor)
+            # Long real TEKNISA IDs may exceed the Figma demo's shorter ID.
+            # Reduce META text only, never truncate/relabel a business identifier.
+            if content.startswith("iFood #") and bb[2] > round(289*SCALE):
+                original=round(float(e.attrib["font-size"])*SCALE)
+                for size in range(original-1,max(15,original-4),-1):
+                    candidate=font_at(fonts[face],size,int(e.attrib.get("font-weight",500)))
+                    candidate_bbox=dr.textbbox(pos,content,font=candidate,anchor=anchor)
+                    if candidate_bbox[2] <= round(289*SCALE):
+                        font,bbox_marker=candidate,"META_FONT_FIT"
+                        bb=candidate_bbox
+                        break
             if bb[0] < round(13*SCALE) or bb[2] > round(289*SCALE):
                 raise ValueError("TEXT_EXCEEDS_FIGMA_WIDTH:"+content)
             if bb[1]<0 or bb[3]>height:
