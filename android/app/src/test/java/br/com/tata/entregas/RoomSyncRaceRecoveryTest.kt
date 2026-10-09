@@ -156,6 +156,21 @@ class RoomSyncRaceRecoveryTest {
         assertEquals(0, db.outbox().pendingCount())
     }
 
+    @Test fun domainRejectedOutboxIsVisibleAndNeverSentByLateWorker() = runBlocking {
+        val item = event("evt-domain-rejected")
+        db.outbox().insert(item)
+        db.outbox().markRejected(listOf(item.eventId), "dominio_recusou:fora_da_rota")
+        db.close()
+        db = open()
+        assertEquals(1, db.outbox().rejectedCount())
+        assertEquals(0, db.outbox().pendingCount())
+        assertTrue(db.outbox().nextBatch(20).isEmpty())
+        db.outbox().markSent(listOf(item.eventId))
+        db.outbox().markFailed(listOf(item.eventId), "late_timeout")
+        assertEquals(1, db.outbox().rejectedCount())
+        assertEquals(0, db.outbox().pendingCount())
+    }
+
     @Test fun pendingOutboxFailureRemainsRetryableAcrossRestart() = runBlocking {
         db.outbox().insert(event("evt-2"))
         db.outbox().markFailed(listOf("evt-2"), "timeout")
