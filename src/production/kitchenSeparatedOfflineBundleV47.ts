@@ -137,8 +137,17 @@ export function buildKitchenSeparatedBundleV47(
       split.dishes.source.identifiers,tickets.conference.identifiers)
       ? ["KITCHEN_DISHES_ORDER_IDENTIFIERS_MISMATCH"] : []),
   ]);
-  append("CONFERENCE",renderConferenceTicketProofV46(tickets.conference),
-    tickets.conference.ready_for_semantic_preview === true ? [] : ["CONFERENCE_SEMANTIC_NOT_READY"]);
+  // Conference coordinates the full order. A conflict against ANY station
+  // makes its combined preview ambiguous, even when some individual stations
+  // can still be exported safely with their own matched identifiers.
+  const conferenceMatchesStations=tickets.production.length>0 &&
+    tickets.production.every(p=>
+      matchingOrderIds(p.identifiers,tickets.conference.identifiers));
+  append("CONFERENCE",renderConferenceTicketProofV46(tickets.conference),[
+    ...(tickets.conference.ready_for_semantic_preview === true
+      ? [] : ["CONFERENCE_SEMANTIC_NOT_READY"]),
+    ...(conferenceMatchesStations ? [] : ["CONFERENCE_STATION_IDENTIFIERS_MISMATCH"]),
+  ]);
   const rawKitchenCount=tickets.production.filter(x=>kitchenStation(x.station)).length;
   // A blocked proof must be explainable from the bundle summary as well as
   // its per-proof diagnostics; channel qualification prevents ambiguity.
