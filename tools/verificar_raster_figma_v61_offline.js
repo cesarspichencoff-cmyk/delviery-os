@@ -40,7 +40,7 @@ check("reject malformed pixel array",()=>{
   assert.throws(()=>toGsV0Raster(x),/BYTES/);
 });
 check("PBM binary whitespace is preserved",()=>{
-  const b=sample(20),header=Buffer.from("P4\\n576 20\\n");
+  const b=sample(20),header=Buffer.from("P4\n576 20\n");
   b[header.length]=0x0a;
   const x=readP4(b);
   assert.equal(x.data[0],0x0a);
