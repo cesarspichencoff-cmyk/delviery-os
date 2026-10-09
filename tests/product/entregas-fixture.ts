@@ -97,6 +97,24 @@ function eventos(o: OpcoesFixture = {}): EventEnvelope[] {
     e.push(fato("ITAIM", "T-103", "occurrence_created", 480, 478, "dev-c"));
     e.push(fato("ITAIM", "T-099", "occurrence_created", 93000, 92990, "dev-f"));
   }
+  if (o.historico) {
+    // Semanas de operacao: viagens encerradas (ciclo completo) e viagens so por
+    // GPS, antigas, sem ciclo de vida — o que o log acumula e nunca apaga. A
+    // de numero 1 e a mais antiga; o intervalo entre elas e de 1 h.
+    for (let i = 1; i <= o.historico.encerradas; i += 1) {
+      const id = `H-${String(i).padStart(3, "0")}`;
+      const fim = 86400 + (o.historico.encerradas - i) * 3600;
+      e.push(fato("ITAIM", id, "trip_created", fim + 1800, fim + 1800, "dev-f"));
+      e.push(fato("ITAIM", id, "trip_started", fim + 1700, fim + 1700, "dev-f"));
+      e.push(fato("ITAIM", id, "gps_batch_received", fim + 60, fim + 58, "dev-f"));
+      e.push(fato("ITAIM", id, "trip_closed", fim, fim, "dev-f"));
+    }
+    for (let i = 1; i <= o.historico.semCiclo; i += 1) {
+      const id = `G-${String(i).padStart(3, "0")}`;
+      const ultimo = 86400 + (o.historico.semCiclo - i) * 3600;
+      e.push(fato("ITAIM", id, "gps_batch_received", ultimo, ultimo - 2, "dev-h"));
+    }
+  }
   return e;
 }
 
@@ -128,6 +146,8 @@ export interface OpcoesFixture {
   soItaim?: boolean;
   /** Acrescenta `occurrence_created` em T-103 (na rua) e em T-099 (encerrada). */
   ocorrencias?: boolean;
+  /** Historico longo: N viagens encerradas (dev-f) e M so por GPS, antigas e sem ciclo (dev-h). */
+  historico?: { encerradas: number; semCiclo: number };
 }
 
 export function realidadeFixture(o: OpcoesFixture = {}): RealidadeDeEntregas {
