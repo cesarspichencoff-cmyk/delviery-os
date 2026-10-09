@@ -108,6 +108,15 @@ export function buildKitchenSeparatedBundleV47(
       ? ["KITCHEN_COMPONENT_IDENTIFIERS_MISMATCH"] : []),
     ...(split.components && !componentMatchesProjection
       ? ["KITCHEN_COMPONENT_PROJECTION_BINDING_MISMATCH"] : []),
+    // An unchanged fingerprint alone cannot overrule a withdrawn approval.
+    // The independent split-level decision must still be valid at export.
+    ...(split.components && split.ready_for_complete_components !== true
+      ? ["KITCHEN_COMPONENT_SPLIT_NOT_READY"] : []),
+    ...(split.components && split.review_reasons.length > 0
+      ? ["KITCHEN_COMPONENT_SPLIT_REVIEW_BLOCKERS"] : []),
+    ...(split.components && (split.components.status !== "PROVEN_COMPLETE" ||
+                              split.components.blocking_reasons.length > 0)
+      ? ["KITCHEN_COMPONENT_NOT_PROVEN_COMPLETE"] : []),
   ]);
   append("KITCHEN_DISHES",kitchen.dishes, [
     ...(split.dishes && split.dishes.source.ready_for_semantic_preview !== true
