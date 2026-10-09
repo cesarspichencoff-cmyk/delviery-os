@@ -4,9 +4,9 @@ lifecycle:
   status: ACTIVE
   authority_scope: m1_visual_change_authorization
   superseded_by: null
-  atualizado_em: "2026-09-25"
-  state_basis: 5effdbe
-  missao: M1A.1 — ponte canônica e estrutural · M1B-R1 · M1B-R2 · exceção Cadeia Real (fora de M1B)
+  atualizado_em: "2026-10-09"
+  state_basis: 2782b31
+  missao: M1A.1 — ponte canônica e estrutural · M1B-R1 · M1B-R2 · exceção Cadeia Real (fora de M1B) · exceção leitura da rua (fora de M1B, 2026-10-09)
 ---
 
 # Envelope de mudança visual M1
@@ -311,6 +311,79 @@ o domínio `src/entregas/**`, os selos da demonstração (`somente_demonstracao`
 
 ```bash
 git checkout 0b8803c -- src/product/viewmodels/entregas-vm.ts src/product/ui/surfaces/entregas.js
+```
+
+### Exceção estreita — César, 2026-10-09 (missão Product UX solo) — fora de M1B · aguardando confirmação (`Q-022`)
+
+```
+src/product/viewmodels/entregas-vm.ts   ENTREGAS_STREET_READING_ONLY
+src/product/ui/surfaces/entregas.js     ENTREGAS_STREET_READING_ONLY
+src/product/ui/surfaces/entregas.css    ENTREGAS_STREET_READING_ONLY
+```
+
+**Não é autorização de M1B**, e nenhum dos três entrou em `AUTHORIZED_PATHS`.
+O registro mora aqui pelo mesmo motivo da exceção Cadeia Real: este envelope é
+o único lugar que o C6 lê. `entregas.css` é arquivo **novo** num caminho
+protegido — sem esta linha, ele derrubaria o C6 no primeiro commit.
+
+**A autorização é do César, na missão de 2026-10-09**
+(`docs/execution/CLAUDE_PRODUCT_UX_SOLO_MISSION_2026-10-09.md`, commit
+`2782b31`, autoria do César): *"Arquivos de SUA responsabilidade preferencial:
+`src/product/ui/**` · `src/product/viewmodels/**` …"* e *"Priorize tela
+Entregas, leitura operacional mobile, hierarquia de estados, carga, vazio, erro
+e evidência real/antiga."* O registro documenta a decisão; não toma decisão
+nova. A confirmação explícita, como a da Cadeia Real em 2026-09-25, fica em
+`Q-022`.
+
+**O que a classe cobre, e só isso:** a **leitura da rua** da superfície
+Entregas — apresentação pura da porta de realidade que já existia
+(`src/platform/leitura/realidade-de-entregas.ts`, intocada):
+
+- frase de abertura, linha de sinal (confiança = solidez), idade de cada fato
+  contra o instante da leitura, hora local declarada;
+- filtro por unidade **derivado da própria leitura** (link, não estado escondido);
+- grupos pelo ciclo de vida já projetado (`projetar()`, intocada) e a lista do
+  que pede conferência — sem botão, sem Foco, sem ação;
+- a demonstração numa faixa própria, recolhida quando há leitura;
+- texto do aparelho da demonstração corrigido: ele afirmava que "não existe
+  rota de leitura" enquanto a mesma tela mostrava o aparelho lido do banco.
+
+Também tocados por esta missão, **já** em `AUTHORIZED_PATHS` (registrados aqui
+para que a classe fique escrita, não porque o C6 precise):
+
+- `src/product/ui/app.js` — consulta no hash (`#/entregas?unidade=`), botão de
+  reler (GET), idade da leitura medida desde a chegada (`performance.now()`),
+  foco devolvido ao filtro escolhido;
+- `src/product/ui/index.html` — uma linha: a folha `entregas.css`;
+- `src/product/ui/shell/shell.css` — `position: relative` em
+  `.shell__conteudo`: o `.sr-only` dos selos escapava do recorte e esticava o
+  documento (1034 px de largura a 768 px; medido);
+- `src/product/ui/components/components.css` — inspetor recolhido sem
+  vazamento de 24 px e fora da ordem de tabulação (medido).
+
+**Não mudaram:** Home, `home-vm.ts`, `home.css`, `sinais.ts`, `areas.ts`,
+`copiloto-vm.ts`, `estados.ts`, os tokens, `src/platform/**` de domínio e de
+leitura, `src/entregas/**`, Calmo/Ambiente/Foco, e nenhum gate de congelamento.
+Os doze caminhos da `Q-019` continuam fora do envelope — esta exceção não os
+registra.
+
+**Limite da guarda:** igual às duas exceções acima — o C6 é por CAMINHO e
+reprova registro sem a linha exata (C6d); a CLASSE é barrada por revisão. **No
+C6, só `entregas.css` depende desta linha.** `entregas-vm.ts` e `entregas.js`
+continuam cobertos pela linha da Cadeia Real; contá-los duas vezes deixou o
+controle C6c cego (medido em 2026-10-09: sem o registro da Cadeia Real, os dois
+continuavam passando). As linhas deles nesta classe existem para que a mudança
+fique escrita no envelope — não para o gate.
+
+**Rollback:** reverter os commits da missão Product UX de 2026-10-09 na branch
+`feat/claude-product-ux-autonomous-20261009` (este bloco, `EXCECAO_LEITURA_DA_RUA`
+e o C6d em `run-m1-bridge-tests.ts`), ou:
+
+```bash
+git checkout 2782b31 -- src/product/viewmodels/entregas-vm.ts src/product/ui/surfaces/entregas.js \
+  src/product/ui/app.js src/product/ui/index.html src/product/ui/shell/shell.css \
+  src/product/ui/components/components.css tools/product_system_server.ts
+git rm src/product/ui/surfaces/entregas.css
 ```
 
 ### `FORBIDDEN_PATHS`

@@ -1,0 +1,470 @@
+/* DeliveryOS — Product System · ENTREGAS: a rua, lida agora
+   ---------------------------------------------------------------------------
+   So tokens que ja existem (src/entregas/ui/shared/tokens.css e
+   tokens/product-tokens.css). Nenhuma cor literal, nenhuma fonte nova.
+
+   Confianca = SOLIDEZ (Contrato Visual de Estados Tecnicos, Nivel 1): o que
+   chegou dentro da janela e traco cheio; envelhecendo, tracejado; passou da
+   janela, pontilhado; sem base, interrompido. Cor de sinal so em traco, ponto
+   e marca — texto usa os tokens `ink`, que passam 4.5:1.
+
+   Nada aqui anima: evidencia nao anima, e uma leitura nao e um fluxo vivo.
+   --------------------------------------------------------------------------- */
+
+/* ------------------------------------------------------------ territorio -- */
+.rua {
+  --rua-traco: var(--line-signal);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+  margin: 0 0 var(--space-5) 0;
+}
+.rua[data-solidez="cheia"] { --rua-traco: var(--signal-calm); }
+.rua[data-solidez="tracejada"],
+.rua[data-solidez="pontilhada"] { --rua-traco: var(--signal-age); }
+.rua[data-solidez="interrompida"] { --rua-traco: var(--signal-lost); }
+/* A leitura envelhece NA TELA (app.js mede desde a chegada, sem misturar relogios). */
+.rua[data-envelhecida="sim"] { --rua-traco: var(--signal-lost); }
+
+.rua__topo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-3);
+}
+.rua__eyebrow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  margin: 0;
+  font-family: var(--font-technical);
+  font-size: var(--type-technical);
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+}
+.rua__eyebrow--tecnico {
+  font-size: var(--type-meta);
+  letter-spacing: 0.17em;
+  text-transform: uppercase;
+}
+.rua__ponto {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--rua-traco);
+}
+
+/* Reler e uma PERGUNTA de novo ao servidor (GET). Nao e acao operacional. */
+.rua__reler {
+  min-height: var(--touch-min);
+  padding: 0 var(--space-3);
+  border: var(--stroke-hairline) solid var(--line-work);
+  border-radius: var(--radius-pill);
+  background: var(--surface-elevated);
+  color: var(--brand-action);
+  font-family: var(--font-ui);
+  font-size: var(--type-small);
+  font-weight: 600;
+  cursor: pointer;
+}
+.rua__reler:hover {
+  border-color: var(--brand-action);
+}
+
+/* A linha de sinal: a forma conta a historia antes do titulo. */
+.rua__sinal {
+  height: 0;
+  margin: var(--space-1) 0 0 0;
+  border-top: var(--stroke-signal) solid var(--rua-traco);
+}
+.rua[data-solidez="tracejada"] .rua__sinal,
+.rua[data-envelhecida="envelhecendo"] .rua__sinal { border-top-style: dashed; }
+.rua[data-solidez="pontilhada"] .rua__sinal,
+.rua[data-envelhecida="sim"] .rua__sinal { border-top-style: dotted; }
+.rua[data-solidez="neutra"] .rua__sinal { border-top-width: var(--stroke-hairline); }
+.rua[data-solidez="interrompida"] .rua__sinal {
+  height: var(--stroke-signal);
+  border-top: none;
+  background: repeating-linear-gradient(90deg, var(--rua-traco) 0 28px, transparent 28px 44px);
+}
+
+.rua__titulo {
+  margin: var(--space-1) 0 0 0;
+  max-width: 34ch;
+  font-family: var(--font-editorial);
+  font-size: clamp(1.5rem, 4.4vw, 2.1rem);
+  font-weight: 400;
+  line-height: 1.14;
+  letter-spacing: -0.012em;
+  color: var(--text-primary);
+  text-wrap: balance;
+}
+.rua__explicacao {
+  margin: 0;
+  max-width: var(--reading-max);
+  font-size: var(--type-body);
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+.rua__restricao {
+  margin: 0;
+  max-width: var(--reading-max);
+  font-size: var(--type-small);
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--text-primary);
+}
+[data-so-envelhecida] { display: none; }
+.rua[data-envelhecida="sim"] [data-so-envelhecida] {
+  display: block;
+  color: var(--ink-age);
+}
+
+/* ---------------------------------------- controles: reler e unidade ----- */
+.rua__controles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: var(--space-1) var(--space-2);
+  margin-top: var(--space-2);
+}
+.rua__unidades ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.rua__unidade {
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: var(--touch-min);
+  min-width: var(--touch-min);
+  padding: 6px var(--space-3);
+  border: var(--stroke-hairline) solid var(--line-work);
+  border-radius: var(--radius-sm);
+  background: var(--surface-elevated);
+  color: var(--text-primary);
+  text-decoration: none;
+}
+.rua__unidade:hover { border-color: var(--brand-action); }
+.rua__unidade[aria-current="true"] {
+  border-color: var(--brand-action);
+  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--brand-action);
+  background: var(--wash-action);
+}
+.rua__unidade-nome {
+  font-size: var(--type-small);
+  font-weight: 600;
+}
+.rua__unidade-conta {
+  font-family: var(--font-technical);
+  font-size: var(--type-meta);
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+/* ------------------------------------------------------------- grupos ---- */
+.rua__grupo {
+  min-width: 0;
+  margin-top: var(--space-4);
+}
+.rua__grupo--recolhido {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+.rua__grupo--recolhido:empty { display: none; }
+.rua__grupo-titulo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-2) 0;
+  font-family: var(--font-ui);
+  font-size: var(--type-heading);
+  font-weight: 600;
+  line-height: 1.3;
+}
+.rua__conta {
+  font-family: var(--font-technical);
+  font-size: var(--type-technical);
+  font-weight: 500;
+  color: var(--text-muted);
+}
+.rua__nada,
+.rua__nota {
+  margin: 0 0 var(--space-2) 0;
+  max-width: var(--reading-max);
+  font-size: var(--type-small);
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+.rua__nota-curta,
+.rua__hora {
+  font-size: var(--type-small);
+  color: var(--text-muted);
+}
+.rua__ausente { display: inline-flex; }
+
+/* Marca de evidencia: cheia para o confirmado, vazada para o incompleto. */
+.marca {
+  flex: none;
+  width: 3px;
+  height: 13px;
+  border-radius: 2px;
+  background: var(--brand-action);
+  transform: translateY(4px);
+}
+.marca[data-solidez="tracejada"] {
+  background: transparent;
+  border: var(--stroke-hairline) dashed var(--line-dashed-unknown);
+}
+.marca[data-solidez="pontilhada"] {
+  background: transparent;
+  border: var(--stroke-hairline) dotted var(--signal-age);
+}
+
+/* -------------------------------------------------------- conferencia ---- */
+.conferir {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: var(--stroke-hairline) solid var(--line-work);
+}
+.conferir__item {
+  display: flex;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: var(--space-3) 0;
+  border-bottom: var(--stroke-hairline) solid var(--line-work);
+}
+.conferir__texto {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.conferir__titulo {
+  margin: 0;
+  font-size: var(--type-body);
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--text-primary);
+}
+.conferir__detalhe {
+  margin: 0;
+  font-size: var(--type-small);
+  color: var(--text-muted);
+}
+.conferir__evidencia {
+  margin: 0;
+  font-family: var(--font-technical);
+  font-size: var(--type-technical);
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+.conferir__restricao {
+  margin: 0;
+  font-size: var(--type-small);
+  font-weight: 500;
+  color: var(--ink-age);
+}
+.conferir__modo {
+  font-family: var(--font-technical);
+  font-size: var(--type-meta);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+/* ------------------------------------------------------------ celulas ---- */
+.celulas {
+  display: grid;
+  gap: var(--space-2);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.celula {
+  --celula-traco: var(--signal-calm);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: var(--space-2) var(--space-3);
+  border: var(--stroke-hairline) solid var(--line-work);
+  border-left: var(--stroke-signal) solid var(--celula-traco);
+  border-radius: var(--radius-sm);
+  background: var(--surface-elevated);
+  overflow-wrap: anywhere;
+}
+.celula[data-solidez="tracejada"] { --celula-traco: var(--signal-age); border-left-style: dashed; }
+.celula[data-solidez="pontilhada"] { --celula-traco: var(--signal-age); border-left-style: dotted; }
+.celula[data-solidez="interrompida"] { --celula-traco: var(--signal-lost); border-left-style: dotted; }
+.celula[data-solidez="neutra"] { --celula-traco: var(--line-signal); }
+/* Sem ciclo de vida conhecido: a celula fica VAZADA — falta algo, e a forma diz. */
+.celulas--vazadas .celula {
+  border-style: dashed;
+  border-left-style: dashed;
+  border-color: var(--line-dashed-unknown);
+  border-left-color: var(--celula-traco);
+  background: var(--surface-work);
+}
+.celula__viagem {
+  margin: 0;
+  font-family: var(--font-technical);
+  font-size: var(--type-technical);
+  color: var(--text-primary);
+}
+.celula__rotulo {
+  font-size: var(--type-meta);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.celula__estado {
+  margin: 0;
+  font-size: var(--type-body);
+  font-weight: 600;
+  line-height: 1.3;
+}
+.celula__posicao {
+  margin: 0;
+  font-size: var(--type-small);
+  color: var(--text-primary);
+}
+.celula__aparelho {
+  margin: 0 0 var(--space-1) 0;
+  font-size: var(--type-small);
+  color: var(--text-muted);
+}
+
+/* ----------------------------------------------------------- aparelhos --- */
+.aparelhos {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: var(--stroke-hairline) solid var(--line-work);
+}
+.aparelho {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-2) var(--space-3);
+  min-width: 0;
+  padding: var(--space-3) 0;
+  border-bottom: var(--stroke-hairline) solid var(--line-work);
+}
+.aparelho__nome { min-width: 0; }
+.aparelho__rotulo {
+  margin: 0;
+  font-weight: 600;
+}
+.aparelho__id {
+  margin: 2px 0 var(--space-1) 0;
+  font-family: var(--font-technical);
+  font-size: var(--type-technical);
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+.aparelho__fatos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2) var(--space-3);
+  margin: 0;
+  min-width: 0;
+}
+.aparelho__fato { min-width: 0; }
+.aparelho__fato--fila { grid-column: 1 / -1; }
+.aparelho__fatos dt {
+  font-family: var(--font-technical);
+  font-size: var(--type-meta);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.aparelho__fatos dd {
+  margin: 2px 0 0 0;
+  font-size: var(--type-small);
+  overflow-wrap: anywhere;
+}
+@media (min-width: 905px) {
+  .aparelho {
+    grid-template-columns: minmax(180px, 1fr) minmax(0, 3fr);
+    align-items: start;
+  }
+  .aparelho__fatos { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+@media (min-width: 1240px) {
+  .aparelho__fatos { grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(0, 1.6fr); }
+  .aparelho__fato--fila { grid-column: auto; }
+}
+
+/* ----------------------------------------------------------- qualidade --- */
+.qualidade {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.qualidade li {
+  display: flex;
+  gap: var(--space-2);
+  max-width: var(--reading-max);
+  font-size: var(--type-small);
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+/* ------------------------------------------------------- demonstracao ---- */
+/* Faixa propria, neutra e tracejada (o canon: neutro tracejado = incompleto).
+   A demonstracao fica para quem avalia; nunca no lugar da rua. */
+.faixa-demo {
+  margin: var(--space-5) 0;
+  padding: var(--space-3);
+  border: var(--stroke-hairline) dashed var(--line-dashed-unknown);
+  border-radius: var(--radius-md);
+  background: var(--surface-muted);
+  min-width: 0;
+}
+.faixa-demo__topo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.faixa-demo__titulo {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: var(--type-heading);
+  font-weight: 600;
+  line-height: 1.3;
+}
+.faixa-demo__texto {
+  margin: var(--space-1) 0 var(--space-3) 0;
+  max-width: var(--reading-max);
+  font-size: var(--type-small);
+  color: var(--text-muted);
+}
+.faixa-demo__corpo,
+.faixa-demo .inspetor__corpo > div {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.faixa-demo__nota { margin-top: var(--space-2); }
+.faixa-demo .secao { margin: var(--space-3) 0 0 0; }
+.faixa-demo .secao__titulo { font-size: var(--type-body); }

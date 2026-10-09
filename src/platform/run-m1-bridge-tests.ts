@@ -459,6 +459,21 @@ const EXCECAO_REALIDADE: readonly string[] = [
   "src/product/ui/surfaces/entregas.js",
 ];
 
+/**
+ * EXCECAO ESTREITA — Cesar, 2026-10-09 (missao Product UX solo). FORA de M1B.
+ *
+ * UM arquivo para o C6: `entregas.css`, NOVO em caminho protegido. Mesmo
+ * mecanismo da Cadeia Real: so vale com a linha EXATA `caminho  CLASSE` no
+ * envelope, e so para o caminho nomeado AQUI. `entregas-vm.ts` e
+ * `entregas.js` tambem tem a linha desta classe no envelope, mas NAO entram
+ * nesta lista: ja sao cobertos pela linha da Cadeia Real, e cobri-los duas
+ * vezes cegaria o controle C6c (medido: o C6c ficou verde sem o registro
+ * dele). O C6 nao le classe; a classe nova fica escrita, nao contada.
+ * Aguarda a confirmacao do Cesar em `Q-022`.
+ */
+const CLASSE_LEITURA_DA_RUA = "ENTREGAS_STREET_READING_ONLY";
+const EXCECAO_LEITURA_DA_RUA: readonly string[] = ["src/product/ui/surfaces/entregas.css"];
+
 function linhaExata(texto: string, caminho: string, classe: string): boolean {
   const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   return new RegExp(`^\\s*${esc(caminho)}\\s+${esc(classe)}\\s*$`, "m").test(texto);
@@ -484,7 +499,8 @@ function foraDoEnvelope(
     (p) =>
       !autorizados.some((a) => (a.endsWith("/") ? p.startsWith(a) : p === a)) &&
       !(p === EXCECAO_ESTREITA && excecaoRegistrada) &&
-      !(EXCECAO_REALIDADE.includes(p) && linhaExata(env, p, CLASSE_REALIDADE)),
+      !(EXCECAO_REALIDADE.includes(p) && linhaExata(env, p, CLASSE_REALIDADE)) &&
+      !(EXCECAO_LEITURA_DA_RUA.includes(p) && linhaExata(env, p, CLASSE_LEITURA_DA_RUA)),
   );
 }
 
@@ -548,6 +564,48 @@ teste("C6c controle: a excecao da Cadeia Real cobre DOIS arquivos, so pela linha
   );
   // M1B continua sem Entregas: nenhum dos dois entrou em AUTHORIZED_PATHS.
   for (const p of EXCECAO_REALIDADE) {
+    assert.ok(
+      !autorizados.some((a) => (a.endsWith("/") ? p.startsWith(a) : p === a)),
+      `${p} entrou na lista de caminhos AUTORIZADOS — virou licenca de M1B`,
+    );
+  }
+});
+
+teste("C6d controle: a excecao da leitura da rua cobre o arquivo NOVO, so pela linha exata, e nao abre Entregas a M1B", () => {
+  const env = ler(ENVELOPE);
+  const autorizados = caminhosAutorizados();
+  assert.deepEqual(foraDoEnvelope(EXCECAO_LEITURA_DA_RUA, env, autorizados), [], "a excecao registrada nao cobre entregas.css");
+  // Remova a garantia e exija a falha.
+  const semRegistro = env
+    .split("\n")
+    .filter((l) => !l.includes(CLASSE_LEITURA_DA_RUA))
+    .join("\n");
+  assert.deepEqual(
+    foraDoEnvelope(EXCECAO_LEITURA_DA_RUA, semRegistro, autorizados),
+    [...EXCECAO_LEITURA_DA_RUA],
+    "sem o registro no envelope, o arquivo novo continuou passando",
+  );
+  // A classe desta excecao NAO cobre os dois arquivos da Cadeia Real: sem a
+  // linha da Cadeia Real, eles reprovam mesmo com a linha desta classe.
+  const semCadeia = env
+    .split("\n")
+    .filter((l) => !l.includes(CLASSE_REALIDADE))
+    .join("\n");
+  assert.deepEqual(
+    foraDoEnvelope(EXCECAO_REALIDADE, semCadeia, autorizados),
+    [...EXCECAO_REALIDADE],
+    "a classe da leitura da rua passou a cobrir os arquivos da Cadeia Real",
+  );
+  // A classe escrita ao lado de OUTRO caminho protegido nao autoriza esse caminho.
+  for (const outro of ["src/product/viewmodels/areas.ts", "src/product/ui/surfaces/operacao-viva.js"]) {
+    assert.deepEqual(
+      foraDoEnvelope([outro], `${env}\n${outro}   ${CLASSE_LEITURA_DA_RUA}\n`, autorizados),
+      [outro],
+      `a excecao se estendeu a ${outro}, que ela nao nomeia`,
+    );
+  }
+  // M1B continua sem Entregas.
+  for (const p of EXCECAO_LEITURA_DA_RUA) {
     assert.ok(
       !autorizados.some((a) => (a.endsWith("/") ? p.startsWith(a) : p === a)),
       `${p} entrou na lista de caminhos AUTORIZADOS — virou licenca de M1B`,

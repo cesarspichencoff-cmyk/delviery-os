@@ -31,6 +31,8 @@ const estado = {
   unidade: null,
   rotaAtual: null,
   rotaAnterior: null,
+  /** O intervalo que envelhece a leitura na tela. Um so, trocado a cada desenho. */
+  relogioDaLeitura: null,
 };
 
 async function obter(caminho) {
@@ -148,11 +150,51 @@ const SUPERFICIES = {
   "/copiloto": { api: "/api/copiloto", tela: telaCopiloto },
 };
 
+/**
+ * `#/entregas?unidade=ITAIM` = rota `/entregas` + consulta. A consulta e
+ * NAVEGACAO (link, compartilhavel, sobrevive a recarga), nunca estado escondido.
+ */
+function hashAtual() {
+  const [caminho, consulta = ""] = window.location.hash.replace(/^#/, "").split("?");
+  return { caminho, consulta: new URLSearchParams(consulta) };
+}
+
 function rotaDoHash() {
-  const h = window.location.hash.replace(/^#/, "");
+  const h = hashAtual().caminho;
   // A rota inicial e a HOME OPERACIONAL. Entregas deixou de ser a home: ela
   // virou home por ter sido a primeira implementada, nao por decisao de produto.
   return h && h.startsWith("/") ? h : "/";
+}
+
+/**
+ * A leitura da rua se declara LEITURA: ela envelhece na tela. A idade e medida
+ * desde a CHEGADA da resposta, com `performance.now()` — nunca comparando o
+ * relogio deste navegador com o do servidor. As janelas vem da propria
+ * superficie (as mesmas da Operacao Viva), nao deste arquivo.
+ */
+function ligarLeitura(alvo, opcoes) {
+  clearInterval(estado.relogioDaLeitura);
+  estado.relogioDaLeitura = null;
+  alvo.querySelectorAll("[data-reler]").forEach((b) =>
+    b.addEventListener("click", () => desenhar(estado.rotaAtual, { focar: "[data-reler]" })),
+  );
+  if (opcoes.focar) {
+    const el = alvo.querySelector(opcoes.focar);
+    if (el) el.focus();
+  }
+  const rua = alvo.querySelector('[data-territorio="rua"][data-fresca-ate-s]');
+  if (!rua) return;
+  const fresca = Number(rua.dataset.frescaAteS);
+  const envelhecendo = Number(rua.dataset.envelhecendoAteS);
+  const idade = rua.querySelector("[data-idade-da-leitura]");
+  const chegou = performance.now();
+  const marcar = () => {
+    const s = (performance.now() - chegou) / 1000;
+    if (idade) idade.textContent = s < 60 ? "lida agora" : `lida ha ${Math.floor(s / 60)} min`;
+    rua.dataset.envelhecida = s >= envelhecendo ? "sim" : s >= fresca ? "envelhecendo" : "nao";
+  };
+  marcar();
+  estado.relogioDaLeitura = setInterval(marcar, 15000);
 }
 
 async function desenhar(rota, opcoes = {}) {
@@ -184,12 +226,20 @@ async function desenhar(rota, opcoes = {}) {
   if ((rota === "/operacao-viva" || rota === "/copiloto") && estado.unidade) {
     api += `${api.includes("?") ? "&" : "?"}unit_id=${encodeURIComponent(estado.unidade)}`;
   }
+  // Entregas filtra pela unidade DA LEITURA (as que o servidor encontrou), nao
+  // pelo seletor do shell, que e de apresentacao.
+  const unidadeDaLeitura = rota === "/entregas" ? hashAtual().consulta.get("unidade") : null;
+  if (unidadeDaLeitura) {
+    api += `${api.includes("?") ? "&" : "?"}unidade=${encodeURIComponent(unidadeDaLeitura)}`;
+  }
+  clearInterval(estado.relogioDaLeitura);
   alvo.setAttribute("aria-busy", "true");
   alvo.innerHTML = skeleton(4);
   try {
     const vm = await obter(api);
     alvo.innerHTML = s.tela(vm);
     ligarInspetores(alvo);
+    ligarLeitura(alvo, opcoes);
   } catch (e) {
     // Falha de leitura NAO vira tela vazia: vazio significaria "nao ha nada",
     // e o que houve foi "nao consegui perguntar".
@@ -206,12 +256,15 @@ async function desenhar(rota, opcoes = {}) {
 
 function aoTrocarRota() {
   const nova = rotaDoHash();
+  // Mesma rota, outra consulta (o filtro de unidade): o foco volta ao link
+  // escolhido, em vez de cair no inicio da pagina.
+  const soConsulta = estado.rotaAtual === nova;
   if (estado.rotaAtual && estado.rotaAtual !== nova) {
     estado.rotaAnterior = estado.rotaAtual;
   }
   estado.rotaAtual = nova;
   fecharMenu();
-  desenhar(nova);
+  desenhar(nova, soConsulta ? { focar: `a[href="${window.location.hash.replace(/["\\]/g, "")}"]` } : {});
 }
 
 /* ------------------------------------------------------------------ *

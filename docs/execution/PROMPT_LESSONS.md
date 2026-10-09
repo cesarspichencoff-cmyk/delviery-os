@@ -4,7 +4,7 @@ lifecycle:
   status: ACTIVE
   authority_scope: lessons
   superseded_by: null
-  atualizado_em: "2026-09-26"
+  atualizado_em: "2026-10-09"
   state_basis: 953a3fb
 ---
 
@@ -1110,3 +1110,28 @@ Kotlin), cada comportamento do host que a página usa vem do CÓDIGO do host, n�
 prova. O modelo também é testado nos seus casos: aqui, mostra, cancela e desconhecido
 (`webview-dialog-model.ts`). Diferenças de WebView que já custam caro: diálogos JS, `localStorage`
 (`domStorageEnabled`), geolocalização, janelas.
+
+
+## L58 — Arquivo novo não rastreado é invisível ao `git diff <base> -- <caminhos>`
+
+**O que quase passou.** Depois de criar `src/product/ui/surfaces/entregas.css` — arquivo NOVO num
+caminho protegido pelo envelope M1 —, o C6 de `test:platform:m1-bridge` listou exatamente os mesmos
+12 caminhos da `Q-019`, como antes. Parecia que o arquivo novo não pesava. Pesava: `git diff
+--name-only <base> -- <caminhos>` compara a base com a árvore e ignora arquivo não rastreado. Depois do
+commit, o C6 acusaria `entregas.css`.
+
+**A regra.** Guarda baseada em `git diff` só mede o que está rastreado. Rode-a DEPOIS do `git add` (ou do
+commit) quando a mudança cria arquivo, e conte a lista de saída contra a da base — "a mesma lista" com
+arquivo novo fora do índice não prova nada.
+
+## L59 — Cobrir o mesmo caminho por duas exceções cega o controle negativo da primeira
+
+**O que quase passou.** A exceção nova da leitura da rua nomeou, além do `entregas.css`, os dois
+arquivos que a exceção Cadeia Real já cobria. O C6 ficou verde — e o controle C6c, que remove o
+registro da Cadeia Real e EXIGE a reprovação, passou a ficar verde também: a segunda cobertura
+sustentava os dois arquivos. Um controle negativo verde é um controle cego.
+
+**A regra.** Ao registrar exceção nova numa guarda por caminho, a lista executável cobre só o que nenhuma
+exceção anterior cobre; o resto da mudança fica escrito (classe, missão, rollback), não contado. E rode
+TODOS os controles negativos da guarda depois, não só o novo: foi o controle antigo que acusou.
+
