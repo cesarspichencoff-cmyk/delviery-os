@@ -204,6 +204,10 @@ function seloDoRelogio(lote: NonNullable<AparelhoReal["ultimo_lote"]>): Selo | n
   );
 }
 
+// O sync Android e periodico a cada 15 min, sujeito ao scheduler.
+// Janelas de APRESENTACAO: nao provam conectividade atual do telefone.
+const JANELAS_FILA_OFFLINE = { fresh_ate_s: 1800, aging_ate_s: 2700 } as const;
+
 function aparelhoVM(a: AparelhoReal, agora: Date): AparelhoRealVM {
   const lidaEm = agora.toISOString();
   // O cadastro e administrativo: a procedencia declarada e a do ultimo lote
