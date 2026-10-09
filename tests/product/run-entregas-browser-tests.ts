@@ -328,6 +328,53 @@ void (async () => {
         await a.fechar();
       }
     });
+    await teste("N10 resposta antiga do filtro nao substitui a ultima unidade escolhida", async () => {
+      const a = await abrir(browser, base, { viewport: VIEWPORTS.desktop, comLeitura: true });
+      let liberarItaim = () => {};
+      let sinalizarItaim = () => {};
+      let sinalizarFinal = () => {};
+      const aguardarItaim = new Promise<void>((r) => { sinalizarItaim = r; });
+      const aguardarFinal = new Promise<void>((r) => { sinalizarFinal = r; });
+      const bloqueio = new Promise<void>((r) => { liberarItaim = r; });
+      try {
+        // A segunda rota interceptada tem precedencia sobre a fixture instalada em abrir().
+        await a.page.route("**/api/entregas**", async (rota) => {
+          const unidade = new URL(rota.request().url()).searchParams.get("unidade");
+          if (unidade === "ITAIM") {
+            sinalizarItaim();
+            await bloqueio;
+          }
+          await rota.fulfill({
+            status: 200, contentType: "application/json; charset=utf-8",
+            body: await vmJson(unidade),
+          });
+          if (unidade === "ITAIM") sinalizarFinal();
+        });
+        await a.page.evaluate(() => { window.location.hash = "#/entregas?unidade=ITAIM"; });
+        await Promise.race([
+          aguardarItaim,
+          new Promise<never>((_, rejeitar) => setTimeout(() => rejeitar(new Error("ITAIM nao iniciou")), 7000)),
+        ]);
+        await a.page.evaluate(() => { window.location.hash = "#/entregas?unidade=VILA-LAB"; });
+        await a.page.waitForFunction(
+          () => document.querySelector("[data-titulo-da-leitura]")?.textContent?.includes("em VILA-LAB"),
+          undefined, { timeout: 10000 },
+        );
+        liberarItaim();
+        await Promise.race([
+          aguardarFinal,
+          new Promise<never>((_, rejeitar) => setTimeout(() => rejeitar(new Error("ITAIM nao terminou")), 7000)),
+        ]);
+        await a.page.waitForTimeout(300);
+        assert.equal(await a.page.evaluate(() => window.location.hash), "#/entregas?unidade=VILA-LAB");
+        assert.match(await a.page.locator("[data-titulo-da-leitura]").innerText(), /em VILA-LAB/);
+        assert.deepEqual(a.erros, [], "erros inesperados no navegador");
+      } finally {
+        liberarItaim();
+        await a.fechar();
+      }
+    });
+
     await teste("N9 inspetor recolhido nao vaza pixel nem recebe foco de teclado", async () => {
       for (const comLeitura of [true, false]) {
         const a = await abrir(browser, base, { viewport: VIEWPORTS.desktop, comLeitura });
