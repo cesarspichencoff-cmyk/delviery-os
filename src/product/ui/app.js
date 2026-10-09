@@ -33,6 +33,8 @@ const estado = {
   rotaAnterior: null,
   /** O intervalo que envelhece a leitura na tela. Um so, trocado a cada desenho. */
   relogioDaLeitura: null,
+  /** Cada desenhar invalida respostas de leituras anteriores. */
+  versaoDoDesenho: 0,
 };
 
 async function obter(caminho) {
@@ -199,6 +201,7 @@ function ligarLeitura(alvo, opcoes) {
 
 async function desenhar(rota, opcoes = {}) {
   const alvo = $("#superficie");
+  const versao = ++estado.versaoDoDesenho;
   const modulo = estado.navegacao.modulos.find((m) => m.rota === rota);
   desenharNavegacao(rota);
   desenharContexto(modulo, opcoes.preservandoContexto === true);
@@ -237,10 +240,15 @@ async function desenhar(rota, opcoes = {}) {
   alvo.innerHTML = skeleton(4);
   try {
     const vm = await obter(api);
+    // A resposta pode chegar depois de outro filtro/rota. Nunca mostrar
+    // dados de uma selecao anterior como se fossem da selecao atual.
+    if (versao !== estado.versaoDoDesenho) return;
     alvo.innerHTML = s.tela(vm);
     ligarInspetores(alvo);
     ligarLeitura(alvo, opcoes);
   } catch (e) {
+    // Um erro tardio tambem nao pode substituir a leitura mais nova.
+    if (versao !== estado.versaoDoDesenho) return;
     // Falha de leitura NAO vira tela vazia: vazio significaria "nao ha nada",
     // e o que houve foi "nao consegui perguntar".
     alvo.innerHTML = estadoTela(
@@ -250,7 +258,7 @@ async function desenhar(rota, opcoes = {}) {
       `A leitura falhou (${e.message}). Isto NAO significa que nao ha nada — significa que nao foi possivel perguntar. Nada nesta tela representa o estado atual.`,
     );
   } finally {
-    alvo.setAttribute("aria-busy", "false");
+    if (versao === estado.versaoDoDesenho) alvo.setAttribute("aria-busy", "false");
   }
 }
 
