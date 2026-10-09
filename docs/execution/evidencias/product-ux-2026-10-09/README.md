@@ -15,6 +15,10 @@ caber no repositório; as `-inteira-50` estão a 50 % da largura.
 | `depois-celular-dobra-itaim.png` | **depois**, `#/entregas?unidade=ITAIM` | idem, 390×844 |
 | `depois-sem-banco-desktop-dobra.png` · `depois-sem-banco-celular-dobra.png` | **depois**, servidor sem banco | `tests/product/run-entregas-browser-tests.ts --evidencias` (N1b): estado técnico com linha interrompida, demonstração aberta depois dele |
 | `depois-leitura-envelhecida-celular-dobra.png` | **depois**, a mesma leitura 6 min mais tarde | idem (N4): relógio do Playwright avançado 6 min; linha de sinal pontilhada e "Esta leitura nao e a mais recente" |
+| `depois-moldura-desktop-dobra.png` · `depois-moldura-celular-dobra-itaim.png` | **3ª iteração** (`5dfdb4a`): a moldura segue a leitura — faixa "DEMONSTRACAO + LEITURA DO SERVIDOR", "UNIDADE DA LEITURA", selo SIMULADO; sem o seletor da demonstração | `run-entregas-servidor-pg-tests.ts --evidencias` (S5, que agora também ASSERTA a moldura), 1440×900 e 390×844 |
+
+As `depois-*` sem `moldura` são da 2ª iteração e mostram, de propósito, a moldura que ainda dizia
+"SOMENTE DEMONSTRACAO" sobre a leitura (L60); ficam como registro do antes da 3ª.
 
 O cenário do "antes" e o do "depois" não são byte a byte o mesmo banco (o do antes não tinha os
 aparelhos `dev-h`/viagens `T-301`, `T-302`, `T-104`); o que se compara é a **tela**, não os números.

@@ -6,7 +6,7 @@
     "authority_scope": "technical_state",
     "superseded_by": null,
     "atualizado_em": "2026-10-09",
-    "state_basis": "02b56c3",
+    "state_basis": "ba3aa4b",
     "observa": [
       "src/product/",
       "src/perfil-delivery/",
@@ -2278,7 +2278,10 @@
       "d722ec0": "Entregas: a rua, lida agora",
       "4091d17": "CI da branch e classificador sem FAIL_NOVO",
       "2c4fc75": "registros e capturas",
-      "02b56c3": "ocorrencia registrada; N10 em todas as superficies; etiqueta de fontes"
+      "02b56c3": "ocorrencia registrada; N10 em todas as superficies; etiqueta de fontes",
+      "c4cdb4f": "registros da 2a iteracao; CI 37940776143 verde",
+      "5dfdb4a": "a moldura (faixa, selo do shell, unidade ativa) segue a origem do primeiro plano; L14",
+      "ba3aa4b": "listas do historico com corte declarado e contagem exata (L15)"
     },
     "superficie": "/entregas (Product System); Home, Copiloto, Operacao Viva e Conference Brain intocados",
     "o_que_mudou": [
@@ -2287,12 +2290,14 @@
       "filtro por unidade derivado da leitura (#/entregas?unidade=), demonstracao numa faixa propria recolhida, estado tecnico sem banco",
       "a leitura envelhece na tela (performance.now, janelas da Operacao Viva); reler e GET",
       "shell: .sr-only nao estica mais o documento; inspetor recolhido nao vaza nem recebe foco",
-      "ocorrencia registrada (occurrence_created ja projetado) numa viagem na rua pede conferencia, sem inventar tipo, horario ou resolucao"
+      "ocorrencia registrada (occurrence_created ja projetado) numa viagem na rua pede conferencia, sem inventar tipo, horario ou resolucao",
+      "moldura: /api/health declara a composicao (DEMONSTRACAO + LEITURA DO SERVIDOR); sobre a leitura, o selo do shell e o modo dos fatos e a unidade e a da leitura; o seletor da demonstracao sai (D96)",
+      "encerradas e sem-ciclo-sem-posicao listam no maximo 20 (as de posicao mais recente), contagem exata e corte escrito na tela (D97)"
     ],
     "tests": {
-      "leitura_da_rua": "23/23 PASS (RED na base: 2/20; L13 22/23 antes da ocorrencia)",
-      "navegador": "11/11 PASS (RED na base: 1/9; N9 RED antes da correcao do inspetor; N10 RED contra a UI da base: inspetores vazando em Conference Brain 4/4, Copiloto 2/2, Entregas 2/2)",
-      "servidor_postgresql_real": "5/5 PASS (filtro pela rota, leitura nao escreve, banco isolado apagado)",
+      "leitura_da_rua": "25/25 PASS (RED na base: 2/20; L13 22/23 antes da ocorrencia; L14 23/24 e L15 24/25 antes da 3a iteracao)",
+      "navegador": "14/14 PASS (RED na base: 1/9; N9, N10 vermelhos antes das correcoes de classe; N11/N12 vermelhos antes da moldura, 12/14; controle N11b verde antes e depois)",
+      "servidor_postgresql_real": "6/6 PASS (filtro pela rota, leitura nao escreve, saude com banco declara a leitura, moldura conferida nas capturas; RED 4/6 antes da moldura)",
       "b5_queue_depth": "12/12 PASS + B5_FRESHNESS_HTML_RENDER PASS",
       "product_system": "52/52 PASS",
       "cadeia_real": "36/36 PASS (PostgreSQL 16 local com auth trust, como o CI)",
@@ -2311,8 +2316,8 @@
       "m1_bridge": "35 passaram + C6 FAIL_PREEXISTENTE (os mesmos 12 caminhos da Q-019, conferido depois do commit)",
       "tsc_noEmit": "exit 0",
       "build_platform": "exit 0",
-      "governanca": "14 guardas verdes depois de 2c4fc75; mutacoes da governanca 13/13 acusadas, 0 cegas (antes abortavam)",
-      "ci_github": "run 37939179462 em 2c4fc75: verde (Chromium 149); evidencias como artefato do run, 14 dias"
+      "governanca": "verde depois de cada registro (L55); G6b acusou 5dfdb4a antes do registro da 3a iteracao — a guarda funciona",
+      "ci_github": "run 37939179462 em 2c4fc75 e run 37940776143 em c4cdb4f: verdes (Chromium 149)"
     },
     "figma": {
       "conta_conectada": "BoAlexandre (nao e a conta do Cesar)",
@@ -2335,9 +2340,15 @@
       "Q-022",
       "Q-023",
       "Q-024",
-      "Q-025"
+      "Q-025",
+      "Q-026"
     ],
     "next_proof": "o gerente da expedicao usar /entregas numa sexta de pico com o banco da plataforma real e dizer o que faltou; e o CI da branch verde no GitHub",
-    "fontes": "medido: Google Fonts responde 200 neste ambiente; capturas com Spectral, Hanken Grotesk e IBM Plex Mono (document.fonts.check)"
+    "fontes": "medido: Google Fonts responde 200 neste ambiente; capturas com Spectral, Hanken Grotesk e IBM Plex Mono (document.fonts.check)",
+    "custo_da_leitura": {
+      "medido": "banco descartavel, 20 aparelhos, fatos simulated: 1.030.000 fatos = porta 20,5 s, HTTP 23,7 s, 8.253 KiB, +1,19 GiB por leitura; SQL 420 ms",
+      "corrigido_aqui": "ba3aa4b: listas do historico com corte; 300.000 fatos 2.506 -> 1.306 KiB (com ciclo) e 3.367 -> 1.718 KiB (so-GPS)",
+      "nao_corrigido": "a porta rele o log inteiro; realidade.viagens inteiro no HTTP — Q-026"
+    }
   }
 }

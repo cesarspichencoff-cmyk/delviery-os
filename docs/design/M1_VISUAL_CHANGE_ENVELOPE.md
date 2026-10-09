@@ -344,6 +344,9 @@ Entregas — apresentação pura da porta de realidade que já existia
 - filtro por unidade **derivado da própria leitura** (link, não estado escondido);
 - grupos pelo ciclo de vida já projetado (`projetar()`, intocada) e a lista do
   que pede conferência — sem botão, sem Foco, sem ação;
+- as listas do histórico (encerradas; sem ciclo e sem posição) com corte
+  declarado e contagem exata (`ba3aa4b`, D97) — apresentação, não janela de
+  leitura: a porta continua lendo tudo (`Q-026`);
 - a demonstração numa faixa própria, recolhida quando há leitura;
 - texto do aparelho da demonstração corrigido: ele afirmava que "não existe
   rota de leitura" enquanto a mesma tela mostrava o aparelho lido do banco.
@@ -360,6 +363,11 @@ para que a classe fique escrita, não porque o C6 precise):
   documento (1034 px de largura a 768 px; medido);
 - `src/product/ui/components/components.css` — inspetor recolhido sem
   vazamento de 24 px e fora da ordem de tabulação (medido).
+- `src/product/ui/app.js`, de novo (`5dfdb4a`) — a **moldura** (selo do shell e
+  unidade ativa) diz a origem do primeiro plano: sobre a leitura do servidor, o
+  modo dos fatos lidos e a unidade da leitura, e o seletor da demonstração, que
+  não age sobre ela, sai da tela; nas outras telas, nada muda. Correção de
+  verdade (D96), não reorganização de módulo: nenhuma das doze da §6 do índice.
 
 **Não mudaram:** Home, `home-vm.ts`, `home.css`, `sinais.ts`, `areas.ts`,
 `copiloto-vm.ts`, `estados.ts`, os tokens, `src/platform/**` de domínio e de

@@ -1135,3 +1135,16 @@ sustentava os dois arquivos. Um controle negativo verde é um controle cego.
 exceção anterior cobre; o resto da mudança fica escrito (classe, missão, rollback), não contado. E rode
 TODOS os controles negativos da guarda depois, não só o novo: foi o controle antigo que acusou.
 
+
+## L60 — A prova da superfície era cega à moldura em volta dela
+
+**O que quase passou.** As provas da leitura da rua mediam o território novo (`[data-territorio="rua"]`:
+dobra, contraste, teclado, idade) e passavam, enquanto a moldura em volta — faixa de topo, selo do
+shell, unidade ativa — dizia "SOMENTE DEMONSTRACAO" e "demo-unit" sobre fatos lidos do banco. As
+capturas "depois" da 2ª iteração mostram isso. O achado foi registrado como "decisão de produto" por
+estar num arquivo compartilhado, e ficou.
+
+**A regra.** Quando uma tela muda a ORIGEM do que mostra, a prova lê a moldura inteira (faixa, selo do
+shell, unidade ativa, trilha), não só o território novo, e o esperado vem da view model. Um achado de
+verdade (a tela afirma algo falso) não vira "decisão de produto" por morar num arquivo compartilhado:
+confira contra as doze decisões da §6 do índice canônico antes de adiar.

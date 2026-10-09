@@ -1,7 +1,7 @@
 # HANDBACK — Product System / UX real (Claude) → César e integração revisada
 
 **Missão:** `docs/execution/CLAUDE_PRODUCT_UX_SOLO_MISSION_2026-10-09.md` · **Execução:** 2026-10-09.
-**Ambiente:** Claude Code Remote (container Linux), modelo configurado `claude-opus-5-5`. Nenhum recurso cobrado.
+**Ambiente:** Claude Code Remote (container Linux). Nenhum recurso cobrado.
 **Branch:** `feat/claude-product-ux-autonomous-20261009` — sem merge, sem PR, sem deploy.
 **Base validada:** `2782b310ef9fe813917ba49134309287ae83c9f2` (remoto = local antes do primeiro commit; worktree limpa).
 **VÉRTICE:** `cesarspichencoff-cmyk/vertice-runtime.` @ `vertice-active` = `e81b6d8`, `VERTICE_ENTRY.md` lido; usado como disciplina interna, nenhuma marca no produto.
@@ -32,10 +32,24 @@
    de novo depois da 2ª iteração); **zero `FAIL_NOVO`** — o C6 do `m1-bridge` segue com os **mesmos 12
    caminhos** da Q-019, conferido depois do commit. **CI da branch no GitHub verde** (run `37939179462`,
    Chromium 149 — outra versão que a local, 141).
-5. **Pede decisão do César:** `Q-025` (aprovar a composição visual — a skill do produto exige a sua
+5. **3ª iteração — a moldura deixou de desmentir a tela.** Com a leitura do banco em primeiro plano, a
+   faixa de topo dizia "AMBIENTE DE DEMONSTRACAO", o selo do shell "SOMENTE DEMONSTRACAO" e a unidade
+   ativa "demo-unit" (visível nas capturas "depois" da 2ª iteração; L60). Agora a faixa diz a composição
+   do servidor ("DEMONSTRACAO + LEITURA DO SERVIDOR"), o selo diz o modo dos fatos lidos e a unidade é a
+   da leitura; o seletor da demonstração, que não age sobre ela, sai da tela (D96). RED antes:
+   navegador **12/14**, PostgreSQL real **4/6** → **14/14** e **6/6**. E a linha de evidência da
+   ocorrência deixou de mostrar o nome interno `occurrence_created` (guarda de classe L14: 23/24 → 24/24).
+6. **Escala, medida.** Cada "Atualizar leitura" relê e reprojeta **todo** o `event_log`: com 1.030.000
+   fatos (banco descartável, `simulated`), **20,5 s** na porta, **23,7 s** no HTTP, **8.253 KiB** e
+   **+1,19 GiB** no servidor por clique. Corrigido na minha faixa (`ba3aa4b`, D97): as listas do
+   histórico na tela têm corte declarado e contagem exata — a parte da leitura fica constante (28 KiB,
+   45 células, com 600 ou 6 encerradas). **Não corrigido** (plataforma e contrato da Cadeia Real): a
+   porta que relê tudo e o bloco legado `realidade.viagens` — `Q-026`, §8.6.
+7. **Pede decisão do César:** `Q-025` (aprovar a composição visual — a skill do produto exige a sua
    aprovação antes de integrar), `Q-022` (confirmar a exceção estreita no envelope M1), `Q-023` (o relato
    de fila B5 não declara modo e era rotulado `real`), `Q-024` (o que é um turno — a missão pediu filtro
-   por turno e não há contrato). A Figma conectada é de **outra pessoa** (`BoAlexandre`) — ver §7.
+   por turno e não há contrato), `Q-026` (janela da leitura da rua — §8.6). A Figma conectada é de
+   **outra pessoa** (`BoAlexandre`) — ver §7.
 
 ## 1. Commits
 
@@ -46,7 +60,10 @@
 | `4091d17` | **ci(product-ux):** workflow só desta branch (PostgreSQL de serviço, Chromium do Playwright) e `run-sem-fail-novo.ts` |
 | `2c4fc75` | registros: este handback, `STATE.json#product_ux_leitura_da_rua_20261009`, 5 linhas de EVIDENCE, 1 de LEDGER, capturas — **CI `37939179462` verde** |
 | `02b56c3` | **2ª iteração:** ocorrência registrada na leitura (L13); N10 em todas as superfícies; etiqueta de fontes nas capturas |
-| _(este)_ | registros da 2ª iteração: matriz de linhagem (§5.1), `Q-025`, EVIDENCE, STATE |
+| `c4cdb4f` | registros da 2ª iteração: matriz de linhagem (§5.1), `Q-025`, EVIDENCE, STATE — **CI `37940776143` verde** |
+| `5dfdb4a` | **3ª iteração:** a moldura (faixa, selo do shell, unidade ativa) segue a origem do primeiro plano; `/api/health` declara a composição; evidência da ocorrência sem nome interno (L14) |
+| `ba3aa4b` | **3ª iteração:** as listas do histórico (encerradas; sem ciclo e sem posição) com corte declarado e contagem exata (L15, D97) |
+| _(este)_ | registros da 3ª iteração: D96, L60, `Q-026`, custo da leitura medido, capturas da moldura, EVIDENCE, STATE |
 
 ## 2. Arquivos
 
@@ -55,15 +72,15 @@
 | `src/product/viewmodels/entregas-vm.ts` | `leitura: LeituraDaRuaVM` (frase, solidez, idades, grupos por ciclo de vida, conferência, unidades, qualidade); 5º argumento opcional `{ unidade }` — chamadas antigas inalteradas; textos do aparelho da demonstração e das limitações corrigidos. As duas linhas-âncora do suíte de mutações da cadeia ficaram intactas |
 | `src/product/ui/surfaces/entregas.js` | reescrita na ordem leitura → demonstração → limitações; aceita VM antiga sem `leitura` (a prova B5 usa uma) |
 | `src/product/ui/surfaces/entregas.css` | **novo**, só tokens existentes; nenhuma cor literal; nada anima |
-| `src/product/ui/app.js` | `#/entregas?unidade=`, botão de reler, idade da leitura por `performance.now()`, foco devolvido ao filtro. A linha "a rota inicial abre a home" (H30) intacta |
+| `src/product/ui/app.js` | `#/entregas?unidade=`, botão de reler, idade da leitura por `performance.now()`, foco devolvido ao filtro. A linha "a rota inicial abre a home" (H30) intacta. 3ª iteração: `desenharMoldura()` — selo do shell e unidade ativa pela origem do primeiro plano |
 | `src/product/ui/index.html` | `<link>` de `entregas.css` |
 | `src/product/ui/shell/shell.css` · `components/components.css` | as duas correções de classe de `c886f87` |
-| `tools/product_system_server.ts` | repassa `unidade` (≤ 64 chars, só igualdade; nunca SQL) |
+| `tools/product_system_server.ts` | repassa `unidade` (≤ 64 chars, só igualdade; nunca SQL); `/api/health` com `leitura_do_servidor` e a faixa da composição real (e o log de boot igual a ela) |
 | `src/platform/run-m1-bridge-tests.ts` · `docs/design/M1_VISUAL_CHANGE_ENVELOPE.md` | exceção `ENTREGAS_STREET_READING_ONLY` + controle **C6d** |
-| `tests/product/entregas-fixture.ts` | fixture determinística, toda `simulated`, viagens pela `projetar()` real |
-| `tests/product/run-entregas-leitura-da-rua-tests.ts` | 22 testes de VM e superfície (L1–L12) |
-| `tests/product/run-entregas-browser-tests.ts` | 10 testes no Chromium (N1–N9) |
-| `tests/product/run-entregas-servidor-pg-tests.ts` | 5 testes com servidor real e PostgreSQL isolado (S1–S5) |
+| `tests/product/entregas-fixture.ts` | fixture determinística, toda `simulated`, viagens pela `projetar()` real; opção `historico` (semanas de log) |
+| `tests/product/run-entregas-leitura-da-rua-tests.ts` | 25 testes de VM e superfície (L1–L15) |
+| `tests/product/run-entregas-browser-tests.ts` | 14 testes no Chromium (N1–N12, com o controle N11b) |
+| `tests/product/run-entregas-servidor-pg-tests.ts` | 6 testes com servidor real e PostgreSQL isolado (S1–S6; S5 confere a moldura nas capturas) |
 | `tests/product/run-sem-fail-novo.ts` | classifica `m1-bridge` e governança por igualdade |
 | `.github/workflows/deliveryos-product-ux.yml` | CI desta branch |
 
@@ -71,14 +88,15 @@
 
 | gate | antes (base `2782b31`) | depois |
 |---|---|---|
-| `npx tsx tests/product/run-entregas-leitura-da-rua-tests.ts` | **2/20** (só as guardas L8/L9); L13 **22/23** antes da ocorrência | **23/23** |
-| `PRODUCT_UI_CHROMIUM=/opt/pw-browsers/chromium npx tsx tests/product/run-entregas-browser-tests.ts` | **1/9** (só N6); N9 vermelho antes da correção do inspetor; N10 vermelho contra a UI da base | **11/11** |
-| `DELIVERYOS_PG_URL=… npx tsx tests/product/run-entregas-servidor-pg-tests.ts` | — (rota sem `unidade`) | **5/5** (S4: sha256 de `event_log` + `identity.device` idêntico depois de 6 leituras; POST 405) |
+| `npx tsx tests/product/run-entregas-leitura-da-rua-tests.ts` | **2/20** (só as guardas L8/L9); L13 **22/23** antes da ocorrência; L14 **23/24** e L15 **24/25** antes da 3ª iteração | **25/25** |
+| `PRODUCT_UI_CHROMIUM=/opt/pw-browsers/chromium npx tsx tests/product/run-entregas-browser-tests.ts` | **1/9** (só N6); N9 vermelho antes da correção do inspetor; N10 vermelho contra a UI da base; N11/N12 vermelhos antes da moldura (**12/14**; o controle N11b verde antes e depois) | **14/14** |
+| `DELIVERYOS_PG_URL=… npx tsx tests/product/run-entregas-servidor-pg-tests.ts` | — (rota sem `unidade`); S5/S6 vermelhos antes da moldura (**4/6**) | **6/6** (S4: sha256 de `event_log` + `identity.device` idêntico depois de 6 leituras; POST 405; S6: `/api/health` com banco declara a leitura) |
 | `test:platform:queue-depth` (B5, frente Android) | 12/12 + smoke | **12/12 + smoke** (nenhum arquivo do B5 tocado) |
 | `test:platform:product` | 52 | **52** |
 | `test:platform:cadeia` (PostgreSQL 16 + `dist/`) | — | **36/36** |
 | `test:platform:cadeia:mutacoes` | — | **15/15, 0 cegas** (M10 → D3, M11 → D4, no `entregas-vm.ts` novo); depois da 2ª iteração, `CADEIA_MUT=M10,M11`: **3/3, 0 cegas** |
 | **CI da branch** (GitHub, run `37939179462`, `2c4fc75`) | — | **verde**: tsc, build, leitura 22/22, navegador 10/10 (Chromium 149), PostgreSQL 5/5, product 52, B5 12/12 + smoke, home 44, organismo 27, visual-order 6, figma-parity 24, skills 12, r5, cadeia 36/36, governança PASS, m1-bridge só o C6 idêntico |
+| **CI da branch** (run `37940776143`, `c4cdb4f`, 2ª iteração) | — | **verde** (mesma lista) |
 | `test:platform:home` · `organismo` · `visual-order` · `figma-parity` | 44 · 27 · 6 · 24 | **44 · 27 · 6 · 24** |
 | `test:platform:r5` · `skills` · `m1b-mutations` · `platform` · `entregas:ui` · `saude-fontes` · `lab:v4` | verdes | **verdes** (9 gates · 12 · 11/11 · 44 · 23 · 10/10 · 9 mutações 0 cegas) |
 | `tsc --noEmit` · `build:platform` | 0 · 0 | **0 · 0** |
@@ -101,7 +119,9 @@ O G6b estava vermelho na base porque `STATE.json` observa `src/product/` e a bas
 `src/product/`) e acrescenta o bloco verificado. Medido **depois** do commit `2c4fc75` (L55):
 `test:platform:governanca` **14 guardas verdes** e `test:platform:governanca:mutacoes` **13/13 acusadas,
 0 cegas** — o suíte de mutações da governança nem rodava antes (abortava: o caso legítimo estava
-vermelho). Na 2ª iteração o `state_basis` passa a `02b56c3`, pelo mesmo motivo.
+vermelho). Na 2ª iteração o `state_basis` passa a `02b56c3`, e na 3ª a `5dfdb4a`, pelo mesmo motivo
+(medido: logo depois de `5dfdb4a`, antes deste registro, o G6b acusou `observa mudou em 5dfdb4a` — a
+guarda funciona).
 
 ## 4. Capturas (antes → depois)
 
@@ -114,6 +134,11 @@ vermelho). Na 2ª iteração o `state_basis` passa a `02b56c3`, pelo mesmo motiv
 - estados novos: `depois-sem-banco-*-dobra.png` (linha interrompida, demonstração depois) e
   `depois-leitura-envelhecida-celular-dobra.png` (6 min depois: linha pontilhada, "Esta leitura nao e a
   mais recente").
+- 3ª iteração, a moldura: `depois-desktop-dobra.png` (faixa "AMBIENTE DE DEMONSTRACAO", selo "SOMENTE
+  DEMONSTRACAO" e "UNIDADE ATIVA · DEMO-UNIT" sobre a leitura do banco) → `depois-moldura-desktop-dobra.png`
+  ("DEMONSTRACAO + LEITURA DO SERVIDOR", "UNIDADE DA LEITURA · TODAS", selo "SIMULADO");
+  `depois-celular-dobra-itaim.png` → `depois-moldura-celular-dobra-itaim.png` (sem o seletor que não
+  agia: uma linha a menos no cabeçalho, e o título da leitura sobe na dobra).
 
 **Fontes:** medido com `document.fonts.check` e as respostas de rede — o Google Fonts responde **200**
 neste container e as capturas usam **Spectral, Hanken Grotesk e IBM Plex Mono** (o teste de navegador
@@ -179,7 +204,7 @@ Copiloto, Operação Viva, Conference Brain, `estados.ts`, tokens, `sinais.ts`, 
 | estado | o quê |
 |---|---|
 | `CODE_READY` | tudo de §2 |
-| `TEST_PASS` | §3 neste container (Linux, Node 22.22, PostgreSQL 16 local descartável, Chromium 141) e no CI da branch (GitHub, run `37939179462`, Chromium 149) |
+| `TEST_PASS` | §3 neste container (Linux, Node 22.22, PostgreSQL 16 local descartável, Chromium 141) e no CI da branch (GitHub, runs `37939179462` e `37940776143`, Chromium 149); a 3ª iteração, neste container — o CI dela roda no push deste registro |
 | `DEPLOYED` | **nada** |
 | `WORLD_PROVEN` | **nada** — nenhuma pessoa da expedição usou a tela; nenhum banco operacional foi lido |
 
@@ -201,15 +226,46 @@ Copiloto, Operação Viva, Conference Brain, `estados.ts`, tokens, `sinais.ts`, 
 1. **`Q-023` — procedência do relato de fila B5.** O `fila_offline` do VM é `real` fixo, e o contrato B5
    não carrega `source_mode`. A leitura da rua já diz "modo nao declarado" (D94); o campo do B5 é da
    frente Android e não foi alterado.
-2. **`/api/health` sempre `demo: true`.** Com banco configurado, a faixa do shell continua "AMBIENTE DE
-   DEMONSTRACAO". É verdade para Home/Copiloto (cenas de demo), mas não para a leitura de Entregas, que
-   se declara por conta própria. Mudar o shell é decisão de produto.
+2. ~~**`/api/health` sempre `demo: true`.**~~ **Fechado em `5dfdb4a`** (D96). Eu tinha deixado este item
+   como "decisão de produto"; conferido contra a §6 do índice canônico, não é nenhuma das doze — é uma
+   moldura afirmando algo falso (L60). Limite que fica: em Operação Viva e Copiloto o selo continua
+   "SOMENTE DEMONSTRACAO" (o primeiro plano é a demonstração), e o histórico lido do servidor declara a
+   própria fonte no bloco dele.
 3. **`Q-021` — linhagem divergente.** `entregas.js`, `entregas-vm.ts` e `product_system_server.ts` estão
    na lista dos 9 conflitos do merge de ensaio com `tmp/product-reader-official-wiring-20261005`; esta
    missão aumenta a divergência nesses três arquivos. Decidir a Q-021 antes de integrar as duas.
 4. **`Q-019`** continua: 12 caminhos protegidos mudados sem registro (nenhum desta missão).
 5. **Fuso de exibição** fixo em `America/Sao_Paulo` (declarado na tela): a porta de realidade não devolve
    `identity.unit.timezone`.
+6. **`Q-026` — o custo de cada leitura cresce com o log inteiro.** Medido com PostgreSQL 16 descartável,
+   20 aparelhos, um lote de GPS a cada 30 s por aparelho, todo fato `simulated`; mediana de 3 leituras
+   em processo e de 3 pedidos HTTP ao servidor real (script de medição fora do repositório; nada do
+   produto mudou para medir). Com ciclo de vida completo, **antes** do corte de `ba3aa4b`:
+
+   | fatos no log | tamanho | SQL (`EXPLAIN ANALYZE`) | releitura no Node | porta inteira | HTTP `/api/entregas` | resposta | memória do servidor |
+   |---|---|---|---|---|---|---|---|
+   | 10.300 | 4 MB | 2,7 ms | 106 ms | 232 ms | 206 ms | 133 KiB | +48 MiB |
+   | 103.000 | 42 MB | 31,6 ms | 1,3 s | 2,1 s | 2,5 s | 868 KiB | +199 MiB |
+   | 309.000 | 129 MB | 135 ms | 3,4 s | 6,7 s | 8,0 s | 2.506 KiB | +456 MiB |
+   | 1.030.000 | 414 MB | 420 ms | 12,4 s | 20,5 s | 23,7 s | 8.253 KiB | +1,19 GiB |
+
+   Só-GPS (a cadeia canônica hoje, sem ciclo de vida): 100.000 fatos = porta 2,1 s, 1.156 KiB;
+   300.000 = porta 6,1 s. **Depois de `ba3aa4b`**, mesmos 300.000: resposta **3.367 → 1.718 KiB** (só-GPS)
+   e **2.506 → 1.306 KiB** (com ciclo); a porta não muda (6,1 s e 6,5 s) — o corte é de apresentação.
+
+   **Onde está o custo:** o SQL é varredura sequencial (não há índice por `event_type`) e leva menos de
+   0,5 s mesmo com 1 milhão; o resto é o Node relendo e reprojetando o histórico inteiro a cada clique,
+   com memória proporcional a ele. O `statement_timeout` de 15 s não é o limite (o SQL termina rápido);
+   o limite é latência e memória. **Hipótese, não medida:** com 20 motos mandando lote a cada 30 s por
+   10 h/dia, 1 milhão de fatos são cerca de 6 semanas de operação.
+
+   **O que sobra, e de quem é:** (a) a porta da plataforma lê o log inteiro — uma janela recente (as
+   viagens com fato nas últimas N horas, ou o turno da `Q-024`) torna a leitura proporcional à janela,
+   mas toca o replay da `Q-016` e conversa com a retenção da `Q-015`; (b) o bloco legado
+   `realidade.viagens` vai inteiro no HTTP (**1.246 KiB de 1.306** a 309 mil fatos, depois do corte) e
+   nenhuma tela o desenha quando há leitura; as bancadas Android leem `realidade.aparelhos` e `fonte`,
+   não `viagens`. Tirá-lo do HTTP é uma linha no servidor, mas é contrato da Cadeia Real. As duas
+   decisões estão na `Q-026`; sem resposta, nada muda.
 
 ## 9. Custo real
 
@@ -226,6 +282,8 @@ git cherry-pick c886f87   # correção de classe do shell/inspetor (só CSS; ser
 git cherry-pick d722ec0   # a leitura da rua (exige o anterior para o N2/N9 do navegador)
 git cherry-pick 4091d17   # CI desta branch — opcional fora dela (o gatilho é o nome da branch)
 git cherry-pick 02b56c3   # 2ª iteração: ocorrência registrada, N10, etiqueta de fontes
+git cherry-pick 5dfdb4a   # 3ª iteração: a moldura segue a origem do primeiro plano; L14
+git cherry-pick ba3aa4b   # 3ª iteração: listas do histórico com corte declarado (L15)
 ```
 
 Antes de integrar: responder `Q-025` e `Q-022`; decidir `Q-021` se a outra linhagem entrar; rodar
@@ -242,7 +300,8 @@ Antes de integrar: responder `Q-025` e `Q-022`; decidir `Q-021` se a outra linha
 
 ## 11. Próximo passo seguro e pequeno
 
-1. César: olhar as capturas e responder `Q-025`; depois `Q-022`, `Q-023`, `Q-024`.
+1. César: olhar as capturas e responder `Q-025`; depois `Q-022`, `Q-023`, `Q-024` e `Q-026` (a janela da
+   leitura — o único item desta lista que piora sozinho com o tempo).
 2. Abrir `/entregas` com o banco da plataforma de teste e o aparelho do Foxxy mandando lote; conferir
    que a frase, a idade e a conferência batem com o que se vê no telefone.
 3. Numa sexta de pico, o gerente da expedição usar a tela e dizer o que faltou — só isso vira

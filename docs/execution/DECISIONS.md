@@ -2083,3 +2083,51 @@ contra `lida_em` do servidor.
 
 **Custo aceito:** quem quer o estado atual precisa tocar em "Atualizar leitura".
 
+
+### D96 — A moldura diz a origem do PRIMEIRO PLANO; a faixa de topo diz a composição do servidor
+
+**Decisão.** `/api/health` declara `leitura_do_servidor` (banco da plataforma ou Conference Brain
+configurados) e a faixa de topo passa a "DEMONSTRACAO + LEITURA DO SERVIDOR"; sem fonte, nada muda. O
+selo do shell diz a origem do que a tela mostra em primeiro plano: sobre a leitura do servidor em
+Entregas, o modo dos fatos lidos (real, simulado, controle); nas outras telas, a demonstração, como
+antes. A unidade ativa passa a ser a da leitura, e o seletor de unidade da demonstração — que não age
+sobre a leitura — sai da tela enquanto ela está em primeiro plano.
+
+**Por que.** A moldura é a primeira coisa legível (`docs/figma/PRODUCT_FLOWS.md` §2). Ela dizia
+"SOMENTE DEMONSTRACAO" e "unidade ativa: demo-unit" sobre fatos lidos do banco: num banco operacional,
+uma ocorrência real apareceria sob "somente demonstração". Dado real rotulado de falso é o espelho de
+"dado sintético chamado de real". O selo do shell existia para que demonstração não passasse por
+leitura real (comentário de `shell.css`); a recíproca vale.
+
+**Alternativas recusadas:** um estado novo no vocabulário ("misto", "servidor") — as 21 espécies são
+contrato com `DESIGN_TOKENS.json` e a Figma (`Q-007`), e os selos de procedência já dizem a verdade que
+falta; dois selos fixos em toda tela — repetiria a faixa e não diria o modo dos fatos; desabilitar o
+seletor em vez de tirá-lo — continuaria mostrando "unidade de demonstração" ao lado da unidade da
+leitura; deixar como "decisão de produto" (o que o handback de `c4cdb4f` fazia) — conferido contra a §6
+do índice canônico: não é nenhuma das doze; é correção de verdade.
+
+**Limite declarado.** Operação Viva e Copiloto podem trazer histórico lido do servidor; nelas o selo
+continua "SOMENTE DEMONSTRACAO" porque o primeiro plano é a demonstração, e o bloco de histórico
+declara a própria fonte ("Fonte platform.event_log"). A faixa de topo cobre a composição.
+
+### D97 — As listas do histórico têm corte declarado; a contagem continua exata
+
+**Decisão.** Na leitura da rua, as duas listas que crescem com o log — viagens encerradas e viagens sem
+ciclo e sem posição recente — trazem no máximo `limite_da_lista` (20) viagens, as de posição confiável
+mais recente primeiro. As contagens são as exatas da leitura, e a tela diz o corte: "As 20 mais
+recentes de 61, pela ultima posicao recebida. As outras continuam no log; esta tela nao lista todas."
+
+**Por que.** O `event_log` é append-only: toda viagem termina num desses dois grupos e nunca sai. Medido
+(banco descartável, fatos `simulated`): com 1.030.000 fatos, 4.043 KiB da resposta eram encerradas; no
+cenário só-GPS (a cadeia canônica hoje), 300.000 fatos davam 2.960 viagens "sem ciclo, sem posição"
+(1.648 KiB). Numa tela de "agora", milhares de células recolhidas são peso sem pergunta. O corte de 20
+é o mesmo que o histórico da Operação Viva já usa ("no máximo os 20 fatos mais recentes").
+
+**Alternativas recusadas:** cortar por tempo (ex.: só as últimas 24 h) — é limiar semântico, decisão de
+produto, e entra na `Q-026`; botão "ver mais" — interação e estado novos para uma lista que não pede
+ação; remover os grupos — perderia o contexto honesto ("podem ter terminado"); ordenar pelo
+`ultimo_fato_em` — é o relógio do aparelho, e a ordem usaria hora não confiável.
+
+**Limite declarado.** O corte é de APRESENTAÇÃO: a porta da plataforma continua relendo o log inteiro
+(1.030.000 fatos = 20,5 s por leitura), e o bloco legado `realidade.viagens` continua inteiro no HTTP.
+Os dois são da `Q-026`.
