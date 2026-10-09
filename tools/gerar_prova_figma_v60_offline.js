@@ -87,8 +87,10 @@ class Receipt {
       this.y+=18;
     }
   }
-  box(model,position,items) {
-    this.text(LEFT,this.y+12,position+"  CAIXA "+canon(model),10.5,"mono",700);
+  box(model,position,items,verifiedDescriptor="") {
+    const boxLabel=position+"  CAIXA "+canon(model)+(verifiedDescriptor?" · "+canon(verifiedDescriptor):"");
+    if([...boxLabel].length>35)this.blockers.push("BOX_LABEL_WIDTH_NEEDS_REVIEW:"+boxLabel);
+    this.text(LEFT,this.y+12,boxLabel,10.5,"mono",700);
     if(this.kind==="CONFERENCIA")
       this.text(RIGHT,this.y+12,"Op. ________",10.5,"mono",700,"end");
     this.y+=17;
@@ -114,11 +116,16 @@ class Receipt {
         }
         continue;
       }
-      const words=entries.map(e=>String(e.quantity)+" "+canon(e.label));
+      const words=entries.map(e=>{
+        const full=canon(e.label);
+        const display=label==="Sacola"?full.replace(/^SACOLA\s+/,""):
+          label==="Kit"?full.replace(/^KIT\s+/,""):full;
+        return String(e.quantity)+" "+display;
+      });
       // No elision of resources: split only between complete resource labels.
       let row=label+": ";
-      for(const word of words) {
-        if(!isPositiveInt(entries[words.indexOf(word)].quantity))
+      for(const [index,word] of words.entries()) {
+        if(!isPositiveInt(entries[index].quantity))
           this.blockers.push("RESOURCE_QUANTITY_INVALID:"+label);
         const candidate=row.endsWith(": ")?row+word:row+"  |  "+word;
         if(candidate.length>42 && !row.endsWith(": ")) {
@@ -162,7 +169,8 @@ function makeProduction(ticket) {
     for(let i=0;i<(split?repetitions:1);i++) {
       physicalNumber++;
       r.box(box.model||"A CONFERIR","C"+physicalNumber,
-        split?[{...box.items[0],quantity:1}]:box.items);
+        split?[{...box.items[0],quantity:1}]:box.items,
+        split?"COMBINADO FECHADO":"");
     }
   }
   r.unknown(ticket.items_without_proven_box||[]);
