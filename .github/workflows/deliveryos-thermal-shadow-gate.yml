@@ -6,6 +6,7 @@ on:
   pull_request:
     branches:
       - feat/thermal-quality-v51-epson-official-fontqa-20261008
+      - feat/thermal-v54-caixa-photo-visual-qa-20261008
 
 permissions:
   contents: read
@@ -61,6 +62,8 @@ jobs:
         run: npm run verificar:tata-sequence-policy
       - name: Semantic job eligibility V5.10 (Issue 25)
         run: node tools/verificar_gate_semantico_termico_v510.js
+      - name: Operacao Viva shadow diagnostic V1
+        run: npm run verificar:operacao-viva-comandas-shadow
       - name: ESC/POS adversarial contract RED until issue 22 is fixed
         # Mandatory hard gate: do not mark continue-on-error or swallow exit code.
         run: node tools/verificar_integridade_termica_v57.js
