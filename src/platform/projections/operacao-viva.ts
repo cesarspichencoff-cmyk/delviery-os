@@ -140,7 +140,7 @@ export const JANELAS = {
 export function classificarFrescor(
   ultimoEm: string | undefined,
   agora: Date,
-  janelas = JANELAS,
+  janelas: Readonly<{ fresh_ate_s: number; aging_ate_s: number }> = JANELAS,
 ): Frescor {
   if (!ultimoEm) return "unknown";
   const idade = (agora.getTime() - Date.parse(ultimoEm)) / 1000;
