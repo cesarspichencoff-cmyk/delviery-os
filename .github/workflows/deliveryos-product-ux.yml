@@ -11,7 +11,7 @@ name: deliveryos-product-ux
 
 on:
   push:
-    branches: [feat/claude-product-ux-autonomous-20261009, integration/deliveryos-product-ux-android-20261009, feat/deliveryos-entregas-response-order-20261009]
+    branches: [feat/claude-product-ux-autonomous-20261009, integration/deliveryos-product-ux-android-20261009, feat/deliveryos-entregas-response-order-20261009, feat/deliveryos-entregas-response-order-fixed-20261009]
   workflow_dispatch:
 
 permissions:
