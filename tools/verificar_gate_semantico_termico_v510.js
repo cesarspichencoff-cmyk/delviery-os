@@ -418,4 +418,26 @@ check("24 contradictory production note must be zero-byte blocked at bundle expo
     "independently consistent conference preview remains available");
 });
 
+check("25 repeated source item within one station exports zero bytes", () => {
+  const f=archivedCompleteInput();
+  const intent=f.production_plan.print_intents.find(p=>p.printer.printer_name!=="COZINHA");
+  assert.ok(intent && intent.lines.length>0);
+  const line=intent.lines[0];
+  intent.lines.push({...structuredClone(line),mount_group_id:"DUPLICATE:PREVIEW"});
+  const projected=projectOperationalTicketsV45({
+    order_id:f.id,source_items:f.source_items,
+    production_plan:f.production_plan,resource_projection:f.resource_projection,
+    packaging_plan:f.packaging,
+  });
+  const station=projected.production.find(p=>p.station===intent.printer.printer_name);
+  assert.ok(station && !station.ready_for_semantic_preview);
+  assert.ok(station.warnings.some(w=>
+    w==="DUPLICATE_STATION_SOURCE_ITEM_INDEX:"+line.item_index));
+  const {bundle}=bundleFrom(projected,f.source_items);
+  const blocked=bundle.blocked_proofs.find(j=>j.channel==="OTHER_PRODUCTION");
+  assert.ok(blocked,"duplicated station must be blocked in offline export");
+  denied(blocked.proof,"STATION_SEMANTIC_NOT_READY");
+  assert.ok(!bundle.jobs.some(j=>j.channel==="OTHER_PRODUCTION"));
+});
+
 console.log("thermal-semantic-gate-v510: "+checks+"/"+checks+" PASS; SHADOW ONLY");
