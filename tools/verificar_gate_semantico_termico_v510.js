@@ -136,4 +136,30 @@ check("09 isolated mutations do not alter the archived source object", () => {
   assert.deepEqual(fresh,original);
 });
 
+check("10 each blocked proof has a channel-qualified reason in bundle review summary", () => {
+  const scenarios = [];
+  const a=structuredClone(original);
+  a.production[0].ready_for_semantic_preview=false;
+  a.ready_for_semantic_preview=false;
+  scenarios.push(a);
+  const b=structuredClone(original);
+  b.conference.ready_for_semantic_preview=false;
+  b.ready_for_semantic_preview=false;
+  scenarios.push(b);
+  const c=structuredClone(original);
+  c.blocking_reasons.push("SYNTHETIC_GLOBAL_FAILURE");
+  c.ready_for_semantic_preview=false;
+  scenarios.push(c);
+  for(const ticket of scenarios) {
+    const {bundle}=bundleFrom(ticket,source);
+    assert.ok(bundle.blocked_proofs.length>0);
+    for(const {channel,proof} of bundle.blocked_proofs) {
+      for(const reason of proof.blocking_reasons) {
+        const reported=channel+":"+reason;
+        assert.ok(bundle.review_reasons.includes(reported),"UNREPORTED_BLOCK_REASON:"+reported);
+      }
+    }
+  }
+});
+
 console.log("thermal-semantic-gate-v510: "+checks+"/"+checks+" PASS; SHADOW ONLY");
