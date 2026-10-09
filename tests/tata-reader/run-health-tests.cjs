@@ -279,5 +279,40 @@ function hb(over = {}) {
     assert.ok(ms < 5000, `demorou ${ms} ms`);
   });
 
+  await teste("H19 consumidor V2 da CAIXA e reconhecido quando RUNNING e supervisor esta saudavel", () => {
+    const v2 = { ...consumer("RUNNING"), schema: "deliveryos.live-shadow-consumer-status.v2", blocked_count: 10, ready_count: 0 };
+    const r = H.evaluateTataReaderHealthV1({ nowMs: T0, heartbeat: hb(), hostStatus: host(), consumerStatus: v2, checkpointMtimeMs: T0 - 3000 });
+    assert.equal(r.verdict, "HEALTHY", JSON.stringify(r.reasons));
+    assert.ok(!r.reasons.includes("CONSUMER_STATUS_SCHEMA_INVALID"));
+    assert.equal(r.evidence.consumer_state, "RUNNING");
+  });
+  await teste("H20 schema consumidor desconhecido bloqueia HEALTHY mesmo com heartbeat valido", () => {
+    const r = H.evaluateTataReaderHealthV1({
+      nowMs: T0, heartbeat: hb(), hostStatus: host(),
+      consumerStatus: { ...consumer(), schema: "deliveryos.live-shadow-consumer-status.v999" },
+      checkpointMtimeMs: T0 - 3000,
+    });
+    assert.equal(r.verdict, "DEGRADED");
+    assert.ok(r.reasons.includes("CONSUMER_STATUS_SCHEMA_INVALID"));
+  });
+  await teste("H21 consumidor V2 FAILED nao pode ser saudavel", () => {
+    const r = H.evaluateTataReaderHealthV1({
+      nowMs: T0, heartbeat: hb(), hostStatus: host(),
+      consumerStatus: { ...consumer("FAILED"), schema: "deliveryos.live-shadow-consumer-status.v2" },
+      checkpointMtimeMs: T0 - 3000,
+    });
+    assert.equal(r.verdict, "DEGRADED");
+    assert.ok(r.reasons.includes("CONSUMER_FAILED"));
+  });
+  await teste("H22 consumidor V2 sem estado nao pode virar HEALTHY", () => {
+    const r = H.evaluateTataReaderHealthV1({
+      nowMs: T0, heartbeat: hb(), hostStatus: host(),
+      consumerStatus: { ...consumer(), schema: "deliveryos.live-shadow-consumer-status.v2", state: null },
+      checkpointMtimeMs: T0 - 3000,
+    });
+    assert.equal(r.verdict, "DEGRADED");
+    assert.ok(r.reasons.includes("CONSUMER_STATE_INVALID"));
+  });
+
   fim("TATA_READER_HEALTH");
 })();
