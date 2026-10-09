@@ -2,7 +2,7 @@ package br.com.tata.entregas
 
 import android.content.Context
 import androidx.room.Room
-import androidx.test.core.app.ApplicationProvider
+import org.robolectric.RuntimeEnvironment
 import br.com.tata.entregas.data.EntregasDatabase
 import br.com.tata.entregas.data.GpsPointEntity
 import br.com.tata.entregas.data.OutboxEventEntity
@@ -29,7 +29,7 @@ class RoomSyncRaceRecoveryTest {
     private fun open() = Room.databaseBuilder(ctx, EntregasDatabase::class.java, name).build()
 
     @Before fun setup() {
-        ctx = ApplicationProvider.getApplicationContext()
+        ctx = RuntimeEnvironment.getApplication()
         name = "sync-race-fixture-${System.nanoTime()}.db"
         db = open()
     }
