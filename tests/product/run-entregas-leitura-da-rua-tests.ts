@@ -376,6 +376,19 @@ void (async () => {
     assert.equal(telaEntregas(await vmDe(realidadeFixture(), "ITAIM")).includes("ocorrencia registrada"), false);
   });
 
+  await teste("L14 texto que a pessoa le nunca carrega nome interno do catalogo (snake_case)", async () => {
+    // As outras linhas de evidencia ja falam lingua de gente ("ultimo lote",
+    // "relato recebido"); a da ocorrencia dizia `occurrence_created no log`.
+    const l = (await vmDe(realidadeFixture({ ocorrencias: true }), null)).leitura;
+    const textos: string[] = [l.titulo, l.explicacao, l.restricao ?? "", ...l.qualidade];
+    for (const c of l.conferir) textos.push(c.titulo, c.detalhe, c.evidencia, c.restricao);
+    for (const grupo of Object.values(l.viagens) as Qualquer[][]) {
+      for (const v of grupo) textos.push(v.estado_legivel, v.aparelho ?? "");
+    }
+    const internos = textos.filter((t) => /\b[a-z]+_[a-z_]+\b/.test(t));
+    assert.deepEqual(internos, [], "nome interno no texto humano");
+  });
+
   if (falhas.length) {
     console.error(`\nENTREGAS_LEITURA_DA_RUA: ${passaram}/${passaram + falhas.length} PASS`);
     for (const f of falhas) console.error(` - ${f}`);

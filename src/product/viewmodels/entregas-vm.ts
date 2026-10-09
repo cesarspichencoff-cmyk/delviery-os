@@ -678,7 +678,7 @@ function conferencias(r: RealidadeDeEntregas, naRua: readonly ViagemLidaVM[], ag
         motivo: "nao_observado",
         explicacao: "A projecao conta a ocorrencia; o horario dela nao chega a esta leitura.",
       },
-      evidencia: `occurrence_created no log · ${v.device_id ?? "sem aparelho"} · ${v.unidade}`,
+      evidencia: `registrada, sem horario nesta leitura · ${v.device_id ?? "sem aparelho"} · ${v.unidade}`,
       procedencia: v.procedencia,
       selo: selo("acao_humana_necessaria", "Ocorrencia registrada na rua: so uma pessoa sabe o que aconteceu."),
     });

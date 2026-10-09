@@ -15,6 +15,7 @@ import {
   estadoTela,
   ligarInspetores,
   selo,
+  selos,
   skeleton,
 } from "./components/ui.js";
 import { telaHome } from "./surfaces/home.js";
@@ -33,6 +34,8 @@ const estado = {
   rotaAnterior: null,
   /** O intervalo que envelhece a leitura na tela. Um so, trocado a cada desenho. */
   relogioDaLeitura: null,
+  /** O selo do shell quando a tela nao traz leitura do servidor (de /api/health). */
+  molduraPadrao: [],
 };
 
 async function obter(caminho) {
@@ -105,6 +108,33 @@ function atualizarUnidadeVisivel() {
   $("#unidadeAtiva").textContent = u
     ? `Unidade ativa · ${u.unit_id} · ${u.praca}`
     : "Unidade ativa · nao selecionada";
+}
+
+/**
+ * A MOLDURA (selo do shell e unidade ativa) diz a origem do que a tela mostra
+ * em PRIMEIRO PLANO. Sobre a leitura do servidor, "SOMENTE DEMONSTRACAO" e
+ * "unidade ativa: demo-unit" eram a moldura desmentindo a tela (2026-10-09).
+ */
+const PROCEDENCIAS = ["real", "simulado", "controle", "controle_positivo_sintetico"];
+
+function desenharMoldura(rota, vm) {
+  const l = rota === "/entregas" && vm && vm.leitura && vm.leitura.disponivel === true ? vm.leitura : null;
+  const sel = $("#seletorUnidade");
+  if (!l) {
+    $("#conexaoShell").innerHTML = selos(estado.molduraPadrao);
+    sel.hidden = false;
+    atualizarUnidadeVisivel();
+    return;
+  }
+  // O modo dos fatos lidos (real, simulado, controle). Leitura sem fato com
+  // modo fica com os selos dela mesma — nunca com a demonstracao por padrao.
+  const modos = l.selos.filter((s) => PROCEDENCIAS.includes(s.estado));
+  $("#conexaoShell").innerHTML = selos(modos.length ? modos : l.selos);
+  // O seletor escolhe a unidade da DEMONSTRACAO; a leitura filtra pelas
+  // unidades que o servidor encontrou. Um controle que nao age sobre a tela sai
+  // dela enquanto a leitura esta em primeiro plano.
+  sel.hidden = true;
+  $("#unidadeAtiva").textContent = `Unidade da leitura · ${l.unidade_selecionada ?? "todas"}`;
 }
 
 function desenharContexto(modulo, preservandoContexto) {
@@ -204,6 +234,7 @@ async function desenhar(rota, opcoes = {}) {
   desenharContexto(modulo, opcoes.preservandoContexto === true);
 
   if (!modulo) {
+    desenharMoldura(rota, null);
     alvo.innerHTML = estadoTela(
       "vazio",
       [{ estado: "indisponivel" }],
@@ -214,6 +245,7 @@ async function desenhar(rota, opcoes = {}) {
   }
 
   if (modulo.disponibilidade === "futuro") {
+    desenharMoldura(rota, null);
     alvo.innerHTML = telaModuloFuturo(modulo);
     return;
   }
@@ -238,11 +270,13 @@ async function desenhar(rota, opcoes = {}) {
   try {
     const vm = await obter(api);
     alvo.innerHTML = s.tela(vm);
+    desenharMoldura(rota, vm);
     ligarInspetores(alvo);
     ligarLeitura(alvo, opcoes);
   } catch (e) {
     // Falha de leitura NAO vira tela vazia: vazio significaria "nao ha nada",
     // e o que houve foi "nao consegui perguntar".
+    desenharMoldura(rota, null);
     alvo.innerHTML = estadoTela(
       "degradado",
       [{ estado: "erro_recuperavel" }],
@@ -316,9 +350,8 @@ async function iniciar() {
     estado.unidade = navegacao.unidades[0] ? navegacao.unidades[0].unit_id : null;
 
     $("#faixaAmbiente").textContent = saude.banner;
-    $("#conexaoShell").innerHTML = selo({
-      estado: saude.demo ? "somente_demonstracao" : "real",
-    });
+    estado.molduraPadrao = [{ estado: saude.demo ? "somente_demonstracao" : "real" }];
+    $("#conexaoShell").innerHTML = selos(estado.molduraPadrao);
 
     desenharUnidades();
     ligarMenu();

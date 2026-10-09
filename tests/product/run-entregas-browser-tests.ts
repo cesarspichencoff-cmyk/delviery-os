@@ -386,6 +386,85 @@ void (async () => {
       }
       assert.deepEqual(problemas, []);
     });
+
+    // A MOLDURA (faixa de topo, selo do shell, unidade ativa) e a primeira coisa
+    // legivel. Sobre uma leitura do servidor ela nao pode dizer "SOMENTE
+    // DEMONSTRACAO" nem "unidade ativa: demo-unit" — seria a moldura desmentindo
+    // a tela. O esperado vem da propria view model, nunca escrito a mao.
+    const PROCEDENCIAS = ["real", "simulado", "controle", "controle_positivo_sintetico"];
+    const moldura = (page: Page) =>
+      page.evaluate(() => {
+        const sel = document.querySelector("#seletorUnidade") as HTMLElement | null;
+        return {
+          selos: [...document.querySelectorAll("#conexaoShell [data-estado]")].map((e) => (e as HTMLElement).dataset.estado ?? ""),
+          unidade: (document.querySelector("#unidadeAtiva")?.textContent ?? "").trim(),
+          seletorVisivel: Boolean(sel && sel.getClientRects().length > 0 && getComputedStyle(sel).visibility !== "hidden"),
+        };
+      });
+
+    await teste("N11 a moldura nao desmente a leitura: selo de procedencia dos fatos, unidade da leitura, sem seletor que nao age", async () => {
+      const esperado = (JSON.parse(await vmJson(null)) as { leitura: { selos: { estado: string }[] } }).leitura.selos
+        .map((s) => s.estado)
+        .filter((e) => PROCEDENCIAS.includes(e));
+      assert.ok(esperado.length > 0, "a fixture perdeu o modo dos fatos");
+      for (const viewport of [{ width: 320, height: 800 }, VIEWPORTS.celular, VIEWPORTS.desktop]) {
+        const a = await abrir(browser, base, { viewport, comLeitura: true });
+        try {
+          const m = await moldura(a.page);
+          assert.deepEqual(m.selos, esperado, `${viewport.width}px: o selo do shell nao e a procedencia da leitura`);
+          assert.doesNotMatch(m.unidade, /demo-unit/i, `${viewport.width}px: a moldura diz a unidade da demonstracao sobre a leitura`);
+          assert.match(m.unidade, /leitura/i);
+          assert.match(m.unidade, /todas/i);
+          assert.equal(m.seletorVisivel, false, `${viewport.width}px: o seletor da demonstracao segue na tela e nao age sobre a leitura`);
+          // Selo e marca nao se pintam um sobre o outro (medido em 320px no M1B-R2).
+          const sobrepostos = await a.page.evaluate(() => {
+            const r1 = document.querySelector(".shell__marca strong")?.getBoundingClientRect();
+            const r2 = document.querySelector("#conexaoShell")?.getBoundingClientRect();
+            if (!r1 || !r2) return "sem marca ou sem selo";
+            return r1.right > r2.left && r2.right > r1.left && r1.bottom > r2.top && r2.bottom > r1.top ? "sobrepostos" : "";
+          });
+          assert.equal(sobrepostos, "", `${viewport.width}px: marca e selo`);
+          if (viewport.width === 390) {
+            await a.page.evaluate(() => {
+              window.location.hash = "#/entregas?unidade=ITAIM";
+            });
+            await a.page.waitForFunction(() => document.querySelector("[data-titulo-da-leitura]")?.textContent?.includes("em ITAIM"), undefined, { timeout: 8000 });
+            assert.match((await moldura(a.page)).unidade, /ITAIM/, "a unidade da moldura nao seguiu o filtro");
+            await a.page.evaluate(() => {
+              window.location.hash = "#/operacao-viva";
+            });
+            await a.page.waitForFunction(() => !document.querySelector('[data-territorio="rua"]') && document.querySelector("#superficie")?.getAttribute("aria-busy") === "false", undefined, { timeout: 8000 });
+            const fora = await moldura(a.page);
+            assert.deepEqual(fora.selos, ["somente_demonstracao"], "fora da leitura a moldura deixou de dizer demonstracao");
+            assert.match(fora.unidade, /demo-unit/i);
+            assert.equal(fora.seletorVisivel, true, "o seletor nao voltou onde ele age");
+          }
+          assert.deepEqual(a.erros, [], `${viewport.width}px: erros no console`);
+        } finally {
+          await a.fechar();
+        }
+      }
+    });
+
+    await teste("N11b controle: sem leitura, a moldura continua dizendo demonstracao", async () => {
+      const a = await abrir(browser, base, { viewport: VIEWPORTS.celular, comLeitura: false });
+      try {
+        const m = await moldura(a.page);
+        assert.deepEqual(m.selos, ["somente_demonstracao"]);
+        assert.match(m.unidade, /demo-unit/i);
+        assert.equal(m.seletorVisivel, true);
+      } finally {
+        await a.fechar();
+      }
+    });
+
+    await teste("N12 a saude do servidor declara a composicao: sem banco, so demonstracao", async () => {
+      const r = await fetch(`${base}/api/health`);
+      const s = (await r.json()) as { demo?: unknown; leitura_do_servidor?: unknown; banner?: unknown };
+      assert.equal(s.demo, true);
+      assert.equal(s.leitura_do_servidor, false, "a saude nao declara se ha leitura do servidor");
+      assert.equal(s.banner, "AMBIENTE DE DEMONSTRACAO · DELIVERYOS PRODUCT SYSTEM");
+    });
   } finally {
     await browser.close();
     await new Promise<void>((r) => servidor.close(() => r()));

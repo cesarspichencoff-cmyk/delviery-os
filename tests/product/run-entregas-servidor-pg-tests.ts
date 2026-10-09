@@ -184,8 +184,17 @@ void (async () => {
       assert.equal(r.status, 405, "escrita aceita pelo servidor de leitura");
     });
 
+    await teste("S6 com banco, a saude do servidor deixa de dizer 'so demonstracao'", async () => {
+      const s = await ler("/api/health");
+      assert.equal(s.leitura_do_servidor, true, "o servidor le o banco e a saude nao diz");
+      assert.match(s.banner, /LEITURA DO SERVIDOR/);
+      assert.doesNotMatch(s.banner, /^AMBIENTE DE DEMONSTRACAO/);
+      assert.equal(s.somente_leitura, true);
+      assert.equal(s.acao_operacional, false);
+    });
+
     if (EVIDENCIAS) {
-      await teste("S5 capturas da tela com o banco real (evidencia)", async () => {
+      await teste("S5 capturas da tela com o banco real (evidencia), com a moldura conferida", async () => {
         mkdirSync(EVIDENCIAS, { recursive: true });
         const { chromium } = await import("playwright");
         const browser = await chromium.launch(process.env.PRODUCT_UI_CHROMIUM ? { executablePath: process.env.PRODUCT_UI_CHROMIUM } : {});
@@ -197,6 +206,14 @@ void (async () => {
               const page = await ctx.newPage();
               await page.goto(`http://127.0.0.1:${PORTA}/${hash}`);
               await page.waitForSelector('#superficie[aria-busy="false"] [data-titulo-da-leitura]');
+              const m = await page.evaluate(() => ({
+                faixa: (document.querySelector("#faixaAmbiente")?.textContent ?? "").trim(),
+                selos: [...document.querySelectorAll("#conexaoShell [data-estado]")].map((e) => (e as HTMLElement).dataset.estado),
+                unidade: (document.querySelector("#unidadeAtiva")?.textContent ?? "").trim(),
+              }));
+              assert.match(m.faixa, /LEITURA DO SERVIDOR/, `${nome}/${rotulo}: a faixa de topo diz so demonstracao`);
+              assert.deepEqual(m.selos, ["simulado"], `${nome}/${rotulo}: o selo do shell nao e o modo dos fatos lidos`);
+              assert.match(m.unidade, rotulo === "itaim" ? /ITAIM/ : /todas/i);
               if (nome === "desktop" && rotulo === "todas") console.log(`      capturas com fontes ${await fontesEmUso(page)}`);
               await page.screenshot({ path: join(EVIDENCIAS, `pg-${rotulo}-${nome}-dobra.png`) });
               await page.screenshot({ path: join(EVIDENCIAS, `pg-${rotulo}-${nome}-inteira.png`), fullPage: true });
