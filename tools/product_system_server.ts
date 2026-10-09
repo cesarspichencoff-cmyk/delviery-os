@@ -233,11 +233,13 @@ async function lerRealidade(cliente: PgSqlClient | null): Promise<LeituraDeReali
   }
   try {
     return { disponivel: true, realidade: await lerRealidadeDeEntregas(cliente, { agora: new Date() }) };
-  } catch (e) {
+  } catch {
+    // Detalhes de rede/SQL podem conter nomes internos e caminhos. A tela
+    // precisa conhecer a indisponibilidade, nunca o erro bruto do driver.
     return {
       disponivel: false,
       motivo: "indisponivel",
-      explicacao: `O banco da plataforma nao respondeu a esta leitura: ${e instanceof Error ? e.message : String(e)}`,
+      explicacao: "O banco da plataforma nao respondeu a esta leitura. Nao foi possivel confirmar os dados atuais; a demonstracao permanece identificada separadamente.",
     };
   }
 }
@@ -386,7 +388,7 @@ export async function criarServidor(): Promise<http.Server> {
           const snap = await facade.snapshot();
           const leitura = await lerRealidade(clientePlataforma);
           json(res, 200, entregasVM(snap, new Date().toISOString(), facade.getPolicyMaxStops(), leitura, { unidade }));
-        })().catch((e: unknown) => json(res, 500, { erro: e instanceof Error ? e.message : String(e) }));
+        })().catch(() => json(res, 500, { erro: "leitura_indisponivel" }));
         return;
       }
       if (p === "/api/operacao-viva") {
@@ -412,7 +414,8 @@ export async function criarServidor(): Promise<http.Server> {
       return servirEstatico(res, p);
     } catch (e) {
       return json(res, 500, {
-        erro: e instanceof Error ? e.message : String(e),
+        // Falhas de roteamento nao devem publicar excecoes e caminhos locais.
+        erro: "leitura_indisponivel",
       });
     }
   });
