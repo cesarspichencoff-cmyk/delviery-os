@@ -5,7 +5,7 @@
     "status": "ACTIVE",
     "authority_scope": "technical_state",
     "superseded_by": null,
-    "atualizado_em": "2026-10-08",
+    "atualizado_em": "2026-10-09",
     "state_basis": "bdcf59d",
     "observa": [
       "src/product/",
@@ -14,7 +14,7 @@
     ],
     "_nota_observa": "Os tres troncos cujo estado este arquivo realmente afirma: produto, perfil e o Lab V4. src/platform/ fica de fora porque o que STATE.json diz dele sao contagens de teste, que esta guarda nao verifica — declarar escopo que a guarda nao cobre seria comprar confianca que ela nao entrega. Escolhido antes de rodar, e nao para acomodar caso que falhava (L44)."
   },
-  "atualizado_em": "2026-10-08",
+  "atualizado_em": "2026-10-09",
   "_nota_atualizado_em": "Ate 2026-08-07 este campo declarava 2026-08-03 enquanto o arquivo continha o bloco revolution_0a datado de 2026-08-05 e havia sido gravado no commit 953a3fb, de 2026-08-07. Foi o primeiro defeito que a guarda G6c acusou.",
   "missao": "MACRO-PROMPT 1/3 — Hybrid Platform + PostgreSQL + Cloud Foundation",
   "veredito": "READY_FOR_MACRO_PROMPT_2_FIELD_AND_COPILOT_BRIDGE",
@@ -2186,7 +2186,7 @@
     }
   },
   "tata_reader_resilience_20261007": {
-    "status": "ROOT_CAUSE_REPRODUCED_SANDBOX_FIX_TEST_PASS_E2E_SIMULATED_NOT_INSTALLED",
+    "status": "ROOT_CAUSE_REPRODUCED_SANDBOX_FIX_TEST_PASS_WINDOWS_REAL_SCM_NOT_INSTALLED",
     "branch": "feat/cloud-solo-reader-resilience-20261007",
     "base": "73626d09cae4ba91b7db2ea4942aa1a882ae7dc0",
     "causa_raiz": {
@@ -2218,7 +2218,7 @@
       "tata_reader_e2e_scm_simulado": "10/10 PASS (UTC e America/Sao_Paulo; E8-E10 0/3 no cutover de 1eacabe)",
       "tata_reader_sqlserver": "3/3 PASS",
       "ps51_compat_estatico": "0 achados em 8 arquivos, controle 3/3",
-      "windows_real_scm": "RED na 1a execucao (CI 37867864216): supervisor 4/23 sob WinPS 5.1 por Get-FileHash + PSModulePath do pwsh 7; corrigido em 078359d; SCM real (W0-W5) ainda nao executado",
+      "windows_real_scm": "GREEN no run 37879636538 (40bff44): supervisor 24/24 e cutover 13/13 sob WinPS 5.1; SCM real W0-W5 6/6 com host C# v2 real e conta virtual. O run 37867864216 ficou vermelho (4/23, Get-FileHash) e foi corrigido em 078359d",
       "migration_reexec": "5/5 PASS",
       "platform_pg": "17/17 PASS",
       "database_preflight": "9/9 PASS",
@@ -2226,7 +2226,7 @@
       "saude_fontes": "10/10 PASS",
       "papeis_compose": "10/10 PASS",
       "android_jvm_unit": "52/52 PASS",
-      "ci_run": "37867864216 (7e705ef): node-postgres, pwsh-sqlserver e android-unit verdes; windows-real-scm vermelho (achado real, corrigido localmente)"
+      "ci_run": "37879636538 (40bff44): node-postgres, pwsh-sqlserver, windows-real-scm e android-unit verdes"
     },
     "current_boundary": {
       "installed_on_caixa": false,
@@ -2236,7 +2236,7 @@
       "print": false,
       "protected_m1_paths_touched": false,
       "world_proven": false,
-      "pushed_until": "7e705ef",
+      "pushed_until": "40bff44",
       "local_commits_awaiting_push_authorization": true
     },
     "riscos": [
@@ -2247,7 +2247,7 @@
       "binario do host instalado sem SHA no Git; o Plan mede e o Apply exige o mesmo valor",
       "repositorio PUBLICO segundo a API do GitHub: data/ guarda evidencias operacionais (agregados financeiros, sem PII de cliente nesta branch) — visibilidade e decisao do Cesar"
     ],
-    "next_step": "Autorizar o push de 078359d em diante -> CI windows-real-scm de novo (supervisor e cutover sob WinPS 5.1, SCM real com host C# v2). Na CAIXA: conferir/publicar e LER o V2 77C16940; auditar; -Mode Plan; -Mode Apply fora do pico com os tres SHA de apply_requires; publicar o recibo.",
+    "next_step": "Na CAIXA: conferir/publicar e LER o V2 77C16940; auditar; -Mode Plan; -Mode Apply fora do pico com os tres SHA de apply_requires; publicar o recibo. Antes, opcional: rodar o W6 (caca de lote sem registro sob a conta virtual) no CI.",
     "sha256": {
       "supervisor": "2B6DC012918F317C8D244531B3CCB2FD33E33B226C6E6E668BEE4B698936BEF5",
       "cutover": "310B0ACE2D6989037F3937D94341A4A1DB74B43C4D0C29E1D01759A3E0CD531E",

@@ -21,7 +21,9 @@
        byte a byte, v1 escrevendo de novo, nenhum processo do candidato;
     W4 candidato que falha: GATE_FAILED_ROLLBACK_PROVEN, saida 3;
     W5 candidato que trava o lote: o Stop-Service real mata so o supervisor,
-       o lote orfao sobrevive e o rollback o encerra pela linha de comando.
+       o lote orfao sobrevive e o rollback o encerra pela linha de comando;
+    W6 a caca de lote sem registro do supervisor funciona sob a conta virtual
+       (o CIM responde ao servico; LIST_UNKNOWN aqui e o limite declarado).
 
   So roda em maquina DESCARTAVEL: exige GITHUB_ACTIONS=true e recusa se o
   servico TataComandaReader ou a pasta C:\ProgramData\TataComandaReader ja
@@ -227,7 +229,11 @@ try {
   $hb = $null
   try { $hb = [IO.File]::ReadAllText($Heartbeat) | ConvertFrom-Json } catch { }
   $w2Pass = ($w2.code -eq 0 -and [string]$w2.receipt.decision -eq "APPLIED_HEALTHY" -and $fixedSha -eq (Get-Sha $SupervisorSrc) -and (Get-Writer) -eq "candidate" -and $null -ne $hb -and [int]$hb.totals.ok -ge 2)
-  Add-Result "W2" "Apply real: APPLIED_HEALTHY, saida 0, supervisor do repo no caminho fixo, lotes OK, checkpoint do candidato" $w2Pass ([ordered]@{ code = $w2.code; stage = $w2.stage; decision = if ($w2.receipt) { [string]$w2.receipt.decision } else { $null }; gate = if ($w2.receipt) { $w2.receipt.gate } else { $null }; after = if ($w2.receipt) { $w2.receipt.after } else { $null }; heartbeat_ok = if ($hb) { [int]$hb.totals.ok } else { $null }; writer = (Get-Writer); stderr = $w2.stderr })
+  # O que a partida do supervisor achou, sob a conta virtual: a caca de lote
+  # sem registro so funciona se o CIM responder ao servico (limite declarado).
+  $startupHunt = if ($hb -and $hb.startup) { [string]$hb.startup.command_line_hunt } else { $null }
+  $startupRecord = if ($hb -and $hb.startup) { [string]$hb.startup.child_record } else { $null }
+  Add-Result "W2" "Apply real: APPLIED_HEALTHY, saida 0, supervisor do repo no caminho fixo, lotes OK, checkpoint do candidato" $w2Pass ([ordered]@{ code = $w2.code; stage = $w2.stage; decision = if ($w2.receipt) { [string]$w2.receipt.decision } else { $null }; gate = if ($w2.receipt) { $w2.receipt.gate } else { $null }; after = if ($w2.receipt) { $w2.receipt.after } else { $null }; heartbeat_ok = if ($hb) { [int]$hb.totals.ok } else { $null }; startup_command_line_hunt = $startupHunt; startup_child_record = $startupRecord; writer = (Get-Writer); stderr = $w2.stderr })
 
   # --------------------------------------------------------------- W3 --
   if ($w2Pass) {
@@ -253,6 +259,13 @@ try {
   $killed = if ($w5.receipt -and $w5.receipt.rollback) { [int]$w5.receipt.rollback.candidate_processes_killed } else { -1 }
   $w5Pass = ($w5.code -eq 3 -and [string]$w5.receipt.decision -eq "GATE_FAILED_ROLLBACK_PROVEN" -and $killed -ge 1 -and (Get-PsCiting "tata_reader_continuous_watch_candidate_v2.ps1") -eq 0 -and $w5Back)
   Add-Result "W5" "lote travado: Stop-Service real mata so o supervisor; o orfao morre pela linha de comando; rollback provado" $w5Pass ([ordered]@{ code = $w5.code; stage = $w5.stage; decision = if ($w5.receipt) { [string]$w5.receipt.decision } else { $null }; candidate_processes_killed = $killed; rollback = if ($w5.receipt) { $w5.receipt.rollback } else { $null }; stderr = $w5.stderr })
+
+  # --------------------------------------------------------------- W6 --
+  # Segunda camada do supervisor (lote sem registro) sob a conta virtual: o
+  # CIM tem de responder ao servico. LIST_UNKNOWN aqui = o limite declarado
+  # vale na CAIXA tambem.
+  $w6Pass = ($startupHunt -eq "NONE" -or $startupHunt -eq "UNRECORDED_STOPPED")
+  Add-Result "W6" "a caca de lote sem registro funciona sob NT SERVICE\TataComandaReader (o CIM responde ao servico)" $w6Pass ([ordered]@{ startup_command_line_hunt = $startupHunt; startup_child_record = $startupRecord })
 } catch {
   $failures += "ORQUESTRADOR"
   Write-Host ("ERRO NO ORQUESTRADOR: " + $_.Exception.GetType().FullName + ": " + $_.Exception.Message)
@@ -277,6 +290,6 @@ Write-Json ([IO.Path]::Combine($OutDir, "summary.json")) $summary
 $total = @($results.Keys).Count
 $ok = @($results.Keys | Where-Object { $results[$_].pass }).Count
 Write-Host ("TATA_READER_REAL_SCM_E2E: " + $ok + "/" + $total + " PASS")
-if ($failures.Count -gt 0 -or $total -lt 6) { Write-Host "TATA_READER_REAL_SCM_E2E_RED"; exit 1 }
+if ($failures.Count -gt 0 -or $total -lt 7) { Write-Host "TATA_READER_REAL_SCM_E2E_RED"; exit 1 }
 Write-Host "TATA_READER_REAL_SCM_E2E_GREEN"
 exit 0
