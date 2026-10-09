@@ -63,7 +63,9 @@
 | `8b62ae7` | registros da releitura: D98, EVIDENCE, STATE, LEDGER — **CI `37946401716` verde** |
 | `e594eae` | handback consolidado; cherry-pick provado byte a byte |
 | `5862d9d` | **acessibilidade:** contraste AA na faixa de demonstração e na barra do celular da Home (N7b, N7c; axe-core) |
-| _(este)_ | registros da acessibilidade: §5.2, L61, EVIDENCE, STATE, captura antes/depois |
+| `4456e8a` | registros da acessibilidade: §5.2, L61, EVIDENCE, STATE, captura antes/depois |
+| `84a2b71` | **guarda:** a auditoria axe-core em todas as rotas vira teste do repositório e passo do CI (versão fixa, sha256 conferido) |
+| _(este)_ | registros da guarda de acessibilidade |
 
 ## 2. Arquivos
 
@@ -83,7 +85,8 @@
 | `src/product/ui/surfaces/home.css` | **só** duas regras dentro de `body:has(.org)`: os itens da barra inferior do celular com os mesmos tokens da barra lateral (contraste AA; §5.2) |
 | `tests/product/run-entregas-servidor-pg-tests.ts` | 6 testes com servidor real e PostgreSQL isolado (S1–S6; S5 confere a moldura nas capturas) |
 | `tests/product/run-sem-fail-novo.ts` | classifica `m1-bridge` e governança por igualdade |
-| `.github/workflows/deliveryos-product-ux.yml` | CI desta branch |
+| `tests/product/run-a11y-axe-tests.ts` | axe-core nas cinco rotas, 390 e 1440 px, Entregas com e sem leitura (12 auditorias); sem `PRODUCT_UI_AXE`, sai 78 |
+| `.github/workflows/deliveryos-product-ux.yml` | CI desta branch; baixa o axe-core 4.10.2 fora da árvore e confere o sha256 antes de rodar a auditoria |
 
 ## 3. Provas — resultados exatos
 
@@ -105,6 +108,7 @@
 | `tsc --noEmit` · `build:platform` | 0 · 0 | **0 · 0** |
 | `test:platform:m1b-perceptual` (geometria da Home) | **BLOQUEADA** aqui (o Playwright procura um Chromium que não existe no container) | **5/5** — Chromium do container injetado no `chromium.launch` por pré-carregamento fora do repositório; as mutações restauraram `home.css` e `shell.css` com sha256 idêntico |
 | axe-core 4.10.2, cinco rotas, 390 e 1440 px | Entregas (base): `scrollable-region-focusable` ×2; Home 390 px: `color-contrast` ×5 (2,13–2,55:1) | Entregas: **0** com e sem banco (a 4,38:1 da faixa de demonstração, desta missão, fechada); Home 390 px: **0** |
+| `PRODUCT_UI_AXE=… npx tsx tests/product/run-a11y-axe-tests.ts` (guarda nova, `84a2b71`) | no commit anterior à correção (`e594eae`): **3 violações**, sai 1 | **12 auditorias, 0 violações**; sem axe: sai 78 |
 | `test:platform:m1-bridge` | 34 + **C6 vermelho** (Q-019, 12 caminhos) | **35** (+ C6d) + **C6 com os mesmos 12 caminhos** — `FAIL_PREEXISTENTE` |
 | `test:platform:governanca` | **G6b vermelho** (`STATE.json` desatualizado desde `52b90c2`) | ver §3.1 |
 
@@ -310,6 +314,7 @@ git cherry-pick 5dfdb4a   # 3ª iteração: a moldura segue a origem do primeiro
 git cherry-pick ba3aa4b   # 3ª iteração: listas do histórico com corte declarado (L15)
 git cherry-pick 2b8bbf9   # 3ª iteração: reler não apaga a leitura (N13, N13b)
 git cherry-pick 5862d9d   # acessibilidade: contraste AA (N7b, N7c) — toca home.css, só a barra do celular
+git cherry-pick 84a2b71   # guarda axe-core em todas as rotas + passo do CI (só testes e workflow)
 ```
 
 Antes de integrar: responder `Q-025` e `Q-022`; decidir `Q-021` se a outra linhagem entrar; rodar
