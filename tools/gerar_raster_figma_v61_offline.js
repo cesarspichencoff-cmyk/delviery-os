@@ -13,7 +13,7 @@ const WIDTH=576, STRIDE=72, BAND_ROWS=256, MAX_HEIGHT=2400;
 
 function readP4(input) {
   if(!Buffer.isBuffer(input))throw Error("PBM_INPUT_REQUIRED");
-  const match=/^P4\s+(?:#[^\n]*\n\s*)*(\d+)\s+(\d+)\s/.exec(input.subarray(0,256).toString("latin1"));
+  const match=/^P4\r?\n(?:#[^\r\n]*\r?\n)*(\d+)[ \t]+(\d+)\r?\n/.exec(input.subarray(0,256).toString("latin1"));
   if(!match)throw Error("PBM_P4_HEADER_REQUIRED");
   const width=Number(match[1]),height=Number(match[2]);
   if(width!==WIDTH)throw Error("RASTER_WIDTH_NOT_576_DOTS");
