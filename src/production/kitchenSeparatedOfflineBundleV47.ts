@@ -20,6 +20,19 @@ function kitchenStation(name: string): boolean {
     .trim().toUpperCase() === "COZINHA";
 }
 /**
+ * All four identifiers must match the order conference projection for
+ * station-level offline eligibility. Consistency check only, no source
+ * authentication and no permission to print.
+ */
+function matchingOrderIds(
+  a: OperationalTicketsResultV45["production"][number]["identifiers"] | null | undefined,
+  b: OperationalTicketsResultV45["production"][number]["identifiers"] | null | undefined,
+): boolean {
+  return !!a && !!b &&
+    a.ifood === b.ifood && a.teknisa === b.teknisa &&
+    a.tata === b.tata && a.hour === b.hour;
+}
+/**
  * Replaces the former unsplit COZINHA output in the OFFLINE export.
  * It NEVER adds a third kitchen paper or routes jobs to a real device.
  */
@@ -63,8 +76,12 @@ export function buildKitchenSeparatedBundleV47(
   // Never emit the old COZINHA source print after implementing the split.
   for(const production of tickets.production) {
     if(kitchenStation(production.station))continue;
-    append("OTHER_PRODUCTION",renderProductionTicketProofV46(production),
-      production.ready_for_semantic_preview === true ? [] : ["STATION_SEMANTIC_NOT_READY:" + production.station]);
+    append("OTHER_PRODUCTION",renderProductionTicketProofV46(production),[
+      ...(production.ready_for_semantic_preview === true
+        ? [] : ["STATION_SEMANTIC_NOT_READY:" + production.station]),
+      ...(matchingOrderIds(production.identifiers,tickets.conference.identifiers)
+        ? [] : ["STATION_ORDER_IDENTIFIERS_MISMATCH"]),
+    ]);
   }
   const kitchen=renderTwoKitchenProofsV47(split);
   // The kitchen split is supplied separately from the order projection.
@@ -87,15 +104,9 @@ export function buildKitchenSeparatedBundleV47(
   // identifiers must agree with every production intent and the conference
   // of this order. Absence or conflict fails closed.
   const componentIds=split.components?.identifiers;
-  const sameIdentifiers=(
-    a: {ifood:string;teknisa:string;tata:string;hour:string|null},
-    b: {ifood:string;teknisa:string;tata:string;hour:string|null},
-  ):boolean => a.ifood===b.ifood && a.teknisa===b.teknisa &&
-    a.tata===b.tata && a.hour===b.hour;
   const componentMatchesOrder=!!componentIds && tickets.production.length>0 &&
-    tickets.production.every(p=>sameIdentifiers(componentIds,p.identifiers)) &&
-    !!tickets.conference.identifiers &&
-    sameIdentifiers(componentIds,tickets.conference.identifiers);
+    tickets.production.every(p=>matchingOrderIds(componentIds,p.identifiers)) &&
+    matchingOrderIds(componentIds,tickets.conference.identifiers);
   // An identifier match alone does not prove that the independently provided
   // kitchen component preview belongs to this exact order projection.
   // Missing/changed bindings fail closed ONLY for that component channel.
@@ -122,6 +133,9 @@ export function buildKitchenSeparatedBundleV47(
     ...(split.dishes && split.dishes.source.ready_for_semantic_preview !== true
       ? ["STATION_SEMANTIC_NOT_READY:" + split.dishes.source.station] : []),
     ...(split.dishes && !matchingKitchenSource ? ["KITCHEN_SPLIT_SOURCE_MISMATCH"] : []),
+    ...(split.dishes && !matchingOrderIds(
+      split.dishes.source.identifiers,tickets.conference.identifiers)
+      ? ["KITCHEN_DISHES_ORDER_IDENTIFIERS_MISMATCH"] : []),
   ]);
   append("CONFERENCE",renderConferenceTicketProofV46(tickets.conference),
     tickets.conference.ready_for_semantic_preview === true ? [] : ["CONFERENCE_SEMANTIC_NOT_READY"]);
