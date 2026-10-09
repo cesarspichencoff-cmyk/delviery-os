@@ -20,6 +20,7 @@ import { join, resolve } from "node:path";
 import { createHash } from "node:crypto";
 
 import { bancoIsolado, type BancoIsolado } from "../../src/platform/banco-isolado";
+import { fontesEmUso, servirFontesCanonicas } from "./fontes-canonicas";
 
 const URL_BASE = (process.env.DELIVERYOS_PG_URL ?? "").trim();
 if (!URL_BASE) {
@@ -192,9 +193,11 @@ void (async () => {
           for (const [nome, viewport] of [["desktop", { width: 1440, height: 900 }], ["celular", { width: 390, height: 844 }]] as const) {
             for (const [rotulo, hash] of [["todas", "#/entregas"], ["itaim", "#/entregas?unidade=ITAIM"]] as const) {
               const ctx = await browser.newContext({ viewport, reducedMotion: "reduce" });
+              await servirFontesCanonicas(ctx, process.env.PRODUCT_UI_FONTES);
               const page = await ctx.newPage();
               await page.goto(`http://127.0.0.1:${PORTA}/${hash}`);
               await page.waitForSelector('#superficie[aria-busy="false"] [data-titulo-da-leitura]');
+              if (nome === "desktop" && rotulo === "todas") console.log(`      capturas com fontes ${await fontesEmUso(page)}`);
               await page.screenshot({ path: join(EVIDENCIAS, `pg-${rotulo}-${nome}-dobra.png`) });
               await page.screenshot({ path: join(EVIDENCIAS, `pg-${rotulo}-${nome}-inteira.png`), fullPage: true });
               await ctx.close();

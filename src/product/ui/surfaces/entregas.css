@@ -349,6 +349,12 @@
   font-size: var(--type-small);
   color: var(--text-muted);
 }
+.celula__ocorrencia {
+  margin: 0 0 var(--space-1) 0;
+  font-size: var(--type-small);
+  font-weight: 600;
+  color: var(--ink-calm);
+}
 
 /* ----------------------------------------------------------- aparelhos --- */
 .aparelhos {

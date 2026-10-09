@@ -67,7 +67,7 @@ function fato(
   };
 }
 
-function eventos(): EventEnvelope[] {
+function eventos(o: OpcoesFixture = {}): EventEnvelope[] {
   seq = 0;
   const e: EventEnvelope[] = [];
   // ITAIM
@@ -92,6 +92,11 @@ function eventos(): EventEnvelope[] {
   e.push(fato("VILA-LAB", "T-201", "trip_created", 800, 800, "dev-g"));
   e.push(fato("VILA-LAB", "T-201", "trip_started", 700, 700, "dev-g"));
   e.push(fato("VILA-LAB", "T-201", "gps_batch_received", -540, 60, "dev-g"));
+  if (o.ocorrencias) {
+    // Uma ocorrencia numa viagem que ainda esta na rua, e outra numa encerrada.
+    e.push(fato("ITAIM", "T-103", "occurrence_created", 480, 478, "dev-c"));
+    e.push(fato("ITAIM", "T-099", "occurrence_created", 93000, 92990, "dev-f"));
+  }
   return e;
 }
 
@@ -121,10 +126,12 @@ function contagem(todos: EventEnvelope[], device: string): AparelhoReal["fatos_p
 export interface OpcoesFixture {
   /** Remove a unidade VILA-LAB inteira (cadastro e fatos). */
   soItaim?: boolean;
+  /** Acrescenta `occurrence_created` em T-103 (na rua) e em T-099 (encerrada). */
+  ocorrencias?: boolean;
 }
 
 export function realidadeFixture(o: OpcoesFixture = {}): RealidadeDeEntregas {
-  const todos = eventos().filter((e) => !(o.soItaim && e.unit_id === "VILA-LAB"));
+  const todos = eventos(o).filter((e) => !(o.soItaim && e.unit_id === "VILA-LAB"));
   const ap = (
     device_id: string,
     unit_id: string,

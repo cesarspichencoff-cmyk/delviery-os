@@ -22,6 +22,7 @@ import { chromium, type Browser, type Page } from "playwright";
 import { entregasVM } from "../../src/product/viewmodels/entregas-vm";
 import { montarEntregasDemo } from "../../src/product/demo/seed-demonstracao";
 import { AGORA_FIXTURE, realidadeFixture } from "./entregas-fixture";
+import { fontesEmUso, servirFontesCanonicas } from "./fontes-canonicas";
 
 delete process.env.DELIVERYOS_DATABASE_URL;
 
@@ -129,6 +130,7 @@ async function abrir(
   o: { viewport: { width: number; height: number }; comLeitura: boolean; reduzido?: boolean; relogio?: boolean; hash?: string },
 ): Promise<Abertura> {
   const ctx = await browser.newContext({ viewport: o.viewport, reducedMotion: o.reduzido ? "reduce" : "no-preference" });
+  await servirFontesCanonicas(ctx, process.env.PRODUCT_UI_FONTES);
   const page = await ctx.newPage();
   const pedidos: string[] = [];
   const erros: string[] = [];
@@ -152,12 +154,17 @@ async function abrir(
   }
   if (o.relogio) await page.clock.install({ time: new Date(AGORA_FIXTURE) });
   await page.goto(`${base}/${o.hash ?? "#/entregas"}`);
-  await page.waitForSelector("#superficie[aria-busy='false'] .superficie__cabecalho", { timeout: 15000 });
+  await page.waitForSelector("#superficie[aria-busy='false'] > *", { timeout: 15000 });
   return { page, pedidos, erros, fechar: () => ctx.close() };
 }
 
+let fontesAnunciadas = false;
 async function evidencia(page: Page, nome: string): Promise<void> {
   if (!EVIDENCIAS) return;
+  if (!fontesAnunciadas) {
+    fontesAnunciadas = true;
+    console.log(`      capturas com fontes ${await fontesEmUso(page)}`);
+  }
   await page.screenshot({ path: join(EVIDENCIAS, `${nome}-dobra.png`) });
   await page.screenshot({ path: join(EVIDENCIAS, `${nome}-inteira.png`), fullPage: true });
 }
@@ -354,6 +361,30 @@ void (async () => {
           await a.fechar();
         }
       }
+    });
+    await teste("N10 a correcao e de CLASSE: nenhuma superficie rola de lado (320 a 1920) e nenhum inspetor recolhido vaza ou recebe foco", async () => {
+      const problemas: string[] = [];
+      for (const rota of ["#/", "#/operacao-viva", "#/conference-brain", "#/copiloto", "#/entregas"]) {
+        for (const largura of [320, 390, 768, 1024, 1440, 1920]) {
+          const a = await abrir(browser, base, { viewport: { width: largura, height: 900 }, comLeitura: rota === "#/entregas", hash: rota });
+          try {
+            const r = await a.page.evaluate(() => ({
+              larg: document.documentElement.scrollWidth,
+              vazando: [...document.querySelectorAll('.inspetor__corpo[data-aberto="nao"]')].filter((el) => el.getBoundingClientRect().height > 1).length,
+              focaveis: [...document.querySelectorAll('.inspetor__corpo[data-aberto="nao"] a, .inspetor__corpo[data-aberto="nao"] button')].filter(
+                (el) => getComputedStyle(el).visibility !== "hidden",
+              ).length,
+            }));
+            if (r.larg > largura) problemas.push(`${rota} ${largura}px: documento com ${r.larg}px`);
+            if (r.vazando) problemas.push(`${rota} ${largura}px: ${r.vazando} inspetor(es) recolhido(s) com altura visivel`);
+            if (r.focaveis) problemas.push(`${rota} ${largura}px: ${r.focaveis} controle(s) visivel(is) dentro de inspetor recolhido`);
+            if (a.erros.length) problemas.push(`${rota} ${largura}px: ${a.erros.join(" | ")}`);
+          } finally {
+            await a.fechar();
+          }
+        }
+      }
+      assert.deepEqual(problemas, []);
     });
   } finally {
     await browser.close();

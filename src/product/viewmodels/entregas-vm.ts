@@ -206,10 +206,20 @@ export interface ViagemLidaVM {
   readonly aparelho: string | null;
   readonly procedencia: Procedencia;
   readonly solidez: Solidez;
+  /**
+   * `occurrence_created` desta viagem, contados pela projecao. O catalogo nao
+   * tem fato de RESOLUCAO: o numero diz quantas foram registradas, nunca
+   * quantas continuam abertas.
+   */
+  readonly ocorrencias: number;
   readonly selos: readonly Selo[];
 }
 
-export type TipoConferir = "viagem_sem_posicao_recente" | "fila_sem_relato_recente" | "cadastro_incompleto";
+export type TipoConferir =
+  | "ocorrencia_registrada"
+  | "viagem_sem_posicao_recente"
+  | "fila_sem_relato_recente"
+  | "cadastro_incompleto";
 
 /**
  * Algo que uma PESSOA pode conferir. Nao e alerta, nao e Foco (a Operacao Viva
@@ -619,6 +629,7 @@ function viagemLida(
     aparelho: v.device_id ? rotuloPor.get(v.device_id) ?? null : null,
     procedencia,
     solidez: esperaPosicao ? SOLIDEZ_DO_FRESCOR[v.frescor] : "neutra",
+    ocorrencias: v.ocorrencias_abertas,
     selos,
   };
 }
@@ -642,14 +653,36 @@ function filtrarPorUnidade(r: RealidadeDeEntregas, unidade: string | null): Real
   };
 }
 
+/** A pessoa na rua levantou a mao (ocorrencia) vem antes do sinal que sumiu. */
 const ORDEM_DO_TIPO: Record<TipoConferir, number> = {
-  viagem_sem_posicao_recente: 0,
-  fila_sem_relato_recente: 1,
-  cadastro_incompleto: 2,
+  ocorrencia_registrada: 0,
+  viagem_sem_posicao_recente: 1,
+  fila_sem_relato_recente: 2,
+  cadastro_incompleto: 3,
 };
 
 function conferencias(r: RealidadeDeEntregas, naRua: readonly ViagemLidaVM[], agora: Date): ConferirVM[] {
   const itens: ConferirVM[] = [];
+  for (const v of naRua) {
+    if (v.ocorrencias <= 0) continue;
+    itens.push({
+      chave: `ocorrencia:${v.viagem_id}`,
+      tipo: "ocorrencia_registrada",
+      unidade: v.unidade,
+      titulo: `Viagem ${v.viagem_id}: ${plural(v.ocorrencias, "ocorrencia registrada", "ocorrencias registradas")}`,
+      detalhe: `${v.estado_legivel} pelo ultimo fato · ${v.aparelho ?? v.device_id ?? "nenhum aparelho nomeado"}`,
+      restricao:
+        "Esta leitura nao sabe o tipo, o horario nem se ela ja foi resolvida: o catalogo de eventos nao tem fato de resolucao.",
+      desde: {
+        observado: false,
+        motivo: "nao_observado",
+        explicacao: "A projecao conta a ocorrencia; o horario dela nao chega a esta leitura.",
+      },
+      evidencia: `occurrence_created no log · ${v.device_id ?? "sem aparelho"} · ${v.unidade}`,
+      procedencia: v.procedencia,
+      selo: selo("acao_humana_necessaria", "Ocorrencia registrada na rua: so uma pessoa sabe o que aconteceu."),
+    });
+  }
   for (const v of naRua) {
     if (v.frescor !== "stale" && v.frescor !== "unknown") continue;
     itens.push({
