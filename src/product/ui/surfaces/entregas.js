@@ -363,10 +363,12 @@ function territorioLido(vm, l) {
   // Anatomia do canon: camada tecnica, linha de sinal, titulo humano,
   // explicacao, restricao. Os controles (reler, unidade) vem DEPOIS da frase:
   // no celular, a frase chega primeiro.
+  // `data-releitura`: o aviso de "relendo" e de releitura que falhou mora na
+  // camada tecnica, e existe vazio desde o desenho (regiao viva anunciada).
   return `<section class="rua" data-territorio="rua" data-solidez="${esc(l.solidez)}" data-envelhecida="nao"
       data-fresca-ate-s="${esc(l.janelas.fresca_ate_s)}" data-envelhecendo-ate-s="${esc(l.janelas.envelhecendo_ate_s)}"
-      aria-labelledby="rua-titulo">
-    <p class="rua__eyebrow"><span class="rua__ponto" aria-hidden="true"></span>Leitura do servidor as ${esc(l.lida_as)} · <span data-idade-da-leitura aria-live="off">lida agora</span></p>
+      data-lida-as="${esc(l.lida_as)}" aria-labelledby="rua-titulo">
+    <p class="rua__eyebrow"><span class="rua__ponto" aria-hidden="true"></span>Leitura do servidor as ${esc(l.lida_as)} · <span data-idade-da-leitura aria-live="off">lida agora</span><span class="rua__releitura" data-releitura role="status" aria-live="polite"></span></p>
     <div class="rua__sinal" aria-hidden="true"></div>
     <p class="rua__restricao rua__restricao--leitura" data-so-envelhecida>Esta leitura nao e a mais recente. Atualize para ver a rua agora.</p>
     <h2 class="rua__titulo" id="rua-titulo" data-titulo-da-leitura>${esc(l.titulo)}</h2>

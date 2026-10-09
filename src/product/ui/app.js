@@ -36,11 +36,14 @@ const estado = {
   relogioDaLeitura: null,
   /** O selo do shell quando a tela nao traz leitura do servidor (de /api/health). */
   molduraPadrao: [],
+  /** Cada desenho incrementa; uma releitura que volta depois de outro desenho e descartada. */
+  geracao: 0,
+  relendo: false,
 };
 
 async function obter(caminho) {
   const r = await fetch(caminho, { headers: { accept: "application/json" } });
-  if (!r.ok) throw new Error(`${caminho} respondeu ${r.status}`);
+  if (!r.ok) throw Object.assign(new Error(`${caminho} respondeu ${r.status}`), { status: r.status });
   return r.json();
 }
 
@@ -205,9 +208,7 @@ function rotaDoHash() {
 function ligarLeitura(alvo, opcoes) {
   clearInterval(estado.relogioDaLeitura);
   estado.relogioDaLeitura = null;
-  alvo.querySelectorAll("[data-reler]").forEach((b) =>
-    b.addEventListener("click", () => desenhar(estado.rotaAtual, { focar: "[data-reler]" })),
-  );
+  alvo.querySelectorAll("[data-reler]").forEach((b) => b.addEventListener("click", () => relerSemApagar(alvo)));
   if (opcoes.focar) {
     const el = alvo.querySelector(opcoes.focar);
     if (el) el.focus();
@@ -227,7 +228,71 @@ function ligarLeitura(alvo, opcoes) {
   estado.relogioDaLeitura = setInterval(marcar, 15000);
 }
 
+/**
+ * Reler SEM apagar (2026-10-09). A leitura na tela se declara — hora e idade —
+ * e continua sendo o que se sabe enquanto a nova nao chega: medido, reler leva
+ * 2,5 s com 100 mil fatos no log e 8 s com 300 mil. Esqueleto no lugar dela
+ * seria tela morta; erro no lugar dela apagaria o que se sabia. Sem leitura na
+ * tela (estado tecnico), reler e um desenho comum.
+ */
+async function relerSemApagar(alvo) {
+  const rua = alvo.querySelector('[data-territorio="rua"][data-lida-as]');
+  const aviso = rua && rua.querySelector("[data-releitura]");
+  if (!aviso) {
+    desenhar(estado.rotaAtual, { focar: "[data-reler]" });
+    return;
+  }
+  if (estado.relendo) return;
+  estado.relendo = true;
+  const geracao = estado.geracao;
+  const rota = estado.rotaAtual;
+  const botoes = alvo.querySelectorAll("[data-reler]");
+  // `data-relendo`, nao `aria-busy`: dentro de regiao ocupada o leitor de tela
+  // pode calar mudancas — e o aviso "relendo" (regiao viva) mora nela.
+  rua.dataset.relendo = "sim";
+  botoes.forEach((b) => b.setAttribute("aria-disabled", "true"));
+  aviso.dataset.estado = "relendo";
+  aviso.textContent = " · relendo…";
+  try {
+    const vm = await obter(apiDaRota(rota));
+    if (geracao !== estado.geracao) return; // outra tela foi desenhada no meio
+    alvo.innerHTML = SUPERFICIES[rota].tela(vm);
+    desenharMoldura(rota, vm);
+    ligarInspetores(alvo);
+    ligarLeitura(alvo, { focar: "[data-reler]" });
+  } catch (e) {
+    if (geracao !== estado.geracao) return;
+    delete rua.dataset.relendo;
+    botoes.forEach((b) => b.removeAttribute("aria-disabled"));
+    aviso.dataset.estado = "falhou";
+    const motivo = e && e.status ? `o servidor respondeu ${e.status}` : "sem resposta do servidor";
+    aviso.textContent = `Nao foi possivel ler de novo (${motivo}). Esta continua sendo a leitura das ${rua.dataset.lidaAs}, e segue envelhecendo.`;
+  } finally {
+    if (geracao === estado.geracao) estado.relendo = false;
+  }
+}
+
+function apiDaRota(rota) {
+  const s = SUPERFICIES[rota];
+  // A cena so viaja para a HOME, e so porque esta build e de demonstracao.
+  const cena = new URLSearchParams(window.location.search).get("cena");
+  let api =
+    rota === "/" && cena ? `${s.api}?cena=${encodeURIComponent(cena)}` : s.api;
+  if ((rota === "/operacao-viva" || rota === "/copiloto") && estado.unidade) {
+    api += `${api.includes("?") ? "&" : "?"}unit_id=${encodeURIComponent(estado.unidade)}`;
+  }
+  // Entregas filtra pela unidade DA LEITURA (as que o servidor encontrou), nao
+  // pelo seletor do shell, que e de apresentacao.
+  const unidadeDaLeitura = rota === "/entregas" ? hashAtual().consulta.get("unidade") : null;
+  if (unidadeDaLeitura) {
+    api += `${api.includes("?") ? "&" : "?"}unidade=${encodeURIComponent(unidadeDaLeitura)}`;
+  }
+  return api;
+}
+
 async function desenhar(rota, opcoes = {}) {
+  estado.geracao += 1;
+  estado.relendo = false;
   const alvo = $("#superficie");
   const modulo = estado.navegacao.modulos.find((m) => m.rota === rota);
   desenharNavegacao(rota);
@@ -251,19 +316,7 @@ async function desenhar(rota, opcoes = {}) {
   }
 
   const s = SUPERFICIES[rota];
-  // A cena so viaja para a HOME, e so porque esta build e de demonstracao.
-  const cena = new URLSearchParams(window.location.search).get("cena");
-  let api =
-    rota === "/" && cena ? `${s.api}?cena=${encodeURIComponent(cena)}` : s.api;
-  if ((rota === "/operacao-viva" || rota === "/copiloto") && estado.unidade) {
-    api += `${api.includes("?") ? "&" : "?"}unit_id=${encodeURIComponent(estado.unidade)}`;
-  }
-  // Entregas filtra pela unidade DA LEITURA (as que o servidor encontrou), nao
-  // pelo seletor do shell, que e de apresentacao.
-  const unidadeDaLeitura = rota === "/entregas" ? hashAtual().consulta.get("unidade") : null;
-  if (unidadeDaLeitura) {
-    api += `${api.includes("?") ? "&" : "?"}unidade=${encodeURIComponent(unidadeDaLeitura)}`;
-  }
+  const api = apiDaRota(rota);
   clearInterval(estado.relogioDaLeitura);
   alvo.setAttribute("aria-busy", "true");
   alvo.innerHTML = skeleton(4);
