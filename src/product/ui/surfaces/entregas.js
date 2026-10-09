@@ -200,6 +200,7 @@ function celulaViagem(v) {
     <p class="celula__estado">${esc(v.estado_legivel)}</p>
     <p class="celula__posicao">${posicao}</p>
     <p class="celula__aparelho">${esc(v.aparelho || v.device_id || "nenhum aparelho nomeado")} · ${esc(v.unidade)}</p>
+    ${v.ocorrencias > 0 ? `<p class="celula__ocorrencia">${esc(plural(v.ocorrencias, "ocorrencia registrada", "ocorrencias registradas"))}</p>` : ""}
     <span class="linha-selos">${selos(v.selos)}</span>
   </li>`;
 }
@@ -265,7 +266,7 @@ function itemConferir(c) {
     ? selo({ estado: c.procedencia })
     : `<span class="conferir__modo">modo nao declarado</span>`;
   return `<li class="conferir__item" data-tipo="${esc(c.tipo)}">
-    ${marca(c.tipo === "cadastro_incompleto" ? "cheia" : "pontilhada")}
+    ${marca(c.tipo === "cadastro_incompleto" || c.tipo === "ocorrencia_registrada" ? "cheia" : "pontilhada")}
     <div class="conferir__texto">
       <p class="conferir__titulo">${esc(c.titulo)}</p>
       <p class="conferir__detalhe">${esc(c.detalhe)}</p>

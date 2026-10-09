@@ -351,6 +351,31 @@ void (async () => {
     assert.ok(html.includes("Nenhuma viagem com saida registrada esta na rua por esta leitura."));
   });
 
+  await teste("L13 ocorrencia registrada numa viagem na rua pede conferencia — sem inventar tipo, horario ou resolucao", async () => {
+    const base = realidadeFixture({ ocorrencias: true });
+    const l = (await vmDe(base, "ITAIM")).leitura;
+    assert.deepEqual(
+      l.conferir.map((c: Qualquer) => c.chave),
+      ["ocorrencia:T-103", "viagem:T-102", "fila:dev-b", "cadastro:dev-d"],
+    );
+    const o = l.conferir[0];
+    assert.equal(o.tipo, "ocorrencia_registrada");
+    assert.equal(o.titulo, "Viagem T-103: 1 ocorrencia registrada");
+    assert.match(o.restricao, /tipo/);
+    assert.match(o.restricao, /resolvida/);
+    assert.equal(o.desde.observado, false, "a leitura nao tem o horario da ocorrencia e inventou um");
+    // A encerrada com ocorrencia NAO pede conferencia, mas a contagem nao some.
+    assert.equal(l.conferir.some((c: Qualquer) => c.chave === "ocorrencia:T-099"), false);
+    const t099 = l.viagens.encerradas.find((v: Qualquer) => v.viagem_id === "T-099");
+    assert.equal(t099.ocorrencias, 1);
+    const html = telaEntregas(await vmDe(base, "ITAIM"));
+    assert.ok(html.includes("1 ocorrencia registrada"), "a celula nao mostra a ocorrencia");
+    // Sem ocorrencia, nada aparece (zero medido nao vira linha de alarme).
+    const sem = (await vmDe(realidadeFixture(), "ITAIM")).leitura;
+    assert.equal(sem.conferir.some((c: Qualquer) => c.tipo === "ocorrencia_registrada"), false);
+    assert.equal(telaEntregas(await vmDe(realidadeFixture(), "ITAIM")).includes("ocorrencia registrada"), false);
+  });
+
   if (falhas.length) {
     console.error(`\nENTREGAS_LEITURA_DA_RUA: ${passaram}/${passaram + falhas.length} PASS`);
     for (const f of falhas) console.error(` - ${f}`);
