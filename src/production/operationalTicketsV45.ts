@@ -483,6 +483,10 @@ export function projectOperationalTicketsV45(input: OperationalTicketsInputV45):
   const conferenceIdentifiers = distinctIdentifiers.size === 1
     ? [...distinctIdentifiers.values()][0]
     : null;
+  // Conference needs an evidenced packaging plan and full allocation.
+  // A readable fallback trace is diagnostic, not semantic approval.
+  const conferenceReady = reasons.size === 0 && input.packaging_plan !== null &&
+    input.packaging_plan.has_unknown === false && remaining.size === 0;
   const conference: ConferenceTicketV45 = {
     order_id: input.order_id,
     identifiers: conferenceIdentifiers,
@@ -493,10 +497,9 @@ export function projectOperationalTicketsV45(input: OperationalTicketsInputV45):
     kits,
     accompaniments: [...accompanimentMap].map(([label, quantity]) => ({ label, quantity })),
     warnings: allReasons(warnings),
-    ready_for_semantic_preview: reasons.size === 0,
+    ready_for_semantic_preview: conferenceReady,
   };
-  if (reasons.size) conference.ready_for_semantic_preview = false;
-  const allReady = reasons.size === 0 && production.every((t) => t.ready_for_semantic_preview);
+  const allReady = conferenceReady && production.every((t) => t.ready_for_semantic_preview);
   return {
     schema: "deliveryos.operational-tickets.v45.shadow.v1",
     production,
