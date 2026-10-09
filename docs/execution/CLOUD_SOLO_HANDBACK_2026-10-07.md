@@ -11,7 +11,7 @@
 1. **Causa raiz do reader "RUNNING mas parado": reproduzida em sandbox, inferida em produção.** O watcher instalado (SHA `4507304C…`, o mesmo da evidência do cutover de 05/10) deixa o `SqlDataReader` aberto quando `Read()` lança LOCK_TIMEOUT (1222); daí todo poll falha no cliente ("already an open DataReader"), o modo contínuo engole o erro, a sessão fica `sleeping` e o checkpoint para — a assinatura de 05/10 21:55:51. **FACT em SQL Server 2022 real com PowerShell 7/.NET 8** (local e CI); **INFERENCE de alta confiança** para a CAIXA (.NET Framework 4.8 não medido). Detalhe: `docs/execution/TATA_READER_STALL_ROOT_CAUSE_AND_SUPERVISOR_2026-10-07.md`.
 2. **Correção pronta para a CAIXA (CODE_READY + TEST_PASS, não instalada):** supervisor de lotes que roda o watcher auditado sem alterar um byte; heartbeat sem PII; saúde por progresso; auditoria estática por tokens; cutover Plan/Apply/Rollback cujo **Apply e rollback são executados** em teste (SCM simulado, 10 cenários) e que exige de volta os **três SHA** do Plan.
 3. **Duas revisões independentes, todos os achados tratados com vermelho antes e verde depois.** A 1ª (sobre `d48bd42`) achou 3 graves: cutover sem rollback depois do primeiro efeito e supervisor derrubado por corrida de arquivo — **corrigidos**; auditoria contornável — **mitigada** (cada revisão acha contornos novos; leitura humana do V2 é obrigatória). A 2ª (sobre `1eacabe`) achou dois caminhos de **dois escritores** no checkpoint (reinstalação com órfão vivo; lista de processos que falha virava "ninguém vivo"), mais 4 contornos da auditoria e 5 menores — **todos fechados** no último commit (ainda local). Achados meus: fuso (PS 7 em UTC-3 tomava heartbeat de 90 min antes como novo) e a troca de arquivo do NTFS derrubando a leitura de saúde.
-4. **Pronto e não executado: prova em Windows real** (job `windows-real-scm`): Windows PowerShell 5.1, SCM de verdade, host C# v2 real compilado com `csc.exe`, conta virtual. Repositório **público** → runner padrão gratuito. **Depende de autorização de push** (CLAUDE.md exige confirmação por push).
+4. **Windows real já achou um defeito de verdade.** Push autorizado (`d48bd42..7e705ef`); no CI `37867864216` os jobs Linux e Android ficaram verdes e o job `windows-real-scm` ficou **vermelho**: sob Windows PowerShell 5.1, todo lote do supervisor virava `WATCHER_UNREADABLE` (4/23) — `Get-FileHash` é função de módulo no 5.1 e quebrava com o `PSModulePath` herdado do PowerShell 7. Corrigido em `078359d` (SHA por .NET, módulo do 7 fora do caminho no 5.1, classe da exceção no heartbeat, S24). **A revalidação e o SCM real (W0–W5) dependem do próximo push**, que precisa de nova autorização (CLAUDE.md: uma autorização não vale para a próxima).
 5. **Pede decisão do César:** Q-019 (C6 do envelope M1), Q-020 (TATÁ na UI), Q-021 (linhagem B5/B8 com duas `0009`); o repositório é **público** e guarda evidências operacionais em `data/` (agregados financeiros do dia, sem PII nesta branch; outras branches têm mais); o consumidor sombra da outra linhagem regrava o status ~1000×/s.
 
 ## 1. Commits
@@ -26,15 +26,17 @@
 | `7fe5fda` | bench de I/O do consumidor sombra | sim |
 | `bdcf59d` | revisão adversarial (antivírus, aviso depois do JSON, lock, órfão, ACL), checagem estática WinPS 5.1, CI Android | sim |
 | `d48bd42` | registros + 1º handback | sim |
-| `3215447` | 1ª revisão independente: supervisor sem queda por corrida de arquivo; efeitos não declarados = FATAL; auditoria por tokens; cutover com rollback em toda falha pós-efeito, 3 SHA, instalação atômica; fuso | local |
-| `c7197a9` | cutover ponta a ponta com SCM simulado — Apply e rollback executados | local |
-| `0153592` | leitura de saúde tolerante à troca de arquivo do NTFS (CLI + `/api/fontes`, assíncrona) | local |
-| `63f3359` | job `windows-real-scm`: WinPS 5.1 + SCM real + host C# v2 real | local |
-| `1eacabe` | handback da sessão 2 e registros | local |
-| `65c38f1` | 2ª revisão independente: nenhum escritor vivo na parada nem no rollback (falha fechada), caça de lote sem registro na partida, rollback que sempre religa, auditoria +4 contornos, `/api/fontes` com prazo e sem FIFO, orquestrador recusa pasta existente | local |
-| _(último)_ | este handback, documento de causa raiz e STATE/EVIDENCE/LEDGER | local |
+| `3215447` | 1ª revisão independente: supervisor sem queda por corrida de arquivo; efeitos não declarados = FATAL; auditoria por tokens; cutover com rollback em toda falha pós-efeito, 3 SHA, instalação atômica; fuso | sim |
+| `c7197a9` | cutover ponta a ponta com SCM simulado — Apply e rollback executados | sim |
+| `0153592` | leitura de saúde tolerante à troca de arquivo do NTFS (CLI + `/api/fontes`, assíncrona) | sim |
+| `63f3359` | job `windows-real-scm`: WinPS 5.1 + SCM real + host C# v2 real | sim |
+| `1eacabe` | handback da sessão 2 e registros | sim |
+| `65c38f1` | 2ª revisão independente: nenhum escritor vivo na parada nem no rollback (falha fechada), caça de lote sem registro na partida, rollback que sempre religa, auditoria +4 contornos, `/api/fontes` com prazo e sem FIFO, orquestrador recusa pasta existente | sim |
+| `7e705ef` | este handback, documento de causa raiz e STATE/EVIDENCE/LEDGER da 2ª revisão | sim |
+| `078359d` | o que o Windows real achou: SHA por .NET, `PSModulePath` limpo no 5.1, classe da exceção em `WATCHER_UNREADABLE`, S24 | local |
+| _(último)_ | registro do achado do Windows real (EVIDENCE, STATE, este handback) | local |
 
-"Local" = commitado e aguardando a autorização de push.
+"Local" = commitado e aguardando nova autorização de push.
 
 ## 2. Delta por frente
 
@@ -74,7 +76,8 @@
 | `ps51_compat_check.ps1` | 0 achados em 8 arquivos, controle 3/3 | controle positivo embutido |
 | `test:platform:saude-fontes` | 10/10 | F8 janela real; F10 leitura que não volta |
 | `test:platform:product` · `tsc` · `build:platform` · `governanca` | verdes | — |
-| `windows-real-scm` (W0–W5) | **NÃO EXECUTADO** — depende do push | — |
+| CI `37867864216` (Linux, em `7e705ef`) | node-postgres, pwsh-sqlserver (supervisor 23/23, cutover 13/13, e2e 10/10, sqlserver 3/3) e android-unit verdes | — |
+| CI `37867864216` — `windows-real-scm` | **vermelho**: supervisor 4/23 sob WinPS 5.1 (achado real, corrigido em `078359d`); SCM real W0–W5 **não chegou a rodar** | é o próprio vermelho |
 
 Cada correção da 2ª revisão tem sua linha em `docs/execution/EVIDENCE.jsonl` (`tata-reader-second-review-two-writers-2026-10-08`, `tata-reader-supervisor-unrecorded-batch-2026-10-08`, `tata-reader-audit-and-read-hardening-2026-10-08`); a regressão final dos gates tocados está em `cloud-solo-second-review-regression-2026-10-08`.
 
@@ -82,7 +85,7 @@ Cada correção da 2ª revisão tem sua linha em `docs/execution/EVIDENCE.jsonl`
 
 - **WORLD_PROVEN:** nada novo (CAIXA e Foxxy inacessíveis daqui).
 - **TEST_PASS (sandbox/CI):** causa raiz em .NET 8; supervisor; avaliador; auditoria; cutover inteiro com SCM simulado; leitura tolerante ao NTFS e a leitura que não volta; correções de plataforma; `/api/fontes`; JVM Android.
-- **CODE_READY:** prova em Windows real (aguarda push); tudo o que depende da CAIXA.
+- **CODE_READY:** a correção do 5.1 (`078359d`) e a prova do SCM real (aguardam push); tudo o que depende da CAIXA.
 - **DEPLOYED:** nada.
 
 ## 5. Regressões, riscos e UNKNOWNs
@@ -104,7 +107,7 @@ Zero gasto. Downloads gratuitos; GitHub Actions em repositório **público** (ru
 
 ## 7. Próximo passo seguro e pequeno
 
-**Aqui (depende só de autorização):** push de `feat/cloud-solo-reader-resilience-20261007` → o CI roda `windows-real-scm`. Verde = WinPS 5.1 e SCM real provados para o cutover; vermelho = defeito real achado antes da CAIXA.
+**Aqui (depende só de autorização):** push de `078359d` em diante → o CI roda `windows-real-scm` de novo. Verde = supervisor, cutover e SCM real provados no Windows PowerShell 5.1; vermelho = outro defeito real achado antes da CAIXA (o primeiro já foi).
 
 **Na CAIXA (com Desktop Commander), nesta ordem:**
 1. `Get-FileHash` do V2 = `77C16940…`; publicar o V2 byte a byte no Git; **uma pessoa lê o V2**.
