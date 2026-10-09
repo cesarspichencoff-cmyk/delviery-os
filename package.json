@@ -108,7 +108,7 @@
     "test:platform:cb4b5": "npx tsx src/platform/run-conference-4b5-tests.ts",
     "test:platform:copiloto": "npx tsx src/platform/run-copiloto-shadow-tests.ts",
     "test:platform:human-action-gate": "npx tsx src/platform/run-human-action-gate-tests.ts",
-    "test:platform:queue-depth": "npx tsx src/platform/run-device-queue-depth-tests.ts",
+    "test:platform:queue-depth": "npx tsx src/platform/run-device-queue-depth-tests.ts && npx tsx tests/product/run-b5-freshness-render-smoke.ts",
     "test:platform:queue-depth:pg": "npx tsx src/platform/run-device-queue-depth-pg-tests.ts",
     "test:platform:queue-depth:http:pg": "npx tsx src/platform/run-device-queue-depth-http-pg-tests.ts",
     "test:platform:q003": "npx tsx src/platform/run-q003-attention-tests.ts",
