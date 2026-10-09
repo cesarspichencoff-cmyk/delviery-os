@@ -29,23 +29,52 @@ export function buildKitchenSeparatedBundleV47(
 ): KitchenSeparatedBundleV47 {
   const jobs: KitchenSeparatedJobV47[] = [];
   const blocked_proofs: KitchenSeparatedJobV47[] = [];
-  function append(channel: KitchenSeparatedJobV47["channel"],proof:TicketEscPosProofV46|null):void {
-    if(!proof)return;
-    const item={channel,proof};
-    if(proof.ready_for_offline_preview && proof.byte_count>0)jobs.push(item);
+  // An eligible offline export needs BOTH printable geometry and an evidenced
+  // semantic source. Keep text_trace for diagnosis, but never export bytes for
+  // a semantically blocked ticket (and never open a physical printer).
+  const globalReasons = Array.isArray(tickets.blocking_reasons)
+    ? tickets.blocking_reasons.map(reason => "GLOBAL_SEMANTIC_BLOCK:" + reason)
+    : ["GLOBAL_SEMANTIC_BLOCKERS_MISSING"];
+  // The global aggregate can be false for a single blocked station; that
+  // condition must not hide other individually proven kitchen work.
+  if (globalReasons.length === 0 && tickets.ready_for_semantic_preview !== true &&
+      tickets.production.every(p => p.ready_for_semantic_preview === true) &&
+      tickets.conference.ready_for_semantic_preview === true) {
+    globalReasons.push("GLOBAL_SEMANTIC_STATUS_INCONSISTENT");
+  }
+  function append(
+    channel: KitchenSeparatedJobV47["channel"],
+    proof: TicketEscPosProofV46 | null,
+    localReasons: string[] = [],
+  ): void {
+    if (!proof) return;
+    const reasons = [...new Set([...globalReasons,...localReasons])];
+    const gated = reasons.length ? {
+      ...proof,
+      ready_for_offline_preview: false,
+      bytes: [],
+      byte_count: 0,
+      blocking_reasons: [...new Set([...proof.blocking_reasons,...reasons])].sort(),
+    } : proof;
+    const item = {channel,proof:gated};
+    if (gated.ready_for_offline_preview && gated.byte_count > 0) jobs.push(item);
     else blocked_proofs.push(item);
   }
   // Never emit the old COZINHA source print after implementing the split.
   for(const production of tickets.production) {
     if(kitchenStation(production.station))continue;
-    append("OTHER_PRODUCTION",renderProductionTicketProofV46(production));
+    append("OTHER_PRODUCTION",renderProductionTicketProofV46(production),
+      production.ready_for_semantic_preview === true ? [] : ["STATION_SEMANTIC_NOT_READY:" + production.station]);
   }
   const kitchen=renderTwoKitchenProofsV47(split);
   append("KITCHEN_COMPONENTS",kitchen.components);
-  append("KITCHEN_DISHES",kitchen.dishes);
-  append("CONFERENCE",renderConferenceTicketProofV46(tickets.conference));
+  append("KITCHEN_DISHES",kitchen.dishes,
+    split.dishes && split.dishes.source.ready_for_semantic_preview !== true
+      ? ["STATION_SEMANTIC_NOT_READY:" + split.dishes.source.station] : []);
+  append("CONFERENCE",renderConferenceTicketProofV46(tickets.conference),
+    tickets.conference.ready_for_semantic_preview === true ? [] : ["CONFERENCE_SEMANTIC_NOT_READY"]);
   const rawKitchenCount=tickets.production.filter(x=>kitchenStation(x.station)).length;
-  const issues=[...split.review_reasons];
+  const issues=[...split.review_reasons,...globalReasons];
   if(rawKitchenCount>1)issues.push("DUPLICATED_SOURCE_KITCHEN_INTENTS_NEED_RECONCILIATION");
   if(rawKitchenCount===1 && !split.dishes)issues.push("KITCHEN_SOURCE_WAS_NOT_REPLACED_BY_DISH_TICKET");
   return {schema:"deliveryos.kitchen-separated-offline-bundle.v47",jobs,
