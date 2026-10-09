@@ -298,5 +298,22 @@ check("26 closed combo and extra share no validated station box even if source g
   assert.equal(result.production[0].items_without_proven_box.length, 2);
   assert.ok(result.production[0].warnings.some((w) => w.startsWith("CLOSED_COMBO_CANNOT_SHARE_BOX")));
 });
+check("27 divergent production note must be blocked instead of replacing source instruction", () => {
+  const f=fixture();
+  f.production_plan.print_intents[0].lines[1].item_observations=["COM CEBOLINHA"];
+  const result=run(f);
+  const line=result.production[0].boxes.flatMap(b=>b.items)
+    .find(item=>item.source_item_index===1);
+  assert.ok(line);
+  assert.deepEqual(f.source_items[1].observations,["SEM CEBOLINHA"],
+    "source observations must never be changed by the projector");
+  assert.equal(result.production[0].ready_for_semantic_preview,false,
+    "contradictory kitchen instructions must not be preview-approved");
+  assert.ok(result.production[0].warnings.some(reason=>
+    reason.includes("PRODUCTION_OBSERVATIONS_SOURCE_MISMATCH:1")));
+  assert.deepEqual(line.observations,["SEM CEBOLINHA"],
+    "source-safe diagnostic text must not silently be replaced by planned instructions");
+});
+
 console.log("operational-tickets-v45: " + checks.length + "/" + checks.length + " shadow tests PASS");
 for (const c of checks) console.log("  PASS " + c);
