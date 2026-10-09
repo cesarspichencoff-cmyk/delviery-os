@@ -74,7 +74,14 @@ export function buildKitchenSeparatedBundleV47(
   append("CONFERENCE",renderConferenceTicketProofV46(tickets.conference),
     tickets.conference.ready_for_semantic_preview === true ? [] : ["CONFERENCE_SEMANTIC_NOT_READY"]);
   const rawKitchenCount=tickets.production.filter(x=>kitchenStation(x.station)).length;
-  const issues=[...split.review_reasons,...globalReasons];
+  // A blocked proof must be explainable from the bundle summary as well as
+  // its per-proof diagnostics; channel qualification prevents ambiguity.
+  const issues=[
+    ...split.review_reasons,
+    ...globalReasons,
+    ...blocked_proofs.flatMap(({channel,proof}) =>
+      proof.blocking_reasons.map(reason => channel + ":" + reason)),
+  ];
   if(rawKitchenCount>1)issues.push("DUPLICATED_SOURCE_KITCHEN_INTENTS_NEED_RECONCILIATION");
   if(rawKitchenCount===1 && !split.dishes)issues.push("KITCHEN_SOURCE_WAS_NOT_REPLACED_BY_DISH_TICKET");
   return {schema:"deliveryos.kitchen-separated-offline-bundle.v47",jobs,
