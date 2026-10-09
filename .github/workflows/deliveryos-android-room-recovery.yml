@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - feat/deliveryos-android-room-recovery-20261009
+      - feat/deliveryos-android-room-recovery-fixed-20261009
   workflow_dispatch:
 permissions:
   contents: read
