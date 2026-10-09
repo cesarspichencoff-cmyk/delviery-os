@@ -340,4 +340,19 @@ check("20 new review blockers after binding must block only components", () => {
   assert.ok(bundle.jobs.some(j=>j.channel==="OTHER_PRODUCTION"));
 });
 
+check("21 non-kitchen foreign identity must not export into this order", () => {
+  const ticket=structuredClone(original);
+  const station=ticket.production.find(p=>p.station!=="COZINHA");
+  assert.ok(station && ticket.conference.identifiers);
+  station.identifiers={...station.identifiers,tata:"FOREIGN-ORDER"};
+  assert.notEqual(station.identifiers.tata,ticket.conference.identifiers.tata);
+  const {bundle}=bundleFrom(ticket,source);
+  assert.ok(!bundle.jobs.some(j=>j.channel==="OTHER_PRODUCTION"),
+    "foreign order station was wrongly admitted to offline output");
+  assert.ok(bundle.blocked_proofs.some(j=>j.channel==="OTHER_PRODUCTION"));
+  assert.ok(bundle.review_reasons.some(x=>x.includes("STATION_ORDER_IDENTIFIERS_MISMATCH")));
+  assert.ok(bundle.jobs.some(j=>j.channel==="KITCHEN_DISHES"),
+    "same-order kitchen dish proof must remain eligible");
+});
+
 console.log("thermal-semantic-gate-v510: "+checks+"/"+checks+" PASS; SHADOW ONLY");
