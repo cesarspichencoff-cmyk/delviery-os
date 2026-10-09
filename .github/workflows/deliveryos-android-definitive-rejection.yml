@@ -1,0 +1,40 @@
+name: DeliveryOS Android definitive event failure
+on:
+  push:
+    branches:
+      - feat/deliveryos-android-definitive-rejection-20261009
+      - feat/deliveryos-android-definitive-rejection-fixed-20261009
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: deliveryos-android-definitive-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  android-unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Android JVM and Room tests
+        working-directory: android
+        run: bash ./gradlew --no-daemon --console=plain testDebugUnitTest
+      - name: Count real JUnit tests
+        if: always()
+        working-directory: android
+        run: |
+          python3 - <<'PY'
+          import glob,xml.etree.ElementTree as ET
+          files=glob.glob("app/build/test-results/testDebugUnitTest/*.xml")
+          t=f=e=0
+          for path in files:
+            r=ET.parse(path).getroot()
+            t+=int(r.attrib.get("tests","0"))
+            f+=int(r.attrib.get("failures","0"))
+            e+=int(r.attrib.get("errors","0"))
+          print(f"ANDROID_DEFINITIVE_JUNIT: suites={len(files)}, tests={t}, failures={f}, errors={e}")
+          PY
