@@ -389,4 +389,33 @@ check("23 conference identity conflicting with stations fails closed", () => {
   assert.ok(!bundle.jobs.some(j=>j.channel==="KITCHEN_DISHES"));
 });
 
+check("24 contradictory production note must be zero-byte blocked at bundle export", () => {
+  const f=archivedCompleteInput();
+  const intent=f.production_plan.print_intents.find(p=>p.printer.printer_name!=="COZINHA");
+  assert.ok(intent && intent.lines.length>0);
+  const line=intent.lines[0];
+  const sourceItem=f.source_items.find(s=>s.item_index===line.item_index);
+  assert.ok(sourceItem);
+  assert.deepEqual(sourceItem.observations,[],
+    "archived source is required to have no customer observations");
+  line.item_observations=["SEM SAL"]; // Synthetic contradiction, not operational data.
+  const projected=projectOperationalTicketsV45({
+    order_id:f.id,source_items:f.source_items,
+    production_plan:f.production_plan,resource_projection:f.resource_projection,
+    packaging_plan:f.packaging,
+  });
+  const station=projected.production.find(p=>p.station===intent.printer.printer_name);
+  assert.ok(station);
+  assert.equal(station.ready_for_semantic_preview,false);
+  assert.ok(station.warnings.includes("PRODUCTION_OBSERVATIONS_SOURCE_MISMATCH:"+line.item_index));
+  const {bundle}=bundleFrom(projected,f.source_items);
+  assert.ok(!bundle.jobs.some(j=>j.channel==="OTHER_PRODUCTION"));
+  const blocked=bundle.blocked_proofs.find(j=>j.channel==="OTHER_PRODUCTION");
+  assert.ok(blocked);
+  denied(blocked.proof,"STATION_SEMANTIC_NOT_READY");
+  assert.ok(bundle.review_reasons.some(x=>x.includes("OTHER_PRODUCTION:STATION_SEMANTIC_NOT_READY")));
+  assert.ok(bundle.jobs.some(j=>j.channel==="CONFERENCE"),
+    "independently consistent conference preview remains available");
+});
+
 console.log("thermal-semantic-gate-v510: "+checks+"/"+checks+" PASS; SHADOW ONLY");
