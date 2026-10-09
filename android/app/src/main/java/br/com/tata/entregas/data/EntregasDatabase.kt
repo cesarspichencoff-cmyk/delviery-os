@@ -108,22 +108,24 @@ interface GpsPointDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(point: GpsPointEntity): Long
 
-    @Query("SELECT * FROM gps_point WHERE syncState IN ('pending','failed') ORDER BY sequenceLocal ASC LIMIT :limit")
+    // Compatibilidade: registros antigos em 'sending' não têm confirmação
+    // persistida; voltam ao lote com a MESMA idempotencyKey.
+    @Query("SELECT * FROM gps_point WHERE syncState IN ('pending','failed','sending') ORDER BY sequenceLocal ASC LIMIT :limit")
     suspend fun nextBatch(limit: Int): List<GpsPointEntity>
 
     // Respostas de dois workers podem chegar fora de ordem (NOW e PERIODIC).
     // Nunca reviver um estado final 'sent'/'rejected' por timeout atrasado.
     // O UPDATE e condicional/atomico no SQLite, inclusive apos restart.
-    @Query("UPDATE gps_point SET syncState = 'sent' WHERE pointId IN (:ids) AND syncState IN ('pending','failed')")
+    @Query("UPDATE gps_point SET syncState = 'sent' WHERE pointId IN (:ids) AND syncState IN ('pending','failed','sending')")
     suspend fun markSent(ids: List<String>)
 
-    @Query("UPDATE gps_point SET syncState = 'failed', attempts = attempts + 1, lastError = :error WHERE pointId IN (:ids) AND syncState IN ('pending','failed')")
+    @Query("UPDATE gps_point SET syncState = 'failed', attempts = attempts + 1, lastError = :error WHERE pointId IN (:ids) AND syncState IN ('pending','failed','sending')")
     suspend fun markFailed(ids: List<String>, error: String)
 
-    @Query("UPDATE gps_point SET syncState = 'rejected', attempts = attempts + 1, lastError = :error WHERE pointId IN (:ids) AND syncState IN ('pending','failed')")
+    @Query("UPDATE gps_point SET syncState = 'rejected', attempts = attempts + 1, lastError = :error WHERE pointId IN (:ids) AND syncState IN ('pending','failed','sending')")
     suspend fun markRejected(ids: List<String>, error: String)
 
-    @Query("SELECT COUNT(*) FROM gps_point WHERE syncState IN ('pending','failed')")
+    @Query("SELECT COUNT(*) FROM gps_point WHERE syncState IN ('pending','failed','sending')")
     suspend fun pendingCount(): Int
 
     @Query("SELECT COUNT(*) FROM gps_point WHERE syncState = 'rejected'")
@@ -149,16 +151,16 @@ interface OutboxEventDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(event: OutboxEventEntity): Long
 
-    @Query("SELECT * FROM outbox_event WHERE syncState IN ('pending','failed') ORDER BY sequenceLocal ASC LIMIT :limit")
+    @Query("SELECT * FROM outbox_event WHERE syncState IN ('pending','failed','sending') ORDER BY sequenceLocal ASC LIMIT :limit")
     suspend fun nextBatch(limit: Int): List<OutboxEventEntity>
 
-    @Query("UPDATE outbox_event SET syncState = 'sent' WHERE eventId IN (:ids) AND syncState IN ('pending','failed')")
+    @Query("UPDATE outbox_event SET syncState = 'sent' WHERE eventId IN (:ids) AND syncState IN ('pending','failed','sending')")
     suspend fun markSent(ids: List<String>)
 
-    @Query("UPDATE outbox_event SET syncState = 'failed', attempts = attempts + 1, lastError = :error WHERE eventId IN (:ids) AND syncState IN ('pending','failed')")
+    @Query("UPDATE outbox_event SET syncState = 'failed', attempts = attempts + 1, lastError = :error WHERE eventId IN (:ids) AND syncState IN ('pending','failed','sending')")
     suspend fun markFailed(ids: List<String>, error: String)
 
-    @Query("SELECT COUNT(*) FROM outbox_event WHERE syncState IN ('pending','failed')")
+    @Query("SELECT COUNT(*) FROM outbox_event WHERE syncState IN ('pending','failed','sending')")
     suspend fun pendingCount(): Int
 
     @Query("SELECT IFNULL(MAX(sequenceLocal), 0) FROM outbox_event")
