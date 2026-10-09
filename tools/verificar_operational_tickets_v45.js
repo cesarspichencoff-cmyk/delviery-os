@@ -350,5 +350,31 @@ check("30 duplicated station source index must not approve repeated units", () =
   assert.ok(station.warnings.some(x=>x==="DUPLICATE_STATION_SOURCE_ITEM_INDEX:1"));
   assert.equal(f.source_items.filter(s=>s.item_index===1).length,1);
 });
+check("31 repeated index inside one mount group is also rejected", () => {
+  const f=fixture();
+  const item=copy(f.production_plan.print_intents[0].lines[1]);
+  f.production_plan.print_intents[0].lines.push(item);
+  const out=run(f);
+  assert.equal(out.production[0].ready_for_semantic_preview,false);
+  assert.ok(out.production[0].warnings.includes("DUPLICATE_STATION_SOURCE_ITEM_INDEX:1"));
+  assert.equal(f.source_items.length,2);
+});
+check("32 same sold line may be routed once to each separate station", () => {
+  const f=fixture();
+  const first=copy(f.production_plan.print_intents[0].lines[0]);
+  const original=f.production_plan.print_intents[0];
+  f.production_plan.print_intents.push({
+    ...copy(original),
+    printer:{printer_name:"COZINHA",printer_code:"00004"},
+    intent_fingerprint:"b".repeat(64),
+    lines:[first],
+  });
+  const out=run(f);
+  assert.equal(out.production.length,2);
+  assert.equal(out.production[0].ready_for_semantic_preview,true);
+  assert.equal(out.production[1].ready_for_semantic_preview,true);
+  assert.ok(!out.production.some(p=>p.warnings.some(x=>
+    x.startsWith("DUPLICATE_STATION_SOURCE_ITEM_INDEX:"))));
+});
 console.log("operational-tickets-v45: " + checks.length + "/" + checks.length + " shadow tests PASS");
 for (const c of checks) console.log("  PASS " + c);
