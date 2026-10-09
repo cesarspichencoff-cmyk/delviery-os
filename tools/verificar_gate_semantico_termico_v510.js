@@ -351,8 +351,12 @@ check("21 non-kitchen foreign identity must not export into this order", () => {
     "foreign order station was wrongly admitted to offline output");
   assert.ok(bundle.blocked_proofs.some(j=>j.channel==="OTHER_PRODUCTION"));
   assert.ok(bundle.review_reasons.some(x=>x.includes("STATION_ORDER_IDENTIFIERS_MISMATCH")));
-  assert.ok(bundle.jobs.some(j=>j.channel==="KITCHEN_DISHES"),
-    "same-order kitchen dish proof must remain eligible");
+  // The existing V4.7 splitter independently detects mixed order IDs
+  // and must continue to fail closed on ambiguous kitchen dishes.
+  assert.ok(!bundle.jobs.some(j=>j.channel==="KITCHEN_DISHES"));
+  const kitchenBlocked=bundle.blocked_proofs.find(j=>j.channel==="KITCHEN_DISHES");
+  assert.ok(kitchenBlocked);
+  denied(kitchenBlocked.proof,"KITCHEN_DISH_IDENTITY_OR_ROUTE_AMBIGUOUS");
 });
 
 check("22 kitchen dish identity inconsistent with conference is blocked", () => {
