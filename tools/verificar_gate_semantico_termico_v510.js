@@ -344,7 +344,7 @@ check("21 non-kitchen foreign identity must not export into this order", () => {
   const ticket=structuredClone(original);
   const station=ticket.production.find(p=>p.station!=="COZINHA");
   assert.ok(station && ticket.conference.identifiers);
-  station.identifiers={...station.identifiers,tata:"FOREIGN-ORDER"};
+  station.identifiers={...station.identifiers,tata:"017"};
   assert.notEqual(station.identifiers.tata,ticket.conference.identifiers.tata);
   const {bundle}=bundleFrom(ticket,source);
   assert.ok(!bundle.jobs.some(j=>j.channel==="OTHER_PRODUCTION"),
