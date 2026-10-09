@@ -98,6 +98,7 @@ export interface AparelhoRealVM {
   readonly fila_offline: Campo<number>;
   readonly fila_offline_pontos: Campo<number>;
   readonly fila_offline_eventos: Campo<number>;
+  readonly fila_offline_frescor: Campo<Frescor>;
   readonly fila_offline_reportada_em: Campo<string>;
   readonly selos: readonly Selo[];
 }
