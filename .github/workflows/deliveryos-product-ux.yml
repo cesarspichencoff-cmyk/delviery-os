@@ -48,6 +48,16 @@ jobs:
         run: npx tsx tests/product/run-entregas-browser-tests.ts --evidencias "$RUNNER_TEMP/evidencias/navegador"
       - name: servidor + PostgreSQL real (filtro de unidade, somente leitura)
         run: npx tsx tests/product/run-entregas-servidor-pg-tests.ts --evidencias "$RUNNER_TEMP/evidencias/postgresql"
+      # axe-core NAO e dependencia do repositorio (package.json intocado): versao
+      # fixa, baixada para fora da arvore e conferida por sha256 antes de rodar.
+      - name: acessibilidade automatica (axe-core, todas as rotas, 390 e 1440)
+        run: |
+          mkdir -p "$RUNNER_TEMP/axe" && cd "$RUNNER_TEMP/axe"
+          npm pack axe-core@4.10.2 --silent
+          echo "9ea2d2d6917da998122bdacfd3b473e31ead53f4b87146c716a12edf89158100  axe-core-4.10.2.tgz" | sha256sum -c -
+          tar -xzf axe-core-4.10.2.tgz
+          cd "$GITHUB_WORKSPACE"
+          PRODUCT_UI_AXE="$RUNNER_TEMP/axe/package/axe.min.js" npx tsx tests/product/run-a11y-axe-tests.ts
       - run: npm run -s test:platform:product
       - run: npm run -s test:platform:queue-depth
       - run: npm run -s test:platform:home
