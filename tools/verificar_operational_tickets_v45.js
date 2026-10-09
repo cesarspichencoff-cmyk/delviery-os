@@ -333,5 +333,22 @@ check("29 harmless whitespace and casing differences in planned notes remain val
   assert.equal(result.ready_for_semantic_preview,true);
   assert.deepEqual(result.production[0].boxes[1].items[0].observations,["SEM CEBOLINHA"]);
 });
+check("30 duplicated station source index must not approve repeated units", () => {
+  const f=fixture();
+  const first=f.production_plan.print_intents[0].lines.find(l=>l.item_index===1);
+  assert.ok(first);
+  f.production_plan.print_intents[0].lines.push({
+    ...copy(first),mount_group_id:"G3",
+  });
+  // The original packaging evidence has only one URA8 allocation.
+  assert.equal(f.packaging_plan.groups.filter(g=>g.products.some(
+    p=>p.name==="Uramaki Skin (8)")).length,1);
+  const projected=run(f);
+  const station=projected.production[0];
+  assert.equal(station.ready_for_semantic_preview,false,
+    "the same source item must not be duplicated within a station");
+  assert.ok(station.warnings.some(x=>x==="DUPLICATE_STATION_SOURCE_ITEM_INDEX:1"));
+  assert.equal(f.source_items.filter(s=>s.item_index===1).length,1);
+});
 console.log("operational-tickets-v45: " + checks.length + "/" + checks.length + " shadow tests PASS");
 for (const c of checks) console.log("  PASS " + c);
