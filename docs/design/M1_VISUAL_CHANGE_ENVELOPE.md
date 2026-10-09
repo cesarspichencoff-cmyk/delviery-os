@@ -371,6 +371,10 @@ para que a classe fique escrita, não porque o C6 precise):
 - `src/product/ui/app.js`, ainda (`2b8bbf9`) — reler mantém a leitura anterior na
   tela, com o aviso na camada técnica, e a falha a mantém com o motivo escrito
   (D98). Nenhuma rota, nenhum módulo, nenhuma ação nova.
+- `src/product/ui/surfaces/home.css` (`5862d9d`) — duas regras dentro de
+  `body:has(.org)`: a barra inferior do celular com os mesmos tokens da barra
+  lateral, de 2,13–2,55:1 para AA. Classe `acessibilidade: contraste` desta
+  seção; nada do que a Home mostra mudou.
 
 **Não mudaram:** Home, `home-vm.ts`, `home.css`, `sinais.ts`, `areas.ts`,
 `copiloto-vm.ts`, `estados.ts`, os tokens, `src/platform/**` de domínio e de

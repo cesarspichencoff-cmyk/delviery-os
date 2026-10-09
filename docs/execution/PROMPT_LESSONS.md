@@ -1148,3 +1148,15 @@ estar num arquivo compartilhado, e ficou.
 shell, unidade ativa, trilha), não só o território novo, e o esperado vem da view model. Um achado de
 verdade (a tela afirma algo falso) não vira "decisão de produto" por morar num arquivo compartilhado:
 confira contra as doze decisões da §6 do índice canônico antes de adiar.
+
+## L61 — Medir a acessibilidade só onde se mexeu esconde o defeito da rota vizinha
+
+**O que quase passou.** O contraste era medido no território novo e no carregamento (N7). A auditoria
+com axe-core nas cinco rotas, feita depois, achou dois defeitos que as provas não viam: um meu (a faixa
+de demonstração, aberta só sem banco, a 4,38:1) e um pré-existente na rota INICIAL do celular (a barra
+inferior da Home a 2,13:1) — este, presente desde antes da missão, e em toda tela de celular que abre
+o produto.
+
+**A regra.** Toda mudança de shell, moldura ou componente compartilhado roda uma auditoria automática
+em TODAS as rotas e larguras, e compara com a base para separar o que é da mudança do que já estava lá.
+Estado que só aparece em condição rara (sem banco, leitura antiga, falha) também entra na medida.

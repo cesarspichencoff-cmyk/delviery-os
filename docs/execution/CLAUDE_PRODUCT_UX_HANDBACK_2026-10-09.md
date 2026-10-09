@@ -34,6 +34,8 @@
    mutações da cadeia **0 cegas** (15/15, e M10/M11 de novo depois de cada mudança na view model);
    governança verde; **zero `FAIL_NOVO`** — o C6 do `m1-bridge` segue com os mesmos 12 caminhos da Q-019.
    **CI da branch verde** em `2c4fc75`, `c4cdb4f`, `6168223` e `8b62ae7` (Chromium 149; local, 141).
+   **axe-core 4.10.2: Entregas sem violação**, com e sem banco, a 390 e 1440 px; e um defeito
+   pré-existente da rota inicial no celular — a barra inferior da Home a 2,1–2,5:1 — corrigido (§5.2).
 6. **Escala, medida — e o que sobra.** Cada leitura relê e reprojeta o `event_log` inteiro: 1.030.000
    fatos (banco descartável, `simulated`) = **20,5 s** na porta, **23,7 s** no HTTP, **8.253 KiB**,
    **+1,19 GiB** no servidor por clique; o SQL leva 420 ms. O corte das listas reduziu a resposta pela
@@ -58,7 +60,10 @@
 | `ba3aa4b` | **3ª iteração:** as listas do histórico (encerradas; sem ciclo e sem posição) com corte declarado e contagem exata (L15, D97) |
 | `6168223` | registros da 3ª iteração: D96, D97, L60, `Q-026`, custo da leitura medido, capturas da moldura — **CI `37944988220` verde** |
 | `2b8bbf9` | **3ª iteração:** reler não apaga a leitura que está na tela (N13, N13b, D98) |
-| _(este)_ | registros da releitura: D98, EVIDENCE, STATE, LEDGER |
+| `8b62ae7` | registros da releitura: D98, EVIDENCE, STATE, LEDGER — **CI `37946401716` verde** |
+| `e594eae` | handback consolidado; cherry-pick provado byte a byte |
+| `5862d9d` | **acessibilidade:** contraste AA na faixa de demonstração e na barra do celular da Home (N7b, N7c; axe-core) |
+| _(este)_ | registros da acessibilidade: §5.2, L61, EVIDENCE, STATE, captura antes/depois |
 
 ## 2. Arquivos
 
@@ -74,7 +79,8 @@
 | `src/platform/run-m1-bridge-tests.ts` · `docs/design/M1_VISUAL_CHANGE_ENVELOPE.md` | exceção `ENTREGAS_STREET_READING_ONLY` + controle **C6d** |
 | `tests/product/entregas-fixture.ts` | fixture determinística, toda `simulated`, viagens pela `projetar()` real; opção `historico` (semanas de log) |
 | `tests/product/run-entregas-leitura-da-rua-tests.ts` | 25 testes de VM e superfície (L1–L15) |
-| `tests/product/run-entregas-browser-tests.ts` | 16 testes no Chromium (N1–N13b, com o controle N11b) |
+| `tests/product/run-entregas-browser-tests.ts` | 18 testes no Chromium (N1–N13b, com o controle N11b; contraste por raiz: rua, demonstração, barra do celular) |
+| `src/product/ui/surfaces/home.css` | **só** duas regras dentro de `body:has(.org)`: os itens da barra inferior do celular com os mesmos tokens da barra lateral (contraste AA; §5.2) |
 | `tests/product/run-entregas-servidor-pg-tests.ts` | 6 testes com servidor real e PostgreSQL isolado (S1–S6; S5 confere a moldura nas capturas) |
 | `tests/product/run-sem-fail-novo.ts` | classifica `m1-bridge` e governança por igualdade |
 | `.github/workflows/deliveryos-product-ux.yml` | CI desta branch |
@@ -84,7 +90,7 @@
 | gate | antes (base `2782b31`) | depois |
 |---|---|---|
 | `npx tsx tests/product/run-entregas-leitura-da-rua-tests.ts` | **2/20** (só as guardas L8/L9); L13 **22/23** antes da ocorrência; L14 **23/24** e L15 **24/25** antes da 3ª iteração | **25/25** |
-| `PRODUCT_UI_CHROMIUM=/opt/pw-browsers/chromium npx tsx tests/product/run-entregas-browser-tests.ts` | **1/9** (só N6); N9 vermelho antes da correção do inspetor; N10 vermelho contra a UI da base; N11/N12 vermelhos antes da moldura (**12/14**; o controle N11b verde antes e depois); N13/N13b vermelhos antes da releitura sem apagar (**14/16**) | **16/16** |
+| `PRODUCT_UI_CHROMIUM=/opt/pw-browsers/chromium npx tsx tests/product/run-entregas-browser-tests.ts` | **1/9** (só N6); N9 vermelho antes da correção do inspetor; N10 vermelho contra a UI da base; N11/N12 vermelhos antes da moldura (**12/14**; o controle N11b verde antes e depois); N13/N13b vermelhos antes da releitura sem apagar (**14/16**); N7b/N7c vermelhos antes do contraste (**16/18**) | **18/18** |
 | `DELIVERYOS_PG_URL=… npx tsx tests/product/run-entregas-servidor-pg-tests.ts` | — (rota sem `unidade`); S5/S6 vermelhos antes da moldura (**4/6**) | **6/6** (S4: sha256 de `event_log` + `identity.device` idêntico depois de 6 leituras; POST 405; S6: `/api/health` com banco declara a leitura) |
 | `test:platform:queue-depth` (B5, frente Android) | 12/12 + smoke | **12/12 + smoke** (nenhum arquivo do B5 tocado) |
 | `test:platform:product` | 52 | **52** |
@@ -97,6 +103,8 @@
 | `test:platform:home` · `organismo` · `visual-order` · `figma-parity` | 44 · 27 · 6 · 24 | **44 · 27 · 6 · 24** |
 | `test:platform:r5` · `skills` · `m1b-mutations` · `platform` · `entregas:ui` · `saude-fontes` · `lab:v4` | verdes | **verdes** (9 gates · 12 · 11/11 · 44 · 23 · 10/10 · 9 mutações 0 cegas); rodados de novo contra `2b8bbf9`: todos verdes |
 | `tsc --noEmit` · `build:platform` | 0 · 0 | **0 · 0** |
+| `test:platform:m1b-perceptual` (geometria da Home) | **BLOQUEADA** aqui (o Playwright procura um Chromium que não existe no container) | **5/5** — Chromium do container injetado no `chromium.launch` por pré-carregamento fora do repositório; as mutações restauraram `home.css` e `shell.css` com sha256 idêntico |
+| axe-core 4.10.2, cinco rotas, 390 e 1440 px | Entregas (base): `scrollable-region-focusable` ×2; Home 390 px: `color-contrast` ×5 (2,13–2,55:1) | Entregas: **0** com e sem banco (a 4,38:1 da faixa de demonstração, desta missão, fechada); Home 390 px: **0** |
 | `test:platform:m1-bridge` | 34 + **C6 vermelho** (Q-019, 12 caminhos) | **35** (+ C6d) + **C6 com os mesmos 12 caminhos** — `FAIL_PREEXISTENTE` |
 | `test:platform:governanca` | **G6b vermelho** (`STATE.json` desatualizado desde `52b90c2`) | ver §3.1 |
 
@@ -197,12 +205,28 @@ lento" (Lei 4); recarga automática (D95); filtro por turno (sem contrato — `Q
 (`Q-026`); tocar Home,
 Copiloto, Operação Viva, Conference Brain, `estados.ts`, tokens, `sinais.ts`, `areas.ts`.
 
+### 5.2 Acessibilidade medida (axe-core) — o que achou e o que mudou
+
+- **Entregas com leitura: 0 violações** (390 e 1440 px). **Sem banco**: 6 selos "INDISPONIVEL" a
+  **4,38:1** — o selo de ausência (tinta fraca sobre lavagem fraca) caía abaixo de AA sobre o
+  preenchimento que eu tinha dado à faixa de demonstração. A faixa passou a ser marcada só pelo
+  tracejado (o cânone: simulação em faixa própria, tracejada). RED: N7b.
+- **Home, celular — pré-existente, idêntico na base:** a barra inferior a **2,13:1** (item atual) e
+  **2,55:1** (demais). O recuo escuro do shell na Home (`home.css`, M1B-R2) tratou a barra lateral e
+  esqueceu a de baixo. Corrigido com os **mesmos tokens** da barra lateral, só dentro de
+  `body:has(.org)` — o precedente escrito no próprio `home.css` ("uso local corrigido, nenhum valor de
+  marca muda") e a classe "acessibilidade: contraste" do envelope M1. **Não é mudança da Home** no
+  sentido da §6 do índice canônico: nada do que a Home mostra mudou, só a legibilidade da navegação.
+  Captura: `a11y-home-barra-celular-antes-depois.png`. RED: N7c.
+- O axe foi baixado para fora do repositório (versão fixa, sha256 do pacote registrado em EVIDENCE) e
+  injetado só no navegador de medição; nenhuma dependência entrou no `package.json`.
+
 ## 6. Estados
 
 | estado | o quê |
 |---|---|
 | `CODE_READY` | tudo de §2 |
-| `TEST_PASS` | §3 neste container (Linux, Node 22.22, PostgreSQL 16 local descartável, Chromium 141) e no CI da branch (GitHub, runs `37939179462`, `37940776143`, `37944988220` e `37946401716` — este último já com a releitura `2b8bbf9` —, Chromium 149) |
+| `TEST_PASS` | §3 neste container (Linux, Node 22.22, PostgreSQL 16 local descartável, Chromium 141) e no CI da branch (GitHub, runs `37939179462`, `37940776143`, `37944988220` e `37946401716` — este último já com a releitura `2b8bbf9` —, Chromium 149); a acessibilidade (`5862d9d`), neste container |
 | `DEPLOYED` | **nada** |
 | `WORLD_PROVEN` | **nada** — nenhuma pessoa da expedição usou a tela; nenhum banco operacional foi lido |
 
@@ -273,9 +297,9 @@ false`), sem cobrança.
 
 ## 10. Integração — cherry-pick ou merge revisado
 
-Os sete commits de código são independentes da frente Android. **Provado:** numa worktree descartável em
-`2782b31`, os sete aplicam limpo, nesta ordem, e a árvore de código resultante (`src`, `tests`, `tools`,
-`.github`) é byte a byte igual à da branch (`git diff --stat` vazio):
+Os oito commits de código são independentes da frente Android. **Provado:** numa worktree descartável em
+`2782b31`, os oito aplicam limpo, nesta ordem, e a árvore de código resultante (`src`, `tests`, `tools`,
+`.github`) é byte a byte igual à de `5862d9d` (`git diff --stat` vazio):
 
 ```bash
 git cherry-pick c886f87   # correção de classe do shell/inspetor (só CSS; serve a todas as superfícies)
@@ -285,6 +309,7 @@ git cherry-pick 02b56c3   # 2ª iteração: ocorrência registrada, N10, etiquet
 git cherry-pick 5dfdb4a   # 3ª iteração: a moldura segue a origem do primeiro plano; L14
 git cherry-pick ba3aa4b   # 3ª iteração: listas do histórico com corte declarado (L15)
 git cherry-pick 2b8bbf9   # 3ª iteração: reler não apaga a leitura (N13, N13b)
+git cherry-pick 5862d9d   # acessibilidade: contraste AA (N7b, N7c) — toca home.css, só a barra do celular
 ```
 
 Antes de integrar: responder `Q-025` e `Q-022`; decidir `Q-021` se a outra linhagem entrar; rodar

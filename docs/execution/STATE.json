@@ -6,7 +6,7 @@
     "authority_scope": "technical_state",
     "superseded_by": null,
     "atualizado_em": "2026-10-09",
-    "state_basis": "2b8bbf9",
+    "state_basis": "5862d9d",
     "observa": [
       "src/product/",
       "src/perfil-delivery/",
@@ -2283,7 +2283,10 @@
       "5dfdb4a": "a moldura (faixa, selo do shell, unidade ativa) segue a origem do primeiro plano; L14",
       "ba3aa4b": "listas do historico com corte declarado e contagem exata (L15)",
       "6168223": "registros da 3a iteracao; CI 37944988220 verde",
-      "2b8bbf9": "reler nao apaga a leitura que esta na tela (N13, N13b)"
+      "2b8bbf9": "reler nao apaga a leitura que esta na tela (N13, N13b)",
+      "8b62ae7": "registros da releitura; CI 37946401716 verde",
+      "e594eae": "handback consolidado; cherry-pick provado byte a byte",
+      "5862d9d": "contraste AA: faixa de demonstracao e barra do celular da Home (axe-core)"
     },
     "superficie": "/entregas (Product System); Home, Copiloto, Operacao Viva e Conference Brain intocados",
     "o_que_mudou": [
@@ -2295,11 +2298,12 @@
       "ocorrencia registrada (occurrence_created ja projetado) numa viagem na rua pede conferencia, sem inventar tipo, horario ou resolucao",
       "moldura: /api/health declara a composicao (DEMONSTRACAO + LEITURA DO SERVIDOR); sobre a leitura, o selo do shell e o modo dos fatos e a unidade e a da leitura; o seletor da demonstracao sai (D96)",
       "encerradas e sem-ciclo-sem-posicao listam no maximo 20 (as de posicao mais recente), contagem exata e corte escrito na tela (D97)",
-      "reler mantem a leitura anterior com 'relendo'; falha a mantem com o motivo escrito e ela segue envelhecendo (D98)"
+      "reler mantem a leitura anterior com 'relendo'; falha a mantem com o motivo escrito e ela segue envelhecendo (D98)",
+      "acessibilidade: axe-core sem violacao em Entregas; a barra inferior do celular na Home passa de 2,13-2,55:1 a AA (pre-existente, mesmos tokens da barra lateral)"
     ],
     "tests": {
       "leitura_da_rua": "25/25 PASS (RED na base: 2/20; L13 22/23 antes da ocorrencia; L14 23/24 e L15 24/25 antes da 3a iteracao)",
-      "navegador": "16/16 PASS (RED na base: 1/9; N9, N10 antes das correcoes de classe; N11/N12 antes da moldura, 12/14; N13/N13b antes da releitura sem apagar, 14/16; controle N11b verde antes e depois)",
+      "navegador": "18/18 PASS (RED na base: 1/9; N9/N10 antes das correcoes de classe; N11/N12 antes da moldura; N13/N13b antes da releitura; N7b/N7c antes do contraste; controle N11b verde antes e depois)",
       "servidor_postgresql_real": "6/6 PASS (filtro pela rota, leitura nao escreve, saude com banco declara a leitura, moldura conferida nas capturas; RED 4/6 antes da moldura)",
       "b5_queue_depth": "12/12 PASS + B5_FRESHNESS_HTML_RENDER PASS",
       "product_system": "52/52 PASS",
@@ -2320,7 +2324,9 @@
       "tsc_noEmit": "exit 0",
       "build_platform": "exit 0",
       "governanca": "verde depois de cada registro (L55); G6b acusou 5dfdb4a antes do registro da 3a iteracao — a guarda funciona",
-      "ci_github": "runs 37939179462 (2c4fc75), 37940776143 (c4cdb4f) e 37944988220 (6168223): verdes, Chromium 149"
+      "ci_github": "runs 37939179462, 37940776143, 37944988220 e 37946401716: verdes, Chromium 149",
+      "m1b_perceptual": "5/5 (antes BLOQUEADA aqui: rodada com o Chromium do container injetado por pre-carregamento fora do repositorio)",
+      "axe_core": "4.10.2: Entregas 0 violacoes com e sem banco, 390 e 1440 px; as outras rotas sem violacao depois de 5862d9d"
     },
     "figma": {
       "conta_conectada": "BoAlexandre (nao e a conta do Cesar)",
