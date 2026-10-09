@@ -1134,4 +1134,3 @@ sustentava os dois arquivos. Um controle negativo verde é um controle cego.
 **A regra.** Ao registrar exceção nova numa guarda por caminho, a lista executável cobre só o que nenhuma
 exceção anterior cobre; o resto da mudança fica escrito (classe, missão, rollback), não contado. E rode
 TODOS os controles negativos da guarda depois, não só o novo: foi o controle antigo que acusou.
-
