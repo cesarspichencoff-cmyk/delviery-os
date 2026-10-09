@@ -9,10 +9,10 @@
 ## 0. Leitura em 60 segundos
 
 1. **Causa raiz do reader "RUNNING mas parado": reproduzida em sandbox, inferida em produção.** O watcher instalado (SHA `4507304C…`, o mesmo da evidência do cutover de 05/10) deixa o `SqlDataReader` aberto quando `Read()` lança LOCK_TIMEOUT (1222); daí todo poll falha no cliente ("already an open DataReader"), o modo contínuo engole o erro, a sessão fica `sleeping` e o checkpoint para — a assinatura de 05/10 21:55:51. **FACT em SQL Server 2022 real com PowerShell 7/.NET 8** (local e CI); **INFERENCE de alta confiança** para a CAIXA (.NET Framework 4.8 não medido). Detalhe: `docs/execution/TATA_READER_STALL_ROOT_CAUSE_AND_SUPERVISOR_2026-10-07.md`.
-2. **Correção pronta para a CAIXA (CODE_READY + TEST_PASS, não instalada):** supervisor de lotes que roda o watcher auditado sem alterar um byte; heartbeat sem PII; saúde por progresso; auditoria estática por tokens; cutover Plan/Apply/Rollback cujo **Apply e rollback agora são executados** em teste (SCM simulado, 7/7) e que exige de volta os **três SHA** do Plan.
-3. **A revisão independente de `d48bd42` achou 3 defeitos graves; todos corrigidos com vermelho antes e verde depois** (`3215447`). Mais dois achados meus nesta sessão: fuso (PS 7 em UTC-3 tomava heartbeat de 90 min antes como novo) e a janela do `File.Replace` do NTFS derrubando a leitura de saúde (CLI e `/api/fontes` com 500).
-4. **Pronto e não executado: prova em Windows real** (`63f3359`, job `windows-real-scm`): Windows PowerShell 5.1, SCM de verdade, host C# v2 real compilado com `csc.exe`, conta virtual. Repositório público → runner padrão gratuito. **Depende de autorização de push** (CLAUDE.md exige confirmação por push).
-5. **Continua pedindo decisão do César:** Q-019 (C6 do envelope M1), Q-020 (TATÁ na UI), Q-021 (linhagem B5/B8 com duas `0009`). Consumidor sombra da outra linhagem regrava o status ~1000×/s.
+2. **Correção pronta para a CAIXA (CODE_READY + TEST_PASS, não instalada):** supervisor de lotes que roda o watcher auditado sem alterar um byte; heartbeat sem PII; saúde por progresso; auditoria estática por tokens; cutover Plan/Apply/Rollback cujo **Apply e rollback são executados** em teste (SCM simulado, 10 cenários) e que exige de volta os **três SHA** do Plan.
+3. **Duas revisões independentes, todos os achados tratados com vermelho antes e verde depois.** A 1ª (sobre `d48bd42`) achou 3 graves: cutover sem rollback depois do primeiro efeito e supervisor derrubado por corrida de arquivo — **corrigidos**; auditoria contornável — **mitigada** (cada revisão acha contornos novos; leitura humana do V2 é obrigatória). A 2ª (sobre `1eacabe`) achou dois caminhos de **dois escritores** no checkpoint (reinstalação com órfão vivo; lista de processos que falha virava "ninguém vivo"), mais 4 contornos da auditoria e 5 menores — **todos fechados** no último commit (ainda local). Achados meus: fuso (PS 7 em UTC-3 tomava heartbeat de 90 min antes como novo) e a troca de arquivo do NTFS derrubando a leitura de saúde.
+4. **Pronto e não executado: prova em Windows real** (job `windows-real-scm`): Windows PowerShell 5.1, SCM de verdade, host C# v2 real compilado com `csc.exe`, conta virtual. Repositório **público** → runner padrão gratuito. **Depende de autorização de push** (CLAUDE.md exige confirmação por push).
+5. **Pede decisão do César:** Q-019 (C6 do envelope M1), Q-020 (TATÁ na UI), Q-021 (linhagem B5/B8 com duas `0009`); o repositório é **público** e guarda evidências operacionais em `data/` (agregados financeiros do dia, sem PII nesta branch; outras branches têm mais); o consumidor sombra da outra linhagem regrava o status ~1000×/s.
 
 ## 1. Commits
 
@@ -26,25 +26,27 @@
 | `7fe5fda` | bench de I/O do consumidor sombra | sim |
 | `bdcf59d` | revisão adversarial (antivírus, aviso depois do JSON, lock, órfão, ACL), checagem estática WinPS 5.1, CI Android | sim |
 | `d48bd42` | registros + 1º handback | sim |
-| `3215447` | **revisão independente**: supervisor sem queda por corrida de arquivo, nunca dois escritores, efeitos não declarados = FATAL; auditoria por tokens; cutover com rollback em toda falha pós-efeito, 3 SHA, instalação atômica; fuso | **local** |
-| `c7197a9` | cutover ponta a ponta com SCM simulado — Apply e rollback executados (7/7) | **local** |
-| `0153592` | leitura de saúde tolerante à troca de arquivo do NTFS (CLI + `/api/fontes`, assíncrona) | **local** |
-| `63f3359` | job `windows-real-scm`: WinPS 5.1 + SCM real + host C# v2 real | **local** |
-| _(último)_ | este handback, documento de causa raiz corrigido, STATE/EVIDENCE/LEDGER | **local** |
+| `3215447` | 1ª revisão independente: supervisor sem queda por corrida de arquivo; efeitos não declarados = FATAL; auditoria por tokens; cutover com rollback em toda falha pós-efeito, 3 SHA, instalação atômica; fuso | local |
+| `c7197a9` | cutover ponta a ponta com SCM simulado — Apply e rollback executados | local |
+| `0153592` | leitura de saúde tolerante à troca de arquivo do NTFS (CLI + `/api/fontes`, assíncrona) | local |
+| `63f3359` | job `windows-real-scm`: WinPS 5.1 + SCM real + host C# v2 real | local |
+| `1eacabe` | handback da sessão 2 e registros | local |
+| `65c38f1` | 2ª revisão independente: nenhum escritor vivo na parada nem no rollback (falha fechada), caça de lote sem registro na partida, rollback que sempre religa, auditoria +4 contornos, `/api/fontes` com prazo e sem FIFO, orquestrador recusa pasta existente | local |
+| _(último)_ | este handback, documento de causa raiz e STATE/EVIDENCE/LEDGER | local |
 
 "Local" = commitado e aguardando a autorização de push.
 
 ## 2. Delta por frente
 
 ### A — Verdade operacional TATÁ → DeliveryOS
-- `runtime/tata-reader/tata_reader_supervisor_v1.ps1` (SHA-256 `F6E17EB9…3BF580`) — lotes de 20 polls; saídas 75/78 (0 só em teste, 70 só se tudo escapar); try/catch por iteração; registro do filho obrigatório; `BLOCKED_CHILD_ALIVE`; quarentena de órfão; `EFFECTS_UNDECLARED` fatal.
-- `runtime/tata-reader/tata_reader_health_v1.cjs` — avaliador puro + CLI; `readSignalDoc`/`readMtimeMs` tolerantes à janela do `File.Replace`.
-- `runtime/tata-reader/tata_reader_watch_static_audit_v1.cjs` — tokenizador; escrita SQL em qualquer literal; código dinâmico; `CommandText` só literal; `human_review_required: true`.
-- `runtime/tata-reader/tata_reader_supervisor_cutover_v1.ps1` (SHA-256 `0D7D110E…DFD1E08`) — Plan devolve `apply_requires` (3 SHA); Apply por fases com rollback; caça de órfão pela linha de comando (só PowerShell); rollback que se recusa a restaurar com candidato vivo; `Test-InstantAfter` em UTC.
-- `tests/tata-reader/**` — suítes, ensaio com SCM simulado (`run-cutover-e2e-tests.cjs` + `fixtures/fake_service_host.cjs`), prova em Windows real (`windows/real_scm_cutover_e2e.ps1` + `fixtures/host_v2/`, cópia byte a byte do host de `93b006b`, procedência em `fixtures/PROVENANCE.json`).
+- `runtime/tata-reader/tata_reader_supervisor_v1.ps1` — lotes de 20 polls; saídas 75/78 (0 só em teste, 70 só se tudo escapar); try/catch por iteração; registro do filho obrigatório; `BLOCKED_CHILD_ALIVE`; quarentena de órfão; **caça de lote sem registro na partida** (`startup.command_line_hunt` no heartbeat); `EFFECTS_UNDECLARED` fatal.
+- `runtime/tata-reader/tata_reader_health_v1.cjs` — avaliador puro + CLI; leitura tolerante à janela do `File.Replace`; **só arquivo regular** (FIFO não prende).
+- `runtime/tata-reader/tata_reader_watch_static_audit_v1.cjs` — tokenizador; escrita SQL em qualquer literal; código dinâmico (inclusive `ScriptBlock` qualificado, `InvokeCommand`, `AddScript`, `&`/`.` com expressão); **membro dinâmico**; `CommandText` só literal; `SqlCommand` sem argumentos; `human_review_required: true`.
+- `runtime/tata-reader/tata_reader_supervisor_cutover_v1.ps1` — Plan devolve `apply_requires` (3 SHA); Apply por fases com rollback; **na parada e no rollback, todo escritor (caminho fixo e candidato) morre e é confirmado, em rodadas; lista de processos desconhecida bloqueia** (falha fechada); rollback que não restaura com escritor vivo ou desconhecido, e que sempre religa o serviço depois de restaurar; `Test-InstantAfter` em UTC.
+- `tests/tata-reader/**` — suítes; ensaio com SCM simulado (`run-cutover-e2e-tests.cjs`, com injeção de falha de lista de processos e de arrumação); prova em Windows real (`windows/real_scm_cutover_e2e.ps1` + `fixtures/host_v2/`, cópia byte a byte do host de `93b006b`, procedência em `fixtures/PROVENANCE.json`).
 
 ### B — Product System
-- `GET /api/fontes`: saúde real da fonte TATÁ no vocabulário canônico; sem raiz configurada = `NAO_CONFIGURADA/indisponivel`; leitura agora assíncrona e sem 500 na troca de arquivo; erro leva só a classe, nunca o caminho.
+- `GET /api/fontes`: saúde real da fonte TATÁ no vocabulário canônico; sem raiz configurada = `NAO_CONFIGURADA/indisponivel`; leitura assíncrona, sem 500 na troca de arquivo, com **prazo de 3 s** (`LEITURA_DOS_ARQUIVOS_EXPIROU`) e sem abrir arquivo não regular; erro leva só a classe, nunca o caminho.
 - O histórico TATÁ de 05/10 (195 pedidos) **só existe na API**; exibir exige caminho protegido do envelope M1 → **Q-020**. Nenhuma UI protegida tocada.
 
 ### C — Android
@@ -57,45 +59,44 @@
 - Leitura autenticada em `dGyF0eRDd4YG8uqyWqU1P4` (`22:2`, `23:2`, `29:2`). **Nenhuma escrita** (Q-007 em PAUSE).
 
 ### F — Cloud
-- PostgreSQL 16, Docker + SQL Server 2022, PowerShell 7.4.6, PSScriptAnalyzer, Chromium/Playwright, Android SDK, GitHub Actions. Um agente de revisão independente (só leitura) — achou os 3 graves de `d48bd42`.
+- PostgreSQL 16, Docker + SQL Server 2022, PowerShell 7.4.6, PSScriptAnalyzer, Chromium/Playwright, Android SDK, GitHub Actions. Um agente de revisão independente (só leitura), duas rodadas.
 
 ## 3. Provas
 
-| gate | resultado | onde |
+| gate | resultado | vermelho antes |
 |---|---|---|
-| `test:tata-reader:health` | 17/17 (H17: janela real dos dois renames, com controle positivo) | local |
-| `test:tata-reader:static` | 13/13 (A11–A13 = os contornos da revisão) | local |
-| `test:tata-reader:supervisor` | 22/22 (o supervisor de `d48bd42` passa 14/22) | local, PS 7.4.6 |
-| `test:tata-reader:cutover` | 13/13 (C12: fuso UTC-3) | local |
-| `test:tata-reader:e2e` | 7/7, em UTC e America/Sao_Paulo | local, SCM simulado |
-| `test:tata-reader:sqlserver` | 3/3 (X1 controle reproduz; X2 recupera; X3 um evento por pedido) | local + CI `37720135234` |
-| `ps51_compat_check.ps1` | 0 achados, controle 3/3 (+ orquestrador do Windows e fixtures: 0) | PSScriptAnalyzer 1.23.0 |
-| `test:platform:saude-fontes` | 9/9 (F8 janela real; F9 laço de eventos livre) | local |
-| `test:platform:product` | 52/52 com e sem `DELIVERYOS_PG_URL` | local |
-| `tsc --noEmit`, `build:platform` | limpos | local |
-| `test:platform:governanca` | GREEN (14 guardas) | local |
-| `windows-real-scm` (W0–W5) | **NÃO EXECUTADO** — depende do push | CI |
+| `test:tata-reader:health` | 18/18 | H17 janela real (leitura antiga: centenas de exceções); H18 FIFO (CLI anterior preso até o `timeout`, saída 124; agora 33 ms) |
+| `test:tata-reader:static` | 14/14 | A14: 13/14 na auditoria anterior |
+| `test:tata-reader:supervisor` | 23/23 | supervisor de `d48bd42` 14/22; de `1eacabe` 22/23 (S23) |
+| `test:tata-reader:cutover` | 13/13 | C12 fuso: True/True antes |
+| `test:tata-reader:e2e` | 10/10, em UTC e America/Sao_Paulo | E8–E10: 0/3 no cutover de `1eacabe` |
+| `test:tata-reader:sqlserver` | 3/3 (X1 controle reproduz; X2 recupera; X3 um evento por pedido) | X1 é o próprio controle |
+| `ps51_compat_check.ps1` | 0 achados em 8 arquivos, controle 3/3 | controle positivo embutido |
+| `test:platform:saude-fontes` | 10/10 | F8 janela real; F10 leitura que não volta |
+| `test:platform:product` · `tsc` · `build:platform` · `governanca` | verdes | — |
+| `windows-real-scm` (W0–W5) | **NÃO EXECUTADO** — depende do push | — |
 
-A regressão final dos gates tocados (lista do CI `node-postgres` + leitor) está em `docs/execution/EVIDENCE.jsonl` (`cloud-solo-session2-regression-2026-10-08`).
+Cada correção da 2ª revisão tem sua linha em `docs/execution/EVIDENCE.jsonl` (`tata-reader-second-review-two-writers-2026-10-08`, `tata-reader-supervisor-unrecorded-batch-2026-10-08`, `tata-reader-audit-and-read-hardening-2026-10-08`); a regressão final dos gates tocados está em `cloud-solo-second-review-regression-2026-10-08`.
 
 ## 4. Classificação
 
 - **WORLD_PROVEN:** nada novo (CAIXA e Foxxy inacessíveis daqui).
-- **TEST_PASS (sandbox/CI):** causa raiz em .NET 8; supervisor; avaliador; auditoria; cutover inteiro com SCM simulado; leitura tolerante ao NTFS; correções de plataforma; `/api/fontes`; JVM Android.
-- **CODE_READY:** prova em Windows real (aguarda push); tudo o que depende da CAIXA (instalação, `Restart-Service` do serviço real, ACL real, binário do host instalado).
+- **TEST_PASS (sandbox/CI):** causa raiz em .NET 8; supervisor; avaliador; auditoria; cutover inteiro com SCM simulado; leitura tolerante ao NTFS e a leitura que não volta; correções de plataforma; `/api/fontes`; JVM Android.
+- **CODE_READY:** prova em Windows real (aguarda push); tudo o que depende da CAIXA.
 - **DEPLOYED:** nada.
 
 ## 5. Regressões, riscos e UNKNOWNs
 
 - **Regressão introduzida:** nenhuma conhecida (zero `FAIL_NOVO` nos gates tocados).
-- **Mudança de contrato interno:** `lerSaudeDaFonteTata` passou a ser assíncrona (único chamador: `/api/fontes`).
+- **Contratos internos que mudaram:** `lerSaudeDaFonteTata` é assíncrona e tem prazo (único chamador: `/api/fontes`); o recibo do cutover ganhou `checks.stop_writers` e `rollback.stop_writers`/`move_aside_errors`; o heartbeat ganhou `startup`.
+- **Limite declarado do supervisor:** lista de processos ilegível (WMI negado à conta do serviço) **e** morte do supervisor anterior exatamente entre `Process.Start` e o registro do filho → um lote pode se sobrepor; o heartbeat registra `LIST_UNKNOWN`. A prova em Windows real mostra se o WMI responde à conta virtual.
+- **Auditoria estática:** heurística; duas revisões acharam 7 contornos (todos fechados); **o V2 precisa ser lido por uma pessoa**.
 - **Pré-existente vermelho (declarado):** `test:platform:m1-bridge` C6 → **Q-019**.
 - **Linhagens divergentes:** 8 commits de 04–05/10 fora desta linha; duas migrations 0009 → **Q-021**.
+- **Repositório público:** a API do GitHub o mostra público; `data/` desta branch tem agregados financeiros do dia (sem PII de cliente) e um CSV de exemplo; outras branches têm evidências mais detalhadas. Se não devia ser público, é decisão do César.
 - **Consumidor sombra (outra linhagem):** ~1000 escritas/s de status com 2000 eventos; correção de uma linha medida; não alterado.
-- **V2 (`77C16940…`)**: fora do Git; UNKNOWN; **precisa de leitura humana** além da auditoria.
-- **Host instalado:** a fonte v2 compilável conhecida é `93b006b` (a anterior nem compila); o binário instalado não tem SHA no Git — o Plan o mede e o Apply exige o mesmo valor.
+- **Host instalado:** a evidência de 05/10 mostra o host v2 rodando (status `…host-status.v2` com watcher e sombra); a fonte compilável é `93b006b`; o SHA do binário instalado não está no Git (o de 7EBC3C5F… é o host v1, anterior) — o Plan mede e o Apply exige o mesmo valor.
 - **Causa em produção:** INFERENCE; o 1222 dentro de `Read()` só foi visto em .NET 8.
-- **Relógio:** toda saúde é avaliada no relógio da máquina do leitor.
 
 ## 6. Custos
 
@@ -103,13 +104,13 @@ Zero gasto. Downloads gratuitos; GitHub Actions em repositório **público** (ru
 
 ## 7. Próximo passo seguro e pequeno
 
-**Aqui (depende só de autorização):** push de `feat/cloud-solo-reader-resilience-20261007` → CI roda `windows-real-scm`. Verde = WinPS 5.1 e SCM real provados para o cutover; vermelho = defeito real achado antes da CAIXA.
+**Aqui (depende só de autorização):** push de `feat/cloud-solo-reader-resilience-20261007` → o CI roda `windows-real-scm`. Verde = WinPS 5.1 e SCM real provados para o cutover; vermelho = defeito real achado antes da CAIXA.
 
 **Na CAIXA (com Desktop Commander), nesta ordem:**
 1. `Get-FileHash` do V2 = `77C16940…`; publicar o V2 byte a byte no Git; **uma pessoa lê o V2**.
 2. `node runtime\tata-reader\tata_reader_watch_static_audit_v1.cjs <V2>` → `INSTALL_ONLY_UNDER_SUPERVISOR`.
-3. `powershell -File runtime\tata-reader\tata_reader_supervisor_cutover_v1.ps1 -Mode Plan -RepoRuntimeDir <checkout>\runtime\tata-reader` → `PLAN_OK`; `apply_requires.SupervisorSha256` tem de ser `F6E17EB9A14D575ED7C572D2C59B551AD9E75809903E6540875AEF49093BF580`.
+3. `powershell -File runtime\tata-reader\tata_reader_supervisor_cutover_v1.ps1 -Mode Plan -RepoRuntimeDir <checkout>\runtime\tata-reader` → `PLAN_OK`; `apply_requires.SupervisorSha256` tem de ser o SHA do supervisor publicado (ver STATE.json, `tata_reader_resilience_20261007.sha256.supervisor`).
 4. Fora do pico: `-Mode Apply -ExpectedInstalledWatcherSha256 <…> -ExpectedHostBinarySha256 <…> -SupervisorSha256 <…> -SqlSessionCheck` → saída 0 (`APPLIED_HEALTHY`) ou 3 (rollback provado); saída 2 = parar e chamar humano.
 5. Publicar o recibo sanitizado; só então `LIVE_READER_WORLD_PROVEN`.
 
-Em paralelo, decisões do César: **Q-019**, **Q-020**, **Q-021**.
+Em paralelo, decisões do César: **Q-019**, **Q-020**, **Q-021** e a visibilidade do repositório.

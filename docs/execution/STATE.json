@@ -2211,19 +2211,19 @@
       "leitura_tolerante_ntfs": "readSignalDoc/readMtimeMs (tata_reader_health_v1.cjs) e lerSaudeDaFonteTata assincrona"
     },
     "tests": {
-      "tata_reader_health": "17/17 PASS",
-      "tata_reader_static": "13/13 PASS",
-      "tata_reader_supervisor": "22/22 PASS (d48bd42: 14/22)",
+      "tata_reader_health": "18/18 PASS",
+      "tata_reader_static": "14/14 PASS",
+      "tata_reader_supervisor": "23/23 PASS (d48bd42: 14/22; 1eacabe: 22/23)",
       "tata_reader_cutover": "13/13 PASS",
-      "tata_reader_e2e_scm_simulado": "7/7 PASS (UTC e America/Sao_Paulo)",
+      "tata_reader_e2e_scm_simulado": "10/10 PASS (UTC e America/Sao_Paulo; E8-E10 0/3 no cutover de 1eacabe)",
       "tata_reader_sqlserver": "3/3 PASS",
-      "ps51_compat_estatico": "0 achados, controle 3/3",
+      "ps51_compat_estatico": "0 achados em 8 arquivos, controle 3/3",
       "windows_real_scm": "NOT_RUN (push pendente de autorizacao)",
       "migration_reexec": "5/5 PASS",
       "platform_pg": "17/17 PASS",
       "database_preflight": "9/9 PASS",
       "product_system": "52/52 PASS",
-      "saude_fontes": "9/9 PASS",
+      "saude_fontes": "10/10 PASS",
       "papeis_compose": "10/10 PASS",
       "android_jvm_unit": "52/52 PASS",
       "ci_run": "37720135234 (d48bd42 e anteriores) node-postgres success, pwsh-sqlserver success; commits 3215447..HEAD sem CI ate o push"
@@ -2243,21 +2243,28 @@
       "Q-021: 8 commits de 04-05/10 fora desta linhagem; duas migrations 0009 (B5 duplicado)",
       "Q-019: C6 vermelho desde 30/09 por mudancas nao registradas no envelope M1",
       "consumidor sombra da outra linhagem regrava status ~1000/s com 2000 eventos (correcao de 1 linha medida)",
-      "V2 77C16940 fora do Git e sem leitura humana; a auditoria estatica e heuristica",
-      "binario do host instalado sem SHA no Git; o Plan mede e o Apply exige o mesmo valor"
+      "V2 77C16940 fora do Git e sem leitura humana; a auditoria estatica e heuristica (7 contornos achados em duas revisoes, todos fechados)",
+      "binario do host instalado sem SHA no Git; o Plan mede e o Apply exige o mesmo valor",
+      "repositorio PUBLICO segundo a API do GitHub: data/ guarda evidencias operacionais (agregados financeiros, sem PII de cliente nesta branch) — visibilidade e decisao do Cesar"
     ],
-    "next_step": "Autorizar o push -> CI windows-real-scm (WinPS 5.1 + SCM real). Na CAIXA: conferir/publicar e LER o V2 77C16940; auditar; -Mode Plan; -Mode Apply fora do pico com os tres SHA de apply_requires; publicar o recibo.",
+    "next_step": "Autorizar o push -> CI windows-real-scm (WinPS 5.1 + SCM real + host C# v2 real). Na CAIXA: conferir/publicar e LER o V2 77C16940; auditar; -Mode Plan; -Mode Apply fora do pico com os tres SHA de apply_requires; publicar o recibo.",
     "sha256": {
-      "supervisor": "F6E17EB9A14D575ED7C572D2C59B551AD9E75809903E6540875AEF49093BF580",
-      "cutover": "0D7D110E8390622F54DDCFF88242E872375AD30C403557D3B8A7239D2DFD1E08",
-      "auditoria": "0586428AEEEED356622E8D7C18140C3F234856AA69D8D3CC3799BB4408DCF65F",
-      "saude": "096D0B5BFF93892576B6A6EC246683ED3C212B060A300965D195115C1A62FA5B"
+      "supervisor": "FAAD93624BD8CD81E0A36DED59A938CCCECAD7AA4FD763D9B4833AAB911F0C6E",
+      "cutover": "FC1F695D4DE36AEAFE2A4918D92FD8BA445A9A9E2F3CB52CD84B097D12FD5869",
+      "auditoria": "98ACE974A948469C0CA1F8D9FECEF97213A90F5FE4A1A8AABF1E444BB2BCDAF4",
+      "saude": "DB4E440CAE85D9798377A2D2222D42C676F0AE32CD987955F486786614CFDE41"
     },
     "revisao_independente": {
       "alvo": "d48bd42",
       "achados": "3 MAJOR (cutover sem rollback apos efeito; supervisor caia na janela do File.Replace; auditoria contornavel) + 5 MINOR",
       "estado": "TODOS_CORRIGIDOS_COM_VERMELHO_ANTES (3215447); alegacoes fortes demais corrigidas no documento de causa raiz §9",
       "achados_proprios_sessao_2": "fuso UTC-3 no PS 7 (Test-InstantAfter); leitura de saude derrubada pela troca de arquivo do NTFS (0153592)"
+    },
+    "revisao_independente_2": {
+      "alvo": "1eacabe",
+      "achados": "N1 reinstalacao deixava o orfao do supervisor anterior vivo (dois escritores, APPLIED_HEALTHY); N2 lista de processos que falha virava 'ninguem vivo' e o rollback restaurava; N3 ordem de kill; N4 lote sem registro; N5 rollback deixava o servico parado; N6 /api/fontes pendurada por leitura que nao volta; N7 orquestrador sem checar a pasta; A3 +4 contornos da auditoria",
+      "estado": "TODOS_FECHADOS_COM_VERMELHO_ANTES (E8-E10 0/3, S23, A14 13/14, H18 timeout 124 no CLI anterior)",
+      "limite_declarado": "lista de processos ilegivel na partida do supervisor E morte do anterior entre Process.Start e o registro: um lote pode sobrepor; heartbeat registra startup.command_line_hunt=LIST_UNKNOWN"
     }
   }
 }
