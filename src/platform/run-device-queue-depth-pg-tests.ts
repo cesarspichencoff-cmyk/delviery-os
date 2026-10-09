@@ -133,6 +133,46 @@ async function main(): Promise<void> {
       reportada_em: "2026-10-06T09:01:00.000Z",
     });
 
+    // Falha de ordem: dois requests autenticados podem terminar fora de ordem.
+    // O snapshot mais antigo NAO pode substituir o mais recente, inclusive
+    // se o sistema gerar dois carimbos identicos no mesmo milissegundo.
+    for (const antigo of [
+      new Date("2026-10-06T09:00:30.000Z"),
+      new Date("2026-10-06T09:01:00.000Z"),
+    ]) {
+      assert.equal(await registro.registrarFilaOffline("device-b5-pg", {
+        pending_points: 99,
+        pending_events: 88,
+        agora: antigo,
+      }), true, "request antigo de aparelho ativo continua autorizado");
+      const atual = await lerRealidadeDeEntregas(critico, {
+        agora: new Date("2026-10-06T09:01:01.000Z"), unit_id: "ITAIM",
+      });
+      assert.deepEqual(atual.aparelhos[0]?.fila_offline, {
+        pending_points: 7,
+        pending_events: 3,
+        reportada_em: "2026-10-06T09:01:00.000Z",
+      }, "snapshot antigo/empate nao pode regredir fila e tempo");
+    }
+
+    // Um relato autenticamente posterior deve ser aceito, inclusive zero.
+    assert.equal(await registro.registrarFilaOffline("device-b5-pg", {
+      pending_points: 0,
+      pending_events: 0,
+      agora: new Date("2026-10-06T09:01:30.000Z"),
+    }), true);
+    const zerou = await lerRealidadeDeEntregas(critico, {
+      agora: new Date("2026-10-06T09:01:31.000Z"), unit_id: "ITAIM",
+    });
+    assert.deepEqual(zerou.aparelhos[0]?.fila_offline, {
+      pending_points: 0, pending_events: 0, reportada_em: "2026-10-06T09:01:30.000Z",
+    }, "zero posterior e medicao real, nao ausencia");
+
+    assert.equal(await registro.registrarFilaOffline("device-b5-pg", {
+      pending_points: 7, pending_events: 3,
+      agora: new Date("2026-10-06T09:01:45.000Z"),
+    }), true);
+
     await deveFalhar(
       "critico nao pode revogar",
       () => critico!.query(`UPDATE identity.device SET revoked_at=now() WHERE device_id='device-b5-pg'`),
