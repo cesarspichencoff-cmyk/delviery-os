@@ -1,7 +1,7 @@
 import { renderConferenceTicketProofV46,renderProductionTicketProofV46,type TicketEscPosProofV46 } from "./operationalTicketEscposV46";
 import { renderTwoKitchenProofsV47 } from "./twoKitchenTicketEscposV47";
 import type { OperationalTicketsResultV45 } from "./operationalTicketsV45";
-import type { KitchenSplitV47 } from "./twoKitchenTicketsV47";
+import { componentProjectionBindingV512, type KitchenSplitV47 } from "./twoKitchenTicketsV47";
 
 export interface KitchenSeparatedJobV47 {
   channel: "OTHER_PRODUCTION" | "KITCHEN_COMPONENTS" | "KITCHEN_DISHES" | "CONFERENCE";
@@ -96,9 +96,19 @@ export function buildKitchenSeparatedBundleV47(
     tickets.production.every(p=>sameIdentifiers(componentIds,p.identifiers)) &&
     !!tickets.conference.identifiers &&
     sameIdentifiers(componentIds,tickets.conference.identifiers);
-  append("KITCHEN_COMPONENTS",kitchen.components,
-    split.components && !componentMatchesOrder
-      ? ["KITCHEN_COMPONENT_IDENTIFIERS_MISMATCH"] : []);
+  // An identifier match alone does not prove that the independently provided
+  // kitchen component preview belongs to this exact order projection.
+  // Missing/changed bindings fail closed ONLY for that component channel.
+  const componentMatchesProjection=!!split.components &&
+    typeof split.components.source_projection_binding_v512==="string" &&
+    split.components.source_projection_binding_v512===
+      componentProjectionBindingV512(tickets,split.components);
+  append("KITCHEN_COMPONENTS",kitchen.components,[
+    ...(split.components && !componentMatchesOrder
+      ? ["KITCHEN_COMPONENT_IDENTIFIERS_MISMATCH"] : []),
+    ...(split.components && !componentMatchesProjection
+      ? ["KITCHEN_COMPONENT_PROJECTION_BINDING_MISMATCH"] : []),
+  ]);
   append("KITCHEN_DISHES",kitchen.dishes, [
     ...(split.dishes && split.dishes.source.ready_for_semantic_preview !== true
       ? ["STATION_SEMANTIC_NOT_READY:" + split.dishes.source.station] : []),
