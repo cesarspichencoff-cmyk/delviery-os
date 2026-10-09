@@ -712,9 +712,18 @@ export class PgDeviceRegistry {
   ): Promise<boolean> {
     const r = await this.sql.query<SqlRow>(
       `UPDATE identity.device
-          SET queue_pending_points = $2,
-              queue_pending_events = $3,
-              queue_depth_reported_at = $4
+          SET queue_pending_points = CASE
+                WHEN queue_depth_reported_at IS NULL
+                  OR queue_depth_reported_at < $4::timestamptz
+                THEN $2 ELSE queue_pending_points END,
+              queue_pending_events = CASE
+                WHEN queue_depth_reported_at IS NULL
+                  OR queue_depth_reported_at < $4::timestamptz
+                THEN $3 ELSE queue_pending_events END,
+              queue_depth_reported_at = CASE
+                WHEN queue_depth_reported_at IS NULL
+                  OR queue_depth_reported_at < $4::timestamptz
+                THEN $4::timestamptz ELSE queue_depth_reported_at END
         WHERE device_id = $1 AND revoked_at IS NULL
         RETURNING device_id`,
       [device_id, dados.pending_points, dados.pending_events, dados.agora.toISOString()],
