@@ -1,5 +1,5 @@
 # Regressao do leitor TATA Comanda e dos gates de plataforma tocados por esta
-# frente. Roda SO nesta branch (e manual): nao muda nada do resto do repo.
+# frente. Roda na branch de resiliencia ou no fix isolado V2 (e manual).
 #
 #  - node-postgres: avaliador de saude, auditoria estatica, migrations
 #    reexecutaveis, preflight, B5 em PostgreSQL real, Product System e /api/fontes.
@@ -17,7 +17,7 @@ name: TATA reader resilience
 on:
   workflow_dispatch:
   push:
-    branches: [feat/cloud-solo-reader-resilience-20261007]
+    branches: [feat/cloud-solo-reader-resilience-20261007, fix/tata-reader-health-consumer-v2-20261009]
 permissions:
   contents: read
 concurrency:
