@@ -65,7 +65,7 @@ async function vmJson(unidade: string | null): Promise<string> {
  * efetivo). Em texto puro de proposito: o tsx injeta `__name` em funcoes
  * nomeadas, e esse helper nao existe dentro do navegador.
  */
-const CONTRASTE_AA = `(() => {
+const contrasteAA = (raizSeletor: string): string => `(() => {
             const rgb = (c) => {
               const m = c.match(/rgba?\\(([^)]+)\\)/);
               if (!m) return null;
@@ -94,8 +94,8 @@ const CONTRASTE_AA = `(() => {
               return cor;
             };
             const fora = [];
-            const raiz = document.querySelector('[data-territorio="rua"]');
-            if (!raiz) return ["sem territorio da rua"];
+            const raiz = document.querySelector(${JSON.stringify(raizSeletor)});
+            if (!raiz) return ["sem raiz " + ${JSON.stringify(raizSeletor)}];
             for (const el of raiz.querySelectorAll("*")) {
               const temTexto = [...el.childNodes].some((n) => n.nodeType === 3 && (n.textContent ?? "").trim() !== "");
               if (!temTexto) continue;
@@ -116,6 +116,7 @@ const CONTRASTE_AA = `(() => {
             }
             return fora;
           })()`;
+const CONTRASTE_AA = contrasteAA('[data-territorio="rua"]');
 
 interface Abertura {
   page: Page;
@@ -312,6 +313,37 @@ void (async () => {
           await a.fechar();
         }
       }
+    });
+
+    await teste("N7b contraste AA tambem na faixa de demonstracao aberta (sem banco)", async () => {
+      // Sem leitura, a faixa abre: o aparelho da demonstracao mostra selos de
+      // ausencia. Medido no axe-core 4.10.2: 4,38:1 sobre o fundo da faixa.
+      for (const [nome, viewport] of Object.entries(VIEWPORTS)) {
+        const a = await abrir(browser, base, { viewport, comLeitura: false });
+        try {
+          const reprovados = (await a.page.evaluate(contrasteAA('[data-territorio="demonstracao"]'))) as string[];
+          assert.deepEqual(reprovados, [], `${nome}: contraste abaixo de AA na demonstracao`);
+        } finally {
+          await a.fechar();
+        }
+      }
+    });
+
+    await teste("N7c a barra inferior do celular e legivel (AA) em todas as superficies, inclusive a Home escura", async () => {
+      // Medido no axe-core 4.10.2 contra a base 2782b31: na Home, os rotulos
+      // da barra ficavam 2,1-2,5:1 — tinta clara do Design System sobre o
+      // fundo escuro do organismo. Pre-existente; a rota inicial no celular.
+      const problemas: string[] = [];
+      for (const rota of ["#/", "#/entregas", "#/operacao-viva", "#/conference-brain", "#/copiloto"]) {
+        const a = await abrir(browser, base, { viewport: VIEWPORTS.celular, comLeitura: rota === "#/entregas", hash: rota });
+        try {
+          const reprovados = (await a.page.evaluate(contrasteAA(".shell__nav-mobile"))) as string[];
+          for (const r of reprovados) problemas.push(`${rota}: ${r}`);
+        } finally {
+          await a.fechar();
+        }
+      }
+      assert.deepEqual(problemas, []);
     });
 
     await teste("N8 hierarquia de titulos sem salto e alvo de toque minimo nos controles da leitura", async () => {

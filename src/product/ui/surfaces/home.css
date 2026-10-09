@@ -70,6 +70,22 @@ body:has(.org) .nav-item[aria-current="page"] {
   background: rgba(140, 198, 63, 0.06);
 }
 
+/*
+ * A barra de BAIXO do celular ficou de fora do recuo acima: o fundo escurecia
+ * e os itens mantinham a tinta do Design System — 2,13:1 no item atual e
+ * 2,55:1 nos outros (axe-core 4.10.2 e o N7c do navegador, 2026-10-09;
+ * identico na base 2782b31). Os mesmos tokens da barra lateral: uso local
+ * corrigido, nenhum valor de marca muda.
+ */
+body:has(.org) .nav-mobile__item {
+  color: var(--org-verde-texto-3);
+}
+body:has(.org) .nav-mobile__item[aria-current="page"] {
+  color: var(--org-creme-3);
+  border-top-color: var(--org-vivo-borda);
+  background: rgba(140, 198, 63, 0.06);
+}
+
 /* ------------------------------------------------------------------ *
  * O QUE AINDA VAZAVA DO NIVEL 4 (M1B-R2, §D — B1 nao estava fechado)
  * ------------------------------------------------------------------ *
