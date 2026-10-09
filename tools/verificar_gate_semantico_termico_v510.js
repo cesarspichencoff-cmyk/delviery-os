@@ -317,4 +317,27 @@ check("18 absent source binding fails closed for components but preserves proven
   assert.ok(bundle.jobs.some(j=>j.channel==="KITCHEN_DISHES"));
 });
 
+check("19 component readiness revoked after binding must block export", () => {
+  const split=syntheticCompleteComponents(original);
+  assert.ok(split.components && split.ready_for_complete_components);
+  split.ready_for_complete_components=false; // task payload/hash remains unchanged
+  const bundle=buildKitchenSeparatedBundleV47(original,split);
+  assert.ok(!bundle.jobs.some(j=>j.channel==="KITCHEN_COMPONENTS"),
+    "revoked component readiness must never export an eligible job");
+  assert.ok(bundle.blocked_proofs.some(j=>j.channel==="KITCHEN_COMPONENTS"));
+  assert.ok(bundle.review_reasons.some(x=>x.includes("KITCHEN_COMPONENT_SPLIT_NOT_READY")));
+  assert.ok(bundle.jobs.some(j=>j.channel==="KITCHEN_DISHES"));
+});
+check("20 new review blockers after binding must block only components", () => {
+  const split=syntheticCompleteComponents(original);
+  assert.ok(split.components && split.ready_for_complete_components);
+  split.review_reasons.push("DEPENDENCY_RULES_NOT_COMPLETE");
+  const bundle=buildKitchenSeparatedBundleV47(original,split);
+  assert.ok(!bundle.jobs.some(j=>j.channel==="KITCHEN_COMPONENTS"),
+    "review-required split cannot be elevated by stale component status");
+  assert.ok(bundle.blocked_proofs.some(j=>j.channel==="KITCHEN_COMPONENTS"));
+  assert.ok(bundle.review_reasons.some(x=>x.includes("KITCHEN_COMPONENT_SPLIT_REVIEW_BLOCKERS")));
+  assert.ok(bundle.jobs.some(j=>j.channel==="OTHER_PRODUCTION"));
+});
+
 console.log("thermal-semantic-gate-v510: "+checks+"/"+checks+" PASS; SHADOW ONLY");
