@@ -1,0 +1,39 @@
+# Isolated Android regression on a development branch; no deployment or device access.
+name: DeliveryOS Android HTTP recovery
+on:
+  push:
+    branches: [feat/deliveryos-android-malformed-receipt-20261009]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: deliveryos-android-receipt-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  android-unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Android JVM tests (no physical device)
+        working-directory: android
+        run: bash ./gradlew --no-daemon --console=plain testDebugUnitTest
+      - name: JUnit proof
+        if: always()
+        working-directory: android
+        run: |
+          python3 - <<'PY'
+          import glob, xml.etree.ElementTree as ET
+          files=glob.glob("app/build/test-results/testDebugUnitTest/*.xml")
+          cases=failures=errors=0
+          for f in files:
+            x=ET.parse(f).getroot()
+            cases+=int(x.attrib.get("tests","0"))
+            failures+=int(x.attrib.get("failures","0"))
+            errors+=int(x.attrib.get("errors","0"))
+          print(f"ANDROID_JVM_JUNIT: suites={len(files)}, tests={cases}, failures={failures}, errors={errors}")
+          PY
