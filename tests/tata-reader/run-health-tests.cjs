@@ -139,6 +139,31 @@ function hb(over = {}) {
     assert.ok(w.reasons.includes("WATCHER_SHA256_NOT_VERIFIED"));
   });
 
+  await teste("H19 consumidor status v2 instalado: RUNNING saudavel, FAILED nunca HEALTHY", () => {
+    const v2 = (state) => ({ ...consumer(state), schema: "deliveryos.live-shadow-consumer-status.v2" });
+    const good = H.evaluateTataReaderHealthV1({
+      nowMs: T0, heartbeat: hb(), consumerStatus: v2("RUNNING"), checkpointMtimeMs: T0 - 1000,
+    });
+    assert.equal(good.verdict, "HEALTHY", JSON.stringify(good.reasons));
+    assert.deepEqual([...good.reasons], []);
+    const failed = H.evaluateTataReaderHealthV1({
+      nowMs: T0, heartbeat: hb(), consumerStatus: v2("FAILED"), checkpointMtimeMs: T0 - 1000,
+    });
+    assert.equal(failed.verdict, "DEGRADED");
+    assert.ok(failed.reasons.includes("CONSUMER_FAILED"));
+    assert.equal(failed.evidence.consumer_state, "FAILED");
+  });
+
+  await teste("H20 consumidor com schema desconhecido nao pode aparecer HEALTHY", () => {
+    const unknown = H.evaluateTataReaderHealthV1({
+      nowMs: T0, heartbeat: hb(),
+      consumerStatus: { ...consumer("RUNNING"), schema: "deliveryos.live-shadow-consumer-status.v999" },
+      checkpointMtimeMs: T0 - 1000,
+    });
+    assert.equal(unknown.verdict, "DEGRADED");
+    assert.ok(unknown.reasons.includes("CONSUMER_STATUS_SCHEMA_INVALID"));
+  });
+
   await teste("H11 relogio trocado (heartbeat do futuro) e schema invalido: UNKNOWN, nunca decide em cima disso", () => {
     const f = H.evaluateTataReaderHealthV1({ nowMs: T0, heartbeat: hb({ written_at: iso(T0 + 3600e3) }), checkpointMtimeMs: T0 });
     assert.equal(f.verdict, "UNKNOWN");
