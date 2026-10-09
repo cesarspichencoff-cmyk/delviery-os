@@ -379,10 +379,13 @@ export async function criarServidor(): Promise<http.Server> {
         // A demonstracao e calculada no boot; a REALIDADE e lida agora. Um
         // bloco congelado no boot mostraria o aparelho como estava quando o
         // servidor subiu, e "agora" e o que quem olha esta perguntando.
+        // `unidade` filtra a leitura pelas unidades que ELA encontrou; texto
+        // curto, so comparado por igualdade — nunca vai para SQL.
+        const unidade = (url.searchParams.get("unidade") || "").trim().slice(0, 64) || null;
         void (async () => {
           const snap = await facade.snapshot();
           const leitura = await lerRealidade(clientePlataforma);
-          json(res, 200, entregasVM(snap, new Date().toISOString(), facade.getPolicyMaxStops(), leitura));
+          json(res, 200, entregasVM(snap, new Date().toISOString(), facade.getPolicyMaxStops(), leitura, { unidade }));
         })().catch((e: unknown) => json(res, 500, { erro: e instanceof Error ? e.message : String(e) }));
         return;
       }

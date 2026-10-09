@@ -4,7 +4,7 @@ lifecycle:
   status: ACTIVE
   authority_scope: decisions
   superseded_by: null
-  atualizado_em: "2026-09-26"
+  atualizado_em: "2026-10-09"
   state_basis: 953a3fb
 ---
 
@@ -2012,3 +2012,74 @@ próprio com `AlertDialog` (mais Kotlin sem compilar e texto novo sem revisão);
 
 **Custo aceito:** o diálogo é o do sistema, com o título que o Android põe (a origem da página). Texto
 e aparência não foram revisados pelo César.
+
+
+---
+
+### D93 — Entregas se organiza pela LEITURA DO SERVIDOR; a demonstração vira faixa própria
+
+**Decisão.** A superfície `/entregas` abre pela leitura da rua, na anatomia do Contrato Visual de Estados
+Técnicos (camada técnica, linha de sinal, título humano, explicação, restrição): uma frase que conta o
+que foi visto (`3 viagens na rua em ITAIM; 1 sem posicao recente.`), a idade de cada fato contra o
+instante da leitura, o que pede conferência, as viagens agrupadas pelo ciclo de vida já projetado e os
+aparelhos. A demonstração em memória sai do topo e vai para uma faixa própria, tracejada, recolhida
+quando há leitura. Sem banco, o lugar da rua é do estado técnico (linha interrompida) e a demonstração
+aparece aberta, depois dele. Tudo é função pura da porta de realidade que já existia: nenhuma fonte,
+estado, janela ou regra nova.
+
+**Por que.** Medido na tela de 2026-10-09 (servidor com banco, 1440×900 e 390×844): a primeira dobra
+inteira era de números da demonstração; a leitura do servidor começava abaixo de ~1100 px; carimbos ISO
+em UTC obrigavam a fazer a conta de idade de cabeça; unidades misturadas; uma viagem ENCERRADA marcada
+`stale` ao lado das viagens na rua; e o texto do aparelho da demonstração afirmava "não existe rota de
+leitura" enquanto a mesma tela mostrava o aparelho lido do banco.
+
+**Alternativas recusadas:** (1) um painel de contagens no topo — é exatamente o dashboard que o
+Manifesto e a decisão de 2026-08-07 rejeitam; (2) uma lista de alertas — o DeliveryOS "nunca será lista
+de alertas", e a Operação Viva é a única dona do Foco; a conferência diz o que foi visto, desde quando,
+a evidência e o que NÃO dá para concluir, sem botão; (3) mapa — `DESIGN_RED_TEAM` proíbe mapa-first e
+GPS como Foco; (4) apagar a demonstração — quem avalia a tela ainda precisa dela.
+
+**Custo aceito:** a tela ficou mais longa no desktop (a lista de limitações cresceu); o fuso de exibição
+é `America/Sao_Paulo` declarado na tela, porque a porta de realidade não devolve
+`identity.unit.timezone`. Autoridade: missão de 2026-10-09; exceção registrada no envelope M1 e
+confirmação pedida em `Q-022`.
+
+---
+
+### D94 — Procedência não se infere: o relato de fila do aparelho é "modo não declarado"
+
+**Decisão.** Na leitura da rua, a conferência que nasce do relato de fila (B5) carrega `procedencia:
+null` e a tela escreve **modo não declarado**. O campo `fila_offline` do view model, do B5, não foi
+alterado.
+
+**Por que.** `POST /api/device/queue-depth` e as colunas de `identity.device` não carregam
+`source_mode`; um aparelho cujos lotes são todos `simulated` tinha o relato de fila rotulado `real`.
+`estados.ts` diz "Procedência nunca inferida", e a Q-017 diz "ausente não é real".
+
+**Alternativas recusadas:** herdar o modo do último lote de GPS (inferência: um aparelho pode trocar de
+modo); mudar o `origem` do `fila_offline` para outro valor (exige vocabulário novo em `estados.ts` e
+`DESIGN_TOKENS.json`, e o contrato B5 é da frente Android em curso). A pergunta de contrato vai ao
+César em `Q-023`.
+
+**Custo aceito:** até a resposta, o `fila_offline` do B5 continua `real` no JSON; só a leitura da rua
+deixa de afirmar o modo.
+
+---
+
+### D95 — A leitura envelhece NA TELA; ela não se atualiza sozinha
+
+**Decisão.** A superfície mostra `Leitura do servidor as 09h43 · lida ha 6 min`. A idade é medida desde
+a CHEGADA da resposta com `performance.now()`; as janelas são as da Operação Viva (`JANELAS`, 120 s e
+300 s), entregues pela própria view model. Passou da primeira, a linha de sinal fica tracejada; passou
+da segunda, pontilhada, e aparece "Esta leitura nao e a mais recente". Reler é um botão que só faz GET.
+
+**Por que.** "Não chamar a tela de real-time só porque o servidor está acessível": uma aba esquecida
+aberta por 20 min continuaria dizendo "posição há 40 s". Comparar o relógio do navegador com o do
+servidor misturaria relógios — a mesma classe de defeito do relógio do aparelho (`docs/etapa-4-8/RELOGIO.md`).
+
+**Alternativas recusadas:** recarregar a cada N segundos (vira painel que pisca, gasta banco e, sem
+declarar a idade, continua mentindo entre recargas); calcular a idade com `Date.now()` do navegador
+contra `lida_em` do servidor.
+
+**Custo aceito:** quem quer o estado atual precisa tocar em "Atualizar leitura".
+

@@ -14,7 +14,13 @@ import type {
   RealidadeDeEntregas,
 } from "../../platform/leitura/realidade-de-entregas";
 import type { SourceMode } from "../../platform/contracts/event-catalog";
-import { classificarFrescor, type Frescor } from "../../platform/projections/operacao-viva";
+import {
+  JANELAS,
+  classificarFrescor,
+  type EstadoViagem,
+  type Frescor,
+  type ViagemProjetada,
+} from "../../platform/projections/operacao-viva";
 import { instanteConfiavel } from "../../platform/contracts/relogio";
 import {
   ausente,
@@ -22,6 +28,7 @@ import {
   selo,
   type Campo,
   type Limitacao,
+  type MotivoAusencia,
   type Procedencia,
   type Selo,
 } from "./estados";
@@ -147,6 +154,151 @@ export interface EntregasVM {
    * procedencia por item. Quando nao ha leitura, e ausencia declarada.
    */
   readonly realidade: RealidadeVM;
+  /**
+   * A LEITURA DA RUA: o mesmo bloco real, organizado pela pergunta de quem
+   * responde pela expedicao — o que pede conferencia, quem esta na rua, com
+   * que idade cada fato chegou. Funcao pura de `realidade`: nenhuma fonte
+   * nova, nenhum estado inventado. Sem leitura, e o estado tecnico.
+   */
+  readonly leitura: LeituraDaRuaVM;
+}
+
+/* ------------------------------------------------------------------ *
+ * Leitura da rua — tipos
+ * ------------------------------------------------------------------ */
+
+/**
+ * Confianca e SOLIDEZ (Contrato Visual de Estados Tecnicos, Nivel 1): o que
+ * chegou dentro da janela aparece cheio; o que envelheceu, tracejado; o que
+ * passou da janela, pontilhado; sem base nenhuma, interrompido. `neutra` e
+ * onde nao se espera sinal (viagem encerrada, aguardando saida).
+ */
+export type Solidez = "cheia" | "tracejada" | "pontilhada" | "interrompida" | "neutra";
+
+export type GrupoDaViagem = "na_rua" | "aguardando_saida" | "ciclo_desconhecido" | "encerrada";
+
+/** Um instante com a idade que ele tinha NO MOMENTO DA LEITURA. Ausente nunca ganha idade. */
+export type InstanteVM =
+  | {
+      readonly observado: true;
+      /** O instante exato, como evidencia. */
+      readonly em: string;
+      /** Hora local no fuso de exibicao ("09h34", ou "08/10 08h43" se nao for o dia da leitura). */
+      readonly hora: string;
+      /** "ha 9 min" — contra o instante da leitura, nao contra o relogio de quem olha. */
+      readonly idade: string;
+      readonly segundos: number;
+    }
+  | { readonly observado: false; readonly motivo: MotivoAusencia; readonly explicacao: string };
+
+export interface ViagemLidaVM {
+  readonly viagem_id: string;
+  readonly rotulo_identidade: "Viagem";
+  readonly unidade: string;
+  readonly estado: EstadoViagem;
+  readonly estado_legivel: string;
+  readonly grupo: GrupoDaViagem;
+  readonly frescor: Frescor;
+  /** Ultima posicao com horario CONFIAVEL (a mesma base do frescor). */
+  readonly posicao: InstanteVM;
+  readonly device_id: string | null;
+  /** Rotulo do cadastro do aparelho, quando o aparelho esta no cadastro lido. */
+  readonly aparelho: string | null;
+  readonly procedencia: Procedencia;
+  readonly solidez: Solidez;
+  readonly selos: readonly Selo[];
+}
+
+export type TipoConferir = "viagem_sem_posicao_recente" | "fila_sem_relato_recente" | "cadastro_incompleto";
+
+/**
+ * Algo que uma PESSOA pode conferir. Nao e alerta, nao e Foco (a Operacao Viva
+ * e a unica dona do Foco) e nao executa nada: diz o que foi visto, desde
+ * quando, a evidencia, e o que a leitura NAO permite concluir. Fala do sinal
+ * e do cadastro — nunca de quem esta na moto (Lei 4).
+ */
+export interface ConferirVM {
+  readonly chave: string;
+  readonly tipo: TipoConferir;
+  readonly unidade: string;
+  readonly titulo: string;
+  readonly detalhe: string;
+  readonly restricao: string;
+  readonly desde: InstanteVM;
+  readonly evidencia: string;
+  /** `null` = o fato nao declara modo (o relato de fila do aparelho nao carrega `source_mode`). */
+  readonly procedencia: Procedencia | null;
+  readonly selo: Selo;
+}
+
+export interface AparelhoLidoVM {
+  readonly device_id: string;
+  readonly situacao: "com_lote" | "sem_lote" | "revogado";
+  /** Ultima posicao com horario confiavel — a do frescor, nao a que o aparelho declarou. */
+  readonly ultima_posicao: InstanteVM;
+  readonly ultima_sessao: InstanteVM;
+  /** Quando o servidor recebeu o ultimo relato de fila. */
+  readonly fila_relato: InstanteVM;
+  readonly solidez: Solidez;
+}
+
+export interface UnidadeLidaVM {
+  readonly unit_id: string;
+  readonly aparelhos: number;
+  readonly viagens_na_rua: number;
+  readonly selecionada: boolean;
+}
+
+export type LeituraDaRuaVM =
+  | {
+      readonly disponivel: false;
+      readonly motivo: "integracao_pendente" | "indisponivel";
+      readonly eyebrow: string;
+      readonly titulo: string;
+      readonly explicacao: string;
+      readonly restricao: string;
+      readonly solidez: "interrompida";
+    }
+  | {
+      readonly disponivel: true;
+      readonly lida_em: string;
+      readonly lida_as: string;
+      readonly fuso: string;
+      /** As janelas que a superficie usa para envelhecer a propria leitura na tela. */
+      readonly janelas: { readonly fresca_ate_s: number; readonly envelhecendo_ate_s: number };
+      readonly unidades: readonly UnidadeLidaVM[];
+      readonly unidade_selecionada: string | null;
+      readonly unidade_encontrada: boolean;
+      readonly titulo: string;
+      readonly explicacao: string;
+      readonly restricao: string | null;
+      readonly solidez: Solidez;
+      readonly selos: readonly Selo[];
+      readonly contagens: {
+        readonly na_rua: number;
+        readonly na_rua_sem_posicao_recente: number;
+        readonly ciclo_desconhecido_com_posicao: number;
+        readonly aguardando_saida: number;
+        readonly encerradas: number;
+        readonly aparelhos: number;
+        readonly conferir: number;
+      };
+      readonly conferir: readonly ConferirVM[];
+      readonly viagens: {
+        readonly na_rua: readonly ViagemLidaVM[];
+        readonly aguardando_saida: readonly ViagemLidaVM[];
+        readonly ciclo_desconhecido_com_posicao: readonly ViagemLidaVM[];
+        readonly ciclo_desconhecido_sem_posicao: readonly ViagemLidaVM[];
+        readonly encerradas: readonly ViagemLidaVM[];
+      };
+      readonly aparelhos: readonly AparelhoLidoVM[];
+      /** Ressalvas sobre a QUALIDADE da informacao: nao entram na conferencia, nao somem. */
+      readonly qualidade: readonly string[];
+    };
+
+export interface OpcoesEntregasVM {
+  /** Unidade do filtro. `null`/vazio = todas as unidades da leitura. */
+  readonly unidade?: string | null;
 }
 
 /* ------------------------------------------------------------------ *
@@ -329,16 +481,438 @@ function realidadeVM(r: RealidadeDeEntregas, agora: Date): RealidadeVM {
   };
 }
 
+/* ------------------------------------------------------------------ *
+ * Leitura da rua — a mesma realidade, na ordem da pergunta de quem opera
+ * ------------------------------------------------------------------ */
+
 /**
- * O aparelho em campo publica saude por `POST /api/gps/batch`; NAO existe rota
- * de LEITURA que devolva credencial, GPS ou fila do aparelho. Em vez de desenhar
- * uma caixa vazia que parece saudavel, cada campo declara por que esta vazio.
+ * Fuso de EXIBICAO. `identity.unit.timezone` existe, mas a porta de realidade
+ * nao o devolve; toda unidade cadastrada hoje usa o padrao da coluna
+ * (0001: 'America/Sao_Paulo'). A tela declara o fuso — nao o esconde.
+ */
+const FUSO_DE_EXIBICAO = "America/Sao_Paulo";
+const FORMATO_HORA = new Intl.DateTimeFormat("pt-BR", {
+  timeZone: FUSO_DE_EXIBICAO,
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+});
+const FORMATO_DIA = new Intl.DateTimeFormat("pt-BR", { timeZone: FUSO_DE_EXIBICAO, day: "2-digit", month: "2-digit" });
+
+function horaLocal(instante: number, referencia: number): string {
+  const partes = FORMATO_HORA.formatToParts(new Date(instante));
+  const parte = (t: string) => partes.find((p) => p.type === t)?.value ?? "??";
+  const hora = `${parte("hour")}h${parte("minute")}`;
+  const dia = FORMATO_DIA.format(new Date(instante));
+  return dia === FORMATO_DIA.format(new Date(referencia)) ? hora : `${dia} ${hora}`;
+}
+
+/** Idade em portugues de balcao. Negativa pequena e desencontro de relogio entre servidores. */
+export function idadeLegivel(segundos: number): string {
+  if (segundos < -60) return "a frente desta leitura";
+  if (segundos < 10) return "agora";
+  if (segundos < 60) return `ha ${Math.floor(segundos)} s`;
+  if (segundos < 3600) return `ha ${Math.floor(segundos / 60)} min`;
+  if (segundos < 86400) {
+    const h = Math.floor(segundos / 3600);
+    const m = Math.floor((segundos % 3600) / 60);
+    return m === 0 ? `ha ${h} h` : `ha ${h} h ${String(m).padStart(2, "0")} min`;
+  }
+  const d = Math.floor(segundos / 86400);
+  return `ha ${d} ${d === 1 ? "dia" : "dias"}`;
+}
+
+function instanteVM(
+  iso: string | null | undefined,
+  agora: Date,
+  ausencia: { motivo: MotivoAusencia; explicacao: string },
+): InstanteVM {
+  const t = iso ? Date.parse(iso) : Number.NaN;
+  if (!iso || !Number.isFinite(t)) return { observado: false, ...ausencia };
+  const segundos = Math.round((agora.getTime() - t) / 1000);
+  return {
+    observado: true,
+    em: new Date(t).toISOString(),
+    hora: horaLocal(t, agora.getTime()),
+    idade: idadeLegivel(segundos),
+    segundos,
+  };
+}
+
+const ESTADO_LEGIVEL: Record<EstadoViagem, string> = {
+  criada: "criada, aguardando saida",
+  em_rota: "em rota",
+  chegou: "chegou ao cliente",
+  entregue: "entrega confirmada",
+  retornando: "retornando",
+  retornou: "retornou",
+  encerrada: "encerrada",
+  desconhecido: "ciclo de vida desconhecido",
+};
+
+/**
+ * Onde se ESPERA posicao. A captura liga com a viagem em `em_rota` ou
+ * `retornando` (`src/entregas/ui/rider-mobile/capture-rule.js`); `chegou` e
+ * `entregue` sao marcos de parada DENTRO da rota. Antes da saida e depois do
+ * retorno, silencio de GPS e o esperado — e nao vira conferencia.
+ */
+function grupoDe(estado: string): GrupoDaViagem {
+  switch (estado) {
+    case "em_rota":
+    case "chegou":
+    case "entregue":
+    case "retornando":
+      return "na_rua";
+    case "criada":
+      return "aguardando_saida";
+    case "retornou":
+    case "encerrada":
+      return "encerrada";
+    default:
+      return "ciclo_desconhecido";
+  }
+}
+
+const SOLIDEZ_DO_FRESCOR: Record<Frescor, Solidez> = {
+  fresh: "cheia",
+  aging: "tracejada",
+  stale: "pontilhada",
+  unknown: "interrompida",
+};
+const ORDEM_DA_SOLIDEZ: Record<Solidez, number> = { interrompida: 0, pontilhada: 1, tracejada: 2, cheia: 3, neutra: 4 };
+
+function plural(n: number, um: string, varios: string): string {
+  return `${n} ${n === 1 ? um : varios}`;
+}
+
+function viagemLida(
+  v: ViagemProjetada,
+  procedencia: Procedencia,
+  rotuloPor: ReadonlyMap<string, string>,
+  agora: Date,
+): ViagemLidaVM {
+  const grupo = grupoDe(v.estado);
+  const esperaPosicao = grupo === "na_rua" || grupo === "ciclo_desconhecido";
+  const selos: Selo[] = [selo(procedencia)];
+  if (grupo === "na_rua" && v.frescor === "stale") {
+    selos.push(selo("stale", `Ultimo lote de GPS mais velho que ${JANELAS.aging_ate_s / 60} min.`));
+  }
+  if (grupo === "na_rua" && v.frescor === "unknown") {
+    selos.push(selo("evidencia_insuficiente", "Nenhuma posicao com horario confiavel nesta viagem."));
+  }
+  if (grupo === "ciclo_desconhecido") {
+    selos.push(selo("evidencia_insuficiente", "A viagem existe pelo GPS; saida e fim ainda nao entram pela cadeia canonica."));
+  }
+  return {
+    viagem_id: v.trip_id,
+    rotulo_identidade: "Viagem",
+    unidade: v.unit_id,
+    estado: v.estado,
+    estado_legivel: ESTADO_LEGIVEL[v.estado] ?? v.estado,
+    grupo,
+    frescor: v.frescor,
+    posicao: instanteVM(v.ultima_posicao_em, agora, {
+      motivo: "nao_observado",
+      explicacao: "Nenhum lote de GPS com horario confiavel nesta viagem.",
+    }),
+    device_id: v.device_id ?? null,
+    aparelho: v.device_id ? rotuloPor.get(v.device_id) ?? null : null,
+    procedencia,
+    solidez: esperaPosicao ? SOLIDEZ_DO_FRESCOR[v.frescor] : "neutra",
+    selos,
+  };
+}
+
+/** Menos solidez primeiro; empate, a posicao mais velha primeiro. A pressao tem lugar no espaco. */
+function porAtencao(a: ViagemLidaVM, b: ViagemLidaVM): number {
+  const s = ORDEM_DA_SOLIDEZ[a.solidez] - ORDEM_DA_SOLIDEZ[b.solidez];
+  if (s !== 0) return s;
+  const ia = a.posicao.observado ? a.posicao.segundos : Number.POSITIVE_INFINITY;
+  const ib = b.posicao.observado ? b.posicao.segundos : Number.POSITIVE_INFINITY;
+  if (ia !== ib) return ib - ia;
+  return a.viagem_id.localeCompare(b.viagem_id);
+}
+
+function filtrarPorUnidade(r: RealidadeDeEntregas, unidade: string | null): RealidadeDeEntregas {
+  if (!unidade) return r;
+  return {
+    ...r,
+    aparelhos: r.aparelhos.filter((a) => a.unit_id === unidade),
+    projecoes: r.projecoes.filter((p) => p.unit_id === unidade),
+  };
+}
+
+const ORDEM_DO_TIPO: Record<TipoConferir, number> = {
+  viagem_sem_posicao_recente: 0,
+  fila_sem_relato_recente: 1,
+  cadastro_incompleto: 2,
+};
+
+function conferencias(r: RealidadeDeEntregas, naRua: readonly ViagemLidaVM[], agora: Date): ConferirVM[] {
+  const itens: ConferirVM[] = [];
+  for (const v of naRua) {
+    if (v.frescor !== "stale" && v.frescor !== "unknown") continue;
+    itens.push({
+      chave: `viagem:${v.viagem_id}`,
+      tipo: "viagem_sem_posicao_recente",
+      unidade: v.unidade,
+      titulo: v.posicao.observado
+        ? `Viagem ${v.viagem_id} sem posicao recebida ${v.posicao.idade}`
+        : `Viagem ${v.viagem_id} sem nenhuma posicao recebida`,
+      detalhe: `${v.estado_legivel} pelo ultimo fato · ${v.aparelho ?? v.device_id ?? "nenhum aparelho nomeado"}`,
+      restricao: "Sem lote recente nao da para saber onde a moto esta. Isto nao diz que ela parou.",
+      desde: v.posicao,
+      evidencia: `ultimo lote ${v.posicao.observado ? v.posicao.hora : "nenhum"} · ${v.device_id ?? "sem aparelho"} · ${v.unidade}`,
+      procedencia: v.procedencia,
+      selo:
+        v.frescor === "stale"
+          ? selo("stale", `Ultimo lote de GPS mais velho que ${JANELAS.aging_ate_s / 60} min.`)
+          : selo("evidencia_insuficiente", "Nenhuma posicao com horario confiavel nesta viagem."),
+    });
+  }
+  for (const a of r.aparelhos) {
+    if (a.revogado_em || !a.fila_offline) continue;
+    const total = a.fila_offline.pending_points + a.fila_offline.pending_events;
+    if (total <= 0) continue;
+    if (classificarFrescor(a.fila_offline.reportada_em, agora, JANELAS_FILA_OFFLINE) !== "stale") continue;
+    const relato = instanteVM(a.fila_offline.reportada_em, agora, {
+      motivo: "evidencia_insuficiente",
+      explicacao: "Instante do relato ilegivel.",
+    });
+    itens.push({
+      chave: `fila:${a.device_id}`,
+      tipo: "fila_sem_relato_recente",
+      unidade: a.unit_id,
+      titulo: `${a.label}: ${total} ${total === 1 ? "item esperando" : "itens esperando"} envio no ultimo relato, ${relato.observado ? relato.idade : "em instante ilegivel"}`,
+      detalhe: `${a.fila_offline.pending_points} pontos · ${a.fila_offline.pending_events} eventos. Nenhum relato mais novo chegou.`,
+      restricao: "O relato antigo nao diz se esses itens ja foram enviados, nem se o telefone esta sem rede agora.",
+      desde: relato,
+      evidencia: `relato recebido ${relato.observado ? relato.hora : "?"} · ${a.device_id} · ${a.unit_id}`,
+      procedencia: null,
+      selo: selo("stale", `Relato com mais de ${JANELAS_FILA_OFFLINE.aging_ate_s / 60} minutos. A fila pode ter mudado.`),
+    });
+  }
+  for (const a of r.aparelhos) {
+    if (a.revogado_em || a.credencial_vinculada_em) continue;
+    const autorizado = instanteVM(a.autorizado_em, agora, { motivo: "nao_observado", explicacao: "Sem data de autorizacao." });
+    itens.push({
+      chave: `cadastro:${a.device_id}`,
+      tipo: "cadastro_incompleto",
+      unidade: a.unit_id,
+      titulo: `${a.label}: cadastro incompleto`,
+      detalhe: "Falta pre-vincular o codigo do aparelho. Sem isso ele nao consegue falar com a plataforma.",
+      restricao: "Esta tela nao altera cadastro: autorizar aparelho e ato do responsavel, fora daqui.",
+      desde: autorizado,
+      evidencia: `autorizado ${autorizado.observado ? autorizado.hora : "?"} · ${a.device_id} · ${a.unit_id}`,
+      procedencia: "real",
+      selo: selo("acao_humana_necessaria", "Cadastro incompleto: falta pre-vincular o codigo do aparelho."),
+    });
+  }
+  const idade = (c: ConferirVM) => (c.desde.observado ? c.desde.segundos : Number.POSITIVE_INFINITY);
+  return itens.sort(
+    (x, y) => ORDEM_DO_TIPO[x.tipo] - ORDEM_DO_TIPO[y.tipo] || idade(y) - idade(x) || x.chave.localeCompare(y.chave),
+  );
+}
+
+function aparelhoLido(a: AparelhoReal, agora: Date): AparelhoLidoVM {
+  const confiavel = a.ultimo_lote
+    ? instanteConfiavel({ occurred_at: a.ultimo_lote.occurred_at, received_at: a.ultimo_lote.recorded_at, clock_trust: a.ultimo_lote.relogio })
+    : undefined;
+  const ultima_posicao = instanteVM(confiavel, agora, {
+    motivo: "nao_observado",
+    explicacao: "Nenhum lote chegou deste aparelho. Isto nao diz que o GPS esta parado — diz que nada foi observado.",
+  });
+  return {
+    device_id: a.device_id,
+    situacao: a.revogado_em ? "revogado" : a.ultimo_lote ? "com_lote" : "sem_lote",
+    ultima_posicao,
+    ultima_sessao: instanteVM(a.ultima_sessao_em, agora, {
+      motivo: "nao_observado",
+      explicacao: "Este aparelho nunca obteve credencial.",
+    }),
+    fila_relato: instanteVM(a.fila_offline?.reportada_em, agora, {
+      motivo: "nao_observado",
+      explicacao: "O telefone ainda nao reportou a profundidade da fila offline.",
+    }),
+    solidez: a.revogado_em
+      ? "neutra"
+      : ultima_posicao.observado
+        ? SOLIDEZ_DO_FRESCOR[classificarFrescor(ultima_posicao.em, agora)]
+        : "interrompida",
+  };
+}
+
+function leituraAusente(motivo: "integracao_pendente" | "indisponivel", explicacao: string): LeituraDaRuaVM {
+  return {
+    disponivel: false,
+    motivo,
+    eyebrow: motivo === "integracao_pendente" ? "Sem leitura do servidor" : "Leitura indisponivel",
+    titulo:
+      motivo === "integracao_pendente"
+        ? "Esta build nao le o banco da plataforma."
+        : "A plataforma nao respondeu a esta leitura.",
+    explicacao,
+    restricao: "Nada nesta tela representa a rua agora. O que aparece abaixo e demonstracao.",
+    solidez: "interrompida",
+  };
+}
+
+function leituraDaRua(
+  todas: RealidadeDeEntregas,
+  r: RealidadeDeEntregas,
+  selecionada: string | null,
+  agora: Date,
+): LeituraDaRuaVM {
+  const rotuloPor = new Map(todas.aparelhos.map((a) => [a.device_id, a.label] as const));
+  const lidas = r.projecoes.flatMap((p) =>
+    p.viagens.map((v) => viagemLida(v, PROCEDENCIA_DO_MODO[p.source_mode], rotuloPor, agora)),
+  );
+  const doGrupo = (g: GrupoDaViagem) => lidas.filter((v) => v.grupo === g).sort(porAtencao);
+  const naRua = doGrupo("na_rua");
+  const desconhecidas = doGrupo("ciclo_desconhecido");
+  const comPosicao = desconhecidas.filter((v) => v.frescor === "fresh" || v.frescor === "aging");
+  const semPosicao = desconhecidas.filter((v) => v.frescor !== "fresh" && v.frescor !== "aging");
+  const semPosicaoRecente = naRua.filter((v) => v.frescor === "stale" || v.frescor === "unknown").length;
+  const conferir = conferencias(r, naRua, agora);
+
+  const unidadesIds = [...new Set([...todas.aparelhos.map((a) => a.unit_id), ...todas.projecoes.map((p) => p.unit_id)])].sort();
+  const unidades: UnidadeLidaVM[] = unidadesIds.map((u) => ({
+    unit_id: u,
+    aparelhos: todas.aparelhos.filter((a) => a.unit_id === u).length,
+    viagens_na_rua: todas.projecoes
+      .filter((p) => p.unit_id === u)
+      .flatMap((p) => p.viagens)
+      .filter((v) => grupoDe(v.estado) === "na_rua").length,
+    selecionada: u === selecionada,
+  }));
+  const encontrada = selecionada === null || unidadesIds.includes(selecionada);
+  const unidadesNaLeitura = [...new Set([...r.aparelhos.map((a) => a.unit_id), ...r.projecoes.map((p) => p.unit_id)])];
+  const onde = selecionada
+    ? ` em ${selecionada}`
+    : unidadesNaLeitura.length === 1
+      ? ` em ${unidadesNaLeitura[0]}`
+      : unidadesNaLeitura.length > 1
+        ? ` em ${unidadesNaLeitura.length} unidades`
+        : "";
+
+  const janelaRecente = `${JANELAS.fresh_ate_s / 60} min`;
+  let titulo: string;
+  let explicacao = `Posicao recente e lote recebido ha ate ${janelaRecente}. Ela diz que o sinal chegou, nao onde a moto esta agora.`;
+  if (!encontrada) {
+    titulo = `Nenhum aparelho de ${selecionada} nesta leitura.`;
+    explicacao = "A unidade pedida nao aparece no cadastro nem nos fatos lidos. Escolha outra unidade ou veja todas.";
+  } else if (naRua.length > 0) {
+    titulo =
+      `${plural(naRua.length, "viagem", "viagens")} na rua${onde}` +
+      (semPosicaoRecente > 0
+        ? `; ${semPosicaoRecente} sem posicao recente.`
+        : naRua.length === 1
+          ? ", com posicao recente."
+          : ", todas com posicao recente.");
+    if (comPosicao.length > 0) {
+      explicacao += ` Mais ${plural(comPosicao.length, "viagem manda", "viagens mandam")} posicao sem ciclo de vida conhecido.`;
+    }
+  } else if (comPosicao.length > 0) {
+    titulo = `${plural(comPosicao.length, "viagem mandando", "viagens mandando")} posicao${onde}; o ciclo de vida nao chega a esta leitura.`;
+  } else if (r.aparelhos.length === 0) {
+    titulo = `Nenhum aparelho autorizado${onde}.`;
+    explicacao = "Sem aparelho autorizado, nenhuma posicao chega a plataforma. Isto nao diz que nao ha motoboy na rua.";
+  } else {
+    titulo = `Nenhuma viagem na rua por esta leitura${onde}.`;
+    explicacao = "Isto nao afirma que a rua esta parada: afirma que nada foi observado por este caminho.";
+  }
+
+  const restricao =
+    semPosicaoRecente > 0
+      ? `${plural(semPosicaoRecente, "viagem", "viagens")} sem posicao recente: esta leitura nao sabe onde ${semPosicaoRecente === 1 ? "ela esta" : "elas estao"}.`
+      : comPosicao.length + semPosicao.length > 0
+        ? "O ciclo de vida das viagens ainda nao chega pela cadeia canonica: saida e fim nao aparecem aqui."
+        : null;
+
+  const comSinal = [...naRua, ...comPosicao];
+  const solidez: Solidez =
+    comSinal.length === 0
+      ? "neutra"
+      : comSinal.reduce<Solidez>((pior, v) => (ORDEM_DA_SOLIDEZ[v.solidez] < ORDEM_DA_SOLIDEZ[pior] ? v.solidez : pior), "cheia");
+
+  // Os selos descrevem os FATOS lidos (o modo de cada lote), nao o cadastro.
+  const modos = new Set<SourceMode>([
+    ...r.projecoes.map((p) => p.source_mode),
+    ...r.aparelhos.flatMap((a) => (a.ultimo_lote?.source_mode ? [a.ultimo_lote.source_mode] : [])),
+  ]);
+  const selos: Selo[] = (["real", "simulated", "control"] as const)
+    .filter((m) => modos.has(m))
+    .map((m) => selo(PROCEDENCIA_DO_MODO[m]));
+  selos.push(
+    selo("parcial", "A leitura traz cadastro, GPS e fila agregada; o ciclo de vida da viagem ainda nao chega por esta cadeia."),
+  );
+
+  const qualidade: string[] = [];
+  for (const a of r.aparelhos) {
+    if (!a.ultimo_lote || a.ultimo_lote.relogio === "trusted") continue;
+    const adiantado = Math.round((Date.parse(a.ultimo_lote.occurred_at) - Date.parse(a.ultimo_lote.recorded_at)) / 60000);
+    qualidade.push(
+      a.ultimo_lote.relogio === "suspect"
+        ? `${a.label}: relogio do aparelho ${adiantado} min a frente do servidor. A hora enviada fica como evidencia; a idade usa a hora em que o servidor recebeu.`
+        : `${a.label}: relogio do aparelho nao avaliado. A idade usa a hora em que o servidor recebeu.`,
+    );
+  }
+  if (semPosicao.length > 0) {
+    qualidade.push(
+      `${plural(semPosicao.length, "viagem", "viagens")} sem posicao recente e sem ciclo de vida conhecido: ${semPosicao.length === 1 ? "pode ter terminado" : "podem ter terminado"}; esta leitura nao sabe.`,
+    );
+  }
+  qualidade.push(
+    `Fatos antigos sem modo (UNKNOWN), anteriores a migration 0003, fora desta leitura: ${todas.historico_sem_modo}.`,
+  );
+
+  return {
+    disponivel: true,
+    lida_em: agora.toISOString(),
+    lida_as: horaLocal(agora.getTime(), agora.getTime()),
+    fuso: FUSO_DE_EXIBICAO,
+    janelas: { fresca_ate_s: JANELAS.fresh_ate_s, envelhecendo_ate_s: JANELAS.aging_ate_s },
+    unidades,
+    unidade_selecionada: selecionada,
+    unidade_encontrada: encontrada,
+    titulo,
+    explicacao,
+    restricao,
+    solidez,
+    selos,
+    contagens: {
+      na_rua: naRua.length,
+      na_rua_sem_posicao_recente: semPosicaoRecente,
+      ciclo_desconhecido_com_posicao: comPosicao.length,
+      aguardando_saida: doGrupo("aguardando_saida").length,
+      encerradas: doGrupo("encerrada").length,
+      aparelhos: r.aparelhos.length,
+      conferir: conferir.length,
+    },
+    conferir,
+    viagens: {
+      na_rua: naRua,
+      aguardando_saida: doGrupo("aguardando_saida"),
+      ciclo_desconhecido_com_posicao: comPosicao,
+      ciclo_desconhecido_sem_posicao: semPosicao,
+      encerradas: doGrupo("encerrada"),
+    },
+    aparelhos: r.aparelhos.map((a) => aparelhoLido(a, agora)),
+    qualidade,
+  };
+}
+
+/**
+ * O aparelho da DEMONSTRACAO. O facade em memoria nao tem aparelho; o aparelho
+ * real — credencial, GPS, fila — e lido do banco da plataforma pela porta de
+ * realidade, quando a build tem banco. Cada campo declara por que esta vazio,
+ * em vez de desenhar uma caixa vazia que parece saudavel.
  */
 function dispositivoSemIntegracaoDeLeitura(): DispositivoVM {
   const pendente = (o: string) =>
     ausente<never>(
       "integracao_pendente",
-      `${o} chega do aparelho pela rota de ingestao, e nao existe rota de leitura que devolva este estado. Nada aqui representa o aparelho agora.`,
+      `${o}: esta demonstracao nao tem aparelho. O aparelho real aparece na leitura do servidor, quando a build le o banco da plataforma.`,
     );
   return {
     credencial: pendente("A integridade da credencial") as Campo<string>,
@@ -378,11 +952,22 @@ export function entregasVM(
     motivo: "integracao_pendente",
     explicacao: "Esta leitura nao recebeu a porta de realidade: nenhum banco foi consultado.",
   },
+  opcoes: OpcoesEntregasVM = {},
 ): EntregasVM {
   const procedencia: Procedencia = "simulado";
-  const realidade = leitura.disponivel
-    ? realidadeVM(leitura.realidade, new Date(agora))
-    : realidadeAusente(leitura.motivo, leitura.explicacao);
+  // O filtro de unidade vale para a REALIDADE inteira; a lista de unidades
+  // continua vindo da leitura sem filtro — filtrar nao apaga a outra unidade.
+  const unidade = (opcoes.unidade ?? "").trim() || null;
+  let realidade: RealidadeVM;
+  let daRua: LeituraDaRuaVM;
+  if (leitura.disponivel) {
+    const lida = filtrarPorUnidade(leitura.realidade, unidade);
+    realidade = realidadeVM(lida, new Date(agora));
+    daRua = leituraDaRua(leitura.realidade, lida, unidade, new Date(agora));
+  } else {
+    realidade = realidadeAusente(leitura.motivo, leitura.explicacao);
+    daRua = leituraAusente(leitura.motivo, leitura.explicacao);
+  }
 
   const viagens: ViagemVM[] = snap.trips.map((t) => ({
     viagem_id: t.trip_id,
@@ -435,6 +1020,7 @@ export function entregasVM(
     ocorrencias,
     dispositivo: dispositivoSemIntegracaoDeLeitura(),
     realidade,
+    leitura: daRua,
     ultimo_erro:
       snap.last_error === null
         ? ausente<string>(
@@ -444,19 +1030,20 @@ export function entregasVM(
         : observado(snap.last_error, procedencia, agora),
     limitacoes: [
       {
-        titulo: "Nenhuma viagem desta tela e real",
+        titulo: "Nenhuma viagem da demonstracao e real",
         texto:
-          "O facade roda em memoria e comeca com pedidos semeados. Fechar a aba apaga tudo. Nada aqui foi observado na rua.",
+          "O facade roda em memoria e comeca com pedidos semeados. Fechar a aba apaga tudo. Nada na faixa de demonstracao foi observado na rua.",
       },
       {
-        titulo: "O aparelho nao tem rota de leitura",
-        texto:
-          "Credencial, GPS, ultima sincronizacao e fila offline chegam do Android pela ingestao. Nao existe endpoint que devolva esse estado, entao os cinco campos aparecem como integracao pendente em vez de zero.",
+        titulo: "A demonstracao nao tem aparelho",
+        texto: leitura.disponivel
+          ? "Os cinco campos do aparelho da demonstracao ficam como integracao pendente em vez de zero. Credencial, GPS, ultima sessao e fila do aparelho REAL estao na leitura do servidor."
+          : "Credencial, GPS, ultima sessao e fila do aparelho existem na plataforma, mas esta build nao le o banco dela. Os cinco campos da demonstracao ficam como integracao pendente em vez de zero.",
       },
       {
         titulo: "Esta tela nao opera",
         texto:
-          "Nao ha botao que crie viagem, mova pedido, confirme entrega ou altere capacidade. A Unidade 6 e de apresentacao.",
+          "Nao ha botao que crie viagem, mova pedido, confirme entrega ou altere capacidade. Atualizar a leitura so pergunta de novo ao servidor (GET).",
       },
     ],
   };
