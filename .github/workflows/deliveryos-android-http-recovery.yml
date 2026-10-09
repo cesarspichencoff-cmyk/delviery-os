@@ -2,7 +2,7 @@
 name: DeliveryOS Android HTTP recovery
 on:
   push:
-    branches: [feat/deliveryos-android-malformed-receipt-20261009]
+    branches: [feat/deliveryos-android-malformed-receipt-20261009, feat/deliveryos-android-http-recovery-green-20261009]
   workflow_dispatch:
 permissions:
   contents: read
