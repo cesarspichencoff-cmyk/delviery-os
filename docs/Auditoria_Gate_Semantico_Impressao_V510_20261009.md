@@ -50,3 +50,25 @@ Escopo: geração de comprovantes **exclusivamente offline**. Não é liberaçã
 - **10/10:** não declarable enquanto qualquer bloqueio material acima estiver aberto.
 
 Este registro documenta o que foi realmente testado e os limites da prova; não autoriza efeitos produtivos.
+
+## 5. Adendo — identidade entre pedidos e proteção administrativa (09/10/2026)
+
+**Novas falhas reproduzidas e depois corrigidas** no fluxo SHADOW, após a auditoria anterior:
+
+| Controle | Prova inicial RED | Correção | Prova posterior |
+|---|---|---|---|
+| Impedir que `KITCHEN_DISHES` de outro pedido entre em `bundle.jobs` | `17624b2f`, [run 37909583795](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/37909583795), teste 13 falhou | `ef66b15b`: identidade, fingerprint e conteúdo da fonte dos pratos | [run 37909755522](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/37909755522), testes 13–14 verdes |
+| Impedir que `KITCHEN_COMPONENTS` incorretos entrem em exportação | `7b507428`, [run 37909917364](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/37909917364), teste 15 falhou | `91f8224d`: identificadores de componentes devem coincidir com **todas** as produções e a conferência | [run 37910080802](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/37910080802): **15/15** semânticos e **26/26** do projetor V4.5 verdes |
+
+Não houve acesso a impressoras. Os testes não provam integridade criptográfica da fonte de componentes: `KitchenPrepV47` ainda não possui campo próprio de fingerprint. A checagem de identificadores elimina a mistura evidente entre pedidos, mas **não autoriza declarar que qualquer dado recebido com os mesmos identificadores é confiável**.
+
+### Proteção do PR — evidência mais precisa
+
+Revalidado em 09/10:
+- `GET /repos/cesarspichencoff-cmyk/delviery-os/rulesets` → `[]`.
+- `GET /repos/.../branches/feat/thermal-quality-v51-epson-official-fontqa-20261008` → `protected:false`. Essa é a **branch-base do PR #21**.
+- O check `Offline thermal proof (fail closed)` é executado e falha de forma real. Contudo, **a exigência administrativa do check antes de merge não está demonstrada**, e o indicador `protected:false` não permite tratá-la como configurada. Verificar branch protection / rulesets com credenciais administrativas apropriadas antes de promover PR para READY.
+
+**Última fronteira técnica:** até corrigir por meio permitido o inspetor `tools/escposByteInspectorV51.js`, o teste adversarial obrigatório termina vermelho em `GS ! 0x22`. Não alterar o teste para mascarar a falha nem contornar o bloqueio anterior de edição.
+
+**Estado neste adendo:** a segurança semântica da exportação offline foi melhorada e comprovada no GitHub; CI integral, política obrigatória de merge e aceite físico permanecem **não comprovados**.
