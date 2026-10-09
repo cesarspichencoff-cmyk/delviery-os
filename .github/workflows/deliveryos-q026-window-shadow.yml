@@ -1,0 +1,22 @@
+name: deliveryos-q026-window-shadow
+on:
+  push:
+    branches:
+      - research/deliveryos-q026-window-shadow-20261009
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  counterexamples:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: contraexemplos de janela sem destruir viagens
+        run: npx tsx tests/product/run-q026-window-shadow-tests.ts
+      - name: TypeScript sem emitir arquivos
+        run: npx tsc --noEmit
