@@ -128,6 +128,34 @@ class RoomSyncRaceRecoveryTest {
         assertEquals(0, db.gpsPoints().pendingCount())
     }
 
+    @Test fun sendingGpsStillInOfflineQueueAfterRestart() = runBlocking {
+        val item = gps("legacy-sending-gps").copy(syncState = "sending")
+        db.gpsPoints().insert(item)
+        db.close()
+        db = open()
+        assertEquals(1, db.gpsPoints().pendingCount())
+        val batch = db.gpsPoints().nextBatch(20)
+        assertEquals(1, batch.size)
+        assertEquals(item.idempotencyKey, batch.single().idempotencyKey)
+        db.gpsPoints().markFailed(listOf(item.pointId), "network_timeout")
+        db.gpsPoints().markSent(listOf(item.pointId))
+        assertEquals(0, db.gpsPoints().pendingCount())
+    }
+
+    @Test fun sendingOutboxStillInOfflineQueueAfterRestart() = runBlocking {
+        val item = event("legacy-sending-event").copy(syncState = "sending")
+        db.outbox().insert(item)
+        db.close()
+        db = open()
+        assertEquals(1, db.outbox().pendingCount())
+        val batch = db.outbox().nextBatch(20)
+        assertEquals(1, batch.size)
+        assertEquals(item.idempotencyKey, batch.single().idempotencyKey)
+        db.outbox().markFailed(listOf(item.eventId), "network_timeout")
+        db.outbox().markSent(listOf(item.eventId))
+        assertEquals(0, db.outbox().pendingCount())
+    }
+
     @Test fun pendingOutboxFailureRemainsRetryableAcrossRestart() = runBlocking {
         db.outbox().insert(event("evt-2"))
         db.outbox().markFailed(listOf("evt-2"), "timeout")
