@@ -85,9 +85,19 @@ function celulaFilaOffline(a) {
   const em = a.fila_offline_reportada_em?.observado === true
     ? a.fila_offline_reportada_em.valor
     : "instante nao observado";
-  return `<span class="campo__valor"><strong>${esc(a.fila_offline.valor)}</strong> pendente(s)</span>
+  const frescor = a.fila_offline_frescor?.observado === true
+    ? a.fila_offline_frescor.valor : "unknown";
+  const aviso = frescor === "stale"
+    ? selo({ estado: "stale", detalhe: "Relato com mais de 45 minutos. A fila pode ter mudado." })
+    : frescor === "aging"
+      ? selo({ estado: "parcial", detalhe: "Relato com 30 a 45 minutos. Nao confirma a fila atual." })
+      : frescor === "unknown"
+        ? selo({ estado: "evidencia_insuficiente", detalhe: "Instante do relato invalido; idade desconhecida." })
+        : "";
+  return `<span class="campo__valor"><strong>${esc(a.fila_offline.valor)}</strong> pendente(s) no ultimo relato</span>
     <br><span class="campo__valor--tecnico">${esc(pontos)} pontos · ${esc(eventos)} eventos</span>
-    <br><span class="campo__rotulo">${esc(em)}</span>`;
+    <br><span class="campo__rotulo">Ultimo relato do aparelho: ${esc(em)}</span>
+    ${aviso}`;
 }
 
 /**
