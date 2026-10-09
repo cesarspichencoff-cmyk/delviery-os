@@ -180,4 +180,41 @@ check("11 planner-declared blocking reasons reject a contradictory ready flag", 
   assert.ok(bundle.blocked_proofs.every(item=>item.proof.bytes.length===0));
 });
 
+check("12 incomplete packaging blocks only the conference when stations remain proven", () => {
+  function project(f) {
+    return projectOperationalTicketsV45({
+      order_id:f.id,source_items:f.source_items,
+      production_plan:f.production_plan,resource_projection:f.resource_projection,
+      packaging_plan:f.packaging
+    });
+  }
+  // The resource projection alone cannot make an absent packaging plan proven.
+  const missing=archivedCompleteInput();
+  missing.packaging=null;
+  const m=project(missing);
+  assert.equal(m.conference.ready_for_semantic_preview,false);
+  const {bundle:missingBundle}=bundleFrom(m,missing.source_items);
+  assert.equal(missingBundle.jobs.some(x=>x.channel==="CONFERENCE"),false);
+  assert.ok(missingBundle.blocked_proofs.some(x=>x.channel==="CONFERENCE"));
+
+  // An explicit unknown must not demote fully proven station tickets.
+  const unknown=archivedCompleteInput();
+  unknown.packaging.has_unknown=true;
+  const u=project(unknown);
+  assert.equal(u.conference.ready_for_semantic_preview,false);
+  assert.ok(u.production.every(x=>x.ready_for_semantic_preview));
+  const {bundle:unknownBundle}=bundleFrom(u,unknown.source_items);
+  assert.deepEqual(channels(unknownBundle),["KITCHEN_DISHES","OTHER_PRODUCTION"]);
+  assert.ok(unknownBundle.blocked_proofs.some(x=>x.channel==="CONFERENCE"));
+
+  // One unallocated product requires manual conference review.
+  const partial=archivedCompleteInput();
+  partial.packaging.groups.pop();
+  const p=project(partial);
+  assert.ok(p.conference.items_without_proven_box.length>0);
+  assert.equal(p.conference.ready_for_semantic_preview,false);
+  const {bundle:partialBundle}=bundleFrom(p,partial.source_items);
+  assert.equal(partialBundle.jobs.some(x=>x.channel==="CONFERENCE"),false);
+});
+
 console.log("thermal-semantic-gate-v510: "+checks+"/"+checks+" PASS; SHADOW ONLY");
