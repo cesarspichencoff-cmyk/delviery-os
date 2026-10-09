@@ -39,4 +39,11 @@ check("reject malformed pixel array",()=>{
   const x=readP4(sample());x.data=Buffer.alloc(1);
   assert.throws(()=>toGsV0Raster(x),/BYTES/);
 });
+check("PBM binary whitespace is preserved",()=>{
+  const b=sample(20),header=Buffer.from("P4\\n576 20\\n");
+  b[header.length]=0x0a;
+  const x=readP4(b);
+  assert.equal(x.data[0],0x0a);
+  assert.equal(x.data.length,72*20);
+});
 console.log("FIGMA_RASTER_V61_TEST_PASS="+n+"/"+n);
