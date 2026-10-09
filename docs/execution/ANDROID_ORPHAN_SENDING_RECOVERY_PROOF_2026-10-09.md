@@ -22,7 +22,7 @@ Somente `EntregasDatabase.kt`:
 - `sent` e `rejected` continuam finais: a correção não os recoloca em fila.
 - O `sending` de uma versão legada entra no reenvio idempotente com mesma chave persistida. A sequência de captura e o payload não são alterados.
 - Sem migration Room, sem mudança de API, sem nova permissão e sem leitura de cliente.
-- Testes em `RoomSyncRaceRecoveryTest.kt`: dois cenários fecham/reabrem SQLite, verificam contagem, lote, idempotencyKey, transição para `failed` e confirmação `sent`. 
+- Testes em `RoomSyncRaceRecoveryTest.kt`: dois cenários fecham/reabrem SQLite, verificam contagem, lote, idempotencyKey, transição para `failed` e confirmação `sent`.
 - Workflow já existente da frente Room estendido para controle e correção, sem custos provisionados por este trabalho.
 
 ## Prova GREEN
