@@ -1,7 +1,9 @@
 # Evidências — Entregas, "a rua, lida agora" (2026-10-09)
 
 Capturas do Product System servidas pelo **servidor real** (`tools/product_system_server.ts`) em
-Chromium 141.0.7390.37 (`/opt/pw-browsers/chromium`), `reducedMotion: reduce`, escala 1. **Todo fato
+Chromium 141.0.7390.37 (`/opt/pw-browsers/chromium`), `reducedMotion: reduce`, escala 1, com as fontes
+canônicas (Spectral, Hanken Grotesk, IBM Plex Mono) carregadas do Google Fonts — medido: respostas 200 e
+`document.fonts.check` verdadeiro para as três. **Todo fato
 nas telas é `simulated`** — banco PostgreSQL 16 local e descartável; nada aqui aconteceu na rua, e as
 telas dizem isso (selos SIMULADO / PARCIAL / SOMENTE DEMONSTRAÇÃO). Imagens reduzidas a 256 cores para
 caber no repositório; as `-inteira-50` estão a 50 % da largura.

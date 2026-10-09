@@ -25,13 +25,17 @@
 3. **Nada de fonte nova.** Tudo é função pura da porta de realidade que já existia
    (`src/platform/leitura/realidade-de-entregas.ts`, intocada) e da `projetar()` da Operação Viva
    (intocada). Nenhuma janela, regra, sinal, Foco ou ação nova.
-4. **Provado com vermelho antes:** leitura da rua **2/20 → 22/22**, navegador **1/9 → 10/10**, servidor
-   + PostgreSQL real **5/5**; cadeia real **36/36**; mutações da cadeia **15/15, zero cegas** (M10 e M11
-   mutam o `entregas-vm.ts` novo e foram acusadas); **zero `FAIL_NOVO`** — o C6 do `m1-bridge` segue com
-   os **mesmos 12 caminhos** da Q-019, conferido depois do commit.
-5. **Pede decisão do César:** `Q-022` (confirmar a exceção estreita no envelope M1), `Q-023` (o relato de
-   fila B5 não declara modo e era rotulado `real`), `Q-024` (o que é um turno — a missão pediu filtro por
-   turno e não há contrato). A Figma conectada é de **outra pessoa** (`BoAlexandre`) — ver §7.
+4. **Provado com vermelho antes:** leitura da rua **2/20 → 23/23**, navegador **1/9 → 11/11** (o N10
+   prova a correção de classe em Home, Operação Viva, Conference Brain, Copiloto e Entregas, de 320 a
+   1920 px — vermelho contra a UI da base), servidor + PostgreSQL real **5/5**; cadeia real **36/36**;
+   mutações da cadeia **15/15, zero cegas** (M10 e M11 mutam o `entregas-vm.ts` novo e foram acusadas, e
+   de novo depois da 2ª iteração); **zero `FAIL_NOVO`** — o C6 do `m1-bridge` segue com os **mesmos 12
+   caminhos** da Q-019, conferido depois do commit. **CI da branch no GitHub verde** (run `37939179462`,
+   Chromium 149 — outra versão que a local, 141).
+5. **Pede decisão do César:** `Q-025` (aprovar a composição visual — a skill do produto exige a sua
+   aprovação antes de integrar), `Q-022` (confirmar a exceção estreita no envelope M1), `Q-023` (o relato
+   de fila B5 não declara modo e era rotulado `real`), `Q-024` (o que é um turno — a missão pediu filtro
+   por turno e não há contrato). A Figma conectada é de **outra pessoa** (`BoAlexandre`) — ver §7.
 
 ## 1. Commits
 
@@ -40,7 +44,9 @@
 | `c886f87` | **fix(product-ui):** `.shell__conteudo { position: relative }` (o `.sr-only` dos selos esticava o documento) e inspetor recolhido sem vazamento de 24 px e fora da ordem de tabulação |
 | `d722ec0` | **feat(entregas):** a leitura da rua — VM, superfície, `entregas.css` (novo), `index.html` (1 linha), `app.js`, servidor; 4 suítes de teste; exceção no envelope M1 + C6d; D93–D95, L58–L59, Q-022–Q-024 |
 | `4091d17` | **ci(product-ux):** workflow só desta branch (PostgreSQL de serviço, Chromium do Playwright) e `run-sem-fail-novo.ts` |
-| _(este)_ | registros: este handback, `STATE.json#product_ux_leitura_da_rua_20261009`, 5 linhas de EVIDENCE, 1 de LEDGER, capturas |
+| `2c4fc75` | registros: este handback, `STATE.json#product_ux_leitura_da_rua_20261009`, 5 linhas de EVIDENCE, 1 de LEDGER, capturas — **CI `37939179462` verde** |
+| `02b56c3` | **2ª iteração:** ocorrência registrada na leitura (L13); N10 em todas as superfícies; etiqueta de fontes nas capturas |
+| _(este)_ | registros da 2ª iteração: matriz de linhagem (§5.1), `Q-025`, EVIDENCE, STATE |
 
 ## 2. Arquivos
 
@@ -65,13 +71,14 @@
 
 | gate | antes (base `2782b31`) | depois |
 |---|---|---|
-| `npx tsx tests/product/run-entregas-leitura-da-rua-tests.ts` | **2/20** (só as guardas L8/L9) | **22/22** |
-| `PRODUCT_UI_CHROMIUM=/opt/pw-browsers/chromium npx tsx tests/product/run-entregas-browser-tests.ts` | **1/9** (só N6); N9 vermelho antes da correção do inspetor | **10/10** |
+| `npx tsx tests/product/run-entregas-leitura-da-rua-tests.ts` | **2/20** (só as guardas L8/L9); L13 **22/23** antes da ocorrência | **23/23** |
+| `PRODUCT_UI_CHROMIUM=/opt/pw-browsers/chromium npx tsx tests/product/run-entregas-browser-tests.ts` | **1/9** (só N6); N9 vermelho antes da correção do inspetor; N10 vermelho contra a UI da base | **11/11** |
 | `DELIVERYOS_PG_URL=… npx tsx tests/product/run-entregas-servidor-pg-tests.ts` | — (rota sem `unidade`) | **5/5** (S4: sha256 de `event_log` + `identity.device` idêntico depois de 6 leituras; POST 405) |
 | `test:platform:queue-depth` (B5, frente Android) | 12/12 + smoke | **12/12 + smoke** (nenhum arquivo do B5 tocado) |
 | `test:platform:product` | 52 | **52** |
 | `test:platform:cadeia` (PostgreSQL 16 + `dist/`) | — | **36/36** |
-| `test:platform:cadeia:mutacoes` | — | **15/15, 0 cegas** (M10 → D3, M11 → D4, no `entregas-vm.ts` novo) |
+| `test:platform:cadeia:mutacoes` | — | **15/15, 0 cegas** (M10 → D3, M11 → D4, no `entregas-vm.ts` novo); depois da 2ª iteração, `CADEIA_MUT=M10,M11`: **3/3, 0 cegas** |
+| **CI da branch** (GitHub, run `37939179462`, `2c4fc75`) | — | **verde**: tsc, build, leitura 22/22, navegador 10/10 (Chromium 149), PostgreSQL 5/5, product 52, B5 12/12 + smoke, home 44, organismo 27, visual-order 6, figma-parity 24, skills 12, r5, cadeia 36/36, governança PASS, m1-bridge só o C6 idêntico |
 | `test:platform:home` · `organismo` · `visual-order` · `figma-parity` | 44 · 27 · 6 · 24 | **44 · 27 · 6 · 24** |
 | `test:platform:r5` · `skills` · `m1b-mutations` · `platform` · `entregas:ui` · `saude-fontes` · `lab:v4` | verdes | **verdes** (9 gates · 12 · 11/11 · 44 · 23 · 10/10 · 9 mutações 0 cegas) |
 | `tsc --noEmit` · `build:platform` | 0 · 0 | **0 · 0** |
@@ -91,8 +98,10 @@ CI: 36/36.
 
 O G6b estava vermelho na base porque `STATE.json` observa `src/product/` e a base declarada era
 `bdcf59d`. Este registro atualiza `state_basis` para `d722ec0` (o último commit que tocou
-`src/product/`) e acrescenta o bloco verificado. Resultado medido **depois** do commit (L55): ver
-`docs/execution/EVIDENCE.jsonl` e o fim deste arquivo.
+`src/product/`) e acrescenta o bloco verificado. Medido **depois** do commit `2c4fc75` (L55):
+`test:platform:governanca` **14 guardas verdes** e `test:platform:governanca:mutacoes` **13/13 acusadas,
+0 cegas** — o suíte de mutações da governança nem rodava antes (abortava: o caso legítimo estava
+vermelho). Na 2ª iteração o `state_basis` passa a `02b56c3`, pelo mesmo motivo.
 
 ## 4. Capturas (antes → depois)
 
@@ -105,6 +114,11 @@ O G6b estava vermelho na base porque `STATE.json` observa `src/product/` e a bas
 - estados novos: `depois-sem-banco-*-dobra.png` (linha interrompida, demonstração depois) e
   `depois-leitura-envelhecida-celular-dobra.png` (6 min depois: linha pontilhada, "Esta leitura nao e a
   mais recente").
+
+**Fontes:** medido com `document.fonts.check` e as respostas de rede — o Google Fonts responde **200**
+neste container e as capturas usam **Spectral, Hanken Grotesk e IBM Plex Mono** (o teste de navegador
+imprime a etiqueta a cada execução). Uma hipótese minha, no meio do trabalho, de que as fontes estavam
+bloqueadas era **falsa**: o host recusado pelo proxy era `www.google.com` (tráfego do próprio Chromium).
 
 ## 5. Decisão visual, explicada
 
@@ -128,6 +142,34 @@ O G6b estava vermelho na base porque `STATE.json` observa `src/product/` e a bas
   toque ≥ 44 px (N8); nada anima e `prefers-reduced-motion` não perde informação (N6); celular com fluxo
   próprio: a frase da leitura e o "Atualizar leitura" cabem na primeira dobra de 390×844.
 
+### 5.1 Matriz de linhagem visual (protocolo da skill `tata-product-system`)
+
+Princípios do Sprint V2 usados, declarados: uma atenção dominante por superfície (a frase da leitura);
+confiança = solidez; trinca Spectral / Hanken Grotesk / IBM Plex Mono; contexto recuado (aparelhos,
+encerradas e qualidade depois); silêncio com intenção (nada pede conferência = uma linha, não um
+painel); linguagem humana sem jargão; simulador fora da superfície de consciência; evidência não anima.
+
+| Elemento | Sprint Visual V2 (Nível 1) | Organismo V3.3 (Nível 2) | Leitura da rua (Entregas, Product System) | Justificativa |
+|---|---|---|---|---|
+| Atenção dominante | uma atenção soberana por estado | Foco central | **a frase da leitura** (`3 viagens na rua em ITAIM; 1 sem posicao recente.`) | Entregas não cria Foco (Operação Viva é a dona); a frase é leitura, não ordem |
+| Anatomia | Contrato de Estados Técnicos: camada técnica, linha de sinal, título humano, explicação, restrição | — | a mesma ordem, inclusive no estado sem banco | a leitura é, ela mesma, um estado de informação |
+| Confiança | solidez: cheio / tracejado / interrompido | — | linha de sinal e borda das células cheia/tracejada/pontilhada/interrompida | nunca semáforo; janelas da Operação Viva |
+| Tipografia | Spectral · Hanken Grotesk · IBM Plex Mono | idem | título Spectral (`clamp(1.5rem, 4.4vw, 2.1rem)`, o do `EstadoTecnico`), UI Hanken, meta/evidência Plex | nenhuma fonte de sistema |
+| Cor | verde vivo; âmbar tensão; neutro tracejado incompleto; ardósia falha | idem | âmbar para sem posição/relato velho; ardósia para leitura antiga e sem banco; verde só para posição recente | tokens existentes; texto sempre em `ink` (AA medido) |
+| Composição | leitura editorial, não painel | foco + contexto recuado | territórios: frase → conferência → células na rua → aparelhos → recolhidos | "territórios e células" (2026-08-07) |
+| Ação | uma ação soberana verde | CTA verde | **nenhuma ação operacional**; só "Atualizar leitura" (GET) | Product System é superfície de leitura (servidor recusa escrita) |
+| Vazio | silêncio com presença | "Nada precisa de você agora" | "Nada pede conferencia nesta leitura." / "Nenhuma viagem na rua por esta leitura." | sem afirmar calma; ausência escrita |
+| Simulação | simulador em faixa separada, fora da consciência | — | demonstração em faixa própria, tracejada, recolhida quando há leitura | o canon, item 11 |
+| Movimento | transição de consciência; evidência não anima | estados cognitivos | **nada anima** | é uma leitura; animar seria fingir fluxo |
+| Mapa | — | — | **sem mapa** | a porta não traz coordenada; GPS não é Foco; mapa-first proibido (`DESIGN_RED_TEAM`) |
+| Mobile | mobile-first, fluxo próprio | — | frase + reler na 1ª dobra de 390×844; aparelhos em lista, não tabela | "nunca desktop comprimido" |
+
+**Divergência declarada:** a linhagem do módulo ENTREGAS (`docs/entregas/ux/LINHAGEM_VISUAL_CANONICA.md`,
+2026-07-20) desenha o **app** do módulo (console com mapa, montar viagem, confirmar parada) e parou à espera
+das composições. Esta missão tocou outra superfície — o aprofundamento somente-leitura do Product System —
+por ordem explícita do César de 2026-10-09. Mesmo assim, como manda a skill, a aprovação visual fica com
+ele (`Q-025`): sem resposta, nada sai da branch.
+
 **O que não foi feito, de propósito:** mapa (proibido como Foco e mapa-first); ranking ou "motoboy
 lento" (Lei 4); recarga automática (D95); filtro por turno (sem contrato — `Q-024`); tocar Home,
 Copiloto, Operação Viva, Conference Brain, `estados.ts`, tokens, `sinais.ts`, `areas.ts`.
@@ -137,7 +179,7 @@ Copiloto, Operação Viva, Conference Brain, `estados.ts`, tokens, `sinais.ts`, 
 | estado | o quê |
 |---|---|
 | `CODE_READY` | tudo de §2 |
-| `TEST_PASS` | §3 neste container (Linux, Node 22.22, PostgreSQL 16 local descartável, Chromium 141); CI da branch: ver §10 |
+| `TEST_PASS` | §3 neste container (Linux, Node 22.22, PostgreSQL 16 local descartável, Chromium 141) e no CI da branch (GitHub, run `37939179462`, Chromium 149) |
 | `DEPLOYED` | **nada** |
 | `WORLD_PROVEN` | **nada** — nenhuma pessoa da expedição usou a tela; nenhum banco operacional foi lido |
 
@@ -183,9 +225,10 @@ Os três commits de código são independentes da frente Android e aplicam limpo
 git cherry-pick c886f87   # correção de classe do shell/inspetor (só CSS; serve a todas as superfícies)
 git cherry-pick d722ec0   # a leitura da rua (exige o anterior para o N2/N9 do navegador)
 git cherry-pick 4091d17   # CI desta branch — opcional fora dela (o gatilho é o nome da branch)
+git cherry-pick 02b56c3   # 2ª iteração: ocorrência registrada, N10, etiqueta de fontes
 ```
 
-Antes de integrar: responder `Q-022`; decidir `Q-021` se a outra linhagem entrar; rodar
+Antes de integrar: responder `Q-025` e `Q-022`; decidir `Q-021` se a outra linhagem entrar; rodar
 `npx tsx tests/product/run-sem-fail-novo.ts` (aceita só o C6 da Q-019, idêntico).
 
 **Delta opcional para `package.json`** (não aplicado, para não colidir com a frente Android):
@@ -199,7 +242,7 @@ Antes de integrar: responder `Q-022`; decidir `Q-021` se a outra linhagem entrar
 
 ## 11. Próximo passo seguro e pequeno
 
-1. César: responder `Q-022`, `Q-023`, `Q-024`.
+1. César: olhar as capturas e responder `Q-025`; depois `Q-022`, `Q-023`, `Q-024`.
 2. Abrir `/entregas` com o banco da plataforma de teste e o aparelho do Foxxy mandando lote; conferir
    que a frase, a idade e a conferência batem com o que se vê no telefone.
 3. Numa sexta de pico, o gerente da expedição usar a tela e dizer o que faltou — só isso vira

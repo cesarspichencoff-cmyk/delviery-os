@@ -6,7 +6,7 @@
     "authority_scope": "technical_state",
     "superseded_by": null,
     "atualizado_em": "2026-10-09",
-    "state_basis": "d722ec0",
+    "state_basis": "02b56c3",
     "observa": [
       "src/product/",
       "src/perfil-delivery/",
@@ -2276,7 +2276,9 @@
     "commits": {
       "c886f87": "shell e inspetor recolhido nao vazam",
       "d722ec0": "Entregas: a rua, lida agora",
-      "4091d17": "CI da branch e classificador sem FAIL_NOVO"
+      "4091d17": "CI da branch e classificador sem FAIL_NOVO",
+      "2c4fc75": "registros e capturas",
+      "02b56c3": "ocorrencia registrada; N10 em todas as superficies; etiqueta de fontes"
     },
     "superficie": "/entregas (Product System); Home, Copiloto, Operacao Viva e Conference Brain intocados",
     "o_que_mudou": [
@@ -2284,16 +2286,17 @@
       "o que pede conferencia: viagem na rua sem posicao recente, relato de fila velho com pendencia, cadastro incompleto — com evidencia e restricao, sem botao, sem Foco",
       "filtro por unidade derivado da leitura (#/entregas?unidade=), demonstracao numa faixa propria recolhida, estado tecnico sem banco",
       "a leitura envelhece na tela (performance.now, janelas da Operacao Viva); reler e GET",
-      "shell: .sr-only nao estica mais o documento; inspetor recolhido nao vaza nem recebe foco"
+      "shell: .sr-only nao estica mais o documento; inspetor recolhido nao vaza nem recebe foco",
+      "ocorrencia registrada (occurrence_created ja projetado) numa viagem na rua pede conferencia, sem inventar tipo, horario ou resolucao"
     ],
     "tests": {
-      "leitura_da_rua": "22/22 PASS (RED na base: 2/20)",
-      "navegador": "10/10 PASS (RED na base: 1/9; N9 RED antes da correcao do inspetor)",
+      "leitura_da_rua": "23/23 PASS (RED na base: 2/20; L13 22/23 antes da ocorrencia)",
+      "navegador": "11/11 PASS (RED na base: 1/9; N9 RED antes da correcao do inspetor; N10 RED contra a UI da base: inspetores vazando em Conference Brain 4/4, Copiloto 2/2, Entregas 2/2)",
       "servidor_postgresql_real": "5/5 PASS (filtro pela rota, leitura nao escreve, banco isolado apagado)",
       "b5_queue_depth": "12/12 PASS + B5_FRESHNESS_HTML_RENDER PASS",
       "product_system": "52/52 PASS",
       "cadeia_real": "36/36 PASS (PostgreSQL 16 local com auth trust, como o CI)",
-      "cadeia_mutacoes": "15/15, 0 cegas (M10 e M11 no entregas-vm.ts acusadas)",
+      "cadeia_mutacoes": "15/15, 0 cegas; depois da 2a iteracao CADEIA_MUT=M10,M11 3/3, 0 cegas",
       "home": "44/44",
       "organismo": "27/27",
       "visual_order": "6/6",
@@ -2307,7 +2310,9 @@
       "lab_v4": "verde (9 mutacoes, 0 cegas)",
       "m1_bridge": "35 passaram + C6 FAIL_PREEXISTENTE (os mesmos 12 caminhos da Q-019, conferido depois do commit)",
       "tsc_noEmit": "exit 0",
-      "build_platform": "exit 0"
+      "build_platform": "exit 0",
+      "governanca": "14 guardas verdes depois de 2c4fc75; mutacoes da governanca 13/13 acusadas, 0 cegas (antes abortavam)",
+      "ci_github": "run 37939179462 em 2c4fc75: verde (Chromium 149); evidencias como artefato do run, 14 dias"
     },
     "figma": {
       "conta_conectada": "BoAlexandre (nao e a conta do Cesar)",
@@ -2329,8 +2334,10 @@
       "Q-021",
       "Q-022",
       "Q-023",
-      "Q-024"
+      "Q-024",
+      "Q-025"
     ],
-    "next_proof": "o gerente da expedicao usar /entregas numa sexta de pico com o banco da plataforma real e dizer o que faltou; e o CI da branch verde no GitHub"
+    "next_proof": "o gerente da expedicao usar /entregas numa sexta de pico com o banco da plataforma real e dizer o que faltou; e o CI da branch verde no GitHub",
+    "fontes": "medido: Google Fonts responde 200 neste ambiente; capturas com Spectral, Hanken Grotesk e IBM Plex Mono (document.fonts.check)"
   }
 }
