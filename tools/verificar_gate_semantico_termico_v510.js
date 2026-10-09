@@ -297,4 +297,24 @@ check("16 same order identifiers but different projection content must not mix c
     "unrelated proven station must remain eligible");
 });
 
+check("17 component quantity manipulation cannot silently change the work instructions", () => {
+  const split=syntheticCompleteComponents(original);
+  assert.equal(split.components?.status,"PROVEN_COMPLETE");
+  split.components.tasks[0].quantity+=100;
+  const bundle=buildKitchenSeparatedBundleV47(original,split);
+  assert.ok(!bundle.jobs.some(j=>j.channel==="KITCHEN_COMPONENTS"));
+  assert.ok(bundle.blocked_proofs.some(j=>j.channel==="KITCHEN_COMPONENTS"));
+  assert.ok(bundle.review_reasons.some(x=>x.includes("KITCHEN_COMPONENT_PROJECTION_BINDING_MISMATCH")));
+  assert.ok(bundle.jobs.some(j=>j.channel==="KITCHEN_DISHES"));
+});
+check("18 absent source binding fails closed for components but preserves proven dishes", () => {
+  const split=syntheticCompleteComponents(original);
+  assert.ok(split.components?.source_projection_binding_v512);
+  delete split.components.source_projection_binding_v512;
+  const bundle=buildKitchenSeparatedBundleV47(original,split);
+  assert.ok(!bundle.jobs.some(j=>j.channel==="KITCHEN_COMPONENTS"));
+  assert.ok(bundle.blocked_proofs.some(j=>j.channel==="KITCHEN_COMPONENTS"));
+  assert.ok(bundle.jobs.some(j=>j.channel==="KITCHEN_DISHES"));
+});
+
 console.log("thermal-semantic-gate-v510: "+checks+"/"+checks+" PASS; SHADOW ONLY");
