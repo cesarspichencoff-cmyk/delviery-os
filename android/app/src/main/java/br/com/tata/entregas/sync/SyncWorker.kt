@@ -136,7 +136,30 @@ class SyncWorker(
                 }
             }
             when (val r = piloto.sendEvents(payloads, correlationId)) {
-                is ApiResult.Ok -> db.outbox().markSent(ids)
+                is ApiResult.Ok -> {
+                    // O piloto retorna HTTP 200 inclusive quando uma parte do
+                    // lote foi recusada pelo dominio. Ler o recibo POR EVENTO.
+                    when (val decision = decideEventReceipt(
+                        events.map { EventReceiptItem(it.eventId) },
+                        r.value,
+                    )) {
+                        is EventReceiptDecision.Apply -> {
+                            if (decision.sentIds.isNotEmpty()) {
+                                db.outbox().markSent(decision.sentIds)
+                            }
+                            decision.rejected.groupBy { it.reason }.forEach { (reason, rejected) ->
+                                db.outbox().markRejected(
+                                    rejected.map { it.eventId },
+                                    "dominio_recusou: $reason",
+                                )
+                            }
+                        }
+                        is EventReceiptDecision.Invalid -> {
+                            db.outbox().markFailed(ids, "recibo_invalido:${decision.reason}")
+                            retryable = true
+                        }
+                    }
+                }
                 is ApiResult.Retryable -> {
                     db.outbox().markFailed(ids, r.reason)
                     retryable = true
