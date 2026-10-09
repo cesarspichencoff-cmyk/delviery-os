@@ -6,7 +6,7 @@
     "authority_scope": "technical_state",
     "superseded_by": null,
     "atualizado_em": "2026-10-09",
-    "state_basis": "bdcf59d",
+    "state_basis": "d722ec0",
     "observa": [
       "src/product/",
       "src/perfil-delivery/",
@@ -2266,5 +2266,71 @@
       "estado": "TODOS_FECHADOS_COM_VERMELHO_ANTES (E8-E10 0/3, S23, A14 13/14, H18 timeout 124 no CLI anterior)",
       "limite_declarado": "lista de processos ilegivel na partida do supervisor E morte do anterior entre Process.Start e o registro: um lote pode sobrepor; heartbeat registra startup.command_line_hunt=LIST_UNKNOWN. Medido no Windows real sob a conta virtual: NONE (o CIM responde ao servico), CI 37907353026"
     }
+  },
+  "product_ux_leitura_da_rua_20261009": {
+    "status": "CODE_READY_TEST_PASS_LOCAL_NOT_DEPLOYED",
+    "missao": "docs/execution/CLAUDE_PRODUCT_UX_SOLO_MISSION_2026-10-09.md",
+    "handback": "docs/execution/CLAUDE_PRODUCT_UX_HANDBACK_2026-10-09.md",
+    "branch": "feat/claude-product-ux-autonomous-20261009",
+    "base": "2782b310ef9fe813917ba49134309287ae83c9f2",
+    "commits": {
+      "c886f87": "shell e inspetor recolhido nao vazam",
+      "d722ec0": "Entregas: a rua, lida agora",
+      "4091d17": "CI da branch e classificador sem FAIL_NOVO"
+    },
+    "superficie": "/entregas (Product System); Home, Copiloto, Operacao Viva e Conference Brain intocados",
+    "o_que_mudou": [
+      "leitura do servidor antes da demonstracao: frase, linha de sinal (solidez), idade contra o instante da leitura, hora local declarada",
+      "o que pede conferencia: viagem na rua sem posicao recente, relato de fila velho com pendencia, cadastro incompleto — com evidencia e restricao, sem botao, sem Foco",
+      "filtro por unidade derivado da leitura (#/entregas?unidade=), demonstracao numa faixa propria recolhida, estado tecnico sem banco",
+      "a leitura envelhece na tela (performance.now, janelas da Operacao Viva); reler e GET",
+      "shell: .sr-only nao estica mais o documento; inspetor recolhido nao vaza nem recebe foco"
+    ],
+    "tests": {
+      "leitura_da_rua": "22/22 PASS (RED na base: 2/20)",
+      "navegador": "10/10 PASS (RED na base: 1/9; N9 RED antes da correcao do inspetor)",
+      "servidor_postgresql_real": "5/5 PASS (filtro pela rota, leitura nao escreve, banco isolado apagado)",
+      "b5_queue_depth": "12/12 PASS + B5_FRESHNESS_HTML_RENDER PASS",
+      "product_system": "52/52 PASS",
+      "cadeia_real": "36/36 PASS (PostgreSQL 16 local com auth trust, como o CI)",
+      "cadeia_mutacoes": "15/15, 0 cegas (M10 e M11 no entregas-vm.ts acusadas)",
+      "home": "44/44",
+      "organismo": "27/27",
+      "visual_order": "6/6",
+      "figma_parity": "24/24",
+      "skills": "12/12",
+      "m1b_mutations": "11/11",
+      "r5": "9 gates verdes",
+      "platform": "44/44",
+      "entregas_ui": "23/23",
+      "saude_fontes": "10/10",
+      "lab_v4": "verde (9 mutacoes, 0 cegas)",
+      "m1_bridge": "35 passaram + C6 FAIL_PREEXISTENTE (os mesmos 12 caminhos da Q-019, conferido depois do commit)",
+      "tsc_noEmit": "exit 0",
+      "build_platform": "exit 0"
+    },
+    "figma": {
+      "conta_conectada": "BoAlexandre (nao e a conta do Cesar)",
+      "dGyF0eRDd4YG8uqyWqU1P4": "LEGIVEL: pagina unica '90 — Capture Reference · Recovery'; 20:808 = captura da tela Entregas antiga (mesmos textos do codigo de 04/10); 21:2 B7; 29:2 B5",
+      "IMWH8ZKMF5ra3QJYiR6vGa": "NAO ACESSIVEL a esta conta (get_metadata recusou)",
+      "escrita": "nenhuma (Q-007 PAUSE; conta de terceiro)"
+    },
+    "current_boundary": {
+      "deployed": false,
+      "world_proven": false,
+      "physical_phone": false,
+      "caixa": false,
+      "merge_main": false,
+      "android_touched": false,
+      "tata_comanda_touched": false
+    },
+    "question_refs": [
+      "Q-019",
+      "Q-021",
+      "Q-022",
+      "Q-023",
+      "Q-024"
+    ],
+    "next_proof": "o gerente da expedicao usar /entregas numa sexta de pico com o banco da plataforma real e dizer o que faltou; e o CI da branch verde no GitHub"
   }
 }
