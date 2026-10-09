@@ -163,6 +163,13 @@ interface OutboxEventDao {
     @Query("SELECT COUNT(*) FROM outbox_event WHERE syncState IN ('pending','failed','sending')")
     suspend fun pendingCount(): Int
 
+    /** Recusa explícita do domínio: terminal, visível, nunca 'sent'. */
+    @Query("UPDATE outbox_event SET syncState = 'rejected', attempts = attempts + 1, lastError = :error WHERE eventId IN (:ids) AND syncState IN ('pending','failed','sending')")
+    suspend fun markRejected(ids: List<String>, error: String)
+
+    @Query("SELECT COUNT(*) FROM outbox_event WHERE syncState = 'rejected'")
+    suspend fun rejectedCount(): Int
+
     @Query("SELECT IFNULL(MAX(sequenceLocal), 0) FROM outbox_event")
     suspend fun maxSequence(): Long
 }
