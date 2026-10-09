@@ -293,11 +293,18 @@ export function projectOperationalTicketsV45(input: OperationalTicketsInputV45):
     const localReasons = new Set<string>();
     const boxes = new Map<string, TicketBoxV45>();
     const sourceLinesByGroup = new Map<string, PlannedProductionLine[]>();
+    // A sold line may feed separate stations, but it cannot be repeated
+    // inside the same production station: that inflates planned work.
+    const stationSourceIndices = new Set<number>();
     const station = intent.printer.printer_name;
     const needed = input.kitchen_needs_by_fingerprint?.[intent.intent_fingerprint];
     if (!needed) warnings.add("KITCHEN_PROJECTION_NOT_ATTACHED:" + station);
     if (needed) for (const issue of needed.blocking_reasons) localReasons.add("KITCHEN_MOTOR:" + issue);
     for (const line of intent.lines) {
+      if (stationSourceIndices.has(line.item_index)) {
+        localReasons.add("DUPLICATE_STATION_SOURCE_ITEM_INDEX:" + line.item_index);
+      }
+      stationSourceIndices.add(line.item_index);
       const source = sources.find((s) => s.item_index === line.item_index);
       if (!source || canon(source.product_name) !== canon(line.product_name) ||
           source.quantity !== line.quantity ||
