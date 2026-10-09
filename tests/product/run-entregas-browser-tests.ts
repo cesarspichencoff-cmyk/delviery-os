@@ -458,6 +458,68 @@ void (async () => {
       }
     });
 
+    // Reler leva o tempo da porta: medido, 2,5 s com 100 mil fatos e 8 s com 300
+    // mil. A leitura anterior se declara (hora e idade, D95) e continua sendo
+    // informacao enquanto a nova nao chega — esqueleto no lugar dela e tela
+    // morta; erro no lugar dela apaga o que se sabia.
+    await teste("N13 reler nao apaga a leitura: a anterior fica, declarada 'relendo', ate a nova chegar", async () => {
+      const a = await abrir(browser, base, { viewport: VIEWPORTS.celular, comLeitura: true });
+      try {
+        const titulo = a.page.locator("[data-titulo-da-leitura]");
+        const antes = await titulo.innerText();
+        let liberar: () => void = () => undefined;
+        const segurar = new Promise<void>((r) => {
+          liberar = r;
+        });
+        await a.page.route("**/api/entregas**", async (rota) => {
+          await segurar;
+          await rota.fulfill({ status: 200, contentType: "application/json; charset=utf-8", body: await vmJson(null) });
+        });
+        await a.page.locator("[data-reler]").first().click();
+        await a.page.waitForFunction(() => document.querySelector('[data-territorio="rua"]')?.getAttribute("data-relendo") === "sim", undefined, { timeout: 5000 });
+        // Sem aria-busy na regiao: dentro dela o leitor de tela pode calar o aviso.
+        assert.equal(await a.page.locator('[data-territorio="rua"][aria-busy="true"]').count(), 0);
+        assert.equal(await titulo.innerText(), antes, "a leitura anterior sumiu enquanto relia");
+        assert.equal(await a.page.locator("#superficie .skeleton").count(), 0, "esqueleto no lugar da leitura");
+        assert.match(await a.page.locator("[data-releitura]").innerText(), /relendo/i);
+        liberar();
+        await a.page.waitForFunction(() => document.querySelector('[data-territorio="rua"]')?.getAttribute("data-relendo") !== "sim", undefined, { timeout: 8000 });
+        assert.equal((await a.page.locator("[data-releitura]").innerText()).trim(), "", "o aviso de releitura ficou depois da chegada");
+        assert.equal(await a.page.evaluate(() => document.activeElement?.hasAttribute("data-reler") ?? false), true, "o foco nao voltou ao botao");
+      } finally {
+        await a.fechar();
+      }
+    });
+
+    await teste("N13b reler que falha nao apaga a leitura: a anterior fica, a falha escrita, e ela segue envelhecendo", async () => {
+      const a = await abrir(browser, base, { viewport: VIEWPORTS.desktop, comLeitura: true, relogio: true });
+      try {
+        const titulo = a.page.locator("[data-titulo-da-leitura]");
+        const antes = await titulo.innerText();
+        const eyebrow = await a.page.locator(".rua__eyebrow").first().innerText();
+        const hora = /as (\d{2}h\d{2})/.exec(eyebrow)?.[1];
+        assert.ok(hora, `a camada tecnica nao diz a hora da leitura: ${eyebrow}`);
+        await a.page.route("**/api/entregas**", (rota) =>
+          rota.fulfill({ status: 503, contentType: "application/json; charset=utf-8", body: '{"erro":"indisponivel"}' }),
+        );
+        await a.page.locator("[data-reler]").first().click();
+        await a.page.waitForFunction(() => /nao foi possivel ler de novo/i.test(document.querySelector("[data-releitura]")?.textContent ?? ""), undefined, { timeout: 8000 });
+        assert.equal(await titulo.innerText(), antes, "a releitura que falhou apagou a leitura anterior");
+        const falha = await a.page.locator("[data-releitura]").innerText();
+        assert.ok(falha.includes(hora!), "a falha nao diz de quando e a leitura que ficou");
+        assert.ok(falha.includes("503"), "a falha nao diz o que o servidor respondeu");
+        assert.equal(falha.includes("/api/"), false, "a falha expoe o caminho interno da API");
+        await a.page.clock.fastForward(6 * 60 * 1000);
+        await a.page.waitForFunction(() => document.querySelector('[data-territorio="rua"]')?.getAttribute("data-envelhecida") === "sim", undefined, { timeout: 8000 });
+        // O texto que so aparece na leitura antiga e na falha tambem passa por AA.
+        assert.ok(await a.page.getByText("Esta leitura nao e a mais recente").isVisible());
+        const reprovados = (await a.page.evaluate(CONTRASTE_AA)) as string[];
+        assert.deepEqual(reprovados, [], "contraste abaixo de AA na leitura antiga com falha de releitura");
+      } finally {
+        await a.fechar();
+      }
+    });
+
     await teste("N12 a saude do servidor declara a composicao: sem banco, so demonstracao", async () => {
       const r = await fetch(`${base}/api/health`);
       const s = (await r.json()) as { demo?: unknown; leitura_do_servidor?: unknown; banner?: unknown };

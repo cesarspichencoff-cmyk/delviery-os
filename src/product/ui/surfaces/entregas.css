@@ -124,6 +124,13 @@
   color: var(--ink-age);
 }
 
+/* Releitura: "relendo…" e a falha moram na camada tecnica. Vazio, o aviso
+   continua na arvore (regiao viva); a falha ocupa a linha inteira. */
+.rua__releitura[data-estado="falhou"] {
+  flex-basis: 100%;
+  color: var(--ink-age);
+}
+
 /* ---------------------------------------- controles: reler e unidade ----- */
 .rua__controles {
   display: flex;
