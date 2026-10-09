@@ -10,8 +10,8 @@
 
 1. **Causa raiz do reader "RUNNING mas parado": reproduzida em sandbox, inferida em produção.** O watcher instalado (SHA `4507304C…`, o mesmo da evidência do cutover de 05/10) deixa o `SqlDataReader` aberto quando `Read()` lança LOCK_TIMEOUT (1222); daí todo poll falha no cliente ("already an open DataReader"), o modo contínuo engole o erro, a sessão fica `sleeping` e o checkpoint para — a assinatura de 05/10 21:55:51. **FACT em SQL Server 2022 real com PowerShell 7/.NET 8** (local e CI); **INFERENCE de alta confiança** para a CAIXA (.NET Framework 4.8 não medido). Detalhe: `docs/execution/TATA_READER_STALL_ROOT_CAUSE_AND_SUPERVISOR_2026-10-07.md`.
 2. **Correção pronta para a CAIXA (CODE_READY + TEST_PASS, não instalada):** supervisor de lotes que roda o watcher auditado sem alterar um byte; heartbeat sem PII; saúde por progresso; auditoria estática por tokens; cutover Plan/Apply/Rollback cujo **Apply e rollback são executados** em teste (SCM simulado, 10 cenários) e que exige de volta os **três SHA** do Plan.
-3. **Duas revisões independentes, todos os achados tratados com vermelho antes e verde depois.** A 1ª (sobre `d48bd42`) achou 3 graves: cutover sem rollback depois do primeiro efeito e supervisor derrubado por corrida de arquivo — **corrigidos**; auditoria contornável — **mitigada** (cada revisão acha contornos novos; leitura humana do V2 é obrigatória). A 2ª (sobre `1eacabe`) achou dois caminhos de **dois escritores** no checkpoint (reinstalação com órfão vivo; lista de processos que falha virava "ninguém vivo"), mais 4 contornos da auditoria e 5 menores — **todos fechados** no último commit (ainda local). Achados meus: fuso (PS 7 em UTC-3 tomava heartbeat de 90 min antes como novo) e a troca de arquivo do NTFS derrubando a leitura de saúde.
-4. **Provado no Windows real (CI `37879636538`, todos os jobs verdes).** Windows PowerShell 5.1.20348 / .NET 4.8: supervisor 24/24 e cutover 13/13; cutover **inteiro** contra o SCM de verdade, com o host C# v2 real compilado pelo `csc.exe` e a conta virtual: Plan só lê, Apply `APPLIED_HEALTHY`, rollback manual provado, candidato que falha revertido, e o `Stop-Service` real matando só o supervisor com o lote órfão morto pela linha de comando (6/6). Antes disso, a primeira passada (`37867864216`) ficou **vermelha** e achou um defeito real do 5.1 (`Get-FileHash` com `PSModulePath` do PowerShell 7: todo lote `WATCHER_UNREADABLE`, 4/23) — corrigido em `078359d`.
+3. **Duas revisões independentes, todos os achados tratados com vermelho antes e verde depois.** A 1ª (sobre `d48bd42`) achou 3 graves: cutover sem rollback depois do primeiro efeito e supervisor derrubado por corrida de arquivo — **corrigidos**; auditoria contornável — **mitigada** (cada revisão acha contornos novos; leitura humana do V2 é obrigatória). A 2ª (sobre `1eacabe`) achou dois caminhos de **dois escritores** no checkpoint (reinstalação com órfão vivo; lista de processos que falha virava "ninguém vivo"), mais 4 contornos da auditoria e 5 menores — **todos fechados** (`65c38f1`). Achados meus: fuso (PS 7 em UTC-3 tomava heartbeat de 90 min antes como novo) e a troca de arquivo do NTFS derrubando a leitura de saúde.
+4. **Provado no Windows real (CI `37879636538`, todos os jobs verdes).** Windows PowerShell 5.1.20348 / .NET 4.8: supervisor 24/24 e cutover 13/13; cutover **inteiro** contra o SCM de verdade, com o host C# v2 real compilado pelo `csc.exe` e a conta virtual: Plan só lê, Apply `APPLIED_HEALTHY`, rollback manual provado, candidato que falha revertido, e o `Stop-Service` real matando só o supervisor com o lote órfão morto pela linha de comando; e, no run final `37907353026`, a caça de lote sem registro do supervisor funcionando sob a conta virtual (W0–W6 7/7). Antes disso, a primeira passada (`37867864216`) ficou **vermelha** e achou um defeito real do 5.1 (`Get-FileHash` com `PSModulePath` do PowerShell 7: todo lote `WATCHER_UNREADABLE`, 4/23) — corrigido em `078359d`.
 5. **Pede decisão do César:** Q-019 (C6 do envelope M1), Q-020 (TATÁ na UI), Q-021 (linhagem B5/B8 com duas `0009`); o repositório é **público** e guarda evidências operacionais em `data/` (agregados financeiros do dia, sem PII nesta branch; outras branches têm mais); o consumidor sombra da outra linhagem regrava o status ~1000×/s.
 
 ## 1. Commits
@@ -35,9 +35,10 @@
 | `7e705ef` | este handback, documento de causa raiz e STATE/EVIDENCE/LEDGER da 2ª revisão | sim |
 | `078359d` | o que o Windows real achou: SHA por .NET, `PSModulePath` limpo no 5.1, classe da exceção em `WATCHER_UNREADABLE`, S24 | sim |
 | `40bff44` | registro do achado do Windows real | sim |
-| _(último)_ | Windows real verde registrado; W6 (caça de lote sem registro sob a conta virtual) adicionado ao job | local |
+| `e05f7b8` | Windows real verde registrado; W6 (caça de lote sem registro sob a conta virtual) adicionado ao job | sim |
+| _(último)_ | este registro final: W6 verde no CI `37907353026` | sim |
 
-"Local" = commitado e aguardando nova autorização de push.
+Todos os commits estão publicados; cada push teve autorização explícita do César.
 
 ## 2. Delta por frente
 
@@ -80,6 +81,7 @@
 | CI `37867864216` (Linux, em `7e705ef`) | node-postgres, pwsh-sqlserver (supervisor 23/23, cutover 13/13, e2e 10/10, sqlserver 3/3) e android-unit verdes | — |
 | CI `37867864216` — `windows-real-scm` | **vermelho**: supervisor 4/23 sob WinPS 5.1 (achado real, corrigido em `078359d`) | é o próprio vermelho |
 | CI `37879636538` — `windows-real-scm` | **verde**: health 18/18, static 14/14, supervisor 24/24 e cutover 13/13 sob WinPS 5.1; SCM real W0–W5 6/6 | o run anterior |
+| CI `37907353026` (`e05f7b8`) — os 4 jobs | **verdes**; `windows-real-scm`: SCM real W0–W6 **7/7** (W6: `startup.command_line_hunt = NONE` sob `NT SERVICE\TataComandaReader` — o CIM responde ao serviço) | — |
 
 Cada correção da 2ª revisão tem sua linha em `docs/execution/EVIDENCE.jsonl` (`tata-reader-second-review-two-writers-2026-10-08`, `tata-reader-supervisor-unrecorded-batch-2026-10-08`, `tata-reader-audit-and-read-hardening-2026-10-08`); a regressão final dos gates tocados está em `cloud-solo-second-review-regression-2026-10-08`.
 
@@ -87,14 +89,14 @@ Cada correção da 2ª revisão tem sua linha em `docs/execution/EVIDENCE.jsonl`
 
 - **WORLD_PROVEN:** nada novo (CAIXA e Foxxy inacessíveis daqui).
 - **TEST_PASS (sandbox/CI):** causa raiz em .NET 8; supervisor (Linux e WinPS 5.1); avaliador; auditoria; cutover inteiro com SCM simulado e com o **SCM real do Windows**; leitura tolerante ao NTFS e a leitura que não volta; correções de plataforma; `/api/fontes`; JVM Android.
-- **CODE_READY:** tudo o que depende da CAIXA (o host realmente instalado, o V2, o SqlClient do .NET Framework contra o banco real); W6 (aguarda push).
+- **CODE_READY:** tudo o que depende da CAIXA (o host realmente instalado, o V2, o SqlClient do .NET Framework contra o banco real).
 - **DEPLOYED:** nada.
 
 ## 5. Regressões, riscos e UNKNOWNs
 
 - **Regressão introduzida:** nenhuma conhecida (zero `FAIL_NOVO` nos gates tocados).
 - **Contratos internos que mudaram:** `lerSaudeDaFonteTata` é assíncrona e tem prazo (único chamador: `/api/fontes`); o recibo do cutover ganhou `checks.stop_writers` e `rollback.stop_writers`/`move_aside_errors`; o heartbeat ganhou `startup`.
-- **Limite declarado do supervisor:** lista de processos ilegível (WMI negado à conta do serviço) **e** morte do supervisor anterior exatamente entre `Process.Start` e o registro do filho → um lote pode se sobrepor; o heartbeat registra `LIST_UNKNOWN`. O W6 (no próximo CI) mostra se o WMI responde à conta virtual.
+- **Limite declarado do supervisor:** lista de processos ilegível (WMI negado à conta do serviço) **e** morte do supervisor anterior exatamente entre `Process.Start` e o registro do filho → um lote pode se sobrepor; o heartbeat registra `LIST_UNKNOWN`. **No Windows real o limite não apareceu:** sob a conta virtual o CIM respondeu e a caça deu `NONE` (W6, CI `37907353026`). Na CAIXA, o heartbeat mostra o mesmo campo.
 - **Auditoria estática:** heurística; duas revisões acharam 7 contornos (todos fechados); **o V2 precisa ser lido por uma pessoa**.
 - **Pré-existente vermelho (declarado):** `test:platform:m1-bridge` C6 → **Q-019**.
 - **Linhagens divergentes:** 8 commits de 04–05/10 fora desta linha; duas migrations 0009 → **Q-021**.
@@ -109,7 +111,7 @@ Zero gasto. Downloads gratuitos; GitHub Actions em repositório **público** (ru
 
 ## 7. Próximo passo seguro e pequeno
 
-**Aqui (depende só de autorização):** push do último commit → o CI roda o W6: a caça de lote sem registro do supervisor sob a conta virtual. Verde = a 2ª camada vale no contexto do serviço; vermelho = o limite declarado (`LIST_UNKNOWN`) vale na CAIXA também.
+**Aqui:** nada pendente — branch publicada (remoto = local) e CI verde nos 4 jobs, inclusive o Windows real.
 
 **Na CAIXA (com Desktop Commander), nesta ordem:**
 1. `Get-FileHash` do V2 = `77C16940…`; publicar o V2 byte a byte no Git; **uma pessoa lê o V2**.
