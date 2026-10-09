@@ -31,6 +31,8 @@ jobs:
         run: npm ci --ignore-scripts
       - name: Typecheck
         run: npm run typecheck
+      - name: Operational ticket semantic projection V4.5
+        run: npm run verificar:tickets-operacionais-v45
       - name: Item quantity integrity V5.9
         run: npm run verificar:quantidades-termicas-v59
       - name: Archived tickets V4.6
