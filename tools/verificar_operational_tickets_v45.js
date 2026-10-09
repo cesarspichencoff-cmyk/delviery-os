@@ -315,5 +315,23 @@ check("27 divergent production note must be blocked instead of replacing source 
     "source-safe diagnostic text must not silently be replaced by planned instructions");
 });
 
+check("28 missing planned customer instruction blocks the station", () => {
+  const f=fixture();
+  f.production_plan.print_intents[0].lines[1].item_observations=[];
+  const result=run(f);
+  assert.equal(result.production[0].ready_for_semantic_preview,false);
+  assert.ok(result.production[0].warnings.includes("PRODUCTION_OBSERVATIONS_SOURCE_MISMATCH:1"));
+  assert.deepEqual(result.production[0].boxes[1].items[0].observations,["SEM CEBOLINHA"]);
+  assert.equal(result.conference.ready_for_semantic_preview,true,
+    "the still-consistent conference projection stays independently inspectable");
+});
+check("29 harmless whitespace and casing differences in planned notes remain valid", () => {
+  const f=fixture();
+  f.production_plan.print_intents[0].lines[1].item_observations=["  sem   cebolinha  "];
+  const result=run(f);
+  assert.equal(result.production[0].ready_for_semantic_preview,true);
+  assert.equal(result.ready_for_semantic_preview,true);
+  assert.deepEqual(result.production[0].boxes[1].items[0].observations,["SEM CEBOLINHA"]);
+});
 console.log("operational-tickets-v45: " + checks.length + "/" + checks.length + " shadow tests PASS");
 for (const c of checks) console.log("  PASS " + c);
