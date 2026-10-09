@@ -328,12 +328,16 @@ async function main(): Promise<void> {
       }).realidade.aparelhos[0];
     const recente = apresenta("2026-10-06T08:50:00.000Z");
     const antiga = apresenta("2026-10-06T07:00:00.000Z");
+    const envelhecendo = apresenta("2026-10-06T08:20:00.000Z");
+    const futuro = apresenta("2026-10-06T09:05:00.000Z");
     const invalida = apresenta("instante-invalido");
     const ler = (a: typeof recente) => (a as unknown as {
       fila_offline_frescor?: { observado: boolean; valor?: string };
     }).fila_offline_frescor;
     assert.equal(ler(recente)?.valor, "fresh");
     assert.equal(ler(antiga)?.valor, "stale");
+    assert.equal(ler(envelhecendo)?.valor, "aging");
+    assert.equal(ler(futuro)?.valor, "unknown");
     assert.equal(ler(invalida)?.valor, "unknown");
     assert.equal(antiga.fila_offline.observado, true, "historico real nao desaparece");
     assert.equal(antiga.fila_offline.observado && antiga.fila_offline.valor, 10);
@@ -345,6 +349,7 @@ async function main(): Promise<void> {
     const ui = readFileSync(join(process.cwd(), "src/product/ui/surfaces/entregas.js"), "utf8");
     assert.ok(ui.includes("fila_offline_frescor"));
     assert.ok(ui.includes("Ultimo relato do aparelho"));
+    assert.ok(!ui.includes("aparece abaixo como integracao pendente"), "aviso obsoleto nao deve reaparecer");
     assert.ok(ui.includes('estado: "stale"'), "medicao historica exige indicacao visivel");
   });
 
