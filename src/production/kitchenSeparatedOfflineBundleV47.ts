@@ -67,10 +67,28 @@ export function buildKitchenSeparatedBundleV47(
       production.ready_for_semantic_preview === true ? [] : ["STATION_SEMANTIC_NOT_READY:" + production.station]);
   }
   const kitchen=renderTwoKitchenProofsV47(split);
+  // The kitchen split is supplied separately from the order projection.
+  // Verify its source is exactly the evidenced source of THIS order before
+  // accepting its offline bytes, so a different order cannot be substituted.
+  const kitchenSources=tickets.production.filter(p=>kitchenStation(p.station));
+  const expectedKitchen=kitchenSources.length===1?kitchenSources[0]:null;
+  const splitDish=split.dishes?.source;
+  const matchingKitchenSource=!!splitDish && !!expectedKitchen &&
+    splitDish.station===expectedKitchen.station &&
+    splitDish.fingerprint===expectedKitchen.fingerprint &&
+    splitDish.identifiers.ifood===expectedKitchen.identifiers.ifood &&
+    splitDish.identifiers.teknisa===expectedKitchen.identifiers.teknisa &&
+    splitDish.identifiers.tata===expectedKitchen.identifiers.tata &&
+    splitDish.identifiers.hour===expectedKitchen.identifiers.hour &&
+    JSON.stringify(splitDish.boxes)===JSON.stringify(expectedKitchen.boxes) &&
+    JSON.stringify(splitDish.items_without_proven_box)===
+      JSON.stringify(expectedKitchen.items_without_proven_box);
   append("KITCHEN_COMPONENTS",kitchen.components);
-  append("KITCHEN_DISHES",kitchen.dishes,
-    split.dishes && split.dishes.source.ready_for_semantic_preview !== true
-      ? ["STATION_SEMANTIC_NOT_READY:" + split.dishes.source.station] : []);
+  append("KITCHEN_DISHES",kitchen.dishes, [
+    ...(split.dishes && split.dishes.source.ready_for_semantic_preview !== true
+      ? ["STATION_SEMANTIC_NOT_READY:" + split.dishes.source.station] : []),
+    ...(split.dishes && !matchingKitchenSource ? ["KITCHEN_SPLIT_SOURCE_MISMATCH"] : []),
+  ]);
   append("CONFERENCE",renderConferenceTicketProofV46(tickets.conference),
     tickets.conference.ready_for_semantic_preview === true ? [] : ["CONFERENCE_SEMANTIC_NOT_READY"]);
   const rawKitchenCount=tickets.production.filter(x=>kitchenStation(x.station)).length;
