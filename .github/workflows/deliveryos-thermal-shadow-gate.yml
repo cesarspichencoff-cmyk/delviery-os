@@ -1,32 +1,11 @@
 name: DeliveryOS Thermal Shadow Gate
 
+# PR-only verification: one run per change, including changes to fixtures,
+# routing/rules, documentation, or dependencies. No path-filter blind spots.
 on:
-  push:
-    branches:
-      - feat/thermal-v54-caixa-photo-visual-qa-20261008
-    paths:
-      - .github/workflows/deliveryos-thermal-shadow-gate.yml
-      - src/production/operationalTicketEscposV46.ts
-      - src/production/operationalTicketsV45.ts
-      - src/production/twoKitchenTicketEscposV47.ts
-      - src/production/twoKitchenTicketsV47.ts
-      - data/thermal_test_target_policy_v53.json
-      - tools/**
-      - package.json
-      - package-lock.json
   pull_request:
     branches:
       - feat/thermal-quality-v51-epson-official-fontqa-20261008
-    paths:
-      - .github/workflows/deliveryos-thermal-shadow-gate.yml
-      - src/production/operationalTicketEscposV46.ts
-      - src/production/operationalTicketsV45.ts
-      - src/production/twoKitchenTicketEscposV47.ts
-      - src/production/twoKitchenTicketsV47.ts
-      - data/thermal_test_target_policy_v53.json
-      - tools/**
-      - package.json
-      - package-lock.json
 
 permissions:
   contents: read
