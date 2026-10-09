@@ -5,12 +5,15 @@ import br.com.tata.entregas.sync.interpretarRespostaHttp
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
 /**
  * HTTP 200 nao prova que um lote foi aceito se o recibo esta corrompido.
  * Classifica sem rede; pontos ficam recuperaveis no Room e reenviam pela
  * mesma chave de idempotencia.
  */
+@RunWith(RobolectricTestRunner::class)
 class HttpResponseRecoveryTest {
     @Test
     fun `resposta HTTP 200 com JSON corrompido sempre e retentavel`() {
@@ -44,6 +47,15 @@ class HttpResponseRecoveryTest {
         val r = interpretarRespostaHttp(400, """{"human":"contrato invalido"}""")
         assertTrue(r is ApiResult.Rejected)
         assertEquals(400, (r as ApiResult.Rejected).status)
+    }
+
+    @Test
+    fun `408 e 429 sao transitorios e nao rejeitam eventos em fila`() {
+        for (status in listOf(408, 429)) {
+            val r = interpretarRespostaHttp(status, """{"human":"tente novamente"}""")
+            assertTrue("HTTP $status precisa reenvio", r is ApiResult.Retryable)
+            assertEquals(status, (r as ApiResult.Retryable).status)
+        }
     }
 
     @Test
