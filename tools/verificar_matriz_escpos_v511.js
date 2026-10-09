@@ -39,6 +39,8 @@ console.log(JSON.stringify({
   matrix:256,
   approved_expected:4,
   unsupported_expected:252,
+  unsupported_rejected_observed:252-acceptedUnsupported.length,
+  unsupported_accepted_observed:acceptedUnsupported.length,
   approved_rejected:rejectedApproved,
   unsupported_not_rejected:acceptedUnsupported.map(x=>({
     n:"0x"+x.n.toString(16).padStart(2,"0"),pass:x.pass,errors:x.errors,
@@ -49,13 +51,17 @@ console.log(JSON.stringify({
   effects:{print:false,spooler_write:false,cut:false,device_access:false},
 }));
 
-assert.equal(baseline.pass,true,"baseline approved ticket must remain accepted");
-assert.deepEqual(rejectedApproved,[],"four approved size codes must remain accepted");
-assert.deepEqual(acceptedUnsupported,[],
-  "all other 252 GS! values must be rejected by the independent inspector");
-assert.equal(midDocumentReset.pass,false,"ESC @ after printed text must fail");
-assert.ok(midDocumentReset.errors.some(e=>e.includes("MID_DOCUMENT_RESET")),
-  "mid-document reset must report a specific reason");
-assert.equal(lateCodePage.pass,false,"ESC t 16 after text must fail");
-assert.ok(lateCodePage.errors.length>0,"late page selection needs a reason");
+// Evaluate every independent contract before failing the job: one early RED
+// must not hide other unsafe command-sequencing behavior.
+const violations = [];
+if(!baseline.pass) violations.push("APPROVED_BASELINE_REJECTED");
+if(rejectedApproved.length) violations.push("APPROVED_SIZE_REJECTED");
+if(acceptedUnsupported.length) violations.push("UNSUPPORTED_SIZE_ACCEPTED:"+acceptedUnsupported.length);
+if(midDocumentReset.pass) violations.push("MID_DOCUMENT_RESET_ACCEPTED");
+if(!midDocumentReset.errors.some(e=>e.includes("MID_DOCUMENT_RESET")))
+  violations.push("MID_DOCUMENT_RESET_REASON_MISSING");
+if(lateCodePage.pass) violations.push("LATE_CODE_PAGE_ACCEPTED");
+if(!lateCodePage.errors.length) violations.push("LATE_CODE_PAGE_REASON_MISSING");
+console.log("ESC_POS_CONTRACT_VIOLATIONS="+JSON.stringify(violations));
+assert.deepEqual(violations,[],"All ESC/POS profile and ordering contracts are mandatory");
 console.log("thermal-escpos-matrix-v511: 256/256 profile checks and command ordering PASS; SHADOW ONLY");
