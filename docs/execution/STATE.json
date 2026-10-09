@@ -6,7 +6,7 @@
     "authority_scope": "technical_state",
     "superseded_by": null,
     "atualizado_em": "2026-10-09",
-    "state_basis": "aeb1fd2",
+    "state_basis": "6f52755",
     "observa": [
       "src/product/",
       "src/perfil-delivery/",
@@ -2332,5 +2332,16 @@
       "Q-024"
     ],
     "next_proof": "o gerente da expedicao usar /entregas numa sexta de pico com o banco da plataforma real e dizer o que faltou; e o CI da branch verde no GitHub"
-  }
-}
+  },
+  "product_ux_q025_visual_20261009": {
+    "status": "CODE_COMPOSED_TEST_PENDING",
+    "authority": "Q-025 answered by Cesar on 2026-10-09; tests-only integration, no release",
+    "base_integration": "cbfbc7b",
+    "visual_code_last_touch": "6f52755",
+    "code_review_head": "b4144b6",
+    "scope": "Product System Entregas and the mobile Home bottom navigation contrast; operational rollout exclusively Itaim",
+    "preserved": ["Android Room and SyncWorker", "PostgreSQL error-detail boundary", "no TATA Comanda changes", "no main merge", "no production deploy"],
+    "quality_gate": "CI composition required; Claude-only green CI is not a composed-branch result",
+    "performance": "Q-026 open; log window and open journeys not modified",
+    "references": ["docs/execution/PERGUNTAS.jsonl#Q-025", "docs/execution/PRODUCT_UX_Q025_REVIEW_2026-10-09.md"]
+  }}
