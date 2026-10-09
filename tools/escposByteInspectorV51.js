@@ -13,6 +13,7 @@ function inspectEscPos(bytes,opts={}){
  const commands=[];
  const profile={dpi:203,nominal_mm:80,printable_width_dots:PRINT_WIDTH_DOTS};
  let font="A", width=1,height=1,bold=false,align="LEFT",page=0;
+ let bodyStarted=false;
  let x=0, rowHeight=0, text="", runs=[],lineNo=0;
  const add=(e)=>errors.push(String(e));
  function reset(){
@@ -27,17 +28,21 @@ function inspectEscPos(bytes,opts={}){
  }
  for(let i=0;i<raw.length;i++){
   const v=raw[i];
-  if(v===0x0a){finish();continue;}
+  if(v===0x0a){bodyStarted=true;finish();continue;}
   if(v===0x1b){
    if(i+1>=raw.length){add("TRUNCATED_ESC");break;}
    const cmd=raw[++i];
    if(![0x40,0x74,0x4d,0x61,0x45].includes(cmd)){
     add("UNEXPECTED_ESCAPE_COMMAND:"+cmd.toString(16));break;
    }
-   if(cmd===0x40){reset();commands.push({type:"INIT"});continue;}
+   if(cmd===0x40){
+    if(i!==1 || bodyStarted)add("MID_DOCUMENT_RESET");
+    reset();commands.push({type:"INIT"});continue;
+   }
    if(i+1>=raw.length){add("TRUNCATED_ESC_ARG");break;}
    const n=raw[++i];
    if(cmd===0x74){
+    if(bodyStarted)add("LATE_CODE_PAGE_SELECTION:"+n);
     page=n;commands.push({type:"CODE_PAGE",n});
     if(n!==16)add("UNEXPECTED_CODE_PAGE:"+n);
    }
@@ -60,6 +65,7 @@ function inspectEscPos(bytes,opts={}){
    if(i+2>=raw.length){add("TRUNCATED_GS");break;}
    const cmd=raw[++i],n=raw[++i];
    if(cmd!==0x21){add("UNEXPECTED_GS_COMMAND:"+cmd.toString(16));break;}
+   if(![0x00,0x01,0x10,0x11].includes(n))add("UNSUPPORTED_CHAR_SIZE:"+n);
    height=(n&7)+1;
    width=((n>>4)&7)+1;
    if(n&0x88)add("GS_RESERVED_BITS_SET:"+n);
@@ -70,6 +76,7 @@ function inspectEscPos(bytes,opts={}){
    add("UNEXPECTED_CONTROL_BYTE:"+v.toString(16));continue;
   }
   if(font!=="A"&&font!=="B"){add("CHAR_WITHOUT_VALID_FONT");continue;}
+  bodyStarted=true;
   const cw=FONT_DOTS[font].width*width;
   const ch=FONT_DOTS[font].height*height;
   const char=Buffer.from([v]).toString("latin1");
