@@ -236,18 +236,41 @@ function grupoNaRua(l) {
 }
 
 /** Encerradas e sem ciclo conhecido saem da leitura principal: contadas, recolhidas, nunca apagadas. */
+/**
+ * O corte das listas do historico, declarado: quantas aparecem, de quantas, e
+ * por qual criterio. A contagem e a exata da leitura; a lista, as mais recentes.
+ */
+function corteDoHistorico(mostradas, total) {
+  return total > mostradas
+    ? `<p class="rua__nota">As ${esc(mostradas)} mais recentes de ${esc(total)}, pela ultima posicao recebida. As outras continuam no log; esta tela nao lista todas.</p>`
+    : "";
+}
+
 function grupoForaDaRua(l) {
   const v = l.viagens;
+  const c = l.contagens || {};
+  // VM anterior ao corte nao traz a contagem: a lista inteira e a contagem.
+  const encerradas = c.encerradas ?? v.encerradas.length;
+  const semCiclo = c.ciclo_desconhecido_sem_posicao ?? v.ciclo_desconhecido_sem_posicao.length;
   const partes = [];
-  if (v.encerradas.length) {
-    partes.push(inspetor("encerradas", plural(v.encerradas.length, "viagem encerrada", "viagens encerradas"), celulas(v.encerradas, "celulas--neutras")));
+  if (encerradas) {
+    partes.push(
+      inspetor(
+        "encerradas",
+        plural(encerradas, "viagem encerrada", "viagens encerradas"),
+        `${corteDoHistorico(v.encerradas.length, encerradas)}${celulas(v.encerradas, "celulas--neutras")}`,
+      ),
+    );
   }
-  if (v.ciclo_desconhecido_sem_posicao.length) {
+  if (semCiclo) {
     partes.push(
       inspetor(
         "sem-ciclo-sem-posicao",
-        `${plural(v.ciclo_desconhecido_sem_posicao.length, "viagem", "viagens")} sem posicao recente e sem ciclo conhecido`,
-        `<p class="rua__nota">Podem ter terminado: sem o ciclo de vida, esta leitura nao sabe.</p>${celulas(v.ciclo_desconhecido_sem_posicao, "celulas--vazadas")}`,
+        `${plural(semCiclo, "viagem", "viagens")} sem posicao recente e sem ciclo conhecido`,
+        `<p class="rua__nota">Podem ter terminado: sem o ciclo de vida, esta leitura nao sabe.</p>${corteDoHistorico(
+          v.ciclo_desconhecido_sem_posicao.length,
+          semCiclo,
+        )}${celulas(v.ciclo_desconhecido_sem_posicao, "celulas--vazadas")}`,
       ),
     );
   }

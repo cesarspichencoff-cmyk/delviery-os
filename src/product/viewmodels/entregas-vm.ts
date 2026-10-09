@@ -289,10 +289,20 @@ export type LeituraDaRuaVM =
         readonly na_rua_sem_posicao_recente: number;
         readonly ciclo_desconhecido_com_posicao: number;
         readonly aguardando_saida: number;
+        /** Contagem EXATA; a lista abaixo traz no maximo `limite_da_lista`. */
         readonly encerradas: number;
+        /** Contagem EXATA; a lista abaixo traz no maximo `limite_da_lista`. */
+        readonly ciclo_desconhecido_sem_posicao: number;
         readonly aparelhos: number;
         readonly conferir: number;
       };
+      /**
+       * As duas listas que crescem com o historico (encerradas; sem ciclo e sem
+       * posicao recente) trazem no maximo este numero de viagens, as de posicao
+       * mais recente. O log e append-only: sem corte, cada semana de operacao
+       * engordava a resposta e a tela com viagens de dias atras.
+       */
+      readonly limite_da_lista: number;
       readonly conferir: readonly ConferirVM[];
       readonly viagens: {
         readonly na_rua: readonly ViagemLidaVM[];
@@ -644,6 +654,21 @@ function porAtencao(a: ViagemLidaVM, b: ViagemLidaVM): number {
   return a.viagem_id.localeCompare(b.viagem_id);
 }
 
+/**
+ * Quantas viagens do HISTORICO a leitura lista. Apresentacao, nao regra: o
+ * mesmo corte do historico da Operacao Viva ("no maximo os 20 fatos mais
+ * recentes"). A contagem continua exata e a tela diz quantas ficaram de fora.
+ */
+const LIMITE_DA_LISTA = 20;
+
+/** A posicao confiavel mais recente primeiro; sem posicao, por ultimo. */
+function maisRecentePrimeiro(a: ViagemLidaVM, b: ViagemLidaVM): number {
+  const ia = a.posicao.observado ? a.posicao.segundos : Number.POSITIVE_INFINITY;
+  const ib = b.posicao.observado ? b.posicao.segundos : Number.POSITIVE_INFINITY;
+  if (ia !== ib) return ia - ib;
+  return b.viagem_id.localeCompare(a.viagem_id);
+}
+
 function filtrarPorUnidade(r: RealidadeDeEntregas, unidade: string | null): RealidadeDeEntregas {
   if (!unidade) return r;
   return {
@@ -919,16 +944,18 @@ function leituraDaRua(
       ciclo_desconhecido_com_posicao: comPosicao.length,
       aguardando_saida: doGrupo("aguardando_saida").length,
       encerradas: doGrupo("encerrada").length,
+      ciclo_desconhecido_sem_posicao: semPosicao.length,
       aparelhos: r.aparelhos.length,
       conferir: conferir.length,
     },
+    limite_da_lista: LIMITE_DA_LISTA,
     conferir,
     viagens: {
       na_rua: naRua,
       aguardando_saida: doGrupo("aguardando_saida"),
       ciclo_desconhecido_com_posicao: comPosicao,
-      ciclo_desconhecido_sem_posicao: semPosicao,
-      encerradas: doGrupo("encerrada"),
+      ciclo_desconhecido_sem_posicao: [...semPosicao].sort(maisRecentePrimeiro).slice(0, LIMITE_DA_LISTA),
+      encerradas: doGrupo("encerrada").sort(maisRecentePrimeiro).slice(0, LIMITE_DA_LISTA),
     },
     aparelhos: r.aparelhos.map((a) => aparelhoLido(a, agora)),
     qualidade,

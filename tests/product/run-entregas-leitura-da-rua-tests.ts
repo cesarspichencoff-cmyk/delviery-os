@@ -389,6 +389,34 @@ void (async () => {
     assert.deepEqual(internos, [], "nome interno no texto humano");
   });
 
+  await teste("L15 historico longo: encerradas e viagens antigas sem ciclo vem limitadas, mais recentes primeiro, e a contagem nao mente", async () => {
+    // O log nunca apaga (append-only): sem limite, cada semana de operacao
+    // engorda a resposta e a arvore da tela com viagens de dias atras.
+    const vm = await vmDe(realidadeFixture({ historico: { encerradas: 60, semCiclo: 45 } }), "ITAIM");
+    const l = vm.leitura;
+    const limite = l.limite_da_lista;
+    assert.equal(typeof limite, "number", "a view model nao declara o limite das listas");
+    assert.ok(limite > 0 && limite < 45, `limite ${limite} nao exercita o corte desta fixture`);
+    // Contagem exata: as 60 do historico + T-099.
+    assert.equal(l.contagens.encerradas, 61);
+    assert.equal(l.viagens.encerradas.length, limite);
+    assert.equal(l.viagens.encerradas[0].viagem_id, "H-060", "a encerrada mais recente nao vem primeiro");
+    // Sem ciclo e sem posicao recente: as 45 do historico + T-302 (ultima posicao ha 2 h).
+    assert.equal(l.contagens.ciclo_desconhecido_sem_posicao, 46);
+    assert.equal(l.viagens.ciclo_desconhecido_sem_posicao.length, limite);
+    assert.equal(l.viagens.ciclo_desconhecido_sem_posicao[0].viagem_id, "T-302");
+    assert.ok(
+      l.qualidade.some((q: string) => q.startsWith("46 viagens sem posicao recente e sem ciclo")),
+      "a ressalva de qualidade perdeu a contagem exata",
+    );
+    // A tela diz que a lista e parcial, e de quanto.
+    const html = telaEntregas(vm);
+    assert.ok(html.includes(`${limite} mais recentes de 61`), "a tela nao declara o corte das encerradas");
+    assert.ok(html.includes(`${limite} mais recentes de 46`), "a tela nao declara o corte das viagens sem ciclo");
+    // Controle: historico curto nao ganha frase de corte.
+    assert.equal(telaEntregas(await vmDe(realidadeFixture(), "ITAIM")).includes("mais recentes de"), false);
+  });
+
   if (falhas.length) {
     console.error(`\nENTREGAS_LEITURA_DA_RUA: ${passaram}/${passaram + falhas.length} PASS`);
     for (const f of falhas) console.error(` - ${f}`);
