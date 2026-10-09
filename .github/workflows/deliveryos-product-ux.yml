@@ -11,7 +11,7 @@ name: deliveryos-product-ux
 
 on:
   push:
-    branches: [feat/claude-product-ux-autonomous-20261009, integration/deliveryos-product-ux-android-20261009]
+    branches: [feat/claude-product-ux-autonomous-20261009, integration/deliveryos-product-ux-android-20261009, feat/deliveryos-itaim-db-error-boundary-20261009]
   workflow_dispatch:
 
 permissions:
@@ -48,6 +48,8 @@ jobs:
         run: npx tsx tests/product/run-entregas-browser-tests.ts --evidencias "$RUNNER_TEMP/evidencias/navegador"
       - name: servidor + PostgreSQL real (filtro de unidade, somente leitura)
         run: npx tsx tests/product/run-entregas-servidor-pg-tests.ts --evidencias "$RUNNER_TEMP/evidencias/postgresql"
+      - name: falha do PostgreSQL nao revela IP, porta ou segredo no painel
+        run: npx tsx tests/product/run-entregas-db-error-boundary-tests.ts
       - run: npm run -s test:platform:product
       - run: npm run -s test:platform:queue-depth
       - run: npm run -s test:platform:home
