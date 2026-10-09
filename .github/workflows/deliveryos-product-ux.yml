@@ -23,7 +23,8 @@ jobs:
     timeout-minutes: 40
     services:
       postgres:
-        image: postgres:16
+        # Docker Official Image no ECR Public: evita limite anonimo do Docker Hub no runner (run 37992818657).
+        image: public.ecr.aws/docker/library/postgres:16
         env:
           POSTGRES_HOST_AUTH_METHOD: trust
         ports: ["5432:5432"]
