@@ -162,4 +162,22 @@ check("10 each blocked proof has a channel-qualified reason in bundle review sum
   }
 });
 
+check("11 planner-declared blocking reasons reject a contradictory ready flag", () => {
+  const f=archivedCompleteInput();
+  assert.equal(f.production_plan.ready_for_shadow_payload,true);
+  f.production_plan.blocking_reasons.push("TEST_SYNTHETIC_PRODUCTION_BLOCK");
+  const result=projectOperationalTicketsV45({
+    order_id:f.id,source_items:f.source_items,
+    production_plan:f.production_plan,resource_projection:f.resource_projection,
+    packaging_plan:f.packaging
+  });
+  assert.equal(result.ready_for_semantic_preview,false,
+    "planner blockers must not be downgraded to warnings");
+  assert.ok(result.blocking_reasons.includes("PRODUCTION_MOTOR:TEST_SYNTHETIC_PRODUCTION_BLOCK"));
+  const {bundle}=bundleFrom(result,f.source_items);
+  assert.deepEqual(bundle.jobs,[]);
+  assert.ok(bundle.blocked_proofs.length>=3);
+  assert.ok(bundle.blocked_proofs.every(item=>item.proof.bytes.length===0));
+});
+
 console.log("thermal-semantic-gate-v510: "+checks+"/"+checks+" PASS; SHADOW ONLY");
