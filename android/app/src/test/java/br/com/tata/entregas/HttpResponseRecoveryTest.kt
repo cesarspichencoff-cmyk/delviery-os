@@ -25,8 +25,8 @@ class HttpResponseRecoveryTest {
     @Test
     fun `resposta HTTP 200 com JSON valido segue caminho de recibo`() {
         val r = interpretarRespostaHttp(200, """{"accepted":2,"duplicate":0,"rejected":0}""")
-        assertTrue(r is ApiResult.Ok)
-        assertEquals(2, (r as ApiResult.Ok).value.optInt("accepted"))
+        assertTrue(r is ApiResult.Ok<*>)
+        assertEquals(2, ((r as ApiResult.Ok<*>).value as org.json.JSONObject).optInt("accepted"))
     }
 
     @Test
