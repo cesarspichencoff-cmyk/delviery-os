@@ -355,4 +355,34 @@ check("21 non-kitchen foreign identity must not export into this order", () => {
     "same-order kitchen dish proof must remain eligible");
 });
 
+check("22 kitchen dish identity inconsistent with conference is blocked", () => {
+  const ticket=structuredClone(original);
+  const kitchen=ticket.production.find(p=>p.station==="COZINHA");
+  assert.ok(kitchen && ticket.conference.identifiers);
+  kitchen.identifiers={...kitchen.identifiers,tata:"017"};
+  assert.notEqual(kitchen.identifiers.tata,ticket.conference.identifiers.tata);
+  const {bundle}=bundleFrom(ticket,source);
+  assert.ok(!bundle.jobs.some(j=>j.channel==="KITCHEN_DISHES"),
+    "kitchen dishes for another order cannot join offline jobs");
+  const blocked=bundle.blocked_proofs.find(j=>j.channel==="KITCHEN_DISHES");
+  assert.ok(blocked);
+  denied(blocked.proof,"KITCHEN_DISHES_ORDER_IDENTIFIERS_MISMATCH");
+  assert.ok(bundle.jobs.some(j=>j.channel==="OTHER_PRODUCTION"),
+    "verified unrelated production channel must remain eligible");
+});
+check("23 conference identity conflicting with stations fails closed", () => {
+  const ticket=structuredClone(original);
+  assert.ok(ticket.conference.identifiers);
+  ticket.conference.identifiers={...ticket.conference.identifiers,tata:"017"};
+  assert.notEqual(ticket.conference.identifiers.tata,ticket.production[0].identifiers.tata);
+  const {bundle}=bundleFrom(ticket,source);
+  assert.ok(!bundle.jobs.some(j=>j.channel==="CONFERENCE"),
+    "a conference with conflicting order identity cannot be exported");
+  const blocked=bundle.blocked_proofs.find(j=>j.channel==="CONFERENCE");
+  assert.ok(blocked);
+  denied(blocked.proof,"CONFERENCE_STATION_IDENTIFIERS_MISMATCH");
+  assert.ok(!bundle.jobs.some(j=>j.channel==="OTHER_PRODUCTION"));
+  assert.ok(!bundle.jobs.some(j=>j.channel==="KITCHEN_DISHES"));
+});
+
 console.log("thermal-semantic-gate-v510: "+checks+"/"+checks+" PASS; SHADOW ONLY");
