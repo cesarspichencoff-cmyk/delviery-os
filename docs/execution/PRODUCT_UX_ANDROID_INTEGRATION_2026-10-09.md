@@ -29,6 +29,12 @@ Nenhum arquivo do Android foi reescrito pelo Claude; o Android mantém a base co
   - Android: https://github.com/cesarspichencoff-cmyk/delviery-os/actions/workflows/deliveryos-android-event-receipt.yml
 - O git local integrador é um worktree isolado Foxxy em `C:\Users\italo\deliveryos-integration-ux-android-20261009`; nenhum serviço de produção foi usado.
 
+## Correção de escopo operacional — autoridade César, 2026-10-09
+César esclareceu que **o uso operacional pretendido é exclusivamente no Itaim; não há utilização em Pinheiros**. Portanto, não priorizar riscos, navegação ou investimentos com base na hipótese de alternância real entre Itaim e Pinheiros. Referências a outras unidades, como `VILA-LAB`, são dados de demonstração/teste, não prova de implantação multiunidade.
+- O teste de resposta atrasada entre filtros de unidades (branch `feat/deliveryos-entregas-response-order-fixed-20261009`) mede robustez genérica de interface, **não um bloqueio real da operação do Itaim**. Não promover esse caso a requisito operacional prioritário nem fundir esse ramo só por existir.
+- Continuar priorizando fluxos reais do Itaim: pedidos, motoboys, recuperação Android, sincronização, procedência e frescor dos dados; não inferir que uma UI multiunidade da demo represente escopo de implantação.
+- O uso exclusivo no Itaim não prova ausência de qualquer corrida técnica entre leituras sucessivas da mesma unidade; tratar isso apenas como hipótese de qualidade, subordinada a problemas operacionais comprovados.
+
 ## O que a integração entrega
 - Primeira leitura da rua da expedição com hora e idade do dado, filtro por unidade declarado, grupos por ciclo de vida, status de evidência e demonstração separada.
 - Mantém as garantias Android acumuladas: sincronização offline, persistência Room, falhas idempotentes e recibos individuais de eventos.
