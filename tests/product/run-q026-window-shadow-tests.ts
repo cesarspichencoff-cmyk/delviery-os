@@ -69,7 +69,7 @@ provar("S2: GPS recente nao recompõe o estado anterior da viagem", () => {
   const fatos = [
     fato("b1", "trip_created", "ABERTA-GPS", 54),
     fato("b2", "trip_started", "ABERTA-GPS", 53),
-    fato("b3", "gps_batch_received", "ABERTA-GPS", 0.05),
+    fato("b3", "gps_batch_received", "ABERTA-GPS", 0.01),
   ];
   assert.equal(viagem(fatos, "ABERTA-GPS")?.estado, "em_rota");
   assert.equal(viagem(janela(fatos, 24), "ABERTA-GPS")?.estado, "desconhecido");
