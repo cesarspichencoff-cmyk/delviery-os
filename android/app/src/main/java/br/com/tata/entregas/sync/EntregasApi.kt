@@ -45,6 +45,36 @@ sealed class ApiResult<out T> {
     data class Unauthorized(val reason: String, val status: Int) : ApiResult<Nothing>()
 }
 
+/**
+ * Uma resposta HTTP 2xx com JSON corrompido NAO e recusa do lote.
+ * O servidor pode ter persistido os dados; reenviar com a mesma chave de
+ * idempotencia e a unica saida que preserva a verdade e o trabalho de campo.
+ */
+internal fun interpretarRespostaHttp(status: Int, texto: String): ApiResult<JSONObject> =
+    when {
+        status in 200..299 -> try {
+            ApiResult.Ok(if (texto.isBlank()) JSONObject() else JSONObject(texto))
+        } catch (_: org.json.JSONException) {
+            ApiResult.Retryable("resposta JSON invalida do servidor", status)
+        }
+        status == 401 -> ApiResult.Unauthorized(
+            semSegredo(
+                runCatching { JSONObject(texto).optString("human", texto) }.getOrDefault(texto),
+            ),
+            status,
+        )
+        status == 408 || status == 429 -> ApiResult.Retryable(
+            "servidor respondeu $status", status,
+        )
+        status in 400..499 -> ApiResult.Rejected(
+            semSegredo(
+                runCatching { JSONObject(texto).optString("human", texto) }.getOrDefault(texto),
+            ),
+            status,
+        )
+        else -> ApiResult.Retryable("servidor respondeu $status", status)
+    }
+
 class EntregasApi(
     private val baseUrl: String,
     private val tokenProvider: () -> String?,
@@ -73,8 +103,10 @@ class EntregasApi(
     }
 
     private fun request(path: String, method: String, body: JSONObject?): ApiResult<JSONObject> {
+        var connection: HttpURLConnection? = null
         return try {
             val conn = open(path, method)
+            connection = conn
             if (body != null) {
                 conn.doOutput = true
                 conn.outputStream.use { it.write(body.toString().toByteArray(Charsets.UTF_8)) }
@@ -82,32 +114,15 @@ class EntregasApi(
             val status = conn.responseCode
             val stream = if (status in 200..299) conn.inputStream else conn.errorStream
             val text = stream?.bufferedReader()?.use(BufferedReader::readText).orEmpty()
-            conn.disconnect()
-
-            when {
-                status in 200..299 -> ApiResult.Ok(
-                    if (text.isBlank()) JSONObject() else JSONObject(text),
-                )
-                // 401 e sempre credencial. Nunca e o lote.
-                status == 401 -> ApiResult.Unauthorized(
-                    semSegredo(
-                        runCatching { JSONObject(text).optString("human", text) }.getOrDefault(text),
-                    ),
-                    status,
-                )
-                status in 400..499 -> ApiResult.Rejected(
-                    semSegredo(
-                        runCatching { JSONObject(text).optString("human", text) }.getOrDefault(text),
-                    ),
-                    status,
-                )
-                else -> ApiResult.Retryable("servidor respondeu $status", status)
-            }
+            interpretarRespostaHttp(status, text)
         } catch (e: java.io.IOException) {
-            // Rede caiu, servidor fora, TLS não negociou. Tudo retentável.
             ApiResult.Retryable(e.javaClass.simpleName)
-        } catch (e: org.json.JSONException) {
-            ApiResult.Rejected("resposta inesperada do servidor", 0)
+        } catch (_: org.json.JSONException) {
+            // Erro de serializacao local/da resposta nao prova recusa do servidor.
+            ApiResult.Retryable("erro de serializacao JSON")
+        } finally {
+            // Mesmo em timeout/IOException, libera conexao e recursos de rede.
+            connection?.disconnect()
         }
     }
 
