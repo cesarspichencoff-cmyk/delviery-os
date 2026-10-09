@@ -5,6 +5,7 @@ on:
       - feat/deliveryos-android-event-receipt-20261009
       - feat/deliveryos-android-event-receipt-fixed-20261009
       - integration/deliveryos-product-ux-android-20261009
+      - integration/deliveryos-q025-review-20261009
   workflow_dispatch:
 permissions:
   contents: read
