@@ -262,4 +262,39 @@ check("15 foreign component ticket identity cannot enter offline export", () => 
     "valid kitchen dishes must remain eligible");
 });
 
+
+// Synthetic complete rules are exclusively test fixtures; never operational approval.
+const {splitTwoKitchenTicketsFromRulesV47} =
+  require("../dist/src/production/twoKitchenTicketsV47.js");
+function syntheticCompleteComponents(ticket) {
+  const rules={
+    schema:"deliveryos.kitchen-dependency-rules.v1",
+    coverage:"COMPLETE",
+    coverage_proof:"HUMAN_CONFIRMED",
+    rules:source.map((s,i)=>({
+      canonical_item_name:s.product_name,
+      proof:"HUMAN_CONFIRMED",
+      yields:i===0?{HOT:1}:{},
+    })),
+  };
+  return splitTwoKitchenTicketsFromRulesV47(source,ticket,rules);
+}
+check("16 same order identifiers but different projection content must not mix component work", () => {
+  const good=syntheticCompleteComponents(original);
+  assert.equal(good.components?.status,"PROVEN_COMPLETE");
+  assert.ok(buildKitchenSeparatedBundleV47(original,good).jobs.some(
+    j=>j.channel==="KITCHEN_COMPONENTS"),"valid synthetic split must remain accepted");
+  const foreign=structuredClone(original);
+  foreign.production[0].fingerprint="e".repeat(64);
+  assert.deepEqual(foreign.production[0].identifiers,original.production[0].identifiers);
+  const foreignSplit=syntheticCompleteComponents(foreign);
+  const mixed=buildKitchenSeparatedBundleV47(original,foreignSplit);
+  assert.ok(!mixed.jobs.some(j=>j.channel==="KITCHEN_COMPONENTS"),
+    "identifiers alone cannot prove the component source for this order");
+  assert.ok(mixed.blocked_proofs.some(j=>j.channel==="KITCHEN_COMPONENTS"));
+  assert.ok(mixed.review_reasons.some(x=>x.includes("KITCHEN_COMPONENT_PROJECTION_BINDING_MISMATCH")));
+  assert.ok(mixed.jobs.some(j=>j.channel==="OTHER_PRODUCTION"),
+    "unrelated proven station must remain eligible");
+});
+
 console.log("thermal-semantic-gate-v510: "+checks+"/"+checks+" PASS; SHADOW ONLY");
