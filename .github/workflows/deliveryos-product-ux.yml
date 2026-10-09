@@ -1,0 +1,67 @@
+name: deliveryos-product-ux
+
+# Product System / Entregas — "a rua, lida agora" (missao de 2026-10-09).
+# So roda na branch desta frente. Nao toca a frente Android, nao publica nada,
+# nao usa segredo: PostgreSQL de servico descartavel (trust, como o resto do CI)
+# e Chromium do proprio Playwright. Repositorio publico: runner padrao.
+#
+# O que NAO prova: aparelho fisico, CAIXA, producao. A falha pre-existente do
+# C6 (Q-019) e classificada por igualdade em run-sem-fail-novo.ts — nunca
+# ignorada, nunca pintada de verde.
+
+on:
+  push:
+    branches: [feat/claude-product-ux-autonomous-20261009]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  product-ux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # as guardas de congelamento leem a historia inteira
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - run: npx tsc --noEmit
+      - run: npm run -s build:platform
+      - name: leitura da rua (view model + superficie)
+        run: npx tsx tests/product/run-entregas-leitura-da-rua-tests.ts
+      - name: navegador (dobra, teclado, idade da leitura, contraste, movimento reduzido)
+        run: npx tsx tests/product/run-entregas-browser-tests.ts --evidencias "$RUNNER_TEMP/evidencias/navegador"
+      - name: servidor + PostgreSQL real (filtro de unidade, somente leitura)
+        run: npx tsx tests/product/run-entregas-servidor-pg-tests.ts --evidencias "$RUNNER_TEMP/evidencias/postgresql"
+      - run: npm run -s test:platform:product
+      - run: npm run -s test:platform:queue-depth
+      - run: npm run -s test:platform:home
+      - run: npm run -s test:platform:organismo
+      - run: npm run -s test:platform:visual-order
+      - run: npm run -s test:platform:figma-parity
+      - run: npm run -s test:platform:skills
+      - run: npm run -s test:platform:r5
+      - run: npm run -s test:platform:cadeia
+      - name: guardas de governanca, sem FAIL_NOVO
+        run: npx tsx tests/product/run-sem-fail-novo.ts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: evidencias-product-ux
+          path: ${{ runner.temp }}/evidencias/
+          retention-days: 14
