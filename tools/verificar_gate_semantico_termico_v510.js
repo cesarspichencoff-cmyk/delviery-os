@@ -31,10 +31,14 @@ function denied(proof, reason) {
 const original = archivedResult();
 const source = archivedCompleteInput().source_items;
 
-check("01 archived replay keeps production bytes, approved conference additions measured", () => {
+check("01 archived replay preserves proved physical boxes and conference output", () => {
   assert.equal(original.ready_for_semantic_preview, true);
   const a = renderOperationalTicketsProofV46(original);
-  assert.deepEqual([...a.production, a.conference].map(p => p.byte_count), [332,349,849]);
+  assert.deepEqual([...a.production, a.conference].map(p => p.byte_count), [340,538,849]);
+  const sushi=a.production.find(p=>p.name.includes("BALCAOSUSHI"));
+  assert.ok(sushi);
+  assert.equal((sushi.text_trace.match(/1  COMBINADO KIDS/g)||[]).length,3);
+  for(let i=1;i<=4;i++)assert.ok(sushi.text_trace.includes("C"+i+"  CAIXA "));
   const {split,bundle} = bundleFrom(original,source);
   assert.ok(split.review_reasons.includes("KITCHEN_NEEDS_MISSING"));
   assert.deepEqual(channels(bundle), ["CONFERENCE","KITCHEN_DISHES","OTHER_PRODUCTION"]);
