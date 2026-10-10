@@ -352,7 +352,21 @@ async function lerHistorico(
 export async function criarServidor(): Promise<http.Server> {
   const pronto = await calcular();
   const facade = await montarEntregasDemo();
-  const clientePlataforma = URL_PLATAFORMA ? await createPgClient({ url: URL_PLATAFORMA, max: 2 }) : null;
+  // Q-026 candidate: a request must never wait 5s in pg.Pool.connect()
+  // when the explicit HTTP read budget can be only 1-3s.
+  // pg-pool owns/removes timed-out FIFO waiters; unlike Promise.race,
+  // this does NOT abandon a queued pool lease that may surface later.
+  // Only applies to the opt-in guarded reader; default stays unchanged.
+  const checkoutMaxMs = PRAZO_ENTREGAS_RR_MS > 0
+    ? Math.min(1_000, PRAZO_ENTREGAS_RR_MS)
+    : undefined;
+  const clientePlataforma = URL_PLATAFORMA
+    ? await createPgClient({
+        url: URL_PLATAFORMA,
+        max: 2,
+        ...(checkoutMaxMs !== undefined ? { connectionTimeoutMillis: checkoutMaxMs } : {}),
+      })
+    : null;
   // Dedicated cancel connection: reader pool max=2 could be fully borrowed.
   // Only created when the candidate is explicitly enabled; never in default.
   const canceladorEntregas = PRAZO_ENTREGAS_RR_MS > 0 && URL_PLATAFORMA
