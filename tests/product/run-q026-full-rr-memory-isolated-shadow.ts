@@ -22,7 +22,6 @@ import { PORTA_DE_REALIDADE_VERSION,lerRealidadeDeEntregas,
 import { entregasVM } from "../../src/product/viewmodels/entregas-vm";
 import { lerRealidadeDeEntregasIncremental } from "../../src/platform/leitura/realidade-de-entregas-incremental";
 import type { SqlClient, SqlRow, TransactionalSqlClient } from "../../src/platform/persistence/sql-client";
-import type { SqlRow } from "../../src/platform/persistence/sql-client";
 import { gerarLinhas,gravarLinhas,PERFIL_LOJA } from "./q026-replay-fixture";
 
 const url=(process.env.DELIVERYOS_PG_URL??"").trim();
