@@ -27,6 +27,9 @@ test('one-hour deterministic boundaries, metadata-only and commitment false',()=
  assert.equal(a.records[0].id,2); assert.equal(a.records[1].id,3);
  assert.equal(a.possible_commitment,false);
  assert.equal(a.coverage_complete_claimed,false);
+ assert.equal(a.collection_basis,'RUN_CREATED_AT');
+ assert.equal(a.lifecycle_updates_complete,false);
+ assert.equal(a.continuity_complete,false);
  assert.equal(a.raw_payload_persisted,false);
  assert.equal(a.record_count,2);
  assert.equal(Date.parse(a.window_end)-Date.parse(a.window_start),3600000);
@@ -46,6 +49,8 @@ test('drift, duplicates, repo spoof, status mismatch fail',()=>{
  assert.throws(()=>makeSnapshot([run(1,{repository:{full_name:'other/repo'}})],1,win),/run_provenance_invalid/);
  assert.throws(()=>makeSnapshot([run(1,{status:'queued',conclusion:'success'})],1,win),/run_provenance_invalid/);
  assert.throws(()=>makeSnapshot([run(1,{created_at:'2026-10-10T11:12:00Z'})],1,win),/run_provenance_invalid/);
+ assert.throws(()=>makeSnapshot([run(1,{updated_at:'2026-10-10T13:10:00Z'})],1,win),/run_provenance_invalid/);
+ assert.throws(()=>makeSnapshot([run(1,{updated_at:'2026-10-10T15:00:00Z'})],1,win),/run_provenance_invalid/);
 });
 test('sanitize branch and workflow labels',()=>{
  const r=makeSnapshot([run(9,{name:'build\nunexpected',head_branch:'evil\tbranch'})],1,win).records[0];
@@ -75,7 +80,7 @@ test('publish only exact ref and path, with existing SHA',async()=>{
  const responses=[
   {status:200,value:{ref:'refs/heads/cesar-os-ci-snapshots'}},
   {status:200,value:{sha:'b'.repeat(40)}},
-  {status:200,value:{content:{path:'ci-snapshots/deliveryos/latest.json'}}}
+  {status:200,value:{content:{path:'ci-snapshots/deliveryos/latest.json',sha:'c'.repeat(40)},commit:{sha:'d'.repeat(40)}}}
  ];
  const fetchFn=async(url,opts)=>{
   calls.push({url,opts});
@@ -83,7 +88,7 @@ test('publish only exact ref and path, with existing SHA',async()=>{
   return {status:r.status,redirected:false,json:async()=>r.value};
  };
  const r=await publish(snapshot,{sha},{token,fetchFn});
- assert.equal(r.status,'PUBLISHED');assert.equal(calls.length,3);
+ assert.equal(r.status,'PUBLISHED');assert.equal(r.commit_sha,'d'.repeat(40));assert.equal(calls.length,3);
  assert.equal(calls[2].opts.method,'PUT');
  const body=JSON.parse(calls[2].opts.body);
  assert.equal(body.branch,'cesar-os-ci-snapshots');
@@ -97,11 +102,32 @@ test('first-time publish creates fixed snapshot branch and file only',async()=>{
  const fetchFn=async(url,opts)=>{
    calls.push({url,opts});
    return {status:statuses[calls.length-1],redirected:false,
-     json:async()=>calls.length===2?{ref:'refs/heads/cesar-os-ci-snapshots'}:{commit:{sha:'c'.repeat(40)}}};
+     json:async()=>calls.length===2?{ref:'refs/heads/cesar-os-ci-snapshots',object:{sha}}:{content:{path:'ci-snapshots/deliveryos/latest.json',sha:'c'.repeat(40)},commit:{sha:'d'.repeat(40)}}};
  };
  const result=await publish(snapshot,{sha},{token,fetchFn});
  assert.equal(result.status,'PUBLISHED');
  assert.equal(calls.length,4);
  assert.equal(JSON.parse(calls[1].opts.body).ref,'refs/heads/cesar-os-ci-snapshots');
  assert.equal(JSON.parse(calls[1].opts.body).sha,sha);
+});
+
+test('reject publish receipt from wrong file or missing commit SHA',async()=>{
+ const snap=makeSnapshot([],0,win);
+ const replies=[
+   {status:200,value:{ref:'refs/heads/cesar-os-ci-snapshots'}},
+   {status:404,value:null},
+   {status:201,value:{content:{path:'other/snapshot.json',sha:'b'.repeat(40)}}}
+ ];
+ let n=0;const fetchFn=async()=>{const r=replies[n++];return {status:r.status,redirected:false,json:async()=>r.value}};
+ await assert.rejects(publish(snap,{sha},{token,fetchFn}),/snapshot_publish_receipt_invalid/);
+});
+test('reject mismatched created branch receipt and malformed snapshot before a write',async()=>{
+ const snap=makeSnapshot([],0,win);const bad={...snap,collection_basis:'ARBITRARY'};
+ await assert.rejects(publish(bad,{sha},{token,fetchFn:async()=>{throw Error('must not call')}}),/publish_contract_invalid/);
+ const replies=[
+   {status:404,value:null},
+   {status:201,value:{ref:'refs/heads/other',object:{sha}}}
+ ];
+ let n=0;const fetchFn=async()=>{const r=replies[n++];return {status:r.status,redirected:false,json:async()=>r.value}};
+ await assert.rejects(publish(snap,{sha},{token,fetchFn}),/snapshot_branch_receipt_invalid/);
 });
