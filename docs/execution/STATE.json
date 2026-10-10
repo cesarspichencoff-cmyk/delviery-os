@@ -5,7 +5,7 @@
     "status": "ACTIVE",
     "authority_scope": "technical_state",
     "superseded_by": null,
-    "atualizado_em": "2026-10-09",
+    "atualizado_em": "2026-10-10",
     "state_basis": "6f52755",
     "observa": [
       "src/product/",
@@ -14,7 +14,7 @@
     ],
     "_nota_observa": "Os tres troncos cujo estado este arquivo realmente afirma: produto, perfil e o Lab V4. src/platform/ fica de fora porque o que STATE.json diz dele sao contagens de teste, que esta guarda nao verifica — declarar escopo que a guarda nao cobre seria comprar confianca que ela nao entrega. Escolhido antes de rodar, e nao para acomodar caso que falhava (L44)."
   },
-  "atualizado_em": "2026-10-09",
+  "atualizado_em": "2026-10-10",
   "_nota_atualizado_em": "Ate 2026-08-07 este campo declarava 2026-08-03 enquanto o arquivo continha o bloco revolution_0a datado de 2026-08-05 e havia sido gravado no commit 953a3fb, de 2026-08-07. Foi o primeiro defeito que a guarda G6c acusou.",
   "missao": "MACRO-PROMPT 1/3 — Hybrid Platform + PostgreSQL + Cloud Foundation",
   "veredito": "READY_FOR_MACRO_PROMPT_2_FIELD_AND_COPILOT_BRIDGE",
@@ -172,6 +172,12 @@
       "motivo": "A CAIXA nao e acessivel deste ambiente; instalar e reiniciar o servico real so com Desktop Commander e a autorizacao ja registrada.",
       "substituto": "causa raiz reproduzida em SQL Server 2022 (.NET 8); cutover inteiro executado com SCM simulado (7/7); prova em Windows real com SCM e host C# v2 reais preparada (job windows-real-scm)",
       "o_que_falta": "push autorizado para a prova Windows; V2 lido por uma pessoa; Plan e Apply na CAIXA com recibo publicado"
+    },
+    {
+      "item": "Q-026 - custo da releitura do event log por clique em volume real",
+      "motivo": "So fatos sinteticos foram medidos; a Q-026 (janela, retencao, bloco legado) e decisao do Cesar e continua aberta.",
+      "substituto": "projecao por escopo com saida identica a d0716fd (15.171 comparacoes, 18/18 mutantes, PostgreSQL 5/5) e benchmark 1k..1,03M no GitHub Actions 38021849258: clique 1,7-1,9x mais rapido; resta ~10 us por fato do log por clique (4 vCPU), linear",
+      "o_que_falta": "decisao Q-026 sobre o que a leitura humana rele; medir com o volume real do Itaim; experimento de timestamp em texto na porta de leitura (so medido)"
     }
   ],
   "protegido_nao_tocar": {
@@ -2344,4 +2350,72 @@
     "quality_gate": "CI composition required; Claude-only green CI is not a composed-branch result",
     "performance": "Q-026 open; log window and open journeys not modified",
     "references": ["docs/execution/PERGUNTAS.jsonl#Q-025", "docs/execution/PRODUCT_UX_Q025_REVIEW_2026-10-09.md"]
-  }}
+  },
+  "q026_replay_adversarial_20261009": {
+    "status": "TEST_PASS_NOT_INTEGRATED",
+    "branch": "feat/claude-q026-replay-adversarial-20261009",
+    "pr": "https://github.com/cesarspichencoff-cmyk/delviery-os/pull/33 (DRAFT, sem merge)",
+    "base": "1cf1f5d (research/deliveryos-q026-window-shadow-20261009)",
+    "referencias_pinadas": {
+      "original": "d0716fd",
+      "pr31": "b20a847"
+    },
+    "mudanca": "projetar() ordena so o escopo, com instante lido uma vez e acumulador local; realidade-de-entregas passa a cada escopo so os seus fatos. Sem schema, migration, tabela, cache, cursor, janela ou retencao.",
+    "equivalencia": "saida identica a d0716fd chave a chave e byte a byte: 15.171 comparacoes adversariais (12/12), 18/18 mutantes mortos com 0 cegos, PostgreSQL real 5/5 (porta, reinicio, atrasados, sem modo)",
+    "desempenho_ci_38021849258": {
+      "maquina": "GitHub Actions ubuntu, 4 vCPU, Node 22.23.3, PostgreSQL 16",
+      "porta_100k_ms": {
+        "original": 1877,
+        "pr31": 1822,
+        "esta": 1082
+      },
+      "porta_1030k_ms": {
+        "original": 19622,
+        "pr31": 18566,
+        "esta": 10340
+      },
+      "http_100k_ms": {
+        "original": 1888,
+        "pr31": 1814,
+        "esta": 1061
+      },
+      "http_1030k_ms": {
+        "original": 18974,
+        "pr31": 18218,
+        "esta": 10555
+      },
+      "projecao_1030k_ms": {
+        "original": 10788,
+        "pr31": 9959,
+        "esta": 1817
+      },
+      "viagem_unica_16k_ms": {
+        "original": 728,
+        "pr31": 37,
+        "esta": 21
+      }
+    },
+    "achados": [
+      "PR #31 correto mas 1,03-1,08x no clique com distribuicao de loja; os 22,9x sao de uma viagem unica",
+      "custo dominante era ordenar o log inteiro por escopo com Date.parse no comparador",
+      "latente: occurred_at ilegivel em qualquer escopo muda a ordem dos outros na original (preservado; nao alcancavel pelos caminhos canonicos)",
+      "proximo gargalo: leitura do log (timestamptz para Date ~45% do SELECT)"
+    ],
+    "regressao": "zero FAIL_NOVO: q016, relogio, q017, cadeia e as mutacoes delas; backup, append-only, spine, queue-depth:pg, product, bridge, platform, conference, r5d1, S1-S8, governanca",
+    "current_boundary": {
+      "deployed": false,
+      "world_proven": false,
+      "merge": false,
+      "main_touched": false,
+      "android_touched": false,
+      "tata_comanda_touched": false,
+      "schema_touched": false
+    },
+    "question_refs": [
+      "Q-026",
+      "Q-016",
+      "Q-024"
+    ],
+    "next_proof": "auditoria do ChatGPT e aceite do Cesar para levar a projecao por escopo a branch de integracao de teste; depois, decisao Q-026"
+  }
+}

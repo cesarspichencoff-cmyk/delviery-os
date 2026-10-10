@@ -165,6 +165,9 @@ async function requisitar(porta: number, pgid: number): Promise<{ ms: number; by
     amostra();
     assert.equal(r.status, 200);
     const j = JSON.parse(corpo.toString("utf8")) as { leitura?: { disponivel?: boolean }; realidade: { viagens: { fatos: number }[]; aparelhos: unknown[]; historico_sem_modo: unknown } };
+    // Controle antifalso-positivo: o servidor LEU o banco. Sem isto, tres
+    // respostas "indisponivel" dariam o mesmo SHA e o benchmark mediria o erro.
+    assert.equal(j.leitura?.disponivel, true, "a leitura da realidade nao veio do banco");
     const realidade = normalizar({ viagens: j.realidade.viagens, aparelhos: j.realidade.aparelhos, historico_sem_modo: j.realidade.historico_sem_modo });
     return {
       ms: Math.round(ms * 100) / 100,
@@ -277,6 +280,7 @@ void (async () => {
                 const ult = amostras.get(s.arv.rotulo)!.at(-1)!;
                 const shas = new Set(amostras.get(s.arv.rotulo)!.map((m) => m.sha256));
                 assert.equal(shas.size, 1, `${s.arv.rotulo}: resposta mudou entre requisicoes`);
+                assert.equal(ult.fatos, fatos, `${s.arv.rotulo}: a resposta HTTP soma ${ult.fatos} fatos nas viagens, esperado ${fatos}`);
                 return {
                   medida: "http", arvore: s.arv.rotulo, fatos, mediana_ms: q(0.5), p95_ms: q(0.95), min_ms: ms[0], amostras: ms,
                   bytes: ult.bytes, rss_pico_mb: Math.max(...amostras.get(s.arv.rotulo)!.map((m) => m.rss_pico_mb)),

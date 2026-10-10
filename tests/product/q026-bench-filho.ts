@@ -94,6 +94,12 @@ async function medirProjecao(): Promise<void> {
   const heap0 = process.memoryUsage().heapUsed;
   let saida = rodar(); // aquecimento, fora da medida
   const sha = createHash("sha256").update(JSON.stringify(saida)).digest("hex");
+  // Controle antifalso-positivo: o mesmo SHA em todas as arvores nao pode vir
+  // de uma saida vazia. Todo fato da fixture tem viagem e chave unica, entao a
+  // soma das listas de eventos das viagens TEM de ser o total de fatos.
+  const contados = (saida as { viagens: { eventos: unknown[] }[] }[])
+    .reduce((s, p) => s + p.viagens.reduce((t, v) => t + v.eventos.length, 0), 0);
+  if (contados !== log.length) throw new Error(`a projecao contou ${contados} de ${log.length} fatos`);
   saida = null as unknown as typeof saida;
   const ms: number[] = [];
   let heapPico = 0;
@@ -125,6 +131,11 @@ async function medirPorta(): Promise<void> {
     const aquec = await lerRealidadeDeEntregas(cliente, { agora });
     const sha = createHash("sha256").update(JSON.stringify(aquec.projecoes)).digest("hex");
     const viagens = (aquec.projecoes as { viagens: unknown[] }[]).reduce((s, p) => s + p.viagens.length, 0);
+    // Controle antifalso-positivo: a porta LEU o banco — toda linha semeada
+    // aparece numa lista de eventos de viagem (nenhuma sem modo, nenhuma sem viagem).
+    const contados = (aquec.projecoes as { viagens: { eventos: unknown[] }[] }[])
+      .reduce((s, p) => s + p.viagens.reduce((t, v) => t + v.eventos.length, 0), 0);
+    if (contados !== a.fatos) throw new Error(`a porta contou ${contados} de ${a.fatos} fatos`);
     const ms: number[] = [];
     let rssPico = 0;
     for (let i = 0; i < a.repeticoes; i++) {

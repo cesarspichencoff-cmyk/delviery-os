@@ -128,6 +128,15 @@ void (async () => {
         assert.deepStrictEqual(nova.projecoes, antiga);
         if (!unit_id) assert.ok(antiga.length >= 4, `escopos insuficientes: ${antiga.length}`);
       }
+      // Controle antifalso-positivo: a MESMA comparacao acusa quando um unico
+      // fato some da referencia — a igualdade acima nao e vacua.
+      const nova = await lerRealidadeDeEntregas(b.cliente, { agora });
+      const aptos = (await lerFatosParaReplay(b.cliente, TIPOS_DA_OPERACAO_VIVA)).aptos;
+      const semUm = aptos.filter((f) => f.event_type === "gps_batch_received").slice(1, 2)[0];
+      assert.ok(semUm);
+      assert.notEqual(JSON.stringify(nova.projecoes),
+        JSON.stringify(projecoesDaPortaAntiga(aptos.filter((f) => f !== semUm), agora)),
+        "CONTROLE falhou: a comparacao nao enxerga um fato a menos");
     });
 
     const digestsDoReinicio: string[] = [];

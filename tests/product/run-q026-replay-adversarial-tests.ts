@@ -11,6 +11,7 @@
  * Saida: `Q026_REPLAY_ADVERSARIAL: n/n PASS`. Qualquer divergencia reprova.
  */
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import type { EventEnvelope, SourceMode } from "../../src/platform/contracts/event-catalog";
 import {
   consumir,
@@ -242,6 +243,28 @@ teste("E11 o fuzz exercita o caminho rapido E o caminho antigo, com duplicatas e
   }
   console.log(`      fuzz: ${consistentes} consistentes, ${inconsistentes} pelo caminho antigo, ${comDup} com duplicata, ${comEmpate} com empate`);
   assert.ok(consistentes > 1_000 && inconsistentes > 50 && comDup > 1_000 && comEmpate > 1_000);
+});
+
+/* ------------------------------------------------------------------ */
+console.log("\n6. IMPRESSAO DIGITAL DO AMBIENTE (informativa, nao reprova)");
+
+teste("E12 digest dos cenarios e das saidas da ORIGINAL neste runtime (Node/ICU/locale/fuso)", () => {
+  // A ordem de desempate usa `localeCompare`: a MESMA entrada pode ordenar
+  // diferente sob outro ICU/locale. Comparar este digest entre maquinas mostra
+  // se o replay "exato" depende do ambiente. Nao reprova: e medida.
+  const hc = createHash("sha256");
+  const ho = createHash("sha256");
+  for (const c of LISTA) {
+    hc.update(JSON.stringify(c.eventos)).update(JSON.stringify(c.opcoes));
+    for (const o of c.opcoes) {
+      let s: string;
+      try { s = JSON.stringify(ORIGINAL(c.eventos, o)); } catch (e) { s = `ERRO:${(e as Error).message}`; }
+      ho.update(s);
+    }
+  }
+  const ro = Intl.DateTimeFormat().resolvedOptions();
+  console.log(`      node ${process.version} · icu ${process.versions.icu} · unicode ${process.versions.unicode} · locale ${ro.locale} · fuso ${ro.timeZone}`);
+  console.log(`      Q026_DIGEST cenarios=${hc.digest("hex").slice(0, 16)} saidas_original=${ho.digest("hex").slice(0, 16)}`);
 });
 
 const total = passou + falhas.length;
