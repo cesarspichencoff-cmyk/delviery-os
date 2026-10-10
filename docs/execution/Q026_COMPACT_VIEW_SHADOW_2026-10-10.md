@@ -46,3 +46,40 @@ Nas duas escalas, **100% dos fatos contabilizados**, campos da apresentação e 
 3. Só após esses passos, decidir se existe um caminho de visualização separado, explicitamente parcial, sem romper os contratos canônicos Q-016 e Q-026. Alterar schema/HTTP/retention/produção demanda decisão humana específica.
 
 **Arquivos da pesquisa:** `tests/product/run-q026-compact-view-shadow.ts` e workflow `.github/workflows/deliveryos-q026-compact-view-shadow.yml`. Nenhum arquivo de runtime alterado, nenhuma migration, nenhuma produção ou custo novo.
+
+
+## Complemento: A/B em processos independentes + modelo completo da tela
+
+[GitHub Actions run **38051370730**](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38051370730): **8/8 jobs SUCCESS** no commit 6d3415c22b3f30068944c94efa4e532883b70598, cobrindo duas provas anteriores, novo teste completo de UI, quatro variantes A/B (100 mil e 1,03 milhão, cada uma em processo Node separado) e um comparador de artefatos que reprova SHA diferente ou contagem incompleta.
+
+### Igualdade de TODO o view model, não apenas de cada viagem
+
+Novo teste: \`tests/product/run-q026-compact-full-ui-shadow.ts\`. Cria banco descartável na versão anterior à migration 0003, escreve um fato sem modo, migra pelas migrations reais, grava 6 mil fatos sintéticos (\`gerarLinhas\`, incluindo empates/atrasos/clock suspeito) com 16 aparelhos, 2 unidades e modos \`real\`, \`simulated\`, \`control\`. Lê a porta de realidade operacional **sem modificá-la**.
+
+Substitui o vetor de IDs em cada viagem por um objeto que só admite a leitura de \`length\`; acessar índice, método, enumerar ou iterar IDs **lança exceção**. Compara **JSON e deepEqual do \`entregasVM()\` inteiro** contra versão com vetores completos para as quatro seleções \`[todas, ITAIM, LAB-BANCADA, SEM-UNIDADE]\`. **5/5 provas** (4 filtros): hashes da visão iguais, 6 mil fatos contabilizados, histórico \`UNKNOWN=1\`, 3 modos presentes. Controle mutante: alterar o tamanho de um vetor \`+1\` muda o VM; alterar \`UNKNOWN 1→0\` também muda o VM. Isso prova que **nesta versão da UI**, o vetor de IDs não é necessário para o resultado **dado que o restante de \`RealidadeDeEntregas\` veio da porta canônica**. Não prova que uma implementação alternativa gere corretamente essa realidade.
+
+### Diagnóstico de memória realmente em processos separados
+
+Arquivo: \`tests/product/run-q026-compact-independent-shadow.ts\`. Jobs \`independent-ab\` matriciais executam em containers GitHub Actions separados, cada um com **PostgreSQL descartável criado pela suíte** e um único processo Node medido. Fixture idêntica (datas ancoradas em 2026-10-09T22:00:00Z, sem variação de \`now()\`). \`independent-compare\` baixa os quatro artefatos e exige SHA-256 igual do JSON compacto, contagem integral \`N\`, quantidade de viagens \`N/1000\`, RSS não nulo e RSS menor no experimento compacto. Portanto o comparador não aceita saída vazia nem sucesso unilateral.
+
+| Fatos | Variante | RSS após GC com resultado retido (MiB) | Pico RSS desde início do processo (MiB) | Tempo da fase (ms) | SHA-256 compacto |
+| ---: | --- | ---: | ---: | ---: | --- |
+| 100.000 | compacta | 159,7 | 160,9 | 1.065 | \`98f420be327fdb7f956cbbb360023bc9e6cca4bfef4b28880be61dd9b3fca67\` |
+| 100.000 | replay integral | 218,0 | 226,2 | 882 | mesmo |
+| 1.030.000 | compacta | **191,6** | **191,6** | 5.825 | \`19f47f74bd0e2ed1ab6a1cac02f2c38b6490510d4d41fc16511c9af9ed90076a\` |
+| 1.030.000 | replay integral | **1.137,8** | **1.242,3** | 6.920 | mesmo |
+
+Pico de memória residente **~84,6% menor** na fixture de 1,03 milhão, agora comparando processos isolados. Tempo mais rápido nessa rodada grande (5,83 vs 6,92 s) e mais lento na pequena (1,065 vs 0,882 s): **uma única amostra de cada variante por tamanho e runners distintos**; não declarar ganho de tempo significativo nem p95. O par de 1,03 milhão foi medido com dados sintéticos, uma unidade, \`simulated\`, dois tipos, viagens com exatamente mil fatos.
+
+### Falha de workflow observada e reparada
+
+O commit intermediário \`2c5ed34\` teve validação de workflow **FAIL antes de qualquer job**, por usar \`runner.temp\` no contexto de \`env\` do job. Foi trocado por caminho relativo de artefato no commit \`6d3415c\`; reexecução **8/8 SUCCESS**. A falha do workflow anterior não foi erro da plataforma, e a correção foi efetivamente validada no CI.
+
+### Fronteira da prova
+
+- **Estudado:** representação de interface sem IDs, contrato de UI completo com mistura de fontes a partir da porta canônica, process-to-process memory em fixture determinística, quatro hashes cruzados.
+- **NÃO demonstrado:** streaming real de \`lerRealidadeDeEntregas\` em múltiplos modos e duas unidades simultâneas; snapshot consistente sob append concorrente; contrato Q-016/cursor/quarentena/dimensões completo; dispositivo físico; HTTP real com leitor compacto; benefício no ambiente operacional.
+- **Não alterar/autorizar:** \`main\`, integração, produção, Android, TATÁ Comanda, schema, retenção, janela, contrato externo, novo custo.
+- **Auditoria independente:** issue [#36](https://github.com/cesarspichencoff-cmyk/delviery-os/issues/36), entregue pelo César ao Claude. Na última verificação **não havia PR/branch \`review/claude-q026-snapshot-adversarial-20261010\` nem comentário novo**; isso é ausência de prova pública, não declaração sobre execução em sessão Claude.
+
+**Decisão:** PR #37 **DRAFT / HOLD**, sem merge. A próxima etapa de implementação deverá preservar replay Q-016 como caminho forense autoritativo; uma vista compacta pode ser uma projeção derivada com contrato explícito, mas depende de auditoria de consistência/snapshot e teste fim a fim. Q-026 continua ABERTA.
