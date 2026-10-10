@@ -45,7 +45,7 @@
  */
 
 import { SOURCE_MODES, type EventEnvelope, type SourceMode } from "../contracts/event-catalog";
-import type { TransactionalSqlClient } from "../persistence/sql-client";
+import type { SqlClient, TransactionalSqlClient } from "../persistence/sql-client";
 import { envelopeDaMensagem } from "./consumidor";
 
 export const PORTA_DE_REPLAY_VERSION = "replay-do-event-log@1.0.0";
@@ -77,10 +77,22 @@ export async function lerFatosParaReplay(
   tipos: readonly string[],
 ): Promise<LeituraParaReplay> {
   return cliente.transaction(async (tx) => {
-    // Primeiro comando da transação. Depois dele, qualquer escrita nesta
-    // conexão é recusada pelo PostgreSQL.
+    // Mantem o comportamento de Q-016: transacao dedicada, apenas leitura.
     await tx.query("SET TRANSACTION READ ONLY");
+    return lerFatosParaReplayNoInstantaneo(tx, tipos);
+  });
+}
 
+/**
+ * Mesmo decodificador Q-016, sem criar segunda transacao.
+ * O chamador ja deve possuir um SqlClient preso a uma transacao READ ONLY
+ * com isolamento apropriado. Usar somente quando ha consultas companheiras
+ * que devem enxergar o MESMO instantaneo.
+ */
+export async function lerFatosParaReplayNoInstantaneo(
+  tx: SqlClient,
+  tipos: readonly string[],
+): Promise<LeituraParaReplay> {
     const linhas = await tx.query(
       `SELECT event_id, unit_id, object_type, object_id, event_type, occurred_at, origin,
               device_id, sequence_local, idempotency_key, contract_version, source_mode,
@@ -155,5 +167,4 @@ export async function lerFatosParaReplay(
     }
 
     return { aptos, sem_modo, corrompidas, lidas: linhas.length };
-  });
 }
