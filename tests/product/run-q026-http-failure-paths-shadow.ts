@@ -12,11 +12,17 @@ import http from "node:http";
 import { performance } from "node:perf_hooks";
 import { bancoIsolado } from "../../src/platform/banco-isolado";
 import { createPgClient } from "../../src/platform/persistence/sql-client";
+import { foiTimeoutNaFilaDoPoolPg } from "../../src/platform/persistence/pg-pool-backpressure";
 
 const base=(process.env.DELIVERYOS_PG_URL??"").trim();
 if(!base){console.error("Q026_FAILURE_PATH_PG_REQUIRED");process.exit(78)}
 const CASE=process.env.Q026_FAILURE_PATH_CASE;
-assert.ok(CASE==="cancel_denied"||CASE==="pool_saturated"||CASE==="pool_checkout_fast");
+assert.ok(CASE==="cancel_denied"||CASE==="pool_saturated"||CASE==="pool_checkout_fast"||CASE==="permission_denied");
+assert.equal(foiTimeoutNaFilaDoPoolPg(new Error("timeout exceeded when trying to connect")),true);
+assert.equal(foiTimeoutNaFilaDoPoolPg(Object.assign(new Error("timeout exceeded when trying to connect"),{code:"42501"})),false);
+assert.equal(foiTimeoutNaFilaDoPoolPg(new Error("Connection terminated due to connection timeout")),false);
+assert.equal(foiTimeoutNaFilaDoPoolPg(new Error("getaddrinfo ENOTFOUND")),false);
+assert.equal(foiTimeoutNaFilaDoPoolPg(null),false);
 const BUDGET_MS=3000;
 const pause=(ms:number)=>new Promise<void>(r=>setTimeout(r,ms));
 const deadline=async<T>(poll:()=>Promise<T|null>,max=16000):Promise<T>=>{
@@ -69,7 +75,7 @@ void(async()=>{
   ].join(" "));
   const role="q026_fault_reader";
   let runtimeUrl=db.url;
-  if(CASE==="cancel_denied"){
+  if(CASE==="cancel_denied"||CASE==="permission_denied"){
    await db.cliente.query("CREATE ROLE q026_fault_reader LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION");
    await db.cliente.query(`GRANT CONNECT ON DATABASE ${db.nome} TO q026_fault_reader`);
    await db.cliente.query("GRANT USAGE ON SCHEMA platform,identity TO q026_fault_reader");
@@ -77,29 +83,54 @@ void(async()=>{
    // This revokes execute on PG's built-in *only within disposable CI cluster*.
    // No effect on operational DB. Tests that a denied external cancel cannot
    // be mistaken for a successful cancel.
-   await db.cliente.query("REVOKE EXECUTE ON FUNCTION pg_catalog.pg_cancel_backend(integer) FROM PUBLIC");
-   const priv=await db.cliente.query(
-    "SELECT has_function_privilege($1,'pg_catalog.pg_cancel_backend(integer)','EXECUTE') AS grant",[role]);
-   assert.equal(priv[0].grant,false,"cancel function EXECUTE must be revoked");
+   if(CASE==="cancel_denied"){
+     await db.cliente.query("REVOKE EXECUTE ON FUNCTION pg_catalog.pg_cancel_backend(integer) FROM PUBLIC");
+     const priv=await db.cliente.query(
+       "SELECT has_function_privilege($1,'pg_catalog.pg_cancel_backend(integer)','EXECUTE') AS grant",[role]);
+     assert.equal(priv[0].grant,false,"cancel function EXECUTE must be revoked");
+   }
    const parsed=new URL(db.url);parsed.username=role;runtimeUrl=parsed.toString();
    const r=await createPgClient({url:runtimeUrl,max:1});
    try{
     assert.equal((await r.query("SELECT current_user AS u"))[0].u,role);
-    let deny:unknown=null;
-    try{await r.query("SELECT pg_cancel_backend(pg_backend_pid())")}catch(e){deny=e}
-    assert.equal((deny as {code?:string}|null)?.code,"42501",
-     "test role unexpectedly may execute cancel");
+    if(CASE==="cancel_denied"){
+      let deny:unknown=null;
+      try{await r.query("SELECT pg_cancel_backend(pg_backend_pid())")}catch(e){deny=e}
+      assert.equal((deny as {code?:string}|null)?.code,"42501",
+        "test role unexpectedly may execute cancel");
+    }
    }finally{await r.close()}
   }
   process.env.DELIVERYOS_DATABASE_URL=runtimeUrl;
   process.env.DELIVERYOS_ENTREGAS_RR_DEADLINE_MS=String(BUDGET_MS);
-  process.env.DELIVERYOS_ENTREGAS_MAX_INFLIGHT=CASE==="cancel_denied"?"1":"4";
+  process.env.DELIVERYOS_ENTREGAS_MAX_INFLIGHT=(CASE==="cancel_denied"||CASE==="permission_denied")?"1":"4";
   const {criarServidor}=await import("../../tools/product_system_server");
   srv=await criarServidor();
   await new Promise<void>((resolve,reject)=>{srv!.once("error",reject);srv!.listen(0,"127.0.0.1",resolve)});
   const addr=srv.address();assert.ok(addr&&typeof addr!=="string");const port=addr.port;
   const initial=await get(port,"/api/entregas?unidade=ITAIM");
   assert.equal(initial.status,200);assert.equal(initial.body.leitura.disponivel,true);
+  if(CASE==="permission_denied"){
+    // Real SQLSTATE 42501 remains an unavailable DATA BLOCK, not overload.
+    await db.cliente.query("REVOKE SELECT ON platform.event_log FROM q026_fault_reader");
+    const forbidden=await get(port,"/api/entregas?unidade=ITAIM");
+    assert.equal(forbidden.status,200);
+    assert.equal(forbidden.body.leitura.disponivel,false);
+    assert.equal(forbidden.body.leitura.motivo,"indisponivel");
+    assert.equal(forbidden.headers["retry-after"],undefined);
+    assert.ok(!forbidden.raw.includes("42501"));
+    assert.ok(!forbidden.raw.includes(runtimeUrl));
+    await db.cliente.query("GRANT SELECT ON platform.event_log TO q026_fault_reader");
+    const restored=await get(port,"/api/entregas?unidade=ITAIM");
+    assert.equal(restored.status,200);
+    assert.equal(restored.body.leitura.disponivel,true);
+    console.log("Q026_PERMISSION_DENIED_DISTINCT_PASS "+JSON.stringify({
+      sqlstate_class:"42501",http_unavailable:forbidden.status,
+      never_fake_503:true,recovery_status:restored.status,
+      no_internal_error_leak:true
+    }));
+    return;
+  }
   let unblock:()=>void=()=>undefined;
   const gate=new Promise<void>(r=>{unblock=r});release=unblock;
   let holding:()=>void=()=>undefined;
