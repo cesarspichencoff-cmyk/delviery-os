@@ -10,6 +10,8 @@ export async function replayDryRun({start,end,token,now=new Date(),fetchFn=fetch
   return {
     schema:'cesar-os-work-replay-dryrun-v1',status:'READ_ONLY_REPORT',source_id:SOURCE,
     horizon:{start,end},archived_files:evidence.snapshots.length,
+    archive_proofs:plan.new_archive_entries.map(x=>({archive_path:x.archive_path,
+      git_blob_sha:x.git_blob_sha,snapshot_sha256:x.snapshot_sha256,record_count:x.record_count})),
     missing_days:evidence.days_missing,coverage:plan.coverage,
     observed_runs:plan.records.length,run_ids_checked:reconciliation.checked,
     late_state_updates:reconciliation.updates.map(x=>({id:x.id,status:x.status,
