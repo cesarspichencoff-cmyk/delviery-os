@@ -93,7 +93,10 @@ try{
  check("V7.11 source values and fake override content never included",()=>{
   const p=path.join(dir,"human-order-overrides-v1.json");
   fs.writeFileSync(p,JSON.stringify({...fixtures["human-order-overrides-v1.json"],
-    orders:[{teknisa_sequence:"SECRET_FAKE_ORDER_999",notes:"SECRET_FAKE_NOTE_123"}]}));
+    orders:[{teknisa_sequence:"SECRET_FAKE_ORDER_999",notes:"SECRET_FAKE_NOTE_123",
+      scope:"EXACT_SNAPSHOT_ONLY",store_id:"0001",loja_id:"01",
+      operational_date:"2026-10-10",order_key:"FAKE_EXACT_ORDER",
+      snapshot_hash:"a".repeat(64),source_refs:["human-review:fictional-example"]}]}));
   const r=audit();assert.equal(r.status,"SOURCE_PREFLIGHT_MATCH_ONLY_NO_DEPLOY_AUTHORIZATION");
   const serialized=JSON.stringify(r);
   assert.ok(!serialized.includes("SECRET_FAKE_ORDER_999"));
