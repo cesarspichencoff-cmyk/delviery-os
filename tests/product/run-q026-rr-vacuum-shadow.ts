@@ -31,7 +31,7 @@ void(async()=>{
    "WITH (fillfactor=100)"
   ].join(" "));
   await b.cliente.query(
-   "INSERT INTO public.q026_vacuum_probe(id,flag,payload)",
+   "INSERT INTO public.q026_vacuum_probe(id,flag,payload) "+
    "SELECT g,0,repeat('x',400) FROM generate_series(1,$1::int) AS g",
    [N]);
   await b.cliente.query("ANALYZE public.q026_vacuum_probe");
