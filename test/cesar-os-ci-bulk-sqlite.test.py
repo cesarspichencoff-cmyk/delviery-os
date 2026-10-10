@@ -81,6 +81,8 @@ class FreeTierBulkSqliteTests(unittest.TestCase):
         db=database()
         try:
             with self.assertRaises(sqlite3.IntegrityError):
+                # isolation_level=None uses autocommit unless an explicit BEGIN is issued.
+                db.execute("BEGIN")
                 with db:
                     db.execute(stmts[0]["sql"],stmts[0]["params"])
                     db.execute("INSERT INTO source_observations (observation_id,source_id,domain,possible_commitment) VALUES (?,?,?,?)",
