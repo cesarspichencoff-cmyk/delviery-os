@@ -1,0 +1,33 @@
+name: DeliveryOS Public CI Snapshot
+
+# Candidate only. Scheduled workflows run only when this file is on the default branch.
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: deliveryos-public-ci-snapshot
+  cancel-in-progress: false
+
+jobs:
+  export:
+    if: github.repository == 'cesarspichencoff-cmyk/delviery-os' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - name: Checkout exact triggering commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Publish bounded public CI metadata
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node tools/cesar-os-ci/snapshot.mjs
