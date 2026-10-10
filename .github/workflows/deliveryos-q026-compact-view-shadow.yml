@@ -181,5 +181,5 @@ jobs:
       - name: Tipagem do cursor SQL + UI integral
         run: npx tsc --noEmit --target ES2022 --module commonjs --moduleResolution node --strict --esModuleInterop --skipLibCheck --types node tests/product/run-q026-mixed-cursor-full-ui-shadow.ts
       - name: Cursor real FETCH 3, 2 unidades/3 modos/UNKNOWN/corrompido/no-trip, VM completa
-        run: npx tsx tests/product/run-q026-compact-full-ui-shadow.ts
+        run: npx tsx tests/product/run-q026-mixed-cursor-full-ui-shadow.ts
 
