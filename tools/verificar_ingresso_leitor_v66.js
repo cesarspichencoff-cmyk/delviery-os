@@ -131,4 +131,11 @@ test("no print despite successful offline assembly",()=>{
  assert.equal(r.ingress.effects.print,false);
  assert.equal(r.tickets.effects.print,false);
 });
+test("legacy plan without root order ID accepted only with all matching intent identifiers",()=>{
+ const f=fixture();f.plan.order_id=null;
+ const ok=ingress(f);assert.equal(ok.status,"ALIGNED",JSON.stringify(ok.blockers));
+ f.plan.print_intents[0].identifiers.teknisa_sequence="FOREIGN";
+ const bad=ingress(f);assert.equal(bad.status,"BLOCKED");
+ assert.ok(bad.blockers.includes("ORDER_JOIN_PRINT_PLAN_ID_MISMATCH"));
+});
 console.log("READER_INGRESS_V66="+checks+"/"+checks+" SHADOW ONLY; NO LIVE ACCESS");
