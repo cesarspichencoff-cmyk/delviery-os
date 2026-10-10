@@ -1,0 +1,36 @@
+name: CÉSAR OS Public CI Replay Read-Only Review
+
+# Pull-request tests only. No schedule, deployment, database or write tokens.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'tools/cesar-os-ci/**'
+      - 'test/cesar-os-ci-*.test.mjs'
+      - '.github/workflows/cesar-os-ci-readonly-review.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: cesar-os-readonly-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  read-only-verify:
+    if: github.repository == 'cesarspichencoff-cmyk/delviery-os' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact PR merge ref
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Run producer and read-only replay tests
+        run: node --test test/cesar-os-ci-snapshot.test.mjs
+      - name: Read public CI archive from real GitHub API without writes
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node tools/cesar-os-ci/replay-live-smoke.mjs
