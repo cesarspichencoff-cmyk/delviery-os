@@ -1,0 +1,69 @@
+name: q026-short-deadline-overrun-probe
+# Research only; PostgreSQL16 ephemeral, no deployment.
+on:
+  push:
+    branches:
+      - research/q026-short-deadline-event-loop-shadow-20261010
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: q026-short-deadline-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  actual-http-short-deadline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        size: [120000, 300000]
+        reader: [baseline, incremental]
+    services:
+      postgres:
+        image: public.ecr.aws/docker/library/postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
+      Q026_EVENT_LOOP_EVENTS: ${{ matrix.size }}
+      Q026_FAIRNESS_VARIANT: ${{ matrix.reader }}
+      Q026_SHORT_HTTP_DEADLINE_MS: "1000"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Strict typecheck
+        run: npx tsc --noEmit
+      - name: Real HTTP / health under one-second deadline
+        shell: bash
+        run: |
+          set -o pipefail
+          npx tsx tests/product/run-q026-event-loop-http-fairness-shadow.ts | tee short-deadline.out
+          grep '^Q026_SHORT_DEADLINE_HTTP_SHADOW_MEASURED ' short-deadline.out
+  regressions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm run test:platform:q016
+      - run: npm run test:platform:product
+      - run: npm run test:platform:governanca
+      - name: PostgreSQL absence must fail
+        shell: bash
+        run: |
+          set +e
+          DELIVERYOS_PG_URL= Q026_EVENT_LOOP_EVENTS=120000 Q026_FAIRNESS_VARIANT=incremental Q026_SHORT_HTTP_DEADLINE_MS=1000 npx tsx tests/product/run-q026-event-loop-http-fairness-shadow.ts
+          test "$?" = 78
