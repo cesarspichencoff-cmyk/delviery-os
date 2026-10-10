@@ -35,4 +35,10 @@ node --test test/cesar-os-ci-snapshot.test.mjs
 6. Only after an authenticated private-runtime ingestion receipt and D1 WORK readback should automated coverage be called active.
 7. Preserve other CÉSAR OS sources and existing Cloudflare Cron; make no billing changes.
 
-**Current proof:** local producer logic 10/10 tests; consumer logic 11/11 tests; cross-language sample normalized as WORK, zero commitments. **No live feed or ingestion has been proven.**
+**Updated proof — 2026-10-10:** GitHub Actions read-only candidate run [#38061371153](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38061371153) completed successfully, with 12/12 producer tests and 11 runs read using an ephemeral `GITHUB_TOKEN` with only `actions:read`/`contents:read`. No repository writes occurred in that job. Local consumer passed 13/13 and a synthetic cross-language WORK envelope contract was validated; no Cockpit writes.
+
+**Data-model limitation:** this snapshot enumerates runs **created in the prior hour**. It does **not** guarantee their eventual conclusion is captured after that hour, nor prove continuous gap-free collection if GitHub Actions scheduling is delayed or skipped. Flags `collection_basis=RUN_CREATED_AT`, `lifecycle_updates_complete=false`, `continuity_complete=false` are mandatory; do not market the feed as live CI health.
+
+**Publish-proof requirement:** the producer checks exact returned snapshot file path, blob SHA, commit SHA, and first-creation branch reference before declaring success. This verifies the API receipt shape, not cryptographic authenticity of public contents.
+
+**No scheduled snapshot feed or private ingestion has been proven.**
