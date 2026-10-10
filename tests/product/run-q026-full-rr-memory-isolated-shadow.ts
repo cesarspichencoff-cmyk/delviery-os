@@ -295,12 +295,12 @@ void(async()=>{
     const devices=new Set(dados.map(d=>JSON.stringify([d.device_id,d.unit_id])));
     for(const x of devices){
       const [id,unit]=JSON.parse(x) as [string,string];
-      await b.cliente.query("INSERT INTO identity.device(device_id,unit_id,label) VALUES ($1,$2,$1)",[id,unit]);
+      await b.cliente.query("INSERT INTO identity.device(device_id,unit_id,label,registered_at) VALUES ($1,$2,$1,\'2026-10-09T00:00:00Z\')",[id,unit]);
     }
     await gravarLinhas(b.cliente,[...dados].sort((a,b)=>a.recorded_at.localeCompare(b.recorded_at)));
     // Exercise nullable and populated device fields, plus an authorized silent device.
     await b.cliente.query(
-      "INSERT INTO identity.device(device_id,unit_id,label) VALUES ('DEV-NO-GPS','ITAIM','No telemetry')");
+      "INSERT INTO identity.device(device_id,unit_id,label,registered_at) VALUES ('DEV-NO-GPS','ITAIM','No telemetry','2026-10-09T00:00:00Z')");
     await b.cliente.query(
       "UPDATE identity.device SET app_version='2026.10-shadow',secret_bound_at=$1,"+
       "queue_pending_points=3,queue_pending_events=2,queue_depth_reported_at=$1 "+
