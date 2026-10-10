@@ -1,3 +1,4 @@
+import {planAnnotationV67, type NoteKindV67} from "./annotationLinePlanV67";
 import type {
   ConferenceTicketV45,
   ProductionTicketV45,
@@ -129,24 +130,27 @@ export class OfflinePrinter {
     this.line(headline, "ITEM:" + item.source_item_index);
     this.heightDouble(false);
     this.bold(false);
-    // Plain instructions prioritize the larger native Font A in low light.
-    // Long instructions fall back to B; >64 columns are blocked, not cut.
-    for (const o of item.observations) {
-      const s = "OBS: " + uppercase(o);
-      this.font([...s].length <= FONT_A_COLS ? "A" : "B");
-      this.line(s, "OBS:" + item.source_item_index);
+    // Wrap WITHOUT breaking words or silently discarding negations/allergens.
+    // V5.6 line plan is now shared by the operational OFFLINE renderer.
+    for (const o of item.observations)
+      this.annotation("OBS",o,"OBS:"+item.source_item_index);
+    for (const f of item.finishing)
+      this.annotation("FINALIZAR",f,"FINALIZAR:"+item.source_item_index);
+    for (const d of item.kitchen_dependencies)
+      this.annotation("AGUARDAR_COZINHA",d,"DEPENDENCIA:"+item.source_item_index);
+  }
+  annotation(kind:NoteKindV67,raw:string,context:string):void {
+    const plan=planAnnotationV67(kind,raw);
+    if(plan.status!=="PREVIEW_ONLY"){
+      this.blockers.add("ANNOTATION_PLAN_BLOCKED:"+context+":"+plan.reason);
+      return;
     }
-    for (const f of item.finishing) {
-      const s = "FINALIZAR: " + uppercase(f);
-      this.font([...s].length <= FONT_A_COLS ? "A" : "B");
-      this.line(s, "FINALIZAR:" + item.source_item_index);
-    }
-    for (const d of item.kitchen_dependencies) {
-      const s = "AGUARDAR COZINHA: " + uppercase(d);
-      this.font([...s].length <= FONT_A_COLS ? "A" : "B");
-      this.line(s, "DEPENDENCIA:" + item.source_item_index);
+    for(const line of plan.lines){
+      this.font(line.font);
+      this.line(line.text,context);
     }
   }
+
   metadata(ids: { ifood: string; teknisa: string; tata: string; hour: string | null } | null): void {
     if (!ids || !plain(ids.ifood) || !plain(ids.teknisa) ||
         !/^\d{3}$/.test(plain(ids.tata))) {
