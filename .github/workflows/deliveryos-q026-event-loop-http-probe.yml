@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        events: [20000, 120000]
+        events: [20000, 120000, 300000]
     services:
       postgres:
         image: public.ecr.aws/docker/library/postgres:16
