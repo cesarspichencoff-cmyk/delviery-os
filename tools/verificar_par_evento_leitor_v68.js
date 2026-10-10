@@ -18,8 +18,12 @@ const source=[
 const fingerprint=d=>{
  const core={order_key:d.order_key,snapshot_hash:d.snapshot_hash,
   ifood_sequence:d.ifood_sequence,teknisa_sequence:d.teknisa_sequence,
-  service:d.service,items:d.items,packaging:d.packaging,kits:d.kits,
-  sequence:d.sequence};
+  service:d.service,items:d.items};
+ if(d.observation_scan_complete!==undefined){
+   core.order_observations=d.order_observations;
+   core.observation_scan_complete=d.observation_scan_complete;
+ }
+ core.packaging=d.packaging;core.kits=d.kits;core.sequence=d.sequence;
  return crypto.createHash("sha256").update(JSON.stringify(core)).digest("hex");
 };
 function fixture(){
@@ -215,6 +219,14 @@ function asWatcherV2(f,rows){
  if(rows.length)core.observation_rows=deep(rows);
  const hashed=crypto.createHash("sha256").update(JSON.stringify(core)).digest("hex");
  f.event.snapshot_hash=hashed;f.decision.snapshot_hash=hashed;
+ // Exact deployed V2 decision core: each item carries [{source_field,value}],
+ // order notes and scan flag precede packaging/kits/sequence in fingerprint.
+ f.decision.observation_scan_complete=true;
+ f.decision.order_observations=rows.filter(r=>r.scope_hint==="order")
+   .map(r=>({source_field:r.source_field,value:r.value}));
+ f.decision.items=f.decision.items.map((item,i)=>({...item,
+   observations:rows.filter(r=>r.scope_hint==="item"&&r.item_index===i)
+      .map(r=>({source_field:r.source_field,value:r.value}))}));
  f.decision.fingerprint=fingerprint(f.decision);
  for(const p of f.ctx.observation_proofs)p.snapshot_hash=hashed;
  return f;
@@ -464,6 +476,67 @@ check("V7.8 forged source SHA-256 string is not independent filesystem attestati
  // the live runtime file was read by this pure verifier.
  assert.deepEqual(r.effects,{database_read:false,database_write:false,print:false,
   spooler:false,odhen_write:false});
+});
+
+
+check("V7.9 watcher V2 decision note-bearing fingerprint matches exactly",()=>{
+ const f=asWatcherV2(fixture(),[general(),itemNote("DSOBSDESCIT","SEM PIMENTA")]);
+ const r=verifyLiveReaderPairV68(f.event,f.decision);
+ assert.equal(r.status,"PAIRED_SOURCE_VERIFIED",r.reasons.join(","));
+ assert.equal(f.decision.observation_scan_complete,true);
+ assert.equal(f.decision.order_observations.length,1);
+ assert.equal(f.decision.items[1].observations.length,1);
+});
+check("V7.9 order note changed in decision but SHA not recomputed is rejected",()=>{
+ const f=asWatcherV2(fixture(),[general()]);
+ f.decision.order_observations[0].value="OTHER_FICTIONAL_METADATA";
+ const r=verifyLiveReaderPairV68(f.event,f.decision);
+ assert.ok(r.reasons.includes("SHADOW_DECISION_CONTENT_FINGERPRINT_MISMATCH"));
+});
+check("V7.9 order note changed with recomputed fingerprint still differs from event",()=>{
+ const f=asWatcherV2(fixture(),[general()]);
+ f.decision.order_observations[0].value="OTHER_FICTIONAL_METADATA";
+ f.decision.fingerprint=fingerprint(f.decision);
+ assert.ok(verifyLiveReaderPairV68(f.event,f.decision).reasons.includes(
+  "WATCHER_V2_OBSERVATIONS_NOT_IDENTICAL_IN_DECISION"));
+});
+check("V7.9 item note dropped and re-fingerprinted is not silently valid",()=>{
+ const f=asWatcherV2(fixture(),[itemNote("DSOBSDESCIT","SEM PIMENTA")]);
+ f.decision.items[1].observations=[];f.decision.fingerprint=fingerprint(f.decision);
+ assert.ok(verifyLiveReaderPairV68(f.event,f.decision).reasons.includes(
+  "WATCHER_V2_OBSERVATIONS_NOT_IDENTICAL_IN_DECISION"));
+});
+check("V7.9 downgrade V2 decision to legacy without notes is blocked",()=>{
+ const f=asWatcherV2(fixture(),[general()]);
+ delete f.decision.observation_scan_complete;
+ delete f.decision.order_observations;
+ for(const item of f.decision.items)delete item.observations;
+ f.decision.fingerprint=fingerprint(f.decision);
+ assert.ok(verifyLiveReaderPairV68(f.event,f.decision).reasons.includes(
+  "WATCHER_V2_DECISION_OBSERVATION_CONTRACT_INCOMPLETE"));
+});
+check("V7.9 V1 event with unexpected V2 decision must be rejected",()=>{
+ const f=fixture();
+ f.decision.observation_scan_complete=true;
+ f.decision.order_observations=[];
+ f.decision.items=f.decision.items.map(item=>({...item,observations:[]}));
+ f.decision.fingerprint=fingerprint(f.decision);
+ assert.ok(verifyLiveReaderPairV68(f.event,f.decision).reasons.includes(
+  "LEGACY_WATCHER_V1_DECISION_HAS_UNPROVEN_V2_OBSERVATIONS"));
+});
+check("V7.9 scan=false in V2 decision invalid despite all notes matching",()=>{
+ const f=asWatcherV2(fixture(),[general()]);
+ f.decision.observation_scan_complete=false;
+ f.decision.fingerprint=fingerprint(f.decision);
+ assert.ok(verifyLiveReaderPairV68(f.event,f.decision).reasons.includes(
+  "WATCHER_V2_DECISION_OBSERVATION_CONTRACT_INCOMPLETE"));
+});
+check("V7.9 human note packet takes V2 fingerprint and never authorizes output",()=>{
+ const f=asWatcherV2(fixture(),[general()]);
+ const p=prepareOrderNoteReviewPacketV77(f.event,f.decision);
+ assert.equal(p.status,"REVIEW_REQUIRED",p.reasons.join(","));
+ assert.equal(p.safeguards.authorizes_tickets,false);
+ assert.equal(projectVerifiedReaderPairV68(f.event,f.decision,f.ctx).status,"BLOCKED");
 });
 
 console.log("STABLE_READER_SHADOW_PAIR_V68="+count+"/"+count+" SHADOW ONLY; NO PHYSICAL EFFECT");
