@@ -42,7 +42,9 @@ function statusFor(name,v){
 }
 /** Evidence is intentionally local and sanitized. Source files are NOT exported. */
 function auditCandidatePrerequisitesV711(dir,opt={}){
- const allowTestMotor=opt.expectedMotorSha256??CANONICAL_MOTOR_SHA256;
+ // V7.15: a caller-controlled test pin must never look like canonical proof.
+ const testPinSupplied=Object.prototype.hasOwnProperty.call(opt,"expectedMotorSha256");
+ const allowTestMotor=testPinSupplied?opt.expectedMotorSha256:CANONICAL_MOTOR_SHA256;
  const rejected=new Set(),files=[];
  const root=path.resolve(dir);
  let rootOk=false;
@@ -87,10 +89,13 @@ function auditCandidatePrerequisitesV711(dir,opt={}){
   files.push({file:source.name,status:ok?"MATCHED":"BLOCKED",sha256:ok?sha:null,
    bytes:ok?bytes:null,schema:ok?schema:null,shape:ok?shape:null});
  }
- const status=rejected.size===0?
-  "SOURCE_PREFLIGHT_MATCH_ONLY_NO_DEPLOY_AUTHORIZATION":"BLOCKED";
+ const status=rejected.size?
+  "BLOCKED":
+  testPinSupplied?"SIMULATION_MATCH_ONLY_UNTRUSTED_TEST_PIN":
+   "SOURCE_PREFLIGHT_MATCH_ONLY_NO_DEPLOY_AUTHORIZATION";
  return {schema:"deliveryos.consumer-v711-read-only-preflight.v1",
-  status,files,blockers:[...rejected].sort(),
+  status,source_pin_mode:testPinSupplied?"TEST_SUPPLIED_NOT_CANONICAL":"CANONICAL_FIXED",
+  files,blockers:[...rejected].sort(),
   safeguards:{sql:false,state_write:false,service_restart:false,print:false,
    spooler:false,source_values_exported:false,
    authenticates_windows_service:false,validates_human_turn:false,
