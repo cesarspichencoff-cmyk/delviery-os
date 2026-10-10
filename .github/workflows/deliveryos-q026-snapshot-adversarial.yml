@@ -32,6 +32,34 @@ jobs:
         with:
           node-version: "22"
       - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Servidor descartavel registra so ERROR ou mais grave (o ruido enchia o log do job)
+        # Cada banco das suites roda as migrations reais. As 0001, 0002, 0006, 0007 e 0008 trazem
+        # BEGIN/COMMIT proprios dentro da transacao do runner: dois WARNING por arquivo, por banco.
+        # Somados aos LOG de checkpoint de cada CREATE DATABASE, eram ~4.950 linhas no fim do log
+        # do job, o que tirava a saida das suites da janela de leitura. Nao muda nada visivel ao
+        # cliente: so o que o servidor descartavel escreve no proprio log.
+        run: |
+          node - <<'JS'
+          const { Client } = require("pg");
+          (async () => {
+            const c = new Client({ connectionString: process.env.DELIVERYOS_PG_URL });
+            await c.connect();
+            await c.query("ALTER SYSTEM SET log_min_messages = 'error'");
+            await c.query("ALTER SYSTEM SET log_checkpoints = off");
+            await c.query("SELECT pg_reload_conf()");
+            await c.end();
+            const d = new Client({ connectionString: process.env.DELIVERYOS_PG_URL });
+            await d.connect();
+            const r = await d.query(
+              "SELECT current_setting('log_min_messages') AS m, current_setting('log_checkpoints') AS k, version() AS v, " +
+              "current_setting('default_transaction_isolation') AS i, " +
+              "(SELECT datcollate FROM pg_database WHERE datname = current_database()) AS c",
+            );
+            await d.end();
+            console.log(JSON.stringify(r.rows[0]));
+            if (r.rows[0].m !== "error" || r.rows[0].k !== "off") throw new Error("configuracao de log nao aplicada");
+          })().catch((e) => { console.error(e); process.exit(1); });
+          JS
       - name: Tipagem do projeto
         run: npx tsc --noEmit
       - name: Tipagem estrita das suites adversariais
@@ -44,11 +72,21 @@ jobs:
               --esModuleInterop --skipLibCheck --types node "$f"
           done
       - name: Instantaneo, transacoes e visibilidade com escritor concorrente (NEG + POS)
-        run: npx tsx tests/product/run-q026-snapshot-adversarial-pg.ts
+        # Verde = exatamente esta linha de resumo, nao so codigo de saida 0.
+        run: |
+          set -o pipefail
+          npx tsx tests/product/run-q026-snapshot-adversarial-pg.ts | tee q026-snapshot.out
+          grep -qx 'Q026_SNAPSHOT_ADVERSARIAL: 11/11 PASS' q026-snapshot.out
       - name: "Cursor do PR #37 (43b6ad8 e dc0cd2f) contra entradas adversariais (NEG + POS)"
-        run: npx tsx tests/product/run-q026-cursor-adversarial-pg.ts
+        run: |
+          set -o pipefail
+          npx tsx tests/product/run-q026-cursor-adversarial-pg.ts | tee q026-cursor.out
+          grep -qx 'Q026_CURSOR_ADVERSARIAL: 21/21 PASS' q026-cursor.out
       - name: Mutacoes — cada caso cai sem o mecanismo que afirma provar (nenhum cego)
-        run: npx tsx tests/product/run-q026-adversarial-mutacoes.ts
+        run: |
+          set -o pipefail
+          npx tsx tests/product/run-q026-adversarial-mutacoes.ts | tee q026-mutacoes.out
+          grep -qx 'Q026_ADVERSARIAL_MUTACOES: 19/19 mortos, 0 cegos' q026-mutacoes.out
       - name: Sem PostgreSQL as tres suites se declaram PULADAS (78), nunca verdes
         run: |
           set +e

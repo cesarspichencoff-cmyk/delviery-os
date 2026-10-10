@@ -51,7 +51,7 @@ mutante que precisa derrubá-lo (§8).
 
 ---
 
-## 2. As cinco noções de tempo e identidade — e o que cada uma NÃO garante
+## 2. As seis noções de tempo e identidade — e o que cada uma NÃO garante
 
 | Noção | O que é | Quem define (evidência) | Serve para | **Não** serve para | Provas |
 |---|---|---|---|---|---|
@@ -309,7 +309,27 @@ entrega a testes, CI e este documento. Todas têm `default_behavior: PAUSE`.
 
 ---
 
-## 9. Reproduzir
+## 9. Achado lateral, fora do escopo e não corrigido: atomicidade do executor de migrations
+
+Achado pelo ruído do CI, sem relação com a Q-026. Fica registrado porque mexe com o banco operacional.
+
+- **Fato (código):** `migrations/runner.ts:127-134` aplica cada migration dentro de
+  `client.transaction(...)`: o corpo e o registro em `platform.schema_migration` deveriam confirmar
+  juntos. Mas `0001`, `0002`, `0006`, `0007` e `0008` trazem `BEGIN; … COMMIT;` próprios.
+- **Fato (medido):** o PostgreSQL registra, por banco migrado, `WARNING: there is already a transaction
+  in progress` seguido de `WARNING: there is no transaction in progress`, um par por arquivo. No log do
+  job do CI eram 4.106 linhas `WARNING` (e 830 `LOG` de checkpoint, na maior parte dos `CREATE
+  DATABASE`). Pela semântica do PostgreSQL, o `COMMIT` do arquivo fecha a transação do executor. O
+  `INSERT` em `schema_migration` roda então fora de transação, e o `COMMIT` final do executor não tem o
+  que confirmar.
+- **Hipótese (não reproduzida):** se o processo cair entre o `COMMIT` do arquivo e o registro, a
+  migration fica aplicada sem estar registrada e roda de novo no boot seguinte. As migrations foram
+  feitas para serem reexecutáveis (`run-migration-reexec-tests.ts`), o que atenua.
+- **Não feito:** nenhuma migration, nenhum runtime. Corrigir é decisão do César, porque migrations
+  estão fora desta missão. O workflow desta branch passa a pedir `log_min_messages = error` ao servidor
+  descartável, para que esse ruído não tire a saída das suítes da janela de leitura do log.
+
+## 10. Reproduzir
 
 ```bash
 export DELIVERYOS_PG_URL=postgres://<admin>@<host-descartavel>/postgres   # nunca o operacional
