@@ -1,3 +1,4 @@
+import {planAnnotationV67, type NoteKindV67} from "./annotationLinePlanV67";
 import type {
   ConferenceTicketV45,
   ProductionTicketV45,
@@ -129,24 +130,27 @@ export class OfflinePrinter {
     this.line(headline, "ITEM:" + item.source_item_index);
     this.heightDouble(false);
     this.bold(false);
-    // Plain instructions prioritize the larger native Font A in low light.
-    // Long instructions fall back to B; >64 columns are blocked, not cut.
-    for (const o of item.observations) {
-      const s = "OBS: " + uppercase(o);
-      this.font([...s].length <= FONT_A_COLS ? "A" : "B");
-      this.line(s, "OBS:" + item.source_item_index);
+    // Wrap WITHOUT breaking words or silently discarding negations/allergens.
+    // V5.6 line plan is now shared by the operational OFFLINE renderer.
+    for (const o of item.observations)
+      this.annotation("OBS",o,"OBS:"+item.source_item_index);
+    for (const f of item.finishing)
+      this.annotation("FINALIZAR",f,"FINALIZAR:"+item.source_item_index);
+    for (const d of item.kitchen_dependencies)
+      this.annotation("AGUARDAR_COZINHA",d,"DEPENDENCIA:"+item.source_item_index);
+  }
+  annotation(kind:NoteKindV67,raw:string,context:string):void {
+    const plan=planAnnotationV67(kind,raw);
+    if(plan.status!=="PREVIEW_ONLY"){
+      this.blockers.add("ANNOTATION_PLAN_BLOCKED:"+context+":"+plan.reason);
+      return;
     }
-    for (const f of item.finishing) {
-      const s = "FINALIZAR: " + uppercase(f);
-      this.font([...s].length <= FONT_A_COLS ? "A" : "B");
-      this.line(s, "FINALIZAR:" + item.source_item_index);
-    }
-    for (const d of item.kitchen_dependencies) {
-      const s = "AGUARDAR COZINHA: " + uppercase(d);
-      this.font([...s].length <= FONT_A_COLS ? "A" : "B");
-      this.line(s, "DEPENDENCIA:" + item.source_item_index);
+    for(const line of plan.lines){
+      this.font(line.font);
+      this.line(line.text,context);
     }
   }
+
   metadata(ids: { ifood: string; teknisa: string; tata: string; hour: string | null } | null): void {
     if (!ids || !plain(ids.ifood) || !plain(ids.teknisa) ||
         !/^\d{3}$/.test(plain(ids.tata))) {
@@ -228,6 +232,10 @@ function printResourceGroups(
 
 export function renderProductionTicketProofV46(ticket: ProductionTicketV45): TicketEscPosProofV46 {
   const p = new OfflinePrinter();
+  // Layout-valid is not source-valid. Preserve diagnostic text but return
+  // ZERO ESC/POS bytes if this station's semantic projection is blocked.
+  if (ticket.ready_for_semantic_preview !== true)
+    p.blockers.add("STATION_SEMANTIC_NOT_READY");
   p.font("B");
   p.bold(true);
   p.line("TESTE - NAO PRODUZIR", "BANNER");
@@ -236,16 +244,28 @@ export function renderProductionTicketProofV46(ticket: ProductionTicketV45): Tic
   p.line(stationTitle, "STATION");
   p.metadata(ticket.identifiers);
   p.line("--------------------------------", "DIVIDER");
+  // Visual V6.1 shows each PROVEN physical box separately. The native
+  // ESC/POS proof must not collapse three closed combos into one ambiguous box.
+  let physicalIndex = 0;
   for (const box of ticket.boxes) {
     const count = box.physical_box_count === undefined ? 1 : box.physical_box_count;
-    const countText = quantity(count, p, "BOX_COUNT");
-    if (!box.model) p.blockers.add("BOX_MODEL_UNPROVEN");
-    p.font("A");
-    p.bold(true);
-    p.line(count > 1 ? countText + "X CAIXA " + box.model : "CAIXA " + box.model, "BOX");
-    p.bold(false);
-    for (const item of box.items) p.item(item);
-    p.line("--------------------------------", "DIVIDER");
+    quantity(count, p, "BOX_COUNT");
+    if (!box.model || box.status !== "PROVEN") p.blockers.add("BOX_MODEL_OR_PROOF_MISSING");
+    const repeated = count > 1 && box.status === "PROVEN" &&
+      box.items.length === 1 && box.items[0].quantity === count;
+    if (count > 1 && !repeated) p.blockers.add("PER_PHYSICAL_BOX_DISTRIBUTION_NOT_PROVEN");
+    // This is a bounded offline preview budget, not a business quantity limit.
+    if (count > 64) p.blockers.add("OFFLINE_PREVIEW_BOX_EXPANSION_BUDGET_EXCEEDED");
+    if (count > 64 || count < 1 || !Number.isSafeInteger(count)) continue;
+    for (let i = 0; i < (repeated ? count : 1); i++) {
+      physicalIndex++;
+      p.font("A");
+      p.bold(true);
+      p.line("C" + physicalIndex + "  CAIXA " + (box.model ?? "A CONFERIR"), "BOX");
+      p.bold(false);
+      for (const item of box.items) p.item(repeated ? {...item, quantity:1} : item);
+      p.line("--------------------------------", "DIVIDER");
+    }
   }
   if (ticket.items_without_proven_box.length) {
     p.bold(true);
@@ -259,6 +279,8 @@ export function renderProductionTicketProofV46(ticket: ProductionTicketV45): Tic
 
 export function renderConferenceTicketProofV46(ticket: ConferenceTicketV45): TicketEscPosProofV46 {
   const p = new OfflinePrinter();
+  if (ticket.ready_for_semantic_preview !== true)
+    p.blockers.add("CONFERENCE_SEMANTIC_NOT_READY");
   p.font("B");
   p.bold(true);
   p.line("TESTE - NAO PRODUZIR", "BANNER");
@@ -285,6 +307,12 @@ export function renderConferenceTicketProofV46(ticket: ConferenceTicketV45): Tic
     p.line("EMBALAGEM A CONFERIR", "PACKING_FALLBACK");
     p.bold(false);
     for (const item of ticket.items_without_proven_box) p.item(item);
+  }
+  if (ticket.items_without_physical_box?.length) {
+    p.font("A");p.bold(true);
+    p.line("ITENS SEM CAIXA FISICA", "NO_BOX_PROVEN");
+    p.bold(false);
+    for(const item of ticket.items_without_physical_box) p.item(item);
   }
   p.line("--------------------------------", "DIVIDER");
   const parts = [...smallResource(p, ticket.bags, "BAG"), ...smallResource(p, ticket.kits, "KIT")];
@@ -317,14 +345,31 @@ export function renderConferenceTicketProofV46(ticket: ConferenceTicketV45): Tic
   return p.result("CONFERENCIA");
 }
 
+/** Applying an explicit global source veto to offline byte artifacts must
+ * happen inside the public renderer wrapper, even for callers that did not
+ * enter via the newer V5.10 kitchen-separated exporter. */
+function vetoSemanticBytesV71(
+  proof: TicketEscPosProofV46, reason:string,
+):TicketEscPosProofV46 {
+  return {...proof, ready_for_offline_preview:false,
+    blocking_reasons:[...new Set([...proof.blocking_reasons,reason])].sort(),
+    bytes:[],byte_count:0,ready_for_operational_print:false};
+}
+
 export function renderOperationalTicketsProofV46(source: OperationalTicketsResultV45): {
   production: TicketEscPosProofV46[];
   conference: TicketEscPosProofV46;
   effects: {print:false;spooler_write:false;odhen_write:false;cut:false};
 } {
-  return {
-    production: source.production.map(renderProductionTicketProofV46),
-    conference: renderConferenceTicketProofV46(source.conference),
+  const production=source.production.map(renderProductionTicketProofV46);
+  const conference=renderConferenceTicketProofV46(source.conference);
+  const globalDenied=source.ready_for_semantic_preview !== true ||
+    !Array.isArray(source.blocking_reasons) || source.blocking_reasons.length>0;
+  if (globalDenied) return {
+    production:production.map(p=>vetoSemanticBytesV71(p,"GLOBAL_SOURCE_SEMANTIC_BLOCKED")),
+    conference:vetoSemanticBytesV71(conference,"GLOBAL_SOURCE_SEMANTIC_BLOCKED"),
     effects:{print:false,spooler_write:false,odhen_write:false,cut:false},
   };
+  return {production,conference,
+    effects:{print:false,spooler_write:false,odhen_write:false,cut:false}};
 }

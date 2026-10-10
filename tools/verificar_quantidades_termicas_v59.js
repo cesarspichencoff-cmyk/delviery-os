@@ -62,12 +62,16 @@ check("optional missing physical box count preserves the existing default of one
  delete c.boxes[0].physical_box_count;
  const proof=renderProductionTicketProofV46(c);
  assert.equal(proof.ready_for_offline_preview,true);
- assert.equal(proof.byte_count,332);
- assert.ok(proof.text_trace.includes("CAIXA 650"));
+ assert.equal(proof.byte_count,340); // V6.4: two distinct C1/C2 box identifiers
+ assert.ok(proof.text_trace.includes("C1  CAIXA 650"));
+ assert.ok(proof.text_trace.includes("C2  CAIXA 650"));
 });
-check("valid archived complete production tickets still yield unchanged safe bytes",()=>{
+check("valid archived production tickets preserve content with explicit per-box IDs",()=>{
  const p=ORIGINAL.production.map(renderProductionTicketProofV46);
- assert.deepEqual(p.map(x=>x.byte_count).sort((a,b)=>a-b),[332,349]);
+ assert.equal(p[0].byte_count,340);
+ assert.ok(p[1].byte_count>349,"Sushi now expands each proven physical box");
+ for(let i=1;i<=4;i++)assert.ok(p[1].text_trace.includes("C"+i+"  CAIXA "));
+ assert.equal((p[1].text_trace.match(/1  COMBINADO KIDS/g)||[]).length,3);
  assert.ok(p.every(x=>x.ready_for_offline_preview===true&&x.ready_for_operational_print===false));
  assert.ok(p.every(x=>inspectEscPos(x.bytes).pass));
 });

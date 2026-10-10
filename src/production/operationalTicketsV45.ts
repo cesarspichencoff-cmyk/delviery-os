@@ -89,6 +89,8 @@ export interface ConferenceTicketV45 {
   revision: number | null;
   boxes: TicketBoxV45[];
   items_without_proven_box: TicketItemV45[];
+  /** Verified beverages/non-production items intentionally have NO physical box. */
+  items_without_physical_box?: TicketItemV45[];
   bags: Array<{ label: string; quantity: number }>;
   kits: Array<{ label: string; quantity: number }>;
   accompaniments: Array<{ label: "GARI" | "WASABI" | "TARE"; quantity: number }>;
@@ -418,10 +420,35 @@ export function projectOperationalTicketsV45(input: OperationalTicketsInputV45):
   // Conference: the packing engine is the ONLY source of physical box assignment.
   const remaining = new Map<number, SourceOrderItemV45>(sources.map((s) => [s.item_index, s]));
   const conferenceBoxes: TicketBoxV45[] = [];
+  const noBoxItems: TicketItemV45[] = [];
   if (!input.packaging_plan) {
     warnings.add("PACKAGING_PLAN_MISSING");
   } else {
     for (const [index, group] of input.packaging_plan.groups.entries()) {
+      if (group.kind === "sem_caixa" && group.box === null && group.boxes === 0 &&
+          group.status === "PROVEN_OPERATIONAL_DOCUMENT" &&
+          Array.isArray(group.products) && group.products.length > 0) {
+        const selected: SourceOrderItemV45[] = [];
+        const reserved = new Set<number>();
+        for (const product of group.products) {
+          const found = [...remaining.values()].filter(s =>
+            canon(s.product_name) === canon(product.name) &&
+            s.quantity === product.quantity && !reserved.has(s.item_index));
+          if (found.length !== 1) {
+            warnings.add("NON_BOXED_ITEM_MEMBERSHIP_NOT_PROVEN:" + index);
+            break;
+          }
+          selected.push(found[0]);
+          reserved.add(found[0].item_index);
+        }
+        if (selected.length === group.products.length) {
+          for (const s of selected) {
+            noBoxItems.push(itemFromSource(s, aliases, reasons));
+            remaining.delete(s.item_index);
+          }
+        }
+        continue;
+      }
       const model = boxModel(group.box);
       const proved = model !== null && Number.isInteger(group.boxes) && (group.boxes ?? 0) >= 1 &&
                      PROVEN_BOX_STATUS.has(group.status) &&
@@ -514,6 +541,7 @@ export function projectOperationalTicketsV45(input: OperationalTicketsInputV45):
     revision: input.revision?.number ?? null,
     boxes: conferenceBoxes,
     items_without_proven_box: unallocated,
+    items_without_physical_box: noBoxItems,
     bags,
     kits,
     accompaniments: [...accompanimentMap].map(([label, quantity]) => ({ label, quantity })),

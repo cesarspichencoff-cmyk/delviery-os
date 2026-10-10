@@ -7,12 +7,14 @@ const {inspectEscPos}=require("./escposByteInspectorV51.js");
 let pass=0;
 function test(label,fn){fn();pass++;console.log("PASS "+String(pass).padStart(2,"0")+" "+label);}
 const long="SEM PIMENTA NENHUMA SEM CEBOLA CRUA E SEM CEBOLINHA POR FAVOR COLOCAR MOLHO A PARTE CONFIRMAR QUE O PEDIDO NAO TEM AMENDOIM";
-test("01 baseline engine BLOCKS overlong notes rather than silently truncating",()=>{
+test("01 integrated renderer wraps long OBS without clipping or breaking words",()=>{
  const item=structuredClone(archivedResult().conference);
  item.boxes[0].items[0].observations=[long];
  const proof=renderConferenceTicketProofV46(item);
- assert.equal(proof.bytes.length,0);
- assert.ok(proof.blocking_reasons.some(x=>x.startsWith("LINE_EXCEEDS_64_COLUMNS:OBS")));
+ assert.equal(proof.ready_for_offline_preview,true,JSON.stringify(proof.blocking_reasons));
+ assert.ok(proof.byte_count>0);
+ const actual=proof.text_trace.split("\n").filter(x=>x.startsWith("OBS: ")||x.startsWith("OBS > "));
+ assert.deepEqual(actual,createAnnotationPlan("OBS",long).lines.map(x=>x.text));
 });
 test("02 multi-line candidate keeps every word, in the correct order",()=>{
  const p=createAnnotationPlan("OBS",long);
@@ -135,9 +137,14 @@ test("18 planner never authorizes printer or spooler effects",()=>{
 test("19 unknown note types are rejected without fallback",()=>{
  assert.throws(()=>createAnnotationPlan("PACKAGING",long),/UNSUPPORTED_NOTE_KIND/);
 });
-test("20 no operational renderer modification is required for this proof",()=>{
+test("20 integrated preview remains offline, paper emphasis still requires acceptance",()=>{
  const p=createAnnotationPlan("OBS",long);
+ const item=structuredClone(archivedResult().conference);
+ item.boxes[0].items[0].observations=[long];
+ const v=renderConferenceTicketProofV46(item);
  assert.equal(p.status,"PREVIEW_ONLY");
  assert.ok(p.lines.every(x=>x.bold_policy==="REQUIRES_PAPER_ACCEPTANCE"));
+ assert.equal(v.ready_for_operational_print,false);
+ assert.equal(v.effects.print,false);
 });
 console.log("annotation-readability-v56: "+pass+"/"+pass+" PASS; candidate remains SHADOW/OFFLINE");

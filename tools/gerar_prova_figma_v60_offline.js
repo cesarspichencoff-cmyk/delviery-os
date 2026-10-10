@@ -113,6 +113,13 @@ class Receipt {
     for(const item of items)this.item(item);
     this.rule();
   }
+  noBox(items) {
+    if(!items || !items.length)return;
+    this.text(LEFT,this.y+11,"ITENS SEM CAIXA FISICA",10.5,"mono",700);
+    this.y+=19;
+    for(const item of items)this.item(item);
+    this.rule();
+  }
   resources(bags,kits,accompaniments,warnings) {
     const groups=[["Sacola",bags],["Kit",kits],["Acomp.",accompaniments]];
     for(const [label,entries] of groups) {
@@ -198,6 +205,7 @@ function makeConference(ticket) {
     r.box(box.model||"A CONFERIR",box.position,box.items||[]);
   }
   r.unknown(ticket.items_without_proven_box||[]);
+  r.noBox(ticket.items_without_physical_box||[]);
   r.resources(ticket.bags||[],ticket.kits||[],
     ticket.accompaniments||[],ticket.warnings||[]);
   r.finalization();

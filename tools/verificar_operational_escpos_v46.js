@@ -37,10 +37,14 @@ test("original item amounts are not interpreted as pieces",()=>{
  assert.ok(conference.text_trace.includes("1  NASU NO MISSO"));
  assert.ok(conference.text_trace.includes("1  SUSHI DE UNAGUI"));
 });
-test("Sushi station quantity3 is made in three separately proven boxes",()=>{
+test("Sushi ESC/POS exposes three distinct physical boxes matching Figma and Conference",()=>{
  const sushi=proofs.production.find(p=>p.name.includes("BALCAOSUSHI1"));
- assert.ok(sushi.text_trace.includes("3X CAIXA 750"));
- assert.ok(sushi.text_trace.includes("3  COMBINADO KIDS"));
+ assert.ok(sushi, "historical sushi station is required");
+ for(let i=1;i<=3;i++)assert.ok(sushi.text_trace.includes("C"+i+"  CAIXA 750"));
+ assert.ok(sushi.text_trace.includes("C4  CAIXA 240"));
+ assert.equal((sushi.text_trace.match(/1  COMBINADO KIDS/g)||[]).length,3);
+ assert.ok(!sushi.text_trace.includes("3X CAIXA 750"));
+ assert.ok(!sushi.text_trace.includes("3  COMBINADO KIDS"));
 });
 test("shared header and sequence survive without inventing new ids",()=>{
  assert.ok(conference.text_trace.includes("IFOOD 9627 | TEKNISA 0000348850"));

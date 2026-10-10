@@ -53,6 +53,8 @@ export interface PackagingGroupInput {
   box: string | null;
   boxes: number | null;
   status: string;
+  /** A motor-proven zero-box product is not an unknown packaging box. */
+  kind?: "sem_caixa";
   products?: Array<{ name: string; quantity: number }>;
 }
 
@@ -258,6 +260,13 @@ export function projectOrderResources(
 
   if (input.packaging) {
     for (const [index, group] of input.packaging.groups.entries()) {
+      if (group.kind === "sem_caixa" && group.box === null &&
+          group.boxes === 0 && group.status === "PROVEN_OPERATIONAL_DOCUMENT" &&
+          Array.isArray(group.products) && group.products.length > 0 &&
+          group.products.every(p => clean(p.name) && Number.isSafeInteger(p.quantity) && p.quantity > 0)) {
+        // No physical box is needed; retain the item for separate Conference display.
+        continue;
+      }
       if (!group.box || group.boxes === null) {
         unknowns.add(`PACKAGING_BOX_UNKNOWN_GROUP_${index}`);
         continue;

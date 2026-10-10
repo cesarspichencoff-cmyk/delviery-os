@@ -1,0 +1,183 @@
+{
+  "schema": "deliveryos.unified-core-kit-registry-pin.v66",
+  "source": {
+    "repo": "cesarspichencoff-cmyk/tata-os",
+    "branch": "feature/unified-tata-core-20261001",
+    "path": "packages/unified-restaurant-core/src/kits.ts",
+    "blob_sha": "42d69fea73e830bd6517e1230a0ec4c7fc9737a4",
+    "derivation": "EXACT_TYPED_KIT_DEFINITIONS",
+    "status": "PINNED_SNAPSHOT_NOT_LIVE_AUTHORITY"
+  },
+  "registry": {
+    "schema": "deliveryos.kit-component-registry.v1",
+    "kits": {
+      "Kit Simples": {
+        "proof": "HUMAN_CONFIRMED",
+        "components": [
+          {
+            "resource_key": "HASHI",
+            "label": "Hashi",
+            "quantity": 1,
+            "uom": "EA"
+          },
+          {
+            "resource_key": "SHOYU_SACHE_8ML",
+            "label": "Sachê de shoyu 8 ml",
+            "quantity": 1,
+            "uom": "EA"
+          },
+          {
+            "resource_key": "SHOYUZARA",
+            "label": "Shoyuzara",
+            "quantity": 1,
+            "uom": "EA"
+          },
+          {
+            "resource_key": "GUARDANAPO",
+            "label": "Guardanapo",
+            "quantity": 1,
+            "uom": "EA"
+          }
+        ]
+      },
+      "Kit p/1": {
+        "proof": "HUMAN_CONFIRMED",
+        "components": [
+          {
+            "resource_key": "HASHI",
+            "label": "Hashi",
+            "quantity": 1,
+            "uom": "EA"
+          },
+          {
+            "resource_key": "SHOYU_GARRAFINHA_50ML",
+            "label": "Garrafinha de shoyu 50 ml",
+            "quantity": 1,
+            "uom": "EA"
+          },
+          {
+            "resource_key": "SHOYUZARA",
+            "label": "Shoyuzara",
+            "quantity": 1,
+            "uom": "EA"
+          },
+          {
+            "resource_key": "GUARDANAPO",
+            "label": "Guardanapo",
+            "quantity": 1,
+            "uom": "EA"
+          }
+        ]
+      },
+      "Kit p/2": {
+        "proof": "HUMAN_CONFIRMED",
+        "components": [
+          {
+            "resource_key": "HASHI",
+            "label": "Hashi",
+            "quantity": 2,
+            "uom": "EA"
+          },
+          {
+            "resource_key": "SHOYU_GARRAFINHA_50ML",
+            "label": "Garrafinha de shoyu 50 ml",
+            "quantity": 2,
+            "uom": "EA"
+          },
+          {
+            "resource_key": "SHOYUZARA",
+            "label": "Shoyuzara",
+            "quantity": 2,
+            "uom": "EA"
+          },
+          {
+            "resource_key": "GUARDANAPO",
+            "label": "Guardanapo",
+            "quantity": 2,
+            "uom": "EA"
+          }
+        ]
+      },
+      "Kit Quente": {
+        "proof": "HUMAN_CONFIRMED",
+        "components": [
+          {
+            "resource_key": "HASHI",
+            "label": "Hashi",
+            "quantity": 1,
+            "uom": "EA"
+          },
+          {
+            "resource_key": "GUARDANAPO",
+            "label": "Guardanapo",
+            "quantity": 1,
+            "uom": "EA"
+          },
+          {
+            "resource_key": "SHOYU_SACHE_8ML",
+            "label": "Sachê de shoyu 8 ml",
+            "quantity": 1,
+            "uom": "EA"
+          }
+        ]
+      },
+      "Kit Kids": {
+        "proof": "HUMAN_CONFIRMED",
+        "components": [
+          {
+            "resource_key": "HASHI",
+            "label": "Hashi",
+            "quantity": 1,
+            "uom": "EA"
+          },
+          {
+            "resource_key": "GUARDANAPO",
+            "label": "Guardanapo",
+            "quantity": 1,
+            "uom": "EA"
+          },
+          {
+            "resource_key": "SHOYUZARA",
+            "label": "Shoyuzara",
+            "quantity": 1,
+            "uom": "EA"
+          },
+          {
+            "resource_key": "SHOYU_SACHE_8ML",
+            "label": "Sachê de shoyu 8 ml",
+            "quantity": 1,
+            "uom": "EA"
+          },
+          {
+            "resource_key": "ADAPTADOR_HASHI_KIDS",
+            "label": "Adaptador de hashi Kids",
+            "quantity": 1,
+            "uom": "EA"
+          }
+        ]
+      },
+      "Kit Sobremesa": {
+        "proof": "HUMAN_CONFIRMED",
+        "components": [
+          {
+            "resource_key": "COLHER_SOBREMESA",
+            "label": "Colher de sobremesa",
+            "quantity": 1,
+            "uom": "EA"
+          },
+          {
+            "resource_key": "GUARDANAPO",
+            "label": "Guardanapo",
+            "quantity": 1,
+            "uom": "EA"
+          }
+        ]
+      }
+    }
+  },
+  "effects": {
+    "stock_write": false,
+    "print": false,
+    "odhen_write": false
+  }
+}
