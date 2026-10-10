@@ -20,6 +20,8 @@ import { PORTA_DE_REALIDADE_VERSION,lerRealidadeDeEntregas,
   type AparelhoReal,type UltimoLote,type RealidadeDeEntregas,type ViagensDeUmModo }
   from "../../src/platform/leitura/realidade-de-entregas";
 import { entregasVM } from "../../src/product/viewmodels/entregas-vm";
+import { lerRealidadeDeEntregasIncremental } from "../../src/platform/leitura/realidade-de-entregas-incremental";
+import type { SqlClient, TransactionalSqlClient } from "../../src/platform/persistence/sql-client";
 import type { SqlRow } from "../../src/platform/persistence/sql-client";
 import { gerarLinhas,gravarLinhas,PERFIL_LOJA } from "./q026-replay-fixture";
 
@@ -346,7 +348,29 @@ void(async()=>{
     const started=performance.now();
     const data=modeBench==="baseline"
       ? {reality:await lerRealidadeDeEntregas(b.cliente,{agora}),tx_ms:null,max_batch:null,fetches:null}
-      : await compactFull(b);
+      : process.env.Q026_FULL_RSS_USE_REAL_PORT==="1"
+        ? await (async()=>{
+          let max_batch=0,fetches=0,tx_ms=0;
+          const wrapped:TransactionalSqlClient={
+            query:(sql,p)=>b.cliente.query(sql,p),
+            close:()=>Promise.resolve(),
+            transaction:<T>(fn:(tx:SqlClient)=>Promise<T>):Promise<T>=>{
+              const started=performance.now();
+              return b.cliente.transaction(async tx=>fn({
+                query:async(sql,p)=>{
+                  const rows=await tx.query(sql,p);
+                  if(sql.startsWith("FETCH FORWARD")){
+                    fetches++;max_batch=Math.max(max_batch,rows.length);
+                  }
+                  return rows;
+                }
+              })).finally(()=>{tx_ms=performance.now()-started});
+            }
+          };
+          const reality=await lerRealidadeDeEntregasIncremental(wrapped,{agora});
+          return {reality,tx_ms,max_batch,fetches};
+        })()
+        : await compactFull(b);
     const resultHash=digest(data.reality);
     const operationMs=performance.now()-started;
     assert.equal(data.reality.historico_sem_modo,1);
