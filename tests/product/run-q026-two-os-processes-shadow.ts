@@ -45,7 +45,7 @@ if(process.env.Q026_MULTIPROCESS_CHILD==="1"){
  type Worker={process:ChildProcessWithoutNullStreams;port:number;pid:number};
  function startWorker(dbUrl:string):Promise<Worker>{
   return new Promise((resolve,reject)=>{
-   const child=spawn(process.execPath,["--import","tsx",process.argv[1]],{
+   const child=spawn("npx",["--yes","tsx",process.argv[1]],{
     cwd:process.cwd(),env:{...process.env,Q026_MULTIPROCESS_CHILD:"1",
      DELIVERYOS_DATABASE_URL:dbUrl,DELIVERYOS_ENTREGAS_INCREMENTAL_RR:"1",
      DELIVERYOS_ENTREGAS_RR_DEADLINE_MS:"3000",DELIVERYOS_ENTREGAS_MAX_INFLIGHT:"1"},
