@@ -6,14 +6,16 @@ const sourcePath=path.join(__dirname,"../runtime/shadow/live_shadow_consumer_v2_
 const candidate=fs.readFileSync(sourcePath,"utf8");
 const v712=fs.readFileSync(path.join(__dirname,
  "../runtime/shadow/live_shadow_consumer_v2_candidate_v712.cjs"),"utf8");
-const sha1blob=txt=>crypto.createHash("sha1")
- .update("blob "+Buffer.byteLength(txt)+"\\0").update(txt).digest("hex");
-const prefix713=/^\\/\\/ BEGIN V713 CANDIDATE[^\\n]*\\n[\\s\\S]*?\\/\\/ END V713 CANDIDATE\\n/;
+const header713="// END V713 CANDIDATE\n";
+const headerEnd=candidate.indexOf(header713);
+assert.ok(headerEnd>0);
+const stripped=candidate.slice(headerEnd+header713.length);
 const start713="// BEGIN V713 INDEPENDENT AUTHORITY BOUNDARY";
 const end713="// END V713 INDEPENDENT AUTHORITY BOUNDARY";
-const newAt=candidate.indexOf(start713),newEnd=candidate.indexOf(end713)+end713.length;
+const newAt=stripped.indexOf(start713);
+const newEnd=stripped.indexOf(end713)+end713.length;
 const oldAt=v712.indexOf("if (exactOrderOverride && exactOverrideBound) {");
-const oldEnd=v712.indexOf("\\nif (!packaging) {",oldAt);
+const oldEnd=v712.indexOf("\nif (!packaging) {",oldAt);
 const sha256=txt=>crypto.createHash("sha256").update(txt).digest("hex");
 const prefix=/^\/\/ BEGIN V712 CANDIDATE[^\n]*\n[\s\S]*?\/\/ END V712 CANDIDATE\n/;
 const gate=/\/\/ BEGIN V712 HUMAN OVERRIDE GATE[^\n]*\n[\s\S]*?\/\/ END V712 HUMAN OVERRIDE GATE/;
@@ -26,10 +28,10 @@ if (exactOrderOverride) {`;
 let checks=0;
 function check(label,fn){fn();checks++;console.log("PASS "+checks+" "+label)}
 check("V7.13 only replaces the V7.13 human-override promotion block",()=>{
- assert.ok(prefix713.test(candidate));
+ assert.ok(candidate.startsWith("// BEGIN V713 CANDIDATE"));
  assert.ok(newAt>=0&&newEnd>newAt&&oldAt>=0&&oldEnd>oldAt);
- const back=candidate.replace(prefix713,"").slice(0,newAt)+
-    v712.slice(oldAt,oldEnd)+candidate.replace(prefix713,"").slice(newEnd);
+ const back=stripped.slice(0,newAt)+
+    v712.slice(oldAt,oldEnd)+stripped.slice(newEnd);
  assert.equal(back,v712);
  assert.ok(candidate.includes("observation_rows"));
  assert.ok(candidate.includes("ALLERGEN_NOTE_REQUIRES_HUMAN_REVIEW"));
