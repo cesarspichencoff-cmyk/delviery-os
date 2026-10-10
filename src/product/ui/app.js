@@ -266,7 +266,7 @@ async function relerSemApagar(alvo) {
     delete rua.dataset.relendo;
     botoes.forEach((b) => b.removeAttribute("aria-disabled"));
     aviso.dataset.estado = "falhou";
-    const sobrecarga = mensagemDeSobrecarga(e, true);
+    const sobrecarga = rota === "/entregas" ? mensagemDeSobrecarga(e, true) : null;
     if (sobrecarga) {
       aviso.textContent = ` ${sobrecarga} Última leitura: ${rua.dataset.lidaAs}.`;
     } else {
