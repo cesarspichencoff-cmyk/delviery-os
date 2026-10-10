@@ -64,6 +64,22 @@ O teste valida simultaneamente a **integridade completa das 8 viagens e seus eve
 
 **Interpretação verificável:** o desenho de instantâneo único evita as contradições concorrentes testadas, preserva dados e limita callbacks com conexão às quatro disponíveis. Mas **16.000 fatos × 8 leituras** já causou espera de pool de até 445 ms e RSS após a rodada próxima de 300 MB num processo pequeno, o que torna **prematuro publicar sem um ensaio representativo de uso e sem estratégia separada de capacidade/memória**. Os PRs #37/#41 continuam intocados e a otimização de memória do #37 permanece não autorizada para merge.
 
+## Defesa opcional contra saturação HTTP — 10/10/2026
+
+**Falha de capacidade a prevenir:** o `pg.Pool` limita conexões SQL, mas não é um limite de requisições HTTP ainda aguardando execução. Nos ensaios anteriores com 16.000 eventos, oito solicitações provocaram espera no pool e retenção significativa de memória no processo Node.
+
+**Implementado no PR #45, mas DESLIGADO POR PADRÃO:** `tools/product_system_server.ts` aceita a variável explícita `DELIVERYOS_ENTREGAS_MAX_INFLIGHT`, com valores **1, 2 ou 4**. Sem variável, o comportamento histórico fica idêntico. Valor inválido recusa a inicialização; nenhum valor é deduzido do horário, da configuração do PostgreSQL ou da observação de carga. A proteção afeta exclusivamente `GET/HEAD /api/entregas` com banco configurado: conta requisições admitidas por instância do servidor, e quando o máximo está ocupado retorna **HTTP 503** com `Retry-After: 1`, JSON `{"erro":"leitura_temporariamente_ocupada"}` e `Cache-Control: no-store`. Não há fila de espera criada por essa proteção; o contador é liberado no sucesso **e na falha**, sem expor dados de pedidos.
+
+**Teste HTTP em execução real local:** `tests/product/run-q026-http-admission-pg.ts` configura explicitamente **2 entradas simultâneas**, carrega 16.000 fatos fictícios num PG16 descartável e dispara 10 requisições HTTP concorrentes. O código exige pelo menos 8 respostas 503, entre 1 e 2 respostas 200 e nenhuma resposta inesperada. Comprova `Retry-After`, ausência de dados sensíveis no bloqueio, liberação posterior de vagas, outras rotas acessíveis, recusa de POST e tratamento seguro de falha do banco sem travamento permanente.
+
+**Verificação:** [CI 38067809017](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38067809017), **SUCCESS**, com `Q026_HTTP_OPT_IN_ADMISSION: 4/4 PASS`, além dos 21/21 testes anteriores, tipagem, regressões Q-016 e Product, e governança GREEN.
+
+**Limites e próximos efeitos:**
+- Esse é um mecanismo **opt-in não ativado**. O código não reduziu a memória do processo de produção e a CI não realizou benchmark comparativo `com vs sem limitação` sob condições equivalentes.
+- A interface atual já trata 503 como leitura indisponível: em nova navegação mostra estado degradado sem simular zero; na releitura mantém a informação anterior identificada e envelhecendo. **Ainda não há mensagem especializada nem retry automático** para saturação; qualquer ajuste de UX precisará de teste separado.
+- Não existe autorização para escolher **1, 2 ou 4** na operação, alterar configuração real, mudar SLO, ou ativar este recurso. O PR continua DRAFT/HOLD.
+- Não resolve o uso de memória de uma leitura individual longa nem substitui as investigações do PR #37. A priorização de capacidade só pode usar representatividade comprovada.
+
 ## Lacunas e restrições
 
 - O handler HTTP **real** `/api/entregas` foi exercitado num servidor local contra banco **descartável**. Não foi exercitado contra **servidor HTTP de produção**, dados operacionais ou aparelho físico; o código permanece na branch, não implantado.
