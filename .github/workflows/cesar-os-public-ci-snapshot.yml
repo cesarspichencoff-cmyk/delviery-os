@@ -1,0 +1,35 @@
+name: DeliveryOS Public CI Snapshot
+
+# Manual-first candidate. Merging this file MUST NOT activate recurring execution.
+# An hourly schedule requires a separate reviewed change and explicit authorization.
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: deliveryos-public-ci-snapshot
+  cancel-in-progress: false
+
+jobs:
+  export:
+    if: github.repository == 'cesarspichencoff-cmyk/delviery-os' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - name: Checkout exact triggering commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Verify snapshot contract before any write
+        run: node --test test/cesar-os-ci-snapshot.test.mjs
+
+      - name: Publish bounded public CI metadata
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node tools/cesar-os-ci/snapshot.mjs
