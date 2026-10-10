@@ -1,0 +1,75 @@
+name: q026-cursor-batch-lab
+on:
+  push:
+    branches: [research/q026-cursor-batch-size-benchmark-20261010]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    strategy:
+      fail-fast: false
+      matrix:
+        n: [120000, 300000, 1030000]
+    services:
+      postgres:
+        image: public.ecr.aws/docker/library/postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
+      Q026_FULL_RSS_N: ${{ matrix.n }}
+      Q026_FULL_RSS_USE_REAL_PORT: '1'
+      Q026_FULL_RSS_MODE: compact
+      NODE_OPTIONS: --expose-gc
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx tsc --noEmit
+      - name: Reader with 257-row FETCH
+        env:
+          Q026_FULL_RSS_BATCH_SIZE: '257'
+          Q026_FULL_RSS_OUT: batch257.json
+        run: npx tsx tests/product/run-q026-full-rr-memory-isolated-shadow.ts
+      - name: Reader with 1024-row FETCH
+        env:
+          Q026_FULL_RSS_BATCH_SIZE: '1024'
+          Q026_FULL_RSS_OUT: batch1024.json
+        run: npx tsx tests/product/run-q026-full-rr-memory-isolated-shadow.ts
+      - name: Compare exact full model and measured performance
+        run: |
+          node - <<'JS'
+          const fs=require('node:fs');
+          const a=JSON.parse(fs.readFileSync('batch257.json'));
+          const b=JSON.parse(fs.readFileSync('batch1024.json'));
+          if(a.hash!==b.hash||a.total_events!==b.total_events||a.hash.length!==64||a.max_batch>257||b.max_batch>1024)
+            throw Error('Q026_CURSOR_BATCH_PARITY_FAILED');
+          console.log('Q026_CURSOR_BATCH_COMPARISON '+JSON.stringify({
+            events:a.total_events,hash:a.hash,
+            batch257:{ms:a.full_reader_ms,peak_mib:a.peak_rss_mib,fetches:a.fetches},
+            batch1024:{ms:b.full_reader_ms,peak_mib:b.peak_rss_mib,fetches:b.fetches},
+            boundary:'single CI sample, separate processes, not production SLA'
+          }));
+          JS
+  regressions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm run test:platform:q016
+      - run: npm run test:platform:product
+      - run: npm run test:platform:governanca
