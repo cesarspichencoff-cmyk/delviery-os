@@ -62,7 +62,7 @@ void(async()=>{
   let cumulative=0;
   for(let iter=0;iter<SEQUENCE.length;iter++){
    const [arm,warmup]=SEQUENCE[iter];
-   const before=N+cumulative;
+   const before:number=N+cumulative;
    const s:Sample={arm,iter,start_count:before,rr_wall_ms:0,mvcc_upper_ms:0,
     writer_ms:0,writer_commits:0,event_select_ms:0,latest_select_ms:0,
     counts_select_ms:0,max_rss_mib:0,peak_heap_mib:0,end_count:0};
@@ -152,7 +152,7 @@ void(async()=>{
      assert.ok(device);
      assert.equal(device.fatos_por_modo.simulated,before,"device count mixed snapshots");
      const out=await inspector.query("SELECT count(*)::int AS n FROM platform.event_log");
-     const expectedOut=before+(arm==="paced"?WRITES:0);
+     const expectedOut:number=before+(arm==="paced"?WRITES:0);
      assert.equal(Number(out[0].n),expectedOut,"commits not all visible to observer");
      s.end_count=expectedOut;
      if(arm==="paced"){
