@@ -1,0 +1,233 @@
+name: deliveryos-q026-integrated-validation
+# Revisao adversarial da Q-026 (replay da leitura de Entregas). SHADOW:
+# so dados sinteticos, PostgreSQL descartavel do proprio runner, sem
+# credencial, sem deploy, sem fonte real. Nada aqui toca producao.
+on:
+  push:
+    branches:
+      - validation/deliveryos-q026-claude-integration-20261010
+  workflow_dispatch:
+    inputs:
+      tamanhos:
+        description: "tamanhos do benchmark (fatos), separados por virgula"
+        default: "1000,10000,100000"
+permissions:
+  contents: read
+concurrency:
+  group: q026-integrated-validation-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  equivalencia:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: commit pinado do PR 31 (b20a847), se ainda existir
+        run: git fetch --no-tags origin b20a847ef3e838dba69f1997e837c32faa66d24f || echo "b20a847 indisponivel, a prova declara PULADO para o PR 31"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: TypeScript do projeto sem emitir
+        run: npx tsc --noEmit
+      - name: TypeScript dos testes Q-026
+        run: >-
+          npx tsc --noEmit --target ES2021 --module commonjs --moduleResolution node --strict
+          --esModuleInterop --skipLibCheck --types node
+          tests/product/q026-replay-fixture.ts tests/product/q026-referencias.ts tests/product/q026-cenarios.ts
+          tests/product/q026-bench-filho.ts tests/product/run-q026-replay-adversarial-tests.ts
+          tests/product/run-q026-replay-adversarial-mutacoes.ts tests/product/run-q026-replay-adversarial-pg-tests.ts
+          tests/product/run-q026-replay-benchmark.ts tests/product/run-q026-replay-fuzz-diferencial.ts
+      - name: equivalencia adversarial contra d0716fd e PR 31
+        run: npx tsx tests/product/run-q026-replay-adversarial-tests.ts
+      - name: mutantes da prova de equivalencia (zero cegos)
+        run: npx tsx tests/product/run-q026-replay-adversarial-mutacoes.ts
+      - name: fuzz diferencial independente (duas sementes)
+        run: |
+          npx tsx tests/product/run-q026-replay-fuzz-diferencial.ts 7 20000
+          npx tsx tests/product/run-q026-replay-fuzz-diferencial.ts 1009 20000
+      - name: contraexemplos de janela S1-S8 (PR 29)
+        run: npx tsx tests/product/run-q026-window-shadow-tests.ts
+      - name: suites que exercitam a projecao
+        run: |
+          npm run -s test:platform
+          npm run -s test:platform:bridge
+          npm run -s test:platform:product
+          npm run -s test:platform:conference
+          npm run -s test:platform:r5d1-event-lineage
+      - name: arvore limpa depois das provas
+        run: test -z "$(git status --porcelain)" || { git status --porcelain; exit 1; }
+
+  postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    services:
+      postgres:
+        image: public.ecr.aws/docker/library/postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
+      Q026_EXIGIR_PG: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --no-audit --no-fund
+      - name: compilar plataforma e migracoes (binarios de dist/)
+        run: npm run -s build:platform
+      - name: equivalencia com PostgreSQL real (porta, reinicio, atrasados, sem modo)
+        run: npx tsx tests/product/run-q026-replay-adversarial-pg-tests.ts
+      - name: Q-016 replay e mutacoes
+        run: |
+          npm run -s test:platform:q016
+          npm run -s test:platform:q016:mutacoes
+      - name: relogio e mutacoes (ancora M2 na projecao)
+        run: |
+          npm run -s test:platform:relogio
+          npm run -s test:platform:relogio:mutacoes
+      - name: Q-017 modo de origem
+        run: npm run -s test:platform:q017
+      - name: cadeia real e mutacoes
+        run: |
+          npm run -s test:platform:cadeia
+          npm run -s test:platform:cadeia:mutacoes
+
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    needs: [equivalencia]
+    services:
+      postgres:
+        image: public.ecr.aws/docker/library/postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
+      Q026_EXIGIR_PG: "1"
+      Q026_BENCH_TAMANHOS: ${{ github.event.inputs.tamanhos || '1000,10000,100000' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: commit pinado do PR 31 (b20a847), se ainda existir
+        run: git fetch --no-tags origin b20a847ef3e838dba69f1997e837c32faa66d24f || echo "b20a847 indisponivel"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: maquina
+        run: nproc && free -m && node --version
+      - name: benchmark progressivo original x PR31 x esta (mesmo SHA de saida exigido)
+        run: npx tsx tests/product/run-q026-replay-benchmark.ts
+        env:
+          Q026_BENCH_SAIDA: ${{ runner.temp }}/q026-bench.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: q026-bench
+          path: ${{ runner.temp }}/q026-bench.json
+          if-no-files-found: warn
+
+  product-ux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    services:
+      postgres:
+        # Docker Official Image no ECR Public: evita limite anonimo do Docker Hub no runner (run 37992818657).
+        image: public.ecr.aws/docker/library/postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # as guardas de congelamento leem a historia inteira
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - run: npx tsc --noEmit
+      - run: npm run -s build:platform
+      - name: leitura da rua (view model + superficie)
+        run: npx tsx tests/product/run-entregas-leitura-da-rua-tests.ts
+      - name: navegador (dobra, teclado, idade da leitura, contraste, movimento reduzido)
+        run: npx tsx tests/product/run-entregas-browser-tests.ts --evidencias "$RUNNER_TEMP/evidencias/navegador"
+      - name: servidor + PostgreSQL real (filtro de unidade, somente leitura)
+        run: npx tsx tests/product/run-entregas-servidor-pg-tests.ts --evidencias "$RUNNER_TEMP/evidencias/postgresql"
+      - name: falha do PostgreSQL nao revela IP, porta ou segredo no painel
+        run: npx tsx tests/product/run-entregas-db-error-boundary-tests.ts
+      # axe-core NAO e dependencia do repositorio (package.json intocado): versao
+      # fixa, baixada para fora da arvore e conferida por sha256 antes de rodar.
+      - name: acessibilidade automatica (axe-core, todas as rotas, 390 e 1440)
+        run: |
+          mkdir -p "$RUNNER_TEMP/axe" && cd "$RUNNER_TEMP/axe"
+          npm pack axe-core@4.10.2 --silent
+          echo "9ea2d2d6917da998122bdacfd3b473e31ead53f4b87146c716a12edf89158100  axe-core-4.10.2.tgz" | sha256sum -c -
+          tar -xzf axe-core-4.10.2.tgz
+          cd "$GITHUB_WORKSPACE"
+          PRODUCT_UI_AXE="$RUNNER_TEMP/axe/package/axe.min.js" npx tsx tests/product/run-a11y-axe-tests.ts
+      - run: npm run -s test:platform:product
+      - run: npm run -s test:platform:queue-depth
+      - run: npm run -s test:platform:home
+      - run: npm run -s test:platform:organismo
+      - run: npm run -s test:platform:visual-order
+      - run: npm run -s test:platform:figma-parity
+      - run: npm run -s test:platform:skills
+      - run: npm run -s test:platform:r5
+      - run: npm run -s test:platform:cadeia
+      - name: guardas de governanca, sem FAIL_NOVO
+        run: npx tsx tests/product/run-sem-fail-novo.ts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: evidencias-product-ux
+          path: ${{ runner.temp }}/evidencias/
+          retention-days: 14
+
+
+  android-unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Android + Room testes JVM sem aparelho ou publicacao
+        working-directory: android
+        run: bash ./gradlew --no-daemon --console=plain testDebugUnitTest
+      - name: Verificar relatorio JUnit da app Android
+        working-directory: android
+        run: |
+          python3 - <<'PY'
+          import glob, xml.etree.ElementTree as ET
+          files=glob.glob("app/build/test-results/testDebugUnitTest/*.xml")
+          if not files: raise SystemExit("SEM_XML_ANDROID")
+          tests=failures=errors=0
+          for f in files:
+              a=ET.parse(f).getroot()
+              tests+=int(a.get("tests",0))
+              failures+=int(a.get("failures",0))
+              errors+=int(a.get("errors",0))
+          print(f"ANDROID_JUNIT: suites={len(files)} tests={tests} failures={failures} errors={errors}")
+          if tests==0 or failures or errors: raise SystemExit(1)
+          PY

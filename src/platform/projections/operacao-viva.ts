@@ -201,11 +201,144 @@ export interface OpcoesProjecao {
 }
 
 /**
+ * A ordem de aplicação: instante, depois sequência local, depois id.
+ *
+ * Sem desempate estável, duas execuções sobre o mesmo conjunto poderiam
+ * divergir — e a projeção deixaria de ser reconstruível. Este comparador é o
+ * CONTRATO da ordem: a versão rápida abaixo devolve, par a par, exatamente o
+ * que ele devolve.
+ */
+function compararEventos(a: EventEnvelope, b: EventEnvelope): number {
+  const ta = Date.parse(a.occurred_at) - Date.parse(b.occurred_at);
+  if (ta !== 0) return ta;
+  const sa = (a.sequence ?? 0) - (b.sequence ?? 0);
+  if (sa !== 0) return sa;
+  return a.event_id.localeCompare(b.event_id);
+}
+
+/**
+ * Os eventos DE UM ESCOPO (unidade + modo), na ordem exata em que a projeção
+ * os aplica — com o instante de cada um já lido.
+ *
+ * Por que existe (Q-026, medido): a versão anterior ordenava a lista INTEIRA,
+ * de todas as unidades e modos, e só depois descartava o que era de outro
+ * escopo; e o comparador relia `Date.parse` duas vezes por comparação. Com
+ * 1,03 milhão de fatos sintéticos, só a ordenação custava ~3 s, repetida a
+ * cada escopo pedido.
+ *
+ * Duas otimizações, e por que cada uma preserva o resultado:
+ *
+ * 1. **Instante lido uma vez por evento.** `Date.parse` é pura: o comparador
+ *    com o instante pré-lido devolve, par a par, o mesmo número que
+ *    `compararEventos`.
+ *
+ * 2. **Filtrar o escopo antes de ordenar.** A ordenação do JavaScript é
+ *    estável, e com um comparador CONSISTENTE o resultado é único: os eventos
+ *    em ordem de chave, empates na ordem de entrada. Filtrar preserva a ordem
+ *    de entrada, então ordenar-depois-filtrar e filtrar-depois-ordenar dão a
+ *    mesma sequência. O comparador só é consistente quando todo instante é
+ *    número finito, toda sequência é número finito e todo id é texto — em
+ *    TODA a lista, porque um instante ilegível de OUTRO escopo já embaralhava
+ *    a ordem deste na versão anterior. Fora disso, o caminho é o antigo,
+ *    literalmente: lista inteira, `compararEventos`, filtro depois.
+ *
+ * A ingestão recusa `occurred_at` ilegível e o replay reconstrói o instante
+ * com `toISOString()`: pelos caminhos canônicos, o caminho antigo não roda.
+ *
+ * O caminho antigo devolve `instantes: null`: o laço lê cada instante só onde a
+ * versão anterior o lia — nenhuma leitura antecipada pode lançar onde ela não
+ * lançava. E a guarda não chama `Date.parse` em instante que não seja texto.
+ */
+function ordenarDoEscopo(
+  eventos: readonly EventEnvelope[],
+  unit_id: string,
+  source_mode: SourceMode,
+): { ordenados: EventEnvelope[]; instantes: Float64Array | null } {
+  // A versão anterior espalhava a entrada (`[...eventos]`): um iterável que não
+  // é array (um Set, por exemplo) era projetado, e não pode virar lista vazia.
+  const lista: readonly EventEnvelope[] = Array.isArray(eventos) ? eventos : [...(eventos as Iterable<EventEnvelope>)];
+  const n = lista.length;
+  const instantes = new Float64Array(n);
+  const sequencias = new Float64Array(n);
+  let consistente = true;
+  for (let i = 0; i < n; i++) {
+    const e = lista[i] as EventEnvelope | null | undefined;
+    if (e === null || e === undefined || typeof e.occurred_at !== "string" || typeof e.event_id !== "string") {
+      consistente = false;
+      break;
+    }
+    const t = Date.parse(e.occurred_at);
+    const s: unknown = e.sequence ?? 0;
+    if (!Number.isFinite(t) || typeof s !== "number" || !Number.isFinite(s)) {
+      consistente = false;
+      break;
+    }
+    instantes[i] = t;
+    sequencias[i] = s;
+  }
+
+  if (!consistente) {
+    const ordenados = [...lista]
+      .sort(compararEventos)
+      .filter((e) => e.unit_id === unit_id && e.source_mode === source_mode);
+    return { ordenados, instantes: null };
+  }
+
+  const indices: number[] = [];
+  for (let i = 0; i < n; i++) {
+    const e = lista[i];
+    if (e.unit_id === unit_id && e.source_mode === source_mode) indices.push(i);
+  }
+  indices.sort((x, y) => {
+    const ta = instantes[x] - instantes[y];
+    if (ta !== 0) return ta;
+    const sa = sequencias[x] - sequencias[y];
+    if (sa !== 0) return sa;
+    return lista[x].event_id.localeCompare(lista[y].event_id);
+  });
+  const ordenados = new Array<EventEnvelope>(indices.length);
+  const tOrd = new Float64Array(indices.length);
+  for (let k = 0; k < indices.length; k++) {
+    ordenados[k] = lista[indices[k]];
+    tOrd[k] = instantes[indices[k]];
+  }
+  return { ordenados, instantes: tOrd };
+}
+
+/**
+ * O acumulador INTERNO de uma viagem. Nunca sai de `projetar`: a saída é
+ * montada no fim, campo a campo, na mesma ordem de chaves de sempre.
+ *
+ * `*_ms` guardam `Date.parse` do texto ao lado, para `maisRecente` não reler
+ * o texto a cada fato. O texto é o que sai; o número é só cache dele.
+ * `ultimo_fato_ms` indefinido = ainda não lido (a versão anterior só lia o
+ * instante guardado quando havia um para comparar).
+ */
+interface AcumuloDaViagem {
+  trip_id: string;
+  unit_id: string;
+  estado: EstadoViagem;
+  device_id?: string;
+  ultimo_fato_em: string;
+  ultimo_fato_ms: number | undefined;
+  ocorrencias_abertas: number;
+  source_mode: SourceMode;
+  eventos: string[];
+  ultima_posicao_em?: string;
+  ultima_posicao_ms: number;
+}
+
+/**
  * Constrói a projeção a partir dos eventos.
  *
  * Pura: mesma entrada, mesma saída. Não lê relógio (recebe `agora`), não lê
  * banco, não guarda nada entre chamadas. É o que permite ao teste comparar
  * duas reconstruções byte a byte.
+ *
+ * Q-026: a saída é idêntica à de `d0716fd` (mesmas chaves, na mesma ordem,
+ * mesmos valores) — provado por `tests/product/run-q026-replay-adversarial-tests.ts`.
+ * O que mudou é só o custo: ordenação do escopo com instante pré-lido, e
+ * acumulador mutável local em vez de recriar objeto e lista a cada fato.
  */
 export function projetar(
   eventos: readonly EventEnvelope[],
@@ -214,25 +347,22 @@ export function projetar(
   const { agora, unit_id, source_mode } = opcoes;
   const janelas = opcoes.janelas ?? JANELAS;
 
-  const porViagem = new Map<string, ViagemAcumulada>();
+  const porViagem = new Map<string, AcumuloDaViagem>();
   const quarentena: { event_id: string; motivo: string }[] = [];
   const vistos = new Set<string>();
-  let cursor: Projecao["cursor"];
+  let ultimoAplicado: EventEnvelope | undefined;
+  let majCo = Number.NaN;
+  let majCoLido = false;
 
-  // Ordena por occurred_at, desempatando por sequence e depois por id. Sem
-  // desempate estável, duas execuções sobre o mesmo conjunto poderiam divergir
-  // — e a projeção deixaria de ser reconstruível.
-  const ordenados = [...eventos].sort((a, b) => {
-    const ta = Date.parse(a.occurred_at) - Date.parse(b.occurred_at);
-    if (ta !== 0) return ta;
-    const sa = (a.sequence ?? 0) - (b.sequence ?? 0);
-    if (sa !== 0) return sa;
-    return a.event_id.localeCompare(b.event_id);
-  });
+  const { ordenados, instantes } = ordenarDoEscopo(eventos, unit_id, source_mode);
+  // No caminho rápido o instante já foi lido; no antigo, é lido aqui, na hora
+  // em que a versão anterior o lia.
+  const instanteDoFato = (k: number): number => (instantes !== null ? instantes[k] : Date.parse(ordenados[k].occurred_at));
 
-  for (const ev of ordenados) {
+  for (let k = 0; k < ordenados.length; k++) {
+    const ev = ordenados[k];
     // Unidade diferente não entra: misturar duas lojas na mesma projeção faz a
-    // carga de uma aparecer como pressão da outra.
+    // carga de uma aparecer como pressão da outra. (Já filtrado; a guarda fica.)
     if (ev.unit_id !== unit_id) continue;
 
     // `real` e `simulated` nunca se somam. Um número que mistura os dois não
@@ -246,10 +376,10 @@ export function projetar(
 
     if (opcoes.consumer_version) {
       const majEv = Number.parseInt((ev.event_version.split("@").pop() ?? "0").split(".")[0], 10);
-      const majCo = Number.parseInt(
-        (opcoes.consumer_version.split("@").pop() ?? "0").split(".")[0],
-        10,
-      );
+      if (!majCoLido) {
+        majCo = Number.parseInt((opcoes.consumer_version.split("@").pop() ?? "0").split(".")[0], 10);
+        majCoLido = true;
+      }
       if (majEv !== majCo) {
         quarentena.push({
           event_id: ev.event_id,
@@ -262,24 +392,30 @@ export function projetar(
     const tripId = ev.trip_id;
     if (!tripId) {
       // Evento sem viagem ainda conta para o cursor, mas não projeta viagem.
-      cursor = { event_id: ev.event_id, occurred_at: ev.occurred_at };
+      ultimoAplicado = ev;
       continue;
     }
 
-    const atual: ViagemAcumulada = porViagem.get(tripId) ?? {
-      trip_id: tripId,
-      unit_id: ev.unit_id,
-      estado: "desconhecido",
-      device_id: ev.device_id,
-      ultimo_fato_em: ev.occurred_at,
-      ocorrencias_abertas: 0,
-      source_mode: ev.source_mode,
-      eventos: [],
-    };
+    let atual = porViagem.get(tripId);
+    if (atual === undefined) {
+      atual = {
+        trip_id: tripId,
+        unit_id: ev.unit_id,
+        estado: "desconhecido",
+        device_id: ev.device_id,
+        ultimo_fato_em: ev.occurred_at,
+        ultimo_fato_ms: instantes !== null ? instantes[k] : undefined,
+        ocorrencias_abertas: 0,
+        source_mode: ev.source_mode,
+        eventos: [],
+        ultima_posicao_em: undefined,
+        ultima_posicao_ms: Number.NaN,
+      };
+      porViagem.set(tripId, atual);
+    }
 
     const destino = TRANSICAO[ev.event_type];
-    const estado =
-      destino && RANK[destino] > RANK[atual.estado] ? destino : atual.estado;
+    if (destino && RANK[destino] > RANK[atual.estado]) atual.estado = destino;
 
     // Frescor só nasce de tempo com autoridade. O `occurred_at` de um relógio
     // adiantado não entra aqui — era ele que deixava um ponto de amanhã
@@ -287,25 +423,57 @@ export function projetar(
     // contando: GPS recebido e horário confiável são coisas diferentes.
     const ehPosicao = ev.event_type === "gps_batch_received";
     const instante = ehPosicao ? instanteConfiavel(ev) : undefined;
-    const ultimaPosicao = instante ? maisRecente(atual.ultima_posicao_em, instante) : atual.ultima_posicao_em;
+    if (instante) {
+      // maisRecente(atual.ultima_posicao_em, instante), com o cache do texto
+      // atual. Relógio confiável devolve o próprio `occurred_at`: o mesmo texto,
+      // o mesmo instante já lido.
+      const t = instante === ev.occurred_at ? instanteDoFato(k) : Date.parse(instante);
+      if (!atual.ultima_posicao_em || t > atual.ultima_posicao_ms) {
+        atual.ultima_posicao_em = instante;
+        atual.ultima_posicao_ms = t;
+      }
+    }
 
-    porViagem.set(tripId, {
-      ...atual,
-      estado,
-      device_id: ev.device_id ?? atual.device_id,
-      ultimo_fato_em: maisRecente(atual.ultimo_fato_em, ev.occurred_at) ?? ev.occurred_at,
-      ultima_posicao_em: ultimaPosicao,
-      ocorrencias_abertas:
-        atual.ocorrencias_abertas + (ev.event_type === "occurrence_created" ? 1 : 0),
-      eventos: [...atual.eventos, ev.event_id],
-    });
+    atual.device_id = ev.device_id ?? atual.device_id;
 
-    cursor = { event_id: ev.event_id, occurred_at: ev.occurred_at };
+    // maisRecente(atual.ultimo_fato_em, ev.occurred_at) ?? ev.occurred_at —
+    // a mesma ordem de leitura: o instante do fato, depois o guardado.
+    if (!atual.ultimo_fato_em) {
+      atual.ultimo_fato_em = ev.occurred_at;
+      atual.ultimo_fato_ms = undefined;
+    } else {
+      const novo = instanteDoFato(k);
+      const guardado = atual.ultimo_fato_ms ?? (atual.ultimo_fato_ms = Date.parse(atual.ultimo_fato_em));
+      if (novo > guardado) {
+        atual.ultimo_fato_em = ev.occurred_at;
+        atual.ultimo_fato_ms = novo;
+      }
+    }
+
+    atual.ocorrencias_abertas += ev.event_type === "occurrence_created" ? 1 : 0;
+    atual.eventos.push(ev.event_id);
+
+    ultimoAplicado = ev;
   }
 
-  const viagens = [...porViagem.values()]
-    .map((v) => ({ ...v, frescor: classificarFrescor(v.ultima_posicao_em, agora, janelas) }))
+  const viagens: ViagemProjetada[] = [...porViagem.values()]
+    .map((v) => ({
+      trip_id: v.trip_id,
+      unit_id: v.unit_id,
+      estado: v.estado,
+      device_id: v.device_id,
+      ultimo_fato_em: v.ultimo_fato_em,
+      ocorrencias_abertas: v.ocorrencias_abertas,
+      source_mode: v.source_mode,
+      eventos: v.eventos,
+      ultima_posicao_em: v.ultima_posicao_em,
+      frescor: classificarFrescor(v.ultima_posicao_em, agora, janelas),
+    }))
     .sort((a, b) => a.trip_id.localeCompare(b.trip_id));
+
+  const cursor: Projecao["cursor"] = ultimoAplicado
+    ? { event_id: ultimoAplicado.event_id, occurred_at: ultimoAplicado.occurred_at }
+    : undefined;
 
   return {
     projection_version: PROJECTION_VERSION,
@@ -317,11 +485,6 @@ export function projetar(
     quarentena,
     cursor,
   };
-}
-
-function maisRecente(a: string | undefined, b: string): string | undefined {
-  if (!a) return b;
-  return Date.parse(b) > Date.parse(a) ? b : a;
 }
 
 /* ------------------------------------------------------------------ *
