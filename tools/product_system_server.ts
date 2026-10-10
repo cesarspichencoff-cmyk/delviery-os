@@ -40,6 +40,7 @@ import {
 import { createPgClient, type PgSqlClient } from "../src/platform/persistence/sql-client";
 import { foiTimeoutNaFilaDoPoolPg } from "../src/platform/persistence/pg-pool-backpressure";
 import { lerRealidadeDeEntregas } from "../src/platform/leitura/realidade-de-entregas";
+import { lerRealidadeDeEntregasIncremental } from "../src/platform/leitura/realidade-de-entregas-incremental";
 import { leitorRrCancelavel, type ProtecaoRr } from "../src/platform/leitura/leitor-rr-cancelavel";
 import { lerHistoricoOperacional } from "../src/platform/leitura/historico-operacional";
 import { lerSaudeDaFonteTata, type AvaliadorDeSaude } from "../src/platform/leitura/saude-fonte-tata";
@@ -79,6 +80,13 @@ function prazoExplicitoEntregas(raw: string | undefined): number {
   return v;
 }
 const PRAZO_ENTREGAS_RR_MS = prazoExplicitoEntregas(process.env.DELIVERYOS_ENTREGAS_RR_DEADLINE_MS);
+function incrementalExplicitamenteAtivo(raw: string | undefined): boolean {
+  if (raw === undefined || raw.trim() === "") return false;
+  if (raw !== "1" || PRAZO_ENTREGAS_RR_MS === 0)
+    throw Error("DELIVERYOS_ENTREGAS_INCREMENTAL_RR exige valor 1 e protecao RR HTTP habilitada");
+  return true;
+}
+const USAR_INCREMENTAL_RR = incrementalExplicitamenteAtivo(process.env.DELIVERYOS_ENTREGAS_INCREMENTAL_RR);
 /**
  * A porta de REALIDADE de Entregas. Com a URL do banco da plataforma, a
  * superficie /entregas ganha um bloco lido de identity.device e de
@@ -274,7 +282,9 @@ async function lerRealidade(cliente: PgSqlClient | null, protecao?: ProtecaoRr):
   try {
     return {
       disponivel: true,
-      realidade: await lerRealidadeDeEntregas(
+      realidade: await (USAR_INCREMENTAL_RR
+        ? lerRealidadeDeEntregasIncremental
+        : lerRealidadeDeEntregas)(
         protecao ? leitorRrCancelavel(cliente, protecao) : cliente,
         { agora: new Date() },
       ),
