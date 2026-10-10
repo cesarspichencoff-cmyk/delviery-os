@@ -27,7 +27,10 @@ const HOST_SCHEMAS = new Set([
   "deliveryos.tata-reader-continuous-host-status.v1",
   "deliveryos.tata-reader-continuous-host-status.v2",
 ]);
-const CONSUMER_SCHEMA = "deliveryos.live-shadow-consumer-status.v1";
+const CONSUMER_SCHEMAS = new Set([
+  "deliveryos.live-shadow-consumer-status.v1",
+  "deliveryos.live-shadow-consumer-status.v2",
+]);
 
 /** Sem cadencia declarada (watcher v1 sem supervisor): poll de ~3 s. */
 const LEGACY_CHECKPOINT_STALE_SECONDS = 90;
@@ -144,11 +147,16 @@ function evaluateTataReaderHealthV1(input) {
   }
   let consumerFailed = false;
   if (consumer !== null) {
-    if (!isObj(consumer) || consumer.schema !== CONSUMER_SCHEMA) {
+    if (!isObj(consumer) || !CONSUMER_SCHEMAS.has(consumer.schema)) {
+      // A version we cannot interpret must NEVER produce a healthy verdict.
+      consumerFailed = true;
       reasons.push("CONSUMER_STATUS_SCHEMA_INVALID");
     } else {
       evidence.consumer_state = String(consumer.state ?? "");
-      if (evidence.consumer_state === "FAILED") {
+      if (!["RUNNING", "FAILED"].includes(evidence.consumer_state)) {
+        consumerFailed = true;
+        reasons.push("CONSUMER_STATE_INVALID");
+      } else if (evidence.consumer_state === "FAILED") {
         consumerFailed = true;
         reasons.push("CONSUMER_FAILED");
       }

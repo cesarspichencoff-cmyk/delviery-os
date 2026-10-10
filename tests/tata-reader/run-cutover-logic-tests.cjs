@@ -179,5 +179,14 @@ $s = Get-Snapshot (Get-Layout '${raiz}') (Get-Date) ([long]0) "S" "W" "x" @{ run
     assert.equal(novo.host, true, "controle positivo: status novo do host tem que passar");
   });
 
+  await teste("C13 contrato V2/consumidor: sem observacoes e com hash divergente bloqueiam o Plan", () => {
+    assert.deepEqual(out.observation_contract, {
+      missing: "MISSING_REQUIRED_OBSERVATION_FIELDS",
+      hash_drift: "SNAPSHOT_HASH_MIGRATION_REQUIRED",
+      static_present: "STATIC_FIELDS_PRESENT_REPLAY_REQUIRED",
+      unknown_consumer: "CONSUMER_CONTRACT_UNKNOWN",
+    });
+  });
+
   fim("TATA_READER_CUTOVER_LOGIC");
 })();

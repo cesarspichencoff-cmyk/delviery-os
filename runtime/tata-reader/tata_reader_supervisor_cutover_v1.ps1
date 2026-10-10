@@ -202,6 +202,37 @@ function Test-AuditAllowsSupervisor($Audit) {
 
 # O candidato precisa ler o checkpoint ATUAL. Se ele declara outro schema de
 # checkpoint, instalar exigiria migracao de estado: decisao humana.
+
+# Minimum STATIC contract with the consumer already installed alongside the
+# watcher. Token presence is only a negative screen, NEVER a replay proof.
+# The real CAIXA consumer requires observation_scan_complete and observation_rows.
+function Test-CandidateObservationContract(
+  [string]$CandidateSource, [string]$ConsumerSource, [string]$InstalledSource
+) {
+  if (-not $ConsumerSource.Contains("OBSERVATION_SOURCE_NOT_PROVEN_COMPLETE") -or
+      -not $ConsumerSource.Contains("observation_scan_complete") -or
+      -not $ConsumerSource.Contains("observation_rows")) {
+    return "CONSUMER_CONTRACT_UNKNOWN"
+  }
+  foreach ($field in @(
+    "DSOBSDESCIT", "DSOBSPEDDIGCMD", "TXPRODCOMVEN",
+    "observation_scan_complete", "observation_rows", "join_proven"
+  )) {
+    if (-not $CandidateSource.Contains($field)) {
+      return "MISSING_REQUIRED_OBSERVATION_FIELDS"
+    }
+  }
+  # This drift would silently re-identify already seen orders after the swap.
+  # A candidate that changes the snapshot basis needs a separate migration
+  # and a replay/duplicate assessment; source token checks cannot certify it.
+  if ($InstalledSource.Contains('$hashBasis') -and
+      $CandidateSource.Contains('truth=$truth') -and
+      $CandidateSource.Contains('$hash=Hash-Text ($basis')) {
+    return "SNAPSHOT_HASH_MIGRATION_REQUIRED"
+  }
+  return "STATIC_FIELDS_PRESENT_REPLAY_REQUIRED"
+}
+
 function Test-CheckpointCompatible([string]$CandidateText, [string]$CurrentCheckpointSchema) {
   if ([string]::IsNullOrWhiteSpace($CurrentCheckpointSchema)) { return "NO_CHECKPOINT_YET" }
   if ($CandidateText.Contains('"' + $CurrentCheckpointSchema + '"')) { return "COMPATIBLE" }
@@ -728,6 +759,24 @@ function Invoke-Preflight($L, $Receipt, [string]$AuditCli, [string]$HealthCli) {
     $Receipt.checks.candidate_audit_allows_supervisor = Test-AuditAllowsSupervisor $a.json
     $Receipt.checks.candidate_checkpoint = Test-CheckpointCompatible ([IO.File]::ReadAllText($CandidateWatcherPath)) $Receipt.checks.checkpoint_schema
   }
+  # Compare this candidate with the REAL installed consumer contract.
+  # Fixture-only roots without a consumer retain isolated test behavior.
+  $consumerPath = [IO.Path]::Combine($L.root, "shadow", "live_shadow_consumer_v1.cjs")
+  $Receipt.checks.consumer_observation_contract = "NO_LOCAL_CONSUMER"
+  $Receipt.checks.consumer_observation_static_valid = $true
+  if ([IO.File]::Exists($consumerPath)) {
+    try {
+      $candidateText = [IO.File]::ReadAllText($CandidateWatcherPath)
+      $consumerText = [IO.File]::ReadAllText($consumerPath)
+      $installedText = [IO.File]::ReadAllText($L.host_fixed_watcher)
+      $contract = Test-CandidateObservationContract $candidateText $consumerText $installedText
+      $Receipt.checks.consumer_observation_contract = [string]$contract
+      $Receipt.checks.consumer_observation_static_valid = ($contract -eq "STATIC_FIELDS_PRESENT_REPLAY_REQUIRED")
+    } catch {
+      $Receipt.checks.consumer_observation_contract = "OBSERVATION_CONTRACT_READ_FAILED"
+      $Receipt.checks.consumer_observation_static_valid = $false
+    }
+  }
   $Receipt.checks.health_before = $null
   if ($Receipt.checks.node_present) {
     $before = Get-Snapshot $L (Get-Date).AddYears(-10) ([long]0) $Receipt.files.supervisor_sha256 $Receipt.files.candidate_expected_sha256 $HealthCli @{ run_id = $null; service_pid = $null } -Light
@@ -736,7 +785,7 @@ function Invoke-Preflight($L, $Receipt, [string]$AuditCli, [string]$HealthCli) {
   $Receipt.checks.preflight_ok = [bool](
     $Receipt.checks.service_identity_ok -and $Receipt.checks.node_present -and $Receipt.checks.candidate_sha_ok -and
     $null -ne $Receipt.files.supervisor_sha256 -and $null -ne $Receipt.files.installed_watcher_sha256 -and $null -ne $Receipt.files.host_binary_sha256 -and
-    $Receipt.checks.candidate_audit_allows_supervisor -and
+    $Receipt.checks.candidate_audit_allows_supervisor -and $Receipt.checks.consumer_observation_static_valid -and
     ($Receipt.checks.candidate_checkpoint -eq "COMPATIBLE" -or $Receipt.checks.candidate_checkpoint -eq "NO_CHECKPOINT_YET"))
 }
 
