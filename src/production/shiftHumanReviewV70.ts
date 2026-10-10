@@ -115,3 +115,91 @@ export function reviewHumanShiftRenewalV70(
    prior_state_status:previous,safeguards:SAFEGUARDS,
  };
 }
+
+
+/**
+ * V7.4 — Pure future-window review ONLY. It takes the result of the existing
+ * V7.0 human-claim reviewer (not a trustworthy signature) and an explicitly
+ * supplied order-opened timestamp; it never translates a request to installed
+ * shift-state v2 or upgrades source/event identity to trusted.
+ *
+ * The fractional part matters at the end boundary: 15:00:00.0000001 is AFTER
+ * a declared 15:00:00 boundary, even though substring(0,19) is equal.
+ */
+export interface ShiftOrderWindowInputV74 {
+  store_id:string;
+  operational_date:string;
+  order_opened_at_local:string;
+}
+export interface ShiftOrderWindowAssessmentV74 {
+  status:"WINDOW_MATCHES_REVIEW_NOT_AUTHORIZED"|"BLOCKED";
+  blockers:string[];
+  service:ProductionShiftService|null;
+  safeguards:{
+    authenticates_claim:false;
+    validates_live_event_origin:false;
+    grants_existing_watcher_v2_state:false;
+    permits_retroactive_orders:false;
+    reads_sql:false;
+    writes_state:false;
+    prints:false;
+    requires_independent_human_effect_approval:true;
+  };
+}
+const WINDOW_SAFEGUARDS_V74={
+ authenticates_claim:false,validates_live_event_origin:false,
+ grants_existing_watcher_v2_state:false,permits_retroactive_orders:false,
+ reads_sql:false,writes_state:false,prints:false,
+ requires_independent_human_effect_approval:true,
+} as const;
+function exactLocalClockTicksV74(value:unknown):string|null {
+ if(typeof value!=="string")return null;
+ const match=/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.(\d{1,7}))?$/.exec(value);
+ if(!match||!isLocalSecond(match[1]))return null;
+ return match[1]+"."+(match[2]||"").padEnd(7,"0");
+}
+/**
+ * Evaluates temporal scope of a self-declared, still-UNAUTHORIZED V7.0 review.
+ * A match is a negative-filter result only; it MUST NOT be copied to
+ * TataComandaReader production-service-state.v2 as approval.
+ */
+export function assessReviewedShiftOrderWindowV74(
+ review:ShiftHumanReviewV70,order:unknown,
+):ShiftOrderWindowAssessmentV74 {
+ const issues=new Set<string>();
+ const x=(order&&typeof order==="object"?order:{}) as Partial<ShiftOrderWindowInputV74>;
+ const req=review?.declared_request;
+ if(review?.status!=="REVIEWABLE_NOT_AUTHORIZED"||!req||
+    review?.blockers?.length!==0||review?.prior_state_status!=="VALID_SCHEMA"||
+    review?.safeguards?.writes_live_state!==false||
+    review?.safeguards?.authenticates_human_identity!==false||
+    review?.safeguards?.requires_independent_human_effect_approval!==true)
+    issues.add("SHIFT_WINDOW_REVIEW_NOT_TRUSTWORTHY_OR_BLOCKED");
+ if(!req||!isDate(req.operational_date)||
+    ![ "LUNCH","DINNER" ].includes(req.service)||
+    req.store_id!=="0001"||
+    !exactLocalClockTicksV74(req.valid_from_local)||
+    !exactLocalClockTicksV74(req.valid_until_local)||
+    req.valid_from_local>=req.valid_until_local||
+    req.valid_from_local.slice(0,10)!==req.operational_date||
+    req.valid_until_local.slice(0,10)!==req.operational_date)
+    issues.add("SHIFT_WINDOW_DECLARED_INTERVAL_INVALID");
+ const opened=exactLocalClockTicksV74(x.order_opened_at_local),
+   start=exactLocalClockTicksV74(req?.valid_from_local),
+   end=exactLocalClockTicksV74(req?.valid_until_local);
+ if(!opened)issues.add("SHIFT_WINDOW_ORDER_TIMESTAMP_NOT_LOCAL_OR_INVALID");
+ if(x.store_id!=="0001"||!req||x.store_id!==req.store_id)
+   issues.add("SHIFT_WINDOW_ORDER_STORE_MISMATCH");
+ if(!isDate(x.operational_date)||!req||
+    x.operational_date!==req.operational_date||
+    (opened&&opened.slice(0,10)!==x.operational_date))
+   issues.add("SHIFT_WINDOW_ORDER_DATE_MISMATCH");
+ if(opened&&start&&opened<start)
+   issues.add("SHIFT_WINDOW_ORDER_PRECEDES_HUMAN_CONFIRMATION");
+ if(opened&&end&&opened>end)
+   issues.add("SHIFT_WINDOW_ORDER_AFTER_VALID_UNTIL");
+ // Never interpret an incomplete or spoofed proposal as deployment authority.
+ return {status:issues.size?"BLOCKED":"WINDOW_MATCHES_REVIEW_NOT_AUTHORIZED",
+  blockers:[...issues].sort(),service:issues.size?null:req?.service??null,
+  safeguards:WINDOW_SAFEGUARDS_V74};
+}
