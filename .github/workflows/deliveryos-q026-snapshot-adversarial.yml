@@ -1,0 +1,59 @@
+name: deliveryos-q026-snapshot-adversarial
+# Q-026 SHADOW — auditoria adversarial de instantaneo, cursor e memoria (issue #36).
+# Somente testes: nenhum runtime, Product UI, Android ou migration muda.
+# PostgreSQL DESCARTAVEL no proprio job; nunca o banco operacional.
+on:
+  push:
+    branches:
+      - review/claude-q026-snapshot-adversarial-20261010
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: q026-snapshot-adversarial-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  adversarial-pg16:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: public.ecr.aws/docker/library/postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Tipagem do projeto
+        run: npx tsc --noEmit
+      - name: Tipagem estrita das suites adversariais
+        run: |
+          for f in tests/product/q026-adversarial-comum.ts \
+                   tests/product/run-q026-snapshot-adversarial-pg.ts \
+                   tests/product/run-q026-cursor-adversarial-pg.ts \
+                   tests/product/run-q026-adversarial-mutacoes.ts; do
+            npx tsc --noEmit --target ES2022 --module commonjs --moduleResolution node --strict \
+              --esModuleInterop --skipLibCheck --types node "$f"
+          done
+      - name: Instantaneo, transacoes e visibilidade com escritor concorrente (NEG + POS)
+        run: npx tsx tests/product/run-q026-snapshot-adversarial-pg.ts
+      - name: "Cursor do PR #37 (43b6ad8 e dc0cd2f) contra entradas adversariais (NEG + POS)"
+        run: npx tsx tests/product/run-q026-cursor-adversarial-pg.ts
+      - name: Mutacoes — cada caso cai sem o mecanismo que afirma provar (nenhum cego)
+        run: npx tsx tests/product/run-q026-adversarial-mutacoes.ts
+      - name: Sem PostgreSQL as tres suites se declaram PULADAS (78), nunca verdes
+        run: |
+          set +e
+          DELIVERYOS_PG_URL= npx tsx tests/product/run-q026-snapshot-adversarial-pg.ts; a=$?
+          DELIVERYOS_PG_URL= npx tsx tests/product/run-q026-cursor-adversarial-pg.ts; b=$?
+          DELIVERYOS_PG_URL= npx tsx tests/product/run-q026-adversarial-mutacoes.ts; c=$?
+          echo "snapshot=$a cursor=$b mutacoes=$c"
+          test "$a" = 78 && test "$b" = 78 && test "$c" = 78
