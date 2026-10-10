@@ -45,7 +45,12 @@ export function compileJoinedReaderIngressV66(
     input:null,entries:null,effects:EFFECTS});
  if(joined.schema!=="deliveryos.delivery-production-join.v1"||!joined.ready||
      joined.blocking_reasons.length)blockers.add("DELIVERY_PRODUCTION_JOIN_NOT_PROVEN");
- if(!text(joined.ids.pedido_interno)||joined.ids.pedido_interno!==printPlan.order_id)
+ // Some archived print plans have order_id=null but each intent carries the
+ // Teknisa identifier. This is valid only when ALL intents agree on that ID.
+ if(!text(joined.ids.pedido_interno)||
+    (text(printPlan.order_id) && joined.ids.pedido_interno!==printPlan.order_id)||
+    (!text(printPlan.order_id) && (!printPlan.print_intents.length ||
+      printPlan.print_intents.some(x=>x.identifiers.teknisa_sequence!==joined.ids.pedido_interno))))
    blockers.add("ORDER_JOIN_PRINT_PLAN_ID_MISMATCH");
  if(!printPlan.ready_for_shadow_payload||printPlan.blocking_reasons.length||
     !printPlan.print_intents.length)blockers.add("PRINT_PLAN_SHADOW_NOT_PROVEN");
