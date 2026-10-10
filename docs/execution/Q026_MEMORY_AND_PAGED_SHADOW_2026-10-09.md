@@ -21,7 +21,16 @@ Status: **LABORATÓRIO / NÃO INTEGRAR / NÃO PUBLICAR / Q-026 OPEN**.
 | 100 mil, 100 viagens, máx. 1.000 fatos/viagem | 1.198 ms, RSS 169,1 MiB | 866 ms, RSS 229,9 MiB | hashes JSON completos de viagens idênticos |
 | 1.030.000, 1.030 viagens, máx. 1.000 fatos/viagem | 11.465 ms, RSS 173,4 MiB | 9.032 ms, RSS 1.200,6 MiB | hashes JSON completos de viagens idênticos |
 
-**Cuidado metodológico:** nessa versão inicial, o percurso paginado guardava *hashes*, não os objetos finais de viagem; a comparação demonstra igualdade do JSON das viagens, mas o pico de memória de 173 MiB ainda NÃO é uma comparação justa da saída viva completa. O commit `ff1b93a` acrescentou a retenção dos objetos completos `ViagemProjetada` e o `deepEqual` completo com o replay. A execução CI atual precisa ser consultada e registrada antes de citar novos ganhos.
+**Correção metodológica comprovada:** [CI 38017990331](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38017990331), commit `ff1b93a`: o percurso paginado passou a **reter integralmente os objetos `ViagemProjetada`** e a comparar o `deepEqual` dos 1.030 objetos com o replay, além dos hashes de JSON. O job `paged-trip-shadow-1030k` terminou SUCCESS.
+
+| Volume (objetos retidos) | Percurso por viagem | Referência integral, executada em seguida | Resultado |
+|---|---:|---:|---|
+| 100.000 fatos / 100 viagens | **165,8 MiB RSS; 13,2 MiB heap; 970 ms** | 231,7 MiB RSS; 119,4 MiB heap; 729 ms | `deepEqual` das 100 viagens: PASS |
+| 1.030.000 fatos / 1.030 viagens | **291,6 MiB RSS; 50,2 MiB heap; 9.257 ms** | 1.252,9 MiB RSS; 1.105,1 MiB heap; 7.491 ms | `deepEqual` das 1.030 viagens: PASS |
+
+Na medição de 1,03 milhão, a etapa paginada utiliza aproximadamente **76,7% menos RSS** em seu ponto de medição e leva **23,6% mais tempo**. A referência integral foi executada **depois** da etapa paginada, no mesmo processo com objetos desta ainda retidos; os picos de RSS não são dois processos independentes. Portanto, a proporção é uma indicação forte de oportunidade, **não** um ganho causal isolado para o HTTP nem uma previsão de produção. Os números iniciais de 173,4 MiB descrevem a variante que guardava apenas hashes e **não devem** ser apresentados como uso completo de memória em serviço.
+
+**Restrição que continua material:** a equivalência observada é de `ViagemProjetada[]` para um conjunto sintético de 1.000 eventos por viagem; não há equivalência demonstrada de `Projecao.cursor`, `Projecao.dimensoes`, linhas inválidas, source modes mistos ou transações adversariais. Paginado fica SHADOW, Q-016 não é substituído.
 
 Os tempos são de duas fases executadas **sequencialmente no mesmo processo**. A prova não dá p50/p95, não mede HTTP, nem isola efeito de cache; o replay funciona como referência sem produção. Ambos usam dados sintéticos, e ordenação no PostgreSQL pode exigir sort e disco temporário em ambiente real.
 
