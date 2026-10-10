@@ -29,3 +29,21 @@
 - Invalid, missing, duplicate or conflicting receipts block cursor advancement; concurrent CAS conflicts do not claim success.
 - Caller-supplied receipt reader MUST be a trusted service binding in production; **tests use fake readers and memory store**. No private D1 migration or read/write was performed by this PR.
 - This addresses only the logical commit guard; it is NOT end-to-end exactly-once proof or permission to enable recurring collection.
+
+
+## Oct 10 real proof, after producer promotion
+- Producer PR #58 merged to protected `main` at `be84a0d651c545295a5db2c8c7452694bb9f6f30`; public snapshot workflow remains `workflow_dispatch` only (no cron).
+- A manual one-time archive fixture was created from the ALREADY-PUBLIC `latest.json` under `ci-snapshots/deliveryos/archive/2026/10/10/20261010T204645627Z.json` on the dedicated snapshot branch. GitHub readback confirmed exact same blob SHA `1b7963fdab69be502b88c9f0864277d5be96cb47` and two rows. This is **NOT** evidence that the producer automatically archived a snapshot.
+- GitHub Actions real PR review run `38094232779`, job `114336703201`: 54/54 Node tests, real archive API reading, two GitHub run GETs, one late lifecycle update, zero missing runs, zero coverage gaps in the bounded historical hour. A current time slice without relevant archives was truthfully flagged `GAPS_DETECTED`.
+- Later checks on the main-synchronized child PR and Python SQLite validation passed: 54 Node tests, 3 SQLite tests, and the same real read-only smoke. SQLite confirms CAS conflict semantics and restricted schema; REAL D1 unchanged.
+- PR #61 is now based on `main` and remains DRAFT. Only the producer is merged. Its PR checks are read-only and event-driven on PRs, not schedule triggers.
+
+## Blocking incompatibility — receipt fingerprint
+- `replay-ack-gate.mjs` now requires each nonempty archive's exact count and SHA-256 digest to match a trusted receipt before cursor advancement. The CURRENT deployed private receipt GET v1 does **not** return `snapshot_sha256`. The candidate therefore **must NOT** be wired to production until ingestion metadata and service-bound receipt v2 convey a verified digest, with read-after-write testing and idempotence. No fake digest or client-supplied assertion may replace this.
+- A fully validated zero-record historical file is evidence, not a D1 ingestion: it advances only the proposed evidence cursor without fabricating an ingestion receipt.
+- Historic probe is fixed to a known manually seeded archive, so it tests that archive only, not all windows or the producer's live publishing behavior.
+
+## Current hard blocks
+- Prior Cloudflare D1 write POST was stopped by tool security; do not repeat equivalent route or bypass it. The new ingestion remains NOT PROVEN.
+- Existing producer cannot be marked WORLD_PROVEN for automatic archive creation until one manually dispatched production GitHub Action writes a genuinely new archive and its latest pointer. Do not fake the action.
+- No schedule or producer auto-run, Cloudflare D1 migration or bridge ingestion activation by these PRs.
