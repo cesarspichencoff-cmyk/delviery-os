@@ -38,11 +38,23 @@ try{
    "product-aliases-v1.json","human-order-overrides-v1.json"]);
  });
  check("V7.11 valid artificial source set is only preflight not approval",()=>{
-  const r=audit();assert.equal(r.status,"SOURCE_PREFLIGHT_MATCH_ONLY_NO_DEPLOY_AUTHORIZATION");
+  const r=audit();assert.equal(r.status,"SIMULATION_MATCH_ONLY_UNTRUSTED_TEST_PIN");
   assert.equal(r.files.length,8);assert.ok(r.files.every(x=>x.status==="MATCHED"));
   assert.equal(r.safeguards.authorizes_cutover,false);
   assert.equal(r.safeguards.authenticates_windows_service,false);
   assert.equal(r.safeguards.validates_human_turn,false);
+ });
+ check("V7.15 explicit fixture SHA cannot masquerade as canonical source evidence",()=>{
+  const r=audit();
+  assert.equal(r.status,"SIMULATION_MATCH_ONLY_UNTRUSTED_TEST_PIN");
+  assert.equal(r.source_pin_mode,"TEST_SUPPLIED_NOT_CANONICAL");
+  assert.equal(r.safeguards.authorizes_cutover,false);
+ });
+ check("V7.15 unmodified canonical source pin remains enforced in actual CLI mode",()=>{
+  const r=auditCandidatePrerequisitesV711(dir);
+  assert.equal(r.status,"BLOCKED");
+  assert.equal(r.source_pin_mode,"CANONICAL_FIXED");
+  assert.ok(r.blockers.includes("packaging-current.js:CANONICAL_MOTOR_SHA256_MISMATCH"));
  });
  check("V7.11 a fake motor always fails the real production pin",()=>{
   const r=auditCandidatePrerequisitesV711(dir);
@@ -97,7 +109,7 @@ try{
       scope:"EXACT_SNAPSHOT_ONLY",store_id:"0001",loja_id:"01",
       operational_date:"2026-10-10",order_key:"FAKE_EXACT_ORDER",
       snapshot_hash:"a".repeat(64),source_refs:["human-review:fictional-example"]}]}));
-  const r=audit();assert.equal(r.status,"SOURCE_PREFLIGHT_MATCH_ONLY_NO_DEPLOY_AUTHORIZATION");
+  const r=audit();assert.equal(r.status,"SIMULATION_MATCH_ONLY_UNTRUSTED_TEST_PIN");
   const serialized=JSON.stringify(r);
   assert.ok(!serialized.includes("SECRET_FAKE_ORDER_999"));
   assert.ok(!serialized.includes("SECRET_FAKE_NOTE_123"));
@@ -120,7 +132,7 @@ try{
     order_key:"test",snapshot_hash:"a".repeat(64),scope:"EXACT_SNAPSHOT_ONLY",
     source_refs:["human-review:FICTIONAL"],bags:[{size:"M",quantity:1}]}]}));
   const r=audit();
-  assert.equal(r.status,"SOURCE_PREFLIGHT_MATCH_ONLY_NO_DEPLOY_AUTHORIZATION");
+  assert.equal(r.status,"SIMULATION_MATCH_ONLY_UNTRUSTED_TEST_PIN");
   assert.equal(r.safeguards.authorizes_cutover,false);
   fs.writeFileSync(file,saved);
  });
@@ -128,7 +140,7 @@ try{
   const file=path.join(dir,"product-aliases-v1.json"),saved=fs.readFileSync(file);
   const text=JSON.stringify(fixtures["product-aliases-v1.json"]);
   fs.writeFileSync(file,Buffer.concat([Buffer.from([0xff,0xfe]),Buffer.from(text,"utf16le")]));
-  assert.equal(audit().status,"SOURCE_PREFLIGHT_MATCH_ONLY_NO_DEPLOY_AUTHORIZATION");
+  assert.equal(audit().status,"SIMULATION_MATCH_ONLY_UNTRUSTED_TEST_PIN");
   fs.writeFileSync(file,saved);
  });
  check("V7.11 unsupported source directory cannot pass",()=>{
