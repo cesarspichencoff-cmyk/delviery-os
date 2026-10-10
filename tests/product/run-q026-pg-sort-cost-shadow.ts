@@ -71,6 +71,19 @@ void(async()=>{
    "g,'DEV-02' FROM generate_series(1,$1::int) g"
   ].join(" ");
   await b.cliente.query(otherSql,[OTHERS]);
+  // Verify UNIQUE(idempotency_key) with actual conflicting insert, NOT just a
+  // comment in the schema. The duplicate must leave the event log unchanged.
+  const dup=await b.cliente.query([
+   "INSERT INTO platform.event_log(event_id,unit_id,object_type,object_id,event_type,payload,",
+   "occurred_at,recorded_at,origin,idempotency_key,contract_version,source_mode,sequence_local,device_id)",
+   "SELECT 'q026pg-DUPLICATE',unit_id,object_type,object_id,event_type,payload,occurred_at,",
+   "recorded_at,origin,idempotency_key,contract_version,source_mode,sequence_local,device_id",
+   "FROM platform.event_log WHERE event_id='q026pg-long-1'",
+   "ON CONFLICT (idempotency_key) DO NOTHING RETURNING event_id"
+  ].join(" "));
+  assert.equal(dup.length,0,"event_log accepted duplicate idempotency_key");
+  const sizeCheck=await b.cliente.query("SELECT count(*)::int AS n FROM platform.event_log");
+  assert.equal(Number(sizeCheck[0].n),N);
   await b.cliente.query("ANALYZE platform.event_log");
   async function explain(){
    return b.cliente.transaction(async tx=>{
