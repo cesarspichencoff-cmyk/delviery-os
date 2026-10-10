@@ -17,7 +17,7 @@ import { TIPOS_DA_OPERACAO_VIVA } from "../../src/platform/runtime/handler-opera
 const URL=(process.env.DELIVERYOS_PG_URL??"").trim();
 if(!URL){console.error("Q026_MVCC_BUDGET_PG_REQUIRED");process.exit(78)}
 const N=Number(process.env.Q026_MVCC_EVENTS??120000);
-assert.ok([120000,300000].includes(N),"supported isolated sizes");
+assert.ok([120000,300000,1030000].includes(N),"supported isolated sizes");
 const budgetMs=650;
 const statementTimeoutMs=15000;
 const contentionMs=200;
