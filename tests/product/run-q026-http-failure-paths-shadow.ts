@@ -167,7 +167,8 @@ void(async()=>{
     },12000);
     const active=await obs.query(
      "SELECT count(*)::int AS n FROM pg_stat_activity WHERE datname=current_database() "+
-     "AND state IN ('active','idle in transaction') AND query LIKE '%platform.event_log%'");
+     "AND state IN ('active','idle in transaction') AND query LIKE '%platform.event_log%' "+
+     "AND pid<>pg_backend_pid()");
     assert.equal(Number(active[0].n),0);
     console.log("Q026_POOL_CONTENTION_PASS "+JSON.stringify({
       pool_max:2,admission_max:4,simultaneous_admitted:4,
