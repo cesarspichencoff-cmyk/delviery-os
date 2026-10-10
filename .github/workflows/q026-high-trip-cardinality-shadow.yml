@@ -1,0 +1,66 @@
+name: q026-high-trip-cardinality-shared-pg-shadow
+# No production data: processes each create throwaway PG16 database.
+on:
+  push:
+    branches:
+      - research/q026-high-trip-cardinality-shadow-20261010
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: q026-high-cardinality-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  mixed-cardinality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    services:
+      postgres:
+        image: public.ecr.aws/docker/library/postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Install tsx only in temporary CI filesystem for Node child processes
+        run: npm install --no-save --no-package-lock --ignore-scripts --no-audit --no-fund tsx@4.23.15
+      - name: Strict typechecking
+        run: |
+          npx tsc --noEmit
+          npx tsc --noEmit --target ES2022 --module commonjs --moduleResolution node --strict --esModuleInterop --skipLibCheck --types node tests/product/run-q026-high-trip-cardinality-child.ts
+          node --check tests/product/run-q026-high-trip-cardinality-ab.cjs
+      - name: Compare 30k and 120k distinct trip objects in separate Node processes
+        shell: bash
+        run: |
+          set -o pipefail
+          node tests/product/run-q026-high-trip-cardinality-ab.cjs | tee q026-cardinality.log
+          test "$(grep -c '^Q026_HIGH_CARDINALITY_PARITY_PASS ' q026-cardinality.log)" = 2
+  regressions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm run test:platform:q016
+      - run: npm run test:platform:product
+      - run: npm run test:platform:governanca
+      - name: No PostgreSQL must fail
+        shell: bash
+        run: |
+          set +e
+          DELIVERYOS_PG_URL= node tests/product/run-q026-high-trip-cardinality-ab.cjs
+          test "$?" = 78
