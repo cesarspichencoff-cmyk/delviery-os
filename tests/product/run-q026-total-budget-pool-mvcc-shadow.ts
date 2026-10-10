@@ -169,6 +169,7 @@ void(async()=>{
     // TEST B: PostgreSQL pg_cancel_backend of an active statement inside a
     // pinned RR cursor transaction. This is not statement_timeout (PR #50).
     let cancelPid=0,cancelXmin:string|null=null,cancelFailure:unknown;
+    let cancelSignalAt=0,cancelSettledAt=0;
     const cancelStart=performance.now();
     try{
       await reader.transaction(async tx=>{
@@ -188,14 +189,17 @@ void(async()=>{
           "SELECT state,backend_xmin::text AS xmin FROM pg_stat_activity WHERE pid=$1",[cancelPid]);
         assert.equal(active[0]?.state,"active","sleep query was not active at cancel");
         assert.equal(String(active[0]?.xmin),cancelXmin);
+        cancelSignalAt=performance.now();
         const sent=await observer.query("SELECT pg_cancel_backend($1::int) AS cancelled",[cancelPid]);
         assert.equal(sent[0]?.cancelled,true,"external PG cancel did not reach reader");
         const outcome=await settled;
+        cancelSettledAt=performance.now();
         if(outcome.ok)throw Error("PG_CANCEL_DID_NOT_INTERRUPT");
         throw outcome.error;
       });
     }catch(e){cancelFailure=e}
     assert.equal(sqlCode(cancelFailure),"57014","external cancel did not emit server SQLSTATE 57014");
+    assert.ok(cancelSignalAt>0&&cancelSettledAt>=cancelSignalAt);
     const afterCancel=await observer.query(
       "SELECT backend_xmin::text AS xmin,state FROM pg_stat_activity WHERE pid=$1",[cancelPid]);
     assert.equal(afterCancel[0]?.xmin,null);
@@ -207,7 +211,8 @@ void(async()=>{
     const forensic=await lerFatosParaReplay(reader,TIPOS_DA_OPERACAO_VIVA);
     assert.equal(forensic.aptos.length,N+40);
     report.cancel_case={sqlstate:sqlCode(cancelFailure),cancel_pid:cancelPid,
-      cancellation_ms:+(performance.now()-cancelStart).toFixed(2),
+      pg_cancel_signal_to_query_settlement_ms:+(cancelSettledAt-cancelSignalAt).toFixed(2),
+      scenario_including_canonical_and_q016_replay_ms:+(performance.now()-cancelStart).toFixed(2),
       same_backend_reused:true,backend_xmin_cleared_after_rollback:true,
       post_abort_canonical_and_q016_intact:true};
     console.log("Q026_EXTERNAL_CANCEL_PASS "+JSON.stringify(report.cancel_case));
