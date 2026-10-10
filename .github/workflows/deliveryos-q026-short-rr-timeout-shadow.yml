@@ -67,9 +67,32 @@ jobs:
         run: npx tsc --noEmit --target ES2022 --module commonjs --moduleResolution node --strict --esModuleInterop --skipLibCheck --types node tests/product/run-q026-rr-timeout-recovery-shadow.ts
       - name: Real PostgreSQL server cancellation at two snapshot stages
         run: npx tsx tests/product/run-q026-rr-timeout-recovery-shadow.ts
+  timeout-total-budget-gap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: public.ecr.aws/docker/library/postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Strict typecheck: per statement timeout is not end-to-end
+        run: npx tsc --noEmit --target ES2022 --module commonjs --moduleResolution node --strict --esModuleInterop --skipLibCheck --types node tests/product/run-q026-statement-vs-transaction-budget-shadow.ts
+      - name: Real PG16 exposes no transaction deadline when each SQL command stays under 150ms
+        run: npx tsx tests/product/run-q026-statement-vs-transaction-budget-shadow.ts
   evidence:
     runs-on: ubuntu-latest
-    needs: [short-window-large-history, server-timeout-and-rollback]
+    needs: [short-window-large-history, server-timeout-and-rollback, timeout-total-budget-gap]
     steps:
       - uses: actions/download-artifact@v4
         with:
