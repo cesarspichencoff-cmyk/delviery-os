@@ -164,10 +164,9 @@ void(async()=>{
       "exactly two waiting pool.connect() must settle before HTTP deadline");
     assert.equal(slow.length,2,"exactly two active blocked SQL reads must hit HTTP deadline");
     for(const x of fast){
-      assert.equal(x.status,200,"existing unavailable-data envelope preserved");
-      assert.equal(x.body.leitura.disponivel,false,
-        "checkout timeout must NEVER become healthy zero/empty data");
-      assert.equal(x.body.leitura.motivo,"indisponivel");
+      assert.equal(x.status,503,"explicit guarded queue saturation must signal overload");
+      assert.deepEqual(x.body,{erro:"leitura_temporariamente_ocupada"});
+      assert.equal(x.headers["retry-after"],"1");
       assert.equal(x.raw.includes(db.url),false);
     }
     for(const x of slow){
@@ -186,7 +185,7 @@ void(async()=>{
     assert.equal(Number(active[0].n),0,"no orphan session after timed-out checkout");
     console.log("Q026_POOL_CHECKOUT_FAST_PASS "+JSON.stringify({
       pool_max:2,admitted_http:4,checkout_limit_ms:1000,
-      fast_unavailable:fast.length,fast_wall_ms:fast.map(x=>x.wall_ms),
+      fast_pool_overload:fast.length,fast_wall_ms:fast.map(x=>x.wall_ms),
       blocked_deadline:slow.length,blocked_wall_ms:slow.map(x=>x.wall_ms),
       fifth_status:over.status,health:health.status,
       recovered_status:recovered.status,no_orphan_sql:true,
@@ -202,18 +201,19 @@ void(async()=>{
     const health=await get(port,"/api/health");assert.equal(health.status,200);
     const statuses=await Promise.all(readers);
     const rejected=statuses.filter(x=>x.status===503&&
-      x.body.erro==="leitura_temporariamente_ocupada");
-    const checkout=statuses.filter(x=>x.status===200&&
-      x.body.leitura?.disponivel===false&&x.body.leitura?.motivo==="indisponivel");
+      x.body.erro==="leitura_temporariamente_ocupada"&&x.wall_ms<300);
+    const checkout=statuses.filter(x=>x.status===503&&
+      x.body.erro==="leitura_temporariamente_ocupada"&&x.wall_ms>=700);
     const timeouts=statuses.filter(x=>x.status===503&&
       x.body.erro==="prazo_total_excedido");
     assert.equal(rejected.length,4,
       "admission must cap at 4 even when eight requests arrive");
     assert.equal(checkout.length,2,
-      "two pg-pool waiters must settle unavailable before HTTP deadline");
+      "two pg-pool waiters must settle with retryable 503 before HTTP deadline");
     assert.equal(timeouts.length,2,
       "two active PG reads should terminate by HTTP deadline");
-    assert.ok(checkout.every(x=>x.wall_ms<2000),"checkout wait exceeded 2 seconds");
+    assert.ok(checkout.every(x=>x.wall_ms<2000 && x.headers["retry-after"]==="1"),
+      "checkout wait exceeded 2 seconds or lost Retry-After");
     assert.ok(timeouts.every(x=>x.wall_ms>=2500&&x.wall_ms<5000),
       "active reader exceeded guarded HTTP deadline");
     release();await held;
@@ -229,7 +229,7 @@ void(async()=>{
     console.log("Q026_POOL_CONTENTION_PASS "+JSON.stringify({
       pool_max:2,admission_max:4,total_simultaneous:8,
       admission_rejections:rejected.length,
-      fast_checkout_unavailable:checkout.length,
+      fast_checkout_retryable_503:checkout.length,
       active_read_deadlines:timeouts.length,
       request_wall_ms:statuses.map(x=>x.wall_ms),
       health:health.status,post_recovery_status:firstRecover.status,
