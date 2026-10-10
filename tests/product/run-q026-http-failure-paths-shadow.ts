@@ -17,7 +17,7 @@ import { foiTimeoutNaFilaDoPoolPg } from "../../src/platform/persistence/pg-pool
 const base=(process.env.DELIVERYOS_PG_URL??"").trim();
 if(!base){console.error("Q026_FAILURE_PATH_PG_REQUIRED");process.exit(78)}
 const CASE=process.env.Q026_FAILURE_PATH_CASE;
-assert.ok(CASE==="cancel_denied"||CASE==="pool_saturated"||CASE==="pool_checkout_fast"||CASE==="permission_denied");
+assert.ok(CASE==="cancel_denied"||CASE==="pool_saturated"||CASE==="pool_checkout_fast"||CASE==="permission_denied"||CASE==="queued_disconnect");
 assert.equal(foiTimeoutNaFilaDoPoolPg(new Error("timeout exceeded when trying to connect")),true);
 assert.equal(foiTimeoutNaFilaDoPoolPg(Object.assign(new Error("timeout exceeded when trying to connect"),{code:"42501"})),false);
 assert.equal(foiTimeoutNaFilaDoPoolPg(new Error("Connection terminated due to connection timeout")),false);
@@ -177,6 +177,67 @@ void(async()=>{
       elapsed_ms:response.wall_ms,postgresql_lock_wait_cleared:true,
       next_http_status:fresh.status,health:health.status,
       boundary:"disposable PG16 built-in grant revoked; test role only"
+    }));
+  }else if(CASE==="queued_disconnect"){
+    // Physical client drops its HTTP socket while its request is queued
+    // *before* a PostgreSQL lease is issued. Two long SQL reads hold all
+    // pool clients while both queued requests fill admission slots.
+    const onSql=[get(port,path),get(port,path)];
+    await deadline(async()=>await countWaiting()>=2?true:null);
+    let unexpectedResponse=false;
+    const disconnected=http.request({host:"127.0.0.1",port,path,method:"GET"});
+    const socketClosed=new Promise<void>(resolve=>{
+      disconnected.on("response",res=>{unexpectedResponse=true;res.resume();});
+      disconnected.on("error",()=>resolve());
+      disconnected.on("close",()=>resolve());
+    });
+    disconnected.end();
+    await pause(75);
+    const otherQueued=get(port,path);
+    await pause(75);
+    const full=await get(port,path);
+    assert.equal(full.status,503);
+    assert.deepEqual(full.body,{erro:"leitura_temporariamente_ocupada"});
+    assert.ok(full.wall_ms<300,"admission must reject immediately when 4 slots used");
+
+    const stopAt=performance.now();
+    disconnected.destroy();
+    await socketClosed;
+    const other=await otherQueued;
+    assert.equal(other.status,503);
+    assert.equal(other.body.erro,"leitura_temporariamente_ocupada");
+    assert.ok(other.wall_ms>=700&&other.wall_ms<2000);
+    // By 1.5 s, a disconnected queued waiter must have been removed by
+    // native pg-pool timeout; it must not tie up HTTP admission until 3 s.
+    await pause(450);
+    const replacement=await get(port,path);
+    assert.equal(replacement.status,503);
+    assert.deepEqual(replacement.body,{erro:"leitura_temporariamente_ocupada"});
+    assert.ok(replacement.wall_ms>=700&&replacement.wall_ms<2000,
+      "replacement was refused admission: disconnected checkout leaked HTTP slot");
+    const original=await Promise.all(onSql);
+    assert.ok(original.every(x=>x.status===503&&x.body.erro==="prazo_total_excedido"));
+    assert.equal(unexpectedResponse,false,"disconnected HTTP client received a fake response");
+
+    release();await held;
+    const recovered=await get(port,path);
+    assert.equal(recovered.status,200);
+    assert.equal(recovered.body.leitura.disponivel,true);
+    const active=await obs.query(
+      "SELECT count(*)::int AS n FROM pg_stat_activity WHERE datname=current_database() "+
+      "AND state IN ('active','idle in transaction') AND query LIKE '%platform.event_log%' "+
+      "AND pid<>pg_backend_pid()");
+    assert.equal(Number(active[0].n),0);
+    console.log("Q026_QUEUED_CLIENT_DISCONNECT_PASS "+JSON.stringify({
+      reader_pool_max:2,http_admission:4,initial_busy:full.status,
+      client_socket_closed:true,client_never_received_response:!unexpectedResponse,
+      disconnect_to_replacement_elapsed_ms:+(performance.now()-stopAt).toFixed(2),
+      queued_peer_status:other.status,queued_peer_ms:other.wall_ms,
+      replacement_admitted_then_backpressured:true,
+      replacement_status:replacement.status,replacement_ms:replacement.wall_ms,
+      two_active_deadlines:original.length,subsequent_read_status:recovered.status,
+      active_event_queries_after_cleanup:Number(active[0].n),
+      boundary:"SHADOW single-process localhost PG16, no production proof"
     }));
   }else if(CASE==="pool_checkout_fast"){
     // Two GETs acquire the two PG connections and block on the real table
