@@ -103,7 +103,7 @@ void(async()=>{
    const v=after.body.leitura.viagens.na_rua.find((x:any)=>x.viagem_id==="TRIP-HTTP-Q026");
    assert.ok(v,"trip missing after update");
    // Both are derived from the same snapshot; no contradiction after commit.
-   assert.equal(v.ultima_posicao_em.observado,true);
+   assert.equal(v.posicao.observado,true);
   });
   await test("04 unit filter never silently widens to all units",async()=>{
    const r=await jsonResponse(server,"/api/entregas?unidade=INEXISTENTE");
