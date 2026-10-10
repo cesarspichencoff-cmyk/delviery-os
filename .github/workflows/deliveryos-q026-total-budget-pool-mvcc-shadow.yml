@@ -1,0 +1,74 @@
+name: deliveryos-q026-total-budget-pool-mvcc-shadow
+# SHADOW only: PostgreSQL 16 disposable, no deployed runtime, schemas or production data.
+on:
+  push:
+    branches:
+      - research/deliveryos-q026-total-budget-pool-mvcc-shadow-20261010
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: q026-total-budget-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  mvcc-pool-budget:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        events: [120000, 300000, 1030000]
+    services:
+      postgres:
+        image: public.ecr.aws/docker/library/postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
+      Q026_MVCC_EVENTS: ${{ matrix.events }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Locked installation
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Typecheck pool-budget shadow
+        run: npx tsc --noEmit --target ES2022 --module commonjs --moduleResolution node --strict --esModuleInterop --skipLibCheck --types node tests/product/run-q026-total-budget-pool-mvcc-shadow.ts
+      - name: Cursor lifetime, VACUUM, concurrent writes, pool contention and pg_cancel_backend
+        shell: bash
+        run: |
+          set -o pipefail
+          npx tsx tests/product/run-q026-total-budget-pool-mvcc-shadow.ts | tee q026-total-budget.out
+          grep '^Q026_BUDGET_POOL_MVCC_PASS ' q026-total-budget.out
+          grep '^Q026_EXTERNAL_CANCEL_PASS ' q026-total-budget.out
+          grep '^Q026_TOTAL_BUDGET_MVCC_SHADOW_PASS ' q026-total-budget.out
+  regressions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Q016 forensic replay
+        run: npm run test:platform:q016
+      - name: Product regression
+        run: npm run test:platform:product
+      - name: Governance guard
+        run: npm run test:platform:governanca
+      - name: No DB must refuse rather than simulate pass
+        shell: bash
+        run: |
+          set +e
+          DELIVERYOS_PG_URL= npx tsx tests/product/run-q026-total-budget-pool-mvcc-shadow.ts
+          code=$?
+          echo "no_db_exit=$code"
+          test "$code" = 78
