@@ -236,16 +236,28 @@ export function renderProductionTicketProofV46(ticket: ProductionTicketV45): Tic
   p.line(stationTitle, "STATION");
   p.metadata(ticket.identifiers);
   p.line("--------------------------------", "DIVIDER");
+  // Visual V6.1 shows each PROVEN physical box separately. The native
+  // ESC/POS proof must not collapse three closed combos into one ambiguous box.
+  let physicalIndex = 0;
   for (const box of ticket.boxes) {
     const count = box.physical_box_count === undefined ? 1 : box.physical_box_count;
-    const countText = quantity(count, p, "BOX_COUNT");
-    if (!box.model) p.blockers.add("BOX_MODEL_UNPROVEN");
-    p.font("A");
-    p.bold(true);
-    p.line(count > 1 ? countText + "X CAIXA " + box.model : "CAIXA " + box.model, "BOX");
-    p.bold(false);
-    for (const item of box.items) p.item(item);
-    p.line("--------------------------------", "DIVIDER");
+    quantity(count, p, "BOX_COUNT");
+    if (!box.model || box.status !== "PROVEN") p.blockers.add("BOX_MODEL_OR_PROOF_MISSING");
+    const repeated = count > 1 && box.status === "PROVEN" &&
+      box.items.length === 1 && box.items[0].quantity === count;
+    if (count > 1 && !repeated) p.blockers.add("PER_PHYSICAL_BOX_DISTRIBUTION_NOT_PROVEN");
+    // This is a bounded offline preview budget, not a business quantity limit.
+    if (count > 64) p.blockers.add("OFFLINE_PREVIEW_BOX_EXPANSION_BUDGET_EXCEEDED");
+    if (count > 64 || count < 1 || !Number.isSafeInteger(count)) continue;
+    for (let i = 0; i < (repeated ? count : 1); i++) {
+      physicalIndex++;
+      p.font("A");
+      p.bold(true);
+      p.line("C" + physicalIndex + "  CAIXA " + (box.model ?? "A CONFERIR"), "BOX");
+      p.bold(false);
+      for (const item of box.items) p.item(repeated ? {...item, quantity:1} : item);
+      p.line("--------------------------------", "DIVIDER");
+    }
   }
   if (ticket.items_without_proven_box.length) {
     p.bold(true);
