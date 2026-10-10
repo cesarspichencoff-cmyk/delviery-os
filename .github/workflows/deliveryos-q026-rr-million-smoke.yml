@@ -1,0 +1,45 @@
+name: deliveryos-q026-rr-million-smoke
+on:
+  push:
+    branches:
+      - research/deliveryos-q026-rr-scale-20261010
+    paths:
+      - tests/product/run-q026-rr-million-smoke-shadow.ts
+      - .github/workflows/deliveryos-q026-rr-million-smoke.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  million-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    services:
+      postgres:
+        image: public.ecr.aws/docker/library/postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
+      Q026_RR_SCALE_EVENTS: 1030000
+      Q026_RR_SCALE_RESULT: q026-rr-million.json
+      NODE_OPTIONS: --expose-gc --max-old-space-size=4096
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Typecheck large-scale shadow
+        run: |
+          npx tsc --noEmit
+          npx tsc --noEmit --target ES2022 --module commonjs --moduleResolution node --strict --esModuleInterop --skipLibCheck --types node tests/product/run-q026-rr-million-smoke-shadow.ts
+      - name: RR consistency at 1.03M facts, one quiet and one paced append
+        run: npx tsx tests/product/run-q026-rr-million-smoke-shadow.ts
+      - uses: actions/upload-artifact@v4
+        with:
+          name: q026-rr-million-raw
+          path: q026-rr-million.json
+          if-no-files-found: error
