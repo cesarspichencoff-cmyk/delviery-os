@@ -230,7 +230,7 @@ function fixtureV2(typedRows){
  e.order={CDFILIAL:"0001",CDLOJA:"01",NRVENDAREST:"0000001111",
   NRCOMANDA:e.order.NRCOMANDA,NRCOMANDAEXT:e.order.NRCOMANDAEXT,
   IDORGCMDVENDA:"DLV_TEST",IDSTCOMANDA:"OPEN",
-  DTHRABERMESA:e.order.DTHRABERMESA,items:e.order.items,
+  DTHRABERMESA:e.order.DTHRABERMESA,items:e.order.items.map(item=>({...item,IDSTPRCOMVEN:"PENDING"})),
   observation_scan_complete:true,observation_rows:typedRows};
  const b={CDFILIAL:e.order.CDFILIAL,CDLOJA:e.order.CDLOJA,
   NRVENDAREST:e.order.NRVENDAREST,NRCOMANDA:e.order.NRCOMANDA,
