@@ -39,3 +39,24 @@ O PostgreSQL retornou `57014 query_canceled` nos dois casos; a função de leitu
 - **Portões adicionais antes de promover:** leitura compacta sob uma única snapshot e preservação rigorosa do contrato global (inclusive escopos sem viagem), memória de Node/PostgreSQL em carga representativa, cancelamento ponta a ponta no HTTP e gestão de observabilidade de `backend_xmin`/duração da transação. A decisão Q-026 de janela e retenção permanece humana e **aberta**.
 
 **Estado:** teste SHADOW `TEST_PASS`; **não `WORLD_PROVEN`**, não `DEPLOYED`, não 10/10. PR associado permanece DRAFT/HOLD.
+
+## Contraprova adicional — `statement_timeout` NÃO delimita a transação inteira
+
+Novo teste `tests/product/run-q026-statement-vs-transaction-budget-shadow.ts`, executado na **função real `lerRealidadeDeEntregas` da base PR #45** e no PostgreSQL 16 descartável. Configura `SET LOCAL statement_timeout='150ms'` apenas após o `SET TRANSACTION REPEATABLE READ, READ ONLY`; injeta **4 comandos `SELECT pg_sleep(0.09)` sequenciais**, cada um individualmente mais curto que 150ms, depois que a primeira leitura do log já estabeleceu `backend_xmin`. O observador independente comprova o mesmo snapshot em todos os quatro comandos e `backend_xmin=NULL` após COMMIT.
+
+**Prova verificável:** [job do CI `38064205091`](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38064205091) `timeout-total-budget-gap` **SUCCESS**:
+
+| Medida | Valor observado |
+| --- | ---: |
+| Timeout por comando (`statement_timeout`) | 150 ms |
+| Comandos separadamente completados sem cancelamento | 4 de 4 |
+| Pausa desejada por comando | 90 ms |
+| Pausas acumuladas realmente medidas | **365,0 ms** |
+| Leitor inteiro, com instruções artificiais | **397,2 ms** |
+| Snapshot retida entre comandos | Sim |
+| Snapshot liberada após COMMIT | Sim |
+| Resultado de 500 eventos íntegro | Sim |
+
+**Interpretação delimitada:** o cancelamento PostgreSQL individual (`57014`) e a recuperação da pool nos testes anteriores não estabelecem um prazo máximo para a soma das consultas de uma transação nem para processamento em CPU/HTTP fora dela. Nesta contraprova os quatro comandos completaram regularmente e o tempo acumulado ultrapassou **duas vezes** o timeout individual. A fixture usa pausas deliberadas e não sugere latência real. PostgreSQL 16 não deve receber configuração não prevista para contornar essa falta de prova; qualquer futuro deadline end-to-end requer desenho com cancelamento efetivo, rollback, sinalização correta ao cliente, recuperação da conexão e observabilidade, com autorização própria antes de integração.
+
+**Bloqueio objetivo de promoção:** `statement_timeout=15.000ms` atualmente configurável por comando no cliente `pg` não equivale a limite de transação completa. Não declarar "transação limitada a 15 segundos", nem aplicar arbitrariamente `60ms/150ms` ao produto. A Q-026 permanece aberta.
