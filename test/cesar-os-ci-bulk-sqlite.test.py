@@ -15,7 +15,7 @@ def load_node_plan(count=100):
 import {packWorkObservationInserts} from './tools/cesar-os-ci/d1-bulk-plan.mjs';
 const cols='observation_id source_id external_ref signal_type observed_at ingested_at domain privacy_scope truth_class authority sensitivity subject_type subject_ref fact_summary possible_commitment due_at confidence evidence_ref content_fingerprint attention_candidate metadata_json'.split(' ');
 const rows=Array.from({length:COUNT},(_,i)=>Object.fromEntries(cols.map(k=>[k,
-k==='observation_id'?'obs_'+String(i+1).padStart(16,'0'):
+k==='observation_id'?'obs_'+String(i+1).padStart(20,'0'):
 k==='source_id'?'github-actions-public-deliveryos':
 k==='domain'?'WORK':
 k==='truth_class'?'SOURCE_CLAIM':
