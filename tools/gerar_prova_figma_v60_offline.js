@@ -94,6 +94,14 @@ class Receipt {
     if(this.kind==="CONFERENCIA")
       this.text(RIGHT,this.y+12,"Op. ________",10.5,"mono",700,"end");
     this.y+=17;
+    if(this.kind==="CONFERENCIA") {
+      // Count validated product LINES, not units: 2x of one product is one line.
+      const count=Array.isArray(items)?items.length:0;
+      if(count<1)this.blockers.push("BOX_PRODUCTS_NOT_PROVEN:"+position);
+      const label="1 CAIXA | "+count+" "+(count===1?"PRODUTO":"PRODUTOS");
+      this.text(LEFT,this.y+11,label,10.1,"mono",700);
+      this.y+=17;
+    }
     for(const item of items) this.item(item);
     this.boxCount++;
     this.rule();
@@ -138,6 +146,11 @@ class Receipt {
     }
     this.rule();
   }
+  finalization() {
+    this.text(LEFT,this.y+12,"FINALIZAÇÃO: CONFERIR FICHA VALIDADA",10.1,"mono",700);
+    this.y+=19;
+    this.rule();
+  }
   finish() {
     const seq=this.ids?.tata || "---";
     this.text(RIGHT,this.y+30,seq,30,"mono",700,"end");
@@ -178,11 +191,16 @@ function makeProduction(ticket) {
 }
 function makeConference(ticket) {
   const r=new Receipt("CONFERENCIA",ticket.identifiers,"CONFERÊNCIA");
-  for(const box of ticket.boxes) r.box(box.model||"A CONFERIR",
-    box.position,box.items);
+  for(const box of ticket.boxes) {
+    if(box.status!=="PROVEN" || (box.physical_box_count??1)!==1 ||
+       !Array.isArray(box.items) || box.items.length===0)
+      r.blockers.push("CONFERENCE_BOX_MEMBERSHIP_NOT_PROVEN:"+box.position);
+    r.box(box.model||"A CONFERIR",box.position,box.items||[]);
+  }
   r.unknown(ticket.items_without_proven_box||[]);
   r.resources(ticket.bags||[],ticket.kits||[],
     ticket.accompaniments||[],ticket.warnings||[]);
+  r.finalization();
   return r.finish();
 }
 function render() {
