@@ -44,6 +44,26 @@ Após a correção inicial, foram implementados mais dois gates usando apenas Po
 
 O código Q-026 continua **DRAFT/HOLD**, sem merge, deploy ou mudança na instância real. O teste HTTP é de **servidor real local**, não prova de acesso HTTP produtivo. O alívio de retenção MVCC é estrutural e comprovado nesse fixture; custos de memória, VACUUM, leitores concorrentes numerosos e latência em milhões de fatos ainda são UNKNOWN.
 
+## Prova de carga controlada e leituras concorrentes — 10/10/2026
+
+**O que foi executado:** `tests/product/run-q026-read-concurrency-pg.ts`, com banco PostgreSQL 16 descartável, migrations reais, **8 aparelhos e 8 viagens**, cruzando 2 unidades e 2 modos de origem (`simulated` e `control`). A matriz mede **2.000 e 16.000 fatos**, com **1, 4 e 8 leituras simultâneas**, pool configurado com **4 conexões**. Usa o leitor canônico real, sem copiar o algoritmo nem acessar dados produtivos.
+
+O teste valida simultaneamente a **integridade completa das 8 viagens e seus eventos**, as contagens independentes por modo, identidade de aparelho, histórico UNKNOWN não inventado, uma transação por leitura, limite de callbacks em conexões emprestadas, e **ausência de backend ocioso em transação ou retendo `backend_xmin` depois das leituras**. Quando chegam 8 pedidos de leitura, no máximo **4 callbacks de transação** realmente usam conexão; as demais aguardam no pool.
+
+**CI final do teste de carga com contador corrigido:** [run 38064050034](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38064050034), HEAD de implementação `975a3a8e4d0930ddf5e15d27b3a8b390b53dc31a`; **6/6** cenários do stress, e demais **15/15** verificações específicas da etapa anterior, além de tipagem, Q-016, Product e governança GREEN.
+
+| Fatos | Leituras simultâneas | Tempo total da rodada | Maior latência individual | Maior espera por conexão | Pico de callbacks com conexão | RSS Node após rodada |
+|---:|---:|---:|---:|---:|---:|---:|
+| 2.000 | 1 | 37,19 ms | 37,17 ms | 2,54 ms | 1 | 99,76 MB |
+| 2.000 | 4 | 70,15 ms | 70,11 ms | 15,25 ms | 4 | 114,69 MB |
+| 16.000 | 1 | 108,75 ms | 108,74 ms | 0,31 ms | 1 | 145,14 MB |
+| 16.000 | 4 | 370,71 ms | 370,62 ms | 43,93 ms | 4 | 175,05 MB |
+| 16.000 | 8 | 661,20 ms | 661,15 ms | **445,35 ms** | 4 | **298,32 MB** |
+
+**Não interpretar como benchmark de produção.** É uma única rodada por configuração, em um runner compartilhado, com aquecimento, alocações e GC não controlados. A memória RSS é do processo Node observado **depois** da rodada, não pico exato e não comparação A/B com a base Q-016. A queda do heap no último cenário mostra ruído de coleta de lixo; não significa que o consumo tenha diminuído. O campo medido `callback_in_connection_max_ms` exclui a espera no pool e o `COMMIT` — não chama esses números de tempo total de transação. O teste não mede manutenção/efeito do VACUUM, comportamento com vários usuários reais, nem a distribuição de tamanhos do banco da operação.
+
+**Interpretação verificável:** o desenho de instantâneo único evita as contradições concorrentes testadas, preserva dados e limita callbacks com conexão às quatro disponíveis. Mas **16.000 fatos × 8 leituras** já causou espera de pool de até 445 ms e RSS após a rodada próxima de 300 MB num processo pequeno, o que torna **prematuro publicar sem um ensaio representativo de uso e sem estratégia separada de capacidade/memória**. Os PRs #37/#41 continuam intocados e a otimização de memória do #37 permanece não autorizada para merge.
+
 ## Lacunas e restrições
 
 - O handler HTTP **real** `/api/entregas` foi exercitado num servidor local contra banco **descartável**. Não foi exercitado contra **servidor HTTP de produção**, dados operacionais ou aparelho físico; o código permanece na branch, não implantado.
