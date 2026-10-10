@@ -4,8 +4,10 @@ const MAX_BYTES=65000;
 const assert=(condition,error)=>{if(!condition)throw Error(error);};
 
 export const MIGRATION_SQL=`CREATE TABLE IF NOT EXISTS ci_archive_cursors (
-  source_id TEXT PRIMARY KEY, revision INTEGER NOT NULL,
-  cursor_json TEXT NOT NULL, updated_at TEXT NOT NULL
+  source_id TEXT PRIMARY KEY CHECK(source_id='github-actions-public-deliveryos'),
+  revision INTEGER NOT NULL CHECK(revision>=1),
+  cursor_json TEXT NOT NULL CHECK(length(cursor_json)<=65000),
+  updated_at TEXT NOT NULL
 );`;
 
 export class D1CursorStore {
