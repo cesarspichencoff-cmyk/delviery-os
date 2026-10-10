@@ -71,10 +71,11 @@ void(async()=>{
     writer_ms:0,writer_commits:0,event_select_ms:0,latest_select_ms:0,
     counts_select_ms:0,max_rss_mib:0,peak_heap_mib:0,end_count:0};
    let readerPid=0,readEvents=0,startedFacts=0,pinnedXmin:string|null=null;
-   let writerTask:Promise<void>|null=null,writerError:unknown=null,writerFinishedAt=0;
+   const writerHandle={current:null as Promise<void>|null};
+   let writerError:unknown=null,writerFinishedAt=0;
    const startWrites=()=>{
      const w0=performance.now();
-     writerTask=(async()=>{
+     writerHandle.current=(async()=>{
        for(let k=0;k<WRITES;k++){
          const id="paced-"+iter+"-"+k;
          // One autocommitted INSERT per event on a DIFFERENT PostgreSQL
@@ -113,7 +114,7 @@ void(async()=>{
           if(eventSelect)startedFacts=performance.now();
           // Wait for all paced external commits BEFORE the last count SELECT;
           // the original RR snapshot must exclude them nonetheless.
-          if(countSelect && writerTask)await writerTask;
+          if(countSelect && writerHandle.current)await writerHandle.current;
           if(writerError)throw writerError;
           const t0=performance.now();
           const rows=await tx.query<R>(sql,args);
@@ -146,7 +147,7 @@ void(async()=>{
    };
    try{
      const reality=await lerRealidadeDeEntregas(intercept,{agora:NOW});
-     if(writerTask)await writerTask;
+     if(writerHandle.current)await writerHandle.current;
      assert.equal(readEvents,1);
      const trip=reality.projecoes.flatMap(p=>p.viagens).find(v=>v.trip_id==="ONE-LONG");
      assert.ok(trip);
@@ -175,7 +176,7 @@ void(async()=>{
      console.log("Q026_RR_SCALE_SAMPLE "+JSON.stringify({...s,warmup}));
    }finally{
      // Don't silently leave the writer pending if a reader validation fails.
-     if(writerTask)await writerTask.catch(()=>undefined);
+     if(writerHandle.current)await writerHandle.current.catch(()=>undefined);
    }
    global.gc?.();
   }
