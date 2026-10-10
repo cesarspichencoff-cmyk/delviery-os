@@ -353,6 +353,7 @@ void(async()=>{
         "SELECT event_id,unit_id,object_type,object_id,event_type,occurred_at,origin,",
         "device_id,sequence_local,idempotency_key,contract_version,source_mode,recorded_at,clock_trust",
         "FROM platform.event_log WHERE object_type='trip' AND object_id='Q026-ONE-LONG'",
+        "AND event_id <> 'q026-rr-incremental-append'",
         "ORDER BY occurred_at DESC, sequence_local DESC NULLS LAST, event_id DESC"
       ].join(" "));
       for(;;){
