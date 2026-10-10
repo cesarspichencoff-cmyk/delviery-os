@@ -78,7 +78,9 @@ void(async()=>{
   const initial=await get(port,"/api/entregas?unidade=ITAIM");
   assert.equal(initial.status,200);
   assert.equal(initial.body.leitura.disponivel,true);
-  assert.ok(initial.body.leitura.aparelhos.some((x:any)=>x.device_id==="Q026-HTTP-DEVICE"));
+  const beforeDevice=initial.body.leitura.aparelhos.find((x:any)=>x.device_id==="Q026-HTTP-DEVICE");
+  assert.ok(beforeDevice);
+  assert.equal(beforeDevice.ultima_posicao.observado,true);
   const health=await get(port,"/api/health");
   assert.equal(health.status,200);
   if(mode==="enabled"){
@@ -154,7 +156,9 @@ void(async()=>{
   assert.equal(fresh.body.leitura.disponivel,true);
   const dev=fresh.body.leitura.aparelhos.find((x:any)=>x.device_id==="Q026-HTTP-DEVICE");
   assert.ok(dev);
-  assert.equal(dev.fatos_por_modo.simulated,2501);
+  assert.equal(dev.ultima_posicao.observado,true);
+  assert.notEqual(dev.ultima_posicao.em,beforeDevice.ultima_posicao.em,
+    "real HTTP response did not observe committed new GPS");
   // Scope remains read-only regardless of opt-in.
   const denied=await new Promise<number>((resolve,reject)=>{
    const req=http.request({host:"127.0.0.1",port,path:"/api/entregas",method:"POST"},res=>{
@@ -164,7 +168,7 @@ void(async()=>{
   assert.equal(denied,405);
   console.log("Q026_ACTUAL_HTTP_GUARD_"+mode.toUpperCase()+"_PASS "+JSON.stringify({
    mode,server:"actual tools/product_system_server.ts",first_http_status:initial.status,
-   after_commit_http_status:fresh.status,after_commit_device_facts:dev.fatos_por_modo.simulated,
+   after_commit_http_status:fresh.status,new_gps_visible:true,
    writes_still_rejected:true,elapsed_ms:+(performance.now()-started).toFixed(2),
    boundary:"disabled by default / branch-only candidate, not deployed"
   }));
