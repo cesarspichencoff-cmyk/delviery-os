@@ -54,6 +54,11 @@ jobs:
           set -o pipefail
           npx tsx tests/product/run-q026-http-single-snapshot-pg.ts | tee q026-http.out
           grep -qx 'Q026_HTTP_SINGLE_SNAPSHOT: 6/6 PASS' q026-http.out
+      - name: Verify MVCC xmin released before projection; 1800 fact fixture
+        run: |
+          set -o pipefail
+          npx tsx tests/product/run-q026-transaction-window-pg.ts | tee q026-mvcc-window.out
+          grep -qx 'Q026_TRANSACTION_WINDOW: 3/3 PASS' q026-mvcc-window.out
       - name: Without PostgreSQL the suite must exit 78 (not fake PASS)
         run: |
           set +e
