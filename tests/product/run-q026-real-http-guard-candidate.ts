@@ -8,7 +8,7 @@ import assert from "node:assert/strict";
 import http from "node:http";
 import { performance } from "node:perf_hooks";
 import { bancoIsolado } from "../../src/platform/banco-isolado";
-import type { SqlRow } from "../../src/platform/persistence/sql-client";
+import { createPgClient, type SqlRow } from "../../src/platform/persistence/sql-client";
 import { lerFatosParaReplay } from "../../src/platform/projections/replay-do-event-log";
 import { TIPOS_DA_OPERACAO_VIVA } from "../../src/platform/runtime/handler-operacao-viva";
 
@@ -16,6 +16,8 @@ const url=(process.env.DELIVERYOS_PG_URL??"").trim();
 if(!url){console.error("Q026_ACTUAL_HTTP_PG_REQUIRED");process.exit(78)}
 const mode=process.env.Q026_ACTUAL_HTTP_MODE;
 assert.ok(mode==="enabled"||mode==="disabled","mode must be enabled or disabled");
+const roleMode=process.env.Q026_ACTUAL_HTTP_DB_ROLE??"admin";
+assert.ok(roleMode==="admin"||roleMode==="reader","unsupported test DB role");
 const ms=3000;
 const pause=(m:number)=>new Promise<void>(resolve=>setTimeout(resolve,m));
 const started=performance.now();
@@ -62,7 +64,34 @@ void(async()=>{
    "'device','q026-real-route-'||g,'gps_batch_received@1.0.0','simulated',g,'Q026-HTTP-DEVICE','trusted'",
    "FROM generate_series(1,2500) AS g"
   ].join(" "));
-  process.env.DELIVERYOS_DATABASE_URL=db.url;
+  // A disposable PostgreSQL-only role with *only* SELECT + schema usage.
+  // This tests real pg_cancel_backend permissions under its own DB identity.
+  // The role is cluster-scoped but the CI PostgreSQL container is ephemeral.
+  let runtimeUrl=db.url;
+  if(roleMode==="reader"){
+    await db.cliente.query("CREATE ROLE q026_http_reader LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION");
+    await db.cliente.query(`GRANT CONNECT ON DATABASE ${db.nome} TO q026_http_reader`);
+    await db.cliente.query("GRANT USAGE ON SCHEMA identity, platform TO q026_http_reader");
+    await db.cliente.query("GRANT SELECT ON identity.device, platform.event_log TO q026_http_reader");
+    const parsed=new URL(db.url);parsed.username="q026_http_reader";
+    runtimeUrl=parsed.toString();
+    const least=await createPgClient({url:runtimeUrl,max:1});
+    try{
+      const who=await least.query("SELECT current_user AS name");
+      assert.equal(who[0].name,"q026_http_reader");
+      let rejected:unknown=null;
+      try{await least.query(
+        "INSERT INTO identity.unit(unit_id,display_name) VALUES ('ILLEGAL','Illegal')"
+      )}catch(e){rejected=e}
+      assert.ok(rejected);
+      assert.equal((rejected as {code?:string}).code,"42501",
+        "least-privilege role unexpectedly could write");
+      console.log("Q026_ACTUAL_HTTP_LEAST_PRIVILEGE_ROLE_PASS "+JSON.stringify({
+        role:"q026_http_reader",non_superuser:true,write_denied_sqlstate:"42501"
+      }));
+    }finally{await least.close()}
+  }
+  process.env.DELIVERYOS_DATABASE_URL=runtimeUrl;
   if(mode==="enabled"){
    process.env.DELIVERYOS_ENTREGAS_MAX_INFLIGHT="1";
    process.env.DELIVERYOS_ENTREGAS_RR_DEADLINE_MS=String(ms);
@@ -172,7 +201,7 @@ void(async()=>{
   assert.equal(fatosQ016.aptos.length,2501,
     "Q016 forensic replay was mutated after HTTP abort/deadline");
   console.log("Q026_ACTUAL_HTTP_GUARD_"+mode.toUpperCase()+"_PASS "+JSON.stringify({
-   mode,server:"actual tools/product_system_server.ts",first_http_status:initial.status,
+   mode,role:roleMode,server:"actual tools/product_system_server.ts",first_http_status:initial.status,
    after_commit_http_status:fresh.status,new_gps_visible:true,
    writes_still_rejected:true,q016_replay_count:fatosQ016.aptos.length,elapsed_ms:+(performance.now()-started).toFixed(2),
    boundary:"disabled by default / branch-only candidate, not deployed"
