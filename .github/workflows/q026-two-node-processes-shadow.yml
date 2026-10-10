@@ -32,6 +32,9 @@ jobs:
         with:
           node-version: "22"
       - run: npm ci --ignore-scripts --no-audit --no-fund
+      # npx tsx uses a temporary cache; fork() must resolve --import tsx locally.
+      # CI-only, no package.json/package-lock modifications or new service.
+      - run: npm install --no-save --no-package-lock --ignore-scripts --no-audit --no-fund tsx@4.23.15
       - name: Strict compile of two-node-process fixture and product code
         run: |
           npx tsc --noEmit
