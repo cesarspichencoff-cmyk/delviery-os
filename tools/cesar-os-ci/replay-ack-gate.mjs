@@ -20,9 +20,10 @@ export async function commitAfterReceipts(plan,{intents,receiptFor,store}={}){
       /^[a-f0-9]{64}$/.test(x.snapshot_sha256)&&
       Number.isSafeInteger(x.record_count)&&x.record_count>=0&&x.record_count<=100),
     'receipt_gate_archive_manifest_invalid');
+  const needsReceipt=new Set(plan.new_archive_entries.filter(x=>x.record_count>0).map(x=>x.archive_path));
   const assigned=new Map();
   for(const item of intents){
-    assert(item&&expected.has(item.archive_path)&&!assigned.has(item.archive_path)&&
+    assert(item&&needsReceipt.has(item.archive_path)&&!assigned.has(item.archive_path)&&
       item.source_id===SOURCE&&typeof item.batch_id==='string'&&BATCH.test(item.batch_id)&&
       Number.isSafeInteger(item.items_expected)&&item.items_expected>=0&&item.items_expected<=100&&
       item.items_expected===manifest.get(item.archive_path)?.record_count&&
@@ -30,9 +31,11 @@ export async function commitAfterReceipts(plan,{intents,receiptFor,store}={}){
       'receipt_gate_intent_invalid');
     assigned.set(item.archive_path,item);
   }
-  assert(assigned.size===expected.size,'receipt_gate_incomplete_intents');
+  assert(assigned.size===needsReceipt.size,'receipt_gate_incomplete_intents');
   const verified=[];
+  let empty_archives_verified=0;
   for(const path of plan.new_archive_paths){
+    if(manifest.get(path).record_count===0){empty_archives_verified++;continue;}
     const intent=assigned.get(path);
     const receipt=await receiptFor(intent.batch_id);
     assert(receipt?.schema==='cesar-os-work-batch-receipt-read-v1'&&
@@ -51,7 +54,7 @@ export async function commitAfterReceipts(plan,{intents,receiptFor,store}={}){
   const saved=await store.compareAndSwap(plan.expected_previous_revision,plan.cursor);
   if(saved?.status!=='COMMITTED'||saved.revision!==plan.cursor.revision)
     return {status:'CURSOR_CAS_CONFLICT',acknowledged:verified.length,cursor_written:false};
-  return {status:'RECEIPTS_VERIFIED_CURSOR_COMMITTED',
-    source_id:SOURCE,acknowledged:verified.length,cursor_revision:saved.revision,
+  return {status:verified.length?'RECEIPTS_VERIFIED_CURSOR_COMMITTED':'EMPTY_ARCHIVES_CURSOR_COMMITTED',
+    source_id:SOURCE,acknowledged:verified.length,empty_archives_verified,cursor_revision:saved.revision,
     cursor_written:true,external_effect_authorized:false};
 }
