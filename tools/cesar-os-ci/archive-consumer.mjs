@@ -20,7 +20,7 @@ const stamp=(date)=>{
   assert(typeof date==='string'&&ISO.test(date)&&Number.isFinite(Date.parse(date))&&new Date(date).toISOString()===date,'invalid_utc_iso');
   return Date.parse(date);
 };
-const digest=x=>createHash('sha256').update(JSON.stringify(x)).digest('hex');
+const digestBytes=bytes=>createHash('sha256').update(bytes).digest('hex');
 export const gitBlobSha=bytes=>createHash('sha1').update('blob '+bytes.length+'\0').update(bytes).digest('hex');
 const pathForDay=date=>'ci-snapshots/deliveryos/archive/'+date.slice(0,4)+'/'+date.slice(5,7)+'/'+date.slice(8,10);
 const API='https://api.github.com/repos/'+REPO;
@@ -31,7 +31,7 @@ export function verifyHorizon(start,end,{now=new Date()}={}){
   return {start,end,startMs:a,endMs:b};
 }
 
-export function validateArchive(snapshot,expectedPath){
+export function validateArchive(snapshot,expectedPath,{rawBytes=null}={}){
   const path=archivePathFor(snapshot); // existing producer identity/limits validator
   assert(path===expectedPath,'archive_path_mismatch');
   assert(String(snapshot.repository_id)===REPO_ID&&String(snapshot.repository_owner_id)===OWNER_ID,'archive_identity_mismatch');
@@ -52,7 +52,14 @@ export function validateArchive(snapshot,expectedPath){
     assert(Number.isFinite(created)&&Number.isFinite(updated)&&created>=start-1000&&created<=end+1000&&
       updated>=created&&updated<=end+60000,'archive_run_time_invalid');
   }
-  return {path,hash:digest(snapshot),snapshot};
+  // The v2 fingerprint identifies the exact Git file bytes, not a reserialized JSON object.
+  const bytes=rawBytes===null?Buffer.from(JSON.stringify(snapshot)+'\n','utf8'):rawBytes;
+  assert(bytes instanceof Uint8Array&&bytes.byteLength>0&&bytes.byteLength<=100000,'archive_bytes_invalid');
+  let parsed;
+  try{parsed=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes));}
+  catch{throw Error('archive_bytes_json_invalid');}
+  assert(JSON.stringify(parsed)===JSON.stringify(snapshot),'archive_bytes_payload_mismatch');
+  return {path,hash:digestBytes(bytes),snapshot};
 }
 
 export function checkpointShape(value){
@@ -76,8 +83,8 @@ export function planReplay(archives,{start,end,cursor=null,now=new Date()}={}){
   assert(Array.isArray(archives)&&archives.length<=MAX_ARCHIVES,'archive_count_invalid');
   const prev=checkpointShape(cursor);
   const byPath=new Map();
-  for(const {path,snapshot} of archives){
-    const verified=validateArchive(snapshot,path);
+  for(const {path,snapshot,rawBytes=null} of archives){
+    const verified=validateArchive(snapshot,path,{rawBytes});
     const other=byPath.get(path);
     assert(!other||other.hash===verified.hash,'archive_path_collision');
     byPath.set(path,verified);
@@ -168,8 +175,8 @@ export async function discoverArchiveEvidence(token,{start,end,now=new Date(),fe
     assert(gitBlobSha(bytes)===item.sha,'archive_blob_sha_mismatch');
     let snapshot;
     try{snapshot=JSON.parse(bytes.toString('utf8'));}catch{throw Error('archive_json_invalid');}
-    validateArchive(snapshot,item.path);
-    snapshots.push({path:item.path,snapshot});
+    validateArchive(snapshot,item.path,{rawBytes:bytes});
+    snapshots.push({path:item.path,snapshot,rawBytes:bytes});
   }
   return {snapshots,days_missing:daysMissing,source_id:SOURCE,complete_claimed:false};
 }
