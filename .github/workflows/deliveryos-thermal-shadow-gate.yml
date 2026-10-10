@@ -33,6 +33,8 @@ jobs:
         run: npm run typecheck
       - name: Operational ticket semantic projection V4.5
         run: npm run verificar:tickets-operacionais-v45
+      - name: Conference proven box grouping and finishing V6.2 (offline)
+        run: node tools/verificar_agrupamento_conferencia_v62.js
       - name: Item quantity integrity V5.9
         run: npm run verificar:quantidades-termicas-v59
       - name: Archived tickets V4.6
