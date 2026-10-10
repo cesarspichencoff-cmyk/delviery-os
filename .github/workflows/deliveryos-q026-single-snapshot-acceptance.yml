@@ -59,6 +59,11 @@ jobs:
           set -o pipefail
           npx tsx tests/product/run-q026-transaction-window-pg.ts | tee q026-mvcc-window.out
           grep -qx 'Q026_TRANSACTION_WINDOW: 3/3 PASS' q026-mvcc-window.out
+      - name: Load read-only 2k/16k facts and 1/4/8 concurrent readers (PG16)
+        run: |
+          set -o pipefail
+          npx tsx tests/product/run-q026-read-concurrency-pg.ts | tee q026-read-concurrency.out
+          grep -qx 'Q026_READ_CONCURRENCY: 6/6 PASS' q026-read-concurrency.out
       - name: Without PostgreSQL the suite must exit 78 (not fake PASS)
         run: |
           set +e
