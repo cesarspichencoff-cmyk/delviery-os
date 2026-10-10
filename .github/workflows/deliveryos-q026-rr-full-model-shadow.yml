@@ -36,7 +36,7 @@ jobs:
       - name: TypeScript project
         run: npx tsc --noEmit
       - name: Shadow test typecheck
-        run: npx tsc --noEmit --target ES2022 --module commonjs --moduleResolution node --strict --esModuleInterop --skipLibCheck --types node tests/product/run-q026-rr-full-model-combination-shadow.ts
+        run: npx tsc --noEmit --target ES2022 --module commonjs --moduleResolution node --strict --esModuleInterop --skipLibCheck --types node tests/product/run-q026-rr-full-model-shadow.ts
       - name: Canonical Q016 regression
         run: npm run test:platform:q016
       - name: Product regression
@@ -47,13 +47,13 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          npx tsx tests/product/run-q026-rr-full-model-combination-shadow.ts | tee q026-rr-incremental.out
+          npx tsx tests/product/run-q026-rr-full-model-shadow.ts | tee q026-rr-incremental.out
           grep '^Q026_RR_FULL_MODEL_PASS ' q026-rr-incremental.out
       - name: Fail closed without PostgreSQL
         shell: bash
         run: |
           set +e
-          DELIVERYOS_PG_URL= npx tsx tests/product/run-q026-rr-full-model-combination-shadow.ts
+          DELIVERYOS_PG_URL= npx tsx tests/product/run-q026-rr-full-model-shadow.ts
           code=$?
           echo "no_db_exit=$code"
           test "$code" = 78
