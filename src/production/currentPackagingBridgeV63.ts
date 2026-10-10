@@ -25,7 +25,8 @@ export interface MotorOutputV63 {
     products:Array<{name:string;quantity:number}>;complement_status?:string|null;
   }>;
   has_unknown:boolean; total_items:number;
-  bags:{size?:Size|null;status:string;exact_bag_count?:number|null};
+  bags:{size?:Size|null;status:string;size_status?:string;
+    exact_bag_count?:number|null;exact_bag_count_status?:string};
 }
 export interface MotorKitOutputV63 {
   status:string;kits:Array<{kit:string;quantidade:number}>;
@@ -130,7 +131,8 @@ export function bridgeCurrentPackagingV63(
   }
   if(accounted.size!==sources.length)issues.add("NOT_ALL_SOURCE_ITEMS_ACCOUNTED_FOR");
   const bags=output.bags;
-  if(bags.status!=="FACT"||!positive(bags.exact_bag_count)||
+  if(!PROVEN.has(bags.status)||bags.size_status!=="FACT"||
+     bags.exact_bag_count_status!=="FACT"||!positive(bags.exact_bag_count)||
      !["P","M","G"].includes(String(bags.size)))
     issues.add("EXTERNAL_BAG_SIZE_OR_COUNT_NOT_PROVEN");
   if(kits.status!=="FACT"||kits.kits.some(k=>!canon(k.kit)||!positive(k.quantidade)))
