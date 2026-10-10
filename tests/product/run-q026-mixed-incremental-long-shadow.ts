@@ -290,6 +290,48 @@ void(async()=>{
     })),"ALL UI projection fields differ from Q016 canonical result");
 
 
+    // Contraprova de ordem: em vez da ordem física do cursor anterior,
+    // entregar a MESMA viagem longa em ordem cronológica INVERTIDA. Se o
+    // redutor depender de arrival order, ultimo device/position/state muda.
+    let inverso:CompactTrip|null=null;
+    let inverseSeen=0,inverseBatches=0,inverseMax=0;
+    await b.cliente.transaction(async tx=>{
+      await tx.query("SET TRANSACTION READ ONLY");
+      await tx.query([
+        "DECLARE q026_inverse NO SCROLL CURSOR FOR",
+        "SELECT event_id,unit_id,object_type,object_id,event_type,occurred_at,origin,",
+        "device_id,sequence_local,idempotency_key,contract_version,source_mode,recorded_at,clock_trust",
+        "FROM platform.event_log WHERE object_type='trip' AND object_id='Q026-ONE-LONG'",
+        "ORDER BY occurred_at DESC, sequence_local DESC NULLS LAST, event_id DESC"
+      ].join(" "));
+      for(;;){
+        const rows=await tx.query("FETCH FORWARD 257 FROM q026_inverse");
+        if(!rows.length)break;
+        inverseBatches++;inverseMax=Math.max(inverseMax,rows.length);
+        for(const row of rows){
+          const e=fromRow(row);
+          assert.ok(e && e.trip_id==="Q026-ONE-LONG");
+          if(!inverso)inverso=new CompactTrip(e);
+          inverso.accept(e);
+          inverseSeen++;
+        }
+      }
+      await tx.query("CLOSE q026_inverse");
+    });
+    assert.equal(inverseSeen,LONG);
+    assert.ok(inverseBatches>=Math.ceil(LONG/257));
+    assert.ok(inverseMax<=257);
+    assert.ok(inverso);
+    const inverted:ViagemProjetada=(inverso as CompactTrip).result(agora);
+    const referenceLong=original.projecoes.flatMap(p=>p.viagens)
+      .find(v=>v.trip_id==="Q026-ONE-LONG");
+    assert.ok(referenceLong);
+    assert.deepEqual(strip(inverted),strip(referenceLong),
+      "120k eventos em ordem inversa mudaram o resultado da viagem");
+    assert.notDeepEqual(strip({...inverted,device_id:"DISPOSITIVO-ERRADO"}),strip(referenceLong),
+      "mutante de desempate do ultimo device nao foi detectado");
+    ok("ordem cronologica inversa de 120k fatos + mutante device detectados");
+
     for(const unit of [null,"ITAIM","LAB-BANCADA","SEM-UNIDADE"]){
       const opts={unidade:unit};
       const baseline=entregasVM(snap,agora.toISOString(),null,{disponivel:true,realidade:original},opts);
