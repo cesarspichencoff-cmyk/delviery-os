@@ -28,7 +28,7 @@ void(async()=>{
   await b.cliente.query([
    "INSERT INTO platform.event_log(event_id,unit_id,object_type,object_id,event_type,payload,",
    "occurred_at,recorded_at,origin,idempotency_key,contract_version,source_mode,sequence_local,device_id,clock_trust)",
-   "SELECT 'time-'+g,'ITAIM','trip','T-SAFE','gps_batch_received','{}'::jsonb,",
+   "SELECT 'time-'||g,'ITAIM','trip','T-SAFE','gps_batch_received','{}'::jsonb,",
    "TIMESTAMPTZ '2026-10-10T12:00:00Z'+g*interval '0.01 second',",
    "TIMESTAMPTZ '2026-10-10T12:00:00Z'+g*interval '0.01 second',",
    "'device','time-key-'||g,'gps_batch_received@1.0.0','simulated',g,'DEV-1','trusted'",
