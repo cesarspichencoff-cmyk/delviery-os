@@ -63,10 +63,10 @@ jobs:
             if(f.N!==n||f.measured!==12||f.results.length!==12||f.committed_append_events!==14||
                !f.all_reads_snapshot_consistent||!f.backend_xmin_released_each_read)
               throw Error('Missing proof '+n);
-            if(f.results.some(r=>r.events<n||r.wall_ms<=0||r.xmin_age_ms<=0||r.writer_ms<=0))
+            if(f.results.some(r=>r.events<n||r.wall_ms<=0||r.xmin_age_ms<=0||r.snapshot_upper_ms<r.xmin_age_ms||r.writer_ms<=0))
               throw Error('Invalid timings/snapshot '+n);
             console.log('Q026_RR_DURATION_PAIRED_EVIDENCE_PASS',JSON.stringify({
-              n,measured:f.measured,wall_ms:f.wall_ms,xmin_age_ms:f.xmin_age_ms,
+              n,measured:f.measured,wall_ms:f.wall_ms,xmin_age_ms:f.xmin_age_ms,snapshot_upper_ms:f.snapshot_upper_ms,
               writer_ms:f.writer_ms,query_ms:f.event_query_ms,
               boundary:'synthetic isolated PostgreSQL; sample quantiles not production SLOs'
             }));
