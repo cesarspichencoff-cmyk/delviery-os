@@ -41,8 +41,8 @@ jobs:
       - name: Mixed two-unit, three-mode UNKNOWN UI + Q026 PostgreSQL adversarial regression
         run: |
           # Prova diferencial Q026 usa git show de commit de referencia d0716fd.
-          # actions/checkout tem fetch-depth=1: buscar base exata antes do teste.
-          git fetch --no-tags --depth=1 origin d0716fda380fc66cecfd791593cb6cc8c017b37a
+          # Histórico inteiro checkout@v4; garantir presença do commit original do teste.
+          git fetch --no-tags origin d0716fda380fc66cecfd791593cb6cc8c017b37a
           npx tsx tests/product/run-q026-compact-full-ui-shadow.ts
           npx tsx tests/product/run-q026-replay-adversarial-pg-tests.ts
       - name: Existing Entregas reader contract
@@ -53,9 +53,9 @@ jobs:
           npm run test:platform:governanca > "$RUNNER_TEMP/candidate-governanca.log" 2>&1
           candidate_status=$?
           set -e
-          # checkout@v4 fetch-depth=1: recuperar explicitamente commit imutavel
+          # checkout@v4 fetch-depth=0: recuperar commit imutavel sem refazer shallow
           # da integracao antes de worktree, sem modificar branches remotas.
-          git fetch --no-tags --depth=1 origin 99b0c72e6a254c68358767b5addffe673707d934
+          git fetch --no-tags origin 99b0c72e6a254c68358767b5addffe673707d934
           git worktree add --detach "$RUNNER_TEMP/q026-base" 99b0c72e6a254c68358767b5addffe673707d934
           ln -s "$GITHUB_WORKSPACE/node_modules" "$RUNNER_TEMP/q026-base/node_modules"
           set +e
