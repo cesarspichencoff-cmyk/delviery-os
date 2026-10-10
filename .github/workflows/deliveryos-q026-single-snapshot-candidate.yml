@@ -38,6 +38,9 @@ jobs:
         run: npx tsx tests/product/run-entregas-servidor-pg-tests.ts
       - name: Mixed two-unit, three-mode UNKNOWN UI + Q026 PostgreSQL adversarial regression
         run: |
+          # Prova diferencial Q026 usa git show de commit de referencia d0716fd.
+          # actions/checkout tem fetch-depth=1: buscar base exata antes do teste.
+          git fetch --no-tags --depth=1 origin d0716fda380fc66cecfd791593cb6cc8c017b37a
           npx tsx tests/product/run-q026-compact-full-ui-shadow.ts
           npx tsx tests/product/run-q026-replay-adversarial-pg-tests.ts
       - name: Existing Entregas reader contract
