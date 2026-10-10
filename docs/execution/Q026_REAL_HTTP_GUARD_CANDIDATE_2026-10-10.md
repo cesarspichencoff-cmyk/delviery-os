@@ -43,3 +43,19 @@ O primeiro run **#38087931118 FALHOU** porque o teste lia `fatos_por_modo` (um c
 5. HTTP/Preview, testes físicos, critérios operacionais, autorização humana para promoção.
 
 **Q-026 OPEN.** **CANDIDATE NOT PROVEN IN PRODUCTION**. Sem merge/deploy/main/integração/dados reais/migração/retention/gasto novo.
+
+## Prova adicional: role PostgreSQL de privilégios mínimos
+
+**[CI #38088254650](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38088254650) — SUCCESS 4/4 jobs**, HEAD `5d4a8fbb`. A matriz ampliada repete a rota real em **enabled/admin**, **enabled/reader**, **disabled/admin**, mais Q-016/Product/governança.
+
+No teste `enabled/reader`, o banco PostgreSQL 16 temporário cria a role **LOGIN, NOSUPERUSER, NOCREATEDB, NOCREATEROLE, NOREPLICATION**, com `USAGE` nos schemas `identity/platform` e `SELECT` apenas nas tabelas `identity.device` e `platform.event_log`. A própria conexão autenticada confirma `current_user=q026_http_reader`. INSERT em `identity.unit` é recusado com SQLSTATE **42501**; não existe concessão de INSERT, UPDATE, DELETE nem `pg_signal_backend`.
+
+Apesar disso, a mesma role consegue cancelar **sua própria consulta** de longa duração através da conexão independente de mesmo usuário, sem superusuário. Provas:
+- Socket HTTP encerrado: `backend_xmin` liberado, PostgreSQL retorna a `idle` em **43,00 ms** (uma amostra).
+- Deadline de 3000 ms: 503 após **3001,90 ms**, backend liberado e PID reutilizado.
+- Seis concorrentes rejeitados, health 200, leitura nova 200 após commit, replay Q-016 com **2.501 eventos** íntegros.
+- Role administradora e flag desligada passam separadamente.
+
+A conta real de operação pode ter política de autenticação/TLS diferente; esta prova apenas indica que **o mecanismo PostgreSQL não exige superusuário** quando o mesmo usuário cancela sua própria sessão. Não usar esta role sintética em banco operacional e não supor que o usuário real já tenha exatamente essas permissões.
+
+**Nova fronteira:** permanece sem prova de memória incremental na rota real em escala milionária, p95/p99, pool checkout sob saturação, falha do cancelador, timeouts durante CPU síncrona, Preview e dispositivos. Nenhum merge/deploy autorizado.
