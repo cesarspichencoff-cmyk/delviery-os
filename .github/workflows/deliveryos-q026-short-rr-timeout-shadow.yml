@@ -86,7 +86,7 @@ jobs:
         with:
           node-version: '22'
       - run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Strict typecheck: per statement timeout is not end-to-end
+      - name: "Strict typecheck: per statement timeout is not end-to-end"
         run: npx tsc --noEmit --target ES2022 --module commonjs --moduleResolution node --strict --esModuleInterop --skipLibCheck --types node tests/product/run-q026-statement-vs-transaction-budget-shadow.ts
       - name: Real PG16 exposes no transaction deadline when each SQL command stays under 150ms
         run: npx tsx tests/product/run-q026-statement-vs-transaction-budget-shadow.ts
