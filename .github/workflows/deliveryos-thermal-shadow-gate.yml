@@ -44,6 +44,8 @@ jobs:
         run: node tools/verificar_ingresso_leitor_v66.js
       - name: Stable Windows reader event/decision pairing V6.8 (offline)
         run: node tools/verificar_par_evento_leitor_v68.js
+      - name: Passive real-file reader audit V6.9 (offline fixtures, no effects)
+        run: node tools/verificar_auditoria_leitor_v69.js
       - name: Item quantity integrity V5.9
         run: npm run verificar:quantidades-termicas-v59
       - name: Archived tickets V4.6
