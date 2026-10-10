@@ -45,3 +45,30 @@ console.log(JSON.stringify({
   db_writes:0,cursor_persisted:false,
   lifecycle_updates_complete:false,continuity_complete:false
 }));
+
+
+// Read-only rate-limit visibility. A positive reading is NOT schedule authorization.
+const quotaResponse=await fetch('https://api.github.com/rate_limit',{
+  method:'GET',redirect:'manual',
+  headers:{
+    accept:'application/vnd.github+json',
+    'x-github-api-version':'2022-11-28',
+    authorization:'Bearer '+token,
+    'user-agent':'cesar-os-ci-review-read-only'
+  }
+});
+if(quotaResponse.ok&&!quotaResponse.redirected){
+  const quota=await quotaResponse.json();
+  const limit=Number(quota.resources?.core?.limit);
+  const remaining=Number(quota.resources?.core?.remaining);
+  if(Number.isSafeInteger(limit)&&Number.isSafeInteger(remaining)&&remaining>=0){
+    console.log(JSON.stringify({
+      status:'GITHUB_CORE_QUOTA_OBSERVED',
+      core_limit:limit,core_remaining:remaining,
+      estimate_full_window_gets:228,
+      estimate_below_observed_remaining:remaining>=228,
+      recurring_execution_authorized:false,
+      db_writes:0
+    }));
+  }else console.log(JSON.stringify({status:'GITHUB_CORE_QUOTA_UNKNOWN',recurring_execution_authorized:false}));
+}else console.log(JSON.stringify({status:'GITHUB_CORE_QUOTA_UNAVAILABLE',recurring_execution_authorized:false}));
