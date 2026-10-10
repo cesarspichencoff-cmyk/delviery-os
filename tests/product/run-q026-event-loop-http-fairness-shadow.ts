@@ -155,6 +155,34 @@ void(async()=>{
   console.log("Q026_EVENT_LOOP_HTTP_SHADOW_MEASURED "+JSON.stringify(metrics));
  }finally{
   if(srv)await new Promise<void>(r=>srv!.close(()=>r()));
+  if(budgetMs===1000 && srv){
+    // HTTP 503 is an EARLY response; the SQL transaction may still be
+    // rolling back after its socket ended. DROP DATABASE FORCE too early
+    // kills a BORROWED pg.Client (57P01), creating an unrelated unhandled
+    // client-error fixture crash. Require confirmed cleanup first; never
+    // silently turn incomplete rollback into a successful measurement.
+    const waitStart=performance.now();
+    let consecutiveIdle=0;
+    let finalBusy=-1;
+    while(performance.now()-waitStart<8000){
+      const result=await db.cliente.query(
+        "SELECT count(*)::int AS n FROM pg_stat_activity "+
+        "WHERE datname=current_database() AND pid<>pg_backend_pid() "+
+        "AND application_name='deliveryos' AND state<>'idle'");
+      finalBusy=Number(result[0].n);
+      if(finalBusy===0)consecutiveIdle++;else consecutiveIdle=0;
+      if(consecutiveIdle>=2)break;
+      await pause(100);
+    }
+    assert.ok(consecutiveIdle>=2,
+      "HTTP responded, but PostgreSQL reader/rollback remained active beyond 8s");
+    await pause(150);
+    console.log("Q026_SHORT_DEADLINE_POOL_DRAIN_PASS "+JSON.stringify({
+      events:N,reader:variant,busy_after_cleanup:finalBusy,
+      confirmed_idle_twice:true,drain_wait_ms:+(performance.now()-waitStart).toFixed(2),
+      boundary:"fixture waits for borrowed SQL clients before destructive DB cleanup"
+    }));
+  }
   await db.descartar();
  }
 })().catch(e=>{console.error("Q026_EVENT_LOOP_HTTP_SHADOW_FAILED",e);process.exitCode=1});
