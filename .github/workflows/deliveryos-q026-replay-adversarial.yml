@@ -25,8 +25,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: commit pinado do PR #31 (b20a847), se ainda existir
-        run: git fetch --no-tags origin b20a847ef3e838dba69f1997e837c32faa66d24f || echo "b20a847 indisponivel — a prova declara PULADO para o PR #31"
+      - name: commit pinado do PR 31 (b20a847), se ainda existir
+        run: git fetch --no-tags origin b20a847ef3e838dba69f1997e837c32faa66d24f || echo "b20a847 indisponivel, a prova declara PULADO para o PR 31"
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
@@ -41,11 +41,11 @@ jobs:
           tests/product/q026-bench-filho.ts tests/product/run-q026-replay-adversarial-tests.ts
           tests/product/run-q026-replay-adversarial-mutacoes.ts tests/product/run-q026-replay-adversarial-pg-tests.ts
           tests/product/run-q026-replay-benchmark.ts
-      - name: equivalencia adversarial contra d0716fd e PR #31
+      - name: equivalencia adversarial contra d0716fd e PR 31
         run: npx tsx tests/product/run-q026-replay-adversarial-tests.ts
       - name: mutantes da prova de equivalencia (zero cegos)
         run: npx tsx tests/product/run-q026-replay-adversarial-mutacoes.ts
-      - name: contraexemplos de janela S1-S8 (PR #29)
+      - name: contraexemplos de janela S1-S8 (PR 29)
         run: npx tsx tests/product/run-q026-window-shadow-tests.ts
       - name: suites que exercitam a projecao
         run: |
@@ -118,7 +118,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: commit pinado do PR #31 (b20a847), se ainda existir
+      - name: commit pinado do PR 31 (b20a847), se ainda existir
         run: git fetch --no-tags origin b20a847ef3e838dba69f1997e837c32faa66d24f || echo "b20a847 indisponivel"
       - uses: actions/setup-node@v4
         with:
