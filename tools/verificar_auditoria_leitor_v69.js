@@ -66,6 +66,42 @@ check("tampering with a decision after fingerprint creation is detected",()=>{
  assert.equal(r.decision_ready,1);
  assert.equal(r.both_ready_for_existing_shadow,0);
 });
+check("both ready flags with blockers are not a verified shadow pair",()=>{
+ const f=fixture(),ep=path.join(f.events,f.filename),
+   dp=path.join(f.decisions,f.filename.replace(".json",".decision.json"));
+ const e=JSON.parse(fs.readFileSync(ep));
+ e.ready_for_downstream_shadow=true;fs.writeFileSync(ep,JSON.stringify(e));
+ const d=JSON.parse(fs.readFileSync(dp));
+ d.ready=true;fs.writeFileSync(dp,JSON.stringify(d));
+ const r=audit(f.events,f.decisions,f.shift);
+ assert.equal(r.both_ready_flags_only,1);
+ assert.equal(r.untrusted_ready_claims,1);
+ assert.equal(r.both_ready_for_existing_shadow,0);
+ assert.equal(r.latest_pair_summaries[0].status,"BLOCKED");
+});
+check("both ready flags with a tampered fingerprint are not a verified shadow pair",()=>{
+ const f=fixture(),ep=path.join(f.events,f.filename),
+   dp=path.join(f.decisions,f.filename.replace(".json",".decision.json"));
+ const e=JSON.parse(fs.readFileSync(ep));
+ const d=JSON.parse(fs.readFileSync(dp));
+ const service={service:"DINNER",evidence:"HUMAN_CONFIRMED_RULE",
+   source_ref:"FIXTURE:PROOF:NOT_LIVE",blockers:[]};
+ e.ready_for_downstream_shadow=true;e.blockers=[];e.service_resolution=service;
+ d.ready=true;d.blocking_reasons=[];d.service=service;
+ d.fingerprint=fingerprint(d);
+ fs.writeFileSync(ep,JSON.stringify(e));
+ fs.writeFileSync(dp,JSON.stringify(d));
+ const valid=audit(f.events,f.decisions,f.shift);
+ assert.equal(valid.both_ready_flags_only,1);
+ assert.equal(valid.both_ready_for_existing_shadow,1);
+ d.items[0].quantity=99;
+ fs.writeFileSync(dp,JSON.stringify(d));
+ const altered=audit(f.events,f.decisions,f.shift);
+ assert.equal(altered.both_ready_flags_only,1);
+ assert.equal(altered.content_fingerprints_changed,1);
+ assert.equal(altered.untrusted_ready_claims,1);
+ assert.equal(altered.both_ready_for_existing_shadow,0);
+});
 check("missing decision is never paired by filename resemblance",()=>{
  const f=fixture({missingDecision:true}),r=audit(f.events,f.decisions,f.shift);
  assert.equal(r.paired,0);assert.equal(r.missing,1);
