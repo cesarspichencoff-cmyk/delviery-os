@@ -48,6 +48,7 @@ jobs:
           set -o pipefail
           npx tsx tests/product/run-q026-event-loop-http-fairness-shadow.ts | tee short-deadline.out
           grep '^Q026_SHORT_DEADLINE_HTTP_SHADOW_MEASURED ' short-deadline.out
+          grep '^Q026_SHORT_DEADLINE_POOL_DRAIN_PASS ' short-deadline.out
   regressions:
     runs-on: ubuntu-latest
     steps:
