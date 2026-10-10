@@ -36,7 +36,37 @@ jobs:
         run: npm run test:platform:q016
       - name: Product Entregas PostgreSQL contract
         run: npx tsx tests/product/run-entregas-servidor-pg-tests.ts
-      - name: Existing Entregas reader and governance guards
+      - name: Existing Entregas reader contract
+        run: npx tsx tests/product/run-entregas-leitura-da-rua-tests.ts
+      - name: Attribute historical governance gate against immutable integration base
         run: |
-          npx tsx tests/product/run-entregas-leitura-da-rua-tests.ts
-          npm run test:platform:governanca
+          set +e
+          npm run test:platform:governanca > "$RUNNER_TEMP/candidate-governanca.log" 2>&1
+          candidate_status=$?
+          set -e
+          mkdir -p "$RUNNER_TEMP/q026-base"
+          git worktree add --detach "$RUNNER_TEMP/q026-base" 99b0c72e6a254c68358767b5addffe673707d934
+          ln -s "$GITHUB_WORKSPACE/node_modules" "$RUNNER_TEMP/q026-base/node_modules"
+          set +e
+          (cd "$RUNNER_TEMP/q026-base" && npm run test:platform:governanca) > "$RUNNER_TEMP/baseline-governanca.log" 2>&1
+          baseline_status=$?
+          set -e
+          CANDIDATE_STATUS="$candidate_status" BASELINE_STATUS="$baseline_status" python3 - <<'PY'
+          import os,re,pathlib
+          t=pathlib.Path(os.environ["RUNNER_TEMP"])
+          a=(t/"candidate-governanca.log").read_text(errors="replace")
+          b=(t/"baseline-governanca.log").read_text(errors="replace")
+          fail=lambda s: sorted(re.findall(r'(?m)^\s+- docs/etapa-4-8/APPEND-ONLY\.md:.*,s))
+          ac,bc=fail(a),fail(b)
+          print("BASELINE_GOVERNANCE_STATUS",os.environ["BASELINE_STATUS"])
+          print("CANDIDATE_GOVERNANCE_STATUS",os.environ["CANDIDATE_STATUS"])
+          print("BASELINE_ISSUES",bc)
+          print("CANDIDATE_ISSUES",ac)
+          if (os.environ["BASELINE_STATUS"]!="0" and
+              os.environ["CANDIDATE_STATUS"]!="0" and ac==bc and len(ac)==2):
+              print("Q026_GOVERNANCE_PREEXISTING_FAIL_PROVEN: no new governance failures")
+          elif os.environ["BASELINE_STATUS"]=="0" and os.environ["CANDIDATE_STATUS"]=="0":
+              print("Q026_GOVERNANCE_BOTH_GREEN")
+          else:
+              raise SystemExit("UNATTRIBUTED GOVERNANCE CHANGE — fail closed")
+          PY
