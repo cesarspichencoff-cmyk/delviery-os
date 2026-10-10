@@ -59,7 +59,7 @@ export function validateArchive(snapshot,expectedPath,{rawBytes=null}={}){
   try{parsed=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes));}
   catch{throw Error('archive_bytes_json_invalid');}
   assert(JSON.stringify(parsed)===JSON.stringify(snapshot),'archive_bytes_payload_mismatch');
-  return {path,hash:digestBytes(bytes),snapshot};
+  return {path,hash:digestBytes(bytes),git_blob_sha:gitBlobSha(bytes),snapshot};
 }
 
 export function checkpointShape(value){
@@ -108,7 +108,7 @@ export function planReplay(archives,{start,end,cursor=null,now=new Date()}={}){
     kept[path]=hash;
     if(!p){
       newArchives++;new_archive_paths.push(path);
-      new_archive_entries.push({archive_path:path,snapshot_sha256:hash,record_count:s.record_count,generated_at:s.generated_at});
+      new_archive_entries.push({archive_path:path,snapshot_sha256:hash,git_blob_sha:record.git_blob_sha,record_count:s.record_count,generated_at:s.generated_at});
     }
     for(const run of s.records){
       // An overlapping hourly file may contain runs created outside the requested partial horizon.
