@@ -232,6 +232,10 @@ function printResourceGroups(
 
 export function renderProductionTicketProofV46(ticket: ProductionTicketV45): TicketEscPosProofV46 {
   const p = new OfflinePrinter();
+  // Layout-valid is not source-valid. Preserve diagnostic text but return
+  // ZERO ESC/POS bytes if this station's semantic projection is blocked.
+  if (ticket.ready_for_semantic_preview !== true)
+    p.blockers.add("STATION_SEMANTIC_NOT_READY");
   p.font("B");
   p.bold(true);
   p.line("TESTE - NAO PRODUZIR", "BANNER");
@@ -275,6 +279,8 @@ export function renderProductionTicketProofV46(ticket: ProductionTicketV45): Tic
 
 export function renderConferenceTicketProofV46(ticket: ConferenceTicketV45): TicketEscPosProofV46 {
   const p = new OfflinePrinter();
+  if (ticket.ready_for_semantic_preview !== true)
+    p.blockers.add("CONFERENCE_SEMANTIC_NOT_READY");
   p.font("B");
   p.bold(true);
   p.line("TESTE - NAO PRODUZIR", "BANNER");
@@ -339,14 +345,31 @@ export function renderConferenceTicketProofV46(ticket: ConferenceTicketV45): Tic
   return p.result("CONFERENCIA");
 }
 
+/** Applying an explicit global source veto to offline byte artifacts must
+ * happen inside the public renderer wrapper, even for callers that did not
+ * enter via the newer V5.10 kitchen-separated exporter. */
+function vetoSemanticBytesV71(
+  proof: TicketEscPosProofV46, reason:string,
+):TicketEscPosProofV46 {
+  return {...proof, ready_for_offline_preview:false,
+    blocking_reasons:[...new Set([...proof.blocking_reasons,reason])].sort(),
+    bytes:[],byte_count:0,ready_for_operational_print:false};
+}
+
 export function renderOperationalTicketsProofV46(source: OperationalTicketsResultV45): {
   production: TicketEscPosProofV46[];
   conference: TicketEscPosProofV46;
   effects: {print:false;spooler_write:false;odhen_write:false;cut:false};
 } {
-  return {
-    production: source.production.map(renderProductionTicketProofV46),
-    conference: renderConferenceTicketProofV46(source.conference),
+  const production=source.production.map(renderProductionTicketProofV46);
+  const conference=renderConferenceTicketProofV46(source.conference);
+  const globalDenied=source.ready_for_semantic_preview !== true ||
+    !Array.isArray(source.blocking_reasons) || source.blocking_reasons.length>0;
+  if (globalDenied) return {
+    production:production.map(p=>vetoSemanticBytesV71(p,"GLOBAL_SOURCE_SEMANTIC_BLOCKED")),
+    conference:vetoSemanticBytesV71(conference,"GLOBAL_SOURCE_SEMANTIC_BLOCKED"),
     effects:{print:false,spooler_write:false,odhen_write:false,cut:false},
   };
+  return {production,conference,
+    effects:{print:false,spooler_write:false,odhen_write:false,cut:false}};
 }
