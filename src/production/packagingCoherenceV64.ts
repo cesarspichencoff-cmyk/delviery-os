@@ -29,6 +29,17 @@ export function alignProductionPackagingV64(
   const sourceByIndex=new Map(source.map(s=>[s.item_index,s]));
   const boxByIndex=new Map<number,{index:number;model:string;members:number[]}>();
   packing.groups.forEach((g,index)=>{
+    if(g.kind==="sem_caixa" && g.box===null && g.boxes===0 &&
+       g.status==="PROVEN_OPERATIONAL_DOCUMENT" &&
+       Array.isArray(g.products) && g.products.length){
+      for(const item of g.products){
+        const candidates=source.filter(s=>
+          name(s.product_name)===name(item.name)&&s.quantity===item.quantity);
+        if(candidates.length!==1)
+          failures.add("NON_BOXED_SOURCE_AMBIGUOUS:"+index);
+      }
+      return;
+    }
     if(!g.box||!Array.isArray(g.products)||!g.products.length||
        !Number.isSafeInteger(g.boxes)||(g.boxes??0)<1){
       failures.add("PACKING_GROUP_UNPROVEN:"+index);return;
