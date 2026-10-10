@@ -1,4 +1,5 @@
 import {test} from 'node:test';
+import {createHash} from 'node:crypto';
 import assert from 'node:assert/strict';
 import {validateArchive,planReplay,verifyHorizon,discoverArchiveEvidence,checkpointShape,MAX_RECONCILE,gitBlobSha} from '../tools/cesar-os-ci/archive-consumer.mjs';
 import {reconcilePublicRuns,validateRunUpdate} from '../tools/cesar-os-ci/run-reconciler.mjs';
@@ -188,4 +189,30 @@ test('partial UTC horizon excludes records created before start or at end',()=>{
  assert.deepEqual(p.records.map(x=>x.id),[62]);
  assert.deepEqual(p.reconcile_ids,[62]);
  assert.equal(p.coverage.gaps.length,0);
+});
+
+test('artifact fingerprint is SHA-256 of actual verified Git bytes, independent of JSON normalization',()=>{
+ const path=archive(s1).path;
+ const tight=Buffer.from(JSON.stringify(s1)+'\n','utf8');
+ const spaced=Buffer.from(JSON.stringify(s1,null,2)+'\n','utf8');
+ const a=validateArchive(s1,path,{rawBytes:tight});
+ const b=validateArchive(s1,path,{rawBytes:spaced});
+ assert.equal(a.hash,createHash('sha256').update(tight).digest('hex'));
+ assert.equal(b.hash,createHash('sha256').update(spaced).digest('hex'));
+ assert.notEqual(a.hash,b.hash);
+ assert.equal(validateArchive(s1,path).hash,a.hash);
+});
+test('bytes do not match validated snapshot: fail closed instead of inventing a digest',()=>{
+ const path=archive(s1).path;
+ const changed={...s1,record_count:0,records:[],coverage_status:'BOUNDED_EMPTY'};
+ assert.throws(()=>validateArchive(s1,path,{rawBytes:Buffer.from(JSON.stringify(changed)+'\n')}),/archive_bytes_payload_mismatch/);
+ assert.throws(()=>validateArchive(s1,path,{rawBytes:Buffer.from([0xc3,0x28])}),/archive_bytes_json_invalid/);
+});
+test('cursor hash uses actual original bytes, not parsed snapshot serialization',()=>{
+ const path=archive(s1).path;
+ const rawBytes=Buffer.from(JSON.stringify(s1,null,3)+'\n');
+ const plan=planReplay([{path,snapshot:s1,rawBytes}],horizon);
+ assert.equal(plan.new_archive_entries[0].snapshot_sha256,createHash('sha256').update(rawBytes).digest('hex'));
+ const another=planReplay([{path,snapshot:s1,rawBytes:Buffer.from(JSON.stringify(s1)+'\n')}],horizon);
+ assert.notEqual(plan.cursor.archives[path],another.cursor.archives[path]);
 });
