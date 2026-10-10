@@ -26,6 +26,9 @@ jobs:
           persist-credentials: false
           fetch-depth: 1
 
+      - name: Verify snapshot contract before any write
+        run: node --test test/cesar-os-ci-snapshot.test.mjs
+
       - name: Publish bounded public CI metadata
         env:
           GITHUB_TOKEN: ${{ github.token }}
