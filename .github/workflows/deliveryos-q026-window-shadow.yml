@@ -18,6 +18,8 @@ jobs:
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - name: contraexemplos de janela sem destruir viagens
         run: npx tsx tests/product/run-q026-window-shadow-tests.ts
+      - name: perfil da copia dos IDs de eventos da viagem
+        run: npx tsx tests/product/run-q026-projection-cost-shadow-tests.ts
       - name: TypeScript sem emitir arquivos
         run: npx tsc --noEmit
 
