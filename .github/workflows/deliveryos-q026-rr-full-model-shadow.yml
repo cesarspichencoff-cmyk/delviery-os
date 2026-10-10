@@ -1,0 +1,59 @@
+name: deliveryos-q026-rr-full-model-shadow
+# Research only: never touches production, main, integration, or operational DB.
+on:
+  push:
+    branches:
+      - research/deliveryos-q026-rr-full-model-shadow-20261010
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: q026-rr-full-model-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  canonical-vs-rr-full-model:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    services:
+      postgres:
+        image: public.ecr.aws/docker/library/postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Lockfile install
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: TypeScript project
+        run: npx tsc --noEmit
+      - name: Shadow test typecheck
+        run: npx tsc --noEmit --target ES2022 --module commonjs --moduleResolution node --strict --esModuleInterop --skipLibCheck --types node tests/product/run-q026-rr-full-model-shadow.ts
+      - name: Canonical Q016 regression
+        run: npm run test:platform:q016
+      - name: Product regression
+        run: npm run test:platform:product
+      - name: Governance
+        run: npm run test:platform:governanca
+      - name: One RR full VM versus canonical with 30 paced independent PG commits (126k)
+        shell: bash
+        run: |
+          set -o pipefail
+          npx tsx tests/product/run-q026-rr-full-model-shadow.ts | tee q026-rr-incremental.out
+          grep '^Q026_RR_FULL_MODEL_PASS ' q026-rr-incremental.out
+      - name: Fail closed without PostgreSQL
+        shell: bash
+        run: |
+          set +e
+          DELIVERYOS_PG_URL= npx tsx tests/product/run-q026-rr-full-model-shadow.ts
+          code=$?
+          echo "no_db_exit=$code"
+          test "$code" = 78
