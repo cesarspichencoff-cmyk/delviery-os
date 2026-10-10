@@ -1,8 +1,9 @@
 "use strict";
 const assert=require("node:assert/strict"),fs=require("node:fs"),
  path=require("node:path"),os=require("node:os");
-const {audit,resolveArgs,scrubReason,fingerprint}=
+const {audit,resolveArgs,scrubReason,fingerprint,watcherV2ObservationSummary}=
  require("./auditar_pares_leitor_v69_readonly.js");
+const {createHash}=require("node:crypto");
 let pass=0;
 const check=(title,fn)=>{fn();pass++;console.log("PASS "+pass+" "+title)};
 const tmp=fs.mkdtempSync(path.join(os.tmpdir(),"deliveryos-passive-audit-v69-"));
@@ -155,7 +156,7 @@ check("V7.3: watcher v1 contains zero note columns in archived real-format fixtu
  assert.equal(o.exact_revision_item_observation_proofs_verified,false);
  assert.equal(o.eligible_three_ticket_pairs_proven,0);
  assert.equal(r.latest_pair_summaries[0].three_ticket_preview_ready,false);
- assert.equal(r.latest_pair_summaries[0].native_event_observation_fields_all_present,false);
+ assert.equal(r.latest_pair_summaries[0].legacy_inline_observation_fields_all_present,false);
 });
 check("V7.3: all three native note field names do NOT imply revision proof or approval",()=>{
  const f=fixture(),file=path.join(f.events,f.filename);
@@ -216,6 +217,95 @@ check("V7.3: even trusted-ready existing shadow does not grant three ticket prev
  assert.equal(r.observation_source_coverage.exact_revision_item_observation_proofs_verified,false);
  assert.equal(r.observation_source_coverage.eligible_three_ticket_pairs_proven,0);
  assert.equal(r.latest_pair_summaries[0].three_ticket_preview_ready,false);
+});
+
+
+/**
+ * The deployed supervisor loads watcher V2, which uses the same event schema
+ * v1 but stores notes under order.observation_rows. This is a SYNTHETIC
+ * reproduction of its documented hashBasis, not a real customer payload.
+ */
+function fixtureV2(typedRows){
+ const f=fixture(),e=structuredClone(f.event),d=structuredClone(f.decision);
+ e.order={CDFILIAL:"0001",CDLOJA:"01",NRVENDAREST:"0000001111",
+  NRCOMANDA:e.order.NRCOMANDA,NRCOMANDAEXT:e.order.NRCOMANDAEXT,
+  IDORGCMDVENDA:"DLV_TEST",IDSTCOMANDA:"OPEN",
+  DTHRABERMESA:e.order.DTHRABERMESA,items:e.order.items,
+  observation_scan_complete:true,observation_rows:typedRows};
+ const b={CDFILIAL:e.order.CDFILIAL,CDLOJA:e.order.CDLOJA,
+  NRVENDAREST:e.order.NRVENDAREST,NRCOMANDA:e.order.NRCOMANDA,
+  NRCOMANDAEXT:e.order.NRCOMANDAEXT,IDORGCMDVENDA:e.order.IDORGCMDVENDA,
+  IDSTCOMANDA:e.order.IDSTCOMANDA,DTHRABERMESA:e.order.DTHRABERMESA,
+  items:e.order.items};
+ if(typedRows.length)b.observation_rows=typedRows;
+ e.snapshot_hash=createHash("sha256").update(JSON.stringify(b)).digest("hex");
+ d.snapshot_hash=e.snapshot_hash;d.fingerprint=fingerprint(d);
+ const evFile=e.order.NRCOMANDA+"_"+e.snapshot_hash+".json";
+ fs.unlinkSync(path.join(f.events,f.filename));
+ fs.unlinkSync(path.join(f.decisions,f.filename.replace(".json",".decision.json")));
+ fs.writeFileSync(path.join(f.events,evFile),JSON.stringify(e));
+ fs.writeFileSync(path.join(f.decisions,evFile.replace(".json",".decision.json")),JSON.stringify(d));
+ return {...f,event:e,decision:d,filename:evFile};
+}
+check("V7.5 watcher V2 one general note is in event SHA, never visible",()=>{
+ const f=fixtureV2([{source_field:"DSOBSCOMANDA",
+  value:"SECRET_FICTITIOUS_PAYMENT_METADATA",scope_hint:"order",join_proven:true}]);
+ const note=watcherV2ObservationSummary(f.event);
+ assert.equal(note.detected,true);assert.equal(note.structure_valid,true);
+ assert.equal(note.hash_matches,true);assert.equal(note.order_note_count,1);
+ assert.equal(note.item_note_count,0);
+ const result=audit(f.events,f.decisions,f.shift);
+ assert.equal(result.observation_source_coverage.watcher_v2_event_hash_matched,1);
+ assert.equal(result.observation_source_coverage.watcher_v2_order_note_rows_in_verified_hash,1);
+ assert.equal(result.observation_source_coverage.eligible_three_ticket_pairs_proven,0);
+ assert.equal(result.latest_pair_summaries[0].three_ticket_preview_ready,false);
+ assert.ok(!JSON.stringify(result).includes("SECRET_FICTITIOUS"));
+});
+check("V7.5 watcher V2 item note is hashed and indexed without leaking text",()=>{
+ const f=fixtureV2([{source_field:"DSOBSDESCIT",
+  value:"SECRET_FICTITIOUS_NO_WASABI",item_index:0,
+  CDPRODUTO:"SECRET_ITEM",scope_hint:"item",join_proven:true}]);
+ const result=audit(f.events,f.decisions,f.shift);
+ assert.equal(result.observation_source_coverage.watcher_v2_event_hash_matched,1);
+ assert.equal(result.observation_source_coverage.watcher_v2_item_note_rows_in_verified_hash,1);
+ assert.ok(!JSON.stringify(result).includes("SECRET_FICTITIOUS_NO_WASABI"));
+ assert.equal(result.observation_source_coverage.exact_revision_item_observation_proofs_verified,false);
+});
+check("V7.5 note tampering is detectable despite intact event-decision link",()=>{
+ const f=fixtureV2([{source_field:"DSOBSCOMANDA",
+  value:"SECRET_FIRST",scope_hint:"order",join_proven:true}]);
+ const filepath=path.join(f.events,f.filename);
+ const e=JSON.parse(fs.readFileSync(filepath,"utf8"));
+ e.order.observation_rows[0].value="SECRET_TAMPERED";
+ fs.writeFileSync(filepath,JSON.stringify(e));
+ const result=audit(f.events,f.decisions,f.shift);
+ assert.equal(result.matching_revisions,1);
+ assert.equal(result.observation_source_coverage.watcher_v2_event_hash_untrusted,1);
+ assert.equal(result.observation_source_coverage.watcher_v2_event_hash_matched,0);
+ assert.ok(!JSON.stringify(result).includes("SECRET_TAMPERED"));
+});
+check("V7.5 watcher V1 without scan-complete marker must not assert no notes",()=>{
+ const f=fixture();
+ const r=audit(f.events,f.decisions,f.shift);
+ assert.equal(r.observation_source_coverage.watcher_v2_event_pairs_observed,0);
+ assert.equal(watcherV2ObservationSummary(f.event).detected,false);
+ assert.equal(r.observation_source_coverage.eligible_three_ticket_pairs_proven,0);
+});
+check("V7.5 invalid/unmapped note sources fail closed and never emit text",()=>{
+ const f=fixtureV2([{source_field:"UNRECOGNIZED_RAW_NOTE_FIELD",
+  value:"SECRET_NO_EXPORT",scope_hint:"item",item_index:0,
+  CDPRODUTO:"SECRET_ITEM",join_proven:true}]);
+ const r=audit(f.events,f.decisions,f.shift);
+ assert.equal(r.observation_source_coverage.watcher_v2_event_hash_untrusted,1);
+ assert.ok(!JSON.stringify(r).includes("SECRET_NO_EXPORT"));
+});
+check("V7.5 even a source-valid v2 empty observation scan is not SQL proof",()=>{
+ const f=fixtureV2([]);
+ const r=audit(f.events,f.decisions,f.shift);
+ assert.equal(r.observation_source_coverage.watcher_v2_event_hash_matched,1);
+ assert.equal(r.observation_source_coverage.watcher_v2_item_note_rows_in_verified_hash,0);
+ assert.equal(r.observation_source_coverage.independent_sql_or_production_notes_join_executed,false);
+ assert.equal(r.observation_source_coverage.eligible_three_ticket_pairs_proven,0);
 });
 
 console.log("PASSIVE_READER_AUDIT_V69="+pass+"/"+pass+" NO_WRITE_NO_PRINT");
