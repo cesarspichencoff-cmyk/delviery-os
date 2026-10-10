@@ -298,6 +298,12 @@ export function renderConferenceTicketProofV46(ticket: ConferenceTicketV45): Tic
     p.bold(false);
     for (const item of ticket.items_without_proven_box) p.item(item);
   }
+  if (ticket.items_without_physical_box?.length) {
+    p.font("A");p.bold(true);
+    p.line("ITENS SEM CAIXA FISICA", "NO_BOX_PROVEN");
+    p.bold(false);
+    for(const item of ticket.items_without_physical_box) p.item(item);
+  }
   p.line("--------------------------------", "DIVIDER");
   const parts = [...smallResource(p, ticket.bags, "BAG"), ...smallResource(p, ticket.kits, "KIT")];
   if (parts.length) {
