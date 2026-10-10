@@ -366,7 +366,8 @@ void(async()=>{
               })).finally(()=>{tx_ms=performance.now()-started});
             }
           };
-          const reality=await lerRealidadeDeEntregasIncremental(wrapped,{agora});
+          const tamanho_lote = process.env.Q026_FULL_RSS_BATCH_SIZE==="1024" ? 1024 : 257;
+          const reality=await lerRealidadeDeEntregasIncremental(wrapped,{agora,tamanho_lote});
           return {reality,tx_ms,max_batch,fetches};
         })()
         : await compactFull(b);
