@@ -68,7 +68,8 @@ function audit(events,decisions,shiftFile){
  const evReasons={},decisionReasons={},shiftIssues={};
  let paired=0,missing=0,unreadable=0,matched=0,validFingerprints=0,
      changedFingerprints=0,readyByBoth=0,readySource=0,readyDecision=0,
-     revisionMismatches=0,shiftDateMismatch=0,expiredAtOrder=0;
+     revisionMismatches=0,shiftDateMismatch=0,expiredAtOrder=0,
+     bothReadyFlagsOnly=0,untrustedReadyClaims=0;
  const newest=[];
  for(const entry of selected){
   const decisionName=entry.name.replace(/\.json$/i,".decision.json");
@@ -88,9 +89,19 @@ function audit(events,decisions,shiftFile){
    if(match)matched++;else revisionMismatches++;
    if(e.ready_for_downstream_shadow)readySource++;
    if(d.ready)readyDecision++;
-   if(match&&e.ready_for_downstream_shadow&&d.ready)readyByBoth++;
-   if(hex64(d.fingerprint)&&fingerprint(d)===d.fingerprint)validFingerprints++;
+   const fingerprintMatches=hex64(d.fingerprint)&&fingerprint(d)===d.fingerprint;
+   if(fingerprintMatches)validFingerprints++;
    else changedFingerprints++;
+   const bothFlags=e.ready_for_downstream_shadow===true&&d.ready===true;
+   if(bothFlags)bothReadyFlagsOnly++;
+   // A decision with valid-looking ready booleans can still be tampered with,
+   // based on a stale source, or explicitly blocked.
+   const verifiedReady=match&&fingerprintMatches&&bothFlags&&
+     e.blockers.length===0&&d.blocking_reasons.length===0&&
+     e.service_resolution?.blockers?.length===0&&
+     d.service?.blockers?.length===0;
+   if(verifiedReady)readyByBoth++;
+   else if(bothFlags)untrustedReadyClaims++;
    for(const v of e.blockers)count(evReasons,scrubReason(v));
    for(const v of d.blocking_reasons)count(decisionReasons,scrubReason(v));
    const opened=String(e.order?.DTHRABERMESA||"");
@@ -104,7 +115,7 @@ function audit(events,decisions,shiftFile){
    }
    if(newest.length<12)newest.push({
      event_revision_matches_decision:match,
-     status:e.ready_for_downstream_shadow&&d.ready?"READY_ONLY_FOR_EXISTING_SHADOW":"BLOCKED",
+     status:verifiedReady?"VERIFIED_ONLY_FOR_EXISTING_SHADOW":"BLOCKED",
      event_reason_classes:[...new Set(e.blockers.map(scrubReason))].sort(),
      decision_reason_classes:[...new Set(d.blocking_reasons.map(scrubReason))].sort()
    });
@@ -117,7 +128,10 @@ function audit(events,decisions,shiftFile){
   observed_file_count:filenames.length,
   paired,missing,unreadable,matching_revisions:matched,revision_mismatches:revisionMismatches,
   content_fingerprints_valid:validFingerprints,content_fingerprints_changed:changedFingerprints,
-  event_ready:readySource,decision_ready:readyDecision,both_ready_for_existing_shadow:readyByBoth,
+  event_ready:readySource,decision_ready:readyDecision,
+  both_ready_flags_only:bothReadyFlagsOnly,
+  untrusted_ready_claims:untrustedReadyClaims,
+  both_ready_for_existing_shadow:readyByBoth,
   shift_control:{
    schema_match:shift.schema==="deliveryos.production-service-shift-state.v2",
    service_is_human_proven:["HUMAN_CONFIRMED_RULE","REAL_OBSERVED"].includes(shift.evidence)&&
@@ -131,6 +145,7 @@ function audit(events,decisions,shiftFile){
   event_blocker_classes:top(evReasons),decision_blocker_classes:top(decisionReasons),
   latest_pair_summaries:newest,
   limitations:["SHADOW_READY_IS_NOT_PHYSICAL_PRINT_READINESS",
+   "SHADOW_READY_REQUIRES_EXACT_REVISION_AND_VALID_FINGERPRINT_AND_NO_BLOCKERS",
    "NO_OBSERVATION_TEXT_IN_WATCHER_V1",
    "NO_AUTHORITY_TO_RENEW_SHIFT_FROM_CLOCK",
    "NO_LIVE_PRODUCTION_JOIN_OR_PRINT_PROOF"],
