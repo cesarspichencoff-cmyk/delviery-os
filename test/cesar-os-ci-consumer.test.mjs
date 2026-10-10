@@ -150,3 +150,19 @@ test('D1 CAS reports conflicts without claiming a write',async()=>{
  assert.equal(result.written,false);
  assert.equal(calls[0].params[0],'github-actions-public-deliveryos');
 });
+
+test('adjacent verified empty windows stay BOUNDED_EMPTY and incomplete',()=>{
+ const a=snapshot('2026-10-10T21:00:00.000Z',[]);
+ const b=snapshot('2026-10-10T22:00:00.000Z',[]);
+ const p=planReplay([archive(a),archive(b)],{...horizon,end:'2026-10-10T22:00:00.000Z'});
+ assert.equal(p.coverage.status,'BOUNDED_EMPTY');
+ assert.equal(p.coverage.gaps.length,0);
+ assert.equal(p.coverage.continuity_complete,false);
+});
+test('equal timestamp contradictory conclusion is rejected',()=>{
+ const prior=makeRun(48,'2026-10-10T20:30:00.000Z',{status:'completed',conclusion:'success'});
+ const changed={id:48,name:prior.workflow,head_branch:prior.branch,status:'completed',
+  conclusion:'failure',created_at:prior.created_at,updated_at:prior.updated_at,
+  repository:{full_name:REPO,id:1279837591,owner:{id:292320191}}};
+ assert.throws(()=>validateRunUpdate(changed,prior,{now:new Date(UTC)}),/reconcile_equal_timestamp_conflict/);
+});
