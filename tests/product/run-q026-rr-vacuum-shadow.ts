@@ -53,7 +53,10 @@ void(async()=>{
      free_percent:Number(p.free_percent)
    };
   }
+  assert.ok(extension,"pgstattuple indisponivel: sem prova fisica nao passar CI");
   const initial=await physical();
+  assert.ok(initial);
+  assert.equal(initial.dead_tuple_count,0,"fixture inicial ja continha mortos");
   let pid=0,hookCount=0,xminDuring:string|null=null;
   let timeInVacuum=0,rrOldCount=0,writerNewCount=0;
   const during={value:null as Awaited<ReturnType<typeof physical>>};
@@ -121,13 +124,14 @@ void(async()=>{
   assert.equal(fresh,N);
   await observer.query("VACUUM (ANALYZE) public.q026_vacuum_probe");
   const afterVac=await physical();
-  if(initial && during.value && afterVac) {
-   // pgstattuple is a physical measure; different PostgreSQL versions can
-   // count RECENTLY_DEAD differently. Avoid inventing a specific dead count.
-   assert.ok(initial.table_len>0&&during.value.table_len>0&&afterVac.table_len>0);
-   assert.ok(afterVac.free_percent>=initial.free_percent,
-    "VACUUM post-RR unexpectedly has less free space");
-  }
+  assert.ok(during.value&&afterVac,"pgstattuple sem medidas fisicas completas");
+  assert.equal(during.value.dead_tuple_count,N,
+    "VACUUM durante RR deveria reter 20k tuplas mortas nesta fixture PG16");
+  assert.equal(afterVac.dead_tuple_count,0,
+    "VACUUM pos-COMMIT nao removeu as tuplas mortas nesta fixture PG16");
+  assert.ok(initial.table_len>0&&during.value.table_len>0&&afterVac.table_len>0);
+  assert.ok(afterVac.free_percent>during.value.free_percent,
+    "VACUUM pos-RR nao recuperou espaco livre");
   const result={
    checks:7,postgres_writers:2,observer_session:1,probe_rows:N,
    one_real_reader:true,source:"lerRealidadeDeEntregas",
