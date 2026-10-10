@@ -17,7 +17,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        mode: [disabled, enabled]
+        include:
+          - { mode: disabled, role: admin }
+          - { mode: enabled, role: admin }
+          - { mode: enabled, role: reader }
     services:
       postgres:
         image: public.ecr.aws/docker/library/postgres:16
@@ -29,6 +32,7 @@ jobs:
     env:
       DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
       Q026_ACTUAL_HTTP_MODE: ${{ matrix.mode }}
+      Q026_ACTUAL_HTTP_DB_ROLE: ${{ matrix.role }}
     steps:
       - uses: actions/checkout@v4
         with:
