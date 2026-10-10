@@ -23,7 +23,8 @@ type RoundResult={
  total_events:number;concurrent_readers:number;pool_max:number;
  wall_ms:number;latency_min_ms:number;latency_median_ms:number;
  latency_p95_ms:number;latency_max_ms:number;
- mvcc_transaction_max_ms:number;max_active_transactions:number;
+ callback_in_connection_max_ms:number;max_borrowed_transactions:number;
+ max_pool_wait_ms:number;max_total_transaction_call_ms:number;
  heap_after_mb:number;rss_after_mb:number;heap_delta_mb:number;
  projected_trips:number;projected_events_each_read:number;
 };
@@ -89,21 +90,34 @@ function checkData(v:RealidadeDeEntregas,perDevice:number){
  }
  assert.equal(v.historico_sem_modo,0);
 }
-function instrument(base:TransactionalSqlClient,observe:{active:number;peak:number;txMs:number[]}){
+function instrument(base:TransactionalSqlClient,observe:{
+ active:number;peak:number;callbackMs:number[];waitMs:number[];totalMs:number[];
+}){
  return {
   query:<R extends SqlRow=SqlRow>(q:string,p?:readonly unknown[])=>base.query<R>(q,p),
   close:async()=>undefined,
   async transaction<T>(f:(tx:SqlClient)=>Promise<T>):Promise<T>{
-   observe.active++;observe.peak=Math.max(observe.peak,observe.active);
-   const start=performance.now();
-   try{return await base.transaction(f)}
-   finally{observe.txMs.push(performance.now()-start);observe.active--;}
+   const called=performance.now();
+   try{
+    return await base.transaction(async tx=>{
+     const acquired=performance.now();
+     observe.waitMs.push(acquired-called);
+     observe.active++;
+     observe.peak=Math.max(observe.peak,observe.active);
+     try{return await f(tx)}
+     finally{
+      observe.callbackMs.push(performance.now()-acquired);
+      observe.active--;
+     }
+    });
+   }finally{observe.totalMs.push(performance.now()-called);}
   },
  } as TransactionalSqlClient;
 }
 async function runRound(pool:TransactionalSqlClient,observer:SqlClient,total:number,
   simultaneous:number):Promise<RoundResult>{
- const obs={active:0,peak:0,txMs:[] as number[]};
+ const obs={active:0,peak:0,callbackMs:[] as number[],waitMs:[] as number[],
+  totalMs:[] as number[]};
  const reader=instrument(pool,obs);
  const heapBefore=process.memoryUsage().heapUsed;
  const wallStart=performance.now();
@@ -115,8 +129,13 @@ async function runRound(pool:TransactionalSqlClient,observer:SqlClient,total:num
  }));
  const wall=performance.now()-wallStart;
  assert.equal(obs.active,0,"borrowed transaction not released after Promise.all");
- assert.equal(obs.txMs.length,simultaneous,"reader opened unexpected number of transactions");
- assert.ok(obs.peak>=1&&obs.peak<=simultaneous);
+ assert.equal(obs.callbackMs.length,simultaneous,"reader entered unexpected number of SQL transactions");
+ assert.equal(obs.waitMs.length,simultaneous);
+ assert.equal(obs.totalMs.length,simultaneous);
+ assert.ok(obs.peak>=1&&obs.peak<=Math.min(simultaneous,4),
+  "connection callbacks exceeded configured four-slot pool");
+ if(simultaneous===8)assert.equal(obs.peak,4,
+  "eight-read test must exercise all four pool connections without counting waiters");
  const [{stillOpen}]=await observer.query<{stillOpen:number}>(`
  SELECT count(*)::int AS "stillOpen" FROM pg_stat_activity
  WHERE datname=current_database()
@@ -132,8 +151,10 @@ async function runRound(pool:TransactionalSqlClient,observer:SqlClient,total:num
   latency_median_ms:roundTo(percentile(latencies,0.5)),
   latency_p95_ms:roundTo(percentile(latencies,0.95)),
   latency_max_ms:roundTo(Math.max(...latencies)),
-  mvcc_transaction_max_ms:roundTo(Math.max(...obs.txMs)),
-  max_active_transactions:obs.peak,
+  callback_in_connection_max_ms:roundTo(Math.max(...obs.callbackMs)),
+  max_borrowed_transactions:obs.peak,
+  max_pool_wait_ms:roundTo(Math.max(...obs.waitMs)),
+  max_total_transaction_call_ms:roundTo(Math.max(...obs.totalMs)),
   heap_after_mb:mb(mem.heapUsed),rss_after_mb:mb(mem.rss),
   heap_delta_mb:mb(mem.heapUsed-heapBefore),
   projected_trips:DEVICES,projected_events_each_read:total,
@@ -168,6 +189,8 @@ void(async()=>{
    data_shape:"8 trips x 2 units x 2 source_modes",
    test_dimensions:results,
    memory_baseline:"NODE_HEAP_OBSERVED_WITH_GC_NOISE_NO_AB_COMPARISON",
+   pending_requests_counted_in_borrowed_transactions:false,
+   transaction_metrics:"CALLBACK_WITH_BORROWED_CONNECTION_EXCLUDES_POOL_WAIT_AND_COMMIT",
    production_slo:"UNKNOWN",vacuum_under_load:"UNMEASURED",
    operational_representativeness:"NOT_ESTABLISHED",
   }));
