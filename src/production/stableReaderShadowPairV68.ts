@@ -12,11 +12,15 @@ import type {OperationalTicketsResultV45} from "./operationalTicketsV45";
  */
 type RawEventItem={NRPRODCOMVEN:string;CDPRODUTO:string;
  CDARVPROD:string|null;QTPRODCOMVEN:string;IDSTPRCOMVEN:string};
+type WatcherNoteRowV76={source_field:string;value:string;scope_hint:string;
+ join_proven:boolean;item_index?:number;CDPRODUTO?:string};
 export interface StableReaderEventV68 {
  schema:string;order_key:string;snapshot_hash:string;
  ready_for_downstream_shadow:boolean;blockers:string[];
  order:{CDFILIAL:string;CDLOJA:string;NRCOMANDA:string;
-  NRCOMANDAEXT:string|null;IDORGCMDVENDA:string;items:RawEventItem[]};
+  NRCOMANDAEXT:string|null;IDORGCMDVENDA:string;items:RawEventItem[];
+  NRVENDAREST?:string;IDSTCOMANDA?:string;DTHRABERMESA?:string;
+  observation_scan_complete?:boolean;observation_rows?:WatcherNoteRowV76[]};
  service_resolution:{service:string|null;evidence:string;source_ref:string|null;blockers:string[]};
 }
 type ShadowItem={
@@ -73,6 +77,74 @@ function canon(code:unknown):string|null {
 const sameStrings=(a:string[],b:string[])=>
  a.length===b.length&&JSON.stringify([...a].sort())===JSON.stringify([...b].sort());
 
+/**
+ * V7.6 — same V2 hashBasis as the INSTALLED watcher. The envelope still says
+ * event.v1, so detection must use the marker & rows, not the schema name.
+ * Source truth: CAIXA_MOOCA read-only inspection, 10/10. Never print notes.
+ * Self-hash checks integrity but DOES NOT authenticate SQL or classify notes.
+ */
+function inspectV2WatcherNotesV76(event:StableReaderEventV68):
+ {detected:boolean;reasons:string[];rows:WatcherNoteRowV76[]} {
+ const order=event?.order;
+ const hasMarker=order?.observation_scan_complete!==undefined||
+   order?.observation_rows!==undefined;
+ if(!hasMarker)return {detected:false,reasons:[],rows:[]};
+ const reasons=new Set<string>(),rows=order?.observation_rows;
+ const block=(why:string)=>{reasons.add(why);
+  return {detected:true,reasons:[...reasons],rows:[] as WatcherNoteRowV76[]};};
+ if(order.observation_scan_complete!==true||!Array.isArray(rows))
+   return block("WATCHER_V2_OBSERVATION_SCAN_INCOMPLETE");
+ const header=["CDFILIAL","CDLOJA","NRVENDAREST","NRCOMANDA",
+   "NRCOMANDAEXT","IDORGCMDVENDA","IDSTCOMANDA","DTHRABERMESA"] as const;
+ const itemFields=["NRPRODCOMVEN","CDPRODUTO","CDARVPROD",
+   "QTPRODCOMVEN","IDSTPRCOMVEN"] as const;
+ if(header.some(k=>!Object.prototype.hasOwnProperty.call(order,k))||
+   !Array.isArray(order.items)||order.items.some(item=>!item||
+    itemFields.some(k=>!Object.prototype.hasOwnProperty.call(item,k))))
+   return block("WATCHER_V2_SNAPSHOT_STRUCTURE_INCOMPLETE");
+ const cleanItems=order.items.map(item=>({
+  NRPRODCOMVEN:item.NRPRODCOMVEN,CDPRODUTO:item.CDPRODUTO,
+  CDARVPROD:item.CDARVPROD,QTPRODCOMVEN:item.QTPRODCOMVEN,
+  IDSTPRCOMVEN:item.IDSTPRCOMVEN,
+ }));
+ const snapshot:Record<string,unknown>={
+  CDFILIAL:order.CDFILIAL,CDLOJA:order.CDLOJA,NRVENDAREST:order.NRVENDAREST,
+  NRCOMANDA:order.NRCOMANDA,NRCOMANDAEXT:order.NRCOMANDAEXT,
+  IDORGCMDVENDA:order.IDORGCMDVENDA,IDSTCOMANDA:order.IDSTCOMANDA,
+  DTHRABERMESA:order.DTHRABERMESA,items:cleanItems,
+ };
+ const mapped:WatcherNoteRowV76[]=[],seen=new Set<string>();
+ let orderNotes=0;
+ for(const row of rows){
+  if(!row||typeof row.value!=="string"||!row.value.trim()||
+   row.value!==row.value.trim()||row.join_proven!==true)
+   return block("WATCHER_V2_NOTE_ROW_INVALID");
+  if(row.scope_hint==="order"){
+   if(row.source_field!=="DSOBSCOMANDA"||++orderNotes>1)
+     return block("WATCHER_V2_ORDER_NOTE_SOURCE_INVALID");
+   mapped.push({source_field:row.source_field,value:row.value,
+    scope_hint:"order",join_proven:true});
+  }else if(row.scope_hint==="item"){
+   if(!["DSOBSDESCIT","DSOBSPEDDIGCMD","TXPRODCOMVEN"].includes(row.source_field)||
+      !Number.isSafeInteger(row.item_index)||row.item_index===undefined||
+      row.item_index<0||row.item_index>=cleanItems.length||
+      row.CDPRODUTO!==cleanItems[row.item_index].CDPRODUTO)
+     return block("WATCHER_V2_ITEM_NOTE_IDENTITY_INVALID");
+   const key=row.item_index+":"+row.source_field;
+   if(seen.has(key))return block("WATCHER_V2_ITEM_NOTE_DUPLICATE_SOURCE");
+   seen.add(key);
+   mapped.push({source_field:row.source_field,value:row.value,
+    item_index:row.item_index,CDPRODUTO:row.CDPRODUTO,
+    scope_hint:"item",join_proven:true});
+  }else return block("WATCHER_V2_NOTE_SCOPE_UNKNOWN");
+ }
+ if(mapped.length)snapshot.observation_rows=mapped;
+ const hash=createHash("sha256").update(JSON.stringify(snapshot)).digest("hex");
+ if(!hex64(event.snapshot_hash)||hash!==event.snapshot_hash.toLowerCase())
+  return block("WATCHER_V2_NOTE_SNAPSHOT_HASH_MISMATCH");
+ return {detected:true,reasons:[],rows:mapped};
+}
+
 /** Verifies that the decision describes exactly the stable event.
  * Crucially SOURCE_VERIFIED is NOT permission to make or print tickets.
  */
@@ -91,6 +163,8 @@ export function verifyLiveReaderPairV68(
     !event.service_resolution||!decision.service){
     reasons.add("READER_EVENT_OR_DECISION_STRUCTURE_MALFORMED");return fail();
  }
+ const v2Notes=inspectV2WatcherNotesV76(event);
+ for(const reason of v2Notes.reasons)reasons.add(reason);
  if(!clean(event.order_key)||!hex64(event.snapshot_hash)||
     event.order_key!==decision.order_key||event.snapshot_hash!==decision.snapshot_hash)
     reasons.add("SHADOW_DECISION_EVENT_REVISION_MISMATCH");
@@ -184,6 +258,11 @@ export function projectVerifiedReaderPairV68(
 ):{status:"OFFLINE_PREVIEW_PROVEN"|"BLOCKED";reasons:string[];
   tickets:OperationalTicketsResultV45|null;print_authorized:false} {
  const pair=verifyLiveReaderPairV68(event,decision),errors=new Set(pair.reasons);
+ const v2Notes=inspectV2WatcherNotesV76(event);
+ // An order-level note cannot be dropped to make a clean-looking ticket.
+ // No general observation gains item/station relevance from its text alone.
+ if(v2Notes.detected&&v2Notes.rows.some(r=>r.scope_hint==="order"))
+   errors.add("WATCHER_V2_ORDER_NOTE_REQUIRES_OPERATIONAL_RELEVANCE_PROOF");
  const block=()=>({status:"BLOCKED" as const,reasons:[...errors].sort(),
    tickets:null,print_authorized:false as const});
  if(pair.status!=="PAIRED_SOURCE_VERIFIED")return block();
@@ -211,6 +290,23 @@ export function projectVerifiedReaderPairV68(
       norm(identity.classification.station)!==norm(observed.classification.station))
      errors.add("CURRENT_IDENTITY_NOT_BOUND_TO_SHADOW_ITEM:"+selected.item_index);
    const proof=context.observation_proofs.find(p=>p.item_index===selected.item_index);
+   // The installed V2 snapshot includes exact SQL note values. Independent
+   // item proof must account for EVERY V2 note, and may not invent extras.
+   // DSOBS* comes from delivery/item; TXPRODCOMVEN from production.
+   if(v2Notes.detected&&v2Notes.reasons.length===0){
+     const own=v2Notes.rows.filter(row=>row.scope_hint==="item"&&
+      row.item_index===observed.item_index-1);
+     const expectedDelivery=own.filter(row=>row.source_field!=="TXPRODCOMVEN")
+       .map(row=>row.value),expectedProduction=own
+       .filter(row=>row.source_field==="TXPRODCOMVEN").map(row=>row.value);
+     const exactly=(a:string[],b:string[])=>
+       JSON.stringify([...a].sort())===JSON.stringify([...b].sort());
+     if(!proof||!exactly(expectedDelivery,proof.delivery_observations??[])||
+       !exactly(expectedProduction,proof.production_observations??[])||
+       (own.length>0&&proof.status!=="OBSERVED_EXACT_ITEM_OBSERVATIONS")||
+       (own.length===0&&proof.status!=="PROVEN_NONE_FOR_THIS_ITEM"))
+       errors.add("WATCHER_V2_ITEM_NOTE_NOT_RECONCILED:"+observed.item_index);
+   }
    const correspondingProduction=context.production.lines.filter(p=>
      norm(p.nome)===norm(observed.name)&&p.quantidade===observed.quantity);
    const productionNotes:string[]=[];
