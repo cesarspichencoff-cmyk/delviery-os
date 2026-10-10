@@ -109,7 +109,7 @@ jobs:
       DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
       Q026_EVENTS: ${{ matrix.n }}
       Q026_INDEPENDENT_MODE: ${{ matrix.variant }}
-      Q026_RESULT_FILE: ${{ runner.temp }}/result-${{ matrix.n }}-${{ matrix.variant }}.json
+      Q026_RESULT_FILE: result-${{ matrix.n }}-${{ matrix.variant }}.json
       NODE_OPTIONS: "--expose-gc"
     steps:
       - uses: actions/checkout@v4
