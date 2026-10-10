@@ -31,7 +31,7 @@ check("V7.13 only replaces the V7.13 human-override promotion block",()=>{
  assert.ok(candidate.startsWith("// BEGIN V713 CANDIDATE"));
  assert.ok(newAt>=0&&newEnd>newAt&&oldAt>=0&&oldEnd>oldAt);
  const back=stripped.slice(0,newAt)+
-    v712.slice(oldAt,oldEnd)+stripped.slice(newEnd);
+    v712.slice(oldAt,oldEnd)+stripped.slice(newEnd+1);
  assert.equal(back,v712);
  assert.ok(candidate.includes("observation_rows"));
  assert.ok(candidate.includes("ALLERGEN_NOTE_REQUIRES_HUMAN_REVIEW"));
