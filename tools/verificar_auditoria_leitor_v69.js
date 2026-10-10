@@ -145,4 +145,77 @@ check("all free-form SQL/customer blocker text is collapsed to safe categories",
  assert.equal(scrubReason("ALERGIA: ANON-CUSTOMER-1"),"OTHER_REDACTED");
  assert.equal(scrubReason("UNEXPECTED_ORDER_0000350928"),"OTHER_REDACTED");
 });
+
+check("V7.3: watcher v1 contains zero note columns in archived real-format fixture",()=>{
+ const f=fixture(),r=audit(f.events,f.decisions,f.shift),o=r.observation_source_coverage;
+ assert.equal(o.native_event_item_records,1);
+ assert.equal(o.native_items_with_any_observation_field,0);
+ assert.equal(o.native_items_with_all_observation_fields,0);
+ assert.equal(o.native_pairs_with_complete_observation_field_names,0);
+ assert.equal(o.exact_revision_item_observation_proofs_verified,false);
+ assert.equal(o.eligible_three_ticket_pairs_proven,0);
+ assert.equal(r.latest_pair_summaries[0].three_ticket_preview_ready,false);
+ assert.equal(r.latest_pair_summaries[0].native_event_observation_fields_all_present,false);
+});
+check("V7.3: all three native note field names do NOT imply revision proof or approval",()=>{
+ const f=fixture(),file=path.join(f.events,f.filename);
+ const event=JSON.parse(fs.readFileSync(file,"utf8"));
+ Object.assign(event.order.items[0],{
+  DSOBSDESCIT:"SECRET_NEVER_EMIT_SEM_CAMARAO",
+  DSOBSPEDDIGCMD:"SECRET_NEVER_EMIT_ALERGIA",
+  TXPRODCOMVEN:"SECRET_NEVER_EMIT_ITEM_123"
+ });
+ fs.writeFileSync(file,JSON.stringify(event));
+ const result=audit(f.events,f.decisions,f.shift),o=result.observation_source_coverage;
+ assert.equal(o.native_items_with_any_observation_field,1);
+ assert.equal(o.native_items_with_all_observation_fields,1);
+ assert.equal(o.native_pairs_with_complete_observation_field_names,1);
+ assert.equal(o.independent_sql_or_production_notes_join_executed,false);
+ assert.equal(o.exact_revision_item_observation_proofs_verified,false);
+ assert.equal(o.eligible_three_ticket_pairs_proven,0);
+ const out=JSON.stringify(result);
+ assert.ok(!out.includes("SECRET_NEVER_EMIT"));
+ assert.ok(!out.includes("SEM_CAMARAO")&&!out.includes("ALERGIA"));
+});
+check("V7.3: one incomplete field set must not count as complete coverage",()=>{
+ const f=fixture(),file=path.join(f.events,f.filename);
+ const event=JSON.parse(fs.readFileSync(file,"utf8"));
+ event.order.items[0].DSOBSDESCIT="NO_EXPORT";
+ event.order.items[0].TXPRODCOMVEN="NO_EXPORT";
+ fs.writeFileSync(file,JSON.stringify(event));
+ const o=audit(f.events,f.decisions,f.shift).observation_source_coverage;
+ assert.equal(o.native_items_with_any_observation_field,1);
+ assert.equal(o.native_items_with_all_observation_fields,0);
+ assert.equal(o.native_pairs_with_complete_observation_field_names,0);
+});
+check("V7.3: empty fields count for schema presence only, never as proven NONE",()=>{
+ const f=fixture(),file=path.join(f.events,f.filename);
+ const event=JSON.parse(fs.readFileSync(file,"utf8"));
+ for(const key of ["DSOBSDESCIT","DSOBSPEDDIGCMD","TXPRODCOMVEN"])
+  event.order.items[0][key]="";
+ fs.writeFileSync(file,JSON.stringify(event));
+ const r=audit(f.events,f.decisions,f.shift);
+ assert.equal(r.observation_source_coverage.native_items_with_all_observation_fields,1);
+ assert.equal(r.observation_source_coverage.exact_revision_item_observation_proofs_verified,false);
+ assert.equal(r.latest_pair_summaries[0].exact_revision_sql_observations_verified,false);
+ assert.equal(r.latest_pair_summaries[0].three_ticket_preview_ready,false);
+});
+check("V7.3: even trusted-ready existing shadow does not grant three ticket preview",()=>{
+ const f=fixture(),ep=path.join(f.events,f.filename),
+  dp=path.join(f.decisions,f.filename.replace(".json",".decision.json"));
+ const e=JSON.parse(fs.readFileSync(ep,"utf8"));
+ const d=JSON.parse(fs.readFileSync(dp,"utf8"));
+ const shiftService={service:"DINNER",evidence:"HUMAN_CONFIRMED_RULE",
+   source_ref:"FICTIONAL_RULE_REFERENCE",blockers:[]};
+ e.ready_for_downstream_shadow=true;e.blockers=[];e.service_resolution=shiftService;
+ d.ready=true;d.blocking_reasons=[];d.service=shiftService;
+ d.fingerprint=fingerprint(d);
+ fs.writeFileSync(ep,JSON.stringify(e));fs.writeFileSync(dp,JSON.stringify(d));
+ const r=audit(f.events,f.decisions,f.shift);
+ assert.equal(r.both_ready_for_existing_shadow,1);
+ assert.equal(r.observation_source_coverage.exact_revision_item_observation_proofs_verified,false);
+ assert.equal(r.observation_source_coverage.eligible_three_ticket_pairs_proven,0);
+ assert.equal(r.latest_pair_summaries[0].three_ticket_preview_ready,false);
+});
+
 console.log("PASSIVE_READER_AUDIT_V69="+pass+"/"+pass+" NO_WRITE_NO_PRINT");
