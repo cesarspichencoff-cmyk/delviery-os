@@ -21,10 +21,33 @@ const fingerprints=row=>{
   return {content,observation};
 };
 
+const metadataText=value=>{
+  let data;
+  try{data=typeof value==='string'?JSON.parse(value):value;}
+  catch{fail('d1_work_metadata_invalid');}
+  if(!data||typeof data!=='object'||Array.isArray(data))fail('d1_work_metadata_invalid');
+  let text;
+  try{text=JSON.stringify(data);}
+  catch{fail('d1_work_metadata_invalid');}
+  if(typeof text!=='string'||Buffer.byteLength(text,'utf8')>4096)
+    fail('d1_work_metadata_size_invalid');
+  const forbidden=new Set(['raw_payload','raw_body','authorization','access_token',
+    'api_key','password','cookie','response_body','request_body']);
+  const visit=x=>{
+    if(!x||typeof x!=='object')return;
+    for(const [k,v] of Object.entries(x)){
+      if(forbidden.has(k.toLowerCase()))fail('d1_work_metadata_sensitive_key');
+      visit(v);
+    }
+  };
+  visit(data);
+  return text;
+};
+
 export function packWorkObservationInserts(rows){
   if(!Array.isArray(rows)||rows.length>D1_MAX_OBSERVATIONS)
     fail('d1_work_observation_count_invalid');
-  const used=new Set(),out=[];
+  const used=new Set(),out=[],metadataById=new Map();
   for(const row of rows){
     if(!row||typeof row!=='object'||Array.isArray(row)||
        typeof row.observation_id!=='string'||!/^obs_[a-f0-9]{20}$/.test(row.observation_id)||
@@ -41,6 +64,7 @@ export function packWorkObservationInserts(rows){
     const expected=fingerprints(row);
     if(row.content_fingerprint!==expected.content||row.observation_id!==expected.observation)
       fail('d1_work_normalized_fingerprint_mismatch');
+    metadataById.set(row.observation_id,metadataText(row.metadata_json));
     used.add(row.observation_id);
     if(!Number.isFinite(Number(row.confidence)))fail('d1_work_confidence_invalid');
   }
@@ -50,7 +74,7 @@ export function packWorkObservationInserts(rows){
     for(const row of chunk){
       for(const col of WORK_COLUMNS){
         const value=col==='possible_commitment'?0:
-          col==='metadata_json'?(typeof row[col]==='string'?row[col]:JSON.stringify(row[col])):row[col];
+          col==='metadata_json'?metadataById.get(row.observation_id):row[col];
         params.push(value);
       }
     }
