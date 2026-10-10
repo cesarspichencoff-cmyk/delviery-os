@@ -108,22 +108,26 @@ void (async () => {
 
     // Original Entregas read path: collect multiple independent GET-equivalent
     // calls, WITHOUT retaining any result. Deliberately exercises retention.
-    const heapAfter = [];
-    for (let i = 1; i <= 3; i++) {
+    const heapHeld: number[] = [];
+    const heapReleased: number[] = [];
+    async function executarLeitura(i: number) {
       const t = performance.now();
-      const result = await lerRealidadeDeEntregas(b.cliente, {agora:AGORA});
+      const result = await lerRealidadeDeEntregas(b.cliente, { agora: AGORA });
       assert.equal(result.projecoes.length, 1);
       assert.equal(result.projecoes[0].viagens.length, N / 1000);
       const soma = result.projecoes[0].viagens.reduce((s,v) => s+v.eventos.length,0);
       assert.equal(soma,N);
       await coletar();
-      registrar("read-result-held", {iteration:i,read_ms:Math.round(performance.now()-t), trips:N/1000});
-      heapAfter.push(memoria().heap_used_mib);
-      // Scope exit above retains result until function completes; stage after
-      // release is measured in a separate helper in subsequent iterations.
+      registrar("read-result-held", { iteration:i, read_ms:Math.round(performance.now()-t), trips:N/1000 });
+      heapHeld.push(memoria().heap_used_mib);
     }
-    await coletar();
-    registrar("after-three-results-and-gc", { held_heap_mib: heapAfter });
+    for (let i = 1; i <= 3; i++) {
+      await executarLeitura(i);
+      await coletar();
+      registrar("read-result-released-and-gc", { iteration:i });
+      heapReleased.push(memoria().heap_used_mib);
+    }
+    registrar("after-three-results-and-gc", { heap_held_mib:heapHeld,heap_released_mib:heapReleased });
     console.log("Q026_MEMORY_PASS "+JSON.stringify({n:N,digest,three_reads:true,diagnostic_only:true}));
   } finally { await b.descartar(); }
 })().catch(e => { console.error(e); process.exitCode = 1; });
