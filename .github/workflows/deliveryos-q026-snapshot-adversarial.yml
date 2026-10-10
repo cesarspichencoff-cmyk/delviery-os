@@ -1,0 +1,97 @@
+name: deliveryos-q026-snapshot-adversarial
+# Q-026 SHADOW — auditoria adversarial de instantaneo, cursor e memoria (issue #36).
+# Somente testes: nenhum runtime, Product UI, Android ou migration muda.
+# PostgreSQL DESCARTAVEL no proprio job; nunca o banco operacional.
+on:
+  push:
+    branches:
+      - review/claude-q026-snapshot-adversarial-20261010
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: q026-snapshot-adversarial-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  adversarial-pg16:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: public.ecr.aws/docker/library/postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Servidor descartavel registra so ERROR ou mais grave (o ruido enchia o log do job)
+        # Cada banco das suites roda as migrations reais. As 0001, 0002, 0006, 0007 e 0008 trazem
+        # BEGIN/COMMIT proprios dentro da transacao do runner: dois WARNING por arquivo, por banco.
+        # Somados aos LOG de checkpoint de cada CREATE DATABASE, eram ~4.950 linhas no fim do log
+        # do job, o que tirava a saida das suites da janela de leitura. Nao muda nada visivel ao
+        # cliente: so o que o servidor descartavel escreve no proprio log.
+        run: |
+          node - <<'JS'
+          const { Client } = require("pg");
+          (async () => {
+            const c = new Client({ connectionString: process.env.DELIVERYOS_PG_URL });
+            await c.connect();
+            await c.query("ALTER SYSTEM SET log_min_messages = 'error'");
+            await c.query("ALTER SYSTEM SET log_checkpoints = off");
+            await c.query("SELECT pg_reload_conf()");
+            await c.end();
+            const d = new Client({ connectionString: process.env.DELIVERYOS_PG_URL });
+            await d.connect();
+            const r = await d.query(
+              "SELECT current_setting('log_min_messages') AS m, current_setting('log_checkpoints') AS k, version() AS v, " +
+              "current_setting('default_transaction_isolation') AS i, " +
+              "(SELECT datcollate FROM pg_database WHERE datname = current_database()) AS c",
+            );
+            await d.end();
+            console.log(JSON.stringify(r.rows[0]));
+            if (r.rows[0].m !== "error" || r.rows[0].k !== "off") throw new Error("configuracao de log nao aplicada");
+          })().catch((e) => { console.error(e); process.exit(1); });
+          JS
+      - name: Tipagem do projeto
+        run: npx tsc --noEmit
+      - name: Tipagem estrita das suites adversariais
+        run: |
+          for f in tests/product/q026-adversarial-comum.ts \
+                   tests/product/run-q026-snapshot-adversarial-pg.ts \
+                   tests/product/run-q026-cursor-adversarial-pg.ts \
+                   tests/product/run-q026-adversarial-mutacoes.ts; do
+            npx tsc --noEmit --target ES2022 --module commonjs --moduleResolution node --strict \
+              --esModuleInterop --skipLibCheck --types node "$f"
+          done
+      - name: Instantaneo, transacoes e visibilidade com escritor concorrente (NEG + POS)
+        # Verde = exatamente esta linha de resumo, nao so codigo de saida 0.
+        run: |
+          set -o pipefail
+          npx tsx tests/product/run-q026-snapshot-adversarial-pg.ts | tee q026-snapshot.out
+          grep -qx 'Q026_SNAPSHOT_ADVERSARIAL: 11/11 PASS' q026-snapshot.out
+      - name: "Cursor do PR #37 (43b6ad8 e dc0cd2f) contra entradas adversariais (NEG + POS)"
+        run: |
+          set -o pipefail
+          npx tsx tests/product/run-q026-cursor-adversarial-pg.ts | tee q026-cursor.out
+          grep -qx 'Q026_CURSOR_ADVERSARIAL: 21/21 PASS' q026-cursor.out
+      - name: Mutacoes — cada caso cai sem o mecanismo que afirma provar (nenhum cego)
+        run: |
+          set -o pipefail
+          npx tsx tests/product/run-q026-adversarial-mutacoes.ts | tee q026-mutacoes.out
+          grep -qx 'Q026_ADVERSARIAL_MUTACOES: 19/19 mortos, 0 cegos' q026-mutacoes.out
+      - name: Sem PostgreSQL as tres suites se declaram PULADAS (78), nunca verdes
+        run: |
+          set +e
+          DELIVERYOS_PG_URL= npx tsx tests/product/run-q026-snapshot-adversarial-pg.ts; a=$?
+          DELIVERYOS_PG_URL= npx tsx tests/product/run-q026-cursor-adversarial-pg.ts; b=$?
+          DELIVERYOS_PG_URL= npx tsx tests/product/run-q026-adversarial-mutacoes.ts; c=$?
+          echo "snapshot=$a cursor=$b mutacoes=$c"
+          test "$a" = 78 && test "$b" = 78 && test "$c" = 78
