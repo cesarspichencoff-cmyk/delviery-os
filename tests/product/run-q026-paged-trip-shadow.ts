@@ -21,7 +21,7 @@ import type { EventEnvelope } from "../../src/platform/contracts/event-catalog";
 import type { SqlRow } from "../../src/platform/persistence/sql-client";
 import { envelopeDaMensagem } from "../../src/platform/projections/consumidor";
 import { lerFatosParaReplay } from "../../src/platform/projections/replay-do-event-log";
-import { projetar } from "../../src/platform/projections/operacao-viva";
+import { projetar, type ViagemProjetada } from "../../src/platform/projections/operacao-viva";
 import { TIPOS_DA_OPERACAO_VIVA } from "../../src/platform/runtime/handler-operacao-viva";
 
 const URL_PG=(process.env.DELIVERYOS_PG_URL??"").trim();
@@ -102,6 +102,7 @@ void(async()=>{
     out("seeded");
 
     const streamed:Fingerprint[]=[];
+    const streamedTrips:ViagemProjetada[]=[];
     let seen=0,groups=0,maxGroup=0;
     const sample=()=>{
       const m=memory();
@@ -133,6 +134,7 @@ void(async()=>{
           const e=buffer[0];
           const p=projetar(buffer,{agora:now,unit_id:e.unit_id,source_mode:e.source_mode});
           assert.equal(p.viagens.length,1,"esperada uma viagem por grupo");
+          streamedTrips.push(p.viagens[0]);
           streamed.push({unit:e.unit_id,mode:e.source_mode,trip:p.viagens[0].trip_id,
             hash:digestTrip(p.viagens[0])});
           groups++;buffer=[];
@@ -157,7 +159,7 @@ void(async()=>{
     assert.equal(groups,N/1000);
     assert.equal(maxGroup,1000);
     await gc();
-    out("streamed-and-released",{
+    out("streamed-output-retained",{
       stream_ms:Math.round(performance.now()-started),
       streamed:seen,groups,max_group:maxGroup,
       sampled_peak:sampledPeak,
@@ -176,9 +178,11 @@ void(async()=>{
       const expected=sorted(fingerprints);
       const actual=sorted(streamed);
       assert.deepEqual(actual,expected,"dados da viagem ou proveniencia divergente");
+      const viajadas=[...streamedTrips].sort((a,b)=>a.trip_id.localeCompare(b.trip_id));
+      assert.deepEqual(viajadas,p.viagens,"OBJETOS INTEIROS de viagens divergentes");
       out("baseline-held",{
         replay_ms:Math.round(performance.now()-t),
-        exact_trip_json_equivalent:true,groups,
+        exact_trip_json_equivalent:true,exact_trip_objects_equivalent:true,groups,
         baseline_event_count:read.aptos.length,
       });
     }
@@ -186,7 +190,7 @@ void(async()=>{
     await gc();
     out("baseline-released-and-gc");
     console.log("Q026_PAGED_SHADOW_PASS "+JSON.stringify({
-      n:N,trips:groups,exact_trip_json_equivalent:true,
+      n:N,trips:groups,exact_trip_json_equivalent:true,exact_trip_objects_equivalent:true,
       limitations:"Not Q-016 full replay; source mode and cursor exceptions require proof",
     }));
   }finally{await b.descartar()}
