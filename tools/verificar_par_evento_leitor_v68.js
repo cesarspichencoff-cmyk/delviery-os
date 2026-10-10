@@ -221,6 +221,12 @@ function asWatcherV2(f,rows){
  f.event.snapshot_hash=hashed;f.decision.snapshot_hash=hashed;
  // Exact deployed V2 decision core: each item carries [{source_field,value}],
  // order notes and scan flag precede packaging/kits/sequence in fingerprint.
+ // V2 installed consumer reads eight identity/rule files, including two
+ // human/alias surfaces. Legacy V1 keeps its original six refs.
+ f.decision.rule_lineage.delivery_rule_refs.push(
+   "deliveryos:installed/product-aliases-v1.json#sha256="+"f".repeat(64),
+   "deliveryos:installed/human-order-overrides-v1.json#sha256="+"0".repeat(64)
+ );
  f.decision.observation_scan_complete=true;
  f.decision.order_observations=rows.filter(r=>r.scope_hint==="order")
    .map(r=>({source_field:r.source_field,value:r.value}));
@@ -537,6 +543,40 @@ check("V7.9 human note packet takes V2 fingerprint and never authorizes output",
  assert.equal(p.status,"REVIEW_REQUIRED",p.reasons.join(","));
  assert.equal(p.safeguards.authorizes_tickets,false);
  assert.equal(projectVerifiedReaderPairV68(f.event,f.decision,f.ctx).status,"BLOCKED");
+});
+
+
+check("V7.10 V2 requires alias and human override input SHA256, not V1 six-file refs",()=>{
+ const f=asWatcherV2(fixture(),[]);
+ assert.equal(verifyLiveReaderPairV68(f.event,f.decision).status,"PAIRED_SOURCE_VERIFIED");
+ f.decision.rule_lineage.delivery_rule_refs=f.decision.rule_lineage.delivery_rule_refs.slice(0,4);
+ assert.ok(verifyLiveReaderPairV68(f.event,f.decision).reasons.includes(
+  "SHADOW_DECISION_LINEAGE_MISSING_OR_MALFORMED_V78"));
+});
+check("V7.10 alias SHA cannot be missing or malformed in V2",()=>{
+ const f=asWatcherV2(fixture(),[]);
+ f.decision.rule_lineage.delivery_rule_refs[4]=
+  "deliveryos:installed/product-aliases-v1.json#sha256=UNVERIFIED";
+ assert.ok(verifyLiveReaderPairV68(f.event,f.decision).reasons.includes(
+  "SHADOW_DECISION_LINEAGE_MISSING_OR_MALFORMED_V78"));
+});
+check("V7.10 human override source SHA must not be replaced by an alias",()=>{
+ const f=asWatcherV2(fixture(),[]);
+ f.decision.rule_lineage.delivery_rule_refs[5]=
+  f.decision.rule_lineage.delivery_rule_refs[4];
+ assert.ok(verifyLiveReaderPairV68(f.event,f.decision).reasons.includes(
+  "SHADOW_DECISION_LINEAGE_MISSING_OR_MALFORMED_V78"));
+});
+check("V7.10 old watcher V1 six-source contract stays valid",()=>{
+ const f=fixture();
+ assert.equal(verifyLiveReaderPairV68(f.event,f.decision).status,"PAIRED_SOURCE_VERIFIED");
+});
+check("V7.10 V2 extra unsolicited ninth source is refused",()=>{
+ const f=asWatcherV2(fixture(),[]);
+ f.decision.rule_lineage.delivery_rule_refs.push(
+  "deliveryos:installed/unknown.json#sha256="+"9".repeat(64));
+ assert.ok(verifyLiveReaderPairV68(f.event,f.decision).reasons.includes(
+  "SHADOW_DECISION_LINEAGE_MISSING_OR_MALFORMED_V78"));
 });
 
 console.log("STABLE_READER_SHADOW_PAIR_V68="+count+"/"+count+" SHADOW ONLY; NO PHYSICAL EFFECT");
