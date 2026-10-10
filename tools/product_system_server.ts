@@ -52,6 +52,18 @@ import {
 
 const PORT = Number(process.env.PRODUCT_UI_PORT || 5290);
 /**
+ * Q-026 DRAFT: explicit opt-in overload protection for the GET Entregas
+ * route. Not enabled in production or by default. PostgreSQL's pool bounds
+ * DB connections but does not bound HTTP callers waiting and holding work.
+ * Only a declared value 1/2/4 enables it; invalid values fail closed at boot.
+ */
+function limiteExplicitoEntregas(raw: string | undefined): number {
+  if (raw === undefined || raw.trim() === "") return 0;
+  if (raw === "1" || raw === "2" || raw === "4") return Number(raw);
+  throw new Error("DELIVERYOS_ENTREGAS_MAX_INFLIGHT invalido; use 1, 2, 4 ou omita");
+}
+const LIMITE_ENTREGAS = limiteExplicitoEntregas(process.env.DELIVERYOS_ENTREGAS_MAX_INFLIGHT);
+/**
  * A porta de REALIDADE de Entregas. Com a URL do banco da plataforma, a
  * superficie /entregas ganha um bloco lido de identity.device e de
  * platform.event_log — somente leitura, a cada requisicao, separado da
@@ -320,6 +332,9 @@ export async function criarServidor(): Promise<http.Server> {
   const pronto = await calcular();
   const facade = await montarEntregasDemo();
   const clientePlataforma = URL_PLATAFORMA ? await createPgClient({ url: URL_PLATAFORMA, max: 2 }) : null;
+  // Count HTTP requests admitted, not borrowed PG connections or queue size.
+  // Counter belongs to THIS server instance and is released after settlement.
+  let entregasEmAndamento = 0;
 
   return http.createServer((req, res) => {
     // A trava: metodo de escrita e recusado antes de qualquer roteamento.
@@ -391,6 +406,12 @@ export async function criarServidor(): Promise<http.Server> {
         });
       }
       if (p === "/api/entregas") {
+        const limitar = LIMITE_ENTREGAS > 0 && clientePlataforma !== null;
+        if (limitar && entregasEmAndamento >= LIMITE_ENTREGAS) {
+          res.setHeader("Retry-After", "1");
+          return json(res, 503, { erro: "leitura_temporariamente_ocupada" });
+        }
+        if (limitar) entregasEmAndamento++;
         // A demonstracao e calculada no boot; a REALIDADE e lida agora. Um
         // bloco congelado no boot mostraria o aparelho como estava quando o
         // servidor subiu, e "agora" e o que quem olha esta perguntando.
@@ -401,7 +422,11 @@ export async function criarServidor(): Promise<http.Server> {
           const snap = await facade.snapshot();
           const leitura = await lerRealidade(clientePlataforma);
           json(res, 200, entregasVM(snap, new Date().toISOString(), facade.getPolicyMaxStops(), leitura, { unidade }));
-        })().catch(() => json(res, 500, { erro: "leitura_indisponivel" }));
+        })()
+          .catch(() => json(res, 500, { erro: "leitura_indisponivel" }))
+          .finally(() => {
+            if (limitar) entregasEmAndamento--;
+          });
         return;
       }
       if (p === "/api/operacao-viva") {
