@@ -430,7 +430,7 @@ void(async()=>{
       memory_note:"RSS is contaminated by the canonical baseline retained in this same process: NOT an A/B memory proof",
       checks,events:TOTAL,long_trip:LONG,device_only:nonTrip,unknown,invalid,groups,
       max_group:maxGroup,max_buffer:maxBuffer,fetch_size:257,batches,scopes:scopes.size,filters:4,
-      boundary:"devices reused from canonical, SQL cursor groups may change under concurrency; no snapshot proof"
+      boundary:"RR snapshot proven for one synthetic concurrent append; device model reused from canonical pre-append snapshot; no production proof"
     }));
   }finally{await writer.close();await observer.close();await b.descartar()}
 })().catch(e=>{console.error(e);process.exitCode=1});
