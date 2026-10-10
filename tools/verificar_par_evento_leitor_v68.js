@@ -1,7 +1,8 @@
 "use strict";
 const assert=require("node:assert/strict");
 const crypto=require("node:crypto");
-const {verifyLiveReaderPairV68,projectVerifiedReaderPairV68}=
+const {verifyLiveReaderPairV68,projectVerifiedReaderPairV68,
+ prepareOrderNoteReviewPacketV77,inspectOrderNoteDispositionClaimV77}=
  require("../dist/src/production/stableReaderShadowPairV68.js");
 const {PACKAGING_SOURCE_BLOB_V63}=
  require("../dist/src/production/currentPackagingBridgeV63.js");
@@ -281,6 +282,121 @@ check("V7.6: general + item notes never become print approval",()=>{
  assert.equal(r.status,"BLOCKED");
  assert.ok(r.reasons.includes("WATCHER_V2_ORDER_NOTE_REQUIRES_OPERATIONAL_RELEVANCE_PROOF"));
  assert.equal(r.print_authorized,false);
+});
+
+
+const packetFor=(rows=[general()])=>{
+ const f=asWatcherV2(fixture(),rows);
+ return {f,packet:prepareOrderNoteReviewPacketV77(f.event,f.decision)};
+};
+const claimFor=(packet,overrides={})=>({
+ schema:"deliveryos.order-note-disposition-claim.v1",
+ order_key_digest:packet.order_key_digest,
+ snapshot_hash:packet.snapshot_hash,
+ note_content_sha256:packet.general_note?.content_sha256,
+ classification:"NON_PRODUCTION_SENSITIVE_PAYMENT_CANCEL_METADATA",
+ action:"EXCLUDE_FROM_PRODUCTION_TICKETS",
+ human_review_reference:"human-review:fictional-operative:case-001",
+ ...overrides,
+});
+check("V7.7 valid V2 general note yields blinded exact-revision human review packet",()=>{
+ const {packet}=packetFor();
+ assert.equal(packet.status,"REVIEW_REQUIRED");
+ assert.equal(packet.general_note.source_field,"DSOBSCOMANDA");
+ assert.equal(packet.general_note.utf8_bytes,Buffer.byteLength(general().value,"utf8"));
+ assert.equal(packet.general_note.content_sha256,
+  crypto.createHash("sha256").update(general().value).digest("hex"));
+ assert.equal(packet.order_key_digest.length,64);
+ assert.equal(packet.safeguards.authorizes_tickets,false);
+ assert.ok(!JSON.stringify(packet).includes("FICTIONAL_NOTE"));
+});
+check("V7.7 no general note means no human exclusion packet",()=>{
+ const {packet}=packetFor([]);
+ assert.equal(packet.status,"NO_GENERAL_NOTE");
+ assert.equal(packet.general_note,null);
+ assert.equal(packet.safeguards.prints,false);
+});
+check("V7.7 legacy V1 cannot borrow V2 authenticated scan",()=>{
+ const f=fixture();
+ const packet=prepareOrderNoteReviewPacketV77(f.event,f.decision);
+ assert.equal(packet.status,"BLOCKED");
+ assert.ok(packet.reasons.includes("NOTE_REVIEW_WATCHER_V2_SOURCE_HASH_NOT_VERIFIED"));
+});
+check("V7.7 changed note bytes after V2 snapshot cannot become reviewer payload",()=>{
+ const {f}=packetFor();
+ f.event.order.observation_rows[0].value="CHANGED_SECRET_NOTE";
+ const packet=prepareOrderNoteReviewPacketV77(f.event,f.decision);
+ assert.equal(packet.status,"BLOCKED");
+ assert.equal(packet.general_note,null);
+ assert.ok(!JSON.stringify(packet).includes("CHANGED_SECRET"));
+});
+check("V7.7 changed decision fingerprint fails review packet even without print",()=>{
+ const {f}=packetFor();
+ f.decision.items[0].quantity=44;
+ const packet=prepareOrderNoteReviewPacketV77(f.event,f.decision);
+ assert.equal(packet.status,"BLOCKED");
+ assert.ok(packet.reasons.includes("NOTE_REVIEW_DECISION_FINGERPRINT_CHANGED"));
+});
+check("V7.7 event-decision revision mismatch fails request",()=>{
+ const {f}=packetFor();f.decision.snapshot_hash="b".repeat(64);
+ assert.ok(prepareOrderNoteReviewPacketV77(f.event,f.decision).reasons.includes(
+  "NOTE_REVIEW_EVENT_DECISION_IDENTITY_MISMATCH"));
+});
+check("V7.7 matching *claim* never authenticates the human or authorizes tickets",()=>{
+ const {packet}=packetFor();
+ const status=inspectOrderNoteDispositionClaimV77(packet,claimFor(packet));
+ assert.equal(status.status,"MATCHED_REVIEW_CLAIM_NOT_AUTHORIZED");
+ assert.equal(status.ticket_authorized,false);
+ assert.equal(status.print_authorized,false);
+ assert.equal(status.human_identity_authenticated,false);
+});
+check("V7.7 reuse claim for another order identity blocked",()=>{
+ const {packet}=packetFor();
+ const status=inspectOrderNoteDispositionClaimV77(packet,claimFor(packet,{
+  order_key_digest:"c".repeat(64)}));
+ assert.equal(status.status,"BLOCKED");
+});
+check("V7.7 stale snapshot is blocked even with same review reference",()=>{
+ const {packet}=packetFor();
+ assert.equal(inspectOrderNoteDispositionClaimV77(packet,
+  claimFor(packet,{snapshot_hash:"d".repeat(64)})).status,"BLOCKED");
+});
+check("V7.7 text digest mismatch from same order blocks",()=>{
+ const {packet}=packetFor();
+ assert.equal(inspectOrderNoteDispositionClaimV77(packet,
+  claimFor(packet,{note_content_sha256:"e".repeat(64)})).status,"BLOCKED");
+});
+check("V7.7 production meaning unresolved cannot turn into an exclusion",()=>{
+ const {packet}=packetFor();
+ const status=inspectOrderNoteDispositionClaimV77(packet,claimFor(packet,{
+  classification:"REQUIRES_PRODUCTION_RELEVANCE_REVIEW",
+  action:"KEEP_BLOCKED"}));
+ assert.ok(status.reasons.includes("NOTE_REVIEW_PRODUCTION_MEANING_UNRESOLVED"));
+});
+check("V7.7 contradictory action and classification blocked",()=>{
+ const {packet}=packetFor();
+ const status=inspectOrderNoteDispositionClaimV77(packet,claimFor(packet,{action:"KEEP_BLOCKED"}));
+ assert.ok(status.reasons.includes("NOTE_REVIEW_ACTION_CLASSIFICATION_CONFLICT"));
+});
+check("V7.7 review evidence reference must be bounded and cannot hold customer text",()=>{
+ const {packet}=packetFor();
+ for(const ref of ["","human-review:SECRET CUSTOMER MESSAGE","http://outside.test",
+  "human-review:"+"X".repeat(300)]){
+  const result=inspectOrderNoteDispositionClaimV77(packet,
+   claimFor(packet,{human_review_reference:ref}));
+  assert.equal(result.status,"BLOCKED");
+  assert.ok(!JSON.stringify(result).includes("SECRET CUSTOMER"));
+ }
+});
+check("V7.7 even structurally valid request with shadow blocked needs review, not tickets",()=>{
+ const {f,packet}=packetFor();
+ assert.equal(f.event.ready_for_downstream_shadow,true);
+ f.event.ready_for_downstream_shadow=false;
+ const revised=prepareOrderNoteReviewPacketV77(f.event,f.decision);
+ assert.equal(revised.status,"REVIEW_REQUIRED");
+ assert.equal(revised.safeguards.authorizes_tickets,false);
+ assert.equal(projectVerifiedReaderPairV68(f.event,f.decision,f.ctx).status,"BLOCKED");
+ assert.equal(packet.snapshot_hash,revised.snapshot_hash);
 });
 
 console.log("STABLE_READER_SHADOW_PAIR_V68="+count+"/"+count+" SHADOW ONLY; NO PHYSICAL EFFECT");
