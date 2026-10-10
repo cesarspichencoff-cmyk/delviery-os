@@ -15,6 +15,18 @@ const hex64=x=>typeof x==="string"&&/^[a-f0-9]{64}$/i.test(x);
 const date=x=>typeof x==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(x);
 const timestamp=x=>typeof x==="string"&&/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(x);
 const count=(o,k)=>o[k]=(o[k]||0)+1;
+// V7.3: presence of a field is only a CONTRACT COVERAGE SIGNAL.
+// Never read, print or validate the customer's free text from this auditor.
+const OBSERVATION_COLUMNS=Object.freeze(["DSOBSDESCIT","DSOBSPEDDIGCMD","TXPRODCOMVEN"]);
+const observationFieldCoverage=items=>{
+ const total=items.length;
+ const present=items.map(item=>OBSERVATION_COLUMNS.filter(key=>
+  item!==null&&typeof item==="object"&&
+  Object.prototype.hasOwnProperty.call(item,key)).length);
+ return {items:total,items_with_any_field:present.filter(n=>n>0).length,
+  items_with_all_fields:present.filter(n=>n===OBSERVATION_COLUMNS.length).length,
+  all_fields_present:total>0&&present.every(n=>n===OBSERVATION_COLUMNS.length)};
+};
 function scrubReason(v){
  const s=String(v||"UNKNOWN").toUpperCase();
  // Do not release product ids, order ids or free-form note text.
@@ -69,7 +81,10 @@ function audit(events,decisions,shiftFile){
  let paired=0,missing=0,unreadable=0,matched=0,validFingerprints=0,
      changedFingerprints=0,readyByBoth=0,readySource=0,readyDecision=0,
      revisionMismatches=0,shiftDateMismatch=0,expiredAtOrder=0,
-     bothReadyFlagsOnly=0,untrustedReadyClaims=0;
+     bothReadyFlagsOnly=0,untrustedReadyClaims=0,
+     nativeItemRecords=0,nativeItemsWithAnyObservationField=0,
+     nativeItemsWithAllObservationFields=0,
+     nativePairsWithAllObservationFields=0;
  const newest=[];
  for(const entry of selected){
   const decisionName=entry.name.replace(/\.json$/i,".decision.json");
@@ -100,6 +115,11 @@ function audit(events,decisions,shiftFile){
    // This is only an audit of their shadow flags; the richer V6.8 proof
    // (product observations + production plan) is still separately required.
    const sourceItems=e.order?.items??[];
+   const notes=observationFieldCoverage(sourceItems);
+   nativeItemRecords+=notes.items;
+   nativeItemsWithAnyObservationField+=notes.items_with_any_field;
+   nativeItemsWithAllObservationFields+=notes.items_with_all_fields;
+   if(notes.all_fields_present)nativePairsWithAllObservationFields++;
    const service=e.service_resolution||{},claimed=d.service||{};
    const provenShift=["LUNCH","DINNER"].includes(service.service)&&
      ["HUMAN_CONFIRMED_RULE","REAL_OBSERVED"].includes(service.evidence)&&
@@ -132,6 +152,10 @@ function audit(events,decisions,shiftFile){
    if(newest.length<12)newest.push({
      event_revision_matches_decision:match,
      status:verifiedReady?"VERIFIED_ONLY_FOR_EXISTING_SHADOW":"BLOCKED",
+     native_event_item_count:notes.items,
+     native_event_observation_fields_all_present:notes.all_fields_present,
+     exact_revision_sql_observations_verified:false,
+     three_ticket_preview_ready:false,
      event_reason_classes:[...new Set(e.blockers.map(scrubReason))].sort(),
      decision_reason_classes:[...new Set(d.blocking_reasons.map(scrubReason))].sort()
    });
@@ -148,6 +172,17 @@ function audit(events,decisions,shiftFile){
   both_ready_flags_only:bothReadyFlagsOnly,
   untrusted_ready_claims:untrustedReadyClaims,
   both_ready_for_existing_shadow:readyByBoth,
+  observation_source_coverage:{
+   native_event_item_records:nativeItemRecords,
+   native_items_with_any_observation_field:nativeItemsWithAnyObservationField,
+   native_items_with_all_observation_fields:nativeItemsWithAllObservationFields,
+   native_pairs_with_complete_observation_field_names:nativePairsWithAllObservationFields,
+   observation_field_names_checked:OBSERVATION_COLUMNS,
+   independent_sql_or_production_notes_join_executed:false,
+   exact_revision_item_observation_proofs_verified:false,
+   eligible_three_ticket_pairs_proven:0,
+   reason:"NATIVE_FIELD_PRESENCE_IS_NOT_OBSERVATION_SOURCE_OR_REVISION_PROOF",
+  },
   shift_control:{
    schema_match:shift.schema==="deliveryos.production-service-shift-state.v2",
    service_is_human_proven:["HUMAN_CONFIRMED_RULE","REAL_OBSERVED"].includes(shift.evidence)&&
@@ -163,6 +198,7 @@ function audit(events,decisions,shiftFile){
   limitations:["SHADOW_READY_IS_NOT_PHYSICAL_PRINT_READINESS",
    "SHADOW_READY_REQUIRES_EXACT_REVISION_AND_VALID_FINGERPRINT_AND_NO_BLOCKERS",
    "NO_OBSERVATION_TEXT_IN_WATCHER_V1",
+   "OBSERVATION_FIELDS_ARE_PRESENCE_ONLY_NOT_CUSTOMER_TEXT_OR_REVISION_PROOF",
    "NO_AUTHORITY_TO_RENEW_SHIFT_FROM_CLOCK",
    "NO_LIVE_PRODUCTION_JOIN_OR_PRINT_PROOF"],
   effects:{reader_service_change:false,database_read:false,database_write:false,
