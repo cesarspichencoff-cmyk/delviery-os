@@ -138,6 +138,12 @@ void(async()=>{
           const e=fromRow(row);
           if(!e){invalid++;continue}
           seen++;
+          // Replay cria escopo para TODO fato apto, inclusive os que nao
+          // possuem trip_id. O cursor nao pode apagar esse modo da UI.
+          const scopeKey=JSON.stringify([e.unit_id,e.source_mode]);
+          if(!scopes.has(scopeKey))scopes.set(scopeKey,{
+            unit_id:e.unit_id,source_mode:e.source_mode,viagens:[]
+          });
           if(!e.trip_id){nonTrip++;continue}
           const key=JSON.stringify([e.unit_id,e.source_mode,e.trip_id]);
           if(active!==null&&key!==active)flush();
@@ -180,6 +186,16 @@ void(async()=>{
     ok("view model inteiro igual em quatro filtros, sem IDs individuais");
     assert.equal(shadow.projecoes.reduce((n,p)=>n+p.viagens.reduce((m,v)=>m+v.eventos.length,0),0),N);
     assert.equal(shadow.historico_sem_modo,1);
+    // Guard adversarial: remover o escopo que so tem evento DEVICE deve
+    // mudar a saida da tela (modos, unidade ou lista de escopos).
+    const empty=shadow.projecoes.find(p=>p.viagens.length===0);
+    assert.ok(empty,"fixture deve testar um escopo valido sem nenhuma viagem");
+    const withoutEmpty={...shadow,projecoes:shadow.projecoes.filter(p=>p!==empty)};
+    const vmWithEmpty=entregasVM(snap,agora.toISOString(),null,{disponivel:true,realidade:shadow});
+    const vmWithoutEmpty=entregasVM(snap,agora.toISOString(),null,{disponivel:true,realidade:withoutEmpty});
+    assert.notEqual(JSON.stringify(vmWithEmpty),JSON.stringify(vmWithoutEmpty),
+      "sentinela cega: descartar escopo sem viagem nao mudou o resultado");
+    ok("controle negativo: eliminar escopo sem trip altera modelo completo");
     assert.ok(maxGroup>1);
     ok("contabilidade integral sem inventar T-BAD");
     console.log("Q026_MIXED_CURSOR_FULL_UI_PASS "+JSON.stringify({
