@@ -42,6 +42,20 @@ A auditoria ainda **não prova observações nem ticket triplo** e não deve ser
 - `tools/verificar_revisao_turno_humano_v70.js`: **13/13**, incluindo estado vencido, serviço não escolhido, referência humana ausente, data passada, retroatividade, janela noturna cruzando data e ausência de efeito.
 - **CI completa:** https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38055394298 — **PASS**. Não houve downgrades dos testes preexistentes.
 
+## 4.1 Evolução V7.4: elegibilidade temporal pura (10/10/2026)
+
+A lacuna anterior foi confirmada: `production-service-shift-state.v2` instalado e `tools/set_production_service_state_v1.ps1` possuem apenas `valid_until_local`, **não** o início efetivo. Uma simples renovação desse estado poderia aceitar retroativamente pedidos abertos antes da confirmação humana. **NÃO instalar, renovar ou migrar automaticamente**.
+
+A função **`assessReviewedShiftOrderWindowV74`** foi adicionada ao **mesmo** `src/production/shiftHumanReviewV70.ts`, sem recriar o resolvedor nem mudar `resolveProductionServiceShiftState`. Ela recebe um resultado de revisão V7.0 e um horário de abertura **explicitamente fornecido**, comparando:
+- filial `0001`, data operacional declarada, início e fim no mesmo dia;
+- `order_opened_at_local >= valid_from_local` e `<= valid_until_local`, sem deduzir turno pelo relógio;
+- frações de segundo até 7 dígitos, de modo que `15:00:00.0000001` **não** seja aceito para fim `15:00:00`;
+- pedido anterior ao início, dia seguinte, outra filial, confirmação bloqueada, revisão adulterada, formato inválido ou horário com offset não contratado: **BLOCKED**.
+
+Saída positiva = `WINDOW_MATCHES_REVIEW_NOT_AUTHORIZED` — um **filtro hipotético** que **não** autentica o operador, não prova a origem do timestamp do pedido, não pode atualizar `production-service-state.v2`, não imprime e não aceita histórico retroativo. A escolha/ativação do turno continua exigindo confirmação humana atual, contrato Windows que respeite `valid_from_local`, autorização de efeito e testes isolados da implementação nativa.
+
+**CI [38085874404](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38085874404) SUCCESS:** `READER_SHIFT_WINDOW_V74=16/16`, suíte total `READER_SHIFT_HUMAN_REVIEW_V70=29/29`; leitor V6.8 `17/17`, auditor V6.9 `15/15`, **desenho V7.2 `12/12 SVG_GOLDENS_MATCH`**. Nenhum arquivo Figma, SVG, ESC/POS, Windows, spooler ou regra de embalagem foi modificado.
+
 ## 5. Próximo portão operacional
 
 1. Confirmação humana atual do turno real, filial, início e fim efetivos, usando fonte auditável. Não inferir almoço/jantar pelo relógio nem pelo antigo `DINNER`.
