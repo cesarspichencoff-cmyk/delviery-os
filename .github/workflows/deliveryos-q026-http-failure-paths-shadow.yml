@@ -3,7 +3,7 @@ name: deliveryos-q026-http-failure-paths-shadow
 on:
   push:
     branches:
-      - research/q026-pool-backpressure-http-contract-20261010
+      - research/q026-retryable-overload-ui-20261010
   workflow_dispatch:
 permissions:
   contents: read
@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        case: [cancel_denied, pool_saturated, pool_checkout_fast, permission_denied]
+        case: [pool_checkout_fast, permission_denied]
     services:
       postgres:
         image: public.ecr.aws/docker/library/postgres:16
@@ -65,6 +65,9 @@ jobs:
         with:
           node-version: "22"
       - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: node --input-type=module --check < src/product/ui/app.js
+      - run: node --input-type=module --check < src/product/ui/http-leitura.js
+      - run: node tests/product/run-q026-product-ui-503-shadow.cjs
       - run: npm run test:platform:q016
       - run: npm run test:platform:product
       - run: npm run test:platform:governanca

@@ -5,8 +5,8 @@
     "status": "ACTIVE",
     "authority_scope": "technical_state",
     "superseded_by": null,
-    "atualizado_em": "2026-10-09",
-    "state_basis": "6f52755",
+    "atualizado_em": "2026-10-10",
+    "state_basis": "300969fc6e525dfc9c004e31a12745953e8aefdf",
     "observa": [
       "src/product/",
       "src/perfil-delivery/",
@@ -14,7 +14,7 @@
     ],
     "_nota_observa": "Os tres troncos cujo estado este arquivo realmente afirma: produto, perfil e o Lab V4. src/platform/ fica de fora porque o que STATE.json diz dele sao contagens de teste, que esta guarda nao verifica — declarar escopo que a guarda nao cobre seria comprar confianca que ela nao entrega. Escolhido antes de rodar, e nao para acomodar caso que falhava (L44)."
   },
-  "atualizado_em": "2026-10-09",
+  "atualizado_em": "2026-10-10",
   "_nota_atualizado_em": "Ate 2026-08-07 este campo declarava 2026-08-03 enquanto o arquivo continha o bloco revolution_0a datado de 2026-08-05 e havia sido gravado no commit 953a3fb, de 2026-08-07. Foi o primeiro defeito que a guarda G6c acusou.",
   "missao": "MACRO-PROMPT 1/3 — Hybrid Platform + PostgreSQL + Cloud Foundation",
   "veredito": "READY_FOR_MACRO_PROMPT_2_FIELD_AND_COPILOT_BRIDGE",
