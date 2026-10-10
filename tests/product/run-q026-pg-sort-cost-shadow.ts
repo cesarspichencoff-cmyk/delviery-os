@@ -92,9 +92,9 @@ void(async()=>{
     return parse(await tx.query("EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) "+query,[TIPOS_DA_OPERACAO_VIVA]));
    });
   }
-  const before=await explain();
-  assert.equal(before.rows,N);
-  assert.ok(before.sorts.length>0||before.indexes.length>0);
+  const beforeTrials=[await explain(),await explain(),await explain()];
+  for(const b of beforeTrials){assert.equal(b.rows,N);assert.ok(b.sorts.length>0||b.indexes.length>0)}
+  const before=beforeTrials[1];
   const size0=Number((await b.cliente.query(
    "SELECT pg_total_relation_size('platform.event_log'::regclass)::bigint AS size"
   ))[0].size);
@@ -102,7 +102,9 @@ void(async()=>{
    "CREATE INDEX q026_shadow_cursor_idx ON platform.event_log (unit_id,source_mode,object_type,object_id)"
   );
   await b.cliente.query("ANALYZE platform.event_log");
-  const after=await explain();
+  const afterTrials=[await explain(),await explain(),await explain()];
+  for(const a of afterTrials)assert.equal(a.rows,N);
+  const after=afterTrials[1];
   const indexSize=Number((await b.cliente.query(
    "SELECT pg_relation_size('platform.q026_shadow_cursor_idx'::regclass)::bigint AS size"
   ))[0].size);
@@ -113,7 +115,14 @@ void(async()=>{
   assert.ok(indexSize>0&&size1>=size0);
   assert.ok(Math.abs(size1-size0-indexSize)<=8192,"table size grew unexpectedly");
   const result={events:N,long_trip:LONG,work_mem_kib:64,
-   before,after,index_size_bytes:indexSize,
+   before,after,
+   before_trials_ms:beforeTrials.map(x=>x.ms),
+   after_trials_ms:afterTrials.map(x=>x.ms),
+   before_median_ms:[...beforeTrials.map(x=>x.ms)].sort((a,b)=>a-b)[1],
+   after_median_ms:[...afterTrials.map(x=>x.ms)].sort((a,b)=>a-b)[1],
+   before_all_external_disk:beforeTrials.every(x=>x.sorts.some(s=>s.space_type==='Disk')),
+   after_all_without_temp:afterTrials.every(x=>x.sorts.length===0&&x.temp_written_blocks===0),
+   index_size_bytes:indexSize,
    table_before_bytes:size0,table_after_bytes:size1,
    postgres_rss_measured:false,
    note:"PG EXPLAIN single-run only; temp blocks not direct server RSS; not production p95"};
