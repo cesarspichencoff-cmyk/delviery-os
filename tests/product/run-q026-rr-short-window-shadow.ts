@@ -21,8 +21,8 @@ import { lerRealidadeDeEntregas } from "../../src/platform/leitura/realidade-de-
 const url=(process.env.DELIVERYOS_PG_URL??"").trim();
 const path=(process.env.Q026_DURATION_RESULT??"").trim();
 const N=Number(process.env.Q026_DURATION_N);
-const MEASURED=4, WARMUPS=1, TOTAL=MEASURED+WARMUPS;
-if(!url||!path||![120000,300000].includes(N))throw Error("Q026_DURATION_PARAMETERS_MISSING_OR_INVALID");
+const MEASURED=N>=1000000?1:4, WARMUPS=N>=1000000?0:1, TOTAL=MEASURED+WARMUPS;
+if(!url||!path||![120000,300000,1030000].includes(N))throw Error("Q026_DURATION_PARAMETERS_MISSING_OR_INVALID");
 const NOW=new Date("2026-10-10T16:00:00Z");
 const baseMoment="2026-10-09T20:00:00Z";
 const round=(x:number)=>+(x.toFixed(2));
@@ -181,7 +181,7 @@ try{
     writer_ms:stats("writer_ms"),node_rss_mib:stats("rss_mib"),
     all_reads_snapshot_consistent:true,backend_xmin_released_each_read:true,
     results:data,
-    caveats:["4 measured observations per job, descriptive extrema only; not p95/p99 SLOs",
+    caveats:["1 observation for 1.03M; 4 for smaller sizes; not production p95/p99 SLOs",
       "synthetic one-unit one-trip data; one independent append per read",
       "wall_ms is transaction incl COMMIT; total_reader_ms includes CPU projection after COMMIT",
       "snapshot_upper_ms from before first event SELECT through COMMIT; xmin_age_ms after event SELECT through COMMIT",
