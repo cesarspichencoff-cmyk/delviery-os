@@ -118,8 +118,9 @@ class CompactTrip {
 }
 
 
-export async function lerRealidadeDeEntregasIncremental(cliente: TransactionalSqlClient, opcoes: { agora: Date; unit_id?: string }): Promise<RealidadeDeEntregas> {
+export async function lerRealidadeDeEntregasIncremental(cliente: TransactionalSqlClient, opcoes: { agora: Date; unit_id?: string; tamanho_lote?: 257 | 1024 }): Promise<RealidadeDeEntregas> {
   const agora=opcoes.agora;
+  const tamanho_lote=opcoes.tamanho_lote ?? 257;
   let unknown=0,invalid=0,maxBatch=0,fetches=0,seen=0;
   const scopes=new Map<string,{unit_id:string;source_mode:SourceMode;viagens:ViagemProjetada[]}>();
   const txDevices:{lines:SqlRow[];latest:SqlRow[];counts:SqlRow[]}={lines:[],latest:[],counts:[]};
@@ -144,7 +145,7 @@ export async function lerRealidadeDeEntregasIncremental(cliente: TransactionalSq
       acc=null;
     };
     for(;;){
-      const rows=await tx.query("FETCH FORWARD 257 FROM q026_full_rss");
+      const rows=await tx.query(`FETCH FORWARD ${tamanho_lote} FROM q026_full_rss`);
       maxBatch=Math.max(maxBatch,rows.length);
       if(rows.length===0)break;
       fetches++;
@@ -185,7 +186,7 @@ export async function lerRealidadeDeEntregasIncremental(cliente: TransactionalSq
   });
   const txMs=performance.now()-start;
 
-  assert.ok(maxBatch<=257);
+  assert.ok(maxBatch<=tamanho_lote);
     const latestBy=new Map<string,UltimoLote>();
     for(const u of txDevices.latest){
       latestBy.set(String(u.device_id),{
