@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        n: [120000, 300000]
+        n: [120000, 300000, 1030000]
     services:
       postgres:
         image: public.ecr.aws/docker/library/postgres:16
@@ -26,6 +26,7 @@ jobs:
       DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
       Q026_DURATION_N: ${{ matrix.n }}
       Q026_DURATION_RESULT: short-rr-${{ matrix.n }}.json
+      NODE_OPTIONS: --max-old-space-size=4096
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -79,18 +80,19 @@ jobs:
         run: |
           node - <<'JS'
           const fs=require('node:fs');
-          for(const n of [120000,300000]){
+          for(const n of [120000,300000,1030000]){
             const r=JSON.parse(fs.readFileSync('results/short-rr-'+n+'.json','utf8'));
-            if(r.N!==n||r.measured!==4||r.results.length!==4||r.committed_append_events!==5||
+            const expected=n===1030000?1:4;
+            if(r.N!==n||r.measured!==expected||r.results.length!==expected||r.committed_append_events!==expected+(n===1030000?0:1)||
                !r.all_reads_snapshot_consistent||!r.backend_xmin_released_each_read)
               throw Error('missing data or snapshot proof at '+n);
             if(r.results.some(s=>s.wall_ms<=0||s.post_commit_ms<=0||
                s.total_reader_ms<s.wall_ms||s.snapshot_upper_ms<s.xmin_age_ms))
               throw Error('bad duration or CPU outside RR at '+n);
             console.log('Q026_SHORT_RR_LARGE_PASS '+JSON.stringify({
-              n,reads:4,rr_ms:r.wall_ms,total_reader_ms:r.total_reader_ms,
+              n,reads:expected,rr_ms:r.wall_ms,total_reader_ms:r.total_reader_ms,
               post_commit_ms:r.post_commit_ms,snapshot_upper_ms:r.snapshot_upper_ms,
-              boundary:'laboratory; not production p95/p99 or configured runtime timeout'
+              boundary:'laboratory; 1 sample at 1.03M, no production p95/p99 or configured runtime timeout'
             }));
           }
           JS
