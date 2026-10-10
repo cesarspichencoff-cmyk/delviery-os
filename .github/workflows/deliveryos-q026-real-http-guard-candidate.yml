@@ -1,0 +1,78 @@
+name: deliveryos-q026-real-http-guard-candidate
+# Q-026 SHADOW/HOLD. Isolated PG16 and localhost only. Never deploy/merge automatically.
+on:
+  push:
+    branches:
+      - research/deliveryos-q026-http-guard-candidate-20261010
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: q026-real-http-guard-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  real-http:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { mode: disabled, role: admin }
+          - { mode: enabled, role: admin }
+          - { mode: enabled, role: reader }
+    services:
+      postgres:
+        image: public.ecr.aws/docker/library/postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
+      Q026_ACTUAL_HTTP_MODE: ${{ matrix.mode }}
+      Q026_ACTUAL_HTTP_DB_ROLE: ${{ matrix.role }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Typecheck candidate route, adapter, and actual HTTP harness
+        run: |
+          npx tsc --noEmit
+          npx tsc --noEmit --target ES2022 --module commonjs --moduleResolution node --strict --esModuleInterop --skipLibCheck --types node tests/product/run-q026-real-http-guard-candidate.ts
+      - name: Actual localhost Product System real HTTP handler with PG lock
+        shell: bash
+        run: |
+          set -o pipefail
+          npx tsx tests/product/run-q026-real-http-guard-candidate.ts | tee q026-real-http.out
+          grep "^Q026_ACTUAL_HTTP_GUARD_${Q026_ACTUAL_HTTP_MODE^^}_PASS " q026-real-http.out
+          if [ "$Q026_ACTUAL_HTTP_MODE" = enabled ]; then
+            grep '^Q026_ACTUAL_HTTP_DISCONNECT_PASS ' q026-real-http.out
+            grep '^Q026_ACTUAL_HTTP_DEADLINE_PASS ' q026-real-http.out
+          fi
+  regressions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm run test:platform:q016
+      - run: npm run test:platform:product
+      - run: npm run test:platform:governanca
+      - name: Missing PG must fail closed
+        shell: bash
+        run: |
+          set +e
+          DELIVERYOS_PG_URL= Q026_ACTUAL_HTTP_MODE=enabled npx tsx tests/product/run-q026-real-http-guard-candidate.ts
+          code=$?
+          echo "no_db_exit=$code"
+          test "$code" = 78
