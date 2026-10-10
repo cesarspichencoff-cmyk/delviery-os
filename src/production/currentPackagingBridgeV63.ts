@@ -8,6 +8,10 @@ import { projectOperationalTicketsFromMotorsV45, type OperationalTicketsFromMoto
  * The motor file must be audited and pinned before any use.
  */
 export const PACKAGING_SOURCE_BLOB_V63 = "3167c309f02a0ad5a84fb43043b8866e3bee873c";
+/** V7.8: UTF-8 file SHA-256 independently read from the live CAIXA_MOOCA
+ * motor and whose Git blob SHA-1 was verified to equal V6.3. A separate
+ * checksum namespace, NEVER interchangeable with the Git blob. */
+export const PACKAGING_SOURCE_SHA256_V78 = "1e4cf2475edb586d5dae88388d2adc7cf02013b00ec93c0371e3edb80f81342e";
 const PROVEN = new Set(["PROVEN_OPERATIONAL_DOCUMENT","PROVEN_CURRENT_HUMAN_RULE",
   "PROVEN_CURRENT_HUMAN_RULE_WITH_DERIVED_CAPACITY","DERIVED_FROM_PROVEN_CAPACITIES"]);
 const canon=(s:unknown)=>String(s??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"")
