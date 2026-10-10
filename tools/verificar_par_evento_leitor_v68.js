@@ -70,6 +70,7 @@ function fixture(){
   source_ref:"fixture:current:product-identity:"+s.canonical}));
  const observation_proofs=source.map(s=>({item_index:s.item_index,canonical_code:s.canonical,
   snapshot_hash:hex,source_ref:"fixture:observations:"+s.internal,
+  delivery_observations:deep(s.obs),production_observations:[],
   status:s.obs.length?"OBSERVED_EXACT_ITEM_OBSERVATIONS":"PROVEN_NONE_FOR_THIS_ITEM"}));
  const pack=()=>({total_items:3,has_unknown:false,
   groups:[{kind:"faixa",station:"duplas",box:"450",boxes:1,
@@ -150,6 +151,16 @@ check("observation proof from a different revision is prohibited",()=>{
 });
 check("customer instruction cannot disappear just by claiming PROVEN_NONE",()=>{
  const f=fixture();f.ctx.observation_proofs[1].status="PROVEN_NONE_FOR_THIS_ITEM";
+ assert.ok(projectVerifiedReaderPairV68(f.event,f.decision,f.ctx).reasons.some(x=>
+ x.startsWith("ITEM_OBSERVATION_PROOF_MISSING_OR_WRONG_REVISION")));
+});
+check("observation status alone is insufficient when customer notes differ",()=>{
+ const f=fixture();f.ctx.observation_proofs[1].delivery_observations=["COM PIMENTA"];
+ assert.ok(projectVerifiedReaderPairV68(f.event,f.decision,f.ctx).reasons.some(x=>
+ x.startsWith("ITEM_OBSERVATION_PROOF_MISSING_OR_WRONG_REVISION")));
+});
+check("an unrecorded TXPRODCOMVEN note blocks pair even if order text matches",()=>{
+ const f=fixture();f.ctx.production.lines[1].tx_prod_com_ven=["SEM WASABI"];
  assert.ok(projectVerifiedReaderPairV68(f.event,f.decision,f.ctx).reasons.some(x=>
  x.startsWith("ITEM_OBSERVATION_PROOF_MISSING_OR_WRONG_REVISION")));
 });
