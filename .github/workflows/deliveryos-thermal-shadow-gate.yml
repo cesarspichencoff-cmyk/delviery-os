@@ -78,6 +78,8 @@ jobs:
         run: npm run verificar:tata-sequence-policy
       - name: Semantic job eligibility V5.10 (Issue 25)
         run: node tools/verificar_gate_semantico_termico_v510.js
+      - name: Three original Figma 80mm receipt SVG goldens V7.2 (no redraw)
+        run: node tools/verificar_desenho_comandas_v72.js
       - name: Direct Epson renderer source-semantic rejection V7.1 (Issue 25)
         run: node tools/verificar_renderer_semantico_direto_v71.js
       - name: ESC/POS adversarial contract RED until issue 22 is fixed
