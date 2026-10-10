@@ -133,17 +133,18 @@ test('reject mismatched created branch receipt and malformed snapshot before a w
  await assert.rejects(publish(snap,{sha},{token,fetchFn}),/snapshot_branch_receipt_invalid/);
 });
 
+
 test('manual-only workflow tests before requiring repo-wide write token',()=>{
  const yml=readFileSync(new URL('../.github/workflows/cesar-os-public-ci-snapshot.yml',import.meta.url),'utf8');
- assert.match(yml,/^on:\\s*\\n\\s+workflow_dispatch:\\s*$/m);
- assert.doesNotMatch(yml,/^\\s*(schedule|cron|push|pull_request|pull_request_target|workflow_run):/m);
- assert.match(yml,/^permissions: \\{\\}$/m);
- assert.match(yml,/^\\s+actions: read$/m);
- assert.match(yml,/^\\s+contents: write$/m);
- assert.match(yml,/uses: actions\\/checkout@[a-f0-9]{40}/);
- assert.match(yml,/persist-credentials: false/);
- assert(yml.indexOf('run: node --test test/cesar-os-ci-snapshot.test.mjs')>=0);
- assert(yml.indexOf('run: node --test test/cesar-os-ci-snapshot.test.mjs') <
-        yml.indexOf('run: node tools/cesar-os-ci/snapshot.mjs'));
- assert.match(yml,/github.ref == 'refs\\/heads\\/main'/);
+ assert.match(yml,/^on:\s*\n\s+workflow_dispatch:\s*$/m);
+ assert.doesNotMatch(yml,/^\s*(schedule|cron|push|pull_request|pull_request_target|workflow_run):/m);
+ assert.match(yml,/^permissions: \{\}$/m);
+ assert.match(yml,/^\s+actions: read$/m);
+ assert.match(yml,/^\s+contents: write$/m);
+ assert(yml.includes('uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683'));
+ assert(yml.includes('persist-credentials: false'));
+ const gate='run: node --test test/cesar-os-ci-snapshot.test.mjs';
+ const write='run: node tools/cesar-os-ci/snapshot.mjs';
+ assert(yml.includes(gate)&&yml.includes(write)&&yml.indexOf(gate)<yml.indexOf(write));
+ assert(yml.includes("github.ref == 'refs/heads/main'"));
 });
