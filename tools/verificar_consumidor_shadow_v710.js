@@ -25,6 +25,9 @@ for(const i of [1,2,3])original=removeAddon(original,i);
 // Lineage 3 was inserted immediately before an existing indented property.
 // Restoring the installed source requires its original newline; no golden edit.
 original=original.replace("  ...core,  effects: {","  ...core,\n  effects: {");
+// read_file returns installed source without terminal LF; candidate staging
+// added one LF for text-file hygiene. Exclude that LF from the original blob.
+original=original.replace(/\n$/,"");
 const digest=crypto.createHash("sha1")
  .update(Buffer.from("blob "+Buffer.byteLength(original)+"\0"))
  .update(original,"utf8").digest("hex");
