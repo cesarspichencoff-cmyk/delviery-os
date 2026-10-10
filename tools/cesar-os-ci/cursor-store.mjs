@@ -6,7 +6,7 @@ const assert=(condition,error)=>{if(!condition)throw Error(error);};
 export const MIGRATION_SQL=`CREATE TABLE IF NOT EXISTS ci_archive_cursors (
   source_id TEXT PRIMARY KEY CHECK(source_id='github-actions-public-deliveryos'),
   revision INTEGER NOT NULL CHECK(revision>=1),
-  cursor_json TEXT NOT NULL CHECK(length(cursor_json)<=65000),
+  cursor_json TEXT NOT NULL CHECK(length(CAST(cursor_json AS BLOB))<=65000),
   updated_at TEXT NOT NULL
 );`;
 
