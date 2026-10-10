@@ -1,9 +1,8 @@
 name: DeliveryOS Public CI Snapshot
 
-# Candidate only. Scheduled workflows run only when this file is on the default branch.
+# Manual-first candidate. Merging this file MUST NOT activate recurring execution.
+# An hourly schedule requires a separate reviewed change and explicit authorization.
 on:
-  schedule:
-    - cron: '17 * * * *'
   workflow_dispatch:
 
 permissions: {}
