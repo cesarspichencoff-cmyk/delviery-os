@@ -34,7 +34,7 @@ jobs:
         run: |
           npx tsc --noEmit
           npx tsc --noEmit --target ES2022 --module commonjs --moduleResolution node --strict --esModuleInterop --skipLibCheck --types node tests/product/run-q026-browser-overload-proof.ts
-      - name: Browser: previous reading remains visible on PG backlog and recovers
+      - name: Browser proves previous reading survives PG backlog and recovers
         shell: bash
         run: |
           set -o pipefail
