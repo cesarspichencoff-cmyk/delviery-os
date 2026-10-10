@@ -92,9 +92,16 @@ void(async()=>{
       "'{}'::jsonb, now()-(($1::bigint-g)::double precision*interval '0.1 seconds'),",
       "now(),'device','q026bench-key-'||g,",
       "CASE WHEN (g-1)%1000=0 THEN 'trip_started@1.0.0' ELSE 'gps_batch_received@1.0.0' END,",
-      "'simulated' FROM generate_series(1,$1::integer) AS g"
+      "'simulated' FROM generate_series($2::integer,$3::integer) AS g"
     ].join(" ");
-    await b.cliente.query(sql,[N]);
+    // O cliente tem statement_timeout de 15s: o seed em uma chamada de 1,03M
+    // expirava sem iniciar o benchmark HTTP. Lotes limitados nao mudam os fatos.
+    const inicioSeed=performance.now();
+    for(let ini=1;ini<=N;ini+=50000){
+      await b.cliente.query(sql,[N,ini,Math.min(N,ini+49999)]);
+    }
+    console.log("Q026_PAIRED_HTTP_SEEDED n="+N+" seed_ms="+
+      Math.round((performance.now()-inicioSeed)*100)/100);
     const cont=await b.cliente.query<{n:string}>("SELECT count(*) AS n FROM platform.event_log");
     assert.equal(Number(cont[0].n),N);
     const result:{side:string;runs:Medida[]}[]=[];
