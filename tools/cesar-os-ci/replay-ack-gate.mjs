@@ -17,7 +17,7 @@ export async function commitAfterReceipts(plan,{intents,receiptFor,store}={}){
   assert(expected.size===plan.new_archive_paths.length&&manifest.size===expected.size&&
     plan.new_archive_entries.length===expected.size&&
     plan.new_archive_entries.every(x=>expected.has(x.archive_path)&&
-      /^[a-f0-9]{64}$/.test(x.snapshot_sha256)&&
+      /^[a-f0-9]{64}$/.test(x.snapshot_sha256)&&/^[a-f0-9]{40}$/.test(x.git_blob_sha)&&
       Number.isSafeInteger(x.record_count)&&x.record_count>=0&&x.record_count<=100),
     'receipt_gate_archive_manifest_invalid');
   const needsReceipt=new Set(plan.new_archive_entries.filter(x=>x.record_count>0).map(x=>x.archive_path));
@@ -27,7 +27,8 @@ export async function commitAfterReceipts(plan,{intents,receiptFor,store}={}){
       item.source_id===SOURCE&&typeof item.batch_id==='string'&&BATCH.test(item.batch_id)&&
       Number.isSafeInteger(item.items_expected)&&item.items_expected>=0&&item.items_expected<=100&&
       item.items_expected===manifest.get(item.archive_path)?.record_count&&
-      item.snapshot_sha256===manifest.get(item.archive_path)?.snapshot_sha256,
+      item.snapshot_sha256===manifest.get(item.archive_path)?.snapshot_sha256&&
+      item.git_blob_sha===manifest.get(item.archive_path)?.git_blob_sha,
       'receipt_gate_intent_invalid');
     assigned.set(item.archive_path,item);
   }
@@ -46,6 +47,7 @@ export async function commitAfterReceipts(plan,{intents,receiptFor,store}={}){
       receipt.external_effect_authorized===false&&
       receipt.items_seen===intent.items_expected&&
       receipt.snapshot_sha256===intent.snapshot_sha256&&
+      receipt.git_blob_sha===intent.git_blob_sha&&
       Number.isSafeInteger(receipt.items_new)&&receipt.items_new>=0&&
       Number.isSafeInteger(receipt.items_deduped)&&receipt.items_deduped>=0&&
       receipt.items_new+receipt.items_deduped===receipt.items_seen&&
