@@ -58,7 +58,7 @@ jobs:
           t=pathlib.Path(os.environ["RUNNER_TEMP"])
           a=(t/"candidate-governanca.log").read_text(errors="replace")
           b=(t/"baseline-governanca.log").read_text(errors="replace")
-          fail=lambda s: sorted(re.findall(r'(?m)^\s+- docs/etapa-4-8/APPEND-ONLY\.md:.*,s))
+          fail=lambda s: sorted(re.findall(r"(?m)^\s+- docs/etapa-4-8/APPEND-ONLY\.md:.*",s))
           ac,bc=fail(a),fail(b)
           print("BASELINE_GOVERNANCE_STATUS",os.environ["BASELINE_STATUS"])
           print("CANDIDATE_GOVERNANCE_STATUS",os.environ["CANDIDATE_STATUS"])
