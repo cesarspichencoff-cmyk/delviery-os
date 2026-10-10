@@ -3,7 +3,7 @@ import type {DeliveryJoinProjection,ProductionJoinProjection} from "./deliveryPr
 import type {ProductionPrintPlan} from "./productionPrintPlan";
 import type {ProvenReaderProductV66} from "./readerIngressV66";
 import {projectJoinedReaderTicketsV66} from "./readerIngressV66";
-import type {MotorInterfaceV63} from "./currentPackagingBridgeV63";
+import {PACKAGING_SOURCE_SHA256_V78, type MotorInterfaceV63} from "./currentPackagingBridgeV63";
 import type {OperationalTicketsResultV45} from "./operationalTicketsV45";
 
 /** V6.8 observes the ACTUAL watcher/consumer v1 contracts.
@@ -312,14 +312,33 @@ export function verifyLiveReaderPairV68(
     !["HUMAN_CONFIRMED_RULE","REAL_OBSERVED"].includes(clean(event.service_resolution.evidence))||
     !clean(event.service_resolution.source_ref))
     reasons.add("EVENT_DECISION_SERVICE_PROOF_MISMATCH");
- if(!decision.rule_lineage||
-    !Array.isArray(decision.rule_lineage.academy_rule_refs)||
-    !Array.isArray(decision.rule_lineage.delivery_rule_refs)||
-    !decision.rule_lineage.academy_rule_refs.length||
-    !decision.rule_lineage.delivery_rule_refs.length||
-    [...decision.rule_lineage.academy_rule_refs,
-     ...decision.rule_lineage.delivery_rule_refs].some(s=>!clean(s)))
-    reasons.add("SHADOW_DECISION_LINEAGE_ABSENT");
+ // V7.8: a nonempty lineage list is NOT evidence that the installed
+ // consumer used the exact packaging engine. The CAIXA installed consumer
+ // currently omits lineage altogether; require all six origin-bearing hashes
+ // and the SHA-256 of the V6.3 pinned source before a 3-ticket preview.
+ const academy=decision.rule_lineage?.academy_rule_refs;
+ const delivery=decision.rule_lineage?.delivery_rule_refs;
+ const requiredAcademy=[
+   "tata-academia:installed/packaging-current.js",
+   "tata-academia:installed/app-data.json",
+ ];
+ const requiredDelivery=[
+   "deliveryos:installed/routing.json",
+   "deliveryos:installed/printer-map.json",
+   "deliveryos:installed/non-production.json",
+   "deliveryos:installed/product-identity-cache-v1.json",
+ ];
+ const valid=(refs:string[]|undefined,names:string[])=>
+   Array.isArray(refs)&&refs.length===names.length&&
+   names.every(prefix=>refs.some(ref=>typeof ref==="string"&&
+      ref.startsWith(prefix+"#sha256=")&&
+      /^[a-f0-9]{64}$/.test(ref.slice((prefix+"#sha256=").length))))&&
+   new Set(refs).size===refs.length;
+ if(!valid(academy,requiredAcademy)||!valid(delivery,requiredDelivery))
+   reasons.add("SHADOW_DECISION_LINEAGE_MISSING_OR_MALFORMED_V78");
+ else if(!academy!.includes(
+   requiredAcademy[0]+"#sha256="+PACKAGING_SOURCE_SHA256_V78))
+   reasons.add("SHADOW_DECISION_PACKAGING_SOURCE_NOT_PINNED_V78");
  if(!decision.packaging||decision.packaging.has_unknown||
     !decision.kits||decision.kits.status!=="FACT")
     reasons.add("SHADOW_PACKAGING_OR_KITS_NOT_PROVEN");
