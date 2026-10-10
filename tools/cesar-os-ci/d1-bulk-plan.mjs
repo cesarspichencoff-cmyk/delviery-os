@@ -20,7 +20,7 @@ export function packWorkObservationInserts(rows){
   const used=new Set(),out=[];
   for(const row of rows){
     if(!row||typeof row!=='object'||Array.isArray(row)||
-       typeof row.observation_id!=='string'||!/^obs_[a-zA-Z0-9_-]{6,80}$/.test(row.observation_id)||
+       typeof row.observation_id!=='string'||!/^obs_[a-f0-9]{20}$/.test(row.observation_id)||
        used.has(row.observation_id)||row.source_id!==SOURCE||row.domain!=='WORK'||
        row.truth_class!=='SOURCE_CLAIM'||row.possible_commitment!==false||
        row.raw_payload_persisted===true)
