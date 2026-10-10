@@ -1,5 +1,6 @@
 // Candidate query planner for a future PRIVATE D1 transactional v2 ingest.
 // Pure function. Does NOT connect to D1, execute SQL, or authorize source ingestion.
+import {createHash} from 'node:crypto';
 const SOURCE='github-actions-public-deliveryos';
 export const WORK_COLUMNS=Object.freeze([
   'observation_id','source_id','external_ref','signal_type','observed_at',
@@ -13,6 +14,12 @@ export const D1_MAX_OBSERVATIONS=100;
 export const MAX_ROWS_PER_INSERT=Math.floor(D1_BIND_PARAM_CEILING/WORK_COLUMNS.length);
 export const RESERVED_EXTRA_QUERIES=5;
 const fail=(x)=>{throw Error(x);};
+const sha=x=>createHash('sha256').update(x,'utf8').digest('hex');
+const fingerprints=row=>{
+  const content=sha([row.signal_type,row.fact_summary,row.due_at||'',row.subject_ref].join('|'));
+  const observation='obs_'+sha(['source-observation-v1',SOURCE,row.external_ref,content].join('|')).slice(0,20);
+  return {content,observation};
+};
 
 export function packWorkObservationInserts(rows){
   if(!Array.isArray(rows)||rows.length>D1_MAX_OBSERVATIONS)
@@ -23,8 +30,12 @@ export function packWorkObservationInserts(rows){
        typeof row.observation_id!=='string'||!/^obs_[a-f0-9]{20}$/.test(row.observation_id)||
        used.has(row.observation_id)||row.source_id!==SOURCE||row.domain!=='WORK'||
        row.truth_class!=='SOURCE_CLAIM'||row.possible_commitment!==false||
+       row.privacy_scope!=='ORGANIZATIONAL'||row.authority!=='OBSERVATION_ONLY'||
        row.raw_payload_persisted===true)
       fail('d1_work_observation_invalid');
+    const expected=fingerprints(row);
+    if(row.content_fingerprint!==expected.content||row.observation_id!==expected.observation)
+      fail('d1_work_normalized_fingerprint_mismatch');
     used.add(row.observation_id);
     if(!Number.isFinite(Number(row.confidence)))fail('d1_work_confidence_invalid');
     for(const col of WORK_COLUMNS){
