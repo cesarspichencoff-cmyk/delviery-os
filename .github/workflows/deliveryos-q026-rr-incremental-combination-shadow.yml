@@ -49,6 +49,22 @@ jobs:
           set -o pipefail
           npx tsx tests/product/run-q026-rr-incremental-combination-shadow.ts | tee q026-rr-incremental.out
           grep '^Q026_RR_INCREMENTAL_SHADOW_PASS ' q026-rr-incremental.out
+      - name: Full RR model shadow typecheck
+        run: npx tsc --noEmit --target ES2022 --module commonjs --moduleResolution node --strict --esModuleInterop --skipLibCheck --types node tests/product/run-q026-rr-full-model-shadow.ts
+      - name: Complete Entregas model and 30 paced independent PostgreSQL commits
+        shell: bash
+        run: |
+          set -o pipefail
+          npx tsx tests/product/run-q026-rr-full-model-shadow.ts | tee q026-rr-full-model.out
+          grep '^Q026_RR_FULL_MODEL_PASS ' q026-rr-full-model.out
+      - name: Fail closed on full-model without PostgreSQL
+        shell: bash
+        run: |
+          set +e
+          DELIVERYOS_PG_URL= npx tsx tests/product/run-q026-rr-full-model-shadow.ts
+          code=$?
+          echo "no_db_exit=$code"
+          test "$code" = 78
       - name: Fail closed without PostgreSQL
         shell: bash
         run: |
