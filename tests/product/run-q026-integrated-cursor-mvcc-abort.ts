@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 import { bancoIsolado } from "../../src/platform/banco-isolado";
 import { createPgClient,type SqlClient,type SqlRow,type TransactionalSqlClient } from "../../src/platform/persistence/sql-client";
 import { lerRealidadeDeEntregas } from "../../src/platform/leitura/realidade-de-entregas";
-import { lerRealidadeDeEntregasIncremental } from "../../src/platform/leitura/realidade-de-entregas-incremental";
+import { lerRealidadeDeEntregasIncremental, type RealidadeParaApresentacao } from "../../src/platform/leitura/realidade-de-entregas-incremental";
 import { leitorRrCancelavel } from "../../src/platform/leitura/leitor-rr-cancelavel";
 import { lerFatosParaReplay } from "../../src/platform/projections/replay-do-event-log";
 import { TIPOS_DA_OPERACAO_VIVA } from "../../src/platform/runtime/handler-operacao-viva";
@@ -22,7 +22,7 @@ const until=async(check:()=>Promise<boolean>,limit=10000)=>{
   await pause(40);
  }
 };
-function normalize(r:Awaited<ReturnType<typeof lerRealidadeDeEntregas>>){
+function normalize(r:RealidadeParaApresentacao){
  return {
   versao:r.versao,fonte:r.fonte,lida_em:r.lida_em,
   aparelhos:r.aparelhos,historico_sem_modo:r.historico_sem_modo,
