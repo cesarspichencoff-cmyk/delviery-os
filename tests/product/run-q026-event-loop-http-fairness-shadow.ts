@@ -16,6 +16,8 @@ if(!admin){console.error("Q026_EVENT_LOOP_PG_REQUIRED");process.exit(78)}
 const N=Number(process.env.Q026_EVENT_LOOP_EVENTS??20000);
 assert.ok([20000,120000,300000].includes(N),"fixture constrained");
 const variant=process.env.Q026_FAIRNESS_VARIANT;
+const budgetMs=Number(process.env.Q026_SHORT_HTTP_DEADLINE_MS??15000);
+assert.ok([1000,15000].includes(budgetMs),"only explicit bounded deadline probes");
 assert.ok(variant==="baseline"||variant==="incremental","variant must be explicitly selected");
 const pause=(ms:number)=>new Promise<void>(r=>setTimeout(r,ms));
 type Response={status:number;body:any;wall_ms:number};
@@ -62,7 +64,7 @@ void(async()=>{
   process.env.DELIVERYOS_ENTREGAS_MAX_INFLIGHT="2";
   if(variant==="incremental") process.env.DELIVERYOS_ENTREGAS_INCREMENTAL_RR="1";
   else delete process.env.DELIVERYOS_ENTREGAS_INCREMENTAL_RR;
-  process.env.DELIVERYOS_ENTREGAS_RR_DEADLINE_MS="15000";
+  process.env.DELIVERYOS_ENTREGAS_RR_DEADLINE_MS=String(budgetMs);
   const {criarServidor}=await import("../../tools/product_system_server");
   srv=await criarServidor();
   await new Promise<void>((resolve,reject)=>{
@@ -111,6 +113,27 @@ void(async()=>{
    if(x.status===200)assert.equal(x.body.leitura.disponivel,true);
    else assert.ok(x.body.erro==="prazo_total_excedido"||
      x.body.erro==="leitura_temporariamente_ocupada");
+  }
+  if(budgetMs===1000){
+    // An overrun can be measured; never count a late healthy 200 as a pass.
+    // Explicit SQL cancel/backpressure errors also must not expose data.
+    for(const x of two){
+      assert.equal(x.status,503,
+        "short HTTP deadline must not return stale/fake 200 under pressure");
+      assert.ok(["prazo_total_excedido","leitura_temporariamente_ocupada"].includes(x.body.erro),
+        "unexpected failure/SQL data leaked to short-deadline client");
+    }
+    console.log("Q026_SHORT_DEADLINE_HTTP_SHADOW_MEASURED "+JSON.stringify({
+      events:N,reader:variant,deadline_ms:budgetMs,
+      statuses:two.map(x=>x.status),
+      errors:two.map(x=>x.body.erro),
+      wall_ms:two.map(x=>x.wall_ms),
+      deadline_overrun_ms:two.map(x=>+Math.max(0,x.wall_ms-budgetMs).toFixed(2)),
+      health_probe_count:healthTimes.length,
+      health_max_wall_ms:+Math.max(...healthTimes).toFixed(2),
+      event_loop_max_ms:+(d.max/1e6).toFixed(2),
+      boundary:"single-run PostgreSQL16 localhost stress, response budget is not hard real-time"
+    }));
   }
   assert.ok(healthTimes.length>=1,"health probe did not run at all");
   const metrics={
