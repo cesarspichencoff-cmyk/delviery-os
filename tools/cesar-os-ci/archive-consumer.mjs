@@ -104,6 +104,9 @@ export function planReplay(archives,{start,end,cursor=null,now=new Date()}={}){
       new_archive_entries.push({archive_path:path,snapshot_sha256:hash,record_count:s.record_count,generated_at:s.generated_at});
     }
     for(const run of s.records){
+      // An overlapping hourly file may contain runs created outside the requested partial horizon.
+      const created=Date.parse(run.created_at);
+      if(created<hz.startMs||created>=hz.endMs)continue;
       const existing=states.get(run.id),updated=Date.parse(run.updated_at);
       if(!existing||updated>Date.parse(existing.updated_at))states.set(run.id,run);
       else if(updated===Date.parse(existing.updated_at)&&
