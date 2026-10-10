@@ -71,9 +71,11 @@ check("valid archived complete production tickets still yield unchanged safe byt
  assert.ok(p.every(x=>x.ready_for_offline_preview===true&&x.ready_for_operational_print===false));
  assert.ok(p.every(x=>inspectEscPos(x.bytes).pass));
 });
-check("valid conference ticket remains 665 bytes, all content intact",()=>{
+check("valid conference includes box summary and finishing line without loss",()=>{
  const p=renderConferenceTicketProofV46(ORIGINAL.conference);
- assert.equal(p.byte_count,665);
+ assert.equal(p.byte_count,849);
+ assert.equal((p.text_trace.match(/1 CAIXA \| 1 PRODUTO/g)||[]).length,6);
+ assert.ok(p.text_trace.includes("FINALIZAÇÃO: CONFERIR FICHA VALIDADA"));
  assert.equal(p.ready_for_offline_preview,true);
  assert.equal(p.ready_for_operational_print,false);
  assert.ok(p.text_trace.includes("3 KIT KIDS"));
