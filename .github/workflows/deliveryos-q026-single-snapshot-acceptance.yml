@@ -1,0 +1,56 @@
+name: deliveryos-q026-single-snapshot-acceptance
+# Isolated, only this branch. Disposable PostgreSQL, no prod env, no deploy.
+on:
+  push:
+    branches:
+      - fix/q026-entregas-single-snapshot-20261010
+  pull_request:
+    branches:
+      - integration/deliveryos-product-ux-android-20261009
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: q026-single-snapshot-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  snapshot-pg16:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: public.ecr.aws/docker/library/postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install from lockfile
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Typecheck
+        run: npx tsc --noEmit
+      - name: Q016 canonical replay regression (without live PostgreSQL)
+        run: npm run test:platform:q016
+      - name: Product regressions (without production data)
+        run: npm run test:platform:product
+      - name: Governance guards
+        run: npm run test:platform:governanca
+      - name: Q026 concurrent writer acceptance, production reader, 6/6
+        run: |
+          set -o pipefail
+          npx tsx tests/product/run-q026-single-snapshot-acceptance-pg.ts | tee q026-single-snapshot.out
+          grep -qx 'Q026_SINGLE_SNAPSHOT_ACCEPTANCE: 6/6 PASS' q026-single-snapshot.out
+      - name: Without PostgreSQL the suite must exit 78 (not fake PASS)
+        run: |
+          set +e
+          DELIVERYOS_PG_URL= npx tsx tests/product/run-q026-single-snapshot-acceptance-pg.ts
+          code=$?
+          echo "no_db_exit=$code"
+          test "$code" = 78
