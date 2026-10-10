@@ -1,4 +1,5 @@
-import type { PackagingPlanInput } from "./resourceConsumption";
+import { projectOrderResources, type PackagingPlanInput } from "./resourceConsumption";
+import {alignProductionPackagingV64,inspectThreeWayBoxCoherenceV64} from "./packagingCoherenceV64";
 import { projectOperationalTicketsFromMotorsV45, type OperationalTicketsFromMotorsInputV45,
   type OperationalTicketsResultV45, type SourceOrderItemV45 } from "./operationalTicketsV45";
 
@@ -26,7 +27,8 @@ export interface MotorOutputV63 {
   }>;
   has_unknown:boolean; total_items:number;
   bags:{size?:Size|null;status:string;size_status?:string;
-    exact_bag_count?:number|null;exact_bag_count_status?:string};
+    exact_bag_count?:number|null;exact_bag_count_status?:string;
+    group_sizes?:Array<{group:string;size:Size|null;status:string}>};
 }
 export interface MotorKitOutputV63 {
   status:string;kits:Array<{kit:string;quantidade:number}>;
@@ -137,11 +139,19 @@ export function bridgeCurrentPackagingV63(
     issues.add("EXTERNAL_BAG_SIZE_OR_COUNT_NOT_PROVEN");
   if(kits.status!=="FACT"||kits.kits.some(k=>!canon(k.kit)||!positive(k.quantidade)))
     issues.add("KIT_ASSIGNMENT_NOT_PROVEN");
+  // The resource projector consumes one explicit size proof per external bag.
+  // A single global size does NOT authorize distributing two or more bags.
+  const bagGroups=bags.exact_bag_count===1
+    ?[{group:"MOTOR_CURRENT_VERIFIED",size:bags.size!,status:"FACT" as const}]
+    :(bags.group_sizes??[]).map(g=>({...g}));
+  if(bagGroups.length!==bags.exact_bag_count ||
+      bagGroups.some(g=>g.status!=="FACT" || !["P","M","G"].includes(String(g.size))))
+    issues.add("PER_BAG_SIZE_DISTRIBUTION_NOT_PROVEN");
   if(issues.size)return block();
   return {status:"VERIFIED_INPUT",reasons:[],
     packaging:{groups,bags:{minimum:bags.exact_bag_count!,status:"FACT",
       exact_bag_count:bags.exact_bag_count!,exact_bag_count_status:"FACT",
-      group_sizes:[{group:"MOTOR_CURRENT_VERIFIED",size:bags.size!,status:"FACT"}]},
+      group_sizes:bagGroups as PackagingPlanInput["bags"]["group_sizes"]},
       has_unknown:false},
     kits:{status:"FACT",kits:kits.kits.map(x=>({...x}))},
     ready_for_automatic_operational_print:false,effects:EFFECTS};
@@ -154,12 +164,35 @@ export function projectTicketsFromCurrentPackagingV63(
  input:OperationalTicketsFromMotorsInputV45,entries:MotorEntryV63[],
  motor:MotorInterfaceV63,blobSha:string,
 ):{bridge:BridgeDecisionV63;tickets:OperationalTicketsResultV45|null;
-   ready_for_automatic_operational_print:false}{
+   coherence_reasons:string[];ready_for_automatic_operational_print:false}{
  const bridge=bridgeCurrentPackagingV63(input.source_items,entries,motor,blobSha);
- if(bridge.status!=="VERIFIED_INPUT"||!bridge.packaging||!bridge.kits)
-   return {bridge,tickets:null,ready_for_automatic_operational_print:false};
- const tickets=projectOperationalTicketsFromMotorsV45({
-   ...input,resource_input:{...input.resource_input,packaging:bridge.packaging,kits:bridge.kits},
+ const reject=(reason:string)=>({
+   bridge:{...bridge,status:"BLOCKED" as const,
+     reasons:[...new Set([...bridge.reasons,reason])].sort(),packaging:null,kits:null},
+   tickets:null,coherence_reasons:[reason],
+   ready_for_automatic_operational_print:false as const,
  });
- return {bridge,tickets,ready_for_automatic_operational_print:false};
+ if(bridge.status!=="VERIFIED_INPUT"||!bridge.packaging||!bridge.kits)
+   return {bridge,tickets:null,coherence_reasons:bridge.reasons,
+      ready_for_automatic_operational_print:false};
+ // Do not silently use the repository's transitional kit snapshot as authority.
+ // A caller must explicitly provide the authenticated current core kit registry.
+ if(!input.resource_input.kit_registry)
+   return reject("CURRENT_KIT_COMPONENT_REGISTRY_REQUIRED");
+ const resources={...input.resource_input,packaging:bridge.packaging,kits:bridge.kits};
+ const resourceProof=projectOrderResources(resources);
+ if(!resourceProof.complete_for_packaging_and_kit_usage ||
+    resourceProof.blocking_reasons.length)
+   return reject("RESOURCE_PACKAGING_KIT_CONTRACT_NOT_PROVEN");
+ const aligned=alignProductionPackagingV64(
+   input.source_items,input.production_plan,bridge.packaging);
+ if(aligned.status!=="ALIGNED"||!aligned.plan)
+   return reject("PRODUCTION_BOX_GROUPING_NOT_RECONCILED:"+aligned.blockers.join(","));
+ const tickets=projectOperationalTicketsFromMotorsV45({
+   ...input,production_plan:aligned.plan,resource_input:resources,
+ });
+ const divergence=inspectThreeWayBoxCoherenceV64(tickets);
+ if(divergence.length)return reject("THREE_WAY_BOX_COHERENCE_BLOCKED:"+divergence.join(","));
+ return {bridge,tickets,coherence_reasons:[],
+   ready_for_automatic_operational_print:false};
 }
