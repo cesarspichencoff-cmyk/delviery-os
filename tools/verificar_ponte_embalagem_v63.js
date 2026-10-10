@@ -14,7 +14,8 @@ const entries=sources.map(s=>({source_item_index:s.item_index,quantity:s.quantit
 const output=()=>({groups:[{kind:"faixa",station:"duplas",box:"450",boxes:1,
  status:"PROVEN_CURRENT_HUMAN_RULE_WITH_DERIVED_CAPACITY",
  products:sources.map(s=>({name:s.product_name,quantity:s.quantity}))}],
- total_items:3,has_unknown:false,bags:{size:"P",status:"FACT",exact_bag_count:1}});
+ total_items:3,has_unknown:false,bags:{size:"P",status:"PROVEN_OPERATIONAL_DOCUMENT",
+ size_status:"FACT",exact_bag_count:1,exact_bag_count_status:"FACT"}});
 const motor=(result=output(),kit={status:"FACT",kits:[{kit:"Kit p/1",quantidade:1}]})=>
  ({packComanda:()=>result,kitVerdict:()=>kit});
 const bridge=(s=sources,e=entries,m=motor(),sha=PACKAGING_SOURCE_BLOB_V63)=>
