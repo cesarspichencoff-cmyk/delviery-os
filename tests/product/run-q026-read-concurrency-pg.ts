@@ -62,7 +62,7 @@ async function seedRange(db:SqlClient,first:number,last:number){
              WHEN n=2 THEN 'trip_started@1.0.0'
              ELSE 'gps_batch_received@1.0.0' END,
         'fixture-dev-'||d,n,
-        CASE WHEN d<=4 THEN 'simulated' ELSE 'control' END,
+        CASE WHEN (d % 2)=1 THEN 'simulated' ELSE 'control' END,
         'trusted'
  FROM generate_series(1,$1::int) AS d
  CROSS JOIN generate_series($2::int,$3::int) AS n`,
@@ -82,9 +82,9 @@ function checkData(v:RealidadeDeEntregas,perDevice:number){
  for(let d=1;d<=DEVICES;d++){
   const a=v.aparelhos.find(a=>a.device_id==="fixture-dev-"+d);
   assert.ok(a,"missing fixture device");
-  const mode=d<=4?"simulated":"control";
+  const mode=(d%2)===1?"simulated":"control";
   assert.equal(a.fatos_por_modo[mode],perDevice-2);
-  assert.equal(a.fatos_por_modo[d<=4?"control":"simulated"],0);
+  assert.equal(a.fatos_por_modo[(d%2)===1?"control":"simulated"],0);
   assert.ok(a.ultimo_lote,"GPS not visible");
  }
  assert.equal(v.historico_sem_modo,0);
