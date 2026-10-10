@@ -22,7 +22,9 @@ function removeAddon(src,label){
 let original=candidate.replace(header,"");
 assert.ok(original.length<candidate.length,"candidate provenance marker missing");
 for(const i of [1,2,3])original=removeAddon(original,i);
-original=original.replace(/\n$/,""); // installed source read-only materialized without trailing blank
+// Lineage 3 was inserted immediately before an existing indented property.
+// Restoring the installed source requires its original newline; no golden edit.
+original=original.replace("  ...core,  effects: {","  ...core,\n  effects: {");
 const digest=crypto.createHash("sha1")
  .update(Buffer.from("blob "+Buffer.byteLength(original)+"\0"))
  .update(original,"utf8").digest("hex");
