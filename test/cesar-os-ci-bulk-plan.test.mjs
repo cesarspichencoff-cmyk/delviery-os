@@ -1,16 +1,22 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
+import {createHash} from 'node:crypto';
 import {packWorkObservationInserts,WORK_COLUMNS,MAX_ROWS_PER_INSERT,D1_FREE_QUERY_CEILING} from '../tools/cesar-os-ci/d1-bulk-plan.mjs';
 
+const sha=x=>createHash('sha256').update(x,'utf8').digest('hex');
 function obs(id){
- return {observation_id:'obs_'+String(id).padStart(20,'0'),
+ const row={
   source_id:'github-actions-public-deliveryos',external_ref:'run:'+id,
-  signal_type:'WORKFLOW_RUN',observed_at:'2026-10-10T20:46:45.627Z',
-  ingested_at:'2026-10-10T20:47:00.000Z',domain:'WORK',privacy_scope:'WORK_OPERATIONS',
-  truth_class:'SOURCE_CLAIM',authority:'EXTERNAL_SOURCE',sensitivity:'NON_SENSITIVE',
+  signal_type:'PROJECT_CI',observed_at:'2026-10-10T20:46:45.627Z',
+  ingested_at:'2026-10-10T20:47:00.000Z',domain:'WORK',privacy_scope:'ORGANIZATIONAL',
+  truth_class:'SOURCE_CLAIM',authority:'OBSERVATION_ONLY',sensitivity:'LOW',
   subject_type:'GITHUB_WORKFLOW_RUN',subject_ref:'run:'+id,fact_summary:'CI workflow status',
   possible_commitment:false,due_at:'',confidence:1,evidence_ref:'github:run:'+id,
-  content_fingerprint:'fingerprint:'+id,attention_candidate:'NONE',metadata_json:'{}'};
+  attention_candidate:'SILENT',metadata_json:'{}'
+ };
+ row.content_fingerprint=sha([row.signal_type,row.fact_summary,row.due_at,row.subject_ref].join('|'));
+ row.observation_id='obs_'+sha(['source-observation-v1',row.source_id,row.external_ref,row.content_fingerprint].join('|')).slice(0,20);
+ return row;
 }
 
 test('100 records fit free D1 query and parameter ceilings without serial writes',()=>{
