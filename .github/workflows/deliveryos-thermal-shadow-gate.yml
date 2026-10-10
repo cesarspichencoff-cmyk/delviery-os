@@ -38,6 +38,8 @@ jobs:
         run: node tools/verificar_agrupamento_conferencia_v62.js
       - name: Current packaging motor bridge V6.3 (offline, source-pinned)
         run: node tools/verificar_ponte_embalagem_v63.js
+      - name: Three-way physical box and resource coherence V6.4 (offline)
+        run: node tools/verificar_coerencia_tres_vias_v64.js
       - name: Item quantity integrity V5.9
         run: npm run verificar:quantidades-termicas-v59
       - name: Archived tickets V4.6
