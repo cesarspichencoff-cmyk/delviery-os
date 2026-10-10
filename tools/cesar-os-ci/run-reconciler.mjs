@@ -19,6 +19,8 @@ export function validateRunUpdate(run,prior,{now=new Date()}={}){
     updated<=now.getTime()+60000,'reconcile_clock_or_history_invalid');
   requireIt(normalizeLabel(run.name,100)===prior.workflow&&normalizeLabel(run.head_branch,130)===prior.branch,
     'reconcile_workflow_identity_drift');
+  requireIt(updated>old||(run.status===prior.status&&run.conclusion===prior.conclusion),
+    'reconcile_equal_timestamp_conflict');
   return {id:prior.id,workflow:prior.workflow,branch:prior.branch,
     created_at:run.created_at,updated_at:run.updated_at,status:run.status,
     conclusion:run.conclusion,domain:'WORK',source_id:SOURCE,
