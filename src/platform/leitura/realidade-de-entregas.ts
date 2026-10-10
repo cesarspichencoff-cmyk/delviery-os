@@ -100,7 +100,7 @@ export async function lerRealidadeDeEntregas(
   // O SET é o PRIMEIRO comando após o BEGIN do adaptador; READ COMMITTED
   // faria cada SELECT enxergar uma confirmação diferente. READ ONLY é
   // assegurado pelo servidor, e o cliente libera a conexão no finally.
-  return cliente.transaction(async (tx) => {
+  const { leitura, linhas, ultimos, contagens } = await cliente.transaction(async (tx) => {
     await tx.query("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY");
     const leitura = await lerFatosParaReplayNaTransacao(tx, TIPOS_DA_OPERACAO_VIVA);
 
@@ -134,7 +134,12 @@ export async function lerRealidadeDeEntregas(
         GROUP BY device_id, source_mode`,
     );
 
-    const ultimoPor = new Map<string, UltimoLote>();
+    // Materialize every SQL result from the SAME snapshot, then release the
+    // MVCC transaction BEFORE CPU-only mapping and projection. No new SQL.
+    return { leitura, linhas, ultimos, contagens };
+  });
+
+  const ultimoPor = new Map<string, UltimoLote>();
     for (const u of ultimos) {
       ultimoPor.set(String(u.device_id), {
         occurred_at: iso(u.occurred_at)!,
@@ -215,5 +220,4 @@ export async function lerRealidadeDeEntregas(
       projecoes,
       historico_sem_modo: leitura.sem_modo,
     };
-  });
 }
