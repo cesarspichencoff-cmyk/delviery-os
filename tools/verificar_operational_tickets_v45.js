@@ -298,5 +298,83 @@ check("26 closed combo and extra share no validated station box even if source g
   assert.equal(result.production[0].items_without_proven_box.length, 2);
   assert.ok(result.production[0].warnings.some((w) => w.startsWith("CLOSED_COMBO_CANNOT_SHARE_BOX")));
 });
+check("27 divergent production note must be blocked instead of replacing source instruction", () => {
+  const f=fixture();
+  f.production_plan.print_intents[0].lines[1].item_observations=["COM CEBOLINHA"];
+  const result=run(f);
+  const line=result.production[0].boxes.flatMap(b=>b.items)
+    .find(item=>item.source_item_index===1);
+  assert.ok(line);
+  assert.deepEqual(f.source_items[1].observations,["SEM CEBOLINHA"],
+    "source observations must never be changed by the projector");
+  assert.equal(result.production[0].ready_for_semantic_preview,false,
+    "contradictory kitchen instructions must not be preview-approved");
+  assert.ok(result.production[0].warnings.some(reason=>
+    reason.includes("PRODUCTION_OBSERVATIONS_SOURCE_MISMATCH:1")));
+  assert.deepEqual(line.observations,["SEM CEBOLINHA"],
+    "source-safe diagnostic text must not silently be replaced by planned instructions");
+});
+
+check("28 missing planned customer instruction blocks the station", () => {
+  const f=fixture();
+  f.production_plan.print_intents[0].lines[1].item_observations=[];
+  const result=run(f);
+  assert.equal(result.production[0].ready_for_semantic_preview,false);
+  assert.ok(result.production[0].warnings.includes("PRODUCTION_OBSERVATIONS_SOURCE_MISMATCH:1"));
+  assert.deepEqual(result.production[0].boxes[1].items[0].observations,["SEM CEBOLINHA"]);
+  assert.equal(result.conference.ready_for_semantic_preview,true,
+    "the still-consistent conference projection stays independently inspectable");
+});
+check("29 harmless whitespace and casing differences in planned notes remain valid", () => {
+  const f=fixture();
+  f.production_plan.print_intents[0].lines[1].item_observations=["  sem   cebolinha  "];
+  const result=run(f);
+  assert.equal(result.production[0].ready_for_semantic_preview,true);
+  assert.equal(result.ready_for_semantic_preview,true);
+  assert.deepEqual(result.production[0].boxes[1].items[0].observations,["SEM CEBOLINHA"]);
+});
+check("30 duplicated station source index must not approve repeated units", () => {
+  const f=fixture();
+  const first=f.production_plan.print_intents[0].lines.find(l=>l.item_index===1);
+  assert.ok(first);
+  f.production_plan.print_intents[0].lines.push({
+    ...copy(first),mount_group_id:"G3",
+  });
+  // The original packaging evidence has only one URA8 allocation.
+  assert.equal(f.packaging_plan.groups.filter(g=>g.products.some(
+    p=>p.name==="Uramaki Skin (8)")).length,1);
+  const projected=run(f);
+  const station=projected.production[0];
+  assert.equal(station.ready_for_semantic_preview,false,
+    "the same source item must not be duplicated within a station");
+  assert.ok(station.warnings.some(x=>x==="DUPLICATE_STATION_SOURCE_ITEM_INDEX:1"));
+  assert.equal(f.source_items.filter(s=>s.item_index===1).length,1);
+});
+check("31 repeated index inside one mount group is also rejected", () => {
+  const f=fixture();
+  const item=copy(f.production_plan.print_intents[0].lines[1]);
+  f.production_plan.print_intents[0].lines.push(item);
+  const out=run(f);
+  assert.equal(out.production[0].ready_for_semantic_preview,false);
+  assert.ok(out.production[0].warnings.includes("DUPLICATE_STATION_SOURCE_ITEM_INDEX:1"));
+  assert.equal(f.source_items.length,2);
+});
+check("32 same sold line may be routed once to each separate station", () => {
+  const f=fixture();
+  const first=copy(f.production_plan.print_intents[0].lines[0]);
+  const original=f.production_plan.print_intents[0];
+  f.production_plan.print_intents.push({
+    ...copy(original),
+    printer:{printer_name:"COZINHA",printer_code:"00004"},
+    intent_fingerprint:"b".repeat(64),
+    lines:[first],
+  });
+  const out=run(f);
+  assert.equal(out.production.length,2);
+  assert.equal(out.production[0].ready_for_semantic_preview,true);
+  assert.equal(out.production[1].ready_for_semantic_preview,true);
+  assert.ok(!out.production.some(p=>p.warnings.some(x=>
+    x.startsWith("DUPLICATE_STATION_SOURCE_ITEM_INDEX:"))));
+});
 console.log("operational-tickets-v45: " + checks.length + "/" + checks.length + " shadow tests PASS");
 for (const c of checks) console.log("  PASS " + c);

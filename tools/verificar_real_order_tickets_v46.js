@@ -209,4 +209,4 @@ if (require.main === module) {
     },
   },null,2)+"\n");
 }
-module.exports = {archivedResult,partiallyKnownResult,smoke};
+module.exports = {archivedResult,archivedCompleteInput,partiallyKnownResult,smoke};

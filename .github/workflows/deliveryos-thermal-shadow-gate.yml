@@ -1,0 +1,73 @@
+name: DeliveryOS Thermal Shadow Gate
+
+# PR-only verification: one run per change, including changes to fixtures,
+# routing/rules, documentation, or dependencies. No path-filter blind spots.
+on:
+  pull_request:
+    branches:
+      - feat/thermal-quality-v51-epson-official-fontqa-20261008
+
+permissions:
+  contents: read
+
+concurrency:
+  group: thermal-shadow-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  thermal-shadow:
+    name: Offline thermal proof (fail closed)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout snapshot
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install locked dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Operational ticket semantic projection V4.5
+        run: npm run verificar:tickets-operacionais-v45
+      - name: Conference proven box grouping and finishing V6.2 (offline)
+        run: node tools/verificar_agrupamento_conferencia_v62.js
+      - name: Item quantity integrity V5.9
+        run: npm run verificar:quantidades-termicas-v59
+      - name: Archived tickets V4.6
+        run: npm run verificar:tickets-reais-v46
+      - name: Two kitchen tickets V4.7
+        run: npm run verificar:two-kitchen-v47
+      - name: Kitchen replay V4.8
+        run: npm run verificar:kitchen-real-v48
+      - name: Sushi Quente V4.9
+        run: npm run verificar:kitchen-sushi-quente-v49
+      - name: Epson command and geometry V5.1
+        run: npm run verificar:thermal-official-v51
+      - name: CAIXA-only scope V5.3 (static)
+        run: npm run verificar:thermal-caixa-only-v53
+      - name: CAIXA comparison V5.4 (offline)
+        run: npm run verificar:comparativo-caixa-v54
+      - name: Typography V5.5 (offline)
+        run: npm run verificar:cobertura-tipografica-v55
+      - name: Long observations V5.6 (offline)
+        run: npm run verificar:observacoes-legiveis-v56
+      - name: Invisible characters V5.7 (offline)
+        run: npm run verificar:caracteres-invisiveis-v57
+      - name: Resource integrity
+        run: npm run verificar:resource-consumption
+      - name: TATA sequence scope
+        run: npm run verificar:tata-sequence-policy
+      - name: Semantic job eligibility V5.10 (Issue 25)
+        run: node tools/verificar_gate_semantico_termico_v510.js
+      - name: ESC/POS adversarial contract RED until issue 22 is fixed
+        # Mandatory hard gate: do not mark continue-on-error or swallow exit code.
+        run: node tools/verificar_integridade_termica_v57.js
+      - name: Full ESC/POS size matrix and command-order audit V5.11
+        # Independent RED proof even when the original mandatory V5.7 gate fails.
+        # Both remain hard failures; no continue-on-error, printer or spooler.
+        if: ${{ !cancelled() }}
+        run: node tools/verificar_matriz_escpos_v511.js

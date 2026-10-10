@@ -250,6 +250,9 @@ export function projectOperationalTicketsV45(input: OperationalTicketsInputV45):
     warnings.add("PRODUCTION_PLAN_NOT_SHADOW_READY");
   }
   for (const problem of input.production_plan.blocking_reasons) {
+    // The production planner's blocking reasons are authoritative even if
+    // a contradictory ready flag slips through. Never downgrade to warnings.
+    reasons.add("PRODUCTION_MOTOR:" + problem);
     warnings.add("PRODUCTION_MOTOR:" + problem);
   }
   const seenIndices = new Set<number>();
@@ -258,7 +261,9 @@ export function projectOperationalTicketsV45(input: OperationalTicketsInputV45):
       reasons.add("INVALID_OR_DUPLICATE_ITEM_INDEX:" + source.item_index);
     }
     seenIndices.add(source.item_index);
-    if (!clean(source.product_name) || !positive(source.quantity) || !Array.isArray(source.observations)) {
+    // Sold menu items are countable portions, unlike fractional resource usages.
+    if (!clean(source.product_name) || !Number.isSafeInteger(source.quantity) ||
+        source.quantity <= 0 || !Array.isArray(source.observations)) {
       reasons.add("INVALID_SOURCE_ITEM:" + source.item_index);
     }
   }
@@ -288,11 +293,18 @@ export function projectOperationalTicketsV45(input: OperationalTicketsInputV45):
     const localReasons = new Set<string>();
     const boxes = new Map<string, TicketBoxV45>();
     const sourceLinesByGroup = new Map<string, PlannedProductionLine[]>();
+    // A sold line may feed separate stations, but it cannot be repeated
+    // inside the same production station: that inflates planned work.
+    const stationSourceIndices = new Set<number>();
     const station = intent.printer.printer_name;
     const needed = input.kitchen_needs_by_fingerprint?.[intent.intent_fingerprint];
     if (!needed) warnings.add("KITCHEN_PROJECTION_NOT_ATTACHED:" + station);
     if (needed) for (const issue of needed.blocking_reasons) localReasons.add("KITCHEN_MOTOR:" + issue);
     for (const line of intent.lines) {
+      if (stationSourceIndices.has(line.item_index)) {
+        localReasons.add("DUPLICATE_STATION_SOURCE_ITEM_INDEX:" + line.item_index);
+      }
+      stationSourceIndices.add(line.item_index);
       const source = sources.find((s) => s.item_index === line.item_index);
       if (!source || canon(source.product_name) !== canon(line.product_name) ||
           source.quantity !== line.quantity ||
@@ -307,7 +319,21 @@ export function projectOperationalTicketsV45(input: OperationalTicketsInputV45):
         observations: line.item_observations,
       };
       const rendered = itemFromSource(chosen, aliases, localReasons);
-      rendered.observations = line.item_observations.map((o) => clean(o).toLocaleUpperCase("pt-BR")).filter(Boolean);
+      // Source notes are the order evidence. Planned station notes may enrich
+      // the routing metadata, but cannot silently replace a customer's
+      // instruction (e.g. SEM vs COM). Detect any difference and fail closed.
+      const sourceObservations = source
+        ? source.observations.map((o) => clean(o).toLocaleUpperCase("pt-BR")).filter(Boolean)
+        : [];
+      const plannedObservations = Array.isArray(line.item_observations)
+        ? line.item_observations.map((o) => clean(o).toLocaleUpperCase("pt-BR")).filter(Boolean)
+        : [];
+      if (source && (!Array.isArray(line.item_observations) ||
+          JSON.stringify(sourceObservations) !== JSON.stringify(plannedObservations))) {
+        localReasons.add("PRODUCTION_OBSERVATIONS_SOURCE_MISMATCH:" + line.item_index);
+      }
+      // Keep source-only diagnostic content, never promote contradicted plan.
+      rendered.observations = source ? sourceObservations : plannedObservations;
       rendered.finishing = finishLines(line, station, rules, localReasons);
       rendered.kitchen_dependencies = dependencies(line, needed, localReasons);
       const group = clean(line.mount_group_id) || "UNASSIGNED:" + line.item_index;
@@ -478,6 +504,10 @@ export function projectOperationalTicketsV45(input: OperationalTicketsInputV45):
   const conferenceIdentifiers = distinctIdentifiers.size === 1
     ? [...distinctIdentifiers.values()][0]
     : null;
+  // Conference needs an evidenced packaging plan and full allocation.
+  // A readable fallback trace is diagnostic, not semantic approval.
+  const conferenceReady = reasons.size === 0 && input.packaging_plan !== null &&
+    input.packaging_plan.has_unknown === false && remaining.size === 0;
   const conference: ConferenceTicketV45 = {
     order_id: input.order_id,
     identifiers: conferenceIdentifiers,
@@ -488,10 +518,9 @@ export function projectOperationalTicketsV45(input: OperationalTicketsInputV45):
     kits,
     accompaniments: [...accompanimentMap].map(([label, quantity]) => ({ label, quantity })),
     warnings: allReasons(warnings),
-    ready_for_semantic_preview: reasons.size === 0,
+    ready_for_semantic_preview: conferenceReady,
   };
-  if (reasons.size) conference.ready_for_semantic_preview = false;
-  const allReady = reasons.size === 0 && production.every((t) => t.ready_for_semantic_preview);
+  const allReady = conferenceReady && production.every((t) => t.ready_for_semantic_preview);
   return {
     schema: "deliveryos.operational-tickets.v45.shadow.v1",
     production,

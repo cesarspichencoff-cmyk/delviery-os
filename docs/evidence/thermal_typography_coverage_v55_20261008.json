@@ -1,0 +1,563 @@
+{
+  "schema": "deliveryos.tata-typography-candidate-audit.v55.offline",
+  "as_of": "2026-10-08",
+  "source_catalogue": "data/cardapio_knowledge_seed.json",
+  "source_is_historical": true,
+  "scope": "REVIEW_ONLY_NO_OPERATIONAL_FONT_CHANGE",
+  "paper_width_nominal_dots": 576,
+  "all_products_current_menu_proven": false,
+  "approved_current_design_change": false,
+  "photo_B_printed": false,
+  "printing_allowed_queue": [
+    "CAIXA"
+  ],
+  "counts": [
+    {
+      "sold_qty": 1,
+      "count_total": 199,
+      "distribution": {
+        "candidate_width_and_height_double": 115,
+        "double_width_with_48dot_reserve": 98,
+        "double_width_with_less_than_48dot_reserve": 17,
+        "baseline_large_font_height_only": 78,
+        "longer_names_font_B": 6,
+        "blocked": 0,
+        "near_right_boundary": 22
+      },
+      "dual_candidate_names": [
+        "Baterá de Salmão",
+        "Baterá de Spicy Tuna",
+        "Baunilha",
+        "Beef com Nirá",
+        "Boné Tatá chumbo",
+        "By Luizinho Especial",
+        "Ceviche",
+        "Chickenkatsu",
+        "Choux Cream",
+        "Coca-Cola Lata 350ml",
+        "Combinado Kids",
+        "Cookie de Matchá",
+        "Cookie de Nutella",
+        "Cookie de Pistache",
+        "Dyo de Atum",
+        "Dyo de Ikura",
+        "Dyo de Salmão",
+        "Dyo de Salmão Shimeji",
+        "Ebi Nikkei",
+        "Ebi Spicy",
+        "Edamame",
+        "Fanta Guaraná 350ml",
+        "Fish Katsu",
+        "Frango Teriyaki",
+        "Gengibre",
+        "Gohan",
+        "Guioza",
+        "Gyukatsu",
+        "Heineken",
+        "Heineken Zero 330ml",
+        "Hossomaki de Atum",
+        "Hossomaki de Pepino",
+        "Hossomaki de Salmão",
+        "Hot Roll",
+        "Hot Roll Tatá",
+        "Hot Roll com Shimeji",
+        "Ice Tea Limão",
+        "Katsudon",
+        "Leyda Pinot Noir",
+        "Melão",
+        "Missoshiro",
+        "Mochi",
+        "Nasu no Missô",
+        "Número de pessoas",
+        "Pistache",
+        "Salmão Grelhado",
+        "Sapporo",
+        "Sashimi Bluefin Toro",
+        "Sashimi Tataki",
+        "Sashimi de Atum",
+        "Sashimi de Buri",
+        "Sashimi de Carapau",
+        "Sashimi de Lula",
+        "Sashimi de Robalo",
+        "Sashimi de Salmão",
+        "Sashimi de Serra",
+        "Sashimi de Toro",
+        "Shimeji",
+        "Shitake",
+        "Shitake e Shimeji",
+        "Sorvete de Baunilha",
+        "Sorvete de Chocolate",
+        "Sprite 350ml",
+        "Sprite Fresh",
+        "Sunomono",
+        "Sushi de Atum",
+        "Sushi de Beijupirá",
+        "Sushi de Bluefin Toro",
+        "Sushi de Buri",
+        "Sushi de Camarão",
+        "Sushi de Carapau",
+        "Sushi de Centolla",
+        "Sushi de Ikura",
+        "Sushi de Lula",
+        "Sushi de Lula Trufada",
+        "Sushi de Massagô",
+        "Sushi de Polvo",
+        "Sushi de Robalo",
+        "Sushi de Salmão",
+        "Sushi de Serra",
+        "Sushi de Tobiko",
+        "Sushi de Toro",
+        "Sushi de Unagui",
+        "Sushi de Uni",
+        "Sushi de Vieira",
+        "Sushi de Wakamê",
+        "Tartar de Atum Spicy",
+        "Tartar de Salmão",
+        "Tarê",
+        "Temaki Ebiten",
+        "Temaki de Atum",
+        "Temaki de Atum Spicy",
+        "Temaki de Ikurá",
+        "Temaki de Salmão",
+        "Temaki de Salmão Skin",
+        "Tempurá Misto",
+        "Tempurá de Camarão",
+        "Tempurá de Legumes",
+        "Tempurá de milho doce",
+        "Teppanyaki de Anchova",
+        "Teppanyaki de Camarão",
+        "Teppanyaki de Frango",
+        "Tirashi",
+        "Tonkatsu",
+        "Tuna Shisô Tartar",
+        "Uramaki Califórnia",
+        "Uramaki Ebiten",
+        "Uramaki Vegan",
+        "Uramaki de Atum",
+        "Uramaki de Salmão",
+        "Wasabi",
+        "Yakissoba Misto",
+        "Yakissoba de Carne",
+        "Yakissoba de Frango",
+        "Yakissoba de Vegetais"
+      ],
+      "edge_items": [
+        {
+          "name": "Baterá de Spicy Tuna",
+          "nominal_print_width_dots": 552,
+          "font": "A",
+          "font_scale_x": 2
+        },
+        {
+          "name": "By Luizinho Especial",
+          "nominal_print_width_dots": 552,
+          "font": "A",
+          "font_scale_x": 2
+        },
+        {
+          "name": "Coca-Cola Lata 350ml",
+          "nominal_print_width_dots": 552,
+          "font": "A",
+          "font_scale_x": 2
+        },
+        {
+          "name": "Combinado Especial Sashimi + Sushi 1 pessoa",
+          "nominal_print_width_dots": 552,
+          "font": "A",
+          "font_scale_x": 1
+        },
+        {
+          "name": "Combinado Especial Sashimi + Sushi 2 pessoas",
+          "nominal_print_width_dots": 564,
+          "font": "A",
+          "font_scale_x": 1
+        },
+        {
+          "name": "Combinado Especial Sushi + Sashimi 2 pessoas",
+          "nominal_print_width_dots": 564,
+          "font": "A",
+          "font_scale_x": 1
+        },
+        {
+          "name": "Dyo de Salmão Shimeji",
+          "nominal_print_width_dots": 576,
+          "font": "A",
+          "font_scale_x": 2
+        },
+        {
+          "name": "Hot Roll com Shimeji",
+          "nominal_print_width_dots": 552,
+          "font": "A",
+          "font_scale_x": 2
+        },
+        {
+          "name": "Sake Kurabitono Homare Tanreikarakuchi 900ml",
+          "nominal_print_width_dots": 564,
+          "font": "A",
+          "font_scale_x": 1
+        },
+        {
+          "name": "Sashimi Bluefin Toro",
+          "nominal_print_width_dots": 552,
+          "font": "A",
+          "font_scale_x": 2
+        },
+        {
+          "name": "Sorvete de Chocolate",
+          "nominal_print_width_dots": 552,
+          "font": "A",
+          "font_scale_x": 2
+        },
+        {
+          "name": "Sushi de Bluefin Toro",
+          "nominal_print_width_dots": 576,
+          "font": "A",
+          "font_scale_x": 2
+        },
+        {
+          "name": "Sushi de Lula Trufada",
+          "nominal_print_width_dots": 576,
+          "font": "A",
+          "font_scale_x": 2
+        },
+        {
+          "name": "Tartar de Atum Spicy",
+          "nominal_print_width_dots": 552,
+          "font": "A",
+          "font_scale_x": 2
+        },
+        {
+          "name": "Temaki de Atum Spicy",
+          "nominal_print_width_dots": 552,
+          "font": "A",
+          "font_scale_x": 2
+        },
+        {
+          "name": "Temaki de Salmão Skin",
+          "nominal_print_width_dots": 576,
+          "font": "A",
+          "font_scale_x": 2
+        },
+        {
+          "name": "Tempurá de milho doce",
+          "nominal_print_width_dots": 576,
+          "font": "A",
+          "font_scale_x": 2
+        },
+        {
+          "name": "Teppanyaki de Anchova",
+          "nominal_print_width_dots": 576,
+          "font": "A",
+          "font_scale_x": 2
+        },
+        {
+          "name": "Teppanyaki de Camarão",
+          "nominal_print_width_dots": 576,
+          "font": "A",
+          "font_scale_x": 2
+        },
+        {
+          "name": "Teppanyaki de Frango",
+          "nominal_print_width_dots": 552,
+          "font": "A",
+          "font_scale_x": 2
+        },
+        {
+          "name": "Vinho Argentino Norton Sexy Fish Cabernet Franc Seco 750ml",
+          "nominal_print_width_dots": 549,
+          "font": "B",
+          "font_scale_x": 1
+        },
+        {
+          "name": "Yakissoba de Vegetais",
+          "nominal_print_width_dots": 576,
+          "font": "A",
+          "font_scale_x": 2
+        }
+      ],
+      "blocked_names": [],
+      "font_B_names": [
+        "Combinado Tradicional Sashimi + Sushi 1 pessoa",
+        "Combinado Tradicional Sashimi + Sushi 2 pessoas",
+        "Sake para presentear - Hakutsuru Daiginjo Yamadaho",
+        "Tatá chocolate com sorvete de caramelo salgado",
+        "Vinho Argentino Norton Sexy Fish Cabernet Franc Seco 750ml",
+        "Vinho Rose 2020 Grenache Lulu Le Francais 750ml"
+      ]
+    },
+    {
+      "sold_qty": 12,
+      "count_total": 199,
+      "distribution": {
+        "candidate_width_and_height_double": 107,
+        "double_width_with_48dot_reserve": 92,
+        "double_width_with_less_than_48dot_reserve": 15,
+        "baseline_large_font_height_only": 86,
+        "longer_names_font_B": 6,
+        "blocked": 0,
+        "near_right_boundary": 22
+      },
+      "dual_candidate_names": [
+        "Baterá de Salmão",
+        "Baterá de Spicy Tuna",
+        "Baunilha",
+        "Beef com Nirá",
+        "Boné Tatá chumbo",
+        "By Luizinho Especial",
+        "Ceviche",
+        "Chickenkatsu",
+        "Choux Cream",
+        "Coca-Cola Lata 350ml",
+        "Combinado Kids",
+        "Cookie de Matchá",
+        "Cookie de Nutella",
+        "Cookie de Pistache",
+        "Dyo de Atum",
+        "Dyo de Ikura",
+        "Dyo de Salmão",
+        "Ebi Nikkei",
+        "Ebi Spicy",
+        "Edamame",
+        "Fanta Guaraná 350ml",
+        "Fish Katsu",
+        "Frango Teriyaki",
+        "Gengibre",
+        "Gohan",
+        "Guioza",
+        "Gyukatsu",
+        "Heineken",
+        "Heineken Zero 330ml",
+        "Hossomaki de Atum",
+        "Hossomaki de Pepino",
+        "Hossomaki de Salmão",
+        "Hot Roll",
+        "Hot Roll Tatá",
+        "Hot Roll com Shimeji",
+        "Ice Tea Limão",
+        "Katsudon",
+        "Leyda Pinot Noir",
+        "Melão",
+        "Missoshiro",
+        "Mochi",
+        "Nasu no Missô",
+        "Número de pessoas",
+        "Pistache",
+        "Salmão Grelhado",
+        "Sapporo",
+        "Sashimi Bluefin Toro",
+        "Sashimi Tataki",
+        "Sashimi de Atum",
+        "Sashimi de Buri",
+        "Sashimi de Carapau",
+        "Sashimi de Lula",
+        "Sashimi de Robalo",
+        "Sashimi de Salmão",
+        "Sashimi de Serra",
+        "Sashimi de Toro",
+        "Shimeji",
+        "Shitake",
+        "Shitake e Shimeji",
+        "Sorvete de Baunilha",
+        "Sorvete de Chocolate",
+        "Sprite 350ml",
+        "Sprite Fresh",
+        "Sunomono",
+        "Sushi de Atum",
+        "Sushi de Beijupirá",
+        "Sushi de Buri",
+        "Sushi de Camarão",
+        "Sushi de Carapau",
+        "Sushi de Centolla",
+        "Sushi de Ikura",
+        "Sushi de Lula",
+        "Sushi de Massagô",
+        "Sushi de Polvo",
+        "Sushi de Robalo",
+        "Sushi de Salmão",
+        "Sushi de Serra",
+        "Sushi de Tobiko",
+        "Sushi de Toro",
+        "Sushi de Unagui",
+        "Sushi de Uni",
+        "Sushi de Vieira",
+        "Sushi de Wakamê",
+        "Tartar de Atum Spicy",
+        "Tartar de Salmão",
+        "Tarê",
+        "Temaki Ebiten",
+        "Temaki de Atum",
+        "Temaki de Atum Spicy",
+        "Temaki de Ikurá",
+        "Temaki de Salmão",
+        "Tempurá Misto",
+        "Tempurá de Camarão",
+        "Tempurá de Legumes",
+        "Teppanyaki de Frango",
+        "Tirashi",
+        "Tonkatsu",
+        "Tuna Shisô Tartar",
+        "Uramaki Califórnia",
+        "Uramaki Ebiten",
+        "Uramaki Vegan",
+        "Uramaki de Atum",
+        "Uramaki de Salmão",
+        "Wasabi",
+        "Yakissoba Misto",
+        "Yakissoba de Carne",
+        "Yakissoba de Frango"
+      ],
+      "edge_items": [
+        {
+          "name": "Baterá de Spicy Tuna",
+          "nominal_print_width_dots": 576,
+          "font": "A",
+          "font_scale_x": 2
+        },
+        {
+          "name": "By Luizinho Especial",
+          "nominal_print_width_dots": 576,
+          "font": "A",
+          "font_scale_x": 2
+        },
+        {
+          "name": "Coca-Cola Lata 350ml",
+          "nominal_print_width_dots": 576,
+          "font": "A",
+          "font_scale_x": 2
+        },
+        {
+          "name": "Combinado Especial Sashimi + Sushi 1 pessoa",
+          "nominal_print_width_dots": 564,
+          "font": "A",
+          "font_scale_x": 1
+        },
+        {
+          "name": "Combinado Especial Sashimi + Sushi 2 pessoas",
+          "nominal_print_width_dots": 576,
+          "font": "A",
+          "font_scale_x": 1
+        },
+        {
+          "name": "Combinado Especial Sushi + Sashimi 2 pessoas",
+          "nominal_print_width_dots": 576,
+          "font": "A",
+          "font_scale_x": 1
+        },
+        {
+          "name": "Fanta Guaraná 350ml",
+          "nominal_print_width_dots": 552,
+          "font": "A",
+          "font_scale_x": 2
+        },
+        {
+          "name": "Heineken Zero 330ml",
+          "nominal_print_width_dots": 552,
+          "font": "A",
+          "font_scale_x": 2
+        },
+        {
+          "name": "Hossomaki de Pepino",
+          "nominal_print_width_dots": 552,
+          "font": "A",
+          "font_scale_x": 2
+        },
+        {
+          "name": "Hossomaki de Salmão",
+          "nominal_print_width_dots": 552,
+          "font": "A",
+          "font_scale_x": 2
+        },
+        {
+          "name": "Hot Roll com Shimeji",
+          "nominal_print_width_dots": 576,
+          "font": "A",
+          "font_scale_x": 2
+        },
+        {
+          "name": "Menu Dia dos namorados com vinho cortesia",
+          "nominal_print_width_dots": 540,
+          "font": "A",
+          "font_scale_x": 1
+        },
+        {
+          "name": "Sake Kurabitono Homare Tanreikarakuchi 900ml",
+          "nominal_print_width_dots": 576,
+          "font": "A",
+          "font_scale_x": 1
+        },
+        {
+          "name": "Sashimi Bluefin Toro",
+          "nominal_print_width_dots": 576,
+          "font": "A",
+          "font_scale_x": 2
+        },
+        {
+          "name": "Sorvete de Baunilha",
+          "nominal_print_width_dots": 552,
+          "font": "A",
+          "font_scale_x": 2
+        },
+        {
+          "name": "Sorvete de Chocolate",
+          "nominal_print_width_dots": 576,
+          "font": "A",
+          "font_scale_x": 2
+        },
+        {
+          "name": "Tartar de Atum Spicy",
+          "nominal_print_width_dots": 576,
+          "font": "A",
+          "font_scale_x": 2
+        },
+        {
+          "name": "Temaki de Atum Spicy",
+          "nominal_print_width_dots": 576,
+          "font": "A",
+          "font_scale_x": 2
+        },
+        {
+          "name": "Teppanyaki de Frango",
+          "nominal_print_width_dots": 576,
+          "font": "A",
+          "font_scale_x": 2
+        },
+        {
+          "name": "Vinho Argentino Norton Sexy Fish Cabernet Franc Seco 750ml",
+          "nominal_print_width_dots": 558,
+          "font": "B",
+          "font_scale_x": 1
+        },
+        {
+          "name": "Vinho Tinto Chileno Leyda Carmenere 750ml",
+          "nominal_print_width_dots": 540,
+          "font": "A",
+          "font_scale_x": 1
+        },
+        {
+          "name": "Yakissoba de Frango",
+          "nominal_print_width_dots": 552,
+          "font": "A",
+          "font_scale_x": 2
+        }
+      ],
+      "blocked_names": [],
+      "font_B_names": [
+        "Combinado Tradicional Sashimi + Sushi 1 pessoa",
+        "Combinado Tradicional Sashimi + Sushi 2 pessoas",
+        "Sake para presentear - Hakutsuru Daiginjo Yamadaho",
+        "Tatá chocolate com sorvete de caramelo salgado",
+        "Vinho Argentino Norton Sexy Fish Cabernet Franc Seco 750ml",
+        "Vinho Rose 2020 Grenache Lulu Le Francais 750ml"
+      ]
+    }
+  ],
+  "effects": {
+    "print": false,
+    "spooler_write": false,
+    "driver_change": false,
+    "density_change": false,
+    "production_renderer_change": false,
+    "warehouse": false
+  },
+  "next_gate": "SECOND_COMPARISON_ON_REAL_CAIXA_PAPER_WITH_PERMITTED_TOOL_AND_PHOTO"
+}

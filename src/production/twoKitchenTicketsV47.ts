@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { projectKitchenNeeds, type KitchenNeedProjection, type KitchenDependencyRuleset } from "./kitchenDependencies";
 import type { SourceOrderItemV45, OperationalTicketsResultV45, ProductionTicketV45 } from "./operationalTicketsV45";
 
@@ -9,6 +10,8 @@ export interface KitchenPrepV47 {
   tasks: Array<{ kind: KitchenKindV47; quantity: number; originating_products: string[] }>;
   status: "PROVEN_COMPLETE" | "PARTIAL_REVIEW_REQUIRED";
   blocking_reasons: string[];
+  /** Consistency binding, not an authenticated signature or proof of live order origin. */
+  source_projection_binding_v512?: string;
 }
 export interface KitchenDishesV47 {
   channel: "KITCHEN_DISHES";
@@ -23,6 +26,36 @@ export interface KitchenSplitV47 {
   ready_for_complete_components: boolean;
   ready_for_automatic_operational_print: false;
   effects: { print:false; spooler_write:false; odhen_write:false; stock_write:false };
+}
+/**
+ * V5.12: associate a synthetic components preview with the exact projection
+ * and task payload from which it was built. This checks consistency across
+ * separately passed values; it is NOT source authentication, a secret MAC,
+ * or permission to print. Remains purely offline.
+ */
+function stableProjection(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(stableProjection);
+  if (value && typeof value === "object") {
+    const record=value as Record<string, unknown>;
+    return Object.fromEntries(Object.keys(record).sort()
+      .map(k=>[k,stableProjection(record[k])]));
+  }
+  return value;
+}
+export function componentProjectionBindingV512(
+  tickets: OperationalTicketsResultV45,
+  component: Pick<KitchenPrepV47, "identifiers" | "tasks" | "status" | "blocking_reasons">,
+): string {
+  const payload=stableProjection({
+    schema:"deliveryos.kitchen-component-projection-binding.v512",
+    tickets,component:{
+      identifiers:component.identifiers,
+      tasks:component.tasks,
+      status:component.status,
+      blocking_reasons:component.blocking_reasons,
+    },
+  });
+  return createHash("sha256").update(JSON.stringify(payload)).digest("hex");
 }
 const kinds: KitchenKindV47[] = ["HOT", "EBITEN", "SHISO"];
 function clean(s: string): string { return String(s).trim().replace(/\s+/g," "); }
@@ -105,6 +138,9 @@ export function splitTwoKitchenTicketsV47(
     status:ready?"PROVEN_COMPLETE":"PARTIAL_REVIEW_REQUIRED",
     blocking_reasons:[...issues].sort(),
   }:null;
+  if (components) {
+    components.source_projection_binding_v512=componentProjectionBindingV512(tickets,components);
+  }
   return {
     schema:"deliveryos.kitchen-two-tickets.v47.shadow.v1",
     components,dishes,review_reasons:[...issues].sort(),
