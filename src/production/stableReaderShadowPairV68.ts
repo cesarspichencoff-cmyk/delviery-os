@@ -145,6 +145,132 @@ function inspectV2WatcherNotesV76(event:StableReaderEventV68):
  return {detected:true,reasons:[],rows:mapped};
 }
 
+
+/**
+ * V7.7: Prepare a scoped human review WITHOUT exporting a customer's
+ * DSOBSCOMANDA text or granting print/semantic-readiness privileges.
+ * This is the missing proof workflow, not a text classifier.
+ */
+export interface OrderNoteReviewPacketV77 {
+ schema:"deliveryos.order-note-review-packet.v1";
+ status:"REVIEW_REQUIRED"|"NO_GENERAL_NOTE"|"BLOCKED";
+ reasons:string[];
+ order_key_digest:string|null;
+ snapshot_hash:string|null;
+ general_note:{
+  source_field:"DSOBSCOMANDA";
+  content_sha256:string;
+  utf8_bytes:number;
+  human_classification_required:true;
+ }|null;
+ safeguards:{
+  human_identity_authenticated:false;
+  classifies_note_automatically:false;
+  verifies_sql_currentness:false;
+  authorizes_tickets:false;
+  writes_state:false;
+  prints:false;
+ };
+}
+const NOTE_REVIEW_GUARD_V77={
+ human_identity_authenticated:false,classifies_note_automatically:false,
+ verifies_sql_currentness:false,authorizes_tickets:false,
+ writes_state:false,prints:false,
+} as const;
+
+export function prepareOrderNoteReviewPacketV77(
+ event:StableReaderEventV68,decision:LiveShadowDecisionV68,
+):OrderNoteReviewPacketV77 {
+ const errors=new Set<string>();
+ const blocked=():OrderNoteReviewPacketV77=>({
+  schema:"deliveryos.order-note-review-packet.v1",
+  status:"BLOCKED",reasons:[...errors].sort(),
+  order_key_digest:null,snapshot_hash:null,general_note:null,
+  safeguards:NOTE_REVIEW_GUARD_V77,
+ });
+ if(!event||!decision||event.schema!=="deliveryos.tata-reader-stable-order-event.v1"||
+   decision.schema!=="deliveryos.live-shadow-decision.v1"||
+   !clean(event.order_key)||event.order_key!==decision.order_key||
+   !hex64(event.snapshot_hash)||event.snapshot_hash!==decision.snapshot_hash)
+   errors.add("NOTE_REVIEW_EVENT_DECISION_IDENTITY_MISMATCH");
+ const note=event?inspectV2WatcherNotesV76(event):null;
+ if(!note?.detected||note.reasons.length)
+   errors.add("NOTE_REVIEW_WATCHER_V2_SOURCE_HASH_NOT_VERIFIED");
+ if(!hex64(decision?.fingerprint))errors.add("NOTE_REVIEW_DECISION_FINGERPRINT_INVALID");
+ else {
+   const core={order_key:decision.order_key,snapshot_hash:decision.snapshot_hash,
+     ifood_sequence:decision.ifood_sequence,teknisa_sequence:decision.teknisa_sequence,
+     service:decision.service,items:decision.items,packaging:decision.packaging,
+     kits:decision.kits,sequence:decision.sequence};
+   const digest=createHash("sha256").update(JSON.stringify(core)).digest("hex");
+   if(digest!==decision.fingerprint)errors.add("NOTE_REVIEW_DECISION_FINGERPRINT_CHANGED");
+ }
+ if(errors.size)return blocked();
+ const general=note!.rows.filter(r=>r.scope_hint==="order");
+ const idHash=createHash("sha256").update(event.order_key).digest("hex");
+ const summary:OrderNoteReviewPacketV77={
+  schema:"deliveryos.order-note-review-packet.v1",
+  status:general.length?"REVIEW_REQUIRED":"NO_GENERAL_NOTE",
+  reasons:[],order_key_digest:idHash,snapshot_hash:event.snapshot_hash,
+  general_note:null,safeguards:NOTE_REVIEW_GUARD_V77,
+ };
+ if(general.length===1){
+  const raw=general[0].value;
+  summary.general_note={
+   source_field:"DSOBSCOMANDA",
+   content_sha256:createHash("sha256").update(raw,"utf8").digest("hex"),
+   utf8_bytes:Buffer.byteLength(raw,"utf8"),
+   human_classification_required:true,
+  };
+ }
+ return summary;
+}
+
+export interface OrderNoteDispositionClaimV77 {
+ schema:"deliveryos.order-note-disposition-claim.v1";
+ order_key_digest:string;
+ snapshot_hash:string;
+ note_content_sha256:string;
+ classification:"NON_PRODUCTION_SENSITIVE_PAYMENT_CANCEL_METADATA"|
+  "REQUIRES_PRODUCTION_RELEVANCE_REVIEW";
+ action:"EXCLUDE_FROM_PRODUCTION_TICKETS"|"KEEP_BLOCKED";
+ human_review_reference:string;
+}
+export function inspectOrderNoteDispositionClaimV77(
+ packet:OrderNoteReviewPacketV77,claim:OrderNoteDispositionClaimV77|undefined,
+):{status:"MATCHED_REVIEW_CLAIM_NOT_AUTHORIZED"|"BLOCKED";
+  reasons:string[];ticket_authorized:false;print_authorized:false;
+  human_identity_authenticated:false} {
+ const reasons=new Set<string>();
+ const block=()=>({status:"BLOCKED" as const,reasons:[...reasons].sort(),
+  ticket_authorized:false as const,print_authorized:false as const,
+  human_identity_authenticated:false as const});
+ if(packet?.status!=="REVIEW_REQUIRED"||!packet.general_note||
+   packet.reasons.length||!claim){
+   reasons.add("NOTE_REVIEW_PACKET_OR_CLAIM_MISSING");return block();
+ }
+ if(claim.schema!=="deliveryos.order-note-disposition-claim.v1"||
+   !hex64(claim.order_key_digest)||claim.order_key_digest!==packet.order_key_digest||
+   !hex64(claim.snapshot_hash)||claim.snapshot_hash!==packet.snapshot_hash||
+   !hex64(claim.note_content_sha256)||
+   claim.note_content_sha256!==packet.general_note.content_sha256)
+   reasons.add("NOTE_REVIEW_CLAIM_NOT_BOUND_TO_EXACT_ORDER_SNAPSHOT_AND_TEXT");
+ if(!/^(?:human-review|human-evidence):[A-Za-z0-9._:/-]{8,160}$/.test(
+   String(claim.human_review_reference??"")))
+   reasons.add("NOTE_REVIEW_HUMAN_EVIDENCE_REFERENCE_INVALID");
+ if(claim.classification==="NON_PRODUCTION_SENSITIVE_PAYMENT_CANCEL_METADATA"){
+   if(claim.action!=="EXCLUDE_FROM_PRODUCTION_TICKETS")
+     reasons.add("NOTE_REVIEW_ACTION_CLASSIFICATION_CONFLICT");
+ }else if(claim.classification==="REQUIRES_PRODUCTION_RELEVANCE_REVIEW"){
+   reasons.add("NOTE_REVIEW_PRODUCTION_MEANING_UNRESOLVED");
+ }else reasons.add("NOTE_REVIEW_CLASSIFICATION_UNSUPPORTED");
+ if(reasons.size)return block();
+ // A self-declared record is never human authentication or permission.
+ return {status:"MATCHED_REVIEW_CLAIM_NOT_AUTHORIZED",reasons:[],
+  ticket_authorized:false,print_authorized:false,
+  human_identity_authenticated:false};
+}
+
 /** Verifies that the decision describes exactly the stable event.
  * Crucially SOURCE_VERIFIED is NOT permission to make or print tickets.
  */
