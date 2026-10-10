@@ -1,0 +1,185 @@
+name: deliveryos-q026-compact-view-shadow
+on:
+  push:
+    branches:
+      - research/deliveryos-q026-compact-view-shadow-20261010
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  compact-ui-100k:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: public.ecr.aws/docker/library/postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
+      Q026_EVENTS: "100000"
+      NODE_OPTIONS: "--expose-gc"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Tipagem do projeto
+        run: npx tsc --noEmit
+      - name: Tipagem da sombra de apresentacao
+        run: npx tsc --noEmit --target ES2022 --module commonjs --moduleResolution node --strict --esModuleInterop --skipLibCheck --types node tests/product/run-q026-compact-view-shadow.ts
+      - name: Cursor PostgreSQL e igualdade byte a byte da apresentacao (somente testes)
+        run: npx tsx tests/product/run-q026-compact-view-shadow.ts
+
+  compact-ui-1030k:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    services:
+      postgres:
+        image: public.ecr.aws/docker/library/postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
+      Q026_EVENTS: "1030000"
+      NODE_OPTIONS: "--expose-gc"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Tipagem do projeto
+        run: npx tsc --noEmit
+      - name: Tipagem da sombra de apresentacao
+        run: npx tsc --noEmit --target ES2022 --module commonjs --moduleResolution node --strict --esModuleInterop --skipLibCheck --types node tests/product/run-q026-compact-view-shadow.ts
+      - name: Cursor PostgreSQL e igualdade byte a byte da apresentacao (somente testes)
+        run: npx tsx tests/product/run-q026-compact-view-shadow.ts
+
+
+
+  complete-ui-three-modes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: public.ecr.aws/docker/library/postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Tipagem do contrato completo da UI
+        run: npx tsc --noEmit --target ES2022 --module commonjs --moduleResolution node --strict --esModuleInterop --skipLibCheck --types node tests/product/run-q026-compact-full-ui-shadow.ts
+      - name: UI completa, 2 unidades, 3 modos, UNKNOWN e mutacoes negativas
+        run: npx tsx tests/product/run-q026-compact-full-ui-shadow.ts
+
+  independent-ab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        n: [100000, 1030000]
+        variant: [compact, baseline]
+    services:
+      postgres:
+        image: public.ecr.aws/docker/library/postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
+      Q026_EVENTS: ${{ matrix.n }}
+      Q026_INDEPENDENT_MODE: ${{ matrix.variant }}
+      Q026_RESULT_FILE: result-${{ matrix.n }}-${{ matrix.variant }}.json
+      NODE_OPTIONS: "--expose-gc"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Tipagem do benchmark independente
+        run: npx tsc --noEmit --target ES2022 --module commonjs --moduleResolution node --strict --esModuleInterop --skipLibCheck --types node tests/product/run-q026-compact-independent-shadow.ts
+      - name: Executar APENAS uma variante neste processo Node
+        run: npx tsx tests/product/run-q026-compact-independent-shadow.ts
+      - uses: actions/upload-artifact@v4
+        with:
+          name: q026-independent-${{ matrix.n }}-${{ matrix.variant }}
+          path: ${{ env.Q026_RESULT_FILE }}
+          if-no-files-found: error
+
+  independent-compare:
+    needs: [independent-ab]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: q026-independent-*
+          path: results
+          merge-multiple: true
+      - name: Comparar SHA, contagem e RSS em processos independentes
+        run: |
+          node - <<'JS'
+          const fs=require('node:fs');
+          for(const n of [100000,1030000]){
+            const read=v=>JSON.parse(fs.readFileSync('results/result-'+n+'-'+v+'.json','utf8'));
+            const a=read('compact'),b=read('baseline');
+            for(const x of [a,b]){
+              if(x.n!==n || x.facts!==n || x.groups!==n/1000 || !x.sha256 || x.rss_mib<1){
+                throw Error('Resultado vazio/corrompido: '+JSON.stringify(x));
+              }
+            }
+            if(a.sha256!==b.sha256)throw Error('JSON compacto diferente '+n+': '+a.sha256+' != '+b.sha256);
+            if(!(a.rss_mib<b.rss_mib))throw Error('Sem economia RSS nesta fixture: '+JSON.stringify({a,b}));
+            console.log('Q026_INDEPENDENT_AB_PASS',JSON.stringify({
+              n,hash:a.sha256,compact_rss_mib:a.rss_mib,baseline_rss_mib:b.rss_mib,
+              compact_ms:a.ms,baseline_ms:b.ms,
+              rss_reduction_percent:+((1-a.rss_mib/b.rss_mib)*100).toFixed(1),
+              note:'processos independentes, mesma fixture; nao e producao'
+            }));
+          }
+          JS
+
+  mixed-pg-cursor-full-ui:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: public.ecr.aws/docker/library/postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Tipagem do cursor SQL + UI integral
+        run: npx tsc --noEmit --target ES2022 --module commonjs --moduleResolution node --strict --esModuleInterop --skipLibCheck --types node tests/product/run-q026-mixed-cursor-full-ui-shadow.ts
+      - name: Cursor real FETCH 3, 2 unidades/3 modos/UNKNOWN/corrompido/no-trip, VM completa
+        run: npx tsx tests/product/run-q026-mixed-cursor-full-ui-shadow.ts
+
