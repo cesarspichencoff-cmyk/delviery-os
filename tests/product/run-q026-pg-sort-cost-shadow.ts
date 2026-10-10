@@ -104,7 +104,7 @@ void(async()=>{
   await b.cliente.query("ANALYZE platform.event_log");
   const after=await explain();
   const indexSize=Number((await b.cliente.query(
-   "SELECT pg_relation_size('q026_shadow_cursor_idx'::regclass)::bigint AS size"
+   "SELECT pg_relation_size('platform.q026_shadow_cursor_idx'::regclass)::bigint AS size"
   ))[0].size);
   const size1=Number((await b.cliente.query(
    "SELECT pg_total_relation_size('platform.event_log'::regclass)::bigint AS size"
