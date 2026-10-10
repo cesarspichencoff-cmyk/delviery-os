@@ -62,6 +62,8 @@ jobs:
         run: npm run verificar:cobertura-tipografica-v55
       - name: Long observations V5.6 (offline)
         run: npm run verificar:observacoes-legiveis-v56
+      - name: Long observations integration V6.7 (offline)
+        run: node tools/verificar_integracao_observacoes_v67.js
       - name: Invisible characters V5.7 (offline)
         run: npm run verificar:caracteres-invisiveis-v57
       - name: Resource integrity
