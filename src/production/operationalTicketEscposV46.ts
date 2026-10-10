@@ -267,10 +267,16 @@ export function renderConferenceTicketProofV46(ticket: ConferenceTicketV45): Tic
   p.line("--------------------------------", "DIVIDER");
   for (const box of ticket.boxes) {
     if (!box.model) p.blockers.add("BOX_MODEL_UNPROVEN");
+    // Never assert membership for unknown or multiply allocated physical boxes.
+    if (box.status !== "PROVEN" || (box.physical_box_count ?? 1) !== 1 ||
+        box.items.length === 0) p.blockers.add("CONFERENCE_BOX_MEMBERSHIP_NOT_PROVEN");
     const boxLabel=box.position + "  CAIXA " + box.model + "  " + box.operator_field;
     p.font([...boxLabel].length <= FONT_A_COLS ? "A" : "B");
     p.bold(true);
     p.line(boxLabel, "BOX_OPERATOR");
+    p.font("A");
+    const lines = box.items.length;
+    p.line("1 CAIXA | " + lines + (lines === 1 ? " PRODUTO" : " PRODUTOS"), "BOX_PRODUCT_COUNT");
     p.bold(false);
     for (const item of box.items) p.item(item);
   }
@@ -303,6 +309,10 @@ export function renderConferenceTicketProofV46(ticket: ConferenceTicketV45): Tic
     p.line("KIT: A CONFERIR", "KIT_UNKNOWN");
   }
   printResourceGroups(p, "ACOMP", ticket.accompaniments);
+  p.font("A");
+  p.bold(true);
+  p.line("FINALIZAÇÃO: CONFERIR FICHA VALIDADA", "FINISHING_CHECK");
+  p.bold(false);
   p.ending(ticket.identifiers?.tata ?? null);
   return p.result("CONFERENCIA");
 }
