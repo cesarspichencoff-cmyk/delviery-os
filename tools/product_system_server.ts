@@ -39,6 +39,7 @@ import {
 } from "../src/product/viewmodels/historico-vm";
 import { createPgClient, type PgSqlClient } from "../src/platform/persistence/sql-client";
 import { lerRealidadeDeEntregas } from "../src/platform/leitura/realidade-de-entregas";
+import { leitorRrCancelavel, type ProtecaoRr } from "../src/platform/leitura/leitor-rr-cancelavel";
 import { lerHistoricoOperacional } from "../src/platform/leitura/historico-operacional";
 import { lerSaudeDaFonteTata, type AvaliadorDeSaude } from "../src/platform/leitura/saude-fonte-tata";
 import { TIPOS_DA_OPERACAO_VIVA } from "../src/platform/runtime/handler-operacao-viva";
@@ -63,6 +64,20 @@ function limiteExplicitoEntregas(raw: string | undefined): number {
   throw new Error("DELIVERYOS_ENTREGAS_MAX_INFLIGHT invalido; use 1, 2, 4 ou omita");
 }
 const LIMITE_ENTREGAS = limiteExplicitoEntregas(process.env.DELIVERYOS_ENTREGAS_MAX_INFLIGHT);
+/**
+ * Q-026 SHADOW CANDIDATE. Deadline is disabled when omitted.
+ * Activation requires an explicit admission limit, so timeout responses
+ * cannot permit unbounded abandoned SQL requests accumulating in parallel.
+ */
+function prazoExplicitoEntregas(raw: string | undefined): number {
+  if (raw === undefined || raw.trim() === "") return 0;
+  if (!/^[0-9]{4,5}$/.test(raw)) throw Error("DELIVERYOS_ENTREGAS_RR_DEADLINE_MS invalido");
+  const v = Number(raw);
+  if (!Number.isInteger(v) || v < 1_000 || v > 15_000 || LIMITE_ENTREGAS === 0)
+    throw Error("DELIVERYOS_ENTREGAS_RR_DEADLINE_MS requer 1000..15000 e admissao 1/2/4");
+  return v;
+}
+const PRAZO_ENTREGAS_RR_MS = prazoExplicitoEntregas(process.env.DELIVERYOS_ENTREGAS_RR_DEADLINE_MS);
 /**
  * A porta de REALIDADE de Entregas. Com a URL do banco da plataforma, a
  * superficie /entregas ganha um bloco lido de identity.device e de
@@ -246,7 +261,7 @@ function servirEstatico(res: http.ServerResponse, caminho: string): void {
  * Servidor
  * ------------------------------------------------------------------ */
 
-async function lerRealidade(cliente: PgSqlClient | null): Promise<LeituraDeRealidade> {
+async function lerRealidade(cliente: PgSqlClient | null, protecao?: ProtecaoRr): Promise<LeituraDeRealidade> {
   if (!cliente) {
     return {
       disponivel: false,
@@ -256,7 +271,13 @@ async function lerRealidade(cliente: PgSqlClient | null): Promise<LeituraDeReali
     };
   }
   try {
-    return { disponivel: true, realidade: await lerRealidadeDeEntregas(cliente, { agora: new Date() }) };
+    return {
+      disponivel: true,
+      realidade: await lerRealidadeDeEntregas(
+        protecao ? leitorRrCancelavel(cliente, protecao) : cliente,
+        { agora: new Date() },
+      ),
+    };
   } catch {
     // Detalhes de rede/SQL podem conter nomes internos e caminhos. A tela
     // precisa conhecer a indisponibilidade, nunca o erro bruto do driver.
@@ -332,6 +353,11 @@ export async function criarServidor(): Promise<http.Server> {
   const pronto = await calcular();
   const facade = await montarEntregasDemo();
   const clientePlataforma = URL_PLATAFORMA ? await createPgClient({ url: URL_PLATAFORMA, max: 2 }) : null;
+  // Dedicated cancel connection: reader pool max=2 could be fully borrowed.
+  // Only created when the candidate is explicitly enabled; never in default.
+  const canceladorEntregas = PRAZO_ENTREGAS_RR_MS > 0 && URL_PLATAFORMA
+    ? await createPgClient({ url: URL_PLATAFORMA, max: 1, connectionTimeoutMillis: 1_000 })
+    : null;
   // Count HTTP requests admitted, not borrowed PG connections or queue size.
   // Counter belongs to THIS server instance and is released after settlement.
   let entregasEmAndamento = 0;
@@ -412,6 +438,30 @@ export async function criarServidor(): Promise<http.Server> {
           return json(res, 503, { erro: "leitura_temporariamente_ocupada" });
         }
         if (limitar) entregasEmAndamento++;
+        // SHADOW opt-in: response close is a disconnect only when it was not
+        // cleanly ended. HTTP request 'close' fires on normal GET completion
+        // and must NOT be used as a disconnect signal.
+        const protegido = PRAZO_ENTREGAS_RR_MS > 0 && clientePlataforma && canceladorEntregas;
+        const abortador = protegido ? new AbortController() : null;
+        const prazoAbsolutoMs = protegido ? Date.now() + PRAZO_ENTREGAS_RR_MS : 0;
+        let causa: "desconexao" | "prazo" | null = null;
+        const interromper = (motivo: "desconexao" | "prazo") => {
+          if (!abortador || abortador.signal.aborted) return;
+          causa = motivo;
+          abortador.abort();
+          // Reply on deadline without releasing admission before PostgreSQL
+          // actually rolls back. This is a response deadline, NOT proof of
+          // total DB-connection acquisition time.
+          if (motivo === "prazo" && !res.destroyed && !res.writableEnded)
+            json(res, 503, { erro: "prazo_total_excedido" });
+        };
+        const aoFechar = () => {
+          if (!res.writableEnded) interromper("desconexao");
+        };
+        if (abortador) res.on("close", aoFechar);
+        const relogio = abortador
+          ? setTimeout(() => interromper("prazo"), PRAZO_ENTREGAS_RR_MS)
+          : null;
         // A demonstracao e calculada no boot; a REALIDADE e lida agora. Um
         // bloco congelado no boot mostraria o aparelho como estava quando o
         // servidor subiu, e "agora" e o que quem olha esta perguntando.
@@ -420,12 +470,27 @@ export async function criarServidor(): Promise<http.Server> {
         const unidade = (url.searchParams.get("unidade") || "").trim().slice(0, 64) || null;
         void (async () => {
           const snap = await facade.snapshot();
-          const leitura = await lerRealidade(clientePlataforma);
+          const leitura = await lerRealidade(
+            clientePlataforma,
+            abortador && canceladorEntregas
+              ? { signal: abortador.signal, prazoAbsolutoMs, cancelador: canceladorEntregas }
+              : undefined,
+          );
+          if (abortador && Date.now() >= prazoAbsolutoMs) interromper("prazo");
+          if (abortador?.signal.aborted || res.destroyed || res.writableEnded) return;
           json(res, 200, entregasVM(snap, new Date().toISOString(), facade.getPolicyMaxStops(), leitura, { unidade }));
         })()
-          .catch(() => json(res, 500, { erro: "leitura_indisponivel" }))
+          .catch(() => {
+            if (!res.destroyed && !res.writableEnded)
+              json(res, 500, { erro: "leitura_indisponivel" });
+          })
           .finally(() => {
+            if (relogio) clearTimeout(relogio);
+            if (abortador) res.removeListener("close", aoFechar);
+            // Never release the admission slot merely because a 503 was sent:
+            // the PG transaction must complete/rollback first.
             if (limitar) entregasEmAndamento--;
+            void causa; // Only local event classification; no customer data.
           });
         return;
       }
