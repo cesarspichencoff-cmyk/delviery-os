@@ -39,7 +39,13 @@ check("production and conference produce identical note lines when source agrees
  const p=renderProductionTicketProofV46(sushi),c=renderConferenceTicketProofV46(conf);
  assert.equal(p.ready_for_offline_preview,true);
  assert.equal(c.ready_for_offline_preview,true);
- assert.deepEqual(get(p.text_trace),get(c.text_trace));
+ const expected=get(c.text_trace);
+ const actual=get(p.text_trace);
+ assert.equal(sushi.boxes[0].physical_box_count,3);
+ assert.equal(actual.length,expected.length*3);
+ for(let i=0;i<3;i++)
+   assert.deepEqual(actual.slice(i*expected.length,(i+1)*expected.length),expected,
+    "Every individually proven Kids box must preserve the same customer note");
 });
 check("note belongs to the right product, never printed on second product",()=>{
  const conf=structuredClone(archivedResult().conference);
