@@ -73,7 +73,7 @@ function auditCandidatePrerequisitesV711(dir,opt={}){
        obj.orders.some(o=>!o||o.scope!=="EXACT_SNAPSHOT_ONLY"||
          !/^[a-f0-9]{64}$/.test(String(o.snapshot_hash??""))||
          !String(o.store_id??"")||!String(o.loja_id??"")||
-         !/^\\d{4}-\\d{2}-\\d{2}$/.test(String(o.operational_date??""))||
+         !/^\d{4}-\d{2}-\d{2}$/.test(String(o.operational_date??""))||
          !String(o.order_key??"")||!Array.isArray(o.source_refs)||
          !o.source_refs.length))
        throw Error("HUMAN_OVERRIDE_SCOPE_INCOMPLETE");
