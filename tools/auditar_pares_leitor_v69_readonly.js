@@ -96,10 +96,26 @@ function audit(events,decisions,shiftFile){
    if(bothFlags)bothReadyFlagsOnly++;
    // A decision with valid-looking ready booleans can still be tampered with,
    // based on a stale source, or explicitly blocked.
+   // Minimal agreement with the already deployed watcher/consumer schema.
+   // This is only an audit of their shadow flags; the richer V6.8 proof
+   // (product observations + production plan) is still separately required.
+   const sourceItems=e.order?.items??[];
+   const service=e.service_resolution||{},claimed=d.service||{};
+   const provenShift=["LUNCH","DINNER"].includes(service.service)&&
+     ["HUMAN_CONFIRMED_RULE","REAL_OBSERVED"].includes(service.evidence)&&
+     !!String(service.source_ref||"").trim()&&
+     service.service===claimed.service&&service.evidence===claimed.evidence&&
+     service.source_ref===claimed.source_ref;
+   const idsMatch=!!String(e.order?.NRCOMANDA||"").trim()&&
+     e.order?.NRCOMANDA===d.teknisa_sequence&&
+     e.order?.NRCOMANDAEXT===d.ifood_sequence;
+   const itemCountMatch=sourceItems.length>0&&
+     sourceItems.length===d.items.length;
    const verifiedReady=match&&fingerprintMatches&&bothFlags&&
+     provenShift&&idsMatch&&itemCountMatch&&
      e.blockers.length===0&&d.blocking_reasons.length===0&&
-     e.service_resolution?.blockers?.length===0&&
-     d.service?.blockers?.length===0;
+     Array.isArray(service.blockers)&&service.blockers.length===0&&
+     Array.isArray(claimed.blockers)&&claimed.blockers.length===0;
    if(verifiedReady)readyByBoth++;
    else if(bothFlags)untrustedReadyClaims++;
    for(const v of e.blockers)count(evReasons,scrubReason(v));
