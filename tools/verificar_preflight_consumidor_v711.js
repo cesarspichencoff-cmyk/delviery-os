@@ -99,6 +99,28 @@ try{
   assert.ok(!serialized.includes("SECRET_FAKE_ORDER_999"));
   assert.ok(!serialized.includes("SECRET_FAKE_NOTE_123"));
  });
+ check("V7.13 historic sequence-only override prevents cutover preflight",()=>{
+  const file=path.join(dir,"human-order-overrides-v1.json"),saved=fs.readFileSync(file);
+  fs.writeFileSync(file,JSON.stringify({schema:"deliveryos.human-exact-order-overrides.v1",
+   orders:[{teknisa_sequence:"DEMO",ifood_sequence:"DEMO",scope:"EXACT_ORDER",
+    source_refs:["human-review:DEMO"],bags:[{size:"M",quantity:1}]}]}));
+  const r=audit();
+  assert.equal(r.status,"BLOCKED");
+  assert.ok(r.blockers.includes("human-order-overrides-v1.json:HUMAN_OVERRIDE_SCOPE_INCOMPLETE"));
+  assert.ok(!JSON.stringify(r).includes("DEMO"));
+  fs.writeFileSync(file,saved);
+ });
+ check("V7.13 structurally bound review remains ONLY a preflight, not attested",()=>{
+  const file=path.join(dir,"human-order-overrides-v1.json"),saved=fs.readFileSync(file);
+  fs.writeFileSync(file,JSON.stringify({schema:"deliveryos.human-exact-order-overrides.v1",
+   orders:[{store_id:"0001",loja_id:"01",operational_date:"2026-10-10",
+    order_key:"test",snapshot_hash:"a".repeat(64),scope:"EXACT_SNAPSHOT_ONLY",
+    source_refs:["human-review:FICTIONAL"],bags:[{size:"M",quantity:1}]}]}));
+  const r=audit();
+  assert.equal(r.status,"SOURCE_PREFLIGHT_MATCH_ONLY_NO_DEPLOY_AUTHORIZATION");
+  assert.equal(r.safeguards.authorizes_cutover,false);
+  fs.writeFileSync(file,saved);
+ });
  check("V7.11 strict UTF16LE BOM source decoding",()=>{
   const file=path.join(dir,"product-aliases-v1.json"),saved=fs.readFileSync(file);
   const text=JSON.stringify(fixtures["product-aliases-v1.json"]);
