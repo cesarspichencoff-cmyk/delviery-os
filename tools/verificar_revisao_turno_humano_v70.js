@@ -1,6 +1,6 @@
 "use strict";
 const assert=require("node:assert/strict");
-const {reviewHumanShiftRenewalV70}=
+const {reviewHumanShiftRenewalV70,assessReviewedShiftOrderWindowV74}=
  require("../dist/src/production/shiftHumanReviewV70.js");
 const {resolveProductionServiceShiftState}=
  require("../dist/src/production/serviceShiftState.js");
@@ -96,5 +96,104 @@ check("review is pure and preserves existing state and declared request",()=>{
  review(req);assert.deepEqual(req,beforeReq);
  assert.deepEqual(current,before);
 });
+
+const reviewed=()=>review();
+const assess=(opened="2026-10-10T12:00:00",overrides={},attestation=reviewed())=>
+ assessReviewedShiftOrderWindowV74(attestation,{
+  store_id:"0001",operational_date:"2026-10-10",
+  order_opened_at_local:opened,...overrides
+ });
+check("V7.4 within prospective window matches REVIEW only, never live approval",()=>{
+ const r=assess();
+ assert.equal(r.status,"WINDOW_MATCHES_REVIEW_NOT_AUTHORIZED");
+ assert.deepEqual(r.blockers,[]);
+ assert.equal(r.service,"LUNCH");
+ assert.equal(r.safeguards.grants_existing_watcher_v2_state,false);
+ assert.equal(r.safeguards.authenticates_claim,false);
+ assert.equal(r.safeguards.prints,false);
+});
+check("V7.4 lower boundary is inclusive at exact tick",()=>{
+ assert.equal(assess("2026-10-10T10:15:00").status,
+  "WINDOW_MATCHES_REVIEW_NOT_AUTHORIZED");
+});
+check("V7.4 upper boundary inclusive at precise .0000000 tick",()=>{
+ assert.equal(assess("2026-10-10T15:00:00.0000000").status,
+  "WINDOW_MATCHES_REVIEW_NOT_AUTHORIZED");
+});
+check("V7.4 one second before human window is blocked",()=>{
+ const r=assess("2026-10-10T10:14:59");
+ assert.equal(r.status,"BLOCKED");
+ assert.ok(r.blockers.includes("SHIFT_WINDOW_ORDER_PRECEDES_HUMAN_CONFIRMATION"));
+});
+check("V7.4 fractional tick AFTER valid_until is blocked",()=>{
+ const r=assess("2026-10-10T15:00:00.0000001");
+ assert.equal(r.status,"BLOCKED");
+ assert.ok(r.blockers.includes("SHIFT_WINDOW_ORDER_AFTER_VALID_UNTIL"));
+});
+check("V7.4 fractional tick AFTER valid_from is still in-window",()=>{
+ const r=assess("2026-10-10T10:15:00.0000001");
+ assert.equal(r.status,"WINDOW_MATCHES_REVIEW_NOT_AUTHORIZED");
+});
+check("V7.4 same-day historical preapproval order never retroactively passes",()=>{
+ const r=assess("2026-10-10T09:59:59");
+ assert.ok(r.blockers.includes("SHIFT_WINDOW_ORDER_PRECEDES_HUMAN_CONFIRMATION"));
+});
+check("V7.4 next-day order blocked; never automatically extends shift",()=>{
+ const r=assess("2026-10-11T00:00:00",{operational_date:"2026-10-11"});
+ assert.equal(r.status,"BLOCKED");
+ assert.ok(r.blockers.includes("SHIFT_WINDOW_ORDER_DATE_MISMATCH"));
+});
+check("V7.4 wrong store cannot inherit Mooca human review",()=>{
+ const r=assess("2026-10-10T12:00:00",{store_id:"0002"});
+ assert.ok(r.blockers.includes("SHIFT_WINDOW_ORDER_STORE_MISMATCH"));
+});
+check("V7.4 false declared operational date must not override true opened date",()=>{
+ const r=assess("2026-10-09T12:00:00");
+ assert.ok(r.blockers.includes("SHIFT_WINDOW_ORDER_DATE_MISMATCH"));
+});
+check("V7.4 missing and malformed timestamps fail closed",()=>{
+ for(const value of ["","2026-10-10T12:00:00-03:00",
+  "2026-10-10T25:00:00","2026-02-30T12:00:00",
+  "2026-10-10T12:00:00.12345678"]){
+  assert.ok(assess(value).blockers.includes("SHIFT_WINDOW_ORDER_TIMESTAMP_NOT_LOCAL_OR_INVALID"),value);
+ }
+});
+check("V7.4 blocked V7.0 review cannot be upgraded by matching timestamps",()=>{
+ const p=review({...fixture(),operational_date:"2026-10-09"});
+ assert.equal(p.status,"BLOCKED");
+ const r=assess("2026-10-10T12:00:00",{},p);
+ assert.equal(r.status,"BLOCKED");
+ assert.ok(r.blockers.includes("SHIFT_WINDOW_REVIEW_NOT_TRUSTWORTHY_OR_BLOCKED"));
+});
+check("V7.4 spoofed review flags are denied",()=>{
+ const p=reviewed();
+ const tampered={...p,safeguards:{...p.safeguards,writes_live_state:true}};
+ assert.equal(assess("2026-10-10T12:00:00",{},tampered).status,"BLOCKED");
+});
+check("V7.4 bad prior-state status is not authorized",()=>{
+ const p={...reviewed(),prior_state_status:"UNTRUSTED_OR_ABSENT"};
+ assert.ok(assess("2026-10-10T12:00:00",{},p).blockers.includes(
+  "SHIFT_WINDOW_REVIEW_NOT_TRUSTWORTHY_OR_BLOCKED"));
+});
+check("V7.4 strict parsing of source review window rejects invalid and cross-date",()=>{
+ const p=reviewed();
+ p.declared_request.valid_until_local="2026-10-11T00:30:00";
+ assert.ok(assess("2026-10-10T12:00:00",{},p).blockers.includes(
+  "SHIFT_WINDOW_DECLARED_INTERVAL_INVALID"));
+});
+check("V7.4 output never authenticates human, event identity or runtime side effects",()=>{
+ const p=assess();
+ assert.deepEqual(p.safeguards,{
+  authenticates_claim:false,validates_live_event_origin:false,
+  grants_existing_watcher_v2_state:false,permits_retroactive_orders:false,
+  reads_sql:false,writes_state:false,prints:false,
+  requires_independent_human_effect_approval:true
+ });
+ const original=fixture(),before=structuredClone(original);
+ assess("2026-10-10T12:00:00",{},review(original));
+ assert.deepEqual(original,before);
+});
+console.log("READER_SHIFT_WINDOW_V74=16/16 REVIEW_ONLY NO_STATE_WRITE NO_PRINT");
+
 console.log("READER_SHIFT_HUMAN_REVIEW_V70="+checks+"/"+checks+
  " REVIEW_ONLY NO_STATE_WRITE NO_PRINT");
