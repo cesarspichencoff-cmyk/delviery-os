@@ -205,7 +205,7 @@ try{
    "const read=fs.readFileSync.bind(fs),file="+JSON.stringify(target)+";"+
    "let used=false;fs.readFileSync=function(p,...a){const bytes=read(p,...a);"+
    "if(!used&&path.resolve(String(p))===path.resolve(file)){used=true;"+
-   "fs.writeFileSync(file,'globalThis.TATAPackaging={FACT:\\"FACT\\"};');}"+
+   "fs.writeFileSync(file,'globalThis.TATAPackaging={FACT:123};');}"+
    "return bytes;};");
   const eventPath=path.join(folder,"event.json");
   const proc=spawnSync(process.execPath,["-r",sh,path.join(folder,"consumer.cjs"),eventPath],
