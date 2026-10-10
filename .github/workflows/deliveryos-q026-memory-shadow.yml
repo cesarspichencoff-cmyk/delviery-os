@@ -111,3 +111,30 @@ jobs:
         run: npx tsc --noEmit
       - name: cursor em lotes vs replay integral, 1,03 milhao fatos
         run: npx tsx tests/product/run-q026-paged-trip-shadow.ts
+
+
+  paged-adversarial-mixed-modes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: public.ecr.aws/docker/library/postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
+      Q026_EVENTS: "100000"
+      NODE_OPTIONS: "--expose-gc"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: tipagem — sem emitir arquivos
+        run: npx tsc --noEmit
+      - name: contraexemplos de modalidades/UNKNOWN/corrupcao em banco pre-0003
+        run: npx tsx tests/product/run-q026-paged-adversarial-shadow.ts
