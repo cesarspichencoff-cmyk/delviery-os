@@ -31,3 +31,7 @@ jobs:
         run: node --version
       - name: Test public CI snapshot, archive, replay and cursor guards
         run: node --test test/cesar-os-ci-snapshot.test.mjs
+      - name: Inspect actual GitHub archive API without writing
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node tools/cesar-os-ci/replay-live-smoke.mjs
