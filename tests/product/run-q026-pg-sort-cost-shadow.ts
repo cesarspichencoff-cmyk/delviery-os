@@ -125,7 +125,7 @@ void(async()=>{
    index_size_bytes:indexSize,
    table_before_bytes:size0,table_after_bytes:size1,
    postgres_rss_measured:false,
-   note:"PG EXPLAIN single-run only; temp blocks not direct server RSS; not production p95"};
+   note:"PG EXPLAIN three sequential measurements per variant; temp blocks not server RSS; not production p95"};
   console.log("Q026_PG_SORT_COST_PASS "+JSON.stringify(result));
  }finally{await b.descartar()}
 })().catch(e=>{console.error(e);process.exitCode=1});
