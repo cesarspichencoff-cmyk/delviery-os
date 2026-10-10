@@ -5,6 +5,8 @@ import {Buffer} from 'node:buffer';
 
 const REPO='cesarspichencoff-cmyk/delviery-os';
 const SOURCE='github-actions-public-deliveryos';
+const REPO_ID='1279837591';
+const OWNER_ID='292320191';
 const BRANCH='cesar-os-ci-snapshots';
 const PREFIX='ci-snapshots/deliveryos/archive/';
 const SHA=/^[a-f0-9]{40}$/;
@@ -14,6 +16,8 @@ const archiveJson=s=>JSON.stringify(s)+'\n';
 export function archivePathFor(snapshot){
   if(snapshot?.schema!=='cesar-os-github-public-ci-snapshot-v1'||
     snapshot?.source_id!==SOURCE||snapshot?.repository!==REPO||
+    String(snapshot?.repository_id)!==REPO_ID||
+    String(snapshot?.repository_owner_id)!==OWNER_ID||
     snapshot?.collection_basis!=='RUN_CREATED_AT'||
     snapshot?.lifecycle_updates_complete!==false||
     snapshot?.continuity_complete!==false||
