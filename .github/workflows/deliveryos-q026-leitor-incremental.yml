@@ -1,0 +1,223 @@
+name: deliveryos-q026-leitor-incremental
+# Q-026 — leitor incremental reutilizável (pesquisa, DRAFT/HOLD). Não liga rota,
+# não muda a porta canônica nem a replay da Q-016. PostgreSQL DESCARTÁVEL no job.
+on:
+  push:
+    branches:
+      - research/claude-q026-incremental-reader-module-20261010
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: q026-leitor-incremental-${{ github.ref }}
+  cancel-in-progress: true
+env:
+  DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
+jobs:
+  provas:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    services:
+      postgres:
+        image: public.ecr.aws/docker/library/postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Servidor descartavel registra so ERROR ou mais grave (o ruido das migrations enchia o log)
+        run: |
+          node - <<'JS'
+          const { Client } = require("pg");
+          (async () => {
+            const c = new Client({ connectionString: process.env.DELIVERYOS_PG_URL });
+            await c.connect();
+            await c.query("ALTER SYSTEM SET log_min_messages = 'error'");
+            await c.query("ALTER SYSTEM SET log_checkpoints = off");
+            await c.query("SELECT pg_reload_conf()");
+            await c.end();
+            const d = new Client({ connectionString: process.env.DELIVERYOS_PG_URL });
+            await d.connect();
+            const r = await d.query(
+              "SELECT current_setting('log_min_messages') AS m, version() AS v, " +
+              "(SELECT datcollate FROM pg_database WHERE datname = current_database()) AS c");
+            await d.end();
+            console.log(JSON.stringify(r.rows[0]));
+            if (r.rows[0].m !== "error") throw new Error("configuracao de log nao aplicada");
+          })().catch((e) => { console.error(e); process.exit(1); });
+          JS
+      - name: Tipagem do projeto
+        run: npx tsc --noEmit
+      - name: Tipagem estrita do modulo e das provas
+        run: |
+          for f in src/platform/leitura/realidade-de-entregas-incremental.ts \
+                   tests/product/q026-leitor-incremental-comparacao.ts \
+                   tests/product/q026-leitor-incremental-fixture.ts \
+                   tests/product/q026-leitor-incremental-medida-filho.ts \
+                   tests/product/run-q026-leitor-incremental-propriedades.ts \
+                   tests/product/run-q026-leitor-incremental-pg.ts \
+                   tests/product/run-q026-leitor-incremental-medicao.ts \
+                   tests/product/run-q026-leitor-incremental-mutacoes.ts; do
+            npx tsc --noEmit --target ES2022 --module commonjs --moduleResolution node --strict \
+              --esModuleInterop --skipLibCheck --types node "$f"
+          done
+      - name: Equivalencia por propriedade com a porta canonica (sem banco)
+        run: |
+          set -o pipefail
+          npx tsx tests/product/run-q026-leitor-incremental-propriedades.ts | tee propriedades.out
+          grep -qx 'Q026_LEITOR_INCREMENTAL_PROPRIEDADES: 9/9 PASS' propriedades.out
+      - name: PostgreSQL real — paridade, concorrencia, rollback, READ ONLY, lotes (120k)
+        run: |
+          set -o pipefail
+          npx tsx tests/product/run-q026-leitor-incremental-pg.ts | tee pg.out
+          grep -qx 'Q026_LEITOR_INCREMENTAL_PG: 10/10 PASS (lote padrão 1024)' pg.out
+      - name: Mutacoes do modulo — nenhuma regra sem prova
+        run: |
+          set -o pipefail
+          npx tsx tests/product/run-q026-leitor-incremental-mutacoes.ts | tee mutacoes.out
+          grep -qx 'Q026_LEITOR_INCREMENTAL_MUTACOES: 14/14 mortos, 0 cegos' mutacoes.out
+      - name: Replay forense Q-016 preservado
+        run: |
+          set -o pipefail
+          npm run -s test:platform:q016 | tee q016.out
+          grep -qx 'Q016_GREEN' q016.out
+      - name: Plataforma e topologia de imports
+        run: |
+          npm run -s test:platform
+          npm run -s test:platform:topology
+      - name: Governanca
+        run: npm run -s test:platform:governanca
+      - name: Sem PostgreSQL as suites de banco se declaram PULADAS (78), nunca verdes
+        run: |
+          set +e
+          DELIVERYOS_PG_URL= npx tsx tests/product/run-q026-leitor-incremental-pg.ts; a=$?
+          DELIVERYOS_PG_URL= npx tsx tests/product/run-q026-leitor-incremental-medicao.ts; b=$?
+          DELIVERYOS_PG_URL= npx tsx tests/product/run-q026-leitor-incremental-mutacoes.ts; c=$?
+          echo "pg=$a medicao=$b mutacoes=$c"
+          test "$a" = 78 && test "$b" = 78 && test "$c" = 78
+
+  paridade-milhao:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    services:
+      postgres:
+        image: public.ecr.aws/docker/library/postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Servidor descartavel registra so ERROR ou mais grave (o ruido das migrations enchia o log)
+        run: |
+          node - <<'JS'
+          const { Client } = require("pg");
+          (async () => {
+            const c = new Client({ connectionString: process.env.DELIVERYOS_PG_URL });
+            await c.connect();
+            await c.query("ALTER SYSTEM SET log_min_messages = 'error'");
+            await c.query("ALTER SYSTEM SET log_checkpoints = off");
+            await c.query("SELECT pg_reload_conf()");
+            await c.end();
+            const d = new Client({ connectionString: process.env.DELIVERYOS_PG_URL });
+            await d.connect();
+            const r = await d.query(
+              "SELECT current_setting('log_min_messages') AS m, version() AS v, " +
+              "(SELECT datcollate FROM pg_database WHERE datname = current_database()) AS c");
+            await d.end();
+            console.log(JSON.stringify(r.rows[0]));
+            if (r.rows[0].m !== "error") throw new Error("configuracao de log nao aplicada");
+          })().catch((e) => { console.error(e); process.exit(1); });
+          JS
+      - name: PostgreSQL real — paridade com 1.030.000 fatos na viagem longa + 20.000 viagens curtas
+        env:
+          Q026_INC_LONGA: "1030000"
+          Q026_INC_CURTAS: "20000"
+        run: |
+          set -o pipefail
+          npx tsx tests/product/run-q026-leitor-incremental-pg.ts | tee pg-milhao.out
+          grep -qx 'Q026_LEITOR_INCREMENTAL_PG: 10/10 PASS (lote padrão 1024)' pg-milhao.out
+
+  medicao:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - cenario: viagem-longa-126k
+            longa: "120000"
+            curtas: "0"
+          - cenario: viagem-longa-306k
+            longa: "300000"
+            curtas: "0"
+          - cenario: viagem-longa-1036k
+            longa: "1030000"
+            curtas: "0"
+          - cenario: viagens-curtas-200k
+            longa: "0"
+            curtas: "200000"
+    services:
+      postgres:
+        image: public.ecr.aws/docker/library/postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Servidor descartavel registra so ERROR ou mais grave (o ruido das migrations enchia o log)
+        run: |
+          node - <<'JS'
+          const { Client } = require("pg");
+          (async () => {
+            const c = new Client({ connectionString: process.env.DELIVERYOS_PG_URL });
+            await c.connect();
+            await c.query("ALTER SYSTEM SET log_min_messages = 'error'");
+            await c.query("ALTER SYSTEM SET log_checkpoints = off");
+            await c.query("SELECT pg_reload_conf()");
+            await c.end();
+            const d = new Client({ connectionString: process.env.DELIVERYOS_PG_URL });
+            await d.connect();
+            const r = await d.query(
+              "SELECT current_setting('log_min_messages') AS m, version() AS v, " +
+              "(SELECT datcollate FROM pg_database WHERE datname = current_database()) AS c");
+            await d.end();
+            console.log(JSON.stringify(r.rows[0]));
+            if (r.rows[0].m !== "error") throw new Error("configuracao de log nao aplicada");
+          })().catch((e) => { console.error(e); process.exit(1); });
+          JS
+      - name: Memoria, tempo e instante em processos independentes (3 repeticoes, ordem rotativa)
+        env:
+          Q026_MEDIDA_LONGA: ${{ matrix.longa }}
+          Q026_MEDIDA_CURTAS: ${{ matrix.curtas }}
+          Q026_MEDIDA_REPETICOES: "3"
+          Q026_MEDIDA_LOTES: "1024,4096"
+          Q026_MEDIDA_SAIDA: medida-${{ matrix.cenario }}.json
+        run: |
+          set -o pipefail
+          npx tsx tests/product/run-q026-leitor-incremental-medicao.ts | tee medicao.out
+          grep -q '^Q026_LEITOR_INCREMENTAL_MEDICAO .*"digest_unico":true' medicao.out
+      - uses: actions/upload-artifact@v4
+        with:
+          name: q026-medida-${{ matrix.cenario }}
+          path: medida-${{ matrix.cenario }}.json
+          if-no-files-found: error
