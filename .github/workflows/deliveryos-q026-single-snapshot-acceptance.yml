@@ -49,6 +49,11 @@ jobs:
           set -o pipefail
           npx tsx tests/product/run-q026-single-snapshot-acceptance-pg.ts | tee q026-single-snapshot.out
           grep -qx 'Q026_SINGLE_SNAPSHOT_ACCEPTANCE: 6/6 PASS' q026-single-snapshot.out
+      - name: Product System real HTTP GET and read-only outage (disposable PG16)
+        run: |
+          set -o pipefail
+          npx tsx tests/product/run-q026-http-single-snapshot-pg.ts | tee q026-http.out
+          grep -qx 'Q026_HTTP_SINGLE_SNAPSHOT: 6/6 PASS' q026-http.out
       - name: Without PostgreSQL the suite must exit 78 (not fake PASS)
         run: |
           set +e
