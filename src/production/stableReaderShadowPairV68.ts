@@ -43,6 +43,9 @@ export interface ReaderObservationProofV68 {
  snapshot_hash:string;
  status:"OBSERVED_EXACT_ITEM_OBSERVATIONS"|"PROVEN_NONE_FOR_THIS_ITEM";
  source_ref:string;
+ /** Independent captured notes from delivery and production source surfaces. */
+ delivery_observations:string[];
+ production_observations:string[];
 }
 type ReadinessV68={
  status:"PAIRED_SOURCE_VERIFIED"|"BLOCKED";
@@ -208,13 +211,26 @@ export function projectVerifiedReaderPairV68(
       norm(identity.classification.station)!==norm(observed.classification.station))
      errors.add("CURRENT_IDENTITY_NOT_BOUND_TO_SHADOW_ITEM:"+selected.item_index);
    const proof=context.observation_proofs.find(p=>p.item_index===selected.item_index);
+   const correspondingProduction=context.production.lines.filter(p=>
+     norm(p.nome)===norm(observed.name)&&p.quantidade===observed.quantity);
+   const productionNotes:string[]=[];
+   for(const p of correspondingProduction)for(const note of p.tx_prod_com_ven??[]){
+     if(!productionNotes.some(x=>norm(x)===norm(note)))productionNotes.push(note);
+   }
+   const noteSignature=(values:string[])=>JSON.stringify(values.map(norm));
    if(!proof||proof.snapshot_hash!==event.snapshot_hash||
       proof.canonical_code!==observed.canonical_code||!clean(proof.source_ref)||
       !["OBSERVED_EXACT_ITEM_OBSERVATIONS","PROVEN_NONE_FOR_THIS_ITEM"].includes(proof.status)||
-      (proof.status==="PROVEN_NONE_FOR_THIS_ITEM"&&selected.observacoes.length>0))
+      !Array.isArray(proof.delivery_observations)||
+      !Array.isArray(proof.production_observations)||
+      (proof.status==="PROVEN_NONE_FOR_THIS_ITEM"&&
+        (selected.observacoes.length>0||productionNotes.length>0))||
+      (proof.delivery_observations&&
+        noteSignature(proof.delivery_observations)!==noteSignature(selected.observacoes))||
+      (proof.production_observations&&
+        noteSignature(proof.production_observations)!==noteSignature(productionNotes)))
      errors.add("ITEM_OBSERVATION_PROOF_MISSING_OR_WRONG_REVISION:"+selected.item_index);
-   const routes=context.production.lines.filter(p=>norm(p.nome)===norm(observed.name)&&
-      p.quantidade===observed.quantity).map(p=>clean(p.printer_key)).filter(Boolean);
+   const routes=correspondingProduction.map(p=>clean(p.printer_key)).filter(Boolean);
    if(!sameStrings([...new Set(routes)],observed.routes))
      errors.add("PRODUCTION_ROUTE_NOT_SAME_SHADOW_DECISION:"+selected.item_index);
  }
