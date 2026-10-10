@@ -1,0 +1,76 @@
+name: deliveryos-q026-constant-trip-shadow
+on:
+  push:
+    branches:
+      - research/deliveryos-q026-constant-trip-shadow-20261010
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  compare-modes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        n: [120000, 300000]
+        mode: [compact, baseline]
+    services:
+      postgres:
+        image: public.ecr.aws/docker/library/postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
+      Q026_LONG_N: ${{ matrix.n }}
+      Q026_LONG_MODE: ${{ matrix.mode }}
+      Q026_LONG_RESULT: result-${{ matrix.n }}-${{ matrix.mode }}.json
+      NODE_OPTIONS: --expose-gc
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Typecheck shadow scenario
+        run: npx tsc --noEmit --target ES2022 --module commonjs --moduleResolution node --strict --esModuleInterop --skipLibCheck --types node tests/product/run-q026-constant-long-trip-shadow.ts
+      - name: PostgreSQL isolated + one long trip (only one implementation)
+        run: npx tsx tests/product/run-q026-constant-long-trip-shadow.ts
+      - uses: actions/upload-artifact@v4
+        with:
+          name: q026-trip-${{ matrix.n }}-${{ matrix.mode }}
+          path: ${{ env.Q026_LONG_RESULT }}
+          if-no-files-found: error
+  compare-outputs:
+    needs: [compare-modes]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: q026-trip-*
+          path: results
+          merge-multiple: true
+      - name: Compare full presentation digest, counts, RSS, measured peaks
+        run: |
+          node - <<'JS'
+          const fs=require('node:fs');
+          for(const n of [120000,300000]){
+            const get=(mode)=>JSON.parse(fs.readFileSync('results/result-'+n+'-'+mode+'.json','utf8'));
+            const a=get('compact'),b=get('baseline');
+            for(const x of [a,b]){
+              if(x.n!==n||x.events!==n||x.hash.length!==64||x.peak_rss_mib<=0)throw Error('invalid result: '+JSON.stringify(x));
+            }
+            if(a.hash!==b.hash)throw Error('PRESENTATION_DIVERGENCE '+n+': compact '+a.hash+' replay '+b.hash);
+            if(a.max_batch>4096||a.batches<Math.ceil(n/4096))throw Error('fetch not bounded '+n);
+            console.log('Q026_CONSTANT_TRIP_PASS '+JSON.stringify({
+              n,hash:a.hash,compact_peak_rss_mib:a.peak_rss_mib,
+              replay_peak_rss_mib:b.peak_rss_mib,compact_ms:a.ms,replay_ms:b.ms,
+              rss_reduction_percent:+((1-a.peak_rss_mib/b.peak_rss_mib)*100).toFixed(1),
+              limit:'UI only, one trip, unique DB keys; not Q016'
+            }));
+          }
+          JS
