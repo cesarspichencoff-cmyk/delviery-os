@@ -29,6 +29,11 @@ const archived=await replayDryRun({
   end:'2026-10-10T20:46:45.627Z',
   token,now
 });
+const proof=archived.archive_proofs.find(x=>
+  x.archive_path==='ci-snapshots/deliveryos/archive/2026/10/10/20261010T204645627Z.json');
+if(!proof||proof.git_blob_sha!=='1b7963fdab69be502b88c9f0864277d5be96cb47'||
+   !/^[a-f0-9]{64}$/.test(proof.snapshot_sha256)||proof.record_count!==2)
+   throw Error('real_archive_proof_fingerprint_mismatch');
 if(archived.archived_files<1||archived.observed_runs!==2||
   archived.coverage.gaps.length!==0||archived.db_writes!==0||
   archived.cursor_persisted!==false||archived.ingestion_receipt_observed!==false||
@@ -38,6 +43,7 @@ console.log(JSON.stringify({
   status:'REAL_PUBLIC_ARCHIVE_READ_PROVEN',
   provenance:'MANUALLY_SEEDED_EXISTING_PUBLIC_SNAPSHOT',
   source_id:archived.source_id,archived_files:archived.archived_files,
+  verified_git_blob:proof.git_blob_sha,verified_snapshot_sha256:proof.snapshot_sha256,
   observed_runs:archived.observed_runs,run_ids_checked:archived.run_ids_checked,
   late_state_updates:archived.late_state_updates.length,
   unresolved_runs:archived.unresolved_runs.length,
