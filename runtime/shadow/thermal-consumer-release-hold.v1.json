@@ -1,0 +1,52 @@
+{
+  "schema": "deliveryos.thermal-consumer-release-hold.v1",
+  "status": "DRAFT_HOLD_NOT_INSTALLED",
+  "branch": "feat/thermal-v63-packaging-bridge-shadow-20261010",
+  "pr": 38,
+  "scope": "COMANDAS_THERMICAS_ONLY",
+  "preferred_future_candidate": {
+    "path": "runtime/shadow/live_shadow_consumer_v2_candidate_v714.cjs",
+    "git_blob_sha1": "0fe817bd07fd13a6df5cf19d4e01c5e28ae77c50",
+    "code_ready_only": true,
+    "installed": false,
+    "print_authorized": false
+  },
+  "deprecated_do_not_install": [
+    {
+      "path": "runtime/shadow/live_shadow_consumer_v2_candidate_v710.cjs",
+      "reason": "MISSING_HUMAN_OVERRIDE_SNAPSHOT_SCOPE"
+    },
+    {
+      "path": "runtime/shadow/live_shadow_consumer_v2_candidate_v712.cjs",
+      "reason": "SELF_DECLARED_HUMAN_METADATA_COULD_GRANT_FACT"
+    },
+    {
+      "path": "runtime/shadow/live_shadow_consumer_v2_candidate_v713.cjs",
+      "reason": "SOURCE_HASH_NOT_BOUND_TO_CONSUMED_JSON_BYTES"
+    }
+  ],
+  "design_goldens": {
+    "kitchen": "041151f766725456d5487578375ac7c011c6bfa113ceaa52e1976a56d90e9db8",
+    "sushi": "87ea691d76e57dca24ef104671c53119b53dfc60ec3d5d12739d1c864babd88f",
+    "conference": "f7a4cd64b85f3611abd5259c30d97f53d2cd7fcb9b3732faef50f794071d79a2"
+  },
+  "requires_before_any_real_cutover": [
+    "AUTHORIZED_SERVICE_IDENTITY_AND_PERMISSIONS",
+    "EIGHT_REAL_RULE_FILES_PRECHECK_WITH_CANONICAL_ENGINE_SHA",
+    "CURRENT_HUMAN_SHIFT_APPROVAL_EFFECTIVE_FROM_TIMESTAMP",
+    "ALL_CURRENT_SOURCE_REASONS_RESOLVED",
+    "ORDER_EXACT_SNAPSHOT_OBSERVATIONS_JOIN",
+    "PHYSICAL_BOX_BAG_KIT_FACTS_PROVEN",
+    "ROLLBACK_REHEARSAL_AND_MONITORING",
+    "SEPARATE_PRINT_ACCEPTANCE_CAIXA_ITAIM"
+  ],
+  "effect_boundaries": {
+    "merge": false,
+    "deploy": false,
+    "live_windows_write": false,
+    "printer": false,
+    "spooler": false,
+    "sequence_write": false
+  },
+  "world_evidence_status": "NOT_PROVEN"
+}
