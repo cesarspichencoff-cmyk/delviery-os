@@ -31,6 +31,7 @@ type Sample={rep:number;wall_ms:number;query_ms:number;writer_ms:number;xmin_age
   event_read_ms:number;devices_ms:number;latest_ms:number;counts_ms:number;
   events:number;rss_mib:number};
 const data:Sample[]=[];
+void(async()=>{
 const db=await bancoIsolado(url,undefined,"q026rrdur");
 const writer=await createPgClient({url:db.url,max:1,statementTimeoutMs:60000});
 const observer=await createPgClient({url:db.url,max:1,statementTimeoutMs:60000});
@@ -176,3 +177,4 @@ try{
 }finally{
  await writer.close();await observer.close();await db.descartar();
 }
+})().catch(e=>{console.error(e);process.exitCode=1});
