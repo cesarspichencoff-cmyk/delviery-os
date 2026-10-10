@@ -15,6 +15,8 @@ const admin=(process.env.DELIVERYOS_PG_URL??"").trim();
 if(!admin){console.error("Q026_EVENT_LOOP_PG_REQUIRED");process.exit(78)}
 const N=Number(process.env.Q026_EVENT_LOOP_EVENTS??20000);
 assert.ok([20000,120000,300000].includes(N),"fixture constrained");
+const variant=process.env.Q026_FAIRNESS_VARIANT;
+assert.ok(variant==="baseline"||variant==="incremental","variant must be explicitly selected");
 const pause=(ms:number)=>new Promise<void>(r=>setTimeout(r,ms));
 type Response={status:number;body:any;wall_ms:number};
 function get(port:number,path:string):Promise<Response>{
@@ -58,6 +60,8 @@ void(async()=>{
   await db.cliente.query("ANALYZE platform.event_log");
   process.env.DELIVERYOS_DATABASE_URL=db.url;
   process.env.DELIVERYOS_ENTREGAS_MAX_INFLIGHT="2";
+  if(variant==="incremental") process.env.DELIVERYOS_ENTREGAS_INCREMENTAL_RR="1";
+  else delete process.env.DELIVERYOS_ENTREGAS_INCREMENTAL_RR;
   process.env.DELIVERYOS_ENTREGAS_RR_DEADLINE_MS="15000";
   const {criarServidor}=await import("../../tools/product_system_server");
   srv=await criarServidor();
@@ -110,7 +114,7 @@ void(async()=>{
   }
   assert.ok(healthTimes.length>=1,"health probe did not run at all");
   const metrics={
-   events:N,concurrent_entregas:2,
+   events:N,variant,concurrent_entregas:2,
    entregas_http_statuses:two.map(x=>x.status),
    entregas_wall_ms:two.map(x=>x.wall_ms),
    health_probe_count:healthTimes.length,
