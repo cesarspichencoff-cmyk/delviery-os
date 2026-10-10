@@ -154,7 +154,25 @@ void(async()=>{
    return Number(rows[0].n)===0?true:null;
   });
   unlock();await holding;
-  const recovered=await Promise.all(workers.map(w=>get(w.port,"/api/entregas?unidade=ITAIM")));
+  // Backend SQL can finish before the async route's finally frees its
+  // admission slot. Do not mistake that race for permanent leakage, and do
+  // not permit unbounded retries: every worker must recover within 8s.
+  const recoveryStart=performance.now();
+  const recoveryAttempts:number[]=[];
+  const recovered=await Promise.all(workers.map(async w=>{
+    let attempts=0;
+    const good=await eventually(async()=>{
+      attempts++;
+      const x=await get(w.port,"/api/entregas?unidade=ITAIM");
+      if(x.status===200 && x.body.leitura.disponivel===true)return x;
+      if(x.status!==503 || !["leitura_temporariamente_ocupada","prazo_total_excedido"].includes(x.body.erro))
+        throw Error("Q026_UNEXPECTED_RECOVERY_HTTP "+JSON.stringify({status:x.status,body:x.body}));
+      return null;
+    },8000);
+    recoveryAttempts.push(attempts);
+    return good;
+  }));
+  const recoveryWaitMs=+(performance.now()-recoveryStart).toFixed(2);
   assert.ok(recovered.every(x=>x.status===200&&x.body.leitura.disponivel===true));
   console.log("Q026_MULTIPROCESS_ADMISSION_SHADOW_PASS "+JSON.stringify({
    process_count:workers.length,distinct_node_pids:workers.map(w=>w.pid),
@@ -163,6 +181,7 @@ void(async()=>{
    active_query_deadlines:expired.map(x=>({status:x.status,ms:x.ms})),
    health_during_block:healthBusy.map(x=>x.status),
    recovered_after_rollback:recovered.map(x=>x.status),
+   recovery_attempts:recoveryAttempts,recovery_wait_ms:recoveryWaitMs,
    boundary:"per-process admission != global cluster limit; isolated PG16 only"
   }));
  }finally{
