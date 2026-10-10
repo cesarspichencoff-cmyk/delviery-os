@@ -20,7 +20,12 @@
 10. Only with separate authorized promotion and end-to-end world proof discuss recurring GitHub dispatch, DELIVERYOS_WORK_ENABLED and INGEST_ENABLED; remain OFF otherwise.
 
 ## Proof boundary
-- Last local evidence: **41/41 Node tests PASS** on Foxxy with GitHub branch commit 6499e1b3503eda1d6c126f64e5e8ed40c739ac7b. Remote GitHub CI checks are NOT proven.
+- Last local evidence: **48/48 Node tests PASS** on Foxxy with GitHub branch commit ecdaf40d57f283bc34f934b8eff31e3ee085fa1b. Remote GitHub CI checks are NOT proven.
 - Producer and consumer changes are DRAFT PRs. Main branch, Cloudflare/D1, and recurring schedules remain unchanged by these PRs.
 - Not WORLD_PROVEN: archival process against real GitHub API; replay into private database; D1 CAS transaction; complete continuity; new INGESTED batch.
 - The 16 previously imported WORK observations are distinct from this unreleased consumer. Avoid DONE/10/10 without these gates.
+## Receipt-gated cursor addition (review only)
+- `replay-ack-gate.mjs` requires a one-to-one normalization intent for each newly discovered archive and a matching private receipt (`PROCESSED`, `source_id`, `batch_id`, exact count, new+deduped count, coverage, receipt ID).
+- Invalid, missing, duplicate or conflicting receipts block cursor advancement; concurrent CAS conflicts do not claim success.
+- Caller-supplied receipt reader MUST be a trusted service binding in production; **tests use fake readers and memory store**. No private D1 migration or read/write was performed by this PR.
+- This addresses only the logical commit guard; it is NOT end-to-end exactly-once proof or permission to enable recurring collection.
