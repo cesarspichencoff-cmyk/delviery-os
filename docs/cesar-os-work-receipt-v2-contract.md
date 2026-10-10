@@ -16,6 +16,10 @@ O recibo privado v1 (`source_ingestion_receipts`) comprova somente `(source_id,b
 8. `archive_verification='TRUSTED_SOURCE_REVALIDATED_AT_INGEST'` só pode ser emitido se a revalidação real ocorreu antes da transação. Um booleano ou string fornecido pelo solicitante não é prova. Recibos antigos sem atestado devem retornar `LEGACY_UNATTESTED` ou permanecer v1, sem preencher o hash retrospectivamente.
 9. Para um arquivo histórico com `record_count=0`, não fabricar recibo de ingestão; avanço eventual de cursor de evidência depende de verificação do próprio arquivo, sem afirmar conclusão operacional.
 
+## Regra adicional: integridade de bytes ≠ procedência autenticada
+- `attestationFromArchiveBytes()` foi implementada como verificação local do arquivo. Ela retorna **`BYTES_VALIDATED_ORIGIN_UNCONFIRMED`**, nunca a marca de origem confiável.
+- A função de decisão de admissão compara novamente caminho, quantidade, SHA Git e SHA-256 aos bytes apresentados e não realiza escrita. Um candidato literal com `TRUSTED_SOURCE_REVALIDATED_AT_INGEST` só poderá ser aceito por um **serviço de origem realmente autorizado**, depois de buscar o arquivo no GitHub com repositório, branch e blob fixados. Ainda não existe essa ponte de produção.
+- A marca confiável na futura resposta privada exige duas provas separadas: fetch GitHub autenticado no serviço de origem e commit atômico privado com recibo. O fato de uma string carregar a marca não constitui essas provas.
 ## Validações obrigatórias e provas
 - Capturar vetores de teste com JSON simples, Unicode, escaping, números, ordem de propriedades e snapshots reais. Verificar byte a byte compatibilidade Node/Python se for usada serialização canônica.
 - Testar arquivo com SHA Git correto/errado, identidade trocada, replay com lote existente e hash idêntico, replay com hash divergente, commit parcial, concorrência e falhas de rollback em D1 isolado.
