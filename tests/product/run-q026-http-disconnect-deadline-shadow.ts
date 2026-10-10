@@ -15,8 +15,8 @@ import { lerRealidadeDeEntregas } from "../../src/platform/leitura/realidade-de-
 import { lerFatosParaReplay } from "../../src/platform/projections/replay-do-event-log";
 import { TIPOS_DA_OPERACAO_VIVA } from "../../src/platform/runtime/handler-operacao-viva";
 
-const URL=(process.env.DELIVERYOS_PG_URL??"").trim();
-if(!URL){console.error("Q026_HTTP_ABORT_PG_REQUIRED");process.exit(78)}
+const ADMIN_URL=(process.env.DELIVERYOS_PG_URL??"").trim();
+if(!ADMIN_URL){console.error("Q026_HTTP_ABORT_PG_REQUIRED");process.exit(78)}
 const N=Number(process.env.Q026_HTTP_EVENTS??120000);
 assert.ok([20000,120000].includes(N),"isolated event counts only");
 const sleepMs=10000;
@@ -38,7 +38,7 @@ const errCode=(e:unknown)=>
  typeof e==="object"&&e!==null&&"code" in e?String((e as {code:unknown}).code):null;
 
 void(async()=>{
- const db=await bancoIsolado(URL,undefined,"q026httpabort");
+ const db=await bancoIsolado(ADMIN_URL,undefined,"q026httpabort");
  const reader=await createPgClient({url:db.url,max:1,connectionTimeoutMillis:350,statementTimeoutMs:15000});
  const writer=await createPgClient({url:db.url,max:1,statementTimeoutMs:15000});
  const observer=await createPgClient({url:db.url,max:2,statementTimeoutMs:15000});
@@ -85,15 +85,16 @@ void(async()=>{
    const entry:CaseMetric={mode,started:performance.now(),finished:null,
      pid:0,cancelTime:null,errorCode:null,stopReason:null,responseCode:null,poolReleased:false};
    cases.push(entry);
-   let pendingCancel:Promise<unknown>|null=null;
+   const pendingCancels:Promise<unknown>[]=[];
    const stop=(reason:"disconnect"|"deadline")=>{
     if(entry.stopReason!==null||entry.finished!==null)return;
     entry.stopReason=reason;
     entry.cancelTime=performance.now();
     if(entry.pid>0){
-      pendingCancel=observer.query("SELECT pg_cancel_backend($1::int) AS cancelled",[entry.pid])
+      const task=observer.query("SELECT pg_cancel_backend($1::int) AS cancelled",[entry.pid])
         .then(rows=>assert.equal(rows[0]?.cancelled,true,"PG backend cancellation refused"));
-      void pendingCancel.catch(e=>console.error("SHADOW_CANCEL_ERROR",e));
+      pendingCancels.push(task);
+      void task.catch(e=>console.error("SHADOW_CANCEL_ERROR",e));
     }
    };
    const timer=setTimeout(()=>stop("deadline"),deadlineMs);
@@ -140,7 +141,7 @@ void(async()=>{
       }
     }finally{
       clearTimeout(timer);
-      if(pendingCancel)await pendingCancel.catch(()=>undefined);
+      await Promise.allSettled(pendingCancels);
       inFlight--;entry.poolReleased=true;entry.finished=performance.now();
     }
    })();
