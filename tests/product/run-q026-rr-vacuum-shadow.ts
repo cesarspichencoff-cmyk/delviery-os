@@ -56,7 +56,7 @@ void(async()=>{
   const initial=await physical();
   let pid=0,hookCount=0,xminDuring:string|null=null;
   let timeInVacuum=0,rrOldCount=0,writerNewCount=0;
-  let during:Awaited<ReturnType<typeof physical>>=null;
+  const during={value:null as Awaited<ReturnType<typeof physical>>};
   const outOfBandXmin=async()=>{
    const r=await observer.query(
     "SELECT backend_xmin::text AS xmin,state FROM pg_stat_activity WHERE pid=$1",[pid]);
@@ -92,7 +92,7 @@ void(async()=>{
         const startVac=performance.now();
         await observer.query("VACUUM (ANALYZE) public.q026_vacuum_probe");
         timeInVacuum=milli(performance.now()-startVac);
-        during=await physical();
+        during.value=await physical();
         rrOldCount=Number((await tx.query(
           "SELECT count(*)::int AS n FROM public.q026_vacuum_probe WHERE flag=0"
         ))[0].n);
@@ -121,10 +121,10 @@ void(async()=>{
   assert.equal(fresh,N);
   await observer.query("VACUUM (ANALYZE) public.q026_vacuum_probe");
   const afterVac=await physical();
-  if(initial && during && afterVac) {
+  if(initial && during.value && afterVac) {
    // pgstattuple is a physical measure; different PostgreSQL versions can
    // count RECENTLY_DEAD differently. Avoid inventing a specific dead count.
-   assert.ok(initial.table_len>0&&during.table_len>0&&afterVac.table_len>0);
+   assert.ok(initial.table_len>0&&during.value.table_len>0&&afterVac.table_len>0);
    assert.ok(afterVac.free_percent>=initial.free_percent,
     "VACUUM post-RR unexpectedly has less free space");
   }
@@ -138,7 +138,7 @@ void(async()=>{
    vacuum_while_rr_ms:timeInVacuum,
    reader_with_injected_update_ms:elapsed,
    pgstattuple_available:extension,
-   physical_before:initial,physical_during_rr:during,physical_after_close_and_vacuum:afterVac,
+   physical_before:initial,physical_during_rr:during.value,physical_after_close_and_vacuum:afterVac,
    caveat:"pinned backend_xmin + version visibility proven; artificial 20k UPDATE; NOT operational VACUUM throughput/p95"
   };
   console.log("Q026_RR_VACUUM_SHADOW_PASS "+JSON.stringify(result));
