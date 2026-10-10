@@ -1,0 +1,83 @@
+name: deliveryos-q026-single-snapshot-candidate
+on:
+  push:
+    branches:
+      - research/deliveryos-q026-single-snapshot-candidate-20261010
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  pg-read-consistency:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: public.ecr.aws/docker/library/postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: TypeScript complete project + strict new regression test
+        run: |
+          npx tsc --noEmit
+          npx tsc --noEmit --target ES2022 --module commonjs --moduleResolution node --strict --esModuleInterop --skipLibCheck --types node tests/product/run-q026-single-snapshot-candidate-pg.ts
+      - name: Q026 live PostgreSQL single snapshot with deterministic writer and mutant negative controls
+        run: npx tsx tests/product/run-q026-single-snapshot-candidate-pg.ts
+      - name: Legacy Q016 replay invariants
+        run: npm run test:platform:q016
+      - name: Product Entregas PostgreSQL contract
+        run: npx tsx tests/product/run-entregas-servidor-pg-tests.ts
+      - name: Mixed two-unit, three-mode UNKNOWN UI + Q026 PostgreSQL adversarial regression
+        run: |
+          # Prova diferencial Q026 usa git show de commit de referencia d0716fd.
+          # Histórico inteiro checkout@v4; garantir presença do commit original do teste.
+          git fetch --no-tags origin d0716fda380fc66cecfd791593cb6cc8c017b37a
+          npx tsx tests/product/run-q026-compact-full-ui-shadow.ts
+          npx tsx tests/product/run-q026-replay-adversarial-pg-tests.ts
+      - name: Existing Entregas reader contract
+        run: npx tsx tests/product/run-entregas-leitura-da-rua-tests.ts
+      - name: Attribute historical governance gate against immutable integration base
+        run: |
+          set +e
+          npm run test:platform:governanca > "$RUNNER_TEMP/candidate-governanca.log" 2>&1
+          candidate_status=$?
+          set -e
+          # checkout@v4 fetch-depth=0: recuperar commit imutavel sem refazer shallow
+          # da integracao antes de worktree, sem modificar branches remotas.
+          git fetch --no-tags origin 99b0c72e6a254c68358767b5addffe673707d934
+          git worktree add --detach "$RUNNER_TEMP/q026-base" 99b0c72e6a254c68358767b5addffe673707d934
+          ln -s "$GITHUB_WORKSPACE/node_modules" "$RUNNER_TEMP/q026-base/node_modules"
+          set +e
+          (cd "$RUNNER_TEMP/q026-base" && npm run test:platform:governanca) > "$RUNNER_TEMP/baseline-governanca.log" 2>&1
+          baseline_status=$?
+          set -e
+          CANDIDATE_STATUS="$candidate_status" BASELINE_STATUS="$baseline_status" python3 - <<'PY'
+          import os,re,pathlib
+          t=pathlib.Path(os.environ["RUNNER_TEMP"])
+          a=(t/"candidate-governanca.log").read_text(errors="replace")
+          b=(t/"baseline-governanca.log").read_text(errors="replace")
+          fail=lambda s: sorted(re.findall(r"(?m)^\s+- docs/etapa-4-8/APPEND-ONLY\.md:.*",s))
+          ac,bc=fail(a),fail(b)
+          print("BASELINE_GOVERNANCE_STATUS",os.environ["BASELINE_STATUS"])
+          print("CANDIDATE_GOVERNANCE_STATUS",os.environ["CANDIDATE_STATUS"])
+          print("BASELINE_ISSUES",bc)
+          print("CANDIDATE_ISSUES",ac)
+          if (os.environ["BASELINE_STATUS"]!="0" and
+              os.environ["CANDIDATE_STATUS"]!="0" and ac==bc and len(ac)==2):
+              print("Q026_GOVERNANCE_PREEXISTING_FAIL_PROVEN: no new governance failures")
+          elif os.environ["BASELINE_STATUS"]=="0" and os.environ["CANDIDATE_STATUS"]=="0":
+              print("Q026_GOVERNANCE_BOTH_GREEN")
+          else:
+              raise SystemExit("UNATTRIBUTED GOVERNANCE CHANGE — fail closed")
+          PY

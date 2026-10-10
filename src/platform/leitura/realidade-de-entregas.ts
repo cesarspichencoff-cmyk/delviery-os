@@ -23,7 +23,7 @@ import type { TransactionalSqlClient } from "../persistence/sql-client";
 import type { EventEnvelope, SourceMode } from "../contracts/event-catalog";
 import { SOURCE_MODES } from "../contracts/event-catalog";
 import { relogioEfetivo, type ConfiancaDoRelogio } from "../contracts/relogio";
-import { lerFatosParaReplay } from "../projections/replay-do-event-log";
+import { lerFatosParaReplayNoInstantaneo } from "../projections/replay-do-event-log";
 import { projetar, type ViagemProjetada } from "../projections/operacao-viva";
 import { TIPOS_DA_OPERACAO_VIVA } from "../runtime/handler-operacao-viva";
 
@@ -96,15 +96,14 @@ export async function lerRealidadeDeEntregas(
   cliente: TransactionalSqlClient,
   opcoes: { agora: Date; unit_id?: string },
 ): Promise<RealidadeDeEntregas> {
-  // Duas transações somente-leitura, não uma: a porta de replay abre a dela.
-  // O cadastro e o último lote saem desta; os fatos da projeção, da outra.
-  // Entre as duas pode entrar um fato novo — e o campo `lida_em` é um só
-  // porque a leitura é UM ato para quem olha a tela, não porque as duas
-  // consultas viram o mesmo instante.
-  const leitura = await lerFatosParaReplay(cliente, TIPOS_DA_OPERACAO_VIVA);
-
+  // Q-026: UM instantaneo consistente para os fatos das viagens, o cadastro,
+  // o ultimo lote e as contagens. Em READ COMMITTED cada SELECT podia enxergar
+  // commits diferentes — uma mesma tela mostrava o aparelho fresco e a
+  // viagem stale. REPEATABLE READ, READ ONLY impede essa contradicao.
+  // Nao alterar o replay Q-016: a sua funcao publica segue transacao propria.
   return cliente.transaction(async (tx) => {
-    await tx.query("SET TRANSACTION READ ONLY");
+    await tx.query("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY");
+    const leitura = await lerFatosParaReplayNoInstantaneo(tx, TIPOS_DA_OPERACAO_VIVA);
 
     const filtro = opcoes.unit_id ? "WHERE d.unit_id = $1" : "";
     const params = opcoes.unit_id ? [opcoes.unit_id] : [];
