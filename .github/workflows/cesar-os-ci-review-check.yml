@@ -7,6 +7,7 @@ on:
     paths:
       - 'tools/cesar-os-ci/**'
       - 'test/cesar-os-ci-*.test.mjs'
+      - 'test/cesar-os-ci-*.test.py'
       - '.github/workflows/cesar-os-ci-review-check.yml'
 
 permissions:
@@ -32,6 +33,8 @@ jobs:
         run: node --version
       - name: Test public CI snapshot, archive, replay and cursor guards
         run: node --test test/cesar-os-ci-snapshot.test.mjs
+      - name: Check cursor migration against SQLite (no D1)
+        run: python3 test/cesar-os-ci-cursor-sqlite.test.py
       - name: Inspect actual GitHub archive API without writing
         env:
           GITHUB_TOKEN: ${{ github.token }}
