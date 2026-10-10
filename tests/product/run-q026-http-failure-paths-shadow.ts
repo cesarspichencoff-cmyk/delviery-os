@@ -193,18 +193,29 @@ void(async()=>{
       boundary:"opt-in pool wait cap 1s, not proof of strict end-to-end deadline"
     }));
   }else{
-    const readers=Array.from({length:4},()=>get(port,path));
+    // Eight parallel callers compete for FOUR HTTP admission slots, but
+    // only TWO PostgreSQL connections. Two will be rejected immediately by
+    // admission, plus others once the first four fill; exact counts must
+    // be grounded in the batch rather than hidden behind a successful retry.
+    const readers=Array.from({length:8},()=>get(port,path));
     await deadline(async()=>await countWaiting()>=2?true:null);
-    const over=await get(port,path);
-    assert.equal(over.status,503);
-    assert.equal(over.body.erro,"leitura_temporariamente_ocupada");
-    assert.equal(over.headers["retry-after"],"1");
     const health=await get(port,"/api/health");assert.equal(health.status,200);
     const statuses=await Promise.all(readers);
-    assert.deepEqual(statuses.map(x=>x.status).sort(),[503,503,503,503]);
-    assert.ok(statuses.every(x=>x.body.erro==="prazo_total_excedido"),"only deliberate deadlines expected");
-    // Pool maximum is 2, whereas 4 are admitted; a waiter may outlive its
-    // HTTP deadline until the pool's default 5s acquisition timeout.
+    const rejected=statuses.filter(x=>x.status===503&&
+      x.body.erro==="leitura_temporariamente_ocupada");
+    const checkout=statuses.filter(x=>x.status===200&&
+      x.body.leitura?.disponivel===false&&x.body.leitura?.motivo==="indisponivel");
+    const timeouts=statuses.filter(x=>x.status===503&&
+      x.body.erro==="prazo_total_excedido");
+    assert.equal(rejected.length,4,
+      "admission must cap at 4 even when eight requests arrive");
+    assert.equal(checkout.length,2,
+      "two pg-pool waiters must settle unavailable before HTTP deadline");
+    assert.equal(timeouts.length,2,
+      "two active PG reads should terminate by HTTP deadline");
+    assert.ok(checkout.every(x=>x.wall_ms<2000),"checkout wait exceeded 2 seconds");
+    assert.ok(timeouts.every(x=>x.wall_ms>=2500&&x.wall_ms<5000),
+      "active reader exceeded guarded HTTP deadline");
     release();await held;
     const firstRecover=await deadline(async()=>{
       const x=await get(port,path);
@@ -216,12 +227,14 @@ void(async()=>{
      "AND pid<>pg_backend_pid()");
     assert.equal(Number(active[0].n),0);
     console.log("Q026_POOL_CONTENTION_PASS "+JSON.stringify({
-      pool_max:2,admission_max:4,simultaneous_admitted:4,
-      admission_rejections:1,statuses:statuses.map(x=>x.status),
+      pool_max:2,admission_max:4,total_simultaneous:8,
+      admission_rejections:rejected.length,
+      fast_checkout_unavailable:checkout.length,
+      active_read_deadlines:timeouts.length,
       request_wall_ms:statuses.map(x=>x.wall_ms),
       health:health.status,post_recovery_status:firstRecover.status,
       server_active_event_reads_after_cleanup:Number(active[0].n),
-      boundary:"pool checkout is not strictly limited by HTTP deadline"
+      boundary:"pg pool checkout capped to 1s with opt-in, not end-to-end SLA"
     }));
   }
  }finally{
