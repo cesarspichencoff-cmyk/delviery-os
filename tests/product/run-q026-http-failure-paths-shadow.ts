@@ -16,7 +16,7 @@ import { createPgClient } from "../../src/platform/persistence/sql-client";
 const base=(process.env.DELIVERYOS_PG_URL??"").trim();
 if(!base){console.error("Q026_FAILURE_PATH_PG_REQUIRED");process.exit(78)}
 const CASE=process.env.Q026_FAILURE_PATH_CASE;
-assert.ok(CASE==="cancel_denied"||CASE==="pool_saturated");
+assert.ok(CASE==="cancel_denied"||CASE==="pool_saturated"||CASE==="pool_checkout_fast");
 const BUDGET_MS=3000;
 const pause=(ms:number)=>new Promise<void>(r=>setTimeout(r,ms));
 const deadline=async<T>(poll:()=>Promise<T|null>,max=16000):Promise<T>=>{
@@ -146,6 +146,51 @@ void(async()=>{
       elapsed_ms:response.wall_ms,postgresql_lock_wait_cleared:true,
       next_http_status:fresh.status,health:health.status,
       boundary:"disposable PG16 built-in grant revoked; test role only"
+    }));
+  }else if(CASE==="pool_checkout_fast"){
+    // Two GETs acquire the two PG connections and block on the real table
+    // lock; another two wait for pg-pool checkout. The candidate's 1000ms
+    // connectionTimeoutMillis must REMOVE both queued waiters. The old
+    // five-second default would keep them outstanding past HTTP deadline.
+    const readers=Array.from({length:4},()=>get(port,path));
+    await deadline(async()=>await countWaiting()>=2?true:null);
+    const over=await get(port,path);
+    assert.equal(over.status,503);
+    assert.deepEqual(over.body,{erro:"leitura_temporariamente_ocupada"});
+    const results=await Promise.all(readers);
+    const fast=results.filter(x=>x.wall_ms<2000);
+    const slow=results.filter(x=>x.wall_ms>=2500 && x.wall_ms<5000);
+    assert.equal(fast.length,2,
+      "exactly two waiting pool.connect() must settle before HTTP deadline");
+    assert.equal(slow.length,2,"exactly two active blocked SQL reads must hit HTTP deadline");
+    for(const x of fast){
+      assert.equal(x.status,200,"existing unavailable-data envelope preserved");
+      assert.equal(x.body.leitura.disponivel,false,
+        "checkout timeout must NEVER become healthy zero/empty data");
+      assert.equal(x.body.leitura.motivo,"indisponivel");
+      assert.equal(x.raw.includes(db.url),false);
+    }
+    for(const x of slow){
+      assert.equal(x.status,503);
+      assert.deepEqual(x.body,{erro:"prazo_total_excedido"});
+    }
+    const health=await get(port,"/api/health");assert.equal(health.status,200);
+    release();await held;
+    const recovered=await get(port,path);
+    assert.equal(recovered.status,200);
+    assert.equal(recovered.body.leitura.disponivel,true);
+    const active=await obs.query(
+      "SELECT count(*)::int AS n FROM pg_stat_activity WHERE datname=current_database() "+
+      "AND state IN ('active','idle in transaction') AND query LIKE '%platform.event_log%' "+
+      "AND pid<>pg_backend_pid()");
+    assert.equal(Number(active[0].n),0,"no orphan session after timed-out checkout");
+    console.log("Q026_POOL_CHECKOUT_FAST_PASS "+JSON.stringify({
+      pool_max:2,admitted_http:4,checkout_limit_ms:1000,
+      fast_unavailable:fast.length,fast_wall_ms:fast.map(x=>x.wall_ms),
+      blocked_deadline:slow.length,blocked_wall_ms:slow.map(x=>x.wall_ms),
+      fifth_status:over.status,health:health.status,
+      recovered_status:recovered.status,no_orphan_sql:true,
+      boundary:"opt-in pool wait cap 1s, not proof of strict end-to-end deadline"
     }));
   }else{
     const readers=Array.from({length:4},()=>get(port,path));
