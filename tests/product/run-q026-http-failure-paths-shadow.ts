@@ -102,7 +102,7 @@ void(async()=>{
   assert.equal(initial.status,200);assert.equal(initial.body.leitura.disponivel,true);
   let unblock:()=>void=()=>undefined;
   const gate=new Promise<void>(r=>{unblock=r});release=unblock;
-  let holding=()=>undefined;
+  let holding:()=>void=()=>undefined;
   const entered=new Promise<void>(r=>{holding=r});
   held=db.cliente.transaction(async tx=>{
    await tx.query("LOCK TABLE platform.event_log IN ACCESS EXCLUSIVE MODE");
