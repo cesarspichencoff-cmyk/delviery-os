@@ -73,6 +73,7 @@ if(process.env.Q026_MULTIPROCESS_CHILD==="1"){
   });
  }
  void(async()=>{
+  const watchdog=setTimeout(()=>{console.error("Q026_MULTIPROCESS_WATCHDOG_EXPIRED");process.exit(72)},90000);
   const db=await bancoIsolado(admin,undefined,"q026workers");
   const obs=await createPgClient({url:db.url,max:1});
   const workers:Worker[]=[];
@@ -90,7 +91,9 @@ if(process.env.Q026_MULTIPROCESS_CHILD==="1"){
     "FROM generate_series(1,2000) g"
    ].join(" "));
    workers.push(await startWorker(db.url));
+   console.log("Q026_WORKER_BOOT_1_PASS");
    workers.push(await startWorker(db.url));
+   console.log("Q026_WORKER_BOOT_2_PASS");
    assert.notEqual(workers[0].pid,workers[1].pid);
    for(const w of workers){
     const r=await get(w.port,"/api/entregas?unidade=ITAIM");
@@ -105,6 +108,7 @@ if(process.env.Q026_MULTIPROCESS_CHILD==="1"){
     ready();await held;
    });
    await entered;
+   console.log("Q026_SHARED_LOCK_ACQUIRED");
    const running=workers.map(w=>get(w.port,"/api/entregas?unidade=ITAIM"));
    await until(async()=>{
     const r=await obs.query(
@@ -113,12 +117,14 @@ if(process.env.Q026_MULTIPROCESS_CHILD==="1"){
       "AND pid<>pg_backend_pid()");
     return Number(r[0].n)>=2;
    });
+   console.log("Q026_TWO_ACTIVE_SQL_OBSERVED");
    const overflow=await Promise.all(workers.map(w=>get(w.port,"/api/entregas?unidade=ITAIM")));
    assert.ok(overflow.every(x=>x.status===503&&x.body.erro==="leitura_temporariamente_ocupada"&&x.ms<500));
    const health=await Promise.all(workers.map(w=>get(w.port,"/api/health")));
    assert.ok(health.every(x=>x.status===200));
    const timed=await Promise.all(running);
    assert.ok(timed.every(x=>x.status===503&&x.body.erro==="prazo_total_excedido"));
+   console.log("Q026_TWO_HTTP_DEADLINES_OBSERVED");
    unlock();await hold;
    const recovered=await Promise.all(workers.map(w=>get(w.port,"/api/entregas?unidade=ITAIM")));
    assert.ok(recovered.every(x=>x.status===200&&x.body.leitura.disponivel===true));
@@ -136,9 +142,12 @@ if(process.env.Q026_MULTIPROCESS_CHILD==="1"){
      limitation:"per-process admission sum across processes, NOT globally shared limit"
    }));
   }finally{
+   console.log("Q026_CLEANUP_START");
    unlock();if(hold)await hold.catch(()=>undefined);
    for(const w of workers){w.process.kill("SIGKILL")}
    await obs.close();await db.descartar();
+   clearTimeout(watchdog);
+   console.log("Q026_CLEANUP_COMPLETE");
   }
  })().catch(e=>{console.error("Q026_TWO_OS_PROCESSES_FAILED",e);process.exitCode=1});
 }
