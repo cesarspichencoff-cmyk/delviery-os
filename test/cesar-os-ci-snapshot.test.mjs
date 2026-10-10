@@ -1,4 +1,5 @@
 import {test} from 'node:test';
+import './cesar-os-ci-archive.test.mjs';
 import {readFileSync} from 'node:fs';
 import assert from 'node:assert/strict';
 import {verifyContext,windowFor,makeSnapshot,collect,publish,requestJson,REPO,REPO_ID,OWNER_ID,MAX_RUNS} from '../tools/cesar-os-ci/snapshot.mjs';

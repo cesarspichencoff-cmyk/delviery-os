@@ -1,6 +1,7 @@
 // DeliveryOS CI public snapshot producer. No private data, PAT, or raw API persistence.
 import { Buffer } from 'node:buffer';
 import { pathToFileURL } from 'node:url';
+import {archiveSnapshot} from './archive.mjs';
 
 export const REPO='cesarspichencoff-cmyk/delviery-os';
 export const REPO_ID='1279837591';
@@ -128,7 +129,9 @@ export async function publish(snapshot,ctx,{token,fetchFn=fetch}={}){
 export async function main(env=process.env,{fetchFn=fetch,now=new Date()}={}){
   const ctx=verifyContext(env);
   const snapshot=await collect(env.GITHUB_TOKEN,{now,fetchFn});
-  return publish(snapshot,ctx,{token:env.GITHUB_TOKEN,fetchFn});
+  const archived=await archiveSnapshot(snapshot,ctx,{token:env.GITHUB_TOKEN,fetchFn,requestJson});
+  const latest=await publish(snapshot,ctx,{token:env.GITHUB_TOKEN,fetchFn});
+  return {...latest,archive_status:archived.status,archive_path:archived.path};
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
   main().then(x=>console.log(JSON.stringify(x))).catch(e=>{
