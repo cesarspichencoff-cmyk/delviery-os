@@ -9,17 +9,14 @@
  */
 
 import type { UiSnapshot } from "../../entregas/ui/adapters/UiApplicationFacade";
-import type {
-  AparelhoReal,
-  RealidadeDeEntregas,
-} from "../../platform/leitura/realidade-de-entregas";
+import type { AparelhoReal } from "../../platform/leitura/realidade-de-entregas";
+import type { RealidadeParaApresentacao, ViagemParaApresentacao } from "../../platform/leitura/realidade-de-entregas-incremental";
 import type { SourceMode } from "../../platform/contracts/event-catalog";
 import {
   JANELAS,
   classificarFrescor,
   type EstadoViagem,
   type Frescor,
-  type ViagemProjetada,
 } from "../../platform/projections/operacao-viva";
 import { instanteConfiavel } from "../../platform/contracts/relogio";
 import {
@@ -326,7 +323,7 @@ export interface OpcoesEntregasVM {
  * ------------------------------------------------------------------ */
 
 export type LeituraDeRealidade =
-  | { disponivel: true; realidade: RealidadeDeEntregas }
+  | { disponivel: true; realidade: RealidadeParaApresentacao }
   | { disponivel: false; motivo: "integracao_pendente" | "indisponivel"; explicacao: string };
 
 const PROCEDENCIA_DO_MODO: Record<SourceMode, Procedencia> = {
@@ -449,7 +446,7 @@ function aparelhoVM(a: AparelhoReal, agora: Date): AparelhoRealVM {
   };
 }
 
-function realidadeVM(r: RealidadeDeEntregas, agora: Date): RealidadeVM {
+function realidadeVM(r: RealidadeParaApresentacao, agora: Date): RealidadeVM {
   const lidaEm = agora.toISOString();
   const viagens: ViagemRealVM[] = r.projecoes.flatMap((p) =>
     p.viagens.map((v) => {
@@ -606,7 +603,7 @@ function plural(n: number, um: string, varios: string): string {
 }
 
 function viagemLida(
-  v: ViagemProjetada,
+  v: ViagemParaApresentacao,
   procedencia: Procedencia,
   rotuloPor: ReadonlyMap<string, string>,
   agora: Date,
@@ -669,7 +666,7 @@ function maisRecentePrimeiro(a: ViagemLidaVM, b: ViagemLidaVM): number {
   return b.viagem_id.localeCompare(a.viagem_id);
 }
 
-function filtrarPorUnidade(r: RealidadeDeEntregas, unidade: string | null): RealidadeDeEntregas {
+function filtrarPorUnidade(r: RealidadeParaApresentacao, unidade: string | null): RealidadeParaApresentacao {
   if (!unidade) return r;
   return {
     ...r,
@@ -686,7 +683,7 @@ const ORDEM_DO_TIPO: Record<TipoConferir, number> = {
   cadastro_incompleto: 3,
 };
 
-function conferencias(r: RealidadeDeEntregas, naRua: readonly ViagemLidaVM[], agora: Date): ConferirVM[] {
+function conferencias(r: RealidadeParaApresentacao, naRua: readonly ViagemLidaVM[], agora: Date): ConferirVM[] {
   const itens: ConferirVM[] = [];
   for (const v of naRua) {
     if (v.ocorrencias <= 0) continue;
@@ -816,8 +813,8 @@ function leituraAusente(motivo: "integracao_pendente" | "indisponivel", explicac
 }
 
 function leituraDaRua(
-  todas: RealidadeDeEntregas,
-  r: RealidadeDeEntregas,
+  todas: RealidadeParaApresentacao,
+  r: RealidadeParaApresentacao,
   selecionada: string | null,
   agora: Date,
 ): LeituraDaRuaVM {
