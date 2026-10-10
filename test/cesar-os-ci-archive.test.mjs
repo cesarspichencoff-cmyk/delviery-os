@@ -1,11 +1,13 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {archivePathFor,archiveSnapshot} from '../tools/cesar-os-ci/archive.mjs';
+import {main} from '../tools/cesar-os-ci/snapshot.mjs';
 
 const sha='a'.repeat(40),token='t'.repeat(40);
 const snapshot=(more={})=>({
   schema:'cesar-os-github-public-ci-snapshot-v1',source_id:'github-actions-public-deliveryos',
-  repository:'cesarspichencoff-cmyk/delviery-os',collection_basis:'RUN_CREATED_AT',
+  repository:'cesarspichencoff-cmyk/delviery-os',
+  repository_id:'1279837591',repository_owner_id:'292320191',collection_basis:'RUN_CREATED_AT',
   generated_at:'2026-10-10T20:46:45.627Z',window_start:'2026-10-10T19:46:45.627Z',
   window_end:'2026-10-10T20:46:45.627Z',record_count:1,records:[{id:123}],
   coverage_status:'BOUNDED_OBSERVED',lifecycle_updates_complete:false,
@@ -32,7 +34,7 @@ test('fixed, ISO-safe, time-addressed path',()=>{
 test('malformed or broadened completeness claims are rejected before API calls',async()=>{
   for(const changed of [{continuity_complete:true},{lifecycle_updates_complete:true},
     {possible_commitment:true},{coverage_complete_claimed:true},{raw_payload_persisted:true},
-    {repository:'else/else'},{generated_at:'../../bad'},{window_start:'2026-10-10T18:46:45.627Z'},
+    {repository:'else/else'},{repository_id:'7'},{repository_owner_id:'9'},{generated_at:'../../bad'},{window_start:'2026-10-10T18:46:45.627Z'},
     {record_count:101},{record_count:0},{collection_basis:'UPDATED_AT'}]){
     const s=snapshot(changed);assert.throws(()=>archivePathFor(s),/archive_snapshot_contract_invalid/);
     await assert.rejects(archiveSnapshot(s,{sha},{token,requestJson:()=>{throw Error('network_called')}}),/archive_snapshot_contract_invalid/);
@@ -85,4 +87,55 @@ test('missing identity, branch receipt and invalid write result fail closed',asy
   await assert.rejects(archiveSnapshot(snapshot(),{sha},{token,requestJson:replies([
     okBranch,notFound,{status:201,value:{content:{path:'other'},commit:{sha:'c'.repeat(40)}}}
   ],[])}),/archive_write_receipt_invalid/);
+});
+
+
+const context={
+ GITHUB_REPOSITORY:'cesarspichencoff-cmyk/delviery-os',
+ GITHUB_REPOSITORY_ID:'1279837591',GITHUB_REPOSITORY_OWNER_ID:'292320191',
+ GITHUB_REF:'refs/heads/main',GITHUB_EVENT_NAME:'workflow_dispatch',
+ GITHUB_SHA:sha,GITHUB_TOKEN:token
+};
+function response(status,value){return {status,redirected:false,json:async()=>value};}
+
+test('whole producer archives before latest and keeps manual workflow identity',async()=>{
+ const calls=[];
+ const fetchFn=async(url,opts)=>{
+  const path=new URL(url).pathname;
+  calls.push({path,method:opts.method});
+  if(path.endsWith('/actions/runs'))return response(200,{total_count:0,workflow_runs:[]});
+  if(path.endsWith('/git/ref/heads/cesar-os-ci-snapshots'))return response(200,{ref:'refs/heads/cesar-os-ci-snapshots'});
+  if(path.includes('/contents/ci-snapshots/deliveryos/archive/')&&opts.method==='GET')return response(404,null);
+  if(path.includes('/contents/ci-snapshots/deliveryos/archive/')&&opts.method==='PUT')return response(201,{
+    content:{path:path.split('/contents/')[1],sha:'b'.repeat(40)},commit:{sha:'c'.repeat(40)}
+  });
+  if(path.endsWith('/contents/ci-snapshots/deliveryos/latest.json')&&opts.method==='GET')return response(404,null);
+  if(path.endsWith('/contents/ci-snapshots/deliveryos/latest.json')&&opts.method==='PUT')return response(201,{
+    content:{path:'ci-snapshots/deliveryos/latest.json',sha:'b'.repeat(40)},commit:{sha:'c'.repeat(40)}
+  });
+  throw Error('unexpected_API_call:'+path);
+ };
+ const r=await main(context,{fetchFn,now:new Date('2026-10-10T20:46:45.627Z')});
+ assert.equal(r.status,'PUBLISHED');assert.equal(r.archive_status,'ARCHIVED');
+ assert.equal(calls.filter(x=>x.method==='PUT').length,2);
+ const puts=calls.filter(x=>x.method==='PUT');
+ assert.match(puts[0].path,/\/archive\//);
+ assert(puts[1].path.endsWith('/latest.json'));
+});
+
+test('whole producer never replaces latest if archived path conflicts',async()=>{
+ const calls=[];
+ const fetchFn=async(url,opts)=>{
+  const path=new URL(url).pathname;
+  calls.push(path);
+  if(path.endsWith('/actions/runs'))return response(200,{total_count:0,workflow_runs:[]});
+  if(path.endsWith('/git/ref/heads/cesar-os-ci-snapshots'))return response(200,{ref:'refs/heads/cesar-os-ci-snapshots'});
+  if(path.includes('/contents/ci-snapshots/deliveryos/archive/'))return response(200,{
+    encoding:'base64',content:Buffer.from('{}').toString('base64')
+  });
+  throw Error('must_not_touch_latest_or_put');
+ };
+ await assert.rejects(main(context,{fetchFn,now:new Date('2026-10-10T20:46:45.627Z')}),/archive_collision_or_unverifiable/);
+ assert.equal(calls.length,3);
+ assert(!calls.some(x=>x.endsWith('/latest.json')));
 });
