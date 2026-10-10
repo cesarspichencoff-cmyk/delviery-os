@@ -3,7 +3,7 @@
   "authority": "CESAR",
   "confirmed_on": "2026-10-10",
   "source": "DIRECT_CHAT",
-  "status": "HUMAN_CONFIRMED_PREPARATION_OWNER_AND_ORDERING",
+  "status": "HUMAN_CONFIRMED_BATCH_PREPARATION_BEFORE_SUSHI",
   "product_keyword": "SKIN",
   "preparation": {
     "owner": "COZINHA",
@@ -11,17 +11,20 @@
     "consumer": "SUSHI",
     "product_part": "PELE_DE_SALMAO",
     "method": "UNKNOWN",
-    "prepared_before_order": "UNKNOWN",
-    "prepared_in_batch": "UNKNOWN",
-    "order_trigger": "UNKNOWN",
+    "prepared_before_order": "YES_BATCH_PREPARED_AHEAD_OF_ORDERS",
+    "prepared_in_batch": "HUMAN_CONFIRMED",
+    "order_trigger": "NOT_PER_SOLD_ORDER",
     "number_of_preparations_per_sold_portion": null
   },
   "operational_boundary": {
-    "kitchen_auto_ticket_per_sold_order": "NOT_AUTHORIZED_WITHOUT_TRIGGER_PROOF",
+    "kitchen_auto_ticket_per_sold_order": "NOT_REQUIRED_BATCH_PREPARATION",
     "sushi_primary_station_from_product_name": "NOT_PROVEN",
     "stock_write": false,
     "print": false,
-    "spooler_write": false
+    "spooler_write": false,
+    "batch_size": "UNKNOWN",
+    "batch_replenishment_frequency": "UNKNOWN",
+    "batch_stock_threshold": "UNKNOWN"
   },
-  "note": "Cesar confirmou que a Cozinha prepara a pele antes do Sushi. Isso comprova autoria e precedencia, NAO comprova preparo por pedido, preparo em lote, quantidade, fator 1:1 ou necessidade de segunda comanda da Cozinha."
+  "note": "Cesar confirmou por chat em 2026-10-10 que a Cozinha prepara a pele de salmao em lote, antecipadamente, para posterior montagem pelo Sushi. SKIN nao gera demanda de preparo nem comanda de Cozinha por pedido vendido. Quantidade, frequencia, ponto de reposicao e consumo de estoque do lote nao foram confirmados e nao devem ser inferidos."
 }
