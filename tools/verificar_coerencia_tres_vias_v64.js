@@ -126,4 +126,37 @@ check("unverified extra kit cannot produce a conference item",()=>{
  const r=run(fixture(),entries,motor(packageData(),{status:"UNKNOWN",kits:[]}));
  assert.equal(r.tickets,null);assert.ok(r.bridge.reasons.includes("KIT_ASSIGNMENT_NOT_PROVEN"));
 });
+check("verified beverage is listed in Conference without a fictitious physical box",()=>{
+ const f=fixture();
+ const drink={item_index:2,product_code:"TEST-BEV",product_name:"COCA COLA ZERO 350ML",
+   quantity:1,observations:[],packaging_role:"OTHER"};
+ f.source_items.push(drink);
+ f.resource_input.sold_items.push({product_code:drink.product_code,
+   product_name:drink.product_name,quantity:1,cmv_basis:"NON_STOCK"});
+ const e=[...entries,{source_item_index:2,quantity:1,
+   station_proof:"CURRENT_NON_PRODUCTION_FAMILY_PROVEN",
+   product:{nome:drink.product_name,classification:{station:null,family:"bebida"}}}];
+ const m=packageData();m.total_items=4;
+ m.groups.push({kind:"sem_caixa",category:"bebida",station:null,box:null,boxes:0,
+   status:"PROVEN_OPERATIONAL_DOCUMENT",
+   products:[{name:drink.product_name,quantity:1}]});
+ const r=run(f,e,motor(m));
+ assert.ok(r.tickets,JSON.stringify(r.coherence_reasons));
+ assert.equal(r.tickets.ready_for_semantic_preview,true);
+ assert.equal(r.tickets.conference.boxes.length,1);
+ assert.equal(r.tickets.conference.items_without_physical_box.length,1);
+ assert.equal(r.tickets.conference.items_without_physical_box[0].print_name,"COCA COLA ZERO 350ML");
+ assert.equal(r.tickets.conference.items_without_proven_box.length,0);
+ const trace=renderOperationalTicketsProofV46(r.tickets).conference.text_trace;
+ assert.ok(trace.includes("ITENS SEM CAIXA FISICA"));
+ assert.ok(trace.includes("1  COCA COLA ZERO 350ML"));
+});
+check("unknown no-box classification is blocked, not labelled as a beverage",()=>{
+ const f=fixture();const e=[...entries];
+ const m=packageData();m.groups[0].kind="sem_caixa";m.groups[0].category="bebida";
+ m.groups[0].box=null;m.groups[0].boxes=0;
+ const r=run(f,e,motor(m));
+ assert.equal(r.tickets,null);
+ assert.ok(r.bridge.reasons.includes("NON_BOXED_CLASSIFICATION_NOT_PROVEN"));
+});
 console.log("THREE_WAY_MOTOR_COHERENCE_V64="+passed+"/"+passed+" OFFLINE; PRINT=false");
