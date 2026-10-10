@@ -394,6 +394,13 @@ export function verifyLiveReaderPairV68(
    "deliveryos:installed/printer-map.json",
    "deliveryos:installed/non-production.json",
    "deliveryos:installed/product-identity-cache-v1.json",
+   // V7.10: The real watcher V2 consumer ALSO loads these two files.
+   // They affect classifications and order-specific bags/kits. A six-file
+   // lineage from the legacy V1 consumer cannot certify the V2 contract.
+   ...(v2Notes.detected?[
+     "deliveryos:installed/product-aliases-v1.json",
+     "deliveryos:installed/human-order-overrides-v1.json",
+   ]:[]),
  ];
  const valid=(refs:string[]|undefined,names:string[])=>
    Array.isArray(refs)&&refs.length===names.length&&
