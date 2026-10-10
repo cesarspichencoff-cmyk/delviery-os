@@ -134,4 +134,15 @@ test("18 no active dependency rules, stock, printer, fiscal or spooler are modif
  assert.equal(rules.rules.length,1);
  assert.equal(rules.rules[0].canonical_item_name,"Uramaki Ebiten Especial");
 });
+test("19 SKIN in current Sushi Quente raises an explicit missing-rule review",()=>{
+ const result=classify([sushi(0,"Uramaki Skin (8)",2)]);
+ assert.ok(result.required_reviews.includes("SKIN_KITCHEN_DEPENDENCY_UNPROVEN:0"));
+ assert.equal(result.candidates.length,0,"No preparation factor may be invented for SKIN");
+ assert.equal(result.ready_for_automatic_operational_print,false);
+});
+test("20 SKIN outside proven Sushi Quente station does not become kitchen preparation",()=>{
+ const result=classify([item(0,"Uramaki Skin (8)",1,"outra_praca","CURRENT_MOTOR_PROVEN")]);
+ assert.equal(result.required_reviews.includes("SKIN_KITCHEN_DEPENDENCY_UNPROVEN:0"),false);
+ assert.equal(result.candidates.length,0);
+});
 console.log("kitchen-sushi-quente-scope-v49: "+passed+"/"+passed+" PASS (SHADOW, no printing)");
