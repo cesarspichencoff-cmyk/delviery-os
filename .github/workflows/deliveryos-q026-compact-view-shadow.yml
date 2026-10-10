@@ -1,0 +1,65 @@
+name: deliveryos-q026-compact-view-shadow
+on:
+  push:
+    branches:
+      - research/deliveryos-q026-compact-view-shadow-20261010
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  compact-ui-100k:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: public.ecr.aws/docker/library/postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
+      Q026_EVENTS: "100000"
+      NODE_OPTIONS: "--expose-gc"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Tipagem do projeto
+        run: npx tsc --noEmit
+      - name: Tipagem da sombra de apresentacao
+        run: npx tsc --noEmit --target ES2022 --module commonjs --moduleResolution node --strict --esModuleInterop --skipLibCheck --types node tests/product/run-q026-compact-view-shadow.ts
+      - name: Cursor PostgreSQL e igualdade byte a byte da apresentacao (somente testes)
+        run: npx tsx tests/product/run-q026-compact-view-shadow.ts
+
+  compact-ui-1030k:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    services:
+      postgres:
+        image: public.ecr.aws/docker/library/postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
+      Q026_EVENTS: "1030000"
+      NODE_OPTIONS: "--expose-gc"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Tipagem do projeto
+        run: npx tsc --noEmit
+      - name: Tipagem da sombra de apresentacao
+        run: npx tsc --noEmit --target ES2022 --module commonjs --moduleResolution node --strict --esModuleInterop --skipLibCheck --types node tests/product/run-q026-compact-view-shadow.ts
+      - name: Cursor PostgreSQL e igualdade byte a byte da apresentacao (somente testes)
+        run: npx tsx tests/product/run-q026-compact-view-shadow.ts
+
