@@ -92,7 +92,9 @@ void(async()=>{
   const first=await context2.newPage();
   const firstStatuses:number[]=[];
   first.on("response",res=>{if(res.url().includes("/api/entregas"))firstStatuses.push(res.status())});
-  await first.goto(root+"/#/entregas",{waitUntil:"networkidle"});
+  // A blocked PostgreSQL read can delay background fetches during initial load.
+  // DOM readiness is independent of API completion; wait for the actual UI state below.
+  await first.goto(root+"/#/entregas",{waitUntil:"domcontentloaded"});
   await first.waitForFunction(()=>{
    return document.querySelector("#superficie")?.textContent?.includes("Leitura temporariamente ocupada");
   },undefined,{timeout:15000});
