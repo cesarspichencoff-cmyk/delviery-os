@@ -86,7 +86,8 @@ class CompactTrip {
     this.source_mode=e.source_mode;
   }
   accept(e:EventEnvelope){
-    assert.deepEqual([e.unit_id,e.source_mode,e.trip_id],[this.unit_id,this.source_mode,this.trip_id]);
+    if(e.unit_id!==this.unit_id||e.source_mode!==this.source_mode||e.trip_id!==this.trip_id)
+      throw Error("Q026_COMPACT_TRIP_SCOPE_MISMATCH");
     const next=NEXT[e.event_type];
     if(next&&RANK[next]>RANK[this.estado])this.estado=next as ViagemProjetada["estado"];
     const t=Date.parse(e.occurred_at);
@@ -134,7 +135,8 @@ export async function lerRealidadeDeEntregasIncremental(cliente: TransactionalSq
       "FROM platform.event_log WHERE event_type IN ("+list+")",
       "ORDER BY unit_id,source_mode NULLS LAST,object_type,object_id"
     ].join(" "));
-    let acc:CompactTrip|null=null,active:string|null=null;
+    let acc:CompactTrip|null=null;
+    let ultimoUnit:string|null=null,ultimoMode:SourceMode|null=null;
     const flush=()=>{
       if(!acc)return;
       const item=acc.result(agora);
@@ -153,12 +155,17 @@ export async function lerRealidadeDeEntregasIncremental(cliente: TransactionalSq
         const e=fromRow(row);
         if(!e){invalid++;continue}
         seen++;
-        const scope=JSON.stringify([e.unit_id,e.source_mode]);
-        if(!scopes.has(scope))scopes.set(scope,{unit_id:e.unit_id,source_mode:e.source_mode,viagens:[]});
+        // SQL cursor sorts by unit and mode, so build the Map key only
+        // when the scope changes, not for every one of 1M GPS events.
+        if(e.unit_id!==ultimoUnit||e.source_mode!==ultimoMode){
+          const scope=JSON.stringify([e.unit_id,e.source_mode]);
+          if(!scopes.has(scope))scopes.set(scope,{unit_id:e.unit_id,source_mode:e.source_mode,viagens:[]});
+          ultimoUnit=e.unit_id;ultimoMode=e.source_mode;
+        }
         if(!e.trip_id)continue;
-        const key=JSON.stringify([e.unit_id,e.source_mode,e.trip_id]);
-        if(active!==null&&active!==key)flush();
-        active=key;
+        // Avoid per-event JSON arrays + deepEqual allocation. This still
+        // rejects an unexpected cross-trip row and keeps one-trip reducer.
+        if(acc&&(acc.unit_id!==e.unit_id||acc.source_mode!==e.source_mode||acc.trip_id!==e.trip_id))flush();
         if(!acc)acc=new CompactTrip(e);
         acc.accept(e);
       }
