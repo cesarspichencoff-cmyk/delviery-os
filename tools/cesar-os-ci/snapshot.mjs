@@ -41,6 +41,7 @@ export function makeSnapshot(runs, total, win){
        !STATUSES.has(r.status)||!CONCLUSIONS.has(r.conclusion)||
        (r.conclusion!==null&&r.status!=='completed')||
        !Number.isFinite(ms(r.created_at))||!Number.isFinite(ms(r.updated_at))||
+       ms(r.updated_at)<ms(r.created_at)||ms(r.updated_at)>ms(win.end)+60000||
        ms(r.created_at)<ms(win.start)-1000||ms(r.created_at)>ms(win.end)+1000)
       throw Error('run_provenance_invalid');
     if(seen.has(r.id))throw Error('run_duplicate');
@@ -55,7 +56,8 @@ export function makeSnapshot(runs, total, win){
     repository_owner_id:OWNER_ID,generated_at:win.end,
     window_start:win.start,window_end:win.end,
     record_count:total,coverage_status:total?'BOUNDED_OBSERVED':'BOUNDED_EMPTY',
-    coverage_complete_claimed:false,raw_payload_persisted:false,
+    collection_basis:'RUN_CREATED_AT',lifecycle_updates_complete:false,
+    continuity_complete:false,coverage_complete_claimed:false,raw_payload_persisted:false,
     possible_commitment:false,records:rows};
 }
 function endpoint(path){return API+'/repos/'+REPO+path}
@@ -85,12 +87,22 @@ export async function collect(token,{now=new Date(),fetchFn=fetch}={}){
   return makeSnapshot(response.value.workflow_runs,response.value.total_count,win);
 }
 export async function publish(snapshot,ctx,{token,fetchFn=fetch}={}){
+  if(snapshot?.schema!=='cesar-os-github-public-ci-snapshot-v1'||
+     snapshot?.repository!==REPO||String(snapshot?.repository_id)!==REPO_ID||
+     snapshot?.source_id!==SOURCE||snapshot?.collection_basis!=='RUN_CREATED_AT'||
+     snapshot?.lifecycle_updates_complete!==false||snapshot?.continuity_complete!==false||
+     snapshot?.possible_commitment!==false||
+     !Number.isSafeInteger(snapshot.record_count)||snapshot.record_count<0||
+     snapshot.record_count>MAX_RUNS||snapshot.records?.length!==snapshot.record_count||
+     !/^[a-f0-9]{40}$/.test(ctx?.sha||''))throw Error('publish_contract_invalid');
   // The sole writable target is a fixed file on a fixed dedicated branch.
   const refPath='/git/ref/heads/'+SNAPSHOT_BRANCH;
   const found=await requestJson(endpoint(refPath),{token,fetchFn});
   if(found.status===404){
-    await requestJson(endpoint('/git/refs'),{token,method:'POST',
+    const created=await requestJson(endpoint('/git/refs'),{token,method:'POST',
       body:{ref:'refs/heads/'+SNAPSHOT_BRANCH,sha:ctx.sha},fetchFn});
+    if(created.status!==201||created.value?.ref!=='refs/heads/'+SNAPSHOT_BRANCH||
+       created.value?.object?.sha!==ctx.sha)throw Error('snapshot_branch_receipt_invalid');
   }else if(found.status!==200||found.value?.ref!=='refs/heads/'+SNAPSHOT_BRANCH){
     throw Error('snapshot_ref_invalid');
   }
@@ -105,8 +117,13 @@ export async function publish(snapshot,ctx,{token,fetchFn=fetch}={}){
     put.sha=existing.value.sha;
   }
   const written=await requestJson(endpoint(filePath),{token,method:'PUT',body:put,fetchFn});
-  if(![200,201].includes(written.status))throw Error('snapshot_publish_failed');
-  return {status:'PUBLISHED',count:snapshot.record_count,branch:SNAPSHOT_BRANCH};
+  if(![200,201].includes(written.status)||
+     written.value?.content?.path!==SNAPSHOT_PATH||
+     !/^[a-f0-9]{40}$/.test(written.value?.content?.sha||'')||
+     !/^[a-f0-9]{40}$/.test(written.value?.commit?.sha||''))
+    throw Error('snapshot_publish_receipt_invalid');
+  return {status:'PUBLISHED',count:snapshot.record_count,branch:SNAPSHOT_BRANCH,
+    commit_sha:written.value.commit.sha};
 }
 export async function main(env=process.env,{fetchFn=fetch,now=new Date()}={}){
   const ctx=verifyContext(env);
