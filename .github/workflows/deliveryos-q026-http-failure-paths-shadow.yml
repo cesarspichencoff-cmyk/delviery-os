@@ -3,7 +3,7 @@ name: deliveryos-q026-http-failure-paths-shadow
 on:
   push:
     branches:
-      - research/q026-pool-backpressure-http-contract-20261010
+      - research/q026-queued-client-abort-shadow-20261010
   workflow_dispatch:
 permissions:
   contents: read
@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        case: [cancel_denied, pool_saturated, pool_checkout_fast, permission_denied]
+        case: [queued_disconnect, pool_checkout_fast, permission_denied]
     services:
       postgres:
         image: public.ecr.aws/docker/library/postgres:16
@@ -52,8 +52,10 @@ jobs:
             grep '^Q026_POOL_CONTENTION_PASS ' failure-path.log
           elif [ "$Q026_FAILURE_PATH_CASE" = pool_checkout_fast ]; then
             grep '^Q026_POOL_CHECKOUT_FAST_PASS ' failure-path.log
-          else
+          elif [ "$Q026_FAILURE_PATH_CASE" = permission_denied ]; then
             grep '^Q026_PERMISSION_DENIED_DISTINCT_PASS ' failure-path.log
+          else
+            grep '^Q026_QUEUED_CLIENT_DISCONNECT_PASS ' failure-path.log
           fi
   regression:
     runs-on: ubuntu-latest
