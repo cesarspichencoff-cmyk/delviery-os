@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {validateArchive,planReplay,verifyHorizon,discoverArchiveEvidence,checkpointShape,MAX_RECONCILE} from '../tools/cesar-os-ci/archive-consumer.mjs';
+import {validateArchive,planReplay,verifyHorizon,discoverArchiveEvidence,checkpointShape,MAX_RECONCILE,gitBlobSha} from '../tools/cesar-os-ci/archive-consumer.mjs';
 import {reconcilePublicRuns,validateRunUpdate} from '../tools/cesar-os-ci/run-reconciler.mjs';
 import {memoryCursorStore,D1CursorStore,MIGRATION_SQL} from '../tools/cesar-os-ci/cursor-store.mjs';
 
@@ -88,8 +88,9 @@ test('reconcile work is limited and rotates to prevent starvation',()=>{
 });
 test('public discovery uses pinned paths and only GET methods',async()=>{
  const calls=[],day='ci-snapshots/deliveryos/archive/2026/10/10',file=archive(s1).path;
- const map={['/repos/'+REPO+'/contents/'+day]:{value:[{type:'file',path:file,name:file.split('/').at(-1),sha:'a'.repeat(40)}]},
- ['/repos/'+REPO+'/contents/'+file]:{value:{sha:'a'.repeat(40),encoding:'base64',content:Buffer.from(JSON.stringify(s1)).toString('base64')}}};
+ const bytes=Buffer.from(JSON.stringify(s1)),sha=gitBlobSha(bytes);
+ const map={['/repos/'+REPO+'/contents/'+day]:{value:[{type:'file',path:file,name:file.split('/').at(-1),sha}]},
+ ['/repos/'+REPO+'/contents/'+file]:{value:{sha,encoding:'base64',content:bytes.toString('base64')}}};
  const result=await discoverArchiveEvidence(token,{start:horizon.start,end:'2026-10-10T21:30:00.000Z',now:new Date(UTC),fetchFn:replies(map,calls)});
  assert.equal(result.snapshots.length,1);
  assert.equal(calls.length,2);
@@ -165,4 +166,11 @@ test('equal timestamp contradictory conclusion is rejected',()=>{
   conclusion:'failure',created_at:prior.created_at,updated_at:prior.updated_at,
   repository:{full_name:REPO,id:1279837591,owner:{id:292320191}}};
  assert.throws(()=>validateRunUpdate(changed,prior,{now:new Date(UTC)}),/reconcile_equal_timestamp_conflict/);
+});
+
+test('archive bytes must match Git blob SHA, not merely API metadata',async()=>{
+ const calls=[],day='ci-snapshots/deliveryos/archive/2026/10/10',file=archive(s1).path;
+ const map={['/repos/'+REPO+'/contents/'+day]:{value:[{type:'file',path:file,name:file.split('/').at(-1),sha:'a'.repeat(40)}]},
+ ['/repos/'+REPO+'/contents/'+file]:{value:{sha:'a'.repeat(40),encoding:'base64',content:Buffer.from(JSON.stringify(s1)).toString('base64')}}};
+ await assert.rejects(discoverArchiveEvidence(token,{start:horizon.start,end:'2026-10-10T21:30:00.000Z',now:new Date(UTC),fetchFn:replies(map,calls)}),/archive_blob_sha_mismatch/);
 });
