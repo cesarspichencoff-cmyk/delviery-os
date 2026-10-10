@@ -33,16 +33,16 @@ export function packWorkObservationInserts(rows){
        row.privacy_scope!=='ORGANIZATIONAL'||row.authority!=='OBSERVATION_ONLY'||
        row.raw_payload_persisted===true)
       fail('d1_work_observation_invalid');
-    const expected=fingerprints(row);
-    if(row.content_fingerprint!==expected.content||row.observation_id!==expected.observation)
-      fail('d1_work_normalized_fingerprint_mismatch');
-    used.add(row.observation_id);
-    if(!Number.isFinite(Number(row.confidence)))fail('d1_work_confidence_invalid');
     for(const col of WORK_COLUMNS){
       if(!(col in row))fail('d1_work_missing_'+col);
       if(row[col]===undefined||typeof row[col]==='object'&&row[col]!==null&&col!=='metadata_json')
         fail('d1_work_type_'+col);
     }
+    const expected=fingerprints(row);
+    if(row.content_fingerprint!==expected.content||row.observation_id!==expected.observation)
+      fail('d1_work_normalized_fingerprint_mismatch');
+    used.add(row.observation_id);
+    if(!Number.isFinite(Number(row.confidence)))fail('d1_work_confidence_invalid');
   }
   for(let index=0;index<rows.length;index+=MAX_ROWS_PER_INSERT){
     const chunk=rows.slice(index,index+MAX_ROWS_PER_INSERT);
