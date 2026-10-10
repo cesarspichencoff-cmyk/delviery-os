@@ -45,7 +45,7 @@ void (async()=>{
  // Non-503/non-Entregas errors retain the existing fallback.
  assert.ok(app.includes("Nao foi possivel ler de novo"));
  console.log("Q026_PRODUCT_UI_503_SHADOW_PASS "+JSON.stringify({
-   tests:24,overload_503:true,retry_after_validated:true,
+   overload_503:true,retry_after_validated:true,
    stale_reading_preserved:true,initial_error_no_false_zero:true,
    non_overload_unchanged:true,no_http_url_or_script_in_message:true,
    actual_product_ui_wiring_present:true,
