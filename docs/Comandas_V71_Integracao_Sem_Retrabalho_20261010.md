@@ -34,6 +34,14 @@ Correção mínima no **mesmo renderer**, sem substituir o bundle:
 
 **CI final:** [run #38071145559](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38071145559) SUCCESS, `CONFERENCE_BOX_GROUPING_V62=8/8 PASS`, `thermal-semantic-gate-v510:25/25 PASS`, `THERMAL_DIRECT_RENDERER_SEMANTIC_V71=12/12 NO_PRINT_NO_SPOOLER` e matrizes ESC/POS verdes.
 
+## 2.1. Revalidação passiva do computador autorizado CAIXA_MOOCA — 10/10/2026
+
+Acesso somente de leitura pelo Remote Desktop Commander ao dispositivo autorizado **CAIXA_MOOCA**, sem executar comandos, ler nomes de clientes, pedidos individuais, observações originais, consultar SQL ou alterar estado. Arquivos EXISTENTES inspecionados:
+- `C:\\ProgramData\\TataComandaReader\\state\\production-service-state.json`: schema `deliveryos.production-service-shift-state.v2`, loja `0001`, `service=DINNER`, `operational_date=2026-10-07`, `valid_until_local=2026-10-07T23:59:59`, fonte `HUMAN_CONFIRMED_RULE`, `clock_inference_used=false`. **Permanece vencido**, sem atualização automática.
+- `C:\\ProgramData\\TataComandaReader\\evidence\\shadow-consumer-status.json`: `state=RUNNING`, `updated_at=2026-10-10T17:22:00.701Z`, `processed=107`, `ready_count=0`, `blocked_count=107`, `reporting_envelopes_written=107`, `projection_runs=99`, `last_projection_status=PROJECTED`, `last_error=null`. São **contadores do estado observado do processo**, NÃO necessariamente totais históricos. Identificadores reais de pedidos e nomes de arquivos omitidos intencionalmente.
+
+**Interpretação:** há atividade de consumo e de projeção passiva sem erro informado no snapshot; ainda **0 ready**. O estado humano expirado é um bloqueio de elegibilidade conhecido, mas não foi provado ser o único. Sem verificação de pacote de observações do mesmo `snapshot_hash`, não há prova de três vias de pedido atual. `reporting_envelopes_written` NÃO equivale a comprovante de impressão ou comandas aprovadas. **Nenhum comando executado, sem write, restart, spooler, SQL, produção ou print.**
+
 ## 3. Próximos pontos REAIS, sem reconstrução
 
 1. Após PR #50 estar tecnicamente e humanamente apto à integração, revalidar **blob do motor e pin** na ponte do DeliveryOS, replay de casos históricos e novos pedidos — **não** repinar só porque PR dirigido passou.
