@@ -33,8 +33,8 @@ test('schema-validated receipts allow one CAS, not a second',async()=>{
  assert.equal((await commitAfterReceipts(plan,options)).status,'CURSOR_CAS_CONFLICT');
 });
 test('wrong source, incorrect count and wrong coverage refuse commit',async()=>{
- for(const broken of [{...receipt,source_id:'another'}, {...receipt,items_seen:1},
-  {...receipt,coverage_status:'BOUNDED_OBSERVED'}]){
+ for(const broken of [{...receipt,source_id:'another'}, {...receipt,items_seen:2},
+  {...receipt,coverage_status:'BOUNDED_EMPTY'}]){
   const store=memoryCursorStore();
   await assert.rejects(commitAfterReceipts(plan,{intents,store,receiptFor:async()=>broken}),/receipt_gate_not_acked/);
   assert.equal((await store.load()).revision,0);
@@ -55,7 +55,7 @@ test('receipt for different archived content cannot advance cursor',async()=>{
  assert.equal((await store.load()).revision,0);
 });
 test('caller cannot claim a different count than the archived file',async()=>{
- const store=memoryCursorStore(),fakeIntents=[{...intents[0],items_expected:1}];let called=0;
+ const store=memoryCursorStore(),fakeIntents=[{...intents[0],items_expected:0}];let called=0;
  await assert.rejects(commitAfterReceipts(plan,{intents:fakeIntents,store,receiptFor:async()=>{called++;return receipt;}}),/receipt_gate_intent_invalid/);
  assert.equal(called,0);
  assert.equal((await store.load()).revision,0);
