@@ -21,7 +21,7 @@ import { PORTA_DE_REALIDADE_VERSION,lerRealidadeDeEntregas,
   from "../../src/platform/leitura/realidade-de-entregas";
 import { entregasVM } from "../../src/product/viewmodels/entregas-vm";
 import { lerRealidadeDeEntregasIncremental } from "../../src/platform/leitura/realidade-de-entregas-incremental";
-import type { SqlClient, TransactionalSqlClient } from "../../src/platform/persistence/sql-client";
+import type { SqlClient, SqlRow, TransactionalSqlClient } from "../../src/platform/persistence/sql-client";
 import type { SqlRow } from "../../src/platform/persistence/sql-client";
 import { gerarLinhas,gravarLinhas,PERFIL_LOJA } from "./q026-replay-fixture";
 
@@ -352,13 +352,13 @@ void(async()=>{
         ? await (async()=>{
           let max_batch=0,fetches=0,tx_ms=0;
           const wrapped:TransactionalSqlClient={
-            query:(sql,p)=>b.cliente.query(sql,p),
+            query:<R extends SqlRow = SqlRow>(sql:string,p?:readonly unknown[])=>b.cliente.query<R>(sql,p),
             close:()=>Promise.resolve(),
             transaction:<T>(fn:(tx:SqlClient)=>Promise<T>):Promise<T>=>{
               const started=performance.now();
               return b.cliente.transaction(async tx=>fn({
-                query:async(sql,p)=>{
-                  const rows=await tx.query(sql,p);
+                query:async<R extends SqlRow = SqlRow>(sql:string,p?:readonly unknown[]):Promise<R[]>=>{
+                  const rows=await tx.query<R>(sql,p);
                   if(sql.startsWith("FETCH FORWARD")){
                     fetches++;max_batch=Math.max(max_batch,rows.length);
                   }
