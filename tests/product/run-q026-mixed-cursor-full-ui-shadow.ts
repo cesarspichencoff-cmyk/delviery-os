@@ -151,9 +151,11 @@ void(async()=>{
     assert.equal(unknown,1);
     assert.equal(invalid,1);
     assert.equal(nonTrip,1);
-    assert.equal(scopes.size,6);
+    assert.equal(scopes.size,original.projecoes.length,"escopos devem ser os observados pelo replay, nao inventados");
+    assert.deepEqual([...new Set([...scopes.values()].map(p=>p.unit_id))].sort(),["ITAIM","LAB-BANCADA"]);
+    assert.deepEqual([...new Set([...scopes.values()].map(p=>p.source_mode))].sort(),["control","real","simulated"]);
     assert.ok(batches>Math.ceil(N/3));
-    ok("cursor PG FETCH 3: 6 escopos, UNKNOWN, corrompido, evento sem viagem");
+    ok("cursor PG FETCH 3: escopos CANONICOS, UNKNOWN, corrompido e fato sem viagem");
     const shadow:RealidadeDeEntregas={
       ...original,historico_sem_modo:unknown,
       projecoes:[...scopes.values()]
