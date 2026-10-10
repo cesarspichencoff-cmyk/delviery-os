@@ -14,6 +14,7 @@
  * benchmark com PostgreSQL (linhas do event log). Duas fixtures divergiriam.
  */
 import type { EventEnvelope, EventType, SourceMode } from "../../src/platform/contracts/event-catalog";
+import type { SqlClient } from "../../src/platform/persistence/sql-client";
 
 /** PRNG pequeno e deterministico (mulberry32). Mesma semente, mesmo log. */
 export function prng(semente: number): () => number {
@@ -205,4 +206,28 @@ export function embaralhar<T>(xs: readonly T[], semente: number): T[] {
     [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
+}
+
+/**
+ * Grava as linhas no event log em lotes (`unnest`), na ordem dada. Ordem de
+ * chegada = ordem de `recorded_at`, como o critico grava.
+ */
+export async function gravarLinhas(cliente: SqlClient, linhas: readonly LinhaDoLog[]): Promise<void> {
+  const LOTE = 20_000;
+  for (let i = 0; i < linhas.length; i += LOTE) {
+    const p = linhas.slice(i, i + LOTE);
+    const col = (f: (l: LinhaDoLog) => unknown) => p.map(f);
+    await cliente.query(
+      `INSERT INTO platform.event_log (event_id, unit_id, object_type, object_id, event_type, payload, occurred_at,
+         recorded_at, origin, device_id, sequence_local, idempotency_key, contract_version, source_mode, clock_trust)
+       SELECT e, u, ot, oi, et, '{}'::jsonb, oc, rc, o, d, s, k, cv, sm, ct
+         FROM unnest($1::text[], $2::text[], $3::text[], $4::text[], $5::text[], $6::timestamptz[], $7::timestamptz[],
+                     $8::text[], $9::text[], $10::bigint[], $11::text[], $12::text[], $13::text[], $14::text[])
+           AS t(e, u, ot, oi, et, oc, rc, o, d, s, k, cv, sm, ct)`,
+      [col((l) => l.event_id), col((l) => l.unit_id), col((l) => l.object_type), col((l) => l.object_id),
+        col((l) => l.event_type), col((l) => l.occurred_at), col((l) => l.recorded_at), col((l) => l.origin),
+        col((l) => l.device_id), col((l) => l.sequence_local), col((l) => l.idempotency_key),
+        col((l) => l.contract_version), col((l) => l.source_mode), col((l) => l.clock_trust)],
+    );
+  }
 }
