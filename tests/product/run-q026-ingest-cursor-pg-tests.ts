@@ -14,6 +14,7 @@ if (!url) {
   process.exit(78);
 }
 
+void (async () => {
 const b = await bancoIsolado(url, undefined, "q026cur");
 let aprovados = 0;
 async function caso(nome: string, fn: () => Promise<void>) {
@@ -22,7 +23,6 @@ async function caso(nome: string, fn: () => Promise<void>) {
   aprovados += 1;
 }
 const ocorreu = "2026-10-09T12:00:00.000Z";
-let num = 0;
 function inserir(id: string, recordedAt?: string) {
   const stamp = recordedAt ? ", recorded_at" : "";
   const params = [id, ocorreu, ...(recordedAt ? [recordedAt] : [])];
@@ -114,3 +114,4 @@ try {
 } finally {
   await b.descartar();
 }
+})().catch((e) => { console.error(e); process.exitCode = 1; });
