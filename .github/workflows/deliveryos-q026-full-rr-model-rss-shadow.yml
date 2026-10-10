@@ -1,0 +1,102 @@
+name: deliveryos-q026-full-rr-model-rss-shadow
+# Only isolated synthetic PG16; no deployment, operational DB, migration writes to shared DB, or cost upgrade.
+on:
+  push:
+    branches:
+      - research/deliveryos-q026-full-model-memory-isolation-shadow-20261010
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: q026-full-rr-rss-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  full-model-rss:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        n: [120000, 300000, 1030000]
+    services:
+      postgres:
+        image: public.ecr.aws/docker/library/postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
+      Q026_FULL_RSS_N: ${{ matrix.n }}
+      NODE_OPTIONS: --expose-gc
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Typecheck full-model memory comparison
+        run: npx tsc --noEmit --target ES2022 --module commonjs --moduleResolution node --strict --esModuleInterop --skipLibCheck --types node tests/product/run-q026-full-rr-memory-isolated-shadow.ts
+      - name: Canonical complete RR model — separate Node process
+        env:
+          Q026_FULL_RSS_MODE: baseline
+          Q026_FULL_RSS_OUT: baseline.json
+        run: npx tsx tests/product/run-q026-full-rr-memory-isolated-shadow.ts
+      - name: Incremental complete RR model — separate Node process
+        env:
+          Q026_FULL_RSS_MODE: compact
+          Q026_FULL_RSS_OUT: compact.json
+        run: npx tsx tests/product/run-q026-full-rr-memory-isolated-shadow.ts
+      - name: Exact digest of ALL read-model fields plus four actual view models
+        shell: bash
+        run: |
+          node - <<'JS'
+          const fs=require('node:fs');
+          const a=JSON.parse(fs.readFileSync('compact.json','utf8'));
+          const b=JSON.parse(fs.readFileSync('baseline.json','utf8'));
+          if(a.n!==b.n||a.total_events!==b.total_events||a.hash!==b.hash||a.hash.length!==64)
+            throw Error('Q026_FULL_MODEL_EQUIVALENCE_DIVERGENCE '+JSON.stringify({a,b}));
+          if(a.device_count!==b.device_count||a.scopes!==b.scopes||a.max_batch>257||a.fetches<Math.ceil(a.total_events/257))
+            throw Error('Q026_FULL_MODEL_CONTRACT_DIVERGENCE '+JSON.stringify({a,b}));
+          const pct=+(100*(1-a.peak_rss_mib/b.peak_rss_mib)).toFixed(1);
+          const record={n:a.n,events:a.total_events,hash:a.hash,
+            baseline_peak_rss_mib:b.peak_rss_mib,incremental_peak_rss_mib:a.peak_rss_mib,
+            baseline_ms:b.full_reader_ms,incremental_ms:a.full_reader_ms,
+            baseline_after_fixture_mib:b.rss_after_fixture_mib,incremental_after_fixture_mib:a.rss_after_fixture_mib,
+            rss_reduction_percent:pct,incremental_rr_transaction_ms:a.transaction_ms,
+            incremental_batches:a.fetches,devices:a.device_count,scopes:a.scopes,
+            scope:'same runner, distinct Node process and disposable database per read path, full VM digest; single repetition'};
+          console.log('Q026_FULL_RR_RSS_COMPARISON '+JSON.stringify(record));
+          if(!Number.isFinite(pct)||pct<=0)throw Error('Q026_FULL_RR_RSS_NOT_IMPROVED');
+          JS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: q026-full-rr-rss-${{ matrix.n }}
+          path: |
+            compact.json
+            baseline.json
+          if-no-files-found: warn
+  q016-and-governance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm run test:platform:q016
+      - run: npm run test:platform:governanca
+      - name: No PostgreSQL must not fake PASS
+        shell: bash
+        run: |
+          set +e
+          DELIVERYOS_PG_URL= Q026_FULL_RSS_MODE=compact Q026_FULL_RSS_N=120000 Q026_FULL_RSS_OUT=dummy.json npx tsx tests/product/run-q026-full-rr-memory-isolated-shadow.ts
+          code=$?
+          echo "no_db_exit=$code"
+          test "$code" = 78
