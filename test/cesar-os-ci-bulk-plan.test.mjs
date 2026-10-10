@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {packWorkObservationInserts,WORK_COLUMNS,MAX_ROWS_PER_INSERT,D1_FREE_QUERY_CEILING} from '../tools/cesar-os-ci/d1-bulk-plan.mjs';
 
 function obs(id){
- return {observation_id:'obs_'+String(id).padStart(16,'0'),
+ return {observation_id:'obs_'+String(id).padStart(20,'0'),
   source_id:'github-actions-public-deliveryos',external_ref:'run:'+id,
   signal_type:'WORKFLOW_RUN',observed_at:'2026-10-10T20:46:45.627Z',
   ingested_at:'2026-10-10T20:47:00.000Z',domain:'WORK',privacy_scope:'WORK_OPERATIONS',
