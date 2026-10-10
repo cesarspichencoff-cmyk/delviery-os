@@ -16,6 +16,8 @@ if(!admin){console.error("Q026_EVENT_LOOP_PG_REQUIRED");process.exit(78)}
 const N=Number(process.env.Q026_EVENT_LOOP_EVENTS??20000);
 assert.ok([20000,120000,300000].includes(N),"fixture constrained");
 const variant=process.env.Q026_FAIRNESS_VARIANT;
+const budgetMs=Number(process.env.Q026_SHORT_HTTP_DEADLINE_MS??15000);
+assert.ok([1000,15000].includes(budgetMs),"only explicit bounded deadline probes");
 assert.ok(variant==="baseline"||variant==="incremental","variant must be explicitly selected");
 const pause=(ms:number)=>new Promise<void>(r=>setTimeout(r,ms));
 type Response={status:number;body:any;wall_ms:number};
@@ -62,7 +64,7 @@ void(async()=>{
   process.env.DELIVERYOS_ENTREGAS_MAX_INFLIGHT="2";
   if(variant==="incremental") process.env.DELIVERYOS_ENTREGAS_INCREMENTAL_RR="1";
   else delete process.env.DELIVERYOS_ENTREGAS_INCREMENTAL_RR;
-  process.env.DELIVERYOS_ENTREGAS_RR_DEADLINE_MS="15000";
+  process.env.DELIVERYOS_ENTREGAS_RR_DEADLINE_MS=String(budgetMs);
   const {criarServidor}=await import("../../tools/product_system_server");
   srv=await criarServidor();
   await new Promise<void>((resolve,reject)=>{
@@ -112,6 +114,27 @@ void(async()=>{
    else assert.ok(x.body.erro==="prazo_total_excedido"||
      x.body.erro==="leitura_temporariamente_ocupada");
   }
+  if(budgetMs===1000){
+    // An overrun can be measured; never count a late healthy 200 as a pass.
+    // Explicit SQL cancel/backpressure errors also must not expose data.
+    for(const x of two){
+      assert.equal(x.status,503,
+        "short HTTP deadline must not return stale/fake 200 under pressure");
+      assert.ok(["prazo_total_excedido","leitura_temporariamente_ocupada"].includes(x.body.erro),
+        "unexpected failure/SQL data leaked to short-deadline client");
+    }
+    console.log("Q026_SHORT_DEADLINE_HTTP_SHADOW_MEASURED "+JSON.stringify({
+      events:N,reader:variant,deadline_ms:budgetMs,
+      statuses:two.map(x=>x.status),
+      errors:two.map(x=>x.body.erro),
+      wall_ms:two.map(x=>x.wall_ms),
+      deadline_overrun_ms:two.map(x=>+Math.max(0,x.wall_ms-budgetMs).toFixed(2)),
+      health_probe_count:healthTimes.length,
+      health_max_wall_ms:+Math.max(...healthTimes).toFixed(2),
+      event_loop_max_ms:+(d.max/1e6).toFixed(2),
+      boundary:"single-run PostgreSQL16 localhost stress, response budget is not hard real-time"
+    }));
+  }
   assert.ok(healthTimes.length>=1,"health probe did not run at all");
   const metrics={
    events:N,variant,concurrent_entregas:2,
@@ -132,6 +155,34 @@ void(async()=>{
   console.log("Q026_EVENT_LOOP_HTTP_SHADOW_MEASURED "+JSON.stringify(metrics));
  }finally{
   if(srv)await new Promise<void>(r=>srv!.close(()=>r()));
+  if(budgetMs===1000 && srv){
+    // HTTP 503 is an EARLY response; the SQL transaction may still be
+    // rolling back after its socket ended. DROP DATABASE FORCE too early
+    // kills a BORROWED pg.Client (57P01), creating an unrelated unhandled
+    // client-error fixture crash. Require confirmed cleanup first; never
+    // silently turn incomplete rollback into a successful measurement.
+    const waitStart=performance.now();
+    let consecutiveIdle=0;
+    let finalBusy=-1;
+    while(performance.now()-waitStart<8000){
+      const result=await db.cliente.query(
+        "SELECT count(*)::int AS n FROM pg_stat_activity "+
+        "WHERE datname=current_database() AND pid<>pg_backend_pid() "+
+        "AND application_name='deliveryos' AND state<>'idle'");
+      finalBusy=Number(result[0].n);
+      if(finalBusy===0)consecutiveIdle++;else consecutiveIdle=0;
+      if(consecutiveIdle>=2)break;
+      await pause(100);
+    }
+    assert.ok(consecutiveIdle>=2,
+      "HTTP responded, but PostgreSQL reader/rollback remained active beyond 8s");
+    await pause(150);
+    console.log("Q026_SHORT_DEADLINE_POOL_DRAIN_PASS "+JSON.stringify({
+      events:N,reader:variant,busy_after_cleanup:finalBusy,
+      confirmed_idle_twice:true,drain_wait_ms:+(performance.now()-waitStart).toFixed(2),
+      boundary:"fixture waits for borrowed SQL clients before destructive DB cleanup"
+    }));
+  }
   await db.descartar();
  }
 })().catch(e=>{console.error("Q026_EVENT_LOOP_HTTP_SHADOW_FAILED",e);process.exitCode=1});
