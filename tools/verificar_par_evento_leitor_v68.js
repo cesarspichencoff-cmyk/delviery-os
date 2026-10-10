@@ -181,4 +181,106 @@ check("nonproduction access is never authorized by proof runner",()=>{
  assert.deepEqual(verifyLiveReaderPairV68(f.event,f.decision).effects,{
   database_read:false,database_write:false,print:false,spooler:false,odhen_write:false});
 });
+
+/** V7.6: the installed V2 watcher adds a scan marker and observation_rows
+ * to the SAME event.v1 envelope, hashes rows only when nonempty. Synthetic
+ * notes only; never use customer text, SQL or a real print path here.
+ */
+function asWatcherV2(f,rows){
+ const old=f.event.order;
+ f.event.order={CDFILIAL:old.CDFILIAL,CDLOJA:old.CDLOJA,
+  NRVENDAREST:"0000123400",NRCOMANDA:old.NRCOMANDA,
+  NRCOMANDAEXT:old.NRCOMANDAEXT,IDORGCMDVENDA:old.IDORGCMDVENDA,
+  IDSTCOMANDA:"A",DTHRABERMESA:"2026-10-10T12:07:00.0000000",
+  items:deep(old.items),observation_scan_complete:true,
+  observation_rows:deep(rows)};
+ const src=f.event.order;
+ const core={CDFILIAL:src.CDFILIAL,CDLOJA:src.CDLOJA,
+  NRVENDAREST:src.NRVENDAREST,NRCOMANDA:src.NRCOMANDA,
+  NRCOMANDAEXT:src.NRCOMANDAEXT,IDORGCMDVENDA:src.IDORGCMDVENDA,
+  IDSTCOMANDA:src.IDSTCOMANDA,DTHRABERMESA:src.DTHRABERMESA,
+  items:src.items};
+ if(rows.length)core.observation_rows=deep(rows);
+ const hashed=crypto.createHash("sha256").update(JSON.stringify(core)).digest("hex");
+ f.event.snapshot_hash=hashed;f.decision.snapshot_hash=hashed;
+ f.decision.fingerprint=fingerprint(f.decision);
+ for(const p of f.ctx.observation_proofs)p.snapshot_hash=hashed;
+ return f;
+}
+const general=()=>({source_field:"DSOBSCOMANDA",
+ value:"FICTIONAL_NOTE_PAYMENT_METADATA_NO_RENDER",
+ scope_hint:"order",join_proven:true});
+const itemNote=(field,value,i=1)=>({source_field:field,value,
+ item_index:i,CDPRODUTO:source[i].internal,scope_hint:"item",join_proven:true});
+check("V7.6: V2 with a general note has valid pair but cannot project 3 tickets",()=>{
+ const f=asWatcherV2(fixture(),[general()]);
+ assert.equal(verifyLiveReaderPairV68(f.event,f.decision).status,"PAIRED_SOURCE_VERIFIED");
+ // Even if the downstream projection silently omitted the general note.
+ assert.deepEqual(f.ctx.delivery.order_observations,[]);
+ const r=projectVerifiedReaderPairV68(f.event,f.decision,f.ctx);
+ assert.equal(r.status,"BLOCKED");assert.equal(r.tickets,null);
+ assert.ok(r.reasons.includes("WATCHER_V2_ORDER_NOTE_REQUIRES_OPERATIONAL_RELEVANCE_PROOF"));
+ assert.equal(r.print_authorized,false);
+});
+check("V7.6: tampering note value after event hash blocks pair",()=>{
+ const f=asWatcherV2(fixture(),[general()]);
+ f.event.order.observation_rows[0].value="ALTERED_FAKE_NOTE";
+ const r=verifyLiveReaderPairV68(f.event,f.decision);
+ assert.ok(r.reasons.includes("WATCHER_V2_NOTE_SNAPSHOT_HASH_MISMATCH"));
+});
+check("V7.6: exact hashed item note plus independent proof keeps old good output",()=>{
+ const f=asWatcherV2(fixture(),[itemNote("DSOBSDESCIT","SEM PIMENTA")]);
+ assert.equal(verifyLiveReaderPairV68(f.event,f.decision).status,"PAIRED_SOURCE_VERIFIED");
+ const r=projectVerifiedReaderPairV68(f.event,f.decision,f.ctx);
+ assert.equal(r.status,"OFFLINE_PREVIEW_PROVEN",r.reasons.join(","));
+ assert.deepEqual(r.tickets.conference.boxes[0].items[1].observations,["SEM PIMENTA"]);
+ assert.equal(r.print_authorized,false);
+});
+check("V7.6: item note present in V2 but omitted in joined/proof is blocked",()=>{
+ const f=asWatcherV2(fixture(),[itemNote("DSOBSDESCIT","SEM PIMENTA")]);
+ f.ctx.observation_proofs[1].delivery_observations=[];
+ f.ctx.delivery.items[1].observacoes=[];
+ const r=projectVerifiedReaderPairV68(f.event,f.decision,f.ctx);
+ assert.ok(r.reasons.includes("WATCHER_V2_ITEM_NOTE_NOT_RECONCILED:2"));
+ assert.equal(r.tickets,null);
+});
+check("V7.6: extra note not in V2 event cannot be invented by independent proof",()=>{
+ const f=asWatcherV2(fixture(),[]);
+ const r=projectVerifiedReaderPairV68(f.event,f.decision,f.ctx);
+ assert.ok(r.reasons.includes("WATCHER_V2_ITEM_NOTE_NOT_RECONCILED:2"));
+});
+check("V7.6: unknown note source rejects event even if hash recomputed",()=>{
+ const f=asWatcherV2(fixture(),[{source_field:"UNKNOWN_FIELD",
+  value:"FICTIONAL",item_index:1,CDPRODUTO:source[1].internal,
+  scope_hint:"item",join_proven:true}]);
+ assert.ok(verifyLiveReaderPairV68(f.event,f.decision).reasons.includes(
+  "WATCHER_V2_ITEM_NOTE_IDENTITY_INVALID"));
+});
+check("V7.6: V2 scan missing with note rows blocks instead of treating as old V1",()=>{
+ const f=asWatcherV2(fixture(),[general()]);
+ delete f.event.order.observation_scan_complete;
+ assert.ok(verifyLiveReaderPairV68(f.event,f.decision).reasons.includes(
+  "WATCHER_V2_OBSERVATION_SCAN_INCOMPLETE"));
+});
+check("V7.6: wrong item index cannot borrow note even with updated hash",()=>{
+ const f=asWatcherV2(fixture(),[itemNote("DSOBSDESCIT","SEM PIMENTA",1)]);
+ f.event.order.observation_rows[0].item_index=0;
+ const r=verifyLiveReaderPairV68(f.event,f.decision);
+ assert.ok(r.reasons.includes("WATCHER_V2_ITEM_NOTE_IDENTITY_INVALID"));
+});
+check("V7.6: TXPRODCOMVEN requires exact production-side note proof",()=>{
+ const f=asWatcherV2(fixture(),[itemNote("TXPRODCOMVEN","SEM WASABI")]);
+ f.ctx.observation_proofs[1].production_observations=["SEM WASABI"];
+ // Delivery note already exists in legacy fixture, but not in V2.
+ assert.ok(projectVerifiedReaderPairV68(f.event,f.decision,f.ctx).reasons.includes(
+  "WATCHER_V2_ITEM_NOTE_NOT_RECONCILED:2"));
+});
+check("V7.6: general + item notes never become print approval",()=>{
+ const f=asWatcherV2(fixture(),[general(),itemNote("DSOBSDESCIT","SEM PIMENTA")]);
+ const r=projectVerifiedReaderPairV68(f.event,f.decision,f.ctx);
+ assert.equal(r.status,"BLOCKED");
+ assert.ok(r.reasons.includes("WATCHER_V2_ORDER_NOTE_REQUIRES_OPERATIONAL_RELEVANCE_PROOF"));
+ assert.equal(r.print_authorized,false);
+});
+
 console.log("STABLE_READER_SHADOW_PAIR_V68="+count+"/"+count+" SHADOW ONLY; NO PHYSICAL EFFECT");
