@@ -27,6 +27,69 @@ const observationFieldCoverage=items=>{
   items_with_all_fields:present.filter(n=>n===OBSERVATION_COLUMNS.length).length,
   all_fields_present:total>0&&present.every(n=>n===OBSERVATION_COLUMNS.length)};
 };
+/**
+ * V7.5: The INSTALLED watcher v2 retains event schema *.v1 but stores notes
+ * in order.observation_rows, rather than inline in order.items. The v2
+ * snapshot hash covers those rows, when present, in an explicit field order.
+ * Reproduce only this witnessed contract, never emit raw note text.
+ * A hash match is STILL NOT an independent SQL observation probe.
+ */
+function watcherV2ObservationSummary(event) {
+ const order=event?.order,rows=order?.observation_rows;
+ const absent={detected:false,structure_valid:false,hash_matches:false,
+  order_note_count:0,item_note_count:0};
+ if(order?.observation_scan_complete!==true||!Array.isArray(rows)||
+    !Array.isArray(order?.items))return absent;
+ const failed={...absent,detected:true};
+ const fields=["CDFILIAL","CDLOJA","NRVENDAREST","NRCOMANDA",
+  "NRCOMANDAEXT","IDORGCMDVENDA","IDSTCOMANDA","DTHRABERMESA"];
+ if(fields.some(f=>!Object.prototype.hasOwnProperty.call(order,f)))return failed;
+ const items=[];
+ for(const item of order.items){
+  if(!item||typeof item!=="object"||
+    ["NRPRODCOMVEN","CDPRODUTO","CDARVPROD","QTPRODCOMVEN","IDSTPRCOMVEN"]
+    .some(f=>!Object.prototype.hasOwnProperty.call(item,f)))return failed;
+  items.push({NRPRODCOMVEN:item.NRPRODCOMVEN,CDPRODUTO:item.CDPRODUTO,
+   CDARVPROD:item.CDARVPROD,QTPRODCOMVEN:item.QTPRODCOMVEN,
+   IDSTPRCOMVEN:item.IDSTPRCOMVEN});
+ }
+ const basis={CDFILIAL:order.CDFILIAL,CDLOJA:order.CDLOJA,
+  NRVENDAREST:order.NRVENDAREST,NRCOMANDA:order.NRCOMANDA,
+  NRCOMANDAEXT:order.NRCOMANDAEXT,IDORGCMDVENDA:order.IDORGCMDVENDA,
+  IDSTCOMANDA:order.IDSTCOMANDA,DTHRABERMESA:order.DTHRABERMESA,items};
+ let orderNotes=0,itemNotes=0;
+ const strictRows=[];
+ const seen=new Set();
+ for(const row of rows){
+  if(!row||typeof row!=="object"||
+      typeof row.value!=="string"||!row.value.trim()||
+      row.value!==row.value.trim()||row.join_proven!==true)return failed;
+  if(row.scope_hint==="order"){
+    if(row.source_field!=="DSOBSCOMANDA"||orderNotes>0)return failed;
+    strictRows.push({source_field:"DSOBSCOMANDA",value:row.value,
+      scope_hint:"order",join_proven:true});
+    orderNotes++;
+  }else if(row.scope_hint==="item"){
+    if(!OBSERVATION_COLUMNS.includes(row.source_field)||
+       !Number.isSafeInteger(row.item_index)||row.item_index<0||
+       row.item_index>=items.length||row.CDPRODUTO!==items[row.item_index].CDPRODUTO)
+       return failed;
+    const key=row.item_index+":"+row.source_field;
+    if(seen.has(key))return failed;
+    seen.add(key);
+    strictRows.push({source_field:row.source_field,value:row.value,
+      item_index:row.item_index,CDPRODUTO:row.CDPRODUTO,
+      scope_hint:"item",join_proven:true});
+    itemNotes++;
+  }else return failed;
+ }
+ if(strictRows.length)basis.observation_rows=strictRows;
+ const actual=createHash("sha256").update(JSON.stringify(basis)).digest("hex");
+ return {detected:true,structure_valid:true,
+  hash_matches:hex64(event.snapshot_hash)&&
+    actual.toLowerCase()===event.snapshot_hash.toLowerCase(),
+  order_note_count:orderNotes,item_note_count:itemNotes};
+}
 function scrubReason(v){
  const s=String(v||"UNKNOWN").toUpperCase();
  // Do not release product ids, order ids or free-form note text.
@@ -84,7 +147,9 @@ function audit(events,decisions,shiftFile){
      bothReadyFlagsOnly=0,untrustedReadyClaims=0,
      nativeItemRecords=0,nativeItemsWithAnyObservationField=0,
      nativeItemsWithAllObservationFields=0,
-     nativePairsWithAllObservationFields=0;
+     nativePairsWithAllObservationFields=0,
+     watcherV2Pairs=0,watcherV2SnapshotMatches=0,watcherV2SnapshotFails=0,
+     watcherV2OrderNoteRows=0,watcherV2ItemNoteRows=0;
  const newest=[];
  for(const entry of selected){
   const decisionName=entry.name.replace(/\.json$/i,".decision.json");
@@ -120,6 +185,15 @@ function audit(events,decisions,shiftFile){
    nativeItemsWithAnyObservationField+=notes.items_with_any_field;
    nativeItemsWithAllObservationFields+=notes.items_with_all_fields;
    if(notes.all_fields_present)nativePairsWithAllObservationFields++;
+   const notesV2=watcherV2ObservationSummary(e);
+   if(notesV2.detected){
+     watcherV2Pairs++;
+     if(notesV2.structure_valid&&notesV2.hash_matches){
+       watcherV2SnapshotMatches++;
+       watcherV2OrderNoteRows+=notesV2.order_note_count;
+       watcherV2ItemNoteRows+=notesV2.item_note_count;
+     }else watcherV2SnapshotFails++;
+   }
    const service=e.service_resolution||{},claimed=d.service||{};
    const provenShift=["LUNCH","DINNER"].includes(service.service)&&
      ["HUMAN_CONFIRMED_RULE","REAL_OBSERVED"].includes(service.evidence)&&
@@ -153,7 +227,13 @@ function audit(events,decisions,shiftFile){
      event_revision_matches_decision:match,
      status:verifiedReady?"VERIFIED_ONLY_FOR_EXISTING_SHADOW":"BLOCKED",
      native_event_item_count:notes.items,
-     native_event_observation_fields_all_present:notes.all_fields_present,
+     legacy_inline_observation_fields_all_present:notes.all_fields_present,
+     watcher_v2_observation_hash_includes_rows_and_matches:
+       notesV2.detected&&notesV2.structure_valid&&notesV2.hash_matches,
+     watcher_v2_order_note_rows_verified_in_hash:
+       notesV2.hash_matches?notesV2.order_note_count:0,
+     watcher_v2_item_note_rows_verified_in_hash:
+       notesV2.hash_matches?notesV2.item_note_count:0,
      exact_revision_sql_observations_verified:false,
      three_ticket_preview_ready:false,
      event_reason_classes:[...new Set(e.blockers.map(scrubReason))].sort(),
@@ -178,6 +258,12 @@ function audit(events,decisions,shiftFile){
    native_items_with_all_observation_fields:nativeItemsWithAllObservationFields,
    native_pairs_with_complete_observation_field_names:nativePairsWithAllObservationFields,
    observation_field_names_checked:OBSERVATION_COLUMNS,
+   watcher_v2_event_pairs_observed:watcherV2Pairs,
+   watcher_v2_event_hash_matched:watcherV2SnapshotMatches,
+   watcher_v2_event_hash_untrusted:watcherV2SnapshotFails,
+   watcher_v2_order_note_rows_in_verified_hash:watcherV2OrderNoteRows,
+   watcher_v2_item_note_rows_in_verified_hash:watcherV2ItemNoteRows,
+   native_inline_fields_are_not_the_watcher_v2_note_contract:true,
    independent_sql_or_production_notes_join_executed:false,
    exact_revision_item_observation_proofs_verified:false,
    eligible_three_ticket_pairs_proven:0,
@@ -197,8 +283,9 @@ function audit(events,decisions,shiftFile){
   latest_pair_summaries:newest,
   limitations:["SHADOW_READY_IS_NOT_PHYSICAL_PRINT_READINESS",
    "SHADOW_READY_REQUIRES_EXACT_REVISION_AND_VALID_FINGERPRINT_AND_NO_BLOCKERS",
-   "NO_OBSERVATION_TEXT_IN_WATCHER_V1",
-   "OBSERVATION_FIELDS_ARE_PRESENCE_ONLY_NOT_CUSTOMER_TEXT_OR_REVISION_PROOF",
+   "LEGACY_V1_INLINE_ITEMS_WITHOUT_NOTES_DOES_NOT_PROVE_ABSENCE",
+   "INSTALLED_WATCHER_V2_NOTES_IN_ORDER_OBSERVATION_ROWS_HASH",
+   "V2_HASH_MATCH_ALONE_IS_NOT_INDEPENDENT_SQL_PROOF",
    "NO_AUTHORITY_TO_RENEW_SHIFT_FROM_CLOCK",
    "NO_LIVE_PRODUCTION_JOIN_OR_PRINT_PROOF"],
   effects:{reader_service_change:false,database_read:false,database_write:false,
@@ -212,4 +299,4 @@ if(require.main===module){
   console.log(JSON.stringify(audit(p["--events"],p["--decisions"],p["--shift"]),null,2));
  }catch(e){console.error("PASSIVE_READER_AUDIT_V69_BLOCKED:"+String(e.message));process.exitCode=1}
 }
-module.exports={audit,resolveArgs,scrubReason,fingerprint};
+module.exports={audit,resolveArgs,scrubReason,fingerprint,watcherV2ObservationSummary};
