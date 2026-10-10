@@ -84,7 +84,7 @@ function watcherV2ObservationSummary(event) {
   }else return failed;
  }
  if(strictRows.length)basis.observation_rows=strictRows;
- const actual=createHash("sha256").update(JSON.stringify(basis)).digest("hex");
+ const actual=crypto.createHash("sha256").update(JSON.stringify(basis)).digest("hex");
  return {detected:true,structure_valid:true,
   hash_matches:hex64(event.snapshot_hash)&&
     actual.toLowerCase()===event.snapshot_hash.toLowerCase(),
