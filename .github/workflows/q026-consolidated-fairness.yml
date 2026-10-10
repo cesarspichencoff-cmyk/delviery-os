@@ -1,0 +1,110 @@
+name: q026-consolidated-read-fairness
+on:
+  push:
+    branches:
+      - research/q026-consolidated-incremental-read-candidate-20261010
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: q026-rc-fairness-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  http-real-comparison:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        events: [20000, 120000, 300000]
+    services:
+      postgres:
+        image: public.ecr.aws/docker/library/postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
+      Q026_EVENT_LOOP_EVENTS: ${{ matrix.events }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Typecheck actual Product HTTP comparison fixture
+        run: |
+          npx tsc --noEmit
+          npx tsc --noEmit --target ES2022 --module commonjs --moduleResolution node --strict --esModuleInterop --skipLibCheck --types node tests/product/run-q026-event-loop-http-fairness-shadow.ts
+      - name: Baseline reader with real Product HTTP
+        shell: bash
+        env:
+          Q026_FAIRNESS_VARIANT: baseline
+        run: |
+          set -o pipefail
+          npx tsx tests/product/run-q026-event-loop-http-fairness-shadow.ts | tee baseline.out
+          grep '^Q026_EVENT_LOOP_HTTP_SHADOW_MEASURED ' baseline.out
+      - name: Integrated incremental reader with same deterministic fixture
+        shell: bash
+        env:
+          Q026_FAIRNESS_VARIANT: incremental
+        run: |
+          set -o pipefail
+          npx tsx tests/product/run-q026-event-loop-http-fairness-shadow.ts | tee incremental.out
+          grep '^Q026_EVENT_LOOP_HTTP_SHADOW_MEASURED ' incremental.out
+      - name: Print real HTTP comparative record; never invent SLA
+        shell: bash
+        run: |
+          node - <<'JS'
+          const fs=require('node:fs');
+          const parse=f=>JSON.parse(fs.readFileSync(f,'utf8').split('\n')
+            .find(x=>x.startsWith('Q026_EVENT_LOOP_HTTP_SHADOW_MEASURED ')).split('Q026_EVENT_LOOP_HTTP_SHADOW_MEASURED ')[1]);
+          const a=parse('baseline.out'),b=parse('incremental.out');
+          if(a.events!==b.events || a.variant!=='baseline' || b.variant!=='incremental')
+            throw Error('Q026_VARIANT_OR_FIXTURE_MISMATCH');
+          const record={events:a.events,
+            baseline_http_statuses:a.entregas_http_statuses,
+            incremental_http_statuses:b.entregas_http_statuses,
+            baseline_http_ms:a.entregas_wall_ms,
+            incremental_http_ms:b.entregas_wall_ms,
+            baseline_health_max_ms:a.health_probe_max_ms,
+            incremental_health_max_ms:b.health_probe_max_ms,
+            baseline_loop_max_ms:a.event_loop_delay_max_ms,
+            incremental_loop_max_ms:b.event_loop_delay_max_ms,
+            baseline_rss_after_mib:a.rss_after_mib,
+            incremental_rss_after_mib:b.rss_after_mib,
+            rss_after_change_pct:+(100*(b.rss_after_mib/a.rss_after_mib-1)).toFixed(1),
+            boundary:'single paired CI runner, separate Node processes and disposable PG16, NOT production latency SLA'};
+          console.log('Q026_REAL_HTTP_READER_COMPARISON '+JSON.stringify(record));
+          JS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: q026-http-compare-${{ matrix.events }}
+          path: |
+            baseline.out
+            incremental.out
+          if-no-files-found: warn
+  regressions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm run test:platform:q016
+      - run: npm run test:platform:product
+      - run: npm run test:platform:governanca
+      - name: Fail closed without PostgreSQL
+        shell: bash
+        run: |
+          set +e
+          DELIVERYOS_PG_URL= Q026_FAIRNESS_VARIANT=incremental npx tsx tests/product/run-q026-event-loop-http-fairness-shadow.ts
+          test "$?" = 78
