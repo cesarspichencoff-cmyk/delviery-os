@@ -20,10 +20,11 @@ export function attestationFromArchiveBytes({batch_id,archive_path,rawBytes}={})
   source_id:SOURCE,batch_id,archive_path,
   snapshot_sha256:checked.hash,git_blob_sha:checked.git_blob_sha,
   record_count:snapshot.record_count,
-  archive_verification:'TRUSTED_SOURCE_REVALIDATED_AT_INGEST',
+  archive_verification:'BYTES_VALIDATED_ORIGIN_UNCONFIRMED',
   possible_commitment:false,external_effect_authorized:false
  };
 }
+// This builder verifies the bytes, NOT the GitHub origin. It cannot issue a trusted receipt.
 // The real caller must fetch rawBytes through a pinned, authorized GitHub source.
 // Validating bytes alone does not authenticate who supplied them.
 
