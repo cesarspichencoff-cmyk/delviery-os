@@ -13,16 +13,27 @@ COLUMNS = (
 def load_node_plan(count=100):
     js = """
 import {packWorkObservationInserts} from './tools/cesar-os-ci/d1-bulk-plan.mjs';
+import {createHash} from 'node:crypto';
+const sha=x=>createHash('sha256').update(x,'utf8').digest('hex');
 const cols='observation_id source_id external_ref signal_type observed_at ingested_at domain privacy_scope truth_class authority sensitivity subject_type subject_ref fact_summary possible_commitment due_at confidence evidence_ref content_fingerprint attention_candidate metadata_json'.split(' ');
 const rows=Array.from({length:COUNT},(_,i)=>Object.fromEntries(cols.map(k=>[k,
 k==='observation_id'?'obs_'+String(i+1).padStart(20,'0'):
 k==='source_id'?'github-actions-public-deliveryos':
+k==='external_ref'||k==='subject_ref'?'run:'+(i+1):
+k==='signal_type'?'PROJECT_CI':
 k==='domain'?'WORK':
+k==='privacy_scope'?'ORGANIZATIONAL':
 k==='truth_class'?'SOURCE_CLAIM':
+k==='authority'?'OBSERVATION_ONLY':
 k==='possible_commitment'?false:
 k==='confidence'?1:
+k==='due_at'?'':
 k==='metadata_json'?'{}':'CI PUBLIC SOURCE_CLAIM'
 ])));
+for(const row of rows){
+ row.content_fingerprint=sha([row.signal_type,row.fact_summary,row.due_at,row.subject_ref].join('|'));
+ row.observation_id='obs_'+sha(['source-observation-v1',row.source_id,row.external_ref,row.content_fingerprint].join('|')).slice(0,20);
+}
 console.log(JSON.stringify(packWorkObservationInserts(rows).observations));
 """.replace("COUNT",str(count))
     p = subprocess.run(["node","--input-type=module","-e",js],capture_output=True,
