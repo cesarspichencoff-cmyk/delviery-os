@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {validateV2Attestation,decideV2BatchAdmission} from '../tools/cesar-os-ci/receipt-v2-admission.mjs';
+import {attestationFromArchiveBytes,validateV2Attestation,decideV2BatchAdmission} from '../tools/cesar-os-ci/receipt-v2-admission.mjs';
 const attestation={
   schema:'cesar-os-work-archive-attestation-v1',
   source_id:'github-actions-public-deliveryos',
@@ -80,4 +80,14 @@ test('tampered bytes or missing verified archive context cannot authorize admiss
 test('a claimed SHA-256 matching no actual archive bytes is refused',()=>{
  assert.throws(()=>decideV2BatchAdmission({...attestation,snapshot_sha256:'0'.repeat(64)},null,
    {verifiedArchive}),/v2_attestation_bytes_mismatch/);
+});
+
+test('valid archive bytes alone never authorize a trusted-origin receipt',()=>{
+ const candidate=attestationFromArchiveBytes({
+  batch_id:attestation.batch_id,archive_path:verifiedArchive.archive_path,rawBytes:verifiedArchive.rawBytes
+ });
+ assert.equal(candidate.snapshot_sha256,attestation.snapshot_sha256);
+ assert.equal(candidate.git_blob_sha,attestation.git_blob_sha);
+ assert.equal(candidate.archive_verification,'BYTES_VALIDATED_ORIGIN_UNCONFIRMED');
+ assert.throws(()=>validateV2Attestation(candidate),/v2_attestation_contract_invalid/);
 });
