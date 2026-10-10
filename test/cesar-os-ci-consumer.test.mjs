@@ -174,3 +174,18 @@ test('archive bytes must match Git blob SHA, not merely API metadata',async()=>{
  ['/repos/'+REPO+'/contents/'+file]:{value:{sha:'a'.repeat(40),encoding:'base64',content:Buffer.from(JSON.stringify(s1)).toString('base64')}}};
  await assert.rejects(discoverArchiveEvidence(token,{start:horizon.start,end:'2026-10-10T21:30:00.000Z',now:new Date(UTC),fetchFn:replies(map,calls)}),/archive_blob_sha_mismatch/);
 });
+
+test('partial UTC horizon excludes records created before start or at end',()=>{
+ const source=snapshot('2026-10-10T21:00:00.000Z',[
+  makeRun(61,'2026-10-10T20:10:00.000Z'),
+  makeRun(62,'2026-10-10T20:45:00.000Z'),
+  makeRun(63,'2026-10-10T21:00:00.000Z')
+ ]);
+ const p=planReplay([archive(source)],{
+  start:'2026-10-10T20:30:00.000Z',
+  end:'2026-10-10T21:00:00.000Z',now:new Date(UTC)
+ });
+ assert.deepEqual(p.records.map(x=>x.id),[62]);
+ assert.deepEqual(p.reconcile_ids,[62]);
+ assert.equal(p.coverage.gaps.length,0);
+});
