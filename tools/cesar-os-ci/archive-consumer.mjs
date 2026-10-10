@@ -114,7 +114,7 @@ export function planReplay(archives,{start,end,cursor=null,now=new Date()}={}){
   return {
     schema:'cesar-os-ci-replay-plan-v1',source_id:SOURCE,
     horizon:{start,end},archives_seen:sorted.length,archives_new:newArchives,
-    coverage:{status:gaps.length?'GAPS_DETECTED':'BOUNDED_OBSERVED',gaps,
+    coverage:{status:gaps.length?'GAPS_DETECTED':runs.length?'BOUNDED_OBSERVED':'BOUNDED_EMPTY',gaps,
       continuity_complete:false,lifecycle_updates_complete:false,coverage_complete_claimed:false},
     records:runs.map(r=>({...r,source_claim_only:true,possible_commitment:false})),
     reconcile_ids,reconcile_deferred:Math.max(0,runs.length-count),
