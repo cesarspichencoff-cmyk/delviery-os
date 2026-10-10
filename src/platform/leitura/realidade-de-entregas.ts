@@ -20,7 +20,7 @@
  */
 
 import type { TransactionalSqlClient } from "../persistence/sql-client";
-import type { SourceMode } from "../contracts/event-catalog";
+import type { EventEnvelope, SourceMode } from "../contracts/event-catalog";
 import { SOURCE_MODES } from "../contracts/event-catalog";
 import { relogioEfetivo, type ConfiancaDoRelogio } from "../contracts/relogio";
 import { lerFatosParaReplay } from "../projections/replay-do-event-log";
@@ -185,17 +185,28 @@ export async function lerRealidadeDeEntregas(
 
     // A projeção é a MESMA do assíncrono, sobre a MESMA porta de leitura da
     // Q-016. Não existe uma segunda maneira de ler o log.
-    const escopos = new Map<string, { unit_id: string; source_mode: SourceMode }>();
+    //
+    // Q-026: cada escopo recebe SÓ os seus fatos, separados numa passada. Antes,
+    // cada chamada recebia o log inteiro e o reordenava inteiro para descartar
+    // os outros escopos depois. O resultado é o mesmo porque `projetar` ignora
+    // fato de outro escopo, e a ordem relativa dos de um escopo não depende dos
+    // outros quando todo instante é legível — o que esta porta garante:
+    // `lerFatosParaReplay` só entrega `occurred_at` reconstruído por
+    // `toISOString()`, `event_id` texto e `sequence` inteiro seguro.
+    const escopos = new Map<string, { unit_id: string; source_mode: SourceMode; fatos: EventEnvelope[] }>();
     for (const f of leitura.aptos) {
       if (opcoes.unit_id && f.unit_id !== opcoes.unit_id) continue;
-      escopos.set(`${f.unit_id}|${f.source_mode}`, { unit_id: f.unit_id, source_mode: f.source_mode });
+      const chave = `${f.unit_id}|${f.source_mode}`;
+      const escopo = escopos.get(chave);
+      if (escopo) escopo.fatos.push(f);
+      else escopos.set(chave, { unit_id: f.unit_id, source_mode: f.source_mode, fatos: [f] });
     }
     const projecoes: ViagensDeUmModo[] = [...escopos.values()]
       .sort((a, b) => `${a.unit_id}|${a.source_mode}`.localeCompare(`${b.unit_id}|${b.source_mode}`))
       .map((e) => ({
         unit_id: e.unit_id,
         source_mode: e.source_mode,
-        viagens: projetar(leitura.aptos, { agora: opcoes.agora, unit_id: e.unit_id, source_mode: e.source_mode }).viagens,
+        viagens: projetar(e.fatos, { agora: opcoes.agora, unit_id: e.unit_id, source_mode: e.source_mode }).viagens,
       }));
 
     return {
