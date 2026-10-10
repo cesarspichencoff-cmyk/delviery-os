@@ -35,6 +35,8 @@ jobs:
         run: node --test test/cesar-os-ci-snapshot.test.mjs
       - name: Check cursor migration against SQLite (no D1)
         run: python3 test/cesar-os-ci-cursor-sqlite.test.py
+      - name: Verify free-tier batch inserts in isolated SQLite
+        run: python3 test/cesar-os-ci-bulk-sqlite.test.py
       - name: Inspect actual GitHub archive API without writing
         env:
           GITHUB_TOKEN: ${{ github.token }}
