@@ -58,3 +58,26 @@ test('missing column or invalid confidence fails before producing SQL',()=>{
  assert.throws(()=>packWorkObservationInserts([missing]),/d1_work_missing_signal_type/);
  assert.throws(()=>packWorkObservationInserts([{...obs(1),confidence:NaN}]),/d1_work_confidence_invalid/);
 });
+
+test('raw payload, secrets, malformed and oversized metadata fail before SQL',()=>{
+ for(const metadata_json of [
+   '{"raw_payload":{"body":"private"}}',
+   '{"nested":{"access_token":"secret"}}',
+   '{"authorization":"Bearer private"}',
+   '{"response_body":"raw"}',
+   'not_json',
+   JSON.stringify({oversized:'x'.repeat(4100)}),
+   '[]',
+   'null'
+ ]){
+  assert.throws(()=>packWorkObservationInserts([{...obs(1),metadata_json}]),/d1_work_metadata_/);
+ }
+});
+test('bounded public metadata object is normalized to JSON text',()=>{
+ const good={...obs(2),metadata_json:{public_run_id:27,raw_payload_persisted:false}};
+ const p=packWorkObservationInserts([good]);
+ const idx=WORK_COLUMNS.indexOf('metadata_json');
+ const data=JSON.parse(p.observations[0].params[idx]);
+ assert.equal(data.public_run_id,27);
+ assert.equal(data.raw_payload_persisted,false);
+});
