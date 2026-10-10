@@ -49,3 +49,23 @@ node --test test/cesar-os-ci-snapshot.test.mjs
 - [Runner identity probe #38062209644](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38062209644): GitHub-hosted runner passed, matching repository ID 1279837591 and owner ID 292320191 with token present. The probe substituted only the expected main/default event values to exercise the verifier from the candidate branch; it is **not** a real main-branch or write authorization test.
 - Both temporary branch-only proof workflows were deleted from the candidate after testing; their historical run logs remain.
 - Real production snapshot emission, static-feed retrieval, and private D1 ingestion are **not** established.
+
+
+## Minimal public-repository `main` protection (no paid plan)
+
+The repository is public and the account has administrator access. In GitHub
+**Settings → Branches → Add branch protection rule**, use:
+
+- Branch name pattern: `main` (exact).
+- **Require a pull request before merging:** enabled.
+- **Require approvals:** leave disabled for the single-owner review flow; do not silently lock the only maintainer out.
+- **Do not allow bypassing the above settings:** enabled, so administrators also follow PR flow.
+- **Allow force pushes:** disabled.
+- **Allow deletions:** disabled.
+- **Require status checks:** do not enable until a suitable always-running PR check is configured (the manual-only workflow is not such a check).
+- **Lock branch:** disabled (it prevents the intended merge).
+- Save and verify `protected=true` before promoting PR #46.
+
+This is a proposal pending real settings verification. No protection was changed
+by writing this document. First manual execution and first snapshot write remain
+separately gated after reviewed merge; recurring scheduling is not included.
