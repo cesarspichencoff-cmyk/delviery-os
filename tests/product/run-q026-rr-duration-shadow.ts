@@ -27,7 +27,7 @@ const NOW=new Date("2026-10-10T16:00:00Z");
 const baseMoment="2026-10-09T20:00:00Z";
 const round=(x:number)=>+(x.toFixed(2));
 const quantile=(xs:number[],p:number)=>[...xs].sort((a,b)=>a-b)[Math.max(0,Math.ceil(xs.length*p)-1)];
-type Sample={rep:number;wall_ms:number;query_ms:number;writer_ms:number;xmin_age_ms:number;
+type Sample={rep:number;wall_ms:number;query_ms:number;writer_ms:number;xmin_age_ms:number;snapshot_upper_ms:number;
   event_read_ms:number;devices_ms:number;latest_ms:number;counts_ms:number;
   events:number;rss_mib:number};
 const data:Sample[]=[];
@@ -57,7 +57,7 @@ try{
   }
   await db.cliente.query("ANALYZE platform.event_log");
   for(let rep=0;rep<TOTAL;rep++){
-    let pid=0,hooked=0,xminSeen=false,writerMs=NaN,xminAt=0,afterXmin=0;
+    let pid=0,hooked=0,xminSeen=false,writerMs=NaN,xminAt=0,afterXmin=0,firstFactsAt=0;
     const segments={events:0,devices:0,latest:0,counts:0,total:0};
     const writerId="q026-duration-append-"+rep;
     const expected=N+rep;
@@ -79,6 +79,7 @@ try{
               s.includes("DISTINCT ON (device_id)")?"latest":
               s.includes("GROUP BY device_id, source_mode")?"counts":"other";
             const t0=performance.now();
+            if(tag==="events")firstFactsAt=t0;
             const rows=await tx.query<R>(s,p);
             const dt=performance.now()-t0;
             if(tag==="events"||tag==="devices"||tag==="latest"||tag==="counts")segments[tag]+=dt;
@@ -108,18 +109,18 @@ try{
           }};
           return fn(proxy);
         });
-        afterXmin=performance.now();
+        afterXmin=performance.now(); // immediately AFTER COMMIT, BEFORE out-of-band observer
+        const wall=afterXmin-started;
         const observed=await observer.query("SELECT backend_xmin::text AS xmin FROM pg_stat_activity WHERE pid=$1",[pid]);
         assert.equal(observed.length,1);
         assert.equal(observed[0].xmin,null,"backend_xmin still pinned after reader committed");
-        const wall=performance.now()-started;
-        // include observer after COMMIT only if negligible; both are reported
+        // wall excludes the post-COMMIT observer call, but includes COMMIT
         const row=sample!;row.wall_ms=wall;
         return result;
       }
     };
     let sample:Sample|null={
-      rep,wall_ms:0,query_ms:0,writer_ms:0,xmin_age_ms:0,
+      rep,wall_ms:0,query_ms:0,writer_ms:0,xmin_age_ms:0,snapshot_upper_ms:0,
       event_read_ms:0,devices_ms:0,latest_ms:0,counts_ms:0,
       events:0,rss_mib:0
     };
@@ -140,6 +141,8 @@ try{
     sample.query_ms=round(segments.total);
     sample.writer_ms=round(writerMs);
     sample.xmin_age_ms=round(afterXmin-xminAt);
+    assert.ok(firstFactsAt>0);
+    sample.snapshot_upper_ms=round(afterXmin-firstFactsAt);
     sample.event_read_ms=round(segments.events);
     sample.devices_ms=round(segments.devices);
     sample.latest_ms=round(segments.latest);
@@ -162,6 +165,7 @@ try{
   const report={
     N,warmups:WARMUPS,measured:MEASURED,committed_append_events:TOTAL,
     wall_ms:stats("wall_ms"),xmin_age_ms:stats("xmin_age_ms"),
+    snapshot_upper_ms:stats("snapshot_upper_ms"),
     event_query_ms:stats("event_read_ms"),device_query_ms:stats("devices_ms"),
     latest_query_ms:stats("latest_ms"),count_query_ms:stats("counts_ms"),
     writer_ms:stats("writer_ms"),node_rss_mib:stats("rss_mib"),
@@ -169,7 +173,8 @@ try{
     results:data,
     caveats:["12 measured observations, nearest-rank sample p95/p99 are descriptive, not representative SLOs",
       "artificial one-unit one-trip data; one external append per read",
-      "transaction wall includes callback and commit plus tiny post-commit observer query",
+      "wall measured transaction start through COMMIT, excluding observer after commit",
+      "snapshot_upper_ms from before first event SELECT through COMMIT; xmin_age_ms after event SELECT through COMMIT",
       "no production server resources or sustained mixed writer workload measured"]
   };
   writeFileSync(path,JSON.stringify(report,null,2));
