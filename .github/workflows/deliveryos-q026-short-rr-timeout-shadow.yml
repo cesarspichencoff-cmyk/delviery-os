@@ -1,0 +1,96 @@
+name: deliveryos-q026-short-rr-timeout-shadow
+on:
+  push:
+    branches:
+      - research/deliveryos-q026-rr-short-window-and-timeout-shadow-20261010
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  short-window-large-history:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        n: [120000, 300000]
+    services:
+      postgres:
+        image: public.ecr.aws/docker/library/postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
+      Q026_DURATION_N: ${{ matrix.n }}
+      Q026_DURATION_RESULT: short-rr-${{ matrix.n }}.json
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Typecheck actual short-RR reader benchmark
+        run: |
+          npx tsc --noEmit
+          npx tsc --noEmit --target ES2022 --module commonjs --moduleResolution node --strict --esModuleInterop --skipLibCheck --types node tests/product/run-q026-rr-short-window-shadow.ts
+      - name: Materialize consistent snapshot then release before CPU projection
+        run: npx tsx tests/product/run-q026-rr-short-window-shadow.ts
+      - uses: actions/upload-artifact@v4
+        with:
+          name: q026-short-rr-${{ matrix.n }}
+          path: ${{ env.Q026_DURATION_RESULT }}
+          if-no-files-found: error
+  server-timeout-and-rollback:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: public.ecr.aws/docker/library/postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Typecheck timeout test
+        run: npx tsc --noEmit --target ES2022 --module commonjs --moduleResolution node --strict --esModuleInterop --skipLibCheck --types node tests/product/run-q026-rr-timeout-recovery-shadow.ts
+      - name: Real PostgreSQL server cancellation at two snapshot stages
+        run: npx tsx tests/product/run-q026-rr-timeout-recovery-shadow.ts
+  evidence:
+    runs-on: ubuntu-latest
+    needs: [short-window-large-history, server-timeout-and-rollback]
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: q026-short-rr-*
+          path: results
+          merge-multiple: true
+      - name: Verify 4 samples per scale, SQL RR shorter than total reader
+        run: |
+          node - <<'JS'
+          const fs=require('node:fs');
+          for(const n of [120000,300000]){
+            const r=JSON.parse(fs.readFileSync('results/short-rr-'+n+'.json','utf8'));
+            if(r.N!==n||r.measured!==4||r.results.length!==4||r.committed_append_events!==5||
+               !r.all_reads_snapshot_consistent||!r.backend_xmin_released_each_read)
+              throw Error('missing data or snapshot proof at '+n);
+            if(r.results.some(s=>s.wall_ms<=0||s.post_commit_ms<=0||
+               s.total_reader_ms<s.wall_ms||s.snapshot_upper_ms<s.xmin_age_ms))
+              throw Error('bad duration or CPU outside RR at '+n);
+            console.log('Q026_SHORT_RR_LARGE_PASS '+JSON.stringify({
+              n,reads:4,rr_ms:r.wall_ms,total_reader_ms:r.total_reader_ms,
+              post_commit_ms:r.post_commit_ms,snapshot_upper_ms:r.snapshot_upper_ms,
+              boundary:'laboratory; not production p95/p99 or configured runtime timeout'
+            }));
+          }
+          JS
