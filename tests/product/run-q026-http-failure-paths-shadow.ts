@@ -93,7 +93,7 @@ void(async()=>{
   }
   process.env.DELIVERYOS_DATABASE_URL=runtimeUrl;
   process.env.DELIVERYOS_ENTREGAS_RR_DEADLINE_MS=String(BUDGET_MS);
-  process.env.DELIVERYOS_ENTREGAS_MAX_INFLIGHT=CASE==="pool_saturated"?"4":"1";
+  process.env.DELIVERYOS_ENTREGAS_MAX_INFLIGHT=CASE==="cancel_denied"?"1":"4";
   const {criarServidor}=await import("../../tools/product_system_server");
   srv=await criarServidor();
   await new Promise<void>((resolve,reject)=>{srv!.once("error",reject);srv!.listen(0,"127.0.0.1",resolve)});
