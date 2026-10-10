@@ -1,0 +1,46 @@
+name: deliveryos-q026-window-shadow
+on:
+  push:
+    branches:
+      - research/deliveryos-q026-window-shadow-20261009
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  counterexamples:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: contraexemplos de janela sem destruir viagens
+        run: npx tsx tests/product/run-q026-window-shadow-tests.ts
+      - name: perfil da copia dos IDs de eventos da viagem
+        run: npx tsx tests/product/run-q026-projection-cost-shadow-tests.ts
+      - name: TypeScript sem emitir arquivos
+        run: npx tsc --noEmit
+
+  postgres-cursor-counterexamples:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: public.ecr.aws/docker/library/postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: contraexemplos reais no PostgreSQL descartavel
+        run: npx tsx tests/product/run-q026-ingest-cursor-pg-tests.ts
