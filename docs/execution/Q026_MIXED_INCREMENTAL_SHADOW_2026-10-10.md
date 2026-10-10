@@ -48,3 +48,14 @@ O log confirma:
 6. Não foram testadas múltiplas snapshots na mesma leitura; `aparelhos` da realidade foi reaproveitado da referência canônica. É prova de `projecoes`/UNKNOWN/consumo da UI, não da porta de realidade totalmente independente.
 
 **Status:** `CODE_READY + TEST_PASS` para este cenário sintético em SHADOW; não `DEPLOYED` nem `WORLD_PROVEN`. **HOLD**, sem merge, produção, schema, Android, TATÁ Comanda ou despesas novas. Q-026 permanece aberta.
+
+
+## Complemento — guarda de independência da ordem do cursor
+
+**Commit de código:** \`9b6260ea97e7aa1f1225a564f92d0ca081d36ad5\`. [CI \`38054013913\`](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38054013913): **SUCCESS, 8/8 verificações**, TypeScript estrito e PostgreSQL 16 isolado.
+
+Além do cursor misto que agrupa 126 mil fatos, uma **segunda consulta real** aplica a MESMA viagem de 120.000 fatos ao redutor incremental em \`ORDER BY occurred_at DESC, sequence_local DESC NULLS LAST, event_id DESC\`, invertendo o critério temporal dos fatos. Compara \`strip(inverted)\` a todos os campos de viagem da porta canônica, sem vetor de IDs. **Igualdade completa provada nessa fixture adversarial.** Também injeta mutação \`device_id = DISPOSITIVO-ERRADO\` no resultado e exige que o comparador a detecte, evitando um teste cego para o último aparelho.
+
+O log confirma \`events=126000\`, \`long_trip=120000\`, \`device_only=1\`, \`unknown=1\`, \`invalid=1\`, \`groups=72\`, \`max_group=120000\`, \`max_buffer=257\`, \`fetch_size=257\`, \`batches=491\`, \`scopes=5\`, \`filters=4\`. O teste individual passou **8/8**.
+
+**Não extrapolar**: ordem invertida num snapshot estático não prova consistência entre duas transações de leitura, escrita concorrente, memória do processo PostgreSQL, deduplicação arbitrária, variantes inválidas fora da fixture ou Q-016 íntegro. Este PR mantém o status DRAFT/HOLD.
