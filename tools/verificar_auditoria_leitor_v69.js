@@ -59,7 +59,8 @@ check("real-format blocked pair classified without leaking an order number",()=>
  assert.ok(output.includes("SERVICE_REQUIRED_SUSHI1"));
 });
 check("tampering with a decision after fingerprint creation is detected",()=>{
- const f=fixture({decisionOverrides:{ready:true}});
+ const f=fixture({decisionOverrides:{ready:true,items:[
+  {item_index:1,product_name:"SECRET_NAME",quantity:2}]}});
  const r=audit(f.events,f.decisions,f.shift);
  assert.equal(r.content_fingerprints_changed,1);
  assert.equal(r.decision_ready,1);
