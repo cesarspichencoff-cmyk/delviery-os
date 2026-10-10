@@ -1,0 +1,114 @@
+name: deliveryos-q026-projection-experiment
+on:
+  push:
+    branches:
+      - experiment/deliveryos-q026-projection-cost-20261009
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  semantics-and-profile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: TypeScript sem emissao
+        run: npx tsc --noEmit
+      - name: equivalencia exata contra base d0716fd e tempo da projecao
+        run: npx tsx tests/product/run-q026-projection-append-equivalence-tests.ts
+      - name: regressao de viagens abertas, atrasos e modos
+        run: npx tsx tests/product/run-q026-window-shadow-tests.ts
+      - name: suite do Product System
+        run: npm run -s test:platform:product
+
+  replay-chain-postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    services:
+      postgres:
+        image: public.ecr.aws/docker/library/postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --no-audit --no-fund
+      - name: Compilar plataforma e migracoes para prova em banco isolado
+        run: npm run -s build:platform
+      - name: Cadeia Real com PostgreSQL
+        run: npm run -s test:platform:cadeia
+      - name: Regressao de mutacoes da Cadeia Real
+        run: npm run -s test:platform:cadeia:mutacoes
+
+  http-paired-100k:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: public.ecr.aws/docker/library/postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
+      Q026_EVENTS: "100000"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: isolacao da baseline real de integracao
+        run: |
+          git worktree add --detach "$RUNNER_TEMP/q026baseline" d0716fda380fc66cecfd791593cb6cc8c017b37a
+          cd "$RUNNER_TEMP/q026baseline"
+          npm ci --ignore-scripts --no-audit --no-fund
+      - name: HTTP A/B 100k no mesmo banco descartavel, sem corte de historico
+        run: Q026_BASELINE_CWD="$RUNNER_TEMP/q026baseline" npx tsx tests/product/run-q026-http-pg-paired-benchmark.ts
+
+  http-paired-1030k:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    services:
+      postgres:
+        image: public.ecr.aws/docker/library/postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
+      Q026_EVENTS: "1030000"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: isolacao da baseline real de integracao
+        run: |
+          git worktree add --detach "$RUNNER_TEMP/q026baseline" d0716fda380fc66cecfd791593cb6cc8c017b37a
+          cd "$RUNNER_TEMP/q026baseline"
+          npm ci --ignore-scripts --no-audit --no-fund
+      - name: HTTP A/B 1030k no mesmo banco descartavel, sem corte de historico
+        run: Q026_BASELINE_CWD="$RUNNER_TEMP/q026baseline" npx tsx tests/product/run-q026-http-pg-paired-benchmark.ts

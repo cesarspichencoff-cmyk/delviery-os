@@ -214,7 +214,10 @@ export function projetar(
   const { agora, unit_id, source_mode } = opcoes;
   const janelas = opcoes.janelas ?? JANELAS;
 
-  const porViagem = new Map<string, ViagemAcumulada>();
+  // Acumulador mutavel somente dentro DESTA chamada. Nada e exposto antes do retorno.
+  // Evita recopia quadratica da lista de IDs a cada GPS da mesma viagem.
+  type AcumuloInterno = Omit<ViagemAcumulada, "eventos"> & { eventos: string[] };
+  const porViagem = new Map<string, AcumuloInterno>();
   const quarentena: { event_id: string; motivo: string }[] = [];
   const vistos = new Set<string>();
   let cursor: Projecao["cursor"];
@@ -266,7 +269,7 @@ export function projetar(
       continue;
     }
 
-    const atual: ViagemAcumulada = porViagem.get(tripId) ?? {
+    const atual: AcumuloInterno = porViagem.get(tripId) ?? {
       trip_id: tripId,
       unit_id: ev.unit_id,
       estado: "desconhecido",
@@ -289,6 +292,9 @@ export function projetar(
     const instante = ehPosicao ? instanteConfiavel(ev) : undefined;
     const ultimaPosicao = instante ? maisRecente(atual.ultima_posicao_em, instante) : atual.ultima_posicao_em;
 
+    // `atual.eventos` nasceu nesta chamada de projetar; compartilhar apenas
+    // entre estados internos sucessivos nao altera entradas nem saidas anteriores.
+    atual.eventos.push(ev.event_id);
     porViagem.set(tripId, {
       ...atual,
       estado,
@@ -297,7 +303,7 @@ export function projetar(
       ultima_posicao_em: ultimaPosicao,
       ocorrencias_abertas:
         atual.ocorrencias_abertas + (ev.event_type === "occurrence_created" ? 1 : 0),
-      eventos: [...atual.eventos, ev.event_id],
+      eventos: atual.eventos,
     });
 
     cursor = { event_id: ev.event_id, occurred_at: ev.occurred_at };
