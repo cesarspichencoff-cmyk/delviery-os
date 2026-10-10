@@ -38,6 +38,7 @@ import {
   type LeituraHistoricaDoStore,
 } from "../src/product/viewmodels/historico-vm";
 import { createPgClient, type PgSqlClient } from "../src/platform/persistence/sql-client";
+import { foiTimeoutNaFilaDoPoolPg } from "../src/platform/persistence/pg-pool-backpressure";
 import { lerRealidadeDeEntregas } from "../src/platform/leitura/realidade-de-entregas";
 import { leitorRrCancelavel, type ProtecaoRr } from "../src/platform/leitura/leitor-rr-cancelavel";
 import { lerHistoricoOperacional } from "../src/platform/leitura/historico-operacional";
@@ -278,7 +279,11 @@ async function lerRealidade(cliente: PgSqlClient | null, protecao?: ProtecaoRr):
         { agora: new Date() },
       ),
     };
-  } catch {
+  } catch (e) {
+    // Preserve the specific queue-overload cause only for the explicit HTTP
+    // guard. A generic outage, DNS/TLS/connect failure or SQLSTATE is still
+    // returned as an unavailable *data block*, not mislabeled as capacity.
+    if (protecao && foiTimeoutNaFilaDoPoolPg(e)) throw e;
     // Detalhes de rede/SQL podem conter nomes internos e caminhos. A tela
     // precisa conhecer a indisponibilidade, nunca o erro bruto do driver.
     return {
@@ -494,9 +499,14 @@ export async function criarServidor(): Promise<http.Server> {
           if (abortador?.signal.aborted || res.destroyed || res.writableEnded) return;
           json(res, 200, entregasVM(snap, new Date().toISOString(), facade.getPolicyMaxStops(), leitura, { unidade }));
         })()
-          .catch(() => {
-            if (!res.destroyed && !res.writableEnded)
-              json(res, 500, { erro: "leitura_indisponivel" });
+          .catch((e: unknown) => {
+            if (res.destroyed || res.writableEnded) return;
+            if (abortador && foiTimeoutNaFilaDoPoolPg(e)) {
+              res.setHeader("Retry-After", "1");
+              // No raw driver text and no fake 200 for admitted pool overload.
+              return json(res, 503, { erro: "leitura_temporariamente_ocupada" });
+            }
+            json(res, 500, { erro: "leitura_indisponivel" });
           })
           .finally(() => {
             if (relogio) clearTimeout(relogio);
