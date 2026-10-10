@@ -73,3 +73,36 @@ jobs:
           code=$?
           echo "no_db_exit=$code"
           test "$code" = 78
+
+  full-model-million:
+    needs: canonical-vs-rr-incremental
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    services:
+      postgres:
+        image: public.ecr.aws/docker/library/postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
+      Q026_FULL_LONG: "1030000"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Locked dependency install
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Million-event full model compile
+        run: npx tsc --noEmit --target ES2022 --module commonjs --moduleResolution node --strict --esModuleInterop --skipLibCheck --types node tests/product/run-q026-rr-full-model-shadow.ts
+      - name: Full model RR with 1.03M trip facts + 6k mixed facts + 30 independent commits
+        shell: bash
+        run: |
+          set -o pipefail
+          npx tsx tests/product/run-q026-rr-full-model-shadow.ts | tee q026-rr-full-million.out
+          grep '^Q026_RR_FULL_MODEL_PASS .*"size_class":"million"' q026-rr-full-million.out
