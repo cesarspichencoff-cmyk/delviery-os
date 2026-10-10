@@ -2,6 +2,7 @@ import {test} from 'node:test';
 import './cesar-os-ci-archive.test.mjs';
 import './cesar-os-ci-consumer.test.mjs';
 import './cesar-os-ci-dryrun.test.mjs';
+import './cesar-os-ci-readonly.test.mjs';
 import './cesar-os-ci-ack.test.mjs';
 import './cesar-os-ci-bulk-plan.test.mjs';
 import './cesar-os-ci-receipt-admission.test.mjs';
