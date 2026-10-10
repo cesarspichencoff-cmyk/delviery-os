@@ -4,7 +4,7 @@ const crypto=require("node:crypto");
 const {verifyLiveReaderPairV68,projectVerifiedReaderPairV68,
  prepareOrderNoteReviewPacketV77,inspectOrderNoteDispositionClaimV77}=
  require("../dist/src/production/stableReaderShadowPairV68.js");
-const {PACKAGING_SOURCE_BLOB_V63}=
+const {PACKAGING_SOURCE_BLOB_V63,PACKAGING_SOURCE_SHA256_V78}=
  require("../dist/src/production/currentPackagingBridgeV63.js");
 let count=0;const check=(name,fn)=>{fn();count++;console.log("PASS "+count+" "+name)};
 const deep=v=>structuredClone(v);
@@ -44,7 +44,18 @@ function fixture(){
    classification_source:"ACADEMIA_EXACT_NAME"})),
   packaging:{has_unknown:false,total_items:3},
   kits:{status:"FACT"},sequence:{shadow_candidate:"001",binding_written:false},
-  rule_lineage:{academy_rule_refs:["fixture:academy:sha256:exact"],delivery_rule_refs:["fixture:routing:sha256:exact"]},
+  rule_lineage:{
+    academy_rule_refs:[
+      "tata-academia:installed/packaging-current.js#sha256="+PACKAGING_SOURCE_SHA256_V78,
+      "tata-academia:installed/app-data.json#sha256="+"a".repeat(64)
+    ],
+    delivery_rule_refs:[
+      "deliveryos:installed/routing.json#sha256="+"b".repeat(64),
+      "deliveryos:installed/printer-map.json#sha256="+"c".repeat(64),
+      "deliveryos:installed/non-production.json#sha256="+"d".repeat(64),
+      "deliveryos:installed/product-identity-cache-v1.json#sha256="+"e".repeat(64)
+    ]
+  },
  };
  decision.fingerprint=fingerprint(decision);
  const delivery={pedido_interno:"0000123456",pedido_externo:"2841",
@@ -397,6 +408,62 @@ check("V7.7 even structurally valid request with shadow blocked needs review, no
  assert.equal(revised.safeguards.authorizes_tickets,false);
  assert.equal(projectVerifiedReaderPairV68(f.event,f.decision,f.ctx).status,"BLOCKED");
  assert.equal(packet.snapshot_hash,revised.snapshot_hash);
+});
+
+
+check("V7.8 exact pinned SHA-256 corresponds to the canonically verified motor source",()=>{
+ assert.equal(PACKAGING_SOURCE_BLOB_V63,"3167c309f02a0ad5a84fb43043b8866e3bee873c");
+ assert.equal(PACKAGING_SOURCE_SHA256_V78,"1e4cf2475edb586d5dae88388d2adc7cf02013b00ec93c0371e3edb80f81342e");
+ assert.equal(verifyLiveReaderPairV68(fixture().event,fixture().decision).status,"PAIRED_SOURCE_VERIFIED");
+});
+check("V7.8 missing lineage as observed on CAIXA deployed consumer cannot prove pair",()=>{
+ const f=fixture();delete f.decision.rule_lineage;
+ const r=verifyLiveReaderPairV68(f.event,f.decision);
+ assert.equal(r.status,"BLOCKED");
+ assert.ok(r.reasons.includes("SHADOW_DECISION_LINEAGE_MISSING_OR_MALFORMED_V78"));
+ assert.equal(projectVerifiedReaderPairV68(f.event,f.decision,f.ctx).tickets,null);
+});
+check("V7.8 old placeholder lineage is not accepted as source proof",()=>{
+ const f=fixture();f.decision.rule_lineage={
+  academy_rule_refs:["fixture:academy:sha256:exact"],
+  delivery_rule_refs:["fixture:routing:sha256:exact"]};
+ assert.ok(verifyLiveReaderPairV68(f.event,f.decision).reasons.includes(
+ "SHADOW_DECISION_LINEAGE_MISSING_OR_MALFORMED_V78"));
+});
+check("V7.8 wrong packaging engine SHA-256 cannot borrow the current motor proof",()=>{
+ const f=fixture();f.decision.rule_lineage.academy_rule_refs[0]=
+  "tata-academia:installed/packaging-current.js#sha256="+"f".repeat(64);
+ const r=verifyLiveReaderPairV68(f.event,f.decision);
+ assert.ok(r.reasons.includes("SHADOW_DECISION_PACKAGING_SOURCE_NOT_PINNED_V78"));
+});
+check("V7.8 deleted academy app-data ref fails closed",()=>{
+ const f=fixture();f.decision.rule_lineage.academy_rule_refs.pop();
+ assert.ok(verifyLiveReaderPairV68(f.event,f.decision).reasons.includes(
+  "SHADOW_DECISION_LINEAGE_MISSING_OR_MALFORMED_V78"));
+});
+check("V7.8 deleted product identity cache lineage fails closed",()=>{
+ const f=fixture();f.decision.rule_lineage.delivery_rule_refs.pop();
+ assert.ok(verifyLiveReaderPairV68(f.event,f.decision).reasons.includes(
+  "SHADOW_DECISION_LINEAGE_MISSING_OR_MALFORMED_V78"));
+});
+check("V7.8 malformed digest and duplicate ref are not proof of origin",()=>{
+ const f=fixture();f.decision.rule_lineage.delivery_rule_refs[0]=
+   "deliveryos:installed/routing.json#sha256=NOT_A_SHA";
+ assert.ok(verifyLiveReaderPairV68(f.event,f.decision).reasons.includes(
+  "SHADOW_DECISION_LINEAGE_MISSING_OR_MALFORMED_V78"));
+ const h=fixture();h.decision.rule_lineage.delivery_rule_refs[0]=
+  h.decision.rule_lineage.delivery_rule_refs[1];
+ assert.ok(verifyLiveReaderPairV68(h.event,h.decision).reasons.includes(
+  "SHADOW_DECISION_LINEAGE_MISSING_OR_MALFORMED_V78"));
+});
+check("V7.8 forged source SHA-256 string is not independent filesystem attestation",()=>{
+ const f=fixture();
+ const r=verifyLiveReaderPairV68(f.event,f.decision);
+ assert.equal(r.status,"PAIRED_SOURCE_VERIFIED");
+ // Deliberate limitation: structure and a claimed checksum do not prove
+ // the live runtime file was read by this pure verifier.
+ assert.deepEqual(r.effects,{database_read:false,database_write:false,print:false,
+  spooler:false,odhen_write:false});
 });
 
 console.log("STABLE_READER_SHADOW_PAIR_V68="+count+"/"+count+" SHADOW ONLY; NO PHYSICAL EFFECT");
