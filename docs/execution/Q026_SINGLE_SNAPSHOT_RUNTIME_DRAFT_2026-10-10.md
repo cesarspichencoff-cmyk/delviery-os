@@ -10,7 +10,7 @@ A porta `lerRealidadeDeEntregas` fazia uma transação `READ ONLY` para o replay
 
 ## Correção mínima neste PR
 
-- `src/platform/leitura/realidade-de-entregas.ts`: inicia uma única `cliente.transaction` e emite como **primeiro comando após BEGIN** `SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY`. Em seguida lê fatos canônicos, aparelhos, último lote e contagens dentro do **mesmo objeto `tx`**.
+- `src/platform/leitura/realidade-de-entregas.ts`: inicia uma única `cliente.transaction` e emite como **primeiro comando após BEGIN** `SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY`. Lê fatos canônicos, aparelhos, último lote e contagens dentro do **mesmo objeto `tx`**, materializa as respostas e **encerra a transação antes de mapear os aparelhos e executar `projetar` em CPU**. Isso não reduz os fatos carregados em memória, mas encurta a retenção MVCC.
 - `src/platform/projections/replay-do-event-log.ts`: extrai somente o corpo original do leitor/decodificador para `lerFatosParaReplayNaTransacao(tx,tipos)`; não muda filtros, reconstrução do envelope, transformação da sequência, contagem UNKNOWN ou quarentena. `lerFatosParaReplay(cliente,tipos)` mantém a API independente, que abre a própria transação `READ ONLY`. Esse helper é de uso restrito a chamador já dentro de transação apropriada.
 - `PgSqlClient.transaction` existente garante conexão dedicada e `COMMIT/ROLLBACK/release` no `finally`; não foi modificado.
 - Nenhuma mudança em SQL migrations, schema, cálculos do `projetar`, `eventos[]`, view model, contrato HTTP, fonte real Q-016, Q-024, compactação de memória ou PR #37/#41.
@@ -30,9 +30,23 @@ A porta `lerRealidadeDeEntregas` fazia uma transação `READ ONLY` para o replay
 
 **CI comprovada:** [run 38061461480](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38061461480), commit de código `66e93174cc972fcce5b38de7eb534764b0e3fd90`. Resultado `success`, logs com 6/6, governança GREEN e verificação do exit 78. Na primeira tentativa, a governança falhou por checkout raso do workflow; foi corrigido com `fetch-depth: 0` sem alterar regras ou código de governança.
 
+## Provas complementares — API HTTP e custo da transação (10/10/2026)
+
+Após a correção inicial, foram implementados mais dois gates usando apenas PostgreSQL 16 descartável, sem banco operacional, alterações de schema ou serviço externo.
+
+**API de apresentação real:** `tests/product/run-q026-http-single-snapshot-pg.ts` — **6/6 PASS**. Exercita `criarServidor()` e o handler `GET /api/entregas` (não uma simulação de roteador) com `DELIVERYOS_DATABASE_URL` apontando explicitamente para o banco temporário. Confirma: `/api/health` read-only, viagem e aparelho lidos do PG, GET subsequente vendo um novo GPS após COMMIT, filtro de unidade inexistente sem abrir o escopo, POST recusado com 405 e contagem do banco intacta, e banco temporário destruído resultando em `indisponivel` sem vazar URL/credenciais.
+
+**Fronteira MVCC:** `tests/product/run-q026-transaction-window-pg.ts` — **3/3 PASS**. Em fixture com **1.800 fatos sintéticos**, o teste observou `backend_xmin` presente na transação, `backend_xmin` liberado após COMMIT e a função `transaction` retornando **apenas respostas SQL materializadas**; as projeções e os aparelhos são compostos depois dessa fronteira. Medição em **uma execução específica da CI**: **44,31 ms** dentro da transação e **52,27 ms** na função inteira. Esse valor é observação do runner descartável, **não** latência típica, SLO, comparação A/B ou custo projetado sob carga. Nenhum efeito em `VACUUM` foi medido.
+
+**Execução final de código anterior a este ajuste documental:** [CI 38062468929](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38062468929), **SUCCESS**. Log com `Q026_SINGLE_SNAPSHOT_ACCEPTANCE: 6/6 PASS`, `Q026_HTTP_SINGLE_SNAPSHOT: 6/6 PASS`, `Q026_TRANSACTION_WINDOW: 3/3 PASS`, `GOVERNANCE_GATE_GREEN`, replay Q-016, Product, tipagem e verificação `no_db_exit=78`.
+
+### Restrição de efeito
+
+O código Q-026 continua **DRAFT/HOLD**, sem merge, deploy ou mudança na instância real. O teste HTTP é de **servidor real local**, não prova de acesso HTTP produtivo. O alívio de retenção MVCC é estrutural e comprovado nesse fixture; custos de memória, VACUUM, leitores concorrentes numerosos e latência em milhões de fatos ainda são UNKNOWN.
+
 ## Lacunas e restrições
 
-- Não executado contra HTTP real, dados operacionais ou aparelho físico. O código está pronto em branch, não em produção.
+- O handler HTTP **real** `/api/entregas` foi exercitado num servidor local contra banco **descartável**. Não foi exercitado contra **servidor HTTP de produção**, dados operacionais ou aparelho físico; o código permanece na branch, não implantado.
 - `REPEATABLE READ` retém horizonte MVCC até `COMMIT`; o leitor continua carregando todos os fatos em memória. Não foi medida latência, `backend_xmin` com carga real ou `VACUUM` sob uso produtivo; manter transações curtas, sem chamadas externas dentro delas.
 - Não corrigidas neste PR: apresentação identificada de quarentena, empate `localeCompare` da Q-016, riscos de collation do cursor, memória da implementação mista, Q-026/Q-024. Decisão de alteração dos critérios históricos permanece de César.
 - Os testes da Q-026 provam o cenário atacado, não equivalência irrestrita de todas as condições em produção.
