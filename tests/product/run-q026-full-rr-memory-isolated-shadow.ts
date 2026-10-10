@@ -20,7 +20,7 @@ import { PORTA_DE_REALIDADE_VERSION,lerRealidadeDeEntregas,
   type AparelhoReal,type UltimoLote,type RealidadeDeEntregas,type ViagensDeUmModo }
   from "../../src/platform/leitura/realidade-de-entregas";
 import { entregasVM } from "../../src/product/viewmodels/entregas-vm";
-import { lerRealidadeDeEntregasIncremental } from "../../src/platform/leitura/realidade-de-entregas-incremental";
+import { lerRealidadeDeEntregasIncremental, type RealidadeParaApresentacao, type ViagemParaApresentacao } from "../../src/platform/leitura/realidade-de-entregas-incremental";
 import type { SqlClient, SqlRow, TransactionalSqlClient } from "../../src/platform/persistence/sql-client";
 import { gerarLinhas,gravarLinhas,PERFIL_LOJA } from "./q026-replay-fixture";
 
@@ -257,13 +257,13 @@ async function compactFull(b:Awaited<ReturnType<typeof bancoIsolado>>):Promise<{
   };
   return {reality,tx_ms:txMs,max_batch:maxBatch,fetches};
 }
-const flat=(v:ViagemProjetada)=>({
+const flat=(v:ViagemParaApresentacao)=>({
   trip_id:v.trip_id,unit_id:v.unit_id,estado:v.estado,device_id:v.device_id,
   ultimo_fato_em:v.ultimo_fato_em,ocorrencias_abertas:v.ocorrencias_abertas,
   source_mode:v.source_mode,fatos:v.eventos.length,
   ultima_posicao_em:v.ultima_posicao_em,frescor:v.frescor
 });
-const digest=(r:RealidadeDeEntregas)=>{
+const digest=(r:RealidadeParaApresentacao)=>{
   const simplified={
     versao:r.versao,fonte:r.fonte,lida_em:r.lida_em,
     aparelhos:r.aparelhos,

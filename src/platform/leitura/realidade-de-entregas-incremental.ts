@@ -9,16 +9,31 @@ import { envelopeDaMensagem } from "../projections/consumidor";
 import { classificarFrescor, type ViagemProjetada } from "../projections/operacao-viva";
 import { instanteConfiavel, relogioEfetivo } from "../contracts/relogio";
 import { TIPOS_DA_OPERACAO_VIVA } from "../runtime/handler-operacao-viva";
-import { PORTA_DE_REALIDADE_VERSION, type AparelhoReal, type UltimoLote, type RealidadeDeEntregas, type ViagensDeUmModo } from "./realidade-de-entregas";
+import { PORTA_DE_REALIDADE_VERSION, type AparelhoReal, type UltimoLote, type RealidadeDeEntregas } from "./realidade-de-entregas";
 import type { SqlRow, TransactionalSqlClient } from "../persistence/sql-client";
+/**
+ * Presentation-only contract. A compact trip preserves fact COUNT but not
+ * the forensic event-ID array. Canonical Q-016 replay remains untouched.
+ * Canonical RealidadeDeEntregas is assignable to this narrower type.
+ */
+export type ViagemParaApresentacao = Omit<ViagemProjetada,"eventos"> & {
+  readonly eventos: Readonly<{ length: number }>;
+};
+export type RealidadeParaApresentacao = Omit<RealidadeDeEntregas,"projecoes"> & {
+  readonly projecoes: readonly {
+    readonly unit_id: string;
+    readonly source_mode: SourceMode;
+    readonly viagens: readonly ViagemParaApresentacao[];
+  }[];
+};
 const mode=(v:unknown):SourceMode|null=>typeof v==="string"&&SOURCE_MODES.includes(v as SourceMode)?v as SourceMode:null;
 const iso=(v:unknown):string|null=>v===null||v===undefined?null:(v instanceof Date?v:new Date(String(v))).toISOString();
 
-function semIds(n:number):readonly string[]{
+function semIds(n:number):Readonly<{length:number}>{
   return new Proxy({length:n},{
     get(t,p){if(p==="length")return t.length;throw Error("VM acessou ID forense "+String(p))},
     ownKeys(){throw Error("VM enumerou IDs forenses")}
-  }) as unknown as readonly string[];
+  });
 }
 function toIso(v:unknown):string{
   const d=v instanceof Date?v:new Date(String(v));
@@ -86,7 +101,8 @@ class CompactTrip {
     this.source_mode=e.source_mode;
   }
   accept(e:EventEnvelope){
-    assert.deepEqual([e.unit_id,e.source_mode,e.trip_id],[this.unit_id,this.source_mode,this.trip_id]);
+    if(e.unit_id!==this.unit_id||e.source_mode!==this.source_mode||e.trip_id!==this.trip_id)
+      throw Error("Q026_COMPACT_TRIP_SCOPE_MISMATCH");
     const next=NEXT[e.event_type];
     if(next&&RANK[next]>RANK[this.estado])this.estado=next as ViagemProjetada["estado"];
     const t=Date.parse(e.occurred_at);
@@ -105,7 +121,7 @@ class CompactTrip {
     if(e.event_type==="occurrence_created")this.ocorrencias_abertas++;
     this.fatos++;
   }
-  result(agora:Date):ViagemProjetada{
+  result(agora:Date):ViagemParaApresentacao{
     assert.ok(this.fatos>0&&this.ultimo_fato_em);
     return {
       trip_id:this.trip_id,unit_id:this.unit_id,estado:this.estado,
@@ -118,10 +134,10 @@ class CompactTrip {
 }
 
 
-export async function lerRealidadeDeEntregasIncremental(cliente: TransactionalSqlClient, opcoes: { agora: Date; unit_id?: string }): Promise<RealidadeDeEntregas> {
+export async function lerRealidadeDeEntregasIncremental(cliente: TransactionalSqlClient, opcoes: { agora: Date; unit_id?: string }): Promise<RealidadeParaApresentacao> {
   const agora=opcoes.agora;
   let unknown=0,invalid=0,maxBatch=0,fetches=0,seen=0;
-  const scopes=new Map<string,{unit_id:string;source_mode:SourceMode;viagens:ViagemProjetada[]}>();
+  const scopes=new Map<string,{unit_id:string;source_mode:SourceMode;viagens:ViagemParaApresentacao[]}>();
   const txDevices:{lines:SqlRow[];latest:SqlRow[];counts:SqlRow[]}={lines:[],latest:[],counts:[]};
   const start=performance.now();
   await cliente.transaction(async tx=>{
@@ -134,7 +150,8 @@ export async function lerRealidadeDeEntregasIncremental(cliente: TransactionalSq
       "FROM platform.event_log WHERE event_type IN ("+list+")",
       "ORDER BY unit_id,source_mode NULLS LAST,object_type,object_id"
     ].join(" "));
-    let acc:CompactTrip|null=null,active:string|null=null;
+    let acc:CompactTrip|null=null;
+    let ultimoUnit:string|null=null,ultimoMode:SourceMode|null=null;
     const flush=()=>{
       if(!acc)return;
       const item=acc.result(agora);
@@ -153,12 +170,17 @@ export async function lerRealidadeDeEntregasIncremental(cliente: TransactionalSq
         const e=fromRow(row);
         if(!e){invalid++;continue}
         seen++;
-        const scope=JSON.stringify([e.unit_id,e.source_mode]);
-        if(!scopes.has(scope))scopes.set(scope,{unit_id:e.unit_id,source_mode:e.source_mode,viagens:[]});
+        // SQL cursor sorts by unit and mode, so build the Map key only
+        // when the scope changes, not for every one of 1M GPS events.
+        if(e.unit_id!==ultimoUnit||e.source_mode!==ultimoMode){
+          const scope=JSON.stringify([e.unit_id,e.source_mode]);
+          if(!scopes.has(scope))scopes.set(scope,{unit_id:e.unit_id,source_mode:e.source_mode,viagens:[]});
+          ultimoUnit=e.unit_id;ultimoMode=e.source_mode;
+        }
         if(!e.trip_id)continue;
-        const key=JSON.stringify([e.unit_id,e.source_mode,e.trip_id]);
-        if(active!==null&&active!==key)flush();
-        active=key;
+        // Avoid per-event JSON arrays + deepEqual allocation. This still
+        // rejects an unexpected cross-trip row and keeps one-trip reducer.
+        if(acc&&(acc.unit_id!==e.unit_id||acc.source_mode!==e.source_mode||acc.trip_id!==e.trip_id))flush();
         if(!acc)acc=new CompactTrip(e);
         acc.accept(e);
       }
@@ -221,12 +243,12 @@ export async function lerRealidadeDeEntregasIncremental(cliente: TransactionalSq
       ultimo_lote:latestBy.get(String(l.device_id))??null
     }));
 
-  const reality:RealidadeDeEntregas={
+  const reality:RealidadeParaApresentacao={
     versao:PORTA_DE_REALIDADE_VERSION,fonte:"postgresql",lida_em:agora.toISOString(),
     aparelhos:appliances,historico_sem_modo:unknown,
     projecoes:[...scopes.values()].filter(x=>!opcoes.unit_id||x.unit_id===opcoes.unit_id)
       .sort((a,b)=>(a.unit_id+"|"+a.source_mode).localeCompare(b.unit_id+"|"+b.source_mode))
-      .map(p=>({...p,viagens:p.viagens.sort((a,b)=>a.trip_id.localeCompare(b.trip_id))})) as ViagensDeUmModo[]
+      .map(p=>({...p,viagens:p.viagens.sort((a,b)=>a.trip_id.localeCompare(b.trip_id))}))
   };
   return reality;
 }
