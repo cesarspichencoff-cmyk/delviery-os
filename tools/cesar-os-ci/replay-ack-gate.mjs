@@ -7,17 +7,26 @@ const assert=(v,e)=>{if(!v)throw Error(e);};
 
 export async function commitAfterReceipts(plan,{intents,receiptFor,store}={}){
   assert(plan?.schema==='cesar-os-ci-replay-plan-v1'&&plan.source_id===SOURCE&&
-    Array.isArray(plan.new_archive_paths)&&Array.isArray(intents)&&
+    Array.isArray(plan.new_archive_paths)&&Array.isArray(plan.new_archive_entries)&&Array.isArray(intents)&&
     Number.isSafeInteger(plan.expected_previous_revision)&&
     plan.cursor?.revision===plan.expected_previous_revision+1&&
     typeof receiptFor==='function'&&store?.compareAndSwap,
     'receipt_gate_contract_invalid');
   const expected=new Set(plan.new_archive_paths);
+  const manifest=new Map(plan.new_archive_entries.map(x=>[x.archive_path,x]));
+  assert(expected.size===plan.new_archive_paths.length&&manifest.size===expected.size&&
+    plan.new_archive_entries.length===expected.size&&
+    plan.new_archive_entries.every(x=>expected.has(x.archive_path)&&
+      /^[a-f0-9]{64}$/.test(x.snapshot_sha256)&&
+      Number.isSafeInteger(x.record_count)&&x.record_count>=0&&x.record_count<=100),
+    'receipt_gate_archive_manifest_invalid');
   const assigned=new Map();
   for(const item of intents){
     assert(item&&expected.has(item.archive_path)&&!assigned.has(item.archive_path)&&
       item.source_id===SOURCE&&typeof item.batch_id==='string'&&BATCH.test(item.batch_id)&&
-      Number.isSafeInteger(item.items_expected)&&item.items_expected>=0&&item.items_expected<=100,
+      Number.isSafeInteger(item.items_expected)&&item.items_expected>=0&&item.items_expected<=100&&
+      item.items_expected===manifest.get(item.archive_path)?.record_count&&
+      item.snapshot_sha256===manifest.get(item.archive_path)?.snapshot_sha256,
       'receipt_gate_intent_invalid');
     assigned.set(item.archive_path,item);
   }
@@ -31,6 +40,7 @@ export async function commitAfterReceipts(plan,{intents,receiptFor,store}={}){
       receipt.status==='PROCESSED'&&RECEIPT.test(receipt.receipt_id||'')&&
       receipt.external_effect_authorized===false&&
       receipt.items_seen===intent.items_expected&&
+      receipt.snapshot_sha256===intent.snapshot_sha256&&
       Number.isSafeInteger(receipt.items_new)&&receipt.items_new>=0&&
       Number.isSafeInteger(receipt.items_deduped)&&receipt.items_deduped>=0&&
       receipt.items_new+receipt.items_deduped===receipt.items_seen&&
