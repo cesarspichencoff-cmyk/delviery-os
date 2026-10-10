@@ -29,6 +29,7 @@ type ShadowItem={
  targets:Array<{printer_code:string;printer_name:string}>;
  classification:{family:string;station:string|null;review_required:boolean};
  classification_source:string;
+ observations?:Array<{source_field:string;value:string}>;
 };
 export interface LiveShadowDecisionV68 {
  schema:string;ready:boolean;blocking_reasons:string[];
@@ -36,6 +37,8 @@ export interface LiveShadowDecisionV68 {
  ifood_sequence:string;teknisa_sequence:string;fingerprint:string;
  service:StableReaderEventV68["service_resolution"];
  items:ShadowItem[];
+ order_observations?:Array<{source_field:string;value:string}>;
+ observation_scan_complete?:boolean;
  packaging:{has_unknown:boolean;total_items:number}|null;
  kits:{status:string}|null;
  sequence:{shadow_candidate:string;binding_written:false}|null;
@@ -147,6 +150,72 @@ function inspectV2WatcherNotesV76(event:StableReaderEventV68):
 
 
 /**
+ * V7.9: The CAIXA-installed V2 consumer fingerprints 11 core fields, not the
+ * V1 9-field decision. Its order notes and per-item notes are part of the
+ * content being fingerprinted. Both formats use event.v1/decision.v1 schemas,
+ * so the V2 event observation marker selects the contract.
+ *
+ * This is NOT an authority claim. Any missing lineage/turn/proof still
+ * independently blocks operational preview.
+ */
+function inspectDecisionNotesFingerprintV79(
+ event:StableReaderEventV68,decision:LiveShadowDecisionV68,
+ note:{detected:boolean;reasons:string[];rows:WatcherNoteRowV76[]},
+):string[] {
+ const errors=new Set<string>();
+ if(!decision||!Array.isArray(decision.items)){
+   errors.add("SHADOW_DECISION_STRUCTURE_NO_ITEMS_V79");return [...errors];
+ }
+ const v2=note.detected;
+ if(v2){
+   if(note.reasons.length||decision.observation_scan_complete!==true||
+      !Array.isArray(decision.order_observations)||
+      decision.items.some(item=>!Array.isArray(item?.observations))){
+     errors.add("WATCHER_V2_DECISION_OBSERVATION_CONTRACT_INCOMPLETE");
+   }else{
+     const expectedOrder=note.rows.filter(r=>r.scope_hint==="order")
+       .map(r=>({source_field:r.source_field,value:r.value}));
+     const expectedItems=event.order.items.map((_,idx)=>
+       note.rows.filter(r=>r.scope_hint==="item"&&r.item_index===idx)
+         .map(r=>({source_field:r.source_field,value:r.value})));
+     const canon=(arr:Array<{source_field:string;value:string}>)=>
+       arr.map(row=>({source_field:row.source_field,value:row.value}));
+     if(JSON.stringify(canon(decision.order_observations??[]))!==
+        JSON.stringify(expectedOrder)||
+        decision.items.some((item,i)=>
+         JSON.stringify(canon(item.observations??[]))!==
+         JSON.stringify(expectedItems[i])))
+       errors.add("WATCHER_V2_OBSERVATIONS_NOT_IDENTICAL_IN_DECISION");
+   }
+ }else if(decision.order_observations!==undefined||
+          decision.observation_scan_complete!==undefined||
+          decision.items.some(item=>item.observations!==undefined)){
+   errors.add("LEGACY_WATCHER_V1_DECISION_HAS_UNPROVEN_V2_OBSERVATIONS");
+ }
+ if(!hex64(decision.fingerprint)){
+   errors.add("SHADOW_DECISION_FINGERPRINT_INVALID");
+ }else{
+   const core:Record<string,unknown>={
+     order_key:decision.order_key,snapshot_hash:decision.snapshot_hash,
+     ifood_sequence:decision.ifood_sequence,
+     teknisa_sequence:decision.teknisa_sequence,
+     service:decision.service,items:decision.items,
+   };
+   if(v2){
+     core.order_observations=decision.order_observations;
+     core.observation_scan_complete=decision.observation_scan_complete;
+   }
+   core.packaging=decision.packaging;
+   core.kits=decision.kits;
+   core.sequence=decision.sequence;
+   const expected=createHash("sha256").update(JSON.stringify(core)).digest("hex");
+   if(expected!==decision.fingerprint)
+     errors.add("SHADOW_DECISION_CONTENT_FINGERPRINT_MISMATCH");
+ }
+ return [...errors];
+}
+
+/**
  * V7.7: Prepare a scoped human review WITHOUT exporting a customer's
  * DSOBSCOMANDA text or granting print/semantic-readiness privileges.
  * This is the missing proof workflow, not a text classifier.
@@ -196,14 +265,12 @@ export function prepareOrderNoteReviewPacketV77(
  const note=event?inspectV2WatcherNotesV76(event):null;
  if(!note?.detected||note.reasons.length)
    errors.add("NOTE_REVIEW_WATCHER_V2_SOURCE_HASH_NOT_VERIFIED");
- if(!hex64(decision?.fingerprint))errors.add("NOTE_REVIEW_DECISION_FINGERPRINT_INVALID");
- else {
-   const core={order_key:decision.order_key,snapshot_hash:decision.snapshot_hash,
-     ifood_sequence:decision.ifood_sequence,teknisa_sequence:decision.teknisa_sequence,
-     service:decision.service,items:decision.items,packaging:decision.packaging,
-     kits:decision.kits,sequence:decision.sequence};
-   const digest=createHash("sha256").update(JSON.stringify(core)).digest("hex");
-   if(digest!==decision.fingerprint)errors.add("NOTE_REVIEW_DECISION_FINGERPRINT_CHANGED");
+ for(const reason of inspectDecisionNotesFingerprintV79(event,decision,
+   note??{detected:false,reasons:[],rows:[]})){
+   if(reason==="SHADOW_DECISION_CONTENT_FINGERPRINT_MISMATCH"||
+      reason==="SHADOW_DECISION_FINGERPRINT_INVALID")
+      errors.add("NOTE_REVIEW_DECISION_FINGERPRINT_CHANGED");
+   else errors.add(reason);
  }
  if(errors.size)return blocked();
  const general=note!.rows.filter(r=>r.scope_hint==="order");
@@ -345,15 +412,8 @@ export function verifyLiveReaderPairV68(
  if(!decision.sequence||decision.sequence.binding_written!==false||
     !/^\d{3}$/.test(clean(decision.sequence.shadow_candidate)))
     reasons.add("SHADOW_SEQUENCE_NOT_READ_ONLY");
- if(!hex64(decision.fingerprint))reasons.add("SHADOW_DECISION_FINGERPRINT_INVALID");
- else {
-   const core={order_key:decision.order_key,snapshot_hash:decision.snapshot_hash,
-     ifood_sequence:decision.ifood_sequence,teknisa_sequence:decision.teknisa_sequence,
-     service:decision.service,items:decision.items,packaging:decision.packaging,
-     kits:decision.kits,sequence:decision.sequence};
-   const sha=createHash("sha256").update(JSON.stringify(core)).digest("hex");
-   if(sha!==decision.fingerprint)reasons.add("SHADOW_DECISION_CONTENT_FINGERPRINT_MISMATCH");
- }
+ for(const reason of inspectDecisionNotesFingerprintV79(event,decision,v2Notes))
+    reasons.add(reason);
  if(!event.order.items.length||event.order.items.length!==decision.items.length)
     reasons.add("STABLE_EVENT_DECISION_ITEM_COUNT_MISMATCH");
  const out:ReadinessV68["items"]=[],ids=new Set<string>(),positions=new Set<number>();
