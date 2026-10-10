@@ -42,6 +42,8 @@ jobs:
         run: node tools/verificar_coerencia_tres_vias_v64.js
       - name: Reconciled reader ingress and pinned Unified Kit Core V6.6 (offline)
         run: node tools/verificar_ingresso_leitor_v66.js
+      - name: Single reviewed future candidate and operational HOLD V7.16
+        run: node tools/verificar_release_hold_v716.js
       - name: Consumed-rule bytes and engine mutation guard V7.14 (offline only)
         run: node tools/verificar_identidade_bytes_v714.js
       - name: No self-declared human bag or kit approval V7.13 (offline only)
