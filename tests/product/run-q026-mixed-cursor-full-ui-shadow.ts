@@ -186,16 +186,34 @@ void(async()=>{
     ok("view model inteiro igual em quatro filtros, sem IDs individuais");
     assert.equal(shadow.projecoes.reduce((n,p)=>n+p.viagens.reduce((m,v)=>m+v.eventos.length,0),0),N);
     assert.equal(shadow.historico_sem_modo,1);
-    // Guard adversarial: remover o escopo que so tem evento DEVICE deve
-    // mudar a saida da tela (modos, unidade ou lista de escopos).
+    // Contraexemplo: o replay possui um escopo com fato DEVICE, mas sem viagem.
+    // Preservar esse escopo e exigencia do CONTRATO de leitura, mesmo quando
+    // a UI atual nao tem campo para ele. Nao usar a UI como prova dessa lacuna.
     const empty=shadow.projecoes.find(p=>p.viagens.length===0);
-    assert.ok(empty,"fixture deve testar um escopo valido sem nenhuma viagem");
+    assert.ok(empty,"fixture deve conter escopo valido sem viagem");
     const withoutEmpty={...shadow,projecoes:shadow.projecoes.filter(p=>p!==empty)};
+    const signature=(r:RealidadeDeEntregas)=>r.projecoes.map(p=>[p.unit_id,p.source_mode,p.viagens.length]);
+    assert.notDeepEqual(signature(withoutEmpty),signature(original),
+      "sem modo apenas de DEVICE passou despercebido pelo contrato");
     const vmWithEmpty=entregasVM(snap,agora.toISOString(),null,{disponivel:true,realidade:shadow});
     const vmWithoutEmpty=entregasVM(snap,agora.toISOString(),null,{disponivel:true,realidade:withoutEmpty});
-    assert.notEqual(JSON.stringify(vmWithEmpty),JSON.stringify(vmWithoutEmpty),
-      "sentinela cega: descartar escopo sem viagem nao mudou o resultado");
-    ok("controle negativo: eliminar escopo sem trip altera modelo completo");
+    const uiObserva=JSON.stringify(vmWithEmpty)!==JSON.stringify(vmWithoutEmpty);
+    ok("controle negativo: retirar escopo sem trip viola CONTRATO; UI percebe="+uiObserva);
+    // Controle de mutacao da propria UI: mudar contagem de uma viagem TEM que
+    // afetar o modelo da tela (nao aceitar igualdade cega).
+    const firstScope=shadow.projecoes.find(p=>p.viagens.length>0)!;
+    const withFalseCount:RealidadeDeEntregas={
+      ...shadow,
+      projecoes:shadow.projecoes.map(p=>p!==firstScope?p:{
+        ...p,viagens:p.viagens.map((v,i)=>i===0?{
+          ...v,eventos:semIds(v.eventos.length+1)
+        }:v)
+      })
+    };
+    const mutatedVm=entregasVM(snap,agora.toISOString(),null,{disponivel:true,realidade:withFalseCount});
+    assert.notEqual(JSON.stringify(mutatedVm),JSON.stringify(vmWithEmpty),
+      "sentinela cega: um fato a mais nao altera a UI");
+    ok("controle negativo de UI: contagem +1 altera a apresentacao");
     assert.ok(maxGroup>1);
     ok("contabilidade integral sem inventar T-BAD");
     console.log("Q026_MIXED_CURSOR_FULL_UI_PASS "+JSON.stringify({
