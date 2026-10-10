@@ -102,6 +102,13 @@ export function classifySushiHotPreparationsV49(
       continue;
     }
     const kinds=kindsFromName(item.product_name);
+    // SKIN is a Sushi Quente product candidate, but no human-confirmed
+    // separate kitchen preparation or per-portion factor exists in this scope.
+    // Make the gap explicit: never turn absence of a rule into zero demand.
+    if(new Set(norm(item.product_name).split(" ")).has("SKIN") &&
+       item.current_praca_proof==="CURRENT_MOTOR_PROVEN" &&
+       norm(item.current_praca)==="ENROLADOS QUENTES")
+      issues.add("SKIN_KITCHEN_DEPENDENCY_UNPROVEN:"+item.item_index);
     if(kinds.length===0)continue;
     const exact=byName.get(norm(item.product_name))??[];
     if(exact.length>1)issues.add("AMBIGUOUS_CATALOGUE_IDENTITY:"+item.item_index);
