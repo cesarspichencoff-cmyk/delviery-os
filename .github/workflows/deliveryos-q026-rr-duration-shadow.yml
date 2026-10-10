@@ -1,0 +1,74 @@
+name: deliveryos-q026-rr-duration-shadow
+on:
+  push:
+    branches:
+      - research/deliveryos-q026-rr-duration-shadow-20261010
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  duration-under-append:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        n: [20000, 120000]
+    services:
+      postgres:
+        image: public.ecr.aws/docker/library/postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
+      Q026_DURATION_N: ${{ matrix.n }}
+      Q026_DURATION_RESULT: q026-duration-${{ matrix.n }}.json
+      NODE_OPTIONS: --expose-gc
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Typecheck independent benchmark and complete project
+        run: |
+          npx tsc --noEmit
+          npx tsc --noEmit --target ES2022 --module commonjs --moduleResolution node --strict --esModuleInterop --skipLibCheck --types node tests/product/run-q026-rr-duration-shadow.ts
+      - name: Measure full RR transaction including concurrent commit + MVCC horizon
+        run: npx tsx tests/product/run-q026-rr-duration-shadow.ts
+      - uses: actions/upload-artifact@v4
+        with:
+          name: q026-rr-duration-${{ matrix.n }}
+          path: ${{ env.Q026_DURATION_RESULT }}
+          if-no-files-found: error
+
+  validate-paired-evidence:
+    needs: duration-under-append
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: q026-rr-duration-*
+          path: evidence
+          merge-multiple: true
+      - name: Both sizes, 12 samples, 14 concurrent commits and released xmin
+        run: |
+          node - <<'JS'
+          const fs=require('node:fs');
+          for(const n of [20000,120000]){
+            const f=JSON.parse(fs.readFileSync('evidence/q026-duration-'+n+'.json','utf8'));
+            if(f.N!==n||f.measured!==12||f.results.length!==12||f.committed_append_events!==14||
+               !f.all_reads_snapshot_consistent||!f.backend_xmin_released_each_read)
+              throw Error('Missing proof '+n);
+            if(f.results.some(r=>r.events<n||r.wall_ms<=0||r.xmin_age_ms<=0||r.snapshot_upper_ms<r.xmin_age_ms||r.writer_ms<=0))
+              throw Error('Invalid timings/snapshot '+n);
+            console.log('Q026_RR_DURATION_PAIRED_EVIDENCE_PASS',JSON.stringify({
+              n,measured:f.measured,wall_ms:f.wall_ms,xmin_age_ms:f.xmin_age_ms,snapshot_upper_ms:f.snapshot_upper_ms,
+              writer_ms:f.writer_ms,query_ms:f.event_query_ms,
+              boundary:'synthetic isolated PostgreSQL; sample quantiles not production SLOs'
+            }));
+          }
+          JS
