@@ -96,6 +96,19 @@ $out.checkpoint = [ordered]@{
   incompatible = Test-CheckpointCompatible 'x "deliveryos.tata-reader-continuous-checkpoint.v2" y' "deliveryos.tata-reader-continuous-checkpoint.v1"
   none_yet = Test-CheckpointCompatible "x" ""
 }
+# Contract of the installed consumer: fail closed on missing observation proof
+# and on the known snapshot hash drift of the private V2 candidate.
+$consumerRequires = 'observation_scan_complete observation_rows OBSERVATION_SOURCE_NOT_PROVEN_COMPLETE'
+$installedBasis = '$hashBasis Hash-Text ($hashBasis'
+$old = '$hash=Hash-Text ($basis|ConvertTo-Json) truth=$truth'
+$fields = 'DSOBSDESCIT DSOBSPEDDIGCMD TXPRODCOMVEN observation_scan_complete observation_rows join_proven'
+$out.observation_contract = [ordered]@{
+  missing = Test-CandidateObservationContract $old $consumerRequires $installedBasis
+  hash_drift = Test-CandidateObservationContract ($old + ' ' + $fields) $consumerRequires $installedBasis
+  static_present = Test-CandidateObservationContract ('$hashBasis ' + $fields) $consumerRequires $installedBasis
+  unknown_consumer = Test-CandidateObservationContract ('$hashBasis ' + $fields) 'unknown' $installedBasis
+}
+
 $L = Get-Layout "C:\ProgramData\TataComandaReader"
 $out.layout = $L
 $out.config_windows = New-SupervisorConfig $L ("ab" * 32) "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" 20
