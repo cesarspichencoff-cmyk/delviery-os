@@ -14,9 +14,10 @@ const snapshot={schema:'cesar-os-github-public-ci-snapshot-v1',source_id:SOURCE,
 const path='ci-snapshots/deliveryos/archive/2026/10/10/20261010T210000000Z.json';
 const plan=planReplay([{path,snapshot}],{start:started,end:generated,now:new Date('2026-10-11T00:00:00.000Z')});
 const batch='publicci_2026101021_abcdef12';
-const intents=[{archive_path:path,source_id:SOURCE,batch_id:batch,items_expected:1,snapshot_sha256:plan.new_archive_entries[0].snapshot_sha256}];
+const intents=[{archive_path:path,source_id:SOURCE,batch_id:batch,items_expected:1,snapshot_sha256:plan.new_archive_entries[0].snapshot_sha256,git_blob_sha:plan.new_archive_entries[0].git_blob_sha}];
 const receipt={schema:'cesar-os-work-batch-receipt-read-v2',source_id:SOURCE,batch_id:batch,
  archive_path:path,archive_verification:'TRUSTED_SOURCE_REVALIDATED_AT_INGEST',
+ git_blob_sha:plan.new_archive_entries[0].git_blob_sha,
  status:'PROCESSED',receipt_id:'sir_'+'a'.repeat(20),snapshot_sha256:plan.new_archive_entries[0].snapshot_sha256,items_seen:1,items_new:1,
  items_deduped:0,coverage_status:'BOUNDED_OBSERVED',external_effect_authorized:false};
 
@@ -101,5 +102,19 @@ test('v2 without trusted-at-ingest verification is insufficient',async()=>{
  const store=memoryCursorStore();
  await assert.rejects(commitAfterReceipts(plan,{intents,store,
    receiptFor:async()=>({...receipt,archive_verification:'CLIENT_SUPPLIED'})}),/receipt_gate_not_acked/);
+ assert.equal((await store.load()).revision,0);
+});
+
+test('future receipt with mismatched Git blob identity cannot advance cursor',async()=>{
+ const store=memoryCursorStore();
+ await assert.rejects(commitAfterReceipts(plan,{intents,store,
+   receiptFor:async()=>({...receipt,git_blob_sha:'f'.repeat(40)})}),/receipt_gate_not_acked/);
+ assert.equal((await store.load()).revision,0);
+});
+test('caller cannot swap the Git blob identifier from the discovered file',async()=>{
+ const store=memoryCursorStore(),bad=[{...intents[0],git_blob_sha:'f'.repeat(40)}];let queried=0;
+ await assert.rejects(commitAfterReceipts(plan,{intents:bad,store,
+  receiptFor:async()=>{queried++;return receipt;}}),/receipt_gate_intent_invalid/);
+ assert.equal(queried,0);
  assert.equal((await store.load()).revision,0);
 });
