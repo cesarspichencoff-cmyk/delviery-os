@@ -21,6 +21,7 @@ const stamp=(date)=>{
   return Date.parse(date);
 };
 const digest=x=>createHash('sha256').update(JSON.stringify(x)).digest('hex');
+export const gitBlobSha=bytes=>createHash('sha1').update('blob '+bytes.length+'\0').update(bytes).digest('hex');
 const pathForDay=date=>'ci-snapshots/deliveryos/archive/'+date.slice(0,4)+'/'+date.slice(5,7)+'/'+date.slice(8,10);
 const API='https://api.github.com/repos/'+REPO;
 
@@ -156,6 +157,7 @@ export async function discoverArchiveEvidence(token,{start,end,now=new Date(),fe
       response.value.content.length<=140000,'archive_content_invalid');
     const bytes=Buffer.from(response.value.content.replace(/\s/g,''),'base64');
     assert(bytes.length<=100000,'archive_content_oversized');
+    assert(gitBlobSha(bytes)===item.sha,'archive_blob_sha_mismatch');
     let snapshot;
     try{snapshot=JSON.parse(bytes.toString('utf8'));}catch{throw Error('archive_json_invalid');}
     validateArchive(snapshot,item.path);
