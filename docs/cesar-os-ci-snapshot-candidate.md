@@ -10,7 +10,7 @@ human commitments or proof of deployment health.
 
 ## Intended operation after separate review
 - Workflow: `.github/workflows/cesar-os-public-ci-snapshot.yml`.
-- Trigger: hourly at minute 17, or an authorized manual dispatch, on the default branch only.
+- Trigger: MANUAL `workflow_dispatch` only, on the default branch. There is NO Cron in this PR. A future separate reviewed change may introduce hourly scheduling.
 - Job identity: exact owner ID `292320191`, repository ID `1279837591`, `refs/heads/main`.
 - Permissions: `actions: read` and `contents: write`; all other token permissions are omitted.
 - Authentication: temporary GitHub Actions `GITHUB_TOKEN`; no PAT, OAuth secret, or third-party credentials.
@@ -29,8 +29,8 @@ node --test test/cesar-os-ci-snapshot.test.mjs
 ## Gates before activation
 1. Confirm a reviewed, protected default branch and appropriate repository workflow permissions. At preparation time `main` was **unprotected**.
 2. Review fixed-path writer and built-in token permissions. A workflow token can write beyond one path; the code restricts its own destination but GitHub does not supply a path-scoped `contents: write` permission.
-3. Approve/default-branch merge separately; no automatic feature-branch scheduling should be expected.
-4. Prove a **real** workflow run using the GitHub-hosted token and read back the fixed snapshot, including freshness, uniqueness, and 100-record limit.
+3. Approve/default-branch merge separately. The workflow MUST remain manual-only after merge; an hourly schedule requires another separately reviewed and authorized PR.
+4. After separate approval of the repository-wide `contents:write` scope, manually dispatch the workflow for the first real write; verify the resulting commit, fixed path, freshness, uniqueness and 100-record limit.
 5. Validate the consumer's exact repository identity, schema, age, and source-claim limitations; then an authorized, isolated read can be enabled.
 6. Only after an authenticated private-runtime ingestion receipt and D1 WORK readback should automated coverage be called active.
 7. Preserve other CÉSAR OS sources and existing Cloudflare Cron; make no billing changes.
@@ -42,3 +42,10 @@ node --test test/cesar-os-ci-snapshot.test.mjs
 **Publish-proof requirement:** the producer checks exact returned snapshot file path, blob SHA, commit SHA, and first-creation branch reference before declaring success. This verifies the API receipt shape, not cryptographic authenticity of public contents.
 
 **No scheduled snapshot feed or private ingestion has been proven.**
+
+## Additional no-write runtime proofs — 2026-10-10
+
+- [Read-only data probe #38061371153](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38061371153): GitHub-hosted runner collected 11 recent public runs using the ephemeral GITHUB_TOKEN; producer tests 12/12.
+- [Runner identity probe #38062209644](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38062209644): GitHub-hosted runner passed, matching repository ID 1279837591 and owner ID 292320191 with token present. The probe substituted only the expected main/default event values to exercise the verifier from the candidate branch; it is **not** a real main-branch or write authorization test.
+- Both temporary branch-only proof workflows were deleted from the candidate after testing; their historical run logs remain.
+- Real production snapshot emission, static-feed retrieval, and private D1 ingestion are **not** established.
