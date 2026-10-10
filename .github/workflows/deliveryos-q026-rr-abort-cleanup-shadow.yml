@@ -1,0 +1,34 @@
+name: deliveryos-q026-rr-abort-cleanup-shadow
+on:
+  push:
+    branches:
+      - research/deliveryos-q026-rr-abort-cleanup-shadow-20261010
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  rollback-and-cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: public.ecr.aws/docker/library/postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Typecheck project and shadow regression
+        run: |
+          npx tsc --noEmit
+          npx tsc --noEmit --target ES2022 --module commonjs --moduleResolution node --strict --esModuleInterop --skipLibCheck --types node tests/product/run-q026-rr-abort-cleanup-shadow.ts
+      - name: Prove rollback, xmin release, no partial data and safe pool reuse
+        run: npx tsx tests/product/run-q026-rr-abort-cleanup-shadow.ts
