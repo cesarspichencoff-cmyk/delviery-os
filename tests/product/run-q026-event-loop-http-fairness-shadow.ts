@@ -14,7 +14,7 @@ import { bancoIsolado } from "../../src/platform/banco-isolado";
 const admin=(process.env.DELIVERYOS_PG_URL??"").trim();
 if(!admin){console.error("Q026_EVENT_LOOP_PG_REQUIRED");process.exit(78)}
 const N=Number(process.env.Q026_EVENT_LOOP_EVENTS??20000);
-assert.ok([20000,120000].includes(N),"fixture constrained");
+assert.ok([20000,120000,300000].includes(N),"fixture constrained");
 const pause=(ms:number)=>new Promise<void>(r=>setTimeout(r,ms));
 type Response={status:number;body:any;wall_ms:number};
 function get(port:number,path:string):Promise<Response>{
