@@ -17,12 +17,12 @@ type Size="P"|"M"|"G";
 export interface MotorEntryV63 {
   source_item_index:number;
   quantity:number;
-  station_proof:"CURRENT_MOTOR_PROVEN"|"UNKNOWN";
-  product:{nome:string;classification:{station:string|null};[key:string]:unknown};
+  station_proof:"CURRENT_MOTOR_PROVEN"|"CURRENT_NON_PRODUCTION_FAMILY_PROVEN"|"UNKNOWN";
+  product:{nome:string;classification:{station:string|null;family?:string|null};[key:string]:unknown};
 }
 export interface MotorOutputV63 {
   groups:Array<{
-    kind:string; station?:string|null; box:string|null; boxes:number|null;status:string;
+    kind:string; category?:string|null; station?:string|null; box:string|null; boxes:number|null;status:string;
     products:Array<{name:string;quantity:number}>;complement_status?:string|null;
   }>;
   has_unknown:boolean; total_items:number;
@@ -81,8 +81,11 @@ export function bridgeCurrentPackagingV63(
     if(!original || !positive(entry.quantity) || entry.quantity!==original.quantity ||
        canon(entry.product?.nome)!==canon(original.product_name))
       issues.add("MOTOR_INPUT_DOES_NOT_MATCH_ORDER_SOURCE");
-    if(entry.station_proof!=="CURRENT_MOTOR_PROVEN" ||
-       !canon(entry.product?.classification?.station))issues.add("STATION_NOT_CURRENTLY_PROVEN");
+    const currentStation=entry.station_proof==="CURRENT_MOTOR_PROVEN" &&
+      !!canon(entry.product?.classification?.station);
+    const nonproduction=entry.station_proof==="CURRENT_NON_PRODUCTION_FAMILY_PROVEN" &&
+      ["BEBIDA","NAO_PRODUCAO"].includes(canon(entry.product?.classification?.family));
+    if(!currentStation&&!nonproduction)issues.add("STATION_NOT_CURRENTLY_PROVEN");
     enriched.set(entry.source_item_index,entry);
   }
   if(sources.some(s=>!seen.has(s.item_index)))issues.add("MOTOR_SOURCE_ITEM_MISSING");
@@ -113,12 +116,18 @@ export function bridgeCurrentPackagingV63(
       matched.push(match[0]);accounted.add(match[0].item_index);
     }
     if(matched.length!==group.products.length)continue;
+    if(group.kind==="sem_caixa" && group.boxes===0 && group.box===null) {
+      const category=canon(group.category);
+      if(group.status!=="PROVEN_OPERATIONAL_DOCUMENT" ||
+         !["BEBIDA","NAO_PRODUCAO"].includes(category) ||
+         matched.some(s=>canon(enriched.get(s.item_index)?.product.classification.family)!==category))
+        issues.add("NON_BOXED_CLASSIFICATION_NOT_PROVEN");
+      groups.push({kind:"sem_caixa",box:null,boxes:0,status:group.status,
+        products:group.products.map(x=>({name:x.name,quantity:x.quantity}))});
+      continue;
+    }
     if(matched.some(s=>canon(enriched.get(s.item_index)?.product.classification.station)!==
       canon(group.station)))issues.add("GROUP_STATION_MISMATCH");
-    if(group.kind==="sem_caixa" && group.boxes===0&&group.box===null){
-      // Not a physical box. V4.5 cannot yet resolve no-box lines in Conference.
-      issues.add("NON_BOXED_ITEMS_REQUIRE_CONFERENCE_ADAPTER");continue;
-    }
     if(!positive(group.boxes)||!group.box||!PROVEN.has(group.status)||
        group.complement_status==="UNKNOWN")issues.add("BOX_CAPACITY_OR_ALLOCATION_NOT_PROVEN");
     if(positive(group.boxes) && group.boxes>1 &&
