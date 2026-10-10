@@ -35,7 +35,7 @@ function fixture(){
  const decision={schema:"deliveryos.live-shadow-decision.v1",
   ready:true,blocking_reasons:[],order_key:event.order_key,
   snapshot_hash:event.snapshot_hash,ifood_sequence:"2841",teknisa_sequence:"0000123456",
-  service,items:source.map((s,i)=>({item_index:i+1,CDPRODUTO:s.internal,
+  service:deep(service),items:source.map((s,i)=>({item_index:i+1,CDPRODUTO:s.internal,
    canonical_code:s.canonical,product_name:s.name,quantity:s.quantity,
    routing_status:"ROUTED",
    targets:[{printer_code:"00009",printer_name:"BALCAOSUSHI1"}],
