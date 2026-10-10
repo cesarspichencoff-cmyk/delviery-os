@@ -23,7 +23,11 @@ const ticket=(boxes,unboxed=[])=>({
   order_id:"SYNTHETIC-NOT-REAL",
   identifiers:{ifood:"TEST-IF",teknisa:"TEST-TK",tata:"997",hour:"19:00"},
   revision:null,boxes,items_without_proven_box:unboxed,
-  bags:[],kits:[],accompaniments:[],warnings:[]
+  bags:[],kits:[],accompaniments:[],warnings:[],
+  // Layout-only synthetic fixture explicitly declares semantic status so
+  // V7.1 can distinguish source veto from physical-box proof rejection.
+  // This is NEVER the status of a real order or an operational authorization.
+  ready_for_semantic_preview:true
 });
 const sample=()=>ticket([box([
   product(0,1,"URAMAKI SKIN 8",["SEM CEBOLINHA"]),
