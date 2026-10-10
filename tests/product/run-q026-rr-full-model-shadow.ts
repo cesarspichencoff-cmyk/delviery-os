@@ -28,7 +28,8 @@ const APPENDS=30;
 const mode=(v:unknown):SourceMode|null=>typeof v==="string"&&SOURCE_MODES.includes(v as SourceMode)?v as SourceMode:null;
 const iso=(v:unknown):string|null=>v===null||v===undefined?null:(v instanceof Date?v:new Date(String(v))).toISOString();
 const N=6000;
-const LONG=120000;
+const LONG=Number(process.env.Q026_FULL_LONG??120000);
+assert.ok([120000,1030000].includes(LONG),"unsupported isolated fixture size");
 const TOTAL=N+LONG;
 let checks=0;
 function ok(t:string){checks++;console.log("  ok MIX"+checks+" "+t)}
@@ -432,6 +433,10 @@ void(async()=>{
     })),"ALL UI projection fields differ from Q016 canonical result");
 
 
+    // Control of reversed-order reducer is fully exercised at 120k.
+    // At 1.03M avoid another full sorter pass and redundant database read;
+    // exact fields/VM are still compared at million scale.
+    if(LONG<=120000){
     // Contraprova de ordem: em vez da ordem física do cursor anterior,
     // entregar a MESMA viagem longa em ordem cronológica INVERTIDA. Se o
     // redutor depender de arrival order, ultimo device/position/state muda.
@@ -474,6 +479,7 @@ void(async()=>{
     assert.notDeepEqual(strip({...inverted,device_id:"DISPOSITIVO-ERRADO"}),strip(referenceLong),
       "mutante de desempate do ultimo device nao foi detectado");
     ok("ordem cronologica inversa de 120k fatos + mutante device detectados");
+    } else console.log("Q026_MILLION_REVERSE_ORDER_SKIPPED: previously covered by 120k test");
 
     for(const unit of [null,"ITAIM","LAB-BANCADA","SEM-UNIDADE"]){
       const opts={unidade:unit};
@@ -517,6 +523,7 @@ void(async()=>{
     ok("contabilidade integral sem inventar T-BAD");
     console.log("Q026_RR_FULL_MODEL_PASS "+JSON.stringify({
       rr_transaction_ms:transactionMs,
+      size_class:LONG>300000?"million":"mixed-120k",
       rss_after_canonical_and_shadow_mib:+(process.memoryUsage().rss/1048576).toFixed(2),
       memory_note:"RSS is contaminated by the canonical baseline retained in this same process: NOT an A/B memory proof",
       checks,events:TOTAL,long_trip:LONG,writer_commits:writerCommits,
