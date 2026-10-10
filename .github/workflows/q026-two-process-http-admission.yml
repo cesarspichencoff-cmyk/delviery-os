@@ -1,0 +1,65 @@
+name: q026-two-process-http-admission
+on:
+  push:
+    branches:
+      - research/q026-two-process-http-admission-shadow-20261010
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  actual-two-worker-http:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    services:
+      postgres:
+        image: public.ecr.aws/docker/library/postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Typecheck actual Product worker test
+        run: |
+          npx tsc --noEmit
+          npx tsc --noEmit --target ES2022 --module commonjs --moduleResolution node --strict --esModuleInterop --skipLibCheck --types node tests/product/run-q026-two-os-processes-shadow.ts
+      - name: Exercise two independent OS process servers with PG lock
+        shell: bash
+        run: |
+          set -o pipefail
+          npx tsx tests/product/run-q026-two-os-processes-shadow.ts | tee q026-multiproc.out
+          grep '^Q026_TWO_OS_PROCESSES_HTTP_PASS ' q026-multiproc.out
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: q026-two-worker-log
+          path: q026-multiproc.out
+          if-no-files-found: warn
+  regressions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm run test:platform:q016
+      - run: npm run test:platform:product
+      - run: npm run test:platform:governanca
+      - name: Fail visibly when PG is missing
+        shell: bash
+        run: |
+          set +e
+          DELIVERYOS_PG_URL= npx tsx tests/product/run-q026-two-os-processes-shadow.ts
+          test "$?" = 78
