@@ -24,6 +24,7 @@ import { telaOperacaoViva } from "./surfaces/operacao-viva.js";
 import { telaConferenceBrain } from "./surfaces/conference-brain.js";
 import { telaCopiloto } from "./surfaces/copiloto.js";
 import { telaModuloFuturo } from "./surfaces/modulo-futuro.js";
+import { falhaDeLeituraHttp, mensagemDeSobrecarga } from "./http-leitura.js";
 
 const $ = (s) => document.querySelector(s);
 
@@ -43,7 +44,7 @@ const estado = {
 
 async function obter(caminho) {
   const r = await fetch(caminho, { headers: { accept: "application/json" } });
-  if (!r.ok) throw Object.assign(new Error(`${caminho} respondeu ${r.status}`), { status: r.status });
+  if (!r.ok) throw falhaDeLeituraHttp(r.status, r.headers.get("Retry-After"));
   return r.json();
 }
 
@@ -265,8 +266,13 @@ async function relerSemApagar(alvo) {
     delete rua.dataset.relendo;
     botoes.forEach((b) => b.removeAttribute("aria-disabled"));
     aviso.dataset.estado = "falhou";
-    const motivo = e && e.status ? `o servidor respondeu ${e.status}` : "sem resposta do servidor";
-    aviso.textContent = `Nao foi possivel ler de novo (${motivo}). Esta continua sendo a leitura das ${rua.dataset.lidaAs}, e segue envelhecendo.`;
+    const sobrecarga = mensagemDeSobrecarga(e, true);
+    if (sobrecarga) {
+      aviso.textContent = ` ${sobrecarga} Última leitura: ${rua.dataset.lidaAs}.`;
+    } else {
+      const motivo = e && e.status ? `o servidor respondeu ${e.status}` : "sem resposta do servidor";
+      aviso.textContent = `Nao foi possivel ler de novo (${motivo}). Esta continua sendo a leitura das ${rua.dataset.lidaAs}, e segue envelhecendo.`;
+    }
   } finally {
     if (geracao === estado.geracao) estado.relendo = false;
   }
@@ -330,11 +336,13 @@ async function desenhar(rota, opcoes = {}) {
     // Falha de leitura NAO vira tela vazia: vazio significaria "nao ha nada",
     // e o que houve foi "nao consegui perguntar".
     desenharMoldura(rota, null);
+    const sobrecarga = rota === "/entregas" ? mensagemDeSobrecarga(e, false) : null;
     alvo.innerHTML = estadoTela(
       "degradado",
       [{ estado: "erro_recuperavel" }],
-      "Nao foi possivel ler esta superficie",
-      `A leitura falhou (${e.message}). Isto NAO significa que nao ha nada — significa que nao foi possivel perguntar. Nada nesta tela representa o estado atual.`,
+      sobrecarga ? "Leitura temporariamente ocupada" : "Nao foi possivel ler esta superficie",
+      sobrecarga ??
+        `A leitura falhou (${e.message}). Isto NAO significa que nao ha nada — significa que nao foi possivel perguntar. Nada nesta tela representa o estado atual.`,
     );
   } finally {
     alvo.setAttribute("aria-busy", "false");
