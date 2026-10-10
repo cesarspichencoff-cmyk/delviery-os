@@ -53,15 +53,15 @@ Se continuar vantajoso, extrair um único decoder canônico e investigar leitura
 
 ## Adversários reais do PostgreSQL, 9/9 — CHECKPOINT ATUAL
 
-[GitHub Actions 38018421409](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38018421409), job \`paged-adversarial-mixed-modes\`, status **SUCCESS**. Suíte nova:
-\`tests/product/run-q026-paged-adversarial-shadow.ts\`.
+[GitHub Actions 38018421409](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38018421409), job `paged-adversarial-mixed-modes`, status **SUCCESS**. Suíte nova:
+`tests/product/run-q026-paged-adversarial-shadow.ts`.
 
-A suíte cria banco na versão anterior a \`0003\`, grava fato sem modo, aplica as migrations reais e preserva esse UNKNOWN (não faz backfill). Insere fatos sintéticos nos modos \`real\`, \`simulated\` e \`control\`, duas unidades, o mesmo trip_id em dois modos, sequência BIGINT ilegível, GPS sem trip_id, clock suspeito com \`received_at\` confiável, fechamento ocorrido ontem e recebido hoje, viagem só com GPS e segundo ciclo em aberto. Reutiliza \`envelopeDaMensagem\` em shadow e compara integralmente \`ViagemProjetada[]\` por 4 escopos contra \`lerFatosParaReplay\` e \`projetar\` existentes. Confirma também que a unicidade de \`idempotency_key\` é imposta no PostgreSQL, entre modos e unidades.
+A suíte cria banco na versão anterior a `0003`, grava fato sem modo, aplica as migrations reais e preserva esse UNKNOWN (não faz backfill). Insere fatos sintéticos nos modos `real`, `simulated` e `control`, duas unidades, o mesmo trip_id em dois modos, sequência BIGINT ilegível, GPS sem trip_id, clock suspeito com `received_at` confiável, fechamento ocorrido ontem e recebido hoje, viagem só com GPS e segundo ciclo em aberto. Reutiliza `envelopeDaMensagem` em shadow e compara integralmente `ViagemProjetada[]` por 4 escopos contra `lerFatosParaReplay` e `projetar` existentes. Confirma também que a unicidade de `idempotency_key` é imposta no PostgreSQL, entre modos e unidades.
 
 9 provas positivas/negativas:
 1. Histórico antigo sem modo permanece NULL.
-2. A porta Q-016 conta \`sem_modo=1\` e coloca sequência insegura em \`corrompidas\`.
-3. \`FETCH 3\` lê todos os fatos aptos, contando inválidos/UNKNOWN sem inventar modo.
+2. A porta Q-016 conta `sem_modo=1` e coloca sequência insegura em `corrompidas`.
+3. `FETCH 3` lê todos os fatos aptos, contando inválidos/UNKNOWN sem inventar modo.
 4. Viagens dos quatro escopos são idênticas à projeção canônica.
 5. Evento de fechamento atrasado não é cortado; GPS sem ciclo segue desconhecido.
 6. Relógio suspeito usa horário do servidor para frescor.
@@ -73,17 +73,17 @@ O sucesso do CI significa que o teste reconheceu essas limitações, **não** qu
 
 ## Cauda longa — teste que falsifica memória estritamente limitada
 
-[GitHub Actions 38018517394](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38018517394), job \`paged-long-trip-120k\`, **SUCCESS**. Arquivo novo:
-\`tests/product/run-q026-long-trip-shadow.ts\`.
+[GitHub Actions 38018517394](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38018517394), job `paged-long-trip-120k`, **SUCCESS**. Arquivo novo:
+`tests/product/run-q026-long-trip-shadow.ts`.
 
-Uma **única** viagem \`simulated\` com 120.000 eventos em PostgreSQL descartável é percorrida com \`FETCH FORWARD 4096\` (30 lotes). Os 120.000 envelopes são acumulados até o fim da viagem. A \`ViagemProjetada\` resultante contém todos os 120.000 \`eventos[]\` e é exatamente igual à viagem obtida pelo replay integral (\`assert.deepEqual\`).
+Uma **única** viagem `simulated` com 120.000 eventos em PostgreSQL descartável é percorrida com `FETCH FORWARD 4096` (30 lotes). Os 120.000 envelopes são acumulados até o fim da viagem. A `ViagemProjetada` resultante contém todos os 120.000 `eventos[]` e é exatamente igual à viagem obtida pelo replay integral (`assert.deepEqual`).
 
 Fatos medidos no percurso paginado:
-- \`fetch_size=4096\`, **\`max_group_events=120000\`** — a memória de **um grupo** não fica limitada ao tamanho do fetch.
+- `fetch_size=4096`, **`max_group_events=120000`** — a memória de **um grupo** não fica limitada ao tamanho do fetch.
 - RSS ~192,4 MiB antes da projeção e ~204,4 MiB depois; heap ~87,8→93,2 MiB. Números desta fixture/runner, não um teto global.
-- Preservar \`ViagemProjetada.eventos: readonly string[]\` exige ao menos O(eventos_da_viagem) identificadores de evidência na saída enquanto ela estiver materializada. Não existe algoritmo de memória O(1) para uma viagem arbitrariamente longa **sem mudar a representação/contrato**, emitir a resposta progressivamente ou descarregar parte do estado fora da RAM.
+- Preservar `ViagemProjetada.eventos: readonly string[]` exige ao menos O(eventos_da_viagem) identificadores de evidência na saída enquanto ela estiver materializada. Não existe algoritmo de memória O(1) para uma viagem arbitrariamente longa **sem mudar a representação/contrato**, emitir a resposta progressivamente ou descarregar parte do estado fora da RAM.
 
-**Conclusão honesta:** a versão paginada evita materializar o log inteiro com muitas viagens curtas, mas não demonstra memória estritamente limitada sob distribuição adversarial. A vista humana Entregas usa \`v.eventos.length\` para a contagem, em vez de expor todos os IDs, o que sugere uma separação de representação a estudar. Porém trocar \`eventos[]\` por contagem dentro de \`projetar()\` ou excluir eventos da cadeia canônica seria alteração de contrato não autorizada.
+**Conclusão honesta:** a versão paginada evita materializar o log inteiro com muitas viagens curtas, mas não demonstra memória estritamente limitada sob distribuição adversarial. A vista humana Entregas usa `v.eventos.length` para a contagem, em vez de expor todos os IDs, o que sugere uma separação de representação a estudar. Porém trocar `eventos[]` por contagem dentro de `projetar()` ou excluir eventos da cadeia canônica seria alteração de contrato não autorizada.
 
 ## Decisão técnica após esses testes
 
@@ -93,4 +93,4 @@ Fatos medidos no percurso paginado:
 - medir HTTP fim a fim e RSS em processos isolados, mais recuperação e erro;
 - obter a decisão humana Q-026 e revisão independente já reservada ao Claude.
 
-Não houve mudança no runtime, nas migrations, no HTTP ou na integração validada; \`main\`/produção/TATÁ Comanda permanecem intocados. Nenhum novo custo foi autorizado ou acionado.
+Não houve mudança no runtime, nas migrations, no HTTP ou na integração validada; `main`/produção/TATÁ Comanda permanecem intocados. Nenhum novo custo foi autorizado ou acionado.
