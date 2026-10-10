@@ -1,0 +1,28 @@
+name: deliveryos-q026-projection-experiment
+on:
+  push:
+    branches:
+      - experiment/deliveryos-q026-projection-cost-20261009
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  semantics-and-profile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: TypeScript sem emissao
+        run: npx tsc --noEmit
+      - name: equivalencia exata contra base d0716fd e tempo da projecao
+        run: npx tsx tests/product/run-q026-projection-append-equivalence-tests.ts
+      - name: regressao de viagens abertas, atrasos e modos
+        run: npx tsx tests/product/run-q026-window-shadow-tests.ts
+      - name: suite do Product System
+        run: npm run -s test:platform:product
