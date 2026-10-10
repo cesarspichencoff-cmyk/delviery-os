@@ -38,7 +38,9 @@ export async function commitAfterReceipts(plan,{intents,receiptFor,store}={}){
     if(manifest.get(path).record_count===0){empty_archives_verified++;continue;}
     const intent=assigned.get(path);
     const receipt=await receiptFor(intent.batch_id);
-    assert(receipt?.schema==='cesar-os-work-batch-receipt-read-v1'&&
+    assert(receipt?.schema==='cesar-os-work-batch-receipt-read-v2'&&
+      receipt.archive_path===path&&
+      receipt.archive_verification==='TRUSTED_SOURCE_REVALIDATED_AT_INGEST'&&
       receipt.source_id===SOURCE&&receipt.batch_id===intent.batch_id&&
       receipt.status==='PROCESSED'&&RECEIPT.test(receipt.receipt_id||'')&&
       receipt.external_effect_authorized===false&&
