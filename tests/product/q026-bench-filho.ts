@@ -24,7 +24,7 @@ interface Args {
   arvore: string;
   rotulo: string;
   fatos: number;
-  distribuicao: "chegada" | "embaralhada" | "viagem-unica";
+  distribuicao: "chegada" | "embaralhada" | "viagem-unica" | "longas-1000";
   repeticoes: number;
   /** projecao: "lista-inteira" (porta antiga) ou "particionada" (porta nova). */
   variante?: "lista-inteira" | "particionada";
@@ -47,6 +47,23 @@ function mb(bytes: number): number {
 }
 
 function logDaDistribuicao(): EventEnvelope[] {
+  if (a.distribuicao === "longas-1000") {
+    // A fixture do PR #31 (run-q026-http-pg-paired-benchmark.ts): viagens de
+    // 1.000 fatos seguidos, um escopo so, sem aparelho e sem sequencia, um fato
+    // a cada 0,1 s, todos recebidos no mesmo instante — como o envelope que
+    // `lerFatosParaReplay` reconstroi daquelas linhas.
+    const agora = PERFIL_LOJA.agora.getTime();
+    return Array.from({ length: a.fatos }, (_, i) => {
+      const g = i + 1;
+      const tipo = (g - 1) % 1000 === 0 ? "trip_started" : "gps_batch_received";
+      return {
+        event_id: `q026bench-${g}`, event_type: tipo, event_version: `${tipo}@1.0.0`, unit_id: "ITAIM",
+        trip_id: `Q026-T-${Math.floor((g - 1) / 1000)}`, occurred_at: new Date(agora - (a.fatos - g) * 100).toISOString(),
+        received_at: new Date(agora).toISOString(), clock_trust: "trusted", origin: "device", source_mode: "simulated",
+        idempotency_key: `q026bench-key-${g}`, payload: {},
+      } as EventEnvelope;
+    });
+  }
   if (a.distribuicao === "viagem-unica") {
     // O pior caso do PR #31: UMA viagem, N pontos.
     const agora = PERFIL_LOJA.agora.getTime();

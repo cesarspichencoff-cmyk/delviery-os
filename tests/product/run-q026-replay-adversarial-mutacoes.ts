@@ -30,8 +30,8 @@ const MUTANTES: Mutante[] = [
     id: "M2",
     propriedade: "desempate por codigo de caractere em vez de localeCompare",
     edicoes: [{
-      de: "    return eventos[x].event_id.localeCompare(eventos[y].event_id);\n",
-      para: "    return eventos[x].event_id < eventos[y].event_id ? -1 : eventos[x].event_id > eventos[y].event_id ? 1 : 0;\n",
+      de: "    return lista[x].event_id.localeCompare(lista[y].event_id);\n",
+      para: "    return lista[x].event_id < lista[y].event_id ? -1 : lista[x].event_id > lista[y].event_id ? 1 : 0;\n",
     }],
   },
   {
@@ -72,7 +72,7 @@ const MUTANTES: Mutante[] = [
   {
     id: "M8",
     propriedade: "mesmo instante, grafia diferente: a ULTIMA aplicada vence (>= em vez de >)",
-    edicoes: [{ de: "    } else if (instantes[k] > atual.ultimo_fato_ms) {\n", para: "    } else if (instantes[k] >= atual.ultimo_fato_ms) {\n" }],
+    edicoes: [{ de: "      if (novo > guardado) {\n", para: "      if (novo >= guardado) {\n" }],
   },
   {
     id: "M9",
@@ -83,14 +83,14 @@ const MUTANTES: Mutante[] = [
     id: "M10",
     propriedade: "cache velho: `ultimo_fato_ms` nao acompanha o texto",
     edicoes: [{
-      de: "    } else if (instantes[k] > atual.ultimo_fato_ms) {\n      atual.ultimo_fato_em = ev.occurred_at;\n      atual.ultimo_fato_ms = instantes[k];\n",
-      para: "    } else if (instantes[k] > atual.ultimo_fato_ms) {\n      atual.ultimo_fato_em = ev.occurred_at;\n",
+      de: "        atual.ultimo_fato_em = ev.occurred_at;\n        atual.ultimo_fato_ms = novo;\n",
+      para: "        atual.ultimo_fato_em = ev.occurred_at;\n",
     }],
   },
   {
     id: "M11",
     propriedade: "relogio sem autoridade: a posicao volta a usar o instante declarado no cache",
-    edicoes: [{ de: "      const t = instante === ev.occurred_at ? instantes[k] : Date.parse(instante);\n", para: "      const t = instantes[k];\n" }],
+    edicoes: [{ de: "      const t = instante === ev.occurred_at ? instanteDoFato(k) : Date.parse(instante);\n", para: "      const t = instanteDoFato(k);\n" }],
   },
   {
     id: "M12",
@@ -114,8 +114,8 @@ const MUTANTES: Mutante[] = [
     id: "M15",
     propriedade: "o caminho antigo filtra ANTES de ordenar (a guarda existe mas e inutil)",
     edicoes: [{
-      de: "    const ordenados = [...eventos]\n      .sort(compararEventos)\n      .filter((e) => e.unit_id === unit_id && e.source_mode === source_mode);\n",
-      para: "    const ordenados = eventos\n      .filter((e) => e.unit_id === unit_id && e.source_mode === source_mode)\n      .sort(compararEventos);\n",
+      de: "    const ordenados = [...lista]\n      .sort(compararEventos)\n      .filter((e) => e.unit_id === unit_id && e.source_mode === source_mode);\n",
+      para: "    const ordenados = lista\n      .filter((e) => e.unit_id === unit_id && e.source_mode === source_mode)\n      .sort(compararEventos);\n",
     }],
   },
   {
@@ -126,12 +126,42 @@ const MUTANTES: Mutante[] = [
   {
     id: "M17",
     propriedade: "a guarda esquece o id nao-texto (o caminho rapido lanca outro erro)",
-    edicoes: [{ de: "    if (!Number.isFinite(t) || typeof e.event_id !== \"string\") consistente = false;\n", para: "    if (!Number.isFinite(t)) consistente = false;\n" }],
+    edicoes: [{
+      de: "    if (e === null || e === undefined || typeof e.occurred_at !== \"string\" || typeof e.event_id !== \"string\") {\n",
+      para: "    if (e === null || e === undefined || typeof e.occurred_at !== \"string\") {\n",
+    }],
   },
   {
     id: "M18",
     propriedade: "a guarda esquece a sequencia nao-finita (NaN em outro escopo)",
-    edicoes: [{ de: "    if (typeof s === \"number\" && Number.isFinite(s)) sequencias[i] = s;\n    else consistente = false;\n", para: "    sequencias[i] = Number(s);\n" }],
+    edicoes: [{
+      de: "    if (!Number.isFinite(t) || typeof s !== \"number\" || !Number.isFinite(s)) {\n",
+      para: "    if (!Number.isFinite(t)) {\n",
+    }, { de: "    sequencias[i] = s;\n", para: "    sequencias[i] = Number(s);\n" }],
+  },
+  {
+    id: "M19",
+    propriedade: "iteravel que nao e array (Set) vira lista vazia em silencio",
+    edicoes: [{
+      de: "  const lista: readonly EventEnvelope[] = Array.isArray(eventos) ? eventos : [...(eventos as Iterable<EventEnvelope>)];\n",
+      para: "  const lista: readonly EventEnvelope[] = eventos;\n",
+    }],
+  },
+  {
+    id: "M20",
+    propriedade: "a guarda le instante que nao e texto com Date.parse (Symbol lanca onde nao lancava)",
+    edicoes: [{
+      de: "    if (e === null || e === undefined || typeof e.occurred_at !== \"string\" || typeof e.event_id !== \"string\") {\n",
+      para: "    if (e === null || e === undefined || typeof e.event_id !== \"string\") {\n",
+    }],
+  },
+  {
+    id: "M21",
+    propriedade: "o caminho antigo le todos os instantes de antemao",
+    edicoes: [{
+      de: "    return { ordenados, instantes: null };\n",
+      para: "    return { ordenados, instantes: Float64Array.from(ordenados, (e) => Date.parse(e.occurred_at)) };\n",
+    }],
   },
 ];
 

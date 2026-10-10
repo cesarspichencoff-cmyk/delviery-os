@@ -244,38 +244,49 @@ function compararEventos(a: EventEnvelope, b: EventEnvelope): number {
  *
  * A ingestão recusa `occurred_at` ilegível e o replay reconstrói o instante
  * com `toISOString()`: pelos caminhos canônicos, o caminho antigo não roda.
+ *
+ * O caminho antigo devolve `instantes: null`: o laço lê cada instante só onde a
+ * versão anterior o lia — nenhuma leitura antecipada pode lançar onde ela não
+ * lançava. E a guarda não chama `Date.parse` em instante que não seja texto.
  */
 function ordenarDoEscopo(
   eventos: readonly EventEnvelope[],
   unit_id: string,
   source_mode: SourceMode,
-): { ordenados: EventEnvelope[]; instantes: Float64Array } {
-  const n = eventos.length;
+): { ordenados: EventEnvelope[]; instantes: Float64Array | null } {
+  // A versão anterior espalhava a entrada (`[...eventos]`): um iterável que não
+  // é array (um Set, por exemplo) era projetado, e não pode virar lista vazia.
+  const lista: readonly EventEnvelope[] = Array.isArray(eventos) ? eventos : [...(eventos as Iterable<EventEnvelope>)];
+  const n = lista.length;
   const instantes = new Float64Array(n);
   const sequencias = new Float64Array(n);
   let consistente = true;
   for (let i = 0; i < n; i++) {
-    const e = eventos[i];
+    const e = lista[i] as EventEnvelope | null | undefined;
+    if (e === null || e === undefined || typeof e.occurred_at !== "string" || typeof e.event_id !== "string") {
+      consistente = false;
+      break;
+    }
     const t = Date.parse(e.occurred_at);
-    instantes[i] = t;
     const s: unknown = e.sequence ?? 0;
-    if (typeof s === "number" && Number.isFinite(s)) sequencias[i] = s;
-    else consistente = false;
-    if (!Number.isFinite(t) || typeof e.event_id !== "string") consistente = false;
+    if (!Number.isFinite(t) || typeof s !== "number" || !Number.isFinite(s)) {
+      consistente = false;
+      break;
+    }
+    instantes[i] = t;
+    sequencias[i] = s;
   }
 
   if (!consistente) {
-    const ordenados = [...eventos]
+    const ordenados = [...lista]
       .sort(compararEventos)
       .filter((e) => e.unit_id === unit_id && e.source_mode === source_mode);
-    const tOrd = new Float64Array(ordenados.length);
-    for (let k = 0; k < ordenados.length; k++) tOrd[k] = Date.parse(ordenados[k].occurred_at);
-    return { ordenados, instantes: tOrd };
+    return { ordenados, instantes: null };
   }
 
   const indices: number[] = [];
   for (let i = 0; i < n; i++) {
-    const e = eventos[i];
+    const e = lista[i];
     if (e.unit_id === unit_id && e.source_mode === source_mode) indices.push(i);
   }
   indices.sort((x, y) => {
@@ -283,12 +294,12 @@ function ordenarDoEscopo(
     if (ta !== 0) return ta;
     const sa = sequencias[x] - sequencias[y];
     if (sa !== 0) return sa;
-    return eventos[x].event_id.localeCompare(eventos[y].event_id);
+    return lista[x].event_id.localeCompare(lista[y].event_id);
   });
   const ordenados = new Array<EventEnvelope>(indices.length);
   const tOrd = new Float64Array(indices.length);
   for (let k = 0; k < indices.length; k++) {
-    ordenados[k] = eventos[indices[k]];
+    ordenados[k] = lista[indices[k]];
     tOrd[k] = instantes[indices[k]];
   }
   return { ordenados, instantes: tOrd };
@@ -300,6 +311,8 @@ function ordenarDoEscopo(
  *
  * `*_ms` guardam `Date.parse` do texto ao lado, para `maisRecente` não reler
  * o texto a cada fato. O texto é o que sai; o número é só cache dele.
+ * `ultimo_fato_ms` indefinido = ainda não lido (a versão anterior só lia o
+ * instante guardado quando havia um para comparar).
  */
 interface AcumuloDaViagem {
   trip_id: string;
@@ -307,7 +320,7 @@ interface AcumuloDaViagem {
   estado: EstadoViagem;
   device_id?: string;
   ultimo_fato_em: string;
-  ultimo_fato_ms: number;
+  ultimo_fato_ms: number | undefined;
   ocorrencias_abertas: number;
   source_mode: SourceMode;
   eventos: string[];
@@ -342,6 +355,9 @@ export function projetar(
   let majCoLido = false;
 
   const { ordenados, instantes } = ordenarDoEscopo(eventos, unit_id, source_mode);
+  // No caminho rápido o instante já foi lido; no antigo, é lido aqui, na hora
+  // em que a versão anterior o lia.
+  const instanteDoFato = (k: number): number => (instantes !== null ? instantes[k] : Date.parse(ordenados[k].occurred_at));
 
   for (let k = 0; k < ordenados.length; k++) {
     const ev = ordenados[k];
@@ -388,7 +404,7 @@ export function projetar(
         estado: "desconhecido",
         device_id: ev.device_id,
         ultimo_fato_em: ev.occurred_at,
-        ultimo_fato_ms: instantes[k],
+        ultimo_fato_ms: instantes !== null ? instantes[k] : undefined,
         ocorrencias_abertas: 0,
         source_mode: ev.source_mode,
         eventos: [],
@@ -411,7 +427,7 @@ export function projetar(
       // maisRecente(atual.ultima_posicao_em, instante), com o cache do texto
       // atual. Relógio confiável devolve o próprio `occurred_at`: o mesmo texto,
       // o mesmo instante já lido.
-      const t = instante === ev.occurred_at ? instantes[k] : Date.parse(instante);
+      const t = instante === ev.occurred_at ? instanteDoFato(k) : Date.parse(instante);
       if (!atual.ultima_posicao_em || t > atual.ultima_posicao_ms) {
         atual.ultima_posicao_em = instante;
         atual.ultima_posicao_ms = t;
@@ -420,13 +436,18 @@ export function projetar(
 
     atual.device_id = ev.device_id ?? atual.device_id;
 
-    // maisRecente(atual.ultimo_fato_em, ev.occurred_at) ?? ev.occurred_at
+    // maisRecente(atual.ultimo_fato_em, ev.occurred_at) ?? ev.occurred_at —
+    // a mesma ordem de leitura: o instante do fato, depois o guardado.
     if (!atual.ultimo_fato_em) {
       atual.ultimo_fato_em = ev.occurred_at;
-      atual.ultimo_fato_ms = instantes[k];
-    } else if (instantes[k] > atual.ultimo_fato_ms) {
-      atual.ultimo_fato_em = ev.occurred_at;
-      atual.ultimo_fato_ms = instantes[k];
+      atual.ultimo_fato_ms = undefined;
+    } else {
+      const novo = instanteDoFato(k);
+      const guardado = atual.ultimo_fato_ms ?? (atual.ultimo_fato_ms = Date.parse(atual.ultimo_fato_em));
+      if (novo > guardado) {
+        atual.ultimo_fato_em = ev.occurred_at;
+        atual.ultimo_fato_ms = novo;
+      }
     }
 
     atual.ocorrencias_abertas += ev.event_type === "occurrence_created" ? 1 : 0;

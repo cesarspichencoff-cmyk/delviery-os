@@ -246,6 +246,31 @@ export function cenarios(): Cenario[] {
     ev({ event_id: "u2", occurred_at: "2026-10-09T22:51:00.000Z" }),
   ]);
 
+  /* ---------------- EXOTICO ---------------- */
+  // Fora do tipo declarado (`readonly EventEnvelope[]`), mas a versao anterior
+  // tinha um comportamento para cada um destes — e a auditoria independente
+  // achou divergencias aqui. A projecao tem de reproduzi-lo, inclusive o erro.
+  const base3 = [
+    ev({ event_id: "x1", event_type: "trip_started", occurred_at: "2026-10-09T22:50:00.000Z" }),
+    ev({ event_id: "x2", occurred_at: "2026-10-09T22:51:00.000Z" }),
+    ev({ event_id: "x3", occurred_at: "2026-10-09T22:52:00.000Z", source_mode: "real" }),
+  ];
+  const exotico = (nome: string, eventos: unknown) =>
+    c.push({ familia: "EXOTICO", nome, eventos: congelar(eventos) as readonly EventEnvelope[], opcoes: opcoesDe(base3) });
+  exotico("Set no lugar da lista", new Set(base3.map((e) => ({ ...e }))));
+  exotico("objeto com length (nao iteravel)", { length: 1, 0: { ...base3[0] } });
+  exotico("um undefined", [undefined]);
+  exotico("um null", [null]);
+  exotico("lista com buraco", (() => { const a: unknown[] = [{ ...base3[0] }]; a[2] = { ...base3[1] }; return a; })());
+  exotico("null entre fatos", [{ ...base3[0] }, null, { ...base3[1] }]);
+  exotico("Symbol como instante, fato sem viagem", [{ ...base3[2], trip_id: undefined, occurred_at: Symbol("t") }]);
+  exotico("Symbol como instante, fato com viagem", [{ ...base3[1], occurred_at: Symbol("t") }]);
+  exotico("Symbol depois de instante vazio na mesma viagem", [
+    { ...base3[1], event_id: "s0", occurred_at: "" }, { ...base3[1], event_id: "s1", idempotency_key: "ks1", occurred_at: Symbol("t") }]);
+  exotico("Date como instante", base3.map((e, i) => ({ ...e, occurred_at: new Date(Date.UTC(2026, 9, 9, 22, 50 + i)) })));
+  exotico("numero 0 como instante (falso, mas legivel)", base3.map((e) => ({ ...e, occurred_at: 0 })));
+  exotico("id ausente", base3.map((e, i) => ({ ...e, event_id: i === 1 ? undefined : e.event_id })));
+
   /* ---------------- FUZZ ---------------- */
   const r = prng(4242);
   const pega = <X>(xs: readonly X[]): X => xs[Math.floor(r() * xs.length)];

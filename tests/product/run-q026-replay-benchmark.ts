@@ -199,6 +199,10 @@ void (async () => {
     for (const fatos of TAMANHOS) {
       const distribuicoes: string[] = ["chegada"];
       if (fatos <= 100_000) distribuicoes.push("embaralhada");
+      // A fixture do proprio PR #31 (viagens de 1.000 fatos, um escopo): o caso
+      // em que a copia quadratica mais pesa. Comparar so na fixture favoravel a
+      // nos seria vies.
+      if (fatos >= 100_000) distribuicoes.push("longas-1000");
       for (const distribuicao of distribuicoes) {
         const repeticoes = fatos <= 100_000 ? 5 : 3;
         const grupo: Record<string, unknown>[] = [];
@@ -232,29 +236,51 @@ void (async () => {
       console.log("\nPULADO: DELIVERYOS_PG_URL nao definida — porta e HTTP NAO foram medidos.");
       if (process.env.Q026_EXIGIR_PG === "1") process.exit(1);
     } else {
-      for (const fatos of TAMANHOS) {
+      const cargas: { fixture: "loja" | "longas-1000"; fatos: number }[] = [
+        ...TAMANHOS.map((fatos) => ({ fixture: "loja" as const, fatos })),
+        ...TAMANHOS.filter((n) => n >= 100_000).map((fatos) => ({ fixture: "longas-1000" as const, fatos })),
+      ];
+      for (const { fixture, fatos } of cargas) {
         const b = await bancoIsolado(URL_PG, undefined, "q026bench");
         try {
-          const linhas = gerarLinhas({ ...PERFIL_LOJA, fatos });
           await b.cliente.query("INSERT INTO identity.unit(unit_id, display_name) VALUES ('ITAIM','Itaim (sintetico)')");
-          for (const d of [...new Set(linhas.map((l) => l.device_id))].sort()) {
-            await b.cliente.query("INSERT INTO identity.device(device_id, unit_id, label) VALUES ($1,'ITAIM',$1)", [d]);
-          }
           const t0 = performance.now();
-          await gravarLinhas(b.cliente, [...linhas].sort((x, y) => (x.recorded_at < y.recorded_at ? -1 : x.recorded_at > y.recorded_at ? 1 : 0)));
+          if (fixture === "loja") {
+            const linhas = gerarLinhas({ ...PERFIL_LOJA, fatos });
+            for (const d of [...new Set(linhas.map((l) => l.device_id))].sort()) {
+              await b.cliente.query("INSERT INTO identity.device(device_id, unit_id, label) VALUES ($1,'ITAIM',$1)", [d]);
+            }
+            await gravarLinhas(b.cliente, [...linhas].sort((x, y) => (x.recorded_at < y.recorded_at ? -1 : x.recorded_at > y.recorded_at ? 1 : 0)));
+          } else {
+            // O gerador SQL do PR #31, em lotes (o statement_timeout e 15 s).
+            for (let ini = 1; ini <= fatos; ini += 100_000) {
+              const fim = Math.min(fatos, ini + 99_999);
+              await b.cliente.query(
+                `INSERT INTO platform.event_log (event_id, unit_id, object_type, object_id, event_type, payload,
+                   occurred_at, recorded_at, origin, idempotency_key, contract_version, source_mode)
+                 SELECT 'q026bench-'||g, 'ITAIM', 'trip', 'Q026-T-'||((g-1)/1000)::integer,
+                        CASE WHEN (g-1)%1000=0 THEN 'trip_started' ELSE 'gps_batch_received' END, '{}'::jsonb,
+                        $3::timestamptz - (($4::bigint-g)::double precision * interval '0.1 seconds'), $3::timestamptz, 'device',
+                        'q026bench-key-'||g, CASE WHEN (g-1)%1000=0 THEN 'trip_started@1.0.0' ELSE 'gps_batch_received@1.0.0' END,
+                        'simulated'
+                   FROM generate_series($1::integer, $2::integer) AS g`,
+                [ini, fim, PERFIL_LOJA.agora.toISOString(), fatos],
+              );
+            }
+          }
           await b.cliente.query("ANALYZE platform.event_log");
-          console.log(`\nbanco ${b.nome}: ${fatos} fatos semeados em ${Math.round(performance.now() - t0)} ms`);
+          console.log(`\nbanco ${b.nome} [${fixture}]: ${fatos} fatos semeados em ${Math.round(performance.now() - t0)} ms`);
           const repeticoes = fatos <= 100_000 ? 5 : 3;
 
           if (PARTES.has("porta")) {
             const grupo: Record<string, unknown>[] = [];
             for (const arv of arvores) {
               const r = filho({ modo: "porta", arvore: arv.caminho, rotulo: arv.rotulo, fatos, repeticoes, url: b.url });
-              grupo.push({ ...r, medida: "porta", arvore: arv.rotulo });
+              grupo.push({ ...r, medida: "porta", fixture, arvore: arv.rotulo });
             }
-            exigirMesmaSaida(grupo, `porta ${fatos}`);
+            exigirMesmaSaida(grupo, `porta ${fixture} ${fatos}`);
             resultados.push(...grupo);
-            tabela(`porta (lerRealidadeDeEntregas) · ${fatos} fatos · ${grupo[0].viagens} viagens · ${repeticoes} amostras`, grupo,
+            tabela(`porta (lerRealidadeDeEntregas) · fixture ${fixture} · ${fatos} fatos · ${grupo[0].viagens} viagens · ${repeticoes} amostras`, grupo,
               ["arvore", "mediana_ms", "p95_ms", "min_ms", "rss_pico_mb", "max_rss_mb"]);
           }
 
@@ -282,14 +308,14 @@ void (async () => {
                 assert.equal(shas.size, 1, `${s.arv.rotulo}: resposta mudou entre requisicoes`);
                 assert.equal(ult.fatos, fatos, `${s.arv.rotulo}: a resposta HTTP soma ${ult.fatos} fatos nas viagens, esperado ${fatos}`);
                 return {
-                  medida: "http", arvore: s.arv.rotulo, fatos, mediana_ms: q(0.5), p95_ms: q(0.95), min_ms: ms[0], amostras: ms,
+                  medida: "http", fixture, arvore: s.arv.rotulo, fatos, mediana_ms: q(0.5), p95_ms: q(0.95), min_ms: ms[0], amostras: ms,
                   bytes: ult.bytes, rss_pico_mb: Math.max(...amostras.get(s.arv.rotulo)!.map((m) => m.rss_pico_mb)),
                   viagens: ult.viagens, fatos_nas_viagens: ult.fatos, sha256: ult.sha256,
                 };
               });
-              exigirMesmaSaida(grupo, `http ${fatos}`);
+              exigirMesmaSaida(grupo, `http ${fixture} ${fatos}`);
               resultados.push(...grupo);
-              tabela(`HTTP GET /api/entregas · ${fatos} fatos · ${repeticoes} rodadas intercaladas`, grupo,
+              tabela(`HTTP GET /api/entregas · fixture ${fixture} · ${fatos} fatos · ${repeticoes} rodadas intercaladas`, grupo,
                 ["arvore", "mediana_ms", "p95_ms", "min_ms", "bytes", "rss_pico_mb"]);
             } finally {
               for (const s of servidores) { try { process.kill(-s.proc.pid!, "SIGTERM"); } catch { /* ja saiu */ } }

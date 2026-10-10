@@ -40,11 +40,15 @@ jobs:
           tests/product/q026-replay-fixture.ts tests/product/q026-referencias.ts tests/product/q026-cenarios.ts
           tests/product/q026-bench-filho.ts tests/product/run-q026-replay-adversarial-tests.ts
           tests/product/run-q026-replay-adversarial-mutacoes.ts tests/product/run-q026-replay-adversarial-pg-tests.ts
-          tests/product/run-q026-replay-benchmark.ts
+          tests/product/run-q026-replay-benchmark.ts tests/product/run-q026-replay-fuzz-diferencial.ts
       - name: equivalencia adversarial contra d0716fd e PR 31
         run: npx tsx tests/product/run-q026-replay-adversarial-tests.ts
       - name: mutantes da prova de equivalencia (zero cegos)
         run: npx tsx tests/product/run-q026-replay-adversarial-mutacoes.ts
+      - name: fuzz diferencial independente (duas sementes)
+        run: |
+          npx tsx tests/product/run-q026-replay-fuzz-diferencial.ts 7 20000
+          npx tsx tests/product/run-q026-replay-fuzz-diferencial.ts 1009 20000
       - name: contraexemplos de janela S1-S8 (PR 29)
         run: npx tsx tests/product/run-q026-window-shadow-tests.ts
       - name: suites que exercitam a projecao
