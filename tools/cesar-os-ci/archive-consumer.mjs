@@ -87,6 +87,7 @@ export function planReplay(archives,{start,end,cursor=null,now=new Date()}={}){
   const gaps=[],states=new Map();
   const kept={};
   let newArchives=0;
+  const new_archive_paths=[];
   for(const record of sorted){
     const {path,snapshot:s,hash}=record;
     const p=prev.archives[path];
@@ -97,7 +98,7 @@ export function planReplay(archives,{start,end,cursor=null,now=new Date()}={}){
     if(left>bound)gaps.push({start:new Date(bound).toISOString(),end:new Date(left).toISOString(),reason:'NO_ARCHIVED_EVIDENCE'});
     bound=Math.max(bound,right);
     kept[path]=hash;
-    if(!p)newArchives++;
+    if(!p){newArchives++;new_archive_paths.push(path); }
     for(const run of s.records){
       const existing=states.get(run.id),updated=Date.parse(run.updated_at);
       if(!existing||updated>Date.parse(existing.updated_at))states.set(run.id,run);
@@ -114,7 +115,7 @@ export function planReplay(archives,{start,end,cursor=null,now=new Date()}={}){
   const reconcile_ids=Array.from({length:count},(_,i)=>runs[(offset+i)%runs.length].id);
   return {
     schema:'cesar-os-ci-replay-plan-v1',source_id:SOURCE,
-    horizon:{start,end},archives_seen:sorted.length,archives_new:newArchives,
+    horizon:{start,end},archives_seen:sorted.length,archives_new:newArchives,new_archive_paths,
     coverage:{status:gaps.length?'GAPS_DETECTED':runs.length?'BOUNDED_OBSERVED':'BOUNDED_EMPTY',gaps,
       continuity_complete:false,lifecycle_updates_complete:false,coverage_complete_claimed:false},
     records:runs.map(r=>({...r,source_claim_only:true,possible_commitment:false})),
