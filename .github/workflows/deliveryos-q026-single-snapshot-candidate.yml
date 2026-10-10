@@ -44,7 +44,9 @@ jobs:
           npm run test:platform:governanca > "$RUNNER_TEMP/candidate-governanca.log" 2>&1
           candidate_status=$?
           set -e
-          mkdir -p "$RUNNER_TEMP/q026-base"
+          # checkout@v4 fetch-depth=1: recuperar explicitamente commit imutavel
+          # da integracao antes de worktree, sem modificar branches remotas.
+          git fetch --no-tags --depth=1 origin 99b0c72e6a254c68358767b5addffe673707d934
           git worktree add --detach "$RUNNER_TEMP/q026-base" 99b0c72e6a254c68358767b5addffe673707d934
           ln -s "$GITHUB_WORKSPACE/node_modules" "$RUNNER_TEMP/q026-base/node_modules"
           set +e
