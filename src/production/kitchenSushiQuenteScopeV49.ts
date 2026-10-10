@@ -5,6 +5,7 @@ import {
 import { projectKitchenNeeds, type KitchenDependencyRuleset } from "./kitchenDependencies";
 import type { OperationalTicketsResultV45, SourceOrderItemV45 } from "./operationalTicketsV45";
 import confirmedPolicy from "../../data/kitchen_sushi_quente_scope_v49.json";
+import skinFact from "../../data/kitchen_skin_human_fact_v50.json";
 
 /**
  * Human-approved CATEGORY SCOPE AND 1 preparation per sold portion.
@@ -34,12 +35,29 @@ export interface KitchenScopeCandidateV49 {
   requested_quantity: number | null;
   yield_evidence: "EXACT_HUMAN_CONFIRMED_RULE" | "HUMAN_CONFIRMED_CATEGORY_1_PER_PORTION" | "NOT_CONFIRMED";
 }
+/** Human-confirmed BATCH kitchen-to-Sushi handoff; never per sold-order prep. */
+export interface SkinPrePreparationV50 {
+  item_index:number;
+  product_name:string;
+  sold_quantity:number;
+  preparation_owner:"COZINHA";
+  handoff_to:"SUSHI";
+  before_sushi_assembly:true;
+  evidence:"HUMAN_CONFIRMED_2026_10_10_DIRECT_CHAT";
+  preparations_per_sold_portion:null;
+  kitchen_requested_quantity:null;
+  preparation_mode:"BATCH_BEFORE_ORDERS";
+  per_order_dispatch:"NOT_REQUIRED_BATCH_PREPARATION";
+  batch_replenishment_policy:"UNKNOWN";
+  generates_kitchen_ticket:false;
+}
 export interface KitchenSushiHotScopeV49 {
   schema: "deliveryos.kitchen-sushi-quente-scope-projection.v49";
   policy_status: string;
   station: "enrolados_quentes";
   confirmed_scope: string[];
   candidates: KitchenScopeCandidateV49[];
+  skin_preparation_handoffs: SkinPrePreparationV50[];
   required_reviews: string[];
   eligible_products_with_current_station: number;
   pending_factor_count: number;
@@ -76,6 +94,7 @@ export function classifySushiHotPreparationsV49(
 ): KitchenSushiHotScopeV49 {
   const issues=new Set<string>();
   const output:KitchenScopeCandidateV49[]=[];
+  const skinPreparationHandoffs:SkinPrePreparationV50[]=[];
   const byName=new Map<string,HistoricalCatalogueItemV49[]>();
   for(const product of catalogue){
     const key=norm(product.nome);
@@ -102,6 +121,41 @@ export function classifySushiHotPreparationsV49(
       continue;
     }
     const kinds=kindsFromName(item.product_name);
+    // Cesar confirmed COZINHA pre-prepares SKIN in a BATCH, before
+    // incoming orders, then Sushi assembles. SKIN therefore never
+    // generates per-order kitchen preparation. Batch size/frequency and
+    // stock replenishment still have NO confirmed numerical policy.
+    if(new Set(norm(item.product_name).split(" ")).has("SKIN") &&
+       item.current_praca_proof==="CURRENT_MOTOR_PROVEN" &&
+       norm(item.current_praca)==="ENROLADOS QUENTES") {
+      if(skinFact.status!=="HUMAN_CONFIRMED_BATCH_PREPARATION_BEFORE_SUSHI" ||
+         skinFact.preparation.owner!=="COZINHA" ||
+         skinFact.preparation.before_sushi_assembly!==true ||
+         skinFact.preparation.consumer!=="SUSHI" ||
+         skinFact.preparation.prepared_in_batch!=="HUMAN_CONFIRMED" ||
+         skinFact.preparation.prepared_before_order!=="YES_BATCH_PREPARED_AHEAD_OF_ORDERS" ||
+         skinFact.preparation.order_trigger!=="NOT_PER_SOLD_ORDER" ||
+         skinFact.operational_boundary.kitchen_auto_ticket_per_sold_order!=="NOT_REQUIRED_BATCH_PREPARATION" ||
+         skinFact.preparation.number_of_preparations_per_sold_portion!==null)
+        issues.add("SKIN_HUMAN_SOURCE_FACT_INVALID:"+item.item_index);
+      else skinPreparationHandoffs.push({
+        item_index:item.item_index,
+        product_name:item.product_name.toLocaleUpperCase("pt-BR"),
+        sold_quantity:item.quantity,
+        preparation_owner:"COZINHA",
+        handoff_to:"SUSHI",
+        before_sushi_assembly:true,
+        evidence:"HUMAN_CONFIRMED_2026_10_10_DIRECT_CHAT",
+        preparations_per_sold_portion:null,
+        kitchen_requested_quantity:null,
+        preparation_mode:"BATCH_BEFORE_ORDERS",
+        per_order_dispatch:"NOT_REQUIRED_BATCH_PREPARATION",
+        batch_replenishment_policy:"UNKNOWN",
+        generates_kitchen_ticket:false,
+      });
+      // A confirmed batch is OUTSIDE the per-order kitchen task list;
+      // undefined replenishment planning is not a false per-order blocker.
+    }
     if(kinds.length===0)continue;
     const exact=byName.get(norm(item.product_name))??[];
     if(exact.length>1)issues.add("AMBIGUOUS_CATALOGUE_IDENTITY:"+item.item_index);
@@ -160,6 +214,7 @@ export function classifySushiHotPreparationsV49(
     station:"enrolados_quentes",
     confirmed_scope:["HOT","EBITEN","SHISO"],
     candidates:output,
+    skin_preparation_handoffs:skinPreparationHandoffs,
     required_reviews:[...issues].sort(),
     eligible_products_with_current_station:keys.size,
     pending_factor_count:output.filter(x=>x.yield_per_sold_unit===null).length,

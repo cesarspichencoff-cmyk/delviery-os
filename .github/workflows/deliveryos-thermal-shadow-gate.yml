@@ -6,6 +6,7 @@ on:
   pull_request:
     branches:
       - feat/thermal-quality-v51-epson-official-fontqa-20261008
+      - feat/thermal-v54-caixa-photo-visual-qa-20261008
 
 permissions:
   contents: read
@@ -35,6 +36,24 @@ jobs:
         run: npm run verificar:tickets-operacionais-v45
       - name: Conference proven box grouping and finishing V6.2 (offline)
         run: node tools/verificar_agrupamento_conferencia_v62.js
+      - name: Current packaging motor bridge V6.3 (offline, source-pinned)
+        run: node tools/verificar_ponte_embalagem_v63.js
+      - name: Three-way physical box and resource coherence V6.4 (offline)
+        run: node tools/verificar_coerencia_tres_vias_v64.js
+      - name: Reconciled reader ingress and pinned Unified Kit Core V6.6 (offline)
+        run: node tools/verificar_ingresso_leitor_v66.js
+      - name: Human bag-kit override exact snapshot scope V7.12 (offline only)
+        run: node tools/verificar_override_snapshot_v712.js
+      - name: Read-only eight asset preflight V7.11 (no Windows effect)
+        run: node tools/verificar_preflight_consumidor_v711.js
+      - name: Installed V2 consumer parity and eight-rule lineage V7.10 (offline only)
+        run: node tools/verificar_consumidor_shadow_v710.js
+      - name: Stable Windows reader event/decision pairing V6.8 (offline)
+        run: node tools/verificar_par_evento_leitor_v68.js
+      - name: Passive real-file reader audit V6.9 (offline fixtures, no effects)
+        run: node tools/verificar_auditoria_leitor_v69.js
+      - name: Future shift renewal review V7.0 (never modify installed state)
+        run: node tools/verificar_revisao_turno_humano_v70.js
       - name: Item quantity integrity V5.9
         run: npm run verificar:quantidades-termicas-v59
       - name: Archived tickets V4.6
@@ -55,6 +74,8 @@ jobs:
         run: npm run verificar:cobertura-tipografica-v55
       - name: Long observations V5.6 (offline)
         run: npm run verificar:observacoes-legiveis-v56
+      - name: Long observations integration V6.7 (offline)
+        run: node tools/verificar_integracao_observacoes_v67.js
       - name: Invisible characters V5.7 (offline)
         run: npm run verificar:caracteres-invisiveis-v57
       - name: Resource integrity
@@ -63,6 +84,10 @@ jobs:
         run: npm run verificar:tata-sequence-policy
       - name: Semantic job eligibility V5.10 (Issue 25)
         run: node tools/verificar_gate_semantico_termico_v510.js
+      - name: Three original Figma 80mm receipt SVG goldens V7.2 (no redraw)
+        run: node tools/verificar_desenho_comandas_v72.js
+      - name: Direct Epson renderer source-semantic rejection V7.1 (Issue 25)
+        run: node tools/verificar_renderer_semantico_direto_v71.js
       - name: ESC/POS adversarial contract RED until issue 22 is fixed
         # Mandatory hard gate: do not mark continue-on-error or swallow exit code.
         run: node tools/verificar_integridade_termica_v57.js

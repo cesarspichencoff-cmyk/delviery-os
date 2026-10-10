@@ -134,4 +134,70 @@ test("18 no active dependency rules, stock, printer, fiscal or spooler are modif
  assert.equal(rules.rules.length,1);
  assert.equal(rules.rules[0].canonical_item_name,"Uramaki Ebiten Especial");
 });
+test("19 SKIN Cozinha-to-Sushi handoff is batch-prepared before orders",()=>{
+ const result=classify([sushi(0,"Uramaki Skin (8)",2)]);
+ assert.equal(result.candidates.length,0,"SKIN is NOT a per-order kitchen preparation");
+ assert.equal(result.skin_preparation_handoffs.length,1);
+ assert.deepEqual(result.skin_preparation_handoffs[0],{
+   item_index:0,product_name:"URAMAKI SKIN (8)",sold_quantity:2,
+   preparation_owner:"COZINHA",handoff_to:"SUSHI",
+   before_sushi_assembly:true,evidence:"HUMAN_CONFIRMED_2026_10_10_DIRECT_CHAT",
+   preparations_per_sold_portion:null,kitchen_requested_quantity:null,
+   preparation_mode:"BATCH_BEFORE_ORDERS",
+   per_order_dispatch:"NOT_REQUIRED_BATCH_PREPARATION",
+   batch_replenishment_policy:"UNKNOWN",
+   generates_kitchen_ticket:false,
+ });
+ assert.ok(!result.required_reviews.some(x=>x.startsWith("SKIN_")));
+ assert.equal(result.ready_for_automatic_operational_print,false);
+});
+test("20 SKIN outside proven Sushi Quente station has no invented item-specific handoff",()=>{
+ const result=classify([item(0,"Uramaki Skin (8)",1,"outra_praca","CURRENT_MOTOR_PROVEN")]);
+ assert.equal(result.candidates.length,0);
+ assert.deepEqual(result.skin_preparation_handoffs,[]);
+});
+test("21 batch mode confirmed, replenishment and kitchen order volume still unknown",()=>{
+ const fact=require("../data/kitchen_skin_human_fact_v50.json");
+ assert.equal(fact.authority,"CESAR");
+ assert.equal(fact.preparation.owner,"COZINHA");
+ assert.equal(fact.preparation.consumer,"SUSHI");
+ assert.equal(fact.preparation.before_sushi_assembly,true);
+ assert.equal(fact.preparation.prepared_in_batch,"HUMAN_CONFIRMED");
+ assert.equal(fact.preparation.prepared_before_order,"YES_BATCH_PREPARED_AHEAD_OF_ORDERS");
+ assert.equal(fact.preparation.order_trigger,"NOT_PER_SOLD_ORDER");
+ assert.equal(fact.preparation.number_of_preparations_per_sold_portion,null);
+ assert.equal(fact.operational_boundary.kitchen_auto_ticket_per_sold_order,
+  "NOT_REQUIRED_BATCH_PREPARATION");
+ assert.equal(fact.operational_boundary.batch_size,"UNKNOWN");
+ assert.equal(fact.operational_boundary.batch_replenishment_frequency,"UNKNOWN");
+});
+test("22 HOT plus SKIN generates HOT task only; batch SKIN does not block order",()=>{
+ const r=classify([sushi(0,"Hot Roll com Skin",3)]);
+ assert.equal(r.candidates.length,1);
+ assert.equal(r.candidates[0].kitchen_kind,"HOT");
+ assert.equal(r.candidates[0].requested_quantity,3);
+ assert.equal(r.skin_preparation_handoffs.length,1);
+ assert.equal(r.skin_preparation_handoffs[0].kitchen_requested_quantity,null);
+ const split=projectTwoKitchenTicketsScopedV49([sushi(0,"Hot Roll com Skin",3)],
+  catalogue.itens,archivedResult(),rules);
+ assert.deepEqual(split.split.components.tasks.map(t=>[t.kind,t.quantity]),[["HOT",3]]);
+ assert.ok(!split.split.review_reasons.some(x=>x.startsWith("SKIN_")));
+ assert.equal(split.print_authorized,false);
+});
+test("23 multiple SKIN orders do not create or scale per-order kitchen tickets",()=>{
+ const order=[sushi(0,"Uramaki Skin",5),sushi(1,"Temaki Skin",2)];
+ const result=projectTwoKitchenTicketsScopedV49(order,catalogue.itens,archivedResult(),rules);
+ assert.equal(result.scope.skin_preparation_handoffs.length,2);
+ assert.deepEqual(result.scope.skin_preparation_handoffs.map(x=>x.sold_quantity),[5,2]);
+ assert.ok(result.scope.skin_preparation_handoffs.every(x=>x.generates_kitchen_ticket===false));
+ assert.ok(result.scope.skin_preparation_handoffs.every(x=>x.kitchen_requested_quantity===null));
+ assert.equal(result.scope.candidates.length,0);
+ assert.equal(result.split.components,null);
+ assert.ok(!result.split.review_reasons.some(x=>x.startsWith("SKIN_")));
+ assert.equal(result.print_authorized,false);
+});
+test("24 SKIN substrings do not become confirmed batch preparations",()=>{
+ const r=classify([sushi(0,"Skinado",3),sushi(1,"Skinfood",2)]);
+ assert.equal(r.skin_preparation_handoffs.length,0);
+});
 console.log("kitchen-sushi-quente-scope-v49: "+passed+"/"+passed+" PASS (SHADOW, no printing)");
