@@ -5,6 +5,7 @@ import {
 import { projectKitchenNeeds, type KitchenDependencyRuleset } from "./kitchenDependencies";
 import type { OperationalTicketsResultV45, SourceOrderItemV45 } from "./operationalTicketsV45";
 import confirmedPolicy from "../../data/kitchen_sushi_quente_scope_v49.json";
+import skinFact from "../../data/kitchen_skin_human_fact_v50.json";
 
 /**
  * Human-approved CATEGORY SCOPE AND 1 preparation per sold portion.
@@ -34,12 +35,27 @@ export interface KitchenScopeCandidateV49 {
   requested_quantity: number | null;
   yield_evidence: "EXACT_HUMAN_CONFIRMED_RULE" | "HUMAN_CONFIRMED_CATEGORY_1_PER_PORTION" | "NOT_CONFIRMED";
 }
+/** Verified kitchen-to-Sushi handoff; NOT a per-order preparation request. */
+export interface SkinPrePreparationV50 {
+  item_index:number;
+  product_name:string;
+  sold_quantity:number;
+  preparation_owner:"COZINHA";
+  handoff_to:"SUSHI";
+  before_sushi_assembly:true;
+  evidence:"HUMAN_CONFIRMED_2026_10_10_DIRECT_CHAT";
+  preparations_per_sold_portion:null;
+  kitchen_requested_quantity:null;
+  per_order_dispatch:"NOT_PROVEN";
+  generates_kitchen_ticket:false;
+}
 export interface KitchenSushiHotScopeV49 {
   schema: "deliveryos.kitchen-sushi-quente-scope-projection.v49";
   policy_status: string;
   station: "enrolados_quentes";
   confirmed_scope: string[];
   candidates: KitchenScopeCandidateV49[];
+  skin_preparation_handoffs: SkinPrePreparationV50[];
   required_reviews: string[];
   eligible_products_with_current_station: number;
   pending_factor_count: number;
@@ -76,6 +92,7 @@ export function classifySushiHotPreparationsV49(
 ): KitchenSushiHotScopeV49 {
   const issues=new Set<string>();
   const output:KitchenScopeCandidateV49[]=[];
+  const skinPreparationHandoffs:SkinPrePreparationV50[]=[];
   const byName=new Map<string,HistoricalCatalogueItemV49[]>();
   for(const product of catalogue){
     const key=norm(product.nome);
@@ -102,13 +119,33 @@ export function classifySushiHotPreparationsV49(
       continue;
     }
     const kinds=kindsFromName(item.product_name);
-    // SKIN is a Sushi Quente product candidate, but no human-confirmed
-    // separate kitchen preparation or per-portion factor exists in this scope.
-    // Make the gap explicit: never turn absence of a rule into zero demand.
+    // Cesar confirmed COZINHA prepares Skin before Sushi assembly.
+    // That is a proven PREPARATION OWNER and HANDOFF, not proof of a
+    // separate per-order kitchen ticket, a batch size, or factor 1:1.
     if(new Set(norm(item.product_name).split(" ")).has("SKIN") &&
        item.current_praca_proof==="CURRENT_MOTOR_PROVEN" &&
-       norm(item.current_praca)==="ENROLADOS QUENTES")
-      issues.add("SKIN_KITCHEN_DEPENDENCY_UNPROVEN:"+item.item_index);
+       norm(item.current_praca)==="ENROLADOS QUENTES") {
+      if(skinFact.status!=="HUMAN_CONFIRMED_PREPARATION_OWNER_AND_ORDERING" ||
+         skinFact.preparation.owner!=="COZINHA" ||
+         skinFact.preparation.before_sushi_assembly!==true ||
+         skinFact.preparation.consumer!=="SUSHI" ||
+         skinFact.preparation.number_of_preparations_per_sold_portion!==null)
+        issues.add("SKIN_HUMAN_SOURCE_FACT_INVALID:"+item.item_index);
+      else skinPreparationHandoffs.push({
+        item_index:item.item_index,
+        product_name:item.product_name.toLocaleUpperCase("pt-BR"),
+        sold_quantity:item.quantity,
+        preparation_owner:"COZINHA",
+        handoff_to:"SUSHI",
+        before_sushi_assembly:true,
+        evidence:"HUMAN_CONFIRMED_2026_10_10_DIRECT_CHAT",
+        preparations_per_sold_portion:null,
+        kitchen_requested_quantity:null,
+        per_order_dispatch:"NOT_PROVEN",
+        generates_kitchen_ticket:false,
+      });
+      issues.add("SKIN_ORDER_TRIGGER_AND_PREP_FACTOR_NOT_CONFIRMED:"+item.item_index);
+    }
     if(kinds.length===0)continue;
     const exact=byName.get(norm(item.product_name))??[];
     if(exact.length>1)issues.add("AMBIGUOUS_CATALOGUE_IDENTITY:"+item.item_index);
@@ -167,6 +204,7 @@ export function classifySushiHotPreparationsV49(
     station:"enrolados_quentes",
     confirmed_scope:["HOT","EBITEN","SHISO"],
     candidates:output,
+    skin_preparation_handoffs:skinPreparationHandoffs,
     required_reviews:[...issues].sort(),
     eligible_products_with_current_station:keys.size,
     pending_factor_count:output.filter(x=>x.yield_per_sold_unit===null).length,
