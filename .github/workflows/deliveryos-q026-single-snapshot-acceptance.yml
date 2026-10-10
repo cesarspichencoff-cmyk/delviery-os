@@ -64,6 +64,11 @@ jobs:
           set -o pipefail
           npx tsx tests/product/run-q026-read-concurrency-pg.ts | tee q026-read-concurrency.out
           grep -qx 'Q026_READ_CONCURRENCY: 6/6 PASS' q026-read-concurrency.out
+      - name: Explicitly opt-in HTTP overload fail-fast on temporary PG16
+        run: |
+          set -o pipefail
+          npx tsx tests/product/run-q026-http-admission-pg.ts | tee q026-http-admission.out
+          grep -qx 'Q026_HTTP_OPT_IN_ADMISSION: 4/4 PASS' q026-http-admission.out
       - name: Without PostgreSQL the suite must exit 78 (not fake PASS)
         run: |
           set +e
