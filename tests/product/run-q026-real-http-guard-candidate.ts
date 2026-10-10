@@ -9,6 +9,8 @@ import http from "node:http";
 import { performance } from "node:perf_hooks";
 import { bancoIsolado } from "../../src/platform/banco-isolado";
 import type { SqlRow } from "../../src/platform/persistence/sql-client";
+import { lerFatosParaReplay } from "../../src/platform/projections/replay-do-event-log";
+import { TIPOS_DA_OPERACAO_VIVA } from "../../src/platform/runtime/handler-operacao-viva";
 
 const url=(process.env.DELIVERYOS_PG_URL??"").trim();
 if(!url){console.error("Q026_ACTUAL_HTTP_PG_REQUIRED");process.exit(78)}
@@ -166,10 +168,13 @@ void(async()=>{
    });req.on("error",reject);req.end();
   });
   assert.equal(denied,405);
+  const fatosQ016=await lerFatosParaReplay(db.cliente,TIPOS_DA_OPERACAO_VIVA);
+  assert.equal(fatosQ016.aptos.length,2501,
+    "Q016 forensic replay was mutated after HTTP abort/deadline");
   console.log("Q026_ACTUAL_HTTP_GUARD_"+mode.toUpperCase()+"_PASS "+JSON.stringify({
    mode,server:"actual tools/product_system_server.ts",first_http_status:initial.status,
    after_commit_http_status:fresh.status,new_gps_visible:true,
-   writes_still_rejected:true,elapsed_ms:+(performance.now()-started).toFixed(2),
+   writes_still_rejected:true,q016_replay_count:fatosQ016.aptos.length,elapsed_ms:+(performance.now()-started).toFixed(2),
    boundary:"disabled by default / branch-only candidate, not deployed"
   }));
  }finally{
