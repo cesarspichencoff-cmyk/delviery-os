@@ -1,0 +1,84 @@
+name: deliveryos-q026-rr-incremental-memory-shadow
+# Independent Node processes and disposable PostgreSQL per one-trip variant.
+on:
+  push:
+    branches:
+      - research/deliveryos-q026-rr-incremental-combination-shadow-20261010
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: q026-rr-memory-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  rr-memory:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        n: [120000, 300000]
+    services:
+      postgres:
+        image: public.ecr.aws/docker/library/postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
+      Q026_LONG_N: ${{ matrix.n }}
+      NODE_OPTIONS: --expose-gc
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Typecheck actual RR memory comparison
+        run: npx tsc --noEmit --target ES2022 --module commonjs --moduleResolution node --strict --esModuleInterop --skipLibCheck --types node tests/product/run-q026-rr-incremental-memory-shadow.ts
+      - name: Bounded RR cursor in its OWN Node process
+        env:
+          Q026_LONG_MODE: compact
+          Q026_LONG_RESULT: compact.json
+        run: npx tsx tests/product/run-q026-rr-incremental-memory-shadow.ts
+      - name: Canonical RR Entregas reader in its OWN Node process
+        env:
+          Q026_LONG_MODE: baseline
+          Q026_LONG_RESULT: baseline.json
+        run: npx tsx tests/product/run-q026-rr-incremental-memory-shadow.ts
+      - name: Compare exact presentation digest and measured process RSS
+        run: |
+          node - <<'JS'
+          const fs=require('node:fs');
+          const compact=JSON.parse(fs.readFileSync('compact.json','utf8'));
+          const baseline=JSON.parse(fs.readFileSync('baseline.json','utf8'));
+          if(compact.n!==baseline.n||compact.events!==baseline.events||compact.hash!==baseline.hash){
+            throw Error('Q026_RR_MEMORY_PRESENTATION_DIVERGENCE '+JSON.stringify({compact,baseline}));
+          }
+          if(compact.max_batch>4096||compact.batches<Math.ceil(compact.n/4096)){
+            throw Error('cursor fetch not bounded');
+          }
+          const reduction=+(100*(1-compact.peak_rss_mib/baseline.peak_rss_mib)).toFixed(1);
+          console.log('Q026_RR_MEMORY_COMPARISON '+JSON.stringify({
+            n:compact.n,hash:compact.hash,
+            compact_peak_rss_mib:compact.peak_rss_mib,
+            baseline_peak_rss_mib:baseline.peak_rss_mib,
+            compact_ms:compact.ms,baseline_ms:baseline.ms,
+            rss_reduction_percent:reduction,
+            scope:'synthetic 1 trip, same runner but independent Node processes/DBs, no concurrent writes in memory stage',
+            note:'all-process peak includes seeding; full Q016 and operational guarantees not replaced'
+          }));
+          if(!Number.isFinite(reduction)||reduction<=0)throw Error('RR cursor not measured more memory-efficient');
+          JS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: q026-rr-incremental-memory-${{ matrix.n }}
+          path: |
+            compact.json
+            baseline.json
+          if-no-files-found: warn
