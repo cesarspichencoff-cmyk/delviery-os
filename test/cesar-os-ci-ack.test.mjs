@@ -147,3 +147,25 @@ test('cursor cannot omit a new archive already required by the verified manifest
  assert.equal(receiptsRead,0);
  assert.equal((await store.load()).revision,0);
 });
+
+test('cursor CAS rejects silent deletion of an old acknowledged archive',async()=>{
+ const store=memoryCursorStore();
+ const first=await commitAfterReceipts(plan,{intents,store,receiptFor:async()=>receipt});
+ assert.equal(first.cursor_revision,1);
+ const emptyEnd='2026-10-10T22:00:00.000Z';
+ const empty={...snapshot,generated_at:emptyEnd,window_start:generated,window_end:emptyEnd,
+   record_count:0,records:[],coverage_status:'BOUNDED_EMPTY'};
+ const nextPath='ci-snapshots/deliveryos/archive/2026/10/10/20261010T220000000Z.json';
+ const next=planReplay([{path:nextPath,snapshot:empty}],{start:generated,end:emptyEnd,
+   now:new Date('2026-10-11T00:00:00.000Z'),cursor:await store.load()});
+ const forged={...next,cursor:{...next.cursor,archives:{[nextPath]:next.cursor.archives[nextPath]}}};
+ let receiptReads=0;
+ await assert.rejects(commitAfterReceipts(forged,{intents:[],store,
+   receiptFor:async()=>{receiptReads++;return receipt;}}),/receipt_gate_cursor_prior_digest_missing/);
+ assert.equal(receiptReads,0);
+ assert.equal((await store.load()).revision,1);
+ const valid=await commitAfterReceipts(next,{intents:[],store,receiptFor:async()=>{throw Error('no_read_needed');}});
+ assert.equal(valid.status,'EMPTY_ARCHIVES_CURSOR_COMMITTED');
+ assert.equal((await store.load()).revision,2);
+ assert.equal((await store.load()).archives[path],plan.cursor.archives[path]);
+});
