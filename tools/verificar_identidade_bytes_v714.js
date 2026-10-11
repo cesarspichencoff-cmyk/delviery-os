@@ -368,5 +368,62 @@ try{
   assert.ok(blocked.reasons.includes("WATCHER_V2_NOTE_SNAPSHOT_HASH_MISMATCH"));
   assert.equal(blocked.effects.print,false);
  });
+
+ // V7.20: exercise the new pinned offline ENTRYPOINT, not just a detached
+ // pair verifier. No separately supplied decision or optional gate switch.
+ const gatePath=path.join(__dirname,"gerar_tres_vias_v2_gate_v720_offline.js");
+ const gateText=fs.readFileSync(gatePath,"utf8");
+ const gateArgs=()=>["--event",path.join(folder,"event.json"),
+  "--consumer",path.join(folder,"consumer.cjs"),
+  "--proof",path.join(folder,"proof.json"),
+  "--motor",path.join(folder,"packaging-current.js")];
+ const runGate=args=>spawnSync(process.execPath,[gatePath,...args],{
+  encoding:"utf8",timeout:20000});
+ check("V7.20 mandatory V6.8 call precedes every ticket rendering path",()=>{
+  assert.ok(gateText.includes("verifyLiveReaderPairV68(event,decision)"));
+  assert.ok(gateText.indexOf("const result=verifyLiveReaderPairV68(event,decision)")<
+   gateText.indexOf("return renderVerifiedOffline(["));
+  assert.ok(!gateText.includes("ready_for_operational_print:true"));
+  assert.ok(!gateText.includes("spooler_write:true"));
+  assert.ok(!gateText.includes("print_authorized:true"));
+  assert.ok(!gateText.includes("child.stdout||"));
+ });
+ check("V7.20 actual V2 subprocess must fail closed at the existing V6.8 gate",()=>{
+  run([],[],"1.000",undefined,true);
+  fs.writeFileSync(path.join(folder,"proof.json"),"{}");
+  const p=runGate(gateArgs());
+  assert.equal(p.status,2,p.stderr);
+  const r=JSON.parse(p.stdout.trim());
+  assert.equal(r.status,"BLOCKED");
+  assert.equal(r.stage,"V68_PAIR_GATE");
+  assert.ok(r.reasons.includes("EVENT_OR_DECISION_NOT_READY_FOR_SHADOW"));
+  assert.ok(r.reasons.includes("SHADOW_DECISION_PACKAGING_SOURCE_NOT_PINNED_V78"));
+  assert.deepEqual(r.outputs,[]);
+  assert.equal(r.effects.print,false);
+  assert.equal(r.effects.spooler_write,false);
+  assert.equal(r.effects.database_write,false);
+  assert.equal(r.print_authorized,false);
+ });
+ check("V7.20 cannot import a cached or manually replaced consumer decision",()=>{
+  const args=[...gateArgs(),"--decision",path.join(folder,"stale.json")];
+  const p=runGate(args);
+  assert.equal(p.status,2);
+  const r=JSON.parse(p.stdout.trim());
+  assert.equal(r.status,"BLOCKED");
+  assert.deepEqual(r.outputs,[]);
+ });
+ check("V7.20 rejects unpinned consumer before any artifact generation",()=>{
+  const fake=path.join(folder,"untrusted-consumer.cjs");
+  fs.writeFileSync(fake,'console.log(JSON.stringify({ready:true}));');
+  const args=gateArgs();
+  args[args.indexOf("--consumer")+1]=fake;
+  const p=runGate(args);
+  assert.equal(p.status,2);
+  const r=JSON.parse(p.stdout.trim());
+  assert.equal(r.status,"BLOCKED");
+  assert.deepEqual(r.outputs,[]);
+  assert.equal(r.effects.print,false);
+ });
+
  console.log("THERMAL_BYTE_IDENTITY_V714="+checks+"/"+checks+" NO_LEGACY_AUTO_FACT NO_PRINT");
 }finally{fs.rmSync(temp,{recursive:true,force:true});}
