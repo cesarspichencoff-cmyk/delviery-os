@@ -47,6 +47,8 @@ jobs:
         run: node tools/verificar_release_hold_v716.js
       - name: Consumed-rule bytes and engine mutation guard V7.14 (offline only)
         run: node tools/verificar_identidade_bytes_v714.js
+      - name: Positive pinned canonical engine V2 to V6.8 three-way replay V7.22 (offline)
+        run: node tools/verificar_cadeia_positiva_v722_offline.js
       - name: No self-declared human bag or kit approval V7.13 (offline only)
         run: node tools/verificar_override_authority_v713.js
       - name: Human bag-kit override exact snapshot scope V7.12 (offline only)
