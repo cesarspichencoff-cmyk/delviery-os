@@ -3,9 +3,10 @@
  * `lerRealidadeDeEntregas` sem carregar o event log inteiro na memória.
  *
  * Q-026 (aberta): esta porta NÃO decide janela, retenção nem o bloco legado.
- * Com opt-in HTTP explícito ela relê o MESMO histórico que a porta canônica, com memória limitada
- * pelo número de viagens em vez do número de fatos. Não está ligada a rota
- * nenhuma: quem a liga é uma decisão separada.
+ * Relê o mesmo histórico que a porta canônica, sob opt-in HTTP EXPLÍCITO
+ * (DELIVERYOS_ENTREGAS_INCREMENTAL_RR=1 mais proteções de prazo/admissão).
+ * Sem essa configuração, a rota permanece no leitor canônico. A memória
+ * cresce com o número de viagens, não com os IDs de todos os fatos.
  *
  * O QUE ELA GARANTE, E POR QUAL MECANISMO
  *
@@ -33,8 +34,10 @@
  * - `eventos` de cada viagem é um CONTADOR: só `length` responde. Ler um id,
  *   iterar ou serializar lança `IDS_FORENSES_NAO_CARREGADOS`. Os ids continuam
  *   no replay da Q-016 (`lerFatosParaReplay`), que este módulo não substitui.
- * - `versao` é `realidade-de-entregas-incremental@…`: a saída nunca se passa
- *   pela da porta canônica.
+ * - Nesta integração opt-in, `versao` preserva o contrato de APRESENTAÇÃO
+ *   da rota canônica; o tipo TypeScript `RealidadeParaApresentacao` restringe
+ *   `eventos` a `length` para impedir uso forense. O algoritmo possui versão
+ *   interna LEITURA_INCREMENTAL_VERSION, não exposta no JSON da interface.
  * - Memória NÃO é O(1): um acumulador por viagem, e o número de viagens cresce
  *   com o histórico. O instante fica aberto do primeiro comando ao COMMIT e,
  *   nesse tempo, segura o horizonte do VACUUM (`backend_xmin`).
