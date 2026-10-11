@@ -1,0 +1,187 @@
+name: q026-mvcc-vacuum-adversarial
+# Q-026 — MVCC, VACUUM e limites de concorrência da candidata #77 (pesquisa,
+# DRAFT/HOLD). Somente testes; nenhum runtime, gate de promoção, integração,
+# servidor produtivo ou frontend é alterado. PostgreSQL DESCARTÁVEL por job.
+on:
+  push:
+    branches:
+      - research/claude-q026-mvcc-vacuum-adversarial-20261011
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: q026-mvcc-vacuum-${{ github.ref }}
+  cancel-in-progress: true
+env:
+  DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
+jobs:
+  falhas:
+    name: falhas no meio da leitura (${{ matrix.leitor }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        leitor: [incremental, canonico]
+    services:
+      postgres:
+        image: public.ecr.aws/docker/library/postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Tipagem estrita do arnes
+        run: |
+          for f in tests/product/q026-mvcc-*.ts tests/product/run-q026-mvcc-*.ts; do
+            npx tsc --noEmit --target ES2022 --module commonjs --moduleResolution node --strict \
+              --esModuleInterop --skipLibCheck --types node "$f"
+          done
+      - name: E1-E4 (desconexao, prazo, erro SQL, conexao derrubada) liberam conexao e instante, e a leitura seguinte funciona
+        env:
+          Q026_FALHAS_LEITOR: ${{ matrix.leitor }}
+          Q026_FALHAS_CASOS: E1,E2,E3,E4
+          Q026_FALHAS_SAIDA: falhas-e1e4-${{ matrix.leitor }}.json
+        run: |
+          set -o pipefail
+          npx tsx tests/product/run-q026-mvcc-falhas.ts | tee e1e4.out
+          grep -q '^Q026_FALHAS_RESULTADO .*"falhas":0' e1e4.out
+      - name: E7 CONTRAPROVA — sem mitigacao, laco ocupado deixa o instante passar do prazo (o teste TEM de falhar)
+        env:
+          Q026_FALHAS_LEITOR: ${{ matrix.leitor }}
+          Q026_FALHAS_CASOS: E7
+          Q026_FALHAS_REPETICOES: "2"
+          Q026_FALHAS_SAIDA: falhas-e7-sem-${{ matrix.leitor }}.json
+        run: |
+          set +e
+          npx tsx tests/product/run-q026-mvcc-falhas.ts | tee e7-sem.out
+          c=${PIPESTATUS[0]}
+          set -e
+          echo "codigo=$c"
+          test "$c" = 1
+          grep -q '^  XX  E7_laco_ocupado' e7-sem.out
+      - name: E7 com idle_in_transaction_session_timeout no papel de leitura — o instante volta a caber no prazo
+        env:
+          Q026_FALHAS_LEITOR: ${{ matrix.leitor }}
+          Q026_FALHAS_CASOS: E7
+          Q026_FALHAS_REPETICOES: "2"
+          Q026_FALHAS_MITIGACAO: sim
+          Q026_FALHAS_SAIDA: falhas-e7-com-${{ matrix.leitor }}.json
+        run: |
+          set -o pipefail
+          npx tsx tests/product/run-q026-mvcc-falhas.ts | tee e7-com.out
+          grep -q '^Q026_FALHAS_RESULTADO .*"falhas":0' e7-com.out
+      - name: Sem PostgreSQL as suites se declaram PULADAS (78), nunca verdes
+        run: |
+          set +e
+          DELIVERYOS_PG_URL= npx tsx tests/product/run-q026-mvcc-falhas.ts; a=$?
+          DELIVERYOS_PG_URL= npx tsx tests/product/run-q026-mvcc-vacuum-concorrencia.ts; b=$?
+          DELIVERYOS_PG_URL= npx tsx tests/product/run-q026-mvcc-lote-envelope.ts; c=$?
+          DELIVERYOS_PG_URL= bash tests/product/run-q026-mvcc-matriz.sh; d=$?
+          echo "falhas=$a concorrencia=$b lote=$c matriz=$d"
+          test "$a" = 78 && test "$b" = 78 && test "$c" = 78 && test "$d" = 78
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: q026-mvcc-falhas-${{ matrix.leitor }}
+          path: falhas-*.json
+          if-no-files-found: warn
+
+  concorrencia:
+    name: MVCC/VACUUM sob escrita (${{ matrix.cenario }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - cenario: longa-1-instancia
+            itens: "longa:controle:1:2 longa:canonico:1:2 longa:incremental:1:2"
+          - cenario: curtas-1-instancia
+            itens: "curtas:controle:1:2 curtas:canonico:1:2 curtas:incremental:1:2"
+          - cenario: mista-1-2-4-instancias
+            itens: "mista:canonico:1:1 mista:incremental:1:1 mista:canonico:2:1 mista:incremental:2:1 mista:canonico:4:1 mista:incremental:4:1"
+    services:
+      postgres:
+        image: public.ecr.aws/docker/library/postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Servidor descartavel — configuracao lida e registrada (sem ajuste de desempenho)
+        run: |
+          node - <<'JS'
+          const { Client } = require("pg");
+          (async () => {
+            const c = new Client({ connectionString: process.env.DELIVERYOS_PG_URL });
+            await c.connect();
+            const r = await c.query("SELECT version() v, current_setting('max_connections') mc, current_setting('max_parallel_workers_per_gather') mpw, current_setting('work_mem') wm, current_setting('autovacuum') av");
+            console.log(JSON.stringify(r.rows[0]));
+            await c.end();
+          })().catch((e) => { console.error(e); process.exit(1); });
+          JS
+      - name: Matriz (escala 0.5, 45 s por cenario, escritor 400 UPDATE/s + 20 fatos/s)
+        env:
+          Q026_MVCC_MATRIZ: ${{ matrix.itens }}
+          Q026_MVCC_ESCALA: "0.5"
+          Q026_MVCC_DURACAO_S: "45"
+          Q026_MVCC_SAIDA_DIR: resultados-${{ matrix.cenario }}
+        run: bash tests/product/run-q026-mvcc-matriz.sh
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: q026-mvcc-${{ matrix.cenario }}
+          path: resultados-${{ matrix.cenario }}/
+          if-no-files-found: warn
+
+  lote-embrulho:
+    name: instante por lote, com e sem o embrulho cancelavel (${{ matrix.perfil }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        perfil: [longa, curtas]
+    services:
+      postgres:
+        image: public.ecr.aws/docker/library/postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Lotes 257/1024/4096/20000 x embrulho, 3 repeticoes, digest unico exigido
+        env:
+          Q026_LOTE_PERFIL: ${{ matrix.perfil }}
+          Q026_LOTE_ESCALA: "1"
+          Q026_LOTE_REPETICOES: "3"
+          Q026_LOTE_SAIDA: lote-${{ matrix.perfil }}.json
+        run: |
+          set -o pipefail
+          npx tsx tests/product/run-q026-mvcc-lote-envelope.ts | tee lote.out
+          grep -q '^Q026_LOTE_RESULTADO .*"digest_unico":true' lote.out
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: q026-lote-${{ matrix.perfil }}
+          path: lote-*.json
+          if-no-files-found: warn
