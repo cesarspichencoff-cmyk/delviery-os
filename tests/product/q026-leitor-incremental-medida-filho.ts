@@ -17,7 +17,7 @@ import { createHash } from "node:crypto";
 import { monitorEventLoopDelay, performance } from "node:perf_hooks";
 
 import { lerRealidadeDeEntregas, type RealidadeDeEntregas } from "../../src/platform/leitura/realidade-de-entregas";
-import { lerRealidadeDeEntregasIncremental } from "../../src/platform/leitura/realidade-de-entregas-incremental";
+import { lerRealidadeDeEntregasIncremental, type RealidadeParaApresentacao } from "../../src/platform/leitura/realidade-de-entregas-incremental";
 import { createPgClient, type SqlClient, type TransactionalSqlClient } from "../../src/platform/persistence/sql-client";
 import { forma, vms } from "./q026-leitor-incremental-comparacao";
 import { AGORA_DA_LOJA } from "./q026-leitor-incremental-fixture";
@@ -98,7 +98,7 @@ void (async () => {
     if (MODO !== "controle") {
       const c = cronometrado(cliente, (ms) => (instantaneo_ms = ms));
       const t0 = performance.now();
-      const r: RealidadeDeEntregas | null =
+      const r: RealidadeDeEntregas | RealidadeParaApresentacao | null =
         MODO === "calibracao"
           ? await calibrar(cliente)
           : MODO === "canonico"
