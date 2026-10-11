@@ -1,0 +1,94 @@
+name: q026-e7-event-loop-timeout-proof
+# Adversarial, synthetic, disposable PG16. Never touches hosted DB or role.
+on:
+  pull_request:
+    branches:
+      - validation/q026-reader-plus-pg-survival-20261011
+permissions:
+  contents: read
+concurrency:
+  group: q026-e7-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  e7:
+    name: Q026 E7 live HTTP event-loop stall and PG idle timeout
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify tested merge tree
+        shell: bash
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          tested="$(git rev-parse HEAD)"
+          test "$tested" = "$GITHUB_SHA"
+          test -n "$PR_BASE_SHA" && test -n "$PR_HEAD_SHA"
+          echo "Q026_E7_TESTED_TREE base=$PR_BASE_SHA head=$PR_HEAD_SHA tested=$tested"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm install --no-save --no-package-lock --ignore-scripts --no-audit --no-fund tsx@4.23.15
+      - name: Strict TypeScript contract
+        run: |
+          set -euo pipefail
+          npx tsc --noEmit
+          npx tsc --noEmit --target ES2022 --module commonjs --moduleResolution node --strict --esModuleInterop --skipLibCheck --types node tests/product/run-q026-e7-event-loop-timeout.ts tests/product/q026-e7-http-child.ts
+      - name: Start owned disposable PostgreSQL16
+        shell: bash
+        run: |
+          set -euo pipefail
+          PG_BIN=/usr/lib/postgresql/16/bin
+          PG_DATA="$RUNNER_TEMP/q026-e7-pg16"
+          test -x "$PG_BIN/initdb" && test -x "$PG_BIN/pg_ctl"
+          "$PG_BIN/initdb" -D "$PG_DATA" --username=postgres --auth-local=trust --auth-host=trust --encoding=UTF8 --locale=C >/dev/null
+          if ! "$PG_BIN/pg_ctl" -D "$PG_DATA" -l "$RUNNER_TEMP/q026-e7-pg16.log" -o "-h 127.0.0.1 -p 5432 -k $RUNNER_TEMP" -w start; then
+            cat "$RUNNER_TEMP/q026-e7-pg16.log"
+            exit 1
+          fi
+          version="$(psql -h 127.0.0.1 -U postgres -d postgres -Atc 'SHOW server_version_num')"
+          test "$version" -ge 160000 && test "$version" -lt 170000
+          echo "Q026_E7_EPHEMERAL_PG16_READY version=$version"
+      - name: Expected negative control — 5s HTTP deadline cannot bound an 8s frozen loop
+        shell: bash
+        run: |
+          set -euo pipefail
+          Q026_E7_VARIANT=incremental Q026_E7_TIMEOUT_MODE=baseline npx tsx tests/product/run-q026-e7-event-loop-timeout.ts | tee e7-baseline.log
+          grep -F 'expected_negative_control_http_budget_does_not_bound_pg_snapshot' e7-baseline.log
+      - name: DB-side timeout releases transaction during blocked Node (incremental)
+        shell: bash
+        run: |
+          set -euo pipefail
+          Q026_E7_VARIANT=incremental Q026_E7_TIMEOUT_MODE=mitigated npx tsx tests/product/run-q026-e7-event-loop-timeout.ts | tee e7-inc.log
+          grep -F 'db_idle_timeout_releases_pg_session_despite_stalled_node' e7-inc.log
+      - name: DB-side timeout releases transaction during blocked Node (canonical)
+        shell: bash
+        run: |
+          set -euo pipefail
+          Q026_E7_VARIANT=canonical Q026_E7_TIMEOUT_MODE=mitigated npx tsx tests/product/run-q026-e7-event-loop-timeout.ts | tee e7-canonical.log
+          grep -F 'db_idle_timeout_releases_pg_session_despite_stalled_node' e7-canonical.log
+      - name: Missing PG must fail closed with exit 78
+        shell: bash
+        run: |
+          set +e
+          DELIVERYOS_PG_URL= Q026_E7_VARIANT=incremental Q026_E7_TIMEOUT_MODE=mitigated npx tsx tests/product/run-q026-e7-event-loop-timeout.ts >q026-e7-no-pg.log 2>&1
+          code=$?
+          set -e
+          test "$code" -eq 78
+          grep -F 'Q026_E7_PG_REQUIRED' q026-e7-no-pg.log
+      - name: Stop only runner-owned PG16
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          PG_DATA="$RUNNER_TEMP/q026-e7-pg16"
+          if test -f "$PG_DATA/postmaster.pid"; then
+            /usr/lib/postgresql/16/bin/pg_ctl -D "$PG_DATA" -m fast -w stop
+          fi
