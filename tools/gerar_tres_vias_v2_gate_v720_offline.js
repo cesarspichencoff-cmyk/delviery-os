@@ -11,6 +11,8 @@ const {verifyLiveReaderPairV68}=
  require("../dist/src/production/stableReaderShadowPairV68.js");
 const {run:renderVerifiedOffline,blob}=
  require("./gerar_tres_vias_par_leitor_v68_offline.js");
+const {PACKAGING_SOURCE_SHA256_V78}=
+ require("../dist/src/production/currentPackagingBridgeV63.js");
 const MANIFEST=path.join(__dirname,
  "../runtime/shadow/thermal-consumer-release-hold.v1.json");
 const NO_EFFECTS=Object.freeze({reader_access:false,database_write:false,
@@ -39,6 +41,19 @@ function readBound(file){
 function sha(bytes){
  return crypto.createHash("sha256").update(bytes).digest("hex");
 }
+const CONSUMER_EFFECT_KEYS=Object.freeze(["database_read","database_write",
+ "sequence_binding_write","print","spooler_write","odhen_write",
+ "fiscal_action","sefaz_call"]);
+function readOnlyConsumerResult(decision,exit){
+ if(!decision||typeof decision!=="object"||Array.isArray(decision)||
+    typeof decision.ready!=="boolean"||
+    (exit===0)!==decision.ready||![0,5].includes(exit))
+  return false;
+ const effects=decision.effects;
+ return !!effects&&typeof effects==="object"&&!Array.isArray(effects)&&
+   Object.keys(effects).length===CONSUMER_EFFECT_KEYS.length&&
+   CONSUMER_EFFECT_KEYS.every(k=>Object.hasOwn(effects,k)&&effects[k]===false);
+}
 function blocked(reasons,stage="V68_PAIR_GATE"){
  const payload={schema:"deliveryos.v2-v68-three-ticket-entry.v720.offline",
   status:"BLOCKED",stage,reasons:[...new Set(reasons)].sort(),
@@ -58,6 +73,12 @@ function run(argv=process.argv.slice(2)){
  const code=readBound(args["--consumer"]);
  if(blob(code)!==hold.preferred_future_candidate.git_blob_sha1)
   throw Error("CONSUMER_GIT_BLOB_NOT_PINNED");
+ // The V2 consumer requires this JavaScript module at startup. Verify it
+ // BEFORE spawn: a post-execution lineage check cannot undo code execution.
+ const motorPath=path.join(path.dirname(args["--consumer"]),"packaging-current.js");
+ const motorSource=readBound(motorPath);
+ if(sha(motorSource)!==PACKAGING_SOURCE_SHA256_V78)
+  throw Error("CANONICAL_PACKAGING_MOTOR_SOURCE_NOT_PINNED_BEFORE_EXEC");
  const source=readBound(args["--event"]);
  const event=JSON.parse(source.toString("utf8").replace(/^\uFEFF/,""));
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),"deliveryos-v720-gated-"));
@@ -67,8 +88,14 @@ function run(argv=process.argv.slice(2)){
   const eventPath=path.join(dir,"event.json");
   const decisionPath=path.join(dir,"decision.json");
   fs.writeFileSync(eventPath,source,{flag:"wx"});
+  // Prevent NODE_OPTIONS --require / --import and NODE_PATH from
+  // preloading unrelated executable JavaScript outside the pinned entry.
+  const childEnv={...process.env};
+  for(const key of ["NODE_OPTIONS","NODE_PATH","npm_config_node_options"])
+   delete childEnv[key];
   const child=spawnSync(process.execPath,[args["--consumer"],eventPath],{
-   encoding:"utf8",timeout:15000,windowsHide:true,maxBuffer:1024*1024
+   encoding:"utf8",timeout:15000,windowsHide:true,maxBuffer:1024*1024,
+   env:childEnv
   });
   if(child.error||![0,5].includes(child.status)||
      !child.stdout||Buffer.byteLength(child.stdout)>1024*1024)
@@ -76,6 +103,8 @@ function run(argv=process.argv.slice(2)){
   let decision;
   try{decision=JSON.parse(child.stdout);}
   catch{return blocked(["V2_CONSUMER_DECISION_NOT_JSON"],"CONSUMER_EXECUTION");}
+  if(!readOnlyConsumerResult(decision,child.status))
+   return blocked(["V2_CONSUMER_EFFECT_OR_EXIT_INCONSISTENT"],"CONSUMER_EXECUTION");
   // Reuse the exact V6.8 implementation, with the V2 decision produced
   // by this child process for THIS event, not a cached report envelope.
   const result=verifyLiveReaderPairV68(event,decision);
@@ -83,8 +112,10 @@ function run(argv=process.argv.slice(2)){
    return blocked(result.reasons);
   // Consumer may not mutate the event on disk after its read.
   if(sha(readBound(eventPath))!==sha(source)||
-     sha(readBound(args["--event"]))!==sha(source))
-   return blocked(["V2_EVENT_CHANGED_DURING_PIPELINE"],"SNAPSHOT_IDENTITY");
+     sha(readBound(args["--event"]))!==sha(source)||
+     sha(readBound(args["--consumer"]))!==sha(code)||
+     sha(readBound(motorPath))!==sha(motorSource))
+   return blocked(["V2_SOURCE_CHANGED_DURING_PIPELINE"],"SNAPSHOT_IDENTITY");
   fs.writeFileSync(decisionPath,JSON.stringify(decision),{flag:"wx"});
   // The existing renderer independently calls projectVerifiedReaderPairV68,
   // verifies source-pinned motor + reconciliation, and rejects partial tickets.
@@ -101,4 +132,4 @@ if(require.main===module){
   process.exitCode=2;
  }
 }
-module.exports={run,parseArgs,NO_EFFECTS};
+module.exports={run,parseArgs,readOnlyConsumerResult,NO_EFFECTS};
