@@ -97,17 +97,3 @@ export function verificarOrcamentoQ026(raw: unknown): OrcamentoDeConexoesQ026 {
     warning:"APENAS ORCAMENTO DECLARADO: NAO AUTORIZA DEPLOY, NAO PROVA TLS/ROLE, CONEXOES REAIS, LATENCIA OU ADMISAO GLOBAL",
   };
 }
-
-// Invoking as a CLI is opt-in: no settings are read from the operational
-// environment. Pass a JSON object WITHOUT credentials as the sole argument.
-if (process.argv[1]?.endsWith("q026-preview-capacity-gate.ts")) {
-  try {
-    if (process.argv.length!==3)throw Error("Q026_CAPACITY_ONE_JSON_ARG_REQUIRED");
-    const result=verificarOrcamentoQ026(JSON.parse(process.argv[2]));
-    console.log("Q026_PREVIEW_CAPACITY_BUDGET "+JSON.stringify(result));
-    if (!result.sufficient_on_declared_assumptions)process.exitCode=2;
-  } catch(e) {
-    console.error("Q026_PREVIEW_CAPACITY_BLOCKED "+(e instanceof Error ? e.message : "INVALID_INPUT"));
-    process.exitCode=2;
-  }
-}
