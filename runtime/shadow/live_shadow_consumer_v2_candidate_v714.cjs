@@ -65,7 +65,7 @@ function norm(s) {
 // contract at this separately executed V2 consumer boundary. Never normalize
 // an invalid quantity into a fabricated single unit.
 function validRawQuantityV718(raw) {
-  if(typeof raw!=="string" || !/^\\d+(?:\\.0+)?$/.test(raw)) return null;
+  if(typeof raw!=="string" || !/^\d+(?:\.0+)?$/.test(raw)) return null;
   const n=Number(raw);
   return Number.isSafeInteger(n)&&n>0?n:null;
 }
