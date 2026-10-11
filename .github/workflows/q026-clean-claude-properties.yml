@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - research/q026-clean-property-evidence-20261010
+      - research/q026-minimal-integration-optin-20261010
   workflow_dispatch:
 permissions:
   contents: read
