@@ -21,10 +21,9 @@ if(
  process.exit(79);
 }
 const deadline=1200;
-const sleep=(ms:number)=>new Promise<void>(r=>setTimeout(r,ms));
 
 async function oneCase(
- db:PgSqlClient,locker:PgSqlClient,skipper:PgSqlClient,lockedId:number
+ locker:PgSqlClient,skipper:PgSqlClient,lockedId:number
 ):Promise<{locked:number;skipped:number;unblocked:number;elapsed_ms:number;nowait_sqlstate:string}>{
  let release!:()=>void;
  let indicate!:()=>void;
@@ -38,7 +37,11 @@ async function oneCase(
   await gate;
  });
  try{
-  await acquired;
+  await Promise.race([
+   acquired,
+   new Promise<never>((_,reject)=>setTimeout(()=>reject(
+    new Error("SKIP_LOCKED_ACQUIRE_TIMEOUT")),5000))
+  ]);
   // Positive proof of real row lock from a different connection.
   let nowaitError:unknown=null;
   try{
@@ -75,7 +78,7 @@ void(async()=>{
    "INSERT INTO public.q026_skip_probe(id,label) VALUES (1,'synthetic one'),(2,'synthetic two')");
   const details=[];
   for(const locked of [1,2]){
-   const result=await oneCase(db,locker,skipper,locked);
+   const result=await oneCase(locker,skipper,locked);
    const again=await skipper.transaction(async tx=>tx.query<{id:number}>(
     "SELECT id FROM public.q026_skip_probe ORDER BY id FOR UPDATE SKIP LOCKED"));
    assert.deepEqual(again.map(x=>Number(x.id)),[1,2],
