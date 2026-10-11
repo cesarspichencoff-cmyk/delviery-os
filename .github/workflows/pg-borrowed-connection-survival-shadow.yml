@@ -75,14 +75,25 @@ jobs:
         run: |
           set -euo pipefail
           npx tsx src/platform/run-pg-repository-tests.ts
-      - name: Actual HTTP route survives killed PostgreSQL session, both readers
+      - name: HTTP survives killed PG sessions — canonical and incremental with admin and SELECT-only roles
         shell: bash
         run: |
           set -euo pipefail
-          Q026_HTTP_KILL_READER=canonical npx tsx tests/product/run-q026-http-pg-session-survival.ts | tee canonical-kill.log
-          grep '^Q026_REAL_HTTP_PG_SESSION_SURVIVAL_PASS ' canonical-kill.log
-          Q026_HTTP_KILL_READER=incremental npx tsx tests/product/run-q026-http-pg-session-survival.ts | tee incremental-kill.log
-          grep '^Q026_REAL_HTTP_PG_SESSION_SURVIVAL_PASS ' incremental-kill.log
+          for role in admin reader; do
+            for mode in canonical incremental; do
+              Q026_HTTP_KILL_DB_ROLE="$role" Q026_HTTP_KILL_READER="$mode" \
+                npx tsx tests/product/run-q026-http-pg-session-survival.ts | tee "kill-$role-$mode.log"
+              grep '^Q026_REAL_HTTP_PG_SESSION_SURVIVAL_PASS ' "kill-$role-$mode.log"
+              grep -F "\"reader\":\"$mode\",\"role\":\"$role\"" "kill-$role-$mode.log"
+              if test "$role" = reader; then
+                grep '^Q026_REAL_HTTP_PG_LEAST_PRIVILEGE_ROLE_PASS ' "kill-$role-$mode.log"
+                grep -F '"write_denied_sqlstate":"42501"' "kill-$role-$mode.log"
+              fi
+            done
+          done
+          count="$(psql -h 127.0.0.1 -U postgres -d postgres -Atc "SELECT count(*) FROM pg_roles WHERE rolname LIKE 'q026_kill_rd_%'")"
+          test "$count" = 0
+          echo 'Q026_REAL_HTTP_PG_LEAST_PRIVILEGE_MATRIX_PASS cases=4 readers=2 roles=2 cleaned=true'
       - name: HTTP proof without PostgreSQL must fail closed
         shell: bash
         run: |
