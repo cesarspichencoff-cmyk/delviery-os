@@ -1,3 +1,4 @@
+import './cesar-os-ci-pinned-reader.test.mjs';
 import {test} from 'node:test';
 import './cesar-os-ci-archive.test.mjs';
 import './cesar-os-ci-consumer.test.mjs';
