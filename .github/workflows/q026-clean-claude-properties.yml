@@ -47,3 +47,22 @@ jobs:
       - run: npm run test:platform:q016
       - run: npm run test:platform:product
       - run: npm run test:platform:governanca
+  mutations:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Typecheck 12 named semantic-mutation proof
+        run: npx tsc --noEmit --target ES2022 --module commonjs --moduleResolution node --strict --esModuleInterop --skipLibCheck --types node tests/product/run-q026-clean-property-mutacoes.ts
+      - name: Each altered rule must be killed by the named canonical property case
+        shell: bash
+        run: |
+          set -o pipefail
+          npx tsx tests/product/run-q026-clean-property-mutacoes.ts | tee q026-claude-mutants.log
+          grep '^Q026_LEITOR_INCREMENTAL_MUTACOES: 12/12 mortos, 0 cegos' q026-claude-mutants.log
