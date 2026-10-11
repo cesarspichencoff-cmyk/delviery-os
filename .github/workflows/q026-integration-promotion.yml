@@ -1,0 +1,161 @@
+name: q026-integration-promotion
+# Q-026 promotion guard: synthetic facts, ephemeral PostgreSQL 16, localhost Chromium.
+# No credentials, deploy, migration of operational data or external side effects.
+# Heavy cardinality benchmarks and mutation suites remain independent research gates.
+on:
+  pull_request:
+    branches:
+      - research/q026-minimal-integration-optin-20261010
+      - integration/deliveryos-product-ux-android-20261009
+  push:
+    branches:
+      - research/q026-integration-ci-safety-20261011
+      - research/q026-minimal-integration-optin-20261010
+      - integration/deliveryos-product-ux-android-20261009
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: q026-integration-promotion-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  semantics:
+    name: Q026 semantics and regressions
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Strict TypeScript contract
+        run: |
+          npx tsc --noEmit
+          npx tsc --noEmit --target ES2022 --module commonjs --moduleResolution node --strict --esModuleInterop --skipLibCheck --types node tests/product/run-q026-leitor-incremental-propriedades.ts tests/product/q026-leitor-incremental-comparacao.ts
+      - name: Nine canonical properties, fail on missing proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx tsx tests/product/run-q026-leitor-incremental-propriedades.ts | tee q026-properties.log
+          grep -F 'Q026_LEITOR_INCREMENTAL_PROPRIEDADES: 9/9 PASS' q026-properties.log
+      - name: Q016 replay, Product and governance regressions
+        run: |
+          npm run -s test:platform:q016
+          npm run -s test:platform:product
+          npm run -s test:platform:governanca
+
+  postgres:
+    name: Q026 PG16 semantics, HTTP and MVCC
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    services:
+      postgres:
+        image: public.ecr.aws/docker/library/postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
+      Q026_INC_LONGA: "5000"
+      Q026_INC_CURTAS: "200"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Real PG16 G1-G10, no empty or skipped pass
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx tsx tests/product/run-q026-leitor-incremental-pg.ts | tee q026-pg.log
+          grep -F 'Q026_LEITOR_INCREMENTAL_PG: 10/10 PASS' q026-pg.log
+      - name: Invalid timestamp and unsafe sequence parity
+        run: npx tsx tests/product/run-q026-infinite-timestamp-parity-pg.ts
+      - name: Physical Unicode ties and cross-scope ordering
+        run: |
+          npx tsx tests/product/run-q026-unicode-p4-tie-pg.ts
+          npx tsx tests/product/run-q026-p4-unicode-scope-trip-pg.ts
+      - name: Commit between FETCH, abort, rollback and backend_xmin release
+        run: npx tsx tests/product/run-q026-integrated-cursor-mvcc-abort.ts
+      - name: Actual HTTP guard with non-superuser SELECT-only role
+        run: Q026_ACTUAL_HTTP_MODE=enabled Q026_ACTUAL_HTTP_DB_ROLE=reader npx tsx tests/product/run-q026-real-http-guard-candidate.ts
+      - name: Actual incremental opt-in route with concurrent GET and health
+        run: Q026_FAIRNESS_VARIANT=incremental Q026_EVENT_LOOP_EVENTS=20000 npx tsx tests/product/run-q026-event-loop-http-fairness-shadow.ts
+      - name: PostgreSQL fixture must be required, not silently skipped
+        shell: bash
+        run: |
+          set +e
+          DELIVERYOS_PG_URL= npx tsx tests/product/run-q026-leitor-incremental-pg.ts >/dev/null 2>&1
+          result=$?
+          test "$result" -eq 78
+
+  chromium:
+    name: Q026 Chromium 503 and recovery
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    services:
+      postgres:
+        image: public.ecr.aws/docker/library/postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - name: Browser tests actual incremental opt-in and stale reading
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx tsx tests/product/run-q026-browser-overload-proof.ts | tee q026-browser.log
+          grep '^Q026_BROWSER_STALE_READING_503_PASS ' q026-browser.log
+          grep '^Q026_BROWSER_503_FIRST_LOAD_AND_RECOVERY_PASS ' q026-browser.log
+      - name: PostgreSQL required for browser proof
+        shell: bash
+        run: |
+          set +e
+          DELIVERYOS_PG_URL= npx tsx tests/product/run-q026-browser-overload-proof.ts >/dev/null 2>&1
+          result=$?
+          test "$result" -eq 78
+
+  required:
+    name: Q026 promotion required
+    needs: [semantics, postgres, chromium]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail closed unless all proof jobs succeeded
+        env:
+          SEMANTICS_RESULT: ${{ needs.semantics.result }}
+          POSTGRES_RESULT: ${{ needs.postgres.result }}
+          CHROMIUM_RESULT: ${{ needs.chromium.result }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$SEMANTICS_RESULT" = success
+          test "$POSTGRES_RESULT" = success
+          test "$CHROMIUM_RESULT" = success
+          echo Q026_PROMOTION_CI_REQUIRED_PASS
