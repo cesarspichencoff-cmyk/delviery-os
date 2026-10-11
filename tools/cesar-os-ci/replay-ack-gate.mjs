@@ -25,6 +25,9 @@ export async function commitAfterReceipts(plan,{intents,receiptFor,store}={}){
   if(previous.revision!==plan.expected_previous_revision)
     return {status:'CURSOR_CAS_CONFLICT',acknowledged:0,cursor_written:false};
   assert(next.revision===previous.revision+1,'receipt_gate_cursor_revision_invalid');
+  // A signed-off cursor may never remove old archive evidence as the replay window moves.
+  for(const [priorPath,priorDigest] of Object.entries(previous.archives))
+    assert(next.archives[priorPath]===priorDigest,'receipt_gate_cursor_prior_digest_missing');
   const newPaths=new Set(plan.new_archive_paths);
   for(const entry of plan.new_archive_entries){
     assert(next.archives[entry.archive_path]===entry.snapshot_sha256&&
