@@ -25,7 +25,7 @@ jobs:
       - name: TS compile complete repository and strict capacity test
         run: |
           npx tsc --noEmit
-          npx tsc --noEmit --target ES2022 --module commonjs --moduleResolution node --strict --esModuleInterop --skipLibCheck --types node tools/q026-preview-capacity-gate.ts tests/product/run-q026-preview-capacity-gate.ts
+          npx tsc --noEmit --target ES2022 --module commonjs --moduleResolution node --strict --esModuleInterop --skipLibCheck --types node tools/q026-preview-capacity-gate.ts tools/q026-preview-capacity-cli.ts tests/product/run-q026-preview-capacity-gate.ts
       - name: Validate fail-closed budget and CLI rejection
         shell: bash
         run: |
