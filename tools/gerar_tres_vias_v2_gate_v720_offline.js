@@ -72,13 +72,13 @@ function run(argv=process.argv.slice(2)){
   throw Error("CANDIDATE_HOLD_INVALID");
  const code=readBound(args["--consumer"]);
  if(blob(code)!==hold.preferred_future_candidate.git_blob_sha1)
-  throw Error("CONSUMER_GIT_BLOB_NOT_PINNED");
+  return blocked(["CONSUMER_GIT_BLOB_NOT_PINNED"],"SOURCE_PREFLIGHT");
  // The V2 consumer requires this JavaScript module at startup. Verify it
  // BEFORE spawn: a post-execution lineage check cannot undo code execution.
  const motorPath=path.join(path.dirname(args["--consumer"]),"packaging-current.js");
  const motorSource=readBound(motorPath);
  if(sha(motorSource)!==PACKAGING_SOURCE_SHA256_V78)
-  throw Error("CANONICAL_PACKAGING_MOTOR_SOURCE_NOT_PINNED_BEFORE_EXEC");
+  return blocked(["CANONICAL_PACKAGING_MOTOR_SOURCE_NOT_PINNED_BEFORE_EXEC"],"SOURCE_PREFLIGHT");
  const source=readBound(args["--event"]);
  const event=JSON.parse(source.toString("utf8").replace(/^\uFEFF/,""));
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),"deliveryos-v720-gated-"));
