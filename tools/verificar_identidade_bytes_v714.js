@@ -450,8 +450,14 @@ try{
   assert.equal(readOnlyConsumerResult({...base,effects:{...base.effects,spooler_write:true}},5),false);
   assert.equal(readOnlyConsumerResult({...base,effects:{...base.effects,database_write:true}},5),false);
   assert.equal(readOnlyConsumerResult({...base,effects:{...base.effects,unknown_effect:false}},5),false);
-  assert.ok(gateText.includes('delete childEnv[key]'));
-  assert.ok(gateText.includes('"NODE_OPTIONS","NODE_PATH","npm_config_node_options"'));
+  const {withoutNodePreloads}=require(gatePath);
+  const inherited={NODE_OPTIONS:"--require /tmp/evil.js",node_options:"--import /tmp/evil.mjs",
+   NODE_PATH:"/tmp",node_path:"/else",npm_config_node_options:"--eval bad",
+   NPM_CONFIG_NODE_OPTIONS:"--eval bad2",SAFE_FLAG:"keep"};
+  const safe=withoutNodePreloads(inherited);
+  assert.deepEqual(safe,{SAFE_FLAG:"keep"});
+  assert.equal(inherited.NODE_OPTIONS,"--require /tmp/evil.js");
+  assert.ok(gateText.includes('env:childEnv'));
  });
  check("V7.21 executable motor pin and V6.8 remain mandatory before rendering",()=>{
   assert.ok(gateText.indexOf("CANONICAL_PACKAGING_MOTOR_SOURCE_NOT_PINNED_BEFORE_EXEC")<
