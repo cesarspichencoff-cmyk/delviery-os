@@ -216,3 +216,33 @@ test('cursor hash uses actual original bytes, not parsed snapshot serialization'
  const another=planReplay([{path,snapshot:s1,rawBytes:Buffer.from(JSON.stringify(s1)+'\n')}],horizon);
  assert.notEqual(plan.cursor.archives[path],another.cursor.archives[path]);
 });
+
+test('rolling lookbacks retain every previously attested hash even when older archive is absent',()=>{
+ const first=planReplay([archive(s1)],{start:'2026-10-10T20:00:00.000Z',
+   end:'2026-10-10T21:00:00.000Z',now:new Date(UTC)});
+ const second=planReplay([archive(s2)],{start:'2026-10-10T22:00:00.000Z',
+   end:'2026-10-10T23:00:00.000Z',now:new Date(UTC),cursor:first.cursor});
+ assert.equal(first.archives_new,1);
+ assert.equal(second.archives_new,1);
+ assert.equal(second.expected_previous_revision,1);
+ assert.equal(second.cursor.revision,2);
+ assert.equal(second.cursor.archives[archive(s1).path],first.cursor.archives[archive(s1).path]);
+ assert.match(second.cursor.archives[archive(s2).path],/^[a-f0-9]{64}$/);
+ const again=planReplay([archive(s2)],{start:'2026-10-10T22:00:00.000Z',
+   end:'2026-10-10T23:00:00.000Z',now:new Date(UTC),cursor:second.cursor});
+ assert.equal(again.archives_new,0);
+ assert.equal(Object.keys(again.cursor.archives).length,2);
+});
+test('archive cursor reaching storage ceiling halts rather than silently evicting history',()=>{
+ const first=planReplay([archive(s1)],{start:'2026-10-10T20:00:00.000Z',
+   end:'2026-10-10T21:00:00.000Z',now:new Date(UTC)});
+ const old={...first.cursor,archives:{...first.cursor.archives}};
+ for(let i=0;i<199;i++){
+   const stamp=new Date(Date.parse('2026-10-01T00:00:00.000Z')+i*3600000).toISOString();
+   const prefix=stamp.slice(0,10).replaceAll('-','/');
+   old.archives['ci-snapshots/deliveryos/archive/'+prefix+'/'+stamp.replace(/[-:.]/g,'')+'.json']='f'.repeat(64);
+ }
+ assert.equal(Object.keys(old.archives).length,200);
+ assert.throws(()=>planReplay([archive(s2)],{start:'2026-10-10T22:00:00.000Z',
+   end:'2026-10-10T23:00:00.000Z',now:new Date(UTC),cursor:old}),/cursor_overflow/);
+});
