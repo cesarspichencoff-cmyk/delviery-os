@@ -43,7 +43,9 @@ interface PoolLike {
 }
 interface PoolClientLike {
   query(sql: string, params?: readonly unknown[]): Promise<{ rows: SqlRow[] }>;
-  release(): void;
+  release(erro?: Error): void;
+  on(evento: "error", ouvinte: (erro: Error) => void): unknown;
+  off(evento: "error", ouvinte: (erro: Error) => void): unknown;
 }
 
 export class PgSqlClient implements TransactionalSqlClient {
@@ -59,6 +61,12 @@ export class PgSqlClient implements TransactionalSqlClient {
 
   async transaction<T>(fn: (tx: SqlClient) => Promise<T>): Promise<T> {
     const conn = await this.pool.connect();
+    // Uma conexão emprestada perde o ouvinte 'error' do pg-pool.
+    // Sem um ouvinte temporário, a queda da sessão encerra o processo Node.
+    // Ao liberar com erro, o pool descarta a conexão inutilizável.
+    let erroDaConexao: Error | undefined;
+    const aoErro = (erro: Error) => { erroDaConexao = erro; };
+    conn.on("error", aoErro);
     // A conexão reservada é o ponto inteiro: todos os comandos de `fn` correm
     // aqui, e não em conexões diferentes do pool.
     const tx: SqlClient = {
@@ -79,7 +87,8 @@ export class PgSqlClient implements TransactionalSqlClient {
       }
       throw e;
     } finally {
-      conn.release();
+      conn.off("error", aoErro);
+      conn.release(erroDaConexao);
     }
   }
 
