@@ -139,24 +139,40 @@ async function main(): Promise<void> {
 
     /* ---------------------------------------------------------------- */
 
-    // `FOR UPDATE SKIP LOCKED` é o que faz a fila funcionar com mais de um
-    // worker. Alguns bancos gerenciados em modo de compatibilidade não o
-    // suportam, e a descoberta sem este teste seria no primeiro pico.
-    let skipLocked = true;
-    let detalheSkip = "suportado";
+    // SKIP LOCKED precisa FUNCIONAR: a sonda antiga usava VALUES, que o
+    // PostgreSQL rejeita por não ser uma relação bloqueável. Ela aceitava
+    // qualquer outro erro como "sintaxe aceita" e podia dar PASS sem prova.
+    // Teste real em tabela TEMPORÁRIA da sessão: não lê, altera nem migra
+    // qualquer tabela de operação; ON COMMIT DROP limpa o artefato.
+    // A conexão tem de ser a MESMA durante CREATE, INSERT e SELECT.
+    let skipLocked = false;
+    let detalheSkip = "não verificado";
     try {
-      await cliente.query(
-        `SELECT 1 FROM (VALUES (1)) AS t(x) LIMIT 1 FOR UPDATE SKIP LOCKED`,
-      );
+      await cliente.transaction(async (tx) => {
+        await tx.query(
+          "CREATE TEMP TABLE deliveryos_preflight_skip_locked " +
+          "(probe_key integer PRIMARY KEY) ON COMMIT DROP",
+        );
+        await tx.query(
+          "INSERT INTO pg_temp.deliveryos_preflight_skip_locked(probe_key) VALUES (1)",
+        );
+        const locked = await tx.query<{ probe_key: number }>(
+          "SELECT probe_key FROM pg_temp.deliveryos_preflight_skip_locked " +
+          "WHERE probe_key = 1 FOR UPDATE SKIP LOCKED",
+        );
+        if (locked.length !== 1 || Number(locked[0]?.probe_key) !== 1) {
+          throw new Error("a consulta bloqueável não devolveu a linha de prova");
+        }
+      });
+      skipLocked = true;
+      detalheSkip = "executado com sucesso em tabela temporária; sem dado operacional";
     } catch (e) {
-      // VALUES não é travável; o que interessa é se a sintaxe é aceita.
-      const msg = e instanceof Error ? e.message : String(e);
-      if (/syntax|not supported|não suportad/i.test(msg)) {
-        skipLocked = false;
-        detalheSkip = "NÃO suportado — a fila não funciona com mais de um worker";
-      } else {
-        detalheSkip = "sintaxe aceita";
-      }
+      // Falha no TEMP também impede provar a capacidade. NÃO afirmar que o
+      // servidor não tem o recurso: a sonda pode estar sem permissão TEMP.
+      const codigo = (e as { code?: string })?.code;
+      detalheSkip = "capacidade NÃO comprovada" +
+        (typeof codigo === "string" ? " (SQLSTATE " + codigo + ")" : "") +
+        " — verificar suporte e permissão TEMP da credencial migradora";
     }
     achados.push({
       nome: "FOR UPDATE SKIP LOCKED",
