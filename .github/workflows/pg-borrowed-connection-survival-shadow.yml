@@ -59,7 +59,7 @@ jobs:
         run: |
           set -e
           npx tsc --noEmit
-          npx tsc --noEmit --target ES2022 --module commonjs --moduleResolution node --strict --esModuleInterop --skipLibCheck --types node tests/product/run-q026-mvcc-conexao-derrubada.ts
+          npx tsc --noEmit --target ES2022 --module commonjs --moduleResolution node --strict --esModuleInterop --skipLibCheck --types node tests/product/run-q026-mvcc-conexao-derrubada.ts tests/product/run-q026-http-pg-session-survival.ts
           npm run test:platform:q016
           npm run test:platform:product
           npm run test:platform:governanca
@@ -75,6 +75,23 @@ jobs:
         run: |
           set -euo pipefail
           npx tsx src/platform/run-pg-repository-tests.ts
+      - name: Actual HTTP route survives killed PostgreSQL session, both readers
+        shell: bash
+        run: |
+          set -euo pipefail
+          Q026_HTTP_KILL_READER=canonical npx tsx tests/product/run-q026-http-pg-session-survival.ts | tee canonical-kill.log
+          grep '^Q026_REAL_HTTP_PG_SESSION_SURVIVAL_PASS ' canonical-kill.log
+          Q026_HTTP_KILL_READER=incremental npx tsx tests/product/run-q026-http-pg-session-survival.ts | tee incremental-kill.log
+          grep '^Q026_REAL_HTTP_PG_SESSION_SURVIVAL_PASS ' incremental-kill.log
+      - name: HTTP proof without PostgreSQL must fail closed
+        shell: bash
+        run: |
+          set +e
+          DELIVERYOS_PG_URL= Q026_HTTP_KILL_READER=incremental npx tsx tests/product/run-q026-http-pg-session-survival.ts >http-no-pg.log 2>&1
+          code=$?
+          set -e
+          test "$code" -eq 78
+          grep -F 'Q026_HTTP_PG_KILL_REQUIRED' http-no-pg.log
       - name: Database missing must NOT pass
         shell: bash
         run: |
