@@ -48,11 +48,11 @@ jobs:
             npx tsc --noEmit --target ES2022 --module commonjs --moduleResolution node --strict \
               --esModuleInterop --skipLibCheck --types node "$f"
           done
-      - name: E1 E2 E3 E5 (desconexao, prazo, erro SQL, excecao JS no meio) liberam conexao e instante, e a leitura seguinte funciona
+      - name: E1 E2 E3 E5 E6 (desconexao, prazo, erro SQL, excecao JS no meio, dois prazos juntos) liberam conexao e instante, e a leitura seguinte funciona
         env:
           Q026_FALHAS_LEITOR: ${{ matrix.leitor }}
-          Q026_FALHAS_CASOS: E1,E2,E3,E5
-          Q026_FALHAS_SAIDA: falhas-e1e2e3e5-head-${{ matrix.leitor }}.json
+          Q026_FALHAS_CASOS: E1,E2,E3,E5,E6
+          Q026_FALHAS_SAIDA: falhas-e1e2e3e5e6-head-${{ matrix.leitor }}.json
         run: |
           set -o pipefail
           npx tsx tests/product/run-q026-mvcc-falhas.ts | tee out.txt
@@ -108,11 +108,11 @@ jobs:
           git apply "$PROPOSTA"
           git diff --stat
           test "$(git diff --name-only)" = "src/platform/persistence/sql-client.ts"
-      - name: Com a proposta — E1 a E5 passam, inclusive a sessao encerrada pelo banco
+      - name: Com a proposta — E1 a E6 passam, inclusive a sessao encerrada pelo banco
         env:
           Q026_FALHAS_LEITOR: ${{ matrix.leitor }}
-          Q026_FALHAS_CASOS: E1,E2,E3,E4,E5
-          Q026_FALHAS_SAIDA: falhas-e1a5-proposta-${{ matrix.leitor }}.json
+          Q026_FALHAS_CASOS: E1,E2,E3,E4,E5,E6
+          Q026_FALHAS_SAIDA: falhas-e1a6-proposta-${{ matrix.leitor }}.json
         run: |
           set -o pipefail
           npx tsx tests/product/run-q026-mvcc-falhas.ts | tee out.txt
@@ -136,8 +136,10 @@ jobs:
           DELIVERYOS_PG_URL= npx tsx tests/product/run-q026-mvcc-lote-envelope.ts; c=$?
           DELIVERYOS_PG_URL= bash tests/product/run-q026-mvcc-matriz.sh; d=$?
           DELIVERYOS_PG_URL= npx tsx tests/product/run-q026-mvcc-conexao-derrubada.ts; e=$?
-          echo "falhas=$a concorrencia=$b lote=$c matriz=$d derrubada=$e"
-          test "$a" = 78 && test "$b" = 78 && test "$c" = 78 && test "$d" = 78 && test "$e" = 78
+          DELIVERYOS_PG_URL= npx tsx tests/product/run-q026-mvcc-rtt.ts; f=$?
+          DELIVERYOS_PG_URL= npx tsx tests/product/run-q026-mvcc-pool-compartilhado.ts; g=$?
+          echo "falhas=$a concorrencia=$b lote=$c matriz=$d derrubada=$e rtt=$f pool=$g"
+          test "$a" = 78 && test "$b" = 78 && test "$c" = 78 && test "$d" = 78 && test "$e" = 78 && test "$f" = 78 && test "$g" = 78
       - if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -175,12 +177,16 @@ jobs:
         run: |
           set +e
           rodar() { n=$1; shift; "$@" > "antes-$n.log" 2>&1; c=$?; echo "$n=$c" | tee -a antes.txt; tail -n 3 "antes-$n.log"; }
+          # O teste da #77 cria o papel GLOBAL q026_http_reader e não o apaga: uma segunda
+          # rodada no mesmo cluster falharia no CREATE ROLE. Sobra de teste, não do runtime.
+          limpar_papel() { node -e 'const {Client}=require("pg");(async()=>{const c=new Client({connectionString:process.env.DELIVERYOS_PG_URL});await c.connect();await c.query("DROP ROLE IF EXISTS q026_http_reader");await c.end();})().catch(e=>{console.error(e);process.exit(1)})'; }
           rodar typecheck npx tsc --noEmit
           rodar repos npx tsx src/platform/run-pg-repository-tests.ts
           rodar q016 npm run test:platform:q016
           rodar incremental-pg npx tsx tests/product/run-q026-leitor-incremental-pg.ts
           rodar http-desligado env Q026_ACTUAL_HTTP_MODE=disabled npx tsx tests/product/run-q026-real-http-guard-candidate.ts
           rodar http-admin env Q026_ACTUAL_HTTP_MODE=enabled Q026_ACTUAL_HTTP_DB_ROLE=admin npx tsx tests/product/run-q026-real-http-guard-candidate.ts
+          limpar_papel
           rodar http-papel-leitor env Q026_ACTUAL_HTTP_MODE=enabled Q026_ACTUAL_HTTP_DB_ROLE=reader npx tsx tests/product/run-q026-real-http-guard-candidate.ts
           exit 0
       - name: PROPOSTA (nao aplicada na branch) — patch aplicado so neste workspace efemero
@@ -197,12 +203,14 @@ jobs:
         run: |
           set +e
           rodar() { n=$1; shift; "$@" > "depois-$n.log" 2>&1; c=$?; echo "$n=$c" | tee -a depois.txt; tail -n 3 "depois-$n.log"; }
+          limpar_papel() { node -e 'const {Client}=require("pg");(async()=>{const c=new Client({connectionString:process.env.DELIVERYOS_PG_URL});await c.connect();await c.query("DROP ROLE IF EXISTS q026_http_reader");await c.end();})().catch(e=>{console.error(e);process.exit(1)})'; }
           rodar typecheck npx tsc --noEmit
           rodar repos npx tsx src/platform/run-pg-repository-tests.ts
           rodar q016 npm run test:platform:q016
           rodar incremental-pg npx tsx tests/product/run-q026-leitor-incremental-pg.ts
           rodar http-desligado env Q026_ACTUAL_HTTP_MODE=disabled npx tsx tests/product/run-q026-real-http-guard-candidate.ts
           rodar http-admin env Q026_ACTUAL_HTTP_MODE=enabled Q026_ACTUAL_HTTP_DB_ROLE=admin npx tsx tests/product/run-q026-real-http-guard-candidate.ts
+          limpar_papel
           rodar http-papel-leitor env Q026_ACTUAL_HTTP_MODE=enabled Q026_ACTUAL_HTTP_DB_ROLE=reader npx tsx tests/product/run-q026-real-http-guard-candidate.ts
           set -e
           echo "antes:  $(tr '\n' ' ' < antes.txt)"
@@ -243,6 +251,11 @@ jobs:
           - cenario: mista-1-2-4-instancias
             itens: "mista:canonico:1:1 mista:incremental:1:1 mista:canonico:2:1 mista:incremental:2:1 mista:canonico:4:1 mista:incremental:4:1"
             clientes: "1"
+          # Admissão 4 numa instância: o pool de leitura (max 2) limita as transações;
+          # os outros dois pedidos esperam a fila do pool (≤ 1 s) ou recebem 503.
+          - cenario: mista-admissao-4
+            itens: "mista:canonico:1:4 mista:incremental:1:4"
+            clientes: "4"
     services:
       postgres:
         image: public.ecr.aws/docker/library/postgres:16
@@ -322,4 +335,73 @@ jobs:
         with:
           name: q026-lote-${{ matrix.perfil }}
           path: lote-*.json
+          if-no-files-found: warn
+
+  rtt:
+    name: instante x latencia de rede ate o PostgreSQL (proxy com atraso medido)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: public.ecr.aws/docker/library/postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Atraso por sentido 0/1/3 ms, canonico e incremental 257/4096 com o embrulho da rota, digest unico exigido
+        env:
+          Q026_RTT_PERFIL: longa
+          Q026_RTT_ESCALA: "1"
+          Q026_RTT_REPETICOES: "2"
+          Q026_RTT_SAIDA: rtt-longa.json
+        run: |
+          set -o pipefail
+          npx tsx tests/product/run-q026-mvcc-rtt.ts | tee rtt.out
+          grep -q '^Q026_RTT_RESULTADO .*"digest_unico":true' rtt.out
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: q026-rtt
+          path: rtt-*.json
+          if-no-files-found: warn
+
+  pool-e-keepalive:
+    name: pool compartilhado com o historico e mecanismo do ECONNRESET
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: public.ecr.aws/docker/library/postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Pool de leitura (max 2) dividido entre Entregas e historico — admissao 2 x 1 (medida, sem criterio de aprovacao)
+        env:
+          Q026_POOL_SAIDA: pool.json
+        run: |
+          set -o pipefail
+          npx tsx tests/product/run-q026-mvcc-pool-compartilhado.ts | tee pool.out
+          grep -q '^Q026_POOL_RESULTADO ' pool.out
+      - name: Mecanismo do ECONNRESET — laco parado alem do keepAliveTimeout (Node http puro, sem banco)
+        run: npx tsx tests/product/run-q026-mvcc-keepalive.ts
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: q026-pool
+          path: pool.json
           if-no-files-found: warn
