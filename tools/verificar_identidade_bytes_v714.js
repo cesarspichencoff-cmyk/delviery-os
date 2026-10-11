@@ -69,7 +69,7 @@ try{
  };
  for(const [k,v] of Object.entries(docs))
   fs.writeFileSync(path.join(folder,k),JSON.stringify(v));
- function run(orders,notes=[]){
+ function run(orders,notes=[],qty="1.000"){
   setConfig(orders);
   const event={schema:"deliveryos.tata-reader-stable-order-event.v1",
    order_key,snapshot_hash:revision,ready_for_downstream_shadow:false,
@@ -79,7 +79,7 @@ try{
     NRCOMANDA:"0000000001",NRCOMANDAEXT:"1001",IDORGCMDVENDA:"DLV_TEST",
     DTHRABERMESA:"2026-10-10T11:30:00.0000000",
     items:[{NRPRODCOMVEN:"000001",CDPRODUTO:pCode,
-     CDARVPROD:productCode.replace(/\./g,""),QTPRODCOMVEN:"1.000",IDSTPRCOMVEN:"A"}],
+     CDARVPROD:productCode.replace(/\./g,""),QTPRODCOMVEN:qty,IDSTPRCOMVEN:"A"}],
     observation_scan_complete:true,observation_rows:notes}};
   const eventPath=path.join(folder,"event.json");
   fs.writeFileSync(eventPath,JSON.stringify(event));
@@ -214,6 +214,46 @@ try{
   assert.ok(proc.stderr.includes("PACKAGING_ENGINE_CHANGED_DURING_LOAD"),proc.stderr.slice(0,400));
   assert.equal(proc.stdout,"");
   fs.writeFileSync(target,original);
+ });
+ // V7.18: same V6.8 raw quantity grammar, enforced at the V2 consumer boundary.
+ check("V7.18 malformed raw quantities never invent a unit, packaging or kit",()=>{
+  for(const raw of ["0","0.000","-1","-2.000","1.5","2.100","3,0","1e3",
+   "Infinity","NaN","abc",""," "," 1.000","1.000 ","1.00001",
+   "9007199254740992",null,1,0,true,{},[]]){
+   const r=run([],[],raw);
+   assert.equal(r.ready,false,"invalid input cannot be ready");
+   assert.ok(r.blocking_reasons.includes("RAW_ITEM_QUANTITY_INVALID:1"),
+     "missing quantity blocker on "+JSON.stringify(raw));
+   assert.ok(r.blocking_reasons.includes("PACKAGING_SKIPPED_INVALID_RAW_QUANTITY"));
+   assert.equal(r.items.length,0,"invalid input yielded an item");
+   assert.equal(r.packaging,null,"invalid input yielded packaging");
+   assert.equal(r.kits,null,"invalid input yielded kits");
+   assert.equal(r.effects.print,false);
+   assert.equal(r.effects.spooler_write,false);
+  }
+ });
+ check("V7.18 retains exact positive integer formats already accepted by V6.8",()=>{
+  for(const [raw,expected] of [["1",1],["1.0",1],["1.000",1],
+   ["0002.000",2],["17",17],["9007199254740991",9007199254740991]]){
+   const r=run([],[],raw);
+   assert.equal(r.items.length,1,JSON.stringify(raw));
+   assert.equal(r.items[0].quantity,expected);
+   assert.ok(!r.blocking_reasons.some(x=>x.startsWith("RAW_ITEM_QUANTITY_INVALID:")));
+   assert.equal(r.ready,false,"expired fixture cannot authorize output");
+  }
+ });
+ check("V7.18 quantity parser matches V6.8 gate and preserves zero effects",()=>{
+  const source=fs.readFileSync(path.join(__dirname,
+   "../src/production/stableReaderShadowPairV68.ts"),"utf8");
+  const quantityContract=String.raw`if(typeof s!=="string"||!/^\d+(?:\.0+)?$/.test(s))return null;`;
+  assert.ok(source.includes(quantityContract),"V6.8 contract drift");
+  const candidateContract=String.raw`if(typeof raw!=="string" || !/^\d+(?:\.0+)?$/.test(raw)) return null;`;
+  assert.ok(candidate.includes(candidateContract),"candidate quantity contract drift");
+  assert.ok(!candidate.includes("Math.max(1, Number(raw.QTPRODCOMVEN) || 1)"));
+  const r=run([],[],"0");
+  assert.deepEqual(r.effects,{database_read:false,database_write:false,
+   sequence_binding_write:false,print:false,spooler_write:false,
+   odhen_write:false,fiscal_action:false,sefaz_call:false});
  });
  console.log("THERMAL_BYTE_IDENTITY_V714="+checks+"/"+checks+" NO_LEGACY_AUTO_FACT NO_PRINT");
 }finally{fs.rmSync(temp,{recursive:true,force:true});}
