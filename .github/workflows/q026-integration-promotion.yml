@@ -144,9 +144,46 @@ jobs:
           result=$?
           test "$result" -eq 78
 
+  android:
+    name: Q026 Android JVM regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Android JVM and Room regressions, no physical device
+        working-directory: android
+        run: bash ./gradlew --no-daemon --console=plain testDebugUnitTest
+      - name: Verify real nonempty JUnit results, fail on errors or missing suites
+        if: ${{ always() }}
+        working-directory: android
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import glob, xml.etree.ElementTree as ET
+          files = glob.glob("app/build/test-results/testDebugUnitTest/*.xml")
+          if not files:
+              raise SystemExit("Q026_ANDROID_JUNIT_MISSING")
+          count = failures = errors = skipped = 0
+          for path in files:
+              root = ET.parse(path).getroot()
+              count += int(root.get("tests", "0"))
+              failures += int(root.get("failures", "0"))
+              errors += int(root.get("errors", "0"))
+              skipped += int(root.get("skipped", "0"))
+          print(f"Q026_ANDROID_JVM_JUNIT: suites={len(files)} tests={count} failures={failures} errors={errors} skipped={skipped}")
+          if count == 0 or count == skipped or failures or errors:
+              raise SystemExit("Q026_ANDROID_JUNIT_INVALID")
+          PY
+
   required:
     name: Q026 promotion required
-    needs: [semantics, postgres, chromium]
+    needs: [semantics, postgres, chromium, android]
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
@@ -155,10 +192,12 @@ jobs:
           SEMANTICS_RESULT: ${{ needs.semantics.result }}
           POSTGRES_RESULT: ${{ needs.postgres.result }}
           CHROMIUM_RESULT: ${{ needs.chromium.result }}
+          ANDROID_RESULT: ${{ needs.android.result }}
         shell: bash
         run: |
           set -euo pipefail
           test "$SEMANTICS_RESULT" = success
           test "$POSTGRES_RESULT" = success
           test "$CHROMIUM_RESULT" = success
+          test "$ANDROID_RESULT" = success
           echo Q026_PROMOTION_CI_REQUIRED_PASS
