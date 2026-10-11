@@ -112,6 +112,7 @@ jobs:
         run: |
           set -euo pipefail
           npx tsc --noEmit
+          npx tsc --noEmit --target ES2022 --module commonjs --moduleResolution node --strict --esModuleInterop --skipLibCheck --types node tests/product/run-preview-skip-locked-real-concurrency.ts
           npx tsx src/platform/run-database-preflight-tests.ts | tee preflight-pure.log
           grep '^DATABASE_PREFLIGHT: 9/9 PASS' preflight-pure.log
       - name: Start ONLY self-owned disposable PostgreSQL16
@@ -147,6 +148,31 @@ jobs:
           count="$(psql -h 127.0.0.1 -U postgres -d postgres -Atc "SELECT count(*) FROM pg_class WHERE relname='deliveryos_preflight_skip_locked'")"
           test "$count" = 0
           echo 'SKIP_LOCKED_REAL_PROBE_PASS temporary_relation_cleaned=true'
+      - name: Actual SKIP LOCKED concurrency (two independent sessions, both lock orders)
+        shell: bash
+        env:
+          DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
+          Q026_ALLOW_ISOLATED_DB_PROBE: runner-owned-postgres16
+        run: |
+          set -euo pipefail
+          npx tsx tests/product/run-preview-skip-locked-real-concurrency.ts | tee real-concurrency.log
+          grep '^SKIP_LOCKED_REAL_CONCURRENT_SESSIONS_PASS ' real-concurrency.log
+          grep -F '"cases":2' real-concurrency.log
+          grep -F '"nowait_positive_control":"55P03"' real-concurrency.log
+          grep -F '"restored_rows":2' real-concurrency.log
+      - name: Concurrent probe refuses missing PostgreSQL and non-runner target
+        shell: bash
+        run: |
+          set +e
+          DELIVERYOS_PG_URL= Q026_ALLOW_ISOLATED_DB_PROBE=runner-owned-postgres16 npx tsx tests/product/run-preview-skip-locked-real-concurrency.ts >real-no-pg.log 2>&1
+          no_pg_code=$?
+          DELIVERYOS_PG_URL=postgres://postgres@remote.example.invalid:5432/postgres Q026_ALLOW_ISOLATED_DB_PROBE=runner-owned-postgres16 npx tsx tests/product/run-preview-skip-locked-real-concurrency.ts >real-no-remote.log 2>&1
+          remote_code=$?
+          set -e
+          test "$no_pg_code" -eq 78
+          test "$remote_code" -eq 79
+          grep -F 'SKIP_LOCKED_REAL_CONCURRENCY_PG_REQUIRED' real-no-pg.log
+          grep -F 'SKIP_LOCKED_REAL_CONCURRENCY_RUNNER_ONLY' real-no-remote.log
       - name: No TEMP must degrade evidence without rejecting valid PostgreSQL
         shell: bash
         run: |
