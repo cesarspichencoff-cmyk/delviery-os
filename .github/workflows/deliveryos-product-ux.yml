@@ -142,7 +142,7 @@ jobs:
         run: |
           set -euo pipefail
           npx tsx src/platform/bin/verificar-banco.ts | tee supported.log
-          grep 'executado com sucesso em tabela temporária' supported.log
+          grep -F 'prova real em linha temporária, sem dado operacional' supported.log
           if grep -F 'sintaxe aceita' supported.log; then exit 1; fi
           count="$(psql -h 127.0.0.1 -U postgres -d postgres -Atc "SELECT count(*) FROM pg_class WHERE relname='deliveryos_preflight_skip_locked'")"
           test "$count" = 0
