@@ -140,8 +140,9 @@ async function main(): Promise<void> {
     /* ---------------------------------------------------------------- */
 
     // SKIP LOCKED precisa FUNCIONAR: a sonda antiga usava VALUES, que o
-    // PostgreSQL rejeita por não ser uma relação bloqueável. Ela aceitava
-    // qualquer outro erro como "sintaxe aceita" e podia dar PASS sem prova.
+    // PostgreSQL aceita a sintaxe sobre VALUES, mas esse SELECT não demonstra
+    // bloqueio de uma linha real. Pior: outros erros eram rotulados como
+    // "sintaxe aceita", sem distinguir falha da prova de compatibilidade.
     // Teste real em tabela TEMPORÁRIA da sessão: não lê, altera nem migra
     // qualquer tabela de operação; ON COMMIT DROP limpa o artefato.
     // A conexão tem de ser a MESMA durante CREATE, INSERT e SELECT.
