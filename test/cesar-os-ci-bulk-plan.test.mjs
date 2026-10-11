@@ -28,7 +28,9 @@ test('100 records fit free D1 query and parameter ceilings without serial writes
  assert.equal(plan.estimated_total_statements,30);
  assert(plan.estimated_total_statements<=D1_FREE_QUERY_CEILING);
  assert(plan.observations.every(x=>x.row_count===4&&x.params.length===84));
- assert(plan.observations.every(x=>x.sql.includes('ON CONFLICT(observation_id) DO NOTHING')));
+ assert(plan.observations.every(x=>!x.sql.includes('ON CONFLICT')&&!x.sql.includes('DO NOTHING')));
+ assert.equal(plan.strict_existing_id_conflicts,true);
+ assert.equal(plan.duplicate_content_comparison_implemented,false);
  assert(plan.observations.every(x=>!x.sql.includes('INSERT OR IGNORE')));
  assert.equal(plan.executed,false);
 });
