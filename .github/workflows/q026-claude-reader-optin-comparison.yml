@@ -1,0 +1,93 @@
+name: q026-claude-reader-optin-comparison
+# Minimal promotion-review branch from integration, never deploys.
+on:
+  push:
+    branches:
+      - research/q026-claude-reader-integrated-comparison-20261010
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: q026-clean-integration-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  actual-http-and-mvcc:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario: [disabled, enabled_admin, enabled_reader, mvcc_abort, fairness_incremental]
+    services:
+      postgres:
+        image: public.ecr.aws/docker/library/postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
+      Q026_CLEAN_SCENARIO: ${{ matrix.scenario }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Strict typecheck clean integration and fixtures
+        run: |
+          npx tsc --noEmit
+          npx tsc --noEmit --target ES2022 --module commonjs --moduleResolution node --strict --esModuleInterop --skipLibCheck --types node tests/product/run-q026-real-http-guard-candidate.ts tests/product/run-q026-integrated-cursor-mvcc-abort.ts tests/product/run-q026-event-loop-http-fairness-shadow.ts
+      - name: Real HTTP, single-snapshot and MVCC safety in disposable PG
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "$Q026_CLEAN_SCENARIO" in
+            disabled)
+              Q026_ACTUAL_HTTP_MODE=disabled npx tsx tests/product/run-q026-real-http-guard-candidate.ts | tee proof.log
+              grep '^Q026_ACTUAL_HTTP_GUARD_DISABLED_PASS ' proof.log
+              ;;
+            enabled_admin)
+              Q026_ACTUAL_HTTP_MODE=enabled Q026_ACTUAL_HTTP_DB_ROLE=admin npx tsx tests/product/run-q026-real-http-guard-candidate.ts | tee proof.log
+              grep '^Q026_ACTUAL_HTTP_DISCONNECT_PASS ' proof.log
+              grep '^Q026_ACTUAL_HTTP_DEADLINE_PASS ' proof.log
+              grep '^Q026_ACTUAL_HTTP_GUARD_ENABLED_PASS ' proof.log
+              ;;
+            enabled_reader)
+              Q026_ACTUAL_HTTP_MODE=enabled Q026_ACTUAL_HTTP_DB_ROLE=reader npx tsx tests/product/run-q026-real-http-guard-candidate.ts | tee proof.log
+              grep '^Q026_ACTUAL_HTTP_LEAST_PRIVILEGE_ROLE_PASS ' proof.log
+              grep '^Q026_ACTUAL_HTTP_GUARD_ENABLED_PASS ' proof.log
+              ;;
+            mvcc_abort)
+              npx tsx tests/product/run-q026-integrated-cursor-mvcc-abort.ts | tee proof.log
+              grep '^Q026_INCREMENTAL_MVCC_CONCURRENT_COMMIT_PASS ' proof.log
+              grep '^Q026_INCREMENTAL_FETCH_ABORT_ROLLBACK_PASS ' proof.log
+              ;;
+            fairness_incremental)
+              Q026_EVENT_LOOP_EVENTS=120000 Q026_FAIRNESS_VARIANT=incremental npx tsx tests/product/run-q026-event-loop-http-fairness-shadow.ts | tee proof.log
+              grep '^Q026_EVENT_LOOP_HTTP_SHADOW_MEASURED ' proof.log
+              ;;
+            *) exit 1 ;;
+          esac
+  regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm run test:platform:q016
+      - run: npm run test:platform:product
+      - run: npm run test:platform:governanca
+      - name: Lack of PG must not count as valid proof
+        shell: bash
+        run: |
+          set +e
+          DELIVERYOS_PG_URL= Q026_ACTUAL_HTTP_MODE=enabled npx tsx tests/product/run-q026-real-http-guard-candidate.ts
+          test "$?" = 78
