@@ -393,6 +393,7 @@ caminho: mediana de 50 `SELECT 1`.
 | longa 200k | 0,11 ms | 2.059 ms | 2.925 ms | 2.284 ms |
 | longa 200k | 2,94 ms | 1.966 ms | **6.411 ms** | 2.400 ms |
 | longa 200k | 6,86 ms | 2.000 ms | **12.822 ms** | 2.601 ms |
+| longa 200k (CI `38135280979`) | 0,11 / 2,33 / 6,33 ms | 991 / 1.037 / 1.057 ms | 1.301 / **4.406** / **10.967** ms | 1.171 / 1.232 / 1.461 ms |
 | curtas 180k | 0,09 ms | 1.419 ms | 2.311 ms | 1.884 ms |
 | curtas 180k | 3,05 ms | 1.665 ms | **5.482 ms** | 1.992 ms |
 | curtas 180k | 6,85 ms | 1.523 ms | **11.251 ms** | 2.468 ms |
@@ -420,6 +421,8 @@ de Entregas em laço fechado por 30 s e uma sonda de `/api/historico?unit_id=ITA
 |---:|---|---:|---|
 | 2 | 200 em 26,9 ms | **9 de 45** | 18,1 / 1.703,6 |
 | 1 | 200 em 32,2 ms | **0 de 104** | 9,8 / 968,6 |
+| 2 (CI `38135280979`) | 200 em 14,6 ms | **9 de 47** | 229,1 / 1.209,7 |
+| 1 (CI `38135280979`) | 200 em 16,4 ms | **0 de 115** | 5,7 / 348,2 |
 
 - Com admissão 2, as duas leituras de Entregas ocupam as duas conexões. O histórico espera o checkout por 1 s e cai
   na própria degradação: responde 200, mas sem a leitura do log. É uma falha **silenciosa para quem olha o status**.
@@ -431,7 +434,19 @@ de Entregas em laço fechado por 30 s e uma sonda de `/api/historico?unit_id=ITA
 
 ### 3.8 CI desta branch
 
-⟨PENDENTE: links do CI final⟩
+O workflow `q026-mvcc-vacuum-adversarial` roda nos pushes desta branch, com um PostgreSQL 16 em contêiner por job.
+Todas as execuções ficam registradas, inclusive as que reprovaram.
+
+| execução | commit | resultado | o que mostrou |
+|---|---|---|---|
+| [38114150701](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38114150701) | `fc1c371` | **falhou** (2 de 7 jobs) | **Achou o defeito da seção 1**: no E4, o processo do servidor morreu nos dois leitores. Lote × embrulho e concorrência longa/curtas/mista passaram; a mista com admissão 1 ainda tinha o laço de recusas (dois clientes por instância). |
+| [38116089526](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38116089526) | `4ffecc4` | **falhou** (2 de 8 jobs) | Contraprovas e proposta verdes no incremental. No canônico, só o "E7 com proposta e timeout" reprovou, pela admissão presa 5,7 s (seção 8, item 9). A comparação antes/depois tropeçou na sobra `q026_http_reader` (seção 8, item 11). |
+| [38135280979](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38135280979) | `2c2acd4` | **verde, 11 de 11 jobs** | E1, E2, E3, E5 e E6 verdes no HEAD. Contraprovas exigidas e obtidas: E4 mata o processo; E7 sem mitigação passa do prazo; E7 com timeout e sem correção mata o processo. Com a proposta: E1 a E6 e E7 com timeout verdes. Adaptador 9/9 → 0/9. Suítes anteriores antes/depois todas verdes, sem falha nova. Concorrência longa, curtas, mista 1/2/4 e admissão 4. Lote, rede, pool e keep-alive. |
+
+⟨PENDENTE: números do CI 38135280979 para falhas e concorrência⟩
+
+Artefatos de cada execução (JSON com as amostras brutas de cada cenário): na página da execução, seção
+"Artifacts".
 
 ---
 
@@ -566,7 +581,8 @@ qualquer limite **do lado do banco** possa existir sem derrubar o processo.
 | E4 na rota, incremental e canônico | 0/3 e 0/3 (morte) | 3/3 e 3/3 |
 | E7 com `idle_in_transaction_session_timeout`, incremental e canônico | 0/3 e 0/3 (morte) | 3/3 e 3/3 |
 | E1, E2, E3 e E5, incremental e canônico | 3/3 em todos | 3/3 em todos (sem regressão) |
-| suítes anteriores: tipagem, repositórios PG, Q-016, leitor incremental PG e guarda HTTP real (admin, papel leitor, desligado) | ⟨PENDENTE: CI⟩ | ⟨PENDENTE: CI⟩ |
+| suítes anteriores no CI `38135280979`: tipagem do projeto, repositórios PG (19 testes), Q-016 (27/27), leitor incremental PG (10/10), guarda HTTP real desligada, ligada como admin e ligada com papel de leitor | todas 0 (verdes) | **todas 0 (verdes); nenhuma falha nova** |
+| adaptador puro no CI `38135280979` | 9/9 morrem | 0/9 |
 
 **Alternativas consideradas:**
 
