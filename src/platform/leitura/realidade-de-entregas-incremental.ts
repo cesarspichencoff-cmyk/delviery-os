@@ -123,7 +123,10 @@ class CompactTrip {
         if(p>this.posMs){this.posMs=p;this.ultima_posicao_em=position}
       }
     }
-    if(e.device_id && (!this.deviceWinner||cmp(e,this.deviceWinner)>0)){
+    // P4: the canonical JS sort is stable; on a complete comparator tie
+    // (e.g. Unicode NFC vs NFD identifiers that localeCompare as 0),
+    // the LATER physical row wins the device, not the first row.
+    if(e.device_id && (!this.deviceWinner||cmp(e,this.deviceWinner)>=0)){
       this.deviceWinner=e;this.device_id=e.device_id;
     }
     if(e.event_type==="occurrence_created")this.ocorrencias_abertas++;
