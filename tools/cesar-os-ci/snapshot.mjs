@@ -39,6 +39,8 @@ export function makeSnapshot(runs, total, win){
   for(const r of runs){
     if(!Number.isSafeInteger(r?.id)||r.id<1 ||
        r.repository?.full_name!==REPO ||
+       String(r.repository?.id)!==REPO_ID ||
+       String(r.repository?.owner?.id)!==OWNER_ID ||
        !STATUSES.has(r.status)||!CONCLUSIONS.has(r.conclusion)||
        (r.conclusion!==null&&r.status!=='completed')||
        !Number.isFinite(ms(r.created_at))||!Number.isFinite(ms(r.updated_at))||
@@ -90,6 +92,7 @@ export async function collect(token,{now=new Date(),fetchFn=fetch}={}){
 export async function publish(snapshot,ctx,{token,fetchFn=fetch}={}){
   if(snapshot?.schema!=='cesar-os-github-public-ci-snapshot-v1'||
      snapshot?.repository!==REPO||String(snapshot?.repository_id)!==REPO_ID||
+     String(snapshot?.repository_owner_id)!==OWNER_ID||
      snapshot?.source_id!==SOURCE||snapshot?.collection_basis!=='RUN_CREATED_AT'||
      snapshot?.lifecycle_updates_complete!==false||snapshot?.continuity_complete!==false||
      snapshot?.possible_commitment!==false||
