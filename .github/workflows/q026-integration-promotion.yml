@@ -7,6 +7,7 @@ on:
     branches:
       - research/q026-minimal-integration-optin-20261010
       - integration/deliveryos-product-ux-android-20261009
+      - main
   push:
     branches:
       - research/q026-integration-ci-safety-20261011
