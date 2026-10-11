@@ -14,7 +14,7 @@ const env={GITHUB_REPOSITORY:REPO,GITHUB_REPOSITORY_ID:REPO_ID,
 const run=(id,more={})=>({id,name:'DeliveryOS Thermal Shadow Gate',
   head_branch:'feat/example',status:'completed',conclusion:'success',
   created_at:'2026-10-10T13:12:00Z',updated_at:'2026-10-10T13:14:00Z',
-  repository:{full_name:REPO},...more});
+  repository:{full_name:REPO,id:Number(REPO_ID),owner:{id:Number(OWNER_ID)}},...more});
 
 test('fixed identity, event, ref and token are required',()=>{
  assert.equal(verifyContext(env).repository,REPO);
@@ -150,4 +150,24 @@ test('manual-only workflow tests before requiring repo-wide write token',()=>{
  const write='run: node tools/cesar-os-ci/snapshot.mjs';
  assert(yml.includes(gate)&&yml.includes(write)&&yml.indexOf(gate)<yml.indexOf(write));
  assert(yml.includes("github.ref == 'refs/heads/main'"));
+});
+
+test('per-run immutable repository and owner IDs must match the run, not only snapshot claims',()=>{
+ const good=run(82);
+ assert.equal(makeSnapshot([good],1,win).repository_id,REPO_ID);
+ for(const bad of [
+  {...good,repository:{full_name:REPO,id:999,owner:{id:Number(OWNER_ID)}}},
+  {...good,repository:{full_name:REPO,id:Number(REPO_ID),owner:{id:999}}},
+  {...good,repository:{full_name:REPO,id:Number(REPO_ID)}},
+  {...good,repository:{full_name:REPO}}
+ ]) assert.throws(()=>makeSnapshot([bad],1,win),/run_provenance_invalid/);
+});
+test('publish independently rejects forged repository owner ID before a write',async()=>{
+ const valid=makeSnapshot([run(83)],1,win);
+ const bad={...valid,repository_owner_id:'42'};
+ let requests=0;
+ await assert.rejects(publish(bad,{sha},{token,fetchFn:async()=>{
+  requests++;throw Error('network_must_not_be_called');
+ }}),/publish_contract_invalid/);
+ assert.equal(requests,0);
 });
