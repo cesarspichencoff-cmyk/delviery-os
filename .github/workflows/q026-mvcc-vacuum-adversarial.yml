@@ -2,6 +2,10 @@ name: q026-mvcc-vacuum-adversarial
 # Q-026 — MVCC, VACUUM e limites de concorrência da candidata #77 (pesquisa,
 # DRAFT/HOLD). Somente testes; nenhum runtime, gate de promoção, integração,
 # servidor produtivo ou frontend é alterado. PostgreSQL DESCARTÁVEL por job.
+#
+# A PROPOSTA de correção (tests/product/q026-mvcc-proposta/*.patch) NÃO está
+# aplicada na branch. Os jobs que a provam aplicam o patch só no workspace
+# efêmero do runner, depois de provar a falha sem ele.
 on:
   push:
     branches:
@@ -14,11 +18,12 @@ concurrency:
   cancel-in-progress: true
 env:
   DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
+  PROPOSTA: tests/product/q026-mvcc-proposta/sql-client-ouvinte-de-erro.patch
 jobs:
   falhas:
     name: falhas no meio da leitura (${{ matrix.leitor }})
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
     strategy:
       fail-fast: false
       matrix:
@@ -43,40 +48,86 @@ jobs:
             npx tsc --noEmit --target ES2022 --module commonjs --moduleResolution node --strict \
               --esModuleInterop --skipLibCheck --types node "$f"
           done
-      - name: E1-E4 (desconexao, prazo, erro SQL, conexao derrubada) liberam conexao e instante, e a leitura seguinte funciona
+      - name: E1 E2 E3 E5 (desconexao, prazo, erro SQL, excecao JS no meio) liberam conexao e instante, e a leitura seguinte funciona
         env:
           Q026_FALHAS_LEITOR: ${{ matrix.leitor }}
-          Q026_FALHAS_CASOS: E1,E2,E3,E4
-          Q026_FALHAS_SAIDA: falhas-e1e4-${{ matrix.leitor }}.json
+          Q026_FALHAS_CASOS: E1,E2,E3,E5
+          Q026_FALHAS_SAIDA: falhas-e1e2e3e5-head-${{ matrix.leitor }}.json
         run: |
           set -o pipefail
-          npx tsx tests/product/run-q026-mvcc-falhas.ts | tee e1e4.out
-          grep -q '^Q026_FALHAS_RESULTADO .*"falhas":0' e1e4.out
-      - name: E7 CONTRAPROVA — sem mitigacao, laco ocupado deixa o instante passar do prazo (o teste TEM de falhar)
+          npx tsx tests/product/run-q026-mvcc-falhas.ts | tee out.txt
+          grep -q '^Q026_FALHAS_RESULTADO .*"falhas":0' out.txt
+      - name: CONTRAPROVA E4 — o banco encerra a sessao no meio da leitura e o PROCESSO do servidor morre (exige a falha)
         env:
           Q026_FALHAS_LEITOR: ${{ matrix.leitor }}
-          Q026_FALHAS_CASOS: E7
+          Q026_FALHAS_CASOS: E4
           Q026_FALHAS_REPETICOES: "2"
-          Q026_FALHAS_SAIDA: falhas-e7-sem-${{ matrix.leitor }}.json
+          Q026_FALHAS_SAIDA: falhas-e4-head-${{ matrix.leitor }}.json
         run: |
           set +e
-          npx tsx tests/product/run-q026-mvcc-falhas.ts | tee e7-sem.out
+          npx tsx tests/product/run-q026-mvcc-falhas.ts | tee out.txt
           c=${PIPESTATUS[0]}
           set -e
           echo "codigo=$c"
           test "$c" = 1
-          grep -q '^  XX  E7_laco_ocupado' e7-sem.out
-      - name: E7 com idle_in_transaction_session_timeout no papel de leitura — o instante volta a caber no prazo
+          grep -q 'E4_conexao_derrubada#1 PROCESSO DA INSTÂNCIA MORREU' out.txt
+          grep -q 'E4_conexao_derrubada#2 PROCESSO DA INSTÂNCIA MORREU' out.txt
+      - name: CONTRAPROVA E7 — laco ocupado, sem mitigacao, o instante passa do prazo (exige a falha, sem morte)
+        env:
+          Q026_FALHAS_LEITOR: ${{ matrix.leitor }}
+          Q026_FALHAS_CASOS: E7
+          Q026_FALHAS_REPETICOES: "2"
+          Q026_FALHAS_SAIDA: falhas-e7-sem-head-${{ matrix.leitor }}.json
+        run: |
+          set +e
+          npx tsx tests/product/run-q026-mvcc-falhas.ts | tee out.txt
+          c=${PIPESTATUS[0]}
+          set -e
+          echo "codigo=$c"
+          test "$c" = 1
+          grep -q '^  XX  E7_laco_ocupado#1 {' out.txt
+          ! grep -q 'PROCESSO DA INSTÂNCIA MORREU' out.txt
+      - name: CONTRAPROVA E7 + idle_in_transaction_session_timeout SEM a correcao do adaptador — o instante cabe, mas o processo morre (exige a falha)
         env:
           Q026_FALHAS_LEITOR: ${{ matrix.leitor }}
           Q026_FALHAS_CASOS: E7
           Q026_FALHAS_REPETICOES: "2"
           Q026_FALHAS_MITIGACAO: sim
-          Q026_FALHAS_SAIDA: falhas-e7-com-${{ matrix.leitor }}.json
+          Q026_FALHAS_SAIDA: falhas-e7-com-head-${{ matrix.leitor }}.json
+        run: |
+          set +e
+          npx tsx tests/product/run-q026-mvcc-falhas.ts | tee out.txt
+          c=${PIPESTATUS[0]}
+          set -e
+          echo "codigo=$c"
+          test "$c" = 1
+          grep -q 'E7_laco_ocupado#1 PROCESSO DA INSTÂNCIA MORREU' out.txt
+      - name: PROPOSTA (nao aplicada na branch) — patch aplicado so neste workspace efemero
+        run: |
+          git apply --check "$PROPOSTA"
+          git apply "$PROPOSTA"
+          git diff --stat
+          test "$(git diff --name-only)" = "src/platform/persistence/sql-client.ts"
+      - name: Com a proposta — E1 a E5 passam, inclusive a sessao encerrada pelo banco
+        env:
+          Q026_FALHAS_LEITOR: ${{ matrix.leitor }}
+          Q026_FALHAS_CASOS: E1,E2,E3,E4,E5
+          Q026_FALHAS_SAIDA: falhas-e1a5-proposta-${{ matrix.leitor }}.json
         run: |
           set -o pipefail
-          npx tsx tests/product/run-q026-mvcc-falhas.ts | tee e7-com.out
-          grep -q '^Q026_FALHAS_RESULTADO .*"falhas":0' e7-com.out
+          npx tsx tests/product/run-q026-mvcc-falhas.ts | tee out.txt
+          grep -q '^Q026_FALHAS_RESULTADO .*"falhas":0' out.txt
+      - name: Com a proposta + idle_in_transaction_session_timeout — E7 passa (instante dentro do prazo, processo vivo, leitura seguinte)
+        env:
+          Q026_FALHAS_LEITOR: ${{ matrix.leitor }}
+          Q026_FALHAS_CASOS: E7
+          Q026_FALHAS_REPETICOES: "2"
+          Q026_FALHAS_MITIGACAO: sim
+          Q026_FALHAS_SAIDA: falhas-e7-com-proposta-${{ matrix.leitor }}.json
+        run: |
+          set -o pipefail
+          npx tsx tests/product/run-q026-mvcc-falhas.ts | tee out.txt
+          grep -q '^Q026_FALHAS_RESULTADO .*"falhas":0' out.txt
       - name: Sem PostgreSQL as suites se declaram PULADAS (78), nunca verdes
         run: |
           set +e
@@ -84,13 +135,94 @@ jobs:
           DELIVERYOS_PG_URL= npx tsx tests/product/run-q026-mvcc-vacuum-concorrencia.ts; b=$?
           DELIVERYOS_PG_URL= npx tsx tests/product/run-q026-mvcc-lote-envelope.ts; c=$?
           DELIVERYOS_PG_URL= bash tests/product/run-q026-mvcc-matriz.sh; d=$?
-          echo "falhas=$a concorrencia=$b lote=$c matriz=$d"
-          test "$a" = 78 && test "$b" = 78 && test "$c" = 78 && test "$d" = 78
+          DELIVERYOS_PG_URL= npx tsx tests/product/run-q026-mvcc-conexao-derrubada.ts; e=$?
+          echo "falhas=$a concorrencia=$b lote=$c matriz=$d derrubada=$e"
+          test "$a" = 78 && test "$b" = 78 && test "$c" = 78 && test "$d" = 78 && test "$e" = 78
       - if: always()
         uses: actions/upload-artifact@v4
         with:
           name: q026-mvcc-falhas-${{ matrix.leitor }}
           path: falhas-*.json
+          if-no-files-found: warn
+
+  derrubada:
+    name: sessao encerrada pelo banco x processo Node (adaptador) e suites anteriores com a proposta
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    services:
+      postgres:
+        image: public.ecr.aws/docker/library/postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: CONTRAPROVA — no adaptador deste HEAD, os 3 modos x 3 rodadas derrubam o processo (exige 9 de 9 falhas)
+        run: |
+          set +e
+          npx tsx tests/product/run-q026-mvcc-conexao-derrubada.ts | tee derrubada-head.txt
+          c=${PIPESTATUS[0]}
+          set -e
+          test "$c" = 1
+          grep -q '^Q026_DERRUBADA_RESULTADO .*"falhas":9' derrubada-head.txt
+      - name: Suites anteriores no runtime do HEAD, antes da proposta (codigos registrados)
+        run: |
+          set +e
+          rodar() { n=$1; shift; "$@" > "antes-$n.log" 2>&1; c=$?; echo "$n=$c" | tee -a antes.txt; tail -n 3 "antes-$n.log"; }
+          rodar typecheck npx tsc --noEmit
+          rodar repos npx tsx src/platform/run-pg-repository-tests.ts
+          rodar q016 npm run test:platform:q016
+          rodar incremental-pg npx tsx tests/product/run-q026-leitor-incremental-pg.ts
+          rodar http-desligado env Q026_ACTUAL_HTTP_MODE=disabled npx tsx tests/product/run-q026-real-http-guard-candidate.ts
+          rodar http-admin env Q026_ACTUAL_HTTP_MODE=enabled Q026_ACTUAL_HTTP_DB_ROLE=admin npx tsx tests/product/run-q026-real-http-guard-candidate.ts
+          rodar http-papel-leitor env Q026_ACTUAL_HTTP_MODE=enabled Q026_ACTUAL_HTTP_DB_ROLE=reader npx tsx tests/product/run-q026-real-http-guard-candidate.ts
+          exit 0
+      - name: PROPOSTA (nao aplicada na branch) — patch aplicado so neste workspace efemero
+        run: |
+          git apply --check "$PROPOSTA"
+          git apply "$PROPOSTA"
+          test "$(git diff --name-only)" = "src/platform/persistence/sql-client.ts"
+      - name: Com a proposta — nenhum modo derruba o processo (0 falhas)
+        run: |
+          set -o pipefail
+          npx tsx tests/product/run-q026-mvcc-conexao-derrubada.ts | tee derrubada-proposta.txt
+          grep -q '^Q026_DERRUBADA_RESULTADO .*"falhas":0' derrubada-proposta.txt
+      - name: Com a proposta — as mesmas suites; nenhuma que passava antes pode falhar agora
+        run: |
+          set +e
+          rodar() { n=$1; shift; "$@" > "depois-$n.log" 2>&1; c=$?; echo "$n=$c" | tee -a depois.txt; tail -n 3 "depois-$n.log"; }
+          rodar typecheck npx tsc --noEmit
+          rodar repos npx tsx src/platform/run-pg-repository-tests.ts
+          rodar q016 npm run test:platform:q016
+          rodar incremental-pg npx tsx tests/product/run-q026-leitor-incremental-pg.ts
+          rodar http-desligado env Q026_ACTUAL_HTTP_MODE=disabled npx tsx tests/product/run-q026-real-http-guard-candidate.ts
+          rodar http-admin env Q026_ACTUAL_HTTP_MODE=enabled Q026_ACTUAL_HTTP_DB_ROLE=admin npx tsx tests/product/run-q026-real-http-guard-candidate.ts
+          rodar http-papel-leitor env Q026_ACTUAL_HTTP_MODE=enabled Q026_ACTUAL_HTTP_DB_ROLE=reader npx tsx tests/product/run-q026-real-http-guard-candidate.ts
+          set -e
+          echo "antes:  $(tr '\n' ' ' < antes.txt)"
+          echo "depois: $(tr '\n' ' ' < depois.txt)"
+          novos=0
+          while IFS='=' read -r n a; do
+            d=$(grep "^$n=" depois.txt | cut -d= -f2)
+            if [ "$a" = 0 ] && [ "$d" != 0 ]; then echo "FAIL_NOVO $n (antes 0, depois $d)"; novos=$((novos + 1)); fi
+          done < antes.txt
+          test "$novos" = 0
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: q026-mvcc-derrubada-e-suites
+          path: |
+            derrubada-*.txt
+            antes*.txt
+            antes-*.log
+            depois*.txt
+            depois-*.log
           if-no-files-found: warn
 
   concorrencia:
@@ -103,10 +235,14 @@ jobs:
         include:
           - cenario: longa-1-instancia
             itens: "longa:controle:1:2 longa:canonico:1:2 longa:incremental:1:2"
+            clientes: "2"
           - cenario: curtas-1-instancia
             itens: "curtas:controle:1:2 curtas:canonico:1:2 curtas:incremental:1:2"
+            clientes: "2"
+          # Admissão 1 com UM cliente por instância: saturado, sem laço de recusas.
           - cenario: mista-1-2-4-instancias
             itens: "mista:canonico:1:1 mista:incremental:1:1 mista:canonico:2:1 mista:incremental:2:1 mista:canonico:4:1 mista:incremental:4:1"
+            clientes: "1"
     services:
       postgres:
         image: public.ecr.aws/docker/library/postgres:16
@@ -123,6 +259,7 @@ jobs:
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Servidor descartavel — configuracao lida e registrada (sem ajuste de desempenho)
         run: |
+          nproc
           node - <<'JS'
           const { Client } = require("pg");
           (async () => {
@@ -136,6 +273,7 @@ jobs:
       - name: Matriz (escala 0.5, 45 s por cenario, escritor 400 UPDATE/s + 20 fatos/s)
         env:
           Q026_MVCC_MATRIZ: ${{ matrix.itens }}
+          Q026_MVCC_CLIENTES_POR_INSTANCIA: ${{ matrix.clientes }}
           Q026_MVCC_ESCALA: "0.5"
           Q026_MVCC_DURACAO_S: "45"
           Q026_MVCC_SAIDA_DIR: resultados-${{ matrix.cenario }}

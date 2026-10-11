@@ -13,7 +13,10 @@
  *
  * Comandos por IPC: `{tipo:"bloquear", ms}` ocupa o laço de propósito (controle
  * positivo do medidor e prova do efeito de um bloqueio sobre transações em
- * voo); `{tipo:"parar"}` fecha o servidor.
+ * voo); `{tipo:"falhar_proximo", padrao, pular}` faz o comando cujo SQL casar
+ * com `padrao`, depois de `pular` casamentos, rejeitar com uma exceção JavaScript, sem chegar ao banco — a
+ * "exceção durante o FETCH" — e responde `{tipo:"injetada", sql}` quando
+ * dispara; `{tipo:"parar"}` fecha o servidor.
  */
 
 import http from "node:http";
@@ -38,6 +41,26 @@ const pools = new Set<PoolPg>();
 let checkouts: Checkout[] = [];
 const rotulo = (p: PoolPg) => (p.options?.max === 1 ? "cancelamento" : p.options?.max === 2 ? "leitura" : `max${String(p.options?.max)}`);
 
+// Injeção de exceção (só teste): armada por IPC, consumida no primeiro comando
+// que casar. Só a forma de promessa (a do adaptador em transação) é tocada.
+let injecao: { re: RegExp; pular: number } | null = null;
+const clientesEmbrulhados = new WeakSet<object>();
+const embrulharCliente = (c: unknown) => {
+  if (!c || typeof c !== "object" || clientesEmbrulhados.has(c)) return;
+  clientesEmbrulhados.add(c);
+  const cliente = c as { query: (...a: unknown[]) => unknown };
+  const queryOriginal = cliente.query;
+  cliente.query = function (this: unknown, ...a: unknown[]) {
+    const sql = typeof a[0] === "string" ? a[0] : "";
+    if (injecao && typeof a[a.length - 1] !== "function" && injecao.re.test(sql) && injecao.pular-- <= 0) {
+      injecao = null;
+      enviar({ tipo: "injetada", sql: sql.replace(/\s+/g, " ").slice(0, 60), t: Date.now() });
+      return Promise.reject(new Error("Q026_EXCECAO_INJETADA_NO_MEIO_DA_LEITURA"));
+    }
+    return queryOriginal.apply(this, a);
+  };
+};
+
 proto.connect = function (this: PoolPg, ...args: unknown[]) {
   pools.add(this);
   const t0 = performance.now();
@@ -52,6 +75,7 @@ proto.connect = function (this: PoolPg, ...args: unknown[]) {
   return (connectOriginal.call(this) as Promise<unknown>).then(
     (c) => {
       anotar(true);
+      embrulharCliente(c);
       return c;
     },
     (e) => {
@@ -126,7 +150,11 @@ void (async () => {
   const end = servidor.address();
   if (!end || typeof end === "string") throw new Error("Q026_MVCC_SERVIDOR_SEM_PORTA");
 
-  process.on("message", (m: { tipo?: string; ms?: number }) => {
+  process.on("message", (m: { tipo?: string; ms?: number; padrao?: string; pular?: number }) => {
+    if (m.tipo === "falhar_proximo" && typeof m.padrao === "string") {
+      injecao = { re: new RegExp(m.padrao, "i"), pular: Number(m.pular ?? 0) };
+      enviar({ tipo: "armada", padrao: m.padrao, pular: injecao.pular });
+    }
     if (m.tipo === "bloquear" && typeof m.ms === "number") {
       const fim = performance.now() + m.ms;
       while (performance.now() < fim) {

@@ -13,12 +13,19 @@
  *  E2 prazo HTTP vence (instância com prazo de 1 s, leitura mais longa que isso);
  *  E3 erro SQL no meio do cursor (pg_cancel_backend repetido até acertar um comando ativo: 57014);
  *  E4 conexão derrubada no meio do cursor (pg_terminate_backend: 57P01);
+ *  E5 exceção JavaScript no meio da leitura (o próximo FETCH — ou, no canônico,
+ *     a consulta de aparelhos depois dos fatos — rejeita sem chegar ao banco;
+ *     a sessão fica `idle in transaction` até o adaptador fazer ROLLBACK);
  *  E7 o event loop da instância fica ocupado no meio da leitura (bloqueio
  *     sintético de 8 s numa instância com prazo de 5 s). PERGUNTA: o prazo
  *     limita o instante MVCC quando o laço não roda? Com
  *     `Q026_FALHAS_MITIGACAO=sim`, o papel de leitura ganha
- *     `idle_in_transaction_session_timeout` — a menor intervenção candidata,
- *     só de configuração do banco.
+ *     `idle_in_transaction_session_timeout` — a intervenção de banco candidata.
+ *
+ * Toda verificação confere também se o PROCESSO da instância continua vivo. Se
+ * morreu, o caso reprova com o código de saída e a causa lida do stderr, e a
+ * instância é levantada de novo para os casos seguintes — a falha de um caso
+ * nunca vira falha confusa do seguinte.
  *
  * Saída: `Q026_FALHAS_RESULTADO {…}`. Código 1 se qualquer verificação falhar.
  * Sem DELIVERYOS_PG_URL: sai 78 — nunca verde.
@@ -43,7 +50,7 @@ const ESCALA = Number(process.env.Q026_FALHAS_ESCALA ?? 1);
 const REPETICOES = Number(process.env.Q026_FALHAS_REPETICOES ?? 3);
 const MITIGACAO = process.env.Q026_FALHAS_MITIGACAO === "sim";
 const OCIOSO_MAX_MS = Number(process.env.Q026_FALHAS_OCIOSO_MS ?? 1500);
-const CASOS = (process.env.Q026_FALHAS_CASOS ?? "E1,E2,E3,E4,E7").split(",");
+const CASOS = (process.env.Q026_FALHAS_CASOS ?? "E1,E2,E3,E4,E5,E7").split(",");
 const SAIDA = (process.env.Q026_FALHAS_SAIDA ?? "").trim();
 const FILHO = join(resolve(__dirname), "q026-mvcc-servidor-filho.ts");
 
@@ -79,6 +86,28 @@ function pedir(porta: number, aoCriar?: (req: http.ClientRequest) => void): Prom
     aoCriar?.(req);
     req.end();
   });
+}
+
+/**
+ * A leitura SEGUINTE a uma falha. A rota devolve a admissão só quando a leitura
+ * anterior assenta — que, no caminho do prazo, vem DEPOIS da resposta 503. Um
+ * pedido logo em seguida pode ser recusado como ocupado. Repete-se, sem
+ * esconder: as recusas e quanto a admissão ficou presa vão para o detalhe, e
+ * mais de 3 s reprova.
+ */
+async function pedirDepoisDaFalha(porta: number, fimDaFalha: number) {
+  let recusas = 0;
+  let inicio = performance.now();
+  let resp = await pedir(porta);
+  const imediato = `${resp.status}/${String(resp.erro ?? resp.disponivel)}`;
+  while (resp.erro === "leitura_temporariamente_ocupada" && performance.now() - fimDaFalha < 10_000) {
+    recusas += 1;
+    await pausa(20);
+    inicio = performance.now();
+    resp = await pedir(porta);
+  }
+  const presa = recusas > 0 ? +(inicio - fimDaFalha).toFixed(1) : 0;
+  return { resp, recusas, imediato, admissao_presa_ms: presa, admissao_ok: presa <= 3000 };
 }
 
 void (async () => {
@@ -130,7 +159,8 @@ void (async () => {
         await pausa(10);
       }
     };
-    const subir = async (papel: string, prazo: number, admissao: number, rotulo: string) => {
+    type Instancia = { filho: Filho; porta: number; papel: string; prazo: number; admissao: number; rotulo: string };
+    const subir = async (papel: string, prazo: number, admissao: number, rotulo: string): Promise<Instancia> => {
       const f = subirFilho(
         FILHO,
         {
@@ -144,7 +174,18 @@ void (async () => {
       );
       filhos.push(f);
       const p = await f.esperar("pronto", 90_000);
-      return { filho: f, porta: Number(p.porta) };
+      return { filho: f, porta: Number(p.porta), papel, prazo, admissao, rotulo };
+    };
+    /** null se o processo da instância está vivo; senão, código, sinal e a causa lida do stderr. */
+    const morte = (x: Instancia) => {
+      const { exitCode, signalCode } = x.filho.proc;
+      if (exitCode === null && signalCode === null) return null;
+      const causa = x.filho.saida
+        .filter((l) => /Unhandled 'error'|terminating connection|Connection terminated|Emitted 'error'|not queryable/.test(l))
+        .slice(0, 3)
+        .join(" | ")
+        .slice(0, 300);
+      return { codigo: exitCode, sinal: signalCode, causa };
     };
     const registrar = (caso: string, rodada: number, ok: boolean, detalhe: Record<string, unknown>) => {
       verificacoes.push({ caso, rodada, ok, detalhe });
@@ -152,19 +193,41 @@ void (async () => {
     };
 
     console.log(`\nQ-026 FALHAS NO MEIO DA LEITURA · ${LEITOR} · ${fatos} fatos · ${REPETICOES} rodadas · mitigação ${MITIGACAO ? `idle_in_transaction_session_timeout=${OCIOSO_MAX_MS}ms (papel C)` : "nenhuma"}`);
-    const A = await subir(papelA!, 15_000, 2, "instanciaA");
-    const B = await subir(papelB!, 1_000, 1, "instanciaB");
-    const C = await subir(papelC!, 5_000, 1, "instanciaC");
+    let A = await subir(papelA!, 15_000, 2, "instanciaA");
+    let B = await subir(papelB!, 1_000, 1, "instanciaB");
+    let C = await subir(papelC!, 5_000, 1, "instanciaC");
+    // Depois de cada caso: se o processo morreu, a última verificação reprova
+    // com a causa, e a instância volta para o caso seguinte.
+    const conferirVida = async (x: Instancia): Promise<Instancia> => {
+      await pausa(200); // a morte por evento 'error' chega no tique seguinte
+      const m = morte(x);
+      if (!m) return x;
+      const ultima = verificacoes[verificacoes.length - 1];
+      if (ultima) {
+        ultima.ok = false;
+        ultima.detalhe = { ...ultima.detalhe, instancia_morreu: m };
+        console.log(`  XX  ${ultima.caso}#${ultima.rodada} PROCESSO DA INSTÂNCIA MORREU ${JSON.stringify(m)}`);
+      }
+      return subir(x.papel, x.prazo, x.admissao, `${x.rotulo}-revivida`);
+    };
     const base = await pedir(A.porta);
     const tempoBase = base.ms;
     console.log(`  leitura de referência na instância A: HTTP ${base.status} em ${base.ms} ms`);
     if (base.status !== 200 || base.disponivel !== true) throw new Error("Q026_FALHAS_REFERENCIA_FALHOU");
 
     const depois = async (caso: string, rodada: number, porta: number, papel: string, detalhe: Record<string, unknown>) => {
+      const fim = performance.now();
       const lib = await esperarLiberacao(papel);
-      const prox = await pedir(porta);
-      const ok = lib.ms >= 0 && prox.status === 200 && prox.disponivel === true && lib.conexoes <= 3;
-      registrar(caso, rodada, ok, { ...detalhe, liberou_em_ms: lib.ms, conexoes_do_papel: lib.conexoes, leitura_seguinte: `${prox.status}/${String(prox.disponivel)}` });
+      const s = await pedirDepoisDaFalha(porta, fim);
+      const prox = s.resp;
+      const ok = lib.ms >= 0 && prox.status === 200 && prox.disponivel === true && lib.conexoes <= 3 && s.admissao_ok;
+      registrar(caso, rodada, ok, {
+        ...detalhe,
+        liberou_em_ms: lib.ms,
+        conexoes_do_papel: lib.conexoes,
+        leitura_seguinte: `${prox.status}/${String(prox.disponivel)}`,
+        ...(s.recusas > 0 ? { recusas_ocupada: s.recusas, admissao_presa_ms: s.admissao_presa_ms } : {}),
+      });
     };
 
     for (let r = 1; r <= REPETICOES; r += 1) {
@@ -173,22 +236,34 @@ void (async () => {
         const p = pedir(A.porta, (x) => (req = x));
         const meio = await esperarLeituraNoMeio(papelA!, Math.min(400, tempoBase / 3));
         const t0 = performance.now();
+        const idadeNaDesconexao = Math.round(Date.now() - meio.xact_ms);
         (req as unknown as http.ClientRequest).destroy();
         const lib = await esperarLiberacao(papelA!);
+        // Medido AQUI, antes da leitura seguinte: quanto o instante durou depois
+        // de o cliente ir embora (o servidor aborta a leitura ou a termina?).
+        const desconexaoAteLiberar = +(performance.now() - t0).toFixed(1);
         await p;
         const prox = await pedir(A.porta);
         const ok = lib.ms >= 0 && lib.ms <= 3000 && prox.status === 200 && prox.disponivel === true && lib.conexoes <= 3;
-        registrar("E1_desconexao", r, ok, { pid: meio.pid, desconexao_ate_liberar_ms: +(performance.now() - t0).toFixed(1), conexoes_do_papel: lib.conexoes, leitura_seguinte: `${prox.status}/${String(prox.disponivel)}` });
+        registrar("E1_desconexao", r, ok, { pid: meio.pid, idade_da_transacao_na_desconexao_ms: idadeNaDesconexao, desconexao_ate_liberar_ms: desconexaoAteLiberar, leitura_de_referencia_ms: tempoBase, conexoes_do_papel: lib.conexoes, leitura_seguinte: `${prox.status}/${String(prox.disponivel)}` });
+        A = await conferirVida(A);
       }
       if (CASOS.includes("E2")) {
         const resp = await pedir(B.porta);
+        const fimResposta = performance.now();
         const lib = await esperarLiberacao(papelB!);
         const ok = resp.status === 503 && resp.erro === "prazo_total_excedido" && lib.ms >= 0 && lib.ms <= 3000;
-        // Admissão devolvida: o pedido seguinte é PROCESSADO (prazo de novo), não recusado como ocupado.
-        const prox = await pedir(B.porta);
-        const okProx = prox.status === 503 && prox.erro === "prazo_total_excedido";
+        // Admissão devolvida? Pedidos seguidos até a instância PROCESSAR um (prazo
+        // de novo) em vez de recusá-lo como ocupado. Mede-se quanto a admissão
+        // ficou presa depois da resposta 503 — o instante já pode ter sido solto.
+        // Critério: devolvida em até 3 s. (A versão anterior exigia o pedido
+        // IMEDIATAMENTE seguinte aceito; o leitor canônico reprovou nela — ver relatório.)
+        const s2 = await pedirDepoisDaFalha(B.porta, fimResposta);
+        const prox = s2.resp;
+        const okProx = prox.status === 503 && prox.erro === "prazo_total_excedido" && s2.admissao_ok;
         await esperarLiberacao(papelB!);
-        registrar("E2_prazo", r, ok && okProx, { resposta: `${resp.status}/${resp.erro}`, resposta_ms: resp.ms, liberou_depois_da_resposta_ms: lib.ms, pedido_seguinte: `${prox.status}/${prox.erro}` });
+        registrar("E2_prazo", r, ok && okProx, { resposta: `${resp.status}/${resp.erro}`, resposta_ms: resp.ms, liberou_depois_da_resposta_ms: lib.ms, pedido_imediato: s2.imediato, recusas_ocupada: s2.recusas, admissao_presa_apos_resposta_ms: s2.admissao_presa_ms, pedido_aceito: `${prox.status}/${prox.erro}` });
+        B = await conferirVida(B);
       }
       if (CASOS.includes("E3")) {
         // Um FETCH de 257 linhas fica ativo por frações de milissegundo; um
@@ -209,6 +284,7 @@ void (async () => {
         const injetou = resp.status === 200 && resp.disponivel === false;
         await depois("E3_cancelamento_sql", r, A.porta, papelA!, { pid: meio.pid, tentativas, erro_injetado: injetou, resposta: `${resp.status}/${String(resp.disponivel)}/${String(resp.erro)}` });
         if (!injetou) verificacoes[verificacoes.length - 1]!.ok = false;
+        A = await conferirVida(A);
       }
       if (CASOS.includes("E4")) {
         const p = pedir(A.porta);
@@ -218,6 +294,28 @@ void (async () => {
         const novo = await pedir(A.porta);
         const pids = (await observar(papelA!)).map((x) => Number(x.pid));
         await depois("E4_conexao_derrubada", r, A.porta, papelA!, { pid_derrubado: meio.pid, resposta: `${resp.status}/${String(resp.disponivel)}/${String(resp.erro)}`, leitura_depois: `${novo.status}/${String(novo.disponivel)}`, pid_derrubado_ainda_no_pool: pids.includes(meio.pid) });
+        A = await conferirVida(A);
+      }
+      if (CASOS.includes("E5")) {
+        // A injeção TEM de disparar — senão o caso não testou nada.
+        const alvo = LEITOR === "incremental" ? "^\\s*FETCH " : "FROM identity\\.device";
+        const antes = A.filho.mensagens.filter((m) => m.tipo === "injetada").length;
+        // No incremental, pula 300 FETCHes (~77 mil linhas): o meio do cursor.
+        const pular = LEITOR === "incremental" ? 300 : 0;
+        A.filho.enviar({ tipo: "falhar_proximo", padrao: alvo, pular });
+        await A.filho.esperar("armada", 5_000);
+        const resp = await pedir(A.porta);
+        const injetadas = A.filho.mensagens.filter((m) => m.tipo === "injetada");
+        const disparou = injetadas.length > antes;
+        await depois("E5_excecao_no_meio", r, A.porta, papelA!, {
+          alvo,
+          pular,
+          disparou,
+          comando: disparou ? String(injetadas[injetadas.length - 1]!.sql) : null,
+          resposta: `${resp.status}/${String(resp.disponivel)}/${String(resp.erro)}`,
+        });
+        if (!disparou) verificacoes[verificacoes.length - 1]!.ok = false;
+        A = await conferirVida(A);
       }
       if (CASOS.includes("E7")) {
         // O prazo de C é 5 s; a leitura sozinha cabe nele. No meio dela, o laço
@@ -245,12 +343,14 @@ void (async () => {
         }
         const lib = await esperarLiberacao(papelC!);
         const resp = await p;
+        const fimResp = performance.now();
         const instante = lib.fim_ms - meio.xact_ms;
         const limite = PRAZO_C + 1000;
         // A instância se recupera? (a conexão morta, se houve, sai do pool)
-        const prox = await pedir(C.porta);
+        const s7 = await pedirDepoisDaFalha(C.porta, fimResp);
+        const prox = s7.resp;
         await esperarLiberacao(papelC!);
-        registrar("E7_laco_ocupado", r, instante <= limite && prox.status === 200 && prox.disponivel === true, {
+        registrar("E7_laco_ocupado", r, instante <= limite && prox.status === 200 && prox.disponivel === true && s7.admissao_ok, {
           prazo_ms: PRAZO_C,
           bloqueio_ms: BLOQUEIO,
           instante_mvcc_ms: Math.round(instante),
@@ -261,7 +361,9 @@ void (async () => {
           resposta: `${resp.status}/${String(resp.erro ?? resp.disponivel)}`,
           resposta_ms: resp.ms,
           leitura_seguinte: `${prox.status}/${String(prox.erro ?? prox.disponivel)}`,
+          ...(s7.recusas > 0 ? { recusas_ocupada: s7.recusas, admissao_presa_ms: s7.admissao_presa_ms } : {}),
         });
+        C = await conferirVida(C);
       }
     }
     const falhas = verificacoes.filter((v) => !v.ok);

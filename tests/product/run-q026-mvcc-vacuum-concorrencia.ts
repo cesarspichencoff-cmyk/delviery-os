@@ -215,19 +215,26 @@ void (async () => {
     const tCarga = Date.now();
     let respostas: { pedidos: Array<Record<string, unknown>>; sondas: Record<string, { t: number[]; ms: number[]; falhas: number }> } = { pedidos: [], sondas: {} };
     if (servidores.length > 0) {
-      const cliente = subirFilho(
-        FILHO("q026-mvcc-cliente-filho.ts"),
-        {
-          Q026_MVCC_PORTAS: servidores.map((s) => s.porta).join(","),
-          Q026_MVCC_CLIENTES: String(CLIENTES),
-          Q026_MVCC_PENSAR_MS: String(PENSAR_MS),
-          Q026_MVCC_DURACAO_MS: String(DURACAO_S * 1000),
-        },
-        "clientes",
-      );
-      filhos.push(cliente);
-      const m = await cliente.esperar("clientes", DURACAO_S * 1000 + 180_000);
-      respostas = m as unknown as typeof respostas;
+      // Um processo por cliente e um só para as sondas: o parse de uma resposta
+      // grande num cliente não pode atrasar a sonda nem outro cliente.
+      const comum = {
+        Q026_MVCC_PORTAS: servidores.map((s) => s.porta).join(","),
+        Q026_MVCC_PENSAR_MS: String(PENSAR_MS),
+        Q026_MVCC_DURACAO_MS: String(DURACAO_S * 1000),
+      };
+      const processos = [
+        subirFilho(FILHO("q026-mvcc-cliente-filho.ts"), { ...comum, Q026_MVCC_CLIENTES: "0", Q026_MVCC_SONDAR: "1" }, "sondas"),
+        ...Array.from({ length: CLIENTES }, (_, i) =>
+          subirFilho(
+            FILHO("q026-mvcc-cliente-filho.ts"),
+            { ...comum, Q026_MVCC_CLIENTES: "1", Q026_MVCC_CLIENTE_BASE: String(i), Q026_MVCC_SONDAR: "0" },
+            `cliente${i}`,
+          ),
+        ),
+      ];
+      filhos.push(...processos);
+      const partes = (await Promise.all(processos.map((c) => c.esperar("clientes", DURACAO_S * 1000 + 180_000)))) as unknown as Array<typeof respostas>;
+      respostas = { pedidos: partes.flatMap((x) => x.pedidos), sondas: partes[0]!.sondas };
     } else {
       await pausa(DURACAO_S * 1000);
     }
