@@ -77,7 +77,12 @@ jobs:
           PG_DATA="$RUNNER_TEMP/q026-pg16-$GITHUB_JOB"
           test -x "$PG_BIN/initdb" && test -x "$PG_BIN/pg_ctl"
           "$PG_BIN/initdb" -D "$PG_DATA" --username=postgres --auth-local=trust --auth-host=trust --encoding=UTF8 --locale=C >/dev/null
-          "$PG_BIN/pg_ctl" -D "$PG_DATA" -l "$RUNNER_TEMP/q026-pg16-$GITHUB_JOB.log" -o "-h 127.0.0.1 -p 5432" -w start
+          # Runner user cannot create sockets under PostgreSQL's default system path.
+          # Bind the local socket only inside the runner-owned temp directory.
+          if ! "$PG_BIN/pg_ctl" -D "$PG_DATA" -l "$RUNNER_TEMP/q026-pg16-$GITHUB_JOB.log" -o "-h 127.0.0.1 -p 5432 -k $RUNNER_TEMP" -w start; then
+            cat "$RUNNER_TEMP/q026-pg16-$GITHUB_JOB.log"
+            exit 1
+          fi
           version="$(psql -h 127.0.0.1 -p 5432 -U postgres -d postgres -Atc 'SHOW server_version_num')"
           test "$version" -ge 160000 && test "$version" -lt 170000
           echo "Q026_PG16_RUNNER_LOCAL_READY version=$version job=$GITHUB_JOB"
@@ -140,7 +145,12 @@ jobs:
           PG_DATA="$RUNNER_TEMP/q026-pg16-$GITHUB_JOB"
           test -x "$PG_BIN/initdb" && test -x "$PG_BIN/pg_ctl"
           "$PG_BIN/initdb" -D "$PG_DATA" --username=postgres --auth-local=trust --auth-host=trust --encoding=UTF8 --locale=C >/dev/null
-          "$PG_BIN/pg_ctl" -D "$PG_DATA" -l "$RUNNER_TEMP/q026-pg16-$GITHUB_JOB.log" -o "-h 127.0.0.1 -p 5432" -w start
+          # Runner user cannot create sockets under PostgreSQL's default system path.
+          # Bind the local socket only inside the runner-owned temp directory.
+          if ! "$PG_BIN/pg_ctl" -D "$PG_DATA" -l "$RUNNER_TEMP/q026-pg16-$GITHUB_JOB.log" -o "-h 127.0.0.1 -p 5432 -k $RUNNER_TEMP" -w start; then
+            cat "$RUNNER_TEMP/q026-pg16-$GITHUB_JOB.log"
+            exit 1
+          fi
           version="$(psql -h 127.0.0.1 -p 5432 -U postgres -d postgres -Atc 'SHOW server_version_num')"
           test "$version" -ge 160000 && test "$version" -lt 170000
           echo "Q026_PG16_RUNNER_LOCAL_READY version=$version job=$GITHUB_JOB"
