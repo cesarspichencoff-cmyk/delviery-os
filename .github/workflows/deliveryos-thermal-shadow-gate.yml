@@ -7,6 +7,7 @@ on:
     branches:
       - feat/thermal-quality-v51-epson-official-fontqa-20261008
       - feat/thermal-v54-caixa-photo-visual-qa-20261008
+      - feat/thermal-v63-packaging-bridge-shadow-20261010
 
 permissions:
   contents: read
