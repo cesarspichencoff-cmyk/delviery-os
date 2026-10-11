@@ -1,5 +1,6 @@
 // Pull-request-only live read smoke of the public GitHub archive API. No persistence.
 import {replayDryRun} from './replay-dryrun.mjs';
+import {readPinnedArchive} from './pinned-archive-reader.mjs';
 
 const now=new Date();
 const start=new Date(now.getTime()-30*60*1000).toISOString();
@@ -29,6 +30,17 @@ const archived=await replayDryRun({
   end:'2026-10-10T20:46:45.627Z',
   token,now
 });
+const pinned=await readPinnedArchive(token,
+ 'ci-snapshots/deliveryos/archive/2026/10/10/20261010T204645627Z.json');
+if(pinned.git_blob_sha!=='1b7963fdab69be502b88c9f0864277d5be96cb47'||
+   pinned.snapshot_sha256!=='61f6575d1101113015734e01be57182e38ec41f7fa2e683c8c4380403b5fcdd1'||
+   pinned.record_count!==2||pinned.private_ingest_performed!==false||
+   pinned.verified_via!=='GITHUB_CONTENTS_API_FIXED_ORIGIN')
+  throw Error('pinned_origin_live_proof_failed');
+console.log(JSON.stringify({status:'PINNED_ORIGIN_READ_WORLD_PROVEN',
+  path:pinned.archive_path,verified_blob:pinned.git_blob_sha,
+  verified_sha256:pinned.snapshot_sha256,record_count:pinned.record_count,
+  private_ingest_performed:false}));
 const proof=archived.archive_proofs.find(x=>
   x.archive_path==='ci-snapshots/deliveryos/archive/2026/10/10/20261010T204645627Z.json');
 if(!proof||proof.git_blob_sha!=='1b7963fdab69be502b88c9f0864277d5be96cb47'||
