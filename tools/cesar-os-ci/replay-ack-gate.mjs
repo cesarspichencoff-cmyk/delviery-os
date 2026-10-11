@@ -1,6 +1,6 @@
 // CANDIDATE ONLY: checks a trusted internal receipt reader before cursor CAS.
 // No direct HTTP, no D1 writes except through a caller-provided cursor store.
-import {SOURCE} from './archive-consumer.mjs';
+import {SOURCE,checkpointShape} from './archive-consumer.mjs';
 const BATCH=/^publicci_[0-9]{10}_[a-f0-9]{8}$/;
 const RECEIPT=/^sir_[a-f0-9]{20}$/;
 const assert=(v,e)=>{if(!v)throw Error(e);};
@@ -10,7 +10,7 @@ export async function commitAfterReceipts(plan,{intents,receiptFor,store}={}){
     Array.isArray(plan.new_archive_paths)&&Array.isArray(plan.new_archive_entries)&&Array.isArray(intents)&&
     Number.isSafeInteger(plan.expected_previous_revision)&&
     plan.cursor?.revision===plan.expected_previous_revision+1&&
-    typeof receiptFor==='function'&&store?.compareAndSwap,
+    typeof receiptFor==='function'&&typeof store?.compareAndSwap==='function'&&typeof store?.load==='function',
     'receipt_gate_contract_invalid');
   const expected=new Set(plan.new_archive_paths);
   const manifest=new Map(plan.new_archive_entries.map(x=>[x.archive_path,x]));
@@ -20,6 +20,22 @@ export async function commitAfterReceipts(plan,{intents,receiptFor,store}={}){
       /^[a-f0-9]{64}$/.test(x.snapshot_sha256)&&/^[a-f0-9]{40}$/.test(x.git_blob_sha)&&
       Number.isSafeInteger(x.record_count)&&x.record_count>=0&&x.record_count<=100),
     'receipt_gate_archive_manifest_invalid');
+  const next=checkpointShape(plan.cursor);
+  const previous=checkpointShape(await store.load());
+  if(previous.revision!==plan.expected_previous_revision)
+    return {status:'CURSOR_CAS_CONFLICT',acknowledged:0,cursor_written:false};
+  assert(next.revision===previous.revision+1,'receipt_gate_cursor_revision_invalid');
+  const newPaths=new Set(plan.new_archive_paths);
+  for(const entry of plan.new_archive_entries){
+    assert(next.archives[entry.archive_path]===entry.snapshot_sha256&&
+      !Object.hasOwn(previous.archives,entry.archive_path),
+      'receipt_gate_cursor_hash_mismatch');
+  }
+  for(const [savedPath,savedHash] of Object.entries(next.archives)){
+    const priorHash=previous.archives[savedPath];
+    assert(priorHash!==undefined?priorHash===savedHash:newPaths.has(savedPath),
+      'receipt_gate_cursor_unrecognized_path');
+  }
   const needsReceipt=new Set(plan.new_archive_entries.filter(x=>x.record_count>0).map(x=>x.archive_path));
   const assigned=new Map();
   for(const item of intents){
