@@ -8,16 +8,16 @@
 - Lote de até 100 observações com 21 colunas: **4 observações por INSERT** (84 parâmetros), até **25 INSERTs**. Reservar cinco instruções para registro de fonte, cobertura, recibo atestado, cursor e verificações, teto planejado **30 < 50**. Esta contagem é planejamento, não medição real de subrequests do runtime Python.
 
 ## Implementação candidata e testes
-- `tools/cesar-os-ci/d1-bulk-plan.mjs`: geração somente em memória, `INSERT INTO source_observations (...) VALUES (...) ... ON CONFLICT(observation_id) DO NOTHING`; nunca usa `INSERT OR IGNORE` amplo nem chama D1.
+- `tools/cesar-os-ci/d1-bulk-plan.mjs`: geração somente em memória, `INSERT INTO source_observations (...) VALUES (...)` sem `ON CONFLICT DO NOTHING`: um ID já existente faz a transação candidata falhar em vez de mascarar conteúdo potencialmente diferente. Nunca usa `INSERT OR IGNORE` amplo nem chama D1.
 - Identidade fixa `github-actions-public-deliveryos`, `WORK`, `SOURCE_CLAIM`, `ORGANIZATIONAL`, `OBSERVATION_ONLY`, `possible_commitment=false` e `observation_id`/`content_fingerprint` calculados conforme algoritmo do `source_spine.py` privado. Não se aceita alegação fornecida pelo chamador sem comparação com a fórmula.
 - Metadados JSON são limitados a 4096 bytes e chaves de payload bruto/credenciais são rejeitadas antes de compor qualquer comando SQL. Não persistir payload bruto.
 - `test/cesar-os-ci-bulk-plan.test.mjs`: tamanho, limite de parâmetros, compromisso rejeitado, identidade inválida e privacidade.
-- `test/cesar-os-ci-bulk-sqlite.test.py`: usa Node para produzir SQL do módulo e SQLite real em memória para testar 100 inserções, repetição sem novas linhas e rollback após falha dentro de transação explícita.
+- `test/cesar-os-ci-bulk-sqlite.test.py`: usa Node para produzir SQL do módulo e SQLite real em memória para testar 100 inserções, conflito de ID com rollback e falha induzida dentro de transação explícita. Repetição idêntica de batch tem de ser interceptada por recibo v2 ANTES do SQL.
 
 ## Evidência exigida antes da promoção
 1. Portar para o Worker Python privado usando prepared statements e `self.env.PRIVATE_DB.batch([...])`; não executar um INSERT individual por observação em plano gratuito.
 2. Criar v2 com impressão digital do **arquivo real validado** (`git_blob_sha` e `snapshot_sha256`) persistida em transação junto às observações e ao recibo; não inferir esses campos retroativamente de v1.
-3. Resolver a contagem verdadeira `items_new` e `items_deduped` mesmo sob concorrência: o plano atual produz SQL, **não** prova o cálculo transacional desses contadores.
+3. Resolver a contagem verdadeira `items_new` e `items_deduped` mesmo sob concorrência: o plano atual produz SQL e rejeita qualquer conflito de ID com erro, **não** prova o cálculo transacional desses contadores. Colisões legítimas entre lotes distintos exigem política de verificação exata de conteúdo dentro da transação antes da promoção; não simplesmente ignorar conflitos.
 4. Criar e testar a migração D1 de recibo v2 e sua consulta interna, mantendo v1 sem mudanças. Se houver conflito entre `(source_id,batch_id)` e hash do arquivo, falhar fechado.
 5. Testar atomicidade no D1 em ambiente autorizado, incluindo queda no meio do lote, duplicação simultânea, 100 observações e leitura posterior de recibo. Só depois permitir CAS do cursor.
 6. Avaliar custo zero e regressões do bridge, Gmail, Calendar, Outlook, Zapia e ActivityWatch. Nunca criar compromissos humanos automaticamente.
