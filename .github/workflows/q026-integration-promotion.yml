@@ -8,10 +8,10 @@ on:
       - research/q026-minimal-integration-optin-20261010
       - integration/deliveryos-product-ux-android-20261009
       - main
+  # PR checks cover research branches; prevent duplicate push+PR runs.
+  # Keep a post-merge safety signal for direct integration writes.
   push:
     branches:
-      - research/q026-integration-ci-safety-20261011
-      - research/q026-minimal-integration-optin-20261010
       - integration/deliveryos-product-ux-android-20261009
   workflow_dispatch:
 
@@ -93,6 +93,8 @@ jobs:
         run: npx tsx tests/product/run-q026-integrated-cursor-mvcc-abort.ts
       - name: Actual HTTP guard with non-superuser SELECT-only role
         run: Q026_ACTUAL_HTTP_MODE=enabled Q026_ACTUAL_HTTP_DB_ROLE=reader npx tsx tests/product/run-q026-real-http-guard-candidate.ts
+      - name: Actual incremental HTTP socket/deadline with SELECT-only PostgreSQL role
+        run: DELIVERYOS_ENTREGAS_INCREMENTAL_RR=1 Q026_ACTUAL_HTTP_MODE=enabled Q026_ACTUAL_HTTP_DB_ROLE=reader npx tsx tests/product/run-q026-real-http-guard-candidate.ts
       - name: Actual incremental opt-in route with concurrent GET and health
         run: Q026_FAIRNESS_VARIANT=incremental Q026_EVENT_LOOP_EVENTS=20000 npx tsx tests/product/run-q026-event-loop-http-fairness-shadow.ts
       - name: PostgreSQL fixture must be required, not silently skipped
