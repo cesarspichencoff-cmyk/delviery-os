@@ -19,8 +19,8 @@ const NO_EFFECTS=Object.freeze({reader_access:false,database_write:false,
  sequence_binding_write:false,print:false,spooler_write:false,
  deploy:false,fiscal:false,sefaz:false});
 function parseArgs(argv){
- const required=["--event","--consumer","--proof","--motor"];
- if(argv.length!==8)throw Error("FOUR_EXPLICIT_LOCAL_SOURCES_REQUIRED");
+ const required=["--event","--consumer","--proof","--motor","--sequence-fixture"];
+ if(argv.length!==10)throw Error("FOUR_EXPLICIT_LOCAL_SOURCES_REQUIRED");
  const out={};
  for(let i=0;i<argv.length;i+=2){
   if(!required.includes(argv[i])||typeof argv[i+1]!=="string"||
@@ -71,6 +71,10 @@ function blocked(reasons,stage="V68_PAIR_GATE"){
 }
 function run(argv=process.argv.slice(2)){
  const args=parseArgs(argv);
+ // Hard offline boundary: a Windows process would resolve the V2 hardcoded
+ // sequence path against live ProgramData, which is never acceptable here.
+ if(process.platform!=="linux")
+  return blocked(["LINUX_ISOLATED_FIXTURE_REQUIRED"],"ISOLATION");
  const hold=JSON.parse(readBound(MANIFEST).toString("utf8"));
  if(hold.status!=="DRAFT_HOLD_NOT_INSTALLED"||
     hold.preferred_future_candidate?.installed!==false||
@@ -87,6 +91,11 @@ function run(argv=process.argv.slice(2)){
  const motorSource=readBound(motorPath);
  if(sha(motorSource)!==PACKAGING_SOURCE_SHA256_V78)
   return blocked(["CANONICAL_PACKAGING_MOTOR_SOURCE_NOT_PINNED_BEFORE_EXEC"],"SOURCE_PREFLIGHT");
+ const seqBytes=readBound(args["--sequence-fixture"]);
+ const seq=JSON.parse(seqBytes.toString("utf8").replace(/^\\uFEFF/,""));
+ if(seq?.schema!=="deliveryos.tata-sequence-state.v1"||
+    !Number.isSafeInteger(seq.next_value)||seq.next_value<1||seq.next_value>999)
+  return blocked(["SYNTHETIC_SEQUENCE_FIXTURE_INVALID"],"SOURCE_PREFLIGHT");
  const source=readBound(args["--event"]);
  const event=JSON.parse(source.toString("utf8").replace(/^\uFEFF/,""));
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),"deliveryos-v720-gated-"));
@@ -96,12 +105,17 @@ function run(argv=process.argv.slice(2)){
   const eventPath=path.join(dir,"event.json");
   const decisionPath=path.join(dir,"decision.json");
   fs.writeFileSync(eventPath,source,{flag:"wx"});
+  // On Linux the *Windows-formatted* hardcoded path is a relative filename.
+  // Only inside this disposable sandbox, provide the explicitly supplied
+  // synthetic sequence file. No real Windows disk or TATÁ sequence is read.
+  const sequenceFilename="C:\\\\ProgramData\\\\TataComandaReader\\\\state\\\\tata-sequence-state.json";
+  fs.writeFileSync(path.join(dir,sequenceFilename),seqBytes,{flag:"wx"});
   // Prevent NODE_OPTIONS --require / --import and NODE_PATH from
   // preloading unrelated executable JavaScript outside the pinned entry.
   const childEnv=withoutNodePreloads(process.env);
   const child=spawnSync(process.execPath,[args["--consumer"],eventPath],{
    encoding:"utf8",timeout:15000,windowsHide:true,maxBuffer:1024*1024,
-   env:childEnv
+   env:childEnv,cwd:dir
   });
   if(child.error||![0,5].includes(child.status)||
      !child.stdout||Buffer.byteLength(child.stdout)>1024*1024)
@@ -120,7 +134,9 @@ function run(argv=process.argv.slice(2)){
   if(sha(readBound(eventPath))!==sha(source)||
      sha(readBound(args["--event"]))!==sha(source)||
      sha(readBound(args["--consumer"]))!==sha(code)||
-     sha(readBound(motorPath))!==sha(motorSource))
+     sha(readBound(motorPath))!==sha(motorSource)||
+     sha(readBound(args["--sequence-fixture"]))!==sha(seqBytes)||
+     sha(readBound(path.join(dir,sequenceFilename)))!==sha(seqBytes))
    return blocked(["V2_SOURCE_CHANGED_DURING_PIPELINE"],"SNAPSHOT_IDENTITY");
   fs.writeFileSync(decisionPath,JSON.stringify(decision),{flag:"wx"});
   // The existing renderer independently calls projectVerifiedReaderPairV68,
