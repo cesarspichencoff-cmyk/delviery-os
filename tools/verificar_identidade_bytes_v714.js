@@ -69,7 +69,7 @@ try{
  };
  for(const [k,v] of Object.entries(docs))
   fs.writeFileSync(path.join(folder,k),JSON.stringify(v));
- function run(orders,notes=[],qty="1.000"){
+ function run(orders,notes=[],qty="1.000",extraQty=undefined){
   setConfig(orders);
   const event={schema:"deliveryos.tata-reader-stable-order-event.v1",
    order_key,snapshot_hash:revision,ready_for_downstream_shadow:false,
@@ -79,7 +79,12 @@ try{
     NRCOMANDA:"0000000001",NRCOMANDAEXT:"1001",IDORGCMDVENDA:"DLV_TEST",
     DTHRABERMESA:"2026-10-10T11:30:00.0000000",
     items:[{NRPRODCOMVEN:"000001",CDPRODUTO:pCode,
-     CDARVPROD:productCode.replace(/\./g,""),QTPRODCOMVEN:qty,IDSTPRCOMVEN:"A"}],
+     CDARVPROD:productCode.replace(/\./g,""),QTPRODCOMVEN:qty,IDSTPRCOMVEN:"A"},
+     ...(extraQty===undefined ? [] : [{
+      NRPRODCOMVEN:"000002",CDPRODUTO:pCode,
+      CDARVPROD:productCode.replace(/\./g,""),
+      QTPRODCOMVEN:extraQty,IDSTPRCOMVEN:"A"
+     }])],
     observation_scan_complete:true,observation_rows:notes}};
   const eventPath=path.join(folder,"event.json");
   fs.writeFileSync(eventPath,JSON.stringify(event));
@@ -230,6 +235,21 @@ try{
    assert.equal(r.kits,null,"invalid input yielded kits");
    assert.equal(r.effects.print,false);
    assert.equal(r.effects.spooler_write,false);
+  }
+ });
+ check("V7.18 one valid plus one invalid item must not yield partial boxes or kits",()=>{
+  for(const [first,second,position] of [
+   ["1.000","0",2],["-1","2.000",1],
+   ["3.000","1.5",2],["abc","1.000",1]
+  ]){
+   const r=run([],[],first,second);
+   assert.equal(r.ready,false);
+   assert.ok(r.blocking_reasons.includes("RAW_ITEM_QUANTITY_INVALID:"+position));
+   assert.ok(r.blocking_reasons.includes("PACKAGING_SKIPPED_INVALID_RAW_QUANTITY"));
+   assert.equal(r.items.length,1,"only the valid item may be retained for audit");
+   assert.equal(r.packaging,null,"no partial order packaging can be FACT");
+   assert.equal(r.kits,null,"no partial order kit can be FACT");
+   assert.equal(r.effects.print,false);assert.equal(r.effects.spooler_write,false);
   }
  });
  check("V7.18 retains exact positive integer formats already accepted by V6.8",()=>{
