@@ -92,7 +92,9 @@ export function planReplay(archives,{start,end,cursor=null,now=new Date()}={}){
   const sorted=[...byPath.values()].sort((a,b)=>a.snapshot.window_start.localeCompare(b.snapshot.window_start)||a.path.localeCompare(b.path));
   let bound=hz.startMs;
   const gaps=[],states=new Map();
-  const kept={};
+  // Keep every previously ACKED hash across disjoint lookbacks; never silently forget evidence.
+  // Retention/compaction needs a separate audited ledger; fail closed at MAX_ARCHIVES until then.
+  const kept={...prev.archives};
   let newArchives=0;
   const new_archive_paths=[];
   const new_archive_entries=[];
