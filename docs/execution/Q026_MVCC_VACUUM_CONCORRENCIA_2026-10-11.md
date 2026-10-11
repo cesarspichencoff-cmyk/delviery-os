@@ -443,7 +443,58 @@ Todas as execuções ficam registradas, inclusive as que reprovaram.
 | [38116089526](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38116089526) | `4ffecc4` | **falhou** (2 de 8 jobs) | Contraprovas e proposta verdes no incremental. No canônico, só o "E7 com proposta e timeout" reprovou, pela admissão presa 5,7 s (seção 8, item 9). A comparação antes/depois tropeçou na sobra `q026_http_reader` (seção 8, item 11). |
 | [38135280979](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38135280979) | `2c2acd4` | **verde, 11 de 11 jobs** | E1, E2, E3, E5 e E6 verdes no HEAD. Contraprovas exigidas e obtidas: E4 mata o processo; E7 sem mitigação passa do prazo; E7 com timeout e sem correção mata o processo. Com a proposta: E1 a E6 e E7 com timeout verdes. Adaptador 9/9 → 0/9. Suítes anteriores antes/depois todas verdes, sem falha nova. Concorrência longa, curtas, mista 1/2/4 e admissão 4. Lote, rede, pool e keep-alive. |
 
-⟨PENDENTE: números do CI 38135280979 para falhas e concorrência⟩
+**Complemento de auditoria independente (11/10/2026, após interrupção da sessão do Claude):** os números
+abaixo foram extraídos dos **logs dos jobs executados na CI [38135280979](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38135280979)**.
+A execução é do commit `2c2acd4d7244799bdaad0efef009da91c93fb428`; a cabeça posterior
+`c48419ea0b7bf64add325b6de26225a684d710a5` foi **somente documentação e [skip ci]**.
+Por isso, estes resultados provam o código **da execução**, não uma nova suíte sobre a documentação posterior.
+
+**Concorrência no CI — valores diretamente extraídos de `Q026_MVCC_RESULTADO`.** Cada caso usa
+`Q026_MVCC_ESCALA=0.5`, **45 s**, PostgreSQL16 descartável, fatos sintéticos, não as contagens integrais
+das matrizes locais (seções 3.1/3.4). `mortas máx` é a máxima medida durante a fase de carga de cada cenário.
+
+| perfil, processos × admissão | leitor | snapshots (n) | MVCC p50 / máx (ms) | mortas máx | pico snapshots | vazamentos |
+|---|---|---:|---:|---:|---:|---:|
+| longa, 1×2 | controle | 0 | – | 2 | 0 | 0 |
+| longa, 1×2 | canônico | 48 | 1.435 / 1.948 | 705 | 2 | 0 |
+| longa, 1×2 | incremental | 44 | 2.057 / 2.290 | 800 | 2 | 0 |
+| curtas, 1×2 | controle | 0 | – | 2 | 0 | 0 |
+| curtas, 1×2 | canônico | 28 | 804 / 1.985 | 635 | 2 | 0 |
+| curtas, 1×2 | incremental | 28 | 2.142 / 2.465 | 873 | 2 | 0 |
+| mista, 1×1 | canônico / incremental | 55 / 54 | 443 / 534 · 580 / 666 | 177 / 250 | 1 / 1 | 0 / 0 |
+| mista, 2×1 | canônico / incremental | 86 / 84 | 582 / 712 · 766 / 915 | 240 / 338 | 2 / 2 | 0 / 0 |
+| mista, 4×1 | canônico / incremental | 104 / 102 | 989 / 1.201 · 1.323 / 1.512 | 481 / 576 | 4 / 4 | 0 / 0 |
+| mista, 1×4 | canônico / incremental | 38 / 38 | 2.085 / 2.766 · 2.504 / 2.840 | 860 / 971 | 2 / 2 | 0 / 0 |
+
+Logs dos jobs: [longa](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38135280979/job/114457774564),
+[curtas](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38135280979/job/114457774640),
+[mista 1/2/4](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38135280979/job/114457774512) e
+[mista admissão 4](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38135280979/job/114457774548).
+**A admissão 4 não gerou 4 snapshots simultâneos**, porque o pool compartilhado limita a 2 conexões;
+o teste não prova que admissão 4 seja operacionalmente aceitável.
+
+**Falhas E1–E7 no CI — extraídas de `Q026_FALHAS_RESULTADO`, nos dois leitores:**
+
+| prova | HEAD sem patch | com patch em cópia de teste |
+|---|---|---|
+| E1, E2, E3, E5, E6 | 3/3 cada caso, zero falhas | 3/3 cada caso, zero falhas |
+| E4: encerrar sessão | **0/2**, processo Node morreu em ambos | **3/3**, Node vivo e leitura seguinte disponível |
+| E7: Node congelado 8s, prazo 5s, sem timeout de DB | **0/2** ao critério de prazo, snapshot incremental 8.255–8.277ms e canônico 8.948–8.995ms | não reexecutado sem timeout nesta matriz final |
+| E7: Node congelado com timeout DB 1.500ms | **0/2**, o timeout liberou a sessão mas derrubou Node sem patch | **2/2**, Node vivo, resposta 503 tardia e próxima leitura OK |
+
+No E7 **com patch e timeout**, MVCC foi 1.758–1.759ms (incremental) e
+2.286–2.295ms (canônico), sem significar resposta HTTP em 5 s.
+Logs: [incremental](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38135280979/job/114457774658)
+e [canônico](https://github.com/cesarspichencoff-cmyk/delviery-os/actions/runs/38135280979/job/114457774608).
+Os ensaios RED do HEAD são **contraprovas esperadas**: 11/11 workflows SUCCESS não quer dizer que o runtime
+sem patch passou esses cenários. A correção foi separada no [PR #91](https://github.com/cesarspichencoff-cmyk/delviery-os/pull/91)
+e a versão combinada com leitor foi depois validada em [PR #96](https://github.com/cesarspichencoff-cmyk/delviery-os/pull/96)
+(**6/6 checks** na árvore de merge `426486f61bc0e339772ca1ba02d568c6844f6702`),
+sem alterar esta pesquisa, sem publicação e sem assumir o estado operacional.
+
+**Auditoria de falsificação:** 11/11 CI prova o contrato de pesquisa e suas falhas esperadas;
+o modelo de carga é sintético, reduzido a metade nesta execução e não mede produção, Preview, rede
+TLS real nem latência de dispositivos físicos.
 
 Artefatos de cada execução (JSON com as amostras brutas de cada cenário): na página da execução, seção
 "Artifacts".
