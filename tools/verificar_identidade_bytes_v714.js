@@ -2,6 +2,8 @@
 const assert=require("node:assert/strict"),fs=require("node:fs");
 const path=require("node:path"),os=require("node:os"),crypto=require("node:crypto");
 const {spawnSync}=require("node:child_process");
+// Reuse the existing V6.8 gate, not a second validator.
+const {verifyLiveReaderPairV68}=require("../dist/src/production/stableReaderShadowPairV68.js");
 const sourcePath=path.join(__dirname,"../runtime/shadow/live_shadow_consumer_v2_candidate_v714.cjs");
 const candidate=fs.readFileSync(sourcePath,"utf8");
 const v712=fs.readFileSync(path.join(__dirname,
@@ -69,7 +71,7 @@ try{
  };
  for(const [k,v] of Object.entries(docs))
   fs.writeFileSync(path.join(folder,k),JSON.stringify(v));
- function run(orders,notes=[],qty="1.000",extraQty=undefined){
+ function run(orders,notes=[],qty="1.000",extraQty=undefined,withPair=false){
   setConfig(orders);
   const event={schema:"deliveryos.tata-reader-stable-order-event.v1",
    order_key,snapshot_hash:revision,ready_for_downstream_shadow:false,
@@ -86,6 +88,23 @@ try{
       QTPRODCOMVEN:extraQty,IDSTPRCOMVEN:"A"
      }])],
     observation_scan_complete:true,observation_rows:notes}};
+  if(withPair){
+   // Exactly the watched V2 snapshot schema and key insertion order.
+   // Note rows affect the SHA only when nonempty. Source is fictional and offline.
+   event.order.IDSTCOMANDA="A";
+   const o=event.order;
+   const snapshot={CDFILIAL:o.CDFILIAL,CDLOJA:o.CDLOJA,
+    NRVENDAREST:o.NRVENDAREST,NRCOMANDA:o.NRCOMANDA,
+    NRCOMANDAEXT:o.NRCOMANDAEXT,IDORGCMDVENDA:o.IDORGCMDVENDA,
+    IDSTCOMANDA:o.IDSTCOMANDA,DTHRABERMESA:o.DTHRABERMESA,
+    items:o.items.map(item=>({
+     NRPRODCOMVEN:item.NRPRODCOMVEN,CDPRODUTO:item.CDPRODUTO,
+     CDARVPROD:item.CDARVPROD,QTPRODCOMVEN:item.QTPRODCOMVEN,
+     IDSTPRCOMVEN:item.IDSTPRCOMVEN
+    }))};
+   if(notes.length)snapshot.observation_rows=notes;
+   event.snapshot_hash=sha256(JSON.stringify(snapshot));
+  }
   const eventPath=path.join(folder,"event.json");
   fs.writeFileSync(eventPath,JSON.stringify(event));
   const p=spawnSync(process.execPath,[path.join(folder,"consumer.cjs"),eventPath],
@@ -95,7 +114,7 @@ try{
   const result=JSON.parse(p.stdout);
   assert.equal(result.ready,false);
   assert.equal(result.effects.print,false);assert.equal(result.effects.spooler_write,false);
-  return result;
+  return withPair?{event,decision:result}:result;
  }
  check("V7.14 legacy exact-sequence override is blocked without snapshot binding",()=>{
   const r=run([baseOverride]);
@@ -274,6 +293,71 @@ try{
   assert.deepEqual(r.effects,{database_read:false,database_write:false,
    sequence_binding_write:false,print:false,spooler_write:false,
    odhen_write:false,fiscal_action:false,sefaz_call:false});
+ });
+
+ // Exercise the actual V2 child process and the existing V6.8 verifier
+ // using exactly the same offline event and decision (not handmade decisions).
+ check("V7.19 consumer V2 -> V6.8 same revision has no artificial identity drift",()=>{
+  const pair=run([],[],"1.000",undefined,true);
+  assert.equal(pair.event.snapshot_hash,pair.decision.snapshot_hash);
+  assert.equal(pair.event.order_key,pair.decision.order_key);
+  const verdict=verifyLiveReaderPairV68(pair.event,pair.decision);
+  assert.equal(verdict.status,"BLOCKED");
+  for(const unexpected of [
+   "SHADOW_DECISION_EVENT_REVISION_MISMATCH",
+   "WATCHER_V2_NOTE_SNAPSHOT_HASH_MISMATCH",
+   "SHADOW_DECISION_CONTENT_FINGERPRINT_MISMATCH",
+   "SHADOW_DECISION_ORDER_IDENTIFIERS_MISMATCH",
+  ])assert.ok(!verdict.reasons.includes(unexpected),unexpected);
+  assert.ok(verdict.reasons.includes("EVENT_OR_DECISION_NOT_READY_FOR_SHADOW"));
+  assert.ok(verdict.reasons.includes("SHADOW_DECISION_PACKAGING_SOURCE_NOT_PINNED_V78"),
+   "fake motor must never authenticate as current academy packaging");
+  assert.equal(verdict.effects.print,false);
+  assert.equal(verdict.effects.spooler,false);
+ });
+ check("V7.19 stale V2 decision from same order but different quantity is rejected",()=>{
+  const original=run([],[],"1.000",undefined,true);
+  const updated=run([],[],"2.000",undefined,true);
+  assert.equal(original.event.order_key,updated.event.order_key);
+  assert.notEqual(original.event.snapshot_hash,updated.event.snapshot_hash);
+  for(const [event,decision] of [
+   [original.event,updated.decision],[updated.event,original.decision]
+  ]){
+   const verdict=verifyLiveReaderPairV68(event,decision);
+   assert.equal(verdict.status,"BLOCKED");
+   assert.ok(verdict.reasons.includes("SHADOW_DECISION_EVENT_REVISION_MISMATCH"));
+   assert.ok(verdict.reasons.some(x=>x.startsWith(
+    "READER_EVENT_DECISION_PRODUCT_IDENTITY_OR_QUANTITY_MISMATCH")));
+   assert.equal(verdict.effects.print,false);
+  }
+ });
+ check("V7.19 event or consumer decision mutation is independently caught by V6.8",()=>{
+  const pair=run([],[],"1.000",undefined,true);
+  const changedEvent=structuredClone(pair.event);
+  changedEvent.order.items[0].QTPRODCOMVEN="4.000";
+  const e=verifyLiveReaderPairV68(changedEvent,pair.decision);
+  assert.ok(e.reasons.includes("WATCHER_V2_NOTE_SNAPSHOT_HASH_MISMATCH"));
+  const changedDecision=structuredClone(pair.decision);
+  changedDecision.items[0].quantity=4;
+  const d=verifyLiveReaderPairV68(pair.event,changedDecision);
+  assert.ok(d.reasons.includes("SHADOW_DECISION_CONTENT_FINGERPRINT_MISMATCH"));
+  assert.ok(d.reasons.some(x=>x.startsWith(
+   "READER_EVENT_DECISION_PRODUCT_IDENTITY_OR_QUANTITY_MISMATCH")));
+  assert.equal(d.effects.print,false);
+ });
+ check("V7.19 item observation remains bound to same V2 snapshot and text",()=>{
+  const note={source_field:"DSOBSDESCIT",scope_hint:"item",
+   value:"SEM PIMENTA",item_index:0,CDPRODUTO:pCode,join_proven:true};
+  const pair=run([],[note],"1.000",undefined,true);
+  const ok=verifyLiveReaderPairV68(pair.event,pair.decision);
+  assert.equal(ok.status,"BLOCKED");
+  assert.ok(!ok.reasons.includes("WATCHER_V2_NOTE_SNAPSHOT_HASH_MISMATCH"));
+  assert.ok(!ok.reasons.includes("WATCHER_V2_OBSERVATIONS_NOT_IDENTICAL_IN_DECISION"));
+  const altered=structuredClone(pair.event);
+  altered.order.observation_rows[0].value="COM PIMENTA";
+  const blocked=verifyLiveReaderPairV68(altered,pair.decision);
+  assert.ok(blocked.reasons.includes("WATCHER_V2_NOTE_SNAPSHOT_HASH_MISMATCH"));
+  assert.equal(blocked.effects.print,false);
  });
  console.log("THERMAL_BYTE_IDENTITY_V714="+checks+"/"+checks+" NO_LEGACY_AUTO_FACT NO_PRINT");
 }finally{fs.rmSync(temp,{recursive:true,force:true});}
