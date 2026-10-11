@@ -75,16 +75,22 @@ class FreeTierBulkSqliteTests(unittest.TestCase):
                 self.assertLessEqual(len(st["params"]),100)
         finally:
             db.close()
-    def test_duplicate_observations_do_not_create_new_rows(self):
+    def test_existing_observation_collision_aborts_and_rolls_back_new_rows(self):
         stmts=load_node_plan(8)
+        additional=load_node_plan(9)[-1]
         db=database()
         try:
-            for _ in range(2):
+            db.execute("BEGIN")
+            for st in stmts:
+                db.execute(st["sql"],st["params"])
+            db.execute("COMMIT")
+            with self.assertRaises(sqlite3.IntegrityError):
                 db.execute("BEGIN")
-                for st in stmts:
-                    db.execute(st["sql"],st["params"])
-                db.execute("COMMIT")
+                with db:
+                    db.execute(additional["sql"],additional["params"])
+                    db.execute(stmts[0]["sql"],stmts[0]["params"])
             self.assertEqual(db.execute("SELECT COUNT(*) FROM source_observations").fetchone()[0],8)
+            self.assertEqual(db.execute("SELECT COUNT(*) FROM source_ingestion_receipts").fetchone()[0],0)
         finally:
             db.close()
     def test_mid_batch_failure_rolls_back_every_observation(self):
