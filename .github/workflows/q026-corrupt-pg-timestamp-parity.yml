@@ -1,0 +1,57 @@
+name: q026-corrupt-pg-timestamp-parity
+on:
+  push:
+    branches:
+      - research/q026-minimal-integration-optin-20261010
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  invalid-timestamp-real-pg16:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: public.ecr.aws/docker/library/postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Full typecheck + exact adversarial fixture
+        shell: bash
+        run: |
+          set -o pipefail
+          npx tsc --noEmit
+          npx tsc --noEmit --target ES2022 --module commonjs --moduleResolution node --strict --esModuleInterop --skipLibCheck --types node tests/product/run-q026-infinite-timestamp-parity-pg.ts
+          npx tsx tests/product/run-q026-infinite-timestamp-parity-pg.ts | tee q026-invalid.out
+          grep '^Q026_CORRUPT_TIME_PARITY_PG_PASS ' q026-invalid.out
+  regressions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm run test:platform:q016
+      - run: npm run test:platform:product
+      - run: npm run test:platform:governanca
+      - name: No PostgreSQL is not proof
+        shell: bash
+        run: |
+          set +e
+          DELIVERYOS_PG_URL= npx tsx tests/product/run-q026-infinite-timestamp-parity-pg.ts
+          test "$?" = 78
