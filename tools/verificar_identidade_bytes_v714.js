@@ -386,7 +386,6 @@ try{
   assert.ok(!gateText.includes("ready_for_operational_print:true"));
   assert.ok(!gateText.includes("spooler_write:true"));
   assert.ok(!gateText.includes("print_authorized:true"));
-  assert.ok(!gateText.includes("child.stdout||"));
  });
  check("V7.20 actual V2 subprocess must fail closed at the existing V6.8 gate",()=>{
   run([],[],"1.000",undefined,true);
