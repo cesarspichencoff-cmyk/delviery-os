@@ -147,7 +147,7 @@ jobs:
           count="$(psql -h 127.0.0.1 -U postgres -d postgres -Atc "SELECT count(*) FROM pg_class WHERE relname='deliveryos_preflight_skip_locked'")"
           test "$count" = 0
           echo 'SKIP_LOCKED_REAL_PROBE_PASS temporary_relation_cleaned=true'
-      - name: Negative — no TEMP privilege must not produce compatibility PASS
+      - name: No TEMP must degrade evidence without rejecting valid PostgreSQL
         shell: bash
         run: |
           set -euo pipefail
@@ -156,21 +156,36 @@ jobs:
           GRANT CONNECT, CREATE ON DATABASE postgres TO q026_probe_no_temp;
           REVOKE TEMP ON DATABASE postgres FROM PUBLIC;
           SQL
+          DELIVERYOS_DATABASE_URL=postgres://q026_probe_no_temp@127.0.0.1:5432/postgres npx tsx src/platform/bin/verificar-banco.ts | tee no-temp.log
+          grep -F 'sintaxe aceita no PostgreSQL >=14; trava real NÃO medida (sem TEMP)' no-temp.log
+          grep -F 'aviso  prova de bloqueio restrita' no-temp.log
+          grep -F 'Este banco serve, com' no-temp.log
+          echo 'SKIP_LOCKED_NO_TEMP_LIMITED_EVIDENCE_NOT_FALSE_REJECT'
+      - name: Adversarial SQL error cannot become fake compatibility PASS
+        shell: bash
+        env:
+          DELIVERYOS_DATABASE_URL: postgres://postgres@127.0.0.1:5432/postgres
+        run: |
+          set -euo pipefail
+          cp src/platform/bin/verificar-banco.ts "$RUNNER_TEMP/verificar-banco.original.ts"
+          trap 'cp "$RUNNER_TEMP/verificar-banco.original.ts" src/platform/bin/verificar-banco.ts' EXIT
+          python3 - <<'PY'
+          from pathlib import Path
+          path=Path("src/platform/bin/verificar-banco.ts")
+          source=path.read_text()
+          old="WHERE probe_key = 1 FOR UPDATE SKIP LOCKED"
+          new="WHERE probe_key = 1 AND (1/0)=1 FOR UPDATE SKIP LOCKED"
+          assert source.count(old)==1
+          path.write_text(source.replace(old,new))
+          PY
           set +e
-          DELIVERYOS_DATABASE_URL=postgres://q026_probe_no_temp@127.0.0.1:5432/postgres npx tsx src/platform/bin/verificar-banco.ts >denied.log 2>&1
+          npx tsx src/platform/bin/verificar-banco.ts >injected-error.log 2>&1
           code=$?
           set -e
           test "$code" -eq 1
-          grep -F 'FOR UPDATE SKIP LOCKED' denied.log
-          grep -F 'capacidade NÃO comprovada (SQLSTATE 42501)' denied.log
-          grep -F 'Este banco NÃO serve' denied.log
-          echo 'SKIP_LOCKED_MISSING_TEMP_FAILS_CLOSED'
-          set +e
-          psql -h 127.0.0.1 -U q026_probe_no_temp -d postgres -v ON_ERROR_STOP=1 -c 'SELECT oid FROM pg_catalog.pg_class WHERE oid = 0 FOR UPDATE SKIP LOCKED' >catalog-lock.log 2>&1
-          catalog_code=$?
-          set -e
-          echo "CATALOG_LOCK_CHECK_STATUS=$catalog_code"
-          cat catalog-lock.log
+          grep -F 'capacidade NÃO comprovada (SQLSTATE 22012)' injected-error.log
+          grep -F 'Este banco NÃO serve' injected-error.log
+          echo 'SKIP_LOCKED_ARBITRARY_SQL_ERROR_FAILS_CLOSED'
       - name: Missing database URL fails closed (exit 2)
         shell: bash
         run: |
