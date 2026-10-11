@@ -139,21 +139,28 @@ async function main(): Promise<void> {
 
     /* ---------------------------------------------------------------- */
 
-    // SKIP LOCKED precisa FUNCIONAR: a sonda antiga usava VALUES, que o
-    // PostgreSQL aceita a sintaxe sobre VALUES, mas esse SELECT não demonstra
-    // bloqueio de uma linha real. Pior: outros erros eram rotulados como
-    // "sintaxe aceita", sem distinguir falha da prova de compatibilidade.
-    // Teste real em tabela TEMPORÁRIA da sessão: não lê, altera nem migra
-    // qualquer tabela de operação; ON COMMIT DROP limpa o artefato.
-    // A conexão tem de ser a MESMA durante CREATE, INSERT e SELECT.
+    // VALUES prova a sintaxe SKIP LOCKED no PostgreSQL, mas não demonstra
+    // que uma linha de tabela pode ser bloqueada. Erros arbitrários tampouco
+    // podem ser rotulados "sintaxe aceita" (falha aberta antiga).
+    //
+    // Prova forte: tabela TEMP da própria sessão, ON COMMIT DROP, uma linha
+    // sintética, e SELECT com bloqueio real. Sem dados operacionais.
+    // A credencial migradora pode legitimamente não ter permissão TEMP:
+    // nesse caso só a GRAMÁTICA é verificável sem uma tabela operacional.
     let skipLocked = false;
     let detalheSkip = "não verificado";
+    let tempNegado = false;
     try {
       await cliente.transaction(async (tx) => {
-        await tx.query(
-          "CREATE TEMP TABLE deliveryos_preflight_skip_locked " +
-          "(probe_key integer PRIMARY KEY) ON COMMIT DROP",
-        );
+        try {
+          await tx.query(
+            "CREATE TEMP TABLE deliveryos_preflight_skip_locked " +
+            "(probe_key integer PRIMARY KEY) ON COMMIT DROP",
+          );
+        } catch (e) {
+          tempNegado = (e as { code?: string })?.code === "42501";
+          throw e;
+        }
         await tx.query(
           "INSERT INTO pg_temp.deliveryos_preflight_skip_locked(probe_key) VALUES (1)",
         );
@@ -166,14 +173,34 @@ async function main(): Promise<void> {
         }
       });
       skipLocked = true;
-      detalheSkip = "executado com sucesso em tabela temporária; sem dado operacional";
+      detalheSkip = "prova real em linha temporária, sem dado operacional";
     } catch (e) {
-      // Falha no TEMP também impede provar a capacidade. NÃO afirmar que o
-      // servidor não tem o recurso: a sonda pode estar sem permissão TEMP.
-      const codigo = (e as { code?: string })?.code;
-      detalheSkip = "capacidade NÃO comprovada" +
-        (typeof codigo === "string" ? " (SQLSTATE " + codigo + ")" : "") +
-        " — verificar suporte e permissão TEMP da credencial migradora";
+      if (tempNegado && major >= VERSAO_MINIMA) {
+        try {
+          // Sem TEMP, recusa fingir teste de bloqueio; usa apenas o nível de
+          // evidência possível: PostgreSQL >=14 e sintaxe efetivamente aceita.
+          await cliente.query(
+            "SELECT 1 FROM (VALUES (1)) AS t(x) LIMIT 1 FOR UPDATE SKIP LOCKED",
+          );
+          skipLocked = true;
+          detalheSkip = "sintaxe aceita no PostgreSQL >=14; trava real NÃO medida (sem TEMP)";
+          achados.push({
+            nome: "prova de bloqueio restrita",
+            ok: false,
+            detalhe: "a credencial não permite TEMP; verificar trava real após migrations",
+            bloqueante: false,
+          });
+        } catch (sintaxeErro) {
+          const codigo = (sintaxeErro as { code?: string })?.code;
+          detalheSkip = "sintaxe não comprovada" +
+            (typeof codigo === "string" ? " (SQLSTATE " + codigo + ")" : "");
+        }
+      } else {
+        const codigo = (e as { code?: string })?.code;
+        detalheSkip = "capacidade NÃO comprovada" +
+          (typeof codigo === "string" ? " (SQLSTATE " + codigo + ")" : "") +
+          " — falha no teste de bloqueio real";
+      }
     }
     achados.push({
       nome: "FOR UPDATE SKIP LOCKED",
