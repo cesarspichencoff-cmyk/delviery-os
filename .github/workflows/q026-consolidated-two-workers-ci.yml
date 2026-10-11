@@ -1,0 +1,91 @@
+name: q026-consolidated-two-workers-proof
+# Adversarial replay against current Q026 consolidated candidate, synthetic PG only.
+on:
+  pull_request:
+    branches:
+      - research/q026-integration-ci-safety-20261011
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: q026-two-workers-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  two-real-node-workers:
+    name: Q026 two-process shared-PG HTTP
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Identify exact tested PR merge tree
+        shell: bash
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          tested="$(git rev-parse HEAD)"
+          test "$tested" = "$GITHUB_SHA"
+          if test "$GITHUB_EVENT_NAME" = pull_request; then
+            test -n "$PR_BASE_SHA" && test -n "$PR_HEAD_SHA"
+          fi
+          echo "Q026_TWO_WORKERS_TESTED_TREE event=$GITHUB_EVENT_NAME base=${PR_BASE_SHA:-none} head=${PR_HEAD_SHA:-none} tested=$tested"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      # fork() needs a local tsx runtime. Install in CI only, do not change package.json/lock.
+      - run: npm install --no-save --no-package-lock --ignore-scripts --no-audit --no-fund tsx@4.23.15
+      - name: TypeScript and adversarial fixture typecheck
+        run: |
+          npx tsc --noEmit
+          npx tsc --noEmit --target ES2022 --module commonjs --moduleResolution node --strict --esModuleInterop --skipLibCheck --types node tests/product/run-q026-multiprocess-http-admission-shadow.ts tests/product/q026-multiprocess-server-child.ts
+      - name: Start disposable native PostgreSQL16 inside runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          PG_BIN=/usr/lib/postgresql/16/bin
+          PG_DATA="$RUNNER_TEMP/q026-two-workers-pg16"
+          test -x "$PG_BIN/initdb" && test -x "$PG_BIN/pg_ctl"
+          "$PG_BIN/initdb" -D "$PG_DATA" --username=postgres --auth-local=trust --auth-host=trust --encoding=UTF8 --locale=C >/dev/null
+          if ! "$PG_BIN/pg_ctl" -D "$PG_DATA" -l "$RUNNER_TEMP/q026-two-workers-pg16.log" -o "-h 127.0.0.1 -p 5432 -k $RUNNER_TEMP" -w start; then
+            cat "$RUNNER_TEMP/q026-two-workers-pg16.log"
+            exit 1
+          fi
+          version="$(psql -h 127.0.0.1 -U postgres -d postgres -Atc 'SHOW server_version_num')"
+          test "$version" -ge 160000 && test "$version" -lt 170000
+          echo "Q026_TWO_WORKERS_EPHEMERAL_PG16_READY version=$version"
+      - name: Real 2-process HTTP, overload, 503, cancellation and recovery
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx tsx tests/product/run-q026-multiprocess-http-admission-shadow.ts | tee q026-two-workers.log
+          grep '^Q026_MULTIPROCESS_ADMISSION_SHADOW_PASS ' q026-two-workers.log
+      - name: Capacity budget algebra and fail-closed CLI — no external PG
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx tsx tests/product/run-q026-preview-capacity-gate.ts | tee q026-capacity-budget.log
+          grep '^Q026_PREVIEW_CAPACITY_PROPERTIES_PASS ' q026-capacity-budget.log
+      - name: No PG fixture must fail closed, not skip
+        shell: bash
+        run: |
+          set +e
+          DELIVERYOS_PG_URL= npx tsx tests/product/run-q026-multiprocess-http-admission-shadow.ts >q026-no-pg.log 2>&1
+          code=$?
+          set -e
+          test "$code" -eq 78
+          grep -F 'Q026_MULTIPROCESS_PG_REQUIRED' q026-no-pg.log
+      - name: Stop only owned disposable PG16
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          PG_DATA="$RUNNER_TEMP/q026-two-workers-pg16"
+          if test -f "$PG_DATA/postmaster.pid"; then
+            /usr/lib/postgresql/16/bin/pg_ctl -D "$PG_DATA" -m fast -w stop
+          fi
