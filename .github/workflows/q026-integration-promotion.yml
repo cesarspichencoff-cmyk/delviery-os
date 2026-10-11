@@ -6,6 +6,7 @@ on:
   pull_request:
     branches:
       - research/q026-minimal-integration-optin-20261010
+      - research/q026-integration-ci-safety-20261011
       - integration/deliveryos-product-ux-android-20261009
       - main
   # PR checks cover research branches; prevent duplicate push+PR runs.
