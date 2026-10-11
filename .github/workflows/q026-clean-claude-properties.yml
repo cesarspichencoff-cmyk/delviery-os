@@ -1,0 +1,49 @@
+name: q026-clean-claude-property-audit
+# DRAFT/HOLD: unit-level property test on the integrated public contract.
+on:
+  push:
+    branches:
+      - research/q026-clean-property-evidence-20261010
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: q026-clean-properties-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  properties:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Compile strict TypeScript, including original Claude property harness
+        shell: bash
+        run: |
+          npx tsc --noEmit
+          npx tsc --noEmit --target ES2022 --module commonjs --moduleResolution node --strict --esModuleInterop --skipLibCheck --types node tests/product/run-q026-leitor-incremental-propriedades.ts tests/product/q026-leitor-incremental-comparacao.ts
+      - name: Run full P1-P7 Claude property cases on clean integrated reader
+        shell: bash
+        run: |
+          set -o pipefail
+          npx tsx tests/product/run-q026-leitor-incremental-propriedades.ts | tee q026-clean-properties.log
+          grep 'Q026_LEITOR_INCREMENTAL_PROPRIEDADES: 9/9 PASS' q026-clean-properties.log
+  regressions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm run test:platform:q016
+      - run: npm run test:platform:product
+      - run: npm run test:platform:governanca
