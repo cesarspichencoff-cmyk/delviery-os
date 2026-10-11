@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - research/q026-integration-ci-safety-20261011
+      - validation/q026-reader-plus-pg-survival-20261011
   workflow_dispatch:
 permissions:
   contents: read
