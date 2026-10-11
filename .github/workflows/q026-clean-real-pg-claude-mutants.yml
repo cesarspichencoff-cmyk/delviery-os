@@ -1,0 +1,59 @@
+name: q026-clean-real-pg-claude-14-mutations
+# DRAFT/HOLD; PostgreSQL16 is disposable and may be modified by tests.
+on:
+  push:
+    branches:
+      - research/q026-clean-property-evidence-20261010
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: q026-clean-claude-pg-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  pg-transactions-and-mutants:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    services:
+      postgres:
+        image: public.ecr.aws/docker/library/postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
+      Q026_INC_LONGA: "5000"
+      Q026_INC_CURTAS: "200"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Strict typecheck Claude's complete PostgreSQL suite plus mutator on integrated reader
+        shell: bash
+        run: |
+          npx tsc --noEmit
+          npx tsc --noEmit --target ES2022 --module commonjs --moduleResolution node --strict --esModuleInterop --skipLibCheck --types node tests/product/run-q026-leitor-incremental-pg.ts tests/product/q026-leitor-incremental-fixture.ts tests/product/run-q026-clean-full-mutacoes.ts
+      - name: Real PostgreSQL G1-G10 transaction rollback and MVCC acceptance
+        shell: bash
+        run: |
+          set -o pipefail
+          npx tsx tests/product/run-q026-leitor-incremental-pg.ts | tee q026-clean-gates-pg.log
+          grep 'Q026_LEITOR_INCREMENTAL_PG: 10/10 PASS' q026-clean-gates-pg.log
+      - name: Mutate 14 semantic and PostgreSQL transaction rules independently
+        shell: bash
+        run: |
+          set -o pipefail
+          npx tsx tests/product/run-q026-clean-full-mutacoes.ts | tee q026-clean-all-14-mutants.log
+          grep '^Q026_LEITOR_INCREMENTAL_MUTACOES: 14/14 mortos, 0 cegos' q026-clean-all-14-mutants.log
+      - name: No PostgreSQL is explicit fail-closed, never a fake green
+        shell: bash
+        run: |
+          set +e
+          DELIVERYOS_PG_URL= npx tsx tests/product/run-q026-leitor-incremental-pg.ts
+          test "$?" = 78
