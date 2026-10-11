@@ -118,3 +118,32 @@ test('caller cannot swap the Git blob identifier from the discovered file',async
  assert.equal(queried,0);
  assert.equal((await store.load()).revision,0);
 });
+
+test('cursor cannot advance with modified digest for a valid receipt',async()=>{
+ const store=memoryCursorStore();
+ const forged={...plan,cursor:{...plan.cursor,archives:{...plan.cursor.archives,[path]:'f'.repeat(64)}}};
+ let receiptsRead=0;
+ await assert.rejects(commitAfterReceipts(forged,{intents,store,receiptFor:async()=>{receiptsRead++;return receipt;}}),
+   /receipt_gate_cursor_hash_mismatch/);
+ assert.equal(receiptsRead,0);
+ assert.equal((await store.load()).revision,0);
+});
+test('cursor cannot silently include fabricated archive paths',async()=>{
+ const store=memoryCursorStore();
+ const phantom='ci-snapshots/deliveryos/archive/2026/10/10/20261010T220000000Z.json';
+ const forged={...plan,cursor:{...plan.cursor,archives:{...plan.cursor.archives,[phantom]:'f'.repeat(64)}}};
+ let receiptsRead=0;
+ await assert.rejects(commitAfterReceipts(forged,{intents,store,receiptFor:async()=>{receiptsRead++;return receipt;}}),
+   /receipt_gate_cursor_unrecognized_path/);
+ assert.equal(receiptsRead,0);
+ assert.equal((await store.load()).revision,0);
+});
+test('cursor cannot omit a new archive already required by the verified manifest',async()=>{
+ const store=memoryCursorStore();
+ const forged={...plan,cursor:{...plan.cursor,archives:{}}};
+ let receiptsRead=0;
+ await assert.rejects(commitAfterReceipts(forged,{intents,store,receiptFor:async()=>{receiptsRead++;return receipt;}}),
+   /receipt_gate_cursor_hash_mismatch/);
+ assert.equal(receiptsRead,0);
+ assert.equal((await store.load()).revision,0);
+});
