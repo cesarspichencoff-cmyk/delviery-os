@@ -68,7 +68,7 @@ for(let n=2;n<=100;n++){
  assert.equal(monotone(n)-monotone(n-1),-4,
    "adding a worker must never increase PostgreSQL safety headroom");
 }
-const path="tools/q026-preview-capacity-gate.ts";
+const path="tools/q026-preview-capacity-cli.ts";
 function cli(argv:string[]){
  return spawnSync("npx",["--no-install","tsx",path,...argv],{
   cwd:process.cwd(),encoding:"utf8",timeout:15000
