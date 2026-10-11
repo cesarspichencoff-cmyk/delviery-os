@@ -373,10 +373,14 @@ try{
  // pair verifier. No separately supplied decision or optional gate switch.
  const gatePath=path.join(__dirname,"gerar_tres_vias_v2_gate_v720_offline.js");
  const gateText=fs.readFileSync(gatePath,"utf8");
+ const seqFixture=path.join(folder,"sequence-fixture.json");
+ fs.writeFileSync(seqFixture,JSON.stringify({
+  schema:"deliveryos.tata-sequence-state.v1",next_value:1}));
  const gateArgs=()=>["--event",path.join(folder,"event.json"),
   "--consumer",path.join(folder,"consumer.cjs"),
   "--proof",path.join(folder,"proof.json"),
-  "--motor",path.join(folder,"packaging-current.js")];
+  "--motor",path.join(folder,"packaging-current.js"),
+  "--sequence-fixture",seqFixture];
  const runGate=args=>spawnSync(process.execPath,[gatePath,...args],{
   encoding:"utf8",timeout:20000});
  check("V7.20 mandatory V6.8 call precedes every ticket rendering path",()=>{
