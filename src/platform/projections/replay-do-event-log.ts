@@ -45,7 +45,7 @@
  */
 
 import { SOURCE_MODES, type EventEnvelope, type SourceMode } from "../contracts/event-catalog";
-import type { TransactionalSqlClient } from "../persistence/sql-client";
+import type { SqlClient, TransactionalSqlClient } from "../persistence/sql-client";
 import { envelopeDaMensagem } from "./consumidor";
 
 export const PORTA_DE_REPLAY_VERSION = "replay-do-event-log@1.0.0";
@@ -77,10 +77,24 @@ export async function lerFatosParaReplay(
   tipos: readonly string[],
 ): Promise<LeituraParaReplay> {
   return cliente.transaction(async (tx) => {
-    // Primeiro comando da transação. Depois dele, qualquer escrita nesta
-    // conexão é recusada pelo PostgreSQL.
+    // Preserva a fronteira READ ONLY autônoma da Q-016 para todos os chamadores.
     await tx.query("SET TRANSACTION READ ONLY");
+    return lerFatosParaReplayNaTransacao(tx, tipos);
+  });
+}
 
+/**
+ * Decodificador canônico Q-016 usando a conexão/transação que o chamador
+ * já abriu. NÃO abre outra transação nem configura isolamento: o proprietário
+ * deve emitir SET TRANSACTION ... antes de qualquer SELECT.
+ *
+ * A porta de Entregas usa a mesma conexão para fatos, aparelhos, último lote
+ * e contagens, com um único instantâneo MVCC REPEATABLE READ, READ ONLY.
+ */
+export async function lerFatosParaReplayNaTransacao(
+  tx: SqlClient,
+  tipos: readonly string[],
+): Promise<LeituraParaReplay> {
     const linhas = await tx.query(
       `SELECT event_id, unit_id, object_type, object_id, event_type, occurred_at, origin,
               device_id, sequence_local, idempotency_key, contract_version, source_mode,
@@ -155,5 +169,4 @@ export async function lerFatosParaReplay(
     }
 
     return { aptos, sem_modo, corrompidas, lidas: linhas.length };
-  });
 }
