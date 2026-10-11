@@ -44,6 +44,9 @@ function get(port:number,path:string):Promise<Resp>{
 }
 void(async()=>{
  const db=await bancoIsolado(url,undefined,"q026actualhttp");
+ // Role is cluster-scoped. Use only a name derived from our own isolated DB.
+ const readerRole=`q026_rd_${db.nome.slice(-48)}`;
+ let readerRoleCreated=false;
  let server:http.Server|null=null;
  let unlock:()=>void=()=>undefined;
  let lockedResolve:()=>void=()=>undefined;
@@ -69,16 +72,17 @@ void(async()=>{
   // The role is cluster-scoped but the CI PostgreSQL container is ephemeral.
   let runtimeUrl=db.url;
   if(roleMode==="reader"){
-    await db.cliente.query("CREATE ROLE q026_http_reader LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION");
-    await db.cliente.query(`GRANT CONNECT ON DATABASE ${db.nome} TO q026_http_reader`);
-    await db.cliente.query("GRANT USAGE ON SCHEMA identity, platform TO q026_http_reader");
-    await db.cliente.query("GRANT SELECT ON identity.device, platform.event_log TO q026_http_reader");
-    const parsed=new URL(db.url);parsed.username="q026_http_reader";
+    await db.cliente.query(`CREATE ROLE ${readerRole} LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION`);
+     readerRoleCreated=true;
+    await db.cliente.query(`GRANT CONNECT ON DATABASE ${db.nome} TO ${readerRole}`);
+    await db.cliente.query(`GRANT USAGE ON SCHEMA identity, platform TO ${readerRole}`);
+    await db.cliente.query(`GRANT SELECT ON identity.device, platform.event_log TO ${readerRole}`);
+    const parsed=new URL(db.url);parsed.username=readerRole;
     runtimeUrl=parsed.toString();
     const least=await createPgClient({url:runtimeUrl,max:1});
     try{
       const who=await least.query("SELECT current_user AS name");
-      assert.equal(who[0].name,"q026_http_reader");
+      assert.equal(who[0].name,readerRole);
       let rejected:unknown=null;
       try{await least.query(
         "INSERT INTO identity.unit(unit_id,display_name) VALUES ('ILLEGAL','Illegal')"
@@ -87,7 +91,7 @@ void(async()=>{
       assert.equal((rejected as {code?:string}).code,"42501",
         "least-privilege role unexpectedly could write");
       console.log("Q026_ACTUAL_HTTP_LEAST_PRIVILEGE_ROLE_PASS "+JSON.stringify({
-        role:"q026_http_reader",non_superuser:true,write_denied_sqlstate:"42501"
+        role:readerRole,non_superuser:true,write_denied_sqlstate:"42501"
       }));
     }finally{await least.close()}
   }
@@ -209,6 +213,14 @@ void(async()=>{
  }finally{
   unlock();if(hold)await hold.catch(()=>undefined);
   if(server)await new Promise<void>(resolve=>server!.close(()=>resolve()));
-  await db.descartar();
+  // The database is discarded before its own cluster role is dropped.
+  try{await db.descartar()}
+  finally{
+   if(readerRoleCreated){
+    const admin=await createPgClient({url,max:1});
+    try{await admin.query(`DROP ROLE ${readerRole}`)}
+    finally{await admin.close()}
+   }
+  }
  }
 })().catch(e=>{console.error("Q026_ACTUAL_HTTP_GUARD_FAILED",e);process.exitCode=1});
