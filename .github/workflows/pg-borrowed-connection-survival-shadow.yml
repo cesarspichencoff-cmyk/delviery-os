@@ -40,14 +40,6 @@ jobs:
           node-version: "22"
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm install --no-save --no-package-lock --ignore-scripts --no-audit --no-fund tsx@4.23.15
-      - name: Strict TypeScript compile and core regression
-        run: |
-          set -e
-          npx tsc --noEmit
-          npx tsc --noEmit --target ES2022 --module commonjs --moduleResolution node --strict --esModuleInterop --skipLibCheck --types node tests/product/run-q026-mvcc-conexao-derrubada.ts
-          npm run test:platform:q016
-          npm run test:platform:product
-          npm run test:platform:governanca
       - name: Start private, disposable PostgreSQL16
         shell: bash
         run: |
@@ -63,6 +55,14 @@ jobs:
           version="$(psql -h 127.0.0.1 -U postgres -d postgres -Atc 'SHOW server_version_num')"
           test "$version" -ge 160000 && test "$version" -lt 170000
           echo "PG_SESSION_SURVIVAL_EPHEMERAL_PG16_READY version=$version"
+      - name: Strict TypeScript compile and core regression
+        run: |
+          set -e
+          npx tsc --noEmit
+          npx tsc --noEmit --target ES2022 --module commonjs --moduleResolution node --strict --esModuleInterop --skipLibCheck --types node tests/product/run-q026-mvcc-conexao-derrubada.ts
+          npm run test:platform:q016
+          npm run test:platform:product
+          npm run test:platform:governanca
       - name: Kill active, idle and timed-out PG sessions; client and next query must survive
         shell: bash
         run: |
