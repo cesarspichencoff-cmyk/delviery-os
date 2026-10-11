@@ -92,7 +92,7 @@ function run(argv=process.argv.slice(2)){
  if(sha(motorSource)!==PACKAGING_SOURCE_SHA256_V78)
   return blocked(["CANONICAL_PACKAGING_MOTOR_SOURCE_NOT_PINNED_BEFORE_EXEC"],"SOURCE_PREFLIGHT");
  const seqBytes=readBound(args["--sequence-fixture"]);
- const seq=JSON.parse(seqBytes.toString("utf8").replace(/^\\uFEFF/,""));
+ const seq=JSON.parse(seqBytes.toString("utf8").replace(/^\uFEFF/,""));
  if(seq?.schema!=="deliveryos.tata-sequence-state.v1"||
     !Number.isSafeInteger(seq.next_value)||seq.next_value<1||seq.next_value>999)
   return blocked(["SYNTHETIC_SEQUENCE_FIXTURE_INVALID"],"SOURCE_PREFLIGHT");
@@ -108,7 +108,7 @@ function run(argv=process.argv.slice(2)){
   // On Linux the *Windows-formatted* hardcoded path is a relative filename.
   // Only inside this disposable sandbox, provide the explicitly supplied
   // synthetic sequence file. No real Windows disk or TATÁ sequence is read.
-  const sequenceFilename="C:\\\\ProgramData\\\\TataComandaReader\\\\state\\\\tata-sequence-state.json";
+  const sequenceFilename=String.raw`C:\ProgramData\TataComandaReader\state\tata-sequence-state.json`;
   fs.writeFileSync(path.join(dir,sequenceFilename),seqBytes,{flag:"wx"});
   // Prevent NODE_OPTIONS --require / --import and NODE_PATH from
   // preloading unrelated executable JavaScript outside the pinned entry.
