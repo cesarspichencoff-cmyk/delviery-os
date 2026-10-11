@@ -387,21 +387,31 @@ try{
   assert.ok(!gateText.includes("spooler_write:true"));
   assert.ok(!gateText.includes("print_authorized:true"));
  });
- check("V7.20 actual V2 subprocess must fail closed at the existing V6.8 gate",()=>{
+ check("V7.21 unpinned executable motor cannot run even once before validation",()=>{
+  // V7.19 above already proves the real V2 child -> real V6.8 on this
+  // blocked fictional fixture. The V7.21 gate rejects its fake executable
+  // module BEFORE spawn, so this scenario must stop at SOURCE_PREFLIGHT.
   run([],[],"1.000",undefined,true);
   fs.writeFileSync(path.join(folder,"proof.json"),"{}");
-  const p=runGate(gateArgs());
-  assert.equal(p.status,2,p.stderr);
-  const r=JSON.parse(p.stdout.trim());
-  assert.equal(r.status,"BLOCKED");
-  assert.equal(r.stage,"V68_PAIR_GATE");
-  assert.ok(r.reasons.includes("EVENT_OR_DECISION_NOT_READY_FOR_SHADOW"));
-  assert.ok(r.reasons.includes("SHADOW_DECISION_PACKAGING_SOURCE_NOT_PINNED_V78"));
-  assert.deepEqual(r.outputs,[]);
-  assert.equal(r.effects.print,false);
-  assert.equal(r.effects.spooler_write,false);
-  assert.equal(r.effects.database_write,false);
-  assert.equal(r.print_authorized,false);
+  const motorPath=path.join(folder,"packaging-current.js");
+  const original=fs.readFileSync(motorPath);
+  const canary=path.join(folder,"should-not-exist.v721");
+  try{
+   fs.writeFileSync(motorPath,
+    "require('node:fs').writeFileSync("+JSON.stringify(canary)+",'BAD');"+fakeMotor);
+   const p=runGate(gateArgs());
+   assert.equal(p.status,2,p.stderr);
+   const r=JSON.parse(p.stdout.trim());
+   assert.equal(r.status,"BLOCKED");
+   assert.equal(r.stage,"SOURCE_PREFLIGHT");
+   assert.ok(r.reasons.includes("CANONICAL_PACKAGING_MOTOR_SOURCE_NOT_PINNED_BEFORE_EXEC"));
+   assert.equal(fs.existsSync(canary),false,"unpinned motor executed before source pin");
+   assert.deepEqual(r.outputs,[]);
+   assert.equal(r.effects.print,false);
+   assert.equal(r.effects.spooler_write,false);
+   assert.equal(r.effects.database_write,false);
+   assert.equal(r.print_authorized,false);
+  }finally{fs.writeFileSync(motorPath,original);}
  });
  check("V7.20 cannot import a cached or manually replaced consumer decision",()=>{
   const args=[...gateArgs(),"--decision",path.join(folder,"stale.json")];
@@ -420,8 +430,36 @@ try{
   assert.equal(p.status,2);
   const r=JSON.parse(p.stdout.trim());
   assert.equal(r.status,"BLOCKED");
+  assert.equal(r.stage,"SOURCE_PREFLIGHT");
+  assert.ok(r.reasons.includes("CONSUMER_GIT_BLOB_NOT_PINNED"));
   assert.deepEqual(r.outputs,[]);
   assert.equal(r.effects.print,false);
+ });
+ check("V7.21 read-only effects and exit/status agreement are required",()=>{
+  const {readOnlyConsumerResult}=require(gatePath);
+  const keys=["database_read","database_write","sequence_binding_write",
+   "print","spooler_write","odhen_write","fiscal_action","sefaz_call"];
+  const base={ready:false,effects:Object.fromEntries(keys.map(k=>[k,false]))};
+  assert.equal(readOnlyConsumerResult(base,5),true);
+  assert.equal(readOnlyConsumerResult({...base,ready:true},0),true);
+  assert.equal(readOnlyConsumerResult(base,0),false);
+  assert.equal(readOnlyConsumerResult({...base,ready:true},5),false);
+  assert.equal(readOnlyConsumerResult({...base,effects:null},5),false);
+  assert.equal(readOnlyConsumerResult({...base,effects:{}},5),false);
+  assert.equal(readOnlyConsumerResult({...base,effects:{...base.effects,print:true}},5),false);
+  assert.equal(readOnlyConsumerResult({...base,effects:{...base.effects,spooler_write:true}},5),false);
+  assert.equal(readOnlyConsumerResult({...base,effects:{...base.effects,database_write:true}},5),false);
+  assert.equal(readOnlyConsumerResult({...base,effects:{...base.effects,unknown_effect:false}},5),false);
+  assert.ok(gateText.includes('delete childEnv[key]'));
+  assert.ok(gateText.includes('"NODE_OPTIONS","NODE_PATH","npm_config_node_options"'));
+ });
+ check("V7.21 executable motor pin and V6.8 remain mandatory before rendering",()=>{
+  assert.ok(gateText.indexOf("CANONICAL_PACKAGING_MOTOR_SOURCE_NOT_PINNED_BEFORE_EXEC")<
+   gateText.indexOf("const child=spawnSync("));
+  assert.ok(gateText.indexOf("readOnlyConsumerResult(decision,child.status)")<
+   gateText.indexOf("verifyLiveReaderPairV68(event,decision)"));
+  assert.ok(gateText.indexOf("verifyLiveReaderPairV68(event,decision)")<
+   gateText.indexOf("return renderVerifiedOffline(["));
  });
 
  console.log("THERMAL_BYTE_IDENTITY_V714="+checks+"/"+checks+" NO_LEGACY_AUTO_FACT NO_PRINT");
