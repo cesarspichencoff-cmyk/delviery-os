@@ -102,7 +102,16 @@ try{
      CDARVPROD:item.CDARVPROD,QTPRODCOMVEN:item.QTPRODCOMVEN,
      IDSTPRCOMVEN:item.IDSTPRCOMVEN
     }))};
-   if(notes.length)snapshot.observation_rows=notes;
+   // Watcher V2 hashes the canonical mapped row keys, not arbitrary input
+   // object insertion order. Match inspectV2WatcherNotesV76 exactly.
+   if(notes.length)snapshot.observation_rows=notes.map(row=>(
+    row.scope_hint==="item"
+     ? {source_field:row.source_field,value:row.value,
+        item_index:row.item_index,CDPRODUTO:row.CDPRODUTO,
+        scope_hint:"item",join_proven:true}
+     : {source_field:row.source_field,value:row.value,
+        scope_hint:"order",join_proven:true}
+   ));
    event.snapshot_hash=sha256(JSON.stringify(snapshot));
   }
   const eventPath=path.join(folder,"event.json");
