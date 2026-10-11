@@ -35,9 +35,12 @@ function semIds(n:number):Readonly<{length:number}>{
     ownKeys(){throw Error("VM enumerou IDs forenses")}
   });
 }
-function toIso(v:unknown):string{
+// A mesma regra do decoder canônico Q-016: timestamptz 'infinity',
+// '-infinity' e datas não parseáveis ficam em quarentena como linha inválida,
+// sem abortar a realidade inteira. Não criar timestamp substituto.
+function instanteValido(v:unknown):string|null{
   const d=v instanceof Date?v:new Date(String(v));
-  assert.ok(Number.isFinite(d.getTime()),"timestamp invalido no cursor");
+  if(Number.isNaN(d.getTime()))return null;
   return d.toISOString();
 }
 function fromRow(l:SqlRow):EventEnvelope|null{
@@ -48,6 +51,8 @@ function fromRow(l:SqlRow):EventEnvelope|null{
     if(!Number.isSafeInteger(n)||n<0)return null;
     sequence=n;
   }
+  const occurred=instanteValido(l.occurred_at);
+  if(occurred===null)return null;
   const event_id=String(l.event_id);
   return envelopeDaMensagem({
     outbox_id:"q026-shadow:"+event_id,
@@ -59,8 +64,11 @@ function fromRow(l:SqlRow):EventEnvelope|null{
       unit_id:String(l.unit_id),
       trip_id:l.object_type==="trip"?String(l.object_id):undefined,
       device_id:l.device_id??undefined,
-      occurred_at:toIso(l.occurred_at),
-      received_at:l.recorded_at===null||l.recorded_at===undefined?undefined:toIso(l.recorded_at),
+      occurred_at:occurred,
+      // Preserve the canonical Q-016 conversion: received_at is passed
+      // through when not a Date (the envelope decides its validity).
+      received_at:l.recorded_at instanceof Date
+        ?l.recorded_at.toISOString():l.recorded_at??undefined,
       clock_trust:l.clock_trust??undefined,origin:l.origin,
       source_mode:l.source_mode,sequence
     }
