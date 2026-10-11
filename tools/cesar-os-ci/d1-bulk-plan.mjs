@@ -80,7 +80,7 @@ export function packWorkObservationInserts(rows){
     }
     const valueTuple='('+WORK_COLUMNS.map(()=>'?').join(',')+')';
     const sql='INSERT INTO source_observations ('+WORK_COLUMNS.join(',')+') VALUES '+
-      chunk.map(()=>valueTuple).join(',')+' ON CONFLICT(observation_id) DO NOTHING';
+      chunk.map(()=>valueTuple).join(','); // conflict aborts the proposed transaction; NEVER hide an unverified existing row
     if(params.length>D1_BIND_PARAM_CEILING||sql.length>100000)
       fail('d1_work_query_limit_violation');
     out.push({sql,params,row_count:chunk.length});
@@ -92,5 +92,8 @@ export function packWorkObservationInserts(rows){
     max_parameters:Math.max(0,...out.map(x=>x.params.length)),
     reserved_extra_queries:RESERVED_EXTRA_QUERIES,
     estimated_total_statements:out.length+RESERVED_EXTRA_QUERIES,
-    observations:out,external_effect_authorized:false,executed:false};
+    observations:out,strict_existing_id_conflicts:true,
+    duplicate_content_comparison_implemented:false,
+    observations_may_overlap_existing_batches:true,
+    external_effect_authorized:false,executed:false};
 }
