@@ -1,0 +1,53 @@
+name: q026-unicode-scope-trip-order-pg
+on:
+  push:
+    branches: [research/q026-unicode-scope-trip-order-20261010]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  p4-stable-tie:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: public.ecr.aws/docker/library/postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: actions/setup-node@v4
+        with: {node-version: "22"}
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Exact Unicode ordering parity
+        shell: bash
+        run: |
+          set -o pipefail
+          npx tsc --noEmit
+          npx tsc --noEmit --target ES2022 --module commonjs --moduleResolution node --strict --esModuleInterop --skipLibCheck --types node tests/product/run-q026-p4-unicode-scope-trip-pg.ts
+          npx tsx tests/product/run-q026-p4-unicode-scope-trip-pg.ts | tee unicode-p4.out
+          test "$(grep -c '^Q026_P4_SCOPE_TRIP_ORDER_CASE_PASS ' unicode-p4.out)" = 2
+          grep '^Q026_P4_SCOPE_TRIP_ORDER_PG_PASS ' unicode-p4.out
+  regressions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: actions/setup-node@v4
+        with: {node-version: "22"}
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm run test:platform:q016
+      - run: npm run test:platform:product
+      - run: npm run test:platform:governanca
+      - name: No PG is not proof
+        shell: bash
+        run: |
+          set +e
+          DELIVERYOS_PG_URL= npx tsx tests/product/run-q026-p4-unicode-scope-trip-pg.ts
+          test "$?" = 78
