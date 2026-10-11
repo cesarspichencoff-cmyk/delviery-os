@@ -10,6 +10,8 @@ name: deliveryos-product-ux
 # ignorada, nunca pintada de verde.
 
 on:
+  pull_request:
+    branches: [integration/deliveryos-product-ux-android-20261009]
   push:
     branches: [feat/claude-product-ux-autonomous-20261009, integration/deliveryos-product-ux-android-20261009, feat/deliveryos-itaim-db-error-boundary-20261009, integration/deliveryos-q025-review-20261009]
   workflow_dispatch:
@@ -19,6 +21,7 @@ permissions:
 
 jobs:
   product-ux:
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 40
     services:
@@ -78,3 +81,151 @@ jobs:
           name: evidencias-product-ux
           path: ${{ runner.temp }}/evidencias/
           retention-days: 14
+
+  ephemeral-provider-preflight:
+    if: github.event_name == 'pull_request'
+    name: DB provider SKIP LOCKED — real SQL and missing-TEMP negative control
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Record tested Git tree
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          tested="$(git rev-parse HEAD)"
+          test "$tested" = "$GITHUB_SHA"
+          test -n "$BASE_SHA" && test -n "$HEAD_SHA"
+          echo "SKIP_LOCKED_PROVIDER_TESTED_TREE base=$BASE_SHA head=$HEAD_SHA tested=$tested"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm install --no-save --no-package-lock --ignore-scripts --no-audit --no-fund tsx@4.23.15
+      - name: Typecheck and pure data preflight tests
+        run: |
+          set -euo pipefail
+          npx tsc --noEmit
+          npx tsc --noEmit --target ES2022 --module commonjs --moduleResolution node --strict --esModuleInterop --skipLibCheck --types node tests/product/run-preview-skip-locked-real-concurrency.ts
+          npx tsx src/platform/run-database-preflight-tests.ts | tee preflight-pure.log
+          grep '^DATABASE_PREFLIGHT: 9/9 PASS' preflight-pure.log
+      - name: Start ONLY self-owned disposable PostgreSQL16
+        shell: bash
+        run: |
+          set -euo pipefail
+          PG_BIN=/usr/lib/postgresql/16/bin
+          PG_DATA="$RUNNER_TEMP/skip-locked-proof-pg16"
+          test -x "$PG_BIN/initdb" && test -x "$PG_BIN/pg_ctl"
+          "$PG_BIN/initdb" -D "$PG_DATA" --username=postgres --auth-local=trust --auth-host=trust --encoding=UTF8 --locale=C >/dev/null
+          if ! "$PG_BIN/pg_ctl" -D "$PG_DATA" -l "$RUNNER_TEMP/skip-locked-pg16.log" -o "-h 127.0.0.1 -p 5432 -k $RUNNER_TEMP" -w start; then
+            cat "$RUNNER_TEMP/skip-locked-pg16.log"
+            exit 1
+          fi
+          version="$(psql -h 127.0.0.1 -U postgres -d postgres -Atc 'SHOW server_version_num')"
+          test "$version" -ge 160000 && test "$version" -lt 170000
+          echo "SKIP_LOCKED_PROVIDER_PG16_READY version=$version"
+      - name: Baseline — VALUES syntax is accepted but cannot prove a real row lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          psql -h 127.0.0.1 -U postgres -d postgres -v ON_ERROR_STOP=1 -c 'SELECT 1 FROM (VALUES (1)) AS t(x) LIMIT 1 FOR UPDATE SKIP LOCKED' | tee old-probe.log
+          echo 'SKIP_LOCKED_OLD_VALUES_SYNTAX_ACCEPTED_NO_ROW_LOCK_PROOF'
+      - name: Positive — real lockable TEMP row, no migrations or persistent writes
+        shell: bash
+        env:
+          DELIVERYOS_DATABASE_URL: postgres://postgres@127.0.0.1:5432/postgres
+        run: |
+          set -euo pipefail
+          npx tsx src/platform/bin/verificar-banco.ts | tee supported.log
+          grep -F 'prova real em linha temporária, sem dado operacional' supported.log
+          if grep -F 'sintaxe aceita' supported.log; then exit 1; fi
+          count="$(psql -h 127.0.0.1 -U postgres -d postgres -Atc "SELECT count(*) FROM pg_class WHERE relname='deliveryos_preflight_skip_locked'")"
+          test "$count" = 0
+          echo 'SKIP_LOCKED_REAL_PROBE_PASS temporary_relation_cleaned=true'
+      - name: Actual SKIP LOCKED concurrency (two independent sessions, both lock orders)
+        shell: bash
+        env:
+          DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
+          Q026_ALLOW_ISOLATED_DB_PROBE: runner-owned-postgres16
+        run: |
+          set -euo pipefail
+          npx tsx tests/product/run-preview-skip-locked-real-concurrency.ts | tee real-concurrency.log
+          grep '^SKIP_LOCKED_REAL_CONCURRENT_SESSIONS_PASS ' real-concurrency.log
+          grep -F '"cases":2' real-concurrency.log
+          grep -F '"nowait_positive_control":"55P03"' real-concurrency.log
+          grep -F '"restored_rows":2' real-concurrency.log
+      - name: Concurrent probe refuses missing PostgreSQL and non-runner target
+        shell: bash
+        run: |
+          set +e
+          DELIVERYOS_PG_URL= Q026_ALLOW_ISOLATED_DB_PROBE=runner-owned-postgres16 npx tsx tests/product/run-preview-skip-locked-real-concurrency.ts >real-no-pg.log 2>&1
+          no_pg_code=$?
+          DELIVERYOS_PG_URL=postgres://postgres@remote.example.invalid:5432/postgres Q026_ALLOW_ISOLATED_DB_PROBE=runner-owned-postgres16 npx tsx tests/product/run-preview-skip-locked-real-concurrency.ts >real-no-remote.log 2>&1
+          remote_code=$?
+          set -e
+          test "$no_pg_code" -eq 78
+          test "$remote_code" -eq 79
+          grep -F 'SKIP_LOCKED_REAL_CONCURRENCY_PG_REQUIRED' real-no-pg.log
+          grep -F 'SKIP_LOCKED_REAL_CONCURRENCY_RUNNER_ONLY' real-no-remote.log
+      - name: No TEMP must degrade evidence without rejecting valid PostgreSQL
+        shell: bash
+        run: |
+          set -euo pipefail
+          psql -h 127.0.0.1 -U postgres -d postgres -v ON_ERROR_STOP=1 <<'SQL'
+          CREATE ROLE q026_probe_no_temp LOGIN;
+          GRANT CONNECT, CREATE ON DATABASE postgres TO q026_probe_no_temp;
+          REVOKE TEMP ON DATABASE postgres FROM PUBLIC;
+          SQL
+          DELIVERYOS_DATABASE_URL=postgres://q026_probe_no_temp@127.0.0.1:5432/postgres npx tsx src/platform/bin/verificar-banco.ts | tee no-temp.log
+          grep -F 'sintaxe aceita no PostgreSQL >=14; trava real NÃO medida (sem TEMP)' no-temp.log
+          grep -F 'aviso  prova de bloqueio restrita' no-temp.log
+          grep -F 'Este banco serve, com' no-temp.log
+          echo 'SKIP_LOCKED_NO_TEMP_LIMITED_EVIDENCE_NOT_FALSE_REJECT'
+      - name: Adversarial SQL error cannot become fake compatibility PASS
+        shell: bash
+        env:
+          DELIVERYOS_DATABASE_URL: postgres://postgres@127.0.0.1:5432/postgres
+        run: |
+          set -euo pipefail
+          cp src/platform/bin/verificar-banco.ts "$RUNNER_TEMP/verificar-banco.original.ts"
+          trap 'cp "$RUNNER_TEMP/verificar-banco.original.ts" src/platform/bin/verificar-banco.ts' EXIT
+          python3 - <<'PY'
+          from pathlib import Path
+          path=Path("src/platform/bin/verificar-banco.ts")
+          source=path.read_text()
+          old="WHERE probe_key = 1 FOR UPDATE SKIP LOCKED"
+          new="WHERE probe_key = 1 AND (1/0)=1 FOR UPDATE SKIP LOCKED"
+          assert source.count(old)==1
+          path.write_text(source.replace(old,new))
+          PY
+          set +e
+          npx tsx src/platform/bin/verificar-banco.ts >injected-error.log 2>&1
+          code=$?
+          set -e
+          test "$code" -eq 1
+          grep -F 'capacidade NÃO comprovada (SQLSTATE 22012)' injected-error.log
+          grep -F 'Este banco NÃO serve' injected-error.log
+          echo 'SKIP_LOCKED_ARBITRARY_SQL_ERROR_FAILS_CLOSED'
+      - name: Missing database URL fails closed (exit 2)
+        shell: bash
+        run: |
+          set +e
+          DELIVERYOS_DATABASE_URL= npx tsx src/platform/bin/verificar-banco.ts >missing.log 2>&1
+          code=$?
+          set -e
+          test "$code" -eq 2
+          grep -F 'DELIVERYOS_DATABASE_URL não definida' missing.log
+      - name: Stop only runner-owned PG16
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          PG_DATA="$RUNNER_TEMP/skip-locked-proof-pg16"
+          if test -f "$PG_DATA/postmaster.pid"; then
+            /usr/lib/postgresql/16/bin/pg_ctl -D "$PG_DATA" -m fast -w stop
+          fi
