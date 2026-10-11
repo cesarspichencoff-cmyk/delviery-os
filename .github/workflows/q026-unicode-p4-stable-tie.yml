@@ -34,6 +34,9 @@ jobs:
           npx tsx tests/product/run-q026-unicode-p4-tie-pg.ts | tee unicode-p4.out
           test "$(grep -c '^Q026_UNICODE_TIE_P4_CASE_PASS ' unicode-p4.out)" = 2
           grep '^Q026_UNICODE_TIE_P4_PG_PASS ' unicode-p4.out
+          npx tsx tests/product/run-q026-p4-unicode-scope-trip-pg.ts | tee scope-trip.out
+          test "$(grep -c '^Q026_P4_SCOPE_TRIP_ORDER_CASE_PASS ' scope-trip.out)" = 2
+          grep '^Q026_P4_SCOPE_TRIP_ORDER_PG_PASS ' scope-trip.out
   regressions:
     runs-on: ubuntu-latest
     steps:
