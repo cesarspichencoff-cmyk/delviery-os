@@ -1,0 +1,48 @@
+name: q026-preview-capacity-budget-shadow
+# Pure declared-capacity check. No external environments or credentials.
+on:
+  push:
+    branches:
+      - research/q026-preview-capacity-gate-20261010
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: q026-preview-capacity-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  capacity-budget:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: TS compile complete repository and strict capacity test
+        run: |
+          npx tsc --noEmit
+          npx tsc --noEmit --target ES2022 --module commonjs --moduleResolution node --strict --esModuleInterop --skipLibCheck --types node tools/q026-preview-capacity-gate.ts tests/product/run-q026-preview-capacity-gate.ts
+      - name: Validate fail-closed budget and CLI rejection
+        shell: bash
+        run: |
+          set -o pipefail
+          npx tsx tests/product/run-q026-preview-capacity-gate.ts | tee q026-capacity.out
+          grep '^Q026_PREVIEW_CAPACITY_PROPERTIES_PASS ' q026-capacity.out
+  regressions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm run test:platform:q016
+      - run: npm run test:platform:product
+      - run: npm run test:platform:governanca
