@@ -66,6 +66,12 @@ jobs:
           set -euo pipefail
           npx tsx tests/product/run-q026-multiprocess-http-admission-shadow.ts | tee q026-two-workers.log
           grep '^Q026_MULTIPROCESS_ADMISSION_SHADOW_PASS ' q026-two-workers.log
+      - name: Capacity budget algebra and fail-closed CLI — no external PG
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx tsx tests/product/run-q026-preview-capacity-gate.ts | tee q026-capacity-budget.log
+          grep '^Q026_PREVIEW_CAPACITY_PROPERTIES_PASS ' q026-capacity-budget.log
       - name: No PG fixture must fail closed, not skip
         shell: bash
         run: |
