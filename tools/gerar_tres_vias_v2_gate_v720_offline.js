@@ -54,6 +54,14 @@ function readOnlyConsumerResult(decision,exit){
    Object.keys(effects).length===CONSUMER_EFFECT_KEYS.length&&
    CONSUMER_EFFECT_KEYS.every(k=>Object.hasOwn(effects,k)&&effects[k]===false);
 }
+function withoutNodePreloads(environment){
+ const copy={...environment};
+ // Environment names are case insensitive on Windows. Scrub all spellings.
+ for(const key of Object.keys(copy))
+  if(/^(?:NODE_OPTIONS|NODE_PATH|NPM_CONFIG_NODE_OPTIONS)$/i.test(key))
+   delete copy[key];
+ return copy;
+}
 function blocked(reasons,stage="V68_PAIR_GATE"){
  const payload={schema:"deliveryos.v2-v68-three-ticket-entry.v720.offline",
   status:"BLOCKED",stage,reasons:[...new Set(reasons)].sort(),
@@ -90,9 +98,7 @@ function run(argv=process.argv.slice(2)){
   fs.writeFileSync(eventPath,source,{flag:"wx"});
   // Prevent NODE_OPTIONS --require / --import and NODE_PATH from
   // preloading unrelated executable JavaScript outside the pinned entry.
-  const childEnv={...process.env};
-  for(const key of ["NODE_OPTIONS","NODE_PATH","npm_config_node_options"])
-   delete childEnv[key];
+  const childEnv=withoutNodePreloads(process.env);
   const child=spawnSync(process.execPath,[args["--consumer"],eventPath],{
    encoding:"utf8",timeout:15000,windowsHide:true,maxBuffer:1024*1024,
    env:childEnv
@@ -132,4 +138,4 @@ if(require.main===module){
   process.exitCode=2;
  }
 }
-module.exports={run,parseArgs,readOnlyConsumerResult,NO_EFFECTS};
+module.exports={run,parseArgs,readOnlyConsumerResult,withoutNodePreloads,NO_EFFECTS};
