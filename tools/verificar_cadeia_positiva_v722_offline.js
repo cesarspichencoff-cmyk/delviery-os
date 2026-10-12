@@ -109,6 +109,38 @@ function invoke(){
   "--motor",SOURCE,"--sequence-fixture",path.join(temp,"sequence.json")],{
    encoding:"utf8",timeout:20000,maxBuffer:1024*1024});
 }
+// V7.26 adversarial replay: exercise the ACTUAL source-pinned V2 subprocess,
+// its exact watcher hash, V6.8 pair and rendering gate. No mock decision.
+function exactWatcherHash(order){
+ const header=["CDFILIAL","CDLOJA","NRVENDAREST","NRCOMANDA",
+  "NRCOMANDAEXT","IDORGCMDVENDA","IDSTCOMANDA","DTHRABERMESA"];
+ const fields=["NRPRODCOMVEN","CDPRODUTO","CDARVPROD","QTPRODCOMVEN","IDSTPRCOMVEN"];
+ const data={};
+ for(const k of header)data[k]=order[k];
+ data.items=order.items.map(item=>Object.fromEntries(fields.map(k=>[k,item[k]])));
+ if(order.observation_rows?.length)data.observation_rows=order.observation_rows;
+ return sha(Buffer.from(JSON.stringify(data)));
+}
+function assertRejectCase(label,mutator,expectedReason=null){
+ const p=path.join(temp,"event.json"),baseline=fs.readFileSync(p);
+ try{
+  const event=JSON.parse(baseline);
+  mutator(event);
+  textJson(p,event);
+  const response=invoke();
+  assert.equal(response.status,2,label+" must fail closed: "+response.stdout.slice(0,1200));
+  const blocked=JSON.parse(response.stdout);
+  assert.equal(blocked.status,"BLOCKED",label);
+  assert.deepEqual(blocked.outputs,[],label);
+  assert.equal(blocked.effects.print,false,label);
+  assert.equal(blocked.effects.spooler_write,false,label);
+  if(expectedReason)
+   assert.ok(blocked.reasons.some(x=>x.includes(expectedReason)),
+    label+" wrong block reasons "+JSON.stringify(blocked.reasons));
+  console.log("PASS V7.26 "+label+" -> "+blocked.stage);
+ }finally{fs.writeFileSync(p,baseline);}
+}
+
 let complete=false;
 try{
  const {event}=createSource();
@@ -164,6 +196,57 @@ try{
   assert.equal(blocked.effects.print,false);
   console.log("PASS V7.24 altered independent quantity proof never generates preview");
  }finally{fs.writeFileSync(proofPath,savedProof);}
+ // Pinned V2, exact watcher hash and real V6.8 must agree on item identity.
+ assertRejectCase("same-order revision with original watcher hash",x=>{
+  x.order.items[0].QTPRODCOMVEN="3.000";
+ });
+ assertRejectCase("duplicate SQL line identity despite freshly computed hash",x=>{
+  x.order.items[1].NRPRODCOMVEN=x.order.items[0].NRPRODCOMVEN;
+  x.snapshot_hash=exactWatcherHash(x.order);
+ });
+ assertRejectCase("wrong order key despite unchanged complete order",x=>{
+  x.order_key="0001|01|FOREIGN_ORDER";
+ });
+ assertRejectCase("allergen declared in exact order note",x=>{
+  x.order.observation_rows=[{source_field:"DSOBSCOMANDA",
+   value:"ALERGIA A CAMARAO",scope_hint:"order",join_proven:true}];
+  x.snapshot_hash=exactWatcherHash(x.order);
+ });
+ assertRejectCase("allergen declared in exact item note",x=>{
+  x.order.observation_rows=[{source_field:"TXPRODCOMVEN",
+   value:"SOU ALERGICO A AMENDOIM",item_index:0,CDPRODUTO:"99001",
+   scope_hint:"item",join_proven:true}];
+  x.snapshot_hash=exactWatcherHash(x.order);
+ });
+ assertRejectCase("item note linked to a different product",x=>{
+  x.order.observation_rows=[{source_field:"TXPRODCOMVEN",
+   value:"SEM CEBOLA",item_index:0,CDPRODUTO:"99002",
+   scope_hint:"item",join_proven:true}];
+  x.snapshot_hash=exactWatcherHash(x.order);
+ });
+ assertRejectCase("duplicate note source on same item",x=>{
+  x.order.observation_rows=[
+   {source_field:"TXPRODCOMVEN",value:"SEM CEBOLA",
+    item_index:0,CDPRODUTO:"99001",scope_hint:"item",join_proven:true},
+   {source_field:"TXPRODCOMVEN",value:"SEM PIMENTA",
+    item_index:0,CDPRODUTO:"99001",scope_hint:"item",join_proven:true}];
+  x.snapshot_hash=exactWatcherHash(x.order);
+ });
+ assertRejectCase("unproven item observation join",x=>{
+  x.order.observation_rows=[{source_field:"TXPRODCOMVEN",
+   value:"SEM PIMENTA",item_index:1,CDPRODUTO:"99002",
+   scope_hint:"item",join_proven:false}];
+  x.snapshot_hash=exactWatcherHash(x.order);
+ });
+ assertRejectCase("apparently benign general note without independent approval",x=>{
+  x.order.observation_rows=[{source_field:"DSOBSCOMANDA",
+   value:"ENTREGAR APOS AS 12H",scope_hint:"order",join_proven:true}];
+  x.snapshot_hash=exactWatcherHash(x.order);
+ });
+ assertRejectCase("unscanned observation source despite event ready",x=>{
+  x.order.observation_scan_complete=false;
+  x.snapshot_hash=exactWatcherHash(x.order);
+ });
  // Adversarial regression on the *same* executable and same independent proof.
  const altered=structuredClone(event);altered.order.items[0].QTPRODCOMVEN="2.000";
  textJson(path.join(temp,"event.json"),altered);
@@ -178,4 +261,4 @@ try{
 }finally{
  fs.rmSync(temp,{recursive:true,force:true});
 }
-if(complete)console.log("THERMAL_REAL_MOTOR_POSITIVE_V722=4/4 OFFLINE_2_PRODUCTION_1_CONFERENCE NO_PRINT");
+if(complete)console.log("THERMAL_REAL_MOTOR_POSITIVE_V722=14/14 OFFLINE_2_PRODUCTION_1_CONFERENCE NO_PRINT");
