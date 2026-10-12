@@ -251,6 +251,29 @@ try{
   x.order.observation_scan_complete=false;
   x.snapshot_hash=exactWatcherHash(x.order);
  });
+ // V7.28: mutate each field represented in the exact watcher raw snapshot,
+ // keep the OLD snapshot hash, and prove no projection can be emitted.
+ // Each check invokes the actual pinned candidate, gate and renderer.
+ const rawHeaderMutations={
+  CDFILIAL:"0002",CDLOJA:"02",NRVENDAREST:"0000000099",
+  NRCOMANDA:"0000000099",NRCOMANDAEXT:"1999",
+  IDORGCMDVENDA:"OTHER_TEST",IDSTCOMANDA:"C",
+  DTHRABERMESA:"2026-10-11T15:00:00.0000000"
+ };
+ for(const [field,changed] of Object.entries(rawHeaderMutations)){
+  assertRejectCase("raw watcher header revision "+field,x=>{
+   x.order[field]=changed;
+  });
+ }
+ const rawItemMutations={
+  NRPRODCOMVEN:"000099",CDPRODUTO:"99999",CDARVPROD:"9999999999",
+  QTPRODCOMVEN:"4.000",IDSTPRCOMVEN:"C"
+ };
+ for(const [field,changed] of Object.entries(rawItemMutations)){
+  assertRejectCase("raw watcher item revision "+field,x=>{
+   x.order.items[0][field]=changed;
+  });
+ }
  // Adversarial regression on the *same* executable and same independent proof.
  const altered=structuredClone(event);altered.order.items[0].QTPRODCOMVEN="2.000";
  textJson(path.join(temp,"event.json"),altered);
@@ -265,4 +288,4 @@ try{
 }finally{
  fs.rmSync(temp,{recursive:true,force:true});
 }
-if(complete)console.log("THERMAL_REAL_MOTOR_POSITIVE_V722=14/14 OFFLINE_2_PRODUCTION_1_CONFERENCE NO_PRINT");
+if(complete)console.log("THERMAL_REAL_MOTOR_POSITIVE_V722=27/27 OFFLINE_2_PRODUCTION_1_CONFERENCE NO_PRINT");
