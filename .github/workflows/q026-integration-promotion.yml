@@ -65,6 +65,7 @@ jobs:
         run: |
           npm run -s test:platform:q016
           npm run -s test:platform:product
+          npx tsx src/product/viewmodels/run-copiloto-celulas-v33-tests.ts
           npm run -s test:platform:governanca
 
   postgres:
