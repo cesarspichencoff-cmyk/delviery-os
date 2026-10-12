@@ -224,6 +224,7 @@ function coberturaCelulasV33(c) {
     return '<li class="fonte-linha">' +
       '<span class="fonte-linha__id">' + esc(a.nome) + '</span>' +
       selo({ estado: classe, detalhe: rotulo }) +
+      '<span class="campo__valor--tecnico">' + esc(rotulo) + '</span>' +
       '<span class="campo__valor">' + esc(a.descricao) + '</span>' +
       origem + '</li>';
   }).join("");
