@@ -19,6 +19,7 @@ import { join, extname, normalize } from "node:path";
 import { createRequire } from "node:module";
 
 import { entregasVM } from "../src/product/viewmodels/entregas-vm";
+import { copilotoEntregasLeitura } from "../src/product/viewmodels/copiloto-entregas-leitura";
 import { operacaoVivaVM } from "../src/product/viewmodels/operacao-viva-vm";
 import { conferenceBrainVM } from "../src/product/viewmodels/conference-vm";
 import { copilotoVM } from "../src/product/viewmodels/copiloto-vm";
@@ -536,9 +537,20 @@ export async function criarServidor(): Promise<http.Server> {
       }
       if (p === "/api/conference-brain") return json(res, 200, pronto.conference);
       if (p === "/api/copiloto") {
-        void lerHistorico(clientePlataforma, pronto.historico, url.searchParams.get("unit_id"))
-          .then((h) => json(res, 200, { ...(pronto.copiloto as object), historico: h.copiloto }))
-          .catch((e: unknown) => json(res, 500, { erro: e instanceof Error ? e.name : "Error" }));
+        // Entregas e Copiloto compartilham a MESMA porta de realidade. Este
+        // resumo NAO cria recomendacao, nao acessa GPS e nao executa comando.
+        // A demo ja montada permanece separada do bloco observado do servidor.
+        const unidade = (url.searchParams.get("unit_id") || "").trim().slice(0, 64) || null;
+        void Promise.all([
+          lerHistorico(clientePlataforma, pronto.historico, unidade),
+          lerRealidade(clientePlataforma),
+        ])
+          .then(([h, leitura]) => json(res, 200, {
+            ...(pronto.copiloto as object),
+            historico: h.copiloto,
+            entregas_observadas: copilotoEntregasLeitura(leitura, unidade),
+          }))
+          .catch(() => json(res, 500, { erro: "leitura_indisponivel" }));
         return;
       }
       if (p === "/api/historico") {
