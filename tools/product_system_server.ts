@@ -20,6 +20,7 @@ import { createRequire } from "node:module";
 
 import { entregasVM } from "../src/product/viewmodels/entregas-vm";
 import { copilotoEntregasLeitura } from "../src/product/viewmodels/copiloto-entregas-leitura";
+import { celulasCopilotoV33 } from "../src/product/viewmodels/copiloto-celulas-v33";
 import { operacaoVivaVM } from "../src/product/viewmodels/operacao-viva-vm";
 import { conferenceBrainVM } from "../src/product/viewmodels/conference-vm";
 import { copilotoVM } from "../src/product/viewmodels/copiloto-vm";
@@ -545,11 +546,17 @@ export async function criarServidor(): Promise<http.Server> {
           lerHistorico(clientePlataforma, pronto.historico, unidade),
           lerRealidade(clientePlataforma),
         ])
-          .then(([h, leitura]) => json(res, 200, {
-            ...(pronto.copiloto as object),
-            historico: h.copiloto,
-            entregas_observadas: copilotoEntregasLeitura(leitura, unidade),
-          }))
+          .then(([h, leitura]) => {
+            const entregas = copilotoEntregasLeitura(leitura, unidade);
+            // Uma única leitura: células herdam os mesmos fatos e o mesmo
+            // recorte, sem segundo SQL, cor operacional ou ação implícita.
+            json(res, 200, {
+              ...(pronto.copiloto as object),
+              historico: h.copiloto,
+              entregas_observadas: entregas,
+              celulas_operacionais: celulasCopilotoV33(entregas),
+            });
+          })
           .catch(() => json(res, 500, { erro: "leitura_indisponivel" }));
         return;
       }
