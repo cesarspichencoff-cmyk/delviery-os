@@ -85,6 +85,13 @@ jobs:
             throw "V729_POWERSHELL_SYNTAX_INVALID"
           }
           Write-Output "V729_POWERSHELL_PARSE_PASS=1 NO_SCRIPT_EXECUTION NO_WINDOWS_ACCESS"
+      - name: Execute passive topology probe on Linux CI only and validate privacy envelope
+        shell: bash
+        run: |
+          pwsh -NoProfile -File tools/auditar_topologia_windows_v729_readonly.ps1 > "$RUNNER_TEMP/passive-topology-v729.json"
+          node tools/validar_topologia_windows_v729.js "$RUNNER_TEMP/passive-topology-v729.json"
+          node -e 'const p=require(process.argv[1]); if(p.service.lookup!=="UNREADABLE" || p.topology.scan!=="UNREADABLE" || p.authorizes_cutover!==false) process.exit(2);' "$RUNNER_TEMP/passive-topology-v729.json"
+          echo "V729_LINUX_FAIL_CLOSED_SMOKE=1 NO_WINDOWS_SERVICE NO_REMOTE NO_PRINT"
       - name: No self-declared human bag or kit approval V7.13 (offline only)
         run: node tools/verificar_override_authority_v713.js
       - name: Human bag-kit override exact snapshot scope V7.12 (offline only)
