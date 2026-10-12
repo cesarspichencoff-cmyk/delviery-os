@@ -39,6 +39,8 @@ jobs:
         run: node tools/verificar_janelas_servico_v733.js
       - name: Itaim confirmed hours V7.34 including legal holidays (unbound)
         run: node tools/verificar_itaim_horarios_v734.js
+      - name: Reader event Itaim service review V7.35 (shop binding HOLD)
+        run: node tools/verificar_servico_evento_itaim_v735.js
       - name: Operational ticket semantic projection V4.5
         run: npm run verificar:tickets-operacionais-v45
       - name: Conference proven box grouping and finishing V6.2 (offline)
@@ -181,3 +183,5 @@ jobs:
         run: node tools/verificar_janelas_servico_v733.js
       - name: Itaim confirmed hours V7.34 including legal holidays (Windows)
         run: node tools/verificar_itaim_horarios_v734.js
+      - name: Reader event Itaim service review V7.35 (Windows shop HOLD)
+        run: node tools/verificar_servico_evento_itaim_v735.js
