@@ -6,10 +6,12 @@
   "scope": "COMANDAS_THERMICAS_ONLY",
   "preferred_future_candidate": {
     "path": "runtime/shadow/live_shadow_consumer_v2_candidate_v714.cjs",
-    "git_blob_sha1": "0fe817bd07fd13a6df5cf19d4e01c5e28ae77c50",
+    "git_blob_sha1": "f7f06fd4827d577bc3fc83bb2d04f9c17141bdc4",
     "code_ready_only": true,
     "installed": false,
-    "print_authorized": false
+    "print_authorized": false,
+    "previous_audited_blob_sha1": "0fe817bd07fd13a6df5cf19d4e01c5e28ae77c50",
+    "quantity_hardening": "V7.18_RAW_QUANTITY_MATCH_V68_REJECT_BEFORE_PACKAGING"
   },
   "deprecated_do_not_install": [
     {

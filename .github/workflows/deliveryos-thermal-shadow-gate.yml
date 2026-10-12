@@ -7,6 +7,7 @@ on:
     branches:
       - feat/thermal-quality-v51-epson-official-fontqa-20261008
       - feat/thermal-v54-caixa-photo-visual-qa-20261008
+      - feat/thermal-v63-packaging-bridge-shadow-20261010
 
 permissions:
   contents: read
@@ -46,6 +47,51 @@ jobs:
         run: node tools/verificar_release_hold_v716.js
       - name: Consumed-rule bytes and engine mutation guard V7.14 (offline only)
         run: node tools/verificar_identidade_bytes_v714.js
+      - name: Exact raw store-shop-order key integrity V7.27 (offline)
+        run: node tools/verificar_identidade_pedido_v727.js
+      - name: Positive pinned canonical engine V2 to V6.8 three-way replay V7.22 (offline)
+        run: node tools/verificar_cadeia_positiva_v722_offline.js
+      - name: Immutable eight-rule subprocess snapshot and lineage guard V7.24 (offline)
+        run: node tools/verificar_snapshot_fontes_v724_offline.js
+      - name: Bounded fd source read symlink FIFO and mutation guard V7.25 (offline)
+        run: node tools/verificar_fd_source_v725_offline.js
+      - name: Passive Windows audit script contract V7.23 (static, no Windows)
+        run: node tools/verificar_auditoria_servico_windows_v723.js
+      - name: Parse passive Windows audit PowerShell V7.23 without executing it
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $parseErrors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile(
+            "tools/auditar_servico_windows_v723_readonly.ps1",
+            [ref]$tokens, [ref]$parseErrors
+          )
+          if ($parseErrors.Count -ne 0) {
+            throw "V723_POWERSHELL_SYNTAX_INVALID"
+          }
+          Write-Output "V723_POWERSHELL_PARSE_PASS=1 NO_SCRIPT_EXECUTION NO_WINDOWS_ACCESS"
+      - name: Windows process topology passive observation privacy V7.29 (static/synthetic)
+        run: node tools/verificar_topologia_windows_v729.js
+      - name: Parse Windows process topology probe V7.29 without executing
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $parseErrors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile(
+            "tools/auditar_topologia_windows_v729_readonly.ps1",
+            [ref]$tokens, [ref]$parseErrors
+          )
+          if ($parseErrors.Count -ne 0) {
+            throw "V729_POWERSHELL_SYNTAX_INVALID"
+          }
+          Write-Output "V729_POWERSHELL_PARSE_PASS=1 NO_SCRIPT_EXECUTION NO_WINDOWS_ACCESS"
+      - name: Execute passive topology probe on Linux CI only and validate privacy envelope
+        shell: bash
+        run: |
+          pwsh -NoProfile -File tools/auditar_topologia_windows_v729_readonly.ps1 > "$RUNNER_TEMP/passive-topology-v729.json"
+          node tools/validar_topologia_windows_v729.js "$RUNNER_TEMP/passive-topology-v729.json"
+          node -e 'const p=require(process.argv[1]); if(p.service.lookup!=="UNREADABLE" || p.topology.scan!=="UNREADABLE" || p.authorizes_cutover!==false) process.exit(2);' "$RUNNER_TEMP/passive-topology-v729.json"
+          echo "V729_LINUX_FAIL_CLOSED_SMOKE=1 NO_WINDOWS_SERVICE NO_REMOTE NO_PRINT"
       - name: No self-declared human bag or kit approval V7.13 (offline only)
         run: node tools/verificar_override_authority_v713.js
       - name: Human bag-kit override exact snapshot scope V7.12 (offline only)

@@ -61,6 +61,14 @@ function norm(s) {
     .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
     .toLowerCase().replace(/\s+/g, " ").trim();
 }
+// V7.18 (OFFLINE HOLD): mirror the already-audited V6.8 raw quantity
+// contract at this separately executed V2 consumer boundary. Never normalize
+// an invalid quantity into a fabricated single unit.
+function validRawQuantityV718(raw) {
+  if(typeof raw!=="string" || !/^\d+(?:\.0+)?$/.test(raw)) return null;
+  const n=Number(raw);
+  return Number.isSafeInteger(n)&&n>0?n:null;
+}
 function canonical(raw) {
   const d = String(raw ?? "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
   if (d.length !== 10) return null;
@@ -231,6 +239,12 @@ const items = [];
 const packEntries = [];
 
 for (const [index, raw] of (event.order.items || []).entries()) {
+  const quantity = validRawQuantityV718(raw?.QTPRODCOMVEN);
+  if(quantity===null) {
+    blockers.push("RAW_ITEM_QUANTITY_INVALID:" + String(index+1));
+    // Do not produce a fictitious item, box or kit from corrupted raw input.
+    continue;
+  }
   const id = cacheByProduct.get(String(raw.CDPRODUTO));
   const code = canonical(raw.CDARVPROD);
   if (!id) {
@@ -360,7 +374,6 @@ for (const [index, raw] of (event.order.items || []).entries()) {
     }
   }
 
-  const quantity = Math.max(1, Number(raw.QTPRODCOMVEN) || 1);
   const item = {
     item_index: index + 1,
     CDPRODUTO: String(raw.CDPRODUTO),
@@ -382,9 +395,12 @@ for (const [index, raw] of (event.order.items || []).entries()) {
 
 let packaging = null;
 let kits = null;
-if (packEntries.length) {
+// A partially valid order can NEVER yield apparently complete packaging/kits.
+if (packEntries.length && !blockers.some(x => x.startsWith("RAW_ITEM_QUANTITY_INVALID:"))) {
   packaging = P.packComanda(packEntries);
   kits = P.kitVerdict(packEntries);
+} else if (blockers.some(x => x.startsWith("RAW_ITEM_QUANTITY_INVALID:"))) {
+  blockers.push("PACKAGING_SKIPPED_INVALID_RAW_QUANTITY");
 }
 
 // BEGIN V712 HUMAN OVERRIDE GATE — no future order may inherit a historical override

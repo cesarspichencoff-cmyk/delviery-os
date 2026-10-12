@@ -2,6 +2,8 @@
 const assert=require("node:assert/strict"),fs=require("node:fs");
 const path=require("node:path"),os=require("node:os"),crypto=require("node:crypto");
 const {spawnSync}=require("node:child_process");
+// Reuse the existing V6.8 gate, not a second validator.
+const {verifyLiveReaderPairV68}=require("../dist/src/production/stableReaderShadowPairV68.js");
 const sourcePath=path.join(__dirname,"../runtime/shadow/live_shadow_consumer_v2_candidate_v714.cjs");
 const candidate=fs.readFileSync(sourcePath,"utf8");
 const v712=fs.readFileSync(path.join(__dirname,
@@ -69,7 +71,7 @@ try{
  };
  for(const [k,v] of Object.entries(docs))
   fs.writeFileSync(path.join(folder,k),JSON.stringify(v));
- function run(orders,notes=[]){
+ function run(orders,notes=[],qty="1.000",extraQty=undefined,withPair=false){
   setConfig(orders);
   const event={schema:"deliveryos.tata-reader-stable-order-event.v1",
    order_key,snapshot_hash:revision,ready_for_downstream_shadow:false,
@@ -79,8 +81,39 @@ try{
     NRCOMANDA:"0000000001",NRCOMANDAEXT:"1001",IDORGCMDVENDA:"DLV_TEST",
     DTHRABERMESA:"2026-10-10T11:30:00.0000000",
     items:[{NRPRODCOMVEN:"000001",CDPRODUTO:pCode,
-     CDARVPROD:productCode.replace(/\./g,""),QTPRODCOMVEN:"1.000",IDSTPRCOMVEN:"A"}],
+     CDARVPROD:productCode.replace(/\./g,""),QTPRODCOMVEN:qty,IDSTPRCOMVEN:"A"},
+     ...(extraQty===undefined ? [] : [{
+      NRPRODCOMVEN:"000002",CDPRODUTO:pCode,
+      CDARVPROD:productCode.replace(/\./g,""),
+      QTPRODCOMVEN:extraQty,IDSTPRCOMVEN:"A"
+     }])],
     observation_scan_complete:true,observation_rows:notes}};
+  if(withPair){
+   // Exactly the watched V2 snapshot schema and key insertion order.
+   // Note rows affect the SHA only when nonempty. Source is fictional and offline.
+   event.order.IDSTCOMANDA="A";
+   const o=event.order;
+   const snapshot={CDFILIAL:o.CDFILIAL,CDLOJA:o.CDLOJA,
+    NRVENDAREST:o.NRVENDAREST,NRCOMANDA:o.NRCOMANDA,
+    NRCOMANDAEXT:o.NRCOMANDAEXT,IDORGCMDVENDA:o.IDORGCMDVENDA,
+    IDSTCOMANDA:o.IDSTCOMANDA,DTHRABERMESA:o.DTHRABERMESA,
+    items:o.items.map(item=>({
+     NRPRODCOMVEN:item.NRPRODCOMVEN,CDPRODUTO:item.CDPRODUTO,
+     CDARVPROD:item.CDARVPROD,QTPRODCOMVEN:item.QTPRODCOMVEN,
+     IDSTPRCOMVEN:item.IDSTPRCOMVEN
+    }))};
+   // Watcher V2 hashes the canonical mapped row keys, not arbitrary input
+   // object insertion order. Match inspectV2WatcherNotesV76 exactly.
+   if(notes.length)snapshot.observation_rows=notes.map(row=>(
+    row.scope_hint==="item"
+     ? {source_field:row.source_field,value:row.value,
+        item_index:row.item_index,CDPRODUTO:row.CDPRODUTO,
+        scope_hint:"item",join_proven:true}
+     : {source_field:row.source_field,value:row.value,
+        scope_hint:"order",join_proven:true}
+   ));
+   event.snapshot_hash=sha256(JSON.stringify(snapshot));
+  }
   const eventPath=path.join(folder,"event.json");
   fs.writeFileSync(eventPath,JSON.stringify(event));
   const p=spawnSync(process.execPath,[path.join(folder,"consumer.cjs"),eventPath],
@@ -90,7 +123,7 @@ try{
   const result=JSON.parse(p.stdout);
   assert.equal(result.ready,false);
   assert.equal(result.effects.print,false);assert.equal(result.effects.spooler_write,false);
-  return result;
+  return withPair?{event,decision:result}:result;
  }
  check("V7.14 legacy exact-sequence override is blocked without snapshot binding",()=>{
   const r=run([baseOverride]);
@@ -215,5 +248,229 @@ try{
   assert.equal(proc.stdout,"");
   fs.writeFileSync(target,original);
  });
+ // V7.18: same V6.8 raw quantity grammar, enforced at the V2 consumer boundary.
+ check("V7.18 malformed raw quantities never invent a unit, packaging or kit",()=>{
+  for(const raw of ["0","0.000","-1","-2.000","1.5","2.100","3,0","1e3",
+   "Infinity","NaN","abc",""," "," 1.000","1.000 ","1.00001",
+   "9007199254740992",null,1,0,true,{},[]]){
+   const r=run([],[],raw);
+   assert.equal(r.ready,false,"invalid input cannot be ready");
+   assert.ok(r.blocking_reasons.includes("RAW_ITEM_QUANTITY_INVALID:1"),
+     "missing quantity blocker on "+JSON.stringify(raw));
+   assert.ok(r.blocking_reasons.includes("PACKAGING_SKIPPED_INVALID_RAW_QUANTITY"));
+   assert.equal(r.items.length,0,"invalid input yielded an item");
+   assert.equal(r.packaging,null,"invalid input yielded packaging");
+   assert.equal(r.kits,null,"invalid input yielded kits");
+   assert.equal(r.effects.print,false);
+   assert.equal(r.effects.spooler_write,false);
+  }
+ });
+ check("V7.18 one valid plus one invalid item must not yield partial boxes or kits",()=>{
+  for(const [first,second,position] of [
+   ["1.000","0",2],["-1","2.000",1],
+   ["3.000","1.5",2],["abc","1.000",1]
+  ]){
+   const r=run([],[],first,second);
+   assert.equal(r.ready,false);
+   assert.ok(r.blocking_reasons.includes("RAW_ITEM_QUANTITY_INVALID:"+position));
+   assert.ok(r.blocking_reasons.includes("PACKAGING_SKIPPED_INVALID_RAW_QUANTITY"));
+   assert.equal(r.items.length,1,"only the valid item may be retained for audit");
+   assert.equal(r.packaging,null,"no partial order packaging can be FACT");
+   assert.equal(r.kits,null,"no partial order kit can be FACT");
+   assert.equal(r.effects.print,false);assert.equal(r.effects.spooler_write,false);
+  }
+ });
+ check("V7.18 retains exact positive integer formats already accepted by V6.8",()=>{
+  for(const [raw,expected] of [["1",1],["1.0",1],["1.000",1],
+   ["0002.000",2],["17",17],["9007199254740991",9007199254740991]]){
+   const r=run([],[],raw);
+   assert.equal(r.items.length,1,JSON.stringify(raw));
+   assert.equal(r.items[0].quantity,expected);
+   assert.ok(!r.blocking_reasons.some(x=>x.startsWith("RAW_ITEM_QUANTITY_INVALID:")));
+   assert.equal(r.ready,false,"expired fixture cannot authorize output");
+  }
+ });
+ check("V7.18 quantity parser matches V6.8 gate and preserves zero effects",()=>{
+  const source=fs.readFileSync(path.join(__dirname,
+   "../src/production/stableReaderShadowPairV68.ts"),"utf8");
+  const quantityContract=String.raw`if(typeof s!=="string"||!/^\d+(?:\.0+)?$/.test(s))return null;`;
+  assert.ok(source.includes(quantityContract),"V6.8 contract drift");
+  const candidateContract=String.raw`if(typeof raw!=="string" || !/^\d+(?:\.0+)?$/.test(raw)) return null;`;
+  assert.ok(candidate.includes(candidateContract),"candidate quantity contract drift");
+  assert.ok(!candidate.includes("Math.max(1, Number(raw.QTPRODCOMVEN) || 1)"));
+  const r=run([],[],"0");
+  assert.deepEqual(r.effects,{database_read:false,database_write:false,
+   sequence_binding_write:false,print:false,spooler_write:false,
+   odhen_write:false,fiscal_action:false,sefaz_call:false});
+ });
+
+ // Exercise the actual V2 child process and the existing V6.8 verifier
+ // using exactly the same offline event and decision (not handmade decisions).
+ check("V7.19 consumer V2 -> V6.8 same revision has no artificial identity drift",()=>{
+  const pair=run([],[],"1.000",undefined,true);
+  assert.equal(pair.event.snapshot_hash,pair.decision.snapshot_hash);
+  assert.equal(pair.event.order_key,pair.decision.order_key);
+  const verdict=verifyLiveReaderPairV68(pair.event,pair.decision);
+  assert.equal(verdict.status,"BLOCKED");
+  for(const unexpected of [
+   "SHADOW_DECISION_EVENT_REVISION_MISMATCH",
+   "WATCHER_V2_NOTE_SNAPSHOT_HASH_MISMATCH",
+   "SHADOW_DECISION_CONTENT_FINGERPRINT_MISMATCH",
+   "SHADOW_DECISION_ORDER_IDENTIFIERS_MISMATCH",
+  ])assert.ok(!verdict.reasons.includes(unexpected),unexpected);
+  assert.ok(verdict.reasons.includes("EVENT_OR_DECISION_NOT_READY_FOR_SHADOW"));
+  assert.ok(verdict.reasons.includes("SHADOW_DECISION_PACKAGING_SOURCE_NOT_PINNED_V78"),
+   "fake motor must never authenticate as current academy packaging");
+  assert.equal(verdict.effects.print,false);
+  assert.equal(verdict.effects.spooler,false);
+ });
+ check("V7.19 stale V2 decision from same order but different quantity is rejected",()=>{
+  const original=run([],[],"1.000",undefined,true);
+  const updated=run([],[],"2.000",undefined,true);
+  assert.equal(original.event.order_key,updated.event.order_key);
+  assert.notEqual(original.event.snapshot_hash,updated.event.snapshot_hash);
+  for(const [event,decision] of [
+   [original.event,updated.decision],[updated.event,original.decision]
+  ]){
+   const verdict=verifyLiveReaderPairV68(event,decision);
+   assert.equal(verdict.status,"BLOCKED");
+   assert.ok(verdict.reasons.includes("SHADOW_DECISION_EVENT_REVISION_MISMATCH"));
+   assert.ok(verdict.reasons.some(x=>x.startsWith(
+    "READER_EVENT_DECISION_PRODUCT_IDENTITY_OR_QUANTITY_MISMATCH")));
+   assert.equal(verdict.effects.print,false);
+  }
+ });
+ check("V7.19 event or consumer decision mutation is independently caught by V6.8",()=>{
+  const pair=run([],[],"1.000",undefined,true);
+  const changedEvent=structuredClone(pair.event);
+  changedEvent.order.items[0].QTPRODCOMVEN="4.000";
+  const e=verifyLiveReaderPairV68(changedEvent,pair.decision);
+  assert.ok(e.reasons.includes("WATCHER_V2_NOTE_SNAPSHOT_HASH_MISMATCH"));
+  const changedDecision=structuredClone(pair.decision);
+  changedDecision.items[0].quantity=4;
+  const d=verifyLiveReaderPairV68(pair.event,changedDecision);
+  assert.ok(d.reasons.includes("SHADOW_DECISION_CONTENT_FINGERPRINT_MISMATCH"));
+  assert.ok(d.reasons.some(x=>x.startsWith(
+   "READER_EVENT_DECISION_PRODUCT_IDENTITY_OR_QUANTITY_MISMATCH")));
+  assert.equal(d.effects.print,false);
+ });
+ check("V7.19 item observation remains bound to same V2 snapshot and text",()=>{
+  const note={source_field:"DSOBSDESCIT",scope_hint:"item",
+   value:"SEM PIMENTA",item_index:0,CDPRODUTO:pCode,join_proven:true};
+  const pair=run([],[note],"1.000",undefined,true);
+  const ok=verifyLiveReaderPairV68(pair.event,pair.decision);
+  assert.equal(ok.status,"BLOCKED");
+  assert.ok(!ok.reasons.includes("WATCHER_V2_NOTE_SNAPSHOT_HASH_MISMATCH"));
+  assert.ok(!ok.reasons.includes("WATCHER_V2_OBSERVATIONS_NOT_IDENTICAL_IN_DECISION"));
+  const altered=structuredClone(pair.event);
+  altered.order.observation_rows[0].value="COM PIMENTA";
+  const blocked=verifyLiveReaderPairV68(altered,pair.decision);
+  assert.ok(blocked.reasons.includes("WATCHER_V2_NOTE_SNAPSHOT_HASH_MISMATCH"));
+  assert.equal(blocked.effects.print,false);
+ });
+
+ // V7.20: exercise the new pinned offline ENTRYPOINT, not just a detached
+ // pair verifier. No separately supplied decision or optional gate switch.
+ const gatePath=path.join(__dirname,"gerar_tres_vias_v2_gate_v720_offline.js");
+ const gateText=fs.readFileSync(gatePath,"utf8");
+ const seqFixture=path.join(folder,"sequence-fixture.json");
+ fs.writeFileSync(seqFixture,JSON.stringify({
+  schema:"deliveryos.tata-sequence-state.v1",next_value:1}));
+ const gateArgs=()=>["--event",path.join(folder,"event.json"),
+  "--consumer",path.join(folder,"consumer.cjs"),
+  "--proof",path.join(folder,"proof.json"),
+  "--motor",path.join(folder,"packaging-current.js"),
+  "--sequence-fixture",seqFixture];
+ const runGate=args=>spawnSync(process.execPath,[gatePath,...args],{
+  encoding:"utf8",timeout:20000});
+ check("V7.20 mandatory V6.8 call precedes every ticket rendering path",()=>{
+  assert.ok(gateText.includes("verifyLiveReaderPairV68(event,decision)"));
+  assert.ok(gateText.indexOf("const result=verifyLiveReaderPairV68(event,decision)")<
+   gateText.indexOf("return renderVerifiedOffline(["));
+  assert.ok(!gateText.includes("ready_for_operational_print:true"));
+  assert.ok(!gateText.includes("spooler_write:true"));
+  assert.ok(!gateText.includes("print_authorized:true"));
+ });
+ check("V7.21 unpinned executable motor cannot run even once before validation",()=>{
+  // V7.19 above already proves the real V2 child -> real V6.8 on this
+  // blocked fictional fixture. The V7.21 gate rejects its fake executable
+  // module BEFORE spawn, so this scenario must stop at SOURCE_PREFLIGHT.
+  run([],[],"1.000",undefined,true);
+  fs.writeFileSync(path.join(folder,"proof.json"),"{}");
+  const motorPath=path.join(folder,"packaging-current.js");
+  const original=fs.readFileSync(motorPath);
+  const canary=path.join(folder,"should-not-exist.v721");
+  try{
+   fs.writeFileSync(motorPath,
+    "require('node:fs').writeFileSync("+JSON.stringify(canary)+",'BAD');"+fakeMotor);
+   const p=runGate(gateArgs());
+   assert.equal(p.status,2,p.stderr);
+   const r=JSON.parse(p.stdout.trim());
+   assert.equal(r.status,"BLOCKED");
+   assert.equal(r.stage,"SOURCE_PREFLIGHT");
+   assert.ok(r.reasons.includes("CANONICAL_PACKAGING_MOTOR_SOURCE_NOT_PINNED_BEFORE_EXEC"));
+   assert.equal(fs.existsSync(canary),false,"unpinned motor executed before source pin");
+   assert.deepEqual(r.outputs,[]);
+   assert.equal(r.effects.print,false);
+   assert.equal(r.effects.spooler_write,false);
+   assert.equal(r.effects.database_write,false);
+   assert.equal(r.print_authorized,false);
+  }finally{fs.writeFileSync(motorPath,original);}
+ });
+ check("V7.20 cannot import a cached or manually replaced consumer decision",()=>{
+  const args=[...gateArgs(),"--decision",path.join(folder,"stale.json")];
+  const p=runGate(args);
+  assert.equal(p.status,2);
+  const r=JSON.parse(p.stdout.trim());
+  assert.equal(r.status,"BLOCKED");
+  assert.deepEqual(r.outputs,[]);
+ });
+ check("V7.20 rejects unpinned consumer before any artifact generation",()=>{
+  const fake=path.join(folder,"untrusted-consumer.cjs");
+  fs.writeFileSync(fake,'console.log(JSON.stringify({ready:true}));');
+  const args=gateArgs();
+  args[args.indexOf("--consumer")+1]=fake;
+  const p=runGate(args);
+  assert.equal(p.status,2);
+  const r=JSON.parse(p.stdout.trim());
+  assert.equal(r.status,"BLOCKED");
+  assert.equal(r.stage,"SOURCE_PREFLIGHT");
+  assert.ok(r.reasons.includes("CONSUMER_GIT_BLOB_NOT_PINNED"));
+  assert.deepEqual(r.outputs,[]);
+  assert.equal(r.effects.print,false);
+ });
+ check("V7.21 read-only effects and exit/status agreement are required",()=>{
+  const {readOnlyConsumerResult}=require(gatePath);
+  const keys=["database_read","database_write","sequence_binding_write",
+   "print","spooler_write","odhen_write","fiscal_action","sefaz_call"];
+  const base={ready:false,effects:Object.fromEntries(keys.map(k=>[k,false]))};
+  assert.equal(readOnlyConsumerResult(base,5),true);
+  assert.equal(readOnlyConsumerResult({...base,ready:true},0),true);
+  assert.equal(readOnlyConsumerResult(base,0),false);
+  assert.equal(readOnlyConsumerResult({...base,ready:true},5),false);
+  assert.equal(readOnlyConsumerResult({...base,effects:null},5),false);
+  assert.equal(readOnlyConsumerResult({...base,effects:{}},5),false);
+  assert.equal(readOnlyConsumerResult({...base,effects:{...base.effects,print:true}},5),false);
+  assert.equal(readOnlyConsumerResult({...base,effects:{...base.effects,spooler_write:true}},5),false);
+  assert.equal(readOnlyConsumerResult({...base,effects:{...base.effects,database_write:true}},5),false);
+  assert.equal(readOnlyConsumerResult({...base,effects:{...base.effects,unknown_effect:false}},5),false);
+  const {withoutNodePreloads}=require(gatePath);
+  const inherited={NODE_OPTIONS:"--require /tmp/evil.js",node_options:"--import /tmp/evil.mjs",
+   NODE_PATH:"/tmp",node_path:"/else",npm_config_node_options:"--eval bad",
+   NPM_CONFIG_NODE_OPTIONS:"--eval bad2",SAFE_FLAG:"keep"};
+  const safe=withoutNodePreloads(inherited);
+  assert.deepEqual(safe,{SAFE_FLAG:"keep"});
+  assert.equal(inherited.NODE_OPTIONS,"--require /tmp/evil.js");
+  assert.ok(gateText.includes('env:childEnv'));
+ });
+ check("V7.21 executable motor pin and V6.8 remain mandatory before rendering",()=>{
+  assert.ok(gateText.indexOf("CANONICAL_PACKAGING_MOTOR_SOURCE_NOT_PINNED_BEFORE_EXEC")<
+   gateText.indexOf("const child=spawnSync("));
+  assert.ok(gateText.indexOf("readOnlyConsumerResult(decision,child.status)")<
+   gateText.indexOf("verifyLiveReaderPairV68(event,decision)"));
+  assert.ok(gateText.indexOf("verifyLiveReaderPairV68(event,decision)")<
+   gateText.indexOf("return renderVerifiedOffline(["));
+ });
+
  console.log("THERMAL_BYTE_IDENTITY_V714="+checks+"/"+checks+" NO_LEGACY_AUTO_FACT NO_PRINT");
 }finally{fs.rmSync(temp,{recursive:true,force:true});}
