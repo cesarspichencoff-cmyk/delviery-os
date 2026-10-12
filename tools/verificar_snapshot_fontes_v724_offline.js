@@ -78,8 +78,9 @@ check("renderer receives exact snapshotted proof and canonical motor",()=>{
  assert.ok(gate.includes("sha(readBound(path.join(isolatedDir,name)))===sha(bytes)"));
 });
 check("symlinks rejected by source reader, effectful paths absent",()=>{
- assert.ok(gate.includes("fs.lstatSync(file)"));
- assert.ok(gate.includes("stat.isSymbolicLink()"));
+ assert.ok(gate.includes("fs.constants.O_NOFOLLOW"));
+ assert.ok(gate.includes("fs.constants.O_NONBLOCK"));
+ assert.ok(gate.includes("fs.fstatSync(fd,{bigint:true})"));
  assert.ok(gate.includes('if(process.platform!=="linux")'));
  assert.ok(gate.includes("withoutNodePreloads(process.env)"));
  assert.ok(!/\b(?:printer\.print|spooler\.write|Set-Service|Start-Service)\b/.test(gate));
