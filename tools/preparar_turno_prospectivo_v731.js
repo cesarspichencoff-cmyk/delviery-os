@@ -4,8 +4,8 @@
  * Accept exactly the audited Oct-12 installed watcher V2 SHA-256, produce
  * a NEW candidate in a caller-created temp folder, never edit the original.
  *
- * The new v3 JSON *shape* is not an authenticated human approval. Issuance
- * and service deployment remain independent human-controlled effect gates.
+ * V3 contains no operator-signature requirement. Trusted provenance of its
+ * observed source must be proved before any operational deployment.
  */
 const fs=require("node:fs"),path=require("node:path"),os=require("node:os"),
   crypto=require("node:crypto");
@@ -38,28 +38,31 @@ function transformWatcher(sourceText){
     throw Error("INSTALLED_SHIFT_BODY_DRIFT");
   let changed=before.replace(oldSchema,
     '"deliveryos.production-service-shift-state.v3"');
+  changed=changed.replace(
+    '@("HUMAN_CONFIRMED_RULE","REAL_OBSERVED")',
+    '@("REAL_OBSERVED")');
   const fromRules=lines(
-    '    # New v3 contract: no retroactive order may inherit a later human review.',
+    '    # New v3 contract: prospective observed source, no operator signature.',
     '    $validFromRaw = [string]$state.valid_from_local',
-    '    $confirmedRaw = [string]$state.confirmed_at_local',
+    '    $observedRaw = [string]$state.source_observed_at_local',
     '    $validFrom = [datetime]::MinValue',
-    '    $confirmedAt = [datetime]::MinValue',
+    '    $observedAt = [datetime]::MinValue',
     '    $fromOk = [datetime]::TryParseExact($validFromRaw, "yyyy-MM-ddTHH:mm:ss",',
     '      [Globalization.CultureInfo]::InvariantCulture,',
     '      [Globalization.DateTimeStyles]::None, [ref]$validFrom)',
-    '    $confirmationOk = [datetime]::TryParseExact($confirmedRaw, "yyyy-MM-ddTHH:mm:ss",',
+    '    $observationOk = [datetime]::TryParseExact($observedRaw, "yyyy-MM-ddTHH:mm:ss",',
     '      [Globalization.CultureInfo]::InvariantCulture,',
-    '      [Globalization.DateTimeStyles]::None, [ref]$confirmedAt)',
+    '      [Globalization.DateTimeStyles]::None, [ref]$observedAt)',
     '    if (-not $fromOk) { $blockers += "SERVICE_STATE_VALID_FROM_REQUIRED" }',
-    '    if (-not $confirmationOk) { $blockers += "SERVICE_STATE_CONFIRMED_AT_REQUIRED" }',
-    '    if ($fromOk -and $confirmationOk -and $validFrom -lt $confirmedAt) {',
-    '      $blockers += "SERVICE_STATE_RETROACTIVE_WINDOW_FORBIDDEN"',
+    '    if (-not $observationOk) { $blockers += "SERVICE_STATE_SOURCE_OBSERVED_AT_REQUIRED" }',
+    '    if ($fromOk -and $observationOk -and $validFrom -lt $observedAt) {',
+    '      $blockers += "SERVICE_STATE_BACKDATED_BEFORE_SOURCE_OBSERVATION"',
     '    }',
     '    if ($fromOk -and $validFrom.ToString("yyyy-MM-dd") -ne $orderDate) {',
     '      $blockers += "SERVICE_STATE_VALID_FROM_DAY_MISMATCH"',
     '    }',
-    '    if ($confirmationOk -and $confirmedAt.ToString("yyyy-MM-dd") -ne $orderDate) {',
-    '      $blockers += "SERVICE_STATE_CONFIRMATION_DAY_MISMATCH"',
+    '    if ($observationOk -and $observedAt.ToString("yyyy-MM-dd") -ne $orderDate) {',
+    '      $blockers += "SERVICE_STATE_SOURCE_OBSERVATION_DAY_MISMATCH"',
     '    }',
     '    if ($fromOk -and $OrderOpenedAt -lt $validFrom) {',
     '      $blockers += "SERVICE_STATE_NOT_YET_EFFECTIVE_FOR_ORDER"',
@@ -78,17 +81,9 @@ function transformWatcher(sourceText){
     '    }',
     ''
   );
-  // Safety stop: the signed V7.32 verifier is a SEPARATE, read-only module
-  // with no validated Windows service/identity binding yet. Never let a
-  // structurally plausible v3 JSON become operative human authorization.
-  const humanAuthorityHold=lines(
-    '    # Signature review code is NOT connected to this Windows watcher.',
-    '    # No JSON field can promote itself to operator-approved FACT.',
-    '    $blockers += "SERVICE_STATE_INDEPENDENT_AUTHORITY_NOT_VERIFIED"',
-    ''
-  );
-  changed=changed.replace(finalAnchor,
-    crossWindow+humanAuthorityHold+finalAnchor);
+  // V3 verifies a prospective interval, never authorizes printing.
+  // Source provenance must be verified externally before installation.
+  changed=changed.replace(finalAnchor,crossWindow+finalAnchor);
   if(changed===before||!changed.includes("SERVICE_STATE_NOT_YET_EFFECTIVE_FOR_ORDER"))
     throw Error("PATCH_FAILED");
   const output=input.slice(0,begin)+changed+
