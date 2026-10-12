@@ -17,6 +17,16 @@ const oldPath=path.join(__dirname,"tata_reader_continuous_watch_candidate_v1.ps1
 const oldSource=fs.readFileSync(oldPath,"utf8");
 const nextSource=transformWatcher(oldSource);
 const origFn=extractShiftFunction(oldSource);
+// Exact normalized UTF-8 bytes measured READ-ONLY on CAIXA_MOOCA V2,
+// 12 Oct 2026; compare against the repository function before using its
+// fixture as evidence about the installed watcher.
+const installedShiftFunctionSha256=
+ "da01a648ea662d6e7aca544dc28d4b65d07ab886db007070231ebf430cb80cfc";
+const fixtureShiftFunctionSha256=require("node:crypto").createHash("sha256")
+ .update(Buffer.from(origFn,"utf8")).digest("hex");
+assert.equal(fixtureShiftFunctionSha256,installedShiftFunctionSha256,
+ "Installed V2 shift function differs from Git watcher-v1 fixture; refuse equivalence");
+console.log("PASS V731 installed V2 shift function normalized SHA matches Git fixture");
 const newFn=extractShiftFunction(nextSource);
 assert.notEqual(origFn,newFn);
 assert.ok(newFn.includes("SERVICE_STATE_NOT_YET_EFFECTIVE_FOR_ORDER"));
