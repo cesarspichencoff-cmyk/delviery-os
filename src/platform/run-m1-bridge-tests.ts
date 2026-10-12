@@ -474,6 +474,25 @@ const EXCECAO_REALIDADE: readonly string[] = [
 const CLASSE_LEITURA_DA_RUA = "ENTREGAS_STREET_READING_ONLY";
 const EXCECAO_LEITURA_DA_RUA: readonly string[] = ["src/product/ui/surfaces/entregas.css"];
 
+/**
+ * Exceções da entrega #103, 2026-10-12, EXCLUSIVAMENTE de apresentação.
+ * Não alteram HUMAN_APPROVAL_STATE de M1B nem a dívida Q-019 (12 caminhos).
+ * Distinguimos o tratamento de 503 da ponte shadow: uma classe nunca cobre
+ * a outra. Exige linha exata no envelope + testes de retirada e rota alheia.
+ */
+const CLASSE_Q026_HTTP_503 = "Q026_HTTP_503_PRESENTATION_ONLY";
+const EXCECAO_Q026_HTTP_503: readonly string[] = [
+  "src/product/ui/http-leitura.js",
+];
+
+const CLASSE_COPILOTO_SHADOW = "COPILOTO_ENTREGAS_SHADOW_READ_ONLY";
+const EXCECAO_COPILOTO_SHADOW: readonly string[] = [
+  "src/product/viewmodels/copiloto-entregas-leitura.ts",
+  "src/product/viewmodels/run-copiloto-entregas-leitura-tests.ts",
+  "src/product/viewmodels/copiloto-celulas-v33.ts",
+  "src/product/viewmodels/run-copiloto-celulas-v33-tests.ts",
+];
+
 function linhaExata(texto: string, caminho: string, classe: string): boolean {
   const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   return new RegExp(`^\\s*${esc(caminho)}\\s+${esc(classe)}\\s*$`, "m").test(texto);
@@ -500,7 +519,9 @@ function foraDoEnvelope(
       !autorizados.some((a) => (a.endsWith("/") ? p.startsWith(a) : p === a)) &&
       !(p === EXCECAO_ESTREITA && excecaoRegistrada) &&
       !(EXCECAO_REALIDADE.includes(p) && linhaExata(env, p, CLASSE_REALIDADE)) &&
-      !(EXCECAO_LEITURA_DA_RUA.includes(p) && linhaExata(env, p, CLASSE_LEITURA_DA_RUA)),
+      !(EXCECAO_LEITURA_DA_RUA.includes(p) && linhaExata(env, p, CLASSE_LEITURA_DA_RUA)) &&
+      !(EXCECAO_Q026_HTTP_503.includes(p) && linhaExata(env, p, CLASSE_Q026_HTTP_503)) &&
+      !(EXCECAO_COPILOTO_SHADOW.includes(p) && linhaExata(env, p, CLASSE_COPILOTO_SHADOW)),
   );
 }
 
@@ -609,6 +630,82 @@ teste("C6d controle: a excecao da leitura da rua cobre o arquivo NOVO, so pela l
     assert.ok(
       !autorizados.some((a) => (a.endsWith("/") ? p.startsWith(a) : p === a)),
       `${p} entrou na lista de caminhos AUTORIZADOS — virou licenca de M1B`,
+    );
+  }
+});
+
+teste("C6e tratamento Q026 HTTP 503: somente a linha exata, sem ampliar M1B", () => {
+  const env = ler(ENVELOPE);
+  const autorizados = caminhosAutorizados();
+  assert.deepEqual(foraDoEnvelope(EXCECAO_Q026_HTTP_503, env, autorizados), []);
+  const semRegistro = env.split("\n")
+    .filter((l) => !l.includes(CLASSE_Q026_HTTP_503)).join("\n");
+  assert.deepEqual(
+    foraDoEnvelope(EXCECAO_Q026_HTTP_503, semRegistro, autorizados),
+    [...EXCECAO_Q026_HTTP_503],
+    "sem registro exato, a excecao HTTP nao deve passar",
+  );
+  const comClasseErrada = env.replace(CLASSE_Q026_HTTP_503, CLASSE_COPILOTO_SHADOW);
+  assert.deepEqual(
+    foraDoEnvelope(EXCECAO_Q026_HTTP_503, comClasseErrada, autorizados),
+    [...EXCECAO_Q026_HTTP_503],
+    "classe de Copiloto nao pode autorizar tratamento HTTP",
+  );
+  for (const outro of [
+    "src/product/viewmodels/areas.ts",
+    "src/product/ui/surfaces/copiloto.js",
+  ]) {
+    assert.deepEqual(
+      foraDoEnvelope([outro], env + "\n" + outro + " " + CLASSE_Q026_HTTP_503, autorizados),
+      [outro],
+      "registro para caminho arbitrario autorizou alteracao protegida: " + outro,
+    );
+  }
+  for (const p of EXCECAO_Q026_HTTP_503) {
+    assert.ok(
+      !autorizados.some((a) => a.endsWith("/") ? p.startsWith(a) : p === a),
+      p + " entrou em AUTHORIZED_PATHS de M1B",
+    );
+  }
+});
+
+teste("C6f Copiloto Entregas shadow: quatro caminhos exatos, controles negativos por caminho e classe", () => {
+  const env = ler(ENVELOPE);
+  const autorizados = caminhosAutorizados();
+  assert.equal(EXCECAO_COPILOTO_SHADOW.length, 4);
+  assert.deepEqual(foraDoEnvelope(EXCECAO_COPILOTO_SHADOW, env, autorizados), []);
+  for (const p of EXCECAO_COPILOTO_SHADOW) {
+    const semRegistro = env.split("\n")
+      .filter((l) => l.trim() !== p + " " + CLASSE_COPILOTO_SHADOW)
+      .join("\n");
+    assert.deepEqual(
+      foraDoEnvelope([p], semRegistro, autorizados),
+      [p],
+      "retirar o caminho nao reprovou: " + p,
+    );
+    const comClasseTrocada = env.replace(
+      p + " " + CLASSE_COPILOTO_SHADOW,
+      p + " " + CLASSE_Q026_HTTP_503,
+    );
+    assert.deepEqual(
+      foraDoEnvelope([p], comClasseTrocada, autorizados),
+      [p],
+      "a classe HTTP autorizou view model: " + p,
+    );
+    assert.ok(
+      !autorizados.some((a) => a.endsWith("/") ? p.startsWith(a) : p === a),
+      "caminho entrou em AUTHORIZED_PATHS de M1B: " + p,
+    );
+  }
+  for (const outro of [
+    "src/product/viewmodels/areas.ts",
+    "src/product/ui/http-leitura.js",
+    "src/product/ui/surfaces/operacao-viva.js",
+  ]) {
+    assert.deepEqual(
+      foraDoEnvelope([outro], env + "\n" + outro + " " + CLASSE_COPILOTO_SHADOW, autorizados),
+      [outro].filter((p) => !EXCECAO_Q026_HTTP_503.includes(p) || !linhaExata(env, p, CLASSE_Q026_HTTP_503)),
+      "outra rota ganhou permissao por classe Copiloto: " + outro,
     );
   }
 });
