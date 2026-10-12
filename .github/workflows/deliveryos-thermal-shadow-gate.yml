@@ -169,3 +169,5 @@ jobs:
         run: npm run build
       - name: Actual Windows V2 subprocess to V6.8 and three in-memory vias
         run: node tools/verificar_v730_windows_ci.js
+      - name: Prospective shift window V7.31 (isolated PowerShell, no effects)
+        run: node tools/verificar_v731_turno_prospectivo_ci.js
