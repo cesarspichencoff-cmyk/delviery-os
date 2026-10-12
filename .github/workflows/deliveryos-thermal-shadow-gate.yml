@@ -70,6 +70,21 @@ jobs:
             throw "V723_POWERSHELL_SYNTAX_INVALID"
           }
           Write-Output "V723_POWERSHELL_PARSE_PASS=1 NO_SCRIPT_EXECUTION NO_WINDOWS_ACCESS"
+      - name: Windows process topology passive observation privacy V7.29 (static/synthetic)
+        run: node tools/verificar_topologia_windows_v729.js
+      - name: Parse Windows process topology probe V7.29 without executing
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $parseErrors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile(
+            "tools/auditar_topologia_windows_v729_readonly.ps1",
+            [ref]$tokens, [ref]$parseErrors
+          )
+          if ($parseErrors.Count -ne 0) {
+            throw "V729_POWERSHELL_SYNTAX_INVALID"
+          }
+          Write-Output "V729_POWERSHELL_PARSE_PASS=1 NO_SCRIPT_EXECUTION NO_WINDOWS_ACCESS"
       - name: No self-declared human bag or kit approval V7.13 (offline only)
         run: node tools/verificar_override_authority_v713.js
       - name: Human bag-kit override exact snapshot scope V7.12 (offline only)
