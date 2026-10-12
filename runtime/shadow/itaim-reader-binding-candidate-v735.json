@@ -1,0 +1,24 @@
+{
+  "schema": "deliveryos.itaim-reader-binding-candidate.v735",
+  "unit": "ITAIM",
+  "windows_host": "CAIXA_MOOCA",
+  "expected_store_id": "0001",
+  "expected_shop_id": null,
+  "state": "CANDIDATE_READ_ONLY_NOT_INSTALLED",
+  "source_ref": "historical-user-confirmation:2026-09-04:CAIXA_MOOCA-ITAIM",
+  "evidence": {
+    "host_to_unit": "HUMAN_CONFIRMED_HISTORICAL_NOT_FRESH_PHYSICAL_PROOF",
+    "branch_id": "READ_ONLY_TEK_NISA_LOCAL_BRANCH_0001_HOST_ASSOCIATION",
+    "shop_id": "UNKNOWN_NOT_GUESSED",
+    "reader_event_identity": "EVENTS_FROM_CURRENT_HOST_REQUIRE_EXACT_RAW_BINDING",
+    "target_freshness": "CAIXA_MOOCA_REMOTE_TIMEOUT_2026-10-12"
+  },
+  "effects": {
+    "state_write": false,
+    "service_change": false,
+    "print": false,
+    "spooler_write": false,
+    "sequence_write": false
+  },
+  "next_required": "Verify current CDLOJA from original reader events and correlate exact CDFILIAL and host, before any live binding or installation."
+}
