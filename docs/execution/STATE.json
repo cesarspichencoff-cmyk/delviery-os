@@ -5,8 +5,8 @@
     "status": "ACTIVE",
     "authority_scope": "technical_state",
     "superseded_by": null,
-    "atualizado_em": "2026-10-10",
-    "state_basis": "a4cc6170c64e3df2bd0db4db0c91d46d9b6a9dc5",
+    "atualizado_em": "2026-10-12",
+    "state_basis": "4970a20819772fa3f25dae8039b9c7f120d5f498",
     "observa": [
       "src/product/",
       "src/perfil-delivery/",
@@ -14,7 +14,7 @@
     ],
     "_nota_observa": "Os tres troncos cujo estado este arquivo realmente afirma: produto, perfil e o Lab V4. src/platform/ fica de fora porque o que STATE.json diz dele sao contagens de teste, que esta guarda nao verifica — declarar escopo que a guarda nao cobre seria comprar confianca que ela nao entrega. Escolhido antes de rodar, e nao para acomodar caso que falhava (L44)."
   },
-  "atualizado_em": "2026-10-10",
+  "atualizado_em": "2026-10-12",
   "_nota_atualizado_em": "Ate 2026-08-07 este campo declarava 2026-08-03 enquanto o arquivo continha o bloco revolution_0a datado de 2026-08-05 e havia sido gravado no commit 953a3fb, de 2026-08-07. Foi o primeiro defeito que a guarda G6c acusou.",
   "missao": "MACRO-PROMPT 1/3 — Hybrid Platform + PostgreSQL + Cloud Foundation",
   "veredito": "READY_FOR_MACRO_PROMPT_2_FIELD_AND_COPILOT_BRIDGE",
@@ -2344,4 +2344,41 @@
     "quality_gate": "CI composition required; Claude-only green CI is not a composed-branch result",
     "performance": "Q-026 open; log window and open journeys not modified",
     "references": ["docs/execution/PERGUNTAS.jsonl#Q-025", "docs/execution/PRODUCT_UX_Q025_REVIEW_2026-10-09.md"]
+  },
+  "copiloto_entregas_unified_shadow_20261012": {
+    "status": "COMBINED_CODE_TEST_PASS_LOCAL_CI_GATE_RECHECK_REQUIRED_NOT_DEPLOYED",
+    "candidate_pr": 106,
+    "candidate_commit_basis": "4970a20819772fa3f25dae8039b9c7f120d5f498",
+    "candidate_tree": "5e63c564c8fdceab66d862a866a0e7fe48e255dd",
+    "product_branch_base": "99b0c72e6a254c68358767b5addffe673707d934",
+    "parents": {
+      "q026_pg_resilience_pr96": "f78ec03b7c73bc75ed4b0dab29e05c806450cbe9",
+      "copiloto_entregas_bridge_pr105": "e70b10582d753eadbaf3a1811223666f4637ed48"
+    },
+    "integration": {
+      "contract": "GET /api/copiloto shares the existing read-only Entregas reality port, unit and source_mode separated",
+      "new_reader_or_sql_adapter": false,
+      "copiloto_writes_or_dispatched_orders": false,
+      "ifood_live_proven": false,
+      "v33_operational_cells_fully_ported": false
+    },
+    "proof_at_basis_commit": {
+      "merge_tree_no_conflict": true,
+      "tsc_combined_local": "PASS",
+      "contract_tests_combined_local": "6/6 PASS",
+      "localhost_http_chromium_390": "PASS",
+      "product_system_full_local": "ONE_PREEXISTING_FAIL_REPRODUCED_ON_BASE",
+      "q026_pg_ci_new_combined_head": "FAILED_G6B_STALE_CHECKPOINT_BEFORE_THIS_METADATA_RECONCILIATION",
+      "production_runtime": "NOT_TESTED",
+      "physical_android": "NOT_TESTED"
+    },
+    "governance_reconciliation": {
+      "reason": "G6b correctly rejected tracked src/product change after previous lifecycle state_basis",
+      "new_lifecycle_state_basis": "4970a20819772fa3f25dae8039b9c7f120d5f498",
+      "scope": "record verified local combined code tree, not human approval or operating state",
+      "governance_rule_unchanged": true
+    },
+    "effect_boundary": "DRAFT_HOLD_NO_MERGE_NO_DEPLOY_NO_PRODUCTION_DB_NO_LOCATION_COLLECTION_NO_SPEND",
+    "parallel_project": "TATA Comandas tracked separately under issue #102",
+    "next_proof": "Re-run promotion and PG survival CI on the new metadata-only head, then field validation and preview"
   }}
