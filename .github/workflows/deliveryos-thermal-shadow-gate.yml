@@ -37,6 +37,8 @@ jobs:
         run: npm run build
       - name: Store documented service windows V7.33 (no signatures, synthetic)
         run: node tools/verificar_janelas_servico_v733.js
+      - name: Itaim confirmed hours V7.34 including legal holidays (unbound)
+        run: node tools/verificar_itaim_horarios_v734.js
       - name: Operational ticket semantic projection V4.5
         run: npm run verificar:tickets-operacionais-v45
       - name: Conference proven box grouping and finishing V6.2 (offline)
@@ -177,3 +179,5 @@ jobs:
         run: node tools/verificar_v731_turno_prospectivo_ci.js
       - name: Store documented service windows V7.33 (Windows synthetic)
         run: node tools/verificar_janelas_servico_v733.js
+      - name: Itaim confirmed hours V7.34 including legal holidays (Windows)
+        run: node tools/verificar_itaim_horarios_v734.js
