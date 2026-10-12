@@ -68,15 +68,21 @@ function audit(input) {
     if(t.snapshot_sha256.toLowerCase()!==l.teknisa_snapshot_sha256.toLowerCase() ||
        tkRevisions.get(key([l.unit_id,l.teknisa_order_key])).size!==1 ||
        neRevisions.get(key([l.unit_id,l.neemo_order_id])).size!==1){drift++;continue;}
-    valid.push([tkey,nkey]);
-    usedT.add(tkey);usedN.add(nkey);
+    valid.push([tkey,nkey,pair]);
   }
-  // Uma fonte ligada a dois destinos NÃO deve se tornar elegível por ordem da lista.
+  // Uma fonte ligada a dois destinos ou um par repetido NAO se torna elegivel.
   const tDegree=new Map(),nDegree=new Map();
   for(const [t,n] of valid){tDegree.set(t,(tDegree.get(t)||0)+1);nDegree.set(n,(nDegree.get(n)||0)+1);}
-  for(const [t,n] of valid){
-    if(tDegree.get(t)>1||nDegree.get(n)>1)ambiguous++;
-    else candidates++;
+  const linkCounts=new Map();
+  for(const l of input.links){
+    const t=key([l.unit_id,l.teknisa_order_key,l.teknisa_revision]);
+    const n=key([l.unit_id,l.neemo_order_id,l.neemo_revision]);
+    const pair=key([t,n]);
+    linkCounts.set(pair,(linkCounts.get(pair)||0)+1);
+  }
+  for(const [t,n,pair] of valid){
+    if(tDegree.get(t)>1||nDegree.get(n)>1||linkCounts.get(pair)>1)ambiguous++;
+    else {candidates++;usedT.add(t);usedN.add(n);}
   }
   return Object.freeze({
     schema:VERSION,status:"REVIEW_ONLY_NOT_WORLD_PROOF",
