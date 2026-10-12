@@ -183,8 +183,12 @@ function leituraEntregasCompartilhada(o) {
     `<p class="secao__sub">${esc(o.motivo || "Leitura não disponível.")}</p>
       ${linhas}
       <div class="grade" data-colunas="2">
-        ${campo("Fonte", { observado: disponivel, valor: disponivel ? "platform.event_log" : "indisponível" }, { tecnico: true })}
-        ${campo("Lida em", { observado: disponivel, valor: disponivel ? (o.lida_em || "não informado") : "não observado" }, { tecnico: true })}
+        ${campo("Fonte", disponivel
+          ? { observado: true, valor: "platform.event_log" }
+          : { observado: false, motivo: "integracao_pendente", explicacao: "Fonte não disponível." }, { tecnico: true })}
+        ${campo("Lida em", disponivel && o.lida_em
+          ? { observado: true, valor: o.lida_em }
+          : { observado: false, motivo: "nao_observado", explicacao: "Não foi possível observar o instante da leitura." }, { tecnico: true })}
       </div>`,
   );
 }
