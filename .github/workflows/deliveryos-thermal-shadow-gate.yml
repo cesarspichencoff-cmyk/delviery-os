@@ -54,6 +54,8 @@ jobs:
         run: node tools/verificar_preflight_consumidor_v711.js
       - name: Installed V2 consumer parity and eight-rule lineage V7.10 (offline only)
         run: node tools/verificar_consumidor_shadow_v710.js
+      - name: iFood exact-origin shift route policy review V1 (offline, no print)
+        run: node tools/verificar_politica_ifood_turno_v1.js
       - name: Stable Windows reader event/decision pairing V6.8 (offline)
         run: node tools/verificar_par_evento_leitor_v68.js
       - name: Passive real-file reader audit V6.9 (offline fixtures, no effects)
