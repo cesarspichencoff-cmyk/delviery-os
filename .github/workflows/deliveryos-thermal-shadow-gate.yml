@@ -49,6 +49,8 @@ jobs:
         run: node tools/verificar_identidade_bytes_v714.js
       - name: Exact raw store-shop-order key integrity V7.27 (offline)
         run: node tools/verificar_identidade_pedido_v727.js
+      - name: Detached signature V7.32 cannot grant shift authority (synthetic)
+        run: node tools/verificar_atestado_turno_v732_ci.js
       - name: Positive pinned canonical engine V2 to V6.8 three-way replay V7.22 (offline)
         run: node tools/verificar_cadeia_positiva_v722_offline.js
       - name: Immutable eight-rule subprocess snapshot and lineage guard V7.24 (offline)
@@ -171,3 +173,5 @@ jobs:
         run: node tools/verificar_v730_windows_ci.js
       - name: Prospective shift window V7.31 (isolated PowerShell, no effects)
         run: node tools/verificar_v731_turno_prospectivo_ci.js
+      - name: Detached signature V7.32 on Windows CI (synthetic)
+        run: node tools/verificar_atestado_turno_v732_ci.js
