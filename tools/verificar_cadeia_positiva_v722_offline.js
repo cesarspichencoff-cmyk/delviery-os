@@ -131,6 +131,39 @@ try{
  }
  fs.rmSync(got.proof_dir,{recursive:true,force:true});
  console.log("PASS V7.22 pinned actual engine + actual V2 child + V6.8 + two station SVGs + conference");
+ // Routing is recomputed by the real V2 child, but MUST agree independently
+ // with the reconciled production source. A matching V2 lineage is not enough.
+ const routingPath=path.join(consumerDir,"routing.json");
+ const routingOriginal=fs.readFileSync(routingPath);
+ try{
+  const changed=JSON.parse(routingOriginal);
+  changed.products[products[1].code]=["00009"];
+  textJson(routingPath,changed);
+  const drift=invoke();
+  assert.equal(drift.status,2,"wrong route not blocked: "+drift.stdout.slice(0,1000));
+  const blocked=JSON.parse(drift.stdout);
+  assert.equal(blocked.status,"BLOCKED");
+  assert.ok(!blocked.proof_dir);
+  assert.ok(!blocked.outputs||blocked.outputs.length===0);
+  assert.equal(blocked.effects.print,false);
+  console.log("PASS V7.24 V2 rule-consistent routing drift rejected by independent V6.8 proof");
+ }finally{fs.writeFileSync(routingPath,routingOriginal);}
+ // The decision may stay valid while the independent proof is altered:
+ // exact order source and observation proof must still reconcile.
+ const proofPath=path.join(temp,"proof.json"),savedProof=fs.readFileSync(proofPath);
+ try{
+  const altered=JSON.parse(savedProof);
+  altered.delivery.items[0].quantidade=99;
+  textJson(proofPath,altered);
+  const badProof=invoke();
+  assert.equal(badProof.status,2,"modified proof not blocked: "+badProof.stdout.slice(0,1000));
+  const blocked=JSON.parse(badProof.stdout);
+  assert.equal(blocked.status,"BLOCKED");
+  assert.ok(!blocked.proof_dir);
+  assert.ok(!blocked.outputs||blocked.outputs.length===0);
+  assert.equal(blocked.effects.print,false);
+  console.log("PASS V7.24 altered independent quantity proof never generates preview");
+ }finally{fs.writeFileSync(proofPath,savedProof);}
  // Adversarial regression on the *same* executable and same independent proof.
  const altered=structuredClone(event);altered.order.items[0].QTPRODCOMVEN="2.000";
  textJson(path.join(temp,"event.json"),altered);
@@ -145,4 +178,4 @@ try{
 }finally{
  fs.rmSync(temp,{recursive:true,force:true});
 }
-if(complete)console.log("THERMAL_REAL_MOTOR_POSITIVE_V722=2/2 OFFLINE_2_PRODUCTION_1_CONFERENCE NO_PRINT");
+if(complete)console.log("THERMAL_REAL_MOTOR_POSITIVE_V722=4/4 OFFLINE_2_PRODUCTION_1_CONFERENCE NO_PRINT");
