@@ -1,0 +1,4 @@
+# Preserve exact Git blob bytes of hash-pinned V2 and Academy motor across Windows checkouts.
+# These exact artifacts are verified by SHA-1/SHA-256, not by source text equivalence.
+tools/fixtures/canonical-packaging-v63-pinned.js -text
+runtime/shadow/live_shadow_consumer_v2_candidate_v714.cjs -text
