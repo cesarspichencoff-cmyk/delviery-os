@@ -33,6 +33,10 @@ jobs:
         run: npm ci --ignore-scripts
       - name: Typecheck
         run: npm run typecheck
+      - name: Compile TypeScript for synthetic windows test
+        run: npm run build
+      - name: Store documented service windows V7.33 (no signatures, synthetic)
+        run: node tools/verificar_janelas_servico_v733.js
       - name: Operational ticket semantic projection V4.5
         run: npm run verificar:tickets-operacionais-v45
       - name: Conference proven box grouping and finishing V6.2 (offline)
@@ -171,3 +175,5 @@ jobs:
         run: node tools/verificar_v730_windows_ci.js
       - name: Prospective shift window V7.31 (isolated PowerShell, no effects)
         run: node tools/verificar_v731_turno_prospectivo_ci.js
+      - name: Store documented service windows V7.33 (Windows synthetic)
+        run: node tools/verificar_janelas_servico_v733.js
