@@ -17,6 +17,18 @@ export interface WeeklyServiceWindowV733 {
   from_local: string; // HH:mm:ss, inclusive
   until_local: string; // HH:mm:ss, exclusive; same day
 }
+export interface HolidayServiceWindowV733 {
+  service: MealServiceV733;
+  from_local: string; // HH:mm:ss inclusive
+  until_local: string; // HH:mm:ss exclusive
+}
+export interface OfficialHolidayCalendarV733 {
+  schema: "deliveryos.official-holiday-dates.v733";
+  source_ref: string; // provenance reference, NOT automatic attestation
+  from_local_date: string; // valid calendar start
+  through_local_date: string; // valid calendar end
+  dates: string[]; // exact legal holiday dates, not optional days off
+}
 export interface StoreServiceRuleV733 {
   schema: "deliveryos.store-service-windows.v733";
   store_id: string;
@@ -25,6 +37,8 @@ export interface StoreServiceRuleV733 {
   evidence: "CURRENT_OPERATING_RULE_CONFIRMED";
   effective_from_local_date: string;
   windows: WeeklyServiceWindowV733[];
+  holiday_calendar?: OfficialHolidayCalendarV733;
+  holiday_windows?: HolidayServiceWindowV733[];
 }
 export interface StoreServiceOrderV733 {
   store_id: string;
@@ -108,6 +122,56 @@ export function reviewStoreServiceWindowsV733(rule:unknown,order:unknown):StoreS
     candidates.push({weekday:w.weekday,service:w.service,
       from:start*10000000,until:end*10000000});
   }
+  // Public holidays supersede the weekly schedule, including weekdays.
+  // Absence of a complete, date-bounded calendar is not a holiday verdict.
+  const usesHolidays=a.holiday_calendar!==undefined||a.holiday_windows!==undefined;
+  const special:{service:MealServiceV733;from:number;until:number}[]=[];
+  let holidayToday=false;
+  if(usesHolidays){
+    const h=a.holiday_calendar;
+    if(!h||h.schema!=="deliveryos.official-holiday-dates.v733"||
+       typeof h.source_ref!=="string"||
+       !/^[A-Za-z0-9][A-Za-z0-9_.:/-]{11,240}$/.test(h.source_ref))
+      errors.add("HOLIDAY_CALENDAR_OR_SOURCE_INVALID");
+    const start=h&&typeof h.from_local_date==="string"?dateParts(h.from_local_date):null;
+    const end=h&&typeof h.through_local_date==="string"?dateParts(h.through_local_date):null;
+    if(!start||!end||start.timestamp>end.timestamp)
+      errors.add("HOLIDAY_CALENDAR_COVERAGE_INVALID");
+    if(opened&&start&&end&&
+       (opened.date<h!.from_local_date||opened.date>h!.through_local_date))
+      errors.add("HOLIDAY_CALENDAR_NOT_VALID_FOR_ORDER");
+    if(!h||!Array.isArray(h.dates)||h.dates.length<1||h.dates.length>400)
+      errors.add("HOLIDAY_DATES_NOT_BOUNDED");
+    else{
+      const unique=new Set<string>();
+      for(const raw of h.dates){
+        const date=typeof raw==="string"?dateParts(raw):null;
+        if(!date||unique.has(raw)||start&&date.timestamp<start.timestamp||
+           end&&date&&date.timestamp>end.timestamp)
+          errors.add("HOLIDAY_DATE_INVALID_OR_DUPLICATE");
+        if(date)unique.add(raw);
+      }
+      if(opened)holidayToday=unique.has(opened.date);
+    }
+    if(!Array.isArray(a.holiday_windows)||
+       a.holiday_windows.length!==2)
+      errors.add("HOLIDAY_WINDOWS_REQUIRED");
+    else{
+      for(const w of a.holiday_windows){
+        const lo=w&&secondsOfDay(w.from_local),hi=w&&secondsOfDay(w.until_local);
+        if(!w||!["LUNCH","DINNER"].includes(w.service)||
+           lo===null||hi===null||lo===undefined||hi===undefined||lo>=hi)
+          errors.add("HOLIDAY_WINDOW_INVALID");
+        else special.push({service:w.service,from:lo*10000000,until:hi*10000000});
+      }
+      if(special.length===2){
+        if(special[0].service===special[1].service||
+           Math.max(special[0].from,special[1].from)<
+             Math.min(special[0].until,special[1].until))
+          errors.add("HOLIDAY_WINDOWS_DUPLICATE_OR_OVERLAP");
+      }
+    }
+  }
   for(let i=0;i<candidates.length;i++)for(let j=i+1;j<candidates.length;j++){
     const x=candidates[i],y=candidates[j];
     if(x.weekday===y.weekday&&Math.max(x.from,y.from)<Math.min(x.until,y.until))
@@ -116,8 +180,10 @@ export function reviewStoreServiceWindowsV733(rule:unknown,order:unknown):StoreS
       errors.add("RULE_DUPLICATE_SERVICE_DAY");
   }
   if(errors.size)return deny();
-  const hit=candidates.filter(w=>w.weekday===opened!.weekday&&
-    w.from<=opened!.time&&opened!.time<w.until);
+  const hit=holidayToday
+    ? special.filter(w=>w.from<=opened!.time&&opened!.time<w.until)
+    : candidates.filter(w=>w.weekday===opened!.weekday&&
+       w.from<=opened!.time&&opened!.time<w.until);
   if(hit.length!==1){
     errors.add(hit.length>1?"AMBIGUOUS_SERVICE":"ORDER_OUTSIDE_DOCUMENTED_SERVICE_WINDOW");
     return deny();
