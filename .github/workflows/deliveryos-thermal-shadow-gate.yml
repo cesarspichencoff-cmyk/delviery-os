@@ -51,6 +51,19 @@ jobs:
         run: node tools/verificar_cadeia_positiva_v722_offline.js
       - name: Passive Windows audit script contract V7.23 (static, no Windows)
         run: node tools/verificar_auditoria_servico_windows_v723.js
+      - name: Parse passive Windows audit PowerShell V7.23 without executing it
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $parseErrors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile(
+            "tools/auditar_servico_windows_v723_readonly.ps1",
+            [ref]$tokens, [ref]$parseErrors
+          )
+          if ($parseErrors.Count -ne 0) {
+            throw "V723_POWERSHELL_SYNTAX_INVALID"
+          }
+          Write-Output "V723_POWERSHELL_PARSE_PASS=1 NO_SCRIPT_EXECUTION NO_WINDOWS_ACCESS"
       - name: No self-declared human bag or kit approval V7.13 (offline only)
         run: node tools/verificar_override_authority_v713.js
       - name: Human bag-kit override exact snapshot scope V7.12 (offline only)
