@@ -6,7 +6,7 @@
     "authority_scope": "technical_state",
     "superseded_by": null,
     "atualizado_em": "2026-10-12",
-    "state_basis": "4970a20819772fa3f25dae8039b9c7f120d5f498",
+    "state_basis": "081e54ceed1aef39e023677c044cea8e27b353c1",
     "observa": [
       "src/product/",
       "src/perfil-delivery/",
@@ -2381,4 +2381,39 @@
     "effect_boundary": "DRAFT_HOLD_NO_MERGE_NO_DEPLOY_NO_PRODUCTION_DB_NO_LOCATION_COLLECTION_NO_SPEND",
     "parallel_project": "TATA Comandas tracked separately under issue #102",
     "next_proof": "Re-run promotion and PG survival CI on the new metadata-only head, then field validation and preview"
-  }}
+  },
+  "copiloto_celulas_v33_shadow_20261012": {
+    "status": "SIX_CELL_PRESENTATION_TEST_PASS_LOCAL_CI_PENDING_NOT_LIVE",
+    "candidate_pr": 106,
+    "verified_code_basis": "081e54ceed1aef39e023677c044cea8e27b353c1",
+    "legacy_reference": "integration/copiloto-celulas-shadow-v1:docs/copiloto/CELULAS_OPERACIONAIS_V1.md",
+    "scope": "six source-coverage cells in /api/copiloto and existing Product System UI; not V3.3 motor or live pressure",
+    "cells": ["Caixa", "Sushi", "Quentes", "Cozinha", "Conferência", "Entregas"],
+    "source_mapping": {
+      "sushi": ["combinados", "duplas", "enrolados"],
+      "quentes": ["enrolados_quentes"],
+      "cozinha": ["cozinha_quentes"],
+      "caixa": "NO_SOURCE",
+      "conferencia": "NO_ORDER_OBSERVATIONS",
+      "entregas": "SHARED_PLATFORM_EVENT_LOG_HISTORICAL_ONLY"
+    },
+    "tests_on_code_basis": {
+      "typescript": "PASS",
+      "six_cells": "7/7 PASS",
+      "shared_delivery_bridge": "6/6 PASS",
+      "http_chromium_mobile_390": "PASS_AFTER_VISIBLE_ABSENCE_CORRECTION"
+    },
+    "explicit_limits": {
+      "full_v33_port": false,
+      "calibrated_pressure": false,
+      "real_orders_connected": false,
+      "ifood_live_connected": false,
+      "android_physical_tested": false,
+      "hosted_preview_deployed": false,
+      "production_approved": false
+    },
+    "governance": "state_basis updated to contain all tracked src/product changes; G6b gate unchanged and requires rerun",
+    "effect_boundary": "DRAFT_HOLD_NO_MERGE_NO_DEPLOY_NO_PRODUCTION_DB_NO_GPS_NO_SPEND",
+    "next_proof": "Exact-head Q026/Product-UX/PG workflows, then authorized LIVE integration and field pilot"
+  }
+}
