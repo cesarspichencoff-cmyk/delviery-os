@@ -78,9 +78,11 @@ const at="2026-10-12T17:30:00";
 let completed=false;
 try{
  let r=assess(base,at);
- if(r.blockers.length||r.service!=="DINNER")console.log("V731_CI_FAKE_BASELINE_DIAGNOSTIC "+JSON.stringify(r));
- check("fictional prospective time passes schema only, not human authentication",
-  r.blockers.length===0&&r.service==="DINNER");
+ check("valid prospective window still BLOCKED without independent signer authority",
+  r.service===null &&
+  r.blockers.includes("SERVICE_STATE_INDEPENDENT_AUTHORITY_NOT_VERIFIED"));
+ check("no v3 claim may silently bypass mandatory authority HOLD",
+  r.blockers.length===1 && r.evidence==="UNKNOWN");
  r=assess(base,"2026-10-12T16:59:59");
  check("past order blocked even on matching operational date",
   r.blockers.includes("SERVICE_STATE_NOT_YET_EFFECTIVE_FOR_ORDER"));
