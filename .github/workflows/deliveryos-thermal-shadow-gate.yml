@@ -47,6 +47,8 @@ jobs:
         run: node tools/verificar_release_hold_v716.js
       - name: Consumed-rule bytes and engine mutation guard V7.14 (offline only)
         run: node tools/verificar_identidade_bytes_v714.js
+      - name: Exact raw store-shop-order key integrity V7.27 (offline)
+        run: node tools/verificar_identidade_pedido_v727.js
       - name: Positive pinned canonical engine V2 to V6.8 three-way replay V7.22 (offline)
         run: node tools/verificar_cadeia_positiva_v722_offline.js
       - name: Immutable eight-rule subprocess snapshot and lineage guard V7.24 (offline)
