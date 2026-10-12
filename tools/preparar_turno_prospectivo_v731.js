@@ -78,7 +78,17 @@ function transformWatcher(sourceText){
     '    }',
     ''
   );
-  changed=changed.replace(finalAnchor,crossWindow+finalAnchor);
+  // Safety stop: the signed V7.32 verifier is a SEPARATE, read-only module
+  // with no validated Windows service/identity binding yet. Never let a
+  // structurally plausible v3 JSON become operative human authorization.
+  const humanAuthorityHold=lines(
+    '    # Signature review code is NOT connected to this Windows watcher.',
+    '    # No JSON field can promote itself to operator-approved FACT.',
+    '    $blockers += "SERVICE_STATE_INDEPENDENT_AUTHORITY_NOT_VERIFIED"',
+    ''
+  );
+  changed=changed.replace(finalAnchor,
+    crossWindow+humanAuthorityHold+finalAnchor);
   if(changed===before||!changed.includes("SERVICE_STATE_NOT_YET_EFFECTIVE_FOR_ORDER"))
     throw Error("PATCH_FAILED");
   const output=input.slice(0,begin)+changed+
