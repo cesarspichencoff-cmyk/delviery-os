@@ -100,6 +100,19 @@ function lineageMatchesPinnedSources(decision,sources){
   ORIGINS.every(([label,name],i)=>Buffer.isBuffer(sources.get(name))&&
    actual[i]===label+"#sha256="+sha(sources.get(name)));
 }
+// V7.27: bind event key to its three raw SQL order identifiers.
+// A matching event/decision pair alone cannot authenticate a forged key.
+function exactOrderIdentity(event){
+ const order=event?.order;
+ if(!event||!order||event.schema!=="deliveryos.tata-reader-stable-order-event.v1")
+  return false;
+ const fields=["CDFILIAL","CDLOJA","NRCOMANDA"];
+ if(fields.some(k=>typeof order[k]!=="string"||!order[k].length||
+    order[k].length>96||/[|\r\n]/.test(order[k])))
+  return false;
+ return typeof event.order_key==="string"&&
+  event.order_key===[order.CDFILIAL,order.CDLOJA,order.NRCOMANDA].join("|");
+}
 function withoutNodePreloads(environment){
  const copy={...environment};
  // Environment names are case insensitive on Windows. Scrub all spellings.
@@ -144,6 +157,8 @@ function run(argv=process.argv.slice(2)){
   return blocked(["SYNTHETIC_SEQUENCE_FIXTURE_INVALID"],"SOURCE_PREFLIGHT");
  const source=readBound(args["--event"]);
  const event=JSON.parse(source.toString("utf8").replace(/^\uFEFF/,""));
+ if(!exactOrderIdentity(event))
+  return blocked(["EVENT_ORDER_KEY_NOT_BOUND_TO_RAW_IDENTIFIERS"],"SOURCE_PREFLIGHT");
  const consumerSourceDir=path.dirname(args["--consumer"]);
  // Copy every source read by V2, avoiding mixed revisions during its run.
  // These are snapshot bytes, not human approvals or trusted business facts.
@@ -234,4 +249,4 @@ if(require.main===module){
  }
 }
 module.exports={run,parseArgs,readOnlyConsumerResult,
- lineageMatchesPinnedSources,withoutNodePreloads,readBound,RULE_FILES,NO_EFFECTS};
+ lineageMatchesPinnedSources,exactOrderIdentity,withoutNodePreloads,readBound,RULE_FILES,NO_EFFECTS};
