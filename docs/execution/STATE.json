@@ -6,7 +6,7 @@
     "authority_scope": "technical_state",
     "superseded_by": null,
     "atualizado_em": "2026-10-12",
-    "state_basis": "081e54ceed1aef39e023677c044cea8e27b353c1",
+    "state_basis": "acca4a53f6787be4cdc479daff81bd4f3e7584d5",
     "observa": [
       "src/product/",
       "src/perfil-delivery/",
@@ -2415,5 +2415,19 @@
     "governance": "state_basis updated to contain all tracked src/product changes; G6b gate unchanged and requires rerun",
     "effect_boundary": "DRAFT_HOLD_NO_MERGE_NO_DEPLOY_NO_PRODUCTION_DB_NO_GPS_NO_SPEND",
     "next_proof": "Exact-head Q026/Product-UX/PG workflows, then authorized LIVE integration and field pilot"
+  },
+  "entregas_browser_503_recovery_20261012": {
+    "status": "LOCAL_CHROMIUM_18_OF_18_TEST_PASS_CI_PENDING",
+    "candidate_pr": 106,
+    "verified_code_basis": "acca4a53f6787be4cdc479daff81bd4f3e7584d5",
+    "failure_class": "retry_overload_copy_removed_existing_replay_failure_status_and_503_code",
+    "fix": "N13b keeps last timestamped reading, explicitly names 503 and failed retry, retains overload advice, never exposes API path",
+    "proof": {
+      "chrome_windows_foxxy": "ENTREGAS_BROWSER: 18/18 PASS",
+      "previous_red_ci": "38305661091: N13b 17/18",
+      "change_only": "src/product/ui/app.js",
+      "no_prod_network_or_data": true
+    },
+    "next_proof": "Exact-head Product UX CI, Q026 Promotion CI and PG session survival"
   }
 }
