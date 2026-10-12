@@ -11,21 +11,31 @@ const {verifyLiveReaderPairV68}=
  require("../dist/src/production/stableReaderShadowPairV68.js");
 const {run:renderVerifiedOffline,blob}=
  require("./gerar_tres_vias_par_leitor_v68_offline.js");
-const {PACKAGING_SOURCE_SHA256_V78}=
+const {PACKAGING_SOURCE_SHA256_V78,PACKAGING_SOURCE_BLOB_V63}=
  require("../dist/src/production/currentPackagingBridgeV63.js");
 const MANIFEST=path.join(__dirname,
  "../runtime/shadow/thermal-consumer-release-hold.v1.json");
+const RULE_FILES=Object.freeze([
+ "app-data.json","routing.json","printer-map.json","non-production.json",
+ "product-identity-cache-v1.json","product-aliases-v1.json",
+ "human-order-overrides-v1.json"
+]);
+const ORIGINS=Object.freeze([
+ ["tata-academia:installed/packaging-current.js","packaging-current.js"],
+ ["tata-academia:installed/app-data.json","app-data.json"],
+ ...RULE_FILES.slice(1).map(name=>["deliveryos:installed/"+name,name])
+]);
 const NO_EFFECTS=Object.freeze({reader_access:false,database_write:false,
  sequence_binding_write:false,print:false,spooler_write:false,
  deploy:false,fiscal:false,sefaz:false});
 function parseArgs(argv){
  const required=["--event","--consumer","--proof","--motor","--sequence-fixture"];
- if(argv.length!==10)throw Error("FOUR_EXPLICIT_LOCAL_SOURCES_REQUIRED");
+ if(argv.length!==10)throw Error("FIVE_EXPLICIT_LOCAL_SOURCES_REQUIRED");
  const out={};
  for(let i=0;i<argv.length;i+=2){
   if(!required.includes(argv[i])||typeof argv[i+1]!=="string"||
     !argv[i+1]||Object.hasOwn(out,argv[i]))
-   throw Error("FOUR_EXPLICIT_LOCAL_SOURCES_REQUIRED");
+   throw Error("FIVE_EXPLICIT_LOCAL_SOURCES_REQUIRED");
   out[argv[i]]=path.resolve(argv[i+1]);
  }
  if(required.some(k=>!Object.hasOwn(out,k)))
@@ -33,8 +43,8 @@ function parseArgs(argv){
  return out;
 }
 function readBound(file){
- const stat=fs.statSync(file);
- if(!stat.isFile()||stat.size>1024*1024)
+ const stat=fs.lstatSync(file);
+ if(!stat.isFile()||stat.isSymbolicLink()||stat.size>1024*1024)
    throw Error("SOURCE_FILE_BUDGET_EXCEEDED");
  return fs.readFileSync(file);
 }
@@ -53,6 +63,16 @@ function readOnlyConsumerResult(decision,exit){
  return !!effects&&typeof effects==="object"&&!Array.isArray(effects)&&
    Object.keys(effects).length===CONSUMER_EFFECT_KEYS.length&&
    CONSUMER_EFFECT_KEYS.every(k=>Object.hasOwn(effects,k)&&effects[k]===false);
+}
+function lineageMatchesPinnedSources(decision,sources){
+ const a=decision?.rule_lineage?.academy_rule_refs;
+ const d=decision?.rule_lineage?.delivery_rule_refs;
+ if(!Array.isArray(a)||a.length!==2||!Array.isArray(d)||d.length!==6)
+  return false;
+ const actual=[...a,...d];
+ return actual.length===ORIGINS.length&&
+  ORIGINS.every(([label,name],i)=>Buffer.isBuffer(sources.get(name))&&
+   actual[i]===label+"#sha256="+sha(sources.get(name)));
 }
 function withoutNodePreloads(environment){
  const copy={...environment};
@@ -98,12 +118,33 @@ function run(argv=process.argv.slice(2)){
   return blocked(["SYNTHETIC_SEQUENCE_FIXTURE_INVALID"],"SOURCE_PREFLIGHT");
  const source=readBound(args["--event"]);
  const event=JSON.parse(source.toString("utf8").replace(/^\uFEFF/,""));
+ const consumerSourceDir=path.dirname(args["--consumer"]);
+ // Copy every source read by V2, avoiding mixed revisions during its run.
+ // These are snapshot bytes, not human approvals or trusted business facts.
+ const ruleSources=new Map([["packaging-current.js",motorSource]]);
+ for(const name of RULE_FILES)
+  ruleSources.set(name,readBound(path.join(consumerSourceDir,name)));
+ const proofSource=readBound(args["--proof"]);
+ const rendererMotor=readBound(args["--motor"]);
+ if(blob(rendererMotor)!==PACKAGING_SOURCE_BLOB_V63||
+    sha(rendererMotor)!==PACKAGING_SOURCE_SHA256_V78)
+  return blocked(["RENDER_MOTOR_SOURCE_NOT_PINNED"],"SOURCE_PREFLIGHT");
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),"deliveryos-v720-gated-"));
  try{
   // Consumer reads an immutable local COPY of the exact bytes validated
   // downstream. Never trust a separately supplied decision file.
   const eventPath=path.join(dir,"event.json");
   const decisionPath=path.join(dir,"decision.json");
+  const proofPath=path.join(dir,"proof.json");
+  const renderMotorPath=path.join(dir,"render-motor.js");
+  const isolatedDir=path.join(dir,"consumer");
+  fs.mkdirSync(isolatedDir);
+  const isolatedConsumer=path.join(isolatedDir,"consumer.cjs");
+  fs.writeFileSync(isolatedConsumer,code,{flag:"wx"});
+  for(const [name,bytes] of ruleSources)
+   fs.writeFileSync(path.join(isolatedDir,name),bytes,{flag:"wx"});
+  fs.writeFileSync(proofPath,proofSource,{flag:"wx"});
+  fs.writeFileSync(renderMotorPath,rendererMotor,{flag:"wx"});
   fs.writeFileSync(eventPath,source,{flag:"wx"});
   // On Linux the *Windows-formatted* hardcoded path is a relative filename.
   // Only inside this disposable sandbox, provide the explicitly supplied
@@ -113,7 +154,7 @@ function run(argv=process.argv.slice(2)){
   // Prevent NODE_OPTIONS --require / --import and NODE_PATH from
   // preloading unrelated executable JavaScript outside the pinned entry.
   const childEnv=withoutNodePreloads(process.env);
-  const child=spawnSync(process.execPath,[args["--consumer"],eventPath],{
+  const child=spawnSync(process.execPath,[isolatedConsumer,eventPath],{
    encoding:"utf8",timeout:15000,windowsHide:true,maxBuffer:1024*1024,
    env:childEnv,cwd:dir
   });
@@ -125,25 +166,37 @@ function run(argv=process.argv.slice(2)){
   catch{return blocked(["V2_CONSUMER_DECISION_NOT_JSON"],"CONSUMER_EXECUTION");}
   if(!readOnlyConsumerResult(decision,child.status))
    return blocked(["V2_CONSUMER_EFFECT_OR_EXIT_INCONSISTENT"],"CONSUMER_EXECUTION");
+  if(!lineageMatchesPinnedSources(decision,ruleSources))
+   return blocked(["V2_DECISION_SOURCE_LINEAGE_NOT_EXACT_INPUT_BYTES"],"SOURCE_LINEAGE");
   // Reuse the exact V6.8 implementation, with the V2 decision produced
   // by this child process for THIS event, not a cached report envelope.
   const result=verifyLiveReaderPairV68(event,decision);
   if(result.status!=="PAIRED_SOURCE_VERIFIED")
    return blocked(result.reasons);
   // Consumer may not mutate the event on disk after its read.
-  if(sha(readBound(eventPath))!==sha(source)||
-     sha(readBound(args["--event"]))!==sha(source)||
-     sha(readBound(args["--consumer"]))!==sha(code)||
-     sha(readBound(motorPath))!==sha(motorSource)||
-     sha(readBound(args["--sequence-fixture"]))!==sha(seqBytes)||
-     sha(readBound(path.join(dir,sequenceFilename)))!==sha(seqBytes))
+  const snapshotsIntact=sha(readBound(eventPath))===sha(source)&&
+    sha(readBound(args["--event"]))===sha(source)&&
+    sha(readBound(args["--consumer"]))===sha(code)&&
+    sha(readBound(isolatedConsumer))===sha(code)&&
+    sha(readBound(motorPath))===sha(motorSource)&&
+    sha(readBound(args["--sequence-fixture"]))===sha(seqBytes)&&
+    sha(readBound(path.join(dir,sequenceFilename)))===sha(seqBytes)&&
+    sha(readBound(args["--proof"]))===sha(proofSource)&&
+    sha(readBound(proofPath))===sha(proofSource)&&
+    sha(readBound(args["--motor"]))===sha(rendererMotor)&&
+    sha(readBound(renderMotorPath))===sha(rendererMotor)&&
+    RULE_FILES.every(name=>sha(readBound(path.join(consumerSourceDir,name)))===
+      sha(ruleSources.get(name)))&&
+    [...ruleSources].every(([name,bytes])=>
+      sha(readBound(path.join(isolatedDir,name)))===sha(bytes));
+  if(!snapshotsIntact)
    return blocked(["V2_SOURCE_CHANGED_DURING_PIPELINE"],"SNAPSHOT_IDENTITY");
   fs.writeFileSync(decisionPath,JSON.stringify(decision),{flag:"wx"});
   // The existing renderer independently calls projectVerifiedReaderPairV68,
   // verifies source-pinned motor + reconciliation, and rejects partial tickets.
   // It emits ONLY offline preview files; never print/spool/sequence writes.
   return renderVerifiedOffline(["--event",eventPath,"--decision",decisionPath,
-   "--proof",args["--proof"],"--motor",args["--motor"]]);
+   "--proof",proofPath,"--motor",renderMotorPath]);
  }finally{fs.rmSync(dir,{recursive:true,force:true});}
 }
 if(require.main===module){
@@ -154,4 +207,5 @@ if(require.main===module){
   process.exitCode=2;
  }
 }
-module.exports={run,parseArgs,readOnlyConsumerResult,withoutNodePreloads,NO_EFFECTS};
+module.exports={run,parseArgs,readOnlyConsumerResult,
+ lineageMatchesPinnedSources,withoutNodePreloads,RULE_FILES,NO_EFFECTS};
