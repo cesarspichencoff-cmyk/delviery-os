@@ -61,6 +61,8 @@ jobs:
           set -euo pipefail
           npx tsx tests/product/run-q026-leitor-incremental-propriedades.ts | tee q026-properties.log
           grep -F 'Q026_LEITOR_INCREMENTAL_PROPRIEDADES: 9/9 PASS' q026-properties.log
+      - name: Neemo and Teknisa identity audit must not guess correlation
+        run: node tools/verificar_neemo_teknisa_identidade_v1.cjs
       - name: Q016 replay, Product and governance regressions
         run: |
           npm run -s test:platform:q016
