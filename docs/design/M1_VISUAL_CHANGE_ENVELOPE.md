@@ -4,7 +4,7 @@ lifecycle:
   status: ACTIVE
   authority_scope: m1_visual_change_authorization
   superseded_by: null
-  atualizado_em: "2026-10-09"
+  atualizado_em: "2026-10-12"
   state_basis: 642fa1e
   missao: M1A.1 — ponte canônica e estrutural · M1B-R1 · M1B-R2 · exceção Cadeia Real (fora de M1B) · exceção leitura da rua (fora de M1B, 2026-10-09)
 ---
@@ -455,6 +455,33 @@ git -C <worktree-m1> reset --hard f87a36dfd39c9989344f0fed6ebf8db5db1a8c35
 A worktree é dedicada e não tem upstream. Nada foi enviado, mesclado nem publicado.
 Descartar a worktree inteira também é rollback completo: a worktree original
 `deliveryos-hybrid-platform-foundation-v1` é independente e não foi tocada.
+
+### Exceções específicas da entrega unificada — 2026-10-12 — fora de M1B, sem decidir Q-019
+
+A missão de César em 12/10/2026, registrada na [issue #103](https://github.com/cesarspichencoff-cmyk/delviery-os/issues/103), é conectar Copiloto e Entregas no mesmo produto, em branch DRAFT/HOLD e sem depender das Comandas. Este registro reconhece apenas as alterações de apresentação de código já realizadas no [PR #106](https://github.com/cesarspichencoff-cmyk/delviery-os/pull/106), com provas locais. **Não aprova M1B, Q-019, produção, fonte real ou ativação operacional.**
+
+**Classe A — Q026 HTTP 503: apenas um arquivo.**
+
+```text
+src/product/ui/http-leitura.js Q026_HTTP_503_PRESENTATION_ONLY
+```
+
+Exclusivamente interpretação de status HTTP 503, Retry-After limitado e mensagem de falha na interface. Não altera banco, origem de dados, write path, comandos nem credenciais. A falha do teste N13b foi corrigida no PR #106 mantendo a leitura anterior e declarando o 503. Prova local em `acca4a53f6787be4cdc479daff81bd4f3e7584d5`: `ENTREGAS_BROWSER: 18/18 PASS`.
+
+**Classe B — ponte e mapa de cobertura de seis células, somente leitura: quatro arquivos.**
+
+```text
+src/product/viewmodels/copiloto-entregas-leitura.ts COPILOTO_ENTREGAS_SHADOW_READ_ONLY
+src/product/viewmodels/run-copiloto-entregas-leitura-tests.ts COPILOTO_ENTREGAS_SHADOW_READ_ONLY
+src/product/viewmodels/copiloto-celulas-v33.ts COPILOTO_ENTREGAS_SHADOW_READ_ONLY
+src/product/viewmodels/run-copiloto-celulas-v33-tests.ts COPILOTO_ENTREGAS_SHADOW_READ_ONLY
+```
+
+Esses arquivos reutilizam a porta de realidade de Entregas já existente e mostram apenas cobertura de Caixa, Sushi, Quentes, Cozinha, Conferência e Entregas. Dados ausentes nunca viram saúde, fila, pressão, cores ou números inventados. Histórico real não demonstra viagens ativas, GPS ou atraso; modo simulado não se torna real. **V3.3 parcial**, sem motor operacional LIVE ou ação. Provas locais: células `7/7`, leitura `6/6`, HTTP e Chromium 390 px PASS. Nenhum novo SQL/collector/consumer.
+
+**Fronteira da exceção:** C6e/C6f devem aceitar SOMENTE as cinco linhas acima com caminho e classe exatos, e demonstrar controles negativos de linha ausente, classe errada e caminho alheio. Nenhuma exceção de diretório ou prefixo, nenhuma ampliação de `AUTHORIZED_PATHS`. A exceção de HTTP não serve para um view model; a do Copiloto não serve para HTTP. Os **12 caminhos antigos de Q-019 permanecem fora dessas classes**, no estado aberto, sem reancorar baseline, sem alterar o classificador `run-sem-fail-novo.ts` e sem declarar aprovação humana inexistente.
+
+A continuidade genérica da missão autoriza execução reversível em DRAFT, **não é aceite final de alteração visual, Q-019, M1B, merge, deploy, Android físico ou operação**. Rollback: remover este registro e seus controles C6e/C6f; o código permanece isolado no PR até revisão.
 
 ---
 
