@@ -51,6 +51,8 @@ jobs:
         run: node tools/verificar_cadeia_positiva_v722_offline.js
       - name: Immutable eight-rule subprocess snapshot and lineage guard V7.24 (offline)
         run: node tools/verificar_snapshot_fontes_v724_offline.js
+      - name: Bounded fd source read symlink FIFO and mutation guard V7.25 (offline)
+        run: node tools/verificar_fd_source_v725_offline.js
       - name: Passive Windows audit script contract V7.23 (static, no Windows)
         run: node tools/verificar_auditoria_servico_windows_v723.js
       - name: Parse passive Windows audit PowerShell V7.23 without executing it
