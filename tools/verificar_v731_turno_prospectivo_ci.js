@@ -67,6 +67,7 @@ const at="2026-10-12T17:30:00";
 let completed=false;
 try{
  let r=assess(base,at);
+ if(r.blockers.length||r.service!=="DINNER")console.log("V731_CI_FAKE_BASELINE_DIAGNOSTIC "+JSON.stringify(r));
  check("fictional prospective time passes schema only, not human authentication",
   r.blockers.length===0&&r.service==="DINNER");
  r=assess(base,"2026-10-12T16:59:59");
