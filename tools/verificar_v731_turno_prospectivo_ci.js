@@ -1,7 +1,8 @@
 "use strict";
 /**
  * Windows CI: isolated reproduction of installed watcher v2 shift function
- * against fictional v3 state. No SQL, service, print or live watcher execution.
+ * against fictional v3 state on Windows PowerShell 5.1, matching the
+ * installed supervisor child. No SQL, service, print or watcher execution.
  * The fixture is the repository's v1 shift function, confirmed structurally
  * equal to the v2 installed shift function in passive inspection (12 Oct).
  */
@@ -44,7 +45,7 @@ function assess(state,at){
  "$r=Read-ServiceState $stamp",
  "$r | ConvertTo-Json -Depth 8 -Compress"
  ].join("\n");
- const response=spawnSync("pwsh",["-NoProfile","-NonInteractive","-EncodedCommand",
+ const response=spawnSync("powershell.exe",["-NoProfile","-NonInteractive","-EncodedCommand",
   Buffer.from(script,"utf16le").toString("base64")],{
     encoding:"utf8",timeout:15000,maxBuffer:65536,windowsHide:true
   });
