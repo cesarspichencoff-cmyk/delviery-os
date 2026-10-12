@@ -92,7 +92,7 @@ function extractShiftFunction(sourceText){
  const start=norm.indexOf(WATCHER_SHIFT_START);
  const end=norm.indexOf(WATCHER_SHIFT_END,start);
  if(start<0||end<0)throw Error("SHIFT_FUNCTION_NOT_FOUND");
- return norm.slice(start,end+2);
+ return norm.slice(start,end+WATCHER_SHIFT_END.length);
 }
 function prepare(argv){
  if(argv.length!==4||argv[0]!=="--source"||argv[2]!=="--output-dir")
