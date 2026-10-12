@@ -268,7 +268,10 @@ async function relerSemApagar(alvo) {
     aviso.dataset.estado = "falhou";
     const sobrecarga = rota === "/entregas" ? mensagemDeSobrecarga(e, true) : null;
     if (sobrecarga) {
-      aviso.textContent = ` ${sobrecarga} Última leitura: ${rua.dataset.lidaAs}.`;
+      // A sobrecarga é explicada em linguagem operacional, mas a falha da
+      // releitura e o status observado continuam explícitos. A tela mantém
+      // a leitura anterior, sem inventar zero e sem expor URLs/infraestrutura.
+      aviso.textContent = `Nao foi possivel ler de novo (o servidor respondeu 503). Última leitura: ${rua.dataset.lidaAs}. ${sobrecarga}`;
     } else {
       const motivo = e && e.status ? `o servidor respondeu ${e.status}` : "sem resposta do servidor";
       aviso.textContent = `Nao foi possivel ler de novo (${motivo}). Esta continua sendo a leitura das ${rua.dataset.lidaAs}, e segue envelhecendo.`;
