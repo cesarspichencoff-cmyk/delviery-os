@@ -148,3 +148,24 @@ jobs:
         # Both remain hard failures; no continue-on-error, printer or spooler.
         if: ${{ !cancelled() }}
         run: node tools/verificar_matriz_escpos_v511.js
+
+  windows-single-shadow-v730:
+    name: Windows CI V730 V2 to V6.8 three vias (no service, no print)
+    runs-on: windows-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout candidate, no production checkout
+        uses: actions/checkout@v4
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Locked dependencies, no lifecycle scripts
+        run: npm ci --ignore-scripts
+      - name: Compile production modules for isolated test
+        run: npm run build
+      - name: Actual Windows V2 subprocess to V6.8 and three in-memory vias
+        run: node tools/verificar_v730_windows_ci.js
