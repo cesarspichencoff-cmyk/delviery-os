@@ -27,6 +27,16 @@ async function main(): Promise<void> {
     assert.equal(res.status, 200);
     const data = await res.json() as {
       modulo?: string;
+      celulas_operacionais?: {
+        modo?: string;
+        celulas?: Array<{
+          nome: string;
+          estado: string;
+          pressao: unknown;
+          cor_operacional: unknown;
+          fila: unknown;
+        }>;
+      };
       entregas_observadas?: {
         estado?: string;
         unidade_solicitada?: string;
@@ -43,6 +53,13 @@ async function main(): Promise<void> {
     assert.equal(data.entregas_observadas?.historico_sem_modo, null);
     assert.equal(data.entregas_observadas?.fonte, null);
     assert.deepEqual(data.entregas_observadas?.grupos, []);
+    assert.equal(data.celulas_operacionais?.modo, "somente_leitura_sem_motor_operacional");
+    assert.deepEqual(data.celulas_operacionais?.celulas?.map(c => c.nome), [
+      "Caixa", "Sushi", "Quentes", "Cozinha", "Conferência", "Entregas",
+    ]);
+    assert.ok(data.celulas_operacionais?.celulas?.every(c =>
+      c.estado === "nao_conectada" && c.pressao === null &&
+      c.cor_operacional === null && c.fila === null));
     assert.equal((await fetch(host + "/api/entregas")).status, 200);
     assert.equal((await fetch(host + "/api/copiloto", { method: "POST" })).status, 405);
 
@@ -63,6 +80,12 @@ async function main(): Promise<void> {
     assert.match(shown, /Entregas · leitura compartilhada/);
     assert.match(shown, /A fonte da plataforma ainda não foi configurada/);
     assert.doesNotMatch(shown, /viagens na projeção histórica/);
+    assert.match(shown, /Células operacionais · cobertura/);
+    for (const nome of ["Caixa", "Sushi", "Quentes", "Cozinha", "Conferência", "Entregas"]) {
+      assert.match(shown, new RegExp(nome));
+    }
+    assert.match(shown, /Fonte não conectada/);
+    assert.doesNotMatch(shown, /Caixa.*sobrecarregad[oa]/i);
     assert.deepEqual(errors, []);
 
     console.log("COPILOTO_ENTREGAS_HTTP_BROWSER=PASS localhost-only no-db no-write 390x844");
