@@ -39,14 +39,40 @@ function parseArgs(argv){
   out[argv[i]]=path.resolve(argv[i+1]);
  }
  if(required.some(k=>!Object.hasOwn(out,k)))
-   throw Error("FOUR_EXPLICIT_LOCAL_SOURCES_REQUIRED");
+   throw Error("FIVE_EXPLICIT_LOCAL_SOURCES_REQUIRED");
  return out;
 }
+// V7.25: establish source identity on the OPEN descriptor, not on a
+// pathname checked before a second open (lstat/readFile TOCTOU).
+// O_NOFOLLOW rejects a leaf symlink even if it is swapped into place before
+// open; O_NONBLOCK avoids hanging on a substituted FIFO. Read only bytes
+// declared by the original fstat, then verify same open inode/metadata.
+// These safeguards apply only to this Linux-only offline entrypoint.
+const SOURCE_MAX_BYTES=1024*1024;
 function readBound(file){
- const stat=fs.lstatSync(file);
- if(!stat.isFile()||stat.isSymbolicLink()||stat.size>1024*1024)
+ let fd;
+ try{
+  fd=fs.openSync(file,fs.constants.O_RDONLY|fs.constants.O_NOFOLLOW|
+   fs.constants.O_NONBLOCK);
+  const before=fs.fstatSync(fd);
+  if(!before.isFile()||before.size>SOURCE_MAX_BYTES||before.size<0)
    throw Error("SOURCE_FILE_BUDGET_EXCEEDED");
- return fs.readFileSync(file);
+  const bytes=Buffer.alloc(before.size);
+  let position=0;
+  while(position<bytes.length){
+   const n=fs.readSync(fd,bytes,position,bytes.length-position,position);
+   if(n<=0)throw Error("SOURCE_FILE_CHANGED_DURING_READ");
+   position+=n;
+  }
+  const after=fs.fstatSync(fd);
+  if(!after.isFile()||after.size!==before.size||
+     after.ino!==before.ino||after.dev!==before.dev||
+     after.mtimeMs!==before.mtimeMs||after.ctimeMs!==before.ctimeMs)
+   throw Error("SOURCE_FILE_CHANGED_DURING_READ");
+  return bytes;
+ }finally{
+  if(fd!==undefined)fs.closeSync(fd);
+ }
 }
 function sha(bytes){
  return crypto.createHash("sha256").update(bytes).digest("hex");
@@ -208,4 +234,4 @@ if(require.main===module){
  }
 }
 module.exports={run,parseArgs,readOnlyConsumerResult,
- lineageMatchesPinnedSources,withoutNodePreloads,RULE_FILES,NO_EFFECTS};
+ lineageMatchesPinnedSources,withoutNodePreloads,readBound,RULE_FILES,NO_EFFECTS};
