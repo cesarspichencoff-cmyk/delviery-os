@@ -131,7 +131,11 @@ function assertRejectCase(label,mutator,expectedReason=null){
   assert.equal(response.status,2,label+" must fail closed: "+response.stdout.slice(0,1200));
   const blocked=JSON.parse(response.stdout);
   assert.equal(blocked.status,"BLOCKED",label);
-  assert.deepEqual(blocked.outputs,[],label);
+  // The V6.8 renderer has a second safe BLOCKED envelope with no
+  // 'outputs' property, unlike the entrypoint's explicit empty array.
+  assert.ok(!blocked.outputs||(Array.isArray(blocked.outputs)&&
+   blocked.outputs.length===0),label+" leaked outputs");
+  assert.equal(blocked.proof_dir,undefined,label+" wrote preview");
   assert.equal(blocked.effects.print,false,label);
   assert.equal(blocked.effects.spooler_write,false,label);
   if(expectedReason)
