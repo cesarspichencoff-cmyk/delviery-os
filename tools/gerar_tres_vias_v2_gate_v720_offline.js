@@ -54,20 +54,20 @@ function readBound(file){
  try{
   fd=fs.openSync(file,fs.constants.O_RDONLY|fs.constants.O_NOFOLLOW|
    fs.constants.O_NONBLOCK);
-  const before=fs.fstatSync(fd);
-  if(!before.isFile()||before.size>SOURCE_MAX_BYTES||before.size<0)
+  const before=fs.fstatSync(fd,{bigint:true});
+  if(!before.isFile()||before.size>BigInt(SOURCE_MAX_BYTES)||before.size<0n)
    throw Error("SOURCE_FILE_BUDGET_EXCEEDED");
-  const bytes=Buffer.alloc(before.size);
+  const bytes=Buffer.alloc(Number(before.size));
   let position=0;
   while(position<bytes.length){
    const n=fs.readSync(fd,bytes,position,bytes.length-position,position);
    if(n<=0)throw Error("SOURCE_FILE_CHANGED_DURING_READ");
    position+=n;
   }
-  const after=fs.fstatSync(fd);
+  const after=fs.fstatSync(fd,{bigint:true});
   if(!after.isFile()||after.size!==before.size||
      after.ino!==before.ino||after.dev!==before.dev||
-     after.mtimeMs!==before.mtimeMs||after.ctimeMs!==before.ctimeMs)
+     after.mtimeNs!==before.mtimeNs||after.ctimeNs!==before.ctimeNs)
    throw Error("SOURCE_FILE_CHANGED_DURING_READ");
   return bytes;
  }finally{
