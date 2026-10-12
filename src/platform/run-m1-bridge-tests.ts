@@ -702,9 +702,14 @@ teste("C6f Copiloto Entregas shadow: quatro caminhos exatos, controles negativos
     "src/product/ui/http-leitura.js",
     "src/product/ui/surfaces/operacao-viva.js",
   ]) {
+    // Para testar o outro tipo, retire PRIMEIRO a autorizacao propria dele.
+    // Uma autorizacao valida preexistente nao pode esconder uma mutacao cruzada.
+    const semClassePropria = env.split("\n")
+      .filter((l) => !(l.trim() === outro + " " + CLASSE_Q026_HTTP_503))
+      .join("\n");
     assert.deepEqual(
-      foraDoEnvelope([outro], env + "\n" + outro + " " + CLASSE_COPILOTO_SHADOW, autorizados),
-      [outro].filter((p) => !EXCECAO_Q026_HTTP_503.includes(p) || !linhaExata(env, p, CLASSE_Q026_HTTP_503)),
+      foraDoEnvelope([outro], semClassePropria + "\n" + outro + " " + CLASSE_COPILOTO_SHADOW, autorizados),
+      [outro],
       "outra rota ganhou permissao por classe Copiloto: " + outro,
     );
   }
