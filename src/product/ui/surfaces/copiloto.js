@@ -152,6 +152,47 @@ function historicoCopiloto(h) {
   );
 }
 
+/**
+ * O Copiloto mostra a MESMA projeção de viagens da tela Entregas.
+ * Ela é evidência da fonte, não nova conclusão do motor e não gera Foco.
+ * Nenhum ID de aparelho, motoboy, cliente, pedido ou GPS é transportado.
+ */
+function leituraEntregasCompartilhada(o) {
+  if (!o || typeof o !== "object") {
+    return secao(
+      "Entregas · leitura compartilhada",
+      "Esta versão do Copiloto ainda não recebeu uma leitura de Entregas.",
+      "<p class=\"secao__sub\">Integração não comprovada nesta resposta.</p>",
+    );
+  }
+
+  const rotulos = { real: "real", simulated: "simulado", control: "controle" };
+  const disponivel = o.estado === "observado" || o.estado === "sem_evidencia";
+  const grupos = Array.isArray(o.grupos) ? o.grupos : [];
+  const linhas = disponivel && o.estado === "observado"
+    ? `<ul class="lista-operacional">${grupos.map((g) =>
+        `<li class="fonte-linha"><span class="fonte-linha__id">${esc(g.unit_id)}</span>
+          <span class="campo__valor">${esc(rotulos[g.source_mode] || "modo desconhecido")}</span>
+          <span class="campo__valor">${esc(String(g.viagens_na_projecao))} viagens na projeção histórica</span></li>`
+      ).join("")}</ul>`
+    : "<p class=\"secao__sub\">Nenhuma contagem operacional confirmada.</p>";
+
+  return secao(
+    "Entregas · leitura compartilhada",
+    "Mesma fonte de Entregas, separada do cenário de demonstração. Isso não mede viagens ativas, atraso ou capacidade.",
+    `<p class="secao__sub">${esc(o.motivo || "Leitura não disponível.")}</p>
+      ${linhas}
+      <div class="grade" data-colunas="2">
+        ${campo("Fonte", disponivel
+          ? { observado: true, valor: "platform.event_log" }
+          : { observado: false, motivo: "integracao_pendente", explicacao: "Fonte não disponível." }, { tecnico: true })}
+        ${campo("Lida em", disponivel && o.lida_em
+          ? { observado: true, valor: o.lida_em }
+          : { observado: false, motivo: "nao_observado", explicacao: "Não foi possível observar o instante da leitura." }, { tecnico: true })}
+      </div>`,
+  );
+}
+
 export function telaCopiloto(vm) {
   const corpoAtivas = vm.sem_recomendacao_sustentada
     ? estadoTela(
@@ -214,6 +255,8 @@ export function telaCopiloto(vm) {
         ${campo("Controles de acao", { observado: true, valor: vm.fronteira_acao_humana.actions_exposed ? "expostos" : "nao expostos" }, { tecnico: true })}
       </div><p class="rec-card__sombra">CONTRACT PREPARED · nenhuma solicitacao de acao pode sair desta tela enquanto identidade + permissao + escopo + executor + auditoria nao estiverem provados.</p>`,
     )}
+
+    ${leituraEntregasCompartilhada(vm.entregas_observadas)}
 
     ${secao(
       "Propostas ativas",

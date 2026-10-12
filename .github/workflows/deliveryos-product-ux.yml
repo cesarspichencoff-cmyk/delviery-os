@@ -11,7 +11,7 @@ name: deliveryos-product-ux
 
 on:
   push:
-    branches: [feat/claude-product-ux-autonomous-20261009, integration/deliveryos-product-ux-android-20261009, feat/deliveryos-itaim-db-error-boundary-20261009, integration/deliveryos-q025-review-20261009]
+    branches: [feat/claude-product-ux-autonomous-20261009, integration/deliveryos-product-ux-android-20261009, feat/deliveryos-itaim-db-error-boundary-20261009, integration/deliveryos-q025-review-20261009, integration/copiloto-entregas-readonly-20261012]
   workflow_dispatch:
 
 permissions:
@@ -43,6 +43,10 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npx tsc --noEmit
       - run: npm run -s build:platform
+      - name: Copiloto le a mesma projecao de Entregas (sem comando ou PII)
+        run: npx tsx src/product/viewmodels/run-copiloto-entregas-leitura-tests.ts
+      - name: Copiloto e Entregas no mesmo HTTP real + Chromium 390
+        run: npx tsx tests/product/run-copiloto-entregas-http-browser.ts
       - name: leitura da rua (view model + superficie)
         run: npx tsx tests/product/run-entregas-leitura-da-rua-tests.ts
       - name: navegador (dobra, teclado, idade da leitura, contraste, movimento reduzido)
