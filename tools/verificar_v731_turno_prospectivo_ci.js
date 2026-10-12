@@ -66,9 +66,9 @@ function assess(state,at){
 const base={
  schema:"deliveryos.production-service-shift-state.v3",
  store_id:"0001",operational_date:"2026-10-12",
- service:"DINNER",evidence:"HUMAN_CONFIRMED_RULE",
- source_ref:"fixture:fictional-untrusted-human-claim",
- confirmed_at_local:"2026-10-12T16:59:59",
+ service:"DINNER",evidence:"REAL_OBSERVED",
+ source_ref:"fixture:fictional-observed-source",
+ source_observed_at_local:"2026-10-12T16:59:59",
  valid_from_local:"2026-10-12T17:00:00",
  valid_until_local:"2026-10-12T22:00:00",
  clock_inference_used:false,
@@ -78,26 +78,30 @@ const at="2026-10-12T17:30:00";
 let completed=false;
 try{
  let r=assess(base,at);
- check("valid prospective window still BLOCKED without independent signer authority",
-  r.service===null &&
-  r.blockers.includes("SERVICE_STATE_INDEPENDENT_AUTHORITY_NOT_VERIFIED"));
- check("no v3 claim may silently bypass mandatory authority HOLD",
-  r.blockers.length===1 && r.evidence==="UNKNOWN");
+ check("valid observed source and prospective window pass semantic check only",
+  r.service==="DINNER" && r.blockers.length===0 &&
+  r.evidence==="REAL_OBSERVED");
+ check("no signature or operator identity required to resolve the fixture",
+  !Object.hasOwn(base,"signature_base64") &&
+  !Object.hasOwn(base,"operator_ref") && !Object.hasOwn(r,"signature"));
  r=assess(base,"2026-10-12T16:59:59");
  check("past order blocked even on matching operational date",
   r.blockers.includes("SERVICE_STATE_NOT_YET_EFFECTIVE_FOR_ORDER"));
  r=assess({...base,valid_from_local:"2026-10-12T16:00:00"},at);
- check("backdated valid-from before declared confirmation rejected",
-  r.blockers.includes("SERVICE_STATE_RETROACTIVE_WINDOW_FORBIDDEN"));
+ check("backdated valid-from before observed source time rejected",
+  r.blockers.includes("SERVICE_STATE_BACKDATED_BEFORE_SOURCE_OBSERVATION"));
  r=assess({...base,valid_from_local:null},at);
  check("missing start window blocked",
   r.blockers.includes("SERVICE_STATE_VALID_FROM_REQUIRED"));
- r=assess({...base,confirmed_at_local:null},at);
- check("missing confirmed-at blocked",
-  r.blockers.includes("SERVICE_STATE_CONFIRMED_AT_REQUIRED"));
+ r=assess({...base,source_observed_at_local:null},at);
+ check("missing source observation time blocked",
+  r.blockers.includes("SERVICE_STATE_SOURCE_OBSERVED_AT_REQUIRED"));
  r=assess({...base,schema:"deliveryos.production-service-shift-state.v2"},at);
  check("legacy state never silently acquires v3 authority",
   r.blockers.includes("SERVICE_STATE_SCHEMA_MISMATCH"));
+ r=assess({...base,evidence:"HUMAN_CONFIRMED_RULE"},at);
+ check("unobserved human assertion alone is not operational source evidence",
+  r.blockers.includes("SERVICE_STATE_EVIDENCE_REQUIRED"));
  r=assess({...base,valid_until_local:"2026-10-12T17:15:00"},at);
  check("expired upper window blocked",
   r.blockers.includes("SERVICE_STATE_EXPIRED_FOR_ORDER"));
