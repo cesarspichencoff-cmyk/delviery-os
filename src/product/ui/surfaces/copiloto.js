@@ -193,6 +193,48 @@ function leituraEntregasCompartilhada(o) {
   );
 }
 
+/**
+ * As seis células do V3.3 são um mapa de COBERTURA de fontes nesta etapa.
+ * Não são indicadores de saúde, pressão ou ambiente: isso exige o motor e
+ * eventos por praça devidamente observados. Não inserir botões.
+ */
+function coberturaCelulasV33(c) {
+  if (!c || c.modo !== "somente_leitura_sem_motor_operacional" || !Array.isArray(c.celulas)) {
+    return secao(
+      "Células operacionais · cobertura",
+      "As seis áreas do V3.3 ainda não foram recebidas nesta versão.",
+      '<p class="secao__sub">Leitura de fontes indisponível; sem diagnóstico de pressão.</p>',
+    );
+  }
+  const modoLabel = { real: "real", simulated: "simulado", control: "controle" };
+  const lista = c.celulas.map(a => {
+    const comHistorico = a.estado === "historico_real_parcial" || a.estado === "historico_sintetico";
+    const origem = Array.isArray(a.modos) && a.modos.length
+      ? '<span class="campo__valor--tecnico">Modos: ' +
+        a.modos.map(m => esc(modoLabel[m] || "desconhecido")).join(", ") + '</span>'
+      : '';
+    const classe = comHistorico ? "parcial" : "indisponivel";
+    const rotulo = a.estado === "historico_real_parcial"
+      ? "Histórico real parcial"
+      : a.estado === "historico_sintetico"
+        ? "Apenas histórico simulado"
+        : a.estado === "sem_evidencia"
+          ? "Sem evidência neste recorte"
+          : "Fonte não conectada";
+    return '<li class="fonte-linha">' +
+      '<span class="fonte-linha__id">' + esc(a.nome) + '</span>' +
+      selo({ estado: classe, detalhe: rotulo }) +
+      '<span class="campo__valor">' + esc(a.descricao) + '</span>' +
+      origem + '</li>';
+  }).join("");
+  return secao(
+    "Células operacionais · cobertura",
+    "Caixa, Sushi, Quentes, Cozinha, Conferência e Entregas. O mapa vem do V3.3; o motor de pressão ainda não está conectado aqui.",
+    '<ul class="lista-operacional">' + lista +
+      '</ul><p class="rec-card__sombra">Cobertura de fontes, não situação operacional. Sem pressão, cor de saúde, fila inferida ou comando.</p>',
+  );
+}
+
 export function telaCopiloto(vm) {
   const corpoAtivas = vm.sem_recomendacao_sustentada
     ? estadoTela(
@@ -257,6 +299,8 @@ export function telaCopiloto(vm) {
     )}
 
     ${leituraEntregasCompartilhada(vm.entregas_observadas)}
+
+    ${coberturaCelulasV33(vm.celulas_operacionais)}
 
     ${secao(
       "Propostas ativas",
