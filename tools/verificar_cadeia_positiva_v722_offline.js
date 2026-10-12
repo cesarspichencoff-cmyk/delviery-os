@@ -167,6 +167,66 @@ try{
  }
  fs.rmSync(got.proof_dir,{recursive:true,force:true});
  console.log("PASS V7.22 pinned actual engine + actual V2 child + V6.8 + two station SVGs + conference");
+ // V7.30: same single-event fixture, same real V2 candidate, same
+ // V6.8 implementation and Figma/ESC-POS renderer, WITHOUT service/print.
+ // This test uses Linux temp state; it is not Windows isolation proof.
+ const v730=require("./gerar_vias_reader_v730_shadow.js");
+ const sandboxSequence=path.join(temp,
+   "C:\\ProgramData\\TataComandaReader\\state\\tata-sequence-state.json");
+ fs.copyFileSync(path.join(temp,"sequence.json"),sandboxSequence);
+ const v730Args=["--event",path.join(temp,"event.json"),
+   "--consumer",path.join(consumerDir,"consumer.cjs"),
+   "--proof",path.join(temp,"proof.json"),
+   "--motor",SOURCE,"--sandbox-root",temp];
+ const pass730=v730.run(v730Args);
+ assert.equal(pass730.ok,true,"V730 must prove real subprocess chain: "+
+   JSON.stringify(pass730.report));
+ assert.equal(pass730.report.status,"SHADOW_THREE_VIAS_IN_MEMORY_NO_PRINT");
+ assert.equal(pass730.report.vias.length,3);
+ assert.equal(pass730.report.effects.print,false);
+ assert.equal(pass730.report.effects.spooler_write,false);
+ assert.equal(pass730.report.service_hook_installed,false);
+ assert.equal(pass730.report.windows_isolation_proven,false);
+ console.log("PASS V7.30 one-shot V2 -> V6.8 -> three in-memory vias");
+ const sourceEventPath=path.join(temp,"event.json");
+ const originalEvent=fs.readFileSync(sourceEventPath);
+ try {
+   const ev=JSON.parse(originalEvent);
+   ev.ready_for_downstream_shadow=false;
+   ev.blockers=["SERVICE_STATE_EXPIRED_FOR_ORDER"];
+   textJson(sourceEventPath,ev);
+   const held=v730.run(v730Args);
+   assert.equal(held.ok,false);
+   assert.deepEqual(held.report.reasons,["UPSTREAM_WATCHER_BLOCKED"]);
+   assert.deepEqual(held.report.vias,[]);
+   assert.equal(held.report.effects.print,false);
+   console.log("PASS V7.30 expired shift cannot execute downstream projection");
+   ev.ready_for_downstream_shadow=true;
+   ev.blockers=[];
+   ev.order_key="FORGED|ORDER|KEY";
+   textJson(sourceEventPath,ev);
+   const mismatch=v730.run(v730Args);
+   assert.equal(mismatch.ok,false);
+   assert.deepEqual(mismatch.report.reasons,
+     ["EVENT_IDENTITY_NOT_BOUND_TO_RAW_KEYS"]);
+   console.log("PASS V7.30 fake order key rejected before consumer");
+ }finally{fs.writeFileSync(sourceEventPath,originalEvent);}
+ const sourceConsumerPath=path.join(consumerDir,"consumer.cjs");
+ const consumerOriginal=fs.readFileSync(sourceConsumerPath);
+ try {
+   fs.appendFileSync(sourceConsumerPath,"\n//unapproved-modification");
+   const drift=v730.run(v730Args);
+   assert.equal(drift.ok,false);
+   assert.deepEqual(drift.report.reasons,["V2_EXECUTABLE_NOT_PINNED"]);
+   assert.equal(drift.report.effects.spooler_write,false);
+   console.log("PASS V7.30 consumer drift blocks subprocess before execution");
+ }finally{fs.writeFileSync(sourceConsumerPath,consumerOriginal);}
+ const noProof=v730.run(v730Args.concat(["--proof",path.join(temp,"not-found")]));
+ assert.equal(noProof.ok,false);
+ assert.deepEqual(noProof.report.vias,[]);
+ console.log("PASS V7.30 duplicate input rejected and produces no preview");
+ console.log("THERMAL_SINGLE_SHADOW_V730=5/5 ONE_SHOT NO_PRINT NO_INSTALL");
+
  // Routing is recomputed by the real V2 child, but MUST agree independently
  // with the reconciled production source. A matching V2 lineage is not enough.
  const routingPath=path.join(consumerDir,"routing.json");
