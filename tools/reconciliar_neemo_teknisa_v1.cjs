@@ -8,7 +8,7 @@
  */
 const fs = require("node:fs");
 
-const VERSION = "neemo-teknisa-correlation-review.v1";
+const VERSION = "neemo-teknisa-correlation-review.v1.1";
 const DIGEST = /^[a-f0-9]{64}$/i;
 const ID = /^[A-Za-z0-9_.:|-]{1,128}$/;
 const TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/;
@@ -24,8 +24,12 @@ function instant(x) { if(typeof x !== "string" || !TIME.test(x) || !Number.isFin
 function key(arr) { return JSON.stringify(arr); }
 function validateList(a) { if(!Array.isArray(a) || a.length > 1000) throw Error("LIST_INVALID"); }
 function validateTeknisa(t) {
-  shape(t,["unit_id","order_key","revision","snapshot_sha256","observed_at"]);
-  textId(t.unit_id);textId(t.order_key);textId(t.revision);digest(t.snapshot_sha256);instant(t.observed_at);
+  shape(t,["unit_id","origin_code","order_key","revision","snapshot_sha256","observed_at"]);
+  textId(t.unit_id);
+  // Auditor exclusivo Neemo: rejeitar iFood, ForSale e canal desconhecido.
+  // NRCOMANDAEXT preenchido nao comprova origem comercial.
+  if(t.origin_code!=="DLV_NMO")throw Error("TEKNISA_NON_NEEMO_ORIGIN_HOLD");
+  textId(t.order_key);textId(t.revision);digest(t.snapshot_sha256);instant(t.observed_at);
 }
 function validateNeemo(n) {
   shape(n,["unit_id","order_id","revision","observed_at"]);
