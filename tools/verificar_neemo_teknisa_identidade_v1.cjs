@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 const {audit,VERSION} = require("./reconciliar_neemo_teknisa_v1.cjs");
 const D = "a".repeat(64), E="b".repeat(64), D2="c".repeat(64);
 const teknisa=(key="T.10", rev="R1", digest=D,unit="ITAIM")=>
-  ({unit_id:unit,order_key:key,revision:rev,snapshot_sha256:digest,observed_at:"2026-10-12T15:00:00-03:00"});
+  ({unit_id:unit,origin_code:"DLV_NMO",order_key:key,revision:rev,snapshot_sha256:digest,observed_at:"2026-10-12T15:00:00-03:00"});
 const neemo=(id="N.20",rev="V1",unit="ITAIM")=>
   ({unit_id:unit,order_id:id,revision:rev,observed_at:"2026-10-12T15:02:00-03:00"});
 const link=(t="T.10",n="N.20",tRev="R1",nRev="V1",unit="ITAIM",hash=D)=>
@@ -74,4 +74,30 @@ test("NI12 no link authorized to start Trip, print or claim operations",()=>{
   assert.equal(r.permits_printing,false);
   assert.equal(r.permits_operational_claim,false);
 });
-console.log("NEEMO_TEK_CORRELATION_REVIEW="+ok+"/12 PASS (SYNTHETIC_ONLY)");
+test("NI13 codigo de origem iFood nao pode entrar em vinculacao Neemo",()=>{
+  assert.throws(
+    ()=>audit(input([{...teknisa(),origin_code:"DLV_IFO"}])),
+    /TEKNISA_NON_NEEMO_ORIGIN_HOLD/,
+  );
+});
+test("NI14 ForSale tambem nao pode ser promovido a Neemo",()=>{
+  assert.throws(
+    ()=>audit(input([{...teknisa(),origin_code:"DLV_FOS"}])),
+    /TEKNISA_NON_NEEMO_ORIGIN_HOLD/,
+  );
+});
+test("NI15 origem ausente ou inventada falha fechado",()=>{
+  const faltando={...teknisa()};delete faltando.origin_code;
+  assert.throws(()=>audit(input([faltando])),/SCHEMA_INVALID/);
+  assert.throws(
+    ()=>audit(input([{...teknisa(),origin_code:"DLV_NMO_FALSO"}])),
+    /TEKNISA_NON_NEEMO_ORIGIN_HOLD/,
+  );
+});
+test("NI16 referencia externa sozinha nao valida Neemo",()=>{
+  assert.throws(
+    ()=>audit(input([{...teknisa(),NRCOMANDAEXT:"123"}])),
+    /SCHEMA_INVALID/,
+  );
+});
+console.log("NEEMO_TEK_CORRELATION_REVIEW="+ok+"/16 PASS (SYNTHETIC_ONLY)");
