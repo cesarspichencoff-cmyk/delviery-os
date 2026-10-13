@@ -76,6 +76,11 @@ export interface PilotSnapshot {
   features: PilotConfig["features"];
 }
 
+// Narrowing do valor persistido: strings arbitrarias nunca viram Channel.
+function canalProprioValidado(v: string | undefined): "proprio" | "app" | undefined {
+  return v === "proprio" || v === "app" ? v : undefined;
+}
+
 export class PilotApplicationFacade {
   private uow: UnitOfWork;
   private readonly storage: PilotUnitOfWorkSource;
@@ -284,13 +289,13 @@ export class PilotApplicationFacade {
             ...full,
             deliveries: full.deliveries.map((d) => ({
               ...d,
-              channel: stored.get(d.order_ref) ?? d.channel,
+              channel: canalProprioValidado(stored.get(d.order_ref)) ?? d.channel,
             })),
           };
         } else {
           validated = {
             ...full,
-            channel: stored.get(full.order_ref) ?? full.channel,
+            channel: canalProprioValidado(stored.get(full.order_ref)) ?? full.channel,
           };
         }
       }
