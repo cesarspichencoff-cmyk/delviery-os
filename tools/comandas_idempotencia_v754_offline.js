@@ -25,7 +25,7 @@ function fresh(){return {schema:SCHEMA,revision:0,entries:[]};}
 function validLedger(s){
  if(!s||s.schema!==SCHEMA||!Number.isSafeInteger(s.revision)||s.revision<0||
    !Array.isArray(s.entries)||s.entries.length>10000)return false;
- const seen=new Set();
+ const seen=new Set(),logicalViews=new Map(),sequenceOwners=new Map();
  for(const e of s.entries){
   if(!e||typeof e.key!=="string"||!DIGEST.test(e.key)||seen.has(e.key)||
     !DIGEST.test(e.payload_sha256)||!DIGEST.test(e.source_sha256)||
@@ -38,6 +38,14 @@ function validLedger(s){
      check.payload_sha256!==e.payload_sha256||
      e.reservation_id!==sha("v754:reservation:"+e.key+":"+e.payload_sha256)||
      e.reserved_revision> s.revision)return false;
+  const viewId=JSON.stringify([e.scope_id,e.order_key,e.kind,e.slot]);
+  const previousDestination=logicalViews.get(viewId);
+  if(previousDestination!==undefined&&previousDestination!==e.key)return false;
+  logicalViews.set(viewId,e.key);
+  const sequenceId=JSON.stringify([e.scope_id,e.tata_sequence]);
+  const previousOrder=sequenceOwners.get(sequenceId);
+  if(previousOrder!==undefined&&previousOrder!==e.order_key)return false;
+  sequenceOwners.set(sequenceId,e.order_key);
   seen.add(e.key);
  }
  return true;
@@ -73,6 +81,16 @@ function reserve(state,raw,expectedRevision){
   return reject("CAS_REVISION_CONFLICT");
  const item=normalize(raw);
  if(!item)return reject("INTENT_OR_SCOPE_UNVERIFIED");
+ // Logical-view identity is independent of printer routing. Moving the
+ // same order/slot to another station must NOT produce a fresh attempt key.
+ // The daily TATA sequence must not bind to another order in this ledger.
+ if(state.entries.some(x=>x.scope_id===item.scope_id&&
+   x.order_key===item.order_key&&x.kind===item.kind&&x.slot===item.slot&&
+   x.key!==item.key))
+  return reject("SAME_LOGICAL_VIEW_DESTINATION_CHANGED_NO_REPRINT");
+ if(state.entries.some(x=>x.scope_id===item.scope_id&&
+   x.tata_sequence===item.tata_sequence&&x.order_key!==item.order_key))
+  return reject("TATA_SEQUENCE_COLLISION_BETWEEN_ORDERS");
  const conflict=state.entries.find(x=>x.key===item.key);
  if(conflict){
   if(conflict.payload_sha256!==item.payload_sha256||
