@@ -101,7 +101,7 @@ foreach($stem in @('01-producao','02-conferencia')){
       if($dark -lt 1000){throw 'RASTER_TOO_LIGHT'}
       $native.Save($dest,[Drawing.Imaging.ImageFormat]::Png)
     } finally {$native.Dispose()}
-    $results += [pscustomobject]@{file=[IO.Path]::GetFileName($dest);width=576;height=$bmp.Height;adjusted_text_lines=$fitted;source_elements=$count;dark_pixels=$dark;gray_pixels=$gray;mode='2x AntiAliasGridFit + binary threshold 320/1020';no_print=$true;source_unchanged=$true}
+    $results += [pscustomobject]@{file=[IO.Path]::GetFileName($dest);width=576;height=[int][Math]::Ceiling($h*$scale);adjusted_text_lines=$fitted;source_elements=$count;dark_pixels=$dark;gray_pixels=$gray;mode='2x AntiAliasGridFit + binary threshold 320/1020';no_print=$true;source_unchanged=$true}
   }finally{$g.Dispose();$bmp.Dispose();$mg.Dispose();$measBmp.Dispose()}
 }
 $results | ConvertTo-Json -Compress
