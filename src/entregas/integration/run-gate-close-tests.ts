@@ -224,6 +224,72 @@ test("eventos da mesma Trip preservam occurred_at; sync não reescreve original"
   assert.equal(started!.occurred_at, t1);
 });
 
+test("Correlacao read-only: eventos da parada vinculam a Trip sem misturar unidade ou fonte", () => {
+  const consumer = new SimulatedCopilotoConsumer();
+  const mk = (
+    id: string,
+    event_type: "trip_created" | "delivery_added" | "arrival_reported" | "delivery_confirmed",
+    attrs: Record<string, unknown> = {},
+  ) => ({
+    ...EXAMPLE_TRIP_CREATED,
+    event_id: "corr-" + id,
+    idempotency_key: "corr-idem-" + id,
+    event_type,
+    occurred_at: t0,
+    recorded_at: t0,
+    unit_id: "LAB-A",
+    source_mode: "simulated" as const,
+    trip_id: undefined as string | undefined,
+    delivery_id: undefined as string | undefined,
+    ...attrs,
+  });
+  function apply(id: string, kind: Parameters<typeof mk>[1], attrs: Record<string, unknown>) {
+    assert.equal(consumer.apply(mk(id, kind, attrs)).applied, true);
+  }
+  apply("trip-a", "trip_created", { trip_id: "T-A" });
+  apply("link-a", "delivery_added", { trip_id: "T-A", delivery_id: "D1" });
+  apply("arrival-a", "arrival_reported", { delivery_id: "D1" });
+  apply("done-a", "delivery_confirmed", { delivery_id: "D1" });
+  assert.deepEqual(consumer.eventsForTrip("T-A").map(e => e.event_type),
+    ["trip_created", "delivery_added", "arrival_reported", "delivery_confirmed"]);
+  assert.deepEqual(consumer.eventsForTrip("T-B"), []);
+  apply("foreign-unit", "arrival_reported", { unit_id: "LAB-B", delivery_id: "D1" });
+  apply("foreign-mode", "delivery_confirmed", { source_mode: "control", delivery_id: "D1" });
+  apply("unknown-mode", "arrival_reported", { source_mode: undefined, delivery_id: "D1" });
+  apply("orphan", "arrival_reported", { delivery_id: "D-UNKNOWN" });
+  assert.equal(consumer.eventsForTrip("T-A").length, 4);
+  // Duas viagens reclamam mesma entrega: evento sem trip_id fica sem dono.
+  apply("link-b", "delivery_added", { trip_id: "T-B", delivery_id: "D1" });
+  assert.deepEqual(consumer.eventsForTrip("T-A").map(e => e.event_type),
+    ["trip_created", "delivery_added"]);
+  assert.deepEqual(consumer.eventsForTrip("T-B").map(e => e.event_type),
+    ["delivery_added"]);
+  assert.equal(consumer.isolatedEvents.length, 0);
+});
+
+test("Consumer nao atribui evento da entrega anterior ao vinculo publico", () => {
+  const consumer = new SimulatedCopilotoConsumer();
+  const mk = (id: string, event_type: "delivery_added" | "arrival_reported", attrs: Record<string, unknown>) => ({
+    ...EXAMPLE_TRIP_CREATED,
+    event_id: "ord-" + id,
+    idempotency_key: "ord-idem-" + id,
+    event_type,
+    occurred_at: t0,
+    recorded_at: t0,
+    unit_id: "LAB-ORD",
+    source_mode: "simulated" as const,
+    trip_id: undefined as string | undefined,
+    delivery_id: "D-ORD",
+    ...attrs,
+  });
+  assert.equal(consumer.apply(mk("premature", "arrival_reported", {})).applied, true);
+  assert.equal(consumer.apply(mk("link", "delivery_added", { trip_id: "T-ORD" })).applied, true);
+  assert.deepEqual(consumer.eventsForTrip("T-ORD").map(e => e.event_type), ["delivery_added"]);
+  assert.equal(consumer.apply(mk("after", "arrival_reported", {})).applied, true);
+  assert.deepEqual(consumer.eventsForTrip("T-ORD").map(e => e.event_id),
+    ["ord-link", "ord-after"]);
+});
+
 test("reinício com checkpoint retoma; replay não altera Entregas", async () => {
   const session = new EntregasSession("u1");
   let agg: TripAggregate | null = null;
