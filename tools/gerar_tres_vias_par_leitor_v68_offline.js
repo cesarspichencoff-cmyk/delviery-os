@@ -13,6 +13,8 @@ const {renderOperationalTicketsProofV46}=
  require("../dist/src/production/operationalTicketEscposV46.js");
 const {makeProduction,makeConference}=
  require("./gerar_prova_figma_v60_offline.js");
+const {renderVerifiedNativeCandidateV752}=
+ require("./comandas_native_v752_three_view_offline.js");
 function sha(buf){return crypto.createHash("sha256").update(buf).digest("hex");}
 function blob(buf){return crypto.createHash("sha1")
  .update(Buffer.from("blob "+buf.length+"\0")).update(buf).digest("hex");}
@@ -71,6 +73,14 @@ function run(args=process.argv.slice(2)){
     !rendered.every(t=>t.ready_for_offline_preview&&!t.ready_for_operational_print)||
     !pictures.every(t=>t.ready_for_visual_review&&!t.ready_for_operational_print))
    throw Error("SOURCE_VERIFIED_BUT_THERMAL_PREVIEW_BLOCKED");
+ // Native-font adaptation is SHADOW metadata only. It consumes the SAME
+ // verified structured V6.8 tickets and independently gates the legacy V4.6
+ // trace + approved Figma preview. Failure never authorizes a fallback print.
+ const nativeFontCandidate=renderVerifiedNativeCandidateV752(tickets);
+ if(nativeFontCandidate.ready_for_operational_print!==false ||
+    nativeFontCandidate.effects?.print!==false ||
+    nativeFontCandidate.effects?.spooler_write!==false)
+  throw Error("NATIVE_FONT_SHADOW_EFFECT_BOUNDARY_INVALID");
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),"deliveryos-v68-reader-pair-"));
  const outputs=pictures.map((p,i)=>{
   const filename=String(i+1).padStart(2,"0")+"-"+p.kind.toLowerCase()+
@@ -81,6 +91,7 @@ function run(args=process.argv.slice(2)){
  });
  const manifest={schema:"deliveryos.stable-reader-shadow-v68.proof",
   status:"OFFLINE_VERIFIED_NO_PHYSICAL_EFFECT",origin,outputs,
+  native_font_candidate:nativeFontCandidate,
   effects:{reader_access:false,print:false,spooler_write:false,
    database_write:false,sequence_binding_write:false,deploy:false,fiscal:false,
    temporary_artifact_write:true}};
