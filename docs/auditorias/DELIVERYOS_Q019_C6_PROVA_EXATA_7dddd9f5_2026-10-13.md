@@ -49,3 +49,19 @@ Os seguintes 12 caminhos foram retornados pelo guard C6:
 5. A aprovação visual humana, o ensaio Android sintético sem GPS e o pedido próprio Neemo/Teknisa supervisionado permanecem etapas distintas e NÃO EXECUTADAS.
 
 **Efeitos desta prova:** uma worktree local limpa, um log local com hash e este documento na branch de auditoria. PR #106 permanece Draft/HOLD e nenhuma produção foi alterada.
+
+
+## Revisão adicional de linhagem, ainda sem homologação semântica
+
+Uma inspeção read-only de `git log f87a36d..7dddd9f5 -- <cada caminho>` confirmou que 11 dos 12 caminhos têm somente o(s) commit(s) já atribuídos no preflight original. **A exceção é `src/product/ui/surfaces/copiloto.js`, com seis commits no intervalo**:
+
+| Commit | Assunto registrado no Git |
+|---|---|
+| `f24ff62` | Fecha histórico read-only no Product System |
+| `a117c43` | Prepara gate humano fail-closed no Product System |
+| `20151b0` | feat(ui): show shared Entregas evidence in Copiloto shadow |
+| `e93faf9` | fix(ui): render missing shared-source fields as explicit absence |
+| `e583b61` | feat(ui): show V3.3 six-cell source coverage without fake severity |
+| `081e54c` | fix(copiloto): show missing-source cell status visibly, not only ARIA |
+
+**Implicação:** uma exceção baseada somente nos commits `f24ff62` e `a117c43` não cobre automaticamente as quatro edições posteriores. A análise de `git log` comprova presença e identificação dos commits, **não** prova que todos os diffs mantêm a mesma classe autorizável. Analisar os patches/efeitos e separar classes antes da decisão humana; nunca transformar autorização de um commit em permissão irrestrita para o caminho.
