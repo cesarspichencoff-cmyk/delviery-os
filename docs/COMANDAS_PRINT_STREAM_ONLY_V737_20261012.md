@@ -27,3 +27,19 @@
 - Se a prova exigir monitor/porta/driver adicional, submeter um desenho reversível de captura em sombra e esperar autorização operacional antes de tocar o sistema.
 
 **Limite demonstrado em 12/10:** impressão ativa, filas identificadas, histórico de jobs sem conteúdo. `PRINT_PAYLOAD_ACCESS=UNKNOWN`, `IFOOD_TEK_PRINT_PAIR=NOT_PROVEN`, `NO_API`, `NO_SERVICE_CHANGE`, `NO_PRINT`, `HOLD`.
+
+
+## V7.38 — Observação in-flight sem retenção (13/10/2026)
+
+**Evidência de máquina 13/10 às 07h18 BRT**, somente leitura:
+- `CAIXA_MOOCA` online, vinculada ao Itaim; nove filas térmicas analisadas: `CAIXA`, `COZINHA`, `BAR`, `BALCAOSUSHI1/2`, `DELIVERY SUSHI 1/2`, `EPSON TM-T...`.
+- Para **todas essas filas**, o Windows reportou `PrintProcessor=winprint`, `Datatype=RAW`, `KeepPrintedJobs=False` e **0 trabalhos pendentes no instante da consulta**. Isto é configuração de fila, **não garantia de formato dos bytes efetivamente spooled**.
+- Log operacional PrintService em 90 min registrou **8 eventos ID 306** e nenhum ID 307; Admin sem eventos no mesmo intervalo. Os 307 históricos continuam verificando **fila e porta**, não o software que originou cada job; propriedades 4/5 conferem com nomes reais de impressora/porta em 30 eventos amostrados. Não inferir processo a partir de valor do campo 3, que não foi atribuído a um emissor verificado.
+- `Gestor de Pedidos\log.log` presente e atualizado, mas na verificação de texto limitada e sem exportar conteúdo **não continha palavras relacionadas a impressão/filas ou nomes das impressoras**. Temp do usuário sem `.prn/.spl/.pdf` recentes observáveis. Busca bounded do `TataComandaReader` mostrou apenas eventos JSON e log; busca recursiva mais ampla interrompida preventivamente por custo, sem conclusão para todos os diretórios.
+- Prova in-flight **passiva por 16 segundos** (sem qualquer escrita, monitor, retenção ou cópia) na pasta Windows `spool\PRINTERS`: **0 arquivos `.SPL` observados**. O intervalo era anterior à abertura do almoço; **isso NÃO prova que uma leitura em horário de movimento é impossível**.
+
+**Ferramenta reutilizável criada**: `tools/auditar_spool_formato_v738_readonly.ps1`, execução pontual de 18 s e no máximo 64 bytes iniciais de cada `.SPL` observado, com `FileAccess.Read` e compartilhamento não bloqueante, saída agregada somente com categorias de prefixo e erros. Não identifica cliente, número do pedido, fonte iFood/Teknisa, não autentica conteúdo e não habilita impressão. Sem persistência, captura de conteúdo completo ou alteração de spooler. `tools/verificar_spool_passivo_v738.js` audita limites e sintaxe do PowerShell **SEM executar o probe no CI**.
+
+**Teste decisivo futuro, quando houver jobs reais:** rodar o probe pontualmente e comparar `completed_print_events_during_probe` com `spl_files_detected/header_readable`. Se existirem jobs 307 e nenhum SPL capturado, o probe simplesmente pode ter perdido jobs muito curtos; **não** concluir prova de ausência e preparar método alternativo autorizado. Se houver SPL, analisar o formato **sem exportar conteúdo** antes de propor parser sob controle de privacidade. Para dois documentos do mesmo pedido, é indispensável uma prova adicional de emissor, identidade e revisão, e depois idempotência física.
+
+**Fronteira**: `SPOOL_PREFIX_UNKNOWN_ON_LIVE_JOB`, `PRINT_PAYLOAD_NOT_CAPTURED`, `OPERATOR_ACCEPTANCE_PENDING`, `NO_API`, `NO_INSTALL`, `NO_PRINT`, `HOLD`.
