@@ -38,6 +38,16 @@ function logEvent(
   return log.append(partial).event;
 }
 
+/**
+ * Viagem do motoboy interno admite canal próprio ou app próprio.
+ * Um canal declarado iFood, desconhecido ou externo NÃO pode cair em Trip:
+ * o fluxo separado de courier externo é Handoff. Um canal omitido continua
+ * compatível com a formação manual legada (operador da loja).
+ */
+function canalPermitidoParaTrip(canal: unknown): boolean {
+  return canal === undefined || canal === "proprio" || canal === "app";
+}
+
 export function createTrip(
   log: InMemoryEventLog,
   input: CreateTripInput,
@@ -58,6 +68,16 @@ export function createTrip(
       error: new DomainError(
         "PRECONDITION_FAILED",
         "Trip requer ao menos um delivery na formação (ou formação em curso — F0 exige ≥1)",
+      ),
+    };
+  }
+
+  if (input.initial_deliveries.some((d) => !canalPermitidoParaTrip(d.channel))) {
+    return {
+      ok: false,
+      error: new DomainError(
+        "NON_OWN_ORDER_IN_TRIP",
+        "Pedido externo ou de origem nao verificada nao pode integrar viagem do motoboy proprio.",
       ),
     };
   }
@@ -504,6 +524,16 @@ export function addDeliveryToTrip(
     return {
       ok: false,
       error: new DomainError("TRIP_TERMINAL", "Trip encerrada"),
+    };
+  }
+
+  if (!canalPermitidoParaTrip(delivery.channel)) {
+    return {
+      ok: false,
+      error: new DomainError(
+        "NON_OWN_ORDER_IN_TRIP",
+        "Pedido externo ou de origem nao verificada exige Handoff ou revisao antes de Trip.",
+      ),
     };
   }
 
