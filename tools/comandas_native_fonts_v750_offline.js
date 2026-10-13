@@ -30,7 +30,7 @@ function encodeCp850(s){
 function line(text,{font="A",mode="normal"}={}){
  if(!["A","B"].includes(font)||!MODES.has(mode))throw Error("UNSUPPORTED_FONT_MODE");
  const payload=encodeCp850(text);
- const width=font==="A"?48:64;  // Epson TM-T20X 80-mm default 576-dot mode
+ const width=font==="A"?42:60; // Epson supports 42/60-column mode; conservative fail-closed cap
  if(payload.length>width)throw Error("NO_TRUNCATE_LINE_OVERFLOW_"+font+"_"+payload.length);
  return {font,mode,text:text.normalize("NFC"),bytes:payload};
 }
@@ -39,7 +39,7 @@ function makeFictitiousComparison(){
  const name="1 URAMAKI FICTICIO EXTRA ESPECIAL";
  const note="OBS: CALIBRAÇÃO FICTÍCIA - NÃO PRODUZIR";
  const result=[
- line("TESTE FICTICIO / NAO PRODUZIR / NAO DUPLICAR",{mode:"emph"}),
+ line("TESTE - NAO PRODUZIR / NAO DUPLICAR",{mode:"emph"}),
  line("V7.50 | FONTES NATIVAS EPSON"),
  line("iFood #0000 | TEKNISA 0000000000 | 00:00"),
  line("----------------------------------------"),
@@ -88,7 +88,7 @@ function proof(){
  const l=makeFictitiousComparison(),p=build(l);
  const hash=crypto.createHash("sha256").update(p).digest("hex").toUpperCase();
  return {schema:"tata.comandas.native-font-offline.v750",status:"CANDIDATE_OFFLINE_ONLY",
-  lines:l.length,source:"ONLY_SYNTHETIC_REFERENCE",fontAColumns:48,fontBColumns:64,
+  lines:l.length,source:"ONLY_SYNTHETIC_REFERENCE",fontAColumns:48,fontBColumns:64,safeColumnsA:42,safeColumnsB:60,
   modeA:"ESC E 1",modeB:"ESC G 1",codepage:"PC850",
   payloadBytes:p.length,sha256:hash,portUsed:false,printJobCreated:false,
   printerSettingsChanged:false,serviceChanged:false,automaticRelease:false,
@@ -107,7 +107,7 @@ function saveFixture(dir){
   assert.ok(svg.includes("TESTE - NAO PRODUZIR / NAO DUPLICAR"));
   assert.ok(svg.includes("URAMAKI FICTICIO EXTRA ESPECIAL"));
  }
- const p=proof(),f=path.join(resolved,"v750-native-font-A-vs-B-offline.bin");
+ const p=proof(),f=path.join(resolved,"v750b-native-font-A-vs-B-offline.bin");
  fs.writeFileSync(f,p.bytes,{flag:"wx",mode:0o600});
  return {status:"OFFLINE_BUFFER_WRITTEN",file:path.basename(f),hash:p.sha256,
   bytes:p.payloadBytes,printJobCreated:false,printerSettingsChanged:false};
