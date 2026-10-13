@@ -153,6 +153,99 @@ console.log("\n=== Pilot gate tests ===\n");
     assert.equal(rec!.trip.state, "em_rota");
   });
 
+  await test("fila marcada iFood nao pode virar Trip mesmo com canal omitido", async () => {
+    const dir = join(root, "channel-trust-ifood");
+    mkdirSync(dir, { recursive: true });
+    const f = new PilotApplicationFacade(makeCfg(dir), createPilotLogger(dir));
+    f.login("tok-ops");
+    const ready = await f.registerReadyOrder("PEDIDO-SEM-PREFIXO", "Pedido externo", "ifood");
+    assert.equal(ready.ok, true);
+    const out = await f.execute({
+      type: "CreateTrip",
+      command_id: "channel-1",
+      occurred_at: new Date().toISOString(),
+      trip_id: "T-IFOD",
+      courier_actor_id: asInternalRiderActorId("rid-1"),
+      deliveries: [{ delivery_id: "d-1", order_ref: "PEDIDO-SEM-PREFIXO" }],
+    });
+    assert.equal(out.ok, false);
+    assert.equal(out.code, "NON_OWN_ORDER_IN_TRIP");
+    const snap = await f.snapshot();
+    assert.equal(snap.trips.length, 0);
+    assert.equal(snap.ready_orders.length, 1);
+  });
+
+  await test("fila com origem desconhecida tambem recusa Trip", async () => {
+    const dir = join(root, "channel-trust-unknown");
+    mkdirSync(dir, { recursive: true });
+    const f = new PilotApplicationFacade(makeCfg(dir), createPilotLogger(dir));
+    f.login("tok-ops");
+    await f.registerReadyOrder("EXT-2", "Sem prova de origem", "desconhecido");
+    const out = await f.execute({
+      type: "CreateTrip",
+      command_id: "channel-2",
+      occurred_at: new Date().toISOString(),
+      trip_id: "T-UNKNOWN",
+      courier_actor_id: asInternalRiderActorId("rid-1"),
+      deliveries: [{ delivery_id: "d-2", order_ref: "EXT-2", channel: "proprio" }],
+    });
+    assert.equal(out.ok, false);
+    assert.equal(out.code, "NON_OWN_ORDER_IN_TRIP");
+    assert.equal((await f.snapshot()).trips.length, 0);
+  });
+
+  await test("fila app proprio carimba canal apesar de navegador omitir", async () => {
+    const dir = join(root, "channel-trust-own-app");
+    mkdirSync(dir, { recursive: true });
+    const f = new PilotApplicationFacade(makeCfg(dir), createPilotLogger(dir));
+    f.login("tok-ops");
+    await f.registerReadyOrder("APP-2", "Pedido do app proprio", "app");
+    const out = await f.execute({
+      type: "CreateTrip",
+      command_id: "channel-3",
+      occurred_at: new Date().toISOString(),
+      trip_id: "T-APP",
+      courier_actor_id: asInternalRiderActorId("rid-1"),
+      deliveries: [{ delivery_id: "d-3", order_ref: "APP-2" }],
+    });
+    assert.equal(out.ok, true, out.error);
+    const { openFileUnitOfWork } = await import("../persistence/file-store");
+    const uow = openFileUnitOfWork(join(dir, "store.json"));
+    const saved = await uow.trips.get("T-APP");
+    assert.equal(saved?.deliveries.find((d) => d.delivery_id === "d-3")?.channel, "app");
+  });
+
+  await test("AddDelivery rejeita canal externo guardado na fila", async () => {
+    const dir = join(root, "channel-trust-add");
+    mkdirSync(dir, { recursive: true });
+    const f = new PilotApplicationFacade(makeCfg(dir), createPilotLogger(dir));
+    f.login("tok-ops");
+    const created = await f.execute({
+      type: "CreateTrip",
+      command_id: "channel-4a",
+      occurred_at: new Date().toISOString(),
+      trip_id: "T-OWN",
+      courier_actor_id: asInternalRiderActorId("rid-1"),
+      deliveries: [{ delivery_id: "d-4a", order_ref: "OWN" }],
+    });
+    assert.equal(created.ok, true, created.error);
+    await f.registerReadyOrder("N-IFOOD", "Externos", "ifood");
+    const added = await f.execute({
+      type: "AddDeliveryToTrip",
+      command_id: "channel-4b",
+      occurred_at: new Date().toISOString(),
+      trip_id: "T-OWN",
+      delivery_id: "d-4b",
+      order_ref: "N-IFOOD",
+      planned_stop_order: 2,
+    });
+    assert.equal(added.ok, false);
+    assert.equal(added.code, "NON_OWN_ORDER_IN_TRIP");
+    const snap = await f.snapshot();
+    assert.equal(snap.trips[0].deliveries.length, 1);
+    assert.ok(snap.ready_orders.some((r) => r.order_ref === "N-IFOOD"));
+  });
+
   await test("command_id duplicado bloqueado", async () => {
     const dir = join(root, "d");
     mkdirSync(dir, { recursive: true });
