@@ -1,0 +1,68 @@
+{
+    "scope":  "DeliveryOS ephemeral pilot lab",
+    "date":  "2026-10-13",
+    "synthetic_only":  true,
+    "unit_id":  "LAB-DELIVERYOS-20261013",
+    "trip_id":  "LAB-PERSISTENT-T01",
+    "events":  [
+                   {
+                       "event_id":  "8fc21ceb-2c10-47ab-9a77-a29a371ca899",
+                       "event_type":  "trip_created",
+                       "unit_id":  "LAB-DELIVERYOS-20261013",
+                       "source_mode":  "simulated",
+                       "trip_id":  "LAB-PERSISTENT-T01",
+                       "delivery_id":  null
+                   },
+                   {
+                       "event_id":  "322a2248-e2a3-43bc-955b-afb8b0958f34",
+                       "event_type":  "delivery_added",
+                       "unit_id":  "LAB-DELIVERYOS-20261013",
+                       "source_mode":  "simulated",
+                       "trip_id":  "LAB-PERSISTENT-T01",
+                       "delivery_id":  "LAB-DELIVERY-D01"
+                   },
+                   {
+                       "event_id":  "f56e9eba-7e5a-4eab-a3f9-07995a6bf473",
+                       "event_type":  "trip_started",
+                       "unit_id":  "LAB-DELIVERYOS-20261013",
+                       "source_mode":  "simulated",
+                       "trip_id":  "LAB-PERSISTENT-T01",
+                       "delivery_id":  null
+                   },
+                   {
+                       "event_id":  "e1e4e7a2-ba3e-4443-b640-8e3035244534",
+                       "event_type":  "arrival_reported",
+                       "unit_id":  "LAB-DELIVERYOS-20261013",
+                       "source_mode":  "simulated",
+                       "trip_id":  null,
+                       "delivery_id":  "LAB-DELIVERY-D01"
+                   },
+                   {
+                       "event_id":  "5bce64e9-5229-4a21-b34d-26c3c0424847",
+                       "event_type":  "delivery_confirmed",
+                       "unit_id":  "LAB-DELIVERYOS-20261013",
+                       "source_mode":  "simulated",
+                       "trip_id":  null,
+                       "delivery_id":  "LAB-DELIVERY-D01"
+                   },
+                   {
+                       "event_id":  "acd87157-666f-408d-8bc0-8f2527950565",
+                       "event_type":  "trip_return_started",
+                       "unit_id":  "LAB-DELIVERYOS-20261013",
+                       "source_mode":  "simulated",
+                       "trip_id":  "LAB-PERSISTENT-T01",
+                       "delivery_id":  null
+                   },
+                   {
+                       "event_id":  "73776de5-256e-4ae7-825a-5fd8835493c4",
+                       "event_type":  "trip_closed_manual",
+                       "unit_id":  "LAB-DELIVERYOS-20261013",
+                       "source_mode":  "simulated",
+                       "trip_id":  "LAB-PERSISTENT-T01",
+                       "delivery_id":  null
+                   }
+               ],
+    "count":  7,
+    "public_consumer":  "simulated_only",
+    "actual_copiloto_ui_connected":  false
+}

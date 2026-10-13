@@ -1,0 +1,61 @@
+{
+    "synthetic_only":  true,
+    "trip_id":  "LAB-PERSISTENT-T01",
+    "restart_count":  2,
+    "states":  [
+                   {
+                       "label":  "created",
+                       "trip_state":  "preparando_saida",
+                       "delivery_state":  "aguardando_saida",
+                       "unit_id":  "LAB-DELIVERYOS-20261013"
+                   },
+                   {
+                       "label":  "after_restart",
+                       "trip_state":  "preparando_saida",
+                       "delivery_state":  "aguardando_saida",
+                       "unit_id":  "LAB-DELIVERYOS-20261013"
+                   },
+                   {
+                       "label":  "before_finish",
+                       "trip_state":  "preparando_saida",
+                       "delivery_state":  "aguardando_saida",
+                       "unit_id":  "LAB-DELIVERYOS-20261013"
+                   },
+                   {
+                       "label":  "departed",
+                       "trip_state":  "em_rota",
+                       "delivery_state":  "em_rota",
+                       "unit_id":  "LAB-DELIVERYOS-20261013"
+                   },
+                   {
+                       "label":  "arrived",
+                       "trip_state":  "em_rota",
+                       "delivery_state":  "chegada_detectada",
+                       "unit_id":  "LAB-DELIVERYOS-20261013"
+                   },
+                   {
+                       "label":  "delivered",
+                       "trip_state":  "em_rota",
+                       "delivery_state":  "entregue_confirmado",
+                       "unit_id":  "LAB-DELIVERYOS-20261013"
+                   },
+                   {
+                       "label":  "returning",
+                       "trip_state":  "retornando",
+                       "delivery_state":  "entregue_confirmado",
+                       "unit_id":  "LAB-DELIVERYOS-20261013"
+                   },
+                   {
+                       "label":  "terminal",
+                       "trip_state":  "encerrada",
+                       "delivery_state":  "entregue_confirmado",
+                       "unit_id":  "LAB-DELIVERYOS-20261013"
+                   },
+                   {
+                       "label":  "after_second_restart",
+                       "trip_state":  "encerrada",
+                       "delivery_state":  "entregue_confirmado",
+                       "unit_id":  "LAB-DELIVERYOS-20261013"
+                   }
+               ]
+}
