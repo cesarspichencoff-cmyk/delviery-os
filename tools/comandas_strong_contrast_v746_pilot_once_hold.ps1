@@ -3,10 +3,10 @@ param([switch]$PrintOnce)
 $ErrorActionPreference='Stop'
 Add-Type -AssemblyName System.Drawing
 $dir='C:\ProgramData\TataComandaReader\pilot-readonly-20261013\figma-preview\calibration-fictitious-v741'
-$png=Join-Path $dir '01-producao-strong-contrast-v746.png'
+$png=Join-Path $dir '01-producao-strong-contrast-final-v746.png'
 $svg=Join-Path $dir '01-producao.svg'
 $marker=Join-Path $dir 'CAIXA_V746_ONCE_PRINT_ATTEMPT.marker'
-$expectedPng='F9D67CE84F47E252E9BF9997B606D5266C9545590CC294F29CF671441F4E8A21'
+$expectedPng='7360CF74DFAA6C957EEE4E355C7AF92242CB6F3A8C85C81C9AC104BB122A604B'
 $expectedSvg='A364477C4E7E53F02AD73D6023314069316BF8C8EFA236C350F93631EF260B63'
 foreach($p in @($png,$svg)){if(-not(Test-Path -LiteralPath $p -PathType Leaf)){throw 'HOLD_SOURCE_MISSING'}}
 if((Get-FileHash $png -Algorithm SHA256).Hash -ne $expectedPng -or
