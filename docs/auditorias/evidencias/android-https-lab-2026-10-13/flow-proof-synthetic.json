@@ -1,0 +1,94 @@
+{
+    "mission":  "DeliveryOS simulated lab HTTPS emulated Android",
+    "date":  "2026-10-13",
+    "trip_id":  "LAB-Q019-20261013-T01",
+    "delivery_id":  "LAB-Q019-20261013-D01",
+    "no_operational_data":  true,
+    "source_mode":  "UI_DEMO_MEMORY_ONLY_NOT_CANONICAL_SIMULATED_EVENT",
+    "steps":  [
+                  {
+                      "label":  "created",
+                      "trip_state":  "preparando_saida",
+                      "delivery_state":  "aguardando_saida",
+                      "connection":  "online",
+                      "pending_visual":  0
+                  },
+                  {
+                      "label":  "inspect",
+                      "trip_state":  "em_rota",
+                      "delivery_state":  "em_rota",
+                      "connection":  "online",
+                      "pending_visual":  0
+                  },
+                  {
+                      "label":  "inspect",
+                      "trip_state":  "em_rota",
+                      "delivery_state":  "em_rota",
+                      "connection":  "online",
+                      "pending_visual":  0
+                  },
+                  {
+                      "label":  "inspect",
+                      "trip_state":  "em_rota",
+                      "delivery_state":  "chegada_detectada",
+                      "connection":  "online",
+                      "pending_visual":  0
+                  },
+                  {
+                      "label":  "before_offline",
+                      "trip_state":  "em_rota",
+                      "delivery_state":  "chegada_detectada",
+                      "connection":  "online",
+                      "pending_visual":  0
+                  },
+                  {
+                      "label":  "simulated_offline_started",
+                      "trip_state":  "em_rota",
+                      "delivery_state":  "chegada_detectada",
+                      "connection":  "offline",
+                      "pending_visual":  0
+                  },
+                  {
+                      "label":  "inspect",
+                      "trip_state":  "em_rota",
+                      "delivery_state":  "entregue_confirmado",
+                      "connection":  "offline",
+                      "pending_visual":  1
+                  },
+                  {
+                      "label":  "delivered_during_simulated_offline",
+                      "trip_state":  "em_rota",
+                      "delivery_state":  "entregue_confirmado",
+                      "connection":  "offline",
+                      "pending_visual":  1
+                  },
+                  {
+                      "label":  "simulation_connection_restored",
+                      "trip_state":  "em_rota",
+                      "delivery_state":  "entregue_confirmado",
+                      "connection":  "online",
+                      "pending_visual":  1
+                  },
+                  {
+                      "label":  "returning",
+                      "trip_state":  "retornando",
+                      "delivery_state":  "entregue_confirmado",
+                      "connection":  "online",
+                      "pending_visual":  0
+                  },
+                  {
+                      "label":  "closed",
+                      "trip_state":  "encerrada",
+                      "delivery_state":  "entregue_confirmado",
+                      "connection":  "online",
+                      "pending_visual":  0
+                  },
+                  {
+                      "label":  "inspect",
+                      "trip_state":  "encerrada",
+                      "delivery_state":  "entregue_confirmado",
+                      "connection":  "online",
+                      "pending_visual":  0
+                  }
+              ]
+}
