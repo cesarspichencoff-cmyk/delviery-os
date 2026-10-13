@@ -12,8 +12,11 @@ const candidate=JSON.parse(fs.readFileSync(
 assert.equal(candidate.unit,"ITAIM");
 assert.equal(candidate.windows_host,"CAIXA_MOOCA");
 assert.equal(candidate.expected_store_id,"0001");
-assert.equal(candidate.expected_shop_id,null); // Real identity not guessed.
-const fixed={...candidate,expected_shop_id:"01"}; // TEST MOCK ONLY.
+assert.equal(candidate.expected_shop_id,"01"); // Read-only SQL DLV_IFO group, NOT reader proof.
+assert.equal(candidate.state,"CANDIDATE_READ_ONLY_NOT_INSTALLED");
+assert.match(candidate.evidence.shop_id,/^SQL_DIRECT_READ_TEK_NISA_COMANDAVEN_DLV_IFO/);
+assert.match(candidate.evidence.reader_event_identity,/^UNKNOWN_NEEDS_EXACT_RAW_/);
+const fixed=candidate; // Known SQL pair; all event objects below are FICTIONAL.
 function event(day="2026-10-12",time="15:30:00"){
  return {schema:"deliveryos.tata-reader-stable-order-event.v1",
   order_key:"0001|01|0000000001",snapshot_hash:"a".repeat(64),
@@ -32,12 +35,19 @@ function blocked(cause,r){
  assert.equal(r.authorizes_watcher_state,false);
  assert.ok(Object.values(r.effects).every(v=>v===false));
 }
-check("candidate remains blocked while live shop identity is unknown",()=>{
- blocked("TARGET_SHOP_ID_UNVERIFIED",review(candidate,template,event()));
+check("SQL-observed candidate is only a diagnostic REVIEW, never end-to-end proof",()=>{
+ const r=review(candidate,template,event());
+ assert.equal(r.status,"RULE_MATCH_REVIEW_ONLY");
+ assert.equal(r.service,"LUNCH");
+ assert.equal(r.binding_independently_proven,false);
+ assert.equal(r.event_snapshot_independently_reconciled,false);
+ assert.equal(r.upstream_watcher_blocked,true);
+ assert.equal(r.authorizes_print,false);
+ assert.equal(r.authorizes_watcher_state,false);
 });
-check("no automatic promotion of event shop into trusted candidate",()=>{
- const ev=event();ev.order.CDLOJA="999";
- blocked("TARGET_SHOP_ID_UNVERIFIED",review(candidate,template,ev));
+check("reader-event shop cannot overwrite the independent SQL candidate",()=>{
+ const ev=event();ev.order.CDLOJA="999";ev.order_key="0001|999|0000000001";
+ blocked("TARGET_SHOP_ID_MISMATCH",review(candidate,template,ev));
 });
 check("synthetic bound shop reviews Monday holiday lunch",()=>{
  const r=review(fixed,template,event());
@@ -152,4 +162,4 @@ check("no alteration of source event, binding or template",()=>{
  assert.ok(Object.values(r.effects).every(x=>x===false));
 });
 console.log("THERMAL_ITAIM_READER_SERVICE_V735="+n+"/"+n+
- " SHOP_ID_UNVERIFIED_LIVE_HOLD READ_ONLY_NO_PRINT");
+ " SHOP_OBSERVED_SQL_READER_PARITY_PENDING_HOLD READ_ONLY_NO_PRINT");
