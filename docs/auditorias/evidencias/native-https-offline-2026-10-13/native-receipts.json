@@ -1,0 +1,12 @@
+{
+  "test_only": true,
+  "source_mode": "simulated",
+  "endpoint": "temporary_lab_tls",
+  "accepted_unique_events": 1,
+  "requests": 2,
+  "duplicates": 1,
+  "errors": 0,
+  "event_ids": [
+    "LAB-NATIVE-OFFLINE-20261013-E1"
+  ]
+}
