@@ -18,6 +18,8 @@ const {verifySignedSyntheticCheckpoint,keyFingerprint,messageFor}=
  require("./comandas_signed_anchor_v757_offline.js");
 const {verifySyntheticWitnessAgainstJournal,genesisHash,recordHash,SCHEMA:WITNESS_SCHEMA}=
  require("./comandas_external_witness_v758_offline.js");
+const {planConditionalWitnessCommit,reconcileSimulatedProviderResult}=
+ require("./comandas_external_cas_v759_offline.js");
 const {auditExpectedThreeViews}=
  require("./comandas_reconciliation_v756_offline.js");
 const sha=bytes=>crypto.createHash("sha256").update(bytes).digest("hex");
@@ -295,6 +297,34 @@ try{
   assert.equal(verifySyntheticWitnessAgainstJournal(lab,witness,
    {...witnessTrust,pinned_witness_head_sha256:sha("untrusted")}).status,
    "WITNESS_HOLD");
+  // V7.59: only conditional append of the third SOURCE-PINNED ticket may
+  // be proposed from an independently pinned 2-record witness. No provider,
+  // printer, or service receives any byte during this entire exercise.
+  const previousWitness={...witness,records:witness.records.slice(0,2)};
+  const previousTrust={...witnessTrust,
+   pinned_witness_revision:2,
+   pinned_witness_head_sha256:witness.records[1].record_sha256,
+   required_latest_journal_head_sha256:
+    witness.records[1].checkpoint.journal_head_sha256
+  };
+  const cas=planConditionalWitnessCommit(previousWitness,previousTrust,
+   witness,witnessTrust);
+  assert.equal(cas.status,"OFFLINE_CONDITIONAL_APPEND_PROPOSAL_ONLY");
+  assert.equal(cas.expected_revision,2);
+  assert.equal(cas.proposed_revision,3);
+  assert.equal(cas.authorize_print,false);
+  assert.equal(reconcileSimulatedProviderResult(cas,witness,witnessTrust,
+   null).status,"CAS_WITNESS_HOLD","provider outage cannot authorize print");
+  const fakeReadback={kind:"SIMULATED_PROVIDER_READBACK",
+   witness,trusted:witnessTrust,provider_request_id:cas.request_id,
+   observed_revision:cas.proposed_revision,
+   observed_head_sha256:cas.proposed_head_sha256};
+  const readback=reconcileSimulatedProviderResult(cas,witness,witnessTrust,
+   fakeReadback);
+  assert.equal(readback.status,
+   "SYNTHETIC_CAS_READBACK_MATCH_NOT_PROVIDER_PROOF");
+  assert.equal(readback.remote_atomic_commit_proven,false);
+  assert.equal(readback.authorize_print,false);
  }finally{fs.rmSync(lab,{recursive:true,force:true});}
  const manifest=JSON.parse(fs.readFileSync(path.join(got.proof_dir,"manifest.json"),"utf8"));
  assert.deepEqual(manifest.outputs,got.outputs);
