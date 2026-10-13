@@ -528,6 +528,15 @@ function excecaoQ019Certificada(caminho: string, env: string, blobEmTeste?: stri
   return blobAtual === e.blob;
 }
 
+/** Retira somente a autorizacao propria para testar que OUTRA classe nao a substitui.
+ * Contratos existentes continuam no teste positivo; negativos sao por isolamento.
+ */
+function semRegistroQ019DoCaminho(env: string, caminho: string): string {
+  const e = EXCECOES_Q019.find((x) => x.caminho === caminho);
+  if (!e) return env;
+  return env.split("\n").filter((l) => l.trim() !== e.caminho + " " + e.classe + " " + e.blob).join("\n");
+}
+
 /** Os caminhos de `mudou` que nenhuma autorizacao registrada no envelope cobre. */
 function foraDoEnvelope(
   mudou: readonly string[],
@@ -652,7 +661,7 @@ teste("C6d controle: a excecao da leitura da rua cobre o arquivo NOVO, so pela l
   // A classe escrita ao lado de OUTRO caminho protegido nao autoriza esse caminho.
   for (const outro of ["src/product/viewmodels/areas.ts", "src/product/ui/surfaces/operacao-viva.js"]) {
     assert.deepEqual(
-      foraDoEnvelope([outro], `${env}\n${outro}   ${CLASSE_LEITURA_DA_RUA}\n`, autorizados),
+      foraDoEnvelope([outro], `${semRegistroQ019DoCaminho(env, outro)}\n${outro}   ${CLASSE_LEITURA_DA_RUA}\n`, autorizados),
       [outro],
       `a excecao se estendeu a ${outro}, que ela nao nomeia`,
     );
@@ -688,7 +697,7 @@ teste("C6e tratamento Q026 HTTP 503: somente a linha exata, sem ampliar M1B", ()
     "src/product/ui/surfaces/copiloto.js",
   ]) {
     assert.deepEqual(
-      foraDoEnvelope([outro], env + "\n" + outro + " " + CLASSE_Q026_HTTP_503, autorizados),
+      foraDoEnvelope([outro], semRegistroQ019DoCaminho(env, outro) + "\n" + outro + " " + CLASSE_Q026_HTTP_503, autorizados),
       [outro],
       "registro para caminho arbitrario autorizou alteracao protegida: " + outro,
     );
@@ -736,7 +745,7 @@ teste("C6f Copiloto Entregas shadow: quatro caminhos exatos, controles negativos
   ]) {
     // Para testar o outro tipo, retire PRIMEIRO a autorizacao propria dele.
     // Uma autorizacao valida preexistente nao pode esconder uma mutacao cruzada.
-    const semClassePropria = env.split("\n")
+    const semClassePropria = semRegistroQ019DoCaminho(env, outro).split("\n")
       .filter((l) => !(l.trim() === outro + " " + CLASSE_Q026_HTTP_503))
       .join("\n");
     assert.deepEqual(
