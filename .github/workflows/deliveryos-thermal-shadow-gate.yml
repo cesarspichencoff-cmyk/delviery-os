@@ -161,6 +161,8 @@ jobs:
         run: node tools/verificar_journal_sandbox_v755.js
       - name: Three-way post-crash reconciliation cannot authorize print V7.56 (Linux)
         run: node tools/verificar_reconciliation_v756_offline.js
+      - name: Independently trusted Ed25519 synthetic journal seal V7.57 (Linux)
+        run: node tools/verificar_signed_anchor_v757_offline.js
       - name: Native-font V7.51 human approval and one-shot safety (static Linux)
         run: node tools/verificar_piloto_fontes_v751_static.js
       - name: RAW V7.48 approval and one-shot transport policy (static only)
@@ -229,6 +231,8 @@ jobs:
         run: node tools/verificar_journal_sandbox_v755.js
       - name: Three-way post-crash reconciliation cannot authorize print V7.56 (Windows)
         run: node tools/verificar_reconciliation_v756_offline.js
+      - name: Independently trusted Ed25519 synthetic journal seal V7.57 (Windows)
+        run: node tools/verificar_signed_anchor_v757_offline.js
       - name: Native-font V7.51 human approval and one-shot safety (static Windows)
         run: node tools/verificar_piloto_fontes_v751_static.js
       - name: Parse V7.51 physical-pilot script without running printer I/O
