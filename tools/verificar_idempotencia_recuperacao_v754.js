@@ -109,6 +109,35 @@ test("ticket mutation on same order conflicts instead of duplicate",()=>{
  const revision={...d.descriptors[0],source_sha256:sha("changed event")};
  assert.equal(resumeDecision(state,revision).reasons[0],"SOURCE_OR_SEQUENCE_DRIFT_NO_REPRINT");
 });
+test("station reroute cannot create a second reservation for the same logical view",()=>{
+ const rerouted={...d.descriptors[0],station:"DELIVERY_SUSHI_2"};
+ assert.equal(reserve(state,rerouted,6).reasons[0],
+  "SAME_LOGICAL_VIEW_DESTINATION_CHANGED_NO_REPRINT");
+ assert.equal(reserve(state,rerouted,6).authorize_print,false);
+});
+test("one TATA sequence cannot silently be shared by two different orders",()=>{
+ const other={...d.descriptors[0],order_key:"0001|01|0000000002|0000000002"};
+ assert.equal(reserve(state,other,6).reasons[0],
+  "TATA_SEQUENCE_COLLISION_BETWEEN_ORDERS");
+});
+test("tampered ledger with two printer routes for one logical receipt is rejected",()=>{
+ const corrupted=structuredClone(state);
+ const changed=normalize({...d.descriptors[0],station:"ANOTHER_STATION"});
+ const replica={...changed,
+  reservation_id:sha("v754:reservation:"+changed.key+":"+changed.payload_sha256),
+  state:STATES.RESERVED,reserved_revision:7};
+ corrupted.entries.push(replica);corrupted.revision=7;
+ assert.equal(validLedger(corrupted),false);
+});
+test("tampered ledger with cross-order number reuse is rejected",()=>{
+ const corrupted=structuredClone(state);
+ const changed=normalize({...d.descriptors[0],order_key:"0001|01|0000000002|0000000002"});
+ const replica={...changed,
+  reservation_id:sha("v754:reservation:"+changed.key+":"+changed.payload_sha256),
+  state:STATES.RESERVED,reserved_revision:7};
+ corrupted.entries.push(replica);corrupted.revision=7;
+ assert.equal(validLedger(corrupted),false);
+});
 test("cross-day scope does not collide, but still only proposes",()=>{
  const tomorrow={...d.descriptors[0],scope_id:"STORE:SIMULATED|DATE:2026-10-14"};
  const r=reserve(state,tomorrow,6);
