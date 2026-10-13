@@ -4,20 +4,20 @@ const assert=require("node:assert/strict"),fs=require("node:fs"),path=require("n
 const source=fs.readFileSync(path.join(__dirname,"comandas_native_fonts_v750_offline.js"),"utf8");
 assert.doesNotMatch(source,/\b(?:WritePrinter|OpenPrinter|StartDocPrinter|Get-Printer|Set-Printer|Start-Service|Restart-Service|lp|lpr|socket\.connect|net\.connect)\s*\(/i);
 const app=require("./comandas_native_fonts_v750_offline.js");
-const expectedSHA="E8FF2B0DA98577C1A25C9E0D61792C4B4BDE265D570989FBFE41BA05C8DDF5B9";
+const expectedSHA="624A3F8C310F6AE570A0B6768B9924AEA075FF75B2243C2F1D4992B2EB076BBE";
 const result=app.proof(),data=result.bytes;
 assert.equal(crypto.createHash("sha256").update(data).digest("hex").toUpperCase(),expectedSHA);
-assert.equal(data.length,851);assert.equal(result.lines,19);
+assert.equal(data.length,842);assert.equal(result.lines,19);
 assert.deepEqual(app.encodeCp850("CONFERÊNCIA"),Buffer.from("434f4e464552d24e434941","hex"));
 assert.deepEqual(app.encodeCp850("FINALIZAÇÃO"),Buffer.from("46494e414c495a4180c74f","hex"));
 assert.deepEqual(app.encodeCp850("NÃO"),Buffer.from("4ec74f","hex"));
 assert.deepEqual(app.encodeCp850("AC\u0327A\u0303O"),Buffer.from("4180c74f","hex"));
 assert.throws(()=>app.encodeCp850("PEDIDO 🚨"),/UNREPRESENTABLE/);
 assert.throws(()=>app.encodeCp850("\u001bPAUSA"),/UNREPRESENTABLE/);
-assert.throws(()=>app.line("X".repeat(49)),/NO_TRUNCATE/);
-assert.doesNotThrow(()=>app.line("X".repeat(48)));
-assert.doesNotThrow(()=>app.line("X".repeat(64),{font:"B"}));
-assert.throws(()=>app.line("X".repeat(65),{font:"B"}),/NO_TRUNCATE/);
+assert.throws(()=>app.line("X".repeat(43)),/NO_TRUNCATE/);
+assert.doesNotThrow(()=>app.line("X".repeat(42)));
+assert.doesNotThrow(()=>app.line("X".repeat(60),{font:"B"}));
+assert.throws(()=>app.line("X".repeat(61),{font:"B"}),/NO_TRUNCATE/);
 function parse(p){
  let i=0;
  const expect=(...numbers)=>{for(const n of numbers){assert.equal(p[i++],n,"V750_COMMAND_BYTE_MISMATCH_"+(i-1))}};
@@ -39,7 +39,7 @@ function parse(p){
   }
   assert.ok(i<p.length,"MISSING_LF");
   const line=p.subarray(begin,i);
-  assert.ok(line.length>0 && line.length<=(font===0?48:64),"FONT_LINE_WIDTH_OVERFLOW");
+  assert.ok(line.length>0 && line.length<=(font===0?42:60),"FONT_LINE_WIDTH_OVERFLOW");
   expect(10);
   lines.push({font,emph,strike,bytes:Buffer.from(line)});
  }
@@ -68,7 +68,7 @@ if(process.argv[2]==="--fixture"){
  assert.equal(path.basename(dir),"calibration-fictitious-v741");
  const meta=JSON.parse(fs.readFileSync(path.join(dir,"manifest-v741.json"),"utf8"));
  assert.equal(meta.real_order,false);assert.equal(meta.print_authorized,false);
- const file=path.join(dir,"v750-native-font-A-vs-B-offline.bin");
+ const file=path.join(dir,"v750b-native-font-A-vs-B-offline.bin");
  const observed=fs.readFileSync(file);
  assert.ok(observed.equals(data),"SYNTHETIC_FIXTURE_BYTES_NOT_EQUAL");
 }else assert.equal(process.argv.length,2);
