@@ -75,7 +75,16 @@ async function refresh() {
 
 function renderReady() {
   const box = $("readyList");
-  const own = (snap.ready_orders || []).filter((o) => !o.order_ref.startsWith("IF-"));
+  // Canal explicito prevalece sobre prefixos do numero do pedido.
+  // Canal ausente continua sujeito a conferencia manual e ao guarda do servidor.
+  const own = (snap.ready_orders || []).filter(
+    (o) =>
+      o.channel === "proprio" ||
+      o.channel === "app" ||
+      (o.channel === undefined && !o.order_ref.startsWith("IF-")),
+  );
+  const eligible = new Set(own.map((o) => o.order_ref));
+  for (const ref of selected) if (!eligible.has(ref)) selected.delete(ref);
   if (!own.length) {
     box.innerHTML = `<div class="empty">Nenhum pedido próprio pronto.</div>`;
     return;
@@ -86,7 +95,7 @@ function renderReady() {
     <div class="item" role="listitem">
       <label>
         <input type="checkbox" data-order="${o.order_ref}" ${selected.has(o.order_ref) ? "checked" : ""} />
-        <span><strong>${o.label}</strong><div class="meta">Próprio · pronto para formação</div></span>
+        <span><strong>${o.label}</strong><div class="meta">${o.channel === undefined ? "Origem não informada · confirmar antes de montar viagem" : "Próprio · pronto para formação"}</div></span>
       </label>
     </div>`,
     )
@@ -433,10 +442,14 @@ $("btnCreateTrip").addEventListener("click", async () => {
   }
   const max = snap.policy.max_stops;
   const tripId = `T-DEMO-${Date.now().toString(36)}`;
-  const deliveries = orders.map((order_ref) => ({
-    delivery_id: `D-${order_ref}`,
-    order_ref,
-  }));
+  const deliveries = orders.map((order_ref) => {
+    const entry = (snap.ready_orders || []).find((o) => o.order_ref === order_ref);
+    return {
+      delivery_id: `D-${order_ref}`,
+      order_ref,
+      ...(entry?.channel ? { channel: entry.channel } : {}),
+    };
+  });
   try {
     const res = await command({
       type: "CreateTrip",

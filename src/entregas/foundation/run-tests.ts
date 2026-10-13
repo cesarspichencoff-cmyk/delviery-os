@@ -20,6 +20,7 @@ import { createPilotPolicy } from "./policy";
 import {
   closeTripAutomatic,
   createTrip,
+  addDeliveryToTrip,
   startReturn,
   startTrip,
   removeDeliveryFromTrip,
@@ -60,6 +61,69 @@ test("contract_version em trip_created", () => {
   assert.equal(r.state.trip.contract_version, CONTRACT_VERSION_FULL);
   assert.equal(r.state.trip.state, "preparando_saida");
   assert.equal(r.state.trip.courier_actor_id, rider);
+});
+
+test("Trip bloqueia iFood e fonte desconhecida antes de qualquer evento", () => {
+  for (const channel of ["ifood", "desconhecido", "DLV_IFO", "DLV_NMO"] as const) {
+    const log = new InMemoryEventLog();
+    const r = createTrip(log, {
+      trip_id: "t-external",
+      unit_id: "itaim",
+      courier_actor_id: rider,
+      created_by: "ops",
+      occurred_at: now,
+      policy,
+      initial_deliveries: [{ delivery_id: "d-ext", order_ref: "REF", channel: channel as "ifood" }],
+    });
+    assert.equal(r.ok, false, "canal deve ser rejeitado: " + channel);
+    if (!r.ok) assert.equal(r.error.code, "NON_OWN_ORDER_IN_TRIP");
+    assert.equal(log.all().length, 0, "canal indevido gerou evento");
+  }
+});
+
+test("Trip aceita canal proprio e app, preserva entrada manual legada", () => {
+  for (const channel of [undefined, "proprio", "app"] as const) {
+    const log = new InMemoryEventLog();
+    const r = createTrip(log, {
+      trip_id: "t-own",
+      unit_id: "itaim",
+      courier_actor_id: rider,
+      created_by: "ops",
+      occurred_at: now,
+      policy,
+      initial_deliveries: [{ delivery_id: "d", order_ref: "OWN", channel }],
+    });
+    assert.equal(r.ok, true);
+    if (r.ok) assert.equal(r.state.deliveries.get("d")?.channel, channel ?? "proprio");
+  }
+});
+
+test("Trip existente rejeita adicionar entrega iFood sem alterar estado", () => {
+  const log = new InMemoryEventLog();
+  const created = createTrip(log, {
+    trip_id: "t-own",
+    unit_id: "itaim",
+    courier_actor_id: rider,
+    created_by: "ops",
+    occurred_at: now,
+    policy,
+    initial_deliveries: [{ delivery_id: "d1", order_ref: "OWN", channel: "proprio" }],
+  });
+  assert.equal(created.ok, true);
+  if (!created.ok) return;
+  const before = log.all().length;
+  const out = addDeliveryToTrip(
+    log,
+    created.state,
+    { delivery_id: "d-ifo", order_ref: "IFO", channel: "ifood", planned_stop_order: 2 },
+    now,
+    "ops",
+    policy,
+  );
+  assert.equal(out.ok, false);
+  if (!out.ok) assert.equal(out.error.code, "NON_OWN_ORDER_IN_TRIP");
+  assert.equal(log.all().length, before);
+  assert.equal(created.state.deliveries.size, 1);
 });
 
 test("max_stops configurável (5) — rejeita 6", () => {

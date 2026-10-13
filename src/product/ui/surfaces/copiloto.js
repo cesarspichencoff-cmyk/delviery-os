@@ -152,6 +152,90 @@ function historicoCopiloto(h) {
   );
 }
 
+/**
+ * O Copiloto mostra a MESMA projeção de viagens da tela Entregas.
+ * Ela é evidência da fonte, não nova conclusão do motor e não gera Foco.
+ * Nenhum ID de aparelho, motoboy, cliente, pedido ou GPS é transportado.
+ */
+function leituraEntregasCompartilhada(o) {
+  if (!o || typeof o !== "object") {
+    return secao(
+      "Entregas · leitura compartilhada",
+      "Esta versão do Copiloto ainda não recebeu uma leitura de Entregas.",
+      "<p class=\"secao__sub\">Integração não comprovada nesta resposta.</p>",
+    );
+  }
+
+  const rotulos = { real: "real", simulated: "simulado", control: "controle" };
+  const disponivel = o.estado === "observado" || o.estado === "sem_evidencia";
+  const grupos = Array.isArray(o.grupos) ? o.grupos : [];
+  const linhas = disponivel && o.estado === "observado"
+    ? `<ul class="lista-operacional">${grupos.map((g) =>
+        `<li class="fonte-linha"><span class="fonte-linha__id">${esc(g.unit_id)}</span>
+          <span class="campo__valor">${esc(rotulos[g.source_mode] || "modo desconhecido")}</span>
+          <span class="campo__valor">${esc(String(g.viagens_na_projecao))} viagens na projeção histórica</span></li>`
+      ).join("")}</ul>`
+    : "<p class=\"secao__sub\">Nenhuma contagem operacional confirmada.</p>";
+
+  return secao(
+    "Entregas · leitura compartilhada",
+    "Mesma fonte de Entregas, separada do cenário de demonstração. Isso não mede viagens ativas, atraso ou capacidade.",
+    `<p class="secao__sub">${esc(o.motivo || "Leitura não disponível.")}</p>
+      ${linhas}
+      <div class="grade" data-colunas="2">
+        ${campo("Fonte", disponivel
+          ? { observado: true, valor: "platform.event_log" }
+          : { observado: false, motivo: "integracao_pendente", explicacao: "Fonte não disponível." }, { tecnico: true })}
+        ${campo("Lida em", disponivel && o.lida_em
+          ? { observado: true, valor: o.lida_em }
+          : { observado: false, motivo: "nao_observado", explicacao: "Não foi possível observar o instante da leitura." }, { tecnico: true })}
+      </div>`,
+  );
+}
+
+/**
+ * As seis células do V3.3 são um mapa de COBERTURA de fontes nesta etapa.
+ * Não são indicadores de saúde, pressão ou ambiente: isso exige o motor e
+ * eventos por praça devidamente observados. Não inserir botões.
+ */
+function coberturaCelulasV33(c) {
+  if (!c || c.modo !== "somente_leitura_sem_motor_operacional" || !Array.isArray(c.celulas)) {
+    return secao(
+      "Células operacionais · cobertura",
+      "As seis áreas do V3.3 ainda não foram recebidas nesta versão.",
+      '<p class="secao__sub">Leitura de fontes indisponível; sem diagnóstico de pressão.</p>',
+    );
+  }
+  const modoLabel = { real: "real", simulated: "simulado", control: "controle" };
+  const lista = c.celulas.map(a => {
+    const comHistorico = a.estado === "historico_real_parcial" || a.estado === "historico_sintetico";
+    const origem = Array.isArray(a.modos) && a.modos.length
+      ? '<span class="campo__valor--tecnico">Modos: ' +
+        a.modos.map(m => esc(modoLabel[m] || "desconhecido")).join(", ") + '</span>'
+      : '';
+    const classe = comHistorico ? "parcial" : "indisponivel";
+    const rotulo = a.estado === "historico_real_parcial"
+      ? "Histórico real parcial"
+      : a.estado === "historico_sintetico"
+        ? "Apenas histórico simulado"
+        : a.estado === "sem_evidencia"
+          ? "Sem evidência neste recorte"
+          : "Fonte não conectada";
+    return '<li class="fonte-linha">' +
+      '<span class="fonte-linha__id">' + esc(a.nome) + '</span>' +
+      selo({ estado: classe, detalhe: rotulo }) +
+      '<span class="campo__valor--tecnico">' + esc(rotulo) + '</span>' +
+      '<span class="campo__valor">' + esc(a.descricao) + '</span>' +
+      origem + '</li>';
+  }).join("");
+  return secao(
+    "Células operacionais · cobertura",
+    "Caixa, Sushi, Quentes, Cozinha, Conferência e Entregas. O mapa vem do V3.3; o motor de pressão ainda não está conectado aqui.",
+    '<ul class="lista-operacional">' + lista +
+      '</ul><p class="rec-card__sombra">Cobertura de fontes, não situação operacional. Sem pressão, cor de saúde, fila inferida ou comando.</p>',
+  );
+}
+
 export function telaCopiloto(vm) {
   const corpoAtivas = vm.sem_recomendacao_sustentada
     ? estadoTela(
@@ -214,6 +298,10 @@ export function telaCopiloto(vm) {
         ${campo("Controles de acao", { observado: true, valor: vm.fronteira_acao_humana.actions_exposed ? "expostos" : "nao expostos" }, { tecnico: true })}
       </div><p class="rec-card__sombra">CONTRACT PREPARED · nenhuma solicitacao de acao pode sair desta tela enquanto identidade + permissao + escopo + executor + auditoria nao estiverem provados.</p>`,
     )}
+
+    ${leituraEntregasCompartilhada(vm.entregas_observadas)}
+
+    ${coberturaCelulasV33(vm.celulas_operacionais)}
 
     ${secao(
       "Propostas ativas",

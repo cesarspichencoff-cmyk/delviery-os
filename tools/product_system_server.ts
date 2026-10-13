@@ -19,6 +19,8 @@ import { join, extname, normalize } from "node:path";
 import { createRequire } from "node:module";
 
 import { entregasVM } from "../src/product/viewmodels/entregas-vm";
+import { copilotoEntregasLeitura } from "../src/product/viewmodels/copiloto-entregas-leitura";
+import { celulasCopilotoV33 } from "../src/product/viewmodels/copiloto-celulas-v33";
 import { operacaoVivaVM } from "../src/product/viewmodels/operacao-viva-vm";
 import { conferenceBrainVM } from "../src/product/viewmodels/conference-vm";
 import { copilotoVM } from "../src/product/viewmodels/copiloto-vm";
@@ -38,7 +40,10 @@ import {
   type LeituraHistoricaDoStore,
 } from "../src/product/viewmodels/historico-vm";
 import { createPgClient, type PgSqlClient } from "../src/platform/persistence/sql-client";
+import { foiTimeoutNaFilaDoPoolPg } from "../src/platform/persistence/pg-pool-backpressure";
 import { lerRealidadeDeEntregas } from "../src/platform/leitura/realidade-de-entregas";
+import { lerRealidadeDeEntregasIncremental } from "../src/platform/leitura/realidade-de-entregas-incremental";
+import { leitorRrCancelavel, type ProtecaoRr } from "../src/platform/leitura/leitor-rr-cancelavel";
 import { lerHistoricoOperacional } from "../src/platform/leitura/historico-operacional";
 import { lerSaudeDaFonteTata, type AvaliadorDeSaude } from "../src/platform/leitura/saude-fonte-tata";
 import { TIPOS_DA_OPERACAO_VIVA } from "../src/platform/runtime/handler-operacao-viva";
@@ -51,6 +56,39 @@ import {
 } from "../src/product/viewmodels/tata-comanda-vm";
 
 const PORT = Number(process.env.PRODUCT_UI_PORT || 5290);
+/**
+ * Q-026 DRAFT: explicit opt-in overload protection for the GET Entregas
+ * route. Not enabled in production or by default. PostgreSQL's pool bounds
+ * DB connections but does not bound HTTP callers waiting and holding work.
+ * Only a declared value 1/2/4 enables it; invalid values fail closed at boot.
+ */
+function limiteExplicitoEntregas(raw: string | undefined): number {
+  if (raw === undefined || raw.trim() === "") return 0;
+  if (raw === "1" || raw === "2" || raw === "4") return Number(raw);
+  throw new Error("DELIVERYOS_ENTREGAS_MAX_INFLIGHT invalido; use 1, 2, 4 ou omita");
+}
+const LIMITE_ENTREGAS = limiteExplicitoEntregas(process.env.DELIVERYOS_ENTREGAS_MAX_INFLIGHT);
+/**
+ * Q-026 SHADOW CANDIDATE. Deadline is disabled when omitted.
+ * Activation requires an explicit admission limit, so timeout responses
+ * cannot permit unbounded abandoned SQL requests accumulating in parallel.
+ */
+function prazoExplicitoEntregas(raw: string | undefined): number {
+  if (raw === undefined || raw.trim() === "") return 0;
+  if (!/^[0-9]{4,5}$/.test(raw)) throw Error("DELIVERYOS_ENTREGAS_RR_DEADLINE_MS invalido");
+  const v = Number(raw);
+  if (!Number.isInteger(v) || v < 1_000 || v > 15_000 || LIMITE_ENTREGAS === 0)
+    throw Error("DELIVERYOS_ENTREGAS_RR_DEADLINE_MS requer 1000..15000 e admissao 1/2/4");
+  return v;
+}
+const PRAZO_ENTREGAS_RR_MS = prazoExplicitoEntregas(process.env.DELIVERYOS_ENTREGAS_RR_DEADLINE_MS);
+function incrementalExplicitamenteAtivo(raw: string | undefined): boolean {
+  if (raw === undefined || raw.trim() === "") return false;
+  if (raw !== "1" || PRAZO_ENTREGAS_RR_MS === 0)
+    throw Error("DELIVERYOS_ENTREGAS_INCREMENTAL_RR exige valor 1 e protecao RR HTTP habilitada");
+  return true;
+}
+const USAR_INCREMENTAL_RR = incrementalExplicitamenteAtivo(process.env.DELIVERYOS_ENTREGAS_INCREMENTAL_RR);
 /**
  * A porta de REALIDADE de Entregas. Com a URL do banco da plataforma, a
  * superficie /entregas ganha um bloco lido de identity.device e de
@@ -234,7 +272,7 @@ function servirEstatico(res: http.ServerResponse, caminho: string): void {
  * Servidor
  * ------------------------------------------------------------------ */
 
-async function lerRealidade(cliente: PgSqlClient | null): Promise<LeituraDeRealidade> {
+async function lerRealidade(cliente: PgSqlClient | null, protecao?: ProtecaoRr): Promise<LeituraDeRealidade> {
   if (!cliente) {
     return {
       disponivel: false,
@@ -244,8 +282,20 @@ async function lerRealidade(cliente: PgSqlClient | null): Promise<LeituraDeReali
     };
   }
   try {
-    return { disponivel: true, realidade: await lerRealidadeDeEntregas(cliente, { agora: new Date() }) };
-  } catch {
+    return {
+      disponivel: true,
+      realidade: await (USAR_INCREMENTAL_RR
+        ? lerRealidadeDeEntregasIncremental
+        : lerRealidadeDeEntregas)(
+        protecao ? leitorRrCancelavel(cliente, protecao) : cliente,
+        { agora: new Date() },
+      ),
+    };
+  } catch (e) {
+    // Preserve the specific queue-overload cause only for the explicit HTTP
+    // guard. A generic outage, DNS/TLS/connect failure or SQLSTATE is still
+    // returned as an unavailable *data block*, not mislabeled as capacity.
+    if (protecao && foiTimeoutNaFilaDoPoolPg(e)) throw e;
     // Detalhes de rede/SQL podem conter nomes internos e caminhos. A tela
     // precisa conhecer a indisponibilidade, nunca o erro bruto do driver.
     return {
@@ -319,7 +369,29 @@ async function lerHistorico(
 export async function criarServidor(): Promise<http.Server> {
   const pronto = await calcular();
   const facade = await montarEntregasDemo();
-  const clientePlataforma = URL_PLATAFORMA ? await createPgClient({ url: URL_PLATAFORMA, max: 2 }) : null;
+  // Q-026 candidate: a request must never wait 5s in pg.Pool.connect()
+  // when the explicit HTTP read budget can be only 1-3s.
+  // pg-pool owns/removes timed-out FIFO waiters; unlike Promise.race,
+  // this does NOT abandon a queued pool lease that may surface later.
+  // Only applies to the opt-in guarded reader; default stays unchanged.
+  const checkoutMaxMs = PRAZO_ENTREGAS_RR_MS > 0
+    ? Math.min(1_000, PRAZO_ENTREGAS_RR_MS)
+    : undefined;
+  const clientePlataforma = URL_PLATAFORMA
+    ? await createPgClient({
+        url: URL_PLATAFORMA,
+        max: 2,
+        ...(checkoutMaxMs !== undefined ? { connectionTimeoutMillis: checkoutMaxMs } : {}),
+      })
+    : null;
+  // Dedicated cancel connection: reader pool max=2 could be fully borrowed.
+  // Only created when the candidate is explicitly enabled; never in default.
+  const canceladorEntregas = PRAZO_ENTREGAS_RR_MS > 0 && URL_PLATAFORMA
+    ? await createPgClient({ url: URL_PLATAFORMA, max: 1, connectionTimeoutMillis: 1_000 })
+    : null;
+  // Count HTTP requests admitted, not borrowed PG connections or queue size.
+  // Counter belongs to THIS server instance and is released after settlement.
+  let entregasEmAndamento = 0;
 
   return http.createServer((req, res) => {
     // A trava: metodo de escrita e recusado antes de qualquer roteamento.
@@ -391,6 +463,36 @@ export async function criarServidor(): Promise<http.Server> {
         });
       }
       if (p === "/api/entregas") {
+        const limitar = LIMITE_ENTREGAS > 0 && clientePlataforma !== null;
+        if (limitar && entregasEmAndamento >= LIMITE_ENTREGAS) {
+          res.setHeader("Retry-After", "1");
+          return json(res, 503, { erro: "leitura_temporariamente_ocupada" });
+        }
+        if (limitar) entregasEmAndamento++;
+        // SHADOW opt-in: response close is a disconnect only when it was not
+        // cleanly ended. HTTP request 'close' fires on normal GET completion
+        // and must NOT be used as a disconnect signal.
+        const protegido = PRAZO_ENTREGAS_RR_MS > 0 && clientePlataforma && canceladorEntregas;
+        const abortador = protegido ? new AbortController() : null;
+        const prazoAbsolutoMs = protegido ? Date.now() + PRAZO_ENTREGAS_RR_MS : 0;
+        let causa: "desconexao" | "prazo" | null = null;
+        const interromper = (motivo: "desconexao" | "prazo") => {
+          if (!abortador || abortador.signal.aborted) return;
+          causa = motivo;
+          abortador.abort();
+          // Reply on deadline without releasing admission before PostgreSQL
+          // actually rolls back. This is a response deadline, NOT proof of
+          // total DB-connection acquisition time.
+          if (motivo === "prazo" && !res.destroyed && !res.writableEnded)
+            json(res, 503, { erro: "prazo_total_excedido" });
+        };
+        const aoFechar = () => {
+          if (!res.writableEnded) interromper("desconexao");
+        };
+        if (abortador) res.on("close", aoFechar);
+        const relogio = abortador
+          ? setTimeout(() => interromper("prazo"), PRAZO_ENTREGAS_RR_MS)
+          : null;
         // A demonstracao e calculada no boot; a REALIDADE e lida agora. Um
         // bloco congelado no boot mostraria o aparelho como estava quando o
         // servidor subiu, e "agora" e o que quem olha esta perguntando.
@@ -399,9 +501,33 @@ export async function criarServidor(): Promise<http.Server> {
         const unidade = (url.searchParams.get("unidade") || "").trim().slice(0, 64) || null;
         void (async () => {
           const snap = await facade.snapshot();
-          const leitura = await lerRealidade(clientePlataforma);
+          const leitura = await lerRealidade(
+            clientePlataforma,
+            abortador && canceladorEntregas
+              ? { signal: abortador.signal, prazoAbsolutoMs, cancelador: canceladorEntregas }
+              : undefined,
+          );
+          if (abortador && Date.now() >= prazoAbsolutoMs) interromper("prazo");
+          if (abortador?.signal.aborted || res.destroyed || res.writableEnded) return;
           json(res, 200, entregasVM(snap, new Date().toISOString(), facade.getPolicyMaxStops(), leitura, { unidade }));
-        })().catch(() => json(res, 500, { erro: "leitura_indisponivel" }));
+        })()
+          .catch((e: unknown) => {
+            if (res.destroyed || res.writableEnded) return;
+            if (abortador && foiTimeoutNaFilaDoPoolPg(e)) {
+              res.setHeader("Retry-After", "1");
+              // No raw driver text and no fake 200 for admitted pool overload.
+              return json(res, 503, { erro: "leitura_temporariamente_ocupada" });
+            }
+            json(res, 500, { erro: "leitura_indisponivel" });
+          })
+          .finally(() => {
+            if (relogio) clearTimeout(relogio);
+            if (abortador) res.removeListener("close", aoFechar);
+            // Never release the admission slot merely because a 503 was sent:
+            // the PG transaction must complete/rollback first.
+            if (limitar) entregasEmAndamento--;
+            void causa; // Only local event classification; no customer data.
+          });
         return;
       }
       if (p === "/api/operacao-viva") {
@@ -412,9 +538,26 @@ export async function criarServidor(): Promise<http.Server> {
       }
       if (p === "/api/conference-brain") return json(res, 200, pronto.conference);
       if (p === "/api/copiloto") {
-        void lerHistorico(clientePlataforma, pronto.historico, url.searchParams.get("unit_id"))
-          .then((h) => json(res, 200, { ...(pronto.copiloto as object), historico: h.copiloto }))
-          .catch((e: unknown) => json(res, 500, { erro: e instanceof Error ? e.name : "Error" }));
+        // Entregas e Copiloto compartilham a MESMA porta de realidade. Este
+        // resumo NAO cria recomendacao, nao acessa GPS e nao executa comando.
+        // A demo ja montada permanece separada do bloco observado do servidor.
+        const unidade = (url.searchParams.get("unit_id") || "").trim().slice(0, 64) || null;
+        void Promise.all([
+          lerHistorico(clientePlataforma, pronto.historico, unidade),
+          lerRealidade(clientePlataforma),
+        ])
+          .then(([h, leitura]) => {
+            const entregas = copilotoEntregasLeitura(leitura, unidade);
+            // Uma única leitura: células herdam os mesmos fatos e o mesmo
+            // recorte, sem segundo SQL, cor operacional ou ação implícita.
+            json(res, 200, {
+              ...(pronto.copiloto as object),
+              historico: h.copiloto,
+              entregas_observadas: entregas,
+              celulas_operacionais: celulasCopilotoV33(entregas),
+            });
+          })
+          .catch(() => json(res, 500, { erro: "leitura_indisponivel" }));
         return;
       }
       if (p === "/api/historico") {

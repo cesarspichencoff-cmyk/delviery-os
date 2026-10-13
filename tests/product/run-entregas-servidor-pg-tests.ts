@@ -177,6 +177,56 @@ void (async () => {
       assert.equal(html.leitura.unidade_encontrada, false);
     });
 
+    await teste("S7 Copiloto e Entregas enxergam as MESMAS viagens simuladas no PostgreSQL, sem inferir operacao", async () => {
+      const entregas = await ler("/api/entregas?unidade=ITAIM");
+      const copiloto = await ler("/api/copiloto?unit_id=ITAIM");
+      const leitura = copiloto.entregas_observadas;
+      assert.equal(leitura.estado, "observado");
+      assert.equal(leitura.fonte, "platform.event_log");
+      assert.equal(leitura.unidade_solicitada, "ITAIM");
+      assert.equal(leitura.nenhuma_acao_executada, true);
+      assert.equal(leitura.historico_sem_modo, null, "historico global nao pertence ao recorte");
+      assert.deepEqual(leitura.grupos, [{
+        unit_id: "ITAIM",
+        source_mode: "simulated",
+        viagens_na_projecao: entregas.realidade.viagens.length,
+      }], "duas telas nao podem discordar sobre unidade, modo e numero de viagens");
+      assert.ok(entregas.realidade.viagens.length > 0, "teste sem viagem nao prova compartilhamento");
+      assert.ok(entregas.realidade.viagens.every((v: { unidade: string; procedencia: string }) =>
+        v.unidade === "ITAIM" && v.procedencia === "simulado"));
+      const celulas = copiloto.celulas_operacionais;
+      assert.equal(celulas.modo, "somente_leitura_sem_motor_operacional");
+      assert.deepEqual(celulas.celulas.map((c: { nome: string }) => c.nome),
+        ["Caixa", "Sushi", "Quentes", "Cozinha", "Conferência", "Entregas"]);
+      assert.ok(celulas.celulas.slice(0, 5).every((c: { estado: string }) => c.estado === "nao_conectada"));
+      const e = celulas.celulas[5];
+      assert.equal(e.estado, "historico_sintetico");
+      assert.deepEqual(e.modos, ["simulated"]);
+      assert.equal(e.pressao, null);
+      assert.equal(e.cor_operacional, null);
+      assert.equal(e.fila, null);
+      assert.equal(e.nenhuma_acao_executada, true);
+      assert.equal((await fetch(`http://127.0.0.1:${PORTA}/api/copiloto`, { method: "POST" })).status, 405);
+    });
+
+    await teste("S8 recortes e ausencias do Copiloto nao transformam viagem em pedido, zero ou resultado real", async () => {
+      const vila = await ler("/api/entregas?unidade=VILA-LAB");
+      const leitura = (await ler("/api/copiloto?unit_id=VILA-LAB")).entregas_observadas;
+      assert.deepEqual(leitura.grupos, [{
+        unit_id: "VILA-LAB",
+        source_mode: "simulated",
+        viagens_na_projecao: vila.realidade.viagens.length,
+      }]);
+      assert.equal(leitura.grupos.length, 1);
+      assert.equal(leitura.historico_sem_modo, null);
+      const ausente = await ler("/api/copiloto?unit_id=UNIDADE-SEM-FATOS");
+      assert.equal(ausente.entregas_observadas.estado, "sem_evidencia");
+      assert.deepEqual(ausente.entregas_observadas.grupos, []);
+      assert.match(ausente.entregas_observadas.motivo, /não significa zero/i);
+      assert.equal(ausente.celulas_operacionais.celulas[5].estado, "sem_evidencia");
+      assert.equal(await impressaoDoBanco(b), antes, "consultas nao podem gravar fatos nem aparelhos");
+    });
+
     await teste("S4 a leitura NAO escreve: event log e cadastro identicos depois de seis leituras", async () => {
       const depois = await impressaoDoBanco(b);
       assert.equal(depois, antes);

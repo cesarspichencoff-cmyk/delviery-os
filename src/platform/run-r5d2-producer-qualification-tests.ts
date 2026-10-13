@@ -331,10 +331,23 @@ teste("Q11 nenhum probe contra fonte externa foi executado, e a recusa esta decl
       .split("\n")
       .filter((l) => l !== "")
       // O proprio gate cita os padroes no texto da busca; ele nao e capturador.
-      .filter((l) => !/run-[a-z0-9-]+-tests.ts$/.test(l.split("\\").join("/")));
+      .filter((l) => !/run-[a-z0-9-]+-tests.ts$/.test(l.split("\\").join("/")))
+      // Comentarios de ferramentas de revisao nao sao probes. O codigo ATIVO
+      // continua proibido de acessar os coletores identificados.
+      .filter((l) =>
+        /Get-PrintJob|puppeteer|spooler/i.test(
+          semComentario(ler(l.split("\\").join("/"))),
+        ),
+      );
   } catch {
     capturadores = [];
   }
+  // O gate nao pode confundir uma NEGACAO em comentario com captura real,
+  // mas uma chamada concreta continua sendo detectada.
+  const proibido = /Get-PrintJob|puppeteer|spooler/i;
+  assert.doesNotMatch(semComentario("/* não usa spooler */ const localOnly = true;"), proibido);
+  assert.match(semComentario("const cmd = 'Get-PrintJob';"), proibido);
+  assert.match(semComentario("const service = 'spooler';"), proibido);
   assert.deepEqual(capturadores, [], `apareceu capturador vivo: ${capturadores.join(", ")}`);
 });
 

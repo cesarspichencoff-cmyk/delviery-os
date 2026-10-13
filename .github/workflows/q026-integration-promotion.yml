@@ -1,0 +1,301 @@
+name: q026-integration-promotion
+# Q-026 promotion guard: synthetic facts, ephemeral runner-local PG16, localhost Chromium.
+# No credentials, deploy, migration of operational data or external side effects.
+# Heavy cardinality benchmarks and mutation suites remain independent research gates.
+on:
+  pull_request:
+    branches:
+      - research/q026-minimal-integration-optin-20261010
+      - research/q026-integration-ci-safety-20261011
+      - integration/deliveryos-product-ux-android-20261009
+      - main
+  # PR checks cover research branches; prevent duplicate push+PR runs.
+  # Keep a post-merge safety signal for direct integration writes.
+  push:
+    branches:
+      - integration/deliveryos-product-ux-android-20261009
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: q026-integration-promotion-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  semantics:
+    name: Q026 semantics and regressions
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Prove actual tested tree and PR destination
+        shell: bash
+        env:
+          PR_BASE_REF: ${{ github.base_ref }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          actual="$(git rev-parse HEAD)"
+          test "$actual" = "$GITHUB_SHA"
+          if test "$GITHUB_EVENT_NAME" = pull_request; then
+            test -n "$PR_BASE_REF" && test -n "$PR_BASE_SHA" && test -n "$PR_HEAD_SHA"
+          fi
+          echo "Q026_TESTED_TREE event=$GITHUB_EVENT_NAME base=${PR_BASE_REF:-push} base_sha=${PR_BASE_SHA:-none} head_sha=${PR_HEAD_SHA:-$GITHUB_SHA} tested_checkout=$actual"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Strict TypeScript contract
+        run: |
+          npx tsc --noEmit
+          npx tsc --noEmit --target ES2022 --module commonjs --moduleResolution node --strict --esModuleInterop --skipLibCheck --types node tests/product/run-q026-leitor-incremental-propriedades.ts tests/product/q026-leitor-incremental-comparacao.ts
+      - name: Nine canonical properties, fail on missing proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx tsx tests/product/run-q026-leitor-incremental-propriedades.ts | tee q026-properties.log
+          grep -F 'Q026_LEITOR_INCREMENTAL_PROPRIEDADES: 9/9 PASS' q026-properties.log
+      - name: Neemo and Teknisa identity audit must not guess correlation
+        run: node tools/verificar_neemo_teknisa_identidade_v1.cjs
+      - name: Internal Trip rejects external and unknown order channels
+        run: npx tsx src/entregas/foundation/run-tests.ts
+      - name: Pilot server respects stored order origin despite omitted client channel
+        run: npx tsx src/entregas/pilot/run-pilot-gate-tests.ts
+      - name: Q016 replay, Product and governance regressions
+        run: |
+          npm run -s test:platform:q016
+          npm run -s test:platform:product
+          npx tsx src/product/viewmodels/run-copiloto-celulas-v33-tests.ts
+          npm run -s test:platform:governanca
+
+  postgres:
+    name: Q026 PG16 semantics, HTTP and MVCC
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
+      Q026_INC_LONGA: "5000"
+      Q026_INC_CURTAS: "200"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Prove actual tested tree and PR destination
+        shell: bash
+        env:
+          PR_BASE_REF: ${{ github.base_ref }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          actual="$(git rev-parse HEAD)"
+          test "$actual" = "$GITHUB_SHA"
+          if test "$GITHUB_EVENT_NAME" = pull_request; then
+            test -n "$PR_BASE_REF" && test -n "$PR_BASE_SHA" && test -n "$PR_HEAD_SHA"
+          fi
+          echo "Q026_TESTED_TREE event=$GITHUB_EVENT_NAME base=${PR_BASE_REF:-push} base_sha=${PR_BASE_SHA:-none} head_sha=${PR_HEAD_SHA:-$GITHUB_SHA} tested_checkout=$actual"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Start disposable localhost PostgreSQL 16 preinstalled on runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          PG_BIN=/usr/lib/postgresql/16/bin
+          PG_DATA="$RUNNER_TEMP/q026-pg16-$GITHUB_JOB"
+          test -x "$PG_BIN/initdb" && test -x "$PG_BIN/pg_ctl"
+          "$PG_BIN/initdb" -D "$PG_DATA" --username=postgres --auth-local=trust --auth-host=trust --encoding=UTF8 --locale=C >/dev/null
+          # Runner user cannot create sockets under PostgreSQL's default system path.
+          # Bind the local socket only inside the runner-owned temp directory.
+          if ! "$PG_BIN/pg_ctl" -D "$PG_DATA" -l "$RUNNER_TEMP/q026-pg16-$GITHUB_JOB.log" -o "-h 127.0.0.1 -p 5432 -k $RUNNER_TEMP" -w start; then
+            cat "$RUNNER_TEMP/q026-pg16-$GITHUB_JOB.log"
+            exit 1
+          fi
+          version="$(psql -h 127.0.0.1 -p 5432 -U postgres -d postgres -Atc 'SHOW server_version_num')"
+          test "$version" -ge 160000 && test "$version" -lt 170000
+          echo "Q026_PG16_RUNNER_LOCAL_READY version=$version job=$GITHUB_JOB"
+      - name: Real PG16 G1-G10, no empty or skipped pass
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx tsx tests/product/run-q026-leitor-incremental-pg.ts | tee q026-pg.log
+          grep -F 'Q026_LEITOR_INCREMENTAL_PG: 10/10 PASS' q026-pg.log
+      - name: Invalid timestamp and unsafe sequence parity
+        run: npx tsx tests/product/run-q026-infinite-timestamp-parity-pg.ts
+      - name: Physical Unicode ties and cross-scope ordering
+        run: |
+          npx tsx tests/product/run-q026-unicode-p4-tie-pg.ts
+          npx tsx tests/product/run-q026-p4-unicode-scope-trip-pg.ts
+      - name: Commit between FETCH, abort, rollback and backend_xmin release
+        run: npx tsx tests/product/run-q026-integrated-cursor-mvcc-abort.ts
+      - name: Actual HTTP guard with non-superuser SELECT-only role
+        run: Q026_ACTUAL_HTTP_MODE=enabled Q026_ACTUAL_HTTP_DB_ROLE=reader npx tsx tests/product/run-q026-real-http-guard-candidate.ts
+      - name: Actual incremental HTTP socket/deadline with SELECT-only PostgreSQL role
+        run: DELIVERYOS_ENTREGAS_INCREMENTAL_RR=1 Q026_ACTUAL_HTTP_MODE=enabled Q026_ACTUAL_HTTP_DB_ROLE=reader npx tsx tests/product/run-q026-real-http-guard-candidate.ts
+      - name: Actual incremental opt-in route with concurrent GET and health
+        run: Q026_FAIRNESS_VARIANT=incremental Q026_EVENT_LOOP_EVENTS=20000 npx tsx tests/product/run-q026-event-loop-http-fairness-shadow.ts
+      - name: PostgreSQL fixture must be required, not silently skipped
+        shell: bash
+        run: |
+          set +e
+          DELIVERYOS_PG_URL= npx tsx tests/product/run-q026-leitor-incremental-pg.ts >/dev/null 2>&1
+          result=$?
+          test "$result" -eq 78
+      - name: Stop owned disposable PostgreSQL cluster
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          PG_DATA="$RUNNER_TEMP/q026-pg16-$GITHUB_JOB"
+          if test -f "$PG_DATA/postmaster.pid"; then
+            /usr/lib/postgresql/16/bin/pg_ctl -D "$PG_DATA" -m fast -w stop
+          fi
+
+  chromium:
+    name: Q026 Chromium 503 and recovery
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      DELIVERYOS_PG_URL: postgres://postgres@127.0.0.1:5432/postgres
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Prove actual tested tree and PR destination
+        shell: bash
+        env:
+          PR_BASE_REF: ${{ github.base_ref }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          actual="$(git rev-parse HEAD)"
+          test "$actual" = "$GITHUB_SHA"
+          if test "$GITHUB_EVENT_NAME" = pull_request; then
+            test -n "$PR_BASE_REF" && test -n "$PR_BASE_SHA" && test -n "$PR_HEAD_SHA"
+          fi
+          echo "Q026_TESTED_TREE event=$GITHUB_EVENT_NAME base=${PR_BASE_REF:-push} base_sha=${PR_BASE_SHA:-none} head_sha=${PR_HEAD_SHA:-$GITHUB_SHA} tested_checkout=$actual"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Start disposable localhost PostgreSQL 16 preinstalled on runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          PG_BIN=/usr/lib/postgresql/16/bin
+          PG_DATA="$RUNNER_TEMP/q026-pg16-$GITHUB_JOB"
+          test -x "$PG_BIN/initdb" && test -x "$PG_BIN/pg_ctl"
+          "$PG_BIN/initdb" -D "$PG_DATA" --username=postgres --auth-local=trust --auth-host=trust --encoding=UTF8 --locale=C >/dev/null
+          # Runner user cannot create sockets under PostgreSQL's default system path.
+          # Bind the local socket only inside the runner-owned temp directory.
+          if ! "$PG_BIN/pg_ctl" -D "$PG_DATA" -l "$RUNNER_TEMP/q026-pg16-$GITHUB_JOB.log" -o "-h 127.0.0.1 -p 5432 -k $RUNNER_TEMP" -w start; then
+            cat "$RUNNER_TEMP/q026-pg16-$GITHUB_JOB.log"
+            exit 1
+          fi
+          version="$(psql -h 127.0.0.1 -p 5432 -U postgres -d postgres -Atc 'SHOW server_version_num')"
+          test "$version" -ge 160000 && test "$version" -lt 170000
+          echo "Q026_PG16_RUNNER_LOCAL_READY version=$version job=$GITHUB_JOB"
+      - run: npx playwright install --with-deps chromium
+      - name: Browser tests actual incremental opt-in and stale reading
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx tsx tests/product/run-q026-browser-overload-proof.ts | tee q026-browser.log
+          grep '^Q026_BROWSER_STALE_READING_503_PASS ' q026-browser.log
+          grep '^Q026_BROWSER_503_FIRST_LOAD_AND_RECOVERY_PASS ' q026-browser.log
+      - name: PostgreSQL required for browser proof
+        shell: bash
+        run: |
+          set +e
+          DELIVERYOS_PG_URL= npx tsx tests/product/run-q026-browser-overload-proof.ts >/dev/null 2>&1
+          result=$?
+          test "$result" -eq 78
+      - name: Stop owned disposable PostgreSQL cluster
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          PG_DATA="$RUNNER_TEMP/q026-pg16-$GITHUB_JOB"
+          if test -f "$PG_DATA/postmaster.pid"; then
+            /usr/lib/postgresql/16/bin/pg_ctl -D "$PG_DATA" -m fast -w stop
+          fi
+
+  android:
+    name: Q026 Android JVM regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Prove actual tested tree and PR destination
+        shell: bash
+        env:
+          PR_BASE_REF: ${{ github.base_ref }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          actual="$(git rev-parse HEAD)"
+          test "$actual" = "$GITHUB_SHA"
+          if test "$GITHUB_EVENT_NAME" = pull_request; then
+            test -n "$PR_BASE_REF" && test -n "$PR_BASE_SHA" && test -n "$PR_HEAD_SHA"
+          fi
+          echo "Q026_TESTED_TREE event=$GITHUB_EVENT_NAME base=${PR_BASE_REF:-push} base_sha=${PR_BASE_SHA:-none} head_sha=${PR_HEAD_SHA:-$GITHUB_SHA} tested_checkout=$actual"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Android JVM and Room regressions, no physical device
+        working-directory: android
+        run: bash ./gradlew --no-daemon --console=plain testDebugUnitTest
+      - name: Verify real nonempty JUnit results, fail on errors or missing suites
+        if: ${{ always() }}
+        working-directory: android
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import glob, xml.etree.ElementTree as ET
+          files = glob.glob("app/build/test-results/testDebugUnitTest/*.xml")
+          if not files:
+              raise SystemExit("Q026_ANDROID_JUNIT_MISSING")
+          count = failures = errors = skipped = 0
+          for path in files:
+              root = ET.parse(path).getroot()
+              count += int(root.get("tests", "0"))
+              failures += int(root.get("failures", "0"))
+              errors += int(root.get("errors", "0"))
+              skipped += int(root.get("skipped", "0"))
+          print(f"Q026_ANDROID_JVM_JUNIT: suites={len(files)} tests={count} failures={failures} errors={errors} skipped={skipped}")
+          if count == 0 or count == skipped or failures or errors:
+              raise SystemExit("Q026_ANDROID_JUNIT_INVALID")
+          PY
+
+  required:
+    name: Q026 promotion required
+    needs: [semantics, postgres, chromium, android]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail closed unless all proof jobs succeeded
+        env:
+          SEMANTICS_RESULT: ${{ needs.semantics.result }}
+          POSTGRES_RESULT: ${{ needs.postgres.result }}
+          CHROMIUM_RESULT: ${{ needs.chromium.result }}
+          ANDROID_RESULT: ${{ needs.android.result }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$SEMANTICS_RESULT" = success
+          test "$POSTGRES_RESULT" = success
+          test "$CHROMIUM_RESULT" = success
+          test "$ANDROID_RESULT" = success
+          echo Q026_PROMOTION_CI_REQUIRED_PASS

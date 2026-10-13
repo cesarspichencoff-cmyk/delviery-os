@@ -127,7 +127,8 @@ export type DomainErrorCode =
   | "GPS_CANNOT_CONFIRM_DELIVERY"
   | "FORBIDDEN_ACTOR_MIX"
   | "TRIP_TERMINAL"
-  | "NO_ACTIVE_DELIVERIES";
+  | "NO_ACTIVE_DELIVERIES"
+  | "NON_OWN_ORDER_IN_TRIP";
 
 export class DomainError extends Error {
   constructor(
