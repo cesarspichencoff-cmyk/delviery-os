@@ -2,6 +2,7 @@
 const assert=require("node:assert/strict"),fs=require("node:fs"),os=require("node:os"),path=require("node:path");
 const {exactSnapshotHash,RULES}=require("./auditar_eventos_watcher_v730_readonly.js");
 const {preflight,shiftReasons}=require("./comandas_windows_sidecar_preflight_v731_readonly.js");
+const {onetime,EFFECTS,DEADLINE}=require("./comandas_windows_observer_oneshot_v732_readonly.js");
 const temp=fs.mkdtempSync(path.join(os.tmpdir(),"tata-comandas-v731-"));
 const state=path.join(temp,"state"),events=path.join(state,"reader-events-v1"),shadow=path.join(temp,"shadow");
 fs.mkdirSync(events,{recursive:true});fs.mkdirSync(shadow,{recursive:true});
@@ -121,6 +122,31 @@ try{
  check("source has no shell, installer, printer or local file write primitives",()=>{
   const src=fs.readFileSync(path.join(__dirname,"comandas_windows_sidecar_preflight_v731_readonly.js"),"utf8");
   assert.doesNotMatch(src,/\b(?:spawnSync|execSync|writeFileSync|createWriteStream|rmSync|Set-Service|Start-Service|Set-Printer)\b/);
+ });
+
+ check("oneshot guards the actual pre-delivery freeze at 11:14 BRT",()=>{
+  reset();
+  const allowed=onetime(temp,new Date("2026-10-13T10:00:00-03:00"));
+  assert.equal(DEADLINE,"2026-10-13T11:14:00-03:00");
+  assert.equal(allowed.status,"HOLD");
+  assert.equal(allowed.checked,1);
+  assert.equal(allowed.consistent,1);
+  assert.equal(allowed.eligible,1);
+  assert.ok(allowed.reason_codes.includes("OS_ISOLATION_AND_VALIDATED_ROLLBACK_REQUIRED"));
+  assert.equal(allowed.effects.service_change,false);
+  assert.equal(allowed.effects.consumer_v2,false);
+  const freeze=onetime(temp,new Date("2026-10-13T11:14:00-03:00"));
+  assert.equal(freeze.checked,0);
+  assert.deepEqual(freeze.reason_codes,["OPERATIONS_FREEZE_DEADLINE_REACHED"]);
+  assert.equal(freeze.status,"HOLD");
+ });
+ check("oneshot cannot be induced to install, print or execute V2",()=>{
+  const got=onetime(temp,new Date("2026-10-13T11:13:59-03:00"));
+  assert.equal(got.external_operational_authority,false);
+  assert.ok(Object.values(EFFECTS).every(v=>v===false));
+  const body=fs.readFileSync(path.join(__dirname,
+   "comandas_windows_observer_oneshot_v732_readonly.js"),"utf8");
+  assert.doesNotMatch(body,/\b(?:spawnSync|execSync|writeFileSync|mkdirSync|unlinkSync|Start-Service|Set-Service|Set-Printer)\b/);
  });
 }finally{fs.rmSync(temp,{recursive:true,force:true});}
 console.log("COMANDAS_WINDOWS_SIDECAR_PREFLIGHT_V731="+count+"/"+count+" HOLD_WHEN_UNPROVEN NO_SERVICE_CHANGE NO_PRINT");
