@@ -144,6 +144,17 @@ test("cross-day scope does not collide, but still only proposes",()=>{
  assert.equal(r.status,"RESERVATION_PROPOSAL_ONLY");
  assert.equal(r.authorize_print,false);
 });
+test("invalid operational dates rejected, valid leap day allowed only offline",()=>{
+ for(const wrong of ["2026-02-30","2025-02-29","2026-13-01","2026-00-01",
+  "2026-10-32","2026-04-31"]){
+  assert.equal(reserve(state,{...d.descriptors[0],
+   scope_id:"STORE:SIMULATED|DATE:"+wrong},6).status,"HOLD",wrong);
+ }
+ const leap=reserve(state,{...d.descriptors[0],
+  scope_id:"STORE:SIMULATED|DATE:2024-02-29"},6);
+ assert.equal(leap.status,"RESERVATION_PROPOSAL_ONLY");
+ assert.equal(leap.authorize_print,false);
+});
 test("missing or self-declared authorization scope blocked",()=>{
  assert.equal(reserve(state,{...d.descriptors[0],scope_evidence:"HUMAN_CONFIRMED_RULE"},6).status,"HOLD");
  assert.equal(reserve(state,{...d.descriptors[0],scope_id:""},6).status,"HOLD");
