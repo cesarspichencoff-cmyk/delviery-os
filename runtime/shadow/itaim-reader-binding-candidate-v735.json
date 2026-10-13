@@ -3,15 +3,17 @@
   "unit": "ITAIM",
   "windows_host": "CAIXA_MOOCA",
   "expected_store_id": "0001",
-  "expected_shop_id": null,
+  "expected_shop_id": "01",
   "state": "CANDIDATE_READ_ONLY_NOT_INSTALLED",
   "source_ref": "historical-user-confirmation:2026-09-04:CAIXA_MOOCA-ITAIM",
   "evidence": {
     "host_to_unit": "HUMAN_CONFIRMED_HISTORICAL_NOT_FRESH_PHYSICAL_PROOF",
     "branch_id": "READ_ONLY_TEK_NISA_LOCAL_BRANCH_0001_HOST_ASSOCIATION",
-    "shop_id": "UNKNOWN_NOT_GUESSED",
-    "reader_event_identity": "EVENTS_FROM_CURRENT_HOST_REQUIRE_EXACT_RAW_BINDING",
-    "target_freshness": "CAIXA_MOOCA_REMOTE_TIMEOUT_2026-10-12"
+    "shop_id": "SQL_DIRECT_READ_TEK_NISA_COMANDAVEN_DLV_IFO_CDFILIAL_0001_CDLOJA_01_2026_10_12",
+    "reader_event_identity": "UNKNOWN_NEEDS_EXACT_RAW_CDFILIAL_CDLOJA_AND_ORDER_KEY_ON_CURRENT_READER_EVENTS",
+    "target_freshness": "SQL_READ_ON_CAIXA_MOOCA_2026-10-12; READER_REMOTE_OFFLINE_ON_FOLLOWUP",
+    "source_count": "361 iFood-origin local commands; 361 with external refs; source grouped by CDFILIAL/CDLOJA, checked read-only 2026-10-12",
+    "service_and_print": "LEGACY_V1_RUNNING; V2_NOT_INSTALLED; ALL_EFFECTS_HOLD"
   },
   "effects": {
     "state_write": false,
@@ -20,5 +22,5 @@
     "spooler_write": false,
     "sequence_write": false
   },
-  "next_required": "Verify current CDLOJA from original reader events and correlate exact CDFILIAL and host, before any live binding or installation."
+  "next_required": "Read only real latest reader-events from host CAIXA_MOOCA; independently compare raw CDFILIAL/CDLOJA/order_key with SQL pair 0001/01; then test V735 service review against a real blocked event in passive SHADOW, without changing state/printing."
 }
