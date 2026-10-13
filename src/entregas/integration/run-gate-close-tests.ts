@@ -267,6 +267,29 @@ test("Correlacao read-only: eventos da parada vinculam a Trip sem misturar unida
   assert.equal(consumer.isolatedEvents.length, 0);
 });
 
+test("Consumer nao atribui evento da entrega anterior ao vinculo publico", () => {
+  const consumer = new SimulatedCopilotoConsumer();
+  const mk = (id: string, event_type: "delivery_added" | "arrival_reported", attrs: Record<string, unknown>) => ({
+    ...EXAMPLE_TRIP_CREATED,
+    event_id: "ord-" + id,
+    idempotency_key: "ord-idem-" + id,
+    event_type,
+    occurred_at: t0,
+    recorded_at: t0,
+    unit_id: "LAB-ORD",
+    source_mode: "simulated" as const,
+    trip_id: undefined as string | undefined,
+    delivery_id: "D-ORD",
+    ...attrs,
+  });
+  assert.equal(consumer.apply(mk("premature", "arrival_reported", {})).applied, true);
+  assert.equal(consumer.apply(mk("link", "delivery_added", { trip_id: "T-ORD" })).applied, true);
+  assert.deepEqual(consumer.eventsForTrip("T-ORD").map(e => e.event_type), ["delivery_added"]);
+  assert.equal(consumer.apply(mk("after", "arrival_reported", {})).applied, true);
+  assert.deepEqual(consumer.eventsForTrip("T-ORD").map(e => e.event_id),
+    ["ord-link", "ord-after"]);
+});
+
 test("reinício com checkpoint retoma; replay não altera Entregas", async () => {
   const session = new EntregasSession("u1");
   let agg: TripAggregate | null = null;

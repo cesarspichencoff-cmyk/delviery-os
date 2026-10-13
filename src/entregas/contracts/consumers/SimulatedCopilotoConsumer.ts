@@ -136,11 +136,23 @@ export class SimulatedCopilotoConsumer {
       seen.add(event.trip_id);
       owners.set(k, seen);
     }
+    // Nao inferir vinculo retroativo: o registro publico da aresta precisa
+    // preceder o evento da entrega. A ambiguidade global continua fail-closed.
+    const linkedSoFar = new Map<string, Set<string>>();
     return this.appliedOrder.filter((event) => {
+      if (event.event_type === "delivery_added" && event.trip_id && event.delivery_id) {
+        const k = key(event);
+        const seen = linkedSoFar.get(k) ?? new Set<string>();
+        seen.add(event.trip_id);
+        linkedSoFar.set(k, seen);
+      }
       if (event.trip_id) return event.trip_id === trip_id;
       if (!event.delivery_id) return false;
-      const seen = owners.get(key(event));
-      return seen?.size === 1 && seen.has(trip_id);
+      const k = key(event);
+      const allOwners = owners.get(k);
+      const precedingOwners = linkedSoFar.get(k);
+      return allOwners?.size === 1 && allOwners.has(trip_id) &&
+        precedingOwners?.size === 1 && precedingOwners.has(trip_id);
     });
   }
 
