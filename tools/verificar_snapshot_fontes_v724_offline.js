@@ -55,7 +55,7 @@ check("malformed decision or missing source cannot claim provenance",()=>{
 check("executable, proof, motor and every rule are staged before subprocess",()=>{
  const proc=gate.indexOf("const child=spawnSync(");
  for(const token of [
-  "fs.writeFileSync(isolatedConsumer,code",
+  "fs.writeFileSync(isolatedConsumer,execCode",
   "for(const [name,bytes] of ruleSources)",
   "fs.writeFileSync(path.join(isolatedDir,name),bytes",
   "fs.writeFileSync(proofPath,proofSource",
@@ -81,7 +81,11 @@ check("symlinks rejected by source reader, effectful paths absent",()=>{
  assert.ok(gate.includes("fs.constants.O_NOFOLLOW"));
  assert.ok(gate.includes("fs.constants.O_NONBLOCK"));
  assert.ok(gate.includes("fs.fstatSync(fd,{bigint:true})"));
- assert.ok(gate.includes('if(process.platform!=="linux")'));
+ assert.ok(gate.includes('if(process.platform!=="linux"&&!windowsCI)'));
+ assert.ok(gate.includes('process.env.RUNNER_OS==="Windows"'));
+ assert.ok(gate.includes("src.split(needle).length!==2"));
+ assert.ok(gate.includes("fs.writeFileSync(isolatedConsumer,execCode"));
+ assert.ok(gate.includes("sha(readBound(isolatedConsumer))===sha(execCode)"));
  assert.ok(gate.includes("withoutNodePreloads(process.env)"));
  assert.ok(!/\b(?:printer\.print|spooler\.write|Set-Service|Start-Service)\b/.test(gate));
 });
