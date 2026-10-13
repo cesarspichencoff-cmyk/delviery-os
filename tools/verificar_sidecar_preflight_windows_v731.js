@@ -35,7 +35,7 @@ const check=(name,cb)=>{cb();count++;console.log("PASS V731 "+count+" "+name);};
 const HOLD=(reason)=>{const result=preflight(temp,eventName);
  assert.equal(result.status,"HOLD");assert.equal(result.operational_permission,false);
  assert.equal(result.consumer_executed,false);assert.equal(result.v68_executed,false);
- assert.equal(result.tickets_generated,false);assert.equal(result.print_authorized,undefined);
+ assert.equal(result.tickets_generated,false);assert.equal(result.print_authorized,false);
  assert.equal(result.printer_access,false);
  assert.equal(result.effects.print,false);assert.equal(result.effects.sequence_write,false);
  assert.ok(result.blockers.includes(reason),JSON.stringify(result.blockers));return result;};
