@@ -42,6 +42,13 @@ const wrapped=wrapVerifiedLine("OBS: NÃO PRODUZIR COM ALERGIA A CAMARÃO E SEM 
 assert.ok(wrapped.length>1&&wrapped.every(t=>encodeCp850(t).length<=42));
 assert.equal(wrapped.join(" "),"OBS: NÃO PRODUZIR COM ALERGIA A CAMARÃO E SEM PIMENTA");
 assert.deepEqual(wrapVerifiedLine(" "),[" "]);
+assert.deepEqual(wrapVerifiedLine("1  COMBINADO KIDS"),["1  COMBINADO KIDS"],
+ "quantity separator spaces must not be collapsed");
+assert.deepEqual(wrapVerifiedLine("C1  CAIXA 750"),["C1  CAIXA 750"]);
+assert.throws(()=>wrapVerifiedLine("OBS:  "+ "MUITA OBSERVAÇÃO ".repeat(5)),
+ /MULTISPACE_LINE_REQUIRES_REVIEW/);
+assert.throws(()=>wrapVerifiedLine(" SEM CAMARÃO"),/TRACE_EDGE_SPACES_NOT_APPROVED/);
+assert.throws(()=>wrapVerifiedLine("SEM CAMARÃO\r"),/TRACE_LINE_INVALID/);
 assert.throws(()=>wrapVerifiedLine("A".repeat(43)),/UNBREAKABLE_WORD/);
 assert.throws(()=>wrapVerifiedLine("CORTAR\u001bPAPEL"),/TRACE_LINE_INVALID/);
 assert.throws(()=>wrapVerifiedLine("NÃO 🚨"),/UNREPRESENTABLE_CP850/);
