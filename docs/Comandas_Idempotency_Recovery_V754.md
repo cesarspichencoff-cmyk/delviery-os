@@ -57,3 +57,27 @@ Transições inválidas, replays, identidade alterada ou versão obsoleta retorn
 **DRAFT / HOLD / NO MERGE / NO DEPLOY / NO INSTALL / NO PRINT / NO SPOOLER WRITE / NO SEQUENCE WRITE / NO TEKNISA CHANGE.**
 
 A próxima fase é um protótipo local de transação durável e teste multiprocessos em ambiente descartável, **não** um envio à impressora compartilhada. A primeira aprovação de produção só pode ocorrer após as provas físicas e de segurança explícitas.
+
+## Complemento V7.55 — diário sintético concorrente
+
+Foi acrescentado `tools/comandas_journal_v755_sandbox.js`, com teste
+`tools/verificar_journal_sandbox_v755.js`. **Somente no diretório temporário
+descartável** cujo nome começa com `deliveryos-v755-`:
+
+- Reserva separada por via é serializada por criação exclusiva de diretório
+  `.attempt-lock`; a concorrência real entre cinco processos é exercitada no teste.
+- Revisões ficam em arquivos `state-000001.json` etc., criados exclusivamente,
+  com `fsync` do arquivo, hash encadeado e leitura pós-gravação.
+- Repetição da reserva após simulação de reinício permanece bloqueada.
+- Se a trava sobreviver a uma queda, ela **não** é liberada automaticamente:
+  o registro fica em HOLD para reconciliação externa. Alteração do histórico
+  também bloqueia, sem apagar silenciosamente a prova.
+- O resultado retornado é `SYNTHETIC_JOURNAL_COMMIT_OBSERVED` com
+  `authorize_print=false` — nunca autorização operacional.
+
+**Limitação relevante:** a gravação/ordenação após perda total de energia no Windows
+não foi validada; nem há lock distribuído, adaptação ao serviço instalado,
+comando de impressora, confirmação de papel ou garantia de zero perdas.
+Nenhum destes arquivos é uma implementação de registro operacional.
+A presença de `fsync` e cinco processos PASS no laboratório não prova a
+atomicidade em rede, a durabilidade de hardware nem *exactly once* física.
