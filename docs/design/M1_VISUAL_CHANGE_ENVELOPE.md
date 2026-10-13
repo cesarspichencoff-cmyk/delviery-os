@@ -483,6 +483,48 @@ Esses arquivos reutilizam a porta de realidade de Entregas já existente e mostr
 
 A continuidade genérica da missão autoriza execução reversível em DRAFT, **não é aceite final de alteração visual, Q-019, M1B, merge, deploy, Android físico ou operação**. Rollback: remover este registro e seus controles C6e/C6f; o código permanece isolado no PR até revisão.
 
+### Q-019 — autorizacao expressa de Cesar em 13/10/2026: excecoes historicas CONGELADAS (fora de M1B)
+
+**Autorizacao humana:** Cesar respondeu "**Sim autorizo**" ao pedido explicito de **regularizar Q-019 por excecoes estritas, vinculadas a cada alteracao comprovada, mantendo os testes de protecao e SEM liberar merge/producao** (conversa de continuidade de 2026-10-13). Esta resposta NAO autoriza reescrever o baseline, redesenhar a Home/Entregas, liberar M1B, ativar produtor/gate LIVE, instalar Android, GPS ou publicar.
+
+**Commit de referencia dos bytes:** `33f267c0de128674c7439286f1c56054c5b21b53` (continuacao da PR #106; unica mudanca entre `7dddd9f5` e ele e um teste PG, fora dos 12 caminhos). Cada linha abaixo e `PATH CLASS GIT_BLOB_SHA`, nao uma permissao por caminho futuro.
+
+```text
+src/perfil-delivery/decisao.js Q019_Q003_CANONICAL_FOCUS_NO_AUTOMATION 050b8cbf62d2067d054962f79a3b7d4c69c0d722
+src/platform/copiloto/attention-authority.ts Q019_Q003_CANONICAL_FOCUS_NO_AUTOMATION 3fc99a02244d9244f0ca3b0ecee602136dedf5ec
+src/platform/copiloto/causal-attention-orchestrator.ts Q019_Q003_CANONICAL_FOCUS_NO_AUTOMATION 77d73eeae76393492d7756b1bf32102d5f123652
+src/platform/copiloto/causal-identity-bridge.ts Q019_Q003_CANONICAL_FOCUS_NO_AUTOMATION c036a40dec650214fe42a75eebecfebbb0ecbefb
+src/platform/copiloto/conference-bridge.ts Q019_Q015_TERMINAL_RETENTION_CONTRACT 57adceadf606caff42d6c7de99514797ff58965d
+src/platform/copiloto/shadow.ts Q019_Q003_CANONICAL_FOCUS_NO_AUTOMATION b65378c2ab9fcc45809726e9932013e3b0ca66c2
+src/product/ui/surfaces/copiloto.js Q019_SHADOW_SHARED_SOURCE_COVERAGE_READONLY eb22f1be10baed3413792f87089ac204ae3c7dcc
+src/product/ui/surfaces/operacao-viva.js Q019_B6_HISTORICAL_OPERACAO_VIVA_READONLY ad6cccf0d1901a97a7c26153927da6909ed09515
+src/product/viewmodels/copiloto-vm.ts Q019_B6_B7_HISTORICAL_SHADOW_READONLY 96cb5115cf734e692678b79ee929a77b13f66bd7
+src/product/viewmodels/historico-vm.ts Q019_B6_TATA_HISTORICAL_READONLY 5323f05511f1cbec247faae485d4acddf29c23fd
+src/product/viewmodels/operacao-viva-vm.ts Q019_B6_HISTORICAL_OPERACAO_VIVA_READONLY a7bd674dda0db4cde9f9cac36a290d9289bca280
+src/product/viewmodels/tata-comanda-vm.ts Q019_TATA_HISTORICAL_ADAPTER_READONLY 7974e633483805c52f8a353ab1e10779e5cdc17f
+```
+
+**Procedencia e limite por arquivo:**
+
+| Caminho | Commits mapeados | Proposito estrito — sem acao automatica |
+|---|---|---|
+| `src/perfil-delivery/decisao.js` | `d326c5d` | `Q019_Q003_CANONICAL_FOCUS_NO_AUTOMATION` |
+| `src/platform/copiloto/attention-authority.ts` | `d326c5d` | `Q019_Q003_CANONICAL_FOCUS_NO_AUTOMATION` |
+| `src/platform/copiloto/causal-attention-orchestrator.ts` | `f23006a` | `Q019_Q003_CANONICAL_FOCUS_NO_AUTOMATION` |
+| `src/platform/copiloto/causal-identity-bridge.ts` | `91e766c` | `Q019_Q003_CANONICAL_FOCUS_NO_AUTOMATION` |
+| `src/platform/copiloto/conference-bridge.ts` | `2a3b8f8` | `Q019_Q015_TERMINAL_RETENTION_CONTRACT` |
+| `src/platform/copiloto/shadow.ts` | `d326c5d` | `Q019_Q003_CANONICAL_FOCUS_NO_AUTOMATION` |
+| `src/product/ui/surfaces/copiloto.js` | `f24ff62,a117c43,20151b0,e93faf9,e583b61,081e54c` | `Q019_SHADOW_SHARED_SOURCE_COVERAGE_READONLY` |
+| `src/product/ui/surfaces/operacao-viva.js` | `f24ff62` | `Q019_B6_HISTORICAL_OPERACAO_VIVA_READONLY` |
+| `src/product/viewmodels/copiloto-vm.ts` | `f24ff62,a117c43` | `Q019_B6_B7_HISTORICAL_SHADOW_READONLY` |
+| `src/product/viewmodels/historico-vm.ts` | `f24ff62,39a9a9c` | `Q019_B6_TATA_HISTORICAL_READONLY` |
+| `src/product/viewmodels/operacao-viva-vm.ts` | `f24ff62` | `Q019_B6_HISTORICAL_OPERACAO_VIVA_READONLY` |
+| `src/product/viewmodels/tata-comanda-vm.ts` | `39a9a9c` | `Q019_TATA_HISTORICAL_ADAPTER_READONLY` |
+
+**Controles:** C6 continua comparando mudanças desde `f87a36d`; C6g exige o triplo exato caminho/classe/blob, confere o blob do commit de referencia e o conteudo atual, e demonstra que remover linha, trocar classe, adulterar hash ou alterar bytes REPROVA; C6h proibe transpor qualquer classe a caminho alheio. Uma futura edicao destes arquivos exige NOVO registro de mudanca e nova autorizacao, nao herda Q-019. Nao adicionar estes caminhos a `AUTHORIZED_PATHS`. C6b-f, C2-C5 e os gates historicos seguem obrigatorios.
+
+**Fronteira:** autorizacao exclusivamente da REGULARIZACAO HISTORICA Q-019. Nao e homologacao funcional/visual; `HUMAN_APPROVAL_STATE = AWAITING_CESAR_M1B_EXECUTION_APPROVAL` fica intacto. Validacoes de segurança causal, retencao, historico read-only, comparacao visual, Android e Neemo/Teknisa continuam independentes. `Q-020` nao esta autorizada por esta decisao.
+
 ---
 
 ## 6. O que M1B **não** decide sozinho
