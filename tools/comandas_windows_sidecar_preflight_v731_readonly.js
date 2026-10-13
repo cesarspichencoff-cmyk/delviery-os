@@ -59,7 +59,7 @@ function preflight(root,eventName){
   status:"HOLD",source_consistent:false,event_reconciled:false,
   shift_record_consistent:false,rules_present:0,rules_required:RULES.length,
   canonical_motor_pinned:false,v2_candidate_pinned:false,
-  printer_access:false,operational_permission:false,
+  printer_access:false,print_authorized:false,operational_permission:false,
   consumer_executed:false,v68_executed:false,tickets_generated:false,
   effects:NO_EFFECTS,blockers:[]};
  const eventPath=path.join(root,"state","reader-events-v1",eventName);
@@ -122,7 +122,7 @@ if(require.main===module){
  }catch{
   process.stdout.write(JSON.stringify({schema:"tata.comandas.windows-sidecar-preflight.v731",
     status:"HOLD",blockers:["PREFLIGHT_INPUT_INVALID"],
-    operational_permission:false,printer_access:false,effects:NO_EFFECTS})+"\n");
+    operational_permission:false,print_authorized:false,printer_access:false,effects:NO_EFFECTS})+"\n");
   process.exitCode=2;
  }
 }
