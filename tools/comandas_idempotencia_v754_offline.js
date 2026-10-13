@@ -50,11 +50,21 @@ function validLedger(s){
  }
  return true;
 }
+function validDailyStoreScope(scope){
+ if(typeof scope!=="string")return false;
+ const m=/^STORE:[A-Z0-9_-]{1,32}\|DATE:(\d{4})-(\d{2})-(\d{2})$/.exec(scope);
+ if(!m)return false;
+ const y=Number(m[1]),mo=Number(m[2]),day=Number(m[3]);
+ if(y<2000||y>2200||mo<1||mo>12||day<1||day>31)return false;
+ const d=new Date(Date.UTC(y,mo-1,day));
+ return d.getUTCFullYear()===y&&d.getUTCMonth()+1===mo&&
+  d.getUTCDate()===day;
+}
 function normalize(raw){
  if(!raw||typeof raw!=="object"||Array.isArray(raw))return null;
  const {scope_id,scope_evidence,order_key,kind,station,slot,
   tata_sequence,payload_sha256,source_sha256}=raw;
- if(typeof scope_id!=="string"||!/^STORE:[A-Z0-9_-]{1,32}\|DATE:\d{4}-\d{2}-\d{2}$/.test(scope_id)||
+ if(!validDailyStoreScope(scope_id)||
    scope_evidence!=="SYNTHETIC_SCOPE_ONLY"||
    typeof order_key!=="string"||order_key.split("|").length!==4||
    order_key.split("|").some(x=>!x||x.length>48||/[\r\n]/.test(x))||
