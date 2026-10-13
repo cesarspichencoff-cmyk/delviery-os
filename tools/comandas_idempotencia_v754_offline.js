@@ -55,7 +55,7 @@ function validDailyStoreScope(scope){
  const m=/^STORE:[A-Z0-9_-]{1,32}\|DATE:(\d{4})-(\d{2})-(\d{2})$/.exec(scope);
  if(!m)return false;
  const y=Number(m[1]),mo=Number(m[2]),day=Number(m[3]);
- if(y<2000||y>2200||mo<1||mo>12||day<1||day>31)return false;
+ if(mo<1||mo>12||day<1||day>31)return false;
  const d=new Date(Date.UTC(y,mo-1,day));
  return d.getUTCFullYear()===y&&d.getUTCMonth()+1===mo&&
   d.getUTCDate()===day;
