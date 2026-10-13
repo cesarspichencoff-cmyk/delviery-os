@@ -21,7 +21,7 @@ foreach($stem in @('01-producao','02-conferencia')){
      -not $svg.InnerText.Contains('NAO PRODUZIR')){throw 'TEST_PREVIEW_REQUIRED'}
   $h = [int]$svg.GetAttribute('height')
   if($h -lt 80 -or $h -gt 1300){throw 'SVG_HEIGHT_OUT_OF_BOUNDS'}
-  $bmp = New-Object Drawing.Bitmap(1152,[int][Math]::Ceiling($h*$scale*2))
+  $bmp = New-Object Drawing.Bitmap(1152,([int][Math]::Ceiling($h*$scale)*2))
   $g = [Drawing.Graphics]::FromImage($bmp)
   $measBmp = New-Object Drawing.Bitmap(400,400)
   $mg = [Drawing.Graphics]::FromImage($measBmp)
