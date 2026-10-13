@@ -103,7 +103,7 @@ function lineageMatchesPinnedSources(decision,sources){
   ORIGINS.every(([label,name],i)=>Buffer.isBuffer(sources.get(name))&&
    actual[i]===label+"#sha256="+sha(sources.get(name)));
 }
-// V7.27: bind event key to its three raw SQL order identifiers.
+// V7.30: bind the actual four-part Windows watcher key to all raw identifiers.
 // A matching event/decision pair alone cannot authenticate a forged key.
 function exactOrderIdentity(event){
  const order=event?.order;
@@ -116,7 +116,7 @@ function exactOrderIdentity(event){
     order[k].length>96||/[|\r\n]/.test(order[k])))
   return false;
  return typeof event.order_key==="string"&&
-  event.order_key===[order.CDFILIAL,order.CDLOJA,order.NRCOMANDA].join("|");
+  event.order_key===[order.CDFILIAL,order.CDLOJA,order.NRVENDAREST,order.NRCOMANDA].join("|");
 }
 function withoutNodePreloads(environment){
  const copy={...environment};
