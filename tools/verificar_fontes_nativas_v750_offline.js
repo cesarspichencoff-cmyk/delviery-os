@@ -18,6 +18,12 @@ assert.throws(()=>app.line("X".repeat(43)),/NO_TRUNCATE/);
 assert.doesNotThrow(()=>app.line("X".repeat(42)));
 assert.doesNotThrow(()=>app.line("X".repeat(60),{font:"B"}));
 assert.throws(()=>app.line("X".repeat(61),{font:"B"}),/NO_TRUNCATE/);
+const fontB=app.build([app.line("CONFERÊNCIA",{font:"B",mode:"emph"})]);
+assert.deepEqual([...fontB.subarray(9,12)],[27,77,1],
+ "ESC_M_1_NOT_SELECTED_FOR_FONT_B");
+assert.ok(fontB.includes(Buffer.from([0x43,0x4f,0x4e,0x46,0x45,0x52,0xd2,0x4e,0x43,0x49,0x41])),
+ "FONT_B_ACCENT_BYTES_LOST");
+
 function parse(p){
  let i=0;
  const expect=(...numbers)=>{for(const n of numbers){assert.equal(p[i++],n,"V750_COMMAND_BYTE_MISMATCH_"+(i-1))}};
