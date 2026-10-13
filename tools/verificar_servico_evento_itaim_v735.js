@@ -19,10 +19,10 @@ assert.match(candidate.evidence.reader_event_identity,/^UNKNOWN_NEEDS_EXACT_RAW_
 const fixed=candidate; // Known SQL pair; all event objects below are FICTIONAL.
 function event(day="2026-10-12",time="15:30:00"){
  return {schema:"deliveryos.tata-reader-stable-order-event.v1",
-  order_key:"0001|01|0000000001",snapshot_hash:"a".repeat(64),
+  order_key:"0001|01|0000000099|0000000001",snapshot_hash:"a".repeat(64),
   ready_for_downstream_shadow:false,
   blockers:["SERVICE_STATE_EXPIRED_FOR_ORDER"],
-  order:{CDFILIAL:"0001",CDLOJA:"01",NRCOMANDA:"0000000001",
+  order:{CDFILIAL:"0001",CDLOJA:"01",NRVENDAREST:"0000000099",NRCOMANDA:"0000000001",
    DTHRABERMESA:day+"T"+time,items:[{CDPRODUTO:"FIXTURE"}]}};
 }
 let n=0;
@@ -46,7 +46,7 @@ check("SQL-observed candidate is only a diagnostic REVIEW, never end-to-end proo
  assert.equal(r.authorizes_watcher_state,false);
 });
 check("reader-event shop cannot overwrite the independent SQL candidate",()=>{
- const ev=event();ev.order.CDLOJA="999";ev.order_key="0001|999|0000000001";
+ const ev=event();ev.order.CDLOJA="999";ev.order_key="0001|999|0000000099|0000000001";
  blocked("TARGET_SHOP_ID_MISMATCH",review(candidate,template,ev));
 });
 check("synthetic bound shop reviews Monday holiday lunch",()=>{
@@ -73,12 +73,20 @@ check("Monday 12 Oct holiday overrides ordinary weekday cutoff",()=>{
  assert.equal(r.service,"LUNCH");
 });
 check("wrong CDFILIAL never inherits the schedule",()=>{
- const ev=event();ev.order.CDFILIAL="0002";ev.order_key="0002|01|0000000001";
+ const ev=event();ev.order.CDFILIAL="0002";ev.order_key="0002|01|0000000099|0000000001";
  blocked("TARGET_STORE_ID_MISMATCH",review(fixed,template,ev));
 });
 check("wrong CDLOJA never inherits the schedule",()=>{
- const ev=event();ev.order.CDLOJA="02";ev.order_key="0001|02|0000000001";
+ const ev=event();ev.order.CDLOJA="02";ev.order_key="0001|02|0000000099|0000000001";
  blocked("TARGET_SHOP_ID_MISMATCH",review(fixed,template,ev));
+});
+check("synthetic legacy 3-field key must not pass installed watcher review",()=>{
+ const ev=event();ev.order_key="0001|01|0000000001";
+ blocked("ORDER_IDENTITY_OR_REVISION_ENVELOPE_INVALID",review(fixed,template,ev));
+});
+check("different sale number must not reuse original order key",()=>{
+ const ev=event();ev.order.NRVENDAREST="0000000098";
+ blocked("ORDER_IDENTITY_OR_REVISION_ENVELOPE_INVALID",review(fixed,template,ev));
 });
 check("forged order key is rejected",()=>{
  const ev=event();ev.order_key="0001|01|0000000002";
