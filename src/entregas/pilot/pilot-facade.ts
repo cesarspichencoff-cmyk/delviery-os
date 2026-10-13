@@ -251,7 +251,50 @@ export class PilotApplicationFacade {
     } as Command;
 
     try {
-      const result = await this.svc.execute(full);
+      // A informacao de canal guardada na fila de pedidos prontos e mais
+      // confiavel que o campo enviado pelo navegador. A interface legada
+      // pode omitir channel, portanto o guarda do dominio isolado nao basta.
+      let validated = full;
+      if (full.type === "CreateTrip" || full.type === "AddDeliveryToTrip") {
+        const stored = new Map(
+          (await this.readyOrders.list()).map((o) => [o.order_ref, o.channel]),
+        );
+        const deliveries =
+          full.type === "CreateTrip" ? full.deliveries : [full];
+        for (const delivery of deliveries) {
+          if (!stored.has(delivery.order_ref)) continue;
+          const channel = stored.get(delivery.order_ref);
+          if (
+            channel !== undefined &&
+            (channel !== "proprio" && channel !== "app" ||
+              (delivery.channel !== undefined && delivery.channel !== channel))
+          ) {
+            this.last_error = "NON_OWN_ORDER_IN_TRIP";
+            this.last_human_error =
+              "Origem do pedido nao permite viagem de motoboy proprio. Confira a fila e use Handoff quando for courier externo.";
+            return {
+              ok: false,
+              error: this.last_human_error,
+              code: this.last_error,
+            };
+          }
+        }
+        if (full.type === "CreateTrip") {
+          validated = {
+            ...full,
+            deliveries: full.deliveries.map((d) => ({
+              ...d,
+              channel: stored.get(d.order_ref) ?? d.channel,
+            })),
+          };
+        } else {
+          validated = {
+            ...full,
+            channel: stored.get(full.order_ref) ?? full.channel,
+          };
+        }
+      }
+      const result = await this.svc.execute(validated);
       if (!result.ok) {
         this.last_error = result.error ?? "rejeitado";
         this.last_human_error = result.error ?? "Ação não concluída.";
