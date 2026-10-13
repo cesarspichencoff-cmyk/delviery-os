@@ -39,3 +39,8 @@
 - Substituir a suíte de mutação travada por execução supervisionada com rollback e timeout antes de reavaliá-la.
 
 O ensaio com **um pedido próprio Neemo/Teknisa supervisionado e consentido** será missão posterior e separada. Courier externo iFood permanece handoff, não Trip interna.
+
+
+## Atualização comprovada em 13/10/2026 — emulador e HTTPS
+
+A etapa **no emulador Android API 34** já foi executada em laboratório com CA temporária no APK de debug, HTTPS estrito e GPS desligado. Uma Trip fictícia avançou pelas ações da WebView até entrega e encerramento no servidor DEMO em memória. Ver [prova HTTPS e fluxo](DELIVERYOS_ANDROID_HTTPS_FLUXO_SINTETICO_2026-10-13.md). Esta atualização **não** autoriza concluir o item de **Android físico**, nem offline durável, vínculo nativo de aparelho ou leitura do **mesmo** evento em Copiloto. A informação histórica de “sem aparelho ADB” acima se referia à verificação inicial, antes de iniciar o AVD.

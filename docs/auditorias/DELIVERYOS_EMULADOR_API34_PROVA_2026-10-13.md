@@ -32,3 +32,8 @@ Ao abrir o APK de debug, o `WebView` tentou carregar `https://10.0.2.2:5193/ride
 4. Depois, homologação visual humana e Android físico supervisionado. **Sem merge ou deploy**.
 
 Não reexecutar a suíte adversarial Q-018 que anteriormente travou sem isolamento/rollback melhores. O checkout do candidato foi verificado limpo após a compilação e os testes.
+
+
+## Atualização posterior em 13/10/2026 — HTTPS local resolvido no emulador
+
+O erro de conexão HTTP(S) registrado acima foi **resolvido no laboratório**, sem mudança no código aprovado: um APK de debug temporário com CA própria acessou, por TLS validado, um proxy HTTPS local para a UI de DEMONSTRAÇÃO em memória. Saída, chegada e entrega foram acionadas no emulador; retorno/encerramento foram concluídos via API do mesmo DEMO. Prova e limites: [DELIVERYOS_ANDROID_HTTPS_FLUXO_SINTETICO_2026-10-13.md](DELIVERYOS_ANDROID_HTTPS_FLUXO_SINTETICO_2026-10-13.md). **Persistência offline de dispositivo e compartilhamento do mesmo evento com Copiloto continuam não comprovados**.
