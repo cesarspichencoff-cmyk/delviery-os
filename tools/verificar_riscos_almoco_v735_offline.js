@@ -7,8 +7,10 @@ const EFFECTS=Object.freeze({teknisa_write:false,ifood_write:false,print:false,s
 function assess(x){
  const reasons=[];
  const need=(ok,reason)=>{if(!ok)reasons.push(reason)};
- need(x.source==="SIGNED_IFOOD_PLUS_READONLY_TEK NISA".replace(" ",""),"UNVERIFIED_INTEGRATION_ORIGIN");
- need(typeof x.eventId==="string"&&x.eventId.length>0&&x.validSignature===true,"IFOOD_EVENT_AUTHENTICITY_UNPROVEN");
+ const webhook=x.source==="IFOOD_WEBHOOK_TEKNISA_READONLY"&&x.validSignature===true;
+ const polling=x.source==="IFOOD_POLLING_TEKNISA_READONLY"&&x.pollingAuthorized===true;
+ need(webhook||polling,"UNVERIFIED_INTEGRATION_ORIGIN");
+ need(typeof x.eventId==="string"&&x.eventId.length>0,"IFOOD_EVENT_ID_MISSING");
  need(x.seenEventIds instanceof Set&&!x.seenEventIds.has(x.eventId),"REDELIVERED_IFOOD_EVENT");
  need(x.eventOrderCorrect===true,"OUT_OF_ORDER_EVENT");
  need(x.canceled!==true&&x.orderStatus==="ACTIVE","ORDER_NOT_ACTIVE");
@@ -26,7 +28,7 @@ function assess(x){
   reasons,print_authorized:false,effects:EFFECTS};
 }
 const good={
- source:"SIGNED_IFOOD_PLUS_READONLY_TEKNISA",eventId:"evt-fake-1",validSignature:true,
+ source:"IFOOD_WEBHOOK_TEKNISA_READONLY",eventId:"evt-fake-1",validSignature:true,pollingAuthorized:false,
  seenEventIds:new Set(),eventOrderCorrect:true,canceled:false,orderStatus:"ACTIVE",
  orderKey:"0001|01|0000000001|0000000001",orderKeyBound:true,
  orderSnapshotHashValid:true,revisionCurrent:true,itemQuantitiesExact:true,
@@ -48,7 +50,13 @@ scenario("positive simulated fixture permits human review but never print",()=>{
 scenario("iFood duplicate delivery",x=>x.seenEventIds.add(x.eventId),"REDELIVERED_IFOOD_EVENT");
 scenario("out-of-order confirmation after cancellation",x=>x.eventOrderCorrect=false,"OUT_OF_ORDER_EVENT");
 scenario("late canceled order",x=>x.canceled=true,"ORDER_NOT_ACTIVE");
-scenario("unsigned/forged iFood event",x=>x.validSignature=false,"IFOOD_EVENT_AUTHENTICITY_UNPROVEN");
+scenario("unsigned/forged webhook event",x=>x.validSignature=false,"UNVERIFIED_INTEGRATION_ORIGIN");
+scenario("authorized polling is alternative valid receive mode",x=>{
+ x.source="IFOOD_POLLING_TEKNISA_READONLY";x.pollingAuthorized=true;
+},null);
+scenario("polling without authorization",x=>{
+ x.source="IFOOD_POLLING_TEKNISA_READONLY";x.pollingAuthorized=false;
+},"UNVERIFIED_INTEGRATION_ORIGIN");
 scenario("different internal Teknisa order",x=>x.orderKeyBound=false,"RAW_TEKNISA_ORDER_ID_NOT_VERIFIED");
 scenario("same order but old revision",x=>x.revisionCurrent=false,"STALE_ORDER_OR_MUTATED_SNAPSHOT");
 scenario("quantity changed after snapshot",x=>x.itemQuantitiesExact=false,"ITEM_OR_OBSERVATION_DRIFT");
@@ -65,6 +73,6 @@ scenario("no durable duplicate-print ledger",x=>x.durablePrintedLedgerVerified=f
 scenario("same revision already printed",x=>x.notAlreadyPrinted=false,"NO_DURABLE_EXACT_ONCE_PRINT_PROOF");
 scenario("paper/Figma parity not physically accepted",x=>x.threePaperViewsAccepted=false,"THREE_PHYSICAL_RECEIPTS_UNACCEPTED");
 scenario("no verified source sync to iFood and Teknisa",x=>x.source="UNVERIFIED","UNVERIFIED_INTEGRATION_ORIGIN");
-assert.equal(count,21);
+assert.equal(count,23);
 console.log("COMANDAS_LUNCH_ADVERSARIAL_V735="+count+"/"+count+" SIMULATION_ONLY NO_TEKNISA_WRITE NO_PRINT");
 module.exports={assess,EFFECTS};
