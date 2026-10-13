@@ -54,6 +54,8 @@ jobs:
         run: node tools/verificar_auditoria_eventos_v730.js
       - name: Windows sidecar shift-and-V2 pin preflight V7.31 (synthetic only)
         run: node tools/verificar_sidecar_preflight_windows_v731.js
+      - name: Windows Sandbox closed-loop config and host isolation V7.33 (static)
+        run: node tools/verificar_sandbox_comandas_v733.js
       - name: Positive pinned canonical engine V2 to V6.8 three-way replay V7.22 (offline)
         run: node tools/verificar_cadeia_positiva_v722_offline.js
       - name: Immutable eight-rule subprocess snapshot and lineage guard V7.24 (offline)
@@ -179,6 +181,18 @@ jobs:
         run: node tools/verificar_auditoria_eventos_v730.js
       - name: Windows sidecar shift-and-V2 pin preflight V7.31 (synthetic only)
         run: node tools/verificar_sidecar_preflight_windows_v731.js
+      - name: Windows Sandbox closed-loop config and host isolation V7.33 (static)
+        run: node tools/verificar_sandbox_comandas_v733.js
+      - name: Parse Windows Sandbox configuration and guest PowerShell syntax
+        shell: pwsh
+        run: |
+          [xml]$cfg = Get-Content -Raw -LiteralPath "runtime/windows/comandas_sandbox_observer_v733.wsb"
+          if ($cfg.Configuration.MappedFolders.MappedFolder.Count -ne 4) { throw 'SANDBOX_XML_MOUNT_COUNT_INVALID' }
+          $tokens = $null
+          $errors = $null
+          $ast = [System.Management.Automation.Language.Parser]::ParseFile(
+            "runtime/windows/comandas_sandbox_observe_v733.ps1", [ref]$tokens, [ref]$errors)
+          if ($errors.Count -ne 0) { throw 'SANDBOX_POWERSHELL_SYNTAX_INVALID' }
       - name: Reconcile V2 consumer, V6.8, pinned Academy motor and three SVG receipts
         run: node tools/verificar_cadeia_positiva_v722_offline.js
       - name: Reject malformed quantities on Windows
