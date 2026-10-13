@@ -8,6 +8,7 @@ on:
       - feat/thermal-quality-v51-epson-official-fontqa-20261008
       - feat/thermal-v54-caixa-photo-visual-qa-20261008
       - feat/thermal-v63-packaging-bridge-shadow-20261010
+      - validation/thermal-v714-raw-quantity-fail-closed-20261011
 
 permissions:
   contents: read
