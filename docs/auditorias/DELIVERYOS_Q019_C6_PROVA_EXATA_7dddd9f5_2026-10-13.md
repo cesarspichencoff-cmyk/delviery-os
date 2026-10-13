@@ -65,3 +65,15 @@ Uma inspeção read-only de `git log f87a36d..7dddd9f5 -- <cada caminho>` confir
 | `081e54c` | fix(copiloto): show missing-source cell status visibly, not only ARIA |
 
 **Implicação:** uma exceção baseada somente nos commits `f24ff62` e `a117c43` não cobre automaticamente as quatro edições posteriores. A análise de `git log` comprova presença e identificação dos commits, **não** prova que todos os diffs mantêm a mesma classe autorizável. Analisar os patches/efeitos e separar classes antes da decisão humana; nunca transformar autorização de um commit em permissão irrestrita para o caminho.
+
+
+### Leitura limitada dos quatro patches posteriores
+
+Os diffs de `20151b0`, `e93faf9`, `e583b61` e `081e54c` em `src/product/ui/surfaces/copiloto.js` foram inspecionados no clone local exato:
+
+- `20151b0`: acrescentou função de apresentação `leituraEntregasCompartilhada`, agrupando unidades/modo/contagem de **projeção histórica**, exibindo indisponibilidade sem contagem operacional fictícia.
+- `e93faf9`: passou a usar objetos de ausência explícita nos campos Fonte e Lida em, em vez de sinalizar observação sem dado.
+- `e583b61`: acrescentou `coberturaCelulasV33` para retratar cobertura de fontes das seis células, com texto declarando que não é pressão/saúde operacional e sem botão no patch.
+- `081e54c`: passou a exibir visualmente o rótulo textual da ausência, além do selo.
+
+**Candidatura técnica, não autorização:** revisar esses quatro patches como classe específica `COPILOTO_SHADOW_READONLY_SOURCE_COVERAGE` vinculada a seus SHAs, separada da autorização dos patches B6/B7 preexistentes. A inspeção isolada dos diffs **não comprova** runtime sem efeitos colaterais, paridade visual com referências ou aceite de César. Se qualquer mudança quebrar o contrato visual fundador, deve ser ajustada, não autorizada por analogia.
