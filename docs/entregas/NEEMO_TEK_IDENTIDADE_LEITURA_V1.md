@@ -9,8 +9,8 @@ O auditor `tools/reconciliar_neemo_teknisa_v1.cjs` foi preparado para um **manif
 ## Contrato de entrada
 
 JSON único:
-- `schema="neemo-teknisa-correlation-review.v1"`
-- `teknisa[]`: `unit_id`, `order_key`, `revision`, `snapshot_sha256`, `observed_at`; identidade/revisão/hash devem vir do mesmo evento existente do TATÁ Comandas. Não usar hash de arquivo de impressão como substituto do pedido.
+- `schema="neemo-teknisa-correlation-review.v1.1"`
+- `teknisa[]`: `unit_id`, `origin_code="DLV_NMO"`, `order_key`, `revision`, `snapshot_sha256`, `observed_at`; identidade/revisão/hash devem vir do mesmo evento existente do TATÁ Comandas. Não usar hash de arquivo de impressão como substituto do pedido.
 - `neemo[]`: `unit_id`, `order_id`, `revision`, `observed_at`; somente campos documentados em captura/exportação/autorização da Neemo. Não inferir `order_id` a partir do número da comanda.
 - `links[]`: chave/revisão/digest exatos de ambas as fontes, `evidence_sha256` e `evidence_kind=independent_source_export` ou `documented_vendor_reference`. Esses vínculos devem vir de uma fonte externa real de associação, não de horário/telefone/nome. O digest declarado **não autentica automaticamente sua própria origem**.
 
