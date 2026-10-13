@@ -1,0 +1,132 @@
+{
+  "schema": "deliveryos.itaim-unbound-service-hours-template.v734",
+  "unit": "ITAIM",
+  "store_id": null,
+  "binding_state": "UNBOUND_REQUIRES_ITAIM_LOCAL_STORE_VERIFICATION",
+  "revision": "itaim-service-hours-confirmed-2026-10-12-v1",
+  "source_ref": "cesar:chat:2026-10-12:itaim-hours",
+  "evidence": "CURRENT_OPERATING_RULE_CONFIRMED",
+  "effective_from_local_date": "2026-10-12",
+  "semantics": "HH:mm:ss local America/Sao_Paulo; starts inclusive, ends exclusive; no daily signature",
+  "windows": [
+    {
+      "weekday": 0,
+      "service": "LUNCH",
+      "from_local": "11:00:00",
+      "until_local": "16:30:00"
+    },
+    {
+      "weekday": 0,
+      "service": "DINNER",
+      "from_local": "18:00:00",
+      "until_local": "23:00:00"
+    },
+    {
+      "weekday": 1,
+      "service": "LUNCH",
+      "from_local": "11:00:00",
+      "until_local": "15:00:00"
+    },
+    {
+      "weekday": 1,
+      "service": "DINNER",
+      "from_local": "18:00:00",
+      "until_local": "23:00:00"
+    },
+    {
+      "weekday": 2,
+      "service": "LUNCH",
+      "from_local": "11:00:00",
+      "until_local": "15:00:00"
+    },
+    {
+      "weekday": 2,
+      "service": "DINNER",
+      "from_local": "18:00:00",
+      "until_local": "23:00:00"
+    },
+    {
+      "weekday": 3,
+      "service": "LUNCH",
+      "from_local": "11:00:00",
+      "until_local": "15:00:00"
+    },
+    {
+      "weekday": 3,
+      "service": "DINNER",
+      "from_local": "18:00:00",
+      "until_local": "23:00:00"
+    },
+    {
+      "weekday": 4,
+      "service": "LUNCH",
+      "from_local": "11:00:00",
+      "until_local": "15:00:00"
+    },
+    {
+      "weekday": 4,
+      "service": "DINNER",
+      "from_local": "18:00:00",
+      "until_local": "23:00:00"
+    },
+    {
+      "weekday": 5,
+      "service": "LUNCH",
+      "from_local": "11:00:00",
+      "until_local": "15:00:00"
+    },
+    {
+      "weekday": 5,
+      "service": "DINNER",
+      "from_local": "18:00:00",
+      "until_local": "23:00:00"
+    },
+    {
+      "weekday": 6,
+      "service": "LUNCH",
+      "from_local": "11:00:00",
+      "until_local": "16:30:00"
+    },
+    {
+      "weekday": 6,
+      "service": "DINNER",
+      "from_local": "18:00:00",
+      "until_local": "23:00:00"
+    }
+  ],
+  "holiday_calendar": {
+    "schema": "deliveryos.official-holiday-dates.v733",
+    "source_ref": "prefeitura.sp.gov.br/web/gestao/w/calendario_2026",
+    "from_local_date": "2026-01-01",
+    "through_local_date": "2026-12-31",
+    "dates": [
+      "2026-01-01",
+      "2026-01-25",
+      "2026-04-03",
+      "2026-04-21",
+      "2026-05-01",
+      "2026-06-04",
+      "2026-07-09",
+      "2026-09-07",
+      "2026-10-12",
+      "2026-11-02",
+      "2026-11-15",
+      "2026-11-20",
+      "2026-12-25"
+    ]
+  },
+  "holiday_windows": [
+    {
+      "service": "LUNCH",
+      "from_local": "11:00:00",
+      "until_local": "16:30:00"
+    },
+    {
+      "service": "DINNER",
+      "from_local": "18:00:00",
+      "until_local": "23:00:00"
+    }
+  ],
+  "calendar_policy": "Legal municipal/state/national holidays per Prefeitura SP. Excludes pontos facultativos and administrative closure days. Must refresh for 2027.",
+  "output_policy": "REVIEW_ONLY_NO_DEPLOY_NO_PRINT"
+}
