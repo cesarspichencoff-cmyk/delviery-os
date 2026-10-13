@@ -78,9 +78,14 @@ try {
 Add-Type -AssemblyName System.Drawing
 $issued=0
 foreach($ticket in $jobs) {
-  # Refuse new jobs if any previous job has not yet cleared.
-  if (@(Get-PrintJob -PrinterName $printerName -ErrorAction SilentlyContinue).Count -ne 0) {
-    throw 'PREVIOUS_MOCK_JOB_STILL_IN_QUEUE_STOP_WITHOUT_RETRY'
+  # Allow bounded draining of the previous synthetic job. Never flush,
+  # cancel or modify any job/queue; a timeout stops without retry.
+  $deadline = (Get-Date).AddSeconds(10)
+  while (@(Get-PrintJob -PrinterName $printerName -ErrorAction SilentlyContinue).Count -ne 0) {
+    if ((Get-Date) -ge $deadline) {
+      throw 'PREVIOUS_MOCK_JOB_STILL_IN_QUEUE_STOP_WITHOUT_RETRY'
+    }
+    Start-Sleep -Milliseconds 250
   }
   $d = New-Object System.Drawing.Printing.PrintDocument
   $d.PrinterSettings.PrinterName = $printerName
