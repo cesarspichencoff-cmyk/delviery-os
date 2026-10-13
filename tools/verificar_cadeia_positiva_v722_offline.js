@@ -12,8 +12,10 @@ const {PACKAGING_SOURCE_BLOB_V63,PACKAGING_SOURCE_SHA256_V78}=
 const {blob}=require("./gerar_tres_vias_par_leitor_v68_offline.js");
 const {fresh,reserve,resumeDecision,descriptorsFromProof}=
  require("./comandas_idempotencia_v754_offline.js");
-const {reserveDurablyInSyntheticSandbox}=
+const {reserveDurablyInSyntheticSandbox,snapshot}=
  require("./comandas_journal_v755_sandbox.js");
+const {verifySignedSyntheticCheckpoint,keyFingerprint,messageFor}=
+ require("./comandas_signed_anchor_v757_offline.js");
 const {auditExpectedThreeViews}=
  require("./comandas_reconciliation_v756_offline.js");
 const sha=bytes=>crypto.createHash("sha256").update(bytes).digest("hex");
@@ -230,6 +232,32 @@ try{
   assert.equal(audit.no_automatic_retry,true);
   assert.equal(audit.exact_once_physical_proven,false);
   assert.equal(audit.effects.print,false);
+  // V7.57: only the source-pinned three-view lab journal is signed by a
+  // throwaway CI key. The signer NEVER exists in a production module.
+  // This demonstrates verification semantics, NOT independent key custody.
+  const current=snapshot(lab);
+  assert.equal(current.status,"SYNTHETIC_SNAPSHOT_ONLY");
+  assert.equal(current.revision,3);
+  const pair=crypto.generateKeyPairSync("ed25519");
+  const unsigned={schema:"deliveryos.signed-journal-anchor.v757.offline",
+   journal_instance_id:"test:v2v68_threeview_001",
+   revision:current.revision,
+   journal_head_sha256:current.journal_head_sha256};
+  const signed={...unsigned,signature_base64:crypto.sign(null,
+   messageFor(unsigned),pair.privateKey).toString("base64")};
+  const trusted={authority:"EPHEMERAL_CI_TEST_CONTEXT_ONLY",
+   journal_instance_id:unsigned.journal_instance_id,
+   minimum_revision:current.revision,
+   required_head_sha256:current.journal_head_sha256,
+   public_key_spki_pem:pair.publicKey.export({format:"pem",type:"spki"}).toString(),
+   public_key_sha256:keyFingerprint(pair.publicKey)};
+  const sealed=verifySignedSyntheticCheckpoint(lab,signed,trusted);
+  assert.equal(sealed.status,
+   "SIGNED_SYNTHETIC_CHECKPOINT_MATCH_NOT_PRODUCTION_PROOF");
+  assert.equal(sealed.authorize_print,false);
+  assert.equal(sealed.operational_external_anchor_proven,false);
+  assert.equal(verifySignedSyntheticCheckpoint(lab,signed,
+   {...trusted,required_head_sha256:sha("different")}).status,"ANCHOR_HOLD");
  }finally{fs.rmSync(lab,{recursive:true,force:true});}
  const manifest=JSON.parse(fs.readFileSync(path.join(got.proof_dir,"manifest.json"),"utf8"));
  assert.deepEqual(manifest.outputs,got.outputs);
