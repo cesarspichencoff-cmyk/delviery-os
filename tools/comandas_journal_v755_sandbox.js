@@ -60,7 +60,8 @@ function readSnapshots(root,allowHeldLock=false){
 }
 function snapshot(root){
  try{const s=readSnapshots(root);return {status:"SYNTHETIC_SNAPSHOT_ONLY",
-  ledger:s.ledger,authorize_print:false};}
+  ledger:s.ledger,revision:s.revision,journal_head_sha256:s.last_hash,
+  authorize_print:false};}
  catch(e){return hold(String(e.message).replace(/[^A-Z0-9_]/gi,"_"))}
 }
 /** Never returns an authorization to dispatch. Failure after exclusive lock
