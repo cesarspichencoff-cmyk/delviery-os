@@ -45,10 +45,15 @@ function readSnapshots(root,allowHeldLock=false){
      record.previous_sha256!==previous||record.revision!==count||
      !validLedger(record.ledger)||record.ledger.revision!==count)
    throw Error("JOURNAL_CHAIN_DIVERGENCE_HOLD");
-  // Reservation history cannot disappear or change content between revisions.
-  if(record.ledger.entries.length<last.entries.length||
-     last.entries.some((old,i)=>JSON.stringify(record.ledger.entries[i])!==JSON.stringify(old)))
-   throw Error("JOURNAL_HISTORY_REWRITTEN_HOLD");
+  // This V7.55 fixture persists ONE RESERVATION per revision, never a spool
+  // ACK or a paper claim. A reconstructed/tampered first snapshot must not be
+  // able to assert that physical output has already been verified.
+  // Observation transitions require a separately reviewed append-only log.
+  if(record.ledger.entries.length!==last.entries.length+1||
+     last.entries.some((old,i)=>JSON.stringify(record.ledger.entries[i])!==JSON.stringify(old))||
+     record.ledger.entries[record.ledger.entries.length-1]?.state!=="ATTEMPT_RESERVED_UNVERIFIED"||
+     record.ledger.entries[record.ledger.entries.length-1]?.reserved_revision!==count)
+   throw Error("JOURNAL_UNSUPPORTED_TRANSITION_OR_HISTORY_REWRITE_HOLD");
   previous=h(raw);last=record.ledger;
  }
  return {ledger:last,last_hash:previous,revision:count};
