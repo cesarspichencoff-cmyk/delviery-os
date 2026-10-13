@@ -163,3 +163,5 @@ check("no alteration of source event, binding or template",()=>{
 });
 console.log("THERMAL_ITAIM_READER_SERVICE_V735="+n+"/"+n+
  " SHOP_OBSERVED_SQL_READER_PARITY_PENDING_HOLD READ_ONLY_NO_PRINT");
+// Static and ParseFile-only proof; NEVER run the real spool probe in CI.
+require("./verificar_spool_passivo_v738.js");
