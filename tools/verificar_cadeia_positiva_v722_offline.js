@@ -16,6 +16,8 @@ const {reserveDurablyInSyntheticSandbox,snapshot}=
  require("./comandas_journal_v755_sandbox.js");
 const {verifySignedSyntheticCheckpoint,keyFingerprint,messageFor}=
  require("./comandas_signed_anchor_v757_offline.js");
+const {verifySyntheticWitnessAgainstJournal,genesisHash,recordHash,SCHEMA:WITNESS_SCHEMA}=
+ require("./comandas_external_witness_v758_offline.js");
 const {auditExpectedThreeViews}=
  require("./comandas_reconciliation_v756_offline.js");
 const sha=bytes=>crypto.createHash("sha256").update(bytes).digest("hex");
@@ -258,6 +260,41 @@ try{
   assert.equal(sealed.operational_external_anchor_proven,false);
   assert.equal(verifySignedSyntheticCheckpoint(lab,signed,
    {...trusted,required_head_sha256:sha("different")}).status,"ANCHOR_HOLD");
+  // V7.58: assemble THREE signed checkpoints from the ACTUAL source-pinned
+  // V2->V6.8 test journal and separately pin the final witness digest.
+  // Both signer and trusted context are TEST PROCESS memory only.
+  const wid="test:v2v68_witness_001";
+  const witness={schema:WITNESS_SCHEMA,witness_instance_id:wid,records:[]};
+  let prior=genesisHash(wid);
+  for(let rev=1;rev<=3;rev++){
+   const fname="state-"+String(rev).padStart(6,"0")+".json";
+   const head=sha(fs.readFileSync(path.join(lab,fname)));
+   const entry={schema:"deliveryos.signed-journal-anchor.v757.offline",
+    journal_instance_id:unsigned.journal_instance_id,
+    revision:rev,journal_head_sha256:head};
+   const signedEntry={...entry,signature_base64:crypto.sign(null,
+    messageFor(entry),pair.privateKey).toString("base64")};
+   const digest=recordHash(wid,prior,signedEntry);
+   witness.records.push({previous_sha256:prior,checkpoint:signedEntry,
+    record_sha256:digest});
+   prior=digest;
+  }
+  const witnessTrust={
+   authority:"EPHEMERAL_CI_TEST_CONTEXT_ONLY",
+   journal_instance_id:unsigned.journal_instance_id,witness_instance_id:wid,
+   public_key_spki_pem:trusted.public_key_spki_pem,
+   public_key_sha256:trusted.public_key_sha256,
+   pinned_witness_revision:3,pinned_witness_head_sha256:prior,
+   required_latest_journal_head_sha256:current.journal_head_sha256
+  };
+  const proof758=verifySyntheticWitnessAgainstJournal(lab,witness,witnessTrust);
+  assert.equal(proof758.status,
+   "SYNTHETIC_OUT_OF_BAND_WITNESS_MATCH_NOT_PRODUCTION_PROOF");
+  assert.equal(proof758.authorize_print,false);
+  assert.equal(proof758.independent_failure_domain_proven,false);
+  assert.equal(verifySyntheticWitnessAgainstJournal(lab,witness,
+   {...witnessTrust,pinned_witness_head_sha256:sha("untrusted")}).status,
+   "WITNESS_HOLD");
  }finally{fs.rmSync(lab,{recursive:true,force:true});}
  const manifest=JSON.parse(fs.readFileSync(path.join(got.proof_dir,"manifest.json"),"utf8"));
  assert.deepEqual(manifest.outputs,got.outputs);
