@@ -6,6 +6,22 @@
 
 O auditor `tools/reconciliar_neemo_teknisa_v1.cjs` foi preparado para um **manifesto local, minimizado e autorizado**, sem banco, rede, impressora, serviço ou escrita. Não faz parsing do banco real: é uma etapa de verificação sobre artefatos já exportados pelas fontes existentes. Não criar outro watcher.
 
+## Verificação da fonte existente — 13/10/2026
+
+A leitura **somente leitura** dos 2.626 envelopes `state/reader-events-v1` no CAIXA_MOOCA terminou com **zero erro de JSON**. Foram observados: `DLV_NMO` 39 eventos/30 `order_key` distintos; `DLV_IFO` 2.557/1.561; `DLV_FOS` 30/11. A amostra abrange eventos coletados entre 05/10 e 13/10/2026, **não necessariamente todos os pedidos comerciais desses dias**.
+
+Nos 30 pedidos de origem `DLV_NMO` havia 30 referências `NRCOMANDAEXT` distintas, sem referência vazia, sem alteração da referência por revisão, sem duplicação da referência entre pedidos e sem sobreposição entre as referências externas Neemo e iFood no conjunto observado. **Estabilidade não é identidade externa autenticada:** a equivalência `NRCOMANDAEXT = ID nativo Neemo` permanece UNKNOWN. A flag `ready_for_downstream_shadow` não declara preparo concluído nem autorização de despacho.
+
+Todos os envelopes pertencem ao mesmo par `CDFILIAL=0001`/`CDLOJA=01`. Os três arquivos de configuração já existentes no Windows (`shadow/routing.json`, `shadow/printer-map.json`, `shadow/non-production.json`) identificam a filial `0001` como **TATÁ ITAIM**, com data de 30/09/2026. Trata-se de **evidência da configuração instalada**, não substitui a conferência do mapeamento completo `0001|01 -> ITAIM` antes de ativar integração.
+
+**Primeira versão sem API iFood:** a loja pode conferir presencialmente a comanda pelo `order_key` interno Teknisa e, sob autorização operacional, registrar uma entrega própria no Entregas. Isso **não exige comprovar previamente o número nativo Neemo** se a própria comanda/filial e o pedido estiverem verificados pelo operador. Em nenhuma hipótese um manifesto de auditoria adiciona pedidos prontos, cria Trip, imprime ou classifica automaticamente pedido como próprio.
+
+A revisão de domínio `a1b693151cebd2a43d9dd668be61876fdcf7734e` introduz bloqueio fail-closed de **canais explicitamente externos/desconhecidos** em `CreateTrip` e `AddDeliveryToTrip`. O cadastro manual legado sem canal explícito continua compatível e **necessita conferência humana da origem**. iFood permanece exclusivamente em `Handoff`. O Copiloto usa a ponte causal pública preexistente, sem coletor adicional.
+
+**Provas pendentes:** amostra independente de ID externo Neemo (apenas se esse dado for necessário na evolução), confirmação final da loja `01`, piloto Android físico com saída/retorno e eventos públicos reais, operação e aceite humano. PR #106 DRAFT/HOLD; nenhum efeito no ambiente da loja.
+
+---
+
 ## Contrato de entrada
 
 JSON único:
