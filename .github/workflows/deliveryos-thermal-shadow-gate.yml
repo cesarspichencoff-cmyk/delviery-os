@@ -149,3 +149,27 @@ jobs:
         # Both remain hard failures; no continue-on-error, printer or spooler.
         if: ${{ !cancelled() }}
         run: node tools/verificar_matriz_escpos_v511.js
+
+
+  windows-thermal-preview:
+    name: Windows offline Figma and ESC/POS integrity (no service)
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout immutable PR snapshot
+        uses: actions/checkout@v4
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Locked dependencies, no lifecycle scripts
+        run: npm ci --ignore-scripts
+      - name: Compile exact source contracts
+        run: npm run typecheck
+      - name: Verify archived Figma SVG masters and thermal traces on Windows
+        run: node tools/verificar_desenho_comandas_v72.js
+      - name: Reject malformed quantities on Windows
+        run: node tools/verificar_quantidades_termicas_v59.js
+      - name: Verify Epson ESC/POS bytes on Windows
+        run: node tools/verificar_integridade_termica_v57.js
