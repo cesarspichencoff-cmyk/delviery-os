@@ -151,6 +151,8 @@ jobs:
         run: node tools/verificar_renderer_semantico_direto_v71.js
       - name: Modern Epson GS L fn112/fn50 byte golden V7.47 (offline, Linux)
         run: node tools/verificar_escpos_graphics_v747_offline.js
+      - name: Native Epson font A/B, emphasis, strike and CP850 V7.50 (offline, Linux)
+        run: node tools/verificar_fontes_nativas_v750_offline.js
       - name: RAW V7.48 approval and one-shot transport policy (static only)
         run: node tools/verificar_raw_pilot_v748_static.js
       - name: ESC/POS adversarial contract RED until issue 22 is fixed
@@ -207,6 +209,8 @@ jobs:
         run: node tools/verificar_quantidades_termicas_v59.js
       - name: Modern Epson GS L fn112/fn50 byte golden V7.47 (offline, Windows)
         run: node tools/verificar_escpos_graphics_v747_offline.js
+      - name: Native Epson font A/B, emphasis, strike and CP850 V7.50 (offline, Windows)
+        run: node tools/verificar_fontes_nativas_v750_offline.js
       - name: RAW V7.48 approval and one-shot transport policy (static only)
         run: node tools/verificar_raw_pilot_v748_static.js
       - name: Parse V7.47 offline PowerShell encoder without execution
