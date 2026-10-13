@@ -65,6 +65,8 @@ jobs:
         run: node tools/verificar_neemo_teknisa_identidade_v1.cjs
       - name: Internal Trip rejects external and unknown order channels
         run: npx tsx src/entregas/foundation/run-tests.ts
+      - name: Pilot server respects stored order origin despite omitted client channel
+        run: npx tsx src/entregas/pilot/run-pilot-gate-tests.ts
       - name: Q016 replay, Product and governance regressions
         run: |
           npm run -s test:platform:q016
