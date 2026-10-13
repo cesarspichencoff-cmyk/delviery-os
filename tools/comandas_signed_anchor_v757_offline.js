@@ -34,7 +34,11 @@ function messageFor(anchor){
   anchor.journal_head_sha256])+"\n","utf8");
 }
 function keyFingerprint(publicKey){
- const key=crypto.createPublicKey(publicKey);
+ // Node createPublicKey() accepts PEM or a *private* KeyObject, but rejects
+ // a public KeyObject. Accept the latter explicitly without allowing
+ // duck-typed objects to impersonate a trusted Node KeyObject.
+ const key=publicKey instanceof crypto.KeyObject&&publicKey.type==="public"?
+  publicKey:crypto.createPublicKey(publicKey);
  if(key.asymmetricKeyType!=="ed25519")throw Error("KEY_NOT_ED25519");
  return sha(key.export({format:"der",type:"spki"}));
 }
