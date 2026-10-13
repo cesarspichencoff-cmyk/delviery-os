@@ -493,9 +493,39 @@ const EXCECAO_COPILOTO_SHADOW: readonly string[] = [
   "src/product/viewmodels/run-copiloto-celulas-v33-tests.ts",
 ];
 
+/** Q-019, Cesar 2026-10-13: excecoes retroativas de CONTEUDO EXATO.
+ * Uma linha no envelope NAO libera edicoes futuras do mesmo caminho.
+ * O blob hash representa o estado lido e certificado em 33f267c0de128674c7439286f1c56054c5b21b53.
+ * Q-019 nao muda o estado de M1B nem autoriza LIVE/merge/deploy.
+ */
+const EXCECOES_Q019: readonly { caminho: string; classe: string; blob: string }[] = [
+  { caminho: "src/perfil-delivery/decisao.js", classe: "Q019_Q003_CANONICAL_FOCUS_NO_AUTOMATION", blob: "050b8cbf62d2067d054962f79a3b7d4c69c0d722" },
+  { caminho: "src/platform/copiloto/attention-authority.ts", classe: "Q019_Q003_CANONICAL_FOCUS_NO_AUTOMATION", blob: "3fc99a02244d9244f0ca3b0ecee602136dedf5ec" },
+  { caminho: "src/platform/copiloto/causal-attention-orchestrator.ts", classe: "Q019_Q003_CANONICAL_FOCUS_NO_AUTOMATION", blob: "77d73eeae76393492d7756b1bf32102d5f123652" },
+  { caminho: "src/platform/copiloto/causal-identity-bridge.ts", classe: "Q019_Q003_CANONICAL_FOCUS_NO_AUTOMATION", blob: "c036a40dec650214fe42a75eebecfebbb0ecbefb" },
+  { caminho: "src/platform/copiloto/conference-bridge.ts", classe: "Q019_Q015_TERMINAL_RETENTION_CONTRACT", blob: "57adceadf606caff42d6c7de99514797ff58965d" },
+  { caminho: "src/platform/copiloto/shadow.ts", classe: "Q019_Q003_CANONICAL_FOCUS_NO_AUTOMATION", blob: "b65378c2ab9fcc45809726e9932013e3b0ca66c2" },
+  { caminho: "src/product/ui/surfaces/copiloto.js", classe: "Q019_SHADOW_SHARED_SOURCE_COVERAGE_READONLY", blob: "eb22f1be10baed3413792f87089ac204ae3c7dcc" },
+  { caminho: "src/product/ui/surfaces/operacao-viva.js", classe: "Q019_B6_HISTORICAL_OPERACAO_VIVA_READONLY", blob: "ad6cccf0d1901a97a7c26153927da6909ed09515" },
+  { caminho: "src/product/viewmodels/copiloto-vm.ts", classe: "Q019_B6_B7_HISTORICAL_SHADOW_READONLY", blob: "96cb5115cf734e692678b79ee929a77b13f66bd7" },
+  { caminho: "src/product/viewmodels/historico-vm.ts", classe: "Q019_B6_TATA_HISTORICAL_READONLY", blob: "5323f05511f1cbec247faae485d4acddf29c23fd" },
+  { caminho: "src/product/viewmodels/operacao-viva-vm.ts", classe: "Q019_B6_HISTORICAL_OPERACAO_VIVA_READONLY", blob: "a7bd674dda0db4cde9f9cac36a290d9289bca280" },
+  { caminho: "src/product/viewmodels/tata-comanda-vm.ts", classe: "Q019_TATA_HISTORICAL_ADAPTER_READONLY", blob: "7974e633483805c52f8a353ab1e10779e5cdc17f" },
+];
+
 function linhaExata(texto: string, caminho: string, classe: string): boolean {
   const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   return new RegExp(`^\\s*${esc(caminho)}\\s+${esc(classe)}\\s*$`, "m").test(texto);
+}
+
+/** Registro de Q-019 vale APENAS para os bytes certificados via Git (atributos de path aplicados).
+ * O quarto argumento de foraDoEnvelope permite testar mutacao de blob SEM tocar em arquivo.
+ */
+function excecaoQ019Certificada(caminho: string, env: string, blobEmTeste?: string): boolean {
+  const e = EXCECOES_Q019.find((x) => x.caminho === caminho);
+  if (!e || !linhaExata(env, caminho, e.classe + " " + e.blob)) return false;
+  const blobAtual = blobEmTeste ?? git("hash-object", "--path", caminho, caminho);
+  return blobAtual === e.blob;
 }
 
 /** Os caminhos de `mudou` que nenhuma autorizacao registrada no envelope cobre. */
@@ -503,6 +533,7 @@ function foraDoEnvelope(
   mudou: readonly string[],
   env: string,
   autorizados: readonly string[],
+  blobsQ019EmTeste: Readonly<Record<string, string>> = {},
 ): string[] {
   // EXCECAO ESTREITA — Cesar, 2026-08-11 (M1B-R1). UM arquivo, UMA classe de
   // mudanca: a frase do sinal S5 dizia "N pedidos" para `carga_por_praca`, e
@@ -521,7 +552,8 @@ function foraDoEnvelope(
       !(EXCECAO_REALIDADE.includes(p) && linhaExata(env, p, CLASSE_REALIDADE)) &&
       !(EXCECAO_LEITURA_DA_RUA.includes(p) && linhaExata(env, p, CLASSE_LEITURA_DA_RUA)) &&
       !(EXCECAO_Q026_HTTP_503.includes(p) && linhaExata(env, p, CLASSE_Q026_HTTP_503)) &&
-      !(EXCECAO_COPILOTO_SHADOW.includes(p) && linhaExata(env, p, CLASSE_COPILOTO_SHADOW)),
+      !(EXCECAO_COPILOTO_SHADOW.includes(p) && linhaExata(env, p, CLASSE_COPILOTO_SHADOW)) &&
+      !excecaoQ019Certificada(p, env, blobsQ019EmTeste[p]),
   );
 }
 
@@ -712,6 +744,37 @@ teste("C6f Copiloto Entregas shadow: quatro caminhos exatos, controles negativos
       [outro],
       "outra rota ganhou permissao por classe Copiloto: " + outro,
     );
+  }
+});
+
+teste("C6g Q-019: 12 excecoes com classe + blob EXATOS e verificacao de procedencia", () => {
+  const env = ler(ENVELOPE);
+  const autorizados = caminhosAutorizados();
+  const paths = EXCECOES_Q019.map((x) => x.caminho);
+  assert.equal(paths.length, 12);
+  assert.equal(new Set(paths).size, 12, "Q-019 tem caminhos duplicados");
+  assert.deepEqual(foraDoEnvelope(paths, env, autorizados), []);
+  for (const e of EXCECOES_Q019) {
+    assert.equal(git("rev-parse", "33f267c0de128674c7439286f1c56054c5b21b53:" + e.caminho), e.blob, "blob incorreto no commit autorizado: " + e.caminho);
+    assert.equal(git("hash-object", "--path", e.caminho, e.caminho), e.blob, "conteudo atual divergiu: " + e.caminho);
+    assert.ok(!autorizados.some((a) => a.endsWith("/") ? e.caminho.startsWith(a) : e.caminho === a), e.caminho + " entrou em AUTHORIZED_PATHS M1B");
+    const linha = e.caminho + " " + e.classe + " " + e.blob;
+    const semLinha = env.split("\n").filter((l) => l.trim() !== linha).join("\n");
+    assert.deepEqual(foraDoEnvelope([e.caminho], semLinha, autorizados), [e.caminho], "remocao da autorizacao nao reprovou: " + e.caminho);
+    assert.deepEqual(foraDoEnvelope([e.caminho], env.replace(linha, e.caminho + " WRONG_CLASS " + e.blob), autorizados), [e.caminho], "classe trocada passou: " + e.caminho);
+    assert.deepEqual(foraDoEnvelope([e.caminho], env.replace(linha, e.caminho + " " + e.classe + " " + "f".repeat(40)), autorizados), [e.caminho], "hash trocado passou: " + e.caminho);
+    assert.deepEqual(foraDoEnvelope([e.caminho], env, autorizados, { [e.caminho]: "0".repeat(40) }), [e.caminho], "conteudo novo aceito por excecao historica: " + e.caminho);
+  }
+});
+
+teste("C6h Q-019: classe de caminho historico nao cobre outro arquivo proibido", () => {
+  const env = ler(ENVELOPE);
+  const autorizados = caminhosAutorizados();
+  for (const outro of ["src/product/viewmodels/areas.ts", "src/product/atencao/politica-temporal.ts", "src/platform/copiloto/confianca-duravel.ts"]) {
+    for (const e of EXCECOES_Q019) {
+      const falso = env + "\n" + outro + " " + e.classe + " " + e.blob + "\n";
+      assert.deepEqual(foraDoEnvelope([outro], falso, autorizados), [outro], "classe extrapolou para: " + outro);
+    }
   }
 });
 
