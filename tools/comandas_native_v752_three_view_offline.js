@@ -39,14 +39,19 @@ function isSourceEligible(source){
 }
 function wrapVerifiedLine(original){
  if(typeof original!=="string"||original.length>512||
-   /[\x00-\x09\x0b-\x1f\x7f]/.test(original))
+   /[\x00-\x1f\x7f]/.test(original))
   throw Error("TRACE_LINE_INVALID");
- const input=original.normalize("NFC").replace(/\r/g,"");
- if(!input.trim())return [" "]; // preserve blank line as white space + LF
- // Reject unsupported bytes BEFORE wrapping. Never strip accents, allergens,
- // negations or unrepresentable characters as a "helpful" fallback.
+ const input=original.normalize("NFC");
+ if(!input.trim())return [" "]; // physical blank line retained
+ // No implicit trim or collapsed spaces: quantity/product alignment and
+ // item observation indentation are a meaningful part of the source layout.
+ if(input!==input.trim())throw Error("TRACE_EDGE_SPACES_NOT_APPROVED");
  encodeCp850(input);
- const chunks=[],words=input.trim().split(/ +/);
+ if(encodeCp850(input).length<=MAX_LINE_COLUMNS)return [input];
+ // When a source line is longer than 42 characters, a split can only
+ // discard a SINGLE separator, never silently erase fixed-width spacing.
+ if(/ {2,}/.test(input))throw Error("MULTISPACE_LINE_REQUIRES_REVIEW");
+ const chunks=[],words=input.split(" ");
  let acc="";
  for(const word of words){
   if(encodeCp850(word).length>MAX_LINE_COLUMNS)
@@ -73,6 +78,9 @@ function nativeFromTrace(textTrace,kind){
  const encoded=[],plain=[];
  for(const sourceLine of sourceLines){
   const lines=wrapVerifiedLine(sourceLine);
+  if(sourceLine.trim() &&
+     lines.join(" ")!==sourceLine.normalize("NFC"))
+   throw Error("CHARACTER_OR_SPACE_LOST_IN_WRAP");
   for(const text of lines){
    const row=line(text,{font:"A",mode:emphasized(text)?"emph":"normal"});
    encoded.push(row);plain.push(row.text);
