@@ -160,6 +160,22 @@ try{
  assert.equal(got.effects.print,false);
  assert.equal(got.effects.spooler_write,false);
  assert.equal(got.outputs.length,3,"two production and one conference, no dropped ticket");
+ // V7.53: This is the ACTUAL source-pinned V2 subprocess -> V6.8 ->
+ // both station tickets + conference, not merely the archived offline sample.
+ assert.ok(got.native_font_candidate,"native-font candidate field absent from chain");
+ assert.equal(got.native_font_candidate.status,"NATIVE_FONT_V752_SEMANTIC_PROOF_ONLY",
+  "native bridge must not silently HOLD in an otherwise accepted V2 pipeline");
+ assert.equal(got.native_font_candidate.ready_for_operational_print,false);
+ assert.equal(got.native_font_candidate.effects.print,false);
+ assert.equal(got.native_font_candidate.effects.spooler_write,false);
+ assert.equal(got.native_font_candidate.outputs.length,got.outputs.length,
+  "source-pinned native candidate missing or multiplying ticket");
+ assert.deepEqual(got.native_font_candidate.outputs.map(o=>o.kind),
+  ["PRODUCAO","PRODUCAO","CONFERENCIA"]);
+ assert.ok(got.native_font_candidate.outputs.every(o=>o.full_text_preserved&&
+  o.unrepresentable_replaced===false&&/^[a-f0-9]{64}$/.test(o.native_bytes_sha256)&&
+  o.native_byte_count>0&&!Object.hasOwn(o,"bytes")));
+
  assert.equal(new Set(got.outputs.map(x=>x.filename)).size,3);
  assert.ok(got.outputs.every(o=>/^[0-9a-f]{64}$/.test(o.svg_sha256)));
  assert.equal(got.origin.event_sha256,sha(fs.readFileSync(path.join(temp,"event.json"))));
